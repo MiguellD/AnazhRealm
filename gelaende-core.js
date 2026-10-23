@@ -1908,6 +1908,17 @@
     // (gate:settlement Plan-Hash Studio = Welt): derselbe Export am selben Ort über derselben Lage ⇒ byte-derselbe Plan.
     // `wasserAt` (optional) nennt das Welt-Wasser für das Brücken-Etikett — der Wirt reicht sein Urteil (`_landAt`: Meer, See
     // und Fluss), ohne ihn gilt das Meer der Lage (Höhe unter `waterLevel`).
+    // DAS HÖHEN-RASTER DER TRASSE (siedlung.K3): der Rahmen `r` {x0, z0, d, n} (fachwerk `trasseRahmen`, plan-lokal um den Ort
+    // ox/oz) gefüllt mit dem Grund der Lage L VOR jedem Erdbau (`hoeheGrund`: der Plan ist eine Funktion von Saat und Gesetz — der
+    // Wege-Bau nach dem Laden liest denselben Grund wie der erste Bau, nie den Erdbau des eigenen Orts), dem die Gassen des Exports
+    // folgen (fachwerk `hoeheAusRaster` → `dorfLayout`). Leser: der Ort-Faden (voxel-worker `ort-raster`), das Studio, die Linse.
+    function hoehenRaster(L, ox, oz, r) {
+        const n = r.n;
+        const h = new Float32Array(n * n);
+        for (let j = 0; j < n; j++)
+            for (let i = 0; i < n; i++) h[i + j * n] = hoeheGrund(L, ox + r.x0 + i * r.d, oz + r.z0 + j * r.d, true);
+        return { x0: r.x0, z0: r.z0, d: r.d, n, h };
+    }
     function ortCtx(L, wasserAt) {
         return {
             hoeheAt: (x, z) => hoehe(L, x, z, true),
@@ -4780,6 +4791,7 @@
         ortCtx: ortCtx,
         LAGE_GRUND: LAGE_GRUND,
         lageGrund: lageGrund,
+        hoehenRaster: hoehenRaster,
         hangOrt: hangOrt,
         HOEHLEN_MUND: HOEHLEN_MUND,
         hoehlenMund: hoehlenMund,

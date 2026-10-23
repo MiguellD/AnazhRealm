@@ -3405,13 +3405,52 @@
     // ════════════ STRASSENGRAPH-GESETZ ════════════ Straßen wachsen als Graph: Kurvensegmente von Knoten zu Knoten;
     // SNAP: endet ein Trieb nahe Bestand, VERBINDET er sich (Knoten/Kantensplit) → ZYKLEN → BLÖCKE. Das ist der Unterschied Stadt/Straßendorf.
     // prettier-ignore
-    function strassengraph(rnd, plan, sW, lw, Rw){
+    // DIE TRASSE LIEST DAS GELÄNDE (siedlung.K3): H(x, z) ist die Höhe des Grunds PLAN-LOKAL (der Ort der Trasse im Ursprung,
+    // `hoeheAusRaster`); ohne H liegt der Plan auf ebenem Grund — dasselbe Gesetz, byte-gleich mit dem Export vor K3. Ein Schritt
+    // der Länge DS, der steiler als `ORT_GESETZ.trasse` steigt, dreht um die kleinste Abweichung (0,1 rad bis ±1,5 rad), die ihn
+    // trägt: die Gasse folgt der Höhenlinie wie ein Saumpfad; trägt keine, nimmt sie die flachste. Bis K3 lief jede Gasse blind
+    // über den Hang (Gefälle p95 22–36 % an zwei von vier Saaten), der Erdbau glättete danach.
+    function trasseLenk(H, x, z, th, DS){
+      if(!H) return th;
+      const lim=ORT_GESETZ.trasse, h0=H(x,z), g=t=>Math.abs(H(x+Math.cos(t)*DS, z+Math.sin(t)*DS)-h0)/DS;
+      let bg=g(th); if(bg<=lim) return th;
+      let best=th;
+      for(let k=1;k<=15;k++){ const d=k*0.1, a=g(th+d), b=g(th-d);
+        if(a<=lim||b<=lim) return a<=b? th+d : th-d;
+        if(a<bg){bg=a;best=th+d;} if(b<bg){bg=b;best=th-d;} }
+      return best; }
+    // eine GERADE Verbindung (Quergasse, Schluss-Gasse, der Fang an Knoten und Kante) baut H nur, wo kein Schritt steiler als
+    // `ORT_GESETZ.trasse` steigt — sie kann nicht lenken
+    function trasseSteil(H, pts){ if(!H) return false;
+      for(let k=0;k+1<pts.length;k++){ const a=pts[k], b=pts[k+1], d=Math.hypot(b.x-a.x,b.z-a.z);
+        if(d>1e-6&&Math.abs(H(b.x,b.z)-H(a.x,a.z))/d>ORT_GESETZ.trasse) return true; }
+      return false; }
+    // DAS HÖHEN-RASTER DER TRASSE: der Rahmen um den Ort eines Plans mit nH Häusern (plan-lokal, n × n Punkte im Abstand d: das
+    // Anderthalbfache seiner Reichweite `siedlungsReich` und 60 m, höchstens ~160 Punkte je Seite) — der Wirt füllt ihn aus dem
+    // EINEN Gelände-Kern (gelaende-core `hoehenRaster`, im Ort-Faden), das Studio aus seiner Lage; `hoeheAusRaster` liest ihn
+    // bilinear. Ein Lese-Punkt außerhalb zählt (`mass.aussen`, im Export `trasse.aussen`; die Linse verlangt 0).
+    function trasseRahmen(nH){ const R=1.5*siedlungsReich(SIEDLUNG, Math.max(1, isFinite(nH)?nH:SIEDLUNG.nHMin))+60, d=Math.max(4, Math.ceil(R/80)), m=Math.ceil(R/d);
+      return {x0:-m*d, z0:-m*d, d, n:2*m+1}; }
+    function hoeheAusRaster(r){
+      if(!r||!isFinite(r.x0)||!isFinite(r.z0)||!(r.d>0)||!(r.n>=2)||!r.h||r.h.length!==r.n*r.n)
+        throw new Error("fachwerk: das Höhen-Raster der Trasse ist keins (x0, z0, d, n, h[n·n])");
+      const n=r.n, d=r.d, h=r.h, mass={aussen:0};
+      const H=(x,z)=>{ let fx=(x-r.x0)/d, fz=(z-r.z0)/d;
+        if(!(fx>=0&&fz>=0&&fx<=n-1&&fz<=n-1)){ mass.aussen++; fx=Math.max(0,Math.min(n-1,fx||0)); fz=Math.max(0,Math.min(n-1,fz||0)); }
+        const i=Math.min(n-2,fx|0), j=Math.min(n-2,fz|0), u=fx-i, v=fz-j, k=i+j*n;
+        return (h[k]*(1-u)+h[k+1]*u)*(1-v)+(h[k+n]*(1-u)+h[k+n+1]*u)*v; };
+      H.mass=mass; return H; }
+    function strassengraph(rnd, plan, sW, lw, Rw, H){
   const staedt=plan.staedtisch, jahr=plan.jahr, DS=3;
   const kruemm= staedt?0.006:(jahr<1500?0.016:jahr<1800?0.010:0.003);
   const grid=(plan.region==='antik')||(staedt&&jahr>=1800);
   const nodes=[{x:0,z:0}], edges=[];
   const deg=k=>{ let d=0; for(const e of edges){ if(e.a===k||e.b===k)d++; } return d; };
   function walk(x0,z0,th0,len,gen){ const pts=[]; let x=x0,z=z0,dev=0;
+    if(H){ for(let u=0;u<=len;u+=DS){ const th=trasseLenk(H,x,z,th0+dev,DS); dev=th-th0; pts.push({x,z,th});   /*DIE TRASSE (K3): der Punkt traegt die Richtung seines Schritts*/
+        if(Rw&&Math.hypot(x,z)>Rw-8){ break; }
+        x+=Math.cos(th)*DS; z+=Math.sin(th)*DS; dev+=(rnd()-0.5)*2*kruemm*DS - dev*0.028*DS; }
+      return pts; }
     for(let u=0;u<=len;u+=DS){ const th=th0+dev; pts.push({x,z,th});
       if(Rw&&Math.hypot(x,z)>Rw-8){ break; }
       dev+=(rnd()-0.5)*2*kruemm*DS - dev*0.028*DS; x+=Math.cos(th0+dev)*DS; z+=Math.sin(th0+dev)*DS; }
@@ -3429,11 +3468,11 @@
     if(pts.length<4) { if(t.gen===0)gates.push({th:Math.atan2(nd.x?nd.x:Math.cos(t.th),0)*0+Math.atan2(Math.sin(t.th),Math.cos(t.th))}); continue; }
     const ex=pts[pts.length-1]; let endNode=-1, dead=false;
     let bi=-1,bd=1e9; nodes.forEach((q,i2)=>{ if(i2===t.node)return; const d=Math.hypot(ex.x-q.x,ex.z-q.z); if(d<bd){bd=d;bi=i2;} });
-    if(bd<(staedt?16:13)){ endNode=bi; dead=true;                                                        // SNAP an Knoten → Zyklus
+    if(bd<(staedt?16:13)&&!trasseSteil(H,[pts[pts.length-2],nodes[bi]])){ endNode=bi; dead=true;                                                        // SNAP an Knoten → Zyklus
       const P=nodes[bi], pv=pts[pts.length-2]; pts[pts.length-1]={x:P.x,z:P.z,th:Math.atan2(P.z-pv.z,P.x-pv.x)}; }
     else { let be=-1,bk=0,ed=1e9;
       edges.forEach((e,ei)=>{ e.pts.forEach((q,k)=>{ const d=Math.hypot(ex.x-q.x,ex.z-q.z); if(d<ed){ed=d;be=ei;bk=k;} }); });
-      if(ed<(staedt?12:9)&&edges.length){ const q=edges[be].pts[bk]; nodes.push({x:q.x,z:q.z}); endNode=nodes.length-1; dead=true;  // SNAP an Kante
+      if(ed<(staedt?12:9)&&edges.length&&!trasseSteil(H,[pts[pts.length-2],edges[be].pts[bk]])){ const q=edges[be].pts[bk]; nodes.push({x:q.x,z:q.z}); endNode=nodes.length-1; dead=true;  // SNAP an Kante
         const pv=pts[pts.length-2]; pts[pts.length-1]={x:q.x,z:q.z,th:Math.atan2(q.z-pv.z,q.x-pv.x)}; }
       else { nodes.push({x:ex.x,z:ex.z}); endNode=nodes.length-1; } }
     edges.push({a:t.node,b:endNode,pts,w:(t.gen===0)?sW:(t.gen===1)?sW*0.78:lw,gen:t.gen});
@@ -3460,13 +3499,13 @@
         let frei=true;
         for(let k2=2;k2<pts.length-2&&frei;k2++){ for(const e of edges){ for(const q of e.pts){
           if(Math.hypot(pts[k2].x-q.x,pts[k2].z-q.z)<RUNDE.fr){frei=false;break;} } if(!frei)break; } }
-        if(!frei)continue;
+        if(!frei||trasseSteil(H,pts))continue;
         edges.push({a:i2,b:j2,pts,w:sW*0.78,gen:1}); added++; } } } }
   return {nodes, edges, gates};
 }
     // ════════════ dorfLayout v5 — GRAPH-WACHSTUM + MAUER ════════════
     // prettier-ignore
-    function dorfLayout(plan, ext, seed){
+    function dorfLayout(plan, ext, seed, H){
   const N=plan.norm, gap=N.gap, sW=N.strasseW, lw=N.laneW, gw=N.gehweg, n=ext.length;
   let s=((Math.round((seed||1)*389+71)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
   const staedt=plan.staedtisch;
@@ -3474,7 +3513,7 @@
   const DS=3;
   const walled= staedt&&plan.jahr<1750;                                                     // STADTMAUER-GESETZ: die Mauer erzwingt die Dichte
   const Rw= walled? Math.min(195, 26+Math.sqrt(n)*8.4) : 0;
-  const G=strassengraph(rnd, plan, sW, lw, Rw);
+  const G=strassengraph(rnd, plan, sW, lw, Rw, H||null);
   const roads=G.edges;
   const at=(rd,u)=>{ const k=Math.max(0,Math.min(rd.pts.length-2,(u/DS)|0)), f=(u-k*DS)/DS, A=rd.pts[k], B=rd.pts[Math.min(rd.pts.length-1,k+1)];
     const x=A.x+(B.x-A.x)*f, z=A.z+(B.z-A.z)*f, th=A.th; return {x,z,th,nx:-Math.sin(th),nz:Math.cos(th)}; };
@@ -3501,6 +3540,7 @@
           if(!frei9) continue;
           const gp=[]; const gl=Q.d; for(let u9=0;u9<=gl;u9+=DS) gp.push({x:P.x+Math.cos(qth)*Math.min(u9,gl), z:P.z+Math.sin(qth)*Math.min(u9,gl), th:qth});
           gp.push({x:Q.x,z:Q.z,th:qth});
+          if(trasseSteil(H,gp)) continue;                                                       /*DIE TRASSE (K3): die gerade Quergasse steigt nicht ueber das Gesetz*/
           roads.push({a:-1,b:-1,pts:gp,w:Math.max(2.6, lw*0.72),gen:2,len:gl,quer:true}); edepth.push(Math.min(edepth[i],edepth[j])+1);   /*quer-Flag: BINNENGASSE, nicht Vorstadt*/   /*len fehlte — (rd.len||0)=0 liess den Setzer die Gasse ueberspringen: WURZEL der Unbesaeumtheit (#1)*/
           paar.add(i+'_'+j); qN++;
           const P2=at(roads[i], li*(fu+0.28)); if(fu<0.5&&qN<qMax2){ const Q2=punktAuf(roads[j], P2.x, P2.z);   /*PAARUNG: zweite Parallelgasse je Block — erst zwei Schnitte machen QUARTIERE*/
@@ -3510,7 +3550,7 @@
                   for(let m9=0;m9<roads.length;m9++){ if(m9===i||m9===j)continue; if(punktAuf(roads[m9],wx,wz).d<5.5){fr2=false;break;} } }
                 if(fr2){ const gp2=[]; for(let u9=0;u9<=Q2.d;u9+=DS) gp2.push({x:P2.x+Math.cos(th2)*Math.min(u9,Q2.d), z:P2.z+Math.sin(th2)*Math.min(u9,Q2.d), th:th2});
                   gp2.push({x:Q2.x,z:Q2.z,th:th2});
-                  roads.push({a:-1,b:-1,pts:gp2,w:Math.max(2.6, lw*0.72),gen:2,len:Q2.d,quer:true}); edepth.push(Math.min(edepth[i],edepth[j])+1); qN++; } } } }
+                  if(!trasseSteil(H,gp2)){ roads.push({a:-1,b:-1,pts:gp2,w:Math.max(2.6, lw*0.72),gen:2,len:Q2.d,quer:true}); edepth.push(Math.min(edepth[i],edepth[j])+1); qN++; } } } } }
           break; } } }
     plan._quergassen=qN; }
   if(staedt&&plan.jahr>1700){ let zqx=0,zqz=0,zqn=0;                                          /*STRASSEN-GEDAECHTNIS (#2): Kern-Gassen SCHMAL, Saum breit — die Breite erinnert die Zeit; gen0-Arterien bleiben*/
@@ -3530,13 +3570,16 @@
     for(const g2 of gts){ if(seen.some(a2=>Math.abs(Math.atan2(Math.sin(a2-g2.th),Math.cos(a2-g2.th)))<0.5))continue; seen.push(g2.th);
       const gx=Math.cos(g2.th)*Rw, gz=Math.sin(g2.th)*Rw; gatePts.push({x:gx,z:gz,th:g2.th});
       const flen=(plan.groesse==='metropole')?230:(plan.groesse==='grossstadt')?110:70;
-      const fp=[]; for(let u=0;u<=flen;u+=DS){ fp.push({x:gx+Math.cos(g2.th)*(u+1), z:gz+Math.sin(g2.th)*(u+1), th:g2.th}); }
+      const fp=[]; if(H){ let x=gx+Math.cos(g2.th), z=gz+Math.sin(g2.th), th=g2.th;          /*DIE TRASSE (K3): die Ausfallstrasse lenkt wie jede Gasse*/
+        for(let u=0;u<=flen;u+=DS){ th=trasseLenk(H,x,z,th,DS); fp.push({x,z,th}); x+=Math.cos(th)*DS; z+=Math.sin(th)*DS; } }
+      else for(let u=0;u<=flen;u+=DS){ fp.push({x:gx+Math.cos(g2.th)*(u+1), z:gz+Math.sin(g2.th)*(u+1), th:g2.th}); }
       roads.push({a:-1,b:-1,pts:fp,w:sW*0.6,gen:2}); edepth.push(7);
       if(plan.groesse==='metropole'||plan.groesse==='grossstadt'){                            // FAUBOURG-GESETZ: die Vorstadt ist selbst ein Netz
         const nq=(plan.groesse==='metropole')?5:2;
         for(let qk=0;qk<nq;qk++){ const uq=26+qk*(flen-40)/Math.max(1,nq-1)+rnd()*10, sg=(rnd()<0.5?1:-1);
           const qx=gx+Math.cos(g2.th)*uq, qz=gz+Math.sin(g2.th)*uq, qth=g2.th+sg*Math.PI/2+(rnd()-0.5)*0.25;
-          const qp=[]; for(let u=0;u<=40+rnd()*22;u+=DS){ qp.push({x:qx+Math.cos(qth)*u, z:qz+Math.sin(qth)*u, th:qth}); }
+          const qp=[]; if(H){ let x=qx, z=qz, th=qth; for(let u=0;u<=40+rnd()*22;u+=DS){ th=trasseLenk(H,x,z,th,DS); qp.push({x,z,th}); x+=Math.cos(th)*DS; z+=Math.sin(th)*DS; } }
+          else for(let u=0;u<=40+rnd()*22;u+=DS){ qp.push({x:qx+Math.cos(qth)*u, z:qz+Math.sin(qth)*u, th:qth}); }
           roads.push({a:-1,b:-1,pts:qp,w:lw,gen:2}); edepth.push(8); } } } }
   const pl=new Array(n), obbs=[], brunnen=[], fences=[], felder=[], staende=[];
   let platz=null;
@@ -6006,7 +6049,10 @@
             Bs.push(Bm);
             ext.push(Bm.ext);
         }
-        var lay = dorfLayout(plan, ext, plan.seed);
+        // DIE TRASSE LIEST DAS GELÄNDE (siedlung.K3): `dp.hoehe` ist das Höhen-Raster um den Ort (`trasseRahmen`, plan-lokal); ohne
+        // es liegt der Plan auf ebenem Grund (der Akt ohne Ort, das Labor ohne Welt)
+        var Htr = dp.hoehe ? hoeheAusRaster(dp.hoehe) : null;
+        var lay = dorfLayout(plan, ext, plan.seed, Htr);
         // U6c — KONSUM BEIDSEITIG: der Export wendet DIESELBE Snap-/Brandwand-
         // Wahrheit an wie buildDorf (Lab): reihenSnap rückt lay.pl zusammen
         // (Slot-x/z/obb), brandwand markiert hp.brandwand (reist als ov.brandwand).
@@ -6064,7 +6110,7 @@
                 grund: Bs[i].grund,
             });
         }
-        return {
+        var aus = {
             seed: plan.seed,
             name: plan.name,
             region: plan.region,
@@ -6117,6 +6163,8 @@
                     return l.wand ? { x: l.x, z: l.z, th: l.th, gas: l.gas, wand: true, slot: slotVon[l.haus] } : l;
                 }),
         };
+        if (Htr) aus.trasse = { aussen: Htr.mass.aussen }; // der Rahmen trug jeden Lese-Punkt der Trasse (die Linse verlangt 0)
+        return aus;
     }
 
     // ── DER ORT AUF DEM GELÄNDE (K10, Plan v2) — ortPlan(plan, origin, ctx): der Export (2D, plan-lokal) auf der Gelände-
@@ -6137,6 +6185,7 @@
     var ORT_GESETZ = {
         glaettM: 6, // halbe Fensterbreite der Weg-Glättung (m)
         gefaelle: 0.12, // die Fuß-Gasse (Nordstern §6: Fuß ≤ 12 %)
+        trasse: 0.09, // so steil darf der Lauf einer Gasse steigen (`trasseLenk`; die Marge zum Fuß trägt die Feinform zwischen den Raster-Punkten)
         saumM: 0.6, // so weit steht eine Platte über den Grundriss, eine Trasse über den Weg hinaus
         vorplatzM: 1.6, // Tiefe des Vorplatzes vor der Haustür (mindestens: er reicht bis zur Gasse des Hauses)
         gasseM: 5, // so weit vor der Tür (über die halbe Wegbreite hinaus) findet das Haus seine Gasse
@@ -6820,6 +6869,8 @@
         SIEDLUNG: SIEDLUNG,
         // siedlung.K2 — das Rang-Gesetz (die Zelle, die Größe, die Reichweite), die Größe je Klasse und die Mauer der Stadt
         siedlungsZelle: siedlungsZelle,
+        trasseRahmen: trasseRahmen, // siedlung.K3 — der Rahmen des Höhen-Rasters um einen Ort (der Wirt füllt ihn aus gelaende-core hoehenRaster)
+        hoeheAusRaster: hoeheAusRaster, // siedlung.K3 — der EINE Leser des Rasters (Export, Labor, Linse)
         siedlungsGroesse: siedlungsGroesse,
         siedlungsReich: siedlungsReich,
         siedlungsEpoche: siedlungsEpoche,

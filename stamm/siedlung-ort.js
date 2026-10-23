@@ -1241,19 +1241,45 @@ class AnazhRealm_siedlung_ort {
     // Siedlung als DATEN anfragen: der Worker rechnet exportSettlement und liefert reine Slot-Daten (kein
     // Mesh, kein Cache — ein deliberater Akt). Fail-closed: kein Worker/nicht ready → null. Dieselbe
     // pending-Map wie die Assets.
+    // DIE TRASSE LIEST DAS GELÄNDE (siedlung.K3): `dp.ort` {x, z}, der Ort, an dem der Plan liegen wird, holt vor dem Export das
+    // Höhen-Raster seines Rahmens (fachwerk `trasseRahmen`) aus dem Ort-Faden (`ort-raster`, gelaende-core `hoehenRaster`,
+    // Lehre 14) als `dp.hoehe` — die Gassen des Exports folgen dem Grund dort (fachwerk `dorfLayout`). Ohne Ort (der Akt, dessen
+    // Anker erst der Plan nennt; der Wege-Bau eines Alt-Saves) liegt der Plan auf ebenem Grund. Steht der Ort-Faden noch nicht, ist der
+    // Export null wie bei kalter Foundry (der nächste Takt fragt neu; ein Wurf im Faden meldet sein `_bruchMelden`).
     _foundryRequestSettlement(dp, kopf) {
         const f = this._ensureAssetFoundry();
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
+        const d = Object.assign({}, dp || {});
+        const ort = d.ort;
+        delete d.ort;
+        const raster = ort
+            ? this._nebenAuftrag("ort", {
+                  type: "ort-raster",
+                  x: ort.x,
+                  z: ort.z,
+                  rahmen: globalThis.__fachwerkCore.trasseRahmen(d.nH),
+              }).then(
+                  (r) => r.raster,
+                  (e) => (
+                      this.log(`SIEDLUNG: der Export wartet auf das Höhen-Raster — ${(e && e.message) || e}`, "INFO"),
+                      false
+                  )
+              )
+            : Promise.resolve(null);
         // Durch DIE EINE WORKER-SCHLANGE, sofort dran (ein deliberater Akt, reine Daten). Dieselbe EINE Frist (45 s
         // Arbeit): ohne Uhr hielte ein verlorener Export die FIFO-Uhr aller späteren Aufträge an.
-        return this._foundryAuftrag(
-            f,
-            "stl-",
-            { type: "export-settlement", dp: dp || {} },
-            this._foundryRang(0, kopf), // das Start-Dorf ist ein Kopf der Ankunft (`_startDorfAmBuch`, die Bahn ohne Arbeit)
-            45000,
-            "FOUNDRY TIMEOUT: export-settlement nach 45 s Arbeit ohne Reply → null"
-        );
+        return raster.then((hoehe) => {
+            if (hoehe === false) return null;
+            if (hoehe) d.hoehe = hoehe;
+            return this._foundryAuftrag(
+                f,
+                "stl-",
+                { type: "export-settlement", dp: d },
+                this._foundryRang(0, kopf), // das Start-Dorf ist ein Kopf der Ankunft (`_startDorfAmBuch`, die Bahn ohne Arbeit)
+                45000,
+                "FOUNDRY TIMEOUT: export-settlement nach 45 s Arbeit ohne Reply → null"
+            );
+        });
     }
     // DIE EINE SLOT-QUELLE: `_spawnSettlementFromExport` (der Akt) und `_tickAutoSettlement`
     // (über Ticks) heben jeden Slot hier. Blueprint-Name aus KIND_POLICY über den kind des LIVE-Rezepts
@@ -2379,7 +2405,15 @@ class AnazhRealm_siedlung_ort {
             // Die Reservierung trägt das Rebuild-Gedächtnis {seed,nH,x,z}: Häuser/Brunnen persistieren als
             // architectures, die Wege (kein Save-Byte) baut `_tickAutoSettlement` nach Reload am Anker neu.
             // Alle Leser fragen nur Existenz (truthy). Ein Stand mitten im Gang schließt ihn zuerst (`saveState`).
-            wm.settlementCells[key] = { seed: i2.seed, nH: i2.nH, x: anchor.x, z: anchor.z };
+            // wx/wz: der Ort der Trasse (siedlung.K3) — der Wege-Bau nach dem Laden fragt den Export dort, wo seine Gassen lagen
+            wm.settlementCells[key] = {
+                seed: i2.seed,
+                nH: i2.nH,
+                x: anchor.x,
+                z: anchor.z,
+                wx: b.anker.x,
+                wz: b.anker.z,
+            };
             this._autoSettlementQueue = this._dorfZug(
                 v2,
                 anchor,
@@ -2460,6 +2494,7 @@ class AnazhRealm_siedlung_ort {
                 seed: i2.seed,
                 nH: i2.nH,
                 epoche: this._siedlungEpoche(i2.seed), // ZENSUS-REST V18.488 — die Epochen-Legende
+                ort: { x: i2.x, z: i2.z }, // DIE TRASSE (siedlung.K3): die Gassen folgen dem Grund am Ort der Zelle
             },
             key === "start"
         ).then((plan) => {
@@ -2668,6 +2703,7 @@ class AnazhRealm_siedlung_ort {
                     seed: c.seed,
                     nH: c.nH,
                     epoche: this._siedlungEpoche(c.seed), // dieselbe EINE Epochen-Funktion (Rebuild-Treue)
+                    ort: Number.isFinite(c.wx) && Number.isFinite(c.wz) ? { x: c.wx, z: c.wz } : undefined, // derselbe Grund der Trasse
                 }).then((plan2) => {
                     this._stlWegePending = false;
                     if (!plan2) return;

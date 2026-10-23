@@ -969,7 +969,8 @@ Schutt), DER GRUND DER HÄUSER (S4: die Art `grund` — der Körper-Satz und der
 Plan im Foundry-Faden, Kanal `grund-plan` → `grundPlan`) mit
 seinem Grundriss-Leser `erdbauGrund`, dem hohlen Keller `erdbauHohl` (das Feld des Wirts, je Spalte gefragt über `erdbauKeller`) und dem Schnitt des gezeichneten
 Bodens `erdbauSchnitt` (Voxel-Faden und Sync-Bau), der Lese-Kontext eines Orts `ortCtx` (Höhe samt Erdbau, Fläche, Welt-Wasser — EIN ctx für Wirt,
-Fachwerk-Studio und Linse), die Lage einer Welt ohne Wirt `LAGE_GRUND`/`lageGrund` und die Hang-Suche eines Orts `hangOrt`.
+Fachwerk-Studio und Linse), die Lage einer Welt ohne Wirt `LAGE_GRUND`/`lageGrund`, die Hang-Suche eines Orts `hangOrt` und das
+Höhen-Raster der Trasse `hoehenRaster` (siedlung.K3: der Grund im Rahmen fachwerk `trasseRahmen` um den Ort, dem die Gassen folgen).
 DIE FORM DES EDITS (F2a „hoch bauen", editform-kern): jeder Spieler-Edit ist die Säule `editForm` seines Maßes `EDIT_FORM` —
 der Punkt `mitEdits`, das Gitter `editsImGitter`, die Reichweite `editReich` (Edit-Karte, Weckung, Fern-Ring), die Krone
 `editKrone` (die Garantie-Luft der Flächen-Probe) und das Band des

@@ -1,4 +1,5 @@
-// diag-settlement.cjs (gate:settlement) — Teil Z (`--nur-z` allein): das Rang-Gesetz (`rangZensus`) · N: der Export
+// diag-settlement.cjs (gate:settlement) — Teil Z (`--nur-z` allein): das Rang-Gesetz (`rangZensus`) · T (`--nur-t` allein): die
+// Trasse am Gelände (`trasseZensus`, siedlung.K3) · N: der Export
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
 // Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände (K10).
 // --selftest: jede Wand feuert an injizierten Brüchen.
@@ -18,12 +19,12 @@ function fingerprint(plan) {
     return sha(JSON.stringify(plan));
 }
 
+const fnv = (t) => [...t].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261);
 // ===== TEIL Z (siedlung.K2): je Saat binnen 2 km eines zufälligen Spawns (±8 km) eine Stadt ≥ stadt, deren Export die Mauer trägt
 function rangZensus(FC, o = {}) {
     const [S, N, Z] = [o.S || FC.SIEDLUNG, o.saaten || 8, { saaten: [], mitStadt: 0 }];
     let lcg = 7;
     const zuf = () => ((lcg = (Math.imul(lcg, 1664525) + 1013904223) >>> 0) / 2 ** 32 - 0.5) * 16000;
-    const fnv = (t) => [...t].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261);
     for (let k = 0; k < N; k++) {
         const [M, st, sx, sz] = [new Map(), [], zuf(), zuf()];
         for (let i = -9; i <= 9; i++)
@@ -44,15 +45,56 @@ function rangZensus(FC, o = {}) {
     return Object.assign(Z, { ok: Z.mitStadt >= (N * 6) / 8 });
 }
 
-// ===== DAS URTEIL DES ORTS (Teil O, K10 — rein, mit Selbsttest) =====
-// v2 = der Ort, wie die Welt ihn trägt (plan-lokal um `ort` {x, z}): je Haus x · z · phi · y (der Boden, absolut) · tuer
-// (die Tür-Zeile: x, z, y = Diele, W × D = die Wand) · obb (der Grundriss mit Dach); roads (pts, w) und platz (cx, cz, phi, ex,
-// ez). hoehe(x, z) = die Welt-Höhe an einem WELT-Ort. Gemessen:
-//   Sockel je Haus = Boden − tiefster Grund unter dem Grundriss (9 × 9 Punkte; nie im hohlen Keller `grund.keller`, S4), Median
-//   und Maximum;
-//   Tür erreichbar = die Schwelle (Boden + Diele) liegt höchstens STUFE über dem Grund 0,3 m vor ihr, die 2 m geradeaus aus
-//   der Tür tragen keine Stufe > STUFE (kein Absatz vor der Schwelle), und ein Gang über ein 0,5-m-Raster (Nachbarn mit
-//   |Δh| ≤ STUFE, nie durch eine Wand oder den Keller) erreicht einen Weg oder den Platz. Das Raster entsteht nur, wo der Gang geht.
+// ===== TEIL T (siedlung.K3): je Saat die 6 nächsten Dorf-Zellen (Site-Wand), ihr Export mit dem Höhen-Raster ihres Orts wie im Wirt;
+// das Gefälle jedes Gassen-Schritts am Grund VOR dem Erdbau. Soll p95 ≤ ORT_GESETZ.gefaelle in ≥ 4 Saaten. `blind`: ohne Raster.
+const TRASSE_SAATEN = [
+    "anazh-realm-seed",
+    "w-sweepalpha0001-aaaaaa",
+    "w-sweepbeta00002-bbbbbb",
+    "w-k3-gamma0003-cccccc",
+];
+function trasseZensus(FC, o = {}) {
+    require(path.join(root, "gelaende-core.js"));
+    const [G, Noise, S, T] = [
+        globalThis.__gelaendeCore,
+        require(path.join(root, "vendor/simplex-noise.js")),
+        FC.SIEDLUNG,
+        { saaten: [], gruen: 0, aussen: 0 },
+    ];
+    const p95 = (a) => a.sort((x, y) => x - y)[Math.round(0.95 * (a.length - 1))];
+    for (const ws of o.saaten || TRASSE_SAATEN) {
+        const [L, M, zellen, gs] = [G.lageGrund(ws, Noise), new Map(), [], []];
+        const H = (x, z) => G.hoehe(L, x, z, true);
+        for (let i = -8; i <= 8; i++)
+            for (let j = -8; j <= 8; j++) {
+                const q = FC.siedlungsZelle(S, i, j, (u, v) => fnv(`${ws}:dorf:${u},${v}`), M);
+                const g = q && Math.hypot(H(q.x + 2, q.z) - H(q.x - 2, q.z), H(q.x, q.z + 2) - H(q.x, q.z - 2)) / 4;
+                if (q && !q.stufe && g <= S.slopeMax && H(q.x, q.z) > L.waterLevel + 0.2)
+                    zellen.push([Math.hypot(q.x, q.z), q]);
+            }
+        for (const [, q] of zellen.sort((u, v) => u[0] - v[0]).slice(0, o.je || 6)) {
+            const dp = { seed: q.seed >>> 0 || 1, nH: q.nH, epoche: FC.siedlungsEpoche(q.seed >>> 0 || 1) };
+            const x = FC.exportSettlement(
+                o.blind ? dp : { ...dp, hoehe: G.hoehenRaster(L, q.x, q.z, FC.trasseRahmen(q.nH)) }
+            );
+            T.aussen += (x.trasse || {}).aussen || 0;
+            for (const { pts: P } of x.roads)
+                for (let k = 1; k < P.length; k++) {
+                    const d = Math.hypot(P[k].x - P[k - 1].x, P[k].z - P[k - 1].z);
+                    if (d >= 0.5)
+                        gs.push(Math.abs(H(q.x + P[k].x, q.z + P[k].z) - H(q.x + P[k - 1].x, q.z + P[k - 1].z)) / d);
+                }
+        }
+        const p = p95(gs);
+        T.gruen += p <= FC.ORT_GESETZ.gefaelle;
+        T.saaten.push(`${ws}: p95 ${(p * 100).toFixed(1)} % über ${gs.length} Schritte`);
+    }
+    return Object.assign(T, { ok: T.gruen >= Math.min(4, T.saaten.length) && !T.aussen });
+}
+
+// ===== DAS URTEIL DES ORTS (Teil O, rein, mit Selbsttest): v2 plan-lokal um `ort`, hoehe(x, z) die Welt-Höhe. Je Haus der Sockel
+// (Boden − tiefster Grund, 9 × 9, nie im Keller) und die Tür: Schwelle ≤ STUFE über dem Grund davor, 2 m ohne Absatz, ein Gang im
+// 0,5-m-Raster (|Δh| ≤ STUFE, nie durch Wand oder Keller) erreicht Weg oder Platz.
 function ortUrteil(v2, hoehe, o) {
     o = o || {};
     const STUFE = o.stufeM || 0.4;
@@ -246,14 +288,9 @@ function ortVerdikt(m) {
 }
 const GT_SOLL_M = 60;
 
-// DAS DORF-LICHT DER GASSE (K10: ≥ 4 sichtbare Quellen im Nachtbild der Gasse) — rein:
-// quellen = die brennenden Leuchtquellen des Orts mit Leib ([x, z] je Quelle, Welt), wege = die Wege des Plans ([[x, z], …]
-// je Weg, Welt), haeuser = die Grundrisse mit Dach ({cx, cz, ex, ez, phi}, Welt), hfov = der waagrechte Öffnungswinkel des
-// Bildes (rad). Die Gasse ist der Stand auf einem Weg-Punkt mit Blick längs des Wegs zu einem Punkt 12–40 m weiter, nie
-// 2,5 m an einer Quelle (das Bild der Abnahme, x-gasse3 der Karte); sichtbar ist eine Quelle 2–100 m vor dem Auge im
-// Öffnungswinkel, deren Sicht-Linie keinen Grundriss schneidet (die Laterne trägt ihr Licht in 3,6 m, jede Traufe liegt
-// darüber). Gewählt wird die Gasse mit den meisten sichtbaren Quellen (gleich viele: die nähere). Liefert { n, pose, je,
-// verdeckt }.
+// DAS DORF-LICHT DER GASSE (rein): quellen [x, z], wege [[x, z], …], haeuser {cx, cz, ex, ez, phi}, hfov (rad), alles Welt. Die
+// Gasse steht auf einem Weg-Punkt mit Blick 12–40 m längs des Wegs, nie 2,5 m an einer Quelle; sichtbar ist eine Quelle 2–100 m
+// voraus im Winkel, deren Linie keinen Grundriss schneidet. Die Gasse mit den meisten Quellen gewinnt. → { n, pose, je, verdeckt }.
 function gassenLicht(quellen, wege, haeuser, hfov) {
     const halb = hfov / 2;
     const schneidet = (ax, az, bx, bz, h) => {
@@ -314,12 +351,8 @@ function gassenLicht(quellen, wege, haeuser, hfov) {
 }
 const GASSE_SOLL = 4;
 
-// DER GT AUF DEM DORFWEG: im Browser,
-// durch den echten Spiel-Takt (`_gameLoopTick`, feste 60-Hz-Frames) und echte Tasten. Der Weg ist die längste Kette der
-// Hauptwege (gen 0, Weg an Weg, wo der nächste beginnt, wo der vorige endet) des Plans, den die Welt trägt; der Wagen startet
-// 2 m hinter ihrem Anfang in ihrer Richtung, der Fahrer hält W und lenkt (A/D) zum Punkt 6 m voraus auf der Kette. Gemessen:
-// der Fortschritt längs der Kette in `sek` Sekunden (gtWeg), die gefahrene Strecke, die größte Ablage von der Kette und der
-// Anteil der Frames auf dem Weg. Läuft im Browser (page.evaluate) — selbstgenügsam.
+// DER GT AUF DEM DORFWEG (Browser, echter Takt `_gameLoopTick`, echte Tasten): auf der längsten Kette der Hauptwege hält der
+// Fahrer W und lenkt zum Punkt 6 m voraus; gemessen Fortschritt in `sek`, Strecke, größte Ablage, Anteil der Frames auf dem Weg.
 async function gtDorfweg(v2, anker, sek) {
     const res = {};
     try {
@@ -497,12 +530,9 @@ async function gtDorfweg(v2, anker, sek) {
     return res;
 }
 
-// DIE WÜRFE DES FELDS WEICHEN DEM ORT: jede Art, die das Affinitäts-Feld wirft (Wald, Fels, Geode und die Feuerstelle
-// des Glut-Felds), weicht dem Ort wie die Natur — sie sperrt der Ort-Wahl keinen Grund (`_bauFrei`, die Wand der Wahl und der
-// Slot-Quelle), der Grundriss eines Hauses räumt sie (`_grundrissRaeumen`), der Weg des Dorfs auch (`_naturRaeumen`).
-// C-K5b DER VORRAT JE ZELLE (Karte vorrat-pingpong): am Mess-Ort `dorf` liegen zwei Zellen im Vorlauf-Ring. Der Zug läuft je
-// Gang einen Takt, bis 20 Gänge nichts unterwegs ist und kein Export beginnt, dann 150 Gänge Ruhe; gezählt werden die Exporte
-// je Zelle. `einer`: der Selbsttest hält EINEN Vorrat zur Zeit, wie bis zum Schnitt. Läuft im Browser.
+// DIE WÜRFE DES FELDS WEICHEN DEM ORT: sie sperren der Ort-Wahl keinen Grund (`_bauFrei`), Grundriss und Weg räumen sie
+// (`_grundrissRaeumen`, `_naturRaeumen`). C-K5b DER VORRAT JE ZELLE: zwei Zellen im Vorlauf-Ring am Mess-Ort `dorf`, gezählt die
+// Exporte je Zelle bis zur Ruhe; `einer` hält im Selbsttest EINEN Vorrat zur Zeit. Browser.
 async function vorratAmDorf(messort, einer) {
     const r = window.anazhRealm;
     const SG = r.constructor._siedlungGesetz();
@@ -558,13 +588,8 @@ async function vorratAmDorf(messort, einer) {
     return Object.assign(e, { nachZug: e.nachZug + e.alle, gaenge, offen: r._weltOffen().foundry });
 }
 
-// Je Art ein Wurf an einem
-// freien Ort (die Wand in jeder Höhe der Platte: im Hang liegt die Platte tiefer als der Wurf), in der Mitte eines Hauses
-// und auf dem Weg. DAS WERK DERSELBEN ART weicht nie: die Feuerstelle des Satzes oder des Bau-Modus ist Bau (sie sperrt den
-// Grund, kein Grundriss und kein Weg räumt sie) — es entscheidet die HERKUNFT (die Marke `feldWurf`, die nur der Wurf des
-// Felds trägt: `_enqueueVegetationSpawn`), nie die Art. `defekt` ist der Selbst-Schein: "bau" — die Feuerstelle gilt wieder als Bau (der Wurf
-// MUSS sperren); "art" — die Art entscheidet (das Werk MUSS weichen).
-// Läuft im Browser (page.evaluate) — selbstgenügsam.
+// Je Art ein Wurf frei, mitten im Haus und auf dem Weg; das WERK derselben Art (Feuerstelle aus Satz oder Bau-Modus) weicht nie —
+// es entscheidet die Herkunft (Marke `feldWurf`), nie die Art. `defekt`: "bau" (der Wurf MUSS sperren), "art" (das Werk MUSS weichen).
 function feldWurfImOrt(anker, defekt) {
     const res = { sperrt: [], grundriss: [], weg: [], fehl: [], werk: { arten: [], weicht: [] } };
     const r = window.anazhRealm;
@@ -908,6 +933,16 @@ const FIXTURES = [
         ];
         const zn = zs.map((o) => rangZensus(FC, { saaten: 2, ...o }).mitStadt) + "";
         check("Selbst-Test Z: ohne Rang und ohne Mauer 0 Städte, die echte Quelle 2/2", zn === "0,0,2", zn);
+        // V-T (siedlung.K3): der blinde Export (ohne Höhen-Raster, der Täter bis K3) reißt das Gefälle am Hang der Beta-Saat
+        {
+            const o = { saaten: ["w-sweepbeta00002-bbbbbb"], je: 3 };
+            const [blind, echt] = [trasseZensus(FC, { ...o, blind: true }), trasseZensus(FC, o)];
+            check(
+                "Selbst-Test T: der blinde Export reißt 12 % am Hang, die Trasse hält",
+                !blind.ok && echt.ok,
+                blind.saaten.concat(echt.saaten).join(" · ")
+            );
+        }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -916,15 +951,33 @@ const FIXTURES = [
         process.exit(0);
     }
 
-    console.log("=== TEIL Z: DAS RANG-GESETZ (siedlung.K2) ===");
-    const Z = rangZensus(FC);
-    const [mod, alt] = [{ seed: 5, epoche: "moderne" }, { seed: 5 }].map(FC.exportSettlement);
-    check(`Z1 RANG: binnen 2 km eine ummauerte Stadt in ${Z.mitStadt}/8 Saaten (Soll ≥ 6)`, Z.ok, Z.saaten.join(" · "));
-    check(
-        `Z2 EPOCHE → GRÖSSE: „moderne" ohne Zahl ${mod.groesse}, ohne Epoche ${alt.slots.length} Slots (18 Häuser)`,
-        mod.groesse === "stadt" && alt.slots.length === 21
-    );
-    if (process.argv.includes("--nur-z")) process.exit(errs.length ? 1 : 0);
+    if (!process.argv.includes("--nur-t")) {
+        console.log("=== TEIL Z: DAS RANG-GESETZ (siedlung.K2) ===");
+        const Z = rangZensus(FC);
+        const [mod, alt] = [{ seed: 5, epoche: "moderne" }, { seed: 5 }].map(FC.exportSettlement);
+        check(
+            `Z1 RANG: binnen 2 km eine ummauerte Stadt in ${Z.mitStadt}/8 Saaten (Soll ≥ 6)`,
+            Z.ok,
+            Z.saaten.join(" · ")
+        );
+        check(
+            `Z2 EPOCHE → GRÖSSE: „moderne" ohne Zahl ${mod.groesse}, ohne Epoche ${alt.slots.length} Slots (18 Häuser)`,
+            mod.groesse === "stadt" && alt.slots.length === 21
+        );
+        if (process.argv.includes("--nur-z")) process.exit(errs.length ? 1 : 0);
+    }
+
+    console.log("=== TEIL T: DIE TRASSE LIEST DAS GELÄNDE (siedlung.K3) ===");
+    {
+        const T = trasseZensus(FC);
+        check(
+            `T1 TRASSE: Gassen-Gefälle p95 ≤ ${FC.ORT_GESETZ.gefaelle * 100} % vor dem Erdbau in ${T.gruen}/${TRASSE_SAATEN.length} Saaten (Soll ≥ 4), ${T.aussen} Lese-Punkte außerhalb des Rahmens`,
+            T.ok,
+            T.saaten.join(" · ")
+        );
+        for (const z of T.saaten) console.log("   " + z);
+    }
+    if (process.argv.includes("--nur-t")) process.exit(errs.length ? 1 : 0);
 
     console.log("=== N5.7 SETTLEMENT — TEIL N: exportSettlement (Node, deterministisch + eingefroren) ===");
     const plans = {};
@@ -984,12 +1037,7 @@ const FIXTURES = [
         );
     }
 
-    // ===== U6c: SNAP-/BRANDWAND-PROBE — die EINE Wahrheit, zwei Leser =====
-    // Die Gesetze wohnen im Kern (__fachwerkCore.reihenSnap/brandwand, verbatim aus
-    // buildDorf gewandert); das Lab ruft DIESELBEN Funktionen. Probe 1 (synthetisch):
-    // zwei dichte parallele Nachbarn docken auf die Norm-Fuge und markieren die
-    // anliegende Seite als Brandwand. Probe 2 (end-to-end): ein städtischer Export
-    // trägt ov.brandwand — der Kern-Layout-Pfad KONSUMIERT das Gesetz.
+    // ===== U6c: REIHEN-SNAP + BRANDWAND im Kern (reihenSnap/brandwand), Lab und Export rufen dieselben: synthetisch, dann am Export =====
     console.log("\n=== U6c: REIHEN-SNAP + BRANDWAND (Kern-Gesetz, beidseitiger Konsum) ===");
     {
         const gap = 0.06; // Metropol-Norm — dicht (<=0.6), der Snap-Pfad ist scharf
@@ -1040,12 +1088,8 @@ const FIXTURES = [
             stadt.staedtisch === true && bwSlots >= 1,
             `groesse=${stadt.groesse} · brandwand-Slots=${bwSlots}`
         );
-        // DAS DORF-LICHT (K10 × K66-2): gemessen wird das Licht je METER der Gasse, nie die Zahl der Laternen. Gemessen wird jeder Meter der Weg-Achse, sein Maß der Abstand zur
-        // nächsten Quelle des Plans, die nachts brennt (Mast und Wandlaterne, Zeitplan `nacht` > 0): in der Gasse (eine Kern-Wand
-        // näher als LICHT_MARKE_M − armM, dort trägt die Wand ihr Licht) jeder ≤ LICHT_MARKE_M (das Gesetz des Kerns,
-        // wandLaternen), über alle Meter p90 ≤ 10 m. Je
-        // Laterne bleibt ihr Stand: der Mast vor der Wand (LATERNE_WAND aus LICHT_GESETZ.laterne, die Wand trägt höchstens das
-        // Doppelte der Gasse; K66) und mit dem Fuß neben jedem Weg (der Tritt des Rezepts), die Wandlaterne mit dem Kopf `armM` vor der Wand eines Kerns (W × D der Tür-Zeile, nie vor der Traufe).
+        // DAS DORF-LICHT je METER der Gasse: Abstand jedes Achsen-Meters zur nächsten Nacht-Quelle (Mast, Wandlaterne) — in der Gasse
+        // ≤ LICHT_MARKE_M, über alle p90 ≤ 10 m; der Mast steht LATERNE_WAND vor der Wand und neben jedem Weg, die Wandlaterne `armM` vor einem Kern.
         const trittR = FC.PRESETS.laterne.fx.tritt.r;
         const LGd = FC.LICHT_GESETZ.laterne;
         const LWd = FC.LICHT_GESETZ.wandlaterne;
@@ -1355,16 +1399,11 @@ const FIXTURES = [
         res.planName = plan && plan.name;
         res.planSlots = plan && plan.slots ? plan.slots.length : plan === "timeout" ? "timeout" : -1;
         if (!res.planOk) return res;
-        // 2) Der Konsument: POSITIONS-DETERMINISTISCH am SELBEN Anker (die Wasser-Wand ist
-        //    Terrain-Wahrheit je Ort — verschiedene Anker duerfen verschieden viele Slots
-        //    tragen; die Determinismus-Aussage ist: derselbe Export + derselbe Anker ⇒
-        //    byte-dieselben Eintraege [type/x/z/rot/seed]).
+        // 2) Der Konsument: derselbe Export + derselbe Anker ⇒ byte-dieselben Einträge [type/x/z/rot/seed].
         const before = r.state.architectures.length;
         // BÜHNE: Bau-Anker: derselbe Export am selben Anker — den Ort trägt das Platz-Gesetz des Stamms (_spawnSettlementFromExport)
         const o1 = { x: 400, z: 400 };
-        // Der zweite Akt steht auf dem geräumten Ort: die Bau-Wand (_bauFrei) setzt kein Haus in ein Haus — neben dem ersten
-        // Dorf entstünde am selben Anker keines (Integration Welle L, gate:haus-welt W7). Die folgenden Proben lesen die
-        // lebenden Einträge des zweiten Akts.
+        // Der zweite Akt steht auf dem geräumten Ort (die Bau-Wand _bauFrei setzt kein Haus in ein Haus); die Proben lesen seine Einträge.
         // der Akt hebt über den Zug (K5): Häuser vor dem ersten Bild nach dem ersten
         const lift0 = r._spawnSettlementSlot;
         let [zugAkt, aus] = [0, false];
@@ -1423,12 +1462,7 @@ const FIXTURES = [
                     Math.abs(e.position.y - (sl.y + 0.5)) < 1e-9
                 );
             });
-        // HAUS-DOPPELBAU-SCHNITT — der KONSUM-Beweis lebt:
-        // (a) jeder platzierte Eintrag trägt den Slot-ov als studioOv (rolle
-        //     byte-gleich, per seed dem Export-Slot zugeordnet),
-        // (b) der Flatten-Chokepoint LIEST ihn (_artifactStudioOv non-null) und
-        //     zwei rollen-verschiedene Häuser trennen sich im ov-Hash — das
-        //     Dorf ist kein Kultur-Default-Klonfeld mehr.
+        // KONSUM: jeder Eintrag trägt den Slot-ov als studioOv, der Flatten-Chokepoint liest ihn, zwei Rollen trennen sich im ov-Hash.
         res.ovTravels =
             e1.length > 0 &&
             e1.every((e) => {
@@ -1511,9 +1545,7 @@ const FIXTURES = [
         const r3 = await r._spawnSettlementFromExport(await r._ortWahl(fake, o3), o3);
         res.failClosed = r3.placed === 0 && r3.skipped === 1;
         // 4) Γ5: spawnSettlement wuerfelt seed-frei aus dem Welt-Stream (Source-Probe am lebenden Symbol).
-        // der Same zieht aus dem EINEN Bau-Strom `_bauSame("stadt")` (Welt-Seed:<art>:<n>, FNV-1a) — derselbe für
-        // den Chat-Satz „baue dorf hier" (die Probe wandert mit dem Code).
-        // derselbe Strom für den Chat-Satz „baue dorf hier"
+        // der Same zieht aus dem EINEN Bau-Strom `_bauSame("stadt")` — derselbe für den Chat-Satz „baue dorf hier"
         const baueHier = (r.chatDslPatterns || []).find((p) => p.example === "baue dorf hier");
         res.gammaHier =
             !!baueHier &&
@@ -1607,14 +1639,8 @@ const FIXTURES = [
                 typeof wm.settlementCells[key] === "object" &&
                 isFinite(wm.settlementCells[key].seed)
             );
-            // EXISTENZ VOR FRAMERATE (Lehre 13): über dem Frame-Budget DROSSELT der Takt das
-            // Tempo, er sperrt die Siedlung nie — 16 Takte dauerhaft über dem Budget tragen Häuser, höchstens einen je
-            // drosselTakte-ten Takt.
-            // Gemessen über den ECHTEN Job-Pfad (Q0): der Frame-Dispatcher (`_dispatchFrameJobs`) mit den Jobs des Spiels
-            // (`_buildDeferrableJobs`, der Spieler steht, wo er steht) und einem ausgeschöpften Budget — die Deko (prio 2,
-            // `scatterDeco` → `_tickScatterStreaming` → `_tickAutoSettlement`) läuft dort nur jeden 4. Frame und nie in
-            // einem Frame mit Chunk-Bau. Gezählt wird in Frames, bis zwei Slots bearbeitet sind (höchstens 3000 Frames ≈ 50 s
-            // bei 60 Bildern/s): die Siedlung wächst über dem Budget — je Deko-Lauf ohne Chunk-Bau höchstens 1/drosselTakte Slot.
+            // EXISTENZ VOR FRAMERATE (Lehre 13): über dem Budget drosselt der Takt, er sperrt nie — gemessen über den echten Job-Pfad
+            // (`_dispatchFrameJobs`, `_buildDeferrableJobs`): je Deko-Lauf ohne Chunk-Bau höchstens 1/drosselTakte Slot, bis 3000 Frames.
             const fob = r.state._frameOverBudget;
             const drossel = A.drosselTakte || 8;
             const B = r._makeFrameBudget(0);
@@ -1682,11 +1708,7 @@ const FIXTURES = [
             const again = await r._autoSettlementSpawnCell(parseInt(key), parseInt(key.split(",")[1]), cand);
             for (let t2 = 0; t2 < 5; t2++) r._tickAutoSettlement({ x: cand.x, z: cand.z });
             res.c.idempotent = again === null && r.state.architectures.length === archAfter;
-            // C5 — DER GENESIS-PORTAL-RING (Schöpfer: „beim ersten spawn
-            // die kernportale um die genesis-plattform anordnen"): am Genesis-Ort
-            // (`_genesisMitte`, die Mitte der Start-Plattform — Welle L, V-D1) heben alle builtIn-Welt-Portale im
-            // Kreis R 11 m; doppelt idempotent
-            // (worldMeta-Stempel + Existenz-Probe).
+            // C5 — DER GENESIS-PORTAL-RING: um `_genesisMitte` heben alle builtIn-Welt-Portale im Kreis R 11 m, doppelt idempotent.
             res.c.ring = {};
             try {
                 const wm5 = r.state.worldMeta;
@@ -1922,7 +1944,12 @@ const FIXTURES = [
                         v2.ort.z,
                         ...v2.slots.flatMap((q) => [q.x, q.z, q.y, q.phi]),
                     ];
-                    return { s, erdbau: fnv(JSON.stringify(v2.erdbau)), hash: fnv(JSON.stringify(v2)) };
+                    return {
+                        s,
+                        erdbau: fnv(JSON.stringify(v2.erdbau)),
+                        hash: fnv(JSON.stringify(v2)),
+                        trasse: b.plan.trasse,
+                    };
                 };
                 const erste = (a, b) => {
                     const i = a.s.findIndex((v, j) => v !== b.s[j]);
@@ -1933,7 +1960,7 @@ const FIXTURES = [
                 };
                 const ortPaar = async (stoer) => {
                     const [a, b] = [await ortLauf(A.nearM + 140, stoer), await ortLauf(A.nearM + 136.3, stoer)];
-                    return { hash: [a.hash, b.hash], erste: erste(a, b) };
+                    return { hash: [a.hash, b.hash], erste: erste(a, b), trasse: a.trasse };
                 };
                 res.c.k5.ort = await ortPaar(false);
                 res.c.k5.ortStoer = await ortPaar(true);
@@ -2041,11 +2068,8 @@ const FIXTURES = [
         return res;
     });
 
-    // ===== TEIL O: DER ORT AUF DEM GELÄNDE — das Dorf 7/18 der Gründerzeit an einem Hang, gemessen an der Welt =====
-    // Der Akt `spawnSettlement` an einem Hang (Gefälle 0,12–0,25 über 16 m, fern der Orte der Teile B und C); gemessen wird,
-    // was die Welt trägt: die Häuser (Eintrag: Ort, Gier, Boden y − 0,5), der Grund unter und vor ihnen (`getTerrainHeightAt`,
-    // der Boden der Körper), der Wald-Plan (`_forestCellDarts`), die Laternen (Einträge der Studio-Gestalt laterne) und der
-    // Plan v2 (`_ortPlaene`).
+    // ===== TEIL O: DER ORT AUF DEM GELÄNDE — der Akt `spawnSettlement` an einem Hang (0,12–0,25 über 16 m): Häuser, Grund
+    // (`getTerrainHeightAt`), Wald-Plan, Laternen und Plan v2 (`_ortPlaene`), wie die Welt sie trägt =====
     const messeOrt = async (modus, messort) => {
         const dpO = { seed: 7, nH: 18, epoche: "gruenderzeit" };
         const outO = await page.evaluate(
@@ -2109,6 +2133,7 @@ const FIXTURES = [
                             seed: c.seed,
                             nH: c.nH,
                             epoche: r._siedlungEpoche(c.seed),
+                            ort: { x: c.wx, z: c.wz }, // der Grund der Trasse, wie der Wege-Bau nach dem Laden
                         });
                     } else {
                         const ort = globalThis.__gelaendeCore.hangOrt(L, (x, z) => r._landAt(x, z, 0.2));
@@ -2414,11 +2439,8 @@ const FIXTURES = [
                         });
                     if (P.ort && pmW) r._tickWegeKarte(pmW.position);
                     res.vorplatzFeld = Number.isFinite(feldMin) ? Math.round(feldMin * 100) / 100 : null;
-                    // DIE WAND DER TERRASSE, gezählt am Netz, das der Spieler sieht: der voxel-worker baut die Chunks um den Ort (± 60 m,
-                    // Stufe 0, `_voxelWorkerComputeChunkMesh` — derselbe Bau wie das Streaming); Wand ist jeder Vertex unter dem
-                    // Himmel, steiler als der Schutt-Kandidat (23°), den der Erdbau um > 0,25 m hebt oder senkt und der auf keiner
-                    // Fläche des Erdbaus liegt (`erdbauFlaeche`); Wiese ist er, wo sein Fels-Stoff (die Steile über rockLo … rockHi
-                    // plus der Schutt im Vertex, gelaende-core `felsStoff`) unter 0,5 bleibt
+                    // DIE WAND DER TERRASSE am Netz des Spielers (`_voxelWorkerComputeChunkMesh`, ± 60 m): Wand ist ein Vertex unter dem
+                    // Himmel, steiler als 23°, vom Erdbau > 0,25 m bewegt, auf keiner Fläche; Wiese, wo `felsStoff` unter 0,5 bleibt
                     if (P.ort) {
                         const GC = globalThis.__gelaendeCore;
                         const GG = r.constructor.TERRAIN_GEOLOGY;
@@ -2454,11 +2476,8 @@ const FIXTURES = [
                                     const hub = GC.hoehe(Lg, x, z, true) - GC.hoehe(Lo, x, z, true);
                                     if (Math.abs(hub) <= 0.25) continue;
                                     wand++;
-                                    // K66, Prüfung 2: die Halme der Wand — die Nah-Wiese wächst nach dem Grün-Kanal der Boden-Karte
-                                    // (`_bodenKarteAusMesh`: die Wiesen-Wache `gruenSchwelle` über der FERTIGEN Vertex-Farbe), die
-                                    // Ferne nach `_fernSchuttAt` (Ring, Kronen-Karte, Feld-Pass): Wiese ab dem halben Grün, Ferne ohne Schutt
-                                    // — wo das Netz den Stoff der Wand zeigt (Schutt ≥ 0,5) und der Erdbau die Höhe der Ferne bewegt (ohne Detail-Term, wie
-                                    // der Ring); die Ferne ist ein Höhenfeld: unter der Kante einer Fläche zeigt sie die Fläche
+                                    // die Halme der Wand: nah nach dem Grün der Boden-Karte (`gruenSchwelle`), fern nach `_fernSchuttAt`
+                                    // — wo das Netz Schutt ≥ 0,5 zeigt und der Erdbau die Höhe der Ferne bewegt
                                     const C3 = w.colors;
                                     let tg = (C3[3 * i + 1] - 0.5 * (C3[3 * i] + C3[3 * i + 2])) / GG.gruenSchwelle;
                                     tg = tg < 0 ? 0 : tg > 1 ? 1 : tg;
@@ -2966,8 +2985,8 @@ const FIXTURES = [
     );
     const [ort, ortS, wach, voll] = [k5.ort || {}, k5.ortStoer || {}, k5.wach || {}, k5.wachVoll || {}];
     check(
-        "C-K5c: DER ORT IST EINE FUNKTION — zwei Vorläufe nH 300, der Spieler 3,7 m versetzt: der Plan v2 bit-gleich",
-        !!ort.hash && ort.hash[0] === ort.hash[1] && !ort.erste,
+        "C-K5c: DER ORT IST EINE FUNKTION — zwei Vorläufe nH 300, der Spieler 3,7 m versetzt: der Plan v2 bit-gleich, seine Trasse las das Raster des Ort-Fadens (siedlung.K3)",
+        !!ort.hash && ort.hash[0] === ort.hash[1] && !ort.erste && (ort.trasse || {}).aussen === 0,
         ort.erste ? `die erste Abweichung: ${ort.erste}` : JSON.stringify(ort.hash || k5.err)
     );
     check(

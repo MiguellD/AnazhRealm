@@ -173,10 +173,15 @@ function ausstattungAm(id, x, z, ry){
 const GK=window.__gelaendeCore;
 const WELT=(()=>{ const u=new URLSearchParams(location.search), o=(u.get('ort')||'').split(',').map(Number);
   return {seed:u.get('welt')||GK.LAGE_GRUND.seed, ort:(o.length===2&&o.every(Number.isFinite))?{x:o[0],z:o[1]}:null, L:null}; })();
-function ortAufWelt(dp, plan, lay){
+// DIE TRASSE AUF DEM WELTGRUND (siedlung.K3): das Höhen-Raster um den Ort (fachwerk trasseRahmen, gelaende-core hoehenRaster) — das
+// Labor-Layout und der Export lesen DASSELBE Raster wie die Welt am Ort ihrer Zelle: die Gassen folgen dem Hang.
+function trasseAufWelt(dp){
   const L=WELT.L||(WELT.L=GK.lageGrund(WELT.seed, window.SimplexNoise));
   if(!WELT.ort){ const h=GK.hangOrt(L, (x,z)=>GK.hoehe(L,x,z,true)>L.waterLevel+3); if(!h) throw new Error('fachwerk: kein Hang auf der Welt '+WELT.seed); WELT.ort={x:Math.round(h.x), z:Math.round(h.z)}; }
-  const v2=FC.ortPlan(FC.exportSettlement({seed:dp.seed, nH:dp.nH, epoche:dp.epoche, budget:dp.budget}), WELT.ort, GK.ortCtx(L));
+  return GK.hoehenRaster(L, WELT.ort.x, WELT.ort.z, FC.trasseRahmen(dp.nH)); }
+function ortAufWelt(dp, plan, lay, hoehe){
+  const L=WELT.L;
+  const v2=FC.ortPlan(FC.exportSettlement({seed:dp.seed, nH:dp.nH, epoche:dp.epoche, budget:dp.budget, hoehe}), WELT.ort, GK.ortCtx(L));
   let k=0; const ys=[];
   const geparkt=(q)=>!q||!q.obb||Math.abs(q.obb.cx)>5000||Math.abs(q.obb.cz)>5000;                // die ±9999-Parkplätze des Layouts reisen nicht
   for(let i=0;i<plan.houses.length;i++){ const q=lay.pl[i];
@@ -225,14 +230,14 @@ function buildDorf(dp){
         spawnL:{x:st.H.spawn.x, z:st.H.spawn.z}, hofGap:plan.norm.gap, meshes:[]}); } }       // HOF-GESETZ: Tür-Punkt + Parzellen-Spielraum wandern mit — das Haus-Wissen formt gleich den Hof
   const ext=dorfB.map(B=>{ if(B.lod!=='voll') return B.ext;
     const bx=new THREE.Box3().setFromObject(B.g); return {x0:bx.min.x,x1:bx.max.x,z0:bx.min.z,z1:bx.max.z,y1:bx.max.y}; });
-  const lay=dorfLayout(plan, ext, plan.seed);
+  const hoehe=trasseAufWelt(dp), lay=dorfLayout(plan, ext, plan.seed, FC.hoeheAusRaster(hoehe));
   let ymax=0;
   { const N=plan.norm;                                                                        // REIHEN-SNAP-GESETZ wohnt im Kern (U6c, __fachwerkCore.reihenSnap) — buildDorf UND exportSettlement rufen DIESELBE Funktion; läuft VOR der Platzierung, damit Solids/OBB konsistent fließen
     const snaps=FC.reihenSnap(dorfB, lay.pl, N.gap);
     if(snaps) console.log('REIHEN-SNAP: '+snaps+' Paare angedockt (Fuge → '+N.gap+'m)');
     FC.brunnenWeicht(dorfB, lay.pl, lay);                                                       // DER BRUNNEN WEICHT DEM HAUS (S4-N4): nach dem Snap — dieselbe Funktion wie exportSettlement
     FC.wandLaternen(dorfB, lay.pl, lay); }                                                     // DIE WANDLATERNE (K66-2): nach dem Snap an der Wand des Kerns — dieselbe Funktion wie exportSettlement
-  const ORT=ortAufWelt(dp, plan, lay);                                                      // DER ORT AUF DEM WELTGRUND (K10): jedes q trägt y
+  const ORT=ortAufWelt(dp, plan, lay, hoehe);                                                      // DER ORT AUF DEM WELTGRUND (K10): jedes q trägt y
   dorfB.forEach((B,i)=>{ const q=lay.pl[i]; B.q=q; ymax=Math.max(ymax, ext[i].y1||0);
     if(B.lod==='voll'){ const wrap=new THREE.Group();
       wrap.rotation.y=q.phi; wrap.position.set(q.x,q.y,q.z); wrap.add(B.g); dorfGroup.add(wrap); wrap.updateMatrixWorld(true);
