@@ -154,6 +154,7 @@ const dorfStand = (page, e) =>
             const ganz = alle.filter((e) => e.t <= vorher.tot + 1000 && e.rec && e.rec.x === g.x && e.rec.z === g.z && e.rec.b === g.b && e.rec.e === g.e);
             zeile.alterS = ganz.length ? Math.max(0, vorher.tot - Math.max(...ganz.map((e) => e.t))) / 1000 : null; // der Haken-Tod kommt in Node bis 0,3 s nach dem Schreiber an
             zeile.verlorenBloecke = vorher.bMax - g.b; zeile.verlorenEdits = vorher.eMax - g.e; // Blöcke, die vor dem Tod in einem FESTEN Schreiben lagen, aber nicht kamen
+            zeile.eGeladen = g.e; // die Station urteilt: entstand in keinem Zyklus ein Edit, ist die Sonde blind (ROT)
             zeile.tod = vorher.art;
             if (vorher.erw && vorher.erw.key) {
                 zeile.dorfGeladen = await dorfStand(o.page, vorher.erw);
@@ -198,9 +199,10 @@ const dorfStand = (page, e) =>
                     const ziel = { x: p.x + 6, y: r._terrainMacroSurfaceY(p.x + 6, p.z), z: p.z }, u = r._setzUrteil("stein_block", ziel, true);
                     if (u.ok || u.grund === "material") r.spawnArchitecture("stein_block", ziel, { silent: true });
                     else (window.__absage = window.__absage || {})[u.grund] = ((window.__absage || {})[u.grund] || 0) + 1;
-                    r.carveVoxelSphere(p.x - 5, r._terrainMacroSurfaceY(p.x - 5, p.z), p.z, 1.5);
+                    // editform-kern benannte carveVoxelSphere in carveVoxel um: beide Namen, damit die Sonde an jedem Baum gräbt
+                    (r.carveVoxel || r.carveVoxelSphere).call(r, p.x - 5, r._terrainMacroSurfaceY(p.x - 5, p.z), p.z, 1.5);
                 })
-                .catch(() => {});
+                .catch((e) => (window.__bauFehler = String(e)));
         }, 1500);
         const art = ERW[z] || (z % 2 === 0 ? ["idb", "fest", "platz"][(z >> 1) % 3] : "zufall");
         await warte(6000 + Math.random() * 12000);
