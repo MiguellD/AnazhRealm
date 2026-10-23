@@ -421,6 +421,11 @@ Die Regler-Definitionen als DATEN (die HDA-Lehre) — **als MAP je kind**:
   bewegt (Hash bei min und max), ist tot und steht beim Namen in `spec/vertraege/ratsche.json` (`reglerTot`, die
   Liste schrumpft nur, Soll 0). Ein Bau, der mit dem Wert bricht (wirft, leer, NaN, Not-Körper), ist rot; ein
   Rand-Wert über der Budget-Zeile (B2c) steht in `reglerBudget` (Soll 0).
+- **Die EINE Klemme** (KI K2): ein Programm prägt sein Werk mit `ov` als fünftem Argument von `spawn_studio`; der EINE
+  Stempel `_studioStampFor` klemmt jede Zahl am Vertrag ihrer Art (`_reglerKlemme`: [min, max], ganze Schritte gerundet,
+  jede Klemme beim Namen im Log), ein Regler ohne Zeile oder ein Wert ohne Zahl schließt die Tat (fail-closed). Dieselbe
+  Klemme trägt die Studio-Übergabe (dort fällt Fremdes, must-ignore); der Prompt der KI nennt die Zeilen aus derselben
+  Quelle (`_studioWordsForPrompt`). Wand: `gate:praegung-welt` (K).
 
 ### B5 — LEHREN (SOLL)
 

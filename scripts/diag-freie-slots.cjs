@@ -1,12 +1,8 @@
 // diag-freie-slots.cjs — DIE SLOT-LINSE (gate:freie-slots): ein freier Slot und eine leere Hülle zeichnen NIE,
 // in keinem Pass.
 //
-// Befund (Radeon 890M, Mess-Wiese −900/−850, drei Wander-Schleifen à 1,2 km, Regler voll): `_archGroupFree` setzte nur die
-// Matrix auf eine Null-3×3 und legte den Slot in eine Free-Liste; `mesh.count` blieb am Höchststand, jede Null-Instanz lief
-// durch den Vertex-Shader jedes Passes — 890 freie Slots mit 1,73 M Dreiecken in 202 Gruppen, 92 leere Hüllen in der
-// Gnadenfrist zeichneten 0,99 M Dreiecke ins Hauptbild (Band-Klasse `leer:*`, Haushalt 0). Der Schnitt: jede Instanz-Senke
-// ist DICHT — Freigeben zieht die letzte Instanz in die Lücke (`_instanzUmzug`), `count` schreibt nur `_instanzZahl`, eine
-// leere Senke ist unsichtbar.
+// Jede Instanz-Senke ist DICHT — Freigeben zieht die letzte Instanz in die Lücke (`_instanzUmzug`), `count` schreibt nur
+// `_instanzZahl`, eine leere Senke ist unsichtbar.
 //
 // Die Linse fährt die echte Welt (Null-Renderer, Foundry an) durch eine Wander-Sequenz — fort und zurück, mehrere Umzüge —
 // und hält nach jedem Umzug JEDE Instanz-Senke gegen ihre lebenden Instanzen:

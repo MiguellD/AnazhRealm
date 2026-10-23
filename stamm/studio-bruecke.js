@@ -1333,9 +1333,11 @@ class AnazhRealm_studio_bruecke {
 
     // Die lebenden Wörter, gruppiert je Art (KI-Prompt und die Absage eines unbekannten Worts): aus dem EINEN Wort-Katalog —
     // nie ein Wort, das die Welt nicht bauen kann. `nennen` = wie der Spieler sie liest („Fachwerkhaus", „Eiche"), sonst
-    // die Wörter des Programms („fachwerkhaus", „eiche").
+    // die Wörter des Programms („fachwerkhaus", „eiche") samt den Reglern der Art aus dem Vertrag (PARAMS_BY_KIND, wie das
+    // Buch sie bringt: id Name min–max — dieselben Zeilen klemmt der Stempel, KI K2).
     _studioWordsForPrompt(nennen = false) {
         const K = this._studioWortKatalog();
+        const PBK = (this._foundry && this._foundry.paramsByKind) || {};
         const GRUPPE = {
             tree: "Bäume",
             rock: "Stein",
@@ -1343,6 +1345,7 @@ class AnazhRealm_studio_bruecke {
             gate: "Tore",
             vehicle: "Fahrzeuge",
             ausstattung: "Ausstattung",
+            weapon: "Klingen",
         };
         const gruppen = {};
         for (const [w, nennung] of K.woerter) {
@@ -1354,10 +1357,15 @@ class AnazhRealm_studio_bruecke {
             if (!g.includes(nenn)) g.push(nenn);
         }
         const kappe = nennen ? 5 : 8;
+        const regler = (a) =>
+            !nennen && Array.isArray(PBK[a]) && PBK[a].length
+                ? ` (Regler: ${PBK[a].map((d) => `${d.id} ${d.lab} ${d.min}–${d.max}`).join(", ")})`
+                : "";
         return Object.keys(GRUPPE)
             .filter((a) => gruppen[a] && gruppen[a].length)
             .map(
-                (a) => `${GRUPPE[a]}: ${gruppen[a].slice(0, kappe).join(", ")}${gruppen[a].length > kappe ? " …" : ""}`
+                (a) =>
+                    `${GRUPPE[a]}: ${gruppen[a].slice(0, kappe).join(", ")}${gruppen[a].length > kappe ? " …" : ""}${regler(a)}`
             )
             .join(" · ");
     }
