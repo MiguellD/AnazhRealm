@@ -28,7 +28,7 @@ async function checkBandV18136Audit(ctx) {
         r.state.csmNode = savedCsm;
         if (Number.isFinite(savedRange)) r.setShadowRange(savedRange);
         if (Number.isFinite(savedApplied)) r._applyEffectiveShadowRange(savedApplied);
-        // (2) die Kachel-Erosion ist gefallen (K16): der Kachel-Eingang baut nur noch die Hydrosphäre.
+        // (2) die Kachel-Erosion ist gefallen: der Kachel-Eingang baut nur noch die Hydrosphäre.
         out.tileLean = window.__fehlt(r._ensureHydroTilesAround, /eTile|_computeErosion|erosionTiles/);
         return out;
     });
@@ -272,7 +272,7 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         const THREE = window.THREE;
         const out = {};
 
-        // LAUT (K22): ohne TSL bricht der Helfer beim Namen (`_stoffBruch`), nie still mit dem Eingangs-Albedo
+        // LAUT: ohne TSL bricht der Helfer beim Namen (`_stoffBruch`), nie still mit dem Eingangs-Albedo
         {
             const logAlt = r.log;
             r.log = () => {};

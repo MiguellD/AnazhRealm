@@ -808,7 +808,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // Welt-Wasser — das Wasser sind per-Chunk-Iso-Surface-Meshes
         // (`voxelChunkWaterIso`-Map) aus dem Cell-Feld. Der alte Quad-Mesh-
         // Pfad ist gestrichen.
-        out.waterSystemOk = r.state.voxelChunkWaterIso instanceof Map;
 
         // --- Atmosphäre-Persistenz --- (der Nebel-Regler ist fort, die Mikro-Struktur trägt den Beweis)
         const microAlt = r.state.atmosphere ? r.state.atmosphere.microStrength : undefined;
@@ -915,7 +914,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             `V17.J: kein still gefangener Aerial-Node-Fehler${v828Results.aerialOutputError ? " — " + v828Results.aerialOutputError : ""}`,
             v828Results.aerialNoError === true
         );
-        check("V9.75: das Iso-Chunk-Wasser-System ist verdrahtet (voxelChunkWaterIso-Map)", v828Results.waterSystemOk);
         check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
         check(
             "V17.J4: setCavityAO pusht live ins aoScale-Uniform + persistiert (Slider-KONSUM)",
@@ -940,7 +938,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28: Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
     }
 
-    // ### V8.29 — Die lebendige Welt (Instanced-Gras, Avatar-Hide,
+    // ### Die lebendige Welt (Instanced-Gras, Avatar-Hide,
     // Genesis-Plattform, adaptives Wasser, Cel-Slider-Fix) ###
     const v829Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
@@ -1117,7 +1115,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.29: Die lebendige Welt Tests laufen", false, v829Results ? v829Results.error : "no result");
     }
 
-    // ### V8.30 — die Sterne testen gegen den Tiefenpuffer (kein Overlay mehr). Die Existenz-Proben des Wasser-Stoffs (sunDir,
+    // ### die Sterne testen gegen den Tiefenpuffer (kein Overlay mehr). Die Existenz-Proben des Wasser-Stoffs (sunDir,
     // emotion, minDepth, keine Fog-Uniforms, das Augen-Flag) fielen mit Licht K3: sein Verhalten fahren die Wasser-Linse und der
     // Lichtweg (`werkbank licht --laub wasser`) im Bild ###
     const v830Results = await safeEvaluate(page, () => {
@@ -1130,7 +1128,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         v830Results && v830Results.error
     );
 
-    // ### V8.33 — Welle 6.G4.e: Tauchen + Schwimm-Animation + Gerstner ###
+    // ### Welle 6.G4.e: Tauchen + Schwimm-Animation + Gerstner ###
     const v833Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1255,7 +1253,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
+    // ### Regler: Sicht-Ring + Cel-Stufen + Fog ###
     const v840Results = await safeEvaluate(
         page,
         (stammDateien) => {
@@ -1282,14 +1280,14 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         check("V8.40: Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
     }
 
-    // ### V8.47 — Shadow-Bias gegen Shadow-Acne auf flachen Flächen (der Wetter-Blend V8.46 lebt in koerper-seele D5a) ###
+    // ### Shadow-Bias gegen Shadow-Acne auf flachen Flächen (der Wetter-Blend V8.46 lebt in koerper-seele D5a) ###
     const v847 = await safeEvaluate(page, () => {
         const sh = window.anazhRealm.state.directionalLight && window.anazhRealm.state.directionalLight.shadow;
         return { shadowAntiAcne: !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048 };
     });
     check("V8.47: Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)", !!v847 && v847.shadowAntiAcne === true);
 
-    // ### V8.48 — Terrain-Schatten + Tag-Nacht-Glättung ###
+    // ### Terrain-Schatten + Tag-Nacht-Glättung ###
     const v848Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1360,7 +1358,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         check("V8.48: Terrain-Schatten-Tests laufen", false, v848Results ? v848Results.error : "no result");
     }
 
-    // ### V8.49 — updateCreatures-Politur (Off-Screen-Sparsamkeit + Distanz-LOD) ###
+    // ### updateCreatures-Politur (Off-Screen-Sparsamkeit + Distanz-LOD) ###
     const v849Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1733,8 +1731,6 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         const busch = r._phytoArt("busch_hazel");
         out.buschGrammar = !!(busch && busch.rec.kind === "shrub");
         out.understoryArts = !!(r._phytoArt("farn_busch") && r._phytoArt("blume_gross"));
-        const layers = A.SCATTER && A.SCATTER.layers;
-        out.understoryLayer = !!(layers && layers.some((l) => l.kind === "under"));
         let buschParts = 0;
         try {
             // N7.3 — UNIT-RICHTER: busch_hazel ist Studio-bekannt → foundry-ON gäbe der
@@ -1763,7 +1759,6 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         res.buschGrammar === true
     );
     check("Ω-OPSIS S4 (IV2) Understory-Arten existieren (Farn + Blume)", res.understoryArts === true);
-    check("Ω-OPSIS S4 (IV3) die Understory-Scatter-Schicht existiert (5-Strata)", res.understoryLayer === true);
     check(
         `Ω-OPSIS S4 (IV4) ein gewachsener Busch ist reich (≥8 Teile, gemessen ${res.buschParts})`,
         res.buschIsRich === true

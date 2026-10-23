@@ -447,7 +447,7 @@ async function runPartB() {
         // Der Strauch verlässt die Welt vor der Baseline (die Slot-Bilanz zählt nur den Proben-Baum); der Sweep pflanzt
         // ihn mit warmen Stufen neu und räumt ihn wieder.
         if (sEntry) r.removeArchitecture(sEntry);
-        // DIE KETTE DES GESETZBUCHS (K43-3): Wagen und Tor tragen ihre
+        // DIE KETTE DES GESETZBUCHS: Wagen und Tor tragen ihre
         // Stufen-Kette im Gesetzbuch — der Wagen [0, 1] und die Karte (KIND_POLICY.impostor), das Tor [0, 1] nach den Grenzen
         // seines Kerns (B2c `ab`, keine Karte; die 3 ist NUR-WURF und wird nie gezeigt). Eigene Orte; JEDE gezeigte Stufe (und
         // die Karte der Karten-Art) wärmt hier, der Sweep pflanzt sie neu und räumt sie.
@@ -657,7 +657,7 @@ async function runPartB() {
                     r.removeArchitecture(s2); // räumt aus der Sweep-Liste (removeArchitecture sucht dort)
                     st.architectures = [entry];
                 }
-                // DIE KETTE DES GESETZBUCHS im selben Gesetz (K43-3): je Probe die GEZEICHNETEN Stufen — eine Instanz-Gruppe mit
+                // DIE KETTE DES GESETZBUCHS im selben Gesetz: je Probe die GEZEICHNETEN Stufen — eine Instanz-Gruppe mit
                 // ihren Instanz-Stempeln, ein Bereich des Bau-Satzes mit den Stempeln JE ECKE seiner Zelle (die Satz-Gruppe
                 // zeichnet nie: sie ist Slot-Wahrheit, gezeichnet wird ihr Bereich im Satz ihres Stoffs, `_bauSatzArt`). Eine
                 // Zelle, die der Satz nicht trägt (Satz verborgen, Bereich oder Zelle fehlt, die Zelle liegt nicht an ihrer
@@ -854,7 +854,7 @@ async function runPartB() {
                 delete r._lodTreeVisHeight;
                 if (r._lodTreeVisHeight !== echt) res.stufenWahrheit.err = "Leser nicht zurückgesetzt";
                 lochSweep(1); // die Stufen auf den echten Leser zurück
-                // ════ (10) DER GEISTER-BAUM (K36): keine Instanz steht halb maskiert. Die DECKUNG je Klasse (Rinde, Laub;
+                // ════ (10) DER GEISTER-BAUM: keine Instanz steht halb maskiert. Die DECKUNG je Klasse (Rinde, Laub;
                 // die Karte deckt beide) = der Anteil der Dither-Werte, den eine gezeichnete Stufe behält — gelesen aus
                 // den Stempeln wie die Maske (|aH0L|, sein Vorzeichen = der HALT; aKarte.w, negativ = voll), gemessen vom
                 // AUGE. Sie ist 0 oder 1; dazwischen steht ein Geist (unter TRAA halb durchsichtig), 0 bei gezeichneten
@@ -1610,7 +1610,7 @@ async function main() {
             check("STRAUCH: kein Loch, Stempel = CPU-Sichthöhe (volle Leistung)", ST.voll.loecher === 0 && ST.voll.stempelUngleich === 0, z(ST.voll));
             check("STRAUCH: kein Loch unter Last (Perf-Streck)", ST.last.proben >= 8 && ST.last.loecher === 0 && ST.last.stempelUngleich === 0, z(ST.last));
         } else check("STRAUCH-Sweep lief", false, "fehlt");
-        // DIE KETTE DES GESETZBUCHS (K43-3): Wagen und Tor tragen ihre Stufen-Kette im Gesetzbuch — jede gezeigte Stufe hat
+        // DIE KETTE DES GESETZBUCHS: Wagen und Tor tragen ihre Stufen-Kette im Gesetzbuch — jede gezeigte Stufe hat
         // ihren Partner (L0 ↔ L1), beide stehen im Bild, und über den Sweep 4–55 m reißt kein Loch, voll und unter Last. Eine
         // Satz-Art (das Tor, `BAU_SATZ`) wird an ihren Satz-Zellen geprobt — die Stempel je Ecke, die der Satz zeichnet.
         const zk = (o) =>
@@ -1670,7 +1670,7 @@ async function main() {
         }
         if (!(out.kette || []).length) check("KETTE DES GESETZBUCHS lief", false, "fehlt");
     } else check("STUFEN-WAHRHEIT lief", false, SW ? SW.err : "fehlt");
-    // (10) DER GEISTER-BAUM (K36): je Lauf 14 Augen-Orte (6–40 m Wahrnehmung, hin und zurück), die Deckung am Auge 0 oder 1.
+    // (10) DER GEISTER-BAUM: je Lauf 14 Augen-Orte (6–40 m Wahrnehmung, hin und zurück), die Deckung am Auge 0 oder 1.
     const GB = out && out.geisterBaum;
     if (GB) {
         const g = (o) =>

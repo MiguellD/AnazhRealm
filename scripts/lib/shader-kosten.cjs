@@ -56,7 +56,7 @@ const LEICHT =
 // Ops-Decke —, die Ladungen des Rausch-Atlas (76, seit K53 ohne den Fleck des Wiesen-Grunds) und die Ops-Schätzung unter der Decke.
 // DIE PROGRAMM-GRÖSSE (`zeichenMax`, K17-3): swiftshader (die CI) übersetzt jedes Programm beim ersten Zeichnen und löst jede
 // WGSL-Funktion in ihren Aufrufer auf — die Zeichen des erzeugten Fragments sind die Übersetzungs-Arbeit, die vor dem
-// ersten Bild steht. Der Boden trug vor dem Fels-Gesetz im Pixel (K17) 96 050 Zeichen; mit dem Gesetz im Pixel, jede
+// ersten Bild steht. Der Boden trug vor dem Fels-Gesetz im Pixel 96 050 Zeichen; mit dem Gesetz im Pixel, jede
 // Ziehung `zufall` 78-mal ausgeschrieben, 149 521 — die Prüfbühne S0 riss ihre Frist (171 s). Die Decke 100 000.
 // Keine Hilfs-Funktion liest eine Bindung (`bindungInFunktionMax` 0, `bindungenInFunktionen`).
 const STOFFE = Object.freeze({
@@ -634,7 +634,7 @@ fn main( @location( 0 ) uv : vec2<f32> ) -> OutputStruct {
         [["colorNode", "normalNode"], 8, 1, { "rausch-atlas": 2 }, 1, 1]
     );
     pruef("Graph ohne Bibliothek", stoffGraph(stoff, RAUSCH_NAME.source, null).verborgen, 2);
-    // der Zweig des Stamms (K17-2): sein Rumpf ist bekannt, sein Inhalt reist als Argument — der Graph zählt die Ladung darin
+    // der Zweig des Stamms: sein Rumpf ist bekannt, sein Inhalt reist als Argument — der Graph zählt die Ladung darin
     const zweigRumpf = { layout: null };
     const imZweig = knoten({ isTextureNode: true, value: atlas });
     const stoffZ = {

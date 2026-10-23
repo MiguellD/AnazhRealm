@@ -184,7 +184,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     // Bau, ohne Knoten-Bau und ohne verschobenen Erst-Bau. Dann kann nichts mehr kommen, was `ziel` wahr macht, und die
     // Probe urteilt. Ein langsamer Runner wartet länger, sein Urteil ist dasselbe.
     const STILL_BILDER = 3;
-    // DER GEGENDRUCK DER GPU (K60-N3): jedes geschaltete Bild wartet, bis das Gerät seine Arbeit abgegeben hat
+    // DER GEGENDRUCK DER GPU: jedes geschaltete Bild wartet, bis das Gerät seine Arbeit abgegeben hat
     // (`queue.onSubmittedWorkDone`), bevor das nächste kommt — sonst wächst der Rückstau über die Probe, und jeder asynchrone
     // Pipeline-Bau wartet hinter ihm. `gpuStau` trägt die längste Wartezeit je Probe.
     const gpuStau = { maxMs: 0 };
@@ -823,7 +823,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     }, IN(1) ? LAUFZEIT_MS : 0);
     // DIE ERST-ZEICHNUNG: Installation, Probe, Gegen-Lauf, Neubau, Neubau ohne Gedächtnis — je ein Aufruf
     if (out && !out.fatal) {
-        // DIE FRIST GILT JE BAU, NIE JE PROBE (K60-N3): eine Probe ohne Sekunden-Frist — sie läuft auf der Seite als
+        // DIE FRIST GILT JE BAU, NIE JE PROBE: eine Probe ohne Sekunden-Frist — sie läuft auf der Seite als
         // Versprechen, Node fragt in kurzen Aufrufen nach. Gerissen wird nur, wenn EIN Bau länger als BAU_FRIST_MS im Flug
         // ist (der GPU-Prozess hängt: ein Bau, der sich nie erfüllt — er steht beim Namen im Wurf) oder so lange kein Bau-
         // Ereignis kommt, während die Probe läuft.

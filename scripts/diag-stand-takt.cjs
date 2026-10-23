@@ -835,7 +835,7 @@ const server = statikServer();
                     aus.gehen.zelleGleich = zelle(p1) === z0;
                     aus.gehen.ankerGleich = (st.fernRing ? st.fernRing.gen | 0 : -1) === g0;
                 }
-                // (U) STUFE (K51-5): aus der Ruhe tauscht ein ferner Chunk seine Stufe hin und zurück, wie der Streaming-Takt
+                // (U) STUFE: aus der Ruhe tauscht ein ferner Chunk seine Stufe hin und zurück, wie der Streaming-Takt
                 // (`_rebuildVoxelChunk(cx, cz, lod)`, hier synchron) — gezählt je Takt die Einheiten und die Rufe des Walds
                 {
                     // DIE RUHE VOR DEM WECHSEL: offener Wuchs ist keine Ruhe. Nach dem Gehen liegen Chunks neu im `foliageRadius`,
@@ -930,7 +930,7 @@ const server = statikServer();
                     }
                     aus.stufe = U;
                 }
-                // (O) ORT (K69): aus der Ruhe legt ein Ort abseits seinen Erdbau (eine Platte 12 × 12 m, 96 m vor dem Spieler — wie
+                // (O) ORT: aus der Ruhe legt ein Ort abseits seinen Erdbau (eine Platte 12 × 12 m, 96 m vor dem Spieler — wie
                 // der Dorf-Zug das nächste Dorf legt, während der Spieler ins erste geht). Es fällt nur, was er ändern kann: gezählt
                 // die Gedächtnisse FERN von ihm (über `fern` m) vorher und nachher — der Stand des Walds (`_forestDartStand`, an ihm
                 // hängt die Gestalt jedes Orts), die Wald-Zellen (dieselben Objekte im Dart-Gedächtnis), die Chunk-Gedächtnisse
@@ -1083,7 +1083,7 @@ const server = statikServer();
                         }
                         O.kamin = { kultur: kultur || null, gesetzt, bau: n, ms: +ms.toFixed(1) };
                     }
-                    // DER BAUM IN FRISCHEM WALD (K69): ein Hof-Baum des Dorfs (`_naturSetzen`, wie die Ausstattung
+                    // DER BAUM IN FRISCHEM WALD: ein Hof-Baum des Dorfs (`_naturSetzen`, wie die Ausstattung
                     // `_spawnSettlementErlebnis`) an einem Ort, dessen Wald nie geplant wurde — gezählt die Wald-Zellen, die
                     // sein Setzen SYNCHRON plant (`planForestCell` im Aufrufer), dann die Takte, bis seine Gestalt steht, und
                     // die längste Plan-Arbeit eines Takts (die Schlange des Walds, `_tickWaldPlan`)
@@ -1159,7 +1159,7 @@ const server = statikServer();
                         }
                         O.wald = Wd;
                     }
-                    // DAS HAUS IM SATZ (K69): ein Dorf-Haus tritt in den Bau-Satz seiner Stoffe (`_tickBauSatz › _bauSatzBlock ›
+                    // DAS HAUS IM SATZ: ein Dorf-Haus tritt in den Bau-Satz seiner Stoffe (`_tickBauSatz › _bauSatzBlock ›
                     // _satzBlock`), verlässt ihn und tritt ein zweites Mal ein (ein stehender Bereich legt nur geänderte Slots) —
                     // gezählt die Bytes, die der Block dabei FRISCH anlegt
                     {
@@ -1250,7 +1250,7 @@ const server = statikServer();
                         }
                         O.satzHaus = SH;
                     }
-                    // DER ERDBAU UNTER DEM SPIELER (K69-2): ein Ort legt seine Platte, wo der Spieler steht (wie der Dorf-Zug
+                    // DER ERDBAU UNTER DEM SPIELER: ein Ort legt seine Platte, wo der Spieler steht (wie der Dorf-Zug
                     // das Dorf um ihn legt) — die Chunks seines Umkreises werden neu gebaut. Gezählt jeder Chunk-Bau, der in
                     // einem Takt SYNCHRON im Haupt-Faden läuft (`_buildVoxelChunkData`, der Bau ohne Worker), mit der Kette
                     // seiner Rufer und seiner Zeit, und die Takte, bis kein Chunk mehr auf seinen Neubau wartet (der Boden heilt).
@@ -1323,7 +1323,7 @@ const server = statikServer();
                     st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
                     const span = r._voxelChunkConfig(0).span;
                     const key = `${Math.floor(x / span)},${Math.floor(z / span)}`;
-                    // DER WALD AM FREMDEN ORT (K69): jede frische Wald-Zelle (`planForestCell`) plant die Schlange des Walds
+                    // DER WALD AM FREMDEN ORT: jede frische Wald-Zelle (`planForestCell`) plant die Schlange des Walds
                     // (`_tickWaldPlan`) — gezählt, was ein anderer Aufrufer am Stück plant, mit dem Namen des ersten
                     const core = globalThis.__phytoCore;
                     const roh = core.planForestCell;
@@ -1340,7 +1340,7 @@ const server = statikServer();
                             tiefe--;
                         }
                     };
-                    // der Rechner der Schlange ist der Wald-Faden (K60-4): seine Lieferungen (`_waldDartsAn`) plante die
+                    // der Rechner der Schlange ist der Wald-Faden: seine Lieferungen (`_waldDartsAn`) plante die
                     // Schlange — sie zählen wie ihre Zellen im Job
                     const anEigen = Object.prototype.hasOwnProperty.call(r, "_waldDartsAn");
                     const anRoh = r._waldDartsAn;
@@ -1404,7 +1404,7 @@ const server = statikServer();
                 L.aus();
                 aus.wache =
                     st && r._standWache ? [...r._standWache.takte].map(([n, x]) => [n, x.ruht, x.arbeit]) : null;
-                // (N) DER NACHSCHUB DES WALDS (K69-2): wartet die Gestalt einer Streu-Zelle auf den Plan des Walds, schiebt
+                // (N) DER NACHSCHUB DES WALDS: wartet die Gestalt einer Streu-Zelle auf den Plan des Walds, schiebt
                 // sich ihre Region auf — steht der Plan ihrer Kästen und steht kein Asset aus, baut sie neu.
                 {
                     const p = st.playerMesh.position;

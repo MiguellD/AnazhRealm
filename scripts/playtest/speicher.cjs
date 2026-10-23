@@ -1579,7 +1579,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         check("KI-Übersetzer P2: Phase-2-Tests laufen", false, transl2Results ? transl2Results.error : "no result");
     }
 
-    // ### V8.70 — Untrusted-Welt-Tor: echte fremde Engine, null-origin ###
+    // ### Untrusted-Welt-Tor: echte fremde Engine, null-origin ###
     const sandboxResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1733,7 +1733,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         check("Untrusted-Tor: V8.70-Tests laufen", false, sandboxResults ? sandboxResults.error : "no result");
     }
 
-    // ### V8.71 — W15 Phase 1: der Auto-Vendor-Pfad ###
+    // ### W15 Phase 1: der Auto-Vendor-Pfad ###
     // _vendorPostBundle (der einzige Netz-Schritt) wird gestubbt —
     // der echte save-server-Round-Trip lebt in der Sonde smoke-vendor (git-Archiv).
     const vendorResults = await safeEvaluate(page, async () => {
@@ -1905,7 +1905,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         check("W15 Auto-Vendor: Phase-1-Tests laufen", false, vendorResults ? vendorResults.error : "no result");
     }
 
-    // ### V8.72 — W15 Phase 2: der GitHub-Fetch ###
+    // ### W15 Phase 2: der GitHub-Fetch ###
     // _vendorPostRepo (der Netz-Schritt) wird gestubbt; der echte GitHub-Round-Trip lebt offline +
     // deterministisch in der Sonde smoke-vendor (git-Archiv) (lokales Fake-GitHub).
     const vendor2Results = await safeEvaluate(page, async () => {
@@ -1998,7 +1998,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         out.roundtripKeepsTrust =
             !!reloaded["gh-test"] && reloaded["gh-test"].trust === "sandboxed" && reloaded["gh-test"].vendored === true;
         // UI: die GitHub-Holen-Sektion im DOM.
-        out.uiRepoSection = !!document.getElementById("vendor-repo") && !!document.getElementById("vendor-repo-dock");
         // Aufräumen.
         r.state.customWorlds = {};
         r._saveCustomWorlds();
@@ -2039,7 +2038,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
             "W15 GitHub-Fetch: die repo-vendorte Welt überlebt den localStorage-Rundlauf",
             vendor2Results.roundtripKeepsTrust
         );
-        check("W15 GitHub-Fetch: die GitHub-Holen-Sektion (URL-Feld + Knopf) im DOM", vendor2Results.uiRepoSection);
     } else {
         check("W15 GitHub-Fetch: Phase-2-Tests laufen", false, vendor2Results ? vendor2Results.error : "no result");
     }

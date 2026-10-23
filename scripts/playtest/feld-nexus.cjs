@@ -1178,7 +1178,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### V8.05 — Werkstatt-UX-Polish (Mode-Bar oben + Stats unten + Tool-Palette + Editor-Toggle + Del-Btn) ###
+    // ### Werkstatt-UX-Polish (Mode-Bar oben + Stats unten + Tool-Palette + Editor-Toggle + Del-Btn) ###
     const v805Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1298,7 +1298,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(`V8.05: evaluate-Fehler — ${v805Results.error}`, false);
     }
 
-    // ### V8.06 — Werkstatt-UX: Klone/Neu in Mode-Bar, Default-Size, Kontrast ###
+    // ### Werkstatt-UX: Klone/Neu in Mode-Bar, Default-Size, Kontrast ###
     const v806Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1384,7 +1384,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(`V8.06: evaluate-Fehler — ${v806Results.error}`, false);
     }
 
-    // ### V8.07 — Werkstatt-Detail-Polish (Klone/Neu klickbar, Stern-Stats, Default-Größe fix) ###
+    // ### Werkstatt-Detail-Polish (Klone/Neu klickbar, Stern-Stats, Default-Größe fix) ###
     const v807Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1563,7 +1563,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(`V7.94 Ollama-Key: evaluate-Fehler — ${ollamaKeyResults.error}`, false);
     }
 
-    // ### V7.95 — Ollama Cloud-Kompatibilität (Endpoint-Detect + Dual-Format-Parse) ###
+    // ### Ollama Cloud-Kompatibilität (Endpoint-Detect + Dual-Format-Parse) ###
     // (1) /api/chat nur anhängen, wenn die URL noch keinen Pfad hat; (2) extractText liest Ollama-native
     // UND OpenAI-kompatibles Format; (3) options.num_predict ist Ollama-spezifisch (OpenAI lehnt ab).
     const v795Results = await safeEvaluate(page, () => {
@@ -1660,7 +1660,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(`V7.95 Ollama-Cloud: evaluate-Fehler — ${v795Results.error}`, false);
     }
 
-    // ### V7.97 — Ollama UX-Politur (Auto-Bypass + Free-Text-Modell + 404-Hint) ###
+    // ### Ollama UX-Politur (Auto-Bypass + Free-Text-Modell + 404-Hint) ###
     // Den lokalen Weg (Modell im Fenster, Proxy an, localhost geht vorbei) fährt der KI-Korpus am Verhalten (diag-v1-pfad
     // --korpus); hier die Cloud-URL durch den Proxy und der 404-Hinweis.
     const v797AutoResults = await safeEvaluate(page, async () => {
@@ -1744,7 +1744,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(`V7.97 Error-Hint: evaluate-Fehler — ${v797ErrorResults.error}`, false);
     }
 
-    // ### V7.98 — Parser-Robustheit für lokale Reasoning-Models ###
+    // ### Parser-Robustheit für lokale Reasoning-Models ###
     // (1) <think>/<thinking>-Blöcke werden gestrippt; (2) ohne JSON-Vertrag greift der Plain-Text-
     // Fallback; (3) num_predict 800 statt 400 — think-Block + Antwort brauchen Raum.
     const v798Results = await safeEvaluate(page, () => {

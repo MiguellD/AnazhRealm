@@ -700,7 +700,7 @@ function spitzenAuswerten(roh, spur, posten = POSTEN_JE_WEG[roh.wandern] || []) 
 }
 // Das EINE Urteil über einem Lauf (Werkbank und `--auswerten`): `spitze` die Takt-Spitze, sonst die Hänger.
 function linseWerten(roh, spur, b) {
-    // ohne `--posten` urteilt der Weg seine Posten (der Vorgabe-Wert, `POSTEN_JE_WEG`): ein leeres [] schwieg sie still grün (integ 93588264)
+    // ohne `--posten` urteilt der Weg seine Posten (der Vorgabe-Wert, `POSTEN_JE_WEG`): ein leeres [] schwieg sie still grün
     if (b.spitze) return spitzenAuswerten(roh, spur, b.posten ? String(b.posten).split(",") : undefined);
     const a = haengerAuswerten(roh, spur, { schwelle: Number(b.schwelle) || 100 });
     return Object.assign(a, { befunde: haengerLinsenBefunde(a), tabelle: haengerTabelle(a) });

@@ -19,7 +19,7 @@
 //         die EMERGENZ (AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist
 //         gefallen) an einem Test-Blueprint aus KIND_SUBSTANCE.fahrzeug_wagen, byte-gleich nachgerechnet;
 //         floats: beim Teile-Werk die Substanz, beim Studio-Wagen die Huelle des Kerns (D10).
-//   B-d (B2, Schoepfer-Browser-Befund 14.07. „Fahren bewegt das Fahrzeug nicht"): DIE
+//   B-d: DIE
 //     FAHR-PROBE — fahrzeug_gt wird gespawnt (Studio-instanziert), bestiegen, N Fahr-Ticks
 //     gefahren; danach MUSS entry.position > 1 m bewegt sein, der Spieler darauf sitzen,
 //     die Blocker (_populateBlockerAABBs) mitgezogen sein und der Snapshot (buildStateSnapshot)

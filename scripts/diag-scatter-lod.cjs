@@ -64,7 +64,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready);
         // Scatter-Regionen um den Spieler bauen lassen (der Streaming-Tick baut 1/Frame), bis die Streu STEHT (die EINE
-        // Antwort `_streuWartet`): die Fern-Baum-Karte bestellt ihr Leser (K30) — eine Region wartet auf sie und baut nach
+        // Antwort `_streuWartet`): die Fern-Baum-Karte bestellt ihr Leser — eine Region wartet auf sie und baut nach
         // der Lieferung neu; erst dann trägt sie ihre Fern-Zellen.
         const pm = r.state.playerMesh.position;
         // DER TAKT DER STREU ist beides, was sie liest: die Schlange des Walds (`_tickWaldPlan`, K69 — die Gestalt jedes

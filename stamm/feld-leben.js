@@ -992,6 +992,12 @@ class AnazhRealm_feld_leben {
                 },
             },
             {
+                // DIE GESTE DES EMPFÄNGERS (Teilen in EINER Geste): ein Werk-Code im Chat — `empfangeWerk` spricht selbst.
+                example: "anazh-werk:<code>",
+                re: /^anazh-werk:\S*$/,
+                run: (m) => void this.empfangeWerk(m[0]),
+            },
+            {
                 // N5.7 (W-A5b) — der deliberate Siedlungs-Akt: „dorf" / „dorf 7" / „dorf 7 24".
                 // Async (Worker-Roundtrip) — spawnSettlement meldet ins Log, hier sofortiges Echo.
                 example: "dorf [seed] [häuser]",
@@ -2264,6 +2270,7 @@ AnazhRealm.SETZ_GRUND = Object.freeze({
     gestalt: "die Gestalt ließ sich nicht gießen",
     buehne: "die Welt hat noch keine Bühne",
     platz: "kein fahrbarer Grund in Reichweite, die Welt stellt den Wagen nicht hin",
+    vertrag: "der Stempel trägt einen Regler, den das Studio nicht ausweist",
     regler: "das Werk kennt diesen Regler nicht (das Log nennt ihn und die Regler seiner Art)",
     unbenannt: "ohne benannten Grund (das Log der Welt nennt ihn)",
 });

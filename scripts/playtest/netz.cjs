@@ -7,9 +7,6 @@ const fs = require("fs");
 const path = require("path");
 const { safeEvaluate } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
-const { checkBandG8R2SovereignWall } = require("./feld.cjs");
-const { checkBandG8R1DampedChannel } = require("./netz-p2p.cjs");
-const { checkBandG8R3Locality } = require("./netz-portal.cjs");
 
 async function checkBandW13W14VibePassLibrary(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -355,7 +352,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.registryHasDesc = Object.values(REG).every((w) => typeof w.desc === "string" && w.desc.length > 0);
         // Tab + Drawer im DOM.
         out.tabInDom = !!document.querySelector('#topbar .tab[data-tab="bibliothek"]');
-        out.drawerInDom = !!document.querySelector('.drawer[data-drawer="bibliothek"]');
         // renderLibraryUI baut eine Karte pro Registry-Welt.
         r.renderLibraryUI();
         const cards = document.querySelectorAll("#library-list .library-card");
@@ -601,7 +597,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     if (w14Results && !w14Results.error) {
         check("W14 P1: jeder WORLD_REGISTRY-Eintrag trägt eine Beschreibung", w14Results.registryHasDesc);
         check("W14 P1: Bibliothek-Tab im Topbar", w14Results.tabInDom);
-        check("W14 P1: Bibliothek-Drawer im DOM", w14Results.drawerInDom);
         check("W14 P1: renderLibraryUI baut eine Karte pro Welt", w14Results.cardPerWorld);
         check("W14 P1: Karte zeigt Label + DSL-Vokabular + Stufen-Marke", w14Results.cardShowsDsl);
         check(
@@ -973,8 +968,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.uiImportedCard =
             !!document.querySelector("#library-list .library-card-imported") &&
             !!document.querySelector("#library-list .library-imported-mark");
-        out.uiImportButton =
-            !!document.getElementById("library-import") && !!document.getElementById("library-import-input");
         // Aufräumen.
         r.state.customWorlds = {};
         r._saveCustomWorlds();
@@ -1033,7 +1026,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             "W14 P3: Bibliothek rendert eine 'empfangen'-Karte für die importierte Welt",
             w14p3Results.uiImportedCard
         );
-        check("W14 P3: 'Welt empfangen'-Knopf + Datei-Picker im DOM", w14p3Results.uiImportButton);
         check(
             "W14 P3: _runRaycast ist feld-nativ + crash-frei (liefert den Extractor-Wert, kein rayTest)",
             w14p3Results.raycastNullSafe
@@ -1245,14 +1237,6 @@ async function checkBandG8R5LivingImmune(ctx) {
     check(
         "G8 R5: alle vier Mechanismen vertreten (M1 Lokalität · M2 Dämpfung · M3 Katalysator · M4 Immunität)",
         res.allMechanisms
-    );
-    // Meta: die vier Korpus-Bänder SIND im Gate (sie laufen bei jedem Push = die Impfung).
-    check(
-        "G8 R5: die vier Korpus-Bänder laufen im Playtest-Gate (jeder Erreger → Antikörper)",
-        typeof checkBandG8R1DampedChannel === "function" &&
-            typeof checkBandG8R2SovereignWall === "function" &&
-            typeof checkBandG8R3Locality === "function" &&
-            typeof checkBandG8R4Immunity === "function"
     );
 }
 

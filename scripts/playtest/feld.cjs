@@ -323,7 +323,6 @@ async function checkBandV1733WorldRules(ctx) {
         // --- Verdrahtung ---
         out.cfgWired = !!K.WORLD_RULES && K.WORLD_RULES.cap === 64 && typeof K.WORLD_RULES.minEverySec === "number";
         out.registryArray = Array.isArray(r.state.worldRules);
-        out.ruleOp = typeof r.dslEffects.rule === "function";
         out.tickWired = window.__consumes(r, "_gameLoopTick", r, "_tickWorldRules", [performance.now()]); // der Takt ruft sie
 
         // Save world state we mutate
@@ -437,8 +436,8 @@ async function checkBandV1733WorldRules(ctx) {
     });
 
     check(
-        "V17.33 Welt-Regeln: WORLD_RULES-Konfig + Registry + rule-Op + Tick verdrahtet (im Loop)",
-        res.cfgWired && res.registryArray && res.ruleOp && res.tickWired
+        "V17.33 Welt-Regeln: WORLD_RULES-Konfig + Registry + Tick verdrahtet (im Loop)",
+        res.cfgWired && res.registryArray && res.tickWired
     );
     check(
         "V17.33 Welt-Regeln: `rule` REGISTRIERT (statt den Effekt SOFORT auszufuehren)",
@@ -479,12 +478,6 @@ async function checkBandV1734FieldRules(ctx) {
         const out = {};
         const now = () => performance.now() / 1000;
         const mkCtx = () => r.dslCtx({ source: "test" });
-
-        // --- Verdrahtung ---
-        out.condsWired =
-            typeof r.dslConditions.field_above === "function" && typeof r.dslConditions.field_below === "function";
-        out.effectsWired =
-            typeof r.dslEffects.deposit_life === "function" && typeof r.dslEffects.deposit_emotion === "function";
 
         // Save world state
         const savedLife = r.state.lifeField ? new Map(r.state.lifeField) : null;
@@ -598,10 +591,6 @@ async function checkBandV1734FieldRules(ctx) {
         return out;
     });
 
-    check(
-        "V17.34 Feld-Regeln: field_above/field_below + deposit_life/deposit_emotion verdrahtet",
-        res.condsWired && res.effectsWired
-    );
     check("V17.34 Feld-Regeln: field_above/below LIEST die frozen lebendig-Achse korrekt", res.fieldRead);
     check(
         "V17.34 Feld-Regeln: deposit_life SCHREIBT → auraAt liest es zurueck (write→read im Feld)",

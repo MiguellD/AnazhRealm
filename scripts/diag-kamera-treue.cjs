@@ -339,7 +339,7 @@ function buehne() {
             kiste.frustumCulled = false;
             gruppe.add(kiste);
         }
-        // DER SATZ (K71): ein Diät-Objekt, dessen Ausschnitt (drawRange) je Pass wechselt wie ein Chunk-Satz der Welt
+        // DER SATZ: ein Diät-Objekt, dessen Ausschnitt (drawRange) je Pass wechselt wie ein Chunk-Satz der Welt
         // (`_chunkSatzPass`: das Hauptbild zeichnet seinen Abschnitt, die Kaskade ihren). Der Ausschnitt ist ein Draw-Parameter
         // (r184 liest ihn bei jedem Draw) — die STAND-Wand nennt jeden Voll-Refresh, den er auslöst, beim Namen.
         const satz = new T.Mesh(new T.BoxGeometry(2, 1, 2), diaet(new T.MeshStandardNodeMaterial({ color: 0x6a8aaa })));
@@ -517,7 +517,7 @@ function buehne() {
                     const still = { zahl: {}, vollWer: {}, ohneMeldung: Object.keys(z.ohneM) };
                     for (const k in z.n) still.zahl[k] = z.n[k] / 4;
                     for (const k in z.grund) still.vollWer[k] = z.grund[k] / 4;
-                    // EINMAL JE ÄNDERUNG (K71): ein Attribut, das jeder Pass liest, hebt seine Version — je Bürger EIN Voll-Refresh, danach keiner.
+                    // EINMAL JE ÄNDERUNG: ein Attribut, das jeder Pass liest, hebt seine Version — je Bürger EIN Voll-Refresh, danach keiner.
                     kisten[2].name = "KISTE";
                     kisten[2].geometry.attributes.position.needsUpdate = true;
                     const erst = await gezaehlt(schuss);

@@ -93,7 +93,7 @@ function ladeWelt() {
     return sb;
 }
 
-// DIE KOPF-SCHALEN (K28): jede starre Kopf-Haut (Kopf und Kiefer — die Fell-Meshes an headGroup und jawGroup) trägt
+// DIE KOPF-SCHALEN: jede starre Kopf-Haut (Kopf und Kiefer — die Fell-Meshes an headGroup und jawGroup) trägt
 // Schalen im EINEN Stapel: Ecken mit Gewicht 1 an ihrem Gelenk, auf kopfSchalen − 1 Höhen (t = s / kopfSchalen), im Raster
 // des Rumpfs (aSchale.z wie der Leib) und deckend (aSchale.y ≥ die Wolle-Schwelle); im ganzen Stapel fehlt die äußerste Höhe
 // (t = 1 trägt keine Locke); kahl (am Auge, an Nase und Lefze) höchstens KOPF_KAHL_MAX der Ecken. Rot vor K28 (der Kopf glatt, dann 19 Karten): `wolf Kopf-Fell: headGroup trägt keine Schale`.

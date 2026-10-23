@@ -167,7 +167,6 @@ async function checkBandV1729CreatureTrickle(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const cfg = r.constructor.LIFE_FIELD;
-        out.hasConsts = typeof cfg.trickle === "number" && typeof cfg.trickleEverySec === "number";
         if (r.state.lifeField) r.state.lifeField.clear();
         // (1) eine TENDENDE Kreatur traeufelt Leben in ihre Zelle
         const X = 23456,
@@ -194,7 +193,6 @@ async function checkBandV1729CreatureTrickle(ctx) {
         if (r.state.lifeField) r.state.lifeField.clear(); // sauberes Ende
         return out;
     });
-    check("V17.29 Trickle: LIFE_FIELD.trickle/trickleEverySec verdrahtet", res.hasConsts);
     check("V17.29 Trickle: eine tendende Kreatur traeufelt Leben in ihre Zelle (sustainiert)", res.tendingDeposits);
     check("V17.29 Trickle: rate-limitiert (kein Deposit-Sturm pro Frame)", res.rateLimited);
     check("V17.29 Trickle: nach dem Intervall traeufelt sie wieder (lebendiger Pfad)", res.tickedAgain);
@@ -209,12 +207,6 @@ async function checkBandV1732SpatialEmotion(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
-        const K = r.constructor;
-        out.hasConst =
-            !!K.EMOTION_FIELD &&
-            Array.isArray(K.EMOTION_AXES) &&
-            K.EMOTION_AXES.length === 6 &&
-            typeof K.EMOTION_FIELD.decayPerSec === "number";
         if (r.state.emotionField) r.state.emotionField.clear();
         const e = r.state.player.emotions;
         const saved = Object.assign({}, e);
@@ -262,7 +254,6 @@ async function checkBandV1732SpatialEmotion(ctx) {
         for (const k of Object.keys(e)) e[k] = saved[k] || 0;
         return out;
     });
-    check("V17.32 raeumliche Emotion: EMOTION_FIELD + EMOTION_AXES verdrahtet", res.hasConst);
     check(
         "V17.32 raeumliche Emotion: leeres Overlay → auraAt.emotion == globale Stimmung (backward-compat)",
         res.emptyIsGlobal
@@ -1106,7 +1097,7 @@ async function checkBandWelle6APolish(ctx) {
         let connMarkerCount = 0;
         let lineColor = null;
         built.traverse((node) => {
-            // W-G (V18.177): die ACHSEN-GEISTER (isJointAxis — Linien +
+            // W-G (V9.56-i): die ACHSEN-GEISTER (isJointAxis — Linien +
             // Kegel-Spitzen) sind eine NEUE Viewer-Schicht; der Verbindungs-Zähler
             // klammert sie aus (der Test prüft die Verbindung, nicht die Achse).
             if (node.userData && node.userData.isConnectionLine && !node.userData.isJointAxis) {
@@ -1281,11 +1272,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         out.baumEicheIsBuiltIn = !!(__heBp && __heBp.builtIn === true);
         out.eichenStammHolz = !!(__heBp && __heBp.parts.some((p) => p.material === "holz"));
         out.eichenKroneLaub = !!(__heBp && __heBp.parts.some((p) => p.material === "laub"));
-        out.hasLaubMaterial = !!(
-            r.state.materials &&
-            r.state.materials.laub &&
-            r.state.materials.laub.builtIn === true
-        );
 
         // Worldgen-Bäume leben in state.architectures (Präfix baum_, stamm_ oder prozedural grown_) — gezählt, wenn das Spiel
         // sagt, dass der Wald der Mesh-Zone steht (Karte WL): keine Lücke „pflanzung"/„bauten" des Weltbilds (`_weltbildLuecken`,
@@ -1551,7 +1537,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         check("Welle 6.G P1.5: baum_eiche ist builtIn", wave6gResults.baumEicheIsBuiltIn);
         check("Welle 6.G P1.5: baum_eiche Stamm = cylinder/holz", wave6gResults.eichenStammHolz);
         check("Welle 6.G P1.5: baum_eiche Krone = sphere/laub", wave6gResults.eichenKroneLaub);
-        check("Welle 6.G P1.5: Material 'laub' existiert als Built-in", wave6gResults.hasLaubMaterial);
         check(
             "Welle 6.G P1.5: Worldgen-Bäume sind in state.architectures",
             wave6gResults.worldgenTreesInArchitectures > 0,

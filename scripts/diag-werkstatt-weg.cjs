@@ -214,7 +214,7 @@ function werkVerdict(m) {
     else if (m.phantomKey !== m.werkKey) out.push(`das Phantom zeigt ${m.phantomKey}, es steht ${m.werkKey}`);
     if (!gleich(m.phantomDreh, m.werkDreh))
         out.push(`das Phantom blickt ${m.phantomDreh} rad, das Werk ${m.werkDreh} rad`);
-    // Das Werk steht nie im Spieler (die EINE Spieler-Klemme, Gegenprüfung 08.10. „das Phantom umhüllt die Kamera"); wie weit
+    // Das Werk steht nie im Spieler; wie weit
     // das Werk reicht, misst die Linse an der Studio-Gestalt des Phantoms in Weltgröße (jeder Vertex, Integration V18.536 —
     // die Klemme maß die Spender-Teile, 3,01 m).
     if (!(m.mindest > 0)) out.push("kein Spieler-Abstand des Werks (Vorbedingung)");
@@ -222,7 +222,7 @@ function werkVerdict(m) {
         out.push(
             `das Phantom steht ${m.abstand} m vor dem Spieler, das Werk reicht ${m.reicht} m (Soll ≥ ${m.mindest} m)`
         );
-    // Die Hülle des gesetzten Werks liegt in der Reichweite, die die Klemme misst (Integration V18.536: die Stamm-Hülle trägt
+    // Die Hülle des gesetzten Werks liegt in der Reichweite, die die Klemme misst (die Stamm-Hülle trägt
     // seit v1-ankunft die Welt-Skala des Studio-Baums).
     if (Number.isFinite(m.huelleReicht) && m.reicht > 0 && m.huelleReicht > m.reicht + 0.01)
         out.push(
@@ -556,7 +556,7 @@ async function probe(argW) {
             }
             m.phantomKey = bm.phantomMesh ? keyVon(bm.phantomMesh.userData.foundrySrcGroup) : null;
             m.phantomDreh = bm.phantomMesh ? +bm.phantomMesh.rotation.y.toFixed(6) : null;
-            // EIN Same je Werk: Vorschau und Hand ziehen `_werkSame`; der Ghost baut das Werk des Phantoms an SEINEM Ort (K20).
+            // EIN Same je Werk: Vorschau und Hand ziehen `_werkSame`; der Ghost baut das Werk des Phantoms an SEINEM Ort.
             const Q = { x: frei.x + 3, y: frei.y, z: frei.z + 3 };
             const pw = r._phantomWerk;
             let woG = null;
