@@ -1,30 +1,7 @@
-// diag-settlement.cjs — DER SETTLEMENT-KANAL N5.7 (Katalysator-Bogen W-A5b).
-// Zwei Teile:
-//   TEIL N (Node, direkt): fachwerk-core exportSettlement(dp) ist DETERMINISTISCH
-//     (derselbe dp ⇒ byte-derselbe Export; anderer Seed ⇒ anderer Export), die
-//     Slots sind sauber (bekannte Kulturen, endliche Anker, keine ±9999-Parkplätze),
-//     und der Export ist EINGEFROREN (sha256-Golden je dp-Fixture in
-//     spec/asset-contract/v6/golden/siedlung.json — Taille-Disziplin: gemintet NUR
-//     wenn die Datei fehlt; ein Kern-Edit, der das Layout verschiebt, wird rot).
-//   TEIL B (Browser, foundry-ON, Null-Renderer): der Kanal lebt END-TO-END —
-//     _foundryRequestSettlement holt den Export durch den EINEN Worker (die Brücke
-//     dispatcht generisch über die Zweit-Kern-Schleife, M8), _spawnSettlementFromExport
-//     platziert N haus_<kultur>-Einträge POSITIONS-DETERMINISTISCH am Anker (zweiter
-//     Anker ⇒ identische Offsets), die Wasser-Wand + die fail-closed-Slot-Regel greifen
-//     (unbekannte Kultur wird übersprungen), und der Chat-Konsument "dorf" existiert.
-//   TEIL C (Nachlese-Welle — WORLDGEN-AUTO-DÖRFER, derselbe Browser): der
-//     "settlement"-Dispatch-Kanal hat seinen Worldgen-Konsumenten — Zell-Wahrheit
-//     deterministisch (2 Läufe byte-gleich, zell-sensitiv, Γ5 ":dorf"-Stream), die
-//     Site-Wände greifen (Spawn-Klar-Wand am Ursprung), die erzwungene Dorf-Zelle
-//     (Hook __anazhAutoSettlement, gesichert+wiederhergestellt) materialisiert
-//     BUDGETIERT über Ticks (perTick, _frameOverBudget pausiert), IDEMPOTENT
-//     (worldMeta.settlementCells markiert; zweiter Durchlauf spawnt 0 neue) und
-//     durch DIE EINE Slot-Quelle _spawnSettlementSlot; headless-default RUHT der
-//     Auto-Zug (Null-Renderer ohne Hook → kein Pending, kein Dorf).
-//   --selftest: ein in-memory korrumpiertes Golden MUSS rot erkannt werden + ein
-//     Slot mit unbekannter Kultur MUSS fallen + die Auto-Dorf-Struktur-Gesetze
-//     MÜSSEN auf injizierte Verletzungen feuern (die Linse ist nicht vakuös).
-//   node scripts/diag-settlement.cjs [--selftest]
+// diag-settlement.cjs (gate:settlement) — Teil Z (`--nur-z` allein): das Rang-Gesetz (`rangZensus`) · N: der Export
+// deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
+// Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände (K10).
+// --selftest: jede Wand feuert an injizierten Brüchen.
 const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
@@ -39,6 +16,32 @@ const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 // Kanonischer Fingerabdruck eines Exports: das volle JSON (Slots + benannte Schichten).
 function fingerprint(plan) {
     return sha(JSON.stringify(plan));
+}
+
+// ===== TEIL Z (siedlung.K2): je Saat binnen 2 km eines zufälligen Spawns (±8 km) eine Stadt ≥ stadt, deren Export die Mauer trägt
+function rangZensus(FC, o = {}) {
+    const [S, N, Z] = [o.S || FC.SIEDLUNG, o.saaten || 8, { saaten: [], mitStadt: 0 }];
+    let lcg = 7;
+    const zuf = () => ((lcg = (Math.imul(lcg, 1664525) + 1013904223) >>> 0) / 2 ** 32 - 0.5) * 16000;
+    const fnv = (t) => [...t].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261);
+    for (let k = 0; k < N; k++) {
+        const [M, st, sx, sz] = [new Map(), [], zuf(), zuf()];
+        for (let i = -9; i <= 9; i++)
+            for (let j = -9; j <= 9; j++) {
+                const [cx, cz] = [Math.floor(sx / S.cellM) + i, Math.floor(sz / S.cellM) + j];
+                const q = S.rang.length && FC.siedlungsZelle(S, cx, cz, (u, v) => fnv(`saat-${k}:dorf:${u},${v}`), M);
+                if (q && q.stufe && Math.hypot(q.x - sx, q.z - sz) <= 2000)
+                    st.push([Math.hypot(q.x - sx, q.z - sz), q]);
+            }
+        let w = null;
+        for (const [d, q] of st.sort((u, v) => u[0] - v[0])) {
+            const x = (o.ex || FC.exportSettlement)({ seed: q.seed, nH: q.nH, epoche: FC.siedlungsEpoche(q.seed) });
+            if (/stadt|metropole/.test(x.groesse) && x.mauer && x.mauer.segs.length && (w = [d, x])) break;
+        }
+        Z.mitStadt += !!w;
+        Z.saaten.push(`saat-${k}: ${w ? `${w[1].groesse} ${w[1].slots.length} Slots ${Math.round(w[0])} m` : "keine"}`);
+    }
+    return Object.assign(Z, { ok: Z.mitStadt >= (N * 6) / 8 });
 }
 
 // ===== DAS URTEIL DES ORTS (Teil O, K10 — rein, mit Selbsttest) =====
@@ -643,7 +646,9 @@ function feldWurfImOrt(anker, defekt) {
         }
         // der Wurf mit den Optionen des Felds (samt seiner Marke), das Werk präzise mit der Marke werk (der Satz, der Bau-Modus)
         const wirf = (t, x, z, wo, werk) => {
-            const o = werk ? { precise: true, seed: 4711, werk: true } : Object.assign({}, feldOpts || {}, { seed: 4711 });
+            const o = werk
+                ? { precise: true, seed: 4711, werk: true }
+                : Object.assign({}, feldOpts || {}, { seed: 4711 });
             const e = r.spawnArchitecture(t, { x, y: H(x, z) + 0.5, z }, o);
             if (!e && werk) res.werk.weicht.push(`${t} (kein Werk @${wo})`);
             else if (!e) res.fehl.push(t + "@" + wo);
@@ -706,83 +711,6 @@ const FIXTURES = [
     global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
     require(path.join(root, "fachwerk-core.js"));
     const FC = globalThis.__fachwerkCore;
-
-    // ===== DIE ALTWELTEN (K10 × Entscheid §5.4) — Mess-Modus, kein Tor: `--altwelt <save.json> …` lädt jeden Save durch den
-    // echten Lade-Pfad (`loadState`: Boden-Umzug, die alten Orte ziehen auf ihren Erdbau) und zählt die Bauten, die kein Ort
-    // trägt (kein Grundriss, keine Dorf-Ausstattung), deren Boden der Erdbau verschiebt (|Δh| > 5 cm gegen dieselbe Welt ohne
-    // Erdbau) bzw. die AUF einer Erdbau-Fläche stehen — je Art, Natur (Baum, Busch, Fels, Kristall) getrennt.
-    const iAlt = process.argv.indexOf("--altwelt");
-    if (iAlt >= 0) {
-        const dateien = process.argv.slice(iAlt + 1).filter((a) => !a.startsWith("--"));
-        const PORT = Number(process.env.SETTLEMENT_PORT || 4436);
-        const server = statikServer();
-        await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-        const browser = await starteBrowser({ art: "null", frist: 240000 });
-        for (const datei of dateien) {
-            const save = JSON.parse(fs.readFileSync(datei, "utf8"));
-            const page = await browser.newPage();
-            await nullRenderer(page, { foundry: true });
-            await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
-            const z = await page.evaluate(async (s) => {
-                await window.__weltDa((r0) => { const f0 = r0._ensureAssetFoundry(); return f0 && f0.ready && f0.recipes && r0.state.blueprints && r0.state.blueprints.haus_alemannisch; });
-                const r = window.anazhRealm;
-                const out = {
-                    arten: {},
-                    natur: 0,
-                    gebaut: 0,
-                    auf: 0,
-                    verschoben: 0,
-                    schwebend: 0,
-                    dhMax: 0,
-                    nebenMax: 0,
-                };
-                try {
-                    r.loadState(s);
-                    const G = globalThis.__gelaendeCore;
-                    const L = r._gelaende();
-                    const L0 = {
-                        seed: L.seed,
-                        noise: L.noise,
-                        baseHeight: L.baseHeight,
-                        waterLevel: L.waterLevel,
-                        erbgut: L.erbgut,
-                        regionSize: L.regionSize,
-                        erdbau: null,
-                    };
-                    out.erdbauSplats = L.erdbau ? L.erdbau.n : 0;
-                    out.orte = r.state.architectures.filter((e) => e.fundament).length;
-                    for (const e of r.state.architectures) {
-                        if (!e || !e.position || e.fundament || /_dorf$/.test(e.type)) continue;
-                        const dh = Math.abs(
-                            G.hoehe(L, e.position.x, e.position.z, true) - G.hoehe(L0, e.position.x, e.position.z, true)
-                        );
-                        const auf = !r._ortFrei(e.position.x, e.position.z, 0.01);
-                        if (!(dh > 0.05) && !auf) continue;
-                        const natur = /^(baum_|grown_|fels|kristall)/.test(e.type);
-                        out[natur ? "natur" : "gebaut"]++;
-                        if (auf) out.auf++;
-                        if (dh > 0.05) {
-                            out.verschoben++;
-                            // folgt der Bau seinem Boden? (Fuß-Höhe 0,5 über dem Grund, wie jeder Bau gesetzt wird)
-                            const neben = Math.abs(e.position.y - 0.5 - G.hoehe(L, e.position.x, e.position.z, true));
-                            out.nebenMax = Math.max(out.nebenMax, Math.round(neben * 100) / 100);
-                            if (neben > 0.05) out.schwebend++;
-                        }
-                        out.dhMax = Math.max(out.dhMax, Math.round(dh * 100) / 100);
-                        out.arten[e.type] = (out.arten[e.type] || 0) + 1;
-                    }
-                } catch (err) {
-                    out.err = (err && err.stack) || String(err);
-                }
-                return out;
-            }, save);
-            console.log(`ALTWELT ${datei}: ` + JSON.stringify(z));
-            await page.close();
-        }
-        await browser.close();
-        server.close();
-        process.exit(0);
-    }
 
     // ===== SELBST-TEST =====
     if (process.argv.includes("--selftest")) {
@@ -972,6 +900,14 @@ const FIXTURES = [
                 JSON.stringify({ br, freiN, yMit, yOhne, deck: mit.roads[0].ys[10] })
             );
         }
+        // V-Z (siedlung.K2): ohne Rang keine Stadt, ein Export ohne Mauer zählt nie
+        const zs = [
+            { S: { ...FC.SIEDLUNG, rang: [] } },
+            { ex: (dp) => ({ ...FC.exportSettlement(dp), mauer: null }) },
+            {},
+        ];
+        const zn = zs.map((o) => rangZensus(FC, { saaten: 2, ...o }).mitStadt) + "";
+        check("Selbst-Test Z: ohne Rang und ohne Mauer 0 Städte, die echte Quelle 2/2", zn === "0,0,2", zn);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -979,6 +915,16 @@ const FIXTURES = [
         console.log("\n✅ SELBST-TEST GRÜN.");
         process.exit(0);
     }
+
+    console.log("=== TEIL Z: DAS RANG-GESETZ (siedlung.K2) ===");
+    const Z = rangZensus(FC);
+    const [mod, alt] = [{ seed: 5, epoche: "moderne" }, { seed: 5 }].map(FC.exportSettlement);
+    check(`Z1 RANG: binnen 2 km eine ummauerte Stadt in ${Z.mitStadt}/8 Saaten (Soll ≥ 6)`, Z.ok, Z.saaten.join(" · "));
+    check(
+        `Z2 EPOCHE → GRÖSSE: „moderne" ohne Zahl ${mod.groesse}, ohne Epoche ${alt.slots.length} Slots (18 Häuser)`,
+        mod.groesse === "stadt" && alt.slots.length === 21
+    );
+    if (process.argv.includes("--nur-z")) process.exit(errs.length ? 1 : 0);
 
     console.log("=== N5.7 SETTLEMENT — TEIL N: exportSettlement (Node, deterministisch + eingefroren) ===");
     const plans = {};
@@ -1520,6 +1466,7 @@ const FIXTURES = [
             const n0 = r.state.architectures.length;
             const wk = r._wegeKarteEnsure();
             const b0 = wk.siedlungen.length;
+            const m0 = (r.state.stlMauer || {}).top | 0;
             const zaeune = ruft(r, "_spawnSettlementErlebnis", r, "_stlZaunAddStrip", [p, o1, { key }]);
             const neu = r.state.architectures.slice(n0);
             neu.forEach((e) => r.removeArchitecture(e));
@@ -1531,6 +1478,7 @@ const FIXTURES = [
                 zaeune,
                 aecker,
                 plan: plan_,
+                mauer: ((r.state.stlMauer || {}).top | 0) - m0,
             };
         };
         // Die Stände stehen nur auf einem Markt-Platz; der Plan des Samens 7 hat keinen — zwei Stände an Hof-Baum-Plätzen des Plans.
@@ -1544,6 +1492,15 @@ const FIXTURES = [
         res.erlebnisLeer = v2
             ? erlebnis(Object.assign({}, v2, { trees: [], staende: [], fences: [], felder: [] }), "__probe2")
             : null;
+        // DIE STADTMAUER (siedlung.K2): der Erlebnis-Hebel legt die Mauer des Exports der Stadt (Same 9, 36 Häuser) in den
+        // Mauer-Pool — Wand und Krone je Segment, Turm und Dach je Turm; er wirft, die Natur weicht ihrer Linie
+        const vS = await r._ortWahl(await r._foundryRequestSettlement({ seed: 9, nH: 36 }), o1);
+        const g = vS.mauer.segs[0];
+        res.stadt = Object.assign(erlebnis(vS, "__mauer"), {
+            soll: 2 * (vS.mauer.segs.length + vS.mauer.towers.length),
+            wirft: r.state.stlMauer.mesh.castShadow,
+            natur: r._aufWeg(o1.x + (g.x0 + g.x1) / 2, o1.z + (g.z0 + g.z1) / 2, 0.5),
+        });
         // DORF-IN-TERRAIN — der Footprint reist als entry.fundament (der Grundriss der Wände und des Erdbaus eines Altstands);
         // das Podest fiel mit dem Erdbau (K10): keine Fundament-Box, kein Sockel-Pool.
         res.fundamentTravels = e1.length > 0 && e1.every((e) => e.fundament && Number.isFinite(e.fundament.ex));
@@ -1583,7 +1540,7 @@ const FIXTURES = [
                     if (key === "d:" + (same >>> 0) || key.indexOf("d:" + (same >>> 0) + "@") === 0) cell = sc[key];
             }
             res.villageNH = cell ? cell.nH : null;
-            res.villageNHSoll = SG ? SG.nHMin + ((same >>> 24) % SG.nHSpan) : null;
+            res.villageNHSoll = SG ? r.constructor.Gesetz("fachwerk:siedlungsGroesse")(SG, same, 0) : null;
         } catch (e) {
             res.villageNHErr = (e && e.message) || String(e);
         }
@@ -1894,7 +1851,18 @@ const FIXTURES = [
                     return lift.call(this, sl, o, ...a);
                 };
                 const zug = r._dorfZug;
-                if (alt) r._dorfZug = (p, o, k, g) => zug.call(r, p, o, k, (function* () { for (const v of g) if (v !== true) yield v; yield true; })());
+                if (alt)
+                    r._dorfZug = (p, o, k, g) =>
+                        zug.call(
+                            r,
+                            p,
+                            o,
+                            k,
+                            (function* () {
+                                for (const v of g) if (v !== true) yield v;
+                                yield true;
+                            })()
+                        );
                 const stell = (m) => (pm.position.set(cand.x + m, pm.position.y, cand.z), pm.position);
                 if (vorlauf) r._tickAutoSettlement(stell(A.nearM + 80));
                 if (vorlauf) for (const v of r._dorfVorraete.values()) await v.fertig;
@@ -1944,15 +1912,24 @@ const FIXTURES = [
                     Object.assign(r, { _dorfVorraete: new Map(), _ortPlaene: new Map(), _ortWahlFlug: new Map() });
                     pm.position.set(i3.x + d, pm.position.y, i3.z);
                     const wahl = r._ortWahl;
-                    if (stoer) r._ortWahl = (p, o, ...a) => wahl.call(r, p, Object.assign(o, { x: o.x + d / 1e3 }), ...a);
+                    if (stoer)
+                        r._ortWahl = (p, o, ...a) => wahl.call(r, p, Object.assign(o, { x: o.x + d / 1e3 }), ...a);
                     const b = await r._dorfBereiten(key, i3).finally(() => delete r._ortWahl);
                     const v2 = r._ortPlaene.get(r.constructor._ortSchluessel(b.plan, b.anker));
-                    const s = [b.anker.x, b.anker.z, v2.ort.x, v2.ort.z, ...v2.slots.flatMap((q) => [q.x, q.z, q.y, q.phi])];
+                    const s = [
+                        b.anker.x,
+                        b.anker.z,
+                        v2.ort.x,
+                        v2.ort.z,
+                        ...v2.slots.flatMap((q) => [q.x, q.z, q.y, q.phi]),
+                    ];
                     return { s, erdbau: fnv(JSON.stringify(v2.erdbau)), hash: fnv(JSON.stringify(v2)) };
                 };
                 const erste = (a, b) => {
                     const i = a.s.findIndex((v, j) => v !== b.s[j]);
-                    const name = ["anker.x", "anker.z", "ort.x", "ort.z"][i] || `slot ${(i - 4) >> 2}.${"xzy"[(i - 4) & 3] || "phi"}`;
+                    const name =
+                        ["anker.x", "anker.z", "ort.x", "ort.z"][i] ||
+                        `slot ${(i - 4) >> 2}.${"xzy"[(i - 4) & 3] || "phi"}`;
                     return i >= 0 ? `${name} ${a.s[i]} ≠ ${b.s[i]}` : a.erdbau !== b.erdbau ? "erdbau" : null;
                 };
                 const ortPaar = async (stoer) => {
@@ -1987,7 +1964,7 @@ const FIXTURES = [
                     r._spawnSettlementSlot = function (...a) {
                         im++;
                         try {
-                            return (s.haeuser = (s.haeuser || 0) + 1), slot.apply(this, a);
+                            return ((s.haeuser = (s.haeuser || 0) + 1), slot.apply(this, a));
                         } finally {
                             im--;
                         }
@@ -1995,14 +1972,19 @@ const FIXTURES = [
                     const takte = [];
                     r._wegeRaeumen(); // die Flächen der Läufe davor
                     try {
-                        for (let t = 0, weiter = window.__deckel("C-K5d", 400, false); t === 0 || r._autoSettlementQueue; t++) {
+                        for (
+                            let t = 0, weiter = window.__deckel("C-K5d", 400, false);
+                            t === 0 || r._autoSettlementQueue;
+                            t++
+                        ) {
                             weiter();
                             s = {};
                             const t0 = performance.now();
                             if (t) r._tickAutoSettlement(pw);
                             else r._autoSettlementSpawnCell(kx, kz, i3);
                             for (let m = 0; m < 3; m++) await Promise.resolve();
-                            if (voll && !t) for (pm.position.x += 2000; r._autoSettlementQueue; ) r._tickAutoSettlement(pw);
+                            if (voll && !t)
+                                for (pm.position.x += 2000; r._autoSettlementQueue;) r._tickAutoSettlement(pw);
                             r._wegeRaeumen();
                             takte.push({ ms: +(performance.now() - t0).toFixed(1), s });
                             // steht der Spieler im Grund jedes offenen Slots (`_dorfZugSchritt`), geht er
@@ -2010,15 +1992,29 @@ const FIXTURES = [
                             if (t && q && !q.gang && !s.haeuser) pm.position.x += 2000;
                         }
                     } finally {
-                        for (const n of ["_erdbauSetzen", "_erdbauAmWasser", "_stlWegeBuild", "_dorfLaterneSetzen", "spawnArchitecture", "_naturSetzen", "_spawnSettlementSlot"])
+                        for (const n of [
+                            "_erdbauSetzen",
+                            "_erdbauAmWasser",
+                            "_stlWegeBuild",
+                            "_dorfLaterneSetzen",
+                            "spawnArchitecture",
+                            "_naturSetzen",
+                            "_spawnSettlementSlot",
+                        ])
                             delete r[n];
                     }
-                    const zeile = (t, i) => `Takt ${i} ${t.ms} ms: ${Object.entries(t.s).map(([k, n]) => `${k} ${n}`).join(" · ")}`;
+                    const zeile = (t, i) =>
+                        `Takt ${i} ${t.ms} ms: ${Object.entries(t.s)
+                            .map(([k, n]) => `${k} ${n}`)
+                            .join(" · ")}`;
                     const lang = takte.map((_t, i) => i).sort((a, b) => takte[b].ms - takte[a].ms);
                     return {
                         takte: takte.length,
                         haus: takte.findIndex((t) => t.s.haeuser),
-                        mehr: takte.map(zeile).filter((_z, i) => Object.keys(takte[i].s).length > 1).slice(0, 3),
+                        mehr: takte
+                            .map(zeile)
+                            .filter((_z, i) => Object.keys(takte[i].s).length > 1)
+                            .slice(0, 3),
                         max: lang.slice(0, 4).map((i) => zeile(takte[i], i)),
                         kopf: takte.slice(0, 6).map(zeile),
                     };
@@ -2029,8 +2025,7 @@ const FIXTURES = [
                 res.c.k5.err = String(e5);
             } finally {
                 FC.ortPlan = ortPlan0;
-                for (const f of ["_autoSettlementCellInfo", "_spawnSettlementSlot", "_dorfZug"])
-                    delete r[f];
+                for (const f of ["_autoSettlementCellInfo", "_spawnSettlementSlot", "_dorfZug"]) delete r[f];
                 [r._autoSettlementRejected, r._stlWegePending, r._autoSettlementQueue] = alt;
                 Object.assign(r, { _autoSettlementPendingKey: null, _dorfVorraete: new Map() });
                 wm.settlementCells[key] = zelle;
@@ -2650,7 +2645,10 @@ const FIXTURES = [
     ).messorte.find((o) => o.id === "dorf").spieler;
     const O = await messeOrt("akt", null);
     const OA = await messeOrt("auto", MESSORT_DORF);
-    const [K5b, K5bS] = [await page.evaluate(vorratAmDorf, MESSORT_DORF, false), await page.evaluate(vorratAmDorf, MESSORT_DORF, true)];
+    const [K5b, K5bS] = [
+        await page.evaluate(vorratAmDorf, MESSORT_DORF, false),
+        await page.evaluate(vorratAmDorf, MESSORT_DORF, true),
+    ];
     // die Würfe des Felds am Auto-Dorf (`feldWurfImOrt`) und ihr Selbst-Schein
     const FW = OA.outO.anker ? await page.evaluate(feldWurfImOrt, OA.outO.anker, false) : { err: "kein Ort" };
     const FWd = OA.outO.anker ? await page.evaluate(feldWurfImOrt, OA.outO.anker, "bau") : { err: "kein Ort" };
@@ -2710,6 +2708,12 @@ const FIXTURES = [
             el.zaeune === 0 &&
             el.aecker === false,
         `mit ${JSON.stringify(out.erlebnis)} · ohne ${JSON.stringify(out.erlebnisLeer)} · Plan ${JSON.stringify(out.planKern)}`
+    );
+    const sm = out.stadt;
+    check(
+        `B: DIE STADTMAUER (siedlung.K2) — ${sm.mauer}/${sm.soll} Streifen, wirft, die Natur weicht; Dorf ${eh.mauer}`,
+        sm.mauer >= 0.8 * sm.soll && sm.wirft && sm.natur && !eh.mauer,
+        JSON.stringify(sm)
     );
     check("B: fail-closed — unbekannte Kultur faellt (0 platziert, 1 uebersprungen)", out.failClosed === true);
     check(
@@ -2941,40 +2945,64 @@ const FIXTURES = [
     // über dem Budget liegt ein Takt des Zugs je drosselTakte Bilder (Stadt GTX 41 fps): 0,5 s tragen `soll` Takte
     const soll = Math.floor((0.5 * 41) / k5.drossel);
     const je = (n, f) => n.every((k) => k5[k] && f(k5[k]));
-    check(`C-K5: DAS NÄCHSTE HAUS ZUERST — nH 12 und 300 heben es nach dem Vorlauf ≤ 0,5 s (${soll} Takte) nach dem Erwachen`, je(["vorlauf12", "vorlauf300"], (w) => w.haus >= 0 && w.haus <= soll), z5);
-    check("C-K5 Selbsttest: der Export nach dem Erwachen (Teleport) und die Schichten vor ihm (alt) fallen ROT", je(["teleport300", "alt300"], (w) => w.haus > soll), z5);
+    check(
+        `C-K5: DAS NÄCHSTE HAUS ZUERST — nH 12 und 300 heben es nach dem Vorlauf ≤ 0,5 s (${soll} Takte) nach dem Erwachen`,
+        je(["vorlauf12", "vorlauf300"], (w) => w.haus >= 0 && w.haus <= soll),
+        z5
+    );
+    check(
+        "C-K5 Selbsttest: der Export nach dem Erwachen (Teleport) und die Schichten vor ihm (alt) fallen ROT",
+        je(["teleport300", "alt300"], (w) => w.haus > soll),
+        z5
+    );
     check(
         "C-K5 OHNE VORLAUF (Teleport, Start-Dorf): Pläne (Haupt-Thread + Ort-Faden) bis zum ersten Haus nH 300 / nH 12 ≤ 1,2",
         je(["teleport12", "teleport300"], () => k5.teleport300.plaene / k5.teleport12.plaene <= 1.2),
         z5
     );
-    check("C-K5: DER RANG — das erste gehobene Haus ist das nächste zum Spieler", je(["vorlauf12", "vorlauf300"], (w) => w.ersterM <= w.naechstM), z5);
+    check(
+        "C-K5: DER RANG — das erste gehobene Haus ist das nächste zum Spieler",
+        je(["vorlauf12", "vorlauf300"], (w) => w.ersterM <= w.naechstM),
+        z5
+    );
     const [ort, ortS, wach, voll] = [k5.ort || {}, k5.ortStoer || {}, k5.wach || {}, k5.wachVoll || {}];
     check(
         "C-K5c: DER ORT IST EINE FUNKTION — zwei Vorläufe nH 300, der Spieler 3,7 m versetzt: der Plan v2 bit-gleich",
         !!ort.hash && ort.hash[0] === ort.hash[1] && !ort.erste,
         ort.erste ? `die erste Abweichung: ${ort.erste}` : JSON.stringify(ort.hash || k5.err)
     );
-    check("C-K5c Selbsttest: ein Wunsch, der mit dem Spieler rückt, wird ROT beim Namen", !!ortS.erste, JSON.stringify(ortS));
+    check(
+        "C-K5c Selbsttest: ein Wunsch, der mit dem Spieler rückt, wird ROT beim Namen",
+        !!ortS.erste,
+        JSON.stringify(ortS)
+    );
     console.log("  C-K5d DAS ERWACHEN " + JSON.stringify(wach));
     check(
         "C-K5d: DAS ERWACHEN IN RATEN — vom Erwachen bis zum letzten Haus trägt jeder Takt höchstens EINEN Schritt des Dorfs",
         wach.takte > 1 && !!wach.mehr && !wach.mehr.length,
-        (wach.mehr || [k5.err]).join(" | ") || `${wach.takte} Takte, das erste Haus im Takt ${wach.haus}, der längste ${wach.max}`
+        (wach.mehr || [k5.err]).join(" | ") ||
+            `${wach.takte} Takte, das erste Haus im Takt ${wach.haus}, der längste ${wach.max}`
     );
     check(
         "C-K5d Selbsttest: ein synchroner Voll-Bau im Takt des Erwachens wird ROT beim Namen",
         !!voll.mehr && voll.mehr.length > 0,
         (voll.mehr || []).join(" | ")
     );
-    const mehrfach = (e) => Object.entries(e.exporte).filter(([, x]) => x > 1).map(([k, x]) => `Zelle ${k}: ${x} Exporte`);
+    const mehrfach = (e) =>
+        Object.entries(e.exporte)
+            .filter(([, x]) => x > 1)
+            .map(([k, x]) => `Zelle ${k}: ${x} Exporte`);
     const ruht = (e) => !e.nachZug && !e.offen;
     check(
         "C-K5b: EIN VORRAT JE ZELLE — am Mess-Ort dorf bereiten sich zwei Zellen vor, jede mit höchstens EINEM Export",
         Object.keys(K5b.exporte).length >= 2 && !mehrfach(K5b).length,
         JSON.stringify(K5b)
     );
-    check("C-K5b: NACH DEM ZUG STEHT DIE WELT — 150 Gänge ohne Export, kein Foundry-Auftrag offen", ruht(K5b), JSON.stringify(K5b));
+    check(
+        "C-K5b: NACH DEM ZUG STEHT DIE WELT — 150 Gänge ohne Export, kein Foundry-Auftrag offen",
+        ruht(K5b),
+        JSON.stringify(K5b)
+    );
     check(
         "C-K5b Selbsttest: EIN Vorrat zur Zeit (das alte Überspringen) wird ROT beim Namen",
         mehrfach(K5bS).length > 0 && !ruht(K5bS),
