@@ -1,9 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-raum-tags.cjs — DAS GEDÄCHTNIS DER RAUM-TAGS SIEHT JEDEN SCHREIBER (0710-11). Befund (OMEN 0710-10, Werkbank an der
-// Mess-Wiese): `tickPlayerBoosts` rechnete je Sekunde `computeSpatialTags` für jeden nahen Eintrag neu — 10 Rufe für 5
-// Baupläne (Haselbusch 112 Teile 1,1 ms, Bäume 80 Teile 0,6 ms), 8,3 ms je Boost-Takt, Spitze 10,3 ms: eine CPU-Spitze jede
-// Sekunde. Die Rechnung prüft je Teil-Paar Kontakt und Hohlraum (O(Teile²)) und hing an keiner Änderung.
+// diag-raum-tags.cjs — DAS GEDÄCHTNIS DER RAUM-TAGS SIEHT JEDEN SCHREIBER (0710-11). Die Rechnung prüft je Teil-Paar Kontakt und Hohlraum (O(Teile²)) und hing an keiner Änderung.
 // Der Schnitt: `computeSpatialTags` merkt sich je Bauplan die Tags und einen SCHLÜSSEL — den Schnappschuss jedes Eingangs der
 // Rechnung (`_raumTagSchluessel`), bei jedem Ruf gebaut und Wert für Wert verglichen; die Rechnung (`_raumTagsRechnen`) läuft
 // nur bei geändertem Schlüssel. Ein Schreiber muss sich nicht melden: der Schlüssel liest den Inhalt.

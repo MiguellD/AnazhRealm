@@ -236,6 +236,10 @@ function tafelUrteil(t, messung) {
                     text: `${z.id}: die Welt zeichnet das Exemplar in L${W.stufen.join("/L")}, erklärt ist L${ds.join("/L")} — ein anderer Stoff im Schuss`,
                 });
         }
+        // DER TON DER STUFE (S8): Welt / Welt der Zeile `stufeVon` im Band `stufenToleranz`
+        const W0 = z.welt.stufeVon && messung.welt[z.welt.stufeVon];
+        if (W0 && !(Math.abs((e.stufeTon = W && +(W.Y / W0.Y).toFixed(3)) - 1) <= t.stufenToleranz))
+            rot.push({ art: "stufen-ton", text: `${z.id}: Welt/${z.welt.stufeVon} ${e.stufeTon}` });
         if (L && W && L.Y > 0 && W.Y > 0) {
             e.verhaeltnis = +(L.Y / W.Y).toFixed(4);
             e.abweichung = +abweichung(e.verhaeltnis).toFixed(4);

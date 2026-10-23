@@ -1755,8 +1755,7 @@ async function kreaturProben(r, T, opts) {
         delete frisch.userData._temperament;
         const masseQuelle =
             leibRufe(() => r._creatureTemperament(frisch)) > 0 &&
-            leibRufe(() => r._kreaturIstBeute(wolfB, hirschB)) >= 2 &&
-            typeof r._kreaturMasse !== "function";
+            leibRufe(() => r._kreaturIstBeute(wolfB, hirschB)) >= 2;
         const beute = {
             hirsch: r._kreaturIstBeute(wolfB, hirschB),
             kitz: r._kreaturIstBeute(wolfB, tier(land(36, 38), "wesen", 0.6)),

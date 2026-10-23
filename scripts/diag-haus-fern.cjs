@@ -465,8 +465,7 @@ const f3 = (x) => (x == null ? "—" : (+x).toFixed(3));
 //    LICHT_GESETZ.fenster: Farbe aus `kelvin` × Zeitplan nacht). Je gezeigter Stufe gegen die L0 desselben Hauses: Glut
 //    L/L0 in [2/3, 3/2], Tag L/L0 in [1/4, 4] (die Albedo sieht kein Licht), Farbe (Anteile r/g/b) höchstens 0,15 entfernt
 //    — zwei Samen derselben Kultur liegen schon in der L0 bis 0,074 auseinander (holzhuette), eine Stufe darf zwei solche
-//    Schritte. Vorher (Kern c5a4d0f8): die L2 legte Bänder im Stoff `dunkel` über die Reihen — Glut 0, Tag L2/L0 0,02–0,25;
-//    die L1 würfelte den Schlaf allein, ihr Raum war Putz für jeden Stil.
+//    Schritte.
 const GLUT = FC.lichtFarbe(FC.LICHT_GESETZ.fenster.kelvin).map((c) => c * FC.LICHT_GESETZ.fenster.zeit.nacht);
 const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 const GLAS_R = 0.05;
