@@ -560,7 +560,16 @@ class AnazhRealm_daten {
             Object.freeze({
                 freq: 1.1, // Mikro-Relief-Frequenz (~0.9 m Feature-Größe — Klumpen/Kiesel)
                 freq2: 2.7, // zweite Oktave (feineres Korn obendrauf)
-                eps: 0.45, // Gradient-Sample-Abstand (Welt-m, vor freq-Skalierung)
+                // DIE OKTAVEN AM SCHIRM (material.K2, `_mikroRelief`): drei Oktaven folgen der Pixelgröße — die feinste trägt
+                // `mikroPx` × |fwidth| je Periode (|fwidth| ist 1,4–1,7 Pixel der Szene: 1 legt sie an den Nyquist der Ausgabe, die TAAU
+                // sammelt die welt-feste Oktave über den Jitter), nie feiner als `mikroMinM` (Schluff und Feinsand);
+                // jede trägt die Neigung `mikro` (gleiche Steigung je Oktave: das 1/f²-Spektrum natürlicher Bilder, Field 1987).
+                mikroPx: 1,
+                mikroMinM: 0.0005,
+                mikro: 0.15,
+                mikroHoehe: 0.75, // die Höhe der nächst gröberen Oktave je feinerer (`_mikroRelief`: das Spektrum β ≈ 1,2)
+                kavitaet: 0.7, // die Kavität je Höhe (`_mikroStoff`, aoNode): das Himmels-Licht der Mulde und der Erhebung
+                korn: 1.0, // das Korn je Höhe (`_mikroStoff`, colorNode): die Albedo der Mulde dunkler, der Erhebung heller, mittelfrei
                 // Kipp-Stärke subtil halten: da TERRAIN_NORMAL_FLATTEN=1.0 voll flacht, ist der Bump die EINZIGE
                 // Normal-Variation — zu stark (0.42 = 23°) gibt bimodales dot(N,L) = bolde Hell/Dunkel-Trapeze pro
                 // Makro-Facette. 0.24 = 13° moduliert echtes Mikro-Relief; das Albedo-Korn trägt die feine Textur.

@@ -2942,6 +2942,13 @@ class AnazhRealm_studio_bruecke {
             mat.userData = mat.userData || {};
             mat.userData.satzSchluessel = key;
         }
+        // DAS MIKRO-RELIEF DER FACETTE (material.K2, `_mikroGestalt`): der facettierte Studio-Stein (Fels, Kristall: kind
+        // „unknown" mit flatShading) kippt seine Facetten in den Oktaven am Schirm, gewogen mit seiner Rauheit (glatt ≤ 0,3 nichts,
+        // matt ≥ 0,6 ganz) — im Satz die Rauheit je Ecke, sonst die des Stoffs
+        if (flat && kind === "unknown") {
+            const rauh = satz ? TSL.attribute("aRegler", "vec3").x : TSL.float(rough);
+            this._mikroGestalt(TSL, mat, true, TSL.smoothstep(0.3, 0.6, rauh));
+        }
         // Studio-Dither-Blende auf den Foundry-3D-Stufen: Fade-out L0 + Fade-in L1 (Laub überlappend, Rinde
         // exakte Partition); die Maske faltet in die Alpha (TSL statt discard, alphaTest cullt). Formeln = die
         // EINE Quelle `__phytoCore.lodCrossfadeMask` (via `_lodCrossfadeMaskNode`); xfade aus = Material
