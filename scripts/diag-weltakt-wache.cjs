@@ -348,20 +348,21 @@ async function tatProbe(m) {
     const [r, K] = [window.anazhRealm, window.__klangCore];
     const [st, P, pm] = [r.state, Object.getPrototypeOf(r), r.state.playerMesh.position];
     [r._loopNexusUpdate, r.evolveNexus, st.worldRules] = [() => {}, () => {}, []];
-    const stelle = (x, n) => {
-        for (let i = 0; i < n; i++) pm.set(x, r._voxelSurfaceY(x, m.z) + 1.8, m.z), r._gameLoopTick(performance.now()), pm.set(x, pm.y, m.z);
+    pm.set(m.x, r._voxelSurfaceY(m.x, m.z) + 1.8, m.z); // der Leib fällt einmal, je Takt hält die Probe x und z
+    const stelle = (n) => {
+        for (let i = 0; i < n; i++) pm.setX(m.x).setZ(m.z), r._gameLoopTick(performance.now()), pm.setX(m.x).setZ(m.z);
     };
-    await window.__weltStehtNach(() => stelle(m.x, 1));
+    await window.__weltStehtNach(() => stelle(1));
     window.__buehne();
     st.weatherEffectTime = 0;
     r._setWeather("sunny", "regler");
     r.initSymphony();
     const um = st.symphony.umwelt;
     const D = (l) => K.umweltMischung(l).vogel.db;
-    // der Chor am Ohr x (ohne Antwort abgezogen: der Teil der Wertung); was der Graph spielt (`zensus`)
-    const ohr = (x) => {
+    // der Chor am Ohr x oder in der Lage l des Misch-Takts (ohne Antwort abgezogen: der Teil der Wertung)
+    const ohr = (x, l) => {
         pm.x = x;
-        const l = r._umweltLage();
+        l = l || r._umweltLage();
         pm.x = m.x;
         return [D(l), D(l) - D({ ...l, antwort: null })];
     };
@@ -369,14 +370,14 @@ async function tatProbe(m) {
     const taten = [];
     for (let n = 1, t0 = st.spielZeit; n <= 10; n++, st.spielZeit = t0 += 30) {
         const delta = tat(() => r.processChatCommand("pflege das land"));
-        const [mischung, antwort] = ohr(m.x);
         um.letzteMischung = -Infinity;
-        stelle(m.x, 4);
+        stelle(4);
+        const [mischung, antwort] = ohr(m.x, um.lage);
         taten.push({ delta, antwort, nachbar: ohr(m.x + 32)[1], mischung, ausgabe: um.graph.zensus().find((v) => v.name === "vogel").db });
     }
     st.spielZeit += 120;
     const stempel = { delta: tat(() => r.dslRun(["deposit_emotion", "joy", 0.8], { source: "human" })), antwort: ohr(m.x)[1] };
-    stelle(m.x, 30);
+    stelle(30);
     [st.taten, st.nexusWirk, st.llm.enabled] = [[], 1e6, true];
     delete r._loopNexusUpdate;
     const [cam, W] = [st.camera, "pflege den Ort vor mir"];
@@ -399,7 +400,7 @@ async function tatProbe(m) {
         st.spielZeit = t0 + s;
         await (plan[s] || (() => {}))();
         r._tickWorldRules((T += 5));
-        stelle(m.x, 2);
+        stelle(2);
     }
     const fr = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
     const plan2 = [["nexus", O[0], 1, "(Programm probe-a"], ["rule:nexus", O[1], g.fires, `weil lebendig am Ort niedrig ist (<1.01). (Gesetz Nr. ${g.id} des Nexus`], ["nexus", O[2], 1, "probe-h"], ["llm:grok", O[3], 1, `auf dein Wort „${W}“`], ["human", O[0], 1, "human"]];
