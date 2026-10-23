@@ -342,6 +342,7 @@ class AnazhRealm_kreatur_verhalten {
     // task-losen Bewegungs-Zweig).
     _creatureHuntDrive(creature, wariness) {
         if (typeof this.getGameMode !== "function" || this.getGameMode() !== "pfad") return false;
+        if (this._kreaturErschoepft(creature)) return false; // die Jagd endete, der Jäger ruht (Tiere K2)
         const VG = AnazhRealm._verhaltenGesetz();
         if (wariness >= VG.furcht.fleeThreshold) return false;
         if (this._creatureTemperament(creature) !== "wild") return false;
@@ -367,6 +368,7 @@ class AnazhRealm_kreatur_verhalten {
         const VG = AnazhRealm._verhaltenGesetz();
         if (wariness >= VG.furcht.fleeThreshold) return null;
         if (this._kreaturSatt(creature)) return null; // satt jagt keine Beute (VERHALTEN.aas)
+        if (this._kreaturErschoepft(creature)) return null; // die Jagd endete, der Jäger ruht (Tiere K2)
         const scentRange = VG.jagd.scentRangeM;
         const cx = creature.position.x;
         const cz = creature.position.z;
@@ -566,12 +568,17 @@ class AnazhRealm_kreatur_verhalten {
         const hetzt = ud._motionZustand === "hetzen";
         const davon = d > 1e-6 && (vx * dx + vz * dz) / d > AnazhRealm._steuerGesetz().tempoEinheit(hueftL);
         if (((hetzt || davon) && d <= 3 * J.hetzM) || (d <= J.hetzM && Math.abs(abw) <= Math.PI / n && umstellt)) {
+            if (this._kreaturJagdEndet(creature, zielKey)) {
+                this._kreaturZustandStempel(creature, null);
+                direction.set(0, 0, 0);
+                return;
+            }
             this._kreaturZustandStempel(creature, "hetzen");
             // die Ankunft gegen ein LAUFENDES Ziel: das Brems-Tempo vor dem Biss plus der Lauf des Ziels von ihm fort — sonst
             // bremste der Hetzer vor einem Sprinter dort, wo sein Brems-Tempo dessen Lauf glich (3,8 m, nie in Biss-Weite)
             const K = AnazhRealm._steuerGesetz();
             const fort = d > 1e-6 ? Math.max(0, (vx * dx + vz * dz) / d) : 0;
-            const sprint = K.sprintTempo(hueftL);
+            const sprint = this._kreaturSprint(creature, hueftL);
             // DIE HETZE HÄLT IN DER WEITE DES ANSPRUNGS (Welle LF kampf, Posten 5): der Rest ist der Spalt vor dem Maul
             // (_kreaturBissRadial, waagrecht, die Gestalt des Jägers am Leib des Ziels) weniger dem halben Weg des Ansprungs
             // (_kreaturBissReich) — der Jäger steht, wo sein Sprung den Leib sicher erreicht, und drängt sich nicht an ihn;
@@ -607,6 +614,34 @@ class AnazhRealm_kreatur_verhalten {
         const qx = tx + Math.sin(platz) * J.hetzM - p.x,
             qz = tz + Math.cos(platz) * J.hetzM - p.z;
         this._kreaturZiel(direction, qx, qz, Math.hypot(qx, qz), v);
+    }
+
+    // DIE JAGD HAT EIN ENDE (Tiere K2, tetrapoda JAGD_GESETZ): die erste Hetze auf ein Ziel beginnt die Jagd (eine Hetze, die
+    // länger als dauerS ruhte, beginnt eine neue); dauert die Jagd dauerS, bricht der Jäger ab und ist ruheS erschöpft — er jagt
+    // nicht (`_kreaturErschoepft`). Liefert true, wenn die Jagd jetzt endet. Vorher hetzte das Rudel, bis die Beute fiel (der
+    // Riss nach 7–9 Minuten, eine Quote je Jagd gab es nicht).
+    _kreaturJagdEndet(creature, zielKey) {
+        const ud = creature.userData;
+        const now = this.state.creatureAnimationTime;
+        const J = AnazhRealm._jagdGesetz().J;
+        const jg = ud._jagd;
+        if (!jg || jg.ziel !== zielKey || now - jg.zuletzt > J.dauerS) ud._jagd = { ziel: zielKey, beginn: now, zuletzt: now };
+        ud._jagd.zuletzt = now;
+        if (now - ud._jagd.beginn < J.dauerS) return false;
+        ud._jagd = null;
+        ud._erschoepftBis = now + J.ruheS;
+        return true;
+    }
+    _kreaturErschoepft(creature) {
+        const b = creature.userData && creature.userData._erschoepftBis;
+        return Number.isFinite(b) && this.state.creatureAnimationTime < b;
+    }
+    // DER SPRINT DES LEIBS (STEUER sprintTempo × tetrapoda wundTempo): die Wunde bremst Flucht, Hetze und Ansprung
+    _kreaturSprint(creature, hueftL) {
+        const ud = creature.userData;
+        const JG = AnazhRealm._jagdGesetz();
+        const anteil = ud && ud.hpMax > 0 && Number.isFinite(ud.hp) ? ud.hp / ud.hpMax : 1;
+        return AnazhRealm._steuerGesetz().sprintTempo(hueftL) * JG.wundTempo(anteil, JG.J);
     }
 
     // SEPARATIONS-KRAFT am EINEN Bewegungs-Chokepoint: updateCreatures ruft sie JEDEN Frame auf die
@@ -3244,7 +3279,7 @@ class AnazhRealm_kreatur_verhalten {
                             this._kreaturZustandStempel(creature, "flucht");
                             // DIE FLUCHT IST DER SPRINT DER GESTALT (Welle LF, STEUER sprintTempo): ein Fluchttier galoppiert
                             // davon (vorher ein Trab, 1,6 × Schlendern — jede Hetze holte es ein, jeder Mensch auch)
-                            const fv = fd > 1e-6 ? AnazhRealm._steuerGesetz().sprintTempo(hueftL) / fd : 0;
+                            const fv = fd > 1e-6 ? this._kreaturSprint(creature, hueftL) / fd : 0;
                             direction.set(fx * fv, 0, fz * fv);
                         } else {
                             this._kreaturZustandStempel(creature, null);
@@ -3380,7 +3415,7 @@ class AnazhRealm_kreatur_verhalten {
                     }
                     const fort = bd > 1e-6 ? Math.max(0, (zvx * bx + zvz * bz) / bd) : 0;
                     const SG = AnazhRealm._steuerGesetz();
-                    const sprint = SG.sprintTempo(hueftL);
+                    const sprint = this._kreaturSprint(creature, hueftL);
                     // (ein Hauch von Wunsch bleibt: er trägt die Wendung zum Ziel, auch wenn der Kopf es schon erreicht)
                     const bv = Math.max(1e-3, weg > 0 ? Math.min(sprint, SG.ankunftTempo(weg, sprint) + fort) : fort);
                     if (bd > 1e-6) direction.set((bx / bd) * bv, 0, (bz / bd) * bv);
@@ -3741,6 +3776,18 @@ AnazhRealm._furchtGesetz = function () {
         return AnazhRealm._furchtGesetzMemo;
     }
     return AnazhRealm._kernPflichtBruch("tetrapoda:FURCHT_GESETZ");
+};
+// DIE JAGD HAT EIN ENDE (tetrapoda JAGD_GESETZ + wundTempo, Tiere K2): die Dauer der Jagd, die Ruhe des Erschöpften, die Wunde,
+// die den Sprint bremst. Fail-closed.
+AnazhRealm._jagdGesetz = function () {
+    if (AnazhRealm._jagdGesetzMemo) return AnazhRealm._jagdGesetzMemo;
+    const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    const J = k && k.JAGD_GESETZ;
+    if (J && [J.dauerS, J.ruheS, J.wundExp].every(Number.isFinite) && typeof k.wundTempo === "function") {
+        AnazhRealm._jagdGesetzMemo = Object.freeze({ J, wundTempo: k.wundTempo });
+        return AnazhRealm._jagdGesetzMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("tetrapoda:JAGD_GESETZ");
 };
 // DER LEBENSRAUM (tetrapoda LEBENSRAUM_GESETZ + bodenKlasse · lebensraum · lebensraumWahl, Tiere K4): die Boden-Klasse eines Orts und die Eignung
 // je Gattung. Fail-closed.

@@ -1818,6 +1818,18 @@
         return m > 0 ? m : 0;
     }
 
+    // DIE JAGD HAT EIN ENDE (Tiere K2, 23.10., additiv — JAGD_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): eine
+    // Jagd beginnt mit der ersten Hetze auf ein Ziel und endet mit dem Riss oder nach dauerS; dann ist der Jaeger erschoepft und
+    // jagt ruheS nicht (Woelfe brechen die meisten Jagden ab: MacNulty et al. 2007, J. Mammal. 88:595). DIE WUNDE BREMST
+    // (wundTempo): der Sprint eines verwundeten Leibs faellt mit dem Anteil seines Lebens hoch wundExp — der Riss folgt, wenn
+    // die Bisse eines Rudels die Beute langsamer machen als den Jaeger; darum steigt der Erfolg mit der Zahl der Jaeger
+    // (MacNulty et al. 2012, Behav. Ecol. 23:75).
+    var JAGD_GESETZ = Object.freeze({ dauerS: 45, ruheS: 120, wundExp: 1.3 });
+    function wundTempo(hpAnteil, J) {
+        var a = hpAnteil > 0 ? (hpAnteil < 1 ? hpAnteil : 1) : 0;
+        return Math.pow(a, J.wundExp);
+    }
+
     // DER LEBENSRAUM (Tiere K4, 23.10., additiv — LEBENSRAUM_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): die
     // Boden-Klasse eines Orts kommt aus dem Gelaende (bodenKlasse): am Fluss, wo sein Rand naeher als flussM liegt, am Hang, wo
     // der Hang des Gelaende-Gesetzes ueber hangTan steigt (20°), sonst nach der Bestandsdichte des Walds (phyto
@@ -3290,6 +3302,8 @@
         bedrohung: bedrohung,
         furchtErinnert: furchtErinnert,
         furchtOrt: furchtOrt,
+        JAGD_GESETZ: JAGD_GESETZ,
+        wundTempo: wundTempo,
         LEBENSRAUM_GESETZ: LEBENSRAUM_GESETZ,
         bodenKlasse: bodenKlasse,
         lebensraum: lebensraum,
