@@ -581,6 +581,42 @@ module.exports = [
         ],
         quelle: "1 = der Wasser-Automat hat 0 Takte in 60 s Ruhe",
     },
+
+    // ── feld.K1 ── gate:fahr-leben W (Zweig wetter-kette-k1): Sturm → Regen-Feld → Nässe → Grip, je Glied die Festhalte-Probe
+    // (`ketteVerdict`: ein Glied zählt, wenn es mit dem Sturm zieht UND steht, solange sein Vorgänger gehalten wird); das
+    // Urteil liest die Zeile `KETTE {"tiefe":N,…}` — an main fehlt `--kette` (ROT „keine KETTE-Zeile")
+    {
+        kriterium: "feld.K1",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-fahr-leben.cjs", "--kette"],
+        env: { FAHR_LEBEN_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const k = jsonZeile(lauf.stdout, /^KETTE \{/);
+            if (!k) return { gruen: false, zahl: "keine KETTE-Zeile (Exit " + lauf.exit + ")" };
+            const r = k.roh || {};
+            const v = (l) => (r[l] && r[l].verz != null ? r[l].verz : "?");
+            return {
+                gruen: k.tiefe >= 2,
+                zahl:
+                    "Tiefe " + k.tiefe + " mit Festhalte-Probe · Verzögerung trocken " + v("trocken") + " → Sturm " + v("sturm") +
+                    " m/s² (Regen gehalten " + v("festRegen") + ", Nässe gehalten " + v("festNaesse") + ") · Exit " + lauf.exit,
+            };
+        },
+        pfad: [
+            "stamm/koerper-fahrt.js",
+            "stamm/koerper-bewegung.js",
+            "stamm/stoff-material.js",
+            "stamm/bild-himmel.js",
+            "stamm/daten.js",
+            "vehicle-core.js",
+            "scripts/diag-fahr-leben.cjs",
+            "scripts/lib/fahr-proben.cjs",
+        ],
+        quelle: "1 = Tiefe 2–3 mit Festhalte-Probe",
+    },
 ];
 
 // ── NICHT FASSBAR (befehl: null): kein Werkzeug im Spiel-Baum misst das Soll dieser Staffel als EIN Befehl am SHA ──
@@ -597,5 +633,6 @@ module.exports.fehlt = [
     { kriterium: "physik.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: der Wagen bei vmax × 1,2 gegen die 0,35-m-Mauer und die Bild-Probe (Spalt Leib–Wand ≤ 5 cm) auf beiden Geräten — gate:kollision-bild läuft auf dem Null-Renderer" },
     { kriterium: "feld.K2", staffel: 1, befehl: null, grund: "Werkzeug fehlt für das ganze Soll: gate:mp-sync (c) trägt nur zwei Chat-Edits über Peers, keine Bauten; kein Werkzeug misst Edits und Bauten byte-gleich über einen Reload (gate:reload-treue prüft den Guss-Pin der Kreatur)" },
     { kriterium: "feld.K2", staffel: 2, befehl: null, grund: "nicht gebaut: Wetter am Ort, Pegel, Overlays, Brand ohne Zustands-Nachricht über Peers ungemessen; Reload mitten im Sturm ohne Linse" },
+    { kriterium: "feld.K1", staffel: 2, befehl: null, grund: "Werkzeug fehlt: `diag-fahr-leben --kette` kennt drei Glieder (Regen-Feld, Nässe, Grip) und misst Tiefe ≥ 4 nie; das vierte Glied (Unterstand und Tränke der Tiere aus Nässe und Pegel statt `_weatherIsWet`, oder der Pegel aus dem Regen) ist nicht gebaut" },
     { kriterium: "feld.K3", staffel: 2, befehl: null, grund: "Werkzeug fehlt: `werkbank stand --sim` misst die Ruhe, nicht „nur in berührten Zellen“ (unter Taten 32 805 Einheiten); der Brand hat keinen Takt im Stamm" },
 ];

@@ -94,6 +94,39 @@ const PAD = [
     "scripts/playtest/koerper.cjs",
 ];
 
+// DIE STADT VOM HÜGEL (siedlung.K2, Zweig stadt-tor-k2; das Muster von stadt-tor-k2-bild/stadt-bild.sh): die nächste Stadt
+// des Rang-Gesetzes binnen 2 km vom Genesis-Ort mit Ort (`_autoSettlementFindSite`), der Spieler auf den höchsten Land-Punkt
+// 180–260 m vor ihr, bis die Mauer steht und kein Zug mehr läuft; dann der Schuss vom höchsten Acker oder Feldweg 70–260 m
+// vor der Stadt-Mitte auf ihre Mitte (+5 m). Der Code trägt kein einfaches Hochkomma (bash '…').
+const STADT_WAHL =
+    "const g = r._genesisMitte(); const out = []; " +
+    "for (let cx = -10; cx <= 10; cx++) for (let cz = -10; cz <= 10; cz++) { const i = r._autoSettlementCellInfo(cx, cz); " +
+    "if (!i || !(i.stufe > 0)) continue; const d = Math.hypot(i.x - g.x, i.z - g.z); if (d > 2000) continue; " +
+    "out.push({ cx, cz, nH: i.nH, stufe: i.stufe, d: Math.round(d), site: r._autoSettlementFindSite(i) }); } " +
+    "out.sort((a, b) => a.d - b.d); const c = out.find((o) => o.site); let hill = null; " +
+    "if (c) for (const R of [180, 220, 260]) for (let k = 0; k < 32; k++) { const a = (k / 32) * 2 * Math.PI, " +
+    "x = c.site.x + Math.cos(a) * R, z = c.site.z + Math.sin(a) * R, y = r.getTerrainHeightAt(x, z); " +
+    "if (Number.isFinite(y) && r._landAt(x, z, 0.2) && (!hill || y > hill.y)) hill = { x, y, z, R }; } " +
+    "window.__stadtWahl = { c, hill }; " +
+    "return { seed: r.state.worldMeta && r.state.worldMeta.seed, staedte: out.length, wahl: c ? { cx: c.cx, cz: c.cz, nH: c.nH, stufe: c.stufe, d: c.d } : null, hill };";
+const STADT_STAND =
+    "const P = r.state.stlMauer, q = r._autoSettlementQueue, c = window.__stadtWahl.c.site; let haeuser = 0; " +
+    "for (const e of r.state.architectures) if (e && /^haus_/.test(e.type) && Math.hypot(e.position.x - c.x, e.position.z - c.z) < 400) haeuser++; " +
+    "return { mauer: P ? P.top : 0, zug: !!(q && q.plan), pending: r._autoSettlementPendingKey || null, haeuser };";
+const STADT_KAMERA =
+    "const c = window.__stadtWahl.c.site; let v2 = null; " +
+    "for (const p of r._ortPlaene.values()) if (p && p.ort && p.mauer && (!v2 || Math.hypot(p.ort.x - c.x, p.ort.z - c.z) < Math.hypot(v2.ort.x - c.x, v2.ort.z - c.z))) v2 = p; " +
+    "if (!v2) return { fehler: \"kein Ortsplan mit Mauer\" }; const o = v2.ort, cand = []; " +
+    "for (const f of v2.felder || []) cand.push({ x: o.x + f.cx, z: o.z + f.cz, art: \"acker\" }); " +
+    "for (const fw of v2.feldwege || []) for (const q of fw.pts) cand.push({ x: o.x + q.x, z: o.z + q.z, art: \"feldweg\" }); " +
+    "let best = null; for (const q of cand) { const d = Math.hypot(q.x - o.x, q.z - o.z); if (d < 70 || d > 260) continue; " +
+    "const y = r.getTerrainHeightAt(q.x, q.z); if (!Number.isFinite(y)) continue; if (!best || y > best.y) best = Object.assign({ y, d: Math.round(d) }, q); } " +
+    "if (!best) return { fehler: \"kein Acker oder Feldweg 70–260 m vor der Stadt\" }; const cy = r.getTerrainHeightAt(o.x, o.z); " +
+    "return { pose: [best.x, best.y + 1.7, best.z, o.x, cy + 5, o.z].map((v) => +v.toFixed(2)), art: best.art, d: best.d, " +
+    "hoeher: Math.round((best.y - cy) * 10) / 10, segs: v2.mauer.segs.length, tuerme: v2.mauer.towers.length };";
+const LIES = (feld) =>
+    "node -e 'const t = require(\"fs\").readFileSync(process.argv[1], \"utf8\"); const e = JSON.parse(t.slice(t.indexOf(\"{\"))).ergebnis; " + feld + "'";
+
 // DER HIT-STOP DES SPIELS neben der Linse (halten.K2, 23.10.): latenz zählt den Halt im Bild (stehende Schwung-Uhr UND Hand);
 // die Haken zählen daneben, was das Spiel tut — jeder Treffer, der den Halt setzt (`_kampfHitJuice`, seine Dauer), und wie weit
 // die Hand im gesetzten Halt je Takt noch gleitet. So heißt ein ROT beim Namen: kein Treffer am Ziel (gesetzt 0) ist das
@@ -230,6 +263,75 @@ const stationen = [
         pfad: [...FAHRT, "stamm/siedlung-bauten.js", "stamm/siedlung-satz.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/welt-boot.cjs"],
         quelle: staffel === 1 ? "1 = an einem Gerät im Bild gehalten" : "2 = an beiden Geräten im Bild, und bei jeder neuen vmax-Stufe neu gemessen",
     })),
+
+    // ───────── siedlung.K2 — die Stadt in Reichweite (Zweig stadt-tor-k2: Rang-Gesetz im fachwerk-core, Mauer im Export) ─────────
+    // Teil Z der Siedlungs-Linse (`diag-settlement --nur-z`, Node, 8 Saaten × zufälliger Spawn, Auto-Zellen binnen 2 km) und das
+    // Bild der nächsten Stadt aus dem Ausgabe-Pfad am Boot-Seed (Abnahme-Urteil des Beweisbilds). An main: Z1 0/8 (ROT).
+    {
+        kriterium: "siedlung.K2",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        befehl: sitzung(
+            "A=$(cygpath -m '{AUS}')",
+            "teil Z node scripts/diag-settlement.cjs --nur-z",
+            "boot",
+            "timeout 60 $W fenster 1600 900 > /dev/null 2>&1",
+            "timeout 120 $W eval '" + STADT_WAHL + "' > \"$L/wahl.json\" 2>&1; echo '@@PUNKTE@@ WAHL'; cat \"$L/wahl.json\"; echo",
+            "HILL=$(" + LIES("console.log(e.hill ? e.hill.x.toFixed(1) + \" \" + e.hill.z.toFixed(1) : \"\")") + " \"$L/wahl.json\" 2> /dev/null)",
+            "[ -n \"$HILL\" ] || { echo '@@PUNKTE@@ KEINE STADT MIT ORT BINNEN 2 KM'; exit 4; }",
+            "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
+            "for i in $(seq 1 60); do timeout 60 $W eval '" + STADT_STAND + "' > \"$L/stand.json\" 2>&1; " +
+                LIES("process.exit(e.mauer > 0 && !e.zug && !e.pending ? 0 : 1)") + " \"$L/stand.json\" 2> /dev/null && break; sleep 5; done",
+            "echo '@@PUNKTE@@ STAND'; cat \"$L/stand.json\"; echo",
+            "timeout 60 $W eval '" + STADT_KAMERA + "' > \"$L/kamera.json\" 2>&1; echo '@@PUNKTE@@ KAMERA'; cat \"$L/kamera.json\"; echo",
+            "K=$(" + LIES("console.log(e.pose ? e.pose.join(\" \") : \"\")") + " \"$L/kamera.json\" 2> /dev/null)",
+            "[ -n \"$K\" ] || { echo '@@PUNKTE@@ KEINE KAMERA'; exit 5; }",
+            "rm -f \"$L/stadt-mittag.abnahme.json\"",
+            "teil BILD $W bild $K --datei \"$L/stadt-mittag.png\" --w 1600 --h 900",
+            "cp \"$L/stadt-mittag.abnahme.json\" \"$A\" 2> /dev/null; true"
+        ),
+        gpu: true,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const teil = (n) => out.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
+            const z = /^\s*(✅|❌) Z1 RANG: binnen 2 km eine ummauerte Stadt in (\d+)\/8 Saaten/m.exec(out);
+            const zOk = !!z && z[1] === "✅" && +z[2] >= 6;
+            const wb = jsonBlock(teil("WAHL"));
+            const w = (wb && wb.ergebnis) || {};
+            const sb = jsonBlock(teil("STAND"));
+            const s = (sb && sb.ergebnis) || {};
+            const kb = jsonBlock(teil("KAMERA"));
+            const k = (kb && kb.ergebnis) || {};
+            const steht = s.mauer > 0 && !s.zug && !s.pending;
+            const bild = !!j && j.ok === true;
+            const gruen = zOk && steht && !k.fehler && k.segs > 0 && k.hoeher > 0 && bild;
+            return {
+                gruen,
+                zahl:
+                    "Z1 " + (z ? z[2] + "/8 Saaten" : "keine Zeile") + " · Boot-Seed " + w.seed + ": Stadt " +
+                    (w.wahl ? w.wahl.cx + "," + w.wahl.cz + " nH " + w.wahl.nH + " " + w.wahl.d + " m vom Genesis-Ort" : "keine mit Ort") +
+                    " · Mauer " + (k.segs != null ? k.segs + " Segmente/" + k.tuerme + " Türme" : k.fehler || "?") + ", Pool " + s.mauer +
+                    (s.zug ? ", Zug läuft" : "") + " · Schuss vom " + k.art + " " + k.d + " m vor der Mitte, " + k.hoeher + " m höher · " +
+                    (j && j.zeile ? j.zeile.slice(0, 120) : "ohne Abnahme (Exit " + lauf.exit + ")"),
+            };
+        },
+        pfad: [
+            "fachwerk-core.js",
+            "stamm/siedlung-ort.js",
+            "stamm/siedlung-satz.js",
+            "stamm/siedlung-bauten.js",
+            "stamm/studio-bruecke.js",
+            "worlds/fachwerk/fachwerk.js",
+            "save-server.js",
+            "scripts/diag-settlement.cjs",
+            "scripts/werkbank.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+            "spec/asset-contract/v6/golden/siedlung.json",
+        ],
+        quelle: "1 = in ≥ 6 von 8 Saaten mit zufälligem Spawn steht binnen 2 km eine ummauerte Stadt (Auto-Zellen, nie Chat), sichtbar vom Hügel an einem Gerät",
+    },
 
     // ───────── siedlung.K1 — das Haus von innen ─────────
     {
@@ -554,6 +656,10 @@ module.exports.fehlt = [
     {
         kriterium: "siedlung.K1", staffel: 2, befehl: null,
         grund: "W10 geht 8 Häuser des Drehbuch-Dorfs, nicht jedes Haus des Start-Dorfs; keine Probe misst die Innen-Luma gegen den Außen-Schatten (≥ 15 %) im Ausgabe-Bild",
+    },
+    {
+        kriterium: "siedlung.K2", staffel: 2, befehl: null,
+        grund: "Werkzeug fehlt: der Zipf-Fit über 32 × 32 km mit Intervall steht in keiner Linse (einmal von Hand gemessen, α 0,916, kein Tor); der Export mit mauer und graph prüft gate:settlement, die Dämmerung und beide Geräte bindet keine Station",
     },
     {
         kriterium: "leib.K4", staffel: 2, befehl: null,

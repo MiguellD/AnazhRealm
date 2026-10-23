@@ -9,6 +9,19 @@ const { jsonZeile } = require("../hilfe.cjs");
 // die Zeile „  ✅|❌ <probe> {…}" der Kreatur-Linse (diag-kreatur-takt.cjs, padEnd 9)
 const probeZeile = (stdout, probe) => jsonZeile(stdout, new RegExp("^\\s*(✅|❌) " + probe + "\\s"));
 
+// R6 der Tier-Gesetze (Zweig tier-gesetz-k5): Kern, Kreatur-Stamm, Leben-Feld, Leib und die Kreatur-Linse
+const KREATUR = [
+    "tetrapoda-core.js",
+    "stamm/kreatur-*.js",
+    "stamm/feld-leben.js",
+    "stamm/daten.js",
+    "stamm/koerper-leib.js",
+    "scripts/diag-kreatur-takt.cjs",
+    "scripts/diag-kreatur-leben.cjs",
+    "scripts/lib/kreatur-proben.cjs",
+    "scripts/lib/welt-boot.cjs",
+];
+
 const stationen = [
     {
         kriterium: "mensch.K3",
@@ -332,6 +345,119 @@ const stationen = [
         ],
         quelle: "1 = Halm- und Büschel-Pixel 0 in jeder Haus-Box des Start-Dorfs an einem Gerät",
     },
+
+    // ───────── oekologie.K3 — EIN Furcht-Gesetz (Zweig tier-gesetz-k5, tetrapoda FURCHT_GESETZ) ─────────
+    // Probe furcht der Kreatur-Linse (Null-Renderer, R3: sie misst ein Gesetz): je Rolle 4 Orte, das Tier reist über
+    // `_serializeCreature` → `_restoreCreatureFromSnapshot` (Speichern), dann geht der Spieler auf es zu; Schlag und Gabe über
+    // die Chokepoints damageCreature (source player) und activateCreatureConsumable. Staffel 2 dazu (z.ort): ein Riss in der
+    // Zelle der Herde gegen den Gegenlauf mit Feld-Furcht 0. An main fehlt die Probe (ROT „keine Zeile").
+    ...[1, 2].map((staffel) => ({
+        kriterium: "oekologie.K3",
+        staffel,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "furcht"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "furcht");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe furcht (Exit " + lauf.exit + ")" };
+            if (z.fehler || !z.erinnert || !z.ort) return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne erinnert/ort") };
+            const { kontrolle: K, geschlagen: G, gefuettert: F } = z.erinnert;
+            const O = z.ort;
+            const wesen =
+                [...G.erinnerungen, ...F.erinnerungen].every((n) => n >= 1) &&
+                K.medianM >= 5 &&
+                G.medianM >= 2 * K.medianM &&
+                F.medianM <= 0.5 * K.medianM &&
+                F.naeherM >= 2;
+            const ort = O.gegenlauf >= 0.2 && O.aufenthalt <= 0.5 * O.gegenlauf;
+            return {
+                gruen: wesen && (staffel === 1 || ort),
+                zahl:
+                    "geschlagen " + G.medianM + " m gegen Kontrolle " + K.medianM + " m · gefüttert " + F.medianM + " m, selbst " +
+                    F.naeherM + " m näher · Gedächtnis nach dem Laden " + G.erinnerungen + " / " + F.erinnerungen +
+                    " · Riss-Zelle Aufenthalt " + O.aufenthalt + " gegen Gegenlauf " + O.gegenlauf,
+            };
+        },
+        pfad: [...KREATUR],
+        quelle:
+            staffel === 1
+                ? "1 = ein Wesen, das der Spieler schlug, hält bei der nächsten Begegnung Abstand (Median ≥ 2× ein Kontroll-Wesen), ein gefüttertes nähert sich, ohne Modell, über Speichern"
+                : "2 = dazu deponiert ein Riss Furcht am Ort, und die Herde meidet die Zelle (Aufenthalt −50 % gegen den Gegenlauf)",
+    })),
+
+    // ───────── tiere.K2 — der Jagd-Kreislauf (Zweig tier-gesetz-k5, tetrapoda JAGD_GESETZ) ─────────
+    // Probe jagdkreis (A) je Jagd: die Beute trägt die HP aus dem Leib-Gesetz (Hirsch 168, Kitz 60), drei Szenen — 1 Wolf und
+    // 4 Wölfe gegen den gesunden Hirsch, das Rudel gegen das Kitz — mit dem Band nach MacNulty (Schlupfloch hp 1e6 / HP 1:
+    // das Band hat ein Oben und ein Unten, hp0 ≥ 100 verlangt den Leib). An main zählt die Probe Riss je Ort (ROT „ohne quote").
+    {
+        kriterium: "tiere.K2",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "jagdkreis"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "jagdkreis");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe jagdkreis (Exit " + lauf.exit + ")" };
+            const Q = z.riss && z.riss.quote;
+            if (z.fehler || !Q) return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne riss.quote") };
+            const band = { einWolf: [0, 0.1], rudel: [0.2, 0.4], kitz: [0.6, 1] };
+            const je = Object.entries(band).map(([sz, [lo, hi]]) => {
+                const q = Q[sz] || {};
+                const v = q.jagden ? q.risse / q.jagden : null;
+                return { sz, ok: q.jagden >= 10 && v != null && v >= lo && v <= hi, t: sz + " " + q.risse + "/" + q.jagden + " (HP " + q.hp0 + ")" };
+            });
+            const hp = Q.rudel && Q.rudel.hp0 >= 100;
+            return {
+                gruen: je.every((x) => x.ok) && hp && z.riss.rissS != null,
+                zahl: "Riss je Jagd " + je.map((x) => (x.ok ? "" : "✗ ") + x.t).join(" · ") + " · erster Riss " + z.riss.rissS + " s",
+            };
+        },
+        pfad: [...KREATUR],
+        quelle: "1 = Hetze und Riss mit HP aus dem Leib-Gesetz, Quote im Band über ≥ 10 Seeds",
+    },
+
+    // ───────── tiere.K4 — Lebensraum (Zweig tier-gesetz-k5, tetrapoda LEBENSRAUM_GESETZ) ─────────
+    // Probe lebensraum: neun Orte (Raster 300 m) je 25 natürliche Geburten, je Tier die Boden-Klasse am Ort gegen die Gattung;
+    // die Gegenprobe in einer importierten Welt anderer Saat (lebensraum-gegen). Schlupfloch Hand-Setzen: Saat-Wechsel. An
+    // main fehlt die Probe (ROT „keine Zeile").
+    {
+        kriterium: "tiere.K4",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "lebensraum"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "lebensraum");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe lebensraum (Exit " + lauf.exit + ")" };
+            if (z.fehler) return { gruen: false, zahl: "Probe-Fehler: " + z.fehler };
+            const g = z.gegen || {};
+            const gruen =
+                z.n >= 150 && Object.keys(z.gattung || {}).length >= 3 && z.anteil >= 0.9 &&
+                !g.fehler && g.n >= 150 && g.anteil >= 0.9 && !!g.saat && g.saat !== z.saat;
+            return {
+                gruen,
+                zahl:
+                    "im Lebensraum " + z.drin + "/" + z.n + " = " + z.anteil + " (Saat " + z.saat + ", " + JSON.stringify(z.gattung) + ") · Gegenprobe " +
+                    (g.fehler ? g.fehler : g.drin + "/" + g.n + " = " + g.anteil + " (Saat " + g.saat + ")"),
+            };
+        },
+        pfad: [
+            ...KREATUR,
+            "gelaende-core.js",
+            "phyto-core.js",
+            "stamm/gelaende-boden.js",
+            "stamm/vegetation-wiese.js",
+            "stamm/wasser-hydro.js",
+            "spec/pruefbuehne/welt.json",
+        ],
+        quelle: "1 = ≥ 0,9 der Geburten in der Boden-Klasse der Gattung, mit Gegenprobe bei anderem Seed",
+    },
 ];
 
 // Nicht als Station fassbar (heute): je Kriterium und Staffel der Grund beim Namen. Sie tragen keine Punkte der Maschine;
@@ -422,6 +548,28 @@ const fehlt = [
             "Werkzeug fehlt: kein Bild zählt Halme unter dem Wasser-Spiegel (diag-haus-welt --bild kennt nur Haus-Boxen), " +
             "Third vor dem Haus ungemessen; die Häuser-Hälfte ist die Station vegetation.K4#1 auf beiden Geräten",
         quelle: "2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte",
+    },
+    {
+        kriterium: "tiere.K2",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: null,
+        grund:
+            "Werkzeug fehlt: die Station Wolfsrevier im Bild beider Geräte gibt es nicht; Fressen (z.riss.fressS) und Fuchs/Bär am " +
+            "Aas (z.riss.gaeste[*].kommtS) liefert die Probe jagdkreis nur headless",
+        quelle:
+            "2 = dazu Fressen ≥ 60 s, der Kadaver lockt Fuchs oder Bär ≤ 120 s, Station Wolfsrevier im Bild beider Geräte",
+    },
+    {
+        kriterium: "tiere.K4",
+        staffel: 2,
+        geraet: "headless",
+        befehl: null,
+        grund:
+            "nicht gebaut: das Tages-Budget je Gattung am Ethogramm fehlt (Rotwild grast tagsüber ~15 % statt ~50 %), " +
+            "„Bär am Fluss ≥ 2×“ ist kein Soll der Linse; nur Durst steht (--proben durst)",
+        quelle:
+            "2 = dazu das Tages-Budget je Gattung ±20 % am Ethogramm, Trinken aus Durst (Mutante „Durst aus“ → 0), am Fluss Bären-Sichtung ≥ 2× wahrscheinlicher",
     },
 ];
 

@@ -346,33 +346,29 @@ module.exports = [
         kriterium: "klang.K5",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        // M15: `diag-klang-zensus --takt --echt` (gehen · Fahrt · nachts, Klang-ms je Bild) und der 10-min-Spielgang der
-        // Mess-Bahn (m14-spielgang mit GEH1 4 · FAHRT 3 · GEH2 3 min, `AudioContext.playbackStats.underrunEvents` vorher/nachher)
-        befehl: [
-            "bash",
-            "-c",
-            HARNESS +
-                'KLANG_ZENSUS_PORT=$(({PORT}+20000)) node scripts/diag-klang-zensus.cjs --takt --echt --json "$A" > "$D/takt.out" 2>&1; ' +
-                'echo "TAKT EXIT=$?"; GEH1_MIN=4 FAHRT_MIN=3 GEH2_MIN=3 node "$D/m14-spielgang.cjs"',
-        ],
+        // M15 in EINER Linse (Zweig klang-takt-k5): `diag-klang-zensus --takt --echt --minuten 10` — gehen 4 · Fahrt 3 · nachts
+        // 3 min an der Uhr des Klangs, Klang-ms je Bild, die Aussetzer am Ausgang über `AudioContext.playbackStats` vor und nach
+        // dem Gang (j.aussetzer = { n, still, s }; null = ungezählt, die Linse meldet dann selbst ROT „T aussetzer"); m14-spielgang
+        // und die HARNESS fallen für diese Station. An main fehlt der Zähler (ungezählt, ROT).
+        befehl: ["node", "scripts/diag-klang-zensus.cjs", "--takt", "--echt", "--minuten", "10", "--json", "{AUS}"],
+        env: { KLANG_ZENSUS_PORT: "{PORT}" },
         gpu: true,
-        minuten: 22,
+        minuten: 15,
         urteil: (j, lauf) => {
             const ph = (j && j.phasen) || {};
             const takt = ["gehen", "fahrt", "nacht"].map((n) => ({ n, p: ph[n] }));
-            const taktOk =
-                takt.every((t) => t.p && t.p.bilder >= 600 && t.p.p95 <= 0.2) && !!(ph.fahrt && ph.fahrt.sattel) && j && Array.isArray(j.rot) && !j.rot.length;
-            const s = jsonZeile(lauf.stdout, /^\{"frame":/);
-            const a = s && s.audioA, b = s && s.audioB;
-            const zaehlt = !!(a && b && typeof a.underrunEvents === "number" && typeof b.underrunEvents === "number");
-            const aus = zaehlt ? b.underrunEvents - a.underrunEvents : null;
-            const sek = zaehlt ? b.totalDurationS - a.totalDurationS : 0;
-            const gruen = taktOk && zaehlt && aus === 0 && sek >= 570;
+            const a = j && j.aussetzer;
+            const gruen =
+                lauf.exit === 0 &&
+                takt.every((t) => t.p && t.p.bilder >= 600 && t.p.p95 <= 0.2) &&
+                !!(ph.fahrt && ph.fahrt.sattel) &&
+                !!j && Array.isArray(j.rot) && !j.rot.length &&
+                !!a && a.n === 0 && a.s >= 570;
             return {
                 gruen,
                 zahl:
                     "Klang-Takt p95 " + takt.map((t) => t.n + " " + (t.p ? t.p.p95 : "?")).join(" · ") + " ms · Aussetzer " +
-                    (zaehlt ? aus + " in " + Math.round(sek) + " s Wiedergabe" : "ungezählt (" + JSON.stringify(a || null).slice(0, 80) + ")"),
+                    (a ? a.n + " in " + a.s + " s Wiedergabe (" + a.still + " s still)" : "ungezählt") + " (Exit " + lauf.exit + ")",
             };
         },
         pfad: [
