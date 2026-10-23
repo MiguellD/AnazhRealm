@@ -16,13 +16,10 @@
 // hier ALS Invariante geprüft: wer Seed-Variation einführt, bricht bewusst
 // die Goldens (Re-Mint-Entscheid).
 //
-// Goldens: spec/asset-contract/v4/golden/gates.json — EINGEFROREN
-// (Taille-Disziplin), gemintet NUR wenn die Datei fehlt (oder MINT_FORCE=1).
-// SELBST-TEST: ein in-memory korrumpiertes Golden MUSS rot erkannt werden.
-// PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): die Transzendenten von Math ±1 ULP kippen kein Byte —
-// die Goldens tragen unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; kippt ein Fall, nennt die Probe Funktion
-// und Aufrufstelle. Befund am Kopf 516e704a: unter Node 24 grün, unter Node 22 16 von 16 Fällen rot (three r128
-// CatmullRomCurve3 'centripetal' und convertSRGBToLinear rufen Math.pow mit gebrochenem Exponenten).
+// Goldens: spec/asset-contract/v4/golden/gates.json — EINGEFROREN (Taille-Disziplin), gemintet NUR wenn die Datei fehlt
+// (oder MINT_FORCE=1). SELBST-TEST: ein in-memory korrumpiertes Golden MUSS rot erkannt werden. PLATTFORM-PROBE (S1
+// Wände, scripts/lib/plattform-probe.cjs): die Transzendenten von Math ±1 ULP kippen kein Byte — die Goldens tragen
+// unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; kippt ein Fall, nennt die Probe Funktion und Aufrufstelle.
 //   node scripts/diag-porta-contract.cjs
 const fs = require("fs");
 const path = require("path");

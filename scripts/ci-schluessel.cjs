@@ -1,4 +1,4 @@
-// ci-schluessel.cjs — DIE CACHE-SCHLÜSSEL DER CI (K61): was ein Cache trägt, und nichts sonst — nie die Projektversion (sie
+// ci-schluessel.cjs — DIE CACHE-SCHLÜSSEL DER CI: was ein Cache trägt, und nichts sonst — nie die Projektversion (sie
 // gab je Versions-Stufe einen neuen Schlüssel und lud den Chrome in jedem Job neu):
 //   npm     der sha256 über `packages` ohne den Wurzel-Eintrag, über dessen Abhängigkeits-Felder und lockfileVersion
 //   chrome  die Version von puppeteer-core (sie pinnt die Chrome-Revision des postinstall)

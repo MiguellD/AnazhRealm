@@ -23,7 +23,7 @@ const vm = require("vm");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
-const { umschlagImVm, ersteAbweichung, DATEN_KANAELE } = require("./lib/asset-worker-harness.cjs");
+const { kanalImVm, ersteAbweichung, DATEN_KANAELE } = require("./lib/asset-worker-harness.cjs");
 
 const root = path.resolve(__dirname, "..");
 
@@ -44,26 +44,6 @@ const CORES = MANIFEST.map((c) => ({
 }));
 
 const REZEPT_ID = /^[a-z0-9_-]+$/;
-// Registrierte + reservierte kinds (§3 B1). Ein UNBEKANNTER kind ist KEIN
-// Fehler (must-ignore G4.1) — er wird hier nur informativ gelistet.
-const KNOWN_KINDS = [
-    "tree",
-    "shrub",
-    "flower",
-    "grass",
-    "rock",
-    "vehicle",
-    "gate",
-    "weapon",
-    "haus",
-    "building",
-    "creature",
-    // W-A6/W-A7 (v1.1 §8, components-only-Domänen): Klang-Genres + Körper-/Kreatur-Gestalt-Daten.
-    "klang",
-    "koerper",
-    "kreatur",
-];
-
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // Ein absorbierender Proxy: frisst jeden Konstruktor/jede Methode der
@@ -568,7 +548,7 @@ function validateManifest(m) {
                         v.push(`B2c: lod.budget.${k}[${st}].ab steigt nicht streng (${abVor} → ${z.ab})`);
                     if (typeof z.ab === "number") abVor = z.ab;
                 }
-                // Welle 5: das Reisig des Strauchs — schnitt (Radius-Schnitt der Stufe in trunkR:
+                // das Reisig des Strauchs — schnitt (Radius-Schnitt der Stufe in trunkR:
                 // duennere Straenge fallen) < rute (in trunkR: darunter Vierkant-Roehre auf jedem 3. Ring) < 1.
                 if (("schnitt" in z || "rute" in z) && !(z.schnitt > 0 && z.rute > z.schnitt && z.rute < 1))
                     v.push(`B2c: lod.budget.${k}[${st}] muss 0 < schnitt < rute < 1 tragen`);
@@ -727,7 +707,7 @@ function validateManifest(m) {
                     v.push(`B5: Lehre "${l.id}" pass-Band [lo,hi] ungültig`);
             }
     }
-    // V18.486 — DIE GEFÜHLS-BLÖCKE (V18.483/485) sind VERTRAG, nicht mehr nur
+    // DIE GEFÜHLS-BLÖCKE sind VERTRAG, nicht mehr nur
     // must-ignore-„darf": trägt ein Kern sie, MUSS die Struktur stimmen
     // (SOLL-Validierung; die PFLICHT je Kern prüft der Haupt-Lauf).
     const fxB =
@@ -850,7 +830,7 @@ function validateManifest(m) {
             Number.isFinite(V.furcht.fleeThreshold) &&
             V.temperament &&
             V.temperament.profile &&
-            // DAS TEMPERAMENT DER GATTUNG (Welle LF): die Gattungs-Zeile (diet × die EINE Masse des Leibs in kg) und der Mut
+            // DAS TEMPERAMENT DER GATTUNG: die Gattungs-Zeile (diet × die EINE Masse des Leibs in kg) und der Mut
             // der Natur sind Vertrag; die Substanz-Signaturen, ihr Floor und die Substanz-Gewichte der Furcht kehren nicht
             // zurueck (die Tiere sind tag-gleich, Lehre 8).
             V.temperament.gattung &&
@@ -869,7 +849,7 @@ function validateManifest(m) {
             Number.isFinite(V.wandern.leashBaseM) &&
             // SCHLUSS-WELLE 17.07. — die neun heimgekehrten Blöcke sind Vertrag
             // (dieselben Felder, die die _verhaltenGesetz-Wand des Wirts prüft):
-            // DIE JAGD SCHLIESST SICH (Welle LF): der Ring der Hetze, die Pirsch-Sicht und die
+            // DIE JAGD SCHLIESST SICH: der Ring der Hetze, die Pirsch-Sicht und die
             // Beute-Masse sind Vertrag; der Gradienten-Schritt der Witterung und der Trab der Flucht kehren nicht zurueck
             // (die Flucht ist der Sprint der Gestalt, STEUER_GESETZ.sprint).
             Number.isFinite(V.jagd.hetzM) &&
@@ -882,7 +862,7 @@ function validateManifest(m) {
             Number.isFinite(V.stimmung.schwellen.weideDiet) &&
             V.freude &&
             Number.isFinite(V.freude.tempoMul) &&
-            // DAS SPRUNG-GESETZ (Welle L): die Huepf-Hoehen sind die EINE Quelle eines Sprungs,
+            // DAS SPRUNG-GESETZ: die Huepf-Hoehen sind die EINE Quelle eines Sprungs,
             // eine Aktion traegt nur `hop: true` (der Abflug in m/s und sprung.impulsProM fielen).
             Number.isFinite(V.freude.hopHochM) &&
             Number.isFinite(V.freude.hopBasisM) &&
@@ -891,7 +871,7 @@ function validateManifest(m) {
             Array.isArray(V.groessen) &&
             V.groessen.length >= 2 &&
             V.separation &&
-            // DER PERSOENLICHE RAUM (Welle LF): der Raum je Leib (raumKugel × Koerper-Kugel), das
+            // DER PERSOENLICHE RAUM: der Raum je Leib (raumKugel × Koerper-Kugel), das
             // Herden-Fenster im Paar-Raum; der feste Paar-Radius, das feste Fenster und der Neugier-Stopp kehren nicht zurueck.
             Number.isFinite(V.separation.raumKugel) &&
             V.separation.radiusBaseM === undefined &&
@@ -977,10 +957,7 @@ function validateManifest(m) {
         for (let i = 1; i < viol.length; i++) console.log(`      ↳ ${viol[i]}`);
         const n = m.presets ? Object.keys(m.presets).length : 0;
         const kinds = m.presets ? [...new Set(Object.values(m.presets).map((r) => r && r.kind))] : [];
-        const unknown = kinds.filter((k) => !KNOWN_KINDS.includes(k));
-        console.log(
-            `      ${n} Rezepte · kinds: ${kinds.join(", ")}${unknown.length ? ` · unbekannt (must-ignore): ${unknown.join(", ")}` : ""}`
-        );
+        console.log(`      ${n} Rezepte · kinds: ${kinds.join(", ")}`);
         if (funktionsKern)
             check(
                 `${entry.file}: §9 Gesetz-Kern (${m.api.length} Funktionen: ${m.api.join(" · ")})`,
@@ -1007,14 +984,13 @@ function validateManifest(m) {
         ohneGestalten.join(", ")
     );
 
-    // U (K64-n2) — DER EINGEFRORENE UMSCHLAG IM PULS: was ein Kern deklariert (Rezepte · Welt-Palette · Stufen und Budget
-    // jeder Art), reist im EINEN Umschlag (get-book) zum Wirt; seine drei Daten-Kanäle sind eingefroren
-    // (spec/asset-contract/v1/golden, Re-Mint = Vertrags-Akt). Befund K64-n1: porta-core trug gate[2].tris 12 500, eingefroren
-    // 15 000 — rot erst in der vollen Batterie (gate:asset-contract, Gruppe 5 Schritt 37, „divergiert" ohne Namen), jeder
-    // spätere Schritt der Gruppe übersprungen. Hier antwortet DERSELBE Kanal der Brücke im Node-vm (umschlagImVm, dieselben
-    // Dateien wie der Worker) und jede Abweichung steht beim Schlüssel; gate:asset-contract bleibt der Beweis im Browser.
+    // U (K64-n2) — DER EINGEFRORENE UMSCHLAG IM PULS: was ein Kern deklariert (Rezepte · Welt-Palette · Stufen und
+    // Budget jeder Art), reist im EINEN Umschlag (get-book) zum Wirt; seine drei Daten-Kanäle sind eingefroren
+    // (spec/asset-contract/v1/golden, Re-Mint = Vertrags-Akt). Hier antwortet DERSELBE Kanal der Brücke im Node-vm
+    // (umschlagImVm, dieselben Dateien wie der Worker) und jede Abweichung steht beim Schlüssel; gate:asset-contract
+    // bleibt der Beweis im Browser.
     const umschlagBefunde = (quellen) => {
-        const u = umschlagImVm(quellen);
+        const u = kanalImVm(quellen)({ type: "get-book" });
         const out = [];
         for (const [feld, key] of DATEN_KANAELE) {
             const gold = fs.readFileSync(
@@ -1063,9 +1039,8 @@ function validateManifest(m) {
         stammLib.fehlt.wo
     );
 
-    // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen
-    // sind Vertrag. Fehlt der Block im tragenden Kern, ist das ROT (vorher war
-    // alles nur must-ignore-„darf" — unbewacht, konnte still fallen).
+    // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen sind Vertrag. Fehlt der Block im
+    // tragenden Kern, ist das ROT.
     const pflicht = {
         "koerper-core.js": (m) =>
             !!(
@@ -1323,7 +1298,7 @@ function validateManifest(m) {
         build: function () {},
         meshfrei: true,
     });
-    // V18.486 — auch die Gefühls-Block-Prüfungen feuern auf Injektion:
+    // auch die Gefühls-Block-Prüfungen feuern auf Injektion:
     const bvFx = validateManifest({
         vertrag: 1,
         presets: {
@@ -1399,7 +1374,7 @@ function validateManifest(m) {
             bvFx.some((s) => s.includes("VERHALTEN unvollständig")),
         `${bv.length + bvS3.length + bvVer.length + bvMesh.length + bvFx.length} erkannt`
     );
-    // DAS SPRUNG-GESETZ (Welle L): der echte tetrapoda-Kern, einmal mit dem Abflug in m/s einer
+    // DAS SPRUNG-GESETZ: der echte tetrapoda-Kern, einmal mit dem Abflug in m/s einer
     // Aktion (der alte bound-Zwilling 3,2) und einmal mit dem linearen sprung-Faktor — beide feuern die VERHALTEN-Wand.
     {
         const tEntry = CORES.find((c) => c.file === "tetrapoda-core.js");
@@ -1419,7 +1394,7 @@ function validateManifest(m) {
                 faktor.some((s) => s.includes("ohne sprung-Zwilling")),
             `echt ${echt.length} · m/s ${hopMs.length} · Faktor ${faktor.length}`
         );
-        // DAS TEMPERAMENT DER GATTUNG (Welle LF): die Substanz-Signaturen kehren zurueck, oder die
+        // DAS TEMPERAMENT DER GATTUNG: die Substanz-Signaturen kehren zurueck, oder die
         // Gattungs-Zeile fehlt — beide feuern die VERHALTEN-Wand.
         const sig = tm ? mitZwilling((V) => (V.temperament.signaturen = { wehrhaft: { dichte: 1 } })) : [];
         const ohneG = tm ? mitZwilling((V) => delete V.temperament.gattung) : [];

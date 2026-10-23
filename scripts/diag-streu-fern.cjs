@@ -1,8 +1,8 @@
 // diag-streu-fern.cjs — DIE FERNFORM DER KLEIN-STREU KOMMT AUS DEM BUDGET (npm run gate:streu-fern).
 //
 // Studio-Vertrag B2c: jede Art trägt `PORTAL_RENDER_CONFIG.lod.budget[kind].fernform` ("gesetz" | "boden" | "karte") —
-// was sie jenseits der EINEN Nah-Grenze des Wirts ist (`AnazhRealm.ANALOG_NAH_M`, 64 m; Schöpfer-Wort 30.09. „AAA nah,
-// nicht Kapseln": diesseits trägt das Studio-Mesh, auch auf dem Fern-Wunsch). Der EINE Zellen-Chokepoint
+// was sie jenseits der EINEN Nah-Grenze des Wirts ist (`AnazhRealm.ANALOG_NAH_M`, 64 m; diesseits trägt das Studio-Mesh,
+// auch auf dem Fern-Wunsch). Der EINE Zellen-Chokepoint
 // `_scatterMaterializeCell` liest sie über `_streuFernBahn` VOR jedem Mesh-Zug: eine Nicht-Baum-Zelle jenseits der
 // Grenze fragt nie ein geklemmtes L0 an. "gesetz" = Platz im Welt-March (oder `wartet`: slots [], keine Instanz-Bahn),
 // "boden" = Datensatz ohne Geometrie (die Boden-Funktion trägt), "karte" = die Studio-Karte.
@@ -426,8 +426,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 r._disposeScatterRegion(flipKey); // ihre Plätze fallen frei (Segmente in die alte Freiliste)
                 // ERSCHÖPFT ist die Liste erst, wenn keine der drei Quellen mehr trägt: der Bump-Cursor, die freien Segmente
                 // UND die freien Plätze der stehenden Gesetz-Blöcke — ein Spawn füllt zuerst den Block seiner Kachel
-                // (`_streuGesetzSpawn`); teilt die Region ihre Kacheln mit Nachbarn, fanden 13 von 150 Zellen dort Platz
-                // (K16-Gelände, lokal und CI 38242768343), der Allokator war nie gefragt.
+                // (`_streuGesetzSpawn`), auch wenn die Region ihre Kacheln mit Nachbarn teilt.
                 for (const bloecke of wm.gesetzKacheln.values())
                     for (const b of bloecke) {
                         plaetze0.set(b, b.freiPlaetze);

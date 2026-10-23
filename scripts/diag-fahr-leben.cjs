@@ -2,7 +2,7 @@
 // Spiel-Takt (`_gameLoopTick` — Akkumulator, Sim-Schritte, Interpolation, Frame-Tick), nie an ihm vorbei, und sie ruft
 // den Fahr-Schritt des Kerns selbst (vehicle-core), nie einen Nachbau. Die Befunde je Zeile tragen die Commit-Messages.
 //
-//   node scripts/diag-fahr-leben.cjs [--selftest | --kern]   Port: FAHR_LEBEN_PORT (Standard 4413)
+//   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern]   Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const path = require("path");
@@ -546,27 +546,39 @@ const server = statikServer();
 
 const { probeLeben, tempoVerdict, tempoSpion, kernTempo } = require("./lib/fahr-proben.cjs");
 
-// ════ F — DIE FAHR-BAHN (K12; die Fahr-Bahn-Linse der Leben-Schau 2 geht hier auf) ════ Der Wagen, den die Welt hinstellt,
-// steht auf fahrbarem Grund, kommt rückwärts und nach einem Stoß frei, zeigt sein Tempo und klingt. Eigenes Boot (Takt-Zähler):
-//   FK  (Node, der Kern) RÜCKWÄRTS AUS DEM STAND: jedes Rezept fährt S (und S + Gegenlenkung je Seite) 2,5 s eben, 10° und
-//       15° bergauf ≥ 3 m.
-//   FK2 (Node) DIE DREHZAHL ÜBER 0…vmax: klang:FAHRT trägt sie vom Leerlauf (v 0) zum Begrenzer (vmax), steigt in jedem
-//       Gang, der Motor-Ton ist die Zünd-Folge U/min/60 · Zylinder/2.
-//   F1  DER PLATZ AN JEDEM TOR des Genesis-Rings: die Welt stellt den GT an den Wunsch-Ort der Vorschau (`_portalVorschauOrt`,
-//       spawnArchitecture autonomous wie die Vorschau; alle zugleich); nach 1 s Welt (die Wald-Schlange setzt ihre Würfe):
-//       Neigung der Rad-Ebene ≤ 15°, keine Wand im Umriss, kein Blocker im Band, E steigt ein und aus.
-//   F2  DIE VORSCHAU DES SPIELS (`_portalApproachPrefetch`, der Befund-Ort, die Platz-Suche im Takt) — dasselbe Urteil und
-//       die Fahrt: W 2 s ≥ 2 m, bremsen, S 2,5 s rückwärts aus dem Stand ≥ 3 m.
-//   F3  DIE NATUR-WAND KENNT DEN WAGEN: ein Wurf der Natur in der Hülle eines stehenden GT fällt ("wagen"); der Wagen ist
-//       kein Grundriss (`_imGrundriss` false: kein Haus räumt die Natur aus einem Wagen und nennt dafür seinen Grundriss).
-//   F4  DER STOSS UND DIE BEFREIUNG: Gas gegen den Glutbrunnen der Schau (−875/−732) und gegen einen Kiefern-Stamm; danach
-//       S + Gegenlenkung je Seite — frei (≥ 1 m vom Stoß) in ≤ 2 s.
-//   F5  DER TACHO zeigt |vlong| × vehicle:FAHR.kmh (die Zahl der Probefahrt), nach dem Absteigen ist er fort.
-//   F6  DIE STIMME: im Sattel klingt die Fahrt aus klang-core fahrtStimme, der Motor-Ton folgt klang:FAHRT (±1 %, Spanne
-//       ≥ 100 Hz), absteigen macht still.
-//   F7  DIE TASTEN: „hilfe" nennt E und Shift, Shift kommt als Handbremse im Fahr-Schritt an.
-//   SCHMUGGEL (im selben Boot): die Vorschau ohne Platz-Gesetz (`_fahrPlatzSuche` gestubbt) und die Natur-Wand ohne die
-//       Wagen (das Blocker-Netz ohne „moveable") → ROT beim Namen.
+// W (feld.K1) DIE WETTER-KETTE: ein Glied zählt, wenn es mit dem Sturm ZIEHT und STEHT, solange sein Vorgänger gehalten wird
+// (`kette` in lib/fahr-proben.cjs); die Tiefe zählt von vorn (Staffel 1 = Tiefe 2–3, 2 = ≥ 4), der Grip zieht ab Bremsweg × `nass`.
+const KETTE = { anlauf: 90, bremsMax: 400, sprungS: 1200, eps: 0.02, nass: 1.3, tiefe: 3 };
+function ketteVerdict(m) {
+    const f = ["trocken", "sturm", "festRegen", "festNaesse"].filter((l) => !(m && m[l] && m[l].verz > 0));
+    if (f.length) return { tiefe: 0, befunde: [`ohne Bremsung: ${f}`] };
+    const { trocken: t, sturm: s, festRegen: fr, festNaesse: fn } = m;
+    const gl = (a, b) => Math.abs(a - b) <= KETTE.eps * Math.max(1, Math.abs(b));
+    const glieder = [
+        ["Regen-Feld", s.regen > t.regen + KETTE.eps, true],
+        ["Nässe", s.naesse > t.naesse + KETTE.eps && gl(s.stoff, s.naesse), !(fr.regen > t.regen) && gl(fr.naesse, t.naesse)],
+        ["Grip", t.verz / s.verz >= KETTE.nass, fn.regen > KETTE.eps && gl(fn.naesse, t.naesse) && gl(fn.verz, t.verz)],
+    ];
+    let tiefe = 0;
+    while (tiefe < 3 && glieder[tiefe][1] && glieder[tiefe][2]) tiefe++;
+    const befunde = glieder.slice(tiefe, tiefe + 1).map(([n, zieht]) => `${n} ${zieht ? "steht nicht" : "zieht nicht"}`);
+    if (m.stern && gl(m.stern.verz, t.verz)) befunde.push("blind: der Wort-Leser steht");
+    return { tiefe, befunde };
+}
+function ketteBericht(k, err) {
+    const v = ketteVerdict(k);
+    check(
+        `W (feld.K1) DIE WETTER-KETTE: Sturm → Regen-Feld → Nässe → Grip, jedes Glied zieht und steht, wenn sein Vorgänger gehalten wird (Tiefe ≥ ${KETTE.tiefe})`,
+        !err && v.tiefe >= KETTE.tiefe && !v.befunde.length,
+        `Tiefe ${v.tiefe} ${JSON.stringify(k)} ${err || ""}${v.befunde.join(" · ")}`
+    );
+    return v;
+}
+
+// ════ F — DIE FAHR-BAHN (K12), eigenes Boot: der Wagen, den die Welt hinstellt, steht auf fahrbarem Grund, kommt rückwärts
+// und nach einem Stoß frei, zeigt sein Tempo und klingt — FK/FK2 am Kern (rückwärts aus dem Stand, die Drehzahl), F1 der
+// Platz an jedem Tor, F2 die Vorschau, F3 die Natur-Wand, F4 Stoß und Befreiung, F5 Tacho, F6 Stimme, F7 Tasten; SCHMUGGEL
+// (Vorschau ohne Platz-Gesetz, Natur-Wand ohne Wagen) → ROT beim Namen. ════
 const BAHN = {
     rueckM: 3, // FK, F1: rückwärts aus dem Stand in 2,5 s
     rueckFrames: 150,
@@ -1472,6 +1484,20 @@ function quellenAbgriff() {
             stufe: 0,
         };
         check("Selbst-Test 0: gesunder Ritt == 0 Täter", taktVerdict(gesund).length === 0);
+        // W: gesund Tiefe 3, jeder Täter beim Namen seines Glieds
+        const lg = (regen, naesse, verz) => ({ regen, naesse, stoff: naesse, verz });
+        const kg = { trocken: lg(0, 0, 9), sturm: lg(1, 1, 6), festRegen: lg(0, 0, 9), festNaesse: lg(1, 0, 9), stern: lg(1, 0, 6) };
+        for (const [bruch, tiefe, soll] of [
+            [{}, 3, /^$/],
+            [{ sturm: lg(1, 1, 9) }, 2, /Grip zieht nicht/],
+            [{ festNaesse: lg(1, 0, 6) }, 2, /Grip steht nicht/],
+            [{ festRegen: lg(0, 1, 6) }, 1, /Nässe steht nicht/],
+            [{ stern: lg(1, 0, 9) }, 3, /blind/],
+        ]) {
+            const v = ketteVerdict(Object.assign({}, kg, bruch));
+            check(`Selbst-Test W ${soll} → Tiefe ${tiefe}`, v.tiefe === tiefe && soll.test(v.befunde.join()), v.befunde.join());
+        }
+
         for (const [name, bruch, soll] of [
             ["der gerittene Wagen auf der Karte (Distanz-Wand)", { stufe: 2 }, "stufe"],
             ["der Eintrag bleibt hinter dem Reiter (Pin gerissen)", { versatz: 3.2 }, "versatz"],
@@ -2137,6 +2163,15 @@ function quellenAbgriff() {
     // die Orte des Wassers aus der Welt (L10: der See, `__wasserOrte`)
     await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
     await page.evaluate(`window.__tempoSpion = ${tempoSpion}`);
+    if (process.argv.includes("--kette")) {
+        const o = await page.evaluate(probeLeben, { messort, nurKette: true, kette: KETTE });
+        await browser.close();
+        server.close();
+        const v = ketteBericht(o.kette, o.err);
+        console.log(`KETTE ${JSON.stringify({ tiefe: v.tiefe, roh: o.kette })}`);
+        process.exit(errs.length ? 1 : 0);
+    }
+
     // F — die Fahr-Bahn im eigenen Boot nach dem Leben (der Quellen-Abgriff der Stimme vor jedem Seiten-Skript)
     const bahnLauf = async () => {
         const page2 = await browser.newPage();
@@ -2150,6 +2185,7 @@ function quellenAbgriff() {
         dorf: require("./lib/welt-orte.cjs").messort("dorf"),
         randM: STATION.randM,
         flugM: STATION.flugM,
+        kette: KETTE,
     });
     await page.close();
     const bahn = await bahnLauf();
@@ -2203,6 +2239,7 @@ function quellenAbgriff() {
         v5.length === 0,
         `${JSON.stringify(out.tempo)}${v5.length ? " — Täter: " + v5.join(" · ") : ""}`
     );
+    ketteBericht(out.kette);
     console.log("=== S — DIE STATIONEN IN DER WELT (Q13 · F-D6 F-D7), echter Sim-Schritt ===");
     const S = out.stationen || {};
     const vS = stationVerdict(S);

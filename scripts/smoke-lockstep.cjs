@@ -1,4 +1,4 @@
-// LOCKSTEP-MP STUFE 2 — DER ZWEI-BROWSER-BEWEIS (V18.382, `npm run smoke:lockstep`).
+// LOCKSTEP-MP STUFE 2 — DER ZWEI-BROWSER-BEWEIS (`npm run smoke:lockstep`).
 // Browser A bewegt sich (skriptgesteuerte Tasten: laufen · drehen · springen); nur seine
 // INPUTS reisen übers echte WebRTC-Mesh (seq · yaw · Bitmask). Browser B simuliert A's
 // Charakter aus diesem Input-Band durch DENSELBEN deterministischen Schritt-Pfad

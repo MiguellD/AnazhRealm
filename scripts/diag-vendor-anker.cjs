@@ -79,14 +79,14 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getBindings(){return this._bindings||(this._bindings=this.getNodeBuilderState().createBindings())}", organ: "AnazhRealm._diaetGeteiltSchreiben (ro.getBindings)" },
     { file: "vendor/three.webgpu.min.js", sub: "this.updateNodes=n,this.updateBeforeNodes=a,this.updateAfterNodes=o,this.observer=u", organ: "AnazhRealm._diaetRefresh (NodeBuilderState: updateNodes · updateAfterNodes · observer)" },
     { file: "vendor/three.webgpu.min.js", sub: "equals(e,t,r){const{object:s,material:i,geometry:n}=e,a=this.getRenderObjectData(e);", organ: "AnazhRealm._diaetRefresh (obs.equals)" },
-    // (7) DER WÄCHTER IST DIE GEOMETRIE-PRÜFUNG (K71): equals() prüft die Geometrie je Geometrie und Render (Stempel `_renderId`,
+    // (7) DER WÄCHTER IST DIE GEOMETRIE-PRÜFUNG: equals() prüft die Geometrie je Geometrie und Render (Stempel `_renderId`,
     // Urteil `_equal`, Id je Objekt `geometryId`) samt drawRange — die Diät stellt diese Daten als geprüft; der Ausschnitt ist ein
     // Draw-Parameter (jeder Draw liest `geometry.drawRange`).
     { file: "vendor/three.webgpu.min.js", sub: "if(a.geometryId!==n.id)return a.geometryId=n.id,!1;const u=this.getGeometryData(e.geometry);if(u._renderId!==r){u._renderId=r;", organ: "AnazhRealm._diaetRefresh (7: equals prüft die Geometrie je Geometrie und Render)" },
     { file: "vendor/three.webgpu.min.js", sub: "u.drawRange.start!==n.drawRange.start||u.drawRange.count!==n.drawRange.count)return u.drawRange.start=n.drawRange.start,u.drawRange.count=n.drawRange.count,u._equal=!1,!1;u._equal=!0}else if(!1===u._equal)return!1;", organ: "AnazhRealm._diaetRefresh (7: der Vendor-Vergleich frischt auf einen anderen Ausschnitt auf)" },
     { file: "vendor/three.webgpu.min.js", sub: "getGeometryData(e){let t=Ps.get(e);return void 0===t&&(t={_renderId:-1,_equal:!1,", organ: "AnazhRealm._diaetRefresh (7: obs.getGeometryData je Geometrie)" },
     { file: "vendor/three.webgpu.min.js", sub: "const u=this._objects.get(e,t,r,s,i,this._currentRenderContext,a,o);if(u.drawRange=e.geometry.drawRange,", organ: "AnazhRealm._diaetRefresh (7: der Ausschnitt ist ein Draw-Parameter)" },
-    // (8) GETRAGEN (K71): r184 lädt ein Attribut EINMAL je Version für alle Render-Objekte — die Daten je Attribut-Objekt am
+    // (8) GETRAGEN: r184 lädt ein Attribut EINMAL je Version für alle Render-Objekte — die Daten je Attribut-Objekt am
     // Renderer (`_attributes`, eine DataMap mit `has`), `version` die hochgeladene; die Diät liest sie, bevor ein Render-Objekt
     // auf eine neue Version hin voll auffrischt.
     { file: "vendor/three.webgpu.min.js", sub: "this._attributes=new By(r,this.info)", organ: "AnazhRealm._diaetGetragen (8: rend._attributes)" },
@@ -96,7 +96,7 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getLights(e,t){if(", organ: "AnazhRealm._diaetRefresh (obs.getLights)" },
     { file: "vendor/three.webgpu.min.js", sub: 'needsVelocity(e){const t=e.getMRT();return null!==t&&t.has("velocity")}', organ: "AnazhRealm._diaetRefresh (obs.needsVelocity)" },
     { file: "vendor/three.webgpu.min.js", sub: "firstInitialization(e){return!1===this.renderObjects.has(e)&&(this.getRenderObjectData(e),!0)}", organ: "AnazhRealm._diaetRefresh (obs.renderObjects = Erst-Init)" },
-    // DER EINE KNOTEN JE QUELLE (_configureRenderer, Welle K): r184 teilt eine geteilte Gruppe über Programme nur bei
+    // DER EINE KNOTEN JE QUELLE (_configureRenderer): r184 teilt eine geteilte Gruppe über Programme nur bei
     // GLEICHEN Knoten-Ids (je Render-Kontext EIN Puffer); ReferenceNode legt seinen Uniform-Knoten in setNodeType an (der
     // Eingriff gibt jedem Verweis auf dasselbe Objekt und dieselbe Eigenschaft einer geteilten Gruppe DENSELBEN), die CSM
     // baut ihre Render-Knoten in setup (einmal je Instanz).
@@ -130,7 +130,7 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: 't.instanceColor){s=kn("vec3","vInstanceColor").mul(s)}', organ: "DIE SENKE (die Instanz-Farbe liest r184 als vInstanceColor — der Instanz-Knoten schreibt sie aus `instanzFarbe`)" },
     { file: "vendor/three.webgpu.min.js", sub: "n.attribute!==e&&(n.attribute=e,s=!0)", organ: "DIE SENKE (je Bindung das Attribut des Speicher-Knotens, ein Wechsel baut die Bindegruppe neu — die Matrix je Zeichen-Objekt)" },
     { file: "vendor/three.webgpu.min.js", sub: "get attribute(){return this.nodeUniform.value}", organ: "DIE SENKE (die Speicher-Bindung liest das Attribut aus dem Wert ihres Knotens — `_senkenKnoten` stellt ihn je Objekt)" },
-    // DER POSITIONS-KNOTEN VOR DER INSTANZ-MATRIX (K20-N1): `setupPosition` legt die Zuweisung des
+    // DER POSITIONS-KNOTEN VOR DER INSTANZ-MATRIX: `setupPosition` legt die Zuweisung des
     // positionNode auf den Stapel, der Instanz-Knoten hängt sein `positionLocal = M × positionLocal` erst in seinem setup an,
     // und `StackNode.build` baut nachgereichte Knoten NACH den ersten — im positionNode sind positionLocal, normalLocal und
     // positionWorld die VORLAGE. Wer die Welt braucht, liest die EINE Naht `_weltNaht`.
@@ -164,7 +164,7 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "S.length>0&&this._renderBundles(S,l,R),!0===this.opaque&&w.length>0&&this._renderObjects(w,t,l,R)", organ: "Bundle-Reihenfolge (Bundles vor den opaken Direkt-Draws)" },
     { file: "vendor/three.webgpu.min.js", sub: "addBundle(e,t){this.get(e).renderBundles.push(this.get(t).bundleGPU)}", organ: "Bundle-Reihenfolge (die gesammelte Liste)" },
     { file: "vendor/three.webgpu.min.js", sub: "t.currentSets={attributes:{},bindingGroups:[],pipeline:null,index:null},t.renderBundles=[]", organ: "Bundle-Reihenfolge (Pass-Zustand nach executeBundles)" },
-    // DIE ERST-ZEICHNUNG (Welle K, `_configureRenderer`): der Stamm bildet `_renderObjectDirect` nach (ändert r184 den Körper,
+    // DIE ERST-ZEICHNUNG (`_configureRenderer`): der Stamm bildet `_renderObjectDirect` nach (ändert r184 den Körper,
     // zieht die Nachbildung nach), baut den Stoff im Pass je Render-Aufruf (`info.calls`) höchstens einmal und lässt die
     // Pipeline asynchron entstehen (`getForRender(ro, promises)`); der Record droppt unfertige Draws und versiegelt danach.
     { file: "vendor/three.webgpu.min.js", sub: "u.version=s.version", organ: "_erstWartet (2): die Marke des Knoten-Baus fällt nach der Versiegelung" },
@@ -284,14 +284,14 @@ const ANKER = [
     { file: "vendor/three.core.min.js", sub: "onUploadCallback(){}set needsUpdate(t){!0===t&&this.version++}", organ: "AnazhRealm._regungMelder (BufferAttribute · InterleavedBuffer)" },
     { file: "vendor/three.core.min.js", sub: "this.matrixWorldNeedsUpdate=!0}updateMatrixWorld(t){this.matrixAutoUpdate&&this.updateMatrix(),", organ: "AnazhRealm._regungMelder (updateMatrix)" },
     { file: "vendor/three.webgpu.min.js", sub: "setGeometry(e){this.geometry=e,this.attributes=null,this.attributesId=null}getAttributes(){if(null!==this.attributes)return this.attributes;", organ: "AnazhRealm._diaetRuhig (Bau-Wechsel, gelesene Attribute)" },
-    // Der Satz (Welle B): ein Chunk ist ein Bereich im Pool-Puffer — sein Upload ist ein Teil-Schreiben ab dem
+    // Der Satz: ein Chunk ist ein Bereich im Pool-Puffer — sein Upload ist ein Teil-Schreiben ab dem
     // Bereichs-Anfang (updateRanges → queue.writeBuffer(offset)); ohne diese Bahn lüde jeder Chunk den ganzen Satz.
     {
         file: "vendor/three.webgpu.min.js",
         sub: "const o=t.updateRanges;if(0===o.length)s.queue.writeBuffer(n,0,a,0);else{",
         organ: "_chunkSatzEin/_chunkSatzMarke (Teil-Upload je Chunk-Bereich)",
     },
-    // Der Satz je Pass (Welle 6 Boden-Schatten): jeder Pass setzt im Szenen-Haken seinen Abschnitt als drawRange — der
+    // Der Satz je Pass: jeder Pass setzt im Szenen-Haken seinen Abschnitt als drawRange — der
     // Draw liest die Geometrie-drawRange beim ZEICHNEN (Referenz am Render-Objekt), nie einmal je Objekt; und jeder Pass
     // gibt seinen Befehl am Pass-Ende ab (ein Umlegen mitten im Frame zieht nur Abschnitte von Schatten-Pässen um, die
     // schon abgegeben sind; den Lauf des offenen Haupt-Passes lässt es liegen).
@@ -310,7 +310,7 @@ const ANKER = [
         sub: "if(this.device.queue.submit([t.encoder.finish()]),null!==e.textures)",
         organ: "_chunkSatzUmlegen (jeder Schatten-Pass ist am Ende abgegeben — ein Umzug mitten im Frame trifft ihn nie)",
     },
-    // DIE INSTANZ-WAHL JE PASS (Welle 7): eine Pflanzen-Stufe ordnet im Szenen-Haken ihre Slots und setzt `count` — der Draw
+    // DIE INSTANZ-WAHL JE PASS: eine Pflanzen-Stufe ordnet im Szenen-Haken ihre Slots und setzt `count` — der Draw
     // liest die Instanz-Zahl beim ZEICHNEN (nicht einmal je Objekt), und jeder Pass ist am Ende abgegeben: die Kaskade k0
     // schreibt die Puffer eines Zwillings, gibt ab, dann schreibt k1 — der Inhalt jedes Passes erreicht die GPU vor dem nächsten.
     {
@@ -432,7 +432,7 @@ const ANKER = [
     // SHADOW_TWIN_LAYER und zeichnet doch im Auge).
     { file: "vendor/three.webgpu.min.js", sub: "_projectObject(e,t,r,s,i){if(!1===e.visible)return;if(e.layers.test(t.layers))", organ: "_applyEgoSicht (jede Kamera zeichnet nur ihre Ebenen)" },
     { file: "vendor/three.webgpu.min.js", sub: "const n=e.children;for(let e=0,a=n.length;e<a;e++)this._projectObject(n[e],t,r,s,i)", organ: "_applyEgoSicht (die Kinder ohne Ebenen-Test: das Gerät unter Ebene-2-Knochen zeichnet)" },
-    // DIE WURF-EBENE (K72): `castShadow` ist ein Accessor auf das Bit SHADOW_TWIN_LAYER — der Konstruktor legt die Ebenen VOR der
+    // DIE WURF-EBENE: `castShadow` ist ein Accessor auf das Bit SHADOW_TWIN_LAYER — der Konstruktor legt die Ebenen VOR der
     // ersten Zuweisung an, `copy` trägt beide; die Schatten-Kamera behält eine Maske mit einem Bit jenseits der 0 (sonst nähme
     // r184 die Maske der Haupt-Kamera und die Kaskade sähe keinen Werfer); die Schatten-Funktion liest `castShadow`.
     { file: "vendor/three.core.min.js", sub: "this.layers=new lr,this.visible=!0,this.castShadow=!1", organ: "_wurfEbene (die Ebenen stehen vor der ersten Zuweisung des Wurfs)" },
@@ -624,7 +624,7 @@ function diaetLauf(fn) {
     const r7 = render(() => freiWert.value++);
     return { r1, r2, r3, r4, r5, r6, r7 };
 }
-// (8) GETRAGEN (K71): EIN Objekt in zwei Pässen — der Schatten (zuerst) liest Instanz-Matrix und Lage, das Hauptbild dazu
+// (8) GETRAGEN: EIN Objekt in zwei Pässen — der Schatten (zuerst) liest Instanz-Matrix und Lage, das Hauptbild dazu
 // die Normale; jeder Pass hat seinen Beobachter. Der Schein-Renderer lädt wie r184 je Attribut-Objekt EINMAL je Version
 // (`_attributes`: `version` die hochgeladene), und nur die Attribute, die der Pass liest. Gemessen je Render: wie viele
 // Pässe voll auffrischen. Soll: eine neue Version der Matrix oder der Lage frischt EINEN Pass auf (der zweite liest, was der

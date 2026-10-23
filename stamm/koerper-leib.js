@@ -983,14 +983,11 @@ class AnazhRealm_koerper_leib {
         // WELCHES Rezept eine Seele liest, pinnt TETRAPODA_SOUL_MAP (Daten) — hier nur
         // die Form-Wache (must-ignore, kein kind-Literal: das klang-Leser-Muster).
         const s = rec && rec.s && typeof rec.s === "object" ? rec.s : null;
-        // STUDIO-ÜBERGABE = VORRANG-Quelle je Gattung: validiert am EINEN Empfänger _studioUebergabeEmpfang,
-        // mischen die fünf allometrischen Dials ÜBER das Buch. Beide Konsumenten folgen: _ofenKreaturDials
-        // (Memo-Key trägt die Dials) und _tetrapodaSoulParts. Nur KÜNFTIGE Spawns lesen hier; bestehende
-        // Kreaturen bleiben wie gegossen.
-        const ue = this.state && this.state.studioUebergabe && this.state.studioUebergabe.kreatur;
-        const ueS = ue && ue[recId] && ue[recId].s;
-        if (ueS && typeof ueS === "object") return Object.assign({}, s || {}, ueS);
-        return s;
+        // DIE PRÄGUNG DER GATTUNG = VORRANG-Quelle (ws.studioOv, geschrieben vom EINEN Übergabe-Kanal und den Werkstatt-
+        // Reglern): die fünf allometrischen Dials ÜBER das Buch. Beide Konsumenten folgen: _ofenKreaturDials (Memo-Key trägt die
+        // Dials) und _tetrapodaSoulParts. Nur KÜNFTIGE Spawns lesen hier; bestehende Kreaturen bleiben wie gegossen.
+        const p = this._studioPraegung(recId);
+        return p ? Object.assign({}, s || {}, p) : s;
     }
     // ═══ DER KREATUR-OFEN ═══
     // Die Gattung reist als ASSET durch dieselbe Foundry wie die Pflanzen (BAKERS_BY_KIND.kreatur, Worker
@@ -1602,6 +1599,9 @@ class AnazhRealm_koerper_leib {
     // Uhr; `_ofenVorratSteht` sagt Boot-Phase 3, dass jede Gattung im Memo liegt (oder laut fehlt).
     async _ofenPrefetchKreaturen() {
         await this._weltbildKommt();
+        // ohne Bild steht es vor der Welt (`_weltbildSteht` im Boot des Null-Renderers): der Vorrat wartet auf das Erwachen (die
+        // Heimat aus dem Faden, die Kreaturen des Boots) — sonst rennt er gegen ihren Guss, und jeder Boot bestellt andere Gattungen
+        if (this.erwacht) await this.erwacht;
         const auftraege = [];
         const map = AnazhRealm.TETRAPODA_SOUL_MAP;
         const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
@@ -2839,18 +2839,15 @@ class AnazhRealm_koerper_leib {
         const rec = f && f.recipes ? f.recipes[AnazhRealm.KOERPER_HOST_RECIPE] : null;
         const s0 = rec && rec.s;
         const s = s0 && typeof s0 === "object" ? s0 : null;
-        // STUDIO-ÜBERGABE = VORRANG-Quelle: validiert am EINEN Empfänger _studioUebergabeEmpfang, mischen
-        // ihre Dials ÜBER das Buch; die Gestalt-Wahlen reisen im selben Objekt (bmDials → Mensch-Ofen-Memo-
-        // Key → bakeMenschInstance). Beim Peer-Avatar-Guss FÜHRT die Übergabe des SENDERS: _p2pApplyPeerSoul
-        // setzt sie transient in this._activePeerUebergabe (try/finally) — derselbe Merge, andere Quelle.
+        // DIE PRÄGUNG DES MENSCH-REZEPTS = VORRANG-Quelle (ws.studioOv, geschrieben vom EINEN Übergabe-Kanal und den
+        // Werkstatt-Reglern): Dials und Gestalt-Wahlen ÜBER das Buch (bmDials → Mensch-Ofen-Memo-Key → bakeMenschInstance).
+        // Beim Peer-Avatar-Guss FÜHRT die Prägung des SENDERS: _p2pApplyPeerSoul setzt sie transient in
+        // this._activePeerUebergabe (try/finally; {} = der Peer ohne Prägung) — derselbe Merge, andere Quelle.
         const ue =
             this._activePeerUebergabe !== undefined && this._activePeerUebergabe !== null
                 ? this._activePeerUebergabe
-                : this.state && this.state.studioUebergabe && this.state.studioUebergabe.koerper;
-        if (ue && ue.s && typeof ue.s === "object") {
-            return Object.assign({}, s || {}, ue.s, ue.gestalt && typeof ue.gestalt === "object" ? ue.gestalt : {});
-        }
-        return s;
+                : this._studioPraegung(AnazhRealm.KOERPER_HOST_RECIPE);
+        return ue && Object.keys(ue).length ? Object.assign({}, s || {}, ue) : s;
     }
 
     // Der Mensch hängt an derselben Größen-Achse: die koerperstudio-Dials tragen den Größen-Faktor in

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// diag-tier-anatomie.cjs — DIE ANATOMIE-LINSE DER TIERE (Welle 5, Tour 09: „der Rumpf ist ein Sack auf dünnen Beinen")
+// diag-tier-anatomie.cjs — DIE ANATOMIE-LINSE DER TIERE
 // (npm run gate:tier-anatomie). Sie misst die GEBACKENE Gestalt — denselben Bäcker, den Worker und Wirt rufen
 // (foundry-core BAKERS_BY_KIND.kreatur, three r128 im node-vm wie im Foundry-Worker) — an der Haut der Ruhe-Pose,
 // normiert auf den Widerrist W, gegen das SOLL des Gesetzbuchs (tetrapoda-core ANATOMIE_SOLL, die Natur-Bänder je Art):
@@ -14,8 +14,7 @@
 //   kehrt zurück → äußerste rot · (S10) das Kopf-Fell unter der Wolle-Schwelle → Kopf-Fell kahl. Die Linse feuert, sonst
 //   ist sie vakuös.
 // Dazu kopfFrei (Anteil der Kopf-Länge vor der Leib-Haut) und halsBreite (die Leib-Haut auf 60 % Schulter → Kopf).
-// DIE KAHL-LINSE (Integration W5-Körper: die Anatomie-Welle ließ 28 % des Bär-Rumpfs, 87 % seiner Läufe und 34 % des
-// Hirsch-Halses kahl, unbenannt): je Region (rumpf · hals · beinOben · beinUnten · rute — nach dem dominanten Bone
+// DIE KAHL-LINSE: je Region (rumpf · hals · beinOben · beinUnten · rute — nach dem dominanten Bone
 // der Schale) der Anteil der innersten Fell-Schale, deren Dichte unter der Wolle-Schwelle des Welt-Materials liegt
 // (aSchale.y < 0,05: dort deckt keine Unterwolle — Stamm, Klasse fellSchale). Rot über KAHL_MAX.
 //   node scripts/diag-tier-anatomie.cjs [--selftest] [--json]
@@ -94,7 +93,7 @@ function ladeWelt() {
     return sb;
 }
 
-// DIE KOPF-SCHALEN (K28): jede starre Kopf-Haut (Kopf und Kiefer — die Fell-Meshes an headGroup und jawGroup) trägt
+// DIE KOPF-SCHALEN: jede starre Kopf-Haut (Kopf und Kiefer — die Fell-Meshes an headGroup und jawGroup) trägt
 // Schalen im EINEN Stapel: Ecken mit Gewicht 1 an ihrem Gelenk, auf kopfSchalen − 1 Höhen (t = s / kopfSchalen), im Raster
 // des Rumpfs (aSchale.z wie der Leib) und deckend (aSchale.y ≥ die Wolle-Schwelle); im ganzen Stapel fehlt die äußerste Höhe
 // (t = 1 trägt keine Locke); kahl (am Auge, an Nase und Lefze) höchstens KOPF_KAHL_MAX der Ecken. Rot vor K28 (der Kopf glatt, dann 19 Karten): `wolf Kopf-Fell: headGroup trägt keine Schale`.
@@ -462,7 +461,7 @@ if (process.argv.includes("--selftest")) {
         pruefe("S3 der Riesen-Wolf (Maßstab 1) wird erkannt", r.fehler, /wolf widerristM/);
     }
     // S4: der Hals 1,8× breit (die Kapuze kehrt zurück) — die Leib-Haut vor den Schultern seitlich gedehnt
-    // S5: der Kopf um die halbe Länge in den Hals geschoben (der Bär vor dieser Welle)
+    // S5: der Kopf um die halbe Länge in den Hals geschoben
     {
         const sb = ladeWelt();
         const r = lauf(sb, {

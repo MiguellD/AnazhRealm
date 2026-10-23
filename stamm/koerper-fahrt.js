@@ -1254,6 +1254,15 @@ class AnazhRealm_koerper_fahrt {
         return spiegel > fz.y ? spiegel - fz.y : 0;
     }
 
+    // DIE HAFTUNG AM WAGEN (feld.K1, die Wetter-Kette Sturm → Regen-Feld → Nässe → Grip): der Boden-Faktor des Reibkreises im
+    // Fahr-Schritt (vehicle-core fahrKraefte `e.haft`) liest die EINE Nässe der Welt (`state.naesse`, EIN Schreiber
+    // `_naesseTakt`), nie das Wetter-Wort — wird die Nässe festgehalten, greift der Reifen wie trocken (gate:fahr-leben W). Voll
+    // nass trägt der Reibkreis `NAESSE.haft` des trockenen, trocken genau 1 (das Lab und der trockene Ritt byte-gleich).
+    _fahrHaft() {
+        const n = this.state.naesse;
+        return n > 0 ? 1 - (1 - AnazhRealm.NAESSE.haft) * Math.min(1, n) : 1;
+    }
+
     // DER NACHLAUF EINES ABGESTIEGENEN GESETZ-WAGENS (Welle L, Gegenprüfung 07.10.: `dismountArchitecture` stellte den Wagen
     // nicht ab — wer im Flug ausstieg, ließ ihn bis zum Reload in der Luft hängen, an der Klippe 4,80 m über seinem Boden).
     // Je Sim-Schritt trägt ihn die ballistische Vertikale des Kerns (vehicle-core fahrStand — dieselbe wie im Ritt), bis er
@@ -1276,7 +1285,12 @@ class AnazhRealm_koerper_fahrt {
             if (rutscht) {
                 const x0 = fz.x;
                 const z0 = fz.z;
-                vc.fahrKraefte(fz, { hand: true, tiefe: this._fahrTiefe(fz) }, entry._fahrSatz, dt);
+                vc.fahrKraefte(
+                    fz,
+                    { hand: true, tiefe: this._fahrTiefe(fz), haft: this._fahrHaft() },
+                    entry._fahrSatz,
+                    dt
+                );
                 entry._rideYaw = fz.yaw + Math.PI / 2;
                 const k = this._fahrHuelle(entry);
                 if (k) {
@@ -1418,13 +1432,16 @@ class AnazhRealm_koerper_fahrt {
 
     // Spieler hält Zoom-Geste (z. B. rechtsklick): wenn ein magnifying-Compound in Blick-Richtung in Reichweite ist, steht
     // das Fernglas (`_zoomActive`) — das FOV setzt der EINE Schreiber `_kamFov` (ZOOM_FOV_DEG), setZoomActive(false) löst es.
-    // ALLE TASTEN LOS (die Tasten-Wand, V-k4): Fokus-Verlust, Unsichtbarkeit und Zeiger-Verlust lösen jede gehaltene
-    // Taste (state.keys), den Zoom und das Mahlen — die EINE Stelle, die die Eingabe auf „nichts gedrückt" setzt.
+    // ALLE TASTEN LOS (die Tasten-Wand, V-k4): Fokus-Verlust, Unsichtbarkeit, Zeiger-Verlust und die Heimkehr aus dem Portal lösen
+    // jede gehaltene Taste (state.keys) und jede gehaltene Aktion der Verb-Tafel — das Mahlen, den gespannten Bogen (er fällt, ohne zu
+    // schießen: `_tickBogenZug`), den Zoom — die EINE Stelle, die die Eingabe auf „nichts gedrückt" setzt. Das Gamepad hält, was
+    // es hält: sein Stand kommt je Bild neu (`_eingabeTakt`).
     _alleTastenLos() {
         const k = this.state.keys;
         if (k) for (const n in k) k[n] = false;
+        const g = this.state.verbTafel.gehalten;
+        for (const n in g) g[n] = false;
         if (this.state._zoomActive) this.setZoomActive(false);
-        if (this.state.player) this.state.player.breakHeld = false;
     }
 
     setZoomActive(active) {

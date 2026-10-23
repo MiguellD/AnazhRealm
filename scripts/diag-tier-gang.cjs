@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// diag-tier-gang.cjs — DIE GLEIT-LINSE DER TIERE (Welle 5, „Gang ohne Gleiten"; npm run gate:tier-gang).
+// diag-tier-gang.cjs — DIE GLEIT-LINSE DER TIERE („Gang ohne Gleiten"; npm run gate:tier-gang).
 // Am ECHTEN Chokepoint (_animateCompoundMotion → _animateTierBaum, headless Null-Renderer, Produktions-Boot): jede
 // Gattung läuft geradeaus bei v̂ 0,3 · 0,74 · 1,2 · 3,5, je Takt der Aufsetz-Punkt jeder Pfote (der Boden-Punkt unter
 // der Handwurzel in der Ruhe-Pose, im Gelenk-Raum der Pfote mitgeführt). Im STAND (unterste 5 % der Hüft-Höhe) darf er nicht mit dem Leib wandern: der SCHLUPF = Weg des
@@ -268,7 +268,7 @@ const LEIB = (k) => {
         const sek = (N - 1 - 30) * dt;
         const toene = (s._schrittKlang ? s._schrittKlang.schritte : 0) - ton0;
         const kadenz = (p.walkPhase - ph0) / Math.PI / sek;
-        // Λ = der Doppelschritt, den der Chokepoint dem Leib gibt (vor K07: 2 × _gaitSchrittLen)
+        // Λ = der Doppelschritt, den der Chokepoint dem Leib gibt
         const lam = r._gaitGesetz(rig, v).schritt;
         const soll = (2 * v * sek) / lam;
         const sl = window.__schlupf(spur, leib, 30, beinM);

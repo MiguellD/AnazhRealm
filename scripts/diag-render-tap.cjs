@@ -2,7 +2,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-render-tap.cjs — DIE WAHRHEITS-WAND UM DEN RENDER-TAP (npm run gate:render-tap, W1)
 //
-// Die V18.427-Wurzel: im r184-WebGPU-Info ist `render.calls` ein LEBENSZEIT-Zähler
+// Die Wurzel: im r184-WebGPU-Info ist `render.calls` ein LEBENSZEIT-Zähler
 // der render()-Aufrufe (`reset()` löscht ihn NICHT — nur drawCalls/frameCalls/
 // triangles); der Tap las `.calls` → HUD („38108dc"), Flugschreiber UND der Regler
 // (renderLoadMs = renderCalls × 0.011) waren mit einer session-linear WACHSENDEN

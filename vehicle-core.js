@@ -2969,7 +2969,11 @@
             const Wf = Math.max(0, Wt * (c / L) - dW),
                 Wr = Math.max(0, Wt * (b / L) + dW);
             // ── Reifen-SEITENKRAEFTE (K1): die Kurve mit Spitze D·sin(C·atan(B·α)) × Achslast, D = μ des Reibkreises ──
-            const cap = G.maxGrip * G.grip;
+            // FELD K1 (rein additiv — ohne e.haft byte-gleich, das Lab kennt keine Naesse): e.haft (0..1) = der Boden-Faktor
+            // des Reibkreises, den der Wirt aus dem ZUSTAND des Bodens liest (die Naesse der Welt) — nass greift der Reifen
+            // seitlich und laengs schwaecher, der Bremsweg waechst um 1 / haft.
+            const haft = e && e.haft > 0 && e.haft < 1 ? e.haft : 1;
+            const cap = G.maxGrip * G.grip * haft;
             let FlatF = -reifenKraft(G.reifen, G.reifen.bdF, cap, slipF) * Wf;
             let FlatR = -reifenKraft(G.reifen, G.reifen.bdR, cap, slipR) * Wr;
             if (hand) FlatR *= G.handLatMul; // HANDBREMSE: die Heck-Seitenfuehrung bricht weg → Drift
