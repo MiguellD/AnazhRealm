@@ -1760,7 +1760,7 @@ class AnazhRealm_vegetation_baum {
         );
         if (!l) return false;
         for (const b of l) {
-            if (b === ohneFlaeche) continue;
+            if (b.quelle === ohneFlaeche) continue;
             if (x < b.x0 - rand || x > b.x1 + rand || z < b.z0 - rand || z > b.z1 + rand) continue;
             for (const f of b.formen)
                 if (AnazhRealm._wegeFormAbstand(f, x, z) < (f.sperr !== undefined ? f.sperr : rand)) return true;
@@ -1793,17 +1793,37 @@ class AnazhRealm_vegetation_baum {
                     l.push(e);
                 }
         }
-        // die Flächen der Dörfer (`_aufWeg`): jede Hülle der Wege-Karte in die Zellen, die sie mit 1 m Rand berührt
+        // die Flächen der Dörfer (`_aufWeg`): je Siedlung der Wege-Karte und Zelle die Formen, die sie mit 1 m Rand berühren
+        // ({ quelle, Hülle, formen }) — bis stadt-erwachen stand die Hülle in jeder Zelle mit ALLEN Formen: im Dorf nH 300 (bis
+        // 900 Formen) fragte jeder Punkt jede, die Räumung seiner Flächen (`_wegeRaeumen`) kostete den Takt nach dem Erwachen 73 ms
         const wk = this.state.wegeKarte;
         if (wk)
-            for (const b of wk.siedlungen)
-                for (let gx = Math.floor((b.x0 - 1) / G); gx <= Math.floor((b.x1 + 1) / G); gx++)
-                    for (let gz = Math.floor((b.z0 - 1) / G); gz <= Math.floor((b.z1 + 1) / G); gz++) {
-                        const k = AnazhRealm._grundrissSchluessel(gx, gz);
-                        let l = gitter.wege.get(k);
-                        if (!l) gitter.wege.set(k, (l = []));
-                        l.push(b);
-                    }
+            for (const b of wk.siedlungen) {
+                const je = new Map();
+                for (const f of b.formen) {
+                    const r = AnazhRealm._wegeFormRadius(f) + 1;
+                    const [gx0, gx1] = [
+                        Math.floor((Math.min(f.ax, f.bx) - r) / G),
+                        Math.floor((Math.max(f.ax, f.bx) + r) / G),
+                    ];
+                    const [gz0, gz1] = [
+                        Math.floor((Math.min(f.az, f.bz) - r) / G),
+                        Math.floor((Math.max(f.az, f.bz) + r) / G),
+                    ];
+                    for (let gx = gx0; gx <= gx1; gx++)
+                        for (let gz = gz0; gz <= gz1; gz++) {
+                            const k = AnazhRealm._grundrissSchluessel(gx, gz);
+                            let e = je.get(k);
+                            if (!e) {
+                                je.set(k, (e = { quelle: b, x0: b.x0, x1: b.x1, z0: b.z0, z1: b.z1, formen: [] }));
+                                const l = gitter.wege.get(k);
+                                if (l) l.push(e);
+                                else gitter.wege.set(k, [e]);
+                            }
+                            e.formen.push(f);
+                        }
+                }
+            }
         return gitter;
     }
 
@@ -1940,7 +1960,8 @@ class AnazhRealm_vegetation_baum {
         const weit = mitKrone ? RM : 0; // eine Krone reicht nie über eine Streu-Region
         this._grundrissFaellt(hx - r - weit, hz - r - weit, hx + r + weit, hz + r + weit);
         const weg = [];
-        for (const e of this.state.architectures || []) {
+        // die Nähe aus dem Platz-Netz (`_blockerUmPlatz`, eine Obermenge des Quadrats), nie der ganze Bestand
+        for (const e of this._blockerUmPlatz(hx, hz, r + weit, [])) {
             if (e === ausser || !e.position) continue;
             if (Math.abs(e.position.x - hx) > r + weit || Math.abs(e.position.z - hz) > r + weit) continue;
             if (!this._weichtDemBau(e)) continue;

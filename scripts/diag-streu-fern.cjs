@@ -31,10 +31,7 @@
 //              kein Deko-Takt das Budget, bevor es dockt: eine zweite Seite hält die Buch-Nachricht zurück, der echte
 //              Spiel-Takt (`_gameLoopTick` → Deko-Job) läuft, bis die Nah-Wiese 8× kalt getaktet hat — die Loop-Grenze
 //              fängt 0 Fehler; nach dem Buch legt die Nah-Wiese ihre 4 Studio-Vorlagen, wieder ohne Fehler. Jeder
-//              gefangene Fehler trägt seine Täter (die ersten Stamm-Methoden des Stacks). Befund: die Zusicherung
-//              `_tickNahWiese` → `_foundryBudgetZeile("gras")` las vor der Vorlage — 200 Brüche bis zum Buch, je Takt
-//              riss der Wurf Nah-Streu und Hydro-Kacheln mit.
-//   SELBSTTEST (sonst wäre das Grün vakuös): (1) eine injizierte `fscatter:geroell:3:0`-Instanz bei 200 m macht B rot
+//              gefangene Fehler trägt seine Täter (die ersten Stamm-Methoden des Stacks). SELBSTTEST (sonst wäre das Grün vakuös): (1) eine injizierte `fscatter:geroell:3:0`-Instanz bei 200 m macht B rot
 //   mit Namen; (2) die ECHTE Erschöpfung (Bump-Cursor an der Kapazität, keine freien Segmente — der echte Spawn läuft)
 //   lässt die Zellen `wartet` stehen — 0 L0-Instanzen, die Warn-Flagge fällt im Allokator, kein Fit läuft im Tick —
 //   und D wird rot; (3) ohne `budget.flower.fernform` bricht der Host-Leser fail-closed (KERN-PFLICHT); (4) die alte
