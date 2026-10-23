@@ -1,0 +1,284 @@
+{
+ "gesamt": "nicht-langsamer",
+ "ergebnisse": [
+  {
+   "zelle": "w-ego",
+   "n": {
+    "A": 2,
+    "B": 2
+   },
+   "urteil": "nicht-langsamer",
+   "verlaengern": false,
+   "zeilen": [],
+   "zaehl": {
+    "steht Befehle": {
+     "A": [],
+     "B": [
+      38,
+      38
+     ]
+    },
+    "steht Dreiecke p95": {
+     "A": [],
+     "B": [
+      283191,
+      283191
+     ]
+    },
+    "steht VRAM MB": {
+     "A": [],
+     "B": [
+      105.6,
+      105.7
+     ]
+    },
+    "geht Befehle": {
+     "A": [],
+     "B": [
+      53,
+      53
+     ]
+    },
+    "geht Dreiecke p95": {
+     "A": [],
+     "B": [
+      385903,
+      381900
+     ]
+    },
+    "geht VRAM MB": {
+     "A": [],
+     "B": [
+      109.4,
+      109.5
+     ]
+    }
+   }
+  },
+  {
+   "zelle": "g-third",
+   "n": {
+    "A": 2,
+    "B": 2
+   },
+   "urteil": "nicht-langsamer",
+   "verlaengern": false,
+   "zeilen": [],
+   "zaehl": {
+    "steht Befehle": {
+     "A": [],
+     "B": [
+      78,
+      78
+     ]
+    },
+    "steht Dreiecke p95": {
+     "A": [],
+     "B": [
+      345412,
+      345412
+     ]
+    },
+    "steht VRAM MB": {
+     "A": [],
+     "B": [
+      111.1,
+      111.1
+     ]
+    }
+   }
+  },
+  {
+   "zelle": "d-ego",
+   "n": {
+    "A": 2,
+    "B": 2
+   },
+   "urteil": "nicht-langsamer",
+   "verlaengern": false,
+   "zeilen": [],
+   "zaehl": {
+    "steht Befehle": {
+     "A": [],
+     "B": [
+      59,
+      59
+     ]
+    },
+    "steht Dreiecke p95": {
+     "A": [],
+     "B": [
+      446648,
+      446648
+     ]
+    },
+    "steht VRAM MB": {
+     "A": [],
+     "B": [
+      109.9,
+      109.4
+     ]
+    }
+   }
+  },
+  {
+   "zelle": "stadt",
+   "n": {
+    "A": 2,
+    "B": 2
+   },
+   "urteil": "nicht-langsamer",
+   "verlaengern": false,
+   "zeilen": [],
+   "zaehl": {
+    "steht Befehle": {
+     "A": [],
+     "B": [
+      44,
+      44
+     ]
+    },
+    "steht Dreiecke p95": {
+     "A": [],
+     "B": [
+      1191218,
+      1191156
+     ]
+    },
+    "steht VRAM MB": {
+     "A": [],
+     "B": [
+      148.3,
+      153.1
+     ]
+    },
+    "geht Befehle": {
+     "A": [],
+     "B": [
+      74,
+      74
+     ]
+    },
+    "geht Dreiecke p95": {
+     "A": [],
+     "B": [
+      1842513,
+      1845326
+     ]
+    },
+    "geht VRAM MB": {
+     "A": [],
+     "B": [
+      183.1,
+      189.2
+     ]
+    }
+   }
+  },
+  {
+   "zelle": "fahrt",
+   "n": {
+    "A": 4,
+    "B": 4
+   },
+   "voll": [
+    "A4",
+    "B1",
+    "B3"
+   ],
+   "urteil": "nicht-langsamer",
+   "verlaengern": false,
+   "zeilen": [
+    {
+     "gang": "volle Fahrt",
+     "titel": "fps",
+     "A": 38.1,
+     "B": 51.7,
+     "d": 13.600000000000001,
+     "zweiSigma": 4.156921938165302,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "volle Fahrt",
+     "titel": "Frame p95",
+     "A": 41.7,
+     "B": 33.349999999999994,
+     "d": -8.350000000000009,
+     "zweiSigma": 0.1732050807568902,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "volle Fahrt",
+     "titel": "Frame p99",
+     "A": 83.3,
+     "B": 45.85,
+     "d": -37.449999999999996,
+     "zweiSigma": 14.376021702821676,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "volle Fahrt",
+     "titel": "CPU-Takt p95",
+     "A": 41.4,
+     "B": 29.4,
+     "d": -12,
+     "zweiSigma": 3.4641016151377544,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "volle Fahrt",
+     "titel": "Belegung p95",
+     "A": 43.46,
+     "B": 31.61,
+     "d": -11.850000000000001,
+     "zweiSigma": 2.979127389018467,
+     "u": "nicht langsamer"
+    }
+   ],
+   "zaehl": {
+    "Befehle": {
+     "A": [
+      58,
+      68
+     ],
+     "B": [
+      62,
+      59,
+      60,
+      64
+     ]
+    },
+    "Dreiecke p95": {
+     "A": [
+      399683,
+      479008
+     ],
+     "B": [
+      437729,
+      449685,
+      453998,
+      437089
+     ]
+    },
+    "VRAM MB": {
+     "A": [
+      115.4,
+      119.6
+     ],
+     "B": [
+      114,
+      115.2,
+      118.5,
+      115.7
+     ]
+    }
+   }
+  }
+ ],
+ "instrument": {
+  "fahrt-A3": "f7dd313c5",
+  "fahrt-A4": "f7dd313c5",
+  "fahrt-B3": "f7dd313c5",
+  "fahrt-B4": "f7dd313c5"
+ }
+}

@@ -1,0 +1,15 @@
+{
+ "ergebnis": {
+  "geritten": true,
+  "weg": 97.7,
+  "takte": 1719,
+  "v10": 0.1,
+  "v50": 1.9,
+  "v90": 10,
+  "anteil8bis12": 0.201,
+  "wechsel": 5,
+  "egoAnteil": 0.718,
+  "sicht": "first"
+ },
+ "ms": 4
+}
