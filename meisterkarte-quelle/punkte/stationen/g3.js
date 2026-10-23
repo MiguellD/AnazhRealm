@@ -602,6 +602,39 @@ const stationen = [
         pfad: ALBEDO_PFAD,
         quelle: "2 = beide Geräte, Eichung Karte 0,180",
     },
+    {
+        kriterium: "schatten.K1",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // schatten-k1-kontakt: werkbank licht --kontakt (scripts/lib/licht-linsen.cjs `kontaktSicht` + `kontaktUrteil`): Pfosten
+        // 0,5 × 0,5 × 3 m auf der Prüfbühne, A Welt / B ohne Pfosten / C ohne Sonne aus dem Ausgabe-Pfad, Halbschatten 10–90 % am
+        // Fuß je Pose bei Uhr 0,5; am Kopf vor dem Zweig kennt licht kein --kontakt (ROT beim Namen)
+        befehl: befehlDer({
+            name: "schatten.K1#1",
+            schritte: [
+                { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+                { name: "kontakt", args: ["licht", "--kontakt"], ms: 900000 },
+            ],
+        }),
+        env: envDer,
+        gpu: true,
+        minuten: 8,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            const k = j.schritte && j.schritte.kontakt;
+            const w = k && k.json;
+            if (j.fehler || !w) return { gruen: false, zahl: "Folge: " + String(j.fehler || (k && k.rest) || "").slice(-200) };
+            const z = ["ego", "third"].map((p) => {
+                const f = (((w["0.5"] || {}).posen || {})[p] || {}).fuss || {};
+                return [p, f.halbschattenCm, f.kanten || 0];
+            });
+            const gruen = hw && k.exit === 0 && z.every(([, cm, n]) => cm != null && cm <= 3 && n >= 6);
+            return { gruen, zahl: z.map(([p, cm, n]) => `Uhr 0.5 ${p} ${cm} cm (${n} Kanten)`).join(" · ") + ", " + (j.adapter || "Adapter ungenannt") };
+        },
+        pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "spec/pruefbuehne/**"],
+        quelle: "1 = Halbschatten am Fuß ≤ 3 cm an einem Gerät",
+    },
 ];
 
 // Was sich nicht als Station fassen lässt. Steht neben der Liste; der Läufer liest es nicht.
@@ -657,6 +690,17 @@ stationen.fehlt = [
             "Die Albedo-Tafel hat keine Stufen-Zeilen für Birke, Fichte und Karte und keine Spalte für Uhr 0,27; dazu sind hochhaus und " +
             "volle_moderne (L1 ≠ L0) offen (material.K3 beleg).",
         quelle: "2 = Haus, Birke, Fichte, Fels, L0/L1/L2/Karte, Uhr 0,5 und 0,27, beide Geräte",
+    },
+    {
+        kriterium: "schatten.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: null,
+        grund:
+            "Werkzeug fehlt: licht --kontakt misst den Zuwachs je m nicht als Urteil (3 m hinter dem Pfosten 2,5 cm aus 2/6 Kanten), " +
+            "bei Uhr 0,3 brechen dunkle Bodenflecken der Prüfbühne die Linie (2/12 Kanten gültig); die Kosten ≤ +0,3 ms an der GTX " +
+            "misst kein ABAB der Station.",
+        quelle: "2 = Zuwachs ≈ 0,9 cm je m, Uhr 0,5 und 0,3, Kosten ≤ +0,3 ms an der GTX, beide Geräte",
     },
 ];
 
