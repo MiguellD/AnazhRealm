@@ -890,7 +890,8 @@ class AnazhRealm_kampf {
     // schmiede-core misst kampfMasze (Länge, Masse, Trägheit um den Pivot, mEff am Impact; prepP wie
     // gueteFaktor) → Schwung-Dauer, Reichweite, Schadens-Faktor der Studio-Klingen. Auflösung SYNCHRON
     // + Lockstep-fest (studioGestalt-Zeile oder KIND_POLICY.weapon-Präfix), NIE der async Buch-Stand;
-    // unbekannt → null (Emergenz-Pfad). Memo je Gestalt|ov-Hash.
+    // unbekannt → null (Emergenz-Pfad). Memo je Gestalt|ov-Hash|Stoff-Stand (die Schmiede wiegt mit den Zeilen der EINEN
+    // Stoff-Zeile — holz, stahl, eisen, bronze sind ihr RHO/MAT —, eine geänderte Dichte misst neu).
     _schmiedeKampfMasze(bp) {
         if (!bp) return null;
         const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
@@ -898,7 +899,7 @@ class AnazhRealm_kampf {
         const gestalt = this._schmiedeGestalt(bp);
         if (!gestalt) return null;
         const ov = typeof this._artifactStudioOv === "function" ? this._artifactStudioOv(bp) : null;
-        const key = gestalt + (ov ? "|ov:" + this._studioOvHash(ov) : "");
+        const key = gestalt + (ov ? "|ov:" + this._studioOvHash(ov) : "") + "|rho:" + (AnazhRealm._stoffStand || 0);
         const memo = this._kampfMaszeMemo || (this._kampfMaszeMemo = new Map());
         let v = memo.get(key);
         if (v === undefined) {

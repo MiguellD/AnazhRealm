@@ -2717,7 +2717,9 @@
                 bauch: Number.isFinite(a.bauch) ? a.bauch : 0,
                 hub: a.hub > 0 ? a.hub : 0, // der Federweg je Rad (fahrAufstand); ein starres Werk federt kein Rad einzeln
             },
-            wasser: fahrWasser(a, zs.mass * FAHR.masseDichte), // SCHAU-2 (rein additiv): die Huelle im Wasser, EINE Masse
+            // SCHAU-2 (rein additiv): die Huelle im Wasser, EINE Masse — physik K1 (rein additiv): reicht der Wirt die Masse
+            // des Werks (d.masseKg: Gestalt × Stoff-Zeile), traegt der Wasser-Term sie; ohne sie das Volumen × masseDichte.
+            wasser: fahrWasser(a, d.masseKg > 0 ? d.masseKg : zs.mass * FAHR.masseDichte),
         };
     }
     function fahrZustand(x, z, yaw) {

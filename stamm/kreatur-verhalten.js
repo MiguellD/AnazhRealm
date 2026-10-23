@@ -919,12 +919,27 @@ class AnazhRealm_kreatur_verhalten {
         return o;
     }
 
+    // DER STOFF EINES LEIBS (physik K1): jeder Leib — Tier wie Mensch — ist Fleisch, seine Dichte die EINE Stoff-Zeile
+    // (`_stoffRho("fleisch")`, das Gewebe der Tiere aus tetrapoda MASSSTAB). Leser: die Masse (`_leibMasse`) und das Wasser,
+    // das ihn trägt (`_leibGetragen`). Bis physik K1 hielt der Mensch eine zweite Dichte (koerper LEIB.dichteKgM3 985).
+    _leibRho() {
+        return this._stoffRho("fleisch");
+    }
+
+    // DAS WASSER TRÄGT DEN LEIB (Archimedes, physik K1): ein Leib schwimmt, solange er nicht dichter ist als Wasser
+    // (`AnazhRealm._eintauchAnteil` ≤ 1) — dann hält er seine Schwimm-Linie (der Mensch am Brustkorb, das Tier am
+    // Schultergelenk); dichter sinkt er und geht auf dem Grund. Leser: der Schritt des Spielers (`_stepCharacter`) und die
+    // Wasser-Regel der Tiere (`_kreaturSchwimmt`).
+    _leibGetragen() {
+        return AnazhRealm._eintauchAnteil(this._leibRho()) <= 1;
+    }
+
     // DIE MASSE EINES LEIBS (kg, das EINE Impuls-Gesetz AnazhRealm.STOSS): das Volumen seiner Gestalt (die geschlossene
-    // Haut, `_leibVolumen`, bei Größe 1 gemessen) × Skala³ × die Dichte seines Kerns — ein Tier (`_tierBaum.leibV`,
-    // tetrapoda) oder ein Mensch (`userData._leibV` am Avatar oder an einem Kind, koerper). Fail-closed: ein Leib ohne
-    // gemessene Gestalt bricht laut. Vorher: eine Kapsel aus der Hüft-Höhe × 1000 im Wirt (Bär 255 kg, Hirsch 436 kg).
+    // Haut, `_leibVolumen`, bei Größe 1 gemessen) × Skala³ × ρ seines Stoffs (`_leibRho`) — ein Tier (`_tierBaum.leibV`)
+    // oder ein Mensch (`userData._leibV` am Avatar oder an einem Kind). Fail-closed: ein Leib ohne gemessene Gestalt bricht
+    // laut. Vorher: eine Kapsel aus der Hüft-Höhe × 1000 im Wirt (Bär 255 kg, Hirsch 436 kg).
     _leibMasse(koerper) {
-        const LG = AnazhRealm._leibGesetz();
+        const rho = this._leibRho();
         const tb = koerper && koerper.userData ? koerper.userData._tierBaum : null;
         // die Skala als Kette der LOKALEN Skalen bis zur Szene — nie über die Welt-Matrix (getWorldScale): die trägt die
         // Hang-Neigung, die der Frame-Takt glättet, und die Masse wich je Bildrate im 1e-9-Bereich ab (0710-5, L8: der
@@ -934,19 +949,14 @@ class AnazhRealm_kreatur_verhalten {
             for (let n = o; n && !n.isScene; n = n.parent) v *= n.scale.x * n.scale.y * n.scale.z;
             return v;
         };
-        if (tb && tb.leibV > 0) return tb.leibV * kette(koerper) * LG.tier;
+        if (tb && tb.leibV > 0) return tb.leibV * kette(koerper) * rho;
         let avatar = null;
         if (koerper && typeof koerper.traverse === "function")
             koerper.traverse((o) => {
                 if (!avatar && o.userData && o.userData._leibV > 0) avatar = o;
             });
-        if (avatar) return avatar.userData._leibV * kette(avatar) * LG.mensch;
+        if (avatar) return avatar.userData._leibV * kette(avatar) * rho;
         return AnazhRealm._kernPflichtBruch("leib:Gestalt ohne Volumen (" + ((koerper && koerper.name) || "?") + ")");
-    }
-
-    // DIE MASSE EINES WAGENS (kg): das Volumen seines Fahr-Satzes (carPhys des Kerns, G.m in m³) × FAHR.masseDichte.
-    _fahrMasse(G) {
-        return G && G.m > 0 ? G.m * AnazhRealm._fahrGesetz().masseDichte : 0;
     }
 
     // DIE GESCHWINDIGKEIT EINES LEIBS (m/s, Welt-XZ): sein Steuer-Schritt (Gier × Tempo) und der Stoß, den er trägt — der
@@ -1011,7 +1021,7 @@ class AnazhRealm_kreatur_verhalten {
             const v = this._fahrWagenGeschw(q);
             o.art = "wagen";
             o.G = G;
-            o.m = this._fahrMasse(G);
+            o.m = this._fahrMasse(q, G.m);
             o.vx = v ? v.x : 0;
             o.vz = v ? v.z : 0;
         }
@@ -1356,8 +1366,9 @@ class AnazhRealm_kreatur_verhalten {
     // DIE EINE WASSER-REGEL DER TIERE (Welle L Q6 + welle-m-impuls, vereint V18.536): die EINE Wasser-Wahrheit am Körper
     // (`_koerperWasser` über dem Grund des Leibs) und seine GESTALT — die Wasserlinie liegt am Schultergelenk (die Gelenk-
     // Höhe des Vorderlaufs × Körpergröße, `_tierBaum.bein`; ohne Gestalt-Baum die Schwimm-Tiefe des Gesetzes). Der Leib
-    // schwimmt, sobald die Säule über dem Grund tiefer ist als diese Linie (mindestens VERHALTEN.wasser.schwimmTiefeM) —
-    // JEDES Tier, nie nur im 50-m-Kreis um den Spieler. Rückgabe: der Spiegel, der ihn trägt, oder null (er watet/steht).
+    // schwimmt, sobald die Säule über dem Grund tiefer ist als diese Linie (mindestens VERHALTEN.wasser.schwimmTiefeM) und
+    // das Wasser ihn trägt (`_leibGetragen`, ρ der Stoff-Zeile, physik K1 — ein dichterer Leib geht auf dem Grund) — JEDES
+    // Tier, nie nur im 50-m-Kreis um den Spieler. Rückgabe: der Spiegel, der ihn trägt, oder null (er watet/steht).
     // Leser: der Frame-Takt (updateCreatures) und der Sim-Schritt des Stoßes (`_kreaturStossSchritt`) — vorher las der
     // Stoß-Schritt einen zweiten Wasser-Kontext (`_creatureWaterContextAt`, nur nahe dem Spieler, der 3×3-gedehnte
     // `_waterLevelAt`) und stellte die Sohle 0,3 m unter ihn: in Wasser zwischen 0,5 m und Schulterhöhe hielt niemand die
@@ -1369,7 +1380,7 @@ class AnazhRealm_kreatur_verhalten {
         ud._wasserlinie = tb && tb.bein ? tb.bein[0].h * (creature.scale.x || 1) : W.schwimmTiefeM;
         if (!Number.isFinite(boden)) return null;
         const spiegel = this._koerperWasser(creature.position.x, creature.position.z, boden);
-        return spiegel - boden > Math.max(W.schwimmTiefeM, ud._wasserlinie) ? spiegel : null;
+        return spiegel - boden > Math.max(W.schwimmTiefeM, ud._wasserlinie) && this._leibGetragen() ? spiegel : null;
     }
     // DIE SCHWIMM-LINIE: die Sohle eines schwimmenden Leibs hängt um seine Wasserlinie unter dem Spiegel (das Paddeln trägt
     // der Gang, MOTION.schwimmen) — Leser: der Frame-Takt und der Stoß-Schritt (beide ohne Welle).
@@ -3870,17 +3881,6 @@ AnazhRealm._lebensraumGesetz = function () {
 AnazhRealm.LEIB_GAENGE = 8;
 // der Teil-Schritt des EINEN Wegs jedes Tiers (`_kreaturWeg`, Gang und Stoß): höchstens `radius` Leib-Radien, mindestens `minM` m
 AnazhRealm.LEIB_TEIL = Object.freeze({ radius: 0.5, minM: 0.02 });
-AnazhRealm._leibGesetz = function () {
-    if (AnazhRealm._leibGesetzMemo) return AnazhRealm._leibGesetzMemo;
-    const T = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
-    const K = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
-    const tier = T && T.MASSSTAB ? T.MASSSTAB.dichteKgM3 : NaN;
-    const mensch = K && K.LEIB ? K.LEIB.dichteKgM3 : NaN;
-    if (!(tier > 0)) return AnazhRealm._kernPflichtBruch("tetrapoda:MASSSTAB.dichteKgM3");
-    if (!(mensch > 0)) return AnazhRealm._kernPflichtBruch("koerper:LEIB.dichteKgM3");
-    AnazhRealm._leibGesetzMemo = Object.freeze({ tier, mensch });
-    return AnazhRealm._leibGesetzMemo;
-};
 // DER BISS ALS STOSS (0710-4): der Anteil der Jäger-Masse hinter dem Biss (tetrapoda BISS.masseAnteil) und das Tempo
 // des Ansprungs (VERHALTEN.aktionen.pounce.tempo, in der Tempo-Einheit des Steuer-Gesetzes). DER BISS IST DER ANSPRUNG
 // (Welle LF kampf, Posten 5): seine Geste ist die Aktion pounce — ihre Dauer und ihr Tempo sind die Reichweite des Mauls

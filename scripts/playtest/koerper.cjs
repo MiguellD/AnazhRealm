@@ -769,8 +769,8 @@ async function checkBandWFFluss(ctx) {
                 }
         }
         out.dryPassthrough = !!dryW && r._atlasWaterLevelAt(dryW.x, dryW.z, -Infinity) === -Infinity;
-        // (5) das BOOT-SCHWIMMEN ist Substanz-emergent: holz schwimmt, stein/
-        // eisen sinken (volumen-gewichtete Mittel-Dichte < 0.55). Behavioral.
+        // (5) das BOOT-SCHWIMMEN folgt der Stoff-Zeile (physik K1): holz schwimmt, stein/
+        // eisen sinken (die mittlere Dichte in kg/m³ unter der des Wassers). Behavioral.
         const mkBoat = (mat) => ({
             name: `__wf_boot_${mat}`,
             parts: [
@@ -820,7 +820,7 @@ async function checkBandWFFluss(ctx) {
         res.runExists && res.dryPassthrough
     );
     check(
-        "W-F Fluss BOOT: Schwimmen ist Substanz-emergent (holz schwimmt, stein/eisen sinken), der Studio-Wagen liest die Hülle des Kerns (GT sinkt) + der Fahr-Boden trägt das Holz-Boot auf seiner Wasserlinie",
+        "W-F Fluss BOOT: Schwimmen folgt der Stoff-Zeile (holz schwimmt, stein/eisen sinken), der Studio-Wagen liest den Stoff seiner Hülle (GT sinkt) + der Fahr-Boden trägt das Holz-Boot auf seiner Wasserlinie",
         res.holzFloats === true &&
             res.steinFloats === false &&
             res.eisenFloats === false &&

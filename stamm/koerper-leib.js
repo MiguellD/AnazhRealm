@@ -3066,9 +3066,9 @@ AnazhRealm._gaitReich = function (kette) {
 AnazhRealm._landungGesetz = function () {
     return AnazhRealm._bewegungsBlock("landung", ["dipProV", "dipMax", "minTempo", "erholK", "kameraK"]);
 };
-// DIE MASSE KOMMT AUS DEM KERN (0710-4): der Wirt hält keine Dichte. Tier · Mensch · Wagen tragen ihre Dichte in ihrem
-// Gesetzbuch (tetrapoda MASSSTAB.dichteKgM3 · koerper LEIB.dichteKgM3 · vehicle FAHR.masseDichte), das Volumen ist ihre
-// Gestalt (`_leibVolumen` der geschlossenen Haut, carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
+// DIE MASSE KOMMT AUS DER GESTALT UND DER STOFF-ZEILE (0710-4, physik K1): der Wirt hält keine Dichte. Tier und Mensch sind
+// Fleisch, der Wagen Blech — ρ aus der EINEN Stoff-Zeile, deren Zeilen die Gesetzbücher tragen (tetrapoda MASSSTAB.dichteKgM3 ·
+// vehicle FAHR.huelleDichte), das Volumen ist ihre Gestalt (`_leibVolumen` der geschlossenen Haut, carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
 // (dichteLeib 1000 über eine Kapsel aus der Hüft-Höhe — der Hirsch wog 436 kg, der Bär 255 —, dichteWagen 150).
 AnazhRealm.LEIB_KLASSEN = Object.freeze(["fell", "haut"]); // die Material-Klassen der geschlossenen Haut eines Leibs
 // Das Volumen einer GESCHLOSSENEN Fläche (m³ im Rahmen ihrer Geometrie) über den Divergenz-Satz, Σ a · (b × c) / 6 je

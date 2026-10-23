@@ -474,7 +474,9 @@ class AnazhRealm_koerper_fahrt {
     // (_compoundSizeFactor) macht träge. Am Entry gecacht (die Bauplan-Form ist frozen).
     _vehicleProfile(entry) {
         if (!entry) return null;
-        if (entry._vehicleProfile) return entry._vehicleProfile;
+        // am Eintrag gemerkt, solange die Stoff-Zeile steht (`AnazhRealm._stoffStand`: eine geänderte Dichte wiegt neu)
+        const stand = AnazhRealm._stoffStand || 0;
+        if (entry._vehicleProfile && entry._vehicleProfile.stoffStand === stand) return entry._vehicleProfile;
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         const roles =
             bp && Array.isArray(bp.parts) && bp.parts.length >= 2
@@ -489,39 +491,27 @@ class AnazhRealm_koerper_fahrt {
             }
         }
         const mass = bp ? Math.max(0.6, Math.min(2.5, this._compoundSizeFactor(bp))) : 1;
-        // Schwimmfähigkeit aus der volumen-gewichteten MITTEL-Dichte (nie der MAX-Tag — ein Eisen-Nagel
-        // versenkte sonst das Holz-Boot): unter der Wasser-Dichte der Tag-Skala (WASSER_DICHTE_TAG) trägt es (holz 0.4
-        // schwimmt, stein/eisen sinken). Ein Studio-Fahrzeug liest seine HÜLLE (unten) — nie die Substanz des Spenders.
-        const W_TAG = AnazhRealm.WASSER_DICHTE_TAG;
-        let floats = false;
-        let dichteMittel = 0.45; // ZENSUS-REST V18.488 — die Wasserlinien-Quelle (s. prof.dichte)
+        // DER STOFF IM WASSER (physik K1): die mittlere Dichte des Werks in kg/m³ — die Masse seiner Teile durch das Volumen
+        // ihrer Gestalt (`_teilMasse` / `_teilVolumen`, die EINE Stoff-Zeile; nie der dichteste Stoff — ein Eisen-Nagel
+        // versenkt das Holz-Boot nicht). Ein Studio-Fahrzeug liegt nach dem Stoff seiner HÜLLE (blech: der Mix des
+        // Fahrzeug-Kerns, wenn die Kabine voll läuft) — nie nach der Substanz des Spenders, dessen Bauplan es klont (D10: der
+        // Supersportler schwamm wie ein Holz-Boot). Es schwimmt, solange das Wasser es trägt (`AnazhRealm._eintauchAnteil` < 1).
+        // Vorher die Tag-Achse dichte gegen eine Wasser-Dichte der Tag-Skala (0,55): der Holzkarren mit vier eisernen
+        // Speichen-Rädern (0,5155) schwamm, nach seinen kg (1 560 kg/m³) sinkt er.
+        let rhoMittel = NaN;
         if (bp && Array.isArray(bp.parts)) {
-            let volSum = 0;
-            let dSum = 0;
+            let vSum = 0;
+            let mSum = 0;
             for (const p of bp.parts) {
-                if (!p || !p.size) continue;
-                const v =
-                    Math.max(0.01, Number(p.size.x) || 0.1) *
-                    Math.max(0.01, Number(p.size.y) || 0.1) *
-                    Math.max(0.01, Number(p.size.z) || 0.1);
-                const md = this.state.materials && this.state.materials[p.material];
-                const d = md && md.tags && Number.isFinite(md.tags.dichte) ? md.tags.dichte : 0.6;
-                volSum += v;
-                dSum += v * d;
+                if (!p) continue;
+                vSum += this._teilVolumen(p);
+                mSum += this._teilMasse(p);
             }
-            floats = volSum > 0 && dSum / volSum < W_TAG;
-            if (volSum > 0) dichteMittel = dSum / volSum;
+            if (vSum > 0) rhoMittel = mSum / vSum;
         }
-        // DIE HÜLLE DES KERNS (D10): jeder Studio-Wagen ist ein Bauplan-Klon des Holzkarren-Spenders (fahrzeug_wagen,
-        // Mittel-Dichte 0,5155 < 0,55 — der Supersportler schwamm wie ein Holz-Boot); seine Dichte im Wasser ist die der
-        // Hülle aus dem Fahrzeug-Kern (exportDrive.huelle.dichte, relativ zu Wasser), fail-closed.
         const fzgH = this._fahrzeugGesetzFor(entry);
-        const huelleH = fzgH && fzgH.drive ? fzgH.drive.huelle : null;
-        if (huelleH) {
-            if (!Number.isFinite(huelleH.dichte)) AnazhRealm._kernPflichtBruch("vehicle:exportDrive.huelle.dichte");
-            dichteMittel = huelleH.dichte * W_TAG;
-            floats = huelleH.dichte < 1;
-        }
+        if (fzgH && fzgH.drive && fzgH.drive.huelle) rhoMittel = this._stoffRho("blech");
+        const floats = Number.isFinite(rhoMittel) && AnazhRealm._eintauchAnteil(rhoMittel) < 1;
         // Emergenz-Koeffizienten aus dem Gesetzbuch (vehicle-core FAHR.hostEmergent); der Leser
         // _fahrGesetz ist FAIL-CLOSED über alle Felder — ein alter Kern bricht laut, kein Literal-Zwilling.
         const HE = AnazhRealm._fahrGesetz().he;
@@ -530,10 +520,9 @@ class AnazhRealm_koerper_fahrt {
             beinCount,
             mass,
             floats,
-            // ZENSUS-REST V18.488 — die volumen-gewichtete Substanz-Dichte
-            // reist ins Profil (die Wasserlinien-Quelle: Archimedes statt
-            // Erst-Wurf-0.25; dieselbe Messung wie das floats-Gate).
-            dichte: dichteMittel,
+            // die mittlere Dichte (kg/m³) reist ins Profil: die Wasserlinie (`_fahrzeugGestalt`, Archimedes) liest sie
+            dichte: rhoMittel,
+            stoffStand: stand,
             topSpeedMul:
                 1 + Math.min(HE.radCap, radCount * HE.radMul) + (radCount === 0 && beinCount >= 2 ? HE.beinBonus : 0),
             kAcc: Math.max(HE.kAccMin, Math.min(HE.kAccMax, HE.kAcc / mass)),
@@ -698,10 +687,10 @@ class AnazhRealm_koerper_fahrt {
     // Leser: der Fahr-Schritt (`_fahrBoden`) und der Ritt im Sim-Schritt (`_rittSchritt`) über `_koerperWasser(x, z, grund,
     // gestalt)` — der Frame-Tick (`_tickMountedMovement`) ist nur Sicht.
     _fahrzeugGestalt(entry, prof) {
-        if (entry._wasserGestalt) return entry._wasserGestalt;
         const p = prof || this._vehicleProfile(entry);
+        if (entry._wasserGestalt && entry._wasserGestalt.prof === p) return entry._wasserGestalt;
         const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
-        const rel = p && Number.isFinite(p.dichte) ? p.dichte / AnazhRealm.WASSER_DICHTE_TAG : Infinity;
+        const rel = p && Number.isFinite(p.dichte) ? AnazhRealm._eintauchAnteil(p.dichte) : Infinity;
         let linie = Infinity;
         if (p && p.floats && rel < 1) {
             const fzg = this._fahrzeugGesetzFor(entry);
@@ -720,7 +709,7 @@ class AnazhRealm_koerper_fahrt {
                 linie = Math.max(0.08, Math.min(rumpfH - 0.05, anteil * rumpfH));
             }
         }
-        entry._wasserGestalt = { linie, lage: null };
+        entry._wasserGestalt = { linie, lage: null, prof: p };
         return entry._wasserGestalt;
     }
 
@@ -1010,6 +999,8 @@ class AnazhRealm_koerper_fahrt {
                 cgH: prof.cgH,
                 radR: prof.radR,
                 spring: prof.spring,
+                // die EINE Masse des Werks (physik K1, `_fahrMasse`): die Trägheit des Wasser-Terms im Kern
+                masseKg: this._fahrMasse(entry, prof.zweispur.mass),
             },
             this._rittAufstand(entry)
         );
@@ -1026,8 +1017,9 @@ class AnazhRealm_koerper_fahrt {
     // Familie wasser schnitt sie) mit einer eigenen Tauchtiefe — ein zweiter Wasser-Leser neben dem Körper. Je Werk EINE
     // Funktion (kein Abschluss je Schritt); ein Werk, das das Wasser nie trägt, fragt es nicht.
     _fahrBoden(entry) {
-        if (entry._fahrBodenFn) return entry._fahrBodenFn;
         const gestalt = this._fahrzeugGestalt(entry, this._vehicleProfile(entry));
+        if (entry._fahrBodenFn && entry._fahrBodenGestalt === gestalt) return entry._fahrBodenFn;
+        entry._fahrBodenGestalt = gestalt;
         const traegt = gestalt.linie !== Infinity;
         const boden = this._werkBoden(entry); // der Boden UNTER dem Werk, nie die Oberkante der Säule
         entry._fahrBodenFn = (x, z) => {
@@ -2168,13 +2160,34 @@ class AnazhRealm_koerper_fahrt {
         this.state.player.mana = Math.max(0, have - n);
         return true;
     }
+
+    // DIE MASSE EINES WAGENS (kg): das Volumen seiner Gestalt × ρ seines Stoffs. Ein Studio-Wagen (die Hülle seines Kerns)
+    // ist Blech: der Raum seines Fahr-Satzes (`raumM3`, carPhys des Kerns, G.m) × der Anteil Blech darin
+    // (`_fahrGesetz().fuellGrad`) × ρ(blech) — ein GT mit 9,6 m³ wiegt 1,4 t. Ein Teile-Werk wiegt seine Teile (`_teilMasse`,
+    // × Skala³). Leser: jeder Stoß (`_stossKoerper`, `_fahrStossSchritt`) und die Trägheit des Wasser-Terms (`_fahrSatz` →
+    // fahrGesetz masseKg). Vorher wog jedes Werk mit Fahr-Satz wie ein Wagen (G.m × FAHR.masseDichte), auch der Holzkarren.
+    _fahrMasse(entry, raumM3) {
+        if (!entry || !(raumM3 > 0)) return 0;
+        const fzg = this._fahrzeugGesetzFor(entry);
+        if (fzg && fzg.drive && fzg.drive.huelle)
+            return raumM3 * AnazhRealm._fahrGesetz().fuellGrad * this._stoffRho("blech");
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
+        let m = 0;
+        for (const p of (bp && bp.parts) || []) if (p) m += this._teilMasse(p);
+        return m * sc * sc * sc;
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_koerper_fahrt]);
 
 // ===== ATLAS · Koerper/fahrt — Außen-Konstanten =====
-// Die Dichte des Wassers auf der Tag-Skala der Materialien (holz 0,4 schwimmt, stein/eisen sinken): die Schwelle des
-// Schwimmens und der Bezug der Wasserlinie (`_vehicleProfile`, `_fahrzeugGestalt`).
-AnazhRealm.WASSER_DICHTE_TAG = 0.55;
+// DER AUFTRIEB (Archimedes, physik K1): der Anteil seines Volumens, mit dem ein Körper der Dichte rho (kg/m³) im Wasser
+// liegt — rho / ρ des Wassers (vehicle FAHR.wasser.rho, `_fahrGesetz().wasserRho`); ≤ 1 trägt ihn das Wasser, darüber sinkt er.
+// Die EINE Schwelle des Schwimmens und der Bezug jeder Wasserlinie: das Gefährt (`_vehicleProfile`, `_fahrzeugGestalt`) und
+// der Leib (`_leibGetragen`). Vorher die Dichte des Wassers auf der Tag-Skala (WASSER_DICHTE_TAG 0,55: holz 0,4 schwamm).
+AnazhRealm._eintauchAnteil = function (rho) {
+    return rho / AnazhRealm._fahrGesetz().wasserRho;
+};
 // Der EINE Fahr-Gesetz-Leser, fail-closed: hostEmergent (Emergenz-Koeffizienten, Klemm-Grenzen,
 // Gier-Folge) + Nick-/Wank-Konstanten (FAHR.pitchGain/rollGain, A_PITCH_MAX/A_LAT_MAX) in EINER
 // Gültigkeits-Wand — ganz oder gar nicht, nie ein Misch-Gesetz. Memo nur im Erfolgs-Fall.
@@ -2207,6 +2220,9 @@ AnazhRealm._fahrGesetz = function () {
         Number.isFinite(vc.A_PITCH_MAX) &&
         Number.isFinite(vc.A_LAT_MAX) &&
         F.masseDichte > 0 &&
+        F.huelleDichte > 0 &&
+        F.wasser &&
+        F.wasser.rho > 0 &&
         F.sitzLehneRad >= 0 &&
         F.kopfFreiraumM >= 0 &&
         F.sitzLehneMaxRad >= F.sitzLehneRad
@@ -2217,8 +2233,13 @@ AnazhRealm._fahrGesetz = function () {
             rollGain: F.rollGain,
             aPitchMax: vc.A_PITCH_MAX,
             aLatMax: vc.A_LAT_MAX,
-            // die Masse des Wagens: das Volumen des Kerns (carPhys, im Fahr-Satz G.m) mal dieser Dichte (0710-4)
-            masseDichte: F.masseDichte,
+            // DER WAGEN ALS KÖRPER (physik K1): sein Stoff ist das Blech der Hülle (der Mix des Kerns, wenn die Kabine voll läuft:
+            // huelleDichte × ρ Wasser — die Zeile blech der Stoff-Zeile), seine Gestalt der Raum des Fahr-Satzes (G.m) zum
+            // Anteil fuellGrad = masseDichte / ρ(blech): die mittlere Dichte der geschlossenen Hülle (0710-4) geteilt durch die
+            // ihres Stoffs. Masse = G.m × fuellGrad × ρ(blech) (`_fahrMasse`), im Wasser liegt er nach ρ(blech) (`_vehicleProfile`).
+            huelleDichte: F.huelleDichte,
+            wasserRho: F.wasser.rho,
+            fuellGrad: F.masseDichte / (F.huelleDichte * F.wasser.rho),
             // der Reiter im Wagen (0710-4 Klasse 4): die Lehne des Sitzes, der Kopf-Freiraum unter der Dachlinie, die
             // steilste Lehne
             sitzLehneRad: F.sitzLehneRad,
@@ -2227,7 +2248,9 @@ AnazhRealm._fahrGesetz = function () {
         };
         return AnazhRealm._fahrGesetzMemo;
     }
-    return AnazhRealm._kernPflichtBruch("vehicle:FAHR.hostEmergent / FAHR.masseDichte / FAHR.sitzLehneRad");
+    return AnazhRealm._kernPflichtBruch(
+        "vehicle:FAHR.hostEmergent / FAHR.masseDichte / FAHR.huelleDichte / FAHR.wasser.rho / FAHR.sitzLehneRad"
+    );
 };
 // DER EINE FAHR-SCHRITT-LESER (Welle L, Nachbesserung 07.10.), fail-closed: die Funktionen des Fahr-Schritts
 // (vehicle-core fahrGesetz · fahrZustand · fahrEbene · fahrStand · fahrKraefte · fahrAufstand) und die Wände des

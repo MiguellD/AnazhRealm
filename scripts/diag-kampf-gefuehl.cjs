@@ -39,7 +39,7 @@ function rueckVerdict(R) {
         );
     return v;
 }
-// (T14) die Masse-Tafel: Volumen der Haut × Dichte des Kerns, der Wagen sein Kern-Volumen × FAHR.masseDichte; der Wirt hält
+// (T14) die Masse-Tafel: Volumen der Haut × ρ(fleisch) der Stoff-Zeile, der Wagen sein Kern-Volumen × FAHR.masseDichte; der Wirt hält
 // keine Dichte; Fuchs < Wolf < Hirsch < Bär < Wagen.
 const MASSE = { toleranz: 0.02, reihe: ["fuchs", "wolf", "hirsch", "baer", "gt"] };
 function masseVerdict(M) {
@@ -642,19 +642,20 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                     box("holz", { x: 0.6, y: 0.6, z: 0.6 }, { x: 0, y: 1.5, z: 0 }),
                 ],
             };
-            const sc = window.__schmiedeCore;
-            const rho = sc.RHO.holz;
+            const zeile = s.materials.holz;
+            const rho = zeile.rho;
             const mess = () => [
                 r._swingDynamics(leicht).swingInertia,
                 r._swingDauerFuerBlueprint(leicht),
                 r._compoundCenterOfMass({ parts: [box("holz", { x: 1, y: 1, z: 1 })] }).mass,
             ];
             const [I1, D1, M1] = mess();
-            sc.RHO.holz = 2 * rho;
+            zeile.rho = 2 * rho;
             const [I2, D2, M2] = mess();
-            sc.RHO.holz = rho;
+            zeile.rho = rho;
             o.dauer = { I1, I2, D1, D2, M1 };
-            o.checks.aKg = M1 === rho && M2 === 2 * rho;
+            o.checks.aKg =
+                rho === window.__schmiedeCore.RHO.holz && Math.abs(M1 / rho - 1) < 1e-9 && Math.abs(M2 / (2 * rho) - 1) < 1e-9;
             const eps = 0.005;
             o.checks.aBeideUngeklemmt =
                 I2 > I1 * 1.5 &&
@@ -1251,7 +1252,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         const mv = masseVerdict(z.masse);
         check(
             mv.length === 0,
-            "0710-4 T14: EINE Masse je Leib — die Gestalt (geschlossene Haut × Dichte des Kerns, der Wagen carPhys × FAHR.masseDichte), keine Dichte im Wirt, die Reihe Fuchs < Wolf < Hirsch < Bär < Wagen" +
+            "0710-4 T14: EINE Masse je Leib — die Gestalt (geschlossene Haut × ρ(fleisch) der Stoff-Zeile, der Wagen carPhys × FAHR.masseDichte), keine Dichte im Wirt, die Reihe Fuchs < Wolf < Hirsch < Bär < Wagen" +
                 (mv.length ? " — " + mv.join(" · ") : "")
         );
         // der Selbst-Test der Tafel: der Befund (Kapsel aus der Hüft-Höhe, Dichten im Wirt) fällt rot beim Namen

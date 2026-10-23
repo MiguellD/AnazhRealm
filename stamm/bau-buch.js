@@ -1514,12 +1514,12 @@ class AnazhRealm_bau_buch {
         return Math.max(0, Math.min(1, Math.max(sMaxX - sMinX, sMaxZ - sMinZ) / compW));
     }
 
-    // DIE DICHTE EINES STOFFS (kg/m³, physik K1): die EINE Stoff-Zeile (`state.materials`). Die eingebaute Zeile trägt ρ
-    // (`_defaultMaterials`, Holz und Metalle aus der Schmiede, Fleisch aus dem Gewebe der Tiere); ein eigener Stoff (DSL
-    // `define_material`, eine geladene Welt) wiegt wie sein nächster Verwandter unter den eingebauten — der kleinste Abstand
-    // über die Tag-Achsen (MATERIAL_TAG_KEYS), an seiner Zeile gemerkt (`rho`, `rhoVon`). Ein Teil ohne Stoff-Zeile wiegt
-    // nichts und meldet sich laut (der EINE Melder). Vorher wog jedes Teil Volumen × die Tag-Achse dichte [0,1] (Holz 0,4 ·
-    // Stein 0,85 · Eisen 0,9 je Einheit, unbekannt 0,5): Stein wog 2,1 Holz statt 3,7, Eisen 2,25 statt 10,9.
+    // DIE DICHTE EINES STOFFS (kg/m³, physik K1): die EINE Stoff-Zeile (`state.materials`, `_defaultMaterials`). Ein eigener
+    // Stoff (DSL `define_material`, eine geladene Welt) wiegt wie sein nächster Verwandter unter den eingebauten — der
+    // kleinste Abstand über die Tag-Achsen (MATERIAL_TAG_KEYS), an seiner Zeile gemerkt (`rhoVon`) und je Ruf aus dessen
+    // Zeile gelesen. Ein Teil ohne Stoff-Zeile wiegt nichts und meldet sich laut (der EINE Melder). Vorher wog jedes Teil
+    // Volumen × die Tag-Achse dichte [0,1] (Holz 0,4 · Stein 0,85 · Eisen 0,9 je Einheit, unbekannt 0,5): Stein wog 2,1 Holz
+    // statt 3,7, Eisen 2,25 statt 10,9.
     _stoffRho(name) {
         const mats = this.state.materials || {};
         const z = mats[name];
@@ -1527,14 +1527,16 @@ class AnazhRealm_bau_buch {
             this._bruchMelden("STOFF-ZEILE fehlt: das Teil aus „" + name + "“ wiegt nichts");
             return 0;
         }
-        if (z.rho > 0) return z.rho;
+        if (z.builtIn) return z.rho;
+        const von = z.rhoVon && mats[z.rhoVon];
+        if (von && von.builtIn) return von.rho;
         const keys = AnazhRealm.MATERIAL_TAG_KEYS;
         const t = z.tags || {};
         let best = null,
             bestD = Infinity;
         for (const k of Object.keys(mats)) {
             const b = mats[k];
-            if (!b || !b.builtIn || !(b.rho > 0)) continue;
+            if (!b || !b.builtIn) continue;
             let d = 0;
             for (const a of keys) d += ((t[a] || 0) - ((b.tags && b.tags[a]) || 0)) ** 2;
             if (d < bestD) ((bestD = d), (best = b));
@@ -1543,16 +1545,52 @@ class AnazhRealm_bau_buch {
             this._bruchMelden("STOFF-ZEILE ohne Verwandten: „" + name + "“ wiegt nichts");
             return 0;
         }
-        z.rho = best.rho;
         z.rhoVon = best.name;
-        return z.rho;
+        return best.rho;
     }
 
-    // DIE MASSE EINES TEILS (kg): sein Volumen (die Box seiner Größe, m³) × ρ seiner Stoff-Zeile (`_stoffRho`) — der EINE
-    // Leser, über den Schwerpunkt, Schwung-Trägheit und Lastpfad wiegen.
+    // DAS VOLUMEN EINES TEILS (m³ in Bauplan-Einheiten): das Volumen seiner GESTALT — das Mesh, das `_makePartGeometry` für
+    // diese Form baut, über den Divergenz-Satz (Σ a · (b × c) / 6 je Dreieck; eine flache Form trägt keins), je Form und Maß
+    // gemerkt. Vorher die Box der Größe für jede Form: ein Speichen-Rad wog wie seine volle Scheibe (Wagen-Rad 0,100 statt
+    // 0,031 m³), eine Kugel 1,9-fach.
+    _teilVolumen(p) {
+        if (!p) return 0;
+        const memo = this._teilVolumenMemo || (this._teilVolumenMemo = new Map());
+        const { position: _p, rotation: _r, material: _m, color: _c, opChain: _o, ...form } = p;
+        const key = JSON.stringify(form);
+        let v = memo.get(key);
+        if (v === undefined) {
+            const geo = this._makePartGeometry(p);
+            const pos = geo && geo.attributes && geo.attributes.position;
+            v = 0;
+            if (pos) {
+                const a = pos.array;
+                const ix = geo.index ? geo.index.array : null;
+                const n = ix ? ix.length : pos.count;
+                for (let t = 0; t + 2 < n; t += 3) {
+                    const i = 3 * (ix ? ix[t] : t);
+                    const j = 3 * (ix ? ix[t + 1] : t + 1);
+                    const k = 3 * (ix ? ix[t + 2] : t + 2);
+                    v +=
+                        (a[i] * (a[j + 1] * a[k + 2] - a[j + 2] * a[k + 1]) -
+                            a[i + 1] * (a[j] * a[k + 2] - a[j + 2] * a[k]) +
+                            a[i + 2] * (a[j] * a[k + 1] - a[j + 1] * a[k])) /
+                        6;
+                }
+                v = Math.abs(v);
+            }
+            if (geo && typeof geo.dispose === "function") geo.dispose();
+            if (memo.size > 512) memo.clear();
+            memo.set(key, v);
+        }
+        return v;
+    }
+
+    // DIE MASSE EINES TEILS (kg): das Volumen seiner Gestalt (`_teilVolumen`, die Bauplan-Einheit ist der Meter) × ρ seiner
+    // Stoff-Zeile (`_stoffRho`) — der EINE Leser, über den Schwerpunkt, Schwung-Trägheit, Lastpfad und das Gefährt im Wasser
+    // wiegen.
     _teilMasse(p) {
-        const s = p.size || { x: 1, y: 1, z: 1 };
-        return Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1)) * this._stoffRho(p.material);
+        return this._teilVolumen(p) * this._stoffRho(p.material);
     }
 
     // ═══ Ω-PHYSIS · Ω-Φ1 — SCHWERPUNKT + MASSE ═══

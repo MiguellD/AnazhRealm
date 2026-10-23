@@ -330,14 +330,19 @@ async function WELLE_L() {
             const TC = globalThis.__tetrapodaCore;
             const KC = globalThis.__koerperCore;
             const VC = globalThis.__vehicleCore;
+            // jeder Leib ist Fleisch (physik K1): die Zeile der Stoff-Zeile trägt das Gewebe des tetrapoda-Kerns
             const dichteTier = TC && TC.MASSSTAB ? TC.MASSSTAB.dichteKgM3 : undefined;
-            const dichteMensch = KC && KC.LEIB ? KC.LEIB.dichteKgM3 : undefined;
+            const dichteMensch = dichteTier;
             const dichteWagen = VC && VC.FAHR ? VC.FAHR.masseDichte : undefined;
             const kernFehlt = [];
             if (!(dichteTier > 0)) kernFehlt.push("tetrapoda MASSSTAB.dichteKgM3");
-            if (!(dichteMensch > 0)) kernFehlt.push("koerper LEIB.dichteKgM3");
             if (!(dichteWagen > 0)) kernFehlt.push("vehicle FAHR.masseDichte");
             const zwillinge = [];
+            if (KC && KC.LEIB && KC.LEIB.dichteKgM3 !== undefined)
+                zwillinge.push("koerper LEIB.dichteKgM3 " + KC.LEIB.dichteKgM3 + " (eine zweite Dichte des Leibs neben ρ(fleisch))");
+            const zeile = s.materials && s.materials.fleisch;
+            if (!zeile || zeile.rho !== dichteTier)
+                zwillinge.push("die Stoff-Zeile fleisch " + (zeile && zeile.rho) + " ≠ dem Gewebe des Kerns " + dichteTier);
             if (A.STOSS && A.STOSS.dichteLeib !== undefined) zwillinge.push("STOSS.dichteLeib " + A.STOSS.dichteLeib);
             if (A.STOSS && A.STOSS.dichteWagen !== undefined)
                 zwillinge.push("STOSS.dichteWagen " + A.STOSS.dichteWagen);
@@ -428,7 +433,7 @@ async function WELLE_L() {
                 const G = prof ? r._fahrSatz(e, prof) : null;
                 if (G)
                     leiber.gt = {
-                        wirtKg: r._fahrMasse(G),
+                        wirtKg: r._fahrMasse(e, G.m),
                         gestaltKg: dichteWagen > 0 ? G.m * dichteWagen : null,
                         vM3: G.m,
                     };

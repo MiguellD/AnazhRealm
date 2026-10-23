@@ -653,7 +653,7 @@ class AnazhRealm_kreatur_leben {
             this._applySizeMultipliersToStats(stats, Math.sqrt(creatureSize));
         }
         // DIE KAMPF-GRÖSSE DES LEIBS (Welle LF 09.10., Posten 6 / K-D18): Biss, Haut und Leben folgen der EINEN Masse des Leibs
-        // (_leibMasse — das Volumen der Gestalt × MASSSTAB.dichteKgM3: Gattung UND Größe, dieselbe Masse wie Stoß, Beute und
+        // (_leibMasse — das Volumen der Gestalt × ρ(fleisch) der Stoff-Zeile: Gattung UND Größe, dieselbe Masse wie Stoß, Beute und
         // Temperament) gegen die Bezugs-Masse des tetrapoda-Gesetzbuchs (KAMPF.refKg, der Wolf der Größe 1): damage ×
         // (m/ref)^biss, defense × (m/ref)^haut, hpMax = Leben der Substanz × (m/ref)^leben. Vorher damage 19,75 und defense 11,9
         // für jede Gattung und Größe (die Tiere sind tag-gleich), hpMax nur 99,8–158,9 von Fuchs 0,62 bis Bär 2. Ein Leib ohne

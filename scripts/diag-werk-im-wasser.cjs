@@ -2306,7 +2306,7 @@ function selbsttest() {
             "eigene Masse im Wasser-Term (der Hüll-Quader × Schüttdichte)",
             (s) =>
                 s.replace(
-                    "fahrWasser(a, zs.mass * FAHR.masseDichte)",
+                    "fahrWasser(a, d.masseKg > 0 ? d.masseKg : zs.mass * FAHR.masseDichte)",
                     "fahrWasser(a, 150 * a.breite * a.laenge * a.dach)"
                 ),
             /K5 der Wasser-Term rechnet mit einer eigenen Masse \(1557 kg\) neben der EINEN Masse des Wagens \(1341 kg/,
