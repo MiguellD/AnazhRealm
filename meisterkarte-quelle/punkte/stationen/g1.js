@@ -489,38 +489,67 @@ module.exports = [
         quelle: "1 = EIN Term, global, die Richtung aus der Saat am Verhalten gemessen",
     },
 
-    // ── physik.K2 ── diag-fahr-leben L7/L8 (Null-Renderer, Mechanik, als solche benannt): der gestoßene Bär (13,7 m/s) vor der
-    // 0,35-m-Wand bei 60 fps, 30 fps und gemischten Frames, und die Lage nach 200 Sim-Schritten je Bildrate
+    // ── physik.K2 ── (Null-Renderer, Mechanik, als solche benannt) ZWEI Linsen in EINEM Lauf: das Durchdringen misst
+    // gate:kollision-bild (V) — Fuchs · Wolf · Bär · Riese bei 144/60/30 fps + Takt-Deckel, der Spieler gehend und im Sprint,
+    // der gestoßene Bär und der Fall gegen Mauer · Fels · Haus · Baum · Leib (die L7-Probe der Fahr-Linse wanderte mit
+    // 4ef668954 dorthin); die Lage nach 200 Sim-Schritten je Bildrate misst diag-fahr-leben L8. Die Zeile gt ist Staffel 2.
     {
         kriterium: "physik.K2",
         staffel: 1,
         geraet: "headless",
-        befehl: ["node", "scripts/diag-fahr-leben.cjs"],
-        env: { FAHR_LEBEN_PORT: "{PORT}" },
+        befehl: [
+            "bash",
+            "-c",
+            'FAHR_LEBEN_PORT={PORT} node scripts/diag-fahr-leben.cjs; E1=$?; echo "FAHR-LEBEN EXIT $E1"; KOLLISION_BILD_PORT={PORT} node scripts/diag-kollision-bild.cjs; E2=$?; echo "KOLLISION-BILD EXIT $E2"; exit $(( E1 > E2 ? E1 : E2 ))',
+        ],
         gpu: false,
         minuten: 10,
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/);
-            const l7 = z.find((x) => /^\s*(✅|❌) L7 /.test(x));
+            // L8 (diag-fahr-leben): der Wagen gegen den Bären, 200 Sim-Schritte bei 60 fps und gemischten Frames
             const l8 = z.find((x) => /^\s*(✅|❌) L8 /.test(x));
-            if (!l7 || !l8) return { gruen: false, zahl: "L7/L8 fehlen in der Ausgabe (Exit " + lauf.exit + ")" };
-            const wand = [...l7.matchAll(/(60|30|gemischt): (\d+)\/(\d+) durch/g)].map((m) => ({ k: m[1], durch: +m[2], n: +m[3] }));
-            const baer = /Bär (-?[\d.e-]+) m/.exec(l8);
-            const wagen = /Abweichung Wagen (-?[\d.e-]+) m/.exec(l8);
-            const gruen =
-                /✅/.test(l7) &&
-                /✅/.test(l8) &&
-                wand.length === 3 &&
-                wand.every((w) => w.durch === 0 && w.n >= 8) &&
-                !!baer &&
-                Math.abs(+baer[1]) <= 0.01 &&
-                !!wagen &&
-                Math.abs(+wagen[1]) <= 0.01;
+            const baer = l8 && /Bär (-?[\d.e-]+) m/.exec(l8);
+            const wagen = l8 && /Abweichung Wagen (-?[\d.e-]+) m/.exec(l8);
+            const l8ok = !!l8 && /✅/.test(l8) && !!baer && Math.abs(+baer[1]) <= 0.01 && !!wagen && Math.abs(+wagen[1]) <= 0.01;
+            // (V) (gate:kollision-bild): je Leib die Takte der Matrix, kein Durchtritt, Eindringen ≤ 1 cm, Spalt ≤ 5 cm
+            const LEIB_N = { fuchs: 20, wolf: 20, baer: 20, riese: 20, gehen: 10, sprint: 10, gestossen: 2, fall: 2 };
+            const kopf = z.find((x) => /^\s*\(V\) Kontakt beim Tempo: \d+\/\d+ Zeilen/.test(x));
+            const sm = kopf && /Schmuggel (\{.*\})\s*$/.exec(kopf);
+            let schmuggel = null;
+            try { schmuggel = sm ? JSON.parse(sm[1]) : null; } catch (_e) { schmuggel = null; }
+            const je = {};
+            for (const x of z) {
+                const m = /^\s+(\S+)\s+(\S+) m\/s · Durchtritt (\d+)\/(\d+) · Eindringen max (\S+) m · Spalt max (\S+) m/.exec(x);
+                if (m) je[m[1]] = { v: +m[2], durch: +m[3], n: +m[4], tief: +m[5], spalt: +m[6] };
+            }
+            const leiber = Object.keys(LEIB_N);
+            const verstoss = z.filter((x) => {
+                const m = /^\s*\(V\) (ZEILE FEHLT|DURCHTRITT|EINDRINGEN|VAKUÖS): ([a-zäöüß]+)/.exec(x);
+                return m && leiber.includes(m[2]);
+            });
+            const stumpf = z.some((x) => /LINSE STUMPF: \(V\)/.test(x));
+            const fehlt = leiber.filter((k) => !je[k] || je[k].n < LEIB_N[k]);
+            const L = leiber.filter((k) => je[k]).map((k) => je[k]);
+            const durch = L.reduce((s, w) => s + w.durch, 0);
+            const takte = L.reduce((s, w) => s + w.n, 0);
+            const tief = L.length ? Math.max(...L.map((w) => w.tief)) : NaN;
+            const spalt = L.length ? Math.max(...L.map((w) => w.spalt)) : NaN;
+            const vok = !!kopf && !!schmuggel && schmuggel.durch === true && !stumpf && !fehlt.length && !verstoss.length &&
+                durch === 0 && tief <= 0.01 && spalt <= 0.05;
+            if (!kopf && !l8) return { gruen: false, zahl: "weder (V) noch L8 in der Ausgabe (Exit " + lauf.exit + ")" };
+            const gt = je.gt;
             return {
-                gruen,
+                gruen: l8ok && vok,
                 zahl:
-                    "Durchdringen " + (wand.map((w) => w.k + " " + w.durch + "/" + w.n).join(" · ") || "?") + ", Lage nach 200 Schritten Bär " +
-                    (baer ? baer[1] : "?") + " m, Wagen " + (wagen ? wagen[1] : "?") + " m",
+                    (kopf
+                        ? "(V) Leiber " + (takte - durch) + "/" + takte + " Takte ohne Durchtritt, Eindringen max " + tief + " m, Spalt max " + spalt +
+                          " m (gestoßener Bär " + (je.gestossen ? je.gestossen.v : "?") + " m/s, Riese " + (je.riese ? je.riese.v : "?") + " m/s)" +
+                          (fehlt.length ? ", fehlen " + fehlt.join("/") : "") + (verstoss.length ? ", " + verstoss.length + " Verstöße" : "") +
+                          ", Schmuggel " + (schmuggel && schmuggel.durch === true ? "durch" : "STUMPF")
+                        : "(V) fehlt in der Ausgabe") +
+                    " · " +
+                    (l8 ? "L8 nach 200 Schritten Bär " + (baer ? baer[1] : "?") + " m, Wagen " + (wagen ? wagen[1] : "?") + " m" : "L8 fehlt") +
+                    (gt ? " · gt (Staffel 2) " + gt.v + " m/s Durchtritt " + gt.durch + "/" + gt.n : ""),
             };
         },
         pfad: [
@@ -532,8 +561,10 @@ module.exports = [
             "vehicle-core.js",
             "koerper-core.js",
             "scripts/diag-fahr-leben.cjs",
+            "scripts/diag-kollision-bild.cjs",
             "scripts/lib/fahr-proben.cjs",
             "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
         ],
         quelle: "1 = die Leiber (Mechanik, als solche benannt)",
     },
