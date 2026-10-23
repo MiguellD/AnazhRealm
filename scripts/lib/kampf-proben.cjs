@@ -1,6 +1,6 @@
 "use strict";
-// scripts/lib/kampf-proben.cjs — die Seiten-Probe der Leben-Prüfung „Kampf“ (gate:kampf-gefuehl), am Domänen-Tag Kampf geteilt
-// (Datei-Decke 4 000, PFLICHT-OFFEN D(3)): eine Seiten-Funktion, die scripts/diag-kampf-gefuehl.cjs per page.evaluate fährt.
+// scripts/lib/kampf-proben.cjs — die Seiten-Probe der Leben-Prüfung „Kampf“ (gate:kampf-gefuehl), am Domänen-Tag Kampf geteilt:
+// eine Seiten-Funktion, die scripts/diag-kampf-gefuehl.cjs per page.evaluate fährt.
 
 // ── WELLE L — die Proben der Leben-Prüfung „Kampf" (Seiten-Funktion; läuft auf JEDEM Stand: fehlt eine Naht, misst
 // die Probe das Verhalten trotzdem — so ist die Linse auf dem alten Stand rot und benennt den Defekt) ──
@@ -99,7 +99,7 @@ async function WELLE_L() {
         return orig.damagePlayer.call(this, amount, source);
     };
     const tiere = [];
-    // JE PRÜFUNG IHR EIGENER ABBRUCH (Welle LF kampf Nachbesserung 2): fehlt einer Prüfung ihre Naht (ein älterer Stand), nennt sie
+    // JE PRÜFUNG IHR EIGENER ABBRUCH: fehlt einer Prüfung ihre Naht (ein älterer Stand), nennt sie
     // sich mit dem Fehler, und die übrigen laufen weiter.
     const teil = async (name, f) => {
         try {
@@ -272,7 +272,7 @@ async function WELLE_L() {
         };
         w.z.stopGross = stopEnergie("klinge_grossschwert");
         w.z.stopKeule = stopEnergie("klinge_keule");
-        // (T13) der Rückstoß je Masse und Waffe (K-D4 entscheidet an der Rezept-Tafel): Fuchs und Bär, Dolch und Keule, je
+        // (T13) der Rückstoß je Masse und Waffe: Fuchs und Bär, Dolch und Keule, je
         // ein Hieb auf die Brust; der Steuer-Schritt steht (Naht `_steuerGesetz`), der Weg nach 1,5 s ist allein der Stoß.
         const fuchsR = setze("fuchs");
         const baer = setze("baer");
@@ -324,7 +324,7 @@ async function WELLE_L() {
             baerDolch: rueck(baer, "klinge_dolch"),
             baerKeule: rueck(baer, "klinge_keule"),
         };
-        // (T14) DIE MASSE-TAFEL (0710-4): je Gattung ein frisches Tier der Größe 1, der Spieler und ein GT — die Masse, mit
+        // (T14) DIE MASSE-TAFEL: je Gattung ein frisches Tier der Größe 1, der Spieler und ein GT — die Masse, mit
         // der der Wirt stößt, gegen das Gewicht der Gestalt (die Linse misst die geschlossene Haut selbst).
         {
             const TC = globalThis.__tetrapodaCore;
@@ -738,7 +738,7 @@ async function WELLE_L() {
             }
             w.z.gesetz = GS;
         }
-        // (T5) die Gegenwehr folgt dem TEMPERAMENT DER GATTUNG (K-D12): 20 Treffer mit Rückstoß aus 1,6 m
+        // (T5) die Gegenwehr folgt dem TEMPERAMENT DER GATTUNG: 20 Treffer mit Rückstoß aus 1,6 m
         // im Modus pfad — der Bär (wehrhaft) schlägt zurück, der Hirsch derselben Größe (scheu, ein Fluchttier) nie.
         r.setGameMode("pfad");
         p.hp = 1e9;
@@ -872,7 +872,7 @@ async function WELLE_L() {
             const frei = schuss(1, hirsch);
             w.z.pfeilFrei = frei.treffer ? 1 : 0;
             w.c.pfeilWand = !!wand && w.z.pfeilHinterWand === 0 && w.z.pfeilFrei === 1;
-            // (T7b) der Bogen ist eine geführte Waffe wie die Klinge (K-D6 ganz): sein Verschleiß wirkt im Schaden
+            // (T7b) der Bogen ist eine geführte Waffe wie die Klinge: sein Verschleiß wirkt im Schaden
             // (wear 0,5 → _wearStatFactor 0,65 des vollen), jeder Schuss zehrt ihn, ein verbrauchter Bogen (wear 0,02,
             // unter WEAR_KAPUTT_SCHWELLE) löst nicht — dieselbe Wand wie Hieb und Abbau.
             const bpB = s.blueprints.klinge_langbogen;
@@ -1163,7 +1163,7 @@ async function WELLE_L() {
             w.z.typeofSelbst = selbst.join(",") || "–";
             w.c.keinTypeofSelbst = selbst.length === 0;
         }
-        // (G3) KEIN DRITTER LEIB (Integration Welle L, Gesetz #0): Klinge und Pfeil fragen das EINE Grob-Tor
+        // (G3) KEIN DRITTER LEIB: Klinge und Pfeil fragen das EINE Grob-Tor
         // (_trefferErreichbar), und das liest den kreatur-Leib (_kreaturLeib) — kein eigenes Körpermaß (2 × Skala) im
         // Treffer-Pfad.
         {
