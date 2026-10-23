@@ -217,36 +217,35 @@ function kernProbe(VC) {
         hubGt > 0 && v45.pen <= hubGt + 1e-9 && s45.pen <= 1e-9 && Math.abs(v10.y) <= 1e-9,
         `GT tau 0,45: ${v45.pen.toFixed(3)} m im Boden (Federweg ${hubGt.toFixed(3)}) · starr tau 0,45: ${s45.pen.toFixed(3)} m · GT tau 0,10: Hub ${v10.y.toFixed(3)} m`,
     ]);
-    const r8 = reifenMessung(VC);
+    const r8 = (out.reifen = reifenMessung(VC)); // die Zeile REIFEN liest die Station fahrzeug.K1
     const v8 = reifenVerdict(r8);
     out.push([
         "K8 Reifen (fahrzeug.K1): Spitze je Achse und Rezept bei 6–10°, bis 30° ≥ 15 % Abfall; Takt ≥ 240 Hz, ≤ 50 µs je Schritt",
-        v8.length === 0,
-        r8.achsen.slice(0, 2).map((a) => `${a.wo} ${a.spitze}°/${Math.round(a.abfall * 100)} %`) +
-            ` · Takt ${r8.hz} Hz · ${r8.kostenUs} µs ${v8.join(" · ")}`,
+        !v8.length,
+        `Takt ${r8.hz} Hz · ${r8.kostenUs} µs ${v8.join(" · ")}`,
     ]);
     return out;
 }
-// ── K8 DER REIFEN: vorn vlat = c·ω (Last c/L), hinten −b·ω (Last b/L) ──
+// ── K8 DER REIFEN: die Seitenkraft je 0,1° Schlupf bis 30°, vorn vlat = c·ω, hinten −b·ω (die andere Achse schlupffrei);
+// der Takt ist die gröbste Teilung, deren Unter-Schritte nichts mehr ändern ──
 const REIFEN = { spitze: [6, 10], abfall: 0.15, hz: 240, kostenUs: 50 };
 function reifenMessung(VC) {
     const m = { achsen: [], hz: 60 };
     let G;
     for (const pid of Object.keys(VC.PRESETS)) {
         G = VC.fahrGesetz(VC.exportDrive(Object.assign({}, VC.DEFAULT_P, VC.presetPatch(pid))));
-        for (const [wo, s, last] of [
-            ["vorn", 1, G.c],
-            ["hinten", -1, G.b],
+        for (const [wo, hebel] of [
+            ["vorn", G.c],
+            ["hinten", -G.b],
         ]) {
-            const kraft = (grad) => {
-                const z = Object.assign(VC.fahrZustand(0, 0, 0), { vlong: 15 });
-                z.yawRate = ((15 + G.slipEps) * Math.tan((grad * Math.PI) / 180)) / G.L;
-                z.vlat = s * last * z.yawRate;
-                return Math.abs(VC.fahrKraefte(z, {}, G, 0).aLat * G.L) / (G.g * last);
-            };
-            let [fMax, spitze] = [0, 0];
-            for (let g = 0.1; g <= 30.001; g += 0.1) if (kraft(g) > fMax) [fMax, spitze] = [kraft(g), g];
-            m.achsen.push({ wo: `${pid} ${wo}`, spitze: +spitze.toFixed(1), abfall: 1 - kraft(30) / fMax });
+            const f = [];
+            for (let g = 1; g <= 300; g++) {
+                const w = ((15 + G.slipEps) * Math.tan((g * Math.PI) / 1800)) / G.L;
+                const z = Object.assign(VC.fahrZustand(0, 0, 0), { vlong: 15, yawRate: w, vlat: hebel * w });
+                f.push(Math.abs(VC.fahrKraefte(z, {}, G, 0).aLat));
+            }
+            const i = f.indexOf(Math.max(...f));
+            m.achsen.push({ wo: pid + " " + wo, spitze: (i + 1) / 10, abfall: 1 - f[299] / f[i] });
         }
     }
     const takt = (n, z = Object.assign(VC.fahrZustand(0, 0, 0), { vlong: 12 })) => {
@@ -2146,7 +2145,9 @@ function quellenAbgriff() {
 
     console.log("=== K — DER EINE FAHR-SCHRITT (Q13 · F-D6 F-D7): der Kern selbst (Node) ===");
     require(path.join(root, "vehicle-core.js"));
-    for (const [name, ok, detail] of kernProbe(globalThis.__vehicleCore)) check(name, ok, detail);
+    const kern = kernProbe(globalThis.__vehicleCore);
+    for (const [name, ok, detail] of kern) check(name, ok, detail);
+    console.log("REIFEN " + JSON.stringify(kern.reifen));
     if (process.argv.includes("--kern")) process.exit(errs.length ? 1 : 0); // Station K allein
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
