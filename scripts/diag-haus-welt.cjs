@@ -378,6 +378,10 @@ async function proben(phasen) {
         const base = e.position.y - 0.5;
         // W10 TIER IM HAUS: kein Leib in der Fundament-Box vor dem Gang (der Wurf des Felds weicht dem Bau, `_naturRaeumen`)
         const fu = e.fundament;
+        // die Saat: ein Wurf des Felds mitten in der Box, der Bau räumt erneut
+        const sp = welt(e, fu.ox || 0, fu.oz || 0);
+        const saat = r.spawnCreatureAt(sp.x, e.position.y + 1, sp.z);
+        h.saat = !!saat && (saat.userData.feldWurf = true) && r._grundrissRaeumen(e) >= 0;
         h.tiere = s.creatures
             .map((c) => [c, lokal(e, c.position.x, c.position.z)])
             .filter(([, q]) => Math.abs(q.x - (fu.ox || 0)) <= fu.ex && Math.abs(q.z - (fu.oz || 0)) <= fu.ez)
@@ -1347,10 +1351,8 @@ async function proben(phasen) {
         // macht aus Streu-Bäumen echte Bäume, der Wald des neuen Rings wirft.
         stell(start.x, start.y + 3, start.z);
         await pumpe(60);
-        // die Streu steht, bevor das Dorf kommt (wie im Spiel: das Auto-Dorf ab 260 m, die Streu bis 384 m): gewartet wird, bis
-        // jede Region unter dem Dorf-Ort gebaut ist, ohne Foundry-Aufschub (die Regel je Region der Welt, `_streuRegionWartet`;
-        // eine aufgeschobene Region baut nach der Lieferung neu, dann durch die Wand — eine frische Welt verlor so ihre Zellen
-        // unter den Häusern; die Vorphasen trugen das sonst zufällig mit)
+        // die Streu steht vor dem Dorf (wie im Spiel): jede Region unter dem Dorf-Ort gebaut, ohne Foundry-Aufschub
+        // (`_streuRegionWartet`)
         const RMd = A.SCATTER.regionM;
         const regionenUm = (x, z) => {
             const q = new Set();
@@ -1359,10 +1361,8 @@ async function proben(phasen) {
             return q;
         };
         const steht = (q) => [...q].every((k) => !r._streuRegionWartet(k));
-        // der Ort des fernen Dorfs aus der stehenden Streu: jede Region in Reichweite steht (`_streuWartet`), dann der
-        // dichteste 40-m-Kreis der Zellen 200–360 m vom Start (fern hinter dem Promotions-Ring), auf Land, jede Region unter ihm
-        // in Reichweite — die Probe braucht Zellen unter den Häusern (an 212/212 trug der Kreis 0 Zellen; der Start liegt an der
-        // Ecke vier gebauter Regionen, Reichweite 240 m: ab 260 m trug kein Kreis mehr alle Regionen in der Reichweite)
+        // der Ort des fernen Dorfs: der dichteste 40-m-Kreis der Zellen 200–360 m vom Start, auf Land, jede Region unter ihm
+        // in Reichweite (`_streuWartet`) — die Probe braucht Zellen unter den Häusern
         const p0 = { x: start.x, z: start.z };
         for (let k = 0; k < 1500 && r._streuWartet(p0) > 0; k++) await pumpe(4);
         const voll = [];
@@ -1878,6 +1878,7 @@ function urteil(o) {
         if (gang.length < 3 || !gang.some((h) => h.gang.keller) || !gang.some((h) => h.gang.dach))
             f.push(`W10 Aufbau: ${gang.length} Gänge (Soll ≥ 3, mit Keller, mit Dachboden)`);
         const tier = hs.filter((h) => h.tiere && h.tiere.length);
+        if (hs.some((h) => !h.saat)) f.push("W10 Saat blind");
         if (tier.length) f.push(`W10 Tier im Haus: ${tier.map((h) => h.typ + " " + h.tiere).join(" · ")}`);
         const hub = gang.filter((h) => !(h.gang.hub <= 0.3));
         if (hub.length) f.push(`W10 Anti-Clip-Hub: ${hub.map((h) => h.typ + " " + h.gang.wo).join(" · ")}`);
