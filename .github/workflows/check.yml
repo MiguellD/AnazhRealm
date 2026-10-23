@@ -1457,17 +1457,17 @@ jobs:
 
     echt:
         # DIE ECHT-GRUPPE (K65, Entscheid 16.10.): BESTEHENDE Wände der GPU-Klasse ZUSÄTZLICH auf dem eigenen Läufer mit der echten
-        # Karte (dem Messplatz, GTX 1060, Label omen-gpu) — swiftshader verbirgt, was eine echte GPU anders zeichnet (Lehre 17); je
+        # Karte (Label echt-gpu, Läufer radeon-890m; die GTX bleibt dem ABAB) — swiftshader verbirgt, was eine echte GPU anders zeichnet (Lehre 17); je
         # Schritt derselbe Befehl wie in `voll`, dazu die Wände der Karte (gate:…:echt). Ein Schritt, dessen Browser nur den
         # Null-Renderer trägt, zeichnet nie und steht hier nicht (die Weiche nennt ihn ROT). Jeder Schritt fährt auch nach einem
         # roten (`!cancelled()`) und trägt seine Frist (timeout-minutes aus node scripts/ci-zeiten.cjs), der Job höchstens 45 min,
         # sein Plan höchstens 20 min (die Waage). Bei jedem push auf integ-probe und nachts, hinter dem Kopf-Richter (echt=ja: der
         # Kopf trägt noch keine grüne Echt-Gruppe); nie pull_request (das Repo ist öffentlich; der Hook des Läufers lässt nur push
-        # von MiguellD durch und wartet auf das GPU-Schloss des Messplatzes). gate:ci-deckung (E).
+        # von MiguellD durch und wartet auf das GPU-Schloss der Maschine). gate:ci-deckung (E).
         name: echt (GPU-Wände auf der Karte)
         needs: kopf
         if: (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/integ-probe')) && needs.kopf.result == 'success' && needs.kopf.outputs.echt == 'ja'
-        runs-on: [self-hosted, omen-gpu]
+        runs-on: [self-hosted, echt-gpu]
         timeout-minutes: 45
         permissions:
             contents: read
