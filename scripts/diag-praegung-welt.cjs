@@ -1,22 +1,7 @@
 // diag-praegung-welt.cjs — PRÄGUNG-WELT (Auftrag A): DIE PRÄGUNG REIST MIT DEM ARTEFAKT.
 // Die Prägung wird beim GUSS als `studioOv` aufs Artefakt GESTEMPELT (Bauplan/Entry), die Welt-Chokepoints
-// (_foundryFlattenFor · _heldFoundryGroup) lesen NUR den Stempel. Diese Linse hält die Naht:
-//
-//   (S) SELBST-TEST (nicht vakuös): ein GESTRIPPTER Stempel (Entry ohne studioOv — die
-//       alte Welt) liefert EXAKT den ungeprägten Fingerabdruck — d. h. der Vergleicher
-//       der Linse ERKENNT den alten Riss (geprägt == ungeprägt ⇒ rot erkennbar).
-//   (N) NAHT: ein geprägtes weapon (klinge_langschwert, __tradition "Nihon") liefert im
-//       HAND-Guss (_heldFoundryGroup) einen ANDEREN Geometrie-Fingerabdruck als ungeprägt;
-//       ein geprägtes Fahrzeug-Entry (fahrzeug_gt, Kultur-fx via KIND_CHARAKTER) formt im
-//       WELT-Flatten (_foundryFlattenFor) anders — zwei Kulturen (toro/stern) unterscheidbar.
-//   (G) GUSS-SEMANTIK: wieldBlueprint (schöpfer, ungeschmiedet) stempelt bp.studioOv als
-//       TIEFE KOPIE; nachträgliches präge ändert das bestehende Artefakt NICHT.
-//   (R) ROUNDTRIP: der Stempel überlebt spawnArchitecture → buildStateSnapshot →
-//       _loadStateRestoreArchitectures; den Bauplan-Zwilling (_serializeBlueprint/
-//       _deserializeBlueprint); UND das place-DSL (spawn_blueprint Slot 6 — die P2P-Naht).
-//   (B) BYTE-IDENTITÄT des ungeprägten Pfads: Schlüssel OHNE "|ov:"-Suffix, Fingerabdruck
-//       == direkter ov-loser _foundryRequest-Bau; ein geprägter Bau legt NUR "|ov:"-Keys
-//       an und der ungeprägte Cache-Eintrag bleibt UNVERGIFTET (Reinheit beide Richtungen).
+// (_foundryFlattenFor · _heldFoundryGroup) lesen NUR den Stempel. Die Linse hält die Naht in (S) Selbsttest · (N) Hand
+// und Welt · (G) Guss-Semantik · (R) Roundtrip · (B) Byte-Identität des ungeprägten Pfads, und
 //   (K) KI-REGLER (ki.K2): spawn_studio trägt ov im fünften Argument durch den EINEN Stempel (am Vertrag geklemmt) in den
 //       Welt-Flatten — je Zeile von PARAMS_BY_KIND das Welt-Werk ≠ ohne ov und = das Studio-Werk mit demselben ov, tot nur
 //       die Ratsche reglerTot; Klemme benannt, Fremdes fail-closed, der Prompt aus derselben Quelle. Selbsttest: ein ov,
@@ -86,9 +71,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             }
             return flat && flat.leaves ? flat : null;
         };
-        // DAS STUDIO-WERK: derselbe Körper direkt aus der Foundry (der Regler-Kanal der Werkstatt, Rang 0), durch DIESELBE
-        // Verschmelzung wie der Flatten — seit V18.510 verschmilzt er die Teile EINES Materials (`_foundryFlatVerschmelzen`),
-        // sonst vergliche die Probe 328 Teile mit 23.
+        // DAS STUDIO-WERK: derselbe Körper direkt aus der Foundry (Rang 0), durch DIESELBE Verschmelzung wie der Flatten
         const studioFp = async (preset, variant, lod, ov) => {
             const m = await Promise.race([r._foundryRequest(preset, variant, lod, ov || undefined, 0), sleep(45000)]);
             const g = Array.isArray(m) && m.length ? r._foundryBuildGroup(m, { lod, preset }) : null;
@@ -107,28 +90,22 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             res.n.fpU = flatU ? fp(flatU) : null;
             const ovToro = KC.vehicle.ov("toro", VC.CULTURES);
             const ovStern = KC.vehicle.ov("stern", VC.CULTURES);
-            res.n.ovToro = ovToro;
             const entryT = { type: "fahrzeug_gt", seed: 7, position: { x: 0, y: 0, z: 0 }, studioOv: ovToro };
             const entryS = { type: "fahrzeug_gt", seed: 7, position: { x: 0, y: 0, z: 0 }, studioOv: ovStern };
             const flatT = await flatFor(entryT);
             const flatS = await flatFor(entryS);
             res.n.fpToro = flatT ? fp(flatT) : null;
             res.n.fpStern = flatS ? fp(flatS) : null;
-            // ===== (S) SELBST-TEST: gestrippter Stempel == ungeprägt (der alte Riss ist erkennbar) =====
+            // ===== (S) SELBST-TEST: gestrippter Stempel nach den geprägten Bauten == ungeprägt (auch die Cache-Reinheit) =====
             const entryStripped = { type: "fahrzeug_gt", seed: 7, position: { x: 0, y: 0, z: 0 } };
             const flatX = await flatFor(entryStripped);
             res.s.fpStripped = flatX ? fp(flatX) : null;
             res.s.rissErkennbar = !!(res.s.fpStripped && res.n.fpU && res.s.fpStripped === res.n.fpU);
             // ===== (B) Cache-Reinheit + Schlüssel-Disziplin =====
             const added = Array.from(f.cache.keys()).filter((k) => !keysBefore.has(k) && k.indexOf("gt|") === 0);
-            res.b.addedKeys = added;
             res.b.plainKeys = added.filter((k) => k.indexOf("|ov:") < 0);
             res.b.ovKeys = added.filter((k) => k.indexOf("|ov:") >= 0);
             res.b.noJsonKeys = added.every((k) => k.indexOf("{") < 0);
-            // Reinheit RÜCKrichtung: der ungeprägte Eintrag liefert NACH den geprägten
-            // Bauten denselben Fingerabdruck (kein geprägtes Entry vergiftete ihn).
-            const flatU2 = await flatFor({ type: "fahrzeug_gt", seed: 7, position: { x: 0, y: 0, z: 0 } });
-            res.b.fpU2 = flatU2 ? fp(flatU2) : null;
             // Byte-Identität: der direkte ov-lose Request baut dieselbe Geometrie wie
             // der ungeprägte Flatten-Pfad (der Schlüssel trägt keinen ov-Hash).
             const variant = r._foundryVariantFor(7, "gt");
@@ -444,11 +421,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     check("der exakte Körper-Schlüssel (preset|gestalt|lod, ohne ov) lebt unverändert", out.b.plainKeyExact === true);
     check("kein JSON-Schlüssel im Welt-Cache (die Rezept-Linsen-Reinheit hält)", out.b.noJsonKeys === true);
     check(
-        "REINHEIT beide Richtungen: der ungeprägte Fingerabdruck bleibt NACH geprägten Bauten gleich",
-        !!out.b.fpU2 && out.b.fpU2 === out.n.fpU,
-        `vorher=${out.n.fpU} nachher=${out.b.fpU2}`
-    );
-    check(
         "BYTE-IDENTITÄT: ungeprägter Flatten == direkter ov-loser _foundryRequest-Bau",
         !!out.b.fpDirect && out.b.fpDirect === out.n.fpU,
         `direkt=${out.b.fpDirect} flatten=${out.n.fpU}`
@@ -477,9 +449,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
         process.exit(1);
     }
-    console.log(
-        "\n✅ GRÜN — DIE PRÄGUNG REIST MIT DEM ARTEFAKT: der Guss stempelt (Bauplan + Entry), Hand- und Welt-Chokepoint konsumieren den Stempel (messbar andere Gestalt), der Stempel überlebt Snapshot + place-DSL, und der ungeprägte Pfad ist byte-identisch mit reinem Cache."
-    );
+    console.log("\n✅ GRÜN — die Prägung reist mit dem Artefakt");
     process.exit(0);
 })().catch((e) => {
     console.error("Prägung-Welt-Diag-Fehler:", (e && e.stack) || e);
