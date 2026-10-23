@@ -1,7 +1,7 @@
 {
  "sha": "f7dd313c5e8d716b3f28df3d0f1420e78c12e2c4",
  "geraet": "headless",
- "zeit": "2026-10-23T14:43:15.794Z",
+ "zeit": "2026-10-23T17:23:52.539Z",
  "host": "MiguellD",
  "je": {
   "gelaende.K1#1": {
@@ -50,14 +50,13 @@
    "port": 7708
   },
   "physik.K2#1": {
-   "gruen": false,
-   "zahl": "L7/L8 fehlen in der Ausgabe (Exit 0)",
+   "gruen": true,
+   "zahl": "(V) Leiber 104/104 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 13.77 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m · gt (Staffel 2) 16 m/s Durchtritt 0/10",
    "exit": 0,
-   "minuten": 1.19,
-   "grund": "ROT: L7/L8 fehlen in der Ausgabe (Exit 0)",
-   "zeit": "2026-10-23T14:18:57.043Z",
-   "abdruck": "ea21f24696e4",
-   "port": 7709
+   "minuten": 7.21,
+   "zeit": "2026-10-23T17:23:52.539Z",
+   "abdruck": "fefe280e8f4d",
+   "port": 8109
   },
   "feld.K3#1": {
    "gruen": true,
