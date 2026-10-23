@@ -1,7 +1,7 @@
 {
  "sha": "7c6f4b49f6412149a218e42b3bc8b6db742a4039",
  "geraet": "radeon",
- "zeit": "2026-10-23T09:21:24.123Z",
+ "zeit": "2026-10-23T10:12:10.822Z",
  "host": "MiguellD",
  "je": {
   "gelaende.K2#1": {
@@ -14,14 +14,13 @@
    "port": 7601
   },
   "gelaende.K3#1": {
-   "gruen": false,
-   "zahl": "kein Begleit-JSON mit Klassen (Exit 1)",
-   "exit": 1,
+   "gruen": true,
+   "zahl": "spiegelTreue 0.7896 (wasserSatz 36615 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.4 σ 51.3 schwarz 0.0 % weiß 0.1 % · Stand 18.546.73 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+   "exit": 0,
    "minuten": 1.07,
-   "grund": "ROT: kein Begleit-JSON mit Klassen (Exit 1)",
-   "zeit": "2026-10-23T07:59:50.405Z",
-   "abdruck": "65c00f3112cb",
-   "port": 7602
+   "zeit": "2026-10-23T09:47:15.250Z",
+   "abdruck": "68e70463a0db",
+   "port": 7702
   },
   "gelaende.K5#2": {
    "gruen": false,
@@ -53,13 +52,13 @@
   },
   "vegetation.K4#1": {
    "gruen": false,
-   "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 7290 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59213 px; ohne freies Auge haus_skandinavisch undefined/undefined haupt · haus_italienisch undefined/undefined haupt · haus_italienisch undefined/undefined haupt · haus_provenzalisch undefined/undefined haupt",
+   "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 7290 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59154 px; Halm/Boden in haus_gotisch 41-0 turm 0/7290 px; ungemessen (ohne freies Auge) haus_skandinavisch 14-0 haupt · haus_italienisch 22-0 haupt · haus_italienisch 28-0 haupt · haus_provenzalisch 31-0 haupt",
    "exit": 1,
-   "minuten": 2.27,
-   "grund": "ROT: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 7290 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59213 px; ohne freies Auge haus_skandinavisch undefined/undefined haupt · haus_italienisch undefined/undefined haupt · haus_italienisch undefined/undefined haupt · haus_provenzalisch undefined/undefined haupt",
-   "zeit": "2026-10-23T08:04:57.532Z",
-   "abdruck": "de6fdcda1f02",
-   "port": 7616
+   "minuten": 2.29,
+   "grund": "ROT: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 7290 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59154 px; Halm/Boden in haus_gotisch 41-0 turm 0/7290 px; ungemessen (ohne freies Auge) haus_skandinavisch 14-0 haupt · haus_italienisch 22-0 haupt · haus_italienisch 28-0 haupt · haus_provenzalisch 31-0 haupt",
+   "zeit": "2026-10-23T09:48:19.685Z",
+   "abdruck": "e53d97783caf",
+   "port": 7716
   },
   "licht.K2#1": {
    "gruen": true,
@@ -183,24 +182,23 @@
    "port": 7639
   },
   "leib.K4#1": {
-   "gruen": false,
-   "zahl": "keine Gang-Zeile — Täter: Gang: nicht gemessen",
+   "gruen": true,
+   "zahl": "stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {\"orbit: Bau\":2,\"orbit fern: Bau\":3} · Ruck p95 0.0065 höchstens 2.968 m · welt-boot klasse: diag-kamera-laub.cjs startet „linse\" und zeichnet nie (keine seiner 1 Seiten arbei",
    "exit": 1,
-   "minuten": 0.07,
-   "grund": "ROT: keine Gang-Zeile — Täter: Gang: nicht gemessen",
-   "zeit": "2026-10-23T08:40:27.893Z",
-   "abdruck": "e7db3df33f65",
-   "port": 7640
+   "minuten": 0.91,
+   "zeit": "2026-10-23T10:12:10.822Z",
+   "abdruck": "bce5fed3572d",
+   "port": 7740
   },
   "halten.K2#1": {
    "gruen": false,
-   "zahl": "p95 ms third/hieb 35.9 · ego/hieb 27.6 · Hit-Stop 1/1 Bilder (Third/Ego)",
+   "zahl": "p95 ms third/hieb 37.8 · ego/hieb 25.3 · Hit-Stop 1/1 Bilder (Third/Ego) · im Spiel: Halt gesetzt 60-mal (180–200 ms), die Hand gleitet im Halt bis 55.8 mm je Takt (1218 Takte)",
    "exit": 0,
-   "minuten": 1.71,
-   "grund": "ROT: p95 ms third/hieb 35.9 · ego/hieb 27.6 · Hit-Stop 1/1 Bilder (Third/Ego)",
-   "zeit": "2026-10-23T08:40:32.007Z",
-   "abdruck": "c54dc6fdd0a1",
-   "port": 7644
+   "minuten": 1.72,
+   "grund": "ROT: p95 ms third/hieb 37.8 · ego/hieb 25.3 · Hit-Stop 1/1 Bilder (Third/Ego) · im Spiel: Halt gesetzt 60-mal (180–200 ms), die Hand gleitet im Halt bis 55.8 mm je Takt (1218 Takte)",
+   "zeit": "2026-10-23T09:51:31.504Z",
+   "abdruck": "87deaeca8238",
+   "port": 7744
   },
   "profiband.K4#1": {
    "gruen": false,
@@ -242,23 +240,22 @@
   },
   "speicher.K1#1": {
    "gruen": false,
-   "zahl": "20 Tode: Alter max 999 s, 1 über 10 s · 0 korrupt · 1 halbe Welten · 0 Haken verfehlt",
+   "zahl": "20 Tode: Alter max 999 s, 1 über 10 s · 0 korrupt · 1 halbe Welten · 0 Haken verfehlt · ohne Alter z5 -11/4 mm neben dem Schreiber 1.37 s vor dem Tod (b/e gleich)",
    "exit": 0,
-   "minuten": 11.14,
-   "grund": "ROT: 20 Tode: Alter max 999 s, 1 über 10 s · 0 korrupt · 1 halbe Welten · 0 Haken verfehlt",
-   "zeit": "2026-10-23T09:01:24.198Z",
-   "abdruck": "1553478965c6",
-   "port": 7655
+   "minuten": 9.32,
+   "grund": "ROT: 20 Tode: Alter max 999 s, 1 über 10 s · 0 korrupt · 1 halbe Welten · 0 Haken verfehlt · ohne Alter z5 -11/4 mm neben dem Schreiber 1.37 s vor dem Tod (b/e gleich)",
+   "zeit": "2026-10-23T09:53:14.660Z",
+   "abdruck": "5cc0e7a17732",
+   "port": 7755
   },
   "speicher.K1#2": {
-   "gruen": false,
-   "zahl": "20 Tode: Alter max 999 s · 0 korrupt · 1 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 1.551 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
    "exit": 0,
-   "minuten": 8.86,
-   "grund": "ROT: 20 Tode: Alter max 999 s · 0 korrupt · 1 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
-   "zeit": "2026-10-23T09:12:32.457Z",
-   "abdruck": "b764bd64e0fd",
-   "port": 7656
+   "minuten": 9.31,
+   "zeit": "2026-10-23T10:02:33.618Z",
+   "abdruck": "c4653228849b",
+   "port": 7756
   },
   "speicher.K2#1": {
    "gruen": true,

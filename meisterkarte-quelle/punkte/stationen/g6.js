@@ -30,6 +30,22 @@ const HARNESS =
     '(PORT={PORT} node save-server.js > "$D/save.log" 2>&1 < /dev/null &); ' +
     "for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:{PORT}/ && break; sleep 1; done; " +
     "export SPIEL_URL=http://localhost:{PORT}; ";
+// DER ZYKLUS OHNE ALTER beim Namen (echt-k1 zählt ihn als halbe Welt mit Alter 999): die Probe sucht den Schreiber, dessen
+// Stand x/z/b/e dem geladenen GENAU gleicht. 23.10. an 7c6f4b49 (Radeon) gab es ihn je Lauf einmal nicht — der geladene Stand
+// lag mit gleichen Blöcken und Edits 4/−25 mm neben dem letzten Schreiber vor dem Tod (z8: 388/93905 → 392/93880): der Spieler
+// wird nach dem Laden versetzt, bevor die Probe liest. Genannt wird je Zyklus der jüngste Schreiber vor dem Tod mit gleichem
+// b/e, sein Abstand zum Tod und der Versatz; das Urteil bleibt beim Werkzeug (den Lese-Haken baut die OMEN).
+function ohneAlter(j) {
+    const tz = Array.isArray(j.todZeiten) ? j.todZeiten : [];
+    const alle = Array.isArray(j.alle) ? j.alle : [];
+    return j.zyklen
+        .filter((z) => z.z > 0 && z.alterS == null)
+        .map((z) => {
+            const tot = tz[z.z - 1], g = z.g || {};
+            const w = alle.filter((e) => e.rec && e.t <= tot && e.rec.b === g.b && e.rec.e === g.e).sort((a, b) => b.t - a.t)[0];
+            return "z" + z.z + (w ? " " + (g.x - w.rec.x) + "/" + (g.z - w.rec.z) + " mm neben dem Schreiber " + ((tot - w.t) / 1000).toFixed(2) + " s vor dem Tod (b/e gleich)" : " ohne Schreiber mit gleichem b/e");
+        });
+}
 // Der Tab-Tod am Pfad des Spielers (statischer Host ohne save-server), Stand M37: Tod im Dorf-Erwachen in Zyklus 1 und 2.
 const ECHT_K1 =
     VOR +
@@ -394,12 +410,13 @@ module.exports = [
             const edits = Math.max(0, ...j.zyklen.map((z) => z.eGeladen || 0));
             if (!(edits > 0)) return { gruen: false, zahl: "Sonde blind: in keinem Zyklus entstand ein Edit" };
             if (j.bauFehler > 0) return { gruen: false, zahl: "Sonde wackelt: der Bauer warf " + j.bauFehler + "-mal (ausser dem Tod)" };
+            const oa = ohneAlter(j);
             const gruen = j.tode >= 20 && j.ueber10 === 0 && j.halbe === 0 && j.korrupt === 0 && verfehlt === 0 && j.alterMax <= 10;
             return {
                 gruen,
                 zahl:
                     j.tode + " Tode: Alter max " + j.alterMax + " s, " + j.ueber10 + " über 10 s · " + j.korrupt + " korrupt · " +
-                    j.halbe + " halbe Welten · " + verfehlt + " Haken verfehlt",
+                    j.halbe + " halbe Welten · " + verfehlt + " Haken verfehlt" + (oa.length ? " · ohne Alter " + oa.join(" · ") : ""),
             };
         },
         pfad: SPEICHER_PFAD,
@@ -421,6 +438,7 @@ module.exports = [
             const edits = Math.max(0, ...j.zyklen.map((z) => z.eGeladen || 0));
             if (!(edits > 0)) return { gruen: false, zahl: "Sonde blind: in keinem Zyklus entstand ein Edit" };
             if (j.bauFehler > 0) return { gruen: false, zahl: "Sonde wackelt: der Bauer warf " + j.bauFehler + "-mal (ausser dem Tod)" };
+            const oa = ohneAlter(j);
             const tode = j.zyklen.filter((z) => z.tod).map((z) => z.tod);
             const gang = j.zyklen.filter((z) => z.erwachen && z.erwachen.gangAktiv).length;
             const arten = ["idb", "platz", "erwachen-hart", "erwachen-idb"].filter((a) => tode.includes(a));
@@ -430,7 +448,7 @@ module.exports = [
                 gruen,
                 zahl:
                     j.tode + " Tode: Alter max " + j.alterMax + " s · " + j.korrupt + " korrupt · " + j.halbe + " halbe · " + verfehlt +
-                    " verfehlt · Tod-Arten " + arten.join("/") + " · im laufenden Erwachen " + gang,
+                    " verfehlt · Tod-Arten " + arten.join("/") + " · im laufenden Erwachen " + gang + (oa.length ? " · ohne Alter " + oa.join(" · ") : ""),
             };
         },
         pfad: SPEICHER_PFAD,

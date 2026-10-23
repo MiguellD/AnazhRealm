@@ -94,6 +94,21 @@ const PAD = [
     "scripts/playtest/koerper.cjs",
 ];
 
+// DER HIT-STOP DES SPIELS neben der Linse (halten.K2, 23.10.): latenz zählt den Halt im Bild (stehende Schwung-Uhr UND Hand);
+// die Haken zählen daneben, was das Spiel tut — jeder Treffer, der den Halt setzt (`_kampfHitJuice`, seine Dauer), und wie weit
+// die Hand im gesetzten Halt je Takt noch gleitet. So heißt ein ROT beim Namen: kein Treffer am Ziel (gesetzt 0) ist das
+// Werkzeug, ein gesetzter Halt mit gleitender Hand das Spiel. Der Code trägt kein einfaches Hochkomma (bash '…').
+const HIT_HAKEN =
+    "const L = (window.__hs = { n: 0, dauer: [], takte: 0, gleit: 0 }); const pj = r._kampfHitJuice.bind(r); " +
+    "r._kampfHitJuice = function (c, now, u, ke) { const v = pj(c, now, u, ke); L.n++; L.dauer.push(r.state.player._hitStopUntil - now); return v; }; " +
+    "const pm = r.state.playerMesh, V = new T.Vector3(); let vor = null; const tick = r._gameLoopTick.bind(r); " +
+    "r._gameLoopTick = function (t) { const v = tick(t); const p = r.state.player; " +
+    "if (p && p._hitStopUntil > performance.now() / 1000) { const w = pm.userData.rig.armR.wrist.getWorldPosition(V).sub(pm.position).toArray(); " +
+    "if (vor && vor.id === p._hitStopUntil) { L.takte++; L.gleit = Math.max(L.gleit, Math.hypot(w[0] - vor.w[0], w[1] - vor.w[1], w[2] - vor.w[2])); } " +
+    "vor = { id: p._hitStopUntil, w }; } return v; }; return 1;";
+const HIT_LESEN =
+    "const L = window.__hs; return { gesetzt: L.n, dauerMs: [Math.min(...L.dauer), Math.max(...L.dauer)].map((x) => Math.round(x * 1000)), haltTakte: L.takte, gleitMm: Math.round(L.gleit * 10000) / 10 };";
+
 // latenz-Reihen: je Sicht × Verb fehlt 0 und p95 ≤ 50 ms
 const reihenZahl = (j, ids) =>
     ids.map((id) => id + " " + (j.reihen[id] ? j.reihen[id].p95 + (j.reihen[id].fehlt ? " (fehlt " + j.reihen[id].fehlt + ")" : "") : "—")).join(" · ");
@@ -350,7 +365,9 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // gate:kamera-leib Teil gang mit --bild (echter Renderer): Stamm, Fels, Haus im echten Spiel-Takt, rückwärts heran +
         // 360°-Orbit; Kugel in Fels/Bau, Nah-Pixel von Fels, Gelände und Rinde, Ruck p95
-        befehl: ["node", "scripts/diag-kamera-laub.cjs", "--teile", "gang", "--bild"],
+        // der Gang läuft NUR im Teil leib (diag-kamera-laub: `if (TEILE.includes("leib")) { … if (TEILE.includes("gang"))`), wie
+        // gate:kamera-leib (`--teile leib,gang,ninja --bild`); `--teile gang` allein mass nichts (23.10.: „Gang: nicht gemessen“)
+        befehl: ["node", "scripts/diag-kamera-laub.cjs", "--teile", "leib,gang", "--bild"],
         env: { KAMERA_LAUB_PORT: "{PORT}", LINSE_GPU: "hardware" },
         gpu: true,
         minuten: 6,
@@ -358,7 +375,13 @@ const stationen = [
             const z = lauf.stdout.split(/\r?\n/).find((l) => /^\s*(✅|❌) K4 der Gang in Third/.test(l));
             if (!z) return { gruen: false, zahl: "keine Zeile K4 der Gang (Exit " + lauf.exit + ")" };
             const gaenge = lauf.stdout.split(/\r?\n/).filter((l) => /^\s+(stamm|fels|haus)\s/.test(l)).map((l) => l.trim().replace(/\s+/g, " "));
-            return { gruen: /✅/.test(z), zahl: (gaenge.join(" | ") || "keine Gang-Zeile") + (/❌/.test(z) ? " — " + z.split(" — ").slice(1).join(" — ") : "") };
+            // der Gang misst am Gesetz (Kugel gegen Feld und Boxen, Nah-Deckung im Raster von kamera-nah), wie die Hand-Messung —
+            // die Seite fährt den Null-Renderer; welt-boot meldet das als Klasse (Exit 2), es steht in der Zahl, nie im Urteil
+            const wb = (/^\s*· (klasse: .*)$/m.exec(lauf.stdout) || [])[1];
+            return {
+                gruen: /✅/.test(z),
+                zahl: (gaenge.join(" | ") || "keine Gang-Zeile") + (/❌/.test(z) ? " — " + z.split(" — ").slice(1).join(" — ") : "") + (wb ? " · welt-boot " + wb.slice(0, 90) : ""),
+            };
         },
         pfad: [
             "stamm/koerper-*.js",
@@ -430,18 +453,28 @@ const stationen = [
         befehl: sitzung(
             "boot",
             "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
-            'teil LATENZ $W latenz --verb hieb --sicht third,ego --proben 30 --json "{AUS}"'
+            "teil HAKEN $W eval '" + HIT_HAKEN + "'",
+            'teil LATENZ $W latenz --verb hieb --sicht third,ego --proben 30 --json "{AUS}"',
+            "teil SPIEL $W eval '" + HIT_LESEN + "'"
         ),
         env: K,
         gpu: true,
         minuten: 6,
-        urteil: (j) => {
+        urteil: (j, lauf) => {
             if (!j || !j.reihen) return { gruen: false, zahl: "keine latenz-JSON" };
             const ids = ["third/hieb", "ego/hieb"];
             const r = ids.map((id) => j.reihen[id]);
             const halt = Math.max(0, ...r.filter(Boolean).map((x) => x.halt || 0));
             const gruen = r.every((x) => x && x.fehlt === 0 && x.n >= 30 && x.p95 <= 50) && halt >= 2;
-            return { gruen, zahl: "p95 ms " + reihenZahl(j, ids) + " · Hit-Stop " + r.map((x) => (x ? x.halt : "—")).join("/") + " Bilder (Third/Ego)" };
+            const out = String(lauf.stdout || "");
+            const sp = out.indexOf("@@PUNKTE@@ SPIEL");
+            const s = sp >= 0 ? jsonBlock(out.slice(sp)) : null;
+            const e = s && s.ergebnis;
+            const spiel = e
+                ? " · im Spiel: Halt gesetzt " + e.gesetzt + "-mal" + (e.gesetzt ? " (" + e.dauerMs.join("–") + " ms)" : "") + ", " +
+                  (e.gesetzt ? "die Hand gleitet im Halt bis " + e.gleitMm + " mm je Takt (" + e.haltTakte + " Takte)" : "kein Treffer am Ziel (Werkzeug)")
+                : " · im Spiel ungezählt";
+            return { gruen, zahl: "p95 ms " + reihenZahl(j, ids) + " · Hit-Stop " + r.map((x) => (x ? x.halt : "—")).join("/") + " Bilder (Third/Ego)" + spiel };
         },
         pfad: LATENZ,
         quelle: "1 = Eingabe → erstes Schwung-Bild ≤ 50 ms und Hit-Stop sichtbar im Ausgabe-Bild an einem Gerät",

@@ -972,7 +972,7 @@
     "stufe": 0,
     "steht": true,
     "ring": 298,
-    "gegenprobe": 59213
+    "gegenprobe": 59154
    }
   ],
   "suche": {
@@ -1035,7 +1035,7 @@
    "reload": 0,
    "ausstattung": null,
    "verblasst": false,
-   "ms": 1
+   "ms": 2
   }
  },
  "fernOrt": {

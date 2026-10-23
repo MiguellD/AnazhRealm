@@ -274,7 +274,11 @@ const stationen = [
         // das Start-Dorf (erwacht in Raten) und das gesetzte Haus des Spielers, je Box des Körper-Satzes Halm- und Boden-Pixel,
         // das Büschel am Gesetz, die Gegenprobe vor der Tür. Gerichtet werden die Häuser des Start-Dorfs (Staffel 1); die
         // Phasen Waise/Ausstattung sind im Bild-Lauf blind und machen den Exit 1 (so auch M24) — das Urteil liest das JSON.
-        // Eine Box ohne freies Auge (M24: haus_skandinavisch, haupt) steht beim Namen in der Zahl; gesehen sein müssen ≥ 90 %.
+        // Eine Box ohne freies Auge (M24: haus_skandinavisch, haupt) steht beim Namen in der Zahl als ungemessen, nie als ROT
+        // (wie M24: 26/27 gesehen, die blinde Box offen benannt); gesehen sein müssen ≥ 90 %. Halm- UND Boden-Pixel zählen wie
+        // in M24 und im W9 der Linse: der Boden-Pixel ist der Grund IN der Box (grün = die Halm-Schicht des Boden-Stoffs; trägt
+        // die Box eine Diele, jeder Grund durch sie) — 23.10. an 7c6f4b49 der Turm des haus_gotisch, Bild grund-41-0-turm-*.png.
+        // Jede Box heißt beim Namen wie das Bild der Linse: Haus-Index/Box-Index (artifacts/haus-welt/grund-<i>-<j>-<art>-<v>.png).
         befehl: ["node", "scripts/diag-haus-welt.cjs", "--phasen=grund", "--bild"],
         env: { HAUS_WELT_PORT: "{PORT}", HAUS_WELT_PARALLEL: "1", HAUS_WELT_JSON: "{AUS}" },
         gpu: true,
@@ -284,7 +288,8 @@ const stationen = [
             if (!w || !Array.isArray(w.haeuser)) return { gruen: false, zahl: "kein W9 im JSON der Linse (HAUS_WELT_JSON)" };
             if (!w.bild) return { gruen: false, zahl: "W9 ohne Bild (der Lauf fuhr nicht --bild)" };
             const dorf = w.haeuser.filter((h) => !h.spieler);
-            const boxen = dorf.flatMap((h) => (h.koerper || []).map((b) => ({ ...b, typ: h.typ, x: h.x, z: h.z })));
+            const boxen = dorf.flatMap((h) => (h.koerper || []).map((b, jb) => ({ ...b, typ: h.typ, wo: w.haeuser.indexOf(h) + "-" + jb })));
+            const name = (b) => b.typ + " " + b.wo + " " + b.art;
             const gesehen = boxen.filter((b) => b.blicke > 0);
             const blind = boxen.filter((b) => !(b.blicke > 0));
             const halm = gesehen.filter((b) => b.halm > 0 || b.boden > 0);
@@ -303,7 +308,9 @@ const stationen = [
                     dorf.length + " Häuser des Start-Dorfs, " + gesehen.length + "/" + boxen.length + " Boxen im Bild: Halm " +
                     sum("halm") + " px, Boden " + sum("boden") + " px, Büschel am Gesetz " + bueschel.length +
                     " Boxen; Gegenprobe " + gegen + " px" +
-                    (blind.length ? "; ohne freies Auge " + blind.map((b) => b.typ + " " + b.x + "/" + b.z + " " + b.art).join(" · ") : ""),
+                    (halm.length ? "; Halm/Boden in " + halm.map((b) => name(b) + " " + (b.halm || 0) + "/" + (b.boden || 0) + " px").join(" · ") : "") +
+                    (bueschel.length ? "; Büschel in " + bueschel.map((b) => name(b) + " " + b.bueschel).join(" · ") : "") +
+                    (blind.length ? "; ungemessen (ohne freies Auge) " + blind.map(name).join(" · ") : ""),
             };
         },
         pfad: [
