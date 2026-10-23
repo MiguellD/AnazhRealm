@@ -55,6 +55,11 @@ class AnazhRealm_feld_dsl {
             source: opts.source || "unknown",
             programId: opts.programId || `prog_${this.state.dsl.nextEntryId++}`,
             orte: new Map(), // Positions-Knoten → aufgelöste Orte (`dslEvalPos`; der Absender schickt sie mit)
+            // DIE TAT (`_tatWerten`): die Regel, die feuert (`_worldRuleCtx`), das Wort, auf das die KI handelt, und die Tat,
+            // die gerade wirkt (`dslEval` → `_tatBeginnt`) — die Stimme des Felds nennt Gesetz und Ursache aus ihnen
+            regel: opts.regel || null,
+            grund: opts.grund || null,
+            tat: null,
         };
     }
 
@@ -280,7 +285,8 @@ class AnazhRealm_feld_dsl {
         // Welt-Akt (AnazhRealm.DSL_WELTAKTE) seinen Zug — gleich wer ihn schickt (Nexus, Welt-Regel, Emotion, Mensch,
         // Mitspieler) — und steht beim Namen seiner Quelle im Log (`_weltaktGehalten`). Bis 07.10. hielt die Bühne nur das
         // Wetter: ein Nexus-Dorf drehte im OMEN-Boot 4B (0710-6) mitten im Lauf den Blick. Das Spiel kennt den Halt nie.
-        if (AnazhRealm.DSL_WELTAKTE.includes(op) && this._messHalt()) {
+        const weltakt = AnazhRealm.DSL_WELTAKTE.includes(op);
+        if (weltakt && this._messHalt()) {
             this._weltaktGehalten(String(op), ctx);
             return;
         }
@@ -295,14 +301,19 @@ class AnazhRealm_feld_dsl {
             return;
         }
         ctx.budget.depthLeft--;
+        // DIE TAT (affekt K1/K4): ein Welt-Akt wird hier EINE Tat — ihr Ort, ihre Wertung am Ort und ihre Zeile (`_tatWerten`)
+        const tat = weltakt ? this._tatBeginnt(String(op), args, ctx) : null;
+        let gelungen = true;
         try {
             fn.call(this, args, ctx);
         } catch (err) {
+            gelungen = false;
             // Ein verlangter Ort fehlt (`dslEvalPos`): sein Eintrag `invalid_position` steht schon im Log — er nennt jetzt
             // auch die Op, die er abbrach. Alles andere ist ein Fehler der Op.
             if (err && err.dslKeinOrt && err.dslKeinOrt.eintrag) err.dslKeinOrt.eintrag.effekt = String(op);
             else ctx.log.push({ event: "op_exception", op: String(op), message: err.message });
         }
+        if (tat) this._tatWerten(tat, ctx, gelungen);
         ctx.budget.depthLeft++;
     }
 
@@ -372,6 +383,8 @@ class AnazhRealm_feld_dsl {
             fehler.dslKeinOrt.eintrag = eintrag;
             throw fehler;
         }
+        // der erste Ort einer wirkenden Tat ist IHR Ort — gelesen, bevor ihr Effekt schreibt (`_tatOrt`)
+        if (ctx.tat && !ctx.tat.ort) this._tatOrt(ctx.tat, pos, op);
         if (node == null) return pos;
         if (ctx.orte) {
             const liste = ctx.orte.get(node);
@@ -711,6 +724,7 @@ class AnazhRealm_feld_dsl {
             source: `rule:${rule.source || "unknown"}`,
             budget: this._worldRuleBudget(),
             programId: `rule_${rule.id}`,
+            regel: rule,
         });
     }
 

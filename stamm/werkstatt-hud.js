@@ -104,6 +104,8 @@ class AnazhRealm_werkstatt_hud {
         // streamt). Der Erst-Spawn-Gruß (grokMarkFirstSpawn) bleibt unberührt; danach re-armen die Timer
         // sauber. Headless steht die Bühne sofort.
         if (!this._buehneSteht()) return;
+        // die Stimme des Felds: eine wartende Tat der Welt spricht, sobald ihre Pause um ist (`_feldStimmeTakt`, affekt K4)
+        this._feldStimmeTakt();
         const grok = this.state.grok;
         const keys = this.state.keys || {};
         const moving = !!(keys["w"] || keys["a"] || keys["s"] || keys["d"] || keys[" "]);

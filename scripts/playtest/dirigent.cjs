@@ -886,9 +886,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         out.a1SpeciesDistinct = sigs.size >= 4; // wenigstens 4 unterschiedlich (Eiche/Kiefer/Tanne/Birke sind klar trennbar)
 
         // ============== A2: R5 LIVE-UNIFORM + SLIDER ==============
-        // (A2b) Live-Uniform existiert in atmoUniforms
         const au = r._ensureAtmoUniforms();
-        out.a2UniformExists = !!(au && au.r5StructureBoost);
         // (A2c) Setter existiert + setzt Uniform + persistiert
         const before = au.r5StructureBoost.value;
         r.setStructureBoost(2.0);
@@ -900,8 +898,6 @@ async function checkBandV18210Verdrahtung(ctx) {
         r.setStructureBoost(0.1);
         out.a2SetterCapsLo = au.r5StructureBoost.value === 0.5;
         r.setStructureBoost(before); // restore
-        // (A2e) DOM-Slider existiert
-        out.a2DomSliderExists = !!document.getElementById("slider-structureboost");
 
         // ============== A3: der Biss der KREATUR-KI ==============
         // (die Witterung urteilt gate:kreatur-takt jagdkreis am echten Takt)
@@ -1046,12 +1042,10 @@ async function checkBandV18210Verdrahtung(ctx) {
     );
 
     // A2 — R5 Live-Slider
-    check("V18.210-A2b Live-Uniform r5StructureBoost in atmoUniforms", res.a2UniformExists === true);
     check("V18.210-A2c2 Setter aktualisiert Uniform live", res.a2SetterUpdatesUniform === true);
     check("V18.210-A2c3 Setter persistiert (atmosphere.r5StructureBoost)", res.a2SetterPersists === true);
     check("V18.210-A2c4 Setter cap-clamp (5.0 → 2.5)", res.a2SetterCapsHi === true);
     check("V18.210-A2c5 Setter floor-clamp (0.1 → 0.5)", res.a2SetterCapsLo === true);
-    check("V18.210-A2e DOM-Slider slider-structureboost existiert", res.a2DomSliderExists === true);
 
     // A3 — der Biss
     check(

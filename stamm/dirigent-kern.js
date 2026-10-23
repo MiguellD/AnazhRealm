@@ -424,7 +424,6 @@ class AnazhRealm {
                     idle: { lastFired: -Infinity, cooldown: 180 },
                     jumpBurst: { lastFired: -Infinity, cooldown: 120 },
                     rainLong: { lastFired: -Infinity, cooldown: 240 },
-                    nexus: { lastFired: -Infinity, cooldown: 60 },
                     // Welle 3 E — Welt-Initiative. journalEvent feuert kurz
                     // nach einem neuen Journal-Eintrag (Erinnerung wird
                     // erzählt), emotionShift bei abrupten Achsen-Sprüngen.
@@ -447,10 +446,6 @@ class AnazhRealm {
                     rainLong: [
                         "Der Regen bleibt. Schön still ist es jetzt.",
                         "Langer Regen. Manche Welten brauchen das.",
-                    ],
-                    nexus: [
-                        "Ich habe etwas verschoben. Spürst du den Unterschied?",
-                        "Eine kleine Änderung im Nexus. Sag mir, ob sie sich richtig anfühlt.",
                     ],
                     journalEvent: [
                         "Ich werde mich daran erinnern.",
