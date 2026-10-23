@@ -19,7 +19,7 @@
 //       Kachel-Pflanze; der Hain der KI wächst weder dort noch im Grundriss eines Dorf-Hauses (Gegenprobe 150 m weiter: er
 //       wächst), jede Absage nennt die Lichtung. DER GENESIS-PLATZ: die Sohle liegt ≤ 0,3 m über dem Boden, die Lichtung ist
 //       der Platz des Rings (Tore + 4 m), ein Damm räumt den Hain aus seinen Boxen.
-//   W10 SPIELGANG: Tür, Keller, jeder Lauf bis zum Dachboden, auch am Spur-Rand — kein Hub > 0,3 m je Schritt
+//   W10 SPIELGANG: Tür, Keller, jeder Lauf bis zum Dachboden, auch am Spur-Rand — kein Hub > 0,3 m je Schritt, kein Tier im Haus
 //   W9  DAS GRUND-DATUM (S4): je Box des Körper-Satzes (fachwerk `grundVon`) kein Büschel der Nah-Wiese, dessen Halme
 //       hineinreichen, keine Erde über der Diele; `--bild`: Halm- und Boden-Pixel je Box 0.
 //       ABBAU · PLAN · WAISE · ZUG · AUSSTATTUNG: der Grund fällt mit dem Bau, liegt vor seiner Hülle, trägt stets einen Bau;
@@ -165,6 +165,7 @@ const BASIS = {
     ],
     // W10: der Stab (die Brüstung) trägt · der Spieler klettert an jeder gestreiften Wand · an keiner
     kletter: [["-Math.SQRT1_2 &&", "Infinity &&"]],
+    tierbau: [['if (wo && wo !== "weg") fallen.push(c);', "if (false) fallen.push(c);"]],
     wand: [["-Math.SQRT1_2 &&", "-2 &&"]],
     stab: [
         [
@@ -375,6 +376,12 @@ async function proben(phasen) {
         }
         const tu = e.tuer;
         const base = e.position.y - 0.5;
+        // W10 TIER IM HAUS: kein Leib in der Fundament-Box vor dem Gang (der Wurf des Felds weicht dem Bau, `_naturRaeumen`)
+        const fu = e.fundament;
+        h.tiere = s.creatures
+            .map((c) => [c, lokal(e, c.position.x, c.position.z)])
+            .filter(([, q]) => Math.abs(q.x - (fu.ox || 0)) <= fu.ex && Math.abs(q.z - (fu.oz || 0)) <= fu.ez)
+            .map(([c]) => c.userData.gattung + " " + (c.position.y - base).toFixed(2));
         // W10 DER SPIELGANG (siedlung.K1): EIN Gang ohne Versetzen, je Sim-Schritt der Hub, je Ziel Rest und Fuß
         const dm = Hh.dims || {};
         const fls = (dm.flights || []).filter((f) => f.x1 - f.x0 > 0.3);
@@ -550,10 +557,8 @@ async function proben(phasen) {
         }
         [s.keys.w, g.wand] = [false, Math.round((wmax - wy) * 100) / 100];
     }
-    // W9 DAS GRUND-DATUM (S4): je Haus des Drehbuch-Dorfs und je Box seines Körper-Satzes die Büschel der Nah-Wiese, deren
-    // Halme in die Box reichen, Erde 5 cm über der Diele (Raster 0,25 m); `--bild`: je Box
-    // zwei Blicke aus dem Ausgabe-Pfad, Halm-Pixel (gegen das Bild ohne die Büschel der Box) und Boden-Pixel (die Maske des
-    // Boden-Satzes, deren Strahl den Boden in der Box trifft), die Bilder unter artifacts/haus-welt/grund-*.png
+    // W9 (Kopf): Erde 5 cm über der Diele, Raster 0,25 m; `--bild`: je Box zwei Blicke aus dem Ausgabe-Pfad (Halm-Pixel gegen
+    // das Bild ohne die Büschel der Box, Boden-Pixel aus der Maske des Boden-Satzes), artifacts/haus-welt/grund-*.png
     // das Grund-Datum eines Hauses (fachwerk `grundVon`): die Boxen des Körper-Satzes (`traegt` 0: der Grund ist ihr Boden)
     const grundDes = (e) => {
         const Hh = gesetz(e);
@@ -936,17 +941,8 @@ async function proben(phasen) {
         }
         return { zellen, imHaus: n, je };
     };
-    // W8 DIE LICHTUNG: die Genesis-Plattform ist ein Grundriss der EINEN Natur-Wand
-    // (`_naturSetzen`) — über ihrer Stein-Scheibe steht keine Krone (`_naturKrone`: die Krone des Wald-Gesetzes × Größe,
-    // × die Welt-Skala der Art, mit der der Baum gezeichnet wird) und auf ihr keine Streu. Der Spieler steht auf der
-    // Plattform, bis Chunk, Wald-Schlange und Nah-Streu ruhen (die Kachel-Pflanzen), dann 120 m daneben, bis die Regionen
-    // über ihr neu gebaut sind (die Streu-Zellen, die Baum-Schichten mit ihrer Krone — innerhalb 64 m baut keine Streu), dann
-    // wieder auf ihr, bis der Promotions-Ring promotet ist (die Natur-Einträge). Dann der Hain der KI
-    // (`spawn_tree` 4 Bäume, `spawn_studio` eine Eiche genau am Ort) mitten auf der Plattform UND mitten im Grundriss eines
-    // Hauses des Dorfs — nichts wächst in Lichtung oder Grundriss; derselbe Hain 150 m weiter wächst (sonst ist die Probe
-    // blind).
-    // DER GENESIS-PLATZ: nach der ersten Ruhe baut der Ort-Takt den Ring der Kern-Portale (`_genesisPortalRing`), und die
-    // Lichtung ist der PLATZ: der gemessene Kreis der Tore + 4 m — darauf keine Krone, Streu, Natur, Kachel-Pflanze.
+    // W8 DIE LICHTUNG (Kopf): auf der Plattform, bis Chunk, Wald-Schlange und Nah-Streu ruhen, 120 m daneben, bis die
+    // Regionen über ihr neu bauen (innerhalb 64 m baut keine Streu), wieder auf ihr, bis der Promotions-Ring promotet ist.
     // der Hain der KI: je Ort `spawn_tree` (4 Bäume im 2,5-m-Kreis) und `spawn_studio` (eine Eiche genau am Ort); `bleibt`
     // lässt ihn stehen (sonst fällt er nach der Zählung)
     const hain = (x, z, bleibt, quelle = "test") => {
@@ -1506,14 +1502,9 @@ async function proben(phasen) {
         o.w4b.nah = naturImHaus(FH);
     }
     if (P.has("w6")) {
-        // W6 DER FRONTALE ANLAUF AUF DIE TÜR: je Kultur (Hof-Grundriss marokkanisch, viktorianisch mit Veranda, alemannisch)
-        // steht ein Haus mit Tür-Zeile und Fundament wie ein Siedlungs-Slot auf dem Hang, die Front bergauf (das Gelände der Welt
-        // ist bis 420 m nirgends eben; bergauf liegt das Podest vorn auf Gelände-Höhe — ein höheres Podest ist ohne Sprung nie
-        // betretbar, offen: Hang-Zugang). Der Spieler läuft 6 m vor der Front los, frontal durch die Tür bis 1,8 m dahinter
-        // (beim Hof-Haus durch das Tor, am Brunnen vorbei, über den Hof): (a) vor der ersten Studio-Stufe (im selben Takt wie
-        // der Spawn — die Foundry liefert erst im nächsten): die Kern-Hülle; (b) während die FERNSTUFE steht (der Spieler wartet
-        // 60 m bzw. 20 m vor der Mitte, bis die Foundry die Stufe 2 bzw. 1 liefert — der Sim-Schritt ruft keinen LOD-Takt, die
-        // Stufe bleibt im Anlauf). Soll: 1 m hinter der Schwelle.
+        // W6 (Kopf): je Kultur (marokkanisch, viktorianisch, alemannisch) ein Haus wie ein Slot am Hang, die Front bergauf
+        // (bergauf liegt das Podest vorn auf Gelände-Höhe); der Lauf beginnt 6 m vor der Front, (a) im Takt des Spawns (die
+        // Kern-Hülle), (b) 60 m bzw. 20 m vor der Mitte, bis die Stufe 2 bzw. 1 steht (der Sim-Schritt ruft keinen LOD-Takt).
         o.w6 = [];
         const KULT = ["marokkanisch", "viktorianisch", "alemannisch"];
         const r0 = (x, z) => r.getTerrainHeightAt(x, z);
@@ -1886,6 +1877,8 @@ function urteil(o) {
         const gang = hs.filter((h) => h.gang);
         if (gang.length < 3 || !gang.some((h) => h.gang.keller) || !gang.some((h) => h.gang.dach))
             f.push(`W10 Aufbau: ${gang.length} Gänge (Soll ≥ 3, mit Keller, mit Dachboden)`);
+        const tier = hs.filter((h) => h.tiere && h.tiere.length);
+        if (tier.length) f.push(`W10 Tier im Haus: ${tier.map((h) => h.typ + " " + h.tiere).join(" · ")}`);
         const hub = gang.filter((h) => !(h.gang.hub <= 0.3));
         if (hub.length) f.push(`W10 Anti-Clip-Hub: ${hub.map((h) => h.typ + " " + h.gang.wo).join(" · ")}`);
         const wand = gang.filter((h) => !(h.gang.wand > 0.5));
@@ -2242,6 +2235,7 @@ function zeile(o) {
                 bauwand: ["haus", "W7 Bau im Bau"],
                 stab: ["haus", "W10 Anti-Clip-Hub"],
                 kletter: ["haus", "W10 Spielgang"],
+                tierbau: ["haus", "W10 Tier im Haus"],
                 wand: ["haus", "W10 Wand"],
                 grundkeller: ["grund", "W9 Dichte"],
                 grundbueschel: ["grund", "W9 Büschel"],

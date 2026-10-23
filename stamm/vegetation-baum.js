@@ -1971,6 +1971,17 @@ class AnazhRealm_vegetation_baum {
             weg.push(e);
         }
         for (const e of weg) this.removeArchitecture(e);
+        // DAS TIER IM BAU: ein Wurf des Felds, geboren vor dem Bau, steht nie in ihm (`_weichtDemBau`) — vorher umschloss das
+        // Haus die Herde, der Erdbau des Kellers nahm ihr den Boden (gate:haus-welt W10: 3 Hirsche im Keller des
+        // haus_provenzalisch, einer auf der Diele, der Gang schob sie vor sich her und riss). Auf dem Weg geht ein Tier weiter.
+        const fallen = [];
+        for (const c of this.state.creatures || []) {
+            if (!c || !c.position || Math.abs(c.position.x - hx) > r + weit || Math.abs(c.position.z - hz) > r + weit)
+                continue;
+            const wo = this._weichtDemBau(c) ? this._imGrundriss(c.position.x, c.position.z, 0) : false;
+            if (wo && wo !== "weg") fallen.push(c);
+        }
+        for (const c of fallen) this.removeCreature(c);
         let n = weg.length;
         const map = this.state.scatterRegions;
         if (map && map.size) {

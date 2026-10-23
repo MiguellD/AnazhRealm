@@ -2782,8 +2782,10 @@ class AnazhRealm_siedlung_ort {
     // jedem späteren Bau (gate:settlement Teil O „das Werk derselben Art"). Bis zur Wiederkehr wich auch das Werk eines Worts
     // aus dem Stoff der Natur (ein stein_block ist basalt): auf der Lichtung beim Satz erlaubt, beim Reload geräumt
     // (gate:persistence Teil W 0/2). Das Werk (`werk`, die Herkunft an der Wurzel `spawnArchitecture`) weicht nie.
+    // Ein Tier weicht nach SEINER Herkunft: der Wurf des Felds (`userData.feldWurf`, `_kreaturWurf`), nie das gerufene Tier.
     _weichtDemBau(e) {
         if (!e || e.werk === true) return false;
+        if (e.userData && e.userData.kind === "creature") return e.userData.feldWurf === true;
         return e.feldWurf === true || this._istNatur(e);
     }
 }

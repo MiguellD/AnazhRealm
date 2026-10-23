@@ -223,6 +223,7 @@ class AnazhRealm_kreatur_leben {
             bodySize: Number.isFinite(ud.bodySize) ? ud.bodySize : 1,
             // S6 — der Verband und sein Revier reisen mit (ohne sie zerfiele die Herde beim Reload)
             verband: ud.verband != null ? String(ud.verband) : undefined,
+            feldWurf: ud.feldWurf === true ? true : undefined, // die Herkunft weicht dem Bau auch nach dem Reload
             revier:
                 ud.wanderAnchor && Number.isFinite(ud.wanderAnchor.x) && Number.isFinite(ud.wanderAnchor.z)
                     ? { x: ud.wanderAnchor.x, z: ud.wanderAnchor.z }
@@ -293,6 +294,7 @@ class AnazhRealm_kreatur_leben {
         }
         if (snap.revier && Number.isFinite(snap.revier.x) && Number.isFinite(snap.revier.z))
             c.userData.wanderAnchor = { x: snap.revier.x, z: snap.revier.z };
+        if (snap.feldWurf === true) c.userData.feldWurf = true;
         // die Wunde als Anteil des Lebens, das der Leib jetzt hat; ein Stand vor dem Anteil (Q12 bis Welle LF kampf Nachbesserung 2)
         // trug hp gegen das Leben VOR dem Massen-Gesetz (Substanz × Größen-Symmetrie, computeCreatureStats.hpOhneMasse) —
         // vorher stand ein voller Hirsch danach bei 124/168, ein voller Bär bei 159/391 (verwundet, ohne Wunde)
@@ -1623,6 +1625,9 @@ class AnazhRealm_kreatur_leben {
             const c = this.spawnCreatureAt(x, (Number.isFinite(gY) ? gY : p.y) + 1, z, emotion, soul);
             if (!c) break; // die Obergrenze oder die Gestalt: der Rest des Wurfs fällt mit
             c.userData.wanderAnchor = { x: ort.x, z: ort.z };
+            // DIE MARKE DES WURFS (`feldWurf`, wie am Wurf eines Werks, im Save): ein Bau, der nach der Geburt kommt, räumt das
+            // Tier aus seinem Grundriss (`_weichtDemBau`, `_naturRaeumen`)
+            c.userData.feldWurf = true;
             if (k === 0) abstand = (W.abstandRaum * 2 * this._kreaturRaum(c)) / c.userData.bodySize;
             geboren.push(c);
         }
