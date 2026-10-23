@@ -351,8 +351,8 @@ async function jSeite(schein) {
     const bloecke = [];
     await runde("Weltgrenze", () => {});
     await runde("Edits", () => {
-        for (let i = 0; i < 6; i++) r.carveVoxelSphere(p.x + 30 + i * 4, boden(p.x + 30 + i * 4, p.z) - 2, p.z, 3);
-        r.fillVoxelSphere(p.x + 30, boden(p.x + 30, p.z + 8) + 1, p.z + 8, 2);
+        for (let i = 0; i < 6; i++) r.carveVoxel(p.x + 30 + i * 4, boden(p.x + 30 + i * 4, p.z) - 2, p.z, 3);
+        r.fillVoxel(p.x + 30, boden(p.x + 30, p.z + 8) + 1, p.z + 8, 2);
     });
     await runde("Bauten", () => {
         for (let i = 0; i < 4; i++) bloecke.push(block(i));
@@ -394,7 +394,7 @@ async function jSeite(schein) {
     const S0 = r._speicher;
     const mitten = new Promise((ok) => S0.w.addEventListener("message", (e) => e.data && e.data.__tt && ok()));
     S0.w.postMessage({ __haken: "mitten" });
-    r.carveVoxelSphere(p.x + 60, boden(p.x + 60, p.z) - 2, p.z, 3);
+    r.carveVoxel(p.x + 60, boden(p.x + 60, p.z) - 2, p.z, 3);
     bloecke.push(block(bloecke.length));
     r.saveState();
     await mitten;
