@@ -6032,6 +6032,21 @@
     //    ziehen aus ihren Seed-LCGs, massBau ist reiner Bau — derselbe dp ⇒
     //    byte-derselbe Export (gate:settlement friert das ein). Unplatzierte
     //    Häuser (die ±9999-Parkplätze des Layouts) reisen NICHT (fail-closed).
+    // DER MASS-BAU IM GEDÄCHTNIS (siedlung.K3): der Wirt rechnet den Export am Ort der Ort-Wahl neu (ein anderes `dp.hoehe`),
+    // der Mass-Bau eines Hauses hängt nur an seinem P-Vektor — derselbe Vektor nimmt denselben Bau, frisch sind je Export nur
+    // `p` (brandwand schreibt in sie) und der Rahmen `q`. Höchstens MASS_GEDAECHTNIS Häuser, dann fällt das Gedächtnis ganz.
+    var MASS_GEDAECHTNIS = 1024;
+    var massGedaechtnis = new Map();
+    function massBauExport(hp) {
+        var k = JSON.stringify(hp);
+        var B = massGedaechtnis.get(k);
+        if (!B) {
+            if (massGedaechtnis.size >= MASS_GEDAECHTNIS) massGedaechtnis.clear();
+            B = massBau(Object.assign({}, hp));
+            massGedaechtnis.set(k, B);
+        }
+        return Object.assign({}, B, { p: hp, q: { phi: 0, x: 0, y: 0, z: 0, obb: { cx: 0, cz: 0 } }, meshes: [] });
+    }
     function exportSettlement(dp) {
         dp = dp && typeof dp === "object" ? dp : {};
         var plan = DORF({
@@ -6044,8 +6059,7 @@
         var Bs = [];
         var i;
         for (i = 0; i < plan.houses.length; i++) {
-            var Bm = massBau(Object.assign({}, plan.houses[i]));
-            Bm.p = plan.houses[i]; // brandwand schreibt in die EINE hp-Quelle — ov (unten) liest sie
+            var Bm = massBauExport(plan.houses[i]); // brandwand schreibt in die EINE hp-Quelle — ov (unten) liest sie
             Bs.push(Bm);
             ext.push(Bm.ext);
         }

@@ -3140,8 +3140,8 @@ AnazhRealm.KEINE_EDITS = Object.freeze([]);
 // Siedlungs-Zelle fachwerk `SIEDLUNG.cellM`; auf jedem Ring Orte im Abstand ≤ `schrittM`), der nächste Ort, an dem der Plan
 // jedes Haus trägt (Ort-Faden `ortTraegt`, am Wirt `_ortTraegtWirt`), gewinnt. `grobM`: das Raster des ersten Urteils (die
 // Wand urteilt im halben Meter). `bodenTolM`: so weit darf die Gestalt des Gewässers (`_gewaesserForm`) den Boden des Plans
-// unter einem Haus verschieben.
-AnazhRealm.ORT_WAHL = Object.freeze({ schrittM: 16, ringe: 8, grobM: 2, bodenTolM: 0.05 });
+// unter einem Haus verschieben. `trasseRunden`: so oft rechnet der Export am gewählten Ort neu (`_ortMitTrasse`, siedlung.K3).
+AnazhRealm.ORT_WAHL = Object.freeze({ schrittM: 16, ringe: 8, grobM: 2, bodenTolM: 0.05, trasseRunden: 6 });
 
 // DIE BODEN-STUFEN (K51, K51-2 CDLOD) — die Stufen-Kette des Chunk-Netzes (`_voxelChunkConfig(lod)`: Schritt 1,8 · 3,6 · 7,2 ·
 // 14,4 m) nach dem KASTEN-Abstand des Spielers zum Chunk-Quadrat (Chebyshev, `_voxelChunkLodFor`): `bis` die Grenze der Stufe,
