@@ -249,6 +249,16 @@ async function proben(phasen) {
             if (k % 8 === 0) await warte(10);
         }
     };
+    // DAS WARTEN IM EREIGNIS (welt-boot `__deckel`): Takt um Takt, bis `bis()` gilt — der Deckel zählt nur Takte, in denen die
+    // Welt nichts offen hat (`_weltOffen`): unter Last wartet die Probe auf den Bau, nie auf eine Takt-Zahl
+    const warteBis = async (bis, n, max) => {
+        let ja = false;
+        try {
+            for (let k = 0, weiter = window.__deckel("haus-welt", max); !(ja = bis()) && weiter() && k++ < 4 * max;)
+                await pumpe(n);
+        } catch (_e) {}
+        return ja;
+    };
     // ── das Drehbuch-Dorf 7/18, der Akt des Chats „dorf 7 18" — AN EINEM HANG: der nächste 16-m-Ring (160–480 m um den
     // Start) mit einem trockenen Ort (kein Wasser im 40-m-Kreis), dessen Gefälle über ±8 m 0,3–0,6 ist, darin der steilste ──
     let dorfOrt = null;
@@ -293,10 +303,7 @@ async function proben(phasen) {
     const dorfHaeuser = () =>
         s.architectures.filter((e) => e.type && e.type.startsWith("haus_") && e.tuer && e.fundament);
     // der Export reist durch den Foundry-Worker, der Akt hebt über den Zug: warten, bis er steht
-    for (let k = 0; k < 120 && !steht; k++) {
-        await pumpe(4);
-        await warte(100);
-    }
+    await warteBis(() => steht, 4, 120);
     const H = dorfHaeuser();
     o.gesamt = H.length;
     const dorfMitte = { x: start.x, z: start.z };
@@ -348,7 +355,7 @@ async function proben(phasen) {
         for (const [x, z] of vor ? orte : []) {
             if (!r._landAt(x, z, 0.5) || !r._ortFrei(x, z, 14)) continue;
             stell(x, r.getTerrainHeightAt(x, z) + 2, z);
-            for (let k = 0; k < 200 && !r._bodenSichtChunks(x - 8, z - 8, x + 8, z + 8); k++) await pumpe(5);
+            await warteBis(() => !!r._bodenSichtChunks(x - 8, z - 8, x + 8, z + 8), 5, 200);
             if (!gut(x, z)) continue;
             // ein eigener Körper (der Steuer-Passagier `__w9`)
             const ov = { id, seed: vor.seed, studioOv: Object.assign({}, vor.studioOv, { __w9: id }), rotationY: 0.6 };
@@ -687,10 +694,8 @@ async function proben(phasen) {
                 kartenDa() &&
                 (!BILD || (s.nahWiese && s.nahWiese.offen === 0 && s.nahWiese.kacheln.size > 0));
             stell(e.position.x, e.position.y + 1, e.position.z);
-            for (let k = 0, ruhig = 0; k < 120 && ruhig < 3; k++) {
-                await pumpe(5);
-                ruhig = steht() ? ruhig + 1 : 0;
-            }
+            let ruhig = 0;
+            await warteBis(() => (ruhig = steht() ? ruhig + 1 : 0) >= 3, 5, 120);
             [h.stufe, h.steht] = [e._servedLod, !!steht()];
             const bueschel = bueschelIn(mx0 - 2, mz0 - 2, mx1 + 2, mz1 + 2);
             h.ring = bueschel.length;
@@ -1039,37 +1044,47 @@ async function proben(phasen) {
             stell(L.x, plat.position.y + 2.2, L.z);
             const span = r._voxelChunkConfig(0).span;
             let ruhig = 0;
-            for (let k = 0; k < 1500 && ruhig < 20; k++) {
-                await pumpe(4);
-                const e = s.voxelChunks && s.voxelChunks.get(`${Math.floor(L.x / span)},${Math.floor(L.z / span)}`);
-                const ns = s.nahStreu;
-                const steht =
-                    k > 60 &&
-                    e &&
-                    e.surfMap &&
-                    !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
-                    ns &&
-                    ns.kacheln.size > 0 &&
-                    ns.offen === 0;
-                ruhig = steht ? ruhig + 1 : 0;
-            }
+            let k8 = 0;
+            await warteBis(
+                () => {
+                    const e = s.voxelChunks && s.voxelChunks.get(`${Math.floor(L.x / span)},${Math.floor(L.z / span)}`);
+                    const ns = s.nahStreu;
+                    const steht =
+                        k8++ > 60 &&
+                        e &&
+                        e.surfMap &&
+                        !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
+                        ns &&
+                        ns.kacheln.size > 0 &&
+                        ns.offen === 0;
+                    return (ruhig = steht ? ruhig + 1 : 0) >= 20;
+                },
+                4,
+                1500
+            );
             w8.ruhe = ruhig >= 20;
             // DER RING: der Ort-Takt baut ihn am Genesis-Ort (headless ruht der Takt, die Probe ruft die Stamm-Methode);
             // die Lichtung der Probe ist ab hier der Platz — der gemessene Kreis der Tore + 4 m
             r._genesisPortalRing(pm.position);
             // die Tore räumen, die Nah-Streu wächst durch die Wand nach: ruhen lassen wie zuvor
-            for (let k = 0, ruhe2 = 0; k < 1500 && ruhe2 < 20; k++) {
-                await pumpe(4);
-                const ns = s.nahStreu;
-                ruhe2 =
-                    k > 20 &&
-                    !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
-                    ns &&
-                    ns.kacheln.size > 0 &&
-                    ns.offen === 0
-                        ? ruhe2 + 1
-                        : 0;
-            }
+            let [ruhe2, k2] = [0, 0];
+            await warteBis(
+                () => {
+                    const ns = s.nahStreu;
+                    return (
+                        (ruhe2 =
+                            k2++ > 20 &&
+                            !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
+                            ns &&
+                            ns.kacheln.size > 0 &&
+                            ns.offen === 0
+                                ? ruhe2 + 1
+                                : 0) >= 20
+                    );
+                },
+                4,
+                1500
+            );
             const tore = s.architectures.filter(
                 (a) => a && /^welt_/.test(a.type) && Math.hypot(a.position.x - L.x, a.position.z - L.z) < 30
             );
@@ -1111,7 +1126,7 @@ async function proben(phasen) {
                     for (const k of keys) r._disposeScatterRegion(k);
                     keysW8 = keys;
                     const steht = () => [...keys].every((q) => !r._streuRegionWartet(q));
-                    for (let k = 0; k < 1500 && !steht(); k++) await pumpe(2);
+                    await warteBis(steht, 2, 1500);
                     await pumpe(10);
                     w8.streuSteht = steht();
                 }
@@ -1152,7 +1167,7 @@ async function proben(phasen) {
                 };
                 window.__anazhGateNoFoundry = true;
                 try {
-                    for (let k = 0; k < 1500 && rest() > 0; k++) await pumpe(4);
+                    await warteBis(() => rest() <= 0, 4, 1500);
                 } finally {
                     window.__anazhGateNoFoundry = false;
                 }
@@ -1377,7 +1392,7 @@ async function proben(phasen) {
         // der Ort des fernen Dorfs: der dichteste 40-m-Kreis der Zellen 200–360 m vom Start, auf Land, jede Region unter ihm
         // in Reichweite (`_streuWartet`) — die Probe braucht Zellen unter den Häusern
         const p0 = { x: start.x, z: start.z };
-        for (let k = 0; k < 1500 && r._streuWartet(p0) > 0; k++) await pumpe(4);
+        await warteBis(() => !(r._streuWartet(p0) > 0), 4, 1500);
         const voll = [];
         for (const region of (s.scatterRegions && s.scatterRegions.values()) || [])
             for (const c of region.cells || []) if ((c.slots && c.slots.length) || c.feld) voll.push(c);
@@ -1398,7 +1413,7 @@ async function proben(phasen) {
         }
         const dorfRegionen = regionenUm(fx, fz);
         const streuSteht = () => steht(dorfRegionen);
-        for (let k = 0; k < 1500 && !streuSteht(); k++) await pumpe(4);
+        await warteBis(streuSteht, 4, 1500);
         let vorZellen = 0;
         for (const region of (s.scatterRegions && s.scatterRegions.values()) || [])
             for (const c of region.cells || [])
@@ -1410,10 +1425,7 @@ async function proben(phasen) {
         );
         const fernHaeuser = () =>
             s.architectures.filter((e) => !vorDorf.has(e) && e.type && e.type.startsWith("haus_") && e.fundament);
-        for (let k = 0; k < 120 && !fernSteht; k++) {
-            await pumpe(4);
-            await warte(100);
-        }
+        await warteBis(() => fernSteht, 4, 120);
         const FH = fernHaeuser();
         o.w4b = { haeuser: FH.length, streuVorher: { steht: streuSteht(), zellen: vorZellen }, fern: streuImHaus(FH) };
         // unter den Häusern: die Zellen, die das Haus geräumt hat, und die, die noch leben (ohne Zellen dort ist W4b blind)
@@ -1437,7 +1449,7 @@ async function proben(phasen) {
             }
             for (const k of keys) r._disposeScatterRegion(k);
             const neuSteht = () => [...keys].every((q) => !r._streuRegionWartet(q));
-            for (let k = 0; k < 1500 && !neuSteht(); k++) await pumpe(2);
+            await warteBis(neuSteht, 2, 1500);
             await pumpe(10);
             o.w4b.neubau = streuImHaus(FH);
             o.w4b.neubau.steht = neuSteht();
@@ -1455,21 +1467,24 @@ async function proben(phasen) {
         const span = r._voxelChunkConfig(0).span;
         // (1) mit warmer Foundry: der Chunk unter dem Spieler steht, die Wald-Schlange ist leer und die Nah-Streu hat jede
         // gewollte Kachel gebaut (`nahStreu.offen` 0) — 20 Proben in Folge; gezählt wird der Konsum, nie eine feste Takt-Zahl
-        let ruhig = 0;
-        for (let k = 0; k < 1500 && ruhig < 20; k++) {
-            await pumpe(4);
-            const e = s.voxelChunks && s.voxelChunks.get(`${Math.floor(mx / span)},${Math.floor(mz / span)}`);
-            const ns = s.nahStreu;
-            const steht =
-                k > 60 &&
-                e &&
-                e.surfMap &&
-                !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
-                ns &&
-                ns.kacheln.size > 0 &&
-                ns.offen === 0;
-            ruhig = steht ? ruhig + 1 : 0;
-        }
+        let [ruhig, k4] = [0, 0];
+        await warteBis(
+            () => {
+                const e = s.voxelChunks && s.voxelChunks.get(`${Math.floor(mx / span)},${Math.floor(mz / span)}`);
+                const ns = s.nahStreu;
+                const steht =
+                    k4++ > 60 &&
+                    e &&
+                    e.surfMap &&
+                    !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
+                    ns &&
+                    ns.kacheln.size > 0 &&
+                    ns.offen === 0;
+                return (ruhig = steht ? ruhig + 1 : 0) >= 20;
+            },
+            4,
+            1500
+        );
         o.w4b.ruhe = ruhig >= 20;
         o.w4b.nahStreu = streuImHaus(FH);
         // die Nah-Streu um die Kamera (Farn, Blume, Kiesel der Kachel): keine Pflanze im Grundriss
@@ -1502,7 +1517,7 @@ async function proben(phasen) {
             o.w4b.promoWarm = ring();
             window.__anazhGateNoFoundry = true;
             try {
-                for (let k = 0; k < 1500 && ring().rest > 0; k++) await pumpe(4);
+                await warteBis(() => ring().rest <= 0, 4, 1500);
             } finally {
                 window.__anazhGateNoFoundry = false;
             }
@@ -1774,17 +1789,13 @@ async function proben(phasen) {
             const karten = () => r._bodenSichtChunks(x - 10, z - 10, x + 10, z + 10);
             // der Boden um das Haus steht, geschnitten im Grund: 3 ruhige Takte
             stell(x, e.position.y + 1, z);
-            for (let k = 0, ruhig = 0; k < 120 && ruhig < 3; k++) {
-                await pumpe(5);
-                ruhig = k >= 6 && karten() && lage().offen ? ruhig + 1 : 0;
-            }
+            let [ruhig, k9] = [0, 0];
+            await warteBis(() => (ruhig = k9++ >= 6 && karten() && lage().offen ? ruhig + 1 : 0) >= 3, 5, 120);
             a.vorher = lage();
             a.boxen = mitten.length;
             a.weg = r.removeArchitecture(e);
-            for (let k = 0; k < 60; k++) {
-                await pumpe(5);
-                if (k >= 6 && karten() && !lage().offen) break;
-            }
+            k9 = 0;
+            await warteBis(() => k9++ >= 6 && karten() && !lage().offen, 5, 60);
             a.nachher = lage();
         }
         // W9 WAISE: das Start-Dorf wächst, ein Bau sperrt seinen letzten Slot, nach dem dritten Haus fällt der Zug wie mit der
@@ -1796,11 +1807,11 @@ async function proben(phasen) {
         stell(start.x, start.y + 1, start.z);
         const zellen = () => (s.worldMeta && s.worldMeta.settlementCells) || {};
         let q = null;
-        for (let k = 0; k < 600 && !(q = r._autoSettlementQueue) && !zellen().start; k++) await pumpe(1);
+        await warteBis(() => !!(q = r._autoSettlementQueue) || !!zellen().start, 1, 600);
         const sl = q && q.plan.slots[q.plan.slots.length - 1];
         const ort = sl && { x: q.origin.x + sl.x, y: sl.y + 0.5, z: q.origin.z + sl.z };
         const sperre = ort && r.spawnArchitecture("brunnen_dorf", ort, { silent: true });
-        for (let k = 0; k < 1200 && q && r._autoSettlementQueue === q && q.idx < 3; k++) await pumpe(1);
+        await warteBis(() => !(q && r._autoSettlementQueue === q && q.idx < 3), 1, 1200);
         const reload = !!q && r._autoSettlementQueue === q && q.idx < q.plan.slots.length ? q.idx : 0;
         if (reload) {
             // der Reload des Spiels: der Schnappschuss schließt den Gang (`_dorfGangSchliessen`), nie die Uhr eines Speicherns
@@ -1810,8 +1821,7 @@ async function proben(phasen) {
         }
         // der Zug des Start-Dorfs (samt seinem Rebuild) ist leer, bevor der Takt ein nächstes Dorf beginnt
         const zugLebt = () => r._autoSettlementQueue || r._stlWegePending || (q && !r._stlWegeKeys.has(q.cellKey));
-        for (let k = 0; k < 6000 && (zugLebt() || !zellen().start); k++) await pumpe(1);
-        const zugOffen = !!zugLebt();
+        const zugOffen = !(await warteBis(() => !zugLebt() && !!zellen().start, 1, 1200));
         window.__anazhAutoSettlement = takt;
         const an = (x, z, typ) => (e) =>
             e !== sperre &&
