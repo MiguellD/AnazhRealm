@@ -36,7 +36,7 @@ const BAND = {
     gummi: [0.015, 0.05],
     kunststoff: [0.015, 0.08],
     polster: [0.02, 0.35],
-    lack: [0.003, 0.9],
+    lack: [0.0123, 0.9], // Dielektrikum ab sRGB 30 (Frostbite 2014)
     blank: [0.3, 0.95], // blankes Metall: Felge, Klinge, Roh-Stahl
     buntmetall: [0.25, 0.95], // Messing, Bronze
     metall: [0.1, 0.95], // beschichtet, geschwärzt, geschmiedet
@@ -130,7 +130,7 @@ function lackGestalten() {
 }
 
 
-// Der Transport am Gesetz der Regler (D3c, vorher am Quelltext von Extraktor, Kern und Wirt): Klarlack und Durchsicht eines
+// Der Transport am Gesetz der Regler (D3c): Klarlack und Durchsicht eines
 // Stoffs werden die Material-Zahlen, aus denen der Wirt baut (phyto-core `budgetRegler`)
 const LACK_GLAS = { clearcoat: 1, clearcoatRoughness: 0.1, opacity: 0.4 };
 function transport(R) {

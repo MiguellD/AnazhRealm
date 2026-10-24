@@ -21,7 +21,7 @@
 //   (A) ARBEIT: der Brennglas-Takt fasst je Takt höchstens die Betroffenen an — die warmen Einträge und, wenn die Sonne durch ein
 //       Glas scheint, die Plätze in Reichweite der Gläser;
 //   (N) DIE NÄHE: Strahlen, Balancieren, Heben und die nächste Affordanz (der Portal-Takt) urteilen wie die Schleife
-//       über ihr Verzeichnis (das Orakel von main 9fb869a5, 49 Plätze, nah und mit der fernen Menge) und kosten die Nähe — eine
+//       über ihr Verzeichnis und kosten die Nähe — eine
 //       ferne Menge derselben Namen (300–3 000 je Name) greift kein Takt an (WELTGRÖSSE rot ab dem ersten Griff je Ruf, gezählt
 //       an ihrem Platz und ihrer Zellen-Marke, nie an der Uhr), die Gegenprobe (das Orakel) greift jeden ihres Namens (sonst BLIND);
 //   (Q) QUELLE: keiner der Takte läuft über `state.architectures`; jeder Schreiber von Affordanzen und Kaminen steht beim Namen
@@ -252,7 +252,7 @@ function quellWand(quelle) {
         }
         // die Schreiber beim Namen (D3c: der Freibrief „ruft _blockerNetzSetzen" am Rumpf fiel; dass das Tor das Verzeichnis
         // nachzieht, beweist (V) am Aufruf)
-        const darfZiel = name === "spawnArchitecture" || name === "setBlueprintAsPortal" || name === "_hausHuelleSetzen"; // B3c: der Kamin aus der Hülle, gestempelt
+        const darfZiel = name === "spawnArchitecture" || name === "setBlueprintAsPortal" || name === "_hausHuelleSetzen"; // der Kamin aus der Hülle, gestempelt
         const darfHitze = name === "_tickFocusingAffordances";
         const harmlosUserData = (links, rechts) => {
             if (rechts.type === "ObjectExpression")
@@ -477,7 +477,7 @@ async function probe() {
     const st = r.state;
     const AR = r.constructor;
     const P = Object.getPrototypeOf(r);
-    // DAS ORAKEL: der Brennglas-Takt von main V18.536 (76c9624d) im Wortlaut — die Schleife über den ganzen Bestand
+    // DAS ORAKEL: der Brennglas-Takt von main V18.536 im Wortlaut — die Schleife über den ganzen Bestand
     const orakel = (dt) => {
         if (!r._buehneSteht()) return;
         const archs = st.architectures || [];
@@ -539,7 +539,7 @@ async function probe() {
                 `Die Sonne entzündete durch „${name(quelle)}" „${name(t)}"${d != null ? ` (${Math.round(d)} m von dir)` : ""}.`
             );
             if (r.journalAppend)
-                r.journalAppend("loss", `Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`, {
+                r.journalAppend("loss", AR._datum`Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`, {
                     type: t.type,
                     linse: quelle.type,
                 });
@@ -646,7 +646,7 @@ async function probe() {
         return n;
     };
     aus.imPunkt = indiePunkte(0.5, 3);
-    // DAS FERNZIEL (Gegenprüfung 0710-10: ein halber Radius blieb grün): ein fünftes Glas 5,9 m hinter einer Zellgrenze, ein
+    // DAS FERNZIEL (ein halber Radius blieb grün): ein fünftes Glas 5,9 m hinter einer Zellgrenze, ein
     // gestrecktes Brennbares, dessen Position 3,9 m daneben in der NACHBAR-Zelle steht — sein Körper trägt den Brennpunkt, sein
     // Platz (Position ± Blocker-Reichweite) liegt außerhalb der halben Frage: nur die volle Reichweite findet ihn. Die Art sucht
     // die Wand unter den brennbaren (Probe-Spawn, die Blocker-Reichweite unter 1,6 m — eine Eiche trägt 10 m Krone als Blocker)
@@ -726,7 +726,7 @@ async function probe() {
             r.removeArchitecture(e);
         }
     }
-    // DER BEWEGER (Gegenprüfung 0710-10: ohne die Beweger blieb die Wand grün): ein Brennbares, weit weg gestempelt, dann in
+    // DER BEWEGER (ohne die Beweger blieb die Wand grün): ein Brennbares, weit weg gestempelt, dann in
     // einen Brennpunkt getragen (`_blockerBewegt`, wie das gerittene Werk) — sein Platz steht noch am alten Ort
     aus.beweger = { gesetzt: false };
     let bewegt = null;
@@ -1062,7 +1062,7 @@ async function probe() {
         });
         st.playerMesh.position.set(echt.x, echt.y, echt.z);
     }
-    // (N) DIE NÄHE (K54): die Takte, die nur den Spieler treffen — Strahlen (mit dem Relais der Masten), Balancieren, Heben und die
+    // (N) DIE NÄHE: die Takte, die nur den Spieler treffen — Strahlen (mit dem Relais der Masten), Balancieren, Heben und die
     // nächste Affordanz (der Portal-Takt je Frame) — urteilen wie die Schleife über ihr Verzeichnis (das ORAKEL, der Takt von main
     // 9fb869a5 im Wortlaut) und kosten die NÄHE: eine ferne Menge derselben Namen (Strahler, Masten, …) ändert ihre Zeit nicht.
     aus.naehe = window.__naeheProbe(r, st, AR, P, setze, stelle, ox - 700, oz);
@@ -1236,8 +1236,8 @@ function naeheProbe(r, st, AR, P, setze, stelle, cx, cz) {
         tor: w[5] != null,
         strahler: w[6].filter((k) => /^radiating/.test(k)).length,
     };
-    // DIE ARBEIT je Ruf am Platz (Lehre 26: gezählt, nie gestoppt — die Uhr urteilte unter Last falsch, CI 39471460860: die
-    // Gegenprobe „balancieren" 0,0117 → 0,0253 ms, BLIND): jeder Griff eines Takts an einen Eintrag der fernen Menge — sein
+    // DIE ARBEIT je Ruf am Platz (Lehre 26: gezählt, nie gestoppt — die Uhr urteilt unter Last falsch): jeder Griff eines
+    // Takts an einen Eintrag der fernen Menge — sein
     // Platz (`position`) oder die Marke der Zellen-Frage (`_blockerFrage`) — zählt; ein Ruf nach einem Ruf zum Anwärmen.
     let griffe = 0;
     const arbeit = (T) => {

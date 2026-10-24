@@ -421,6 +421,11 @@ Die Regler-Definitionen als DATEN (die HDA-Lehre) — **als MAP je kind**:
   bewegt (Hash bei min und max), ist tot und steht beim Namen in `spec/vertraege/ratsche.json` (`reglerTot`, die
   Liste schrumpft nur, Soll 0). Ein Bau, der mit dem Wert bricht (wirft, leer, NaN, Not-Körper), ist rot; ein
   Rand-Wert über der Budget-Zeile (B2c) steht in `reglerBudget` (Soll 0).
+- **Die EINE Klemme** (KI K2): ein Programm prägt sein Werk mit `ov` als fünftem Argument von `spawn_studio`; der EINE
+  Stempel `_studioStampFor` klemmt jede Zahl am Vertrag ihrer Art (`_reglerKlemme`: [min, max], ganze Schritte gerundet,
+  jede Klemme beim Namen im Log), ein Regler ohne Zeile oder ein Wert ohne Zahl schließt die Tat (fail-closed). Dieselbe
+  Klemme trägt die Studio-Übergabe (dort fällt Fremdes, must-ignore); der Prompt der KI nennt die Zeilen aus derselben
+  Quelle (`_studioWordsForPrompt`). Wand: `gate:praegung-welt` (K).
 
 ### B5 — LEHREN (SOLL)
 
@@ -624,6 +629,21 @@ wende beschl brems }` (Froude-dimensionslos über die Hüft-Höhe L, mit
   nur für den Stehenden). Linse `gate:kreatur-takt` (ferngang, Täter
   `ferngang` · `ferngang-bindung`).
 
+### B7 — KIND_POLICY: DIE WIRTS-ZEILE EINER ART (SOLL, studios.K5)
+
+Ein Zweit-Kern, dessen Art der Wirt nicht kennt, bringt ihre Wirts-Zeile selbst mit: `KIND_POLICY = { <kind>: { prefix,
+substanz: { label, parts } } }` unter seinem Namensraum. `prefix` (`[a-z][a-z0-9]*_`, frei) ist der Bauplan-Namensraum
+(`<prefix><rezeptId>`), `substanz` die unsichtbare Judge-Substanz des Bauplans in der Teile-Form des Wirts (je Teil
+`shape` · `material` · `position` · `size`; die Gestalt kommt aus `buildInstance`). Die Brücke reicht die Zeilen im Buch-Umschlag
+(`kindPolicy`, je Art die Kern-id als `kern`, disjunkt first-wins), der EINE Ingest vereint sie (`_kindPolicyVereinen`) mit den
+Wirts-Zeilen zu `AnazhRealm.KIND_POLICY` — jeder Leser (Register, Werkstatt, Wort-Katalog, Präfix-Auflösung) liest dieselbe
+Tafel, keine Zeile im Wirt. Disjunkt: eine Art mit Wirts-Zeile (die Verben des Wirts — grown, role, handAxis, donorTool, synchron vor
+dem Buch für den Lockstep: tree · shrub · vehicle · gate · weapon · haus) behält sie, die Buch-Zeile fällt laut. Fail-closed je
+Zeile (G4.2): Art-Name, Präfix, Substanz — eine kaputte Zeile registriert nichts. Nur `prefix` und `substanz` reisen; eine
+Buch-Zeile trägt keine Wirts-Verben (grown · builtIn falsch, placeExtra null — die Platzierung sagt `fx.place`, B3).
+Beweis: `gate:nervensystem` E — das neue Gesetzbuch `worlds/neuntes-buch/stele-core.js` (die Stele, kein Spiel-Manifest) steht über
+die Werkstatt in der Welt, mit Kosten-Leiste, Stufen-Kette und Speicher-Rundlauf, und der Wirt nennt die Art nie beim Namen.
+
 ## §4 Die Empfänger-Gesetze (Taille-Erbe)
 
 Diese vier gelten für JEDEN Leser des Manifests (AnazhRealm heute, P2P-geteilte
@@ -632,8 +652,8 @@ angewandt:
 
 - **G4.1 must-ignore:** unbekannte Felder und unbekannte `kind`-Werte werden
   IGNORIERT, nie zerstört und nie als Fehler behandelt (ein altes AnazhRealm
-  überlebt ein neues Studio; `_foundryAutoRegisterSpecies` registriert heute
-  nur bekannte kinds — genau diese Form).
+  überlebt ein neues Studio; `_foundryAutoRegisterSpecies` registriert nur
+  kinds mit einer Zeile in `KIND_POLICY` — der des Wirts oder der ihres Buchs, B7).
 - **G4.2 fail-closed:** ein Rezept, das einen MUSS-Block verletzt (kein `kind`,
   ungültige id), wird NICHT registriert und LAUT geloggt — nie halb-registriert.
 - **G4.3 EINE Versions-Semantik:** der Kern deklariert `STUDIO_VERTRAG = 1`
@@ -681,14 +701,15 @@ Fünf Schritte, immer dieselben — das ist „die gleiche Pipeline für alles":
    (`importScripts`), die Rezepte fließen in das EINE Buch (`f.recipes`,
    kind-getaggt); die Brücken (`get-recipes`/`get-render-config`/`get-params`)
    exportieren die Blöcke.
-4. **kind-Handler:** der EINE Auto-Register-Chokepoint bekommt den Zweig für
-   den neuen kind (Blueprint-Namensraum + Komponenten-Anschluss an
-   existierende Systeme) — kein zweiter Register-Pfad.
-5. **Wächter:** ein `gate:nervensystem-<domäne>` (synthetisches Rezept
-   injizieren → Auto-Blueprint → platziert/angeschlossen, ohne eine Zeile
-   AnazhRealm-Edit) + eingefrorene Vertrags-Fixtures (`spec/asset-contract/
-v<n>/`) + dieser Validator (`gate:studio-vertrag` prüft den neuen Kern
-   automatisch mit).
+4. **Die Wirts-Zeile:** der Kern trägt sie selbst (B7 — Bauplan-Namensraum und
+   Substanz); der EINE Auto-Register-Chokepoint liest sie aus dem Buch — keine
+   Zeile im Wirt, kein zweiter Register-Pfad. Nur eine Art, die ein Wirts-Verb
+   braucht (wachsen, Portal, Hand), trägt ihre Zeile im Wirt.
+5. **Wächter:** `gate:nervensystem` E beweist den Weg für JEDES neue Buch
+   (Werkstatt → Welt, Stufen, Kosten, Speicher, ohne eine Zeile AnazhRealm-Edit),
+   ein `gate:nervensystem-<domäne>` die Komponenten der Domäne + eingefrorene
+   Vertrags-Fixtures (`spec/asset-contract/v<n>/`) + dieser Validator
+   (`gate:studio-vertrag` prüft den neuen Kern automatisch mit).
 
 ## §6 Konformanz
 
@@ -941,7 +962,10 @@ K16: Großform-Splines `grossform` an den Knoten `OFFSET_KNOTEN`/`RELIEF_KNOTEN`
 je Lage über `landformRegler` —, das Flussnetz mit den Kanten `NETZ_KANTE`, seinen Läufen `flussLaeufe` und seinen Senken als
 den benannten Seen `benannteSeen`, die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, der Mäander `MAEANDER`, das
 Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die Schneegrenze `SCHNEE`/`schnee`, die
-Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DER FELS-STOFF (K17): das Aussehen
+Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DIE HYDROSPHÄRE (Karte hydro-faden): das
+Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, Kanal-Index, Wasser-Feld; `H` das Gesetz des
+Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet sie), die Bett-Tiefe `flussTiefe` und das Wasser-Band
+`hydroBand`. DER FELS-STOFF (K17): das Aussehen
 des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden je Chunk im Worker), `felsNetz` (die Gestalten),
 `felsBasis`, `felsFarbe`, `felsKruemmung`, `felsLage`, `felsMittel`/`felsMittelWerte` (die Ferne), `felsFein` (der
 Detail-Term des Shaders) mit seiner Welle `felsWelle` (K17-3: der Shader liest sie EINMAL im Rausch-Atlas und reicht sie
@@ -962,6 +986,10 @@ Plan im Foundry-Faden, Kanal `grund-plan` → `grundPlan`) mit
 seinem Grundriss-Leser `erdbauGrund`, dem hohlen Keller `erdbauHohl` (das Feld des Wirts, je Spalte gefragt über `erdbauKeller`) und dem Schnitt des gezeichneten
 Bodens `erdbauSchnitt` (Voxel-Faden und Sync-Bau), der Lese-Kontext eines Orts `ortCtx` (Höhe samt Erdbau, Fläche, Welt-Wasser — EIN ctx für Wirt,
 Fachwerk-Studio und Linse), die Lage einer Welt ohne Wirt `LAGE_GRUND`/`lageGrund` und die Hang-Suche eines Orts `hangOrt`.
+DIE FORM DES EDITS (F2a „hoch bauen", editform-kern): jeder Spieler-Edit ist die Säule `editForm` seines Maßes `EDIT_FORM` —
+der Punkt `mitEdits`, das Gitter `editsImGitter`, die Reichweite `editReich` (Edit-Karte, Weckung, Fern-Ring), die Krone
+`editKrone` (die Garantie-Luft der Flächen-Probe) und das Band des
+Gitters `bandOben`/`bandUnten`, das die Edits deckt (`bandUmEdits`); Stamm und voxel-worker rufen dieselben Funktionen.
 DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
 Geladen vom Stamm (vor `stamm/`), vom Terrain-Labor (vor `foundry-core.js`), vom voxel-worker (`importScripts` mit `?v=`),
 vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, der Feld-Zeichner und der Fern-Ring `hoehe`, die

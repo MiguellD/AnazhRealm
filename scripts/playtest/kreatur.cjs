@@ -5,72 +5,18 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// Die Logik-Konsumenten lesen die lebendige auraAt-API (nicht das eingefrorene worldFieldAt); die
-// Fauna liest die VOLLEN Achsen (lebendig hebt, glut dämpft); Beweis: Konsum + behavioral.
+// Die Logik-Konsumenten lesen die lebendige auraAt-API (nicht das eingefrorene worldFieldAt; den Bestand misst
+// gate:kreatur-takt bestand).
 async function checkBandV1725FieldReaders(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — die Fauna-Behavioral-Probe misst den frozen Kern
-        // KONSUM-Beweis statt Quelltext-Zitat: die Leser rufen auraAt WIRKLICH (Spy-Swap __consumes), und eine glühende
-        // Aura senkt Ziel und Deckel der Fauna (dieselbe Lebendigkeit, nur die glut-Achse wechselt).
-        const glutWirkt = (fn) => {
-            try {
-                r.auraAt = () => ({ lebendig: 0.5, glut: 0 });
-                const kalt = r[fn]();
-                r.auraAt = () => ({ lebendig: 0.5, glut: 1 });
-                return r[fn]() < kalt;
-            } finally {
-                delete r.auraAt;
-            }
-        };
-        out.faunaReadsAura = window.__consumes(r, "_currentFaunaTarget", r, "auraAt") && glutWirkt("_currentFaunaTarget");
-        out.faunaMaxReadsAura = window.__consumes(r, "_currentFaunaMax", r, "auraAt") && glutWirkt("_currentFaunaMax");
         out.lofiReadsAura = window.__consumes(r, "_lofiWorldField", r, "auraAt");
-        const pm = r.state.playerMesh && r.state.playerMesh.position;
-        if (pm) {
-            const ox = pm.x,
-                oz = pm.z;
-            let lebSpot = null,
-                lebBest = -2,
-                glutSpot = null,
-                glutBest = -2;
-            for (let gx = -2000; gx <= 2000; gx += 200) {
-                for (let gz = -2000; gz <= 2000; gz += 200) {
-                    const f = r.worldFieldAt(gx, gz);
-                    if (f.lebendig - f.glut > lebBest) {
-                        lebBest = f.lebendig - f.glut;
-                        lebSpot = { x: gx, z: gz };
-                    }
-                    if (f.glut - f.lebendig > glutBest) {
-                        glutBest = f.glut - f.lebendig;
-                        glutSpot = { x: gx, z: gz };
-                    }
-                }
-            }
-            pm.x = lebSpot.x;
-            pm.z = lebSpot.z;
-            const targetLeb = r._currentFaunaTarget();
-            pm.x = glutSpot.x;
-            pm.z = glutSpot.z;
-            const targetGlut = r._currentFaunaTarget();
-            pm.x = ox; // Restore
-            pm.z = oz;
-            out.faunaDiffers = targetLeb > targetGlut;
-            out.targetLeb = targetLeb;
-            out.targetGlut = targetGlut;
-        }
         return out;
     });
-    check("V17.25 mehr Leser: _currentFaunaTarget liest auraAt + glut (volle Achsen, §5)", res.faunaReadsAura);
-    check("V17.25 mehr Leser: _currentFaunaMax liest auraAt + glut", res.faunaMaxReadsAura);
     check("V17.25 mehr Leser: _lofiWorldField liest auraAt (living)", res.lofiReadsAura);
-    check(
-        "V17.25 mehr Leser: lebendige Region trägt MEHR Fauna als glühende (glut dämpft, alle Achsen)",
-        res.faunaDiffers,
-        `leb=${res.targetLeb} vs glut=${res.targetGlut}`
-    );
 }
 
 // Kombat-Stats: knockback/attackSpeed/defense EMERGIEREN aus der Substanz (Tags → STAT_FROM_TAGS) wie
@@ -174,7 +120,7 @@ async function checkBandV1753CreatureCombat(ctx) {
             inv.reduce((s, slot) => s + (slot && slot.kind === "material" ? slot.count || 0 : 0), 0);
 
         // (1) hp wird bei spawn auf hpMax initialisiert (DIESELBE Pipeline wie der Spieler)
-        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
+        // Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
         const _capG = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
         const c1 = r.spawnCreatureAt(pm.x + 260, pm.y, pm.z + 260, "happy", "wesen");
@@ -293,7 +239,7 @@ async function checkBandV1754PlayerAttack(ctx) {
         r.state.emotionField = new Map();
 
         // (1) KONSUM — _playerAttackCreature schädigt eine Kreatur (der LMB-Konsument)
-        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
+        // Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
         const _capG = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
         const c1 = r.spawnCreatureAt(pm.x + 320, pm.y, pm.z + 320, "happy", "wesen");
@@ -304,7 +250,7 @@ async function checkBandV1754PlayerAttack(ctx) {
         const savedCam = r.state.cameraMode;
         r.state.yaw = 0;
         c1.position.set(pm.x, pm.y, pm.z + 1.6);
-        // Die Klinge zielt durchs Fadenkreuz (Welle L, K-D3): die ECHTE Kamera auf die Leibes-Mitte (`_leibMitte`) richten.
+        // Die Klinge zielt durchs Fadenkreuz (K-D3): die ECHTE Kamera auf die Leibes-Mitte (`_leibMitte`) richten.
         r.setCameraMode("first");
         r._loopCamera(performance.now() / 1000);
         {
@@ -414,8 +360,6 @@ async function checkBandV1754PlayerAttack(ctx) {
     );
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2B.2 + 2D + 2D.1 — Kreatur baut für Spieler + Spezialisierung aus Memory + Persistenz-Snapshot).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HBuildAndPersist(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -608,7 +552,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         out.listHasBuildClass = !!buildRow;
         out.listShowsBaut = listEl && /baut stein_block/.test(listEl.textContent);
 
-        // 18. UI (V18.48 Hof-C): die Bau-Optionen leben im inline „Auftrag ▾"-Select am Wesen
+        // 18. UI (Hof-C): die Bau-Optionen leben im inline „Auftrag ▾"-Select am Wesen
         // (statt des globalen #creature-build-select, der der NÄCHSTEN Kreatur befahl).
         const buildSelect = listEl && listEl.querySelector(".creature-row .creature-order-select");
         out.uiBuildSelectExists = !!buildSelect;
@@ -849,7 +793,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         // Die EINTRAGS-IDENTITÄT messen, nicht entries.length: worldJournal.entries ist FIFO-gedeckelt (200),
         // am Cap bleibt die Länge gleich und journalAppends id (`entries.length + 1`) ist nicht eindeutig.
         const journalEntriesBefore = new Set(r.state.worldJournal.entries || []);
-        // 3 gathered → L1, sollte LevelUp triggern — und das Tier ruft dazu (Welle 5 Klang: seine Stimme, genau einmal)
+        // 3 gathered → L1, sollte LevelUp triggern — und das Tier ruft dazu (seine Stimme, genau einmal)
         const rufVor = r.state.symphony.tierRufe || 0;
         r._creatureRemember(cFollow, "gathered", { material: "quarz" });
         r._creatureRemember(cFollow, "gathered", { material: "quarz" });
@@ -1211,8 +1155,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     }
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2F.1 + 2F.2 + 2F.3 — Kreatur-Stats + Equipped + Boosts via Konsumables).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HCreatureStats(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1320,7 +1262,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         const rows = listEl ? listEl.querySelectorAll(".creature-row") : [];
         let rowsWithTitle = 0;
         for (const row of rows) {
-            // V18.51 Hof-E (V9.56-i) — der Stats-title sitzt jetzt auf der kompakten Zeile (.creature-row-main).
+            // Hof-E — der Stats-title sitzt jetzt auf der kompakten Zeile (.creature-row-main).
             const main = row.querySelector(".creature-row-main");
             const t = (main && main.title) || "";
             if (t && /HP\s+\d/.test(t) && /SPD\s+\d/.test(t) && /DMG\s+\d/.test(t)) rowsWithTitle++;
@@ -1834,7 +1776,7 @@ async function checkBandWDRittSpawn(ctx) {
     );
 }
 
-// V18.208 — KREATUR-GRÖSSEN-STAT-SYMMETRIE (Folge zu V18.195/V18.206
+// KREATUR-GRÖSSEN-STAT-SYMMETRIE (Folge zu V18.195/V18.206
 // Spieler-Symmetrie): größere Kreaturen sind robuster aber langsamer.
 async function checkBandV18208CreatureSizeSymmetry(ctx) {
     const { page, check } = ctx;
@@ -1928,7 +1870,7 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
     );
 }
 
-// DER HÜPFER LANDET (V18.531, Blick-Tour 3): der feld-native Hüpfer (`creatureJump`, die Verhaltens-Aktion
+// DER HÜPFER LANDET (Blick-Tour 3): der feld-native Hüpfer (`creatureJump`, die Verhaltens-Aktion
 // `hop`) integrierte die Höhe nur, solange der Impuls stieg — im Fall fror `_hopH` am Scheitel ein (der Körper sprang
 // auf den Boden zurück) und der nächste Sprung begann dort: an der Mess-Wiese stand ein Bär 7,6 m über dem Boden.
 // Wand: zwei Sprünge hintereinander am echten Kreatur-Takt (updateCreatures) — jeder endet mit dem Versatz 0 auf

@@ -1660,6 +1660,18 @@
     function ankunftTempo(rest, vMax) {
         return Math.min(vMax, Math.sqrt(2 * STEUER_GESETZ.brems * GANG_GESETZ.g * Math.max(0, rest)));
     }
+    // DER UMWEG (Oekologie K5, 24.10., additiv): wer ein Ziel hat, eine Wand hielt ihn vor hoechstens haltS (n die Normale aus
+    // ihr), und sein Wunsch (ux, uz) steht fast frontal in ihr (|Wunsch · Tangente| <= quer — schraeg laesst ihn die Wand
+    // gleiten), geht laengs der Wand zur Seite, auf der er von ihrer Mitte (ox, oz) schon steht (der kuerzere Weg); die Seite
+    // alt haelt, solange der Umweg nicht laenger als haltS ruht. Liefert die Seite s (±1, 0 = kein Umweg), die Richtung ist
+    // s × (−nz, nx). Vorher stand ein Folger hinter einer Wand, bis der Spieler ihre Linie verliess (folgen: 30 s an 8 m).
+    var UMWEG_GESETZ = Object.freeze({ haltS: 0.5, quer: 0.25 });
+    function umwegSeite(ux, uz, nx, nz, ox, oz, alt) {
+        if (alt) return alt;
+        var q = uz * nx - ux * nz;
+        if (Math.abs(q) > UMWEG_GESETZ.quer) return 0;
+        return oz * nx - ox * nz < 0 ? -1 : 1;
+    }
     // DER VERBAND (S6 18.10.): das Rudel, die Herde — der Wurf, den die Geburt bindet — ist ein DATUM, kein Zufall der
     // Nachbarschaft. Die Form davor (herdeZug) zog nur Nachbarn derselben Gattung im Fenster fensterRaum × Paar-Raum: ein
     // Nachzuegler jenseits des Fensters blieb fuer immer zurueck, zwei fremde Herden derselben Art verschmolzen, und die
@@ -1769,6 +1781,159 @@
         if (g.diet >= T.fleischDiet) return kg >= T.jagdKg ? "wild" : "scheu";
         if (g.diet <= T.pflanzDiet) return kg >= T.kolossKg ? "wehrhaft" : "scheu";
         return kg >= T.wehrKg ? "wehrhaft" : "sanft";
+    }
+
+    // DAS FURCHT-GESETZ (Oekologie K3, 23.10., additiv — FURCHT_GESETZ wohnt nicht in VERHALTEN, VERHALTEN reist in PRESETS und
+    // der v7-Fingerabdruck bleibt): EINE Furcht eines Wesens aus zwei Gedaechtnissen, gewogen nach EINER Bedrohung.
+    // DIE BEDROHUNG eines Gefuehls (bedrohung): chaos und sorrow schrecken, peace und joy beruhigen — mit den Gewichten von
+    // VERHALTEN.furcht; sie wiegt die Aura des Spielers UND den Abdruck einer Tat am Ort (vorher rechnete der Wirt sie nur fuer
+    // den Spieler, der Ort trug Gefuehle, die kein Tier las). DAS WESEN ERINNERT (furchtErinnert): jede Erinnerung an den
+    // Spieler traegt ihr Gewicht (geschlagen +, gefuettert −; der Schlag wiegt schwerer als die Gabe: Baumeister et al. 2001,
+    // „Bad is stronger than good"), die Summe geklemmt auf ±deckel hebt oder senkt die Wariness vor ihm; erinnerte Furcht
+    // weitet Witterung und Flucht-Distanz um fluchtJeFurcht je Einheit (bejagte Bestaende fliehen frueher und weiter, beim
+    // Wapiti um ein Mehrfaches: Stankowich 2008, Biol. Conserv. 141:2159). Gezaehlt wird, was das Gedaechtnis traegt (die Kappe
+    // seiner Eintraege), nie eine Uhr: die Erinnerung reist im Speicherstand. DER ORT ERINNERT (furchtOrt): die Bedrohung des
+    // Abdrucks in einer Zelle × ortGewicht; ein Riss praegt riss ein (die Emotion des Schadens, sorrow + chaos, bis zur
+    // Saettigung der Zelle). Die Landschaft der Furcht meidet, wer Beute ist (Laundre et al. 2001), im Umkreis
+    // ortRadiusZellen Zellen um die Mitte der Zelle, linear zum Rand.
+    var FURCHT_GESETZ = Object.freeze({
+        erinnerung: Object.freeze({ geschlagen: 2, gefuettert: -1.5 }),
+        deckel: 3,
+        fluchtJeFurcht: 1.25,
+        riss: Object.freeze({ chaos: 1.6, sorrow: 1.6 }),
+        ortGewicht: 1,
+        ortRadiusZellen: 1.5,
+    });
+    // e = die Emotions-Achsen {chaos, sorrow, peace, joy, …}, NAT = VERHALTEN.furcht. Liefert die Bedrohung (negativ = beruhigt).
+    function bedrohung(e, NAT) {
+        return (
+            (e.chaos || 0) * NAT.menaceFromChaos +
+            (e.sorrow || 0) * NAT.menaceFromSorrow -
+            (e.peace || 0) * NAT.calmFromPeace -
+            (e.joy || 0) * NAT.calmFromJoy
+        );
+    }
+    // memory = die Erinnerungen des Wesens [{type, …}] (die Typen geschlagen · gefuettert; jeder andere wiegt 0).
+    function furchtErinnert(memory, F) {
+        if (!memory || !memory.length) return 0;
+        var s = 0;
+        for (var i = 0; i < memory.length; i++) {
+            var g = memory[i] && F.erinnerung[memory[i].type];
+            if (g) s += g;
+        }
+        return s > F.deckel ? F.deckel : s < -F.deckel ? -F.deckel : s;
+    }
+    // gefuehl = der Abdruck einer Zelle (Achsen wie e) oder null. Liefert die Furcht des Orts (≥ 0: ein ruhiger Ort lockt nicht).
+    function furchtOrt(gefuehl, NAT, F) {
+        if (!gefuehl) return 0;
+        var m = bedrohung(gefuehl, NAT) * F.ortGewicht;
+        return m > 0 ? m : 0;
+    }
+
+    // DIE JAGD HAT EIN ENDE (Tiere K2, 23.10., additiv — JAGD_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): eine
+    // Jagd beginnt mit der ersten Hetze auf ein Ziel und endet mit dem Riss oder nach dauerS; dann ist der Jaeger erschoepft und
+    // jagt ruheS nicht (Woelfe brechen die meisten Jagden ab: MacNulty et al. 2007, J. Mammal. 88:595). DIE WUNDE BREMST
+    // (wundTempo): der Sprint eines verwundeten Leibs faellt mit dem Anteil seines Lebens hoch wundExp — der Riss folgt, wenn
+    // die Bisse eines Rudels die Beute langsamer machen als den Jaeger; darum steigt der Erfolg mit der Zahl der Jaeger
+    // (MacNulty et al. 2012, Behav. Ecol. 23:75).
+    var JAGD_GESETZ = Object.freeze({ dauerS: 45, ruheS: 120, wundExp: 1.3 });
+    function wundTempo(hpAnteil, J) {
+        var a = hpAnteil > 0 ? (hpAnteil < 1 ? hpAnteil : 1) : 0;
+        return Math.pow(a, J.wundExp);
+    }
+
+    // DER LEBENSRAUM (Tiere K4, 23.10., additiv — LEBENSRAUM_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): die
+    // Boden-Klasse eines Orts kommt aus dem Gelaende (bodenKlasse): am Fluss, wo sein Rand naeher als flussM liegt, am Hang, wo
+    // der Hang des Gelaende-Gesetzes ueber hangTan steigt (20°), sonst nach der Bestandsdichte des Walds (phyto
+    // forestStandDensity): Wald ab waldSd, Waldrand ab randSd, darunter Wiese. Je Gattung ihr Lebensraum (gattung: Klasse →
+    // Eignung) und ihre Haeufigkeit (Beute ist haeufig, der Jaeger selten); lebensraum = Eignung × Haeufigkeit, 0 = die Gattung
+    // lebt dort nicht. Das Rotwild aest auf Wiese und Saum (Clutton-Brock et al. 1982), der Wolf jagt aus dem Wald, der Baer
+    // sucht Fluss und Hang, der Fuchs den Saum. Die Art waehlt der Ort, nie ein Tag (Lehre 8).
+    var LEBENSRAUM_GESETZ = Object.freeze({
+        flussM: 40,
+        hangTan: 0.36,
+        waldSd: 0.7,
+        randSd: 0.5,
+        gattung: Object.freeze({
+            deer: Object.freeze({ wiese: 1, waldrand: 1 }),
+            fox: Object.freeze({ waldrand: 1, wiese: 0.5 }),
+            wolf: Object.freeze({ wald: 1 }),
+            bear: Object.freeze({ fluss: 1, hang: 1 }),
+        }),
+        haeufigkeit: Object.freeze({ deer: 1, fox: 0.4, wolf: 0.35, bear: 0.25 }),
+    });
+    // flussRandM = der Abstand zum Rand des naechsten Flusses (m, Infinity ohne), hangTan = der Hang (tan), sd = die
+    // Bestandsdichte (0..1). Liefert "fluss" · "hang" · "wald" · "waldrand" · "wiese".
+    function bodenKlasse(flussRandM, hangTan, sd, L) {
+        if (flussRandM <= L.flussM) return "fluss";
+        if (hangTan >= L.hangTan) return "hang";
+        return sd >= L.waldSd ? "wald" : sd >= L.randSd ? "waldrand" : "wiese";
+    }
+    function lebensraum(gattung, klasse, L) {
+        var g = L.gattung[gattung];
+        return g && g[klasse] ? g[klasse] * (L.haeufigkeit[gattung] || 0) : 0;
+    }
+    // DER DURST (Tiere K4, additiv): die Zeit seit dem letzten Trinken auf der Kreatur-Uhr durch durstS; ab 1 sucht das Tier
+    // Wasser im Umkreis VERHALTEN.aufgaben.trinkSuchM und trinkt, dann ist er 0; fand es keines, sucht es nach suchPauseS
+    // wieder (das Rotwild zieht mehrmals am Tag zur Traenke).
+    var DURST_GESETZ = Object.freeze({ durstS: 1200, suchPauseS: 300 });
+    function durst(seitS, D) {
+        return seitS > 0 ? seitS / D.durstS : 0;
+    }
+    // DIE GEBURT AM ORT: aus dem Wurf u ∈ [0, 1) die Gattung nach ihrem lebensraum in der Klasse; die Luecke bis zur Summe des
+    // reichsten Lebensraums traegt keine Geburt (null) — wo nur der Jaeger lebt, wird selten geboren, die Beute ist haeufig.
+    var LEBENSRAUM_KLASSEN = ["fluss", "hang", "wald", "waldrand", "wiese"];
+    function lebensraumWahl(klasse, u, L) {
+        var max = 0,
+            g,
+            i,
+            s;
+        for (i = 0; i < LEBENSRAUM_KLASSEN.length; i++) {
+            s = 0;
+            for (g in L.gattung) s += lebensraum(g, LEBENSRAUM_KLASSEN[i], L);
+            if (s > max) max = s;
+        }
+        var w = u * max;
+        for (g in L.gattung) if ((w -= lebensraum(g, klasse, L)) < 0) return g;
+        return null;
+    }
+
+    // DER BESTAND (Oekologie K2, 23.10., additiv — BESTAND_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): Geburt
+    // und Tod einer Gattung folgen ihrer Nahrung im Revier, nie einem Deckel. DIE NAHRUNG eines Orts (bestandNahrung) ist die
+    // Kost nach der Ernaehrung der Gattung (GATTUNGEN diet: 0 frisst Aesung, 1 Beute, dazwischen beides): Aesung = das Leben
+    // des Felds am Ort (0..1), Beute = der Bestand der Pflanzenfresser im Revier gegen beuteVoll Koepfe (auf 1 geklemmt) — die
+    // Zahl der Jaeger folgt der Zahl der Beute (die numerische Antwort: Messier 1994, Ecology 75:478). DIE KAPAZITAET des
+    // Reviers (revierM um den Spieler, je Zelle des Rasters rasterM) = kopfJeHa × Σ lebensraum (Eignung × Haeufigkeit) ×
+    // Flaeche (ha) × Nahrung — Nahrung × Lebensraum. DIE BILANZ (bestandBilanz) ist logistisch (Verhulst 1838) je taktS der
+    // Spiel-Zeit: unter der Kapazitaet K wirft die Gattung mit geburt × (1 − n/K), darueber stirbt mit tod × (n/K − 1)
+    // (geklemmt auf tod) einer am Hunger; ohne Nahrung (K = 0) stirbt jeder Bestand. DER FRASS (bestandFrass, Oekologie K1): je
+    // Takt nimmt jedes Tier nach seinem Anteil Aesung (1 − diet) fress vom Leben seines Orts — negativ ins Feld; das Overlay
+    // zerfaellt zum Substrat zurueck, das ist das Nachwachsen (der Verbiss senkt die Aesung, die Aesung den Bestand: die
+    // Rueckkopplung ist negativ, wie das Feld sie erlaubt).
+    var BESTAND_GESETZ = Object.freeze({
+        taktS: 10,
+        revierM: 200,
+        rasterM: 50,
+        kopfJeHa: 2,
+        beuteVoll: 10,
+        geburt: 0.25,
+        tod: 0.2,
+        fress: 0.02,
+    });
+    function bestandFrass(diet, B) {
+        var d = diet > 0 ? (diet < 1 ? diet : 1) : 0;
+        return B.fress * (1 - d);
+    }
+    function bestandNahrung(diet, aesung, beute) {
+        var d = diet > 0 ? (diet < 1 ? diet : 1) : 0;
+        return (1 - d) * aesung + d * beute;
+    }
+    // n = der Bestand der Gattung, K = ihre Kapazitaet im Revier. Liefert die Chancen je Takt {geburt, tod}.
+    function bestandBilanz(n, K, B) {
+        if (!(K > 0)) return { geburt: 0, tod: n > 0 ? B.tod : 0 };
+        if (n < K) return { geburt: B.geburt * (1 - n / K), tod: 0 };
+        var u = n / K - 1;
+        return { geburt: 0, tod: B.tod * (u < 1 ? u : 1) };
     }
 
     // Mit folge (GANG_FOLGE, die Gangart aus dem Tempo) zieht das Netz jedes Bein in DIESES Muster: jedes Bein an jedes, die
@@ -3186,10 +3351,28 @@
         sprintTempo: sprintTempo,
         steuerSchritt: steuerSchritt,
         ankunftTempo: ankunftTempo,
+        UMWEG_GESETZ: UMWEG_GESETZ,
+        umwegSeite: umwegSeite,
         VERBAND_GESETZ: VERBAND_GESETZ,
         verbandZug: verbandZug,
         rudelPlatz: rudelPlatz,
         temperamentDerGattung: temperamentDerGattung,
+        FURCHT_GESETZ: FURCHT_GESETZ,
+        bedrohung: bedrohung,
+        furchtErinnert: furchtErinnert,
+        furchtOrt: furchtOrt,
+        JAGD_GESETZ: JAGD_GESETZ,
+        wundTempo: wundTempo,
+        LEBENSRAUM_GESETZ: LEBENSRAUM_GESETZ,
+        bodenKlasse: bodenKlasse,
+        lebensraum: lebensraum,
+        lebensraumWahl: lebensraumWahl,
+        DURST_GESETZ: DURST_GESETZ,
+        durst: durst,
+        BESTAND_GESETZ: BESTAND_GESETZ,
+        bestandNahrung: bestandNahrung,
+        bestandBilanz: bestandBilanz,
+        bestandFrass: bestandFrass,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         FELL_SCHALE: FELL_SCHALE,

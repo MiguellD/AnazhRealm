@@ -2,10 +2,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-ziel-zensus.cjs — DER ZIEL-ZENSUS ALS WAND (gate:ziel-zensus, Auftrag 0710-1 P2 Familie HOST-VRAM)
 //
-// Befund (OMEN, GTX 1060, V18.534, Mess-Wiese, `werkbank ziele`): von 29 GPU-Texturen des Hosts (108,8 MB) hatten zwei
-// keinen Leser — die r8-Farben der Schatten-Kaskaden (kaskade0:farbe, kaskade1:farbe, je 4 MB), geschrieben in k0/k1,
-// gelesen von keinem Pass. Jede andere Textur der Post-Kette (Szene, Auflösung, Geschichte, drei Tiefen) hat ihren Leser
-// und lebt mit ihren Formgleichen zugleich. Die Wand hält das (scripts/lib/ziel-zensus.cjs):
+// Jede GPU-Textur des Hosts hat ihren Leser, die Karte der Kaskade trägt keine Farbe (scripts/lib/ziel-zensus.cjs):
 //   (a) ZENSUS — der echte Frame des Spiels (WebGPU auf swiftshader, Holz `kienspan`), n Frames der Bank-Runde: keine
 //       Täter-Klasse fällt (ohne Leser · teilbar · volle Auflösung · Tiefe · Format), jede Textur trägt einen Erzeuger. Am Bach
 //       der Mess-Wiese (`uferStellen`): ein Leser der Szenen-Tiefe zeichnet im Blick, sie MUSS im Fenster gelesen sein.
@@ -296,8 +293,7 @@ function rundungProbe() {
         const aus = { gelaufen: true, format: st._ausgabeFormat || null, rundung: st._ausgabeRundung || null, faktor: A && A.toArray(), gleich: !!(A && U && U.value === A) };
         if (!A) return Object.assign(aus, { einFrame: true, verbrauch: 0, zurueck: 0 });
         // DREI BILDER EINES FRAMES (W9): vorher, Ausgleich ×2 und zurück zeichnet die Post-Kette über EINEN Szenen-Pass (r184 rendert
-        // PassNode und TRAANode einmal je Knoten-Frame; der Block ist synchron, kein rAF schaltet ihn). Bis W9 drei Schüsse zu je 33
-        // Frames: dazwischen änderte die Welt das Bild ohne Regungs-Stempel (CI integ cbc222cc: vorher 107,8, zurück +2,25).
+        // PassNode und TRAANode einmal je Knoten-Frame; der Block ist synchron, kein rAF schaltet ihn).
         window.__buehne();
         await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" }); // die Erst-Ruhe und die Geschichte der zeitlichen Auflösung
         const db = rend.getDrawingBufferSize(new window.THREE.Vector2()),

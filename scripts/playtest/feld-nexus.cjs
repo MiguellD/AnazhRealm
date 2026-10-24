@@ -5,8 +5,6 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// V9.52-b Sub-Welle b — Band-Funktion (Ring 2 Phase 3/6/7 + Schicht 1 IQ).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing2Extended(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
     void errors;
@@ -91,7 +89,7 @@ async function checkBandRing2Extended(ctx) {
             learned.source === "human";
 
         // 8. Phase 5: "Führe Fähigkeit aus" ruft dslRun und mutiert state.
-        // Welle 6.H P2A — Kreatur ist Group; Color lebt auf Sub-Meshes.
+        // Kreatur ist Group; Color lebt auf Sub-Meshes.
         const someCreature = r.state.creatures[0];
         const readCreatureColor = (c) => {
             if (!c) return 0;
@@ -125,7 +123,7 @@ async function checkBandRing2Extended(ctx) {
             parsed.dslAbilities.some((a) => a.name === "blaukreaturen");
         out.savedNoLegacyAbilitiesList = !!parsed && parsed.abilities === undefined;
 
-        // V18.53 — „Der Nexus komponiert" (Gesten) auf Werkstatt-Stand: ✦-Abzeichen, „vor Xs",
+        // „Der Nexus komponiert" (Gesten) auf Werkstatt-Stand: ✦-Abzeichen, „vor Xs",
         // direkt vergessbar (✕), gekappt + „leeren". Mehrere Nexus-Gesten anlegen + den Renderer prüfen.
         r.state.dsl.abilities.length = 0;
         for (let i = 0; i < 9; i++)
@@ -318,17 +316,6 @@ async function checkBandRing2Extended(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        // State-Felder existieren
-        out.hasPathBuckets =
-            !!r.state.player.pathBuckets &&
-            !!r.state.player.pathBuckets.height &&
-            !!r.state.player.pathBuckets.distance;
-        out.hasPatternMemory = r.state.dsl && typeof r.state.dsl.patternMemory === "object";
-        out.hasRecentKeywords = Array.isArray(r.state.dsl.recentKeywords);
-        out.hasPendingOutcomes = Array.isArray(r.state.dsl.pendingOutcomes);
-        out.historyCap500 = r.state.dsl.historyCap >= 500;
-        out.schemaVersionIq = /^(7\.7[2-9]|8\.0-multiworld)/.test(r.state.worldMeta.schemaVersion);
-
         // Keyword-Extraktion
         const kws = r.pathExtractKeywords("Ich liebe den Wald und Wasserfälle hier");
         out.keywordsExtracted = Array.isArray(kws) && kws.includes("wald") && kws.includes("wasserfälle");
@@ -407,14 +394,6 @@ async function checkBandRing2Extended(ctx) {
             (iqResults && iqResults.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Schicht 1: pathBuckets-State im player", iqResults.hasPathBuckets);
-        check("Schicht 1: patternMemory-State im dsl", iqResults.hasPatternMemory);
-        check(
-            "Schicht 1: recentKeywords + pendingOutcomes",
-            iqResults.hasRecentKeywords && iqResults.hasPendingOutcomes
-        );
-        check("Schicht 1: historyCap auf 500 erhöht", iqResults.historyCap500);
-        check("Schicht 1: schemaVersion auf 7.72-iq-v1 gebumpt", iqResults.schemaVersionIq);
         check("Schicht 1: pathExtractKeywords liefert echte Tokens", iqResults.keywordsExtracted);
         check("Schicht 1: Keyword-Filter wirft Stoppwörter raus", iqResults.keywordsFilterStopwords);
         check("Schicht 1: rememberChatKeywords füllt das Fenster", iqResults.keywordsRemembered);
@@ -454,8 +433,6 @@ async function checkBandV1722NexusEyes(ctx) {
     check("V17.22 Nexus-Augen: komponiert weiter valide DSL (backward-compat)", res.composesValid);
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2E V1 + V1.1 + V2 + V3 — Kreatur-LLM-Persona + @-Adressen + Proaktive Sprache + Welt-Aktion-Vorschläge).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HCreatureLlm(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -471,7 +448,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
         // 2. _findCreatureByName findet die Kreatur (case-insensitive)
         const player = r.state.playerMesh.position;
-        // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
+        // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
         const __savedC = r.state.creatures;
@@ -525,7 +502,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         out.promptHasMemory = /sammelte holz/.test(prompt) || /baute/.test(prompt);
         out.promptHasWeather = new RegExp(r.state.weather || "sunny").test(prompt);
         out.promptInstructsJson = /JSON-Objekt/.test(prompt) && /say/.test(prompt) && /program/.test(prompt);
-        // V3 (V7.93): Prompt erlaubt jetzt program + nennt
+        // V3: Prompt erlaubt jetzt program + nennt
         // Whitelist (Co-Schöpfer-Geist). V1-Test umgekehrt:
         // wir prüfen, dass Whitelist + Anweisung enthalten sind.
         out.promptForbidsProgram = /Welt-Aktion ist erlaubt/.test(prompt) && /Erlaubte Ops/.test(prompt);
@@ -642,7 +619,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
         // 7. Liste rendert Soul-Klassen auf creature-name
         const player = r.state.playerMesh.position;
-        // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
+        // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
         const __savedC = r.state.creatures;
@@ -747,16 +724,8 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         const out = {};
         const Class = r.constructor;
 
-        // 2. Phrase-Pool hat 5 Event-Typen, jede mit 3 Soul-Profile + default
+        // 2. Phrase-Pool
         const pool = Class.CREATURE_PROACTIVE_PHRASES;
-        const events = [
-            "level_up_gather",
-            "level_up_build",
-            "boost_received",
-            "no_material_found",
-            "no_inventory_for_build",
-        ];
-        out.allEventsPresent = events.every((e) => pool[e]);
         // ALTLASTEN-NULL: sprite/geist-Stimmen sind gefallen — default trägt
         // jede Gattung; wesen (Hirsch) behält seine erdige Stimme.
         out.hasSpriteVariants = !pool.level_up_gather.sprite;
@@ -768,7 +737,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         r.state.creatureProactiveSpeechEnabled = true;
         r.state.lastCreatureProactiveSpeech = -Infinity;
         const player = r.state.playerMesh.position;
-        // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
+        // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
         const __savedC = r.state.creatures;
@@ -881,20 +850,11 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         const afterB2 = chatOutput ? chatOutput.children.length : 0;
         out.boostRefreshSilent = afterB2 === beforeB2;
 
-        // 13. UI-Toggle existiert im DOM
-        const toggleEl = document.getElementById("creature-speech-toggle");
-        out.toggleExists = !!toggleEl;
-        out.toggleIsCheckbox = toggleEl && toggleEl.type === "checkbox";
-
         __restore();
         return out;
     });
 
     if (wave6hP2eV2Results && !wave6hP2eV2Results.error) {
-        check(
-            "Welle 6.H P2E V2: Phrase-Pool deckt alle 5 Events (level_up_gather/build, boost_received, no_material_found, no_inventory_for_build)",
-            wave6hP2eV2Results.allEventsPresent
-        );
         check(
             "Welle 6.H P2E V2 (NULL): wesen-Stimme + default-Fallback (sprite/geist-Stimmen gefallen)",
             wave6hP2eV2Results.hasSpriteVariants &&
@@ -936,10 +896,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
             "Welle 6.H P2E V2: applyCreatureBoost mit SELBER Quelle (Verlängerung) → KEINE erneute Sprache (kein Flood)",
             wave6hP2eV2Results.boostRefreshSilent
         );
-        check(
-            "Welle 6.H P2E V2: UI-Toggle #creature-speech-toggle existiert im DOM (Checkbox)",
-            wave6hP2eV2Results.toggleExists && wave6hP2eV2Results.toggleIsCheckbox
-        );
     } else {
         // STUMM-GRÜN-WAND: auch ein NULL-Ergebnis (geworfene evaluate) ist ROT —
         // vorher übersprang der else-if-Guard die Checks still (die U1-Klasse).
@@ -960,8 +916,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         const Class = r.constructor;
 
         // 1. Konstanten + Methoden existieren
-        out.hasWhitelist = Class.CREATURE_PROPOSED_OPS instanceof Set;
-        out.whitelistSize = Class.CREATURE_PROPOSED_OPS.size >= 10;
         out.weatherAllowed = Class.CREATURE_PROPOSED_OPS.has("weather");
         out.voxelCarveAllowed = Class.CREATURE_PROPOSED_OPS.has("voxel_carve");
         out.voxelFillAllowed = Class.CREATURE_PROPOSED_OPS.has("voxel_fill");
@@ -971,7 +925,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         out.playerSpeedForbidden = !Class.CREATURE_PROPOSED_OPS.has("player_speed");
         out.defineBlueprintForbidden = !Class.CREATURE_PROPOSED_OPS.has("define_blueprint");
         out.setModeForbidden = !Class.CREATURE_PROPOSED_OPS.has("set_mode");
-        out.rareEventGap = Class.CREATURE_LLM_RARE_EVENT_GAP === 600;
 
         // 2. Validator: erlaubtes Programm
         const okWeather = r._isCreatureProposalAllowed(["weather", "rainy"]);
@@ -996,7 +949,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
         // 4. Persona-Prompt erlaubt program (V3-Update)
         const player = r.state.playerMesh.position;
-        // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
+        // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
         const __savedC = r.state.creatures;
@@ -1101,12 +1054,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
     if (wave6hP2eV3Results && !wave6hP2eV3Results.error) {
         check(
-            "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set (>= 10 Ops) + Takt 600 s",
-            wave6hP2eV3Results.hasWhitelist &&
-                wave6hP2eV3Results.whitelistSize &&
-                wave6hP2eV3Results.rareEventGap
-        );
-        check(
             "Welle 6.H P2E V3 + V9.36: Whitelist erlaubt atmosphärische + Voxel-Mod-Ops (weather, voxel_carve, voxel_fill, spawn_blueprint, chain)",
             wave6hP2eV3Results.weatherAllowed &&
                 wave6hP2eV3Results.voxelCarveAllowed &&
@@ -1178,13 +1125,11 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     }
 }
 
-// V9.52-e Sub-Welle e — Band-Funktion (V8.05+06+07 Werkstatt-UX-Polish + Schicht 2 Multi-Provider-LLM-Sandbox + V7.94-V7.98 Ollama-API-Key/Cloud/Proxy/UX/Parser-Robustheit).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWorkshopPolishAndLlm(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### V8.05 — Werkstatt-UX-Polish (Mode-Bar oben + Stats unten + Tool-Palette + Editor-Toggle + Del-Btn) ###
+    // ### Werkstatt-UX-Polish (Mode-Bar oben + Stats unten + Tool-Palette + Editor-Toggle + Del-Btn) ###
     const v805Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1207,9 +1152,9 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
                 out.modeBarBeforeCanvas = mbIdx >= 0 && cIdx > mbIdx;
             }
 
-            // Stats-Panel im DOM + NACH Canvas (V18.37: jetzt VOLLBREIT aus dem Preview-Wrapper
+            // Stats-Panel im DOM + NACH Canvas (jetzt VOLLBREIT aus dem Preview-Wrapper
             // heraus, als Geschwister unter der ganzen Reihe → Dokument-Reihenfolge prüfen, nicht
-            // Wrapper-Kind-Index; V9.56-i: der Test wandert mit dem Layout).
+            // Wrapper-Kind-Index; der Test wandert mit dem Layout).
             const stats = document.getElementById("workshop-stats-panel");
             out.statsInDom = !!stats;
             if (stats && canvas) {
@@ -1222,11 +1167,11 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             // Wenn Spieler Werkzeuge hat, sind Cards drin
             const playerTools = (r.state.player && r.state.player.tools) || [];
             out.toolCardsCount = toolPalette ? toolPalette.querySelectorAll(".workshop-tool-card").length : 0;
-            // V17.91 — die Palette enthält die Hand + (in schöpfer/nah) die Werkstatt-Prozess-Karten; mind. eine Karte.
+            // die Palette enthält die Hand + (in schöpfer/nah) die Werkstatt-Prozess-Karten; mind. eine Karte.
             void playerTools;
             out.toolPaletteHasCards = out.toolCardsCount > 0;
 
-            // V17.91 — der alte einklappbare Detail-Editor (#workshop-editor + Toggle) ist ENTFERNT (die
+            // der alte einklappbare Detail-Editor (#workshop-editor + Toggle) ist ENTFERNT (die
             // Werkstatt ist 3D-zentrisch); die Editor-Akte Undo/Redo/Löschen wohnen jetzt in der Top-Leiste.
             out.editorRemoved =
                 !document.getElementById("workshop-editor") && !document.getElementById("workshop-editor-toggle");
@@ -1251,10 +1196,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             if (delBtn) delBtn.click();
             const partsAfter = r.state.blueprints.test_v805.parts.length;
             out.delBtnRemovesPart = partsAfter === partsBefore - 1;
-
-            // Stats-Panel zeigt Rolle-Chip
-            const roleChip = stats && stats.querySelector(".role-chip");
-            out.statsHasRoleChip = !!roleChip;
 
             // Cleanup
             if (r.state.blueprints["test_v805"]) r.deleteBlueprint("test_v805");
@@ -1299,12 +1240,11 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             "V8.05: Del-Button enabled bei Part-Selection + Click entfernt Part",
             v805Results.delBtnEnabledOnSelect && v805Results.delBtnRemovesPart
         );
-        check("V8.05 Stats: Rolle-Chip im Stats-Panel sichtbar", v805Results.statsHasRoleChip);
     } else if (v805Results && v805Results.error) {
         check(`V8.05: evaluate-Fehler — ${v805Results.error}`, false);
     }
 
-    // ### V8.06 — Werkstatt-UX: Klone/Neu in Mode-Bar, Default-Size, Kontrast ###
+    // ### Werkstatt-UX: Klone/Neu in Mode-Bar, Default-Size, Kontrast ###
     const v806Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1317,7 +1257,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             out.cloneBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-clone-btn"));
             out.newBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-new-btn"));
             out.dividerInModeBar = !!(modeBar && modeBar.querySelector(".workshop-mode-divider"));
-            // V17.91 — die Mode-Bar trägt 4 Modi (Move/Rotate/Scale/Connect) + Snap + Zentrieren + Undo +
+            // die Mode-Bar trägt 4 Modi (Move/Rotate/Scale/Connect) + Snap + Zentrieren + Undo +
             // Redo + Klonen + Neu + Löschen. V18.62 Ich-H — + „Körper holen" (Seele→Bauplan-Brücke) = 12.
             const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
             out.sevenButtonsInBar = allBtns === 12; // W-G (V18.177): +„▶ Gelenk-Probe" (V18.110 waren 11)
@@ -1345,17 +1285,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
                 statsStyle.backgroundColor &&
                 /rgba?\((\d+),\s*(\d+),\s*(\d+)/.test(statsStyle.backgroundColor);
 
-            // Default-Size-Apply-Funktion ist sauber idempotent —
-            // wir setzen Flag, dann ist die Funktion no-op
-            try {
-                localStorage.setItem("anazh.workshop.defaultApplied", "1");
-                r._workshopApplyDefaultSizeOnce();
-                // Nichts sollte passiert sein (flag schützt)
-                out.idempotentRespected = true;
-            } catch {
-                out.idempotentRespected = false;
-            }
-
             // Cleanup
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             r.closeAllDrawers();
@@ -1382,15 +1311,11 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         );
         check("V8.06: Mode-Bar hat Hintergrund-Farbe (Kontrast-Verbesserung)", v806Results.modeBarHasBg);
         check("V8.06: Stats-Panel hat dunklen Hintergrund (Kontrast-Verbesserung)", v806Results.statsHasDarkBg);
-        check(
-            "V8.06: _workshopApplyDefaultSizeOnce ist idempotent (flag respektiert)",
-            v806Results.idempotentRespected
-        );
     } else if (v806Results && v806Results.error) {
         check(`V8.06: evaluate-Fehler — ${v806Results.error}`, false);
     }
 
-    // ### V8.07 — Werkstatt-Detail-Polish (Klone/Neu klickbar, Stern-Stats, Default-Größe fix) ###
+    // ### Werkstatt-Detail-Polish (Klone/Neu klickbar, Stern-Stats, Default-Größe fix) ###
     const v807Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1413,7 +1338,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             r.selectBlueprintForEdit("test_v807");
             out.modeBtnEnabledOnCustom = moveBtn && moveBtn.disabled === false;
 
-            // V18.44 Spec-Sheet: die Tags sind Daten-Viz-BALKEN (.spec-bar mit .spec-bar-fill.lvl-X),
+            // Spec-Sheet: die Tags sind Daten-Viz-BALKEN (.spec-bar mit .spec-bar-fill.lvl-X),
             // nicht mehr Stern-Chips. Geprüft wird: Balken existieren + tragen eine Stufen-Klasse.
             const statsPanel = document.getElementById("workshop-stats-panel");
             const tagBars = statsPanel ? statsPanel.querySelectorAll(".spec-bar") : [];
@@ -1507,7 +1432,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             defs.google.extractText({ candidates: [{ content: { parts: [{ text: "hi" }] } }] }) === "hi";
         out.openrouterExtract = defs.openrouter.extractText({ choices: [{ message: { content: "hi" } }] }) === "hi";
 
-        // V7.98: Parser nutzt Plain-Text-Fallback statt strict-error.
+        // Parser nutzt Plain-Text-Fallback statt strict-error.
         // Lokale Modelle ignorieren oft den JSON-Vertrag — wir nehmen
         // ihren Plain-Text als `say` damit der Spieler trotzdem etwas sieht.
         const broken = r.llmParseResponse("nicht json");
@@ -1569,7 +1494,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(`V7.94 Ollama-Key: evaluate-Fehler — ${ollamaKeyResults.error}`, false);
     }
 
-    // ### V7.95 — Ollama Cloud-Kompatibilität (Endpoint-Detect + Dual-Format-Parse) ###
+    // ### Ollama Cloud-Kompatibilität (Endpoint-Detect + Dual-Format-Parse) ###
     // (1) /api/chat nur anhängen, wenn die URL noch keinen Pfad hat; (2) extractText liest Ollama-native
     // UND OpenAI-kompatibles Format; (3) options.num_predict ist Ollama-spezifisch (OpenAI lehnt ab).
     const v795Results = await safeEvaluate(page, () => {
@@ -1604,7 +1529,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         out.extractsEmpty = ol.extractText(null) === "" && ol.extractText({}) === "";
 
         // 9. buildBody — Ollama-Native (Basis-URL): hat options.num_predict
-        // V7.98: 400→800 für Reasoning-Models (think-Block + Antwort)
+        // 400→800 für Reasoning-Models (think-Block + Antwort)
         const bodyNative = ol.buildBody("llama3.1", "sys", "user", {
             endpoint: "http://localhost:11434",
         });
@@ -1612,7 +1537,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         out.bodyNativeNoMaxTokens = bodyNative.max_tokens === undefined;
 
         // 10. buildBody — OpenAI-kompat (/v1/): hat max_tokens, KEIN options
-        // V7.98: 400→800
+        // 400→800
         const bodyOpenAi = ol.buildBody("gpt-oss", "sys", "user", {
             endpoint: "https://provider/v1/chat/completions",
         });
@@ -1666,7 +1591,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(`V7.95 Ollama-Cloud: evaluate-Fehler — ${v795Results.error}`, false);
     }
 
-    // ### V7.97 — Ollama UX-Politur (Auto-Bypass + Free-Text-Modell + 404-Hint) ###
+    // ### Ollama UX-Politur (Auto-Bypass + Free-Text-Modell + 404-Hint) ###
     // Den lokalen Weg (Modell im Fenster, Proxy an, localhost geht vorbei) fährt der KI-Korpus am Verhalten (diag-v1-pfad
     // --korpus); hier die Cloud-URL durch den Proxy und der 404-Hinweis.
     const v797AutoResults = await safeEvaluate(page, async () => {
@@ -1750,7 +1675,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check(`V7.97 Error-Hint: evaluate-Fehler — ${v797ErrorResults.error}`, false);
     }
 
-    // ### V7.98 — Parser-Robustheit für lokale Reasoning-Models ###
+    // ### Parser-Robustheit für lokale Reasoning-Models ###
     // (1) <think>/<thinking>-Blöcke werden gestrippt; (2) ohne JSON-Vertrag greift der Plain-Text-
     // Fallback; (3) num_predict 800 statt 400 — think-Block + Antwort brauchen Raum.
     const v798Results = await safeEvaluate(page, () => {

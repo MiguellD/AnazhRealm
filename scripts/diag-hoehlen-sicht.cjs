@@ -25,13 +25,13 @@
 //   (h) GEDÄCHTNIS — die gemerkte Horizont-Sperre gilt nur dem Boden, den sie gemessen hat: im Stand an der Mündung hält
 //       sie (sonst prüfte die Wand nichts), nach einem neuen Boden (`_chunkSatzMarke`: Graben, LOD-Naht) misst der nächste
 //       Pass jede Mündung im Bild neu;
-//   (i) HIMMELS-LICHT — der Boden-Stoff liest die Himmels-Sicht je Vertex (`aoNode` =
+//   (i) HIMMELS-LICHT — der Boden-Stoff liest die Himmels-Sicht je Vertex (`aoNode` trägt
 //       `aHimmel`, gelaende-core `himmelsSicht` aus dem Höhlen-Graph): kein Höhlen-Vertex trägt mehr Himmel, als sein gerader Abstand zur
 //       nächsten Himmels-Fläche lässt, und die Mündung bleibt hell.
 //   (j) LICHT DES AUGES — in der Höhle die wahre Normale und das Licht des Auges nach seinem Gesetz, im Freien aus; BLENDUNG:
 //       es fällt nicht mit dem Abstand (die Wand in 0,3 m höchstens 1,5× die Karte in 2 m — mit 1/d lag sie weiß). Es ist
 //       EIN Term des Boden-Stoffs (`_buildPbrNodeMaterial`, gewichtet mit 1 − `aHimmel`), seine Stärke die geteilte Uniform
-//       `_augenLeuchte`, ein Platz des Licht-Pools mit Himmels-Ersatz (K11): der Boden reicht dem Pool seine Himmels-Sicht,
+//       `_augenLeuchte`, ein Platz des Licht-Pools mit Himmels-Ersatz: der Boden reicht dem Pool seine Himmels-Sicht,
 //       `_lichtPoolTerm` ist das EINE Punktlicht-Gesetz des Stamms (der Abfall des Labors); die Wand zählt dazu die Wesen in
 //       Höhlen-Luft (ohne Himmels-Sicht tragen sie es nicht);
 //   (l) SZENEN-LICHT: unter freiem Himmel trägt jedes Licht der Szene Licht — ein Licht auf Stärke 0 steht trotzdem im
@@ -58,7 +58,7 @@ const PFLICHT = ["wiese", "hang", "muendung", "hoehle", "hinaus"];
 // Natürliche Mündungen je km² im Mittelgebirge (Karte K16): die Welt trägt die Höhlen sichtbar.
 const MUENDUNGEN_JE_KM2 = 1;
 const IN_HOEHLE = ["muendung", "hoehle", "hinaus"];
-// (k) Der Fels-Stoff (K17): höchstens 1 % der Fels-Vertices ohne das Gesetz (Summen-Reihenfolge der Krümmung an den
+// (k) Der Fels-Stoff: höchstens 1 % der Fels-Vertices ohne das Gesetz (Summen-Reihenfolge der Krümmung an den
 // Satz-Nähten), Streuung σ/Mittel der Leuchtdichte ≥ 0,08 (die gleichförmige Masse liegt bei 0), Albedo ≤ 0,30 (nordstern §1).
 const FELS_FREMD_ANTEIL = 0.01;
 const FELS_STREUUNG_MIN = 0.08;
@@ -80,7 +80,7 @@ function urteil(b) {
         for (const [feld, gleich] of Object.entries(sp.felder || {}))
             if (!gleich) v.push(`SPIEGEL: Chunk ${sp.chunk} (LOD ${sp.lod}): ${feld} weicht ab (Main ≠ Worker)`);
     }
-    // (l) MÜNDUNGEN IM GESETZ (K16): die Welt trägt natürliche Mündungen — gefunden, nie gegraben, mindestens eine je km²
+    // (l) MÜNDUNGEN IM GESETZ: die Welt trägt natürliche Mündungen — gefunden, nie gegraben, mindestens eine je km²
     const mu = b.muendungen;
     if (!mu || !(mu.km2 > 0)) v.push("LEER: (l) Mündungen: keine Suche über das Gesetz (die Wand prüfte nichts)");
     else if (!(mu.jeKm2 >= MUENDUNGEN_JE_KM2))
@@ -226,7 +226,7 @@ function urteil(b) {
             );
         }
     }
-    // (k) DER FELS HAT STOFF (K17): jeder Höhlen-Vertex ohne Himmel und jeder Kliff-Vertex trägt den Fels-Stoff des
+    // (k) DER FELS HAT STOFF: jeder Höhlen-Vertex ohne Himmel und jeder Kliff-Vertex trägt den Fels-Stoff des
     // Gesetzes (gelaende-core `felsFarbe`) — nie die Farbe der Säule, nie EINE graue Masse, im Natur-Band
     const wf = b.wieseUnterFels;
     if (!wf || !(wf.ohneHimmel > 0))
@@ -312,7 +312,7 @@ function urteil(b) {
     const hl = b.himmel;
     if (!c.himmelLiest)
         v.push(
-            "CODE: `_getVoxelChunkMaterial` liest die Himmels-Sicht nicht (`aoNode` = `aHimmel`) — das Himmels-Licht liegt " +
+            "CODE: `_getVoxelChunkMaterial` liest die Himmels-Sicht nicht (`aoNode` trägt `aHimmel`) — das Himmels-Licht liegt " +
                 "auf jeder Höhlen-Wand"
         );
     if (!hl || !(hl.hoehle > 0))
@@ -539,7 +539,7 @@ function selbsttest() {
         ],
         // (j) K11: das Licht des Auges und jede Leuchtquelle fallen nach EINEM Gesetz
         ["zwei Punktlicht-Gesetze", (b) => (b.code.poolGesetz = false), /PUNKTLICHT-GESETZ: der Licht-Pool/],
-        // die zwei Fallen der Werkbank 11.10. (echte GPU): die Mündung schwarz (Helligkeit 60 statt 123)
+        // die zwei Fallen der Werkbank (echte GPU): die Mündung schwarz
         [
             "Normale im Zweig",
             (b) => (b.code.augenVorZweig = false),
@@ -550,7 +550,7 @@ function selbsttest() {
             (b) => (b.code.augenTslFremd = "diffuseContribution"),
             /CODE: der Licht-Pool liest `diffuseContribution` — `three\/tsl` der Seite kennt/,
         ],
-        // (l) der Befund von OMEN 1110-3 (GTX 1060, V18.540): das Punkt-Licht des Auges stand ab Boot auf 0 in der Szene
+        // (l) der Befund von OMEN 1110-3: das Punkt-Licht des Auges stand ab Boot auf 0 in der Szene
         [
             "Szenen-Licht auf 0",
             (b) =>
@@ -570,7 +570,7 @@ function selbsttest() {
         ],
         ["Szenen-Licht ungezählt", (b) => (b.szenenLicht = null), /LEER: \(l\) Szenen-Licht/],
         ["Licht ohne Höhle", (b) => (b.augenLicht.augeInHoehle = false), /LEER: \(j\) Licht des Auges/],
-        // (j) der Befund der Werkbank 11.10. (echte GPU, Auge 11): steil am Auge lag die Wand in 0,2 m weiß ohne Maserung
+        // (j) die Falle der Werkbank: steil am Auge die Wand in 0,2 m weiß ohne Maserung
         [
             "geblendet",
             (b) => Object.assign(b.augenLicht.hoehle, { abfall: 2, kern: 0.3, blendung: 23.6 }),
@@ -601,7 +601,7 @@ function selbsttest() {
             /KLIFF OHNE STOFF: 280 von 300 steilen Vertices/,
         ],
         ["Kein Kliff", (b) => (b.kliff.steil = 0), /LEER: \(k\) Kliff/],
-        // (m) K17 Nachbesserung 1: das Höhlen-Bild las sich als Ziegelmauer (9f400dd5)
+        // (m) K17 Nachbesserung 1: das Höhlen-Bild las sich als Ziegelmauer
         ["Ziegelmauer", (b) => (b.bankung.cv = 0.204), /MAUERWERK: die Bänke sind gleich hoch — .* 0\.204 über 2000/],
         ["Gerade Fugen", (b) => (b.bankung.welligkeit = 0), /GERADE FUGEN: .* Eigen-Welligkeit 0 Bänke/],
         ["Klüfte je Bank", (b) => (b.bankung.durchlauf = 0.13), /KLÜFTE SETZEN NEU AN: nur 0\.13/],
@@ -641,9 +641,7 @@ const { installHoehlenStrahl } = require("./lib/hoehlen-strahl.cjs");
 
 const PORT = Number(process.env.HOEHLEN_SICHT_PORT) || 4504;
 // Die Mess-Wiese (die Blicke wiese und hang), die Mitte der Welt und das Quadrat der Mündungs-Suche um sie (halbe Seite, m).
-// Mündung, Höhlen-Raum und der Blick hinaus stehen nicht als Zahl hier: die Suche liest sie aus dem Gesetz der Welt (K16 — die
-// Orte der alten Welt waren Literale; K55-2 — bis dahin lag das Quadrat um die Mess-Wiese, in der flachen Aue −278/−1038 trug
-// es 5 Mündungen ohne ein Paar, der Blick hinaus prüfte nichts, CI 38546830515).
+// Mündung, Höhlen-Raum und der Blick hinaus stehen nicht als Zahl hier: die Suche liest sie aus dem Gesetz der Welt.
 const { messort, WELT_MITTE } = require("./lib/welt-orte.cjs");
 const ORTE = { mess: messort("wiese"), welt: WELT_MITTE, mundHalb: 1000 };
 const server = statikServer();
@@ -790,7 +788,7 @@ const server = statikServer();
             }
             globalThis.__gelaendeCore = GK0;
 
-            // ── Standorte aus dem Gesetz (K16): DIE MÜNDUNGS-SUCHE — im Quadrat um die Mitte der Welt jede Spalte mit einer Flanke
+            // ── Standorte aus dem Gesetz: DIE MÜNDUNGS-SUCHE — im Quadrat um die Mitte der Welt jede Spalte mit einer Flanke
             // ab 30° (der Hang der Welt-Höhe, unabhängig vom Mündungs-Term des Kerns), dann das Kriterium an ihr und ihren
             // Nachbarn: Höhlen-Luft unter Fels, daneben Luft unter freiem Himmel, der Gang dahinter mindestens 12 m tief.
             // Gegraben wird nichts — die Linse findet, was die Welt trägt; Mündungen näher als 25 m sind eine.
@@ -1118,7 +1116,7 @@ const server = statikServer();
                 xh = miss(hin);
                 xh.augeInHoehle = !fest(ha[0], ha[1], ha[2]) && ueber;
                 r._hoehlenHinaus = () => {};
-                // dieselbe Lage: die Kette hielte die eben gerechnete Wahl (`_passLageGen`, Welle C) — die alte Probe rechnet neu
+                // dieselbe Lage: die Kette hielte die eben gerechnete Wahl (`_passLageGen`) — die alte Probe rechnet neu
                 if (r._passLagen) r._passLagen.clear();
                 const alt = window.__hoehlenStrahl(r, cam, hauptbild(hin), { nx: 160, ny: 90 });
                 delete r._hoehlenHinaus;
@@ -1231,7 +1229,7 @@ const server = statikServer();
                 if (HA) for (const i of mundV) ms += HA.getX(i);
                 hl.muendMittel = mundV.size ? +(ms / mundV.size).toFixed(3) : null;
                 aus.himmel = hl;
-                // (k) DER FELS HAT STOFF (K17): jeder Höhlen-Vertex ohne Himmel (aHimmel ≤ 0,001) und jeder Kliff-Vertex
+                // (k) DER FELS HAT STOFF: jeder Höhlen-Vertex ohne Himmel (aHimmel ≤ 0,001) und jeder Kliff-Vertex
                 // (aHimmel ≥ 0,999, Steile ≥ rockHi: das Gewicht des Fels-Stoffs ist dort 1) trägt die Farbe, die das Gesetz
                 // für IHN rechnet — gelaende-core `felsFarbe` mit seiner Krümmung (`felsKruemmung` über das Netz des Satzes),
                 // seiner Himmels-Sicht und Feuchte (`_feuchteAt`), je Kanal auf 0,002 —, nie die Farbe der Säule; dazu die
@@ -1449,9 +1447,9 @@ const server = statikServer();
                     kh.components === "w" &&
                     kh.node.getAttributeName() === "aNormalZiel" &&
                     kh.node.nodeType === "vec4" &&
-                    r._getVoxelChunkMaterial().aoNode === kh &&
-                    m1.aoNode === kh &&
-                    m0.aoNode !== kh;
+                    haelt(r._getVoxelChunkMaterial().aoNode, kh) &&
+                    haelt(m1.aoNode, kh) &&
+                    !haelt(m0.aoNode, kh);
                 aus.code.normaleHoehle = haelt(m1.normalNode, kh) && !haelt(m0.normalNode, kh);
                 // der Boden reicht dem Pool seine Himmels-Sicht, jeder Himmels-Ersatz hängt im gebauten Term; im selben Ruf: der
                 // Pool ruft die EINE BRDF, und die Bedingung jedes Zweigs (`select`) liest normalView/positionView (r184 baut

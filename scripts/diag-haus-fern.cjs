@@ -45,7 +45,7 @@ const ZEILEN = ARG.includes("--zeilen");
 // das Raster der Hülle (N5): jede Zahl der Liste liegt auf 2^-12 — der Abstand innen trägt ein Raster-Korn Spiel
 const RASTER = 1 / 4096;
 // DAS SOLL (Plan §3.3: Wurf-IoU ≥ 0,92 je Fall und Median ≥ 0,95, Umriss ≥ 0,92 je Achse) hielt im Spike nicht und steigt
-// OFFEN mit Wert und Grund (Entscheid E8; gemessen am Kopf des Kern-Akts, 64 Häuser + 7 Ausstattungen):
+// OFFEN mit Wert und Grund:
 //   Wurf Haus   min 0,879 (viktorianisch) · Median 0,926 → Soll je Fall ≥ 0,87, Median ≥ 0,92. Grund: der Körper liegt INNEN
 //               (Wand −1,5 cm, Dach −3 cm unter der Ebene — Risiko 2, Akne/Peter-Panning), die L0 trägt darüber Dachhaut
 //               und Firstziegel (+0,12 bis +0,27 m) und den Ortgang-Überstand (ovX 0,32 m; ein Ortgang-Keil schwärzte den
@@ -759,7 +759,7 @@ function selbsttest() {
     const z2 = hausFall("holzhuette", 1);
     LOD.budget.haus[2].schatten = alt;
     if (!hausUrteil(z2).some((x) => /L2 wirft nicht/.test(x))) fehler.push("W: eine Stufe ohne Werfer ist nicht rot");
-    // T: das Blatt noch einmal aufs Scharnier gesetzt (der Befund vor K08: haus-lokal gebakt + Hülle am Scharnier)
+    // T: das Blatt noch einmal aufs Scharnier gesetzt
     const doppelt = (g0) => {
         for (const w of g0.children)
             if (w.userData && typeof w.userData.side === "number")
@@ -767,7 +767,7 @@ function selbsttest() {
     };
     if (!hausUrteil(hausFall("alemannisch", 1, null, doppelt)).some((x) => /^Türblatt L0/.test(x)))
         fehler.push("T: ein Türblatt vor seinem Scharnier ist nicht rot");
-    // G: die Band-Fassade vor dem Akt (K38) — die L2 ohne ihr Glas, je Öffnung ein Kasten im Stoff `dunkel` über dem Fenster
+    // G: die Band-Fassade vor dem Akt — die L2 ohne ihr Glas, je Öffnung ein Kasten im Stoff `dunkel` über dem Fenster
     const band = (g, H) => {
         const dunkel = FC.materials().dunkel;
         const glas = [];

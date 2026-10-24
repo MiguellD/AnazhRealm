@@ -156,16 +156,16 @@ function bankJe(lauf) {
     return { je, takt };
 }
 
-// DAS SCHALTER-URTEIL (1310-1, rein): ein Schalter in EINER Sitzung, die Erst-Zeichnung von der Dauer-Zeichnung getrennt
-// (jeder Eingriff macht das folgende 10-s-Band teurer). Ein Schalter-Vergleich ist nur ein Urteil, wenn (a) je Block das erste Band nach dem Eingriff verworfen
+// DAS SCHALTER-URTEIL (1310-1, rein): ein Schalter in EINER Sitzung, die Erst-Zeichnung von der Dauer-Zeichnung getrennt.
+// Ein Schalter-Vergleich ist nur ein Urteil, wenn (a) je Block das erste Band nach dem Eingriff verworfen
 // wird (die Erst-Zeichnung: neue Programme, Bündel-Neuaufnahme), (b) jeder Schalter-Block gegen den Mittelwert seiner
 // Grund-Nachbarn davor UND danach steht (linearer Drift fällt heraus) und (c) ein NULL-Schalter (derselbe Eingriff ohne
-// Änderung) im Rauschband liegt — sonst misst die Methode den Eingriff mit (Täter: Methode).
-// `bloecke` = [{ zustand: "grund" | "null" | <schalter>, baender: [ms …] (das erste = Aufwärm-Band), takt: [MHz …] }] in
-// Zeitfolge. DAS RAUSCHEN misst dieselbe Rechnung ohne Schalter: jeder innere Grund-Block gegen das Mittel seiner Grund-
-// Nachbarn (σ_d, quadratisch um 0) — Drift über die Sitzung (der Takt fällt mit der Wärme) fällt so
-// aus Rauschen UND Schalter heraus; das Rauschband eines Schalters über k Blöcke = 2σ_d/√k. DER TAKT gilt lokal: der Schalter-
-// Block gegen das Mittel seiner Grund-Nachbarn (±0,5 %), je Band das Mittel der nvidia-smi-Proben.
+// Änderung) im Rauschband liegt — sonst misst die Methode den Eingriff mit (Täter: Methode). `bloecke` = [{ zustand:
+// "grund" | "null" | <schalter>, baender: [ms …] (das erste = Aufwärm-Band), takt: [MHz …] }] in Zeitfolge. DAS
+// RAUSCHEN misst dieselbe Rechnung ohne Schalter: jeder innere Grund-Block gegen das Mittel seiner Grund-Nachbarn
+// (σ_d, quadratisch um 0) — Drift über die Sitzung (der Takt fällt mit der Wärme) fällt so aus Rauschen UND Schalter
+// heraus; das Rauschband eines Schalters über k Blöcke = 2σ_d/√k. DER TAKT gilt lokal: der Schalter-Block gegen das
+// Mittel seiner Grund-Nachbarn (±0,5 %), je Band das Mittel der nvidia-smi-Proben.
 const SCHALTER_MIN_BLOECKE = 2;
 const SCHALTER_MIN_BAENDER = 3; // gemessen je Block, nach dem Aufwärm-Band
 function schalterUrteil(bloecke, toleranz = 0.005) {
@@ -1220,7 +1220,7 @@ async function selbsttest() {
             wachenUrteil("band", anWiese, anWiese, g, true),
             /ORT band \(vor\): aufgestellt am Ort wiese, nicht genesis/
         );
-        // DER LESER DER BAND-LINSE (K26): jede
+        // DER LESER DER BAND-LINSE: jede
         // Rot-Zeile der Linse ist ein Befund der Folge — außer die Basis-Seite A des ABAB trägt sie (derselbe Schlüssel, B nicht
         // über A hinaus, A am selben Ort, Gerät und in derselben Sicht).
         const { haushalt } = BAND.ladeSpec("genesis");

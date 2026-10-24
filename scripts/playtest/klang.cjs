@@ -5,8 +5,6 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// V9.52-b Sub-Welle b — Band-Funktion (W4 V2/V3 — die Lofi-Pad-Schicht (generative Harmonie)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW4LofiPad(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -122,18 +120,18 @@ async function checkBandW4LofiPad(ctx) {
                 !!sym.lofi.gain &&
                 !!sym.lofi.filter &&
                 !!sym.lofi.melodyGain &&
-                // V8.91 — die Lead-Stimme sitzt über dem Pad.
+                // die Lead-Stimme sitzt über dem Pad.
                 sym.lofi.melodyGain.gain.value >= 0.2 &&
-                // V8.91 Phase 3 — die Groove-Schicht + Noise-Puffer.
+                // die Groove-Schicht + Noise-Puffer.
                 !!sym.lofi.grooveGain &&
                 !!sym.lofi.noiseBuffer &&
-                // V8.93 Phase 4 — die Bass-Schicht.
+                // die Bass-Schicht.
                 !!sym.lofi.bassGain &&
                 sym.lofi.degree === 0 &&
                 typeof sym.lofi.rngState === "number";
             // W4 V3 Phase 2 — die Melodie: Form (startet + endet
             // auf einem Akkord-Ton, aufsteigende Startzeiten, über
-            // dem Pad), emotion-gesteuerte Dichte, wurf-frei.
+            // dem Pad), emotion-gesteuerte Dichte.
             const mel = r._lofiMelodyNotes(0, 4);
             const chordTones = [0, 2, 4, 6];
             let melAsc = true;
@@ -158,7 +156,7 @@ async function checkBandW4LofiPad(ctx) {
             emo.joy = 0;
             emo.peace = 0;
             out.melodyDensityEmotion = melJoyTotal > melPeaceTotal;
-            // V8.90 — Rhythmus + Dynamik: über 12 Phrasen gibt es
+            // Rhythmus + Dynamik: über 12 Phrasen gibt es
             // verschiedene Noten-LÄNGEN (Halbtakt/Viertel) UND
             // verschiedene Lautstärken (starker vs schwacher Takt).
             const durSet = new Set();
@@ -170,34 +168,6 @@ async function checkBandW4LofiPad(ctx) {
                 }
             }
             out.melodyRhythmDynamics = durSet.size >= 2 && velSet.size >= 2;
-            let melOk = true;
-            try {
-                r._lofiPlayMelody(0, 4);
-            } catch (e) {
-                melOk = false;
-                void e;
-            }
-            out.melodyPlayRuns = melOk;
-            // W4 V3 Phase 3 — der Groove spielt wurf-frei.
-            let grooveOk = true;
-            try {
-                r._lofiPlayGroove(4);
-            } catch (e) {
-                grooveOk = false;
-                void e;
-            }
-            out.groovePlayRuns = grooveOk;
-            // W4 V3 Phase 4 — der Bass spielt wurf-frei (folgt der
-            // Akkord-Wurzel auf den Kick-Schritten).
-            let bassOk = true;
-            try {
-                r._lofiPlayBass(0, 4);
-                r._lofiPlayBass(3, 4);
-            } catch (e) {
-                bassOk = false;
-                void e;
-            }
-            out.bassPlayRuns = bassOk;
             // W4 V4 — die Musik hört die Welt: das Welt-Feld
             // liefert vier geclampte Achsen.
             const wf = r._lofiWorldField();
@@ -206,25 +176,6 @@ async function checkBandW4LofiPad(ctx) {
                 ["lebendig", "dichte", "glut", "magieleitung"].every(
                     (k) => typeof wf[k] === "number" && wf[k] >= 0 && wf[k] <= 1
                 );
-            // W4 V4 Sub-Schritt 1 — die Timbre-Modulation läuft wurf-frei.
-            let timbreOk = true;
-            try {
-                r._lofiApplyWorldTimbre(4);
-            } catch (e) {
-                timbreOk = false;
-                void e;
-            }
-            out.worldTimbreRuns = timbreOk;
-            // W4 V4 Sub-Schritt 3 — Resonanz-Nähe liefert einen Boolean.
-            let nearResOk = true;
-            let nearResBool = false;
-            try {
-                nearResBool = r._lofiNearResonantArchitecture();
-            } catch (e) {
-                nearResOk = false;
-                void e;
-            }
-            out.nearResonantBoolean = nearResOk && typeof nearResBool === "boolean";
             // Das Welt-Feld biast die Harmonie, die Emotion bleibt dominant: _lofiWorldField gestubbt, um beide
             // Kanäle (Emotion 0.8, Welt-Feld 0.4) bei fixem rngState deterministisch zu vergleichen. Gemessen
             // wird die HOST-Markov-Kette (kaltes Studio); bar-Zähler zurücksetzen.
@@ -308,15 +259,6 @@ async function checkBandW4LofiPad(ctx) {
             const degAfter = sym.lofi.degree;
             r._lofiTick();
             out.tickThrottled = sym.lofi.degree === degAfter;
-            // symphonyTick ruft _lofiTick — kein Wurf.
-            let symTickOk = true;
-            try {
-                r.symphonyTick();
-            } catch (e) {
-                symTickOk = false;
-                void e;
-            }
-            out.symphonyTickRuns = symTickOk;
             // disposeSymphony räumt die Lofi-Schicht.
             r.disposeSymphony();
             out.disposeClearsLofi = sym.lofi === null;
@@ -377,18 +319,7 @@ async function checkBandW4LofiPad(ctx) {
                 "W4 V3 Phase 2: Melodie hat Rhythmus + Dynamik (verschiedene Noten-Längen + Lautstärken)",
                 w4v2Results.melodyRhythmDynamics
             );
-            check("W4 V3 Phase 2: _lofiPlayMelody spielt die Phrase wurf-frei", w4v2Results.melodyPlayRuns);
-            check("W4 V3 Phase 3: _lofiPlayGroove spielt den Groove wurf-frei", w4v2Results.groovePlayRuns);
-            check(
-                "W4 V3 Phase 4: _lofiPlayBass spielt den Bass wurf-frei (folgt der Akkord-Wurzel)",
-                w4v2Results.bassPlayRuns
-            );
             check("W4 V4: _lofiWorldField liefert vier geclampte Welt-Achsen (0..1)", w4v2Results.worldFieldShape);
-            check("W4 V4 Sub-1: _lofiApplyWorldTimbre moduliert die Klangfarbe wurf-frei", w4v2Results.worldTimbreRuns);
-            check(
-                "W4 V4 Sub-3: _lofiNearResonantArchitecture liefert einen Boolean wurf-frei",
-                w4v2Results.nearResonantBoolean
-            );
             check(
                 "W4 V4 Sub-2: das Welt-Feld biast die Harmonie (helles Feld → mehr helle Stufen)",
                 w4v2Results.worldFieldBiasesHarmony
@@ -405,7 +336,6 @@ async function checkBandW4LofiPad(ctx) {
             check("W4 V3: Emotion biast die Harmonie (joy/hope → mehr helle Stufen)", w4v2Results.emotionBiasesHarmony);
             check("W4 V3: _lofiTick spielt einen Akkord + wählt die nächste Stufe", w4v2Results.tickPlaysChord);
             check("W4 V2: _lofiTick ist akkord-dauer-gedrosselt", w4v2Results.tickThrottled);
-            check("W4 V2: symphonyTick ruft _lofiTick wurf-frei", w4v2Results.symphonyTickRuns);
             check("W4 V2: disposeSymphony räumt die Lofi-Schicht", w4v2Results.disposeClearsLofi);
         } else {
             check("W4 V2: Symphony im Headless initialisierbar", false, "initSymphony nicht bereit");

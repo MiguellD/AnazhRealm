@@ -27,13 +27,13 @@ const VOLL_WENN =
     "contains(github.event.head_commit.message, '[ci voll]')";
 const normWenn = (x) => String(x == null ? "" : x).trim().replace(/\s+/g, " ");
 const istVollWenn = (x) => normWenn(x) === VOLL_WENN;
-// EIN URTEIL JE KOPF (K61): der Kopf-Richter läuft unter VOLL_WENN, die Batterie hinter ihm, wenn der Kopf noch kein
+// EIN URTEIL JE KOPF: der Kopf-Richter läuft unter VOLL_WENN, die Batterie hinter ihm, wenn der Kopf noch kein
 // grünes Urteil der vollen Batterie trägt (scripts/ci-kopf.cjs)
 const KOPF_JOB = "kopf";
 const KOPF_LAUF = /^node scripts\/ci-kopf\.cjs$/;
 const VOLL_NACH_KOPF = "needs.kopf.outputs.voll == 'ja'";
 const needsVon = (J) => [].concat((J && J.needs) || []);
-// (E) DIE ECHT-GRUPPE (K65): GPU-Schritte von `voll` und die Wände der Karte (gate:…:echt) auf dem eigenen Läufer, hinter dem
+// (E) DIE ECHT-GRUPPE: GPU-Schritte von `voll` und die Wände der Karte (gate:…:echt) auf dem eigenen Läufer, hinter dem
 // Kopf-Richter (`echt`), nie pull_request; je Schritt eine Frist, der Job ≤ ECHT_DECKEL_MIN, sein Plan ≤ ECHT_PLAN_S (T).
 const ECHT_JOB = "echt";
 const ECHT_WENN =
@@ -58,12 +58,12 @@ function echtForm(doc) {
         []
             .concat(E["runs-on"] || [])
             .sort()
-            .join(" + ") !== "omen-gpu + self-hosted" ||
+            .join(" + ") !== "echt-gpu + self-hosted" ||
         env.CI_KLASSE !== "gpu" ||
         env.LINSE_GPU !== "karte"
     )
         v.push(
-            `(E) ECHT: „${ECHT_JOB}" läuft nicht auf self-hosted + omen-gpu mit env CI_KLASSE gpu und LINSE_GPU karte`
+            `(E) ECHT: „${ECHT_JOB}" läuft nicht auf self-hosted + echt-gpu mit env CI_KLASSE gpu und LINSE_GPU karte`
         );
     if (normWenn(E.if) !== normWenn(ECHT_WENN) || !needsVon(E).includes(KOPF_JOB))
         v.push(`(E) ECHT: „${ECHT_JOB}" läuft unter „${E.if}" statt hinter dem Kopf-Richter unter ${ECHT_WENN}`);
@@ -94,7 +94,7 @@ function vollArt(doc, job) {
 // dass sie hinter dem Kopf-Richter steht, verlangt (V) BEDINGUNG)
 const imVollenLauf = (doc, job) =>
     vollArt(doc, job) || (job === VOLL_JOB && !!doc && !!doc.jobs && !!doc.jobs[job] && istVollWenn(doc.jobs[job].if));
-// Die Deckel der Waage: der Puls 2 min je Push (K14), die volle Stufe das Mittel ihrer Klasse plus RAND_S (die Streuung einer
+// Die Deckel der Waage: der Puls 2 min je Push, die volle Stufe das Mittel ihrer Klasse plus RAND_S (die Streuung einer
 // Gruppe um ihren Plan, CW2).
 const [PULS_S, RAND_S] = [120, 30];
 const DECKEL_MIN = 45;
@@ -104,7 +104,7 @@ const VORBEREITUNG = [
     ["System-Libs", (s) => /apt-get install/.test(String(s.run || ""))],
     ["npm ci", (s) => /\bnpm ci\b/.test(String(s.run || ""))],
 ];
-// die Caches (K61): der npm-Cache und der puppeteer-Chrome aus dem Actions-Cache vor npm ci (sonst lädt dessen postinstall
+// die Caches: der npm-Cache und der puppeteer-Chrome aus dem Actions-Cache vor npm ci (sonst lädt dessen postinstall
 // den Chrome je Job neu), ihre Schlüssel aus scripts/ci-schluessel.cjs; sie stehen im Vorbereitungs-Block, ohne Gruppe
 const CACHE = (s) => typeof s.uses === "string" && /^actions\/cache(\/restore)?@/.test(s.uses);
 const SCHLUESSEL = (s) => /^node scripts\/ci-schluessel\.cjs$/.test(String(s.run || "").trim());
@@ -500,7 +500,7 @@ function gruppenUrteil(job, J) {
         v.push(`(V) DECKEL: „${job}" timeout-minutes ${J["timeout-minutes"]} (Soll 1–${DECKEL_MIN} je Gruppe)`);
     const steps = J.steps || [];
     // der Vorbereitungs-Block: die führenden Schritte der Vorbereitung; in ihm checkout · setup-node · System-Libs · npm ci
-    // in dieser Reihenfolge, daneben nur der Schlüssel-Schritt und die Caches (K61) — der Schlüssel vor jedem Cache, der
+    // in dieser Reihenfolge, daneben nur der Schlüssel-Schritt und die Caches — der Schlüssel vor jedem Cache, der
     // ihn liest, jeder Cache vor npm ci (danach hätte die Installation ihn nicht gelesen)
     let blockEnde = 0;
     while (blockEnde < steps.length && IST_VORBEREITUNG(steps[blockEnde])) blockEnde++;
@@ -542,7 +542,7 @@ function gruppenUrteil(job, J) {
     return v;
 }
 
-// (V) KOPF (K61): der Kopf-Richter vor der vollen Batterie — unter VOLL_WENN, ohne Matrix, nie stumm, EIN Schritt außer
+// (V) KOPF: der Kopf-Richter vor der vollen Batterie — unter VOLL_WENN, ohne Matrix, nie stumm, EIN Schritt außer
 // checkout (scripts/ci-kopf.cjs mit id), dessen Ausgaben `voll` und `echt` der Job weiterreicht
 function kopfForm(doc) {
     const v = [];
@@ -576,7 +576,7 @@ function kopfForm(doc) {
     return v;
 }
 
-// (V) SCHLÜSSEL (K61) über ALLE Workflows: ein Cache-Schlüssel hasht nur, was der Cache trägt
+// (V) SCHLÜSSEL über ALLE Workflows: ein Cache-Schlüssel hasht nur, was der Cache trägt
 const VERSIONS_HASH = /hashFiles\(([^)]*\bpackage(?:-lock)?\.json[^)]*)\)/;
 function schluesselUrteil(docs) {
     const v = [];
@@ -603,7 +603,7 @@ function schluesselUrteil(docs) {
     return v;
 }
 
-// (K) DIE KLASSE (K61): jede Voll-Gruppe trägt GENAU eine Klasse (matrix.include { gruppe, klasse: cpu | gpu }) und reicht sie als
+// (K) DIE KLASSE: jede Voll-Gruppe trägt GENAU eine Klasse (matrix.include { gruppe, klasse: cpu | gpu }) und reicht sie als
 // CI_KLASSE an die Weiche (welt-boot), die zur Laufzeit urteilt; statisch steht jeder Schritt in der Klasse seines Rezepts.
 const KLASSEN_CI = ["cpu", "gpu"];
 const CI_KLASSE_ENV = "${{ matrix.klasse }}";
@@ -833,7 +833,7 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
     return { v, zeilen, plaetze, wanduhr: laengster, gross: [...gross], deckel: voll, alt };
 }
 
-// Fixture-Bausteine (K61): der Kopf-Richter in seiner Form, ein Cache-Schritt
+// Fixture-Bausteine: der Kopf-Richter in seiner Form, ein Cache-Schritt
 const kopfJob = () => ({
     if: VOLL_WENN,
     outputs: { voll: "${{ steps.kopf.outputs.voll }}", echt: "${{ steps.kopf.outputs.echt }}" },
@@ -1025,7 +1025,7 @@ function selbsttest() {
         return (d.jobs.echt = {
             needs: KOPF_JOB,
             if: ECHT_WENN,
-            "runs-on": ["self-hosted", "omen-gpu"],
+            "runs-on": ["self-hosted", "echt-gpu"],
             "timeout-minutes": 30,
             env,
             steps: prep().concat([schritt]),
@@ -1083,7 +1083,7 @@ function selbsttest() {
             /\(V\) VORBEREITUNG: „puls" „System-Libs" trägt eine Bedingung/,
         ],
         ["keine Matrix", (d) => delete V(d).strategy.matrix, /\(V\) MATRIX: „voll"/],
-        // die zwei Stufen (K14): genau puls und voll, der Puls ohne Bedingung, voll unter der EINEN Bedingung
+        // die zwei Stufen: genau puls und voll, der Puls ohne Bedingung, voll unter der EINEN Bedingung
         [
             "ein dritter Job neben puls und voll",
             (d) => (d.jobs.check = { steps: [{ name: "X", run: "npm run gate:x" }] }),
@@ -1100,7 +1100,7 @@ function selbsttest() {
             /\(V\) PULS: „puls" trägt die Bedingung/,
         ],
         ["kein Job voll", (d) => delete d.jobs.voll, /\(V\) LEER: kein Job „voll"/],
-        // EIN URTEIL JE KOPF (K61): der Kopf-Richter vor der Batterie, nie stumm, EIN Schritt
+        // EIN URTEIL JE KOPF: der Kopf-Richter vor der Batterie, nie stumm, EIN Schritt
         ["kein Kopf-Richter", (d) => delete d.jobs.kopf, /\(V\) KOPF: kein Job „kopf"/],
         [
             "die Batterie ohne den Kopf-Richter",
@@ -1127,7 +1127,7 @@ function selbsttest() {
         ],
         ["die Ausgabe nicht weitergereicht", (d) => delete d.jobs.kopf.outputs, /\(V\) KOPF: „kopf" reicht outputs\.voll nicht/],
         ["der Puls wartet auf den Kopf", (d) => (d.jobs.puls.needs = KOPF_JOB), /\(V\) PULS: „puls" .*wartet auf kopf/],
-        // die Caches (K61): der Schlüssel vor dem Cache, der Cache vor npm ci
+        // die Caches: der Schlüssel vor dem Cache, der Cache vor npm ci
         [
             "ein Cache nach npm ci",
             (d) => V(d).steps.splice(4, 0, cacheSchritt("~/.npm", "npm-${{ runner.os }}-x")),
@@ -1230,7 +1230,7 @@ function selbsttestWaage() {
         ["die Quelle älter als ihre Läufe", () => {}, /\(T\) ALT: seit dem Kopf der Zeit-Quelle \(ffffffff\) trugen 8 Merges/, 8],
         ["dieselbe auf einem Arbeits-Zweig (benannt, nie ROT)", () => {}, (w) => !w.v.length && /^\(T\) ALT: seit dem Kopf/.test(w.alt[0]), 8, false],
         ["der Kopf der Quelle nicht aufzulösen", () => {}, /\(T\) ALT: der Kopf der Zeit-Quelle „f+" ist in der Geschichte nicht/, "wurf"],
-        // (T) PLÄTZE (K61): 1 Puls- und 20 Voll-Gruppen auf 20 Plätzen; der Kopf-Richter endet vor der Batterie
+        // (T) PLÄTZE: 1 Puls- und 20 Voll-Gruppen auf 20 Plätzen; der Kopf-Richter endet vor der Batterie
         ["mehr Jobs zugleich als Läufer-Plätze (K61-Befund: 22 gegen 20)", (d) => gruppen(d, 20), /\(T\) PLÄTZE: ein voller Lauf fährt 21 Jobs zugleich \(puls 1 · voll 20\) — das Konto hat 20 Läufer-Plätze: 1 warten/],
         ["der Kopf-Richter belegt keinen Platz neben der Batterie", (d, z) => mitKopf(d, z) || gruppen(d, 19), (w) => !w.v.some((x) => /PLÄTZE/.test(x))],
         ["der längste Weg über 8 min (benannt, nie ROT)", (d, z) => mitKopf(d, z, 120), (w) => !w.v.length && minuten(w.wanduhr[0]) === "8,5" && w.wanduhr[1] === "kopf → voll 1/2"],
@@ -1334,8 +1334,8 @@ function selbsttestGegenrichtung() {
             (s, d) => d["check.yml"].jobs.check.steps.push({ name: "A allein", run: "npm run gate:a" }),
             /\(R\) REDUNDANT: „A allein" \(check\.yml\/check\) fährt nur, was schon „Statik" fährt/,
         ],
-        // (S) DER ABGESCHALTETE SCHRITT (Gegenprüfung 09.10.: `|| true`, continue-on-error am Schritt und im nächtlichen
-        // Job zählten als Deckung) — die Klasse: jeder Weg, auf dem das Rot einer Wand den Merge nicht hält
+        // (S) DER ABGESCHALTETE SCHRITT (`|| true`, continue-on-error) — die Klasse: jeder Weg, auf dem das Rot einer
+        // Wand den Merge nicht hält
         [
             "|| true hinter dem Gate",
             (s, d) => (C(d).run = "npm run gate:c || true"),
@@ -1523,7 +1523,7 @@ function selbsttestPlaytest() {
     return f;
 }
 
-// ci-zeiten: liefert die API keinen Lauf, endet die Messung ROT (22.10.: eine leere Tafel)
+// ci-zeiten: liefert die API keinen Lauf, endet die Messung ROT (nie eine leere Tafel)
 async function selbsttestZeiten() {
     const leer = async (p) => (p.includes("/runs?per_page") ? { total_count: 0, workflow_runs: [] } : { jobs: [] });
     const u = await messe(leer, { jobs: { puls: { steps: [{ name: "Lint", run: "npm run lint" }] } } }, {}, 0).then(

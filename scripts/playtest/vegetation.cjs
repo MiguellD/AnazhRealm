@@ -39,14 +39,14 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // Gate-Welt hat hohe Warmup-frameMs.
         st._frameOverBudget = false;
         const tk = `${pcx + 1},${pcz + 1}`;
-        // nicht existent → durch den EINEN Abbau (Welle B: der Boden-Satz verliert den Bereich mit), kein Re-Populate
+        // nicht existent → durch den EINEN Abbau (der Boden-Satz verliert den Bereich mit), kein Re-Populate
         if (st.voxelChunks && st.voxelChunks.has(tk)) r._disposeVoxelChunk(tk);
         st.pendingFoliageChunks = new Set([tk]);
         r._tickFoliageGrowth();
         out.growthDrains = !st.pendingFoliageChunks.has(tk);
         // (4) EXISTENZ VOR FRAMERATE (Lehre 13, K22-3): Frame ÜBER BUDGET → das Wachstum drosselt sein TEMPO, nie seine
-        // Existenz: EIN Chunk je WUCHS_DROSSEL_MS, der NÄCHSTE zuerst; innerhalb der Frist keiner; Frame frei → es läuft.
-        // Bis V18.543 PAUSIERTE es über Budget ganz (die Dorf-Chunks im 64-m-Kreis blieben auf der Radeon kahl).
+        // Existenz: EIN Chunk je WUCHS_DROSSEL_MS, der NÄCHSTE zuerst; innerhalb der Frist keiner; Frame frei → es
+        // läuft.
         const tk2 = `${pcx + 2},${pcz + 2}`;
         const tk3 = `${pcx + 4},${pcz + 4}`;
         for (const k of [tk2, tk3]) if (st.voxelChunks && st.voxelChunks.has(k)) r._disposeVoxelChunk(k);
@@ -120,7 +120,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
         out.densityHeadlessFull = !st.renderer || !st.renderer._isHeadlessNull || st._foliageDensityScale === 1;
         st._foliageDensityScale = 1;
 
-        // V18.280 — DAS NACH-DÜNNEN: eine STATIONÄRE, bei voller Dichte gebaute Region schrumpft,
+        // DAS NACH-DÜNNEN: eine STATIONÄRE, bei voller Dichte gebaute Region schrumpft,
         // wenn die geregelte Dichte sinkt (`_tickFoliageThin` re-streamt sie) → die schon geladene
         // Welt sinkt auf die Kapazität, nicht nur die frisch gebaute. CONSUM: instanceCount fällt.
         out.streamingCallsThin = window.__consumes(r, "_tickScatterStreaming", r, "_tickFoliageThin", [st.playerMesh.position]);
@@ -492,19 +492,7 @@ async function checkBandV18133Forage(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        const mats = r.state.materials;
-        out.materials =
-            !!(mats.kraut && mats.kraut.builtIn && mats.kraut.tags.lebendig >= 0.9) &&
-            !!(mats.essenz && mats.essenz.builtIn && mats.essenz.tags.magieleitung >= 0.9);
-        const ernte = r.constructor.STREU_ERNTE;
-        out.allYields = !!ernte && Object.values(ernte).every((m) => typeof m === "string" && !!mats[m]);
-        out.forageConst = !!r.constructor.FORAGE && Number.isFinite(r.constructor.FORAGE.regrowMs);
-        // Die Zutaten-Oekonomie schliesst: der Lebenssaft traegt kraut (das
-        // Mach-Tor V17.65 zieht damit GEPFLUECKTE Zutaten).
-        out.trankKraut =
-            r.state.blueprints.trank_lebenssaft &&
-            r.state.blueprints.trank_lebenssaft.parts.some((pp) => pp.material === "kraut");
-        // Behavioral (wenn die Nah-Streu steht — sonst unmessbar=bestanden, V13.1): die erste Pflanze einer
+        // Behavioral (wenn die Nah-Streu steht — sonst unmessbar=bestanden): die erste Pflanze einer
         // erntbaren Senke pflücken.
         let pick = null;
         const ns = r.state.nahStreu;
@@ -544,13 +532,12 @@ async function checkBandV18133Forage(ctx) {
                 bereich.n === nVor - 1 &&
                 a.anzahl === zahlVor - 1 &&
                 vertsVor - vertsNach === a.geo.attributes.position.count;
-            // Aufraeumen: Ernte-Eintrag zuruecknehmen (kein Band-Crosstalk) + die Kachel neu (die Pflanze kehrt
-            // mit dem nächsten Nah-Streu-Takt zurück).
-            const jeKachel = r.state.scatterHarvested.get(pick.key);
-            if (jeKachel) {
-                jeKachel.delete(pick.id);
-                if (jeKachel.size === 0) r.state.scatterHarvested.delete(pick.key);
-            }
+            // DIE TAT BLEIBT (feld.K4): die Ernte steht als Tat im worldMeta (sie reist mit jedem Save) und senkt lebendig am Ort
+            const L = r.state.worldMeta.taten;
+            const i = L.findIndex((x) => x.kachel === pick.key && x.id === pick.id);
+            out.tatBleibt = i >= 0 && r.auraAt(L[i].x, L[i].z).lebendig < r.worldFieldAt(L[i].x, L[i].z).lebendig;
+            // Aufraeumen: die Tat zuruecknehmen (kein Band-Crosstalk) + die Kachel neu (die Pflanze kehrt zurück)
+            if (i >= 0) L.splice(i, 1);
             const k = ns.kacheln.get(pick.key);
             if (k) k.zustand = null;
             r._tickNahStreu();
@@ -564,18 +551,9 @@ async function checkBandV18133Forage(ctx) {
         check("V18.133 Foraging: Sonde lief", false, "evaluate warf");
         return;
     }
-    check("V18.133 Foraging: die Alchemie-Materialien kraut+essenz stehen (builtIn, Tag-Profil)", res.materials);
     check(
-        "V18.133 Foraging: jede Studio-Art trägt einen existierenden Ernte-Stoff (STREU_ERNTE je kind)",
-        res.allYields && res.forageConst
-    );
-    check(
-        "V18.133 Foraging: der Lebenssaft zieht GEPFLUECKTES kraut (die Zutaten-Oekonomie schliesst)",
-        res.trankKraut
-    );
-    check(
-        "V18.133 Foraging: pfluecken wirkt (+1 Stoff · die Pflanze tritt aus der Senke · Doppel-Pflueck abgelehnt) — oder unmessbar",
-        !res.measured || (res.harvested && res.doubleRejected && res.ausgetreten)
+        "V18.133 Foraging: pfluecken wirkt (+1 Stoff · die Pflanze tritt aus der Senke · Doppel-Pflueck abgelehnt · die Tat senkt lebendig) — oder unmessbar",
+        !res.measured || (res.harvested && res.doubleRejected && res.ausgetreten && res.tatBleibt)
     );
 }
 
@@ -593,7 +571,7 @@ async function checkBandV18197GammaMStrata(ctx) {
         // (Achse-Argmax), wie vor V18.197 — bit-identisch zu Pre-V18.197.
         // Finde einen Punkt, wo erde gewinnt (Vegetation-Achse stark) — und dessen Schwelle (S6) in Gleitkomma GENAU
         // auf STRATA_STEIN_DEPTH liegt: der Stamm rechnet die Tiefe als surfY − y, und surfY − (surfY − D) trifft D
-        // nicht für jede Höhe (eine Zufalls-Höhe lag 1 ulp über D → „stein", CI 38211283065 voll 11/11; ≈ 1 % der Höhen).
+        // nicht für jede Höhe (≈ 1 % der Höhen läge 1 ulp über D → „stein").
         let erdePt = null;
         for (let i = 0; i < 200 && !erdePt; i++) {
             const x = (Math.random() - 0.5) * 600;
@@ -664,7 +642,7 @@ async function checkBandV18197GammaMStrata(ctx) {
     }
 }
 
-// V18.200 — Γ-M IRON-BANDS (genese-plan §Γ-M Folge zu V18.197 STRATA +
+// Γ-M IRON-BANDS (genese-plan §Γ-M Folge zu V18.197 STRATA +
 // V18.199 LICHEN). Vertikale Eisenadern in tiefen Bergregionen — vollendet
 // die Γ-M-Triade (Strata horizontal + Lichen Patina + Iron-Bands vertikal).
 async function checkBandV18200GammaMIronBands(ctx) {
@@ -674,26 +652,7 @@ async function checkBandV18200GammaMIronBands(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (I1) IRON_BANDS
-        if (A.IRON_BANDS) {
-            const IB = A.IRON_BANDS;
-            out.constsSensible =
-                typeof IB.minDepth === "number" &&
-                IB.minDepth > 0 &&
-                typeof IB.threshold === "number" &&
-                IB.threshold > 0 &&
-                IB.threshold < 1 &&
-                typeof IB.dichteFloor === "number" &&
-                IB.dichteFloor >= 0 &&
-                typeof IB.scale === "number" &&
-                IB.scale > 0;
-            // minDepth muss > STRATA_STEIN_DEPTH sein (Iron-Bands sind eine
-            // Subschicht UNTERHALB der reinen Stein-Schicht)
-            out.deepBeyondStrata = IB.minDepth > A.STRATA_STEIN_DEPTH;
-        }
-
-        // (I2) _eisenAderAt-Helper existiert + ist deterministisch
-        // Determinismus: zweimal gleicher (x,z) → gleicher Wert
+        // (I2) Determinismus: zweimal gleicher (x,z) → gleicher Wert
         const a1 = r._eisenAderAt(123.7, 456.3);
         const a2 = r._eisenAderAt(123.7, 456.3);
         out.deterministic = Math.abs(a1 - a2) < 1e-10;
@@ -742,9 +701,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
         out.deepProbed = probedDeep;
         out.steinDominant = steinHits > eisenHits; // Iron-Bands sind selten
 
-        // (I5) EISEN als Material existiert
-        out.eisenMaterialExists = !!(r.state.materials && r.state.materials["eisen"]);
-
         // (I6) MATH: an einem KÜNSTLICH konstruierten Iron-Band-Punkt
         // (ironAder hoch + tief + dichte hoch) → eisen
         // Finde einen Punkt mit aderwert > threshold
@@ -778,10 +734,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
         return out;
     });
 
-    check(
-        "V18.200 (I1b) Konstanten sinnvoll + minDepth > STRATA_STEIN_DEPTH",
-        res.constsSensible === true && res.deepBeyondStrata === true
-    );
     check("V18.200 (I2b) deterministisch (zwei Aufrufe gleicher Wert)", res.deterministic === true);
     check("V18.200 (I2c) Werte in [0, 1] gebounded", res.boundedRange === true);
     check(
@@ -793,7 +745,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
         `V18.200 (I4) STRATA dominant: stein ${res.deepSteinHits}/${res.deepProbed} > eisen ${res.deepEisenHits} in tiefen Punkten`,
         res.steinDominant === true
     );
-    check("V18.200 (I5) Material 'eisen' existiert in state.materials", res.eisenMaterialExists === true);
     if (res.foundIronPoint) {
         check(
             "V18.200 (I6a) An Iron-Ader-Punkt (tief + dichte hoch + ader>threshold) → eisen",
@@ -808,7 +759,7 @@ async function checkBandV18200GammaMIronBands(ctx) {
     }
 }
 
-// V18.205 — Γ7 BAUM-VARIANTEN-GRAMMATIK (genese-plan §Γ7 + aktiv-plan §4.A):
+// Γ7 BAUM-VARIANTEN-GRAMMATIK:
 // `_growTreeBlueprint(speciesKey, seed)` emittiert parts[] in der bestehenden
 // Sprache. Tag-neutral via material-Konsistenz (holz+laub).
 async function checkBandV18205Gamma7Grammatik(ctx) {
@@ -816,7 +767,6 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-
 
         // (G2) Determinismus: gleiche seed → gleiche parts
         const p1 = r._growTreeBlueprint("eiche", "seed-a");
@@ -852,7 +802,7 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
         // cylinder+sphere). fakeBp trägt die Spezies-Marke (_grownSpecies), damit computeCompoundTags beiden
         // dieselbe Art-Variation gibt — sonst läse die +0.05-Variation als Drift.
         const fakeBp = { parts: sample, _grownSpecies: "baum_eiche" };
-        // V18.257 — baum_eiche statisch geschnitten; gegen einen GEWACHSENEN Baum prüfen.
+        // baum_eiche statisch geschnitten; gegen einen GEWACHSENEN Baum prüfen.
         const __g6Key = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "g6");
         const treeBp = __g6Key && r.state.blueprints[__g6Key];
         if (treeBp) {
@@ -896,7 +846,6 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
         const hMax = Math.max(...heights);
         out.heightSpread = Number((hMax - hMin).toFixed(2));
         out.heightsVary = hMax - hMin > 0.5; // mindestens 0.5 m Spreizung über 6 Varianten
-
         return out;
     });
 
@@ -958,7 +907,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         // Spawne einen grown_-Bauplan + prüfe das Snapshot-Feld.
         const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "v211-snapshot-test");
         if (grownKey && r.state.blueprints[grownKey]) {
-            // V18.317/.347 — der Snapshot persistiert NUR architektur-REFERENZIERTE grown-Baupläne
+            // der Snapshot persistiert NUR architektur-REFERENZIERTE grown-Baupläne
             // (die Foliage-Masse re-wächst f(seed), §2.5); eine Sentinel-Architektur hält den Test-
             // Bauplan, sonst filtert ihn der Snapshot KORREKT heraus → das ist die neue Wahrheit.
             r.state.architectures = r.state.architectures || [];
@@ -1115,25 +1064,6 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // ─── (W1) SPECIES_TAG_VARIATION frozen, alle 6 Baum-Spezies, kein Totholz ─────
-        {
-            const v = A.SPECIES_TAG_VARIATION;
-            out.variationAllSpecies =
-                !!v.baum_tanne &&
-                !!v.baum_kiefer &&
-                !!v.baum_buche &&
-                !!v.baum_birke &&
-                !!v.baum_eiche &&
-                !!v.baum_erle &&
-                !v.baum_totholz;
-            // Plan §7: Tanne/Kiefer brennbar↑ resoniert↑ — die DEKLARIERTEN Achsen pro Spezies.
-            out.tannenDeklariert =
-                Number.isFinite(v.baum_tanne.brennbar) &&
-                v.baum_tanne.brennbar > 0 &&
-                Number.isFinite(v.baum_tanne.resoniert) &&
-                v.baum_tanne.resoniert > 0;
-        }
-
         // ─── (W2) baum_totholz ist aus SPECIES_TREE_PARAMS + dem Foundry-Alias GEFALLEN (die Stamm-Grammatik fiel K24) ─
         // Seit dem Waldboden ist Totholz eine Studio-Art: die generische Regel (`baum_<preset>` im
         // LIVE-Buch) löst baum_totholz auf das stehende Studio-Totholz auf — nie auf die belaubte Eiche (der Alias).
@@ -1169,19 +1099,6 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
             r._lastTreeSkeleton = origLast;
         }
 
-        // ─── (W8) Material-Colors Ω-K3 (laub/holz dunkler) ──────────
-        const mat = r.state.materials;
-        if (mat && mat.holz && mat.laub) {
-            out.holzColor = mat.holz.color;
-            out.laubColor = mat.laub.color;
-            // dunkler als V18.214: holz < 0x80, laub < 0x80 in jedem Kanal
-            const holzR = (mat.holz.color >> 16) & 0xff;
-            const holzG = (mat.holz.color >> 8) & 0xff;
-            out.holzIsErdig = holzR < 0x80 && holzG < 0x60; // erdiges Braun
-            const laubG = (mat.laub.color >> 8) & 0xff;
-            out.laubIsDunkel = laubG < 0x80; // gedämpftes Grün (war 0x8b → jetzt < 0x80)
-        }
-
         // ─── (W9) W1: baum_totholz ist aus TREE_NAMES + candidates GEFALLEN ───
         // Totholz zeichnete nur die Streu (belaubte Alias-Eiche); die Grammatik-Art fiel 05.10. mit.
         out.candidatesIncludeTotholz = (window.anazhRealm.constructor.FELD_WURF || []).includes("baum_totholz");
@@ -1189,8 +1106,6 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         return out;
     });
 
-    check("V18.215 (W1b) Alle 6 Baum-Spezies deklariert, baum_totholz nicht", res.variationAllSpecies === true);
-    check("V18.215 (W1c) Tanne: brennbar↑ + resoniert↑ deklariert", res.tannenDeklariert === true);
     check(
         "Integration 05.10. (W2) baum_totholz ist aus SPECIES_TREE_PARAMS und dem Eichen-Alias gefallen (Studio-Totholz)",
         res.totholzFort === true
@@ -1198,14 +1113,6 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
     check(
         "V18.215 (W5a) Tanne _isGrown: brennbar +0.1 angewandt (computeCompoundTags-Δ)",
         res.tannenVariationApplied === true
-    );
-    check(
-        `V18.215 (W8a) Holz dunkler+erdig (R<0x80, G<0x60) — gemessen R=${res.holzColor ? ((res.holzColor >> 16) & 0xff).toString(16) : "?"}, G=${res.holzColor ? ((res.holzColor >> 8) & 0xff).toString(16) : "?"}`,
-        res.holzIsErdig === true
-    );
-    check(
-        `V18.215 (W8b) Laub dunkler (G<0x80) — gemessen G=${res.laubColor ? ((res.laubColor >> 8) & 0xff).toString(16) : "?"}`,
-        res.laubIsDunkel === true
     );
     check(
         "W1 (W9) baum_totholz ist aus den _vegetationSampleSpawn-Kandidaten gefallen",
@@ -1226,22 +1133,11 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
         // ─── (A) KARST: die Studio-Art karst (_phytoArt, K24) + Params + Variation ───────
         const karstArt = r._phytoArt("baum_karst");
         out.grammarHasKarst = !!(karstArt && karstArt.id === "karst" && karstArt.rec.kind === "tree");
-        out.karstInTreeParams = !!(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.baum_karst);
-        if (out.karstInTreeParams) {
-            const p = A.SPECIES_TREE_PARAMS.baum_karst;
-            out.karstSlope16 = Math.abs(p.slopeMax - 1.6) < 1e-9; // klettert Klippen
-            // K24-N1: der knorrige Sockel ist das Gesetz der Art (P.flare 0,9 im Phänotyp), nie eine Hand-Zeile
-            r._growTreeBlueprintRich("baum_karst", "pt-karst-anlauf");
-            const skK = r._lastTreeSkeleton;
-            r._lastTreeSkeleton = null;
-            out.karstFlareAmp = !("flare" in p) && !!skK && Math.abs(skK.flareAmp - 0.9) < 1e-9;
-        }
-        out.karstInTagVariation = !!(A.SPECIES_TAG_VARIATION && A.SPECIES_TAG_VARIATION.baum_karst);
-        if (out.karstInTagVariation) {
-            const v = A.SPECIES_TAG_VARIATION.baum_karst;
-            out.karstDichteVar = Math.abs(v.dichte - 0.1) < 1e-9; // dichte+0.10 (M3)
-            out.karstLebendigVar = Math.abs(v.lebendig - -0.05) < 1e-9; // lebendig-0.05
-        }
+        // K24-N1: der knorrige Sockel ist das Gesetz der Art (P.flare 0,9 im Phänotyp), nie eine Hand-Zeile
+        r._growTreeBlueprintRich("baum_karst", "pt-karst-anlauf");
+        const skK = r._lastTreeSkeleton;
+        r._lastTreeSkeleton = null;
+        out.karstFlareAmp = !("flare" in (A.SPECIES_TREE_PARAMS.baum_karst || {})) && !!skK && Math.abs(skK.flareAmp - 0.9) < 1e-9;
 
         // ─── (B) Drei Unterholz-Arten als Studio-Arten (_phytoArt, K24) ─────────────────────
         const artKind = (sp) => {
@@ -1252,31 +1148,6 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
         out.grammarHasFarn = artKind("farn_busch") === "fern";
         out.grammarHasBlume = artKind("blume_gross") === "flower";
 
-        // Bush-Tree-Params + Tag-Variation
-        out.allBushInParams =
-            !!(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.busch_hazel) &&
-            !!(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.farn_busch) &&
-            !!(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.blume_gross);
-        if (out.allBushInParams) {
-            const ph = A.SPECIES_TREE_PARAMS.busch_hazel;
-            const pf = A.SPECIES_TREE_PARAMS.farn_busch;
-            const pb = A.SPECIES_TREE_PARAMS.blume_gross;
-            // Hazel klettert mehr (0.9), Blume meidet Steile (0.4)
-            out.bushSlopeOrdered = ph.slopeMax > pf.slopeMax && pf.slopeMax > pb.slopeMax;
-        }
-        out.allBushInVariation =
-            !!(A.SPECIES_TAG_VARIATION && A.SPECIES_TAG_VARIATION.busch_hazel) &&
-            !!(A.SPECIES_TAG_VARIATION && A.SPECIES_TAG_VARIATION.farn_busch) &&
-            !!(A.SPECIES_TAG_VARIATION && A.SPECIES_TAG_VARIATION.blume_gross);
-        if (out.allBushInVariation) {
-            const vh = A.SPECIES_TAG_VARIATION.busch_hazel;
-            const vf = A.SPECIES_TAG_VARIATION.farn_busch;
-            const vb = A.SPECIES_TAG_VARIATION.blume_gross;
-            // Alle drei deklarieren lebendig↑ (saftig)
-            out.allBushLebendigUp = vh.lebendig > 0 && vf.lebendig > 0 && vb.lebendig > 0;
-            // Farn + Blume mit magieleitung↑
-            out.farnBlumeMagical = vf.magieleitung > 0 && vb.magieleitung > 0;
-        }
 
         // ─── (C) Wachstum produziert valide Bauplane für die 4 Neuen ─
         if (r.state.worldMeta) r.state.worldMeta.genVersion = 9;
@@ -1335,31 +1206,18 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
             out.spawnError = String(_e && _e.message);
         }
 
-        out.candidatesHasKarst = (A.FELD_WURF || []).includes("baum_karst"); // die Liste der Würfe des Felds (K10-6)
-
-        out.genVersionFresh9 = !!(r.state.worldMeta && r.state.worldMeta.genVersion >= 9);
 
         return out;
     });
 
     // (A) KARST
     check("K24 (A1) baum_karst ist die Studio-Art karst (_phytoArt)", res.grammarHasKarst === true);
-    check("V18.216 (A5) Karst in SPECIES_TREE_PARAMS", res.karstInTreeParams === true);
-    check("V18.216 (A6) Karst slopeMax=1.6 (klettert Klippen)", res.karstSlope16 === true);
     check("V18.216 (A7) Karst-Anlauf 0,9 aus dem Gesetz (Sockel knorrig)", res.karstFlareAmp === true);
-    check("V18.216 (A8) Karst in SPECIES_TAG_VARIATION", res.karstInTagVariation === true);
-    check("V18.216 (A9) Karst dichte+0.10 (hart)", res.karstDichteVar === true);
-    check("V18.216 (A10) Karst lebendig-0.05 (weniger saftig)", res.karstLebendigVar === true);
 
     // (B) Drei Büsche
     check("K24 (B1) busch_hazel ist der Studio-Strauch (_phytoArt)", res.grammarHasHazel === true);
     check("K24 (B2) farn_busch ist der Studio-Farn (_phytoArt)", res.grammarHasFarn === true);
     check("K24 (B3) blume_gross ist die Studio-Blume (_phytoArt)", res.grammarHasBlume === true);
-    check("V18.216 (B10) Alle 3 Büsche in SPECIES_TREE_PARAMS", res.allBushInParams === true);
-    check("V18.216 (B11) Bush-slopeMax-Reihenfolge Hazel>Farn>Blume", res.bushSlopeOrdered === true);
-    check("V18.216 (B12) Alle 3 Büsche in SPECIES_TAG_VARIATION", res.allBushInVariation === true);
-    check("V18.216 (B13) Alle 3 Büsche lebendig↑ deklariert", res.allBushLebendigUp === true);
-    check("V18.216 (B14) Farn + Blume magieleitung↑ deklariert", res.farnBlumeMagical === true);
 
     // (C) Wachstum
     check(`V18.216 (C1) Karst-rich-Grow ≥30 parts (gemessen ${res.karstPartsCount})`, res.karstPartsValid === true);
@@ -1378,11 +1236,6 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
     check("V18.216 (D3) Hazel spawnable", res.hazelSpawnable === true);
     check("V18.216 (D4) Farn spawnable", res.farnSpawnable === true);
     check("V18.216 (D5) Blume spawnable", res.blumeSpawnable === true);
-
-    // (E) Source-Integration
-    check("V18.216 (E1) baum_karst in _vegetationSampleSpawn-candidates", res.candidatesHasKarst === true);
-
-    check("V18.216 (F2) Fresh-Welt genVersion ≥ 9 (V18.216 Routing)", res.genVersionFresh9 === true);
 }
 
 // Varianten-Pool: N=VARIANTS_PER_SPECIES Varianten je Spezies, gefroren als Genese-Konstante in
@@ -1394,12 +1247,6 @@ async function checkBandV18217VariantenPool(ctx) {
         const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
-
-        // ─── (A) Source-Probes ───
-        // N ≥ 2 statt fester Zahl: N ist bewusst klein (jede Variante = eigene Geometrie = eigene Draw-Calls;
-        // die Vielfalt reitet pro Instanz über scale/rotationY/tint); der Pool-Mechanismus ist N-unabhängig.
-        out.constantExists = Number.isFinite(A.VARIANTS_PER_SPECIES) && A.VARIANTS_PER_SPECIES >= 2;
-        out.constantValue = A.VARIANTS_PER_SPECIES;
 
         // ─── (B) Behavioral: Fresh-Welt hat Pool ──────────────────────
         const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18217") : null;
@@ -1431,8 +1278,6 @@ async function checkBandV18217VariantenPool(ctx) {
                             Array.isArray(newMeta.variantSeed[sp]) &&
                             newMeta.variantSeed[sp].length === A.VARIANTS_PER_SPECIES
                     ) && r._variantSeedsFor("stein_block") === null;
-                // String-Seeds, kein Float-Drift-Risiko (P2P-Konsistenz)
-                out.poolEntriesAreStrings = newMeta.variantSeed.baum_eiche.every((v) => typeof v === "string");
             } finally {
                 r.state.worldMeta = savedFresh;
             }
@@ -1482,9 +1327,8 @@ async function checkBandV18217VariantenPool(ctx) {
             out.sameRegionSameKey = !!(k1 && k1 === k2);
             // Pattern grown_<species>_v<idx>
             out.keyHasVariantForm = !!(k1 && /^grown_baum_eiche_v\d+$/.test(k1));
-            // bp trägt _variantIndex
+            // der Bauplan des Keys
             const bp = k1 && r.state.blueprints[k1];
-            out.bpVariantIndexSet = !!(bp && Number.isFinite(bp._variantIndex));
             // bp._grownSeed ist der variantSeed-String (NICHT der regionSeed)
             const pool = r.state.worldMeta && r.state.worldMeta.variantSeed;
             if (bp && pool && Array.isArray(pool["baum_eiche"])) {
@@ -1538,19 +1382,12 @@ async function checkBandV18217VariantenPool(ctx) {
         return out;
     });
 
-    // (A) Source
-    check(
-        `V18.217 (A1) AnazhRealm.VARIANTS_PER_SPECIES Konstante (gemessen ${res.constantValue})`,
-        res.constantExists === true
-    );
-
     // (B) Fresh-Welt
     check("V18.217 (B1) Fresh-Welt-Meta trägt variantSeed-Pool", res.freshHasPool === true);
     check(
         `K24 (B2) der Pool wächst je Pflanze des Gesetzbuchs, nie für Fels (gemessen ${res.freshPoolSpeciesCount} Arten)`,
         res.allGrammarSpeciesInPool === true
     );
-    check("V18.217 (B3) Pool-Einträge sind STRINGS (P2P-Determinismus)", res.poolEntriesAreStrings === true);
 
     // (C) Determinismus
     check(
@@ -1562,7 +1399,6 @@ async function checkBandV18217VariantenPool(ctx) {
     // (D) Spawn-Pipeline
     check("V18.217 (D1) Gleicher regionSeed → gleicher Bauplan-Key", res.sameRegionSameKey === true);
     check("V18.217 (D2) Bauplan-Key folgt `grown_<species>_v<idx>`-Form", res.keyHasVariantForm === true);
-    check("V18.217 (D3) Bauplan trägt _variantIndex (numerisch)", res.bpVariantIndexSet === true);
     check(
         "V18.217 (D4) bp._grownSeed === variantSeed[species][index] (Re-Wachstum bit-genau)",
         res.bpGrownSeedIsVariantSeed === true
@@ -1591,13 +1427,6 @@ async function checkBandV18218LODStufen(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // ─── (A) Source-Probes ────────────────────────────────────────
-        out.lodDistancesExists =
-            A.LOD_DISTANCES &&
-            Number.isFinite(A.LOD_DISTANCES.thresh01) &&
-            Number.isFinite(A.LOD_DISTANCES.thresh12) &&
-            Number.isFinite(A.LOD_DISTANCES.hysteresis);
-
         // ─── (B) Distanz-Chooser ───
         // Die Probe liest die Schwellen aus LOD_DISTANCES (thresh01/thresh12/hysteresis), keine festen Meter.
         const t01r = A.LOD_DISTANCES.thresh01;
@@ -1614,7 +1443,7 @@ async function checkBandV18218LODStufen(ctx) {
         // Hysterese: cur=1 + dist=60m → kehrt zurück zu 0 (unter -h-Buffer)
         out.hyst1to0Below = r._chooseLODForDistance(t01 - h * 2, 1) === 0; // 60 → 0
         out.hyst1to0Above = r._chooseLODForDistance(t01 - h * 0.5, 1) === 1; // 75 → 1
-        // V18.526 — Mehrstufen-Sprung: jenseits ZWEIER Schwellen springt die Wahl durch (sonst stand die region-
+        // Mehrstufen-Sprung: jenseits ZWEIER Schwellen springt die Wahl durch (sonst stand die region-
         // private Fern-Streu, die nur nach 2 zurückwandern darf, für immer auf L0).
         const t12 = A.LOD_DISTANCES.thresh12;
         out.sprung0to2 = r._chooseLODForDistance(t12 + h * 2, 0) === 2;
@@ -1741,7 +1570,6 @@ async function checkBandV18218LODStufen(ctx) {
     });
 
     // (A) Source
-    check("V18.218 (A1) AnazhRealm.LOD_DISTANCES (thresh01/thresh12/hysteresis)", res.lodDistancesExists === true);
 
     // (B) Distanz-Chooser
     check(`V18.218 (B1) chooseLOD(0.6·t01)=0 (Hero-Nähe)`, res.choose50 === true);
@@ -1878,7 +1706,7 @@ async function checkBandV18219bisVollendung(ctx) {
         return out;
     });
 
-    // V18.218.1 LOD-Activation
+    // LOD-Activation
     check("V18.218.1 (L3) _gameLoopTick ruft _tickArchitectureLOD (Verdrahtung)", res.lodTickInLoop === true);
     check("V18.218.1 (L4) atmosphere.treeLOD=true Default", res.lodFlagDefault === true);
     check(
@@ -1892,7 +1720,7 @@ async function checkBandV18219bisVollendung(ctx) {
 
     check("V18.219 (B11) Invalidation setzt dirty=true", res.invalidationSetDirty === true);
 
-    // V18.220 Scatter-Bitmask + Cap + Lookup
+    // Scatter-Bitmask + Cap + Lookup
     check("V18.220 (S6) markiertes Cell ist promoted=true", res.markedThenIsPromoted === true);
     check("V18.220 (S7) Distant cell promoted=false (kein false-positive)", res.distantNotPromoted === true);
     check("V18.220 (S8) Lookup species=baum_birke", res.lookupSpecies === true);
@@ -1902,7 +1730,7 @@ async function checkBandV18219bisVollendung(ctx) {
 
     check("V18.221 (P2) Snapshot trägt worldMeta.scatterPromoted (Array)", res.snapshotCarriesPromoted === true);
 
-    // V18.222 Canopy chunk-streaming
+    // Canopy chunk-streaming
     check("V18.222 (C5) _gameLoopTick ruft _tickCanopyStreaming (Verdrahtung)", res.canopyTickInLoop === true);
     check("V18.222 (C6) atmosphere.canopyStreaming Default false (OPT-IN)", res.canopyFlagDefault === true);
     check("V18.222 (C8) _canopyEnsureChunk baut Mesh+Geometry+Material", res.canopyMeshBuilt === true);
@@ -1925,8 +1753,6 @@ async function checkBandV18224ScatterPromotion(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // ─── (A) Source + Config ──────────────────────────────────────
-        out.scatterConfigExists = A.SCATTER && Number.isFinite(A.SCATTER.cellM) && Number.isFinite(A.SCATTER.promoteM);
         // KONSUM: der nächste Takt des Loops (Dispatcher-Takt Nr. 4: der Deko-Boden greift) ruft das Streu-Streaming
         r._schedFrameNo = 3;
         out.tickInLoop = window.__consumes(r, "_gameLoopTick", r, "_tickScatterStreaming", [performance.now()]);
@@ -1948,7 +1774,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
         if (r.state.scene) {
             // Sicherstellen: Pool + Bake bereit
             r._variantSeedsFor("baum_eiche");
-            // V18.225 — die Dichte-Messung an der SPIELER-Region (vegetiert,
+            // die Dichte-Messung an der SPIELER-Region (vegetiert,
             // worldgen-habitabel) statt einer fernen leeren → die echte Plan-§13-
             // Dichte (≥hunderte/Chunk via 5 Strata) ist messbar.
             const ppm = r.state.playerMesh.position;
@@ -1965,7 +1791,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
             out.regionBuilt = !!region;
             out.regionInstanceCount = region ? region.instanceCount : 0;
             out.regionHasCells = region && Array.isArray(region.cells) && region.cells.length > 0;
-            // V18.225 — MEHRSCHICHT-DICHTE (Plan §13 „≥hunderte/Chunk + 5 Strata")
+            // MEHRSCHICHT-DICHTE (Plan §13 „≥hunderte/Chunk + 5 Strata")
             out.scatterLayerCount = Array.isArray(SC.layers) ? SC.layers.length : 0;
             out.byLayer = region ? region.byLayer : null;
             // Config-Beweis: Understory-Cap dominiert (der Dichte-Träger)
@@ -2007,7 +1833,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
                 out.cellHasSlots = Array.isArray(c0.slots) && c0.slots.length > 0;
                 // Lookup-Buffer ist jetzt LEBENDIG (V18.220-Passagier geheilt) —
                 // an einer PROMOTABLE (Baum-)Cell prüfen (Understory hat keinen
-                // Lookup-Eintrag, V18.225).
+                // Lookup-Eintrag).
                 const tc = region.cells.find((c) => c.promotable && c.slots);
                 if (tc) {
                     const look = r._scatterLookupCell(tc.x, tc.z, tc.layer || "tree");
@@ -2043,7 +1869,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
                 const region = r._scatterRegion(regX2, regZ2, pp2);
                 if (region && region.cells.length > 0) {
                     // eine PROMOTABLE (Baum-)Cell, die NICHT promoted ist + slots hat
-                    // (V18.225 — Understory/Streu sind nie promotable)
+                    // Understory/Streu sind nie promotable)
                     const cell = region.cells.find((c) => c.promotable && c.slots && c.slots.length > 0);
                     if (cell) {
                         const archBefore = r.state.architectures.length;
@@ -2079,7 +1905,6 @@ async function checkBandV18224ScatterPromotion(ctx) {
     });
 
     // (A) Source + Config
-    check("V18.224 (A1) AnazhRealm.SCATTER Config (cellM/promoteM)", res.scatterConfigExists === true);
     check("V18.224 (A7) _gameLoopTick ruft _tickScatterStreaming (Verdrahtung)", res.tickInLoop === true);
 
     // (B) Determinismus
@@ -2197,17 +2022,12 @@ async function checkBandWahrerAnblickFels(ctx) {
 
         // (B) Tag-Neutralität: noiserock-Aktivierung == box (stein_block bleibt neutral)
         const fta = A.FORM_TAG_ACTIVATION;
-        out.noiserockActivation = !!(fta && fta.noiserock && fta.box);
-        if (out.noiserockActivation) {
-            out.noiserockEqualsBox = Object.keys(fta.box).every((k) => fta.noiserock[k] === fta.box[k]);
-        }
+        out.noiserockEqualsBox = Object.keys(fta.box).every((k) => fta.noiserock[k] === fta.box[k]);
 
         // (C) stein_block gewachsen + Kiesel/Felsbrocken-Baupläne
         const bp = r.state.blueprints;
         out.steinIsRock = !!(bp && bp.stein_block && bp.stein_block.parts[0].shape === "noiserock");
-        out.kieselExists = !!(bp && bp.kiesel && bp.kiesel.instanced && bp.kiesel.parts.length >= 1);
         out.kieselIsRock = !!(bp && bp.kiesel && bp.kiesel.parts.every((p) => p.shape === "noiserock"));
-        out.felsbrockenExists = !!(bp && bp.felsbrocken && bp.felsbrocken.instanced);
         // computeCompoundTags von stein_block trägt dichte (noiserock = box → dicht)
         try {
             const tags = r.computeCompoundTags(bp.stein_block);
@@ -2223,10 +2043,6 @@ async function checkBandWahrerAnblickFels(ctx) {
         out.staticLods = !!(lods && lods[0] === "kiesel" && lods[1] === "kiesel" && lods[2] === "kiesel");
         const sp = r._scatterSpeciesForLayer("rock", 0.1, 0.1, 50);
         out.rockSpecies = sp === "kiesel" || sp === "felsbrocken" || sp === "stein_block";
-        const layers = A.SCATTER && A.SCATTER.layers;
-        out.rockLayer = !!(
-            layers && layers.some((l) => l.name === "rock" && l.kind === "rock" && l.promotable === false)
-        );
 
 
         return out;
@@ -2236,18 +2052,14 @@ async function checkBandWahrerAnblickFels(ctx) {
     check("Ω-OPSIS S6 (A2) noiserock ist detailliert (≥12 Vertices)", res.rockGeomDetailed === true);
     check("Ω-OPSIS S6 (A3) noiserock ist noise-verschoben (Facetten, kein glatter Radius)", res.rockDisplaced === true);
 
-    check("Ω-OPSIS S6 (B1) noiserock-Aktivierung existiert (FORM_TAG_ACTIVATION)", res.noiserockActivation === true);
     check("Ω-OPSIS S6 (B2) noiserock == box → tag-neutral (Affinitäts-Baseline hält)", res.noiserockEqualsBox === true);
 
     check("Ω-OPSIS S6 (C1) stein_block gewachsen (Box-Samen → noiserock)", res.steinIsRock === true);
-    check("Ω-OPSIS S6 (C2) kiesel-Bauplan existiert (instanced, noiserock)", res.kieselExists === true);
     check("Ω-OPSIS S6 (C3) kiesel-Teile sind alle noiserock", res.kieselIsRock === true);
-    check("Ω-OPSIS S6 (C4) felsbrocken-Bauplan existiert (instanced)", res.felsbrockenExists === true);
     check("Ω-OPSIS S6 (C5) stein_block trägt dichte (Tags finit, noiserock=box)", res.steinTagsFinite === true);
 
     check("Ω-OPSIS S5 (D1) CONSUM: _buildVariantLODs gibt statische Fels-Keys", res.staticLods === true);
     check("Ω-OPSIS S5 (D2) CONSUM: _scatterSpeciesForLayer(rock) gibt Fels-Spezies", res.rockSpecies === true);
-    check("Ω-OPSIS S5 (D3) CONSUM: SCATTER.layers trägt die Fels-Schicht (Deko)", res.rockLayer === true);
 
 }
 

@@ -23,6 +23,9 @@ class AnazhRealm_dirigent_takt {
             // W12 — ist ein Portal offen, friert die Heimat-Welt ein: der
             // Loop kehrt VOR Physik/Ticks/Render um. lastTime wurde gerade
             // gesetzt und bleibt frisch → kein Delta-Sprung beim Verlassen.
+            // DIE EINGABE je Bild (leib.K5): das Gamepad in die Verb-Tafel, der Blick in die Kamera-Kugel — auch bei offenem Portal,
+            // dessen Zurück-Knopf es verlässt (`_eingabeTakt`)
+            this._eingabeTakt(delta);
             if (this._portalOverlay) return;
             this.state.spielZeit += delta; // DIE SPIEL-ZEIT: nur Takte der Heimat-Welt zählen (das Portal friert sie ein)
             // DIE BILD-UHR (A9, Gesetz #0): die EINE Shader-Zeit der Welt in Sekunden, hier EINMAL je Takt geschrieben — Himmel,
@@ -95,9 +98,9 @@ class AnazhRealm_dirigent_takt {
                     // Cross-Fade über 45 s. No-op wenn kein Übergang aktiv.
                     this.tickWeatherTransition(currentTime);
 
-                    // ### Fauna-Lifecycle (Welle 6.G3.c) ###
-                    // Alle 10 s: Geburt bei < TARGET, Tod bei > MAX mit Trauer.
-                    this.tickFaunaLifecycle(currentTime);
+                    // ### Fauna-Lifecycle (Ökologie K2) ###
+                    // je Takt der Spiel-Zeit die Bilanz des Bestands: Geburt unter, Hunger über der Kapazität aus Nahrung × Lebensraum.
+                    this.tickFaunaLifecycle();
 
                     // ### Boot-Phase 3 (V18.308) — die deferierte Boot-Arbeit progressiv ###
                     // Spawnt die Initial-Kreaturen NACH der Kontrolle, einen Atem pro Wesen,
@@ -142,6 +145,8 @@ class AnazhRealm_dirigent_takt {
                 let _pt = performance.now();
                 this._loopFixedStep(delta, currentTime);
                 this._perfSenseLap("physics", _pt);
+                // das Rumble aus dem Zustand dieses Takts (Fahrt, Treffer), nach der Sim
+                if (!ruht) this._rumbleTakt(delta, currentTime);
 
                 // V17.28 — Boden unter dem Boden: fällt der Spieler durch (Struktur-
                 // Remesh-Timing, Teleport in ungebauten Chunk, …), fängt ihn das ab.
@@ -151,8 +156,8 @@ class AnazhRealm_dirigent_takt {
                 // das überall definiert ist (auch unter ungebauten Chunks) → kein Durchfallen.
 
                 if (!ruht) {
-                    // V17.55 W1 — Halten-zum-Abbauen: der Auto-Hieb-Tick (gegated durch breakHeld +
-                    // Pointer-Lock; das kontinuierliche Mahlen in der strikeInterval-Kadenz).
+                    // V17.55 W1 — Halten-zum-Abbauen: der Auto-Hieb-Tick (gegated durch die gehaltene Abbau-Aktion der
+                    // Verb-Tafel; das kontinuierliche Mahlen in der strikeInterval-Kadenz).
                     this._tickHarvest();
 
                     // 3-Phasen-Schwung-Tick: treibt Windup/Strike/Recover auf der ANZEIGE-Uhr (der Hit-Stop pausiert
@@ -210,9 +215,9 @@ class AnazhRealm_dirigent_takt {
                 this._updateDorfRauch(delta);
 
                 if (!ruht) {
-                    // ### Fähigkeiten ###
+                    // ### Fähigkeiten ### (rule) — gehalten über die Verb-Tafel: ihre Taste oder ihr Pad-Knopf (`_verbTaste`)
                     Object.keys(this.state.abilities).forEach((ability) => {
-                        if (this.state.keys[ability]) this.state.abilities[ability](this, this.state);
+                        if (this.state.verbTafel.gehalten[ability]) this.state.abilities[ability](this, this.state);
                     });
 
                     // ### Speichern ### (V9.44-f → _loopAutoSave)
@@ -596,13 +601,16 @@ class AnazhRealm_dirigent_takt {
                     }
                     this.state.nexusWirk -= wirkCost;
                 }
-                const result = this.dslRun(evolution.program, { source: evolution.source || "nexus" });
+                // das Programm trägt den Namen seiner Evolution — die Stimme des Felds nennt ihn als Gesetz der Tat (`_tatWerten`)
+                const result = this.dslRun(evolution.program, {
+                    source: evolution.source || "nexus",
+                    programId: evolution.name,
+                });
                 // Eine REGEL-Evolution registriert (rule-Op) eine stehende Regel in state.worldRules; ihre Fitness
                 // läuft über deren Lebens-Fenster (_worldRuleFitness), NICHT über den 5-s-Gesten-Finalizer →
                 // nicht in pendingOutcomes/Gesten-History.
                 if (evolution.program[0] === "rule") {
                     this.log(`Nexus-Evolution (Regel) registriert: ${evolution.name}`, "INFO");
-                    this.grokSpeak("nexus");
                     return;
                 }
                 // Schicht 1 — Initiale Fitness aus FPS allein. Endgültiger
@@ -646,7 +654,8 @@ class AnazhRealm_dirigent_takt {
             } else {
                 this.log(`Nexus-Evolution ohne DSL-Programm verworfen: ${evolution.name}`, "WARNING");
             }
-            this.grokSpeak("nexus");
+            // was der Nexus tat, sagt die Stimme des Felds mit Ort, Ursache und Gesetz (`_feldStimme`); die generische
+            // Pool-Zeile („Ich habe etwas verschoben …") nach jeder Evolution war ihr Zwilling und überschrieb sie
         }
     }
 
@@ -750,6 +759,7 @@ class AnazhRealm_dirigent_takt {
     // Physik integriert sie im SELBEN Schritt (leib.K1: die Ordnung Physik → Bewegung trug die Taste erst einen Schritt später
     // in die Lage — 16,7 ms jeder Anfahrt; die Folge der Schritte ist dieselbe, die Eingabe greift einen Schritt früher).
     _stepFixedSim(simTime, dt) {
+        this._verbTafelSammeln(); // die Eingabe dieses Schritts: Tastatur und Pad → die Verb-Tafel (leib.K5)
         // die Gier des gerittenen Werks VOR dem Schritt: das Bild dreht den Wagen zwischen ihr und der neuen (`_tickMountedMovement`)
         if (this._mountedEntry) this._mountedEntry._gierVor = this._mountedEntry._rideYaw;
         this._loopPlayerMovement(simTime, dt);
@@ -842,7 +852,7 @@ class AnazhRealm_dirigent_takt {
     // bit-identisches Ergebnis. Die bit-Gleichheit zweier Läufe IST der Beweis; Lockstep-MP baut darauf.
 
     // Hält den Input dieses Frames fest (im Loop nach `_loopPlayerMovement`). Genau die
-    // Größen, die Bewegung + Feld-Schritt deterministisch treiben: die WASD/Shift/Space-Tasten,
+    // Größen, die Bewegung + Feld-Schritt deterministisch treiben: die Leib-Felder der Verb-Tafel (analog),
     // der Blick-Yaw und das Zeit-Delta.
     _replayCaptureFrame(delta) {
         const rec = this.state._replayRec;
@@ -851,16 +861,14 @@ class AnazhRealm_dirigent_takt {
             this.state._replayRec = null; // Sicherheits-Cap gegen unbegrenztes Wachstum
             return;
         }
-        const k = this.state.keys || {};
+        const T = this.state.verbTafel;
         rec.frames.push({
             dt: delta,
             yaw: this.state.yaw,
-            w: !!k["w"],
-            a: !!k["a"],
-            s: !!k["s"],
-            d: !!k["d"],
-            shift: !!k["shift"],
-            space: !!k[" "],
+            vor: T.vor,
+            quer: T.quer,
+            sprint: T.sprint,
+            sprung: T.sprung,
         });
     }
 
@@ -917,7 +925,7 @@ class AnazhRealm_dirigent_takt {
         // Replays vom selben Start bit-gleich laufen (kein Carry-over): die Bewegung liest sie VOR dem ersten Feld-Schritt
         // (leib.K1) — der Sprung-Puffer des Vor-Replays sprang sonst im ersten Schritt des nächsten.
         const frisch = {
-            keys: s.keys,
+            verbTafel: Object.assign({}, s.verbTafel, { rutsch: false, gehalten: {} }),
             _lastMoveT: 0,
             _fieldWasGrounded: false,
             isInAir: false,
@@ -941,7 +949,7 @@ class AnazhRealm_dirigent_takt {
         let t = 0;
         for (let i = 0; i < rec.frames.length; i++) {
             const f = rec.frames[i];
-            s.keys = { w: f.w, a: f.a, s: f.s, d: f.d, shift: f.shift, " ": f.space };
+            Object.assign(s.verbTafel, { vor: f.vor, quer: f.quer, sprint: !!f.sprint, sprung: !!f.sprung });
             s.yaw = f.yaw;
             t += f.dt;
             // die Ordnung des Sim-Schritts (`_stepFixedSim`): erst die Bewegung (setzt die Intent-Velocity dieses
@@ -1241,7 +1249,7 @@ class AnazhRealm_dirigent_takt {
                     const _sct = performance.now();
                     this._tickScatterStreaming(playerPos, _dl);
                     this._tickPendingGrass(lade ? Infinity : 1, lade ? _dl : undefined);
-                    this._tickScatterRegrow(performance.now());
+                    this._tickScatterRegrow(this._weltStunde());
                     this._tickNahWiese(_dl);
                     this._tickNahStreu(_dl);
                     this._perfSenseLap("scatter", _sct);

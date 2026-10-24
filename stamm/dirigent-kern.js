@@ -82,10 +82,10 @@ class AnazhRealm {
             dorfRauchSatz: null, // die EINE Rauch-InstancedMesh (_dorfRauchZeichnen)
             _regionBundles: null, // Map Region → BundleGroup (_archRegionBundleFor)
             stlWege: null, // der Wege-Pool der Siedlungen
-            _chunkIdbMiss: null, // Set der Chunk-Platten-Fehlgriffe
             _chunkIdbHits: 0,
             _chunkIdbHitByKey: null,
             _pfeile: null,
+            pfeileStecken: null, // die steckenden Pfeile in Gelände und Bau (_pfeilStecken, im Speicher)
             _deviceLost: null, // der Grund eines verlorenen GPU-Geräts
             _schrittKlang: null,
             _holzExplizit: false,
@@ -179,7 +179,26 @@ class AnazhRealm {
             // _computeHydrosphere. ALLE Voxel-Chunks teilen es → Cells außerhalb sind deterministisch
             // (above=AIR, below=WATER) ohne Naht-Drift; spart ~60 % Density-Samples auf Wasser-Chunks.
             hydroBand: null,
-            keys: {},
+            keys: {}, // die Tastatur roh (event.key klein) — gelesen NUR vom Sammler der Verb-Tafel
+            // DIE VERB-TAFEL (leib.K5): Tastatur, Maus und Gamepad schreiben hinein, jedes Verb liest NUR sie (`_verbTafelSammeln`).
+            // Analog: vor/quer (−1..1, quer + = links), gas/bremse (0..1), lenken (−1..1, + = links), der Blick seit dem letzten
+            // Bild (rad). Digital: sprint · sprung · rutsch · handbremse und `gehalten` (Aktion → gedrückt, der EINE Auslöser).
+            verbTafel: {
+                vor: 0,
+                quer: 0,
+                sprint: false,
+                sprung: false,
+                rutsch: false,
+                gas: 0,
+                bremse: 0,
+                lenken: 0,
+                handbremse: false,
+                blickGier: 0,
+                blickNeig: 0,
+                gehalten: {},
+            },
+            padBelegung: null, // Aktion → "Pad<n>" (die freie Belegung des Gamepads, `_loadKeybindings`)
+            _pad: null, // das Gamepad dieses Bilds (Achsen hinter der Totzone, Abzüge, Knöpfe), `_eingabeTakt`
             // 0 ist NULL-SENTINEL, kein spielbarer Zwilling: bei kaltem Kern steht der Spieler sichtbar
             // (_kernPflichtWand nennt den Täter), bei warmem Kern setzt die Boot-Gesetz-Eichung (init) die
             // Kern-Werte VOR dem ersten Loop-Frame.
@@ -278,11 +297,6 @@ class AnazhRealm {
             // der EINE Lofi-Konsument liest (null = das Host-Rezept KLANG_HOST_RECIPE,
             // byte-alt). Gesetzt aus der Werkstatt („Als Welt-Klang setzen"), persistiert.
             klangPreset: null,
-            // Studio-Übergabe: die LIVE-Bearbeitung reist aus dem Studio in die Welt (W12-Kanal "uebergabe",
-            // Empfänger _studioUebergabeEmpfang, fail-closed). koerper = {s, gestalt} → Vorrang-Quelle von
-            // _koerperStudioDials; kreatur = je Gattung {s} → gemischt in _tetrapodaStudioDials (geprägt beim
-            // Guss, Bestand bleibt). Persistiert im Snapshot; Linse: gate:studio-uebergabe.
-            studioUebergabe: { koerper: null, kreatur: {} },
             seasonYearSeconds: 2400, // ein Jahr ueber 40 min Echtzeit (10 min/Saison)
             dayLengthMinutes: AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES,
             _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
@@ -358,10 +372,8 @@ class AnazhRealm {
             skyTintTo: null,
             skyTintStrength: 0,
             skyTintTarget: 0,
-            // Welle 6.G3 (V8.24) — Fauna-Lifecycle. Bei Unterpopulation
-            // (< TARGET) gebären sich Kreaturen langsam, bei Überpopulation
-            // (> MAX) verabschieden sich die ältesten mit Trauer-Effekt.
-            faunaLifecycle: { lastTick: 0, lastBirthAt: 0, lastDeathAt: 0 },
+            // Der Fauna-Lebenszyklus (Ökologie K2): der Takt der Bestands-Bilanz in der Spiel-Zeit (tickFaunaLifecycle).
+            faunaLifecycle: { lastTick: 0 },
             nexusEvolutionQueue: [],
             nexusLastEvolution: 0,
             nexusEvolutionInterval: 24.0, // V18.302 — ruhiger (war 10 s = die „endlose Churn"); perf-gestreckt unter Last
@@ -424,7 +436,6 @@ class AnazhRealm {
                     idle: { lastFired: -Infinity, cooldown: 180 },
                     jumpBurst: { lastFired: -Infinity, cooldown: 120 },
                     rainLong: { lastFired: -Infinity, cooldown: 240 },
-                    nexus: { lastFired: -Infinity, cooldown: 60 },
                     // Welle 3 E — Welt-Initiative. journalEvent feuert kurz
                     // nach einem neuen Journal-Eintrag (Erinnerung wird
                     // erzählt), emotionShift bei abrupten Achsen-Sprüngen.
@@ -447,10 +458,6 @@ class AnazhRealm {
                     rainLong: [
                         "Der Regen bleibt. Schön still ist es jetzt.",
                         "Langer Regen. Manche Welten brauchen das.",
-                    ],
-                    nexus: [
-                        "Ich habe etwas verschoben. Spürst du den Unterschied?",
-                        "Eine kleine Änderung im Nexus. Sag mir, ob sie sich richtig anfühlt.",
                     ],
                     journalEvent: [
                         "Ich werde mich daran erinnern.",
@@ -1791,7 +1798,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.72";
+AnazhRealm.VERSION = "18.546.79";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

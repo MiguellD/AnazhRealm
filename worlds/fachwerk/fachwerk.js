@@ -333,16 +333,16 @@ function buildDorf(dp){
   lay.feldwege.forEach(fw=>{ const m=new THREE.Mesh(rib(fw.pts,fw.w,0.03),M.weg); m.receiveShadow=true; dorfGroup.add(m); });
   if(lay.platz){ const pz=lay.platz, pm=new THREE.Mesh(new THREE.BoxGeometry(pz.ex*2,0.09,pz.ez*2),(pz.typ==='gras')?M.gras:((modernS||pflasterS)?new THREE.MeshLambertMaterial({color:0xa9a49a, side:THREE.DoubleSide}):M.weg));   // MARKT trägt den Zonen-Belag
     pm.position.set(pz.cx,0.045,pz.cz); pm.receiveShadow=true; dorfGroup.add(pm); }
-  if(lay.mauer){                                                                              // STADTMAUER: Segmente, Türme, Tore
-    lay.mauer.segs.forEach(sg=>{ const dx=sg.x1-sg.x0, dz=sg.z1-sg.z0, len=Math.hypot(dx,dz)+0.6;
+  if(lay.mauer){ const SM=FC.STADTMAUER, W=SM.wand, K=SM.krone, T=SM.turm, D=SM.dach;      // STADTMAUER: Segmente, Türme, Tore — die Maße des Gesetzbuchs (siedlung.K2: dieselben baut die Welt, _stlMauerBuild)
+    lay.mauer.segs.forEach(sg=>{ const dx=sg.x1-sg.x0, dz=sg.z1-sg.z0, len=Math.hypot(dx,dz)+W.ueber;
       const ang=Math.atan2(-dz,dx), mx=(sg.x0+sg.x1)/2, mz=(sg.z0+sg.z1)/2;
-      const w=new THREE.Mesh(new THREE.BoxGeometry(len,5.6,1.6),mLay('stein')); w.position.set(mx,2.8,mz); w.rotation.y=ang;
+      const w=new THREE.Mesh(new THREE.BoxGeometry(len,W.hoch,W.dick),mLay('stein')); w.position.set(mx,W.hoch/2,mz); w.rotation.y=ang;
       w.castShadow=true; w.receiveShadow=true; dorfGroup.add(w);
-      const zi=new THREE.Mesh(new THREE.BoxGeometry(len,0.7,2.0),mLay('stein')); zi.position.set(mx,5.9,mz); zi.rotation.y=ang; zi.castShadow=true; dorfGroup.add(zi);
-      solids.push({min:[-len/2,0,-0.8],max:[len/2,5.6,0.8], th:ang, tx:mx, tz:mz}); });
-    lay.mauer.towers.forEach(tw=>{ const tm=new THREE.Mesh(new THREE.BoxGeometry(3.6,8.4,3.6),mLay('stein')); tm.position.set(tw.x,4.2,tw.z); tm.castShadow=true; tm.receiveShadow=true; dorfGroup.add(tm);
-      const td=new THREE.Mesh(new THREE.BoxGeometry(4.2,1.5,4.2),M.ziegel); td.position.set(tw.x,9.1,tw.z); td.castShadow=true; dorfGroup.add(td);
-      solids.push({min:[tw.x-1.8,0,tw.z-1.8],max:[tw.x+1.8,8.4,tw.z+1.8]}); }); }
+      const zi=new THREE.Mesh(new THREE.BoxGeometry(len,K.hoch,K.dick),mLay('stein')); zi.position.set(mx,K.y,mz); zi.rotation.y=ang; zi.castShadow=true; dorfGroup.add(zi);
+      solids.push({min:[-len/2,0,-W.dick/2],max:[len/2,W.hoch,W.dick/2], th:ang, tx:mx, tz:mz}); });
+    lay.mauer.towers.forEach(tw=>{ const tm=new THREE.Mesh(new THREE.BoxGeometry(T.breit,T.hoch,T.breit),mLay('stein')); tm.position.set(tw.x,T.hoch/2,tw.z); tm.castShadow=true; tm.receiveShadow=true; dorfGroup.add(tm);
+      const td=new THREE.Mesh(new THREE.BoxGeometry(D.breit,D.hoch,D.breit),M.ziegel); td.position.set(tw.x,D.y,tw.z); td.castShadow=true; dorfGroup.add(td);
+      solids.push({min:[tw.x-T.breit/2,0,tw.z-T.breit/2],max:[tw.x+T.breit/2,T.hoch,tw.z+T.breit/2]}); }); }
   lay.brunnen.forEach(b3=>{ const bg2=ausstattungAm('brunnen', b3.x, b3.z, 0); dorfGroup.add(bg2);   // AUSSTATTUNG: der Ziehbrunnen kommt aus dem Gesetzbuch (Lab = Welt)
     solids.push({min:[b3.x-0.95,0,b3.z-0.95],max:[b3.x+0.95,0.75,b3.z+0.95]}); });
   lay.fences.forEach(f=>{ const dx=f.x1-f.x0, dz=f.z1-f.z0, len=Math.hypot(dx,dz); if(len<0.8)return;
@@ -1026,6 +1026,20 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
         },
         esc: function () {
             return mode !== "walk"; /* Esc = Pointer-Lock im Begeh-Modus */
+        },
+        /* DAS WERK DER BÜHNE (der EINE Übergabe-Kanal der Hülle): das Einzelstück der Ausstattung mit seiner Gestalt, sonst
+           das Haus der gewählten Kultur mit Same 1 und den Werten der Haus-Zeilen (die Welt-Gestalt der Kosten-Leiste) — das
+           nächste gesetzte Werk des Rezepts trägt es. */
+        werk: function () {
+            var aus = document.getElementById("pAus") ? document.getElementById("pAus").value : "haus";
+            if (aus !== "haus" && FC.AUSSTATTUNG[aus])
+                return { kind: "ausstattung", preset: aus, seed: 1 + ((SEED >>> 0) % (FC.AUSSTATTUNG[aus].gestalten || 1)), ov: {} };
+            var k = document.getElementById("pK").value;
+            var ov = {};
+            FC.PARAMS_BY_KIND.haus.forEach(function (z) {
+                ov[z.id] = RW[z.id];
+            });
+            return { kind: "haus", preset: FC.PRESETS[k] ? k : kulturFromSeed(SEED), seed: 1, ov: ov };
         },
     });
 })();

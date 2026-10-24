@@ -1,12 +1,12 @@
 // diag-analog-nah.cjs — DIE NAH-LINSE (gate:analog-nah): nah und mittel ist das Studio-Mesh die Gestalt
-// (Schöpfer-Wort 30.09.: „am Ende AAA-Niveau, nicht Kapseln"), das Analog-Feld trägt erst jenseits der EINEN Nah-
+// (AAA, nicht Kapseln), das Analog-Feld trägt erst jenseits der EINEN Nah-
 // Grenze `ANALOG_NAH_M` (64 m). Die Linse fährt den ECHTEN Renderer (WebGPU/swiftshader — der Null-Renderer ist für den Analog-Pfad blind) auf der
 // Mess-Wiese −900/−850 (der Takt selbst zeichnet nicht — die Linse liest die CPU-Wahrheit, welcher Satz zeichnet)
 // und liest `_analogZensus` (jeder zeichnende Analog-Satz diesseits der Nah-Grenze beim NAMEN:
 // Klasse · Träger · Abstand · seit wann · warum dort kein Mesh steht). Ein Satz, dessen Mesh schon übernimmt und der
-// ausdithert (der Schwund, 500 ms), ist kein Befund — ein Schwund über zwei Schwund-Zeiten hängt und IST einer.
-// Dazu die BRÜCKEN: ein kalter Baum < 64 m, der seine Karte voll trägt, weil seine Wunsch-Stufe lädt — eingeschwungen
-// steht keine (sonst wäre ein Nah-Wald aus Karten grün).
+// ausdithert (der Schwund, 500 ms), ist kein Befund — ein Schwund über zwei Schwund-Zeiten hängt und IST einer. Dazu
+// die BRÜCKEN: ein kalter Baum < 64 m, der seine Karte voll trägt, weil seine Wunsch-Stufe lädt — eingeschwungen steht
+// keine (sonst wäre ein Nah-Wald aus Karten grün).
 //   S  am Ruf: zwei Wurzeln der Klumpen-Rampe — der feste Takt ruft den Karten-Bäcker, die Karte reist im Rang ihres
 //      nächsten Wartenden durch die Worker-Schlange (nie Vorrats-Rang); den Nah-Gang fährt T9
 //   E  Einschwingen: binnen GRENZE_E Takten steht die Welt (Bauten in der Mesh-Zone, Chunks gleich, Foundry-Schlange und
@@ -19,8 +19,7 @@
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 // DER MESSORT (spec/profiband/haushalt.json `messorte`, S1 W1f): die Linse steht an der Mess-Wiese in IHREM Zustand —
 // Spieler und Dorf-Zug (`dorfZug: false` = `window.__anazhAutoSettlement = false`). Mit laufendem Zug baute das Auto-Dorf
-// je nach Bildrate in der Ruhe ein Haus (haus_griechisch 23,6 m, „Studio-Stufe L2 lädt") — zwei Läufe maßen zwei Welten
-// (Integration Welle L: an ad134ca7 1 von 7 Läufen rot, nach dem Fahr-Merge 5 von 9).
+// je nach Bildrate in der Ruhe ein Haus (haus_griechisch 23,6 m, „Studio-Stufe L2 lädt") — zwei Läufe maßen zwei Welten.
 const ORT = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort;
 const PORT = Number(process.env.ANALOG_NAH_PORT || 4477);
 const SELBST = process.argv.includes("--selftest");
@@ -60,8 +59,7 @@ function urteil(z) {
     await page.setViewport({ width: 640, height: 360 });
     const pageErrors = [];
     // Die Linse nennt den Täter eines Seiten-Fehlers: die Phase (die letzte [N]-Zeile) und die Zeit seit dem Start;
-    // WebGPU-Meldungen der Konsole (Geräteverlust, Validierung) reisen mit ins Log (die CI-Runner fahren Dawns
-    // swiftshader auf Linux — 05.10. brach dort die Instanz mitten im Lauf weg, lokal nie).
+    // WebGPU-Meldungen der Konsole (Geräteverlust, Validierung) reisen mit ins Log (die CI fährt Dawns swiftshader).
     const t0 = Date.now();
     let phase = "boot";
     let gpuMeldungen = 0;
@@ -84,8 +82,7 @@ function urteil(z) {
             console.log(`  [GPU-Konsole] Phase „${phase}" +${Date.now() - t0} ms: ${t.slice(0, 300)}`);
         }
     });
-    // Wer zerstört ein Gerät? (CI 05.10.: „destroyed · Device was destroyed" 3,8 s nach dem Start, nur auf Linux) — der
-    // Aufrufer-Stapel jedes GPUDevice.destroy reist ins Log.
+    // Wer zerstört ein Gerät? Der Aufrufer-Stapel jedes GPUDevice.destroy reist ins Log.
     await page.evaluateOnNewDocument(() => {
         if (typeof GPUDevice === "undefined" || !GPUDevice.prototype || !GPUDevice.prototype.destroy) return;
         const org = GPUDevice.prototype.destroy;
@@ -109,7 +106,9 @@ function urteil(z) {
             await window.__weltDa((r) => r.state);
             const r = window.anazhRealm;
             if (!r || !r.state.renderer || r.state.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
+            // der Loop ruht die ganze Probe
             r.state.renderer.setAnimationLoop(null);
+            r.state.renderer.setAnimationLoop = () => {};
             // Der Takt rendert NICHT (unter swiftshader kostet ein Voll-Render mit Studio-Meshes Sekunden — wie in
             // diag-beweis-e): der Zensus liest die CPU-Wahrheit, welcher Satz zeichnet; der Analog-Pfad bleibt offen,
             // denn der Renderer ist echt (kein Null-Renderer), nur sein Zeichnen ruht.
@@ -123,19 +122,20 @@ function urteil(z) {
             r.state.postProcessingFailed = true;
             await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
             // der Karten-Takt bäckt erst mit dem Renderer (`_tickKarteWelt`: rendererReady) — kam das Buch vor `renderer.init()`, war S vakuös
-            // (B5, GTX: S2 false, die Reihe leer, an 4d5f1c0c im Selbsttest, an ab97f0a8 im Lauf)
             await window.__weltDa(() => !(!r.state.rendererReady));
             // nach init(): fiel der r184-Renderer ohne Adapter auf WebGL2, steht das hier (kein stilles Grün)
             const backend = r._gpuComputeFaehig() ? "WebGPU" : "WebGL2-Rückfall (der Feld-Pass zeichnet nicht)";
-            // S am Ruf (D3c, vorher am Rumpf-TEXT); der Selbsttest fährt einen Takt ohne Bäcker und eine Schlange in Ankunfts-Folge
+            // S am Ruf (D3c); der Selbsttest fährt einen Takt ohne Bäcker und eine Schlange in Ankunfts-Folge
             const sProbe = (sched, tick) => {
-                const wo = [], q = r._impostorBakeQueue, stubs = ["_foundryEnabled", "_ensureAssetFoundry", "_impostorAtlasTexturen", "_karteWeltBacken"];
+                const wo = [], q = r._impostorBakeQueue, stubs = ["_foundryEnabled", "_ensureAssetFoundry", "_impostorAtlasTexturen", "_karteWeltBacken", "_gpuLeineStraff"];
                 let bake = 0;
                 r._tickImpostorBake = () => (bake++, 0);
                 try { sched.call(r, r.state.playerMesh.position); } finally { delete r._tickImpostorBake; }
-                // S2: die Welt-Karte bäckt im Rang ihres nächsten Wartenden (`_bedarfD2`), nie in Ankunfts-Folge
+                // S2: die Welt-Karte bäckt im Rang ihres nächsten Wartenden (`_bedarfD2`), nie in Ankunfts-Folge; die Leine ist
+                // nicht Gegenstand von S (der Takt der Linse zeichnet nicht, die Queue löst die Bilder vor dem Stopp erst mit der
+                // nächsten Abgabe: imFlug 2 = gerendert 2)
                 const at = { zellen: new Map([["fern", { key: "fern", _bedarfD2: 400 }], ["nah", { key: "nah", _bedarfD2: 4 }]]) };
-                Object.assign(r, { _impostorBakeQueue: ["fern", "nah"], _foundryEnabled: () => true, _ensureAssetFoundry: () => ({ ready: true }), _impostorAtlasTexturen: () => true, _karteWeltBacken: (a, z) => (wo.push(z.key), null) });
+                Object.assign(r, { _impostorBakeQueue: ["fern", "nah"], _foundryEnabled: () => true, _ensureAssetFoundry: () => ({ ready: true }), _impostorAtlasTexturen: () => true, _karteWeltBacken: (a, z) => (wo.push(z.key), null), _gpuLeineStraff: () => false });
                 try { tick.call(r, at); } finally { for (const k of stubs) delete r[k]; r._impostorBakeQueue = q; }
                 return { S1: bake > 0, S2: wo[0] === "nah" && wo[1] === "fern", bereit: !!r.state.rendererReady, leine: r._gpuLeineStraff(), imFlug: (r._gpuLeine || {}).imFlug, wo: wo.join(",") }; // prettier-ignore
             };

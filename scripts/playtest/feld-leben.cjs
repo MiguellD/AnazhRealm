@@ -14,16 +14,6 @@ async function checkBandV1721LivingFieldAura(ctx) {
         const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — Feld-Lese-Tests messen den frozen Kern
-        const a = r.auraAt(0, 0, 1.5);
-        out.auraShape =
-            !!a &&
-            typeof a.lebendig === "number" &&
-            typeof a.dichte === "number" &&
-            typeof a.glut === "number" &&
-            typeof a.magieleitung === "number" &&
-            a.emotion &&
-            typeof a.emotion === "object" &&
-            a.t === 1.5;
         const wf = r.worldFieldAt(123, -456);
         const au = r.auraAt(123, -456);
         out.auraWrapsField =
@@ -31,10 +21,6 @@ async function checkBandV1721LivingFieldAura(ctx) {
             au.glut === wf.glut &&
             au.dichte === wf.dichte &&
             au.magieleitung === wf.magieleitung;
-        // class AnazhRealm {} ist ein lexikalisches Global (wie let) — bare
-        // `AnazhRealm`, NICHT window.AnazhRealm; r.constructor ist am robustesten.
-        const M = r.constructor && r.constructor.FIELD_TO_EMOTION;
-        out.hasMap = !!M && Object.isFrozen(M) && M.lebendig && typeof M.lebendig.peace === "number";
         // Der Kreis: finde den lebendigsten Spot in einem weiten Raster, setze
         // den Spieler dorthin, ticke updatePlayerEmotions → peace steigt.
         let spot = null,
@@ -72,9 +58,7 @@ async function checkBandV1721LivingFieldAura(ctx) {
         }
         return out;
     });
-    check("V17.21 lebendiges Feld: auraAt-Shape (4 Feld-Achsen + emotion + t)", res.auraShape);
     check("V17.21 lebendiges Feld: auraAt umhüllt das eingefrorene worldFieldAt (Kern bit-gleich)", res.auraWrapsField);
-    check("V17.21 lebendiges Feld: FIELD_TO_EMOTION ist frozen + verdrahtet", res.hasMap);
     check(
         "V17.21 lebendiges Feld: eine lebendige Region HEBT peace (der Kreis schließt sich)",
         res.peaceRose,
@@ -167,7 +151,6 @@ async function checkBandV1729CreatureTrickle(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const cfg = r.constructor.LIFE_FIELD;
-        out.hasConsts = typeof cfg.trickle === "number" && typeof cfg.trickleEverySec === "number";
         if (r.state.lifeField) r.state.lifeField.clear();
         // (1) eine TENDENDE Kreatur traeufelt Leben in ihre Zelle
         const X = 23456,
@@ -194,7 +177,6 @@ async function checkBandV1729CreatureTrickle(ctx) {
         if (r.state.lifeField) r.state.lifeField.clear(); // sauberes Ende
         return out;
     });
-    check("V17.29 Trickle: LIFE_FIELD.trickle/trickleEverySec verdrahtet", res.hasConsts);
     check("V17.29 Trickle: eine tendende Kreatur traeufelt Leben in ihre Zelle (sustainiert)", res.tendingDeposits);
     check("V17.29 Trickle: rate-limitiert (kein Deposit-Sturm pro Frame)", res.rateLimited);
     check("V17.29 Trickle: nach dem Intervall traeufelt sie wieder (lebendiger Pfad)", res.tickedAgain);
@@ -209,12 +191,6 @@ async function checkBandV1732SpatialEmotion(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
-        const K = r.constructor;
-        out.hasConst =
-            !!K.EMOTION_FIELD &&
-            Array.isArray(K.EMOTION_AXES) &&
-            K.EMOTION_AXES.length === 6 &&
-            typeof K.EMOTION_FIELD.decayPerSec === "number";
         if (r.state.emotionField) r.state.emotionField.clear();
         const e = r.state.player.emotions;
         const saved = Object.assign({}, e);
@@ -242,9 +218,9 @@ async function checkBandV1732SpatialEmotion(ctx) {
         const THREE = window.THREE;
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         if (THREE && THREE.Color && pm) {
-            // V18.369 — Default auraTintStrength=0 (realistischer Himmel, Schöpfer-Wunsch); der
+            // Default auraTintStrength=0 (realistischer Himmel, Schöpfer-Wunsch); der
             // KONSUM-Mechanismus lebt weiter → für die Anti-Passagier-Probe auf 1 forcieren
-            // (deterministisch, V18.236-Muster), dann den Default (0) wiederherstellen.
+            // (deterministisch), dann den Default (0) wiederherstellen.
             const _origAuraK1732 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
             if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
             for (const k of Object.keys(e)) e[k] = 0;
@@ -262,7 +238,6 @@ async function checkBandV1732SpatialEmotion(ctx) {
         for (const k of Object.keys(e)) e[k] = saved[k] || 0;
         return out;
     });
-    check("V17.32 raeumliche Emotion: EMOTION_FIELD + EMOTION_AXES verdrahtet", res.hasConst);
     check(
         "V17.32 raeumliche Emotion: leeres Overlay → auraAt.emotion == globale Stimmung (backward-compat)",
         res.emptyIsGlobal
@@ -517,7 +492,6 @@ async function checkBandV1750Klammer(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
-        const W = r.constructor.WERTUNG;
         const pm = r.state.playerMesh.position;
         const savedEmo = { ...p.emotions };
         const savedMood = p.mood ? { ...p.mood } : null;
@@ -530,9 +504,6 @@ async function checkBandV1750Klammer(ctx) {
         const setEmo = (o) => {
             for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
         };
-
-        // (1) Config
-        out.config = !!W && W.phase4Radius > 0 && W.phase4Weight > 0 && W.appraisalEmaTau > 0;
 
         // (2) ANTI-GAMING an der WURZEL: appraisalDelta trackt die SITUATION (lebendig+HP),
         // NICHT die gestempelte Emotion → eine Regel kann den Bonus nicht über Emotion faken.
@@ -594,7 +565,6 @@ async function checkBandV1750Klammer(ctx) {
         r.state.emotionField = savedEmoField;
         return out;
     });
-    check("V17.50 Klammer: WERTUNG Phase-4-Config (phase4Radius/Weight/appraisalEmaTau)", res.config);
     check(
         "V17.50 Klammer: ANTI-GAMING-Wurzel — appraisalDelta trackt die SITUATION (steigt mit Leben)",
         res.deltaTracksSituationUp
@@ -617,8 +587,6 @@ async function checkBandV1750Klammer(ctx) {
     );
 }
 
-// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.A1-A5 + 6.E1/E2 + 6.F1/F2 — Interaktions-Politur + Beschreibung + Verbindungs-Linien).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6APolish(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -660,7 +628,7 @@ async function checkBandWelle6APolish(ctx) {
         // entry.blockerAABBs (solide Part-AABBs, dichte ≥ 0.3), kein Ammo-Body mehr.
         out.archHasCollision = !!(entry && Array.isArray(entry.blockerAABBs) && entry.blockerAABBs.length > 0);
 
-        // V12.0-perf.c.2 — temple ist jetzt instanced (kein entry.mesh). Die
+        // temple ist jetzt instanced (kein entry.mesh). Die
         // Top-Y instanced-aware aus den Flatten-Leaf-AABBs × entry-World-Matrix
         // bestimmen (Collision IST gebaut → isPlayerGrounded raycastet sie).
         let topY = null;
@@ -685,7 +653,7 @@ async function checkBandWelle6APolish(ctx) {
             // Negativ-Kontrolle: 50 m über Tempel-Top — Ray reicht nur
             // 2.5 m runter, also trifft das Bauwerk nicht.
             r.state.playerMesh.position.set(archX, topY + 50, archZ);
-            // Welle 6.X.5 — Cache invalidieren vor frischem Compute.
+            // Cache invalidieren vor frischem Compute.
             delete r.state._groundedCachedAt;
             out.isGroundedHighInSky = r.isPlayerGrounded();
             // Positiv-Test: die visuelle Top-BBox ist nicht 1:1 die Kollision (Dekor-Spitzen ragen über die
@@ -713,8 +681,8 @@ async function checkBandWelle6APolish(ctx) {
             out.isGroundedOnArchitecture = false;
             out.isGroundedHighInSky = false;
         }
-        // Cleanup nach Identität über den EINEN Abbau-Pfad (jedes Aufräumen der Bänder): ein Bau lässt Feld-Würfe weichen
-        // (`_weichtDemBau`) — die Kürzung auf die alte Länge ließ ihn dann als Waise ohne Bauplan in der Welt (CI 38967779045)
+        // Cleanup nach Identität über den EINEN Abbau-Pfad (jedes Aufräumen der Bänder): ein Bau lässt Feld-Würfe
+        // weichen (`_weichtDemBau`) — die Kürzung auf die alte Länge ließ ihn dann als Waise ohne Bauplan in der Welt
         for (const e of r.state.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
         delete r.state.blueprints._t_w6a_haus;
 
@@ -761,7 +729,6 @@ async function checkBandWelle6APolish(ctx) {
         out.hasHangMaxSlopeY = typeof hangMax === "number";
         out.hangMaxSlopeYValue = hangMax;
         out.hangMaxSlopeYIs05 = Math.abs(hangMax - 0.5) < 0.001;
-        out.stateZwillingAbwesend = !("maxWalkableSlopeY" in r.state);
 
         // Diskriminations-Test onSteepSlope (= isGrounded && bestNormalY<0.5) in zwei Setups:
         // (a) Spieler hoch im Himmel → nicht geerdet → false; (b) auf flachem Tempel-Dach (Normal-Y ~1)
@@ -807,7 +774,7 @@ async function checkBandWelle6APolish(ctx) {
             ? `mesh=${!!_entryA3.mesh} instanced=${!!_entryA3.instanced} keys=${Object.keys(_entryA3).slice(0, 10).join("/")}`
             : "null";
         let flatBlueprintNotSteep = false;
-        // V12.0-perf.c.2 — temple instanced: Top-Y aus Flatten-Leaf-AABBs.
+        // temple instanced: Top-Y aus Flatten-Leaf-AABBs.
         let topYA3 = null;
         if (_entryA3 && _entryA3.mesh) {
             topYA3 = new THREE.Box3().setFromObject(_entryA3.mesh).max.y;
@@ -852,10 +819,6 @@ async function checkBandWelle6APolish(ctx) {
     if (wave6a3Results) {
         check("Welle 6.A3: Steilhang-Gesetz (hang.maxSlopeY) fail-closed lesbar", wave6a3Results.hasHangMaxSlopeY);
         check("Welle 6.A3: hang.maxSlopeY == 0.5 (cos 60° = walkable bis 60°)", wave6a3Results.hangMaxSlopeYIs05);
-        check(
-            "Welle 6.A3: der State-Zwilling maxWalkableSlopeY ist abwesend (19.07.)",
-            wave6a3Results.stateZwillingAbwesend
-        );
         check(
             "Welle 6.A3: Negativ-Kontrolle — Himmel hat onSteepSlope=false (nicht geerdet)",
             wave6a3Results.skyOnSteepSlope === false
@@ -1102,18 +1065,18 @@ async function checkBandWelle6APolish(ctx) {
             ],
             connections: [{ type: "masonry", partA: 0, partB: 1 }],
         };
-        // Build und auf THREE.Line prüfen — V18.153: die Linien sind ein
+        // Build und auf THREE.Line prüfen — die Linien sind ein
         // WERKSTATT-Werkzeug (opts.connectionLines), der Test bestellt sie
-        // wie der Werkstatt-Viewer (V9.56-i: der Test wandert mit).
+        // wie der Werkstatt-Viewer (der Test wandert mit).
         const built = r._buildFromBlueprint(r.state.blueprints[testName], 0, undefined, { connectionLines: true });
-        // V8.38 — eine Verbindung erzeugt jetzt eine Linie UND
+        // eine Verbindung erzeugt jetzt eine Linie UND
         // einen Mittelpunkt-Marker (beide isConnectionLine), damit
         // die Verbindung auch bei überlappenden Parts sichtbar ist.
         let connLineCount = 0;
         let connMarkerCount = 0;
         let lineColor = null;
         built.traverse((node) => {
-            // W-G (V18.177, V9.56-i): die ACHSEN-GEISTER (isJointAxis — Linien +
+            // W-G (V9.56-i): die ACHSEN-GEISTER (isJointAxis — Linien +
             // Kegel-Spitzen) sind eine NEUE Viewer-Schicht; der Verbindungs-Zähler
             // klammert sie aus (der Test prüft die Verbindung, nicht die Achse).
             if (node.userData && node.userData.isConnectionLine && !node.userData.isJointAxis) {
@@ -1126,7 +1089,7 @@ async function checkBandWelle6APolish(ctx) {
         out.lineExists = connLineCount === 1 && connMarkerCount === 1;
         out.lineHasUserDataFlag = connLineCount === 1;
         out.lineColor = lineColor;
-        // V18.153 — OHNE Bestellung (= jeder Welt-Spawn) bleibt das Werk REIN:
+        // OHNE Bestellung (= jeder Welt-Spawn) bleibt das Werk REIN:
         // keine Linien/Marker über gespawnten Gefährten/Portalen.
         let worldLines = 0;
         const builtPlain = r._buildFromBlueprint(r.state.blueprints[testName]);
@@ -1263,8 +1226,6 @@ async function checkBandWelle6APolish(ctx) {
     }
 }
 
-// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.G P1.5 + P2 + P3 + P4 — Hylomorphismus-Unification + Welt-Affinität + Felsen + Terrain-Materie).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6GHylomorphism(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1290,11 +1251,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         out.baumEicheIsBuiltIn = !!(__heBp && __heBp.builtIn === true);
         out.eichenStammHolz = !!(__heBp && __heBp.parts.some((p) => p.material === "holz"));
         out.eichenKroneLaub = !!(__heBp && __heBp.parts.some((p) => p.material === "laub"));
-        out.hasLaubMaterial = !!(
-            r.state.materials &&
-            r.state.materials.laub &&
-            r.state.materials.laub.builtIn === true
-        );
 
         // Worldgen-Bäume leben in state.architectures (Präfix baum_, stamm_ oder prozedural grown_) — gezählt, wenn das Spiel
         // sagt, dass der Wald der Mesh-Zone steht (Karte WL): keine Lücke „pflanzung"/„bauten" des Weltbilds (`_weltbildLuecken`,
@@ -1369,7 +1325,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             out.newTreeTakte++;
             if (out.newTreeTakte % 10 === 0) await new Promise((ok) => setTimeout(ok, 0));
         }
-        // V12.0-perf.c.2 — instancierter Baum: gerendert via Instance-Slot
+        // instancierter Baum: gerendert via Instance-Slot
         // (entry.instanced), nicht via entry.mesh.
         out.newTreeHasMesh = !!(newTreeArch && (newTreeArch.mesh || newTreeArch.instanced));
         // DETERMINISMUS-BOGEN P3 — Baum-Kollision ist feld-nativ via blockerAABBs
@@ -1503,7 +1459,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             `V9.42-b: Skirt-Naht — ${r42bSkirt.duplicates || 0} Vertices teilen identische Position zwischen ${r42bSkirt.chunks || 0} Nachbar-Chunks (Smooth respektiert Naht)`,
             (r42bSkirt.duplicates || 0) >= 200
         );
-        // V9.42-b — Insel-Höhen-Amplitude skaliert mit `height`.
+        // Insel-Höhen-Amplitude skaliert mit `height`.
         const r42bIslandAmp = await page.evaluate(() => {
             const r = window.anazhRealm;
             const noise = { noise2D: () => 0.5 };
@@ -1518,7 +1474,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             `V9.42-b: Insel-Amplitude skaliert mit height (ratio ${(r42bIslandAmp.ratio || 0).toFixed(2)}x bei height 20 vs 5)`,
             r42bIslandAmp.ratio > 1.5
         );
-        // V9.42-b — DSL spawn_island akzeptiert 5. `size`-Argument.
+        // DSL spawn_island akzeptiert 5. `size`-Argument.
         const r42bDsl = await page.evaluate(() => {
             const r = window.anazhRealm;
             const before = r.state.floatingIslands.length;
@@ -1547,7 +1503,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
                 // Toon ODER PBR.
                 out.isToonMarker = !!(isle.material.isMeshToonMaterial || isle.material.isMeshStandardMaterial);
                 out.isNodeMaterial = /Node/.test(isle.material.type || "");
-                out.hasColorAttr = !!isle.geometry.getAttribute("color");
             }
             return out;
         });
@@ -1555,12 +1510,10 @@ async function checkBandWelle6GHylomorphism(ctx) {
             `V9.42-c/234: Insel nutzt das aktive lit NodeMaterial (Toon ODER PBR) — ${r42c.material}`,
             r42c.isToonMarker === true && r42c.isNodeMaterial === true
         );
-        check("V9.42-c: Insel-Geometrie trägt per-Vertex color-Attribut", !!r42c.hasColorAttr);
         check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert (Multi-Part, V17.11)", wave6gResults.hasBaumKiefer);
         check("Welle 6.G P1.5: baum_eiche ist builtIn", wave6gResults.baumEicheIsBuiltIn);
         check("Welle 6.G P1.5: baum_eiche Stamm = cylinder/holz", wave6gResults.eichenStammHolz);
         check("Welle 6.G P1.5: baum_eiche Krone = sphere/laub", wave6gResults.eichenKroneLaub);
-        check("Welle 6.G P1.5: Material 'laub' existiert als Built-in", wave6gResults.hasLaubMaterial);
         check(
             "Welle 6.G P1.5: Worldgen-Bäume sind in state.architectures",
             wave6gResults.worldgenTreesInArchitectures > 0,
@@ -1622,7 +1575,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        // V9.39 — der Voxel-Populator ist die lebende Schicht.
+        // der Voxel-Populator ist die lebende Schicht.
         const bps = r.state.blueprints || {};
         // worldFieldAt liefert 4 Tag-Achsen.
         const sample = r.worldFieldAt(0, 0);
@@ -1705,7 +1658,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Das Welt-Affinitäts-Feld treibt die Vegetation idempotent über `_populateVoxelChunkVegetation`
         // (am Voxel-Chunk-Lifecycle); geprüft wird dessen Idempotenz-Cache `voxelPopulatedChunks`, den
         // die initialen Voxel-Chunks beim Welt-Aufbau füllen.
-        out.populatedChunksSize = r.state.voxelPopulatedChunks ? r.state.voxelPopulatedChunks.size : 0;
         const before = archs.length;
         // Ein bereits-befüllter Chunk: zweiter Aufruf MUSS 0
         // zurückgeben dank voxelPopulatedChunks-Cache.
@@ -1716,11 +1668,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
             const after = r.state.architectures.length;
             out.populateIdempotent = secondReturn === 0 && after === before;
         }
-        // Die Stamm-Dicke ist grammatik-getrieben: geprüft wird nur, dass der gewachsene Baum einen
-        // holz-Stamm trägt.
-        const __siKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "stamm");
-        const __siBp = __siKey && bps[__siKey];
-        out.stammIsThicker = !!(__siBp && __siBp.parts.some((p) => p.material === "holz"));
         // Affinitäts-Tag-Wächter: die Parts einer spawnbaren Architektur bestimmen WO sie spawnt
         // (computeCompoundTags × worldField in spawnAffinityForBlueprint) UND wie sie aussieht. Eine
         // Optik-Anreicherung darf die 4 Affinitäts-Achsen-Tags NICHT verschieben, sonst kippt der
@@ -1797,21 +1744,15 @@ async function checkBandWelle6GHylomorphism(ctx) {
         );
         check("Welle 6.G P2: Initial-Worldgen hat mind. einen Baum gespawnt", wave6gP2Results.hasInitialTrees);
         check(
-            "Welle 6.G P2: populatedChunks-Cache befüllt",
-            wave6gP2Results.populatedChunksSize >= 1,
-            `size=${wave6gP2Results.populatedChunksSize}`
-        );
-        check(
             "Welle 6.G P2: populateChunkVegetation idempotent (zweiter Aufruf → 0 spawns)",
             wave6gP2Results.populateIdempotent
         );
-        check("Welle 6.G P2: baum_eiche Stamm-Radius >= 0.7 (Bugfix V7.75)", wave6gP2Results.stammIsThicker);
         // Affinitäts-Tag-Stabilitäts-Wächter (siehe evaluate-Block oben): eingefrorene, GEMESSENE
         // Baseline der 4 Affinitäts-Achsen + `resoniert` je spawnbarer Architektur. Ein verschobener Tag
         // verschiebt den Spawn-Ort (Winner-take-all) und kann Bäume verdrängen; bewusste Shifts ziehen
         // die Baseline nach (felsturm: eisen-Mast → dichte 1.8, resoniert 1.2).
         const AFF_BASELINE = {
-            // V18.259 — die Baseline trägt jetzt die GEWACHSENE Spezies-Wahrheit (gemessen):
+            // die Baseline trägt jetzt die GEWACHSENE Spezies-Wahrheit (gemessen):
             // baum_eiche = Basis + Art-Variation (lebendig +0.05); baum_kiefer = Basis +
             // (brennbar +0.1, resoniert +0.05). Die statische Kugel-Baum-Baseline ist tot.
             baum_eiche: { lebendig: 1.45, dichte: 0.8, brennbar: 0.8, magieleitung: 0.7, resoniert: 1.35 },
@@ -1846,7 +1787,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             }
             check(`V17.18: Tags von '${name}' stabil (Spawn-Ort + Resonanz unverschoben)`, ok, detail);
         }
-        // V17.18 — der felsturm ist ein EISEN-Mast → broadcasting-Affordanz (Antenne/
+        // der felsturm ist ein EISEN-Mast → broadcasting-Affordanz (Antenne/
         // Relais): sichert die neue Funktion ab (geht sie verloren, war's eine
         // Regression). Gegenprobe: felsbogen (stein, nicht leitfähig) ist es NICHT.
         const bc = wave6gP2Results.archBroadcasting || {};
@@ -1917,12 +1858,12 @@ async function checkBandWelle6GHylomorphism(ctx) {
         window.__withNoFoundry(() => {
             const eb = r.spawnArchitecture("felsbogen", { x: px + 9, y: 4, z: pz + 9 });
             out.felsbogenSpawned = !!(eb && eb.type === "felsbogen");
-            // V12.0-perf.c.2 — felsbogen ist instanced (kein eb.mesh); „gerendert"
+            // felsbogen ist instanced (kein eb.mesh); „gerendert"
             // = instanced ODER klassischer Mesh.
             out.felsbogenHasMesh = !!(eb && (eb.mesh || eb.instanced));
             out.felsbogenCompoundChildren = eb && Array.isArray(eb.blockerAABBs) ? eb.blockerAABBs.length : 0;
             out.felsbogenWalkThroughCollision = out.felsbogenCompoundChildren >= 3;
-            // V9.06 — der Felsbogen rendert in der stein-Material-Farbe
+            // der Felsbogen rendert in der stein-Material-Farbe
             // (0x7a7a7a), NICHT weiss. V12.0-perf.c.2 — die Farbe kommt jetzt aus
             // dem geteilten Leaf-Material (Flatten-Cache), nicht aus eb.mesh.
             if (eb) {
@@ -1983,7 +1924,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
                 const key = `${cx},${cz}`;
                 if (r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has(key)) continue;
                 fresh.add(key);
-                // V9.96 — der Test-Pfad braucht synchrone Spawns (er
+                // der Test-Pfad braucht synchrone Spawns (er
                 // misst gleich danach state.architectures); im echten
                 // Streaming geht das durch die Per-Frame-Queue.
                 r._populateVoxelChunkVegetation(cx, cz, { immediate: true });
@@ -2097,7 +2038,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const inv = r.state.player.inventory;
         // Inventar tief snapshotten — der Grabe-Test darf den
         // Spieler-Zustand nicht verschmutzen (spätere 6.C1-Tests
-        // prüfen „Inventar initial leer"). V8.97-Disziplin.
+        // prüfen „Inventar initial leer"). Disziplin.
         const invSnapshot = inv.map((s) => (s ? { ...s } : null));
         const matSlotsBefore = inv.filter((s) => s && s.kind === "material").length;
         const ok = r.tryMouseBreak();
@@ -2112,7 +2053,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
 
         // Un-mocked Realpfad: der ECHTE _raycastWorldHit gegen das echte Terrain; nur
         // _pickArchitectureAtCrosshair wird genullt (garantiert den Terrain-Zweig). Kamera blickt nach
-        // unten → beweist Raycast + `carveVoxelSphere` + Material-Yield ohne Mock.
+        // unten → beweist Raycast + `carveVoxel` + Material-Yield ohne Mock.
         if (r.state.camera && r.state.playerMesh) {
             // Ein paar Loop-Ticks pumpen, damit der Spieler per Schwerkraft auf der Oberfläche settled —
             // sonst hängt der feld-native Raycast vom zufälligen Welt-Zustand ab (renderer-unabhängig).
@@ -2165,15 +2106,15 @@ async function checkBandWelle6GHylomorphism(ctx) {
         );
         check("W6.G P4: der ECHTE Raycast (Kamera nach unten) trifft das Terrain", wave6gP4Results.realRaycastHit);
         check(
-            "W6.G P4: ein un-gemockter Grabe-Hieb (echter Raycast + V9.36-carveVoxelSphere) yieldet Material",
+            "W6.G P4: ein un-gemockter Grabe-Hieb (echter Raycast + V9.36-carveVoxel) yieldet Material",
             wave6gP4Results.realDigYielded
         );
     }
 }
 
-// V18.203 — Γ3 FELD-CHARAKTER FOUNDATION (genese-plan §Γ3 + aktiv-plan §4.A):
+// Γ3 FELD-CHARAKTER FOUNDATION:
 // Frequenz-Fächer pro Welt-Stimme bei genVersion >= 3 (Domain-Warp als Folge).
-// Legacy gen<3 = bit-identisch zu Pre-V18.203 (V18.181/V18.193-Disziplin).
+// Legacy gen<3 = bit-identisch zu Pre-V18.203 (V18.181/Disziplin).
 async function checkBandV18203Gamma3FeldCharakter(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -2264,12 +2205,6 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
             out.totalDeltaDichte = Number(totalDeltaDichte.toFixed(3));
 
 
-            // (F8) V18.204 DOMAIN-WARP — warpAmp + warpScale Konstanten existieren
-            out.warpConstsExist =
-                typeof A.FIELD_CHARACTER.warpAmp === "number" &&
-                A.FIELD_CHARACTER.warpAmp > 0 &&
-                typeof A.FIELD_CHARACTER.warpScale === "number" &&
-                A.FIELD_CHARACTER.warpScale > 0;
 
             // (F9) DOMAIN-WARP: bei gen=3 verschiebt der Warp die Lese-Position.
             // Wir vergleichen: worldFieldAt(x,z) mit warp vs. ohne warp
@@ -2328,7 +2263,6 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
         `V18.203 (F6) magieleitung (λ160) variabler als dichte (λ340) über 200 m (Δmagie ${res.totalDeltaMagie} > Δdichte ${res.totalDeltaDichte})`,
         res.magieMoreVariable === true
     );
-    check("V18.204 (F8) DOMAIN-WARP Konstanten (warpAmp + warpScale)", res.warpConstsExist === true);
     check("V18.204 (F9a) Warp ändert den gelesenen Wert (Sample-Position verschoben)", res.warpChangesValue === true);
     check(
         "V18.204 (F9b) Implementierung matched manuelle Warp-Berechnung (bit-identisch)",

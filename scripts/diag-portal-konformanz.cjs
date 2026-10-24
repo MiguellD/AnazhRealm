@@ -429,7 +429,7 @@ async function schleuse(page, weg, welt, tat) {
             let antwort = null;
             const zurueck = new Promise((ende) => {
                 // die Marke kehrt zurück (das Ereignis) — ohne Frist: ein Hänger endet an der Frist des Browsers, die Stall-Akte
-                // nennt ihn (bis K-WANDUHR 60 s Wanduhr: unter Last „kam binnen 60 s nicht zurück", CI 1 von 27)
+                // nennt ihn
                 function hoer(ev) {
                     if (!ev.data || ev.data.__schleuse !== m) return;
                     ev.stopImmediatePropagation();

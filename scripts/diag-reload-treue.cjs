@@ -1,10 +1,7 @@
-// diag-reload-treue.cjs — RELOAD-TREUE (V18.478): DIE KREATUR KEHRT WIE GEGOSSEN WIEDER.
-// Der benannte V18.477-Richter-Befund [mittel]: Kreatur-Snapshots trugen soul/bodySize, aber
-// KEINE Guss-Dials — nach dem Reload goss spawnCreatureAt ALLE Kreaturen aus der AKTUELLEN
-// Studio-Übergabe: eine vormals klein gegossene Gattung wurde groß, sobald der Schöpfer die
-// Übergabe später änderte. Jetzt friert der GUSS die wirksame Übergabe je Wesen ein
+// diag-reload-treue.cjs — RELOAD-TREUE: DIE KREATUR KEHRT WIE GEGOSSEN WIEDER.
+// Der GUSS friert die wirksame Übergabe je Wesen ein
 // (group.userData.gussDials — nur wenn eine aktiv war, sonst feld-los + byte-alt), der Snapshot
-// trägt sie, und der Restore pinnt sie durch DENSELBEN Validator (Kreatur-PARAMS-Clamps) als
+// trägt sie, und der Restore pinnt sie durch DENSELBEN Prüfer (Kreatur-PARAMS-Klemme) als
 // dialsOv in den Neu-Guss. Diese Linse hält die Naht:
 //
 //   (R) GUSS-TREUE: Wolf unter Übergabe size 3.5 gegossen → Snapshot → Übergabe auf 1.5 GEÄNDERT
@@ -43,28 +40,9 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // Leere Bühne + genug Kapazität.
         for (const c of r.state.creatures.slice()) r.removeCreature(c);
         r.state.maxCreatures = 12;
-        // Geometrie-Fingerabdruck (position-Attribute des NAH-Templates).
-        const fnv = (h, arr) => {
-            const u8 = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
-            for (let i = 0; i < u8.length; i++) {
-                h ^= u8[i];
-                h = Math.imul(h, 0x01000193);
-            }
-            return h >>> 0;
-        };
-        const fpGroup = (g) => {
-            let h = 0x811c9dc5;
-            let n = 0;
-            g.traverse((o) => {
-                const a = o.geometry && o.geometry.attributes && o.geometry.attributes.position;
-                if (!a || !a.array) return;
-                n++;
-                h = fnv(h, a.array);
-            });
-            return (h >>> 0).toString(16) + "/" + n;
-        };
+        const fpGroup = window.__abdruck; // der EINE Abdruck (welt-boot)
         const setUe = (size) => {
-            r._studioUebergabeEmpfang({ kind: "kreatur", gattung: "wolf", s: { size } });
+            r._studioUebergabeEmpfang({ type: "uebergabe", kind: "kreatur", preset: "wolf", seed: 0, ov: { size } });
         };
         const spawnWolf = (opts) =>
             // BÜHNE: der Wolf fällt präzise aus 40 m (die Probe misst Gestalt und Reload, nie den Boden)
@@ -108,7 +86,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         if (wolfS) r.removeCreature(wolfS);
 
         // ── (D) DEFAULT-TREUE: keine Übergabe ⇒ feld-los + byte-alt ──
-        r.state.studioUebergabe = { koerper: null, kreatur: {} };
+        delete r._ensureWorkshopState().studioOv.wolf;
         const wolfD = spawnWolf();
         res.d.feldLos = !(wolfD && wolfD.userData.gussDials);
         const snapD = r._serializeCreature(wolfD);
@@ -119,15 +97,16 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         const rows = window.__tetrapodaCore && window.__tetrapodaCore.PARAMS_BY_KIND.kreatur;
         const sizeRow = rows && rows.find((x) => x.id === "size");
         const snapBoese = Object.assign({}, snapA, { gussDials: { size: 9999 } });
-        // der EINE Validator: der Restore klemmt durch _studioUebergabeValidate("kreatur", …), keinen Zwilling (Spion am Ruf)
-        const echtV = r._studioUebergabeValidate;
+        // der EINE Prüfer: der Restore klemmt durch _studioWerkPruefen("kreatur", …) wie der Übergabe-Kanal, keinen Zwilling
+        // (Spion am Ruf)
+        const echtV = r._studioWerkPruefen;
         let validiert = 0;
-        r._studioUebergabeValidate = function (art, ...x) {
+        r._studioWerkPruefen = function (art, ...x) {
             if (art === "kreatur") validiert++;
             return echtV.call(this, art, ...x);
         };
         const wolfW = r._restoreCreatureFromSnapshot(snapBoese, "happy");
-        delete r._studioUebergabeValidate;
+        delete r._studioWerkPruefen;
         res.w.einValidator = validiert > 0;
         res.w.geclampt = !!(
             wolfW &&

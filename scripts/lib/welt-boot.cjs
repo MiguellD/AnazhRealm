@@ -8,7 +8,7 @@
 //   halteBis()       eine Taste halten, bis ihr Ereignis eintritt (nie nach der Wanduhr, gate:apparat Klinge 5)
 //   buehne()         die Bühne (Mittag · Sonne · Sommer, scripts/lib/ausgabe-aufnahme.cjs)
 //   uferStellen      (Seite) ein Leser der Szenen-Tiefe im Blick, der zeichnet: das Wasser am Bach der Mess-Wiese
-//   DIE STALL-AKTE   (K67) ein Hänger der Seite steht mit Täter im Log (unten); `--selbsttest` (gate:welt-boot) beweist es
+//   DIE STALL-AKTE ein Hänger der Seite steht mit Täter im Log (unten); `--selbsttest` (gate:welt-boot) beweist es
 // Die Wand: gate:altlasten DIE BOOT-WAND — ein Start außerhalb dieser Datei ist ROT, die Liste der noch eigenen Starts
 // darf nur schrumpfen.
 "use strict";
@@ -118,12 +118,37 @@ function deckel(name, max, offen) {
 // Sekunde).
 async function weltDa(bed) {
     window.__weltDaWartet = bed ? String(bed).replace(/\s+/g, " ").slice(0, 160) : "den Stamm";
+    // erst das Erwachen des Boots (`erwacht`: init samt der Heimat aus dem Faden) — eine Linse, die vorher taktet, taktet
+    // eine halbe Welt (der Spieler fällt, ehe die Tiere geboren sind)
+    while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
+    await window.anazhRealm.erwacht;
     for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r)));)
         await new Promise((ok) => setTimeout(ok, 50));
     window.__weltDaWartet = null;
     return window.anazhRealm;
 }
-const WARTEN_SEITE = `window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa};`;
+// DER EINE ABDRUCK einer Gestalt (`window.__abdruck(x, alle)`): FNV-1a über die Puffer einer Gruppe (traverse), eines Flats (je
+// Geometrie seiner Blätter einmal, ohne Schatten-Zwilling) oder einer Geometrie — die Lage, mit `alle` jedes Attribut und der
+// Index (ein Farb-Regler bewegt die Vertex-Farbe, nie die Lage); „hash/Teile".
+function abdruck(x, alle) {
+    let [h, n] = [0x811c9dc5, 0];
+    const ein = (a) => {
+        const u = new Uint8Array(a.buffer, a.byteOffset, a.byteLength);
+        for (let i = 0; i < u.length; i++) h = Math.imul(h ^ u[i], 0x01000193);
+    };
+    const geo = (g) => {
+        const at = g && g.attributes;
+        if (!at || !at.position) return;
+        n++;
+        for (const k of alle ? Object.keys(at).sort() : ["position"]) ein(at[k].array || at[k].data.array);
+        if (alle && g.index) ein(g.index.array);
+    };
+    if (x && x.leaves) for (const g of new Set(x.leaves.filter((l) => !l.shadowTwin).map((l) => l.geom))) geo(g);
+    else if (x && x.traverse) x.traverse((o) => geo(o.geometry));
+    else geo(x);
+    return (h >>> 0).toString(16) + "/" + n;
+}
+const WARTEN_SEITE = `window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -197,7 +222,7 @@ const REZEPTE = {
     linse: (o) => linsenWebGpuArgs(process.env, process.platform, o),
     echt: () => echteWebGpuArgs(),
 };
-// DIE KLASSE DER CI (K61): diese Rezepte zeichnen mit einem Echt-Renderer; in einer CPU-Gruppe (CI_KLASSE) ist eines ROT beim Namen,
+// DIE KLASSE DER CI: diese Rezepte zeichnen mit einem Echt-Renderer; in einer CPU-Gruppe (CI_KLASSE) ist eines ROT beim Namen,
 // eines, das nie zeichnet, in jeder Gruppe (browser.close).
 const GPU_REZEPTE = ["linse", "webgl", "echt"];
 
@@ -261,7 +286,7 @@ function fehlerSammler(page) {
     return page;
 }
 
-// ── DIE STALL-AKTE (K67): ein Hänger der Seite hat einen Namen — der PULS (ein Binding, je Sekunde mit der Phase) zeigt, ob der
+// ── DIE STALL-AKTE: ein Hänger der Seite hat einen Namen — der PULS (ein Binding, je Sekunde mit der Phase) zeigt, ob der
 // Haupt-Thread lebt; die STEMPEL gehen hinaus, bevor ein Aufruf blockiert; Debugger.pause liefert den Stapel einer JS-Schleife
 // (ein nativer Block antwortet nicht — dann sprechen CPU je Prozess, Stempel und Stderr).
 const AKTE_SEITEN = new Set();

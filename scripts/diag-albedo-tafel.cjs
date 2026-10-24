@@ -158,7 +158,7 @@ async function messeLabor({ echt, nur, tafel }) {
     return out;
 }
 
-// ── Die Labor-Seite der Laub-Licht-Linse (K19) ──────────────────────────────────────────────────────────────────────────
+// ── Die Labor-Seite der Laub-Licht-Linse ──────────────────────────────────────────────────────────────────────────
 // `--laub [eiche,birke] [--welt w.json] [--echt]`: je Art die Vorlage im Phytogenesis-Labor, der Key allein hinter bzw. vor
 // der Krone (`__laborLaub`); mit `--welt` (die Ausgabe von `werkbank licht --laub --datei`) das Urteil der EINEN Linse
 // (`laubLichtUrteil`: Welt ≥ 1,3, Labor = Welt nur unter der Sonne ± 10 %).
@@ -254,8 +254,7 @@ async function selbsttest() {
         S0.gemessen = { welt: seite(), labor: seite() };
         const frisch = AT.tafelStand(S0, pruefsumme);
         const d0 = S0.zeilen[0].quellen[0];
-        // DER CODE-ABDRUCK (K63-n8; Koordinator 15.10.: eine reine Kommentarzeile in einer Stamm-Datei machte jede Zeile veraltet und
-        // sperrte jeden folgenden Merge): dieselbe Quelle mit Kommentarzeilen und neuem Leerraum → kein Befund; ein Token mehr
+        // DER CODE-ABDRUCK (K63-n8): dieselbe Quelle mit Kommentarzeilen und neuem Leerraum → kein Befund; ein Token mehr
         // → `veraltet seit 01234567` beim Namen der Datei, in BEIDEN Seiten jeder Zeile, die sie trägt
         const text0 = fs.readFileSync(path.join(__dirname, "..", d0), "utf8");
         const mit = (neu) => (d) => (d === d0 ? AU.codeAbdruck(neu, d) : pruefsumme(d));
@@ -326,6 +325,11 @@ async function selbsttest() {
     const m5 = messungZumTest(T0);
     m5.karten.garage.kL = 0.62;
     t("Karte garage k·L 0,62 → ROT `ratsche`", hatRot(AT.tafelUrteil(T0, m5), "ratsche"));
+    // S5p — die Pflicht-Zeile (material.K1): unter ihrer Ratsche, außerhalb des Solls ROT
+    const P = tafelZumTest();
+    P.zeilen.find((z) => z.id === "haut").ratsche = 0.2;
+    const uP = AT.tafelUrteil(P, messungZumTest(P, { haut: 0.86 }));
+    t("Pflicht-Zeile 0,86 → nur ROT `soll`", uP.rot.length === 1 && hatRot(uP, "soll"));
     // S6 — das Schema: eine fehlende Klasse, ein Welt-Muster ohne Anker, eine Zeile mit falschem Verhältnis werden rot.
     const s6a = JSON.parse(JSON.stringify(T0));
     s6a.zeilen = s6a.zeilen.filter((z) => z.gruppe !== "Klinge");
@@ -340,8 +344,8 @@ async function selbsttest() {
             AT.tafelPruefen(s6c).some((f) => /nicht Labor\/Welt/.test(f)) &&
             !AT.tafelPruefen(AT.ladeTafel()).length
     );
-    // S6s — DIE STUFE (K63-n7; der Lack am 15.10.: der Wagen in der Blende L0/L1, die Stufe 1 faltet Chrom und Glas in den Lack,
-    // Welt 0,0175 gegen 0,0066): die Zeile erklärt L0, die Welt zeichnet L0 und L1 → ROT `stufe` beim Namen; nur L0 → kein
+    // S6s — DIE STUFE (K63-n7; die Stufe 1 faltet Chrom und Glas in den Lack): die Zeile erklärt L0, die Welt zeichnet
+    // L0 und L1 → ROT `stufe` beim Namen; nur L0 → kein
     // Befund; eine Messung ohne Stufen → ROT; eine Foundry-Klasse ohne erklärte Stufen → Schema rot.
     {
         const zs = T0.zeilen.find((z) => z.welt && Array.isArray(z.welt.stufen) && z.welt.stufen.length === 1);
@@ -360,7 +364,7 @@ async function selbsttest() {
                 AT.tafelPruefen(s6s).some((f) => f.startsWith(`${zs.id}: welt.stufen fehlt`))
         );
     }
-    // S6t — DER TON DER STUFE (S8, Radeon 22.10.): Haus L2/L0 0,946 → ROT; gleich → GRÜN (S1)
+    // S6t — DER TON DER STUFE: Haus L2/L0 0,946 → ROT; gleich → GRÜN (S1)
     const m6t = messungZumTest(T0);
     m6t.welt["haus-l2"].Y = 0.1892;
     t("Stufen-Ton: L2/L0 0,946 → ROT beim Namen", AT.tafelUrteil(T0, m6t).rot.some((r) => r.text.startsWith("haus-l2: Welt/haus")));
@@ -652,6 +656,7 @@ async function main() {
         if (!k.ist || k.ratsche == null) errs.push(`Karte ${s}: ohne Ist oder Ratsche`);
     const u = AT.tafelUrteil(t, gespeichert(t));
     for (const r of u.rot) errs.push(`[${r.art}] ${r.text}`);
+    for (const s of ["labor", "welt"]) if (t.gemessen && !t.gemessen[s].echt) errs.push(`[echt] ${s} nicht echt gemessen`);
     // DER STAND (K63-n8; wie H5): ungeprüft bricht, veraltet steht laut je Zeile
     const sw = AT.standWand(AT.tafelStand(t, pruefsumme));
     for (const b of sw.brueche) errs.push(`[stand] ${b}`);

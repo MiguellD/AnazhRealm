@@ -1,8 +1,5 @@
-// diag-p2p-gestalt.cjs — P2P-GESTALT (V18.478): DIE STUDIO-ÜBERGABE REIST ZU DEN PEERS.
-// Der benannte V18.477-Offen-Punkt: die Studio-Übergabe (state.studioUebergabe) war LOKALE
-// Wahrheit — ein Mitspieler baute den fremden Avatar aus SEINEM eigenen _koerperStudioDials,
-// die vom Sender gewählte Gestalt (Kleider/Haut/Haar) reiste nie übers Mesh. Jetzt trägt der
-// soul-Kanal (_p2pBroadcastSoul) die Avatar-Übergabe additiv, der Empfänger (_p2pMsgSoul)
+// diag-p2p-gestalt.cjs — P2P-GESTALT: DIE STUDIO-ÜBERGABE REIST ZU DEN PEERS.
+// Der soul-Kanal (_p2pBroadcastSoul) trägt die Avatar-Übergabe additiv, der Empfänger (_p2pMsgSoul)
 // validiert sie durch DENSELBEN Validator (_studioUebergabeValidate — EINE Quelle) und legt
 // sie als PER-PEER-Wahrheit (entry.uebergabe) ab; der Peer-Guss (_p2pApplyPeerSoul) führt sie
 // transient über _activePeerUebergabe in den EINEN Leser _koerperStudioDials (try/finally räumt
@@ -50,26 +47,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             });
             return set;
         };
-        const fnv = (h, arr) => {
-            const u8 = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
-            for (let i = 0; i < u8.length; i++) {
-                h ^= u8[i];
-                h = Math.imul(h, 0x01000193);
-            }
-            return h >>> 0;
-        };
-        const fpGroup = (g) => {
-            let h = 0x811c9dc5;
-            let n = 0;
-            if (!g) return "0/0";
-            g.traverse((o) => {
-                const a = o.geometry && o.geometry.attributes && o.geometry.attributes.position;
-                if (!a || !a.array) return;
-                n++;
-                h = fnv(h, a.array);
-            });
-            return (h >>> 0).toString(16) + "/" + n;
-        };
+        const fpGroup = window.__abdruck; // der EINE Abdruck (welt-boot)
         const lin = (hx) => {
             const f = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
             return [f(((hx >> 16) & 255) / 255), f(((hx >> 8) & 255) / 255), f((hx & 255) / 255)]
@@ -119,12 +97,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             {
                 peerId: "A",
                 soulName: "human",
-                uebergabe: {
-                    koerper: {
-                        s: { height: 1.0 },
-                        gestalt: { skinTone: "porzellan", topColor: "blue", hairColor: "black" },
-                    },
-                },
+                uebergabe: { koerper: { height: 1.0, skinTone: "porzellan", topColor: "blue", hairColor: "black" } },
             },
             r.state.p2p
         );
@@ -141,7 +114,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             {
                 peerId: "W",
                 soulName: "human",
-                uebergabe: { koerper: { s: { height: NaN }, gestalt: { skinTone: "erfunden_xyz" } } },
+                uebergabe: { koerper: { height: NaN, skinTone: "erfunden_xyz" } },
             },
             r.state.p2p
         );
@@ -155,15 +128,14 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             {
                 peerId: "R",
                 soulName: "human",
-                uebergabe: { koerper: { s: { height: 1 }, gestalt: { topColor: riese } } },
+                uebergabe: { koerper: { height: 1, topColor: riese } },
             },
             r.state.p2p
         );
         res.w.rieseEntryLeerOderGeclampt = (() => {
             const u = r.state.p2p.peers.get("R") && r.state.p2p.peers.get("R").uebergabe;
-            // Der Riesen-String fällt (nicht in CLOTH_COLORS + FORM-Wand) ⇒ gestalt leer;
-            // die valide height bleibt ⇒ Übergabe darf {s:{height}} sein, aber NIE den Riesen tragen.
-            return !u || !(u.gestalt && u.gestalt.topColor === riese);
+            // Der Riesen-String fällt (Taille-Cap, nicht in CLOTH_COLORS + FORM-Wand) ⇒ die Prägung trägt NIE den Riesen.
+            return !u || u.topColor !== riese;
         })();
 
         // ── (M) KEINE VERGIFTUNG: zwei Peers, zwei distinkte Ofen-Keys ──
@@ -174,7 +146,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             {
                 peerId: "B",
                 soulName: "human",
-                uebergabe: { koerper: { s: { height: 1.0 }, gestalt: { skinTone: "sand", topColor: "grey" } } },
+                uebergabe: { koerper: { height: 1.0, skinTone: "sand", topColor: "grey" } },
             },
             r.state.p2p
         );
@@ -197,33 +169,35 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         const cLocalNach = colorsOf(r.state.playerMesh);
         res.e.eigenKeineFremdHaut = !cLocalNach.has(porzellanLin);
 
-        // ── (K) DIE NAHT AM VERHALTEN: der Broadcast trägt nur koerper, der Peer führt vor der eigenen Übergabe, der Empfang
-        // klemmt durch DENSELBEN Validator ──
-        const su0 = r.state.studioUebergabe,
+        // ── (K) DIE NAHT AM VERHALTEN: der Broadcast trägt nur koerper (ohne den Samen), der Peer führt vor der eigenen
+        // Prägung, der Empfang klemmt durch DENSELBEN Prüfer ──
+        const pr = r._ensureWorkshopState().studioOv,
+            pr0 = JSON.stringify(pr),
             p2pAn = r.state.p2p.enabled,
             sent = [],
-            echtV = r._studioUebergabeValidate;
+            echtV = r._studioWerkPruefen;
         r.p2pSend = (m) => sent.push(m);
         r.state.p2p.enabled = true;
-        r.state.studioUebergabe = { koerper: { s: { height: 1.1 } }, kreatur: { s: { x: 1 } } };
+        pr.mensch = { height: 1.1, __gestalt: 3 };
+        pr.wolf = { size: 3 };
         r._p2pBroadcastSoul();
         delete r.p2pSend;
-        res.k.nurKoerper = !!sent[0] && JSON.stringify(sent[0].uebergabe) === '{"koerper":{"s":{"height":1.1}}}';
-        r._activePeerUebergabe = { s: { height: 1.3 } };
+        res.k.nurKoerper = !!sent[0] && JSON.stringify(sent[0].uebergabe) === '{"koerper":{"height":1.1}}';
+        r._activePeerUebergabe = { height: 1.3 };
         res.k.peerFuehrt = r._koerperStudioDials().height === 1.3;
         r._activePeerUebergabe = null;
         res.k.eigen = r._koerperStudioDials().height === 1.1;
-        r.state.studioUebergabe = su0;
+        r._ensureWorkshopState().studioOv = JSON.parse(pr0);
         r.state.p2p.enabled = p2pAn;
         let validiert = 0;
-        r._studioUebergabeValidate = function (art, ...x) {
+        r._studioWerkPruefen = function (art, ...x) {
             if (art === "koerper") validiert++;
             return echtV.call(this, art, ...x);
         };
         try {
-            r._p2pMsgSoul({ peerId: "K", soulName: "human", uebergabe: { koerper: { s: { height: 1 } } } }, r.state.p2p);
+            r._p2pMsgSoul({ peerId: "K", soulName: "human", uebergabe: { koerper: { height: 1 } } }, r.state.p2p);
         } catch (_e) {}
-        delete r._studioUebergabeValidate;
+        delete r._studioWerkPruefen;
         res.k.einValidator = validiert > 0;
 
         return res;
@@ -265,8 +239,14 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     check("(E) der transiente Peer-Kontext leckt nicht (_activePeerUebergabe leer)", out.e.activeLeer === true);
     check("(E) der eigene Neu-Guss trägt KEINE fremde Haut", out.e.eigenKeineFremdHaut === true);
     check("(K) der soul-Broadcast trägt die Übergabe additiv, nur koerper", out.k.nurKoerper === true);
-    check("(K) beim Peer-Guss führt die Übergabe des Senders vor der eigenen", out.k.peerFuehrt === true && out.k.eigen === true);
-    check("(K) der Empfang klemmt durch DENSELBEN Validator (_studioUebergabeValidate)", out.k.einValidator === true);
+    check(
+        "(K) beim Peer-Guss führt die Übergabe des Senders vor der eigenen",
+        out.k.peerFuehrt === true && out.k.eigen === true
+    );
+    check(
+        "(K) der Empfang klemmt durch DENSELBEN Prüfer wie der Übergabe-Kanal (_studioWerkPruefen)",
+        out.k.einValidator === true
+    );
 
     if (errs.length) {
         console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);

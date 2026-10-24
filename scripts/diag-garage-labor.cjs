@@ -1,18 +1,6 @@
 // diag-garage-labor.cjs — DIE LABOR-LINSE DER GARAGE (Welle L, Familie fahren): die Probefahrt-Werkstatt so, wie der
-// Schöpfer sie bedient — Maus ziehen, Probefahrt starten, Gas geben, Gattung und Kultur wechseln. Befund 06.10.
-// (artifacts/profiband/studios/bild-befund-garage.md + artifacts/profiband/leben/befund-fahren-gelaende.md F-D9, gesehen auf der Radeon):
-//   G1 maus     — jede Mausbewegung warf `ReferenceError: dragging is not defined` (die Deklaration stand im Kommentar
-//                 hinter camOrb), ein Orbit-Zug 10 Seitenfehler                                          Soll 0
-//   G2 hud      — `enterDrive` setzte display:block auf den Flex-HUD: die Einheit klebte an der Tastenhilfe
-//                 („86 km/hW/S Gas·Brems")                                                Soll flex, Abstand ≥ 10 px
-//   G3 tacho    — HUD ÷ echte km/h = 3,334 (`|speed| × 12` unter „km/h"; 10,5 m/s zeigte 126)   Soll ×3,6 aus FAHR.kmh
-//   G4 preset   — der Preset-Wechsel mergte ohne DEFAULT_P: Supersport → GT ließ grip 0,85 stehen; der Regler-Zustand
-//                 beim ersten Laden wich vom Modell ab (Federrate 95 gegen 100)        Soll P == DEFAULT_P + Preset + Kultur
-//   G5 kultur   — eine gewählte Kultur ließ sich nicht abwählen (Toro → Limousine trug cEdge 0,9 weiter, kein Weg zurück)
-//                                                                                     Soll: zweiter Klick wählt ab
-//   G7 tempo    — (H3) die Probefahrt las kein Tempo, nach dem Orbit schnappte sie in 0,5 s zurück (tempoVerdict)
-//   G6 lehren   — (0710-2) die Probefahrt erbte die Werkstatt-Ebenen: RADSTAND, ÜH-H, FREI, RAD-Ø … schwebten als Schilder
-//                 über dem fahrenden Wagen                  Soll 0 Schilder in der Fahrt (die Sicht ERGEBNIS), > 0 in der Werkstatt
+// Schöpfer sie bedient — Maus ziehen, Probefahrt starten, Gas geben, Gattung und Kultur wechseln.
+//   G1 Maus · G2 HUD · G3 Tacho · G4 Preset · G5 Kultur · G6 Lehren · G7 Tempo — je Zeile das Soll im Namen ihres Checks.
 // Die Seite läuft in ihrem echten Renderer (r184 WebGPU, die Engine der Welt) im Kopflos-Browser; gezählt wird an der Seite selbst.
 //   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
 "use strict";

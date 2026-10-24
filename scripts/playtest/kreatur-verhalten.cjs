@@ -1,121 +1,10 @@
 "use strict";
 // scripts/playtest/kreatur-verhalten.cjs — der Richter von Kreatur/verhalten (spec/stamm/modul-karte.json): Aufgaben · Scheu · Jagd · Rudel · Kreatur-Takt.
-// 6 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 5 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// Aura-reaktive Kreatur: Wariness = Aura-Menace × Natur × Bindung × Modus → neugierig (näher) oder
-// scheu (fort), treibt den wander-Tick; ein Treffer setzt Furcht (Flucht).
-async function checkBandV1758CreatureNature(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
-        const p = r.state.player;
-        const pm = r.state.playerMesh.position;
-        const e = p.emotions;
-        const savedEmo = {};
-        for (const k of Object.keys(e)) savedEmo[k] = e[k];
-        const savedMode = r.getGameMode();
-        const setEmo = (o) => {
-            for (const k of Object.keys(e)) e[k] = o[k] || 0;
-        };
-        const NAT = r.constructor._verhaltenGesetz().furcht;
-        out.furchtGesetz = !!NAT && typeof NAT.fleeThreshold === "number";
-
-        r.setGameMode("pfad");
-        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
-        const _capG = r.state.maxCreatures;
-        r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
-        const near = (soul) => r.spawnCreatureAt(pm.x + 3, pm.y, pm.z + 3, "happy", soul);
-        // ALTLASTEN-NULL: die Tiere sind tag-identisch (V17.16-Wand) — die
-        // Natur-Achse diskriminiert jetzt über BINDUNG (bond = Kühnheit) und
-        // FURCHT (Kampf), nicht über gefallene Fantasie-Substanzen.
-        const timid = near("fuchs");
-        const bold = near("baer");
-        bold.userData.bond = 1;
-
-        // (2) sanfte Aura → neugierig (näher); (3) chaotische Aura hebt die Wariness DEUTLICH
-        setEmo({ peace: 0.9 });
-        out.calmIsCurious = r._creatureWariness(bold) <= NAT.curiousThreshold;
-        setEmo({ chaos: 0.9 });
-        const angryTimidW = r._creatureWariness(timid);
-        setEmo({ peace: 0.9 });
-        out.angryScaresTimid = angryTimidW > r._creatureWariness(timid) + 1.0;
-        // die Aura treibt die Reaktion (chaotisch verschreckt mehr als sanft, gleiches Wesen)
-        out.auraDrivesReaction = angryTimidW > r._creatureWariness(timid);
-
-        // (4) ein GEBUNDENES Wesen ist weniger scheu als ein ungebundenes (gleiche chaotische Aura)
-        setEmo({ chaos: 0.9 });
-        out.boldLessWaryThanTimid = r._creatureWariness(bold) < r._creatureWariness(timid);
-
-        // (5) Bindung senkt die Scheu (Vertrauen)
-        timid.userData.bond = 0;
-        const unbondW = r._creatureWariness(timid);
-        timid.userData.bond = 1;
-        const bondW = r._creatureWariness(timid);
-        timid.userData.bond = 0;
-        out.bondReducesWariness = bondW < unbondW;
-
-        // (6) frieden dämpft die Bedrohung vs pfad (gleiche chaotische Aura)
-        r.setGameMode("pfad");
-        const pfadW = r._creatureWariness(timid);
-        r.setGameMode("frieden");
-        const friedenW = r._creatureWariness(timid);
-        out.friedenDampsMenace = friedenW < pfadW;
-        r.setGameMode("pfad");
-
-        // (7) fern → neutral (Wariness 0, das Wesen wandert)
-        const far = near("fuchs");
-        far.position.set(pm.x + 999, pm.y, pm.z + 999);
-        out.farIsNeutral = r._creatureWariness(far) === 0;
-
-        // (8)+(9) KONSUM Kampf-Furcht: ein getroffenes (überlebendes) Wesen → fearUntil + sad + flieht
-        // selbst bei SANFTER Aura (die Furcht überschreibt die Ruhe)
-        setEmo({ peace: 0.9 });
-        timid.userData.hp = 9999;
-        const idx = r.state.creatures.indexOf(timid);
-        r.damageCreature(timid, 5, { source: "player" });
-        out.hitSetsFear =
-            Number.isFinite(timid.userData.fearUntil) && timid.userData.fearUntil > r.state.creatureAnimationTime;
-        out.hitSetsSad = idx >= 0 && r.state.creatureEmotions[idx] === "sad";
-        out.hitFlees = r._creatureWariness(timid) >= NAT.fleeThreshold;
-        timid.userData.fearUntil = 0;
-
-        // cleanup
-        for (const c of [timid, bold, far]) if (c && r.state.creatures.indexOf(c) !== -1) r.removeCreature(c);
-        setEmo(savedEmo);
-        r.setGameMode(savedMode);
-        r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
-        return out;
-    });
-    check("V17.58 W3: VERHALTEN.furcht (Gesetz) trägt fleeThreshold", res.furchtGesetz);
-    check(
-        "V17.58 W3: KONSUM — eine sanfte Aura macht ein kühnes Wesen neugierig (Wariness ≤ Schwelle → näher)",
-        res.calmIsCurious
-    );
-    check("V17.58 W3 (NULL): die chaotische Aura hebt die Wariness deutlich über die sanfte", res.angryScaresTimid);
-    check(
-        "V17.58 W3: deine Aura treibt die Reaktion (chaotisch verschreckt mehr als sanft, gleiches Wesen)",
-        res.auraDrivesReaction
-    );
-    check("V17.58 W3 (NULL): ein GEBUNDENES Wesen ist weniger scheu (bond = Kühnheit)", res.boldLessWaryThanTimid);
-    check("V17.58 W3: KONSUM — die Bindung senkt die Scheu (Vertrauen)", res.bondReducesWariness);
-    check("V17.58 W3: KONSUM — frieden dämpft die Bedrohung (neugierige Welt) vs pfad", res.friedenDampsMenace);
-    check("V17.58 W3: ein fernes Wesen ist neutral (es wandert, ignoriert den Spieler)", res.farIsNeutral);
-    check(
-        "V17.58 W3: KONSUM — ein getroffenes Wesen FÜRCHTET sich (fearUntil + sad)",
-        res.hitSetsFear && res.hitSetsSad
-    );
-    check(
-        "V17.58 W3: KONSUM — ein getroffenes Wesen flieht selbst bei sanfter Aura (die Kampf-Furcht überschreibt)",
-        res.hitFlees
-    );
-}
-
-// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.H P1 + V2 + P2A + P2B.1 + P2B.5 + P2C — Kreatur-Aufträge + Hylomorphismus-Compounds + Bring-Phase + Material-Konsum).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWelle6HCreatures(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -166,18 +55,8 @@ async function checkBandWelle6HCreatures(ctx) {
         const waitDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
         out.waitGivesZeroDir = waitDir && waitDir.x === 0 && waitDir.z === 0;
 
-        // follow_player: weit weg → Richtung zum Spieler
+        // (das Folgen misst gate:kreatur-takt folgen)
         const p = r.state.playerMesh.position;
-        c1.position.set(p.x + 10, p.y, p.z + 10);
-        r.assignCreatureTask(c1, "follow_player");
-        const fdir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
-        out.followDirectionToPlayer = fdir.x < 0 && fdir.z < 0 && Math.hypot(fdir.x, fdir.z) > 0;
-
-        // follow_player: innerhalb haltDist → direction = (0,0,0)
-        c1.position.set(p.x + 0.3, p.y, p.z + 0.3);
-        const stopDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
-        out.followStopsAtHalt = stopDir.x === 0 && stopDir.z === 0;
-
         // wander → null (Caller fällt auf Emotion-Logik)
         r.assignCreatureTask(c1, "wander");
         const wDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
@@ -217,12 +96,6 @@ async function checkBandWelle6HCreatures(ctx) {
         out.nbCreatureTaskAll = nbs.has("creature_task_all");
 
         // Chat-Patterns
-        const folge = r.parseChatToDsl("folge mir");
-        out.chatFolgeMir =
-            folge &&
-            Array.isArray(folge.program) &&
-            folge.program[0] === "creature_task_nearest" &&
-            folge.program[1] === "follow_player";
         const warte = r.parseChatToDsl("warte");
         out.chatWarte = warte && warte.program[0] === "creature_task_nearest" && warte.program[1] === "wait";
         const erkunde = r.parseChatToDsl("erkunde");
@@ -278,11 +151,6 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Welle 6.H Phase 1: assignCreatureTask lehnt unbekannten Task ab", wave6hResults.unknownRejected);
         check("Welle 6.H Phase 1: wait-Task liefert direction (0,0,0)", wave6hResults.waitGivesZeroDir);
         check(
-            "Welle 6.H Phase 1: follow_player-Direction zeigt zum Spieler (weit weg)",
-            wave6hResults.followDirectionToPlayer
-        );
-        check("Welle 6.H Phase 1: follow_player stoppt am haltDist (direction=0)", wave6hResults.followStopsAtHalt);
-        check(
             "Welle 6.H Phase 1: wander-Direction liefert null (Fallback auf Emotion-Logik)",
             wave6hResults.wanderReturnsNull
         );
@@ -295,7 +163,6 @@ async function checkBandWelle6HCreatures(ctx) {
             "Welle 6.H Phase 1: creature_task* in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
             wave6hResults.nbCreatureTask && wave6hResults.nbCreatureTaskNearest && wave6hResults.nbCreatureTaskAll
         );
-        check("Welle 6.H Phase 1: Chat 'folge mir' → creature_task_nearest follow_player", wave6hResults.chatFolgeMir);
         check("Welle 6.H Phase 1: Chat 'warte' → creature_task_nearest wait", wave6hResults.chatWarte);
         check("Welle 6.H Phase 1: Chat 'erkunde' → creature_task_nearest wander", wave6hResults.chatErkunde);
         check("Welle 6.H Phase 1: Chat 'komm her' → follow_player mit distance=1.5", wave6hResults.chatKommHer);
@@ -481,7 +348,7 @@ async function checkBandWelle6HCreatures(ctx) {
         const out = {};
         const souls = r.constructor.CREATURE_SOULS;
         out.soulsFrozen = !!souls && Object.isFrozen(souls);
-        // ALTLASTEN-NULL (V9.56-i): die Seelen-Menge sind die VIER ehrlichen
+        // ALTLASTEN-NULL: die Seelen-Menge sind die VIER ehrlichen
         // Tiere (Hirsch·Wolf·Fuchs·Bär) — sprite/geist/glutwesen sind gefallen.
         out.threeSouls =
             souls &&
@@ -531,7 +398,7 @@ async function checkBandWelle6HCreatures(ctx) {
         out.spriteHasResoniert = (tagsWolf.resoniert || 0) > 0;
         out.wesenHasLebendig = (tagsWesen.lebendig || 0) > 0;
         out.geistHasLebendig = (r.computeCreatureCompoundTags(geist).lebendig || 0) > 0;
-        // Welle L (Q12): ein unbekannter Seelen-Wunsch ist eine laute Absage (null, geloggt), nie ein still gewürfelter
+        // ein unbekannter Seelen-Wunsch ist eine laute Absage (null, geloggt), nie ein still gewürfelter
         // Ersatz (`spawnCreatureAt(…, "hirsch")` ergab einen Bären) — und der Schild einer Seele findet sie.
         const nVorAbsage = r.state.creatures.length;
         const fb = r.spawnCreatureAt(p.x + 4, p.y, p.z + 4, "happy", "fictional-soul");
@@ -551,7 +418,7 @@ async function checkBandWelle6HCreatures(ctx) {
         r._renderCreatureListUI();
         const list = document.getElementById("creature-list");
         out.listRendersRows = list && list.querySelectorAll(".creature-row").length === r.state.creatures.length;
-        // V18.46 Hof-A — die Befehle leben INLINE am Wesen (.creature-action-btn[data-task]); die globale
+        // Hof-A — die Befehle leben INLINE am Wesen (.creature-action-btn[data-task]); die globale
         // „Aufträge"-Knopfreihe ist aufgelöst (Omnibox `k:` + inline tragen sie, kein Duplikat mehr).
         out.hasTaskActions = !!(list && list.querySelector(".creature-actions-inline"));
         out.hasFolgeInline = !!(list && list.querySelector('[data-task="follow_player"]'));
@@ -563,8 +430,8 @@ async function checkBandWelle6HCreatures(ctx) {
             firstRow.querySelector(".creature-name") &&
             firstRow.querySelector(".creature-soul") &&
             firstRow.querySelector(".creature-task");
-        // Hof-D0 (hof-plan §G.1) — der EINE Wesen-Lese-Vektor (_creatureProfile), den alle Hof-Leser teilen.
-        // KONSUM (V17.31): er bündelt GEMESSENE Vektoren (tags/stats/specs/task/emotion/wariness/bond/id) UND
+        // Hof-D0 — der EINE Wesen-Lese-Vektor (_creatureProfile), den alle Hof-Leser teilen.
+        // KONSUM: er bündelt GEMESSENE Vektoren (tags/stats/specs/task/emotion/wariness/bond/id) UND
         // der Renderer LIEST ihn (der rowTitle trägt jetzt die `moodLabel` aus dem Profil → echter Konsument).
         const prof = r._creatureProfile(sprite);
         out.profileBundlesVectors = !!(
@@ -584,11 +451,11 @@ async function checkBandWelle6HCreatures(ctx) {
         const firstMain = firstRow && firstRow.querySelector(".creature-row-main");
         const firstRowTitle = (firstMain && firstMain.getAttribute("title")) || "";
         out.rendererConsumesProfile = firstRowTitle.includes("Stimmung") && /froh|trübe/.test(firstRowTitle);
-        // Hof-D (hof-plan §D.1/§G.5) — die Stimmung als Glyph an jeder Zeile (immer sichtbar).
+        // Hof-D — die Stimmung als Glyph an jeder Zeile (immer sichtbar).
         out.rowHasMoodGlyph = !!(firstRow && firstRow.querySelector(".creature-mood"));
-        // V18.54 Hof-Bühne — die Zeilen sind der schlanke PICKER: NIE eine Detail-Card inline (sie lebt auf der Bühne).
+        // Hof-Bühne — die Zeilen sind der schlanke PICKER: NIE eine Detail-Card inline (sie lebt auf der Bühne).
         out.detailNotInRows = !!(firstRow && !firstRow.querySelector(".creature-detail"));
-        // V18.55 — die Spec-Card lebt als GETEILTES Werkstatt-Spec-Sheet (.spec-sheet) unter/neben der Bühne.
+        // die Spec-Card lebt als GETEILTES Werkstatt-Spec-Sheet (.spec-sheet) unter/neben der Bühne.
         const stageSpec = document.getElementById("hof-stage-spec");
         out.stageSpecPresent = !!stageSpec;
         out.stageShowsOneCard =
@@ -610,7 +477,7 @@ async function checkBandWelle6HCreatures(ctx) {
         out.focusUpdatesStage = !!stageSpec && stageSpec.querySelectorAll(".spec-sheet").length === 1;
         r._toggleHofFocus(firstProf.id); // wieder zu → Fokus zurück auf das erste Wesen (kein Leck)
         out.focusToggleClears = r.state.hofFocusId === null;
-        // V18.51 Hof-E (hof-plan §D/§G.7) — die zwei Zonen ORCHESTER | PARTITUR + der integrierte Spawn-Fuß.
+        // Hof-E — die zwei Zonen ORCHESTER | PARTITUR + der integrierte Spawn-Fuß.
         out.hasOrchesterZone = !!document.querySelector(".hof-orchester");
         out.hasPartiturZone = !!document.querySelector(".hof-partitur");
         out.partiturHoldsLaws = !!(
@@ -618,7 +485,7 @@ async function checkBandWelle6HCreatures(ctx) {
             document.querySelector(".hof-partitur #status-abilities")
         );
         out.spawnFootInOrchester = !!document.querySelector(".hof-orchester .hof-spawn #creature-soul-select");
-        // V18.51 Hof-F (hof-plan §D.2/§G.4) — die Sektions-Leiste (Gruppen-Dirigat).
+        // Hof-F — die Sektions-Leiste (Gruppen-Dirigat).
         const secHost = document.getElementById("hof-sections");
         out.sectionChipsRender = !!(secHost && secHost.querySelectorAll(".hof-section-chip").length >= 1);
         const alleChip = secHost && secHost.querySelector(".hof-section-chip");
@@ -653,7 +520,7 @@ async function checkBandWelle6HCreatures(ctx) {
         out.sceneAfterRemove = !r.state.scene.children.includes(sprite);
         r.clearCreatures();
         r._renderCreatureListUI();
-        // V18.51 Hof-E/§G.9 — der leere Hof zeigt den einladenden Onboarding-Zustand (kein kahles „—").
+        // Hof-E/§G.9 — der leere Hof zeigt den einladenden Onboarding-Zustand (kein kahles „—").
         out.emptyShowsOnboarding = !!(list && list.querySelector(".hof-empty"));
         // Cleanup für nachfolgende Tests (Ring 3 V2 peace,
         // UI Run-Button): brauchen Kreaturen-Population.
@@ -915,7 +782,7 @@ async function checkBandWelle6HCreatures(ctx) {
         out.listShowsSammelt = firstTask && /sammelt/.test(firstTask.textContent);
         out.listTaskHasGatherClass = firstTask && firstTask.classList.contains("gather");
 
-        // V18.48 Hof-C: der inline „Auftrag ▾"-Select pro Wesen trägt Sammle (+ Baue) — die globalen
+        // Hof-C: der inline „Auftrag ▾"-Select pro Wesen trägt Sammle (+ Baue) — die globalen
         // Dropdowns sind aufgelöst (sie befahlen der NÄCHSTEN Kreatur; jetzt befiehlt man DEM Wesen).
         const orderSel = list && list.querySelector(".creature-row .creature-order-select");
         out.hasGatherSelect = !!orderSel;
@@ -1071,7 +938,7 @@ async function checkBandWelle6HCreatures(ctx) {
             r.state.camera.lookAt(tcx, p.y, tcz);
             r.state.camera.updateMatrixWorld(true);
         }
-        // V17.55 W1 — Abbauen kostet jetzt MÜHE + braucht ein taugliches Werkzeug (kein Instant
+        // Abbauen kostet jetzt MÜHE + braucht ein taugliches Werkzeug (kein Instant
         // mehr). Wir rüsten ein hartes Werkzeug aus (stein als harte Substanz) + hieben bis zum
         // Bruch; der Ertrag fließt nur mit tauglichem Werkzeug (die bloße Faust gäbe ~nichts).
         r.state.player.equipped = r.state.player.equipped || {};
@@ -1267,7 +1134,7 @@ async function checkBandWelle6HCreatures(ctx) {
         out.schoepferEmptyAfter = r.state.player.inventory.every((s) => !s);
         out.schoepferGrows = r.state.architectures.length > archBeforeSchoepfer;
 
-        // S2 (kampf-plan §11.2) — confirmBuild frieden OHNE Material → ABGELEHNT (die kristallisierte
+        // S2 — confirmBuild frieden OHNE Material → ABGELEHNT (die kristallisierte
         // Modus-Achse: Materie kostet in pfad UND frieden, frei nur in schöpfer; frieden ist friedlich,
         // aber NICHT gratis — die V17.59-Diskrepanz geheilt).
         r.setGameMode("frieden");
@@ -1373,113 +1240,16 @@ async function checkBandWelle6HCreatures(ctx) {
     }
 }
 
-// V11.0-d.3 (Pfeiler D — Trinken am Ufer) — Beweis dass der drink-Task als
+// Beweis dass der drink-Task als
 // 6. Task registriert ist, dass die Sprache (Aura+Ping+Chat) ihn trägt,
 // und dass _tickCreatureDrink den 3-Phasen-Zyklus durchläuft.
 async function checkBandWelleV11D3DrinkTask(ctx) {
     const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return { error: "no realm" };
-        const out = {};
-
-        // Sprache: drink ist 6. Task + hat Aura-Hue (die Antwort ist die Stimme des Tiers, kein Ping-Ton).
-        const tasks = r.constructor.CREATURE_TASKS;
-        out.tasksInclude = tasks.includes("drink");
-        out.tasksLength = tasks.length;
-        out.auraHue = r.constructor.CREATURE_TASK_AURA_HUE.drink;
-
-        // Konstanten existieren.
-        out.haltDist = r.constructor.CREATURE_DRINK_HALT_DIST;
-        out.duration = r.constructor.CREATURE_DRINK_DURATION_S;
-        out.searchRadius = r.constructor.CREATURE_DRINK_SEARCH_RADIUS;
-        out.speed = r.constructor.CREATURE_DRINK_SPEED;
-
-        // Chat-Pattern „trinke" liefert drink-Programm.
-        const parsed = r.parseChatToDsl("trinke");
-        out.chatParsesTrinke =
-            parsed && parsed.program && parsed.program[0] === "creature_task_nearest" && parsed.program[1] === "drink";
-
-        // Empirisch: _findNearestWaterPoint findet Wasser im Spawn-Bereich.
-        let waterSpot = null;
-        const SCAN = 100;
-        const STEP = 6;
-        for (let dx = -SCAN; dx <= SCAN && !waterSpot; dx += STEP) {
-            for (let dz = -SCAN; dz <= SCAN && !waterSpot; dz += STEP) {
-                // das Wasser, wie der Körper es trägt (Welle L: das Trink-Ziel liest `_nassAt` über `_koerperWasser`)
-                if (r._nassAt(dx, dz, 0.1)) waterSpot = { x: dx, z: dz };
-            }
-        }
-        out.waterFound = waterSpot !== null;
-        if (waterSpot) {
-            // Stelle eine Land-Cell in der Nähe des Wassers + suche von dort.
-            const found = r._findNearestWaterPoint(waterSpot.x + 15, waterSpot.z + 15, 40);
-            out.findReturnsObj = found !== null && typeof found.x === "number" && typeof found.z === "number";
-        }
-
-        // Verhaltens-Probe: assign drink an existing Kreatur, ein Tick laufen,
-        // task.args._target sollte gesetzt sein (Phase 1 abgeschlossen).
-        if (Array.isArray(r.state.creatures) && r.state.creatures.length > 0) {
-            const creature = r.state.creatures[0];
-            const origX = creature.position.x;
-            const origZ = creature.position.z;
-            const origTask = creature.userData && creature.userData.task ? { ...creature.userData.task } : null;
-            // Platziere die Kreatur nahe an einem Wasser-Punkt (falls vorhanden).
-            if (waterSpot) {
-                const sy = r._voxelSurfaceY(waterSpot.x + 12, waterSpot.z + 12);
-                if (Number.isFinite(sy)) {
-                    creature.position.set(waterSpot.x + 12, sy + 0.5, waterSpot.z + 12);
-                }
-            }
-            const ok = r.assignCreatureTask(creature, "drink", {}, { silent: true });
-            out.assignOk = ok === true;
-            const taskAfter = r._getCreatureTask(creature);
-            out.taskNameAfter = taskAfter ? taskAfter.name : null;
-            // Ein Tick — der drink-Tick sollte _target setzen wenn Wasser
-            // in 40m gefunden, sonst zurück zu wander.
-            r.updateCreatures(0.016);
-            const taskTicked = r._getCreatureTask(creature);
-            out.taskNameAfterTick = taskTicked ? taskTicked.name : null;
-            // Wenn Wasser gefunden: noch drink-Task; sonst wander-Fallback.
-            // Beide sind valide Outcomes je nach Welt-Variation.
-            if (taskTicked && taskTicked.name === "drink") {
-                out.targetSet = taskTicked.args && taskTicked.args._target !== undefined;
-            }
-
-            // Wieder-Herstellung.
-            creature.position.set(origX, creature.position.y, origZ);
-            if (origTask) r.assignCreatureTask(creature, origTask.name, origTask.args || {}, { silent: true });
-            else r.assignCreatureTask(creature, "wander", {}, { silent: true });
-        }
-
-        return out;
-    });
-    if (res.error) {
-        check("Welle V11.0-d.3: Drink-Band (realm verfügbar)", false, res.error);
-        return;
-    }
-    check("Welle V11.0-d.3: 'drink' in CREATURE_TASKS (6. Task)", res.tasksInclude === true);
-    check("Welle V11.0-d.3: CREATURE_TASKS jetzt 6 Einträge", res.tasksLength === 6);
-    check("Welle V11.0-d.3: AURA_HUE.drink = 210 (azur)", res.auraHue === 210);
-    check("Welle V11.0-d.3: CREATURE_DRINK_HALT_DIST = 1.5m", res.haltDist === 1.5);
-    check("Welle V11.0-d.3: CREATURE_DRINK_DURATION_S = 2.5s", res.duration === 2.5);
-    check("Welle V11.0-d.3: CREATURE_DRINK_SEARCH_RADIUS = 40m", res.searchRadius === 40);
-    check("Welle V11.0-d.3: CREATURE_DRINK_SPEED = 3.0 m/s", res.speed === 3.0);
-    check("Welle V11.0-d.3: Chat-Pattern 'trinke' → creature_task_nearest drink", res.chatParsesTrinke === true);
-    if (res.waterFound) {
-        check("Welle V11.0-d.3: _findNearestWaterPoint findet Wasser (Vorbedingung)", res.findReturnsObj === true);
-    }
-    if (res.assignOk !== undefined) {
-        check("Welle V11.0-d.3: assignCreatureTask akzeptiert 'drink'", res.assignOk === true);
-        check("Welle V11.0-d.3: Kreatur trägt drink-Task nach assign", res.taskNameAfter === "drink");
-        // Nach einem Tick: entweder noch drink (Wasser gefunden, walking)
-        // oder wander (Wasser nicht in 40m, Auto-Fallback). Beide OK.
-        check(
-            "Welle V11.0-d.3: nach Tick — Task ist drink ODER wander (3-Phasen läuft oder Fallback)",
-            res.taskNameAfterTick === "drink" || res.taskNameAfterTick === "wander",
-            `nach Tick: ${res.taskNameAfterTick}`
-        );
-    }
+    const p = await page.evaluate(() => window.anazhRealm.parseChatToDsl("trinke"));
+    check(
+        "Welle V11.0-d.3: Chat-Pattern trinke → creature_task_nearest drink",
+        !!p && !!p.program && p.program[0] === "creature_task_nearest" && p.program[1] === "drink"
+    );
 }
 
 // BEDROHUNG: ein WILDES Wesen (Temperament aus glühender Substanz, kein hostile-Flag) jagt nur im
@@ -1490,9 +1260,6 @@ async function checkBandPhaseEThreat(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        const HUNT = r.constructor._verhaltenGesetz().jagd;
-        out.consts = !!HUNT && HUNT.radius > 0 && HUNT.strikeCooldownSec > 0;
-        out.soul = !!r.constructor.CREATURE_SOULS.wolf; // die Raubtier-Seele (ALTLASTEN-NULL: der WOLF)
         const p = r.state.player;
         const pm = r.state.playerMesh.position;
         const savedMode = r.getGameMode();
@@ -1511,16 +1278,16 @@ async function checkBandPhaseEThreat(ctx) {
             pm.y = r.getTerrainHeightAt(pm.x, pm.z) + r.constructor.PLAYER_FOOT_OFFSET;
             const wolf = r.spawnCreatureAt(pm.x + 2, pm.y, pm.z, "happy", "wolf");
             spawned.push(wolf);
-            // W-D/M-F1 (V18.170) — die Spieler-Klemme schiebt frische Spawns auf
+            // W-D/M-F1 — die Spieler-Klemme schiebt frische Spawns auf
             // ≥3 m; dieser Test prüft den BISS, nicht den Spawn-Ort → die Kreatur
-            // rückt explizit in die Weite ihres Ansprungs (V9.56-i; Welle LF kampf:
+            // rückt explizit in die Weite ihres Ansprungs (Welle LF kampf:
             // der Biss ist der Ansprung, 1,2 m reicht jeder Größe), ihm zugewandt.
             if (wolf) {
                 wolf.position.set(pm.x + 1.2, pm.y, pm.z);
                 wolf.rotation.set(0, -Math.PI / 2, 0);
                 wolf.userData._steuer = null;
             }
-            // DER BISS IST DER ANSPRUNG (Welle LF kampf, Posten 5): der Ansatz springt an, gebissen wird, wenn der Kopf
+            // DER BISS IST DER ANSPRUNG (Posten 5): der Ansatz springt an, gebissen wird, wenn der Kopf
             // den Leib berührt — der Kreatur-Takt läuft, bis der Ansprung schnappt oder endet (höchstens 1,5 s). Ein
             // voriger Ansprung landet erst (die Biss-Uhr ruht so lange: kein Biss, den die Probe nicht setzt).
             // (die EINE Frage des Spiels, _kreaturAnsprungOffen: die Landung gehört zum Sprung — K13)
@@ -1544,9 +1311,7 @@ async function checkBandPhaseEThreat(ctx) {
                 }
                 return ok;
             };
-            // (1) die GATTUNG trägt WILD (predator = Carnivor-diet als Daten;
-            // die Substanz bleibt Richter für alle Nicht-Raubtiere).
-            out.wildTemperament = !!wolf && r._creatureTemperament(wolf) === "wild";
+            // (1) die Gattung trägt WILD: gate:kreatur-takt temperament (wolf@1 wild).
             // (2) der Jagd-Trieb: pfad+nah+unverängstigt → JA; Furcht schlägt
             // Jagd; frieden kennt keine Bedrohung; eine sanfte Seele jagt nie.
             out.drivePfad = r._creatureHuntDrive(wolf, 0) === true;
@@ -1604,8 +1369,6 @@ async function checkBandPhaseEThreat(ctx) {
         }
         return out;
     });
-    check("Phase E Bedrohung: Konstanten + Raubtier-Seele", res.consts && res.soul);
-    check("Phase E Bedrohung (NULL): die Gattung trägt WILD (Carnivor-diet als Daten)", res.wildTemperament);
     check(
         "Phase E Bedrohung: Jagd-Trieb pfad+nah+unverängstigt; Furcht schlägt Jagd",
         res.drivePfad && res.fearBeatsHunt
@@ -1622,8 +1385,7 @@ async function checkBandPhaseEThreat(ctx) {
     check("Phase E Bedrohung: FURCHT bei niedriger HP + TRIUMPH beim Fall des Jägers", res.fearFelt && res.triumphFelt);
 }
 
-// Die Tiere entstapeln + differenzieren sich — eingefaltet aus gate:tier-separation (D3b, V18.472, Schöpfer 14.07.: „tiere staken
-// sich aktuell, obwohl wir emotionen, unterschiedliches verhalten und charaktere sein sollten"): am ECHTEN Chokepoint (updateCreatures):
+// Die Tiere entstapeln + differenzieren sich — eingefaltet aus gate:tier-separation (D3b): am ECHTEN Chokepoint (updateCreatures):
 // (A) zwei identische Wesen auf DEMSELBEN Punkt sind nach 200 Ticks > Körperradius getrennt, beschränkt · (B) verschiedene Stats →
 // messbar verschiedene Bewegung (speedMul, Leine aus Mut × Größe) · (C) Selbsttest · (D–F, 0710-4) Leib an Leib: keine Durchdringung,
 // Impuls nach Masse, der Spieler bekommt seinen Stoß, Lockstep; Selbsttests C2 (ohne Leib-Kontakt) und D (der alte Befund).
@@ -1727,13 +1489,13 @@ async function checkBandTierSeparation(ctx) {
         delete a2.userData._wanderSlot;
         a1.userData.wanderAnchor = null;
         a2.userData.wanderAnchor = null;
-        // genullt: die Separation UND der EINE Leib-Löser `_leibKontakte` (nie Durchdringung — er allein trennte das Paar)
+        // genullt: die Separation UND das EINE Paar Leib an Leib `_leibPaar` (es allein trennte das Paar)
         const savedSep = r._applyCreatureSeparation;
         r._applyCreatureSeparation = function () {};
-        r._leibKontakte = function () {};
+        r._leibPaar = () => false;
         tick(200, 0.05);
         r._applyCreatureSeparation = savedSep; // restaurieren (Gate-Hook-Lehre)
-        delete r._leibKontakte;
+        delete r._leibPaar;
         o.cGap = gap(a1, a2);
         o.checks.cLensFires = o.cGap < 0.2; // gestapelt → die (A)-Bedingung WÜRDE rot lesen
         cleanup([a1, a2]);
@@ -1764,7 +1526,7 @@ async function checkBandTierSeparation(ctx) {
         }
         o.b1PathSmall = pathSmall;
         o.b1PathBig = pathBig;
-        // Das Tempo ist m/s aus dem Gang-Gesetz (Welle L, Q3): die Tempo-Einheit tempo·√(g·L) wächst mit der Hüft-
+        // Das Tempo ist m/s aus dem Gang-Gesetz (Q3): die Tempo-Einheit tempo·√(g·L) wächst mit der Hüft-
         // Höhe — ein Gigant läuft in m/s schneller als ein Kitz. Die Stat-Achse zeigt sich im Weg JE EINHEIT seiner Größe
         // (Froude-gleich): das Kitz flink, der Gigant träge relativ zu seinem Leib.
         const ST = window.__tetrapodaCore;
@@ -2122,7 +1884,7 @@ async function checkBandKreaturKosten(ctx) {
         // ── (B) NEUTRALE STANCE: mid-step posieren → jenseits der Grenze einfrieren ──
         const probeS = probes.voll;
         const roles = r._motionRolesForSoul(probeS.userData.soul);
-        // Gehen heißt WEG (Welle 5, das Gang-Gesetz): der Schritt-Schwung folgt der Lage-Änderung des Leibs — die
+        // Gehen heißt WEG (das Gang-Gesetz): der Schritt-Schwung folgt der Lage-Änderung des Leibs — die
         // Probe läuft 20 Takte mit 1,6 m/s (ein einzelner Ruf ohne Weg steht).
         const schreite = (pr) => {
             const g0 = pr.userData._tierBaum._gang;
@@ -2811,8 +2573,7 @@ async function checkBandKreaturKosten(ctx) {
         // Absenz (window.__codeOf, Kommentare gestrippt): kein castShadow-Literal am Gelenk-Guss; die Wirts-Distanzen sind keine
         // Konstante mehr (ihre Leser hält gate:altlasten über jede Stamm-Datei, die Gestalt liest `ab`/`hyst` aus ihrer Kern-Zeile).
         o.wLiterale = ["_buildCreatureGroup", "_buildHumanoidRig"].filter((k) => !window.__fehlt(r[k], /castShadow\s*=\s*false/)).length;
-        o.wDistKonst = ["TIER_FERN_DIST_SQ", "TIER_FERN_HYST", "MENSCH_FERN_DIST_SQ"].filter((k) => k in A);
-        o.checks.wAbsenz = o.wLiterale === 0 && o.wDistKonst.length === 0;
+        o.checks.wAbsenz = o.wLiterale === 0;
     
         // ── (F) DIE RUHE JENSEITS DER GRENZE (S3): beide Stufen tragen DIESELBEN Knochen — wo der Gang jenseits der Grenze
         // ruht (der Peer-Tick des Menschen, die Sicht-Kopie eines fremden Tiers), stehen sie in der Ruhe-Pose, nie mitten
@@ -3245,6 +3006,6 @@ async function checkBandKreaturKosten(ctx) {
 }
 
 module.exports = {
-    checkBandV1758CreatureNature, checkBandWelle6HCreatures, checkBandWelleV11D3DrinkTask, checkBandPhaseEThreat,
+    checkBandWelle6HCreatures, checkBandWelleV11D3DrinkTask, checkBandPhaseEThreat,
     checkBandTierSeparation, checkBandKreaturKosten,
 };

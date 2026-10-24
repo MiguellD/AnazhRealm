@@ -1,8 +1,6 @@
 // albedo-tafel.cjs — DIE ALBEDO-TAFEL LABOR ↔ WELT (S1 W1e, Gebot 10: die Klasse beim NAMEN, bevor ein Schnitt fällt).
-// Befund (Synthese §2.2 b, Karten): das r128-Labor liest ein Paletten-Hex roh als lineare Albedo, die Welt (r184) liest
-// die Albedo, die der Kern backt — wo das FARB-GESETZ (Lehre 21: Hex = sRGB-Absicht, Albedo = sein linearer Wert) erst im
-// Ofen oder nur in der Welt greift, sieht der Schöpfer im Labor eine andere Farbe als im Spiel (Holz-Griff 0,10 ↔ 0,31,
-// Karamell-Haut 1,4–3,0× je Kanal). Keine Linse maß das je Klasse an BEIDEN Seiten mit DERSELBEN Rechnung.
+// Wo das FARB-GESETZ (Lehre 21: Hex = sRGB-Absicht, Albedo = sein linearer Wert) erst im Ofen oder nur in der Welt greift,
+// sieht der Schöpfer im Labor eine andere Farbe als im Spiel — die Tafel misst je Klasse BEIDE Seiten mit DERSELBEN Rechnung.
 //
 // DIE TAFEL (spec/farbe/albedo-tafel.json): je Klasse (Rinde · Laub · Fels · Boden · Haus · Metall/Lack · Haut/Fell ·
 // Klinge) ein Exemplar im Labor (Studio · Vorlage · Stoff-Wähler) und in der Welt (Exemplar · Täter-Klasse · Stoff-Wähler),
@@ -14,7 +12,7 @@
 //   RATSCHE  je Zeile die Abweichung des letzten Nachzugs — eine neue Messung darf nur näher an 1 (a ≤ Ratsche + Messrand);
 //            sie ist die Wand, solange W5 (das FARB-GESETZ in jedem Kern) offen ist.
 //   SOLL     a ≤ ln(1 + Toleranz) (die Toleranz steht in der Tafel, W5: „Albedo Lab ↔ Welt je Klasse innerhalb einer
-//            gesetzten Toleranz") — benannt, gezählt (n von N innerhalb), nie Teil des Ratschen-Urteils.
+//            gesetzten Toleranz") — benannt, gezählt (n von N innerhalb); eine `pflicht`-Zeile hält es selbst.
 //   KARTE    je Studio die 18-%-Karte unter dem Labor-Licht: k·L = Belichtung × Leuchtdichte (der Eingang der Tonkurve),
 //            Soll: Mittelgrau + 1 EV durch die Kurve der Labore (Tafel `belichtung.kurve`, r128 ACESFilmicToneMapping;
 //            `kartenEichung`, scripts/lib/licht-linsen.cjs — dieselbe Rechnung, mit der die Welt ihre Kurve eicht, BELICHTUNG),
@@ -116,7 +114,7 @@ function tafelPruefen(t) {
             f.push(`${z.id}: welt.klasse ist kein Regex`);
         }
         const ex = W.exemplar || {};
-        if (!["architektur", "tier", "spieler", "boden"].includes(ex.typ))
+        if (!["architektur", "tier", "mensch", "boden"].includes(ex.typ))
             f.push(`${z.id}: welt.exemplar.typ unbekannt`);
         if ((ex.typ === "architektur" || ex.typ === "tier") && !ex.name) f.push(`${z.id}: welt.exemplar.name fehlt`);
         if (ex.typ === "boden" && !(Array.isArray(ex.stelle) && ex.stelle.length === 2 && ex.stelle.every(zahl)))
@@ -220,9 +218,8 @@ function tafelUrteil(t, messung) {
             rot.push({ art: "stumm", text: `${z.id}: das Labor maß nichts (${(L && L.fehler) || "keine Zeile"})` });
         if (!W || !zahl(W.Y) || !(W.Y > 0))
             rot.push({ art: "stumm", text: `${z.id}: die Welt maß nichts (${(W && W.fehler) || "keine Zeile"})` });
-        // DIE STUFE DES EXEMPLARS (K63-n7; gemessen 15.10., Radeon: der Wagen gt stand in der Blende L0/L1, die Stufe 1 faltet
-        // die Stoffe ihrer Seh-Klasse — Chrom und Glas lasen im Lack, Welt 0,0175 gegen 0,0066): eine Zeile erklärt die Stufen,
-        // in denen die Welt ihr Exemplar zeigt (`welt.stufen`); zeichnet der Schuss eine andere, misst er einen anderen Stoff
+        // DIE STUFE DES EXEMPLARS (K63-n7): eine Zeile erklärt die Stufen, in denen die Welt ihr Exemplar zeigt
+        // (`welt.stufen`); zeichnet der Schuss eine andere, misst er einen anderen Stoff
         const ds = z.welt && Array.isArray(z.welt.stufen) ? z.welt.stufen : null;
         if (ds && W && zahl(W.Y)) {
             // eine leere Liste ist keine Antwort: der Schuss trug keinen Zug mit Stufe (ein ganzer Satz statt seines Exemplars)
@@ -249,6 +246,7 @@ function tafelUrteil(t, messung) {
                     art: "ratsche",
                     text: `${z.id}: Labor/Welt ${e.verhaeltnis} (|ln| ${e.abweichung}) über der Ratsche ${z.ratsche} + Rand`,
                 });
+            if (z.pflicht && !e.imSoll) rot.push({ art: "soll", text: `${z.id}: Labor/Welt ${e.verhaeltnis} außerhalb des Solls` });
         }
         zeilen.push(e);
     }
@@ -375,7 +373,7 @@ function tafelTabelle(u) {
 }
 
 // DAS ZIEL DES LABORS (EINE Quelle für Albedo und Karte): ein Halbfloat-Ziel W × H und sein Leser. Die Engine der Welt (r184,
-// die Garage seit 18.10.) liest es als Versprechen, das WebGPU-Backend aufrecht; WebGL (r128 und der WebGL2-Ersatz von r184)
+// auch die Garage) liest es als Versprechen, das WebGPU-Backend aufrecht; WebGL (r128 und der WebGL2-Ersatz von r184)
 // liest von unten nach oben — die Zeilen kehren um (das Bild steht wie in der Welt). Die Kopie bucht beim Aufruf, das Ziel
 // wechselt sofort zurück.
 function laborZiel(R, W, H) {

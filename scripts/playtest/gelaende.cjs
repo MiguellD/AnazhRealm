@@ -5,44 +5,29 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
-    // `carveVoxelSphere` schnitzt eine Kugel Luft ins Dichte-Feld.
+    // `carveVoxel` nimmt eine Säule aus dem Dichte-Feld (gelaende-core `editForm`: Radius r, halbe Höhe r).
     const voxelP3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         if (r.state.worldMeta) {
             const base = r.state.terrainBaseHeight || 0;
-            // Der Schnitt zieht am Kugel-Zentrum exakt strength (48) ab.
+            // Der Schnitt ist die Säule r im Fels: ihr Kern und 0,5 m innerhalb ihres Rands Luft, 0,5 m außerhalb Fels.
             r.state.worldMeta.voxelEdits = [];
-            const dBefore = r._terrainDensityAt(0, base - 33, 0);
-            r.carveVoxelSphere(0, base - 33, 0, 12);
-            const dAfter = r._terrainDensityAt(0, base - 33, 0);
-            out.carveSubtracts = Math.abs(dBefore - dAfter - 48) < 0.01;
+            r.carveVoxel(0, base - 33, 0, 12);
+            out.carveSubtracts =
+                r._terrainDensityAt(0, base - 33, 0) < 0 &&
+                r._terrainDensityAt(11.5, base - 33, 0) < 0 &&
+                r._terrainDensityAt(12.5, base - 33, 0) > 0;
             out.editStored = r.state.worldMeta.voxelEdits.length === 1;
-            // Ein fester Punkt wird zu Luft (echtes Loch). V14.7: SURF-RELATIV das
-            // Fenster knapp unter der Oberfläche scannen (dort ist Dichte klein-positiv),
-            // statt absolut base+20..base-30 (das lag in der hohen V14.7-Welt tief solid).
-            let solidToAir = false;
-            const sSurf = r._terrainMacroSurfaceY(50, 50);
-            for (let sy = Math.round(sSurf) + 5; sy >= sSurf - 30 && !solidToAir; sy -= 3) {
-                const dB = r._terrainDensityAt(50, sy, 50);
-                if (dB > 1 && dB < 40) {
-                    r.state.worldMeta.voxelEdits = [];
-                    r.carveVoxelSphere(50, sy, 50, 12);
-                    if (r._terrainDensityAt(50, sy, 50) < 0) solidToAir = true;
-                }
-            }
-            out.solidToAir = solidToAir;
             // Persistenz: der Edit reist im Welt-Snapshot.
             r.state.worldMeta.voxelEdits = [];
-            r.carveVoxelSphere(10, base, 10, 5);
+            r.carveVoxel(10, base, 10, 5);
             const snap = r.buildStateSnapshot();
             out.snapshotHasEdit = !!(
                 snap &&
@@ -50,12 +35,12 @@ async function checkBandVoxelP3AndInventory(ctx) {
                 Array.isArray(snap.worldMeta.voxelEdits) &&
                 snap.worldMeta.voxelEdits.length >= 1
             );
-            // Kein Edit fällt still (K23): 270 Schnitte → 270 Edits (bis K23 verdrängte ein FIFO-Deckel ab 257).
+            // Kein Edit fällt still (K23): 270 Schnitte → 270 Edits.
             r.state.worldMeta.voxelEdits = [];
-            for (let i = 0; i < 270; i++) r.carveVoxelSphere(i * 3, base, i * 3, 3);
+            for (let i = 0; i < 270; i++) r.carveVoxel(i * 3, base, i * 3, 3);
             out.capHeld = r.state.worldMeta.voxelEdits.length === 270;
             // Chat-Befehl `voxel carve` fügt einen Edit hinzu.
-            // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
+            // voxelTerrainActive ist permanent — kein Setup nötig.
             r.state.worldMeta.voxelEdits = [];
             r.processChatCommand("voxel carve");
             out.chatCarveAddsEdit = r.state.worldMeta.voxelEdits.length === 1;
@@ -68,11 +53,10 @@ async function checkBandVoxelP3AndInventory(ctx) {
 
     if (voxelP3Results && !voxelP3Results.error) {
         check(
-            "Voxel P3: der Schnitt zieht am Kugel-Zentrum die Dichte ab (festes → Luft)",
+            "Voxel P3: der Schnitt nimmt die Säule r aus dem Fels (Kern und Rand Luft, außerhalb Fels)",
             voxelP3Results.carveSubtracts
         );
         check("Voxel P3: der Schnitt-Edit landet in worldMeta.voxelEdits", voxelP3Results.editStored);
-        check("Voxel P3: ein fester Punkt wird durch den Schnitt zu Luft (echtes Loch)", voxelP3Results.solidToAir);
         check("Voxel P3: der Schnitt-Edit reist im Welt-Snapshot (überlebt Reload)", voxelP3Results.snapshotHasEdit);
         check("Voxel P3: kein Edit fällt still — 270 Schnitte, 270 Edits (K23)", voxelP3Results.capHeld);
         check("Voxel P3: der Chat-Befehl `voxel carve` schnitzt eine Mulde", voxelP3Results.chatCarveAddsEdit);
@@ -117,9 +101,9 @@ async function checkBandVoxelP3AndInventory(ctx) {
         // Ein Carve in der Nähe des Spielers markiert Chunks dirty
         // statt sie sofort zu rebuilden (V9.40-c-Verhalten).
         const dirtyBefore = r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : 0;
-        const carveRet = r.carveVoxelSphere(pm.x, cy, pm.z, 3.5);
+        const carveRet = r.carveVoxel(pm.x, cy, pm.z, 3.5);
         out.editMarksDirty = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.size > dirtyBefore);
-        // V18.97-Telemetrie (V18.93-Muster): bei Rot zeigt die Invariante den
+        // bei Rot zeigt die Invariante den
         // ECHTEN Lauf-Zustand (Position/Surface/Edit-Annahme), statt zu raten.
         out.telemetry = JSON.stringify({
             pm: { x: +pm.x.toFixed(1), y: +pm.y.toFixed(1), z: +pm.z.toFixed(1) },
@@ -129,7 +113,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
             dirtyBefore,
             dirtyAfter: r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : -1,
             chunks: r.state.voxelChunks ? r.state.voxelChunks.size : -1,
-            // V18.105 — offset-FREIE Chunk-Formel (der alte +150-Offset war die
+            // offset-FREIE Chunk-Formel (der alte +150-Offset war die
             // Heightfield-Ära und log in der Telemetrie).
             playerChunkBuilt: !!(
                 r.state.voxelChunks && r.state.voxelChunks.get(`${Math.floor(pm.x / 43.2)},${Math.floor(pm.z / 43.2)}`)
@@ -145,7 +129,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         // nächsten gehen an den Worker voraus; ohne Worker baut er einen je Frame synchron). Ein frischer Frame: der
         // Einbau-Merker des Edits (`_bodenEinbau`, der Frame-Planer setzt ihn je Frame zurück) gilt nicht.
         r.state._frameOverBudget = false;
-        r.carveVoxelSphere(pm.x, cy, pm.z, 3.5);
+        r.carveVoxel(pm.x, cy, pm.z, 3.5);
         const dirtyPostEdit = r.state.dirtyVoxelChunks.size;
         if (dirtyPostEdit > 1) {
             const st = r.state;
@@ -175,7 +159,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         }
         // Disposal räumt dirty-Marker mit.
         r._drainDirtyVoxelChunks();
-        r.carveVoxelSphere(pm.x, cy, pm.z, 3.5);
+        r.carveVoxel(pm.x, cy, pm.z, 3.5);
         const dirtyKey = [...r.state.dirtyVoxelChunks][0];
         if (dirtyKey) {
             r._disposeVoxelChunk(dirtyKey);
@@ -384,44 +368,34 @@ async function checkBandVoxelP3AndInventory(ctx) {
     }
 
     // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ###
-    // `fillVoxelSphere` addiert Dichte (Boden aufschütten).
+    // `fillVoxel` vereinigt eine Säule mit dem Boden (Aufschütten).
     const voxelP3bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         if (r.state.worldMeta) {
             const base = r.state.terrainBaseHeight || 0;
-            // Der Füll-Schnitt addiert am Kugel-Zentrum exakt strength.
+            // Die Füllung ist die Säule r in der Luft (20 m über dem Boden): ihr Kern und 0,5 m innerhalb ihres Rands Fels,
+            // 0,5 m außerhalb bleibt Luft Luft.
             r.state.worldMeta.voxelEdits = [];
-            const dBefore = r._terrainDensityAt(0, base + 40, 0);
-            r.fillVoxelSphere(0, base + 40, 0, 12);
-            const dAfter = r._terrainDensityAt(0, base + 40, 0);
-            out.fillAdds = Math.abs(dAfter - dBefore - 48) < 0.01;
+            const fy = r._terrainMacroSurfaceY(70, 70) + 20;
+            const aussen = r._terrainDensityAt(82.5, fy, 70);
+            r.fillVoxel(70, fy, 70, 12);
+            out.fillAdds =
+                r._terrainDensityAt(70, fy, 70) > 0 &&
+                r._terrainDensityAt(81.5, fy, 70) > 0 &&
+                (aussen > 0 || r._terrainDensityAt(82.5, fy, 70) < 0);
             out.editIsFillMode =
                 r.state.worldMeta.voxelEdits.length === 1 && r.state.worldMeta.voxelEdits[0].mode === "fill";
-            // Ein Luft-Punkt wird durch das Füllen zu festem Grund. V14.7: SURF-RELATIV
-            // knapp ÜBER der Oberfläche scannen (dort ist die Dichte klein-negativ/Luft),
-            // statt absolut base+35..base-25 (das lag in der hohen V14.7-Welt tief solid).
-            let airToSolid = false;
-            const fSurf = r._terrainMacroSurfaceY(70, 70);
-            for (let sy = Math.round(fSurf) + 30; sy >= fSurf - 5 && !airToSolid; sy -= 3) {
-                const dB = r._terrainDensityAt(70, sy, 70);
-                if (dB < -1 && dB > -40) {
-                    r.state.worldMeta.voxelEdits = [];
-                    r.fillVoxelSphere(70, sy, 70, 12);
-                    if (r._terrainDensityAt(70, sy, 70) > 0) airToSolid = true;
-                }
-            }
-            out.airToSolid = airToSolid;
             // Backward-Compat: ein mode-loser Alt-Edit gilt als carve.
             r.state.worldMeta.voxelEdits = [];
             const dPre = r._terrainDensityAt(120, base - 33, 120);
             // BÜHNE: Edit-Daten einer Einheits-Probe — gelesen wird der Edit, nicht der Ort
-            r.state.worldMeta.voxelEdits = [{ x: 120, y: base - 33, z: 120, r: 12, strength: 48 }];
+            r.state.worldMeta.voxelEdits = [{ x: 120, y: base - 33, z: 120, r: 12 }];
             out.modelessIsCarve = r._terrainDensityAt(120, base - 33, 120) < dPre;
             // Chat-Befehl `voxel fill` fügt einen fill-Edit hinzu.
             // frieden — damit das V9.17-Füll-Gate frei ist.
-            // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
+            // voxelTerrainActive ist permanent — kein Setup nötig.
             const p3bMode = r.getGameMode();
             r.setGameMode("frieden");
             r.state.worldMeta.voxelEdits = [];
@@ -438,14 +412,10 @@ async function checkBandVoxelP3AndInventory(ctx) {
 
     if (voxelP3bResults && !voxelP3bResults.error) {
         check(
-            "Voxel P3b: der Füll-Schnitt addiert am Kugel-Zentrum die Dichte (Luft → fest)",
+            "Voxel P3b: die Füllung ist die Säule r (Kern und Rand fest, außerhalb bleibt Luft Luft)",
             voxelP3bResults.fillAdds
         );
         check("Voxel P3b: der Füll-Edit trägt mode:fill", voxelP3bResults.editIsFillMode);
-        check(
-            "Voxel P3b: ein Luft-Punkt wird durch das Füllen zu festem Grund (aufgeschüttet)",
-            voxelP3bResults.airToSolid
-        );
         check("Voxel P3b: ein mode-loser Alt-Edit gilt als carve (Backward-Compat)", voxelP3bResults.modelessIsCarve);
         check("Voxel P3b: der Chat-Befehl `voxel fill` schüttet auf", voxelP3bResults.chatFillAddsEdit);
     }
@@ -490,7 +460,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         r.state.player.inventory = new Array(27).fill(null);
         out.gatePfadDeniesEmpty = r._voxelFillGate().ok === false;
         // Chat `voxel fill` in pfad ohne Material → kein Edit.
-        // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
+        // voxelTerrainActive ist permanent — kein Setup nötig.
         wm.voxelEdits = [];
         r.processChatCommand("voxel fill");
         out.chatFillDeniedNoMat = wm.voxelEdits.length === 0;
@@ -602,7 +572,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         r.state.player.stamina = 100;
         r.setGameMode("pfad");
         const opResultPfad = r.applyOpToPart("mode-test-bp", 0, "hände");
-        // V8.39 — die Kosten skalieren mit dem Werkzeug-cap (nicht
+        // die Kosten skalieren mit dem Werkzeug-cap (nicht
         // mehr fix 10); dieser Test prüft das Modus-GATE (pfad
         // konsumiert), die genaue Skalierung prüft der V8.39-Block.
         out.pfadChargesStamina = opResultPfad.ok === true && r.state.player.stamina < 100;
@@ -760,7 +730,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         const slot1 = document.querySelector('#inventory-grid [data-inv-slot="1"]');
         out.geodeHasMagieClass = slot0 && slot0.classList.contains("tag-magieleitung");
         out.baumHasLebendigClass = slot1 && slot1.classList.contains("tag-lebendig");
-        // V18.60 — die Drag&Drop-Affordanz: ein gefüllter Inventar-Slot ist ziehbar (Spielerperspektive,
+        // die Drag&Drop-Affordanz: ein gefüllter Inventar-Slot ist ziehbar (Spielerperspektive,
         // Werkstatt-artige Direkt-Manipulation; das Ziehen inv→hotbar existiert via _onSlotDrop).
         out.filledSlotDraggable = !!(slot0 && slot0.getAttribute("draggable") === "true");
         // baum_eiche hat laub → brennbar 0.85 hoch
@@ -779,7 +749,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.assignWorks = assignOk === true && r.state.hotbar[3] === "kristall_geode";
         out.assignClearsSelection = r.state.inventorySelected === null;
 
-        // V18.57 Ich-Bogen — das Selbst-Porträt (Werkstatt-/Hof-Muster auf das Selbst): EIN _selfProfile-Vektor,
+        // Ich-Bogen — das Selbst-Porträt (Werkstatt-/Hof-Muster auf das Selbst): EIN _selfProfile-Vektor,
         // das geteilte Spec-Sheet (WERTE führen | NATUR), die Bühne, die 6-Achsen-EMOTION (live), die REISE,
         // die drei Zonen. Das Overlay ist hier offen (toggle(true) oben → _ichHandleOverlay rendert).
         const sp = r._selfProfile();
@@ -799,7 +769,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.ichWerteBars = !!(ichSpec && ichSpec.querySelectorAll(".spec-body .spec-bar").length > 0);
         // die reiche 6-Achsen-Emotion (live, ≠ Kreatur binär) prominent im Ich
         out.ichEmotion6 = document.querySelectorAll("#status-emotions .emotion").length === 6;
-        // V18.61 Ich-F (H.1) — die Chronik/Reise wandert in den HOF (Welt-Stimme); das Ich trägt keine Reise mehr.
+        // die Chronik/Reise wandert in den HOF (Welt-Stimme); das Ich trägt keine Reise mehr.
         out.ichHasNoReise = !document.getElementById("ich-reise");
         out.hofChronikInDom = !!document.getElementById("hof-chronik");
         r._renderHofChronik();
@@ -818,15 +788,15 @@ async function checkBandVoxelP3AndInventory(ctx) {
             document.querySelector(".ich-readout #ich-stage-spec") &&
             document.querySelector(".ich-readout #status-emotions")
         );
-        // V18.62 Ich-H — der Soul-Select wandert in den Header (Körper-Bar), keine separate Seele-Sektion;
+        // der Soul-Select wandert in den Header (Körper-Bar), keine separate Seele-Sektion;
         // ein Hinweis zeigt auf die Werkstatt; der Ich-Soul-Editor ist weg.
         out.ichSoulBarInHeader = !!document.querySelector(".inventory-col-character .ich-soul-bar #player-soul-select");
-        // V18.65 — der Werkstatt-Hinweis lebt jetzt als Tooltip am Select (Chrome komprimiert, kein Absatz).
+        // der Werkstatt-Hinweis lebt jetzt als Tooltip am Select (Chrome komprimiert, kein Absatz).
         out.ichSoulHint = (() => {
             const sel = document.getElementById("player-soul-select");
             return !!(sel && /werkstatt/i.test(sel.getAttribute("title") || ""));
         })();
-        // V18.65 — die EINE Selbst-Suche TREIBT das Ich (das Werkstatt-Loop search→Treffer, kein toter
+        // die EINE Selbst-Suche TREIBT das Ich (das Werkstatt-Loop search→Treffer, kein toter
         // Omnibox-Knopf): tippen filtert das Rezeptbuch UND dimmt Nicht-Treffer in der Habe; leer = alles
         // wieder sichtbar. KONSUM-Test: nicht „Knopf existiert", sondern „die Suche wirkt beobachtbar".
         r.renderRecipeBook();
@@ -1410,7 +1380,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
         if (damChunkEntry && damChunkEntry.waterCells) {
             const cells = damChunkEntry.waterCells;
             const aabb = damEntry.blockerAABBs[0];
-            // V9.93 — waterCells immer LOD 0, daher cfgWater statt cfgFor
+            // waterCells immer LOD 0, daher cfgWater statt cfgFor
             const cfg = cfgWater;
             const step = cfg.step;
             const oy = base - cfg.floorDrop;
@@ -1459,7 +1429,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
         const wl = r.state.waterLevel;
         let carveX = null;
         let carveZ = null;
-        let carveMacro = null;
         for (let cx = -4; cx <= 4 && carveX === null; cx++) {
             for (let cz = -4; cz <= 4 && carveX === null; cz++) {
                 if (cx === testCx && cz === testCz) continue;
@@ -1486,7 +1455,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 ) {
                     carveX = x;
                     carveZ = z;
-                    carveMacro = m;
                 }
             }
         }
@@ -1505,7 +1473,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
             out.carveCellUnderWL = carveChunkEntry && carveChunkEntry.waterCells ? "measure" : "no-watercells";
             if (carveChunkEntry && carveChunkEntry.waterCells) {
                 const cells = carveChunkEntry.waterCells;
-                // V9.93 — waterCells immer LOD 0
+                // waterCells immer LOD 0
                 const cfg = cfgWater;
                 const step = cfg.step;
                 const oy = base - cfg.floorDrop;
@@ -1517,7 +1485,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 const idxUnderWL = cellI + cellK * cfg.dim + cellJUnderWL * cfg.dim * cfg.dim;
                 if (cellJUnderWL >= 0 && cellJUnderWL < cfg.dimY) {
                     out.carveCellUnderWL = cells[idxUnderWL];
-                    // V13.1: ein Carve im isolierten Hochland bleibt TROCKEN
+                    // ein Carve im isolierten Hochland bleibt TROCKEN
                     // (Atlas-strict → keine Phantom-Pfütze ohne echte Quelle).
                     // In-Page berechnet (STATE lebt nur hier, nicht im Node-Check).
                     out.carveStaysDry = cells[idxUnderWL] !== STATE.WATER;
@@ -1622,7 +1590,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 s1 += v;
                 cw += v * j;
             }
-        // V18.93 — der Distanz-Decay (CA_FLOW_KEEP) dissipiert LATERAL bewusst:
+        // der Distanz-Decay (CA_FLOW_KEEP) dissipiert LATERAL bewusst:
         // die Invariante ist KEINE SCHÖPFUNG + begrenzter Schwund (der Blob fällt
         // verlustfrei, spreizt dann mit Decay — Σ fällt begrenzt, steigt nie).
         out.t4Conserves = s1 <= s0 + 1e-4 && s1 >= s0 * 0.3;
@@ -1630,7 +1598,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // T4a-2 — der Automat ist in die WELT verdrahtet: reaktive Level-Schicht + Welt-Tick +
         // cross-chunk-wake, der Carve weckt die Region. Voller Welt-Beweis: `diag-water-world-flow`.
 
-        // V18.224 — der Streu-Takt kehrt zurück (Test-Isolation aufräumen)
+        // der Streu-Takt kehrt zurück (Test-Isolation aufräumen)
         delete r._tickScatterStreaming;
         return out;
     });
@@ -1660,15 +1628,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
             `diff=${res.cellAfterRemoveAbove}`
         );
     }
-    // Kein isolierter Flach-Spot im Ring = „unmessbar = bestanden“ (nicht jeder Ring hat einen);
-    // der Phantom-Test (carveStaysDry) läuft nur mit passendem Spot.
-    check(
-        "Welle C.3 V9.74: Trocken-Spot für Carve-Test (gefunden ODER unmessbar)",
-        true,
-        res.carveSpotFound
-            ? `macroY=${res.carveMacro || "?"}`
-            : "kein isolierter Flach-Spot im Ring — Test übersprungen"
-    );
+    // der Phantom-Test (carveStaysDry) läuft nur mit passendem Spot (nicht jeder Ring hat einen)
     if (res.carveSpotFound) {
         // Phantom-Schutz (heilige Invariante): ein Carve OHNE Wasser-Quelle in Reichweite bleibt TROCKEN,
         // jede Tiefe; nur nahe einer echten Quelle füllt sich die Mulde reaktiv. Der Spot oben ist via
@@ -1706,7 +1666,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
         "T3 (Dual Contouring): DC_LAMBDA + DC_SHARP_MOVE2 Konstanten existieren (Worker-gespiegelt)",
         res.t3DcConstants
     );
-    // T4 (terrain-t4-wasser-ca-plan §3): der Wasser-Automat-Kern — Wasser fliesst (Option A).
+    // T4: der Wasser-Automat-Kern — Wasser fliesst (Option A).
     check("T4 (Wasser-CA): keine Schöpfung + begrenzter Decay-Schwund (V18.93)", res.t4Conserves);
     check("T4 (Wasser-CA): das Wasser FLIESST — ein Blob fällt (Schwerpunkt sinkt)", res.t4Flows);
     // T4a-2 — in die Welt verdrahtet (reaktive Schicht + Welt-Tick + cross-chunk-wake + Carve-Wake).
@@ -1806,7 +1766,7 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         r.state.voxelDensityCache.set(`${ecx + 10},${ecx + 10},0`, new Float32Array(1));
         const editsVor5 = r.state.worldMeta.voxelEdits;
         r.state.worldMeta.voxelEdits = (editsVor5 || []).slice();
-        r.carveVoxelSphere(1000, r._terrainMacroSurfaceY(1000, 1000), 1000, 3);
+        r.carveVoxel(1000, r._terrainMacroSurfaceY(1000, 1000), 1000, 3);
         out.editBumpedStateGen =
             r._voxelStand(ecx, ecx) !== standNahVor && r._voxelStand(ecx + 10, ecx + 10) === standFernVor;
         out.editClearedCache =
@@ -2000,7 +1960,7 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
                 if (syncFresh.waterCells[i] !== workerMesh.waterCells[i]) cellMismatches++;
             }
             out.cellMismatches = cellMismatches;
-            // V9.91 Akzeptanz: < 1% Cell-Mismatches (Architektur-Stempel-
+            // Akzeptanz: < 1% Cell-Mismatches (Architektur-Stempel-
             // Differenz von <100 Cells bei ~71k Cells = < 0.15%).
             out.cellsNearMatch = cellMismatches < len * 0.01;
         } else {
@@ -2076,8 +2036,8 @@ async function checkBandV17118WorkerEngaged(ctx) {
             workerSpawned: !!r.state.voxelWorker,
             worldgenSynced: !!r.state.voxelWorkerWorldgenSynced,
             // Laufzeit: der Neubau des Spieler-Chunks baut nie synchron (K69-2: der Neubau jedes Chunks geht über den
-            // Worker, die Flut-Saat reist mit dem Auftrag; bis K69-2 baute der Spieler-Chunk am Erdbau 88–261 ms im
-            // Haupt-Faden). Gegenprobe: forceSync (die Test-Naht) baut synchron — der Zähler sieht ihn.
+            // Worker, die Flut-Saat reist mit dem Auftrag). Gegenprobe: forceSync (die Test-Naht) baut synchron — der
+            // Zähler sieht ihn.
             spielerNeubau: (() => {
                 const pm = r.state.playerMesh && r.state.playerMesh.position;
                 const span = r._voxelChunkConfig().span;
@@ -2121,7 +2081,7 @@ async function checkBandV17118WorkerEngaged(ctx) {
     );
 }
 
-// PHASE A (gigant-plan §5) — das Fundament watertight: A1 Morph-Cap+Stitch-Band ·
+// PHASE A — das Fundament watertight: A1 Morph-Cap+Stitch-Band ·
 // A2 Edit-Lokalität (der „Reset" ist GEMESSEN unsichtbar) · A5 Luft↔Ring-Kante ·
 // A6 Körper-Kollision (Begraben-Rettung + Decken-Sprung-Klemme + Kamera-Clip).
 async function checkBandPhaseAFundament(ctx) {
@@ -2174,10 +2134,11 @@ async function checkBandPhaseAFundament(ctx) {
                     ez = cz * span + span / 2;
                 const surf = r._voxelSurfaceY(ex, ez);
                 if (typeof surf === "number") {
-                    r.carveVoxelSphere(ex, surf - 0.5, ez, 1.5);
+                    r.carveVoxel(ex, surf - 0.5, ez, 1.5);
                     r._drainDirtyVoxelChunks();
                     const after = snap(r.state.voxelChunks.get(`${cx},${cz}`).mesh.geometry);
-                    const rInf = 1.5 + 4 * 1.8;
+                    const zelle = r._voxelChunkConfig(entry.lod).step * Math.sqrt(3); // ein Vertex mittelt seine Zelle
+                    const rInf = globalThis.__gelaendeCore.editReich({ r: 1.5 }) + zelle; // die Reichweite des Gesetzes
                     let changedOutside = 0,
                         totalOutside = 0;
                     for (const k of before) {

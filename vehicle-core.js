@@ -2367,6 +2367,20 @@
             rho: 1000, // kg/m³
             cw: 1.0,
         },
+        // ── K1 (23.10., rein additive DATEN-Zeile — Praezedenz: wasser) — DER REIFEN MIT SPITZE: die Seitenkraft je Achse
+        //    ist die Magic Formula (Pacejka) F/N = D·sin(C·atan(B·α)), D = μ des Reibkreises (maxGrip · grip), B·C·D die
+        //    Schraeglauf-Steifigkeit (die Karkasse, sie haengt nicht am μ: die Spitze wandert mit ihm, α* = spitzeGrad · D).
+        //    Vorher eine gesaettigte Gerade CA·α bis μ: keine Spitze, kein Abfall, im Drift hielt der Reifen die volle Kraft.
+        //    spitzeGrad legt die Spitze der Vorderachse auf dem Bezugs-Boden (μ 1), die Hinterachse traegt dasselbe Gesetz im
+        //    Verhaeltnis CA_R/CA_F (steifer: GT 7,6°); C 1,6 laesst die Kraft bis 30° Schlupf um 21 % fallen, gleitend auf
+        //    sin(C·π/2) = 59 %. taktHz: der Fahr-Schritt rechnet Kraefte, Gier und Geschwindigkeit in Unter-Schritten zu
+        //    hoechstens 1/taktHz s (am Sim-Takt 60 Hz vier) — die steife Kurve (16/rad statt 5) kippt bei 60 Hz die Gier im
+        //    Slalom 23-mal statt 13-mal (Referenz 7 680 Hz) und faehrt 0,70 m neben der Bahn, bei 240 Hz 13-mal und 0,20 m. ──
+        reifen: {
+            spitzeGrad: 8.5,
+            C: 1.6,
+            taktHz: 240,
+        },
     };
     // STEER_VIS — intentional dual steer visual (Feel-Entscheid .124). Do NOT merge.
     // compound "hub-yaw" = Host rad.front + rotation.y = base + _rideSteerYaw (.120).
@@ -2400,12 +2414,15 @@
     // V18.491.230 Lab Garage Lack-Swatches; seit W5 trägt die Welt sie je Gestalt (`lackIndex`/`lackStoff`, LACK_VIS.host).
     // Die Hex sind sRGB-Absichten (das Farbfeld der Leiste IST der Lack — `farbeLinear`); das vierte Feld ist die
     // LACK-ART (`LACK_ART`: uni pigmentiert · metallic geflockt), Labor und Welt lesen denselben Stoff (`lackStoff`).
+    // DAS REALE BAND (material.K1, Re-Mint 23.10.): ein uni-Lack ist ein Dielektrikum — seine Albedo liegt in sRGB 30–240
+    // (Frostbite, Lagarde & de Rousiers 2014; linear 0,0123–0,871). Tiefschwarz 0x111319 las 0,006 (Tafel lack, beide Seiten),
+    // 0x22252c liest 0,0185 und bleibt das tiefe Blau-Schwarz.
     const LACK_GESETZ = [
         ["Clay", 0x8d9499, 1, "uni"],
         ["Signalrot", 0xc4181b, 0, "uni"],
         ["Racing-Grün", 0x1d4a30, 0, "uni"],
         ["Silber", 0xb6babf, 0, "metallic"],
-        ["Tiefschwarz", 0x111319, 0, "uni"],
+        ["Tiefschwarz", 0x22252c, 0, "uni"],
         ["Azurblau", 0x1c5190, 0, "metallic"],
         ["Solargelb", 0xe2b21e, 0, "uni"],
         ["Kupfer-Orange", 0xc8641a, 0, "metallic"],
@@ -2715,7 +2732,19 @@
                 hub: a.hub > 0 ? a.hub : 0, // der Federweg je Rad (fahrAufstand); ein starres Werk federt kein Rad einzeln
             },
             wasser: fahrWasser(a, zs.mass * FAHR.masseDichte), // SCHAU-2 (rein additiv): die Huelle im Wasser, EINE Masse
+            reifen: fahrReifen(zs), // K1 (rein additiv): die Kurve mit Spitze je Achse
         };
+    }
+    // DAS REIFEN-GESETZ eines Fahr-Satzes (K1, FAHR.reifen): B·D je Achse aus der Spitze der Vorderachse auf dem Bezugs-Boden und
+    // dem Achs-Verhaeltnis des Rezepts (der Leser teilt durch D: B = bd / D, die Steifigkeit B·C·D steht, die Spitze wandert).
+    function fahrReifen(zs) {
+        const R = FAHR.reifen;
+        const bdF = Math.tan(Math.PI / (2 * R.C)) / ((R.spitzeGrad * Math.PI) / 180);
+        return { C: R.C, bdF: bdF, bdR: (bdF * zs.CA_R) / zs.CA_F, taktHz: R.taktHz };
+    }
+    // Die Seitenkraft je Achslast (K1): D·sin(C·atan(B·α)), D = mu, B = bd / mu.
+    function reifenKraft(R, bd, mu, a) {
+        return mu > 0 ? mu * Math.sin(R.C * Math.atan((bd / mu) * a)) : 0;
     }
     function fahrZustand(x, z, yaw) {
         return {
@@ -2876,7 +2905,21 @@
         }
         return z;
     }
+    // DER TAKT DES FAHR-SCHRITTS (K1, FAHR.reifen.taktHz): Kraefte, Gier und Geschwindigkeit in n gleichen Unter-Schritten zu
+    // hoechstens 1/taktHz s (Welt 60 Hz: vier zu 1/240 s, die Probefahrt je Bild-Zeit); die Lage EINMAL je Aufruf aus der
+    // Geschwindigkeit an seinem Ende — so faehrt der Kontakt-Loeser der Welt sie (playerVel × dt): Labor = Welt.
     function fahrKraefte(z, e, G, dt) {
+        const n = dt > 0 ? Math.max(1, Math.ceil(dt * G.reifen.taktHz - 1e-9)) : 1;
+        for (let i = 0; i < n; i++) fahrTakt(z, e, G, dt / n);
+        // ── Lage aus der Koerper-Geschwindigkeit (vorwaerts = (cos, −sin), links = (−sin, −cos)) ──
+        const cy = Math.cos(z.yaw),
+            sy = Math.sin(z.yaw);
+        z.x += (z.vlong * cy - z.vlat * sy) * dt;
+        z.z += (-z.vlong * sy - z.vlat * cy) * dt;
+        z.wheelAng += (z.vlong / G.radR) * dt; // Abrollen ω = v/r (radR > 0: Pflicht des Fahr-Satzes)
+        return z;
+    }
+    function fahrTakt(z, e, G, dt) {
         const S = FAHR.schritt;
         const m = G.m,
             L = G.L,
@@ -2925,10 +2968,14 @@
                 dW = (((z.aLong || 0) * G.cgH) / L) * m;
             const Wf = Math.max(0, Wt * (c / L) - dW),
                 Wr = Math.max(0, Wt * (b / L) + dW);
-            // ── Reifen-SEITENKRAEFTE: Schlupf × Steifigkeit, gesaettigt am Reibkreis × Achslast ──
-            const cap = G.maxGrip * G.grip;
-            let FlatF = -Math.max(-cap, Math.min(cap, G.CA_F * slipF)) * Wf;
-            let FlatR = -Math.max(-cap, Math.min(cap, G.CA_R * slipR)) * Wr;
+            // ── Reifen-SEITENKRAEFTE (K1): die Kurve mit Spitze D·sin(C·atan(B·α)) × Achslast, D = μ des Reibkreises ──
+            // FELD K1 (rein additiv — ohne e.haft byte-gleich, das Lab kennt keine Naesse): e.haft (0..1) = der Boden-Faktor
+            // des Reibkreises, den der Wirt aus dem ZUSTAND des Bodens liest (die Naesse der Welt) — nass greift der Reifen
+            // seitlich und laengs schwaecher, der Bremsweg waechst um 1 / haft.
+            const haft = e && e.haft > 0 && e.haft < 1 ? e.haft : 1;
+            const cap = G.maxGrip * G.grip * haft;
+            let FlatF = -reifenKraft(G.reifen, G.reifen.bdF, cap, slipF) * Wf;
+            let FlatR = -reifenKraft(G.reifen, G.reifen.bdR, cap, slipR) * Wr;
             if (hand) FlatR *= G.handLatMul; // HANDBREMSE: die Heck-Seitenfuehrung bricht weg → Drift
             // ── LAENGS am REIBKREIS: Antrieb, Bremse und Handbremse sind Reifenkraft — gedeckelt bei μ·N. Vorher trieb
             //    der Motor ungedeckelt: der Supersport stieg 90°, der GT 66,6°; jetzt steht jeder bei tan α = μ. ──
@@ -2977,7 +3024,7 @@
             if (thr === 0 && brk === 0 && spd < S.haltV && hangL <= aS && !rutscht) {
                 z.vlong = 0;
                 z.vlat = 0;
-                z.yawRate *= S.haltGier;
+                z.yawRate *= Math.pow(S.haltGier, dt * 60); // je 1/60 s (im Unter-Schritt dt-ehrlich, K1)
             } else {
                 z.vlong -= g * Math.sin(z.steig || 0) * dt;
             }
@@ -3007,14 +3054,7 @@
         }
         if (!Number.isFinite(z.steer)) z.steer = 0;
         if (!Number.isFinite(z.yaw)) z.yaw = 0;
-        // ── Lage aus der Koerper-Geschwindigkeit (vorwaerts = (cos, −sin), links = (−sin, −cos)) ──
-        const cy = Math.cos(z.yaw),
-            sy = Math.sin(z.yaw);
-        z.x += (z.vlong * cy - z.vlat * sy) * dt;
-        z.z += (-z.vlong * sy - z.vlat * cy) * dt;
-        z.speed = Math.hypot(z.vlong, z.vlat);
-        z.wheelAng += (z.vlong / G.radR) * dt; // Abrollen ω = v/r (radR > 0: Pflicht des Fahr-Satzes)
-        return z;
+        z.speed = Math.hypot(z.vlong, z.vlat); // die Lenksaeule des naechsten Unter-Schritts liest das Tempo
     }
     function fahrSchritt(z, e, G, boden, dt) {
         fahrKraefte(z, e, G, dt);
@@ -3079,9 +3119,20 @@
     function winkelPi(a) {
         return Math.atan2(Math.sin(a), Math.cos(a));
     }
+    // DIE FAHRBAHN IN DER RICHTUNG DES RIGS (K1-Folge, 23.10.): die Neigung der Ebene der Raeder (steig laengs, wank quer, um
+    // die Gier) vom Wagen zum Rig bei Azimut az gesehen — hinter dem Wagen (az = gier) −steig. Am gleichmaessigen Hang steht
+    // ihr Gefaelle in der Welt still, waehrend steig und wank mit der Gier wandern.
+    function chaseFahrbahn(az, gier, steig, wank) {
+        const ts = Math.tan(steig),
+            tw = Math.tan(wank);
+        const gx = ts * Math.cos(gier) - tw * Math.sin(gier),
+            gz = -ts * Math.sin(gier) - tw * Math.cos(gier);
+        return Math.atan(gz * Math.sin(az) - gx * Math.cos(az));
+    }
     function chaseKamera(c, gier, steig, dt, K, z, vmax) {
         K = K || FAHR.kamera;
-        const elZ = K.el - (Number.isFinite(steig) ? steig : 0);
+        const st = Number.isFinite(steig) ? steig : 0;
+        const wk = z && Number.isFinite(z.wank) ? z.wank : 0;
         const s = z && vmax > 0 ? Math.min(1, Math.abs(z.speed) / vmax) : 0;
         const drift = z ? Math.atan2(z.vlat, Math.max(Math.abs(z.vlong), K.driftMinV)) : 0;
         const frisch = !Number.isFinite(c.az) || !(dt > 0);
@@ -3097,9 +3148,10 @@
             const ziel = gier + K.driftFolge * c.dF;
             if (frisch) {
                 c.az = ziel;
-                c.el = c.elF = elZ;
+                c.el = c.elF = K.el + chaseFahrbahn(c.az, gier, st, wk);
                 c.rueck = null;
             } else {
+                const p0 = chaseFahrbahn(c.az, gier, st, wk);
                 const kA = 1 - Math.pow(K.azEase, dt);
                 if (c.frei) {
                     c.frei = false;
@@ -3113,9 +3165,15 @@
                     c.az = r.az + r.d0 * (1 - u * u * (3 - 2 * u));
                     if (u >= 1) c.rueck = null;
                 } else c.az += winkelPi(ziel - c.az) * kA;
+                // DAS RIG DREHT AUF DER FAHRBAHN (K1-Folge): die Elevation steht K.el ueber der Fahrbahn in SEINER Richtung;
+                // dreht der Azimut, tragen el und elF die Neigung dorthin starr mit, die Federn glaetten nur, was der Boden
+                // aendert. Vorher zielten sie auf K.el − steig, und in der Hang-Kurve hinkten sie dem wandernden Ziel nach:
+                // die Kamera sank am Steilhang (T4) auf p05 8,9° ueber der Ebene des Wagens (main 12,3°, Soll ≥ 10°), jetzt 17,5°.
+                const p1 = chaseFahrbahn(c.az, gier, st, wk);
+                const elZ = K.el + p1;
                 const k = 1 - Math.pow(K.elEase, dt);
-                if (!Number.isFinite(c.el)) c.el = elZ;
-                if (!Number.isFinite(c.elF)) c.elF = c.el;
+                c.el = Number.isFinite(c.el) ? c.el + p1 - p0 : elZ;
+                c.elF = Number.isFinite(c.elF) ? c.elF + p1 - p0 : c.el;
                 c.elF += (elZ - c.elF) * k;
                 c.el += (c.elF - c.el) * k;
             }

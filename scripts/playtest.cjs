@@ -141,7 +141,7 @@ if (require.main === module) (async () => {
         // löschen). Null-Renderer: kein Band liest ein Pixel; den LOOK messen die Bild-Sonden (ausgabe-aufnahme).
         // `__codeOf` (Code ohne Kommentare, der EINE Stripper) und `__dokuOf` (ungestrippt) trägt der Welt-Boot in jede Seite.
         if (!realRenderer) window.__anazhHeadlessNullRenderer = true;
-        // DER SETZ-ORT (K16): ein Bau-Band ohne `tickBuildMode` (headless zielt kein Raycast) stellt das Phantom des Werks
+        // DER SETZ-ORT: ein Bau-Band ohne `tickBuildMode` (headless zielt kein Raycast) stellt das Phantom des Werks
         // `name` auf den Boden der nächsten Stelle um den Spieler, die die Natur-Wand freigibt (`_naturWand`: die Lichtung
         // der Genesis-Plattform, ein Grundriss, das Wasser) — nie auf den Ursprung, auf dem seit K16 die Plattform steht
         // (die offene Stelle der Ankunft ist der Ursprung). Rückgabe { x, y, z } oder null.
@@ -161,21 +161,23 @@ if (require.main === module) (async () => {
                 }
             return null;
         };
-        // DER WASSER-ORT (K16): jedes Band, das einen See oder das Meer prüft, liest ihn dort, wo das Gelände-Gesetz
+        // DER WASSER-ORT: jedes Band, das einen See oder das Meer prüft, liest ihn dort, wo das Gelände-Gesetz
         // ihn setzt — die Heimat-Kachel trägt keinen (die Seen sind die Senken des Flussnetzes, ≤ 1 je km²; das Meer liegt
         // jenseits des Kontinents). „see“: die nächste benannte Senke (gelaende-core `benannteSeen`), deren Kachel einen
         // gerenderten See (Spiegel > Meer + 2 m, ≥ 16 Zellen) trägt; „meer“: der nächste Punkt unter dem Meeresspiegel auf
         // Ringen um den Ursprung, dort die nächste Ozean-Zelle; „fall“: der Wasserfall der nächsten Kachel, die einen trägt
         // (Ringe von Kacheln um den Ursprung bis zum zweiten — die Täler sind das Flussnetz, ein Sturz lebt, wo ein Lauf
         // steil fällt, nicht mehr an den Gruben der Canyon-Maske). Die Kachel wird über den EINEN Kachel-Eingang registriert
-        // (`_ensureHydroTilesAround`), damit jeder Hydro-Leser (`_hydroFor`) sie findet. Rückgabe { x, z, hydro, lake }.
-        window.__wasserOrt = (art) => {
+        // (`_ensureHydroTilesAround`, die Kachel kommt aus dem Faden: `kachel` wartet auf sie), damit jeder Hydro-Leser
+        // (`_hydroFor`) sie findet. Rückgabe { x, z, hydro, lake }.
+        window.__wasserOrt = async (art) => {
             const r = window.anazhRealm;
             const G = window.__gelaendeCore;
+            const kachel = (x, z) => window.__weltDa(() => !r._ensureHydroTilesAround(x, z, 0));
             window.__wasserOrtCache = window.__wasserOrtCache || {};
             const c = window.__wasserOrtCache[art];
             if (c) {
-                r._ensureHydroTilesAround(c.x, c.z, 0);
+                await kachel(c.x, c.z);
                 return { ...c, hydro: r._hydroFor(c.x, c.z) };
             }
             const L = r._gelaende();
@@ -192,7 +194,7 @@ if (require.main === module) (async () => {
                     .map((k) => ({ x: -12000 + (k % n) * step, z: -12000 + ((k / n) | 0) * step }))
                     .sort((a, b) => a.x * a.x + a.z * a.z - (b.x * b.x + b.z * b.z));
                 for (const k of kand) {
-                    r._ensureHydroTilesAround(k.x, k.z, 0);
+                    await kachel(k.x, k.z);
                     const h = r._hydroFor(k.x, k.z);
                     const lake = h && h.lakes.find((l) => l.level > wl + 2 && l.cells && l.cells.length >= 16);
                     if (!lake) continue;
@@ -204,7 +206,7 @@ if (require.main === module) (async () => {
                 // Grund (die Decke), dann Luft (die Höhle), dann wieder Grund (ihr Boden). Gesucht in den See-Zellen und
                 // ihrem Rand-Ring (4-m-Raster) der Seen um die benannten Senken, nächste zuerst — so, wie die Wasser-Zellen
                 // sie sehen: je 1,8-m-Zelle das Mittel der Dichte an ihren acht Ecken (`_buildVoxelChunkWaterCells`, das
-                // Gitter liegt auf Vielfachen des Schritts). Seit die Canyon-Maske fiel (K16), bleibt die Decke 16 m unter
+                // Gitter liegt auf Vielfachen des Schritts). Seit die Canyon-Maske fiel, bleibt die Decke 16 m unter
                 // dem Boden; die Meter-Probe einer Spalte fand unter dem See eine Höhle, die keine Zelle trägt (0 von 0).
                 const cfgH = r._voxelChunkConfig(0);
                 const S = cfgH.step;
@@ -224,7 +226,7 @@ if (require.main === module) (async () => {
                 const geprueft = new Set();
                 for (const k of kand.slice(0, 6)) {
                     if (ort) break;
-                    r._ensureHydroTilesAround(k.x, k.z, 0);
+                    await kachel(k.x, k.z);
                     const h = r._hydroFor(k.x, k.z);
                     for (const lake of (h && h.lakes) || []) {
                         if (ort || !(lake.level > wl + 2) || !lake.cells) break;
@@ -259,7 +261,7 @@ if (require.main === module) (async () => {
                     for (let rz = -ring; rz <= ring && !ort; rz++)
                         for (let rx = -ring; rx <= ring && !ort; rx++) {
                             if (Math.max(Math.abs(rx), Math.abs(rz)) !== ring) continue;
-                            r._ensureHydroTilesAround(rx * size, rz * size, 0);
+                            await kachel(rx * size, rz * size);
                             const h = r._hydroFor(rx * size, rz * size);
                             const wf = h && Array.isArray(h.waterfalls) && h.waterfalls.length ? h.waterfalls[0] : null;
                             if (wf) ort = { x: wf.x, z: wf.z, lake: null, fall: wf };
@@ -270,7 +272,7 @@ if (require.main === module) (async () => {
                         const x = R * Math.cos((a / 64) * 2 * Math.PI);
                         const z = R * Math.sin((a / 64) * 2 * Math.PI);
                         if (!(G.hoehe(L, x, z, false) < wl - 4)) continue;
-                        r._ensureHydroTilesAround(x, z, 0);
+                        await kachel(x, z);
                         const h = r._hydroFor(x, z);
                         let best = -1;
                         let bd = Infinity;
@@ -290,10 +292,10 @@ if (require.main === module) (async () => {
         };
         // Der Wasser-Chunk am Wasser-Ort: synchron gebaut über den EINEN Build-Eingang und in die Chunk-Menge gelegt (der
         // Stream räumt ihn wie jeden fernen Chunk). Steht er schon mit Wasser-Zellen, bleibt alles, wie es ist.
-        window.__wasserChunk = (art) => {
+        window.__wasserChunk = async (art) => {
             const r = window.anazhRealm;
             if (!r.state.voxelChunks) r.state.voxelChunks = new Map();
-            const ort = window.__wasserOrt(art);
+            const ort = await window.__wasserOrt(art);
             if (!ort) return null;
             const { span } = r._voxelChunkConfig(0);
             const cx = Math.floor(ort.x / span);
@@ -301,13 +303,14 @@ if (require.main === module) (async () => {
             const key = `${cx},${cz}`;
             const da = r.state.voxelChunks.get(key);
             if (da && da.mesh && da.waterCells) return key;
+            await window.__weltDa(() => r._hydroSteht(cx, cz)); // die Kacheln um den Chunk kommen aus dem Faden
             r._disposeVoxelChunk(key);
             r.state.voxelChunks.delete(key);
             const fresh = r._acquireVoxelChunkBuild(cx, cz, 0, { forceSync: true });
             if (fresh && fresh !== "pending") r._finalizeVoxelChunkBuild(cx, cz, 0, fresh, true);
             return r.state.voxelChunks.has(key) ? key : null;
         };
-        // DER STOFF-ZEUGE (K22): jeder Bruch eines Stoffs meldet ERROR „STOFF: …" (`_stoffBruch`). Eine Prüfzeile „kein
+        // DER STOFF-ZEUGE: jeder Bruch eines Stoffs meldet ERROR „STOFF: …" (`_stoffBruch`). Eine Prüfzeile „kein
         // Fehler" zählt diese Meldungen über ihren Bau (`const z = __stoffZeuge(r); …bauen…; z.zu()` → die Brüche) — nie
         // eine Konstante, nie eine Fenster-Variable; der Spion reicht an `log` durch und kehrt eigen-treu zurück.
         window.__stoffZeuge = (r) => {
@@ -549,7 +552,7 @@ if (require.main === module) (async () => {
                 }
             }
             // Worker wieder einhängen — die Folge-Bänder nutzen den echten async-Pfad
-            // (er re-synct seine Worldgen-Kachel lazy beim ersten Request, V18.132).
+            // (er re-synct seine Worldgen-Kachel lazy beim ersten Request).
             r.state.voxelWorker = _warmupSavedWorker;
             return {
                 foundryWarmMs: foundryReadyMs,
@@ -647,7 +650,6 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandV1754PlayerAttack, ctx);
             await timed(BAND.checkBandV1755HarvestEffort, ctx);
             await timed(BAND.checkBandV1755W2Profile, ctx);
-            await timed(BAND.checkBandV1758CreatureNature, ctx);
             await timed(BAND.checkBandV1759CapabilityReadout, ctx);
             await timed(BAND.checkBandV1761ForgeImplement, ctx);
             await timed(BAND.checkBandV1762ForgeMeaningful, ctx);
@@ -707,34 +709,23 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandWelleC2WaterIsoSurface, ctx);
             await timed(BAND.checkBandWelleC3CellularReaction, ctx);
             await timed(BAND.checkBandWellePerf3bDistanceLod, ctx);
-            // V12.0-perf.c.1 — Architektur-Instancing-Foundation (Matrix-Bit-Gleichheit).
             await timed(BAND.checkBandWellePerfCArchInstancing, ctx);
-            // V12.0-perf.d — budgetierter Culling-Build (Wurzel B, kein Burst).
             await timed(BAND.checkBandWellePerfDBudget, ctx);
-            // V12.0-perf.e — Nexus → adaptiver Qualitäts-Governor (Wurzel D).
             await timed(BAND.checkBandWellePerfENexusGovernor, ctx);
             // JEDES-HOLZ — der Existenz-Boden der Ring-Ramp (die Welt entsteht auf jedem Holz).
             await timed(BAND.checkBandJedesHolzExistenzBoden, ctx);
-            // V12.0-perf.h — Wasser-Iso deferred-Queue (Streaming-Hitch-Heilung).
             await timed(BAND.checkBandWellePerfHWaterIsoQueue, ctx);
             await timed(BAND.checkBandWellePerf3cPhase2Async, ctx);
             await timed(BAND.checkBandWellePerf3cPhase3FullMesh, ctx);
-            // V17.117 — H3: der globale Ozean jenseits ±1024 m (Worker<->Main bit-identisch).
             await timed(BAND.checkBandV17117FarWater, ctx);
-            // V17.118 — E3: der Voxel-Worker engagiert (Mesh off-thread, Regressions-Wand).
             await timed(BAND.checkBandV17118WorkerEngaged, ctx);
-            // PHASE A (gigant-plan §5) — A1 Stitch-Band · A2 Edit-Lokalität · A5 Luft↔Ring · A6 Kollision.
             await timed(BAND.checkBandPhaseAFundament, ctx);
-            // PHASEN B–F (V18.104) — die Kern-KONSUM-Beweise des Phasen-Zugs.
             await timed(BAND.checkBandPhasenBF, ctx);
             await timed(BAND.checkBandWelle993WaterLodSeam, ctx);
-            // V11.0-d.1 — Pfeiler D Foundation: Wasser-Kontext für Kreaturen.
             await timed(BAND.checkBandWelleV11D1WaterContext, ctx);
-            // V11.0-d.2 — Pfeiler D: Tiefen-Scheue + Schwimm-Surface im wander-Loop.
             await timed(BAND.checkBandWelleV11D2WaterBias, ctx);
-            // V11.0-d.3 — Pfeiler D: Trinken-Task (6. Task, Aura azur, Ping A5).
             await timed(BAND.checkBandWelleV11D3DrinkTask, ctx);
-            // V17.1 — FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation.
+            // FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation.
             await timed(BAND.checkBandNahStreu, ctx);
 
             // Band 3 — Atmosphäre, Welt-Portal/Vibe-Pass/Bibliothek, Übersetzer + Untrusted-Tor, späte Politur.
@@ -884,6 +875,7 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandKeinZweiterBaumbaecker, ctx);
             await timed(BAND.checkBandTierFern, ctx);
             await timed(BAND.checkBandKoerperBewegung, ctx);
+            await timed(BAND.checkBandGamepadVerben, ctx);
             await timed(BAND.checkBandTodZensus, ctx);
             await timed(BAND.checkBandWasserWahrheit, ctx);
             await timed(BAND.checkBandTierSeparation, ctx);
@@ -982,7 +974,7 @@ if (require.main === module) (async () => {
     }
     console.log(`\nLaufzeit: ${((Date.now() - T0) / 1000).toFixed(0)}s`);
     if (gateAborted) {
-        // V18.309 — UNÜBERSEHBAR: ein toter/hängender Lauf endet NIE mehr als
+        // UNÜBERSEHBAR: ein toter/hängender Lauf endet NIE mehr als
         // rätselhafte ✅-Liste oder Endlos-Schweigen. Eine laute Zeile, Exit≠0,
         // egal ob STRICT — ein unvollständiger Lauf ist nie ein grünes Gate.
         console.log(`\n⛔ GATE UNVOLLSTÄNDIG — abgebrochen bei Band „${gateAborted.band}" (Seite tot/abgehängt).`);

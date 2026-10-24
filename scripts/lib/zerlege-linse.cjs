@@ -158,7 +158,7 @@ function passUhr() {
     return uhr;
 }
 
-// DIE ZWEI GIPFEL JE PASS (Befund G8, OMEN 18.10.; Leser: `lauf` → `gpuJePassMs`): die Frame-Werte eines Passes, an der
+// DIE ZWEI GIPFEL JE PASS (G8; Leser: `lauf` → `gpuJePassMs`): die Frame-Werte eines Passes, an der
 // größten Lücke in zwei Gipfel geteilt — `rein` p50 des unteren, `anteilOben` Anteil des oberen, `versatz` Abstand der
 // Gipfel-Mediane; p50 · p95 · frames wie zuvor. Die Lücke ist die weiteste Spanne, die höchstens 2 % der Werte überbrückt
 // (an der GTX liegen einzelne k0-Werte mitten in der Lücke — eine Einzel-Lücke teilte dort nicht), geteilt an ihrer Mitte
@@ -1114,7 +1114,7 @@ function zerlegeMessen(k) {
             try {
                 auf = await window.__ausgabeAufnahme(W, H, 1);
             } finally {
-                if (wieseRuht) wieseRuht();
+                wieseRuht();
             }
             await lese();
             const cv = document.createElement("canvas");

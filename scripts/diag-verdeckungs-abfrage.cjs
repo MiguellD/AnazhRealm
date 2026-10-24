@@ -1,9 +1,5 @@
 // diag-verdeckungs-abfrage.cjs — DIE LINSE DER VERDECKUNGS-ABFRAGE (npm run gate:verdeckungs-abfrage; 0910-3 A).
 //
-// Befund (Leben-Schau 2, Radeon, Spur B, beim Aussteigen am Bachufer): „No occlusion queries are active" in
-// EndOcclusionQuery (renderContext_4/_6), danach 4× „Invalid CommandBuffer … invalid due to a previous error", 1× THREE
-// „No occlusion queries are active" (r184s Fehler-Bereich um einen asynchronen Pipeline-Bau hatte den Fehler geschluckt und
-// DIESE Pipeline für immer als gescheitert markiert) und 3× PAGEERROR „Invalid value used in weak set".
 // Wurzel: r184 hält die offene Occlusion-Query nur indirekt (`lastOcclusionObject`, träges Ende beim nächsten Draw) und
 // nimmt an, JEDES gezählte Objekt (`occlusionQueryCount`, die Render-Liste) beginne in einem durchgehenden Pass:
 //   - ein Stellvertreter des Berg-Culls (`_bundleQueryTick`), dessen Pipeline noch nicht steht, wird gezählt, aber nicht
@@ -12,8 +8,7 @@
 //   - bricht der Pass zwischen Beginn und trägem Ende (`copyFramebufferToTexture`: das Tiefen-Abbild für den ersten Leser
 //     der Szenen-Tiefe), endet der alte Pass mit offener Query;
 //   - ist ein Stellvertreter der LETZTE Draw eines Probe-Frames, erbt der nächste Frame (Zähler 0 — r184s `beginRender` setzt
-//     `lastOcclusionObject` nur bei Zähler > 0 zurück) die offene Query und schließt sie in einem Pass ohne Abfrage-Satz
-//     (Radeon, Bündel seitlich: 176 Meldungen in 45 s am Kopf 1457bfa9, 382 an main).
+//     `lastOcclusionObject` nur bei Zähler > 0 zurück) die offene Query und schließt sie in einem Pass ohne Abfrage-Satz.
 // Der Schnitt: der EINE Block „Verdeckungs-Abfrage" in `_configureRenderer` (be.__anazhVerdeckung).
 //
 // Die Linse (echter Frame, WebGPU auf swiftshader, holz=kienspan), am Bach der Mess-Wiese:
@@ -398,7 +393,7 @@ async function verdeckungPhase(opts) {
             // der Bach der Mess-Wiese: der nächste Fluss-Punkt zum Messort, der Wasser trägt — quer zum Lauf mindestens 2 m
             // nass (K16: der nächste Punkt des Flussnetzes ist oft eine trockene Rinne der Ebene 2; dort zeichnet kein Wasser)
             const [mx, mz] = opts.messort;
-            r._ensureHydroTilesAround(mx, mz, 200);
+            await window.__weltDa(() => !r._ensureHydroTilesAround(mx, mz, 200));
             const h = r._hydroFor(mx, mz);
             let P = null,
                 fl = null,

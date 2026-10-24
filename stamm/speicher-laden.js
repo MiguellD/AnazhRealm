@@ -266,29 +266,14 @@ class AnazhRealm_speicher_laden {
             }
             this.state.customSouls = restored;
         }
-        // Studio-Übergabe VOR playerSoul restaurieren (der Seelen-Guss liest _koerperStudioDials); jeder Wert
-        // läuft durch DENSELBEN fail-closed-Validator wie der Empfang. Ohne Feld byte-alt (koerper null,
-        // kreatur {}); Müll fällt still.
-        if (state.studioUebergabe && typeof state.studioUebergabe === "object") {
-            const su = state.studioUebergabe;
-            const ziel =
-                this.state.studioUebergabe && typeof this.state.studioUebergabe === "object"
-                    ? this.state.studioUebergabe
-                    : (this.state.studioUebergabe = { koerper: null, kreatur: {} });
-            const k =
-                su.koerper && typeof su.koerper === "object"
-                    ? this._studioUebergabeValidate("koerper", su.koerper)
-                    : null;
-            if (k) ziel.koerper = { s: k.s, gestalt: k.gestalt };
-            if (su.kreatur && typeof su.kreatur === "object" && !Array.isArray(su.kreatur)) {
-                for (const g of Object.keys(su.kreatur)) {
-                    const e = su.kreatur[g];
-                    const c =
-                        e && typeof e === "object"
-                            ? this._studioUebergabeValidate("kreatur", { gattung: g, s: e.s })
-                            : null;
-                    if (c) ziel.kreatur[c.gattung] = { s: c.s };
-                }
+        // DER PRÄGUNGS-SPEICHER VOR playerSoul restaurieren (der Seelen-Guss liest _koerperStudioDials): jede Prägung läuft durch
+        // DENSELBEN fail-closed-Prüfer wie der Übergabe-Kanal (`_studioWerkPruefen`, die Art aus dem Rezept). Müll fällt still.
+        if (state.studioOv && typeof state.studioOv === "object" && !Array.isArray(state.studioOv)) {
+            const ziel = (this._ensureWorkshopState().studioOv = {});
+            for (const preset of Object.keys(state.studioOv)) {
+                const e = state.studioOv[preset];
+                const p = e && typeof e === "object" ? this._studioWerkPruefen(null, preset, e, e.__gestalt) : null;
+                if (p && Object.keys(p).length) ziel[preset] = p;
             }
         }
         if (typeof state.playerSoul === "string") {
@@ -774,6 +759,8 @@ class AnazhRealm_speicher_laden {
     // Pfad-Buckets (defensiver Merge, fremde Keys ignoriert), Welt-Journal (entries + seen mit entryCap),
     // Legacy-Fähigkeiten (restoreAbility mappt drei historische Nexus-Namen auf ihre DSL-Äquivalente).
     _loadStateRestoreMiscState(state) {
+        // halten.K4 — die steckenden Pfeile der Welt ersetzen die der Seite (`_pfeileSteckenLaden`, gedeckelt, endlich)
+        this._pfeileSteckenLaden(state.pfeileStecken);
         // R6 (V18.152) — gewährte Fähigkeiten wiederherstellen, durch die
         // HEUTIGE Wand (Empfänger-Gesetz: auch Restauriertes prüft die
         // Regel-Wand + die Broadcast-Wand; Name id-förmig; bounded).
@@ -854,11 +841,19 @@ class AnazhRealm_speicher_laden {
     _weltBetreten(snapshot, meta = null, { neuLaden = true, aktiv = true, zeugnisA = null, p2pAuto = null } = {}) {
         if (!snapshot || typeof snapshot !== "object") return { ok: false, reason: "kein Snapshot" };
         if (!this._weltWechselSperre && this.state.worldMeta && this.state.worldMeta.worldId) {
-            if (zeugnisA) this.journalAppendOnce(zeugnisA.key, zeugnisA.type || "portal", zeugnisA.text);
+            if (zeugnisA)
+                this.journalAppendOnce(zeugnisA.key, zeugnisA.type || "portal", AnazhRealm._datum(zeugnisA.text));
             this.saveState();
         }
         const wm = snapshot.worldMeta && typeof snapshot.worldMeta === "object" ? snapshot.worldMeta : {};
         const welt = { ...snapshot, worldMeta: { ...wm, ...(meta || {}) } };
+        // jede Erinnerung der fremden Welt ist Datum (`_erinnerungFuerKi`): ihr Stempel `d` fällt, wer ihn auch schrieb
+        const wj = welt.worldJournal;
+        if (wj && Array.isArray(wj.entries))
+            welt.worldJournal = {
+                ...wj,
+                entries: wj.entries.map((e) => (e && typeof e === "object" ? { ...e, d: 0 } : e)),
+            };
         if (typeof welt.worldMeta.worldId !== "string" || !welt.worldMeta.worldId)
             welt.worldMeta.worldId = AnazhRealm._neueWeltId();
         const ab = this._weltAblegen(welt, { aktiv: aktiv || neuLaden });
@@ -1120,7 +1115,7 @@ class AnazhRealm_speicher_laden {
             chatOutput.scrollTop = chatOutput.scrollHeight;
         }
         if (result.ok) {
-            this.journalAppend("witness", `Eine andere Welt „${result.slug}" liegt nun neben mir.`);
+            this.journalAppend("witness", AnazhRealm._datum`Eine andere Welt „${result.slug}" liegt nun neben mir.`);
             this.updateWorldInfo();
         }
         this._closeWeltTorDialog();
@@ -1312,6 +1307,7 @@ class AnazhRealm_speicher_laden {
         if (!snap.worldJournal.seen || typeof snap.worldJournal.seen !== "object") {
             snap.worldJournal.seen = {};
         }
+        text = String(text).replace(/[⁦-⁩]/g, ""); // der Spieler liest rein, `d: 0` macht ihn Datum
         const eintrag = { id: snap.worldJournal.entries.length + 1, at: Date.now(), tick: 0, type: "witness", text };
         if (ctx) eintrag.ctx = ctx;
         snap.worldJournal.entries.push(eintrag);
@@ -1377,11 +1373,15 @@ class AnazhRealm_speicher_laden {
             schemaVersion: "9.0-tor-v1",
         };
         // Der Import hält seinen Empfang als Witness-Eintrag mit Provenienz fest.
-        AnazhRealm._zeugnisEintragen(cloned, `Ich wurde als „${slug}" neben einer fremden Welt empfangen.`, {
-            fromWorldId: originalId,
-            asWorldId: newWorldId,
-            asSlug: slug,
-        });
+        AnazhRealm._zeugnisEintragen(
+            cloned,
+            AnazhRealm._datum`Ich wurde als „${slug}" neben einer fremden Welt empfangen.`,
+            {
+                fromWorldId: originalId,
+                asWorldId: newWorldId,
+                asSlug: slug,
+            }
+        );
         // durch DIE TÜR: die Welt der Seite sichert sich, die fremde liegt mit Probe unter ihrer neuen Id; mit `reload` der
         // Welt-Wechsel (Zeiger, Sperre, Reload), sonst bleibt die aktive Welt.
         const ab = this._weltBetreten(cloned, null, { neuLaden: reload, aktiv: reload });
@@ -1618,7 +1618,7 @@ class AnazhRealm_speicher_laden {
         const total = addedBPs.length + addedMats.length + addedTools.length;
         this.journalAppend(
             "witness",
-            `Ich habe Rezepte aus „${sourceSlug}" empfangen: ${addedBPs.length} Baupläne, ${addedMats.length} Materialien, ${addedTools.length} Werkzeuge.`,
+            AnazhRealm._datum`Ich habe Rezepte aus „${sourceSlug}" empfangen: ${addedBPs.length} Baupläne, ${addedMats.length} Materialien, ${addedTools.length} Werkzeuge.`,
             {
                 fromWorldId: sourceWorldId,
                 fromSlug: sourceSlug,

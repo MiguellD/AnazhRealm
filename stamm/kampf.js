@@ -89,7 +89,7 @@ class AnazhRealm_kampf {
     }
 
     // Der Schwung-Tick (im ewigen Loop, NACH der fixen Sim): läuft auf der ANZEIGE-
-    // Uhr — der Hit-Stop pausiert Gang + Schwung, die FIXE SIM läuft IMMER weiter.
+    // Uhr — der Hit-Stop hält den ganzen Leib und den Schwung an, die FIXE SIM läuft IMMER weiter.
     // In der Strike-Phase fegt der Kapsel-Sweep entlang der Klinge.
     _tickKampfSchwung(currentTime) {
         const p = this.state.player;
@@ -111,10 +111,12 @@ class AnazhRealm_kampf {
     }
 
     // 0 = die Anzeige-Uhr steht (Hit-Stop aktiv), 1 = sie läuft. NUR animatePlayerSoul
-    // (Gang-Phase) + _tickKampfSchwung (Schwung-Phase) lesen den Faktor — NIE die Sim.
+    // (der ganze Leib, halten.K2) + _tickKampfSchwung (Schwung-Phase) lesen den Faktor — NIE die Sim.
+    // Der Halt ist ein FENSTER [_hitStopAb, _hitStopUntil): eine Zeit vor dem Treffer steht nie darin (eine Probe auf eigener
+    // Uhr nach einem echten Treffer fror sonst bis zu dessen Ende, auf der Uhr des Spiels gleich).
     _hitStopFactor(nowSec) {
         const p = this.state.player;
-        return p && Number.isFinite(p._hitStopUntil) && nowSec < p._hitStopUntil ? 0 : 1;
+        return p && Number.isFinite(p._hitStopUntil) && nowSec < p._hitStopUntil && !(nowSec < p._hitStopAb) ? 0 : 1;
     }
 
     // DIE REICHWEITE DER KLINGE ab dem Schultergelenk: der gestreckte Arm bis zur Hand-Mitte und das Gerät vor der Hand —
@@ -736,7 +738,11 @@ class AnazhRealm_kampf {
         const ke = urteil ? urteil.KE : Number.isFinite(keEigen) ? keEigen : 0;
         const e = Math.max(0, Math.min(1, ke / Math.max(1, G.keRefJ)));
         const p = this.state.player;
-        if (p) p._hitStopUntil = nowSec + G.freezeMinSec + (G.freezeMaxSec - G.freezeMinSec) * e;
+        if (p) {
+            p._hitStopAb = nowSec;
+            p._hitStopUntil = nowSec + G.freezeMinSec + (G.freezeMaxSec - G.freezeMinSec) * e;
+            p._stoss = Math.max(p._stoss || 0, e); // (4) das Rumble des Treffers (`_rumbleTakt`)
+        }
         this.state._landImpactPending = Math.max(
             this.state._landImpactPending || 0,
             G.dipMin + (G.dipMax - G.dipMin) * e
@@ -859,7 +865,7 @@ class AnazhRealm_kampf {
         const p = this.state.player;
         const d = p && p._bogenDraw;
         if (!d) return;
-        if (!this.state.isPointerLocked || !this._heldBogenRecipe()) {
+        if (!this.state.verbTafel.gehalten.break || !this._heldBogenRecipe()) {
             p._bogenDraw = null;
             this._bogenHudZeige(null);
             return;
@@ -960,7 +966,7 @@ class AnazhRealm_kampf {
         const ziel = this._blickZiel(AnazhRealm.BLICK_ZIEL_M);
         // DIE BAHN TRIFFT DAS FADENKREUZ (Welle LF, Posten 4): der Pfeil fällt (state.gravity) — er steigt im flachen der zwei
         // Winkel, deren Bahn den Punkt des Fadenkreuzes trifft, tan θ = (v² − √(v⁴ − g(g·x² + 2·y·v²))) / (g·x); jenseits der
-        // Weite des Bogens unter 45°. Vorher flog er geradewegs auf den Punkt und fiel bei 13 m 0,2 m darunter durch.
+        // Weite des Bogens unter 45°. Die Umkehrung DERSELBEN Parabel, die der Flug fliegt (`_pfeilBahn`, halten.K4).
         let dx = ziel.x - mx,
             dy = ziel.y - my,
             dz = ziel.z - mz;
@@ -986,7 +992,16 @@ class AnazhRealm_kampf {
         }
         const list = this.state._pfeile || (this.state._pfeile = []);
         while (list.length >= AnazhRealm.MAX_PFEILE) this._pfeilDespawn(list.shift()); // bounded (Wirts-Deckel)
+        // die Lage ist die SPITZE; der Abschuss-Zustand (Ort, Tempo, g) trägt die ganze Bahn, tau die Flugzeit
         const pf = {
+            x0: mx,
+            y0: my,
+            z0: mz,
+            vx0: dx * v0,
+            vy0: dy * v0,
+            vz0: dz * v0,
+            g: this.state.gravity,
+            tau: 0,
             x: mx,
             y: my,
             z: mz,
@@ -1006,17 +1021,36 @@ class AnazhRealm_kampf {
         return true;
     }
 
-    // Pfeil-Tick (Anzeige-Uhr, NACH der fixen Sim): semi-implizit in state.gravity. Das Flug-Segment (alt → neu) trifft
-    // zuerst die WELT (Gelände UND Bauten — _fieldRaycast, die EINE Welt-Kollision; Welle L K-D8: 3 von 3 Pfeilen
-    // flogen durch ein Haus), davor die GESTALT eines Tiers (_kreaturGliedTreffer, Zone je Glied); das Urteil ist der
-    // Stich des Kerns (trefferUrteil: KE = ½·m·v² trägt Schaden und Hit-Stop). Lebenszeit deckelt; MAX_PFEILE, kein Snapshot.
+    // DAS EINE BALLISTISCHE GESETZ DES PFEILS (halten.K4): die Lage der Spitze ist eine FUNKTION der Flugzeit τ aus dem
+    // Abschuss — p(τ) = p0 + v0·τ + ½·g·τ² (g senkrecht, beim Lösen gelesen), v(τ) = v0 + g·τ. Das Zielen (die Umkehrung in
+    // `_beginPlayerShot`), der Flug und der Treffer lesen sie. Vorher integrierte der Flug semi-implizit je Bild: der Fall lag
+    // um ½·g·dt·τ zu tief, die Bahn hing an der Bildrate (30 fps: 33 % nach 0,1 s, gate:kampf-gefuehl Q12).
+    _pfeilBahn(pf, tau, out) {
+        out.x = pf.x0 + pf.vx0 * tau;
+        out.y = pf.y0 + pf.vy0 * tau + 0.5 * pf.g * tau * tau;
+        out.z = pf.z0 + pf.vz0 * tau;
+        out.vx = pf.vx0;
+        out.vy = pf.vy0 + pf.g * tau;
+        out.vz = pf.vz0;
+        return out;
+    }
+
+    // Pfeil-Tick (Anzeige-Uhr, NACH der fixen Sim): die Flugzeit wächst um den Takt (TAKT_DECKEL_S deckelt einen Hänger), die
+    // Spitze folgt `_pfeilBahn` in Sehnen von höchstens PFEIL_SEHNE_S (die Sehne liegt ≤ g·h²/8 neben dem Bogen, 3 mm). Wo eine
+    // Sehne ein Ding trifft (`_pfeilSehne`), endet der Flug und der Pfeil STECKT (`_pfeilStecken`); die Lebenszeit deckelt die
+    // Flugzeit, MAX_PFEILE die Fliegenden.
     _tickPfeile(nowSec) {
+        if (this._pfeilSteckenOffen) this._pfeilSteckenZeigen();
+        if (
+            (this.state.pfeileStecken && this.state.pfeileStecken.length) ||
+            (this._pfeilTiere && this._pfeilTiere.size)
+        )
+            this._pfeilSteckenSicht();
         const list = this.state._pfeile;
         if (!list || !list.length) return;
         const B = AnazhRealm._arenaGesetz().bogen;
-        // V18.491.149 GRAVITY_VIS.host=state-signed — Lab ARENA.g studio +9.81; Host state.gravity world −9.81 dual, not Fake-merge.
-        const g = this.state.gravity;
         const creatures = this.state.creatures || [];
+        const q = this._pfeilQ || (this._pfeilQ = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0 });
         for (let i = list.length - 1; i >= 0; i--) {
             const pf = list[i];
             const dt = Math.min(
@@ -1024,76 +1058,241 @@ class AnazhRealm_kampf {
                 Math.max(0, nowSec - (Number.isFinite(pf.lastT) ? pf.lastT : nowSec))
             );
             pf.lastT = nowSec;
-            if (nowSec - pf.born > B.maxFlugSec) {
-                this._pfeilDespawn(pf);
-                list.splice(i, 1);
-                continue;
-            }
             if (dt <= 0) continue;
-            const ox = pf.x;
-            const oy = pf.y;
-            const oz = pf.z;
-            pf.vy += g * dt;
-            pf.x += pf.vx * dt;
-            pf.y += pf.vy * dt;
-            pf.z += pf.vz * dt;
-            // NaN-Wand: ein entgleister Pfeil fällt sofort aus der Welt.
-            if (!Number.isFinite(pf.x) || !Number.isFinite(pf.y) || !Number.isFinite(pf.z)) {
-                this._pfeilDespawn(pf);
-                list.splice(i, 1);
-                continue;
-            }
-            // Die Welt zuerst: wo das Segment Gelände oder Bau trifft, endet der Flug (ein Tier dahinter bleibt heil).
-            const wand = this._fieldRaycast(ox, oy, oz, pf.x, pf.y, pf.z);
-            const ex = wand.hit ? wand.x : pf.x,
-                ey = wand.hit ? wand.y : pf.y,
-                ez = wand.hit ? wand.z : pf.z;
-            // Treffer: das Flug-Segment (alt → Wand oder neu) gegen die Glieder jedes Tiers; das früheste gewinnt.
-            let hit = null;
-            let hitTr = null;
-            const stepR = Math.hypot(ex - ox, ey - oy, ez - oz);
-            for (let c = 0; c < creatures.length; c++) {
-                const cr = creatures[c];
-                if (!cr || !cr.userData) continue;
-                if (!this._trefferErreichbar(cr, ex, ez, stepR + B.radiusM)) continue; // das Grob-Tor (der Leib)
-                const tr = this._kreaturGliedTreffer(cr, ox, oy, oz, ex, ey, ez, B.radiusM);
-                if (tr && (!hitTr || tr.s < hitTr.s)) {
-                    hit = cr;
-                    hitTr = tr;
+            const tau0 = pf.tau;
+            const tau1 = Math.min(B.maxFlugSec, tau0 + dt);
+            const n = Math.max(1, Math.ceil((tau1 - tau0) / AnazhRealm.PFEIL_SEHNE_S));
+            let ende = false;
+            for (let k = 1; k <= n && !ende; k++) {
+                const tau = tau0 + ((tau1 - tau0) * k) / n;
+                const b = this._pfeilBahn(pf, tau, q);
+                // NaN-Wand: ein entgleister Pfeil fällt sofort aus der Welt.
+                if (!Number.isFinite(b.x) || !Number.isFinite(b.y) || !Number.isFinite(b.z)) {
+                    this._pfeilDespawn(pf);
+                    ende = true;
+                } else if (this._pfeilSehne(pf, b, creatures, B, nowSec)) ende = true;
+                else {
+                    pf.x = b.x;
+                    pf.y = b.y;
+                    pf.z = b.z;
+                    pf.vx = b.vx;
+                    pf.vy = b.vy;
+                    pf.vz = b.vz;
+                    pf.tau = tau;
                 }
             }
-            if (hit) {
-                const vv = Math.sqrt(pf.vx * pf.vx + pf.vy * pf.vy + pf.vz * pf.vz);
-                const sc = globalThis.__schmiedeCore;
-                const urteil = sc.trefferUrteil({ M: B.mArrow, mEffFrac: 1 }, { vLat: 0, vAx: vv, zone: hitTr.zone });
-                const res = this.damageCreature(hit, this._kampfRohSchaden(urteil, hitTr.zone, pf.kraft), {
-                    source: "player",
-                    fromPos: { x: ox, y: oy, z: oz },
-                    stoss: { p: urteil.p, m: urteil.mEff },
-                });
-                if (res && res.ok) this._kampfHitJuice(hit, nowSec, urteil, null);
+            if (!ende && pf.tau >= B.maxFlugSec) {
                 this._pfeilDespawn(pf);
-                list.splice(i, 1);
-                continue;
+                ende = true;
             }
-            if (wand.hit) {
-                this._pfeilDespawn(pf);
-                list.splice(i, 1);
-                continue;
-            }
-            if (pf.mesh) {
-                pf.mesh.position.set(pf.x, pf.y, pf.z);
-                pf.mesh.lookAt(pf.x + pf.vx, pf.y + pf.vy, pf.z + pf.vz);
+            if (ende) list.splice(i, 1);
+            else if (pf.mesh) this._pfeilMeshLage(pf.mesh, pf.x, pf.y, pf.z, pf.vx, pf.vy, pf.vz);
+        }
+    }
+
+    // EINE Sehne des Flugs (Spitze pf → b): sie trifft zuerst die WELT (Gelände UND Bauten — _fieldRaycast, die EINE
+    // Welt-Kollision; Welle L K-D8: 3 von 3 Pfeilen flogen durch ein Haus), davor die GESTALT eines Tiers
+    // (_kreaturGliedTreffer, Zone je Glied; ein Tier hinter der Wand bleibt heil); das Urteil ist der Stich des Kerns
+    // (trefferUrteil: KE = ½·m·v² trägt Schaden und Hit-Stop). true = der Flug endet hier.
+    _pfeilSehne(pf, b, creatures, B, nowSec) {
+        const ox = pf.x,
+            oy = pf.y,
+            oz = pf.z;
+        const wand = this._fieldRaycast(ox, oy, oz, b.x, b.y, b.z);
+        const ex = wand.hit ? wand.x : b.x,
+            ey = wand.hit ? wand.y : b.y,
+            ez = wand.hit ? wand.z : b.z;
+        let hit = null;
+        let hitTr = null;
+        const stepR = Math.hypot(ex - ox, ey - oy, ez - oz);
+        for (let c = 0; c < creatures.length; c++) {
+            const cr = creatures[c];
+            if (!cr || !cr.userData) continue;
+            if (!this._trefferErreichbar(cr, ex, ez, stepR + B.radiusM)) continue; // das Grob-Tor (der Leib)
+            const tr = this._kreaturGliedTreffer(cr, ox, oy, oz, ex, ey, ez, B.radiusM);
+            if (tr && (!hitTr || tr.s < hitTr.s)) {
+                hit = cr;
+                hitTr = tr;
             }
         }
+        if (hit) {
+            const vv = Math.hypot(b.vx, b.vy, b.vz);
+            const sc = globalThis.__schmiedeCore;
+            const urteil = sc.trefferUrteil({ M: B.mArrow, mEffFrac: 1 }, { vLat: 0, vAx: vv, zone: hitTr.zone });
+            const res = this.damageCreature(hit, this._kampfRohSchaden(urteil, hitTr.zone, pf.kraft), {
+                source: "player",
+                fromPos: { x: ox, y: oy, z: oz },
+                stoss: { p: urteil.p, m: urteil.mEff },
+            });
+            if (res && res.ok) this._kampfHitJuice(hit, nowSec, urteil, null);
+            const s = hitTr.ein;
+            this._pfeilStecken(pf, ox + (ex - ox) * s, oy + (ey - oy) * s, oz + (ez - oz) * s, b, hit, hitTr);
+            return true;
+        }
+        if (!wand.hit) return false;
+        this._pfeilStecken(pf, wand.x, wand.y, wand.z, b, null, null);
+        return true;
+    }
+
+    // DER PFEIL STECKT (halten.K4): wo der Flug endet, bleibt er — die Spitze PFEIL_EINDRING_M tief längs ihrer Flug-Richtung
+    // im getroffenen Ding. Im Tier hängt er am getroffenen Glied (sein Anker der Gestalt, `_gliedAnker`), folgt dessen Pose und
+    // reist mit dem Tier in den Speicher (`_serializeCreature` · pfeile, MAX_PFEILE_JE_TIER); in Gelände und Bau liegt er in
+    // der Welt (state.pfeileStecken, `buildStateSnapshot` · pfeileStecken, MAX_PFEILE_STECKEN) — der älteste fällt.
+    _pfeilStecken(pf, x, y, z, b, cr, tr) {
+        const l = Math.hypot(b.vx, b.vy, b.vz) || 1;
+        const dx = b.vx / l,
+            dy = b.vy / l,
+            dz = b.vz / l;
+        const e = AnazhRealm.PFEIL_EINDRING_M;
+        const sx = x + dx * e,
+            sy = y + dy * e,
+            sz = z + dz * e;
+        const mesh = pf.mesh;
+        pf.mesh = null;
+        if (cr && tr && tr.anker) {
+            // die Lage im Glied: Anker⁻¹ × Welt (die Pose des Tiers trägt sie fortan)
+            const M = this._pfeilM();
+            const c = this._pfeilSpitzeM();
+            M.q.setFromUnitVectors(M.vorn, M.d.set(dx, dy, dz));
+            M.w.compose(M.p.set(sx - dx * c, sy - dy * c, sz - dz * c), M.q, M.s.set(1, 1, 1));
+            tr.anker.updateMatrixWorld(true);
+            M.i.copy(tr.anker.matrixWorld).invert().multiply(M.w).decompose(M.p, M.q, M.s);
+            const rec = { teil: tr.teil, p: M.p.toArray(), q: M.q.toArray(), s: M.s.toArray(), mesh: null };
+            if (mesh && mesh.parent) mesh.parent.remove(mesh);
+            this._pfeilInsTier(cr, rec, mesh);
+            return;
+        }
+        const liste = this.state.pfeileStecken || (this.state.pfeileStecken = []);
+        const rec = { x: sx, y: sy, z: sz, dx, dy, dz, mesh: mesh || null };
+        if (mesh) this._pfeilMeshLage(mesh, sx, sy, sz, dx, dy, dz);
+        else this._pfeilSteckenOffen = true;
+        liste.push(rec);
+        while (liste.length > AnazhRealm.MAX_PFEILE_STECKEN) this._pfeilDespawn(liste.shift());
+    }
+
+    // Ein steckender Pfeil an seinem Glied: der Datensatz {teil, p, q, s} (lokal im Anker) reist mit dem Tier, das Bild hängt
+    // als Kind am Anker (ohne Szene bleibt der Datensatz, die Sim trägt ihn). Der älteste über MAX_PFEILE_JE_TIER fällt.
+    _pfeilInsTier(cr, rec, mesh) {
+        const u = cr.userData;
+        const liste = u._steckPfeile || (u._steckPfeile = []);
+        const anker = this._gliedAnker(cr, rec.teil);
+        const m =
+            anker && typeof THREE !== "undefined" && this.state.scene ? mesh || this._pfeilVorlage().clone() : null;
+        if (m) {
+            m.position.fromArray(rec.p);
+            m.quaternion.fromArray(rec.q);
+            m.scale.fromArray(rec.s);
+            anker.add(m);
+            rec.mesh = m;
+        }
+        liste.push(rec);
+        while (liste.length > AnazhRealm.MAX_PFEILE_JE_TIER) this._pfeilDespawn(liste.shift());
+        (this._pfeilTiere || (this._pfeilTiere = new Set())).add(cr);
+    }
+
+    // DIE KOSTEN AM SCHIRM (Gebot 7): ein steckender Pfeil zeichnet nur bis PFEIL_SICHT_M vor der Kamera (dahinter ist sein
+    // Schaft unter einem Pixel) — 6 Teile je Pfeil zahlen Bild und Kaskade sonst für jeden, den die Welt je getroffen hat.
+    // Der Pfeil-Tick fragt je Frame die steckenden Pfeile der Welt und die Tiere, in denen einer steckt.
+    _pfeilSteckenSicht() {
+        const cam = this.state.camera;
+        if (!cam) return;
+        const c = cam.position;
+        const r2 = AnazhRealm.PFEIL_SICHT_M * AnazhRealm.PFEIL_SICHT_M;
+        for (const p of this.state.pfeileStecken || [])
+            if (p.mesh) p.mesh.visible = (p.x - c.x) ** 2 + (p.y - c.y) ** 2 + (p.z - c.z) ** 2 <= r2;
+        if (!this._pfeilTiere) return;
+        for (const cr of this._pfeilTiere) {
+            const l = cr.userData && cr.userData._steckPfeile;
+            if (!cr.parent || !l || !l.length) {
+                this._pfeilTiere.delete(cr);
+                continue;
+            }
+            const nah = cr.position.distanceToSquared(c) <= r2;
+            for (const p of l) if (p.mesh) p.mesh.visible = nah;
+        }
+    }
+
+    // Die Pfeile eines Tiers aus dem Speicher (`_restoreCreatureFromSnapshot`): je Datensatz ein Glied der Gestalt und eine
+    // endliche Lage; was fehlt oder bricht, fällt (wie jeder Müll des Speichers).
+    _pfeileInsTierLaden(cr, roh) {
+        if (!cr || !Array.isArray(roh)) return;
+        const zahlen = (a, n) => Array.isArray(a) && a.length === n && a.every((v) => Number.isFinite(v));
+        for (const r of roh.slice(-AnazhRealm.MAX_PFEILE_JE_TIER)) {
+            if (!r || typeof r.teil !== "string" || r.teil.length > 64) continue;
+            if (!zahlen(r.p, 3) || !zahlen(r.q, 4) || !zahlen(r.s, 3) || !this._gliedAnker(cr, r.teil)) continue;
+            this._pfeilInsTier(cr, { teil: r.teil, p: r.p.slice(), q: r.q.slice(), s: r.s.slice(), mesh: null }, null);
+        }
+    }
+
+    // Der Speicher-Abdruck der Pfeile eines Tiers (`_serializeCreature`); undefined ohne Pfeil (saubere Snapshots).
+    _pfeileDesTiers(cr) {
+        const l = cr && cr.userData && cr.userData._steckPfeile;
+        if (!l || !l.length) return undefined;
+        const r = (a) => a.map((v) => Math.round(v * 1e5) / 1e5);
+        return l.map((p) => ({ teil: p.teil, p: r(p.p), q: r(p.q), s: r(p.s) }));
+    }
+
+    // Die steckenden Pfeile der Welt aus dem Speicher (`loadState`): sie ersetzen die der Seite; endliche Lage, gedeckelt.
+    _pfeileSteckenLaden(roh) {
+        for (const alt of this.state.pfeileStecken || []) this._pfeilDespawn(alt);
+        const liste = (this.state.pfeileStecken = []);
+        if (!Array.isArray(roh)) return;
+        for (const r of roh.slice(-AnazhRealm.MAX_PFEILE_STECKEN)) {
+            const v = r ? [r.x, r.y, r.z, r.dx, r.dy, r.dz] : null;
+            if (!v || !v.every((x) => Number.isFinite(x))) continue;
+            const l = Math.hypot(r.dx, r.dy, r.dz);
+            if (!(l > 1e-6)) continue;
+            liste.push({ x: r.x, y: r.y, z: r.z, dx: r.dx / l, dy: r.dy / l, dz: r.dz / l, mesh: null });
+        }
+        this._pfeilSteckenOffen = liste.length > 0;
+    }
+
+    // Der Speicher-Abdruck der steckenden Pfeile der Welt (mm, Richtung auf 1e-4).
+    _pfeileSteckenAbdruck() {
+        const r = (v, k) => Math.round(v * k) / k;
+        return (this.state.pfeileStecken || []).map((p) => ({
+            x: r(p.x, 1000),
+            y: r(p.y, 1000),
+            z: r(p.z, 1000),
+            dx: r(p.dx, 1e4),
+            dy: r(p.dy, 1e4),
+            dz: r(p.dz, 1e4),
+        }));
+    }
+
+    // Das Bild der geladenen Pfeile, sobald die Szene steht (der Pfeil-Tick fragt die Marke je Frame, sonst nichts).
+    _pfeilSteckenZeigen() {
+        if (typeof THREE === "undefined" || !this.state.scene) return;
+        this._pfeilSteckenOffen = false;
+        for (const p of this.state.pfeileStecken || []) {
+            if (p.mesh) continue;
+            p.mesh = this._pfeilVorlage().clone();
+            this._pfeilMeshLage(p.mesh, p.x, p.y, p.z, p.dx, p.dy, p.dz);
+            this.state.scene.add(p.mesh);
+        }
+    }
+
+    _pfeilM() {
+        return (
+            this._pfeilMemoM ||
+            (this._pfeilMemoM = {
+                w: new THREE.Matrix4(),
+                i: new THREE.Matrix4(),
+                p: new THREE.Vector3(),
+                q: new THREE.Quaternion(),
+                s: new THREE.Vector3(),
+                d: new THREE.Vector3(),
+                vorn: new THREE.Vector3(0, 0, 1),
+            })
+        );
     }
 
     // Pfeil-Optik (render-seitig, headless-fest: ohne THREE/Szene fliegt die reine Sim): DIE GESTALT DES SCHMIEDE-KERNS
     // (Welle LF 09.10., Posten 4 — schmiede buildPfeil: Schaft, Spitze, Nocke, drei Federn; die Albedo im Vertex) durch den
     // EINEN Stoff-Weg der Welt (_ofenMeshEintragAusThree → _foundryBuildGroup, wie jeder Guss des Ofens): einmal als Vorlage
     // gebaut, je Schuss ein Klon, der Geometrie und Stoffe teilt — kein Alloc-Churn. Die Vorlage liegt längs +X, die Hülle
-    // dreht sie auf +Z (die lookAt-Konvention des Flugs). Vorher ein eigener Zylinder des Wirts in MeshBasic: ein brauner
-    // Stab ohne Spitze, Federn, Licht und Schatten (Leben-Schau 07.10., Bild ks08).
+    // dreht sie auf +Z (vorn, die Flug-Richtung); `spitzeM` ist der Weg von der Mitte zur Spitze. Vorher ein eigener Zylinder
+    // des Wirts in MeshBasic: ein brauner Stab ohne Spitze, Federn, Licht und Schatten (Leben-Schau 07.10., Bild ks08).
     _pfeilVorlage() {
         if (this._pfeilVorlageMemo) return this._pfeilVorlageMemo;
         const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
@@ -1123,16 +1322,33 @@ class AnazhRealm_kampf {
         const huelle = new THREE.Group();
         huelle.name = "pfeil";
         huelle.add(teile);
+        huelle.updateMatrixWorld(true);
+        huelle.userData.spitzeM = new THREE.Box3().setFromObject(huelle).max.z;
         this._pfeilVorlageMemo = huelle;
         return huelle;
+    }
+
+    // Von der Mitte der Gestalt zur Spitze (die Lage des Flugs ist die Spitze); ohne THREE die halbe Länge des Kerns.
+    _pfeilSpitzeM() {
+        if (typeof THREE !== "undefined") return this._pfeilVorlage().userData.spitzeM;
+        return globalThis.__schmiedeCore.PFEIL.laengeM / 2;
+    }
+
+    // Das Bild an der Spitze (x, y, z), vorn längs (dx, dy, dz): die Mitte liegt spitzeM dahinter.
+    _pfeilMeshLage(mesh, x, y, z, dx, dy, dz) {
+        const l = Math.hypot(dx, dy, dz);
+        if (!(l > 1e-9)) return;
+        const M = this._pfeilM();
+        const c = this._pfeilSpitzeM() / l;
+        mesh.position.set(x - dx * c, y - dy * c, z - dz * c);
+        mesh.quaternion.setFromUnitVectors(M.vorn, M.d.set(dx / l, dy / l, dz / l));
     }
 
     _pfeilMeshAttach(pf) {
         if (typeof THREE === "undefined" || !this.state.scene) return;
         const v = this._pfeilVorlage();
         pf.mesh = v.clone();
-        pf.mesh.position.set(pf.x, pf.y, pf.z);
-        pf.mesh.lookAt(pf.x + pf.vx, pf.y + pf.vy, pf.z + pf.vz);
+        this._pfeilMeshLage(pf.mesh, pf.x, pf.y, pf.z, pf.vx, pf.vy, pf.vz);
         this.state.scene.add(pf.mesh);
     }
 
@@ -1599,10 +1815,11 @@ class AnazhRealm_kampf {
     // Inventar und Schubladen zu), wird in der strikeInterval-Kadenz nachgesetzt — mit DEMSELBEN Verb wie beim Drücken
     // (die Maus-Absicht, p._mausVerb): der Hieb schlägt weiter, auch wenn der Stoß das Tier aus dem Fadenkreuz schob.
     _tickHarvest() {
-        const p = this.state.player;
-        if (!p || !p.breakHeld) return;
-        if (!this.state.isPointerLocked || this.state.inventoryOpen || this._uiSchubladeOffen()) {
-            p.breakHeld = false;
+        const [p, g] = [this.state.player, this.state.verbTafel.gehalten];
+        if (!p || !g.break) return;
+        // gehalten über die Verb-Tafel (Maus oder Pad); ein verlorener Zeiger löst es an der Tasten-Wand (`_alleTastenLos`)
+        if (this.state.inventoryOpen || this._uiSchubladeOffen()) {
+            g.break = false;
             return;
         }
         const now = performance.now() / 1000;
@@ -1769,11 +1986,11 @@ class AnazhRealm_kampf {
             }
             dig.progress = 0;
         }
-        // Der Grabe-Hieb schnitzt das 3D-Dichte-Feld (echtes Loch). carveRadius 3.5 m spannt ~140 Voxel —
-        // eine begehbare Mulde; kleiner wäre eine Nadel.
+        // Der Grabe-Hieb schnitzt das 3D-Dichte-Feld (echtes Loch): die Säule r 3,5 m (gelaende-core `editForm`, Radius und
+        // halbe Höhe) — eine begehbare Grube mit ebenem Grund; kleiner wäre eine Nadel.
         const carveRadius = 3.5;
         // Graben läuft durch dslRun (source:"human" → p2pBroadcastDsl), damit Mitspieler dieselbe Mulde
-        // sehen; lokal ruft voxel_carve dieselbe carveVoxelSphere. Der DSL-Op ist der EINE Broadcast-Anker
+        // sehen; lokal ruft voxel_carve dieselbe carveVoxel. Der DSL-Op ist der EINE Broadcast-Anker
         // — ein direkter API-Call wäre eine Sync-Lücke.
         this.dslRun(["voxel_carve", target.x, target.y, target.z, carveRadius], { source: "human" });
         // Der Boden gibt Materie wie harvestArchitecture: Material aus dem Welt-Affinitäts-Feld am Grabe-Ort
@@ -1943,7 +2160,7 @@ class AnazhRealm_kampf {
                 return false;
             }
             this._consumeMouseStamina();
-            // Aufschütten via dslRun (voxel_fill, broadcastet; lokal fillVoxelSphere). Der Material-Konsum
+            // Aufschütten via dslRun (voxel_fill, broadcastet; lokal fillVoxel). Der Material-Konsum
             // (matGate oben) bleibt lokal — Inventar-Geste, nicht broadcastbar.
             this.dslRun(["voxel_fill", fillHit.x, fillHit.y, fillHit.z, 3.5], { source: "human" });
             if (!matGate.free) this.log(`Aufgeschüttet (${matGate.cost}× Material verbraucht).`, "INFO");
@@ -1999,6 +2216,14 @@ _stammZonen(AnazhRealm, [AnazhRealm_kampf]);
 // Konsumenten lesen _arenaGesetz(), fail-closed. Die Mechanik hält gate:kampf-gefuehl.
 // maxPfeile ist Wirts-Infrastruktur (Perf-Deckel lebender Pfeile), kein Gefühls-Gesetz:
 AnazhRealm.MAX_PFEILE = 16;
+// Die steckenden Pfeile (halten.K4, `_pfeilStecken`), Wirts-Deckel wie MAX_PFEILE: in Gelände und Bau höchstens
+// MAX_PFEILE_STECKEN, je Tier MAX_PFEILE_JE_TIER (der älteste fällt); die Spitze dringt PFEIL_EINDRING_M ein; eine Sehne
+// des Flugs umfasst höchstens PFEIL_SEHNE_S Flugzeit (sie liegt ≤ g·h²/8 = 3 mm neben dem Bogen).
+AnazhRealm.MAX_PFEILE_STECKEN = 16;
+AnazhRealm.MAX_PFEILE_JE_TIER = 6;
+AnazhRealm.PFEIL_EINDRING_M = 0.12;
+AnazhRealm.PFEIL_SEHNE_S = 0.05;
+AnazhRealm.PFEIL_SICHT_M = 40; // ein steckender Pfeil zeichnet bis hier (`_pfeilSteckenSicht`)
 // Der Treffer-Weg (_kampfTrefferWeg) tastet jede Glied-Kapsel in so vielen Schritten ab — Wirts-Auflösung, kein Gefühls-
 // Gesetz; je Treffer, nie je Frame.
 AnazhRealm.TREFFER_WEG_PROBEN = 6;

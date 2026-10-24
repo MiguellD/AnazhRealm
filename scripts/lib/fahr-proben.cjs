@@ -98,14 +98,9 @@ async function probeLeben(expected) {
         const m = st.playerMesh.position;
         const x0 = m.x;
         const z0 = m.z;
-        const k = st.keys;
-        const e = {
-            throttle: k.w ? 1 : 0,
-            brake: k.s ? 1 : 0,
-            steer: (k.a ? 1 : 0) - (k.d ? 1 : 0),
-            hand: !!k.shift,
-        };
         P._stepFixedSim.call(this, simTime, dt);
+        const T = st.verbTafel; // die Eingabe, die der Schritt las (die Verb-Tafel, leib.K5)
+        const e = { throttle: T.gas, brake: T.bremse, steer: T.lenken, hand: T.handbremse };
         if (z.an) {
             z.simWeg += Math.hypot(m.x - x0, m.z - z0);
             z.schritte++;
@@ -113,7 +108,7 @@ async function probeLeben(expected) {
         }
         if (z.spur && z.ent && z.ent._fahr) {
             const q = z.ent._fahr;
-            z.spur.push({ e, dt, x: q.x, z: q.z, yaw: q.yaw, y: q.y, luft: q.luft, kontakt: z.kontakt });
+            z.spur.push({ e, dt, x: q.x, z: q.z, yaw: q.yaw, y: q.y, luft: q.luft, v: q.vlong, kontakt: z.kontakt });
         }
     };
     // Der EINE Kontakt-Löser: was er in diesem Sim-Schritt der Fahrt nahm (Lage oder Geschwindigkeit ≠ v·dt), ist kein
@@ -149,10 +144,8 @@ async function probeLeben(expected) {
         const ws = r._atlasWaterLevelAt(a, b, hh(a, b)); // der Spiegel des Gesetzes (wie gate:vehicle-drive)
         return Number.isFinite(ws) && ws > hh(a, b) - 0.3;
     };
-    // Die Strecke: trocken, die kleinste Stufe (dieselbe Suche wie gate:vehicle-drive B-e), Fahrt in +x — und EBEN: die
-    // Mess-Wiese war eben, seit K16 liegt sie am Hang (quer 0,31 m je m, die Strecke von damals 0,21 m Stufe je 2 m). Der
-    // nächste Ring (32 m, bis 512 m) mit einer Strecke, deren Stufe ≤ 0,16 m je 2 m und deren Quergefälle ≤ 0,05 m je m
-    // ist, darin die kleinste Stufe.
+    // Die Strecke: trocken, eben, Fahrt in +x — der nächste Ring um die Mess-Wiese (32 m, bis 512 m) mit Stufe ≤ 0,16 m je 2 m
+    // und Quergefälle ≤ 0,05 m je m, darin die kleinste Stufe.
     const mo = expected.messort;
     let start = null;
     for (let ring = 0; ring <= 16 && !start; ring++)
@@ -181,10 +174,7 @@ async function probeLeben(expected) {
         aufraeumen();
         return res;
     }
-    // DIE ANKUNFT (K55-2): eine Station an einem neuen Ort misst erst, wenn die Welt um den Spieler steht (das EINE Einschwingen,
-    // welt-boot `__weltStehtNach`; bis D3d: der Ring der Chunks 80 Frames ruhig). Die Orte der Stationen kommen aus der Welt und
-    // liegen Hunderte Meter auseinander (die Mess-Wiese, das Dorf, die Mitte der Welt): ohne Ankunft fuhr L1 an einen
-    // Glutbrunnen ohne Kontakt, L6 setzte den Spieler 1,68 m in den Wagen, und L8 maß, während die Welt um die Gasse streamte.
+    // DIE ANKUNFT: eine Station an einem neuen Ort misst erst, wenn die Welt um den Spieler steht (welt-boot `__weltStehtNach`).
     const ankommen = async (x, zz) => {
         st.playerMesh.position.set(x, hh(x, zz) + 2, zz);
         if (st.playerVel) st.playerVel.setValue(0, 0, 0);
@@ -268,6 +258,68 @@ async function probeLeben(expected) {
             stufe,
         };
     };
+    // W (feld.K1) DIE WETTER-KETTE: das Wort Sturm, 20 min per Sprung des Nässe-Schreibers; je Lage Regen-Feld, Nässe (= Uniform
+    // des Stoffs), Grip (Verzögerung der Vollbremsung in Sim-Schritten). Gehalten wird der VORGÄNGER; `stern` liest das Wort.
+    const kette = async (K) => {
+        const [P0, bV, out] = [Object.getPrototypeOf(r), VC.FAHR.schritt.bremsV, {}];
+        await ankommen(start.x, start.z);
+        const wetter = (wort, s) => {
+            r._setWeather(wort, "human");
+            st.weatherTransition = null; // der Übergang des Bilds läuft auf der Wanduhr
+            r._naesseTakt(s);
+        };
+        const bremse = async () => {
+            const e = await setzen("fahrzeug_gt", start.x, start.z, Math.PI / 2);
+            if (!e || !e._fahr) return {};
+            tasten(true);
+            for (let i = 0; i < K.anlauf; i++) frame(i);
+            let [t, v] = [0, e._fahr.vlong];
+            const v0 = v;
+            [z.spur, z.ent] = [[], e];
+            tasten(false);
+            st.keys.s = true;
+            for (let n = 0; n < K.bremsMax && e._fahr.vlong > bV; n++) frame(n);
+            for (const q of z.spur) {
+                if (!q.e.brake || !(q.v > bV)) break;
+                [t, v] = [t + q.dt, q.v];
+            }
+            [z.spur, z.ent, st.keys.s] = [null, null, false];
+            weg(e);
+            return { verz: t > 0 ? (v0 - v) / t : 0 };
+        };
+        const lage = async (name, wort, halt) => {
+            wetter("sunny", 1e6);
+            const los = halt && halt();
+            wetter(wort, K.sprungS);
+            const m = { regen: r._weatherFieldFor(st.weather).rain, naesse: st.naesse, stoff: r._ensureAtmoUniforms().naesse.value };
+            out[name] = Object.assign(m, await bremse());
+            if (los) los();
+        };
+        const halte = (k, fn) => () => ((r[k] = fn), () => delete r[k]);
+        const fest = halte("_naesseTakt", () => st.naesse);
+        await lage("trocken", "sunny");
+        await lage("sturm", "stormy");
+        await lage("festRegen", "stormy", halte("_weatherFieldFor", () => P0._weatherFieldFor.call(r, "sunny")));
+        await lage("festNaesse", "stormy", fest);
+        if (P0._fahrHaft)
+            await lage("stern", "stormy", () => {
+                const los = fest();
+                r._fahrHaft = () => (r._weatherIsWet() ? r.constructor.NAESSE.haft : 1);
+                return () => los() && delete r._fahrHaft;
+            });
+        wetter("sunny", 1e6);
+        r._wetterFreigeben("human");
+        return out;
+    };
+    if (expected.nurKette) {
+        try {
+            res.kette = await kette(expected.kette);
+        } catch (e) {
+            res.err = String((e && e.stack) || e);
+        }
+        aufraeumen();
+        return res;
+    }
     try {
         // (1) Der GT geradeaus, W gehalten (Fahrt +x).
         const gt = await setzen("fahrzeug_gt", start.x, start.z, Math.PI / 2);
@@ -345,8 +397,7 @@ async function probeLeben(expected) {
             r._foundry = fo;
         }
         r.setCameraMode(sicht5);
-        // (2) Am Hang ohne Taste: der GT steht bergauf (der Befund: rollte zurück und drehte sich 84°). Der Hang kommt aus der
-        // Welt (welt-orte `hang`, K55-2 — bis dahin ±48 m um die Mess-Wiese, die flache Aue trug keinen): das Gefälle über ±3 m
+        // (2) Am Hang ohne Taste: der GT steht bergauf. Der Hang aus der Welt (welt-orte `hang`): das Gefälle über ±3 m
         // 0,2–0,45 (11,3–24,2°), gleichmäßig — 6 m talwärts noch ≥ 0,15 (8,5°) —, trocken.
         const grad = (t) => (Math.atan(t) * 180) / Math.PI;
         const hangOrt = window.__weltOrt("hang", {
@@ -492,7 +543,7 @@ async function probeLeben(expected) {
 
         // ═══ S — DIE STATIONEN (Q13) ═══
         const S = (res.stationen = { kern: !!(VC && typeof VC.fahrSchritt === "function") });
-        // R — DIE RÄDER IN DER INSTANZ (Q13 F-D8): dieselbe Gerade; W (1,5 s), dann S (Vollbremsung, 1 s), dann W + A. Je
+        // R — DIE RÄDER IN DER INSTANZ: dieselbe Gerade; W (1,5 s), dann S (Vollbremsung, 1 s), dann W + A. Je
         // Sim-Schritt die Rad-Leaves (`lf.rad`) RELATIV zum Aufbau (dreht, lenkt das Rad?) und der Aufstand (Naben-Mitte − radR
         // gegen den Boden); ohne Rad-Leaves die Rad-Punkte der Aufbau-Matrix (fAx/rAx × ±Spur/2).
         const gR = await setzen("fahrzeug_gt", start.x, start.z, Math.PI / 2);
@@ -558,7 +609,6 @@ async function probeLeben(expected) {
                         const key = rd.ecke;
                         const e = Rel.elements;
                         const yAchse = [e[4], e[5], e[6]];
-                        const xAchse = [e[0], e[1], e[2]];
                         if (!relStart.has(key)) relStart.set(key, yAchse);
                         const y0 = relStart.get(key);
                         const c =
@@ -568,11 +618,10 @@ async function probeLeben(expected) {
                         if (phase === "a") {
                             // Gier der Nabe im Aufbau: die Achse z des Rades (die Drehachse) gegen die Quer-Achse z des Aufbaus
                             const zA = [e[8], e[9], e[10]];
-                            const gier = Math.abs(Math.atan2(zA[0], Math.abs(zA[2]))) * (rd.dreh ? 1 : 1);
+                            const gier = Math.abs(Math.atan2(zA[0], Math.abs(zA[2])));
                             if (rd.front) lenk = Math.max(lenk, gier);
                             else lenkHinten = Math.max(lenkHinten, gier);
                         }
-                        void xAchse;
                     }
                 } else {
                     for (const ax of [hu.fAx, hu.rAx])
@@ -712,10 +761,8 @@ async function probeLeben(expected) {
             ? { x: kOrt.x, z: kOrt.z, fall: kOrt.fall, kante: kOrt.kante, fahrt: kOrt.gier, sx: kOrt.sx, sz: kOrt.sz }
             : null;
         S.klippeOrt = kl;
-        // DIE BAHN IST FREI (Fixture der Klippen-Stationen): der gesetzte Wagen stößt beim Spawn einen Remesh seines Chunks an,
-        // und die Welt streut dort neu ein (Spawn-Affinität — im Lauf vom 07.10. standen drei Felsbögen und ein Glutbrunnen
-        // AUF dem Wagen und schoben ihn 3,3 m in den Hang: die Klasse „Natur weicht dem Bau", Familie koerper-haus, D3).
-        // Vor dem Aufsitzen läuft die Welt 60 Frames, dann räumt die Probe, was auf dem Anlauf bis 8 m über die Kante blockt.
+        // DIE BAHN IST FREI (Fixture der Klippen-Stationen): der gesetzte Wagen stößt einen Remesh seines Chunks an, die Welt
+        // streut dort neu ein; vor dem Aufsitzen läuft sie 60 Frames, dann räumt die Probe, was auf dem Anlauf blockt.
         let geraeumt = 0;
         const bahnFrei = (k) => (wagen) => {
             for (let i = 0; i < 60; i++) frame(i);
@@ -743,10 +790,8 @@ async function probeLeben(expected) {
             quer: 6,
             n: 0,
         });
-        // DER FAHRER DER LINIE (K55-5): W und die Lenkung eines Spielers, der auf die Kante zuhält — die Gier zielt auf die
-        // Linie (Ziel-Gier = Fahrt − 0,35 · Quer-Abstand, höchstens ±0,6 rad), A dreht die Gier auf, D zurück (der Fahr-Satz:
-        // steer = A − D, die Gier wächst mit steer). Ohne Lenkung glitt der GT am Grat vor der Kante der Mitte der Welt
-        // (589,7/147,9, Querhang 23–38°) 17° von der Linie und fuhr 3 m neben der Kante vorbei (Flug 0,32 m, S4 vakuös).
+        // DER FAHRER DER LINIE: W und die Lenkung eines Spielers, der auf die Kante zuhält — die Gier zielt auf die Linie
+        // (Ziel-Gier = Fahrt − 0,35 · Quer-Abstand, höchstens ±0,6 rad), A dreht die Gier auf, D zurück.
         let gierVor = null;
         const halteLinie = (g, k) => {
             for (const t of ["w", "a", "s", "d", "shift", " "]) st.keys[t] = false;
@@ -799,10 +844,8 @@ async function probeLeben(expected) {
                 weg(g2);
             }
             bahnWache = klippenBahn(kl);
-            // S4 ABSTEIGEN IM FLUG (Gegenprüfung 07.10.: `dismountArchitecture` stellte den Wagen nicht ab — wer im Flug
-            // ausstieg, ließ ihn bis zum Reload in der Luft hängen): dieselbe Klippe, W bis der Wagen `STATION.flugM` über dem
-            // Boden fliegt, dann absteigen; 240 Frames später steht er auf der Ebene seiner Räder (≤ 0,05 m), gefallen ohne Höhen-
-            // Sprung > 0,5 m je Sim-Schritt.
+            // S4 ABSTEIGEN IM FLUG: dieselbe Klippe, W bis der Wagen `STATION.flugM` über dem Boden fliegt, dann absteigen; 240
+            // Frames später steht er auf der Ebene seiner Räder (≤ 0,05 m), gefallen ohne Höhen-Sprung > 0,5 m je Sim-Schritt.
             const g4 = await setzen("fahrzeug_gt", kl.sx, kl.sz, kl.fahrt, bahnFrei(kl));
             if (g4) {
                 tasten(true, false);
@@ -863,9 +906,7 @@ async function probeLeben(expected) {
             bahnWache = null;
         }
         // S3 QUERHANG: 25–40° quer, die Höhenlinie 16 m gerade (Richtung ±20°), trocken; Fahrt längs der Linie, W. Der Querhang
-        // kommt aus der Welt (welt-orte `querhang`, K55-2 — bis dahin ± 160 m um die Mess-Wiese, die flache Aue trug keinen):
-        // die Fahrt-Linie ist frei von Bauten und Stämmen (wie die Gasse von H) — seit die Stamm-Hülle eines Studio-Baums im
-        // Weltmaß steht (Kollision == Optik), hält ein Stamm den Wagen (in der CI nach 3,2 m).
+        // aus der Welt (welt-orte `querhang`), die Fahrt-Linie frei von Bauten und Stämmen (wie die Gasse von H).
         const qOrt = window.__weltOrt("querhang", { schritt: 4, rMax: 1600 });
         const qh = qOrt ? { x: qOrt.sx, z: qOrt.sz, grad: qOrt.neigung, fahrt: qOrt.gier } : null;
         S.querOrt = qh;
@@ -898,7 +939,7 @@ async function probeLeben(expected) {
             bahnWache = null;
         }
 
-        // ═══ H — DIE HÜLLE ALS KÖRPER (Q5 · F-D4 F-L5) ═══ Auf einer freien, trockenen, flachen Gasse (kein fremder Blocker in
+        // ═══ H — DIE HÜLLE ALS KÖRPER ═══ Auf einer freien, trockenen, flachen Gasse (kein fremder Blocker in
         // ±2,5 m auf 16 m) steht 9 m vor dem Wagen ein Hindernis; der GT fährt mit W hinein. Gemessen: das EINDRINGEN der
         // Wagen-Hülle (exportDrive.huelle, 0,1-m-Raster) in die Blocker-Boxen eines Felsblocks (`stein_block`) und den Leib
         // eines Bären, und der kleinste Abstand am Ende (sonst wäre 0 Eindringen vakuös).
@@ -937,145 +978,8 @@ async function probeLeben(expected) {
             return null;
         })();
         S.gasse = gasse;
-        const huelleProbe = async (hindernis) => {
-            if (!gasse) return null;
-            const gH = await setzen("fahrzeug_gt", gasse.x, gasse.z, gasse.fahrt);
-            if (!gH) return null;
-            const h = r._fahrzeugGesetzFor(gH).drive.huelle;
-            const sc = Number.isFinite(gH.scale) ? gH.scale : 1;
-            const ux = Math.sin(gasse.fahrt);
-            const uz = Math.cos(gasse.fahrt);
-            // die Gasse ist frei von fremden Wesen (ein Wolf vor dem Bug hält den Wagen an seinem Leib — die Probe misst ihr
-            // eigenes Hindernis): jedes Wesen im Umkreis 30 m der Strecke geht, bevor das Hindernis steht
-            for (const cr of (st.creatures || []).slice())
-                if (
-                    cr &&
-                    cr.position &&
-                    Math.hypot(cr.position.x - (gasse.x + ux * 8), cr.position.z - (gasse.z + uz * 8)) < 30
-                )
-                    r.removeCreature(cr);
-            const ziel = hindernis.setzen(gH.position.x + ux * 9, gH.position.z + uz * 9);
-            if (!ziel) {
-                weg(gH);
-                return null;
-            }
-            let tief = 0;
-            let abstand = Infinity;
-            let nah = Infinity; // der kleinste Abstand über die Fahrt (gleitet die Hülle an der Wand entlang, zählt der Kontakt)
-            let schritte = 0;
-            const messen = () => {
-                const ry = Number.isFinite(gH._rideYaw) ? gH._rideYaw : 0;
-                const fX = Math.sin(ry);
-                const fZ = Math.cos(ry);
-                abstand = Infinity;
-                for (let l = h.tailX * sc; l <= h.noseX * sc + 1e-6; l += 0.1)
-                    for (let q = -h.bw * sc; q <= h.bw * sc + 1e-6; q += 0.1) {
-                        const px = gH.position.x + l * fX + q * fZ;
-                        const pz = gH.position.z + l * fZ - q * fX;
-                        const t = hindernis.tiefe(ziel, px, pz);
-                        tief = Math.max(tief, t);
-                        abstand = Math.min(abstand, t > 0 ? 0 : hindernis.abstand(ziel, px, pz));
-                    }
-            };
-            const P4 = r._stepFixedSim;
-            r._stepFixedSim = function (simTime, dt) {
-                // das Hindernis steht VOR dem Kontakt und bei der Messung am selben Ort (das Hirn des Bären läuft im Frame)
-                hindernis.halten(ziel);
-                P4.call(this, simTime, dt);
-                hindernis.halten(ziel);
-                messen();
-                nah = Math.min(nah, abstand);
-                schritte++;
-            };
-            tasten(true, false);
-            for (let i = 0; i < 150; i++) frame(i);
-            tasten(false);
-            r._stepFixedSim = P4;
-            const vorn = (gH.position.x - gasse.x) * ux + (gH.position.z - gasse.z) * uz;
-            weg(gH);
-            hindernis.weg(ziel);
-            return { tief, abstand, nah, schritte, vorn };
-        };
-        const boxTiefe = (boxes, px, pz) => {
-            let t = 0;
-            for (const b of boxes || []) {
-                if (px < b.minX || px > b.maxX || pz < b.minZ || pz > b.maxZ) continue;
-                t = Math.max(t, Math.min(px - b.minX, b.maxX - px, pz - b.minZ, b.maxZ - pz));
-            }
-            return t;
-        };
-        const boxAbstand = (boxes, px, pz) => {
-            let a = Infinity;
-            for (const b of boxes || []) {
-                const dx = Math.max(b.minX - px, 0, px - b.maxX);
-                const dz = Math.max(b.minZ - pz, 0, pz - b.maxZ);
-                a = Math.min(a, Math.hypot(dx, dz));
-            }
-            return a;
-        };
-        S.huelleBlock = await huelleProbe({
-            setzen: (x, zz) => {
-                const b = r.spawnArchitecture(
-                    "stein_block",
-                    { x, y: hh(x, zz) + 0.5, z: zz },
-                    { silent: true, precise: true }
-                );
-                if (b) r._populateBlockerAABBs(b);
-                return b && b.blockerAABBs && b.blockerAABBs.length ? b : null;
-            },
-            tiefe: (b, px, pz) => boxTiefe(b.blockerAABBs, px, pz),
-            abstand: (b, px, pz) => boxAbstand(b.blockerAABBs, px, pz),
-            halten: () => {},
-            weg: (b) => r.removeArchitecture(b),
-        });
-        // Der Bär steht QUER zur Fahrt (die Flanke zum Bug): gemessen wird gegen SEINEN Leib (`_kreaturLeib`, D2 — dieselbe
-        // Größe, mit der er selbst gegen jede Hülle löst: drei Achsen längs der Gier, je Achse der Radius), nie gegen einen
-        // zweiten Kreis. Der Wagen soll den Leib berühren (Abstand ≤ 0,3 m), nicht vor einem breiteren Kreis halten.
-        const leibAchsen = (b) => {
-            const lb = b.leib;
-            const out = [];
-            for (let o = -1; o <= 1; o++)
-                out.push([b.c.position.x + lb.fx * o * lb.halb, b.c.position.z + lb.fz * o * lb.halb]);
-            return out;
-        };
-        const leibMass = (b, px, pz) => {
-            let d = Infinity;
-            for (const [ax, az] of leibAchsen(b)) d = Math.min(d, Math.hypot(px - ax, pz - az));
-            return d - b.leib.radius; // < 0: im Leib
-        };
+        // H1/H2/H7/H8 (der Wagen gegen Fels, Bär, gedrehte Wände) misst gate:kollision-bild (V) — der Bär quer zur Fahrt für H3
         const quer = Number.isFinite(gasse && gasse.fahrt) ? gasse.fahrt + Math.PI / 2 : 0;
-        let baerLeib = null;
-        const baerHalten = (b) => {
-            b.c.position.set(b.x, b.y, b.z);
-            b.c.rotation.y = b.ry;
-            b.c.userData._stossV = null; // die Hand der Probe hält auch die Geschwindigkeit (der Bär steht)
-            b.leib = r._kreaturLeib(b.c, 0, b.leib || {});
-        };
-        S.huelleBaer = await huelleProbe({
-            setzen: (x, zz) => {
-                st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + 1); // die Probe braucht ihren Bären
-                const c = r.spawnCreatureAt(x, hh(x, zz) + 0.5, zz, "calm", "baer", { precise: true });
-                if (!c) return null;
-                // die Füße auf dem Boden (die Lage eines stehenden Tiers; der Leib reicht vom Fuß bis zum Kopf)
-                const b = { c, x, z: zz, y: hh(x, zz), ry: quer };
-                baerHalten(b);
-                // die Maße im Bericht: der Leib und der Kreis, den der Wagen-Kontakt vor D2 las (separation × bodySize)
-                baerLeib = {
-                    radius: b.leib.radius,
-                    halb: b.leib.halb,
-                    // (der feste Paar-Radius 1,6 m dieses Kreises fiel mit dem persönlichen Raum, Welle LF — die Zahl
-                    // bleibt als Bericht des Vor-Stands)
-                    kreis: 0.5 * 1.6 * (c.userData.bodySize || 1),
-                };
-                return b;
-            },
-            tiefe: (b, px, pz) => Math.max(0, -leibMass(b, px, pz)),
-            abstand: (b, px, pz) => Math.max(0, leibMass(b, px, pz)),
-            // der Bär steht (sein Hirn läuft im Frame-Takt; die Probe hält ihn am Ort und in seiner Gier)
-            halten: baerHalten,
-            weg: (b) => r.removeCreature(b.c),
-        });
-        if (S.huelleBaer && baerLeib) S.huelleBaer.leib = baerLeib;
         // H3 — EIN WESEN SCHIEBT KEINEN WAGEN: der GT steht (keine Taste), ein Bär steht 0,5 m tief in seinem Bug (er lief
         // hinein); 60 Frames später darf der Wagen sich nicht bewegt haben (das Ausweichen ist Sache des Wesens).
         if (gasse) {
@@ -1137,95 +1041,6 @@ async function probeLeben(expected) {
                 }
             }
         }
-        // H7 — DAS GEDREHTE HAUS (Entscheid D5 der Welle L, Integration): eine Haus-Wand 12 × 0,8 m, 34° gegen die Fahrt
-        // gedreht, als Hülle der Stufe (`_hausHuelleSetzen` → `_hausObb`, derselbe Weg wie der Beipack `__huelle` der
-        // Foundry) steht 9 m voraus; der GT fährt mit W hinein. Gemessen gegen die ECHTE Wand (im Rahmen der gedrehten Box):
-        // das Eindringen und der kleinste Abstand über die Fahrt. Die Welt-AABB der gedrehten Wand ist ein Mehrfaches der
-        // Wand — hält die Hülle an ihr, bleibt sie vor der Wand stehen (keine Berührung).
-        st.blueprints._t_fahr_haus = {
-            name: "_t_fahr_haus",
-            parts: [
-                { shape: "box", material: "stein", position: { x: 0, y: 1.25, z: 0 }, size: { x: 12, y: 2.5, z: 0.8 } },
-            ],
-        };
-        const obbLokal = (ob, px, pz) => {
-            const dx = px - ob.cx;
-            const dz = pz - ob.cz;
-            return [dx * ob.c - dz * ob.s, dx * ob.s + dz * ob.c];
-        };
-        S.huelleHaus = await huelleProbe({
-            setzen: (x, zz) => {
-                const e = r.spawnArchitecture(
-                    "_t_fahr_haus",
-                    { x, y: hh(x, zz) + 0.5, z: zz },
-                    { silent: true, precise: true, rotationY: gasse.fahrt + 0.6 }
-                );
-                if (!e) return null;
-                // die EINE Hüllen-Form (N5, S3 haus): die Wand als Kasten c ± h, rolle "fest" (vorher die Zahlen-Zeile `boxen`)
-                r._hausHuelleSetzen(e, {
-                    stufe: 0,
-                    teile: [{ art: "box", c: [0, -0.25, 0], h: [6, 2.75, 0.4], rolle: "fest" }],
-                });
-                const box = (e.blockerAABBs || []).find((b) => b.obb);
-                if (!box) {
-                    r.removeArchitecture(e);
-                    return null;
-                }
-                return { e, ob: box.obb, aabb: [box.maxX - box.minX, box.maxZ - box.minZ] };
-            },
-            tiefe: (b, px, pz) => {
-                const [lx, lz] = obbLokal(b.ob, px, pz);
-                return Math.max(0, Math.min(b.ob.hx - Math.abs(lx), b.ob.hz - Math.abs(lz)));
-            },
-            abstand: (b, px, pz) => {
-                const [lx, lz] = obbLokal(b.ob, px, pz);
-                return Math.hypot(Math.max(Math.abs(lx) - b.ob.hx, 0), Math.max(Math.abs(lz) - b.ob.hz, 0));
-            },
-            halten: () => {},
-            weg: (b) => r.removeArchitecture(b.e),
-        });
-        delete st.blueprints._t_fahr_haus;
-        // H8 — DIE GEDREHTE TEIL-BOX (D5, die zweite Rolle der Hülle: jedes Hindernis aus Teilen — der geparkte Wagen, der
-        // Fels, das Tor, ein Bauwerk — steht als seine Teil-Boxen aus `_blockerComputePartAABB`): eine Mauer aus EINEM Teil
-        // 12 × 0,8 m, ohne Haus-Hülle, 34° gegen die Fahrt gedreht, steht 9 m voraus; der GT fährt mit W hinein. Gemessen
-        // gegen das ECHTE Teil (in seinem Rahmen): das Eindringen und der kleinste Abstand über die Fahrt. Steht das Teil als
-        // Welt-AABB, hält die Hülle vor dem Rechteck um die Mauer.
-        st.blueprints._t_fahr_mauer = {
-            name: "_t_fahr_mauer",
-            parts: [
-                { shape: "box", material: "stein", position: { x: 0, y: 1.25, z: 0 }, size: { x: 12, y: 2.5, z: 0.8 } },
-            ],
-        };
-        S.huelleTeil = await huelleProbe({
-            setzen: (x, zz) => {
-                const e = r.spawnArchitecture(
-                    "_t_fahr_mauer",
-                    { x, y: hh(x, zz) + 0.5, z: zz },
-                    { silent: true, precise: true, rotationY: gasse.fahrt + 0.6 }
-                );
-                if (!e) return null;
-                r._populateBlockerAABBs(e);
-                if (!e.blockerAABBs || e.blockerAABBs.length !== 1 || e._hausHuelle) {
-                    r.removeArchitecture(e);
-                    return null;
-                }
-                const sc = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
-                const c = Math.cos(e.rotationY);
-                const sn = Math.sin(e.rotationY);
-                return { e, ob: { cx: e.position.x, cz: e.position.z, c, s: sn, hx: 6 * sc, hz: 0.4 * sc } };
-            },
-            tiefe: (b, px, pz) => {
-                const [lx, lz] = obbLokal(b.ob, px, pz);
-                return Math.max(0, Math.min(b.ob.hx - Math.abs(lx), b.ob.hz - Math.abs(lz)));
-            },
-            abstand: (b, px, pz) => {
-                const [lx, lz] = obbLokal(b.ob, px, pz);
-                return Math.hypot(Math.max(Math.abs(lx) - b.ob.hx, 0), Math.max(Math.abs(lz) - b.ob.hz, 0));
-            },
-            halten: () => {},
-            weg: (b) => r.removeArchitecture(b.e),
-        });
-        delete st.blueprints._t_fahr_mauer;
         // H4 — KEIN SCHUB INS GELÄNDE: die ECHTE Methode `_fahrHuelleKontakt` mit der echten Hülle des GT auf einer
         // synthetischen Welt (ein Objekt mit der Welt als Prototyp): eine senkrechte Gelände-Wand 0,3 m neben der rechten
         // Flanke, ein Kasten überlappt die linke Flanke 0,8 m und schiebt zur Wand hin. Die Hülle darf nicht in die Wand.
@@ -1272,7 +1087,7 @@ async function probeLeben(expected) {
                         return out;
                     };
                     const ent = { _fahr: { y: 0, steig: 0, wank: 0 }, _rideYaw: 0 };
-                    // zehn Schritte nacheinander (der Schub je Schritt ist auf eine Rad-Stufe begrenzt, 0710-2): der Kasten
+                    // zehn Schritte nacheinander (der Schub je Schritt ist auf eine Rad-Stufe begrenzt): der Kasten
                     // drückt die Hülle Schritt um Schritt an die Wand, und keiner schiebt sie hinein
                     let x = 0;
                     let schub = 0;
@@ -1290,7 +1105,7 @@ async function probeLeben(expected) {
             }
         }
 
-        // ═══ L — DIE ORTE DER LEBEN-SCHAU (Auftrag 0710-2, sichtbar gefahren) ═══
+        // ═══ L — DIE ORTE DER LEBEN-SCHAU ═══
         // An GENAU den Orten der Leben-Schau, mit ihrem Tempo und ihrer Gier, durch den echten Sim-Schritt. Je Sim-Schritt:
         // `unter` — die Ebene der Räder (der Kern selbst: fahrEbene an der Lage und Gier des Stands) über der Höhe des Wagens,
         // solange er nicht fliegt; `schub` — was der Kontakt-Löser die Lage über die eigene Fahrt hinaus versetzte.
@@ -1599,8 +1414,7 @@ async function probeLeben(expected) {
                 c.position.set(x, hh(x, zz), zz);
                 c.rotation.y = gasse.fahrt + Math.PI / 2; // quer zur Fahrt, die Flanke zum Bug
                 r.assignCreatureTask(c, "wait");
-                // Der Bär steht still (sein Hirn wählte Flucht oder Wandern mit Math.random — 07.10. kippte L5 so von
-                // 7,99 → 6,07 auf 7,92 → 3,70 m/s): ein Steuer-Gesetz, dessen Schritt das Tempo nullt; nur der Stoß bewegt ihn.
+                // Der Bär steht still: ein Steuer-Gesetz, dessen Schritt das Tempo nullt; nur der Stoß bewegt ihn.
                 const A = Object.getPrototypeOf(r).constructor;
                 if (!A.__steuerRoh) {
                     A.__steuerRoh = A._steuerGesetz;
@@ -1622,7 +1436,7 @@ async function probeLeben(expected) {
                 r.removeCreature(c);
             },
         });
-        // L6 SPIELER UND WAGEN (0710-4): (a) der Spieler läuft (W) gegen die Flanke eines geparkten GT — der Stoß nimmt ihm
+        // L6 SPIELER UND WAGEN: (a) der Spieler läuft (W) gegen die Flanke eines geparkten GT — der Stoß nimmt ihm
         // die Fahrt in den Wagen (er prallt ab, statt in die Box zu drücken), die Handbremse hält den Wagen (sie nimmt den
         // Stoß eines Menschen auf), der Spieler steckt nicht in ihm; (b) ein GT, angestoßen mit 5 m/s, rutscht auf den
         // stehenden Spieler zu — der Spieler bekommt seinen Impuls, der Wagen schiebt ihn nicht durch.
@@ -1773,9 +1587,6 @@ async function probeLeben(expected) {
             }
             S.spielerWagen = sw;
         }
-        // L7 DER GESTOSSENE LEIB VOR DÜNNER WAND: ein Bär (Größe 1, Steuer-Schritt steht) 3 m vor einer 0,35-m-Wand wird mit
-        // 13,7 m/s gegen sie gedrückt (45 Frames je Frame neu gesetzt), je Kadenz (60 fps, 30 fps, gemischt 8–33 ms) zehn
-        // Versuche mit versetztem Start, Lage quer und Akkumulator-Phase; gezählt: die Mitte des Bären hinter der Wand.
         // L8 LOCKSTEP: ein GT (W) gegen einen stehenden Bären — die Lage nach 200 Sim-Schritten bei 60 fps = gemischt.
         if (start && gasse) {
             if (st.player && st.player.mountedArch != null) r.dismountArchitecture();
@@ -1786,7 +1597,7 @@ async function probeLeben(expected) {
             steht.steuerSchritt = (sw2) => {
                 sw2.v = 0;
             };
-            const KADENZ = { 60: [1000 / 60], 30: [1000 / 30], gemischt: [8, 33, 16, 25, 12, 30, 20, 9, 33, 14] };
+            const KADENZ = { 60: [1000 / 60], gemischt: [8, 33, 16, 25, 12, 30, 20, 9, 33, 14] };
             const lauf = (muster, n, nachJedem) => {
                 for (let i = 0; i < n; i++) {
                     tMs += muster[i % muster.length];
@@ -1796,75 +1607,6 @@ async function probeLeben(expected) {
             };
             A._steuerGesetz = () => steht;
             try {
-                // L7
-                const wx = start.x + 14;
-                const wz = start.z;
-                const g = hh(wx, wz);
-                const wand = r.spawnArchitecture(
-                    "stein_block",
-                    { x: wx, y: g + 0.5, z: wz },
-                    { silent: true, precise: true }
-                );
-                if (wand) {
-                    const platte = () => {
-                        wand.blockerAABBs = [
-                            {
-                                minX: wx - 0.175,
-                                maxX: wx + 0.175,
-                                minZ: wz - 2,
-                                maxZ: wz + 2,
-                                botY: g - 0.5,
-                                topY: g + 3,
-                                dick: 3.5,
-                            },
-                        ];
-                        wand._blockerReach = 3;
-                    };
-                    // der Spieler steht zu Fuß neben der Probe (die Tiere ticken im Nah-Band)
-                    st.playerMesh.position.set(wx - 4, hh(wx - 4, wz + 6) + 1.2, wz + 6);
-                    st.playerVel.setValue(0, 0, 0);
-                    tasten(false);
-                    const L7 = {};
-                    for (const [name, muster] of Object.entries(KADENZ)) {
-                        let durch = 0;
-                        let n = 0;
-                        let tiefstX = -Infinity;
-                        for (let v = 0; v < 10; v++) {
-                            platte();
-                            const bz = wz - 0.9 + v * 0.2;
-                            // der Start-Abstand je Versuch um 4,5 cm versetzt: zehn Versuche decken einen ganzen Frame-Weg (30 fps,
-                            // ~0,45 m) — durch geht nur, wessen vordere Achse im Sprung über die Wandmitte kommt, ein Fenster von cm
-                            st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + 1); // die Probe braucht ihren Bären
-                            const bx = wx - 0.175 - 3 - v * 0.045;
-                            const b = r.spawnCreatureAt(bx, hh(bx, bz) + 0.5, bz, "calm", "baer", {
-                                precise: true,
-                                bodySize: 1,
-                            });
-                            if (!b) continue;
-                            b.position.set(bx, hh(bx, bz), bz);
-                            b.rotation.y = Math.PI / 2;
-                            b.userData._steuer = { gier: Math.PI / 2, v: 0 };
-                            b.userData._stossV = null;
-                            lauf([1 + v * 1.3], 1); // die Phase des Akkumulators je Versuch
-                            b.userData._stossV = { x: 13.7, z: 0 };
-                            let maxX = -Infinity;
-                            // der Stoß DRÜCKT wie ein Wagen, der nachschiebt: je Frame neu 13,7 m/s gegen die Wand (die Gegenprüfung:
-                            // Bär vor der Wand, Wagen 13,7 m/s) — liegt der Leib an der Wand, beginnt jeder Frame mit der Achse an ihr
-                            lauf(muster, 90, (i) => {
-                                maxX = Math.max(maxX, b.position.x);
-                                if (i < 45) b.userData._stossV = { x: 13.7, z: 0 };
-                            });
-                            n++;
-                            tiefstX = Math.max(tiefstX, maxX - (wx + 0.175));
-                            if (maxX > wx + 0.175) durch++;
-                            r.removeCreature(b);
-                        }
-                        L7[name] = { durch, n, ueber: +tiefstX.toFixed(3) };
-                    }
-                    r.removeArchitecture(wand);
-                    S.leibWand = L7;
-                }
-                // L8
                 const ux = Math.sin(gasse.fahrt);
                 const uz = Math.cos(gasse.fahrt);
                 const lockProbe = async (muster) => {
@@ -1877,7 +1619,7 @@ async function probeLeben(expected) {
                     for (const cr of (st.creatures || []).slice())
                         if (cr && cr.position && Math.hypot(cr.position.x - bx, cr.position.z - bz) < 60)
                             r.removeCreature(cr);
-                    // DER GLEICHE START (K70-N1): beide Läufe beginnen am RUHENDEN Wagen — gewartet wird auf das Ereignis (der
+                    // DER GLEICHE START: beide Läufe beginnen am RUHENDEN Wagen — gewartet wird auf das Ereignis (der
                     // Fahr-Zustand ändert sich drei Bilder lang um höchstens 1 nm), nie auf die Wanduhr; der Stand reist mit.
                     let ruhe = 0;
                     let stand = null;
@@ -2006,7 +1748,7 @@ async function probeLeben(expected) {
         // aus der Welt (`__wasserOrte`), gesucht um seine tiefste Stelle.
         {
             let ort = null;
-            const seeO = window.__wasserOrte({ mess: mo }).see;
+            const seeO = (await window.__wasserOrte({ mess: mo })).see;
             const mitte = seeO ? [seeO.x, seeO.z] : null;
             for (let ring = 0; mitte && ring <= 120 && !ort; ring++)
                 for (let k = 0; k < Math.max(1, ring * 6) && !ort; k++) {
@@ -2066,7 +1808,7 @@ async function probeLeben(expected) {
                         m.tiefe = +(ort.spiegel - hh(ort.x, ort.z)).toFixed(2);
                         S.schwimmer = m;
                         r.removeCreature(f);
-                        // DER SCHWIMMER IM LOCKSTEP (L8, 0710-5-Nachschnitt): derselbe Stoß bei 60 fps und bei gemischten Frames,
+                        // DER SCHWIMMER IM LOCKSTEP (L8): derselbe Stoß bei 60 fps und bei gemischten Frames,
                         // die Lage 20 Sim-Schritte danach — x, z UND y (im Wasser setzte der Frame-Takt die Höhe, mit seinen Wellen)
                         const schwimmLauf = (muster) => {
                             const g = r.spawnCreatureAt(ort.x, ort.spiegel, ort.z, "calm", "fuchs", {
@@ -2125,7 +1867,7 @@ async function probeLeben(expected) {
                         : "kein See in der Welt (`__wasserOrte`)",
                 };
         }
-        // L9 DER REITER IM WAGEN (0710-4 Klasse 4): je Wagen-Art und am Karren (Teile-Werk) aufsitzen, der Spieler schaut
+        // L9 DER REITER IM WAGEN: je Wagen-Art und am Karren (Teile-Werk) aufsitzen, der Spieler schaut
         // quer zur Fahrt (die Maus ist nicht der Wagen), einschwingen — dann die HAUT des Reiters: jede Ecke jedes sichtbaren
         // Meshes der Nah-Gestalt über ihre Knochen. Gemessen über der Rad-Ebene (Ursprung − 0,5): die Oberkante gegen die
         // Dachlinie des Kerns (huelle.yRoof), die Unterseite der Oberschenkel gegen die Sitzfläche (der Sitz-Anker), das
@@ -2383,6 +2125,7 @@ async function probeLeben(expected) {
             S.spalt.rand = hh(kante.x, kante.z);
             S.spalt.grund = kante.grund;
         }
+        res.kette = await kette(expected.kette); // W (feld.K1) zuletzt
     } catch (e) {
         res.err = (e && e.stack) || String(e);
     }
@@ -2456,8 +2199,8 @@ function kernTempo(VC) {
     const [v0, v1] = [lauf(c0, 300, 0, 0), lauf(c0, 300, 0, vmax)];
     lauf(cd, 300, 0, 8, 8);
     const drift = +((Math.abs(cd.az - Math.PI / 4) * 180) / Math.PI).toFixed(1);
-    // die Rückkehr in der Kurve (0,5 rad/s): die Maus hält 0,5 s und dreht das Rig 0,5 rad, dann frei — der größte Sprung der
-    // Drehrate je Bild ab dem Loslassen, relativ zur Kurve (vorher 1,0 am Loslassen und 0,9 am Ende der Rückkehr)
+    // die Rückkehr in der Kurve (0,5 rad/s): die Maus hält 0,5 s und dreht das Rig 0,5 rad, dann frei — der größte
+    // Sprung der Drehrate je Bild ab dem Loslassen, relativ zur Kurve
     const ck = {};
     let [az, rate, knick] = [0, 0, 0];
     for (let i = 0; i < (kern.length ? 0 : 300); i++) {

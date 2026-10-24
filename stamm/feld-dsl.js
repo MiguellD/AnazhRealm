@@ -10,7 +10,7 @@ class AnazhRealm_feld_dsl {
         if (now - grok.lastSpoke < grok.minGapSeconds) return false;
         if (cfg && now - cfg.lastFired < cfg.cooldown) return false;
         if (this.state.llm && this.state.llm.enabled) {
-            const prompt = `In dir geschah gerade etwas: "${entry.text}" (Typ: ${entry.type}). Kommentiere es in einem kurzen Satz, in erster Person. Gib KEIN program — nur say.`;
+            const prompt = `In dir geschah gerade etwas: ${this._erinnerungFuerKi(entry)}. Kommentiere es in einem kurzen Satz, in erster Person. Gib KEIN program — nur say.`;
             // Async ohne await: das Tick darf nicht blockieren.
             this.llmCall(prompt, null, { hintergrund: true }).then((reply) => {
                 if (!reply || !reply.say) return;
@@ -55,6 +55,11 @@ class AnazhRealm_feld_dsl {
             source: opts.source || "unknown",
             programId: opts.programId || `prog_${this.state.dsl.nextEntryId++}`,
             orte: new Map(), // Positions-Knoten → aufgelöste Orte (`dslEvalPos`; der Absender schickt sie mit)
+            // DIE TAT (`_tatWerten`): die Regel, die feuert (`_worldRuleCtx`), das Wort, auf das die KI handelt, und die Tat,
+            // die gerade wirkt (`dslEval` → `_tatBeginnt`) — die Stimme des Felds nennt Gesetz und Ursache aus ihnen
+            regel: opts.regel || null,
+            grund: opts.grund || null,
+            tat: null,
         };
     }
 
@@ -280,7 +285,8 @@ class AnazhRealm_feld_dsl {
         // Welt-Akt (AnazhRealm.DSL_WELTAKTE) seinen Zug — gleich wer ihn schickt (Nexus, Welt-Regel, Emotion, Mensch,
         // Mitspieler) — und steht beim Namen seiner Quelle im Log (`_weltaktGehalten`). Bis 07.10. hielt die Bühne nur das
         // Wetter: ein Nexus-Dorf drehte im OMEN-Boot 4B (0710-6) mitten im Lauf den Blick. Das Spiel kennt den Halt nie.
-        if (AnazhRealm.DSL_WELTAKTE.includes(op) && this._messHalt()) {
+        const weltakt = AnazhRealm.DSL_WELTAKTE.includes(op);
+        if (weltakt && this._messHalt()) {
             this._weltaktGehalten(String(op), ctx);
             return;
         }
@@ -295,14 +301,19 @@ class AnazhRealm_feld_dsl {
             return;
         }
         ctx.budget.depthLeft--;
+        // DIE TAT (affekt K1/K4): ein Welt-Akt wird hier EINE Tat — ihr Ort, ihre Wertung am Ort und ihre Zeile (`_tatWerten`)
+        const tat = weltakt ? this._tatBeginnt(String(op), args, ctx) : null;
+        let gelungen = true;
         try {
             fn.call(this, args, ctx);
         } catch (err) {
+            gelungen = false;
             // Ein verlangter Ort fehlt (`dslEvalPos`): sein Eintrag `invalid_position` steht schon im Log — er nennt jetzt
             // auch die Op, die er abbrach. Alles andere ist ein Fehler der Op.
             if (err && err.dslKeinOrt && err.dslKeinOrt.eintrag) err.dslKeinOrt.eintrag.effekt = String(op);
             else ctx.log.push({ event: "op_exception", op: String(op), message: err.message });
         }
+        if (tat) this._tatWerten(tat, ctx, gelungen);
         ctx.budget.depthLeft++;
     }
 
@@ -372,6 +383,8 @@ class AnazhRealm_feld_dsl {
             fehler.dslKeinOrt.eintrag = eintrag;
             throw fehler;
         }
+        // der erste Ort einer wirkenden Tat ist IHR Ort — gelesen, bevor ihr Effekt schreibt (`_tatOrt`)
+        if (ctx.tat && !ctx.tat.ort) this._tatOrt(ctx.tat, pos, op);
         if (node == null) return pos;
         if (ctx.orte) {
             const liste = ctx.orte.get(node);
@@ -711,6 +724,7 @@ class AnazhRealm_feld_dsl {
             source: `rule:${rule.source || "unknown"}`,
             budget: this._worldRuleBudget(),
             programId: `rule_${rule.id}`,
+            regel: rule,
         });
     }
 
@@ -813,7 +827,11 @@ class AnazhRealm_feld_dsl {
         } catch {
             desc = "ein Gesetz";
         }
-        this.journalAppendOnce(`ruleAwoke:${rule._sig || rule.id}`, "rule", `Dein Gesetz erwachte — ${desc}.`);
+        this.journalAppendOnce(
+            `ruleAwoke:${rule._sig || rule.id}`,
+            "rule",
+            AnazhRealm._datum`Dein Gesetz erwachte — ${desc}.`
+        );
     }
 
     // DIE KREATUR EINES VERBS (Karte KI2, 16.10.): `indexOrId` ist, was die Form verspricht — der Platz in `state.creatures`
@@ -881,13 +899,13 @@ class AnazhRealm_feld_dsl {
             voxel_carve: ([x, y, z, radius], ctx) => {
                 const p = this.dslEvalPos(["at", x, y, z], ctx);
                 const r = c(radius, 0.5, 12);
-                this.carveVoxelSphere(p.x, p.y, p.z, r);
+                this.carveVoxel(p.x, p.y, p.z, r);
                 ctx.log.push({ event: "voxel_carved", x: p.x, y: p.y, z: p.z, r });
             },
             voxel_fill: ([x, y, z, radius], ctx) => {
                 const p = this.dslEvalPos(["at", x, y, z], ctx);
                 const r = c(radius, 0.5, 12);
-                this.fillVoxelSphere(p.x, p.y, p.z, r);
+                this.fillVoxel(p.x, p.y, p.z, r);
                 ctx.log.push({ event: "voxel_filled", x: p.x, y: p.y, z: p.z, r });
             },
             skybox_color: ([color]) => {
@@ -1019,8 +1037,9 @@ class AnazhRealm_feld_dsl {
             // Co-Schöpfer pflanzt Studio-Assets: ein Wort ("eiche", "birken", "fels", ein Haus-/Tor-Rezept)
             // wird über dieselben Tabellen wie die Werkstatt zum Bauplan (_studioBlueprintForWord) und landet
             // am EINEN Chokepoint spawnArchitecture — mit Preset-Stempel (_studioStampFor), geerdet, nie im
-            // Wasser (_dslSpawnStudioItems). Unbekanntes Wort → Log-Eintrag, kein Raten, kein Ersatz-Baum.
-            spawn_studio: ([what, positionNode, count, seed], ctx) => {
+            // Wasser (_dslSpawnStudioItems). Unbekanntes Wort → Log-Eintrag, kein Raten, kein Ersatz-Baum. `ov` (die
+            // Regler {id: Zahl}, KI K2) prägt das Werk über denselben Stempel, am Vertrag der Art geklemmt.
+            spawn_studio: ([what, positionNode, count, seed, ov], ctx) => {
                 const name = this._studioBlueprintForWord(what == null ? "" : String(what));
                 if (!name) {
                     ctx.log.push({ event: "unknown_studio_word", word: what, program_id: ctx.programId });
@@ -1030,7 +1049,7 @@ class AnazhRealm_feld_dsl {
                 const pos = this.dslEvalPos(positionNode, ctx); // kein Ort → `dslEvalPos` bricht die Op benannt ab
                 const abstand = this._studioSpawnAbstand(name);
                 const jitter = n > 1 ? abstand * Math.sqrt(n) : 0;
-                const spawned = this._dslSpawnStudioItems(name, pos, n, seed, ctx, jitter);
+                const spawned = this._dslSpawnStudioItems(name, pos, n, seed, ctx, jitter, ov);
                 ctx.log.push({ event: "spawned_studio", count: spawned, pos, kind: name });
             },
             spawn_island: ([positionNode, height, seed, size], ctx) => {
@@ -1223,6 +1242,14 @@ class AnazhRealm_feld_dsl {
                     ctx.log.push({ event: "spawn_blueprint_duplicate", name, id: sharedId });
                     return;
                 }
+                // der gereiste Stempel trägt nur, was der Kern seiner Art ausweist (`_ovVertrag`) — sonst fällt der Bau benannt
+                const bruch = this._ovVertrag(name, studioOv);
+                if (bruch) {
+                    ctx.log.push({ event: "studio_ov_vertrag", name, grund: bruch });
+                    absage(bruch === "buch" ? "buch" : "vertrag");
+                    ergebnis(0);
+                    return;
+                }
                 const ziel = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
@@ -1236,9 +1263,8 @@ class AnazhRealm_feld_dsl {
                 const opts = { seed: s, autonomous: this._feldHandelt(ctx), werk: !this._feldHandelt(ctx) };
                 if (sharedId) opts.id = sharedId;
                 if (typeof drehung === "number" && Number.isFinite(drehung)) opts.rotationY = drehung;
-                // PRÄGUNG-WELT — der gereiste Stempel geht ungestrippt an den EINEN
-                // Sanitize-Chokepoint (spawnArchitecture: plain object + Taille-Wand).
-                if (studioOv && typeof studioOv === "object" && !Array.isArray(studioOv)) opts.studioOv = studioOv;
+                // PRÄGUNG-WELT — der Stempel (im Vertrag, oben) geht an den Sanitize-Chokepoint (spawnArchitecture: Taille-Wand).
+                if (studioOv) opts.studioOv = studioOv;
                 // Ein Werk mit geteilter id steht, wo der Sender es gesetzt hat; sonst wählt das Programm den Ort — er trägt das
                 // ganze Fundament (`_werkOrtSuchen`, nach der Spieler-Klemme der Wurzel), keiner → benannt.
                 const ort = sharedId ? ziel : this._werkOrtSuchen(name, ziel, opts, this._samenStrom(s));
@@ -1285,10 +1311,18 @@ class AnazhRealm_feld_dsl {
                     reason: result.reason,
                 });
                 if (result.ok) {
-                    this.journalAppend("growth", `Ein neuer Bauplan entstand: ${result.name}.`, {
-                        name: result.name,
-                        parts: valid.parts.length,
-                    });
+                    // ein Name aus fremder Hand (Mitspieler, Werk-Code) geht nie in den Text der Erinnerung — sie liest die KI
+                    const fremd = /^(remote:|teilen)/.test(String(ctx.source));
+                    this.journalAppend(
+                        "growth",
+                        fremd
+                            ? "Ein Bauplan kam von außen."
+                            : AnazhRealm._datum`Ein neuer Bauplan entstand: ${result.name}.`,
+                        {
+                            name: result.name,
+                            parts: valid.parts.length,
+                        }
+                    );
                     // Einen EIGENEN Bauplan erschaffen feuert Stolz (joy + hope) ∝ Komplexität, gefärbt von der
                     // Substanz — NUR die Mensch-Geste (nicht Nexus/LLM/remote).
                     if (ctx && ctx.source === "human") this._feelAction("create", { blueprint: result.name });
@@ -1536,7 +1570,7 @@ class AnazhRealm_feld_dsl {
                     });
                 }
                 if (result.ok) {
-                    this.journalAppend("growth", `Ein neues Konsumabel entstand: ${result.name}.`, {
+                    this.journalAppend("growth", AnazhRealm._datum`Ein neues Konsumabel entstand: ${result.name}.`, {
                         name: result.name,
                     });
                 }
@@ -1569,7 +1603,7 @@ class AnazhRealm_feld_dsl {
                     reason: result.reason,
                 });
                 if (result.ok) {
-                    this.journalAppend("growth", `Eine neue Seele entstand: ${result.name}.`, {
+                    this.journalAppend("growth", AnazhRealm._datum`Eine neue Seele entstand: ${result.name}.`, {
                         name: result.name,
                         parts: valid.parts.length,
                     });
@@ -1589,7 +1623,7 @@ class AnazhRealm_feld_dsl {
                     reason: result.reason,
                 });
                 if (result.ok) {
-                    this.journalAppend("growth", `Eine neue Substanz wurde benannt: ${result.name}.`, {
+                    this.journalAppend("growth", AnazhRealm._datum`Eine neue Substanz wurde benannt: ${result.name}.`, {
                         name: result.name,
                     });
                 }
@@ -1619,7 +1653,7 @@ class AnazhRealm_feld_dsl {
                 if (r.ok) {
                     this.journalAppend(
                         "growth",
-                        `Ein eigenes Werkzeug entstand: ${blueprintName} (Cap ${r.precisionCap.toFixed(2)}).`,
+                        AnazhRealm._datum`Ein eigenes Werkzeug entstand: ${blueprintName} (Cap ${r.precisionCap.toFixed(2)}).`,
                         { tool: blueprintName, cap: r.precisionCap }
                     );
                 }
@@ -1682,7 +1716,9 @@ class AnazhRealm_feld_dsl {
                     return;
                 }
                 this.addNewAbility(safeName, program, "llm");
-                this.journalAppend("growth", `Eine neue Fähigkeit ruht in mir: ${safeName}.`, { name: safeName });
+                this.journalAppend("growth", AnazhRealm._datum`Eine neue Fähigkeit ruht in mir: ${safeName}.`, {
+                    name: safeName,
+                });
                 ctx.log.push({ event: "defined_ability", name: safeName });
             },
             // Fraktal-Bau: eine Wurzel, hexagonal von 6 Sub-Strukturen (× ratio) umringt, rekursiv bis
@@ -1952,12 +1988,31 @@ class AnazhRealm_feld_dsl {
         return y;
     }
 
-    _dslSpawnStudioItems(name, pos, n, seed, ctx, jitter) {
-        const stamp = this._studioStampFor(name);
+    // Die Regler des Programms (`ov`) prägen über den EINEN Stempel; jede Klemme steht beim Namen im Log, ein fremder Regler
+    // setzt nichts (der Grund `regler`, das Log nennt ihn und die Regler der Art). Ein Same null ist keiner (Lehre 17).
+    _dslSpawnStudioItems(name, pos, n, seed, ctx, jitter, ov) {
+        const befund = {};
+        const stamp = this._studioStampFor(name, ov, befund);
         const istBaum = name.startsWith("baum_");
         const natur = this._istNatur({ type: name });
+        if (befund.geklemmt && befund.geklemmt.length)
+            ctx.log.push({ event: "studio_regler_geklemmt", kind: name, geklemmt: befund.geklemmt });
+        if (stamp === false) {
+            ctx.log.push({ event: "studio_regler_abgelehnt", kind: name, regler: befund.fremd, kennt: befund.kennt });
+            this._setzErgebnis(
+                ctx,
+                "spawn_studio",
+                n,
+                0,
+                { regler: n },
+                this._werkLabel(name),
+                natur ? "gewachsen" : "gebaut"
+            );
+            return 0;
+        }
         const grundriss = !natur && !!this._grundrissGesetz(name);
-        const baseSeed = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : this._bauSame("studio:" + name);
+        const baseSeed =
+            seed != null && Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : this._bauSame("studio:" + name);
         const wurf = this._samenStrom(baseSeed);
         let spawned = 0;
         const weicht = {};

@@ -1,12 +1,8 @@
 // diag-freie-slots.cjs — DIE SLOT-LINSE (gate:freie-slots): ein freier Slot und eine leere Hülle zeichnen NIE,
 // in keinem Pass.
 //
-// Befund (Radeon 890M, Mess-Wiese −900/−850, drei Wander-Schleifen à 1,2 km, Regler voll): `_archGroupFree` setzte nur die
-// Matrix auf eine Null-3×3 und legte den Slot in eine Free-Liste; `mesh.count` blieb am Höchststand, jede Null-Instanz lief
-// durch den Vertex-Shader jedes Passes — 890 freie Slots mit 1,73 M Dreiecken in 202 Gruppen, 92 leere Hüllen in der
-// Gnadenfrist zeichneten 0,99 M Dreiecke ins Hauptbild (Band-Klasse `leer:*`, Haushalt 0). Der Schnitt: jede Instanz-Senke
-// ist DICHT — Freigeben zieht die letzte Instanz in die Lücke (`_instanzUmzug`), `count` schreibt nur `_instanzZahl`, eine
-// leere Senke ist unsichtbar.
+// Jede Instanz-Senke ist DICHT — Freigeben zieht die letzte Instanz in die Lücke (`_instanzUmzug`), `count` schreibt nur
+// `_instanzZahl`, eine leere Senke ist unsichtbar.
 //
 // Die Linse fährt die echte Welt (Null-Renderer, Foundry an) durch eine Wander-Sequenz — fort und zurück, mehrere Umzüge —
 // und hält nach jedem Umzug JEDE Instanz-Senke gegen ihre lebenden Instanzen:
@@ -16,7 +12,7 @@
 //   F  Fundament-Pool: count == Zahl der Sockel, Rückverweis Slot ↔ Eintrag geschlossen
 //   S  Nah-Wiese · Zaun: keine Null-3×3 in [0, count), leer ⇒ unsichtbar; die Nah-Streu (W7: ihre Senken
 //      sind Daten, ihr Stoff-Satz zeichnet): Σ Blöcke == Anzahl, keine Senke trägt eine Mesh
-//   W  Nah-Wiese (Welle 6): ihre Senken füllt der Sicht-Satz `_nahWieseSicht` im Haupt-Pass — der Null-Renderer zeichnet
+//   W  Nah-Wiese: ihre Senken füllt der Sicht-Satz `_nahWieseSicht` im Haupt-Pass — der Null-Renderer zeichnet
 //      nie, die Senken stünden leer und S prüfte nichts. Die Linse legt den Satz nach jedem Umzug SELBST
 //      (scripts/lib/wiese-sicht.cjs: Linsen-Kamera am Ring-Mittelpunkt, Blick auf den nächsten Büschel) und verlangt:
 //      der Ring trägt Büschel, JEDE Senke anzahl > 0, jede gelegte Instanz steht im Ring um das Auge

@@ -513,7 +513,7 @@
                     "muster": "^bau:"
                 },
                 {
-                    "muster": "^siedlung-zaun$"
+                    "muster": "^siedlung-(zaun|mauer)$"
                 },
                 {
                     "muster": "^bauSatz$"

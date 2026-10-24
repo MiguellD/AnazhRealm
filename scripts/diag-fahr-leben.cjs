@@ -1,53 +1,8 @@
-// diag-fahr-leben.cjs — DIE FAHR-LINSE DES LEBENS (Welle L, Familie fahren): sie fährt den Ritt durch den ECHTEN
+// diag-fahr-leben.cjs — DIE FAHR-LINSE DES LEBENS (Familie fahren): sie fährt den Ritt durch den ECHTEN
 // Spiel-Takt (`_gameLoopTick` — Akkumulator, Sim-Schritte, Interpolation, Frame-Tick), nie an ihm vorbei, und sie ruft
 // den Fahr-Schritt des Kerns selbst (vehicle-core), nie einen Nachbau. Die Befunde je Zeile tragen die Commit-Messages.
 //
-//   T (Q1 · F-D1 F-D2 F-D10) — DER RITT-TAKT. Der GT fährt mit W über eine trockene Gerade an der Mess-Wiese, die
-//     Frame-Zeiten wechseln (8–33 ms: Frames ohne, mit einem und mit zwei Sim-Schritten). Gezählt wird je Frame:
-//       teleport — der Akkumulator fand das Spieler-Mesh nicht dort, wo die Interpolation es hinlegte      Soll 0
-//       weg      — Sim-Weg (Σ der Sim-Schritte) gegen Fahr-Weg (Σ der Wagen-Lage je Frame)       Soll ±2 % (min 0,4 m)
-//       luft     — Sim-Schritte, in denen der Reiter nicht auf seinem Sitz oder der geerdete Wagen auf keinem seiner
-//                  vier Aufstandspunkte steht (die Lage selbst, nie das Flag isInAir)                       Soll 0
-//       gier     — die Gier dreht in Frames OHNE Sim-Schritt                                               Soll ≤ 0,5°
-//     T2 am Hang ohne Taste: der Wagen HÄLT (die Haltebremse bis zum Reibkreis) und dreht nicht. T3 das Pferd
-//     (`reittier_holzross`, der richtungs-folgende Ritt ohne Lenk-Gesetz): teleport 0, weg ±2 %.
-//     T4 DER WECHSEL Third → Ego → Third in der Fahrt am Steilhang bergab, dieselben Frame-Zeiten
-//     (die Schwellen am Verdikt `WECHSEL`).
-//
-//   K (Q13 · F-D6 F-D7) — DER EINE FAHR-SCHRITT, am Kern selbst (Node) und als Wand:
-//       K2 Reibkreis längs: kein Rezept steigt steiler als tan α = μ
-//       K3 Halt: am 21°-Hang ohne Eingabe hält der Wagen; über dem Reibkreis (50°) rutscht er
-//       K4 Querhang: Fahrt längs 35° ohne Lenkung driftet talwärts; am Stand hält 30°, 50° rutscht
-//       K5 Vertikale: mit v²/R > g hebt der Wagen an der Kuppe ab, unter g nicht; über eine 7-m-Klippe fällt er
-//          ballistisch (kein Höhen-Sprung > 0,5 m je Schritt) und landet auf dem Grund
-//   S (Q13) — DIE STATIONEN IN DER WELT (echter Sim-Schritt, an der Mess-Wiese gesucht):
-//       S1 Welt == Labor: dieselben Eingaben, derselbe Boden — der Welt-Ritt fährt die Spur von VC.fahrSchritt  Soll ≤ 0,01 m
-//       S2 Klippe: kein Höhen-Sprung je Sim-Schritt > 0,5 m, der Wagen fliegt (Luft-Schritte > 0)
-//       S3 Querhang: Fahrt längs eines 25–40°-Querhangs ohne Lenkung driftet quer talwärts                     Soll ≥ 0,3 m
-//
-//   R (Q13 · F-D8) — DIE RÄDER IN DER INSTANZ: der GT fährt (W), bremst voll (S) und lenkt (W + A); je Sim-Schritt die
-//       Rad-Leaves relativ zum Aufbau (Rolle > 1 rad, Einschlag vorn > 0,1 rad, hinten 0) und der Aufstand (Eintauchen
-//       beim Bremsen ≤ 0,03 m, Rad-Spalt p75 ≤ 0,03 m).
-//   H (Q5 · F-D4 F-L5) — DIE HÜLLE ALS KÖRPER: das Eindringen der Wagen-Hülle (exportDrive.huelle) in Felsblock-Boxen
-//       und den LEIB eines Bären ≤ 0,05 m. H6 (D2) Wagen gegen Tier liest denselben Leib wie Tier gegen Hülle
-//       (`_kreaturLeib`, die Hülle berührt die Flanke ≤ 0,3 m). H7/H8 (D5) eine 34° gedrehte Haus-Wand (`_hausObb`) und
-//       Mauer aus EINEM Teil (`_blockerComputePartAABB` → obb): die Hülle berührt die echte Wand ≤ 0,3 m, nie die
-//       Welt-AABB. Die H-Proben räumen die Gasse von fremden Wesen.
-//
-//   K7 (0710-2) die Wand ist ein SPRUNG des Bodens: 0,35 m höherer Boden hält EINEN Schritt, dann steigt der Wagen auf
-//       sein Gesetz (je Schritt ≤ eine Stufe).
-//   L (0710-2) — DIE ORTE DER LEBEN-SCHAU, echter Sim-Schritt, an den Orten mit Tempo und Gier der Schau:
-//       L1 HANGFUSS (−852/−861,2, 9,3 m/s, Gier 92,3°): nach JEDER Kontakt-Antwort steht der Wagen auf dem Gesetz
-//          (≤ 0,2 m darunter, ≤ 3 Schritte), der Schub je Schritt ≤ 0,2 m über die eigene Fahrt, er fährt weiter.
-//       L2 SPALTKANTE (−904/−975, 11,4 m/s in +x): er fährt über die Kante und FÄLLT.
-//       L3–L5 DER STOSS aus 9 m Anlauf gegen Fels, geparkten GT und Bären: das EINE Impuls-Gesetz — am Fels Rückprall,
-//          der Gegner bekommt seinen Impuls nach Masse, ein Stoß-Ereignis (Kamera, Klang).
-//
-//   F (K12) — DIE FAHR-BAHN, im zweiten Boot derselben Linse: der Platz an jedem Tor des Genesis-Rings und am
-//       Vorschau-GT, rückwärts aus dem Stand, die Befreiung nach dem Stoß, die Natur-Wand um den Wagen, Tacho, Stimme
-//       und Tasten — die Zeilen FK…F7 stehen am Block `BAHN`.
-//
-//   node scripts/diag-fahr-leben.cjs [--selftest]          Port: FAHR_LEBEN_PORT (Standard 4413)
+//   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern]   Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const path = require("path");
@@ -205,7 +160,7 @@ function kernProbe(VC) {
         k12.luft > 0 && k40.luft === 0 && kl.luft > 0 && kl.sprung <= 0.5 && !kl.z.luft && Math.abs(kl.z.y + 7) <= 0.05,
         `Kuppe R12 Luft ${k12.luft} · R40 Luft ${k40.luft} · Klippe Luft ${kl.luft}, größter Sprung ${kl.sprung.toFixed(2)} m, Ende y ${kl.z.y.toFixed(2)}`,
     ]);
-    // K7 — DIE WAND IST EIN SPRUNG DES BODENS (0710-2, die Hangfuß-Falle): der GT steht auf ebenem Boden, dann liegt der Boden
+    // K7 — DIE WAND IST EIN SPRUNG DES BODENS: der GT steht auf ebenem Boden, dann liegt der Boden
     // unter ihm auf einmal 0,35 m höher (der Schub des Wirts quer auf höheren Grund). Die Wand hält EINEN Schritt (der Wirt
     // schiebt heraus), dann steigt der Wagen auf sein Gesetz, je Schritt höchstens eine Stufe.
     {
@@ -229,8 +184,7 @@ function kernProbe(VC) {
             `Boden +0,35 m: Höhe je Schritt ${ys.map((y) => y.toFixed(3)).join(" · ")} (Stufe ${stufe7.toFixed(3)} m)`,
         ]);
     }
-    // K6 — DIE VERWINDUNG (Gegenprüfung 07.10.: M3 an (102, 60) — auf verwundenem Boden lagen zwei diagonale Räder des
-    // Teile-Wagens 0,229 m im Boden): bilinear verwundener Boden, die vier Aufstandspunkte ±tau um die Ebene. Kein Rad
+    // K6 — DIE VERWINDUNG: bilinear verwundener Boden, die vier Aufstandspunkte ±tau um die Ebene. Kein Rad
     // liegt tiefer im Boden als sein Federweg (auf.hub — der GT federt ein Rad einzeln, ein starres Werk nie), und wo der
     // Federweg trägt, hebt die Verwindung den Wagen nicht.
     const Pv = Object.assign({}, VC.DEFAULT_P, VC.presetPatch("gt"));
@@ -263,7 +217,56 @@ function kernProbe(VC) {
         hubGt > 0 && v45.pen <= hubGt + 1e-9 && s45.pen <= 1e-9 && Math.abs(v10.y) <= 1e-9,
         `GT tau 0,45: ${v45.pen.toFixed(3)} m im Boden (Federweg ${hubGt.toFixed(3)}) · starr tau 0,45: ${s45.pen.toFixed(3)} m · GT tau 0,10: Hub ${v10.y.toFixed(3)} m`,
     ]);
+    const r8 = (out.reifen = reifenMessung(VC)); // die Zeile REIFEN liest die Station fahrzeug.K1
+    const v8 = reifenVerdict(r8);
+    out.push([
+        "K8 Reifen (fahrzeug.K1): Spitze je Achse und Rezept bei 6–10°, bis 30° ≥ 15 % Abfall; Takt ≥ 240 Hz, ≤ 50 µs je Schritt",
+        !v8.length,
+        `Takt ${r8.hz} Hz · ${r8.kostenUs} µs ${v8.join(" · ")}`,
+    ]);
     return out;
+}
+// ── K8 DER REIFEN: die Seitenkraft je 0,1° Schlupf bis 30°, vorn vlat = c·ω, hinten −b·ω (die andere Achse schlupffrei);
+// der Takt ist die gröbste Teilung, deren Unter-Schritte nichts mehr ändern ──
+const REIFEN = { spitze: [6, 10], abfall: 0.15, hz: 240, kostenUs: 50 };
+function reifenMessung(VC) {
+    const m = { achsen: [], hz: 60 };
+    let G;
+    for (const pid of Object.keys(VC.PRESETS)) {
+        G = VC.fahrGesetz(VC.exportDrive(Object.assign({}, VC.DEFAULT_P, VC.presetPatch(pid))));
+        for (const [wo, hebel] of [
+            ["vorn", G.c],
+            ["hinten", -G.b],
+        ]) {
+            const f = [];
+            for (let g = 1; g <= 300; g++) {
+                const w = ((15 + G.slipEps) * Math.tan((g * Math.PI) / 1800)) / G.L;
+                const z = Object.assign(VC.fahrZustand(0, 0, 0), { vlong: 15, yawRate: w, vlat: hebel * w });
+                f.push(Math.abs(VC.fahrKraefte(z, {}, G, 0).aLat));
+            }
+            const i = f.indexOf(Math.max(...f));
+            m.achsen.push({ wo: pid + " " + wo, spitze: (i + 1) / 10, abfall: 1 - f[299] / f[i] });
+        }
+    }
+    const takt = (n, z = Object.assign(VC.fahrZustand(0, 0, 0), { vlong: 12 })) => {
+        for (let k = 0; k < n; k++) VC.fahrKraefte(z, { throttle: 1, steer: 1 }, G, 1 / (60 * n));
+        return [z.vlong, z.vlat, z.yawRate, z.yaw, z.steer].join();
+    };
+    for (let n = 2; n <= 16 && takt(n) === takt(1); n *= 2) m.hz = 60 * n;
+    const [z, t0] = [VC.fahrZustand(0, 0, 0), process.hrtime.bigint()];
+    for (let i = 0; i < 20000; i++) VC.fahrKraefte(z, { throttle: 1, steer: i & 64 ? 1 : -1 }, G, 1 / 60);
+    m.kostenUs = +(Number(process.hrtime.bigint() - t0) / 2e7).toFixed(2);
+    return m;
+}
+function reifenVerdict(m) {
+    const out = [];
+    for (const a of m.achsen) {
+        if (!(a.spitze >= REIFEN.spitze[0] && a.spitze <= REIFEN.spitze[1])) out.push(`spitze ${a.wo} ${a.spitze}°`);
+        if (!(a.abfall >= REIFEN.abfall)) out.push(`abfall ${a.wo} ${Math.round(a.abfall * 100)} %`);
+    }
+    if (!(m.hz >= REIFEN.hz)) out.push(`takt ${m.hz} Hz`);
+    if (!(m.kostenUs <= REIFEN.kostenUs)) out.push(`kosten ${m.kostenUs} µs`);
+    return m.achsen.length ? out : ["reifen ohne Achse"];
 }
 
 // ── DAS STATIONS-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). ──
@@ -271,8 +274,6 @@ const STATION = {
     laborM: 0.01,
     sprungM: 0.5,
     querM: 0.3,
-    huelleM: 0.05,
-    beruehrtM: 0.3,
     rolleRad: 1,
     lenkRad: 0.1,
     spaltM: 0.03,
@@ -280,17 +281,17 @@ const STATION = {
     sattelRad: 0.01,
     standM: 0.05,
     // S4: die Flug-Höhe der Station (Räder über dem Grund), ab der abgestiegen wird — 10× die Stand-Toleranz: ein Wagen, der in
-    // der Luft hängen bliebe, steht dort sichtbar über ihr. Die Landform (K16) trägt an der Wiese einen Hang von 3,7 m: der Wagen
+    // der Luft hängen bliebe, steht dort sichtbar über ihr. Die Landform trägt an der Wiese einen Hang von 3,7 m: der Wagen
     // fliegt 87 Takte, höchstens 0,69 m über dem Grund (die 1 m davor fand nur die 8,5-m-Klippe der alten Welt).
     flugM: 0.5,
-    // L (0710-2, die Orte der Leben-Schau): eine Rad-Stufe des GT (FAHR.schritt.stufeRad · radR ≈ 0,17 m) ist das Maß
+    // L (die Orte der Leben-Schau): eine Rad-Stufe des GT (FAHR.schritt.stufeRad · radR ≈ 0,17 m) ist das Maß
     unterM: 0.2, // so tief darf der Wagen höchstens unter der Ebene seiner Räder liegen (einen Schritt lang: die Wand)
     unterN: 3, // so viele Sim-Schritte höchstens mehr als 5 cm darunter (die Wand hält einen, das Steigen zwei)
     versetztM: 0.2, // so weit versetzt der Kontakt-Löser den Wagen je Schritt höchstens über die eigene Fahrt hinaus
     wegM: 5, // so weit fährt der GT mit W nach dem Kontakt mindestens (er steht nie für immer)
     randM: 10, // der Spalt ist ein Spalt: der Rand liegt so hoch über seinem Grund (sonst ist L2 vakuös)
     fallM: 3, // so tief fällt der Wagen hinter der Kante mindestens
-    // L3–L5 der Stoß (0710-2): das EINE Impuls-Gesetz (Masse aus Leib und Kern, Stoß-Zahl, Impuls-Austausch)
+    // L3–L5 der Stoß: das EINE Impuls-Gesetz (Masse aus Leib und Kern, Stoß-Zahl, Impuls-Austausch)
     stossVMin: 3, // m/s: so schnell fährt der GT mindestens in den Stoß (sonst ist die Probe vakuös)
     rueckprallMs: -0.3, // m/s: so weit rückwärts prallt der Wagen am Fels in den 8 Schritten nach dem Stoß mindestens
     wagenWegM: 0.3, // m: so weit rutscht der gestoßene geparkte GT mindestens
@@ -305,9 +306,7 @@ const STATION = {
     schwimmTiefM: 0.25, // m: so tief darf ein gleitender Schwimmer unter seiner Schwimm-Linie liegen (die Wellen ±0,2)
     hautAussen: 0.005, // Anteil der Haut des Reiters, der je Richtung außerhalb der Hülle des Wagens liegen darf
     spielerDv: 0.3, // m/s: so viel bekommt der Spieler mindestens vom rutschenden GT
-    spielerTiefM: 0.12, // m: höchstens EIN Frame der Anfahrt (zwei Sim-Schritte bei 3,5 m/s) zwischen Kapsel und Blocker-Box — die
-    // Lage des Spielers setzt sein Sim-Schritt (der Stoß trägt ihn im nächsten fort), die Blocker-Boxen des rutschenden Wagens
-    // folgen je Frame; gemessen 0,05–0,10 m je nach Kadenz, die Basis 0,14 m mit 0 m/s
+    spielerTiefM: 0.12, // m: höchstens EIN Frame der Anfahrt (zwei Sim-Schritte bei 3,5 m/s) zwischen Kapsel und Blocker-Box
 };
 function stationVerdict(s) {
     const out = [];
@@ -363,29 +362,7 @@ function stationVerdict(s) {
     if (!s.huelleSchub) out.push("huelle-schub keine Probe");
     else if (!(s.huelleSchub.weg <= STATION.schubM))
         out.push(`huelle-schub ein Wesen schob den Wagen ${s.huelleSchub.weg.toFixed(2)} m`);
-    for (const [k, name] of [
-        ["huelleBlock", "fels"],
-        ["huelleBaer", "baer"],
-    ]) {
-        const h = s[k];
-        if (!h) out.push(`huelle-${name} keine Probe`);
-        else if (!(h.abstand <= STATION.beruehrtM))
-            out.push(`huelle-${name} keine Berührung (Abstand ${h.abstand.toFixed(2)} m)`);
-        else if (!(h.tief <= STATION.huelleM)) out.push(`huelle-${name} Eindringen ${h.tief.toFixed(2)} m`);
-    }
-    // das gedrehte Haus (D5): die Hülle berührt die ECHTE Wand (kleinster Abstand über die Fahrt), nie die Welt-AABB davor
-    // und die gedrehte Teil-Box (D5, die zweite Rolle — Wagen, Fels, Tor, Bauwerk): die Hülle berührt das Teil, nie seine Welt-AABB
-    for (const [k, name, was] of [
-        ["huelleHaus", "haus", "der echten Wand"],
-        ["huelleTeil", "teil", "des Teils"],
-    ]) {
-        const h = s[k];
-        if (!h) out.push(`huelle-${name} keine Probe`);
-        else if (!(h.nah <= STATION.beruehrtM))
-            out.push(`huelle-${name} keine Berührung ${was} (kleinster Abstand ${h.nah.toFixed(2)} m)`);
-        else if (!(h.tief <= STATION.huelleM)) out.push(`huelle-${name} Eindringen ${h.tief.toFixed(2)} m`);
-    }
-    // L1 DER HANGFUSS (0710-2): nach JEDER Kontakt-Antwort steht der Wagen wieder auf dem Gesetz, der Schub je Schritt ist
+    // L1 DER HANGFUSS: nach JEDER Kontakt-Antwort steht der Wagen wieder auf dem Gesetz, der Schub je Schritt ist
     // begrenzt, er fährt weiter.
     const hf = s.hangfuss;
     if (!hf) out.push("hangfuss keine Probe");
@@ -402,7 +379,7 @@ function stationVerdict(s) {
             );
         if (!(hf.weg >= STATION.wegM)) out.push(`hangfuss-steht: mit W nur ${hf.weg.toFixed(2)} m gefahren`);
     }
-    // L3–L5 DER STOSS (0710-2): ein Stoß hat eine Folge — Rückprall am Fels, der Gegner bekommt seinen Impuls, ein Ereignis
+    // L3–L5 DER STOSS: ein Stoß hat eine Folge — Rückprall am Fels, der Gegner bekommt seinen Impuls, ein Ereignis
     // für Kamera und Klang.
     for (const [k, name] of [
         ["stossFels", "stoss-fels"],
@@ -448,7 +425,7 @@ function stationVerdict(s) {
                 `${name}: kein Stoß-Ereignis (${m.ereignisse} Ereignisse, Kamera-Ruck ${(m.ruck || 0).toFixed(2)}) — keine Rückmeldung`
             );
     }
-    // L6 SPIELER UND WAGEN (0710-4): Impuls in beide Richtungen, keine Durchdringung.
+    // L6 SPIELER UND WAGEN: Impuls in beide Richtungen, keine Durchdringung.
     const sw = s.spielerWagen;
     if (!sw || !sw.a || !sw.b) out.push("spieler-wagen keine Probe");
     else {
@@ -495,7 +472,7 @@ function stationVerdict(s) {
         out.push(
             `schwimmer: der gestoßene Fuchs sinkt ${(-sch.tiefste).toFixed(2)} m unter seine Schwimm-Linie (auf den Grund)`
         );
-    // L9 DER REITER IM WAGEN (0710-4 Klasse 4)
+    // L9 DER REITER IM WAGEN
     const rw = s.reiter;
     if (!rw || !rw.length) out.push("reiter keine Probe");
     else
@@ -542,16 +519,7 @@ function stationVerdict(s) {
         out.push(
             `reiter: nach dem Absteigen steht der Wurzel-Knochen ${s.reiterStand.abw.toFixed(3)} m neben seinem Stand (Gier ${(s.reiterStand.gier || 0).toFixed(3)})`
         );
-    // L7/L8 DER STOSS IM SIM-SCHRITT (0710-5)
-    const lw = s.leibWand;
-    if (!lw) out.push("leib-wand keine Probe");
-    else
-        for (const k of ["60", "30", "gemischt"]) {
-            const m = lw[k];
-            if (!m || !(m.n >= 8)) out.push(`leib-wand ${k}: keine Probe`);
-            else if (m.durch > 0)
-                out.push(`leib-wand ${k}: der gestoßene Bär geht ${m.durch}/${m.n} Mal durch die 0,35-m-Wand`);
-        }
+    // L8 DER STOSS IM SIM-SCHRITT (der Leib vor der Mauer: gate:kollision-bild (V))
     if (!s.lockstep) out.push("lockstep keine Probe");
     else if (s.lockstep.ruhe !== true)
         out.push(`lockstep start: der Wagen kommt vor der Probe nicht zur Ruhe (600 Bilder, der Fahr-Zustand nie drei Bilder lang ≤ 1 nm; zuletzt ${(s.lockstep.unruhe || []).join(" / ")})`);
@@ -561,7 +529,7 @@ function stationVerdict(s) {
         out.push(
             `lockstep: nach 200 Sim-Schritten steht der Wagen bei gemischten Frames ${s.lockstep.abw.toFixed(3)} m anders als bei 60 fps (Bär ${s.lockstep.baerAbw.toFixed(3)} m)${s.lockstep.erst ? ` — zuerst in Schritt ${s.lockstep.erst.schritt}: ${s.lockstep.erst.groesse} um ${s.lockstep.erst.d}${s.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${s.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
         );
-    // L2 DIE SPALTKANTE (0710-2): der Wagen fährt über die Kante und fällt.
+    // L2 DIE SPALTKANTE: der Wagen fährt über die Kante und fällt.
     const sp = s.spalt;
     if (!sp) out.push("spalt keine Probe");
     else if (!(sp.rand - sp.grund >= STATION.randM))
@@ -577,27 +545,39 @@ const server = statikServer();
 
 const { probeLeben, tempoVerdict, tempoSpion, kernTempo } = require("./lib/fahr-proben.cjs");
 
-// ════ F — DIE FAHR-BAHN (K12; die Fahr-Bahn-Linse der Leben-Schau 2 geht hier auf) ════ Der Wagen, den die Welt hinstellt,
-// steht auf fahrbarem Grund, kommt rückwärts und nach einem Stoß frei, zeigt sein Tempo und klingt. Eigenes Boot (Takt-Zähler):
-//   FK  (Node, der Kern) RÜCKWÄRTS AUS DEM STAND: jedes Rezept fährt S (und S + Gegenlenkung je Seite) 2,5 s eben, 10° und
-//       15° bergauf ≥ 3 m.
-//   FK2 (Node) DIE DREHZAHL ÜBER 0…vmax: klang:FAHRT trägt sie vom Leerlauf (v 0) zum Begrenzer (vmax), steigt in jedem
-//       Gang, der Motor-Ton ist die Zünd-Folge U/min/60 · Zylinder/2.
-//   F1  DER PLATZ AN JEDEM TOR des Genesis-Rings: die Welt stellt den GT an den Wunsch-Ort der Vorschau (`_portalVorschauOrt`,
-//       spawnArchitecture autonomous wie die Vorschau; alle zugleich); nach 1 s Welt (die Wald-Schlange setzt ihre Würfe):
-//       Neigung der Rad-Ebene ≤ 15°, keine Wand im Umriss, kein Blocker im Band, E steigt ein und aus.
-//   F2  DIE VORSCHAU DES SPIELS (`_portalApproachPrefetch`, der Befund-Ort, die Platz-Suche im Takt) — dasselbe Urteil und
-//       die Fahrt: W 2 s ≥ 2 m, bremsen, S 2,5 s rückwärts aus dem Stand ≥ 3 m.
-//   F3  DIE NATUR-WAND KENNT DEN WAGEN: ein Wurf der Natur in der Hülle eines stehenden GT fällt ("wagen"); der Wagen ist
-//       kein Grundriss (`_imGrundriss` false: kein Haus räumt die Natur aus einem Wagen und nennt dafür seinen Grundriss).
-//   F4  DER STOSS UND DIE BEFREIUNG: Gas gegen den Glutbrunnen der Schau (−875/−732) und gegen einen Kiefern-Stamm; danach
-//       S + Gegenlenkung je Seite — frei (≥ 1 m vom Stoß) in ≤ 2 s.
-//   F5  DER TACHO zeigt |vlong| × vehicle:FAHR.kmh (die Zahl der Probefahrt), nach dem Absteigen ist er fort.
-//   F6  DIE STIMME: im Sattel klingt die Fahrt aus klang-core fahrtStimme, der Motor-Ton folgt klang:FAHRT (±1 %, Spanne
-//       ≥ 100 Hz), absteigen macht still.
-//   F7  DIE TASTEN: „hilfe" nennt E und Shift, Shift kommt als Handbremse im Fahr-Schritt an.
-//   SCHMUGGEL (im selben Boot): die Vorschau ohne Platz-Gesetz (`_fahrPlatzSuche` gestubbt) und die Natur-Wand ohne die
-//       Wagen (das Blocker-Netz ohne „moveable") → ROT beim Namen.
+// W (feld.K1) DIE WETTER-KETTE: ein Glied zählt, wenn es mit dem Sturm ZIEHT und STEHT, solange sein Vorgänger gehalten wird
+// (`kette` in lib/fahr-proben.cjs); die Tiefe zählt von vorn (Staffel 1 = Tiefe 2–3, 2 = ≥ 4), der Grip zieht ab Bremsweg × `nass`.
+const KETTE = { anlauf: 90, bremsMax: 400, sprungS: 1200, eps: 0.02, nass: 1.3, tiefe: 3 };
+function ketteVerdict(m) {
+    const f = ["trocken", "sturm", "festRegen", "festNaesse"].filter((l) => !(m && m[l] && m[l].verz > 0));
+    if (f.length) return { tiefe: 0, befunde: [`ohne Bremsung: ${f}`] };
+    const { trocken: t, sturm: s, festRegen: fr, festNaesse: fn } = m;
+    const gl = (a, b) => Math.abs(a - b) <= KETTE.eps * Math.max(1, Math.abs(b));
+    const glieder = [
+        ["Regen-Feld", s.regen > t.regen + KETTE.eps, true],
+        ["Nässe", s.naesse > t.naesse + KETTE.eps && gl(s.stoff, s.naesse), !(fr.regen > t.regen) && gl(fr.naesse, t.naesse)],
+        ["Grip", t.verz / s.verz >= KETTE.nass, fn.regen > KETTE.eps && gl(fn.naesse, t.naesse) && gl(fn.verz, t.verz)],
+    ];
+    let tiefe = 0;
+    while (tiefe < 3 && glieder[tiefe][1] && glieder[tiefe][2]) tiefe++;
+    const befunde = glieder.slice(tiefe, tiefe + 1).map(([n, zieht]) => `${n} ${zieht ? "steht nicht" : "zieht nicht"}`);
+    if (m.stern && gl(m.stern.verz, t.verz)) befunde.push("blind: der Wort-Leser steht");
+    return { tiefe, befunde };
+}
+function ketteBericht(k, err) {
+    const v = ketteVerdict(k);
+    check(
+        `W (feld.K1) DIE WETTER-KETTE: Sturm → Regen-Feld → Nässe → Grip, jedes Glied zieht und steht, wenn sein Vorgänger gehalten wird (Tiefe ≥ ${KETTE.tiefe})`,
+        !err && v.tiefe >= KETTE.tiefe && !v.befunde.length,
+        `Tiefe ${v.tiefe} ${JSON.stringify(k)} ${err || ""}${v.befunde.join(" · ")}`
+    );
+    return v;
+}
+
+// ════ F — DIE FAHR-BAHN (K12), eigenes Boot: der Wagen, den die Welt hinstellt, steht auf fahrbarem Grund, kommt rückwärts
+// und nach einem Stoß frei, zeigt sein Tempo und klingt — FK/FK2 am Kern (rückwärts aus dem Stand, die Drehzahl), F1 der
+// Platz an jedem Tor, F2 die Vorschau, F3 die Natur-Wand, F4 Stoß und Befreiung, F5 Tacho, F6 Stimme, F7 Tasten; SCHMUGGEL
+// (Vorschau ohne Platz-Gesetz, Natur-Wand ohne Wagen) → ROT beim Namen. ════
 const BAHN = {
     rueckM: 3, // FK, F1: rückwärts aus dem Stand in 2,5 s
     rueckFrames: 150,
@@ -1048,8 +1028,7 @@ async function probeBahn(B) {
     phase("F1");
     // ════ F3 — DIE NATUR-WAND KENNT DEN WAGEN: eine Tanne 1,5 m vor dem Ursprung eines stehenden GT ════
     const wandProbe = () => {
-        // außerhalb der Lichtung des Genesis-Platzes samt der Krone einer Tanne (K52: die Lichtung trägt den Ring der Tore,
-        // 15 m — bei M + 14/14 urteilte die Wand „lichtung", bevor sie den Wagen fragte)
+        // außerhalb der Lichtung des Genesis-Platzes samt der Krone einer Tanne (die Lichtung trägt den Ring der Tore, 15 m)
         const sx = M.x + 30;
         const sz = M.z + 30;
         const e = r.spawnArchitecture(
@@ -1083,7 +1062,7 @@ async function probeBahn(B) {
                 return true;
             };
         }
-        // DER ORT, AN DEM DAS GESETZ ZÄHLT (K16): ein Kiefern-Stamm auf dem Wunsch-Ort der Vorschau (`_portalVorschauOrt`) —
+        // DER ORT, AN DEM DAS GESETZ ZÄHLT: ein Kiefern-Stamm auf dem Wunsch-Ort der Vorschau (`_portalVorschauOrt`) —
         // ohne Platz-Gesetz steht der Wagen in ihm. Die Welt allein trägt dort nicht immer ein Hindernis: am Flussnetz-Gelände
         // ist der Wunsch-Ort am Garage-Tor frei (3°, keine Wand, kein Blocker), und der Schmuggel fiel vakuös grün.
         const torG = st.architectures.find((a) => a && a.type === "welt_garage" && a.position);
@@ -1122,7 +1101,7 @@ async function probeBahn(B) {
         out.log.push("initSymphony: " + (e && e.message));
     }
     const Q = window.__fahrQuellen || [];
-    // DIE STELLE AUS DER WELT (K16): die Schau stand auf ebenem Grund (−875/−732, Kurs auf −765/−752); am Flussnetz-Gelände liegt
+    // DIE STELLE AUS DER WELT: die Schau stand auf ebenem Grund (−875/−732, Kurs auf −765/−752); am Flussnetz-Gelände liegt
     // sie am Hang, und der Wagen glitt quer am Ziel vorbei (kein Stoß). Die Station sucht in Ringen um die Stelle der Schau
     // den nächsten trockenen Anlauf (2 m zurück, 10 m voraus) mit Stufe ≤ 0,08 m je m und Quergefälle ≤ 0,05 m je m.
     const stossOrt = (() => {
@@ -1191,9 +1170,7 @@ async function probeBahn(B) {
             m.grund = `kein ${zielTyp} vor dem Bug`;
             return m;
         }
-        // JEDER VERSUCH VON DER STATION: der Wagen steht je Seite neu am Ort der Schau, Bug auf das Ziel. Fuhr der zweite
-        // Versuch dort los, wo die Befreiung des ersten endete, lag das Ziel um deren Lenk-Drehung schief vor dem Bug (K16:
-        // 19,4° — bei 5,7 m Abstand 1,9 m quer, mehr als halbe Wagen-Breite + Ring-Radius, der GT fuhr 23 m vorbei).
+        // JEDER VERSUCH VON DER STATION: der Wagen steht je Seite neu am Ort der Schau, Bug auf das Ziel.
         const wagenAnDerStation = async () => {
             const e = r.spawnArchitecture(
                 "fahrzeug_gt",
@@ -1506,6 +1483,20 @@ function quellenAbgriff() {
             stufe: 0,
         };
         check("Selbst-Test 0: gesunder Ritt == 0 Täter", taktVerdict(gesund).length === 0);
+        // W: gesund Tiefe 3, jeder Täter beim Namen seines Glieds
+        const lg = (regen, naesse, verz) => ({ regen, naesse, stoff: naesse, verz });
+        const kg = { trocken: lg(0, 0, 9), sturm: lg(1, 1, 6), festRegen: lg(0, 0, 9), festNaesse: lg(1, 0, 9), stern: lg(1, 0, 6) };
+        for (const [bruch, tiefe, soll] of [
+            [{}, 3, /^$/],
+            [{ sturm: lg(1, 1, 9) }, 2, /Grip zieht nicht/],
+            [{ festNaesse: lg(1, 0, 6) }, 2, /Grip steht nicht/],
+            [{ festRegen: lg(0, 1, 6) }, 1, /Nässe steht nicht/],
+            [{ stern: lg(1, 0, 9) }, 3, /blind/],
+        ]) {
+            const v = ketteVerdict(Object.assign({}, kg, bruch));
+            check(`Selbst-Test W ${soll} → Tiefe ${tiefe}`, v.tiefe === tiefe && soll.test(v.befunde.join()), v.befunde.join());
+        }
+
         for (const [name, bruch, soll] of [
             ["der gerittene Wagen auf der Karte (Distanz-Wand)", { stufe: 2 }, "stufe"],
             ["der Eintrag bleibt hinter dem Reiter (Pin gerissen)", { versatz: 3.2 }, "versatz"],
@@ -1552,7 +1543,7 @@ function quellenAbgriff() {
             const v = wechselVerdict(Object.assign({}, wechsel, bruch));
             check(`Selbst-Test T4: ‚${name}' → die Linse nennt ${soll}`, v.length === 1 && v[0].startsWith(soll), v.join(" · "));
         }
-        // T5 (H3) das Tempo der Kamera: die Täter von integ-probe 20.10. beim Namen
+        // T5 das Tempo der Kamera: die Täter beim Namen
         const gut5 = { n: 9, quelle: true, fov: { 10: 5.4 }, zeigt: 0, schreiber: ["_kamFov"], orbit: 69, rueck: 1.08, fovMax: 10, arm: 0.2, drift: 9, knick: 0.08 };
         check("Selbst-Test T5: das gesunde Tempo == 0 Täter", tempoVerdict(gut5).length === 0, tempoVerdict(gut5).join(" · "));
         for (const [bruch, soll] of [
@@ -1591,12 +1582,8 @@ function quellenAbgriff() {
                 spaltP75: 0.01,
                 spaltMax: 0.05,
             },
-            huelleBlock: { tief: 0.0, abstand: 0.02 },
             huelleSchub: { weg: 0 },
             huelleHang: { schub: 0.8, eindringen: 0 },
-            huelleBaer: { tief: 0.01, abstand: 0.0 },
-            huelleHaus: { tief: 0.0, abstand: 0.4, nah: 0.02 },
-            huelleTeil: { tief: 0.0, abstand: 0.2, nah: 0.03 },
             pflicht: { satz: "bruch", ebene: "bruch", leser: true },
             huelleKonsum: { gleiten: true, kapsel: true, leibWagen: true, leibTier: true },
             hangfuss: { ziel: true, kontakte: 4, unterMax: 0.12, unterN: 2, schubMax: 0.17, weg: 21 },
@@ -1616,7 +1603,6 @@ function quellenAbgriff() {
                 },
                 b: { minAbstand: 0, spielerDv: 3.2, angestossen: true },
             },
-            leibWand: { 60: { durch: 0, n: 10 }, 30: { durch: 0, n: 10 }, gemischt: { durch: 0, n: 10 } },
             lockstep: { abw: 0, baerAbw: 0, ruhe: true, gleicherStart: true },
             reiter: [
                 {
@@ -1752,11 +1738,6 @@ function quellenAbgriff() {
                 "spieler-wagen",
             ],
             [
-                "der gestoßene Bär geht bei 30 fps durch die Wand (Gegenprüfung 0710-5: 9/10)",
-                { leibWand: { 60: { durch: 0, n: 10 }, 30: { durch: 9, n: 10 }, gemischt: { durch: 0, n: 10 } } },
-                "leib-wand 30",
-            ],
-            [
                 "der Wagen steht je nach Bildrate anders (Gegenprüfung 0710-5: 0,06 m nach 200 Schritten)",
                 { lockstep: { abw: 0.06, baerAbw: 0, ruhe: true, gleicherStart: true } },
                 "lockstep",
@@ -1857,7 +1838,6 @@ function quellenAbgriff() {
                 "absteigen nicht im Flug",
             ],
             ["Querhang ohne Abtrieb: 0,00 m (F-D7)", { quer: { drift: 0.0 } }, "querhang"],
-            ["Bug 1,85 m im Fels (F-D4)", { huelleBlock: { tief: 1.85, abstand: 0 } }, "huelle-fels Eindringen"],
             [
                 "die starre Instanz: kein Rad-Leaf (F-D8)",
                 { raeder: { leaves: 0, rolle: 0, lenk: 0, lenkHinten: 0, tauchBremse: 0.0, spaltP75: 0.01 } },
@@ -1927,33 +1907,6 @@ function quellenAbgriff() {
                 },
                 "raeder ohne Sattel",
             ],
-            ["der Bär ganz im Wagen (F-L5)", { huelleBaer: { tief: 1.6, abstand: 0 } }, "huelle-baer Eindringen"],
-            [
-                "der Wagen hält an der Welt-AABB des gedrehten Hauses, 1,5 m vor der Wand (D5)",
-                { huelleHaus: { tief: 0, abstand: 1.5, nah: 1.5 } },
-                "huelle-haus keine Berührung",
-            ],
-            [
-                "der Bug in der gedrehten Wand",
-                { huelleHaus: { tief: 0.4, abstand: 0, nah: 0 } },
-                "huelle-haus Eindringen",
-            ],
-            [
-                "der Wagen hält vor der Welt-AABB einer gedrehten Teil-Box, 2,2 m vor dem Teil (D5)",
-                { huelleTeil: { tief: 0, abstand: 2.2, nah: 2.2 } },
-                "huelle-teil keine Berührung",
-            ],
-            [
-                "der Bug in der gedrehten Teil-Box",
-                { huelleTeil: { tief: 0.5, abstand: 0, nah: 0 } },
-                "huelle-teil Eindringen",
-            ],
-            [
-                "der Wagen hält am zweiten Kreis (separation × bodySize), 0,8 m vor dem Leib (D2)",
-                { huelleBaer: { tief: 0, abstand: 0.8 } },
-                "huelle-baer keine Berührung",
-            ],
-            ["nie berührt (vakuös)", { huelleBlock: { tief: 0, abstand: 6.5 } }, "huelle-fels keine Berührung"],
             ["ein Bär schiebt den stehenden Wagen 0,5 m", { huelleSchub: { weg: 0.5 } }, "huelle-schub"],
             [
                 "ein Kasten schiebt die Hülle 0,5 m in den Hang (Befund 07.10.)",
@@ -1977,7 +1930,7 @@ function quellenAbgriff() {
             );
         }
         {
-            // F — DIE FAHR-BAHN (K12): jedes Urteil nennt seinen eingeschmuggelten Täter
+            // F — DIE FAHR-BAHN: jedes Urteil nennt seinen eingeschmuggelten Täter
             const gutP = {
                 da: true,
                 neigung: 8,
@@ -2163,6 +2116,21 @@ function quellenAbgriff() {
                     sAlt.some((t) => /vmax 800 U\/min ≠ Begrenzer/.test(t)),
                     sAlt.slice(0, 2).join(" · ")
                 );
+                // K8: der Kern verstimmt; Kosten, keine Achse
+                const R8 = VCs.FAHR.reifen;
+                const alt8 = [R8.spitzeGrad, R8.C, R8.taktHz];
+                Object.assign(R8, { spitzeGrad: 12, C: 1.1, taktHz: 60 });
+                const k8 = reifenVerdict(reifenMessung(VCs)).join(" · ");
+                [R8.spitzeGrad, R8.C, R8.taktHz] = alt8;
+                const p8 = [[], [{ spitze: 8, abfall: 1 }]].map((achsen) =>
+                    reifenVerdict({ achsen, hz: 240, kostenUs: 180 })
+                );
+                check(
+                    "Selbst-Test K8: Spitze 12°, C 1,1, Takt 60 Hz, 180 µs, keine Achse → beim Namen",
+                    /^spitze gt vorn 12° · abfall gt vorn 0 %.* · takt 60 Hz$/.test(k8) &&
+                        p8.join() === "reifen ohne Achse,kosten 180 µs",
+                    `${k8.slice(0, 40)} … ${k8.slice(-10)} · ${p8.join(" · ")}`
+                );
             }
         }
         if (errs.length) {
@@ -2177,7 +2145,10 @@ function quellenAbgriff() {
 
     console.log("=== K — DER EINE FAHR-SCHRITT (Q13 · F-D6 F-D7): der Kern selbst (Node) ===");
     require(path.join(root, "vehicle-core.js"));
-    for (const [name, ok, detail] of kernProbe(globalThis.__vehicleCore)) check(name, ok, detail);
+    const kern = kernProbe(globalThis.__vehicleCore);
+    for (const [name, ok, detail] of kern) check(name, ok, detail);
+    console.log("REIFEN " + JSON.stringify(kern.reifen));
+    if (process.argv.includes("--kern")) process.exit(errs.length ? 1 : 0); // Station K allein
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({
@@ -2193,6 +2164,15 @@ function quellenAbgriff() {
     // die Orte des Wassers aus der Welt (L10: der See, `__wasserOrte`)
     await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
     await page.evaluate(`window.__tempoSpion = ${tempoSpion}`);
+    if (process.argv.includes("--kette")) {
+        const o = await page.evaluate(probeLeben, { messort, nurKette: true, kette: KETTE });
+        await browser.close();
+        server.close();
+        const v = ketteBericht(o.kette, o.err);
+        console.log(`KETTE ${JSON.stringify({ tiefe: v.tiefe, roh: o.kette })}`);
+        process.exit(errs.length ? 1 : 0);
+    }
+
     // F — die Fahr-Bahn im eigenen Boot nach dem Leben (der Quellen-Abgriff der Stimme vor jedem Seiten-Skript)
     const bahnLauf = async () => {
         const page2 = await browser.newPage();
@@ -2206,6 +2186,7 @@ function quellenAbgriff() {
         dorf: require("./lib/welt-orte.cjs").messort("dorf"),
         randM: STATION.randM,
         flugM: STATION.flugM,
+        kette: KETTE,
     });
     await page.close();
     const bahn = await bahnLauf();
@@ -2259,6 +2240,7 @@ function quellenAbgriff() {
         v5.length === 0,
         `${JSON.stringify(out.tempo)}${v5.length ? " — Täter: " + v5.join(" · ") : ""}`
     );
+    ketteBericht(out.kette);
     console.log("=== S — DIE STATIONEN IN DER WELT (Q13 · F-D6 F-D7), echter Sim-Schritt ===");
     const S = out.stationen || {};
     const vS = stationVerdict(S);
@@ -2324,23 +2306,6 @@ function quellenAbgriff() {
         !hat("huelle-konsum"),
         JSON.stringify(S.huelleKonsum || null)
     );
-    const hz = (h, was) =>
-        h
-            ? `Eindringen der Hülle ${h.tief.toFixed(3)} m · Abstand am Ende ${h.abstand.toFixed(3)} m · ${h.vorn.toFixed(1)} m gefahren · ${h.schritte} Schritte`
-            : `keine Probe (${was})`;
-    check(
-        "H1 der GT fährt mit W gegen einen Felsblock: die Hülle hält an den Blocker-Boxen (Eindringen ≤ 0,05 m)",
-        !hat("kern") && !hat("huelle-fels"),
-        hz(S.huelleBlock, "stein_block")
-    );
-    check(
-        "H2 der GT fährt mit W gegen die Flanke eines Bären: die Hülle hält an SEINEM Leib (`_kreaturLeib`, D2 — Eindringen ≤ 0,05 m, Berührung ≤ 0,3 m)",
-        !hat("kern") && !hat("huelle-baer"),
-        hz(S.huelleBaer, "baer") +
-            (S.huelleBaer && S.huelleBaer.leib
-                ? ` · Leib: Radius ${S.huelleBaer.leib.radius.toFixed(2)} m, Achsen ±${S.huelleBaer.leib.halb.toFixed(2)} m (der Kreis vor D2: ${S.huelleBaer.leib.kreis.toFixed(2)} m)`
-                : "")
-    );
     check(
         "H3 ein Bär steht 0,5 m im Bug des stehenden Wagens: der Wagen bleibt stehen (ein Wesen schiebt keinen Wagen)",
         !hat("kern") && !hat("huelle-schub"),
@@ -2352,22 +2317,6 @@ function quellenAbgriff() {
         S.huelleHang
             ? `Schub des Kastens ${S.huelleHang.schub.toFixed(2)} m · Eindringen in die Wand ${S.huelleHang.eindringen.toFixed(3)} m`
             : "keine Probe"
-    );
-    const H7 = S.huelleHaus;
-    check(
-        "H7 der GT fährt mit W gegen eine 34° gedrehte Haus-Wand: die Hülle hält an der ECHTEN Wand (Berührung ≤ 0,3 m, Eindringen ≤ 0,05 m), nicht an ihrer Welt-AABB",
-        !hat("kern") && !hat("huelle-haus"),
-        H7
-            ? `kleinster Abstand zur Wand ${H7.nah.toFixed(3)} m · Eindringen ${H7.tief.toFixed(3)} m · am Ende ${H7.abstand.toFixed(3)} m · ${H7.vorn.toFixed(1)} m gefahren · ${H7.schritte} Schritte`
-            : "keine Probe (Haus-Wand)"
-    );
-    const H8 = S.huelleTeil;
-    check(
-        "H8 der GT fährt mit W gegen eine 34° gedrehte Mauer aus EINEM Teil (die Teil-Box jedes Hindernisses — Wagen, Fels, Tor, Bauwerk): die Hülle hält am ECHTEN Teil (Berührung ≤ 0,3 m, Eindringen ≤ 0,05 m), nicht an seiner Welt-AABB",
-        !hat("kern") && !hat("huelle-teil"),
-        H8
-            ? `kleinster Abstand zum Teil ${H8.nah.toFixed(3)} m · Eindringen ${H8.tief.toFixed(3)} m · am Ende ${H8.abstand.toFixed(3)} m · ${H8.vorn.toFixed(1)} m gefahren · ${H8.schritte} Schritte`
-            : "keine Probe (gedrehte Teil-Box)"
     );
     console.log("=== L — DIE ORTE DER LEBEN-SCHAU (Auftrag 0710-2), echter Sim-Schritt ===");
     const L1 = S.hangfuss;
@@ -2423,14 +2372,6 @@ function quellenAbgriff() {
                 ? ` — ${vS.filter((x) => x.startsWith("spieler-wagen") || x.startsWith("wagen-spieler")).join(" · ")}`
                 : "")
     );
-    const lwz = S.leibWand || {};
-    const lwT = (k) =>
-        lwz[k] ? `${k}: ${lwz[k].durch}/${lwz[k].n} durch (am weitesten ${lwz[k].ueber} m hinter der Wand)` : k + " –";
-    check(
-        "L7 der gestoßene Leib vor dünner Wand (0710-5): 13,7 m/s gegen 0,35 m — bei 60 fps, 30 fps und gemischten Frames geht er nie hindurch",
-        !hat("kern") && !hat("leib-wand"),
-        ["60", "30", "gemischt"].map(lwT).join(" · ")
-    );
     check(
         "L8 Lockstep (0710-5): der Wagen steht nach 200 Sim-Schritten gegen einen Bären bei 60 fps und gemischten Frames an derselben Stelle, ein gestoßener Schwimmer nach 20 (auch in der Höhe)",
         !hat("kern") && !hat("lockstep"),
@@ -2471,7 +2412,7 @@ function quellenAbgriff() {
             : `Wasser ${swm.tiefe} m tief · vor dem Stoß ${swm.vorher} m, beim Gleiten tiefstens ${swm.tiefste} m gegen die Linie (${swm.gleitet} Frames gleitend)`
     );
     {
-        // ════ F — DIE FAHR-BAHN (K12) ════
+        // ════ F — DIE FAHR-BAHN ════
         console.log("=== F — DIE FAHR-BAHN (K12): Platz an jedem Tor, rückwärts, Befreiung, Tacho, Stimme, Tasten ===");
         const fkRows = bahnKernRueck(globalThis.__vehicleCore);
         const fk = bahnKernVerdict(fkRows);

@@ -122,8 +122,6 @@ async function checkBandV1738RulePersistence(ctx) {
     );
 }
 
-// V9.52-b Sub-Welle b — Band-Funktion (Ring 8 (+ UI + 8.1 + 8.2) — Multi-Welt).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing8(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -148,7 +146,7 @@ async function checkBandRing8(ctx) {
             const echt = r.state.worldMeta;
             r.state.worldMeta = Object.assign({}, echt, {
                 macro: { massivC: { x: 1, z: 2 } },
-                voxelEdits: [{ x: 1, y: 2, z: 3, r: 2, strength: 48, mode: "carve" }],
+                voxelEdits: [{ x: 1, y: 2, z: 3, r: 2, mode: "carve" }],
                 settlementCells: { start: { x: 0, z: 0 } },
                 genesisPortalRing: true,
                 portalPreviewFachwerk: true,
@@ -213,10 +211,9 @@ async function checkBandRing8(ctx) {
                 zahl: /keine Zahl/.test(wirft({ terme: [{ art: "insel", x: 0 }] })),
             };
         }
-        // DIE TÜREN DES ERBGUTS (`_erbgutEinlass`, Gegenprüfung 10.10.): eine Welt mit einer Term-Art, die dieser Build nicht
-        // trägt, betritt den Speicher nie — weder über das Welt-Tor (daneben) noch als Einladung noch als Snapshot eines
-        // Mitspielers; Index, Zeiger der aktiven Welt und die lebende Welt bleiben (bis 10.10. nahmen die Türen sie mit
-        // ok:true an, der Zeiger blieb stehen, und jeder Reload scheiterte am Ladeschirm).
+        // DIE TÜREN DES ERBGUTS (`_erbgutEinlass`, Gegenprüfung 10.10.): eine Welt mit einer Term-Art, die dieser Build
+        // nicht trägt, betritt den Speicher nie — weder über das Welt-Tor (daneben) noch als Einladung noch als
+        // Snapshot eines Mitspielers; Index, Zeiger der aktiven Welt und die lebende Welt bleiben.
         {
             const fremd = () => ({
                 worldMeta: {
@@ -385,8 +382,8 @@ async function checkBandRing8(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        // V18.73: die "Andere Welten" sind in den rechten Schöpfen-Block vereint (3er-Block + Picker-Liste),
-        // die eigene #world-picker-section entfiel — der Picker lebt als #world-picker-list (V9.56-i).
+        // die "Andere Welten" sind in den rechten Schöpfen-Block vereint (3er-Block + Picker-Liste),
+        // die eigene #world-picker-section entfiel — der Picker lebt als #world-picker-list.
         out.pickerSectionInDom = !!document.querySelector(".feed-schoepfen #world-picker-list");
         out.newWorldBtnInDom = !!document.getElementById("world-new");
         // Rendern mit zwei Test-Welten und prüfen, dass UI sie zeigt
@@ -584,8 +581,6 @@ async function checkBandRing8(ctx) {
     }
 }
 
-// V9.52-b Sub-Welle b — Band-Funktion (Ring 9 + Ring 10 + Ring 10.1 — Welt-Tor, Welt-Fusion, Rezept-Holen).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandRing9to10(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -745,7 +740,7 @@ async function checkBandRing9to10(ctx) {
         out.fusionStrategyRadios = document.querySelectorAll('input[name="fusion-strategy"]').length === 3;
         out.fusionParentBSelectInDom = !!document.getElementById("world-fusion-parent-b");
         out.fusionOpenBtnInDom = !!document.getElementById("world-fuse-open");
-        // Bib (V18.71): der Stammbaum-Samen blüht jetzt im "Diese Welt"-Eiland (.feed-self), nicht mehr
+        // Bib: der Stammbaum-Samen blüht jetzt im "Diese Welt"-Eiland (.feed-self), nicht mehr
         // in einer eigenen #world-lineage-section (die wanderte ins Eiland; V9.56-i — Test wandert mit).
         out.lineageSectionInDom = !!document.querySelector(".feed-self #world-lineage");
         out.lineageDivInDom = !!document.getElementById("world-lineage");
@@ -1172,8 +1167,6 @@ async function checkBandRing9to10(ctx) {
     }
 }
 
-// V9.52-d Sub-Welle d — Band-Funktion (KI-Übersetzer Phase 1+2 + V8.70 Untrusted-Welt-Tor + V8.71/V8.72 W15 Auto-Vendor/GitHub-Fetch).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandTranslatorAndUntrusted(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -1586,7 +1579,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         check("KI-Übersetzer P2: Phase-2-Tests laufen", false, transl2Results ? transl2Results.error : "no result");
     }
 
-    // ### V8.70 — Untrusted-Welt-Tor: echte fremde Engine, null-origin ###
+    // ### Untrusted-Welt-Tor: echte fremde Engine, null-origin ###
     const sandboxResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1635,7 +1628,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         out.overlaySandboxAttr = r._portalOverlay.iframe.getAttribute("sandbox") === "allow-scripts";
         out.overlayTrustField = r._portalOverlay.trust === "sandboxed";
         r._disposePortalOverlay();
-        // trusted → mit allow-same-origin + allow-pointer-lock (V18.384: die
+        // trusted → mit allow-same-origin + allow-pointer-lock (die
         // begehbare Welt fängt den Zeiger; sandboxed bleibt OHNE beides).
         r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: null });
         out.overlayTrustedAttr = /allow-same-origin/.test(r._portalOverlay.iframe.getAttribute("sandbox"));
@@ -1740,13 +1733,12 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         check("Untrusted-Tor: V8.70-Tests laufen", false, sandboxResults ? sandboxResults.error : "no result");
     }
 
-    // ### V8.71 — W15 Phase 1: der Auto-Vendor-Pfad ###
+    // ### W15 Phase 1: der Auto-Vendor-Pfad ###
     // _vendorPostBundle (der einzige Netz-Schritt) wird gestubbt —
     // der echte save-server-Round-Trip lebt in der Sonde smoke-vendor (git-Archiv).
     const vendorResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods = typeof r._vendorPostBundle === "function" && typeof r._runVendorDock === "function";
         r.state.customWorlds = {};
         const okBundle = [{ path: "index.html", content: "<!doctype html><title>x</title>" }];
         // _vendorSanitizeBundle — REIN, kein Netz.
@@ -1854,10 +1846,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     });
 
     if (vendorResults && !vendorResults.error) {
-        check(
-            "W15 Auto-Vendor: _vendorPostBundle/_runVendorDock existieren (die Suite ruft sie nie)",
-            vendorResults.methods
-        );
         check("W15 Auto-Vendor: _vendorSanitizeBundle akzeptiert ein sauberes Bündel", vendorResults.sanitizeOk);
         check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine ungültige Welt-id ab", vendorResults.rejectsBadId);
         check(
@@ -1917,16 +1905,12 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         check("W15 Auto-Vendor: Phase-1-Tests laufen", false, vendorResults ? vendorResults.error : "no result");
     }
 
-    // ### V8.72 — W15 Phase 2: der GitHub-Fetch ###
+    // ### W15 Phase 2: der GitHub-Fetch ###
     // _vendorPostRepo (der Netz-Schritt) wird gestubbt; der echte GitHub-Round-Trip lebt offline +
     // deterministisch in der Sonde smoke-vendor (git-Archiv) (lokales Fake-GitHub).
     const vendor2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
-        out.methods =
-            typeof r._vendorPostRepo === "function" &&
-            typeof r._vendorPostJson === "function" &&
-            typeof r._runVendorRepoDock === "function";
         r.state.customWorlds = {};
         const origRepo = r._vendorPostRepo;
         const origBundle = r._vendorPostBundle;
@@ -2014,7 +1998,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         out.roundtripKeepsTrust =
             !!reloaded["gh-test"] && reloaded["gh-test"].trust === "sandboxed" && reloaded["gh-test"].vendored === true;
         // UI: die GitHub-Holen-Sektion im DOM.
-        out.uiRepoSection = !!document.getElementById("vendor-repo") && !!document.getElementById("vendor-repo-dock");
         // Aufräumen.
         r.state.customWorlds = {};
         r._saveCustomWorlds();
@@ -2024,10 +2007,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     });
 
     if (vendor2Results && !vendor2Results.error) {
-        check(
-            "W15 GitHub-Fetch: _vendorPostRepo/_vendorPostJson/_runVendorRepoDock existieren (die Suite ruft sie nie)",
-            vendor2Results.methods
-        );
         check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine ungültige Welt-id ab", vendor2Results.rejectsBadId);
         check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine Built-in-id ab", vendor2Results.rejectsReservedId);
         check(
@@ -2059,7 +2038,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
             "W15 GitHub-Fetch: die repo-vendorte Welt überlebt den localStorage-Rundlauf",
             vendor2Results.roundtripKeepsTrust
         );
-        check("W15 GitHub-Fetch: die GitHub-Holen-Sektion (URL-Feld + Knopf) im DOM", vendor2Results.uiRepoSection);
     } else {
         check("W15 GitHub-Fetch: Phase-2-Tests laufen", false, vendor2Results ? vendor2Results.error : "no result");
     }
@@ -2203,7 +2181,7 @@ async function checkBandTailleOmega2(ctx) {
     );
 }
 
-// DIE QUOTA-WAND (V18.151): wirft localStorage, fällt das Abbild weich — kein Wurf, ein ehrliches WARN, der Stand landet
+// DIE QUOTA-WAND: wirft localStorage, fällt das Abbild weich — kein Wurf, ein ehrliches WARN, der Stand landet
 // in IndexedDB (der Rundlauf, der Spiegel und die Frische fährt gate:persistence (T) am Tab-Tod, gate:boot-rettung am Boot).
 async function checkBandV18151Idb(ctx) {
     const { page, check } = ctx;
@@ -2254,7 +2232,7 @@ async function checkBandV18151Idb(ctx) {
     );
 }
 
-// V18.207 — R5 STRUKTUR-TEXTUR (aktiv-plan §4.C): Material-Mikro-Tiefe-Boost
+// R5 STRUKTUR-TEXTUR: Material-Mikro-Tiefe-Boost
 // für werk-Profile. Default 1.0 = no-op, browser-justierbar wenn Strukturen
 // platt wirken. Source-Probe + Konstante.
 async function checkBandV18207R5StructureTexture(ctx) {

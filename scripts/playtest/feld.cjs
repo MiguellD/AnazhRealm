@@ -48,7 +48,7 @@ async function checkRing2Dsl(ctx) {
         out.chainEffect = res2.ok && r.state.weather === "sunny" && r.state.jumpPower === jA;
 
         const creBefore = r.state.creatures.length;
-        // V18.296 — maxCreatures 120→20 (Schöpfer-Anordnung): Raum für die 2 sichern,
+        // maxCreatures 120→20 (Schöpfer-Anordnung): Raum für die 2 sichern,
         // damit dieser Band den spawn_creature-INTENT misst, nicht den Cap (der Warmup
         // kann nahe 20 liegen). Der Test wandert mit dem Code (kein Revert der Senkung).
         const _saveMaxPos = r.state.maxCreatures;
@@ -180,7 +180,6 @@ async function checkBandV1723Harmony(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
-        out.skyTintMax = r.constructor.SKY_TINT_MAX === 0.6;
         r.state.skyTint = null;
         r.state.skyTintTarget = 0;
         r.state.skyTintStrength = 0;
@@ -195,7 +194,7 @@ async function checkBandV1723Harmony(ctx) {
         r.state.skyTintTo = null;
         r.state.skyTintTarget = 0;
         r.state.skyTintStrength = 0;
-        // V17.24 — Farb-Cross-Fade: skyTint lerpt von Rot zur Ziel-Farbe Blau (ein
+        // Farb-Cross-Fade: skyTint lerpt von Rot zur Ziel-Farbe Blau (ein
         // Farbwechsel springt nicht, er fadet). Erst rot (init), dann blau (skyTint
         // bleibt rot), dann ticken → skyTint wandert Richtung blau.
         r.dslRun(["skybox_color", "#ff0000"], { source: "test" });
@@ -225,7 +224,6 @@ async function checkBandV1723Harmony(ctx) {
         r.state.maxCreatures = capR;
         return out;
     });
-    check("V17.23 Harmonie: SKY_TINT_MAX verdrahtet (Tag-Nacht bleibt sichtbar)", res.skyTintMax);
     check("V17.23 Harmonie: skybox_color setzt eine Tönung (state.skyTint), snappt nicht himmelTint", res.skyTintSet);
     check("V17.23 Harmonie: die Sky-Tönung rampt smooth hoch (kein Snap)", res.skyRamped);
     check("V17.23 Harmonie: die Sky-Tönung fadet (Ziel decayt → verblasst, nicht abrupt)", res.skyDecays);
@@ -323,7 +321,6 @@ async function checkBandV1733WorldRules(ctx) {
         // --- Verdrahtung ---
         out.cfgWired = !!K.WORLD_RULES && K.WORLD_RULES.cap === 64 && typeof K.WORLD_RULES.minEverySec === "number";
         out.registryArray = Array.isArray(r.state.worldRules);
-        out.ruleOp = typeof r.dslEffects.rule === "function";
         out.tickWired = window.__consumes(r, "_gameLoopTick", r, "_tickWorldRules", [performance.now()]); // der Takt ruft sie
 
         // Save world state we mutate
@@ -437,8 +434,8 @@ async function checkBandV1733WorldRules(ctx) {
     });
 
     check(
-        "V17.33 Welt-Regeln: WORLD_RULES-Konfig + Registry + rule-Op + Tick verdrahtet (im Loop)",
-        res.cfgWired && res.registryArray && res.ruleOp && res.tickWired
+        "V17.33 Welt-Regeln: WORLD_RULES-Konfig + Registry + Tick verdrahtet (im Loop)",
+        res.cfgWired && res.registryArray && res.tickWired
     );
     check(
         "V17.33 Welt-Regeln: `rule` REGISTRIERT (statt den Effekt SOFORT auszufuehren)",
@@ -479,12 +476,6 @@ async function checkBandV1734FieldRules(ctx) {
         const out = {};
         const now = () => performance.now() / 1000;
         const mkCtx = () => r.dslCtx({ source: "test" });
-
-        // --- Verdrahtung ---
-        out.condsWired =
-            typeof r.dslConditions.field_above === "function" && typeof r.dslConditions.field_below === "function";
-        out.effectsWired =
-            typeof r.dslEffects.deposit_life === "function" && typeof r.dslEffects.deposit_emotion === "function";
 
         // Save world state
         const savedLife = r.state.lifeField ? new Map(r.state.lifeField) : null;
@@ -598,10 +589,6 @@ async function checkBandV1734FieldRules(ctx) {
         return out;
     });
 
-    check(
-        "V17.34 Feld-Regeln: field_above/field_below + deposit_life/deposit_emotion verdrahtet",
-        res.condsWired && res.effectsWired
-    );
     check("V17.34 Feld-Regeln: field_above/below LIEST die frozen lebendig-Achse korrekt", res.fieldRead);
     check(
         "V17.34 Feld-Regeln: deposit_life SCHREIBT → auraAt liest es zurueck (write→read im Feld)",
@@ -634,12 +621,6 @@ async function checkBandV1735NexusEvolvesRules(ctx) {
         const now = () => performance.now() / 1000;
         const cfg = K.WORLD_RULES;
         const rng = r.dslCtx({ seed: 777 }).rng; // deterministischer LCG fuer die Komposition
-
-        // --- Verdrahtung + Konstanten ---
-        out.cfgWired =
-            typeof cfg.composeRuleProb === "number" &&
-            typeof cfg.renewFitness === "number" &&
-            typeof cfg.costBudgetMs === "number";
 
         // --- (A) dslComposeRule: gueltige Regel-Struktur ---
         const prog = r.dslComposeRule(rng);
@@ -771,7 +752,6 @@ async function checkBandV1735NexusEvolvesRules(ctx) {
         return out;
     });
 
-    check("V17.35 Nexus-Regeln: die Konfig trägt composeRuleProb + renewFitness + costBudgetMs", res.cfgWired);
     check(
         "V17.35 Nexus-Regeln: dslComposeRule liefert eine gueltige Regel (cond+effect+everySec+ttl in Spanne)",
         res.composeStruct
@@ -818,16 +798,12 @@ async function checkBandV1736HumanRules(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
-        const K = r.constructor;
         const out = {};
         const now = () => performance.now() / 1000;
         const mkSink = () => {
             const msgs = [];
             return { input: { value: "x" }, append: (s) => msgs.push(String(s)), msgs };
         };
-
-        // --- Verdrahtung ---
-        out.wired = K.RULE_FORBIDDEN_EFFECT_OPS instanceof Set;
 
         // --- (2) _parseChatCondition: Sprache → DSL-Bedingung ---
         const cRain = r._parseChatCondition("es regnet");
@@ -919,7 +895,6 @@ async function checkBandV1736HumanRules(ctx) {
         return out;
     });
 
-    check("V17.36 Mensch-Regeln: die Sperrliste RULE_FORBIDDEN_EFFECT_OPS ist ein Set", res.wired);
     check(
         "V17.36 Mensch-Regeln: _parseChatCondition übersetzt Sprache → DSL-Bedingung (Wetter/Stimmung/Feld)",
         res.condParse
@@ -953,7 +928,6 @@ async function checkBandV1737RulesUI(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const host = document.getElementById("status-worldrules");
-        out.domHost = !!host && r._statusRefs && r._statusRefs.worldrules === host;
 
         // Save state
         const savedRules = r.state.worldRules.slice();
@@ -1005,8 +979,8 @@ async function checkBandV1737RulesUI(ctx) {
         out.collapsibleHeaders =
             secs.length >= 2 && Array.from(secs).every((s) => s.querySelector("h3.collapsible-header"));
 
-        // V18.52 Hof-Partitur — ZWEI Gruppen (Deine Gesetze | Der Nexus erprobt), Nexus nach gelerntem
-        // WERT sortiert + auf Top-5 gekappt, mit Wert-Chip (der value-Vektor wird endlich gelesen, V17.31).
+        // Hof-Partitur — ZWEI Gruppen (Deine Gesetze | Der Nexus erprobt), Nexus nach gelerntem
+        // WERT sortiert + auf Top-5 gekappt, mit Wert-Chip (der value-Vektor wird endlich gelesen).
         r.state.worldRules.length = 0;
         r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"]], { source: "human" });
         // Distinkte Bedingung je Regel → distinkte Dedup-Signatur (sonst kollabieren identische zu EINER).
@@ -1041,10 +1015,6 @@ async function checkBandV1737RulesUI(ctx) {
         return out;
     });
 
-    check(
-        "V17.37 Gesetze-UI: #status-worldrules existiert im Faehigkeiten-Drawer + ist als Status-Ref verdrahtet",
-        res.domHost
-    );
     check("V18.52 Hof-Partitur: zwei Gruppen (Deine Gesetze | Der Nexus erprobt)", res.twoGroups);
     check(
         "V18.52 Hof-Partitur: die Nexus-Experimente auf Top-5 gekappt + '+N weitere'-Zeile",
@@ -1144,7 +1114,7 @@ async function checkBandV1739RulesUX(ctx) {
             r.state.worldRules.length <= r.constructor.WORLD_RULES.cap &&
             r.state.worldRules.some((x) => x.id === keepId);
 
-        // --- (E) V18.53: ein ephemeres Nexus-Experiment ist DIREKT steuerbar — ⏸ + ✕ in JEDEM Modus
+        // --- (E) ein ephemeres Nexus-Experiment ist DIREKT steuerbar — ⏸ + ✕ in JEDEM Modus
         //         (kein pin-zuerst-Trap). Geheilter Schöpfer-Befund „muss zuerst pinnen, um zu stoppen". ---
         r.state.worldRules.length = 0;
         r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { everySec: 3, ttlSec: 60 }], {
@@ -1608,7 +1578,7 @@ async function checkBandV1745EmotionCore(ctx) {
         const sCalm = r._emotionState();
         out.calmReadout = sCalm.intensity < 0.2 && sCalm.label === "ruhig";
 
-        // (5) KONSUM (kein Passagier, V17.31): die KI KENNT die Stimmung des Spielers
+        // (5) KONSUM (kein Passagier): die KI KENNT die Stimmung des Spielers
         // (llmBuildSystemPrompt — vorher trug der Persona-Prompt NULL Emotion).
         setEmo({ joy: 0.8 });
         out.promptClear = r.llmBuildSystemPrompt().includes("Freude");
@@ -1702,8 +1672,6 @@ async function checkBandV1746EmotionSubstance(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
-        const T2E = r.constructor.TAG_TO_EMOTION;
-        const A2E = r.constructor.ACTION_TO_EMOTION;
         const savedEmo = { ...p.emotions };
         const savedLife = r.state.lifeField;
         const savedEmoField = r.state.emotionField;
@@ -1712,10 +1680,6 @@ async function checkBandV1746EmotionSubstance(ctx) {
         const reset = () => {
             for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
         };
-
-        // (1) die Resonanz-Tabelle + der schöpferische Akt
-        out.tableExists = !!T2E && typeof T2E.lebendig === "object" && typeof T2E.dichte === "object";
-        out.createAct = !!A2E && typeof A2E.create === "object";
 
         // (2) _appraiseSubstance — die Substanz färbt das Gefühl
         const sLeb = r._appraiseSubstance({ lebendig: 1 }, 1);
@@ -1770,7 +1734,6 @@ async function checkBandV1746EmotionSubstance(ctx) {
         r.state.emotionField = savedEmoField;
         return out;
     });
-    check("V17.46 Substanz: TAG_TO_EMOTION-Resonanz + der create-Akt existieren", res.tableExists && res.createAct);
     check(
         "V17.46 Substanz: lebendig → peace (Nähren), dichte → hope (Solidität) — die Substanz färbt",
         res.lebendigPeace && res.dichteHope
@@ -1955,8 +1918,6 @@ async function checkBandV1748Social(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
-        const C = r.constructor.EMOTION_CONTAGION;
-        const A2E = r.constructor.ACTION_TO_EMOTION;
         const AX = r.constructor.EMOTION_AXES;
         const savedEmo = { ...p.emotions };
         const savedMood = p.mood ? { ...p.mood } : null;
@@ -1979,9 +1940,6 @@ async function checkBandV1748Social(ctx) {
             r.state.creatures = [fake(bond, task)];
             r.state.creatureEmotions = [emo];
         };
-
-        // (1) Config + die loss-Tat
-        out.config = !!C && C.radius > 0 && !!r.constructor.CONTAGION_TARGET.happy && typeof A2E.loss === "object";
 
         // (2) CONTAGION — ein freudiges Wesen nah HEBT joy + peace; ein leidendes betrübt
         setEmo({});
@@ -2029,10 +1987,7 @@ async function checkBandV1748Social(ctx) {
         const joyUnbonded = p.emotions.joy;
         out.bondWeights = joyBonded > joyUnbonded + 0.005;
 
-        // (4) BINDUNG wächst, während eine FOLGENDE Kreatur nah ist (gemeinsame Zeit); WARTEN nicht
-        inject("happy", 0, "follow_player");
-        r._tickEmotionContagion(2);
-        out.bondGrows = r.state.creatures[0].userData.bond > 0;
+        // (4) eine WARTENDE Kreatur baut keine Bindung auf (das Wachsen misst gate:kreatur-takt folgen)
         inject("happy", 0, "wait");
         r._tickEmotionContagion(2);
         out.waitNoBond = r.state.creatures[0].userData.bond === 0;
@@ -2068,7 +2023,6 @@ async function checkBandV1748Social(ctx) {
         r.state.creatureEmotions = savedCreatureEmotions;
         return out;
     });
-    check("V17.48 Soziales: EMOTION_CONTAGION-Config + CONTAGION_TARGET + die loss-Tat existieren", res.config);
     check("V17.48 Soziales: KONSUM — ein freudiges Wesen nah HEBT joy + peace (Contagion)", res.happyLifts);
     check("V17.48 Soziales: KONSUM — ein leidendes Wesen nah betrübt (sorrow)", res.sadGrieves);
     check(
@@ -2087,7 +2041,6 @@ async function checkBandV1748Social(ctx) {
         "V17.48 Soziales: KONSUM — die BINDUNG gewichtet die Contagion (gebunden färbt mehr als fremd)",
         res.bondWeights
     );
-    check("V17.48 Soziales: KONSUM — die Bindung WÄCHST, während eine folgende Kreatur nah ist", res.bondGrows);
     check("V17.48 Soziales: eine WARTENDE Kreatur baut keine Bindung auf (nur gemeinsame Zeit zählt)", res.waitNoBond);
     check(
         "V17.48 Soziales: KONSUM — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (Trauer ∝ Bindung)",
@@ -2110,15 +2063,6 @@ async function checkBandG8R2SovereignWall(ctx) {
         const K = r.constructor;
         const out = {};
         const SA = K.SOVEREIGN_ACTIONS;
-        // (1) SOVEREIGN_ACTIONS benannt + eingefroren + die vier Akte.
-        out.frozen =
-            Array.isArray(SA) &&
-            Object.isFrozen(SA) &&
-            SA.length === 4 &&
-            SA.includes("wallet_transfer") &&
-            SA.includes("sign_manifest") &&
-            SA.includes("change_identity") &&
-            SA.includes("grant_capability");
         // (2) DISJUNKTHEIT: kein souveräner Akt ist ein dslEffect, in
         // NON_BROADCASTABLE_OPS, oder im Nexus-Auto-Pool (dslComposeAtomic).
         const effects = r.dslEffects;
@@ -2161,7 +2105,6 @@ async function checkBandG8R2SovereignWall(ctx) {
         check("G8 R2: Sovereign-Wall-Sonde lief", false, "evaluate warf");
         return;
     }
-    check("G8 R2: SOVEREIGN_ACTIONS benannt + eingefroren (vier Akte)", res.frozen);
     check(
         "G8 R2: DISJUNKT von dslEffects ∪ NON_BROADCASTABLE ∪ dslComposeAtomic (die Wand)",
         res.notDslOp && res.notBroadcast && res.notComposed

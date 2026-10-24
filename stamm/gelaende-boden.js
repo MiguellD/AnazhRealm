@@ -267,36 +267,95 @@ class AnazhRealm_gelaende_boden {
         }
     }
 
-    // Hydrosphären-Atlas (Drainage-Netz: Flüsse/Seen/Wasserfälle) + Render; Atlas VOR Render (Render
-    // liest state.hydrosphere). Zwei try/catch — keine Stufe darf den Worldgen brechen.
+    // Hydrosphären-Atlas (Drainage-Netz: Flüsse/Seen/Wasserfälle) + Render; Atlas VOR Render (Render liest state.hydrosphere).
+    // DIE HEIMAT ENTSTEHT IM FADEN (Karte hydro-faden, Lehre 14): die Weltgen räumt die alte Wahrheit (die fernen Kacheln des
+    // alten Seeds fallen mit, A3), gibt dem Voxel-Faden den Stand dieser Welt (`_voxelWorkerSyncWorldgenState`) und bestellt
+    // die Heimat (`_hydroBestellen`). Das Versprechen trägt den Rest: mit ihr stehen Band und Wasser-Meshes, und erst dann
+    // fragt der Strom den Faden (`voxelWorkerWorldgenSynced`). Bis zur Karte rechnete der Haupt-Faden sie hier synchron
+    // (Kalt-Boot 168 ms headless). → Promise<Hydrosphäre | null> (null: eine neuere Welt kam ihr zuvor).
     _worldgenComputeAndBuildHydrosphere() {
-        try {
-            // A3 (V18.132) — ein Welt-Regen erneuert die Heimat-Wahrheit: die
-            // fernen Kacheln des ALTEN Seeds muessen fallen (lazy-Neubau aus
-            // dem neuen Seed; derived, nie persistiert).
-            this.state.hydroTiles = new Map();
-            const hydro = this._computeHydrosphere();
-            this.state.hydrosphere = hydro;
+        this._hydroWelt = (this._hydroWelt | 0) + 1;
+        this._hydroBestellt = new Map();
+        this.state.hydroTiles = new Map();
+        this.state.hydrosphere = null;
+        this.state.voxelWorkerWorldgenSynced = false;
+        this._computeHydroBand();
+        this._voxelWorkerSyncWorldgenState();
+        return this._hydroBestellen("heim", null).then((hydro) => {
+            if (!hydro) return null;
             this.log(
-                `V9.43-b: Hydrosphäre berechnet — ${hydro.rivers.length} Flüsse, ${hydro.lakes.length} Seen, ${hydro.waterfalls.length} Wasserfälle`,
+                `V9.43-b: Hydrosphäre aus dem Faden — ${hydro.rivers.length} Flüsse, ${hydro.lakes.length} Seen, ${hydro.waterfalls.length} Wasserfälle`,
                 "INFO"
             );
-        } catch (e) {
-            this.state.hydrosphere = null;
-            this.log(`Hydrosphäre-Berechnung fehlgeschlagen: ${e.message}`, "ERROR");
+            try {
+                this._buildHydrosphereMeshes();
+            } catch (e) {
+                this.log(`Hydrosphäre-Rendering fehlgeschlagen: ${e.message}`, "ERROR");
+            }
+            // ab hier fragt der Strom den Faden (`_voxelFadenTraegt`): die Heimat steht in Main und Faden
+            this.state.voxelWorkerWorldgenSynced = true;
+            return hydro;
+        });
+    }
+
+    // DIE BESTELLUNG EINER REGION (Karte hydro-faden): die Heimat (`key` "heim", `origin` null) oder eine ferne Kachel entsteht
+    // im Faden — der EINE Sender des Zustands (`_voxelZustandPost`) trägt den Auftrag an jeden Faden an DERSELBEN Stelle seiner
+    // Reihe (jeder Auftrag dahinter liest sie), der Voxel-Faden antwortet per Transfer (`_hydroAn`). Der Haupt-Faden rechnet
+    // sie nie: ohne Faden bricht es laut (`_bruchMelden`); kommt der Faden über den Blob-Weg, wartet die Bestellung auf ihn.
+    // → das Versprechen der Region (eine schon bestellte gibt ihres zurück; null, wenn eine neuere Welt ihr zuvorkam).
+    _hydroBestellen(key, origin) {
+        const B = this._hydroBestellt || (this._hydroBestellt = new Map());
+        const da = B.get(key);
+        if (da) return da.zusage;
+        const welt = this._hydroWelt | 0;
+        const e = { faeden: null, ab: null };
+        const zusage = new Promise((ok, ab) => {
+            e.ab = ab;
+            e.post = () => {
+                const requestId = this.state.voxelWorkerNextRequestId++;
+                this.state.voxelWorkerPending.set(requestId, { resolve: ok, reject: ab });
+                e.faeden = new Set(this._nebenFaeden ? this._nebenFaeden.keys() : []);
+                this._voxelZustandPost({ type: "hydro", key, origin, requestId });
+            };
+        });
+        e.zusage = zusage.then((msg) => this._hydroAn(key, msg.region, welt, e.faeden));
+        B.set(key, e);
+        if (this.state.voxelWorker) e.post();
+        else if (this._voxelWeltWartet) (this._hydroWarte || (this._hydroWarte = [])).push(e.post);
+        else {
+            this._bruchMelden(
+                `HYDRO-FADEN: die Hydrosphäre (${key}) ohne Voxel-Faden — der Haupt-Faden rechnet sie nie (Lehre 14)`
+            );
+            e.ab(new Error("kein Voxel-Faden für die Hydrosphäre"));
         }
-        // Globales Wasser-Y-Band für die Cell-Klassifikation: alle Chunks teilen es → Cells außerhalb sind
-        // deterministisch gleich (above=AIR, below=WATER), die OOB-Naht bleibt konsistent.
+        if (key !== "heim")
+            e.zusage = e.zusage.catch((err) => {
+                B.delete(key);
+                this._bruchMelden(`HYDRO-FADEN: die Kachel ${key} kam nicht — ${(err && err.message) || err}`);
+                return null;
+            });
+        return e.zusage;
+    }
+
+    // DER EMPFANG EINER REGION (Karte hydro-faden): die Region der eigenen Welt geht in den Zustand (Heimat oder Kachel), das
+    // globale Band folgt (`_computeHydroBand`). Ein Neben-Faden, der nach der Bestellung geboren wurde, trug ihren Auftrag
+    // nicht — er bekommt die Region (sein Geburts-Stand kannte sie noch nicht); jeder andere Faden rechnete sie selbst.
+    _hydroAn(key, h, welt, faeden) {
+        if (welt !== (this._hydroWelt | 0) || !h) return null; // eine Region einer alten Welt fällt
+        if (key === "heim") this.state.hydrosphere = h;
+        else {
+            this.state.hydroTiles.set(key, h);
+            this.log(
+                `A3: Hydro-Kachel ${key} aus dem Faden (${h.rivers.length} Fluesse, ${h.lakes.length} Seen)`,
+                "INFO"
+            );
+        }
         this._computeHydroBand();
-        try {
-            this._buildHydrosphereMeshes();
-        } catch (e) {
-            this.log(`Hydrosphäre-Rendering fehlgeschlagen: ${e.message}`, "ERROR");
-        }
-        // Der Worker erhält fertigen Atlas (full state-set); ab
-        // `voxelWorkerSyncedHydroStateGen === voxelWorkerStateGen` traut ihm der Streaming-Pfad.
-        // Bumpt stateGen → in-flight Pre-Worldgen-Requests werden verworfen.
-        this._voxelWorkerSyncWorldgenState();
+        if (this._nebenFaeden)
+            for (const [name, f] of this._nebenFaeden)
+                if (!faeden || !faeden.has(name))
+                    f.worker.postMessage({ type: "state-update", delta: { hydroRegion: { key, h } } });
+        return h;
     }
 
     // Globales Wasser-Y-Band: top = der höchste Spiegel JEDES Wasser-Körpers (waterLevel, jeder See, jeder Punkt jedes Flusses)
@@ -306,26 +365,15 @@ class AnazhRealm_gelaende_boden {
     // Landform im Gelände-Gesetz liegt, steigen die Flüsse in die Täler des Mittelgebirges (Spiegel bis 55 m), das Band endete
     // bei 23,7 m (der höchste See + 10) — der Zell-Bau ließ jede Fluss-Zelle darüber AIR: in der Heimat 344 von 549 Fluss-
     // Segmenten ohne gezeichnetes Wasser (am Bach -744/-872 Wasser-Meshes 0, die Quellen trocken).
+    // A3 (V18.132) — das Band ist GLOBAL (V9.77: alle Chunks teilen die Thresholds): die Spiegel der fernen Kacheln heben es
+    // mit, sonst übersprünge der Band-Skip ihre Zellen als garantiert-AIR. Der Rechner ist der des Gelände-Kerns (`hydroBand`),
+    // derselbe im Faden.
     _computeHydroBand() {
         const wl = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        let topY = wl;
-        const hebe = (h) => {
-            if (!h) return;
-            if (Array.isArray(h.lakes))
-                for (const lake of h.lakes) if (Number.isFinite(lake.level) && lake.level > topY) topY = lake.level;
-            if (Array.isArray(h.rivers))
-                for (const fluss of h.rivers)
-                    for (const p of fluss.points || []) if (Number.isFinite(p.S) && p.S > topY) topY = p.S;
-        };
-        hebe(this.state.hydrosphere);
-        // A3 (V18.132) — das Band ist GLOBAL (V9.77: alle Chunks teilen die
-        // Thresholds): die Spiegel der fernen Kacheln heben es mit, sonst
-        // wuerde der Band-Skip ihre Zellen als garantiert-AIR ueberspringen.
-        if (this.state.hydroTiles) for (const t of this.state.hydroTiles.values()) hebe(t);
-        this.state.hydroBand = {
-            top: topY + 10,
-            bottom: wl - 10,
-        };
+        const regionen = [this.state.hydrosphere].concat(
+            this.state.hydroTiles ? [...this.state.hydroTiles.values()] : []
+        );
+        this.state.hydroBand = globalThis.__gelaendeCore.hydroBand(wl, regionen);
     }
 
     // Das Wasser-Cell-Feld ist DERIVED (Worldgen-Density + voxelEdits + Architektur-Stempel): Spieler-
@@ -448,10 +496,11 @@ class AnazhRealm_gelaende_boden {
         return h;
     }
 
-    // Stellt sicher, dass jede Kachel, die [x±r, z±r] schneidet, berechnet ist (Heimat "0,0" immer).
-    // Am Chunk-Build-Eingang gerufen = die HARTE Garantie: kein Chunk baut vor seiner Wasser/Erosions-
-    // Wahrheit (keine Kachel-Naht durch Build-Reihenfolge). Neue Kachel → hydroBand neu + voller Worker-
-    // Re-Sync (gen-bump verwirft stale Builds; die Nachrichten-Ordnung garantiert Kachel-vor-Request).
+    // Stellt sicher, dass jede Kachel, die [x±r, z±r] schneidet, da ist oder im Faden entsteht (Heimat "0,0" immer): eine
+    // fehlende wird bestellt (`_hydroBestellen`). Am Chunk-Build-Eingang gerufen (`_hydroSteht`) = die HARTE Garantie: kein
+    // Chunk baut vor seiner Wasser/Erosions-Wahrheit (keine Kachel-Naht durch Build-Reihenfolge). → die Zahl der Kacheln, die
+    // noch fehlen (0 = alle da). Bis zur Karte hydro-faden rechnete der Haupt-Faden jede neue Kachel hier synchron (235 ms
+    // headless) und klonte danach den ganzen Zustand samt aller Kacheln in jeden Faden (0,82 MB je Faden und Kachel).
     _ensureHydroTilesAround(x, z, r) {
         const h = this.state.hydrosphere;
         if (!h || !h.ready) return 0; // vor dem Worldgen gibt es keine Wahrheit zu kacheln
@@ -461,31 +510,28 @@ class AnazhRealm_gelaende_boden {
         const r1x = Math.floor((x + r + half) / size);
         const r0z = Math.floor((z - r + half) / size);
         const r1z = Math.floor((z + r + half) / size);
-        let made = 0;
+        if (!this.state.hydroTiles) this.state.hydroTiles = new Map();
+        let fehlt = 0;
         for (let rx = r0x; rx <= r1x; rx++) {
             for (let rz = r0z; rz <= r1z; rz++) {
                 if (rx === 0 && rz === 0) continue;
                 const key = `${rx},${rz}`;
-                if (!this.state.hydroTiles) this.state.hydroTiles = new Map();
                 if (this.state.hydroTiles.has(key)) continue;
-                const t0 = performance.now();
-                const origin = { x: rx * size - half, z: rz * size - half };
-                this.state.hydroTiles.set(key, this._computeHydrosphere(origin));
-                this._computeHydroBand();
-                made++;
-                const t = this.state.hydroTiles.get(key);
-                this.log(
-                    `A3: Hydro-Kachel ${key} berechnet (${Math.round(performance.now() - t0)} ms — ` +
-                        `${t.rivers ? t.rivers.length : 0} Fluesse, ${t.lakes ? t.lakes.length : 0} Seen)`,
-                    "INFO"
-                );
+                fehlt++;
+                this._hydroBestellen(key, { x: rx * size - half, z: rz * size - half });
             }
         }
-        // NUR einen existierenden Worker syncen, NIE bootstrappen (`_voxelWorkerSyncWorldgenState` würde einen
-        // genullten Worker re-spawnen; ohne Worker baut der Main sync mit der Kachel-Wahrheit). Kein Cache-
-        // Clear nötig: kein Chunk der neuen Kachel wurde je gebaut, in-flight verwirft der gen-bump.
-        if (made && this.state.voxelWorker) this._voxelWorkerSyncState({ op: "state-set" });
-        return made;
+        return fehlt;
+    }
+
+    // DIE WAHRHEIT VOR DEM BAU (Karte hydro-faden): die Heimat steht und jede Kachel um den Chunk (cx, cz) samt 64 m Polster
+    // für die Leser über die Grenze ist da — sonst ist sie bestellt, und der Bau wartet (false).
+    _hydroSteht(cx, cz) {
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready) return false;
+        const { span } = this._voxelChunkConfig(0);
+        const half = span / 2;
+        return !this._ensureHydroTilesAround(cx * span + half, cz * span + half, half + 64);
     }
 
     // Slope + Rock-Exposure als abgeleitete Welt-Felder direkt aus `_voxelSurfaceY` — am Genese-Leser
@@ -821,8 +867,17 @@ class AnazhRealm_gelaende_boden {
         const mass = (this._ortWahlMass = { kandidaten: 0, scheiben: 0, ms: 0, maxMs: 0, abstandM: null });
         let reich = 0; // so weit reicht der Plan um seinen Ursprung (das Wasser jedes Kandidaten muss gekachelt sein)
         for (const s of plan.slots) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
-        // das Wasser der ganzen Suche ist gekachelt, bevor der Faden urteilt (die Kachel reist vor dem Auftrag)
-        this._ensureHydroTilesAround(origin.x, origin.z, reich + W.ringe * W.schrittM);
+        // das Wasser der ganzen Suche ist gekachelt, bevor der Faden urteilt: jede fehlende Kachel rechnet der Faden
+        // (`_hydroBestellen`), die Wahl wartet auf ihre Ankunft — ein Ort-Faden, der nach der Bestellung geboren wurde, trägt
+        // sie erst mit ihr (`_hydroAn`)
+        const suche = reich + W.ringe * W.schrittM;
+        if (this._ensureHydroTilesAround(origin.x, origin.z, suche)) {
+            await Promise.all([...this._hydroBestellt.values()].map((e) => e.zusage));
+            if (this._ensureHydroTilesAround(origin.x, origin.z, suche))
+                throw new Error(
+                    `ORT: das Wasser um ${Math.round(origin.x)}/${Math.round(origin.z)} kam nicht aus dem Faden`
+                );
+        }
         for (let ab = 0, wand = -1; ;) {
             const pm = frei === undefined ? this.state.playerMesh && this.state.playerMesh.position : frei;
             const raster = this._ortRaster(plan);
@@ -995,8 +1050,8 @@ class AnazhRealm_gelaende_boden {
     // Spalten-Kontext: die rein 2D-Arbeit (Makro-Oberfläche `_terrainMacroSurfaceY` ~61 % der Density-
     // Kosten, eroR, Höhlen-Mündung, Hydro-Carve/See) EINMAL pro (x,z) statt pro Voxel; der per-Voxel
     // `_terrainBaseDensityAtCol` liest sie byte-identisch. Die Basis-Dichte OHNE voxelEdits ist
-    // worldgen-frozen → pro Chunk+LOD cachebar (`state.voxelBaseDensityCache`), Edits legen nur das
-    // Kugel-Delta drauf. MUSS bit-identisch im Worker (`terrainColumnContext`).
+    // worldgen-frozen → pro Chunk+LOD cachebar (`state.voxelBaseDensityCache`), Edits legen nur ihre
+    // Form drauf (gelaende-core `editsImGitter`). MUSS bit-identisch im Worker (`terrainColumnContext`).
     _terrainColumnContext(x, z) {
         return this._terrainColumnContextIn(x, z, {});
     }
@@ -1023,7 +1078,7 @@ class AnazhRealm_gelaende_boden {
         }
         // V9.43-d/-45-b — der Hydrosphären-Carve (Fluss-Rinnen + See-Becken-Blend), 2D je Spalte.
         const hydro = this.state.hydrosphere;
-        const hydroActive = !!(hydro && hydro.ready && !this._hydroComputing);
+        const hydroActive = !!(hydro && hydro.ready);
         let hydroCarve = null; // der Fluss-Kanal { P, L, k } (`_hydrosphereCarveAt`) oder null
         let lake = null;
         if (hydroActive) {
@@ -1103,15 +1158,14 @@ class AnazhRealm_gelaende_boden {
         return this._terrainBaseDensityAtCol(x, y, z, this._terrainColumnContextIn(x, z, s));
     }
 
-    // Volle Terrain-Dichte = Basis + voxelEdit-Delta für Punkt-Samples (Wasser-Iso-OOB, `_voxelSurfaceY`,
-    // direkte Aufrufer); der Chunk-Grid-Pfad nutzt `_voxelEditedDensityGrid` (base-gecacht + Delta).
+    // Volle Terrain-Dichte = Basis mit den Edits für Punkt-Samples (Wasser-Iso-OOB, `_voxelSurfaceY`, direkte Aufrufer); der
+    // Chunk-Grid-Pfad nutzt `_voxelEditedDensityGrid` (base-gecacht, dieselbe Form je Ecke).
     _terrainDensityAt(x, y, z) {
-        // Die Edit-Deltas leben in `_voxelEditDeltaAt`, damit der feld-native Kollisions-Pfad
-        // (`_fieldDensityAt`) DIESELBE Edit-Wahrheit liest. Das Chunk-GITTER (`_voxelEditedDensityGrid`) legt die
-        // Edits in Float32 auf das Basis-Gitter; sein Worker-Spiegel `computeDensityGrid` ist byte-gleich
-        // (gate:worker-dichte: maxDiff 0, LOD 0–3, mit Edits über dem Band).
+        // Die Edits liest `_mitEdits`, damit der feld-native Kollisions-Pfad (`_fieldDensityAt`) DIESELBE Edit-Wahrheit
+        // liest; die Form ist das Gesetz des Kerns (gelaende-core `mitEdits`, `editsImGitter` — Punkt, Gitter und Worker
+        // rufen es; gate:worker-dichte Teil H: Main = Worker = Gesetz, LOD 0–3, mit Edits über dem Band).
         // DER KELLER IST HOHL (S4, gelaende-core `erdbauHohl`): das Feld trägt den Raum des Hauses, das Gitter des Netzes nicht
-        const d = this._terrainBaseDensityAt(x, y, z) + this._voxelEditDeltaAt(x, y, z);
+        const d = this._mitEdits(this._terrainBaseDensityAt(x, y, z), x, y, z);
         const K = this._kellerLage(x, z);
         return K ? globalThis.__gelaendeCore.erdbauHohl(K, x, y, z, d) : d;
     }
@@ -1122,8 +1176,8 @@ class AnazhRealm_gelaende_boden {
     }
 
     // DIE EDIT-KARTE (K23): die Edits der Welt je Chunk. `worldMeta.voxelEdits` bleibt die EINE Liste (persistiert, in
-    // Setz-Reihenfolge, ohne Deckel — kein Edit fällt still); die Karte legt jeden Edit in jeden Chunk, den seine Kugel
-    // samt einem Chunk Rand berührt (Spalten floor((x − r)/span) − 1 … floor((x + r)/span) + 1, r mindestens 1 m), in
+    // Setz-Reihenfolge, ohne Deckel — kein Edit fällt still); die Karte legt jeden Edit in jeden Chunk, den seine Reichweite
+    // samt einem Chunk Rand berührt (Spalten floor((x − R)/span) − 1 … floor((x + R)/span) + 1, R = gelaende-core `editReich`), in
     // derselben Reihenfolge; der KERN ohne Rand dient der Punkt-Probe. Ein Leser fragt nur seinen Chunk statt alle Edits
     // zu summieren, und die Summe bleibt Bit für Bit die der ganzen Liste (ein Edit außerhalb trägt nichts bei). Je Chunk
     // eine Generation aus EINEM steigenden Zähler (nie wiederholt) — der Stale-Filter der Worker-Antworten
@@ -1148,10 +1202,10 @@ class AnazhRealm_gelaende_boden {
             while (k.n < edits.length) {
                 const ed = edits[k.n++];
                 if (!ed || !Number.isFinite(ed.x) || !Number.isFinite(ed.z)) continue;
-                const r = Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1;
+                const r = globalThis.__gelaendeCore.editReich(ed);
                 this._editGenZaehler = (this._editGenZaehler || 0) + 1;
                 const g = this._editGenZaehler;
-                // Der Kasten der Kugel in Chunks (ka … kb); die Karte nimmt einen Chunk Rand dazu.
+                // Der Kasten seiner Reichweite in Chunks (ka … kb); die Karte nimmt einen Chunk Rand dazu.
                 const kax = Math.floor((ed.x - r) / span);
                 const kbx = Math.floor((ed.x + r) / span);
                 const kaz = Math.floor((ed.z - r) / span);
@@ -1218,41 +1272,21 @@ class AnazhRealm_gelaende_boden {
         return `${this.state.voxelWorkerStateGen}|${g}`;
     }
 
-    // Voxel-Edit-Deltas (EINE Quelle): jede Schnitz-Kugel zieht Dichte ab (carve) oder schüttet auf
-    // (fill). Edits leben in worldMeta.voxelEdits (persistiert) und gelten ZULETZT — der Spieler-Wille
-    // überschreibt Terrain UND Hydrosphäre-Sculpting. Summiert werden nur die Edits, deren Kasten den Chunk der Probe
-    // berührt (der Kern der Karte).
-    _voxelEditDeltaAt(x, y, z) {
+    // Die Dichte über der Basis `basis` an (x, y, z) mit den Edits (EINE Quelle): sie leben in worldMeta.voxelEdits
+    // (persistiert) und gelten ZULETZT — der Spieler-Wille überschreibt Terrain UND Hydrosphäre-Sculpting. Gefragt werden nur
+    // die Edits, deren Reichweite den Chunk der Probe berührt (der Kern der Karte); die Form ist das Gesetz des Kerns
+    // (gelaende-core `mitEdits`: die Säule `editForm`, Graben und Aufschütten, mode-lose Alt-Edits graben).
+    _mitEdits(basis, x, y, z) {
         const meta = this.state.worldMeta;
-        if (!meta || !meta.voxelEdits || !meta.voxelEdits.length) return 0;
+        if (!meta || !meta.voxelEdits || !meta.voxelEdits.length) return basis;
         const k = this._voxelEditKarte();
         const edits = k.kern.get((Math.floor(x / k.span) + 32768) * 65536 + (Math.floor(z / k.span) + 32768));
-        if (!edits) return 0;
-        let d = 0;
-        for (let e = 0; e < edits.length; e++) {
-            const ed = edits[e];
-            if (!ed) continue;
-            const dx = x - ed.x;
-            const dy = y - ed.y;
-            const dz = z - ed.z;
-            const dist2 = dx * dx + dy * dy + dz * dz;
-            const r = ed.r;
-            if (dist2 < r * r) {
-                const fall = 1 - Math.sqrt(dist2) / r;
-                const amt = fall * (ed.strength || 48);
-                // `fill` addiert Dichte (Boden aufschütten), `carve` (Default,
-                // auch mode-lose Alt-Edits) zieht ab.
-                if (ed.mode === "fill") d += amt;
-                else d -= amt;
-            }
-        }
-        return d;
+        return globalThis.__gelaendeCore.mitEdits(basis, x, y, z, edits);
     }
 
     // Base-gecachter Density-Grid-Pfad: (dimX+1)·(dimY+1)·(dimZ+1)-Grid identisch zu
     // `_voxelSampleDensityGrid`, aber das teure Basis-Grid wird pro Chunk+LOD gecacht; der Edit-Rebuild
-    // legt nur die Kugel-Deltas auf eine Kopie (~2 ms statt ~126 ms). Ohne Edits: read-only-Reuse.
-    // Bit-identisch zu `_terrainDensityAt` (base + Σ edit-delta).
+    // legt nur die Form der Edits auf eine Kopie (~2 ms statt ~126 ms). Ohne Edits: read-only-Reuse.
     _voxelEditedDensityGrid(cacheKey, gox, goy, goz, dimX, dimY, dimZ, step) {
         const Nx = dimX + 1;
         const Ny = dimY + 1;
@@ -1264,51 +1298,32 @@ class AnazhRealm_gelaende_boden {
             const baseSample = (x, y, z) => this._terrainBaseDensityAt(x, y, z);
             // V18.321 — der Spalten-Hoist: colVoxel = die per-Voxel-Hälfte (liest den 2D-Kontext).
             const colVoxel = (x, y, z, ctx) => this._terrainBaseDensityAtCol(x, y, z, ctx);
-            baseGrid = this._voxelSampleDensityGrid(gox, goy, goz, dimX, dimY, dimZ, step, baseSample, colVoxel);
+            baseGrid = this._voxelSampleDensityGrid(
+                gox,
+                goy,
+                goz,
+                dimX,
+                dimY,
+                dimZ,
+                step,
+                baseSample,
+                colVoxel,
+                true,
+                AnazhRealm.KEINE_EDITS
+            );
             this.state.voxelBaseDensityCache.set(cacheKey, baseGrid);
         }
         // Die Edits des Gitter-Kastens (die Karte, `_voxelEditsImKasten`; der Worker fragt denselben Kasten).
         const edits = this._voxelEditsImKasten(gox, gox + dimX * step, goz, goz + dimZ * step);
         if (!edits.length) return baseGrid; // Basis IST das Grid (read-only)
-        // Edit-Delta auf eine Kopie legen. Nur Vertices im Kugel-Radius werden
-        // berührt (Index-Bounding-Box), der Rest bleibt Basis → billig.
-        const out = new Float32Array(baseGrid);
-        for (let e = 0; e < edits.length; e++) {
-            const ed = edits[e];
-            if (!ed) continue;
-            const r = ed.r;
-            const r2 = r * r;
-            const strength = ed.strength || 48;
-            const isFill = ed.mode === "fill";
-            // Grid-Index-Bounding-Box der Kugel (clamp auf [0, N-1]).
-            const i0 = Math.max(0, Math.floor((ed.x - r - gox) / step));
-            const i1 = Math.min(Nx - 1, Math.ceil((ed.x + r - gox) / step));
-            const j0 = Math.max(0, Math.floor((ed.y - r - goy) / step));
-            const j1 = Math.min(Ny - 1, Math.ceil((ed.y + r - goy) / step));
-            const k0 = Math.max(0, Math.floor((ed.z - r - goz) / step));
-            const k1 = Math.min(Nz - 1, Math.ceil((ed.z + r - goz) / step));
-            for (let k = k0; k <= k1; k++) {
-                const wz = goz + k * step;
-                const dz = wz - ed.z;
-                for (let j = j0; j <= j1; j++) {
-                    const wy = goy + j * step;
-                    const dy = wy - ed.y;
-                    for (let i = i0; i <= i1; i++) {
-                        const wx = gox + i * step;
-                        const dx = wx - ed.x;
-                        const dist2 = dx * dx + dy * dy + dz * dz;
-                        if (dist2 < r2) {
-                            const fall = 1 - Math.sqrt(dist2) / r;
-                            const amt = fall * strength;
-                            const idx = i + j * Nx + k * Nx * Ny;
-                            if (isFill) out[idx] += amt;
-                            else out[idx] -= amt;
-                        }
-                    }
-                }
-            }
-        }
-        return out;
+        // Die Edits auf eine Kopie legen, deren Band ihre Reichweite deckt (dort die wahre Basis statt ±1 — die Kappe der Form
+        // braucht sie), je Ecke das Gesetz des Kerns (`bandUmEdits`, `editsImGitter`); der Basis-Cache bleibt edit-frei.
+        const G = globalThis.__gelaendeCore;
+        const basis = new Float32Array(baseGrid);
+        const col = (x, y, z, ctx) => this._terrainBaseDensityAtCol(x, y, z, ctx);
+        const spalte = (x, z) => this._terrainColumnContext(x, z);
+        G.bandUmEdits(basis, gox, goy, goz, Nx, Ny, Nz, step, edits, this.state.terrainBaseHeight || 0, spalte, col);
+        return G.editsImGitter(basis, gox, goy, goz, Nx, Ny, Nz, step, edits);
     }
 
     // DER FLUSS-KANAL an xz: die Gestalt, die das Gelände im Fluss-Korridor annimmt — `{ P, L, k }` oder null. P ist die
@@ -1772,21 +1787,19 @@ class AnazhRealm_gelaende_boden {
     // eigenem Sampler) sampelt jede Ecke. Bis 10.10. schnitt das Boden-Band jedes Feld — die Insel (lokal um 0|0|0) bekam
     // das Band des Bodens am Welt-Ursprung: lag er tiefer als ~−3 m, verlor sie ihre Kuppe, unter ~−20 m (Tiefsee) jede
     // Ecke, und `new THREE.Mesh(null)` riss den Boot ab (1 von 40 frisch geborenen Welten erwachte nie).
-    _voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample, colVoxel, boden = true) {
+    // `reich`: die Edits, deren Reichweite das Band deckt (gelaende-core `bandUmEdits`) — Default die des Kastens; der
+    // Basis-Cache (`_voxelEditedDensityGrid`) bleibt edit-frei, seine Kopie trägt sie.
+    _voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample, colVoxel, boden = true, reich = undefined) {
         const Nx = dimX + 1;
         const Ny = dimY + 1;
         const Nz = dimZ + 1;
         const density = new Float32Array(Nx * Ny * Nz);
-        // BAND-SKIP: pro Spalte (i,k) nur die j-Ebenen um die Oberfläche sample()-n — über `surf + Roughness`
-        // garantiert Luft, unter base−40 (Höhlen-Band endet base−28) garantiert Fels → −1/+1 statt sample(),
-        // bit-identische Geometrie, ~60–70 % weniger Calls; Edits (strength 48) dominieren das ±1.
-        // MUSS bit-identisch im Worker (`computeDensityGrid`).
+        // BAND-SKIP: pro Spalte (i,k) nur die j-Ebenen um die Oberfläche sample()-n — über dem Band garantiert Luft, unter
+        // ihm garantiert Fels → −1/+1 statt sample(), bit-identische Geometrie, ~60–70 % weniger Calls. Das Band ist EIN
+        // Gesetz des Kerns (`bandOben`/`bandUnten`); wo ein Edit seine Fläche hinlegt, deckt es seine Reichweite
+        // (`bandUmEdits`). Der Worker (`computeDensityGrid`) liest dasselbe Gesetz.
+        const G = globalThis.__gelaendeCore;
         const base = this.state.terrainBaseHeight || 0;
-        const ROUGH = 12; // max 3D-Roughness (noise·7 + noise·5)
-        // Der Band-Top-Margin MUSS den Gradient-eps von `_voxelGradientNormals` (1.5 Zellen) decken — ein
-        // Gipfel-Vertex sampelt +eps nach oben, das muss im echt gesampelten Band liegen (sonst kippt die
-        // Gipfel-Normale). eps 1.5 + Puffer → 4 Zellen.
-        const topMargin = 4 * step;
         // Spalten-Hoist: mit `colVoxel` wird `_terrainColumnContext` EINMAL pro Spalte gerechnet und deckt
         // Band-Grenzen (`ctx.surf`) UND per-Voxel-Auswertung (`colVoxel(...,ctx)` == sample, byte-identisch).
         // Ohne `colVoxel` (Edit-/Sonder-Sampler) der direkte Pfad. MUSS bit-identisch im Worker.
@@ -1796,10 +1809,8 @@ class AnazhRealm_gelaende_boden {
                 const wx = ox + i * step;
                 const ctx = colVoxel ? this._terrainColumnContext(wx, wz) : null;
                 const surf = !boden ? 0 : ctx ? ctx.surf : this._terrainMacroSurfaceY(wx, wz);
-                const bandTopJ = boden ? Math.floor((surf + ROUGH + topMargin - oy) / step) + 1 : Ny;
-                // Band-Boden: unter `min(surf, base) − 40` ist garantiert Fels. Er MUSS surf folgen — in einer
-                // Tiefsee-Rinne (~−75 m) füllte ein fixes base−40 die Wassersäule fälschlich als Fels.
-                const bandBotJ = boden ? Math.floor((Math.min(surf, base) - 40 - oy) / step) : -1;
+                const bandTopJ = boden ? G.bandOben(surf, oy, step) : Ny;
+                const bandBotJ = boden ? G.bandUnten(surf, base, oy, step) : -1;
                 const colBase = i + k * Nx * Ny;
                 for (let j = 0; j < Ny; j++) {
                     const idx = colBase + j * Nx;
@@ -1809,6 +1820,21 @@ class AnazhRealm_gelaende_boden {
                 }
             }
         }
+        if (boden)
+            G.bandUmEdits(
+                density,
+                ox,
+                oy,
+                oz,
+                Nx,
+                Ny,
+                Nz,
+                step,
+                reich === undefined ? this._voxelEditsImKasten(ox, ox + dimX * step, oz, oz + dimZ * step) : reich,
+                base,
+                (x, z) => this._terrainColumnContext(x, z),
+                colVoxel || ((x, y, z) => sample(x, y, z))
+            );
         return density;
     }
 

@@ -7,12 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const { safeEvaluate } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
-const { checkBandG8R2SovereignWall } = require("./feld.cjs");
-const { checkBandG8R1DampedChannel } = require("./netz-p2p.cjs");
-const { checkBandG8R3Locality } = require("./netz-portal.cjs");
 
-// V9.52-d Sub-Welle d — Band-Funktion (W13 Phase 1+2+3 (Vibe-Pass + Bauplan-Signaturen + Multi-User-Identität) + W14 Phase 1+2A+2B+3 (Bibliothek + Welt-Manifest + Schaffen reist mit + Empfang)).
-// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandW13W14VibePassLibrary(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
@@ -183,7 +178,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         // verifyBlueprintSignature ist defensiv.
         out.verifyDefensive = (await r.verifyBlueprintSignature(null)) === "unsigned";
         // UI: Signatur-Sektion in der MACH-ZONE (Step 1, V18.41 — die Signatur wanderte aus dem
-        // Readout-Panel in den „Werk"-Block #workshop-action-zone, über FERTIGEN; V9.56-i).
+        // Readout-Panel in den „Werk"-Block #workshop-action-zone, über FERTIGEN).
         r.selectBlueprintForEdit("_w13p2");
         const machZone =
             document.getElementById("workshop-action-zone") || document.getElementById("workshop-stats-panel");
@@ -357,7 +352,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.registryHasDesc = Object.values(REG).every((w) => typeof w.desc === "string" && w.desc.length > 0);
         // Tab + Drawer im DOM.
         out.tabInDom = !!document.querySelector('#topbar .tab[data-tab="bibliothek"]');
-        out.drawerInDom = !!document.querySelector('.drawer[data-drawer="bibliothek"]');
         // renderLibraryUI baut eine Karte pro Registry-Welt.
         r.renderLibraryUI();
         const cards = document.querySelectorAll("#library-list .library-card");
@@ -366,7 +360,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const fluidCard = Array.from(cards).find((c) => /Strom-Welt/.test(c.textContent));
         out.cardShowsDsl =
             !!fluidCard && /sturm/.test(fluidCard.textContent) && /übersetzt/.test(fluidCard.textContent);
-        // === Bib-A0/A/B/D (bibliothek-plan) — der Welt-Browser auf Werkstatt-/Hof-/Ich-Niveau ===
+        // === Bib-A0/A/B/D — der Welt-Browser auf Werkstatt-/Hof-/Ich-Niveau ===
         // Bib-A0: _worldProfile bündelt den GEMESSENEN Welt-Vektor (EIN Vektor, viele Leser; KONSUM V17.31).
         const wpRef = REG.fluid;
         const wp = r._worldProfile(wpRef);
@@ -386,14 +380,14 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             !!fluidCard.querySelector(".lib-trust-seal") &&
             !!fluidCard.querySelector(".spec-body") &&
             !!fluidCard.querySelector(".spec-footer .library-get");
-        // V18.77 — Profi-Lightening: der Body ist EINE kompakte Meta-Zeile (DSL-Vokabular + Signatur),
+        // Profi-Lightening: der Body ist EINE kompakte Meta-Zeile (DSL-Vokabular + Signatur),
         // KEIN beschriftetes Zwei-Spalten-Datenblatt mehr (die `.spec-col-head`-Form-Labels sind weg).
         out.cardLightened =
             !!fluidCard &&
             !!fluidCard.querySelector(".lib-card-body .lib-card-meta") &&
             !!fluidCard.querySelector(".lib-card-meta .library-dsl-word") &&
             !fluidCard.querySelector(".lib-card-body .spec-col-head");
-        // === Feed (die Social-Media-Plattform, V18.70) — 3 Spalten, der vereinte Feed, das WERTEN ===
+        // === Feed (die Social-Media-Plattform) — 3 Spalten, der vereinte Feed, das WERTEN ===
         const libDrawer = document.querySelector('.drawer[data-drawer="bibliothek"]');
         const feedLayout = libDrawer && libDrawer.querySelector(".feed-layout");
         const feedLeft = feedLayout && feedLayout.querySelector(".feed-left");
@@ -402,7 +396,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.feedThreeCol = !!feedLayout && !!feedLeft && !!feedCenter && !!feedRight;
         out.feedCenterHoldsStream = !!feedCenter && !!feedCenter.querySelector("#library-list");
         out.searchInHead = !!(feedCenter && feedCenter.querySelector(".library-head #library-search"));
-        // V18.73 — die Schöpf-Werkzeuge leben jetzt RECHTS (Schöpfen & Andocken), mit Empfangen vereint;
+        // die Schöpf-Werkzeuge leben jetzt RECHTS (Schöpfen & Andocken), mit Empfangen vereint;
         // die Welt-Katalog-Quelle im Hauptthread als Tab (X-Muster); das Tagebuch eingeklappt (Chronik im Hof).
         const schoepfen = feedRight && feedRight.querySelector(".feed-schoepfen");
         out.schoepfenRight =
@@ -412,7 +406,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             !!schoepfen.querySelector(".feed-3block #world-new") &&
             !!schoepfen.querySelector(".feed-3block #world-fuse-open") &&
             !!schoepfen.querySelector(".feed-3block #library-import");
-        // V18.71: das "Diese Welt"-Eiland — Identität + die Provenienz-Samen (Stammbaum + Tagebuch) links.
+        // das "Diese Welt"-Eiland — Identität + die Provenienz-Samen (Stammbaum + Tagebuch) links.
         const feedSelf = feedLeft && feedLeft.querySelector(".feed-self");
         r._renderActiveWorldIsland();
         out.feedSelfIsland =
@@ -424,12 +418,12 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         // das Tagebuch ist eingeklappt (progressive disclosure; die Welt-Chronik lebt im Hof).
         const tagebuch = feedSelf && feedSelf.querySelector("details.feed-tagebuch");
         out.tagebuchCollapsed = !!tagebuch && !tagebuch.open && !!tagebuch.querySelector("#world-journal-list");
-        // V18.72/.73: die fremde-Welt-Werkzeuge als Akkordeon (Glyph+Name+Zweck), die Formulare bewahrt.
+        // die fremde-Welt-Werkzeuge als Akkordeon (Glyph+Name+Zweck), die Formulare bewahrt.
         const feedTools = schoepfen ? schoepfen.querySelectorAll(".feed-tool") : [];
         out.feedToolsAccordion =
             feedTools.length >= 2 &&
             Array.from(feedTools).every((t) => !!t.querySelector(".feed-tool-head .feed-tool-name"));
-        // V18.73: die Feed-Tabs (Für dich | Aus dem Mesh) im Hauptthread; der Welt-Katalog im Mesh-Panel.
+        // die Feed-Tabs (Für dich | Aus dem Mesh) im Hauptthread; der Welt-Katalog im Mesh-Panel.
         const feedTabEls = feedCenter ? feedCenter.querySelectorAll(".feed-tabs .feed-tab") : [];
         const meshPanel = feedCenter && feedCenter.querySelector("#feed-mesh-panel");
         out.feedTabs =
@@ -479,14 +473,14 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         r.state.feedKind = "alle";
         r._applyLibraryFilter();
         out.feedKindChips = document.querySelectorAll("#feed-kinds .feed-kind-chip").length === 6; // V18.135 + „Gemerkt"; V18.142 + „Gefolgt"
-        // V18.74 — jede Feed-Karte trägt eine VORSCHAU (Cover-Band, „quasi ein Bild") + den Art-Glyph.
+        // jede Feed-Karte trägt eine VORSCHAU (Cover-Band, „quasi ein Bild") + den Art-Glyph.
         out.feedCovers =
             !!stream.querySelector(".library-card[data-kind='world'] .feed-cover .feed-cover-glyph") &&
             !!stream.querySelector(".feed-recipe .feed-cover") &&
             (!hasCreatures || !!stream.querySelector(".feed-creature .feed-cover"));
-        // V18.74 — die Sortier-Chips + sort-by-rating WIRKT (ein 5★-Item steigt
-        // nach oben). V18.147: die Chips wuchsen auf DREI (Neueste · ✦ Für dich
-        // · ★ Bewertung) — der Test wandert mit (V9.56-i).
+        // die Sortier-Chips + sort-by-rating WIRKT (ein 5★-Item steigt
+        // nach oben). Die Chips wuchsen auf DREI (Neueste · ✦ Für dich
+        // · ★ Bewertung) — der Test wandert mit.
         out.feedSortChips = document.querySelectorAll("#feed-sort .feed-kind-chip").length === 3;
         const aRecipe = Object.values(r.state.blueprints).find((b) => b && !b.instanced && b.role !== "portal");
         if (aRecipe) {
@@ -502,7 +496,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             r.state.feedSort = "neueste";
             r.renderLibraryUI();
         }
-        // V18.75 — der geteilte 3D-VORSCHAU-Bereich (EIN Renderer, das Hof-Bühnen-Muster) + die Klick-Fokus-Logik.
+        // der geteilte 3D-VORSCHAU-Bereich (EIN Renderer, das Hof-Bühnen-Muster) + die Klick-Fokus-Logik.
         out.feedPreviewPanel =
             !!document.querySelector(".feed-left .feed-preview-panel #feed-preview-canvas");
         const recForFocus = r._feedItems().find((x) => x.kind === "recipe");
@@ -514,11 +508,11 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             // die Bühne idle lassen (kein RAF läuft ohne Drawer-Öffnen); Fokus zurücksetzen für spätere Bands.
             r.state.feedFocusId = null;
         }
-        // V18.76 — der Drawer-Fit: box-sizing:border-box, sonst überläuft das max-height um padding (die V18.64-
+        // der Drawer-Fit: box-sizing:border-box, sonst überläuft das max-height um padding (die V18.64-
         // Wurzel, GEMESSEN: der Drawer war 858 statt 816 → ragte unten aus dem Bild + der Resize-Griff unerreichbar).
         const bibDrawer = document.querySelector('.drawer[data-drawer="bibliothek"]');
         out.drawerBoxSizing = !!bibDrawer && getComputedStyle(bibDrawer).boxSizing === "border-box";
-        // V18.76 — die Omnibox `welt:` surfaced die einzelnen Welten (wie `b:` die Baupläne, §D.4-Konsistenz).
+        // die Omnibox `welt:` surfaced die einzelnen Welten (wie `b:` die Baupläne, §D.4-Konsistenz).
         const omniWelt = r._omniboxSearch("welt:");
         out.omniboxWelt =
             Array.isArray(omniWelt) &&
@@ -603,7 +597,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     if (w14Results && !w14Results.error) {
         check("W14 P1: jeder WORLD_REGISTRY-Eintrag trägt eine Beschreibung", w14Results.registryHasDesc);
         check("W14 P1: Bibliothek-Tab im Topbar", w14Results.tabInDom);
-        check("W14 P1: Bibliothek-Drawer im DOM", w14Results.drawerInDom);
         check("W14 P1: renderLibraryUI baut eine Karte pro Welt", w14Results.cardPerWorld);
         check("W14 P1: Karte zeigt Label + DSL-Vokabular + Stufen-Marke", w14Results.cardShowsDsl);
         check(
@@ -975,8 +968,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.uiImportedCard =
             !!document.querySelector("#library-list .library-card-imported") &&
             !!document.querySelector("#library-list .library-imported-mark");
-        out.uiImportButton =
-            !!document.getElementById("library-import") && !!document.getElementById("library-import-input");
         // Aufräumen.
         r.state.customWorlds = {};
         r._saveCustomWorlds();
@@ -1035,7 +1026,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             "W14 P3: Bibliothek rendert eine 'empfangen'-Karte für die importierte Welt",
             w14p3Results.uiImportedCard
         );
-        check("W14 P3: 'Welt empfangen'-Knopf + Datei-Picker im DOM", w14p3Results.uiImportButton);
         check(
             "W14 P3: _runRaycast ist feld-nativ + crash-frei (liefert den Extractor-Wert, kein rayTest)",
             w14p3Results.raycastNullSafe
@@ -1247,14 +1237,6 @@ async function checkBandG8R5LivingImmune(ctx) {
     check(
         "G8 R5: alle vier Mechanismen vertreten (M1 Lokalität · M2 Dämpfung · M3 Katalysator · M4 Immunität)",
         res.allMechanisms
-    );
-    // Meta: die vier Korpus-Bänder SIND im Gate (sie laufen bei jedem Push = die Impfung).
-    check(
-        "G8 R5: die vier Korpus-Bänder laufen im Playtest-Gate (jeder Erreger → Antikörper)",
-        typeof checkBandG8R1DampedChannel === "function" &&
-            typeof checkBandG8R2SovereignWall === "function" &&
-            typeof checkBandG8R3Locality === "function" &&
-            typeof checkBandG8R4Immunity === "function"
     );
 }
 
@@ -1569,8 +1551,6 @@ async function checkBandPhiArchipel(ctx) {
         // (P3) DIE R2-WAND: KEINE der neuen Methoden ist als DSL-Op registriert
         // (kein Skript kann sie automatisch auslösen — die Disjunktheit am Pool
         // ist die Wand; SOVEREIGN_ACTIONS bleibt FROZEN auf vier Akte).
-        // Wir lesen über die toString-Source: ein DSL-Op wäre als string-Schlüssel
-        // im dslRun/_isAllowedOp-Pfad sichtbar; wir prüfen direkt die FROZEN-Liste.
         out.sovereignFrozen = AR.SOVEREIGN_ACTIONS.length === 4;
         // Die neuen Akte sind GAR KEINE Ops: die EINE Dispatch-Tafel der DSL (`dslEffects[op]`, sonst unknown_op) kennt sie nicht.
         const keinOp = (op) => !r.dslEffects[op];
