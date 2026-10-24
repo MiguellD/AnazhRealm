@@ -425,7 +425,7 @@ async function probe(arg) {
         out.lade = m;
         m.terme = r.constructor.WELTBILD_TERME ? Array.from(r.constructor.WELTBILD_TERME) : null;
         const ls = document.getElementById("ladeschirm");
-        m.nachBootWeg = !ls || ls.hidden || ls.classList.contains("weg");
+        m.nachBootWeg = !r._ladeschirmSteht();
         // die Render-Schleife fragt das Weltbild, solange es nicht steht (Spion am Ruf)
         const daVor = st._weltbildDa;
         st._weltbildDa = 0;

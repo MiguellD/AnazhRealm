@@ -4,7 +4,7 @@
 // Die Seite läuft in ihrem echten Renderer (r184 WebGPU, die Engine der Welt) im Kopflos-Browser; gezählt wird an der Seite selbst.
 //   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
 "use strict";
-const { statikServer, starteBrowser, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, pruefer, halteBis } = require("./lib/welt-boot.cjs");
 const { tempoVerdict, tempoSpion } = require("./lib/fahr-proben.cjs");
 
 const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
@@ -140,30 +140,14 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
     const sf = await schilder();
     m.schilderFahrt = sf.length;
     m.schilderNamen = sf.slice(0, 4).join(", ");
-    // G3: Gas geben, dann Anzeige gegen das echte Tempo desselben Frames.
-    await page.keyboard.down("KeyW");
-    // bis der Wagen fährt (> 3 m/s) — nie eine feste Uhr: auf dem CPU-Raster der CI kommen in 1,8 s nur wenige Frames
-    // (gemessen 1,1 m/s), der Tacho ist aber eine Frage der Umrechnung, nicht der Bildrate
-    await page
+    // G3: Gas, bis der Wagen fährt (> 3 m/s, nie nach der Uhr) — Anzeige gegen das echte Tempo im selben Augenblick
+    const g3 = await halteBis(page, {
+        taste: "KeyW",
+        frist: 90000,
         // eslint-disable-next-line no-undef
-        .waitForFunction(() => Math.abs(car.speed) > 3, { timeout: 90000, polling: 100 })
-        .catch(() => {});
-    Object.assign(
-        m,
-        await page.evaluate(
-            () =>
-                new Promise((res) =>
-                    requestAnimationFrame(() =>
-                        res({
-                            tachoAnzeige: parseInt(document.querySelector("#hud #spd").textContent, 10),
-                            // eslint-disable-next-line no-undef
-                            tachoV: Math.abs(car.speed),
-                        })
-                    )
-                )
-        )
-    );
-    await page.keyboard.up("KeyW");
+        ziel: () => Math.abs(car.speed) > 3 && [+document.querySelector("#hud #spd").textContent, Math.abs(car.speed)],
+    });
+    [m.tachoAnzeige, m.tachoV] = g3.wert || [];
     m.tempo = await page.evaluate(() => (window.__m7.ende(), Object.assign(window.__m7, { fov: undefined })));
     await page.keyboard.press("Escape");
     await new Promise((r) => setTimeout(r, 200));
