@@ -2383,8 +2383,16 @@ function luftTiefeUrteil(m, R) {
     gemessen.forEach((n, i) => {
         if (n < M.azimute) liste.push(`K1-1 KOSCHMIEDER Uhr 0.5 ${R.baenderM[i] / 1000} km: in ${n} von 4 Azimuten gemessen (< ${M.azimute})`);
     });
-    // die Sonnenseite: Y der In-Streuung zur Sonne / gegen sie je Uhr; das ferne Weiß bei Sonne 5°
+    // der Himmel am Horizont (die In-Streuung, linear) zu Mittag gegen den Ton der Referenz; die Sonnenseite: Y der In-Streuung
+    // zur Sonne / gegen sie je Uhr; das ferne Weiß bei Sonne 5°
     const Y = (c) => c && 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    for (const z of m.zeilen.filter((x) => x.uhr === 0.5)) {
+        const [r, g, b] = z.himmel || [0, 0, 0];
+        const d = Math.max(r, g, b) - Math.min(r, g, b);
+        const h = d > 0 && b >= Math.max(r, g) ? +(60 * ((r - g) / d + 4)).toFixed(1) : null;
+        if (!(Math.abs(h - R.himmel.ton) <= B.himmelTon))
+            liste.push(`K1-2 HIMMEL Azimut ${z.az}°: Ton der In-Streuung ${h == null ? "nicht blau " + z.himmel : h + "°"} statt ${R.himmel.ton}° ±${B.himmelTon}`);
+    }
     for (const u of R.uhren) {
         const h = [0, 180].map((az) => Y((m.zeilen.find((x) => x.uhr === u && x.az === az) || {}).himmel));
         const s = h[1] > 0 ? +(h[0] / h[1]).toFixed(3) : null;
@@ -2406,7 +2414,7 @@ function luftTiefeUrteil(m, R) {
 
 function luftTiefeSelbsttest(R) {
     const ref = R.rayleigh.map((x) => -Math.log(R.kontrast) / R.sichtKlarM - R.rayleigh[1] + x);
-    const sichten = (dk, C, n = 50, linie = 0, seite = 1.3) =>
+    const sichten = (dk, C, n = 50, linie = 0, seite = 1.3, himmel = [0.7, 0.79, 1]) =>
         R.uhren.flatMap((uhr) =>
             [0, 90, 180, 270].map((az) => ({
                 uhr,
@@ -2414,7 +2422,7 @@ function luftTiefeSelbsttest(R) {
                 az,
                 rand: { km: 20, C },
                 kante: { spalten: n, rand: n, linie, stufe: 0.01 },
-                himmel: n ? [1, 1, 1].map((x) => (az ? x : seite)) : null,
+                himmel: n ? himmel.map((x) => (az ? x : seite * x)) : null,
                 baender: R.baenderM.map((d) => ({ d, n, q: [1, 1, 1], dk, nk: n, dh: 5 })),
             }))
         );
@@ -2434,6 +2442,7 @@ function luftTiefeSelbsttest(R) {
         urteil(sichten(k, 0.005, 50, R.band.linie)).staffel["K2-2"] === "ROT" || "eine Linie an der Schwelle ist nicht ROT",
         urteil(sichten(k, 0.005), []).staffel["K2-2"] === "ROT" || "ein fehlender Gipfel ist nicht ROT",
         urteil(sichten(k, 0.005, 50, 0, 1.15)).befunde.some((b) => /SONNENSEITE/.test(b)) || "die Sonnenseite 1,15 ist nicht ROT",
+        urteil(sichten(k, 0.005, 50, 0, 1.3, [0.39, 0.45, 0.39])).befunde.some((b) => /HIMMEL/.test(b)) || "ein grüner Horizont ist nicht ROT",
         urteil(sichten(k, 0.005), undefined, null).befunde.some((b) => /FERNES WEISS/.test(b)) || "ein ungemessenes fernes Weiß ist nicht ROT",
         (bild(0.05) >= 400 && bild(0.01) === 0 && bild(0.05, true) <= 8) || `Linie bei Stufe 5 % ${bild(0.05)} px, 1 % ${bild(0.01)}, Zacken ${bild(0.05, true)}`,
         (leer["K1-1"] === "ROT" && leer["K1-2"] === "ROT" && leer["K2-1"] === "ROT" && leer["K2-2"] === "ROT") || "eine leere Messung ist nicht ROT",
