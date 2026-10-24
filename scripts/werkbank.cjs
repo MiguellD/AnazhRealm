@@ -1570,7 +1570,7 @@ async function starte() {
                             const wd = r._windDirAt(T0),
                                 WB = r.constructor.WIND_BOE;
                             const sB = Array.from({ length: B }, (_, b) => zeitBl[b * 3 + 1] * wd.x + zeitBl[b * 3 + 2] * wd.z);
-                            const s0 = Math.min(...sB);
+                            const s0 = sB.reduce((a, s) => Math.min(a, s), Infinity);
                             const streifen = new Map();
                             sB.forEach((s, b) => {
                                 const j = Math.floor((s - s0) / 1.5);
