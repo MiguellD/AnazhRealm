@@ -1598,7 +1598,7 @@ async function gebaut(page, fehler) {
                 out.push({
                     seed: saat,
                     hydro: !!(h && h.ready),
-                    fluesse: h && h.rivers ? h.rivers.length : 0,
+                    fluesse: h ? h.fluesse : 0,
                     maeander: maeanderWasser(h),
                     maeanderGerade: selbst ? geradeMessung(h) : null,
                     voll: kurz(G.statistik(voll, n, S, wl, [], 0)),
@@ -1684,22 +1684,22 @@ async function gebaut(page, fehler) {
 // K4: eine Hydrosphäre (Heimat, Kachel), die nicht als Faden-Nachricht kam, und ein Bau im Haupt-Faden (Chunk-Stoff
 //     `_buildVoxelChunkData`, Guss aus `BAKERS_BY_KIND`) außerhalb von `FADEN_SYNC` ist ROT beim Namen des Rufers.
 // K5: `fadenHuelle` vor dem Quelltext jedes Fadens heftet jeder Nachricht ihre Klon-Bytes an (Transfer zählt nicht);
-//     der Main summiert sie je Faden und Art in beiden Richtungen, dazu jede Kopie empfangener Bytes und die Platte —
-//     je Minute im Kalt-Boot und in einer Minute Fahrt, Soll ≤ 5 MB/min in der Fahrt.
-//   --faden [--selftest]   ein injizierter Hydro-Bau, Chunk-Bau und Klon (3 MB in einer Nachricht, 3 MB in 300
-//                          Krumen, eine Kopie) fallen ROT beim Namen.
+//     der Main summiert sie am Empfang je Faden und Art in beiden Richtungen, dazu jede Kopie empfangener Bytes (jeder
+//     Tiefe, `da`: auch ihr Klon) und die Platte — je Minute im Kalt-Boot und in einer Minute Fahrt, Soll ≤ 5 MB/min.
+//   --faden [--selftest]   ein injizierter Hydro-Bau, Chunk-Bau und Klon (3 MB tief in einer Nachricht, 3 MB in 300
+//                          Krumen, zwei Kopien) fallen ROT beim Namen.
 const FADEN_SYNC = ["_syncRebuildEditFootprint", "spawnArchitecture", "_drainDirtyVoxelChunks", "init", "_bootDeferCreatures"];
 const FADEN_SOLL = 5e6; // Bytes je Minute
-function klonBytes(v, frei, seen) {
-    if (v === null || typeof v !== "object") return typeof v === "string" ? v.length : 8;
+function klonBytes(v, frei, seen, da) {
+    if (v === null || typeof v !== "object") return da ? 0 : typeof v === "string" ? v.length : 8;
     if (seen.has(v)) return 0;
     seen.add(v);
-    if (v instanceof ArrayBuffer) return frei.has(v) ? 0 : v.byteLength;
-    if (ArrayBuffer.isView(v))
-        return frei.has(v.buffer) || seen.has(v.buffer) ? 0 : (seen.add(v.buffer), v.buffer.byteLength);
-    let b = 8;
-    if (v instanceof Map || v instanceof Set) for (const e of v) b += klonBytes(e, frei, seen);
-    else for (const k in v) b += k.length + klonBytes(v[k], frei, seen);
+    const puffer = (p) => (frei.has(p) || (da && !da(p)) ? 0 : p.byteLength);
+    if (v instanceof ArrayBuffer) return puffer(v);
+    if (ArrayBuffer.isView(v)) return seen.has(v.buffer) ? 0 : (seen.add(v.buffer), puffer(v.buffer));
+    let b = da ? 0 : 8;
+    if (v instanceof Map || v instanceof Set) for (const e of v) b += klonBytes(e, frei, seen, da);
+    else for (const k in v) b += (da ? 0 : k.length) + klonBytes(v[k], frei, seen, da);
     return b;
 }
 // läuft VOR dem Quelltext jedes Fadens: jede ausgehende Nachricht trägt ihre Klon-Bytes (`__klon`)
@@ -1713,7 +1713,7 @@ function fadenHuelle(klonBytes) {
 }
 function fadenSeite(bytesQ, huelleQ, sync) {
     const klonBytes = new Function("return " + bytesQ)();
-    const F = (window.__faden = { fenster: "boot", t: {}, hydro: { faden: 0, rot: [] }, bau: { sync: 0, rot: [] } });
+    const F = (window.__faden = { fenster: "boot", t: {}, faeden: [], hydro: { faden: 0, rot: [] }, bau: { sync: 0, rot: [] } });
     Error.stackTraceLimit = 40; // die Kette bis zur Sync-Stelle (V8 hält sonst 10 Rahmen)
     const von = new WeakSet();
     const bytes = new WeakSet();
@@ -1729,12 +1729,13 @@ function fadenSeite(bytesQ, huelleQ, sync) {
         const fremd = (l) => /^[\w$]+$/.test(n(l)) && !/^(rufer|pruefe|set|zaehle|fadenBau|fadenGuss|kopie|construct|zu)$/.test(n(l));
         return n(st || z.find(fremd) || "?");
     };
-    const merke = (v, t) => {
-        if (!v || typeof v !== "object" || t > 3) return;
+    const merke = (v, seen) => {
+        if (!v || typeof v !== "object" || seen.has(v)) return;
+        seen.add(v);
         if (v instanceof ArrayBuffer) return bytes.add(v);
         if (ArrayBuffer.isView(v)) return bytes.add(v.buffer);
         von.add(v);
-        for (const k in v) merke(v[k], t + 1);
+        for (const k in v) merke(v[k], seen);
     };
     // der Quelltext jedes Blobs aus Text (der Boot der Foundry und des Klangs), gemerkt an seiner URL
     const blobText = new WeakMap();
@@ -1753,22 +1754,14 @@ function fadenSeite(bytesQ, huelleQ, sync) {
         return u;
     };
     const Roh = window.Worker;
-    let voxel = 0;
     const W = function (url, opts) {
-        let innen, name;
-        if (urlText.has(String(url))) {
-            innen = urlText.get(String(url));
-            name =
-                (opts && opts.name) ||
-                (/klang/.test(innen) ? "klang" : /_foundry|manifest/.test(innen) ? "werk" : "blob");
-        } else {
-            const u = new URL(url, location.href);
-            innen = `self.__anazhBase=${JSON.stringify(new URL(".", u).href)};importScripts(${JSON.stringify(u.href)});`;
-            name = /voxel-worker/.test(u.pathname) ? (voxel++ ? "voxel-neben" : "voxel") : u.pathname;
-        }
+        const u = new URL(url, location.href);
+        const innen =
+            urlText.get(String(url)) ||
+            `self.__anazhBase=${JSON.stringify(new URL(".", u).href)};importScripts(${JSON.stringify(u.href)});`;
         const quelle = `(${huelleQ})(${bytesQ});\n${innen}`;
         const w = new Roh(URL.createObjectURL(new Blob([quelle], { type: "text/javascript" })), opts);
-        w.__faden = name;
+        F.faeden.push((w.__faden = (opts && opts.name) || "?"));
         return w;
     };
     W.prototype = Roh.prototype;
@@ -1777,7 +1770,7 @@ function fadenSeite(bytesQ, huelleQ, sync) {
         const d = e.data;
         const b = d && typeof d.__klon === "number" ? d.__klon : klonBytes(d, new Set(), new Set());
         zu("empfang", `${this.__faden}:${(d && d.type) || "?"}`, b);
-        merke(d, 0);
+        merke(d, new Set());
     };
     const om = Object.getOwnPropertyDescriptor(Roh.prototype, "onmessage");
     Object.defineProperty(Roh.prototype, "onmessage", {
@@ -1798,7 +1791,9 @@ function fadenSeite(bytesQ, huelleQ, sync) {
     const post = Roh.prototype.postMessage;
     Roh.prototype.postMessage = function (m, tr) {
         const frei = new Set(Array.isArray(tr) ? tr : (tr && tr.transfer) || []);
-        zu("gesendet", `${this.__faden}:${(m && m.type) || "?"}`, klonBytes(m, frei, new Set()));
+        const k = klonBytes(m, frei, new Set(), (p) => bytes.has(p));
+        if (k) kopie(k);
+        zu("gesendet", `${this.__faden}:${(m && m.type) || "?"}`, klonBytes(m, frei, new Set()) - k);
         return post.call(this, m, tr);
     };
     // DIE PLATTE wie im Spiel: Put und Get klonen ihren Wert im Haupt-Faden — es zählt, wo der Wert Bytes trägt
@@ -1826,8 +1821,9 @@ function fadenSeite(bytesQ, huelleQ, sync) {
     // die Kopien empfangener Bytes: ein NEUES Array aus ihnen (set in einen bestehenden Puffer ist Verbrauch)
     const kopie = (b) => zu("kopie", rufer(), b);
     const da = (x) => !!x && (bytes.has(x) || (ArrayBuffer.isView(x) && bytes.has(x.buffer)));
-    const TA = Object.getPrototypeOf(Int8Array).prototype;
-    const [sl, abs, af] = [TA.slice, ArrayBuffer.prototype.slice, Array.from];
+    const TAK = Object.getPrototypeOf(Int8Array);
+    const TA = TAK.prototype;
+    const [sl, abs] = [TA.slice, ArrayBuffer.prototype.slice];
     TA.slice = function (...a) {
         const r = sl.apply(this, a);
         if (da(this)) kopie(r.byteLength);
@@ -1838,10 +1834,13 @@ function fadenSeite(bytesQ, huelleQ, sync) {
         if (da(this)) kopie(r.byteLength);
         return r;
     };
-    Array.from = function (q, ...a) {
-        if (da(q)) kopie(q.byteLength);
-        return af.call(this, q, ...a);
-    };
+    for (const K of [Array, TAK]) {
+        const f = K.from;
+        K.from = function (q, ...a) {
+            if (da(q)) kopie(q.byteLength);
+            return f.call(this, q, ...a);
+        };
+    }
     for (const n of [
         "Int8Array",
         "Uint8Array",
@@ -1978,7 +1977,7 @@ async function faden(page, fehler, url) {
             const w = new Worker(
                 URL.createObjectURL(
                     new Blob([
-                        "self.postMessage({ type: 'klon', ta: new Float32Array(750000) });",
+                        "self.postMessage({ type: 'klon', a: { b: { c: new Float32Array(750000) } } });",
                         "for (let i = 0; i < 300; i++) self.postMessage({ type: 'krume', b: new Uint8Array(10000) });",
                     ])
                 ),
@@ -1987,7 +1986,7 @@ async function faden(page, fehler, url) {
             await new Promise((ok) => {
                 let n = 0;
                 w.onmessage = (e) => {
-                    if (e.data.type === "klon") new Float32Array(e.data.ta); // die Kopie nach dem Empfang
+                    if (e.data.type === "klon") w.postMessage(Float32Array.from(e.data.a.b.c) && e.data.a);
                     if (++n === 301) ok();
                 };
             });
@@ -2016,10 +2015,11 @@ async function faden(page, fehler, url) {
                 .map(([k, b]) => `${k} ${mb(b)} MB`)
                 .join(" · ");
         console.log(
-            `  ${w.padEnd(6)} ${(dauer[w] / 1000).toFixed(1)} s · ${mb(proMin[w])} MB/min: ${teile.map(([n, o]) => `${n} ${mb(summe(o))} MB`).join(" · ")}`
+            `  ${w.padEnd(6)} ${(dauer[w] / 1000).toFixed(1)} s · ${mb(proMin[w])} MB/min am Empfang: ${teile.map(([n, o]) => `${n} ${mb(summe(o))} MB`).join(" · ")}`
         );
         for (const [n, o] of teile) if (summe(o)) console.log(`         ${n}: ${top(o)}`);
     }
+    console.log(`  Fäden: ${F.faeden.join(" · ")}`);
     console.log(
         `  Hydrosphären: ${F.hydro.faden} aus dem Faden · ${F.hydro.rot.length} im Haupt-Faden${F.hydro.rot.length ? " — " + F.hydro.rot.join(" | ") : ""}`
     );
@@ -2030,7 +2030,8 @@ async function faden(page, fehler, url) {
     const blind =
         F.blind ||
         (!F.haken && "die Haken sitzen nicht") ||
-        (!F.hydro.faden && !F.hydro.rot.length && "keine Hydrosphäre gesehen");
+        (!F.hydro.faden && !F.hydro.rot.length && "keine Hydrosphäre gesehen") ||
+        (!summe((F.t.fahrt || {}).empfang) && "kein Empfang in der Fahrt");
     let rot = !!blind || k4.length > 0 || proMin.fahrt > FADEN_SOLL || !!fehler();
     if (blind) console.log(`  ⛔ BLIND: ${blind}`);
     if (k4.length) console.log(`  ⛔ K4: ${k4.length} synchrone Bauten im Haupt-Faden, obwohl ein Faden zuständig ist`);
@@ -2045,7 +2046,7 @@ async function faden(page, fehler, url) {
             nennt(F.bau.rot, "injizierterChunkBau") &&
             klon >= 5.9e6 &&
             (S.empfang["selbsttest:krume"] || 0) >= 2.9e6 &&
-            summe(S.kopie) >= 2.9e6 &&
+            summe(S.kopie) >= 5.9e6 &&
             proMin.selbst > FADEN_SOLL;
         console.log(
             `  SELBSTTEST: injizierter Hydro-Bau, Chunk-Bau und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`

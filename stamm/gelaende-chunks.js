@@ -14,7 +14,7 @@ class AnazhRealm_gelaende_chunks {
             // → Blob-URL → dieselbe Methode re-entrant; bis dahin trägt der Sync-Fallback.
             let worker;
             try {
-                worker = new Worker(srcUrl || `voxel-worker.js?v=${AnazhRealm.VERSION}`);
+                worker = new Worker(srcUrl || `voxel-worker.js?v=${AnazhRealm.VERSION}`, { name: "voxel" });
                 this._voxelFadenQuelle = srcUrl || `voxel-worker.js?v=${AnazhRealm.VERSION}`; // der Wald-Faden lädt dieselbe
             } catch (_workerErr) {
                 // Der Sandbox-Weg ist EIN Versuch (K22): scheitert der Faden über die Blob-URL oder ein zweites Mal, bricht
@@ -24,7 +24,8 @@ class AnazhRealm_gelaende_chunks {
                 this._voxelFadenBlobWeg();
                 return null;
             }
-            this.state.voxelWorkerPending = new Map();
+            // die EINE Tafel der Rückfragen: ein nachgeborener Faden behält sie, die Antworten des alten (eine Kachel im Flug) kommen an
+            if (!this.state.voxelWorkerPending) this.state.voxelWorkerPending = new Map();
             worker.onmessage = (e) => {
                 const msg = e.data;
                 if (!msg || !msg.type) return;
@@ -87,7 +88,7 @@ class AnazhRealm_gelaende_chunks {
                     if (pending) {
                         this.state.voxelWorkerPending.delete(msg.requestId);
                         if (msg.fehlt) {
-                            pending.resolve({ fehlt: true }); // ein Verweis traf keine Zellen des Fadens (`_workerBuildWaterSheet`)
+                            pending.resolve({ fehlt: msg.fehlt }); // Verweise ohne Zellen im Faden (`_workerBuildWaterSheet`)
                         } else if (msg.empty) {
                             pending.resolve({ empty: true });
                         } else {
@@ -114,10 +115,18 @@ class AnazhRealm_gelaende_chunks {
                         });
                     }
                 } else if (msg.type === "hydro-result" && msg.requestId) {
-                    // die Region aus dem Faden (Karte hydro-faden): ihre Felder per Transfer, der Empfang ist `_hydroAn`
+                    // die Region aus dem Faden (Karte hydro-faden): jedes Feld per Transfer (`hydroAntwort`), der Empfang ist
+                    // `_hydroAn`. Flüsse und Seen liest im Spiel niemand: sie kommen als Bytes, ihr erster Leser (Linse, Tor)
+                    // entpackt sie einmal (streaming.K5: bis dahin klonten sie 0,7 MB je Minute Fahrt in den Haupt-Faden)
                     const pending = this.state.voxelWorkerPending.get(msg.requestId);
                     if (pending) {
                         this.state.voxelWorkerPending.delete(msg.requestId);
+                        const r = msg.region;
+                        let d = null;
+                        for (const k of ["rivers", "lakes"])
+                            Object.defineProperty(r, k, {
+                                get: () => (d = d || JSON.parse(new TextDecoder().decode(r.daten)))[k],
+                            });
                         pending.resolve(msg);
                     }
                 } else if (msg.type === "ack" && msg.requestId) {
@@ -142,10 +151,15 @@ class AnazhRealm_gelaende_chunks {
                 this.state.voxelWorkerReady = false;
             };
             this.state.voxelWorker = worker;
-            // DIE EINE ZUSAGE (B-K2): der init der Geburt trägt den Stand (Seed, Atlas, voxelEdits); jeder Auftrag wartet auf
+            // DIE EINE ZUSAGE (B-K2): der init der Geburt trägt den Stand (Seed, Gesetz, voxelEdits); jeder Auftrag wartet auf
             // sie (`_voxelFadenAuftrag`), nie auf einen neuen init. Kommt der Faden erst nach der Weltgen (der Blob-Weg),
             // trägt dieser init schon die Welt: der Strom darf ihn fragen.
             worker.zusage = this._voxelWorkerSyncState({ op: "init" });
+            // DIE REGIONEN DIESER WELT (streaming.K5): der Stand trägt keine — ein Faden, der nach ihrer Bestellung geboren wird,
+            // rechnet jede selbst direkt hinter seinem init (ohne Rückfrage: der Main hält sie). Bis dahin baute ein
+            // nachgeborener Voxel-Faden jeden Chunk ohne Fluss und See (werk-im-wasser: 0 Häuser an 8 Uferorten, das Bild trocken)
+            for (const [key, e] of this._hydroBestellt || [])
+                if (e.gepostet) worker.postMessage({ type: "hydro", key, origin: e.origin });
             // die Bestellungen der Weltgen, die auf den Faden warteten (der Blob-Weg), reisen hinter seinem init
             if (this._voxelWeltWartet) for (const post of this._hydroWarte || []) post();
             this._hydroWarte = null;
@@ -179,8 +193,7 @@ class AnazhRealm_gelaende_chunks {
             .catch((e2) => this._stoffBruch("der Voxel-Faden startet nicht (Blob-Weg)", e2));
     }
 
-    // Voller State-Snapshot für den Worker (Seed, Hydrosphäre-Atlas, voxelEdits, …).
-    // Structured Clone statt Transfer: der Main-Thread muss die Atlas-Daten BEHALTEN.
+    // Voller State-Snapshot für den Worker (Seed, Gesetz, voxelEdits, …) — reine Daten des Mains, nie empfangene Bytes.
     _voxelWorkerSnapshotState() {
         const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         const snap = {
@@ -211,7 +224,8 @@ class AnazhRealm_gelaende_chunks {
             felsStoff: { basis: AnazhRealm.FELS_STOFF.basis, netz: AnazhRealm.FELS_STOFF.netz },
             // DIE PLATTE DES BODENS (Karte hydro-faden): der Faden führt den Warm-Start — ob er gilt, sein Stempel, sein Deckel
             platte: this._chunkPlatte(),
-            // DIE KONSTANTEN DER FERNE reisen mit (B2): der Fern-Faden färbt den Horizont mit DENSELBEN Zahlen (`fernAuftrag`)
+            // DIE KONSTANTEN DER FERNE reisen mit (B2): der Fern-Faden färbt den Horizont mit DENSELBEN Zahlen (`fernAuftrag`), der
+            // Wald-Faden pflanzt nach DEMSELBEN Wald-Gesetz (`waldCtx`; bis zur Karte streaming-k5 reiste es mit jedem Auftrag)
             fern: {
                 forest: AnazhRealm.FOREST,
                 kronenSchatten: AnazhRealm.FERN_FARBE.kronenSchatten,
@@ -220,58 +234,18 @@ class AnazhRealm_gelaende_chunks {
                 memo: AnazhRealm.FERN_FARBE.memo,
             },
         };
-        const h = this.state.hydrosphere;
-        if (h && h.ready) {
-            snap.hydrosphere = {
-                ready: true,
-                originX: h.originX,
-                originZ: h.originZ,
-                cell: h.cell,
-                dim: h.dim,
-                bucketSize: h.bucketSize,
-                bucketsDim: h.bucketsDim,
-                // riverBuckets ist ein Array of Arrays of segment-Objekten —
-                // strukturierte Klon-Kompatibel ohne weitere Transformation.
-                riverBuckets: h.riverBuckets,
-                lakeBedCell: h.lakeBedCell,
-                lakeW: h.lakeW,
-                lakeNear: h.lakeNear,
-                // h.water trägt waterY/waterKind für den `_waterLevelAt`-Spiegel im Worker (Cell-Klassifikation,
-                // Strand-Tint) — ohne sie kennt der Worker nur state.waterLevel, keine Bergsee-Spiegel.
-                water: h.water || null,
-            };
-        } else {
-            snap.hydrosphere = null;
-        }
+        // DIE REGIONEN reisen nie im Stand: jeder Faden rechnet sie selbst an derselben Stelle seiner Reihe (`_hydroBestellen`),
+        // ein später geborener Voxel-Faden hinter seinem init (`_getVoxelWorker`), ein später geborener Neben-Faden bekommt sie
+        // vom Voxel-Faden (`_nebenFaden`, per Transfer). Der Stand trägt nur die
+        // Welt der Regionen (`hydroWelt`): eine neue räumt sie im Faden. Bis zur Karte streaming-k5 klonte der Haupt-Faden hier
+        // Heimat und Kacheln (0,23 MB je Kalt-Boot).
+        snap.hydroWelt = this._hydroWelt | 0;
         // V9.91 (Phase 3) — hydroBand für Cell-Klassifikations-Skip (Cells
         // außerhalb [bottom..top] sind garantiert AIR; spart 30-40% Cells-
         // Iterationen).
         snap.hydroBand = this.state.hydroBand
             ? { top: this.state.hydroBand.top, bottom: this.state.hydroBand.bottom }
             : null;
-        // Die fernen Kacheln reisen mit (plain Object {key: tile}, gelesen in hydroFor) — sonst
-        // baut der Worker ferne Chunks gegen die OOB-Wahrheit = Determinismus-Bruch main↔worker.
-        snap.hydroTiles = null;
-        if (this.state.hydroTiles && this.state.hydroTiles.size) {
-            snap.hydroTiles = {};
-            for (const [key, t] of this.state.hydroTiles) {
-                if (!t || !t.ready) continue;
-                snap.hydroTiles[key] = {
-                    ready: true,
-                    originX: t.originX,
-                    originZ: t.originZ,
-                    cell: t.cell,
-                    dim: t.dim,
-                    bucketSize: t.bucketSize,
-                    bucketsDim: t.bucketsDim,
-                    riverBuckets: t.riverBuckets,
-                    lakeBedCell: t.lakeBedCell,
-                    lakeW: t.lakeW,
-                    lakeNear: t.lakeNear,
-                    water: t.water || null,
-                };
-            }
-        }
         return snap;
     }
 
@@ -381,7 +355,7 @@ class AnazhRealm_gelaende_chunks {
         if (f) return f;
         // der Voxel-Faden zuerst (er trägt die Quelle; lazy wie jeder Chunk-Auftrag) — steht er noch nicht (Blob-Weg), wartet der Rufer
         if (!this._getVoxelWorker() || !this._voxelFadenQuelle) return null;
-        const worker = new Worker(this._voxelFadenQuelle);
+        const worker = new Worker(this._voxelFadenQuelle, { name });
         f = { worker, pending: new Map(), next: 1 };
         const NAME = name.toUpperCase();
         const Name = name[0].toUpperCase() + name.slice(1);
@@ -396,8 +370,14 @@ class AnazhRealm_gelaende_chunks {
             else p.resolve(msg);
         };
         worker.onerror = (err) => this._bruchMelden(`${NAME}: der ${Name}-Faden brach — ` + (err && err.message));
-        // der EINE volle Stand bei der Geburt; jede spätere Änderung bringt der Sender des Zustands (`_voxelZustandPost`)
-        worker.postMessage({ type: "state-set", snapshot: this._voxelWorkerSnapshotState() });
+        // der EINE volle Stand bei der Geburt, die Regionen dahinter vom Voxel-Faden über einen Port (`hydro-an`: jede, die er
+        // trägt, per Transfer — der Haupt-Faden klont nie eine); jede spätere Änderung bringt der Sender des Zustands
+        // (`_voxelZustandPost`), auch jede Bestellung ab jetzt
+        const port = new MessageChannel();
+        this.state.voxelWorker.postMessage({ type: "hydro-an", port: port.port1 }, [port.port1]);
+        worker.postMessage({ type: "state-set", snapshot: this._voxelWorkerSnapshotState(), hydroVon: port.port2 }, [
+            port.port2,
+        ]);
         alle.set(name, f);
         return f;
     }
@@ -439,7 +419,8 @@ class AnazhRealm_gelaende_chunks {
         const entry = this.state.voxelChunks ? this.state.voxelChunks.get(`${cx},${cz}`) : null;
         if (!entry || !entry.waterCells) return Promise.resolve({ empty: true });
         // je Chunk des 3×3 ein Verweis auf die Zellen des Fadens (`zellenId`: er baute sie, der Main trägt sie samt der Liste
-        // seines Stempels, `zellenFest`) — sonst die eigenen Zellen des Mains (`ganz`, und wenn ein Verweis den Faden verfehlt)
+        // seines Stempels, `zellenFest`) — sonst die eigenen Zellen des Mains (ohne Verweis, und je Verweis, der den Faden
+        // verfehlte: `ganz`, die Plätze der Antwort)
         const zellen = (ganz) => {
             const cells = new Array(9).fill(null);
             for (let dz = -1; dz <= 1; dz++)
@@ -447,7 +428,9 @@ class AnazhRealm_gelaende_chunks {
                     const e = dx === 0 && dz === 0 ? entry : this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
                     if (e && e.waterCells)
                         cells[(dz + 1) * 3 + (dx + 1)] =
-                            !ganz && e.zellenId ? { zid: e.zellenId, fest: e.zellenFest } : e.waterCells;
+                            e.zellenId && !(ganz && ganz.includes((dz + 1) * 3 + (dx + 1)))
+                                ? { zid: e.zellenId, fest: e.zellenFest }
+                                : e.waterCells;
                 }
             return cells;
         };
@@ -456,9 +439,13 @@ class AnazhRealm_gelaende_chunks {
                 ? Math.round(this.state.atmosphere.waterSheetSmooth)
                 : 4;
         const smoothPasses = Math.max(0, Math.min(6, smoothRaw));
+        // die Plätze, die den Faden verfehlten, wachsen, bis keiner mehr fehlt (höchstens neun Runden): fiel ein Verweis zwischen
+        // zwei Runden (der Deckel des Fadens, `zellen-frei` beim Neubau), kam `{ fehlt }` als Blatt an — ein leeres Netz
         const auftrag = (ganz) =>
-            this._voxelFadenAuftrag(worker, { type: "water-sheet", cx, cz, smoothPasses, cells: zellen(ganz) });
-        return auftrag(false).then((r) => (r && r.fehlt ? auftrag(true) : r));
+            this._voxelFadenAuftrag(worker, { type: "water-sheet", cx, cz, smoothPasses, cells: zellen(ganz) }).then(
+                (r) => (r && r.fehlt ? auftrag((ganz || []).concat(r.fehlt)) : r)
+            );
+        return auftrag(null);
     }
 
     // Off-thread (statischer Flood-Sheet) nur, wenn Chunk + 8 Nachbarn nicht in `waterCAActive` sind und

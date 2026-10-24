@@ -3882,7 +3882,7 @@
             rivers,
             lakes,
             waterfalls,
-            riverBuckets: carve.riverBuckets,
+            kanal: carve.kanal,
             bucketSize: carve.bucketSize,
             bucketsDim: carve.bucketsDim,
             lakeBedCell: carve.lakeBedCell,
@@ -4581,16 +4581,19 @@
         return waterfalls;
     }
 
-    // Carve-Index für `_hydrosphereCarveAt` + `_hydrosphereLakeAt`: (1) Fluss-Bucket-Grid (jedes Segment
-    // in alle Buckets seiner um die Kanal-Reichweite erweiterten BBox; eine Abfrage liest einen Bucket),
-    // (2) See-Raster `lakeBedCell`, `lakeW`, `lakeNear` (Early-Out). Pure Daten — kein
-    // `_terrainDensityAt`, kein Zirkel.
+    // Carve-Index für `_hydrosphereCarveAt` + `_hydrosphereLakeAt`: (1) DER KANAL `kanal` — jedes Segment in alle Buckets
+    // seiner um die Kanal-Reichweite erweiterten BBox (eine Abfrage liest einen Bucket), gepackt: `seg` je Segment
+    // KANAL_FELDER Zahlen (ax az bx bz · hwA hwB · dA dB · sA sB), die Nummern des Buckets k in `idx[ab[k] .. ab[k + 1]]`
+    // in der Reihe des Einsortierens — er reist per Transfer, kein Leser klont ihn (Lehre 24); (2) See-Raster
+    // `lakeBedCell`, `lakeW`, `lakeNear` (Early-Out). Pure Daten — kein `_terrainDensityAt`, kein Zirkel.
+    const KANAL_FELDER = 10;
     function hydroBuildCarveIndex(ctx, H, rivers, lakes) {
         const { dim, originX, originZ, size, waterLevel } = ctx;
         // --- Fluss-Bucket-Grid ---
         const bucketSize = H.carveBucketSize;
         const bucketsDim = Math.max(1, Math.ceil(size / bucketSize));
-        const riverBuckets = new Array(bucketsDim * bucketsDim);
+        const listen = new Array(bucketsDim * bucketsDim);
+        const zahlen = [];
         const addSeg = (seg) => {
             // die Reichweite des Kanals: Krone (halbe Breite + Tiefe / Neigung) + die Krone des Damms + die Böschung dahinter
             const reach =
@@ -4603,11 +4606,14 @@
             if (bj0 < 0) bj0 = 0;
             if (bi1 >= bucketsDim) bi1 = bucketsDim - 1;
             if (bj1 >= bucketsDim) bj1 = bucketsDim - 1;
+            if (bi1 < bi0 || bj1 < bj0) return; // kein Bucket trägt es (das Segment liegt jenseits der Region)
+            const si = zahlen.length / KANAL_FELDER;
+            zahlen.push(seg.ax, seg.az, seg.bx, seg.bz, seg.hwA, seg.hwB, seg.dA, seg.dB, seg.sA, seg.sB);
             for (let bj = bj0; bj <= bj1; bj++) {
                 for (let bi = bi0; bi <= bi1; bi++) {
                     const k = bj * bucketsDim + bi;
-                    if (!riverBuckets[k]) riverBuckets[k] = [];
-                    riverBuckets[k].push(seg);
+                    if (!listen[k]) listen[k] = [];
+                    listen[k].push(si);
                 }
             }
         };
@@ -4640,6 +4646,11 @@
                 });
             }
         }
+        const ab = new Int32Array(listen.length + 1);
+        for (let k = 0; k < listen.length; k++) ab[k + 1] = ab[k] + (listen[k] ? listen[k].length : 0);
+        const idx = new Int32Array(ab[listen.length]);
+        for (let k = 0; k < listen.length; k++) if (listen[k]) idx.set(listen[k], ab[k]);
+        const kanal = { seg: new Float64Array(zahlen), ab, idx };
         // --- See-Becken-Raster ---
         // `lakeBedCell` = flache Bett-Höhe `bedY` (2 Ringe propagiert für saubere bilineare Ufer-Ecken);
         // `lakeW` = Becken-Zugehörigkeit 0/1 (daraus rampt die Ufer-Mischung); `lakeNear` = 1-Ring-Maske.
@@ -4675,7 +4686,7 @@
                 }
             }
         }
-        return { riverBuckets, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear };
+        return { kanal, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear };
     }
 
     // Vereintes Wasser-Feld je Region-Zelle: flacher Spiegel `waterY` + `waterKind` (0 Land · 1 Ozean ·
@@ -4796,6 +4807,7 @@
         schichtOrt: schichtOrt,
         kachelSchluessel: kachelSchluessel,
         hydrosphaere: hydrosphaere,
+        KANAL_FELDER: KANAL_FELDER,
         flussTiefe: flussTiefe,
         hydroBand: hydroBand,
     });

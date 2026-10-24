@@ -9,13 +9,13 @@ class AnazhRealm_vegetation_baum {
     // Auftrag rechnet mindestens am Zustand, der vor ihm reiste. Der Faden rechnet nah zuerst nach `rang` (Abstand² der nächsten
     // Zelle beim Senden, ohne Rang zuerst). Leser: die Schlange des Walds (`_waldFadenSchicken`).
     _voxelWorkerWaldDarts(zellen, seedInt, extras, rang) {
-        return this._nebenAuftrag("wald", { type: "wald-darts", zellen, seedInt, extras, F: AnazhRealm.FOREST, rang }, [
-            zellen.buffer,
-        ]).then((msg) => ({
-            anzahl: new Int32Array(msg.anzahl),
-            werte: new Float64Array(msg.werte),
-            arten: msg.arten,
-        }));
+        return this._nebenAuftrag("wald", { type: "wald-darts", zellen, seedInt, extras, rang }, [zellen.buffer]).then(
+            (msg) => ({
+                anzahl: new Int32Array(msg.anzahl),
+                werte: new Float64Array(msg.werte),
+                arten: msg.arten,
+            })
+        );
     }
 
     // Trägt die Wildnis den Ort? Das EINE Prädikat an den WÜRFEN des Feldes (Wald, Streu, Nah-Streu, Geburts-Ort, Dorf-
