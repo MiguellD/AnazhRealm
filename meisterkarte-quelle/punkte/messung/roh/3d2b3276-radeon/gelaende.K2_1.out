@@ -1,0 +1,30 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-radeon'); K=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination'); A=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\3d2b3276-radeon\gelaende.K2_1.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT=7701 node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:7701/ && break; sleep 1; done; export SPIEL_URL=http://localhost:7701; node "$D/m2-graben.cjs"; E=$?; cp "$D/roh/m2-graben.json" "$A" 2>/dev/null; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $E
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T13:14:17+02:00 pid=3888 (34 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T13:14:17+02:00 pid=3888 (108 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T13:14:17+02:00 pid=3888 (177 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T13:14:17+02:00 pid=3888 (250 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T13:14:17+02:00 pid=3888 (325 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T13:14:17+02:00 pid=3888 (396 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T13:14:17+02:00 pid=3888 (474 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T13:14:17+02:00 pid=3888 (550 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T13:14:17+02:00 pid=3888 (623 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T13:14:17+02:00 pid=3888 (698 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T13:14:17+02:00 pid=3888 (765 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T13:14:17+02:00 pid=3888 (838 s)
+gpu-lauf: warte auf dorf-takt-z13-tod 2026-10-24T13:29:00+02:00 pid=10712 (23 s)
+gpu-lauf: warte auf dorf-takt-z13-tod 2026-10-24T13:29:00+02:00 pid=10712 (97 s)
+gpu-lauf: warte auf dorf-takt-z13-tod 2026-10-24T13:29:00+02:00 pid=10712 (174 s)
+gpu-lauf: warte auf dorf-takt-z13-tod 2026-10-24T13:29:00+02:00 pid=10712 (243 s)
+gpu-lauf: warte auf lod-k1 2026-10-24T13:33:20+02:00 pid=13344 (49 s)
+SCHLOSS VERWAIST (lod-k1 2026-10-24T13:33:20+02:00 pid=13344: Halter pid=13344 lebt nicht) — gelöst
+gpu-lauf: Schloss punkte-radeon nach 1227 s
+{"saat":11,"abstand":1,"verb":"abbau","edits":0,"k":62,"krone":3.68,"nassVor":139,"nassEnde":139,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":373}
+{"saat":11,"abstand":3,"verb":"graben","edits":1,"k":62,"krone":3.68,"nassVor":55,"nassEnde":292,"gefuelltMs":301.4,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":317}
+{"saat":23,"abstand":1,"verb":"graben","edits":2,"k":49,"krone":3.68,"nassVor":112,"nassEnde":295,"gefuelltMs":171.7,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":365}
+{"saat":23,"abstand":3,"verb":"graben","edits":3,"k":49,"krone":3.68,"nassVor":217,"nassEnde":250,"gefuelltMs":180.8,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":380}
+{"saat":37,"abstand":1,"verb":"graben","edits":4,"k":47,"krone":3.34,"nassVor":105,"nassEnde":306,"gefuelltMs":244.4,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":262}
+{"saat":37,"abstand":3,"verb":"graben","edits":5,"k":47,"krone":3.34,"nassVor":240,"nassEnde":280,"gefuelltMs":183,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":303}
+{"saat":51,"abstand":1,"verb":"graben","edits":6,"k":7,"krone":3.34,"nassVor":153,"nassEnde":337,"gefuelltMs":748.1,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":153}
+{"saat":51,"abstand":3,"verb":"graben","edits":7,"k":7,"krone":3.34,"nassVor":266,"nassEnde":281,"gefuelltMs":53.1,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":324}
+{"saat":73,"abstand":1,"verb":"graben","edits":8,"k":16,"krone":3.34,"nassVor":116,"nassEnde":299,"gefuelltMs":197,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":222}
+{"saat":73,"abstand":3,"verb":"graben","edits":9,"k":16,"krone":3.34,"nassVor":221,"nassEnde":252,"gefuelltMs":156.5,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":291}

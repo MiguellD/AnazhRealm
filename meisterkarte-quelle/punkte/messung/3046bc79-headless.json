@@ -1,0 +1,66 @@
+{
+ "sha": "3046bc79f6863760692afe9ce161798215cbd8cb",
+ "geraet": "headless",
+ "zeit": "2026-10-24T11:42:56.953Z",
+ "host": "MiguellD",
+ "je": {
+  "gelaende.K4#1": {
+   "gruen": true,
+   "zahl": "10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0",
+   "exit": 0,
+   "minuten": 0.52,
+   "zeit": "2026-10-24T11:41:56.612Z",
+   "abdruck": "a049a8dbebf9",
+   "port": 7703
+  },
+  "wetter.K1#1": {
+   "gruen": true,
+   "zahl": "saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: rainy stormy rainy sunny stormy rainy sunny stormy sunny rainy), saat-b anders",
+   "exit": 0,
+   "minuten": 0.48,
+   "zeit": "2026-10-24T11:42:28.060Z",
+   "abdruck": "c69389bcf98b",
+   "port": 7706
+  },
+  "wetter.K1#2": {
+   "gruen": false,
+   "zahl": "keine Front-Zeile (Exit 0)",
+   "exit": 0,
+   "minuten": 0.48,
+   "grund": "ROT: keine Front-Zeile (Exit 0)",
+   "zeit": "2026-10-24T11:42:28.060Z",
+   "abdruck": "27f38395f50c",
+   "port": 7706,
+   "zwilling": "wetter.K1#1"
+  },
+  "gelaende.K1#1": {
+   "gruen": true,
+   "zahl": "Welt = Studio byte-gleich (Makro 1d05ef660c4a7994), Statistik gleich, 18 Regler, tot 0, Selbsttest sieht",
+   "exit": 0,
+   "minuten": 1.1,
+   "zeit": "2026-10-24T11:41:56.543Z",
+   "abdruck": "6f7eb4149e5b",
+   "port": 7700
+  },
+  "wetter.K5#1": {
+   "gruen": true,
+   "zahl": "F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam",
+   "exit": 0,
+   "minuten": 0.12,
+   "zeit": "2026-10-24T11:42:56.953Z",
+   "abdruck": "531ff2d7aefb",
+   "port": 7709
+  },
+  "wetter.K5#2": {
+   "gruen": false,
+   "zahl": "keine F3-Feld-Zeile (Exit 0)",
+   "exit": 0,
+   "minuten": 0.12,
+   "grund": "ROT: keine F3-Feld-Zeile (Exit 0)",
+   "zeit": "2026-10-24T11:42:56.953Z",
+   "abdruck": "9b3c4a3a2e0f",
+   "port": 7709,
+   "zwilling": "wetter.K5#1"
+  }
+ }
+}
