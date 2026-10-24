@@ -88,8 +88,8 @@ const OBERKANTE_BENANNT = {
     _creatureWaterContextAt: [["_voxelSurfaceY"], "Ufer-Suche: Land in den Nachbar-Spalten, nie der Boden des Leibs"],
     _bergSchattenVerdeckt: [["_terrainMacroSurfaceY"], "Sicht: die Berg-Verdeckung einer Region (kein Leib)"],
     _bodenUmzug: [
-        ["_voxelSurfaceY"],
-        "Platzierung: ein Save eines alten Bodens setzt Bauten und Spieler auf die Oberfläche des neuen (K16)",
+        ["_voxelSurfaceY", "_terrainMacroSurfaceY"],
+        "Platzierung: ein Save eines alten Bodens setzt Bauten, Gruben und Spieler auf die Oberfläche des neuen (K16)",
     ],
 };
 
@@ -438,7 +438,9 @@ function selbsttest() {
     const amStamm = quellenWand(stamm);
     console.log(`  ${amStamm.length ? "❌" : "✅"} Quellen-Wand am Stamm: ${amStamm.join(" · ") || "sauber"}`);
     if (amStamm.length) fehler.push("die Quellen-Wand ist am Stamm rot: " + amStamm.join(" · "));
-    const kopie = stammLib.ersetze(stamm, null,
+    const kopie = stammLib.ersetze(
+        stamm,
+        null,
         /(\n {4}_werkBoden\([^)]*\) \{)/,
         "$1\n        if (entry.__schmuggel) return () => this.getTerrainHeightAt(0, 0);"
     );

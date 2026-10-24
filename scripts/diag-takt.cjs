@@ -61,7 +61,7 @@ const SELBST = process.argv.includes("--selftest");
                 try {
                     const a = r.computeBlueprintAffordances(st.blueprints[n]);
                     return !!(a && a.focusing);
-                } catch (_e) {
+                } catch {
                     return false;
                 }
             });

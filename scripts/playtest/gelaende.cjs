@@ -156,25 +156,25 @@ async function checkBandVoxelP3AndInventory(ctx) {
 
     if (voxelV940cResults && !voxelV940cResults.error && !voxelV940cResults.skip) {
         check(
-            "V9.40-c: ein Carve markiert Voxel-Chunks dirty (statt sofort sync rebuild)",
+            "ein Carve markiert Voxel-Chunks dirty (statt sofort sync rebuild)",
             voxelV940cResults.editMarksDirty,
             voxelV940cResults.telemetry
         );
         check(
-            "V9.40-c: _drainDirtyVoxelChunks rebuildet + leert das Set",
+            "_drainDirtyVoxelChunks rebuildet + leert das Set",
             voxelV940cResults.drainRebuilt && voxelV940cResults.drainEmptiesSet,
             voxelV940cResults.telemetry
         );
         check(
-            "V9.40-c: _drainDirtyVoxelChunks liefert die Anzahl der rebuildeten Chunks",
+            "_drainDirtyVoxelChunks liefert die Anzahl der rebuildeten Chunks",
             voxelV940cResults.drainReturnedCount
         );
         check(
-            "V9.40-c: der Game-Loop-Tick baut pro Frame max 1 Chunk ein, keinen synchron (K69-2)",
+            "der Game-Loop-Tick baut pro Frame max 1 Chunk ein, keinen synchron (K69-2)",
             voxelV940cResults.tickRebuildsOne
         );
         check(
-            "V9.40-c: _disposeVoxelChunk räumt den dirty-Marker mit (gegen stale-rebuild)",
+            "_disposeVoxelChunk räumt den dirty-Marker mit (gegen stale-rebuild)",
             voxelV940cResults.disposeClearsDirty
         );
     }
@@ -243,24 +243,24 @@ async function checkBandVoxelP3AndInventory(ctx) {
 
     if (voxelV940dResults && !voxelV940dResults.error && !voxelV940dResults.skip) {
         check(
-            "V9.40-d: _rebuildVoxelChunk liefert true bei Erfolg + die Mesh-Identität wechselt",
+            "_rebuildVoxelChunk liefert true bei Erfolg + die Mesh-Identität wechselt",
             voxelV940dResults.rebuildOk && voxelV940dResults.meshIdentityChanged
         );
         check(
-            "V9.40-d: bei Build-Fail wird der voxelRebuildAttempts-Counter gepflegt (1. Versuch)",
+            "bei Build-Fail wird der voxelRebuildAttempts-Counter gepflegt (1. Versuch)",
             voxelV940dResults.retryCounter1
         );
         check(
-            "V9.40-d: bei Build-Fail wird der Chunk wieder dirty markiert (Retry-Chance)",
+            "bei Build-Fail wird der Chunk wieder dirty markiert (Retry-Chance)",
             voxelV940dResults.dirtyAfterFail
         );
-        check("V9.40-d: Counter steigt bei wiederholten Fails (2. Versuch)", voxelV940dResults.retryCounter2);
+        check("Counter steigt bei wiederholten Fails (2. Versuch)", voxelV940dResults.retryCounter2);
         check(
-            "V9.40-d: nach 3 Fails wird der Chunk ehrlich als {empty:true} markiert",
+            "nach 3 Fails wird der Chunk ehrlich als {empty:true} markiert",
             voxelV940dResults.giveUpAsEmpty
         );
         check(
-            "V9.40-d: nach dem give-up wird der Counter geräumt (für späteren neuen Versuch)",
+            "nach dem give-up wird der Counter geräumt (für späteren neuen Versuch)",
             voxelV940dResults.counterClearedAfterGiveUp
         );
     }
@@ -322,32 +322,32 @@ async function checkBandVoxelP3AndInventory(ctx) {
 
     if (voxelV940eResults && !voxelV940eResults.error) {
         check(
-            "V9.40-e: _addVoxelEdit verwirft Edit weit über der Chunk-Decke (Schöpfer-Hinweis)",
+            "_addVoxelEdit verwirft Edit weit über der Chunk-Decke (Schöpfer-Hinweis)",
             voxelV940eResults.farEditRejected && voxelV940eResults.farEditNotStored
         );
-        check("V9.40-e: _addVoxelEdit verwirft Edit weit unter dem Chunk-Boden", voxelV940eResults.farDownRejected);
-        check("V9.40-e: _addVoxelEdit akzeptiert Edit innerhalb des Chunk-Bands", voxelV940eResults.inBoundAccepted);
+        check("_addVoxelEdit verwirft Edit weit unter dem Chunk-Boden", voxelV940eResults.farDownRejected);
+        check("_addVoxelEdit akzeptiert Edit innerhalb des Chunk-Bands", voxelV940eResults.inBoundAccepted);
         check(
-            "V9.40-e: _addVoxelEdit clampt Edit knapp ÜBER der Decke (innerhalb Marge)",
+            "_addVoxelEdit clampt Edit knapp ÜBER der Decke (innerhalb Marge)",
             voxelV940eResults.nearEdgeAccepted
         );
         check(
-            "V9.40-e: _disposeVoxelChunk räumt voxelRebuildAttempts (Memory-Hygiene)",
+            "_disposeVoxelChunk räumt voxelRebuildAttempts (Memory-Hygiene)",
             voxelV940eResults.disposeClearsAttempts
         );
         check(
-            "V9.40-e: _ensureVoxelChunkAt-Streaming-Fail setzt KEINEN Map-Eintrag (Retry erlaubt)",
+            "_ensureVoxelChunkAt-Streaming-Fail setzt KEINEN Map-Eintrag (Retry erlaubt)",
             voxelV940eResults.streamFail1NoEntry && voxelV940eResults.streamAttempt1
         );
         check(
-            "V9.40-e: Streaming-Retry-Counter steigt bei wiederholten Fails (2. Versuch)",
+            "Streaming-Retry-Counter steigt bei wiederholten Fails (2. Versuch)",
             voxelV940eResults.streamAttempt2
         );
         check(
-            "V9.40-e: nach 3 Streaming-Fails wird der Chunk ehrlich als {empty:true} markiert",
+            "nach 3 Streaming-Fails wird der Chunk ehrlich als {empty:true} markiert",
             voxelV940eResults.streamGiveUpAsEmpty
         );
-        check("V9.40-e: Streaming-Counter geräumt nach give-up", voxelV940eResults.streamCounterClearedAfterGiveUp);
+        check("Streaming-Counter geräumt nach give-up", voxelV940eResults.streamCounterClearedAfterGiveUp);
     }
 
     // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ### (die Säule des Füll-Edits über die Maus und den Reload: gate:fall-waechter B)
