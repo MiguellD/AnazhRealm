@@ -226,14 +226,25 @@ AnazhRealm._diaetGang = function (ro, nbs) {
 // dieselben fremden Verweise — der Gang ging sie je Programm Stempel für Stempel durch (Radeon, Genesis Third, Stand, Kopf
 // 9768286c: 57 Gänge je Bild, ~26 Einträge je Gang; der Gang ohne Laden und Melder 0,6 von 7,4 ms Szene unter Fremdlast). Jetzt
 // trägt jede gleiche Liste EINEN Satz mit EINEM Stempel je Render-Abschnitt; ein Satz, der im Abschnitt schon ging, fällt ganz
-// (jeder seiner Knoten trägt dann denselben Stempel). Die Tafel hält ihre Sätze schwach (ein gefallenes Programm hält nichts).
+// (jeder seiner Knoten trägt dann denselben Stempel). Die Tafel hält ihre Sätze schwach (ein gefallenes Programm hält nichts)
+// und vergisst den Schlüssel eines gefallenen Satzes (`ende`, die Sammlung meldet ihn; bis hier blieb jeder Schlüssel stehen).
 // Gemessen (Radeon, Stand, ABAB in einer Welt): von 1 620 Einträgen je Bild fallen 1 328 (Genesis Third), von 574 fallen 357
 // (Wiese Ego). Der Wert-Blick davor (ein Vergleich je Knoten statt je Uniform) fiel: ein Gang langsamer, 1,29 → 1,58 ms.
 AnazhRealm._diaetSatz = function (liste, id) {
-    const T = AnazhRealm._diaetSaetze || (AnazhRealm._diaetSaetze = new Map());
+    let T = AnazhRealm._diaetSaetze;
+    if (T === undefined) {
+        T = AnazhRealm._diaetSaetze = new Map();
+        T.ende = new FinalizationRegistry((k) => {
+            const w = T.get(k);
+            if (w !== undefined && w.deref() === undefined) T.delete(k);
+        });
+    }
     const k = liste.map(id).join(",");
     let s = T.has(k) ? T.get(k).deref() : undefined;
-    if (!s) T.set(k, new WeakRef((s = { liste, rid: -1, ruf: -1 })));
+    if (!s) {
+        T.set(k, new WeakRef((s = { liste, rid: -1, ruf: -1 })));
+        T.ende.register(s, k);
+    }
     return s;
 };
 // DAS REGISTER DER REGUNG (E-Bauart, 21.10.): die Diät HÖRT, statt jedes Render-Objekt in jedem Pass zu fragen. Bis hier ging jede
