@@ -1796,11 +1796,15 @@
     // seiner Eintraege), nie eine Uhr: die Erinnerung reist im Speicherstand. DER ORT ERINNERT (furchtOrt): die Bedrohung des
     // Abdrucks in einer Zelle × ortGewicht; ein Riss praegt riss ein (die Emotion des Schadens, sorrow + chaos, bis zur
     // Saettigung der Zelle). Die Landschaft der Furcht meidet, wer Beute ist (Laundre et al. 2001), im Umkreis
-    // ortRadiusZellen Zellen um die Mitte der Zelle, linear zum Rand.
+    // ortRadiusZellen Zellen um die Mitte der Zelle, linear zum Rand. DER FLUCHTWEG (Tiere K1, 24.10., additiv): wer flieht,
+    // laeuft vom Ort der Bedrohung bis fluchtWegJeRadius Flucht-Radien jenseits des Radius — die Beute flieht eine Strecke, nicht
+    // bis zur Kante der Furcht, und wer frueher flieht, flieht weiter (Stankowich 2008, „distance fled"); vorher endete die
+    // Flucht am Radius selbst.
     var FURCHT_GESETZ = Object.freeze({
         erinnerung: Object.freeze({ geschlagen: 2, gefuettert: -1.5 }),
         deckel: 3,
         fluchtJeFurcht: 1.25,
+        fluchtWegJeRadius: 2.2,
         riss: Object.freeze({ chaos: 1.6, sorrow: 1.6 }),
         ortGewicht: 1,
         ortRadiusZellen: 1.5,
@@ -1829,6 +1833,18 @@
         if (!gefuehl) return 0;
         var m = bedrohung(gefuehl, NAT) * F.ortGewicht;
         return m > 0 ? m : 0;
+    }
+    // B = die Bedrohung {x, z, r} (Ort und Flucht-Radius), glieder = die Leiber des Verbands ({position}) oder null, eigen = das
+    // Wesen wittert selbst. Liefert den Radius der Flucht um B: wer selbst wittert, flieht, bis er und das fernste Glied seines
+    // Verbands fluchtWegJeRadius × B.r jenseits des Radius stehen; aus zweiter Hand traegt B die Flucht, die das Glied uebernimmt.
+    function fluchtRadius(B, glieder, eigen) {
+        if (!eigen) return B.r;
+        var r = B.r;
+        for (var i = 0; glieder && i < glieder.length; i++) {
+            var p = glieder[i].position;
+            r = Math.max(r, Math.sqrt((p.x - B.x) * (p.x - B.x) + (p.z - B.z) * (p.z - B.z)));
+        }
+        return r + FURCHT_GESETZ.fluchtWegJeRadius * B.r;
     }
 
     // DIE JAGD HAT EIN ENDE (Tiere K2, 23.10., additiv — JAGD_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): eine
@@ -3413,6 +3429,7 @@
         bedrohung: bedrohung,
         furchtErinnert: furchtErinnert,
         furchtOrt: furchtOrt,
+        fluchtRadius: fluchtRadius,
         JAGD_GESETZ: JAGD_GESETZ,
         wundTempo: wundTempo,
         LEBENSRAUM_GESETZ: LEBENSRAUM_GESETZ,
