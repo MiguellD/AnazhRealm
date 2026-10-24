@@ -4,7 +4,6 @@
 //                    + der FEHLER-SAMMLER an jeder Seite: pageerror (auch unbehandelte Rejections), console.error,
 //                    Absturz der Seite, Trennung des Browsers ohne Abbau — jeder Fehler macht den Lauf ROT mit Namen,
 //                    nie Exit 0 (die Wache sitzt am Prozess-Ende: ein Exit 0 mit gesammeltem Fehler wird Exit 1)
-//   oeffneWelt()     Seite laden und auf die Welt warten (anazhRealm mit _gameLoopTick), wahlweise Null-Renderer
 //   halteBis()       eine Taste halten, bis ihr Ereignis eintritt (nie nach der Wanduhr, gate:apparat Klinge 5)
 //   buehne()         die Bühne (Mittag · Sonne · Sommer, scripts/lib/ausgabe-aufnahme.cjs)
 //   uferStellen      (Seite) ein Leser der Szenen-Tiefe im Blick, der zeichnet: das Wasser am Bach der Mess-Wiese
@@ -774,27 +773,6 @@ async function warteAufWelt(page, frist = 120000) {
     });
 }
 
-// Die Seite der Welt: Null-Renderer wahlweise, laden, auf die Welt warten.
-async function oeffneWelt(
-    browser,
-    {
-        port,
-        pfad = "/index.html",
-        nullRenderer: ohneBild = false,
-        viewport,
-        frist = 120000,
-        warteBis = "networkidle0",
-        warten = true,
-    } = {}
-) {
-    const page = await browser.newPage();
-    if (viewport) await page.setViewport(viewport);
-    if (ohneBild) await nullRenderer(page);
-    await page.goto(`http://127.0.0.1:${port}${pfad}`, { waitUntil: warteBis, timeout: frist });
-    if (warten) await warteAufWelt(page, frist);
-    return page;
-}
-
 // Eine Taste HALTEN, bis `ziel` auf `seite` (Page oder Frame) wahr wird — nie nach der Wanduhr (gate:apparat Klinge 5); `taste`
 // über die Tastatur, sonst `druck`/`los`; losgelassen wird immer. → { erreicht, ms, wert }
 async function halteBis(seite, { taste, druck, los, ziel, args = [], frist = 30000 }) {
@@ -1101,7 +1079,6 @@ module.exports = {
     WARTEN_SEITE,
     statikServer,
     starteBrowser,
-    oeffneWelt,
     warteAufWelt,
     nullRenderer,
     halteBis,

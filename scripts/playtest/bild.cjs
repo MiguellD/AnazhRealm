@@ -1637,7 +1637,6 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
         const out = {};
 
         // (IV) Büsche wachsen aus dem Gesetz (kein Kugel-Haufen) — der Studio-Strauch, K24

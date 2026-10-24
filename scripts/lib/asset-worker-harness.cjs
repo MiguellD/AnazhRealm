@@ -435,8 +435,6 @@ function ersteAbweichung(ist, soll, pfad = "") {
 module.exports = {
     runWithWorker,
     fingerprintMeshes,
-    WORKER_SCRIPTS,
-    WORKER_BOOT,
     DATEN_KANAELE,
     kanalImVm,
     bauAbdruck,

@@ -834,7 +834,7 @@ async function tempo(K) {
             if (!e || !ziel(e)) throw new Error(`${typ} steht nicht`);
             H[n] = werkH(e, ziel(e), rot > 0);
         }
-        for (const [n, z] of Object.entries(BAHN))
+        for (const z of Object.values(BAHN))
             for (const o of st.architectures.slice())
                 if (
                     o &&

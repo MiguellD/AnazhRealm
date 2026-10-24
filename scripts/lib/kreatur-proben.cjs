@@ -1674,7 +1674,6 @@ async function kreaturProben(r, T, opts) {
                 woelfe.forEach(ruhig);
                 r._kreaturVerbinden(woelfe);
                 const kette = szene === "rudel" && R.rissS === null;
-                const zuK = (c) => Math.hypot(c.position.x - beute.position.x, c.position.z - beute.position.z);
                 const hetzer = new Set();
                 let riss = false;
                 for (let k = 0, ende = 5400; k < ende; k++) {

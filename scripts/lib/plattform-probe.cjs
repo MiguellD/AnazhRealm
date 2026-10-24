@@ -372,7 +372,6 @@ function goldenVergleich(golden, actual) {
 
 module.exports = {
     plattformProbe,
-    probeAblauf,
     installiereDrift,
     FUNKTIONEN,
     probeWand,
