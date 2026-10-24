@@ -1609,6 +1609,7 @@ async function probeLeben(expected) {
             try {
                 const ux = Math.sin(gasse.fahrt);
                 const uz = Math.cos(gasse.fahrt);
+                let simUhr;
                 const lockProbe = async (muster) => {
                     const gS = await setzen("fahrzeug_gt", gasse.x, gasse.z, gasse.fahrt);
                     if (!gS) return null;
@@ -1655,6 +1656,7 @@ async function probeLeben(expected) {
                     b.userData._steuer = { gier: b.rotation.y, v: 0 };
                     b.userData._stossV = null;
                     st._fixedAccumulator = 0;
+                    st._fixedSimTime = simUhr ??= st._fixedSimTime;
                     const PF = r._stepFixedSim;
                     let schritte = 0;
                     let lage = null;

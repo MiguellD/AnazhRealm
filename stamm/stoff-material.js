@@ -167,15 +167,21 @@ class AnazhRealm_stoff_material {
     // Wetter-Felds × die Böen-Drift `_weatherWob`, 0 ruhig … 1 Sturm) vom Gelände geformt (gelaende-core `windForm`: Lee bis
     // −40 %, Tal-Düse bis +20 %, an der Höhe des Gesetzes ohne Detail) und die wandernde Böe am Ort (WIND_BOE, dieselben Zahlen
     // wie der Shader). `staerke` = U · Form (die Böen-Amplitude am Ort ist staerke · WIND_BOE.amp), `ms` der Wind in m/s
-    // (staerke · Böe · WIND_FELD.sturmMS). t: die Wind-Uhr (die Bild-Uhr, A9).
+    // (staerke · Böe · WIND_FELD.sturmMS). t: die Wind-Uhr — das Bild liest die Bild-Uhr (A9), der Sim-Schritt seine Uhr
+    // (`state._simZeit`); der Wind ist eine reine Funktion von Saat, Wetter, Ort und t.
     _windAt(x, z, t) {
         const tt = Number.isFinite(t) ? t : 0;
         const d = this._windDirAt(tt);
         const B = AnazhRealm.WIND_BOE;
         const boe = Math.sin(tt * B.omega - (x * d.x + z * d.z) * B.k) * B.amp + B.mitte;
         const form = this._windForm(x, z, d);
-        const staerke = this._weatherFieldFor(this.state.weather).wind * (this._weatherWob || 1) * form;
+        const staerke = this._weatherFieldFor(this.state.weather).wind * this._windWob(tt) * form;
         return { x: d.x, z: d.z, staerke, boe, form, ms: staerke * boe * globalThis.__phytoCore.WIND_FELD.sturmMS };
+    }
+    // DIE BÖEN-DRIFT der Wind-Uhr t (Math.random-frei, ~±18 % um die Wort-Basis): bis wetter.K5 ein Feld, das nur das Bild schrieb
+    // — der Wagen im Wind hing an der Bildrate (gate:fahr-leben L8 Lockstep 0,37 mm).
+    _windWob(t) {
+        return 1 + 0.18 * (Math.sin(t * 0.19) * 0.6 + Math.sin(t * 0.47 + 1.3) * 0.3 + Math.sin(t * 1.13 + 3.7) * 0.1);
     }
     // Die Form des Geländes je Zelle von 16 m und 1/64 Drehung, gemerkt je Stand des Gesetzes (Saat, Erbgut, Erdbau — ein
     // neuer Ort formt den Wind neu); der Merker gehört der Instanz.

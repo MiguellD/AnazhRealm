@@ -1498,8 +1498,8 @@ class AnazhRealm_koerper_seele {
 
     // Geruch an (x, z) aus `sources` [{x, z, strength}], Σ über alle Quellen, ∈ [0, ∞) — cappen und
     // deuten die Konsumenten. Je Quelle: decay = exp(−dist/rangeM); dot = toRecv · windDir (toRecv =
-    // Einheitsvektor Quelle→Empfänger, windDir = der EINE Wind an der Quelle, `_windAt` auf der Bild-Uhr — die Nase riecht
-    // den Wind, den das Gras zeigt; positiv = downwind); windMod = max(minDirectional, (1−windFactor) + windFactor ·
+    // Einheitsvektor Quelle→Empfänger, windDir = der EINE Wind an der Quelle, `_windAt` auf der Sim-Uhr — die Nase riecht
+    // den Wind, den das Gras zeigt, und das Verhalten hängt nie an der Bildrate; positiv = downwind); windMod = max(minDirectional, (1−windFactor) + windFactor ·
     // max(0, dot)); geruch = strength · decay · windMod.
     _scentAt(x, z, sources) {
         if (!Array.isArray(sources) || sources.length === 0) return 0;
@@ -1515,7 +1515,7 @@ class AnazhRealm_koerper_seele {
             if (dist > S.rangeM * 4) continue; // jenseits 4× range vernachlässigbar
             const decay = Math.exp(-dist / S.rangeM);
             // Wind an der Quelle (der Wind, der den Geruch wegträgt)
-            const wind = this._windAt(src.x, src.z, this._bildZeit);
+            const wind = this._windAt(src.x, src.z, this.state._simZeit);
             // Normierter Vektor von Source zum Receiver
             const norm = dist > 0.001 ? 1 / dist : 0;
             const dirX = dx * norm;

@@ -1263,10 +1263,11 @@ class AnazhRealm_koerper_fahrt {
         return n > 0 ? 1 - (1 - AnazhRealm.NAESSE.haft) * Math.min(1, n) : 1;
     }
 
-    // DER WIND AM WAGEN (wetter.K5): der EINE Wind am Ort des Fahr-Zustands (`_windAt` auf der Bild-Uhr) in m/s als Welt-Vektor
-    // — der Kern (vehicle-core fahrKraefte `e.wind`) legt ihn quer auf die Flanke; ohne Wind fährt der Wagen wie im Lab.
+    // DER WIND AM WAGEN (wetter.K5): der EINE Wind am Ort des Fahr-Zustands (`_windAt` auf der Uhr des Sim-Schritts, nie der
+    // Bild-Uhr: Lockstep und Replay) in m/s als Welt-Vektor — der Kern (vehicle-core fahrKraefte `e.wind`) legt ihn quer auf die
+    // Flanke; ohne Wind fährt der Wagen wie im Lab.
     _fahrWind(fz) {
-        const w = this._windAt(fz.x, fz.z, this._bildZeit);
+        const w = this._windAt(fz.x, fz.z, this.state._simZeit);
         return { x: w.x * w.ms, z: w.z * w.ms };
     }
 

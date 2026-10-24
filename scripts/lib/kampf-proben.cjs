@@ -298,7 +298,7 @@ async function WELLE_L() {
             };
             A._steuerGesetz = () => steht;
             try {
-                // wie der Loop: der feste Sim-Schritt trägt den Stoß (0710-5), dann der Kreatur-Takt
+                // wie der Loop: der feste Sim-Schritt trägt den Stoß, dann der Kreatur-Takt
                 for (let k = 0; k < 90; k++) {
                     r._kreaturStossSchritt(1 / 60);
                     r._leibKontakte();
@@ -1900,7 +1900,7 @@ async function WELLE_L() {
             // die Ich-Regel bleibt rückstandsfrei: 3rd → 1st → 3rd stellt jede Sichtbarkeit UND Ebene des Leibs wieder her, und
             // im 1st zeichnet keine Haut (die Kamera sitzt im Leib) außer dem Gerät in der Hand. „Zeichnet" fragt, was r184s
             // _projectObject fragt: jeder Ahne sichtbar UND die eigene Ebene in der Haupt-Kamera — die Ich-Regel ist die
-            // Ebenen-Regel (0910-5): die Haut verlässt Ebene 0 und bleibt sichtbar, damit sie in den Kaskaden wirft
+            // Ebenen-Regel: die Haut verlässt Ebene 0 und bleibt sichtbar, damit sie in den Kaskaden wirft
             {
                 const heldR = pm.userData.heldMesh;
                 const unterGeraet = (o) => {

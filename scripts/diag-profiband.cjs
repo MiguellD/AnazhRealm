@@ -622,7 +622,7 @@ function selbsttest() {
             szene.form[0] === "buf:szene:bodenSatz" &&
             szene.form[1] === "buf:szene:spieler"
     );
-    // S17c — DAS RAHMEN-ZIEL DES DIREKTPFADS (0910-1): `tex:r184-ausgabe` im Band ist ein Linsen-Rest (0710-9 B: 23,7 MB in
+    // S17c — DAS RAHMEN-ZIEL DES DIREKTPFADS: `tex:r184-ausgabe` im Band ist ein Linsen-Rest (0710-9 B: 23,7 MB in
     // `band --ort genesis` nach `zerlegen`) → LINSE rot `leck` mit Zahl und Grund; ohne VRAM-Abgriff zählen die Textur-Objekte;
     // ein Band ohne Rahmen-Ziel bleibt sauber.
     const u17c = v17([

@@ -15,7 +15,7 @@
 //     ratsche    eine Klasse × Pass (oder ein VRAM-Erzeuger, oder die Summe) über ihrem letzten Ist plus Toleranz
 //     leck       VRAM, den kein Bild trägt: Geometrie-Puffer, die nur der Foundry-Cache (`buf:ruhend`) oder nur r184s
 //                Attribut-Register (`buf:verwaist`) hält — der Täter beim Namen (W6); und das Rahmen-Ziel des Direktpfads
-//                (`tex:r184-ausgabe`), das eine Linse liegen ließ (0910-1)
+//                (`tex:r184-ausgabe`), das eine Linse liegen ließ
 //     weit       eine Ratsche über der Messung × (1 + Toleranz): sie hielte einen Rückschritt bis zu ihr grün
 //     ungemessen keine gemessene Ratsche für diesen Ort × Gerät × Sicht
 //   Den Exit der Messfolge trägt JEDE Rot-Zeile (omen-messfolge `bandBefunde`, K26); die Ratsche ziehen nur unbenannt ·
@@ -292,7 +292,7 @@ const LINSEN_ARTEN = ["unbenannt", "haushalt", "ratsche", "leck"];
 // (`ruhend`) oder nur r184s Attribut-Register (`verwaist`) hält (`__pufferZensus`, draw-zaehler) — VRAM an der Geschichte
 // statt am Schirm. Jedes MB davon ist ein LECK, der Täter steht im Urteil beim Namen.
 const LECK_ERZEUGER = /^buf:(ruhend|verwaist)$/;
-// DAS RAHMEN-ZIEL DES DIREKTPFADS (0910-1): r184 legt es nur an, wenn ein Render MIT Tonemapping auf die Leinwand geht
+// DAS RAHMEN-ZIEL DES DIREKTPFADS: r184 legt es nur an, wenn ein Render MIT Tonemapping auf die Leinwand geht
 // (`_getFrameBufferTarget`: rgba16float + depth24plus, 15,8 + 7,9 MB bei 1080p, `isPostProcessingRenderTarget` → der Erzeuger
 // `r184-ausgabe`). Die Post-Kette tut das nie (r184 schaltet Tonemapping und Farbraum für ihr Quad ab), im Spiel lebt es also
 // nur im Rückfall ohne Kette. Steht es im Band, fuhr eine Linse den Direktpfad und ließ es liegen: in 0710-6 und 0710-9 trug

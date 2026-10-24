@@ -1451,15 +1451,8 @@ class AnazhRealm_dirigent_takt {
         this._weltLichtTakt();
         const knotenUhr = this.state.renderer && this.state.renderer._nodes && this.state.renderer._nodes.nodeFrame;
         if (knotenUhr) knotenUhr.time = bildZeit;
-        // Kontinuierlicher Böen-Drift (Math.random-frei): layered-sine auf der Bild-Uhr (~±18 % um die Wort-Basis), ein
-        // Instanz-Feld (nicht serialisiert; Klang und Wind lesen es) — bis A9 auf der Uhr des Wetter-Zugs, die bei jedem Zug
-        // auf 0 sprang.
-        this._weatherWob =
-            1 +
-            0.18 *
-                (Math.sin(bildZeit * 0.19) * 0.6 +
-                    Math.sin(bildZeit * 0.47 + 1.3) * 0.3 +
-                    Math.sin(bildZeit * 1.13 + 3.7) * 0.1);
+        // die Böen-Drift am Bild (`_windWob` auf der Bild-Uhr; die Uhr-Wache liest sie)
+        this._weatherWob = this._windWob(bildZeit);
         // `uEmotion` füttern: die Stimmung hebt den Schaum (s. `_ensureHydroSurfaceMaterial`) — positive
         // Gefühle beleben das Wasser, Trauer dämpft.
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.emotion) {

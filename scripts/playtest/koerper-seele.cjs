@@ -3303,7 +3303,7 @@ async function checkBandV18202GeruchFeld(ctx) {
         // (N5) Wind-Modulation: downwind > upwind — eine Quelle an fester Position, gesampelt EXAKT downwind und upwind
         const sx = 100,
             sz = 100;
-        const wind = r._windAt(sx, sz, r._bildZeit);
+        const wind = r._windAt(sx, sz, r.state._simZeit);
         // Downwind = in Wind-Richtung von Source aus
         const dRecv = { x: sx + wind.x * 50, z: sz + wind.z * 50 };
         const uRecv = { x: sx - wind.x * 50, z: sz - wind.z * 50 };

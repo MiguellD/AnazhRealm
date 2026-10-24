@@ -52,7 +52,7 @@ const GODRAY_MIN_PCT = 2;
 const WASSER_TOL = 4;
 const WASSER_RAUSCHEN = 1;
 const WASSER_TIEFE_MIN = 15;
-// (f) Der Saum auf ungerader Leinwand (0710-3): so viele Kanten-Pixel links am Pfahl dürfen zwischen Abbild und r184s Tiefe
+// (f) Der Saum auf ungerader Leinwand: so viele Kanten-Pixel links am Pfahl dürfen zwischen Abbild und r184s Tiefe
 // höchstens um mehr als 8 Luma abweichen (Rauschen), und so viele Kanten-Pixel braucht die Probe mindestens (sonst blind).
 const SAUM_MAX = 2;
 const SAUM_KANTEN_MIN = 10;
@@ -651,7 +651,7 @@ function buehne(nFrames, nachtLicht) {
             const t = rend.getCanvasTarget().depthTexture;
             return !!(t && rend.backend.has(t) && rend.backend.get(t).texture);
         };
-        // (g) DAS RAHMEN-ZIEL DES DIREKTPFADS (0910-1): r184s Rahmen-Ziele (`_frameBufferTargets`, je Leinwand- bzw.
+        // (g) DAS RAHMEN-ZIEL DES DIREKTPFADS: r184s Rahmen-Ziele (`_frameBufferTargets`, je Leinwand- bzw.
         // Ausgabe-Ziel) und die Textur-Objekte, die der Zensus der Band dem Erzeuger `r184-ausgabe` gibt
         // (`isPostProcessingRenderTarget`) — in MB nach r184s eigener Schätzung
         const rahmenZiel = () => {
@@ -754,7 +754,7 @@ function buehne(nFrames, nachtLicht) {
                 throw new Error("gate:post-kette — erzwungener Render-Fehler der Kette");
             };
             await schritt("Render-Fehler");
-            // (g) DIE DRIFT (0910-1 A): fehlt r184s Abschied am Leinwand-Ziel (der dispose-Hörer, den
+            // (g) DIE DRIFT: fehlt r184s Abschied am Leinwand-Ziel (der dispose-Hörer, den
             // `_getFrameBufferTarget` anhängt), fällt das Rahmen-Ziel des Rückfalls trotzdem — LAUT: `_rahmenZielAbschied` meldet
             // ERROR. Die Wand nimmt den Hörer fort, kehrt zur Kette zurück und verlangt beides; ihre ERROR-Zeile ist die einzige,
             // die das Urteil duldet.

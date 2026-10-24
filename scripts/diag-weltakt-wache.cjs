@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-weltakt-wache.cjs — DIE BÜHNE HÄLT DIE WELT (0710-7). Jeder solche Zug ist ein Welt-Akt der DSL, und alle laufen
+// diag-weltakt-wache.cjs — DIE BÜHNE HÄLT DIE WELT. Jeder solche Zug ist ein Welt-Akt der DSL, und alle laufen
 // durch EINE Engstelle: `dslEval`. Der Schnitt liegt dort: unter dem Halt einer Messung (`_messHalt`, dieselbe
 // eingefrorene Uhr wie der Wetter-Halt) verweigert `dslEval` jeden Welt-Akt (`AnazhRealm.DSL_WELTAKTE`) und nennt ihn
 // beim Namen seiner Quelle (`_weltaktGehalten`); im Spiel zählt die Uhr von 0 aufwärts — das Spiel bleibt, wie es ist.

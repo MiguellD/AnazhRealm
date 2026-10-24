@@ -1586,7 +1586,7 @@ async function checkBandTierSeparation(ctx) {
         o.checks.b2BoldRoams = o.b2DistBold > 30 && o.b2DistBold > o.b2DistShy + 4; // frei — keine Leine unter 67 m
         cleanup([shy, bold]);
     
-        // ── (D) LEIB AN LEIB, (E) TIER AM SPIELER, (F) LOCKSTEP, (C2) SELBST-TEST (0710-4) ──
+        // ── (D) LEIB AN LEIB, (E) TIER AM SPIELER, (F) LOCKSTEP, (C2) SELBST-TEST ──
         {
             const steuerRoh = A._steuerGesetz;
             const steht = Object.create(steuerRoh.call(A));

@@ -1740,7 +1740,7 @@ const FIXTURES = [
             } catch (e6) {
                 res.c.wegeErr = (e6 && e6.message) || String(e6);
             }
-            // C7 — DER BLICK GEHÖRT DEM, DER DAS DORF VERLANGT (0710-7): ein Dorf aus einem Nexus-Programm (DSL-Quelle „nexus") lässt den Blick des Spielers
+            // C7 — DER BLICK GEHÖRT DEM, DER DAS DORF VERLANGT: ein Dorf aus einem Nexus-Programm (DSL-Quelle „nexus") lässt den Blick des Spielers
             // stehen; eines aus dem Chat-Programm des Spielers (DSL-Quelle „human") und der Befehl „dorf" richten ihn auf IHR
             // neues Dorf (den Schwerpunkt der eben gesetzten Häuser) — nie auf alle Häuser der Welt.
             try {
@@ -1787,7 +1787,7 @@ const FIXTURES = [
                         const muster = r.chatSystemPatterns.find((q) => q.re.test("dorf 4714 8"));
                         muster.run("dorf 4714 8".match(muster.re), () => {});
                     }),
-                    // die Werkzeuge des Spielers (0710-8): Fähigkeit per Taste, Wirken, Verzehr — und ein Mitspieler (für die Welt)
+                    // die Werkzeuge des Spielers: Fähigkeit per Taste, Wirken, Verzehr — und ein Mitspieler (für die Welt)
                     faehigkeit: await probe(-1800, 600, () =>
                         r.dslRun(["spawn_village", ["at_player"], 4715], { source: "ability:dorfruf" })
                     ),

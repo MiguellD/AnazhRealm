@@ -58,7 +58,7 @@ const opt = (k, d) => {
 };
 
 // DIE FOLGE je Messort — fest; die Ordnung ist das Gesetz der Messung. Die Mess-Wiese trägt die volle Folge. Der Genesis-Ring
-// (0910-1) misst sein Band in einer EIGENEN frischen Sitzung (jeder Aufruf ist ein Boot): in 0710-6 und 0710-9 lief
+// misst sein Band in einer EIGENEN frischen Sitzung (jeder Aufruf ist ein Boot): in 0710-6 und 0710-9 lief
 // `band --ort genesis` in der Zerleg-Sitzung an der Wiese — die Band-Linse schrieb selbst „NICHT GESTELLT … aufgestellt am Ort
 // wiese", und das Band trug 23,7 MB Rahmen-Ziel des Direktpfads (`tex:r184-ausgabe`). Keine der beiden Zahlen war Genesis.
 const FOLGEN = {
@@ -1196,7 +1196,7 @@ async function selbsttest() {
         /WELTAKT lauf-voll: kein Welt-Akt-Spion/
     );
     pruefe("vor der Bühne zählen Welt-Akte nicht", wachenUrteil("umstellen", wache(), dorf, ort, false), null);
-    // DER GENESIS-RING (0910-1): seine Folge ist die eigene (Boot · Ort · Bühne · Lauf voll · Band — seit 1110-9 richtet E dort
+    // DER GENESIS-RING: seine Folge ist die eigene (Boot · Ort · Bühne · Lauf voll · Band — seit 1110-9 richtet E dort
     // auch Frame und CPU-Takt); eine Bank der Wiese an der Genesis fällt beim Namen, ein Lauf an der Wiese, der „genesis"
     // heißt, an der Ort-Wache und an der Aufzeichnung der Band — und ein liegen gelassenes Rahmen-Ziel des Direktpfads
     // (0710-9 B: `band --ort genesis` nach `zerlegen` in derselben Sitzung) beim Namen.
