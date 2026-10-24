@@ -64,12 +64,15 @@ class AnazhRealm_kreatur_verhalten {
             build: "wird zur Schöpferin",
             drink: "sucht Wasser am Ufer",
         };
-        const text = `Eine Kreatur ${labels[taskName] || "ändert ihren Auftrag"}.`;
-        this.journalAppend("relationship", text, {
-            task: taskName,
-            from: prevName,
-            creatures_total: this.state.creatures.length,
-        });
+        this.journalAppend(
+            "relationship",
+            AnazhRealm._datum`Eine Kreatur ${labels[taskName] || "ändert ihren Auftrag"}.`,
+            {
+                task: taskName,
+                from: prevName,
+                creatures_total: this.state.creatures.length,
+            }
+        );
     }
 
     assignTaskToNearestCreature(toPos, taskName, args = {}, maxDist = 60) {
@@ -90,7 +93,7 @@ class AnazhRealm_kreatur_verhalten {
                 this.log("Keine Kreatur in Reichweite für Auftrag", "INFO");
             }
             if (typeof this.journalAppend === "function") {
-                this.journalAppend("reach", `Ein Auftrag „${taskName}" verhallte ohne Hörer.`, {
+                this.journalAppend("reach", AnazhRealm._datum`Ein Auftrag „${taskName}" verhallte ohne Hörer.`, {
                     task: taskName,
                     maxDist,
                 });
@@ -1671,7 +1674,7 @@ class AnazhRealm_kreatur_verhalten {
             this.journalAppendOnce(
                 `hunted:${name}`,
                 "relationship",
-                `${name} witterte dich als Beute — die Wildnis hat Zähne.`
+                AnazhRealm._datum`${name} witterte dich als Beute — die Wildnis hat Zähne.`
             );
         }
     }
@@ -1979,7 +1982,7 @@ class AnazhRealm_kreatur_verhalten {
                     const cname = (creature.userData && creature.userData.name) || "Kreatur";
                     this.journalAppend(
                         "growth",
-                        `${cname} trank am Ufer — das Wasser nährte sie, sie fühlt sich erfrischt.`,
+                        AnazhRealm._datum`${cname} trank am Ufer — das Wasser nährte sie, sie fühlt sich erfrischt.`,
                         { creatures_total: this.state.creatures.length }
                     );
                 }
@@ -2071,10 +2074,14 @@ class AnazhRealm_kreatur_verhalten {
                     blueprint: carrying.blueprint,
                 });
                 if (typeof this.journalAppend === "function" && summary.length > 0) {
-                    this.journalAppend("growth", `Eine Kreatur übergab dem Schöpfer: ${summary.join(", ")}.`, {
-                        materials: carrying.materials,
-                        blueprint: carrying.blueprint,
-                    });
+                    this.journalAppend(
+                        "growth",
+                        AnazhRealm._datum`Eine Kreatur übergab dem Schöpfer: ${summary.join(", ")}.`,
+                        {
+                            materials: carrying.materials,
+                            blueprint: carrying.blueprint,
+                        }
+                    );
                 }
                 creature.userData.carrying = null;
                 if (typeof this._refreshCreatureCarryingVisual === "function") {
@@ -2083,7 +2090,6 @@ class AnazhRealm_kreatur_verhalten {
                 this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
                 return out.set(0, 0, 0);
             }
-            // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation.
             const speed =
                 AnazhRealm.CREATURE_GATHER_SPEED *
                 this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
@@ -2100,15 +2106,18 @@ class AnazhRealm_kreatur_verhalten {
             target = this._findNearestArchitectureWithMaterial(creature.position, material);
             if (!target) {
                 this._creatureRemember(creature, "no_material", { material });
-                // Welle 6.H Phase 2E V2 — proaktive Sprache bei Material-Mangel.
                 if (typeof this._creatureSpeakProactive === "function") {
                     this._creatureSpeakProactive(creature, "no_material_found", { material });
                 }
                 if (typeof this.journalAppend === "function") {
-                    this.journalAppend("reach", `Eine Kreatur findet kein „${material}" in der Nähe.`, {
-                        material,
-                        creatures_total: this.state.creatures.length,
-                    });
+                    this.journalAppend(
+                        "reach",
+                        AnazhRealm._datum`Eine Kreatur findet kein „${material}" in der Nähe.`,
+                        {
+                            material,
+                            creatures_total: this.state.creatures.length,
+                        }
+                    );
                 }
                 this.assignCreatureTask(creature, "wander", {}, { silent: true });
                 return null;
@@ -2144,7 +2153,6 @@ class AnazhRealm_kreatur_verhalten {
             this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
             return out.set(0, 0, 0); // diesen Tick stehen, nächster sucht neues Ziel
         }
-        // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (Such-Phase).
         const speed =
             AnazhRealm.CREATURE_GATHER_SPEED *
             this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
@@ -2166,7 +2174,9 @@ class AnazhRealm_kreatur_verhalten {
         if (!bp) {
             this._creatureRemember(creature, "no_blueprint", { blueprint });
             if (typeof this.journalAppend === "function") {
-                this.journalAppend("reach", `Eine Kreatur kennt den Bauplan „${blueprint}" nicht.`, { blueprint });
+                this.journalAppend("reach", AnazhRealm._datum`Eine Kreatur kennt den Bauplan „${blueprint}" nicht.`, {
+                    blueprint,
+                });
             }
             this.assignCreatureTask(creature, "wander", {}, { silent: true });
             return null;
@@ -2174,7 +2184,6 @@ class AnazhRealm_kreatur_verhalten {
         const carrying = creature.userData && creature.userData.carrying;
         const player = this.state.playerMesh ? this.state.playerMesh.position : null;
         if (!player) return out.set(0, 0, 0);
-        // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (alle build-Phasen).
         const buildSpeed =
             AnazhRealm.CREATURE_BUILD_SPEED *
             this._creatureTaskSpeedMultiplier(creature, "build", task.args) *
@@ -2197,14 +2206,13 @@ class AnazhRealm_kreatur_verhalten {
                         blueprint,
                         missing: gate.missing,
                     });
-                    // Welle 6.H Phase 2E V2 — proaktive Sprache bei Material-Mangel beim Bauen.
                     if (typeof this._creatureSpeakProactive === "function") {
                         this._creatureSpeakProactive(creature, "no_inventory_for_build", { blueprint });
                     }
                     if (typeof this.journalAppend === "function") {
                         this.journalAppend(
                             "reach",
-                            `Der Schöpfer hat kein Material für „${blueprint}" (fehlt: ${missingStr}).`,
+                            AnazhRealm._datum`Der Schöpfer hat kein Material für „${blueprint}" (fehlt: ${missingStr}).`,
                             { blueprint, missing: gate.missing }
                         );
                     }
@@ -2267,7 +2275,7 @@ class AnazhRealm_kreatur_verhalten {
             position: spawnPos,
         });
         if (typeof this.journalAppend === "function") {
-            this.journalAppend("growth", `Eine Kreatur erschuf „${blueprint}" für den Schöpfer.`, {
+            this.journalAppend("growth", AnazhRealm._datum`Eine Kreatur erschuf „${blueprint}" für den Schöpfer.`, {
                 blueprint,
                 materials: carrying.materials,
             });
