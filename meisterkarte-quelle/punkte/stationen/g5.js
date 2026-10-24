@@ -74,7 +74,7 @@ const KAMPF = [
     "stamm/kreatur-*.js",
     "stamm/koerper-*.js",
     "stamm/daten.js",
-    "worlds/schmiede/schmiede-core.js",
+    "schmiede-core.js",
     "scripts/diag-kampf-gefuehl.cjs",
     "scripts/lib/kampf-proben.cjs",
     "scripts/lib/welt-boot.cjs",
@@ -651,11 +651,44 @@ const stationen = [
             const form = l.find((x) => /^\s+form \{/.test(x));
             return {
                 gruen: /✅/.test(q) && !!sichel && /✅/.test(sichel),
-                zahl: "Q11 " + (/✅/.test(q) ? "grün" : "ROT") + " (" + (form ? form.trim() : "keine Form-Zeile") + ") · Sichel " + (sichel ? (/✅/.test(sichel) ? "grün" : "ROT") : "ungemessen (keine Probe)"),
+                zahl: "Q11 " + (/✅/.test(q) ? "grün" : "ROT") + " (" + (form ? form.trim().slice(0, 240) : "keine Form-Zeile") + ") · Sichel " + (sichel ? (/✅/.test(sichel) ? "grün" : "ROT") : "ungemessen (keine Probe)"),
             };
         },
         pfad: KAMPF,
         quelle: "1 = Axt fällt, Spaten gräbt, Sichel erntet über die echte Eingabe, und eine umgeformte Klinge (Axt mit Spaten-Blatt) wirkt nach der neuen Form",
+    },
+    // gate:kampf-gefuehl Q11 (der Werkzeug-Satz an der Mess-Wiese): jede der 22 Gestalten des Gesetzbuchs und die Hand, je Ziel EIN
+    // Klick über die echte Eingabe — Eiche, Fels, Erde, Wiese, Wild, Schuss —, gezählt Wirkung und Verschleiß, am Ziel der Aufgabe
+    // dazu wear 0,5 (der Faktor in der Kraft) und 0,02 (die Wand); die Form-Mutation (Grab-Blatt, Axt-Kopf, Krümmung, Recurve)
+    // und der Stoff (Stahl, Eisen, Bronze aus der Tradition, 16 Hiebe in Folge, die halbe Härte der Stahl-Zeile). Die Selbst-Tests
+    // S6 (Pfeil ohne Verschleiß), S13 (Art-Tafel), S15 (Name), S16 (Spender) müssen feuern. An main 6f8a2c66 ROT: 19 von 22,
+    // Stahl, Eisen und Bronze zehren je 0,0032, Graben zehrt nicht und kennt keine Wand, die Recurve schießt gleich.
+    {
+        kriterium: "halten.K3",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kampf-gefuehl.cjs"],
+        env: { KAMPF_GEFUEHL_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const l = lauf.stdout.split(/\r?\n/);
+            const q = l.find((x) => /^\s*(✅|❌) Q11 halten\.K3 Staffel 2/.test(x));
+            if (!q) return { gruen: false, zahl: "keine Zeile Q11 halten.K3 Staffel 2 (Exit " + lauf.exit + ")" };
+            const selbst = ["S6", "S13", "S15", "S16"].map((k) => [k, l.find((x) => x.includes("SELBST-TEST (" + k + ")"))]);
+            const stumm = selbst.filter(([, x]) => !x || !/✅/.test(x)).map(([k]) => k);
+            const [, gut, alle] = q.match(/\((\d+) von (\d+)\)/) || [];
+            const stoff = (q.match(/Stoff-Zeile \(([^)]*)\)/) || [])[1];
+            return {
+                gruen: /✅/.test(q) && +gut === +alle && +alle >= 22 && !stumm.length,
+                zahl:
+                    (gut || "?") + " von " + (alle || "?") + " Gestalten · zehrt " + (stoff || "ungemessen") +
+                    (/❌/.test(q) ? " · ROT: " + q.split(" — ").slice(1).join(" — ").slice(0, 300) : "") +
+                    (stumm.length ? " · Selbst-Test stumm: " + stumm.join(", ") : ""),
+            };
+        },
+        pfad: KAMPF.concat(["stamm/vegetation-wiese.js", "stamm/bau-vorlagen.js"]),
+        quelle: "2 = jede Werkzeug-Form der Schmiede, Verschleiß aus dem Stoff",
     },
 
     // ───────── tore.K5 — Teilen in EINER Geste (tore-k5-geste) ─────────
@@ -847,9 +880,5 @@ module.exports.fehlt = [
     {
         kriterium: "halten.K2", staffel: 2, befehl: null,
         grund: "kein Klang-Abgriff je Stoff-Paar (Stahl/Holz, Stahl/Stein, Holz/Fell) und keine Funken-Probe; latenz zählt nur den Hit-Stop",
-    },
-    {
-        kriterium: "halten.K3", staffel: 2, befehl: null,
-        grund: "keine Probe über jede Werkzeug-Form der Schmiede und keine für den Verschleiß aus dem Stoff",
     },
 ];

@@ -1,7 +1,7 @@
 // Stationen der Gruppe I (src/g1.js): je Kriterium und Staffel EINE Station — Befehl im Spiel-Baum am SHA, Urteil über
 // seine Ausgabe, Pfad für R6. Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst ist jedes Kriterium der Gruppe mit Punkten (gelaende K1–K5, wetter K1 K2 K5, physik K1 K2, feld K2 K3; physik K2
-// ist zugleich das Ziel des Zweigs kontakt-tempo). Die Messschuld M30–M43 trägt kein Kriterium der Gruppe I.
+// Erfasst ist jedes Kriterium der Gruppe mit Punkten (gelaende K1–K5, wetter K1 K2 K5, physik K1 K2, feld K2 K3, stoffe K3;
+// physik K2 ist zugleich das Ziel des Zweigs kontakt-tempo). Die Messschuld M30–M43 trägt kein Kriterium der Gruppe I.
 // Was kein Werkzeug im Spiel-Baum misst, steht NICHT in der Liste (der Läufer verlangt ein argv), sondern in
 // `module.exports.fehlt` mit befehl: null und dem Grund — das Kriterium bleibt dort Hand-Buchung, bis das Werkzeug steht.
 "use strict";
@@ -824,6 +824,63 @@ module.exports = [
             "schmiede-core.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/lib/wasser-linse.cjs"],
         quelle: "2 = jedes Ding (gebaut, geschmiedet, lose); die Mutation von ρ in der EINEN Stoff-Zeile zieht Masse und Eintauchtiefe in der Welt",
     },
+
+    // ── stoffe.K3 ── das Eis, die feste Phase der EINEN Wasser-Wahrheit (gate:wasser-leben E im Block koerper, Null-Renderer:
+    // Mechanik am Spieler-Weg, R3): im Winter (Saison 0,875, das Temperatur-Feld des Gelände-Kerns am Spiegel unter 0 °C)
+    // geht der Spieler mit W über den See der Mess-Wiese und steht auf dem Eis, Wolf, Fuchs und Bär stehen auf ihm; das Feld
+    // +10 °C an seiner EINEN Naht (`_temperaturAt`) bricht ihn ein — er schwimmt wie im Sommer. Am main 6f8a2c66 ROT (keine
+    // Eis-Probe; im Winter schwamm der Spieler, die Füße bis 1,227 m unter dem Spiegel), am Zweig stoffe-k3-phasen GRÜN.
+    {
+        kriterium: "stoffe.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-wasser-leben.cjs", "--nur", "koerper"],
+        env: { WASSER_LEBEN_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const b = jsonBlock(lauf.stdout);
+            const e = b && b.koerper && b.koerper.eis;
+            if (!e || !e.winter || !e.mutation)
+                return { gruen: false, zahl: "keine Eis-Probe in der Ausgabe (Exit " + lauf.exit + ")" };
+            const w = e.winter;
+            const m = e.mutation;
+            const tier = Array.isArray(e.tier) ? e.tier : [];
+            const tierTraegt = tier.filter((t) => !t.schwimmt && Math.abs(t.sohleUnterSpiegel) <= 0.05).length;
+            const gruen =
+                lauf.exit === 0 &&
+                /WASSER-LEBEN GRÜN/.test(lauf.stdout) &&
+                w.temperatur < 0 &&
+                w.seeFrames >= 120 &&
+                w.schwimmFrames === 0 &&
+                w.luft === 0 &&
+                w.maxM <= 0.05 &&
+                tier.length === 3 &&
+                tierTraegt === 3 &&
+                m.temperatur >= 0 &&
+                m.schwimmFrames > 0;
+            return {
+                gruen,
+                zahl:
+                    "Winter " + w.temperatur + " °C am Spiegel: " + w.seeFrames + " Schritte auf dem See, die Füße bis " +
+                    w.maxM + " m vom Spiegel, " + w.schwimmFrames + " schwimmend · " + tierTraegt + " von " + tier.length +
+                    " Tieren am Spiegel · Feld +10 °C (" + m.temperatur + " °C): " + m.schwimmFrames + " Schritte schwimmend",
+            };
+        },
+        pfad: [
+            "gelaende-core.js",
+            "stamm/wasser-*.js",
+            "stamm/koerper-*.js",
+            "stamm/kreatur-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/daten.js",
+            "scripts/diag-wasser-leben.cjs",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = eine Phase mit Körper-Folge (das Eis trägt den Spieler, y am Spiegel ±5 cm)",
+    },
 ];
 
 // ── NICHT FASSBAR (befehl: null): kein Werkzeug im Spiel-Baum misst das Soll dieser Staffel als EIN Befehl am SHA ──
@@ -837,5 +894,6 @@ module.exports.fehlt = [
     { kriterium: "feld.K2", staffel: 1, befehl: null, grund: "Werkzeug fehlt für das ganze Soll: gate:mp-sync (c) trägt nur zwei Chat-Edits über Peers, keine Bauten; kein Werkzeug misst Edits und Bauten byte-gleich über einen Reload (gate:reload-treue prüft den Guss-Pin der Kreatur)" },
     { kriterium: "feld.K2", staffel: 2, befehl: null, grund: "nicht gebaut: Wetter am Ort, Pegel, Overlays, Brand ohne Zustands-Nachricht über Peers ungemessen; Reload mitten im Sturm ohne Linse" },
     { kriterium: "feld.K1", staffel: 2, befehl: null, grund: "Werkzeug fehlt: `diag-fahr-leben --kette` kennt drei Glieder (Regen-Feld, Nässe, Grip) und misst Tiefe ≥ 4 nie; das vierte Glied (Unterstand und Tränke der Tiere aus Nässe und Pegel statt `_weatherIsWet`, oder der Pegel aus dem Regen) ist nicht gebaut" },
+    { kriterium: "stoffe.K3", staffel: 2, befehl: null, grund: "nicht gebaut: der Schnee schmilzt nicht (die Schneegrenze ist Höhe allein, kein Pegel liest Schmelze), Lava erstarrt nicht (die glut-Achse ist eine eingefrorene Feld-Achse), der Stahl der Esse liest das Temperatur-Feld nicht; nur das Eis steht (Staffel 1)" },
     { kriterium: "feld.K3", staffel: 2, befehl: null, grund: "Werkzeug fehlt: `werkbank stand --sim` misst die Ruhe, nicht „nur in berührten Zellen“ (unter Taten 32 805 Einheiten); der Brand hat keinen Takt im Stamm" },
 ];
