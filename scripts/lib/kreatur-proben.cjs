@@ -2791,7 +2791,8 @@ async function kreaturProben(r, T, opts) {
     });
 
     // ── tiersatz (profiband.K1 „Sturm mit 50 Tieren“): 10 und 50 Tiere im Nah-Kreis — die Befehle der Tiere hängen nie an
-    // der Kopfzahl; wer nicht als Leib lebt, geht im Satz seiner Gattung und gleitet nicht (`satzGang`).
+    // der Kopfzahl; wer nicht als Leib lebt, geht im Satz seiner Gattung (dass er dort nicht gleitet und die Gangart des Leibs
+    // geht, misst gate:tier-gang je Gattung und Tempo am Knoten des Satzes).
     await buehne("tiersatz", async (restore) => {
         const SM = A.TETRAPODA_SOUL_MAP;
         const seelen = ["wolf", "fox", "bear", "deer"].map((g) => Object.keys(SM).find((k) => SM[k] === g));
@@ -2822,7 +2823,7 @@ async function kreaturProben(r, T, opts) {
                 }
             return { haupt, wurf, leiber, satz, satzW };
         };
-        // Täter (Selbsttest): die Menge als Leib (keine Satz-Wahl) · der Satz geht schneller, als der Leib läuft
+        // Täter (Selbsttest): die Menge als Leib (keine Satz-Wahl)
         if (taeter === "tiersatz-kopf") decke(restore, "_tierSatzWahl", () => () => null);
         // · das Auge trägt jedes Satz-Tier (kein Blick) · der Takt schreibt jeden Platz, ob sich etwas rührte oder nicht
         if (taeter === "tiersatz-blick") decke(restore, "_kreaturAusserBlick", () => () => false);
@@ -2841,15 +2842,6 @@ async function kreaturProben(r, T, opts) {
                         } finally {
                             s.p2p.remoteCreatures = k;
                         }
-                    }
-            );
-        if (taeter === "tiersatz-gleiten")
-            decke(
-                restore,
-                "_tierSatzSchritt",
-                (alt) =>
-                    function (u, weg, ...rest) {
-                        return alt.call(this, u, weg * 1.5, ...rest);
                     }
             );
         const ring = (n, rMin, rMax, saat) => {
@@ -2940,35 +2932,6 @@ async function kreaturProben(r, T, opts) {
                     ),
                 ].reduce((n, a) => n + a.byteLength, 0),
             }));
-        // DER GANG IM SATZ (`satzGang`): je Senke `fell` die tiefste Ecke je Bein (Seite × vorn/hinten der stehenden Vorlage)
-        const fuesse = (geo) => {
-            const P = geo.attributes.position;
-            let zM = 0;
-            for (let v = 0; v < P.count; v++) zM += P.getZ(v) / P.count;
-            const ix = [[-1], [-1], [-1], [-1]];
-            for (let v = 0; v < P.count; v++) {
-                const f = ix[(P.getX(v) < 0 ? 0 : 1) + (P.getZ(v) < zM ? 0 : 2)];
-                if (f[0] < 0 || P.getY(v) < P.getY(f[0])) f[0] = v;
-            }
-            return ix;
-        };
-        const gang = satzGang(fuesse, (x, z) => {
-            const c = s.creatures.find((k) => Math.hypot(k.position.x - x, k.position.z - z) < 1e-3);
-            return c
-                ? {
-                      key: c.userData.netId,
-                      bein: c.userData._tierBaum.beinL,
-                      x: c.position.x,
-                      z: c.position.z,
-                      ry: c.rotation.y,
-                  }
-                : null;
-        });
-        for (let i = 0; i < 360; i++) {
-            bildTakt(1 / 60);
-            gang.messen(saetze().filter((m) => m.userData.teil === "wurf"));
-        }
-        const G = gang.schlupf();
         // DIE SICHT-KOPIEN (dieselbe Klasse): 8 Kopien eines Mitspielers im Ring 20–40 m stehen in der Menge — als Leib zeichnen
         // höchstens die `nahLeiber` Nächsten aller Tiere, eigene und Kopien zusammen
         const remote = s.p2p.remoteCreatures;
@@ -3000,9 +2963,6 @@ async function kreaturProben(r, T, opts) {
             b50: B50,
             nahLeiber: A.KREATUR_SATZ ? A.KREATUR_SATZ.nahLeiber : null,
             senken: saetze().length,
-            satzTiere: G.spuren,
-            schlupf: G.schlupf,
-            wegLeib: G.wegLeib,
             ruhe,
             blick,
             puffer,
@@ -3055,10 +3015,6 @@ function urteil(name, z) {
         soll(
             z.nahLeiber != null && z.b50.leiber <= z.nahLeiber,
             `${z.b50.leiber} von 50 Tieren als Leib gezeichnet (Soll ≤ nahLeiber ${z.nahLeiber})`
-        );
-        soll(
-            z.satzTiere >= 10 && z.wegLeib >= 20 && z.schlupf !== null && z.schlupf <= 0.05,
-            `der Satz gleitet: Schlupf ${z.schlupf} über ${z.wegLeib} m Gang von ${z.satzTiere} Satz-Tieren (Soll ≤ 0,05 über ≥ 20 m, ≥ 10 Tiere)`
         );
         const Rh = z.ruhe;
         soll(
@@ -3490,7 +3446,6 @@ const TAETER = {
     todlage: [["todlage-takt", /der Tod rechnet seine Lage im Takt: [1-9]/]],
     tiersatz: [
         ["tiersatz-kopf", /hängen an der Kopfzahl/],
-        ["tiersatz-gleiten", /der Satz gleitet/],
         ["tiersatz-blick", /Satz außer Blick/],
         ["tiersatz-schreiben", /schreibt ohne Änderung/],
         ["tiersatz-kopie", /Sicht-Kopien zeichnen als Leib/],
