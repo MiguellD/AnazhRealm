@@ -822,9 +822,13 @@ class AnazhRealm_werkstatt_sozial {
         else delete this.state.feedFollows[key];
         this._saveFeedFollows();
         if (on && typeof this.journalAppend === "function") {
-            this.journalAppend("witness", `Ich folge nun ${this._vibeFingerprint(key)} — seine Werke begleiten mich.`, {
-                follow: key,
-            });
+            this.journalAppend(
+                "witness",
+                AnazhRealm._datum`Ich folge nun ${this._vibeFingerprint(key)} — seine Werke begleiten mich.`,
+                {
+                    follow: key,
+                }
+            );
         }
         return on;
     }
@@ -1044,9 +1048,13 @@ class AnazhRealm_werkstatt_sozial {
             this.p2pSend({ type: "social-comment", c });
         }
         if (typeof this.journalAppend === "function") {
-            this.journalAppend("share", `Ich liess ein Wort bei „${id}" zurueck: „${x.slice(0, 60)}"`, {
-                comment: id,
-            });
+            this.journalAppend(
+                "share",
+                AnazhRealm._datum`Ich liess ein Wort bei „${id}" zurueck: „${x.slice(0, 60)}"`,
+                {
+                    comment: id,
+                }
+            );
         }
         return c;
     }
