@@ -1161,7 +1161,7 @@ class AnazhRealm_vegetation_wiese {
             if (!nah(key, AnazhRealm.NAH_STREU.kachel)) continue;
             const alt = sh ? sh.get(key) : null;
             for (const it of k.items)
-                if (arten[it.art].ernte === stoff && !(alt && alt.has(it.id)) && imZug(it.x, it.y, it.z))
+                if ((arten[it.art] || {}).ernte === stoff && !(alt && alt.has(it.id)) && imZug(it.x, it.y, it.z))
                     mahd.streu.push({ key, id: it.id });
         }
         const nw = this.state.nahWiese;
