@@ -224,6 +224,8 @@ AnazhRealm._diaetGang = function (ro, nbs) {
 // 9768286c: 57 Gänge je Bild, ~26 Einträge je Gang; der Gang ohne Laden und Melder 0,6 von 7,4 ms Szene unter Fremdlast). Jetzt
 // trägt jede gleiche Liste EINEN Satz mit EINEM Stempel je Render-Abschnitt; ein Satz, der im Abschnitt schon ging, fällt ganz
 // (jeder seiner Knoten trägt dann denselben Stempel). Die Tafel hält ihre Sätze schwach (ein gefallenes Programm hält nichts).
+// Gemessen (Radeon, Stand, ABAB in einer Welt): von 1 620 Einträgen je Bild fallen 1 328 (Genesis Third), von 574 fallen 357
+// (Wiese Ego). Der Wert-Blick davor (ein Vergleich je Knoten statt je Uniform) fiel: ein Gang langsamer, 1,29 → 1,58 ms.
 AnazhRealm._diaetSatz = function (liste, id) {
     const T = AnazhRealm._diaetSaetze || (AnazhRealm._diaetSaetze = new Map());
     const k = liste.map(id).join(",");
