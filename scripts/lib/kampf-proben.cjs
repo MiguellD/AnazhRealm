@@ -3232,7 +3232,7 @@ async function WELLE_L(ort) {
                 const x = { verb: p._mausVerb, kraut: kraut() - v[1] };
                 await window.__weltStehtNach();
                 x.fehlen = v[0] - um();
-                r._tickScatterRegrow(performance.now() + A.FORAGE.regrowMs + 1);
+                r._tickScatterRegrow(Infinity);
                 await window.__weltStehtNach();
                 return Object.assign(x, { wieder: um() === v[0] });
             };
