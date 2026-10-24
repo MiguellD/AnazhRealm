@@ -268,6 +268,7 @@ async function kaltLauf() {
         console.log(`⛔ Kalt-Zeile fehlgeschlagen: ${out ? out.__err : "?"}`);
         process.exit(2);
     }
+    out.urteil = ankunftUrteil(out);
     const json = OPT("--json", null);
     if (json) fs.writeFileSync(json, JSON.stringify(out, null, 1));
     // je Sekunde: der Stand am Ende der Sekunde (die letzte Probe) und die blockierten ms des Haupt-Threads
@@ -325,7 +326,7 @@ async function kaltLauf() {
     if (wagen.length) console.log(`  ${(Math.max(...wagen) / 1000).toFixed(1)} s  der Vorrat der Wagen steht (${wagen.length})`);
     if (out.bild && out.bild.datei)
         console.log(`  das Bild bei der Kontrolle: ${out.bild.datei} (${out.bild.dc} Befehle · ${out.bild.dreiecke} Dreiecke)`);
-    const u = ankunftUrteil(out);
+    const u = out.urteil;
     const s = (ms) => (ms ? (ms / 1000).toFixed(2) + " s" : "— (nicht erreicht)");
     console.log(
         `\n  t(Kontrolle) ${s(u.t)} ab Navigation (von außen: W bewegt den Leib ≥ 0,1 m) · die Eigenmeldung t(Weltbild) ` +
