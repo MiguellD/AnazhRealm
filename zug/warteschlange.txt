@@ -21,3 +21,7 @@ z16b-abab 1 abab A=3d2b3276b43471f4f38f8859a3c92ed62ca15abc B=3046bc79f686376069
 z16b-punkte 2 punkte sha=3046bc79f6863760692afe9ce161798215cbd8cb geraet=gtx
 z17-abab 1 abab A=3046bc79f6863760692afe9ce161798215cbd8cb B=6f8a2c6638623a037f69bf110358f36b68b343d6 zellen=w-ego,d-ego,stadt
 z17-punkte 2 punkte sha=6f8a2c6638623a037f69bf110358f36b68b343d6 geraet=gtx
+z14c-punkte 0 storno
+z15d-punkte 0 storno
+z16b-punkte 0 storno
+z13-dorf-takt 1 abab A=6f8a2c6638623a037f69bf110358f36b68b343d6 B=cfff4685ee87b240c071569fc70311b37925ce79 zellen=d-ego,w-ego
