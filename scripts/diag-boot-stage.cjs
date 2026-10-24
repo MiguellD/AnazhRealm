@@ -31,14 +31,10 @@ const server = statikServer();
 
 // ── DIE KALT-ZEILE: die Probe in der Seite ab dem ersten Skript ──
 function KALT_PROBE() {
-    const A = (window.__kalt = { proben: [], lang: [], ev: [] });
-    try {
-        new PerformanceObserver((l) => {
-            for (const e of l.getEntries()) A.lang.push([Math.round(e.startTime), Math.round(e.duration)]);
-        }).observe({ type: "longtask", buffered: true });
-    } catch (_e) {
-        A.ohneLang = true;
-    }
+    const A = (window.__kalt = { proben: [], lang: [] });
+    new PerformanceObserver((l) => {
+        for (const e of l.getEntries()) A.lang.push([Math.round(e.startTime), Math.round(e.duration)]);
+    }).observe({ type: "longtask", buffered: true });
     let gewickelt = false;
     // die Haupt-Faden-Zeit je Sekunde der schweren Arbeiter (verschachtelt zählt doppelt)
     A.kosten = {};
@@ -51,23 +47,19 @@ function KALT_PROBE() {
         _foundryIngestBook: "Buch",
         _spawnSettlementSlot: "Dorf",
     };
-    // dazu die Siedlungs-Probe beim Namen
     const wickle = (P) => {
-        for (const name of [...Object.keys(KOSTEN), "_foundryRequestSettlement"]) {
+        for (const name of Object.keys(KOSTEN)) {
             const alt = P[name];
             if (typeof alt !== "function") continue;
             const k = KOSTEN[name];
             P[name] = function (...a) {
                 const t0 = performance.now();
-                if (!k) A.ev.push([Math.round(t0), name + " ab"]);
                 try {
-                    const x = alt.apply(this, a);
-                    if (!k && x && typeof x.then === "function") x.then(() => A.ev.push([Math.round(performance.now()), name + " an"]));
-                    return x;
+                    return alt.apply(this, a);
                 } finally {
                     const t1 = performance.now();
-                    const z = k ? A.kosten[k] || (A.kosten[k] = {}) : null;
-                    if (z) z[Math.floor(t0 / 1000)] = (z[Math.floor(t0 / 1000)] || 0) + (t1 - t0);
+                    const z = A.kosten[k] || (A.kosten[k] = {});
+                    z[Math.floor(t0 / 1000)] = (z[Math.floor(t0 / 1000)] || 0) + (t1 - t0);
                     if (name === "_foundryIngestBook" && !A.buchDa) A.buchDa = Math.round(t1);
                 }
             };
@@ -97,6 +89,7 @@ function KALT_PROBE() {
             const E = r._erstZeichnung;
             if (E) o.erst = [E.bauN, Math.round(E.bauMs), E.offen ? E.offen.size : 0];
             o.da = r.state._weltbildDa ? Math.round(r.state._weltbildDa) : 0;
+            o.takt = r.state.spielZeit;
         }
         A.proben.push(o);
     }, 200);
@@ -273,7 +266,6 @@ async function kaltLauf() {
         if (p.vorrat || phase) console.log(`  ${(p.t / 1000).toFixed(1)} s  der Vorrat ${p.vorrat || "ist durch"}`);
         phase = p.vorrat;
     }
-    for (const [t, was] of out.ev || []) console.log(`  ${(t / 1000).toFixed(1)} s  ${was}`);
     if (out.bild && out.bild.datei) console.log(`  das Bild bei der Kontrolle: ${out.bild.datei}`);
     const u = out.urteil;
     const s = (ms) => (ms ? (ms / 1000).toFixed(2) + " s" : "—");
@@ -298,6 +290,10 @@ function ankunftUrteil(m) {
     else if (t > ANKUNFT_SOLL_MS) taeter.push(`t(Kontrolle) ${(t / 1000).toFixed(2)} s > ${ANKUNFT_SOLL_MS / 1000} s`);
     if (halb) taeter.push(`das halbe Weltbild: ${halb}`);
     if (t && !(luecke <= BILD_LUECKE)) taeter.push(`das Bild bei der Kontrolle weicht ${luecke} > ${BILD_LUECKE}`);
+    // vor dem Bild zwei Proben in 300 ms (der Faden frei) ohne Takt dazwischen
+    const P = m.proben || [];
+    const steht = P.filter((q, i) => i && q.takt > 0 && q.takt === P[i - 1].takt && q.t - P[i - 1].t < 300 && !q.da);
+    if (steht.length) taeter.push(`der Takt stand ${steht.length} × 200 ms vor dem Bild`);
     return { t, luecke, ganz: !!t && !halb && luecke <= BILD_LUECKE, taeter };
 }
 const ankunftSelbsttest = () =>
@@ -307,6 +303,7 @@ const ankunftSelbsttest = () =>
         ["das Bild bei der Kontrolle weicht 8 %", { kontrolle: 4000, bild: { luecke: 0.08 } }, true],
         ["die Welt nennt das halbe Weltbild", { kontrolle: 4000, bild: { luecke: 0 }, ohne: ["x"] }, true],
         ["die Welt stand", { kontrolle: 4000, bild: { lauf: 0 } }, true],
+        ["der Takt stand", { kontrolle: 4000, bild: { luecke: 0 }, proben: [{ t: 0, takt: 1 }, { t: 200, takt: 1 }] }, true],
     ].map(([fall, m, rot]) => {
         const u = ankunftUrteil(m);
         return { name: `SELBST-TEST Ankunft: ${fall} — ${u.taeter.length ? "ROT" : "GRÜN"}`, pass: !!u.taeter.length === rot };
