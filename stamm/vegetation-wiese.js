@@ -560,7 +560,8 @@ class AnazhRealm_vegetation_wiese {
                         this._senkeMesh(a, Math.ceil(a.kap * 1.5), this.state.scene);
                         a.anders = true;
                     }
-                    const e = mw.multiplyMatrices(m4, a.lokal).elements;
+                    // die Karte trägt keine lokale Matrix (die Einheit): ihre Basis ist die Matrix
+                    const e = stufe === 3 ? m4.elements : mw.multiplyMatrices(m4, a.lokal).elements;
                     const arr = a.mesh.instanceMatrix.array;
                     const o = a.anzahl * 16;
                     for (let j = 0; j < 16; j++) {
