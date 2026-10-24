@@ -3010,20 +3010,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
-        const AR = window.AnazhRealm || r.constructor;
         const out = {};
-
-        // (W1) FROZEN-Konstanten existieren mit plausiblen Werten.
-        out.constantsExist =
-            typeof AR.WEAR_PER_STRIKE_BASE === "number" &&
-            AR.WEAR_PER_STRIKE_BASE > 0 &&
-            AR.WEAR_PER_STRIKE_BASE < 0.1 &&
-            typeof AR.WEAR_KAPUTT_SCHWELLE === "number" &&
-            AR.WEAR_KAPUTT_SCHWELLE > 0 &&
-            AR.WEAR_KAPUTT_SCHWELLE < 1 &&
-            typeof AR.REPAIR_COST_FRACTION === "number" &&
-            AR.REPAIR_COST_FRACTION > 0 &&
-            AR.REPAIR_COST_FRACTION <= 1;
 
         // (W2) MIGRATION: ein Bauplan ohne wear-Feld liest 1 (alte Welten
         // verlieren NICHTS — kein Funktions-Verlust beim Reload).
@@ -3073,19 +3060,6 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         const wHolz = r._wearPerStrike(holzBp);
         out.eisenSlower = wEisen > 0 && wHolz > 0 && wEisen < wHolz;
 
-        // (W5) _wearStatFactor: voll → 1.0, leer → FLOOR (≥0.3), 50 % → ~0.65.
-        r._setBlueprintWear(fakeBp, 1);
-        const factorFull = r._wearStatFactor(fakeBp);
-        r._setBlueprintWear(fakeBp, 0);
-        const factorEmpty = r._wearStatFactor(fakeBp);
-        r._setBlueprintWear(fakeBp, 0.5);
-        const factorMid = r._wearStatFactor(fakeBp);
-        out.factorMonotonic =
-            factorFull > 0.99 &&
-            Math.abs(factorEmpty - AR.WEAR_STAT_FLOOR) < 0.001 &&
-            factorMid > factorEmpty + 0.1 &&
-            factorMid < factorFull;
-
         // (W6) FORGE setzt wear=1 (frisches Werkzeug startet voll). Test-Blueprint deterministisch aus der
         // Substanz-Zeile KIND_SUBSTANCE.geraet_spitzhacke, am Ende geräumt.
         const KSw5 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
@@ -3108,51 +3082,8 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
             out.forgeRefilled = !!(forgeRes && forgeRes.ok && r._blueprintWear(heldBp) > 0.99);
         }
 
-        // (W7) STRIKE zehrt wear. Wir bauen einen Test-Architektur-Eintrag +
-        // hauen drauf; wear muss messbar sinken.
-        if (heldBp) {
-            // Sicherstellen: Spieler hält das Gerät.
-            const eqRes = r.equipHeld(heldName);
-            out.equipOk = !!(eqRes && eqRes.ok);
-            r._setBlueprintWear(heldBp, 1); // voll
-            // Test-Architektur (klein, abbaubar) — wir nehmen einen Bauplan
-            // mit Holz-Stamm; die existierenden Baupläne haben einen.
-            const testArchType = r.state.blueprints["baum_eiche"] ? "baum_eiche" : Object.keys(r.state.blueprints)[0];
-            const testEntry = r.spawnArchitecture(testArchType, { x: 800, y: 0, z: 800 }, { precise: true });
-            if (testEntry) {
-                const wearBefore = r._blueprintWear(heldBp);
-                r._strikeArchitecture(testEntry);
-                const wearAfter = r._blueprintWear(heldBp);
-                out.strikeReducesWear = wearAfter < wearBefore && wearBefore - wearAfter < 0.1;
-                // Aufräumen — die Test-Architektur entfernen.
-                try {
-                    r.removeArchitecture(testEntry);
-                } catch {
-                    /* defensive */
-                }
-            } else {
-                out.strikeReducesWear = false;
-            }
-        }
-
-        // (W8) KAPUTT-WAND: ein verbrauchtes Werkzeug verweigert den Hieb.
-        if (heldBp) {
-            r._setBlueprintWear(heldBp, AR.WEAR_KAPUTT_SCHWELLE - 0.01); // unter der Schwelle
-            const testArchType = r.state.blueprints["baum_eiche"] ? "baum_eiche" : Object.keys(r.state.blueprints)[0];
-            const testEntry = r.spawnArchitecture(testArchType, { x: 900, y: 0, z: 900 }, { precise: true });
-            if (testEntry) {
-                const result = r._strikeArchitecture(testEntry);
-                // _strikeArchitecture liefert false bei „verbraucht"; wear hat sich NICHT geändert
-                const wearAfter = r._blueprintWear(heldBp);
-                out.kaputtWand = result === false && wearAfter === AR.WEAR_KAPUTT_SCHWELLE - 0.01;
-                // Aufräumen — das Bauwerk steht noch (wir konnten nicht hauen).
-                try {
-                    r.removeArchitecture(testEntry);
-                } catch {
-                    /* defensive */
-                }
-            }
-        }
+        // W9 repariert das gehaltene Gerät (Zehren, Wand und Faktor misst der Werkzeug-Satz, gate:kampf-gefuehl Q11)
+        if (heldBp) r.equipHeld(heldName);
 
         // (W9) REPAIR-Akt stellt wear voll her (im schöpfer-Modus frei).
         if (heldBp) {
@@ -3200,12 +3131,6 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
             out.w12Partial = w12Partial;
             out.w12Omitted = w12Omitted;
             out.w12RoundTrip = w12RoundTrip;
-            out.w12_serWear = ser.wear;
-            out.w12_serFullHasWear = "wear" in serFull;
-            out.w12_serFullKeys = Object.keys(serFull).join(",");
-            out.wearSerializedWhenPartial = w12Partial;
-            out.wearOmittedWhenFull = w12Omitted;
-            out.wearRoundTrip = w12RoundTrip;
         }
 
         // (W13) R2-DISJUNKTHEIT strukturell: weder repair_held noch wear-Setter
@@ -3229,10 +3154,6 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
     });
 
     check(
-        "W5 (W1): FROZEN-Konstanten existieren mit plausiblen Werten (WEAR_PER_STRIKE_BASE · WEAR_KAPUTT_SCHWELLE · REPAIR_COST_FRACTION)",
-        res.constantsExist
-    );
-    check(
         "W5 (W2): MIGRATION — ein Bauplan ohne wear-Feld liest 1 (alte Welten verlieren NICHTS) + null-safe",
         res.migrationDefault && res.migrationNullSafe
     );
@@ -3245,20 +3166,8 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         res.eisenSlower
     );
     check(
-        "W5 (W5): _wearStatFactor monoton (voll → 1.0 · leer → WEAR_STAT_FLOOR ≥ 0.3 · 50 % → dazwischen) — die Equip-Stat-Modulation lebt",
-        res.factorMonotonic
-    );
-    check(
         "W5 (W6): FORGE setzt wear=1 (frisches/repariertes Werkzeug startet voll) — die Spitzhacken-Substanz (KIND_SUBSTANCE) ist craftbar",
         res.libraryHasSpitzhacke && res.forgeRefilled
-    );
-    check(
-        "W5 (W7): STRIKE zehrt wear (ein Hieb am Bauwerk sinkt wear messbar, klein) — die Mühe-Senke wirkt",
-        res.equipOk && res.strikeReducesWear
-    );
-    check(
-        "W5 (W8): KAPUTT-WAND — ein verbrauchtes Werkzeug (wear < WEAR_KAPUTT_SCHWELLE) verweigert den Hieb (return false, wear unverändert)",
-        res.kaputtWand
     );
     check(
         "W5 (W9): REPAIR-Akt stellt wear voll her (im schöpfer-Modus frei + ok-Resultat trägt before/after/free)",

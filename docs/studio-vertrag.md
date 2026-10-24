@@ -505,6 +505,10 @@ radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
   (`schlagpunkt` nur bei voller Wirkung, sonst die Seite: `griffnah` · `hand` · `spitze`). `buildPfeil()` (rein
   additiv) ist die EINE Gestalt des Pfeils (Schaft, Bodkin-Spitze, Nocke, drei Federn; die Albedo im Vertex nach dem
   FARB-GESETZ, `PFEIL` trägt Masse und Paletten-Hexe) — die Shell und der Wirt (`_pfeilVorlage`) bauen keinen eigenen.
+  halten.K3 Staffel 2 (rein additiv): `werkStoff(rezeptId, ov?)` ist der Stoff des Teils, das am Ziel arbeitet (der Werkstoff
+  der Gestalt, Holz für Keule und Bogen) — der Wirt zehrt nach der Härte seiner Stoff-Zeile (`_wearPerStrike`);
+  `bogenEnergie(rezeptId, ov?)` ist die Pfeil-Energie der präparierten Gestalt samt Prägung — der Schuss des Wirts liest sie
+  statt der Aufgabe des Rezepts, `ableitenBogen` rechnet über dieselbe `bogenArbeit` (byte-gleich).
 - **`VERHALTEN` (V18.483, tetrapoda-core, Namensraum-Export):** die
   Verhaltens-Seele (`aktionen { <name>: { dauer profil dreh? kopfSweep?
 rollAmp/Rate? hop? tempo? } } · stimmung { <lage>: { aktionen[] alle[min,max] } }`)
