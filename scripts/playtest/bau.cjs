@@ -397,7 +397,7 @@ async function checkBandOmegaGrammatik(ctx) {
                 entasis: 0.05,
             });
             o.flutedGeo = !!(g && g.getAttribute("position") && g.getAttribute("position").count > 100);
-        } catch (e) {
+        } catch {
             o.flutedGeo = false;
         }
         // PHYSIK-GARANT: steht, knickt nicht, Lastpfad schließt
@@ -443,7 +443,7 @@ async function checkBandOmegaGrammatik(ctx) {
                 fuller: 0.5,
             });
             o.bladeGeo = !!(bg && bg.getAttribute("position") && bg.getAttribute("position").count > 50);
-        } catch (e) {
+        } catch {
             o.bladeGeo = false;
         }
         // die Balance (Ω-Φ4) ist gerechnet + typ-abhängig (großes Schwert kopflastiger)

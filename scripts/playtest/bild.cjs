@@ -111,7 +111,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.setDayLengthClampedMin = r.state.dayLengthMinutes === 1;
         r.setDayLength(AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES); // zurück
 
-        // DSL-Op set_time_of_day — die Uhr gehört dem Spieler (Leben-Schau 2): sein Satz stellt sie, der Nexus nie
+        // DSL-Op set_time_of_day — die Uhr gehört dem Spieler: sein Satz stellt sie, der Nexus nie
         r.dslRun(["set_time_of_day", 0.7], { source: "human" });
         out.dslSetTimeOfDay = Math.abs(r.state.timeOfDay - 0.7) < 0.001;
         const nexusUhr = r.dslRun(["set_time_of_day", 0.1], { source: "nexus" });
@@ -140,7 +140,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
 
         // --- b) Sanfte Wetter-Übergänge
         const wxL = globalThis.__phytoCore.WX_LICHT; // K2: der Tint IST die Sonne der Wetter-Zeile, kein zweiter Wert
-        out.weatherTintsSunnyRainy = ["sunny", "rainy", "stormy"].every((w) => {
+        out.weatherTintsSunnyRainy = Object.keys(AnazhRealm.WEATHER_FIELD).every((w) => {
             const [s, t] = [AnazhRealm.WEATHER_FIELD[w].sun, AnazhRealm.WEATHER_TINTS[w]];
             return t.skyMul === s && t.lightMul === wxL.sockel + wxL.sonne * s;
         });
@@ -478,7 +478,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const out = {};
 
         // 1. HemisphereLight im Scene + state-cached
-        // Die In-Streuung der Luft IST der Himmel der EINEN Atmosphäre (D3): nach dem ersten _applyDayNightToScene trägt
+        // Die In-Streuung der Luft IST der Himmel der EINEN Atmosphäre: nach dem ersten _applyDayNightToScene trägt
         // die Tafel das Licht von Sonne oder Mond (die Farbe über Wasser liest himmelFarbe, nie ein eigenes Uniform)
         r._applyDayNightToScene();
         const atmoU = r._atmoLutBau().U;
@@ -908,7 +908,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.grassCellsBookedHalmFree = grassCells > 0 && grassInstances === 0;
         out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
 
-        // V18.508 — DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft `_bodenSichtAt`
+        // DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft `_bodenSichtAt`
         // (der EINE Leser, K21) die Mesh-Oberfläche (Strahl von oben, beide Seiten — die Surface-Nets-Wicklung zeigt
         // oben nach unten). Das Gesetz `_voxelSurfaceY` liegt daneben — Gras und Streu darauf steckten im Boden. DIE
         // NAH-WIESE: die Büschel einer Kachel sind Γ5-stabil und stehen auf der Karte.
@@ -1815,7 +1815,7 @@ async function checkBandWetterVektor(ctx) {
     );
 }
 
-// Look-Physik — eingefaltet aus look-lens (D3b): Schöpfer 25.06. „die Realität kann man messen — wieso also hängt der Look
+// Look-Physik — eingefaltet aus look-lens: Schöpfer 25.06. „die Realität kann man messen — wieso also hängt der Look
 // von MIR ab?" Die CPU-lesbaren Look-KONSTANTEN gegen reale physikalische Bereiche: Gras-Albedo (Vegetation ~0,15–0,30,
 // grün-dominant, MEADOW_GREEN linear), Wetter dimmt Licht monoton, Koschmieder-Luft, die Tonkurve der EINEN
 // Eichung (Lehre 21, F1) und lineares Farb-Management.
@@ -1874,12 +1874,12 @@ async function checkBandLookPhysik(ctx) {
     );
 }
 
-// Himmelskörper-Tag — eingefaltet aus gate:himmel-tag (D3b): kein Planet aus Math.random am Mittagshimmel; die
+// Himmelskörper-Tag — eingefaltet aus gate:himmel-tag: kein Planet aus Math.random am Mittagshimmel; die
 // Wandelsterne sind die hellsten PUNKTE des Sternfelds,
 // die Dämmerung setzt die Grenzgröße (Kanal `grenze` der EINEN Tag-Achse `_tagAchse`); die Probe liest DIESELBEN Größen wie der Stern-Knoten (`aMag` ·
 // `grenze`): 1 KÖRPER nur Sonne und Mond · 2 MITTAG kein Punkt · 3 DÄMMERUNG der Abendstern · 4 NACHT alle Punkte · 5 MOND Tag
 // blass, Nacht deckend · 6 ZEICHNEN genau dann, in EINEM Durchgang · 7 UNENDLICH Kuppel, Sterne, Sonne, Mond tragen den EINEN
-// Unendlich-Knoten (K16). Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge und eine Sonne ohne Knoten werden rot.
+// Unendlich-Knoten. Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge und eine Sonne ohne Knoten werden rot.
 async function checkBandHimmelTag(ctx) {
     const { page, check } = ctx;
     const probe = (stoerung) => {
@@ -1996,7 +1996,7 @@ async function checkBandHimmelTag(ctx) {
     );
 }
 
-// Die Schatten-Wand — eingefaltet aus gate:schatten-takt (D3b): r184 liest `shadow.needsUpdate || shadow.autoUpdate`
+// Die Schatten-Wand — eingefaltet aus gate:schatten-takt: r184 liest `shadow.needsUpdate || shadow.autoUpdate`
 // je Licht (`ShadowNode.updateBefore`), nie
 // `renderer.shadowMap.needsUpdate`. `_loopShadowUpdate` fährt je Kaskade den echten Leser; JE FRAME HÖCHSTENS EINE KASKADE
 // (1410-3), nur die bewegte Kamera lässt die nahe jeden Frame folgen. Der ECHTE `_loopShadowUpdate` gegen Schein-Kaskaden:

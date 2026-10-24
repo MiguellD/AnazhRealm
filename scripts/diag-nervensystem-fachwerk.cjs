@@ -38,7 +38,7 @@ function staticLaws(q, manifestSrc) {
     let manifest = null;
     try {
         manifest = JSON.parse(manifestSrc);
-    } catch (_e) {}
+    } catch {}
     const fachwerk = Array.isArray(manifest) ? manifest.find((c) => c && c.id === "fachwerk") : null;
     out.push([
         "S1: das Manifest traegt den fachwerk-Kern (scripts fachwerk-core.js, ns __fachwerkCore)",

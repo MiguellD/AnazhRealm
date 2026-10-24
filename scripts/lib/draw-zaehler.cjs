@@ -530,7 +530,7 @@ function heapHalter(r, tiefe) {
             if (!Array.isArray(o) || !/^\d+$/.test(k))
                 try {
                     kinder.push([o[k], p + "." + k]);
-                } catch (_e) {}
+                } catch {}
         for (const [v, pp] of kinder) {
             if (!v || typeof v !== "object" || gesehen.has(v)) continue;
             gesehen.add(v);

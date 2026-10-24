@@ -43,7 +43,7 @@ async function checkBandV1755HarvestEffort(ctx) {
         const toolPower = r._heldMinePower();
         out.toolBeatsHand = toolPower > handPower && handPower > 0;
 
-        // (3) Widerstand: ein hartes Bauwerk widersteht mehr als die Basis (V17.56 W2: {mineResist, cutResist})
+        // (3) Widerstand: ein hartes Bauwerk widersteht mehr als die Basis (W2: {mineResist, cutResist})
         const hardRes = r._architectureResistance({ type: "stein_block" });
         out.hardResists = hardRes.mineResist > H.resistBase;
 

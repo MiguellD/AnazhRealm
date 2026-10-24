@@ -102,7 +102,7 @@ async function welt() {
                 try {
                     r._gameLoopTick(performance.now());
                     r._tickScatterStreaming(spieler());
-                } catch (_e) {}
+                } catch {}
                 await sleep(6);
             }
         };

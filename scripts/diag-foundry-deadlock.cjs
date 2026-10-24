@@ -37,7 +37,7 @@ const server = statikServer();
             for (let i = 0; i < 120; i++) {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
                 await new Promise((res) => setTimeout(res, 0));
             }
 

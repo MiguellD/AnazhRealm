@@ -954,7 +954,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             const reA = r.setVec(r.state.tmpVec2, 0, -1000, 0);
             const hit = r._runRaycast(rsA, reA, (_cb, h) => h);
             out.raycastNullSafe = typeof hit === "boolean";
-        } catch (e) {
+        } catch {
             out.raycastNullSafe = false;
         }
         // localStorage-Rundlauf.

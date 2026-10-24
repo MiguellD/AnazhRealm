@@ -24,7 +24,7 @@ async function probeLeben(expected) {
         };
         try {
             lauf();
-        } catch (_e) {
+        } catch {
             /* der Ruf zählt */
         } finally {
             if (eigen) o[k] = f0;
@@ -94,13 +94,19 @@ async function probeLeben(expected) {
         if (z.an && st._fixedSimPos && !(st._fixedRenderPos && m.position.equals(st._fixedRenderPos))) z.teleport++;
         return P._loopFixedStep.call(this, realDt, ct);
     };
+    // die Eingabe, die der Welt-Schritt dem Kern gab (Verb-Tafel, Tiefe, Haft, Wind am Ort): die Labor-Spur fährt genau sie
+    const kraefte = VC.fahrKraefte;
+    VC.fahrKraefte = function (q, e, G, dt) {
+        if (z.spur && z.ent && q === z.ent._fahr) z.e = e;
+        return kraefte.call(this, q, e, G, dt);
+    };
     r._stepFixedSim = function (simTime, dt) {
         const m = st.playerMesh.position;
         const x0 = m.x;
         const z0 = m.z;
+        z.e = null;
         P._stepFixedSim.call(this, simTime, dt);
-        const T = st.verbTafel; // die Eingabe, die der Schritt las (die Verb-Tafel, leib.K5)
-        const e = { throttle: T.gas, brake: T.bremse, steer: T.lenken, hand: T.handbremse };
+        const e = z.e;
         if (z.an) {
             z.simWeg += Math.hypot(m.x - x0, m.z - z0);
             z.schritte++;
@@ -280,7 +286,7 @@ async function probeLeben(expected) {
             st.keys.s = true;
             for (let n = 0; n < K.bremsMax && e._fahr.vlong > bV; n++) frame(n);
             for (const q of z.spur) {
-                if (!q.e.brake || !(q.v > bV)) break;
+                if (!(q.e && q.e.brake) || !(q.v > bV)) break;
                 [t, v] = [t + q.dt, q.v];
             }
             [z.spur, z.ent, st.keys.s] = [null, null, false];
@@ -742,6 +748,10 @@ async function probeLeben(expected) {
                 }
                 VC.fahrStand(q, G, boden, spur[n].dt);
                 maxY = Math.max(maxY, Math.abs(q.y - spur[n].y));
+                if (!spur[n].e) {
+                    [maxM, bei] = [Infinity, n]; // der Welt-Schritt rief den Kern nicht: kein Labor-Ritt
+                    break;
+                }
                 VC.fahrKraefte(q, spur[n].e, G, spur[n].dt);
                 const d = Math.max(Math.hypot(q.x - spur[n].x, q.z - spur[n].z), Math.abs(q.yaw - spur[n].yaw));
                 if (d > maxM) {
@@ -1609,6 +1619,7 @@ async function probeLeben(expected) {
             try {
                 const ux = Math.sin(gasse.fahrt);
                 const uz = Math.cos(gasse.fahrt);
+                let simUhr;
                 const lockProbe = async (muster) => {
                     const gS = await setzen("fahrzeug_gt", gasse.x, gasse.z, gasse.fahrt);
                     if (!gS) return null;
@@ -1655,6 +1666,7 @@ async function probeLeben(expected) {
                     b.userData._steuer = { gier: b.rotation.y, v: 0 };
                     b.userData._stossV = null;
                     st._fixedAccumulator = 0;
+                    st._fixedSimTime = simUhr ??= st._fixedSimTime;
                     const PF = r._stepFixedSim;
                     let schritte = 0;
                     let lage = null;

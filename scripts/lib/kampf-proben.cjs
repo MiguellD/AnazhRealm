@@ -300,7 +300,7 @@ async function WELLE_L(ort) {
             };
             A._steuerGesetz = () => steht;
             try {
-                // wie der Loop: der feste Sim-Schritt trägt den Stoß (0710-5), dann der Kreatur-Takt
+                // wie der Loop: der feste Sim-Schritt trägt den Stoß, dann der Kreatur-Takt
                 for (let k = 0; k < 90; k++) {
                     r._kreaturStossSchritt(1 / 60);
                     r._leibKontakte();
@@ -1731,7 +1731,7 @@ async function WELLE_L(ort) {
             // die Ich-Regel bleibt rückstandsfrei: 3rd → 1st → 3rd stellt jede Sichtbarkeit UND Ebene des Leibs wieder her, und
             // im 1st zeichnet keine Haut (die Kamera sitzt im Leib) außer dem Gerät in der Hand. „Zeichnet" fragt, was r184s
             // _projectObject fragt: jeder Ahne sichtbar UND die eigene Ebene in der Haupt-Kamera — die Ich-Regel ist die
-            // Ebenen-Regel (0910-5): die Haut verlässt Ebene 0 und bleibt sichtbar, damit sie in den Kaskaden wirft
+            // Ebenen-Regel: die Haut verlässt Ebene 0 und bleibt sichtbar, damit sie in den Kaskaden wirft
             {
                 const heldR = pm.userData.heldMesh;
                 const unterGeraet = (o) => {
@@ -1928,7 +1928,7 @@ async function WELLE_L(ort) {
             if (r.getGameMode() !== modeA) r.setGameMode(modeA);
             w.z.ausdauer = zehr;
         });
-        // (T27) Lebenswerte sind Zustand (K27): ein Biss senkt hp, ein Hieb die Ausdauer, dann jeder Rufer der
+        // (T27) Lebenswerte sind Zustand: ein Biss senkt hp, ein Hieb die Ausdauer, dann jeder Rufer der
         // Neuberechnung einmal (Gerät · Panel · Boost · Tod-Takt); erlaubt Regen·dt, voll setzen nur Wandlung und Rückkehr.
         // (S11) die alte Zeile → equipHeld.
         await teil("T27", async () => {
@@ -2439,7 +2439,7 @@ async function WELLE_L(ort) {
             const mitBiss = { spieler: null, tier: null, kitz: null };
             const dpGate = r.damagePlayer;
             const dcGate = r.damageCreature;
-            // WER BEISST (K13): gezählt wird nur der Biss des Tiers der Probe — das Schnappen (_kreaturBissTakt) nennt den
+            // WER BEISST: gezählt wird nur der Biss des Tiers der Probe — das Schnappen (_kreaturBissTakt) nennt den
             // Beißer; ein Wild-Tier der Welt, das den Spieler im selben Takt beißt, ist nicht der Wolf der Probe
             const btRoh = r._kreaturBissTakt;
             let beisser = null;
@@ -2586,7 +2586,7 @@ async function WELLE_L(ort) {
                         ([ox, oz]) =>
                             j2 &&
                             r2 &&
-                            // EBEN (K16): Reh, beide Absprung-Orte und die Flanken liegen in 0,12 m — am Hang (−14|14 im neuen
+                            // EBEN: Reh, beide Absprung-Orte und die Flanken liegen in 0,12 m — am Hang (−14|14 im neuen
                             // Gelände) stand der Wolf 0,76 m über dem Gesetz, der Kopf zielte an die Klemme
                             eben(P.x + ox, P.z + oz) &&
                             trocken(r2, P.x + ox, P.z + oz + 1.6) &&
@@ -2669,7 +2669,7 @@ async function WELLE_L(ort) {
                     // die Rest-Summe: zehnmal _kreaturBissKopf ohne Takt in der Stand-Pose — die gezeigte Pose steht still;
                     // die Gier des Rehs (π/2 − 0,4) hält das Glied im Band des Hinterschenkels.
                     if (j2 && r2 && ortR && j2.userData._tierBaum) {
-                        // EINE HÖHE (K16): beide Leiber stehen auf dem Grund des Wolfs — die Probe misst das Zielen, nie den Hang.
+                        // EINE HÖHE: beide Leiber stehen auf dem Grund des Wolfs — die Probe misst das Zielen, nie den Hang.
                         // Die Gier des Rehs kommt aus einer festen Reihe ab π/2 − 0,4: die erste, deren
                         // erster Rest im Band der Klemme liegt (Rand 0,05 rad = REH_SOLL.kopfRest), trägt die Probe; ihr Glied steht im Bericht.
                         const R0 = { x: P.x + ortR[0], z: P.z + ortR[1] + 1.6 };

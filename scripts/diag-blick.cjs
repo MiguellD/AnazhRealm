@@ -100,12 +100,12 @@ const server = statikServer();
             // Zeit setzen (Tag/Nacht) über die eine Zeit-Quelle, falls vorhanden.
             try {
                 if (zeitArg && r.state.world) r.state.world.timeOfDay = Number(zeitArg) / 24;
-            } catch (_e) {}
+            } catch {}
             // Ein paar echte Loop-Ticks, damit Uniforms/Streaming den Blick tragen.
             for (let i = 0; i < 20; i++) {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
                 await sleep(30);
             }
             res.schuesse.haupt = await schuss("haupt");
@@ -144,6 +144,6 @@ const server = statikServer();
     console.error("DIAG-FEHLER:", e);
     try {
         server.close();
-    } catch (_e) {}
+    } catch {}
     process.exit(1);
 });

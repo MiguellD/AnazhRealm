@@ -49,7 +49,7 @@ function haengerAn() {
             try {
                 e.pass = window.__passName ? window.__passName(c.scene, c.camera) : "?";
                 e.klasse = window.anazhRealm._taeterKlasse(c.object);
-            } catch (_e) {
+            } catch {
                 e.pass = e.pass || "?";
             }
         } else e.pass = art === "sync" || art === "bau" ? "ausserhalb" : "kompilat";
