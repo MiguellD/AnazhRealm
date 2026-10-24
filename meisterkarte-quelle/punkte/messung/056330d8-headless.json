@@ -1,0 +1,73 @@
+{
+ "sha": "056330d8a70fcdc617df8c3ff62ec174c5d33995",
+ "geraet": "headless",
+ "zeit": "2026-10-24T05:24:31.833Z",
+ "host": "MiguellD",
+ "je": {
+  "gelaende.K1#1": {
+   "gruen": true,
+   "zahl": "Welt = Studio byte-gleich (Makro 1d05ef660c4a7994), Statistik gleich, 18 Regler, tot 0, Selbsttest sieht",
+   "exit": 0,
+   "minuten": 1.74,
+   "zeit": "2026-10-24T05:18:07.164Z",
+   "abdruck": "6f7eb4149e5b",
+   "port": 7700
+  },
+  "gelaende.K4#1": {
+   "gruen": true,
+   "zahl": "10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0",
+   "exit": 0,
+   "minuten": 0.81,
+   "zeit": "2026-10-24T05:19:51.707Z",
+   "abdruck": "a049a8dbebf9",
+   "port": 7703
+  },
+  "gelaende.K5#1": {
+   "gruen": true,
+   "zahl": "im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 1.2 · huf 3.2 · rad 2.4 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 2.82,
+   "zeit": "2026-10-24T05:20:40.382Z",
+   "abdruck": "f729c64e18ed",
+   "port": 7704
+  },
+  "wetter.K1#1": {
+   "gruen": true,
+   "zahl": "saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: rainy stormy rainy sunny stormy rainy sunny stormy sunny rainy), saat-b anders",
+   "exit": 0,
+   "minuten": 0.53,
+   "zeit": "2026-10-24T05:23:29.631Z",
+   "abdruck": "c69389bcf98b",
+   "port": 7706
+  },
+  "wetter.K1#2": {
+   "gruen": false,
+   "zahl": "keine Front-Zeile (Exit 0)",
+   "exit": 0,
+   "minuten": 0.39,
+   "grund": "ROT: keine Front-Zeile (Exit 0)",
+   "zeit": "2026-10-24T05:24:01.155Z",
+   "abdruck": "27f38395f50c",
+   "port": 7707
+  },
+  "wetter.K5#1": {
+   "gruen": true,
+   "zahl": "F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam",
+   "exit": 0,
+   "minuten": 0.12,
+   "zeit": "2026-10-24T05:24:24.380Z",
+   "abdruck": "531ff2d7aefb",
+   "port": 7709
+  },
+  "wetter.K5#2": {
+   "gruen": false,
+   "zahl": "keine F3-Feld-Zeile (Exit 0)",
+   "exit": 0,
+   "minuten": 0.13,
+   "grund": "ROT: keine F3-Feld-Zeile (Exit 0)",
+   "zeit": "2026-10-24T05:24:31.833Z",
+   "abdruck": "9b3c4a3a2e0f",
+   "port": 7710
+  }
+ }
+}

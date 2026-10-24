@@ -1,0 +1,92 @@
+{
+ "sha": "18a846491377cb9898af2b5bb930234c249fa6ad",
+ "geraet": "radeon",
+ "zeit": "2026-10-24T04:07:29.889Z",
+ "host": "MiguellD",
+ "je": {
+  "gelaende.K2#1": {
+   "gruen": false,
+   "zahl": "7 von 10 Gräben über das Verb, in 2638 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 137.8–363.1 ms (1 m 3, 3 m 4)",
+   "exit": 0,
+   "minuten": 12.82,
+   "grund": "ROT: 7 von 10 Gräben über das Verb, in 2638 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 137.8–363.1 ms (1 m 3, 3 m 4)",
+   "zeit": "2026-10-24T03:21:25.326Z",
+   "abdruck": "1ee7bd28bb9c",
+   "port": 7701
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.7924 (wasserSatz 36582 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.2 σ 51.4 schwarz 0.0 % weiß 0.1 % · Stand 18.546.78 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+   "exit": 0,
+   "minuten": 1.14,
+   "zeit": "2026-10-24T03:34:14.305Z",
+   "abdruck": "68e70463a0db",
+   "port": 7702
+  },
+  "gelaende.K5#2": {
+   "gruen": true,
+   "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 2.5 · rad 2.4 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 0.96,
+   "zeit": "2026-10-24T03:35:22.742Z",
+   "abdruck": "1c2538e83974",
+   "port": 7705
+  },
+  "wetter.K2#1": {
+   "gruen": true,
+   "zahl": "Dorf porös draußen 0.763 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 83 (n 336/865), Wiese draußen 0.772",
+   "exit": 0,
+   "minuten": 6.9,
+   "zeit": "2026-10-24T03:36:20.055Z",
+   "abdruck": "e03a045fab93",
+   "port": 7708
+  },
+  "mensch.K1#1": {
+   "gruen": true,
+   "zahl": "Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 37 Menschen im Bild, 14 gehend, 118.3 fps",
+   "exit": 0,
+   "minuten": 1.23,
+   "zeit": "2026-10-24T03:43:14.025Z",
+   "abdruck": "5b2b0b3745f2",
+   "port": 7722
+  },
+  "vegetation.K4#1": {
+   "gruen": true,
+   "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59139 px; ungemessen (ohne freies Auge) haus_skandinavisch 14-0 haupt · haus_italienisch 22-0 haupt · haus_italienisch 28-0 haupt · haus_provenzalisch 31-0 haupt",
+   "exit": 1,
+   "minuten": 3.21,
+   "zeit": "2026-10-24T03:44:27.905Z",
+   "abdruck": "e53d97783caf",
+   "port": 7723
+  },
+  "mensch.K2#2": {
+   "gruen": false,
+   "zahl": "Soll-Orte alle 79/81 ≥ 0,9 (min 0.896), Wege je Tag 4–7 (außer 4–10: 0), Wiederkehr nach 1 h undefined von undefined Lagen über ±2 m (max undefined m), Sprünge 0, Plan bit-gleich true",
+   "exit": 1,
+   "minuten": 1.42,
+   "grund": "ROT: Soll-Orte alle 79/81 ≥ 0,9 (min 0.896), Wege je Tag 4–7 (außer 4–10: 0), Wiederkehr nach 1 h undefined von undefined Lagen über ±2 m (max undefined m), Sprünge 0, Plan bit-gleich true",
+   "zeit": "2026-10-24T03:47:40.349Z",
+   "abdruck": "ca42240b7c1b",
+   "port": 7732
+  },
+  "licht.K2#1": {
+   "gruen": true,
+   "zahl": "Verhältnis 5.005 (5–12,5), Schatten-Anteil 0.1998 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 18.41,
+   "zeit": "2026-10-24T03:49:05.329Z",
+   "abdruck": "a3fab07da97f",
+   "port": 7733
+  },
+  "ferne.K1#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75)",
+   "exit": 75,
+   "minuten": 45.14,
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75)",
+   "zeit": "2026-10-24T04:07:29.889Z",
+   "abdruck": "bbee11502f53",
+   "port": 7734
+  }
+ }
+}

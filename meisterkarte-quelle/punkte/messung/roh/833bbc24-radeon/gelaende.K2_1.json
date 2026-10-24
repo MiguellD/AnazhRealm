@@ -103,7 +103,7 @@
    },
    "verb": "abbau",
    "edits": 0,
-   "bilder": 217,
+   "bilder": 392,
    "nassVor": 139,
    "nassEnde": 139,
    "gefuelltMs": null,
@@ -123,20 +123,20 @@
     618.9604401451771
    ],
    "blick": {
-    "yaw": -1.9180389764515486,
-    "pitch": -0.8727813774306485,
+    "yaw": -1.9187985433707253,
+    "pitch": -0.8966435188261649,
     "dir": [
-     -0.534,
-     -0.823,
-     -0.193
+     -0.517,
+     -0.835,
+     -0.188
     ]
    },
    "verb": "graben",
    "edits": 1,
-   "bilder": 203,
+   "bilder": 370,
    "nassVor": 55,
    "nassEnde": 292,
-   "gefuelltMs": 183.3,
+   "gefuelltMs": 173.7,
    "doppeltMax": 0,
    "ueberMax": 0,
    "ueberMaxM": 0,
@@ -153,20 +153,20 @@
     538.5105290684102
    ],
    "blick": {
-    "yaw": -1.7428735641568605,
-    "pitch": -0.5700507635203481,
+    "yaw": -1.7420338977113774,
+    "pitch": -0.5781328828320881,
     "dir": [
-     -0.755,
-     -0.643,
-     -0.131
+     -0.75,
+     -0.648,
+     -0.13
     ]
    },
    "verb": "graben",
    "edits": 2,
-   "bilder": 221,
+   "bilder": 417,
    "nassVor": 112,
-   "nassEnde": 295,
-   "gefuelltMs": 205.7,
+   "nassEnde": 294,
+   "gefuelltMs": 218.6,
    "doppeltMax": 0,
    "ueberMax": 0,
    "ueberMaxM": 0,
@@ -183,20 +183,20 @@
     539.294403206735
    ],
    "blick": {
-    "yaw": -1.705170115130772,
-    "pitch": -1.056771557897134,
+    "yaw": -1.7049624004874289,
+    "pitch": -1.0723583926433218,
     "dir": [
-     -0.424,
-     -0.904,
-     -0.057
+     -0.412,
+     -0.909,
+     -0.056
     ]
    },
    "verb": "graben",
    "edits": 3,
-   "bilder": 233,
-   "nassVor": 217,
-   "nassEnde": 256,
-   "gefuelltMs": 129.6,
+   "bilder": 416,
+   "nassVor": 216,
+   "nassEnde": 249,
+   "gefuelltMs": 134.6,
    "doppeltMax": 0,
    "ueberMax": 0,
    "ueberMaxM": 0,
@@ -213,20 +213,20 @@
     513.9062073844185
    ],
    "blick": {
-    "yaw": 0.33381799062629486,
-    "pitch": -0.8772017030742087,
+    "yaw": 0.3392514173401333,
+    "pitch": -0.8599024751564517,
     "dir": [
-     0.185,
-     -0.826,
-     0.533
+     0.192,
+     -0.817,
+     0.544
     ]
    },
    "verb": "graben",
    "edits": 4,
-   "bilder": 211,
+   "bilder": 378,
    "nassVor": 105,
    "nassEnde": 306,
-   "gefuelltMs": 115.7,
+   "gefuelltMs": 123.1,
    "doppeltMax": 0,
    "ueberMax": 0,
    "ueberMaxM": 0,
@@ -243,20 +243,20 @@
     512.0071283121754
    ],
    "blick": {
-    "yaw": 0.5497038645607956,
-    "pitch": -0.8574430372302712,
+    "yaw": 0.5498129192195106,
+    "pitch": -0.8514375590910976,
     "dir": [
-     0.302,
-     -0.816,
-     0.493
+     0.304,
+     -0.813,
+     0.497
     ]
    },
    "verb": "graben",
-   "edits": 6,
-   "bilder": 186,
+   "edits": 5,
+   "bilder": 380,
    "nassVor": 242,
-   "nassEnde": 279,
-   "gefuelltMs": 363,
+   "nassEnde": 281,
+   "gefuelltMs": 139,
    "doppeltMax": 0,
    "ueberMax": 0,
    "ueberMaxM": 0,
@@ -273,20 +273,20 @@
     279.71671063690246
    ],
    "blick": {
-    "yaw": 3.429011985102577,
-    "pitch": -0.9920658483302685,
+    "yaw": 3.4291570512112086,
+    "pitch": -1.0157070242669306,
     "dir": [
-     -0.136,
-     -0.878,
-     -0.459
+     -0.131,
+     -0.888,
+     -0.441
     ]
    },
    "verb": "graben",
-   "edits": 7,
-   "bilder": 215,
+   "edits": 6,
+   "bilder": 348,
    "nassVor": 153,
-   "nassEnde": 337,
-   "gefuelltMs": 283.7,
+   "nassEnde": 338,
+   "gefuelltMs": 353.7,
    "doppeltMax": 0,
    "ueberMax": 0,
    "ueberMaxM": 0,
@@ -303,20 +303,20 @@
     281.6157897091456
    ],
    "blick": {
-    "yaw": 3.6909625654720597,
-    "pitch": -0.9057280119908401,
+    "yaw": 3.691307635622924,
+    "pitch": -0.884190958156607,
     "dir": [
-     -0.284,
-     -0.84,
-     -0.463
+     -0.292,
+     -0.829,
+     -0.477
     ]
    },
    "verb": "graben",
-   "edits": 8,
-   "bilder": 235,
+   "edits": 7,
+   "bilder": 429,
    "nassVor": 266,
-   "nassEnde": 281,
-   "gefuelltMs": 39.2,
+   "nassEnde": 285,
+   "gefuelltMs": 100.8,
    "doppeltMax": 0,
    "ueberMax": 0,
    "ueberMaxM": 0,
@@ -333,20 +333,20 @@
     336.12138139327726
    ],
    "blick": {
-    "yaw": 4.042667374741567,
-    "pitch": -0.6936281322175001,
+    "yaw": 4.031996435260529,
+    "pitch": -0.5696874471876955,
     "dir": [
-     -0.541,
-     -0.724,
-     -0.428
+     -0.596,
+     -0.642,
+     -0.482
     ]
    },
    "verb": "graben",
-   "edits": 9,
-   "bilder": 237,
+   "edits": 8,
+   "bilder": 443,
    "nassVor": 116,
-   "nassEnde": 300,
-   "gefuelltMs": 94.5,
+   "nassEnde": 292,
+   "gefuelltMs": 87.4,
    "doppeltMax": 0,
    "ueberMax": 0,
    "ueberMaxM": 0,
@@ -363,20 +363,20 @@
     337.64960297661406
    ],
    "blick": {
-    "yaw": 4.141780762507242,
-    "pitch": -0.9031298418177055,
+    "yaw": 4.102357538516817,
+    "pitch": -0.9867767057580263,
     "dir": [
-     -0.459,
-     -0.838,
-     -0.295
+     -0.395,
+     -0.876,
+     -0.276
     ]
    },
    "verb": "graben",
-   "edits": 10,
-   "bilder": 228,
-   "nassVor": 224,
-   "nassEnde": 253,
-   "gefuelltMs": 113.5,
+   "edits": 9,
+   "bilder": 437,
+   "nassVor": 211,
+   "nassEnde": 247,
+   "gefuelltMs": 95,
    "doppeltMax": 0,
    "ueberMax": 0,
    "ueberMaxM": 0,

@@ -1,0 +1,29 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben kaskade
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7726/index.html · der Puls steht seit 20.1 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 21.5 s
+[stall-akte] Puls 13×, zuletzt vor 20.1 s — complete · renderer bereit · weltbild da · frames 335 · welt 335 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 21976 105 % · browser 11308 1 % · GPU 18492 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 45:57 gpu 7/r 236 · 45:59 gpu 2/r 293 · 46:01 gpu 1/r 684 · 46:03 gpu 3/r 627 · 46:05 gpu 1/r 243 · 46:07 gpu 2/r 149 · 46:09 gpu 1/r 111 · 46:11 gpu 2/r 112 · 46:13 gpu 2/r 106 · 46:15 gpu 2/r 104 · 46:17 gpu 2/r 103 · 46:19 gpu 2/r 105 · 46:21 gpu 2/r 104 · 46:23 gpu 2/r 104 · 46:25 gpu 1/r 103 · 46:27 gpu 1/r 104 · 46:29 gpu 1/r 103
+[stall-akte] Stapel _hydrosphereCarveAt :1342 < _terrainColumnContextIn :1085 < _terrainColumnContext :1056 < _voxelSurfaceY :2317 < getTerrainHeightAt :3129 < _kreaturImBlick :1584 < _kreaturGeburtsOrt :1574 < _creatureNaturalBirth :1681
+[stall-akte] Konsole log: [AnazhRealm V18.546.78] [INFO] Maussteuerung für Kamera initialisiert
+[stall-akte] Konsole log: [AnazhRealm V18.546.78] [INFO] Chat-Steuerung initialisiert
+[stall-akte] Konsole log: [AnazhRealm V18.546.78] [INFO] State-Import (Lade Datei) initialisiert
+[stall-akte] Konsole log: [AnazhRealm V18.546.78] [INFO] Hauptschleife gestartet – Ultiversum pulsiert!
+[stall-akte] Konsole log: [AnazhRealm V18.546.78] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
+[stall-akte] Konsole log: [AnazhRealm V18.546.78] [INFO] Nervensystem: 69 neue Studio-Art(en) automatisch registriert.
+[stall-akte] Konsole log: [AnazhRealm V18.546.78] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.78] [WARN] AUSGABE: rg11b10ufloat ist auf diesem Gerät nicht renderbar (Feature rg11b10ufloat-renderable fehlt) — das Szenen-Ziel bleibt rgba16float, +7,9 MB bei 1080p
+[stall-akte] Konsole log: [AnazhRealm V18.546.78] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
+[stall-akte] Konsole log: [AnazhRealm V18.546.78] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — Cannot read properties of undefined (reading 'enabled')
+[stall-akte] Konsole log: [AnazhRealm V18.546.78] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.78] [WARN] Der Rundblick steht nach 120 Takten ohne: 1 Bäume und Bauten wachsen · 318 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _hydrosphereCarveAt :1342
+[stall-akte] Seite #2: der Puls kehrt zurück nach 149.2 s — complete · renderer bereit · weltbild da · frames 407 · welt 407 Takte · Ruhe 30 · zuletzt Fege-Takt archLod 1280/1307 · programme 0 · gl-sync 0
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ kaskade   {"saaten":[{"deer":[4.2,4],"fox":[1.01,1.04],"wolf":[2.66,2.37],"bear":[0.19,0.14]},{"deer":[4,3.99],"fox":[1,1.05],"wolf":[2.1,2.52],"bear":[0.08,0.13]},{"deer":[4,4.22],"fox":[1.03,1.06],"wolf":[1.79,2.65],"bear":[0.08,0.2]},{"deer":[4.25,4],"fox":[1.12,1.06],"wolf":[2.08,2.36],"bear":[0.17,0.31]},{"deer":[4.03,3.98],"fox":[1.05,0.96],"wolf":[2.21,2.7],"bear":[0.21,0.21]},{"deer":[4.42,4],"fox":[1.16,1.05],"wolf":[2.16,1.71],"bear":[0.14,0.1]},{"deer":[4.15,4.42],"fox":[1.11,1.26],"wolf":[2.16,2.71],"bear":[0.2,0.2]},{"deer":[4,4],"fox":[1.07,1.06],"wolf":[2.43,2.23],"bear":[0.23,0.16]}],"kappe":0}
+
+  (166 s)
+
+✅ GRÜN — kaskade
