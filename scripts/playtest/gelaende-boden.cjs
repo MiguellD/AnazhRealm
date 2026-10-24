@@ -2075,7 +2075,7 @@ async function checkBandTodZensus(ctx) {
                 );
             if (taeter === "lage")
                 decke(
-                    "_todHebeTafel",
+                    "_todHaut",
                     (alt) =>
                         function (c, ...rest) {
                             if (c.visible === false) return null;
@@ -2182,6 +2182,7 @@ async function checkBandTodZensus(ctx) {
             const kill = r.damageCreature(tB, 1e9, { source: "player" });
             tC.visible = false;
             r._creatureNaturalDeath(tC);
+            r._todLageTick({ timeRemaining: () => Infinity });
             o.last = { soll: lastSoll, zurueck: holzZurueck, journal: lastJournal };
             o.raeumt = raeumt;
             // kein Zweit-Räumer: keine andere Methode nimmt ein Zeichen über dem Leib aus der Szene und gibt sein Material frei

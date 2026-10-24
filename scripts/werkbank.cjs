@@ -193,16 +193,17 @@ async function eigeneWelt() {
     return () => rufe("/stop");
 }
 
-// Eine Klassen-Methode (4 Leerzeichen eingerückt, prettier-Form) aus dem Quelltext schneiden.
+// Eine Klassen-Methode (4 Leerzeichen eingerückt, prettier-Form, auch ein Gang) aus dem Quelltext schneiden.
 function methodeAusQuelle(quelle, name) {
-    const kopf = new RegExp(`\\n    (async )?${name}\\(([^)]*)\\) \\{\\n`);
+    const kopf = new RegExp(`\\n    (async |\\*)?${name}\\(([^)]*)\\) \\{\\n`);
     const m = kopf.exec(quelle);
     if (!m) return null;
     const start = m.index + 1;
     const ende = quelle.indexOf("\n    }\n", start);
     if (ende < 0) return null;
     const text = quelle.slice(start, ende + 6);
-    return `(${m[1] || ""}function ${name}(${m[2]}) {${text.slice(text.indexOf("{\n") + 1)})`;
+    const art = m[1] === "*" ? "function*" : `${m[1] || ""}function`;
+    return `(${art} ${name}(${m[2]}) {${text.slice(text.indexOf("{\n") + 1)})`;
 }
 
 // DER ECHTE LAUF (Seiten-Kontext): der Spiel-Loop läuft über rAF wie im Spiel; nach dem Einschwingen

@@ -922,12 +922,12 @@ jobs:
               # Q8: Zone je Glied, hangab und klein je ≥ 8/10, Hit-Stop-Energie Keule ≠ Grossschwert, keine
               # Schadens-Kappe, Gegenwehr > 0, die Hand ist kein Panzer, Verschleiß von Klinge UND Bogen (jeder
               # Waffen-Schadens-Pfad im EINEN _kampfRohSchaden), der Pfeil trägt seine Energie und eine Wand hält ihn,
-              # ohne tetrapoda trefferZone ein lauter Bruch, der erste Hieb je Gattung zerlegt keine Haut (vorgebacken)
+              # ohne tetrapoda trefferZone ein lauter Bruch
               # · Q9: 3rd-Person-Klick schwingt (0 Krater), Halten gräbt nicht, RMB mit Schwert schüttet nie auf,
               # offene Werkstatt = tauber Canvas, ein Bauwerk geht in den Bau-Modus · Q10: Ego-Neigung −90° = Blick
               # −90°, „vor dir" liegt vor dem Blick, der Pfeil fliegt aufs Fadenkreuz, der Sweep liest _blickVorn.
               # Kein dritter Leib: Klinge und Pfeil fragen das EINE Grob-Tor, es liest den kreatur-Leib und deckt die
-              # Gestalt. Dazu die alten Gesetze (Dauer ∝ √I, Sweep, Hit-Stop ≠ Sim, Tod-Kippen). Selbst-Tests S1–S10.
+              # Gestalt. Dazu die alten Gesetze (Dauer ∝ √I, Sweep, Hit-Stop ≠ Sim, Tod-Kippen). Selbst-Tests S1–S7, S9, S10.
               # K13 T26: die Klick-Pfad-Matrix (8 Waffen × 3 Abstände × Rumpf/Horizont × 3rd/1st über tryMouseBreak) macht
               # 96 von 96 Schaden, der Wolf im Rücken bleibt heil, jenseits der Klinge ein Luftschlag mit Hinweis.
               run: npm run gate:kampf-gefuehl
