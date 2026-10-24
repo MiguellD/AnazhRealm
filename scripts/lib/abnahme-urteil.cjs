@@ -220,7 +220,7 @@ function paarUrteil(a, b, S) {
     return { ok: rot.length === 0, rot, korr: korr == null ? null : +korr.toFixed(3) };
 }
 
-// PNG lesen und schreiben (Node, nur zlib) — die Fixture-Bilder der Linse. Lesen: 8 Bit, RGB oder RGBA, ohne Interlace.
+// PNG lesen (Node, nur zlib) — die Fixture-Bilder der Linse: 8 Bit, RGB oder RGBA, ohne Interlace.
 function pngLesen(buf) {
     if (buf.readUInt32BE(0) !== 0x89504e47) throw new Error("kein PNG");
     let p = 8,
@@ -276,59 +276,6 @@ function pngLesen(buf) {
         vor = cur;
     }
     return { W, H, u8: out };
-}
-
-function pngSchreiben(u8, W, H) {
-    const crcT = new Int32Array(256);
-    for (let n = 0; n < 256; n++) {
-        let c = n;
-        for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-        crcT[n] = c;
-    }
-    const crc = (b) => {
-        let c = -1;
-        for (const x of b) c = crcT[(c ^ x) & 255] ^ (c >>> 8);
-        return (c ^ -1) >>> 0;
-    };
-    const chunk = (art, d) => {
-        const kopf = Buffer.alloc(8);
-        kopf.writeUInt32BE(d.length, 0);
-        kopf.write(art, 4, "ascii");
-        const c = Buffer.alloc(4);
-        c.writeUInt32BE(crc(Buffer.concat([kopf.subarray(4), d])), 0);
-        return Buffer.concat([kopf, d, c]);
-    };
-    const ihdr = Buffer.alloc(13);
-    ihdr.writeUInt32BE(W, 0);
-    ihdr.writeUInt32BE(H, 4);
-    ihdr[8] = 8;
-    ihdr[9] = 6;
-    const roh = Buffer.alloc(H * (W * 4 + 1));
-    for (let y = 0; y < H; y++) Buffer.from(u8.buffer, u8.byteOffset + y * W * 4, W * 4).copy(roh, y * (W * 4 + 1) + 1);
-    return Buffer.concat([
-        Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-        chunk("IHDR", ihdr),
-        chunk("IDAT", zlib.deflateSync(roh, { level: 9 })),
-        chunk("IEND", Buffer.alloc(0)),
-    ]);
-}
-
-// Flächen-Mittel auf W×H (das Fixture-Bild der Linse aus dem Original).
-function verkleinern(b, W, H) {
-    const u8 = new Uint8Array(W * H * 4);
-    for (let y = 0; y < H; y++)
-        for (let x = 0; x < W; x++) {
-            const y0 = Math.floor((y * b.H) / H),
-                y1 = Math.max(y0 + 1, Math.floor(((y + 1) * b.H) / H));
-            const x0 = Math.floor((x * b.W) / W),
-                x1 = Math.max(x0 + 1, Math.floor(((x + 1) * b.W) / W));
-            const s = [0, 0, 0, 0];
-            for (let yy = y0; yy < y1; yy++)
-                for (let xx = x0; xx < x1; xx++) for (let k = 0; k < 4; k++) s[k] += b.u8[(yy * b.W + xx) * 4 + k];
-            const nn = (y1 - y0) * (x1 - x0);
-            for (let k = 0; k < 4; k++) u8[(y * W + x) * 4 + k] = Math.round(s[k] / nn);
-        }
-    return { W, H, u8 };
 }
 
 // DIE FIXTURES (spec/abnahme/faelle.json): die Beweisbilder vom 13.10. ohne freie Sicht — je Fall das verkleinerte Bild
@@ -471,10 +418,6 @@ function abnahmeSelbsttest(fixtureDir) {
     const b4 = gesund();
     b4.stand.sha = null;
     if (!paarUrteil(a, b4, SCHWELLEN).rot.some((x) => x.includes("SHA"))) v.push("Paar: Stand ohne SHA nicht ROT");
-    // PNG hin und zurück
-    const rt = pngLesen(pngSchreiben(bunt, W, H));
-    if (rt.W !== W || rt.H !== H || rt.u8.some((x, i) => x !== bunt[i]))
-        v.push("PNG: Hin und Zurück nicht byte-gleich");
     // DIE FIXTURES: die Beweisbilder vom 13.10. — jede fällt ROT mit ihrem erwarteten Grund
     if (fixtureDir) {
         const fs = require("fs");
@@ -2585,7 +2528,6 @@ module.exports = {
     abnahmeUrteil,
     bildMasse,
     pngLesen,
-    verkleinern,
     fixtureMessung,
     abnahmeSelbsttest,
     ABNAHME_INSTALL:
