@@ -12,17 +12,12 @@
 //       Fade-Saum aus CSMShadowNode._setupFade abgeschrieben) — mittags und am Abend
 //   K2  die Box ist eng: Fläche ≤ 60 % des Addon-Quadrats (Diagonale + Fade-Saum) je Kaskade, waagrechter Blick
 //   K3  das Zentrum liegt auf dem Texel-Raster der Licht-Basis; 0,37 m Gehen hält Größe und Raster
-//   K7  der Takt hält die Box (`_kaskadeHaelt`): rendert eine Kaskade auf ihrem Takt und nichts änderte sich,
-//       behält sie ihre Box (dieselbe Lage — die Wahl ihres Passes steht); steigt ein Werfer über ihre nahe Ebene, legt
-//       sie neu (und wirft ihn). Die Box-Messungen (K1–K6, W5, die Selbsttests) legen die Box frisch (`alleNeu`).
-//   K8  die Wahl hält über die Stufen der Sonne: dreht das Licht
-//       um weniger, als der halbe Licht-Rand (`PASS_WAHL.lichtRandTexel` Texel) über den längsten Licht-Weg erlaubt, legt
-//       jede Kaskade ihre Box neu, ihre Lage hält, und die gehaltene Wahl trägt jeden echten Werfer (Zellen der werfenden
-//       Sätze, Instanzen der Schatten-Gruppen — das Gesetz ohne Rand frisch gerechnet), auch wenn jeder Leser mitten in der
-//       gehaltenen Drehung neu wählt (die Folge des Gesetzes `_wahlHaelt`: −0,9 der gemessenen Grenze, Neu-Wahl, +0,9);
-//       Wahl und Wahrheit ohne den Saum der Wahl-Scheibe (er trug Drehungen bis 20°); über dem Rand wählt jede neu
-//   K4  außerhalb des Takts: dieselbe Kamera → keine Kaskade rendert; 40° gedreht → beide rendern (die Scheibe lief
-//       aus der Box)
+//   K7  der Takt hält die Box (`_kaskadeHaelt`): ohne Änderung behält eine Kaskade ihre Box; steigt ein Werfer über ihre
+//       nahe Ebene, legt sie neu (und wirft ihn). Die Box-Messungen (K1–K6, W5, die Selbsttests) legen die Box frisch (`alleNeu`).
+//   K8  die Wahl hält über die Stufen der Sonne: dreht das Licht um weniger als der halbe Licht-Rand
+//       (`PASS_WAHL.lichtRandTexel`) über den längsten Licht-Weg, hält jede Kaskade ihre Lage, und die gehaltene Wahl trägt
+//       jeden echten Werfer, auch über eine Neu-Wahl mitten in der Drehung (`_wahlHaelt`); über dem Rand wählt jede neu
+//   K4  außerhalb des Takts: dieselbe Kamera → keine Kaskade rendert; 40° gedreht → jede rendert
 //   K5  die Karte trägt die LÄNGSTE Kante der Referenz-Scheibe bei texelM (kleinste Zweierpotenz)
 //   K6  Drehen (360 × 1°, Mittag): die längste Kante je Texel bleibt ≤ 1,05 · texelM; die Rast-Wechsel der Box-Größe
 //       (jeder ist ein Neu-Abtasten aller Schatten-Kanten) werden gezählt
@@ -36,29 +31,20 @@
 //       nahen Box), ein Hang 30 m über der nahen Ebene zum Licht hin wirft (die nahe Ebene steigt über ihn)
 //   W6  jeder Werfer der Szene ist der Box bekannt: Bundle-Kind, werfender Satz (Boden, Bau-Satz) oder freier Werfer
 //       (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe)
-//   W7  die Sätze je Pass: jeder Pass zeichnet in jedem Satz genau die Zellen, deren Hülle das EINE Gesetz der Pass-Wahl trifft (Höhlen-Zellen nur, wenn
-//       die Höhlen-Sicht des Passes sie erreicht, Welle 7), byte-gleich hintereinander, nach dem Pass wieder den Abschnitt
-//       des Hauptbilds; ein Pass lässt Ring weg, und am Abend (Sonne im Rücken) trägt die nahe Kaskade Boden hinter dem
-//       Blick (der Hang wirft)
-//   W8  die Instanz-Wahl je Pass: gebaute Bäume an bekannten Orten — im Hauptbild zeichnet die L1 nur die
-//       Instanzen im Frustum und in ihrem Fenster (nicht hinter dem Blick, nicht jenseits d1), die L0 nicht jenseits d0; der
-//       Zwilling wirft mittags in die nahe Scheibe, nicht in die ferne, ein hoher Zwilling mitten in der fernen Scheibe nur
-//       dort, und am Abend wirft ein Zwilling HINTER dem Blick in die nahe Scheibe (sein Schatten läuft nach vorn); nach jedem
-//       Pass zählt jede Gruppe wieder alle, jede Marke trägt ihren Slot; ein Stoff OHNE Maske (die GPU zeichnet jede Instanz
-//       voll) bekommt kein Fenster — seine L1 jenseits d1 zeichnet; die Gruppen der Welt ohne Masken-Stoff stehen beim Namen
-//   W9  DAS EINE GESETZ, DREI LESER: ein Punkt P in der Box einer Kaskade, dessen Licht-Kapsel ihre Scheibe verfehlt (aus der Welt gesucht) — dort wirft
-//       weder ein Werfer eines Bündels noch eine Instanz der Wahl in diese Kaskade, und der Boden-Satz zeichnet dort genau
-//       die Zellen des Gesetzes (es schneidet Zellen, die das Frustum allein zöge: nicht vakuös)
-//   W10 DIE WURF-EBENE: der Wurf IST die Ebene SHADOW_TWIN_LAYER
-//       (`castShadow` liest und schreibt ihr Bit, kein Knoten trägt ein eigenes Feld), jede Kaskaden-Kamera sieht NUR sie —
-//       jeder zeichnende Knoten der Szene ist für sie gesehen genau dann, wenn er wirft; jedes Licht sieht sie wie das Auge
-//       (r184 hält EINEN Lichter-Knoten je Szene, auch für den Schatten-Pass mitten im Hauptbild)
+//   W7  die Sätze je Pass: jeder Pass zeichnet in jedem Satz genau die Zellen des EINEN Gesetzes der Pass-Wahl, danach den
+//       Abschnitt des Hauptbilds; am Abend (Sonne im Rücken) trägt die nahe Kaskade Boden hinter dem Blick
+//   W8  die Instanz-Wahl je Pass: gebaute Bäume an bekannten Orten — im Hauptbild die L1 nur im Frustum und Fenster, die L0
+//       nicht jenseits d0; Zwillinge werfen mittags in die nahe Scheibe (NAH, vor der fernen), hoch in der fernen nur dort,
+//       am Abend hinter dem Blick in die nahe; danach zählt jede Gruppe wieder alle; ein Stoff OHNE Maske bekommt kein Fenster
+//   W9  DAS EINE GESETZ, DREI LESER: am Punkt P in der Box, dessen Licht-Kapsel die Scheibe verfehlt, wirft weder ein Bündel-
+//       Werfer noch eine Instanz, und der Boden-Satz zeichnet genau die Zellen des Gesetzes
+//   W10 DIE WURF-EBENE: der Wurf IST die Ebene SHADOW_TWIN_LAYER (`castShadow` ist ihr Bit), jede Kaskaden-Kamera sieht NUR
+//       sie — ein Knoten ist für sie gesehen genau dann, wenn er wirft; jedes Licht sieht sie wie das Auge
 //   Z1  die Karten-Ziele: Farbe r8 ohne GPU-Textur auf WebGPU (kein Pass liest sie — der Filter nur mit transmitted), Tiefe 16 bit, benannt —
 //       gesetzt beim Bau des Ziels (die Hülle um setupRenderTarget), nie umgebaut
 //   Z2  die Bildziele je Leser: EINE Szenen-Tiefe (`_szeneTiefe`), kein namenloses Bildziel (convertToTexture)
-//   A1  Absenz: kein Frustum-Schreiber nimmt Inseln/Mesh-Tieren den Schatten; das Addon schreibt keine Box (updateBefore
-//       und _updateShadowBounds stumm), der Haken des Haupt-Passes stellt die Kaskaden (Konsum), Schatten-Pässe stellen
-//       nichts; die Sicht je Pass schaltet keine Bundle-Eigenschaft
+//   A1  Absenz: kein Frustum-Schreiber nimmt Inseln/Mesh-Tieren den Schatten; das Addon schreibt keine Box, der Haken des
+//       Haupt-Passes stellt die Kaskaden, Schatten-Pässe stellen nichts
 //   S1  Selbsttest: die alte Regel (jeder Pass liest das Haupt-Urteil) muss W1/W2/W3/W4 rot machen
 //   S3  Selbsttest: die alte Hüllen-Regel (nur Bundles) muss W5 rot machen
 //   S4  Selbsttest: die beiden alten Frustum-Schreiber der Tiere fängt die Absenz-Regel
@@ -105,6 +91,8 @@ function probe(selbsttest) {
     const csm = st.csmNode;
     const aus = { selbsttest };
     if (!csm) return Object.assign(aus, { fehler: "keine CSM" });
+    // die nahe und die ferne Kaskade des Band-Gesetzes (davor die Kontakt-Kaskade, schatten.K1)
+    const [NAH, FERN] = [csm.cascades - 2, csm.cascades - 1];
     // Die Addon-Init, wie sie der erste Material-Bau fährt (Kaskaden-Lichter + Frusta an der Haupt-Kamera).
     if (!csm.camera) csm._init({ camera: cam, renderer: { coordinateSystem: cam.coordinateSystem } });
     // Der Boden-Satz legt seinen Index (wie vor jedem Render) — erst dann ist er sichtbar und eine Hülle der Box.
@@ -589,7 +577,7 @@ function probe(selbsttest) {
         try {
             // das Tal: ein Boden IN der nahen Scheibe (1 m über ihrer Unterkante, 95 % ihrer Tiefe), tief unter jeder
             // Bundle-Hülle — ein Empfänger, den nur seine eigene Boden-Hülle ins Band holt
-            const ab = r._kaskadenSaum(csm.breaks, 0, csm.fade === true, [0, 1]);
+            const ab = r._kaskadenSaum(csm.breaks, NAH, csm.fade === true, [0, 1]);
             const mf = csm.mainFrustum.vertices;
             const unten = (t) => {
                 const e = [0, 1, 2, 3].map((j) =>
@@ -604,9 +592,9 @@ function probe(selbsttest) {
             boden.bloecke.set("__w7:tal", tal);
             alleNeu();
             r._kaskadenPassen(csm);
-            const talDrin = frustumVon(0).containsPoint(pt);
+            const talDrin = frustumVon(NAH).containsPoint(pt);
             // der Hang: im Licht-Raum über dem Zentrum der nahen Box, 30 m über ihrer nahen Ebene
-            const f0 = csm._anazhFit[0];
+            const f0 = csm._anazhFit[NAH];
             const ph = new T.Vector3(f0.x0 + f0.W / 2, f0.y0 + f0.H / 2, f0.zt + 30).applyMatrix4(
                 f0.basisInv.clone().invert()
             );
@@ -614,7 +602,7 @@ function probe(selbsttest) {
             boden.bloecke.set("__w7:hang", hang);
             alleNeu();
             r._kaskadenPassen(csm);
-            const f1 = csm._anazhFit[0];
+            const f1 = csm._anazhFit[NAH];
             const lz = ph.clone().applyMatrix4(f1.basisInv).z;
             return { talDrin, hangWirft: lz <= f1.zt, hangZ: +(lz - f1.zt).toFixed(1) };
         } finally {
@@ -713,7 +701,7 @@ function probe(selbsttest) {
             const kinder = (o) => {
                 for (const c of o.children) {
                     if (c.visible === false && !abgewaehlt.has(c)) continue;
-                    if (c.isMesh && c.castShadow && c.children.length === 0) {
+                    if (c.isMesh && c.castShadow && (c.children.length === 0 || (c.__zeichner !== undefined && c.children.length === 1))) {
                         const b = c.userData._werferKind;
                         const soll = !!b && !b.isEmpty() && r._passTrifftBox(L, b, 0);
                         if (c.visible !== soll) w.kindFalsch++;
@@ -1018,8 +1006,8 @@ function probe(selbsttest) {
             ].join(" · ");
             r._passSicht(cam, true);
             danach();
-            res.k0 = kaskade(0, ["G"]);
-            res.k1 = kaskade(1, []);
+            res.k0 = kaskade(NAH, ["G"]);
+            res.k1 = kaskade(FERN, []);
             // (2) Mittag, Blick in Licht-Richtung (der Schatten läuft vom Auge weg): der Zwilling H mitten in der fernen
             // Scheibe, so hoch, dass seine Maske vom Auge etwas behält — er wirft in k1, nicht in k0.
             leere(G.Z);
@@ -1027,15 +1015,15 @@ function probe(selbsttest) {
             blick(Math.atan2(L.x, L.z));
             const c1 = cam.position.clone();
             const far = Math.min(cam.far, csm.maxFar);
-            const b0 = csm.breaks[0] * (far - cam.near);
+            const b0 = csm.breaks[NAH] * (far - cam.near);
             const dH = b0 + 0.45 * (far - b0);
             const sH = Math.ceil((12 * dH - 24) / 264) + 1;
             setze(G.Z, "H", c1.x + L.x * dH, c1.z + L.z * dH, sH);
             takt();
             uniformen(c1);
             res.fernH = { tiefe: Math.round(dH), skala: sH, nahGrenze: Math.round(b0) };
-            res.k1H = kaskade(1, ["H"]);
-            res.k0H = kaskade(0, []);
+            res.k1H = kaskade(FERN, ["H"]);
+            res.k0H = kaskade(NAH, []);
             // (3) Abend, die Sonne im Rücken: ein 30 m hoher Zwilling 15 m HINTER dem Blick wirft seinen Schatten nach vorn in
             // die nahe Scheibe — er wirft in k0, obwohl das Hauptbild ihn nie sieht.
             leere(G.Z);
@@ -1046,7 +1034,7 @@ function probe(selbsttest) {
             setze(G.Z, "J", c2.x - L.x * 15, c2.z - L.z * 15, 3);
             takt();
             uniformen(c2);
-            res.abend = kaskade(0, ["J"]);
+            res.abend = kaskade(NAH, ["J"]);
         } finally {
             for (const g of Object.values(G)) {
                 set.add(g);
@@ -1537,12 +1525,12 @@ function probe(selbsttest) {
         // hält die Folge, kein echter Werfer fehlt, über dem Rand wählt jede Kaskade neu
         const k8gut = (x) =>
             !!x &&
-            x.faelle.length === 2 &&
+            x.faelle.length === x.budget.length &&
             x.faelle.every((y) => y.gehalten) &&
             x.grenze.every((g, k) => g > 0 && g <= 1.1 * x.budget[k]) &&
             x.loecher === 0 &&
             x.geprueft > 100 &&
-            x.neu.length === 2 &&
+            x.neu.length === x.budget.length &&
             x.neu.every(Boolean);
         if (a.k8)
             check(
@@ -1689,7 +1677,7 @@ function probe(selbsttest) {
                 // (den fernen Zwilling H allein hält schon die Werfer-Wahl aus k0 — dasselbe Gesetz über die Gruppe als Ganzes)
                 !!a.s9 &&
                     a.s9.falsch.some((x) => /^haupt: /.test(x)) &&
-                    a.s9.falsch.some((x) => /^k0: /.test(x)) &&
+                    a.s9.falsch.some((x) => /^k\d: /.test(x)) &&
                     a.s9.falsch.some((x) => /__w8:baum/.test(x) || /g:__w8/.test(x)),
                 a.s9 ? w8t(a.s9) : "keine Messung"
             );
