@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "056330d8",
-    "zeit": "2026-10-24T08:56:07.997Z",
+    "zeit": "2026-10-24T08:57:30.570Z",
     "kriterien": [
       "affekt.K1",
       "bauen.K1",
@@ -1286,7 +1286,7 @@
           "punkte": 1,
           "staffel": "1 = Start-Dorf voll: Körper mit Menschen-Leib je Siedlung ÷ Σ leute = 1,0 ±0,05, ≥ 10 Menschen im Bild am Dorfplatz an einem Gerät · 2 = Stadt ≥ 200 mit ≥ 40 nah animiert, ABAB an der GTX nicht schlechter",
           "messung": "NEUER Bewohner-Zensus in der Familie kreatur-proben am Start-Dorf und an einer Stadt mit nH ≥ 27; Spielgang-Station Dorfplatz (Ego und Third, Mittag); Selbsttest: ein Haus ohne Bewohner ist ROT beim Namen.",
-          "beleg": "Maschine: Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 37 Menschen im Bild, 14 gehend, 118.3 fps an 18a84649 radeon — offen: mensch.K1#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 37 Menschen im Bild, 14 gehend, 118.3 fps an 18a84649 radeon · Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 38 Menschen im Bild, 15 gehend, 104.3 fps an 18a84649 gtx — offen: mensch.K1#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Statisten-Puppen als statische Meshes erfüllten die Zählung: gezählt werden nur Körper mit Leib-Löser und Bewegung > 0 im Tag; Gegenprobe Haus mit leute 0 → 0 Körper.",
           "aenderung": "Gemessen 22.10. (bewohner-tag, Radeon) 0 → 1; nach R6 (bewohner-wege) 22.10. 1 → 0; am Kopf 6cfce28a gemessen (M32) 22.10. 0 → 1.; nach R6 (stadt-takt, tier-satz, stadt-erwachen) 23.10. 1 → 0.",
           "maschine": true
@@ -1296,7 +1296,7 @@
           "punkte": 1,
           "staffel": "1 = ein Bewohner trifft ≥ 0,9 seiner Soll-Orte über 24 Spielstunden · 2 = alle Bewohner einer Siedlung, 4–10 Wege am Tag, Wiederkehr nach 1 h Abwesenheit auf ±2 m",
           "messung": "NEUE Zeitraffer-Linse auf der Uhr des Spieler-Worts; der Plan ist bei gleichem Seed bit-gleich; Bild der Station Schmiede: um 10 Uhr besetzt, um 2 Uhr leer; Selbsttest: ein um 6 h verschobener Plan ist ROT.",
-          "beleg": "Maschine: Soll-Orte über 24 Spielstunden min 1 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an 056330d8 headless — offen: mensch.K2#2 radeon: ROT: Soll-Orte alle 79/81 ≥ 0,9 (min 0.821), Wege je Tag 4–7 (außer 4–10: 0), Wiederkehr nach 1 h undefined von undefined Lagen über ±2 m (max undefined m), Sprünge 0, Plan bit-gleich true an 056330d8 · mensch.K2#2 gtx: ungemessen (R10)",
+          "beleg": "Maschine: Soll-Orte über 24 Spielstunden min 1 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an 056330d8 headless — offen: mensch.K2#2 radeon: ROT: Soll-Orte alle 79/81 ≥ 0,9 (min 0.821), Wege je Tag 4–7 (außer 4–10: 0), Wiederkehr nach 1 h undefined von undefined Lagen über ±2 m (max undefined m), Sprünge 0, Plan bit-gleich true an 056330d8 · mensch.K2#2 gtx: Pfad seit der Messung geändert (R6: stamm/bild-himmel.js)",
           "schlupfloch": "Ein Teleport an den Soll-Ort erfüllte den Anteil: K3 verlangt Gangzeit auf Wegen, im Nahbereich sind Sprünge > 2 m je Frame ROT.",
           "aenderung": "Staffel neu (B31); gemessen 22.10. (bewohner-tag, Radeon) 0 → 1.",
           "maschine": true

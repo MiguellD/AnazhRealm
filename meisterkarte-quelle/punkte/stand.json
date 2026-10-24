@@ -699,7 +699,7 @@
   },
   "mensch.K1": {
    "punkte": 1,
-   "beleg": "Maschine: Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 37 Menschen im Bild, 14 gehend, 118.3 fps an 18a84649 radeon — offen: mensch.K1#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 37 Menschen im Bild, 14 gehend, 118.3 fps an 18a84649 radeon · Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 38 Menschen im Bild, 15 gehend, 104.3 fps an 18a84649 gtx — offen: mensch.K1#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "mensch.K1#1",
@@ -712,16 +712,16 @@
     {
      "id": "mensch.K1#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/koerper-fahrt.js, stamm/koerper-seele.js +2)"
+     "gruen": true,
+     "zahl": "Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 38 Menschen im Bild, 15 gehend, 104.3 fps",
+     "sha": "18a846491377cb9898af2b5bb930234c249fa6ad",
+     "grund": null
     }
    ]
   },
   "mensch.K2": {
    "punkte": 1,
-   "beleg": "Maschine: Soll-Orte über 24 Spielstunden min 1 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an 056330d8 headless — offen: mensch.K2#2 radeon: ROT: Soll-Orte alle 79/81 ≥ 0,9 (min 0.821), Wege je Tag 4–7 (außer 4–10: 0), Wiederkehr nach 1 h undefined von undefined Lagen über ±2 m (max undefined m), Sprünge 0, Plan bit-gleich true an 056330d8 · mensch.K2#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: Soll-Orte über 24 Spielstunden min 1 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an 056330d8 headless — offen: mensch.K2#2 radeon: ROT: Soll-Orte alle 79/81 ≥ 0,9 (min 0.821), Wege je Tag 4–7 (außer 4–10: 0), Wiederkehr nach 1 h undefined von undefined Lagen über ±2 m (max undefined m), Sprünge 0, Plan bit-gleich true an 056330d8 · mensch.K2#2 gtx: Pfad seit der Messung geändert (R6: stamm/bild-himmel.js)",
    "stationen": [
     {
      "id": "mensch.K2#1",
@@ -745,7 +745,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/bild-himmel.js)"
     }
    ]
   },
@@ -1375,5 +1375,5 @@
   }
  },
  "kopfVoll": "056330d8a70fcdc617df8c3ff62ec174c5d33995",
- "zeit": "2026-10-24T08:56:07.997Z"
+ "zeit": "2026-10-24T08:57:30.570Z"
 }
