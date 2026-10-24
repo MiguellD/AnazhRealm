@@ -2201,7 +2201,8 @@
         //    das Material traegt): Masse-Anteile Stahl 0,65 · Aluminium 0,10 · Kunststoff 0,10 · Gummi 0,05 ·
         //    Glas 0,03 · Fluide 0,07 ueber ihre Dichten (7,85 · 2,7 · 1,1 · 1,2 · 2,5 · 1,0) geben 1/Σ(w/ρ) ≈ 3,0.
         //    Ueber 1 traegt das Wasser die Huelle nie: ein Strassenwagen watet und sinkt, er schwimmt nicht. Das
-        //    Lab kennt kein Wasser; der Wirt liest sie ueber exportDrive.huelle.dichte. ──
+        //    Lab kennt kein Wasser; der Wirt liest sie als Stoff seines Blechs (physik K1: die Zeile blech der Stoff-Zeile,
+        //    huelleDichte × wasser.rho). ──
         huelleDichte: 3.0,
         // ── PHYSIK-NAHT (N6.5b, rein additive DATEN-Zeile — Praezedenz: §8.5-Stufen-Zeile) —
         // DIE HOST-EMERGENZ-KOEFFIZIENTEN: die Fallback-Fahr-Formel des Wirts (ein Werk OHNE
@@ -2520,9 +2521,6 @@
                 yRoof: P.dach,
                 radR: P.radR,
                 spur: P.spur,
-                // WELLE L (07.10., rein additiv): die Dichte der Huelle relativ zu Wasser (FAHR.huelleDichte) — der
-                // Wirt legt das Fahrzeug danach ins Wasser (Archimedes ueber Unterkoerper + Greenhouse).
-                dichte: FAHR.huelleDichte,
             },
             topSpeedMul: ph.vmax / VMAX_REF,
             kAcc: ph.aEngine / ph.vmax,

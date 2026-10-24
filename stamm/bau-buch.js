@@ -1556,8 +1556,10 @@ class AnazhRealm_bau_buch {
     _teilVolumen(p) {
         if (!p) return 0;
         const memo = this._teilVolumenMemo || (this._teilVolumenMemo = new Map());
-        const { position: _p, rotation: _r, material: _m, color: _c, opChain: _o, ...form } = p;
-        const key = JSON.stringify(form);
+        // der Schlüssel ist die Form: alles am Teil außer Lage, Drehung, Stoff, Farbe und Werkzeug-Spur
+        const key = JSON.stringify(p, function (k, v) {
+            return this === p && AnazhRealm.TEIL_FORM_FREI.includes(k) ? undefined : v;
+        });
         let v = memo.get(key);
         if (v === undefined) {
             const geo = this._makePartGeometry(p);
@@ -2372,6 +2374,8 @@ class AnazhRealm_bau_buch {
 _stammZonen(AnazhRealm, [AnazhRealm_bau_buch]);
 
 // ===== ATLAS · Bau/buch — Außen-Konstanten =====
+// Die Felder eines Teils, die seine Gestalt nicht formen (`_teilVolumen`: das Volumen gilt je Form und Maß).
+AnazhRealm.TEIL_FORM_FREI = Object.freeze(["position", "rotation", "material", "color", "opChain"]);
 AnazhRealm._bewegungsKoeff = function (stat) {
     const row = AnazhRealm.Gesetz("koerper:bewegung." + stat, null);
     if (row && Number.isFinite(row.base) && Number.isFinite(row.leicht) && Number.isFinite(row.mag)) return row;

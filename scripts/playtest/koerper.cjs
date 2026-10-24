@@ -789,7 +789,7 @@ async function checkBandWFFluss(ctx) {
         out.holzFloats = probeFloat("holz");
         out.steinFloats = probeFloat("stein");
         out.eisenFloats = probeFloat("eisen");
-        // (6) der Studio-Wagen liegt nach der Hülle des Fahrzeug-Kerns im Wasser (D10: exportDrive.huelle.dichte), nie nach
+        // (6) der Studio-Wagen liegt nach dem Stoff seiner Hülle im Wasser (D10, physik K1: ρ blech der Stoff-Zeile), nie nach
         // dem Holzkarren-Spender, den sein Bauplan klont (bis 8f09227d schwamm der GT wie ein Holz-Boot).
         const pGt = r._vehicleProfile({ type: "fahrzeug_gt", scale: 1, position: { x: 0, y: 0, z: 0 } });
         out.gtFloats = pGt ? pGt.floats : null;
