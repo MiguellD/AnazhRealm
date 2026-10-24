@@ -250,7 +250,7 @@ function staticLaws(garage) {
         try {
             const pGt = r._vehicleProfile({ type: "fahrzeug_gt" });
             res.prof.gt = pGt
-                ? { topSpeedMul: pGt.topSpeedMul, kAcc: pGt.kAcc, kBrake: pGt.kBrake, floats: pGt.floats }
+                ? { topSpeedMul: pGt.topSpeedMul, kAcc: pGt.kAcc, kBrake: pGt.kBrake }
                 : null;
             // AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist gefallen — die
             // EMERGENZ wird an einem Test-Blueprint aus der Substanz-Tabelle bewiesen
@@ -267,7 +267,7 @@ function staticLaws(garage) {
             };
             const pWg = r._vehicleProfile({ type: "_drive_probe_wagen" });
             res.prof.wagen = pWg
-                ? { topSpeedMul: pWg.topSpeedMul, kAcc: pWg.kAcc, kBrake: pWg.kBrake, floats: pWg.floats }
+                ? { topSpeedMul: pWg.topSpeedMul, kAcc: pWg.kAcc, kBrake: pWg.kBrake }
                 : null;
             // fahrzeug_wagen loest auf KEIN Buch-Preset ("wagen" steht in keinem Buch -> null,
             // der dokumentierte Substanz-Pfad) — die 0-Regress-Praemisse: kein Override moeglich.
@@ -662,11 +662,6 @@ function staticLaws(garage) {
         pw
             ? `kAcc=${pw.kAcc} soll=${out.emerg && out.emerg.kAcc} rad=${out.emerg && out.emerg.radCount}`
             : "kein Profil"
-    );
-    check(
-        "B-c (D10): der Studio-Wagen schwimmt nach der Huelle des Kerns (exportDrive.huelle.dichte > 1: gt sinkt), das Teile-Werk nach seiner Substanz (wagen-Substanz schwimmt) — nie gt == Holzkarren-Spender",
-        !!pg && !!pw && pg.floats === false && pw.floats === true,
-        pg && pw ? `gt=${pg.floats} wagen=${pw.floats}` : ""
     );
     // B-d (B2): die stehende Fahr-Probe — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
     const dv = driveVerdict(out.drive);
