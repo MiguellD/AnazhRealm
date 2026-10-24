@@ -478,7 +478,8 @@ module.exports = [
         kriterium: "speicher.K4",
         staffel: 1,
         geraet: "headless",
-        // gate:persistence: (K) das Haus mit Zahlen-id übersteht den Reload mit kaltem Buch, (W) zwei Werke auf der Lichtung,
+        // gate:persistence aus dem Korpus (spec/speicher-korpus/, je Stand ein echter Boot): (K) das Haus mit Zahlen-id übersteht
+        // den Reload mit kaltem Buch, (W) zwei Werke auf der Lichtung,
         // aus (T) die Dichte: nach dem letzten echten Reload steht die Linie der Löcher (> 256 von 300) und kein Stand ist korrupt.
         // Die halbe Welt von (T) urteilt den Tod mitten im Schreiben — das ist Speicher K1 (echt-k1), nicht der Rundlauf; unter
         // Windows meldet (T) sie zudem als Rennen der Linse (taskkill /T erreicht den Baum verzögert, Bericht 2210-messschuld-6cfce).
@@ -505,15 +506,15 @@ module.exports = [
                     " | " + (dichte ? "✅" : "❌") + " Dichte über den Reload: Linie " + linie[1] + " Löcher, " + korrupt[1] + " korrupt",
             };
         },
-        pfad: SPEICHER_PFAD.concat(["stamm/studio-bruecke.js", "stamm/vegetation-baum.js", "scripts/diag-persistence.cjs"]),
+        pfad: SPEICHER_PFAD.concat(["stamm/studio-bruecke.js", "stamm/vegetation-baum.js", "scripts/diag-persistence.cjs", "spec/speicher-korpus/*"]),
         quelle: "1 = der Zahlen-Rundlauf (Dichte, Bauten) über einen echten Reload ist bewiesen",
     },
     {
         kriterium: "speicher.K5",
         staffel: 1,
         geraet: "headless",
-        // gate:persistence (U): der Save eines alten Bodens lädt durch `loadState` auf den neuen (Bauten in Fuß-Höhe),
-        // Gegenprobe: ein Save desselben Bodens zieht nicht um
+        // gate:persistence (U) aus dem Korpus: die Stände eines alten Bodens (V18.530–V18.541, vor K16) laden durch den Boot des
+        // Spielers auf den neuen (Bauten in ihrer Höhe über Grund, Gruben am Boden), Gegenprobe: die Stände desselben Bodens ziehen nicht um
         befehl: ["node", "scripts/diag-persistence.cjs"],
         env: { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_SERVER_PORT: "2{PORT}" },
         gpu: false,
@@ -525,8 +526,33 @@ module.exports = [
             if (t.some((x) => !x)) return { gruen: false, zahl: "Teil (U) fehlt in der Ausgabe (Exit " + lauf.exit + ")" };
             return { gruen: t.every((x) => x.ok), zahl: t.map((x) => (x.ok ? "✅ " : "❌ ") + x.l.replace(/^(✅|❌)\s*/, "").slice(0, 140)).join(" | ") };
         },
-        pfad: ["stamm/dienst.js", "stamm/speicher-*.js", "stamm/gelaende-boden.js", "stamm/siedlung-satz.js", "gelaende-core.js", "scripts/diag-persistence.cjs", "scripts/lib/welt-boot.cjs"],
+        pfad: ["stamm/dienst.js", "stamm/speicher-*.js", "stamm/gelaende-boden.js", "stamm/siedlung-satz.js", "gelaende-core.js", "scripts/diag-persistence.cjs", "scripts/lib/welt-boot.cjs", "spec/speicher-korpus/*"],
         quelle: "1 = eine Migrations-Klasse bewiesen",
+    },
+    {
+        kriterium: "speicher.K5",
+        staffel: 2,
+        geraet: "headless",
+        // gate:persistence (V): der Korpus spec/speicher-korpus/ — je Versions-Stufe EIN Stand, den ihre Version selbst schrieb
+        // (Bauten, Grabe-Hiebe, Inventar), lädt am Kopf durch den Boot des Spielers ohne Verlust; die Versions-Stufe trägt ihren
+        // Stand im Baum (fehlt er, schreibt ihn der Kopf und die Zeile ist ROT, bis er committet ist)
+        befehl: ["node", "scripts/diag-persistence.cjs"],
+        env: { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_SERVER_PORT: "2{PORT}" },
+        gpu: false,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            const z = String(lauf.stdout || "").split(/\r?\n/);
+            const teil = (re) => { const l = z.find((x) => re.test(x)); return l ? { ok: /✅/.test(l), l: l.trim() } : null; };
+            const t = [teil(/^\s*(✅|❌) \(V\) Korpus:/), teil(/^\s*(✅|❌) \(V\) Versions-Stufe/)];
+            const n = t[0] && /(\d+) Stände/.exec(t[0].l);
+            if (t.some((x) => !x) || !n) return { gruen: false, zahl: "Teil (V) fehlt in der Ausgabe (Exit " + lauf.exit + ")" };
+            return {
+                gruen: t.every((x) => x.ok) && +n[1] >= 10,
+                zahl: t.map((x) => (x.ok ? "✅ " : "❌ ") + x.l.replace(/^(✅|❌)\s*/, "").slice(0, 160)).join(" | "),
+            };
+        },
+        pfad: ["stamm/dienst.js", "stamm/speicher-*.js", "stamm/gelaende-boden.js", "stamm/siedlung-satz.js", "stamm/vegetation-baum.js", "gelaende-core.js", "scripts/diag-persistence.cjs", "scripts/lib/welt-boot.cjs", "spec/speicher-korpus/*"],
+        quelle: "2 = ein Korpus aus ≥ 10 alten Versionen (aus git gezogen, unter spec/) lädt am Kopf ohne Verlust, der Korpus wächst je Versions-Stufe",
     },
 ];
 
@@ -573,12 +599,6 @@ module.exports.fehlt = [
         staffel: 2,
         befehl: null,
         grund: "m16-k2k4 (bild-diff 6,75 % am 21.10., Radeon) setzt Bau und Edit, bringt aber kein Wasser sicher ins Bild: der Pflicht-Inhalt der Staffel (Bauten, Edits, Wasser) ist im Urteil nicht prüfbar",
-    },
-    {
-        kriterium: "speicher.K5",
-        staffel: 2,
-        befehl: null,
-        grund: "kein Korpus alter Stände unter spec/ und kein Korpus-Lauf; (U) beweist nur den Boden-Umzug",
     },
     {
         kriterium: "streaming.K4",
