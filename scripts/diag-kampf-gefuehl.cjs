@@ -470,6 +470,10 @@ function werkVerdict(W) {
         if (W.boden[x] !== null) v.push(`boden: ${x} gräbt in ${W.boden[x]} Klicks, soll schwingen`);
     return v.concat(formVerdict(W.form));
 }
+// (Q11 halten.K3 Sichel) eine Form mäht: der Klick trägt das Verb pfluecken, Büschel der Wiese fehlen nach ihrem Takt (ins kraut)
+// und wachsen nach; die Sichel und der hohle Säbel mähen, die gerade Sichel nicht.
+const maeht = (x) => !!x && x.verb === "pfluecken" && x.fehlen > 0 && x.kraut >= x.fehlen && x.wieder;
+const sichelForm = (F = {}) => ["sichel", "gerade", "hohl"].filter((k) => maeht(F[k]) === (k === "gerade"));
 // (Q12) halten.K4: die Spitze gegen die Parabel ihres Abschusses als Anteil des Falls ½·|g|·τ² ab 0,1 s; Staffel 1 Bahn und
 // Treffer-Ort ≤ 5 %, Tempo √(2E/m); Staffel 2 der Pfeil steckt und kehrt aus dem Speicher wieder, das Tempo folgt BOGENMAT.
 const fall = (g, t) => 0.5 * Math.abs(g) * t * t;
@@ -928,7 +932,10 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
 
             return o;
         });
-        welle = await page.evaluate(WELLE_L);
+        welle = await page.evaluate(
+            WELLE_L,
+            require("../spec/profiband/haushalt.json").messorte.find((o) => o.id === "wiese")
+        );
     } catch (e) {
         out = { error: (e && e.message) || String(e) };
     }
@@ -1089,6 +1096,17 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         check(
             s13.some((x) => x.includes("gräbt")) && s13.some((x) => x.includes("fällt")),
             "SELBST-TEST (S13): eine Art-Tafel neben dem Gesetz (graben nach task.art, ein Abbau-Profil für alle) — die Form-Mutation bleibt stumm, die Linse nennt sie"
+        );
+        const SK = z.sichel || {},
+            skv = sichelForm(SK);
+        console.log(`  (Q11 Sichel) ${JSON.stringify(SK)}`);
+        check(
+            !skv.length,
+            `Q11 halten.K3 Sichel erntet über die echte Eingabe nach der Form — ${(SK.sichel || {}).fehlen} Büschel der Mess-Wiese ins kraut, sie wachsen nach; die gerade Sichel mäht nicht, der hohle Säbel mäht${skv.length ? " — ROT " + skv : ""}`
+        );
+        check(
+            sichelForm(SK.s15).join() === "gerade,hohl",
+            "SELBST-TEST (S15): mäht, wer Sichel heißt — die Form-Mutation bleibt stumm"
         );
         const K4 = z.bogenK4 || {};
         const k4 = bogenK4Verdict(K4);

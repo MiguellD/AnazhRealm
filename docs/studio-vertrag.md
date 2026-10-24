@@ -770,7 +770,7 @@ rein additiv): **`TUER_GESETZ { offen }`** = der Flügel-Öffnungswinkel (rad)
 — Shell (`DOOR_OPEN`) UND Wirt (`AnazhRealm._tuerOffenRad()`, Fallback
 `TOR_FLUEGEL_OFFEN`) lesen die EINE Quelle (der 1.95-Zahlen-Zwilling ist
 geschlossen). `schmiede-core.js` (W-A4a, ε —
-GEBAUT: B1 21 Gattungen `kind:"weapon"` [Waffen UND Werkzeuge, die
+GEBAUT: B1 22 Gattungen `kind:"weapon"` [Waffen UND Werkzeuge, die
 tool:true-Marke reist in fx] · B2 `buildInstance` + `kindStages:{weapon:[0]}` +
 Goldens `spec/asset-contract/v5/` (`gate:schmiede-contract`, seed-invariant
 cv:5) · B4 PARAMS (PARAMS_BLADE+PARAMS_IMPACT, def aus dem Lab-Startzustand) ·

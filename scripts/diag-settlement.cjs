@@ -1837,7 +1837,11 @@ const FIXTURES = [
                     _autoSettlementQueue: null,
                 });
                 delete wm.settlementCells[key];
-                let [wach, erst, haus, haupt] = [false, null, -1, 1];
+                let [wach, erst, haus, haupt, vor] = [false, null, -1, 1, 0];
+                r._foundryFlattenFor = function (e, ...a) {
+                    vor += !wach && /^haus_/.test(e.type);
+                    return r.constructor.prototype._foundryFlattenFor.call(this, e, ...a);
+                };
                 FC.ortPlan = function (p, ...a) {
                     haupt += wach && p && p.slots ? 1 : 0;
                     return ortPlan0.call(this, p, ...a);
@@ -1845,8 +1849,7 @@ const FIXTURES = [
                 const lift = r.constructor.prototype._spawnSettlementSlot;
                 r._spawnSettlementSlot = function (sl, o, ...a) {
                     const q = r._autoSettlementQueue;
-                    if (!erst && q && q.cellKey === key)
-                        erst = { d: Math.hypot(o.x + sl.x - pm.position.x, o.z + sl.z - pm.position.z), q };
+                    if (!erst && q && q.cellKey === key) erst = q;
                     return lift.call(this, sl, o, ...a);
                 };
                 const zug = r._dorfZug;
@@ -1876,20 +1879,12 @@ const FIXTURES = [
                     haus++;
                     await new Promise((rs) => setTimeout(rs, 5));
                 }
-                const naechst =
-                    erst &&
-                    Math.min(
-                        ...erst.q.plan.slots.map((s) =>
-                            Math.hypot(erst.q.origin.x + s.x - pw.x, erst.q.origin.z + s.z - pw.z)
-                        )
-                    );
                 return (
                     erst && {
                         nH,
                         plaene: haupt + r._ortWahlMass.kandidaten,
                         haus,
-                        ersterM: +erst.d.toFixed(1),
-                        naechstM: +naechst.toFixed(1),
+                        vor,
                     }
                 );
             };
@@ -1902,7 +1897,11 @@ const FIXTURES = [
                     ["alt300", 301, 1, 1],
                 ])
                     res.c.k5[k] = await lauf(nH, v, alt);
+                delete r._foundryFlattenFor;
                 res.c.k5.drossel = A.drosselTakte;
+                const y = r.state.yaw;
+                const slot = (d, w) => ({ x: d * Math.sin(y + w), z: d * Math.cos(y + w), obb: { ex: 3, ez: 3 } });
+                res.c.k5.schirm = r._dorfZug({ slots: [slot(15, Math.PI / 2), slot(40, 0)] }, pm.position).reihe;
                 // C-K5c DER ORT IST EINE FUNKTION (Lehre 7): zwei Vorläufe derselben Saat, der Spieler 3,7 m versetzt im Vorlauf-Ring
                 // — der Plan v2 bit-gleich, sonst die erste abweichende Größe; `stoer` (Selbsttest) rückt den Wunsch mit ihm
                 const i3 = { ...cand, seed: (cand.seed ^ 0x51ed) >>> 0, nH: 300 };
@@ -2945,8 +2944,8 @@ const FIXTURES = [
     const soll = Math.floor((0.5 * 41) / k5.drossel);
     const je = (n, f) => n.every((k) => k5[k] && f(k5[k]));
     check(
-        `C-K5: DAS NÄCHSTE HAUS ZUERST — nH 12 und 300 heben es nach dem Vorlauf ≤ 0,5 s (${soll} Takte) nach dem Erwachen`,
-        je(["vorlauf12", "vorlauf300"], (w) => w.haus >= 0 && w.haus <= soll),
+        `C-K5: DAS NÄCHSTE HAUS ZUERST — nH 12 und 300 heben es nach dem Vorlauf ≤ 0,5 s (${soll} Takte) nach dem Erwachen, ihre Stufen bestellt vor ihm`,
+        je(["vorlauf12", "vorlauf300"], (w) => w.haus >= 0 && w.haus <= soll && w.vor > 0),
         z5
     );
     check(
@@ -2960,8 +2959,8 @@ const FIXTURES = [
         z5
     );
     check(
-        "C-K5: DER RANG — das erste gehobene Haus ist das nächste zum Spieler",
-        je(["vorlauf12", "vorlauf300"], (w) => w.ersterM <= w.naechstM),
+        "C-K5: DER RANG — der Schirm zuerst: 40 m vor dem Spieler vor 15 m neben ihm",
+        k5.schirm && k5.schirm[0] === 1,
         z5
     );
     const [ort, ortS, wach, voll] = [k5.ort || {}, k5.ortStoer || {}, k5.wach || {}, k5.wachVoll || {}];

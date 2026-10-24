@@ -33,7 +33,7 @@
             "porta:gate:tunnel": "wie energy",
             "porta:gate:twist": "wie energy",
             "porta:gate:wave": "wie energy",
-            "schmiede:weapon:schaftR": "bewegt den Bau an keinem der 21 Rezepte",
+            "schmiede:weapon:schaftR": "bewegt den Bau an keinem der 22 Rezepte",
             "vehicle:vehicle:grip": "Fahr-Regler: der Bau trägt ihn nicht, das Fahr-Gesetz der Welt (_fahrzeugGesetzFor) liest Rezept s+fx, nie ov — die Bau-Hash-Linse heilt diese Zeile nie, sie fällt erst mit einer Linse am Fahr-Gesetz (Synthese W6 b)"
         }
     },

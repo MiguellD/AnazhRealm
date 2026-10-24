@@ -3391,8 +3391,9 @@ class AnazhRealm_stoff_instanz {
     }
     // Distanz-LOD (die Vorlagen-LODs 0/1/2): nah = voll (LOD 0 < 25 m), mittel = LOD 1, fern = LOD 2.
     // Perf-bewusst — die meisten Wald-Baeume sind mittel -> das leichte LOD 1.
-    _foundryLodForEntry(entry) {
-        const p = this._lodAuge(); // vom Auge der Maske (K36), wie der LOD-Tick
+    // `auge` {x, z}: die Wahl an einem anderen Ort als dem Auge der Maske (der Vorrat des Dorfs am Ort seines Erwachens).
+    _foundryLodForEntry(entry, auge) {
+        const p = auge || this._lodAuge(); // vom Auge der Maske (K36), wie der LOD-Tick
         if (!p || !entry || !entry.position) return 1;
         const d = Math.hypot(entry.position.x - p.x, entry.position.z - p.z);
         // DIE EINE STUFEN-WAHL: der Kalt-Schätzer fragt dieselbe Wahl wie der LOD-Tick — Wahrnehmungs-Distanz aus der
