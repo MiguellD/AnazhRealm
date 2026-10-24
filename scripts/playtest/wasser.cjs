@@ -2233,7 +2233,7 @@ async function checkBandWasserSheetSpiegel(ctx) {
                 r._tickVoxelChunkStreaming();
                 r._gameLoopTick(performance.now());
                 r._drainPendingWaterIso();
-            } catch (_e) {
+            } catch {
                 /* */
             }
             if (i % 6 === 0) await new Promise((res) => setTimeout(res, 12));

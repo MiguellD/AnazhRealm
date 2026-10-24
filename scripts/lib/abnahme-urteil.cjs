@@ -1494,7 +1494,7 @@ function albedoZeile(ma, q) {
     let t = null;
     try {
         t = JSON.parse(text);
-    } catch (_e) {
+    } catch {
         return { fehler: `Rohdatei ${ro.datei} ist kein JSON` };
     }
     const z = (t.zeilen || []).find((x) => x.id === ro.zeile);
@@ -1594,7 +1594,7 @@ function eigenschaftBand(e, q, wo) {
     let t = null;
     try {
         t = JSON.parse(text);
-    } catch (_e) {
+    } catch {
         return { fehler: `${wo}: Verweis auf ${v.datei} — kein JSON` };
     }
     const wert = v.feld ? t[v.feld] : undefined;
@@ -1646,7 +1646,7 @@ function standLeser(root) {
                 .toString()
                 .trim();
             return sha + (neu ? "+geaendert" : "");
-        } catch (_e) {
+        } catch {
             return null;
         }
     };
@@ -1692,7 +1692,7 @@ function standLeser(root) {
                         vm.createContext(sb);
                         try {
                             vm.runInContext(fs.readFileSync(path.join(root, d), "utf8"), sb, { filename: d });
-                        } catch (_e) {}
+                        } catch {}
                         kerne[d] = sb;
                     }
                     for (const v of Object.values(kerne[d]))

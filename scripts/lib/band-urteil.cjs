@@ -473,7 +473,7 @@ function haushaltPruefen(h) {
         else
             try {
                 new RegExp(g.muster, "i");
-            } catch (_e) {
+            } catch {
                 f.push(`geraete.${k}: muster ${g.muster} ist kein Regex`);
             }
     }
@@ -490,7 +490,7 @@ function haushaltPruefen(h) {
     else
         try {
             new RegExp(rz.erzeuger);
-        } catch (_e) {
+        } catch {
             f.push("renderZiele.erzeuger ist kein Muster");
         }
     const kl = (h && h.klassen) || [];
@@ -517,7 +517,7 @@ function haushaltPruefen(h) {
                     // `^g:(…|tor)` fing g:torus, `^(bau|…)` jeden „baum…".
                     if (!r.muster.startsWith("^") || !(r.muster.endsWith("$") || r.muster.endsWith(":")))
                         f.push(`${k.id}: Muster ${r.muster} ohne Anker (vorn ^, hinten $ oder :)`);
-                } catch (_e) {
+                } catch {
                     f.push(`${k.id}: Muster ${r.muster} ist kein Regex`);
                 }
         }

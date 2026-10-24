@@ -1063,19 +1063,9 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         out.restoredCreatureHasMemory =
             sammler && Array.isArray(sammler.userData.memory) && sammler.userData.memory.length === 1;
 
-        // 10. Legacy-Save (nur position) fällt auf Default-Spawn zurück
+        // 10. die Ruhe vor dem Deckel (die Legacy-Probe prüfte ein Literal gegen sich selbst, kein Spiel — sie fiel)
         r.state._pendingCreatureSnapshots = null;
         r.state.creatureEmotions = [];
-        // Stub loadState: simuliere legacy save format
-        const legacyState = {
-            creatures: [{ position: { x: 0, y: 5, z: 0 } }, { position: { x: 1, y: 5, z: 1 } }],
-        };
-        const looksFullLegacy =
-            Array.isArray(legacyState.creatures) &&
-            legacyState.creatures.length > 0 &&
-            legacyState.creatures[0] &&
-            typeof legacyState.creatures[0].soul === "string";
-        out.legacyDetectedAsLegacy = !looksFullLegacy;
 
         // 11. Memory-Cap 200 enforced
         const cCap = r.spawnCreatureAt(player.x + 140, player.y, player.z + 140, "happy", "wesen");
@@ -1137,10 +1127,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
                 wave6hP2d1Results.restoredNamesMatch &&
                 wave6hP2d1Results.pendingClearedAfterRestore &&
                 wave6hP2d1Results.restoredCreatureHasMemory
-        );
-        check(
-            "Legacy-Save (nur position) wird als Legacy erkannt",
-            wave6hP2d1Results.legacyDetectedAsLegacy
         );
         check(
             "Memory-Cap=200 wird durchgesetzt (FIFO bei 250 push)",

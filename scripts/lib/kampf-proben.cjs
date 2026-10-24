@@ -899,7 +899,7 @@ async function WELLE_L(ort) {
             for (let k = 0; k < 90; k++) {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
                 if (k % 6) continue;
                 const o = gestaltDeckung();
                 summe.proben += o.proben;
@@ -1875,7 +1875,7 @@ async function WELLE_L(ort) {
                 schritt("_ichHandleOverlay", () => r._ichHandleOverlay(true));
                 try {
                     r._ichHandleOverlay(false);
-                } catch (_e) {}
+                } catch {}
                 // Boost: die Trauer der Bisse steht über der Schwelle (die Refrakt-Pause frei), der Takt löst den Boost aus
                 p.emotions.sorrow = 0.9;
                 p.boostLastTriggered = { ...(p.boostLastTriggered || {}), "emotion:sorrow": -Infinity };
@@ -1940,7 +1940,7 @@ async function WELLE_L(ort) {
                 try {
                     ausruesten(null);
                     r.equipArmor(savedL.armor || null);
-                } catch (_e) {}
+                } catch {}
                 zurueck();
                 if (r.getGameMode() !== modeL) r.setGameMode(modeL);
             }
@@ -2034,7 +2034,7 @@ async function WELLE_L(ort) {
                     try {
                         r._pfeilMeshAttach(pfT);
                         still.push(name);
-                    } catch (_e) {
+                    } catch {
                         /* laut gebrochen — so trägt es */
                     } finally {
                         if (pfT.mesh) r._pfeilDespawn(pfT);
@@ -3031,7 +3031,7 @@ async function WELLE_L(ort) {
         if (s.pfeileStecken) s.pfeileStecken.length = 0;
         try {
             r.equipHeld(saved.held || null);
-        } catch (_e) {}
+        } catch {}
         if (s.buildMode && s.buildMode.active) r._clearBuildMode();
         if (Array.isArray(saved.hotbar)) s.hotbar = saved.hotbar;
         if (r.getGameMode() !== saved.mode) r.setGameMode(saved.mode);

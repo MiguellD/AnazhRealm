@@ -92,7 +92,7 @@ async function headless(laeufe) {
             window.__weltStehtNach(() => {
                 try {
                     window.anazhRealm._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
             })
         );
     const lauf = (o) =>

@@ -392,7 +392,7 @@ async function probe(arg) {
         for (let i = 0; i < n; i++) {
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             await sleep(ms || 30);
         }
     };
@@ -407,7 +407,7 @@ async function probe(arg) {
         };
         try {
             wer[methode](...args);
-        } catch (_e) {
+        } catch {
             /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
         } finally {
             if (eigen) lieferer[name] = echt;
@@ -1356,7 +1356,7 @@ async function probe(arg) {
                         st.yaw = gier;
                         try {
                             r._gameLoopTick(performance.now());
-                        } catch (_e) {}
+                        } catch {}
                         await sleep(16);
                     }
                     st.keys.w = false;

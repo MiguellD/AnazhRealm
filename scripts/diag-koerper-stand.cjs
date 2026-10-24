@@ -208,7 +208,7 @@ async function proben(mitWiese, umfang) {
     const takt = () => {
         try {
             r._gameLoopTick(performance.now());
-        } catch (_e) {}
+        } catch {}
     };
     const rig = pm && pm.userData && pm.userData.rig;
     if (!rig || !rig.hips) return { fehler: "Spieler-Rig fehlt" };
@@ -820,7 +820,7 @@ async function rollen(n) {
     const takt = () => {
         try {
             r._gameLoopTick((uhr += 1000 / 60));
-        } catch (_e) {}
+        } catch {}
     };
     const cm = (a, f) => {
         const b = a.slice().sort((x, y) => x - y);
@@ -1162,7 +1162,7 @@ function zeile(o) {
                 window.__weltStehtNach(() => {
                     try {
                         window.anazhRealm._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                 })
             );
             const o = k8
