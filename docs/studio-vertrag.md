@@ -640,9 +640,13 @@ Wirts-Zeilen zu `AnazhRealm.KIND_POLICY` — jeder Leser (Register, Werkstatt, W
 Tafel, keine Zeile im Wirt. Disjunkt: eine Art mit Wirts-Zeile (die Verben des Wirts — grown, role, handAxis, donorTool, synchron vor
 dem Buch für den Lockstep: tree · shrub · vehicle · gate · weapon · haus) behält sie, die Buch-Zeile fällt laut. Fail-closed je
 Zeile (G4.2): Art-Name, Präfix, Substanz — eine kaputte Zeile registriert nichts. Nur `prefix` und `substanz` reisen; eine
-Buch-Zeile trägt keine Wirts-Verben (grown · builtIn falsch, placeExtra null — die Platzierung sagt `fx.place`, B3).
+Buch-Zeile trägt keine Wirts-Verben (grown · builtIn falsch, placeExtra null — die Platzierung sagt `fx.place`, B3). Der Prompt
+der KI nennt die Wörter einer Buch-Art unter ihrem `substanz.label` (`_studioWordsForPrompt`).
 Beweis: `gate:nervensystem` E — das neue Gesetzbuch `worlds/neuntes-buch/stele-core.js` (die Stele, kein Spiel-Manifest) steht über
-die Werkstatt in der Welt, mit Kosten-Leiste, Stufen-Kette und Speicher-Rundlauf, und der Wirt nennt die Art nie beim Namen.
+die Werkstatt in der Welt, mit Kosten-Leiste, Stufen-Kette und Speicher-Rundlauf, und der Wirt nennt die Art nie beim Namen; E2 —
+dasselbe Werk auf jedem Weg mit dem Bau-Hash der gezeigten Stufe: KI-Satz (`spawn_studio` mit Reglern über `_studioStampFor`),
+Foundry (`build-asset` L0–L2), P2P (der Mitspieler baut es byte-gleich), und der Atlas (`npm run atlas -- --find neuntes`)
+nennt das Buch als die EINE Quelle der Art.
 
 ## §4 Die Empfänger-Gesetze (Taille-Erbe)
 

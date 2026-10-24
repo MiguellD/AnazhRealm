@@ -1411,6 +1411,10 @@ class AnazhRealm_studio_bruecke {
             ausstattung: "Ausstattung",
             weapon: "Klingen",
         };
+        // eine Art, deren Wirts-Zeile ihr Gesetzbuch bringt (B7, `_kindPolicyVereinen`), heißt, wie das Buch sie nennt —
+        // ohne sie fiel jedes Wort einer neuen Art still aus dem Prompt (studios.K5: die KI kannte das neunte Buch nie)
+        const KP = AnazhRealm.KIND_POLICY;
+        for (const a of Object.keys(KP)) if (KP[a].kern && !GRUPPE[a]) GRUPPE[a] = KP[a].substanz.label;
         const gruppen = {};
         for (const [w, nennung] of K.woerter) {
             const ziel = this._studioBlueprintForWord(w);

@@ -488,28 +488,28 @@ async function checkBandCadWorkshop(ctx) {
 
     if (resizeResults && !resizeResults.error) {
         check(
-            "V18.83 Resize: Konsole hat .resize-tr Handle (oben-rechts, wächst nach oben; bottom-verankert)",
+            "Resize: Konsole hat .resize-tr Handle (oben-rechts, wächst nach oben; bottom-verankert)",
             resizeResults.consoleHasHandle
         );
         check(
-            `V18.43 Rahmen: die ${resizeResults.drawerCount} V18-Drawer tragen einen HÖHEN-Griff (.resize-b, symmetrie-treu, kein .resize-bl)`,
+            `Rahmen: die ${resizeResults.drawerCount} V18-Drawer tragen einen HÖHEN-Griff (.resize-b, symmetrie-treu, kein .resize-bl)`,
             resizeResults.noDrawerHasHandle
         );
         check(
-            "V8.00 Resize: installResizeHandles ist idempotent (kein Duplikat)",
+            "Resize: installResizeHandles ist idempotent (kein Duplikat)",
             resizeResults.consoleHandleNotDuplicated
         );
-        check("V8.00 Resize: localStorage-Persistence schreibt + liest", resizeResults.persistenceWorks);
+        check("Resize: localStorage-Persistence schreibt + liest", resizeResults.persistenceWorks);
         check(
-            "V8.00 BG-Fix: .drawer hat direktes background-image (statt nur via ::before)",
+            "BG-Fix: .drawer hat direktes background-image (statt nur via ::before)",
             resizeResults.drawerHasDirectBackground
         );
         check(
-            "V8.00 BG-Fix: .drawer hat inset box-shadow für Border-Ringe (statt nur via ::after)",
+            "BG-Fix: .drawer hat inset box-shadow für Border-Ringe (statt nur via ::after)",
             resizeResults.drawerHasInsetShadow
         );
     } else if (resizeResults && resizeResults.error) {
-        check(`V8.00 Resize: evaluate-Fehler — ${resizeResults.error}`, false);
+        check(`Resize: evaluate-Fehler — ${resizeResults.error}`, false);
     }
 
     // ### DIE OMNIBOX (Ctrl/Cmd+K): Tag → Treffer → Ausführung (KONSUM) ###
@@ -560,18 +560,18 @@ async function checkBandCadWorkshop(ctx) {
         return out;
     });
     if (omniResults && !omniResults.error) {
-        check("V18.45 Omnibox: c:wetter → nur Befehls-Treffer mit run() (KONSUM)", omniResults.cmdAllBefehl);
-        check("V18.45 Omnibox: c:wetter findet einen Wetter-Befehl", omniResults.cmdMatchesWetter);
-        check("V18.45 Omnibox: b: liefert Bauplan-Treffer", omniResults.bHasBlueprints);
-        check("V18.45 Omnibox: w: ist rollen-gefiltert (⊆ b:, liest die emergente Rolle)", omniResults.wIsRoleFiltered);
-        check("V18.45 Omnibox: geh:werkstatt findet den Raum", omniResults.gehFindsRoom);
-        check("V18.45 Omnibox: geh:werkstatt ÖFFNET die Werkstatt (KONSUM)", omniResults.gehOpensWorkshop);
-        check("V18.45 Omnibox: Freitext → der Nexus-Pfad als Fallback", omniResults.freetextHasNexus);
-        check("V18.45 Omnibox: Ctrl+K öffnet das Overlay", omniResults.ctrlKOpens);
-        check("V18.45 Omnibox: Esc schließt das Overlay", omniResults.escCloses);
-        check("V18.47 Omnibox: der Maus-Trigger öffnet das Overlay (Maus-Parität)", omniResults.triggerOpens);
+        check("Omnibox: c:wetter → nur Befehls-Treffer mit run() (KONSUM)", omniResults.cmdAllBefehl);
+        check("Omnibox: c:wetter findet einen Wetter-Befehl", omniResults.cmdMatchesWetter);
+        check("Omnibox: b: liefert Bauplan-Treffer", omniResults.bHasBlueprints);
+        check("Omnibox: w: ist rollen-gefiltert (⊆ b:, liest die emergente Rolle)", omniResults.wIsRoleFiltered);
+        check("Omnibox: geh:werkstatt findet den Raum", omniResults.gehFindsRoom);
+        check("Omnibox: geh:werkstatt ÖFFNET die Werkstatt (KONSUM)", omniResults.gehOpensWorkshop);
+        check("Omnibox: Freitext → der Nexus-Pfad als Fallback", omniResults.freetextHasNexus);
+        check("Omnibox: Ctrl+K öffnet das Overlay", omniResults.ctrlKOpens);
+        check("Omnibox: Esc schließt das Overlay", omniResults.escCloses);
+        check("Omnibox: der Maus-Trigger öffnet das Overlay (Maus-Parität)", omniResults.triggerOpens);
     } else if (omniResults && omniResults.error) {
-        check(`V18.45 Omnibox: evaluate-Fehler — ${omniResults.error}`, false);
+        check(`Omnibox: evaluate-Fehler — ${omniResults.error}`, false);
     }
 
     // ### Drawer-Scroll-Wrapper + Canvas-Sync (Bug-Fixes nach Browser-Test) ###
@@ -640,26 +640,26 @@ async function checkBandCadWorkshop(ctx) {
 
     if (v801Results && !v801Results.error) {
         check(
-            `V8.01: Alle ${v801Results.drawerCount} Drawer haben .drawer-scroll-Wrapper (Inhalt scrollt, Rahmen bleibt fest)`,
+            `Alle ${v801Results.drawerCount} Drawer haben .drawer-scroll-Wrapper (Inhalt scrollt, Rahmen bleibt fest)`,
             v801Results.allDrawersWrapped
         );
         check(
-            "V8.01: h2 (Drawer-Titel) ist direktes child des Drawers — bleibt oben fest beim Scroll",
+            "h2 (Drawer-Titel) ist direktes child des Drawers — bleibt oben fest beim Scroll",
             v801Results.h2DirectChildOfDrawer
         );
         check(
-            "V18.42: Konsole-Resize-Griff fest (direktes Kind, kein Scroll-Wrapper); kein Drawer-Griff im Scroll",
+            "Konsole-Resize-Griff fest (direktes Kind, kein Scroll-Wrapper); kein Drawer-Griff im Scroll",
             v801Results.handleOutsideScroll
         );
-        check("V8.01: .drawer hat overflow:hidden (CSS-Wechsel von overflow-y:auto)", v801Results.drawerOverflowHidden);
-        check("V8.01: .drawer hat display:flex für column-Layout", v801Results.drawerDisplayFlex);
-        check("V8.01: .drawer-scroll hat overflow-y:auto (scroller im Wrapper)", v801Results.scrollOverflowYAuto);
+        check(".drawer hat overflow:hidden (CSS-Wechsel von overflow-y:auto)", v801Results.drawerOverflowHidden);
+        check(".drawer hat display:flex für column-Layout", v801Results.drawerDisplayFlex);
+        check(".drawer-scroll hat overflow-y:auto (scroller im Wrapper)", v801Results.scrollOverflowYAuto);
         check(
-            "V8.01: _workshopSyncCanvasSize zieht canvas.width an CSS-rect.width nach (Drawer-Resize → Render-Pixel mitwachsen)",
+            "_workshopSyncCanvasSize zieht canvas.width an CSS-rect.width nach (Drawer-Resize → Render-Pixel mitwachsen)",
             v801Results.canvasSyncWorks
         );
     } else if (v801Results && v801Results.error) {
-        check(`V8.01: evaluate-Fehler — ${v801Results.error}`, false);
+        check(`evaluate-Fehler — ${v801Results.error}`, false);
     }
 
     // ### V8.02 Phase 3 — Shape-Drag-Drop + Klick-Klick-Connection ###
@@ -787,47 +787,47 @@ async function checkBandCadWorkshop(ctx) {
     });
 
     if (v802Results && !v802Results.error) {
-        check("V8.02 Phase 3a: 9 Shape-Cards in der Palette", v802Results.nineCards);
+        check("Phase 3a: 9 Shape-Cards in der Palette", v802Results.nineCards);
         check(
-            "V8.02 Phase 3a: alle 9 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus/helix)",
+            "Phase 3a: alle 9 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus/helix)",
             v802Results.allNineShapesPresent
         );
         check(
-            "V8.02 Phase 3a: Drop auf Built-in-Bauplan abgelehnt (read-only-Schutz)",
+            "Phase 3a: Drop auf Built-in-Bauplan abgelehnt (read-only-Schutz)",
             v802Results.dropOnBuiltInRejected
         );
         check(
-            "V8.02 Phase 3a: Drop auf eigenem Bauplan fügt einen Part hinzu",
+            "Phase 3a: Drop auf eigenem Bauplan fügt einen Part hinzu",
             v802Results.dropOnCustomAddsPart && v802Results.newPartIsSphere
         );
-        check("V8.02 Phase 3a: Neuer Part wird automatisch selektiert (Gizmo bereit)", v802Results.newPartSelected);
+        check("Phase 3a: Neuer Part wird automatisch selektiert (Gizmo bereit)", v802Results.newPartSelected);
         check(
-            "V8.02 Phase 3b: setWorkshopManipulatorMode('connect') akzeptiert + setzt State",
+            "Phase 3b: setWorkshopManipulatorMode('connect') akzeptiert + setzt State",
             v802Results.connectModeAccepted && v802Results.modeIsConnect
         );
         check(
-            "V8.02 Phase 3b: Erster Connect-Klick setzt connectFirstPartIdx auf Source",
+            "Phase 3b: Erster Connect-Klick setzt connectFirstPartIdx auf Source",
             v802Results.connectFirstSetTo0
         );
-        check("V8.02 Phase 3b: Zweiter Connect-Klick öffnet #workshop-connect-overlay", v802Results.popoverOpened);
+        check("Phase 3b: Zweiter Connect-Klick öffnet #workshop-connect-overlay", v802Results.popoverOpened);
         check(
             "V8.02/V18.110: Popover hat 11 Type-Buttons (8 Prozess + 3 C7-Punkte) + 1 Cancel (= 12 total)",
             v802Results.popoverHasButtons
         );
         check(
-            "V8.02 Phase 3b: _workshopApplyConnection schreibt {type, partA, partB} ins bp.connections",
+            "Phase 3b: _workshopApplyConnection schreibt {type, partA, partB} ins bp.connections",
             v802Results.connectionAdded
         );
-        check("V8.02 Phase 3b: Popover schließt nach Apply", v802Results.popoverClosedAfterApply);
-        check("V8.02 Phase 3b: connectFirstPartIdx zurückgesetzt nach Apply", v802Results.connectStateReset);
-        check("V8.02 Phase 3b: Duplikat-Schutz — selbe Connection zweimal → bleibt 1", v802Results.dupRejected);
-        check("V8.02 Phase 3b: Unbekannter Connection-Type wird abgelehnt", v802Results.bogusTypeRejected);
+        check("Phase 3b: Popover schließt nach Apply", v802Results.popoverClosedAfterApply);
+        check("Phase 3b: connectFirstPartIdx zurückgesetzt nach Apply", v802Results.connectStateReset);
+        check("Phase 3b: Duplikat-Schutz — selbe Connection zweimal → bleibt 1", v802Results.dupRejected);
+        check("Phase 3b: Unbekannter Connection-Type wird abgelehnt", v802Results.bogusTypeRejected);
         check(
-            "V8.02 Phase 3b: ESC im Connect-Mode mit pending Source → cancelt nur Connect (nicht Drawer)",
+            "Phase 3b: ESC im Connect-Mode mit pending Source → cancelt nur Connect (nicht Drawer)",
             v802Results.escCancelsConnectOnly && v802Results.drawerStillActiveAfterEsc
         );
     } else if (v802Results && v802Results.error) {
-        check(`V8.02 Phase 3: evaluate-Fehler — ${v802Results.error}`, false);
+        check(`Phase 3: evaluate-Fehler — ${v802Results.error}`, false);
     }
 
     // ### Camera-CAD-Konventionen (Pan + Zoom-to-Cursor + Wheel-Stop) +
@@ -949,38 +949,38 @@ async function checkBandCadWorkshop(ctx) {
     });
 
     if (v803Results && !v803Results.error) {
-        check("V8.03: #workshop-preview-row im DOM (Layout-Container)", v803Results.previewRowInDom);
-        check("V8.03: #workshop-side-palette im DOM (seitliche Drag-Sources)", v803Results.sidePaletteInDom);
+        check("#workshop-preview-row im DOM (Layout-Container)", v803Results.previewRowInDom);
+        check("#workshop-side-palette im DOM (seitliche Drag-Sources)", v803Results.sidePaletteInDom);
         check(
-            "V8.03: Alle 3 Sub-Paletten im DOM (shape/material/color)",
+            "Alle 3 Sub-Paletten im DOM (shape/material/color)",
             v803Results.shapePaletteInDom && v803Results.matPaletteInDom && v803Results.colorPaletteInDom
         );
         check(
-            "V8.03: Side-Palette steht VOR Preview im DOM (flex-row → visuell links)",
+            "Side-Palette steht VOR Preview im DOM (flex-row → visuell links)",
             v803Results.paletteBeforePreview
         );
         check(
-            `V8.03: Material-Palette hat ${v803Results.matCardsCount} Cards (= alle state.materials)`,
+            `Material-Palette hat ${v803Results.matCardsCount} Cards (= alle state.materials)`,
             v803Results.matCardsMatchState
         );
-        check("V8.03: Color-Palette hat 12 Swatches", v803Results.twelveColorSwatches);
+        check("Color-Palette hat 12 Swatches", v803Results.twelveColorSwatches);
         check(
-            "V8.03 Camera: Preview-Listener wurden installiert (listenersInstalled-Flag)",
+            "Camera: Preview-Listener wurden installiert (listenersInstalled-Flag)",
             v803Results.previewListenersInstalled
         );
-        check("V8.03 Camera: Wheel ändert orbit.dist (Zoom)", v803Results.distChangedOnWheel);
-        check("V8.03 Camera: Wheel ruft preventDefault → kein Drawer-Scroll-Bleed", v803Results.wheelPreventDefault);
+        check("Camera: Wheel ändert orbit.dist (Zoom)", v803Results.distChangedOnWheel);
+        check("Camera: Wheel ruft preventDefault → kein Drawer-Scroll-Bleed", v803Results.wheelPreventDefault);
         check(
-            "V8.03 Camera: _workshopHandleMaterialDrop crashed nicht",
+            "Camera: _workshopHandleMaterialDrop crashed nicht",
             v803Results.materialDropNoCrash && v803Results.bogusMaterialNoCrash
         );
-        check("V8.03 Camera: _workshopHandleColorDrop crashed nicht", v803Results.colorDropNoCrash);
+        check("Camera: _workshopHandleColorDrop crashed nicht", v803Results.colorDropNoCrash);
         check(
-            "V8.03 CSS: .drawer-scroll hat overscroll-behavior:contain (zweite Verteidigung gegen Wheel-Bleed)",
+            "CSS: .drawer-scroll hat overscroll-behavior:contain (zweite Verteidigung gegen Wheel-Bleed)",
             v803Results.overscrollContain
         );
     } else if (v803Results && v803Results.error) {
-        check(`V8.03: evaluate-Fehler — ${v803Results.error}`, false);
+        check(`evaluate-Fehler — ${v803Results.error}`, false);
     }
 }
 
@@ -1565,11 +1565,11 @@ async function checkBandEarlyRingsAndUi(ctx) {
             uiActionsResults.quickActionsGone
         );
         check(
-            "V18.47 Hof-B: die ~60-Befehle-Liste ist aufgelöst (kein #help-section, die Omnibox trägt)",
+            "Hof-B: die ~60-Befehle-Liste ist aufgelöst (kein #help-section, die Omnibox trägt)",
             uiActionsResults.helpSectionGone
         );
         check(
-            "V18.47 Hof-B: die Omnibox trägt die Befehle (c:wetter → Treffer; die EINE Quelle)",
+            "Hof-B: die Omnibox trägt die Befehle (c:wetter → Treffer; die EINE Quelle)",
             uiActionsResults.omniboxCarriesCommands
         );
         check("UI V2: Hof-Drawer initial versteckt", uiActionsResults.hilfeDrawerInitiallyHidden);
@@ -1930,19 +1930,19 @@ async function checkBandV18134Social(ctx) {
         return out;
     });
     if (!res) {
-        check("V18.134 Sozial: Sonde lief", false, "evaluate warf");
+        check("Sozial: Sonde lief", false, "evaluate warf");
         return;
     }
-    check("V18.134 Sozial: SOCIAL-Konfiguration steht (frozen)", res.consts);
+    check("Sozial: SOCIAL-Konfiguration steht (frozen)", res.consts);
     if (!res.unmeasurable) {
         check(
-            "V18.134 Sozial: eigenes Zeugnis signiert + fremdes verifiziert + Aggregation Ø 4.5 (2)",
+            "Sozial: eigenes Zeugnis signiert + fremdes verifiziert + Aggregation Ø 4.5 (2)",
             res.ownSigned && res.received && res.aggOk
         );
-        check("V18.134 Sozial: LWW haelt (aelteres Zeugnis derselben Identitaet faellt)", res.lwwRejected);
-        check("V18.134 Sozial: ein manipuliertes Zeugnis bricht an der Signatur", res.tamperRejected);
-        check("V18.134 Sozial: der R4-Rueckruf wirkt sozial (Aggregation + Empfang sieben)", res.revokeConsumed);
-        check("V18.134 Sozial: die Anschluss-Annonce traegt die eigenen Zeugnisse (Batch)", res.batchCarries);
+        check("Sozial: LWW haelt (aelteres Zeugnis derselben Identitaet faellt)", res.lwwRejected);
+        check("Sozial: ein manipuliertes Zeugnis bricht an der Signatur", res.tamperRejected);
+        check("Sozial: der R4-Rueckruf wirkt sozial (Aggregation + Empfang sieben)", res.revokeConsumed);
+        check("Sozial: die Anschluss-Annonce traegt die eigenen Zeugnisse (Batch)", res.batchCarries);
     }
 }
 
@@ -1970,11 +1970,11 @@ async function checkBandV18135Bookmarks(ctx) {
         return out;
     });
     if (!res) {
-        check("V18.135 Lesezeichen: Sonde lief", false, "evaluate warf");
+        check("Lesezeichen: Sonde lief", false, "evaluate warf");
         return;
     }
     check(
-        "V18.135 Lesezeichen: Toggle-Roundtrip + globale Persistenz",
+        "Lesezeichen: Toggle-Roundtrip + globale Persistenz",
         res.toggleOn && res.persisted && res.toggleOff
     );
 }
@@ -2015,14 +2015,14 @@ async function checkBandV18142Follow(ctx) {
         return out;
     });
     if (!res) {
-        check("V18.142 Folgen: Sonde lief", false, "evaluate warf");
+        check("Folgen: Sonde lief", false, "evaluate warf");
         return;
     }
     check(
-        "V18.142 Folgen: Toggle-Roundtrip + globale Persistenz + Hex-Wand + NIE im Snapshot",
+        "Folgen: Toggle-Roundtrip + globale Persistenz + Hex-Wand + NIE im Snapshot",
         res.toggleOn && res.persisted && res.toggleOff && res.garbageRejected && res.notInSnapshot
     );
-    check("V18.142 Folgen: das Folgen schreibt witness (die ruhende Journal-Saat blüht)", res.witnessWritten);
+    check("Folgen: das Folgen schreibt witness (die ruhende Journal-Saat blüht)", res.witnessWritten);
 }
 
 // KOMMENTARE: signierte Text-Zeugnisse übers Mesh (append-only statt LWW). End-to-end mit ZWEITER
@@ -2093,31 +2093,31 @@ async function checkBandV18143Comments(ctx) {
         return out;
     });
     if (!res) {
-        check("V18.143 Kommentare: Sonde lief", false, "evaluate warf");
+        check("Kommentare: Sonde lief", false, "evaluate warf");
         return;
     }
     check(
-        "V18.143 Kommentare: Config + stabiles Kanonisches (x am Ende — Trennzeichen-eindeutig)",
+        "Kommentare: Config + stabiles Kanonisches (x am Ende — Trennzeichen-eindeutig)",
         res.config && res.canonical
     );
     if (res.skipCrypto) {
-        check("V18.143 Kommentare: Krypto-Teil lief (Vibe-Pass bereit)", false, "vibePass nicht ready");
+        check("Kommentare: Krypto-Teil lief (Vibe-Pass bereit)", false, "vibePass nicht ready");
         return;
     }
     check(
-        "V18.143 Kommentare: das eigene Wort signiert + gespeichert + bezeugt (journal share — die Saat blüht)",
+        "Kommentare: das eigene Wort signiert + gespeichert + bezeugt (journal share — die Saat blüht)",
         res.ownSigned && res.ownStored && res.shareWritten
     );
     check(
-        "V18.143 Kommentare: das fremde Wort verifiziert + landet — Tamper bricht, dedupe hält",
+        "Kommentare: das fremde Wort verifiziert + landet — Tamper bricht, dedupe hält",
         res.foreignAccepted && res.foreignStored && res.tamperRejected && res.dedupe
     );
     check(
-        "V18.143 Kommentare: der Rückruf siebt das Wort (Lese-Wahrheit + Empfang — R4 wirkt)",
+        "Kommentare: der Rückruf siebt das Wort (Lese-Wahrheit + Empfang — R4 wirkt)",
         res.revokedSieved && res.revokedReceiveBlocked
     );
     check(
-        "V18.143 Kommentare: verdrahtet (der Kanal reicht das Wort an den Empfang · das fremde Wort bleibt Text — XSS-Wand)",
+        "Kommentare: verdrahtet (der Kanal reicht das Wort an den Empfang · das fremde Wort bleibt Text — XSS-Wand)",
         res.handlerWired && res.xssWall
     );
 }
@@ -2155,9 +2155,9 @@ async function checkBandV18147ForYou(ctx) {
         r.state.feedSort = savedSort;
         return out;
     });
-    check("V18.147 Für dich: Folgen ist das stärkste persönliche Wort (+4)", res.followBoost);
-    check("V18.147 Für dich: das Merken hebt (+2)", res.bookmarkBoost);
-    check("V18.147 Für dich: die drei Sortier-Chips stehen (Neueste · Für dich · Bewertung)", res.chips);
+    check("Für dich: Folgen ist das stärkste persönliche Wort (+4)", res.followBoost);
+    check("Für dich: das Merken hebt (+2)", res.bookmarkBoost);
+    check("Für dich: die drei Sortier-Chips stehen (Neueste · Für dich · Bewertung)", res.chips);
 }
 
 // M5 HUD/Räume-Politur: kein Resize-Sprung der Konsole · Logbuch = Dev-Sicht (EIN Schalter) ·
