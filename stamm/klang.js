@@ -124,7 +124,7 @@ class AnazhRealm_klang {
             ")();";
         let w = null;
         try {
-            w = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
+            w = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })), { name: "klang" });
         } catch (e) {
             this.log(`Klang-Werkstatt startet nicht (${e && e.message}) — die Klang-Welt schweigt`, "WARNING");
             return null;

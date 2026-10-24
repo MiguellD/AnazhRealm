@@ -1402,29 +1402,25 @@ const server = statikServer();
                     const j = Math.floor((z - z0w) / t);
                     return i < 2 || j < 2 || i >= N - 2 || j >= N - 2 ? NaN : fs1.fluss.daten[j * N + i] / 255;
                 };
-                const h = r.state.hydrosphere;
-                const gesehen = new Set();
-                for (const list of (h && h.riverBuckets) || []) {
-                    for (const seg of list || []) {
-                        if (gesehen.has(seg)) continue;
-                        gesehen.add(seg);
-                        const hw = (seg.hwA + seg.hwB) / 2;
-                        if (hw < 2 * t) continue;
-                        const mx = (seg.ax + seg.bx) / 2;
-                        const mz = (seg.az + seg.bz) / 2;
-                        const m = lies(mx, mz);
-                        if (!(m === m)) continue;
-                        w.karteMitte++;
-                        if (m < 0.8) w.karteMitteFehl++;
-                        const l = Math.hypot(seg.bx - seg.ax, seg.bz - seg.az) || 1;
-                        const nx = -(seg.bz - seg.az) / l;
-                        const nz = (seg.bx - seg.ax) / l;
-                        // daneben heißt: 2 Texel um den Punkt kein Wasser — auch keins des Nachbar-Bogens (der Mäander
-                        // legt seine Schleifen eng; ein Punkt-Test traf den Rand der nächsten Schleife)
-                        const aussen = flussDeckungL(mx + nx * (hw + 2 * t), mz + nz * (hw + 2 * t), 2 * t);
-                        const d = lies(mx + nx * (hw + 2 * t), mz + nz * (hw + 2 * t));
-                        if (aussen === 0 && d > 0.08) w.karteDanebenFehl++;
-                    }
+                const K = r.state.hydrosphere && r.state.hydrosphere.kanal;
+                for (let o = 0; K && o < K.seg.length; o += window.__gelaendeCore.KANAL_FELDER) {
+                    const [ax, az, bx, bz, hwA, hwB] = K.seg.subarray(o, o + 6);
+                    const hw = (hwA + hwB) / 2;
+                    if (hw < 2 * t) continue;
+                    const mx = (ax + bx) / 2;
+                    const mz = (az + bz) / 2;
+                    const m = lies(mx, mz);
+                    if (!(m === m)) continue;
+                    w.karteMitte++;
+                    if (m < 0.8) w.karteMitteFehl++;
+                    const l = Math.hypot(bx - ax, bz - az) || 1;
+                    const nx = -(bz - az) / l;
+                    const nz = (bx - ax) / l;
+                    // daneben heißt: 2 Texel um den Punkt kein Wasser — auch keins des Nachbar-Bogens (der Mäander
+                    // legt seine Schleifen eng; ein Punkt-Test traf den Rand der nächsten Schleife)
+                    const aussen = flussDeckungL(mx + nx * (hw + 2 * t), mz + nz * (hw + 2 * t), 2 * t);
+                    const d = lies(mx + nx * (hw + 2 * t), mz + nz * (hw + 2 * t));
+                    if (aussen === 0 && d > 0.08) w.karteDanebenFehl++;
                 }
             }
             res.binnen = w;

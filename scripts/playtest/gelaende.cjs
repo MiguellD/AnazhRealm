@@ -1833,9 +1833,6 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         out.posBitIdentical = posMismatches === 0;
         // Normals bit-identisch?
         const syncNorm = syncFresh.mesh.geometry.getAttribute("normal");
-        out.syncNormCount = syncNorm.count;
-        out.workerNormCount = workerMesh.normals.length / 3;
-        out.normCountMatch = syncNorm.count === workerMesh.normals.length / 3;
         let normMismatches = 0;
         let maxNormDelta = 0;
         const syncNormArr = syncNorm.array;
@@ -1854,7 +1851,6 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         const syncIdx = syncFresh.mesh.geometry.getIndex();
         out.syncIdxCount = syncIdx ? syncIdx.count : 0;
         out.workerIdxCount = workerMesh.indices.length;
-        out.idxCountMatch = (syncIdx ? syncIdx.count : 0) === workerMesh.indices.length;
         let idxMismatches = 0;
         if (syncIdx) {
             const syncIdxArr = syncIdx.array;
@@ -1878,8 +1874,6 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
             })
         );
         const syncCol = syncFresh.mesh.geometry.getAttribute("color");
-        out.syncColCount = syncCol ? syncCol.count : 0;
-        out.workerColCount = workerMesh.colors.length / 3;
         let colMismatches = 0;
         let maxColDelta = 0;
         if (syncCol) {

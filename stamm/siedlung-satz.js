@@ -1884,7 +1884,7 @@ class AnazhRealm_siedlung_satz {
     }
 
     // Die Flüsse EINER zentrierten Stufe malen (K16, die Naht des Wassers): leeren, jedes Segment der bereiten Regionen
-    // (`riverBuckets`, je Segment einmal) als Kasten-Filter seines Wassers über die Texel-Kante — der Anteil des Texels,
+    // (der Kanal `kanal`, je Segment einmal) als Kasten-Filter seines Wassers über die Texel-Kante — der Anteil des Texels,
     // den [−Halbbreite, +Halbbreite] quer zum Segment deckt (dieselbe Breite wie `_fernFlussDeckung`); EIN Upload.
     _flussKarteMalen(stufe, hydroN) {
         const fl = stufe.fluss;
@@ -1897,38 +1897,40 @@ class AnazhRealm_siedlung_satz {
         const z0w = stufe.mitteZ - S.fensterM / 2;
         const st = this.state;
         const regionen = [st.hydrosphere, ...(st.hydroTiles ? st.hydroTiles.values() : [])];
-        const gesehen = new Set();
         const daten = fl.daten;
+        const KANAL_FELDER = globalThis.__gelaendeCore.KANAL_FELDER;
         for (const h of regionen) {
-            if (!h || !h.ready || !h.riverBuckets) continue;
-            for (const list of h.riverBuckets) {
-                if (!list) continue;
-                for (const seg of list) {
-                    if (gesehen.has(seg)) continue;
-                    gesehen.add(seg);
-                    const r = Math.max(seg.hwA, seg.hwB) + t;
-                    const i0 = Math.max(0, Math.floor((Math.min(seg.ax, seg.bx) - r - x0w) / t));
-                    const i1 = Math.min(N - 1, Math.ceil((Math.max(seg.ax, seg.bx) + r - x0w) / t));
-                    const j0 = Math.max(0, Math.floor((Math.min(seg.az, seg.bz) - r - z0w) / t));
-                    const j1 = Math.min(N - 1, Math.ceil((Math.max(seg.az, seg.bz) + r - z0w) / t));
-                    if (i1 < i0 || j1 < j0) continue;
-                    const ex = seg.bx - seg.ax;
-                    const ez = seg.bz - seg.az;
-                    const len2 = ex * ex + ez * ez || 1;
-                    for (let j = j0; j <= j1; j++) {
-                        const pz = z0w + (j + 0.5) * t;
-                        for (let i = i0; i <= i1; i++) {
-                            const px = x0w + (i + 0.5) * t;
-                            let u = ((px - seg.ax) * ex + (pz - seg.az) * ez) / len2;
-                            u = u < 0 ? 0 : u > 1 ? 1 : u;
-                            const d = Math.hypot(px - (seg.ax + ex * u), pz - (seg.az + ez * u));
-                            const hw = seg.hwA + (seg.hwB - seg.hwA) * u;
-                            const c = Math.max(0, Math.min(d + t / 2, hw) - Math.max(d - t / 2, -hw)) / t;
-                            if (c <= 0) continue;
-                            const v = Math.round(Math.min(1, c) * 255);
-                            const k = j * N + i;
-                            if (v > daten[k]) daten[k] = v;
-                        }
+            if (!h || !h.ready || !h.kanal) continue;
+            const seg = h.kanal.seg;
+            for (let o = 0; o < seg.length; o += KANAL_FELDER) {
+                const ax = seg[o];
+                const az = seg[o + 1];
+                const bx = seg[o + 2];
+                const bz = seg[o + 3];
+                const hwA = seg[o + 4];
+                const hwB = seg[o + 5];
+                const r = Math.max(hwA, hwB) + t;
+                const i0 = Math.max(0, Math.floor((Math.min(ax, bx) - r - x0w) / t));
+                const i1 = Math.min(N - 1, Math.ceil((Math.max(ax, bx) + r - x0w) / t));
+                const j0 = Math.max(0, Math.floor((Math.min(az, bz) - r - z0w) / t));
+                const j1 = Math.min(N - 1, Math.ceil((Math.max(az, bz) + r - z0w) / t));
+                if (i1 < i0 || j1 < j0) continue;
+                const ex = bx - ax;
+                const ez = bz - az;
+                const len2 = ex * ex + ez * ez || 1;
+                for (let j = j0; j <= j1; j++) {
+                    const pz = z0w + (j + 0.5) * t;
+                    for (let i = i0; i <= i1; i++) {
+                        const px = x0w + (i + 0.5) * t;
+                        let u = ((px - ax) * ex + (pz - az) * ez) / len2;
+                        u = u < 0 ? 0 : u > 1 ? 1 : u;
+                        const d = Math.hypot(px - (ax + ex * u), pz - (az + ez * u));
+                        const hw = hwA + (hwB - hwA) * u;
+                        const c = Math.max(0, Math.min(d + t / 2, hw) - Math.max(d - t / 2, -hw)) / t;
+                        if (c <= 0) continue;
+                        const v = Math.round(Math.min(1, c) * 255);
+                        const k = j * N + i;
+                        if (v > daten[k]) daten[k] = v;
                     }
                 }
             }
