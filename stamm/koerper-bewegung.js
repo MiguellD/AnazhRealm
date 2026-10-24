@@ -684,7 +684,7 @@ class AnazhRealm_koerper_bewegung {
         const schwimmt =
             waterY > feet0 &&
             (waterY - feet0 > brustM || grund0 === null || waterY - grund0 > brustM) &&
-            this._leibGetragen();
+            this._leibGetragen(true);
         s.playerUnderwater = schwimmt;
         s.playerEyesUnderwater = waterY > feet0 && mesh.position.y + 1.6 < waterY;
 
@@ -2397,7 +2397,7 @@ AnazhRealm._bewegungsBlock = function (block, felder) {
 // DAS EINE IMPULS-GESETZ (0710-2: der Stoß der Fahrt und der Rückstoß des Kampfs, K-D9): jeder Stoß zweier Körper —
 // Wagen an Fels, Wagen an Wagen, Wagen an Tier, Klinge und Pfeil am Tier — tauscht Impuls längs der Stoß-Normalen,
 // J = (1 + e) · v_rel / (1/mA + 1/mB) (ein starrer Gegner: 1/mB = 0), mit der Stoß-Zahl e des Paars. Die Masse kommt
-// aus der EINEN Stoff-Zeile (Tier und Mensch: das Volumen der geschlossenen Haut mal ρ(fleisch), `_leibMasse`; der Wagen:
+// aus der EINEN Stoff-Zeile (das Tier: seine geschlossene Haut mal ρ(fleisch), der Mensch: sein Leib aus dem Ofen mal ρ(leib), `_leibMasse`; der Wagen:
 // sein Blech-Anteil am carPhys-Volumen mal ρ(blech), `_fahrMasse`; der Schlag: die wirksame Masse des Schmiede-Urteils). Was ein Leib an Geschwindigkeit bekommt, trägt ihn im festen Sim-Schritt, bis die Reibung am Boden
 // sie aufzehrt (`_kreaturStossSchritt`, der Weg gegen die EINE Hülle) — der Bär rutscht wenig, der Fuchs fliegt; ein
 // gestoßener Wagen rutscht mit der Handbremse (`_fahrNachlauf`). Vorher stand der Wagen in EINEM Frame

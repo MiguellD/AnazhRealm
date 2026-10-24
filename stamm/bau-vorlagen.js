@@ -1433,8 +1433,8 @@ class AnazhRealm_bau_vorlagen {
     // DIE STOFF-ZEILE TRÄGT kg (physik K1): je Stoff die Dichte ρ in kg/m³ (SI) — die EINE Zahl, aus der jedes Ding wiegt und
     // im Wasser liegt (`_stoffRho`: Teile, Eigenwerke, Leiber, Wagen, Gefährte). Wo ein Gesetzbuch den Stoff wiegt, IST die
     // Zeile sein Eintrag: Holz und die Metalle der Schmiede (RHO.holz · MAT.stahl/eisen/bronze, ein Zugriff — wer die Zeile
-    // ändert, ändert die Klinge, Labor = Welt), das Fleisch jedes Leibs aus dem Gewebe der Tiere (tetrapoda
-    // MASSSTAB.dichteKgM3), das Blech des Wagens aus der Hülle des Fahr-Kerns (FAHR.huelleDichte × FAHR.wasser.rho: der
+    // ändert, ändert die Klinge, Labor = Welt), das Fleisch der Tiere aus ihrem Gewebe (tetrapoda MASSSTAB.dichteKgM3), der
+    // Leib des Menschen samt der Luft seiner Lunge aus dem Körper-Kern (koerper LEIB.dichteKgM3), das Blech des Wagens aus der Hülle des Fahr-Kerns (FAHR.huelleDichte × FAHR.wasser.rho: der
     // Stoff-Mix, wenn die Kabine voll läuft). Die übrigen sind Tafel-Werte: Granit und Quarz 2 650, Leder 860, kompakter
     // Knochen 1 900, Keratin-Schuppen 1 300, Federkleid 50, Holzkohlen-Glut 400, Laub 300, Boden 1 500, Kraut 400, die Essenz
     // eine Flüssigkeit wie Wasser 1 000. Jede Änderung einer Zeile zählt den Stoff-Stand (`AnazhRealm._stoffStand`), an dem
@@ -1446,6 +1446,9 @@ class AnazhRealm_bau_vorlagen {
         const T = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
         const fleisch = T && T.MASSSTAB ? T.MASSSTAB.dichteKgM3 : NaN;
         if (!(fleisch > 0)) AnazhRealm._kernPflichtBruch("tetrapoda:MASSSTAB.dichteKgM3");
+        const K = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
+        const leib = K && K.LEIB ? K.LEIB.dichteKgM3 : NaN;
+        if (!(leib > 0)) AnazhRealm._kernPflichtBruch("koerper:LEIB.dichteKgM3");
         const FG = AnazhRealm._fahrGesetz();
         const im = (o, k) => ({ get: () => o[k], set: (v) => (o[k] = v) });
         const RHO = {
@@ -1458,6 +1461,7 @@ class AnazhRealm_bau_vorlagen {
             leder: 860,
             knochen: 1900,
             fleisch,
+            leib,
             federn: 50,
             schuppen: 1300,
             glut: 400,
@@ -1561,6 +1565,15 @@ class AnazhRealm_bau_vorlagen {
                 lebendig: 1.0,
             }),
             make("fleisch", "Fleisch", 0xb55050, {
+                härte: 0.15,
+                dichte: 0.4,
+                zähigkeit: 0.75,
+                wärmeleitung: 0.45,
+                brennbar: 0.35,
+                lebendig: 1.0,
+            }),
+            // leib: der Leib des Menschen (Gewebe samt der Luft der Lunge) — wie das Fleisch, knapp leichter als Wasser.
+            make("leib", "Leib", 0xc98f73, {
                 härte: 0.15,
                 dichte: 0.4,
                 zähigkeit: 0.75,

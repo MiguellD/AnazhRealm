@@ -702,9 +702,10 @@ class AnazhRealm_koerper_fahrt {
                 const m = rel * (v1 + a2 * (h.yRoof - h.yBelt));
                 linie = (h.yFloor + (m <= v1 ? m / a1 : h.yBelt - h.yFloor + (m - v1) / a2)) * sc;
             } else {
-                const bp = this.state.blueprints && this.state.blueprints[entry.type];
-                const bb = bp ? this._compoundBBox(bp) : null;
-                const rumpfH = bb ? Math.max(0.3, (bb.max.y - bb.min.y) * sc) : 1;
+                // die Höhe des Rumpfs aus den Hüllen seiner Teile (`_teileHuelle`), nie aus ihren Mitten: ein Floß aus EINER
+                // Bohle hatte die Höhe 0 und lag mit der Mindest-Höhe 0,3 m im Wasser (physik K1)
+                const hu = this._teileHuelle(this.state.blueprints && this.state.blueprints[entry.type]);
+                const rumpfH = hu ? Math.max(0.3, (hu.y1 - hu.y0) * sc) : 1;
                 const anteil = Math.max(0.1, Math.min(0.95, rel));
                 linie = Math.max(0.08, Math.min(rumpfH - 0.05, anteil * rumpfH));
             }

@@ -50,30 +50,11 @@ class AnazhRealm_kampf {
         return this._schmiedeKampfMasze(bp) || this._eigenwerkMasze(bp);
     }
 
-    // DIE SPANNE EINES BAUPLANS (Bauplan-Einheiten): die längste Achse der rotations-bewussten Hülle seiner Teile
-    // (`_partWorldExtents`, dieselbe Hülle wie der Kontakt).
+    // DIE SPANNE EINES BAUPLANS (Bauplan-Einheiten): die längste Achse der Hülle seiner Teile (`_teileHuelle`, dieselbe Hülle
+    // wie der Kontakt).
     _geraetSpanne(bp) {
-        let x0 = Infinity,
-            y0 = Infinity,
-            z0 = Infinity,
-            x1 = -Infinity,
-            y1 = -Infinity,
-            z1 = -Infinity;
-        for (const p of (bp && bp.parts) || []) {
-            const e = this._partWorldExtents(p);
-            const q = p.position || {};
-            const x = q.x || 0,
-                y = q.y || 0,
-                z = q.z || 0;
-            x0 = Math.min(x0, x - e.ex / 2);
-            x1 = Math.max(x1, x + e.ex / 2);
-            y0 = Math.min(y0, y - e.ey / 2);
-            y1 = Math.max(y1, y + e.ey / 2);
-            z0 = Math.min(z0, z - e.ez / 2);
-            z1 = Math.max(z1, z + e.ez / 2);
-        }
-        const span = Math.max(x1 - x0, y1 - y0, z1 - z0);
-        return Number.isFinite(span) ? span : 0;
+        const h = this._teileHuelle(bp);
+        return h ? Math.max(h.x1 - h.x0, h.y1 - h.y0, h.z1 - h.z0) : 0;
     }
 
     // DIE WAHRE GRÖSSE EINES EIGENWERKS (m je Bauplan-Einheit, W5): seine Spanne auf die Werkzeug-Spanne der Hand

@@ -494,46 +494,45 @@ function stationVerdict(s) {
     return out;
 }
 
-// K1 (physik.K1, `probeKoerper`): ρ ×2 in der EINEN Stoff-Zeile → jede Masse ×2; was nicht dichter ist als Wasser, trägt es
-// über dem Grund, sonst liegt es auf ihm; wen es trug, dessen Tiefe ändert sich. Labor = Welt (Wolf = tetrapoda KAMPF.refKg,
-// Wagen = carPhys × masseDichte, Keule = Schmiede), der Wagen liegt nach ρ(blech) (D10), Δv = Massen-Verhältnis.
-const K1 = { m: 0.01, dv: 0.05, tief: 0.1, grund: 0.3 };
+// K1 (physik.K1, `probeKoerper`): die Messung der Meisterkarte (Bänder, Δv, Holz ρ/ρw, Stein sinkt, Labor = Welt ≤ 1 %), der
+// Spieler an seiner Brustkorb-Linie; ρ ×2 in der EINEN Stoff-Zeile → jede Masse ×2, wen das Wasser trug, der sinkt.
+const K1 = { m: 0.01, dv: 0.05, grund: 0.3, holz: 0.1, brust: 0.2 };
 function koerperVerdict(k) {
     if (!k || k.err || !k.vor || !k.nach) return { s1: [`keine Probe (${k && k.err})`], s2: ["keine Probe"] };
     const [V, N, s1, s2] = [k.vor, k.nach, [], []];
-    if (!(k.zurueck && k.mutiert > 0)) s1.push("die Mutation fasste nichts");
-    const traegt = (x) => (Number.isFinite(x.anteil) ? x.anteil < 1 : x.traegt === true);
+    const nie = (b, out, t) => b || out.push(t);
+    nie(k.mutiert > 0, s1, "die Mutation fasste nichts");
+    const traegt = (x) => (x.anteil >= 0 ? x.anteil < 1 : x.traegt);
     const koerper = (n, out, wasser, lab) => {
         const [a, b] = [V[n], N[n]];
-        if (!a || !b || !(a.kg > 0)) return out.push(`${n}: keine Masse`);
-        if (!(Math.abs(b.kg / a.kg - 2) <= K1.m)) out.push(`${n}: ρ ×2 → Masse ×${(b.kg / a.kg).toFixed(3)}`);
-        if (lab && !(Math.abs(a.kg / lab - 1) <= K1.m)) out.push(`${n}: Welt ${a.kg.toFixed(2)} ≠ Labor ${lab.toFixed(2)} kg`);
+        if (!(a && b && a.kg > 0)) return out.push(`${n}: keine Masse`);
+        nie(Math.abs(b.kg / a.kg - 2) <= K1.m, out, `${n}: ρ ×2 → Masse ×${(b.kg / a.kg).toFixed(3)}`);
+        nie(lab === undefined || Math.abs(a.kg / lab - 1) <= K1.m, out, `${n}: Welt ${a.kg.toFixed(2)} ≠ Labor ${lab} kg`);
         for (const x of wasser ? [a, b] : [])
-            if (traegt(x) ? !(x.schwimmt && x.tief < x.grund - K1.grund) : x.schwimmt || !(Math.abs(x.tief - x.grund) <= K1.grund))
-                out.push(`${n} (${x === a ? "vorher" : "ρ ×2"}): ${traegt(x) ? "getragen" : "dichter als Wasser"}, ${x.tief} m tief`);
-        if (wasser && traegt(a) && !(Math.abs(b.tief - a.tief) >= K1.tief)) out.push(`${n}: die Eintauchtiefe steht`);
+            nie(traegt(x) ? x.schwimmt && x.tief < x.grund - K1.grund : !x.schwimmt && Math.abs(x.tief - x.grund) <= K1.grund, out,
+                `${n} (${x === a ? "vorher" : "ρ ×2"}): ${traegt(x) ? "getragen" : "dichter als Wasser"}, ${x.tief} m tief`);
     };
-    koerper("spieler", s1, true);
+    const [sp, wo, wa, h] = [V.spieler || {}, V.wolf || {}, V.wagen || {}, V.holz || {}];
+    koerper("spieler", s1, true, k.labMensch);
     koerper("wolf", s1, true, k.refKg);
-    for (const n of ["spieler", "wolf"]) if (V[n] && !V[n].traegt) s1.push(`${n}: vorher nicht getragen`);
-    koerper("wagen", s1, true, V.wagen && V.wagen.kernKg);
-    if (V.wagen && V.wagen.rho !== k.rhoBlech) s1.push(`wagen: liegt nach ${V.wagen.rho}, nicht nach ρ(blech) ${k.rhoBlech}`);
-    if (V.wagen && N.wagen && !(Math.abs((2 * N.wagen.wasserK) / V.wagen.wasserK - 1) <= K1.m))
-        s1.push("wagen: Wasser-Term mit eigener Masse");
-    for (const [p, a, b] of [
-        ["stossSpielerWolf", "spieler", "wolf"],
-        ["stossWolfBaer", "wolf", "baer"],
-    ])
-        for (const M of [V, N]) {
-            const q = M[p];
-            const soll = M[a] && M[b] ? M[b].kg / M[a].kg : NaN;
-            if (!q || !(Math.abs(q.dvA / q.dvB / soll - 1) <= K1.dv)) s1.push(`${p}: Δv ≠ Massen ${soll.toFixed(3)}`);
-        }
-    koerper("gebaut", s2, true);
-    if (V.gebaut && !traegt(V.gebaut)) s2.push("gebaut: schwimmt vorher nicht");
-    koerper("geschmiedet", s2, false, V.geschmiedet && V.geschmiedet.labKg);
+    koerper("wagen", s1, true, wa.kernKg);
+    nie(sp.traegt && wo.traegt, s1, "vorher nicht getragen");
+    nie(Math.abs(sp.tief - k.brustM) <= K1.brust, s1, `spieler ${sp.tief} m tief ≠ Brustkorb ${k.brustM}`);
+    nie(sp.kg >= 60 && sp.kg <= 90, s1, `Mensch ${sp.kg} kg außer 60–90`);
+    nie(wa.kg >= 1100 && wa.kg <= 1600, s1, `Wagen ${wa.kg} kg außer 1100–1600`);
+    nie(wa.rho === k.rhoBlech, s1, `wagen: liegt nach ${wa.rho}, nicht nach ρ(blech)`);
+    nie(N.wagen && Math.abs((2 * N.wagen.wasserK) / wa.wasserK - 1) <= K1.m, s1, "wagen: Wasser-Term mit eigener Masse");
+    for (const M of [V, N]) {
+        const q = M.stoss || {};
+        nie(q.J > 0 && Math.abs((q.dvA / q.dvB) * (M.spieler.kg / M.wolf.kg) - 1) <= K1.dv, s1, "Stoß: Δv ≠ Massen-Verhältnis");
+    }
+    koerper("holz", s2, true);
+    koerper("stein", s2, true);
+    nie(Math.abs(h.tief / h.H / (h.rho / k.rhoW) - 1) <= K1.holz, s2, `holz: Eintauchtiefe ${h.tief} von ${h.H} m`);
+    nie(V.stein && !traegt(V.stein), s2, "stein: schwimmt");
+    koerper("geschmiedet", s2, false, (V.geschmiedet || {}).labKg);
     koerper("lose", s2);
-    for (const n of ["geschmiedet", "lose"]) if (V[n] && N[n] && !(N[n].dauer > V[n].dauer)) s2.push(`${n}: der Schwung bleibt`);
+    for (const n of ["geschmiedet", "lose"]) nie(V[n] && N[n] && N[n].dauer > V[n].dauer, s2, `${n}: der Schwung bleibt`);
     return { s1, s2 };
 }
 function koerperBericht(k) {
@@ -541,9 +540,17 @@ function koerperBericht(k) {
     const [V, N] = [(k && k.vor) || {}, (k && k.nach) || {}];
     const z = (n) =>
         V[n] && N[n] ? `${n} ${(+V[n].kg).toFixed(1)} → ${(+N[n].kg).toFixed(1)} kg` + (V[n].tief >= 0 ? `, tief ${V[n].tief} → ${N[n].tief} m` : "") : n;
-    const zeile = (s, t, n) => check(t, !v[s].length, n.map(z).join(" · ") + (v[s].length ? " — " + v[s].join(" · ") : ""));
-    zeile("s1", "K1#1 (physik.K1) DIE LEIBER: ρ ×2 → Masse ×2, Eintauchtiefe, Δv (Mensch-Band 60–90 kg)", ["spieler", "wolf", "wagen"]);
-    zeile("s2", "K1#2 (physik.K1) DIE DINGE: gebaut, geschmiedet, lose — ρ ×2 → Masse ×2, Eintauchtiefe, Schwung", ["gebaut", "geschmiedet", "lose"]);
+    const [h, w, q] = [V.holz || {}, V.wagen || {}, V.stoss || {}];
+    const zahl = [
+        ["spieler", "wolf", "wagen"].map(z).join(" · ") +
+            ` · Labor Mensch ${(+k.labMensch).toFixed(1)}, Wolf ${k.refKg}, Wagen ${(+w.kernKg).toFixed(0)} kg · Brustkorb ${(+k.brustM).toFixed(2)} m · Δv Spieler/Wolf ${(q.dvA / q.dvB).toFixed(3)}`,
+        ["holz", "stein", "geschmiedet", "lose"].map(z).join(" · ") +
+            ` · Holz ${(h.tief / h.H).toFixed(3)} der Höhe (ρ/ρw ${(h.rho / k.rhoW).toFixed(2)}) · Labor Keule ${(+(V.geschmiedet || {}).labKg).toFixed(3)} kg`,
+    ];
+    ["s1", "s2"].forEach((s, i) =>
+        check(`K1#${i + 1} (physik.K1) ${i ? "DIE DINGE" : "DIE LEIBER"}: die Messung der Meisterkarte und ρ ×2`, !v[s].length,
+            zahl[i] + (v[s].length ? " — " + v[s].join(" · ") : ""))
+    );
     return v;
 }
 
@@ -1510,27 +1517,24 @@ function quellenAbgriff() {
         {
             const lauf = (k) => {
                 const o = {};
-                for (const [n, kg, t1, t2, anteil] of [
-                    ["spieler", 117.29, 1.07, 3.438],
-                    ["wolf", 64.01, 0.599, 3.407],
-                    ["wagen", 1341.36, 3.438, 3.438, 3],
-                    ["gebaut", 1020.22, 0.691, 3.438, 0.72],
+                for (const [n, kg, t, anteil] of [
+                    ["spieler", 89.06, 1.07],
+                    ["wolf", 64.01, 0.6],
+                    ["wagen", 1341.36, 3.43, 3],
+                    ["holz", 1814.4, 0.432, 0.72],
+                    ["stein", 6678, 3.43, 2.65],
                 ])
-                    o[n] = { kg: kg * k, tief: k === 1 ? t1 : t2, grund: 3.43, schwimmt: k === 1 && n !== "wagen", traegt: k === 1 };
-                o.wagen.anteil = 3 * k;
-                o.wagen.rho = 3000;
-                o.wagen.kernKg = 1341.36;
-                o.wagen.wasserK = 0.7 / k;
-                o.gebaut.anteil = 0.72 * k;
-                o.baer = { kg: 335.38 * k };
-                o.stossSpielerWolf = { J: 1, dvA: 1.1651, dvB: 2.1349 };
-                o.stossWolfBaer = { J: 1, dvA: 2.7711, dvB: 0.5289 };
-                o.geschmiedet = { kg: 2.1766 * k, labKg: 2.1766, dauer: 0.65 * k };
-                o.lose = { kg: 2.5846 * k, dauer: 0.763 * k };
+                    o[n] = { kg: kg * k, tief: k > 1 ? 3.43 : t, grund: 3.43, schwimmt: k < 2 && t < 3, traegt: k < 2, anteil: anteil * k, H: 0.6 };
+                Object.assign(o.wagen, { rho: 3000, kernKg: 1341.36, wasserK: 0.7 / k });
+                o.holz.rho = 720 * k;
+                o.stoss = { J: 1, dvA: 0.7187, dvB: 1 };
+                o.geschmiedet = { kg: 2.1766 * k, labKg: 2.1766, dauer: k };
+                o.lose = { kg: 2.5846 * k, dauer: k };
                 return o;
             };
             const fall = (pfad, wert) => {
-                const k = { vor: lauf(1), nach: lauf(2), mutiert: 17, zurueck: true, refKg: 64, rhoBlech: 3000 };
+                const k = { vor: lauf(1), nach: lauf(2), mutiert: 18, refKg: 64, rhoBlech: 3000, rhoW: 1000, brustM: 1.22, labMensch: 89.06 };
+                for (const M of [k.vor, k.nach]) delete M.spieler.anteil, delete M.wolf.anteil;
                 if (pfad) {
                     const t = pfad.split(".");
                     t.slice(0, -1).reduce((o, x) => o[x], k)[t[t.length - 1]] = wert;
@@ -1542,13 +1546,15 @@ function quellenAbgriff() {
             for (const [pfad, wert, s, soll] of [
                 ["nach.wolf.kg", 64.01, "s1", /wolf: ρ ×2 → Masse/],
                 ["nach.spieler.schwimmt", true, "s1", /spieler \(ρ ×2\): dichter als Wasser/],
+                ["labMensch", 117.29, "s1", /spieler: Welt/],
+                ["vor.spieler.kg", 117.29, "s1", /Mensch 117\.29 kg außer/],
+                ["vor.stoss.dvB", 0.7187, "s1", /Stoß: Δv/],
+                ["vor.holz.tief", 0.216, "s2", /holz: Eintauchtiefe 0\.216/],
+                ["vor.stein.anteil", 0.9, "s2", /stein: schwimmt/],
                 ["vor.geschmiedet.labKg", 2.5, "s2", /geschmiedet: Welt/],
-                ["vor.stossSpielerWolf.dvB", 1.1651, "s1", /stossSpielerWolf: Δv/],
-                ["vor.wagen.rho", 1153, "s1", /wagen: liegt nach 1153/],
-                ["vor.wolf.kg", 140.5, "s1", /wolf: Welt/],
             ]) {
                 const v = fall(pfad, wert);
-                check(`Selbst-Test K1: ${pfad} = ${wert} → ROT beim Namen`, v[s].some((x) => soll.test(x)), v[s].join(" · "));
+                check(`Selbst-Test K1: ${pfad} = ${wert} → ROT`, v[s].some((x) => soll.test(x)), v[s].join(" · "));
             }
         }
 

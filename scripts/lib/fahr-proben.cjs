@@ -2214,8 +2214,7 @@ function kernTempo(VC) {
     return kern.length ? m : Object.assign(m, { knick: +knick.toFixed(2) });
 }
 
-// ── K1 (physik K1, `--koerper`): je Körper Masse und Eintauchtiefe am Spieler-Weg (Takt, `_fahrBoden`), dann jede Zeile der
-// Stoff-Zeile ×2 und dieselbe Messung.
+// ── K1 (physik K1, `--koerper`): Masse und Eintauchtiefe am Spieler-Weg (Takt, `_fahrBoden`), dann jede Zeile ρ ×2.
 async function probeKoerper(opt) {
     await window.__weltDa();
     const r = window.anazhRealm;
@@ -2237,89 +2236,65 @@ async function probeKoerper(opt) {
                 if ([0, 2, 4, 6].every((d) => tief(x + d, z) > 2 && !r._waterFlowAt(x + d, z)))
                     ort = { x, z, spiegel: r._koerperWasser(x, z, hh(x, z)) };
             }
-        if (!(res.ort = ort)) throw new Error("kein tiefes Wasser im See");
+        if (!(res.ort = ort)) throw new Error("kein See");
         const steuerRoh = A._steuerGesetz;
         const steht = Object.create(steuerRoh.call(A));
         steht.steuerSchritt = (sw) => (sw.v = 0);
         const mats = st.materials;
         const alt = {};
         for (const n of Object.keys(mats)) if (mats[n].builtIn) alt[n] = mats[n].rho;
-        const KS = A.KIND_SUBSTANCE.fahrzeug_wagen;
-        st.blueprints._k1_holzwagen = {
-            name: "_k1_holzwagen",
-            parts: KS.parts.map((p) => Object.assign(JSON.parse(JSON.stringify(p)), { material: "holz" })),
-            connections: JSON.parse(JSON.stringify(KS.connections || [])),
-        };
-        const box = (sz, y) => ({ shape: "box", material: "holz", size: sz, position: { x: 0, y, z: 0 } });
-        const eigen = { name: "_k1_eigenwerk", parts: [box({ x: 0.15, y: 1.5, z: 0.15 }, 0), box({ x: 0.6, y: 0.6, z: 0.6 }, 1.5)] };
+        const box = (m, sz, y) => ({ shape: "box", material: m, size: sz, position: { x: 0, y, z: 0 } });
+        for (const m of ["holz", "stein"]) st.blueprints["_k1_" + m] = { parts: [box(m, { x: 3, y: 0.6, z: 1.4 }, 0.3)] };
+        const eigen = { parts: [box("holz", { x: 0.15, y: 1.5, z: 0.15 }, 0), box("holz", { x: 0.6, y: 0.6, z: 0.6 }, 1.5)] };
         const keule = st.blueprints.klinge_keule;
-        if (!keule || !keule.parts || !keule.parts.length) throw new Error("kein Bauplan klinge_keule");
         const messe = () => {
-            const o = {};
             const pm = st.playerMesh;
-            if (st.player && st.player.mountedArch != null) r.dismountArchitecture();
             pm.position.set(ort.x, ort.spiegel - 0.4 + A.PLAYER_FOOT_OFFSET, ort.z);
             st.playerVel.setValue(0, 0, 0);
             A._steuerGesetz = () => steht;
-            const kappe = st.maxCreatures;
-            st.maxCreatures = st.creatures.length + 2;
-            const tier = (g, x, y, z) => r.spawnCreatureAt(x, y, z, "calm", g, { precise: true, bodySize: 1 });
-            const wolf = tier("wolf", ort.x + 3, ort.spiegel, ort.z);
-            const baer = tier("baer", ort.x + 60, hh(ort.x + 60, ort.z + 60), ort.z + 60);
-            try {
-                if (wolf) wolf.userData._steuer = { gier: 0, v: 0 };
-                for (let i = 0; i < 300; i++) r._gameLoopTick((tMs += 16.7));
-                const leib = (q, fuss, schwimmt) => {
-                    const g = hh(q.position.x, q.position.z);
-                    const sp = r._koerperWasser(q.position.x, q.position.z, g);
-                    const kg = r._stossKoerper(q, {}).m;
-                    return { kg, tief: +(sp - fuss).toFixed(3), grund: +(sp - g).toFixed(3), schwimmt, traegt: r._leibGetragen() };
-                };
-                o.spieler = leib(pm, pm.position.y - A.PLAYER_FOOT_OFFSET, !!st.playerUnderwater);
-                if (wolf) o.wolf = leib(wolf, wolf.position.y, r._kreaturSchwimmt(wolf, hh(wolf.position.x, wolf.position.z)) !== null);
-                if (baer) o.baer = { kg: r._stossKoerper(baer, {}).m };
-                const vx = (q) => (q === pm ? st.playerVel.x() : q.userData._stossV.x);
-                const paar = (qa, qb) => {
-                    st.playerVel.setValue(qa === pm ? 3 : 0, 0, 0);
-                    for (const q of [qa, qb]) if (q !== pm) q.userData._stossV = { x: q === qa ? 3 : 0, z: 0 };
-                    const [va, vb] = [vx(qa), vx(qb)];
-                    const J = r._stossPaar(qa, qb, 1, 0);
-                    const q = { J, dvA: Math.abs(vx(qa) - va), dvB: Math.abs(vx(qb) - vb) };
-                    st.playerVel.setValue(0, 0, 0);
-                    for (const k of [qa, qb]) if (k !== pm) k.userData._stossV = null;
-                    return q;
-                };
-                if (wolf) o.stossSpielerWolf = paar(pm, wolf);
-                if (wolf && baer) o.stossWolfBaer = paar(wolf, baer);
-            } finally {
-                for (const c of [wolf, baer]) if (c) r.removeCreature(c);
-                A._steuerGesetz = steuerRoh;
-                st.maxCreatures = kappe;
-            }
+            st.maxCreatures = st.creatures.length + 1;
+            const wolf = r.spawnCreatureAt(ort.x + 3, ort.spiegel, ort.z, "calm", "wolf", { precise: true, bodySize: 1 });
+            wolf.userData._steuer = { gier: 0, v: 0 };
+            for (let i = 0; i < 300; i++) r._gameLoopTick((tMs += 16.7));
+            A._steuerGesetz = steuerRoh;
+            const leib = (q, fuss, schwimmt, mensch) => {
+                const g = hh(q.position.x, q.position.z);
+                const sp = r._koerperWasser(q.position.x, q.position.z, g);
+                const [kg, traegt] = [r._stossKoerper(q, {}).m, r._leibGetragen(mensch)];
+                return { kg, tief: +(sp - fuss).toFixed(3), grund: +(sp - g).toFixed(3), schwimmt, traegt };
+            };
+            const o = { spieler: leib(pm, pm.position.y - A.PLAYER_FOOT_OFFSET, !!st.playerUnderwater, true) };
+            o.wolf = leib(wolf, wolf.position.y, r._kreaturSchwimmt(wolf, hh(wolf.position.x, wolf.position.z)) !== null);
+            st.playerVel.setValue(3, 0, 0);
+            wolf.userData._stossV = { x: 0, z: 0 };
+            o.stoss = { J: r._stossPaar(pm, wolf, 1, 0), dvA: 3 - st.playerVel.x(), dvB: wolf.userData._stossV.x };
+            st.playerVel.setValue(0, 0, 0);
+            r.removeCreature(wolf);
             const werk = (typ) => {
                 const e = r.spawnArchitecture(typ, { x: ort.x, y: hh(ort.x, ort.z), z: ort.z }, { silent: true, precise: true });
-                if (!e) return null;
                 try {
                     const prof = r._vehicleProfile(e);
                     const K = r._stossKoerper(e, {});
-                    const anteil = A._eintauchAnteil(prof.dichte);
-                    const grund = +(ort.spiegel - hh(ort.x, ort.z)).toFixed(3);
-                    const tiefe = +(ort.spiegel - r._fahrBoden(e)(ort.x, ort.z)).toFixed(3);
-                    const kernKg = K && K.G ? K.G.m * window.__vehicleCore.FAHR.masseDichte : null;
-                    const wasserK = K && K.G && K.G.wasser ? K.G.wasser.kStirn : null;
-                    return { kg: K ? K.m : null, rho: prof.dichte, anteil, schwimmt: prof.floats, tief: tiefe, grund, kernKg, wasserK };
+                    const bp = st.blueprints[e.type];
+                    const hu = r._teileHuelle(bp);
+                    return {
+                        kg: K ? K.m : bp.parts.reduce((m, p) => m + r._teilMasse(p), 0),
+                        rho: prof.dichte,
+                        anteil: A._eintauchAnteil(prof.dichte),
+                        schwimmt: prof.floats,
+                        tief: +(ort.spiegel - r._fahrBoden(e)(ort.x, ort.z)).toFixed(3),
+                        grund: +(ort.spiegel - hh(ort.x, ort.z)).toFixed(3),
+                        kernKg: K && K.G.m * window.__vehicleCore.FAHR.masseDichte,
+                        wasserK: K && K.G.wasser.kStirn,
+                        H: hu.y1 - hu.y0,
+                    };
                 } finally {
                     r.removeArchitecture(e);
                 }
             };
-            o.wagen = werk("fahrzeug_gt");
-            o.gebaut = werk("_k1_holzwagen");
-            const km = r._schmiedeKampfMasze(keule);
-            o.geschmiedet = {
-                kg: km && km.masseKg,
-                labKg: window.__schmiedeCore.kampfMasze("keule").masseKg,
-                dauer: r._swingDauerFuerBlueprint(keule),
-            };
+            [o.wagen, o.holz, o.stein] = ["fahrzeug_gt", "_k1_holz", "_k1_stein"].map(werk);
+            const lab = window.__schmiedeCore.kampfMasze("keule").masseKg;
+            o.geschmiedet = { kg: r._schmiedeKampfMasze(keule).masseKg, labKg: lab, dauer: r._swingDauerFuerBlueprint(keule) };
             o.lose = { kg: r._geraetMasze(eigen).masseKg, dauer: r._swingDauerFuerBlueprint(eigen) };
             return o;
         };
@@ -2330,11 +2305,18 @@ async function probeKoerper(opt) {
             res.nach = messe();
         } finally {
             for (const n of Object.keys(alt)) mats[n].rho = alt[n];
-            delete st.blueprints._k1_holzwagen;
+            for (const m of ["holz", "stein"]) delete st.blueprints["_k1_" + m];
         }
-        res.zurueck = Object.keys(alt).every((n) => mats[n].rho === alt[n]);
-        res.refKg = window.__tetrapodaCore.KAMPF.refKg;
-        res.rhoBlech = mats.blech ? mats.blech.rho : null;
+        Object.assign(res, {
+            refKg: window.__tetrapodaCore.KAMPF.refKg,
+            rhoBlech: mats.blech.rho,
+            brustM: A._schwimmBrustM(),
+            rhoW: A._fahrGesetz().wasserRho,
+        });
+        // das Labor: der Guss des Körperstudios (Saat 0, Start-Dials), sein Leib in Metern (6 E = 8 Kopf-Einheiten) × ρ(leib)
+        const sk = BAKERS_BY_KIND.koerper(window.__koerperCore, "mensch", 0, 0, undefined).userData.__skelett;
+        const w = sk.joints.find((j) => j.name === sk.root).scale;
+        res.labMensch = sk.leibV * w[0] * w[1] * w[2] * ((8 * A.PLAYER_KH) / 6) ** 3 * mats.leib.rho;
     } catch (e) {
         res.err = String((e && e.stack) || e);
     }

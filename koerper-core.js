@@ -1343,13 +1343,13 @@
     // W8 — die Gestalten je Rezept (B2c): JEDES Rezept trägt GESTALTEN_JE_REZEPT Individuen (ein neues zählt mit).
     for (var _gid in PRESETS) PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = GESTALTEN_JE_REZEPT;
 
-    // ── physik K1 (23.10.): die Dichte des Leibs (LEIB.dichteKgM3, 985) fiel — jeder Leib ist Fleisch, seine Dichte die EINE
-    //    Stoff-Zeile des Wirts (das Gewebe aus tetrapoda MASSSTAB.dichteKgM3); die Masse eines Menschen bleibt das Volumen
-    //    seiner geschlossenen Haut (bauMensch) mal dieser Zahl (Wirt: _leibMasse). ──
+    // ── 0710-4 (rein additiv) — DER LEIB DES MENSCHEN ALS MASSE: die Dichte des Körpers (kg/m³, mit der Luft der Lunge
+    //    knapp unter Wasser). Die Masse eines Menschen ist das Volumen seiner geschlossenen Haut (bauMensch) mal dieser
+    //    Zahl — EINE Quelle für jeden Stoß (Wirt: _leibMasse). ──
     // ── Welle LF 09.10. (rein additiv) — DER ARM ALS ANTEIL DER MASSE: ein Arm samt Hand wiegt 5,0 % des Körpers (Dempster
     //    1955: Oberarm 2,8 · Unterarm 1,6 · Hand 0,6 %). Eine Maus-Arm-Aktion bewegt ihn samt Gerät — ihre Ausdauer wächst
     //    mit (m_Arm + m_Gerät) / m_Arm (Wirt: _mausAusdauer; die leere Hand trägt aktionAusdauer). ──
-    var LEIB = Object.freeze({ armAnteil: 0.05 });
+    var LEIB = Object.freeze({ dichteKgM3: 985, armAnteil: 0.05 });
 
     // ── K2 (rein additiv) — DIE WEBUNG je Stoff-Art (Kleid-Zeile `webe`): [Frequenz, Tiefe] der Mikro-Struktur, die die
     //    Stoff-Farbe moduliert (Strick grob, Denim/Baumwolle fein, Leder/Gummi glatt) — EINE Tafel für Labor und Welt. ──

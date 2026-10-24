@@ -1426,6 +1426,25 @@ class AnazhRealm_bau_buch {
         return v;
     }
 
+    // DIE HÜLLE DER TEILE (Bauplan-Einheiten): die achsen-parallele Box über die rotations-bewussten Hüllen aller Teile
+    // (`_partWorldExtents`) — { x0, x1, y0, y1, z0, z1 } oder null. Leser: die Spanne eines Geräts (`_geraetSpanne`) und die
+    // Höhe eines Werks im Wasser (`_fahrzeugGestalt`).
+    _teileHuelle(bp) {
+        const h = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity, z0: Infinity, z1: -Infinity };
+        for (const p of (bp && bp.parts) || []) {
+            const e = this._partWorldExtents(p);
+            const q = p.position || {};
+            const [x, y, z] = [q.x || 0, q.y || 0, q.z || 0];
+            h.x0 = Math.min(h.x0, x - e.ex / 2);
+            h.x1 = Math.max(h.x1, x + e.ex / 2);
+            h.y0 = Math.min(h.y0, y - e.ey / 2);
+            h.y1 = Math.max(h.y1, y + e.ey / 2);
+            h.z0 = Math.min(h.z0, z - e.ez / 2);
+            h.z1 = Math.max(h.z1, z + e.ez / 2);
+        }
+        return h.x1 > h.x0 ? h : null;
+    }
+
     // ROTATIONS-BEWUSSTE Welt-Hülle eines Parts: konservative AABB |R|·s auf Three.js' EXAKTER Euler-XYZ-
     // Matrix (makeRotationFromEuler-Zeilen), damit sie dem Renderer entspricht. Liefert {ex, ey, ez} =
     // volle Welt-Ausdehnung je Achse.
