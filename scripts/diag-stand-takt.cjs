@@ -119,8 +119,7 @@ function selbsttest() {
                 dichte: { fern: 0, gehalten: 0 },
                 mesh: { fern: 2, gehalten: 2 },
             },
-            stand: { key: "-11,-27", vor: "3|0", nach: "3|0", gleich: true },
-            nah: { key: "-7,-24", lod: 0, vor: "3|0", nach: "3|0", gleich: true },
+            stand: { key: "-7,-24", lod: 0, vor: "3|0", nach: "3|0", gleich: true },
             plan: 140,
             maxTaktMs: 21,
             raeumung: { abbau: 5, saves: 0, saveMs: 0 },
@@ -318,16 +317,10 @@ function selbsttest() {
             /ORT: der Erdbau bei \(-182,-1038\) warf 6 von 6 fernen Chunk-Gedächtnissen \(basis/,
         ],
         [
-            "der Stand eines fernen Chunks springt",
-            (b) => Object.assign(b.ort.stand, { nach: "4|0", gleich: false }),
-            /ORT: der Erdbau bei \(-182,-1038\) verwarf die Worker-Antworten des fernen Chunks -11,-27 \(Stand 3\|0 → 4\|0\)/,
+            "der Stand des Spieler-Chunks springt in seiner Stufe",
+            (b) => Object.assign(b.ort.stand, { nach: "3|7", gleich: false }),
+            /ORT: der Erdbau bei \(-182,-1038\) verwarf die Worker-Antworten des Spieler-Chunks -7,-24 in Stufe L0 \(3\|0 → 3\|7\)/,
         ],
-        [
-            "der Spieler-Chunk verwirft in seiner Stufe",
-            (b) => Object.assign(b.ort.nah, { nach: "3|7", gleich: false }),
-            /ORT: der Erdbau bei \(-182,-1038\) verwarf die Worker-Antworten des Spieler-Chunks -7,-24 in seiner Stufe L0 \(Stand 3\|0 → 3\|7\)/,
-        ],
-        ["die Ort-Phase findet den Spieler-Chunk nicht", (b) => (b.ort.nah = null), /LEER: die Ort-Phase fand den Spieler-Chunk nicht/],
         [
             "jeder Abbau speichert die Welt synchron",
             (b) => Object.assign(b.ort.raeumung, { saves: 5, saveMs: 420 }),
@@ -1086,19 +1079,10 @@ const TAT = process.argv.includes("--tat");
                     const caches0 = {};
                     for (const [n, c] of Object.entries(caches))
                         caches0[n] = c ? [...c.keys()].filter((k) => weit(k, span)) : [];
-                    let standKey = null;
-                    for (const k of st.voxelChunks.keys())
-                        if (weit(k, span)) {
-                            standKey = k;
-                            break;
-                        }
-                    const standOf = (k) => r._voxelStand(...k.split(",").map(Number));
-                    O.stand = { key: standKey, vor: standKey ? standOf(standKey) : null };
-                    // der Spieler-Chunk IN SEINER STUFE (der Boden der Ankunft): 96 m vor ihm trifft der Erdbau sein Gitter nie
-                    const [pcx, pcz] = [Math.floor(pm.x / span), Math.floor(pm.z / span)];
-                    const pch = st.voxelChunks.get(`${pcx},${pcz}`);
-                    const plod = pch && Number.isFinite(pch.lod) ? pch.lod : 0;
-                    O.nah = pch ? { key: `${pcx},${pcz}`, lod: plod, vor: r._voxelStand(pcx, pcz, plod) } : null;
+                    const pk = [Math.floor(pm.x / span), Math.floor(pm.z / span)];
+                    const pch = st.voxelChunks.get(pk.join());
+                    const standOf = () => r._voxelStand(...pk, pch.lod | 0);
+                    O.stand = pch ? { key: pk.join(), lod: pch.lod | 0, vor: standOf() } : {};
                     const core = globalThis.__phytoCore;
                     const pfcRoh = core.planForestCell;
                     let pfc = 0;
@@ -1131,13 +1115,9 @@ const TAT = process.argv.includes("--tat");
                                 ];
                             O.chunks[n] = { fern: ks.length, gehalten: ks.filter((k) => c && c.has(k)).length };
                         }
-                        if (standKey) {
-                            O.stand.nach = standOf(standKey);
+                        if (pch) {
+                            O.stand.nach = standOf();
                             O.stand.gleich = O.stand.nach === O.stand.vor;
-                        }
-                        if (O.nah) {
-                            O.nah.nach = r._voxelStand(pcx, pcz, O.nah.lod);
-                            O.nah.gleich = O.nah.nach === O.nah.vor;
                         }
                         let max = 0;
                         for (let i = 0; i < O.takte; i++) {
@@ -1771,7 +1751,7 @@ const TAT = process.argv.includes("--tat");
                     .map(([n, c]) => `${n} ${c.gehalten}/${c.fern}`)
                     .join(
                         " · "
-                    )}, ferner Chunk ${O.stand ? O.stand.key : "?"} ${O.stand && O.stand.gleich ? "hält seinen Stand" : "SPRINGT"} — ` +
+                    )}, Spieler-Chunk ${O.stand ? O.stand.key : "?"} ${O.stand && O.stand.gleich ? "hält seinen Stand" : "SPRINGT"} — ` +
                 `die ${O.takte} Takte danach planten ${O.plan} Wald-Zellen, der längste ${O.maxTaktMs} ms — die Räumung: ` +
                 (O.raeumung
                     ? `${O.raeumung.abbau} Abbauten, ${O.raeumung.saves} synchrone Saves (Σ ${O.raeumung.saveMs} ms)`

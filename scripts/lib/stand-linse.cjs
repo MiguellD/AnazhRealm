@@ -714,19 +714,11 @@ function standUrteil(b) {
                     `Sammlung fällt in den Takt`
             );
         if (!O.stand || !O.stand.key)
-            v.push("LEER: die Ort-Phase fand keinen fernen Chunk für den Stand der Worker-Antworten");
+            v.push("LEER: die Ort-Phase fand den Spieler-Chunk nicht für den Stand der Worker-Antworten");
         else if (!O.stand.gleich)
             v.push(
-                `ORT: ${wo} verwarf die Worker-Antworten des fernen Chunks ${O.stand.key} (Stand ${O.stand.vor} → ` +
-                    `${O.stand.nach}) — der Worker baut fern neu, was der Erdbau nie berührt`
-            );
-        // DER BODEN DER ANKUNFT (b-abdruck): die Antwort einer Stufe fällt nur, wo ihr Gedächtnis fällt (`_voxelStand` in der Stufe)
-        if (!O.nah) v.push("LEER: die Ort-Phase fand den Spieler-Chunk nicht — der Stand in der Stufe ist ungeprüft");
-        else if (!O.nah.gleich)
-            v.push(
-                `ORT: ${wo} verwarf die Worker-Antworten des Spieler-Chunks ${O.nah.key} in seiner Stufe L${O.nah.lod} ` +
-                    `(Stand ${O.nah.vor} → ${O.nah.nach}), 96 m vor ihm, jenseits jeder Wirkung auf sein Gitter ` +
-                    `(\`_voxelStand\` ohne Stufe) — der Boden der Ankunft kommt ein zweites Mal`
+                `ORT: ${wo} verwarf die Worker-Antworten des Spieler-Chunks ${O.stand.key} in Stufe L${O.stand.lod} (${O.stand.vor} → ` +
+                    `${O.stand.nach}) 96 m vor ihm — der Boden der Ankunft kommt ein zweites Mal`
             );
         // DER ERDBAU UNTER DEM SPIELER: der Chunk-Stoff entsteht im Worker, nie im Haupt-Faden (Lehre 14) — ein Takt,
         // der einen Chunk synchron baut (`_buildVoxelChunkData`) über SYNC_CHUNK_MS, ist der Riss beim Namen seiner Rufer.
