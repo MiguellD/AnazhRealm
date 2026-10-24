@@ -2913,18 +2913,18 @@ class AnazhRealm_kreatur_verhalten {
     }
 
     // ═══ KAMPF-GEFÜHL — DER LEICHNAM (Welle LF kampf, Posten 7) ═══
-    // Ein Gefallener (state.leichname, _kreaturFaellt) hat keine KI, keinen Gang und keine Stimme: er kippt (~83° smoothstep
-    // über kippDauerSec) auf die beim Tod gemerkte Flanke, die Wurzel steigt nach der Tod-Lage (_todHebeTafel), dann liegt
-    // er gefuehl.leichnamSec und sinkt in der letzten Spanne um die Höhe seines Leibs in die Erde — DANN removeCreature. Je
-    // Takt wählt er seine Sicht wie jeder Leib im Bild (_leibSicht: die Stufe nach dem Abstand). Rein optisch — kein
-    // Sim-/Replay-Pfad liest die Lage; der Mehrspieler-Strom trägt sie (q).
+    // Ein Gefallener (state.leichname, _kreaturFaellt) hat keine KI, keinen Gang und keine Stimme: steht seine Tod-Lage (der
+    // Leerlauf, `_todLageTick`), kippt er (~83° smoothstep über kippDauerSec, Uhr `fall`) auf ihre Flanke, die Wurzel nach ihrer
+    // Tafel; er liegt bis zur Frist (`t` ab dem Tod) und sinkt zuletzt in die Erde — DANN removeCreature. Je Takt wählt er
+    // seine Sicht (_leibSicht). Rein optisch — kein Sim-/Replay-Pfad liest die Lage; der Mehrspieler-Strom trägt sie (q).
     _tickLeichname(delta, playerPos) {
         const L = this.state.leichname;
         for (let i = L.length - 1; i >= 0; i--) {
             const creature = L[i];
             const dying = creature.userData.dying;
             dying.t += delta;
-            const u = Math.min(1, dying.t / Math.max(1e-6, dying.dauer));
+            if (dying.hebe !== undefined) dying.fall += delta;
+            const u = Math.min(1, dying.fall / Math.max(1e-6, dying.dauer));
             const ang = AnazhRealm.TOD_KIPP_RAD * u * u * (3 - 2 * u); // ~83° — gekippt, nicht vergraben
             const axis = this._kampfTipAxis || (this._kampfTipAxis = new THREE.Vector3());
             axis.set(dying.dirZ, 0, -dying.dirX).normalize(); // ⊥ Kipp-Richtung: up kippt AUF sie zu

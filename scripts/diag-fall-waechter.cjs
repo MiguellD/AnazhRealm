@@ -420,7 +420,7 @@ function selbsttest() {
     // ein unbenannter neuer Leser der Oberkante an einem Leib, und ein veralteter Name
     {
         const k3 = stammLib.ersetze(stamm, null,
-            /(\n {4}_todHebeTafel\([^)]*\) \{)/,
+            /(\n {4}\*_todHebeTafel\([^)]*\) \{)/,
             "\n    _schmuggelLeib(c) {\n        c.position.y = this.getTerrainHeightAt(c.position.x, c.position.z);\n    }\n$1"
         );
         const a3 = quellenWand(k3, Object.assign({ _nieGelesen: [["getTerrainHeightAt"], "Test"] }, OBERKANTE_BENANNT));
@@ -851,6 +851,7 @@ async function probe(K) {
                 r.removeCreature(w);
                 return { fehler: "der Wolf stirbt nicht" };
             }
+            r._todLageTick({ timeRemaining: () => Infinity }); // die Tod-Lage aus dem Leerlauf, vor dem ersten Takt des Falls
             // der Gefallene verlässt die Liste der Wesen im Moment des Todes und liegt in state.leichname (Welle LF kampf)
             const dabei = () => st.creatures.includes(w) || (st.leichname || []).includes(w);
             let kippMin = Infinity,
