@@ -1225,8 +1225,17 @@ async function checkBandV18132FerneSeen(ctx) {
         r.state.voxelBaseDensityCache.delete(`ferne-seen|${cx},${cz}`);
         const wk = await r._voxelWorkerComputeDensity(...g).catch((e) => String(e));
         const bits = (a) => new Uint32Array(a.buffer, a.byteOffset, a.length);
-        out.workerMirror =
-            !wk || typeof wk === "string" ? String(wk) : main.length === wk.length && bits(main).every((v, i) => v === bits(wk)[i]);
+        const gleich = (w) =>
+            !w || typeof w === "string" ? String(w) : main.length === w.length && bits(main).every((v, i) => v === bits(w)[i]);
+        out.workerMirror = gleich(wk);
+        // DER NACHGEBORENE FADEN SPIEGELT SIE AUCH (streaming.K5): der Stand trägt keine Region — ein Voxel-Faden, der nach
+        // ihrer Bestellung geboren wird, rechnet sie selbst (`_getVoxelWorker`); bis dahin baute er trocken (werk-im-wasser S)
+        const alt = [r.state.voxelWorker, r.state.voxelWorkerPending];
+        r.state.voxelWorker = null;
+        const neu = r._getVoxelWorker();
+        out.nachgeboren = gleich(await r._voxelWorkerComputeDensity(...g).catch((e) => String(e)));
+        neu.terminate();
+        [r.state.voxelWorker, r.state.voxelWorkerPending] = alt;
         return out;
     });
     if (!res) {
@@ -1239,6 +1248,11 @@ async function checkBandV18132FerneSeen(ctx) {
             "V18.132 Ferne Seen: der Worker spiegelt die Kachel — das Dichte-Gitter am Kachel-Fluss ist in Main und Worker bit-gleich",
             res.workerMirror === true,
             String(res.workerMirror)
+        );
+        check(
+            "V18.132 Ferne Seen: ein nachgeborener Voxel-Faden spiegelt die Kachel bit-gleich (Täter: _getVoxelWorker)",
+            res.nachgeboren === true,
+            String(res.nachgeboren)
         );
         check(
             "V18.132 Ferne Seen: die WEST-Kachel baut mit Substanz (Fluesse+Seen > 0)",

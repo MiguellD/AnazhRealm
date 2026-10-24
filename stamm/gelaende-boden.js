@@ -309,10 +309,11 @@ class AnazhRealm_gelaende_boden {
         const da = B.get(key);
         if (da) return da.zusage;
         const welt = this._hydroWelt | 0;
-        const e = { ab: null };
+        const e = { ab: null, origin, gepostet: false };
         const zusage = new Promise((ok, ab) => {
             e.ab = ab;
             e.post = () => {
+                e.gepostet = true; // ein später geborener Voxel-Faden bekommt sie bestellt (`_getVoxelWorker`)
                 const requestId = this.state.voxelWorkerNextRequestId++;
                 this.state.voxelWorkerPending.set(requestId, { resolve: ok, reject: ab });
                 this._voxelZustandPost({ type: "hydro", key, origin, requestId });

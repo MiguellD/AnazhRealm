@@ -150,10 +150,15 @@ class AnazhRealm_gelaende_chunks {
                 this.state.voxelWorkerReady = false;
             };
             this.state.voxelWorker = worker;
-            // DIE EINE ZUSAGE (B-K2): der init der Geburt trägt den Stand (Seed, Atlas, voxelEdits); jeder Auftrag wartet auf
+            // DIE EINE ZUSAGE (B-K2): der init der Geburt trägt den Stand (Seed, Gesetz, voxelEdits); jeder Auftrag wartet auf
             // sie (`_voxelFadenAuftrag`), nie auf einen neuen init. Kommt der Faden erst nach der Weltgen (der Blob-Weg),
             // trägt dieser init schon die Welt: der Strom darf ihn fragen.
             worker.zusage = this._voxelWorkerSyncState({ op: "init" });
+            // DIE REGIONEN DIESER WELT (streaming.K5): der Stand trägt keine — ein Faden, der nach ihrer Bestellung geboren wird,
+            // rechnet jede selbst direkt hinter seinem init (ohne Rückfrage: der Main hält sie). Bis dahin baute ein
+            // nachgeborener Voxel-Faden jeden Chunk ohne Fluss und See (werk-im-wasser: 0 Häuser an 8 Uferorten, das Bild trocken)
+            for (const [key, e] of this._hydroBestellt || [])
+                if (e.gepostet) worker.postMessage({ type: "hydro", key, origin: e.origin });
             // die Bestellungen der Weltgen, die auf den Faden warteten (der Blob-Weg), reisen hinter seinem init
             if (this._voxelWeltWartet) for (const post of this._hydroWarte || []) post();
             this._hydroWarte = null;
@@ -229,7 +234,8 @@ class AnazhRealm_gelaende_chunks {
             },
         };
         // DIE REGIONEN reisen nie im Stand: jeder Faden rechnet sie selbst an derselben Stelle seiner Reihe (`_hydroBestellen`),
-        // ein später geborener Neben-Faden bekommt sie vom Voxel-Faden (`_nebenFaden`, per Transfer). Der Stand trägt nur die
+        // ein später geborener Voxel-Faden hinter seinem init (`_getVoxelWorker`), ein später geborener Neben-Faden bekommt sie
+        // vom Voxel-Faden (`_nebenFaden`, per Transfer). Der Stand trägt nur die
         // Welt der Regionen (`hydroWelt`): eine neue räumt sie im Faden. Bis zur Karte streaming-k5 klonte der Haupt-Faden hier
         // Heimat und Kacheln (0,23 MB je Kalt-Boot).
         snap.hydroWelt = this._hydroWelt | 0;
