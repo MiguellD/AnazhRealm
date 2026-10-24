@@ -49,8 +49,12 @@ const BASIS = {
     kappe: [[LAB, "s.min[1]>yk? Math.sqrt(Math.max(0,R*R-(s.min[1]-yk)*(s.min[1]-yk))) : R;", "R;"]],
     // die Null-Spur: ohne Speicher und Keller hatte die rechte Spur 0 m
     spur: [[KERN, "||P.keller||levels.length>=3) ? 0.90 : 0;", "||P.keller) ? 0.90 : 0;"]],
-    // der Speicherlauf folgte stur der Kehre — bei drei Geschossen trat er unter der Schräge aus (Kopfraum 1,2 m)
-    austritt: [[KERN, "    if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;", ""]],
+    // der Speicherlauf folgte stur der Kehre und stand auch ohne Stehraum am Austritt — bei drei Geschossen trat er unter der
+    // Schräge aus (Kopfraum 1,2 m)
+    austritt: [
+        [KERN, "    if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;", ""],
+        [KERN, "    if(austritt(dir)<=zBandTop){", "    {"],
+    ],
     // K10: das Dorf stand flach — der Dorf-Boden 0 und jedes Haus auf y = 0, gleich wo die Welt es trug
     flach: [
         [
