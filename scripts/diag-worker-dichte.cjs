@@ -70,7 +70,7 @@ async function boote(page) {
             if (r && typeof r._gameLoopTick === "function") {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {
+                } catch {
                     /* der Boot reift */
                 }
                 const s = r.state;
@@ -1513,7 +1513,7 @@ async function gebaut(page, fehler) {
                     takt: async () => {
                     try {
                         r._gameLoopTick(performance.now());
-                    } catch (_e) {
+                    } catch {
                         /* der Boot reift */
                     }
                     await new Promise((res) => setTimeout(res, 16));
