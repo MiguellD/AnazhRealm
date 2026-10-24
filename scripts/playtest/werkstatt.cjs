@@ -893,7 +893,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Ring 3 – Player-Emotionen → Welt ###
+    // ### Player-Emotionen → Welt ###
     const ring3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player) return null;
@@ -1014,7 +1014,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         check("Ring 3: Save persistiert playerEmotions", ring3Results.savedEmotions);
     }
 
-    // ### Ring 3 V2 — Achsen-Vollabdeckung + Generator-Modulation ###
+    // ### Achsen-Vollabdeckung + Generator-Modulation ###
     const ring3v2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player) return null;
@@ -1146,7 +1146,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         );
     }
 
-    // ### Ring 4 — anazhSymphony V1 ###
+    // ### anazhSymphony ###
     const ring4Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.symphony) return null;
