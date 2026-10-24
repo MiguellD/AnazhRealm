@@ -1449,7 +1449,7 @@ function probe(selbsttest) {
             const takte = await window.__weltStehtNach(() => {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
             });
             // DIE VORAUSSETZUNG BAUEN: seit dem EINEN Karten-Atlas (die Strauch-L2 zeichnet in der globalen
             // Atlas-Gruppe) und dem Waldboden (die Klein-Streu ist Nah-Streu) trägt die Spawn-Welt keine Region-Bundles

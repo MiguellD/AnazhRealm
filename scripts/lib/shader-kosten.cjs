@@ -522,7 +522,7 @@ fn main( @builtin( position ) p : vec4<f32> ) -> Out {
     let wirft = false;
     try {
         kostenUrteil(k, { rauschMax: 0 }, "s");
-    } catch (_e) {
+    } catch {
         wirft = true;
     }
     if (!wirft) fehler.push("ein unbekannter Budget-Schlüssel prüfte still nichts");
@@ -670,7 +670,7 @@ function shaderKostenSeite(o) {
             if (traa && ro.material === traa._resolveMaterial) return "TRAA.resolve";
             try {
                 return r._taeterKlasse(ro.object);
-            } catch (_e) {
+            } catch {
                 return (ro.object && (ro.object.name || ro.object.type)) || "?";
             }
         };
@@ -688,7 +688,7 @@ function shaderKostenSeite(o) {
                 const k = name(ro);
                 e.klassen.set(k, (e.klassen.get(k) || 0) + 1);
                 for (const [n, m] of stoffe) if (m && ro.material === m) e.stoffe.add(n);
-            } catch (_e) {
+            } catch {
                 /* ein Objekt ohne Zustand zählt nicht */
             }
             return ro;

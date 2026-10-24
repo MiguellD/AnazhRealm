@@ -291,7 +291,7 @@ async function probe(argW) {
         for (let i = 0; i < n; i++) {
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             await sleep(ms || 30);
         }
     };
@@ -403,7 +403,7 @@ async function probe(argW) {
         };
         try {
             wer[methode](...args);
-        } catch (_e) {
+        } catch {
             /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
         } finally {
             if (eigen) lieferer[name] = echt;
@@ -935,7 +935,7 @@ function wegHelfer(arg) {
     const takt = setInterval(() => {
         try {
             r._gameLoopTick(performance.now());
-        } catch (_e) {}
+        } catch {}
         if (lauf && lauf.standT == null && neue().length) lauf.standT = performance.now();
     }, 40);
     window.__bauWeg = {

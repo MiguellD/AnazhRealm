@@ -124,7 +124,7 @@ function probe(stoerung) {
         const alt = r[k], eigen = Object.prototype.hasOwnProperty.call(r, k);
         let n = 0;
         r[k] = function (...a) { n++; return alt.apply(this, a); };
-        try { f(); } catch (_e) { /* ein Wurf nach dem Ruf entwertet den Konsum nicht */ } finally { if (eigen) r[k] = alt; else delete r[k]; }
+        try { f(); } catch { /* ein Wurf nach dem Ruf entwertet den Konsum nicht */ } finally { if (eigen) r[k] = alt; else delete r[k]; }
         return n > 0;
     };
     const stoffAlt = st.voxelChunkMaterial;
