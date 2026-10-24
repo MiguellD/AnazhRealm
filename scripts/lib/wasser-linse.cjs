@@ -412,8 +412,7 @@ function wasserKoerper(opts) {
             // (8) DAS LICHT AM WASSER (K9) fährt mit dem echten Renderer: `wasserLicht` (der Himmel lebt auf der GPU, D3)
             // (9) DAS EIS (stoffe.K3): im Winter (Saison 0,875) trägt der gefrorene See denselben Gang und dieselben Tiere am
             // Spiegel; die Mutation (das Feld +10 °C an seiner EINEN Naht `_temperaturAt`) bricht den Spieler ein.
-            const TW = window.__gelaendeCore.TEMPERATUR;
-            const gang = () => Object.assign(gehen(), { temperatur: R(r._temperaturAt(spiegel, TW.wasserTraegTage)) });
+            const gang = () => Object.assign(gehen(), { temperatur: R(r._wasserTemperaturAt(spiegel)) });
             Object.assign(st, { autoSeason: false, seasonPhase: 0.875 });
             aus.eis = {
                 winter: gang(),

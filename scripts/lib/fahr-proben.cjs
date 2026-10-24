@@ -2292,7 +2292,7 @@ async function probeKoerper(opt) {
                     return {
                         kg: K ? K.m : bp.parts.reduce((m, p) => m + r._teilMasse(p), 0),
                         rho: prof.dichte,
-                        anteil: A._eintauchAnteil(prof.dichte),
+                        anteil: r._eintauchAnteil(prof.dichte),
                         schwimmt: prof.floats,
                         tief: +(ort.spiegel - r._fahrBoden(e)(ort.x, ort.z)).toFixed(3),
                         grund: +(ort.spiegel - hh(ort.x, ort.z)).toFixed(3),

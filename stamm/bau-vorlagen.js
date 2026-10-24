@@ -1440,6 +1440,22 @@ class AnazhRealm_bau_vorlagen {
     // eine Flüssigkeit wie Wasser 1 000. Jede Änderung einer Zeile zählt den Stoff-Stand (`AnazhRealm._stoffStand`), an dem
     // die Gedächtnisse der Masse hängen. Die Tag-Achse `dichte` [0,1] bleibt Potenzial der Tag-Sprache (Rolle, Kampf-Stats)
     // und wiegt nichts.
+    //
+    // DIE STOFF-TAFEL IN SI (stoffe.K1): dieselbe Zeile trägt jede Zahl, die eine Wirkung des Stoffs liest — gelesen über den
+    // EINEN Leser `_stoff` (ein eigener Stoff liest die Zeile seines nächsten Verwandten):
+    //   rho      kg/m³ — Masse und Auftrieb (oben); das Wasser IST der Eintrag des Fahr-Kerns (FAHR.wasser.rho), an ihm liegt
+    //            jeder Körper im Wasser (`_eintauchAnteil`)
+    //   mu       Gleitreibung eines Leibs (Sohle, Pfote, Fell) auf dem Stoff — der gestoßene Leib verzögert mit μ·g auf dem
+    //            Stoff unter ihm (`_kreaturStossSchritt` über `_kontaktStoffAt`); null: eine Flüssigkeit trägt keinen Gleitenden
+    //   c        J/(kg·K) — der Brennpunkt erwärmt den Stoff mit P / (ρ·V·c) (`_brennWaerme`), das Wasser sieht die Luft durch
+    //            seine Trägheit ρ·c·d / h (`_wasserTemperaturAt`)
+    //   tZuend   K — an ihr fängt der Stoff im Brennpunkt Feuer; null brennt nie
+    //   tSchmelz K — der Gefrierpunkt des Wassers ist die Phasen-Grenze des Eises (`_eisAt`, die Zeile eis liest dieselbe Zahl);
+    //            null zersetzt sich vor dem Schmelzen
+    //   klang    die Schritt-Spalte des Klang-Kerns (klang:SCHRITT_TIMBRE, ein Zugriff — wer die Zeile ändert, ändert den Schritt)
+    // Tafel-Werte (Engineering ToolBox, CRC Handbook): Granit c 790, T_schmelz 1 500 K; Holz c 1 700, Zündung 573 K; Eisen c 449,
+    // 1 811 K; Bronze 380, 1 223 K; Stahl 490, 1 723 K; Quarz 740, 1 986 K; trockenes Laub, Gras und Kraut c 1 800, Zündung
+    // 523–533 K; trockener Boden c 800; Wasser c 4 186, 273,15 K; Eis ρ 917, c 2 050, μ 0,05.
     _defaultMaterials() {
         const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
         if (!sc || !sc.RHO || !sc.MAT || !sc.MAT.stahl) AnazhRealm._kernPflichtBruch("schmiede:RHO/MAT");
@@ -1470,19 +1486,63 @@ class AnazhRealm_bau_vorlagen {
             kraut: 400,
             essenz: 1000,
             blech: FG.huelleDichte * FG.wasserRho,
+            gras: 350,
+            wasser: im(globalThis.__vehicleCore.FAHR.wasser, "rho"),
+            eis: 917,
         };
-        // Stahl, Blech und Leib sind Stoffe der Körper (die Klinge der Schmiede, die Hülle des Wagens, der Mensch), keine
-        // Bau-Stoffe: die Welt hat keine Quelle, aus der man sie sammelt, die Werkstatt bietet sie nicht an (`bauStoff`).
-        const nurKoerper = ["stahl", "blech", "leib"];
+        // prettier-ignore
+        const SI = {
+            //         μ      c     T_zünd  T_schmelz
+            stein:    [0.7,  790,  null,   1500],
+            holz:     [0.6,  1700, 573,    null],
+            eisen:    [0.5,  449,  null,   1811],
+            bronze:   [0.5,  380,  null,   1223],
+            stahl:    [0.5,  490,  null,   1723],
+            quarz:    [0.6,  740,  null,   1986],
+            leder:    [0.6,  1500, 573,    null],
+            knochen:  [0.5,  1300, null,   null],
+            fleisch:  [0.5,  3500, null,   null],
+            leib:     [0.5,  3500, null,   null],
+            federn:   [0.4,  1500, 573,    null],
+            schuppen: [0.4,  1500, null,   null],
+            glut:     [0.6,  1000, 623,    null],
+            laub:     [0.4,  1800, 523,    null],
+            erde:     [0.6,  800,  null,   null],
+            kraut:    [0.4,  1800, 533,    null],
+            essenz:   [null, 4186, null,   null],
+            blech:    [0.5,  460,  null,   1723],
+            gras:     [0.4,  1800, 533,    null],
+            wasser:   [null, 4186, null,   273.15],
+            eis:      [0.05, 2050, null,   null],
+        };
+        const TB = AnazhRealm._schrittTimbre().material;
+        // Stahl, Blech und Leib sind Stoffe der Körper (die Klinge der Schmiede, die Hülle des Wagens, der Mensch), Gras, Wasser
+        // und Eis Stoffe der Welt, keine Bau-Stoffe: die Welt hat keine Quelle, aus der man sie sammelt, die Werkstatt bietet sie
+        // nicht an (`bauStoff`).
+        const keinBauStoff = ["stahl", "blech", "leib", "gras", "wasser", "eis"];
         const make = (name, label, color, tags) => {
+            const si = SI[name];
+            if (!si || !TB[name])
+                AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": SI-Zeile und klang:SCHRITT_TIMBRE");
             const z = {
                 name,
                 label,
                 builtIn: true,
                 color,
                 tags: { ...AnazhRealm.MATERIAL_TAG_DEFAULTS, ...tags },
+                mu: si[0],
+                c: si[1],
+                tZuend: si[2],
+                tSchmelz: si[3],
             };
-            if (nurKoerper.includes(name)) z.bauStoff = false;
+            Object.defineProperty(z, "klang", {
+                enumerable: true,
+                get: () => TB[name],
+                set: (v) => {
+                    TB[name] = v;
+                },
+            });
+            if (keinBauStoff.includes(name)) z.bauStoff = false;
             const q = typeof RHO[name] === "object" ? RHO[name] : { wert: RHO[name] };
             if (!q.get) {
                 if (!(q.wert > 0)) throw new Error("STOFF-ZEILE ohne Dichte: " + name);
@@ -1668,9 +1728,42 @@ class AnazhRealm_bau_vorlagen {
                 stromleitung: 0.8,
                 resoniert: 0.65,
             }),
+            // DIE STOFFE DER WELT (stoffe.K1): das Gras der Wiese (der Boden, wo die Boden-Karte Wiese zeichnet), das Wasser
+            // der EINEN Wasser-Wahrheit und seine feste Phase, das Eis.
+            make("gras", "Gras", 0x4f8f2f, {
+                härte: 0.05,
+                dichte: 0.08,
+                zähigkeit: 0.3,
+                wärmeleitung: 0.1,
+                brennbar: 0.75,
+                resoniert: 0.3,
+                lebendig: 1.0,
+            }),
+            make("wasser", "Wasser", 0x2a5d7a, {
+                dichte: 0.5,
+                wärmeleitung: 0.6,
+                magieleitung: 0.3,
+                transparent: 0.9,
+                lebendig: 0.2,
+            }),
+            make("eis", "Eis", 0xcfe6f0, {
+                härte: 0.4,
+                dichte: 0.55,
+                zähigkeit: 0.2,
+                wärmeleitung: 0.5,
+                transparent: 0.7,
+                resoniert: 0.5,
+            }),
         ];
         const out = {};
         for (const m of list) out[m.name] = m;
+        Object.defineProperty(out.eis, "tSchmelz", {
+            enumerable: true,
+            get: () => out.wasser.tSchmelz,
+            set: (v) => {
+                out.wasser.tSchmelz = v;
+            },
+        });
         return out;
     }
 

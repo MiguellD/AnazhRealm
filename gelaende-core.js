@@ -1112,7 +1112,9 @@
     // 3 km tragen; 0,11 K/m).
     // DIE TRÄGHEIT (`traegTage`): ein Stoff mit Wärme-Gedächtnis (das Wasser) sieht die Luft durch einen Tiefpass erster
     // Ordnung mit der Zeitkonstante τ in Tagen — jede Schwingung gedämpft um 1/√(1 + (ωτ)²) und verspätet um atan(ωτ),
-    // geschlossen gerechnet (die Welt bleibt eine Funktion): am See ±0,4 °C Tagesgang, 6 h verspätet.
+    // geschlossen gerechnet (die Welt bleibt eine Funktion): am See ±0,4 °C Tagesgang, 6 h verspätet. τ = ρ·c·d / h rechnet der
+    // Wirt aus seiner Stoff-Tafel (ρ, c, stoffe.K1); hier wohnen die Misch-Tiefe d (m), bis zu der die Luft das Wasser wärmt,
+    // und der Wärme-Übergang h (W/(m²·K)) von Luft und Strahlung an der Fläche.
     const TEMPERATUR = Object.freeze({
         sommer: 18,
         winter: -4,
@@ -1120,8 +1122,8 @@
         tagAmp: 5,
         tagGipfel: 0.625,
         jahrTage: 365,
-        gefrierpunkt: 0,
-        wasserTraegTage: 2,
+        mischTiefeM: 1,
+        waermeUebergang: 24,
     });
     function temperatur(L, y, saison, uhr, traegTage) {
         if (!Number.isFinite(y) || !Number.isFinite(saison) || !Number.isFinite(uhr))

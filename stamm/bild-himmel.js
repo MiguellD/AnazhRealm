@@ -2539,11 +2539,11 @@ class AnazhRealm_bild_himmel {
                     0,
                     Math.min(1, this._windAt(cam.position.x, cam.position.z, this._bildZeit).staerke)
                 );
-            // DAS EIS (stoffe.K3): die Höhe, über der das Wasser gefriert — das Feld ist linear in der Höhe (`_temperaturAt`)
+            // DAS EIS (stoffe.K3): die Höhe, über der das Wasser gefriert — das Feld ist linear in der Höhe (`_wasserTemperaturAt`)
             if (uniforms.eisNull) {
-                const TW = globalThis.__gelaendeCore.TEMPERATUR;
-                const t0 = this._temperaturAt(0, TW.wasserTraegTage) - TW.gefrierpunkt;
-                const t100 = this._temperaturAt(100, TW.wasserTraegTage) - TW.gefrierpunkt;
+                const ts = this._stoff("wasser").tSchmelz - 273.15;
+                const t0 = this._wasserTemperaturAt(0) - ts;
+                const t100 = this._wasserTemperaturAt(100) - ts;
                 uniforms.eisNull.value = (100 * t0) / (t0 - t100);
             }
         };
@@ -2812,11 +2812,20 @@ class AnazhRealm_bild_himmel {
     }
 
     // DIE TEMPERATUR AN DER HÖHE y (stoffe.K3) — die EINE Naht zum Feld des Gelände-Kerns (`temperatur`) mit der Saison
-    // (`seasonPhase`) und der Uhr (`timeOfDay`) der Welt; `traegTage` reicht die Wärme-Trägheit eines Stoffs durch (das Wasser:
-    // TEMPERATUR.wasserTraegTage). Leser: das Eis (`_eisAt`) und sein Bild (`_dayNightApplyWaterMaterials`).
+    // (`seasonPhase`) und der Uhr (`timeOfDay`) der Welt; `traegTage` reicht die Wärme-Trägheit eines Stoffs durch.
     _temperaturAt(y, traegTage) {
         const st = this.state;
         return globalThis.__gelaendeCore.temperatur(this._gelaende(), y, st.seasonPhase, st.timeOfDay, traegTage);
+    }
+
+    // DAS WASSER AN DER HÖHE y (stoffe.K1): die Luft durch die Trägheit des Wassers, τ = ρ·c·d / h — ρ und c aus seiner Zeile der
+    // Stoff-Tafel (`_stoff`), d und h aus dem Temperatur-Gesetz (TEMPERATUR.mischTiefeM, waermeUebergang): 1 000 · 4 186 · 1 /
+    // 24 s = 2,02 Tage. Je kleiner c, desto weiter folgt es dem Tag. Leser: das Eis (`_eisAt`) und sein Bild
+    // (`_dayNightApplyWaterMaterials`).
+    _wasserTemperaturAt(y) {
+        const w = this._stoff("wasser");
+        const TW = globalThis.__gelaendeCore.TEMPERATUR;
+        return this._temperaturAt(y, (w.rho * w.c * TW.mischTiefeM) / TW.waermeUebergang / 86400);
     }
 
     // DIE NÄSSE (wetter.K2) — EIN Zustand der Welt aus dem Wetter-Feld (`state.naesse`, 0 trocken … 1 nass): Regen benetzt

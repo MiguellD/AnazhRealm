@@ -495,7 +495,7 @@ class AnazhRealm_koerper_fahrt {
         // ihrer Gestalt (`_teilMasse` / `_teilVolumen`, die EINE Stoff-Zeile; nie der dichteste Stoff — ein Eisen-Nagel
         // versenkt das Holz-Boot nicht). Ein Studio-Fahrzeug liegt nach dem Stoff seiner HÜLLE (blech: der Mix des
         // Fahrzeug-Kerns, wenn die Kabine voll läuft) — nie nach der Substanz des Spenders, dessen Bauplan es klont (D10: der
-        // Supersportler schwamm wie ein Holz-Boot). Es schwimmt, solange das Wasser es trägt (`AnazhRealm._eintauchAnteil` < 1).
+        // Supersportler schwamm wie ein Holz-Boot). Es schwimmt, solange das Wasser es trägt (`_eintauchAnteil` < 1).
         // Vorher die Tag-Achse dichte gegen eine Wasser-Dichte der Tag-Skala (0,55): der Holzkarren mit vier eisernen
         // Speichen-Rädern (0,5155) schwamm, nach seinen kg (1 560 kg/m³) sinkt er.
         let rhoMittel = NaN;
@@ -511,7 +511,7 @@ class AnazhRealm_koerper_fahrt {
         }
         const fzgH = this._fahrzeugGesetzFor(entry);
         if (fzgH && fzgH.drive && fzgH.drive.huelle) rhoMittel = this._stoffRho("blech");
-        const floats = Number.isFinite(rhoMittel) && AnazhRealm._eintauchAnteil(rhoMittel) < 1;
+        const floats = Number.isFinite(rhoMittel) && this._eintauchAnteil(rhoMittel) < 1;
         // Emergenz-Koeffizienten aus dem Gesetzbuch (vehicle-core FAHR.hostEmergent); der Leser
         // _fahrGesetz ist FAIL-CLOSED über alle Felder — ein alter Kern bricht laut, kein Literal-Zwilling.
         const HE = AnazhRealm._fahrGesetz().he;
@@ -690,7 +690,7 @@ class AnazhRealm_koerper_fahrt {
         const p = prof || this._vehicleProfile(entry);
         if (entry._wasserGestalt && entry._wasserGestalt.prof === p) return entry._wasserGestalt;
         const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
-        const rel = p && Number.isFinite(p.dichte) ? AnazhRealm._eintauchAnteil(p.dichte) : Infinity;
+        const rel = p && Number.isFinite(p.dichte) ? this._eintauchAnteil(p.dichte) : Infinity;
         let linie = Infinity;
         if (p && p.floats && rel < 1) {
             const fzg = this._fahrzeugGesetzFor(entry);
@@ -1251,6 +1251,15 @@ class AnazhRealm_koerper_fahrt {
     // Fahr-Schritt (vehicle-core fahrKraefte `e.haft`) liest die EINE Nässe der Welt (`state.naesse`, EIN Schreiber
     // `_naesseTakt`), nie das Wetter-Wort — wird die Nässe festgehalten, greift der Reifen wie trocken (gate:fahr-leben W). Voll
     // nass trägt der Reibkreis `NAESSE.haft` des trockenen, trocken genau 1 (das Lab und der trockene Ritt byte-gleich).
+    // DER AUFTRIEB (Archimedes, physik K1): der Anteil seines Volumens, mit dem ein Körper der Dichte rho (kg/m³) im Wasser
+    // liegt — rho / ρ des Wassers (die Zeile wasser der Stoff-Tafel, `_stoff`, stoffe.K1: sie IST der Eintrag des Fahr-Kerns
+    // FAHR.wasser.rho); ≤ 1 trägt ihn das Wasser, darüber sinkt er. Die EINE Schwelle des Schwimmens und der Bezug jeder
+    // Wasserlinie: das Gefährt (`_vehicleProfile`, `_fahrzeugGestalt`) und der Leib (`_leibGetragen`). Vorher die Dichte des
+    // Wassers auf der Tag-Skala (WASSER_DICHTE_TAG 0,55: holz 0,4 schwamm).
+    _eintauchAnteil(rho) {
+        return rho / this._stoff("wasser").rho;
+    }
+
     _fahrHaft() {
         const n = this.state.naesse;
         return n > 0 ? 1 - (1 - AnazhRealm.NAESSE.haft) * Math.min(1, n) : 1;
@@ -2196,13 +2205,6 @@ class AnazhRealm_koerper_fahrt {
 _stammZonen(AnazhRealm, [AnazhRealm_koerper_fahrt]);
 
 // ===== ATLAS · Koerper/fahrt — Außen-Konstanten =====
-// DER AUFTRIEB (Archimedes, physik K1): der Anteil seines Volumens, mit dem ein Körper der Dichte rho (kg/m³) im Wasser
-// liegt — rho / ρ des Wassers (vehicle FAHR.wasser.rho, `_fahrGesetz().wasserRho`); ≤ 1 trägt ihn das Wasser, darüber sinkt er.
-// Die EINE Schwelle des Schwimmens und der Bezug jeder Wasserlinie: das Gefährt (`_vehicleProfile`, `_fahrzeugGestalt`) und
-// der Leib (`_leibGetragen`). Vorher die Dichte des Wassers auf der Tag-Skala (WASSER_DICHTE_TAG 0,55: holz 0,4 schwamm).
-AnazhRealm._eintauchAnteil = function (rho) {
-    return rho / AnazhRealm._fahrGesetz().wasserRho;
-};
 // Der EINE Fahr-Gesetz-Leser, fail-closed: hostEmergent (Emergenz-Koeffizienten, Klemm-Grenzen,
 // Gier-Folge) + Nick-/Wank-Konstanten (FAHR.pitchGain/rollGain, A_PITCH_MAX/A_LAT_MAX) in EINER
 // Gültigkeits-Wand — ganz oder gar nicht, nie ein Misch-Gesetz. Memo nur im Erfolgs-Fall.

@@ -597,14 +597,15 @@ class AnazhRealm_wasser_hydro {
     }
 
     // DAS EIS (stoffe.K3): die feste Phase der EINEN Wasser-Wahrheit — der Spiegel am Körper (`_koerperWasser` über jedem
-    // Grund), dessen Wasser unter dem Gefrierpunkt liegt (`_temperaturAt` an seiner Höhe, mit der Trägheit des Wassers),
+    // Grund), dessen Wasser (`_wasserTemperaturAt` an seiner Höhe) unter seinem Gefrierpunkt liegt (T_schmelz der Zeile wasser
+    // der Stoff-Tafel, stoffe.K1),
     // trägt als Fläche: der Grund unter `y0` binnen `maxDist` (wie `_fieldSurfaceBelow`; ohne `y0` von oben), sonst null.
     // Kein zweites Wasser: dieselbe Fläche, die das Auge sieht und durch die der Körper taucht, solange sie flüssig ist.
     // Der billige Beweis zuerst (Lehre 25): ist das Wasser an `y0` warm, ist es jede Fläche darunter (die Luft kühlt mit
     // der Höhe). Leser: der Grund jedes Körpers (`_koerperGrund`, `_koerperBodenUnter`) und die Sicht des Stands.
     _eisAt(x, z, y0, maxDist) {
-        const TW = globalThis.__gelaendeCore.TEMPERATUR;
-        const gefroren = (y) => this._temperaturAt(y, TW.wasserTraegTage) < TW.gefrierpunkt;
+        const ts = this._stoff("wasser").tSchmelz - 273.15;
+        const gefroren = (y) => this._wasserTemperaturAt(y) < ts;
         const mitRef = Number.isFinite(y0);
         if (mitRef && !gefroren(y0)) return null;
         const spiegel = this._koerperWasser(x, z, -Infinity);

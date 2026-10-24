@@ -914,11 +914,11 @@ class AnazhRealm_kreatur_verhalten {
     }
 
     // DAS WASSER TRÄGT DEN LEIB (Archimedes, physik K1): ein Leib schwimmt, solange er nicht dichter ist als Wasser
-    // (`AnazhRealm._eintauchAnteil` ≤ 1) — dann hält er seine Schwimm-Linie (der Mensch am Brustkorb, das Tier am
+    // (`_eintauchAnteil` ≤ 1) — dann hält er seine Schwimm-Linie (der Mensch am Brustkorb, das Tier am
     // Schultergelenk); dichter sinkt er und geht auf dem Grund. Leser: der Schritt des Spielers (`_stepCharacter`) und die
     // Wasser-Regel der Tiere (`_kreaturSchwimmt`).
     _leibGetragen(mensch) {
-        return AnazhRealm._eintauchAnteil(this._leibRho(mensch)) <= 1;
+        return this._eintauchAnteil(this._leibRho(mensch)) <= 1;
     }
 
     // DIE MASSE EINES LEIBS (kg, das EINE Impuls-Gesetz AnazhRealm.STOSS): das Volumen seiner Gestalt (die geschlossene
@@ -1245,20 +1245,22 @@ class AnazhRealm_kreatur_verhalten {
     // DER GESTOSSENE LEIB IM SIM-SCHRITT (0710-5, Lehre 13: was einen Körper bewegt, läuft im festen Schritt): je Tier mit
     // getragenem Stoß der Weg dieses Schritts (`_kreaturWeg`, Teil-Schritte gegen die Hülle; dieselbe Regel wie der Deckel des
     // Wagens: nie mehr als eine Stufe in eine Box je Schritt). Hält ein
-    // Hindernis den Leib, stirbt sein Stoß in das Hindernis (unelastisch); danach zehrt die Reibung μ·g·dt. Vorher bewegte
+    // Hindernis den Leib, stirbt sein Stoß in das Hindernis (unelastisch); danach zehrt die Reibung μ·g·dt, μ aus der Zeile
+    // des Stoffs unter ihm (`_kontaktStoffAt`, stoffe.K1: auf Eis gleitet er weit, auf Fels kurz). Vorher bewegte
     // updateCreatures ihn je Frame um _stossV·delta ohne Weg-Prüfung (30 fps und gemischte Frames: 9 von 10 Bären durch eine
     // 0,35-m-Mauer; nach 200 Sim-Schritten stand der Bär 1,39 m, der Wagen 0,06 m anders, je nach Bildrate).
     _kreaturStossSchritt(dt) {
         const wesen = this.state.creatures;
         if (!wesen || !wesen.length || !(dt > 0)) return;
         const ST = AnazhRealm.STOSS;
-        const ab = ST.reibungLeib * Math.abs(this.state.gravity) * dt;
         const leib = this._kreaturStossLeib || (this._kreaturStossLeib = {});
         for (let i = 0; i < wesen.length; i++) {
             const c = wesen[i];
             const ud = c && c.userData;
             const sv = ud && ud._stossV;
             if (!sv) continue;
+            const boden = this._stoff(this._kontaktStoffAt(c.position.x, c.position.z, c.position.y));
+            const ab = boden && boden.mu > 0 ? boden.mu * Math.abs(this.state.gravity) * dt : Infinity;
             const sp = Math.hypot(sv.x, sv.z);
             if (!(sp > Math.max(ab, ST.ruheMs))) {
                 ud._stossV = null;

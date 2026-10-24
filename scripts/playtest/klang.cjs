@@ -444,14 +444,14 @@ async function checkBandSchrittKlang(ctx) {
         o.checks.bSchwimmNull = z().schritte === 0;
     
         // ── (C) MATERIAL WÄHLT TIMBRE — zwei Böden durch die ECHTE Pipe ──
-        const savedTerr = r._terrainMaterialAt;
+        const savedTerr = r._kontaktStoffAt;
         const savedWl = r._koerperWasser;
         r._koerperWasser = () => -Infinity; // trocken (der Boden entscheidet)
-        r._terrainMaterialAt = () => "erde";
+        r._kontaktStoffAt = () => "erde";
         frisch();
         fahre(6, 1.5, 700);
         const pErde = z().letzter;
-        r._terrainMaterialAt = () => "stein";
+        r._kontaktStoffAt = () => "stein";
         frisch();
         fahre(6, 1.5, 800);
         const pStein = z().letzter;
@@ -467,11 +467,11 @@ async function checkBandSchrittKlang(ctx) {
         frisch();
         fahre(6, 1.0, 900);
         const pNass = z().letzter;
-        r._terrainMaterialAt = savedTerr; // restaurieren (Gate-Hook-Lehre)
+        r._kontaktStoffAt = savedTerr; // restaurieren (Gate-Hook-Lehre)
         r._koerperWasser = savedWl;
         o.checks.s2NassSchlaegtFest = !!pNass && pNass.material === "wasser";
-        // Tabelle pur: Fallback + Deckel
-        o.checks.cFallback = r._schrittKlangParams("nebelkuchen", false, 0).material === T.fallback;
+        // die Klang-Spalte der Stoff-Tafel (stoffe.K1) + Deckel
+        o.checks.cFallback = r._schrittKlangParams("holz", false, 0).freq === s.materials.holz.klang.freq;
         o.checks.cDeckel = r._schrittKlangParams("stein", true, 1000).gain <= T.gainDeckel + 1e-12;
     
         // ── (D) LANDUNG: genau 1×, stärker + tiefer; unter der Schwelle nie ──

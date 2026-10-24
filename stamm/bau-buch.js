@@ -1533,27 +1533,22 @@ class AnazhRealm_bau_buch {
         return Math.max(0, Math.min(1, Math.max(sMaxX - sMinX, sMaxZ - sMinZ) / compW));
     }
 
-    // DIE DICHTE EINES STOFFS (kg/m³, physik K1): die EINE Stoff-Zeile (`state.materials`, `_defaultMaterials`). Ein eigener
-    // Stoff (DSL `define_material`, eine geladene Welt) wiegt wie sein nächster Verwandter unter den eingebauten — der
-    // kleinste Abstand über die Tag-Achsen (MATERIAL_TAG_KEYS), an seiner Zeile gemerkt (`rhoVon`) und je Ruf aus dessen
-    // Zeile gelesen. Ein Teil ohne Stoff-Zeile wiegt nichts und meldet sich laut (der EINE Melder). Vorher wog jedes Teil
-    // Volumen × die Tag-Achse dichte [0,1] (Holz 0,4 · Stein 0,85 · Eisen 0,9 je Einheit, unbekannt 0,5): Stein wog 2,1 Holz
-    // statt 3,7, Eisen 2,25 statt 10,9.
-    _stoffRho(name) {
+    // DIE ZEILE EINES STOFFS (stoffe.K1): der EINE Leser der Stoff-Tafel (`state.materials`, `_defaultMaterials`) — jede Wirkung
+    // liest ihre Spalte hier (Dichte, Reibung, Wärme, Zündung, Schmelze, Klang). Ein eigener Stoff (DSL `define_material`, eine
+    // geladene Welt) liest die Zeile seines nächsten Verwandten unter den eingebauten — der kleinste Abstand über die
+    // Tag-Achsen (MATERIAL_TAG_KEYS), an seiner Zeile gemerkt (`verwandt`) und je Ruf aus dessen Zeile gelesen. Ein Stoff ohne
+    // Zeile und ohne Verwandten meldet sich laut (der EINE Melder) und liest null.
+    _stoff(name) {
         const mats = this.state.materials || {};
         const z = mats[name];
-        if (!z) {
-            this._bruchMelden("STOFF-ZEILE fehlt: das Teil aus „" + name + "“ wiegt nichts");
-            return 0;
-        }
-        if (z.builtIn) return z.rho;
-        const von = z.rhoVon && mats[z.rhoVon];
-        if (von && von.builtIn) return von.rho;
+        if (z && z.builtIn) return z;
+        const von = z && z.verwandt && mats[z.verwandt];
+        if (von && von.builtIn) return von;
         const keys = AnazhRealm.MATERIAL_TAG_KEYS;
-        const t = z.tags || {};
+        const t = (z && z.tags) || {};
         let best = null,
             bestD = Infinity;
-        for (const k of Object.keys(mats)) {
+        for (const k of z ? Object.keys(mats) : []) {
             const b = mats[k];
             if (!b || !b.builtIn) continue;
             let d = 0;
@@ -1561,11 +1556,19 @@ class AnazhRealm_bau_buch {
             if (d < bestD) ((bestD = d), (best = b));
         }
         if (!best) {
-            this._bruchMelden("STOFF-ZEILE ohne Verwandten: „" + name + "“ wiegt nichts");
-            return 0;
+            this._bruchMelden("STOFF-ZEILE fehlt: „" + name + "“ hat weder Zeile noch Verwandten in der Stoff-Tafel");
+            return null;
         }
-        z.rhoVon = best.name;
-        return best.rho;
+        z.verwandt = best.name;
+        return best;
+    }
+
+    // DIE DICHTE EINES STOFFS (kg/m³, physik K1): die Spalte rho seiner Zeile. Vorher wog jedes Teil Volumen × die Tag-Achse
+    // dichte [0,1] (Holz 0,4 · Stein 0,85 · Eisen 0,9 je Einheit, unbekannt 0,5): Stein wog 2,1 Holz statt 3,7, Eisen 2,25
+    // statt 10,9. Ein Teil ohne Zeile wiegt nichts.
+    _stoffRho(name) {
+        const z = this._stoff(name);
+        return z ? z.rho : 0;
     }
 
     // DAS VOLUMEN EINES TEILS (m³ in Bauplan-Einheiten): das Volumen seiner GESTALT — das Mesh, das `_makePartGeometry` für
