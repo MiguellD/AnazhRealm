@@ -20,15 +20,11 @@
 //                 ceil(aufholJeSchritt × dt/FIXED_DT) oder bis zur Jitter-Reserve, nie weniger, nie mehr (Täter
 //                 `_lockstepTickPeers`: die Kappe zählt Frames statt Wanduhr). Der Selbsttest im Hauptlauf setzt die alte
 //                 Kappe ein → (d) ROT am Gesetz; der aufgenommene Schub vor dem Fenster (`SCHUB_VOR_DEM_FENSTER`) hält es.
-//   (e) GLEICH FÜR ALLE (feld.K2) Saat + Schreib-Akte = Welt: A gräbt (c) und baut per Chat („bau mir ein haus", der Satz der
-//                 Ziellinie → spawn_studio); B trägt denselben Abdruck — jeder Edit (Art, Radius, Ort), jeder Bau eines Akts
-//                 (Kennung, Art, Ort, Drehung, Größe, Same, Prägung) und der Boden an jedem Edit (`_terrainDensityAt`,
-//                 `_voxelSurfaceY`: die Welt, die daraus wird) —, und nach einem Reload von B (sein Speicher) derselbe. DAS
-//                 NETZ-LOG zählt jede Sendung beider Seiten am Draht (WebSocket und DataChannel `send`): erlaubt sind die Schreib-
-//                 Akte (dsl), der Leib des Spielers, die Sicht der eigenen Wesen und die Leitung (`NETZ_ERLAUBT`); jede andere Art
-//                 ist eine Zustands-Nachricht. Dazu der Leib aus seinen Eingaben: B's Ghost rechnet jeden Schritt von A bit-gleich
-//                 (je seq). Selbsttests: B wendet jede Akt-Nachricht doppelt an und nimmt den Samen des Baus um eins verschoben →
-//                 Edits und Bauten des Abdrucks ROT; A sendet eine Wetter-Nachricht → das Netz-Log ROT.
+//   (e) GLEICH FÜR ALLE (feld.K2) Saat + Schreib-Akte = Welt: A gräbt (c) und baut per Chat („bau mir ein haus" →
+//                 spawn_studio); B trägt denselben `abdruck`, nach einem Reload von B derselbe. Das Netz-Log zählt jede Sendung
+//                 am Draht: jede Art außer `NETZ_ERLAUBT` ist eine Zustands-Nachricht. Der Leib: B's Ghost rechnet jeden Schritt
+//                 von A bit-gleich (je seq). Selbsttests: B wendet jede Akt-Nachricht doppelt an und verschiebt den Samen des
+//                 Baus → Edits und Bauten ROT; A sendet eine Wetter-Nachricht → das Netz-Log ROT.
 // Dazu der Spielpfad: Seite A über den KNOPF (`#p2p-toggle`, zweiter Klick im Aufbau startet kein zweites Init, der
 // Knopf liest die EINE Absicht), Seite B über den BOOT (die gemerkte Absicht aus `p2pPersist`). A läuft nach dem
 // Ladeschirm über die Tastatur (`_stepCharacter`; A bootete zuerst, sein Ladeschirm fällt zuerst), B sieht A an dessen
@@ -475,8 +471,17 @@ function bericht(p) {
         await waitFor(pageB, (id) => window.anazhRealm.state.p2p.peers.has(id), "B kennt A", idA);
         check("B verbunden über den Boot, beide kennen einander", true, `A=${idA} B=${idB}`);
         // am echten Broker: A's Vibe-Pass reist mit dem peerId-Stempel des Servers, B verifiziert die Signatur über ihn
-        const vibeMs = await waitFor(pageB, (id) => !!(window.anazhRealm.state.p2p.peers.get(id) || {}).vibeVerified, "B verifiziert A's Vibe-Pass", idA).catch(() => -1);
-        check("W13 P3: der Broker relayt den Vibe-Pass mit peerId-Stempel, B verifiziert A", vibeMs >= 0, `${vibeMs} ms`);
+        const vibeMs = await waitFor(
+            pageB,
+            (id) => !!(window.anazhRealm.state.p2p.peers.get(id) || {}).vibeVerified,
+            "B verifiziert A's Vibe-Pass",
+            idA
+        ).catch(() => -1);
+        check(
+            "W13 P3: der Broker relayt den Vibe-Pass mit peerId-Stempel, B verifiziert A",
+            vibeMs >= 0,
+            `${vibeMs} ms`
+        );
 
         // A steht: der Ladeschirm ist gefallen (erst dann gehören die Tasten dem Spieler), die Höhe ruhig.
         const ladeMs = await waitFor(pageA, () => !window.anazhRealm._ladeschirmSteht(), "A: Ladeschirm weg");
@@ -765,13 +770,30 @@ function bericht(p) {
         const bautenVon = (p) =>
             p.evaluate(() => (window.anazhRealm.state.architectures || []).map((e) => String(e.id)));
         // die drei Akte, bis B den Abdruck von A trägt (höchstens 8 s), dann der Nachlauf (eine zweite Anwendung landet danach)
+        const werke = () => (window.anazhRealm.state.architectures || []).filter((e) => e.werk).length;
         const akte = async () => {
-            const [vorA, nA] = [await bautenVon(pageA), (await pageA.evaluate(abdruck, [])).edits.length];
+            const [vorA, nA, wB] = [
+                await bautenVon(pageA),
+                (await pageA.evaluate(abdruck, [])).edits.length,
+                await pageB.evaluate(werke),
+            ];
             for (const satz of ["voxel carve", "voxel fill", "bau mir ein haus"]) await sage(satz);
             const a = (await bautenVon(pageA)).filter((id) => !vorA.includes(id));
-            const zug = async () =>
-                [await pageA.evaluate(abdruck, a), await pageB.evaluate(abdruck, a)].map((x) => JSON.stringify(x));
-            for (const t = Date.now(); Date.now() - t < 8000 && new Set(await zug()).size > 1;) await sleep(200);
+            // B trägt so viele Edits wie A und je Bau von A ein neues Werk (das Ereignis, nie die Uhr)
+            const n = (await pageA.evaluate(abdruck, [])).edits.length;
+            await waitFor(
+                pageB,
+                (n, w) => {
+                    const st = window.anazhRealm.state;
+                    return (
+                        (st.worldMeta.voxelEdits || []).length >= n &&
+                        st.architectures.filter((e) => e.werk).length >= w
+                    );
+                },
+                "B trägt die Akte von A",
+                n,
+                wB + a.length
+            ).catch(() => {});
             await sleep(GRABEN_NACHLAUF_MS);
             const [A, B] = [await pageA.evaluate(abdruck, a), await pageB.evaluate(abdruck, a)];
             return {
@@ -824,22 +846,22 @@ function bericht(p) {
             );
         }
 
-        // (e) der Reload von B: sein Speicher (saveState, derselbe Schreiber wie die Sicherung), dann die Seite neu — sie lädt, bis
-        // ihre Welt steht und den Bau trägt (eine Seite, die beim Laden die Welt betritt, lädt sich selbst neu: jede Frage verträgt es)
+        // (e) der Reload von B: sein Speicher (saveState, derselbe Schreiber wie die Sicherung), dann die Seite neu, bis ihre Welt
+        // steht und den Bau trägt
         const netzB = await pageB.evaluate(() => Object.assign({}, window.__netz));
         await pageB.evaluate(() => window.anazhRealm.saveState());
         await pageB.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
-        let nachReload = null;
-        for (const t = Date.now(); Date.now() - t < 180000 && !nachReload; await sleep(500))
-            nachReload = await pageB
-                .evaluate((ids) => {
-                    const r = window.anazhRealm;
-                    const steht = r && r.state.playerMesh && !r._ladeSperre && r.state.p2p.connected;
-                    return steht && ids.every((id) => (r.state.architectures || []).some((e) => String(e.id) === id))
-                        ? true
-                        : null;
-                }, g.a)
-                .catch(() => null);
+        const steht = (ids) => {
+            const r = window.anazhRealm;
+            const da = r && r.state.playerMesh && !r._ladeSperre && r.state.p2p.connected;
+            return !!da && ids.every((id) => (r.state.architectures || []).some((e) => String(e.id) === id));
+        };
+        let nachReload = false; // reißt der Rahmen (die Seite lädt sich beim Betreten der Welt selbst neu), fragt sie erneut
+        for (let i = 0; i < 3 && !nachReload; i++)
+            nachReload = await waitFor(pageB, steht, "B nach dem Reload mit dem Bau", g.a).then(
+                () => true,
+                () => false
+            );
         const R = nachReload ? await pageB.evaluate(abdruck, g.a) : null;
         roh.gleich.reload = R;
         check(

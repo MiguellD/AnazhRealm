@@ -158,8 +158,7 @@ function simPhase(frames, spielS) {
 }
 
 const simJe = (t) => t.je.map(([m, k]) => `${m} ${k}`).join(", ");
-// in Ruhe arbeitet keine Sim, und ein Akt (ein Wesen träufelt Leben) kostet nur die Zellen, die er schreibt — höchstens zwei
-// Einheiten je geschriebener Zelle (`_feldTod`, feld.K3#2: was niemand berührt, kostet nichts, auch der Blick des Spielers nicht)
+// in Ruhe arbeitet keine Sim, ein Akt (ein Wesen träufelt Leben) höchstens zwei Einheiten je geschriebener Zelle (feld.K3#2)
 function simRuheZeilen(R, wo) {
     return Object.keys(SIMS)
         .filter((n) => !R.sims[n] || R.sims[n].summe > 0)
@@ -426,7 +425,7 @@ function standLauf(k) {
 // DAS URTEIL DER SIMS (feld.K3): in 60 s Ruhe nach einer Tat (Ernte, Leben) arbeitet keine Sim und kein Akt; ihr Ereignis weckt
 // jede (sonst STUMPF), danach schläft sie; der Wasser-Automat geht nach einem Wecken am Fixpunkt genau EINEN Takt; das Feld und
 // der Brand arbeiten nur in berührten Zellen.
-const BRAND_JE = 64; // Einheiten je brennende Zelle und Schritt: ihr Gang, vier Würfel, die Nachbarn, die fangen, ihre Asche
+const BRAND_JE = 64; // je brennende Zelle und Schritt: ihr Gang, vier Würfel, die fangenden Nachbarn, die Asche
 function simUrteil(b, v) {
     const R = b.simRuhe;
     if (!R || !R.frames) v.push("LEER: keine Sim-Ruhe gemessen");
@@ -451,9 +450,8 @@ function simUrteil(b, v) {
         }
     }
     if (W.nachwuchs && !W.nachwuchs.nachgewachsen) v.push("NACHWUCHS: die Ernte wuchs zu ihrer Zeit nicht nach");
-    // (feld.K3#2) das Feld: vier Wellen Taten, vor jeder ist die vorige tot (die Spielzeit springt) — danach trägt die Karte keine
-    // Tote (die Tat räumte die fälligen Eimer), die Räumung ging nie über eine ganze Karte (`·lifeField` …: jede Zelle, auch die
-    // lebende, die keine Tat berührt) und kostete höchstens zwei Einheiten je geschriebener Zelle
+    // (feld.K3#2) das Feld: vier Wellen Taten, die vorige tot — danach keine Tote in der Karte, die Räumung ging nie über eine
+    // ganze Karte (`·lifeField` …) und kostete höchstens zwei Einheiten je geschriebener Zelle
     const F = W.feld;
     if (!F || !F.wellen || F.wellen.length < 4 || !(F.geschrieben > 0)) v.push("LEER: die Feld-Probe schrieb keine vier Wellen");
     else {
@@ -466,8 +464,8 @@ function simUrteil(b, v) {
             v.push(`FELD-BESUCH: die Wellen kosteten ${arbeit} Einheiten für ${F.geschrieben} geschriebene Zellen` +
                 (karte.length ? `, die Räumung ging über die ganze Karte (${karte.map((x) => x.join(" ")).join(", ")})` : "") + " — sie besucht Unberührte");
     }
-    // (feld.K3#2) der Brand: gezündet an der Mess-Wiese, je Bild ein Schritt — er arbeitet nur in brennenden Zellen (je Zelle und
-    // Schritt höchstens BRAND_JE Einheiten), erlischt von selbst, hinterlässt Asche, leuchtet und glüht im Feld und schläft danach
+    // (feld.K3#2) der Brand arbeitet nur in brennenden Zellen (≤ BRAND_JE je Zelle und Schritt), erlischt, hinterlässt Asche,
+    // leuchtet, glüht und schläft danach
     const Z = W.brand;
     if (!Z || !Z.start) v.push("LEER: an der Mess-Wiese fing kein Brand");
     else {
