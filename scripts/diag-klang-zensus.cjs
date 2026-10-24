@@ -1245,22 +1245,44 @@ function taktSeite(m, echt, namen) {
 async function taktPhase(page, phase, n, pendeln, sek = 0) {
     const uhr = () => page.evaluate(() => window.__klangTakt.uhr());
     const t0 = await page.evaluate((p) => (window.__klangTakt.start(p), window.__klangTakt.uhr()), phase);
+    let risse = 0;
     for (let i = 0; i < n || (await uhr()) - t0 < sek; i++) {
         const taste = pendeln && Math.floor(i / 2) % 2 ? "s" : "w";
-        await halteBis(page, { taste, ziel: (b) => window.__klangTakt.bilder.length >= b, args: [60 * (i + 1)] });
+        const h = await halteBis(page, {
+            taste,
+            ziel: (b) => window.__klangTakt.bilder.length >= b,
+            args: [60 * (i + 1)],
+        });
+        if (!h.erreicht) risse++;
         if (!pendeln) await page.keyboard.press("a", { delay: 70 });
     }
     const z = await page.evaluate((soll) => window.__klangTakt.urteil(soll), TAKT_SOLL_MS);
+    z.risse = risse;
     console.log(
         `── ${phase}: Klang-ms je Bild p95 ${z.p95} · max ${z.max} (${z.bilder} Bilder, ${z.weg} m) · ${z.schreiben} Parameter-Schreibungen je Bild · über dem Soll trägt ${z.traeger.join(" · ") || "—"}`
     );
     return z;
 }
+// bereit: erst weicht der Ladeschirm (sein Fänger nimmt jede Taste, und der Druck der Linse wiederholt sich nie — W vor dem
+// Weichen hielt 180 s ins Leere), dann W gehalten, bis der Spieler 3 m geht. → { frei, geht, s }
+async function bereit(page, frist = 180000) {
+    const t0 = Date.now();
+    const frei = await page
+        .waitForFunction(() => !window.anazhRealm._ladeschirmSteht(), { timeout: frist, polling: 100 })
+        .then(
+            () => true,
+            () => false
+        );
+    const geht = frei && (await halteBis(page, { taste: "w", ziel: () => window.__klangTakt.weg >= 3 })).erreicht;
+    return { frei, geht, s: +((Date.now() - t0) / 1000).toFixed(1) };
+}
 async function takt(page, erg) {
     erg.seite = await page.evaluate(taktSeite, MESS, ECHT, TAKT_TEILE);
     console.log("Klang-Takt:", JSON.stringify(erg.seite));
-    // bereit: W gehalten, bis der Spieler geht (die Ankunft gibt die Kontrolle frei; im Fenster kalt bis 80 s)
-    await halteBis(page, { taste: "w", ziel: () => window.__klangTakt.weg >= 3, frist: 180000 });
+    erg.bereit = await bereit(page);
+    console.log(
+        `── bereit: Ladeschirm ${erg.bereit.frei ? "weicht" : "steht"} · Spieler geht ${erg.bereit.geht ? "ja" : "nein"} nach ${erg.bereit.s} s`
+    );
     await taktPhase(page, "ein", 5);
     const audio = () => page.evaluate(() => window.__klangTakt.audio());
     const a = await audio();
@@ -1300,7 +1322,12 @@ async function takt(page, erg) {
     const rot = (erg.rot = []);
     if (!aus) rot.push("T aussetzer: ungezählt — kein playbackStats am Kontext, oder er wechselte");
     else if (aus.n) rot.push(`T aussetzer: ${aus.n} in ${aus.s} s Wiedergabe`);
+    if (!erg.bereit.geht)
+        rot.push(
+            `T bereit: ${erg.bereit.frei ? "W ging keine 3 m" : "der Ladeschirm wich nicht"} in ${erg.bereit.s} s`
+        );
     for (const [name, z] of Object.entries(ph)) {
+        if (z.risse) rot.push(`T ${name}: ${z.risse} Schritte ohne ihre 60 Bilder in 30 s — das Spiel stand`);
         if (!(z.bilder >= 300 && z.weg >= 10))
             rot.push(`T ${name}: ${z.bilder} Bilder, ${z.weg} m — keine Bewegung gemessen`);
         else if (!(z.p95 <= TAKT_SOLL_MS))
@@ -1317,9 +1344,12 @@ async function takt(page, erg) {
         erg.selbst = await taktPhase(page, "selbst", 10);
         const s1 = await audio();
         erg.selbst.aussetzer = s0 && s1 ? s1.n - s0.n : null;
-        feuert = erg.selbst.p95 > TAKT_SOLL_MS && erg.selbst.aussetzer > 0;
+        await page.evaluate(() => (window.anazhRealm._ladeschirmSteht = () => true));
+        erg.selbst.bereit = await bereit(page, 2000);
+        await page.evaluate(() => delete window.anazhRealm._ladeschirmSteht);
+        feuert = erg.selbst.p95 > TAKT_SOLL_MS && erg.selbst.aussetzer > 0 && !erg.selbst.bereit.geht;
         console.log(
-            `${feuert ? "✅" : "❌"} SELBSTTEST: der Takt, der je Bild 300 Rufer fragt, ist ${erg.selbst.p95 > TAKT_SOLL_MS ? "ROT" : "unbemerkt"} (p95 ${erg.selbst.p95} ms) · die stotternde Stimme zählt ${erg.selbst.aussetzer} Aussetzer`
+            `${feuert ? "✅" : "❌"} SELBSTTEST: der Takt, der je Bild 300 Rufer fragt, ist ${erg.selbst.p95 > TAKT_SOLL_MS ? "ROT" : "unbemerkt"} (p95 ${erg.selbst.p95} ms) · die stotternde Stimme zählt ${erg.selbst.aussetzer} Aussetzer · der Ladeschirm, der nie weicht, ist ${erg.selbst.bereit.geht ? "unbemerkt" : "ROT"}`
         );
     }
     for (const t of rot) console.log("   " + t);
