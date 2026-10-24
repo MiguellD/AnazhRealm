@@ -738,14 +738,6 @@ jobs:
               # schlafen nach ihrem Ereignis wieder. --selftest zuerst.
               run: npm run gate:stand-takt
 
-            - name: Terrain-Portal bootet im Display-Modus (P2 — die Shell liest foundry-core-Globals)
-              if: matrix.gruppe == 16
-              # P2 Kern-Split: der Studio-Generator lebt jetzt in foundry-core.js (verschoben aus
-              # phytogenesis.js), die Shell liest seine Top-Level-Globals. Beweist, dass das Portal im vollen
-              # Display-Modus (Renderer+Welt+UI, nicht ?asset-foundry) ohne page-error bootet — ein
-              # übersehener Bezug flöge hier als ReferenceError auf (der asset-foundry-Modus kehrt vorher zurück).
-              run: npm run gate:portal-boot
-
             - name: Foundry-Deadlock geheilt (P4 — die Nähe konvergiert unter Last)
               if: matrix.gruppe == 12
               # P4: der overBudget?0-bakeBudget liess die nahen LOD0/1-Bäume unter Last nie backen (=die kahle
@@ -1150,18 +1142,21 @@ jobs:
             - name: Portal-Konformanz (W1 c/e — die Heimat richtet jede Welt — Handshake endlich, Quelle geprüft, DSL wirkt, Esc heim)
               if: matrix.gruppe == 16
               # Bootet die echte Heimat (Null-Renderer, ohne Foundry) und betritt alle 13 Welten über den echten Weg
-              # (Bibliothek → obtainPortalForWorld → _buildPortalOverlay; die übersetzte über acceptTranslatedManifest +
+              # (die zehn des Genesis-Rings durch ihr Tor: W durch die Apertur, am Teile-Tor E; die übrigen über die
+              # Bibliothek → obtainPortalForWorld → _buildPortalOverlay; die übersetzte über acceptTranslatedManifest +
               # buildTranslatedWorld mit gestubbtem LLM). K1 ready (das Manifest-Soll steht in WELTEN: skeleton, fluid und
               # terrain liefern ihr manifest.json und stehen in der Heimat auf „nativ" mit Label und jedem Wort; fehlt es,
               # ist K1 rot beim Namen, ebenso ein Manifest ohne Soll-Zeile) · K2 der Handshake endet (höchstens 3 enter;
               # vorher 106 bis 202 Runden Ping-Pong je Studio) · K3 eine fremde Seite steuert keine Welt · K4 die chain-Form wirkt sichtbar (Journal
               # der Heimat bzw. Zustand der Welt-UI; dazu die Probefahrt der Garage und das bewegte Bild der Strom-Welt) ·
               # K5 Esc bringt heim · K6 keine Seiten-Fehler · K7 die Welt zeigt das Mitgebrachte (skeleton: Seele, eigenes
-              # Material als Text mit gesäuberter Farbe, Werkzeug, Vibe-Pass; fluid/terrain: Vibe-Pass am Namen).
+              # Material als Text mit gesäuberter Farbe, Werkzeug, Vibe-Pass; fluid/terrain: Vibe-Pass am Namen) · K8 was der
+              # Spieler trägt (Leib, Inventar, Gehaltenes) steht vor dem Tor, drüben in der Hülle und daheim byte-gleich.
               # Ratschen (spec/vertraege/ratsche.json): DSL-Einzelwort stumm 7 → Soll 0 · ready-Echo 7 → 0.
               # --selftest zuerst: begegnung ohne Quellen-Prüfung, die Heimat beantwortet jede ready, skeleton mit
               # Element-Adapter und Markup-Panel, skeleton und terrain ohne Manifest (der Server antwortet 404), fluid
-              # meldet ihr Manifest ohne „flut", die garage trägt eins ohne Soll-Zeile → jede Wand rot und beim Namen.
+              # meldet ihr Manifest ohne „flut", die garage trägt eins ohne Soll-Zeile, die Hülle lässt das Gehaltene
+              # fallen → jede Wand rot und beim Namen.
               run: npm run gate:portal-konformanz
 
             - name: Regler wirkt Teil 1 (W1 d — jede PARAMS-Zeile bewegt den Bau am Kanal der Werkstatt, tote Regler beim Namen)
