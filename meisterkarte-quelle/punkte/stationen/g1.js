@@ -828,7 +828,8 @@ module.exports = [
     // ── stoffe.K3 ── das Eis, die feste Phase der EINEN Wasser-Wahrheit (gate:wasser-leben E im Block koerper, Null-Renderer:
     // Mechanik am Spieler-Weg, R3): im Winter (Saison 0,875, das Temperatur-Feld des Gelände-Kerns am Spiegel unter 0 °C)
     // geht der Spieler mit W über den See der Mess-Wiese und steht auf dem Eis, Wolf, Fuchs und Bär stehen auf ihm; das Feld
-    // +10 °C an seiner EINEN Naht (`_temperaturAt`) bricht ihn ein — er schwimmt wie im Sommer.
+    // +10 °C an seiner EINEN Naht (`_temperaturAt`) bricht ihn ein — er schwimmt wie im Sommer. Am main 6f8a2c66 ROT (keine
+    // Eis-Probe; im Winter schwamm der Spieler, die Füße bis 1,227 m unter dem Spiegel), am Zweig stoffe-k3-phasen GRÜN.
     {
         kriterium: "stoffe.K3",
         staffel: 1,
