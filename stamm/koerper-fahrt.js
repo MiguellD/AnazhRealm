@@ -1801,6 +1801,7 @@ class AnazhRealm_koerper_fahrt {
         this._tickBalancingAffordances(dt);
         this._tickLiftingAffordances();
         this._tickPortalAffordance();
+        this._tickWerkGesetz(dt);
     }
 
     // Bauplan mit role="soul" als Seele anwenden: parts → bodyParts in state.customSouls (eindeutiger

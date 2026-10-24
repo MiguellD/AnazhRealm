@@ -26,7 +26,7 @@ async function checkBandV1774UseByRole(ctx) {
         // sauberer Start, damit der „noch nicht verkörpert"-Listen-Test ehrlich ist.
         if (r.state.customSouls) delete r.state.customSouls["bp_koerper_human"];
 
-        // AUSLÖSCHUNGS-WELLE — geraet_spitzhacke fiel; Test-Blueprint aus der Werkzeug-Substanz
+        // geraet_spitzhacke fiel; Test-Blueprint aus der Werkzeug-Substanz
         // (KIND_SUBSTANCE, deterministisch, am Ende geräumt). Das Label trägt „Spitzhacke",
         // damit die Rezeptbuch-Sichtbarkeits-Probe (5) dieselbe Wahrheit liest.
         const KS74 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
@@ -330,9 +330,8 @@ async function checkBandV1777SteigerungVisible(ctx) {
     check("die Meister-Esse littert den Worldgen NICHT (built-in ohne instanced)", res.noLitter);
 }
 
-// der Schöpfer-Browser-Befund: die WERTE eines Werks müssen sich dynamisch mit Material × Form
-// ändern (fähigkeiten steigen+sinken), sichtbar im Readout; die Werkstatt erscheint im Werkzeuge-Feld
-// sobald platziert+nah; das Undo/Redo unter den Parts. Drei Befunde, eine Welle.
+// die WERTE eines Werks folgen Material × Form (fähigkeiten steigen+sinken), sichtbar im Readout; die Werkstatt erscheint
+// im Werkzeuge-Feld sobald platziert+nah; das Undo/Redo unter den Parts.
 async function checkBandV1789WorkshopReadout(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -483,9 +482,8 @@ async function checkBandV1790Recalibration(ctx) {
         out.materialDramatic = dHolz > 0 && dEisen > dHolz * 1.8;
         out.materialVals = `eisen=${dEisen.toFixed(1)} holz=${dHolz.toFixed(1)} (${(dEisen / Math.max(0.01, dHolz)).toFixed(2)}×)`;
 
-        // (3) FACETTE 3 — V18.311 (Gesetz #0, Schöpfer „Spieler runter"): der Equip-Fold ist jetzt EINE
-        // kanonische Quelle (`_foldEquippedStatTags`), geteilt von Spieler + Kreatur; der V17.90-Größen-Faktor
-        // ist VORERST raus → eine 3× größere Klinge faltet GLEICH wie eine 1× (size-neutral, Readout UND Kampf).
+        // (3) der Equip-Fold ist EINE Quelle (`_foldEquippedStatTags`, Spieler + Kreatur), size-neutral: eine 3× größere
+        // Klinge faltet GLEICH wie eine 1× (Readout UND Kampf).
         const ab1 = r._blueprintAbilityStats(blade("eisen", 1));
         const ab3 = r._blueprintAbilityStats(blade("eisen", 3));
         out.sizeNeutralReadout = Math.abs(dmg(ab3) - dmg(ab1)) <= 0.02 * dmg(ab1) + 0.1;
@@ -513,14 +511,14 @@ async function checkBandV1790Recalibration(ctx) {
         delete blu._rcheavy;
 
         // (4) FACETTE 4 — ROLLE scharf: Pickel→Werkzeug (Holzstiel), Schwert→Waffe (Metall-Klinge).
-        // AUSLÖSCHUNGS-WELLE — die Blueprints fielen; die Substanz-Zeilen (KIND_SUBSTANCE) tragen die Probe.
+        // die Blueprints fielen; die Substanz-Zeilen (KIND_SUBSTANCE) tragen die Probe.
         const KS90 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
         out.spitzhackeTool = r.computeBlueprintRole({ parts: KS90.geraet_spitzhacke.parts }) === "tool";
         out.schwertWeapon = r.computeBlueprintRole({ parts: KS90.geraet_schwert.parts }) === "weapon";
         // ein lebendiger Körper bleibt soul, ein dichter Klotz bleibt architecture (kein Regress durch livingBody)
         out.bladeWeapon = r.computeBlueprintRole(blade("eisen")) === "weapon";
 
-        // (5) UI-Befund (a) — die platzierte Drehbank erscheint in 32 m im Prozess-Menü (frieden/pfad).
+        // (5) die platzierte Drehbank erscheint in 32 m im Prozess-Menü (frieden/pfad).
         r.setGameMode("frieden");
         r.state.architectures = (r.state.architectures || []).filter((a) => a && a.type !== "drehbank");
         const pm = r.state.playerMesh && r.state.playerMesh.position;
@@ -538,7 +536,7 @@ async function checkBandV1790Recalibration(ctx) {
         out.drehbankFarHidden = !far.some((p) => p.stationName === "drehbank");
         out.proximityM = r.constructor.WORKSHOP_PROXIMITY_M;
 
-        // (6) UI-Befund (b) — Undo/Redo wohnen jetzt in der Top-Leiste als .workshop-action-btn; ihr
+        // (6) Undo/Redo wohnen in der Top-Leiste als .workshop-action-btn; ihr
         // disabled-Zustand ist gestylt (ausgegraut), die Station-Karten der Palette sind abgehoben.
         let cssHistory = false;
         for (const sheet of document.styleSheets) {
@@ -716,7 +714,7 @@ async function checkBandWelle6Keybindings(ctx) {
         out.symphonyReady = !!ctxOk;
         if (!ctxOk) return out;
 
-        // kristall_geode: resoniert ≈ 2.7 (Built-in, Welle 6.G P2)
+        // kristall_geode: resoniert ≈ 2.7 (Built-in)
         const geodeTags = r.computeCompoundTags(r.state.blueprints.kristall_geode);
         out.geodeIsResonant = (geodeTags.resoniert || 0) >= thr.resonance_mild;
         // stein_block: resoniert ≈ 0
@@ -1196,7 +1194,7 @@ async function checkBandWelle6XAudit(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Welle 6.X.1 — Audit-Fixes ###
+    // ### Audit-Fixes ###
     // A1 Sprung feld-nativ (handleJump → playerVel) · A2 confirmBuild blockt instabiles Phantom im pfad ·
     // A3 Umwidmen nimmt emergente Rollen auf + Stat-Panel zeigt Equipped · A4 Avatar-Aura ist gefallen.
     const wave6x1Results = await safeEvaluate(page, () => {
@@ -1246,7 +1244,7 @@ async function checkBandWelle6XAudit(ctx) {
                 document.getElementById("workshop-action-zone") || document.getElementById("workshop-stats-panel");
             const rowA3 = zoneA3 && zoneA3.querySelector(".workshop-umwidmen-row");
             out._a3aLabelCount = rowA3 ? rowA3.querySelectorAll(".workshop-umwidmen-btn").length : 0;
-            // W-C(f)/V18.169 — die Zeile schrumpfte aufs INTENT-TRIO (Portal → ·
+            // die Zeile schrumpfte aufs INTENT-TRIO (Portal → ·
             // ⚒ Station · ✨ Emergent): Rüstung/Konsumabel fixt der PROZESS.
             out.markListShowsEmergentRole =
                 !!rowA3 && out._a3aLabelCount === 3 && /⚒ Station/.test(rowA3.textContent || "");
@@ -1321,7 +1319,7 @@ async function checkBandWelle6XAudit(ctx) {
         check("Welle 6.X.1: Audit-Fix-Tests laufen", false, wave6x1Results ? wave6x1Results.error : "no result");
     }
 
-    // ### Welle 6.X.2 — UI-Politur ###
+    // ### UI-Politur ###
     // B1 Logbuch-Toggle (default versteckt) · B2 keine Welt-Bauwerke-Buttons im world-drawer ·
     // B4 Scrollrad zyklt durch die Hotbar-Slots.
     const wave6x2Results = await safeEvaluate(page, () => {
@@ -1401,7 +1399,7 @@ async function checkBandWelle6XAudit(ctx) {
         check("Welle 6.X.2: UI-Politur-Tests laufen", false, wave6x2Results ? wave6x2Results.error : "no result");
     }
 
-    // ### Welle 6.X.3 — Vision-Quick-Wins ###
+    // ### Vision-Quick-Wins ###
     // C1 at_player_forward(dist) DSL-Resolver + Chat „baue X hier"
     // C3 Soul-bound Sprung-Steilheits-Toleranz
     const wave6x3Results = await safeEvaluate(page, () => {
@@ -1411,7 +1409,7 @@ async function checkBandWelle6XAudit(ctx) {
         // --- C1: at_player_forward DSL-Resolver
         if (r.dslPositions.at_player_forward) {
             // Spieler bei (10, 50, 20), yaw=0 → der Blick geht nach +Z (die EINE Vorwärts-Richtung _blickVorn,
-            // dieselbe wie Kamera und Phantom — Welle L, Befund V-D4: die alte Probe schrieb „hinter dir" fest).
+            // dieselbe wie Kamera und Phantom).
             // at_player_forward(8) liefert (10, 50, 28).
             // BÜHNE: die Vorwärts-Richtung (at_player_forward rechnet relativ zum Spieler)
             r.state.playerMesh.position.set(10, 50, 20);
@@ -1565,7 +1563,7 @@ async function checkBandWelle6XAudit(ctx) {
         check("Welle 6.X.3: Vision-Quick-Win-Tests laufen", false, wave6x3Results ? wave6x3Results.error : "no result");
     }
 
-    // ### Welle 6.X.4 — Identity ###
+    // ### Identity ###
     // F1 Begleiter-Name + Avatar-Name (LLM-Persona)
     const wave6x45Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
@@ -1893,7 +1891,7 @@ async function checkBandWGGelenke(ctx) {
         out.teachScharnier = /Scharnier.*Längsachse/.test(r._jointTeachLine("scharnier", "z") || "");
         out.teachNull = r._jointTeachLine("nonsense", "x") === null;
         // (d) PROGRESSIVE DISCLOSURE: die Typen NACH Substanz-Stärke geordnet.
-        // AUSLÖSCHUNGS-WELLE — der Wagen lebt als Substanz-Zeile (KIND_SUBSTANCE).
+        // der Wagen lebt als Substanz-Zeile (KIND_SUBSTANCE).
         const KSwg = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
         const wagen = KSwg.fahrzeug_wagen
             ? {
