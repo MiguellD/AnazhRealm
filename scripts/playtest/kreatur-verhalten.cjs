@@ -131,50 +131,50 @@ async function checkBandWelle6HCreatures(ctx) {
     });
 
     if (wave6hResults && !wave6hResults.error) {
-        check("Welle 6.H Phase 1: CREATURE_TASKS frozen mit ≥3 Aufträgen", wave6hResults.hasTasks);
-        check("Welle 6.H Phase 1: CREATURE_TASK_AURA_HUE map (wander=null)", wave6hResults.hasAuraHueMap);
+        check("CREATURE_TASKS frozen mit ≥3 Aufträgen", wave6hResults.hasTasks);
+        check("CREATURE_TASK_AURA_HUE map (wander=null)", wave6hResults.hasAuraHueMap);
         check(
-            "Welle 6.H Phase 1: Default-Task initial-gespawnter Kreaturen ist wander",
+            "Default-Task initial-gespawnter Kreaturen ist wander",
             wave6hResults.initialTaskWander
         );
-        check("Welle 6.H Phase 1: Default-Task wander hat KEINE Aura", wave6hResults.initialNoAura);
+        check("Default-Task wander hat KEINE Aura", wave6hResults.initialNoAura);
         check(
-            "Welle 6.H Phase 1: assignCreatureTask(follow_player) setzt Task + erzeugt Aura",
+            "assignCreatureTask(follow_player) setzt Task + erzeugt Aura",
             wave6hResults.assignFollowOk && wave6hResults.followCreatesAura
         );
-        check("Welle 6.H Phase 1: Aura für follow_player ist grünlich", wave6hResults.followAuraGreenish);
-        check("Welle 6.H Phase 1: Wechsel auf wait ändert Aura-Farbe", wave6hResults.waitChangesAuraColor);
+        check("Aura für follow_player ist grünlich", wave6hResults.followAuraGreenish);
+        check("Wechsel auf wait ändert Aura-Farbe", wave6hResults.waitChangesAuraColor);
         check(
-            "Welle 6.H Phase 1: Rückkehr zu wander entfernt Aura (Lifecycle-Sauberkeit)",
+            "Rückkehr zu wander entfernt Aura (Lifecycle-Sauberkeit)",
             wave6hResults.wanderRemovesAura
         );
-        check("Welle 6.H Phase 1: assignCreatureTask lehnt unbekannten Task ab", wave6hResults.unknownRejected);
-        check("Welle 6.H Phase 1: wait-Task liefert direction (0,0,0)", wave6hResults.waitGivesZeroDir);
+        check("assignCreatureTask lehnt unbekannten Task ab", wave6hResults.unknownRejected);
+        check("wait-Task liefert direction (0,0,0)", wave6hResults.waitGivesZeroDir);
         check(
-            "Welle 6.H Phase 1: wander-Direction liefert null (Fallback auf Emotion-Logik)",
+            "wander-Direction liefert null (Fallback auf Emotion-Logik)",
             wave6hResults.wanderReturnsNull
         );
-        check("Welle 6.H Phase 1: distance-Arg landet in task.args", wave6hResults.distanceArgKept);
-        check("Welle 6.H Phase 1: findNearestCreature wählt die nahste", wave6hResults.nearestIsCorrect);
-        check("Welle 6.H Phase 1: assignTaskToNearestCreature wirkt auf nahste", wave6hResults.assignNearestWorks);
-        check("Welle 6.H Phase 1: assignTaskToAllCreatures wirkt auf alle", wave6hResults.assignAllWorks);
-        check("Welle 6.H Phase 1: DSL creature_task_all setzt alle", wave6hResults.dslAllWorks);
+        check("distance-Arg landet in task.args", wave6hResults.distanceArgKept);
+        check("findNearestCreature wählt die nahste", wave6hResults.nearestIsCorrect);
+        check("assignTaskToNearestCreature wirkt auf nahste", wave6hResults.assignNearestWorks);
+        check("assignTaskToAllCreatures wirkt auf alle", wave6hResults.assignAllWorks);
+        check("DSL creature_task_all setzt alle", wave6hResults.dslAllWorks);
         check(
-            "Welle 6.H Phase 1: creature_task* in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
+            "creature_task* in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
             wave6hResults.nbCreatureTask && wave6hResults.nbCreatureTaskNearest && wave6hResults.nbCreatureTaskAll
         );
-        check("Welle 6.H Phase 1: Chat 'warte' → creature_task_nearest wait", wave6hResults.chatWarte);
-        check("Welle 6.H Phase 1: Chat 'erkunde' → creature_task_nearest wander", wave6hResults.chatErkunde);
-        check("Welle 6.H Phase 1: Chat 'komm her' → follow_player mit distance=1.5", wave6hResults.chatKommHer);
+        check("Chat 'warte' → creature_task_nearest wait", wave6hResults.chatWarte);
+        check("Chat 'erkunde' → creature_task_nearest wander", wave6hResults.chatErkunde);
+        check("Chat 'komm her' → follow_player mit distance=1.5", wave6hResults.chatKommHer);
         check(
-            "Welle 6.H Phase 1: Chat 'alle folgt mir' → creature_task_all follow_player",
+            "Chat 'alle folgt mir' → creature_task_all follow_player",
             wave6hResults.chatAlleFolgt
         );
-        check("Welle 6.H Phase 1: Chat 'alle warten' → creature_task_all wait", wave6hResults.chatAlleWarten);
-        check("Welle 6.H Phase 1: describeProgram für nearest enthält 'folge'/'nächste'", wave6hResults.descNearest);
-        check("Welle 6.H Phase 1: describeProgram für all enthält 'alle'", wave6hResults.descAll);
+        check("Chat 'alle warten' → creature_task_all wait", wave6hResults.chatAlleWarten);
+        check("describeProgram für nearest enthält 'folge'/'nächste'", wave6hResults.descNearest);
+        check("describeProgram für all enthält 'alle'", wave6hResults.descAll);
         check(
-            "Welle 6.H Phase 1: removeCreature räumt Aura aus Scene (kein Memory-Leak)",
+            "removeCreature räumt Aura aus Scene (kein Memory-Leak)",
             wave6hResults.preRemoveAuraInScene && wave6hResults.postRemoveAuraGone
         );
     }
@@ -294,47 +294,47 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Welle 6.H V2: Symphony initialisierbar im Headless", wave6hV2Results.symphonyReady);
         if (wave6hV2Results.symphonyReady) {
             check(
-                "Welle 6.H V2: Wechsel zu follow_player — das Tier antwortet mit seiner Stimme (genau ein Ruf)",
+                "Wechsel zu follow_player — das Tier antwortet mit seiner Stimme (genau ein Ruf)",
                 wave6hV2Results.followPings
             );
             check(
-                "Welle 6.H V2: Wechsel zu wait — das Tier antwortet mit seiner Stimme (genau ein Ruf)",
+                "Wechsel zu wait — das Tier antwortet mit seiner Stimme (genau ein Ruf)",
                 wave6hV2Results.waitPings
             );
             check(
-                "Welle 6.H V2: Wechsel zu wander bleibt STUMM (Disziplin: Lösen tönt nicht)",
+                "Wechsel zu wander bleibt STUMM (Disziplin: Lösen tönt nicht)",
                 wave6hV2Results.wanderIsSilent
             );
         }
-        check("Welle 6.H V2: Task-Wechsel schreibt ins Welt-Journal (Vision §1.1)", wave6hV2Results.journalGrows);
-        check("Welle 6.H V2: Journal-Eintrag trägt type='relationship'", wave6hV2Results.journalTypeIsRelationship);
+        check("Task-Wechsel schreibt ins Welt-Journal (Vision §1.1)", wave6hV2Results.journalGrows);
+        check("Journal-Eintrag trägt type='relationship'", wave6hV2Results.journalTypeIsRelationship);
         check(
-            "Welle 6.H V2: silent-Option unterdrückt Audio + Journal (Spawn-Defaults bleiben still)",
+            "silent-Option unterdrückt Audio + Journal (Spawn-Defaults bleiben still)",
             wave6hV2Results.silentSuppressesJournal
         );
         check(
-            "Welle 6.H V2: Leerschlag-Geste schreibt Chat-Output 'Keine Kreatur in der Nähe'",
+            "Leerschlag-Geste schreibt Chat-Output 'Keine Kreatur in der Nähe'",
             wave6hV2Results.leerschlagWritesChat
         );
         check(
-            "Welle 6.H V2: Leerschlag-Geste schreibt 'reach'-Journal-Eintrag",
+            "Leerschlag-Geste schreibt 'reach'-Journal-Eintrag",
             wave6hV2Results.leerschlagWritesJournal && wave6hV2Results.leerschlagJournalTypeReach
         );
-        check("Welle 6.H V2: assignTaskToNearest returnt null bei Leerschlag", wave6hV2Results.leerschlagReturnsNull);
+        check("assignTaskToNearest returnt null bei Leerschlag", wave6hV2Results.leerschlagReturnsNull);
         check(
-            "Welle 6.H V2: die Aura-Textur ist gecacht (dieselbe Instanz)",
+            "die Aura-Textur ist gecacht (dieselbe Instanz)",
             wave6hV2Results.textureCacheReusesInstance
         );
         check(
-            "Welle 6.H V2: 10 Task-Wechsel teilen sich EINE Textur (kein Memory-Churn)",
+            "10 Task-Wechsel teilen sich EINE Textur (kein Memory-Churn)",
             wave6hV2Results.textureSharedAcross10Cycles
         );
-        check("Welle 6.H V2: #status-tasks-Item im DOM", wave6hV2Results.statusTasksInDom);
-        check("Welle 6.H V2: Status-Bar zeigt '2 folgen · 1 warten' nach Setup", wave6hV2Results.statusShowsCounts);
-        check("Welle 6.H V2: Status-Bar zeigt '—' wenn alle wander", wave6hV2Results.statusEmptyDash);
-        check("Welle 6.H V2: describeProgram zeigt Distanz wenn gesetzt", wave6hV2Results.descShowsDistance);
+        check("#status-tasks-Item im DOM", wave6hV2Results.statusTasksInDom);
+        check("Status-Bar zeigt '2 folgen · 1 warten' nach Setup", wave6hV2Results.statusShowsCounts);
+        check("Status-Bar zeigt '—' wenn alle wander", wave6hV2Results.statusEmptyDash);
+        check("describeProgram zeigt Distanz wenn gesetzt", wave6hV2Results.descShowsDistance);
         check(
-            "Welle 6.H V2: describeProgram zeigt keine Distanz wenn nicht gesetzt",
+            "describeProgram zeigt keine Distanz wenn nicht gesetzt",
             wave6hV2Results.descNoDistanceWhenNotGiven
         );
     }
@@ -529,52 +529,52 @@ async function checkBandWelle6HCreatures(ctx) {
     });
 
     if (wave6hP2aResults && !wave6hP2aResults.error) {
-        check("Welle 6.H P2A: CREATURE_SOULS frozen", wave6hP2aResults.soulsFrozen);
-        check("Welle 6.H P2A (ALTLASTEN-NULL): exakt vier Seelen — Hirsch·Wolf·Fuchs·Bär", wave6hP2aResults.threeSouls);
-        check("Welle 6.H P2A: CREATURE_SOUL_NAMES Array", wave6hP2aResults.hasSoulNames);
-        check("Welle 6.H P2A: CREATURE_NAME_POOL ≥ 20 Namen", wave6hP2aResults.hasNamePool);
-        check("Welle 6.H P2A: bodyParts haben shape+material-Schema", wave6hP2aResults.bodyPartsHaveSchema);
-        check("Welle 6.H P2A: wolf.auraY === 0.75", wave6hP2aResults.spriteAuraY);
-        check("Welle 6.H P2A: wesen.auraY === 0.8", wave6hP2aResults.wesenAuraY);
-        check("Welle 6.H P2A: Initial-Kreatur ist THREE.Group", wave6hP2aResults.initialIsGroup);
-        check("Welle 6.H P2A: Initial-Kreatur trägt Soul-Name", wave6hP2aResults.initialHasSoul);
-        check("Welle 6.H P2A: Initial-Kreatur trägt Name aus Pool", wave6hP2aResults.initialHasName);
-        check("Welle 6.H P2A: Initial-Kreatur hat Default-Task wander", wave6hP2aResults.initialHasTask);
-        check("Welle 6.H P2A: Initial-Kreatur-Group hat ≥2 Sub-Meshes", wave6hP2aResults.initialHasChildren);
+        check("CREATURE_SOULS frozen", wave6hP2aResults.soulsFrozen);
+        check("exakt vier Seelen — Hirsch·Wolf·Fuchs·Bär", wave6hP2aResults.threeSouls);
+        check("CREATURE_SOUL_NAMES Array", wave6hP2aResults.hasSoulNames);
+        check("CREATURE_NAME_POOL ≥ 20 Namen", wave6hP2aResults.hasNamePool);
+        check("bodyParts haben shape+material-Schema", wave6hP2aResults.bodyPartsHaveSchema);
+        check("wolf.auraY === 0.75", wave6hP2aResults.spriteAuraY);
+        check("wesen.auraY === 0.8", wave6hP2aResults.wesenAuraY);
+        check("Initial-Kreatur ist THREE.Group", wave6hP2aResults.initialIsGroup);
+        check("Initial-Kreatur trägt Soul-Name", wave6hP2aResults.initialHasSoul);
+        check("Initial-Kreatur trägt Name aus Pool", wave6hP2aResults.initialHasName);
+        check("Initial-Kreatur hat Default-Task wander", wave6hP2aResults.initialHasTask);
+        check("Initial-Kreatur-Group hat ≥2 Sub-Meshes", wave6hP2aResults.initialHasChildren);
         check(
-            "Welle 6.H P2A (NULL): Tiere tag-identisch (V17.16-Wand; Diskrimination = Größe)",
+            "Tiere tag-identisch (V17.16-Wand; Diskrimination = Größe)",
             wave6hP2aResults.spriteMoreMagie
         );
-        check("Welle 6.H P2A: wesen-Compound trägt dichte > 0", wave6hP2aResults.wesenMoreDichte);
-        check("Welle 6.H P2A: wolf-Compound trägt resoniert > 0", wave6hP2aResults.spriteHasResoniert);
-        check("Welle 6.H P2A: wesen-Compound trägt lebendig > 0", wave6hP2aResults.wesenHasLebendig);
-        check("Welle 6.H P2A: fuchs-Compound trägt lebendig > 0", wave6hP2aResults.geistHasLebendig);
+        check("wesen-Compound trägt dichte > 0", wave6hP2aResults.wesenMoreDichte);
+        check("wolf-Compound trägt resoniert > 0", wave6hP2aResults.spriteHasResoniert);
+        check("wesen-Compound trägt lebendig > 0", wave6hP2aResults.wesenHasLebendig);
+        check("fuchs-Compound trägt lebendig > 0", wave6hP2aResults.geistHasLebendig);
         check(
-            "Welle L: ein unbekannter Seelen-Wunsch ist eine laute Absage (kein Ersatz-Tier)",
+            "ein unbekannter Seelen-Wunsch ist eine laute Absage (kein Ersatz-Tier)",
             wave6hP2aResults.unknownSoulAbsage
         );
-        check("Welle L: der Schild einer Seele (Hirsch) findet sie", wave6hP2aResults.soulLabelFindet);
-        check("Welle 6.H P2A: _creatureAuraOffsetY(wolf) === 0.75", wave6hP2aResults.spriteAuraOffset);
-        check("Welle 6.H P2A: _creatureAuraOffsetY(wesen) === 0.8", wave6hP2aResults.wesenAuraOffset);
+        check("der Schild einer Seele (Hirsch) findet sie", wave6hP2aResults.soulLabelFindet);
+        check("_creatureAuraOffsetY(wolf) === 0.75", wave6hP2aResults.spriteAuraOffset);
+        check("_creatureAuraOffsetY(wesen) === 0.8", wave6hP2aResults.wesenAuraOffset);
         check(
-            "Welle 6.H P2A: spawnCreatureAt(soulName) setzt korrekte Soul",
+            "spawnCreatureAt(soulName) setzt korrekte Soul",
             wave6hP2aResults.spawnSpriteWorks && wave6hP2aResults.spawnWesenWorks && wave6hP2aResults.spawnGeistWorks
         );
-        check("Welle 6.H P2A: Kreaturen-Drawer im DOM", wave6hP2aResults.hasCreatureDrawerEl);
+        check("Kreaturen-Drawer im DOM", wave6hP2aResults.hasCreatureDrawerEl);
         check(
-            "V18.46 Hof-A: inline-Befehle am Wesen (.creature-actions-inline, P16 eine Ebene)",
+            "Hof-A: inline-Befehle am Wesen (.creature-actions-inline, P16 eine Ebene)",
             wave6hP2aResults.hasTaskActions
         );
-        check("Welle 6.H P2A: Form-Dropdown = Zufällig + die vier Tiere", wave6hP2aResults.hasSoulSelect);
-        check("Welle 6.H P2A: Kreatur-Liste-Container im DOM", wave6hP2aResults.hasCreatureList);
+        check("Form-Dropdown = Zufällig + die vier Tiere", wave6hP2aResults.hasSoulSelect);
+        check("Kreatur-Liste-Container im DOM", wave6hP2aResults.hasCreatureList);
         check(
-            "V18.46 Hof-A: die 3 inline-Tasks am Wesen (Folge/Warte/Streift via data-task)",
+            "Hof-A: die 3 inline-Tasks am Wesen (Folge/Warte/Streift via data-task)",
             wave6hP2aResults.hasFolgeInline && wave6hP2aResults.hasWarteInline && wave6hP2aResults.hasStreiftInline
         );
-        check("Welle 6.H P2A: Spawn-Buttons +1/+5", wave6hP2aResults.spawn1Button && wave6hP2aResults.spawn5Button);
-        check("Welle 6.H P2A: Liste rendert eine Zeile pro Kreatur", wave6hP2aResults.listRendersRows);
+        check("Spawn-Buttons +1/+5", wave6hP2aResults.spawn1Button && wave6hP2aResults.spawn5Button);
+        check("Liste rendert eine Zeile pro Kreatur", wave6hP2aResults.listRendersRows);
         check(
-            "Welle 6.H P2A: Zeile hat .creature-name + .creature-soul + .creature-task",
+            "Zeile hat .creature-name + .creature-soul + .creature-task",
             wave6hP2aResults.rowHasNameSoulTask
         );
         check(
@@ -595,46 +595,46 @@ async function checkBandWelle6HCreatures(ctx) {
             wave6hP2aResults.stageSpecPresent && wave6hP2aResults.stageShowsOneCard
         );
         check(
-            "V18.55 Hof-Bühne: das Wesen-Spec-Sheet trägt den Header (Name) + Zwei-Spalten-Body (Werkstatt-DNA)",
+            "Hof-Bühne: das Wesen-Spec-Sheet trägt den Header (Name) + Zwei-Spalten-Body (Werkstatt-DNA)",
             wave6hP2aResults.stageHasTitle && wave6hP2aResults.stageHasBody2Col
         );
         check(
-            "V18.54 Hof-Bühne: die Spec-Card unter der Bühne trägt den Verabschieden-Akt",
+            "Hof-Bühne: die Spec-Card unter der Bühne trägt den Verabschieden-Akt",
             wave6hP2aResults.stageHasDismiss
         );
         check(
-            "V18.54 Hof-Bühne: Klick markiert GENAU eine Zeile + holt das Wesen auf die Bühne",
+            "Hof-Bühne: Klick markiert GENAU eine Zeile + holt das Wesen auf die Bühne",
             wave6hP2aResults.focusMarksOneRow && wave6hP2aResults.focusUpdatesStage
         );
         check(
-            "V18.54 Hof-Bühne: erneuter Klick löst den Fokus (zurück aufs erste Wesen, kein Leck)",
+            "Hof-Bühne: erneuter Klick löst den Fokus (zurück aufs erste Wesen, kein Leck)",
             wave6hP2aResults.focusToggleClears
         );
-        check("Welle 6.H P2A: Task-Wechsel triggert Liste-Refresh", wave6hP2aResults.taskCellUpdates);
-        check("Welle 6.H P2A: removeCreature entfernt Group aus scene", wave6hP2aResults.sceneAfterRemove);
+        check("Task-Wechsel triggert Liste-Refresh", wave6hP2aResults.taskCellUpdates);
+        check("removeCreature entfernt Group aus scene", wave6hP2aResults.sceneAfterRemove);
         check(
-            "V18.51 Hof-E/§G.9: leerer Hof zeigt den Onboarding-Zustand (.hof-empty, kein kahles '—')",
+            "Hof-E/§G.9: leerer Hof zeigt den Onboarding-Zustand (.hof-empty, kein kahles '—')",
             wave6hP2aResults.emptyShowsOnboarding
         );
         check(
-            "V18.51 Hof-E §D: zwei Zonen — ORCHESTER + PARTITUR existieren",
+            "Hof-E §D: zwei Zonen — ORCHESTER + PARTITUR existieren",
             wave6hP2aResults.hasOrchesterZone && wave6hP2aResults.hasPartiturZone
         );
         check(
-            "V18.51 Hof-E §D.4: die PARTITUR trägt die Gesetze + den Nexus (worldrules + abilities)",
+            "Hof-E §D.4: die PARTITUR trägt die Gesetze + den Nexus (worldrules + abilities)",
             wave6hP2aResults.partiturHoldsLaws
         );
-        check("V18.51 Hof-E §D.3: der Spawn-Fuß ist ins ORCHESTER integriert", wave6hP2aResults.spawnFootInOrchester);
+        check("Hof-E §D.3: der Spawn-Fuß ist ins ORCHESTER integriert", wave6hP2aResults.spawnFootInOrchester);
         check(
-            "V18.51 Hof-F §D.2: die Sektions-Leiste rendert Chips (Alle zuerst)",
+            "Hof-F §D.2: die Sektions-Leiste rendert Chips (Alle zuerst)",
             wave6hP2aResults.sectionChipsRender && wave6hP2aResults.firstSectionIsAlle
         );
         check(
-            "V18.51 Hof-F: eine Sektion wählen filtert die Liste + zeigt die Befehlsleiste",
+            "Hof-F: eine Sektion wählen filtert die Liste + zeigt die Befehlsleiste",
             wave6hP2aResults.sectionSelectShowsCmd && wave6hP2aResults.sectionFiltersList
         );
         check(
-            "V18.51 Hof-F/§G.4: der Sektions-Befehl ruft DENSELBEN assignTaskToAllCreatures (gefiltert)",
+            "Hof-F/§G.4: der Sektions-Befehl ruft DENSELBEN assignTaskToAllCreatures (gefiltert)",
             wave6hP2aResults.sectionCmdAssignsTask
         );
     }
@@ -800,64 +800,64 @@ async function checkBandWelle6HCreatures(ctx) {
     });
 
     if (wave6hP2bResults && !wave6hP2bResults.error) {
-        check("Welle 6.H P2B.1: CREATURE_TASKS enthält 'gather'", wave6hP2bResults.tasksHasGather);
-        check("Welle 6.H P2B.1: AURA_HUE.gather === 200 (cyan)", wave6hP2bResults.auraHueGather);
+        check("CREATURE_TASKS enthält 'gather'", wave6hP2bResults.tasksHasGather);
+        check("AURA_HUE.gather === 200 (cyan)", wave6hP2bResults.auraHueGather);
         check(
-            "Welle 6.H P2B.1: HALT_DIST/SPEED als Konstanten",
+            "HALT_DIST/SPEED als Konstanten",
             Number.isFinite(wave6hP2bResults.haltDist) && Number.isFinite(wave6hP2bResults.speed)
         );
         check(
-            "Welle 6.H P2B.1: memory[] FIFO-Cap=200 nach 205 Pushes (P2D.1)",
+            "memory[] FIFO-Cap=200 nach 205 Pushes (P2D.1)",
             wave6hP2bResults.memCapEnforced && wave6hP2bResults.memFifoCorrect
         );
-        check("Welle 6.H P2B.1: memory-Eintrag hat at-Timestamp", wave6hP2bResults.memHasTimestamp);
-        check("Welle 6.H P2B.1: _findNearestArchitectureWithMaterial(holz) findet Baum", wave6hP2bResults.findsHolz);
-        check("Welle 6.H P2B.1: gefundene Architektur trägt material im Part", wave6hP2bResults.holzPartConfirmed);
-        check("Welle 6.H P2B.1: Unknown Material → null", wave6hP2bResults.findsFictionalNull);
+        check("memory-Eintrag hat at-Timestamp", wave6hP2bResults.memHasTimestamp);
+        check("_findNearestArchitectureWithMaterial(holz) findet Baum", wave6hP2bResults.findsHolz);
+        check("gefundene Architektur trägt material im Part", wave6hP2bResults.holzPartConfirmed);
+        check("Unknown Material → null", wave6hP2bResults.findsFictionalNull);
         check(
-            "Welle 6.H P2B.1: _buildCreatureTaskArgs context-aware (gather→material, follow→distance, wait→leer, gather+number droppt)",
+            "_buildCreatureTaskArgs context-aware (gather→material, follow→distance, wait→leer, gather+number droppt)",
             wave6hP2bResults.gatherStringArg &&
                 wave6hP2bResults.followNumberArg &&
                 wave6hP2bResults.waitEmptyArg &&
                 wave6hP2bResults.gatherWithNumberDrops
         );
         check(
-            "Welle 6.H P2B.1: gather-Tick Direction zeigt zum Ziel",
+            "gather-Tick Direction zeigt zum Ziel",
             wave6hP2bResults.gatherDirNonZero && wave6hP2bResults.gatherDirTargetsX
         );
-        check("Welle 6.H P2B.1: Ziel wird in task.args._target gecached", wave6hP2bResults.targetCached);
+        check("Ziel wird in task.args._target gecached", wave6hP2bResults.targetCached);
         check(
-            "Welle 6.H P2B.1: bei haltDist → Architektur entfernt + Inventar gefüllt + memory 'gathered'",
+            "bei haltDist → Architektur entfernt + Inventar gefüllt + memory 'gathered'",
             wave6hP2bResults.archRemovedOnHarvest &&
                 wave6hP2bResults.inventoryHasHarvested &&
                 wave6hP2bResults.memoryHasGathered
         );
         check(
-            "Welle 6.H P2B.1: gather mit unbekanntem Material → Task fällt auf wander",
+            "gather mit unbekanntem Material → Task fällt auf wander",
             wave6hP2bResults.unknownReturnsToWander
         );
-        check("Welle 6.H P2B.1: 'no_material'-Erinnerung gespeichert", wave6hP2bResults.memoryHasNoMaterial);
-        check("Welle 6.H P2B.1: DSL creature_task(idx, gather, material) wirkt", wave6hP2bResults.dslGatherWorks);
+        check("'no_material'-Erinnerung gespeichert", wave6hP2bResults.memoryHasNoMaterial);
+        check("DSL creature_task(idx, gather, material) wirkt", wave6hP2bResults.dslGatherWorks);
         check(
-            "Welle 6.H P2B.1: Chat 'sammle/bring/alle sammeln' Patterns routen korrekt",
+            "Chat 'sammle/bring/alle sammeln' Patterns routen korrekt",
             wave6hP2bResults.chatPatterns
         );
-        check("Welle 6.H P2B.1: gather-DSL-Ops bleiben in NON_BROADCASTABLE_OPS", wave6hP2bResults.nonBroadcastable);
+        check("gather-DSL-Ops bleiben in NON_BROADCASTABLE_OPS", wave6hP2bResults.nonBroadcastable);
         check(
-            "Welle 6.H P2B.1: Status-Bar zeigt 'N sammeln' bei gather-Tasks",
+            "Status-Bar zeigt 'N sammeln' bei gather-Tasks",
             wave6hP2bResults.statusShowsGather && wave6hP2bResults.statusShowsFollow
         );
-        check("Welle 6.H P2B.1: describeProgram zeigt Material", wave6hP2bResults.descShowsMaterial);
+        check("describeProgram zeigt Material", wave6hP2bResults.descShowsMaterial);
         check(
-            "Welle 6.H P2B.1: Liste zeigt 'sammelt' + .gather-Class",
+            "Liste zeigt 'sammelt' + .gather-Class",
             wave6hP2bResults.listShowsSammelt && wave6hP2bResults.listTaskHasGatherClass
         );
         check(
-            "V18.48 Hof-C: der inline Auftrag-Select am Wesen traegt >=10 Sammle-Materialien",
+            "Hof-C: der inline Auftrag-Select am Wesen traegt >=10 Sammle-Materialien",
             wave6hP2bResults.hasGatherSelect && wave6hP2bResults.gatherSelectHasMaterials
         );
         check(
-            "V18.48 Hof-C: inline Task-Knöpfe am Wesen + Bau-Optionen im Auftrag-Select",
+            "Hof-C: inline Task-Knöpfe am Wesen + Bau-Optionen im Auftrag-Select",
             wave6hP2bResults.hasNearestGatherBtn && wave6hP2bResults.hasAllGatherBtn
         );
     }
@@ -996,48 +996,48 @@ async function checkBandWelle6HCreatures(ctx) {
 
     if (wave6hP2b5Results && !wave6hP2b5Results.error) {
         check(
-            "Welle 6.H P2B.5: stein_block-Harvest liefert ≥10 Stein (volumen-basiert)",
+            "stein_block-Harvest liefert ≥10 Stein (volumen-basiert)",
             wave6hP2b5Results.steinBlockHasStein
         );
-        check("Welle 6.H P2B.5: Rückgabe-Objekt trägt blueprint-Namen", wave6hP2b5Results.steinHasBlueprintName);
+        check("Rückgabe-Objekt trägt blueprint-Namen", wave6hP2b5Results.steinHasBlueprintName);
         check(
-            "Welle 6.H P2B.5: baum_eiche → holz UND laub (Compound-Diskrimination)",
+            "baum_eiche → holz UND laub (Compound-Diskrimination)",
             wave6hP2b5Results.oakHasHolzAndLaub
         );
-        check("Welle 6.H P2B.5: baum_eiche enthält KEIN stein (Negativ-Kontrolle)", wave6hP2b5Results.oakHasNoStein);
+        check("baum_eiche enthält KEIN stein (Negativ-Kontrolle)", wave6hP2b5Results.oakHasNoStein);
         check(
-            "Welle 6.H P2B.5: Diskrimination — 2×2×2-Box liefert mehr als 1×1×1",
+            "Diskrimination — 2×2×2-Box liefert mehr als 1×1×1",
             wave6hP2b5Results.volumeDiscrimination
         );
-        check("Welle 6.H P2B.5: addMaterialToInventory akzeptiert bekanntes Material", wave6hP2b5Results.matAddOk);
-        check("Welle 6.H P2B.5: Material-Slots stacken (5+3=8), kind='material'", wave6hP2b5Results.matStacks);
-        check("Welle 6.H P2B.5: Unterschiedliche Materialien in neuen Slots", wave6hP2b5Results.matNewSlot);
-        check("Welle 6.H P2B.5: addMaterialToInventory lehnt Unknown ab", wave6hP2b5Results.matRejectsUnknown);
-        check("Welle 6.H P2B.5: Spieler-LMB entfernt Architektur (eine Funktion)", wave6hP2b5Results.lmbShrunkArch);
+        check("addMaterialToInventory akzeptiert bekanntes Material", wave6hP2b5Results.matAddOk);
+        check("Material-Slots stacken (5+3=8), kind='material'", wave6hP2b5Results.matStacks);
+        check("Unterschiedliche Materialien in neuen Slots", wave6hP2b5Results.matNewSlot);
+        check("addMaterialToInventory lehnt Unknown ab", wave6hP2b5Results.matRejectsUnknown);
+        check("Spieler-LMB entfernt Architektur (eine Funktion)", wave6hP2b5Results.lmbShrunkArch);
         check(
-            "Welle 6.H P2B.5: Spieler-LMB füllt Material-Slots (Vision-Inkonsistenz behoben)",
+            "Spieler-LMB füllt Material-Slots (Vision-Inkonsistenz behoben)",
             wave6hP2b5Results.lmbFilledInventory
         );
         check(
-            "Welle 6.H P2B.5: Kreatur-Ernte setzt userData.carrying (statt direkt Inventar)",
+            "Kreatur-Ernte setzt userData.carrying (statt direkt Inventar)",
             wave6hP2b5Results.creatureCarryingSet
         );
         check(
-            "Welle 6.H P2B.5: Spieler-Inventar bleibt LEER bis Bring-Phase abgeschlossen",
+            "Spieler-Inventar bleibt LEER bis Bring-Phase abgeschlossen",
             wave6hP2b5Results.inventoryStillEmptyAfterHarvest
         );
-        check("Welle 6.H P2B.5: Carrying-Sprite wird beim Harvest erzeugt", wave6hP2b5Results.carryingSpriteCreated);
+        check("Carrying-Sprite wird beim Harvest erzeugt", wave6hP2b5Results.carryingSpriteCreated);
         check(
-            "Welle 6.H P2B.5: Bei <2m zum Spieler: carrying wird geclearet",
+            "Bei <2m zum Spieler: carrying wird geclearet",
             wave6hP2b5Results.carryingClearedAfterDelivery
         );
         check(
-            "Welle 6.H P2B.5: Materialien gehen ins Spieler-Inventar bei Übergabe",
+            "Materialien gehen ins Spieler-Inventar bei Übergabe",
             wave6hP2b5Results.playerHasMaterialAfterDelivery
         );
-        check("Welle 6.H P2B.5: 'delivered'-Memory-Eintrag bei Übergabe", wave6hP2b5Results.memoryHasDelivered);
-        check("Welle 6.H P2B.5: Material-Slot trägt .material-slot CSS-Klasse", wave6hP2b5Results.uiHasMaterialClass);
-        check("Welle 6.H P2B.5: Material-Slot-Label zeigt Material-Namen", wave6hP2b5Results.uiShowsMaterialName);
+        check("'delivered'-Memory-Eintrag bei Übergabe", wave6hP2b5Results.memoryHasDelivered);
+        check("Material-Slot trägt .material-slot CSS-Klasse", wave6hP2b5Results.uiHasMaterialClass);
+        check("Material-Slot-Label zeigt Material-Namen", wave6hP2b5Results.uiShowsMaterialName);
     }
 
     // ### Material-Konsum beim Bauen (modus-symmetrisch) ###
@@ -1194,47 +1194,47 @@ async function checkBandWelle6HCreatures(ctx) {
 
     if (wave6hP2cResults && !wave6hP2cResults.error) {
         check(
-            "Welle 6.H P2C: computeBuildCost ≡ harvestArchitecture (Wertneutralität)",
+            "computeBuildCost ≡ harvestArchitecture (Wertneutralität)",
             wave6hP2cResults.symmetryHarvest
         );
-        check("Welle 6.H P2C: stein_block-Kosten enthalten NUR stein", wave6hP2cResults.steinBlockOnlyStein);
-        check("Welle 6.H P2C: baum_eiche-Kosten enthalten holz UND laub", wave6hP2cResults.oakHasHolzAndLaub);
-        check("Welle 6.H P2C: baum_eiche-Kosten enthalten KEIN stein (Diskrimination)", wave6hP2cResults.oakHasNoStein);
+        check("stein_block-Kosten enthalten NUR stein", wave6hP2cResults.steinBlockOnlyStein);
+        check("baum_eiche-Kosten enthalten holz UND laub", wave6hP2cResults.oakHasHolzAndLaub);
+        check("baum_eiche-Kosten enthalten KEIN stein (Diskrimination)", wave6hP2cResults.oakHasNoStein);
         check(
-            "Welle 6.H P2C: pfad + leeres Inventar → checkBuildCost.ok=false",
+            "pfad + leeres Inventar → checkBuildCost.ok=false",
             wave6hP2cResults.checkEmptyInventoryRejected
         );
         check(
-            "Welle 6.H P2C: pfad + ausreichend Material → checkBuildCost.ok=true",
+            "pfad + ausreichend Material → checkBuildCost.ok=true",
             wave6hP2cResults.checkSufficientOk
         );
-        check("Welle 6.H P2C: tryConsumeBuildCost zieht genau die Kosten ab", wave6hP2cResults.consumesExactly);
-        check("Welle 6.H P2C: Atomarität — bei Mangel wird NICHTS abgezogen", wave6hP2cResults.atomicAtomicityOnFail);
-        check("Welle 6.H P2C: missing-Map zeigt fehlendes Sub-Material", wave6hP2cResults.atomicReportsMissing);
+        check("tryConsumeBuildCost zieht genau die Kosten ab", wave6hP2cResults.consumesExactly);
+        check("Atomarität — bei Mangel wird NICHTS abgezogen", wave6hP2cResults.atomicAtomicityOnFail);
+        check("missing-Map zeigt fehlendes Sub-Material", wave6hP2cResults.atomicReportsMissing);
         check(
-            "Welle 6.H P2C: pfad + Material → confirmBuild liefert true + spawnt",
+            "pfad + Material → confirmBuild liefert true + spawnt",
             wave6hP2cResults.pfadBuildsWithMaterial && wave6hP2cResults.pfadGrowsWorld
         );
-        check("Welle 6.H P2C: pfad-Modus konsumiert Material aus Inventar", wave6hP2cResults.pfadConsumesMaterial);
-        check("Welle 6.H P2C: pfad ohne Material → confirmBuild lehnt ab", wave6hP2cResults.pfadRejectsWithoutMaterial);
-        check("Welle 6.H P2C: pfad-Ablehnung → keine Architektur entsteht", wave6hP2cResults.pfadNoArchOnReject);
+        check("pfad-Modus konsumiert Material aus Inventar", wave6hP2cResults.pfadConsumesMaterial);
+        check("pfad ohne Material → confirmBuild lehnt ab", wave6hP2cResults.pfadRejectsWithoutMaterial);
+        check("pfad-Ablehnung → keine Architektur entsteht", wave6hP2cResults.pfadNoArchOnReject);
         check(
-            "Welle 6.H P2C: schöpfer-Modus baut ohne Material (Vision §1.5)",
+            "schöpfer-Modus baut ohne Material (Vision §1.5)",
             wave6hP2cResults.schoepferBuildsFree && wave6hP2cResults.schoepferGrows
         );
-        check("Welle 6.H P2C: schöpfer-Modus: Inventar bleibt leer (unbegrenzt)", wave6hP2cResults.schoepferEmptyAfter);
+        check("schöpfer-Modus: Inventar bleibt leer (unbegrenzt)", wave6hP2cResults.schoepferEmptyAfter);
         check(
-            "V17.60 S2: frieden ohne Material → confirmBuild lehnt ab (frieden zahlt Materie, nicht gratis)",
+            "S2: frieden ohne Material → confirmBuild lehnt ab (frieden zahlt Materie, nicht gratis)",
             wave6hP2cResults.friedenRejectsWithoutMaterial && wave6hP2cResults.friedenNoArchOnReject
         );
         check(
-            "V17.60 S2: KONSUM — frieden MIT Material baut + verbraucht das Material (wie pfad; nur Mühe/Bedrohung fehlt)",
+            "S2: KONSUM — frieden MIT Material baut + verbraucht das Material (wie pfad; nur Mühe/Bedrohung fehlt)",
             wave6hP2cResults.friedenBuildsWithMaterial && wave6hP2cResults.friedenConsumesMaterial
         );
-        check("Welle 6.H P2C: pfad-HUD zeigt Material-Kosten + verfügbare Menge", wave6hP2cResults.hudShowsCostInPfad);
-        check("Welle 6.H P2C: schöpfer-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInSchoepfer);
+        check("pfad-HUD zeigt Material-Kosten + verfügbare Menge", wave6hP2cResults.hudShowsCostInPfad);
+        check("schöpfer-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInSchoepfer);
         check(
-            "V17.60 S2: frieden-HUD zeigt die Material-Kosten (nicht mehr 'frei')",
+            "S2: frieden-HUD zeigt die Material-Kosten (nicht mehr 'frei')",
             wave6hP2cResults.hudShowsCostInFrieden
         );
     }
@@ -1247,7 +1247,7 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
     const { page, check } = ctx;
     const p = await page.evaluate(() => window.anazhRealm.parseChatToDsl("trinke"));
     check(
-        "Welle V11.0-d.3: Chat-Pattern trinke → creature_task_nearest drink",
+        "Chat-Pattern trinke → creature_task_nearest drink",
         !!p && !!p.program && p.program[0] === "creature_task_nearest" && p.program[1] === "drink"
     );
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // gate:kreatur-leben — DIE LEBENS-LINSE: als Skript die Seele im Kern; als Stück der Seiten-Funktion der Kreatur-Proben
-// (`BUEHNEN` an ihrer Marke) Furcht, Durst, Lebensraum, Bestand, Kaskade und Folgen am ECHTEN Takt (gate:kreatur-takt).
+// (`BUEHNEN` an ihrer Marke) Furcht, Lebensraum, Tages-Budget, Bestand, Kaskade und Folgen am ECHTEN Takt (gate:kreatur-takt).
 "use strict";
 
 // ── furcht (Ökologie K3, tetrapoda FURCHT_GESETZ): (A) je Ort und Rolle ein Tier allein — geschlagen, gefüttert, gebunden,
@@ -428,40 +428,121 @@ async function lebenBuehnen(
         z.gegenlauf = { abstandM: +Math.hypot(u.position.x - pm.x, u.position.z - pm.z).toFixed(1) };
         return z;
     });
-    // ── durst (Tiere K4, DURST_GESETZ): drei Hirsche 15–30 m vom Fluss, 1,5 × durstS: ihre Trünke am Wasser ──
-    await buehne("durst", async (restore) => {
-        if (taeter === "durst") decke(restore, "_kreaturDurstig", () => () => false);
-        const D = A._lebensraumGesetz().D;
-        let ort = null;
-        for (let k = 0; k < 441 && !ort; k++) {
+    // ── tagesbudget (Tiere K4, ETHOGRAMM_GESETZ · DURST_GESETZ): je Gattung drei Tiere ohne Verband am Ufer (15–30 m vom Fluss), im
+    // frieden (ohne Jagd), der Spieler ruhig 90 m fern. Die Uhr des Spieler-Worts läuft 12 Spielstunden ein und misst 24: je Tier
+    // und Takt die Tätigkeit, die es zeigt (Auftrag und Flucht sind wach), sein Lauf in der Ruhe, seine Trünke am Wasser; der
+    // Gegenlauf „Durst aus“ (drei Hirsche, 10 Spielstunden) ──
+    await buehne("tagesbudget", async (restore) => {
+        const LG = A._lebensraumGesetz(),
+            SW = A._verhaltenGesetz().stimmung.schwellen;
+        // die Täter: kein Durst · der Ruhe-Pegel leer · die alte Uhr (Ruhe, solange die Sonne unter nachtSin steht, am Tag weidet,
+        // wer weidet) · die Ruhe läuft
+        const durstAus = () => decke(restore, "_kreaturDurstig", () => () => false);
+        if (taeter === "durst") durstAus();
+        if (taeter === "tagesbudget-ruhe")
+            decke(
+                restore,
+                "_kreaturTaetigkeit",
+                (alt) =>
+                    function (c) {
+                        const t = alt.call(this, c);
+                        c.userData._ruhe = 0;
+                        return t;
+                    }
+            );
+        if (taeter === "tagesbudget-sonne")
+            decke(
+                restore,
+                "_kreaturTaetigkeit",
+                () =>
+                    function (c) {
+                        c.userData._gezeigt = null;
+                        const nacht = this._sonnenRichtung().y < SW.nachtSin;
+                        return (c.userData._taetigkeit = nacht
+                            ? "ruhen"
+                            : this._kreaturDiet(c) <= SW.weideDiet
+                              ? "nahrung"
+                              : "ziehen");
+                    }
+            );
+        if (taeter === "nacht")
+            decke(
+                restore,
+                "updateCreatures",
+                (alt) =>
+                    function (dt) {
+                        alt.call(this, dt);
+                        for (const c of this.state.creatures) if (c.userData._gezeigt === "ruhen") c.position.x += 0.02;
+                    }
+            );
+        let U = null;
+        for (let k = 0; k < 441 && !U; k++) {
             const x = pm.x + ((k % 21) - 10) * 25,
                 z = pm.z + (Math.floor(k / 21) - 10) * 25;
             const h = r._hydroDistAt(x, z),
                 rand = h.dist - Math.max(1, h.halfW);
-            if (rand > 15 && rand < 30 && r._landAt(x, z)) ort = { x, y: r.getTerrainHeightAt(x, z) + 0.5, z };
+            if (rand > 15 && rand < 30 && r._landAt(x, z)) U = { x, z };
         }
-        if (!ort) throw new Error("kein Fluss im Umkreis von 250 m");
-        pm.set(ort.x + 150, pm.y, ort.z);
-        const tiere = [0, 1, 2].map((i) => tier({ x: ort.x + i * 3, y: ort.y, z: ort.z }, "wesen", 1));
-        tiere.forEach(ruhig);
-        const z = { truenke: [0, 0, 0], amWasser: 0, durstS: D.durstS };
-        const zuletzt = [];
-        for (let k = 0; k < 1.5 * D.durstS * 60; k++) {
-            ruhigSpieler();
-            takt(1 / 60);
-            tiere.forEach((c, i) => {
-                const g = c.userData._getrunken;
-                if (zuletzt[i] !== undefined && g !== zuletzt[i]) {
-                    z.truenke[i]++;
-                    if (r._findNearestWaterPoint(c.position.x, c.position.z, 4)) z.amWasser++;
+        if (!U) throw new Error("kein Fluss im Umkreis von 250 m");
+        r.setGameMode("frieden");
+        const tag0 = s.timeOfDay;
+        restore.push(() => r._uhrSetzen(tag0, "regler"));
+        r._uhrSetzen(0.5, "regler");
+        const takte = Math.round((0.1 / 24) * (s.dayLengthMinutes || A.DAY_LENGTH_DEFAULT_MINUTES) * 600);
+        const z = { budget: {}, soll: {}, ruhe: [0, 0] };
+        const tagLauf = (seelen, ein, mess, z) => {
+            const tiere = seelen.flatMap((seele) =>
+                [0, 1, 2].map((i) => {
+                    const x = U.x + Math.cos(i * 2.1 + seele.length) * 6,
+                        zz = U.z + Math.sin(i * 2.1 + seele.length) * 6;
+                    const c = tier({ x, y: r.getTerrainHeightAt(x, zz) + 0.5, z: zz }, seele, 1);
+                    ruhig(c);
+                    return { c, g: A.TETRAPODA_SOUL_MAP[seele], x, z: zz, ruhK: 0, trunk: 0, nass: 0 };
+                })
+            );
+            pm.set(U.x, r.getTerrainHeightAt(U.x, U.z + 90) + 0.5, U.z + 90);
+            for (let i = 0; i < (ein + mess) * 10; i++) {
+                r._uhrSetzen(((s.timeOfDay * 24 + 0.1) % 24) / 24, "regler");
+                for (let k = 0; k < takte; k++) {
+                    ruhigSpieler();
+                    takt(0.1);
+                    for (const t of tiere) {
+                        const ud = t.c.userData,
+                            p = t.c.position;
+                        if (t.g0 !== undefined && ud._getrunken !== t.g0)
+                            (t.trunk++, (t.nass += r._findNearestWaterPoint(p.x, p.z, 4) ? 1 : 0));
+                        t.g0 = ud._getrunken;
+                        const kat = (ud.task && ud.task.name === "drink") || !ud._gezeigt ? "ziehen" : ud._gezeigt;
+                        t.ruhK = kat === "ruhen" ? t.ruhK + 1 : 0;
+                        if (i >= ein * 10) {
+                            const B = z.budget[t.g] || (z.budget[t.g] = { ruhen: 0, nahrung: 0, ziehen: 0 });
+                            B[kat]++;
+                            if (t.ruhK > 20)
+                                (z.ruhe[0]++, (z.ruhe[1] += Math.hypot(p.x - t.x, p.z - t.z) > 0.01 ? 1 : 0));
+                        }
+                        [t.x, t.z] = [p.x, p.z];
+                    }
                 }
-                zuletzt[i] = g;
-            });
+            }
+            for (const t of tiere) r.removeCreature(t.c);
+            return tiere;
+        };
+        const tiere = tagLauf(["wesen", "baer", "fuchs", "wolf"], ...(taeter ? [2, 12] : [12, 24]), z);
+        for (const g in z.budget) {
+            const B = z.budget[g],
+                n = B.ruhen + B.nahrung + B.ziehen,
+                G = LG.E.gattung[g];
+            for (const k in B) B[k] = +(B[k] / n).toFixed(3);
+            z.soll[g] = { ruhen: G.ruhen, nahrung: G.nahrung, ziehen: +(1 - G.ruhen - G.nahrung).toFixed(3) };
         }
+        z.truenke = tiere.map((t) => t.trunk);
+        z.amWasser = tiere.reduce((a, t) => a + t.nass, 0);
+        durstAus();
+        z.durstAus = tagLauf(["wesen"], 0, 10, { budget: {}, ruhe: [0, 0] }).reduce((a, t) => a + t.trunk, 0);
         return z;
     });
     // ── lebensraum (Tiere K4; die Geburt fern, außer Blick, in Gruppen): an neun Orten (Raster 300 m) je 25 Geburten — je Tier
-    // Gattung, Boden-Klasse, Abstand, Blick, der Nächste der Gruppe; die Gegenprobe in anderer Saat ──
+    // Gattung, Boden-Klasse, Abstand, Blick, der Nächste der Gruppe, je Wurf der Bär am Fluss; die Gegenprobe in anderer Saat ──
     await buehne("lebensraum", async (restore) => {
         if (taeter === "lebensraum")
             decke(restore, "_pickFaunaSoulAtPlayer", () => (x, z, rng) => A.CREATURE_SOUL_NAMES[Math.floor(rng() * 4)]);
@@ -476,7 +557,12 @@ async function lebenBuehnen(
             });
         const LG = A._lebensraumGesetz();
         const z = { n: 0, drin: 0, gattung: {}, klasse: {}, geburten: 0, gruppen: 0, journal: 0, minM: Infinity };
-        Object.assign(z, { imBlick: 0, fensterMax: 0, fernMin: A.CREATURE_SPAWN_FAR_MIN });
+        Object.assign(z, {
+            imBlick: 0,
+            fensterMax: 0,
+            fernMin: A.CREATURE_SPAWN_FAR_MIN,
+            baer: { fluss: [0, 0], sonst: [0, 0] },
+        });
         const p0 = pm.clone();
         for (let i = 0; i < (taeter ? 3 : 9); i++) {
             pm.set(p0.x + ((i % 3) - 1) * 300, p0.y, p0.z + (Math.floor(i / 3) - 1) * 300);
@@ -498,6 +584,9 @@ async function lebenBuehnen(
                     if (LG.lebensraum(g, kl, LG.L) > 0) z.drin++;
                     z.gattung[g] = (z.gattung[g] || 0) + 1;
                     z.klasse[kl] = (z.klasse[kl] || 0) + 1;
+                    // DER BÄR AM FLUSS (Staffel 2): je Wurf [Würfe, Bären] am Fluss und abseits
+                    const B = c === neu[0] && z.baer[kl === "fluss" ? "fluss" : "sonst"];
+                    if (B) (B[0]++, (B[1] += g === "bear" ? 1 : 0));
                     z.minM = Math.min(z.minM, +Math.hypot(c.position.x - pm.x, c.position.z - pm.z).toFixed(1));
                     if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) z.imBlick++;
                     const nn = Math.min(
@@ -581,11 +670,29 @@ function lebenUrteil(name, z, soll) {
             `das ungebundene Tier folgt auch (${z.gegenlauf.abstandM} m nach 2 min, vakuös)`
         );
     }
-    if (name === "durst")
+    if (name === "tagesbudget") {
+        // DAS ETHOGRAMM (±20 % je Tätigkeit; was die Gattung nicht tut, tut sie nie)
+        for (const [g, S] of Object.entries(z.soll))
+            for (const [k, v] of Object.entries(S)) {
+                const ist = z.budget[g][k];
+                soll(
+                    v > 0 ? Math.abs(ist / v - 1) <= 0.2 : ist <= 0.01,
+                    `das Tages-Budget verfehlt das Ethogramm (${g} ${k}): ${ist} gegen ${v} (±20 %)`
+                );
+            }
+        soll(Object.keys(z.soll).length >= 4, `nur ${Object.keys(z.soll).length} Gattungen im Tag (vakuös)`);
         soll(
-            z.truenke.every((n) => n >= 1) && z.amWasser === z.truenke.reduce((a, b) => a + b, 0),
-            `kein Tier trinkt aus Durst: Trünke ${z.truenke} in ${1.5 * z.durstS} s, ${z.amWasser} am Wasser`
+            z.ruhe[0] >= 1000 && z.ruhe[1] < 0.03 * z.ruhe[0],
+            `${((100 * z.ruhe[1]) / z.ruhe[0]).toFixed(1)} % bewegt während ruhen (${z.ruhe[0]} Takte)`
         );
+        soll(
+            z.truenke.length >= 12 &&
+                z.truenke.every((n) => n >= 1) &&
+                z.amWasser === z.truenke.reduce((a, b) => a + b, 0),
+            `kein Tier trinkt aus Durst: Trünke ${z.truenke}, ${z.amWasser} am Wasser`
+        );
+        soll(z.durstAus === 0, `das Trinken folgt dem Durst nicht: ohne Durst ${z.durstAus} Trünke`);
+    }
     if (name === "lebensraum") {
         soll(z.minM >= 0.99 * z.fernMin, `Geburt ${z.minM} m vor dem Spieler (Soll ≥ ${z.fernMin} m)`);
         soll(z.imBlick === 0, `${z.imBlick} Geburten im Blick`);
@@ -611,6 +718,14 @@ function lebenUrteil(name, z, soll) {
                     `${wo}Geburten außerhalb des Lebensraums: ${L.drin} von ${L.n} (Soll ≥ 0,9; ${JSON.stringify(L.gattung)}, Saat ${L.saat})`
                 );
         }
+    if (name === "lebensraum") {
+        const gb = (z.gegen && z.gegen.baer) || { fluss: [0, 0], sonst: [0, 0] };
+        const [F, N] = ["fluss", "sonst"].map((k) => [z.baer[k][0] + gb[k][0], z.baer[k][1] + gb[k][1]]);
+        soll(
+            F[0] >= 10 && N[0] >= 10 && F[1] > 0 && F[1] / F[0] >= (2 * N[1]) / N[0],
+            `der Bär sucht den Fluss nicht: am Fluss ${F[1]}/${F[0]} Würfe ein Bär, abseits ${N[1]}/${N[0]} (Soll ≥ 2×)`
+        );
+    }
     if (name !== "furcht") return;
     const { kontrolle: K, geschlagen: G, gefuettert: F, gebunden: B, baerRuhig, baerZornig, baerFrieden } = z.erinnert;
     soll(
@@ -641,9 +756,14 @@ function lebenUrteil(name, z, soll) {
 const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
     BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil, kamera, imBlick);`,
-    PROBEN: ["furcht", "lebensraum", "durst", "bestand", "kaskade", "folgen"],
+    PROBEN: ["furcht", "lebensraum", "tagesbudget", "bestand", "kaskade", "folgen"],
     TAETER: {
-        durst: [["durst", /kein Tier trinkt aus Durst/]],
+        tagesbudget: [
+            ["durst", /kein Tier trinkt aus Durst/],
+            ["tagesbudget-ruhe", /verfehlt das Ethogramm \(\w+ ruhen\)/],
+            ["tagesbudget-sonne", /verfehlt das Ethogramm/],
+            ["nacht", /bewegt während ruhen/],
+        ],
         bestand: [
             ["bestand-nahrung", /die Geburt folgt der Nahrung nicht[\s\S]*der Tod folgt der Nahrung nicht/],
             ["bestand-deckel", /Kosten-Kappe[\s\S]*die Geburt folgt der Nahrung nicht[\s\S]*der Tod folgt der Nahrung nicht/],
@@ -659,7 +779,10 @@ module.exports = {
             ["gedreht-rahmen", /gedrehten Wand/],
         ],
         lebensraum: [
-            ["lebensraum", /Geburten außerhalb des Lebensraums[\s\S]*Gegenprobe Geburten außerhalb/],
+            [
+                "lebensraum",
+                /Geburten außerhalb des Lebensraums[\s\S]*Gegenprobe Geburten außerhalb[\s\S]*der Bär sucht den Fluss nicht/,
+            ],
             ["geburt", /vor dem Spieler/],
             ["geburt-einzeln", /keine Gruppe/],
         ],

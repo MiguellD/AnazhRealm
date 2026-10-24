@@ -123,8 +123,9 @@
             fressen: { aktionen: ["fressen"], alle: [0, 0.4] },
             // SCHLUSS-WELLE (Spiegel-Zensus 17.07., rein additive DATEN-Zeile):
             // die SCHWELLEN des Verhaltens-Ticks — ab wann das Gemuet die
-            // Stimmung waehlt (chaos→alert, joy→joy), wann die Nacht ruht
-            // (Sonnen-Sinus unter nachtSin) und wer weidet (diet ≤ weideDiet).
+            // Stimmung waehlt (chaos→alert, joy→joy), wann Nacht ist (Sonnen-
+            // Sinus unter nachtSin: die Lichtphase des ETHOGRAMM_GESETZ, Tiere K4)
+            // und wer weidet (diet ≤ weideDiet).
             // KEINE Stimmungs-Zeile (kein aktionen/alle) — die Leser der
             // Stimmungs-Tabelle ueberspringen den Schluessel (must-ignore).
             schwellen: { chaos: 0.5, joy: 0.5, nachtSin: -0.15, weideDiet: 0.5 },
@@ -1880,6 +1881,57 @@
     function durst(seitS, D) {
         return seitS > 0 ? seitS / D.durstS : 0;
     }
+    // DAS ETHOGRAMM (Tiere K4, 24.10., additiv — ETHOGRAMM_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): der
+    // Tag eines Tiers ist ein BUDGET aus drei Taetigkeiten — ruhen, nahrung (aesen, nur wer weidet: diet bis
+    // VERHALTEN.stimmung.schwellen.weideDiet) und ziehen (der Rest) —, getragen von Beduerfnis-Pegeln, nie von einem Zeitplan.
+    // DER HUNGER ist der Magen (VERHALTEN.aas): er leert sich in verdauSec; wer weidet, beginnt unter hungerAnteil zu aesen und
+    // aest, bis er voll ist — die Aesung fuellt ihn mit voll / (verdauSec × nahrung) je Sekunde (aesung), darum aest er im Mittel
+    // den Anteil nahrung (Gras ist karg: das Rotwild aest ~ 50 % des Tages, Clutton-Brock et al. 1982). DIE RUHE ist ein Pegel
+    // (ruhePegel, der Schlafdruck des Zwei-Prozess-Modells, Borbely 1982): wach steigt er in ruheTaktS × (1 − ruhen) auf 1,
+    // ruhend faellt er in ruheTaktS × ruhen auf 0 — im Mittel ruht die Gattung den Anteil ruhen. DER RHYTHMUS (lichtPhase: der
+    // Zeitgeber ist das Licht, die Hoehe der Sonne): in ihrer aktiven Lichtphase legt sich die Gattung erst bei schwelle.aktiv
+    // nieder, sonst schon bei schwelle.ruhig — die Schwelle verschiebt, WANN sie ruht, nie wie lange: das Budget haelt jede
+    // Uhr. Wer ruht, ruht, bis der Pegel leer ist; wer aest, aest, bis der Magen voll ist (taetigkeit). Das Rotwild aest in der
+    // Daemmerung (Georgii 1981), der Wolf zieht nachts und in der Daemmerung (Theuerkauf et al. 2003: aktiv ~ 40 %), der Fuchs
+    // nachts (Doncaster & Macdonald 1997), der Baer am Tag (Munro et al. 2006: aktiv ~ 55 %, das meiste Nahrungssuche). Jede
+    // Taetigkeit zeigt sich in einer Stimmung des Buchs und traegt das Tempo ihrer Aktion (zeigt; ziehen wandert).
+    var ETHOGRAMM_GESETZ = Object.freeze({
+        daemmerSin: 0.25,
+        schwelle: Object.freeze({ aktiv: 1.5, ruhig: 0.6 }),
+        zeigt: Object.freeze({
+            ruhen: Object.freeze({ stimmung: "nacht", aktion: "ruhen" }),
+            nahrung: Object.freeze({ stimmung: "tag", aktion: "grasen" }),
+            ziehen: Object.freeze({ stimmung: "idle", aktion: null }),
+        }),
+        gattung: Object.freeze({
+            deer: Object.freeze({ ruhen: 0.4, nahrung: 0.5, ruheTaktS: 360, aktiv: Object.freeze(["daemmerung"]) }),
+            bear: Object.freeze({ ruhen: 0.45, nahrung: 0.4, ruheTaktS: 360, aktiv: Object.freeze(["tag", "daemmerung"]) }),
+            wolf: Object.freeze({ ruhen: 0.6, nahrung: 0, ruheTaktS: 360, aktiv: Object.freeze(["nacht", "daemmerung"]) }),
+            fox: Object.freeze({ ruhen: 0.6, nahrung: 0, ruheTaktS: 360, aktiv: Object.freeze(["nacht"]) }),
+        }),
+    });
+    // sonneSin = die Hoehe der Sonne (sin), nachtSin = VERHALTEN.stimmung.schwellen.nachtSin. Liefert die Lichtphase.
+    function lichtPhase(sonneSin, nachtSin, E) {
+        return sonneSin < nachtSin ? "nacht" : sonneSin < E.daemmerSin ? "daemmerung" : "tag";
+    }
+    // p = der Ruhe-Pegel, ruht = ruhte das Tier in den letzten dtS Sekunden, G = die Zeile der Gattung. Liefert den neuen Pegel.
+    function ruhePegel(p, ruht, dtS, G) {
+        var q = ruht ? p - dtS / (G.ruheTaktS * G.ruhen) : p + dtS / (G.ruheTaktS * (1 - G.ruhen));
+        return q > 0 ? q : 0;
+    }
+    // voll = der volle Magen (kg), verdauSec = VERHALTEN.aas.verdauSec. Liefert die Aesung (kg je Sekunde).
+    function aesung(voll, verdauSec, G) {
+        return G.nahrung > 0 ? voll / (verdauSec * G.nahrung) : 0;
+    }
+    // vorher = die Taetigkeit des Vor-Takts, magenAnteil = der Magen durch den vollen, weidet = diet bis weideDiet,
+    // hungerAnteil = VERHALTEN.aas.hungerAnteil. Liefert "ruhen" · "nahrung" · "ziehen".
+    function taetigkeit(vorher, ruhe, magenAnteil, phase, weidet, G, E, hungerAnteil) {
+        var aest = weidet && G.nahrung > 0;
+        if (vorher === "ruhen" && ruhe > 0) return "ruhen";
+        if (vorher === "nahrung" && aest && magenAnteil < 1) return "nahrung";
+        if (ruhe >= (G.aktiv.indexOf(phase) >= 0 ? E.schwelle.aktiv : E.schwelle.ruhig)) return "ruhen";
+        return aest && magenAnteil < hungerAnteil ? "nahrung" : "ziehen";
+    }
     // DIE GEBURT AM ORT: aus dem Wurf u ∈ [0, 1) die Gattung nach ihrem lebensraum in der Klasse; die Luecke bis zur Summe des
     // reichsten Lebensraums traegt keine Geburt (null) — wo nur der Jaeger lebt, wird selten geboren, die Beute ist haeufig.
     var LEBENSRAUM_KLASSEN = ["fluss", "hang", "wald", "waldrand", "wiese"];
@@ -3369,6 +3421,11 @@
         lebensraumWahl: lebensraumWahl,
         DURST_GESETZ: DURST_GESETZ,
         durst: durst,
+        ETHOGRAMM_GESETZ: ETHOGRAMM_GESETZ,
+        lichtPhase: lichtPhase,
+        ruhePegel: ruhePegel,
+        aesung: aesung,
+        taetigkeit: taetigkeit,
         BESTAND_GESETZ: BESTAND_GESETZ,
         bestandNahrung: bestandNahrung,
         bestandBilanz: bestandBilanz,

@@ -496,27 +496,6 @@ class AnazhRealm_kreatur_verhalten {
         }
         return false;
     }
-    // DER MAGEN (kg, VERHALTEN.aas): so viel frisst ein Tier auf einmal — magenAnteil × die EINE Masse seines Leibs; ein Leib
-    // ohne gemessene Gestalt hat keinen (0). Er leert sich in verdauSec auf der Kreatur-Uhr (gerechnet, wenn ihn einer liest).
-    _kreaturMagenVoll(creature) {
-        const tb = creature.userData && creature.userData._tierBaum;
-        return tb && tb.leibV > 0 ? AnazhRealm._verhaltenGesetz().aas.magenAnteil * this._leibMasse(creature) : 0;
-    }
-    _kreaturMagen(creature) {
-        const ud = creature.userData;
-        const now = this.state.creatureAnimationTime;
-        const dt = Number.isFinite(ud._magenT) ? Math.max(0, now - ud._magenT) : 0;
-        ud._magenT = now;
-        if (!(ud.magen > 0)) return (ud.magen = 0);
-        const voll = this._kreaturMagenVoll(creature);
-        ud.magen = Math.max(0, ud.magen - (voll / AnazhRealm._verhaltenGesetz().aas.verdauSec) * dt);
-        return ud.magen;
-    }
-    // SATT (VERHALTEN.aas.hungerAnteil): wer mehr als diesen Anteil seines Magens trägt, jagt keine Beute und frisst nicht an.
-    _kreaturSatt(creature) {
-        const voll = this._kreaturMagenVoll(creature);
-        return voll > 0 && this._kreaturMagen(creature) >= AnazhRealm._verhaltenGesetz().aas.hungerAnteil * voll;
-    }
 
     // IST DAS BEUTE für diesen Jäger? Nicht wild (wild jagt nicht wild) und höchstens jagd.beuteMasse ×
     // die Masse des Jägers — die EINE Masse des Leibs (`_leibMasse`, kg: Volumen der Gestalt × Dichte des Kerns), die
@@ -1537,9 +1516,10 @@ class AnazhRealm_kreatur_verhalten {
     // falsch — rotierende Einheitsvektoren summieren sich zum Kreisel). Emotionen modulieren Amplitude
     // + Rhythmus (chaos bis +50 %, sorrow bis −40 %, Boden 0.3); die LEINE (leashM) zieht zum Anker
     // (Geburtsort, lazy beim ersten freien Tick — Restore-sicher).
-    _creatureCharacterWander(creature, direction, speed) {
+    _creatureCharacterWander(creature, direction, speed, zeigt = true) {
         const K = AnazhRealm._verhaltenGesetz().wandern;
         const ud = creature.userData || {};
+        ud._gezeigt = (zeigt && ud._taetigkeit) || null; // das Wandern zeigt die Tätigkeit des Tiers (Tiere K4, _kreaturTaetigkeit)
         const em = ud.emotions;
         let amp = 1 + (em ? (em.chaos || 0) * K.chaosGain - (em.sorrow || 0) * K.sorrowDamp : 0);
         if (amp < K.ampFloor) amp = K.ampFloor;
@@ -1977,8 +1957,12 @@ class AnazhRealm_kreatur_verhalten {
         const dx = tx - cx;
         const dz = tz - cz;
         const dist = Math.hypot(dx, dz);
-        // Phase 3: am Wasser angekommen → trinken (Pause + Happiness).
-        if (dist <= HALT_DIST) {
+        // Phase 3: am Wasser angekommen → trinken (Pause + Happiness). DAS MAUL AM UFER (Tiere K4): am Ziel oder, wo die Brust
+        // über dem Wasser steht (`_nassAt` die halbe Länge voraus) — die Herde trinkt nebeneinander. Vorher drängten sich die
+        // Durstigen eines Wurfs um ihre Ziel-Punkte (Probe tagesbudget: neun Tiere bis 1 250 s im Auftrag).
+        const hL = this._kreaturHalbLaenge(creature);
+        const gier = creature.rotation.y;
+        if (dist <= HALT_DIST || this._nassAt(cx + Math.sin(gier) * hL, cz + Math.cos(gier) * hL, 0.2)) {
             if (!task.args._drinkStart) {
                 task.args._drinkStart = now;
                 // Das Tier ruft zum Trink-Beginn (seine Stimme, multisensorisch — Vision §1.2).
@@ -2012,9 +1996,10 @@ class AnazhRealm_kreatur_verhalten {
             // Pausen-Phase — stehen (der Gang trägt die Ruhe-Animation).
             return out.set(0, 0, 0);
         }
-        // Phase 2: walk Richtung Ziel (das Ankunfts-Gesetz bremst vor dem Halt).
+        // Phase 2: walk Richtung Ziel (das Ankunfts-Gesetz bremst vor dem Halt). Am Ufer drängen sich die Trinker wie die
+        // Fresser am Kadaver (_kreaturAasZug): kein Anstellen hinter einem, der dort ruht oder äst — die Separation weicht.
         const speed = SPEED * this._creatureBodySpeedMultiplier(creature);
-        return this._kreaturZiel(out, dx, dz, dist - HALT_DIST, speed, creature);
+        return this._kreaturZiel(out, dx, dz, dist - HALT_DIST, speed, null, creature);
     }
 
     // Ring-Scan: konzentrische Ringe in 4-m-Schritten bis radius, je Ring so viele Richtungen, dass der Bogen
@@ -3301,6 +3286,7 @@ class AnazhRealm_kreatur_verhalten {
             let direction;
             if (recomputeAI) {
                 task = this._getCreatureTask(creature);
+                this._kreaturTaetigkeit(creature); // der Tag des Tiers (Tiere K4): Pegel und Tätigkeit vor jedem Zweig
                 // DER DURST ZIEHT ZUM WASSER (Tiere K4): ein Tier in Ruhe, ohne Auftrag des Spielers, trinkt, wenn es durstig ist
                 if (
                     (!task || task.name === "wander") &&
@@ -3358,8 +3344,9 @@ class AnazhRealm_kreatur_verhalten {
                             direction.set(fx * fv, 0, fz * fv);
                         } else {
                             this._kreaturZustandStempel(creature, null);
-                            // V18.472 (C2) — die EINE Wander-Quelle (Charakter statt Rauschen).
-                            this._creatureCharacterWander(creature, direction, speed);
+                            // V18.472 (C2) — die EINE Wander-Quelle (Charakter statt Rauschen); wer sich fürchtet, ruht und äst
+                            // nicht (Tiere K4): er zieht mit seinem Verband
+                            this._creatureCharacterWander(creature, direction, speed, false);
                         }
                     } else if (this._kreaturAasZug(creature, direction, speed, hueftL)) {
                         // DER KADAVER (Meisterkarte Tiere H3): Hunger schlägt Neugier und Jagd — ein hungriges Tier frisst,
@@ -3410,6 +3397,8 @@ class AnazhRealm_kreatur_verhalten {
                     // den Wunsch, den der Zweig schrieb: die Glieder richten sich aus und halten zusammen. Nur die Jagd folgt
                     // ihrem Ring (rudelPlatz). Vorher zog die Herden-Form allein im Neugier-Zweig, und nur Nachbarn im Fenster.
                     if (!jagt && !frisst) this._kreaturVerbandZug(creature, direction, speed, hueftL);
+                    // DIE TÄTIGKEIT TRÄGT DEN ZUG (Tiere K4): wer wandernd ruht, steht, auch im Verband; wer äst, grast
+                    if (creature.userData._gezeigt) direction.multiplyScalar(this._kreaturTaetigkeitTempo(creature));
                 }
                 // V17.115 U3 — die KI-Richtung cachen; ferne Kreaturen verwenden sie
                 // aiDiv Frames lang wieder → glatte Bewegung, seltene Neuberechnung.

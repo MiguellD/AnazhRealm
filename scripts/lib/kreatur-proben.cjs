@@ -1005,60 +1005,6 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-
-
-    // ── nacht: die Ruhe-Aktion hält den Leib an ──
-    await buehne("nacht", async (restore) => {
-        r.setGameMode("frieden");
-        const altTod = s.timeOfDay;
-        restore.push(() => {
-            s.timeOfDay = altTod;
-        });
-        s.timeOfDay = 0; // Mitternacht: die Stimmung „nacht" wählt ruhen/yawn
-        if (taeter === "nacht")
-            decke(
-                restore,
-                "updateCreatures",
-                (alt) =>
-                    function (dt) {
-                        alt.call(this, dt);
-                        for (const c of this.state.creatures) {
-                            const VA = c.userData._verhaltenAktion;
-                            if (VA && VA.name === "ruhen") c.position.x += 0.02;
-                        }
-                    }
-            );
-        const o = land(25, 0);
-        const arten = ["wesen", "wesen", "wesen", "wesen", "wolf", "wolf", "fuchs", "fuchs"];
-        const tiere = arten.map((a, i) => {
-            const c = tier({ x: o.x + (i % 4) * 4, y: o.y, z: o.z + Math.floor(i / 4) * 5 }, a);
-            ruhig(c);
-            return c;
-        });
-        const dt = 1 / 60;
-        const vor = tiere.map((c) => ({ x: c.position.x, z: c.position.z }));
-        // die Ruhe einer Aktion zählt in Takten seit ihrem Stempel (dieselbe Uhr, wie der Spieler sie sieht)
-        const gesehen = tiere.map(() => ({ va: null, k0: 0 }));
-        let ruhFrames = 0,
-            ruhBewegt = 0;
-        for (let k = 0; k < 3600; k++) {
-            takt(dt);
-            tiere.forEach((c, i) => {
-                const VA = c.userData._verhaltenAktion;
-                const sp = Math.hypot(c.position.x - vor[i].x, c.position.z - vor[i].z) / dt;
-                vor[i] = { x: c.position.x, z: c.position.z };
-                // die Ruhe ab ihrer zweiten Sekunde (der Leib bremst mit der Brems-Grenze in den Stand)
-                if (VA !== gesehen[i].va) gesehen[i] = { va: VA, k0: k };
-                const alter = (k - gesehen[i].k0) * dt;
-                if (VA && VA.name === "ruhen" && alter > 1 && alter < VA.def.dauer) {
-                    ruhFrames++;
-                    if (sp > 0.1) ruhBewegt++;
-                }
-            });
-        }
-        return { ruhFrames, ruhBewegt, bewegtAnteil: ruhFrames ? +(ruhBewegt / ruhFrames).toFixed(3) : null };
-    });
-
     // ── reload: ein verwundetes Tier kehrt verwundet und mit seiner Gier zurück ──
     await buehne("reload", async (restore) => {
         const c = tier(land(30, 12), "wesen");
@@ -1689,6 +1635,12 @@ async function kreaturProben(r, T, opts) {
         if (taeter === "jagd-ohne-ende") decke(restore, "_kreaturJagdEndet", () => () => false);
         if (taeter === "jagd-ohne-wunde")
             decke(restore, "_kreaturSprint", () => (c, L) => A._steuerGesetz().sprintTempo(L));
+        // der magere Riss: der Kadaver trägt ein Zwölftel seines Fleischs (aas.fleischAnteil 0,05)
+        if (taeter === "jagd-mager") {
+            const V0 = A._verhaltenGesetzMemo;
+            A._verhaltenGesetzMemo = Object.assign({}, V0, { aas: Object.assign({}, V0.aas, { fleischAnteil: 0.05 }) });
+            restore.push(() => (A._verhaltenGesetzMemo = V0));
+        }
         const R = {
             quote: {},
             rissS: null,
@@ -3026,7 +2978,6 @@ const PROBEN = [
     "gier",
     "jagd",
     "herde",
-    "nacht",
     "peer",
     "zufall",
     "nexus",
@@ -3216,13 +3167,6 @@ function urteil(name, z) {
             `Verband zerfällt auf der Flucht: im Mittel ${F.fluchtMittel} der ${F.n} Glieder binnen ${FR} Paar-Räumen vom Mittel, solange die Herde flieht (Soll ≥ 0,8; am wenigsten ${F.fluchtMin}, Wurf ${F.wurfAnteil})`
         );
     }
-    if (name === "nacht") {
-        soll(z.ruhFrames >= 300, `nur ${z.ruhFrames} Ruhe-Frames (Probe vakuös)`);
-        soll(
-            z.bewegtAnteil !== null && z.bewegtAnteil < 0.03,
-            `${(z.bewegtAnteil * 100).toFixed(1)} % bewegt während ruhen`
-        );
-    }
     if (name === "reload") {
         soll(Math.abs(z.hpNach - z.hpVor) < 0.01, `hp vor dem Reload ${z.hpVor}, danach ${z.hpNach} (geheilt)`);
         soll(z.gierFehlerGrad <= 1, `die Gier kehrt ${z.gierFehlerGrad}° daneben zurück`);
@@ -3369,6 +3313,11 @@ function urteil(name, z) {
             );
             for (const G of R.gaeste)
                 soll(G.frissS > 0, `kein Geruch: der ${G.seele} folgt dem Kadaver nicht (frisst ${G.frissS} s)`);
+            // DAS MAHL (Tiere K2 Staffel 2): das Rudel frisst ≥ 60 s der 120 s nach dem Riss (Fuchs und Bär oben: im Fenster)
+            soll(
+                R.fressS >= 60,
+                `das Rudel frisst nicht: ${R.fressS} s am Kadaver in 120 s nach dem Riss (Soll ≥ 60 s)`
+            );
         }
     }
     if (name === "rudel") {
@@ -3448,7 +3397,6 @@ const TAETER = {
         // der Wurf ohne Bindung — der Verband zerfällt beim Wandern UND auf der Flucht
         ["herde-zerfall", /Verband zerfällt beim Wandern[\s\S]*Verband zerfällt auf der Flucht/],
     ],
-    nacht: [["nacht", /bewegt während ruhen/]],
     peer: [["peer", /Sicht-Kopie/]],
     zufall: [["zufall", /Math\.random im Kreatur-Leben: _pickCreatureName/]],
     nexus: [
@@ -3474,6 +3422,7 @@ const TAETER = {
         ["jagd-flucht", /Beute ohne Leben \(rudel\)/],
         ["jagd-ohne-ende", /die Jagd hat kein Ende/],
         ["jagd-ohne-wunde", /reißt zu selten \(rudel\)/],
+        ["jagd-mager", /das Rudel frisst nicht/],
     ],
     rudel: [["rudel", /umstellt nicht/]],
     // je Täter nennen BEIDE Orte ihn: der Hang der Welt und die Rampe der Prüfbühne
