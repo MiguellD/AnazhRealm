@@ -934,7 +934,7 @@ class AnazhRealm_gelaende_fern {
     _fernWasserBlickNode(_T) {
         this._ensureHydroSurfaceMaterial();
         const U = this.state.hydroSurfaceUniforms;
-        if (!U || !U.sunCol || !U.sunDir || !U.light)
+        if (!U || !U.sunCol || !U.sunDir || !U.light || !U.eisNull)
             throw new Error("Fern-Ring: der Blick des Wassers braucht den Wasser-Stoff (hydroSurfaceUniforms)");
         const WG =
             AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
@@ -948,6 +948,7 @@ class AnazhRealm_gelaende_fern {
             sunCol: U.sunCol,
             sunDir: U.sunDir,
             light: U.light,
+            eisNull: U.eisNull,
         }).eigen;
     }
     // Der Wasser-Körper R∞ des Gesetzes für die CPU-Leser der Ferne (`_wasserKoerper`, EINE Formel mit dem Wasser-Stoff).

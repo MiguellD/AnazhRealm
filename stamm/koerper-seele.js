@@ -1038,9 +1038,17 @@ class AnazhRealm_koerper_seele {
 
     // Verschleiß je Hieb = WEAR_PER_STRIKE_BASE × FLOOR / clamp(härte, FLOOR, CEIL)
     // (WEAR_HARDNESS_FLOOR · WEAR_HARDNESS_CEIL): harte Materialien zehren langsamer; CEIL klemmt
-    // unrealistisch harte (sonst unzerstörbar), FLOOR deckelt den Verschleiß weicher Materialien.
+    // unrealistisch harte (sonst unzerstörbar), FLOOR deckelt den Verschleiß weicher Materialien. Ein Werk der Schmiede
+    // zehrt aus der EINEN Stoff-Zeile seines Stoffs (schmiede werkStoff: der Werkstoff von Klinge, Kopf und Blatt, das Holz von
+    // Keule und Bogen) — die Bronze-Axt schneller als die Stahl-Axt (halten.K3); vorher las es die Teile seines Spenders
+    // (geraet_schwert, geraet_spitzhacke): zwei Raten für 22 Gestalten und jeden Stoff. Ein Eigenwerk liest seine Teile.
     _wearPerStrike(bp) {
-        const tags = bp && typeof this.computeCompoundTags === "function" ? this.computeCompoundTags(bp) : null;
+        const sc = this._schmiedeWerk(bp) ? globalThis.__schmiedeCore : null;
+        if (sc && typeof sc.werkStoff !== "function") AnazhRealm._kernPflichtBruch("schmiede:werkStoff");
+        const stoff = sc ? sc.werkStoff(this._schmiedeGestalt(bp), this._artifactStudioOv(bp) || undefined) : null;
+        const zeile = stoff ? (this.state.materials || {})[stoff] : null;
+        if (stoff && !zeile) this._bruchMelden("STOFF-ZEILE fehlt: das Werk aus „" + stoff + "“ zehrt ohne Härte");
+        const tags = zeile ? zeile.tags : !sc && bp ? this.computeCompoundTags(bp) : null;
         const haerte = tags && typeof tags["härte"] === "number" ? tags["härte"] : 0.5;
         const floor = AnazhRealm.WEAR_HARDNESS_FLOOR;
         const ceil = AnazhRealm.WEAR_HARDNESS_CEIL;

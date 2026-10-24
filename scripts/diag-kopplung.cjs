@@ -72,6 +72,8 @@ const server = statikServer();
                     _fieldVy: 0,
                     waterLevel: -50,
                     terrainBaseHeight: 0,
+                    seasonPhase: 0.375, // Sommer-Mittag: das Temperatur-Feld des Eises (stoffe.K3) friert nichts
+                    timeOfDay: 0.5,
                     worldMeta: { voxelTerrain: true },
                     forward: new THREE.Vector3(),
                     right: new THREE.Vector3(),

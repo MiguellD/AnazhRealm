@@ -30,11 +30,12 @@ const AZIMUTE = 8;
 const HEBUNGEN = [0, Math.PI / 6, Math.PI / 3];
 const ANSICHTEN = AZIMUTE * HEBUNGEN.length;
 
-function bildDeckung(meshes, atlas, px) {
-    const je = [];
-    const thr = Math.round((atlas && atlas.schwelle != null ? atlas.schwelle : 0.5) * 255);
+// DAS RASTER DER 24 ANSICHTEN (bildDeckung, bildLagen): je Ansicht (r = horizontal quer zur Blickrichtung, u = Bild-Oben,
+// senkrecht zu r und zum Blick, der um e nach oben zeigt) die Netze, die `nimm` wählt, auf ein Raster der Kante `px` —
+// `jeAnsicht(W, H)` bekommt die Raster-Größe (ohne Ausdehnung 0 × 0, dann kein Pixel) und liefert den Pixel-Leser
+// `(o, w0, w1, w2, m, a, b, c)`, gerufen für jedes Pixel, dessen Mitte das Dreieck a-b-c von `m` deckt (Baryzentren ≥ 0).
+function rastere(meshes, px, nimm, jeAnsicht) {
     for (let k = 0; k < ANSICHTEN; k++) {
-        // r = horizontal quer zur Blickrichtung; u = Bild-Oben (senkrecht zu r und zum Blick, der um e nach oben zeigt)
         const th = ((k % AZIMUTE) * Math.PI) / AZIMUTE,
             e = HEBUNGEN[Math.floor(k / AZIMUTE)];
         const cx = Math.cos(th),
@@ -42,12 +43,12 @@ function bildDeckung(meshes, atlas, px) {
         const ux = Math.sin(th) * Math.sin(e),
             uy = Math.cos(e),
             uz = -Math.cos(th) * Math.sin(e);
-        // Ausdehnung der Ansicht
         let u0 = Infinity,
             u1 = -Infinity,
             v0 = Infinity,
             v1 = -Infinity;
         for (const m of meshes) {
+            if (!nimm(m)) continue;
             const p = m.pos;
             for (let i = 0; i < p.length; i += 3) {
                 const u = p[i] * cx + p[i + 2] * cz,
@@ -59,17 +60,16 @@ function bildDeckung(meshes, atlas, px) {
             }
         }
         if (!(u1 > u0) || !(v1 > v0)) {
-            je.push(0);
+            jeAnsicht(0, 0);
             continue;
         }
         const W = Math.ceil((u1 - u0) / px) + 2,
             H = Math.ceil((v1 - v0) / px) + 2;
-        const bild = new Uint8Array(W * H);
+        const pixel = jeAnsicht(W, H);
         for (const m of meshes) {
+            if (!nimm(m)) continue;
             const p = m.pos,
-                ix = m.idx,
-                karte = m.kind === "foliageTex" && m.uv && atlas;
-            const uv = m.uv;
+                ix = m.idx;
             for (let t = 0; t < ix.length; t += 3) {
                 const a = ix[t],
                     b = ix[t + 1],
@@ -86,40 +86,53 @@ function bildDeckung(meshes, atlas, px) {
                     xb = Math.min(W - 1, Math.ceil(Math.max(ax, bx, qx))),
                     ya = Math.max(0, Math.floor(Math.min(ay, by, qy))),
                     yb = Math.min(H - 1, Math.ceil(Math.max(ay, by, qy)));
-                // DER BODEN (S3): das Bild ist, was über dem Boden der Vorlage steht (y ≥ 0) — die Wurzeln tauchen
-                // ab, kein Spieler sieht sie im Boden, und eine Ansicht von unten sähe sie sonst von unter der Erde.
-                const ya3 = p[a * 3 + 1],
-                    yb3 = p[b * 3 + 1],
-                    yc3 = p[c * 3 + 1];
-                if (ya3 < 0 && yb3 < 0 && yc3 < 0) continue;
-                const ganz = ya3 >= 0 && yb3 >= 0 && yc3 >= 0;
                 for (let y = ya; y <= yb; y++) {
                     const sy = y + 0.5;
                     for (let x = xa; x <= xb; x++) {
-                        const o = y * W + x;
-                        if (bild[o]) continue;
                         const sx = x + 0.5;
                         const w0 = ((bx - sx) * (qy - sy) - (by - sy) * (qx - sx)) / fl,
                             w1 = ((qx - sx) * (ay - sy) - (qy - sy) * (ax - sx)) / fl,
                             w2 = 1 - w0 - w1;
-                        if (w0 < 0 || w1 < 0 || w2 < 0) continue;
-                        if (!ganz && w0 * ya3 + w1 * yb3 + w2 * yc3 < 0) continue;
-                        if (karte) {
-                            const tu = w0 * uv[a * 2] + w1 * uv[b * 2] + w2 * uv[c * 2],
-                                tv = w0 * uv[a * 2 + 1] + w1 * uv[b * 2 + 1] + w2 * uv[c * 2 + 1];
-                            const tx = Math.min(atlas.w - 1, Math.max(0, Math.floor(tu * atlas.w))),
-                                ty = Math.min(atlas.h - 1, Math.max(0, Math.floor(tv * atlas.h)));
-                            if (atlas.alpha[ty * atlas.w + tx] < thr) continue;
-                        }
-                        bild[o] = 1;
+                        if (w0 >= 0 && w1 >= 0 && w2 >= 0) pixel(y * W + x, w0, w1, w2, m, a, b, c);
                     }
                 }
             }
         }
-        let n = 0;
-        for (let i = 0; i < bild.length; i++) n += bild[i];
-        je.push(n * px * px);
     }
+}
+// Die Alpha des EINEN Blatt-Atlas am Baryzentrum (Textur-Ordnung, nächster Texel von Stufe 0) — hält sie die Schwelle?
+function atlasHaelt(atlas, thr, uv, w0, w1, w2, a, b, c) {
+    const tu = w0 * uv[a * 2] + w1 * uv[b * 2] + w2 * uv[c * 2],
+        tv = w0 * uv[a * 2 + 1] + w1 * uv[b * 2 + 1] + w2 * uv[c * 2 + 1];
+    const tx = Math.min(atlas.w - 1, Math.max(0, Math.floor(tu * atlas.w))),
+        ty = Math.min(atlas.h - 1, Math.max(0, Math.floor(tv * atlas.h)));
+    return atlas.alpha[ty * atlas.w + tx] >= thr;
+}
+const schwelleVon = (atlas) => Math.round((atlas && atlas.schwelle != null ? atlas.schwelle : 0.5) * 255);
+
+function bildDeckung(meshes, atlas, px) {
+    const je = [];
+    const thr = schwelleVon(atlas);
+    let bild = null;
+    rastere(
+        meshes,
+        px,
+        () => true,
+        (W, H) => {
+            if (bild) je.push(bild.reduce((n, x) => n + x, 0) * px * px);
+            bild = W ? new Uint8Array(W * H) : null;
+            if (!bild) je.push(0);
+            // DER BODEN (S3): das Bild ist, was über dem Boden der Vorlage steht (y ≥ 0) — die Wurzeln tauchen
+            // ab, kein Spieler sieht sie im Boden, und eine Ansicht von unten sähe sie sonst von unter der Erde.
+            return (o, w0, w1, w2, m, a, b, c) => {
+                const p = m.pos;
+                if (bild[o] || w0 * p[a * 3 + 1] + w1 * p[b * 3 + 1] + w2 * p[c * 3 + 1] < 0) return;
+                if (m.kind === "foliageTex" && m.uv && atlas && !atlasHaelt(atlas, thr, m.uv, w0, w1, w2, a, b, c)) return;
+                bild[o] = 1;
+            };
+        }
+    );
+    if (bild) je.push(bild.reduce((n, x) => n + x, 0) * px * px);
     return { je, mittel: je.reduce((s, x) => s + x, 0) / je.length, hebung: jeHebung(je) };
 }
 // Das Bild JE BLICK-HEBUNG (S3 R1): das Mittel über die acht Azimute je Hebung (0°, 30°, 60° von
@@ -129,109 +142,45 @@ function jeHebung(je) {
     return HEBUNGEN.map((_, h) => je.slice(h * AZIMUTE, (h + 1) * AZIMUTE).reduce((s, x) => s + x, 0) / AZIMUTE);
 }
 
-// DIE LAGEN (4): dieselben Ansichten wie bildDeckung, aber jede Karte zählt — eine Lage je Karte über der Pixel-Mitte.
+// DIE LAGEN (4): dieselben Ansichten wie bildDeckung, aber jede Karte zählt — eine Lage je Karte über der Pixel-Mitte; die
+// Diagonale eines Quads gehört EINEM seiner zwei Dreiecke (w2 > 0 halb offen).
 function bildLagen(meshes, atlas, px) {
     const je = [];
-    const thr = Math.round((atlas && atlas.schwelle != null ? atlas.schwelle : 0.5) * 255);
-    let sQ = 0,
-        nQ = 0,
-        sA = 0,
-        nA = 0;
-    for (let k = 0; k < ANSICHTEN; k++) {
-        const th = ((k % AZIMUTE) * Math.PI) / AZIMUTE,
-            e = HEBUNGEN[Math.floor(k / AZIMUTE)];
-        const cx = Math.cos(th),
-            cz = Math.sin(th);
-        const ux = Math.sin(th) * Math.sin(e),
-            uy = Math.cos(e),
-            uz = -Math.cos(th) * Math.sin(e);
-        let u0 = Infinity,
-            u1 = -Infinity,
-            v0 = Infinity,
-            v1 = -Infinity;
-        for (const m of meshes) {
-            if (m.kind !== "foliageTex") continue;
-            const p = m.pos;
-            for (let i = 0; i < p.length; i += 3) {
-                const u = p[i] * cx + p[i + 2] * cz,
-                    v = p[i] * ux + p[i + 1] * uy + p[i + 2] * uz;
-                if (u < u0) u0 = u;
-                if (u > u1) u1 = u;
-                if (v < v0) v0 = v;
-                if (v > v1) v1 = v;
-            }
-        }
-        if (!(u1 > u0) || !(v1 > v0)) {
-            je.push({ quad: 0, alpha: 0 });
-            continue;
-        }
-        const W = Math.ceil((u1 - u0) / px) + 2,
-            H = Math.ceil((v1 - v0) / px) + 2;
-        const quad = new Uint16Array(W * H),
-            alpha = new Uint16Array(W * H);
-        for (const m of meshes) {
-            if (m.kind !== "foliageTex" || !m.uv) continue;
-            const p = m.pos,
-                ix = m.idx,
-                uv = m.uv;
-            for (let t = 0; t < ix.length; t += 3) {
-                const a = ix[t],
-                    b = ix[t + 1],
-                    c = ix[t + 2];
-                const ax = (p[a * 3] * cx + p[a * 3 + 2] * cz - u0) / px,
-                    ay = (p[a * 3] * ux + p[a * 3 + 1] * uy + p[a * 3 + 2] * uz - v0) / px;
-                const bx = (p[b * 3] * cx + p[b * 3 + 2] * cz - u0) / px,
-                    by = (p[b * 3] * ux + p[b * 3 + 1] * uy + p[b * 3 + 2] * uz - v0) / px;
-                const qx = (p[c * 3] * cx + p[c * 3 + 2] * cz - u0) / px,
-                    qy = (p[c * 3] * ux + p[c * 3 + 1] * uy + p[c * 3 + 2] * uz - v0) / px;
-                const fl = (bx - ax) * (qy - ay) - (by - ay) * (qx - ax);
-                if (Math.abs(fl) < 1e-12) continue;
-                const xa = Math.max(0, Math.floor(Math.min(ax, bx, qx))),
-                    xb = Math.min(W - 1, Math.ceil(Math.max(ax, bx, qx))),
-                    ya = Math.max(0, Math.floor(Math.min(ay, by, qy))),
-                    yb = Math.min(H - 1, Math.ceil(Math.max(ay, by, qy)));
-                for (let y = ya; y <= yb; y++) {
-                    const sy = y + 0.5;
-                    for (let x = xa; x <= xb; x++) {
-                        const sx = x + 0.5;
-                        const w0 = ((bx - sx) * (qy - sy) - (by - sy) * (qx - sx)) / fl,
-                            w1 = ((qx - sx) * (ay - sy) - (qy - sy) * (ax - sx)) / fl,
-                            w2 = 1 - w0 - w1;
-                        // die Diagonale eines Quads gehört EINEM seiner zwei Dreiecke (w2 > 0 halb offen)
-                        if (w0 < 0 || w1 < 0 || w2 <= 0) continue;
-                        const o = y * W + x;
-                        quad[o]++;
-                        if (atlas) {
-                            const tu = w0 * uv[a * 2] + w1 * uv[b * 2] + w2 * uv[c * 2],
-                                tv = w0 * uv[a * 2 + 1] + w1 * uv[b * 2 + 1] + w2 * uv[c * 2 + 1];
-                            const tx = Math.min(atlas.w - 1, Math.max(0, Math.floor(tu * atlas.w))),
-                                ty = Math.min(atlas.h - 1, Math.max(0, Math.floor(tv * atlas.h)));
-                            if (atlas.alpha[ty * atlas.w + tx] >= thr) alpha[o]++;
-                        }
-                    }
-                }
-            }
-        }
+    const thr = schwelleVon(atlas);
+    const summe = { sQ: 0, nQ: 0, sA: 0, nA: 0 };
+    let quad = null,
+        alpha = null;
+    const abschluss = () => {
+        if (!quad) return;
         let q = 0,
             nq = 0,
             al = 0,
             na = 0;
         for (let i = 0; i < quad.length; i++) {
-            if (quad[i]) {
-                q += quad[i];
-                nq++;
-            }
-            if (alpha[i]) {
-                al += alpha[i];
-                na++;
-            }
+            if (quad[i]) ((q += quad[i]), nq++);
+            if (alpha[i]) ((al += alpha[i]), na++);
         }
-        sQ += q;
-        nQ += nq;
-        sA += al;
-        nA += na;
+        Object.assign(summe, { sQ: summe.sQ + q, nQ: summe.nQ + nq, sA: summe.sA + al, nA: summe.nA + na });
         je.push({ quad: nq ? q / nq : 0, alpha: na ? al / na : 0 });
-    }
+    };
+    rastere(
+        meshes,
+        px,
+        (m) => m.kind === "foliageTex",
+        (W, H) => {
+            abschluss();
+            quad = W ? new Uint16Array(W * H) : null;
+            alpha = W ? new Uint16Array(W * H) : null;
+            if (!W) je.push({ quad: 0, alpha: 0 });
+            return (o, w0, w1, w2, m, a, b, c) => {
+                if (!m.uv || !(w2 > 0)) return;
+                quad[o]++;
+                if (atlas && atlasHaelt(atlas, thr, m.uv, w0, w1, w2, a, b, c)) alpha[o]++;
+            };
+        }
+    );
+    abschluss();
+    const { sQ, nQ, sA, nA } = summe;
     return { quad: nQ ? sQ / nQ : 0, alpha: nA ? sA / nA : 0, je };
 }
 

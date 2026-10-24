@@ -19,6 +19,7 @@
 //                   Mess-Wiese und überall (K4). K8: keine Ufer-Flut nach dem Wecken des Automaten.
 //   K4 LÄUFE        jeder Lauf endet in See oder Meer, jede Senke ist nass, Sohle und Spiegel steigen nie; K4 STRÖMUNG: an 4
 //                   Fluss-Orten treiben Schwimmer, Boot und Tier > 0,5 m in 90 Takten, ohne Strömung nicht.
+//   E (stoffe.K3)   im Winter trägt das Eis den Gang und die Tiere am Spiegel (±5 cm); das Feld +10 °C bricht ihn ein.
 //   G (F3)          der Graben am Fluss (1 m und 3 m jenseits der Krone, der Weg des Grabe-Hiebs): EINE Wasser-Fläche, nie über
 //                   dem Spiegel, in Ruhe auf ihm; der Automat ruht binnen Takten; die Wiese daneben fällt nie.
 // Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_atlasWaterLevelAt`), den
@@ -427,6 +428,12 @@ function urteil(b) {
                     `K6 BAUMLOS: ein Wesen ohne Gestalt-Baum treibt mit der Sohle ${bl.sohleUnterSpiegel} m unter dem Spiegel, ` +
                         `die Schwimm-Tiefe des Gesetzes ist ${bl.soll} m`
                 );
+            const { winter: w = {}, mutation: mu = {}, tier: et = [] } = k.eis || {};
+            if (!(w.seeFrames >= 120 && et.length === 3)) v.push(`E LEER: ${w.seeFrames} Schritte über dem See, ${et.length} Tiere`);
+            else if (!(w.temperatur < 0) || w.schwimmFrames || w.luft || !(w.maxM <= 0.05))
+                v.push(`E1 EINBRUCH: bei ${w.temperatur} °C ${w.schwimmFrames} Schritte schwimmend, ${w.luft} in der Luft, Füße bis ${w.maxM} m vom Spiegel`);
+            for (const t of et) if (t.schwimmt || !(Math.abs(t.sohleUnterSpiegel) <= 0.05)) v.push(`E3 TIER: ${t.seele} ${t.sohleUnterSpiegel} m im Eis`);
+            if (!(mu.temperatur >= 0 && mu.schwimmFrames > 0)) v.push(`E2 BLIND: +10 °C (${mu.temperatur} °C), ${mu.schwimmFrames} Schritte schwimmend`);
             if (!k.peer) v.push("K7 MITSPIELER: die Peer-Probe lief nicht");
             else if (!(Math.abs(k.peer.lehne) > 0.05))
                 v.push(`K7 MITSPIELER: der Peer-Körper an der Brustkorb-Linie schwimmt nicht (Lehne ${k.peer.lehne})`);
@@ -662,6 +669,11 @@ function selbsttest() {
             ),
             baumlos: { sohleUnterSpiegel: 0.5, soll: 0.5 },
             peer: { lehne: 0.4, meshKind: "soul" },
+            eis: {
+                winter: { temperatur: -4.7, seeFrames: 1152, schwimmFrames: 0, luft: 0, maxM: 0 },
+                tier: ["wolf", "fuchs", "baer"].map((seele) => ({ seele, sohleUnterSpiegel: 0 })),
+                mutation: { temperatur: 5.3, schwimmFrames: 900 },
+            },
         },
         licht: {
             nachtOben: 0.03,
@@ -741,6 +753,11 @@ function selbsttest() {
         ["K6 LAGE", (b) => Object.assign(b.koerper.tier[0], { sohleUnterSpiegel: 0.3, wasserlinie: 0.87 })],
         ["K6 LEER", (b) => (b.koerper.tier = [])],
         ["K7 MITSPIELER", (b) => (b.koerper.peer.lehne = 0)],
+        // stoffe.K3 an der Basis 6f8a2c66: kein Eis
+        ["E1 EINBRUCH", (b) => Object.assign(b.koerper.eis.winter, { schwimmFrames: 60, maxM: 1.227 })],
+        ["E2 BLIND", (b) => (b.koerper.eis.mutation.schwimmFrames = 0)],
+        ["E3 TIER", (b) => Object.assign(b.koerper.eis.tier[0], { sohleUnterSpiegel: 0.599, schwimmt: true })],
+        ["E LEER", (b) => (b.koerper.eis = null)],
         ["K9 NACHT", (b) => Object.assign(b.licht, { nachtUnten: 0.17 })],
         ["K9 LITERAL", (b) => Object.assign(b.licht, { nachtUnten: 0.17, mittagUnten: 0.17, nachtOben: 0.5 })],
         ["K9 HIMMEL", (b) => (b.licht.himmelGetaucht = [81, 132, 170])],

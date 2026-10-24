@@ -402,6 +402,22 @@ class AnazhRealm_wasser_hydro {
         return spiegel;
     }
 
+    // DAS EIS (stoffe.K3): die feste Phase der EINEN Wasser-Wahrheit — der Spiegel am Körper (`_koerperWasser` über jedem
+    // Grund), dessen Wasser unter dem Gefrierpunkt liegt (`_temperaturAt` an seiner Höhe, mit der Trägheit des Wassers),
+    // trägt als Fläche: der Grund unter `y0` binnen `maxDist` (wie `_fieldSurfaceBelow`; ohne `y0` von oben), sonst null.
+    // Kein zweites Wasser: dieselbe Fläche, die das Auge sieht und durch die der Körper taucht, solange sie flüssig ist.
+    // Der billige Beweis zuerst (Lehre 25): ist das Wasser an `y0` warm, ist es jede Fläche darunter (die Luft kühlt mit
+    // der Höhe). Leser: der Grund jedes Körpers (`_koerperGrund`, `_koerperBodenUnter`) und die Sicht des Stands.
+    _eisAt(x, z, y0, maxDist) {
+        const TW = globalThis.__gelaendeCore.TEMPERATUR;
+        const gefroren = (y) => this._temperaturAt(y, TW.wasserTraegTage) < TW.gefrierpunkt;
+        const mitRef = Number.isFinite(y0);
+        if (mitRef && !gefroren(y0)) return null;
+        const spiegel = this._koerperWasser(x, z, -Infinity);
+        if (!(spiegel > -Infinity) || (mitRef && !(spiegel <= y0 && y0 - spiegel <= maxDist))) return null;
+        return gefroren(spiegel) ? spiegel : null;
+    }
+
     // Der Spiegel am Körper (die Wahrheit ohne Gestalt) — nur `_koerperWasser` ruft ihn. Wo ein Chunk geladen ist, ist es das
     // GEZEICHNETE Wasser (`_wasserBildAt`: das Sheet, auch der Küsten-Aquifer, das Live-Dach des Automaten, das flache Ufer)
     // unter der DECKE (D11), gelesen an der Zelle des Körpers (die erste nicht-feste über seinem Grund): ist sie geflutet,
@@ -443,8 +459,11 @@ class AnazhRealm_wasser_hydro {
     // DER BLICK DES WASSERS (K16, EIN Baustein für den Wasser-Stoff und den Fern-Ring): was die Fläche mit der Normale `n`
     // dem Auge `viewDir` zurückwirft, über dem Grund mit dem Durchlass `T` — der Körper im Licht des Orts (R∞ × E/π), soweit
     // er den Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Liefert { eigen, fres }.
+    // DAS EIS (stoffe.K3): über der Höhe, über der das Wasser gefriert (`o.eisNull`), ist die Fläche gefroren — deckend, ihr
+    // Körper der Schnee der Boden-Palette im Licht des Orts, der Himmel nach demselben Fresnel (n Eis 1,31 ≈ n Wasser 1,33);
+    // dieselbe Fläche trägt den Körper (`_eisAt`).
     _wasserBlick(TSL, WG, o) {
-        const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step } = TSL;
+        const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step, mix } = TSL;
         const HG =
             AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
         // Schlick-Fresnel (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2 — EIN Fresnel für Spiegel UND Durchlass.
@@ -492,7 +511,11 @@ class AnazhRealm_wasser_hydro {
             .mul(float(1.0).sub(fres))
             .add(himmel.mul(fres))
             .add(glanz);
-        return { eigen, fres };
+        const eis = step(o.eisNull, o.ort.y);
+        return {
+            eigen: mix(eigen, mix(vec3(...AnazhRealm.BODEN_FARBE.schnee).mul(o.irr), himmel, fres), eis),
+            fres: mix(fres, float(1.0), eis),
+        };
     }
 
     // DER BODEN UNTER EINEM WERK (Leben-Schau 2, 09.10.): der Boden des Körpers (`_koerperBodenUnter`) ab der Höhe des

@@ -179,38 +179,62 @@ function wasserKoerper(opts) {
             see: { mitte: [R(mx, 1), R(mz, 1)], spiegel: R(spiegel, 2), tiefeMitte: R(tiefeMitte, 2) },
             brust: R(brust),
         };
-        const yawAlt = st.yaw;
-        try {
-            // (1) HINEINGEHEN: vom Ostufer nach Westen, W gedrückt.
-            const g0 = r._voxelSurfaceY(x0, mz);
-            setze(x0, g0 + FUSS + 0.05, mz);
+        // (1) DER GANG vom Ostufer nach Westen bis zur See-Mitte, W gedrückt — über dem See (das gezeichnete Wasser > 0,5 m
+        // über dem Grund) die Füße gegen den Spiegel (K1 im Sommer, das Eis im Winter).
+        const gehen = () => {
+            setze(x0, r._voxelSurfaceY(x0, mz) + FUSS + 0.05, mz);
             st.yaw = -Math.PI / 2; // vorwärts = −x
-            let tiefGeerdet = 0,
-                augenUnterGeerdet = 0,
-                maxTiefeGeerdet = 0,
-                schwimmFrames = 0,
-                n = 0;
-            for (; n < (o.gehFrames || 1500); n++) {
+            const g = { frames: 0, tiefGeerdet: 0, augenUnterGeerdet: 0, maxTiefeGeerdetM: 0, schwimmFrames: 0 };
+            Object.assign(g, { seeFrames: 0, luft: 0, maxM: 0 });
+            for (; g.frames < (o.gehFrames || 1500) && pm.position.x > mx; g.frames++) {
                 schritt({ w: true });
                 const fuss = pm.position.y - FUSS;
-                const tiefe = spiegel - fuss;
                 const geerdet = st._fieldWasGrounded === true;
-                if (geerdet && tiefe > brust + 0.05) {
-                    tiefGeerdet++;
-                    if (tiefe > maxTiefeGeerdet) maxTiefeGeerdet = tiefe;
+                if (geerdet && spiegel - fuss > brust + 0.05) {
+                    g.tiefGeerdet++;
+                    g.maxTiefeGeerdetM = Math.max(g.maxTiefeGeerdetM, R(spiegel - fuss, 2));
                 }
-                if (geerdet && st.playerEyesUnderwater) augenUnterGeerdet++;
-                if (st.playerUnderwater) schwimmFrames++;
-                if (pm.position.x <= mx) break;
+                if (geerdet && st.playerEyesUnderwater) g.augenUnterGeerdet++;
+                if (st.playerUnderwater) g.schwimmFrames++;
+                const s = r._koerperWasser(pm.position.x, pm.position.z, -Infinity);
+                if (s - r._voxelSurfaceY(pm.position.x, pm.position.z) > 0.5)
+                    Object.assign(g, {
+                        seeFrames: g.seeFrames + 1,
+                        luft: g.luft + !geerdet,
+                        maxM: Math.max(g.maxM, R(Math.abs(fuss - s))),
+                    });
             }
-            aus.hinein = {
-                frames: n,
-                erreichtMitte: pm.position.x <= mx + 1,
-                tiefGeerdet,
-                augenUnterGeerdet,
-                maxTiefeGeerdetM: R(maxTiefeGeerdet, 2),
-                schwimmFrames,
-            };
+            g.erreichtMitte = pm.position.x <= mx + 1;
+            return g;
+        };
+        // DAS TIER IN DER SEE-MITTE, der Spieler `abstand` daneben: nach 90 Kreatur-Takten (x/z gehalten) der Median der Sohle
+        // unter dem Spiegel über die Takte ohne Hüpfer (der Hüpf-Würfel ist eine eigene Klasse, Q1/Q2), seine Wasserlinie (das
+        // Schultergelenk, Gelenk-Höhe des Vorderlaufs × Größe) und ob er schwimmt; `ohneBaum` nimmt ihm den Gestalt-Baum.
+        const tierLage = (seele, abstand, ohneBaum) => {
+            pm.position.set(mx + abstand, spiegel + 1, mz);
+            const c = r.spawnCreatureAt(mx, spiegel, mz, "happy", seele, { precise: true, bodySize: 1 });
+            if (!c) return null;
+            if (ohneBaum) delete c.userData._tierBaum;
+            const tb = c.userData._tierBaum;
+            const tiefen = [];
+            for (let k = 0; k < 90; k++) {
+                const ohneHopf = !(c.userData._hopV > 0) && !(c.userData._hopH > 0);
+                r.updateCreatures(0.05);
+                c.position.x = mx;
+                c.position.z = mz;
+                if (k >= 30 && ohneHopf && !(c.userData._hopH > 0)) tiefen.push(spiegel - c.position.y);
+            }
+            tiefen.sort((a, b) => a - b);
+            r.removeCreature(c);
+            if (!tiefen.length) return null;
+            const linie = tb && tb.bein ? tb.bein[0].h * (c.scale.x || 1) : null;
+            const sohle = tiefen[tiefen.length >> 1];
+            const schwimmt = c.userData._motionZustand === "schwimmen";
+            return { seele, abstand, sohleUnterSpiegel: R(sohle, 3), wasserlinie: R(linie, 3), schwimmt };
+        };
+        const jahr = [st.seasonPhase, st.autoSeason];
+        try {
+            aus.hinein = gehen();
             // (2) SCHWIMM-LAGE: an der See-Mitte loslassen, 300 Schritte Ruhe; gemessen die letzten 120.
             const gm = r._voxelSurfaceY(mx, mz);
             setze(mx, Math.max(gm + FUSS + 0.1, spiegel - brust + FUSS), mz);
@@ -293,67 +317,21 @@ function wasserKoerper(opts) {
                     r._applyDayNightToScene();
                 }
             }
-            // (6) DAS TIER IM WASSER (W-T, R-D8/R-D9): je Art eine Kreatur in der See-Mitte, einmal nah (der Spieler 8 m
-            // daneben), einmal fern (120 m) — nach 60 Kreatur-Takten (x/z gehalten) die Sohle unter dem Spiegel gegen
-            // ihre Wasserlinie (das Schultergelenk, Gelenk-Höhe des Vorderlaufs × Größe) und „am Grund" (Sohle < Grund +
-            // 0,5 m). Median der letzten 30 Takte (der Hüpfer wirft einzelne Takte).
-            const tierProbe = [];
+            // (6) DAS TIER IM WASSER (W-T, R-D8/R-D9): je Art nah (der Spieler 8 m daneben) und fern (120 m) — die Sohle gegen
+            // ihre Wasserlinie und „am Grund" (Sohle < Grund + 0,5 m); (6b) ohne Gestalt-Baum liegt die Wasserlinie auf der
+            // Schwimm-Tiefe des Gesetzes (VERHALTEN.wasser.schwimmTiefeM).
             const playerAlt = pm.position.clone();
             try {
-                for (const abstand of [8, 120]) {
-                    pm.position.set(mx + abstand, spiegel + 1, mz);
-                    for (const seele of ["wesen", "wolf", "fuchs", "baer"]) {
-                        const c = r.spawnCreatureAt(mx, spiegel, mz, "happy", seele, { precise: true, bodySize: 1 });
-                        if (!c) continue;
-                        const tb = c.userData._tierBaum;
-                        const linie = tb && tb.bein ? tb.bein[0].h * (c.scale.x || 1) : null;
-                        const tiefen = [];
-                        for (let k = 0; k < 90; k++) {
-                            // nur Takte ohne Hüpfer (der Hüpf-Würfel ist eine eigene Klasse, Q1/Q2 — hier zählt die Lage)
-                            const ohneHopf = !(c.userData._hopV > 0) && !(c.userData._hopH > 0);
-                            r.updateCreatures(0.05);
-                            c.position.x = mx;
-                            c.position.z = mz;
-                            if (k >= 30 && ohneHopf && !(c.userData._hopH > 0)) tiefen.push(spiegel - c.position.y);
-                        }
-                        tiefen.sort((a, b) => a - b);
-                        if (!tiefen.length) continue;
-                        const sohle = tiefen[tiefen.length >> 1];
-                        tierProbe.push({
-                            seele,
-                            abstand,
-                            sohleUnterSpiegel: R(sohle, 3),
-                            wasserlinie: R(linie, 3),
-                            amGrund: spiegel - sohle < gm + 0.5,
-                        });
-                        r.removeCreature(c);
-                    }
-                }
-                // (6b) DAS WESEN OHNE GESTALT-BAUM: trägt eine Kreatur keinen `_tierBaum`, liegt ihre Wasserlinie auf der
-                // Schwimm-Tiefe des Gesetzes (VERHALTEN.wasser.schwimmTiefeM).
-                pm.position.set(mx + 8, spiegel + 1, mz);
-                const cB = r.spawnCreatureAt(mx, spiegel, mz, "happy", "wolf", { precise: true, bodySize: 1 });
-                if (cB) {
-                    delete cB.userData._tierBaum;
-                    const tiefenB = [];
-                    for (let k = 0; k < 90; k++) {
-                        const ohneHopf = !(cB.userData._hopV > 0) && !(cB.userData._hopH > 0);
-                        r.updateCreatures(0.05);
-                        cB.position.x = mx;
-                        cB.position.z = mz;
-                        if (k >= 30 && ohneHopf && !(cB.userData._hopH > 0)) tiefenB.push(spiegel - cB.position.y);
-                    }
-                    tiefenB.sort((a, b) => a - b);
-                    aus.baumlos = {
-                        sohleUnterSpiegel: tiefenB.length ? R(tiefenB[tiefenB.length >> 1], 3) : null,
-                        soll: R(r.constructor._verhaltenGesetz().wasser.schwimmTiefeM, 3),
-                    };
-                    r.removeCreature(cB);
-                }
+                aus.tier = [8, 120]
+                    .flatMap((abstand) => ["wesen", "wolf", "fuchs", "baer"].map((seele) => tierLage(seele, abstand)))
+                    .filter(Boolean)
+                    .map((t) => Object.assign(t, { amGrund: spiegel - t.sohleUnterSpiegel < gm + 0.5 }));
+                const b = tierLage("wolf", 8, true);
+                const soll = R(A._verhaltenGesetz().wasser.schwimmTiefeM, 3);
+                if (b) aus.baumlos = { sohleUnterSpiegel: b.sohleUnterSpiegel, soll };
             } finally {
                 pm.position.copy(playerAlt);
             }
-            aus.tier = tierProbe;
             // (7) DER MITSPIELER (W-kD3b): ein Peer-Körper des Menschen treibt mit der Brustkorb-Linie am See-Spiegel —
             // die EINE Wasser-Wahrheit macht ihn zum Schwimmer (die Schwimm-Lehne neigt den Leib), wie den eigenen.
             const peer = {
@@ -374,8 +352,20 @@ function wasserKoerper(opts) {
                 r._disposeSoulGroup(peer.mesh); // die EINE Entsorgungs-Regel (Frost 08.10.: `_p2pDisposeMesh` fiel)
             }
             // (8) DAS LICHT AM WASSER (K9) fährt mit dem echten Renderer: `wasserLicht` (der Himmel lebt auf der GPU, D3)
+            // (9) DAS EIS (stoffe.K3): im Winter (Saison 0,875) trägt der gefrorene See denselben Gang und dieselben Tiere am
+            // Spiegel; die Mutation (das Feld +10 °C an seiner EINEN Naht `_temperaturAt`) bricht den Spieler ein.
+            const TW = window.__gelaendeCore.TEMPERATUR;
+            const gang = () => Object.assign(gehen(), { temperatur: R(r._temperaturAt(spiegel, TW.wasserTraegTage)) });
+            Object.assign(st, { autoSeason: false, seasonPhase: 0.875 });
+            aus.eis = {
+                winter: gang(),
+                tier: ["wolf", "fuchs", "baer"].map((seele) => tierLage(seele, 8)).filter(Boolean),
+            };
+            r._temperaturAt = (y, tr) => A.prototype._temperaturAt.call(r, y, tr) + 10;
+            aus.eis.mutation = gang();
         } finally {
-            st.yaw = yawAlt;
+            delete r._temperaturAt;
+            [st.seasonPhase, st.autoSeason] = jahr;
             leib.zurueck();
         }
         return aus;
@@ -2545,11 +2535,11 @@ function wasserLeser(opts) {
 }
 
 // DER LEIB DER PROBE (EIN Gestell): der Spiel-Takt ruht, `setze` stellt den Leib ruhend an (x, y, z), `takt` geht mit den Tasten
-// einen festen Sim-Schritt (`_stepFixedSim`), `zurueck` stellt Ort, Tasten, Takt und Kamera wieder her.
+// einen festen Sim-Schritt (`_stepFixedSim`), `zurueck` stellt Ort, Tasten, Blick, Takt und Kamera wieder her.
 function wasserLeib() {
     const [r, A] = [window.anazhRealm, window.anazhRealm.constructor];
     const [st, pm] = [r.state, r.state.playerMesh];
-    const alt = [pm.position.clone(), st.keys, r._loopFixedStep, st.camera && st.camera.position.clone()];
+    const alt = [pm.position.clone(), st.keys, r._loopFixedStep, st.camera && st.camera.position.clone(), st.yaw];
     [r._loopFixedStep, st.keys] = [() => 0, {}];
     let t = Number.isFinite(st._fixedSimTime) ? st._fixedSimTime : 0;
     const leib = {
@@ -2562,7 +2552,7 @@ function wasserLeib() {
         },
         takt: (keys) => ((st.keys = Object.assign({}, keys)), r._stepFixedSim(t, A.FIXED_DT), (st._fixedSimTime = t += A.FIXED_DT)),
         zurueck() {
-            [r._loopFixedStep, st.keys] = [alt[2], alt[1] || {}];
+            [r._loopFixedStep, st.keys, st.yaw] = [alt[2], alt[1] || {}, alt[4]];
             leib.setze(alt[0].x, alt[0].y, alt[0].z);
             if (alt[3]) (st.camera.position.copy(alt[3]), st.camera.updateMatrixWorld(true), r._applyDayNightToScene());
         },

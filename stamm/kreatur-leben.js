@@ -1461,15 +1461,27 @@ class AnazhRealm_kreatur_leben {
     // (`_bewohnerGeburt`). gate:fall-waechter (Q) nennt
     // jede Methode beim Namen, die die Oberkante der Säule liest UND die Höhe eines Leibs berührt, ohne als Platzierung
     // (Geburt, Ersteh-Ort, Rettung aus der Leere) benannt zu sein.
+    // DAS EIS (stoffe.K3) trägt wie Fels: ein gefrorener Spiegel (`_eisAt`) über der Fels-Grenze ist der Grund.
     _koerperBodenUnter(x, yRef, z) {
         if (Number.isFinite(yRef)) {
             // eingegraben (der Hang stieg unter dem Schritt): nur eine Stufe aufwärts suchen — tiefer im Fels ist kein
             // Gang (ein Spawn im Gestein), dort trägt die Säule
             const y0 = yRef + AnazhRealm.PLAYER_STEP_UP;
-            const g = this._fieldSurfaceBelow(x, y0, z, this._fieldSolid(x, y0, z) ? 2 : 40);
+            const g = this._koerperGrund(x, y0, z, this._fieldSolid(x, y0, z) ? 2 : 40);
             if (g !== null) return g;
         }
-        return this._voxelSurfaceY(x, z);
+        const oben = this._voxelSurfaceY(x, z);
+        const eis = this._eisAt(x, z, NaN);
+        return eis !== null && !(oben >= eis) ? eis : oben;
+    }
+
+    // DER GRUND EINES KÖRPERS unter y0 binnen `maxDist`: die Fels-Grenze (`_fieldSurfaceBelow`) oder das Eis über ihr
+    // (`_eisAt`) — das Höhere trägt, null ohne beides. Leser: der Kapsel-Schritt (`_stepCharacter`), `_koerperBodenUnter`,
+    // `_koerperSchritt`, der Ausstieg vom Wagen (`_aussteigOrt`).
+    _koerperGrund(x, y0, z, maxDist) {
+        const g = this._fieldSurfaceBelow(x, y0, z, maxDist);
+        const e = this._eisAt(x, z, y0, maxDist);
+        return e !== null && !(g >= e) ? e : g;
     }
 
     // DIE KANTE GENAU: die Fels-Grenze um den gefundenen Grund `g` (`_fieldSurfaceBelow` liegt bis 7,8 mm darunter, je nach
@@ -1503,7 +1515,7 @@ class AnazhRealm_kreatur_leben {
         const y0 = vg + stufe;
         let g;
         if (!this._fieldSolid(x, y0, z)) {
-            g = this._fieldSurfaceBelow(x, y0, z, 40);
+            g = this._koerperGrund(x, y0, z, 40);
             if (g === null) return this._koerperBodenUnter(x, NaN, z);
         } else {
             g = this._koerperBodenUnter(x, vg, z);

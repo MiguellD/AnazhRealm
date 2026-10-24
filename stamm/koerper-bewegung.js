@@ -672,7 +672,7 @@ class AnazhRealm_koerper_bewegung {
         //    auf dem Grund.
         const feet0 = mesh.position.y - footDrop;
         const brustM = AnazhRealm._schwimmBrustM();
-        const grund0 = this._fieldSurfaceBelow(
+        const grund0 = this._koerperGrund(
             mesh.position.x,
             feet0 + AnazhRealm.PLAYER_STEP_UP,
             mesh.position.z,
@@ -846,8 +846,17 @@ class AnazhRealm_koerper_bewegung {
             : this._stepCharacterIslands(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
         nx = structPos.x;
         nz = structPos.z;
-        // Die höhere der beiden begehbaren Auflagen (Bauwerk ODER Insel) trägt den Spieler.
-        const supTop = Math.max(structTop, islandTop);
+        // DAS EIS (stoffe.K3): ein gefrorener Spiegel unter den Füßen (`_eisAt`) ist eine Auflage — eben, die Sicht steht auf
+        // ihm. Die höchste der begehbaren Auflagen (Bauwerk, Insel ODER Eis) trägt den Spieler.
+        const eisTop = fahrHuelle
+            ? null
+            : this._eisAt(
+                  nx,
+                  nz,
+                  feetY + AnazhRealm.PLAYER_STEP_UP,
+                  footDrop + AnazhRealm.PLAYER_STEP_UP + AnazhRealm.PLAYER_GROUND_SNAP + 4
+              );
+        const supTop = Math.max(structTop, islandTop, eisTop === null ? -Infinity : eisTop);
 
         // 7. TERRAIN-WAND-KOLLISION — nur HORIZONTAL, und VOR dem Boden-Snap (so wird der Spieler
         //    erst aus der Wand geschoben, bevor Schritt 8 vertikal entscheidet → der Anti-Clip

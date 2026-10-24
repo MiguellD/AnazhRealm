@@ -9,7 +9,7 @@
 // Die Leben-Prüfung „Kampf" (WELLE_L, scripts/lib/kampf-proben.cjs) spielt wie ein Mensch — das Fadenkreuz durch die echte
 // Kamera, der Klick über den EINEN Dispatcher, gezählt nur mitlaufend: Q8 Treffer · Q9 Maus · Q10 Blick · Q11 das Gesetz
 // des Haltens · Q12 der ballistische Bogen · G3/T12 das Grob-Tor · T13–T27 die Posten der Leben-Schau; die Selbst-Tests
-// S3–S14 feuern je an ihrer Naht, jede Naht restauriert. Aufruf: node scripts/diag-kampf-gefuehl.cjs
+// S3–S16 feuern je an ihrer Naht, jede Naht restauriert. Aufruf: node scripts/diag-kampf-gefuehl.cjs
 const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 // Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
@@ -438,42 +438,57 @@ function gesetzVerdict(G) {
     }
     return v;
 }
-// (Q11) das Urteil des Werks in Klicks über den Dispatcher (null: nie): Fällaxt fällt, Hacke und Hammer brechen Fels,
-// Spaten und Schaufel graben, die umgeformte Gestalt folgt (formVerdict).
-const klickZahl = (x) => (x === null ? Infinity : x);
-function formVerdict(F) {
+// (Q11 halten.K3) DER WERKZEUG-SATZ: jede Gestalt wirkt am Ziel ihrer Aufgabe über die Hand hinaus, gräbt genau mit offener
+// Front, mäht nur mit fassender Schneide, zehrt, wo sie wirkt, führt den Faktor und wirkt verbraucht nicht; Form; Stoff.
+const f2 = (x) => (x && Number.isFinite(x.wirk) ? x.wirk.toFixed(2) : "–");
+const graebt = (x) => !!x && x.verb === "graben";
+const maeht = (x) => !!x && x.verb === "pfluecken" && x.wirk > 0 && x.kraut >= x.wirk && x.wieder;
+function satzVerdict(S) {
+    if (!S || !S.hand) return ["keine Messung"];
     const v = [];
-    if (!(F.axtBlatt.boden !== null && F.axt.boden === null))
-        v.push(`form: die Fällaxt gräbt mit dem Grab-Blatt ${F.axtBlatt.boden}, mit dem Axt-Kopf ${F.axt.boden}`);
-    if (!(klickZahl(F.axtBlatt.baum) > klickZahl(F.axt.baum)))
-        v.push(`form: die Fällaxt fällt mit dem Grab-Blatt in ${F.axtBlatt.baum}, mit dem Axt-Kopf in ${F.axt.baum}`);
-    if (!(F.spatenAxt.boden === null && F.spaten.boden !== null))
-        v.push(`form: der Spaten gräbt mit dem Axt-Kopf ${F.spatenAxt.boden}, mit dem Blatt ${F.spaten.boden}`);
-    if (!(klickZahl(F.spatenAxt.baum) < klickZahl(F.spaten.baum)))
-        v.push(`form: der Spaten fällt mit dem Axt-Kopf in ${F.spatenAxt.baum}, mit dem Blatt in ${F.spaten.baum}`);
+    for (const [id, g] of Object.entries(S)) {
+        if (id === "hand") continue;
+        const [x, h, L] = [g[g.ziel] || {}, S.hand[g.ziel] || {}, g.leer || { wirk: 1 }];
+        const satt = Object.keys(g).filter((z) => g[z] && g[z].verb && g[z].wirk > 0 && !(g[z].zehrt > 0));
+        const halb = g.halb && g.halb.kraft / x.kraft;
+        if (!(x.wirk > (h.wirk || 0))) v.push(`${id} wirkt am ${g.ziel} ${f2(x)}`);
+        if (g.boden && graebt(g.boden) !== g.oeffnet) v.push(`${id} gräbt gegen die Front`);
+        if (g.wiese && g.wiese.wirk > 0 && !g.fasst) v.push(`${id} mäht ohne fassende Schneide`);
+        if (satt.length) v.push(`${id} zehrt nicht am ${satt}`);
+        if (g.halb && !(Math.abs(halb - S.hand.halb) < 0.01)) v.push(`${id} führt bei wear 0,5 ${halb}`);
+        if (L.wirk > 0 || L.zehrt > 0) v.push(`${id} wirkt verbraucht`);
+    }
     return v;
 }
-function werkVerdict(W) {
-    if (!W || !W.baum_eiche || !W.stein_block || !W.boden || !W.form) return ["keine Messung"];
-    const v = [];
-    const vor = (wo, tab, sieger, andere) => {
-        for (const x of andere)
-            if (!(tab[sieger] !== null && tab[sieger] < klickZahl(tab[x])))
-                v.push(`${wo}: ${sieger} ${tab[sieger]} Klicks, ${x} ${tab[x]}`);
-    };
-    vor("baum", W.baum_eiche, "faellaxt", ["langschwert", "spitzhacke", "vorschlaghammer", "spaten", "hand"]);
-    vor("fels", W.stein_block, "spitzhacke", ["faellaxt", "langschwert", "spaten", "hand"]);
-    vor("fels", W.stein_block, "vorschlaghammer", ["faellaxt", "langschwert"]);
-    vor("boden", W.boden, "spaten", ["hand"]);
-    vor("boden", W.boden, "schaufel", ["hand"]);
-    for (const x of ["langschwert", "vorschlaghammer", "faellaxt"])
-        if (W.boden[x] !== null) v.push(`boden: ${x} gräbt in ${W.boden[x]} Klicks, soll schwingen`);
-    return v.concat(formVerdict(W.form));
+function formVerdict(F) {
+    if (!F || !F.recurve) return ["keine Messung"];
+    const w = (k, z) => F[k][z].wirk;
+    return [
+        [graebt(F.axtBlatt.boden) && !graebt(F.axt.boden), "form: Fällaxt gräbt mit Kopf, nicht mit Blatt"],
+        [w("axtBlatt", "baum_eiche") < w("axt", "baum_eiche"), "form: Fällaxt fällt mit Blatt wie mit Kopf"],
+        [graebt(F.spaten.boden) && !graebt(F.spatenAxt.boden), "form: Spaten gräbt mit Axt-Kopf, nicht mit Blatt"],
+        [w("spatenAxt", "baum_eiche") > w("spaten", "baum_eiche"), "form: Spaten fällt mit Axt-Kopf wie mit Blatt"],
+        [maeht(F.sichel.wiese), "sichel: sichel mäht nicht"],
+        [!maeht(F.gerade.wiese), "sichel: gerade mäht"],
+        [maeht(F.hohl.wiese), "sichel: hohl mäht nicht"],
+        [w("recurve", "schuss") > w("bogen", "schuss") * 1.01, "bogen: Recurve 0,6 schießt nicht schneller"],
+    ]
+        .filter(([ok]) => !ok)
+        .map(([, t]) => t);
 }
-// (Q11 halten.K3 Sichel) eine Form mäht: der Klick trägt das Verb pfluecken, Büschel der Wiese fehlen nach ihrem Takt (ins kraut)
-// und wachsen nach; die Sichel und der hohle Säbel mähen, die gerade Sichel nicht.
-const maeht = (x) => !!x && x.verb === "pfluecken" && x.fehlen > 0 && x.kraut >= x.fehlen && x.wieder;
-const sichelForm = (F = {}) => ["sichel", "gerade", "hohl"].filter((k) => maeht(F[k]) === (k === "gerade"));
+function stoffVerdict(V) {
+    const R = ["Frank", "Nihon", "Urvolk"].map((t) => (V || {})[t]).filter(Boolean);
+    if (R.length < 3) return ["keine Messung"];
+    const v = [];
+    R.sort((a, b) => b.haerte - a.haerte).forEach((b, i, [st]) => {
+        const a = R[i - 1] || { zehrt: 0, wear: 2 };
+        if (!(b.zehrt > a.zehrt * 1.01)) v.push(`stoff: ${b.stoff} zehrt wie ${a.stoff}`);
+        if (!(b.wear < a.wear)) v.push(`zustand: ${b.stoff} wie ${a.stoff}`);
+        if (!(b.wirk[1] < b.wirk[0])) v.push(`wirkung: ${b.stoff} stumpft nicht`);
+        if (!i && !(V.weich > st.zehrt * 1.01)) v.push(`härte: die halbe zehrt wie die volle`);
+    });
+    return v;
+}
 // (Q12) halten.K4: die Spitze gegen die Parabel ihres Abschusses als Anteil des Falls ½·|g|·τ² ab 0,1 s; Staffel 1 Bahn und
 // Treffer-Ort ≤ 5 %, Tempo √(2E/m); Staffel 2 der Pfeil steckt und kehrt aus dem Speicher wieder, das Tempo folgt BOGENMAT.
 const fall = (g, t) => 0.5 * Math.abs(g) * t * t;
@@ -1037,14 +1052,10 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         );
         console.log(`       Faktoren ${z.faktoren}`);
         console.log(
-            `       ${z.panzer} · Verschleiß wear ${f1(z.wear16)} nach ${z.treffer16} Treffern, verbraucht ${z.trefferVerbraucht} Treffer · Güte uneins ${z.gueteUneins} von ${z.gueteGeraete}${z.gueteProben ? " (" + z.gueteProben + ")" : ""}`
+            `       ${z.panzer} · Güte uneins ${z.gueteUneins} von ${z.gueteGeraete}${z.gueteProben ? " (" + z.gueteProben + ")" : ""}`
         );
         console.log(
             `       Pfeil voll ${f1(z.pfeilVoll)} · 25 % ${f1(z.pfeilViertel)} · hinter der Wand ${z.pfeilHinterWand} · frei ${z.pfeilFrei}`
-        );
-        const bg = z.bogen || {};
-        console.log(
-            `       Bogen-Verschleiß: wear 1 ${f1(bg.voll)} · wear 0,5 ${f1(bg.halb)} (÷ ${f1(bg.verh)}, Soll ${f1(bg.soll)}) · zehrt je Schuss ${bg.zehrtVoll === undefined ? "–" : bg.zehrtVoll.toFixed(4)}/${bg.zehrtHalb === undefined ? "–" : bg.zehrtHalb.toFixed(4)} · verbraucht (0,02) flog ${bg.verbrauchtFlog}, traf ${bg.verbrauchtTraf} · Täter S6 ok=${z.s6 ? z.s6.ok : "–"}`
         );
         console.log(
             `       Waffen-Schadens-Pfade ${z.schadensPfade} · ohne _kampfRohSchaden: ${z.schadensZwillinge} · Täter S7 nennt ${z.s7 || "–"} · trefferZone fehlt → ${z.kernOhneZone} (mit Kern ${z.kernMitZone} Glieder)`
@@ -1066,15 +1077,24 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             `  (Q10) Ego-Neigung −90° → ${f1(z.blick90)}°, −57,3° → ${f1(z.blick57)}° · vor dir min cos ${f1(z.vorDirCos)} · „baue dorf hier" cos ${f1(z.dorfCos)} · Pfeil↔Fadenkreuz ${f1(z.pfeilFadenkreuz)}°\n`
         );
         const G = z.gesetz || {},
-            W = G.werk || {},
             T = G.vor || {};
         const zeile = (id) =>
             ["vor", "masse", "tempo", "eisen", "schneide"].map((k) => `${k} ${f1(G[k][id].wirk)}/${f1(G[k][id].p)}`);
         console.log(
             `  (Q11) Leib ${f1(G.leib)} · Wirkung/Stoß: langschwert ${zeile("langschwert")} · dolch ${zeile("dolch")}`
         );
-        for (const k of ["baum_eiche", "stein_block", "boden", "form", "s13"])
-            console.log(`        ${k} ${JSON.stringify(W[k])}`);
+        const [S, V, SB] = [z.satz || {}, z.stoff, z.selbst || {}];
+        const basis = (M) =>
+            M && Object.assign({ axt: S.faellaxt, spaten: S.spaten, sichel: S.sichel, bogen: S.langbogen }, M);
+        const F = basis(z.form);
+        const kurz = (g) =>
+            Object.entries(g)
+                .filter(([, x]) => x && x.verb !== undefined)
+                .map(([k, x]) => `${k} ${x.verb} ${f2(x)}/${x.zehrt.toFixed(4)}`)
+                .join(" ");
+        for (const [id, g] of Object.entries(S)) console.log(`        ${id} → ${g.ziel || "–"}: ${kurz(g)}`);
+        console.log(`        form ${JSON.stringify(z.form)}`);
+        console.log(`        stoff ${JSON.stringify(V)}`);
         const gv = gesetzVerdict(G);
         check(
             gv.length === 0,
@@ -1086,27 +1106,47 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             s12.some((x) => x.startsWith("tempo")),
             "SELBST-TEST (S12): ein fester Schaden neben dem Gesetz (_trefferWirkung ≡ 1) — die Tempo-Mutation bleibt stumm, die Linse nennt sie"
         );
-        const werkV = werkVerdict(W);
+        const fv = formVerdict(F),
+            nach = (pre) => fv.filter((x) => x === "keine Messung" || x.startsWith(pre));
+        const werkV = ["faellaxt", "spitzhacke", "vorschlaghammer", "spaten", "schaufel"]
+            .flatMap((id) => satzVerdict({ hand: S.hand, [id]: S[id] || {} }))
+            .concat(nach("form"));
         check(
             werkV.length === 0,
             "Q11 halten.K3: das Werk wirkt nach seiner Form — Fällaxt fällt, Hacke und Hammer brechen Fels, Spaten und Schaufel graben, die umgeformte Gestalt (Grab-Blatt, Axt-Kopf) folgt der neuen Form" +
                 (werkV.length ? " — " + werkV.join(" · ") : "")
         );
-        const s13 = W.s13 ? formVerdict(W.s13) : [];
+        const skv = nach("sichel");
+        check(
+            !skv.length,
+            `Q11 halten.K3 Sichel erntet über die echte Eingabe nach der Form — ${F && f2(F.sichel.wiese)} Büschel der Mess-Wiese ins kraut, sie wachsen nach; die gerade Sichel mäht nicht, der hohle Säbel mäht${skv.length ? " — ROT " + skv : ""}`
+        );
+        const ids = Object.keys(S).filter((id) => id !== "hand");
+        const gut = ids.filter((id) => !satzVerdict({ hand: S.hand, [id]: S[id] }).length);
+        const s2 = satzVerdict(S).concat(nach("bogen"), stoffVerdict(V));
+        const zj = (t) => (V && V[t] ? V[t].stoff + " " + V[t].zehrt.toFixed(4) : "–");
+        check(
+            ids.length >= 22 && !s2.length,
+            `Q11 halten.K3 Staffel 2: jede Gestalt der Schmiede (${gut.length} von ${ids.length}) wirkt nach ihrer Form an ihrem Ziel und zehrt, wo sie wirkt, nach der Härte ihrer Stoff-Zeile (${zj("Urvolk")} > ${zj("Nihon")} > ${zj("Frank")} je Hieb, die halbe Härte ${V && V.weich.toFixed(4)})` +
+                (s2.length ? " — " + s2.slice(0, 10).join(" · ") + ` (${s2.length})` : "")
+        );
+        const s13 = formVerdict(basis(SB.form));
         check(
             s13.some((x) => x.includes("gräbt")) && s13.some((x) => x.includes("fällt")),
             "SELBST-TEST (S13): eine Art-Tafel neben dem Gesetz (graben nach task.art, ein Abbau-Profil für alle) — die Form-Mutation bleibt stumm, die Linse nennt sie"
         );
-        const SK = z.sichel || {},
-            skv = sichelForm(SK);
-        console.log(`  (Q11 Sichel) ${JSON.stringify(SK)}`);
         check(
-            !skv.length,
-            `Q11 halten.K3 Sichel erntet über die echte Eingabe nach der Form — ${(SK.sichel || {}).fehlen} Büschel der Mess-Wiese ins kraut, sie wachsen nach; die gerade Sichel mäht nicht, der hohle Säbel mäht${skv.length ? " — ROT " + skv : ""}`
+            s13.includes("sichel: gerade mäht") && s13.includes("sichel: hohl mäht nicht"),
+            "SELBST-TEST (S15): mäht, wer Sichel heißt — die Form-Mutation bleibt stumm"
         );
         check(
-            sichelForm(SK.s15).join() === "gerade,hohl",
-            "SELBST-TEST (S15): mäht, wer Sichel heißt — die Form-Mutation bleibt stumm"
+            stoffVerdict(SB.stoff).some((x) => x.startsWith("stoff")),
+            "SELBST-TEST (S16): ein Verschleiß ohne Stoff (der Spender) — Bronze zehrt wie Stahl, die Linse nennt sie"
+        );
+        const s6 = satzVerdict({ hand: S.hand, langbogen: SB.bogen });
+        check(
+            s6.some((x) => x.includes("zehrt nicht")) && s6.some((x) => x.includes("führt bei wear")),
+            "SELBST-TEST (S6): der Pfeil ohne Verschleiß (Faktor 1, kein Zehren) — der Satz nennt ihn"
         );
         const K4 = z.bogenK4 || {};
         const k4 = bogenK4Verdict(K4);
@@ -1174,7 +1214,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             "Q8 K-D4: der Hit-Stop ist energie-skaliert — jedes Nahkampf-Rezept stoppt nach SEINER Treffer-Energie (höchstens 3 teilen sie auf ±3 %; Befund: 13 von 17 mit 19,8 J)"
         );
         check(c.keineKappe, "Q8 K-D5: keine Schadens-Kappe — höchstens 2 Nahkampf-Rezepte auf dem Maximal-Faktor");
-        check(c.verschleiss, "Q8 K-D6: Kampf verschleißt die Klinge, ein verbrauchtes Gerät schlägt nicht");
         check(
             c.eineGuete,
             "Q8 K-D7: EINE Güte je Gerät — Schaden, Werkstoff-Kraft und Equip-Fold lesen das Lehren-Urteil des Kerns"
@@ -1706,10 +1745,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             "Selbst-Test T24: die Befunde (15 Gestalten je Takt, 6 Ansprünge unter dem Sims, 0 Bisse am Reh, ein Kopf-Ziel, das ohne Pose-Fortschritt 0,69 rad wandert) nennen Kosten, Sims, Reh und Kopf; ein erster Rest an der Klemme (1,0) heißt vakuös; ein Biss nur in Reichweite, der trifft, bleibt grün"
         );
         check(
-            c.bogenVerschleiss,
-            "Q8 K-D6: der Bogen verschleißt wie die Klinge — wear 0,5 trifft mit 0,65, jeder Schuss zehrt, verbraucht (0,02) löst er nicht"
-        );
-        check(
             c.einRohSchaden,
             "Q8 K-D6: JEDER Waffen-Schadens-Pfad (damageCreature im Namen des Spielers) rechnet im EINEN _kampfRohSchaden"
         );
@@ -1761,10 +1796,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         check(
             c.s5 === true,
             "SELBST-TEST (S5): _kreaturGliedTreffer ≡ null → kein Treffer (die Serie misst die Gestalt)"
-        );
-        check(
-            c.s6 === true,
-            "SELBST-TEST (S6): der Pfeil ohne Verschleiß (_wearStatFactor ≡ 1, _kampfVerschleiss leer) → die Bogen-Probe ist rot"
         );
         check(
             c.s7 === true,
