@@ -848,8 +848,17 @@ class AnazhRealm_feld_sprache {
                 const aPl = 1 - Math.exp(-delta / AnazhRealm.WERTUNG.playerTau);
                 p.wohlBaseline += aPl * (sit - p.wohlBaseline);
             }
-            // Die Feld-Baseline-Map an der Spieler-Zelle füttern (für die Regel-Fitness, Phase 2).
-            this._observeFieldWohl(pm.x, pm.z, currentTime);
+            // Die Feld-Baseline-Map an der Spieler-Zelle füttern (für die Regel-Fitness, Phase 2): beim Betreten der Zelle und
+            // beim Verlassen — dazwischen trägt die lazy EMA die Zeit (ein Blick nach Δt gleicht jedem Blick dazwischen bei
+            // gleicher Lage). Bis feld.K3#2 sah der Spieler in JEDEM Bild hin (gate:stand-takt, 60 s Ruhe: 46 802 Einheiten).
+            const wz = this._wohlCellKey(pm.x, pm.z);
+            const vor = p.wohlZelle;
+            const wb = this.state.wohlBaseline;
+            if (!vor || vor.key !== wz || !(wb && wb.has(wz))) {
+                if (vor && vor.key !== wz) this._observeFieldWohl(vor.x, vor.z, currentTime);
+                this._observeFieldWohl(pm.x, pm.z, currentTime);
+                p.wohlZelle = { key: wz, x: pm.x, z: pm.z };
+            }
         }
 
         // === Der ZUSTAND-Kanal ===
@@ -1174,22 +1183,16 @@ class AnazhRealm_feld_sprache {
             const alt = erw.get(key);
             const erwartet = alt ? alt.e * Math.exp(-Math.max(0, jetzt - alt.t) / W.tatTau) : 0;
             e.delta = e.ertrag - erwartet;
-            erw.set(key, { e: erwartet + W.ruleValueBeta * e.delta, t: jetzt });
-            if (!alt && erw.size > (this._tatRaeumAb || W.raeumAb)) this._tatErwartungRaeumen(jetzt);
+            const neu = { e: erwartet + W.ruleValueBeta * e.delta, t: jetzt };
+            erw.set(key, neu);
+            // vergessen, wo |e| · e^(−Δt/τ) unter 1e-3 fällt — die Tat räumt (`_feldTod`)
+            this._feldTod(erw, key, neu, jetzt + W.tatTau * Math.max(0, Math.log(Math.abs(neu.e) / 1e-3)), jetzt);
         }
         const buch = st.taten || (st.taten = []);
         buch.push(e);
         if (buch.length > W.tatBuch) buch.splice(0, buch.length - W.tatBuch);
         this._feldStimme(e);
         return e;
-    }
-
-    // Die Erwartungen bounded halten (wie `_pruneWohlBaseline`): eine neue Zelle über der Räum-Schwelle räumt, was vergessen ist.
-    _tatErwartungRaeumen(jetzt) {
-        const erw = this.state.tatErwartung;
-        const tau = AnazhRealm.WERTUNG.tatTau;
-        for (const [k, v] of erw) if (Math.abs(v.e * Math.exp(-Math.max(0, jetzt - v.t) / tau)) < 1e-3) erw.delete(k);
-        this._tatRaeumAb = Math.max(AnazhRealm.WERTUNG.raeumAb, 2 * erw.size);
     }
 
     // DIE ANTWORT AM OHR (x, z), der Leser des Klangs (`_umweltLage`): die Tat, deren abklingendes δ hier am stärksten wirkt —
@@ -1314,13 +1317,12 @@ _stammZonen(AnazhRealm, [AnazhRealm_feld_sprache]);
 //   cell        — Zell-Größe der Baseline-Map (= LIFE_FIELD.cell, 16 m)
 //   fieldTau    — ORTS-Baseline (s); ~120 s → ein Ort re-normalisiert langsam
 //   playerTau   — SPIELER-Baseline (s); ~30 s → Gewöhnung in einer Sitzung
-//   pruneAgeSec / raeumAb — die Baseline-Map bounded halten (eine neue Zelle über `raeumAb` räumt die alten)
+//   pruneAgeSec — die Baseline-Map bounded halten: eine Zelle ohne Blick veraltet und fällt (`_feldTod`)
 AnazhRealm.WERTUNG = Object.freeze({
     cell: 16,
     fieldTau: 120,
     playerTau: 30,
     pruneAgeSec: 180,
-    raeumAb: 64,
     // V17.43 Phase 2 — die EMA-Rate, mit der rule.value den per-Feuern gemessenen
     // Reward (lokaler struktureller δ) integriert. Eine Regel braucht mehrere Feuern,
     // um sich als Heiler/Schädling zu beweisen (kein Snap-Urteil). value ∈ [−1, +1]. Dieselbe Rate lernt die Erwartung eines

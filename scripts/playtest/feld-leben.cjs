@@ -308,9 +308,9 @@ async function checkBandV1742Wohl(ctx) {
                   Math.abs(pre - struktur0) < 1e-3 && bAfter > struktur0 + 1e-4 && bAfter < strukturHigh - 0.05
                 : true; // kein Headroom an diesem Spot → vacuously ok (selten)
 
-        // --- (5) Prune: eine alte (lange nicht beobachtete) Zelle wird entfernt ---
-        r.state.wohlBaseline.set("9,9", { b: 0.5, t: 0 });
-        r._pruneWohlBaseline(W.pruneAgeSec + 10);
+        // --- (5) Prune: eine alte (lange nicht beobachtete) Zelle fällt, sobald ein Blick nach ihrem Tod schreibt (`_feldTod`) ---
+        r._observeFieldWohl(9 * W.cell, 9 * W.cell, 0);
+        r._observeFieldWohl(sx, sz, W.pruneAgeSec + 2 * r.constructor.FELD_TOD_EIMER_S);
         out.prunes = !r.state.wohlBaseline.has("9,9");
 
         // (Die SPIELER-Baseline + ihr Appraisal-Konsum sind Phase 3 → getestet in

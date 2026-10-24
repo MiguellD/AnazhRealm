@@ -158,7 +158,12 @@ function selbsttest() {
             regen: { wach: simPh(6, 5), nachher: simPh(0, 60) },
             wuchs: { offen: 2, wach: simPh(9, 5), nachher: simPh(0, 60) },
             nachwuchs: { wach: simPh(2, 1), nachgewachsen: true, nachher: simPh(0, 60) },
-            feld: { lebend: 626, tot: 2160, max: 1143, welle: Object.assign(simPh(0, 1), { akt: 1650 }) },
+            feld: { geschrieben: 2160, wellen: [0, 1, 2, 3].map(() => ({ groesse: 540, tote: 0 })), welle: Object.assign(simPh(0, 1), { akt: 2200 }) },
+            brand: {
+                start: true,
+                ...{ zellen: [1, 1, 2, 3, 2, 1], einheiten: [9, 9, 30, 41, 20, 12], brennt: 0, asche: 4 },
+                ...{ lebVor: 0.62, lebNach: 0.32, glut: 1, licht: true, nachher: simPh(0, 60) },
+            },
             // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
             wasser: { ort: [-396, -878], chunks: 9, takte: [1, 1], gehalten: [0, 0], bewegt: [0, 0] },
         },
@@ -461,10 +466,24 @@ function selbsttest() {
         ["kein Chunk wartet auf seinen Wuchs", (b) => (b.simWecken.wuchs.offen = 0), /LEER: keine Weck-Probe für wuchs/],
         ["die Ernte wächst nicht nach", (b) => (b.simWecken.nachwuchs.nachgewachsen = false), /NACHWUCHS: die Ernte wuchs/],
         [
-            "das Feld räumt nur im Takt (die Basis)",
-            (b) => (b.simWecken.feld.max = 2246),
-            /FELD: die Taten hoben das Feld auf 2246 Zellen \(lebend höchstens 626\)/,
+            "der Blick des Spielers je Bild (die Basis)",
+            (b) => Object.assign(b.simRuhe, { akt: 46802, aktJe: [["auraAt", 3600]] }),
+            /RUHE-TAT: die Akte .* arbeiten in Ruhe nach einer Tat über ihre Zellen hinaus — 46802 Einheiten für 0 geschriebene \(auraAt 3600\)/,
         ],
+        [
+            "die Räumung wartet auf die Schwelle (die Basis)",
+            (b) => Object.assign(b.simWecken.feld.wellen[1], { groesse: 1110, tote: 537 }),
+            /FELD-TOTE: nach den Wellen trägt die Karte 0 von 540 · 537 von 1110/,
+        ],
+        ["die Räumung geht jede Zelle durch", (b) => (b.simWecken.feld.welle.akt = 5000), /FELD-BESUCH: die Wellen kosteten 5000 Einheiten für 2160/],
+        ["der Brand prüft in Ruhe", (b) => (b.simRuhe.sims.brand = simPh(1, 3600).sims.brand), /RUHE-SIM: brand \(_tickBrand\) arbeitet in Ruhe/],
+        ["kein Brand fängt (die Basis: kein Takt im Stamm)", (b) => (b.simWecken.brand.start = false), /LEER: an der Mess-Wiese fing kein Brand/],
+        ["der Brand ohne Takt", (b) => b.simWecken.brand.einheiten.fill(0), /STUMPF: der Brand brennt, die Sim-Linse sieht keinen Takt/],
+        ["der Brand fegt die Welt", (b) => (b.simWecken.brand.einheiten[3] = 4000), /BRAND-ZELLEN: Schritt 4 kostete 4000 Einheiten bei 3 brennenden/],
+        ["der Brand erlischt nie", (b) => (b.simWecken.brand.brennt = 7), /BRAND-ERLISCHT: nach 6 Schritten brennen noch 7/],
+        ["der Brand hinterlässt keine Asche", (b) => (b.simWecken.brand.lebNach = 0.62), /BRAND-ASCHE: 4 Aschen, lebendig am Herd 0.62 → 0.62/],
+        ["der Brand leuchtet nicht", (b) => (b.simWecken.brand.licht = false), /BRAND-LESER: glut am Herd \+1, Leuchtquelle fehlt/],
+        ["der Brand schläft nicht", (b) => (b.simWecken.brand.nachher = simPh(2, 60, "brand")), /BRAND-RUHE: .* 120 Einheiten/],
         [
             "der Automat geht am Fixpunkt 4 Takte (die Basis)",
             (b) => Object.assign(b.simWecken.wasser, { takte: [1, 4], gehalten: [0, 9] }),
@@ -1623,20 +1642,40 @@ const TAT = process.argv.includes("--tat");
                             nachgewachsen: !!E && !r._geerntetIn(E.key).has(E.id),
                             nachher: await simPhase(60),
                         };
-                        // das Feld: vier Wellen zu 60 Taten fern, jede danach gealtert (wie die Probe des Playtests)
-                        const fern = MESS.x + 3900;
-                        const F = (W.feld = { lebend: st.lifeField.size + 540, tot: 0, max: 0 });
+                        // das Feld (feld.K3#2): vier Wellen zu 60 Taten fern, vor jeder vergehen 3 000 s Spielzeit (die vorige ist tot)
+                        const C = r.constructor.LIFE_FIELD;
+                        const lebt = (e) => Math.abs(e.a * Math.exp(-C.decayPerSec * (st.spielZeit - e.t))) >= C.epsilon;
+                        const F = (W.feld = { wellen: [], geschrieben: 0 });
                         S.frame();
                         for (let w = 0; w < 4; w++) {
-                            for (let i = 0; i < 60; i++) r._depositLife(fern + 100 + i * 64, MESS.z + 4000 + w * 64);
-                            F.max = Math.max(F.max, st.lifeField.size);
-                            for (const [key, e] of st.lifeField)
-                                if (+key.split(",")[0] * r.constructor.LIFE_FIELD.cell >= fern && e.t >= st.spielZeit - 1) {
-                                    e.t -= 3000;
-                                    F.tot++;
-                                }
+                            st.spielZeit += 3000;
+                            for (let i = 0; i < 60; i++) r._depositLife(MESS.x + 4000 + i * 64, MESS.z + 4000 + w * 64);
+                            F.geschrieben += 540;
+                            const alle = [...st.lifeField.values()];
+                            F.wellen.push({ groesse: alle.length, tote: alle.filter((e) => !lebt(e)).length });
                         }
                         F.welle = window.__simPhase([S.frame()], 0);
+                        // der Brand (feld.K3#2): an der Mess-Wiese gezündet (der Weg des Brennglases), je Bild genau EIN Schritt, bis er
+                        // erlischt; je Schritt seine Einheiten und die brennenden Zellen, am Herd glut, Licht und danach die Asche
+                        const B = r.constructor.BRAND;
+                        const asche = () => (st.worldMeta.taten || []).filter((a) => a.tat === "brand").length;
+                        const am = () => r.auraAt(MESS.x, MESS.z);
+                        const Z = (W.brand = { zellen: [], einheiten: [], asche: -asche(), glut: 0, licht: false, lebVor: +am().lebendig.toFixed(3) });
+                        const glut0 = am().glut;
+                        Z.start = !!r._brandEntfachen(MESS.x, MESS.z);
+                        S.frame();
+                        for (let i = 0; i < 600 && st.brandFeld && st.brandFeld.size; i++) {
+                            Z.zellen.push(st.brandFeld.size);
+                            st.spielZeit = r._brandUhr + B.schrittS;
+                            takt();
+                            Z.einheiten.push(S.frame().brand);
+                            Z.glut = Math.max(Z.glut, +(am().glut - glut0).toFixed(3));
+                            Z.licht = Z.licht || r._leuchtQuellen(MESS.x, pm.y, MESS.z, 32).some((q) => q.quelle === "brand");
+                            if (i % 20 === 0) await pause(2);
+                        }
+                        Object.assign(Z, { brennt: st.brandFeld ? st.brandFeld.size : 0, lebNach: +am().lebendig.toFixed(3) });
+                        Z.asche += asche();
+                        Z.nachher = await simPhase(60);
                     } finally {
                         S.aus();
                         st.weatherEffectTime = uhr;
@@ -1800,8 +1839,12 @@ const TAT = process.argv.includes("--tat");
                 (n === "wasser"
                     ? JSON.stringify(w)
                     : n === "feld"
-                      ? `${w.tot} gealtert, höchstens ${w.max} Zellen (lebend ${w.lebend}) — ${simZeile(w.welle)}`
-                      : `wach ${simZeile(w.wach)} — nachher ${simZeile(w.nachher)}`)
+                      ? `${w.geschrieben} Zellen geschrieben, tote/Zellen nach den Wellen ${w.wellen.map((x) => x.tote + "/" + x.groesse).join(" · ")} — ${simZeile(w.welle)}`
+                      : n === "brand"
+                        ? `gezündet ${w.start}, ${w.zellen.length} Schritte, brennend bis ${Math.max(0, ...w.zellen)} Zellen, Einheiten je Zelle und ` +
+                          `Schritt bis ${Math.max(0, ...w.einheiten.map((e, i) => +(e / w.zellen[i]).toFixed(1)))}, noch brennend ${w.brennt}, Asche ` +
+                          `${w.asche}, lebendig am Herd ${w.lebVor} → ${w.lebNach}, glut +${w.glut}, Licht ${w.licht} — nachher ${simZeile(w.nachher)}`
+                        : `wach ${simZeile(w.wach)} — nachher ${simZeile(w.nachher)}`)
         );
     console.log(`  Wach (ein kalter Bau): ${befund.wach} · Dorf ${JSON.stringify(befund.dorf)}`);
     if ("fixWach" in befund) console.log(`  Fixpunkt Weckruf (1 mm): nach 1 Takt ${befund.fixWach ? "STEHT die Welt" : "steht sie nicht"}`);

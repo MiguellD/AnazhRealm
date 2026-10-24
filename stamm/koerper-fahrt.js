@@ -1578,6 +1578,7 @@ class AnazhRealm_koerper_fahrt {
                     }
                 );
             }
+            this._brandEntfachen(t.position.x, t.position.z); // das Feuer fängt das Feld unter dem Werk (feld.K3#2)
             this.removeArchitecture(t);
         }
     }

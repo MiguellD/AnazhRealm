@@ -1279,9 +1279,10 @@ class AnazhRealm_feld_dsl {
                 ergebnis(entry ? 1 : 0);
             },
             // Einen Bau abbauen — per Id in der Form, die die Welt vergibt (Karte KI2, 16.10.): eine Zahl (`architectureNextId`, jede
-            // Welt zählt selbst) oder ein String (die geteilte Id spieler-gebauter Werke, `_newArchId`; der Sender hat sie lokal
-            // schon abgebaut, Mitspieler holen es hier nach). Bis 16.10. nahm das Verb nur Strings — jeder Bau aus Programm, Feld und
-            // Worldgen fiel als invalid_id. Eine Zahl zählt jeder Peer anders: von einem Mitspieler (`remote:`) trifft sie nie.
+            // Welt zählt selbst) oder ein String (die geteilte Id spieler-gebauter Werke: `_newArchId` des Bau-Modus, `_werkKennung`
+            // eines Werks aus einem Akt; der Sender hat sie lokal schon abgebaut, Mitspieler holen es hier nach). Bis 16.10. nahm das
+            // Verb nur Strings — jeder Bau aus Programm, Feld und Worldgen fiel als invalid_id. Eine Zahl zählt jeder Peer anders: von
+            // einem Mitspieler (`remote:`) trifft sie nie.
             remove_architecture: ([archId], ctx) => {
                 const zahl = Number.isInteger(archId) && !String(ctx.source || "").startsWith("remote:");
                 if (!zahl && !(typeof archId === "string" && archId)) {
