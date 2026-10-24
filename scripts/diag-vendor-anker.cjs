@@ -112,7 +112,7 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getUpdateBeforeType(){return this.updateBeforeType}", organ: "AnazhRealm._diaetGang (Vorher-Takt: object geht je Programm)" },
     { file: "vendor/three.webgpu.min.js", sub: "updateBeforeNode(e){const t=e.getUpdateBeforeType(),r=e.updateReference(this);if(t===ri.FRAME){", organ: "AnazhRealm._diaetGeteiltSchreiben (NodeFrame.updateBeforeNode je Vorher-Knoten, wie Nodes.updateBefore)" },
     { file: "vendor/three.webgpu.min.js", sub: "updateReference(e){return this.reference=null!==this.object?this.object:e.object,this.reference}", organ: "AnazhRealm._diaetGang (ein Verweis ohne festes Objekt liest frame.object — sein Programm geht seinen eigenen Gang) · _stoffWert (der Wert je Stoff liest den Stoff des zeichnenden Objekts, in jedem Pass)" },
-    // EIN GRAPH JE SIGNATUR (1310-18, `_foundryTreeMaterial` · `_membranGraph`): r184 schlüsselt ein Programm
+    // EIN GRAPH JE SIGNATUR (`_foundryTreeMaterial` · `_membranGraph`): r184 schlüsselt ein Programm
     // nach der IDENTITÄT seiner Knoten — der Knoten-Schlüssel endet in `customCacheKey` = Knoten-id; frisch gebaute Knoten
     // hießen ein Programm je Stoff. Und je InstancedMesh hängt r184 die Objekt-uuid an den Schlüssel (der InstanceNode bindet
     // die Matrix-Puffer des Objekts in den Graphen): die instanzierten Foundry-Teile bauen je Objekt, auch mit EINEM Graphen —
@@ -196,14 +196,14 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getTextureForReference(e=null){", organ: "Diät (6) / _tiefenKnotenTausch (Viewport-Tiefen-Klon je Ziel)" },
     // Der Name der Viewport-Tiefe: EIN geteiltes Original je Seite, jeder Klon je Ziel erbt seinen Namen
     { file: "vendor/three.webgpu.min.js", sub: '"ViewportDepthTextureNode"}constructor(e=ud,t=null,r=null){null===r&&(null===Kp&&(Kp=new Z),r=Kp)', organ: "_szeneTiefe (WebGL2-Rückfall und Null-Renderer: r184s Viewport-Tiefe, szene:tiefenkopie)" },
-    // DAS TIEFEN-ABBILD (0710-1 P2, Runde 2): r184s Bruch-Weg (Pass beenden, auf demselben Encoder kopieren, mit load neu
+    // DAS TIEFEN-ABBILD: r184s Bruch-Weg (Pass beenden, auf demselben Encoder kopieren, mit load neu
     // beginnen) trägt den Abbild-Pass — seine Quelle ist die Tiefe des Kontexts, seine Kopie die EINE Encoder-Stelle, die
     // `_tiefenAbbild` für die Attrappe durch den Abbild-Pass ersetzt; der Knoten zieht je Render einmal; r32float bindet
     // r184 als (unfilterable-)float.
     { file: "vendor/three.webgpu.min.js", sub: "i=t.renderTarget?e.isDepthTexture?this.get(t.depthTexture).texture", organ: "_tiefenAbbild (Quelle des Bruchs = die Tiefe des Kontexts)" },
     { file: "vendor/three.webgpu.min.js", sub: 's.currentPass?(s.currentPass.end(),a=s.encoder):a=this.device.createCommandEncoder({label:"copyFramebufferToTexture_"+e.id}),a.copyTextureToTexture({texture:i,origin:[r.x,r.y,0]},{texture:n},[r.z,r.w])', organ: "_tiefenAbbild (Pass-Ende und die EINE Encoder-Kopie)" },
     { file: "vendor/three.webgpu.min.js", sub: "s.currentPass=a.beginRenderPass(e),s.currentSets={attributes:{},bindingGroups:[],pipeline:null,index:null}", organ: "_tiefenAbbild (der Neubeginn mit load)" },
-    // DER VORHER-TEXTUR-WÄCHTER der Diät (0910-3 A1): r184 zerstört beim Neu-Anlegen einer Ziel-Textur (das Tiefen-Abbild
+    // DER VORHER-TEXTUR-WÄCHTER der Diät: r184 zerstört beim Neu-Anlegen einer Ziel-Textur (das Tiefen-Abbild
     // in neuer Größe) die alte GPU-Textur; die Diät liest die Texturen der Vorher-Knoten am NodeBuilderState.
     { file: "vendor/three.webgpu.min.js", sub: "const s=e.isRenderTargetTexture||e.isDepthTexture||e.isFramebufferTexture,i=this.backend;if(s&&!0===r.initialized&&i.destroyTexture(e)", organ: "Diät (6) Vorher-Textur-Wächter (updateTexture zerstört die alte Ziel-Textur)" },
     { file: "vendor/three.webgpu.min.js", sub: "this.updateNodes=n,this.updateBeforeNodes=a,this.updateAfterNodes=o,this.observer=u", organ: "Diät (6) Vorher-Textur-Wächter (die Vorher-Knoten am NodeBuilderState)" },
@@ -211,26 +211,24 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "this.hasAnimation=!0===e.object.isSkinnedMesh,this.refreshUniforms=", organ: "Diät (11) nach Eingang: der Stoff-Verweis, dessen Eigenschaft equals() prüft (refreshUniforms)" },
     { file: "vendor/three.webgpu.min.js", sub: "const o=this.getMaterialData(e.material);if(o._renderId!==r){o._renderId=r;for(const e in o){const t=o[e],r=i[e];", organ: "Diät (13) · AnazhRealm._diaetStoffBlick: equals() merkt die Stoff-Daten je STOFF und Render-Id (getMaterialData), nie je Render-Objekt, und geht JEDEN Schlüssel der Daten durch (der Stempel steht am Stoff)" },
     { file: "vendor/three.webgpu.min.js", sub: "clearUpdateRanges(){this._updateRangeCache.clear(),super.clearUpdateRanges()}", organ: "Diät (11) nach Eingang: der eigene Uniform-Puffer lädt seine Bereiche und leert sie (wie Bindings._update)" },
-    // DIE VERDECKUNGS-ABFRAGE (0910-3 A): r184 beginnt die Query im Draw und schließt sie träge beim nächsten Objekt; der
+    // DIE VERDECKUNGS-ABFRAGE: r184 beginnt die Query im Draw und schließt sie träge beim nächsten Objekt; der
     // Wirt hält die offene am selben Feld (`lastOcclusionObject`), schließt sie vor dem Pass-Bruch, lässt `finishRender` nur
     // eine offene schließen und füllt die Lücken nie begonnener Indizes vor dem WeakSet.
     { file: "vendor/three.webgpu.min.js", sub: "if(void 0!==n.occlusionQuerySet){const e=n.lastOcclusionObject;e!==r&&(null!==e&&!0===e.occlusionTest&&(n.currentPass.endOcclusionQuery(),n.occlusionQueryIndex++),!0===r.occlusionTest&&(n.currentPass.beginOcclusionQuery(n.occlusionQueryIndex),n.occlusionQueryObjects[n.occlusionQueryIndex]=r),n.lastOcclusionObject=r)}", organ: "Verdeckungs-Abfrage (träges Ende am nächsten Objekt, `lastOcclusionObject`)" },
     { file: "vendor/three.webgpu.min.js", sub: "t.occlusionQueryIndex=0,t.occlusionQueryObjects=new Array(s),t.lastOcclusionObject=null", organ: "Verdeckungs-Abfrage (beginRender: Index, Objekt-Feld mit Lücken, keine offene)" },
     { file: "vendor/three.webgpu.min.js", sub: "r>t.occlusionQueryIndex&&t.currentPass.endOcclusionQuery()", organ: "Verdeckungs-Abfrage (finishRender schließt nach Zähler, nicht nach offen)" },
     { file: "vendor/three.webgpu.min.js", sub: "for(let t=0;t<s.length;t++)n[t]===BigInt(0)&&e.add(s[t])", organ: "Verdeckungs-Abfrage (resolveOccludedAsync: das WeakSet nimmt jede Lücke)" },
-    // das Feld, das die Hülle des Auflösens füllt: beginRender reicht das Objekt-Feld des vorigen Probe-Frames als
-    // `currentOcclusionQueryObjects` weiter, resolveOccludedAsync liest es (und der Berg-Cull liest `occlusionQueryObjects`)
+    // das Feld der Hülle des Auflösens: beginRender reicht es als `currentOcclusionQueryObjects` weiter
     { file: "vendor/three.webgpu.min.js", sub: "t.currentOcclusionQuerySet=t.occlusionQuerySet,t.currentOcclusionQueryBuffer=t.occlusionQueryBuffer,t.currentOcclusionQueryObjects=t.occlusionQueryObjects", organ: "Verdeckungs-Abfrage (beginRender: das Objekt-Feld wandert nach current*)" },
     { file: "vendor/three.webgpu.min.js", sub: "{currentOcclusionQueryBuffer:r,currentOcclusionQueryObjects:s}=t;if(r&&s){const e=new WeakSet;t.currentOcclusionQueryObjects=null", organ: "Verdeckungs-Abfrage (resolveOccludedAsync liest currentOcclusionQueryObjects)" },
     { file: "vendor/three.webgpu.min.js", sub: "else if(t===ri.RENDER){const t=this._getMaps(this.updateBeforeMap,r);if(t.renderId!==this.renderId)", organ: "_szeneTiefe (der Abbild-Knoten zieht je Render einmal)" },
     { file: "vendor/three.webgpu.min.js", sub: 'e===K&&(this.backend.hasFeature("float32-filterable")?t.sampleType=Gw:t.sampleType=zw)', organ: "_szeneTiefe (das r32float-Abbild als float-Textur gebunden)" },
     { file: "vendor/three.webgpu.min.js", sub: "if(!1===r.has(e)){const s=t.clone();r.set(e,s)}return r.get(e)}", organ: "_szeneTiefe (der Klon je Ziel trägt den Namen)" },
-    // Der Schatten-Takt (_loopShadowUpdate): der EINE Leser je Licht, die Matrix nur im Schatten-Render, die
-    // Matrix-Uniform rechnet nur bei abgeschalteter Map selbst nach — sonst bliebe eine übersprungene Kaskade
-    // nicht konsistent zu ihrer Map.
+    // Der Schatten-Takt (_loopShadowUpdate): der EINE Leser je Licht, die Matrix nur im Schatten-Render; der Filter je Kaskade
     { file: "vendor/three.webgpu.min.js", sub: "updateBefore(e){const{shadow:t}=this;let r=t.needsUpdate||t.autoUpdate;", organ: "_loopShadowUpdate (Leser je Licht)" },
     { file: "vendor/three.webgpu.min.js", sub: "renderShadow(e){const{shadow:t,shadowMap:r,light:s}=this,{renderer:i,scene:n}=e;t.updateMatrices(s)", organ: "_loopShadowUpdate (Matrix nur im Render)" },
     { file: "vendor/three.webgpu.min.js", sub: "renderer.shadowMap.enabled||(e.shadow.camera.coordinateSystem!==", organ: "_loopShadowUpdate (Uniform nur ohne Map)" },
+    { file: "vendor/three.webgpu.min.js", sub: "m=i.filterNode||this.getShadowFilterFn(t.shadowMap.type)", organ: "_schattenFilter (shadow.filterNode vor dem Typ-Filter)" },
     // Uniform-Heimat (shared-Gruppen-Klon-Weiche + renderGroup-Export)
     { file: "vendor/three.webgpu.min.js", sub: "groupNode.shared", organ: "_uniformHeimatTeilen (Klon-Weiche)" },
     { file: "vendor/three.webgpu.min.js", sub: "setGroup(e){return this.groupNode=e,this}", organ: "_uniformHeimatTeilen (setGroup)" },
@@ -249,7 +247,7 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "null!==this._context.onBeforeRenderPipeline&&this._context.onBeforeRenderPipeline()", organ: "_traaReprojektion (RenderPipeline ruft den Vorher-Haken)" },
     { file: "vendor/TRAANode.js", sub: "this._jitterIndex = this._jitterIndex % ( _haltonOffsets.length - 1 );", organ: "Ausgabe-Aufnahme (32 Frames = eine Halton-Runde)" },
     { file: "vendor/TRAANode.js", sub: "this.updateBeforeType = NodeUpdateType.FRAME;", organ: "Ausgabe-Aufnahme/gpu-bank (je Frame nodeFrame.update)" },
-    // DAS AUSGABE-ZIEL IN 32 BIT (0910-1 B, `_ausgabeFormat`): r184 fordert jedes Feature an, das der Adapter trägt (darum
+    // DAS AUSGABE-ZIEL IN 32 BIT (`_ausgabeFormat`): r184 fordert jedes Feature an, das der Adapter trägt (darum
     // fragt der Stamm `device.features`); RGBFormat × UnsignedInt101111Type ist rg11b10ufloat; PassNode.setup schreibt den
     // Typ je Bau auf den des Renderers zurück (der Stamm stellt ihn danach).
     { file: "vendor/three.webgpu.min.js", sub: 'RG11B10UFloat:"rg11b10ufloat-renderable"', organ: "_ausgabeFormat (das Feature, das r184 anfordert)" },
@@ -267,7 +265,7 @@ const ANKER = [
     { file: "vendor/CSMShadowNode.js", sub: "const cascades = reference( '_cascades', 'vec2', this )", organ: "gate:schatten-werfer K1 (die Kaskaden-Uniform, die der Shader liest)" },
     { file: "vendor/three.webgpu.min.js", sub: 'r.name="ShadowDepthTexture",r.compareFunction=', organ: "_kaskadenZiele (ShadowNode.setupRenderTarget baut Tiefe …)" },
     { file: "vendor/three.webgpu.min.js", sub: 'return s.texture.name="ShadowMap",s.texture.type=e.mapType,s.depthTexture=r,{shadowMap:s,depthTexture:r}}', organ: "_kaskadenZiele (… und Farbe, die Hülle setzt r8 + 16 bit)" },
-    // DIE KARTE OHNE FARBE (0710-1 P2, Ziel-Zensus: kaskade0/1:farbe OHNE LESER): die Ziel-Daten tragen eine leere Farb-
+    // DIE KARTE OHNE FARBE (Ziel-Zensus: kaskade0/1:farbe OHNE LESER): die Ziel-Daten tragen eine leere Farb-
     // Liste, die Farb-Textur legt die GPU nie an — der Ziel-Bau misst textures[0] und reicht die Liste an den Kontext,
     // updateTexture ist der EINE Anlage-Weg, der Pass-Deskriptor und der Pipeline-Bau laufen über die Liste, Format und
     // Farbraum lasen blind textures[0].
@@ -427,7 +425,7 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getIndex(){return this._geometries.getIndex(this)}", organ: "_indexWacheDraw (der Index, den der Draw bindet)" },
     { file: "vendor/three.webgpu.min.js", sub: "async init(e){await super.init(e);const t=this.parameters;", organ: "_gpuWacheAn (das Device jedes Backends nach seinem init)" },
     { file: "vendor/three.webgpu.min.js", sub: '[Uint16Array,["uint16","unorm16"]]', organ: "_hautGewicht (normiertes Uint16 → unorm16x4)" },
-    // Die Ego-Sicht ist EIN Ebenen-Schalter (0910-5): jede Kamera — Haupt-Kamera wie Kaskade — zeichnet nur, was ihre Ebenen
+    // Die Ego-Sicht ist EIN Ebenen-Schalter: jede Kamera — Haupt-Kamera wie Kaskade — zeichnet nur, was ihre Ebenen
     // trifft, und projiziert die Kinder JEDES Knotens danach ohne Ebenen-Test (das Gerät in der Hand hängt an Knochen auf
     // SHADOW_TWIN_LAYER und zeichnet doch im Auge).
     { file: "vendor/three.webgpu.min.js", sub: "_projectObject(e,t,r,s,i){if(!1===e.visible)return;if(e.layers.test(t.layers))", organ: "_applyEgoSicht (jede Kamera zeichnet nur ihre Ebenen)" },

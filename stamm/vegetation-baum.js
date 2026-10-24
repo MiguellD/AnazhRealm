@@ -1079,6 +1079,7 @@ class AnazhRealm_vegetation_baum {
                     // Nur Darts, deren POSITION in DIESEN Chunk fällt (disjunkt → einmal).
                     if (d.x < ox || d.x >= ox + span || d.z < oz || d.z >= oz + span) continue;
                     if (!this._forestDartSteht(d, gx, gz, cellDarts)) continue;
+                    if (this._tatAm("faellen", d.x, d.z)) continue; // die Tat bleibt (feld.K4): hier fiel der Baum, er heilt erst
                     // die Genesis-Lichtung hält die EINE Natur-Wand frei (`_naturSetzen`, die Plattform ist ein Grundriss)
                     // Dichte = die Vorlage: das Studio dünnt den Wald NIE (volle Dichte, Last über LOD + Sicht-Kappung).
                     // Im Studio-Regime ist fd=1 → dieser Check feuert nie; sonst dünnt der Perf-Regler.
@@ -2140,7 +2141,7 @@ class AnazhRealm_vegetation_baum {
             this.journalAppendOnce(
                 `singing:${blueprintName}`,
                 "growth",
-                `Eine Form singt: ${bp.label || blueprintName} schwingt rein im Klang.`,
+                AnazhRealm._datum`Eine Form singt: ${bp.label || blueprintName} schwingt rein im Klang.`,
                 { blueprint: blueprintName, resonance: tags.resoniert, precision: avgPrec }
             );
             // Die Form singt: eine reine Sinus-Welle, die Tonhöhe folgt der Resonanz (klang:SUBSTANZ.singen) — am
@@ -2154,7 +2155,7 @@ class AnazhRealm_vegetation_baum {
             this.journalAppendOnce(
                 `magic_compound:${blueprintName}`,
                 "growth",
-                `Etwas Magisches in der Luft, als ${bp.label || blueprintName} entstand.`,
+                AnazhRealm._datum`Etwas Magisches in der Luft, als ${bp.label || blueprintName} entstand.`,
                 { blueprint: blueprintName, magic: tags.magieleitung }
             );
         }
@@ -2175,8 +2176,7 @@ class AnazhRealm_vegetation_baum {
                 this.journalAppendOnce(
                     `weak_connection:${blueprintName}`,
                     "weakness",
-                    `Eine ${weakestType}-Verbindung in „${bp.label || blueprintName}" trägt knapp ` +
-                        `(Last ${weakest.toFixed(2)}).`,
+                    AnazhRealm._datum`Eine ${weakestType}-Verbindung in „${bp.label || blueprintName}" trägt knapp (Last ${weakest.toFixed(2)}).`,
                     { blueprint: blueprintName, weakest: weakest, type: weakestType }
                 );
             }

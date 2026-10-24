@@ -438,9 +438,13 @@
             glut:   { textur: ["glut"], sr: 32000, sek: 7.9, saat: 71, quellen: 1, filter: "lowpass", gerichtet: true,
                       refDb: -18, dRef: 1.5, dMin: 0.6, bettRefM: 0.76, hoerweiteM: 26, hzFern: 4500, hzNah: 12000, hzHalbM: 8, kalibHz: 12000 },
             // Voegel: Morgenchor(Sonne) × √lebendig × Lebensraum(Deckung) × (1 − Regen)² × Windruhe.
+            // DIE ANTWORT DES ORTS (affekt K1): das gewertete δ einer Tat (lage.antwort = {d, delta}, der Wirt wertet sie am Ort
+            // und laesst sie abklingen) hebt oder senkt den Chor um dbJeDelta·δ dB (geklemmt dbMin..dbMax) — voll bis dVoll
+            // Meter von der Tat, still ab dAus: die Voegel DIESES Orts antworten, die der Nachbar-Zelle (16 m Raster) nicht.
             vogel:  { textur: ["vogelA", "vogelB"], sr: 24000, sek: [23.3, 17.9], saat: [83, 89], quellen: 2, spreizung: 0.55,
                       filter: "lowpass", refDb: -30, habitatBasis: 0.35, windStill: 0.8, hz: 9000, kalibHz: 9000,
-                      chor: [[-0.15, 0], [0, 0.7], [0.12, 1], [0.4, 0.6], [1, 0.55]] },
+                      chor: [[-0.15, 0], [0, 0.7], [0.12, 1], [0.4, 0.6], [1, 0.55]],
+                      antwort: { dbJeDelta: 40, dbMin: -24, dbMax: 9, dVoll: 8, dAus: 24 } },
             // Grillen: nachts × Waerme × offenes Gras; Zirp-Takt nach DOLBEAR (N/min = 7·(T − 10) + 40).
             grille: { textur: ["grille"], sr: 22050, sek: 4.3, saat: 97, quellen: 2, spreizung: 0.5, filter: "highpass",
                       refDb: -34, tMin: 2, tMax: 24, tStumm: 12, tVoll: 16, nRef: 110, nachtAb: 0.05, nachtVoll: -0.15, hz: 2500, kalibHz: 2500 }
@@ -802,7 +806,8 @@
 
     // ── DIE MISCHUNG: Lage am Ohr → je Stimme {db, gain, hz, q, pan, rate} ──
     // lage = { windFeld, boe, deckung, regen, sonne, saisonPhase, lebendig,
-    //          ufer:{d, anteil, pan}, fluss:{d, tempo, pan}, fall:{d, hoehe, pan}, glut:{d, flaeche (m², Brenn-Flaeche), pan} }
+    //          ufer:{d, anteil, pan}, fluss:{d, tempo, pan}, fall:{d, hoehe, pan}, glut:{d, flaeche (m², Brenn-Flaeche), pan},
+    //          antwort:{d, delta} (die Antwort der Wertung, optional) }
     function umweltMischung(lage) {
         var U = UMWELT, W = U.stimmen, L = lage || {};
         var zahl = function (v, d) { return typeof v === "number" && isFinite(v) ? v : d; };
@@ -855,7 +860,10 @@
         else if (sonne >= C[C.length - 1][0]) chor = C[C.length - 1][1];
         else for (var i = 1; i < C.length; i++) if (sonne <= C[i][0]) { chor = C[i - 1][1] + ((C[i][1] - C[i - 1][1]) * (sonne - C[i - 1][0])) / (C[i][0] - C[i - 1][0]); break; }
         var aktiv = chor * Math.sqrt(leb) * (Sv.habitatBasis + (1 - Sv.habitatBasis) * deck) * (1 - regen) * (1 - regen) * (1 - Sv.windStill * Math.min(1, windFeld));
-        setze("vogel", aktiv > 0 ? Sv.refDb + db(aktiv) : -Infinity, Sv.hz, 0.707);
+        // die Antwort des Orts: δ der Tat × Naehe (ohne lage.antwort 0 dB — die Lab-Orte bleiben byte-gleich)
+        var An = Sv.antwort, an = L.antwort || {}, dAn = zahl(an.d, Infinity), dlt = zahl(an.delta, 0);
+        var antwortDb = dlt !== 0 && dAn < An.dAus ? Math.max(An.dbMin, Math.min(An.dbMax, An.dbJeDelta * dlt * (1 - glatt(An.dVoll, An.dAus, dAn)))) : 0;
+        setze("vogel", aktiv > 0 ? Sv.refDb + db(aktiv) + antwortDb : -Infinity, Sv.hz, 0.707);
         // Grillen: nachts × Waerme × offenes Gras; DOLBEAR-Takt
         var Sc = W.grille, waerme = 0.5 + 0.5 * Math.cos(2 * Math.PI * (phase - 0.375));
         var T = Sc.tMin + (Sc.tMax - Sc.tMin) * waerme;

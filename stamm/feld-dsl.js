@@ -10,7 +10,7 @@ class AnazhRealm_feld_dsl {
         if (now - grok.lastSpoke < grok.minGapSeconds) return false;
         if (cfg && now - cfg.lastFired < cfg.cooldown) return false;
         if (this.state.llm && this.state.llm.enabled) {
-            const prompt = `In dir geschah gerade etwas: "${entry.text}" (Typ: ${entry.type}). Kommentiere es in einem kurzen Satz, in erster Person. Gib KEIN program — nur say.`;
+            const prompt = `In dir geschah gerade etwas: ${this._erinnerungFuerKi(entry)}. Kommentiere es in einem kurzen Satz, in erster Person. Gib KEIN program — nur say.`;
             // Async ohne await: das Tick darf nicht blockieren.
             this.llmCall(prompt, null, { hintergrund: true }).then((reply) => {
                 if (!reply || !reply.say) return;
@@ -55,6 +55,11 @@ class AnazhRealm_feld_dsl {
             source: opts.source || "unknown",
             programId: opts.programId || `prog_${this.state.dsl.nextEntryId++}`,
             orte: new Map(), // Positions-Knoten → aufgelöste Orte (`dslEvalPos`; der Absender schickt sie mit)
+            // DIE TAT (`_tatWerten`): die Regel, die feuert (`_worldRuleCtx`), das Wort, auf das die KI handelt, und die Tat,
+            // die gerade wirkt (`dslEval` → `_tatBeginnt`) — die Stimme des Felds nennt Gesetz und Ursache aus ihnen
+            regel: opts.regel || null,
+            grund: opts.grund || null,
+            tat: null,
         };
     }
 
@@ -280,7 +285,8 @@ class AnazhRealm_feld_dsl {
         // Welt-Akt (AnazhRealm.DSL_WELTAKTE) seinen Zug — gleich wer ihn schickt (Nexus, Welt-Regel, Emotion, Mensch,
         // Mitspieler) — und steht beim Namen seiner Quelle im Log (`_weltaktGehalten`). Bis 07.10. hielt die Bühne nur das
         // Wetter: ein Nexus-Dorf drehte im OMEN-Boot 4B (0710-6) mitten im Lauf den Blick. Das Spiel kennt den Halt nie.
-        if (AnazhRealm.DSL_WELTAKTE.includes(op) && this._messHalt()) {
+        const weltakt = AnazhRealm.DSL_WELTAKTE.includes(op);
+        if (weltakt && this._messHalt()) {
             this._weltaktGehalten(String(op), ctx);
             return;
         }
@@ -295,14 +301,19 @@ class AnazhRealm_feld_dsl {
             return;
         }
         ctx.budget.depthLeft--;
+        // DIE TAT (affekt K1/K4): ein Welt-Akt wird hier EINE Tat — ihr Ort, ihre Wertung am Ort und ihre Zeile (`_tatWerten`)
+        const tat = weltakt ? this._tatBeginnt(String(op), args, ctx) : null;
+        let gelungen = true;
         try {
             fn.call(this, args, ctx);
         } catch (err) {
+            gelungen = false;
             // Ein verlangter Ort fehlt (`dslEvalPos`): sein Eintrag `invalid_position` steht schon im Log — er nennt jetzt
             // auch die Op, die er abbrach. Alles andere ist ein Fehler der Op.
             if (err && err.dslKeinOrt && err.dslKeinOrt.eintrag) err.dslKeinOrt.eintrag.effekt = String(op);
             else ctx.log.push({ event: "op_exception", op: String(op), message: err.message });
         }
+        if (tat) this._tatWerten(tat, ctx, gelungen);
         ctx.budget.depthLeft++;
     }
 
@@ -372,6 +383,8 @@ class AnazhRealm_feld_dsl {
             fehler.dslKeinOrt.eintrag = eintrag;
             throw fehler;
         }
+        // der erste Ort einer wirkenden Tat ist IHR Ort — gelesen, bevor ihr Effekt schreibt (`_tatOrt`)
+        if (ctx.tat && !ctx.tat.ort) this._tatOrt(ctx.tat, pos, op);
         if (node == null) return pos;
         if (ctx.orte) {
             const liste = ctx.orte.get(node);
@@ -711,6 +724,7 @@ class AnazhRealm_feld_dsl {
             source: `rule:${rule.source || "unknown"}`,
             budget: this._worldRuleBudget(),
             programId: `rule_${rule.id}`,
+            regel: rule,
         });
     }
 
@@ -813,7 +827,11 @@ class AnazhRealm_feld_dsl {
         } catch {
             desc = "ein Gesetz";
         }
-        this.journalAppendOnce(`ruleAwoke:${rule._sig || rule.id}`, "rule", `Dein Gesetz erwachte — ${desc}.`);
+        this.journalAppendOnce(
+            `ruleAwoke:${rule._sig || rule.id}`,
+            "rule",
+            AnazhRealm._datum`Dein Gesetz erwachte — ${desc}.`
+        );
     }
 
     // DIE KREATUR EINES VERBS (Karte KI2, 16.10.): `indexOrId` ist, was die Form verspricht — der Platz in `state.creatures`
@@ -1297,7 +1315,9 @@ class AnazhRealm_feld_dsl {
                     const fremd = /^(remote:|teilen)/.test(String(ctx.source));
                     this.journalAppend(
                         "growth",
-                        fremd ? "Ein Bauplan kam von außen." : `Ein neuer Bauplan entstand: ${result.name}.`,
+                        fremd
+                            ? "Ein Bauplan kam von außen."
+                            : AnazhRealm._datum`Ein neuer Bauplan entstand: ${result.name}.`,
                         {
                             name: result.name,
                             parts: valid.parts.length,
@@ -1550,7 +1570,7 @@ class AnazhRealm_feld_dsl {
                     });
                 }
                 if (result.ok) {
-                    this.journalAppend("growth", `Ein neues Konsumabel entstand: ${result.name}.`, {
+                    this.journalAppend("growth", AnazhRealm._datum`Ein neues Konsumabel entstand: ${result.name}.`, {
                         name: result.name,
                     });
                 }
@@ -1583,7 +1603,7 @@ class AnazhRealm_feld_dsl {
                     reason: result.reason,
                 });
                 if (result.ok) {
-                    this.journalAppend("growth", `Eine neue Seele entstand: ${result.name}.`, {
+                    this.journalAppend("growth", AnazhRealm._datum`Eine neue Seele entstand: ${result.name}.`, {
                         name: result.name,
                         parts: valid.parts.length,
                     });
@@ -1603,7 +1623,7 @@ class AnazhRealm_feld_dsl {
                     reason: result.reason,
                 });
                 if (result.ok) {
-                    this.journalAppend("growth", `Eine neue Substanz wurde benannt: ${result.name}.`, {
+                    this.journalAppend("growth", AnazhRealm._datum`Eine neue Substanz wurde benannt: ${result.name}.`, {
                         name: result.name,
                     });
                 }
@@ -1633,7 +1653,7 @@ class AnazhRealm_feld_dsl {
                 if (r.ok) {
                     this.journalAppend(
                         "growth",
-                        `Ein eigenes Werkzeug entstand: ${blueprintName} (Cap ${r.precisionCap.toFixed(2)}).`,
+                        AnazhRealm._datum`Ein eigenes Werkzeug entstand: ${blueprintName} (Cap ${r.precisionCap.toFixed(2)}).`,
                         { tool: blueprintName, cap: r.precisionCap }
                     );
                 }
@@ -1696,7 +1716,9 @@ class AnazhRealm_feld_dsl {
                     return;
                 }
                 this.addNewAbility(safeName, program, "llm");
-                this.journalAppend("growth", `Eine neue Fähigkeit ruht in mir: ${safeName}.`, { name: safeName });
+                this.journalAppend("growth", AnazhRealm._datum`Eine neue Fähigkeit ruht in mir: ${safeName}.`, {
+                    name: safeName,
+                });
                 ctx.log.push({ event: "defined_ability", name: safeName });
             },
             // Fraktal-Bau: eine Wurzel, hexagonal von 6 Sub-Strukturen (× ratio) umringt, rekursiv bis

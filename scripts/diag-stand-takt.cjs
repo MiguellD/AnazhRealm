@@ -24,7 +24,7 @@
 // ein verschlafener Wechsel, eine halbe oder wachsende Runde, ein ungesehener Täter, ein Bau, der nicht weckt, starres
 // Gehen, verhungernder Strom, eine Sim, die in Ruhe zählt oder nach ihrem Ereignis nicht schläft, ein Automat, der am
 // Fixpunkt wach bleibt, Page-Error — MUSS rot fallen und ihn beim Namen nennen.
-//   node scripts/diag-stand-takt.cjs [--selftest]   (npm run gate:stand-takt; Port STAND_TAKT_PORT)
+//   node scripts/diag-stand-takt.cjs [--selftest | --tat]   (npm run gate:stand-takt; Port STAND_TAKT_PORT; --tat: (K4) unten)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
@@ -493,16 +493,134 @@ function selbsttest() {
     console.log("\n✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.");
 }
 
+// (K4) DIE TAT BLEIBT (feld.K4, `--tat`): an der Mess-Wiese fällt der Spieler mit dem echten Verb (tryMouseBreak) zehn Bäume
+// und pflückt dreißig Pflanzen der Nah-Streu; gezählt wird, was die Welt zeichnet (Bäume der Lichtung, Pflanzen und Stümpfe in
+// den Blöcken der Nah-Streu, auraAt − frozen an den Stämmen) nach einer Spielstunde, nach Save → Reload → einer Stunde und nach
+// 36 Stunden mehr. Urteil: nach der Stunde ≤ 30 % der Bäume, keine Pflanze, je Baum ein Stumpf, das Feld ≥ 0,05 unter frozen.
+function tatUrteil(T) {
+    const h = T && T.stunde;
+    if (!h) return ["LEER: keine Messung nach der Stunde"];
+    return [
+        T.gefaellt >= 8 && T.gepflueckt >= 25 ? "" : `LEER: ${T.gefaellt} Bäume, ${T.gepflueckt} Pflanzen`,
+        h.baeume <= 0.3 * T.baeumeVorher ? "" : `BAUM: ${h.baeume} von ${T.baeumeVorher} stehen`,
+        h.pflanzen === 0 ? "" : `ERNTE: ${h.pflanzen} Pflanzen zurück`,
+        h.stuempfe >= T.gefaellt ? "" : `STUMPF: ${h.stuempfe} für ${T.gefaellt} Bäume`,
+        h.narbe <= -0.05 ? "" : `NARBE: ${h.narbe}`,
+    ].filter(Boolean);
+}
+
+async function tatSeite(MESS, vorher) {
+    const r = await window.__weltDa((x) => x.state.playerMesh && x._foundry && x._foundry.ready);
+    const st = r.state;
+    const [pm, cam, P] = [st.playerMesh.position, st.camera, Math.hypot];
+    let t = performance.now();
+    const takt = () => r._gameLoopTick((t += 1000 / 60));
+    Object.assign(st, { perfRegulator: false, nexusEvolutionInterval: Infinity });
+    const y = (x, z) => r._voxelSurfaceY(x, z);
+    const stehen = (p) => (pm.set(p.x, y(p.x, p.z) + 1.8, p.z), window.__weltStehtNach(takt));
+    const baum = (a) => /baum/.test(a._lodSpecies || a.type) && r._istNatur(a);
+    const ab = (a, p) => P(a.position.x - p.x, a.position.z - p.z);
+    const zeichnet = (wahl, s = new Set()) => {
+        for (const a of st.nahStreu.senken.values()) for (const [k, b] of a.bloecke) for (const id of b.ids) if (wahl(a, k + "#" + id)) s.add(k + "#" + id);
+        return s.size;
+    };
+    const mess = (T) => {
+        const d = T.staemme.map((p) => r.auraAt(p.x, p.z).lebendig - r.worldFieldAt(p.x, p.z).lebendig);
+        return {
+            baeume: st.architectures.filter((a) => baum(a) && ab(a, T.mitte) <= T.R).length,
+            pflanzen: zeichnet((a, id) => T.ernte.includes(id)),
+            stuempfe: zeichnet((a, id) => a.preset === "stumpf" && id.includes("#tat|")),
+            narbe: +(d.reduce((s, x) => s + x, 0) / Math.max(1, d.length)).toFixed(3),
+            taten: (st.worldMeta.taten || []).length,
+        };
+    };
+    const stunden = async (h, T) => {
+        for (let n = h; n > 0; n -= 6) {
+            r.setTimeOfDay((st.timeOfDay + Math.min(6, n) / 24) % 1, "regler");
+            for (let i = 0; i < 30; i++) takt();
+        }
+        await stehen(T.mitte);
+        return mess(T);
+    };
+    // das Fadenkreuz auf das Ziel; geklickt wird, wenn der Pick des Spiels es trifft
+    const klick = (ziel, von, hoch, trifft) => {
+        const g = (takt(), y(von.x, von.z));
+        pm.set(von.x, g + 1.8, von.z);
+        cam.position.set(von.x, g + hoch, von.z);
+        cam.lookAt(ziel.x, ziel.y, ziel.z);
+        cam.updateMatrixWorld(true);
+        return trifft() && (r.tryMouseBreak(), true);
+    };
+    if (vorher) {
+        await stehen(vorher.mitte);
+        const aus = { reload: mess(vorher) };
+        aus.reloadStunde = await stunden(1, vorher);
+        aus.heilung = await stunden(36, vorher);
+        return aus;
+    }
+    await stehen(MESS);
+    const B = st.architectures.filter(baum);
+    const kern = B.sort((a, b) => ab(a, MESS) - ab(b, MESS))[0].position;
+    const ziel = B.sort((a, b) => ab(a, kern) - ab(b, kern)).slice(0, 10);
+    const mitte = { x: 0, z: 0 };
+    for (const a of ziel) (mitte.x += a.position.x / ziel.length), (mitte.z += a.position.z / ziel.length);
+    const T = { mitte, R: Math.max(...ziel.map((a) => ab(a, mitte))) + 1, staemme: [], ernte: [], klicks: 0 };
+    await stehen(mitte);
+    T.baeumeVorher = st.architectures.filter((a) => baum(a) && ab(a, mitte) <= T.R).length;
+    r.setGameMode("frieden");
+    for (const a of ziel) {
+        const p = { x: a.position.x, y: y(a.position.x, a.position.z) + 1, z: a.position.z };
+        for (let i = 0; i < 64 && st.architectures.includes(a); i++) {
+            const von = { x: p.x + 2.2 * Math.cos(i * 0.785), z: p.z + 2.2 * Math.sin(i * 0.785) };
+            if (klick(p, von, 1.6, () => (r._pickArchitectureAtCrosshair() || {}).entry === a)) T.klicks++;
+        }
+        if (!st.architectures.includes(a)) T.staemme.push({ x: p.x, z: p.z });
+    }
+    for (let runde = 0; runde < 4 && T.ernte.length < 30; runde++) {
+        await stehen(mitte);
+        const [ns, kand] = [st.nahStreu, []];
+        for (const a of ns.senken.values())
+            for (const [k, b] of a.ernte && a.preset !== "stumpf" ? a.bloecke : [])
+                for (const it of (ns.kacheln.get(k) || { items: [] }).items)
+                    if (b.ids.includes(it.id) && P(it.x - mitte.x, it.z - mitte.z) < 12) kand.push({ id: k + "#" + it.id, k, it });
+        kand.sort((a, b) => P(a.it.x - mitte.x, a.it.z - mitte.z) - P(b.it.x - mitte.x, b.it.z - mitte.z));
+        for (const { id, k, it } of kand) {
+            if (T.ernte.length >= 30 || T.ernte.includes(id)) continue;
+            const trifft = () => ((q) => q && q.key === k && q.id === it.id)(r._pickScatterAtCrosshair());
+            if (klick({ x: it.x, y: it.y + 0.12, z: it.z }, { x: it.x + 1.2, z: it.z + 0.4 }, 1, trifft))
+                if (!zeichnet((a, x) => x === id)) T.ernte.push(id);
+        }
+    }
+    Object.assign(T, { gefaellt: T.staemme.length, gepflueckt: T.ernte.length });
+    T.stunde = await stunden(1, T);
+    r.saveState();
+    await new Promise((ok) => setTimeout(ok, 2500)); // der Save landet vor dem Reload
+    return T;
+}
+
+async function tatLauf(page) {
+    const T = await page.evaluate(tatSeite, MESS, null);
+    await page.reload({ waitUntil: "networkidle0", timeout: 120000 });
+    await warteAufWelt(page, 120000);
+    return Object.assign(T, await page.evaluate(tatSeite, MESS, T));
+}
+
 if (process.argv.includes("--selftest")) {
     console.log("=== STAND-TAKT — Selbsttest (ohne Browser) ===");
     selbsttest();
-    process.exit(0);
+    // die Tat-Linse: grün am Soll, je Täter rot beim Namen
+    const T = (h, n = 10) => ({ gefaellt: n, gepflueckt: 30, baeumeVorher: 12, stunde: Object.assign({ baeume: 2, pflanzen: 0, stuempfe: 10, narbe: -0.2 }, h) });
+    const roh = [[T({}), ""], [T({ narbe: 0 }), "NARBE"], [T({ stuempfe: 0 }), "STUMPF"], [T({ pflanzen: 9 }), "ERNTE"], [T({ baeume: 12 }), "BAUM"], [T({}, 3), "LEER"], [{}, "LEER"]];
+    const fall = roh.filter(([b, n]) => (tatUrteil(b).join() + "|").split(":")[0] !== (n || "|"));
+    console.log(fall.length ? "❌ SELBSTTEST ROT — die Tat-Linse irrt: " + fall.map(([, n]) => n || "GRÜN").join(" · ") : "✅ SELBSTTEST GRÜN — die Tat-Linse nennt jeden Täter.");
+    process.exit(fall.length ? 1 : 0);
 }
 
 const PORT = Number(process.env.STAND_TAKT_PORT) || 4528;
 const { messort } = require("./lib/welt-orte.cjs");
 const MESS = messort("wiese");
 const server = statikServer();
+const TAT = process.argv.includes("--tat");
 
 (async () => {
     console.log("=== STAND-TAKT (Welle K) — Null-Renderer, Mess-Wiese, die Stand-Linse je Frame ===");
@@ -522,7 +640,8 @@ const server = statikServer();
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
         await warteAufWelt(page, 120000);
         await page.evaluate(STAND.STAND_INSTALL);
-        befund = await page.evaluate(
+        if (TAT) befund = await tatLauf(page);
+        else befund = await page.evaluate(
             async (MESS, TAKTE) => {
                 const r = window.anazhRealm,
                     st = r.state;
@@ -1497,12 +1616,11 @@ const server = statikServer();
                         st.foliageRadius = fr;
                         // die Ernte ist fällig: ihr Takt zur Zeit ihres Nachwachsens
                         S.frame();
-                        r._tickScatterRegrow(performance.now() + r.constructor.FORAGE.regrowMs + 1);
+                        r._tickScatterRegrow(Infinity);
                         const E = vorher.ernte;
-                        const jeKachel = E && st.scatterHarvested && st.scatterHarvested.get(E.key);
                         W.nachwuchs = {
                             wach: window.__simPhase([S.frame()], 0),
-                            nachgewachsen: !!E && !(jeKachel && jeKachel.has(E.id)),
+                            nachgewachsen: !!E && !r._geerntetIn(E.key).has(E.id),
                             nachher: await simPhase(60),
                         };
                         // das Feld: vier Wellen zu 60 Taten fern, jede danach gealtert (wie die Probe des Playtests)
@@ -1572,6 +1690,13 @@ const server = statikServer();
     if (!befund || befund.fehler) {
         console.log("❌ LAUF-FEHLER: " + (befund ? befund.fehler : "kein Befund"));
         process.exit(1);
+    }
+    if (TAT) {
+        const v = tatUrteil(befund);
+        const { staemme, ernte, ...zeile } = befund;
+        console.log("TAT " + JSON.stringify(zeile));
+        console.log(v.length ? "❌ TAT ROT — " + v.join(" | ") : "✅ TAT GRÜN — die Spur hält bis zum Reload");
+        process.exit(v.length ? 1 : 0);
     }
     befund.pageErrors = pageErrors.concat(befund.taktFehler || []);
     const namen = Object.keys(STAND.TAKTE);
