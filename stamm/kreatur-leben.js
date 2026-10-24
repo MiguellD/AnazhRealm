@@ -1716,6 +1716,22 @@ class AnazhRealm_kreatur_leben {
         return geboren.length;
     }
 
+    // DER DURST (Tiere K4, tetrapoda durst): die Zeit seit dem letzten Trinken auf der Kreatur-Uhr (ab der Geburt); nach einer
+    // Suche ohne Wasser ruht er suchPauseS.
+    _kreaturDurstig(creature) {
+        const ud = creature.userData;
+        const now = this.state.creatureAnimationTime;
+        if (!Number.isFinite(ud._getrunken)) ud._getrunken = now;
+        if (now < ud._durstSucheBis) return false;
+        const LG = AnazhRealm._lebensraumGesetz();
+        if (LG.durst(now - ud._getrunken, LG.D) < 1) return false;
+        // kein Fluss im Umkreis der Suche (der Rand aus `_hydroDistAt`, ein Blick in die Eimer): keine Suche über das Gelände
+        const h = this._hydroDistAt(creature.position.x, creature.position.z);
+        if (h.dist - Math.max(1, h.halfW) <= AnazhRealm.CREATURE_DRINK_SEARCH_RADIUS) return true;
+        ud._durstSucheBis = now + LG.D.suchPauseS;
+        return false;
+    }
+
     // DIE NAHRUNG EINES ORTS für den Bestand (Ökologie K2): die Äsung = das Leben des Felds (`auraAt`.lebendig — das Substrat
     // und das Leben-Overlay, das die Taten schreiben), 0..1.
     _kreaturNahrung(x, z) {
@@ -2397,6 +2413,36 @@ AnazhRealm.TOD_KIPP_PUNKTE = 1500;
 // Tafel: 0,46–0,52 m darunter); je Tod kostet das Raster 180 (Höhle) bzw. 206 (Freiland) Feld-Proben neben den 25 568
 // Karten-Lesungen, die auch die alte Tafel trug.
 AnazhRealm.TOD_BODEN_ZELLE = 0.5;
+// DER LEBENSRAUM (tetrapoda LEBENSRAUM_GESETZ + bodenKlasse · lebensraum · lebensraumWahl, DURST_GESETZ + durst, Tiere K4): die Boden-Klasse eines Orts und die Eignung
+// je Gattung. Fail-closed.
+AnazhRealm._lebensraumGesetz = function () {
+    if (AnazhRealm._lebensraumMemo) return AnazhRealm._lebensraumMemo;
+    const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    const L = k && k.LEBENSRAUM_GESETZ;
+    if (
+        L &&
+        [L.flussM, L.hangTan, L.waldSd, L.randSd].every(Number.isFinite) &&
+        L.gattung &&
+        L.haeufigkeit &&
+        typeof k.bodenKlasse === "function" &&
+        typeof k.lebensraum === "function" &&
+        typeof k.lebensraumWahl === "function" &&
+        k.DURST_GESETZ &&
+        [k.DURST_GESETZ.durstS, k.DURST_GESETZ.suchPauseS].every(Number.isFinite) &&
+        typeof k.durst === "function"
+    ) {
+        AnazhRealm._lebensraumMemo = Object.freeze({
+            L,
+            bodenKlasse: k.bodenKlasse,
+            lebensraum: k.lebensraum,
+            wahl: k.lebensraumWahl,
+            D: k.DURST_GESETZ,
+            durst: k.durst,
+        });
+        return AnazhRealm._lebensraumMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("tetrapoda:LEBENSRAUM_GESETZ");
+};
 // DER BESTAND (tetrapoda BESTAND_GESETZ + bestandNahrung · bestandBilanz, Ökologie K2): das Revier, die Kapazität aus Nahrung ×
 // Lebensraum und die logistische Bilanz je Takt der Spiel-Zeit. Fail-closed.
 AnazhRealm._bestandGesetz = function () {

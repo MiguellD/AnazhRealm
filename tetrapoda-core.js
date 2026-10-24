@@ -1660,6 +1660,18 @@
     function ankunftTempo(rest, vMax) {
         return Math.min(vMax, Math.sqrt(2 * STEUER_GESETZ.brems * GANG_GESETZ.g * Math.max(0, rest)));
     }
+    // DER UMWEG (Oekologie K5, 24.10., additiv): wer ein Ziel hat, eine Wand hielt ihn vor hoechstens haltS (n die Normale aus
+    // ihr), und sein Wunsch (ux, uz) steht fast frontal in ihr (|Wunsch · Tangente| <= quer — schraeg laesst ihn die Wand
+    // gleiten), geht laengs der Wand zur Seite, auf der er von ihrer Mitte (ox, oz) schon steht (der kuerzere Weg); die Seite
+    // alt haelt, solange der Umweg nicht laenger als haltS ruht. Liefert die Seite s (±1, 0 = kein Umweg), die Richtung ist
+    // s × (−nz, nx). Vorher stand ein Folger hinter einer Wand, bis der Spieler ihre Linie verliess (folgen: 30 s an 8 m).
+    var UMWEG_GESETZ = Object.freeze({ haltS: 0.5, quer: 0.25 });
+    function umwegSeite(ux, uz, nx, nz, ox, oz, alt) {
+        if (alt) return alt;
+        var q = uz * nx - ux * nz;
+        if (Math.abs(q) > UMWEG_GESETZ.quer) return 0;
+        return oz * nx - ox * nz < 0 ? -1 : 1;
+    }
     // DER VERBAND (S6 18.10.): das Rudel, die Herde — der Wurf, den die Geburt bindet — ist ein DATUM, kein Zufall der
     // Nachbarschaft. Die Form davor (herdeZug) zog nur Nachbarn derselben Gattung im Fenster fensterRaum × Paar-Raum: ein
     // Nachzuegler jenseits des Fensters blieb fuer immer zurueck, zwei fremde Herden derselben Art verschmolzen, und die
@@ -3339,6 +3351,8 @@
         sprintTempo: sprintTempo,
         steuerSchritt: steuerSchritt,
         ankunftTempo: ankunftTempo,
+        UMWEG_GESETZ: UMWEG_GESETZ,
+        umwegSeite: umwegSeite,
         VERBAND_GESETZ: VERBAND_GESETZ,
         verbandZug: verbandZug,
         rudelPlatz: rudelPlatz,

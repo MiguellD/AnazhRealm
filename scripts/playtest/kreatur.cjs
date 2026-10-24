@@ -5,20 +5,17 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// Die Logik-Konsumenten lesen die lebendige auraAt-API (nicht das eingefrorene worldFieldAt); der Bestand der
-// Fauna liest die Äsung des Felds (Ökologie K2; das Verhalten misst die Kreatur-Linse, Probe bestand).
+// Die Logik-Konsumenten lesen die lebendige auraAt-API (nicht das eingefrorene worldFieldAt; den Bestand misst
+// gate:kreatur-takt bestand).
 async function checkBandV1725FieldReaders(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — die Fauna-Behavioral-Probe misst den frozen Kern
-        // KONSUM-Beweis statt Quelltext-Zitat: der Bestand ruft auraAt WIRKLICH (Spy-Swap __consumes)
-        out.faunaReadsAura = window.__consumes(r, "_kreaturBestand", r, "auraAt");
         out.lofiReadsAura = window.__consumes(r, "_lofiWorldField", r, "auraAt");
         return out;
     });
-    check("Ökologie K2: _kreaturBestand liest auraAt (die Äsung des Reviers)", res.faunaReadsAura);
     check("V17.25 mehr Leser: _lofiWorldField liest auraAt (living)", res.lofiReadsAura);
 }
 
