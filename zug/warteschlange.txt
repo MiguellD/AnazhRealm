@@ -58,3 +58,7 @@ z2425-abab 0 storno
 z25-gtx 0 storno
 takt1-gtx 1 punkte sha=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 geraet=gtx
 takt1-abab 1 abab A=79c0fae296ec982fe5ad2673a85157eb9f7ea313 B=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 zellen=w-ego,g-third,d-ego,stadt
+takt1-gtx 0 storno
+takt1-abab 0 storno
+takt1b-gtx 1 punkte sha=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 geraet=gtx
+takt1b-abab 1 abab A=79c0fae296ec982fe5ad2673a85157eb9f7ea313 B=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 zellen=w-ego,g-third,d-ego,stadt
