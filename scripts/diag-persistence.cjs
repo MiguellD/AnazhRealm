@@ -2,13 +2,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-persistence.cjs — DIE PERSISTENZ-HÄRTUNG (npm run gate:persistence)
 //
-// (T) DER TAB-TOD urteilt den Browser-Pfad, (K) (U) den Lade-Pfad, (S) (C) den save-server, (W) die Wiederkehr (ein Werk auf der Lichtung).
+// (T) DER TAB-TOD urteilt den Browser-Pfad, der KORPUS den Lade-Pfad über die Versionen, (S) (C) den save-server.
 //
-// (K) DER RELOAD MIT KALTEM BUCH: ein Studio-Haus der Welt (haus_*, Worldgen-id als ZAHL) muss
-// den Restore überstehen, auch wenn das Studio-Buch noch nicht da ist. Gegenprobe (nicht vakuös): ein FRISCHER Spawn bei kaltem Buch bleibt blockiert.
-// (U) DER BODEN-UMZUG (K16): ein Save eines alten Bodens (ohne Boden-Generation, ohne Höhe über Grund) lädt durch den
-// ganzen Lade-Pfad (`loadState`) — jeder Bau steht danach auf dem Boden des Gesetzes in Fuß-Höhe. Gegenprobe: ein Save
-// desselben Bodens bewegt nichts. Die Zahl: wie viele Bauten der Welt sich bewegen (`state.bodenUmzug`).
+// (V) DER KORPUS (speicher.K5): je Versions-Stufe EIN Stand, den die ALTE Version selbst schrieb — Werke des Spielers (zwei
+// auf der Lichtung, ein Studio-Haus mit Zahlen-id), Grabe-Hiebe, Inventar, ihr saveState; `spec/speicher-korpus/<version>.json.br`
+// hält ihren localStorage. Jeder lädt am Kopf durch den Boot des Spielers: jeder Bau an seinem Ort in seiner Höhe über Grund,
+// jede Grube am Boden, jeder Slot mit seiner Zahl. Daraus (U) der Boden-Umzug (K16: ein Stand eines alten Bodens zieht um,
+// einer desselben nicht), (W) die Werke auf der Lichtung und (K) der Reload mit kaltem Buch (das Haus kehrt zurück; beim
+// Restore blockiert das Buch einen frischen Studio-Spawn). Eine Versions-Stufe ohne Stand ist ROT; `--korpus [rev …]` legt
+// ihn an (ohne rev: der Baum). `--selftest`: eine Migration lässt ein Feld fallen (`VERLUST`), oder der Räumer fragt den Stoff
+// statt der Herkunft — ROT.
 //
 // (S) DER SERVER SCHREIBT GANZ (K23): der save-server läuft in einer Sandbox-Kopie, ein Stand (≈ 1 MB) geht an
 // /api/save-state, und der Prozess stirbt (SIGKILL) an JEDEM Schreib-Punkt einmal — mitten in jedem Schreiben (die
@@ -18,16 +21,10 @@
 // `--selftest` setzt in der Kopie das direkte Schreiben wieder ein (`schreibeGanz` → fs.writeFile) und MUSS rot werden.
 // Ports: PERSISTENCE_PORT (Seite, Standard 4326), PERSISTENCE_SERVER_PORT (Sandbox-Server, Standard 4327).
 // ─────────────────────────────────────────────────────────────────────────
-const {
-    statikServer,
-    starteBrowser,
-    warteAufWelt,
-    nullRenderer,
-    startProc,
-    ROOT: root,
-} = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, startProc, ROOT: root } = require("./lib/welt-boot.cjs");
 const http = require("http");
-const { spawnSync } = require("child_process");
+const { spawnSync, execSync } = require("child_process");
+const zlib = require("zlib");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -393,124 +390,204 @@ const ttZeile = (t) =>
     `${t.n} Tode: Alter max ${t.maxAlter} s, ${t.alt} über 10 s · ${t.korrupt} korrupt · ${t.halb} halbe Welten · ${t.verfehlt} Haken verfehlt · Linie ${t.linie} Löcher`;
 const ttOk = (t) => t.n > 0 && !t.alt && !t.korrupt && !t.halb && !t.verfehlt && t.linie > 256;
 const [TT_VON, TT_BIS] = (process.env.PERSISTENCE_TABTOD || "0-7").split("-").map(Number);
-const server = statikServer();
+// `--korpus <baum>`: der Server trägt einen anderen Baum (git archive <rev> | tar -x -C <baum>), die Probe legt nur seinen Stand.
+const BAUM = process.argv.includes("--korpus")
+    ? path.resolve(process.argv[process.argv.indexOf("--korpus") + 1])
+    : root;
+const server = statikServer({ root: BAUM, seiten: { "/korpus.html": "" } });
+const [KORPUS, STUFE] = [path.join(root, "spec", "speicher-korpus"), require("../package.json").version];
+
+// (V) Der Spieler der Version, die der Server trägt, mit Verben, die jede Stufe seit V18.530 kennt; sein localStorage wird
+// der Stand ihrer Versions-Stufe. Bau 0 (der Satz) und 1 (der Bau-Modus) stehen auf der Lichtung, Bau 4 ist das Haus.
+async function korpusSpielen() {
+    const r = window.anazhRealm;
+    for (await r.erwacht; !(r._foundry && r._foundry.ready && r.state.blueprints.haus_griechisch);)
+        await new Promise((ok) => setTimeout(ok, 50));
+    const G = r.state.architectures.find((a) => a.type === "start_plattform").position;
+    const ort = (dx, dz) => [G.x + dx, r._voxelSurfaceY(G.x + dx, G.z + dz), G.z + dz];
+    r.dslRun(["spawn_blueprint", "stein_block", ["at", ...ort(15, 0)]], { source: "human" });
+    const bauten = [r.state.architectures[r.state.architectures.length - 1].id];
+    for (const [dx, dz, typ, opt] of [
+        [0, 15],
+        [-40, 30],
+        [-34, 30],
+        [52, 52, "haus_griechisch", { seed: 9, precise: true, id: 990001 }],
+    ]) {
+        const [x, y, z] = ort(dx, dz);
+        bauten.push(
+            r.spawnArchitecture(typ || "stein_block", { x, y, z }, opt || { id: "korpus-" + bauten.length }).id
+        );
+    }
+    for (let i = 0; i < 3; i++) r.dslRun(["voxel_carve", ...ort(30 + i * 8, -30), 3.5], { source: "human" });
+    r.addToInventory("stein_block", 7);
+    r.addToInventory(
+        r.state.hotbar.find((n) => n && n !== "stein_block" && r.state.blueprints[n]),
+        3
+    );
+    r.addMaterialToInventory("stein", 5);
+    r.saveState();
+    return { version: r.constructor.VERSION, bauten, ls: { ...localStorage } };
+}
+async function korpusNeu(browser) {
+    const page = await browser.newPage();
+    await nullRenderer(page, { foundry: true });
+    await page.goto(`http://127.0.0.1:${PORT}/korpus.html`);
+    await page.evaluate(() => localStorage.clear());
+    const da = new Promise((ok) => page.on("console", (m) => /Hauptschleife gestartet/.test(m.text()) && ok()));
+    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
+    const k = await da.then(() => page.evaluate(korpusSpielen));
+    await page.close();
+    fs.writeFileSync(path.join(KORPUS, k.version + ".json.br"), zlib.brotliCompressSync(JSON.stringify(k)));
+    return k;
+}
+// Was der Platz der aktiven Welt trägt, wie die alte Version ihn schrieb (ein Slot ohne Art fiel schon dort).
+function korpusSoll(k) {
+    const s = JSON.parse(k.ls["anazhRealmState_" + k.ls.anazhRealmActiveWorld]);
+    return {
+        welt: s.worldMeta.worldId,
+        boden: s.bodenGeneration,
+        bauten: k.bauten
+            .map((id) => s.architectures.find((a) => a.id === id))
+            .map((a) => [a.type, a.position.x, a.position.z, a.ueberGrund]),
+        edits: s.worldMeta.voxelEdits.map((e) => [e.x, e.z]),
+        inventar: s.playerInventory
+            .filter((x) => x && (x.material || x.blueprintName))
+            .map((x) => (x.material || x.blueprintName) + "×" + x.count),
+    };
+}
+// Am Kopf nach dem Boot: jeder Bau an seinem Ort in seiner Höhe über Grund, jeder Edit mit seiner Grube am Boden (die
+// Oberfläche liegt unter dem Gesetz), jeder Slot mit Art und Zahl.
+async function korpusIst(s) {
+    const r = await window.__weltDa((x) => x.state.worldMeta.worldId === s.welt);
+    const inv = r.state.player.inventory.filter(Boolean).map((x) => (x.material || x.blueprintName) + "×" + x.count);
+    const da = s.bauten.map(([t, x, z, ue]) =>
+        r.state.architectures.some(
+            (a) =>
+                a.type === t &&
+                a.position.x === x &&
+                a.position.z === z &&
+                Math.abs(r._ueberGrund(a.position) - (ue ?? r.constructor.PLAYER_FOOT_OFFSET)) <= 0.05
+        )
+    );
+    const grube = ([x, z]) =>
+        r.state.worldMeta.voxelEdits.some((e) => e.x === x && e.z === z) &&
+        r._voxelSurfaceY(x, z) < r._terrainMacroSurfaceY(x, z) - 1;
+    return {
+        alt: s.boden !== globalThis.__gelaendeCore.BODEN_GENERATION,
+        umzug: !!r.state.bodenUmzug,
+        kalt: window.__korpusKalt,
+        da,
+        n: [da.filter(Boolean).length, s.edits.filter(grube).length, s.inventar.filter((x) => inv.includes(x)).length],
+    };
+}
+// Der Haken: beim Restore der Bauten muss das kalte Buch einen frischen Studio-Spawn blockieren. Im Selbsttest pflanzt er die
+// Migration, die ein Feld fallen lässt, oder den Räumer, der den Stoff statt der Herkunft fragt.
+const VERLUST = ["architectures", "worldMeta.voxelEdits", "playerInventory", "_weichtDemBau"];
+function korpusHaken(feld) {
+    Object.defineProperty(window, "anazhRealm", {
+        configurable: true,
+        set(r) {
+            const [lies, bauen] = [r._loadStateLoadFromStorage, r._loadStateRestoreArchitectures];
+            r._loadStateRestoreArchitectures = function (...a) {
+                window.__korpusKalt =
+                    r.spawnArchitecture("haus_griechisch", { x: 1e4, y: 0, z: 1e4 }, { seed: 9 }) === null;
+                return bauen.apply(this, a);
+            };
+            r._loadStateLoadFromStorage = function () {
+                const [s, [a, b]] = [lies.call(this), String(feld).split(".")];
+                if (a === "_weichtDemBau") r[a] = (e) => r._istNatur(e);
+                else if (feld) delete (b ? s[a] : s)[b || a];
+                return s;
+            };
+            Object.defineProperty(window, "anazhRealm", { value: r, writable: true });
+        },
+    });
+}
+// Je Stand eine Seite, sein localStorage hinein (IndexedDB trug denselben Stand), der Boot des Spielers. Fehlt der Stand der
+// Versions-Stufe, legt ihn der Kopf — die Wand nennt ihn, bis er im Baum steht.
+async function korpusLauf(selbst) {
+    const alle = fs
+        .readdirSync(KORPUS)
+        .map((f) => JSON.parse(zlib.brotliDecompressSync(fs.readFileSync(path.join(KORPUS, f)))));
+    const [browser, zeilen] = [await starteBrowser({ art: "null" }), []];
+    if (!selbst && !alle.some((k) => k.version === STUFE)) alle.push(await korpusNeu(browser));
+    alle.sort((a, b) => a.version.localeCompare(b.version, "en", { numeric: true }));
+    for (const [i, k] of (selbst ? alle.slice(0, VERLUST.length) : alle).entries()) {
+        const [page, s] = [await browser.newPage(), korpusSoll(k)];
+        await nullRenderer(page);
+        await page.evaluateOnNewDocument(korpusHaken, selbst ? VERLUST[i] : null);
+        await page.goto(`http://127.0.0.1:${PORT}/korpus.html`);
+        await page.evaluate((ls) => Object.assign((localStorage.clear(), localStorage), ls), k.ls);
+        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
+        const z = {
+            version: k.version,
+            soll: [s.bauten, s.edits, s.inventar].map((l) => l.length),
+            ...(await page.evaluate(korpusIst, s)),
+        };
+        await page.close();
+        z.ganz = z.soll.every((x, j) => x > 0 && z.n[j] === x);
+        console.log(`  [V] ${k.version}${selbst ? " ohne " + VERLUST[i] : ""}: ${korpusZahl([z])}`);
+        zeilen.push(z);
+    }
+    await browser.close();
+    return zeilen;
+}
+const korpusZahl = (l) =>
+    ["Bauten", "Gruben", "Inventar"]
+        .map((w, j) => `${w} ${l.reduce((s, x) => s + x.n[j], 0)}/${l.reduce((s, x) => s + x.soll[j], 0)}`)
+        .join(" · ");
+function korpusUrteil(z, selbst) {
+    const [alt, gleich] = [z.filter((x) => x.alt), z.filter((x) => !x.alt)];
+    const spanne = (l) =>
+        `${l.length} Stände ${l
+            .map((x) => x.version)
+            .filter((v, i) => !i || i === l.length - 1)
+            .join(" … ")}`;
+    const licht = (l) => l.reduce((s, x) => s + x.da.slice(0, 2).filter(Boolean).length, 0);
+    const stand = `spec/speicher-korpus/${STUFE}.json.br`;
+    const urteil = [
+        [`(V) Korpus: ${spanne(z)} laden am Kopf — ${korpusZahl(z)}`, z.every((x) => x.ganz)],
+        [
+            `(V) Versions-Stufe ${STUFE}: ${stand} steht im Baum`,
+            execSync(`git ls-files ${stand}`, { cwd: root, encoding: "utf8" }),
+        ],
+        [
+            `(U) Boden-Umzug: ${spanne(alt)} eines alten Bodens stehen auf dem neuen — ${korpusZahl(alt)}`,
+            alt.length && alt.every((x) => x.ganz && x.umzug),
+        ],
+        [
+            `(U) Gegenprobe: ${spanne(gleich)} desselben Bodens ziehen nicht um`,
+            gleich.length && !gleich.some((x) => x.umzug),
+        ],
+        [`(W) Werke auf der Lichtung nach dem Reload ${licht(z)}/${2 * z.length}`, licht(z) === 2 * z.length],
+        [
+            `(K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn (${z.filter((x) => x.kalt).length}/${z.length})`,
+            z.every((x) => x.kalt),
+        ],
+        [
+            `(K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück (${z.filter((x) => x.da[4]).length}/${z.length})`,
+            z.every((x) => x.da[4]),
+        ],
+    ];
+    if (selbst)
+        urteil.push(
+            [
+                `(V) SELBSTTEST: eine Migration ohne ${VERLUST.slice(0, 3).join(" · ")} wird ROT`,
+                selbst.slice(0, 3).every((x) => !x.ganz),
+            ],
+            [`(W) SELBSTTEST: der Räumer nach Stoff nimmt sie (${licht(selbst.slice(3))}/2)`, !licht(selbst.slice(3))]
+        );
+    return urteil.map(([name, pass]) => ({ name, pass: z.length > 0 && !!pass }));
+}
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await starteBrowser({ art: "null" });
-    const page = await browser.newPage();
-    await nullRenderer(page, { foundry: true });
-    let out = null;
-    try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 60000 });
-        await warteAufWelt(page, 60000);
-        out = {};
-        // (W) zwei Werke auf der Lichtung (Satz, Bau-Modus), Save, Reload; Selbsttest: der Räumer nach Stoff
-        const w = (art) =>
-            page.evaluate(async (art) => {
-                const r = await window.__weltDa((x) => x._genesisPlattform());
-                const G = r._genesisMitte();
-                if (art === "setzen") {
-                    r.dslRun(["spawn_blueprint", "stein_block", ["at", G.x + 15, r._voxelSurfaceY(G.x + 15, G.z), G.z]], { source: "human" });
-                    r.spawnArchitecture("stein_block", { x: G.x, y: r._voxelSurfaceY(G.x, G.z + 15), z: G.z + 15 }, { id: r._newArchId() });
-                    r.saveState();
-                }
-                if (art === "stoff") {
-                    r._weichtDemBau = (e) => r._istNatur(e);
-                    r._loadStateRestoreArchitectures(r.buildStateSnapshot());
-                    delete r._weichtDemBau;
-                }
-                return r.state.architectures.filter((a) => a.type === "stein_block" && Math.hypot(a.position.x - G.x, a.position.z - G.z) < 16).length;
-            }, art);
-        out.w = { gesetzt: await w("setzen") };
-        await sleep(1500); // der IDB-Put des Saves landet (ein Reload schneidet sonst den Schreiber ab)
-        await page.reload({ waitUntil: "networkidle0", timeout: 60000 });
-        out.w.stehen = await w("laden");
-        if (SELBSTTEST) out.w.selbst = await w("stoff");
-        // (K) DER RELOAD MIT KALTEM BUCH: warten, bis das Studio-Buch die Häuser registriert hat, dann ein Haus mit
-        // Zahlen-id setzen, den Snapshot bei kaltem Buch zurückspielen (der Zweit-Boot) und zählen.
-        await page.waitForFunction(
-            () => {
-                const r = window.anazhRealm;
-                return !!(r._foundry && r._foundry.ready && r.state.blueprints && r.state.blueprints.haus_griechisch);
-            },
-            { timeout: 120000 }
-        );
-        Object.assign(
-            out,
-            await page.evaluate(() => {
-                const r = window.anazhRealm;
-                const k = {};
-                const id = 990001; // eine Zahlen-id (wie Worldgen) — der Spawn vergibt sie neu, gezählt wird die Stelle
-                const istHaus = (a) =>
-                    a &&
-                    a.type === "haus_griechisch" &&
-                    Math.abs(a.position.x - 52) < 0.01 &&
-                    Math.abs(a.position.z - 52) < 0.01;
-                const pos = { x: 52, y: r._voxelSurfaceY(52, 52), z: 52 };
-                const haus = r.spawnArchitecture("haus_griechisch", pos, { seed: 9, precise: true, id });
-                k.kGesetzt = !!haus;
-                const snap = r.buildStateSnapshot();
-                k.kImSnapshot = (snap.architectures || []).some(istHaus);
-                const f = r._foundry;
-                const warm = f.ready;
-                f.ready = false; // der Zweit-Boot: der Stand lädt, bevor das Buch kommt
-                try {
-                    k.kFrischBlockiert =
-                        r.spawnArchitecture("haus_griechisch", { x: 60, y: pos.y, z: 60 }, { seed: 9 }) === null;
-                    r._loadStateRestoreArchitectures({ architectures: snap.architectures });
-                } finally {
-                    f.ready = warm;
-                }
-                k.kZurueck = (r.state.architectures || []).some(istHaus);
-                k.kVorher = (snap.architectures || []).length;
-                k.kNachher = (r.state.architectures || []).length;
-                // (U) der alte Boden: jede Höhe 37,7 m daneben (die gemessene Verschiebung p50), ohne Generation und Höhe über Grund
-                const alt = JSON.parse(JSON.stringify(r.buildStateSnapshot()));
-                const gleich = JSON.parse(JSON.stringify(alt));
-                delete alt.bodenGeneration;
-                delete alt.spielerUeberGrund;
-                for (const a of alt.architectures || []) {
-                    delete a.ueberGrund;
-                    if (a.position) a.position.y += 37.7;
-                }
-                const fehl = (liste) => {
-                    let n = 0,
-                        max = 0;
-                    for (const a of liste || []) {
-                        if (!a || !a.position) continue;
-                        const g = r._voxelSurfaceY(a.position.x, a.position.z);
-                        if (!Number.isFinite(g)) continue;
-                        const d = Math.abs(a.position.y - (g + 0.5));
-                        n++;
-                        if (d > max) max = d;
-                    }
-                    return { n, max: Math.round(max * 100) / 100 };
-                };
-                r.state.bodenUmzug = null;
-                r.loadState(alt);
-                k.uAlt = fehl(r.state.architectures);
-                k.uBericht = r.state.bodenUmzug || null;
-                r.state.bodenUmzug = null;
-                const vorGleich = (r.state.architectures || []).map((a) => a.position.y);
-                r.loadState(gleich);
-                k.uGleichBericht = r.state.bodenUmzug || null;
-                k.uGleichN = vorGleich.length;
-                return k;
-            })
-        );
-    } catch (e) {
-        out = { __err: (e && e.message) || String(e) };
-    }
-    await browser.close();
+    if (BAUM !== root)
+        return korpusNeu(await starteBrowser({ art: "null", erwartet: /./ })).then(() => process.exit(0));
     const tLauf = await tabTodProbe({ von: TT_VON, bis: TT_BIS });
     const tSelbst = SELBSTTEST ? await tabTodProbe({ von: 0, bis: 0, selbst: true }) : null;
+    const korpus = korpusUrteil(await korpusLauf(false), SELBSTTEST ? await korpusLauf(true) : null);
     server.close();
-
-    if (!out || out.__err) {
-        console.log(`⛔ Persistenz-Linse fehlgeschlagen: ${out ? out.__err : "?"}`);
-        process.exit(2);
-    }
 
     // (S) Der save-server schreibt ganz — und im Selbsttest die alte Schreib-Art in der Kopie, die rot werden MUSS.
     const quelle = fs.readFileSync(path.join(root, "save-server.js"), "utf8");
@@ -556,33 +633,7 @@ const server = statikServer();
         `erst ${p.erst.status} ETag ${p.erst.etag ? "ja" : "nein"} „${p.erst.cc || "—"}" · nachgefragt ${p.frisch.status} (${p.frisch.n || 0} B) · Inhalt geändert ${p.geaendert.status}${p.geaendert.etag && p.geaendert.etag !== p.erst.etag ? " neuer ETag" : ""}`;
 
     const checks = [
-        {
-            name: "(K) Gegenprobe: ein FRISCHER Studio-Spawn bei kaltem Buch bleibt blockiert (die Kalt-Probe wirkt)",
-            pass: out.kGesetzt === true && out.kFrischBlockiert === true,
-        },
-        {
-            name: `(K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück (Einträge ${out.kVorher} → ${out.kNachher})`,
-            pass: out.kImSnapshot === true && out.kZurueck === true && out.kNachher === out.kVorher,
-        },
-        {
-            name:
-                `(U) Boden-Umzug: ein Save des alten Bodens steht auf dem neuen (${out.uAlt ? out.uAlt.n : "?"} Bauten, ` +
-                `größte Abweichung von der Fuß-Höhe ${out.uAlt ? out.uAlt.max : "?"} m; Bericht ${JSON.stringify(out.uBericht)})`,
-            pass:
-                !!out.uAlt &&
-                out.uAlt.n > 0 &&
-                out.uAlt.max <= 0.05 &&
-                !!out.uBericht &&
-                out.uBericht.bewegt === out.uAlt.n,
-        },
-        {
-            name: `(U) Gegenprobe: ein Save desselben Bodens zieht nicht um (Bericht ${JSON.stringify(out.uGleichBericht)})`,
-            pass: out.uGleichBericht === null,
-        },
-        {
-            name: `(W) Werke auf der Lichtung nach dem Reload ${out.w.stehen}/${out.w.gesetzt}${out.w.stehen < 2 ? " — Täter _weichtDemBau: Stoff statt Herkunft" : ""}`,
-            pass: out.w.gesetzt === 2 && out.w.stehen === 2,
-        },
+        ...korpus,
         {
             name: `(S) save-server: ein voller Save hält den Stand davor im .bak (${sZeile(s)})`,
             pass: s.vollOk,
@@ -602,10 +653,6 @@ const server = statikServer();
     ];
     if (SELBSTTEST)
         checks.push(
-            {
-                name: `(W) SELBSTTEST: der Räumer nach Stoff nimmt sie (${out.w.selbst}/${out.w.gesetzt})`,
-                pass: out.w.selbst === 0,
-            },
             {
                 name: `(S) SELBSTTEST: die alte Schreib-Art (fs.writeFile aufs Ziel) wird ROT (${sZeile(selbst)})`,
                 pass: !selbst.killsOk,

@@ -1827,14 +1827,19 @@ class AnazhRealm_vegetation_baum {
         return gitter;
     }
 
-    // Ist der Eintrag Natur? Die Art steht am Eintrag (`_lodSpecies` des Walds, die Bauplan-Präfixe baum_/busch_/grown_,
-    // der Totholz-Stamm) — unabhängig davon, ob das Studio-Buch schon geladen ist; sonst trägt das Gesetzbuch des
+    // Natur nach ihrer ART am Eintrag (`_lodSpecies` des Walds, die Bauplan-Präfixe baum_/busch_/grown_, der Totholz-Stamm).
+    _naturArt(e) {
+        return !!e._lodSpecies || e.type === "stamm_gefallen" || /^(baum_|busch_|grown_)/.test(e.type);
+    }
+
+    // Ist der Eintrag Natur? Die Art steht am Eintrag (`_naturArt`) — unabhängig davon, ob das Studio-Buch schon geladen
+    // ist; sonst trägt das Gesetzbuch des
     // Terrain-Studios seine Art (`terrain:PHYTO_PRESETS`: Baum, Strauch, Fels, Farn, Totholz …; der Kern ist Pflicht —
     // unlesbar ist ein lauter Bruch, nie ein stilles „keine Natur", das nichts mehr räumt). Tor und Wagen sind nie Natur
     // (sie tragen auch eine Impostor-Zeile — die frühere Frage `_foundryPresetIsTree` hätte sie geräumt).
     _istNatur(e) {
         if (!e || typeof e.type !== "string") return false;
-        if (e._lodSpecies || e.type === "stamm_gefallen" || /^(baum_|busch_|grown_)/.test(e.type)) return true;
+        if (this._naturArt(e)) return true;
         const tab =
             AnazhRealm.Gesetz("terrain:PHYTO_PRESETS", null) || AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS");
         const pr = this._foundryPresetForEntry(e);

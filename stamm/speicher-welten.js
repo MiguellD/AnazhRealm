@@ -789,6 +789,8 @@ class AnazhRealm_speicher_welten {
                 : { x: 0, y: 5, z: 0 },
             // DIE BODEN-GENERATION (K16): unter welchem Gelände-Gesetz die Höhen dieses Saves stehen (`_bodenUmzug`).
             bodenGeneration: globalThis.__gelaendeCore.BODEN_GENERATION,
+            // DIE HERKUNFT: jedes Werk dieses Stands trägt `werk` (seit 22.10.); ohne die Zeile entscheidet das Laden.
+            herkunft: 1,
             spielerUeberGrund: this.state.playerMesh ? this._ueberGrund(this.state.playerMesh.position) : undefined,
             knowledgeBase: knowledgeBase,
             version: this.state.currentVersion,
@@ -1073,12 +1075,19 @@ class AnazhRealm_speicher_welten {
             // oder null. Default wird beim Init überschrieben.
             hotbar: Array.isArray(this.state.hotbar) ? this.state.hotbar.slice(0, 9) : [],
             // Welle 6.C1 — Inventar persistiert. 27 Slots, jeweils {blueprintName,
-            // count} oder null. Bei Reload defensive Validierung (unbekannte
-            // Bauplan-Namen werden zu null, count auf 1..999 geclampt).
+            // count}, ein Material-Slot {kind, material, count}, oder null. Bei Reload defensive Validierung (unbekannte
+            // Namen werden zu null, count auf 1..999 geclampt). Bis 24.10. schrieb der Material-Slot nur {count}: jedes Laden
+            // verlor, was Graben, Ernte und Beute gaben (der Korpus, speicher.K5).
             playerInventory: Array.isArray(this.state.player && this.state.player.inventory)
                 ? this.state.player.inventory
                       .slice(0, 27)
-                      .map((s) => (s ? { blueprintName: s.blueprintName, count: s.count || 1 } : null))
+                      .map((s) =>
+                          s
+                              ? s.kind === "material"
+                                  ? { kind: "material", material: s.material, count: s.count || 1 }
+                                  : { blueprintName: s.blueprintName, count: s.count || 1 }
+                              : null
+                      )
                 : [],
         };
     }
