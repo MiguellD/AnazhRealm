@@ -1,6 +1,5 @@
 {
- "Messfenster, die Zeit ist das Maß: Ankunft (B), Erstarren, Flugschreiber und Hänger-Wache, Klang in Echtzeit, Feld-Alter, die Stille nach dem Wort": {
-  "scripts/diag-boot-stage.cjs": 1,
+ "Messfenster, die Zeit ist das Maß: Erstarren, Flugschreiber und Hänger-Wache, Klang in Echtzeit, Feld-Alter, die Stille nach dem Wort": {
   "scripts/diag-erstarren.cjs": 1,
   "scripts/diag-hitch-telemetrie.cjs": 2,
   "scripts/diag-klang-zensus.cjs": 3,
