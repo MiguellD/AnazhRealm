@@ -146,7 +146,7 @@ const stationen = [
         ],
         quelle: "1 = (a) Kohäsion an einem Gerät",
     },
-    // ───────── tiere.K1 Staffel 2 — der Verband ganz (Zweig tiere-k1-s2, tetrapoda FURCHT_GESETZ.fluchtWegM + fluchtRadius) ─────────
+    // ───────── tiere.K1 Staffel 2 — der Verband ganz (Zweig tiere-k1-s2, tetrapoda fluchtRadius: fernstes Glied + FURCHT_GESETZ.fluchtWegJeRadius Radien) ─────────
     // (a)–(d) der Probe herde am echten Kreatur-Takt (Null-Renderer, R3: Verband ist Mechanik; Port {PORT}+10000): (a) Kohäsion
     // wandernd ≥ 0,9, fliehend ≥ 0,8; (b) Φ = |Σv̂|/N der laufenden Glieder (ab 1 m/s) ≥ 0,8 über ≥ 60 Flucht-Takte; (c) der
     // letzte Flüchter läuft ≤ 1,0 s nach dem ersten, ≥ 1 Glied aus zweiter Hand; (d) 600 s neben einem fremden Verband derselben
