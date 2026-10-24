@@ -708,6 +708,91 @@ module.exports = [
         quelle: "1 = der Wasser-Automat hat 0 Takte in 60 s Ruhe",
     },
 
+    // ── feld.K3 Staffel 2 ── gate:stand-takt (RS, WS) am Kopf: in 60 s Ruhe arbeitet keine der sieben Sims (der Brand
+    // eingeschlossen), ein Akt kostet höchstens zwei Einheiten je geschriebener Zelle (RUHE-TAT), das Feld räumt am Tod (nach
+    // vier Wellen 0 Tote: FELD-TOTE, FELD-BESUCH), der Brand arbeitet nur in brennenden Zellen, erlischt, hinterlässt Asche,
+    // leuchtet und glüht (BRAND-*) — die Wand grün nur, wenn jede Sim-Probe hält. An main 6f8a2c66 ROT: Taten 46 802
+    // Einheiten in 60 s Ruhe (der Blick des Spielers je Bild), das Feld bis 1 110 Zellen bei 573 lebenden, kein Brand im Stamm
+    // (feld-k2k3)
+    {
+        kriterium: "feld.K3",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-stand-takt.cjs"],
+        env: { STAND_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const z = (n) => (new RegExp("^\\s*" + n + ": (.*)$", "m").exec(out) || [])[1];
+            const [ruhe, feld, brand] = [z("Sim-Ruhe 60 s"), z("Sim-Wecken feld"), z("Sim-Wecken brand")];
+            if (!ruhe || !feld || !brand) return { gruen: false, zahl: "keine Sim-Ruhe-, Feld- oder Brand-Zeile (Exit " + lauf.exit + ")" };
+            const rot = (out.split("❌ STAND-TAKT ROT:")[1] || "").split("\n").map((x) => x.trim()).filter(Boolean);
+            return {
+                gruen: lauf.exit === 0 && /✅ STAND-TAKT GRÜN/.test(out) && / brand 0 /.test(ruhe + " "),
+                zahl: "Ruhe 60 s: " + ruhe + " · Feld: " + feld.split(" — ")[0] + " · Brand: " + brand.split(" — ")[0] +
+                    (rot.length ? " · ROT: " + rot.slice(0, 3).join(" | ") : ""),
+            };
+        },
+        pfad: [
+            "stamm/wasser-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/feld-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/vegetation-*.js",
+            "stamm/koerper-fahrt.js",
+            "stamm/dienst.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "scripts/diag-stand-takt.cjs",
+            "scripts/lib/stand-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = jede langsame Simulation (Wasser, Overlays, Wetter, Brand, Wachstum) hat 0 Einheiten in Ruhe und arbeitet nur in berührten Zellen",
+    },
+
+    // ── feld.K2 ── gate:mp-sync (e) (zwei Seiten einer Maschine, ein echter Broker): A gräbt, schüttet und baut im Gespräch,
+    // B trägt denselben Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden an jedem Edit), nach dem Reload von B
+    // derselbe; das Netz-Log beider Seiten trägt keine Zustands-Nachricht; der Leib rechnet bit-gleich aus seinen Eingaben; je
+    // Probe ein Selbsttest. An main 6f8a2c66 fehlt (e); am Schnitt ROT: die Kennung eines Akt-Baus war der Zähler der Seite
+    // (A 463, B 471) (feld-k2k3)
+    {
+        kriterium: "feld.K2",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-mp-sync.cjs"],
+        env: { MP_SYNC_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const e = String(lauf.stdout || "").split(/\r?\n/).filter((x) => /^\s*(OK|ROT)\s+\(e\)/.test(x));
+            if (e.length < 6) return { gruen: false, zahl: "(e) trägt " + e.length + " von 6 Proben (Exit " + lauf.exit + ")" };
+            const rot = e.filter((x) => /^\s*ROT/.test(x));
+            return {
+                gruen: lauf.exit === 0 && rot.length === 0,
+                zahl: (rot.length ? rot.length + " von " + e.length + " (e)-Proben ROT: " : e.length + " (e)-Proben GRÜN: ") +
+                    (rot.length ? rot : e.slice(0, 3)).map((x) => x.replace(/^\s*(OK|ROT)\s+/, "").slice(0, 140)).join(" | "),
+            };
+        },
+        pfad: [
+            "stamm/netz-*.js",
+            "stamm/feld-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/speicher-*.js",
+            "stamm/werkstatt-*.js",
+            "stamm/dienst.js",
+            "stamm/dirigent-*.js",
+            "signaling-server.js",
+            "save-server.js",
+            "voxel-worker.js",
+            "gelaende-core.js",
+            "scripts/diag-mp-sync.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = Edits und Bauten aus Schreib-Akten byte-gleich über Peers und Reload, gemessen",
+    },
+
     // ── feld.K1 ── gate:fahr-leben W (Zweig wetter-kette-k1): Sturm → Regen-Feld → Nässe → Grip, je Glied die Festhalte-Probe
     // (`ketteVerdict`: ein Glied zählt, wenn es mit dem Sturm zieht UND steht, solange sein Vorgänger gehalten wird); das
     // Urteil liest die Zeile `KETTE {"tiefe":N,…}` — an main fehlt `--kette` (ROT „keine KETTE-Zeile")
@@ -891,9 +976,7 @@ module.exports.fehlt = [
     { kriterium: "gelaende.K4", staffel: 2, befehl: null, grund: "Werkzeug fehlt: die Mutation läuft nur am See der Mess-Wiese (nicht überall); „jeder Lauf endet in See oder Meer“ und „die Strömung treibt“ (gate:kopplung F1) sind getrennte Linsen ohne gemeinsames Urteil" },
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Pfützen in den Mulden, keine Trocken-Kurve, kein Third" },
     { kriterium: "physik.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: der Wagen bei vmax × 1,2 gegen die 0,35-m-Mauer und die Bild-Probe (Spalt Leib–Wand ≤ 5 cm) auf beiden Geräten — gate:kollision-bild läuft auf dem Null-Renderer" },
-    { kriterium: "feld.K2", staffel: 1, befehl: null, grund: "Werkzeug fehlt für das ganze Soll: gate:mp-sync (c) trägt nur zwei Chat-Edits über Peers, keine Bauten; kein Werkzeug misst Edits und Bauten byte-gleich über einen Reload (gate:reload-treue prüft den Guss-Pin der Kreatur)" },
-    { kriterium: "feld.K2", staffel: 2, befehl: null, grund: "nicht gebaut: Wetter am Ort, Pegel, Overlays, Brand ohne Zustands-Nachricht über Peers ungemessen; Reload mitten im Sturm ohne Linse" },
+    { kriterium: "feld.K2", staffel: 2, befehl: null, grund: "nicht gebaut: das Netz-Log steht (gate:mp-sync (e), keine Zustands-Nachricht), aber die Uhren der Teil-Simulationen sind je Seite — der Auto-Zug des Wetters zählt die Sitzung (`weatherEffectTime`) und den Wunsch des eigenen Nexus, Overlays und Brand die Spielzeit der Seite (`spielZeit`), die Tageszeit ist Spieler-Wort (set_time_of_day nicht broadcastbar); ohne geteilte Welt-Uhr ist Wetter am Ort keine Funktion von Saat und Akten, und ein Reload mitten im Sturm setzt nur das Wort fort (der Übergang reist nicht)" },
     { kriterium: "feld.K1", staffel: 2, befehl: null, grund: "Werkzeug fehlt: `diag-fahr-leben --kette` kennt drei Glieder (Regen-Feld, Nässe, Grip) und misst Tiefe ≥ 4 nie; das vierte Glied (Unterstand und Tränke der Tiere aus Nässe und Pegel statt `_weatherIsWet`, oder der Pegel aus dem Regen) ist nicht gebaut" },
     { kriterium: "stoffe.K3", staffel: 2, befehl: null, grund: "nicht gebaut: der Schnee schmilzt nicht (die Schneegrenze ist Höhe allein, kein Pegel liest Schmelze), Lava erstarrt nicht (die glut-Achse ist eine eingefrorene Feld-Achse), der Stahl der Esse liest das Temperatur-Feld nicht; nur das Eis steht (Staffel 1)" },
-    { kriterium: "feld.K3", staffel: 2, befehl: null, grund: "Werkzeug fehlt: `werkbank stand --sim` misst die Ruhe, nicht „nur in berührten Zellen“ (unter Taten 32 805 Einheiten); der Brand hat keinen Takt im Stamm" },
 ];
