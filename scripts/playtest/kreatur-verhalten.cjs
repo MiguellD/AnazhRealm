@@ -562,13 +562,13 @@ async function checkBandWelle6HCreatures(ctx) {
         );
         check("Welle 6.H P2A: Kreaturen-Drawer im DOM", wave6hP2aResults.hasCreatureDrawerEl);
         check(
-            "V18.46 Hof-A: inline-Befehle am Wesen (.creature-actions-inline, P16 eine Ebene)",
+            "Hof-A: inline-Befehle am Wesen (.creature-actions-inline, P16 eine Ebene)",
             wave6hP2aResults.hasTaskActions
         );
         check("Welle 6.H P2A: Form-Dropdown = Zufällig + die vier Tiere", wave6hP2aResults.hasSoulSelect);
         check("Welle 6.H P2A: Kreatur-Liste-Container im DOM", wave6hP2aResults.hasCreatureList);
         check(
-            "V18.46 Hof-A: die 3 inline-Tasks am Wesen (Folge/Warte/Streift via data-task)",
+            "Hof-A: die 3 inline-Tasks am Wesen (Folge/Warte/Streift via data-task)",
             wave6hP2aResults.hasFolgeInline && wave6hP2aResults.hasWarteInline && wave6hP2aResults.hasStreiftInline
         );
         check("Welle 6.H P2A: Spawn-Buttons +1/+5", wave6hP2aResults.spawn1Button && wave6hP2aResults.spawn5Button);
@@ -587,54 +587,54 @@ async function checkBandWelle6HCreatures(ctx) {
         );
         check("Hof-D §D.1: die Stimmung als Glyph an jeder Zeile (.creature-mood)", wave6hP2aResults.rowHasMoodGlyph);
         check(
-            "V18.54 Hof-Bühne: die Zeilen sind der schlanke Picker (keine Detail-Card inline)",
+            "Hof-Bühne: die Zeilen sind der schlanke Picker (keine Detail-Card inline)",
             wave6hP2aResults.detailNotInRows
         );
         check(
-            "V18.54 Hof-Bühne: die Spec-Card des fokussierten Wesens lebt unter der Bühne (#hof-stage-spec, EINE Karte mit Balken)",
+            "Hof-Bühne: die Spec-Card des fokussierten Wesens lebt unter der Bühne (#hof-stage-spec, EINE Karte mit Balken)",
             wave6hP2aResults.stageSpecPresent && wave6hP2aResults.stageShowsOneCard
         );
         check(
-            "V18.55 Hof-Bühne: das Wesen-Spec-Sheet trägt den Header (Name) + Zwei-Spalten-Body (Werkstatt-DNA)",
+            "Hof-Bühne: das Wesen-Spec-Sheet trägt den Header (Name) + Zwei-Spalten-Body (Werkstatt-DNA)",
             wave6hP2aResults.stageHasTitle && wave6hP2aResults.stageHasBody2Col
         );
         check(
-            "V18.54 Hof-Bühne: die Spec-Card unter der Bühne trägt den Verabschieden-Akt",
+            "Hof-Bühne: die Spec-Card unter der Bühne trägt den Verabschieden-Akt",
             wave6hP2aResults.stageHasDismiss
         );
         check(
-            "V18.54 Hof-Bühne: Klick markiert GENAU eine Zeile + holt das Wesen auf die Bühne",
+            "Hof-Bühne: Klick markiert GENAU eine Zeile + holt das Wesen auf die Bühne",
             wave6hP2aResults.focusMarksOneRow && wave6hP2aResults.focusUpdatesStage
         );
         check(
-            "V18.54 Hof-Bühne: erneuter Klick löst den Fokus (zurück aufs erste Wesen, kein Leck)",
+            "Hof-Bühne: erneuter Klick löst den Fokus (zurück aufs erste Wesen, kein Leck)",
             wave6hP2aResults.focusToggleClears
         );
         check("Welle 6.H P2A: Task-Wechsel triggert Liste-Refresh", wave6hP2aResults.taskCellUpdates);
         check("Welle 6.H P2A: removeCreature entfernt Group aus scene", wave6hP2aResults.sceneAfterRemove);
         check(
-            "V18.51 Hof-E/§G.9: leerer Hof zeigt den Onboarding-Zustand (.hof-empty, kein kahles '—')",
+            "Hof-E/§G.9: leerer Hof zeigt den Onboarding-Zustand (.hof-empty, kein kahles '—')",
             wave6hP2aResults.emptyShowsOnboarding
         );
         check(
-            "V18.51 Hof-E §D: zwei Zonen — ORCHESTER + PARTITUR existieren",
+            "Hof-E §D: zwei Zonen — ORCHESTER + PARTITUR existieren",
             wave6hP2aResults.hasOrchesterZone && wave6hP2aResults.hasPartiturZone
         );
         check(
-            "V18.51 Hof-E §D.4: die PARTITUR trägt die Gesetze + den Nexus (worldrules + abilities)",
+            "Hof-E §D.4: die PARTITUR trägt die Gesetze + den Nexus (worldrules + abilities)",
             wave6hP2aResults.partiturHoldsLaws
         );
-        check("V18.51 Hof-E §D.3: der Spawn-Fuß ist ins ORCHESTER integriert", wave6hP2aResults.spawnFootInOrchester);
+        check("Hof-E §D.3: der Spawn-Fuß ist ins ORCHESTER integriert", wave6hP2aResults.spawnFootInOrchester);
         check(
-            "V18.51 Hof-F §D.2: die Sektions-Leiste rendert Chips (Alle zuerst)",
+            "Hof-F §D.2: die Sektions-Leiste rendert Chips (Alle zuerst)",
             wave6hP2aResults.sectionChipsRender && wave6hP2aResults.firstSectionIsAlle
         );
         check(
-            "V18.51 Hof-F: eine Sektion wählen filtert die Liste + zeigt die Befehlsleiste",
+            "Hof-F: eine Sektion wählen filtert die Liste + zeigt die Befehlsleiste",
             wave6hP2aResults.sectionSelectShowsCmd && wave6hP2aResults.sectionFiltersList
         );
         check(
-            "V18.51 Hof-F/§G.4: der Sektions-Befehl ruft DENSELBEN assignTaskToAllCreatures (gefiltert)",
+            "Hof-F/§G.4: der Sektions-Befehl ruft DENSELBEN assignTaskToAllCreatures (gefiltert)",
             wave6hP2aResults.sectionCmdAssignsTask
         );
     }
@@ -853,11 +853,11 @@ async function checkBandWelle6HCreatures(ctx) {
             wave6hP2bResults.listShowsSammelt && wave6hP2bResults.listTaskHasGatherClass
         );
         check(
-            "V18.48 Hof-C: der inline Auftrag-Select am Wesen traegt >=10 Sammle-Materialien",
+            "Hof-C: der inline Auftrag-Select am Wesen traegt >=10 Sammle-Materialien",
             wave6hP2bResults.hasGatherSelect && wave6hP2bResults.gatherSelectHasMaterials
         );
         check(
-            "V18.48 Hof-C: inline Task-Knöpfe am Wesen + Bau-Optionen im Auftrag-Select",
+            "Hof-C: inline Task-Knöpfe am Wesen + Bau-Optionen im Auftrag-Select",
             wave6hP2bResults.hasNearestGatherBtn && wave6hP2bResults.hasAllGatherBtn
         );
     }
@@ -1224,17 +1224,17 @@ async function checkBandWelle6HCreatures(ctx) {
         );
         check("Welle 6.H P2C: schöpfer-Modus: Inventar bleibt leer (unbegrenzt)", wave6hP2cResults.schoepferEmptyAfter);
         check(
-            "V17.60 S2: frieden ohne Material → confirmBuild lehnt ab (frieden zahlt Materie, nicht gratis)",
+            "S2: frieden ohne Material → confirmBuild lehnt ab (frieden zahlt Materie, nicht gratis)",
             wave6hP2cResults.friedenRejectsWithoutMaterial && wave6hP2cResults.friedenNoArchOnReject
         );
         check(
-            "V17.60 S2: KONSUM — frieden MIT Material baut + verbraucht das Material (wie pfad; nur Mühe/Bedrohung fehlt)",
+            "S2: KONSUM — frieden MIT Material baut + verbraucht das Material (wie pfad; nur Mühe/Bedrohung fehlt)",
             wave6hP2cResults.friedenBuildsWithMaterial && wave6hP2cResults.friedenConsumesMaterial
         );
         check("Welle 6.H P2C: pfad-HUD zeigt Material-Kosten + verfügbare Menge", wave6hP2cResults.hudShowsCostInPfad);
         check("Welle 6.H P2C: schöpfer-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInSchoepfer);
         check(
-            "V17.60 S2: frieden-HUD zeigt die Material-Kosten (nicht mehr 'frei')",
+            "S2: frieden-HUD zeigt die Material-Kosten (nicht mehr 'frei')",
             wave6hP2cResults.hudShowsCostInFrieden
         );
     }

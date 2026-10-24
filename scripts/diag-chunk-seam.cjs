@@ -1,30 +1,24 @@
-// Diagnose T0 (Terrain-Kohärenz-Plan §4) — DIE NAHT MESSEN, bevor ein Stein sich bewegt.
-//
-// Die These (§0): jeder Chunk ist eine INSEL — er baut sein Mesh allein, und seine Ränder
-// finden nur *approximativ* (über Determinismus) und *verspätet* (über eine async-Queue) zu
-// den Nachbarn. T0 härtet die These EMPIRISCH + trennt die zwei Achsen, BEVOR irgendein Umbau:
+// diag-chunk-seam.cjs — DIE NAHT MESSEN: jeder Chunk baut sein Mesh allein, seine Ränder finden über Determinismus
+// und eine async-Queue zu den Nachbarn.
 //
 //   A — RÄUMLICH, gleiche LOD (die Determinismus-Wette):
 //       Teilen zwei gleich-LODige Nachbar-Chunks am gemeinsamen Rand koinzidente Oberflächen-
 //       Vertices? Wenn die Wette aufgeht: ~100 % koinzident, ΔY≈0
-//       → die gleiche-LOD-Naht ist STRUKTURELL straff (kein T1/T2 nötig). Wenn nicht: sub-cell-
+//       → die gleiche-LOD-Naht ist STRUKTURELL straff. Wenn nicht: sub-cell-
 //       Jitter = ein echter Riss.
 //
 //   B — RÄUMLICH, Cross-LOD (die LOD-T-junction):
 //       An der LOD0↔LOD1-Grenze (Ring 1→2) sitzt der feinere Chunk (step 1.8) neben dem groben
 //       (step 3.6). Die feineren Rand-Vertices fallen ZWISCHEN die groben → hängende Knoten
-//       (T-junctions) + vertikaler Spalt. Das ist die räumliche Naht, die T2 (Stable-LOD+Geomorph)
-//       heilt. Wir messen ihre Magnitude.
+//       (T-junctions) + vertikaler Spalt, die der Geomorph heilt — gemessen wird ihre Magnitude.
 //
 //   C — ZEITLICH (das async-Fenster beim Abbauen):
 //       Ein Carve an einer Chunk-Grenze markiert ~9-12 Chunks dirty; `_tickDirtyVoxelChunks` heilt
 //       aber nur 1/Frame (nächster zuerst) → der Grenz-Nachbar bleibt k Frames STALE = die sichtbare
 //       Abbau-Naht. Wir messen k (Frames bis der Nachbar heilt) + zeigen die SYNC-Alternative
-//       (`_drainDirtyVoxelChunks` → 0 Frames Stale), die T1 strukturell macht.
+//       (`_drainDirtyVoxelChunks` → 0 Frames Stale).
 //
-// Sign-off (§4 T0): der Schöpfer entscheidet aus A/B/C, welche Naht schwerer wiegt → priorisiert
-// T1 (zeitlich) vs T2 (räumlich). Dies ist eine MESSUNG (informativ), kein Pass/Fail-Gate:
-// Exit 0 bei erfolgreicher Messung, Exit 1 nur bei Harness-Versagen (keine Chunks gestreamt).
+// Exit 1: keine Chunks gestreamt, eine Cross-LOD-Spalte ohne Stitch-Band (A1) oder das Naht-Gate (`--gate`) rot.
 const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.CHUNK_SEAM_PORT) || 4364;
 const server = statikServer();
@@ -728,18 +722,10 @@ const server = statikServer();
     console.log(`   Nachbar-Paare: ${A.pairs}`);
     console.log(`   DISPOSITIV — EXAKT-geteilte Vertices nach Abstand zur Naht-Ebene:  ${fmtBins(A)}`);
     console.log(
-        `   → ~50% der Naht-Vertices sind float-EXAKT geteilt (der Pad+Crop-Overlap, V9.79) → die §1.2-These ‚KEINE geteilten Vertices‘ ist WIDERLEGT; die gleiche-LOD-Naht ist halb-verschweisst.`
-    );
-    console.log(
         `   Rest-Proxy (UNRELIABEL — Punkt→Fläche auf MEHRWERTIGER Oberfläche, dominiert von Höhlen/Überhängen): von n${A.gapN} ungeteilten ${A.onSurfPct}% auf der Fläche · ${A.gap1Pct}% >1 m (${A.occlPct}% okkludiert) · max ${A.gapMax} m`
     );
-    // Verdikt führt mit dem dispositiven Kontrast (50% vs Cross-LOD 0%), NICHT mit dem
-    // unreliablen Rest-Proxy; in der Praxis gibt es KEINEN „Terrain-Löcher"-Befund (30 Wellen
-    // Playtests) → same-LOD ist kein primärer sichtbarer Riss. Das Schöpfer-Auge ist die Wahrheit.
+    // Das Verdikt (BEFUND unten) führt mit dem dispositiven Kontrast (≥ 40 % geteilt, Cross-LOD 0 %), nie mit dem Rest-Proxy.
     const sameWelded = A.binPct[0] != null && A.binPct[0] >= 40;
-    console.log(
-        `   → ${sameWelded ? "STRUKTURELL SEMI-VERSCHWEISST (50% geteilt vs Cross-LOD 0%) → KEIN primärer sichtbarer Riss (kein ‚Terrain-Löcher‘-Befund in 30 Wellen; der Rest-Proxy ist headless-unreliabel auf der mehrwertigen Fläche). Schöpfer-Auge bestätigt." : "WENIG geteilt — unerwartet; der Schöpfer-Browser muss die gleiche-LOD-Naht prüfen"}\n`
-    );
 
     console.log("── B · RÄUMLICH, CROSS-LOD (die LOD-T-junction) ──");
     const Bc = spatial.cross;
@@ -758,7 +744,7 @@ const server = statikServer();
         );
         if (Bc.worst) console.log(`   schlimmster Spalt: ${Bc.worst.at}  ${Bc.worst.d3} m @y ${Bc.worst.ay}`);
         console.log(
-            `   → die Cross-LOD-Naht ist STRUKTURELL: 0% geteilte Vertices (fundamental inkompatible Gitter) + ~${bVisGap}% sichtbare >1-m-Spalten an der Oberfläche → ein echter LOD-Riss → T2 Stable-LOD+Geomorph\n`
+            `   → die Cross-LOD-Naht ist STRUKTURELL: 0% geteilte Vertices (fundamental inkompatible Gitter) + ~${bVisGap}% sichtbare >1-m-Spalten an der Oberfläche → ein echter LOD-Riss\n`
         );
     }
 
@@ -830,16 +816,16 @@ const server = statikServer();
         );
     }
 
-    // Empfehlung (die Zahlen führen, §6 „Miss zuerst")
-    console.log("── BEFUND (T1 gebaut · T2 als nächstes) ──");
+    // der Befund: die Zahlen führen
+    console.log("── BEFUND ──");
     const t1ok = !temporal.err && temporal.pInEdit && temporal.nbInEdit;
     const lodGap = spatial.cross.pairs ? +(spatial.cross.gap1Pct * (1 - spatial.cross.occlPct / 100)).toFixed(1) : 0;
     if (sameWelded) {
         console.log(
-            "   • A · gleiche-LOD-Grenze: STRUKTURELL SEMI-VERSCHWEISST (~50% float-exakt geteilt vs Cross-LOD 0%) → kein primärer sichtbarer Riss; KEINE eigene Arbeit nötig."
+            `   • A · gleiche-LOD-Grenze: halb verschweißt (${spatial.same.binPct[0]} % der Rand-Vertices float-exakt geteilt).`
         );
     } else {
-        console.log("   • A · gleiche-LOD-Grenze teilt unerwartet WENIG → der Schöpfer-Browser muss prüfen.");
+        console.log("   • A · gleiche-LOD-Grenze teilt unerwartet WENIG Vertices.");
     }
     console.log(
         `   • C · zeitliche Naht (T1): ${t1ok ? "GEHEILT — Footprint (Spieler-Chunk + Grenz-Nachbar) heilt synchron im Edit-Frame, 0 Frames stale." : "noch offen — der Footprint heilt nicht vollständig in-edit."}`
@@ -868,7 +854,7 @@ const server = statikServer();
         const sharedPct =
             spatial.same && spatial.same.binPct && spatial.same.binPct[0] != null ? spatial.same.binPct[0] : 0;
         const crossPairs = spatial.cross ? spatial.cross.pairs : 0;
-        const SAME_BASELINE = 45; // V18.371-Baseline ~50% (G1 hebt das auf ~100%)
+        const SAME_BASELINE = 45; // die Baseline der gleichen Stufe (~50 %)
         let bad = false;
         if (crossPairs <= 0) {
             console.log(

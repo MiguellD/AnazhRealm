@@ -4,7 +4,7 @@
 // OHNE eigenen Multiplayer-Begriff) — und die beiden SEHEN sich darin.
 //
 // Der Fluss, exakt wie ein Spieler-Paar ihn erlebt:
-//   1. A + B verbinden sich im Mesh (W7).
+//   1. A + B verbinden sich im Mesh.
 //   2. A holt das Begegnungs-Portal (obtainPortalForWorld) + betritt es;
 //      der portal-invite-Broadcast lädt die Gruppe ein (W17 C, jetzt auch
 //      für Ko-Präsenz-Welten).
