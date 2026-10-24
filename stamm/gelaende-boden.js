@@ -3037,6 +3037,25 @@ class AnazhRealm_gelaende_boden {
             delete wmU.erdbau;
             this._erdbauStand = (this._erdbauStand || 0) + 1;
         }
+        // DIE GRUBEN ZIEHEN MIT, vor den Bauten (die auf dem gegrabenen Grund stehen): der Hieb traf den alten Boden, die oberste
+        // Grube (die unterste Schüttung) einer Säule lag an ihm. Jeder Edit steht danach in seiner Lage zu ihr auf dem Gesetz
+        // (`_terrainMacroSurfaceY`, ohne Edits) — bis 24.10. blieb er in der Höhe des alten Bodens, ~30 m unter dem neuen (der
+        // Korpus, speicher.K5: kein Loch des Spielers kam sichtbar zurück).
+        const eds = wmU && Array.isArray(wmU.voxelEdits) ? wmU.voxelEdits : [];
+        const zelle = new Map();
+        const schluessel = (x, z) => Math.floor(x / 4) + "," + Math.floor(z / 4);
+        for (const e of eds) zelle.set(schluessel(e.x, e.z), (zelle.get(schluessel(e.x, e.z)) || []).concat(e));
+        if (eds.length)
+            wmU.voxelEdits = eds.map((e) => {
+                const fuellt = e.mode === "fill";
+                let ref = e.y;
+                for (let i = -4; i <= 4; i += 4)
+                    for (let j = -4; j <= 4; j += 4)
+                        for (const f of zelle.get(schluessel(e.x + i, e.z + j)) || [])
+                            if ((f.mode === "fill") === fuellt && Math.hypot(f.x - e.x, f.z - e.z) < f.r)
+                                ref = fuellt ? Math.min(ref, f.y) : Math.max(ref, f.y);
+                return { ...e, y: this._terrainMacroSurfaceY(e.x, e.z) + e.y - ref };
+            });
         const geerdet = this._erdbauAltOrte(liste, (a) => {
             const p = a.position;
             const g = Number.isFinite(p.x) && Number.isFinite(p.z) ? this._voxelSurfaceY(p.x, p.z) : NaN;
