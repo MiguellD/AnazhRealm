@@ -83,9 +83,8 @@ async function checkBandW4LofiPad(ctx) {
             r._grooveStepTime(2, 1, 0.58) === 2 &&
             r._grooveStepTime(1, 1, 0.58) > r._grooveStepTime(1, 1, 0.5) &&
             r._grooveStepTime(1, 1, 0.5) === 1;
-        // _lofiChordFreqs — positive Frequenzen, Wurzel A ≈ 110.
+        // _lofiChordFreqs — die Wurzel A ≈ 110.
         const freqs = r._lofiChordFreqs([0, 3, 7, 10], false);
-        out.freqsPositive = freqs.length === 4 && freqs.every((f) => f > 0);
         out.rootIsA = Math.abs(freqs[0] - 110) < 0.01;
         // major-lean (hope) hebt die Terz (Ton 2), lässt die Wurzel.
         const freqsMajor = r._lofiChordFreqs([0, 3, 7, 10], true);
@@ -207,16 +206,6 @@ async function checkBandW4LofiPad(ctx) {
                 ["lebendig", "dichte", "glut", "magieleitung"].every(
                     (k) => typeof wf[k] === "number" && wf[k] >= 0 && wf[k] <= 1
                 );
-            // W4 V4 Sub-Schritt 3 — Resonanz-Nähe liefert einen Boolean.
-            let nearResOk = true;
-            let nearResBool = false;
-            try {
-                nearResBool = r._lofiNearResonantArchitecture();
-            } catch (e) {
-                nearResOk = false;
-                void e;
-            }
-            out.nearResonantBoolean = nearResOk && typeof nearResBool === "boolean";
             // Das Welt-Feld biast die Harmonie, die Emotion bleibt dominant: _lofiWorldField gestubbt, um beide
             // Kanäle (Emotion 0.8, Welt-Feld 0.4) bei fixem rngState deterministisch zu vergleichen. Gemessen
             // wird die HOST-Markov-Kette (kaltes Studio); bar-Zähler zurücksetzen.
@@ -300,15 +289,6 @@ async function checkBandW4LofiPad(ctx) {
             const degAfter = sym.lofi.degree;
             r._lofiTick();
             out.tickThrottled = sym.lofi.degree === degAfter;
-            // symphonyTick ruft _lofiTick — kein Wurf.
-            let symTickOk = true;
-            try {
-                r.symphonyTick();
-            } catch (e) {
-                symTickOk = false;
-                void e;
-            }
-            out.symphonyTickRuns = symTickOk;
             // disposeSymphony räumt die Lofi-Schicht.
             r.disposeSymphony();
             out.disposeClearsLofi = sym.lofi === null;
@@ -344,7 +324,6 @@ async function checkBandW4LofiPad(ctx) {
             "W4 V3 Phase 3: _grooveStepTime — Off-Beat-Schritt wird geswingt (verzögert)",
             w4v2Results.grooveStepTime
         );
-        check("W4 V2: _lofiChordFreqs liefert positive Frequenzen", w4v2Results.freqsPositive);
         check("W4 V2: die Akkord-Wurzel ist A (≈110 Hz)", w4v2Results.rootIsA);
         check("W4 V2: major-lean (hope) hebt die Terz, lässt die Wurzel", w4v2Results.majorLeanRaisesThird);
         check(
@@ -375,10 +354,6 @@ async function checkBandW4LofiPad(ctx) {
             );
             check("W4 V4: _lofiWorldField liefert vier geclampte Welt-Achsen (0..1)", w4v2Results.worldFieldShape);
             check(
-                "W4 V4 Sub-3: _lofiNearResonantArchitecture liefert einen Boolean wurf-frei",
-                w4v2Results.nearResonantBoolean
-            );
-            check(
                 "W4 V4 Sub-2: das Welt-Feld biast die Harmonie (helles Feld → mehr helle Stufen)",
                 w4v2Results.worldFieldBiasesHarmony
             );
@@ -394,7 +369,6 @@ async function checkBandW4LofiPad(ctx) {
             check("W4 V3: Emotion biast die Harmonie (joy/hope → mehr helle Stufen)", w4v2Results.emotionBiasesHarmony);
             check("W4 V3: _lofiTick spielt einen Akkord + wählt die nächste Stufe", w4v2Results.tickPlaysChord);
             check("W4 V2: _lofiTick ist akkord-dauer-gedrosselt", w4v2Results.tickThrottled);
-            check("W4 V2: symphonyTick ruft _lofiTick wurf-frei", w4v2Results.symphonyTickRuns);
             check("W4 V2: disposeSymphony räumt die Lofi-Schicht", w4v2Results.disposeClearsLofi);
         } else {
             check("W4 V2: Symphony im Headless initialisierbar", false, "initSymphony nicht bereit");

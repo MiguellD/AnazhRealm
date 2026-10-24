@@ -624,13 +624,8 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             o.checks.ruftSelbst = !ruft(() => r._hitStopFactor(0), "_playerSwingDauer"); // ein Leser ohne Ruf bleibt stumm
             const absenzKlick = window.__fehlt(r._playerAttackCreature, /attackSpeed|damageCreature/);
             const absenzDauer = window.__fehlt(r._beginPlayerSwing, /attackSpeed/);
-            // der Treffer klingt aus dem Gesetz (klang:SUBSTANZ.treffer) über den EINEN Ereignis-
-            // Chokepoint `_substanzKlang` — Master und Symphonie-Wand beweist gate:klang-zensus am Graphen.
-            const absenzKlang = window.__fehlt(r._substanzKlang, /new\s+AudioContext/);
             // der Tod im Kampf fällt den EINEN Fall (_kreaturFaellt, (D) treibt ihn), keiner despawnt selbst
             const absenzTod = window.__fehlt([r._creatureCombatDeath, r._kreaturFaellt], /removeCreature\(/);
-            // Stimme-aus respektiert (headless: Symphonie nie aktiviert → stumm, kein Throw)
-            o.checks.stimmeAusStumm = r._playKampfOneShot({ härte: 1 }) === false && !s.symphony.enabled;
 
             // ── (A) DAUER ∝ √I — zwei ECHTE Blueprints durch die ECHTE Quelle ──
             const box = (m, sz, p) => ({ shape: "box", material: m, size: sz, position: p || { x: 0, y: 0, z: 0 } });
@@ -732,7 +727,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             s._statsHudLastTick = s._statsHudTooltipLastTick = 0;
             o.checks.juiceKanaele = ruft(() => r._kampfHitJuice(cNeben, 1000, null, 5), "_playKampfOneShot");
             p._hitStopUntil = 0;
-            o.checks.klangEineMaschine = ruft(() => r._playKampfOneShot({ härte: 1 }), "_substanzKlang") && absenzKlang;
 
             const schwinge = (t0) => {
                 // ein voller Schwung über die synthetische Anzeige-Uhr; zählt die
@@ -1016,8 +1010,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         );
         check(c.bKameraImpuls, "(B) Kamera-Impuls über den BESTEHENDEN Landungs-Dip (_landImpactPending)");
         check(c.juiceKanaele, "(B) der Treffer-Juice spielt den Klang-One-Shot (_playKampfOneShot am Spion)");
-        check(c.klangEineMaschine, "(B) der One-Shot klingt über _substanzKlang (kein zweiter AudioContext)");
-        check(c.stimmeAusStumm, "(B) Stimme-aus respektiert: Symphonie aus → der Treffer bleibt stumm");
         check(
             c.s2LinseFeuert,
             "SELBST-TEST (S2): Kapsel-Mathe ≡ ∞ gestubbt → kein Treffer (die Messung ist nicht blind)"

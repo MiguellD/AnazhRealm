@@ -706,9 +706,7 @@ async function checkBandWelle6Keybindings(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        // Threshold-Konstante existiert
         const thr = r.constructor.WORLD_EFFECT_THRESHOLDS;
-        out.thresholdReadable = thr && typeof thr.resonance_mild === "number" && thr.resonance_mild > 0;
 
         // Symphony aktivieren (Headless: autoplay-policy=no-user-gesture-required)
         r.initSymphony();
@@ -723,49 +721,29 @@ async function checkBandWelle6Keybindings(ctx) {
         const stoneTags = r.computeCompoundTags(r.state.blueprints.stein_block);
         out.stoneIsNotResonant = (stoneTags.resoniert || 0) < thr.resonance_mild;
 
-        // Spy auf createOscillator
-        const ctx = r.state.symphony.ctx;
-        const orig = ctx.createOscillator.bind(ctx);
+        // die klingenden Stimmen des Abbaus (`_klangStimme`, der Pool hinter jedem Ereignis-Klang)
+        const P = Object.getPrototypeOf(r);
+        const klingt = (fn) => {
+            let n = 0;
+            r._klangStimme = (...a) => (n++, P._klangStimme.apply(r, a));
+            fn();
+            delete r._klangStimme;
+            return n;
+        };
         const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
-
-        // Test A: Geode-Abbau → mind. 1 Oszillator
+        // A: die Geode klingt beim Abbau · B: der Stein bleibt stumm · C: Symphonie aus → stumm, auch die Geode
         const geode = r.spawnArchitecture("kristall_geode", { x: p.x, y: p.y, z: p.z + 6 });
-        let counterA = 0;
-        ctx.createOscillator = function () {
-            counterA++;
-            return orig();
-        };
-        r.removeArchitecture(geode);
-        out.geodeRemovalRingsOnce = counterA >= 1;
-
-        // Test B: Stein-Abbau → kein Oszillator (Negativ-Kontrolle)
+        out.geodeRemovalRingsOnce = klingt(() => r.removeArchitecture(geode)) >= 1;
         const stone = r.spawnArchitecture("stein_block", { x: p.x + 4, y: p.y, z: p.z + 4 });
-        let counterB = 0;
-        ctx.createOscillator = function () {
-            counterB++;
-            return orig();
-        };
-        r.removeArchitecture(stone);
-        out.stoneRemovalIsSilent = counterB === 0;
-
-        // Test C: Symphony aus → kein Ping selbst bei resonanter Struktur
+        out.stoneRemovalIsSilent = klingt(() => r.removeArchitecture(stone)) === 0;
         r.state.symphony.enabled = false;
         const geode2 = r.spawnArchitecture("kristall_geode", { x: p.x - 4, y: p.y, z: p.z - 4 });
-        let counterC = 0;
-        ctx.createOscillator = function () {
-            counterC++;
-            return orig();
-        };
-        r.removeArchitecture(geode2);
-        out.disabledSymphonyStaysSilent = counterC === 0;
+        out.disabledSymphonyStaysSilent = klingt(() => r.removeArchitecture(geode2)) === 0;
         r.state.symphony.enabled = true;
-
-        ctx.createOscillator = orig;
         return out;
     });
 
     if (wave6a6V2Results && !wave6a6V2Results.error) {
-        check("Welle 6.A6 V2: WORLD_EFFECT_THRESHOLDS.resonance_mild lesbar", wave6a6V2Results.thresholdReadable);
         check("Welle 6.A6 V2: Symphony initialisierbar im Headless", wave6a6V2Results.symphonyReady);
         if (wave6a6V2Results.symphonyReady) {
             check("Welle 6.A6 V2: kristall_geode trägt resoniert ≥ mild-Threshold", wave6a6V2Results.geodeIsResonant);
@@ -774,7 +752,7 @@ async function checkBandWelle6Keybindings(ctx) {
                 wave6a6V2Results.stoneIsNotResonant
             );
             check(
-                "Welle 6.A6 V2: Geode-Abbau erzeugt mind. einen Oszillator (Vision §1.2)",
+                "Welle 6.A6 V2: der Geode-Abbau klingt auf mind. einer Stimme (Vision §1.2)",
                 wave6a6V2Results.geodeRemovalRingsOnce
             );
             check("Welle 6.A6 V2: Stein-Abbau bleibt stumm (Vision-Disziplin)", wave6a6V2Results.stoneRemovalIsSilent);

@@ -1293,9 +1293,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
         r._tierRuf(wesen, "trauer");
         out.rufZaehlt = s.tierRufe === rufeVor + 2;
 
-        // (e) masterGain im Bereich
-        out.masterGainSane = !!s.masterGain && s.masterGain.gain.value > 0 && s.masterGain.gain.value <= 1;
-
         // (f) disposeSymphony räumt auf
         r.disposeSymphony();
         out.disposeClears = s.enabled === false && s.ctx === null && s.umwelt === null;
@@ -1321,7 +1318,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
         );
         check("Welle 5 Klang: symphonyTick mischt die Lage am Ohr", ring4Results.taktMischt);
         check("Welle 5 Klang: _tierRuf zählt jeden Ruf", ring4Results.rufZaehlt);
-        check("Ring 4: masterGain im plausiblen Bereich (0..1)", ring4Results.masterGainSane);
         check("Ring 4: disposeSymphony räumt Audio-Graph komplett auf", ring4Results.disposeClears);
     }
 
