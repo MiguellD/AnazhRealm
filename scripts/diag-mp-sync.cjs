@@ -913,16 +913,7 @@ function bericht(p) {
         check(
             "(e) Netz-Log: keine Zustands-Nachricht, nur Schreib-Akte, Leib, Sicht und Leitung",
             fremd(n0).length === 0 && n0.A.dsl > 0,
-            Object.entries(n0)
-                .map(
-                    ([w, l]) =>
-                        w +
-                        " " +
-                        Object.entries(l)
-                            .map(([t, k]) => t + " " + k)
-                            .join(" · ")
-                )
-                .join(" | ") + (fremd(n0).length ? " — Zustand: " + fremd(n0).join(", ") : "")
+            JSON.stringify(n0) + (fremd(n0).length ? " — Zustand: " + fremd(n0).join(", ") : "")
         );
         await pageA.evaluate(() => window.anazhRealm.p2pSend({ type: "wetter", weather: "stormy" }));
         const n1 = fremd(await netz());
