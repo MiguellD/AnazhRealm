@@ -580,7 +580,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             [0, 1, 2, 3, 9, 10, 12].every(
                 (rr) => r._voxelChunkLodFor(rr, 0, 21.6, 21.6) === kette(Math.max(0, rr * 43.2 - 21.6))
             );
-        // Die Hysterese (K51-2, in Metern): ein Chunk hält seine feinere Stufe, bis der Kasten-Abstand bis + vorlauf +
+        // Die Hysterese: ein Chunk hält seine feinere Stufe, bis der Kasten-Abstand bis + vorlauf +
         // halt erreicht, VERFEINERT aber sofort. Chunk 1,0 (Kante bei 43,2 m): Abstand 41 m → rein L1, mit L0 gehalten;
         // 44 m → L1 (eine Stufe); 38 m mit L1 → L0.
         out.lodHysteresis =
@@ -841,7 +841,7 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         out.lod1CellsLess = cfg1.dim * cfg1.dim * cfg1.dimY < cfg0.dim * cfg0.dim * cfg0.dimY;
         out.cellsRatio = (cfg0.dim * cfg0.dim * cfg0.dimY) / (cfg1.dim * cfg1.dim * cfg1.dimY);
         // 2) Helper `_voxelChunkLodFor` Distance-Decision
-        // der Spieler in der Mitte des Chunks 0,0 (K51-2: die Stufe folgt dem Kasten-Abstand)
+        // der Spieler in der Mitte des Chunks 0,0 (die Stufe folgt dem Kasten-Abstand)
         out.lodNear = r._voxelChunkLodFor(0, 0, 21.6, 21.6); // r=0 → LOD 0
         out.lodAdjacent = r._voxelChunkLodFor(1, 0, 21.6, 21.6); // r=1 (21,6 m) → LOD 0
         out.lodMidRing = r._voxelChunkLodFor(2, 0, 21.6, 21.6); // r=2 (64,8 m) → LOD 1
@@ -1079,11 +1079,9 @@ async function checkBandWelle993WaterLodSeam(ctx) {
     );
 }
 
-// SCHATTEN-CSM: das vendorte r184-Addon CSMShadowNode, 2 Kaskaden INNERHALB der Schatten-Reichweite
-// Kaskade 0 endet an der DETAIL_CASCADE-Band-0-Kante, Kaskade 1 an maxFar = Reichweite ×
-// SCHATTEN_FERN_FAKTOR. Jede Kaskade zeichnet jeden Werfer ihrer Box — die Wand: über die ganze geregelte
-// Reichweite (MIN..MAX) und die User-Decke (400 m) trägt JEDE Kaskade ≥ 10 % der Tiefe (kein Streifen, der
-// einen vollen Werfer-Durchgang kostet; V18.130–509 klemmte die dritte auf einen 5-%-Streifen). Die CSM-Init
+// SCHATTEN-CSM: das vendorte r184-Addon CSMShadowNode, 3 Kaskaden INNERHALB der Schatten-Reichweite: bis kontaktM
+// (schatten.K1), bis zur Band-0-Kante, bis maxFar = Reichweite × SCHATTEN_FERN_FAKTOR. Über die ganze geregelte Reichweite (MIN..MAX) und die
+// User-Decke (400 m) trägt jede Kaskade hinter der Kontakt-Kaskade ≥ 10 % der Tiefe. Die CSM-Init
 // ist LAZY (erster echter Material-Build) → hier Konstruktion + Vertrag; Look + Maps misst die Sonde diag-csm (git-Archiv).
 async function checkBandV18130CsmShadow(ctx) {
     const { page, check } = ctx;
@@ -1110,9 +1108,10 @@ async function checkBandV18130CsmShadow(ctx) {
                 const breaks = [];
                 csm.customSplitsCallback(csm.cascades, 0.5, far, breaks);
                 if (breaks.length !== csm.cascades || breaks[breaks.length - 1] !== 1) kante = false;
-                if (Math.abs(breaks[0] - Math.min(0.85, e0 / far)) > 1e-9) kante = false;
-                let prev = 0;
-                for (const b of breaks) {
+                if (Math.abs(breaks[0] - A.SCHATTEN_KASKADE.kontaktM / far) > 1e-9) kante = false;
+                if (Math.abs(breaks[1] - Math.min(0.85, e0 / far)) > 1e-9) kante = false;
+                let prev = breaks[0];
+                for (const b of breaks.slice(1)) {
                     minAnteil = Math.min(minAnteil, b - prev);
                     prev = b;
                 }
@@ -1138,16 +1137,16 @@ async function checkBandV18130CsmShadow(ctx) {
     }
     check("V18.130 CSM: das r184-Addon ist vendort + angebunden (THREE.CSMShadowNode)", res.vendorSymbol);
     check(
-        "V18.510 CSM: 2 Kaskaden aktiv als shadowNode des Sonnen-Lichts (fade an)",
-        res.active && res.cascades === 2 && res.fade && res.isShadowNode
+        "schatten.K1 CSM: 3 Kaskaden aktiv als shadowNode des Sonnen-Lichts (fade an)",
+        res.active && res.cascades === 3 && res.fade && res.isShadowNode
     );
     check(
-        "V18.510 CSM: Kaskade 0 endet an der Band-0-Kante, die letzte an maxFar = Reichweite × Faktor",
+        "schatten.K1 CSM: Kaskade 0 endet an kontaktM, Kaskade 1 an der Band-0-Kante, die letzte an maxFar",
         res.active && res.mode === "custom" && res.breaksAreLaw && res.maxFarIstReichweite,
         `breaks=${res.breaks} maxFar=${res.maxFar}`
     );
     check(
-        "V18.510 CSM: jede Kaskade trägt ≥ 10 % der Tiefe über die ganze Reichweite (kein Streifen-Durchgang)",
+        "V18.510 CSM: jede Kaskade hinter der Kontakt-Kaskade trägt ≥ 10 % der Tiefe (kein Streifen-Durchgang)",
         res.active && res.minAnteil >= 0.1,
         `min=${res.minAnteil} breaks=${res.breaks}`
     );
@@ -1782,10 +1781,9 @@ async function checkBandWahrerAnblickPfade(ctx) {
     );
 }
 
-// G1 Seam-Normal — eingefaltet aus gate:seam-normal (D3b, die Welt des Läufers statt eines eigenen Boots): zwei same-LOD-
+// G1 Seam-Normal: zwei same-LOD-
 // Face-Nachbarn teilen ihre Boundary-Verts float-exakt (pad+crop); in der Rand-Schale rechnet der Gradient via sample()
-// (reine Funktion der Welt-Position), beide Nachbarn rechnen die IDENTISCHE Normale — vor V18.372 bis 69° an ~18 % der
-// Rand-Verts, die Lichtungs-Naht „direkt unter dem Wasser".
+// (reine Funktion der Welt-Position), beide Nachbarn rechnen die IDENTISCHE Normale.
 async function checkBandSeamNormal(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, () => {
@@ -2567,7 +2565,7 @@ async function checkBandBewegungUnterLast(ctx) {
         // WIEDERHERSTELLEN (die Gate-Hook-Lehre: sichern + restaurieren, nie löschen)
         s.voxelWorker = savedWorker;
     
-        // ── (d) DIE PAUSE (K21, Lehre 13): der Loop ruht 10 s (versteckter Tab, Debugger, Lade-Stau), die Uhr läuft.
+        // ── (d) DIE PAUSE: der Loop ruht 10 s (versteckter Tab, Debugger, Lade-Stau), die Uhr läuft.
         // Vier Wölfe laufen auf den stehenden Spieler zu; im ersten Takt nach der Pause trägt kein Tier weiter als
         // sein Sprint (Steuer-Gesetz: sprintTempo der Hüft-Höhe) × den Takt-Deckel. deckelAus (Selbst-Test) hebt
         // den Deckel auf — der ungedeckelte Takt (Tempo × Pause) MUSS die Linse rot machen.

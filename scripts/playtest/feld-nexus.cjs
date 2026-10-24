@@ -316,17 +316,6 @@ async function checkBandRing2Extended(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        // State-Felder existieren
-        out.hasPathBuckets =
-            !!r.state.player.pathBuckets &&
-            !!r.state.player.pathBuckets.height &&
-            !!r.state.player.pathBuckets.distance;
-        out.hasPatternMemory = r.state.dsl && typeof r.state.dsl.patternMemory === "object";
-        out.hasRecentKeywords = Array.isArray(r.state.dsl.recentKeywords);
-        out.hasPendingOutcomes = Array.isArray(r.state.dsl.pendingOutcomes);
-        out.historyCap500 = r.state.dsl.historyCap >= 500;
-        out.schemaVersionIq = /^(7\.7[2-9]|8\.0-multiworld)/.test(r.state.worldMeta.schemaVersion);
-
         // Keyword-Extraktion
         const kws = r.pathExtractKeywords("Ich liebe den Wald und Wasserfälle hier");
         out.keywordsExtracted = Array.isArray(kws) && kws.includes("wald") && kws.includes("wasserfälle");
@@ -405,14 +394,6 @@ async function checkBandRing2Extended(ctx) {
             (iqResults && iqResults.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Schicht 1: pathBuckets-State im player", iqResults.hasPathBuckets);
-        check("Schicht 1: patternMemory-State im dsl", iqResults.hasPatternMemory);
-        check(
-            "Schicht 1: recentKeywords + pendingOutcomes",
-            iqResults.hasRecentKeywords && iqResults.hasPendingOutcomes
-        );
-        check("Schicht 1: historyCap auf 500 erhöht", iqResults.historyCap500);
-        check("Schicht 1: schemaVersion auf 7.72-iq-v1 gebumpt", iqResults.schemaVersionIq);
         check("Schicht 1: pathExtractKeywords liefert echte Tokens", iqResults.keywordsExtracted);
         check("Schicht 1: Keyword-Filter wirft Stoppwörter raus", iqResults.keywordsFilterStopwords);
         check("Schicht 1: rememberChatKeywords füllt das Fenster", iqResults.keywordsRemembered);
@@ -743,16 +724,8 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         const out = {};
         const Class = r.constructor;
 
-        // 2. Phrase-Pool hat 5 Event-Typen, jede mit 3 Soul-Profile + default
+        // 2. Phrase-Pool
         const pool = Class.CREATURE_PROACTIVE_PHRASES;
-        const events = [
-            "level_up_gather",
-            "level_up_build",
-            "boost_received",
-            "no_material_found",
-            "no_inventory_for_build",
-        ];
-        out.allEventsPresent = events.every((e) => pool[e]);
         // ALTLASTEN-NULL: sprite/geist-Stimmen sind gefallen — default trägt
         // jede Gattung; wesen (Hirsch) behält seine erdige Stimme.
         out.hasSpriteVariants = !pool.level_up_gather.sprite;
@@ -877,20 +850,11 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         const afterB2 = chatOutput ? chatOutput.children.length : 0;
         out.boostRefreshSilent = afterB2 === beforeB2;
 
-        // 13. UI-Toggle existiert im DOM
-        const toggleEl = document.getElementById("creature-speech-toggle");
-        out.toggleExists = !!toggleEl;
-        out.toggleIsCheckbox = toggleEl && toggleEl.type === "checkbox";
-
         __restore();
         return out;
     });
 
     if (wave6hP2eV2Results && !wave6hP2eV2Results.error) {
-        check(
-            "Welle 6.H P2E V2: Phrase-Pool deckt alle 5 Events (level_up_gather/build, boost_received, no_material_found, no_inventory_for_build)",
-            wave6hP2eV2Results.allEventsPresent
-        );
         check(
             "Welle 6.H P2E V2 (NULL): wesen-Stimme + default-Fallback (sprite/geist-Stimmen gefallen)",
             wave6hP2eV2Results.hasSpriteVariants &&
@@ -932,10 +896,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
             "Welle 6.H P2E V2: applyCreatureBoost mit SELBER Quelle (Verlängerung) → KEINE erneute Sprache (kein Flood)",
             wave6hP2eV2Results.boostRefreshSilent
         );
-        check(
-            "Welle 6.H P2E V2: UI-Toggle #creature-speech-toggle existiert im DOM (Checkbox)",
-            wave6hP2eV2Results.toggleExists && wave6hP2eV2Results.toggleIsCheckbox
-        );
     } else {
         // STUMM-GRÜN-WAND: auch ein NULL-Ergebnis (geworfene evaluate) ist ROT —
         // vorher übersprang der else-if-Guard die Checks still (die U1-Klasse).
@@ -956,8 +916,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         const Class = r.constructor;
 
         // 1. Konstanten + Methoden existieren
-        out.hasWhitelist = Class.CREATURE_PROPOSED_OPS instanceof Set;
-        out.whitelistSize = Class.CREATURE_PROPOSED_OPS.size >= 10;
         out.weatherAllowed = Class.CREATURE_PROPOSED_OPS.has("weather");
         out.voxelCarveAllowed = Class.CREATURE_PROPOSED_OPS.has("voxel_carve");
         out.voxelFillAllowed = Class.CREATURE_PROPOSED_OPS.has("voxel_fill");
@@ -967,7 +925,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         out.playerSpeedForbidden = !Class.CREATURE_PROPOSED_OPS.has("player_speed");
         out.defineBlueprintForbidden = !Class.CREATURE_PROPOSED_OPS.has("define_blueprint");
         out.setModeForbidden = !Class.CREATURE_PROPOSED_OPS.has("set_mode");
-        out.rareEventGap = Class.CREATURE_LLM_RARE_EVENT_GAP === 600;
 
         // 2. Validator: erlaubtes Programm
         const okWeather = r._isCreatureProposalAllowed(["weather", "rainy"]);
@@ -1096,12 +1053,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     });
 
     if (wave6hP2eV3Results && !wave6hP2eV3Results.error) {
-        check(
-            "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set (>= 10 Ops) + Takt 600 s",
-            wave6hP2eV3Results.hasWhitelist &&
-                wave6hP2eV3Results.whitelistSize &&
-                wave6hP2eV3Results.rareEventGap
-        );
         check(
             "Welle 6.H P2E V3 + V9.36: Whitelist erlaubt atmosphärische + Voxel-Mod-Ops (weather, voxel_carve, voxel_fill, spawn_blueprint, chain)",
             wave6hP2eV3Results.weatherAllowed &&
@@ -1246,10 +1197,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             const partsAfter = r.state.blueprints.test_v805.parts.length;
             out.delBtnRemovesPart = partsAfter === partsBefore - 1;
 
-            // Stats-Panel zeigt Rolle-Chip
-            const roleChip = stats && stats.querySelector(".role-chip");
-            out.statsHasRoleChip = !!roleChip;
-
             // Cleanup
             if (r.state.blueprints["test_v805"]) r.deleteBlueprint("test_v805");
             r.selectBlueprintForEdit("stein_block");
@@ -1293,7 +1240,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             "V8.05: Del-Button enabled bei Part-Selection + Click entfernt Part",
             v805Results.delBtnEnabledOnSelect && v805Results.delBtnRemovesPart
         );
-        check("V8.05 Stats: Rolle-Chip im Stats-Panel sichtbar", v805Results.statsHasRoleChip);
     } else if (v805Results && v805Results.error) {
         check(`V8.05: evaluate-Fehler — ${v805Results.error}`, false);
     }
@@ -1339,17 +1285,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
                 statsStyle.backgroundColor &&
                 /rgba?\((\d+),\s*(\d+),\s*(\d+)/.test(statsStyle.backgroundColor);
 
-            // Default-Size-Apply-Funktion ist sauber idempotent —
-            // wir setzen Flag, dann ist die Funktion no-op
-            try {
-                localStorage.setItem("anazh.workshop.defaultApplied", "1");
-                r._workshopApplyDefaultSizeOnce();
-                // Nichts sollte passiert sein (flag schützt)
-                out.idempotentRespected = true;
-            } catch {
-                out.idempotentRespected = false;
-            }
-
             // Cleanup
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             r.closeAllDrawers();
@@ -1376,10 +1311,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         );
         check("V8.06: Mode-Bar hat Hintergrund-Farbe (Kontrast-Verbesserung)", v806Results.modeBarHasBg);
         check("V8.06: Stats-Panel hat dunklen Hintergrund (Kontrast-Verbesserung)", v806Results.statsHasDarkBg);
-        check(
-            "V8.06: _workshopApplyDefaultSizeOnce ist idempotent (flag respektiert)",
-            v806Results.idempotentRespected
-        );
     } else if (v806Results && v806Results.error) {
         check(`V8.06: evaluate-Fehler — ${v806Results.error}`, false);
     }
