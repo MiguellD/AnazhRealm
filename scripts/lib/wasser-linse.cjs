@@ -20,6 +20,16 @@ function wasserBoot(st) {
     };
     return "__wasser_boot";
 }
+// DAS TIER DER PROBE: `seele` an (x, y, z), präzise in Größe 1 — sein Leib zählt nie gegen die Obergrenze der Welt
+// (`maxCreatures`: die Welt füllt sie beim Streamen mit ihren Würfen, die Geburt der Probe fiele dann aus)
+function wasserTier(r, x, y, z, seele) {
+    const st = r.state,
+        cap = st.maxCreatures;
+    st.maxCreatures = Infinity;
+    const c = r.spawnCreatureAt(x, y, z, "happy", seele, { precise: true, bodySize: 1 });
+    st.maxCreatures = cap;
+    return c;
+}
 // DER ZUFALL der Proben (mulberry32 aus der Saat `hs`): je Ruf eine Zahl in [0, 1)
 function wasserZufall(hs) {
     return () => {
@@ -212,7 +222,7 @@ function wasserKoerper(opts) {
         // Schultergelenk, Gelenk-Höhe des Vorderlaufs × Größe) und ob er schwimmt; `ohneBaum` nimmt ihm den Gestalt-Baum.
         const tierLage = (seele, abstand, ohneBaum) => {
             pm.position.set(mx + abstand, spiegel + 1, mz);
-            const c = r.spawnCreatureAt(mx, spiegel, mz, "happy", seele, { precise: true, bodySize: 1 });
+            const c = wasserTier(r, mx, spiegel, mz, seele);
             if (!c) return null;
             if (ohneBaum) delete c.userData._tierBaum;
             const tb = c.userData._tierBaum;
@@ -1299,7 +1309,7 @@ function wasserHoehle(opts) {
                     r._applyDayNightToScene();
                     if (st.kameraUnterWasser) kameraUnter++;
                 }
-                const c = r.spawnCreatureAt(h.x, h.boden, h.z, "happy", "wolf", { precise: true, bodySize: 1 });
+                const c = wasserTier(r, h.x, h.boden, h.z, "wolf");
                 if (c) {
                     tierProben++;
                     let schwimmt = false;
@@ -2615,10 +2625,7 @@ function wasserMutation(opts) {
             kontrolle: "das Gesetz allein (`_atlasWaterLevelAt`, die Kontrolle)",
         };
         const leib = window.__wasserLeib();
-        const capAlt = st.maxCreatures;
-        st.maxCreatures = Infinity; // der Leib der Probe zählt nie gegen die Obergrenze der Welt
-        const c = punkte.length ? r.spawnCreatureAt(punkte[0].x, punkte[0].b, punkte[0].z, "happy", "wolf", { precise: true, bodySize: 1 }) : null;
-        st.maxCreatures = capAlt;
+        const c = punkte.length ? wasserTier(r, punkte[0].x, punkte[0].b, punkte[0].z, "wolf") : null;
         const takt = Math.max(1, A.KREATUR_RUHE.takt);
         const urteil = (p) => {
             const u = {};
@@ -2789,7 +2796,7 @@ async function wasserTreibt(o) {
         );
         A._steuerGesetzMemo = Object.assign({}, SG, { steuerSchritt: (s) => (s.v = 0) });
         leib.setze(x, S + 30, z); // sein Leib schöbe den Wolf
-        aus.tier = lauf(() => r.spawnCreatureAt(x, S, z, "happy", "wolf", { precise: true, bodySize: 1 }), () => r.updateCreatures(A.FIXED_DT), (c) => r.removeCreature(c));
+        aus.tier = lauf(() => wasserTier(r, x, S, z, "wolf"), () => r.updateCreatures(A.FIXED_DT), (c) => r.removeCreature(c));
     } finally {
         delete r._waterFlowAt;
         delete st.blueprints[BOOT];
@@ -2989,6 +2996,7 @@ module.exports = {
         wasserRund.toString() +
         wasserZufall.toString() +
         wasserBoot.toString() +
+        wasserTier.toString() +
         wasserPflanzen.toString() +
         `window.__wasserOrte = ${wasserOrte.toString()};` +
         `window.__wasserLeser = ${wasserLeser.toString()};` +
