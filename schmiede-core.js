@@ -3087,10 +3087,11 @@
             // Passung wie das Fern-Bild). Die senkrechte Säule kapselRK/RMin/
             // Y0/Y1 (0.55/0.35/0.1/1.4 · L) ist GEFALLEN: sie war gattungs- und
             // höhenblind (Hirsch L 0,64 flach 1/10, hangab 2/8).
-            dauerProSqrtI: 0.55,
-            // EINHEITSBREI-SCHNITT (18.07., rein additiv): die Dauer-Konstante
-            // für die GEMESSENE Trägheit (kampfMasze, echte kg·m² — andere
-            // Einheit als die Tag-Trägheit des Emergenz-Pfads): Langschwert
+            // EINHEITSBREI-SCHNITT (18.07.): die Dauer-Konstante für die
+            // Trägheit in echten kg·m² — seit physik K1 (23.10.) für JEDES
+            // Gerät: die Messung der Klinge (kampfMasze) wie die Gestalt des
+            // Eigenwerks (Wirt _eigenwerkMasze, Teile × ρ der Stoff-Zeile); die
+            // Tag-Konstante dauerProSqrtI (0.55) fiel mit ihrem Leser: Langschwert
             // (I 0.137) → ~0.52 s, Grossschwert (0.336) → ~0.81 s, Dolch
             // klemmt flink auf minDauerSec, Vorschlaghammer träge auf max.
             dauerProSqrtIKg: 1.4,

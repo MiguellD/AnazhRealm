@@ -2563,7 +2563,11 @@ class AnazhRealm_bau_teile {
             return this._werkPoseZeigen(e);
         }
         this.removeArchitecture(e, { still: true });
-        this.journalAppend("loss", `${s.name} stürzte ein: ${s.text}.`, { type: e.type, id: e.id, grund: s.grund });
+        this.journalAppend("loss", AnazhRealm._datum`${s.name} stürzte ein: ${s.text}.`, {
+            type: e.type,
+            id: e.id,
+            grund: s.grund,
+        });
     }
 
     // Das Werk rollt: der Hang treibt es längs seiner Roll-Richtung (quer zur Achse; die Kugel die Falllinie hinab) mit

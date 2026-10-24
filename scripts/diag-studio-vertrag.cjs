@@ -769,7 +769,7 @@ function validateManifest(m) {
         // Felder, die die _arenaGesetz-Gültigkeits-Wand des Wirts prüft).
         if (
             !a.schwung ||
-            !Number.isFinite(a.schwung.dauerProSqrtI) ||
+            !Number.isFinite(a.schwung.dauerProSqrtIKg) ||
             !Number.isFinite(a.schwung.windupFrac) ||
             !a.gefuehl ||
             !Number.isFinite(a.gefuehl.keRefJ) ||
@@ -780,7 +780,7 @@ function validateManifest(m) {
             !Number.isFinite(a.bogen.muendungM)
         )
             v.push(
-                "§B6+ ARENA unvollständig (schwung.dauerProSqrtI/windupFrac · gefuehl.keRefJ/wucht/pProKb · bogen.mArrow/muendungM)"
+                "§B6+ ARENA unvollständig (schwung.dauerProSqrtIKg/windupFrac · gefuehl.keRefJ/wucht/pProKb · bogen.mArrow/muendungM)"
             );
     }
     if (m.fahr) {
