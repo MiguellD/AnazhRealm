@@ -516,8 +516,8 @@ async function gtDorfweg(v2, anker, sek) {
 // Slot-Quelle), der Grundriss eines Hauses räumt sie (`_grundrissRaeumen`), der Weg des Dorfs auch (`_naturRaeumen`).
 // C-K5b DER VORRAT JE ZELLE (Karte vorrat-pingpong): am Mess-Ort `dorf` liegen zwei Zellen im Vorlauf-Ring. Der Zug läuft je
 // Gang einen Takt, bis 20 Gänge nichts unterwegs ist und kein Export beginnt, dann 150 Gänge Ruhe; gezählt werden die Bereitungen
-// (`_ortMitTrasse`) je Zelle. Der Selbsttest `alt` "vorrat" hält EINEN Vorrat zur Zeit, "trasse" den Plan am Raster des Wunschs,
-// wohin die Wahl ihn auch rückt — wie bis zu ihren Schnitten. C-K3 DIE TRASSE AM ORT: je Vorrat der Abstand seines Plans v2 vom Ort
+// (`_ortMitTrasse`) je Zelle. Der Selbsttest `alt` "vorrat" hält EINEN Vorrat zur Zeit, "trasse" jeden Export am Raster des
+// Wunschs, wohin die Wahl ihn auch rückt — wie bis zu ihren Schnitten. C-K3 DIE TRASSE AM ORT: je Vorrat der Abstand seines Plans v2 vom Ort
 // seines Höhen-Rasters, die Lese-Punkte außerhalb des Rasters und die Gassen (das Gefälle misst `gassenGefaelle`). Browser.
 async function vorratAmDorf(messort, alt) {
     const r = window.anazhRealm;
@@ -529,20 +529,12 @@ async function vorratAmDorf(messort, alt) {
         if (z) zelle.set(z.seed, z.key);
     }
     const e = { exporte: {}, alle: 0, nachZug: -1, trasse: [], welt: r._gelaende().seed };
-    const req = r._foundryRequestSettlement;
-    r._foundryRequestSettlement = function (...a) {
+    const [req, bereite, ort0] = [r._foundryRequestSettlement, r._ortMitTrasse, {}];
+    r._foundryRequestSettlement = function (dp, ...a) {
         e.alle++;
-        return req.apply(this, a);
+        if (alt === "trasse" && dp && dp.ort) dp.ort = ort0[dp.seed] ||= dp.ort;
+        return req.call(this, dp, ...a);
     };
-    const bereite =
-        alt === "trasse"
-            ? async function (dp, wunsch, frei, kopf) {
-                  const ort = { x: wunsch.x, z: wunsch.z };
-                  const plan = await this._foundryRequestSettlement(Object.assign({}, dp, { ort }), kopf);
-                  if (plan) await this._ortWahl(plan, { x: ort.x, z: ort.z }, false, frei);
-                  return plan && { plan, ort };
-              }
-            : r._ortMitTrasse;
     r._ortMitTrasse = function (dp, ...a) {
         const k = zelle.get(dp && dp.seed) || "fremd";
         e.exporte[k] = (e.exporte[k] || 0) + 1;
@@ -3077,7 +3069,7 @@ const FIXTURES = [
     );
     check(
         "C-K3 Selbsttest: der Plan am Raster des Wunschs, den die Wahl rückt, wird ROT beim Namen",
-        K3S.trasse.some((t) => t.versatzM > 0 && t.p95 > gefSoll),
+        K3S.trasse.some((t) => t.p95 > gefSoll),
         JSON.stringify(K3S.trasse)
     );
     if (errs.length) {
