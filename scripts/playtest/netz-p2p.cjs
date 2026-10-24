@@ -9,7 +9,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Voxel V9.36 — modify_terrain stirbt, voxel_carve/_fill leben ###
+    // ### modify_terrain stirbt, voxel_carve/_fill leben ###
     // Die Absenz der modify_terrain-Schicht trägt gate:altlasten (KI2);
     // die Welt-Mod läuft über die broadcastbaren voxel_carve/voxel_fill (Chat `grabe loch`/`hebe hügel`
     // mit Spieler-Position; CREATURE_PROPOSED_OPS führt sie statt modify_terrain).
@@ -100,7 +100,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     }
 
-    // ### Ring 11 V1 — Multi-User Position-Sync (Daten + UI + Sandbox) ###
+    // ### Multi-User Position-Sync (Daten + UI + Sandbox) ###
     // Nur Position + Rotation (kein DSL-Sync). Geprüft: Datenstruktur, Sandbox-Grenze (kein neuer
     // eval-Pfad), CSP ws://, UI-Toggle; ohne echten WebSocket: initP2PSync ohne worldId lehnt ab, mit
     // worldId steht die Datenstruktur, auch wenn die Connection scheitert.
@@ -283,7 +283,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         check("Ring 11 V1: Toggle-Klick wechselt aria-pressed", ring11Results.toggleFlipsAriaPressed);
     }
 
-    // ### W7 Phase 1 — WebRTC-Mesh (Compute-Sharing) ###
+    // ### WebRTC-Mesh (Compute-Sharing) ###
     // Signaling ist nur Handshake-Rendezvous; Position/DSL/Soul fließen über RTCDataChannels P2P.
     // Geprüft: Datenstruktur, Mesh-Komplett-Wand (_p2pMeshReady), peerId-Stempelung am Kanal
     // (anti-spoof), Transport-Wechsel in p2pSend, RTC-Handler + CSP; zwei Browser: smoke-webrtc.cjs.
@@ -460,7 +460,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         check("W7 P1: UI-Status zeigt 'Server-Relay' bei Fallback", w7Results.uiShowsRelay);
     }
 
-    // ### W7 Phase 2 — Welt-Snapshot über das Mesh ###
+    // ### Welt-Snapshot über das Mesh ###
     // Ein Guest holt die Host-Welt in P2P_WORLD_CHUNK_SIZE-Stücken; Annahme-Wand: nur Stücke vom
     // gepullten Peer + nur bei pending. Geprüft: Reassembly, worldRole im soul-Kanal,
     // _p2pApplyWorldSnapshot, Resync-Fehlerpfade; echter Transfer: smoke-webrtc.cjs.
@@ -605,7 +605,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         }
         r.activeWorldSet(zeiger0);
 
-        // W7 P2 Härtung — Rate-Limit-Datenstruktur + Konstante.
+        // die Härtung: Rate-Limit-Datenstruktur + Konstante.
         out.pullCooldownFields =
             p2p._pullServedAt instanceof Map &&
             Number.isInteger(r.constructor.P2P_PULL_COOLDOWN_MS) &&
@@ -666,7 +666,7 @@ async function checkBandW16Distribution(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### W16 Phase 1 — Mesh-Welt-Verteilung ###
+    // ### Mesh-Welt-Verteilung ###
     // Eine vendorte Welt reist P2P (Transport spiegelt den W7-P2-world-pull). Geprüft: Sender,
     // Empfänger, Annahme-Wand, Rate-Limit, kanal-exklusiv; Zwei-Browser-Transfer: smoke-webrtc.cjs.
     const w16Results = await safeEvaluate(page, async () => {
@@ -887,7 +887,7 @@ async function checkBandW16Distribution(ctx) {
         out.bundlePullOnChannelPath = pullSpy === 1;
         r._p2pHandleWorldBundlePull = origPull;
 
-        // ### W16-Politur — Hash-Verifikation + Pull-Timeout ###
+        // ### Hash-Verifikation + Pull-Timeout ###
         // requestWorldBundleFromPeer trägt Katalog-Hash + startedAt im pendingBundlePull (Hash-Prüfung nach
         // dem Pull + weicher Timeout).
         sent.length = 0;
@@ -948,7 +948,7 @@ async function checkBandW16Distribution(ctx) {
         r._vendorPostBundle = origPostBundle;
         out.vendorReturnsHash = !!vwbRes && vwbRes.ok === true && vwbRes.bundleHash === "deadbeef";
 
-        // ### W16 Phase 2 — der Welt-Katalog ###
+        // ### der Welt-Katalog ###
         // _p2pBuildCatalog — nur vendored-Welten (eine importierte
         // Manifest-Welt hat kein teilbares Bündel).
         r.state.customWorlds["cat-vendored-w16"] = {
@@ -1143,7 +1143,7 @@ async function checkBandW16Distribution(ctx) {
             "W16: world-bundle-pull ist kanal-exklusiv (nicht über den WS-Pfad)",
             w16Results.bundlePullNotOnWsPath && w16Results.bundlePullOnChannelPath
         );
-        // ── W16-Politur — Hash-Verifikation + Pull-Timeout ──
+        // ── Hash-Verifikation + Pull-Timeout ──
         check(
             "W16-Politur: requestWorldBundleFromPeer trägt Katalog-Hash + startedAt im pendingBundlePull",
             w16Results.pullCarriesHash
@@ -1158,7 +1158,7 @@ async function checkBandW16Distribution(ctx) {
         check("W16-Politur: _meshWorldReasonText kennt timeout + hash_mismatch", w16Results.reasonTextHasPolish);
         check("W16-Politur: P2P_BUNDLE_PULL_TIMEOUT_MS definiert", w16Results.bundleTimeoutConst);
         check("W16-Politur: vendorWorldBundle reicht den save-server-Content-Hash durch", w16Results.vendorReturnsHash);
-        // ── W16 Phase 2 — der Welt-Katalog ──
+        // ── der Welt-Katalog ──
         check(
             "W16 P2: _p2pBuildCatalog liefert nur vendored-Welten (id/label/hash)",
             w16Results.catalogBuildsVendoredOnly
@@ -1315,7 +1315,7 @@ async function checkBandLateMultiUser(ctx) {
         check("Bau-Sync: buildStateSnapshot persistiert die arch-id", buildSyncResults.snapshotKeepsArchId);
     }
 
-    // ### W7 Phase 3 — LLM-Pool: eine Stimme über das Mesh teilen ###
+    // ### LLM-Pool: eine Stimme über das Mesh teilen ###
     // Ein Peer mit aktivem LLM teilt seine Stimme, ein schlüsselloser routet Chat darüber. Sicherheit:
     // Opt-in (voiceShared), Rate-Limit, dslRun-Sandbox für das Antwort-Programm; Annahme-Wand
     // not_sharing/rate_limited/wrong-peer.
@@ -1484,7 +1484,7 @@ async function checkBandLateMultiUser(ctx) {
         check("W7 P3: 'Stimme teilen'-Knopf im DOM", w7p3Results.voiceButtonExists);
     }
 
-    // ### W7 Phase 4 — Public-Lobby + Kreatur-Sicht-Sync ###
+    // ### Public-Lobby + Kreatur-Sicht-Sync ###
     // Lobby: lobby-publish/list/join. Jeder Peer streamt SEINE Kreaturen; Mitspieler rendern sie als
     // Sicht-Schicht (remoteCreatures, NICHT in state.creatures).
     const w7p4Results = await safeEvaluate(page, () => {
@@ -1493,7 +1493,7 @@ async function checkBandLateMultiUser(ctx) {
         const out = {};
         const p2p = r.state.p2p;
 
-        // ── W7 P4 — Lobby ──
+        // ── Lobby ──
         out.lobbyState =
             !!p2p.lobby &&
             p2p.lobby.published === false &&
@@ -1626,7 +1626,7 @@ async function checkBandLateMultiUser(ctx) {
         check("Kreatur-Sync: creature-pos ist kanal-zustellbar", w7p4Results.creaturePosChannelAllowed);
     }
 
-    // ### W11 Phase 4 — Voice-Sync (companion-say) ###
+    // ### Voice-Sync (companion-say) ###
     // grokRender ist der EINE Sprech-Engpass; spricht der Begleiter, reist der Text via companion-say an
     // alle Mitspieler (SpeechSynthesis, gegated auf deren Stimme-Toggle). Eigener Kanal wie soul/aura.
     const w11v4Results = await safeEvaluate(page, () => {
@@ -1777,7 +1777,7 @@ async function checkBandLateMultiUser(ctx) {
         check("W11 V4: Voice-Wahl persistiert in companionVoice + localStorage", w11v4Results.voiceChangePersists);
     }
 
-    // ### Ring 11 V2 — DSL-AST-Broadcast (Welt-Sync) ###
+    // ### DSL-AST-Broadcast (Welt-Sync) ###
     // human-dslRun broadcastet via p2pSend (enabled+connected); remote-dslRun (source="remote:*") läuft
     // durch dslRun OHNE Re-Broadcast (sonst Endlos-Echo). So wirken voxel_carve/voxel_fill auf beiden
     // Welten.
@@ -1905,7 +1905,7 @@ async function checkBandLateMultiUser(ctx) {
         );
     }
 
-    // ### Ring 11 V2.1 — LAN-Fähigkeit + Sync-Korrektheit ###
+    // ### LAN-Fähigkeit + Sync-Korrektheit ###
     // 1. signaling-server bindet 0.0.0.0 (LAN)  2. CSP ws:/wss: (Custom-IPs)  3. Raum-Override
     // (state.p2p.roomOverride)  4. spawn_*-Chat-Patterns embedden Position+Seed → der Empfänger spawnt
     // am SENDER-Ort  5. Non-broadcastable-Filter: player_*-Ops bleiben lokal.
@@ -2076,7 +2076,7 @@ async function checkBandLateMultiUser(ctx) {
         );
     }
 
-    // ### Ring 11.5 — Intuitives Multi-User-Setup ###
+    // ### Intuitives Multi-User-Setup ###
     // Mode/Rolle im New-World-Dialog, Einladungs-Code, Auto-Host/Guest, world-snapshot-Empfang nur bei
     // pending=true, role-State in worldMeta + p2p.
     const ring115Results = await safeEvaluate(page, () => {
@@ -2220,8 +2220,7 @@ async function checkBandLateMultiUser(ctx) {
         out.modeRadiosExist = document.querySelectorAll('input[name="new-world-mode"]').length === 2;
         out.roleRadiosExist = document.querySelectorAll('input[name="new-world-role"]').length === 2;
         out.inviteInputExists = !!document.getElementById("new-world-invite");
-        // die V9.23-Heightfield-Opt-out-Checkbox ist GELÖSCHT
-        // (Voxel permanent + irreversibel — Toggle-Tod).
+        // die Heightfield-Opt-out-Checkbox fehlt (Voxel ist permanent).
         out.heightfieldCheckboxGone = !document.getElementById("new-world-heightfield");
         out.hostBannerExists = !!document.getElementById("world-host-banner");
         out.guestBannerExists = !!document.getElementById("world-guest-banner");
@@ -2285,7 +2284,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Ring 11 V3: Soul-Sync (Peer-Avatar = echte Seele) ###
+    // ### Soul-Sync (Peer-Avatar = echte Seele) ###
     const v834Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -2476,7 +2475,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         check("V8.34: Soul-Sync Tests laufen", false, v834Results ? v834Results.error : "no result");
     }
 
-    // ### Welle 11 ext.: Substanz-Rolle (Rolle aus der Substanz) ###
+    // ### Substanz-Rolle (Rolle aus der Substanz) ###
     const v835Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};

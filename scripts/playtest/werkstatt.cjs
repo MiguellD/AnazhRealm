@@ -101,7 +101,7 @@ async function checkBandCadWorkshop(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Welle 6.B Phase 1+2 — CAD-Werkstatt (3D-Preview + Manipulator-Gizmo) ###
+    // ### CAD-Werkstatt (3D-Preview + Manipulator-Gizmo) ###
     const wave6bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -653,7 +653,7 @@ async function checkBandCadWorkshop(ctx) {
         check(`V8.01: evaluate-Fehler — ${v801Results.error}`, false);
     }
 
-    // ### V8.02 Phase 3 — Shape-Drag-Drop + Klick-Klick-Connection ###
+    // ### Shape-Drag-Drop + Klick-Klick-Connection ###
     const v802Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -935,7 +935,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Ring 3 – Player-Emotionen → Welt ###
+    // ### Player-Emotionen → Welt ###
     const ring3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player) return null;
@@ -1056,7 +1056,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         check("Ring 3: Save persistiert playerEmotions", ring3Results.savedEmotions);
     }
 
-    // ### Ring 3 V2 — Achsen-Vollabdeckung + Generator-Modulation ###
+    // ### Achsen-Vollabdeckung + Generator-Modulation ###
     const ring3v2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player) return null;
@@ -1188,7 +1188,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         );
     }
 
-    // ### Ring 4 — anazhSymphony V1 ###
+    // ### anazhSymphony ###
     const ring4Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.symphony) return null;
