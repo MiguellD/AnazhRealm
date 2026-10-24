@@ -301,7 +301,7 @@ async function mitTakt(fn) {
         proc = spawn("nvidia-smi", SMI_ABFRAGE, { windowsHide: true });
         proc.on("error", () => (proc = null));
         proc.stdout.on("data", (d) => zeilen.push(...String(d).split(/\r?\n/).filter(Boolean)));
-    } catch (_e) {
+    } catch {
         proc = null;
     }
     try {
@@ -526,10 +526,10 @@ async function beendeBaum(kind, frist) {
             kind.kill("SIGTERM");
             if (!(await warte(10000))) kind.kill("SIGKILL");
         }
-    } catch (_e) {
+    } catch {
         try {
             kind.kill("SIGKILL");
-        } catch (_e2) {}
+        } catch {}
     }
     return (await warte(10000)) || !lebt() ? "getoetet" : "waise";
 }
@@ -614,7 +614,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
     const git = (c) => {
         try {
             return execSync(`git ${c}`, { cwd: root, encoding: "utf8" }).trim();
-        } catch (_e) {
+        } catch {
             return null;
         }
     };
@@ -908,7 +908,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
             aus.befunde.push(`FOLGE: ${gefahren.length} von ${FOLGE.length} Schritten gefahren`);
         try {
             await Promise.race([R("/stop"), new Promise((res) => setTimeout(res, 30000))]);
-        } catch (_e) {}
+        } catch {}
         aus.werkbankEnde = await beendeBaum(kind, 30000);
         if (aus.werkbankEnde === "waise")
             aus.befunde.push(
@@ -1300,7 +1300,7 @@ async function selbsttest() {
             try {
                 process.kill(pid, 0);
                 return true;
-            } catch (_e) {
+            } catch {
                 return false;
             }
         };
@@ -1317,7 +1317,7 @@ async function selbsttest() {
         if (kindLebt)
             try {
                 process.kill(kindPid, "SIGKILL");
-            } catch (_e) {}
+            } catch {}
         pruefe("hängender /stop: Werkbank und Kind sterben", v, null);
     }
     // DIE WIEDERHOLBARKEIT (1110-6): vier ruhige Sitzungen liegen im Soll; eine fünfte 0,3 ms daneben fällt an IHRER Pose;

@@ -1027,7 +1027,9 @@ function wegHelfer(arg) {
 // Liste erreicht das Mausrad über ihr, je Raste 100 px und eine Eingabe. ──
 const pause = (ms) => new Promise((q) => setTimeout(q, ms));
 const bauWeg = (page, fn, ...a) => page.evaluate((f, ...x) => window.__bauWeg[f](...x), fn, ...a);
-const taste = async (page, code) => (await page.keyboard.press(code), pause(120));
+// nach der Taste urteilt das Ereignis, nicht die Uhr: jede endliche Animation (die Schublade gleitet 0,32 s) ist zu Ende
+const ruht = () => document.getAnimations().every((a) => a.playState !== "running" || a.effect.getComputedTiming().iterations === Infinity);
+const taste = async (page, code) => (await page.keyboard.press(code), await pause(120), page.waitForFunction(ruht));
 async function klicke(page, el, liste) {
     for (let i = 0; i < 80 && !(await el.isIntersectingViewport({ threshold: 1 })); i++) {
         const [b, h] = [await el.boundingBox(), await (await page.$(liste)).boundingBox()];
