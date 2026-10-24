@@ -190,9 +190,8 @@ const BASIS = {
 const patchZiel = (z) =>
     z.length === 3 ? z : ["/" + (stammLib.dateiMit(ROOT, z[0]) || stammLib.dateien(ROOT)[0]), z[0], z[1]];
 
-// DIE WELTEN NEBENEINANDER: HAUS_WELT_PARALLEL Welten zugleich (Vorgabe: die Kerne, höchstens 4); jeder Platz im Pool trägt
-// seinen EIGENEN Server (HAUS_WELT_PORT + Platz, sonst ein freier Port) mit dem Patch SEINER Welt und je Welt einen eigenen
-// Browser-Kontext — kein Patch reist in eine fremde Welt.
+// DIE WELTEN NEBENEINANDER (HAUS_WELT_PARALLEL, höchstens 4): je Platz ein EIGENER Server (HAUS_WELT_PORT + Platz) mit dem
+// Patch SEINER Welt, je Welt ein eigener Browser-Kontext
 const PARALLEL = Math.max(1, Number(process.env.HAUS_WELT_PARALLEL) || Math.min(4, require("os").cpus().length));
 const PORT_BASIS = Number(process.env.HAUS_WELT_PORT) || 0;
 // --teil=k/n: die CI fährt die Welten in n Gruppen — Teil k trägt die Welten i (0 = der Hauptlauf, dann die Selbsttests)
@@ -205,9 +204,8 @@ const TEIL = (() => {
     return { k: +m[1], n: +m[2] };
 })();
 const imTeil = (i) => !TEIL || i % TEIL.n === TEIL.k - 1;
-// eine Patch-Zeile [geheilt, basis] gilt dem Stamm — der Datei, die die Zeile trägt (scripts/lib/stamm.cjs `dateiMit`; trägt
-// sie keine, der ersten: dort meldet der Lauf die fehlende Zeile) —, [datei, geheilt, basis] der genannten Datei (das
-// Gesetzbuch reist über den Foundry-Worker: /fachwerk-core.js)
+// eine Patch-Zeile [geheilt, basis] gilt der Stamm-Datei, die sie trägt (`dateiMit`), [datei, geheilt, basis] der genannten
+// (das Gesetzbuch reist über den Foundry-Worker: /fachwerk-core.js)
 const machServer = (platz) =>
     statikServer({
         root: ROOT,
@@ -250,12 +248,12 @@ async function proben(phasen) {
         }
     };
     // DAS WARTEN IM EREIGNIS (welt-boot `__deckel`): Takt um Takt, bis `bis()` gilt — der Deckel zählt nur Takte, in denen die
-    // Welt nichts offen hat (`_weltOffen`): unter Last wartet die Probe auf den Bau, nie auf eine Takt-Zahl
-    const warteBis = async (bis, n, max) => {
+    // Welt nichts offen hat (`_weltOffen`): unter Last wartet die Probe auf den Bau, nie auf eine Takt-Zahl; `ms` Pause je Gang
+    const warteBis = async (bis, n, max, ms) => {
         let ja = false;
         try {
             for (let k = 0, weiter = window.__deckel("haus-welt", max); !(ja = bis()) && weiter() && k++ < 4 * max;)
-                await pumpe(n);
+                await pumpe(n).then(() => ms && warte(ms));
         } catch (_e) {}
         return ja;
     };
@@ -303,7 +301,7 @@ async function proben(phasen) {
     const dorfHaeuser = () =>
         s.architectures.filter((e) => e.type && e.type.startsWith("haus_") && e.tuer && e.fundament);
     // der Export reist durch den Foundry-Worker, der Akt hebt über den Zug: warten, bis er steht
-    await warteBis(() => steht, 4, 120);
+    await warteBis(() => steht, 4, 120, 100);
     const H = dorfHaeuser();
     o.gesamt = H.length;
     const dorfMitte = { x: start.x, z: start.z };
@@ -1425,7 +1423,7 @@ async function proben(phasen) {
         );
         const fernHaeuser = () =>
             s.architectures.filter((e) => !vorDorf.has(e) && e.type && e.type.startsWith("haus_") && e.fundament);
-        await warteBis(() => fernSteht, 4, 120);
+        await warteBis(() => fernSteht, 4, 120, 100);
         const FH = fernHaeuser();
         o.w4b = { haeuser: FH.length, streuVorher: { steht: streuSteht(), zellen: vorZellen }, fern: streuImHaus(FH) };
         // unter den Häusern: die Zellen, die das Haus geräumt hat, und die, die noch leben (ohne Zellen dort ist W4b blind)
@@ -2296,7 +2294,9 @@ function zeile(o) {
                 const trifft = (x) => f.find((y) => x.split("|").some((a) => y.startsWith(a)));
                 const fehlt = soll[inj].filter((x) => !trifft(x));
                 const ok = pf.length === 0 && fehlt.length === 0;
-                const beleg = soll[inj].map((x) => trifft(x) || `${x}: grün (blind!)`).join(" | ");
+                const beleg = soll[inj]
+                    .map((x) => trifft(x) || `${x}: grün (blind! ${f.join(" | ") || "kein Urteil"})`)
+                    .join(" | ");
                 console.log(
                     `  ${ok ? "✅" : "❌"} Selbsttest „${inj}" macht ${soll[inj].join(" + ")} rot — ${pf.length ? pf.join("; ") : beleg}`
                 );
