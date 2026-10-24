@@ -2495,8 +2495,9 @@ AnazhRealm.TOD_KIPP_PUNKTE = 1500;
 // Karten-Lesungen, die auch die alte Tafel trug.
 AnazhRealm.TOD_BODEN_ZELLE = 0.5;
 // DIE TOD-LAGE IM LEERLAUF (`_todLageTick`): die Frist, nach der ein Fenster auch ohne Leerlauf kommt (ms), und die Scheibe
-// (ms) — die Reserve, die ein Leerlauf-Fenster dem nächsten Bild lässt, und die Länge eines Fensters ohne Leerlauf. Ein
-// Winkel der Tafel kostet auf der Radeon ~1 ms (1 500 Karten-Lesungen).
+// (ms) — die Reserve, die ein Leerlauf-Fenster dem nächsten Bild lässt, und die Länge eines Fensters ohne Leerlauf. Gemessen
+// (Radeon, Dorf Ego, unter Fremdlast): ein Tod kostete den Takt 28–84 ms, jetzt 0,3–0,6 ms; die Lage läuft in Fenstern von
+// höchstens 9,7 ms, die Tafel steht 0,13–0,58 s nach dem Tod.
 AnazhRealm.TOD_LAGE = Object.freeze({ fristMs: 50, scheibeMs: 2 });
 // DER LEBENSRAUM (tetrapoda LEBENSRAUM_GESETZ + bodenKlasse · lebensraum · lebensraumWahl, DURST_GESETZ + durst, Tiere K4): die Boden-Klasse eines Orts und die Eignung
 // je Gattung. Fail-closed.
