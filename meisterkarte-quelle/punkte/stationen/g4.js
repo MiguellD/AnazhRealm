@@ -643,20 +643,52 @@ const alle = [
             "worlds/neuntes-buch/",
             "worlds/huelle/huelle.js",
             "worlds/terrain/lib/",
+            "signaling-server.js",
             "scripts/diag-nervensystem.cjs",
+            "scripts/diag-atlas.cjs",
             "scripts/lib/welt-boot.cjs",
             "scripts/lib/stamm.cjs",
         ],
         quelle: "1 = ein Probe-Gesetzbuch (Fixture-Kern in spec/ mit PARAMS_BY_KIND und Bauer) steht über die Werkstatt in der Welt mit LOD-Kette, Kosten-Leiste und Speicher-Rundlauf, `git diff stamm/` = 0",
     },
+    // gate:nervensystem E2: je Weg der Bau-Hash der gezeigten Stufe (Werkstatt · KI-Satz mit festem DSL-Text, das Prompt lehrt
+    // das Wort · Foundry build-asset L0–L2 = die gezeigten Stufen · P2P: der Mitspieler baut das Werk byte-gleich), der Atlas
+    // (`--find neuntes`) nennt die EINE Quelle, der Wirt nennt die Art 0×
     {
         kriterium: "studios.K5",
         staffel: 2,
         geraet: "headless",
-        befehl: null,
-        grund:
-            "gate:nervensystem E misst Werkstatt und Wort-Katalog; es fehlen der KI-Satz bis spawn_studio, der P2P-Weg zum Mitspieler " +
-            "und der Atlas-Eintrag des Buchs (diag-atlas liest nur cores.manifest.json)",
+        befehl: ["node", "scripts/diag-nervensystem.cjs"],
+        env: { ...SOFT, NERV_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const e = jsonZeile(lauf.stdout, /^E-ZAHL \{/);
+            if (!e || !Array.isArray(e.wege)) return { gruen: false, zahl: "keine Wege in der E-ZAHL (Exit " + lauf.exit + ")" };
+            const auf = e.wege.filter((w) => w.ok).length;
+            return {
+                gruen:
+                    lauf.exit === 0 && !(e.taeter || []).length && auf === 4 && e.atlas === "worlds/neuntes-buch/stele-core.js" && e.nennt === 0,
+                zahl:
+                    `${auf}/4 Wege (${e.wege.map((w) => `${w.ok ? "✓" : "✗"} ${w.weg} ${w.bau || "kein Bau"}`).join(" · ")}) · ` +
+                    `Atlas ${e.atlas || "kein Gesetzbuch"} · der Wirt nennt die Art ${e.nennt}×`,
+            };
+        },
+        pfad: [
+            "stamm/",
+            "index.html",
+            "cores.manifest.json",
+            "*-core.js",
+            "foundry-bruecke.js",
+            "signaling-server.js",
+            "worlds/neuntes-buch/",
+            "worlds/huelle/huelle.js",
+            "worlds/terrain/lib/",
+            "scripts/diag-nervensystem.cjs",
+            "scripts/diag-atlas.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/stamm.cjs",
+        ],
         quelle: "2 = auf allen Wegen (Werkstatt, KI-Satz, Foundry, P2P), und der Atlas nennt seine EINE Quelle",
     },
 ];
