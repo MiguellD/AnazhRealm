@@ -1,5 +1,5 @@
 $ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c set -u
-WP=7743; SP=$((7743 + 20000)); LP=$((7743 + 20001)); export WERKBANK_PORT=$WP
+WP=7765; SP=$((7765 + 20000)); LP=$((7765 + 20001)); export WERKBANK_PORT=$WP
 L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=
 weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n "$SPID" ] && kill "$SPID" 2> /dev/null; SPID=; for p in $(netstat -ano 2> /dev/null | grep -aE ":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }
 trap weg EXIT
@@ -9,26 +9,44 @@ boot --ort dorf
 timeout 60 $W fenster 1920 1080 > /dev/null 2>&1
 timeout 120 $W umstellen --ort dorf --sicht ego > /dev/null 2>&1
 timeout 300 $W lauf 10 --ein 20 --ruhe 120 --regler frei --tiere frei > /dev/null 2>&1
-teil NH12 $W eval "window.__m36 = { zelle: [-4, -6], nH: 12, start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2210-messschuld-gtx-6cfce/m36-erstes-haus.js")"
+teil NH12 $W eval "window.__m36 = { zelle: [-4, -6], nH: 12, start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2410-siedlung-k5/m36-stufe.js")"
 boot --ort dorf
 timeout 60 $W fenster 1920 1080 > /dev/null 2>&1
 timeout 120 $W umstellen --ort dorf --sicht ego > /dev/null 2>&1
 timeout 300 $W lauf 10 --ein 20 --ruhe 120 --regler frei --tiere frei > /dev/null 2>&1
-teil NH300 $W eval "window.__m36 = { zelle: [-4, -6], nH: 300, start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2210-messschuld-gtx-6cfce/m36-erstes-haus.js")"
+teil NH300 $W eval "window.__m36 = { zelle: [-4, -6], nH: 300, start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2410-siedlung-k5/m36-stufe.js")"
 gpu-lauf: Schloss punkte-radeon nach 1 s
 @@PUNKTE@@ NH12
 {
  "ergebnis": {
   "gesetzt": {
-   "ms": 17.5,
+   "ms": 7.1,
    "bilder": 0
   },
   "imRadius": {
-   "ms": 33106,
-   "bilder": 1670,
-   "radius": 105.46295507557335
+   "ms": 33254.8,
+   "bilder": 3642,
+   "radius": 104.84268061009125
   },
-  "latenzMs": 144,
+  "latenzMs": 133.7,
+  "erstesMesh": {
+   "ms": 33388.5,
+   "bilder": 3657,
+   "stufe": "mesh",
+   "typ": "haus_fraenkisch",
+   "same": 905543,
+   "ort": [
+    -828.52,
+    -1350.34
+   ],
+   "abstand": 104.3,
+   "auge": [
+    -839.9,
+    43.4,
+    -1246.6
+   ]
+  },
+  "radius": 104.84268061009125,
   "zelle": [
    -4,
    -6
@@ -40,22 +58,28 @@ gpu-lauf: Schloss punkte-radeon nach 1 s
    -1373.1
   ],
   "erwacht": {
-   "bild": 2499,
-   "d": 259.9
+   "bild": 4949,
+   "d": 260
   },
   "erstes": {
-   "ms": 33250,
-   "bilder": 1676,
-   "typ": "haus_fraenkisch",
-   "same": 905543,
+   "ms": 41.4,
+   "bilder": 2,
+   "stufe": "huelle",
+   "typ": "haus_alemannisch",
+   "same": 540317,
    "ort": [
-    -828.52,
-    -1350.34
+    -795.45,
+    -1343.13
    ],
-   "abstand": 104.9
+   "abstand": 234.2,
+   "auge": [
+    -840.3,
+    43.7,
+    -1113.2
+   ]
   },
-  "hash": "f5558d2c",
-  "bilder": 4175,
+  "hash": "99282f35",
+  "bilder": 8606,
   "reserviert": {
    "seed": 29749318,
    "nH": 12,
@@ -63,22 +87,40 @@ gpu-lauf: Schloss punkte-radeon nach 1 s
    "z": -1373.113725490196
   }
  },
- "ms": 80780
+ "ms": 80903
 }
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ NH300
 {
  "ergebnis": {
   "gesetzt": {
-   "ms": 8.5,
+   "ms": 7.1,
    "bilder": 0
   },
   "imRadius": {
-   "ms": 101.7,
+   "ms": 111.5,
    "bilder": 2,
-   "radius": 117.84159762137696
+   "radius": 115.8302911635386
   },
   "latenzMs": 0,
+  "erstesMesh": {
+   "ms": 111.5,
+   "bilder": 2,
+   "stufe": "mesh",
+   "typ": "haus_fraenkisch",
+   "same": 867856,
+   "ort": [
+    -826.92,
+    -1130.07
+   ],
+   "abstand": 21.5,
+   "auge": [
+    -840.4,
+    44.4,
+    -1113.3
+   ]
+  },
+  "radius": 115.8302911635386,
   "zelle": [
    -4,
    -6
@@ -90,22 +132,28 @@ gpu-lauf: Schloss punkte-radeon nach 1 s
    -1373.1
   ],
   "erwacht": {
-   "bild": 4973,
+   "bild": 4901,
    "d": 260
   },
   "erstes": {
-   "ms": 101.7,
+   "ms": 111.5,
    "bilder": 2,
+   "stufe": "mesh",
    "typ": "haus_fraenkisch",
    "same": 867856,
    "ort": [
     -826.92,
     -1130.07
    ],
-   "abstand": 21.4
+   "abstand": 21.5,
+   "auge": [
+    -840.4,
+    44.4,
+    -1113.3
+   ]
   },
   "hash": "ed9b6932",
-  "bilder": 4975,
+  "bilder": 4903,
   "reserviert": {
    "seed": 29749318,
    "nH": 300,
@@ -113,6 +161,10 @@ gpu-lauf: Schloss punkte-radeon nach 1 s
    "z": -1373.113725490196
   }
  },
- "ms": 47626
+ "ms": 47630
 }
 @@PUNKTE@@ EXIT 0
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

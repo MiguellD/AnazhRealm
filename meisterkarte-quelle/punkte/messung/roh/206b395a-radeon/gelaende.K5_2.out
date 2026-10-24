@@ -29,9 +29,9 @@ $ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifact
     }
     fs.writeFileSync(aus, JSON.stringify(erg));
 })() C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koord-punkte\meisterkarte-quelle\punkte\messung\roh\206b395a-radeon\gelaende.K5_2.json
-gpu-lauf: Schloss punkte-radeon nach 2 s
+gpu-lauf: Schloss punkte-radeon nach 1 s
 == SICHT first EXIT 0
-  K8 wiese -280.4/-1045.6 0° · fein 1.1 (0.1, n 200) · streu 0.5 (0, n 332) · fuss 3.3 (0.8, n 200) · huf 2.1 (gigant -0.7, n 200) · rad 0.2 (0, n 200) | K8 hang -526/-853 24.4° · fein 4.3 (0.3, n 200) · streu 0.9 (0, n 783) · fuss 2.7 (-0.1, n 200) · huf 2.4 (gigant 0.3, n 202) · rad 2.4 (2.2, n 200)
+  K8 wiese -280.4/-1045.6 0° · fein 1.1 (0.1, n 200) · streu 0.5 (0, n 332) · fuss 3.3 (0.8, n 200) · huf 2.1 (gigant -0.7, n 200) · rad 0.2 (0, n 200) | K8 hang -526/-853 24.4° · fein 4.3 (0.3, n 200) · streu 0.9 (0, n 780) · fuss 2.7 (-0.1, n 200) · huf 2.4 (gigant 0.3, n 202) · rad 2.4 (2.2, n 200)
 ✅ gate:koerper-stand grün
 == SICHT third EXIT 0
   K8 wiese -280.4/-1045.6 0° · fein 1.1 (0.1, n 200) · streu 0.5 (0, n 337) · fuss 3.3 (0.8, n 200) · huf 2.1 (gigant -0.7, n 200) · rad 0.2 (0, n 200) | K8 hang -526/-853 24.4° · fein 4.3 (0.3, n 200) · streu 0.9 (0, n 780) · fuss 2.7 (-0.1, n 200) · huf 2.3 (gigant 0.2, n 201) · rad 2.4 (2.2, n 200)

@@ -1,5 +1,5 @@
 $ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c set -u
-WP=7740; SP=$((7740 + 20000)); LP=$((7740 + 20001)); export WERKBANK_PORT=$WP
+WP=7763; SP=$((7763 + 20000)); LP=$((7763 + 20001)); export WERKBANK_PORT=$WP
 L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=
 weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n "$SPID" ] && kill "$SPID" 2> /dev/null; SPID=; for p in $(netstat -ano 2> /dev/null | grep -aE ":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }
 trap weg EXIT
@@ -21,7 +21,7 @@ K=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); cons
 rm -f "$L/stadt-mittag.abnahme.json"
 teil BILD $W bild $K --datei "$L/stadt-mittag.png" --w 1600 --h 900
 cp "$L/stadt-mittag.abnahme.json" "$A" 2> /dev/null; true
-gpu-lauf: Schloss punkte-radeon nach 2 s
+gpu-lauf: Schloss punkte-radeon nach 1 s
 @@PUNKTE@@ Z
 === TEIL Z: DAS RANG-GESETZ (siedlung.K2) ===
   ✅ Z1 RANG: binnen 2 km eine ummauerte Stadt in 7/8 Saaten (Soll ≥ 6) — saat-0: metropole 192 Slots 416 m · saat-1: stadt 35 Slots 618 m · saat-2: stadt 39 Slots 266 m · saat-3: stadt 41 Slots 691 m · saat-4: grossstadt 68 Slots 1139 m · saat-5: keine · saat-6: stadt 32 Slots 970 m · saat-7: stadt 30 Slots 1105 m
@@ -90,11 +90,14 @@ gpu-lauf: Schloss punkte-radeon nach 2 s
  "hell": 114.1,
  "kontrast": 12.05,
  "dc": 30,
- "dreiecke": 300717,
- "ms": 260,
+ "dreiecke": 300765,
+ "ms": 272,
  "klasse": null,
  "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 105.58 m · Luma 99.9 σ 44 schwarz 0.0 % weiß 0.0 % · Stand 18.546.87 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
- "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\punkte-g5-7740\\stadt-mittag.png",
- "gesamtMs": 2133
+ "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\punkte-g5-7763\\stadt-mittag.png",
+ "gesamtMs": 2037
 }
 @@PUNKTE@@ EXIT 0
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

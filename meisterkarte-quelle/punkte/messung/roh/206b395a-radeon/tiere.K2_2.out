@@ -1,4 +1,4 @@
-$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\206b395a-radeon\tiere.K2_2.json' | tr '\\' /); B="${A%.json}"
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koord-punkte\meisterkarte-quelle\punkte\messung\roh\206b395a-radeon\tiere.K2_2.json' | tr '\\' /); B="${A%.json}"
 S=$(( 7732 )); W=$(( 7732 + 20000 )); export WERKBANK_PORT=$W
 raeum() { for p in $(netstat -ano | grep -E ":($S|$W|$((W - 1))) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }
 stand() { mkdir -p "$B-stand"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json "$B-stand/" 2> /dev/null; }
@@ -20,37 +20,40 @@ node scripts/werkbank.cjs bild $(node -e 'console.log(JSON.parse(process.argv[1]
 echo "BILD $(grep -o '"abnahme": "[^"]*"' "$B-bild.txt")"
 cp "$B-wolfsrevier.abnahme.json" "$A"
 gpu-lauf: Schloss punkte-radeon nach 1 s
-[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:17732/index.html · der Puls steht seit 20.0 s
-[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 21.8 s
-[stall-akte] Puls 8×, zuletzt vor 20.0 s — complete · renderer bereit · weltbild da · frames 335 · welt 335 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
-[stall-akte] CPU (2 s) renderer 31668 114 % · browser 1216 1 % · GPU 18000 1 %
-[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 36:35 gpu 3/r 424 · 36:37 gpu 1/r 516 · 36:39 gpu 1/r 124 · 36:41 gpu 1/r 135 · 36:43 gpu 1/r 133 · 36:45 gpu 1/r 119 · 36:47 gpu 1/r 114 · 36:49 gpu 1/r 115 · 36:51 gpu 1/r 123 · 36:53 gpu 1/r 114 · 36:55 gpu 1/r 110 · 36:57 gpu 1/r 108 · 36:59 gpu 1/r 115
-[stall-akte] Stapel updateMatrixWorld :6 < updateMatrixWorld :6 < updateMatrixWorld :6 < _leibMatrix :7 < _kreaturBissKopfWeg :1829 < updateCreatures :3481 < takt :241 < (anonym) :1673
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:17732/index.html · der Puls steht seit 20.1 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 21.4 s
+[stall-akte] Puls 7×, zuletzt vor 20.1 s — complete · renderer bereit · weltbild da · frames 260 · welt 260 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 26136 103 % · GPU 32852 1 % · browser 34440 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 57:53 gpu 2/r 540 · 57:55 gpu 1/r 311 · 57:57 gpu 1/r 130 · 57:59 gpu 1/r 135 · 58:01 gpu 1/r 134 · 58:03 gpu 1/r 116 · 58:05 gpu 1/r 105 · 58:07 gpu 1/r 122 · 58:09 gpu 1/r 128 · 58:11 gpu 1/r 112 · 58:13 gpu 1/r 104 · 58:15 gpu 1/r 105 · 58:17 gpu 1/r 103
+[stall-akte] Stapel huelleNah :109 < (anonym) :142 < spirale :130 < frei :139 < (anonym) :1654 < buehne :58 < kreaturProben :1550
 [stall-akte] Konsole log: [AnazhRealm V18.546.87] [INFO] State-Import (Lade Datei) initialisiert
 [stall-akte] Konsole log: [AnazhRealm V18.546.87] [INFO] Hauptschleife gestartet – Ultiversum pulsiert!
 [stall-akte] Konsole log: [AnazhRealm V18.546.87] [INFO] Nervensystem: 70 neue Studio-Art(en) automatisch registriert.
 [stall-akte] Konsole log: [AnazhRealm V18.546.87] [INFO] Seele gewechselt: Mensch (human)
-[stall-akte] Konsole log: [AnazhRealm V18.546.87] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
 [stall-akte] Konsole log: [AnazhRealm V18.546.87] [WARN] AUSGABE: rg11b10ufloat ist auf diesem Gerät nicht renderbar (Feature rg11b10ufloat-renderable fehlt) — das Szenen-Ziel bleibt rgba16float, +7,9 MB bei 1080p
 [stall-akte] Konsole log: [AnazhRealm V18.546.87] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
 [stall-akte] Konsole log: [AnazhRealm V18.546.87] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — Cannot read properties of undefined (reading 'enabled')
-[stall-akte] Konsole log: [AnazhRealm V18.546.87] [WARN] FPS-Einbruch: 27 (zuvor ~39)
+[stall-akte] Konsole log: [AnazhRealm V18.546.87] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
+[stall-akte] Konsole log: [AnazhRealm V18.546.87] [WARN] FPS-Einbruch: 26 (zuvor ~39)
 [stall-akte] Konsole log: [AnazhRealm V18.546.87] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
-[stall-akte] Konsole log: [AnazhRealm V18.546.87] [WARN] Der Rundblick steht nach 120 Takten ohne: 323 Bäume werden gepflanzt · 2 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.87] [WARN] Der Rundblick steht nach 120 Takten ohne: 337 Bäume werden gepflanzt · 2 Wald-Stücke warten auf ihre Gestalt
 [stall-akte] Konsole log: [AnazhRealm V18.546.87] [INFO] Welt-Beziehung: Pfad
-[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in updateMatrixWorld :6
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in huelleNah :109
 
 ===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
 
   ✅ jagdkreis {"riss":{"quote":{"einWolf":{"jagden":20,"risse":0,"erschoepft":20,"hp0":168},"rudel":{"jagden":60,"risse":13,"erschoepft":47,"hp0":168},"kitz":{"jagden":20,"risse":20,"erschoepft":0,"hp0":60}},"rissS":27.6,"fleisch0":56.5,"fleischEnde":0,"fressS":73.42,"gaeste":[{"seele":"fuchs","kommtS":20.1,"frissS":35.36},{"seele":"baer","kommtS":17.3,"frissS":37.42}]},"sprinter":{"sprintMs":5.17,"abstand0":6,"abstandEnde":2.2,"abstandMin":1.1,"bisse":4,"wolfSprintMs":7.45,"bahn":[-54,53]}}
 
-  (37 s) — Sekunden je Probe: jagdkreis: 29
+  (34 s) — Sekunden je Probe: jagdkreis: 26
 
 ✅ GRÜN — jagdkreis
 WERKBANK bereit: Steuer 127.0.0.1:27732 · Seite :27731
 ORT [50,0]
-REVIER {"ort":"wald","kamera":[58.74,90.56,4.25,50.89,88.97,5.82],"klasse":"waldrand","rissS":13.6,"fressen":3,"nah":4,"woelfe":4}
-BILD "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.19 m · Luma 82.3 σ 38 schwarz 0.0 % weiß 0.0 % · Stand 18.546.87 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 3 Posen"
+REVIER {"ort":"wald","kamera":[59.76,90.99,0.4,51.76,89.16,0.56],"klasse":"wald","rissS":13.3,"fressen":3,"nah":4,"woelfe":4}
+BILD "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.21 m · Luma 82.6 σ 36.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.87 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen"
 
 --- stderr ---
 tr: warning: an unescaped backslash at end of string is not portable
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

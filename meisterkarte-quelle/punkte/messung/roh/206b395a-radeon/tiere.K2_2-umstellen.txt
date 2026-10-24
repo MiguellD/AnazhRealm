@@ -6,5 +6,5 @@
  "dorfZug": true,
  "ortTakt": [],
  "dorfSchwebt": null,
- "ms": 41559
+ "ms": 36117
 }
