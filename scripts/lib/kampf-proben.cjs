@@ -205,8 +205,7 @@ async function WELLE_L() {
         if (s.buildMode && s.buildMode.active) r._clearBuildMode();
 
         // ═══ Q8 — TREFFER ═══
-        // die Glieder jeder getroffenen Gattung liegen im Vorrat (der Leerlauf baut sie, `_gliederBestellen`; die Welt
-        // bestellt die des Lebensraums beim Boot) — eine kalte Gattung trägt bis dahin kein Treffer-Volumen
+        // die Glieder jeder getroffenen Gattung im Vorrat (der Leerlauf) — eine kalte trägt kein Treffer-Volumen
         await Promise.all(["wesen", "fuchs", "wolf", "baer"].map((seele) => r._gliederBestellen(seele)));
         const hirsch = setze("wesen");
         const fuchs = setze("fuchs");
@@ -2232,7 +2231,7 @@ async function WELLE_L() {
                 r._fieldGradient = fgRoh;
                 delete r._fieldGradient;
             }
-            r._todLageTick({ timeRemaining: () => Infinity }); // die Tod-Lage aus dem Leerlauf, vor dem Fall
+            r._todLageTick({ timeRemaining: () => Infinity });
             const K = A._arenaGesetz().gefuehl;
             for (let k = 0; k < Math.ceil((K.kippDauerSec + 0.2) / 0.05); k++) r.updateCreatures(0.05);
             hT.updateMatrixWorld(true);

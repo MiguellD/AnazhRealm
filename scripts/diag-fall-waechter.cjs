@@ -851,7 +851,7 @@ async function probe(K) {
                 r.removeCreature(w);
                 return { fehler: "der Wolf stirbt nicht" };
             }
-            r._todLageTick({ timeRemaining: () => Infinity }); // die Tod-Lage aus dem Leerlauf, vor dem ersten Takt des Falls
+            r._todLageTick({ timeRemaining: () => Infinity });
             // der Gefallene verlässt die Liste der Wesen im Moment des Todes und liegt in state.leichname (Welle LF kampf)
             const dabei = () => st.creatures.includes(w) || (st.leichname || []).includes(w);
             let kippMin = Infinity,

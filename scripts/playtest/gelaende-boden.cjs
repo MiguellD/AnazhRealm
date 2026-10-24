@@ -2074,7 +2074,6 @@ async function checkBandTodZensus(ctx) {
                         }
                 );
             if (taeter === "lage")
-                // die Haut der Tod-Lage liest eine verborgene Wurzel als „keine Haut“
                 decke(
                     "_todHaut",
                     (alt) =>
@@ -2183,7 +2182,6 @@ async function checkBandTodZensus(ctx) {
             const kill = r.damageCreature(tB, 1e9, { source: "player" });
             tC.visible = false;
             r._creatureNaturalDeath(tC);
-            // die Tod-Lagen rechnet der Leerlauf (`_todLageTick`) — hier ein Fenster ohne Ende, bevor die Frist beginnt
             r._todLageTick({ timeRemaining: () => Infinity });
             o.last = { soll: lastSoll, zurueck: holzZurueck, journal: lastJournal };
             o.raeumt = raeumt;

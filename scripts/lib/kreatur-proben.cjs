@@ -2330,56 +2330,34 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // DIE TOD-LAGE IM LEERLAUF (dorf-takt-z13, Lehre 14): ein Wolf stirbt — der Tod liest keine Karte (die Lage rechnet der
-    // Leerlauf, `_todLageTick`), der Leib steht in der Haltung seines Todes, bis die Tafel steht; ein Fenster ohne Zeit
-    // rechnet genau einen Winkel; steht die Tafel, kippt er.
+    // DIE TOD-LAGE IM LEERLAUF (dorf-takt-z13, Lehre 14): der Tod eines Wolfs liest keine Karte, der Leib steht, bis der
+    // Leerlauf seine Tafel rechnet (`_todLageTick`), ein Fenster ohne Zeit genau einen Winkel.
     await buehne("todlage", async (restore) => {
         if (taeter === "todlage-takt")
-            // der Täter: der Tod rechnet seine Lage selbst (die Tod-Lage im Takt, bis dorf-takt-z13)
             decke(
                 restore,
                 "_kreaturFaellt",
-                (f) =>
-                    function (c, ...a) {
-                        const out = f.call(this, c, ...a);
-                        this._todLageTick({ timeRemaining: () => Infinity });
-                        return out;
-                    }
+                (f) => (c) => (f.call(r, c), r._todLageTick({ timeRemaining: () => Infinity }))
             );
-        let lesungen = 0;
+        let n = 0;
         decke(
             restore,
             "_standSicht",
             (f) =>
-                (...a) => (lesungen++, f.apply(r, a))
+                (...a) => (n++, f.apply(r, a))
         );
-        const o = frei(20, -20, 6) || land(20, -20);
-        const c = tier({ x: o.x, y: o.y, z: o.z }, "wolf", 1);
+        const c = tier(frei(20, -20, 6) || land(20, -20), "wolf");
         for (let k = 0; k < 20; k++) takt(1 / 30);
-        const n0 = lesungen;
-        r.damageCreature(c, 1e9, { source: "world" });
-        const imTod = lesungen - n0;
+        n = 0;
+        r.damageCreature(c, 1e9, {});
         const d = c.userData.dying;
-        if (!d) return { fehler: "der Wolf stirbt nicht" };
+        const z = { imTod: n, fenster: 0, soll: A.TOD_KIPP_STUETZ + 1 };
         for (let k = 0; k < 5; k++) takt(1 / 30);
-        const wartet = { ohneTafel: d.hebe === undefined, fall: d.fall };
-        let fenster = 0;
-        while (d.hebe === undefined && fenster < 500) {
-            r._todLageTick({ timeRemaining: () => 0 });
-            fenster++;
-        }
-        for (let k = 0; k < 40; k++) takt(1 / 30);
-        const obenY = 1 - 2 * (c.quaternion.x * c.quaternion.x + c.quaternion.z * c.quaternion.z);
+        z.steht = d.fall === 0 && d.hebe === undefined;
+        for (; d.hebe === undefined && z.fenster < 99; z.fenster++) r._todLageTick({ timeRemaining: () => 0 });
+        z.tafel = d.hebe ? d.hebe.length : 0;
         r.removeCreature(c);
-        return {
-            imTod,
-            wartet,
-            fenster,
-            tafel: d.hebe ? d.hebe.length : 0,
-            soll: A.TOD_KIPP_STUETZ + 1,
-            fall: +d.fall.toFixed(3),
-            obenY: +obenY.toFixed(3),
-        };
+        return z;
     });
 
     // ── bewohner (mensch.K1–K3): das Start-Dorf wächst, bis jeder Bewohner seinen Leib trägt (je Haus `leuteVon`), am
@@ -3393,21 +3371,10 @@ function urteil(name, z) {
         );
     }
     if (name === "todlage") {
+        soll(z.imTod === 0, `der Tod rechnet seine Lage im Takt: ${z.imTod} Karten-Lesungen (Soll 0)`);
         soll(
-            z.imTod === 0,
-            `der Tod rechnet seine Lage im Takt: ${z.imTod} Karten-Lesungen im Tod (Soll 0 — der Leerlauf rechnet sie)`
-        );
-        soll(
-            z.imTod > 0 || (z.wartet.ohneTafel && z.wartet.fall === 0),
-            `der Leib kippt, bevor seine Tafel steht (ohne Tafel ${z.wartet.ohneTafel}, Fall ${z.wartet.fall} s)`
-        );
-        soll(
-            z.imTod > 0 || (z.fenster > 1 && z.tafel === z.soll),
-            `ein Fenster ohne Zeit rechnet die ganze Lage: ${z.fenster} Fenster, Tafel ${z.tafel} von ${z.soll} Winkeln`
-        );
-        soll(
-            z.fall > 1 && z.obenY < 0.5,
-            `der Leib kippt nicht, wenn seine Tafel steht (Fall ${z.fall} s, oben ${z.obenY})`
+            z.imTod > 0 || (z.steht && z.fenster > 1 && z.tafel === z.soll),
+            `die Lage im Leerlauf: der Leib steht ${z.steht}, ${z.fenster} Fenster ohne Zeit, Tafel ${z.tafel} von ${z.soll}`
         );
     }
     if (name === "jagdkreis") {

@@ -193,7 +193,7 @@ async function eigeneWelt() {
     return () => rufe("/stop");
 }
 
-// Eine Klassen-Methode (4 Leerzeichen eingerückt, prettier-Form; async oder ein Gang `*name`) aus dem Quelltext schneiden.
+// Eine Klassen-Methode (4 Leerzeichen eingerückt, prettier-Form, auch ein Gang) aus dem Quelltext schneiden.
 function methodeAusQuelle(quelle, name) {
     const kopf = new RegExp(`\\n    (async |\\*)?${name}\\(([^)]*)\\) \\{\\n`);
     const m = kopf.exec(quelle);

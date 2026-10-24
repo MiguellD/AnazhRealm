@@ -879,7 +879,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             // = 1 − 2(qx² + qz²), kein THREE nötig.
             const upY = (c) => 1 - 2 * (c.quaternion.x * c.quaternion.x + c.quaternion.z * c.quaternion.z);
             const kill = r.damageCreature(cTod, 99999, { source: "world" });
-            r._todLageTick({ timeRemaining: () => Infinity }); // die Tod-Lage aus dem Leerlauf, vor dem Fall
+            r._todLageTick({ timeRemaining: () => Infinity });
             // der Gefallene liegt: nicht mehr unter den Wesen, in der Liste der Gefallenen, in der Szene
             const liegt = (c) => (s.leichname || []).indexOf(c) !== -1 && s.creatures.indexOf(c) === -1 && !!c.parent;
             o.checks.dKillKipptErst = !!kill.killed && !!cTod.userData.dying && liegt(cTod);

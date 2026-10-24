@@ -597,7 +597,7 @@ async function proben(mitWiese, umfang) {
             r.damageCreature(c, 1e6, {});
             const dy = c.userData.dying;
             if (dy) {
-                r._todLageTick({ timeRemaining: () => Infinity }); // die Tod-Lage aus dem Leerlauf, vor dem Fall
+                r._todLageTick({ timeRemaining: () => Infinity });
                 const nKipp = Math.ceil((dy.dauer + 0.05) / 0.02);
                 let wegMin = Infinity;
                 let wegMax = -Infinity;
