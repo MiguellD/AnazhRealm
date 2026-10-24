@@ -1,7 +1,7 @@
 {
  "sha": "056330d8a70fcdc617df8c3ff62ec174c5d33995",
  "geraet": "radeon",
- "zeit": "2026-10-24T08:05:54.752Z",
+ "zeit": "2026-10-24T08:48:31.417Z",
  "host": "MiguellD",
  "je": {
   "gelaende.K2#1": {
@@ -105,6 +105,111 @@
    "zeit": "2026-10-24T08:05:54.752Z",
    "abdruck": "c1c161cacf47",
    "port": 7737
+  },
+  "material.K1#1": {
+   "gruen": true,
+   "zahl": "Welt/Labor 0,9–1,1: 12/12 · im realen Band beidseits: 12/12 · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 11.37,
+   "zeit": "2026-10-24T08:12:10.969Z",
+   "abdruck": "7d958f1a0783",
+   "port": 7738
+  },
+  "material.K1#2": {
+   "gruen": true,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 11.37,
+   "zeit": "2026-10-24T08:12:10.969Z",
+   "abdruck": "03c706724ee9",
+   "port": 7738,
+   "zwilling": "material.K1#1"
+  },
+  "schatten.K1#1": {
+   "gruen": true,
+   "zahl": "Uhr 0.5 ego 2.4 cm (12 Kanten) · Uhr 0.5 third 2.4 cm (12 Kanten), [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.74,
+   "zeit": "2026-10-24T08:23:33.360Z",
+   "abdruck": "5e5cfa6d8c00",
+   "port": 7740
+  },
+  "fahrzeug.K3#1": {
+   "gruen": true,
+   "zahl": "Garage FOV +9.06° Arm +18.1 % bei 15.20/16.00 m/s · Welt FOV +9.4° Arm +18.2 % bei 15.09 m/s (Ende ok)",
+   "exit": 0,
+   "minuten": 10.27,
+   "zeit": "2026-10-24T08:25:17.550Z",
+   "abdruck": "47c7c8bcd372",
+   "port": 7753
+  },
+  "fahrzeug.K3#2": {
+   "gruen": true,
+   "zahl": "Drift Kamera ≤ 6.2° neben dem Fahrtvektor (Schlupf bis 4.3°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.017 m (165) · FOV-Schreiber [_kamFov]",
+   "exit": 0,
+   "minuten": 2.78,
+   "zeit": "2026-10-24T08:35:33.928Z",
+   "abdruck": "3a58d98e9e1c",
+   "port": 7754
+  },
+  "fahrzeug.K4#1": {
+   "gruen": true,
+   "zahl": "nach Ego → Third im Bild 3/3, Azimut 1.3/5.8/8.4°, Stufe ≤ 1.72 m · T4 Absteigen 0.26 m je Bild, Azimut nach 10 Bildern 2.2° · Hang 17.4°",
+   "exit": 0,
+   "minuten": 3.37,
+   "zeit": "2026-10-24T08:38:20.906Z",
+   "abdruck": "ab61dce55516",
+   "port": 7755
+  },
+  "fahrzeug.K4#2": {
+   "gruen": true,
+   "zahl": "nach Ego → Third im Bild 3/3, Azimut 1.3/5.8/8.4°, Stufe ≤ 1.72 m · T4 Absteigen 0.26 m je Bild, Azimut nach 10 Bildern 2.2° · Hang 17.4°",
+   "exit": 0,
+   "minuten": 3.37,
+   "zeit": "2026-10-24T08:38:20.906Z",
+   "abdruck": "b8dfe1a249ab",
+   "port": 7755,
+   "zwilling": "fahrzeug.K4#1"
+  },
+  "siedlung.K2#1": {
+   "gruen": true,
+   "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 92 · Schuss vom acker 106 m vor der Mitte, 3.6 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 105.58 m · Luma 99.9 σ 44 schwarz 0.0 % weiß 0.0 % · S",
+   "exit": 0,
+   "minuten": 1.2,
+   "zeit": "2026-10-24T08:41:43.280Z",
+   "abdruck": "22156cd39fff",
+   "port": 7757
+  },
+  "siedlung.K5#1": {
+   "gruen": false,
+   "zahl": "nH 12 erstes Haus nach 171.2 ms (haus_alemannisch, huelle in 233.4 m, Bau-Hash 99282f35) · nH 300 erstes Haus nach 6994.4 ms (haus_fraenkisch, mesh in 21.3 m, Bau-Hash d3621130)",
+   "exit": 0,
+   "minuten": 5.6,
+   "grund": "ROT: nH 12 erstes Haus nach 171.2 ms (haus_alemannisch, huelle in 233.4 m, Bau-Hash 99282f35) · nH 300 erstes Haus nach 6994.4 ms (haus_fraenkisch, mesh in 21.3 m, Bau-Hash d3621130)",
+   "zeit": "2026-10-24T08:42:55.446Z",
+   "abdruck": "1bf868639fe6",
+   "port": 7759
+  },
+  "siedlung.K5#2": {
+   "gruen": false,
+   "zahl": "nH 12 erstes Haus nach 171.2 ms (haus_alemannisch, huelle in 233.4 m, Bau-Hash 99282f35) · nH 300 erstes Haus nach 6994.4 ms (haus_fraenkisch, mesh in 21.3 m, Bau-Hash d3621130)",
+   "exit": 0,
+   "minuten": 5.6,
+   "grund": "ROT: nH 12 erstes Haus nach 171.2 ms (haus_alemannisch, huelle in 233.4 m, Bau-Hash 99282f35) · nH 300 erstes Haus nach 6994.4 ms (haus_fraenkisch, mesh in 21.3 m, Bau-Hash d3621130)",
+   "zeit": "2026-10-24T08:42:55.446Z",
+   "abdruck": "607c1995be2b",
+   "port": 7759,
+   "zwilling": "siedlung.K5#1"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "p95 ms ego/gehen 75.8 · third/gehen 53.1 · ego/wechsel 74.1 · third/wechsel 61.6",
+   "exit": 0,
+   "minuten": 3.03,
+   "grund": "ROT: p95 ms ego/gehen 75.8 · third/gehen 53.1 · ego/wechsel 74.1 · third/wechsel 61.6",
+   "zeit": "2026-10-24T08:48:31.417Z",
+   "abdruck": "8746d55fc31a",
+   "port": 7762
   }
  }
 }
