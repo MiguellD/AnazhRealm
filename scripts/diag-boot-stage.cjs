@@ -117,14 +117,15 @@ function KALT_PROBE() {
         A.proben.push(o);
     }, 200);
     // DIE KONTROLLE VON AUSSEN (ankunft K1): der erste Moment, in dem der Leib ≥ 0,1 m von dem Ort wich, an dem er stand, als
-    // der Ladeschirm (die DOM-Wahrheit) noch stand
+    // der Ladeschirm (die DOM-Wahrheit) noch stand; ein Sprung über 3 m ist ein Versetzen, kein Schritt (TAKT_DECKEL_S)
     const leib = setInterval(() => {
         const r = window.anazhRealm;
         const p = r && r.state && r.state.playerMesh && r.state.playerMesh.position;
         if (!p) return;
         const el = document.getElementById("ladeschirm");
-        if (!A.leibAb || (el && !el.hidden && !el.classList.contains("weg"))) A.leibAb = [p.x, p.z];
-        else if (Math.hypot(p.x - A.leibAb[0], p.z - A.leibAb[1]) >= 0.1) {
+        const d = A.leibAb ? Math.hypot(p.x - A.leibAb[0], p.z - A.leibAb[1]) : 9;
+        if (d > 3 || (el && !el.hidden && !el.classList.contains("weg"))) A.leibAb = [p.x, p.z];
+        else if (d >= 0.1) {
             A.kontrolle = Math.round(performance.now());
             clearInterval(leib);
         }
@@ -176,7 +177,7 @@ async function kaltLauf() {
             await page.evaluate(AUSGABE_INSTALL);
             const schuss = (zweit) =>
                 page.evaluate(
-                    async (W, H, zweit, tol, png) => {
+                    async (W, H, zweit, tol) => {
                         const r = window.anazhRealm;
                         r.state.renderer.setAnimationLoop(null);
                         window.__buehne();
@@ -187,49 +188,29 @@ async function kaltLauf() {
                         }
                         r.state.renderer.setAnimationLoop(r._gameLoopTick);
                         const px = auf.u8.slice(0, W * H * 4);
-                        const a = window.__bildA;
+                        const a = zweit ? window.__bildA : (window.__bildA = px);
                         let weicht = 0;
-                        if (!zweit) window.__bildA = px;
-                        else
-                            for (let i = 0; i < px.length; i += 4)
-                                if (
-                                    Math.max(
-                                        Math.abs(px[i] - a[i]),
-                                        Math.abs(px[i + 1] - a[i + 1]),
-                                        Math.abs(px[i + 2] - a[i + 2])
-                                    ) > tol
-                                )
-                                    weicht++;
-                        let url = null;
-                        if (png && !zweit) {
-                            const cv = document.createElement("canvas");
-                            cv.width = W;
-                            cv.height = H;
-                            const ctx = cv.getContext("2d");
-                            const img = ctx.createImageData(W, H);
-                            img.data.set(px);
-                            ctx.putImageData(img, 0, 0);
-                            url = cv.toDataURL("image/png");
-                        }
-                        return {
-                            dc: auf.info.drawCalls,
-                            dreiecke: auf.info.triangles,
-                            luecke: weicht / (W * H),
-                            png: url,
-                        };
+                        for (let i = 0; i < px.length; i += 4)
+                            weicht += Math.max(Math.abs(px[i] - a[i]), Math.abs(px[i + 1] - a[i + 1]), Math.abs(px[i + 2] - a[i + 2])) > tol;
+                        const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
+                        cv.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(px.buffer), W, H), 0, 0);
+                        const { drawCalls: dc, triangles: dreiecke } = auf.info;
+                        return { dc, dreiecke, luecke: weicht / (W * H), spiel: r.state.spielZeit, png: cv.toDataURL("image/png") };
                     },
                     ECHT ? 960 : 640,
                     ECHT ? 540 : 360,
                     zweit,
-                    BILD_TOL,
-                    !!bildDatei
+                    BILD_TOL
                 );
-            bildInfo = await schuss(false);
+            const a = await schuss(false);
             await new Promise((r) => setTimeout(r, KONTROLLE_RUHE_S * 1000));
-            bildInfo.luecke = (await schuss(true)).luecke;
-            if (bildInfo.png)
-                fs.writeFileSync(path.resolve(bildDatei), Buffer.from(bildInfo.png.split(",")[1], "base64"));
-            delete bildInfo.png;
+            const b = await schuss(true);
+            // die Ruhe zählt nur, wenn die Welt in ihr lief (die Spiel-Zeit wuchs um ≥ 1/6 der Ruhe)
+            const lauf = b.spiel - a.spiel;
+            bildInfo = { dc: a.dc, dreiecke: a.dreiecke, luecke: lauf >= KONTROLLE_RUHE_S / 6 ? b.luecke : null, lauf };
+            if (bildDatei)
+                for (const [x, d] of [[a, bildDatei], [b, bildDatei.replace(/\.png$/, "-ruhe.png")]])
+                    fs.writeFileSync(path.resolve(d), Buffer.from(x.png.split(",")[1], "base64"));
         }
         out = await page.evaluate(() => {
             const r = window.anazhRealm;
@@ -324,9 +305,9 @@ async function kaltLauf() {
     const u = out.urteil;
     const s = (ms) => (ms ? (ms / 1000).toFixed(2) + " s" : "—");
     console.log(
-        `
-  t(Kontrolle) ${s(u.t)} ab Navigation (W bewegt den Leib) · Eigenmeldung t(Weltbild) ${s(out.weltbildDa)} · ` +
-            `das Bild bei der Kontrolle weicht ${u.luecke == null ? "—" : (u.luecke * 100).toFixed(2) + " %"}`
+        `\n  t(Kontrolle) ${s(u.t)} ab Navigation (W bewegt den Leib) · Eigenmeldung t(Weltbild) ${s(out.weltbildDa)} · ` +
+            `das Bild bei der Kontrolle weicht ${u.luecke == null ? "—" : (u.luecke * 100).toFixed(2) + " %"} ` +
+            `(die Welt lief ${out.bild ? out.bild.lauf.toFixed(1) : "—"} s)`
     );
     for (const x of u.taeter) console.log(`  ❌ ${x}`);
     console.log(`  ${u.taeter.length ? "❌" : "✅"} die Ankunft kalt ≤ ${ANKUNFT_SOLL_MS / 1000} s in einem ganzen Bild — ${s(u.t)}`);
