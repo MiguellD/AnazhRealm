@@ -548,11 +548,47 @@ const alle = [
         kriterium: "bauen.K3",
         staffel: 2,
         geraet: "headless",
-        befehl: null,
-        grund:
-            "kein Prüf-Satz in der Welt: das Statik-Urteil fällt nur beim Fertigen (`_workshopPhysicsVerdict`), beim Setzen zählt nur " +
-            "„Phantom auf dem Boden“ (`_setzUrteil`); Turm, Kragarm, Brücke, Bogen und Rad/Schale baut keine Linse",
-        quelle: "2 = ein Prüf-Satz aus 10 Konstruktionen (5 stabil, 5 instabil) wird in der Welt 10/10 richtig geurteilt",
+        // DER PRÜF-SATZ (diag-werkstatt-weg, spec/pruefsatz/bauen-k3.json): zehn Konstruktionen über den Bau-Weg des Spielers
+        // (Hotbar, Phantom, confirmBuild) — das Stabile steht nach 150 Takten, das Instabile stürzt sichtbar (die gezeichnete
+        // Lage kippt ≥ 30° oder fällt ≥ 0,3 m), bricht und nennt den Grund (die EINE Statik beim Setzen, `_werkGesetzSetzen`);
+        // Wirkung: Brennglas mittags und nachts, das Rad rollt den Hang hinab (der Klotz nicht), die Schale hält Regen (die mit
+        // Loch nicht), der Gründer legt den Aufruhr (der Stapel derselben Steine nicht). Am main 833bbc24: Statik 5/10, Wirkung 3/5.
+        befehl: WEG_BEFEHL,
+        env: WEG_ENV,
+        gpu: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const l = zeilen(lauf.stdout).find((x) => /^\s*(✅|❌) Prüf-Satz über den Bau-Weg/.test(x));
+            if (!l) return { gruen: false, zahl: "keine Prüf-Satz-Zeile (Exit " + lauf.exit + ")" };
+            const m = l.match(/Statik (\d+)\/10 · Wirkung (\d+)\/5/);
+            if (!m) return { gruen: false, zahl: "keine Zahl in der Prüf-Satz-Zeile" };
+            return {
+                gruen: /^\s*✅/.test(l) && m[1] === "10" && m[2] === "5",
+                zahl: `Statik ${m[1]}/10 richtig, Wirkung ${m[2]}/5`,
+            };
+        },
+        pfad: [
+            "stamm/bau-*.js",
+            "stamm/werkstatt-*.js",
+            "stamm/siedlung-satz.js",
+            "stamm/siedlung-bauten.js",
+            "stamm/koerper-fahrt.js",
+            "stamm/bild-himmel.js",
+            "stamm/wasser-hydro.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/studio-bruecke.js",
+            "stamm/vegetation-baum.js",
+            "stamm/dienst.js",
+            "stamm/daten.js",
+            "foundry-core.js",
+            "foundry-bruecke.js",
+            "vehicle-core.js",
+            "spec/pruefsatz/bauen-k3.json",
+            "scripts/diag-werkstatt-weg.cjs",
+            "scripts/lib/stamm.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = ein Prüf-Satz aus 10 Konstruktionen (5 stabil, 5 instabil) wird in der Welt 10/10 richtig geurteilt mit sichtbarer Folge, und 5 Wirkungs-Konstruktionen halten 100 %",
     },
     {
         kriterium: "bauen.K4",
