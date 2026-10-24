@@ -39,36 +39,6 @@ function rueckVerdict(R) {
         );
     return v;
 }
-// (T14) die Masse-Tafel: Volumen der Haut × ρ(fleisch) der Stoff-Zeile, der Wagen sein Kern-Volumen × FAHR.masseDichte; der Wirt hält
-// keine Dichte; Fuchs < Wolf < Hirsch < Bär < Wagen.
-const MASSE = { toleranz: 0.02, reihe: ["fuchs", "wolf", "hirsch", "baer", "gt"] };
-function masseVerdict(M) {
-    if (!M || !M.leiber) return ["masse keine Probe"];
-    const v = [];
-    for (const k of M.kernFehlt || []) v.push(`masse-kern: ${k} fehlt — die Dichte lebt im Wirt, nicht im Gesetzbuch`);
-    for (const z of M.zwillinge || []) v.push(`masse-zwilling: ${z} im Wirt (eine Studio-Größe neben dem Kern)`);
-    for (const name of [...MASSE.reihe, "mensch"]) {
-        const l = M.leiber[name];
-        if (!l || !(l.wirtKg > 0)) {
-            v.push(`masse-${name}: keine Masse im Wirt`);
-            continue;
-        }
-        if (l.gestaltKg == null) continue; // ohne Kern-Dichte nennt masse-kern den Täter; 0 kg (offene Haut) ist ROT
-        if (!(Math.abs(l.wirtKg - l.gestaltKg) <= MASSE.toleranz * l.gestaltKg))
-            v.push(
-                `masse-${name}: der Wirt rechnet ${l.wirtKg.toFixed(1)} kg, die Gestalt wiegt ${l.gestaltKg.toFixed(1)} kg`
-            );
-    }
-    for (let i = 1; i < MASSE.reihe.length; i++) {
-        const a = M.leiber[MASSE.reihe[i - 1]];
-        const b = M.leiber[MASSE.reihe[i]];
-        if (a && b && !(a.wirtKg < b.wirtKg))
-            v.push(
-                `masse-reihe: ${MASSE.reihe[i - 1]} ${a.wirtKg.toFixed(1)} kg ≥ ${MASSE.reihe[i]} ${b.wirtKg.toFixed(1)} kg`
-            );
-    }
-    return v;
-}
 // (T15) der Biss als Stoß: das Ziel (Kitz, Spieler) bekommt Δv > 0, der schwerere Jäger stößt stärker (Fuchs < Wolf < Bär).
 const BISS_SOLL = { dvMin: 0.01, jaeger: ["fuchs", "wolf", "baer"] };
 function bissVerdict(B) {
@@ -632,7 +602,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             // Stimme-aus respektiert (headless: Symphonie nie aktiviert → stumm, kein Throw)
             o.checks.stimmeAusStumm = r._playKampfOneShot({ härte: 1 }) === false && !s.symphony.enabled;
 
-            // ── (A) DAUER ∝ √I — ein ECHTER Blueprint durch die ECHTE Quelle, ρ(holz) × 2 im Gesetzbuch der Schmiede ──
+            // ── (A) DAUER ∝ √I — ein ECHTER Blueprint durch die ECHTE Quelle, ρ(holz) × 2 in der Stoff-Zeile ──
             const box = (m, sz, p) => ({ shape: "box", material: m, size: sz, position: p || { x: 0, y: 0, z: 0 } });
             const blu = s.blueprints;
             const leicht = {
@@ -644,18 +614,12 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             };
             const zeile = s.materials.holz;
             const rho = zeile.rho;
-            const mess = () => [
-                r._swingDynamics(leicht).swingInertia,
-                r._swingDauerFuerBlueprint(leicht),
-                r._compoundCenterOfMass({ parts: [box("holz", { x: 1, y: 1, z: 1 })] }).mass,
-            ];
-            const [I1, D1, M1] = mess();
+            const mess = () => [r._swingDynamics(leicht).swingInertia, r._swingDauerFuerBlueprint(leicht)];
+            const [I1, D1] = mess();
             zeile.rho = 2 * rho;
-            const [I2, D2, M2] = mess();
+            const [I2, D2] = mess();
             zeile.rho = rho;
-            o.dauer = { I1, I2, D1, D2, M1 };
-            o.checks.aKg =
-                rho === window.__schmiedeCore.RHO.holz && Math.abs(M1 / rho - 1) < 1e-9 && Math.abs(M2 / (2 * rho) - 1) < 1e-9;
+            o.dauer = { I1, I2, D1, D2 };
             const eps = 0.005;
             o.checks.aBeideUngeklemmt =
                 I2 > I1 * 1.5 &&
@@ -989,7 +953,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
     } else {
         const c = out.checks;
         console.log(
-            `  (A) I1=${out.dauer.I1.toFixed(3)} → ${out.dauer.D1.toFixed(3)} s · I2=${out.dauer.I2.toFixed(3)} → ${out.dauer.D2.toFixed(3)} s · Ratio ${out.dauerRatio.toFixed(3)} (soll √(I2/I1)=${out.dauerSoll.toFixed(3)}) · 1 m³ Holz ${out.dauer.M1} kg`
+            `  (A) I1=${out.dauer.I1.toFixed(3)} → ${out.dauer.D1.toFixed(3)} s · I2=${out.dauer.I2.toFixed(3)} → ${out.dauer.D2.toFixed(3)} s · Ratio ${out.dauerRatio.toFixed(3)} (soll √(I2/I1)=${out.dauerSoll.toFixed(3)})`
         );
         console.log(
             `  (B) Reichweite ${out.reach.toFixed(2)} m · Treffer je Schwung ${out.sweep.hits} · (C) Sim-Schritte im Hit-Stop ${out.simSteps} (Δt ${out.simDelta.toFixed(3)} s) · Hand C2 / C4 / S1 ${out.handM.map((m) => (m * 1000).toFixed(1)).join(" / ")} mm`
@@ -1007,7 +971,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             c.aVerhaeltnisWurzelI,
             `(A) Schwung-Dauer-Verhältnis ∝ √(I2/I1) ± 5 % (${out.dauerRatio.toFixed(3)} vs ${out.dauerSoll.toFixed(3)})`
         );
-        check(c.aKg, "(A) 1 m³ Holz wiegt ρ der Stoff-Zeile in kg und folgt ihr in der Schmiede (physik K1)");
         check(c.aFaustDauer, "(A) die leere Faust hat die endliche Hand-Dauer (kein Instant-Prügeln)");
         check(c.bTrifftNeben, "(B) der Sweep trifft ein Ziel NEBEN dem Crosshair (in der Klingen-Kapsel)");
         check(c.bDedupEinmal, `(B) dedupliziert je Schwung: GENAU EIN Treffer (${out.sweep.hits})`);
@@ -1235,57 +1198,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                     rvAlt.some((x) => x.startsWith(t))
                 ),
             "Selbst-Test K-D9: der Befund (2,16 m überall, in EINEM Takt) nennt Satz, Masse und Waffe; ein gesunder Stoß bleibt grün"
-        );
-        const mz = z.masse || {};
-        const ml = mz.leiber || {};
-        console.log(
-            "  (T14) Masse-Tafel (Wirt / Gestalt): " +
-                ["fuchs", "wolf", "hirsch", "baer", "mensch", "gt"]
-                    .map((k) =>
-                        ml[k]
-                            ? `${k} ${ml[k].wirtKg.toFixed(1)} / ${ml[k].gestaltKg === null ? "–" : ml[k].gestaltKg.toFixed(1)} kg`
-                            : k + " –"
-                    )
-                    .join(" · ") +
-                (mz.zwillinge && mz.zwillinge.length ? " · Zwillinge: " + mz.zwillinge.join(", ") : "")
-        );
-        const mv = masseVerdict(z.masse);
-        check(
-            mv.length === 0,
-            "0710-4 T14: EINE Masse je Leib — die Gestalt (geschlossene Haut × ρ(fleisch) der Stoff-Zeile, der Wagen carPhys × FAHR.masseDichte), keine Dichte im Wirt, die Reihe Fuchs < Wolf < Hirsch < Bär < Wagen" +
-                (mv.length ? " — " + mv.join(" · ") : "")
-        );
-        // der Selbst-Test der Tafel: der Befund (Kapsel aus der Hüft-Höhe, Dichten im Wirt) fällt rot beim Namen
-        const mvAlt = masseVerdict({
-            kernFehlt: ["tetrapoda MASSSTAB.dichteKgM3"],
-            zwillinge: ["STOSS.dichteLeib 1000", "STOSS.dichteWagen 150"],
-            leiber: {
-                fuchs: { wirtKg: 35.4, gestaltKg: 15 },
-                wolf: { wirtKg: 140.5, gestaltKg: 64 },
-                hirsch: { wirtKg: 435.6, gestaltKg: 94.2 },
-                baer: { wirtKg: 254.8, gestaltKg: 335.4 },
-                mensch: { wirtKg: 111.5, gestaltKg: 0 },
-                gt: { wirtKg: 1341.4, gestaltKg: 1341.4 },
-            },
-        });
-        const mvGut = masseVerdict({
-            kernFehlt: [],
-            zwillinge: [],
-            leiber: {
-                fuchs: { wirtKg: 15, gestaltKg: 15 },
-                wolf: { wirtKg: 64, gestaltKg: 64 },
-                hirsch: { wirtKg: 94.2, gestaltKg: 94.2 },
-                baer: { wirtKg: 335.4, gestaltKg: 335.4 },
-                mensch: { wirtKg: 98.8, gestaltKg: 98.8 },
-                gt: { wirtKg: 1341.4, gestaltKg: 1341.4 },
-            },
-        });
-        check(
-            mvGut.length === 0 &&
-                ["masse-kern", "masse-zwilling", "masse-hirsch", "masse-baer", "masse-mensch", "masse-reihe"].every(
-                    (t) => mvAlt.some((x) => x.startsWith(t))
-                ),
-            "Selbst-Test T14: der Befund (Kapsel aus der Hüft-Höhe, Dichten im Wirt, der Mensch ohne geschlossene Haut 0 kg) nennt Kern, Zwilling, Hirsch, Bär, Mensch und Reihe; eine Tafel aus EINER Quelle bleibt grün"
         );
         const bz2 = z.biss || {};
         const bw = (t) =>

@@ -324,123 +324,6 @@ async function WELLE_L() {
             baerDolch: rueck(baer, "klinge_dolch"),
             baerKeule: rueck(baer, "klinge_keule"),
         };
-        // (T14) DIE MASSE-TAFEL: je Gattung ein frisches Tier der Größe 1, der Spieler und ein GT — die Masse, mit
-        // der der Wirt stößt, gegen das Gewicht der Gestalt (die Linse misst die geschlossene Haut selbst).
-        {
-            const TC = globalThis.__tetrapodaCore;
-            const KC = globalThis.__koerperCore;
-            const VC = globalThis.__vehicleCore;
-            // jeder Leib ist Fleisch (physik K1): die Zeile der Stoff-Zeile trägt das Gewebe des tetrapoda-Kerns
-            const dichteTier = TC && TC.MASSSTAB ? TC.MASSSTAB.dichteKgM3 : undefined;
-            const dichteMensch = dichteTier;
-            const dichteWagen = VC && VC.FAHR ? VC.FAHR.masseDichte : undefined;
-            const kernFehlt = [];
-            if (!(dichteTier > 0)) kernFehlt.push("tetrapoda MASSSTAB.dichteKgM3");
-            if (!(dichteWagen > 0)) kernFehlt.push("vehicle FAHR.masseDichte");
-            const zwillinge = [];
-            if (KC && KC.LEIB && KC.LEIB.dichteKgM3 !== undefined)
-                zwillinge.push("koerper LEIB.dichteKgM3 " + KC.LEIB.dichteKgM3 + " (eine zweite Dichte des Leibs neben ρ(fleisch))");
-            const zeile = s.materials && s.materials.fleisch;
-            if (!zeile || zeile.rho !== dichteTier)
-                zwillinge.push("die Stoff-Zeile fleisch " + (zeile && zeile.rho) + " ≠ dem Gewebe des Kerns " + dichteTier);
-            if (A.STOSS && A.STOSS.dichteLeib !== undefined) zwillinge.push("STOSS.dichteLeib " + A.STOSS.dichteLeib);
-            if (A.STOSS && A.STOSS.dichteWagen !== undefined)
-                zwillinge.push("STOSS.dichteWagen " + A.STOSS.dichteWagen);
-            if (typeof r._kreaturMasse === "function") zwillinge.push("_kreaturMasse (die Kapsel aus der Hüft-Höhe)");
-            // das Volumen der geschlossenen Haut (Klasse fell/haut, jede Kante gerade oft) im Rahmen von `rahmen` — dazu, was der
-            // Stoff-Schnitt des Ofens öffnet (`__leibV` am Gelenk der Hülle, vor dem Schnitt gemessen); Kopf und Hände misst die Linse
-            const hautVolumen = (teil, rahmen, klassen) => {
-                rahmen.updateMatrixWorld(true);
-                const inv = new THREE.Matrix4().copy(rahmen.matrixWorld).invert();
-                const mm = new THREE.Matrix4();
-                let vol = 0;
-                teil.traverse((o) => {
-                    if (o.userData && o.userData.__leibV > 0)
-                        vol += o.userData.__leibV * Math.abs(mm.multiplyMatrices(inv, o.matrixWorld).determinant());
-                    if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
-                    const kl = o.material && o.material.userData ? o.material.userData.foundryKind : null;
-                    if (!klassen.includes(kl)) return;
-                    const pa = o.geometry.attributes.position.array;
-                    const ix = o.geometry.index ? o.geometry.index.array : null;
-                    const n = ix ? ix.length : pa.length / 3;
-                    const kanten = new Map();
-                    let vv = 0;
-                    for (let t = 0; t + 2 < n; t += 3) {
-                        const ia = ix ? ix[t] : t;
-                        const ib = ix ? ix[t + 1] : t + 1;
-                        const ic = ix ? ix[t + 2] : t + 2;
-                        const [ax, ay, az] = [pa[3 * ia], pa[3 * ia + 1], pa[3 * ia + 2]];
-                        const [bx, by, bz] = [pa[3 * ib], pa[3 * ib + 1], pa[3 * ib + 2]];
-                        const [cx, cy, cz] = [pa[3 * ic], pa[3 * ic + 1], pa[3 * ic + 2]];
-                        vv += (ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx) + az * (bx * cy - by * cx)) / 6;
-                        for (const [u, q] of [
-                            [ia, ib],
-                            [ib, ic],
-                            [ic, ia],
-                        ]) {
-                            const key = u < q ? u + ":" + q : q + ":" + u;
-                            kanten.set(key, (kanten.get(key) || 0) + 1);
-                        }
-                    }
-                    for (const zz of kanten.values()) if (zz % 2) return; // offen: keine Masse
-                    mm.multiplyMatrices(inv, o.matrixWorld);
-                    vol += Math.abs(vv) * Math.abs(mm.determinant());
-                });
-                return vol;
-            };
-            const wirtLeib = (k) => r._leibMasse(k);
-            const leiber = {};
-            const ort = pm.position;
-            for (const [name, seele] of [
-                ["fuchs", "fuchs"],
-                ["wolf", "wolf"],
-                ["hirsch", "wesen"],
-                ["baer", "baer"],
-            ]) {
-                s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 2);
-                const c = r.spawnCreatureAt(ort.x + 320, ort.y, ort.z + 320, "calm", seele, { bodySize: 1 });
-                if (!c) continue;
-                const tb = c.userData._tierBaum;
-                const sk = new THREE.Vector3();
-                c.getWorldScale(sk);
-                // die feine Stufe allein (die Grobstufe unter demselben Wrap trägt die Haut noch einmal)
-                const gl = c.userData._gelenk;
-                const vol = tb && gl ? hautVolumen(gl.nah, c, ["fell"]) * sk.x * sk.y * sk.z : 0;
-                leiber[name] = { wirtKg: wirtLeib(c), gestaltKg: dichteTier > 0 ? vol * dichteTier : null, vM3: vol };
-                r.removeCreature(c);
-            }
-            {
-                // der Spieler: seine Nah-Gestalt (die Grobstufe daneben trägt dieselbe Haut noch einmal)
-                let nah = null;
-                pm.traverse((o) => {
-                    if (!nah && o.userData && o.userData._gelenk && o.userData._gelenk.nah)
-                        nah = o.userData._gelenk.nah;
-                });
-                const vol = hautVolumen(nah || pm, pm, ["haut"]);
-                leiber.mensch = {
-                    wirtKg: wirtLeib(pm),
-                    gestaltKg: dichteMensch > 0 ? vol * dichteMensch : null,
-                    vM3: vol,
-                };
-            }
-            {
-                const e = r.spawnArchitecture(
-                    "fahrzeug_gt",
-                    { x: ort.x + 330, y: r.getTerrainHeightAt(ort.x + 330, ort.z + 330) + 0.5, z: ort.z + 330 },
-                    { silent: true, precise: true }
-                );
-                const prof = e ? r._vehicleProfile(e) : null;
-                const G = prof ? r._fahrSatz(e, prof) : null;
-                if (G)
-                    leiber.gt = {
-                        wirtKg: r._fahrMasse(e, G.m),
-                        gestaltKg: dichteWagen > 0 ? G.m * dichteWagen : null,
-                        vM3: G.m,
-                    };
-                if (e) r.removeArchitecture(e);
-            }
-            w.z.masse = { leiber, kernFehlt, zwillinge };
-        }
         // (T15) der Biss als Stoß: je Jäger ein Biss auf ein Kitz (_tickCreatureScentStrike) und auf den Spieler
         // (_tickCreatureHuntStrike), der Takt läuft bis zum Schnappen (≤ 1,5 s); gemessen das Δv am Ziel.
         {
@@ -2077,12 +1960,8 @@ async function WELLE_L() {
             const modeA = r.getGameMode();
             r.setGameMode("pfad");
             const zehr = [];
-            // das Eigenwerk wiegt aus der Stoff-Zeile (physik K1): Stiel und Kopf aus Holz
-            const holz = (y, a, b) => ({ material: "holz", size: { x: a, y: b, z: a }, position: { x: 0, y, z: 0 } });
-            s.blueprints._eigenwerk = { name: "_eigenwerk", parts: [holz(0, 0.15, 1.5), holz(1.5, 0.6, 0.6)] };
             for (const name of [
                 null,
-                "_eigenwerk",
                 "klinge_dolch",
                 "klinge_langschwert",
                 "klinge_grossschwert",
@@ -2094,7 +1973,7 @@ async function WELLE_L() {
                 p._swing = null;
                 p.stamina = 100;
                 const ok = r._beginPlayerSwing();
-                const km = name && s.blueprints[name] ? (r._geraetMasze || r._schmiedeKampfMasze).call(r, s.blueprints[name]) : null;
+                const km = name && s.blueprints[name] ? r._schmiedeKampfMasze(s.blueprints[name]) : null;
                 zehr.push({
                     geraet: name ? name.replace("klinge_", "") : "faust",
                     kg: km ? +km.masseKg.toFixed(3) : 0,
@@ -2103,7 +1982,6 @@ async function WELLE_L() {
                 p._swing = null;
             }
             p.stamina = 100;
-            delete s.blueprints._eigenwerk;
             if (r.getGameMode() !== modeA) r.setGameMode(modeA);
             w.z.ausdauer = zehr;
         });

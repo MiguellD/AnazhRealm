@@ -2214,13 +2214,8 @@ function kernTempo(VC) {
     return kern.length ? m : Object.assign(m, { knick: +knick.toFixed(2) });
 }
 
-// ── K1 DAS EINE KÖRPER-GESETZ (physik K1, `--koerper`): Masse und Eintauchtiefe aus der EINEN Stoff-Zeile, am Spieler-Weg.
-// Je Körper die Masse, mit der die Welt ihn wiegt (Stoß: `_stossKoerper`; Gebautes: die Teile `_teilMasse`; Geschmiedetes:
-// die Messung der Schmiede `_schmiedeKampfMasze`; ein Eigenwerk in der Hand `_geraetMasze`), und wie tief ihn das Wasser
-// hält — der Spieler und der Wolf im echten Takt im tiefen Wasser (`_gameLoopTick`, ohne Eingabe), der Wagen und das
-// gebaute Werk über den Boden des Fahr-Schritts (`_fahrBoden`). Dann DIE FESTE MUTATION: jede Zeile der Stoff-Zeile ×2
-// (durch die Zeile — wo ein Gesetzbuch den Stoff trägt, schreibt sie dorthin), dieselbe Messung, die Zeilen zurück.
-// Dazu die Stoß-Matrix: Δv-Verhältnis der Leiber = Massen-Verhältnis (Spieler–Wolf, Wolf–Bär). Rückgabe: Zahlen, kein Urteil.
+// ── K1 (physik K1, `--koerper`): je Körper Masse und Eintauchtiefe am Spieler-Weg (Takt, `_fahrBoden`), dann jede Zeile der
+// Stoff-Zeile ×2 und dieselbe Messung.
 async function probeKoerper(opt) {
     await window.__weltDa();
     const r = window.anazhRealm;
@@ -2231,149 +2226,101 @@ async function probeKoerper(opt) {
     const res = { err: null };
     const hh = (a, b) => r.getTerrainHeightAt(a, b);
     let tMs = performance.now();
-    const frames = (n) => {
-        for (let i = 0; i < n; i++) r._gameLoopTick((tMs += 16.7));
-    };
     try {
-        // der Ort: tiefes, stilles Wasser im See der Mess-Wiese (≥ 2 m über dem Grund — tiefer als jede Schwimm-Linie —, 6 m in
-        // +x ebenso, keine Strömung)
-        const seeO = (await window.__wasserOrte({ mess: opt.messort })).see;
-        const mitte = seeO ? [seeO.x, seeO.z] : null;
-        let ort = null;
+        const see = (await window.__wasserOrte({ mess: opt.messort })).see;
         const tief = (x, z) => r._koerperWasser(x, z, hh(x, z)) - hh(x, z);
-        for (let ring = 0; mitte && ring <= 160 && !ort; ring++)
+        let ort = null;
+        for (let ring = 0; see && ring <= 160 && !ort; ring++)
             for (let k = 0; k < Math.max(1, ring * 6) && !ort; k++) {
                 const w = (k / Math.max(1, ring * 6)) * Math.PI * 2;
-                const x = mitte[0] + Math.cos(w) * ring * 3;
-                const z = mitte[1] + Math.sin(w) * ring * 3;
-                let ok = true;
-                for (let d = 0; d <= 6 && ok; d += 2) if (!(tief(x + d, z) > 2) || r._waterFlowAt(x + d, z)) ok = false;
-                if (ok) ort = { x, z, spiegel: r._koerperWasser(x, z, hh(x, z)) };
+                const [x, z] = [see.x + Math.cos(w) * ring * 3, see.z + Math.sin(w) * ring * 3];
+                if ([0, 2, 4, 6].every((d) => tief(x + d, z) > 2 && !r._waterFlowAt(x + d, z)))
+                    ort = { x, z, spiegel: r._koerperWasser(x, z, hh(x, z)) };
             }
-        res.ort = ort;
-        if (!ort) throw new Error("kein tiefes Wasser (≥ 2 m) im See der Mess-Wiese");
-        // die Tiere stehen still (der Steuer-Schritt hält v = 0): gemessen wird, wie das Wasser sie hält, nicht der Gang
+        if (!(res.ort = ort)) throw new Error("kein tiefes Wasser im See");
         const steuerRoh = A._steuerGesetz;
         const steht = Object.create(steuerRoh.call(A));
-        steht.steuerSchritt = (sw) => {
-            sw.v = 0;
-        };
-        const kappe = st.maxCreatures;
+        steht.steuerSchritt = (sw) => (sw.v = 0);
         const mats = st.materials;
         const alt = {};
-        for (const n of Object.keys(mats)) if (mats[n] && mats[n].builtIn) alt[n] = mats[n].rho;
-        const box = (m, sz, p) => ({ shape: "box", material: m, size: sz, position: p || { x: 0, y: 0, z: 0 } });
-        // das GEBAUTE: der Holzkarren der Substanz-Tafel ganz aus Holz (Kasten, Deichsel, vier Speichen-Räder)
+        for (const n of Object.keys(mats)) if (mats[n].builtIn) alt[n] = mats[n].rho;
         const KS = A.KIND_SUBSTANCE.fahrzeug_wagen;
         st.blueprints._k1_holzwagen = {
             name: "_k1_holzwagen",
             parts: KS.parts.map((p) => Object.assign(JSON.parse(JSON.stringify(p)), { material: "holz" })),
             connections: JSON.parse(JSON.stringify(KS.connections || [])),
         };
-        // das LOSE: ein Eigenwerk aus der Werkstatt in der Hand (Stiel und Kopf aus Holz) — kein Schmiede-Gerät
-        const eigen = {
-            name: "_k1_eigenwerk",
-            parts: [box("holz", { x: 0.15, y: 1.5, z: 0.15 }), box("holz", { x: 0.6, y: 0.6, z: 0.6 }, { x: 0, y: 1.5, z: 0 })],
-        };
-        st.blueprints._k1_eigenwerk = eigen;
+        const box = (sz, y) => ({ shape: "box", material: "holz", size: sz, position: { x: 0, y, z: 0 } });
+        const eigen = { name: "_k1_eigenwerk", parts: [box({ x: 0.15, y: 1.5, z: 0.15 }, 0), box({ x: 0.6, y: 0.6, z: 0.6 }, 1.5)] };
         const keule = st.blueprints.klinge_keule;
-        if (!keule || !keule.parts || !keule.parts.length) throw new Error("kein Bauplan klinge_keule in der Welt");
+        if (!keule || !keule.parts || !keule.parts.length) throw new Error("kein Bauplan klinge_keule");
         const messe = () => {
             const o = {};
             const pm = st.playerMesh;
             if (st.player && st.player.mountedArch != null) r.dismountArchitecture();
-            // der SPIELER im tiefen Wasser, ohne Eingabe, 300 Bilder; der WOLF 3 m daneben, still
             pm.position.set(ort.x, ort.spiegel - 0.4 + A.PLAYER_FOOT_OFFSET, ort.z);
             st.playerVel.setValue(0, 0, 0);
             A._steuerGesetz = () => steht;
+            const kappe = st.maxCreatures;
             st.maxCreatures = st.creatures.length + 2;
-            const wolf = r.spawnCreatureAt(ort.x + 3, ort.spiegel, ort.z, "calm", "wolf", { precise: true, bodySize: 1 });
-            const baer = r.spawnCreatureAt(ort.x + 60, hh(ort.x + 60, ort.z + 60), ort.z + 60, "calm", "baer", {
-                precise: true,
-                bodySize: 1,
-            });
+            const tier = (g, x, y, z) => r.spawnCreatureAt(x, y, z, "calm", g, { precise: true, bodySize: 1 });
+            const wolf = tier("wolf", ort.x + 3, ort.spiegel, ort.z);
+            const baer = tier("baer", ort.x + 60, hh(ort.x + 60, ort.z + 60), ort.z + 60);
             try {
                 if (wolf) wolf.userData._steuer = { gier: 0, v: 0 };
-                frames(300);
-                const fuss = pm.position.y - A.PLAYER_FOOT_OFFSET;
-                o.spieler = {
-                    kg: r._stossKoerper(pm, {}).m,
-                    tief: +(ort.spiegel - fuss).toFixed(3),
-                    grund: +(ort.spiegel - hh(pm.position.x, pm.position.z)).toFixed(3),
-                    schwimmt: !!st.playerUnderwater,
-                    traegt: typeof r._leibGetragen === "function" ? r._leibGetragen() : null,
+                for (let i = 0; i < 300; i++) r._gameLoopTick((tMs += 16.7));
+                const leib = (q, fuss, schwimmt) => {
+                    const g = hh(q.position.x, q.position.z);
+                    const sp = r._koerperWasser(q.position.x, q.position.z, g);
+                    const kg = r._stossKoerper(q, {}).m;
+                    return { kg, tief: +(sp - fuss).toFixed(3), grund: +(sp - g).toFixed(3), schwimmt, traegt: r._leibGetragen() };
                 };
-                if (wolf) {
-                    const g = hh(wolf.position.x, wolf.position.z);
-                    const sp = r._koerperWasser(wolf.position.x, wolf.position.z, g);
-                    o.wolf = {
-                        kg: r._stossKoerper(wolf, {}).m,
-                        tief: +(sp - wolf.position.y).toFixed(3),
-                        grund: +(sp - g).toFixed(3),
-                        schwimmt: r._kreaturSchwimmt(wolf, g) !== null,
-                        traegt: typeof r._leibGetragen === "function" ? r._leibGetragen() : null,
-                    };
-                }
+                o.spieler = leib(pm, pm.position.y - A.PLAYER_FOOT_OFFSET, !!st.playerUnderwater);
+                if (wolf) o.wolf = leib(wolf, wolf.position.y, r._kreaturSchwimmt(wolf, hh(wolf.position.x, wolf.position.z)) !== null);
                 if (baer) o.baer = { kg: r._stossKoerper(baer, {}).m };
-                // DIE STOSS-MATRIX: Leib an Leib längs +x, 3 m/s Annäherung; Δv je Leib aus seiner Geschwindigkeit
-                const vx = (q) => (q === pm ? st.playerVel.x() : q.userData._stossV ? q.userData._stossV.x : 0);
-                const dvPaar = (qa, qb) => {
-                    for (const q of [qa, qb]) if (q !== pm) q.userData._stossV = { x: 0, z: 0 };
-                    if (qa === pm) st.playerVel.setValue(3, 0, 0);
-                    else qa.userData._stossV = { x: 3, z: 0 };
-                    if (qb === pm) st.playerVel.setValue(0, 0, 0);
-                    const va = vx(qa);
-                    const vb = vx(qb);
+                const vx = (q) => (q === pm ? st.playerVel.x() : q.userData._stossV.x);
+                const paar = (qa, qb) => {
+                    st.playerVel.setValue(qa === pm ? 3 : 0, 0, 0);
+                    for (const q of [qa, qb]) if (q !== pm) q.userData._stossV = { x: q === qa ? 3 : 0, z: 0 };
+                    const [va, vb] = [vx(qa), vx(qb)];
                     const J = r._stossPaar(qa, qb, 1, 0);
-                    const out = { J, dvA: Math.abs(vx(qa) - va), dvB: Math.abs(vx(qb) - vb) };
+                    const q = { J, dvA: Math.abs(vx(qa) - va), dvB: Math.abs(vx(qb) - vb) };
                     st.playerVel.setValue(0, 0, 0);
-                    for (const q of [qa, qb]) if (q !== pm) q.userData._stossV = null;
-                    return out;
+                    for (const k of [qa, qb]) if (k !== pm) k.userData._stossV = null;
+                    return q;
                 };
-                if (wolf) o.stossSpielerWolf = dvPaar(pm, wolf);
-                if (wolf && baer) o.stossWolfBaer = dvPaar(wolf, baer);
+                if (wolf) o.stossSpielerWolf = paar(pm, wolf);
+                if (wolf && baer) o.stossWolfBaer = paar(wolf, baer);
             } finally {
-                if (wolf) r.removeCreature(wolf);
-                if (baer) r.removeCreature(baer);
+                for (const c of [wolf, baer]) if (c) r.removeCreature(c);
                 A._steuerGesetz = steuerRoh;
                 st.maxCreatures = kappe;
             }
-            // der WAGEN (Studio-GT) und das GEBAUTE Werk am Ort: Masse und der Boden des Fahr-Schritts im Wasser
             const werk = (typ) => {
                 const e = r.spawnArchitecture(typ, { x: ort.x, y: hh(ort.x, ort.z), z: ort.z }, { silent: true, precise: true });
                 if (!e) return null;
                 try {
                     const prof = r._vehicleProfile(e);
                     const K = r._stossKoerper(e, {});
-                    const bp = st.blueprints[e.type];
-                    const sc = Number.isFinite(e.scale) ? e.scale : 1;
-                    const teile =
-                        bp && bp.parts && typeof r._teilMasse === "function"
-                            ? bp.parts.reduce((s, p) => s + r._teilMasse(p), 0) * sc * sc * sc
-                            : NaN;
-                    const boden = r._fahrBoden(e)(ort.x, ort.z);
-                    return {
-                        kg: K ? K.m : teile,
-                        rho: prof ? prof.dichte : NaN,
-                        anteil: prof && typeof A._eintauchAnteil === "function" ? A._eintauchAnteil(prof.dichte) : NaN,
-                        schwimmt: !!(prof && prof.floats),
-                        tief: +(ort.spiegel - boden).toFixed(3),
-                        grund: +(ort.spiegel - hh(ort.x, ort.z)).toFixed(3),
-                        wasserK: K && K.G && K.G.wasser ? K.G.wasser.kStirn : null,
-                    };
+                    const anteil = A._eintauchAnteil(prof.dichte);
+                    const grund = +(ort.spiegel - hh(ort.x, ort.z)).toFixed(3);
+                    const tiefe = +(ort.spiegel - r._fahrBoden(e)(ort.x, ort.z)).toFixed(3);
+                    const kernKg = K && K.G ? K.G.m * window.__vehicleCore.FAHR.masseDichte : null;
+                    const wasserK = K && K.G && K.G.wasser ? K.G.wasser.kStirn : null;
+                    return { kg: K ? K.m : null, rho: prof.dichte, anteil, schwimmt: prof.floats, tief: tiefe, grund, kernKg, wasserK };
                 } finally {
                     r.removeArchitecture(e);
                 }
             };
             o.wagen = werk("fahrzeug_gt");
             o.gebaut = werk("_k1_holzwagen");
-            // das GESCHMIEDETE: die Keule der Schmiede in der Welt gegen das Labor (derselbe Kern, ohne Wirt)
             const km = r._schmiedeKampfMasze(keule);
-            const lab = window.__schmiedeCore.kampfMasze("keule");
-            o.geschmiedet = { kg: km ? km.masseKg : NaN, labKg: lab ? lab.masseKg : NaN, dauer: r._swingDauerFuerBlueprint(keule) };
-            // das LOSE: das Eigenwerk in der Hand
-            const ew = typeof r._geraetMasze === "function" ? r._geraetMasze(eigen) : null;
-            o.lose = { kg: ew ? ew.masseKg : NaN, dauer: r._swingDauerFuerBlueprint(eigen) };
+            o.geschmiedet = {
+                kg: km && km.masseKg,
+                labKg: window.__schmiedeCore.kampfMasze("keule").masseKg,
+                dauer: r._swingDauerFuerBlueprint(keule),
+            };
+            o.lose = { kg: r._geraetMasze(eigen).masseKg, dauer: r._swingDauerFuerBlueprint(eigen) };
             return o;
         };
         res.vor = messe();
@@ -2383,11 +2330,11 @@ async function probeKoerper(opt) {
             res.nach = messe();
         } finally {
             for (const n of Object.keys(alt)) mats[n].rho = alt[n];
+            delete st.blueprints._k1_holzwagen;
         }
         res.zurueck = Object.keys(alt).every((n) => mats[n].rho === alt[n]);
-        res.rhoW = A._fahrGesetz().wasserRho;
-        delete st.blueprints._k1_holzwagen;
-        delete st.blueprints._k1_eigenwerk;
+        res.refKg = window.__tetrapodaCore.KAMPF.refKg;
+        res.rhoBlech = mats.blech ? mats.blech.rho : null;
     } catch (e) {
         res.err = String((e && e.stack) || e);
     }

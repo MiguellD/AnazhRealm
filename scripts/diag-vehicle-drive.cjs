@@ -18,8 +18,7 @@
 //     B-c _vehicleProfile(fahrzeug_gt) traegt die LAB-Werte (=== exportDrive);
 //         die EMERGENZ (AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist
 //         gefallen) an einem Test-Blueprint aus KIND_SUBSTANCE.fahrzeug_wagen, byte-gleich nachgerechnet;
-//         im Wasser (physik K1): der Studio-Wagen nach dem Stoff seiner Huelle (ρ blech der Stoff-Zeile, D10), das
-//         Teile-Werk nach der mittleren Dichte seiner Teile (Σ Masse / Σ Volumen der Gestalt).
+//         (wie der Wagen im Wasser liegt — nach dem Stoff seiner Huelle, D10 — misst gate:fahr-leben --koerper, physik K1).
 //   B-d: DIE
 //     FAHR-PROBE — fahrzeug_gt wird gespawnt (Studio-instanziert), bestiegen, N Fahr-Ticks
 //     gefahren; danach MUSS entry.position > 1 m bewegt sein, der Spieler darauf sitzen,
@@ -281,9 +280,8 @@ function staticLaws(garage) {
         try {
             const pGt = r._vehicleProfile({ type: "fahrzeug_gt" });
             res.prof.gt = pGt
-                ? { topSpeedMul: pGt.topSpeedMul, kAcc: pGt.kAcc, kBrake: pGt.kBrake, floats: pGt.floats, dichte: pGt.dichte }
+                ? { topSpeedMul: pGt.topSpeedMul, kAcc: pGt.kAcc, kBrake: pGt.kBrake }
                 : null;
-            res.prof.rhoBlech = r.state.materials.blech ? r.state.materials.blech.rho : null;
             // AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist gefallen — die
             // EMERGENZ wird an einem Test-Blueprint aus der Substanz-Tabelle bewiesen
             // (parts+connections JSON-geklont, registriert, danach aufgeraeumt).
@@ -299,14 +297,8 @@ function staticLaws(garage) {
             };
             const pWg = r._vehicleProfile({ type: "_drive_probe_wagen" });
             res.prof.wagen = pWg
-                ? { topSpeedMul: pWg.topSpeedMul, kAcc: pWg.kAcc, kBrake: pWg.kBrake, floats: pWg.floats, dichte: pWg.dichte }
+                ? { topSpeedMul: pWg.topSpeedMul, kAcc: pWg.kAcc, kBrake: pWg.kBrake }
                 : null;
-            {
-                const tl = r.state.blueprints._drive_probe_wagen.parts;
-                const m = tl.reduce((a, p) => a + r._teilMasse(p), 0);
-                const v = tl.reduce((a, p) => a + r._teilVolumen(p), 0);
-                res.prof.rhoTeile = v > 0 ? m / v : null;
-            }
             // fahrzeug_wagen loest auf KEIN Buch-Preset ("wagen" steht in keinem Buch -> null,
             // der dokumentierte Substanz-Pfad) — die 0-Regress-Praemisse: kein Override moeglich.
             res.prof.wagenPreset = r._foundryPresetFor("fahrzeug_wagen");
@@ -700,17 +692,6 @@ function staticLaws(garage) {
         pw
             ? `kAcc=${pw.kAcc} soll=${out.emerg && out.emerg.kAcc} rad=${out.emerg && out.emerg.radCount}`
             : "kein Profil"
-    );
-    check(
-        "B-c (D10, physik K1): der Studio-Wagen liegt nach dem Stoff seiner Huelle im Wasser (ρ blech > ρ Wasser: gt sinkt), das Teile-Werk nach seinen Teilen (Σ kg / Σ m³) — nie gt == Holzkarren-Spender",
-        !!pg &&
-            !!pw &&
-            pg.floats === false &&
-            pg.dichte === out.prof.rhoBlech &&
-            Number.isFinite(out.prof.rhoTeile) &&
-            Math.abs(pw.dichte - out.prof.rhoTeile) <= 1e-9 * out.prof.rhoTeile &&
-            pw.dichte !== pg.dichte,
-        pg && pw ? `gt ${pg.dichte} kg/m³ (blech ${out.prof.rhoBlech}) · wagen ${pw.dichte} kg/m³ (Teile ${out.prof.rhoTeile})` : ""
     );
     // B-d (B2): die stehende Fahr-Probe — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
     const dv = driveVerdict(out.drive);

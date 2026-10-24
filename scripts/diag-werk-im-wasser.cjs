@@ -53,7 +53,7 @@
 //   K — DER KERN (Node, vehicle-core fahrKraefte): ohne Tiefe byte-gleich (das Labor kennt kein Wasser, Labor = Welt an
 //       Land); in 0,61 m aus 12 m/s nach 1 s ≤ 6 m/s; Vollgas im Wasser endet im Gleichgewicht des Gesetzes
 //       √((aEngine − rollDecel) / (kStirn·Tiefe + dragK)) ± 5 %; steht das Wasser an der Ansaugung (Gürtellinie), fährt er
-//       aus dem Stand keine 5 cm; die Trägheit des Wasser-Terms ist die EINE Masse des Wagens (Fahr-Satz × masseDichte).
+//       aus dem Stand keine 5 cm (seine Masse: gate:fahr-leben --koerper).
 //
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]          Port: WERK_WASSER_PORT (Standard 4643)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
@@ -410,18 +410,6 @@ function kernUrteil(VC) {
     if (!(Math.abs(z6.vlong) <= 0.5))
         v.push(
             `K6 über der Ansaugung am 11°-Hang rollt er unter Vollgas 3 s später mit ${z6.vlong.toFixed(2)} m/s weiter (Soll ≤ 0,5: der Wasserschlag sperrt die Räder)`
-        );
-    // K5 EINE Masse: die Kraft wirkt auf die getauchte Stirn (Breite der Hülle), die Trägheit ist die EINE Masse des Wagens
-    // (das Volumen seines Fahr-Satzes × masseDichte — dieselbe, die jeder Stoß liest); die Masse, die der Wasser-Term trägt,
-    // ist ½·rho·cw·Breite / kStirn
-    const auf = VC.fahrAufstand(d.huelle, 1);
-    const breite = auf && auf.breite > 0 ? auf.breite : auf ? 2 * auf.quer : NaN;
-    const W = VC.FAHR.wasser || {};
-    const mWasser = (0.5 * W.rho * W.cw * breite) / G.wasser.kStirn;
-    const mEine = G.m * VC.FAHR.masseDichte;
-    if (!(Math.abs(mWasser - mEine) <= 1e-6 * mEine))
-        v.push(
-            `K5 der Wasser-Term rechnet mit einer eigenen Masse (${mWasser.toFixed(0)} kg) neben der EINEN Masse des Wagens (${mEine.toFixed(0)} kg: Fahr-Satz × masseDichte)`
         );
     return v;
 }
@@ -2302,15 +2290,6 @@ function selbsttest() {
     console.log(`  ${kernOk ? "✅" : "❌"} der echte Kern → ${kernEcht.length ? kernEcht.join(" · ") : "0 Täter"}`);
     if (!kernOk) ok = false;
     for (const [name, gift, re] of [
-        [
-            "eigene Masse im Wasser-Term (der Hüll-Quader × Schüttdichte)",
-            (s) =>
-                s.replace(
-                    "fahrWasser(a, d.masseKg > 0 ? d.masseKg : zs.mass * FAHR.masseDichte)",
-                    "fahrWasser(a, 150 * a.breite * a.laenge * a.dach)"
-                ),
-            /K5 der Wasser-Term rechnet mit einer eigenen Masse \(1557 kg\) neben der EINEN Masse des Wagens \(1341 kg/,
-        ],
         [
             "Wasser-Term ohne Widerstand",
             (s) => s.replace("z.vlong = vL0 / (1 + Wg.kStirn * t * Math.abs(vL0) * dt);", "z.vlong = vL0;"),

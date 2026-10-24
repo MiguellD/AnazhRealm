@@ -2521,6 +2521,9 @@
                 yRoof: P.dach,
                 radR: P.radR,
                 spur: P.spur,
+                // WELLE L (07.10., rein additiv): die Dichte der Huelle relativ zu Wasser (FAHR.huelleDichte) — der
+                // Wirt legt das Fahrzeug danach ins Wasser (Archimedes ueber Unterkoerper + Greenhouse).
+                dichte: FAHR.huelleDichte,
             },
             topSpeedMul: ph.vmax / VMAX_REF,
             kAcc: ph.aEngine / ph.vmax,

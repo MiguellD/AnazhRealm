@@ -739,7 +739,7 @@ async function checkBandM3RittVollendet(ctx) {
 // W-F Fluss (Q7-Gestalt): der EINE Spiegel des Gesetzes (_atlasWaterLevelAt — der Fluss-Spiegel stromab nie
 // steigend, quer waagrecht, `_hydroRiverSpiegel`) mit seinen Konsumenten (Zell-Sheet · Körper · Boot-Schwimmen); die
 // geglättete Lauf-Fläche (_waterRunSurfaceAt) fiel mit dem monotonen Spiegel. Flow-Kräuselung im Shader,
-// Substanz-emergentes Schwimmen. Headless: Verdrahtung + Boot-Schwimmen.
+// Headless: Verdrahtung (das Schwimmen der Werke nach der Stoff-Zeile misst gate:fahr-leben --koerper, physik K1).
 // (checkBandWEFrequenzband unten: EIN Empfänger _applySubstanceResponse, Profile aus der Substanz
 // via _substanceResponseProfile; das additive Licht-Band fiel mit F6.)
 async function checkBandWFFluss(ctx) {
@@ -769,63 +769,11 @@ async function checkBandWFFluss(ctx) {
                 }
         }
         out.dryPassthrough = !!dryW && r._atlasWaterLevelAt(dryW.x, dryW.z, -Infinity) === -Infinity;
-        // (5) das BOOT-SCHWIMMEN folgt der Stoff-Zeile (physik K1): holz schwimmt, stein/
-        // eisen sinken (die mittlere Dichte in kg/m³ unter der des Wassers). Behavioral.
-        const mkBoat = (mat) => ({
-            name: `__wf_boot_${mat}`,
-            parts: [
-                { shape: "box", material: mat, size: { x: 3, y: 0.6, z: 1.4 }, position: { x: 0, y: 0, z: 0 } },
-                { shape: "box", material: mat, size: { x: 0.4, y: 0.4, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
-            ],
-            connections: [],
-        });
-        const probeFloat = (mat) => {
-            const bp = mkBoat(mat);
-            r.state.blueprints[bp.name] = bp;
-            const prof = r._vehicleProfile({ type: bp.name, scale: 1, position: { x: 0, y: 0, z: 0 } });
-            delete r.state.blueprints[bp.name];
-            return prof ? prof.floats : null;
-        };
-        out.holzFloats = probeFloat("holz");
-        out.steinFloats = probeFloat("stein");
-        out.eisenFloats = probeFloat("eisen");
-        // (6) der Studio-Wagen liegt nach dem Stoff seiner Hülle im Wasser (D10, physik K1: ρ blech der Stoff-Zeile), nie nach
-        // dem Holzkarren-Spender, den sein Bauplan klont (bis 8f09227d schwamm der GT wie ein Holz-Boot).
-        const pGt = r._vehicleProfile({ type: "fahrzeug_gt", scale: 1, position: { x: 0, y: 0, z: 0 } });
-        out.gtFloats = pGt ? pGt.floats : null;
-        // (7) der Boden des Fahr-Schritts legt das Gefährt über die EINE Wahrheit am Körper mit seiner Gestalt ins Wasser
-        // (D4/D10): am See trägt das Holz-Boot genau Spiegel minus Wasserlinie, das Stein-Boot fährt auf dem Werk-Boden
-        // (den Ritt im Sim-Schritt beweist gate:wasser-leben am treibenden Boot).
-        const o = await window.__wasserOrt("see");
-        const boot = (mat) => {
-            const bp = mkBoat(mat);
-            r.state.blueprints[bp.name] = bp;
-            const e = r.spawnArchitecture(bp.name, { x: o.x, y: r.getTerrainHeightAt(o.x, o.z), z: o.z }, { silent: true, precise: true });
-            try {
-                const g = r._fahrzeugGestalt(e), w = r._werkBoden(e)(o.x, o.z), s = r._koerperWasser(o.x, o.z, w);
-                return { g, w, s, f: r._fahrBoden(e)(o.x, o.z) };
-            } finally {
-                if (e) r.removeArchitecture(e);
-                delete r.state.blueprints[bp.name];
-            }
-        };
-        const holz = o ? boot("holz") : null, stein = o ? boot("stein") : null;
-        out.tickFloatConsumed =
-            !!holz && holz.g.linie < Infinity && holz.s - holz.w > holz.g.linie && Math.abs(holz.f - (holz.s - holz.g.linie)) < 1e-6 &&
-            !!stein && stein.f === stein.w;
         return out;
     });
     check(
         "W-F Fluss: der EINE Spiegel-Leser _atlasWaterLevelAt lebt + erfindet kein Wasser",
         res.runExists && res.dryPassthrough
-    );
-    check(
-        "W-F Fluss BOOT: Schwimmen folgt der Stoff-Zeile (holz schwimmt, stein/eisen sinken), der Studio-Wagen liest den Stoff seiner Hülle (GT sinkt) + der Fahr-Boden trägt das Holz-Boot auf seiner Wasserlinie",
-        res.holzFloats === true &&
-            res.steinFloats === false &&
-            res.eisenFloats === false &&
-            res.gtFloats === false &&
-            res.tickFloatConsumed
     );
 }
 
