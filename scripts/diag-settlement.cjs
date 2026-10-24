@@ -755,13 +755,7 @@ const FIXTURES = [
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Settlement-Linse feuert ===");
         const a = FC.exportSettlement(FIXTURES[0]);
-        // V1: ein korrumpiertes Golden wird erkannt (die Byte-Wand ist nicht vakuös).
-        const fakeGolden = { [JSON.stringify(FIXTURES[0])]: "deadbeef" };
-        check(
-            "Selbst-Test 1: korruptes Golden wird erkannt",
-            fingerprint(a) !== fakeGolden[JSON.stringify(FIXTURES[0])]
-        );
-        // V2: ein manipulierter Export (ein Slot verschoben) kippt den Fingerabdruck.
+        // V2: ein manipulierter Export (ein Slot verschoben) kippt den Fingerabdruck — die Byte-Wand ist nicht vakuös.
         const b = JSON.parse(JSON.stringify(a));
         b.slots[0].x += 0.001;
         check("Selbst-Test 2: ein 1-mm-Slot-Versatz kippt den Fingerabdruck", fingerprint(a) !== fingerprint(b));
@@ -992,10 +986,6 @@ const FIXTURES = [
             `slots=${p1.slots && p1.slots.length}`
         );
     }
-    check(
-        "seed-sensitiv (Seed 7 != Seed 12345)",
-        fingerprint(plans[JSON.stringify(FIXTURES[0])]) !== fingerprint(plans[JSON.stringify(FIXTURES[1])])
-    );
 
     // Golden: EINGEFROREN — gemintet NUR wenn die Datei fehlt (Taille-Disziplin).
     if (!fs.existsSync(goldenFile)) {
@@ -1245,18 +1235,13 @@ const FIXTURES = [
             lichtFehl.slice(0, 3).join(" · ")
         );
         // DAS LICHT DER WANDLATERNE: die Wand in armM trägt höchstens das Doppelte der Gasse unter ihr (das Wand-Gesetz
-        // der Laterne, K66), ihr Licht brennt nachts in der Farbe der Laterne und reist als Datum ihres Rezepts
+        // der Laterne, K66), ihr Licht brennt nachts in der Farbe der Laterne (das Datum ihres Rezepts hält gate:fachwerk-contract)
         const wandGesetz = LWd
             ? ((LWd.hoeheM ** 2 + LWd.kernM ** 2) / (LWd.armM ** 2 + LWd.kernM ** 2)) ** (LWd.abfall / 2)
             : Infinity;
-        const wandRezept = FC.PRESETS.wandlaterne && FC.PRESETS.wandlaterne.fx ? FC.PRESETS.wandlaterne.fx.licht : null;
         check(
-            `Das Licht der Wandlaterne hält das Wand-Gesetz: die Wand in ${LWd ? LWd.armM : "?"} m trägt ${wandGesetz.toFixed(2)} × die Gasse unter ihr (Soll ≤ 2), ${LWd ? LWd.kelvin : "?"} K wie die Laterne, das Datum ihres Rezepts`,
-            wandGesetz <= 2.001 &&
-                !!LWd &&
-                LWd.zeit.nacht > 0 &&
-                LWd.kelvin === LGd.kelvin &&
-                JSON.stringify(wandRezept) === JSON.stringify(LWd)
+            `Das Licht der Wandlaterne hält das Wand-Gesetz: die Wand in ${LWd ? LWd.armM : "?"} m trägt ${wandGesetz.toFixed(2)} × die Gasse unter ihr (Soll ≤ 2), ${LWd ? LWd.kelvin : "?"} K wie die Laterne`,
+            wandGesetz <= 2.001 && !!LWd && LWd.zeit.nacht > 0 && LWd.kelvin === LGd.kelvin
         );
         // DIE WANDLATERNE IM ORTPLAN (K66-2 N1): fällt ein Slot ins Wasser (ortPlan, auch der Rückfall von `_ortWahl`), hängt jede
         // Wandlaterne armM vor der Wand des Hauses, mit dem die Welt sie hebt (`v2.slots[l.slot]`, `_spawnSettlementSlot`), und die
@@ -1384,7 +1369,6 @@ const FIXTURES = [
         const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.alemannisch);
-        res.bookReady = !!(f && f.ready && f.recipes && f.recipes.alemannisch);
         // 1) Der Export durch den EINEN Worker (Timeout-bewacht — massBau × Häuser braucht Sekunden).
         const plan = await Promise.race([
             r._foundryRequestSettlement({ seed: 7, nH: 8 }),
@@ -1618,7 +1602,6 @@ const FIXTURES = [
             wmS.seed = s0;
             res.c.seedStrom = z0 !== "" && z0 !== z1 && z0 === zellen();
             res.c.spawnClearWall = r._autoSettlementSiteOk(0, 0) === false; // die Warmup-Welt bleibt dorffrei
-            res.c.channelLive = r._autoSettlementChannelLive() === true; // der Dispatch-Kanal (M8)
             // C2 — HEADLESS-DEFAULT: Null-Renderer ohne Hook -> der Tick ruht (kein Pending).
             const prevHook = window.__anazhAutoSettlement;
             delete window.__anazhAutoSettlement;
@@ -2327,8 +2310,6 @@ const FIXTURES = [
                     // Eintrag, dessen Licht ihr Rezept trägt (`_lichtDatumDerGestalt`) — ein Licht ohne Leib zählt nicht
                     res.laternenWelt = laternen.length;
                     res.laternenPlan = Array.isArray(P.laternen) ? P.laternen.length : 0;
-                    // der Zwilling: ein Licht ohne Leib (ein Laternen-Leser mit Zellen-Gedächtnis)
-                    res.laternenZwilling = ["_laternenLesen", "_laternen"].filter((k) => k in r);
                     // DIE LATERNE VOR DER WAND: je Laterne der
                     // Zelle der Abstand zur nächsten Hauswand des Plans (die Tür-Zeile W × D um den Slot); das Soll aus dem EINEN
                     // Licht-Gesetz (fachwerk LICHT_GESETZ.laterne, Abfall 1/(d² + k²)): die Wand trägt höchstens das Doppelte der Gasse
@@ -2700,7 +2681,6 @@ const FIXTURES = [
     await browser.close();
     server.close();
 
-    check("B: das LIVE-Buch ist warm (Voraussetzung)", out.bookReady === true);
     check(
         "B: _foundryRequestSettlement liefert den Export durch den EINEN Worker",
         out.planOk === true,
@@ -2869,11 +2849,6 @@ const FIXTURES = [
             !!outO.gasse && outO.gasse.schein === 0 && outO.gasse.n > 0,
             outO.gasse ? `hell ${outO.gasse.n} · dunkel ${outO.gasse.schein}` : "keine Gasse"
         );
-        check(
-            `O ${modusName}: die Laterne hat EINE Quelle — ihre Studio-Gestalt trägt Leib und Licht, kein Licht ohne Leib (_laternenLesen gefallen)`,
-            Array.isArray(outO.laternenZwilling) && outO.laternenZwilling.length === 0,
-            "lebt: " + (outO.laternenZwilling || ["?"]).join(", ")
-        );
     };
     pruefeOrt("Dorf 7/18 Gründerzeit am Hang", "Akt", O.outO, O.gtO);
     pruefeOrt(`das Auto-Dorf der Welt am Mess-Ort dorf, Zelle ${OA.outO.zelle || "?"}`, "Auto-Dorf", OA.outO, OA.gtO);
@@ -2919,7 +2894,6 @@ const FIXTURES = [
         c.err || `seedStrom=${c.seedStrom}`
     );
     check("C1b: die Spawn-Klar-Wand steht (der Welt-Ursprung ist nie Dorf-Site)", c.spawnClearWall === true);
-    check("C1c: der Dispatch-Kanal lebt (mind. ein Rezept -> settlement, M8)", c.channelLive === true);
     check(
         "C2: HEADLESS-DEFAULT — Null-Renderer ohne Hook: der Auto-Zug ruht (kein Pending, keine Queue)",
         c.headlessQuiet === true

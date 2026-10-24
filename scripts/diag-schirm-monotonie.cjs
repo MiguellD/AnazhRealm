@@ -153,9 +153,7 @@ async function welt() {
     // Boot · Mess-Wiese · Einschwingen · Bühne · stille Tiere · der Wolf der Fell-Probe
     const boot = await page.evaluate(async (groessen) => {
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return { fatal: "keine Welt" };
+        const r = await window.__weltDa();
         if (!r.state.renderer || !r.state.renderer._isHeadlessNull) return { fatal: "kein Null-Renderer" };
         const st = r.state;
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;

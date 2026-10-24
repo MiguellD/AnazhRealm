@@ -2439,18 +2439,12 @@ async function checkBandRezeptKatalog(ctx) {
     const pp = globalThis.__portaCore && globalThis.__portaCore.PARAMS_BY_KIND && globalThis.__portaCore.PARAMS_BY_KIND.gate;
     const portaParamsLen = Array.isArray(pp) ? pp.length : -1;
     const out = (await safeEvaluate(page, async (portaLen) => {
-        const res = { warm: {}, a: {}, b: {}, c: {}, d: {}, e: {} };
+        const res = { a: {}, b: {}, c: {}, d: {}, e: {} };
         const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
         // ===== WARM-ANKER: Boot → f.ready → Buch+paramsByKind → !_vorrat (120-s-Cap) =====
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return { fatal: "anazhRealm kam nie" };
+        const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => !!(f && f.ready && f.recipes && f.recipes.drachentor && f.recipes.gras && f.paramsByKind && f.paramsByKind.gate && !f._vorrat));
-        res.warm.ready = !!(f && f.ready);
-        res.warm.recipeCount = f && f.recipes ? Object.keys(f.recipes).length : 0;
-        res.warm.vorrat = (f && f._vorrat) || false; // die Phase des Vorrats (VORRAT_PHASE), false = durch
-        if (!f || !f.ready || !f.recipes) return res;
     
         // ===== (a) paramsByKind: gate + vehicle als Regler-DATEN =====
         const pk = f.paramsByKind || {};
@@ -2622,8 +2616,8 @@ async function checkBandRezeptKatalog(ctx) {
         }
         return res;
     }, portaParamsLen)) || { fatal: "keine Antwort der Seite" };
-    const { warm = {}, a = {}, b = {}, c = {}, d = {}, e = {} } = out;
-    check("Rezept-Katalog: Foundry warm (ready + Buch + Vorrat durch), porta-core.PARAMS_BY_KIND.gate nicht leer", !out.fatal && portaParamsLen > 0 && warm.ready && warm.recipeCount > 0 && !warm.vorrat, out.fatal || `recipes=${warm.recipeCount} vorrat=${warm.vorrat || "durch"} porta=${portaParamsLen}`);
+    const { a = {}, b = {}, c = {}, d = {}, e = {} } = out;
+    check("Rezept-Katalog: porta-core.PARAMS_BY_KIND.gate nicht leer (die Seite wartet auf Buch, paramsByKind und Vorrat)", !out.fatal && portaParamsLen > 0, out.fatal || `porta=${portaParamsLen}`);
     check(
         "Rezept-Katalog (a) paramsByKind: gate (id/min/max/def, grp, Länge = porta-core) · vehicle · flower (5) · grass (≥ 4) reisen als Regler-Daten",
         a.gateRowsOk === true && a.vehicleRowsOk === true && a.vehicleLen > 0 && a.gateMatchesNode === true && a.gateHasGrp === true && a.flowerLen === 5 && a.flowerRowsOk === true && a.grassLen >= 4,

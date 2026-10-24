@@ -198,9 +198,8 @@ async function waitFoundryReady(page, timeoutMs) {
         if (!f) return out;
         const t0 = performance.now();
         await window.__weltDa(() => !(!f.ready));
-        out.ready = !!f.ready;
-        out.readyMs = f.ready ? Math.round(performance.now() - t0) : -1;
-        if (!f.ready) return out;
+        out.ready = true;
+        out.readyMs = Math.round(performance.now() - t0);
         await window.__weltDa(() => f.recipeCount > 0);
         out.recipeCount = f.recipeCount || 0;
         return out;

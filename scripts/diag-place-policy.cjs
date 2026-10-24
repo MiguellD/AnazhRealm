@@ -32,9 +32,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
     const out = await page.evaluate(async (selftest) => {
         const res = { a: {}, b: {}, c: {}, e: {}, st: {} };
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return { fatal: "anazhRealm bootet nicht" };
+        const r = await window.__weltDa();
         // Worker + Rezeptbuch abwarten (get-recipes folgt dem ready-Handshake).
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.eiche);

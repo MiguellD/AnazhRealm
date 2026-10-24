@@ -1762,9 +1762,7 @@ async function checkBandV18264ShadowCache(ctx) {
 async function checkBandWetterVektor(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return { err: "keine Instanz" };
+        const r = await window.__weltDa();
         // Keine laufende Transition — die Wort-Vorgabe führt.
         r.state.weatherTransition = null;
         const sunny = r._weatherFieldFor("sunny");
