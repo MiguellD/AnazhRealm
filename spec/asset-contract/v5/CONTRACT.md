@@ -64,9 +64,10 @@ Emissive/roughness/metalness/opacity/transparent) · alle Geometrie-Attribute
 (Namen sortiert: itemSize + rohe Puffer-Bytes) · Index-Puffer. Ein einziges
 abweichendes Byte kippt den Hash.
 
-Fälle: 21 Gattungen × 2 Seeds (7, 12345) × LOD 0 + 2 ov-Fälle
+Fälle: 22 Gattungen × 2 Seeds (7, 12345) × LOD 0 + 2 ov-Fälle
 (langschwert+klinge/fuller, spitzhacke+schaft — friert auch die
-Override-Merge-Semantik ein) = 44; plus die aktiven Proben (nicht
+Override-Merge-Semantik ein) = 46 (halten.K3: die Sichel kam additiv dazu,
+die 44 Fälle davor byte-gleich); plus die aktiven Proben (nicht
 golden-gespeichert): lod-Klemme (lod 2 == lod 0) und die Split-Parität
 `buildInstance(id,7,0) == buildWeaponModel(<Gattung>)` je Gattung (der
 Waffenständer der Lab-Arena baut über buildWeaponModel — Kern und Shell-Pfad

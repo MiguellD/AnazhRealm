@@ -3317,16 +3317,8 @@ class AnazhRealm_siedlung_satz {
         // Der Guss-Stempel reist am Eintrag (Snapshot + P2P): NUR ein non-leeres plain object, tief
         // JSON-kopiert, max 8 KiB (dieselbe Taille-Wand wie _carryUnknown — ein Riesenstempel wäre ein
         // Quota-DoS). _foundryFlattenFor liest ihn als Unikat-ov.
-        if (opts.studioOv && typeof opts.studioOv === "object" && !Array.isArray(opts.studioOv)) {
-            try {
-                const json = JSON.stringify(opts.studioOv);
-                if (json && json.length > 2 && json.length <= AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) {
-                    entry.studioOv = JSON.parse(json);
-                }
-            } catch (_e) {
-                /* nicht-serialisierbar → kein Stempel (fail-closed) */
-            }
-        }
+        const praegung = AnazhRealm._stempelVon(opts.studioOv);
+        if (praegung) entry.studioOv = praegung;
         // DORF-IN-TERRAIN — der Fundament-Footprint reist am Eintrag (Snapshot + Restore):
         // die halben Ausdehnungen {ex,ez} und der Versatz seiner Mitte zum Haus-Ursprung {ox,oz}
         // (haus-lokal, Welle L — das Hof-Haus reicht 4 m vor seinen Ursprung; ein älterer Stand ohne

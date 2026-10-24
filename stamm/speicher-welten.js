@@ -763,16 +763,8 @@ class AnazhRealm_speicher_welten {
         // PRÄGUNG-WELT — der Guss-Stempel kehrt zurück (Gegenstück zu _serializeBlueprint):
         // NUR ein non-leeres plain object, tief kopiert + größen-bewacht (dieselbe
         // 8-KiB-Taille-Wand wie _carryUnknown — kein Save-/Peer-Riesenstempel).
-        if (data.studioOv && typeof data.studioOv === "object" && !Array.isArray(data.studioOv)) {
-            try {
-                const json = JSON.stringify(data.studioOv);
-                if (json && json.length > 2 && json.length <= AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) {
-                    restored.studioOv = JSON.parse(json);
-                }
-            } catch (_e) {
-                /* nicht-serialisierbar → fällt still (fail-closed) */
-            }
-        }
+        const stempel = AnazhRealm._stempelVon(data.studioOv);
+        if (stempel) restored.studioOv = stempel;
         this._carryUnknown(data, restored, AnazhRealm.BLUEPRINT_KNOWN_KEYS);
         return restored;
     }
@@ -2195,7 +2187,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
         ]),
         desc: "Das Tor-Labor: sieben Portal-Ordnungen aus der Stich-Schub-Dicke-Lehre, fraktal vertieft, mit öffnenden Türen.",
     }),
-    // Das KLINGEN-Labor: 21 Gattungen (Waffen + Werkzeuge), 4 Traditionen, Anschlag-Probe + Prüfstand.
+    // Das KLINGEN-Labor: 22 Gattungen (Waffen + Werkzeuge), 4 Traditionen, Anschlag-Probe + Prüfstand.
     // schmiede-core.js (__schmiedeCore) ist die EINE generative Quelle für Shell UND Foundry. DSL = echte
     // UI-Pfade: Gattungen + Traditionen (Umlaute ASCII-gefaltet: saebel/grossschwert/faellaxt) +
     // anschlagen + stahl.
@@ -2232,7 +2224,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
             "anschlagen",
             "stahl",
         ]),
-        desc: "Das Klingen-Labor: Rückgrat, Schnittprofil und Lehren urteilen die Waffe — 21 Gattungen, 4 Traditionen, Anschlag-Probe und Prüfstand.",
+        desc: "Das Klingen-Labor: Rückgrat, Schnittprofil und Lehren urteilen die Waffe — 22 Gattungen, 4 Traditionen, Anschlag-Probe und Prüfstand.",
     }),
     // Das HAUS-Labor: Fachwerkhaus, parametrisch + begehbar — 32 Kultur-Archetypen, Dorf-Modus
     // (Straßengraph, Mauer, Jahresringe). fachwerk-core.js (__fachwerkCore) ist die EINE generative

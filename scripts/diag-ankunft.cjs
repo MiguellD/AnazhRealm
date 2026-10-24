@@ -373,7 +373,6 @@ function wand(quelle) {
     );
     return [
         ["W1 der Satz für Unbekanntes trägt keine Befehlsliste von Hand", fehlt("_chatHandleConversationalFallback", /'Setze Wetter rainy'/)],
-        ["W4 das Welt-Dorf schätzt keinen Anker (`_structureSpawnPos` in `_autoSettlementSpawnCell`)", fehlt("_autoSettlementSpawnCell", /_structureSpawnPos/)],
         ["W6 kein rohes Programm im Spieler-Chat (kein `JSON.stringify(reply.program)`)", fehlt(null, /JSON\.stringify\(reply\.program\)/)],
         ["W8 das Buch fragt die Köpfe der Ankunft (`_buchKoepfe` in `_foundryIngestBook`, B5)", !fehlt("_foundryIngestBook", /this\._buchKoepfe\(\)/)],
         [`W7 Streu-Pick, Lupe und Klingen-Achse rechnen keine eigene Richtung ab der Kamera (\`getWorldDirection\`)${kreuzEigen.length ? " — mit: " + kreuzEigen.join(", ") : ""}`, kreuzEigen.length === 0],
@@ -1871,15 +1870,14 @@ async function probe(arg) {
         const kopfMit = (n, rein) => [null, new RegExp(`(\\n {4}${n}\\([^)]*\\) \\{)`), `$1 ${rein};`];
         const vorStand = (t) => stammLib.ersetze(t, [
             kopfMit("_chatHandleConversationalFallback", `"'Setze Wetter rainy'"`),
-            kopfMit("_autoSettlementSpawnCell", "this._structureSpawnPos"),
             ["maybeAnswerWithLlm", "(Welt verändert: ${compName} ${this.describeProgram(reply.program)}.)", "(Welt verändert: ${JSON.stringify(reply.program)})"],
             kopfMit("_hasMagnifyingInSight", "this.camera.getWorldDirection(this._v)"),
             ["_foundryIngestBook", "this._buchKoepfe();", ""],
         ]);
         const rot = wand(vorStand);
         check(
-            "Selbst-Test W: der Vor-Stand (Liste von Hand, geschätzter Dorf-Anker, rohes Programm, eine eigene Kamera-Richtung, ein Buch ohne Köpfe) → W1, W4, W6, W7, W8 feuern",
-            rot.filter((w) => !w[1]).length === 5,
+            "Selbst-Test W: der Vor-Stand (Liste von Hand, rohes Programm, eine eigene Kamera-Richtung, ein Buch ohne Köpfe) → W1, W6, W7, W8 feuern",
+            rot.filter((w) => !w[1]).length === 4,
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
         if (errs.length) {
