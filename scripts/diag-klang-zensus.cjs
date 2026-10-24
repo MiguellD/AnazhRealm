@@ -698,57 +698,10 @@ async function offlineRender(page, lage) {
                 q += l * l + rr * rr; // Leistung beider Kanäle (Panner gleich-leistig)
                 mono[i] = (l + rr) * 0.5;
             }
-            // Schwerpunkt über eine 8192-DFT-Mittelung (Hann).
-            const N = 8192;
-            let sw = 0;
-            let sf = 0;
-            const re = new Float64Array(N);
-            const im = new Float64Array(N);
-            for (let o = 0; o + N <= n; o += N) {
-                for (let i = 0; i < N; i++) {
-                    re[i] = mono[o + i] * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / N));
-                    im[i] = 0;
-                }
-                for (let i = 1, j = 0; i < N; i++) {
-                    let bit = N >> 1;
-                    for (; j & bit; bit >>= 1) j ^= bit;
-                    j ^= bit;
-                    if (i < j) {
-                        [re[i], re[j]] = [re[j], re[i]];
-                        [im[i], im[j]] = [im[j], im[i]];
-                    }
-                }
-                for (let len = 2; len <= N; len <<= 1) {
-                    const ang = (-2 * Math.PI) / len;
-                    const wr = Math.cos(ang);
-                    const wi = Math.sin(ang);
-                    for (let i = 0; i < N; i += len) {
-                        let cr = 1;
-                        let ci = 0;
-                        for (let j = 0; j < len / 2; j++) {
-                            const h = i + j + len / 2;
-                            const vr = re[h] * cr - im[h] * ci;
-                            const vi = re[h] * ci + im[h] * cr;
-                            re[h] = re[i + j] - vr;
-                            im[h] = im[i + j] - vi;
-                            re[i + j] += vr;
-                            im[i + j] += vi;
-                            const nr = cr * wr - ci * wi;
-                            ci = cr * wi + ci * wr;
-                            cr = nr;
-                        }
-                    }
-                }
-                for (let k = 1; k < N / 2; k++) {
-                    const p = re[k] * re[k] + im[k] * im[k];
-                    sw += p;
-                    sf += (p * k * sr) / N;
-                }
-            }
             out[name] = {
                 gesetzDb: +mix[name].db.toFixed(1),
                 gemessenDb: +(10 * Math.log10(q / n / 2 + 1e-20) + 3.01).toFixed(1),
-                schwerpunktHz: Math.round(sf / Math.max(1e-20, sw)),
+                schwerpunktHz: Math.round(K.schwerpunkt(mono, sr)),
             };
         }
         return out;

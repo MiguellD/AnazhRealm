@@ -173,7 +173,7 @@ function brennVerdict(m) {
         out.push(`nachts erwärmt die Linse (Wärme ${n.waerme}${n.steht ? "" : ", verbrannt"})`);
     const k = m.kuehlung || {};
     if (!(k.nachFokus > 0)) out.push("keine Wärme im Brennpunkt (Vorbedingung)");
-    else if (!(k.nachKuehlen === 0))
+    else if (!(k.nachKuehlen < k.nachFokus / 2))
         out.push(`außerhalb des Brennpunkts kühlt nichts (${k.nachFokus} → ${k.nachKuehlen})`);
     return out;
 }

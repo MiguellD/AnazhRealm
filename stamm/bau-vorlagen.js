@@ -1740,7 +1740,7 @@ class AnazhRealm_bau_vorlagen {
                 lebendig: 1.0,
             }),
             make("wasser", "Wasser", 0x2a5d7a, {
-                dichte: 0.5,
+                dichte: 0.25,
                 wärmeleitung: 0.6,
                 magieleitung: 0.3,
                 transparent: 0.9,

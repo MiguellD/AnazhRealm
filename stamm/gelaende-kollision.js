@@ -798,15 +798,17 @@ class AnazhRealm_gelaende_kollision {
         return this._terrainMaterialAt(x, z, y);
     }
 
-    // Der Stoff eines Werks: der Stoff seines größten festen Teils (Volumen der Gestalt, `_teilVolumen`), gemerkt am Eintrag.
+    // Der Stoff eines Werks: der Stoff seines größten festen Teils (Volumen der Gestalt, `_teilVolumen`; ohne festes Teil sein
+    // größtes), gemerkt am Eintrag. Leser: die Auflage ohne Teil (`_kontaktStoffAt`) und der kühlende Brennfleck (`_brennWaerme`).
     _werkStoff(e) {
         if (e._werkStoff !== undefined) return e._werkStoff;
         const bp = this.state.blueprints && this.state.blueprints[e.type];
         const je = {};
-        for (const p of (bp && bp.parts) || [])
-            if (this._isPartSolid(p)) je[p.material] = (je[p.material] || 0) + this._teilVolumen(p);
+        const teile = ((bp && bp.parts) || []).filter((p) => typeof p.material === "string");
+        const fest = teile.filter((p) => this._isPartSolid(p));
+        for (const p of fest.length ? fest : teile) je[p.material] = (je[p.material] || 0) + this._teilVolumen(p);
         const best = Object.keys(je).sort((a, b) => je[b] - je[a])[0];
-        if (!best) this._bruchMelden("STOFF-ZEILE fehlt: das Werk „" + e.type + "“ trägt keinen festen Stoff");
+        if (!best) this._bruchMelden("STOFF-ZEILE fehlt: das Werk „" + e.type + "“ trägt keinen Stoff");
         return (e._werkStoff = best || null);
     }
 

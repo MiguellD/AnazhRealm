@@ -1489,8 +1489,9 @@ class AnazhRealm_koerper_fahrt {
     // DAS BRENNGLAS-GESETZ (throttled in _tickAffordances; Welle L Folge): eine focusing-Architektur bündelt die SONNE durch
     // ihre Linse (jeder Teil, der die Tag-Sprache „transparent" trägt) in EINEN Brennpunkt je Linse — die Linsen-Mitte, um
     // 1,5 Linsen-Radien gegen das Licht versetzt (`_brennpunkte`; die Brennweite einer Glas-Kugel, n ≈ 1,5). Erwärmt wird
-    // nur, wessen Körper den Brennpunkt trägt (`_traegtPunkt`: Grundriss und Höhe seiner Teile); außerhalb kühlt es mit
-    // derselben Rate, nachts und ohne Sonne kühlt alles. Auf halbem Weg glimmt es — der Spieler hört es, ehe es brennt —,
+    // nur, wessen Körper den Brennpunkt trägt (`_traegtPunkt`: Grundriss und Höhe seiner Teile), nach dem Wärme-Gesetz seines
+    // Stoffs (`_brennWaerme`, stoffe.K1); außerhalb kühlt es, nachts und ohne Sonne kühlt alles. Auf halbem Weg zur
+    // Zünd-Temperatur glimmt es — der Spieler hört es, ehe es brennt —,
     // an der Schwelle entzündet es sich, das Feld unter ihm fängt Feuer (`_brandEntfachen`), und die Zerstörung nennt sich dem
     // Spieler (`_spielerSagt` + Journal, mit den Namen von Werk und Linse). Befund (Leben-Schau 07.10.): die Genesis-Plattform (Quarz-Kern auf Stein) ist nach der Tag-Sprache
     // ein Brennglas — sie erhitzte JEDES Brennbare im 4-m-Kreis, ohne Licht-Geometrie, ohne Abkühlung, auch nachts; die
@@ -1505,9 +1506,6 @@ class AnazhRealm_koerper_fahrt {
         const licht = sonne && sonne.y > 0 ? sonne : null;
         const punkte = [];
         if (licht) for (const fa of focusing) for (const p of this._brennpunkte(fa, licht)) punkte.push({ fa, p });
-        const heatRange2 = AnazhRealm.FOCUSING_HEAT_RANGE_M * AnazhRealm.FOCUSING_HEAT_RANGE_M;
-        const ignite = AnazhRealm.FOCUSING_IGNITE_THRESHOLD;
-        const ratePerSec = AnazhRealm.FOCUSING_HEAT_RATE_PER_SEC;
         const name = (e) => {
             const b = e && this.state.blueprints ? this.state.blueprints[e.type] : null;
             return String((b && b.label) || (e && e.type) || "?").split(/\s[·—(]/)[0];
@@ -1537,47 +1535,21 @@ class AnazhRealm_koerper_fahrt {
             ziele.length = w;
         }
         for (const target of ziele) {
-            const warm = target.heatBuildup > 0;
-            if (!warm && !punkte.length) continue; // kein Licht, nichts zu kühlen: der billigste Weg (Lehre 25)
+            const vorher = target.heatBuildup || 0;
+            if (!(vorher > 0) && !punkte.length) continue; // kein Licht, nichts zu kühlen: der billigste Weg (Lehre 25)
             if (target.affordances && target.affordances.focusing) continue; // selbst nicht
             if (this._gerittenesWerk(target)) continue;
-            let quelle = null;
-            if (punkte.length) {
-                // Mindestens eine focusing-Architektur in Range? ZUERST (billig) — die Compound-Tags rechnet nur ein
-                // Bau in Reichweite (Befund 02.10.: die Tags aller ~120 Bauten je Takt kosteten Ø 20 ms, max 62 ms).
-                let inRange = false;
-                for (const fa of focusing) {
-                    const dx = fa.position.x - target.position.x;
-                    const dz = fa.position.z - target.position.z;
-                    if (dx * dx + dz * dz <= heatRange2) {
-                        inRange = true;
-                        break;
-                    }
-                }
-                const targetBp = inRange && this.state.blueprints ? this.state.blueprints[target.type] : null;
-                const tags = targetBp ? this.computeCompoundTags(targetBp) || {} : {};
-                if ((tags.brennbar || 0) >= AnazhRealm.BRENNBAR_TAG_MIN)
-                    for (const { fa, p } of punkte)
-                        if (this._traegtPunkt(target, targetBp, p)) {
-                            quelle = fa;
-                            break;
-                        }
-            }
-            if (!quelle) {
-                if (warm) {
-                    target.heatBuildup = Math.max(0, target.heatBuildup - ratePerSec * dt);
-                    if (!(target.heatBuildup > 0)) N.warm.delete(target);
-                }
-                continue;
-            }
-            const vorher = target.heatBuildup || 0;
-            target.heatBuildup = vorher + ratePerSec * dt;
-            if (target.heatBuildup > 0) N.warm.add(target);
-            if (vorher < ignite / 2 && target.heatBuildup >= ignite / 2 && target.heatBuildup < ignite)
+            const w = this._brennWaerme(target, punkte, focusing, dt);
+            if (!w) continue;
+            target.heatBuildup = w.dT;
+            if (w.dT > 0) N.warm.add(target);
+            else N.warm.delete(target);
+            if (!w.quelle) continue;
+            if (vorher < w.zuend / 2 && w.dT >= w.zuend / 2 && w.dT < w.zuend)
                 this._spielerSagt(
-                    `„${name(target)}" glimmt im Brennpunkt von „${name(quelle)}" — rück es aus dem Licht, sonst fängt es Feuer.`
+                    `„${name(target)}" glimmt im Brennpunkt von „${name(w.quelle)}" — rück es aus dem Licht, sonst fängt es Feuer.`
                 );
-            if (target.heatBuildup >= ignite) ignitions.push({ t: target, quelle });
+            if (w.dT >= w.zuend) ignitions.push({ t: target, quelle: w.quelle });
         }
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         for (const { t, quelle } of ignitions) {
@@ -1600,9 +1572,49 @@ class AnazhRealm_koerper_fahrt {
         }
     }
 
+    // DIE WÄRME IM BRENNPUNKT (stoffe.K1; rein, der Takt schreibt): ein Werk, dessen Körper einen Brennpunkt trägt, erwärmt
+    // den Brennfleck seines Teils am Punkt — FOCUSING_FLECK_M3 dieses Stoffs, die Wärme ρ·V·c aus seiner Zeile der Stoff-Tafel
+    // (`_stoff`) — mit der Leistung der Linse P = FOCUSING_SONNE_W_M2 · π r² · Sonnenhöhe; der Fleck gibt FOCUSING_VERLUST_W_K
+    // an Luft und Körper ab. Seine Übertemperatur ΔT (`heatBuildup`, K) strebt exakt (die geschlossene Lösung je Schritt) gegen
+    // P / H mit τ = ρ·V·c / H; außerhalb jedes Brennpunkts kühlt er mit dem Stoff seines Werks (`_werkStoff`) gegen 0, unter
+    // FOCUSING_RUHE_K ist er kalt. Feuer fängt er an der Zünd-Temperatur seines Stoffs (`zuend`: T_zünd über der Luft,
+    // `_temperaturAt`); ohne T_zünd erwärmt er sich nur. Vorher erwärmte sich jedes Werk mit der Tag-Achse brennbar ≥ 0,5 um
+    // 0,05 je Sekunde und brannte nach 20 s, gleich aus welchem Stoff (gate:gegenstand-stoff --tafel: c und T_zünd ohne Folge).
+    // → { quelle, dT, zuend } oder null (kalt, und kein Brennpunkt trifft es).
+    _brennWaerme(target, punkte, focusing, dt) {
+        const bp = this.state.blueprints && this.state.blueprints[target.type];
+        const R2 = AnazhRealm.FOCUSING_HEAT_RANGE_M ** 2;
+        const P0 = target.position;
+        let [quelle, P, stoff] = [null, 0, null];
+        if (bp && focusing.some((fa) => (fa.position.x - P0.x) ** 2 + (fa.position.z - P0.z) ** 2 <= R2))
+            for (const { fa, p } of punkte) {
+                if (!this._traegtPunkt(target, bp, p)) continue;
+                [quelle, P] = [fa, AnazhRealm.FOCUSING_SONNE_W_M2 * Math.PI * p.r * p.r * p.sonne];
+                const g = target.scale > 0 ? target.scale : 1;
+                const [c, s] = [Math.cos(target.rotationY || 0), Math.sin(target.rotationY || 0)];
+                let nah = Infinity;
+                for (const t of bp.parts) {
+                    const q = t.position || {};
+                    const [lx, lz] = [(q.x || 0) * g, (q.z || 0) * g];
+                    const d = (P0.x + lx * c + lz * s - p.x) ** 2 + (P0.y + (q.y || 0) * g - p.y) ** 2 + (P0.z - lx * s + lz * c - p.z) ** 2;
+                    if (d < nah && typeof t.material === "string") [nah, stoff] = [d, t.material];
+                }
+                break;
+            }
+        const vorher = target.heatBuildup || 0;
+        const z = quelle || vorher > 0 ? this._stoff(stoff || this._werkStoff(target)) : null;
+        if (!z) return null;
+        const H = AnazhRealm.FOCUSING_VERLUST_W_K;
+        let dT = P / H + (vorher - P / H) * Math.exp((-dt * H) / (z.rho * AnazhRealm.FOCUSING_FLECK_M3 * z.c));
+        if (!quelle && dT < AnazhRealm.FOCUSING_RUHE_K) dT = 0;
+        const zuend = z.tZuend > 0 ? z.tZuend - 273.15 - this._temperaturAt(P0.y) : Infinity;
+        return { quelle, dT, zuend };
+    }
+
     // Die Brennpunkte einer Linse in der Welt: je Teil, der die Tag-Sprache „transparent" trägt (die Schwelle der
-    // focusing-Affordanz), seine Mitte (Eintrag + gedrehter, skalierter Teil-Ort) minus Licht × 1,5 Radien (Radius = die
-    // halbe waagrechte Ausdehnung des Teils). `licht` = Richtung ZUR Sonne.
+    // focusing-Affordanz), seine Mitte (Eintrag + gedrehter, skalierter Teil-Ort) minus Licht × 1,5 Radien (Radius r = die
+    // halbe waagrechte Ausdehnung des Teils), mit r und der Sonnenhöhe (die Leistung, `_brennWaerme`). `licht` = Richtung ZUR
+    // Sonne.
     _brennpunkte(fa, licht) {
         const bp = this.state.blueprints && this.state.blueprints[fa.type];
         if (!bp || !Array.isArray(bp.parts) || !fa.position) return [];
@@ -1617,13 +1629,16 @@ class AnazhRealm_koerper_fahrt {
             const pp = part.position || { x: 0, y: 0, z: 0 };
             const sz = part.size || { x: 1, y: 1, z: 1 };
             const sx = Math.abs(sz.x || 1);
-            const f = 1.5 * (Math.max(sx, Math.abs(sz.z || sx)) / 2) * g;
+            const r = (Math.max(sx, Math.abs(sz.z || sx)) / 2) * g;
+            const f = 1.5 * r;
             const lx = (pp.x || 0) * g;
             const lz = (pp.z || 0) * g;
             out.push({
                 x: fa.position.x + lx * c + lz * s - licht.x * f,
                 y: fa.position.y + (pp.y || 0) * g - licht.y * f,
                 z: fa.position.z - lx * s + lz * c - licht.z * f,
+                r,
+                sonne: licht.y,
             });
         }
         return out;
@@ -2381,7 +2396,12 @@ AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
 AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
 AnazhRealm.KAM_FOV_GRAD = 75; // die Ruhe des Sichtfelds (vertikal), auf die `_kamFov` Tempo und Bogen-Auszug legt
 AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen
-AnazhRealm.FOCUSING_HEAT_RANGE_M = 4; // Brennbare Architekturen in diesem Radius werden erhitzt
-AnazhRealm.FOCUSING_HEAT_RATE_PER_SEC = 0.05; // Erwärmung pro Sekunde bei sunny
-AnazhRealm.FOCUSING_IGNITE_THRESHOLD = 1.0; // Schwelle bei der ignite ausgelöst wird
-AnazhRealm.BRENNBAR_TAG_MIN = 0.5; // Architektur gilt als brennbar ab diesem Tag-Wert
+AnazhRealm.FOCUSING_HEAT_RANGE_M = 4; // Architekturen in diesem Radius einer Linse können ihren Brennpunkt tragen
+// DAS WÄRME-GESETZ DES BRENNGLASES (stoffe.K1, `_brennWaerme`): die Sonne trägt FOCUSING_SONNE_W_M2 auf die Linse (π r² mal
+// Sonnenhöhe), der Brennfleck ist FOCUSING_FLECK_M3 des Stoffs und gibt FOCUSING_VERLUST_W_K an Luft und Körper ab, unter
+// FOCUSING_RUHE_K ist er kalt. Die Quarz-Kugel von 0,4 m Radius trägt mittags ~480 W, der Fleck strebt gegen ~570 K über der
+// Luft: Holz (573 K, τ 29 s) fängt nach ~20 s, Gras nach ~8 s, Stein und Eisen erwärmen sich nur.
+AnazhRealm.FOCUSING_SONNE_W_M2 = 1000;
+AnazhRealm.FOCUSING_FLECK_M3 = 2e-5;
+AnazhRealm.FOCUSING_VERLUST_W_K = 0.85;
+AnazhRealm.FOCUSING_RUHE_K = 1;

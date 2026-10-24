@@ -2254,7 +2254,7 @@ async function probeKoerper(opt) {
         steht.steuerSchritt = (sw) => (sw.v = 0);
         const mats = st.materials;
         const alt = {};
-        for (const n of Object.keys(mats)) if (mats[n].builtIn) alt[n] = mats[n].rho;
+        for (const n of Object.keys(mats)) if (mats[n].builtIn && n !== "wasser") alt[n] = mats[n].rho; // die Leiber und Dinge, nie das Medium
         const box = (m, sz, y) => ({ shape: "box", material: m, size: sz, position: { x: 0, y, z: 0 } });
         for (const m of ["holz", "stein"]) st.blueprints["_k1_" + m] = { parts: [box(m, { x: 3, y: 0.6, z: 1.4 }, 0.3)] };
         const eigen = { parts: [box("holz", { x: 0.15, y: 1.5, z: 0.15 }, 0), box("holz", { x: 0.6, y: 0.6, z: 0.6 }, 1.5)] };

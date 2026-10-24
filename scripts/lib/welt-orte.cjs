@@ -432,6 +432,9 @@ function weltOrte(art, opts) {
             if (o.wand && !wand) return null;
             return { grund: g, dach: top, wand };
         },
+        // stoff — 4 m trockener, freier Boden aus dem Stoff `o.stoff` längs −z: der Stoff unter dem Fuß (`_kontaktStoffAt`, stoffe.K1)
+        stoff: (x, z) =>
+            bahnFrei(x, z, 0, -1, -1, 5, 1) && [0, 1, 2, 3, 4].every((q) => !r._nassAt(x, z - q, 0.1, H(x, z - q)) && r._kontaktStoffAt(x, z - q, H(x, z - q)) === o.stoff) ? {} : null,
         // wiese — das Gesetz der Mess-Wiese (`o.wiese`, Vorgabe die Schwellen des Messorts `__wieseGesetz`): erst Boden (Hang,
         // Nässe), dann Wald, Blick und Horizont; zurück kommt die Messung samt dem besten Blick-Punkt
         // Die Suche steht vor dem Bau: das Gras liest sie am Gesetz der Boden-Farbe (`_bodenFarbeAt`, aus dem der Chunk jeden

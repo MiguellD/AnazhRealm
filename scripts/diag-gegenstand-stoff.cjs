@@ -208,241 +208,163 @@ function selbstTest() {
 
 const STOFFE = ["holz", "stein", "eisen", "gras", "erde", "laub", "wasser"];
 const WIRKUNGEN = ["rho", "mu", "albedo", "klang", "tZuend", "tSchmelz", "c"];
-async function tafelProbe(STOFFE, sabotage) {
+async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
     const r = window.anazhRealm;
-    const [st, A] = [r.state, r.constructor];
-    const [M, pm, FUSS] = [st.materials, st.playerMesh, A.PLAYER_FOOT_OFFSET];
-    const see = (await window.__wasserOrte({})).see;
-    const [[UX, UZ], [SX, SZ]] = [see.ufer, see.mitte];
+    const st = r.state;
+    const M = st.materials;
+    const pm = st.playerMesh;
+    const { see } = await window.__wasserOrte({});
+    const [UX, UZ] = see.ufer;
+    const [SX, SZ] = see.mitte;
     const hh = (x, z) => r._voxelSurfaceY(x, z);
-    const setz = (x, z, y) => {
-        pm.position.set(x, (y === undefined ? hh(x, z) : y) + FUSS, z);
-        st.playerVel.setValue(0, 0, 0);
-        [st._fixedSimPos, st.isInAir] = [null, false];
-    };
-    await window.__weltStehtNach(() => (setz(UX, UZ), r._gameLoopTick(performance.now())));
+    const setz = (x, z, y = hh(x, z)) => pm.position.set(x, y + r.constructor.PLAYER_FOOT_OFFSET, z);
+    await window.__weltStehtNach(() => (setz(UX, UZ), (st._fixedSimPos = null), r._gameLoopTick(performance.now())));
     window.__buehne();
-    const box = (m, sx, sy, sz, x, y) => ({ shape: "box", material: m, size: { x: sx, y: sy, z: sz }, position: { x, y, z: 0 } });
-    const werk = (n, parts, x, z, y) => {
-        st.blueprints[n] = { parts };
-        return r.spawnArchitecture(n, { x, y: y === undefined ? hh(x, z) : y, z }, { silent: true, precise: true });
-    };
-    const weg = (e) => {
-        if (st.architectures.includes(e)) r.removeArchitecture(e);
-        delete st.blueprints[e.type];
-    };
-    const spiegel = r._koerperWasser(SX, SZ, hh(SX, SZ));
-    const grund = spiegel - hh(SX, SZ);
-    let watX = UX; // das Ufer, an dem der Spieler watet (0,15–0,45 m Wasser)
-    while (watX > UX - 30 && !(r._koerperWasser(watX, UZ, hh(watX, UZ)) - hh(watX, UZ) > 0.15)) watX -= 0.25;
-    const [PX, PZ] = [UX + 14, UZ]; // die Platte (16 × 1,2 × 4 m) und die Linse daneben
-    const linse = werk("_tafel_linse", [box("eisen", 0.2, 2.2, 0.2, 0.7, 1.1), box("quarz", 0.8, 0.8, 0.8, 0, 2.6)], UX + 30, UZ);
-    // der Boden der Natur: 4 m Wiese (Gras der Boden-Karte, offen) und 4 m Waldboden (das Kronendach) längs −z, die nächsten
-    // um das Ufer
-    const gruen = (x, z, g = {}) => (r._bodenSichtAt(x, z, g) !== null ? g.gruen : 0);
-    const natur = { gras: (x, z) => gruen(x, z) > 0.9 && r._kronenStreuAt(x, z) < 0.3, laub: (x, z) => r._kronenStreuAt(x, z) > 0.6 };
-    for (const n of Object.keys(natur)) {
-        const f = natur[n];
-        natur[n] = null;
-        for (let d = 0; d <= 120 && !natur[n]; d += 3)
-            for (let k = 0; k < Math.max(1, d) && !natur[n]; k++) {
-                const [x, z] = [UX + d * Math.cos((2 * Math.PI * k) / Math.max(1, d)), UZ + d * Math.sin((2 * Math.PI * k) / Math.max(1, d))];
-                if ([0, 1, 2, 3, 4].every((q) => f(x, z - q) && !r._nassAt(x, z - q, 0.1, hh(x, z - q)))) natur[n] = [x, z];
-            }
-    }
-    const platte = (X, fn) => {
-        const e = natur[X] !== undefined ? null : werk("_tafel_platte", [box(X, 8, 0.4, 3, 0, 0.2)], PX, PZ, hh(PX, PZ) + 0.5);
-        if (!e && !natur[X]) throw new Error("kein Boden aus " + X + " um das Ufer");
+    st.autoSeason = false;
+    // ein Werk `n` aus Quadern [Stoff, Breite, Höhe, Tiefe, Versatz x, Mitte y] bei (x, z, y); mit `fn` gemessen, dann abgerissen
+    const werk = async (n, teile, x, z, y, fn) => {
+        st.blueprints[n] = { parts: teile.map(([m, sx, sy, sz, px, py]) => ({ shape: "box", material: m, size: { x: sx, y: sy, z: sz }, position: { x: px, y: py, z: 0 } })) };
+        const e = r.spawnArchitecture(n, { x, y, z }, { silent: true, precise: true });
+        if (!fn) return e;
         try {
-            return e ? fn(PX - 3, PZ, e.blockerAABBs[0].topY, 1) : fn(natur[X][0], natur[X][1], hh(natur[X][0], natur[X][1]), 0);
+            return await fn(e);
         } finally {
-            if (e) weg(e);
+            if (st.architectures.includes(e)) r.removeArchitecture(e);
         }
     };
-    const zentroid = (d) => {
-        const N = 1 << Math.floor(Math.log2(d.length));
-        const [re, im] = [Float64Array.from(d.subarray(0, N)), new Float64Array(N)];
-        for (let i = 1, j = 0; i < N; i++) {
-            let b = N >> 1;
-            for (; j & b; b >>= 1) j ^= b;
-            j ^= b;
-            if (i < j) [re[i], re[j]] = [re[j], re[i]];
-        }
-        for (let len = 2; len <= N; len <<= 1)
-            for (let i = 0; i < N; i += len)
-                for (let k = 0; k < len / 2; k++) {
-                    const [c, s, a, b] = [Math.cos((-2 * Math.PI * k) / len), Math.sin((-2 * Math.PI * k) / len), i + k, i + k + len / 2];
-                    const [tr, ti] = [re[b] * c - im[b] * s, re[b] * s + im[b] * c];
-                    [re[b], im[b], re[a], im[a]] = [re[a] - tr, im[a] - ti, re[a] + tr, im[a] + ti];
-                }
-        let [sf, s] = [0, 0];
-        for (let k = 1; k < N / 2; k++) [sf, s] = [sf + (re[k] ** 2 + im[k] ** 2) * k, s + re[k] ** 2 + im[k] ** 2];
-        return (sf / s) * (48000 / N);
-    };
+    const linse = await werk("_linse", [["eisen", 0.2, 2.2, 0.2, 0.7, 1.1], ["quarz", 0.8, 0.8, 0.8, 0, 2.6]], UX + 30, UZ, hh(UX + 30, UZ));
+    const spiegel = r._koerperWasser(SX, SZ, hh(SX, SZ));
+    let watX = UX; // das Ufer, an dem der Spieler watet
+    while (watX > UX - 30 && !(r._koerperWasser(watX, UZ, hh(watX, UZ)) > hh(watX, UZ) + 0.15)) watX -= 0.25;
+    // der Boden aus X: Gras und Laub der Natur (4 m trocken längs −z, die EINE Orts-Suche nach dem Stoff unter dem Fuß), sonst
+    // eine Platte 8 × 0,4 × 3 m an der Oberkante ihrer Hülle; `fn(x, z, y, längs x)`
+    const boden = (X, fn, o = ["gras", "laub"].includes(X) && window.__weltOrt("stoff", { stoff: X, mitte: [UX, UZ], rMax: 126, schritt: 3 })) =>
+        o ? fn(o.x, o.z, hh(o.x, o.z), 0) : werk("_platte", [[X, 8, 0.4, 3, 0, 0.2]], UX + 14, UZ, hh(UX + 14, UZ) + 0.5, (e) => fn(UX + 11, UZ, e.blockerAABBs[0].topY, 1));
+    // der Stoff im Brennpunkt der Linse: [Erwärmung nach `dauer` s, Zündzeit oder null]
     const brenn = (X, dauer) => {
         const p = r._brennpunkte(linse, r._sonnenRichtung())[0];
-        const e = werk("_tafel_ziel", [box(X, 0.6, 0.6, 0.6, 0, 0)], p.x, p.z, p.y);
-        let t = 0;
-        try {
+        return werk("_ziel", [[X, 0.6, 0.6, 0.6, 0, 0]], p.x, p.z, p.y, (e) => {
+            let t = 0;
             for (; t < dauer && st.architectures.includes(e); t += 0.25) r._tickFocusingAffordances(0.25);
-            return { warm: e.heatBuildup || 0, zuend: st.architectures.includes(e) ? null : t };
-        } finally {
-            weg(e);
             if (st.brandFeld) st.brandFeld.clear();
-        }
+            return [e.heatBuildup, st.architectures.includes(e) ? null : t];
+        });
     };
-    const halte = (felder, fn) => {
-        const alt = Object.keys(felder).map((k) => [k, st[k]]);
-        Object.assign(st, felder);
+    const um = (k, v, fn) => {
+        const alt = st[k];
+        st[k] = v;
         try {
             return fn();
         } finally {
-            for (const [k, v] of alt) st[k] = v;
+            st[k] = alt;
         }
     };
+    // je Wirkung [Mutation, Messung, Urteil (vorher, nachher)]
     const W = {
         rho: [
             (z) => (z.rho *= 0.5),
-            (X) => {
-                const e = werk("_tafel", [box(X === "wasser" ? "holz" : X, 3, 0.6, 1.4, 0, 0.3)], SX, SZ);
-                try {
-                    return [st.blueprints._tafel.parts.reduce((m, p) => m + r._teilMasse(p), 0), spiegel - r._fahrBoden(e)(SX, SZ)];
-                } finally {
-                    weg(e);
-                }
-            },
-            (X, v, n) =>
-                X === "wasser"
-                    ? Math.abs(n[1] - v[1]) > 0.05
-                    : Math.abs(n[0] / v[0] - 0.5) < 0.005 && (Math.abs(n[1] - v[1]) > 0.02 || Math.min(v[1], n[1]) > grund - 0.05),
+            (X) => werk("_tafel", [[X === "wasser" ? "holz" : X, 3, 0.6, 1.4, 0, 0.3]], SX, SZ, hh(SX, SZ), (e) => [r._teilMasse(st.blueprints._tafel.parts[0]), spiegel - r._fahrBoden(e)(SX, SZ)]),
+            (X, v, n) => (X === "wasser" ? n[1] - v[1] > 0.05 : Math.abs(n[0] / v[0] - 0.5) < 0.005 && (v[1] - n[1] > 0.02 || n[1] > spiegel - hh(SX, SZ) - 0.05)),
         ],
         mu: [
             (z) => (z.mu *= 0.5),
             (X) =>
-                platte(X, (x, z, y, ux) => {
+                boden(X, (x, z, y, ux) => {
                     st.maxCreatures = st.creatures.length + 1;
                     const w = r.spawnCreatureAt(x, y, z, "calm", "wolf", { precise: true, bodySize: 1 });
                     w.position.y = y;
-                    w.userData._stossV = { x: 3 * ux, z: 3 * (ux - 1) };
-                    const [x0, z0] = [w.position.x, w.position.z];
-                    for (let i = 0; i < 3000 && w.userData._stossV; i++) r._kreaturStossSchritt(A.FIXED_DT);
+                    w.userData._stossV = { x: 3 * ux, z: 3 * ux - 3 };
+                    for (let i = 0; i < 3000 && w.userData._stossV; i++) r._kreaturStossSchritt(r.constructor.FIXED_DT);
                     r.removeCreature(w);
-                    return Math.hypot(w.position.x - x0, w.position.z - z0);
+                    return Math.hypot(w.position.x - x, w.position.z - z);
                 }),
-            (X, v, n) => v > 0.1 && n / v > 1.7 && n / v < 2.3,
+            (X, v, n) => v > 0.1 && Math.abs(n / v - 2) < 0.3,
         ],
-        albedo: null,
         klang: [
-            (z) => (z.klang = Object.assign({}, z.klang, { freq: z.klang.freq * 2 })),
+            (z) => (z.klang = { ...z.klang, freq: z.klang.freq * 2 }),
             async (X) => {
                 const sym = st.symphony;
-                const alt = [sym.enabled, sym.ctx, sym.masterGain];
+                const alt = { ...sym };
                 const ctx = new OfflineAudioContext(1, 24000, 48000);
-                [sym.enabled, sym.ctx, sym.masterGain] = [true, ctx, ctx.destination];
-                try {
-                    const tritt = (x, z, y) => (setz(x, z, y), r._schrittKlangTick({ walkPhase: 0 }, 0, false, pm), r._schrittKlangEreignis(pm, false, 0));
-                    if (X === "wasser") tritt(watX, UZ);
-                    else platte(X, tritt);
-                    return zentroid((await ctx.startRendering()).getChannelData(0));
-                } finally {
-                    [sym.enabled, sym.ctx, sym.masterGain] = alt;
-                    setz(UX, UZ);
-                }
+                Object.assign(sym, { enabled: true, ctx, masterGain: ctx.destination });
+                const tritt = (x, z, y) => (setz(x, z, y), r._schrittKlangTick({ walkPhase: 0 }, 0, false, pm), r._schrittKlangEreignis(pm, false, 0));
+                await (X === "wasser" ? tritt(watX, UZ) : boden(X, tritt));
+                Object.assign(sym, alt);
+                return window.__klangCore.schwerpunkt((await ctx.startRendering()).getChannelData(0), 48000);
             },
             (X, v, n) => n / v > 1.4,
         ],
-        tZuend: [(z) => (z.tZuend -= 100), (X) => brenn(X, 120).zuend, (X, v, n) => v > 0 && n > 0 && n < 0.85 * v],
+        tZuend: [(z) => (z.tZuend -= 100), async (X) => (await brenn(X, 120))[1], (X, v, n) => n > 0 && n < 0.85 * v],
         tSchmelz: [
             (z) => (z.tSchmelz -= 100),
             (X) => {
                 if (X !== "wasser") throw new Error("offen: kein Leser der Phase von " + X);
-                return halte({ seasonPhase: 0.875, autoSeason: false, timeOfDay: 0.5 }, () => +(r._eisAt(SX, SZ, NaN) !== null));
+                return um("seasonPhase", 0.875, () => +(r._eisAt(SX, SZ, NaN) !== null));
             },
             (X, v, n) => v === 1 && n === 0,
         ],
         c: [
             (z) => (z.c *= 0.5),
-            (X) =>
-                X === "wasser"
-                    ? halte({ timeOfDay: 0.625 }, () => r._wasserTemperaturAt(spiegel)) - halte({ timeOfDay: 0.125 }, () => r._wasserTemperaturAt(spiegel))
-                    : brenn(X, 2).warm,
+            async (X) => (X === "wasser" ? um("timeOfDay", 0.625, () => r._wasserTemperaturAt(spiegel)) - um("timeOfDay", 0.125, () => r._wasserTemperaturAt(spiegel)) : (await brenn(X, 2))[0]),
             (X, v, n) => v > 0 && n / v > 1.5,
         ],
     };
     const aus = {};
-    const tafelLeser = r._stoff;
-    for (const X of STOFFE) {
-        aus[X] = {};
-        for (const w of Object.keys(W)) {
+    const leser = r._stoff;
+    for (const X of STOFFE)
+        for (const w of WIRKUNGEN) {
             const z = M[X];
             const alt = z && z[w];
-            if (!W[w]) {
-                aus[X][w] = { ok: false, fehler: "offen: die Luma braucht das Ausgabe-Bild (echte GPU)" };
-                continue;
-            }
+            const f = W[w];
+            aus[X] = aus[X] || {};
             try {
-                const vor = await W[w][1](X);
-                if (!z) throw new Error("keine Zeile " + X);
+                if (!f) throw new Error("offen: die Luma braucht das Ausgabe-Bild (echte GPU)");
+                const vor = await f[1](X);
                 if (sabotage) {
-                    const snap = Object.fromEntries(Object.keys(M).map((n) => [n, Object.assign({}, M[n])]));
+                    const snap = Object.fromEntries(Object.keys(M).map((n) => [n, { ...M[n] }]));
                     r._stoff = (n) => snap[n];
                 }
-                W[w][0](z);
-                const nach = await W[w][1](X);
-                aus[X][w] = { vor, nach, ok: !!W[w][2](X, vor, nach) };
+                f[0](z);
+                const nach = await f[1](X);
+                aus[X][w] = { vor, nach, ok: !!f[2](X, vor, nach) };
             } catch (e) {
-                aus[X][w] = { ok: false, fehler: String((e && e.message) || e).slice(0, 140) };
+                aus[X][w] = { ok: false, fehler: String(e.message || e).slice(0, 140) };
             } finally {
                 if (z) z[w] = alt;
-                if (tafelLeser) r._stoff = tafelLeser;
-                else delete r._stoff;
+                r._stoff = leser;
             }
         }
-    }
-    weg(linse);
+    r.removeArchitecture(linse);
     return aus;
 }
 async function tafel() {
-    const { statikServer, starteBrowser, nullRenderer, warteAufWelt, buehne } = require("./lib/welt-boot.cjs");
-    const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
-    const PORT = Number(process.env.GEGENSTAND_STOFF_PORT || 4677);
-    const server = statikServer();
-    await new Promise((ok) => server.listen(PORT, "127.0.0.1", ok));
+    const { statikServer, starteBrowser, oeffneWelt, buehne } = require("./lib/welt-boot.cjs");
+    const port = Number(process.env.GEGENSTAND_STOFF_PORT || 4677);
+    const server = statikServer().listen(port, "127.0.0.1");
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     try {
-        const page = await browser.newPage();
-        await nullRenderer(page);
-        await page.evaluateOnNewDocument(WASSER_INSTALL);
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 180000 });
-        await warteAufWelt(page, 180000);
+        const page = await oeffneWelt(browser, { port, nullRenderer: true, warteBis: "domcontentloaded", frist: 180000 });
+        await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
         await buehne(page);
-        const echt = await page.evaluate(tafelProbe, STOFFE, false);
-        const sabotage = await page.evaluate(tafelProbe, STOFFE, true);
-        const je = Object.fromEntries(STOFFE.map((X) => [X, WIRKUNGEN.filter((w) => echt[X][w].ok)]));
-        const vorbei = STOFFE.flatMap((X) => WIRKUNGEN.filter((w) => sabotage[X][w].ok).map((w) => X + "." + w));
-        console.log("=== DIE STOFF-TAFEL (stoffe.K1): je Stoff EINE Mutation je Wirkung, beobachtet in der Welt ===");
-        const f = (v) => (Array.isArray(v) ? v.map(f).join("/") : typeof v === "number" ? +v.toFixed(3) : v);
-        for (const X of STOFFE) {
-            console.log(`  ${X.padEnd(7)} ${je[X].length}/7 — ` + WIRKUNGEN.map((w) => `${echt[X][w].ok ? "✅" : "❌"} ${w} ${echt[X][w].fehler || f(echt[X][w].vor) + " → " + f(echt[X][w].nach)}`).join(" · "));
-        }
-        console.log("TAFEL " + JSON.stringify({ je: Object.fromEntries(STOFFE.map((X) => [X, je[X].length])), wirkungen: je, vorbei, echt }));
-        const s1 = STOFFE.every((X) => je[X].length >= 3);
-        if (vorbei.length) console.error(`❌ SABOTAGE: ${vorbei.join(", ")} bleibt grün, während die Tafel ihre alte Zeile liefert — der Leser liest an ihr vorbei`);
-        console.log(s1 && !vorbei.length ? `✅ TAFEL GRÜN — Staffel ${STOFFE.every((X) => je[X].length === 7) ? 2 : 1}` : "❌ TAFEL ROT — " + (s1 ? "die Sabotage" : "ein Stoff unter 3 von 7"));
-        return s1 && !vorbei.length ? 0 : 1;
+        const echt = await page.evaluate(tafelProbe, STOFFE, WIRKUNGEN, false);
+        const sab = await page.evaluate(tafelProbe, STOFFE, WIRKUNGEN, true);
+        const je = {};
+        for (const X of STOFFE) console.log(X, (je[X] = WIRKUNGEN.filter((w) => echt[X][w].ok)).length + "/7", JSON.stringify(echt[X]));
+        const vorbei = STOFFE.flatMap((X) => WIRKUNGEN.filter((w) => sab[X][w].ok).map((w) => X + "." + w));
+        console.log("TAFEL " + JSON.stringify({ je, vorbei }));
+        const gruen = !vorbei.length && STOFFE.every((X) => je[X].length >= 3);
+        console.log(gruen ? "✅ TAFEL GRÜN — Staffel " + (STOFFE.every((X) => je[X].length === 7) ? 2 : 1) : "❌ TAFEL ROT — an der Tafel vorbei: " + vorbei);
+        return gruen ? 0 : 1;
     } finally {
         await browser.close();
         server.close();
     }
 }
 if (process.argv.includes("--tafel")) {
-    tafel().then(
-        (c) => process.exit(c),
-        (e) => {
-            console.error(e);
-            process.exit(2);
-        }
-    );
+    tafel().then(process.exit, (e) => {
+        console.error(e);
+        process.exit(2);
+    });
     return;
 }
 

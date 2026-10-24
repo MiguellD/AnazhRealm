@@ -1042,6 +1042,52 @@
         };
     }
 
+    // ── DER SPEKTRAL-SCHWERPUNKT (stoffe.K1, rein additiv, Mathe): Σ f·P(f) / Σ P(f) in Hz über die Leistung einer Folge —
+    //    Hann-gefensterte FFT der Länge N (die größte Zweierpotenz ≤ 8192 und ≤ der Folge), gemittelt über ihre Blöcke; die
+    //    Farbe eines Klangs. Leser: die Klang-Linse (je Stimme) und die Stoff-Linse (der Schritt je Stoff). ──
+    function schwerpunkt(daten, sr) {
+        var N = 2;
+        while (N < 8192 && N * 2 <= daten.length) N *= 2;
+        var re = new Float64Array(N), im = new Float64Array(N), sw = 0, sf = 0;
+        for (var o = 0; o + N <= daten.length; o += N) {
+            for (var i = 0; i < N; i++) {
+                re[i] = daten[o + i] * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / N));
+                im[i] = 0;
+            }
+            for (var a = 1, j = 0; a < N; a++) {
+                var bit = N >> 1;
+                for (; j & bit; bit >>= 1) j ^= bit;
+                j ^= bit;
+                if (a < j) {
+                    var tr = re[a], ti = im[a];
+                    re[a] = re[j]; im[a] = im[j]; re[j] = tr; im[j] = ti;
+                }
+            }
+            for (var len = 2; len <= N; len <<= 1) {
+                var wr = Math.cos((-2 * Math.PI) / len), wi = Math.sin((-2 * Math.PI) / len);
+                for (var b = 0; b < N; b += len) {
+                    var cr = 1, ci = 0;
+                    for (var k = 0; k < len / 2; k++) {
+                        var h = b + k + len / 2, vr = re[h] * cr - im[h] * ci, vi = re[h] * ci + im[h] * cr;
+                        re[h] = re[b + k] - vr;
+                        im[h] = im[b + k] - vi;
+                        re[b + k] += vr;
+                        im[b + k] += vi;
+                        var nr = cr * wr - ci * wi;
+                        ci = cr * wi + ci * wr;
+                        cr = nr;
+                    }
+                }
+            }
+            for (var q = 1; q < N / 2; q++) {
+                var p = re[q] * re[q] + im[q] * im[q];
+                sw += p;
+                sf += (p * q * sr) / N;
+            }
+        }
+        return sf / Math.max(1e-20, sw);
+    }
+
     // ── DIE SPITZEN-WAND hinter dem Welt-Master (Wirt UND Lab), Zahlen aus UMWELT.spitze ──
     // Die Kennlinie (rein): f(x) = x bis T, darueber T + (C − T)·tanh((|x| − T)/(C − T)) — stetig mit stetiger
     // Steigung bei T, |f| < C fuer jedes x. Abgetastet ueber x ∈ [−H, H] (H = Kopfraum).
@@ -1377,6 +1423,7 @@
         umweltMischung: umweltMischung,
         umweltGraph: umweltGraph,
         umweltSpitze: umweltSpitze,
+        schwerpunkt: schwerpunkt,
         tierRufPuffer: tierRufPuffer,
         tierRufPegel: tierRufPegel,
         tierRuf: tierRuf,
