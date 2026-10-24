@@ -1471,6 +1471,9 @@ class AnazhRealm_bau_vorlagen {
             essenz: 1000,
             blech: FG.huelleDichte * FG.wasserRho,
         };
+        // Stahl, Blech und Leib sind Stoffe der Körper (die Klinge der Schmiede, die Hülle des Wagens, der Mensch), keine
+        // Bau-Stoffe: die Welt hat keine Quelle, aus der man sie sammelt, die Werkstatt bietet sie nicht an (`bauStoff`).
+        const nurKoerper = ["stahl", "blech", "leib"];
         const make = (name, label, color, tags) => {
             const z = {
                 name,
@@ -1479,6 +1482,7 @@ class AnazhRealm_bau_vorlagen {
                 color,
                 tags: { ...AnazhRealm.MATERIAL_TAG_DEFAULTS, ...tags },
             };
+            if (nurKoerper.includes(name)) z.bauStoff = false;
             const q = typeof RHO[name] === "object" ? RHO[name] : { wert: RHO[name] };
             if (!q.get) {
                 if (!(q.wert > 0)) throw new Error("STOFF-ZEILE ohne Dichte: " + name);

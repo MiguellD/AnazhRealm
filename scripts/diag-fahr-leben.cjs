@@ -541,8 +541,7 @@ function stationVerdict(s) {
     return out;
 }
 
-// K1 (physik.K1, `probeKoerper`): die Messung der Meisterkarte (Bänder, Δv, Holz ρ/ρw, Stein sinkt, Labor = Welt ≤ 1 %), der
-// Spieler an seiner Brustkorb-Linie; ρ ×2 in der EINEN Stoff-Zeile → jede Masse ×2, wen das Wasser trug, der sinkt.
+// K1 (physik.K1, `probeKoerper`): die Messung der Meisterkarte und ρ ×2 in der EINEN Stoff-Zeile (jede Masse ×2).
 const K1 = { m: 0.01, dv: 0.05, grund: 0.3, holz: 0.1, brust: 0.2 };
 function koerperVerdict(k) {
     if (!k || k.err || !k.vor || !k.nach) return { s1: [`keine Probe (${k && k.err})`], s2: ["keine Probe"] };

@@ -2255,6 +2255,7 @@ class AnazhRealm_werkstatt_bauen {
         };
         for (const name of Object.keys(materials)) {
             const mat = materials[name];
+            if (mat.bauStoff === false) continue; // ein Stoff der Körper, kein Bau-Stoff (_defaultMaterials)
             const card = document.createElement("div");
             card.className = "workshop-material-card";
             card.setAttribute("draggable", "true");

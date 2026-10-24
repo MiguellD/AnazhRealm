@@ -1570,7 +1570,7 @@ class AnazhRealm_bau_buch {
 
     // DAS VOLUMEN EINES TEILS (m³ in Bauplan-Einheiten): das Volumen seiner GESTALT — das Mesh, das `_makePartGeometry` für
     // diese Form baut, über den Divergenz-Satz (Σ a · (b × c) / 6 je Dreieck; eine flache Form trägt keins), je Form und Maß
-    // gemerkt. Vorher die Box der Größe für jede Form: ein Speichen-Rad wog wie seine volle Scheibe (Wagen-Rad 0,100 statt
+    // gemerkt (eine Zahl je Form, das Netz fällt sofort). Vorher die Box der Größe für jede Form: ein Speichen-Rad wog wie seine volle Scheibe (Wagen-Rad 0,100 statt
     // 0,031 m³), eine Kugel 1,9-fach.
     _teilVolumen(p) {
         if (!p) return 0;
@@ -1601,8 +1601,7 @@ class AnazhRealm_bau_buch {
                 v = Math.abs(v);
             }
             if (geo && typeof geo.dispose === "function") geo.dispose();
-            if (memo.size > 512) memo.clear();
-            memo.set(key, v);
+            memo.set(key, v); // je Form EINE Zahl, nie geleert: eine Welt trägt ~1 500 Formen (ein Deckel von 512 baute je Gang 1 450 Netze neu)
         }
         return v;
     }
