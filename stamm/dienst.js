@@ -1266,9 +1266,7 @@ class AnazhRealm_dienst {
             this._ladeSperre.verlangt = true;
             return false;
         }
-        // DAS DORF IST NIE HALB (stadt-erwachen): der Gang seines Erlebnisses (`_dorfErlebnis`, Raten je Takt) schließt vor dem
-        // Schnappschuss — nach dem Laden baut die Zelle nur ihre Wege neu, nie Laterne, Brunnen und Hof-Baum
-        for (const q = this._autoSettlementQueue; q && q.gang;) if (q.gang.next().done) q.gang = null;
+        this._dorfGangSchliessen();
         const stateToSave = this.buildStateSnapshot();
         // Pro Welt eigener Key + lastPlayed im Index. Ohne worldId (nach ensureWorldMeta unmöglich) auf den
         // Legacy-Key zurück, damit nichts still verloren geht.

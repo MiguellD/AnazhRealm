@@ -2094,11 +2094,11 @@
         {
             id: "kruemmung",
             lab: "Krümmung (Sori)",
-            min: 0,
+            min: -0.5,
             max: 0.2,
             step: 0.005,
             grp: "SCHLIFF",
-            law: "Mittellinie biegt → Säbel/Shamshir-Bogen",
+            law: "Mittellinie biegt → Säbel/Shamshir-Bogen; negativ gegen die Schneide → die hohle Sichel",
         },
         {
             id: "griff",
@@ -2364,6 +2364,17 @@
             beak: false,
             tool: true,
         }, // loses Material schöpfen → breit, konkav
+        // halten.K3 (additiv): den stehenden Halm im Zug schneiden → die Schneide hohl (der Halm gibt nach, ableitenKlinge),
+        // einschneidig, dünn, kurz; ein Werkzeug ohne Parier
+        Sichel: {
+            modus: "klinge",
+            task: { art: "klinge", stich: 0.0, zug: 1.0, ziel: "kraut", laenge: 0.42 },
+            griff: 0.13,
+            knaufR: 0.014,
+            parier: 0.02,
+            guardOverride: "keine",
+            tool: true,
+        },
     };
     // — Traditionen: jetzt GENERATIVE FORM-REGLER (orthogonale Design-Sprachen, die die Gattungs-Basis biegen) —
     //   Möblierung (pommel/guard/wrap/accent/fam/single/curveBias) + FORM-Multiplikatoren:
@@ -2484,7 +2495,8 @@
                 P.fam = T.fam;
                 P.single = T.single;
             } // mit Aufgabe besitzt das Gesetz Familie/Schneiden; Tradition gibt Proportion+Krümmung+Möbel
-            P.kruemmung = cl((P._kBase || 0) + (T.curveBias || 0), 0, 0.22);
+            // die hohle Klinge (halten.K3, kruemmung < 0 aus dem Gesetz) behält ihren Bogen; jede andere klemmt auf [0, 0,22]
+            P.kruemmung = cl((P._kBase || 0) + (T.curveBias || 0), Math.min(0, P._kBase || 0), 0.22);
             P.w0 = cl(P._w0B * (T.breite || 1), 0.012, 0.078);
             P.th0 = cl(P._th0B * (T.dicke || 1), 0.0025, 0.014);
             P.wTip = cl(P._wTipB * (T.taper || 1), 0.08, 1.0);
@@ -2518,7 +2530,10 @@
         erde: { mu: 0.4, hart: 0.3, spalt: 0.3 },
         knochen: { mu: 0.3, hart: 0.7, spalt: 0.35 },
         maille: { mu: 0.3, hart: 0.78, spalt: 0.05 },
-    }; // mu=Reibung, hart=Härte, spalt=Spalt-Anisotropie (wie leicht längs spaltbar)
+        // halten.K3 (additiv): der stehende Halm (Gras, Farn, Schilf, Blume — der Stoff „kraut" der Welt, Härte 0,05 wie
+        // dort): Fasern längs, und er GIBT NACH (biege 1) — er weicht der Schneide aus, statt ihr zu widerstehen
+        kraut: { mu: 0.3, hart: 0.05, spalt: 0.8, biege: 1 },
+    }; // mu=Reibung, hart=Härte, spalt=Spalt-Anisotropie (wie leicht längs spaltbar), biege=der Halm weicht aus (0..1)
     // ── WERKSTOFF des Werkzeugs: GEMESSENE Härte = Fähigkeit, eine dünne Kante zu halten. Die Dichte trägt die EINE
     //    Stoff-Zeile MAT (halten-gesetz: die rho-Spalte hier war ihr Zwilling, byte-gleiche Zahlen) ──
     const WERKSTOFF = {
@@ -2736,6 +2751,11 @@
         const fuller = fam === "raute" ? 0 : cl((1 - s) * 0.62 * Math.min(1, L + 0.1), 0, 0.72); // I-Träger nur lang & nicht-Raute
         const thTip = cl(0.52 - s * 0.16, 0.3, 0.6); // Stechen stärker distal (schneller Ort, dicke Basis)
         const wTip = cl(0.4 - s * 0.24, 0.1, 0.55); // Stechen spitzer
+        // halten.K3 (additiv) — ein NACHGEBENDES Ziel (zm.biege: der stehende Halm) fasst nur eine HOHLE Schneide: wo ihr
+        // Zug-Winkel φ den Reibungswinkel des Halms nicht übersteigt (tan φ ≤ μ), schiebt sie ihn vor sich her. Die Mittellinie
+        // krümmt sich GEGEN die einschneidige Schneide (kruemmung < 0: die Sichel), bis die Spitze den Reibungswinkel plus den
+        // Zug-Winkel der Aufgabe trägt — tan φ_Spitze = tan(atan μ + atan zug) = |kruemmung|·π/(2·L) (die Steigung von curveY).
+        const hohl = zm.biege ? (zm.mu + zug) / (1 - zm.mu * zug) : 0;
         return {
             w0,
             wTip,
@@ -2746,9 +2766,9 @@
             fullerW: 0.6,
             klinge: L,
             flat: cl(0.46 - s * 0.1, 0.3, 0.52),
-            kruemmung: cl(zug * 0.15, 0, 0.2),
+            kruemmung: hohl ? (-2 * L * hohl) / Math.PI : cl(zug * 0.15, 0, 0.2),
             single: zug > 0.5,
-            intent: s > 0.6 ? "stich" : t.ziel === "holz" ? "nutz" : "hieb",
+            intent: s > 0.6 ? "stich" : t.ziel === "holz" || hohl ? "nutz" : "hieb",
         };
     }
     // ════════════════════════════════════════════════════════════════════
@@ -2848,9 +2868,9 @@
 
     // ── B1 REZEPTE — die GATTUNGEN des Labs im Vertrags-Namensraum [a-z0-9_-]+
     //    (`lab` = der Schöpfer-Wortlaut der Buttons; Umlaute normalisiert ae/oe/ss).
-    //    Die Rezept-Menge ist BEWUSST alle 21 Gattungen: Waffen UND Werkzeuge — die
+    //    Die Rezept-Menge ist BEWUSST alle 22 Gattungen: Waffen UND Werkzeuge — die
     //    tool:true-Einträge (Messer/Fällaxt/Spaltmaul/Vorschlaghammer/Beil/Spitzhacke/
-    //    Spaten/Schaufel) decken die geraet_spitzhacke-Klasse. ──
+    //    Spaten/Schaufel/Sichel) decken die geraet_spitzhacke-Klasse. ──
     // prettier-ignore
     var REZEPT_ZU_GATTUNG = {
         langschwert: "Langschwert", saebel: "Säbel", degen: "Degen", grossschwert: "Großschwert",
@@ -2858,7 +2878,7 @@
         langbogen: "Langbogen", kriegsbogen: "Kriegsbogen", reiterbogen: "Reiterbogen", recurvebogen: "Recurvebogen",
         streitkolben: "Streitkolben", kriegsaxt: "Kriegsaxt", kriegshammer: "Kriegshammer", keule: "Keule",
         faellaxt: "Fällaxt", spaltmaul: "Spaltmaul", vorschlaghammer: "Vorschlaghammer", beil: "Beil",
-        spitzhacke: "Spitzhacke", spaten: "Spaten", schaufel: "Schaufel",
+        spitzhacke: "Spitzhacke", spaten: "Spaten", schaufel: "Schaufel", sichel: "Sichel",
     };
 
     // ── B1-Ableitung (eine Quelle, zwei Sichten — das porta-SLIDERS→PARAMS-Muster):
@@ -3087,10 +3107,11 @@
             // Passung wie das Fern-Bild). Die senkrechte Säule kapselRK/RMin/
             // Y0/Y1 (0.55/0.35/0.1/1.4 · L) ist GEFALLEN: sie war gattungs- und
             // höhenblind (Hirsch L 0,64 flach 1/10, hangab 2/8).
-            dauerProSqrtI: 0.55,
-            // EINHEITSBREI-SCHNITT (18.07., rein additiv): die Dauer-Konstante
-            // für die GEMESSENE Trägheit (kampfMasze, echte kg·m² — andere
-            // Einheit als die Tag-Trägheit des Emergenz-Pfads): Langschwert
+            // EINHEITSBREI-SCHNITT (18.07.): die Dauer-Konstante für die
+            // Trägheit in echten kg·m² — seit physik K1 (23.10.) für JEDES
+            // Gerät: die Messung der Klinge (kampfMasze) wie die Gestalt des
+            // Eigenwerks (Wirt _eigenwerkMasze, Teile × ρ der Stoff-Zeile); die
+            // Tag-Konstante dauerProSqrtI (0.55) fiel mit ihrem Leser: Langschwert
             // (I 0.137) → ~0.52 s, Grossschwert (0.336) → ~0.81 s, Dolch
             // klemmt flink auf minDauerSec, Vorschlaghammer träge auf max.
             dauerProSqrtIKg: 1.4,
@@ -3357,7 +3378,20 @@
     // Fläche (grabeBlatt). Wer die Gestalt umformt (ov kopfTyp, beta, …), formt die Front.
     function schlagFront(P, m) {
         var ws = (P.task && P.task.werkstoff) || P.werkstoff || "stahl";
-        if (m.edgeWinkel != null) return { art: "kante", winkelDeg: m.edgeWinkel, werkstoff: ws };
+        // die HOHLE Schneide (halten.K3, additiv): an der Stelle s der Klinge trägt die Schneide auf der hohlen Seite der
+        // gekrümmten Mittellinie (curveY) den Zug-Winkel tan φ(s) = hohl·sin(πs/2), hohl = |kruemmung|·π/(2·klinge) — die
+        // einschneidige Klinge nur bei kruemmung < 0 (die Schneide liegt bei −W, die Mitte biegt nach −Y), die zweischneidige
+        // bei jeder Krümmung; ein Wucht-Kopf krümmt nie (hohl 0). klingeM: die Länge, über die s läuft.
+        if (m.edgeWinkel != null) {
+            var kr = P.modus === "klinge" ? P.kruemmung || 0 : 0;
+            return {
+                art: "kante",
+                winkelDeg: m.edgeWinkel,
+                werkstoff: ws,
+                hohl: kr < 0 || (kr > 0 && !P.single) ? (Math.abs(kr) * Math.PI) / (2 * P.klinge) : 0,
+                klingeM: P.modus === "klinge" ? P.klinge : 0,
+            };
+        }
         if (P.kopfTyp === "grabeblatt") return { art: "blatt", flaecheM2: (P.bladeW || 0.16) * (P.bladeLen || 0.24) };
         var sR = P.socketR,
             r;
@@ -3436,7 +3470,30 @@
             weg = "bruch";
             grad = (ARENA.werk.buendelM / (ARENA.werk.buendelM + F.rKontaktM)) * Z.hart * (1 - Z.spalt);
         }
-        return { weg: weg, E: E, W: E * grad, grad: grad, halt: halt, ziel: t.ziel };
+        // DER NACHGEBENDE HALM (halten.K3, additiv — nur ein Ziel mit biege): die Schneide fasst ihn, wo ihr Zug-Winkel den
+        // Reibungswinkel übersteigt (hohl·sin(πs/2) > μ, ab s0 = (2/π)·asin(μ/hohl)); dort schneidet sie, davor schiebt sie
+        // den Halm weg: fang = 1 − s0, grad × (1 − biege + biege·fang). fangM ist die Länge der fassenden Schneide längs
+        // ihres Bogens (L·∫ √(1 + tan²φ) ds über [s0, 1]) — das Band, das ein Zug mäht. Eine Front ohne hohle Schneide fasst
+        // keinen Halm (fang 0).
+        var fang = null,
+            fangM = 0;
+        if (Z.biege) {
+            var hohl = F.art === "kante" ? F.hohl || 0 : 0,
+                s0 = hohl > Z.mu ? (2 / Math.PI) * Math.asin(Z.mu / hohl) : 1;
+            fang = 1 - s0;
+            for (var i = 0; i < 16; i++) {
+                var tanPhi = hohl * Math.sin((Math.PI / 2) * (s0 + ((i + 0.5) * fang) / 16));
+                fangM += (Math.sqrt(1 + tanPhi * tanPhi) * fang) / 16;
+            }
+            fangM *= F.klingeM || 0;
+            grad *= 1 - Z.biege + Z.biege * fang;
+        }
+        var u = { weg: weg, E: E, W: E * grad, grad: grad, halt: halt, ziel: t.ziel };
+        if (fang !== null) {
+            u.fang = fang;
+            u.fangM = fangM;
+        }
+        return u;
     }
 
     // DER LEHREN-ANTEIL einer vorbereiteten Gestalt (pass 1, warn ½, na zählt nicht) ∈ [0, 1].

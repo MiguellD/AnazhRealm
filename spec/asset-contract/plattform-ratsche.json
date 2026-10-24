@@ -45,18 +45,19 @@
         },
         "v5": {
             "kern": "schmiede-core.js",
-            "faelle": 23,
+            "faelle": 24,
+            "probe": "Samen 7 je Gattung + 2 ov-Faelle. Gehoben um EINEN Fall (halten.K3: die Sichel kam additiv dazu, 23 -> 24): sie kippt wie jede Klinge mit Wicklung an cos/sin (19 -> 20) und an der Tangenten-Laenge ihrer gekruemmten Mittellinie (hypot 7 -> 8, wie der Saebel); kein alter Fall kippt neu, pow bleibt 0",
             "kippt": {
-                "cos": 19,
-                "sin": 19,
+                "cos": 20,
+                "sin": 20,
                 "atan2": 15,
-                "hypot": 7
+                "hypot": 8
             },
             "taeter": {
-                "cos": "schmiede-core.js:800 cos (ring.rotation.z -> Quaternion -> Float64-Matrix)",
-                "sin": "schmiede-core.js:800 sin (ring.rotation.z -> Quaternion -> Float64-Matrix)",
+                "cos": "schmiede-core.js:802 cos (ring.rotation.z -> Quaternion -> Float64-Matrix)",
+                "sin": "schmiede-core.js:805 sin (ring.rotation.z -> Quaternion -> Float64-Matrix)",
                 "atan2": "schmiede-core.js:844 atan2 (ang, der Umfangs-Winkel)",
-                "hypot": "schmiede-core.js:500 hypot (tl, die Tangenten-Laenge)"
+                "hypot": "schmiede-core.js:505 hypot (tl, die Tangenten-Laenge)"
             },
             "soll": "0 - das Raster kommt mit dem v5-Akt der W3 (Klinge L0/L1)"
         },

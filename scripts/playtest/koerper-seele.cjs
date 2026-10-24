@@ -85,27 +85,27 @@ async function checkBandV1757HeldSlot(ctx) {
         r.recomputePlayerStats();
         return out;
     });
-    check("V17.57 W2-B: das Test-Gerät trägt härte (die Substanz-Prämisse hält)", res.implHasHardness);
+    check("das Test-Gerät trägt härte (die Substanz-Prämisse hält)", res.implHasHardness);
     check(
-        "V17.57 W2-B: equipHeld nimmt JEDEN Bauplan — keine Markierung nötig (kein Rollen-Schloss)",
+        "equipHeld nimmt JEDEN Bauplan — keine Markierung nötig (kein Rollen-Schloss)",
         res.equipNoRoleNeeded
     );
-    check("V17.57 W2-B: equipHeld lehnt einen unbekannten Bauplan ab", res.rejectsUnknown);
-    check("V17.57 W2-B: equipHeld lehnt ein builtIn-Crafting-Tool ab (kein Welt-Gerät)", res.rejectsBuiltinTool);
+    check("equipHeld lehnt einen unbekannten Bauplan ab", res.rejectsUnknown);
+    check("equipHeld lehnt ein builtIn-Crafting-Tool ab (kein Welt-Gerät)", res.rejectsBuiltinTool);
     check(
-        "V17.57 W2-B: KONSUM — ein gehaltenes hartes Gerät HEBT den Schaden (Angriff-mit-jedem-Gerät, Substanz→Profil)",
+        "KONSUM — ein gehaltenes hartes Gerät HEBT den Schaden (Angriff-mit-jedem-Gerät, Substanz→Profil)",
         res.heldRaisesDamage
     );
     check(
         "Welle L K-D15: die Hand ist kein Panzer — das harte Gerät lässt Verteidigung und HP unberührt (nur Angriff)",
         res.heldKeinPanzer
     );
-    check("V17.57 W2-B: Gerät abnehmen → zurück auf die Baseline (kein Rest-Effekt)", res.unequipRestores);
+    check("Gerät abnehmen → zurück auf die Baseline (kein Rest-Effekt)", res.unequipRestores);
     check(
-        "V17.57 W2-B: DASSELBE Gerät treibt das Abbauen (_heldImplementBlueprint löst den held-Slot auf)",
+        "DASSELBE Gerät treibt das Abbauen (_heldImplementBlueprint löst den held-Slot auf)",
         res.heldDrivesHarvest
     );
-    check("V17.57 W2-B: Persistenz — der held-Slot reist im Snapshot", res.snapHasHeld);
+    check("Persistenz — der held-Slot reist im Snapshot", res.snapHasHeld);
 }
 
 // das Gerät SCHMIEDEN: F2 die Präzision moduliert das Abbauen
@@ -196,19 +196,19 @@ async function checkBandV1761ForgeImplement(ctx) {
         return out;
     });
     check(
-        "V17.61 S3: F2 — die Praezision moduliert die Abbau-Kraft (fein > grob, gleiche Form/Materie; die Rekursion schliesst)",
+        "F2 — die Praezision moduliert die Abbau-Kraft (fein > grob, gleiche Form/Materie; die Rekursion schliesst)",
         res.precisionModulatesMine
     );
     check(
-        "V17.61 S3: F3 — schmieden in pfad OHNE Material → abgelehnt (not_enough_material) + nicht ausgeruestet",
+        "F3 — schmieden in pfad OHNE Material → abgelehnt (not_enough_material) + nicht ausgeruestet",
         res.pfadForgeRejectsWithoutMaterial && res.notEquippedAfterFail
     );
     check(
-        "V17.61 S3: F3 KONSUM — schmieden in pfad MIT Material → erfolg + verbraucht Material + ausgeruestet",
+        "F3 KONSUM — schmieden in pfad MIT Material → erfolg + verbraucht Material + ausgeruestet",
         res.pfadForgeSucceeds && res.pfadForgeConsumes && res.forgeEquips
     );
-    check("V17.61 S3: F3 — schmieden friert die Praezision ein (forgedPrecision gesetzt)", res.forgeFreezesPrecision);
-    check("V17.61 S3: F3 — schoepfer schmiedet frei (ohne Material) + ruestet aus", res.schoepferForgesFree);
+    check("F3 — schmieden friert die Praezision ein (forgedPrecision gesetzt)", res.forgeFreezesPrecision);
+    check("F3 — schoepfer schmiedet frei (ohne Material) + ruestet aus", res.schoepferForgesFree);
 }
 
 // der Schmiede-Akt wird BEDEUTSAM: der Spieler-Equip-Pfad (wieldBlueprint)
@@ -289,23 +289,23 @@ async function checkBandV1762ForgeMeaningful(ctx) {
         return out;
     });
     check(
-        "V17.62 S3-B: forgedPrecision persistiert (serialize → deserialize; geschmiedet bleibt geschmiedet)",
+        "forgedPrecision persistiert (serialize → deserialize; geschmiedet bleibt geschmiedet)",
         res.forgedPrecisionPersists
     );
     check(
-        "V17.62 S3-B: DER HEAL — ein UNgeschmiedetes Geraet in pfad OHNE Material in die Hand → abgelehnt (schmieden noetig, nicht gratis)",
+        "DER HEAL — ein UNgeschmiedetes Geraet in pfad OHNE Material in die Hand → abgelehnt (schmieden noetig, nicht gratis)",
         res.pfadWieldRejectsUnforged
     );
     check(
-        "V17.62 S3-B: KONSUM — ein ungeschmiedetes in pfad MIT Material in die Hand → SCHMIEDET (zahlt + ruestet aus + friert ein)",
+        "KONSUM — ein ungeschmiedetes in pfad MIT Material in die Hand → SCHMIEDET (zahlt + ruestet aus + friert ein)",
         res.pfadWieldForgesUnforged
     );
     check(
-        "V17.62 S3-B: GEBRAUCH frei — ein GESCHMIEDETES Geraet in die Hand nehmen kostet NICHTS (leeres Inventar, trotzdem ok)",
+        "GEBRAUCH frei — ein GESCHMIEDETES Geraet in die Hand nehmen kostet NICHTS (leeres Inventar, trotzdem ok)",
         res.pfadWieldForgedIsFree
     );
     check(
-        "V17.62 S3-B: schoepfer nimmt ungeschmiedet frei in die Hand (Gott-Modus, kein Schmieden)",
+        "schoepfer nimmt ungeschmiedet frei in die Hand (Gott-Modus, kein Schmieden)",
         res.schoepferWieldsFree
     );
 }
@@ -405,27 +405,27 @@ async function checkBandV1763ForgeArmor(ctx) {
         return out;
     });
     check(
-        "V17.63 S4: forgeArmor verlangt einen als Ruestung markierten Bauplan (sonst not_marked_as_armor)",
+        "forgeArmor verlangt einen als Ruestung markierten Bauplan (sonst not_marked_as_armor)",
         res.forgeArmorRequiresRole && res.markedArmor
     );
     check(
-        "V17.63 S4: forgeArmor in pfad OHNE Material → abgelehnt + nicht getragen",
+        "forgeArmor in pfad OHNE Material → abgelehnt + nicht getragen",
         res.pfadArmorRejectsWithoutMaterial
     );
     check(
-        "V17.63 S4: KONSUM — forgeArmor in pfad MIT Material → webt (zahlt + traegt + friert ein)",
+        "KONSUM — forgeArmor in pfad MIT Material → webt (zahlt + traegt + friert ein)",
         res.pfadArmorForges
     );
     check(
-        "V17.63 S4: GEBRAUCH frei — eine gemachte Ruestung tragen kostet nichts (leeres Inventar)",
+        "GEBRAUCH frei — eine gemachte Ruestung tragen kostet nichts (leeres Inventar)",
         res.wearMadeArmorFree
     );
     check(
-        "V17.63 S4: fertigeBlueprint routet nach Rolle (Ruestung → armor-Slot, Geraet → held-Slot)",
+        "fertigeBlueprint routet nach Rolle (Ruestung → armor-Slot, Geraet → held-Slot)",
         res.fertigeArmorToArmorSlot && res.fertigeGeraetToHeldSlot
     );
     check(
-        "V17.63 S4: forgeBlueprint funktioniert nach dem Refactor noch (zahlt + in die Hand)",
+        "forgeBlueprint funktioniert nach dem Refactor noch (zahlt + in die Hand)",
         res.forgeBlueprintStillWorks
     );
 }
@@ -506,21 +506,21 @@ async function checkBandV1765BrewConsumable(ctx) {
         return out;
     });
     check(
-        "V17.65 S6: brewConsumable verlangt role=consumable (sonst not_a_consumable)",
+        "brewConsumable verlangt role=consumable (sonst not_a_consumable)",
         res.brewRequiresConsumable && res.markedConsumable
     );
-    check("V17.65 S6: brauen in pfad OHNE Zutaten → abgelehnt (kein Trank)", res.pfadBrewRejectsWithoutMaterial);
+    check("brauen in pfad OHNE Zutaten → abgelehnt (kein Trank)", res.pfadBrewRejectsWithoutMaterial);
     check(
-        "V17.65 S6: KONSUM — brauen in pfad MIT Zutaten → zieht Material + der Trank wirkt",
+        "KONSUM — brauen in pfad MIT Zutaten → zieht Material + der Trank wirkt",
         res.pfadBrewConsumesAndWorks
     );
     check(
-        "V17.65 S6: activateConsumable bleibt das freie Low-Level-Primitiv (wirkt ohne Material)",
+        "activateConsumable bleibt das freie Low-Level-Primitiv (wirkt ohne Material)",
         res.activateStillFree
     );
-    check("V17.65 S6: schoepfer braut frei (ohne Zutaten)", res.schoepferBrewsFree);
+    check("schoepfer braut frei (ohne Zutaten)", res.schoepferBrewsFree);
     check(
-        "V17.65 S6: fertigeBlueprint routet consumable → brewConsumable (Brau-Ablehnung, nicht Geraet)",
+        "fertigeBlueprint routet consumable → brewConsumable (Brau-Ablehnung, nicht Geraet)",
         res.fertigeRoutesConsumable
     );
 }
@@ -616,22 +616,22 @@ async function checkBandV1766FertigenFlow(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-    check("V17.66 S7: das forging-Geraet traegt die Domain (Voraussetzung fuers Maschine-Gate)", res.forgeHasDomain);
+    check("das forging-Geraet traegt die Domain (Voraussetzung fuers Maschine-Gate)", res.forgeHasDomain);
     check(
-        "V17.66 S7: (b) DAS MASCHINE-GATE — pfad + forging ohne Esse → no_workshop_station (Domain gemeldet + Material bleibt)",
+        "(b) DAS MASCHINE-GATE — pfad + forging ohne Esse → no_workshop_station (Domain gemeldet + Material bleibt)",
         res.pfadNoStationRejects && res.noStationReportsDomain && res.noStationKeepsMaterial
     );
     check(
-        "V17.66 S7: KONSUM — Esse beim Spieler → FERTIGEN gelingt + zieht Material (end-to-end, nicht nur confirmBuild)",
+        "KONSUM — Esse beim Spieler → FERTIGEN gelingt + zieht Material (end-to-end, nicht nur confirmBuild)",
         res.pfadWithStationMakes
     );
     check(
-        "V17.66 S7: ein domain-loses Geraet braucht KEINE Station (das Gate ist transparent — darum brechen die S3-S6-Bands nicht)",
+        "ein domain-loses Geraet braucht KEINE Station (das Gate ist transparent — darum brechen die S3-S6-Bands nicht)",
         res.domainlessNeedsNoStation
     );
-    check("V17.66 S7: frieden/schoepfer ueberspringen die Station (forging ohne Esse → ok)", res.schoepferSkipsStation);
+    check("frieden/schoepfer ueberspringen die Station (forging ohne Esse → ok)", res.schoepferSkipsStation);
     check(
-        "V17.66 S7: KONSUM — die FERTIGEN-Zeile rendert ins DOM; eine Station-Rolle (esse) rendert KEINE (Guard)",
+        "KONSUM — die FERTIGEN-Zeile rendert ins DOM; eine Station-Rolle (esse) rendert KEINE (Guard)",
         res.domHasFertigenButton && res.stationRoleNoFertigen
     );
 }
@@ -714,22 +714,22 @@ async function checkBandV1770WorkshopStationMark(ctx) {
         return out;
     });
     check(
-        "V17.70 R3-Schluss: die Markierung setzt role=workshop-station + roleManual (der Intent-Override); vorher emergiert der Apparat NICHT als Werkstatt",
+        "die Markierung setzt role=workshop-station + roleManual (der Intent-Override); vorher emergiert der Apparat NICHT als Werkstatt",
         res.markSetsRole && res.notStationBeforeMark
     );
     check(
-        "V17.70 R3-Schluss: KONSUM — die bediente Domäne EMERGIERT aus der Substanz (Quarz-Gefäß → alchemy via R1), nicht deklariert",
+        "KONSUM — die bediente Domäne EMERGIERT aus der Substanz (Quarz-Gefäß → alchemy via R1), nicht deklariert",
         res.domainEmerges
     );
     check(
-        "V17.70 R3-Schluss: Built-in (esse) + unbekannt werden abgelehnt (Saat unantastbar)",
+        "Built-in (esse) + unbekannt werden abgelehnt (Saat unantastbar)",
         res.rejectsBuiltin && res.rejectsUnknown
     );
     check(
-        "V17.70 R3-Schluss: end-to-end — ein vom SPIELER gebauter, markierter Apparat bedient das Werkstatt-Gate (ein alchemy-Werk passt zu ihm)",
+        "end-to-end — ein vom SPIELER gebauter, markierter Apparat bedient das Werkstatt-Gate (ein alchemy-Werk passt zu ihm)",
         res.forgeStationDomain && res.workIsForging && res.playerStationServes
     );
-    check("V17.70 R3-Schluss: der DSL-Op set_workshop_station markiert (Spiegel von set_armor_role)", res.dslMarks);
+    check("der DSL-Op set_workshop_station markiert (Spiegel von set_armor_role)", res.dslMarks);
 }
 
 async function checkBandV1772Library(ctx) {
@@ -804,31 +804,31 @@ async function checkBandV1772Library(ctx) {
         return out;
     });
     check(
-        "V17.72 A1: die drei Bibliotheks-Built-ins (Rüstung/Trank/Avatar) + die Geräte-Substanz (KIND_SUBSTANCE) existieren",
+        "die drei Bibliotheks-Built-ins (Rüstung/Trank/Avatar) + die Geräte-Substanz (KIND_SUBSTANCE) existieren",
         res.allExist
     );
     check(
-        "V17.72 A1: die Rollen sind deklariert — Gerät rollenlos (gehalten, W2-B), Rüstung/Trank/Avatar = armor/consumable/soul",
+        "die Rollen sind deklariert — Gerät rollenlos (gehalten, W2-B), Rüstung/Trank/Avatar = armor/consumable/soul",
         res.rolesDeclared
     );
     check(
-        "V17.72 A1 SUBSTANZ-EHRLICH: der Trank resoniert consumable + der Avatar soul (body-shaped) — ein Spieler-Klon emergierte zur selben Rolle",
+        "A1 SUBSTANZ-EHRLICH: der Trank resoniert consumable + der Avatar soul (body-shaped) — ein Spieler-Klon emergierte zur selben Rolle",
         res.trankHonest && res.avatarHonest
     );
     check(
-        "V17.72 A1 / V17.83 U4: die Rüstungs-Platte (stumpf) → Bauwerk (armor-Rolle = Intent-Override, V17.70); die Spitzhacke (spitz+gestreckt) → Gerät AUS DER FORM (U4 trennt Klinge vom Bauwerk)",
+        "A1 / V17.83 U4: die Rüstungs-Platte (stumpf) → Bauwerk (armor-Rolle = Intent-Override, V17.70); die Spitzhacke (spitz+gestreckt) → Gerät AUS DER FORM (U4 trennt Klinge vom Bauwerk)",
         res.armorIsTwin && res.geraetIsImplement
     );
     check(
-        "V17.72 A1: das Role-GATE beißt — forgeArmor/brewConsumable/forgeAvatar lehnen das rollenlose Gerät ab",
+        "das Role-GATE beißt — forgeArmor/brewConsumable/forgeAvatar lehnen das rollenlose Gerät ab",
         res.armorGate && res.brewGate && res.avatarGate
     );
     check(
-        "V17.72 A1: kein Worldgen-Litter — die vier sind deliberate Items (kein instanced-Flag, nicht in der Spawn-Kandidatenliste)",
+        "kein Worldgen-Litter — die vier sind deliberate Items (kein instanced-Flag, nicht in der Spawn-Kandidatenliste)",
         res.noLitter
     );
     check(
-        "V17.72 A1 KONSUM: die vier Mach-Akte FEUERN rollen-gerecht — fertigeBlueprint schmiedet Gerät (held) + webt Rüstung (armor) + braut Trank + formt Avatar",
+        "A1 KONSUM: die vier Mach-Akte FEUERN rollen-gerecht — fertigeBlueprint schmiedet Gerät (held) + webt Rüstung (armor) + braut Trank + formt Avatar",
         res.geraetForged && res.armorForged && res.trankBrewed && res.avatarEmbodied
     );
 }
@@ -919,25 +919,25 @@ async function checkBandV1773HeldMesh(ctx) {
         return out;
     });
     check(
-        "V17.73 S9: Hand-Mesh — Spieler-Mesh da + sauberer Start (kein Held-Mesh nach equipHeld(null))",
+        "Hand-Mesh — Spieler-Mesh da + sauberer Start (kein Held-Mesh nach equipHeld(null))",
         res.hasPlayerMesh && res.startNoMesh
     );
     check(
-        "V17.73 S9: ein Geräte-Bauplan (Spitzhacken-Substanz aus KIND_SUBSTANCE) erzeugt ein Hand-Mesh, an den Avatar geparentet (Arm/Flügel/Wurzel)",
+        "ein Geräte-Bauplan (Spitzhacken-Substanz aus KIND_SUBSTANCE) erzeugt ein Hand-Mesh, an den Avatar geparentet (Arm/Flügel/Wurzel)",
         res.equipOk && res.meshBuilt && res.parented && res.onAnchor
     );
-    check("V17.73 S9: das Hand-Mesh ist auf greifbare Hand-Größe skaliert (0 < scale ≤ maxScale)", res.scaled);
+    check("das Hand-Mesh ist auf greifbare Hand-Größe skaliert (0 < scale ≤ maxScale)", res.scaled);
     check(
-        "V17.73 S9: Equip-Wechsel tauscht das Mesh (neues Objekt) + das alte ist aus dem Szenen-Graph (kein Leak)",
+        "Equip-Wechsel tauscht das Mesh (neues Objekt) + das alte ist aus dem Szenen-Graph (kein Leak)",
         res.swapped && res.oldDetached
     );
-    check("V17.73 S9: ablegen (equipHeld(null)) entfernt das Hand-Mesh", res.unequipNoMesh);
+    check("ablegen (equipHeld(null)) entfernt das Hand-Mesh", res.unequipNoMesh);
     check(
-        "V17.73 S9: ein formloses builtIn-Crafting-Tool (schmiede-hammer) wird abgelehnt → kein Hand-Mesh (die Werkstatt-Schicht bleibt getrennt)",
+        "ein formloses builtIn-Crafting-Tool (schmiede-hammer) wird abgelehnt → kein Hand-Mesh (die Werkstatt-Schicht bleibt getrennt)",
         res.toolRejected && res.toolNoMesh
     );
     check(
-        "V17.73 S9 KONSUM: Körper-Wechsel (applyPlayerSoul) re-attached das Hand-Mesh am NEUEN Avatar (Restore-/Seelen-sicher)",
+        "S9 KONSUM: Körper-Wechsel (applyPlayerSoul) re-attached das Hand-Mesh am NEUEN Avatar (Restore-/Seelen-sicher)",
         res.reattached && res.reattachedNewBody
     );
 }
@@ -1009,16 +1009,16 @@ async function checkBandV1784AvatarFormFit(ctx) {
         return out;
     });
     check(
-        "V17.84 U6: der Gate — eine Built-in-Seele bleibt neutral (in playerSoulDefs, soulFit 1.0), ein Custom-Avatar bekommt die Form-Passung",
+        "der Gate — eine Built-in-Seele bleibt neutral (in playerSoulDefs, soulFit 1.0), ein Custom-Avatar bekommt die Form-Passung",
         res.builtinGate
     );
     check(
-        "V17.84 U6: die soul-Passung diskriminiert über die FORM — ein körper-förmiger Avatar > ein Klumpen (gleiches Material)",
+        "die soul-Passung diskriminiert über die FORM — ein körper-förmiger Avatar > ein Klumpen (gleiches Material)",
         res.soulDiscriminates && res.bodyShaped,
         res.soulVals
     );
     check(
-        "V17.84 U6 KONSUM: ein körper-förmiger Custom-Avatar hat höhere Basis-Stats als ein Klumpen-Avatar — die FORM erreicht die Avatar-Wirkung",
+        "U6 KONSUM: ein körper-förmiger Custom-Avatar hat höhere Basis-Stats als ein Klumpen-Avatar — die FORM erreicht die Avatar-Wirkung",
         res.konsum,
         res.konsumVals
     );
@@ -1610,15 +1610,15 @@ async function checkBandWelle6DSoul(ctx) {
         );
         check("Welle 6.D Etappe 3b: DSL-Op unequip(armor) entfernt Rüstung", wave6d3bResults.dslUnequipWorks);
         check(
-            "V17.57 W2-B: equipHeld lehnt ein builtIn-Crafting-Tool ab (kein Welt-Gerät)",
+            "equipHeld lehnt ein builtIn-Crafting-Tool ab (kein Welt-Gerät)",
             wave6d3bResults.equipBuiltinToolOk
         );
         check(
-            "V17.57 W2-B: nach der Ablehnung ist nichts gehalten (equipped.held leer)",
+            "nach der Ablehnung ist nichts gehalten (equipped.held leer)",
             wave6d3bResults.equippedToolIs
         );
         check(
-            "V17.57 W2-B: das abgelehnte builtIn-Tool ließ die Stats unberührt (ok)",
+            "das abgelehnte builtIn-Tool ließ die Stats unberührt (ok)",
             wave6d3bResults.builtinToolNoStatChange
         );
         check(
@@ -2225,12 +2225,12 @@ async function checkBandWelle6DSoul(ctx) {
 
     if (wave6d17Results && !wave6d17Results.error) {
         check(
-            "V18.62 Ich-H: der parallele Ich-Soul-Editor ist geschnitten (Schöpfung in der Werkstatt)",
+            "Ich-H: der parallele Ich-Soul-Editor ist geschnitten (Schöpfung in der Werkstatt)",
             wave6d17Results.ichSoulEditorGone
         );
-        check("V18.62 Ich-H: soulToBlueprint holt einen Built-in-Körper in die Werkstatt (ok)", wave6d17Results.s2bOk);
+        check("Ich-H: soulToBlueprint holt einen Built-in-Körper in die Werkstatt (ok)", wave6d17Results.s2bOk);
         check(
-            "V18.62 Ich-H: der geholte Körper ist ein role:soul-Bauplan mit allen 4 Teilen (Avatare-in-Werkstatt)",
+            "Ich-H: der geholte Körper ist ein role:soul-Bauplan mit allen 4 Teilen (Avatare-in-Werkstatt)",
             wave6d17Results.s2bIsSoulRole
         );
         check("Welle 6.D Etappe 1.7: Klonen aus aktiver Seele liefert ok", wave6d17Results.cloneReturnsOk);
@@ -2966,9 +2966,9 @@ async function checkBandPhasenBF(ctx) {
     check("C7: die getragene Rüstung sitzt am TORSO, nicht auf dem Kopf (GEMESSEN ±0.45)", res.c7ArmorSitz);
     check("C7: Wagen+Holzross-Saat sind moveable + tragen sitz-Punkte (GEMESSEN)", res.c7Seeds);
     check("C7: Built-in-Körper liegen automatisch als Blueprints (Button gefallen)", res.c7Bodies);
-    check("A4: aWave ist ART-gedämpft (Fluss-riverness + See still — die Mündungs-Synergie)", res.a4MouthWave);
+    check("aWave ist ART-gedämpft (Fluss-riverness + See still — die Mündungs-Synergie)", res.a4MouthWave);
     check(
-        "V18.117: Wasser-Sheet-Queue verhungert nicht (FIFO-Slot zieht ferne Keys trotz Dauer-Nachschub)",
+        "Wasser-Sheet-Queue verhungert nicht (FIFO-Slot zieht ferne Keys trotz Dauer-Nachschub)",
         res.waterIsoNoStarve !== false
     );
     check("E3/V18.119: Mana-HUD — pfad zeigt die Währung (Wert folgt), frieden blendet aus", res.e3ManaHud);
@@ -3328,20 +3328,20 @@ async function checkBandV18202GeruchFeld(ctx) {
         return out;
     });
 
-    check("V18.202 (N2a) Wind deterministisch (zwei Aufrufe gleich)", res.windDeterministic === true);
-    check("V18.202 (N2b) Wind normalisiert (Länge ≈ 1)", res.windNormalized === true);
+    check("(N2a) Wind deterministisch (zwei Aufrufe gleich)", res.windDeterministic === true);
+    check("(N2b) Wind normalisiert (Länge ≈ 1)", res.windNormalized === true);
     check(
-        "V18.202 (N2c) Wind variiert über 2000 m Distanz (kein konstanter Vektor)",
+        "(N2c) Wind variiert über 2000 m Distanz (kein konstanter Vektor)",
         res.windVariesOverDistance === true
     );
-    check("V18.202 (N3a) Geruch nah > 0.3 (volle Stärke nahe Quelle)", res.scentNearStrong === true);
-    check("V18.202 (N3b) Distanz-Decay monoton (20>50>100)", res.scentDistantWeaker === true);
-    check("V18.202 (N3c) Bei 300 m: Geruch sehr schwach < 0.05 (decay × windMod)", res.scentFarVanishes === true);
+    check("(N3a) Geruch nah > 0.3 (volle Stärke nahe Quelle)", res.scentNearStrong === true);
+    check("(N3b) Distanz-Decay monoton (20>50>100)", res.scentDistantWeaker === true);
+    check("(N3c) Bei 300 m: Geruch sehr schwach < 0.05 (decay × windMod)", res.scentFarVanishes === true);
     check(
-        `V18.202 (N5a) Downwind stärker als upwind (down=${res.downwindMagnitude && res.downwindMagnitude.toFixed(3)} > up=${res.upwindMagnitude && res.upwindMagnitude.toFixed(3)})`,
+        `(N5a) Downwind stärker als upwind (down=${res.downwindMagnitude && res.downwindMagnitude.toFixed(3)} > up=${res.upwindMagnitude && res.upwindMagnitude.toFixed(3)})`,
         res.downwindStronger === true
     );
-    check("V18.202 (N5b) Upwind hat Restduft > 0 (minDirectional-Schwelle)", res.upwindStillHasMinScent === true);
+    check("(N5b) Upwind hat Restduft > 0 (minDirectional-Schwelle)", res.upwindStillHasMinScent === true);
 }
 
 module.exports = {
