@@ -1576,6 +1576,7 @@ class AnazhRealm_dirigent_takt {
         // Ziele beim nächsten Frame neu an wie ein Fenster-Wechsel (der Vorher-Textur-Wächter der Diät folgt jeder Textur).
         const sp = this.state.scenePass;
         if (sp && sp.getResolutionScale() !== this._szeneSkalaWirk()) sp.setResolutionScale(this._szeneSkalaWirk());
+        if (this.state.atmoUniforms) this.state.atmoUniforms.szeneSkala.value = this._szeneSkalaWirk();
         const ppu = this.state.postProcessingUniforms;
         if (ppu && ppu.nachSchaerfe)
             ppu.nachSchaerfe.value = this.state.traaNode ? AnazhRealm.ZEIT_SCHAERFE * (1 - this._szeneSkalaWirk()) : 0;

@@ -544,6 +544,9 @@ class AnazhRealm_stoff_material {
             // DAS AUGE DER STUFEN (K51-2, `_stufeAugeTakt`): der Spieler des Streaming-Takts — der Geomorph des Bodens misst daran
             // den Chebyshev-Abstand jedes Vertex zu seinem Übergangs-Band
             stufeAuge: TSL.uniform(new THREE.Vector2(0, 0)),
+            // DIE EINE SZENEN-SKALA im Stoff (K50, `_szeneSkalaWirk`): das Mikro-Relief bindet seine Oktaven an den Ausgabe-Pixel
+            // (`_mikroRelief`); ohne zeitliche Auflösung 1. EIN Schreiber: `_loopRender`.
+            szeneSkala: TSL.uniform(1),
             // DER LICHT-POOL (K11, `_leuchtStoff`): je Platz der Welt-Ort (xyz) mit der Reichweite (w, 0 = leer), die
             // lineare Farbe × Stärke (rgb) mit dem Abfall (a), der Himmels-Ersatz (0 | 1: ein Licht, das nur trägt, wo der
             // Himmel fehlt — das Licht des Auges) und der Kern der Quelle (k², K11b `lichtAbfall`) — eine feste Zahl ab dem Boot (`LICHT_POOL.plaetze`): ein Wechsel der
@@ -1845,7 +1848,7 @@ class AnazhRealm_stoff_material {
     }
 
     // DAS MIKRO-RELIEF (TERRAIN_BUMP, material.K2): Neigung und Kavität einer Fläche aus dem Rausch-Gesetz in Oktaven, die der
-    // Pixel trägt. Drei Oktaven folgen der Pixelgröße (`fwidth` der Welt-Lage): die feinste trägt `mikroPx` Pixel je Periode,
+    // Pixel trägt. Drei Oktaven folgen der Größe des Ausgabe-Pixels (`fwidth` der Welt-Lage × Szenen-Skala): die feinste Zelle misst `mikroPx` davon,
     // jede weitere die halbe Frequenz, und zwischen zwei Stufen blendet die feinste ein, die gröbste aus (Gewichte fract · 1 ·
     // 1 − fract — die Summe bleibt, keine Frequenz springt am Schirm). Was feiner als ein Pixel ist, flimmert und kostet; was
     // gröber ist, fehlt bei Armlänge: die EINE Regel bindet beides an den Schirm, nie an die Weltgröße (Gebot 7). Jede Oktave
@@ -1859,7 +1862,12 @@ class AnazhRealm_stoff_material {
         const B = AnazhRealm.TERRAIN_BUMP;
         const ra = this._rauschAtlas();
         const P = AnazhRealm.RAUSCH_GESETZ.P;
-        const L = T.log2(T.fwidth(wp).length().mul(B.mikroPx).max(B.mikroMinM)).negate();
+        // der Pixel der AUSGABE: `fwidth` misst den Szenen-Pixel, die Szene rendert in der EINEN Skala (K50) und die TAAU löst auf
+        // die Ausgabe auf — wie die Textur-Stufe jedes zeitlichen Hochskalierers folgt die Oktave dem Ausgabe-Pixel (Skala ×
+        // Szenen-Pixel), der Jitter sammelt, was feiner als der Szenen-Pixel ist (Radeon, Mess-Wiese 0,5/1/2 m: am Szenen-Pixel
+        // nyquist 0,127–0,134 bei Skala 0,75 gegen 0,176–0,194 bei Skala 1 — dasselbe Korn, gekappt vom Gitter der Szene)
+        const px = T.fwidth(wp).length().mul(this._ensureAtmoUniforms().szeneSkala);
+        const L = T.log2(px.mul(B.mikroPx).max(B.mikroMinM)).negate();
         const fr = T.fract(L);
         const L0 = L.sub(fr);
         // die Höhe je Oktave fällt mit `mikroHoehe` zur gröberen (0,75: Amplitude ∝ f^0,42, das Spektrum β ≈ 1,2 — die Energie

@@ -538,11 +538,13 @@ class AnazhRealm_daten {
                 freq: 1.1, // Mikro-Relief-Frequenz (~0.9 m Feature-Größe — Klumpen/Kiesel)
                 freq2: 2.7, // zweite Oktave (feineres Korn obendrauf)
                 // DIE OKTAVEN AM SCHIRM (material.K2, `_mikroRelief`): drei Oktaven folgen der Pixelgröße — die feinste trägt
-                // `mikroPx` × |fwidth| je Periode (|fwidth| ist 1,4–1,7 Pixel der Szene: 1 legt sie an den Nyquist der Ausgabe, die TAAU
-                // sammelt die welt-feste Oktave über den Jitter), nie feiner als `mikroMinM` (Schluff und Feinsand);
+                // `mikroPx` × |fwidth| des AUSGABE-Pixels je Zelle (|fwidth| ist 1,4–1,7 Pixel; eine Perlin-Zelle trägt ihre Energie
+                // bei 0,5–1 Periode je Zelle: 0,4 legt die feinste an den Nyquist der Ausgabe, die TAAU sammelt sie über den Jitter —
+                // gemessen Radeon, Mess-Wiese 0,5/1/2 m, Skala 0,75: 1,33 nyquist 0,13, 0,67 → 0,15, 0,47 → 0,16–0,17, 0,33 → 0,16–0,19
+                // und glatt bis 0,06 — feiner mittelt der Jitter das Korn zu glatten Blöcken), nie feiner als `mikroMinM` (Feinsand);
                 // jede trägt die Neigung `mikro` (gleiche Steigung je Oktave: das 1/f²-Spektrum natürlicher Bilder, Field 1987).
-                mikroPx: 1,
-                mikroMinM: 0.0005,
+                mikroPx: 0.4,
+                mikroMinM: 0.00025,
                 mikro: 0.15,
                 mikroHoehe: 0.75, // die Höhe der nächst gröberen Oktave je feinerer (`_mikroRelief`: das Spektrum β ≈ 1,2)
                 kavitaet: 0.7, // die Kavität je Höhe (`_mikroStoff`, aoNode): das Himmels-Licht der Mulde und der Erhebung

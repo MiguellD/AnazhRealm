@@ -1047,10 +1047,12 @@ async function starte() {
                     d = cam.getWorldDirection(new window.THREE.Vector3()),
                     e = a.clone().addScaledVector(d, 40);
                 const t = r._fieldRaycast(a.x, a.y, a.z, e.x, e.y, e.z, { durchPflanzen: true });
-                if (!t.hit) throw new Error("--arm: der Ego-Blick trifft in 40 m keine Fläche");
                 await window.__ausgabeAufnahme(64, 36, 1, { satz: "messung" }); // nur die Tiefe
                 const P = mitte(await window.__spiegelDaten());
-                const hit = P && P.distanceTo(a) > a.distanceTo(t) ? P : new window.THREE.Vector3(t.x, t.y, t.z);
+                // `--arm-mitte`: die Fläche ist, was die Tiefe der Bildmitte zeigt (die Rinde eines Stamms — der Strahl geht durch Pflanzen)
+                if (!t.hit && !(k.armMitte && P)) throw new Error("--arm: der Ego-Blick trifft in 40 m keine Fläche");
+                const hit =
+                    P && (k.armMitte || P.distanceTo(a) > a.distanceTo(t)) ? P : new window.THREE.Vector3(t.x, t.y, t.z);
                 const c = hit.clone().addScaledVector(d, -Number(k.arm));
                 gpos = [c.x, c.y, c.z, hit.x, hit.y, hit.z];
             }
@@ -1170,6 +1172,12 @@ async function starte() {
                     if (!zeichnet(o)) return;
                     const bs = bauSaetze.get(o);
                     if (bs) {
+                        // die Klasse beim Namen des Satzes (`formationenSatz`, material.K2): alle seine Bereiche als EINE
+                        const satz = teilName(o);
+                        if (re.test(satz)) {
+                            for (const key of bs.s.bloecke.keys()) nimm(satz, { bereich: true, art: bs.art, key, mesh: o });
+                            return;
+                        }
                         for (const key of bs.s.bloecke.keys()) {
                             const kl = r._taeterGruppe(key);
                             if (re.test(kl)) nimm(kl, { bereich: true, art: bs.art, key, mesh: o });
@@ -1338,6 +1346,8 @@ async function starte() {
                         const mb = /^portal-membran$/.test(n);
                         const ms = window.__klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel);
                         if (mb && ms.pixel) ms.ziel = zielTreue(m);
+                        // DIE KACHEL (`--kachel <N>`, material.K2 Staffel 2): die Wiederkehr des Details im Fenster N × N der Klasse
+                        if (ms.pixel && k.kachel != null) ms.kachel = window.__kachelMasse(u8, m, W, H, Number(k.kachel) || 256);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
                     // DIE PROBEN DES GESICHTS (`--gesicht`): je Vertex des Kopfs sein Zug (Iris am Gelenk, auf der
@@ -2995,6 +3005,8 @@ async function starte() {
             abstand: argv.includes("--abstand"),
             gesicht: opt("--gesicht"),
             arm: opt("--arm"),
+            armMitte: argv.includes("--arm-mitte"),
+            kachel: opt("--kachel"),
             ist: opt("--ist"),
             fov: opt("--fov"),
         });
