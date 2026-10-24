@@ -1,0 +1,16 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-radeon'); K=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination'); A=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\056330d8-radeon\klang.K4_1.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; (PORT=7780 node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:7780/ && break; sleep 1; done; export SPIEL_URL=http://localhost:7780; node "$D/m15-schritt.cjs" && node "$D/m15-schritt.cjs" --auswerten
+gpu-lauf: warte auf lod-k1 2026-10-24T12:16:15+02:00 pid=27456 (4 s)
+gpu-lauf: warte auf lod-k1 2026-10-24T12:16:15+02:00 pid=27456 (71 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T12:17:52+02:00 pid=32420 (37 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T12:17:52+02:00 pid=32420 (101 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T12:17:52+02:00 pid=32420 (166 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T12:17:52+02:00 pid=32420 (241 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T12:17:52+02:00 pid=32420 (316 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T12:17:52+02:00 pid=32420 (376 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T12:17:52+02:00 pid=32420 (460 s)
+SCHLOSS VERWAIST (material-k2-mikro 2026-10-24T12:17:52+02:00 pid=32420: Halter pid=32420 lebt nicht) — gelöst
+gpu-lauf: Schloss punkte-radeon nach 603 s
+{"klang":{"weg":"cdp-klick","an":true,"ctx":"running"},"orte":{"erde":[-280.4,-1045.6],"stein":[-262.4,-1076.8],"glut":[-274.1,-998]},"stoffe":{"erde":{"wegM":10.1,"bursts":8,"medianHz":379,"p10":313,"p90":465},"stein":{"wegM":11.5,"bursts":15,"medianHz":2386,"p10":2092,"p90":2527},"glut":{"wegM":11.6,"bursts":16,"medianHz":1763,"p10":1428,"p90":2118}}}
+erde n 8 median 379 p10 313 p90 465
+stein n 15 median 2386 p10 2092 p90 2527
+glut n 16 median 1763 p10 1428 p90 2118

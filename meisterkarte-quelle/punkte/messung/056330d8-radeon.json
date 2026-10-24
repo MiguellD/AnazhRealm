@@ -1,7 +1,7 @@
 {
  "sha": "056330d8a70fcdc617df8c3ff62ec174c5d33995",
  "geraet": "radeon",
- "zeit": "2026-10-24T08:48:31.417Z",
+ "zeit": "2026-10-24T11:05:12.450Z",
  "host": "MiguellD",
  "je": {
   "gelaende.K2#1": {
@@ -210,6 +210,99 @@
    "zeit": "2026-10-24T08:48:31.417Z",
    "abdruck": "8746d55fc31a",
    "port": 7762
+  },
+  "leib.K1#2": {
+   "gruen": true,
+   "zahl": "p95 ms ego/gehen 50 · third/gehen 49.6 · ego/springen 39.4 · third/springen 34.3 · ego/einsteigen 33.1 · third/einsteigen 24.1 · ego/hieb 41.4 · third/hieb 31.5",
+   "exit": 0,
+   "minuten": 35.82,
+   "zeit": "2026-10-24T08:51:33.425Z",
+   "abdruck": "156d9c781ed5",
+   "port": 7763
+  },
+  "leib.K4#1": {
+   "gruen": true,
+   "zahl": "stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {\"orbit: Bau\":2,\"orbit fern: Bau\":3} · Ruck p95 0.0065 höchstens 2.968 m · welt-boot klasse: diag-kamera-laub.cjs startet „linse\" und zeichnet nie (keine seiner 1 Seiten arbei",
+   "exit": 1,
+   "minuten": 27.3,
+   "zeit": "2026-10-24T09:27:22.544Z",
+   "abdruck": "bce5fed3572d",
+   "port": 7764
+  },
+  "halten.K2#1": {
+   "gruen": true,
+   "zahl": "p95 ms third/hieb 43.9 · ego/hieb 31.5 · Hit-Stop 7/8 Bilder (Third/Ego) · im Spiel: Halt gesetzt 54-mal (72–179 ms), die Hand gleitet im Halt bis 0 mm je Takt (943 Takte)",
+   "exit": 0,
+   "minuten": 6.76,
+   "zeit": "2026-10-24T09:54:40.381Z",
+   "abdruck": "87deaeca8238",
+   "port": 7768
+  },
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "1 von 4 Sitzungen ohne Frame > 100 ms (max 234.2 · 201.1 · 75.5 · 234.4 ms; Hänger 1/1/0/1)",
+   "exit": 0,
+   "minuten": 13.3,
+   "grund": "ROT: 1 von 4 Sitzungen ohne Frame > 100 ms (max 234.2 · 201.1 · 75.5 · 234.4 ms; Hänger 1/1/0/1)",
+   "zeit": "2026-10-24T10:01:26.241Z",
+   "abdruck": "3b1e54b5711e",
+   "port": 7778
+  },
+  "klang.K2#1": {
+   "gruen": true,
+   "zahl": "r 0.83 bei Lag 0 (n 119), Spitze 0.85 bei -0.5 s, CV Bild 0.26 / Ohr 0.53, 119.6 fps, Klang an",
+   "exit": 0,
+   "minuten": 1.56,
+   "zeit": "2026-10-24T10:14:44.028Z",
+   "abdruck": "2d4a675eda1b",
+   "port": 7779
+  },
+  "klang.K4#1": {
+   "gruen": true,
+   "zahl": "erde 379 Hz (n 8) · stein 2386 Hz (n 15) · glut 1763 Hz (n 16) — kleinster Abstand 623 Hz",
+   "exit": 0,
+   "minuten": 11.44,
+   "zeit": "2026-10-24T10:16:17.926Z",
+   "abdruck": "762071c99dce",
+   "port": 7780
+  },
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "Klang-Takt p95 gehen 0.48 · fahrt 0.34 · nacht 0.22 ms · Aussetzer 0 in 601 s Wiedergabe (0 s still) (Exit 1)",
+   "exit": 1,
+   "minuten": 15.33,
+   "grund": "ROT: Klang-Takt p95 gehen 0.48 · fahrt 0.34 · nacht 0.22 ms · Aussetzer 0 in 601 s Wiedergabe (0 s still) (Exit 1)",
+   "zeit": "2026-10-24T10:27:44.569Z",
+   "abdruck": "fd9f3386b62b",
+   "port": 7782
+  },
+  "speicher.K1#1": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 1.624 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
+   "exit": 0,
+   "minuten": 22.13,
+   "zeit": "2026-10-24T10:43:04.611Z",
+   "abdruck": "b0e83e1e02aa",
+   "port": 7783
+  },
+  "speicher.K1#2": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 1.624 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+   "exit": 0,
+   "minuten": 22.13,
+   "zeit": "2026-10-24T10:43:04.611Z",
+   "abdruck": "675248d33f86",
+   "port": 7783,
+   "zwilling": "speicher.K1#1"
+  },
+  "speicher.K2#1": {
+   "gruen": true,
+   "zahl": "je Bild p95 0 / p99 0 ms (10008 Bilder, 102 Rufe); je Ruf p50 9.6 / p95 24.2 / max 62.8 ms",
+   "exit": 0,
+   "minuten": 9.05,
+   "zeit": "2026-10-24T11:05:12.450Z",
+   "abdruck": "1f4b3b5822c2",
+   "port": 7785
   }
  }
 }
