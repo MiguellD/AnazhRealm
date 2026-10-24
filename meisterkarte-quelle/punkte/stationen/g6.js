@@ -156,11 +156,12 @@ module.exports = [
             if (!f) return { gruen: false, zahl: "keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit " + lauf.exit };
             const kopie = phasen.filter((p) => p[1] !== "selbst").reduce((s, p) => s + +p[4], 0);
             const speicher = /speicher/i.test(faeden);
-            const gruen = !blind && +f[2] <= 1 && kopie === 0 && speicher;
+            // f[2] die Dauer der Fahrt, f[3] ihre MB/min (bis streaming-k5 verglich das Urteil die Sekunden mit 1 MB/min)
+            const gruen = !blind && +f[2] >= 55 && +f[3] <= 1 && kopie === 0 && speicher;
             return {
                 gruen,
                 zahl:
-                    f[3] + " MB/min in der Fahrt · Kopie " + kopie.toFixed(2) + " MB · Speicher-Faden " +
+                    f[3] + " MB/min in " + f[2] + " s Fahrt · Kopie " + kopie.toFixed(2) + " MB · Speicher-Faden " +
                     (speicher ? "ja" : "nein") + " (Fäden: " + faeden.slice(0, 120) + ")",
             };
         },
