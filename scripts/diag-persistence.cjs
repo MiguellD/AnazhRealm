@@ -6,11 +6,11 @@
 //
 // (K) DER RELOAD MIT KALTEM BUCH: ein Studio-Haus der Welt (haus_*, Worldgen-id als ZAHL) muss
 // den Restore überstehen, auch wenn das Studio-Buch noch nicht da ist. Gegenprobe (nicht vakuös): ein FRISCHER Spawn bei kaltem Buch bleibt blockiert.
-// (U) DER BODEN-UMZUG: ein Save eines alten Bodens (ohne Boden-Generation, ohne Höhe über Grund) lädt durch den
+// (U) DER BODEN-UMZUG (K16): ein Save eines alten Bodens (ohne Boden-Generation, ohne Höhe über Grund) lädt durch den
 // ganzen Lade-Pfad (`loadState`) — jeder Bau steht danach auf dem Boden des Gesetzes in Fuß-Höhe. Gegenprobe: ein Save
 // desselben Bodens bewegt nichts. Die Zahl: wie viele Bauten der Welt sich bewegen (`state.bodenUmzug`).
 //
-// (S) DER SERVER SCHREIBT GANZ: der save-server läuft in einer Sandbox-Kopie, ein Stand (≈ 1 MB) geht an
+// (S) DER SERVER SCHREIBT GANZ (K23): der save-server läuft in einer Sandbox-Kopie, ein Stand (≈ 1 MB) geht an
 // /api/save-state, und der Prozess stirbt (SIGKILL) an JEDEM Schreib-Punkt einmal — mitten in jedem Schreiben (die
 // halbe Last liegt) und nach jedem Schreiber (ein Vorlade-Haken zählt writeFile · copyFile · rename). Danach liegt
 // der alte ODER der neue Stand ganz da (JSON parst, Marker alt|neu), und nach dem vollen Save hält
