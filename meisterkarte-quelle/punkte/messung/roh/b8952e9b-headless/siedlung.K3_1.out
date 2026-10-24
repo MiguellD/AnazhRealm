@@ -1,0 +1,105 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-settlement.cjs
+=== TEIL Z: DAS RANG-GESETZ (siedlung.K2) ===
+  ✅ Z1 RANG: binnen 2 km eine ummauerte Stadt in 7/8 Saaten (Soll ≥ 6) — saat-0: metropole 192 Slots 416 m · saat-1: stadt 35 Slots 618 m · saat-2: stadt 39 Slots 266 m · saat-3: stadt 41 Slots 691 m · saat-4: grossstadt 68 Slots 1139 m · saat-5: keine · saat-6: stadt 32 Slots 970 m · saat-7: stadt 30 Slots 1105 m
+  ✅ Z2 EPOCHE → GRÖSSE: „moderne" ohne Zahl stadt, ohne Epoche 21 Slots (18 Häuser)
+=== N5.7 SETTLEMENT — TEIL N: exportSettlement (Node, deterministisch + eingefroren) ===
+  ✅ deterministisch fuer {"seed":7,"nH":12} (zwei Läufe byte-gleich)
+  ✅ Slots sauber fuer {"seed":7,"nH":12} (>=4, bekannte Kulturen, endliche Anker, |x/z| < 5000) — slots=16
+  ✅ deterministisch fuer {"seed":12345,"nH":6} (zwei Läufe byte-gleich)
+  ✅ Slots sauber fuer {"seed":12345,"nH":6} (>=4, bekannte Kulturen, endliche Anker, |x/z| < 5000) — slots=7
+  ✅ seed-sensitiv (Seed 7 != Seed 12345)
+  ✅ GOLDEN byte-treu fuer {"seed":7,"nH":12} (16 Slots · „Villaalto") — 454e32aa0e05
+  ✅ GOLDEN byte-treu fuer {"seed":12345,"nH":6} (7 Slots · „Grünbach") — ade14355595f
+
+=== U6c: REIHEN-SNAP + BRANDWAND (Kern-Gesetz, beidseitiger Konsum) ===
+  ✅ Snap-Probe: zwei dichte Nachbarn docken an (1 Paar) — snaps=1
+  ✅ Snap-Probe: die Fuge ist die Norm-Fuge — fuge=0.0600
+  ✅ Snap-Probe: x und obb.cx rücken kohärent (Solids/OBB fließen konsistent)
+  ✅ Brandwand-Probe: die anliegenden Seiten sind markiert (x1 am linken, x0 am rechten Haus) — bwN=2
+  ✅ Snap-Probe: ferne Nachbarn (Fuge>1.8m) bleiben stehen — snaps=0
+  ✅ Konsum-Probe: der städtische Export trägt ov.brandwand (der Kern-Pfad ruft DIESELBE Wahrheit wie buildDorf) — groesse=markt · brandwand-Slots=2
+  DORF-LICHT je Meter: dunkle Gasse 0/4278 Meter weiter als 10 m · alle Meter Median 4.8 m · p90 7.2 m · max 72.6 m · Laternen 470 (Wand 210)
+  ✅ DAS DORF-LICHT je Meter: jeder Meter der Gasse (Kern-Wand ≤ 9.6 m) ≤ 10 m von einer Quelle, die nachts brennt, alle Meter p90 ≤ 10 m; der Mast vor der Wand und mit dem Fuß neben dem Weg, die Wandlaterne an der Wand (23 Pläne, 4278 Meter Gasse)
+  ✅ Das Licht der Wandlaterne hält das Wand-Gesetz: die Wand in 0.4 m trägt 2.00 × die Gasse unter ihr (Soll ≤ 2), 1900 K wie die Laterne, das Datum ihres Rezepts
+  ✅ Die Wandlaterne hängt im Ortplan an ihrem Haus: Slot 1 fällt ins Wasser (1 nass), 12/12 hängen 0.4 m vor der Wand ihres Slots, 0/1 des nassen Hauses bleiben — {"fremd":[]}
+  ✅ Selbst-Test 16: der Ortplan mit den Slot-Nummern des v1-Plans (wie bis N1) fällt — Wandlaternen an fremden Häusern, die des nassen Hauses bleibt — {"haengt":0,"n":13,"fremd":[9.7,8,17.1,9.5],"bleibt":1}
+  ✅ Selbst-Test 15: derselbe Plan ohne Laternen fällt im Dorf-Licht, ein Mast an der Wand (0,45 m wie bis K66) ebenso, einer in der Fahrbahn (rd.w/4 von der Achse wie bis K66-n4) am Weg; die dichte Gasse ohne ihre Wandlaternen an der Marke, eine Wandlaterne 0,9 m vor ihrem Stand an der Wand — {"weg":-1.25,"wegOk":false,"ohneWand":"99/191 Meter der Gasse > 10 m, der dunkelste 33.5 m","schwebt":"0/13"}
+
+=== TEIL B: der lebende Kanal (Browser, foundry-ON, Null-Renderer) ===
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1702,"soll":1700}]
+  ✅ B: das LIVE-Buch ist warm (Voraussetzung)
+  ✅ B: _foundryRequestSettlement liefert den Export durch den EINEN Worker — slots=9 name=Villaalto
+  ✅ B: der Konsument platziert (placed > 0, Buchhaltung exakt) — placed=9 skipped=0 Wandlaternen 6/6
+  ✅ B: jeder Eintrag ist ein haus_<kultur>-Blueprint (Tabellen-Regel, kein Literal) oder die Wandlaterne seines Hauses
+  ✅ B: POSITIONS-DETERMINISTISCH (derselbe Anker zweimal — identische Offsets/Seeds/Rotationen) — placed1=9 placed2=9
+  ✅ B: der Slot-Anker sitzt EXAKT auf dem Plan v2 (entry == anker + slot.x/z, y == slot.y + 0,5, phi, seed) — v2=true
+  ✅ B: DORF-IN-TERRAIN — der Slot-Footprint reist als entry.fundament {ex,ez}
+  ✅ B: DER AKT hebt über den Zug — vor dem ersten Bild nach dem ersten Haus höchstens perTick (K5)
+  ✅ B: HAUS-DOPPELBAU — der Slot-ov reist als studioOv an JEDEM Eintrag (rolle == Export)
+  ✅ B: HAUS-DOPPELBAU — der Flatten-Chokepoint liest den Stempel (ov-Hash trennt Kirche von Wohnhaus)
+  ✅ B: der Erlebnis-Hebel hebt die Schichten des Plans (Hof-Bäume, Marktstände, Zäune über den Zaun-Pool, Äcker in der Wege-Karte) — ohne sie keine — mit {"baeume":12,"staende":2,"zaeune":3,"aecker":true,"plan":"15/2/3/2","mauer":0} · ohne {"baeume":0,"staende":0,"zaeune":0,"aecker":false,"plan":"0/0/0/0","mauer":0} · Plan ["anger",0]
+  ✅ B: DIE STADTMAUER (siedlung.K2) — 40/40 Streifen, wirft, die Natur weicht; Dorf 0 — {"baeume":12,"staende":3,"zaeune":0,"aecker":true,"plan":"30/3/0/9","mauer":40,"soll":40,"wirft":true,"natur":true}
+  ✅ B: fail-closed — unbekannte Kultur faellt (0 platziert, 1 uebersprungen)
+  ✅ B: Γ5 — der Siedlungs-Same zieht aus dem Bau-Strom (`_bauSame` am Ruf, kein Math.random)
+  ✅ B: Γ5 — „baue dorf hier“ zieht denselben Bau-Strom (_bauSame, kein Math.random)
+  ✅ B: der DSL-Akt spawn_village trägt die Größe des Siedlungs-Gesetzes (nach der Buch-Ankunft, nie der Kern-Default) — nH 8 (Soll 8)
+
+=== TEIL O: DER ORT AUF DEM GELÄNDE (K10, Dorf 7/18 Gründerzeit am Hang) ===
+  ✅ O Akt: ein Hang trägt den Akt (Gefälle 0,12–0,25 über 16 m, trocken) — -1448.9/-388.2 Gefälle 0.213
+  DORF-LICHT DER GASSE {"n":4,"pose":[-1463.9,-388.3,-1448.9,-388.2],"je":[[-1442.9,-384.1,21.4],[-1452.9,-382.3,12.5],[-1454.9,-392.3,9.8],[-1444.8,-394.2,19.9]],"verdeckt":2,"brennend":6,"schein":0,"plaetze":4,"pool":[["laterne_dorf",-1454.9,-392.3],["laterne_dorf",-1452.9,-382.3],["laterne_dorf",-1444.8,-394.2],["laterne_dorf",-1442.9,-384.1]],"poolOrt":4}
+  GT AUF DEM DORFWEG {"kette":51,"endeNachS":4.9,"gtWeg":48.15,"strecke":48.15,"ablage":0.11,"aufWeg":1,"start":{"x":-1446.9,"z":-388.2}}
+  ORT-ZAHLEN {"haeuser":26,"slots":26,"planV2":true,"zellen":18065,"fremdArten":{},"wasserSlots":0,"sockelMedian":0,"sockelMax":0,"tuerenOk":26,"tuerenN":26,"kronen":0,"laternenWelt":6,"laternenPlan":6,"laterneWand":3.51,"laterneWandSoll":2.545,"laterneWeg":1.55,"laterneWegSoll":0.45,"vorplatzOk":26,"vorplatzN":26,"vorplatzFehl":[],"terrasseWand":2626,"terrasseWiese":0,"terrasseHalm":0,"terrasseFerne":0,"terrasseFerneFehl":[],"vorplatzFeld":0.94,"planHashGleich":true,"fremdBauten":0,"gtWeg":48.15,"gtEnde":4.9,"quellenGasse":4,"poolGasse":4,"poolPlaetze":4}
+  Ort-Wahl: [AnazhRealm V18.546.86] [WARN] ORT: der Plan „Altadunum" findet binnen 128 m um -1468/-1389 keinen Ort, der jedes Haus trocken trägt — die Wand wirft die nassen Häuser | [AnazhRealm V18.546.86] [WARN] ORT: der Plan „Altadunum" findet binnen 128 m um -1468/-1389 keinen Ort, der jedes Haus trocken trägt — die Wand wirft die nassen Häuser
+  ORT-WAHL-KOSTEN {"kandidaten":2,"scheiben":2,"ms":57.19999998807907,"maxMs":0,"abstandM":0}
+  ✅ O Akt: das Dorf trägt jedes Haus (alle Slots stehen) — 26/26
+  ✅ O Akt: der Ort hält jede Zahl (Sockel 0, Türen, Kronen 0, Laternen, Plan-Hash, Altwelten 0, der GT ≥ 60 m in 8 s auf dem Dorfweg, ≥ 4 Quellen in der Gasse nachts) — gehalten
+  ✅ O Akt: Selbst-Schein — der Zeitplan der Welt dunkel, die Gasse sieht keine Quelle (die Zahl liest das Licht-Gesetz der Welt) — hell 4 · dunkel 0
+  ✅ O Akt: die Laterne hat EINE Quelle — ihre Studio-Gestalt trägt Leib und Licht, kein Licht ohne Leib (_laternenLesen gefallen) — lebt: 
+
+=== TEIL O: DER ORT AUF DEM GELÄNDE (K10, das Auto-Dorf der Welt am Mess-Ort dorf, Zelle -4,-4) ===
+  ✅ O Auto-Dorf: der Dorf-Zug baut das Dorf der Zelle am Mess-Ort (wie im Spiel, _tickAutoSettlement) — Zelle -4,-4
+  DORF-LICHT DER GASSE {"n":5,"pose":[-872.5,-822.9,-842.6,-820.4],"je":[[-810.2,-813.5,63],[-868.8,-826.8,5.4],[-809.3,-823.2,63.2],[-821.4,-815.3,51.7],[-859.4,-817.8,14.1]],"verdeckt":6,"brennend":17,"schein":0,"plaetze":2,"pool":[["laterne_dorf",-868.8,-826.8],["laterne_dorf",-859.4,-817.8],["wandlaterne_dorf",-849,-824.6],["wandlaterne_dorf",-836.2,-814.9]],"poolOrt":2}
+  GT AUF DEM DORFWEG {"kette":72,"endeNachS":5.7,"gtWeg":69.14,"strecke":69.13,"ablage":0.15,"aufWeg":1,"start":{"x":-810.7,"z":-819.1}}
+  ORT-ZAHLEN {"haeuser":16,"slots":16,"planV2":true,"zellen":6983,"fremdArten":{},"zweit":"-7,-7","wasserSlots":0,"sockelMedian":0,"sockelMax":0,"tuerenOk":16,"tuerenN":16,"kronen":0,"laternenWelt":17,"laternenPlan":17,"laterneWand":3.74,"laterneWandSoll":2.545,"laterneWeg":1.55,"laterneWegSoll":0.45,"vorplatzOk":16,"vorplatzN":16,"vorplatzFehl":[],"terrasseWand":2610,"terrasseWiese":0,"terrasseHalm":0,"terrasseFerne":0,"terrasseFerneFehl":[],"vorplatzFeld":0.94,"planHashGleich":true,"fremdBauten":0,"gtWeg":69.14,"gtEnde":5.7,"quellenGasse":5,"poolGasse":2,"poolPlaetze":2}
+  Ort-Wahl: [AnazhRealm V18.546.86] [WARN] ORT: der Plan „Altadunum" findet binnen 128 m um -1468/-1389 keinen Ort, der jedes Haus trocken trägt — die Wand wirft die nassen Häuser | [AnazhRealm V18.546.86] [WARN] ORT: der Plan „Altadunum" findet binnen 128 m um -1468/-1389 keinen Ort, der jedes Haus trocken trägt — die Wand wirft die nassen Häuser
+  ORT-WAHL-KOSTEN {"kandidaten":2,"scheiben":2,"ms":65.59999999403954,"maxMs":0.20000000298023224,"abstandM":0}
+  ✅ O Auto-Dorf: das Dorf trägt jedes Haus (alle Slots stehen) — 16/16
+  ✅ O Auto-Dorf: Selbst-Test — ein zweites Dorf im Fenster, vor der Zelle angekommen, lässt das Urteil der Zelle gleich; die Ankunfts-Reihenfolge (erste neue Zelle, alle Häuser seit vorher) mischt es ein — zweites Dorf -7,-7, vor der Zelle true · Ankunft: Zelle -7,-7, Häuser 28/16 · Zelle -4,-4: 16/16
+  ✅ O Auto-Dorf: der Ort hält jede Zahl (Sockel 0, Türen, Kronen 0, Laternen, Plan-Hash, Altwelten 0, der GT ≥ 60 m in 8 s auf dem Dorfweg, ≥ 4 Quellen in der Gasse nachts) — gehalten
+  ✅ O Auto-Dorf: Selbst-Schein — der Zeitplan der Welt dunkel, die Gasse sieht keine Quelle (die Zahl liest das Licht-Gesetz der Welt) — hell 5 · dunkel 0
+  ✅ O Auto-Dorf: die Laterne hat EINE Quelle — ihre Studio-Gestalt trägt Leib und Licht, kein Licht ohne Leib (_laternenLesen gefallen) — lebt: 
+  FELD-WURF IM ORT {"sperrt":[],"grundriss":[],"weg":[],"fehl":[],"werk":{"arten":["baum_eiche","baum_kiefer","baum_birke","baum_erle","baum_buche","baum_tanne","baum_karst","stein_block","kristall_geode","glutbrunnen"],"weicht":[]},"arten":10,"quelle":true,"feldMarke":true,"orte":{"haus":[-856,-843.3],"weg":{"x":-892.6621750242291,"z":-834.0025375298825},"frei":{"x":-912.6621750242291,"z":-919.0025375298825}},"weichen":10}
+  ✅ O Auto-Dorf: jeder Wurf des Felds weicht dem Ort wie die Natur — keiner sperrt der Wahl Grund (_bauFrei), Grundriss und Weg räumen ihn (die Arten aus EINER Liste, FELD_WURF) — 10/10 Arten weichen
+  ✅ O Auto-Dorf: Selbst-Schein — gilt die Feuerstelle als Bau, sperrt sie den Grund und bleibt im Grundriss (die Linse sieht den Täter) — sperrt: glutbrunnen · im Grundriss: glutbrunnen
+  ✅ O Auto-Dorf: das Werk jeder Art (der Satz, der Bau-Modus) weicht nie — es sperrt den Grund, kein Grundriss und kein Weg räumt es (die Herkunft entscheidet, die Marke werk, nie die Art) — Werk-Arten baum_eiche, baum_kiefer, baum_birke, baum_erle, baum_buche, baum_tanne, baum_karst, stein_block, kristall_geode, glutbrunnen · keins weicht
+  ✅ O Auto-Dorf: Selbst-Schein — entscheidet die Art, weicht die Feuerstelle des Menschen (die Linse sieht den Täter) — weicht als Werk: baum_eiche (sperrt nicht · im Grundriss geräumt · auf dem Weg geräumt), baum_kiefer (sperrt nicht · im Grundriss geräumt · auf dem Weg geräumt), baum_birke (sperrt nicht · im Grundriss geräumt · auf dem Weg geräumt), baum_erle (sperrt nicht · im Grundriss geräumt · auf dem Weg geräumt), baum_buche (sperrt nicht · im Grundriss geräumt · auf dem Weg geräumt), baum_tanne (sperrt nicht · im Grundriss geräumt · auf dem Weg geräumt), baum_karst (sperrt nicht · im Grundriss geräumt · auf dem Weg geräumt), stein_block (sperrt nicht · im Grundriss geräumt · auf dem Weg geräumt), kristall_geode (sperrt nicht · im Grundriss geräumt · auf dem Weg geräumt), glutbrunnen (sperrt nicht · im Grundriss geräumt · auf dem Weg geräumt)
+
+=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===
+  ✅ C1: die Zell-Wahrheit ist selten + deterministisch (2 Läufe byte-gleich) und zieht aus dem Strom des Welt-Seeds (ein anderer Seed, andere Dörfer; Γ5) — seedStrom=true
+  ✅ C1b: die Spawn-Klar-Wand steht (der Welt-Ursprung ist nie Dorf-Site)
+  ✅ C1c: der Dispatch-Kanal lebt (mind. ein Rezept -> settlement, M8)
+  ✅ C2: HEADLESS-DEFAULT — Null-Renderer ohne Hook: der Auto-Zug ruht (kein Pending, keine Queue)
+  ✅ C3: die erzwungene Dorf-Zelle materialisiert (Export -> Reservierung -> Häuser) — placed=52 ticks=9
+  ✅ C3b: Existenz vor Framerate — über dem Budget wächst die Siedlung gedrosselt (echter Job-Pfad scatterDeco: Slots in Frames, nie 0, je Deko-Lauf ≤ 1/drosselTakte) — über dem Budget: 2 Slots in 36 Frames (9 Deko-Läufe; der Ring stand nach 184 Frames)
+  ✅ C6: der Wege-Schlüssel trägt den Ort — zwei Siedlungen mit demselben Samen bauen je ihre Wege — Wege-Formen je Ort: 71 / 69
+  ✅ C7: ein Nexus-Dorf lässt den Blick des Spielers stehen (0710-7; 4B: −2,745 mitten im Lauf) — Nexus: 11 Häuser, Gier 1 (gedreht 0, neben dem Dorf 0.1714)
+  ✅ C7: ein Dorf, das der Spieler verlangt (Chat-Programm, Befehl „dorf“), richtet den Blick auf SEIN neues Dorf — Chat-Programm: 10 Häuser, Gier 1.5333 (gedreht 0.5333, neben dem Dorf 0) · dorf: 10 Häuser, Gier 1 (gedreht 0, neben dem Dorf 0)
+  ✅ C7: ein Dorf aus einem Werkzeug des Spielers (Fähigkeit ability:, Wirken capability:, Verzehr consume:) schaut auf SEIN Dorf (0710-8) — faehigkeit: 12 Häuser, Gier 2.7729 (gedreht 1.7729, neben dem Dorf 0) · wirken: 10 Häuser, Gier -2.0578 (gedreht 3.0578, neben dem Dorf 0) · verzehr: 14 Häuser, Gier 2.13 (gedreht 1.13, neben dem Dorf 0)
+  ✅ C7: ein Dorf eines Mitspielers (remote-…) lässt den Blick stehen — er handelt für die Welt — Mitspieler: 8 Häuser, Gier 1 (gedreht 0, neben dem Dorf 1.2573)
+  ✅ C5: DER GENESIS-PORTAL-RING hebt am Ursprung (alle builtIn-Welt-Portale, Stempel gesetzt) — arten=10 gebaut=10
+  ✅ C5: Ring-Radius ~11 m + doppelt idempotent (Stempel traegt, 0 Doppel) — radiusOk=true idem=true
+  ✅ C4: IDEMPOTENT — dieselbe Zelle nochmal: 0 neue Häuser (worldMeta.settlementCells trägt über den Reload)
+  ✅ C-K5: DAS NÄCHSTE HAUS ZUERST — nH 12 und 300 heben es nach dem Vorlauf ≤ 0,5 s (2 Takte) nach dem Erwachen, ihre Stufen bestellt vor ihm — {"vorlauf12":{"nH":12,"plaene":17,"haus":2,"vor":80},"vorlauf300":{"nH":300,"plaene":3,"haus":2,"vor":80},"teleport12":{"nH":12,"plaene":10,"haus":106,"vor":0},"teleport300":{"nH":300,"plaene":1,"haus":767,"vor":0},"alt300":{"nH":301,"plaene":1,"haus":9,"vor":13},"drossel":8,"schirm":[1,0],"ort":{"hash":[237879090,237879090],"erste":null},"ortStoer":{"hash":[412186289,261704657],"erste":"ort.x -1468.0862745098038 ≠ -1468.0899745098038"},"wach":{"takte":171,"haus":12,"mehr":[],"max":["Takt 2 32.4 ms: erdbau 1","Takt 6 29.7 ms: wege 1","Takt 117 24.7 ms: haeuser 2","Takt 151 23.1 ms: haeuser 2"],"kopf":["Takt 0 0.7 ms: ","Takt 1 3.8 ms: ","Takt 2 32.4 ms: erdbau 1","Takt 3 18.2 ms: erdbau 1","Takt 4 8 ms: erdbau 1","Takt 5 20.5 ms: erdbau 1"]},"wachVoll":{"takte":1,"haus":0,"mehr":["Takt 0 1136.6 ms: erdbau 4 · wege 1 · laternen 100 · ausstattung 19 · haeuser 289"],"max":["Takt 0 1136.6 ms: erdbau 4 · wege 1 · laternen 100 · ausstattung 19 · haeuser 289"],"kopf":["Takt 0 1136.6 ms: erdbau 4 · wege 1 · laternen 100 · ausstattung 19 · haeuser 289"]}}
+  ✅ C-K5 Selbsttest: der Export nach dem Erwachen (Teleport) und die Schichten vor ihm (alt) fallen ROT — {"vorlauf12":{"nH":12,"plaene":17,"haus":2,"vor":80},"vorlauf300":{"nH":300,"plaene":3,"haus":2,"vor":80},"teleport12":{"nH":12,"plaene":10,"haus":106,"vor":0},"teleport300":{"nH":300,"plaene":1,"haus":767,"vor":0},"alt300":{"nH":301,"plaene":1,"haus":9,"vor":13},"drossel":8,"schirm":[1,0],"ort":{"hash":[237879090,237879090],"erste":null},"ortStoer":{"hash":[412186289,261704657],"erste":"ort.x -1468.0862745098038 ≠ -1468.0899745098038"},"wach":{"takte":171,"haus":12,"mehr":[],"max":["Takt 2 32.4 ms: erdbau 1","Takt 6 29.7 ms: wege 1","Takt 117 24.7 ms: haeuser 2","Takt 151 23.1 ms: haeuser 2"],"kopf":["Takt 0 0.7 ms: ","Takt 1 3.8 ms: ","Takt 2 32.4 ms: erdbau 1","Takt 3 18.2 ms: erdbau 1","Takt 4 8 ms: erdbau 1","Takt 5 20.5 ms: erdbau 1"]},"wachVoll":{"takte":1,"haus":0,"mehr":["Takt 0 1136.6 ms: erdbau 4 · wege 1 · laternen 100 · ausstattung 19 · haeuser 289"],"max":["Takt 0 1136.6 ms: erdbau 4 · wege 1 · laternen 100 · ausstattung 19 · haeuser 289"],"kopf":["Takt 0 1136.6 ms: erdbau 4 · wege 1 · laternen 100 · ausstattung 19 · haeuser 289"]}}
+  ✅ C-K5 OHNE VORLAUF (Teleport, Start-Dorf): Pläne (Haupt-Thread + Ort-Faden) bis zum ersten Haus nH 300 / nH 12 ≤ 1,2 — {"vorlauf12":{"nH":12,"plaene":17,"haus":2,"vor":80},"vorlauf300":{"nH":300,"plaene":3,"haus":2,"vor":80},"teleport12":{"nH":12,"plaene":10,"haus":106,"vor":0},"teleport300":{"nH":300,"plaene":1,"haus":767,"vor":0},"alt300":{"nH":301,"plaene":1,"haus":9,"vor":13},"drossel":8,"schirm":[1,0],"ort":{"hash":[237879090,237879090],"erste":null},"ortStoer":{"hash":[412186289,261704657],"erste":"ort.x -1468.0862745098038 ≠ -1468.0899745098038"},"wach":{"takte":171,"haus":12,"mehr":[],"max":["Takt 2 32.4 ms: erdbau 1","Takt 6 29.7 ms: wege 1","Takt 117 24.7 ms: haeuser 2","Takt 151 23.1 ms: haeuser 2"],"kopf":["Takt 0 0.7 ms: ","Takt 1 3.8 ms: ","Takt 2 32.4 ms: erdbau 1","Takt 3 18.2 ms: erdbau 1","Takt 4 8 ms: erdbau 1","Takt 5 20.5 ms: erdbau 1"]},"wachVoll":{"takte":1,"haus":0,"mehr":["Takt 0 1136.6 ms: erdbau 4 · wege 1 · laternen 100 · ausstattung 19 · haeuser 289"],"max":["Takt 0 1136.6 ms: erdbau 4 · wege 1 · laternen 100 · ausstattung 19 · haeuser 289"],"kopf":["Takt 0 1136.6 ms: erdbau 4 · wege 1 · laternen 100 · ausstattung 19 · haeuser 289"]}}
+  ✅ C-K5: DER RANG — der Schirm zuerst: 40 m vor dem Spieler vor 15 m neben ihm — {"vorlauf12":{"nH":12,"plaene":17,"haus":2,"vor":80},"vorlauf300":{"nH":300,"plaene":3,"haus":2,"vor":80},"teleport12":{"nH":12,"plaene":10,"haus":106,"vor":0},"teleport300":{"nH":300,"plaene":1,"haus":767,"vor":0},"alt300":{"nH":301,"plaene":1,"haus":9,"vor":13},"drossel":8,"schirm":[1,0],"ort":{"hash":[237879090,237879090],"erste":null},"ortStoer":{"hash":[412186289,261704657],"erste":"ort.x -1468.0862745098038 ≠ -1468.0899745098038"},"wach":{"takte":171,"haus":12,"mehr":[],"max":["Takt 2 32.4 ms: erdbau 1","Takt 6 29.7 ms: wege 1","Takt 117 24.7 ms: haeuser 2","Takt 151 23.1 ms: haeuser 2"],"kopf":["Takt 0 0.7 ms: ","Takt 1 3.8 ms: ","Takt 2 32.4 ms: erdbau 1","Takt 3 18.2 ms: erdbau 1","Takt 4 8 ms: erdbau 1","Takt 5 20.5 ms: erdbau 1"]},"wachVoll":{"takte":1,"haus":0,"mehr":["Takt 0 1136.6 ms: erdbau 4 · wege 1 · laternen 100 · ausstattung 19 · haeuser 289"],"max":["Takt 0 1136.6 ms: erdbau 4 · wege 1 · laternen 100 · ausstattung 19 · haeuser 289"],"kopf":["Takt 0 1136.6 ms: erdbau 4 · wege 1 · laternen 100 · ausstattung 19 · haeuser 289"]}}
+  ✅ C-K5c: DER ORT IST EINE FUNKTION — zwei Vorläufe nH 300, der Spieler 3,7 m versetzt: der Plan v2 bit-gleich — [237879090,237879090]
+  ✅ C-K5c Selbsttest: ein Wunsch, der mit dem Spieler rückt, wird ROT beim Namen — {"hash":[412186289,261704657],"erste":"ort.x -1468.0862745098038 ≠ -1468.0899745098038"}
+  C-K5d DAS ERWACHEN {"takte":171,"haus":12,"mehr":[],"max":["Takt 2 32.4 ms: erdbau 1","Takt 6 29.7 ms: wege 1","Takt 117 24.7 ms: haeuser 2","Takt 151 23.1 ms: haeuser 2"],"kopf":["Takt 0 0.7 ms: ","Takt 1 3.8 ms: ","Takt 2 32.4 ms: erdbau 1","Takt 3 18.2 ms: erdbau 1","Takt 4 8 ms: erdbau 1","Takt 5 20.5 ms: erdbau 1"]}
+  ✅ C-K5d: DAS ERWACHEN IN RATEN — vom Erwachen bis zum letzten Haus trägt jeder Takt höchstens EINEN Schritt des Dorfs — 171 Takte, das erste Haus im Takt 12, der längste Takt 2 32.4 ms: erdbau 1,Takt 6 29.7 ms: wege 1,Takt 117 24.7 ms: haeuser 2,Takt 151 23.1 ms: haeuser 2
+  ✅ C-K5d Selbsttest: ein synchroner Voll-Bau im Takt des Erwachens wird ROT beim Namen — Takt 0 1136.6 ms: erdbau 4 · wege 1 · laternen 100 · ausstattung 19 · haeuser 289
+  ✅ C-K5b: EIN VORRAT JE ZELLE — am Mess-Ort dorf bereiten sich zwei Zellen vor, jede mit höchstens EINEM Export — {"exporte":{"-3,-5":1,"-5,-3":1,"-3,-3":1},"alle":3,"nachZug":0,"gaenge":61,"offen":0}
+  ✅ C-K5b: NACH DEM ZUG STEHT DIE WELT — 150 Gänge ohne Export, kein Foundry-Auftrag offen — {"exporte":{"-3,-5":1,"-5,-3":1,"-3,-3":1},"alle":3,"nachZug":0,"gaenge":61,"offen":0}
+  ✅ C-K5b Selbsttest: EIN Vorrat zur Zeit (das alte Überspringen) wird ROT beim Namen — Zelle -3,-5: 31 Exporte · Zelle -5,-3: 31 Exporte {"exporte":{"-3,-5":31,"-5,-3":31},"alle":62,"nachZug":11,"gaenge":600,"offen":1}
+
+✅ GRÜN — DER SETTLEMENT-KANAL N5.7 STEHT: exportSettlement ist deterministisch + eingefroren (Kern), der Export reist durch den EINEN Worker (Brücke generisch, M8), der Host hebt die Slots positions-deterministisch, wasser-bewacht und fail-closed in die Welt (deliberater Akt) — UND der Worldgen-Konsument lebt (Auto-Dörfer: Γ5-Zellen, Site-Wände, budgetierte Materialisierung durch die EINE Slot-Quelle, Reload-idempotent, headless-ruhig).

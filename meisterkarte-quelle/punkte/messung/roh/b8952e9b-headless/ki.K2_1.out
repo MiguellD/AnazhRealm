@@ -1,0 +1,72 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-praegung-welt.cjs
+
+=== (S) SELBST-TEST — der alte Riss ist ERKENNBAR (nicht vakuös) ===
+  ✅ gestrippter Entry-Stempel ⇒ EXAKT der ungeprägte Fingerabdruck — 515787a7/12 vs 515787a7/12
+  ✅ gestrippter Hand-Stempel ⇒ EXAKT der ungeprägte Hand-Fingerabdruck — 439da209/18 vs 439da209/18
+
+=== (N) NAHT — die Prägung formt in Hand UND Welt ===
+  ✅ HAND-Guss: klinge_langschwert geprägt (Nihon) ≠ ungeprägt — 439da209/18 fc241ed2/17
+  ✅ WELT-Flatten: fahrzeug_gt-Entry geprägt (toro ≠ stern, mind. eine ≠ ungeprägt) — U=515787a7/12 toro=4ac87a2a/12 stern=d49e2d35/12
+
+=== (G) GUSS-SEMANTIK — Stempel beim Guss, gefroren danach ===
+  ✅ wieldBlueprint (schöpfer, ungeschmiedet) stempelt bp.studioOv als TIEFE Kopie
+  ✅ nachträgliches präge ändert das bestehende Artefakt NICHT
+  ✅ Neu-Guss OHNE Prägung räumt den Alt-Stempel
+  ✅ auch der Schmiede-Guss stempelt (_forgeMaterialAndFreeze → _stampStudioOv)
+
+=== (R) ROUNDTRIP — Snapshot · Bauplan-Zwilling · Taille ===
+  ✅ spawnArchitecture stempelt den Entry (tiefe Kopie)
+  ✅ Snapshot trägt den Entry-Stempel + Restore bringt ihn zurück
+  ✅ Bauplan-Zwilling: _serializeBlueprint/_deserializeBlueprint tragen studioOv
+  ✅ Taille des eigenen Zweigs: ein kaputter Stempel fällt in Serialisierung und Laden
+  ✅ Taille-Wand: >8-KiB-Stempel fällt am Chokepoint
+
+=== (B) BYTE-IDENTITÄT + CACHE-REINHEIT des ungeprägten Pfads ===
+  ✅ der ungeprägte Bau legt NUR den alten Schlüssel (ohne |ov:) an, geprägte NUR |ov:-Schlüssel — plain=["gt|3|1","gt|3|0"] ov=4
+  ✅ der exakte Körper-Schlüssel (preset|gestalt|lod, ohne ov) lebt unverändert
+  ✅ kein JSON-Schlüssel im Welt-Cache (die Rezept-Linsen-Reinheit hält)
+  ✅ BYTE-IDENTITÄT: ungeprägter Flatten == direkter ov-loser _foundryRequest-Bau — 515787a7/12 vs 515787a7/12
+
+=== (K) KI-REGLER — spawn_studio prägt ===
+  ✅ SELBST-TEST: ein ov, das nicht ankommt (Stempel · Bau), ist ROT — {"Stempel":"unbewegt","Bau":"unbewegt"}
+  ✅ ERREICHT: 73 von 112 Zeilen von PARAMS_BY_KIND (65.2 %) erreicht — je Art vehicle 14/15 · gate 18/26 · weapon 17/18 · haus 21/21 · ausstattung 3/3 · klang 0/7 · koerper 0/8 · kreatur 0/5 · flower 0/5 · grass 0/4 (tot 10, ohne Wort 29)
+  ✅ KLEMME: W -3 · pitchDeg 75 · annexN 1,6 → 6 · 60 · 2, benannt, gebaut wie das Studio-Werk — {"st":"erreicht","ov":{"W":6,"pitchDeg":60,"annexN":2},"genannt":["W -3→6","pitchDeg 75→60","annexN 1.6→2"],"ok":true}
+  ✅ FAIL-CLOSED: fremder Regler · Text · Liste · Art ohne Zeilen setzen nichts, benannt — {"fremd":true,"text":true,"liste":true,"baum":true}
+  ✅ PROMPT: jede Zeile jeder sagbaren Art mit Bereich, aus DERSELBEN Quelle (Mutation gewinnt) — fehlt:  · Mutation true
+
+=== (T) TEILEN in EINER Geste: A klickt, B gibt den Code in den Chat ===
+TEILEN {"code":530,"leer":0,"ov":true,"hashA":"9c183437/12","hashB":"9c183437/12","ohne":"515787a7/12","ndc":[0,-0.36456459071818037,0.9835316865019835],"d":12,"lod":0,"ms":787,"autor":true,"msA":586}
+  ✅ A: Werkstatt → GT → Teilen liefert EINEN Code ≤ 4 KB — 530 Zeichen, eigener Bauplan 845 Zeichen
+  ✅ B ist ein frisches Profil (Platte + localStorage vor dem Boot leer, eigener Vibe-Pass)
+  ✅ B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A — {"ok":true,"id":2,"name":"fahrzeug_gt","autor":"0c9652a714b757083bd62d1212add631ae668ed1b802ee25b4006e030cde7c18","fremd":[]}
+  ✅ B: gezeichnet an der eigenen Pose (≤ 24 m, im Bild) — 12 m 0,-0.36456459071818037,0.9835316865019835
+  ✅ ZEIT: Klick bis Code + Enter bis gezeichnet ≤ 10 s — 787 ms (A 586)
+  ✅ B: Stempel und Same reisen tief gleich
+  ✅ BAU-HASH A ↔ B byte-gleich, der Stempel wirkt (≠ ungeprägt) — A=9c183437/12 B=9c183437/12 ohne=515787a7/12
+  ✅ der eigene Bauplan kommt byte-gleich (kanonische Substanz)
+
+=== (F) KORPUS fremder Codes ===
+  ✅ gross — gross · Geteiltes Werk abgewiesen: der Code ist größer als 4 KB (gross).
+  ✅ kaputt — kaputt · Geteiltes Werk abgewiesen: der Code ist beschädigt (kaputt).
+  ✅ version — version · Geteiltes Werk abgewiesen: der Code spricht eine fremde Version (version).
+  ✅ op:voxel_carve — op:voxel_carve · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:voxel_carve).
+  ✅ op:rule — op:rule · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:rule).
+  ✅ op:player_soul — op:player_soul · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:player_soul).
+  ✅ form — form · Geteiltes Werk abgewiesen: das Programm hat nicht die Form eines Werks (form).
+  ✅ regler:segments — regler:segments · Geteiltes Werk abgewiesen: der Stempel trägt einen Regler, den das Studio nicht ausweist (regler:segments).
+  ✅ band:radstand — band:radstand · Geteiltes Werk abgewiesen: ein Regler liegt außerhalb seines Bands (band:radstand).
+  ✅ regler:cEdge — regler:cEdge · Geteiltes Werk abgewiesen: der Stempel trägt einen Regler, den das Studio nicht ausweist (regler:cEdge).
+  ✅ name — name · Geteiltes Werk abgewiesen: der Name ist kein Bauplan-Name (name).
+  ✅ teile:shape_not_allowed:evil — teile:shape_not_allowed:evil · Geteiltes Werk abgewiesen: ein Teil steht nicht im Bau-Vertrag (teile:shape_not_allowed:evil).
+  ✅ builtin:fahrzeug_gt — builtin:fahrzeug_gt · Geteiltes Werk abgewiesen: ein fremder Bauplan überschreibt keinen der Welt (builtin:fahrzeug_gt).
+  ✅ signatur — signatur · Geteiltes Werk abgewiesen: die Signatur passt nicht zum Werk (signatur).
+  ✅ signatur — signatur · Geteiltes Werk abgewiesen: die Signatur passt nicht zum Werk (signatur).
+  ✅ unsigniert — unsigniert · Geteiltes Werk abgewiesen: der Code ist nicht signiert (unsigniert).
+  ✅ 0 Schreibe: Baupläne, Bauten, Regeln, Edits, Same, Erinnerung unverändert — true
+  ✅ P2P: Slot 6 mit einem Regler außerhalb des Vertrags fällt benannt (dieselbe Wand)
+  ✅ P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden)
+  ✅ must-ignore gilt FREMDEN Hüllen-Feldern: das Werk steht, das Feld ist benannt — {"ok":true,"id":4,"name":"fahrzeug_gt","autor":"0c9652a714b757083bd62d1212add631ae668ed1b802ee25b4006e030cde7c18","fremd":["zukunft"],"laut":"Geteiltes Werk steht: GT (von 0c96 52a7 14b7 5708)."}
+  ✅ ein Name aus fremder Hand erreicht die KI nie (Werk steht, System-Prompt ohne ihn)
+  ✅ TÄTER-PROBE: ohne die Vertrags-Wand käme der Täter durch — das Urteil wird ROT
+
+✅ GRÜN — die Prägung reist mit dem Artefakt, per Code zum anderen Spieler, jeder fremde Code fällt beim Namen
