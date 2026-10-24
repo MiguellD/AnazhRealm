@@ -146,32 +146,13 @@ function wasserKoerper(opts) {
         const SG = A._schwimmGesetz();
         // Die Welt läuft weiter (der Spiel-Loop ist der Ort des Streamings) — die Sim-Schritte hier sind dieselben, die
         // `_loopFixedStep` je Frame ruft (`_stepFixedSim`). Der Loop ruht, solange die Probe steppt.
-        const vorher = { loop: r._loopFixedStep };
-        r._loopFixedStep = function () {
-            return 0;
-        };
-        let t = Number.isFinite(st._fixedSimTime) ? st._fixedSimTime : 0;
-        const schritt = (keys) => {
-            st.keys = Object.assign({}, keys || {});
-            r._stepFixedSim(t, DT);
-            t += DT;
-            st._fixedSimTime = t;
-        };
-        const setze = (x, y, z) => {
-            pm.position.set(x, y, z);
-            st._fieldVy = 0;
-            st.playerVel.setValue(0, 0, 0);
-            st.isInAir = false;
-            st._fieldWasGrounded = false;
-            if (st._fixedSimPos) st._fixedSimPos.copy(pm.position);
-            st._fixedPrevPos = null;
-        };
+        const leib = window.__wasserLeib();
+        const [schritt, setze] = [leib.takt, leib.setze];
         const R = (x, n = 3) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
         const aus = {
             see: { mitte: [R(mx, 1), R(mz, 1)], spiegel: R(spiegel, 2), tiefeMitte: R(tiefeMitte, 2) },
             brust: R(brust),
         };
-        const keysAlt = st.keys;
         const yawAlt = st.yaw;
         try {
             // (1) HINEINGEHEN: vom Ostufer nach Westen, W gedrückt.
@@ -368,9 +349,8 @@ function wasserKoerper(opts) {
             }
             // (8) DAS LICHT AM WASSER (K9) fährt mit dem echten Renderer: `wasserLicht` (der Himmel lebt auf der GPU, D3)
         } finally {
-            st.keys = keysAlt || {};
             st.yaw = yawAlt;
-            r._loopFixedStep = vorher.loop;
+            leib.zurueck();
         }
         return aus;
     })();
@@ -1292,33 +1272,17 @@ function wasserHoehle(opts) {
         const wahl = [];
         for (let q = 0; q < raum.length && wahl.length < (o.n || 6); q += Math.max(1, Math.floor(raum.length / 6)))
             wahl.push(raum[q]);
-        const pm = st.playerMesh;
-        const posAlt = pm.position.clone();
-        const camAlt = st.camera ? st.camera.position.clone() : null;
-        const loopAlt = r._loopFixedStep;
-        const keysAlt = st.keys;
-        r._loopFixedStep = function () {
-            return 0;
-        };
         const FUSS = A.PLAYER_FOOT_OFFSET;
-        let t = Number.isFinite(st._fixedSimTime) ? st._fixedSimTime : 0;
+        const leib = window.__wasserLeib();
         let schwimmFrames = 0,
             kameraUnter = 0,
             tierSchwimmt = 0,
             tierProben = 0;
         try {
-            st.keys = {};
             for (const h of wahl) {
-                pm.position.set(h.x, h.boden + FUSS + 0.02, h.z);
-                st._fieldVy = 0;
-                st.playerVel.setValue(0, 0, 0);
-                st.isInAir = false;
-                if (st._fixedSimPos) st._fixedSimPos.copy(pm.position);
-                st._fixedPrevPos = null;
+                leib.setze(h.x, h.boden + FUSS + 0.02, h.z);
                 for (let s = 0; s < 20; s++) {
-                    r._stepFixedSim(t, A.FIXED_DT);
-                    t += A.FIXED_DT;
-                    st._fixedSimTime = t;
+                    leib.takt();
                     if (st.playerUnderwater) schwimmFrames++;
                 }
                 if (st.camera) {
@@ -1345,16 +1309,7 @@ function wasserHoehle(opts) {
                 }
             }
         } finally {
-            r._loopFixedStep = loopAlt;
-            st.keys = keysAlt || {};
-            pm.position.copy(posAlt);
-            if (st._fixedSimPos) st._fixedSimPos.copy(posAlt);
-            st._fixedPrevPos = null;
-            if (camAlt) {
-                st.camera.position.copy(camAlt);
-                st.camera.updateMatrixWorld(true);
-                r._applyDayNightToScene();
-            }
+            leib.zurueck();
         }
         return {
             proben: hoehlen.length,
@@ -2596,6 +2551,33 @@ function wasserLeser(opts) {
     })();
 }
 
+// DER LEIB DER PROBE (EIN Gestell für jede Probe am Spieler): der Spiel-Takt ruht (`_loopFixedStep`), `setze` stellt den Leib
+// ruhend an (x, y, z), `takt` geht mit den Tasten einen festen Sim-Schritt (`_stepFixedSim`, derselbe wie je Frame), `zurueck`
+// stellt Ort, Tasten, Takt und Kamera wieder her.
+function wasserLeib() {
+    const [r, A] = [window.anazhRealm, window.anazhRealm.constructor];
+    const [st, pm] = [r.state, r.state.playerMesh];
+    const alt = [pm.position.clone(), st.keys, r._loopFixedStep, st.camera && st.camera.position.clone()];
+    [r._loopFixedStep, st.keys] = [() => 0, {}];
+    let t = Number.isFinite(st._fixedSimTime) ? st._fixedSimTime : 0;
+    const leib = {
+        setze(x, y, z) {
+            pm.position.set(x, y, z);
+            if (st._fixedSimPos) st._fixedSimPos.copy(pm.position);
+            [st._fixedPrevPos, st._fieldVy, st.isInAir, st._fieldWasGrounded] = [null, 0, false, false];
+            st.playerVel.setValue(0, 0, 0);
+            return pm;
+        },
+        takt: (keys) => ((st.keys = Object.assign({}, keys)), r._stepFixedSim(t, A.FIXED_DT), (st._fixedSimTime = t += A.FIXED_DT)),
+        zurueck() {
+            [r._loopFixedStep, st.keys] = [alt[2], alt[1] || {}];
+            leib.setze(alt[0].x, alt[0].y, alt[0].z);
+            if (alt[3]) (st.camera.position.copy(alt[3]), st.camera.updateMatrixWorld(true), r._applyDayNightToScene());
+        },
+    };
+    return leib;
+}
+
 // ── K12 M: DIE MUTATION DER EINEN WAHRHEIT (Meisterkarte Gelände K4, Staffel 1) ──
 // An `n` (50) Zufalls-Punkten trockenen Lands um `ort` trägt der Kern der Wahrheit am Körper (`_koerperWasserSpiegel`) je eine
 // Scheibe von RHO m mit einem Spiegel TIEF m über dem Boden. Jeder Leser (LESER, die Liste steht nur hier; das Trink-Ziel
@@ -2622,6 +2604,9 @@ function wasserMutation(opts) {
             return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
         };
         const drin = (x, z) => punkte.some((p) => (x - p.x) ** 2 + (z - p.z) ** 2 <= RHO * RHO);
+        // unter dem Spiegel einer Scheibe steht eine Pflanze, die in ihr tiefer wurzelt als ihr Spiegel (am Hang ragt der Rand
+        // der Scheibe über ihn: dort steht die Wiese zu Recht)
+        const unter = (it) => punkte.some((p) => (it.x - p.x) ** 2 + (it.z - p.z) ** 2 <= RHO * RHO && it.y < p.b + TIEF);
         const punkte = [];
         let versuche = 0;
         for (; versuche < 3000 && punkte.length < (o.n || 50); versuche++) {
@@ -2649,7 +2634,7 @@ function wasserMutation(opts) {
                     if (!satz) n.warten++;
                     else
                         for (const it of satz.items || satz)
-                            if ((art === "wiese" || !arten[it.art].zeile.ufer) && drin(it.x, it.z)) n[art]++;
+                            if ((art === "wiese" || !arten[it.art].zeile.ufer) && unter(it)) n[art]++;
                 }
             }
             return n;
@@ -2667,11 +2652,7 @@ function wasserMutation(opts) {
             land: "das Land der Streu und der Werke (`_landAt`)",
             kontrolle: "das Gesetz allein (`_atlasWaterLevelAt`, die Kontrolle)",
         };
-        const pm = st.playerMesh;
-        const [posAlt, camAlt, keysAlt, loopAlt] = [pm.position.clone(), st.camera && st.camera.position.clone(), st.keys, r._loopFixedStep];
-        r._loopFixedStep = () => 0;
-        st.keys = {};
-        let t = Number.isFinite(st._fixedSimTime) ? st._fixedSimTime : 0;
+        const leib = window.__wasserLeib();
         const capAlt = st.maxCreatures;
         st.maxCreatures = Infinity; // der Leib der Probe zählt nie gegen die Obergrenze der Welt
         const c = punkte.length ? r.spawnCreatureAt(punkte[0].x, punkte[0].b, punkte[0].z, "happy", "wolf", { precise: true, bodySize: 1 }) : null;
@@ -2679,14 +2660,8 @@ function wasserMutation(opts) {
         const takt = Math.max(1, A.KREATUR_RUHE.takt);
         const urteil = (p) => {
             const u = {};
-            pm.position.set(p.x, p.b + A.PLAYER_FOOT_OFFSET + 0.02, p.z);
-            st._fieldVy = 0;
-            st.playerVel.setValue(0, 0, 0);
-            st.isInAir = false;
-            if (st._fixedSimPos) st._fixedSimPos.copy(pm.position);
-            st._fixedPrevPos = null;
-            r._stepFixedSim(t, A.FIXED_DT);
-            st._fixedSimTime = t += A.FIXED_DT;
+            leib.setze(p.x, p.b + A.PLAYER_FOOT_OFFSET + 0.02, p.z);
+            leib.takt();
             u.leib = !!st.playerUnderwater;
             if (st.camera) {
                 st.camera.position.set(p.x, p.b + 1, p.z);
@@ -2744,24 +2719,15 @@ function wasserMutation(opts) {
         } finally {
             delete r._koerperWasserSpiegel;
             if (c) r.removeCreature(c);
-            r._loopFixedStep = loopAlt;
-            st.keys = keysAlt || {};
-            pm.position.copy(posAlt);
-            if (st._fixedSimPos) st._fixedSimPos.copy(posAlt);
-            st._fixedPrevPos = null;
-            if (camAlt) {
-                st.camera.position.copy(camAlt);
-                st.camera.updateMatrixWorld(true);
-                r._applyDayNightToScene();
-            }
+            leib.zurueck();
         }
         return aus;
     })();
 }
 
 // ── GELÄNDE K4 STAFFEL 2: ÜBERALL ── DIE ORTE ÜBER DIE KARTE: `n` Würfe aus der Saat der Probe (±6 km um die Mitte der Welt, je
-// ≥ 1,5 km auseinander) — trockenes Land (`_landAt`, 2 m Marge) oder der Fluss-Punkt nächst dem Wurf (`__wasserFlussNah`), an dem
-// die Strömung trägt und das Wasser ≥ 1,2 m über dem gezeichneten Bett steht (`fluss`).
+// ≥ 1,5 km auseinander) — trockenes Land (`_landAt`, 2 m Marge) oder der Fluss-Punkt seiner Region nächst dem Wurf, an dem die
+// Strömung trägt und das Wasser ≥ 1,2 m über dem gezeichneten Bett steht (`fluss`); an jedem die Mutation oder die Strömung.
 async function wasserKarte(o) {
     const r = window.anazhRealm;
     let hs = 0x51ed270b;
@@ -2776,18 +2742,21 @@ async function wasserKarte(o) {
         const [x, z] = [zufall(), zufall()];
         if (orte.some(([a, b]) => Math.hypot(a - x, b - z) < 1500)) continue;
         await window.__weltDa(() => !r._ensureHydroTilesAround(x, z, 300));
-        const p = o.fluss ? window.__wasserFlussNah(r, x, z).p : { x, z };
-        const boden = p && r._voxelSurfaceY(p.x, p.z);
-        if (o.fluss ? p && r._waterFlowAt(p.x, p.z) && r._atlasWaterLevelAt(p.x, p.z, boden) - boden >= 1.2 : r._landAt(x, z, 2))
-            orte.push([p.x, p.z]);
+        const tief = (q, b = r._voxelSurfaceY(q.x, q.z)) => r._waterFlowAt(q.x, q.z) && r._atlasWaterLevelAt(q.x, q.z, b) - b >= 1.2;
+        const P = o.fluss ? (r._hydroFor(x, z).rivers || []).flatMap((rv) => rv.points.slice(4, -4)).filter((q) => !q.inLake) : [];
+        const p = o.fluss ? P.sort((a, b) => Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z)).slice(0, 400).find((q) => tief(q)) : { x, z };
+        if (o.fluss ? p : r._landAt(x, z, 2)) orte.push([p.x, p.z]);
     }
-    return orte;
+    const aus = [];
+    for (const ort of orte) aus.push(Object.assign({ ort }, await (o.fluss ? window.__wasserTreibt : window.__wasserMutation)({ ort })));
+    return aus;
 }
 
 // DIE LÄUFE ENDEN IN SEE ODER MEER: jeder Lauf des Gesetzes (`flussLaeufe` ±3 km um die Mitte der Welt) bis zu seiner Senke
 // verfolgt — über den Fenster-Rand (derselbe Lauf ab seinem letzten Knoten; an einer Senke beginnt kein Glied, der Lauf, der an ihr
-// endet, trägt sie) und die Mündung (der Lauf der Ebene darunter, dessen Bahn sie trägt); an jeder Senke trägt die Welt Wasser über
-// dem gezeichneten Grund (`_atlasWaterLevelAt`, dort oder eine Zelle daneben); der Spiegel jedes Flusses der Regionen steigt nie.
+// endet, trägt sie) und die Mündung (der Lauf der Ebene darunter, dessen Bahn sie trägt); an jeder Senke (dazu jede benannte des
+// Netzes, `benannteSeen`) trägt die Welt Wasser über dem gezeichneten Grund (`_atlasWaterLevelAt`, dort oder eine Zelle daneben);
+// stromab fällt die Sohle jedes Flusses der Regionen streng, sein Spiegel steigt nie.
 async function wasserLaeufe() {
     const r = window.anazhRealm;
     const [G, L] = [window.__gelaendeCore, r._gelaende()];
@@ -2814,6 +2783,7 @@ async function wasserLaeufe() {
         if (ende === "see" || ende === "meer") senken.set(x + "," + z, [ende, x, z]);
         else if (aus.trocken.length < 6) aus.trocken.push([ende, Math.round(x), Math.round(z)]);
     }
+    for (const k of G.benannteSeen(L, -3072, -3072, 16, 385)) senken.set(k, ["see", -3072 + (k % 385) * 16, -3072 + ((k / 385) | 0) * 16]);
     for (const [ende, x, z] of senken.values()) {
         await window.__weltDa(() => !r._ensureHydroTilesAround(x, z, 32));
         aus.senken++;
@@ -2822,53 +2792,33 @@ async function wasserLaeufe() {
         else aus.trocken.push([ende, Math.round(x), Math.round(z)]);
     }
     for (const h of [r.state.hydrosphere, ...r.state.hydroTiles.values()])
-        for (const P of (h.rivers || []).map((rv) => rv.points)) for (let i = 1; i < P.length; i++, aus.schritte++) aus.steigt += P[i].S > P[i - 1].S;
+        for (const P of (h.rivers || []).map((rv) => rv.points)) for (let i = 1; i < P.length; i++, aus.schritte++) aus.steigt += P[i].S > P[i - 1].S || P[i].y >= P[i - 1].y;
     return aus;
 }
 
 // DIE STRÖMUNG TREIBT (gate:kopplung F1 in der Welt): am Fluss-Punkt `ort` (die Welt dort gestreamt) je Körper 90 Takte ohne
-// Eingabe, einmal mit und einmal ohne Strömung (`_waterFlowAt` schweigt); sein Weg längs des Laufs ohne den eigenen Gang (das Tier
-// steuert selbst: Σ Gier × Tempo des Steuer-Gesetzes) ist die Drift — der Schwimmer (`_stepFixedSim`, unter dem Spiegel), das
-// gerittene Probe-Boot (`_rittSchritt` im Sim-Schritt) und der Wolf in der Kanal-Mitte (`updateCreatures`) treiben, ohne Strömung
-// nicht; der Läufer am trockenen Ufer nie.
+// Eingabe, einmal mit und einmal ohne Strömung (`_waterFlowAt` schweigt); sein Weg längs des Laufs ist die Drift — der Schwimmer
+// (`_stepFixedSim`, unter dem Spiegel), das gerittene Probe-Boot (`_rittSchritt` im Sim-Schritt) und der Wolf in der Kanal-Mitte
+// (`updateCreatures`, sein Steuer-Gesetz rudert nicht: der Gang des Leibs trägt nur die Strömung) treiben, ohne Strömung nicht.
 async function wasserTreibt(o) {
     const [r, A] = [window.anazhRealm, window.anazhRealm.constructor];
-    const [st, pm] = [r.state, r.state.playerMesh];
     const [x, z] = o.ort;
     await window.__wasserStrom([x, z], 3);
-    const [f, rv] = [r._waterFlowAt(x, z), r._hydroRiverAt(x, z)];
-    if (!f || !rv) return { fehler: "kein Fluss am Ort" };
+    const f = r._waterFlowAt(x, z);
+    if (!f) return { fehler: "kein Fluss am Ort" };
     const m = Math.hypot(f.x, f.z);
     const S = r._atlasWaterLevelAt(x, z, r._voxelSurfaceY(x, z));
-    let ufer = null;
-    for (let d = rv.depth + 6; d < 80 && !ufer; d++)
-        for (const [ux, uz] of [[x - (f.z / m) * d, z + (f.x / m) * d], [x + (f.z / m) * d, z - (f.x / m) * d]])
-            if (!ufer && !r._nassAt(ux, uz) && !r._hydroRiverAt(ux, uz)) ufer = [ux, uz];
-    const [posAlt, keysAlt, loopAlt] = [pm.position.clone(), st.keys, r._loopFixedStep];
-    [r._loopFixedStep, st.keys] = [() => 0, {}];
-    let t = Number.isFinite(st._fixedSimTime) ? st._fixedSimTime : 0;
-    const sim = () => r._stepFixedSim(t, A.FIXED_DT) || (st._fixedSimTime = t += A.FIXED_DT);
-    const spieler = (px, py, pz) => {
-        pm.position.set(px, py, pz);
-        if (st._fixedSimPos) st._fixedSimPos.copy(pm.position);
-        [st._fixedPrevPos, st._fieldVy, st.isInAir] = [null, 0, false];
-        st.playerVel.setValue(0, 0, 0);
-        return pm;
-    };
-    // je Körper: setzen, 90 Takte, der Weg längs des Laufs ohne den eigenen Gang — mit und ohne Strömung
+    const [st, leib, SG] = [r.state, window.__wasserLeib(), A._steuerGesetz()];
+    // je Körper: setzen, 90 Takte, der Weg längs des Laufs — mit und ohne Strömung
     const lauf = (setze, takt, fort) => {
         const weg = [];
         for (const mit of [true, false]) {
             if (!mit) r._waterFlowAt = () => null;
             const k = setze();
             if (!k) return { fehler: "der Körper steht nicht" };
-            let w = -(k.position.x * f.x + k.position.z * f.z) / m;
-            for (let n = 0; n < 90; n++) {
-                takt(k);
-                const s = k.userData && k.userData._steuer;
-                if (s) w -= ((Math.sin(s.gier) * f.x + Math.cos(s.gier) * f.z) / m) * s.v * A.FIXED_DT;
-            }
-            weg.push(Math.round((w + (k.position.x * f.x + k.position.z * f.z) / m) * 1000) / 1000);
+            const w = k.position.x * f.x + k.position.z * f.z;
+            for (let n = 0; n < 90; n++) takt(k);
+            weg.push(Math.round(((k.position.x * f.x + k.position.z * f.z - w) / m) * 1000) / 1000);
             delete r._waterFlowAt;
             if (fort) fort(k);
         }
@@ -2878,25 +2828,25 @@ async function wasserTreibt(o) {
     st.blueprints[BOOT] = { name: BOOT, parts: [{ shape: "box", material: "holz", size: { x: 3, y: 0.6, z: 1.4 }, position: { x: 0, y: 0, z: 0 } }], connections: [] };
     const aus = { ort: [x, z], spiegel: S, strom: m };
     try {
-        aus.schwimmer = lauf(() => spieler(x, S - 0.9, z), sim);
-        if (ufer) aus.land = lauf(() => spieler(ufer[0], r._voxelSurfaceY(...ufer) + A.PLAYER_FOOT_OFFSET + 0.02, ufer[1]), sim);
+        aus.schwimmer = lauf(() => leib.setze(x, S - 0.9, z), () => leib.takt());
         aus.boot = lauf(
             () => {
-                spieler(x, S + 1, z);
+                leib.setze(x, S + 1, z);
                 const e = r.spawnArchitecture(BOOT, { x, y: r._voxelSurfaceY(x, z), z }, { silent: true, precise: true });
                 e.affordances = Object.assign({}, e.affordances, { moveable: true });
                 return (r.mountArchitecture(e) || {}).ok ? e : (r.removeArchitecture(e), null);
             },
-            () => (sim(), r._tickMountedMovement(A.FIXED_DT)),
+            () => (leib.takt(), r._tickMountedMovement(A.FIXED_DT)),
             (e) => (r.dismountArchitecture(), r.removeArchitecture(e))
         );
-        if (ufer) spieler(ufer[0], r._voxelSurfaceY(...ufer) + 1, ufer[1]);
+        A._steuerGesetzMemo = Object.assign({}, SG, { steuerSchritt: (s) => (s.v = 0) });
+        leib.setze(x, S + 30, z); // der Spieler aus dem Weg: sein Leib schöbe den Wolf
         aus.tier = lauf(() => r.spawnCreatureAt(x, S, z, "happy", "wolf", { precise: true, bodySize: 1 }), () => r.updateCreatures(A.FIXED_DT), (c) => r.removeCreature(c));
     } finally {
         delete r._waterFlowAt;
         delete st.blueprints[BOOT];
-        [r._loopFixedStep, st.keys] = [loopAlt, keysAlt || {}];
-        spieler(posAlt.x, posAlt.y, posAlt.z);
+        A._steuerGesetzMemo = SG;
+        leib.zurueck();
     }
     return aus;
 }
@@ -3090,6 +3040,7 @@ module.exports = {
         `var BACH_PROBE_M = ${BACH_PROBE_M};` +
         `window.__wasserOrte = ${wasserOrte.toString()};` +
         `window.__wasserLeser = ${wasserLeser.toString()};` +
+        `window.__wasserLeib = ${wasserLeib.toString()};` +
         `window.__wasserMutation = ${wasserMutation.toString()};` +
         `window.__wasserKarte = ${wasserKarte.toString()};` +
         `window.__wasserLaeufe = ${wasserLaeufe.toString()};` +

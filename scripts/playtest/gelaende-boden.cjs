@@ -1195,10 +1195,8 @@ async function checkBandV18132FerneSeen(ctx) {
         out.maxSpiegel = maxSpiegel;
         out.bandTop = r.state.hydroBand ? r.state.hydroBand.top : null;
         out.bandCovers = !Number.isFinite(maxSpiegel) || (r.state.hydroBand && r.state.hydroBand.top >= maxSpiegel);
-        // Der Worker-Snapshot traegt die Kachel.
-        const snap = r._voxelWorkerSnapshotState();
-        out.snapCarries = !!(snap.hydroTiles && snap.hydroTiles["-1,0"]);
-        // die Leser der Kachel (gelaende-core `hydroRegion`) misst die Kern-Probe am See in seiner Kachel (gate:worker-dichte `--kern`)
+        // die Leser der Kachel (gelaende-core `hydroRegion`) im Haupt-Faden und im Worker misst die Kern-Probe am See in seiner
+        // Kachel (gate:worker-dichte `--kern`)
         return out;
     });
     if (!res) {
@@ -1217,7 +1215,6 @@ async function checkBandV18132FerneSeen(ctx) {
             res.bandCovers,
             `Band-Oberkante ${res.bandTop} · höchster Spiegel ${res.maxSpiegel} (Täter: _computeHydroBand)`
         );
-        check("Ferne Seen: der Worker-Snapshot traegt die Kachel (Determinismus-Wand)", res.snapCarries);
     }
 }
 

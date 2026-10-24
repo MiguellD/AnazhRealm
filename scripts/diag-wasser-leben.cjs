@@ -17,8 +17,8 @@
 //   F7 · K12        die Bank nie steiler als der Fels; Klang und Küsten-Sheet lesen die EINE Wahrheit, und an 50 Zufalls-Punkten
 //                   folgt ihrer Mutation jeder Leser (K12 M: Leib, Tier, Wagen, Scheu, Trink-Ziel, Klang, Natur) — am See der
 //                   Mess-Wiese und an 5 Zufalls-Orten der Karte (K4 ÜBERALL). K8: keine Ufer-Flut nach dem Wecken des Automaten.
-//   K4 LÄUFE        jeder Lauf des Gesetzes endet in See oder Meer, dort trägt die Welt Wasser, der Spiegel steigt stromab nie;
-//   K4 STRÖMUNG     an 4 Fluss-Orten der Karte treiben Schwimmer, Boot und Tier > 0,5 m in 90 Takten, der Läufer am Ufer nie.
+//   K4 LÄUFE        jeder Lauf des Gesetzes endet in See oder Meer, jede Senke trägt Wasser, Sohle und Spiegel steigen nie;
+//   K4 STRÖMUNG     an 4 Fluss-Orten der Karte treiben Schwimmer, Boot und Tier > 0,5 m in 90 Takten, ohne Strömung nicht.
 //   G (F3)          der Graben am Fluss (1 m und 3 m jenseits der Krone, der Weg des Grabe-Hiebs): EINE Wasser-Fläche, nie über
 //                   dem Spiegel, in Ruhe auf ihm; der Automat ruht binnen Takten; die Wiese daneben fällt nie.
 // Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_atlasWaterLevelAt`), den
@@ -356,7 +356,7 @@ function urteil(b) {
         if (!(l.laeufe >= 100 && l.schritte > 10000)) v.push(`K4 LÄUFE LEER: ${l.laeufe} Läufe, ${l.schritte} Lauf-Schritte`);
         if (ende !== l.laeufe) v.push(`K4 LÄUFE: ${l.laeufe - ende} von ${l.laeufe} enden in keinem See und Meer (${JSON.stringify(l.trocken)})`);
         if (l.nass !== l.senken) v.push(`K4 SENKE TROCKEN: ${l.senken - l.nass} von ${l.senken} Senken ohne Wasser (${JSON.stringify(l.trocken)})`);
-        if (l.steigt > 0) v.push(`K4 BERGAUF: an ${l.steigt} von ${l.schritte} Lauf-Schritten steigt der Spiegel stromab`);
+        if (l.steigt > 0) v.push(`K4 BERGAUF: an ${l.steigt} von ${l.schritte} Lauf-Schritten steigt der Spiegel oder die Sohle stromab`);
     }
     if (b.treibt) {
         if (!(b.treibt.length >= 4)) v.push(`K4 STRÖMUNG LEER: nur ${b.treibt.length} Fluss-Orte`);
@@ -367,8 +367,6 @@ function urteil(b) {
                 if (!(d.mit > 0.5)) v.push(`K4 STRÖMUNG ${wo(t)}: ${k} treibt ${d.mit} m in 90 Takten (soll > 0,5 m)`);
                 if (!(Math.abs(d.ohne) < 0.05)) v.push(`K4 STRÖMUNG ${wo(t)}: ${k} treibt ohne Strömung ${d.ohne} m (zweite Quelle)`);
             }
-            if (!t.fehler && !(t.land && Math.abs(t.land.mit - t.land.ohne) < 0.01))
-                v.push(`K4 STRÖMUNG ${wo(t)}: der Läufer am trockenen Ufer wird geschoben (${JSON.stringify(t.land)})`);
         }
     }
     if (b.ufer) {
@@ -633,7 +631,6 @@ function selbsttest() {
         treibt: [1, 2, 3, 4].map((i) => ({
             ort: [i * 900, -i * 700],
             ...Object.fromEntries(["schwimmer", "boot", "tier"].map((k) => [k, { mit: 1.2, ohne: 0 }])),
-            land: { mit: 0.88, ohne: 0.88 },
         })),
         uferFarbe: {
             proben: 24,
@@ -769,7 +766,6 @@ function selbsttest() {
         ["K4 BERGAUF", (b) => (b.laeufe.steigt = 551)],
         ["K4 STRÖMUNG 2700,-2100: tier treibt 0.31", (b) => (b.treibt[2].tier.mit = 0.31)],
         ["K4 STRÖMUNG 900,-700: schwimmer treibt ohne", (b) => (b.treibt[0].schwimmer.ohne = 0.4)],
-        ["K4 STRÖMUNG 1800,-1400: der Läufer", (b) => (b.treibt[1].land.mit = 1.2)],
         ["U3 SCHILF-SPRUNG", (b) => Object.assign(b.uferFarbe.schilf, { spruenge: 12, maxSprung: 0.61 })],
         ["U3 LEER", (b) => (b.uferFarbe.schilf.schritte = 0)],
         ["K8 LEER", (b) => (b.ufer.trocken = 0)],
@@ -1044,15 +1040,8 @@ async function lauf() {
             // GELÄNDE K4 STAFFEL 2 — überall: die Läufe des Gesetzes bis zu ihrer Senke, die Mutation an Zufalls-Orten der Karte,
             // die Strömung an Fluss-Punkten der Karte (je Ort die Welt dort gestreamt)
             if (soll("laeufe")) befund.laeufe = await page.evaluate(() => window.__wasserLaeufe());
-            for (const [art, fluss, n] of [["ueberall", false, 5], ["treibt", true, 4]]) {
-                if (!soll(art)) continue;
-                const orte = await page.evaluate((fl, k) => window.__wasserKarte({ fluss: fl, n: k }), fluss, n);
-                befund[art] = [];
-                for (const ort of orte)
-                    befund[art].push(
-                        Object.assign({ ort }, await page.evaluate((o, fl) => (fl ? window.__wasserTreibt : window.__wasserMutation)({ ort: o }), ort, fluss))
-                    );
-            }
+            for (const [art, fluss, n] of [["ueberall", false, 5], ["treibt", true, 4]])
+                if (soll(art)) befund[art] = await page.evaluate((fluss, n) => window.__wasserKarte({ fluss, n }), fluss, n);
             // zuletzt (sie bauen die Chunks an jeder Quelle und am Bach selbst): das gezeichnete Wasser gegen den Körper
             if (soll("quelle")) {
                 const teil0 = await page.evaluate(

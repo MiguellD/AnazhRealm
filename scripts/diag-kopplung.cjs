@@ -3,7 +3,7 @@
 // diag-kopplung.cjs — DIE KOPPLUNGS-LINSE (npm run gate:kopplung)
 //
 // KOPPLUNG: die Welt fasst den Körper an — drei Fäden, eine Linse (F1, die Strömung, misst die Welt selbst: gate:wasser-leben
-// K4 STRÖMUNG an Fluss-Orten der Karte — Schwimmer, Boot und Tier treiben, der Läufer am Ufer nie):
+// K4 STRÖMUNG an Fluss-Orten der Karte — Schwimmer, Boot und Tier treiben, ohne Strömung nicht):
 //   F2 GLEITEN STATT VOLLSTOPP (PM_ClipVelocity, Quake/Source): 45°-Anlauf
 //      auf eine Wand behält ~Tempo/2 entlang der Absicht (v −= n·(v·n) je
 //      Kontaktebene, bis 3) statt 0; STEILHANG: Gravitation entlang der
@@ -69,7 +69,7 @@ const server = statikServer();
                     this._z = c;
                 },
             });
-            const mkShim = (densityAt, spiegelAt, riverAt) => {
+            const mkShim = (densityAt) => {
                 const shim = Object.create(r);
                 shim.state = {
                     playerMesh: { position: new THREE.Vector3(0, 0.5, 0) },
@@ -97,9 +97,9 @@ const server = statikServer();
                 shim._mountedEntry = null;
                 shim._fieldDensityAt = (x, y, z) => densityAt(x, y, z);
                 shim._terrainColumnContext = () => null;
-                // die EINE Wasser-Wahrheit am Körper (der Spiegel oder −Infinity), synthetisch
-                shim._koerperWasser = (x, z, g) => spiegelAt(x, z, g);
-                shim._hydroRiverAt = (x, z) => riverAt(x, z);
+                // die EINE Wasser-Wahrheit am Körper: trocken, kein Fluss
+                shim._koerperWasser = () => -Infinity;
+                shim._hydroRiverAt = () => null;
                 return shim;
             };
             const runTicks = (shim, n, keys, yaw) => {
@@ -123,10 +123,8 @@ const server = statikServer();
             //     Wandfuß steil (Gradient mischt Boden+Wand über e=0.6) und der
             //     PRE-EXISTENTE Slope-Penalty (Input × 0.2) verdünnte die Klip-Messung.
             const wallDens = (x, y) => Math.max(0 - y, Math.min((x - 8) * 2, (y - 0.25) * 4));
-            const dryCtx = () => -Infinity;
-            const noRiver = () => null;
             const mkWallShim = () => {
-                const s = mkShim(wallDens, dryCtx, noRiver);
+                const s = mkShim(wallDens);
                 s._fieldResolveSphere = () => false; // Isolation: nur der Klip verteidigt
                 return s;
             };
@@ -140,7 +138,7 @@ const server = statikServer();
                 return { proj: intentProj(p0, p1), x: p1.x, z: p1.z };
             };
             {
-                const free = mkShim((x, y) => 0 - y, dryCtx, noRiver); // ohne Wand: Referenz-Tempo
+                const free = mkShim((x, y) => 0 - y); // ohne Wand: Referenz-Tempo
                 const fRes = runWallWindow(free);
                 const wall = mkWallShim();
                 const wRes = runWallWindow(wall);
@@ -175,7 +173,7 @@ const server = statikServer();
             //     Auflösung aus (Isolation: sie kriecht am 68°-Hang ~1 mm/Tick
             //     positional — pre-existent, hier spricht allein der Gravitations-Term).
             const mkSlopeShim = () => {
-                const s = mkShim((x, y) => -2.5 * x - y, dryCtx, noRiver);
+                const s = mkShim((x, y) => -2.5 * x - y);
                 s._fieldResolveSphere = () => false;
                 return s;
             };
