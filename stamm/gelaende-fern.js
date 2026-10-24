@@ -903,7 +903,7 @@ class AnazhRealm_gelaende_fern {
     }
 
     // DIE NÄSSE DER FERNE (K16, die Naht: dieselbe Höhe UND dasselbe Wasser aus EINEM Gesetz): ein Punkt mit der Gesetzes-
-    // Höhe `law` trägt die Form des Gewässers, die die Dichte des Chunks trägt (`_gewaesserForm`: Kanal, Damm, See-Becken),
+    // Höhe `law` trägt die Form des Gewässers, die die Dichte des Chunks trägt (gelaende-core `gewaesserForm`: Kanal, Damm, See-Becken),
     // und sein Spiegel ist die EINE Wasser-Wahrheit (`_atlasWaterLevelAt`: Meer und See; jenseits der Kacheln der
     // Meeresspiegel; vor der Hydrosphäre der Meeresspiegel `wl`). Schreibt `aus.y` (die Fläche) und `aus.spiegel`
     // (−Infinity = trocken) und liefert, ob der Punkt nass ist. Der FLUSS taucht keinen Punkt: sein Kanal (4–17 m) ist
@@ -917,7 +917,12 @@ class AnazhRealm_gelaende_fern {
             aus.spiegel = wl;
             return law < wl;
         }
-        const y = AnazhRealm._gewaesserForm(law, 0, this._hydrosphereCarveAt(x, z), this._hydrosphereLakeAt(x, z));
+        const y = globalThis.__gelaendeCore.gewaesserForm(
+            law,
+            0,
+            this._hydrosphereCarveAt(x, z),
+            this._hydrosphereLakeAt(x, z)
+        );
         aus.y = y;
         this._atlasWaterLevelAt(x, z, y, aus);
         aus.spiegel = aus.koerper;

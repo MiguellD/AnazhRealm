@@ -1586,7 +1586,6 @@ async function checkBandV18198Gamma2Totholz(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
         const out = {};
 
 

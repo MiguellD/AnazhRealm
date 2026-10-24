@@ -67,7 +67,7 @@ const state = {
     baseHeight: 0,
     waterLevel: 0,
     hydrosphere: null, // { ready, originX, originZ, cell, dim, kanal, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear, water:{waterY, waterKind} }
-    hydroTiles: null, // A3 (V18.132) — {key: tile} ferne Kacheln (gleicher Feld-Satz wie hydrosphere)
+    hydroTiles: null, // A3 (V18.132) — Map key → tile, die fernen Kacheln (gleicher Feld-Satz wie hydrosphere)
     hydroWelt: null, // die Welt der Regionen (`_hydroWelt` des Mains): eine neue im Stand räumt sie
     hydroBand: null, // V9.91 — { top, bottom } für Cell-Klassifikation-Skip
     voxelEdits: [], // Array of { x, y, z, r, mode } — die EINE Liste, ohne Deckel; gelesen über die Edit-Karte
@@ -120,7 +120,7 @@ self.onmessage = function (e) {
             // DIE REGIONEN AN EINEN NEBEN-FADEN: ein Faden, der nach einer Bestellung geboren wurde, rechnete sie nicht — dieser
             // Faden reicht ihm jede, die er trägt (alle Bestellungen vor dem Port stehen hier schon), je eine Kopie per Transfer.
             // Der Haupt-Faden klont nie eine Region (bis zur Karte streaming-k5 klonte sein Geburts-Stand sie, 0,23 MB je Boot).
-            const regionen = Object.entries(state.hydroTiles || {});
+            const regionen = [...(state.hydroTiles || [])];
             if (state.hydrosphere) regionen.unshift(["heim", state.hydrosphere]);
             for (const [key, h] of regionen) {
                 const a = hydroAntwort(h, false);
@@ -494,7 +494,7 @@ function ortTraegt(msg, k, grob) {
 function ortNass(msg, E, x, z) {
     const h0 = G.hoehe(state, x, z, true);
     const he = E ? G.erdbauY(E, x, z, h0) : h0;
-    const h = gewaesserForm(he, 0, hydrosphereCarveAt(x, z), hydrosphereLakeAt(x, z));
+    const h = G.gewaesserForm(he, 0, hydrosphereCarveAt(x, z), hydrosphereLakeAt(x, z));
     if (Math.abs(h - he) > msg.W.bodenTolM) return true;
     return h < atlasWaterLevelAt(x, z, h) + msg.M;
 }
@@ -745,202 +745,41 @@ function applyStateDelta(delta) {
     applyStateSnapshot(delta);
 }
 
-// DIE EDIT-KARTE (Spiegel von `_voxelEditKarte` im Stamm, K23): je Chunk die Edits, deren Reichweite ihn samt einem
-// Chunk Rand berührt (Spalten floor((x − R)/span) − 1 … floor((x + R)/span) + 1, R = `G.editReich`), in Setz-Reihenfolge.
-// Der KERN ohne Rand dient der Punkt-Probe. Identität und Länge von state.voxelEdits halten sie frisch (ein Append wird
-// nachgetragen, ein Snapshot baut neu). Die Summe je Chunk bleibt Bit für Bit die der ganzen Liste. MUSS bit-identisch
-// zur Main (gate:worker-dichte, 300 Edits).
-const KEINE_EDITS = Object.freeze([]);
+// DIE EDIT-KARTE (K23): das Gesetz des Kerns (`G.editKarte`) über der EINEN Liste `state.voxelEdits` — je Chunk die Edits,
+// deren Reichweite ihn samt einem Chunk Rand berührt; Identität und Länge der Liste halten sie frisch.
 let editKarte = null;
 function editKarteFrisch() {
     const edits = Array.isArray(state.voxelEdits) ? state.voxelEdits : null;
-    let k = editKarte;
-    if (!k || k.edits !== edits || k.n > (edits ? edits.length : 0)) {
-        k = editKarte = { edits, n: 0, span: voxelChunkConfig(0).span, je: new Map(), kern: new Map() };
-    }
-    if (edits && k.n < edits.length) {
-        const span = k.span;
-        while (k.n < edits.length) {
-            const ed = edits[k.n++];
-            if (!ed || !Number.isFinite(ed.x) || !Number.isFinite(ed.z)) continue;
-            const r = G.editReich(ed); // die Reichweite der Form (das Gesetz des Kerns)
-            const kax = Math.floor((ed.x - r) / span);
-            const kbx = Math.floor((ed.x + r) / span);
-            const kaz = Math.floor((ed.z - r) / span);
-            const kbz = Math.floor((ed.z + r) / span);
-            for (let cx = kax - 1; cx <= kbx + 1; cx++) {
-                for (let cz = kaz - 1; cz <= kbz + 1; cz++) {
-                    const key = (cx + 32768) * 65536 + (cz + 32768);
-                    const liste = k.je.get(key);
-                    if (liste) liste.push(ed);
-                    else k.je.set(key, [ed]);
-                    // der Kern ohne Rand (die Punkt-Probe)
-                    if (cx >= kax && cx <= kbx && cz >= kaz && cz <= kbz) {
-                        const kern = k.kern.get(key);
-                        if (kern) kern.push(ed);
-                        else k.kern.set(key, [ed]);
-                    }
-                }
-            }
-        }
-    }
-    return k;
+    return (editKarte = G.editKarte(editKarte, edits, voxelChunkConfig(0).span, null));
 }
-
-// Spiegel von `_voxelEditsNah`: die Edits, die den Chunk (cx, cz) samt einem Chunk Rand berühren können.
+// die Edits, die den Chunk (cx, cz) samt einem Chunk Rand berühren können
 function editsNah(cx, cz) {
-    return editKarteFrisch().je.get((cx + 32768) * 65536 + (cz + 32768)) || KEINE_EDITS;
-}
-
-// Spiegel von `_voxelEditsImKasten`: liegt der Kasten (mit 1 m Rand) im 3×3 um den Chunk seiner Mitte, dessen Eintrag,
-// sonst die ganze Liste.
-function editsImKasten(x0, x1, z0, z1) {
-    const k = editKarteFrisch();
-    if (!k.edits || !k.edits.length) return KEINE_EDITS;
-    const span = k.span;
-    const cx = Math.floor((x0 + x1) / 2 / span);
-    const cz = Math.floor((z0 + z1) / 2 / span);
-    if (x0 - 1 > (cx - 1) * span && x1 + 1 < (cx + 2) * span && z0 - 1 > (cz - 1) * span && z1 + 1 < (cz + 2) * span)
-        return k.je.get((cx + 32768) * 65536 + (cz + 32768)) || KEINE_EDITS;
-    return k.edits;
+    return G.editsNah(editKarteFrisch(), cx, cz);
 }
 
 // =============================================================================
-// Density-Grid-Build
+// Die Dichte des Bodens: das Gesetz des Kerns (gelaende-core `dichteGitter`, `gitterMitEdits`, `dichteSpalte`,
+// `dichteBasis`, `dichte`) am Zustand dieses Fadens — derselbe Rechner wie der Stamm (gate:worker-dichte, `--kern`).
 // =============================================================================
 
+// Das Gitter eines Chunks ((dimX+1)·(dimY+1)·(dimZ+1) Ecken): Band und Basis, darauf die Edits des Gitter-Kastens.
 function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
-    // Identische Indizierung wie `_voxelSampleDensityGrid` im Stamm:
-    // Nx=dimX+1, Ny=dimY+1, Nz=dimZ+1 — wir samplen Vertices (Cell-Ecken).
-    const Nx = dimX + 1;
-    const Ny = dimY + 1;
-    const Nz = dimZ + 1;
-    const density = new Float32Array(Nx * Ny * Nz);
-    // Welle F (wie `_voxelSampleDensityGrid`): BAND-SKIP — pro Spalte nur die j-Ebenen um die Oberfläche samplen, über dem
-    // Band Luft (−1), unter ihm Fels (+1); das Band ist das Gesetz des Kerns (`G.bandOben`/`G.bandUnten`).
-    const base = state.baseHeight || 0;
-    // V18.321 (mirror von `_voxelSampleDensityGrid`-Hoist): der rein-2D `terrainColumnContext`
-    // EINMAL pro Spalte (statt pro Voxel die Makro-Oberfläche [61 %] neu zu rechnen) — deckt
-    // die Band-Grenzen (`ctx.surf`) UND die per-Voxel-Auswertung (`terrainBaseDensityCol`).
-    for (let k = 0; k < Nz; k++) {
-        const wz = oz + k * step;
-        for (let i = 0; i < Nx; i++) {
-            const wx = ox + i * step;
-            const ctx = state.noise ? terrainColumnContext(wx, wz) : null;
-            const surf = ctx ? ctx.surf : G.hoehe(state, wx, wz, true);
-            const bandTopJ = G.bandOben(surf, oy, step);
-            const bandBotJ = G.bandUnten(surf, base, oy, step);
-            const colBase = i + k * Nx * Ny;
-            for (let j = 0; j < Ny; j++) {
-                const idx = colBase + j * Nx;
-                if (j > bandTopJ) density[idx] = -1;
-                else if (j < bandBotJ) density[idx] = 1;
-                else density[idx] = ctx ? terrainBaseDensityCol(wx, oy + j * step, wz, ctx) : 0;
-            }
-        }
-    }
-    // Die Edits liegen wie im Main (`_voxelEditedDensityGrid`) auf dem BASIS-Gitter, je Edit über seinen Index-Kasten und in
-    // Float32 — auch über und unter dem Band, das ihre Reichweite deckt: dieselbe Form des Kerns (`G.bandUmEdits`,
-    // `G.editsImGitter`). Bis 09.10. legte der Worker sie nur im Band (je Ecke in f64): eine Füll-Kugel über dem Band stand
-    // im Main-Chunk und fehlte im Worker-Chunk (gate:worker-dichte, Mess-Wiese: LOD 0 93 Ecken, LOD 1 7 Ecken, maxDiff 42,2).
-    const edits = editsImKasten(ox, ox + dimX * step, oz, oz + dimZ * step);
-    if (!edits.length) return density;
-    if (state.noise)
-        G.bandUmEdits(density, ox, oy, oz, Nx, Ny, Nz, step, edits, base, terrainColumnContext, terrainBaseDensityCol);
-    return G.editsImGitter(density, ox, oy, oz, Nx, Ny, Nz, step, edits);
+    const [Nx, Ny, Nz] = [dimX + 1, dimY + 1, dimZ + 1];
+    const basis = G.dichteGitter(state, ox, oy, oz, Nx, Ny, Nz, step);
+    const edits = G.editsImKasten(editKarteFrisch(), ox, ox + dimX * step, oz, oz + dimZ * step);
+    return G.gitterMitEdits(state, basis, ox, oy, oz, Nx, Ny, Nz, step, edits);
 }
-
-// =============================================================================
-// Mirror von `_terrainDensityAt` + Subroutinen aus dem Stamm
-// Bei jeder Anpassung dort: hier mit-wandern (Determinismus-Test fängt Drift).
-// =============================================================================
-
-// V18.321 (mirror von `_terrainColumnContext`) — DER SPALTEN-KONTEXT: die rein-2D-Arbeit
-// (Makro-Oberfläche [61 %] + Roughness-Region + Höhlen-Mündung + Hydro-Carve/See) hängt NUR von
-// (x,z) ab; einmal pro Spalte berechnet, vom per-Voxel `terrainBaseDensityCol` über das ganze
-// y-Band gelesen = byte-identisch, ~3× weniger Arbeit. MUSS bit-identisch zur Main.
-const SPALTEN_HANG = { hang: 0 };
+// die Spalte (x, z) der Dichte (die Höhe, die Decke der Höhle, Kanal und See-Becken — einmal je Spalte)
 function terrainColumnContext(x, z) {
-    const surf = G.hoehe(state, x, z, true, SPALTEN_HANG);
-    const base = state.baseHeight || 0;
-    // DAS WILDNIS-GEWICHT der Spalte (Mirror): Rauheit und Höhlen-Hülle wiegen mit ihm; 0 → kein noise3D.
-    const wild = state.erbgut.wildnis;
-    let ceilOffset = -24;
-    if (wild > 0) {
-        // Die Decke bleibt unter dem Boden (Mirror), die Mündung ist Gesetz (gelaende-core `hoehlenMund`, K16).
-        const waterLevelD = typeof state.waterLevel === "number" ? state.waterLevel : base + 4;
-        ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + G.HOEHLEN_MUND.hub * G.hoehlenMund(SPALTEN_HANG.hang);
-    }
-    const hydro = state.hydrosphere;
-    const hydroActive = !!(hydro && hydro.ready && !state.hydroComputing);
-    let hydroCarve = null; // der Fluss-Kanal { P, L, k } (Mirror `_hydrosphereCarveAt`) oder null
-    let lake = null;
-    if (hydroActive) {
-        hydroCarve = hydrosphereCarveAt(x, z);
-        lake = hydrosphereLakeAt(x, z);
-    }
-    return { surf, wild, base, ceilOffset, hydroActive, hydroCarve, lake };
+    return G.dichteSpalte(state, x, z, {});
 }
-
-// Die per-VOXEL-Hälfte (y-abhängig, OHNE Edits) — mirror von `_terrainBaseDensityAtCol`.
-function terrainBaseDensityCol(x, y, z, ctx) {
-    const surf = ctx.surf;
-    let d = surf - y;
-    // Rauheit und Höhlen sind Wildnis (Mirror): ohne ihr Gewicht kein noise3D.
-    if (ctx.wild > 0) {
-        const base = ctx.base;
-        const caveFloor = clamp01((y - (base - 28)) / 8);
-        const caveCeil = clamp01((surf + ctx.ceilOffset - y) / 8);
-        const caveEnv = caveFloor * caveCeil * ctx.wild;
-        if (caveEnv > 0) {
-            const ridge = 1 - Math.abs(state.noise.noise3D(x * 0.03, y * 0.034, z * 0.03));
-            const cave = Math.max(0, (ridge - 0.7) / 0.3);
-            d -= cave * caveEnv * 36;
-            const cavern = state.noise.noise3D(x * 0.013, y * 0.018, z * 0.013);
-            const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
-            d -= cavernCarve * caveEnv * 46;
-            const hall = state.noise.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
-            const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
-            d -= hallCarve * caveEnv * 72;
-        }
-    }
-    if (ctx.hydroActive) d = gewaesserForm(d, y, ctx.hydroCarve, ctx.lake);
-    return d;
-}
-// DIE GESTALT DES GEWÄSSERS (Mirror von `_gewaesserForm`): der Fluss-Kanal kn — das weiche Maximum aus Gelände und Damm, davon
-// das weiche Minimum mit dem Kanal —, danach das See-Becken lk. Leser: die Dichte und die Ort-Wahl (`ortTraegt`).
-function gewaesserForm(d, y, kn, lk) {
-    if (kn) {
-        const dL = kn.L - y;
-        let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
-        const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
-        const dP = kn.P - y;
-        hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
-        d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
-    }
-    if (lk) {
-        const flatD = lk.bedY - y;
-        d = d * (1 - lk.w) + flatD * lk.w;
-    }
-    return d;
-}
-
-// Voxel-Edits (Spieler-Wille gewinnt zuletzt) — per-Voxel die Form des Kerns (`G.mitEdits`), gefragt wird die Karte des
-// Chunks (wie `_mitEdits` im Stamm).
-function applyVoxelEdits(basis, x, y, z) {
-    const k = state.voxelEdits && state.voxelEdits.length ? editKarteFrisch() : null;
-    const edits = k ? k.kern.get((Math.floor(x / k.span) + 32768) * 65536 + (Math.floor(z / k.span) + 32768)) : null;
-    return G.mitEdits(basis, x, y, z, edits);
-}
-
-// Volle Density an EINEM Punkt mit gegebenem Spalten-Kontext (base-col + edits) — der Hoist-Pfad.
+// die Dichte an (x, y, z) über der Spalte ctx, mit den Edits der Karte am Punkt
 function terrainDensityAtCol(x, y, z, ctx) {
-    return applyVoxelEdits(terrainBaseDensityCol(x, y, z, ctx), x, y, z);
+    const edits = state.voxelEdits && state.voxelEdits.length ? G.editsAm(editKarteFrisch(), x, z) : undefined;
+    return G.mitEdits(G.dichteBasis(x, y, z, ctx), x, y, z, edits);
 }
-
-// Die EINE-Punkt-API (mirror von `_terrainDensityAt`): Kontext + per-Voxel + Edits, byte-identisch.
+// die EINE Punkt-API: die Dichte an (x, y, z) samt Edits
 function terrainDensityAt(x, y, z) {
-    if (!state.noise) return 0;
     return terrainDensityAtCol(x, y, z, terrainColumnContext(x, z));
 }
 
@@ -962,8 +801,8 @@ function hydroRegion(key, origin) {
 }
 function hydroSetzen(key, h) {
     if (key === "heim") state.hydrosphere = h;
-    else (state.hydroTiles || (state.hydroTiles = {}))[key] = h;
-    const regionen = [state.hydrosphere].concat(state.hydroTiles ? Object.values(state.hydroTiles) : []);
+    else (state.hydroTiles || (state.hydroTiles = new Map())).set(key, h);
+    const regionen = [state.hydrosphere].concat(state.hydroTiles ? [...state.hydroTiles.values()] : []);
     state.hydroBand = G.hydroBand(typeof state.waterLevel === "number" ? state.waterLevel : 0, regionen);
 }
 
@@ -1002,119 +841,16 @@ function hydroVom(port) {
     };
 }
 
-// A3 (V18.132) — Mirror der Region-Aufloesung (`_hydroFor` im Stamm): Heimat-Region wenn (x,z) in ihr, sonst die
-// Kachel, sonst die Heimat (deren OOB-Logik in den Lesern = der alte Pfad). Der Kachel-Schlüssel ist der des Gelände-
-// Gesetzbuchs (`G.kachelSchluessel`); der Kachel-Container ist hier ein plain Object (postMessage-Form).
+// Die Region (Heimat oder Kachel), der Fluss-Kanal und das See-Becken an (x, z): das Gesetz des Kerns (`G.hydroRegion`,
+// `G.flussKanal`, `G.seeBecken`) am Zustand dieses Fadens.
 function hydroFor(x, z) {
-    const h = state.hydrosphere;
-    if (h && h.ready) {
-        const sizeM = h.dim * h.cell;
-        if (x >= h.originX && z >= h.originZ && x < h.originX + sizeM && z < h.originZ + sizeM) return h;
-        const tiles = state.hydroTiles;
-        if (tiles) {
-            const t = tiles[G.kachelSchluessel(state, x, z)];
-            if (t && t.ready) return t;
-        }
-    }
-    return h;
+    return G.hydroRegion(state, x, z);
 }
-
-// Mirror von `_hydrosphereCarveAt` (Gegenprüfung 07.10.): der Fluss-Kanal { P, L, k } — P der Kanal (Flachboden, Bank mit
-// bankNeigung bis zur Krone, dahinter die steiler werdende Böschung), L der Damm (die Krone, dahinter fallend), k die
-// Rundung; mehrere Segmente: der tiefste Kanal, der höchste Damm. MUSS bit-identisch zum Main sein.
 function hydrosphereCarveAt(x, z) {
-    const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-    if (!h || !h.ready) return null;
-    const kanal = h.kanal;
-    if (!kanal) return null;
-    const bs = h.bucketSize;
-    const bd = h.bucketsDim;
-    const bi = Math.floor((x - h.originX) / bs);
-    const bj = Math.floor((z - h.originZ) / bs);
-    if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
-    const kb = bj * bd + bi;
-    if (kanal.ab[kb] === kanal.ab[kb + 1]) return null;
-    const H = state.hydroGesetz;
-    const sN = H.bankNeigung;
-    const sK = H.bankKruemmung;
-    const fuss = H.bankRundung;
-    const kB = H.dammBreite;
-    let P = Infinity;
-    let L = -Infinity;
-    for (let q = kanal.ab[kb]; q < kanal.ab[kb + 1]; q++) {
-        const o = kanal.idx[q] * KANAL_FELDER;
-        const ax = kanal.seg[o];
-        const az = kanal.seg[o + 1];
-        const bx = kanal.seg[o + 2];
-        const bz = kanal.seg[o + 3];
-        const hwA = kanal.seg[o + 4];
-        const hwB = kanal.seg[o + 5];
-        const dA = kanal.seg[o + 6];
-        const dB = kanal.seg[o + 7];
-        const sA = kanal.seg[o + 8];
-        const sB = kanal.seg[o + 9];
-        const ex = bx - ax;
-        const ez = bz - az;
-        const len2 = ex * ex + ez * ez || 1;
-        let t = ((x - ax) * ex + (z - az) * ez) / len2;
-        if (t < 0) t = 0;
-        else if (t > 1) t = 1;
-        const px = ax + ex * t;
-        const pz = az + ez * t;
-        const dist = Math.hypot(x - px, z - pz);
-        const halfW = hwA + (hwB - hwA) * t;
-        const D = dA + (dB - dA) * t;
-        const dK = halfW + D / sN;
-        if (dist >= dK + kB + H.bankWeite) continue;
-        const spiegel = sA + (sB - sA) * t;
-        const B = spiegel - (1 - H.spiegelFreibord) * D;
-        const u0 = dist - halfW;
-        let p = u0 <= -fuss ? B : u0 < fuss ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss) : B + sN * u0;
-        const u = dist - dK;
-        if (u > 0) p += sK * u * u;
-        // der Damm: seine Krone eben bis dammBreite hinter der Krone des Kanals, dahinter die Böschung (Mirror)
-        let l = spiegel + Math.max(H.spiegelFreibord * D, H.dammFreibord);
-        const uL = u - kB;
-        if (uL > 0) l -= sN * uL + sK * uL * uL;
-        if (p < P) P = p;
-        if (l > L) L = l;
-    }
-    return P < Infinity ? { P, L, k: fuss } : null;
+    return G.flussKanal(state, x, z);
 }
-
 function hydrosphereLakeAt(x, z) {
-    const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-    if (!h || !h.ready) return null;
-    const lw = h.lakeW;
-    const lb = h.lakeBedCell;
-    const ln = h.lakeNear;
-    if (!lw || !lb || !ln) return null;
-    const dim = h.dim;
-    const cell = h.cell;
-    const ci = Math.floor((x - h.originX) / cell);
-    const cj = Math.floor((z - h.originZ) / cell);
-    if (ci < 0 || cj < 0 || ci >= dim || cj >= dim || !ln[ci + cj * dim]) return null;
-    const cf = (x - h.originX) / cell - 0.5;
-    const gf = (z - h.originZ) / cell - 0.5;
-    const i0 = Math.floor(cf);
-    const j0 = Math.floor(gf);
-    const tx = cf - i0;
-    const tz = gf - j0;
-    const cl = (v) => (v < 0 ? 0 : v >= dim ? dim - 1 : v);
-    const i0c = cl(i0);
-    const i1c = cl(i0 + 1);
-    const r0 = cl(j0) * dim;
-    const r1 = cl(j0 + 1) * dim;
-    const w =
-        (lw[i0c + r0] * (1 - tx) + lw[i1c + r0] * tx) * (1 - tz) + (lw[i0c + r1] * (1 - tx) + lw[i1c + r1] * tx) * tz;
-    if (w <= 0) return null;
-    const bedY =
-        (lb[i0c + r0] * (1 - tx) + lb[i1c + r0] * tx) * (1 - tz) + (lb[i0c + r1] * (1 - tx) + lb[i1c + r1] * tx) * tz;
-    return { bedY, w };
-}
-
-function clamp01(v) {
-    return v < 0 ? 0 : v > 1 ? 1 : v;
+    return G.seeBecken(state, x, z);
 }
 
 // DAS SPIEGEL-FELD (D10, der See spiegelt die Welt): je Zelle (Kante `texel` m) des Rechtecks [i0, i0 + w) × [j0, j0 + h)
@@ -1388,126 +1124,27 @@ function worldFieldAt(x, z) {
     };
 }
 
-// Mirror von `_hydroSpiegelQuer` (bit-identisch): der Spiegel des nächsten Fluss-Segments, auch jenseits der Krone.
+// Der Fluss an (x, z), der Spiegel quer, der nächste Fluss-Rand, der Bezug der Ufer-Bänder und der Spiegel des Wassers: das
+// Gesetz des Kerns (`G.flussAm`, `G.spiegelQuer`, `G.flussRand`, `G.wasserSpiegel`, `G.atlasSpiegel`) am Zustand dieses Fadens.
 function hydroSpiegelQuer(x, z) {
-    const h = hydroFor(x, z);
-    if (!h || !h.ready || !h.kanal) return -Infinity;
-    const kanal = h.kanal;
-    const bs = h.bucketSize;
-    const bd = h.bucketsDim;
-    const bi = Math.floor((x - h.originX) / bs);
-    const bj = Math.floor((z - h.originZ) / bs);
-    if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return -Infinity;
-    const kb = bj * bd + bi;
-    if (kanal.ab[kb] === kanal.ab[kb + 1]) return -Infinity;
-    let bestD = Infinity;
-    let spiegel = -Infinity;
-    for (let q = kanal.ab[kb]; q < kanal.ab[kb + 1]; q++) {
-        const o = kanal.idx[q] * KANAL_FELDER;
-        const ax = kanal.seg[o];
-        const az = kanal.seg[o + 1];
-        const bx = kanal.seg[o + 2];
-        const bz = kanal.seg[o + 3];
-        const sA = kanal.seg[o + 8];
-        const sB = kanal.seg[o + 9];
-        const ex = bx - ax;
-        const ez = bz - az;
-        const len2 = ex * ex + ez * ez || 1;
-        let t = ((x - ax) * ex + (z - az) * ez) / len2;
-        if (t < 0) t = 0;
-        else if (t > 1) t = 1;
-        const dist = Math.hypot(x - (ax + ex * t), z - (az + ez * t));
-        if (dist < bestD) {
-            bestD = dist;
-            spiegel = sA + (sB - sA) * t;
-        }
-    }
-    return spiegel;
+    return G.spiegelQuer(state, x, z);
 }
-
-// Mirror von `_schnittSpiegel` (bit-identisch, F3): der Fluss-Spiegel quer über einer Spalte, die ein Schnitt berührt.
-function schnittSpiegel(x, z, step) {
-    const span = voxelChunkConfig(0).span;
-    const ed = editsNah(Math.floor(x / span), Math.floor(z / span));
-    for (let e = 0; e < ed.length; e++) {
-        const s = ed[e];
-        if (s && s.mode === "carve" && Math.hypot(x - s.x, z - s.z) <= s.r + 0.71 * step) return hydroSpiegelQuer(x, z);
-    }
-    return -Infinity;
-}
-
 function hydroRiverAt(x, z) {
-    const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-    if (!h || !h.ready || !h.kanal) return null;
-    const kanal = h.kanal;
-    const bs = h.bucketSize;
-    const bd = h.bucketsDim;
-    const bi = Math.floor((x - h.originX) / bs);
-    const bj = Math.floor((z - h.originZ) / bs);
-    if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
-    const kb = bj * bd + bi;
-    if (kanal.ab[kb] === kanal.ab[kb + 1]) return null;
-    let bestD = Infinity;
-    let dirX = 0;
-    let dirZ = 0;
-    let depth = 0;
-    let bestHalfW = 1;
-    let gSumme = 0;
-    let sSumme = 0;
-    let ufer = 0;
-    for (let q = kanal.ab[kb]; q < kanal.ab[kb + 1]; q++) {
-        const o = kanal.idx[q] * KANAL_FELDER;
-        const ax = kanal.seg[o];
-        const az = kanal.seg[o + 1];
-        const bx = kanal.seg[o + 2];
-        const bz = kanal.seg[o + 3];
-        const hwA = kanal.seg[o + 4];
-        const hwB = kanal.seg[o + 5];
-        const dA = kanal.seg[o + 6];
-        const dB = kanal.seg[o + 7];
-        const sA = kanal.seg[o + 8];
-        const sB = kanal.seg[o + 9];
-        const ex = bx - ax;
-        const ez = bz - az;
-        const len2 = ex * ex + ez * ez || 1;
-        let t = ((x - ax) * ex + (z - az) * ez) / len2;
-        if (t < 0) t = 0;
-        else if (t > 1) t = 1;
-        const px = ax + ex * t;
-        const pz = az + ez * t;
-        const dist = Math.hypot(x - px, z - pz);
-        const halfW = hwA + (hwB - hwA) * t;
-        const D = dA + (dB - dA) * t;
-        const krone = halfW + D / state.hydroGesetz.bankNeigung;
-        if (dist > krone) continue;
-        const g = (1 - dist / krone) * (1 - dist / krone) + 1e-6;
-        gSumme += g;
-        sSumme += g * (sA + (sB - sA) * t);
-        // die Kronen-Blende (Mirror): 1 bis zur Kanal-Kante, smoothstep auf 0 an der Krone
-        const u = dist <= halfW ? 0 : (dist - halfW) / (krone - halfW);
-        const uS = 1 - u * u * (3 - 2 * u);
-        if (uS > ufer) ufer = uS;
-        if (dist < bestD) {
-            bestD = dist;
-            const len = Math.sqrt(len2);
-            dirX = ex / len;
-            dirZ = ez / len;
-            depth = D;
-            bestHalfW = halfW;
-        }
-    }
-    if (bestD === Infinity) return null;
-    // Welle L (Mirror): der Spiegel der Segmente (linear zwischen ihren Enden — stromab nie steigend, quer waagrecht),
-    // gemittelt zur Krone stetig auslaufend; flowX/flowZ/centerness des nächsten Segments liest der Wasser-Sheet-Worker-
-    // Mirror (aFlow). MUSS bit-identisch zum Main sein.
-    return {
-        flowX: dirX,
-        flowZ: dirZ,
-        depth,
-        surfaceY: sSumme / gSumme,
-        centerness: Math.max(0, 1 - bestD / Math.max(bestHalfW, 1)),
-        ufer,
-    };
+    return G.flussAm(state, x, z);
+}
+function hydroDistAt(x, z) {
+    return G.flussRand(state, x, z);
+}
+function waterLevelAt(x, z, aus) {
+    return G.wasserSpiegel(state, x, z, aus);
+}
+function atlasWaterLevelAt(x, z, terrainTopY, aus) {
+    return G.atlasSpiegel(state, x, z, terrainTopY, aus);
+}
+
+// der Fluss-Spiegel quer über einer Spalte, die ein Schnitt berührt (F3, `G.schnittSpiegel`)
+function schnittSpiegel(x, z, step) {
+    return G.schnittSpiegel(state, editKarteFrisch(), x, z, step);
 }
 
 // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178, clever-gauss): DAS FEUCHTE-
@@ -1526,58 +1163,6 @@ const FEUCHTE_FLUSS_REICHWEITE = 26;
 const FEUCHTE_HOEHE_NAH = 1.5;
 const FEUCHTE_HOEHE_FERN = 7;
 const FEUCHTE_HOEHE_GEWICHT = 0.85; // V6 (Look-Finale, 3): 0.6→0.85 — bit-identischer Spiegel von AnazhRealm.FEUCHTE.hoeheGewicht (das FEUCHTE-DACH gehoben)
-
-function hydroDistAt(x, z) {
-    const h = hydroFor(x, z);
-    if (!h || !h.ready || !h.kanal) return { dist: Infinity, halfW: 0 };
-    const kanal = h.kanal;
-    const bs = h.bucketSize;
-    const bd = h.bucketsDim;
-    const bi0 = Math.floor((x - h.originX) / bs);
-    const bj0 = Math.floor((z - h.originZ) / bs);
-    let best = Infinity;
-    let bestHw = 0;
-    let bestRand = Infinity;
-    let bestSp = NaN;
-    for (let dj = -1; dj <= 1; dj++) {
-        for (let di = -1; di <= 1; di++) {
-            const bi = bi0 + di;
-            const bj = bj0 + dj;
-            if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) continue;
-            const kb = bj * bd + bi;
-            for (let q = kanal.ab[kb]; q < kanal.ab[kb + 1]; q++) {
-                const o = kanal.idx[q] * KANAL_FELDER;
-                const ax = kanal.seg[o];
-                const az = kanal.seg[o + 1];
-                const bx = kanal.seg[o + 2];
-                const bz = kanal.seg[o + 3];
-                const hwA = kanal.seg[o + 4];
-                const hwB = kanal.seg[o + 5];
-                const sA = kanal.seg[o + 8];
-                const sB = kanal.seg[o + 9];
-                const ex = bx - ax;
-                const ez = bz - az;
-                const len2 = ex * ex + ez * ez || 1;
-                let t = ((x - ax) * ex + (z - az) * ez) / len2;
-                if (t < 0) t = 0;
-                else if (t > 1) t = 1;
-                const dist = Math.hypot(x - (ax + ex * t), z - (az + ez * t));
-                // die Halbbreite am Fußpunkt wie im Main (bis Welle L las der Spiegel ein Feld `halfW`, das kein
-                // Segment trägt: 0 — die Feuchte fiel im Worker anders aus, 2016 von 6507 Ufer-Vertices)
-                const hw = hwA + (hwB - hwA) * t;
-                // der nächste RAND, nie die nächste Mittellinie — bit-identisch zum Main (K16, U1)
-                const rand = dist - Math.max(1, hw);
-                if (rand < bestRand) {
-                    bestRand = rand;
-                    best = dist;
-                    bestHw = hw;
-                    bestSp = sA + (sB - sA) * t; // der Spiegel des Segments (Mirror, Leser: `fernFlussDeckung`)
-                }
-            }
-        }
-    }
-    return { dist: best, halfW: bestHw, spiegel: bestSp };
-}
 
 // `fussM` (optional, die Ferne): die Kante der Fläche, für die der Punkt steht — jedes Fluss-Band trägt sein Mittel über sie
 // (`flussAbdruck`, Mirror `_feuchteAt`).
@@ -1651,100 +1236,6 @@ function pathFieldAt(x, z, surfY, fussM) {
     let w = niedrig(surfY - uf.see);
     if (uf.fluss !== null) w = Math.max(w, uf.ufer * niedrig(surfY - uf.fluss));
     return band * band * w;
-}
-
-function waterLevelAt(x, z, aus) {
-    let level = typeof state.waterLevel === "number" ? state.waterLevel : 0;
-    const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-    if (h && h.ready && h.water && h.water.waterKind) {
-        const dim = h.dim;
-        const cell = h.cell;
-        const ci = Math.floor((x - h.originX) / cell);
-        const cj = Math.floor((z - h.originZ) / cell);
-        const wK = h.water.waterKind;
-        const wY = h.water.waterY;
-        for (let dj = -1; dj <= 1; dj++) {
-            for (let di = -1; di <= 1; di++) {
-                const ni = ci + di;
-                const nj = cj + dj;
-                if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
-                const idx = ni + nj * dim;
-                if (wK[idx] === 2 && wY[idx] > level) level = wY[idx];
-            }
-        }
-    }
-    const river = hydroRiverAt(x, z);
-    // die beiden Bezüge der Ufer-Bänder getrennt (Mirror `_waterLevelAt`): See/Meer, Fluss-Spiegel, Kronen-Blende
-    if (aus) {
-        aus.see = level;
-        aus.fluss = river ? river.surfaceY : null;
-        aus.ufer = river ? river.ufer : 0;
-    }
-    if (river && river.surfaceY > level) level = river.surfaceY;
-    return level;
-}
-
-// V13.1 — Mirror von `_atlasWaterLevelAt`: Atlas-strikter Wasser-Spiegel +
-// Rand-Tiefen-Gate (statt des 16-m-See-Dilatations-Bleeds). exact-Ozean/See →
-// voller Spiegel; Atlas-Land im 3×3-Rand → Spiegel nur wenn Terrain ≤ BAND
-// darunter (flacher Ufer-Rand); sonst -Infinity (Hang-Schatten weg). Muss 1:1
-// mit der Main-Thread-Methode wandern (Determinismus-Test ist die Wand).
-function atlasWaterLevelAt(x, z, terrainTopY, aus) {
-    let level = -Infinity;
-    let inRegion = false;
-    const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-    if (h && h.ready && h.water && h.water.waterKind) {
-        const dim = h.dim;
-        const cell = h.cell;
-        const ci = Math.floor((x - h.originX) / cell);
-        const cj = Math.floor((z - h.originZ) / cell);
-        if (ci >= 0 && cj >= 0 && ci < dim && cj < dim) {
-            inRegion = true;
-            const wK = h.water.waterKind;
-            const wY = h.water.waterY;
-            const here = wK[ci + cj * dim];
-            if (here === 1 || here === 2) {
-                level = wY[ci + cj * dim];
-            } else {
-                let rim = -Infinity;
-                for (let dj = -1; dj <= 1; dj++) {
-                    for (let di = -1; di <= 1; di++) {
-                        const ni = ci + di;
-                        const nj = cj + dj;
-                        if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
-                        const nk = wK[ni + nj * dim];
-                        if ((nk === 1 || nk === 2) && wY[ni + nj * dim] > rim) rim = wY[ni + nj * dim];
-                    }
-                }
-                // V13.7 — verbundenes Wasser (Mirror von `_atlasWaterLevelAt`): fülle
-                // bis zum Body-Spiegel, wenn Terrain UNTER dem Spiegel liegt (jede
-                // Tiefe, kein 3,6-m-Cap mehr). Heilt die vertikalen Ufer-Wände; kein
-                // Hang-Schatten (Terrain über Spiegel bleibt abgelehnt), kein Phantom.
-                // V18.475 — DIE RIM-WAND (Mirror, F2): der Rim-Pfad greift NUR bei
-                // ENDLICHEM terrainTopY — „unbekannt" (−Inf) heißt KEINE Rim-Erweiterung,
-                // nie „immer nass" (Herleitung im Main).
-                if (Number.isFinite(terrainTopY) && rim > -Infinity && terrainTopY < rim) {
-                    level = rim;
-                }
-            }
-        }
-    }
-    // V17.117 (H3) — Mirror des globalen Ozean-Defaults (siehe `_atlasWaterLevelAt`):
-    // jenseits der ±1024-Atlas-Region ist der Meeresspiegel der Default-Wasserkörper;
-    // der Flood + die soliden Cells trennen Land/Wasser. Muss bit-identisch zum Main.
-    if (h && h.ready && !inRegion) {
-        const waterLevel = typeof state.waterLevel === "number" ? state.waterLevel : 0;
-        level = waterLevel;
-    }
-    if (aus) aus.koerper = level; // der Körper ohne Fluss (Mirror `_atlasWaterLevelAt`; Leser: `fernNass`)
-    const river = hydroRiverAt(x, z);
-    if (river && river.surfaceY > level) {
-        // V18.475 — DIE RIM-WAND GILT AUCH DEM FLUSS (Mirror, F2): bei terrainTopY ===
-        // −Infinity zählt NUR der Kanal-KERN (centerness > 0 ⇔ dist < halfW); +Infinity
-        // (Existenz-Probe) und endliches Terrain behalten die volle Carve-Breite.
-        if (terrainTopY !== -Infinity || river.centerness > 0) level = river.surfaceY;
-    }
-    return level;
 }
 
 // B1 (V18.345) — Mirror von `_caColumnScan`: scannt eine Zell-Spalte top-down nach
@@ -3798,18 +3289,7 @@ function fernNass(x, z, law, wl, aus) {
         aus.spiegel = wl;
         return law < wl;
     }
-    let y = law;
-    const kn = hydrosphereCarveAt(x, z);
-    if (kn) {
-        const dL = kn.L;
-        let hk = Math.max(kn.k - Math.abs(y - dL), 0) / kn.k;
-        const damm = Math.max(y, dL) + hk * hk * kn.k * 0.25;
-        const dP = kn.P;
-        hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
-        y = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
-    }
-    const lk = hydrosphereLakeAt(x, z);
-    if (lk) y = y * (1 - lk.w) + lk.bedY * lk.w;
+    const y = G.gewaesserForm(law, 0, hydrosphereCarveAt(x, z), hydrosphereLakeAt(x, z));
     aus.y = y;
     atlasWaterLevelAt(x, z, y, aus);
     aus.spiegel = aus.koerper;

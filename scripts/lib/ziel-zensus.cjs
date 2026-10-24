@@ -970,13 +970,11 @@ function selbsttest() {
 }
 
 module.exports = {
-    NIEDERFREQUENT,
     VENDOR,
     zielUrteil,
     zielTabelle,
     selbsttest,
     traegt,
-    lebenszeit,
     // Die Seite: die Pass-Uhr und die Bank-Runde der Zerleg-Linse (ZERLEGE_INSTALL) und der Textur-Erzeuger des Draw-Zählers
     // (ZAEHLER_INSTALL) müssen davor stehen; der VRAM-Abgriff ab Dokument-Start.
     ZIEL_INSTALL:
