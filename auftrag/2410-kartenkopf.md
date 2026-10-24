@@ -30,7 +30,9 @@ Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend. Danach dies
 2. **Kein Zwilling:** existiert die Regel schon (dieselbe Datei, Vendor), rufe sie.
 3. **Labor = Welt:** Plan-/Asset-Fehler heilen im Studio-Kern unter Byte-Beweis, nie als Host-Pflaster; die Welt verliert nichts still.
 4. **Die Decke:** `node scripts/diag-betriebsgesetz.cjs --grund origin/main --kopf HEAD` ≤ 0 — bezahlt mit echtem Streichen
-   (Linse ersetzt Linse), nie Pressen. (Die Umstellung auf Code-Atome ohne Kommentare läuft als eigene Karte `decke-code`.)
+   (Linse ersetzt Linse), nie Pressen. Seit main 79c0fae2 (Zug 21) zählt die Decke Code-Atome ohne Kommentare: gestrichene
+   Kommentare und Versions-Etiketten zahlen nichts mehr. Zahle mit gestrichenem Code (tote Proben, Doppel, ungenutzte
+   catch-Bindungen per eslint `no-unused-vars` mit `caughtErrors: all`) und berühre keine Datei nur ihrer Kommentare wegen.
 5. **Was fällt, fällt ganz:** verwaiste Kommentare, Doku-Zitate, Linsen-Verweise im selben Commit.
 6. **Die Linse urteilt Verhalten** am Spieler-Weg (Ausgabe-Pfad, Ereignis statt Wanduhr), nie Text; nie aufweichen, damit es grün wird.
 7. **Du entscheidest** nach Gesetz und Messung — keine Frage an den Schöpfer, keine Optionsliste.
