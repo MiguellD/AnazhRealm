@@ -1031,6 +1031,7 @@ class AnazhRealm_bild_sicht {
             uint,
             int,
             abs,
+            step,
             // V13.5 (Schicht 3) — Tiefenpuffer-Knoten für die pro-Pixel-Uferlinie.
             linearDepth,
             depth,
@@ -1099,6 +1100,10 @@ class AnazhRealm_bild_sicht {
         // skaliert Kräuselung, Dünung und Glitzer — `uWind` ist der Wind des Wetters (0 ruhig … 1 Sturm, Schreiber
         // `_dayNightApplyWaterMaterials`). Bis V18.531 las die Welt die Zeile nicht: Sturm und Sonne zeigten denselben See.
         const uWind = uniform(0.06);
+        // DAS EIS (stoffe.K3): die Höhe, über der das Wasser gefriert (`_dayNightApplyWaterMaterials`; ohne Schreiber nie) —
+        // gefrorenes Wasser wogt und kräuselt nicht (`fluessig` 0) — an der Welt-Höhe, die auch die Farbe liest.
+        const uEisNull = uniform(1e9);
+        const fluessig = float(1.0).sub(step(uEisNull, modelWorldMatrix.mul(vec4(positionLocal, 1.0)).y));
         const windF = float(WG.wind[0]).add(uWind.mul(WG.wind[1]));
 
         // 2D-Hash + Value-Noise. Der Hash ist pcg2d (Jarzynski & Olano 2020, derselbe wie `_pcg2d`) auf dem ganzzahligen
@@ -1202,7 +1207,7 @@ class AnazhRealm_bild_sicht {
                 .sub(float(K.mitte))
                 .mul(float(K.kraeusel));
             const ripple = vec3(float(0.0), rippleH.mul(rippleAmt), float(0.0));
-            return ocean.add(ripple);
+            return ocean.add(ripple).mul(fluessig);
         });
         const disp = surfDisp(p.xz);
         const pd = p.add(disp);
@@ -1317,7 +1322,8 @@ class AnazhRealm_bild_sicht {
             .mul(0.2)
             .mul(fmag)
             .mul(windF)
-            .mul(detailFade);
+            .mul(detailFade)
+            .mul(fluessig);
         const nFlow = normalize(n.add(vec3(fdir.x.mul(flowRipple), float(0.0), fdir.y.mul(flowRipple))));
         const viewDir = normalize(cameraPosition.sub(vWorldPos));
         const { eigen, fres } = this._wasserBlick(TSL, WG, {
@@ -1330,6 +1336,7 @@ class AnazhRealm_bild_sicht {
             sunCol: uSunCol,
             sunDir: uSunDir,
             light: uLight,
+            eisNull: uEisNull,
         });
         const fw = foamD.mul(0.7);
         // DIE DECKUNG (Standard-Blending: Bild = C·α + Grund·(1−α)): der Grund kommt mit T·(1−F)·(1−fw) durch, also
@@ -1379,6 +1386,7 @@ class AnazhRealm_bild_sicht {
             depthFoam: uDepthFoam,
             lakeRipple: uLakeRipple,
             wind: uWind,
+            eisNull: uEisNull,
         };
         // UNIFORM-HEIMAT (Pflicht-Paar der Diät, die jeder Welt-Stoff bei seiner Erst-Zeichnung trägt): alle Takt-Uniforms
         // des Wassers sind geteilt → der Monitor darf auf die equals()-Bahn.

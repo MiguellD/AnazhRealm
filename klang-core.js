@@ -313,7 +313,9 @@
             glut:   { filter: 'bandpass', freq: 800,  q: 1.0, dauer: 0.11, gain: 0.05 },
             quarz:  { filter: 'bandpass', freq: 2600, q: 3.0, dauer: 0.08, gain: 0.045 },
             eisen:  { filter: 'bandpass', freq: 2100, q: 2.4, dauer: 0.07, gain: 0.055 },
-            wasser: { filter: 'lowpass',  freq: 900,  q: 0.7, dauer: 0.16, gain: 0.06 }
+            wasser: { filter: 'lowpass',  freq: 900,  q: 0.7, dauer: 0.16, gain: 0.06 },
+            // stoffe.K3 (rein additiv): das Eis — hart, kurz und hell wie Stein, eine Terz höher
+            eis:    { filter: 'bandpass', freq: 1900, q: 2.0, dauer: 0.05, gain: 0.05 }
         }
     };
 

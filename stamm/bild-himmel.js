@@ -2539,6 +2539,13 @@ class AnazhRealm_bild_himmel {
                     0,
                     Math.min(1, this._windAt(cam.position.x, cam.position.z, this._bildZeit).staerke)
                 );
+            // DAS EIS (stoffe.K3): die Höhe, über der das Wasser gefriert — das Feld ist linear in der Höhe (`_temperaturAt`)
+            if (uniforms.eisNull) {
+                const TW = globalThis.__gelaendeCore.TEMPERATUR;
+                const t0 = this._temperaturAt(0, TW.wasserTraegTage) - TW.gefrierpunkt;
+                const t100 = this._temperaturAt(100, TW.wasserTraegTage) - TW.gefrierpunkt;
+                uniforms.eisNull.value = (100 * t0) / (t0 - t100);
+            }
         };
         applyToTSL(this.state.hydroSurfaceUniforms);
     }
@@ -2802,6 +2809,14 @@ class AnazhRealm_bild_himmel {
     _weatherIsWet(w) {
         const word = typeof w === "string" ? w : this.state.weather;
         return (AnazhRealm.WEATHER_INTENSITY[word] || 0) >= 1;
+    }
+
+    // DIE TEMPERATUR AN DER HÖHE y (stoffe.K3) — die EINE Naht zum Feld des Gelände-Kerns (`temperatur`) mit der Saison
+    // (`seasonPhase`) und der Uhr (`timeOfDay`) der Welt; `traegTage` reicht die Wärme-Trägheit eines Stoffs durch (das Wasser:
+    // TEMPERATUR.wasserTraegTage). Leser: das Eis (`_eisAt`) und sein Bild (`_dayNightApplyWaterMaterials`).
+    _temperaturAt(y, traegTage) {
+        const st = this.state;
+        return globalThis.__gelaendeCore.temperatur(this._gelaende(), y, st.seasonPhase, st.timeOfDay, traegTage);
     }
 
     // DIE NÄSSE (wetter.K2) — EIN Zustand der Welt aus dem Wetter-Feld (`state.naesse`, 0 trocken … 1 nass): Regen benetzt

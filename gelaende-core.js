@@ -11,7 +11,8 @@
 //   seed · noise (SimplexNoise des Stroms seed + ":voxel") · baseHeight · waterLevel · erbgut ({ terme, wildnis, hash }
 //   — die Normalform) · regionSize (die Kachel-Kante der Hydro-Regionen) · erdbau (die Normalform `erdbauNormal` der Orte
 //   oder null, K10).
-// Kein this, kein Zustand außer den Rausch-Strömen je Saat (aus der Saat abgeleitet, nie Math.random), keine Zeit.
+// Kein this, kein Zustand außer den Rausch-Strömen je Saat (aus der Saat abgeleitet, nie Math.random), keine Uhr (Saison
+// und Uhr der Temperatur reicht der Wirt als Argumente).
 //
 // GESETZ-KERN (studio-vertrag §9): STUDIO_VERTRAG = 1 und FUNKTION = 1 — keine Rezepte, keine Gestalt.
 (function (root) {
@@ -1101,6 +1102,42 @@
         let zunge = 0;
         for (const o of SCHNEE.zungen) zunge += L.noise.noise2D(x * o.f + o.ox, z * o.f + o.oz) * o.a;
         return glatt(SCHNEE.start, SCHNEE.voll, y - wl + zunge);
+    }
+
+    // DIE TEMPERATUR (stoffe.K3, Wetter H4): die Luft an der Höhe y in °C — EINE reine Funktion aus der Höhe über dem Meer,
+    // der Saison (`saison`, die Phase der Welt: Sommer-Mitte 0,375, Winter-Mitte 0,875) und der Uhr (`uhr`, Mittag 0,5).
+    // Das Klima ist gemäßigt-kontinental: im Tagesmittel am Meer 18 °C im Sommer, −4 °C im Winter, der Tagesgang ±5 °C, am
+    // wärmsten um 15 Uhr. Die Höhe kühlt mit dem Gradienten, der die Null-Grad-Linie des Sommer-Mittels auf die Mitte der
+    // SCHNEEGRENZE legt: wo der Schnee liegt, ist es kalt (die Welt staucht die Höhe — ihre 160 m tragen, was in den Alpen
+    // 3 km tragen; 0,11 K/m).
+    // DIE TRÄGHEIT (`traegTage`): ein Stoff mit Wärme-Gedächtnis (das Wasser) sieht die Luft durch einen Tiefpass erster
+    // Ordnung mit der Zeitkonstante τ in Tagen — jede Schwingung gedämpft um 1/√(1 + (ωτ)²) und verspätet um atan(ωτ),
+    // geschlossen gerechnet (die Welt bleibt eine Funktion): am See ±0,4 °C Tagesgang, 6 h verspätet.
+    const TEMPERATUR = Object.freeze({
+        sommer: 18,
+        winter: -4,
+        sommerPhase: 0.375,
+        tagAmp: 5,
+        tagGipfel: 0.625,
+        jahrTage: 365,
+        gefrierpunkt: 0,
+        wasserTraegTage: 2,
+    });
+    function temperatur(L, y, saison, uhr, traegTage) {
+        if (!Number.isFinite(y) || !Number.isFinite(saison) || !Number.isFinite(uhr))
+            throw new Error("gelaende-core temperatur: Höhe, Saison oder Uhr fehlt");
+        const T = TEMPERATUR;
+        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
+        const welle = (amp, phase, perioden) => {
+            const wt = 2 * Math.PI * (traegTage > 0 ? traegTage : 0) * perioden;
+            return (amp / Math.sqrt(1 + wt * wt)) * Math.cos(2 * Math.PI * phase - Math.atan(wt));
+        };
+        return (
+            (T.sommer + T.winter) / 2 +
+            welle((T.sommer - T.winter) / 2, saison - T.sommerPhase, 1 / T.jahrTage) +
+            welle(T.tagAmp, uhr - T.tagGipfel, 1) -
+            (T.sommer / ((SCHNEE.start + SCHNEE.voll) / 2)) * (y - wl)
+        );
     }
 
     function wildnisY(L, x, z, mitDetail, aus) {
@@ -4836,6 +4873,8 @@
         termY: termY,
         SCHNEE: SCHNEE,
         schnee: schnee,
+        TEMPERATUR: TEMPERATUR,
+        temperatur: temperatur,
         grossform: grossformAus,
         landformRegler: landformRegler,
         benannteSeen: benannteSeen,
