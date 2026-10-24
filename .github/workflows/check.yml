@@ -463,6 +463,7 @@ jobs:
               # (`_voxelEditedDensityGrid`) mit dem des Workers (`computeDensityGrid`) Wort fuer Wort - die Standard-Welt
               # (Mess-Wiese, Genesis, ein Fluss) und die Pruefbuehne (spec/pruefbuehne/welt.json, ihre Stationen), dazu
               # eine Fuell-Kugel ueber dem Band. Der Selbsttest verfaelscht EINEN Term nur im Worker und muss rot werden.
+              # Die Kern-Probe (`--kern`): an 10^5 Punkten Stamm-Leser = Worker-Feld = Kern, die feste Mutations-Liste zieht beide.
               run: npm run gate:worker-dichte
 
             - name: Gelaende-Linse (die Natur-Zahlen am Gesetzbuch - Senken, Flint, Hammond, Dorfplaetze, Schicht-Gesetz)
