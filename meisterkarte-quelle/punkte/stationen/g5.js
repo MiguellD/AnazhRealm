@@ -1,7 +1,7 @@
 // Stationen der Gruppe V (src/g5.js) — Welten und Wege. Format und Regeln: punkte/punkte.cjs (Kopf).
 // Erfasst: jedes Kriterium mit Punkten > 0 (fahrzeug.K3/K4, siedlung.K1, leib.K1/K4, halten.K1/K2), die Messschuld M36
 // (siedlung.K5) und was ein Zweig im Stau kippen soll (stadt-erwachen-2 siedlung.K5, halten-gesetz halten.K1/K3,
-// teilen-sicher tore.K5/ultiversum.K5, gamepad-verben leib.K5). Was sich nicht als Station fassen lässt, steht in
+// teilen-sicher ultiversum.K5, tore-k5-geste tore.K5, gamepad-verben leib.K5). Was sich nicht als Station fassen lässt, steht in
 // `module.exports.fehlt` (befehl null, grund) — außerhalb der Liste, damit `run` der anderen Gruppen nicht an ihr bricht.
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
@@ -658,6 +658,57 @@ const stationen = [
         quelle: "1 = Axt fällt, Spaten gräbt, Sichel erntet über die echte Eingabe, und eine umgeformte Klinge (Axt mit Spaten-Blatt) wirkt nach der neuen Form",
     },
 
+    // ───────── tore.K5 — Teilen in EINER Geste (tore-k5-geste) ─────────
+    // gate:praegung-welt (T): A klickt Werkstatt → GT → Teilen (die souveräne Geste signiert); B, ein eigener Browser-Kontext
+    // mit frischem Profil (Platte und localStorage vor dem Boot gezählt), drückt die Chat-Taste, gibt den Code ein, Enter — die
+    // Welt zeichnet das Werk in ihrem eigenen Takt. Die Zeile TEILEN trägt Code-Länge, Platte, Stempel, Signatur, Bau-Hash
+    // A/B/ungeprägt, Pose (m vor B, NDC, Stufe) und Zeit (A Klick bis Code + B Enter bis gezeichnet). „Anderes Gerät" ist
+    // headless ein frisches Profil derselben Maschine. An main 056330d8 fehlt die Zeile: Pose, Zeit und Platte ungemessen,
+    // A rief das Panel, B den Chat von Hand.
+    {
+        kriterium: "tore.K5",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-praegung-welt.cjs"],
+        env: { PRAEGUNG_WELT_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const t = jsonZeile(lauf.stdout, /^TEILEN {/);
+            if (!t) return { gruen: false, zahl: "keine TEILEN-Zeile (Exit " + lauf.exit + ")" };
+            const imBild = Array.isArray(t.ndc) && t.ndc.length === 3 && t.ndc.every((v) => Math.abs(v) <= 1);
+            const hash = !!t.hashA && t.hashA === t.hashB && t.hashB !== t.ohne;
+            return {
+                gruen: t.code <= 4096 && t.leer === 0 && t.autor === true && t.ov === true && hash && t.d <= 24 && imBild && t.ms <= 10000,
+                zahl:
+                    "Code " + t.code + " Zeichen · Platte vor dem Boot " + t.leer + " · Signatur " + (t.autor ? "von A" : "ROT") +
+                    " · Stempel " + (t.ov ? "gleich" : "ROT") + " · Bau-Hash A " + t.hashA + " B " + t.hashB + " (ungeprägt " + t.ohne + ")" +
+                    " · " + (Number.isFinite(t.d) ? t.d.toFixed(1) + " m vor B, " : "") + (imBild ? "im Bild" : "nicht im Bild") + " L" + t.lod +
+                    " · " + t.ms + " ms (A " + t.msA + " ms)",
+            };
+        },
+        pfad: [
+            "stamm/netz-identitaet.js",
+            "stamm/werkstatt-*.js",
+            "stamm/bau-buch.js",
+            "stamm/feld-dsl.js",
+            "stamm/feld-leben.js",
+            "stamm/dirigent-ankunft.js",
+            "stamm/studio-bruecke.js",
+            "stamm/siedlung-satz.js",
+            "stamm/siedlung-bauten.js",
+            "stamm/stoff-instanz.js",
+            "stamm/daten.js",
+            "index.html",
+            "vehicle-core.js",
+            "foundry-core.js",
+            "foundry-bruecke.js",
+            "scripts/diag-praegung-welt.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = ein Fluss (Bauplan oder Welt) an einem Gerät: A teilt, B (anderes Gerät, frisches Profil, IDB leer) öffnet; das Werk steht an B's Pose mit gleichem Bau-Hash und studioOv, Signatur gültig, ≤ 10 s",
+    },
+
     // ───────── ultiversum.K5 — Vertrauen (teilen-sicher) ─────────
     {
         kriterium: "ultiversum.K5",
@@ -774,12 +825,8 @@ module.exports = stationen;
 // NICHT FASSBAR als Station (befehl null): das Werkzeug fehlt oder die Staffel verlangt, was EIN Lauf auf EINEM Gerät nie misst.
 module.exports.fehlt = [
     {
-        kriterium: "tore.K5", staffel: 1, befehl: null,
-        grund: "B ist ein ANDERES Gerät mit frischem Profil — die Maschine fährt je Lauf EIN Gerät; gate:praegung-welt (T) misst A = B in zwei Kontexten einer Maschine (Bau-Hash 9c183437, teilen-sicher), nie zwei Geräte",
-    },
-    {
         kriterium: "tore.K5", staffel: 2, befehl: null,
-        grund: "der Welt-Fluss (Einladungs-Code, Kontrolle ≤ 5 s) hat keine Linse (teilen-sicher: Welt-Fluss 0 %), dazu zwei Geräte",
+        grund: "der Welt-Fluss hat keine Linse: der Einladungs-Code lädt die Seite neu (joinWorldFromCode → _weltWechselNeuLaden), Kontrolle ≤ 5 s verlangt das Welt-Tor ohne Neuladen; dazu beide Flüsse an zwei Geräten (#1 misst den Bauplan-Fluss headless)",
     },
     {
         kriterium: "siedlung.K1", staffel: 2, befehl: null,

@@ -459,6 +459,133 @@ const stationen = [
         quelle: "1 = ≥ 0,9 der Geburten in der Boden-Klasse der Gattung, mit Gegenprobe bei anderem Seed",
     },
 
+    // ───────── tiere.K4 Staffel 2 — der Tag (Zweig tiere-k2k4, tetrapoda ETHOGRAMM_GESETZ) ─────────
+    // Probe tagesbudget: je Gattung drei Tiere am Ufer, 12 Spielstunden der Spieler-Uhr eingelaufen, 24 gemessen — das Budget
+    // ruhen · nahrung · ziehen gegen das Ethogramm (±20 %; was die Gattung nicht tut, ≤ 0,01), jedes Tier trinkt am Wasser, der
+    // Gegenlauf „Durst aus“ trinkt 0, die Ruhe steht (< 3 % bewegt); Probe lebensraum: je Wurf der Bär am Fluss gegen abseits in
+    // zwei Saaten (Schlupfloch Zeitplan: das Budget kommt aus den Pegeln, die Täter alte Uhr und leerer Ruhe-Pegel sind ROT). An
+    // main fehlt die Probe tagesbudget (ROT „keine Zeile“).
+    {
+        kriterium: "tiere.K4",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "lebensraum,tagesbudget"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const t = probeZeile(lauf.stdout, "tagesbudget");
+            const l = probeZeile(lauf.stdout, "lebensraum");
+            if (!t || !l) return { gruen: false, zahl: "keine Zeile der Probe " + (t ? "lebensraum" : "tagesbudget") + " (Exit " + lauf.exit + ")" };
+            if (t.fehler || l.fehler || !l.baer) return { gruen: false, zahl: "Probe-Fehler: " + (t.fehler || l.fehler || "ohne baer") };
+            const je = Object.entries(t.soll || {}).flatMap(([g, S]) =>
+                Object.entries(S).map(([k, v]) => {
+                    const ist = t.budget[g][k];
+                    return { ok: v > 0 ? Math.abs(ist / v - 1) <= 0.2 : ist <= 0.01, t: g + " " + k + " " + ist + "/" + v };
+                })
+            );
+            const tr = t.truenke || [];
+            const durst = tr.length >= 12 && tr.every((n) => n >= 1) && t.amWasser === tr.reduce((a, b) => a + b, 0) && t.durstAus === 0;
+            const ruhe = t.ruhe[0] >= 1000 && t.ruhe[1] < 0.03 * t.ruhe[0];
+            const gb = (l.gegen && l.gegen.baer) || { fluss: [0, 0], sonst: [0, 0] };
+            const [F, N] = ["fluss", "sonst"].map((k) => [l.baer[k][0] + gb[k][0], l.baer[k][1] + gb[k][1]]);
+            const baer = F[0] >= 10 && N[0] >= 10 && F[1] > 0 && F[1] / F[0] >= (2 * N[1]) / N[0];
+            return {
+                gruen: je.length >= 12 && je.every((x) => x.ok) && durst && ruhe && baer,
+                zahl:
+                    "Budget " + je.map((x) => (x.ok ? "" : "✗ ") + x.t).join(" · ") + " · Trünke " + tr.join(",") + " (am Wasser " +
+                    t.amWasser + ", Durst aus " + t.durstAus + ") · Ruhe bewegt " + t.ruhe[1] + "/" + t.ruhe[0] + " · Bär am Fluss " +
+                    F[1] + "/" + F[0] + " Würfe, abseits " + N[1] + "/" + N[0],
+            };
+        },
+        pfad: [
+            ...KREATUR,
+            "gelaende-core.js",
+            "phyto-core.js",
+            "stamm/gelaende-boden.js",
+            "stamm/wasser-hydro.js",
+            "stamm/bild-himmel.js",
+            "spec/pruefbuehne/welt.json",
+        ],
+        quelle: "2 = dazu das Tages-Budget je Gattung ±20 % am Ethogramm, Trinken aus Durst (Mutante „Durst aus“ → 0), am Fluss Bären-Sichtung ≥ 2× wahrscheinlicher",
+    },
+
+    // ───────── tiere.K2 Staffel 2 — das Mahl und das Wolfsrevier im Bild (Zweig tiere-k2k4) ─────────
+    // (1) das Mahl headless wie tiere.K2#1 (`diag-kreatur-takt --proben jagdkreis`, Port {PORT}+10000): nach dem ersten Riss des Rudels
+    // am gesunden Hirsch frisst es ≥ 60 s der 120 s (z.riss.fressS), Fuchs oder Bär sind ≤ 120 s am Aas (gaeste[].kommtS) — im
+    // Fenster der Werkbank misst die Probe ihren Sprinter am Spieler des Fensters (Sprint 7,88 m/s), darum nicht dort; (2) EINE
+    // Werkbank-Sitzung `--echt` gegen einen eigenen save-server, das Wolfsrevier: der nächste Ort der Boden-Klasse wald 50–400 m
+    // um den Spieler, der Spieler 30 m daneben (`umstellen`), vier Wölfe als Verband reißen am echten Takt ein Kitz und fressen
+    // (≥ 2), geschossen aus dem Ausgabe-Pfad 8 m vor dem Riss, 2,2 m hoch, 1920×1080: die Wölfe im Bild (Klasse tier:wolf ≥ 800 px —
+    // vier Sichtungen zu 200 px), die Abnahme GRÜN. Ports: save-server {PORT}, Werkbank {PORT}+20000.
+    {
+        kriterium: "tiere.K2",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: [
+            "bash",
+            "-c",
+            [
+                "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
+                "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+                "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
+                "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
+                "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
+                "trap ende EXIT; trap 'exit 143' INT TERM",
+                "raeum; stand",
+                "KREATUR_TAKT_PORT=$(( {PORT} + 10000 )) node scripts/diag-kreatur-takt.cjs --proben jagdkreis",
+                "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
+                "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
+                "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
+                "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
+                "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
+                "node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1",
+                "erg() { node -e 'const t = require(\"fs\").readFileSync(0, \"utf8\"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf(\"{\"))).ergebnis))'; }",
+                "O=$(node scripts/werkbank.cjs eval 'const pm = r.state.playerMesh.position; let O = null; for (let ring = 2; ring <= 16 && !O; ring++) for (let q = 0, n = ring * 6; q < n && !O; q++) { const a = (q / n) * 2 * Math.PI, x = pm.x + Math.cos(a) * ring * 25, z = pm.z + Math.sin(a) * ring * 25; if (r._landAt(x, z) && r._bodenKlasseAt(x, z) === \"wald\" && r._bodenKlasseAt(x + 30, z) !== \"fluss\" && r._kreaturGrundFrei(x, z) && r._kreaturGrundFrei(x + 30, z)) O = [+x.toFixed(1), +z.toFixed(1)]; } return O;' | erg); echo \"ORT $O\"",
+                "node scripts/werkbank.cjs umstellen $(node -e 'const o = JSON.parse(process.argv[1]); console.log(o[0] + 30, o[1])' \"$O\") > \"$B-umstellen.txt\" 2>&1",
+                "R=$(node scripts/werkbank.cjs eval 'const s = r.state, pm = s.playerMesh.position; r.setGameMode(\"pfad\"); const O = { x: pm.x - 30, z: pm.z }; for (const c of [...s.creatures, ...s.leichname]) r.removeCreature(c); const neu = (x, z, seele, gr) => { const c = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 0.5, z, \"happy\", seele, { precise: true, bodySize: gr }); c.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 }; return c; }; const kitz = neu(O.x, O.z, \"wesen\", 0.6); const W = [0, 1, 2, 3].map((i) => neu(O.x + Math.cos(Math.PI + (i - 1.5) * 0.5) * 25, O.z + Math.sin(Math.PI + (i - 1.5) * 0.5) * 25, \"wolf\", 1)); r._kreaturVerbinden(W); let rissS = null, k = 0; const frisst = () => W.filter((c) => c.userData._motionZustand === \"fressen\").length; for (; k < 7200 && (rissS === null || (frisst() < 3 && k / 60 < rissS + 20)); k++) { r._kreaturStossSchritt(1 / 60); r._leibKontakte(); r.updateCreatures(1 / 60); if (rissS === null && s.leichname.includes(kitz)) rissS = +(k / 60).toFixed(1); } const fressen = frisst(); const nah = W.filter((c) => Math.hypot(c.position.x - kitz.position.x, c.position.z - kitz.position.z) < 4).length; const K = kitz.position, d = Math.hypot(pm.x - K.x, pm.z - K.z) || 1, ax = K.x + ((pm.x - K.x) / d) * 8, az = K.z + ((pm.z - K.z) / d) * 8; return { ort: r._bodenKlasseAt(O.x, O.z), kamera: [ax, r.getTerrainHeightAt(ax, az) + 2.2, az, K.x, K.y + 0.4, K.z].map((v) => +v.toFixed(2)), klasse: r._bodenKlasseAt(kitz.position.x, kitz.position.z), rissS, fressen, nah, woelfe: W.length };' | erg); echo \"REVIER $R\"",
+                "node scripts/werkbank.cjs bild $(node -e 'console.log(JSON.parse(process.argv[1]).kamera.join(\" \"))' \"$R\") --w 1920 --h 1080 --klasse '^tier:' --ziel Riss --datei \"$B-wolfsrevier.png\" > \"$B-bild.txt\" 2>&1",
+                "echo \"BILD $(grep -o '\"abnahme\": \"[^\"]*\"' \"$B-bild.txt\")\"",
+                "cp \"$B-wolfsrevier.abnahme.json\" \"$A\"",
+            ].join("\n"),
+        ],
+        gpu: true,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "jagdkreis");
+            const R = z && z.riss;
+            if (!R || z.fehler) return { gruen: false, zahl: "keine Zeile der Probe jagdkreis (Exit " + lauf.exit + (z && z.fehler ? ": " + z.fehler : "") + ")" };
+            const rv = jsonZeile(lauf.stdout, /^REVIER /);
+            const w = j && j.klasse && (j.klasse.klassen || {})["tier:wolf"];
+            const b = (j && j.bild) || {};
+            const gaeste = (R.gaeste || []).map((G) => G.seele + " " + G.kommtS + " s");
+            const mahl = R.rissS != null && R.fressS >= 60 && (R.gaeste || []).some((G) => G.kommtS != null && G.kommtS <= 120);
+            const bild = !!rv && rv.ort === "wald" && rv.rissS != null && rv.fressen >= 2 && !!w && w.pixel >= 800 && b.w === 1920 && b.h === 1080 && j.ok === true;
+            return {
+                gruen: mahl && bild,
+                zahl:
+                    "Fressen " + R.fressS + " s nach dem Riss bei " + R.rissS + " s, am Aas " + gaeste.join(", ") + " · Wolfsrevier " +
+                    (rv ? rv.ort + ", Riss " + rv.rissS + " s, " + rv.fressen + " fressen" : "ohne REVIER-Zeile") + ": tier:wolf " +
+                    (w ? w.pixel : 0) + " px in " + b.w + "×" + b.h + ", " + ((j && j.zeile) || "ohne Abnahme-Zeile"),
+            };
+        },
+        pfad: [
+            ...KREATUR,
+            "stamm/bild-*.js",
+            "stamm/stoff-*.js",
+            "stamm/vegetation-*.js",
+            "stamm/gelaende-boden.js",
+            "gelaende-core.js",
+            "phyto-core.js",
+            "save-server.js",
+            "scripts/werkbank.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "2 = dazu Fressen ≥ 60 s, der Kadaver lockt Fuchs oder Bär ≤ 120 s, Station Wolfsrevier im Bild beider Geräte",
+    },
+
     // ───────── affekt.K1 — die Wertung antwortet am Ort (affekt-k1-ort) ─────────
     {
         kriterium: "affekt.K1",
@@ -736,28 +863,6 @@ const fehlt = [
             "Werkzeug fehlt: kein Bild zählt Halme unter dem Wasser-Spiegel (diag-haus-welt --bild kennt nur Haus-Boxen), " +
             "Third vor dem Haus ungemessen; die Häuser-Hälfte ist die Station vegetation.K4#1 auf beiden Geräten",
         quelle: "2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte",
-    },
-    {
-        kriterium: "tiere.K2",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "Werkzeug fehlt: die Station Wolfsrevier im Bild beider Geräte gibt es nicht; Fressen (z.riss.fressS) und Fuchs/Bär am " +
-            "Aas (z.riss.gaeste[*].kommtS) liefert die Probe jagdkreis nur headless",
-        quelle:
-            "2 = dazu Fressen ≥ 60 s, der Kadaver lockt Fuchs oder Bär ≤ 120 s, Station Wolfsrevier im Bild beider Geräte",
-    },
-    {
-        kriterium: "tiere.K4",
-        staffel: 2,
-        geraet: "headless",
-        befehl: null,
-        grund:
-            "nicht gebaut: das Tages-Budget je Gattung am Ethogramm fehlt (Rotwild grast tagsüber ~15 % statt ~50 %), " +
-            "„Bär am Fluss ≥ 2×“ ist kein Soll der Linse; nur Durst steht (--proben durst)",
-        quelle:
-            "2 = dazu das Tages-Budget je Gattung ±20 % am Ethogramm, Trinken aus Durst (Mutante „Durst aus“ → 0), am Fluss Bären-Sichtung ≥ 2× wahrscheinlicher",
     },
 ];
 
