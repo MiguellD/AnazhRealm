@@ -271,7 +271,7 @@ class AnazhRealm_bild_kosten {
             // die Liste des Bündels (`_projectObject`: Sicht, Ebene, Frustum, Sortier-Lage, Listen-Platz) — die Liste liest nur
             // die AUFNAHME, der Replay zieht die aufgenommenen Render-Objekte. Ein Bündel, das abspielt, hat seine Änderung über
             // seine Version gemeldet (`_buendelSpieltAb`): sein Kinder-Gang fällt, der Bürger-Gang des Replays bleibt.
-            if (typeof renderer._projectObject !== "function" || !renderer._renderLists || !renderer._bundles)
+            if (typeof renderer._projectObject !== "function")
                 this.log("RUHENDE PROJEKTION: r184-Renderer._projectObject nicht gefunden (Vendor-Drift)", "ERROR");
             else if (!renderer.__anazhRuhendeProjektion) {
                 const projRoh = renderer._projectObject;
