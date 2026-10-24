@@ -3,7 +3,7 @@ class AnazhRealm_dirigent_takt {
     startEternalLoop() {
         // ### Spiel-Loop ###
         let lastTime = performance.now();
-        const loop = (time) => {
+        const loop = (time, gepumpt) => {
             // NaN-WAND am Loop-Eingang: ein argloser Aufruf (`_gameLoopTick()`, jeder Test-Warmup) liefert time
             // undefined → NaN in delta/frameMs vergiftet die frameMs-EWMA für immer (der Regler säße still im
             // Totband). Bewacht von `gate:regler-sim`.
@@ -46,7 +46,7 @@ class AnazhRealm_dirigent_takt {
                 // Mitspieler gehört (K60). Radeon kalt am Kopf 210fe8a7 rief jeder der 224–256 Takte unter dem Ladeschirm jedes
                 // Spiel-Glied (515–1 007 ms); mit der Phase ruft es jedes Lade-Bild (24 von 210 Takten, 281 ms), das Netz
                 // jeder Takt.
-                const bild = this._gpuLeineFrei();
+                const bild = this._gpuLeineFrei(gepumpt === true);
                 const ruht = !bild && this._ladeTakt();
                 // DER SCHIRM einmal je Takt (die EINE Quelle jeder Schirm-Größe, `_schirm`).
                 this._schirmMessen();
@@ -326,6 +326,18 @@ class AnazhRealm_dirigent_takt {
         // auf das headless gedrosselte rAF zu warten; der Loop selbst läuft weiter über setAnimationLoop.
         this._gameLoopTick = loop;
         this.state.renderer.setAnimationLoop(loop);
+        // DIE LADE-PUMPE (ankunft.K1): unter dem Ladeschirm (`_ladeTakt`) zeigt kein Takt die Welt, und Chrome hält rAF hinter dem
+        // GPU-Prozess an — Radeon kalt (e5554c62) nach jedem Lade-Bild 0,5–1,1 s ohne rAF bei freiem Haupt-Faden, von 2 bis 10 s
+        // 1–9 Takte je Sekunde, und jeder Leser des ersten Weltbilds lief mit ihnen. Vergeht LADE_PUMPE_MS ohne Takt, ruft die
+        // Pumpe ihn selbst als Takt ohne Bild (`gepumpt`: das Bild bleibt beim rAF); mit dem ersten Weltbild endet sie.
+        const pumpe = () => {
+            const st = this.state;
+            if (st._weltbildDa || (st.renderer && st.renderer._isHeadlessNull)) return;
+            if (this._ladeTakt() && performance.now() - lastTime >= AnazhRealm.LADE_PUMPE_MS)
+                loop(performance.now(), true);
+            setTimeout(pumpe, AnazhRealm.LADE_PUMPE_MS);
+        };
+        setTimeout(pumpe, AnazhRealm.LADE_PUMPE_MS);
     }
 
     // ═══ DAS WORT „DIE WELT STEHT" (A9) ═══
@@ -447,7 +459,7 @@ class AnazhRealm_dirigent_takt {
         const r = this.state.renderer;
         return r && !r._isHeadlessNull && r.backend && r.backend.device ? r.backend.device.queue : null;
     }
-    _gpuLeineFrei() {
+    _gpuLeineFrei(ohneBild) {
         const L =
             this._gpuLeine ||
             (this._gpuLeine = {
@@ -460,6 +472,7 @@ class AnazhRealm_dirigent_takt {
                 erledigtMs: null,
             });
         L.versuch = false;
+        if (ohneBild) return false;
         if (this._gpuLeineStraff()) {
             L.ausgesetzt++;
             return false;
@@ -1681,6 +1694,8 @@ AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS = 2.5;
 AnazhRealm.LADE_TAKT_MS = 100;
 // Der Abstand der Bilder unter dem Ladeschirm (ms, `_ladeBildFaellig`): dazwischen schickt der Lade-Takt nichts an die GPU.
 AnazhRealm.LADE_BILD_MS = 500;
+// Die Frist der Lade-Pumpe (ms, `startEternalLoop`): so lange darf unter dem Ladeschirm kein Takt kommen, bevor sie ihn ruft.
+AnazhRealm.LADE_PUMPE_MS = 16;
 AnazhRealm.TAKT_DECKEL_S = 0.1;
 AnazhRealm.FIXED_MAX_STEPS = 8;
 AnazhRealm.ZEIT_SCHAERFE = 1;

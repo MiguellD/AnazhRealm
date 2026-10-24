@@ -279,7 +279,7 @@ async function kaltLauf() {
     const s = (ms) => (ms ? (ms / 1000).toFixed(2) + " s" : "—");
     console.log(
         `\n  t(Kontrolle) ${s(u.t)} ab Navigation (W bewegt den Leib) · Eigenmeldung t(Weltbild) ${s(out.weltbildDa)} · ` +
-            `das Bild bei der Kontrolle weicht ${u.luecke == null ? "—" : (u.luecke * 100).toFixed(2) + " %"} ` +
+            `das Bild bei der Kontrolle weicht ${u.luecke === Infinity ? "∞" : (u.luecke * 100).toFixed(2) + " %"} ` +
             `(die Welt lief ${out.bild ? out.bild.lauf.toFixed(1) : "—"} s)`
     );
     for (const x of u.taeter) console.log(`  ❌ ${x}`);
@@ -288,10 +288,10 @@ async function kaltLauf() {
 }
 
 // DAS URTEIL DER ANKUNFT (pure; Kalt-Zeile, Selbsttest und die Station ankunft.K1 lesen es): t ist die Kontrolle von außen,
-// nie `_weltbildDa`; ganz heißt: die Welt nennt kein halbes Weltbild, das Bild bei der Kontrolle weicht ≤ BILD_LUECKE
+// nie `_weltbildDa`; ganz heißt: die Welt nennt kein halbes Weltbild, das Bild bei der Kontrolle weicht ≤ BILD_LUECKE (ungemessen: ∞)
 function ankunftUrteil(m) {
     const t = m.kontrolle || null;
-    const luecke = m.bild && Number.isFinite(m.bild.luecke) ? m.bild.luecke : null;
+    const luecke = m.bild && Number.isFinite(m.bild.luecke) ? m.bild.luecke : Infinity;
     const halb = m.ohne && m.ohne.length ? m.ohne[0] : null;
     const taeter = [];
     if (!t) taeter.push("keine Kontrolle: W bewegt den Leib nie ≥ 0,1 m");
@@ -306,6 +306,7 @@ const ankunftSelbsttest = () =>
         ["die Eigenmeldung früh, die Kontrolle spät", { weltbildDa: 2000, kontrolle: 9000, bild: { luecke: 0 } }, true],
         ["das Bild bei der Kontrolle weicht 8 %", { kontrolle: 4000, bild: { luecke: 0.08 } }, true],
         ["die Welt nennt das halbe Weltbild", { kontrolle: 4000, bild: { luecke: 0 }, ohne: ["x"] }, true],
+        ["die Welt stand", { kontrolle: 4000, bild: { lauf: 0 } }, true],
     ].map(([fall, m, rot]) => {
         const u = ankunftUrteil(m);
         return { name: `SELBST-TEST Ankunft: ${fall} — ${u.taeter.length ? "ROT" : "GRÜN"}`, pass: !!u.taeter.length === rot };
@@ -398,7 +399,6 @@ const ankunftSelbsttest = () =>
                     st._buehneStand = merk.latch;
                     r._buehneT0 = merk.t0;
                 }
-                // (W4.3, der Wachhund eines hängenden Bakes, fiel mit S2: die Karte backt synchron im Takt)
             }
             return o;
         }, SELFTEST);
