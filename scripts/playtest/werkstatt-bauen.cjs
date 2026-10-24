@@ -165,24 +165,24 @@ async function checkBandV1774UseByRole(ctx) {
         return out;
     });
     check(
-        "V17.74 Welle 1b: _blueprintUseKind liest aus Rolle+Form — Gerät→hold · Rüstung→wear · Trank→drink · Avatar→embody",
+        "Welle 1b: _blueprintUseKind liest aus Rolle+Form — Gerät→hold · Rüstung→wear · Trank→drink · Avatar→embody",
         res.kindGeraet && res.kindArmor && res.kindTrank && res.kindAvatar
     );
     check(
-        "V17.74 Welle 1b: die DEFAULT-Hotbar (Felsblock/Wasserfall/Damm) bleibt platzierbar — die groessen-bewusste Spanne faengt den 8-m-Wasserfall (kein Gate-Regress)",
+        "Welle 1b: die DEFAULT-Hotbar (Felsblock/Wasserfall/Damm) bleibt platzierbar — die groessen-bewusste Spanne faengt den 8-m-Wasserfall (kein Gate-Regress)",
         res.defaultHotbarPlace
     );
     check(
-        "V17.74 Welle 1b HOTBAR-GATE: ein Gerät im Slot geht IN DIE HAND (equipped.held), KEIN Platzier-Phantom",
+        "Welle 1b HOTBAR-GATE: ein Gerät im Slot geht IN DIE HAND (equipped.held), KEIN Platzier-Phantom",
         res.deviceToHand
     );
-    check("V17.74 Welle 1b: ein gehaltener Slot re-ausgewählt → ablegen (Toggle zur Faust)", res.toggleOff);
+    check("Welle 1b: ein gehaltener Slot re-ausgewählt → ablegen (Toggle zur Faust)", res.toggleOff);
     check(
-        "V17.74 Welle 1b BUG-a: die Ausrüstung-Fläche erkennt die built-in Bibliotheks-Rüstung + das Gerät (nicht mehr nur !builtIn)",
+        "Welle 1b BUG-a: die Ausrüstung-Fläche erkennt die built-in Bibliotheks-Rüstung + das Gerät (nicht mehr nur !builtIn)",
         res.armorListed && res.heldDeviceListed
     );
     check(
-        "V17.74 Welle 1b BUG-b: die Seele-Select listet einen Bauplan-Avatar (role:soul) als verkörperbar",
+        "Welle 1b BUG-b: die Seele-Select listet einen Bauplan-Avatar (role:soul) als verkörperbar",
         res.avatarListed
     );
     check(
@@ -190,15 +190,15 @@ async function checkBandV1774UseByRole(ctx) {
         res.studioSicht
     );
     check(
-        "V17.74 Welle 1b BUG-b KONSUM: einen Bauplan-Avatar verkörpern formt + registriert ihn (player.soul=bp_…, customSoul), kein Doppel-Eintrag danach",
+        "Welle 1b BUG-b KONSUM: einen Bauplan-Avatar verkörpern formt + registriert ihn (player.soul=bp_…, customSoul), kein Doppel-Eintrag danach",
         res.avatarEmbodied && res.noDuplicate
     );
     check(
-        "V18.99 G1: Bewegungs-Rollen EMERGIEREN für den Bauplan-Avatar (Bein + Flügel aus Form×Lage×Spiegelung)",
+        "G1: Bewegungs-Rollen EMERGIEREN für den Bauplan-Avatar (Bein + Flügel aus Form×Lage×Spiegelung)",
         res.motionRolesEmerge
     );
     check(
-        "V18.99 G1 KONSUM: der verkörperte Custom-Avatar BEWEGT sich beim Gehen (animatePlayerSoul treibt die Motion-Resonanz — vorher statisch)",
+        "G1 KONSUM: der verkörperte Custom-Avatar BEWEGT sich beim Gehen (animatePlayerSoul treibt die Motion-Resonanz — vorher statisch)",
         res.customAvatarAnimates
     );
 }
@@ -263,17 +263,17 @@ async function checkBandV1776WorkshopPrecision(ctx) {
         return out;
     });
     check(
-        "V17.76 Welle 2: die Werkstatt-Präzision emergiert aus SUBSTANZ — eine dichte+harte Esse (>0.8) hält feiner als eine weiche Werkstatt (kein Crafting-Zirkel)",
+        "Welle 2: die Werkstatt-Präzision emergiert aus SUBSTANZ — eine dichte+harte Esse (>0.8) hält feiner als eine weiche Werkstatt (kein Crafting-Zirkel)",
         res.substancePrecision,
         `esseP=${(res.esseP || 0).toFixed(3)} softP=${(res.softP || 0).toFixed(3)}`
     );
     check(
-        "V17.76 Welle 2: _nearbyWorkshopStationPrecision — keine Station → 0, eine passende Esse nah → ihre Präzision (== Substanz)",
+        "Welle 2: _nearbyWorkshopStationPrecision — keine Station → 0, eine passende Esse nah → ihre Präzision (== Substanz)",
         res.noStationZero && res.stationBoosts
     );
-    check("V17.76 Welle 2: nur die EIGENE Domäne zählt — die forging-Esse boostet alchemy NICHT", res.wrongDomainZero);
+    check("Welle 2: nur die EIGENE Domäne zählt — die forging-Esse boostet alchemy NICHT", res.wrongDomainZero);
     check(
-        "V17.76 Welle 2 KONSUM: applyOpToPart NAH der Esse hebt den opChain-Cap über den Werkzeug-Cap (bessere Esse → feiner)",
+        "Welle 2 KONSUM: applyOpToPart NAH der Esse hebt den opChain-Cap über den Werkzeug-Cap (bessere Esse → feiner)",
         res.konsum
     );
 }
@@ -312,22 +312,22 @@ async function checkBandV1777SteigerungVisible(ctx) {
         out.noLitter = !meister.instanced; // built-in ohne instanced → kein Worldgen-Litter (V17.72)
         return out;
     });
-    check("V17.77: die Meister-Esse existiert als craftbare workshop-station", res.meisterExists);
-    check("V17.77: ihre Domäne emergiert als forging (Eisen+Glut → Schmiede, S7-B)", res.meisterForging);
+    check("die Meister-Esse existiert als craftbare workshop-station", res.meisterExists);
+    check("ihre Domäne emergiert als forging (Eisen+Glut → Schmiede, S7-B)", res.meisterForging);
     check(
-        "V17.77 STEIGERUNG: die Meister-Esse (Eisen) fertigt feiner als die Basis-Esse — bessere Substanz → höherer Cap",
+        "STEIGERUNG: die Meister-Esse (Eisen) fertigt feiner als die Basis-Esse — bessere Substanz → höherer Cap",
         res.steigerung,
         `esse=${res.esseP} meister=${res.meisterP}`
     );
     check(
-        "V17.77: die Spanne ist sichtbar — eine weiche Werkstatt fertigt deutlich gröber als die Eisen-Esse",
+        "die Spanne ist sichtbar — eine weiche Werkstatt fertigt deutlich gröber als die Eisen-Esse",
         res.rangeVisible
     );
     check(
-        "V17.77 KONSUM: der Werkstatt-Readout rendert die Präzisions-Zeile (die Steigerung sichtbar/lernbar)",
+        "KONSUM: der Werkstatt-Readout rendert die Präzisions-Zeile (die Steigerung sichtbar/lernbar)",
         res.readoutShowsPrecision
     );
-    check("V17.77: die Meister-Esse littert den Worldgen NICHT (built-in ohne instanced)", res.noLitter);
+    check("die Meister-Esse littert den Worldgen NICHT (built-in ohne instanced)", res.noLitter);
 }
 
 // die WERTE eines Werks folgen Material × Form (fähigkeiten steigen+sinken), sichtbar im Readout; die Werkstatt erscheint
@@ -427,23 +427,23 @@ async function checkBandV1789WorkshopReadout(ctx) {
         return out;
     });
     check(
-        "V17.89 KONSUM: die Werte folgen dem MATERIAL — eine eisen-Klinge schlägt härter als eine holz-Klinge (gleiche Form)",
+        "KONSUM: die Werte folgen dem MATERIAL — eine eisen-Klinge schlägt härter als eine holz-Klinge (gleiche Form)",
         res.materialMovesValues,
         res.materialVals
     );
     check(
-        "V17.89 KONSUM: die Werte folgen der FORM — ein stumpfer Zylinder an der Klinge verschiebt die Waffen-Eignung (fähigkeiten steigen+sinken)",
+        "KONSUM: die Werte folgen der FORM — ein stumpfer Zylinder an der Klinge verschiebt die Waffen-Eignung (fähigkeiten steigen+sinken)",
         res.formMovesValues,
         res.formVals
     );
-    check("V17.89: rollen-gerechte Werte — eine Rüstung zeigt Verteidigung (nicht Schaden)", res.armorHasDefense);
-    check("V17.89 KONSUM (DOM): die Werte-Zeile rendert im Werkstatt-Readout", res.domAbilitiesRow);
+    check("rollen-gerechte Werte — eine Rüstung zeigt Verteidigung (nicht Schaden)", res.armorHasDefense);
+    check("KONSUM (DOM): die Werte-Zeile rendert im Werkstatt-Readout", res.domAbilitiesRow);
     check(
-        "V17.91 KONSUM (DOM): die Werkstatt-Prozesse sind ziehbare Karten in der WERKZEUGE-Palette (schöpfer → besessene Werkstätten)",
+        "KONSUM (DOM): die Werkstatt-Prozesse sind ziehbare Karten in der WERKZEUGE-Palette (schöpfer → besessene Werkstätten)",
         res.domWorkshopChips
     );
     check(
-        "V17.91 (DOM): Undo/Redo wohnen in der Top-Leiste (workshop-undo-btn / workshop-redo-btn)",
+        "(DOM): Undo/Redo wohnen in der Top-Leiste (workshop-undo-btn / workshop-redo-btn)",
         res.domHistoryControls
     );
 }
@@ -558,41 +558,41 @@ async function checkBandV1790Recalibration(ctx) {
         return out;
     });
     check(
-        "V17.90 Facette 1: das Rollen-Spektrum SPREIZT (Top ≫ 5., nicht 1.0/1.0/1.0) + führt mit der Form-Rolle (Klinge→Waffe)",
+        "Facette 1: das Rollen-Spektrum SPREIZT (Top ≫ 5., nicht 1.0/1.0/1.0) + führt mit der Form-Rolle (Klinge→Waffe)",
         res.spectrumSpreads && res.spectrumLeadsWeapon,
         `top=${res.specTop}`
     );
     check(
-        "V17.90 Facette 2: MATERIAL bewegt die Werte dramatisch — eine Eisen-Klinge ≥1.8× Schaden einer Holz-Klinge",
+        "Facette 2: MATERIAL bewegt die Werte dramatisch — eine Eisen-Klinge ≥1.8× Schaden einer Holz-Klinge",
         res.materialDramatic,
         res.materialVals
     );
     check(
-        "V18.311 (Spieler runter): Equip-Fold size-NEUTRAL im Readout — 3× Klinge ≈ 1× (der V17.90-Größen-Faktor ist vorerst raus)",
+        "(Spieler runter): Equip-Fold size-NEUTRAL im Readout — 3× Klinge ≈ 1× (der V17.90-Größen-Faktor ist vorerst raus)",
         res.sizeNeutralReadout,
         res.sizeVals
     );
     check(
-        "V18.311 (Spieler runter): size-neutral auch im ECHTEN Kampf (Equip-Fold) — eq 3× ≈ 1×",
+        "(Spieler runter): size-neutral auch im ECHTEN Kampf (Equip-Fold) — eq 3× ≈ 1×",
         res.sizeNeutralEquip,
         res.equipVals
     );
     check(
-        "V17.90 Facette 3: attackSpeed bleibt POSITIV trotz schwerem Gerät (kein negativer Cooldown)",
+        "Facette 3: attackSpeed bleibt POSITIV trotz schwerem Gerät (kein negativer Cooldown)",
         res.attackSpeedPositive
     );
     check(
-        "V17.90 Facette 4: ROLLE scharf — Pickel→Werkzeug (Holzstiel), Schwert→Waffe (Metall-Klinge), Klinge→Waffe",
+        "Facette 4: ROLLE scharf — Pickel→Werkzeug (Holzstiel), Schwert→Waffe (Metall-Klinge), Klinge→Waffe",
         res.spitzhackeTool && res.schwertWeapon && res.bladeWeapon,
         `spitz=${res.spitzhackeTool} schwert=${res.schwertWeapon}`
     );
     check(
-        "V17.90 Befund (a): die platzierte Drehbank erscheint in WORKSHOP_PROXIMITY_M (32 m) im Prozess-Menü, jenseits NICHT",
+        "Befund (a): die platzierte Drehbank erscheint in WORKSHOP_PROXIMITY_M (32 m) im Prozess-Menü, jenseits NICHT",
         res.drehbankNearAppears && res.drehbankFarHidden,
         `radius=${res.proximityM}m near=${res.drehbankNearAppears} far=${res.drehbankFarHidden}`
     );
     check(
-        "V17.91 Befund (b): die Top-Leisten-Akte (disabled-Stil) + Station-Karten haben CSS (sichtbar)",
+        "Befund (b): die Top-Leisten-Akte (disabled-Stil) + Station-Karten haben CSS (sichtbar)",
         res.cssHistory
     );
 }

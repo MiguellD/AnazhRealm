@@ -281,14 +281,12 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
             }
             // (2) DIE HÜLLE (F2a „hoch bauen", Karte editform-kern): die Form des Edits ist EIN Gesetz des Kerns (gelaende-core
             // `editForm` · `editReich` · `mitEdits` · `editsImGitter` · `bandUmEdits`). Ein Turm aus N_TURM Füll-Edits über den
-            // Spielpfad (`_addVoxelEdit`, r 3,5 wie der Hieb), jeder auf der Krone des vorigen (`_voxelSurfaceY`),
-            // hebt sich je Edit um r (−0,1 … +0,3 m, die Interpolation der Flächen-Probe) und steht als EINE Hülle (in jeder Höhe
-            // 0,5 m innerhalb des Rands Fels, 0,6 m außerhalb Luft) — bis über das Band (+19,2 m); dazu ein Graben an seinem Fuß.
+            // Spielpfad (`_addVoxelEdit`, r 3,5 wie der Hieb), jeder auf der Krone des vorigen (`_voxelSurfaceY`), bis über das
+            // Band, dazu ein Graben an seinem Fuß (Höhe, Hub und Hülle über die echte Eingabe und den Reload: gate:fall-waechter B).
             // Jeder Leser trägt das Gesetz über die ganze Liste: der Haupt-Faden im Punkt (`_terrainDensityAt`, `_fieldDensityAt`
             // mit und ohne Spalten-Kontext) und im Gitter (`_voxelEditedDensityGrid`), der Worker = Main (LOD 0–3), und die Wache
             // des Fern-Rings (`_fernRingDeckWache` auf einer Naht aus 640 Probe-Ecken) weckt genau die Ecken in der Reichweite;
-            // jenseits ändert sich keine Fläche. An der Basis e3dd2b67 stapelte jeder Edit an vier Stellen einen additiven Kegel
-            // der Stärke 48: 10 Blöcke hoben 24,5 m (Hub 3,26 → 1,90 m). `zwilling` (Selbsttest): der Kegel im Punkt des
+            // jenseits ändert sich keine Fläche. `zwilling` (Selbsttest): der Kegel im Punkt des
             // Haupt-Fadens (`_mitEdits`) und die alte Reichweite r + 4 m in der Wache — beide MÜSSEN beim Namen rot werden.
             const o0 = orte[0];
             s.worldMeta.voxelEdits = [];
@@ -310,28 +308,14 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                     return b;
                 };
             const y0 = r._voxelSurfaceY(tx, tz);
-            const hub = [];
             let krone = y0;
             for (let k = 0; k < N_TURM; k++) {
                 r._addVoxelEdit(tx, krone, tz, R, "fill");
-                const y = r._voxelSurfaceY(tx, tz);
-                hub.push(+(y - krone).toFixed(3));
-                krone = y;
+                krone = r._voxelSurfaceY(tx, tz);
             }
             r._addVoxelEdit(tx + 6, y0, tz - 2, 2.5, "carve");
             const alle = s.worldMeta.voxelEdits;
-            out.huelle = { hub, fern: "—" };
-            if (!hub.every((h) => Math.abs(h - R - 0.1) <= 0.2))
-                out.befunde.push(
-                    `TURM: ${N_TURM} Füll-Edits r ${R} heben ${(krone - y0).toFixed(2)} m statt ${N_TURM * R} m`
-                );
-            let loch = 0;
-            for (let y = y0 + 2; y < krone - 1; y++)
-                for (let a = 0; a < 16; a++) {
-                    const [w, q] = [(a * Math.PI) / 4, a < 8 ? R - 0.5 : R + 0.6];
-                    if (r._terrainDensityAt(tx + Math.cos(w) * q, y, tz + Math.sin(w) * q) > 0 !== a < 8) loch++;
-                }
-            if (loch) out.befunde.push(`HÜLLE: ${loch} Proben am Rand des Turms falsch (innen Luft oder außen Fels)`);
+            out.huelle = { fern: "—" };
             if (!G.editForm)
                 return (out.befunde.push("KERN: gelaende-core trägt die Form des Edits nicht (editForm)"), out);
             let ab = 0;
@@ -394,8 +378,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
             if (jenseits) out.befunde.push(`REICHWEITE (editReich): ${jenseits} Flächen ändern sich jenseits von ihr`);
             // (3) DIE EDIT-WAHRHEIT (K23): 300 Edits über den Spielpfad (`carveVoxel` → `_addVoxelEdit` → das Delta an den
             // Worker), 20 × 15 im 2-m-Raster über die Chunk-Naht des ersten Orts. Kein Edit fällt still: der Main hält alle 300,
-            // und die Gitter des Orts und seiner zwei Nachbarn sind Main = Worker byte-gleich (SHA je Gitter). Der FIFO-Deckel
-            // (256) verdrängte die ersten 44 nur im Main — der Worker hielt sie: zwei Böden ab Edit 257.
+            // und die Gitter des Orts und seiner zwei Nachbarn sind Main = Worker byte-gleich (SHA je Gitter).
             s.worldMeta.voxelEdits = [];
             await r._voxelWorkerSyncState({ op: "state-set" });
             const N_EDITS = 300;
@@ -643,7 +626,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
 
 // TEIL S (Lehre 14, B-K2): kein Chunk-Stoff im Haupt-Faden vor dem Ack des Fadens. Ack und Zusage hängen, der Strom fragt den
 // Spieler-Chunk in L3 und die Dichte: Soll pending, kein voller Stand (`voxelWorkerStateGen`), die Dichte kommt nach dem Ack,
-// und der Boot meldete keinen VOXEL-FADEN-Bruch. `urform` (Selbsttest): Stufe 3 und ein init vor dem Ack, wie bis B-K2.
+// und der Boot meldete keinen VOXEL-FADEN-Bruch. `urform` (Selbsttest): Stufe 3 und ein init vor dem Ack.
 const STROM_SOLL = "pending · volle Stände 0 · Dichte true · Brüche 0";
 async function strom(page, urform) {
     return page.evaluate(async (urform) => {
@@ -665,8 +648,8 @@ async function strom(page, urform) {
     }, urform);
 }
 
-// Der Selbsttest: EIN Term nur im Worker verfälscht (die Basis-Höhe, die das Gesetzbuch `hoehe` liest, um 1 cm — die Steilheit
-// las es seit K16 nicht mehr, der Selbsttest war blind) — die Linse MUSS das beim Ort und Gitter nennen.
+// Der Selbsttest: EIN Term nur im Worker verfälscht (die Basis-Höhe, die das Gesetzbuch `hoehe` liest, um 1 cm) — die Linse
+// MUSS das beim Ort und Gitter nennen.
 async function verfaelsche(page, an) {
     return page.evaluate(async (an) => {
         const r = window.anazhRealm;
@@ -713,7 +696,7 @@ function zeige(rep) {
                     `      ✗ L${z.lod}: ${z.abweichend} Ecken, maxDiff ${z.maxDiff} — erste bei (${z.erste.x}|${z.erste.y}|${z.erste.z}) Main ${z.erste.main} ≠ Worker ${z.erste.worker}`
                 );
     }
-    if (rep.huelle) console.log(`    Hülle: Turm Hub ${rep.huelle.hub.join(" · ")} m · Fern-Ring ${rep.huelle.fern}`);
+    if (rep.huelle) console.log(`    Hülle: Fern-Ring ${rep.huelle.fern}`);
     if (rep.editWahrheit) {
         const w = rep.editWahrheit;
         console.log(
@@ -786,8 +769,7 @@ function spaltenKosten(G, L, H, n, S, A, usKalt, last = 0) {
             if (g < 0.08 && H[k] > L.waterLevel) eben.push(k);
         }
     // Spalten und Eichung WECHSELN sich ab (16 Scheiben, je Scheibe 4 000 noise2D): die Last des Holzes driftet während der
-    // Messung (ein voller Rechner verdoppelte noise2D 0,20 → 0,48 µs), das Verhältnis je Scheibe nicht — gezählt wird sein
-    // Median. Erst die Rohwerte kalt am 30-m-Raster und eine Eichung am Ende ließen dieselbe Welt zwischen 17 und 30 springen.
+    // Messung, das Verhältnis je Scheibe nicht — gezählt wird sein Median.
     const median = (a) => a.slice().sort((p, q) => p - q)[a.length >> 1];
     const takt = (ks) => {
         const B = Math.max(1, Math.floor(ks.length / 16));
@@ -1207,7 +1189,7 @@ async function studioProbe() {
             throw new Error("kein Studio");
         }
         // DER START: das Studio öffnet auf A, und der Entwurf nennt, was die fremde Welt trägt und kein Plan (die Rampe, die
-        // Basis 7 m) — vorher öffnete es auf B, der Projektion, und schwieg.
+        // Basis 7 m).
         const zS = await page.evaluate(async () => {
             const S = window.__gelaendeStudio;
             await S.ruhig();
@@ -1510,9 +1492,7 @@ async function studioProbe() {
 // ── DER GEBAUTE BODEN (K16, Prüfung 1, `--gebaut`): dieselbe Linse (`statistik`) am Boden, den der Spieler betritt
 // (`_voxelSurfaceY`: Gesetz, Höhle, Hydrosphären-Kanal und See-Becken) neben der Makro-Höhe des Gesetzbuchs, je Saat der
 // Realismus-Wand (die Boot-Saat und zwei frische: Regenesis der Ströme, die Hydrosphäre neu), 2 × 2 km um den Ursprung (die
-// Heimat-Kachel der Hydrosphäre), 30 m. Die Makro-Wand (`--realismus`) war grün, während der gebaute Boden rot war: 3,94–
-// 11,05 Senken > 1 m je km², 1–3 Dorfplätze (Prüfung 1, gegenmessung-3saaten-1110f.json). Ziel je Saat: Senken > 1 m ≤ 1 je
-// km², ≥ 3 Dorfplätze, und die Hydrosphäre trägt Flüsse. Der Täter steht beim Namen: derselbe Boden ohne den Kanal (ohne
+// Heimat-Kachel der Hydrosphäre), 30 m. Ziel je Saat: Senken > 1 m ≤ 1 je km², ≥ 3 Dorfplätze, und die Hydrosphäre trägt Flüsse. Der Täter steht beim Namen: derselbe Boden ohne den Kanal (ohne
 // Hydrosphäre) — ohne den Kanal grün → der Kanal (`hydroNetzFluesse` → `_hydrosphereCarveAt`). Die Hydrosphäre jeder Saat
 // rechnet der Faden (Karte hydro-faden). Mit `--selftest` im selben Boot: die Bett-Tiefe des alten Gesetzes (1,4 m + 0,16 ·
 // Breite, ohne `kanalTiefe`, dem Faden als Gesetz gegeben) MUSS die Boot-Saat rot färben.

@@ -48,6 +48,7 @@ const DAUER_S = {
     querhang: 13,
     ferngang: 1,
     gestalt: 1,
+    todlage: 1,
     bewohner: 446,
     tiersatz: 7,
     furcht: 31,
