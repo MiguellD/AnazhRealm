@@ -16,7 +16,8 @@ class AnazhRealm_werkstatt_hof {
             before = this.computePlayerStats().stats;
             eq.armor = name;
             after = this.computePlayerStats().stats;
-        } catch {
+        } catch (e) {
+            this._bruchMelden("Rüstungs-Vergleich: die Werte des Spielers brechen — " + ((e && e.message) || e));
             return "";
         } finally {
             eq.armor = prev;
@@ -581,8 +582,8 @@ class AnazhRealm_werkstatt_hof {
             prof.stats = cs;
             prof.hpMax = cs.hpMax;
             prof.hp = Number.isFinite(ud.hp) ? ud.hp : cs.hpMax;
-        } catch {
-            /* stats optional */
+        } catch (e) {
+            this._bruchMelden("Kreatur-Profil: die Werte brechen — " + ((e && e.message) || e));
         }
         try {
             if (typeof this._creatureTopSpecializations === "function") {

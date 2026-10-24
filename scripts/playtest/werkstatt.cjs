@@ -855,10 +855,11 @@ async function checkBandCadWorkshop(ctx) {
                     children[1] &&
                     children[1].id === "workshop-preview-wrapper";
             }
-            // Material-Palette: eine Card pro Material in state.materials
+            // Material-Palette: eine Card pro Bau-Stoff in state.materials
             const matCards = document.querySelectorAll(".workshop-material-card");
             out.matCardsCount = matCards.length;
-            out.matCardsMatchState = matCards.length === Object.keys(r.state.materials).length;
+            out.matCardsMatchState =
+                matCards.length === Object.values(r.state.materials).filter((m) => m.bauStoff !== false).length;
             // Color-Palette: 12 Swatches
             const colorSwatches = document.querySelectorAll(".workshop-color-swatch");
             out.twelveColorSwatches = colorSwatches.length === 12;

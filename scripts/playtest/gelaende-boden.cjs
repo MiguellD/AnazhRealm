@@ -1867,9 +1867,7 @@ async function checkBandTodZensus(ctx) {
         try {
             // der Ort: Spieler P, Tier A 2 m vor ihm, Tier B 40 m — dieselbe Linie, damit ein Blick beide fasst; nach dem Wechsel
             // steht der Spieler 42 m weiter und blickt zurück (A auf 40 m, B auf 2 m). Jeder Punkt trocken und eben: die gezeichnete
-            // Boden-Karte (`_bodenSichtAt`) liegt dort, höchstens 0,3 m neben dem Gesetz. Vor K07 las der Stand-Leser im Rand-Streifen
-            // der Chunk-Zeile z = 0 (der Start) und ohne Karte den Träger — |Sicht − Gesetz| = 0 war dort geschenkt; ehrlich gelesen
-            // liegt die beste 42-m-Linie um den Start bei 0,23 m.
+            // Boden-Karte (`_bodenSichtAt`) liegt dort, höchstens 0,3 m neben dem Gesetz.
             const trocken = (x, z) => {
                 if (!r._landAt(x, z)) return false;
                 const gy = r.getTerrainHeightAt(x, z);
@@ -2589,11 +2587,13 @@ async function checkBandBewegungUnterLast(ctx) {
                 c.userData.task = { name: "follow_player", args: { distance: 3 }, since: performance.now() / 1000 };
                 W.push(c);
             }
-            // DIE KI-ABSICHT RUHT (W10): `_verhaltenNext` ∞ würfelt die Aktions-Uhr neu (`_tickKreaturVerhalten`),
-            // statt dass der 10-s-Takt der Kreatur-Uhr jede fällige Aktion startet (idle: scan · shake · yawn, tempo 0)
-            // — der stehende Wolf machte den Selbsttest blind
+            // KI-ABSICHT UND LEBENS-UHR RUHEN (W10): `_verhaltenNext` ∞ würfelt die Aktions-Uhr neu, statt dass der 10-s-Takt
+            // jede fällige Aktion startet (tempo 0); `lastTick` ∞ hält den Lebenszyklus, der den ältesten Wolf ohne Beute nähme
             const RUHIG = { _verhaltenAktion: null, _verhaltenNext: Infinity, _hopV: 0, _hopH: 0 };
             const ruhig = () => W.forEach((c) => Object.assign(c.userData, RUHIG));
+            const leben = s.faunaLifecycle || {};
+            const lebenAlt = leben.lastTick;
+            leben.lastTick = Infinity;
             let t = performance.now();
             for (let k = 0; k < 40; k++) {
                 ruhig();
@@ -2610,8 +2610,10 @@ async function checkBandBewegungUnterLast(ctx) {
             const weg = W.map((c, i) => Math.hypot(c.position.x - vor[i][0], c.position.z - vor[i][1]));
             // DIE VORBEDINGUNG DES TÄTERS, laut: jeder Wolf lief vor der Pause auf seinem Lage-Pfad und blieb im Pausen-Takt auf
             // ihm (keine Aktion, Tempo > 0) — sonst urteilt die Linse nichts, und sein Name steht im Urteil
+            leben.lastTick = lebenAlt;
             const halt = W.map((c, i) => {
                 const u = c.userData;
+                if (!s.creatures.includes(c)) return `Wolf ${i}: fiel im Pausen-Takt`;
                 if (u._verhaltenAktion) return `Wolf ${i}: Aktion ${u._verhaltenAktion.name}`;
                 return vVor[i] > 0 && u._steuer && u._steuer.v > 0 ? null : `Wolf ${i}: steht (vVor ${vVor[i]})`;
             }).filter(Boolean).concat(absage);
