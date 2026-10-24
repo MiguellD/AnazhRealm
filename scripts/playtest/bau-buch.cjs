@@ -1107,8 +1107,8 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
         check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
         check(
-            "Welle 4 P1: Built-in-Anzahl exakt 15 (6 Bau + 5 Körper + laub + erde + kraut/essenz V18.133)",
-            wave4p1Results.builtInCount === 15
+            "Welle 4 P1: Built-in-Anzahl exakt 17 (6 Bau + 5 Körper + laub + erde + kraut/essenz + stahl/blech)",
+            wave4p1Results.builtInCount === 17
         );
         check("Welle 4 P1: Alle Tag-Werte 0..1", wave4p1Results.tagsInRange);
         check(

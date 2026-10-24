@@ -1305,9 +1305,7 @@ class AnazhRealm_kreatur_leben {
                     this._handleCreatureProposedProgram(creature, name, reply.program);
                 }
             })
-            .catch(() => {
-                /* silent — rare-event-llm ist nice-to-have */
-            });
+            .catch((e) => this._bruchMelden("Kreatur-Ereignis (LLM): " + ((e && e.message) || e)));
         return true;
     }
 
