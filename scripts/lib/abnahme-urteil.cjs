@@ -604,7 +604,7 @@ function spiegelDaten() {
 
 // DIE KLASSEN-MASSE (rein, in der Seite als `__klassenMasse`): was das Bild F auf den Pixeln der Maske m zeigt (Luma = Rec. 709
 // auf den sRGB-Werten 0–255, wie `bildMasse`):
-//   luma          Mittel der Luma auf der Klasse (deckung, kontrast, nyquist, silhouette, deckungUnten fielen mit A13: kein Leser)
+//   luma          Mittel der Luma auf der Klasse
 //   glatt/nyquist/beta  das Mikro-Detail je 8×8-Block (s. DAS MIKRO-DETAIL unten)
 //   weiss/wt      Anteil und Zahl der Pixel, die als Weiß lesen statt als Farbe (s. MILCHWEISS unten)
 //   kante/kr      die Geradheit des Umrisses gegen das Außen (s. DIE KANTE DER SILHOUETTE unten) und die Zahl seiner Pixel
@@ -858,104 +858,6 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         nyquist: mk[2] + mk[3] > 0 ? r4(mk[2] / (mk[2] + mk[3])) : null,
         beta: mk[4] > 0 && mk[6] > 0 ? r4(2 + Math.log2(mk[6] / mk[4]) / 2) : null,
     };
-}
-
-// DAS KACHEL-MUSTER (rein, in der Seite als `__kachelMasse`; material.K2 Staffel 2, `werkbank bild --kachel`): die stärkste
-// Wiederkehr des DETAILS (die Luma ohne ihr 9×9-Mittel) im Fenster N × N mit den meisten Pixeln der Maske m (≥ 90 %, Raster
-// 32 px) — die Autokorrelation je Versatz (FFT, gepolstert), geteilt durch die Überdeckung beider Masken, gegen den Versatz 0;
-// gezählt ab 8 px Versatz bei ≥ ¼ Überdeckung. Ein Rauschen trägt ~0, eine Kachel 1. Rückgabe { wert, d: [dx, dy], fenster } oder
-// null (kein Fenster der Klasse).
-function kachelMasse(F, m, W, H, N = 256) {
-    const R = 4,
-        S = 2 * N;
-    const L = (p) => 0.2126 * F[p * 4] + 0.7152 * F[p * 4 + 1] + 0.0722 * F[p * 4 + 2];
-    const I = new Float64Array((W + 1) * (H + 1));
-    for (let y = 0; y < H; y++)
-        for (let x = 0, s = 0; x < W; x++) {
-            s += m[y * W + x] === 1 ? 1 : 0;
-            I[(y + 1) * (W + 1) + x + 1] = I[y * (W + 1) + x + 1] + s;
-        }
-    const flaeche = (x0, y0, x1, y1) =>
-        I[y1 * (W + 1) + x1] - I[y0 * (W + 1) + x1] - I[y1 * (W + 1) + x0] + I[y0 * (W + 1) + x0];
-    let f = null;
-    for (let y0 = 0; y0 + N <= H; y0 += 32)
-        for (let x0 = 0; x0 + N <= W; x0 += 32) {
-            const c = flaeche(x0, y0, x0 + N, y0 + N);
-            if (!f || c > f.c) f = { x0, y0, c };
-        }
-    if (!f || f.c < 0.9 * N * N) return null;
-    const re = new Float64Array(S * S),
-        im = new Float64Array(S * S),
-        mr = new Float64Array(S * S),
-        mi = new Float64Array(S * S);
-    for (let y = 0; y < N; y++)
-        for (let x = 0; x < N; x++) {
-            const gx = f.x0 + x,
-                gy = f.y0 + y;
-            if (m[gy * W + gx] !== 1) continue;
-            let s = 0,
-                n = 0;
-            for (let j = -R; j <= R; j++)
-                for (let i = -R; i <= R; i++) {
-                    const xx = gx + i,
-                        yy = gy + j;
-                    if (xx < 0 || yy < 0 || xx >= W || yy >= H || m[yy * W + xx] !== 1) continue;
-                    s += L(yy * W + xx);
-                    n++;
-                }
-            re[y * S + x] = L(gy * W + gx) - s / n;
-            mr[y * S + x] = 1;
-        }
-    // die 2-D-FFT (Radix 2, an Ort) je Zeile und Spalte; die Autokorrelation = Rücktransformation des Leistungsspektrums
-    const zeile = (A, B, o, st, inv) => {
-        for (let i = 1, j = 0; i < S; i++) {
-            let b = S >> 1;
-            for (; j & b; b >>= 1) j ^= b;
-            j ^= b;
-            if (i < j) {
-                const p = o + i * st,
-                    q = o + j * st;
-                [A[p], A[q]] = [A[q], A[p]];
-                [B[p], B[q]] = [B[q], B[p]];
-            }
-        }
-        for (let len = 2; len <= S; len <<= 1) {
-            const w = ((inv ? 2 : -2) * Math.PI) / len;
-            for (let i = 0; i < S; i += len)
-                for (let k = 0; k < len / 2; k++) {
-                    const c = Math.cos(w * k),
-                        sn = Math.sin(w * k),
-                        p = o + (i + k) * st,
-                        q = o + (i + k + len / 2) * st;
-                    const xr = A[q] * c - B[q] * sn,
-                        xi = A[q] * sn + B[q] * c;
-                    [A[q], B[q], A[p], B[p]] = [A[p] - xr, B[p] - xi, A[p] + xr, B[p] + xi];
-                }
-        }
-    };
-    const auto = (A, B) => {
-        for (const inv of [false, true]) {
-            for (let y = 0; y < S; y++) zeile(A, B, y * S, 1, inv);
-            for (let x = 0; x < S; x++) zeile(A, B, x, S, inv);
-            if (!inv) for (let i = 0; i < A.length; i++) [A[i], B[i]] = [A[i] * A[i] + B[i] * B[i], 0];
-        }
-    };
-    auto(re, im);
-    auto(mr, mi);
-    const r0 = re[0] / mr[0];
-    const aus = { wert: 0, d: null, fenster: [f.x0, f.y0, N] };
-    if (!(r0 > 1e-9)) return aus;
-    aus.wert = -1;
-    for (let dy = -N / 2; dy <= N / 2; dy++)
-        for (let dx = 0; dx <= N / 2; dx++) {
-            if (Math.max(Math.abs(dx), Math.abs(dy)) < 8 || (dx === 0 && dy < 0)) continue;
-            const p = ((dy + S) % S) * S + dx;
-            if (mr[p] < 0.25 * mr[0]) continue;
-            const v = re[p] / mr[p] / r0;
-            if (v > aus.wert) [aus.wert, aus.d] = [v, [dx, dy]];
-        }
-    aus.wert = +aus.wert.toFixed(4);
-    return aus;
 }
 
 // DAS GESICHT IM BILD (rein, in der Seite als `__gesichtMasse`; K63-n2, `werkbank bild --gesicht`): die Züge, die KOPF_SOLL
@@ -2125,19 +2027,6 @@ function sollTafelSelbsttest(tafel, q) {
             const ist = klassenMasse(rauschBild(n, b, 7919), v1, n, n).beta;
             if (!(Math.abs(ist - b) < 0.35)) v.push(`Maß Mikro: β ${b} gemessen als ${ist}`);
         }
-        // DIE KACHEL: ein Rauschen (β 1) frei → unter 0,3; ein anderes als Kachel 24 px wiederholt → über 0,9 bei einem Vielfachen von 24
-        const N = 128,
-            frei = rauschBild(N, 1, 7919),
-            klein = rauschBild(N, 1, 104729),
-            kachel = Uint8Array.from({ length: N * N * 4 }, (_, i) => {
-                const p = i >> 2;
-                return klein[(((p / N) | 0) % 24) * N * 4 + ((p % N) % 24) * 4 + (i & 3)];
-            }),
-            vN = new Uint8Array(N * N).fill(1);
-        const kf = kachelMasse(frei, vN, N, N, 64),
-            kk = kachelMasse(kachel, vN, N, N, 64);
-        if (!(kf && kk && kf.wert < 0.3 && kk.wert > 0.9 && kk.d && kk.d.every((d) => d % 24 === 0)))
-            v.push(`Maß Kachel: frei ${kf && kf.wert}, Kachel 24 px ${kk && kk.wert} bei ${kk && kk.d} statt < 0,3 und > 0,9`);
     }
     // DIE SPIEGEL-TREUE (D10, A13) geeicht an einer gebauten Welt, je Pixel per Strahl (Kamera 2 m über dem See, waagrecht, 60°;
     // rechts ein Sandstreifen 0,4 m hoch, Bäume dahinter, fern ein Ufer mit Wald, Wolken-Bänder): der ideale Spiegel (F = 1) → ≥ 0,95
@@ -2708,7 +2597,6 @@ module.exports = {
         `window.spiegelPartner = ${spiegelPartner.toString()};` +
         `window.__spiegelDaten = ${spiegelDaten.toString()};` +
         `window.__klassenMasse = ${klassenMasse.toString()};` +
-        `window.__kachelMasse = ${kachelMasse.toString()};` +
         `window.__gesichtMasse = ${gesichtMasse.toString()};` +
         `window.__farbtonProbe = ${farbtonProbe.toString()};`,
 };
