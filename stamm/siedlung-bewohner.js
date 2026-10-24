@@ -427,7 +427,8 @@ class AnazhRealm_siedlung_bewohner {
     // gemischt, wie der Knoten des Satzes mischt (`_gangSatzKnoten`: der Stand gegen die Phasen k0 und k1 nach dem Gewicht des
     // Gangs; ungebacken der Stand), auf der Wurzel des Leibs. Ein Leib ohne Glieder (die Liste des Felds erschöpft) zeichnet
     // nirgends und kostet nichts. Bis stadt-takt-z15d ging je Schritt das Rig (`_animateHuman`) und die Welt-Matrix des
-    // ganzen Leibs (`_leibMatrix`) — am Messort stadt `_bewohnerGangSchritt` 98,5 ms je Sekunde (Radeon, 166 Gehende).
+    // ganzen Leibs (`_leibMatrix`) — am Messort stadt mittags (165 Gehende) `_bewohnerGangSchritt` 108,7 → 25,6 ms je
+    // Sekunde (Radeon); die Lage der Glieder weicht vom Rig höchstens 3,7 cm ab (der Atem, das Tempo des Back-Leibs).
     _bewohnerFeldLage(b, S) {
         const g = b.leib;
         const gl = g.userData._kzGlieder;
