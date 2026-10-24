@@ -416,7 +416,8 @@ class AnazhRealm_daten {
     // 19.10. an der GEZEICHNETEN Vorlage (Geometrie × lokale Matrix des Teils, beide Vorlagen, L1/L2) 0,606–0,683 m, dazu der
     // Hub im Sturm (WIND_GESETZ 0,035 m); die 0,17 vom 17.10. lasen das Studio-Gras ohne die Matrix — ein Büschel 0,4 m vor der
     // Wand steckte seine Halme durch sie in den Anbau (gate:haus-welt W9 misst die Weite an der Vorlage).
-    // DIE WIESE BIS ZUM SAUM (vegetation K1, das Tsushima-Gesetz in festen Ringen): die Büschel stehen bis `radius` 40 m —
+    // DIE WIESE BIS ZUM SAUM (vegetation K1, das Tsushima-Gesetz in festen Ringen): die Büschel stehen voll bis 40 m (`radius`
+    // 42, das Rand-Band dünnt erst jenseits des letzten festen Rings) —
     // L1 im Kreis `stufe1`, die Studio-L2 bis `karte`, dahinter die Karte der Wiese (`_nahWieseKarte`: zwei Tafeln, deren
     // Halme der Stoff rechnet; im Band ±`karteRand` gewürfelt). Bis `dicht` steht jedes Büschel; dahinter trägt der Abstand d
     // den Anteil dicht/d (ein Präfix der Würfel-Ordnung), jedes stehende um d/dicht breiter (`_nahWieseWahl`) — die Halm-
@@ -436,7 +437,7 @@ class AnazhRealm_daten {
                 karteRand: 2,
                 karteHalme: 0.77,
                 dicht: 20,
-                radius: 40,
+                radius: 42,
                 rand: 4,
                 sinken: 0.2,
                 kachelnJeTakt: 1,
