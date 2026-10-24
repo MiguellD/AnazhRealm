@@ -16,3 +16,4 @@ z14c-abab 1 abab A=18a846491377cb9898af2b5bb930234c249fa6ad B=056330d8a70fcdc617
 z14c-punkte 2 punkte sha=056330d8a70fcdc617df8c3ff62ec174c5d33995 geraet=gtx
 omen-z13-takt 1 station sha=056330d8a70fcdc617df8c3ff62ec174c5d33995 lauf=omen-z13-takt.sh
 z15d-abab 1 abab A=056330d8a70fcdc617df8c3ff62ec174c5d33995 B=3d2b3276b43471f4f38f8859a3c92ed62ca15abc zellen=w-ego,d-ego,stadt
+z15d-punkte 2 punkte sha=3d2b3276b43471f4f38f8859a3c92ed62ca15abc geraet=gtx
