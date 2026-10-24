@@ -5,6 +5,7 @@
 //   node punkte.cjs run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--port-basis 7700]
 //        fährt jede Station des Geräts im Spiel-Baum am SHA, schreibt messung/<sha8>-<geraet>.json
 //        --offen: nur die Stationen ohne frische Messung am SHA (das Frische-Urteil der Buchung) · --trocken: nur nennen
+//        Zwillinge (gleicher Befehl und Umgebung) fahren EINMAL; headless bis zu 3 Bahnen in eigenen Bäumen (--bahnen N)
 //   node punkte.cjs buchen --kopf <sha>
 //        liest alle messung/*.json, urteilt R6 (Pfad unberührt seit der Messung) und R10, schreibt stand.json
 //   node punkte.cjs liste        die registrierten Stationen, geprüft gegen src/gN.js
@@ -216,9 +217,16 @@ const SCHLOSS_WARTE_S = 2700; // gpu-lauf.sh GPU_LAUF_WARTE_S
 // fährt EINE Station; ctx = { baum, koord, port, aus, roh, geraet, gpuLauf, bash, deckelMinS }
 // Rückgabe { gruen, zahl, exit, minuten, grund? } — ein Fehler, ein Absturz, ein Deckel ist ROT mit Grund, nie still.
 function fahreStation(st, ctx) {
-    return new Promise((fertig) => {
+    return fahreGruppe([st], ctx).then((r) => r[0]);
+}
+// fährt den Befehl der ERSTEN Station EINMAL und urteilt jede Station der Gruppe über denselben Lauf — Zwillinge (gleicher
+// Befehl, gleiche Umgebung, z. B. Staffel 1 und 2 aus EINER Linse) kosten nie zwei Läufe; Rückgabe je Station ein Ergebnis
+function fahreGruppe(sts, ctx) {
+    const st = sts[0];
+    return new Promise((ganz) => {
         const t0 = Date.now();
         const min = () => +((Date.now() - t0) / 60000).toFixed(2);
+        const fertig = (e) => ganz(sts.map(() => e));
         const rot = (grund, exit = null, zahl = "") => fertig({ gruen: false, zahl: zahl || grund, exit, minuten: min(), grund });
         const deckelS = Math.max(ctx.deckelMinS != null ? ctx.deckelMinS : 120, Math.ceil(st.minuten * 60 * 2));
         let argv = st.befehl.map((a) => ersetze(a, ctx));
@@ -272,15 +280,19 @@ function fahreStation(st, ctx) {
             let j = null;
             if (fs.existsSync(ctx.aus))
                 try { j = JSON.parse(fs.readFileSync(ctx.aus, "utf8")); } catch (_e) { j = null; }
-            let u;
-            try {
-                u = st.urteil(j, { exit: code, stdout: out, stderr: err });
-            } catch (e) {
-                return rot("Urteil warf: " + String((e && e.message) || e).split("\n")[0], code);
-            }
-            if (!u || typeof u.gruen !== "boolean" || typeof u.zahl !== "string" || !u.zahl)
-                return rot("Urteil ungültig (verlangt { gruen: bool, zahl: Text })", code);
-            fertig({ gruen: u.gruen, zahl: u.zahl, exit: code, minuten: min(), ...(u.gruen ? {} : { grund: "ROT: " + u.zahl }) });
+            const m = min();
+            ganz(sts.map((s) => {
+                const r = (grund) => ({ gruen: false, zahl: grund, exit: code, minuten: m, grund });
+                let u;
+                try {
+                    u = s.urteil(j, { exit: code, stdout: out, stderr: err });
+                } catch (e) {
+                    return r("Urteil warf: " + String((e && e.message) || e).split("\n")[0]);
+                }
+                if (!u || typeof u.gruen !== "boolean" || typeof u.zahl !== "string" || !u.zahl)
+                    return r("Urteil ungültig (verlangt { gruen: bool, zahl: Text })");
+                return { gruen: u.gruen, zahl: u.zahl, exit: code, minuten: m, ...(u.gruen ? {} : { grund: "ROT: " + u.zahl }) };
+            }));
         });
     });
 }
@@ -364,20 +376,42 @@ async function run(opt) {
     const hilfe = hilfeText();
     const ctx0 = { baum, koord: KOORD, geraet: opt.geraet, bash: findeBash(),
         gpuLauf: process.env.PUNKTE_GPU_LAUF || path.join(repo, "artifacts", "profiband", "werkzeug", "gpu-lauf.sh") };
-    console.log("Punkte-Maschine: " + meine.length + " Station(en) auf " + opt.geraet + " am " + sha.slice(0, 8) + " (Baum " + baum + ")");
+    // Zwillinge (gleicher Befehl, gleiche Umgebung) fahren EINMAL; headless fahren bis zu drei Gruppen zugleich, jede Bahn im
+    // EIGENEN Spiel-Baum (Spielstände, Rohdateien), eine GPU-Station wartet ohnehin am Schloss — dort EINE Bahn
+    const gruppen = [];
+    const je = new Map();
     for (const st of meine) {
-        const id = schluessel(st);
-        const datei2 = id.replace("#", "_");
-        const ctx = { ...ctx0, port: ports.get(id), aus: path.join(rohDir, datei2 + ".json"), roh: path.join(rohDir, datei2 + ".out") };
-        fs.mkdirSync(rohDir, { recursive: true });
-        const zeit = new Date().toISOString();
-        const e = await fahreStation(st, ctx);
-        m.je[id] = { ...e, zeit, abdruck: abdruck(st, hilfe), port: ctx.port };
-        m.zeit = zeit;
-        m.host = os.hostname();
-        fs.writeFileSync(datei, JSON.stringify(m, null, 1) + "\n");
-        console.log("  " + (e.gruen ? "GRÜN" : "ROT ") + " " + id + " · " + e.zahl + " · Exit " + e.exit + " · " + e.minuten + " min");
+        const k = JSON.stringify([st.befehl, st.env || {}, !!st.gpu]);
+        if (!je.has(k)) { je.set(k, []); gruppen.push(je.get(k)); }
+        je.get(k).push(st);
     }
+    const bahnen = Math.max(1, Math.min(gruppen.length, Number(opt.bahnen || (opt.geraet === "headless" ? 3 : 1))));
+    const baeume = [baum];
+    for (let i = 2; i <= bahnen; i++) baeume.push(baumAmSha(repo, opt.geraet + "-" + i, sha));
+    console.log("Punkte-Maschine: " + meine.length + " Station(en) in " + gruppen.length + " Läufen auf " + opt.geraet + " am " +
+        sha.slice(0, 8) + ", " + bahnen + " Bahn(en) (Baum " + baeume.join(", ") + ")");
+    fs.mkdirSync(rohDir, { recursive: true });
+    const schlange = gruppen.slice();
+    const bahn = async (b) => {
+        for (let g = schlange.shift(); g; g = schlange.shift()) {
+            const ids = g.map(schluessel);
+            const ctx = { ...ctx0, baum: b, port: ports.get(ids[0]), aus: path.join(rohDir, ids[0].replace("#", "_") + ".json"),
+                roh: path.join(rohDir, ids[0].replace("#", "_") + ".out") };
+            const zeit = new Date().toISOString();
+            const es = await fahreGruppe(g, ctx);
+            g.forEach((st, i) => {
+                const id = ids[i];
+                if (i > 0 && fs.existsSync(ctx.roh)) fs.copyFileSync(ctx.roh, path.join(rohDir, id.replace("#", "_") + ".out"));
+                m.je[id] = { ...es[i], zeit, abdruck: abdruck(st, hilfe), port: ctx.port, ...(i > 0 ? { zwilling: ids[0] } : {}) };
+                console.log("  " + (es[i].gruen ? "GRÜN" : "ROT ") + " " + id + " · " + es[i].zahl + " · Exit " + es[i].exit + " · " +
+                    es[i].minuten + " min" + (i > 0 ? " (Zwilling von " + ids[0] + ")" : ""));
+            });
+            m.zeit = zeit;
+            m.host = os.hostname();
+            fs.writeFileSync(datei, JSON.stringify(m, null, 1) + "\n");
+        }
+    };
+    await Promise.all(baeume.map((b) => bahn(b)));
     console.log("→ " + path.relative(KOORD, datei));
     return m;
 }
