@@ -432,7 +432,7 @@ async function probe(A) {
         for (let i = 0; i < 30; i++)
             try {
                 frame();
-            } catch (_e) {}
+            } catch {}
     };
     // Das Wasser über dem Boden an (x, z), wo es über ihm steht (sonst −Infinity): das gezeichnete (`_wasserBildAt`) und —
     // `gesetz` — das des Gesetzes, aus dem das Bild wird (`_atlasWaterLevelAt` über dem Boden: ein Fern-Chunk zeichnet einen
@@ -663,7 +663,7 @@ async function probe(A) {
                 st.playerMesh.position.set(PX, r._voxelSurfaceY(PX, PZ) + 1.8, PZ);
                 try {
                     frame();
-                } catch (_e) {}
+                } catch {}
                 if (i % 20 === 0) await new Promise((res) => setTimeout(res, 0));
             }
             st.playerMesh.position.set(PX, r._voxelSurfaceY(PX, PZ) + 1.8, PZ);
@@ -677,7 +677,7 @@ async function probe(A) {
             for (let i = 0; i < 60; i++) {
                 try {
                     frame();
-                } catch (_e) {}
+                } catch {}
                 if (i % 20 === 0) await new Promise((res) => setTimeout(res, 0));
             }
             zensus.quelle = "strom";
@@ -707,7 +707,7 @@ async function probe(A) {
             st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
             try {
                 frame();
-            } catch (_e) {}
+            } catch {}
             const n = st.voxelChunks ? st.voxelChunks.size : 0;
             still = n === last ? still + 1 : 0;
             last = n;
@@ -717,7 +717,7 @@ async function probe(A) {
         for (let i = 0; i < nachlauf; i++) {
             try {
                 frame();
-            } catch (_e) {}
+            } catch {}
             if (i % 20 === 0) await new Promise((res) => setTimeout(res, 0));
         }
     };
@@ -772,7 +772,7 @@ async function probe(A) {
                 for (let i = 0; i < A.takte; i++) {
                     try {
                         frame();
-                    } catch (_e) {}
+                    } catch {}
                     if (i % 20 === 0) await new Promise((res) => setTimeout(res, 0));
                 }
                 out.hain = {
@@ -1380,7 +1380,7 @@ async function probe(A) {
                 for (let i = 0; i < 30; i++)
                     try {
                         frame();
-                    } catch (_e) {}
+                    } catch {}
                 stelle(cx, cz);
                 // der Blick auf DIESEN See (`_blickVorn`: vorn = (sin, cos) der Gier), nie auf ein anderes Ufer
                 st.yaw = Math.atan2(A.rand.see[0] - cx, A.rand.see[1] - cz);
@@ -1399,7 +1399,7 @@ async function probe(A) {
                         for (let i = 0; i < 10; i++)
                             try {
                                 frame();
-                            } catch (_e) {}
+                            } catch {}
                         await new Promise((res2) => setTimeout(res2, 50));
                         echo = el
                             ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(sofort.length).slice(0, 300)
@@ -1507,7 +1507,7 @@ async function probe(A) {
                     for (let i = 0; i < A.rand.takte; i++) {
                         try {
                             frame();
-                        } catch (_e) {}
+                        } catch {}
                         if (i % 20 === 0) await new Promise((res2) => setTimeout(res2, 0));
                     }
                 };
@@ -1517,7 +1517,7 @@ async function probe(A) {
                     for (let i = 0; i < 30; i++)
                         try {
                             frame();
-                        } catch (_e) {}
+                        } catch {}
                     await new Promise((res2) => setTimeout(res2, 0));
                     const z = zaehlen();
                     ruhig = z.nass === vor.nass && z.bild === vor.bild ? ruhig + 1 : 0;
@@ -1659,7 +1659,7 @@ async function probe(A) {
                     };
                     try {
                         o[m](...args);
-                    } catch (_e) {
+                    } catch {
                         /* ein Wurf NACH dem Ruf entwertet den Konsum nicht */
                     } finally {
                         if (eigen) r[lief] = alt;
@@ -1717,7 +1717,7 @@ async function probe(A) {
                 if (gt && gt._fahr) {
                     try {
                         r.dismountArchitecture();
-                    } catch (_e) {
+                    } catch {
                         /* steht niemand im Wagen, ist nichts zu lösen */
                     }
                     (r._fahrLos || (r._fahrLos = new Set())).add(gt);
@@ -1758,7 +1758,7 @@ async function dammProbe(A) {
         tMs += MUSTER[nFrame++ % MUSTER.length];
         try {
             r._gameLoopTick(tMs);
-        } catch (_e) {}
+        } catch {}
     };
     const takte = async (n) => {
         for (let i = 0; i < n; i++) {
