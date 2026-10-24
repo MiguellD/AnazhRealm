@@ -360,7 +360,9 @@ module.exports = [
             "2 = alle Rollen an Mess-Wiese und 25°-Hang, in Fahrt, beide Geräte, jede Rolle ruft benannt EINE Funktion (Ratsche)",
     },
 
-    // ── wetter.K1 ── gate:wetter-wache (Z): 20 min Spiel-Zeit, Saat × Ort (3 km) × Wanduhr (steht | 120 s je Takt)
+    // ── wetter.K1 ── gate:wetter-wache (Z): 20 min Spiel-Zeit in Takten des Zugs, Saat × Ort (3 km windab) × Wanduhr (steht |
+    // 120 s je Takt). Staffel 2 (die Front am Ort) hebt das globale Wort auf: die Folge gleicht sich JE ORT über die Wanduhren,
+    // die andere Saat zieht eine andere; jeder Wechsel geht über `_setWeather` (überblendet).
     {
         kriterium: "wetter.K1",
         staffel: 1,
@@ -380,18 +382,20 @@ module.exports = [
             const b = l.filter((x) => x.saat === "saat-b");
             if (a.length < 4 || !b.length) return { gruen: false, zahl: "Saat-Zeilen fehlen: " + a.length + " × a, " + b.length + " × b (Exit " + lauf.exit + ")" };
             const zuege = a[0].folge.split(" ").length;
-            const voll = l.every((x) => x.folge.split(" ").length === zuege && x.fade === zuege);
-            const orte = new Set(a.map((x) => x.ort)).size;
+            const wechsel = (f) => f.split(" ").filter((w, i, x) => w !== (i ? x[i - 1] : "sunny")).length;
+            const voll = l.every((x) => x.folge.split(" ").length === zuege && x.fade === wechsel(x.folge) && x.fade > 0);
+            const je = new Map();
+            for (const x of a) je.set(x.ort, (je.get(x.ort) || []).concat(x.folge));
             const uhren = new Set(a.map((x) => x.uhr)).size;
-            const gleich = a.every((x) => x.folge === a[0].folge);
-            const anders = b.every((x) => x.folge !== a[0].folge);
+            const gleich = [...je.values()].every((f) => f.every((y) => y === f[0]));
+            const anders = b.every((x) => x.folge !== (je.get(x.ort) || [""])[0]);
             const saatRot = /\(Z\) SAAT/.test(lauf.stderr || "");
-            const gruen = zuege >= 10 && voll && orte >= 2 && uhren >= 2 && gleich && anders && !saatRot;
+            const gruen = zuege >= 10 && voll && je.size >= 2 && uhren >= 2 && gleich && anders && !saatRot;
             return {
                 gruen,
                 zahl:
-                    "saat-a an " + orte + " Orten × " + uhren + " Wanduhren " + (gleich ? "gleich" : "VERSCHIEDEN") + " (" + zuege +
-                    " Züge: " + a[0].folge + "), saat-b " + (anders ? "anders" : "GLEICH") + (voll ? "" : ", ein Zug nicht überblendet"),
+                    "saat-a je Ort (" + je.size + ") über " + uhren + " Wanduhren " + (gleich ? "gleich" : "VERSCHIEDEN") + " (" + zuege +
+                    " Takte: " + a[0].folge + "), saat-b " + (anders ? "anders" : "GLEICH") + (voll ? "" : ", ein Wechsel nicht überblendet"),
             };
         },
         pfad: [
@@ -405,6 +409,48 @@ module.exports = [
             "scripts/lib/welt-boot.cjs",
         ],
         quelle: "1 = das Wetter-Wort entsteht aus Saat + Spielzeit + Schreib-Akten statt aus der Wanduhr (global, gemessen)",
+    },
+
+    // ── wetter.K1 ── gate:wetter-wache (F): die Front am Ort — 20 min Spiel-Zeit in Ereignis-Takten von 5 s an A (der Spieler) und
+    // B (3 km windab) über `_wetterAmOrt`, die Worte an 4 096 Orten, der Sturm des Kerns (phyto-core wetterAt) im Zug der Welt und
+    // im Wetterspiel des Labors (worlds/terrain, Rechnung ohne Bild)
+    {
+        kriterium: "wetter.K1",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-wetter-wache.cjs"],
+        env: { WETTER_WACHE_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const m = /^\s*Front · Regen an A bei trockenem B (\d+) % · Lag (\d+) s \(Soll (\d+) s ±20 %\) · Worte (\d)\/5 \(([^)]*)\) · Mutation des Kerns: Welt (\w+), Labor (\w+)\s*$/m.exec(
+                String(lauf.stdout || "")
+            );
+            if (!m) return { gruen: false, zahl: "keine Front-Zeile (Exit " + lauf.exit + ")" };
+            const [nass, lag, soll, worte, welt, labor] = [+m[1], +m[2], +m[3], +m[4], m[6], m[7]];
+            const rot = /\(F\) /.test(lauf.stderr || "");
+            const gruen = nass >= 20 && Math.abs(lag - soll) <= 0.2 * soll && worte === 5 && welt === "stormy" && labor === "sturm" && !rot;
+            return {
+                gruen,
+                zahl:
+                    "Regen an A bei trockenem B " + nass + " % · Lag " + lag + " s (Soll " + soll + " s ±20 %) · Worte " + worte + "/5 (" +
+                    m[5] + ") · Mutation des Kerns: Welt " + welt + ", Labor " + labor,
+            };
+        },
+        pfad: [
+            "stamm/dirigent-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/feld-*.js",
+            "stamm/daten.js",
+            "phyto-core.js",
+            "foundry-core.js",
+            "worlds/terrain/phytogenesis.js",
+            "worlds/terrain/index.html",
+            "scripts/diag-wetter-wache.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = die Front am Ort: Regen an A bei trockenem B ≥ 20 % der Zeit, Lag = Abstand ÷ Wind ±20 %, alle 5 Labor-Zeilen erreichbar, die Mutation der Kern-Funktion zieht Labor und Welt",
     },
 
     // ── wetter.K2 ── gate:naesse:echt: klar gegen 10 min Regen als Spieler-Wort aus dem Ausgabe-Pfad (echter Renderer)
@@ -487,6 +533,50 @@ module.exports = [
             "scripts/lib/welt-boot.cjs",
         ],
         quelle: "1 = EIN Term, global, die Richtung aus der Saat am Verhalten gemessen",
+    },
+
+    // ── wetter.K5 ── gate:kopplung F3 Feld: der EINE Wind am Ort (`_windAt`), vom Gelände geformt (gelaende-core windForm) —
+    // Lee und Tal-Düse am Gesetz (Bühnen-Höhe), die Form an 41 × 41 Orten der Welt, und die Mutation „Wind ×0" zieht jeden der
+    // fünf Leser (Wasser-Kräusel, Regen-Drift bis zum Boden seines Gesetzes, Tuch, Rauch des Feuers, Wagen-Seitenkraft)
+    {
+        kriterium: "wetter.K5",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kopplung.cjs"],
+        env: { KOPPLUNG_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const m = /^\s*F3 Feld: Lee (-?\d+) % · Tal-Düse \+(-?\d+) % · Welt ([\d.]+)–([\d.]+) · Leser (\d+)\/(\d+) folgen ×0 \((.*)\)\s*$/m.exec(out);
+            if (!m) return { gruen: false, zahl: "keine F3-Feld-Zeile (Exit " + lauf.exit + ")" };
+            const [lee, duese, min, max, folgen, leser] = [+m[1], +m[2], +m[3], +m[4], +m[5], +m[6]];
+            const fuenf = ["wasser", "regen", "tuch", "rauch", "wagen"].filter((n) => new RegExp("(^| )" + n + " ").test(m[7]));
+            const f3 = out.split(/\r?\n/).filter((z) => /❌\s*F3/.test(z));
+            const gruen =
+                Math.abs(lee + 40) <= 2 && Math.abs(duese - 20) <= 2 && min <= 0.7 && max >= 1.1 && folgen === leser && fuenf.length === 5 &&
+                !f3.length && !/PAGE-ERROR|FEHLER pageerror/.test(out);
+            return {
+                gruen,
+                zahl:
+                    "Lee " + lee + " % · Tal-Düse +" + duese + " % · Welt " + min + "–" + max + " · " + folgen + "/" + leser + " Leser folgen ×0, " +
+                    fuenf.length + "/5 benannt (" + m[7] + ")",
+            };
+        },
+        pfad: [
+            "stamm/stoff-material.js",
+            "stamm/bild-*.js",
+            "stamm/koerper-*.js",
+            "stamm/siedlung-ort.js",
+            "stamm/dirigent-takt.js",
+            "stamm/daten.js",
+            "gelaende-core.js",
+            "phyto-core.js",
+            "vehicle-core.js",
+            "scripts/diag-kopplung.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = Lee −40 %, Tal-Düse +20 %, und jeder Leser außer Pflanze und Ohr (Wasser-Kräusel, Regen-Drift, Tuch, Feuer, Wagen-Seitenkraft) liest dieselbe Funktion (Mutation)",
     },
 
     // ── physik.K2 ── (Null-Renderer, Mechanik, als solche benannt) ZWEI Linsen in EINEM Lauf: das Durchdringen misst
@@ -656,9 +746,7 @@ module.exports.fehlt = [
     { kriterium: "gelaende.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: Damm (b) und Ferne (d, byte-Diff am Ring) misst keine Linse; Ego und GTX ungemessen" },
     { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug fehlt: 12 Posen (Ego/Third × Mittag/Nacht/Regen × beide Geräte) und die Fließ-Anisotropie (ohne Soll im Code)" },
     { kriterium: "gelaende.K4", staffel: 2, befehl: null, grund: "Werkzeug fehlt: die Mutation läuft nur am See der Mess-Wiese (nicht überall); „jeder Lauf endet in See oder Meer“ und „die Strömung treibt“ (gate:kopplung F1) sind getrennte Linsen ohne gemeinsames Urteil" },
-    { kriterium: "wetter.K1", staffel: 2, befehl: null, grund: "nicht gebaut: das Wetter bleibt EIN globales Wort (`_setWeather`), keine Front am Ort; die Welt kennt 3 der 5 Zeilen von WX_GESETZ" },
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Pfützen in den Mulden, keine Trocken-Kurve, kein Third" },
-    { kriterium: "wetter.K5", staffel: 2, befehl: null, grund: "nicht gebaut: kein Gelände formt den Wind (Lee, Tal-Düse); die Leser-Mutation von `_windAt` misst keine Linse" },
     { kriterium: "physik.K1", staffel: 1, befehl: null, grund: "Werkzeug fehlt: keine Stoß-Matrix (Δv-Verhältnis = Massen-Verhältnis ±5 %, Masse aus Volumen × ρ) im Baum; der Beleg zitiert Code (`_stossPaar`, `_leibMasse`), die Kreatur-Probe temperament prüft nur, dass Temperament und Beute die EINE Masse lesen (R3)" },
     { kriterium: "physik.K1", staffel: 2, befehl: null, grund: "nicht gebaut: Gebautes wiegt nichts (bau-buch dichte [0,1]-normiert), die Schmiede trägt ρ für 4 Stoffe — zwei Skalen" },
     { kriterium: "physik.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: der Wagen bei vmax × 1,2 gegen die 0,35-m-Mauer und die Bild-Probe (Spalt Leib–Wand ≤ 5 cm) auf beiden Geräten — gate:kollision-bild läuft auf dem Null-Renderer" },
