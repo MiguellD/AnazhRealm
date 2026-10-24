@@ -9,3 +9,4 @@ z13-abab LANGSAMER abab 18a84649 gegen 833bbc24: w-ego 4+4 nicht-langsamer · d-
 z10b-punkte gemessen punkte 833bbc24 gtx: 23 grün / 6 rot
 z14c-abab nicht-langsamer abab 056330d8 gegen 18a84649: w-ego 2+2 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 2+2 nicht-langsamer
 omen-z13-takt Exit0 station omen-z13-takt.sh an 056330d8
+z13-punkte gemessen punkte 18a84649 gtx: 27 grün / 5 rot
