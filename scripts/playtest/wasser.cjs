@@ -317,7 +317,7 @@ async function checkBandHydrosphere(ctx) {
         if (r.state.worldMeta) r.state.worldMeta.voxelEdits = [];
         // (2) der Carve-Index ist an state.hydrosphere verdrahtet
         out.indexWired =
-            Array.isArray(hydro.riverBuckets) &&
+            hydro.kanal.seg instanceof Float64Array &&
             hydro.lakeBedCell instanceof Float32Array &&
             hydro.lakeW instanceof Float32Array &&
             hydro.lakeNear instanceof Uint8Array &&
@@ -445,7 +445,7 @@ async function checkBandHydrosphere(ctx) {
     if (voxelV943d && !voxelV943d.error) {
         const d = voxelV943d;
         check(
-            "Voxel V9.43-d: der Carve-Index ist an state.hydrosphere verdrahtet (riverBuckets/lakeBedCell/lakeW/lakeNear)",
+            "Voxel V9.43-d: der Carve-Index ist an state.hydrosphere verdrahtet (kanal/lakeBedCell/lakeW/lakeNear)",
             d.indexWired
         );
         check(

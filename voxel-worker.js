@@ -57,6 +57,8 @@ importScripts((self.__anazhBase || "") + "phyto-core.js" + (__phytoV ? "?v=" + _
 importScripts((self.__anazhBase || "") + "gelaende-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
 const G = self.__gelaendeCore;
 if (!G || typeof G.hoehe !== "function") throw new Error("voxel-worker: gelaende-core fehlt");
+// die Zahlen je Segment des gepackten Kanal-Index (gelaende-core `hydroBuildCarveIndex`)
+const KANAL_FELDER = G.KANAL_FELDER;
 
 // State-Container — wird per init-Message gesetzt + per state-update-Delta gepflegt.
 const state = {
@@ -64,8 +66,9 @@ const state = {
     noise: null,
     baseHeight: 0,
     waterLevel: 0,
-    hydrosphere: null, // { ready, originX, originZ, cell, dim, riverBuckets, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear, water:{waterY, waterKind} }
+    hydrosphere: null, // { ready, originX, originZ, cell, dim, kanal, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear, water:{waterY, waterKind} }
     hydroTiles: null, // A3 (V18.132) — {key: tile} ferne Kacheln (gleicher Feld-Satz wie hydrosphere)
+    hydroWelt: null, // die Welt der Regionen (`_hydroWelt` des Mains): eine neue im Stand räumt sie
     hydroBand: null, // V9.91 — { top, bottom } für Cell-Klassifikation-Skip
     voxelEdits: [], // Array of { x, y, z, r, mode } — die EINE Liste, ohne Deckel; gelesen über die Edit-Karte
     hydroComputing: false,
@@ -92,9 +95,11 @@ const state = {
 self.onmessage = function (e) {
     const msg = e.data;
     if (!msg || !msg.type) return;
+    if (warten) return void warten.push(e); // die Regionen des Voxel-Fadens kommen zuerst (`hydroVom`)
     try {
         if (msg.type === "init" || msg.type === "state-set") {
             applyStateSnapshot(msg.snapshot);
+            if (msg.hydroVon) hydroVom(msg.hydroVon);
             self.postMessage({ type: "ack", op: msg.type, requestId: msg.requestId || null });
         } else if (msg.type === "state-update") {
             applyStateDelta(msg.delta);
@@ -105,12 +110,23 @@ self.onmessage = function (e) {
             // antwortet dem Main per Transfer (`hydroAntwort`), ein Neben-Faden behält sie nur. Jeder Auftrag dahinter liest sie.
             const h = hydroRegion(msg.key, msg.origin || null);
             if (msg.requestId) {
-                const a = hydroAntwort(h);
+                const a = hydroAntwort(h, true);
                 self.postMessage(
                     { type: "hydro-result", requestId: msg.requestId, key: msg.key, region: a.region },
                     a.transfer
                 );
             }
+        } else if (msg.type === "hydro-an") {
+            // DIE REGIONEN AN EINEN NEBEN-FADEN: ein Faden, der nach einer Bestellung geboren wurde, rechnete sie nicht — dieser
+            // Faden reicht ihm jede, die er trägt (alle Bestellungen vor dem Port stehen hier schon), je eine Kopie per Transfer.
+            // Der Haupt-Faden klont nie eine Region (bis zur Karte streaming-k5 klonte sein Geburts-Stand sie, 0,23 MB je Boot).
+            const regionen = Object.entries(state.hydroTiles || {});
+            if (state.hydrosphere) regionen.unshift(["heim", state.hydrosphere]);
+            for (const [key, h] of regionen) {
+                const a = hydroAntwort(h, false);
+                msg.port.postMessage({ key, region: a.region }, a.transfer);
+            }
+            msg.port.postMessage({ fertig: true });
         } else if (msg.type === "density-grid") {
             const { ox, oy, oz, dimX, dimY, dimZ, step, requestId } = msg;
             const density = computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step);
@@ -139,15 +155,16 @@ self.onmessage = function (e) {
             // Nachbarschaft mit gezeichnetem Dach selbst, `_waterSheetCaFree`).
             const { cx, cz, requestId, smoothPasses } = msg;
             // DIE ZELLEN DES FADENS (Karte hydro-faden): ein Verweis `{ zid }` nimmt die Zellen, die dieser Faden für den Chunk
-            // baute und unverändert beim Main liegen (`zellen`); fehlt einer, fragt der Main mit den Zellen selbst nach.
-            let fehlt = false;
+            // baute und unverändert beim Main liegen (`zellen`); fehlt einer, nennt die Antwort ihn, und der Main fragt mit
+            // genau diesen Zellen nach (bis zur Karte streaming-k5 mit allen neun: 2,9 MB je Minute Fahrt).
+            const fehlt = [];
             const cells = msg.cells.map((c, i) => {
                 if (!c || !(c.zid > 0)) return c;
                 const z = (zellen.get(cx + ((i % 3) - 1) + "," + (cz + ((i / 3) | 0) - 1)) || []).find(
                     (b) => b.zid === c.zid
                 );
                 if (!z) {
-                    fehlt = true;
+                    fehlt.push(i);
                     return null;
                 }
                 if (!c.fest) return z.cells;
@@ -156,8 +173,8 @@ self.onmessage = function (e) {
                 for (let j = 0; j < c.fest.length; j++) k[c.fest[j]] = CELL_STATE.SOLID;
                 return k;
             });
-            if (fehlt) {
-                self.postMessage({ type: "water-sheet-result", requestId, fehlt: true });
+            if (fehlt.length) {
+                self.postMessage({ type: "water-sheet-result", requestId, fehlt });
                 return;
             }
             const ctx = {
@@ -648,7 +665,7 @@ function waldCtx(msg) {
         return typeof vy === "number" && Number.isFinite(vy) ? vy : state.baseHeight || 0;
     };
     return {
-        F: msg.F,
+        F: fernK().forest, // das Wald-Gesetz des Stands (FOREST), nie je Auftrag
         baseH: state.baseHeight || 0,
         extras: msg.extras,
         fbm: forestFbm,
@@ -680,12 +697,14 @@ function applyStateSnapshot(snap) {
     }
     if (typeof snap.baseHeight === "number") state.baseHeight = snap.baseHeight;
     if (typeof snap.waterLevel === "number") state.waterLevel = snap.waterLevel;
-    if (snap.hydrosphere !== undefined) state.hydrosphere = snap.hydrosphere;
+    // eine neue Welt räumt die Regionen (der Stand trägt keine: jeder Faden rechnet sie, ein Neben-Faden bekommt sie vom Voxel-Faden)
+    if (snap.hydroWelt !== state.hydroWelt) {
+        state.hydroWelt = snap.hydroWelt;
+        state.hydrosphere = null;
+        state.hydroTiles = null;
+    }
     if (snap.hydroBand !== undefined) state.hydroBand = snap.hydroBand;
-    if (snap.hydroTiles !== undefined) state.hydroTiles = snap.hydroTiles; // A3 (V18.132)
     if (snap.voxelEdits !== undefined) state.voxelEdits = snap.voxelEdits;
-    // eine Region, die dieser Faden nicht selbst rechnete (er wurde nach ihrer Bestellung geboren, `_hydroAn` im Main)
-    if (snap.hydroRegion) hydroSetzen(snap.hydroRegion.key, snap.hydroRegion.h);
     if (snap.hydroGesetz) state.hydroGesetz = snap.hydroGesetz;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): genVersion-Schleuse mit-laden.
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
@@ -947,16 +966,39 @@ function hydroSetzen(key, h) {
     state.hydroBand = G.hydroBand(typeof state.waterLevel === "number" ? state.waterLevel : 0, regionen);
 }
 
-// Die Antwort an den Main (Lehre 24): die Felder der Region reisen per Transfer — der Faden behält seine eigenen und kopiert
-// sie hier (die Kopie liegt im Faden, nie im Haupt-Faden); Flüsse, Seen, Fälle und der Kanal-Index reisen als Daten.
-function hydroAntwort(h) {
-    const lakeBedCell = h.lakeBedCell.slice();
-    const lakeW = h.lakeW.slice();
-    const lakeNear = h.lakeNear.slice();
-    const waterY = h.water.waterY.slice();
-    const waterKind = h.water.waterKind.slice();
-    const region = Object.assign({}, h, { lakeBedCell, lakeW, lakeNear, water: { waterY, waterKind } });
-    return { region, transfer: [lakeBedCell.buffer, lakeW.buffer, lakeNear.buffer, waterY.buffer, waterKind.buffer] };
+// Die Antwort an einen Faden (Lehre 24): jedes Feld der Region reist per Transfer — der Faden behält seine eigenen und kopiert
+// sie hier (die Kopie liegt im Faden, nie im Haupt-Faden): die Felder, der Kanal und für den Main (`daten`) Flüsse und Seen
+// als Bytes ihres JSON (im Spiel liest sie niemand, erst ein Leser entpackt sie, `hydro-result` im Main); die Fälle (wenige je
+// Kachel, der Klang liest sie) und die Zahlen reisen als Daten.
+function hydroAntwort(h, daten) {
+    const { rivers, lakes, kanal: k, ...rest } = h;
+    const kanal = { seg: k.seg.slice(), ab: k.ab.slice(), idx: k.idx.slice() };
+    const felder = {
+        lakeBedCell: h.lakeBedCell.slice(),
+        lakeW: h.lakeW.slice(),
+        lakeNear: h.lakeNear.slice(),
+        water: { waterY: h.water.waterY.slice(), waterKind: h.water.waterKind.slice() },
+    };
+    const region = Object.assign(rest, felder, { kanal, fluesse: rivers.length, seen: lakes.length });
+    if (daten) region.daten = new self.TextEncoder().encode(JSON.stringify({ rivers, lakes }));
+    const transfer = [kanal.seg, kanal.ab, kanal.idx, felder.lakeBedCell, felder.lakeW, felder.lakeNear]
+        .concat(felder.water.waterY, felder.water.waterKind, daten ? region.daten : [])
+        .map((a) => a.buffer);
+    return { region, transfer };
+}
+
+// DIE REGIONEN VOM VOXEL-FADEN (ein Neben-Faden, geboren nach ihrer Bestellung): jede Nachricht hinter seinem Stand wartet, bis
+// der Port sie gebracht hat (`hydro-an`) — derselbe Zustand wie in jedem Faden, der sie selbst rechnete.
+let warten = null;
+function hydroVom(port) {
+    warten = [];
+    port.onmessage = (e) => {
+        if (!e.data.fertig) return void hydroSetzen(e.data.key, e.data.region);
+        port.close();
+        const liste = warten;
+        warten = null;
+        for (const m of liste) self.onmessage(m);
+    };
 }
 
 // A3 (V18.132) — Mirror der Region-Aufloesung (`_hydroFor` im Stamm): Heimat-Region wenn (x,z) in ihr, sonst die
@@ -982,15 +1024,15 @@ function hydroFor(x, z) {
 function hydrosphereCarveAt(x, z) {
     const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
     if (!h || !h.ready) return null;
-    const rb = h.riverBuckets;
-    if (!rb) return null;
+    const kanal = h.kanal;
+    if (!kanal) return null;
     const bs = h.bucketSize;
     const bd = h.bucketsDim;
     const bi = Math.floor((x - h.originX) / bs);
     const bj = Math.floor((z - h.originZ) / bs);
     if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
-    const list = rb[bj * bd + bi];
-    if (!list) return null;
+    const kb = bj * bd + bi;
+    if (kanal.ab[kb] === kanal.ab[kb + 1]) return null;
     const H = state.hydroGesetz;
     const sN = H.bankNeigung;
     const sK = H.bankKruemmung;
@@ -998,22 +1040,32 @@ function hydrosphereCarveAt(x, z) {
     const kB = H.dammBreite;
     let P = Infinity;
     let L = -Infinity;
-    for (let s = 0; s < list.length; s++) {
-        const seg = list[s];
-        const ex = seg.bx - seg.ax;
-        const ez = seg.bz - seg.az;
+    for (let q = kanal.ab[kb]; q < kanal.ab[kb + 1]; q++) {
+        const o = kanal.idx[q] * KANAL_FELDER;
+        const ax = kanal.seg[o];
+        const az = kanal.seg[o + 1];
+        const bx = kanal.seg[o + 2];
+        const bz = kanal.seg[o + 3];
+        const hwA = kanal.seg[o + 4];
+        const hwB = kanal.seg[o + 5];
+        const dA = kanal.seg[o + 6];
+        const dB = kanal.seg[o + 7];
+        const sA = kanal.seg[o + 8];
+        const sB = kanal.seg[o + 9];
+        const ex = bx - ax;
+        const ez = bz - az;
         const len2 = ex * ex + ez * ez || 1;
-        let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+        let t = ((x - ax) * ex + (z - az) * ez) / len2;
         if (t < 0) t = 0;
         else if (t > 1) t = 1;
-        const px = seg.ax + ex * t;
-        const pz = seg.az + ez * t;
+        const px = ax + ex * t;
+        const pz = az + ez * t;
         const dist = Math.hypot(x - px, z - pz);
-        const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
-        const D = seg.dA + (seg.dB - seg.dA) * t;
+        const halfW = hwA + (hwB - hwA) * t;
+        const D = dA + (dB - dA) * t;
         const dK = halfW + D / sN;
         if (dist >= dK + kB + H.bankWeite) continue;
-        const spiegel = seg.sA + (seg.sB - seg.sA) * t;
+        const spiegel = sA + (sB - sA) * t;
         const B = spiegel - (1 - H.spiegelFreibord) * D;
         const u0 = dist - halfW;
         let p = u0 <= -fuss ? B : u0 < fuss ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss) : B + sN * u0;
@@ -1338,28 +1390,35 @@ function worldFieldAt(x, z) {
 // Mirror von `_hydroSpiegelQuer` (bit-identisch): der Spiegel des nächsten Fluss-Segments, auch jenseits der Krone.
 function hydroSpiegelQuer(x, z) {
     const h = hydroFor(x, z);
-    if (!h || !h.ready || !h.riverBuckets) return -Infinity;
+    if (!h || !h.ready || !h.kanal) return -Infinity;
+    const kanal = h.kanal;
     const bs = h.bucketSize;
     const bd = h.bucketsDim;
     const bi = Math.floor((x - h.originX) / bs);
     const bj = Math.floor((z - h.originZ) / bs);
     if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return -Infinity;
-    const list = h.riverBuckets[bj * bd + bi];
-    if (!list) return -Infinity;
+    const kb = bj * bd + bi;
+    if (kanal.ab[kb] === kanal.ab[kb + 1]) return -Infinity;
     let bestD = Infinity;
     let spiegel = -Infinity;
-    for (let s = 0; s < list.length; s++) {
-        const seg = list[s];
-        const ex = seg.bx - seg.ax;
-        const ez = seg.bz - seg.az;
+    for (let q = kanal.ab[kb]; q < kanal.ab[kb + 1]; q++) {
+        const o = kanal.idx[q] * KANAL_FELDER;
+        const ax = kanal.seg[o];
+        const az = kanal.seg[o + 1];
+        const bx = kanal.seg[o + 2];
+        const bz = kanal.seg[o + 3];
+        const sA = kanal.seg[o + 8];
+        const sB = kanal.seg[o + 9];
+        const ex = bx - ax;
+        const ez = bz - az;
         const len2 = ex * ex + ez * ez || 1;
-        let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+        let t = ((x - ax) * ex + (z - az) * ez) / len2;
         if (t < 0) t = 0;
         else if (t > 1) t = 1;
-        const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
+        const dist = Math.hypot(x - (ax + ex * t), z - (az + ez * t));
         if (dist < bestD) {
             bestD = dist;
-            spiegel = seg.sA + (seg.sB - seg.sA) * t;
+            spiegel = sA + (sB - sA) * t;
         }
     }
     return spiegel;
@@ -1378,14 +1437,15 @@ function schnittSpiegel(x, z, step) {
 
 function hydroRiverAt(x, z) {
     const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-    if (!h || !h.ready || !h.riverBuckets) return null;
+    if (!h || !h.ready || !h.kanal) return null;
+    const kanal = h.kanal;
     const bs = h.bucketSize;
     const bd = h.bucketsDim;
     const bi = Math.floor((x - h.originX) / bs);
     const bj = Math.floor((z - h.originZ) / bs);
     if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
-    const list = h.riverBuckets[bj * bd + bi];
-    if (!list) return null;
+    const kb = bj * bd + bi;
+    if (kanal.ab[kb] === kanal.ab[kb + 1]) return null;
     let bestD = Infinity;
     let dirX = 0;
     let dirZ = 0;
@@ -1394,24 +1454,34 @@ function hydroRiverAt(x, z) {
     let gSumme = 0;
     let sSumme = 0;
     let ufer = 0;
-    for (let s = 0; s < list.length; s++) {
-        const seg = list[s];
-        const ex = seg.bx - seg.ax;
-        const ez = seg.bz - seg.az;
+    for (let q = kanal.ab[kb]; q < kanal.ab[kb + 1]; q++) {
+        const o = kanal.idx[q] * KANAL_FELDER;
+        const ax = kanal.seg[o];
+        const az = kanal.seg[o + 1];
+        const bx = kanal.seg[o + 2];
+        const bz = kanal.seg[o + 3];
+        const hwA = kanal.seg[o + 4];
+        const hwB = kanal.seg[o + 5];
+        const dA = kanal.seg[o + 6];
+        const dB = kanal.seg[o + 7];
+        const sA = kanal.seg[o + 8];
+        const sB = kanal.seg[o + 9];
+        const ex = bx - ax;
+        const ez = bz - az;
         const len2 = ex * ex + ez * ez || 1;
-        let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+        let t = ((x - ax) * ex + (z - az) * ez) / len2;
         if (t < 0) t = 0;
         else if (t > 1) t = 1;
-        const px = seg.ax + ex * t;
-        const pz = seg.az + ez * t;
+        const px = ax + ex * t;
+        const pz = az + ez * t;
         const dist = Math.hypot(x - px, z - pz);
-        const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
-        const D = seg.dA + (seg.dB - seg.dA) * t;
+        const halfW = hwA + (hwB - hwA) * t;
+        const D = dA + (dB - dA) * t;
         const krone = halfW + D / state.hydroGesetz.bankNeigung;
         if (dist > krone) continue;
         const g = (1 - dist / krone) * (1 - dist / krone) + 1e-6;
         gSumme += g;
-        sSumme += g * (seg.sA + (seg.sB - seg.sA) * t);
+        sSumme += g * (sA + (sB - sA) * t);
         // die Kronen-Blende (Mirror): 1 bis zur Kanal-Kante, smoothstep auf 0 an der Krone
         const u = dist <= halfW ? 0 : (dist - halfW) / (krone - halfW);
         const uS = 1 - u * u * (3 - 2 * u);
@@ -1458,8 +1528,8 @@ const FEUCHTE_HOEHE_GEWICHT = 0.85; // V6 (Look-Finale, 3): 0.6→0.85 — bit-i
 
 function hydroDistAt(x, z) {
     const h = hydroFor(x, z);
-    if (!h || !h.ready || !h.riverBuckets) return { dist: Infinity, halfW: 0 };
-    const rb = h.riverBuckets;
+    if (!h || !h.ready || !h.kanal) return { dist: Infinity, halfW: 0 };
+    const kanal = h.kanal;
     const bs = h.bucketSize;
     const bd = h.bucketsDim;
     const bi0 = Math.floor((x - h.originX) / bs);
@@ -1473,27 +1543,34 @@ function hydroDistAt(x, z) {
             const bi = bi0 + di;
             const bj = bj0 + dj;
             if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) continue;
-            const list = rb[bj * bd + bi];
-            if (!list) continue;
-            for (let s = 0; s < list.length; s++) {
-                const seg = list[s];
-                const ex = seg.bx - seg.ax;
-                const ez = seg.bz - seg.az;
+            const kb = bj * bd + bi;
+            for (let q = kanal.ab[kb]; q < kanal.ab[kb + 1]; q++) {
+                const o = kanal.idx[q] * KANAL_FELDER;
+                const ax = kanal.seg[o];
+                const az = kanal.seg[o + 1];
+                const bx = kanal.seg[o + 2];
+                const bz = kanal.seg[o + 3];
+                const hwA = kanal.seg[o + 4];
+                const hwB = kanal.seg[o + 5];
+                const sA = kanal.seg[o + 8];
+                const sB = kanal.seg[o + 9];
+                const ex = bx - ax;
+                const ez = bz - az;
                 const len2 = ex * ex + ez * ez || 1;
-                let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+                let t = ((x - ax) * ex + (z - az) * ez) / len2;
                 if (t < 0) t = 0;
                 else if (t > 1) t = 1;
-                const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
-                // die Halbbreite am Fußpunkt wie im Main (bis Welle L las der Spiegel `seg.halfW`, das kein
+                const dist = Math.hypot(x - (ax + ex * t), z - (az + ez * t));
+                // die Halbbreite am Fußpunkt wie im Main (bis Welle L las der Spiegel ein Feld `halfW`, das kein
                 // Segment trägt: 0 — die Feuchte fiel im Worker anders aus, 2016 von 6507 Ufer-Vertices)
-                const hw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                const hw = hwA + (hwB - hwA) * t;
                 // der nächste RAND, nie die nächste Mittellinie — bit-identisch zum Main (K16, U1)
                 const rand = dist - Math.max(1, hw);
                 if (rand < bestRand) {
                     bestRand = rand;
                     best = dist;
                     bestHw = hw;
-                    bestSp = seg.sA + (seg.sB - seg.sA) * t; // der Spiegel des Segments (Mirror, Leser: `fernFlussDeckung`)
+                    bestSp = sA + (sB - sA) * t; // der Spiegel des Segments (Mirror, Leser: `fernFlussDeckung`)
                 }
             }
         }
@@ -3298,7 +3375,7 @@ function chunkHasAnyWater(cx, cz, lod) {
                 }
             }
         }
-        if (h.riverBuckets) {
+        if (h.kanal) {
             const b0i = Math.floor((ox - h.originX) / h.bucketSize);
             const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
             const b0j = Math.floor((oz - h.originZ) / h.bucketSize);
@@ -3306,8 +3383,8 @@ function chunkHasAnyWater(cx, cz, lod) {
             for (let bj = b0j; bj <= b1j; bj++) {
                 for (let bi = b0i; bi <= b1i; bi++) {
                     if (bi < 0 || bj < 0 || bi >= h.bucketsDim || bj >= h.bucketsDim) continue;
-                    const list = h.riverBuckets[bi + bj * h.bucketsDim];
-                    if (list && list.length) return true;
+                    const kb = bi + bj * h.bucketsDim;
+                    if (h.kanal.ab[kb + 1] > h.kanal.ab[kb]) return true;
                 }
             }
         }
@@ -3575,7 +3652,7 @@ const flussAbdruckMemo = {
 function flussAbdruck(x, z, F) {
     const A = flussAbdruckMemo;
     const h = hydroFor(x, z);
-    const bereit = !!(h && h.ready && h.riverBuckets);
+    const bereit = !!(h && h.ready && h.kanal);
     if (A.x === x && A.z === z && A.F === F && A.h === h && A.bereit === bereit) return A;
     A.x = x;
     A.z = z;
@@ -3584,6 +3661,7 @@ function flussAbdruck(x, z, F) {
     A.bereit = bereit;
     A.n = 0;
     if (!bereit) return A;
+    const kanal = h.kanal;
     const reich = FEUCHTE_FLUSS_REICHWEITE;
     const bs = h.bucketSize;
     const bd = h.bucketsDim;
@@ -3594,23 +3672,32 @@ function flussAbdruck(x, z, F) {
         if (bj < 0 || bj >= bd) continue;
         for (let bi = bi0 - nb; bi <= bi0 + nb; bi++) {
             if (bi < 0 || bi >= bd) continue;
-            const list = h.riverBuckets[bj * bd + bi];
-            if (!list) continue;
-            for (let s = 0; s < list.length; s++) {
-                const seg = list[s];
-                const ex = seg.bx - seg.ax;
-                const ez = seg.bz - seg.az;
+            const kb = bj * bd + bi;
+            for (let q = kanal.ab[kb]; q < kanal.ab[kb + 1]; q++) {
+                const o = kanal.idx[q] * KANAL_FELDER;
+                const ax = kanal.seg[o];
+                const az = kanal.seg[o + 1];
+                const bx = kanal.seg[o + 2];
+                const bz = kanal.seg[o + 3];
+                const hwA = kanal.seg[o + 4];
+                const hwB = kanal.seg[o + 5];
+                const dA = kanal.seg[o + 6];
+                const dB = kanal.seg[o + 7];
+                const sA = kanal.seg[o + 8];
+                const sB = kanal.seg[o + 9];
+                const ex = bx - ax;
+                const ez = bz - az;
                 const len2 = ex * ex + ez * ez || 1;
-                let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+                let t = ((x - ax) * ex + (z - az) * ez) / len2;
                 if (t < 0) t = 0;
                 else if (t > 1) t = 1;
-                const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
-                const hw = seg.hwA + (seg.hwB - seg.hwA) * t;
-                const kappa = Math.max(1e-3, (seg.dA + (seg.dB - seg.dA) * t) / state.hydroGesetz.bankNeigung);
+                const dist = Math.hypot(x - (ax + ex * t), z - (az + ez * t));
+                const hw = hwA + (hwB - hwA) * t;
+                const kappa = Math.max(1e-3, (dA + (dB - dA) * t) / state.hydroGesetz.bankNeigung);
                 if (dist - F / 2 >= Math.max(Math.max(1, hw) + reich, hw + kappa)) continue;
                 let schon = false;
                 for (let k = 0; k < A.n; k++)
-                    if (A.seg[k] === seg) {
+                    if (A.seg[k] === kanal.idx[q]) {
                         schon = true;
                         break;
                     }
@@ -3622,11 +3709,11 @@ function flussAbdruck(x, z, F) {
                         A[key] = neu;
                     }
                 const n = A.n++;
-                A.seg[n] = seg;
+                A.seg[n] = kanal.idx[q];
                 A.dist[n] = dist;
                 A.hw[n] = hw;
                 A.kappa[n] = kappa;
-                A.sp[n] = seg.sA + (seg.sB - seg.sA) * t;
+                A.sp[n] = sA + (sB - sA) * t;
                 A.mu[n] = kastenMittel(stammUfer, dist, F, hw, kappa);
             }
         }

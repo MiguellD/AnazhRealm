@@ -187,7 +187,7 @@ class AnazhRealm_studio_bruecke {
         f.helfer = [];
         const n = this._foundryFaedenZahl();
         for (let k = 1; k < n; k++) {
-            const w = new Worker(f.bootUrl);
+            const w = new Worker(f.bootUrl, { name: "werk" });
             const h = { k, w, bereit: false };
             // ein Boot-/Laufzeit-Fehler eines Helfers bricht LAUT (K22) wie der des Werks
             w.onerror = (ev) =>

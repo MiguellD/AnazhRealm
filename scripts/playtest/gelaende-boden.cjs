@@ -1180,7 +1180,7 @@ async function checkBandV18132FerneSeen(ctx) {
         await window.__weltDa(() => !r._ensureHydroTilesAround(-2048, 0, 10)); // Kachel WEST (-1,0) aus dem Faden
         const tile = r.state.hydroTiles ? r.state.hydroTiles.get("-1,0") : null;
         out.tileBuilt = !!(tile && tile.ready);
-        out.tileSubstanz = tile ? (tile.rivers ? tile.rivers.length : 0) + (tile.lakes ? tile.lakes.length : 0) : 0;
+        out.tileSubstanz = tile ? tile.fluesse + tile.seen : 0;
         out.homeIdentical = fp() === before;
         // hydroBand deckt JEDEN Spiegel (das Band ist global) — die Seen UND die Flüsse (Punkt-Spiegel S) der Heimat
         // und jeder Kachel. K16: das Band kannte nur die Seen (23,7 m), die Flüsse der Landform steigen bis 55 m — der
@@ -1196,9 +1196,6 @@ async function checkBandV18132FerneSeen(ctx) {
         out.maxSpiegel = maxSpiegel;
         out.bandTop = r.state.hydroBand ? r.state.hydroBand.top : null;
         out.bandCovers = !Number.isFinite(maxSpiegel) || (r.state.hydroBand && r.state.hydroBand.top >= maxSpiegel);
-        // Der Worker-Snapshot traegt die Kachel.
-        const snap = r._voxelWorkerSnapshotState();
-        out.snapCarries = !!(snap.hydroTiles && snap.hydroTiles["-1,0"]);
         // KONSUM: jeder Hydro-Leser löst seine Region über _hydroFor auf — Spion am Ruf; wer _hydroRiverAt ruft,
         // läuft mit dessen Schatten, damit nur sein EIGENER Ruf zählt.
         const K = (m, a, schatten) => {
@@ -1255,7 +1252,6 @@ async function checkBandV18132FerneSeen(ctx) {
             res.bandCovers,
             `Band-Oberkante ${res.bandTop} · höchster Spiegel ${res.maxSpiegel} (Täter: _computeHydroBand)`
         );
-        check("V18.132 Ferne Seen: der Worker-Snapshot traegt die Kachel (Determinismus-Wand)", res.snapCarries);
     }
 }
 

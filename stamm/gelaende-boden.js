@@ -284,7 +284,7 @@ class AnazhRealm_gelaende_boden {
         return this._hydroBestellen("heim", null).then((hydro) => {
             if (!hydro) return null;
             this.log(
-                `V9.43-b: Hydrosphäre aus dem Faden — ${hydro.rivers.length} Flüsse, ${hydro.lakes.length} Seen, ${hydro.waterfalls.length} Wasserfälle`,
+                `V9.43-b: Hydrosphäre aus dem Faden — ${hydro.fluesse} Flüsse, ${hydro.seen} Seen, ${hydro.waterfalls.length} Wasserfälle`,
                 "INFO"
             );
             try {
@@ -300,25 +300,25 @@ class AnazhRealm_gelaende_boden {
 
     // DIE BESTELLUNG EINER REGION (Karte hydro-faden): die Heimat (`key` "heim", `origin` null) oder eine ferne Kachel entsteht
     // im Faden — der EINE Sender des Zustands (`_voxelZustandPost`) trägt den Auftrag an jeden Faden an DERSELBEN Stelle seiner
-    // Reihe (jeder Auftrag dahinter liest sie), der Voxel-Faden antwortet per Transfer (`_hydroAn`). Der Haupt-Faden rechnet
-    // sie nie: ohne Faden bricht es laut (`_bruchMelden`); kommt der Faden über den Blob-Weg, wartet die Bestellung auf ihn.
+    // Reihe (jeder Auftrag dahinter liest sie; ein später geborener Neben-Faden bekommt sie vom Voxel-Faden, `_nebenFaden`),
+    // der Voxel-Faden antwortet per Transfer (`_hydroAn`). Der Haupt-Faden rechnet sie nie: ohne Faden bricht es laut
+    // (`_bruchMelden`); kommt der Faden über den Blob-Weg, wartet die Bestellung auf ihn.
     // → das Versprechen der Region (eine schon bestellte gibt ihres zurück; null, wenn eine neuere Welt ihr zuvorkam).
     _hydroBestellen(key, origin) {
         const B = this._hydroBestellt || (this._hydroBestellt = new Map());
         const da = B.get(key);
         if (da) return da.zusage;
         const welt = this._hydroWelt | 0;
-        const e = { faeden: null, ab: null };
+        const e = { ab: null };
         const zusage = new Promise((ok, ab) => {
             e.ab = ab;
             e.post = () => {
                 const requestId = this.state.voxelWorkerNextRequestId++;
                 this.state.voxelWorkerPending.set(requestId, { resolve: ok, reject: ab });
-                e.faeden = new Set(this._nebenFaeden ? this._nebenFaeden.keys() : []);
                 this._voxelZustandPost({ type: "hydro", key, origin, requestId });
             };
         });
-        e.zusage = zusage.then((msg) => this._hydroAn(key, msg.region, welt, e.faeden));
+        e.zusage = zusage.then((msg) => this._hydroAn(key, msg.region, welt));
         B.set(key, e);
         if (this.state.voxelWorker) e.post();
         else if (this._voxelWeltWartet) (this._hydroWarte || (this._hydroWarte = [])).push(e.post);
@@ -338,23 +338,15 @@ class AnazhRealm_gelaende_boden {
     }
 
     // DER EMPFANG EINER REGION (Karte hydro-faden): die Region der eigenen Welt geht in den Zustand (Heimat oder Kachel), das
-    // globale Band folgt (`_computeHydroBand`). Ein Neben-Faden, der nach der Bestellung geboren wurde, trug ihren Auftrag
-    // nicht — er bekommt die Region (sein Geburts-Stand kannte sie noch nicht); jeder andere Faden rechnete sie selbst.
-    _hydroAn(key, h, welt, faeden) {
+    // globale Band folgt (`_computeHydroBand`). Jeder Faden trägt sie schon (selbst gerechnet oder vom Voxel-Faden).
+    _hydroAn(key, h, welt) {
         if (welt !== (this._hydroWelt | 0) || !h) return null; // eine Region einer alten Welt fällt
         if (key === "heim") this.state.hydrosphere = h;
         else {
             this.state.hydroTiles.set(key, h);
-            this.log(
-                `A3: Hydro-Kachel ${key} aus dem Faden (${h.rivers.length} Fluesse, ${h.lakes.length} Seen)`,
-                "INFO"
-            );
+            this.log(`A3: Hydro-Kachel ${key} aus dem Faden (${h.fluesse} Fluesse, ${h.seen} Seen)`, "INFO");
         }
         this._computeHydroBand();
-        if (this._nebenFaeden)
-            for (const [name, f] of this._nebenFaeden)
-                if (!faeden || !faeden.has(name))
-                    f.worker.postMessage({ type: "state-update", delta: { hydroRegion: { key, h } } });
         return h;
     }
 
@@ -1341,15 +1333,16 @@ class AnazhRealm_gelaende_boden {
     _hydrosphereCarveAt(x, z) {
         const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (!h || !h.ready) return null;
-        const rb = h.riverBuckets;
-        if (!rb) return null;
+        const kanal = h.kanal;
+        if (!kanal) return null;
         const bs = h.bucketSize;
         const bd = h.bucketsDim;
         const bi = Math.floor((x - h.originX) / bs);
         const bj = Math.floor((z - h.originZ) / bs);
         if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
-        const list = rb[bj * bd + bi];
-        if (!list) return null;
+        const kb = bj * bd + bi;
+        if (kanal.ab[kb] === kanal.ab[kb + 1]) return null;
+        const KANAL_FELDER = globalThis.__gelaendeCore.KANAL_FELDER;
         const HC = AnazhRealm.HYDROSPHERE;
         const sN = HC.bankNeigung;
         const sK = HC.bankKruemmung;
@@ -1357,22 +1350,32 @@ class AnazhRealm_gelaende_boden {
         const kB = HC.dammBreite;
         let P = Infinity;
         let L = -Infinity;
-        for (let s = 0; s < list.length; s++) {
-            const seg = list[s];
-            const ex = seg.bx - seg.ax;
-            const ez = seg.bz - seg.az;
+        for (let q = kanal.ab[kb]; q < kanal.ab[kb + 1]; q++) {
+            const o = kanal.idx[q] * KANAL_FELDER;
+            const ax = kanal.seg[o];
+            const az = kanal.seg[o + 1];
+            const bx = kanal.seg[o + 2];
+            const bz = kanal.seg[o + 3];
+            const hwA = kanal.seg[o + 4];
+            const hwB = kanal.seg[o + 5];
+            const dA = kanal.seg[o + 6];
+            const dB = kanal.seg[o + 7];
+            const sA = kanal.seg[o + 8];
+            const sB = kanal.seg[o + 9];
+            const ex = bx - ax;
+            const ez = bz - az;
             const len2 = ex * ex + ez * ez || 1;
-            let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+            let t = ((x - ax) * ex + (z - az) * ez) / len2;
             if (t < 0) t = 0;
             else if (t > 1) t = 1;
-            const px = seg.ax + ex * t;
-            const pz = seg.az + ez * t;
+            const px = ax + ex * t;
+            const pz = az + ez * t;
             const dist = Math.hypot(x - px, z - pz);
-            const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
-            const D = seg.dA + (seg.dB - seg.dA) * t;
+            const halfW = hwA + (hwB - hwA) * t;
+            const D = dA + (dB - dA) * t;
             const dK = halfW + D / sN;
             if (dist >= dK + kB + HC.bankWeite) continue;
-            const spiegel = seg.sA + (seg.sB - seg.sA) * t;
+            const spiegel = sA + (sB - sA) * t;
             const B = spiegel - (1 - HC.spiegelFreibord) * D;
             const u0 = dist - halfW;
             let p = u0 <= -fuss ? B : u0 < fuss ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss) : B + sN * u0;
@@ -1388,13 +1391,14 @@ class AnazhRealm_gelaende_boden {
         return P < Infinity ? { P, L, k: fuss } : null;
     }
 
-    // Fluss-Distanz an (x,z): derselbe riverBuckets-Walk wie _hydrosphereCarveAt (EINE Quelle), liefert
+    // Fluss-Distanz an (x,z): derselbe Walk über den Kanal wie _hydrosphereCarveAt (EINE Quelle), liefert
     // Distanz + Segment-Halbbreite. Anders als der Carve liest er die 3×3-Bucket-Nachbarschaft
     // (Feuchte-Reichweite ~26 m > Bankbreite).
     _hydroDistAt(x, z) {
         const h = this._hydroFor(x, z);
-        if (!h || !h.ready || !h.riverBuckets) return { dist: Infinity, halfW: 0 };
-        const rb = h.riverBuckets;
+        if (!h || !h.ready || !h.kanal) return { dist: Infinity, halfW: 0 };
+        const kanal = h.kanal;
+        const KANAL_FELDER = globalThis.__gelaendeCore.KANAL_FELDER;
         const bs = h.bucketSize;
         const bd = h.bucketsDim;
         const bi0 = Math.floor((x - h.originX) / bs);
@@ -1408,18 +1412,25 @@ class AnazhRealm_gelaende_boden {
                 const bi = bi0 + di;
                 const bj = bj0 + dj;
                 if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) continue;
-                const list = rb[bj * bd + bi];
-                if (!list) continue;
-                for (let s = 0; s < list.length; s++) {
-                    const seg = list[s];
-                    const ex = seg.bx - seg.ax;
-                    const ez = seg.bz - seg.az;
+                const kb = bj * bd + bi;
+                for (let q = kanal.ab[kb]; q < kanal.ab[kb + 1]; q++) {
+                    const o = kanal.idx[q] * KANAL_FELDER;
+                    const ax = kanal.seg[o];
+                    const az = kanal.seg[o + 1];
+                    const bx = kanal.seg[o + 2];
+                    const bz = kanal.seg[o + 3];
+                    const hwA = kanal.seg[o + 4];
+                    const hwB = kanal.seg[o + 5];
+                    const sA = kanal.seg[o + 8];
+                    const sB = kanal.seg[o + 9];
+                    const ex = bx - ax;
+                    const ez = bz - az;
                     const len2 = ex * ex + ez * ez || 1;
-                    let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+                    let t = ((x - ax) * ex + (z - az) * ez) / len2;
                     if (t < 0) t = 0;
                     else if (t > 1) t = 1;
-                    const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
-                    const hw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                    const dist = Math.hypot(x - (ax + ex * t), z - (az + ez * t));
+                    const hw = hwA + (hwB - hwA) * t;
                     // der nächste RAND (Abstand minus die Halbbreite, wie die Leser sie nehmen), nie die nächste Mittellinie
                     // (K16, U1): zwischen zwei Segmenten ungleicher Breite sprang sonst die Halbbreite und mit ihr die Feuchte
                     // (0,83 → 0,44 in 2 cm, 213/−890) — so ist jedes Band das Maximum der Segmente, stetig
@@ -1428,7 +1439,7 @@ class AnazhRealm_gelaende_boden {
                         bestRand = rand;
                         best = dist;
                         bestHw = hw;
-                        bestSp = seg.sA + (seg.sB - seg.sA) * t;
+                        bestSp = sA + (sB - sA) * t;
                     }
                 }
             }
