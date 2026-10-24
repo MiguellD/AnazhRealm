@@ -606,7 +606,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             w14Results.cardIsSpecCard
         );
         check(
-            "V18.77: die Karte ist Profi-leicht — EINE Meta-Zeile (DSL), keine Datenblatt-Spalten-Labels",
+            "die Karte ist Profi-leicht — EINE Meta-Zeile (DSL), keine Datenblatt-Spalten-Labels",
             w14Results.cardLightened
         );
         check(

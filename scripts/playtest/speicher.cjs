@@ -109,15 +109,15 @@ async function checkBandV1738RulePersistence(ctx) {
     });
 
     check(
-        "V17.38 Persistenz: buildStateSnapshot serialisiert worldRules (nur definierende Felder, keine Akkus)",
+        "Persistenz: buildStateSnapshot serialisiert worldRules (nur definierende Felder, keine Akkus)",
         res.snapSerializes
     );
-    check("V17.38 Persistenz: loadState-Restore stellt die Regeln her (frische Akkus, ttl erhalten)", res.restoreWorks);
-    check("V17.38 Persistenz: eine RESTAURIERTE Regel ist voll funktional (feuert rainy → sunny)", res.restoredFires);
-    check("V17.38 Persistenz: der Restore dedupt (zweimal dieselbe Regel → ein Eintrag)", res.restoreDedup);
-    check("V17.38 Persistenz: ein alter Save OHNE worldRules → no-op (state bleibt)", res.oldSaveNoop);
+    check("Persistenz: loadState-Restore stellt die Regeln her (frische Akkus, ttl erhalten)", res.restoreWorks);
+    check("Persistenz: eine RESTAURIERTE Regel ist voll funktional (feuert rainy → sunny)", res.restoredFires);
+    check("Persistenz: der Restore dedupt (zweimal dieselbe Regel → ein Eintrag)", res.restoreDedup);
+    check("Persistenz: ein alter Save OHNE worldRules → no-op (state bleibt)", res.oldSaveNoop);
     check(
-        "V17.38 Bibliothek: fuseWorlds VEREINIGT die Regel-Saetze (Union + Dedup — eine Welt IST ihr Regel-Satz)",
+        "Bibliothek: fuseWorlds VEREINIGT die Regel-Saetze (Union + Dedup — eine Welt IST ihr Regel-Satz)",
         res.mergeUnions
     );
 }
@@ -569,12 +569,12 @@ async function checkBandRing8(ctx) {
             (ring82Results && ring82Results.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("V18.95: leerer Welt-Snapshot trägt playerPosition:null", ring82Results.emptySnapHasNoPosition);
+        check("leerer Welt-Snapshot trägt playerPosition:null", ring82Results.emptySnapHasNoPosition);
         check(
-            "V18.95: Save ohne playerPosition lässt terrainEverGenerated false (Erst-Spawn-Pfad)",
+            "Save ohne playerPosition lässt terrainEverGenerated false (Erst-Spawn-Pfad)",
             ring82Results.emptySnapKeepsFirstSpawn
         );
-        check("V18.95: Save ohne playerPosition bewegt den Spieler nicht", ring82Results.emptySnapKeepsPosition);
+        check("Save ohne playerPosition bewegt den Spieler nicht", ring82Results.emptySnapKeepsPosition);
         check("Ring 8.2: #status-slug im DOM", ring82Results.statusSlugInDom);
         check("Ring 8.2: Status-Bar-Label heißt 'Welt'", ring82Results.statusLabelIsWelt);
         check("Ring 8.2: Status-Bar zeigt aktive Welt-Slug", ring82Results.statusSlugShowsActiveWorld);
@@ -2227,7 +2227,7 @@ async function checkBandV18151Idb(ctx) {
         };
     });
     check(
-        "V18.151 IndexedDB: die QUOTA-Wand fällt weich (kein Wurf, ehrliches WARN, der Akt landet in IndexedDB)",
+        "IndexedDB: die QUOTA-Wand fällt weich (kein Wurf, ehrliches WARN, der Akt landet in IndexedDB)",
         res.quotaSoft
     );
 }
@@ -2255,7 +2255,7 @@ async function checkBandV18207R5StructureTexture(ctx) {
     });
 
     check(
-        `V18.207 (R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`,
+        `(R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`,
         res.microBoostSensible === true
     );
 }
