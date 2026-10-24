@@ -1,0 +1,110 @@
+{
+ "sha": "056330d8a70fcdc617df8c3ff62ec174c5d33995",
+ "geraet": "radeon",
+ "zeit": "2026-10-24T08:05:54.752Z",
+ "host": "MiguellD",
+ "je": {
+  "gelaende.K2#1": {
+   "gruen": true,
+   "zahl": "9 von 10 Gräben über das Verb, in 3254 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 46.7–405.1 ms (1 m 4, 3 m 5)",
+   "exit": 0,
+   "minuten": 19.21,
+   "zeit": "2026-10-24T05:29:15.379Z",
+   "abdruck": "1ee7bd28bb9c",
+   "port": 7701
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.7776 (wasserSatz 36784 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.1 σ 51.6 schwarz 0.0 % weiß 0.1 % · Stand 18.546.79 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+   "exit": 0,
+   "minuten": 35.38,
+   "zeit": "2026-10-24T05:48:27.818Z",
+   "abdruck": "68e70463a0db",
+   "port": 7702
+  },
+  "gelaende.K5#2": {
+   "gruen": true,
+   "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 2.5 · rad 2.4 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 1.33,
+   "zeit": "2026-10-24T06:23:50.473Z",
+   "abdruck": "1c2538e83974",
+   "port": 7705
+  },
+  "wetter.K2#1": {
+   "gruen": true,
+   "zahl": "Dorf porös draußen 0.763 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 83 (n 336/865), Wiese draußen 0.772",
+   "exit": 0,
+   "minuten": 2.09,
+   "zeit": "2026-10-24T06:25:10.417Z",
+   "abdruck": "e03a045fab93",
+   "port": 7708
+  },
+  "vegetation.K4#1": {
+   "gruen": true,
+   "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59022 px; ungemessen (ohne freies Auge) haus_skandinavisch 14-0 haupt · haus_italienisch 22-0 haupt · haus_italienisch 28-0 haupt · haus_provenzalisch 31-0 haupt",
+   "exit": 1,
+   "minuten": 4.76,
+   "zeit": "2026-10-24T06:27:16.084Z",
+   "abdruck": "e53d97783caf",
+   "port": 7723
+  },
+  "mensch.K2#2": {
+   "gruen": false,
+   "zahl": "Soll-Orte alle 79/81 ≥ 0,9 (min 0.821), Wege je Tag 4–7 (außer 4–10: 0), Wiederkehr nach 1 h undefined von undefined Lagen über ±2 m (max undefined m), Sprünge 0, Plan bit-gleich true",
+   "exit": 1,
+   "minuten": 37.17,
+   "grund": "ROT: Soll-Orte alle 79/81 ≥ 0,9 (min 0.821), Wege je Tag 4–7 (außer 4–10: 0), Wiederkehr nach 1 h undefined von undefined Lagen über ±2 m (max undefined m), Sprünge 0, Plan bit-gleich true",
+   "zeit": "2026-10-24T06:32:01.853Z",
+   "abdruck": "ca42240b7c1b",
+   "port": 7732
+  },
+  "licht.K2#1": {
+   "gruen": true,
+   "zahl": "Verhältnis 5.005 (5–12,5), Schatten-Anteil 0.1998 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 9.03,
+   "zeit": "2026-10-24T07:09:11.927Z",
+   "abdruck": "a3fab07da97f",
+   "port": 7733
+  },
+  "ferne.K1#1": {
+   "gruen": true,
+   "zahl": "Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 36.1,
+   "zeit": "2026-10-24T07:18:13.991Z",
+   "abdruck": "bbee11502f53",
+   "port": 7734
+  },
+  "ferne.K2#1": {
+   "gruen": true,
+   "zahl": "Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 36.1,
+   "zeit": "2026-10-24T07:18:13.991Z",
+   "abdruck": "a2c61a28b0e5",
+   "port": 7734,
+   "zwilling": "ferne.K1#1"
+  },
+  "material.K2#1": {
+   "gruen": false,
+   "zahl": "boden 0.5 m glatt 0.0172 nyquist 0.1266 (Arm 0.408), 1 m glatt 0.0112 nyquist 0.1341 (Arm 0.909), 2 m glatt 0.0078 nyquist 0.1296 (Arm 1.91) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: ABNAHME ROT [Sicht verdeckt 5.1 % (Laub · Rinde · Fels · Böschung näher als 1.000000000000 · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 11.58,
+   "grund": "ROT: boden 0.5 m glatt 0.0172 nyquist 0.1266 (Arm 0.408), 1 m glatt 0.0112 nyquist 0.1341 (Arm 0.909), 2 m glatt 0.0078 nyquist 0.1296 (Arm 1.91) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: ABNAHME ROT [Sicht verdeckt 5.1 % (Laub · Rinde · Fels · Böschung näher als 1.000000000000 · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
+   "zeit": "2026-10-24T07:54:19.978Z",
+   "abdruck": "db1cd34d4849",
+   "port": 7736
+  },
+  "material.K3#1": {
+   "gruen": true,
+   "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.985 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 6.27,
+   "zeit": "2026-10-24T08:05:54.752Z",
+   "abdruck": "c1c161cacf47",
+   "port": 7737
+  }
+ }
+}
