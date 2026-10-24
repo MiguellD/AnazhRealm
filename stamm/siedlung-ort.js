@@ -2481,35 +2481,42 @@ class AnazhRealm_siedlung_ort {
     // auf dem Weg vom Spieler zum Anker) — in der Mesh-Zone die Stufe, die die Kette dort wählt (`_foundryLodForEntry` am Auge des
     // Erwachens), dahinter die Fernform des Gesetzbuchs — über DENSELBEN Chokepoint wie das gesetzte Haus (`_foundryFlattenFor`).
     // Bis hier bestellte erst das gesetzte Haus, nach dem Erdbau, und der Faden trug fremde Aufträge: das erste Haus stand nach
-    // 148–518 ms (nH 12, Hülle) bzw. 474–800 ms (nH 300, Mesh; Radeon, Station dorf). Rückgabe: ob bestellt ist (sonst fragt der Takt neu).
+    // 148–518 ms (nH 12, Hülle) bzw. 474–800 ms (nH 300, Mesh; Radeon, Station dorf). Rückgabe: ob jede Stufe steht (sonst fragt der Takt neu).
     _dorfVorbacken(w, p) {
         const f = this._foundry;
         if (!w.v2 || !f || !f.recipes) return false;
-        const A = AnazhRealm.AUTO_SETTLEMENT;
-        const o = w.v2.ort;
-        const d = Math.hypot(p.x - o.x, p.z - o.z) || 1;
-        const k = (A.nearM + (w.mehrM || 0)) / d;
-        const auge = { x: o.x + (p.x - o.x) * k, z: o.z + (p.z - o.z) * k };
-        const d2 = (e) => (e.position.x - auge.x) ** 2 + (e.position.z - auge.z) ** 2;
-        const haeuser = [];
-        for (const sl of w.v2.slots) {
-            const type = this._slotBauplan(sl, f);
-            const position = { x: o.x + sl.x, y: sl.y + 0.5, z: o.z + sl.z };
-            if (type) haeuser.push({ type, seed: sl.seed >>> 0, position, studioOv: AnazhRealm._stempelVon(sl.ov) });
+        if (!w.vorback) {
+            const A = AnazhRealm.AUTO_SETTLEMENT;
+            const o = w.v2.ort;
+            const d = Math.hypot(p.x - o.x, p.z - o.z) || 1;
+            const k = (A.nearM + (w.mehrM || 0)) / d;
+            const auge = { x: o.x + (p.x - o.x) * k, z: o.z + (p.z - o.z) * k };
+            const d2 = (e) => (e.position.x - auge.x) ** 2 + (e.position.z - auge.z) ** 2;
+            const haeuser = [];
+            for (const sl of w.v2.slots) {
+                const type = this._slotBauplan(sl, f);
+                const position = { x: o.x + sl.x, y: sl.y + 0.5, z: o.z + sl.z };
+                if (type)
+                    haeuser.push({ type, seed: sl.seed >>> 0, position, studioOv: AnazhRealm._stempelVon(sl.ov) });
+            }
+            haeuser.sort((a, b) => d2(a) - d2(b));
+            const R = this.state.architectureCullingRadius;
+            w.vorback = [];
+            for (const e of haeuser.slice(0, A.vorbackHaeuser)) {
+                const preset = this._foundryPresetForEntry(e);
+                const fern = d2(e) > R * R;
+                if (preset)
+                    w.vorback.push([
+                        e,
+                        preset,
+                        fern ? this._foundryFernStufe(preset) : this._foundryLodForEntry(e, auge),
+                    ]);
+            }
         }
-        haeuser.sort((a, b) => d2(a) - d2(b));
-        const R = this.state.architectureCullingRadius;
-        for (const e of haeuser.slice(0, A.vorbackHaeuser)) {
-            const preset = this._foundryPresetForEntry(e);
-            if (!preset) continue;
-            const fern = d2(e) > R * R;
-            this._foundryFlattenFor(
-                e,
-                preset,
-                fern ? this._foundryFernStufe(preset) : this._foundryLodForEntry(e, auge)
-            );
-        }
-        return true;
+        // bis jede Stufe steht: ein Flat setzt sich erst aus seinen Teilen zusammen (der Schatten-Zwilling bestellt sich dabei)
+        let steht = true;
+        for (const [e, preset, lod] of w.vorback) if (this._foundryFlattenFor(e, preset, lod) === null) steht = false;
+        return steht;
     }
     // Der Bauplan eines Slots: das Präfix seiner Studio-Art (KIND_POLICY) vor seiner Kultur, wenn die Welt ihn kennt — sonst null.
     // Leser: die Slot-Quelle (`_spawnSettlementSlot`) und der Vorrat (`_dorfVorbacken`).
