@@ -28,7 +28,7 @@
 //   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · sohle · lichtung · bau · w4 · w4b · w6), der Hauptlauf alle.
 //   node scripts/diag-haus-welt.cjs [--selftest [--nur=promotion,nahstreu]] [--phasen=lichtung]
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, warteAufWelt, ROOT } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, warteAufWelt, teilAus, ROOT } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -184,14 +184,8 @@ const patchZiel = (z) =>
 const PARALLEL = Math.max(1, Number(process.env.HAUS_WELT_PARALLEL) || Math.min(4, require("os").cpus().length));
 const PORT_BASIS = Number(process.env.HAUS_WELT_PORT) || 0;
 // --teil=k/n: die CI fährt die Welten in n Gruppen — Teil k trägt die Welten i (0 = der Hauptlauf, dann die Selbsttests)
-// mit i mod n = k - 1; jede Welt urteilt in GENAU einem Teil. Ohne --teil alle.
-const TEIL = (() => {
-    const a = process.argv.find((x) => x.startsWith("--teil="));
-    if (!a) return null;
-    const m = /^--teil=(\d+)\/(\d+)$/.exec(a);
-    if (!m || !(+m[1] >= 1 && +m[1] <= +m[2])) throw new Error(`${a}: erwartet --teil=k/n mit 1 <= k <= n`);
-    return { k: +m[1], n: +m[2] };
-})();
+// mit i mod n = k - 1; jede Welt urteilt in GENAU einem Teil.
+const TEIL = teilAus(process.argv);
 const imTeil = (i) => !TEIL || i % TEIL.n === TEIL.k - 1;
 // eine Patch-Zeile [geheilt, basis] gilt dem Stamm — der Datei, die die Zeile trägt (scripts/lib/stamm.cjs `dateiMit`; trägt
 // sie keine, der ersten: dort meldet der Lauf die fehlende Zeile) —, [datei, geheilt, basis] der genannten Datei (das

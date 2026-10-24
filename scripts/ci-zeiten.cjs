@@ -126,9 +126,9 @@ function verteile(jetzt, out) {
     const packe = (gs, k) => {
         const last = Array.from({ length: k }, () => ({ s: out.vorbereitung_s, n: [] }));
         const lege = (g, s, vz = 1) => ((g.s += vz * z(s)), vz > 0 ? g.n.push(s) : g.n.splice(g.n.indexOf(s), 1));
-        // die Teile EINES Skripts (`--teil=N`) nie in einer Gruppe
+        // die Teile EINES Skripts (`--teil=N`, jedes im Schritt) nie in einer Gruppe
         const darf = (g, s, ohne) =>
-            !g.n.some((x) => x !== ohne && x.run.replace(/--teil=\d+/, "") === s.run.replace(/--teil=\d+/, ""));
+            !g.n.some((x) => x !== ohne && x.run.replace(/--teil=\d+/g, "") === s.run.replace(/--teil=\d+/g, ""));
         for (const s of [...gs].sort((x, y) => pt(y) - pt(x) || z(y) - z(x)))
             lege(
                 pt(s)
