@@ -130,7 +130,7 @@ const stationen = [
                 gruen,
                 zahl:
                     "Kohäsion wandernd " + W.mittel + " (" + W.n + " Glieder), fliehend " + F.fluchtMittel + " (min " +
-                    F.fluchtMin + ", in Flucht " + F.fluchtAnteil + "), fremder Verband " + z.artFremdZugM + " m",
+                    F.fluchtMin + ", in Flucht " + F.fluchtAnteil + ")",
             };
         },
         pfad: [
@@ -145,6 +145,52 @@ const stationen = [
             "scripts/lib/welt-boot.cjs",
         ],
         quelle: "1 = (a) Kohäsion an einem Gerät",
+    },
+    // ───────── tiere.K1 Staffel 2 — der Verband ganz (Zweig tiere-k1-s2, tetrapoda FURCHT_GESETZ.fluchtWegM + fluchtRadius) ─────────
+    // (a)–(d) der Probe herde am echten Kreatur-Takt (Null-Renderer, R3: Verband ist Mechanik; Port {PORT}+10000): (a) Kohäsion
+    // wandernd ≥ 0,9, fliehend ≥ 0,8; (b) Φ = |Σv̂|/N der laufenden Glieder (ab 1 m/s) ≥ 0,8 über ≥ 60 Flucht-Takte; (c) der
+    // letzte Flüchter läuft ≤ 1,0 s nach dem ersten, ≥ 1 Glied aus zweiter Hand; (d) 600 s neben einem fremden Verband derselben
+    // Art, beide fliehen ≥ 3 s, die Glieder des Gesetzes bleiben dieselben Leiber; Schlupfloch: Glieder ≥ 3, Fluchtanteil ≥ 0,1,
+    // Fluchtweg je Glied ≥ 30 m. Die Bild-Serie „Herde am Hang" (Ego auf 40 m, die Herde flieht als EIN Pulk im Bild beider
+    // Geräte) hat kein Werkzeug: das Urteil bleibt ROT beim Namen, bis ein Schritt ihre Abnahme nach {AUS} schreibt.
+    {
+        kriterium: "tiere.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: ["bash", "-c", "KREATUR_TAKT_PORT=$(( {PORT} + 10000 )) node scripts/diag-kreatur-takt.cjs --proben herde"],
+        gpu: true,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "herde");
+            if (!z || z.fehler || !z.alarm || !z.id)
+                return { gruen: false, zahl: "keine Zeile (a)–(d) der Probe herde (Exit " + lauf.exit + (z && z.fehler ? ": " + z.fehler : "") + ")" };
+            const { wander: W, flucht: F } = z.verband;
+            const [R, K, I] = [z.ausrichtung, z.alarm, z.id];
+            const echt = Math.min(W.n, F.n, z.fremdN, ...I.fluchtS) >= 3 && F.fluchtAnteil >= 0.1 && W.fluchtAnteil === 0 && K.zweiteHand >= 1;
+            const ad =
+                echt && W.mittel >= 0.9 && F.fluchtMittel >= 0.8 && R.takte >= 60 && R.mittel >= 0.8 && K.letzterS !== null &&
+                K.letzterS <= 1 && z.fluchtWegM >= 30 && !I.bruch;
+            return {
+                gruen: false,
+                zahl:
+                    "(a)–(d) headless " + (ad ? "GRÜN" : "ROT") + ": Kohäsion " + W.mittel + " / " + F.fluchtMittel + ", Φ " + R.mittel +
+                    " über " + R.takte + " Takte, letzter Flüchter " + K.letzterS + " s (" + K.zweiteHand + " aus zweiter Hand), Fluchtweg " +
+                    z.fluchtWegM + " m, ID 600 s " + (I.bruch ? "bricht nach " + I.bruch[0] + " s" : "hält") + " (Flucht " + I.fluchtS.join(" / ") +
+                    " s) · Bild-Serie „Herde am Hang“ ungemessen: kein Werkzeug",
+            };
+        },
+        pfad: [
+            "stamm/kreatur-*.js",
+            "stamm/koerper-*.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/daten.js",
+            "tetrapoda-core.js",
+            "gelaende-core.js",
+            "scripts/diag-kreatur-takt.cjs",
+            "scripts/lib/kreatur-proben.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = (a)–(d) auf beiden Geräten mit der Bild-Serie „Herde am Hang“",
     },
     {
         kriterium: "tiere.K3",
@@ -810,16 +856,6 @@ const fehlt = [
             "und kein Reload der Bindung in einer Linse; GTX ungemessen",
         quelle:
             "2 = die Ansteckung verschiebt die Stimmung des Spielers messbar gegen einen Gegenlauf mit bond = 0, und die Bindung übersteht den Reload",
-    },
-    {
-        kriterium: "tiere.K1",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "Werkzeug fehlt: die Probe herde misst nur (a) Kohäsion — Ausrichtung Φ (b), Alarm-Kette ≤ 1,0 s (c) und " +
-            "Verbands-ID 600 s (d) misst keine Linse, die Bild-Serie „Herde am Hang“ hat keine Station",
-        quelle: "2 = (a)–(d) auf beiden Geräten mit der Bild-Serie „Herde am Hang“",
     },
     {
         kriterium: "tiere.K3",
