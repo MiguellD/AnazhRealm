@@ -121,7 +121,7 @@ function werkzeug() {
         try {
             window.__buehne();
             r._gameLoopTick(performance.now());
-        } catch (_e) {}
+        } catch {}
     };
     W.umstellen = async (x, z) => {
         st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);

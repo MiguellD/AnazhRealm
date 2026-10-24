@@ -126,7 +126,7 @@ const welt = async (seite) => {
             wm.gameMode = "schöpfer";
             try {
                 r.wieldBlueprint("klinge_langschwert");
-            } catch (_e) {
+            } catch {
                 /* headless-Equip-Nebenwege dürfen scheitern — der Stempel sitzt VOR equipHeld */
             }
             res.g.stamped = bp.studioOv?.__tradition === "Nihon";
@@ -289,25 +289,27 @@ const welt = async (seite) => {
         } catch (e) {
             k.err = e?.stack || String(e);
         }
+        r._ensureWorkshopState().studioOv.gt = { radstand: 3.1, grip: 1.2, ...KC.vehicle.ov("toro", VC.CULTURES) }; // die Prägung, die A teilt (T)
         return res;
     }, TOT);
 
     // ===== (T)+(F) B in einem eigenen Browser-Kontext (frisches Profil) =====
     const pageB = await (await browser.createBrowserContext()).newPage();
+    await pageB.goto(`http://127.0.0.1:${PORT}/package.json`);
+    const leer = await pageB.evaluate(async () => (await indexedDB.databases()).length + localStorage.length);
     await welt(pageB);
     page.on("dialog", (d) => d.accept()); // die souveräne Geste des Senders (window.confirm)
+    // die Geste in echten Klicks, bis der Code in der Zeile steht
+    let uhr = Date.now();
+    for (const s of ['[data-tab="werkstatt"]', '[data-blueprint="fahrzeug_gt"]', ".workshop-teilen-btn"])
+        await (await page.waitForSelector(s, { visible: true })).click();
+    await page.waitForFunction(() => document.querySelector(".workshop-teilen-code").textContent);
+    const msA = Date.now() - uhr;
     const a = await page.evaluate(async () => {
         try {
-            const r = await window.__weltDa((r) => r.state.vibePass?.ready);
+            const r = window.anazhRealm;
             const ws = r._ensureWorkshopState();
-            const kultur = r.constructor.KIND_CHARAKTER.vehicle.ov("toro", globalThis.__vehicleCore.CULTURES);
-            ws.studioOv.gt = { radstand: 3.1, grip: 1.2, ...kultur };
-            ws.selectedBlueprint = "fahrzeug_gt";
-            r._workshopRenderStatsPanel();
-            document.querySelector(".workshop-teilen-btn").click();
-            // der Code, sobald die Zeile ihn zeigt (die Werkstatt rendert das Panel danach neu)
-            let code = "";
-            await window.__weltDa(() => (code = document.querySelector(".workshop-teilen-code").textContent));
+            const code = document.querySelector(".workshop-teilen-code").textContent;
             const seed = r._werkSame(r.state.blueprints.fahrzeug_gt, "fahrzeug_gt", null);
             const fp = await window.__flatFp(r, { type: "fahrzeug_gt", seed, studioOv: ws.studioOv.gt });
             const box = (x, y, sx, sy) => ({
@@ -391,20 +393,32 @@ const welt = async (seite) => {
         const sagt = [];
         const s0 = r._spielerSagt;
         r._spielerSagt = (t) => (sagt.push(String(t)), s0.call(r, t));
-        const lauf = async (code) => {
+        const lauf = (window.__lauf = async (code) => {
             const n = sagt.length;
             return { ...(await r.empfangeWerk(code)), laut: sagt.slice(n).join(" | ") };
-        };
+        });
         for (const [soll, code] of a.korpus) res.faelle.push({ soll, ...(await lauf(code)) });
         res.nullSchreibe = zustand() === vor || [vor, zustand()];
-        // (T) die Geste des Empfängers: der Code in den Chat
-        let spur = null;
-        r.empfangeWerk = (...x) => (spur = r.constructor.prototype.empfangeWerk.apply(r, x));
-        r.processChatCommand(a.code);
+        r.empfangeWerk = (...x) => (window.__spur = r.constructor.prototype.empfangeWerk.apply(r, x));
+        return res;
+    }, a);
+    // (T) die Geste des Empfängers: die Chat-Taste, der Code, Enter
+    uhr = Date.now();
+    await pageB.keyboard.press("Enter");
+    await pageB.keyboard.sendCharacter(a.code);
+    await pageB.keyboard.press("Enter");
+    Object.assign(b, await pageB.evaluate(async (a) => {
+        const r = window.anazhRealm;
+        const lauf = window.__lauf;
+        const res = { gut: window.__spur ? await window.__spur : { grund: "der Chat rief empfangeWerk nie" } };
         delete r.empfangeWerk;
-        res.gut = spur ? await spur : { grund: "der Chat rief empfangeWerk nie" };
         const e = res.gut.ok && r.state.architectures.find((x) => x && x.id === res.gut.id);
         if (e) {
+            await window.__gebautNach(e, { bau: () => {} }); // die Welt zeichnet es in ihrem eigenen Takt
+            res.steht = Date.now();
+            const [p, q, cam] = [r.state.playerMesh.position, e.position, r.state.camera];
+            cam.updateMatrixWorld();
+            res.pose = { d: Math.hypot(q.x - p.x, q.z - p.z), ndc: new THREE.Vector3().copy(q).project(cam).toArray(), lod: e._lodLevel };
             res.stempel = JSON.stringify(e.studioOv) === JSON.stringify(a.ov) && e.seed === a.seed;
             res.fp = await window.__flatFp(r, e);
             res.fpOhne = await window.__flatFp(r, { type: e.type, seed: e.seed });
@@ -419,7 +433,7 @@ const welt = async (seite) => {
         res.taeter = { soll: "regler:segments", ...(await lauf(a.korpus.find((k) => k[0] === "regler:segments")[1])) };
         delete r._ovVertrag;
         return res;
-    }, a);
+    }, a));
 
     await browser.close();
     server.close();
@@ -482,17 +496,14 @@ const welt = async (seite) => {
 
     console.log("\n=== (T) TEILEN in EINER Geste: A klickt, B gibt den Code in den Chat ===");
     const kb = (c) => (c ? `${c.length} Zeichen` : "kein Code");
-    check(
-        "A: der Knopf liefert EINEN Code ≤ 4 KB",
-        a.code?.length <= 4096,
-        a.fehler || `${kb(a.code)}, eigener Bauplan ${kb(a.eigen)}`
-    );
-    check("B ist ein frisches Profil (eigener Vibe-Pass, A's Bauplan unbekannt)", b.frisch === true);
-    check(
-        "B: das Werk steht, die Signatur trägt A als Autor",
-        b.gut?.ok === true && b.gut.autor === a.autor,
-        JSON.stringify(b.gut)
-    );
+    const t = { code: a.code?.length, leer, ov: b.stempel, hashA: a.fp, hashB: b.fp, ohne: b.fpOhne, ndc: [9], ...b.pose };
+    t.ms = b.steht && msA + b.steht - uhr;
+    console.log("TEILEN " + JSON.stringify({ ...t, autor: b.gut?.autor === a.autor, msA }));
+    check("A: Werkstatt → GT → Teilen liefert EINEN Code ≤ 4 KB", t.code <= 4096, a.fehler || `${kb(a.code)}, eigener Bauplan ${kb(a.eigen)}`);
+    check("B ist ein frisches Profil (Platte + localStorage vor dem Boot leer, eigener Vibe-Pass)", b.frisch && !leer, leer);
+    check("B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A", b.gut?.ok && b.gut.autor === a.autor, JSON.stringify(b.gut));
+    check("B: gezeichnet an der eigenen Pose (≤ 24 m, im Bild)", t.d <= 24 && t.ndc.every((v) => Math.abs(v) <= 1), `${t.d} m ${t.ndc}`);
+    check("ZEIT: Klick bis Code + Enter bis gezeichnet ≤ 10 s", t.ms <= 10000, `${t.ms} ms (A ${msA})`);
     check("B: Stempel und Same reisen tief gleich", b.stempel === true);
     check(
         "BAU-HASH A ↔ B byte-gleich, der Stempel wirkt (≠ ungeprägt)",

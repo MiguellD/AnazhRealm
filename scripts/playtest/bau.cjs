@@ -328,23 +328,23 @@ async function checkBandV1767WorkshopDomainEmergent(ctx) {
         return out;
     });
     check(
-        "V17.67 R1: der Resonanz-Kern rechnet ein gewichtetes Skalarprodukt (mit Invers-Achse: {a:2,b:3}·{a:1,b:-1} = -1)",
+        "R1: der Resonanz-Kern rechnet ein gewichtetes Skalarprodukt (mit Invers-Achse: {a:2,b:3}·{a:1,b:-1} = -1)",
         res.resonanceKernel
     );
     check(
-        "V17.67 S7-B: DER WÄCHTER — die 5 Built-in-Werkstätten emergieren (Resonanz-argmax) korrekt (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism) + KEIN hardcoded Feld",
+        "S7-B: DER WÄCHTER — die 5 Built-in-Werkstätten emergieren (Resonanz-argmax) korrekt (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism) + KEIN hardcoded Feld",
         res.esse && res.brennkolben && res.webstuhl && res.altar && res.drehbank && res.noHardcode
     );
     check(
-        "V17.67 S7-B: SUBSTANZ statt NAME — die Resonanz diskriminiert nach Form×Material (quarz-Gefäß→alchemy, dichte→forging, lone Block→null statt über-klassifiziert)",
+        "S7-B: SUBSTANZ statt NAME — die Resonanz diskriminiert nach Form×Material (quarz-Gefäß→alchemy, dichte→forging, lone Block→null statt über-klassifiziert)",
         res.quarzSphereAlchemy && res.steinBoxForging && res.holzBoxNull && res.knochenBoxNull
     );
     check(
-        "V17.67 S7-B: DER FLIP — dieselbe Struktur + ein quarz-Gefäß → forging WIRD alchemy (live Form×Material, kein Schloss)",
+        "S7-B: DER FLIP — dieselbe Struktur + ein quarz-Gefäß → forging WIRD alchemy (live Form×Material, kein Schloss)",
         res.substanceFlip
     );
     check(
-        "V17.67 S7-B: DAS GATE liest die EMERGENTE Domäne end-to-end — ein forging-Werk passt zur Esse, NICHT zum Brennkolben (alchemy)",
+        "S7-B: DAS GATE liest die EMERGENTE Domäne end-to-end — ein forging-Werk passt zur Esse, NICHT zum Brennkolben (alchemy)",
         res.workIsForging && res.esseMatchesForging && res.brennkolbenWrongDomain
     );
 }
@@ -397,7 +397,7 @@ async function checkBandOmegaGrammatik(ctx) {
                 entasis: 0.05,
             });
             o.flutedGeo = !!(g && g.getAttribute("position") && g.getAttribute("position").count > 100);
-        } catch (e) {
+        } catch {
             o.flutedGeo = false;
         }
         // PHYSIK-GARANT: steht, knickt nicht, Lastpfad schließt
@@ -443,7 +443,7 @@ async function checkBandOmegaGrammatik(ctx) {
                 fuller: 0.5,
             });
             o.bladeGeo = !!(bg && bg.getAttribute("position") && bg.getAttribute("position").count > 50);
-        } catch (e) {
+        } catch {
             o.bladeGeo = false;
         }
         // die Balance (Ω-Φ4) ist gerechnet + typ-abhängig (großes Schwert kopflastiger)
@@ -1732,13 +1732,13 @@ async function checkBandV18266RockDetail(ctx) {
         out.overrideHonored = out.overrideTris >= 60; // noiseDetail:1 erzwingt det 1 trotz kleiner Grösse
         return out;
     });
-    check(`V18.266: kleiner Kiesel ist low-poly (${res.smallTris} Dreiecke, det 0)`, res.smallLow === true);
+    check(`kleiner Kiesel ist low-poly (${res.smallTris} Dreiecke, det 0)`, res.smallLow === true);
     check(
-        `V18.266: grosser Brocken behält Facetten (${res.bigTris} Dreiecke) — nur kleine Steine schrumpfen`,
+        `grosser Brocken behält Facetten (${res.bigTris} Dreiecke) — nur kleine Steine schrumpfen`,
         res.bigHigher === true && res.smallCheaperThanBig === true
     );
     check(
-        "V18.266: explizites noiseDetail bleibt Intent-Override",
+        "explizites noiseDetail bleibt Intent-Override",
         res.overrideHonored === true
     );
 }

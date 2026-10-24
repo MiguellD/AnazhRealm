@@ -22,8 +22,8 @@
 //               (kein Abbau, kein Neubau, kein Takt ohne Gestalt), draußen die Karte allein — kein Pop am Radius.
 //   D2 RIESE    eine Eiche mit Sichthöhe 110 m (Band 134–270 m, jenseits jedes Radius): im Band trägt sie ihren Partner
 //               (nicht voll gestempelt), jenseits die Karte allein, zurück wieder das Band — kein Takt ohne Gestalt.
-//   E STAND     die Gestalt des Orts (Solitär/Bestand) merkt sich erst nach der Wasser-Wahrheit ihrer Kachel (K20).
-//   F GRUNDRISS ein Haus über dem einzigen stehenden Nachbarn einer Eiche macht sie zum Solitär, gemerkt wie frisch (K20).
+//   E STAND     die Gestalt des Orts (Solitär/Bestand) merkt sich erst nach der Wasser-Wahrheit ihrer Kachel.
+//   F GRUNDRISS ein Haus über dem einzigen stehenden Nachbarn einer Eiche macht sie zum Solitär, gemerkt wie frisch.
 //   SELBSTTEST (sonst wäre das Grün vakuös): (1) der alte Weg (`_archKartenPreset` → null: jenseits der Mesh-Zone
 //               geräumt) macht A und D rot; (2) ein injizierter Feld-Satz an einem Baum macht B rot mit Namen;
 //               (3) kein Band jenseits des Radius — D2 rot; (4) ein Gedächtnis mit
@@ -45,7 +45,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     const page = await browser.newPage();
     await nullRenderer(page, { foundry: true });
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
-    // das Holz der Mess-Wiese ist „voll" (Ring 4): seit die Holz-Wahl auf dem WebGL2-Rückfall den GL-Renderer fragt (K67),
+    // das Holz der Mess-Wiese ist „voll" (Ring 4): seit die Holz-Wahl auf dem WebGL2-Rückfall den GL-Renderer fragt,
     // wählt swiftshader kienspan (Ring 2) — die Karten-Zone trüge dann 18 statt ≥ 100 Bäume, A wäre vakuös. Der Null-
     // Renderer baut kein Programm: „voll" kostet hier nichts.
     await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=voll`, { waitUntil: "domcontentloaded", timeout: 60000 });
@@ -63,7 +63,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         await window.__weltDa(() => f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod);
         res.buch = !!(f && f.ready);
         if (!res.buch) return res;
-        // E DER STAND DES WALD-GESETZES (K20): die Gestalt des Orts (Solitär oder Bestand) ist eine Antwort des Walds, und der
+        // E DER STAND DES WALD-GESETZES: die Gestalt des Orts (Solitär oder Bestand) ist eine Antwort des Walds, und der
         // Wald wächst aus der Wasser-Wahrheit seines Orts (Erosion, Flüsse, Seen der Hydro-Kachel). Ein Raster gesetzter Eichen
         // in einer Kachel, die noch nicht steht (der Zweit-Boot fragt den gespeicherten Baum vor dem Spieler-Takt), fragt
         // seine Gestalt; dann kommt der Spieler (die Kachel steht), und jede gemerkte Gestalt muss die aus dem Nichts
@@ -89,7 +89,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             const kr = AR.FOREST.crown.baum_eiche;
             // DIE FRAGE IN BAU-EREIGNISSEN (K69: die Schlange des Walds plant im Takt): wartet die Gestalt einer Eiche auf den Plan
             // ihres Walds, pumpt die Linse die Schlange (`_tickWaldPlan`), bis sie steht; jede Zelle plant ihre Wahrheit zuerst
-            // (`_ensureHydroTilesAround`). Ihr Rechner ist der Wald-Faden (K60-4): zwischen zwei Pumpen bekommt er die Nachrichten-Runde.
+            // (`_ensureHydroTilesAround`). Ihr Rechner ist der Wald-Faden: zwischen zwei Pumpen bekommt er die Nachrichten-Runde.
             const frag = async (e) => {
                 let g = r._foundryGestaltFor(e, "eiche");
                 for (let i = 0; g == null && i < 4000; i++) {
@@ -207,7 +207,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     selbst: sAlt !== sFrisch,
                 });
             }
-            // F DER GRUNDRISS-STAND (K20): ein Wurf des Walds, den die Natur-Wand hält (`_naturWand`: der
+            // F DER GRUNDRISS-STAND: ein Wurf des Walds, den die Natur-Wand hält (`_naturWand`: der
             // Grundriss eines Hauses), steht nie — die Eiche neben ihm steht frei. Eine Eiche im Bestand mit genau EINEM
             // stehenden Nachbarn bekommt über diesem Nachbarn ein Haus; danach muss ihre Gestalt der Solitär sein, gemerkt
             // (die Antwort vor dem Haus) wie frisch gefragt.

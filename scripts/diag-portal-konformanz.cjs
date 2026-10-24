@@ -44,7 +44,7 @@ const READY_FRIST_MS = 120000;
 // Welt-UI (same-origin: Selektor + Feld + Soll, der echte UI-Pfad der Studios); ohne `ui` = das Journal der Heimat
 // (die Welt antwortet mit einem Ereignis). begegnung versteht keine DSL (dsl []), ihre Wirkung ist der Ko-Präsenz-
 // Eintritt eines Gefährten (peer-join → Ereignis). `manifest: true` ist das SOLL der nativen Stufe: die Welt trägt ihr
-// worlds/<id>/manifest.json, liest es selbst und meldet es im ready (K1).
+// worlds/<id>/manifest.json, liest es selbst und meldet es im ready.
 const WELTEN = [
     { id: "skeleton", manifest: true, wort: "skybox_color 2a0a3a", mitgebracht: "voll" },
     { id: "fluid", manifest: true, wort: "flut", zusatz: stromZeichnet, mitgebracht: "pass" },
@@ -688,7 +688,7 @@ async function lauf(welten, taeter) {
             () => window.anazhRealm && window.anazhRealm.state && typeof window.anazhRealm._gameLoopTick === "function" && window.anazhRealm.state.blueprints,
             { timeout: 120000, polling: 200 }
         );
-        // Der Vibe-Pass steht (ed25519, asynchron im Boot); dann das Mitgebrachte in den Zustand der Heimat (K7).
+        // Der Vibe-Pass steht (ed25519, asynchron im Boot); dann das Mitgebrachte in den Zustand der Heimat.
         await page.evaluate(() => window.__weltDa((r) => !!(r.state.vibePass && r.state.vibePass.ready)));
         await page.evaluate((M) => {
             const st = window.anazhRealm.state;

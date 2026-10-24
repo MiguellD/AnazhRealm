@@ -16,7 +16,7 @@ class AnazhRealm_feld_sprache {
                 // D5a (V18.128) — das Vokabular wächst mit der WEATHER_INTENSITY-
                 // Tabelle; deutsche Worte normalisieren auf die kanonischen. Das Wort des Spielers steht, bis er es
                 // freigibt: „setze wetter frei" (oder „wechselhaft") lässt den Wetter-Zug wieder ziehen.
-                re: /^setze\s+wetter\s+(sunny|rainy|stormy|sturm|stürmisch|sonnig|sonne|regen|regnerisch|frei|wechselhaft)\s*$/i,
+                re: /^setze\s+wetter\s+(sunny|cloudy|foggy|rainy|stormy|sturm|stürmisch|sonnig|sonne|bewölkt|bewoelkt|wolkig|nebel|neblig|regen|regnerisch|frei|wechselhaft)\s*$/i,
                 build: (m) => {
                     const raw = m[1].toLowerCase();
                     const map = {
@@ -24,6 +24,11 @@ class AnazhRealm_feld_sprache {
                         stürmisch: "stormy",
                         sonnig: "sunny",
                         sonne: "sunny",
+                        bewölkt: "cloudy",
+                        bewoelkt: "cloudy",
+                        wolkig: "cloudy",
+                        nebel: "foggy",
+                        neblig: "foggy",
                         regen: "rainy",
                         regnerisch: "rainy",
                         wechselhaft: "frei",
@@ -589,6 +594,8 @@ class AnazhRealm_feld_sprache {
         // D5a (V18.128): der Sturm VOR dem Regen — das spezifischere Wort gewinnt.
         if (/\bsturm|stürmisch|stuermisch|stormy|gewitter/.test(t)) return ["weather_is", "stormy"];
         if (/\bregn|\bregen\b|regnet|rainy|nass/.test(t)) return ["weather_is", "rainy"];
+        if (/\bnebel|neblig|foggy/.test(t)) return ["weather_is", "foggy"];
+        if (/bewölkt|bewoelkt|wolkig|cloudy/.test(t)) return ["weather_is", "cloudy"];
         if (/\bsonn|sunny|klar\b|heiter/.test(t)) return ["weather_is", "sunny"];
         // Stimmung (globale Spieler-Emotion)
         if (/traurig|trauer|sorrow|kummer|weinst/.test(t)) return ["emotion_above", "sorrow", 0.5];

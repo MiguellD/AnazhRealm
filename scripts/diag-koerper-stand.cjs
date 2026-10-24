@@ -29,7 +29,7 @@
 //       (der tiefste Vertex je Reifen des GT in Fahrt), der Fuß der Streu (jede Instanz im Stand, nach Gang und Fahrt); die
 //       Feinform (Mesh gegen `_voxelSurfaceY`) ≤ 5 cm. Über dem Soll hält die Ratsche spec/profiband/ratsche-boden-rolle.json
 //   --selftest: je Defekt trägt die Welt den Leser vor seiner Heilung als Laufzeit-Stub (`taeter`) — GENAU
-//   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext (D3c).
+//   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";
 const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT } = require("./lib/welt-boot.cjs");
@@ -597,6 +597,7 @@ async function proben(mitWiese, umfang) {
             r.damageCreature(c, 1e6, {});
             const dy = c.userData.dying;
             if (dy) {
+                r._todLageTick({ timeRemaining: () => Infinity });
                 const nKipp = Math.ceil((dy.dauer + 0.05) / 0.02);
                 let wegMin = Infinity;
                 let wegMax = -Infinity;

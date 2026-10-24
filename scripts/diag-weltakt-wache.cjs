@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-weltakt-wache.cjs — DIE BÜHNE HÄLT DIE WELT (0710-7). Jeder solche Zug ist ein Welt-Akt der DSL, und alle laufen
+// diag-weltakt-wache.cjs — DIE BÜHNE HÄLT DIE WELT. Jeder solche Zug ist ein Welt-Akt der DSL, und alle laufen
 // durch EINE Engstelle: `dslEval`. Der Schnitt liegt dort: unter dem Halt einer Messung (`_messHalt`, dieselbe
 // eingefrorene Uhr wie der Wetter-Halt) verweigert `dslEval` jeden Welt-Akt (`AnazhRealm.DSL_WELTAKTE`) und nennt ihn
 // beim Namen seiner Quelle (`_weltaktGehalten`); im Spiel zählt die Uhr von 0 aufwärts — das Spiel bleibt, wie es ist.
@@ -450,7 +450,7 @@ function urteil(S, pageErrors) {
         rot.push(
             `(F) FREI: der Nexus wirkt ohne Halt nicht (${JSON.stringify(fn.vorher)} → ${JSON.stringify(fn.nachher)})`
         );
-    // Die Uhr gehört dem Spieler (Leben-Schau 2, `_himmelSchreiber`, gate:wetter-wache): auch ohne Halt stellt der Nexus sie nie.
+    // Die Uhr gehört dem Spieler (`_himmelSchreiber`, gate:wetter-wache): auch ohne Halt stellt der Nexus sie nie.
     if (fn.nachher.zeit !== fn.vorher.zeit)
         rot.push(
             `(F) FREI: der Nexus stellt die Uhr (${fn.vorher.zeit} → ${fn.nachher.zeit}) — sie gehört dem Spieler`

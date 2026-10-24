@@ -1256,6 +1256,14 @@ class AnazhRealm_koerper_fahrt {
         return n > 0 ? 1 - (1 - AnazhRealm.NAESSE.haft) * Math.min(1, n) : 1;
     }
 
+    // DER WIND AM WAGEN (wetter.K5): der EINE Wind am Ort des Fahr-Zustands (`_windAt` auf der Uhr des Sim-Schritts, nie der
+    // Bild-Uhr: Lockstep und Replay) in m/s als Welt-Vektor — der Kern (vehicle-core fahrKraefte `e.wind`) legt ihn quer auf die
+    // Flanke; ohne Wind fährt der Wagen wie im Lab.
+    _fahrWind(fz) {
+        const w = this._windAt(fz.x, fz.z, this.state._simZeit);
+        return { x: w.x * w.ms, z: w.z * w.ms };
+    }
+
     // DER NACHLAUF EINES ABGESTIEGENEN GESETZ-WAGENS (Welle L, Gegenprüfung 07.10.: `dismountArchitecture` stellte den Wagen
     // nicht ab — wer im Flug ausstieg, ließ ihn bis zum Reload in der Luft hängen, an der Klippe 4,80 m über seinem Boden).
     // Je Sim-Schritt trägt ihn die ballistische Vertikale des Kerns (vehicle-core fahrStand — dieselbe wie im Ritt), bis er
@@ -1280,7 +1288,7 @@ class AnazhRealm_koerper_fahrt {
                 const z0 = fz.z;
                 vc.fahrKraefte(
                     fz,
-                    { hand: true, tiefe: this._fahrTiefe(fz), haft: this._fahrHaft() },
+                    { hand: true, tiefe: this._fahrTiefe(fz), haft: this._fahrHaft(), wind: this._fahrWind(fz) },
                     entry._fahrSatz,
                     dt
                 );

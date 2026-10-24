@@ -193,16 +193,17 @@ async function eigeneWelt() {
     return () => rufe("/stop");
 }
 
-// Eine Klassen-Methode (4 Leerzeichen eingerückt, prettier-Form) aus dem Quelltext schneiden.
+// Eine Klassen-Methode (4 Leerzeichen eingerückt, prettier-Form, auch ein Gang) aus dem Quelltext schneiden.
 function methodeAusQuelle(quelle, name) {
-    const kopf = new RegExp(`\\n    (async )?${name}\\(([^)]*)\\) \\{\\n`);
+    const kopf = new RegExp(`\\n    (async |\\*)?${name}\\(([^)]*)\\) \\{\\n`);
     const m = kopf.exec(quelle);
     if (!m) return null;
     const start = m.index + 1;
     const ende = quelle.indexOf("\n    }\n", start);
     if (ende < 0) return null;
     const text = quelle.slice(start, ende + 6);
-    return `(${m[1] || ""}function ${name}(${m[2]}) {${text.slice(text.indexOf("{\n") + 1)})`;
+    const art = m[1] === "*" ? "function*" : `${m[1] || ""}function`;
+    return `(${art} ${name}(${m[2]}) {${text.slice(text.indexOf("{\n") + 1)})`;
 }
 
 // DER ECHTE LAUF (Seiten-Kontext): der Spiel-Loop läuft über rAF wie im Spiel; nach dem Einschwingen
@@ -668,7 +669,7 @@ function bandEinschwingen(k) {
                 window.__buehne();
                 if (window.__ortSchritt) window.__ortSchritt();
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             takte++;
             // was die Welt noch baut — die EINE Liste (band-urteil `einschwingOffen`, mit der Dorf-Wache des Messorts dorf)
             o = window.__einschwingOffen(r);
@@ -704,13 +705,13 @@ function bandProben(k) {
                         window.__buehne();
                         if (window.__ortSchritt) window.__ortSchritt();
                         r._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                     await sleep(50);
                 }
             window.__buehne();
             try {
                 if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
-            } catch (_e) {}
+            } catch {}
             proben.push(await window.__drawZensus({ alle: true }));
         }
         return proben;
@@ -942,7 +943,7 @@ async function starte() {
                         window.__buehne();
                         window.__ortSchritt();
                         r._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                     await sleep(50);
                 };
                 let takte;
@@ -1072,7 +1073,7 @@ async function starte() {
             for (let i = 0; i < 2; i++) {
                 try {
                     if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
-                } catch (_e) {}
+                } catch {}
                 r._schattenAlleNeu();
                 // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten
                 auf = await window.__ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: i === 0 ? wahl : 0 });
@@ -1638,7 +1639,7 @@ async function starte() {
             let b = {};
             try {
                 b = d ? JSON.parse(d) : {};
-            } catch (_e) {}
+            } catch {}
             const t0 = Date.now();
             // DIE STEMPEL-WACHE (scripts/lib/zerlege-linse.cjs): sobald der Pool steht, zählt sie jede verweigerte Abfrage.
             const stempel = () =>
@@ -2025,7 +2026,7 @@ async function starte() {
                                 if (window.__buehne) window.__buehne();
                                 if (window.__ortSchritt) window.__ortSchritt();
                                 r._gameLoopTick(performance.now());
-                            } catch (_e) {}
+                            } catch {}
                             takte++;
                             await new Promise((w) => setTimeout(w, 50));
                         };
@@ -2067,7 +2068,7 @@ async function starte() {
                                 try {
                                     if (window.__buehne) window.__buehne();
                                     r._gameLoopTick(performance.now());
-                                } catch (_e) {}
+                                } catch {}
                                 await rend.backend.device.queue.onSubmittedWorkDone();
                             }
                             return n - Math.max(0, ziel - gezeichnet);
@@ -2424,7 +2425,7 @@ async function starte() {
                         }
                         try {
                             if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
-                        } catch (_e) {}
+                        } catch {}
                         return window.__drawZensus({ top: 16, alle: !!k.alle });
                     }, b);
                     return send(Object.assign(o, { ms: Date.now() - t0 }));

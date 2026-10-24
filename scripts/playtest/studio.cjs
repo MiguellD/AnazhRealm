@@ -229,45 +229,45 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
         return out;
     });
     const R = res || {};
-    check("V18.493 Co-Schöpfer: Band lief ohne Fehler", !R.err, R.err);
+    check("Co-Schöpfer: Band lief ohne Fehler", !R.err, R.err);
     check(
-        "V18.493 Co-Schöpfer: der Wort-Auflöser liest die lebenden Tabellen (eiche/Eichen → baum_eiche, fels → Bauplan, Unsinn → null)",
+        "Co-Schöpfer: der Wort-Auflöser liest die lebenden Tabellen (eiche/Eichen → baum_eiche, fels → Bauplan, Unsinn → null)",
         R.eiche === "baum_eiche" && R.eichen === "baum_eiche" && !!R.fels && R.unbekannt === null,
         `eiche=${R.eiche} eichen=${R.eichen} fels=${R.fels} unbekannt=${R.unbekannt}`
     );
     check(
-        `V18.493 Co-Schöpfer: JEDE Baum-Art des Rezeptbuchs ist ein sagbares Wort (${R.treeIds} Arten)`,
+        `Co-Schöpfer: JEDE Baum-Art des Rezeptbuchs ist ein sagbares Wort (${R.treeIds} Arten)`,
         R.alleBaeumeLoesen === true && R.treeIds > 0
     );
     check(
-        "V18.493 Co-Schöpfer: spawn_studio pflanzt 5 Eichen — geerdet (Oberfläche+0.5), trocken, am EINEN Chokepoint",
+        "Co-Schöpfer: spawn_studio pflanzt 5 Eichen — geerdet (Oberfläche+0.5), trocken, am EINEN Chokepoint",
         R.spot === true && R.neuZahl === 5 && R.alleEiche && R.alleTrocken && R.alleGeerdet && R.ok1,
         `neu=${R.neuZahl} eiche=${R.alleEiche} trocken=${R.alleTrocken} geerdet=${R.alleGeerdet}`
     );
-    check("V18.493 Co-Schöpfer: ein unbekanntes Wort pflanzt NICHTS und sagt es im Log", R.unbekanntKeinSpawn === true);
+    check("Co-Schöpfer: ein unbekanntes Wort pflanzt NICHTS und sagt es im Log", R.unbekanntKeinSpawn === true);
     check(
-        "V18.493 Co-Schöpfer: der Satz OHNE KI („pflanz mir einen eichenhain am wasser“) wird spawn_studio eichen · near_water · 6",
+        "Co-Schöpfer: der Satz OHNE KI („pflanz mir einen eichenhain am wasser“) wird spawn_studio eichen · near_water · 6",
         R.satz === JSON.stringify(["spawn_studio", "eichen", "near_water", 6]),
         String(R.satz)
     );
     check(
-        "V18.493 Co-Schöpfer: die spezifischere alte Geste bleibt („pflanze baum hier“ → spawn_tree)",
+        "Co-Schöpfer: die spezifischere alte Geste bleibt („pflanze baum hier“ → spawn_tree)",
         R.altGesteBleibt === true
     );
     check(
-        "V18.493 Co-Schöpfer: near_water liefert einen Ufer-Ort am Wasser (eigenes 4-m-Raster) — ohne Wasser im Umkreis KEINEN, benannt (nie still den Spieler-Ort)",
+        "Co-Schöpfer: near_water liefert einen Ufer-Ort am Wasser (eigenes 4-m-Raster) — ohne Wasser im Umkreis KEINEN, benannt (nie still den Spieler-Ort)",
         R.nearWater === true && R.nearWaterTrocken === true,
         JSON.stringify(R.nearWaterBefund)
     );
     check(
-        "V18.493 Co-Schöpfer: das KI-Prompt lehrt die lebenden Wörter (spawn_studio wie jedes Verb: gate:weltakt-wache K); Regeln dürfen es nicht",
+        "Co-Schöpfer: das KI-Prompt lehrt die lebenden Wörter (spawn_studio wie jedes Verb: gate:weltakt-wache K); Regeln dürfen es nicht",
         R.promptWoerter === true && R.ruleVerbot === true
     );
     check(
-        "V18.493 Co-Schöpfer: die Claude-Anfrage spricht die aktuelle Generation (5er: effort low + fallbacks; Haiku schlicht)",
+        "Co-Schöpfer: die Claude-Anfrage spricht die aktuelle Generation (5er: effort low + fallbacks; Haiku schlicht)",
         R.anthropicForm === true
     );
-    check("V18.493 Co-Schöpfer: die Test-Pflanzung ist wieder aufgeräumt", R.aufgeraeumt === true);
+    check("Co-Schöpfer: die Test-Pflanzung ist wieder aufgeräumt", R.aufgeraeumt === true);
 }
 
 // V4(B) Foundry-Geometrie-Speicher flach über 4 LRU-Churn-Zyklen (Deckel 32) — eingefaltet aus gate:foundry-memory (D3b, die Welt des Läufers statt eines eigenen Boots): V4(B)-GATE — DER FOUNDRY-GEOMETRIE-SPEICHER IST FLACH (Null-Renderer, foundry-ON, JS-Bilanz-Zähler):
@@ -352,7 +352,7 @@ async function checkBandFoundrySpeicherFlach(ctx) {
     check("V4(B) Foundry-Geometrie-Speicher flach über 4 LRU-Churn-Zyklen (Deckel 32): dispose feuert, kein Use-after-free, live sub-linear", fails.length === 0, fails.join(" · "));
 }
 
-// V1 das Kristall-Kleid — eingefaltet aus gate:v1-resolve (D3b): `_foundryPresetForEntry` löst die Formations-VARIANTEN
+// V1 das Kristall-Kleid — eingefaltet aus gate:v1-resolve: `_foundryPresetForEntry` löst die Formations-VARIANTEN
 // (kristall_var${N}/fels_var${N}) auf ein Studio-Rezept auf; die Ausstattung (glutbrunnen · marktstand_dorf ·
 // brunnen_dorf · laterne_dorf) löst über ihre studioGestalt-Zeile auf das Gesetzbuch der Architektur; das Glut-Genom
 // ist gefallen, sein Umzug trägt alte Welten auf glutbrunnen; ein Tor-Wort ohne tor_-Klon fällt nie auf das
@@ -398,7 +398,7 @@ async function checkBandKristallKleid(ctx) {
     check("V2 Werkstatt: der Rezept-Regler erkennt die Repräsentanten (fels_var0 rock, kristall_var0 crystal)", o._kind === "rock/crystal", o._kind);
 }
 
-// V3 kein zweiter Baum-Bäcker — eingefaltet aus gate:no-second-treebuilder (D3b): die P4-Invariante — bei lebender Foundry rendert
+// V3 kein zweiter Baum-Bäcker — eingefaltet aus gate:no-second-treebuilder: die P4-Invariante — bei lebender Foundry rendert
 // KEIN Baum die Grammatik-Geometrie (der „83 batched-174k-Bäume"-Nachbau ist weg); der Scatter trägt Bäume UND Fels/Kiesel als
 // Studio-Asset (fscatter:*, die Karten in der EINEN Atlas-Gruppe), die Grammatik erscheint nur für wirklich ungemappte Arten.
 async function checkBandKeinZweiterBaumbaecker(ctx) {

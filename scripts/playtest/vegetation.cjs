@@ -199,18 +199,18 @@ async function checkBandV18275FoliageGrowth(ctx) {
         return out;
     });
     if (res.error) {
-        check("V18.275: Foliage-Growth-Band (realm)", false, res.error);
+        check("Foliage-Growth-Band (realm)", false, res.error);
         return;
     }
-    check("V18.275: headless (Null-Renderer) → foliageRadius = MAX (gate-treu)", res.headlessFull);
+    check("headless (Null-Renderer) → foliageRadius = MAX (gate-treu)", res.headlessFull);
     if (!res.skip) {
         check(
-            "V18.275: kleiner Radius → ferner Chunk wartet, Spieler-Chunk füllt",
+            "kleiner Radius → ferner Chunk wartet, Spieler-Chunk füllt",
             res.farDeferred && res.nearIncluded
         );
-        check("V18.275: der Radius wächst → der ferne Chunk wird in-radius (Welt wächst)", res.farIncludedAfterGrow);
+        check("der Radius wächst → der ferne Chunk wird in-radius (Welt wächst)", res.farIncludedAfterGrow);
         check(
-            "V18.275 CONSUM: _tickFoliageGrowth füllt wartende in-radius Chunks (sanftes Nachwachsen)",
+            "CONSUM: _tickFoliageGrowth füllt wartende in-radius Chunks (sanftes Nachwachsen)",
             res.growthDrains
         );
         check(
@@ -218,22 +218,22 @@ async function checkBandV18275FoliageGrowth(ctx) {
             res.growthNearestOverBudget && res.growthThrottledOverBudget && res.growthNeverStarves,
             `nächster ${res.growthNearestOverBudget} · Frist ${res.growthThrottledOverBudget} · nie verhungert ${res.growthNeverStarves}`
         );
-        check("V18.282: Frame frei → das Wachstum läuft weiter (lädt in den Lücken)", res.growthResumesWhenFree);
+        check("Frame frei → das Wachstum läuft weiter (lädt in den Lücken)", res.growthResumesWhenFree);
     }
     check(
-        "V18.277: headless (Null-Renderer) → _foliageDensityScale = 1 (volle Dichte, gate-treu)",
+        "headless (Null-Renderer) → _foliageDensityScale = 1 (volle Dichte, gate-treu)",
         res.densityHeadlessFull
     );
     if (res.densityCutsInstances !== undefined) {
         check(
-            `V18.277 CONSUM: gedrosselte Dichte baut WENIGER ferne Scatter-Instanzen (${res.densFull} → ${res.densLow}) — direkt weniger Geometrie (der Bulk-Hebel)`,
+            `CONSUM: gedrosselte Dichte baut WENIGER ferne Scatter-Instanzen (${res.densFull} → ${res.densLow}) — direkt weniger Geometrie (der Bulk-Hebel)`,
             res.densityCutsInstances
         );
     } else if (res.densityProbeError) {
-        check("V18.277 CONSUM: Dichte-Probe lief ohne Fehler", false, res.densityProbeError);
+        check("CONSUM: Dichte-Probe lief ohne Fehler", false, res.densityProbeError);
     }
     check(
-        "V18.280: Region trägt builtDensity · der Scatter-Tick ruft das Nach-Dünnen (Konsum)",
+        "Region trägt builtDensity · der Scatter-Tick ruft das Nach-Dünnen (Konsum)",
         res.scatterReadsBuiltDensity && res.streamingCallsThin
     );
     if (res.oneSourceProbeError) {
@@ -246,11 +246,11 @@ async function checkBandV18275FoliageGrowth(ctx) {
     }
     if (res.thinReduces !== undefined) {
         check(
-            `V18.280 CONSUM: sinkt die Kapazität, schrumpft die STATIONÄRE Welt (Region ${res.thinFull} → ${res.thinAfter}) — die geladene Welt dünnt beim Drehen`,
+            `CONSUM: sinkt die Kapazität, schrumpft die STATIONÄRE Welt (Region ${res.thinFull} → ${res.thinAfter}) — die geladene Welt dünnt beim Drehen`,
             res.thinReduces
         );
     } else if (res.thinProbeError) {
-        check("V18.280 CONSUM: Nach-Dünn-Probe lief ohne Fehler", false, res.thinProbeError);
+        check("CONSUM: Nach-Dünn-Probe lief ohne Fehler", false, res.thinProbeError);
     }
 }
 
@@ -548,11 +548,11 @@ async function checkBandV18133Forage(ctx) {
         return out;
     });
     if (!res) {
-        check("V18.133 Foraging: Sonde lief", false, "evaluate warf");
+        check("Foraging: Sonde lief", false, "evaluate warf");
         return;
     }
     check(
-        "V18.133 Foraging: pfluecken wirkt (+1 Stoff · die Pflanze tritt aus der Senke · Doppel-Pflueck abgelehnt · die Tat senkt lebendig) — oder unmessbar",
+        "Foraging: pfluecken wirkt (+1 Stoff · die Pflanze tritt aus der Senke · Doppel-Pflueck abgelehnt · die Tat senkt lebendig) — oder unmessbar",
         !res.measured || (res.harvested && res.doubleRejected && res.ausgetreten && res.tatBleibt)
     );
 }
@@ -622,23 +622,23 @@ async function checkBandV18197GammaMStrata(ctx) {
 
     if (res.foundErdePoint) {
         check(
-            `V18.197 (S4) An Oberfläche (y=surfY): bleibt erde (alte Achse, gemessen ${res.surfaceMat})`,
+            `(S4) An Oberfläche (y=surfY): bleibt erde (alte Achse, gemessen ${res.surfaceMat})`,
             res.surfaceStaysSame === true
         );
         check(
-            `V18.197 (S5) Tief unter Strata-Schwelle: forciert stein (gemessen ${res.deepMat})`,
+            `(S5) Tief unter Strata-Schwelle: forciert stein (gemessen ${res.deepMat})`,
             res.deepIsStein === true
         );
         check(
-            `V18.197 (S6) Auf der Strata-Schwelle: bleibt erde (strikte >-Wand, gemessen ${res.thresholdMat})`,
+            `(S6) Auf der Strata-Schwelle: bleibt erde (strikte >-Wand, gemessen ${res.thresholdMat})`,
             res.thresholdStaysSame === true
         );
         check(
-            `V18.197 (S8) MIGRATION: 2-arg Aufruf = 3-arg mit y=surfY (bit-identisch zu Pre-V18.197)`,
+            `(S8) MIGRATION: 2-arg Aufruf = 3-arg mit y=surfY (bit-identisch zu Pre-V18.197)`,
             res.migrationConsistent === true
         );
     } else {
-        check("V18.197 (S4-S8) Erde-Punkt nicht gefunden — Welt ohne Erde-Region (skip)", true);
+        check("(S4-S8) Erde-Punkt nicht gefunden — Welt ohne Erde-Region (skip)", true);
     }
 }
 
@@ -734,28 +734,28 @@ async function checkBandV18200GammaMIronBands(ctx) {
         return out;
     });
 
-    check("V18.200 (I2b) deterministisch (zwei Aufrufe gleicher Wert)", res.deterministic === true);
-    check("V18.200 (I2c) Werte in [0, 1] gebounded", res.boundedRange === true);
+    check("(I2b) deterministisch (zwei Aufrufe gleicher Wert)", res.deterministic === true);
+    check("(I2c) Werte in [0, 1] gebounded", res.boundedRange === true);
     check(
-        `V18.200 (I2d) Verteilung nicht-degeneriert (max=${res.distMax && res.distMax.toFixed(2)}, mean=${res.distMean && res.distMean.toFixed(2)}, Peaks > 0.5)`,
+        `(I2d) Verteilung nicht-degeneriert (max=${res.distMax && res.distMax.toFixed(2)}, mean=${res.distMean && res.distMean.toFixed(2)}, Peaks > 0.5)`,
         res.distHasPeaks === true
     );
-    check("V18.200 (I3) MIGRATION: ohne y bit-identisch (Pre-V18.197)", res.migrationOk === true);
+    check("(I3) MIGRATION: ohne y bit-identisch (Pre-V18.197)", res.migrationOk === true);
     check(
-        `V18.200 (I4) STRATA dominant: stein ${res.deepSteinHits}/${res.deepProbed} > eisen ${res.deepEisenHits} in tiefen Punkten`,
+        `(I4) STRATA dominant: stein ${res.deepSteinHits}/${res.deepProbed} > eisen ${res.deepEisenHits} in tiefen Punkten`,
         res.steinDominant === true
     );
     if (res.foundIronPoint) {
         check(
-            "V18.200 (I6a) An Iron-Ader-Punkt (tief + dichte hoch + ader>threshold) → eisen",
+            "(I6a) An Iron-Ader-Punkt (tief + dichte hoch + ader>threshold) → eisen",
             res.ironPointGivesEisen === true
         );
         check(
-            "V18.200 (I6b) Bei flacher Tiefe bleibt es stein (Iron-Schwelle nicht erreicht)",
+            "(I6b) Bei flacher Tiefe bleibt es stein (Iron-Schwelle nicht erreicht)",
             res.midDepthStaysStein === true
         );
     } else {
-        check("V18.200 (I6) Kein Iron-Ader-Punkt in 1000 Samples gefunden (skip)", true);
+        check("(I6) Kein Iron-Ader-Punkt in 1000 Samples gefunden (skip)", true);
     }
 }
 
@@ -849,19 +849,19 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
         return out;
     });
 
-    check("V18.205 (G2) Determinismus: gleiche seed → identische parts", res.deterministic === true);
-    check(`V18.205 (G3) 6 unterschiedliche seeds → 6 unique Varianten`, res.sixDistinct === true);
-    check(`V18.205 (G4a) parts > 0 (gemessen ${res.partsCount})`, res.partsCount > 0);
-    check("V18.205 (G4b) Alle Parts holz oder laub Material", res.allHolzOrLaub === true);
-    check("V18.205 (G4c) Mind. 3 Stamm-Holz-Parts", res.hasHolzParts === true);
-    check("V18.205 (G4d) Mind. 1 Laub-Krone-Part", res.hasLaubParts === true);
-    check("V18.205 (G5) SPECIES.ts-Regel: Laub an Ast-Enden (nie am Hauptstamm direkt)", res.laubAtBranchEnds === true);
+    check("(G2) Determinismus: gleiche seed → identische parts", res.deterministic === true);
+    check(`(G3) 6 unterschiedliche seeds → 6 unique Varianten`, res.sixDistinct === true);
+    check(`(G4a) parts > 0 (gemessen ${res.partsCount})`, res.partsCount > 0);
+    check("(G4b) Alle Parts holz oder laub Material", res.allHolzOrLaub === true);
+    check("(G4c) Mind. 3 Stamm-Holz-Parts", res.hasHolzParts === true);
+    check("(G4d) Mind. 1 Laub-Krone-Part", res.hasLaubParts === true);
+    check("(G5) SPECIES.ts-Regel: Laub an Ast-Enden (nie am Hauptstamm direkt)", res.laubAtBranchEnds === true);
     check(
-        `V18.205 (G6) TAG-NEUTRALITÄT zu baum_eiche (V17.16-Disziplin, diffs ${JSON.stringify(res.tagDiffs)})`,
+        `(G6) TAG-NEUTRALITÄT zu baum_eiche (V17.16-Disziplin, diffs ${JSON.stringify(res.tagDiffs)})`,
         res.tagNeutral === true
     );
-    check("V18.205 (G7) Parts wohlgeformt (shape+material+position+size vollständig)", res.wellFormed === true);
-    check(`V18.205 (G8) Höhen-Spreizung über 6 Varianten > 0.5 m (${res.heightSpread})`, res.heightsVary === true);
+    check("(G7) Parts wohlgeformt (shape+material+position+size vollständig)", res.wellFormed === true);
+    check(`(G8) Höhen-Spreizung über 6 Varianten > 0.5 m (${res.heightSpread})`, res.heightsVary === true);
 }
 
 // Skeleton-Grammar: mehrstufige Grammatik (trunk + L1 + L2) mit Foliage an den TIPS; Routing-Gate
@@ -931,21 +931,21 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         res.sixSpecies === true
     );
     check(
-        `V18.211 (S3a) Rich-Grammatik produziert ≥50 Parts (gemessen ${res.richPartsCount})`,
+        `(S3a) Rich-Grammatik produziert ≥50 Parts (gemessen ${res.richPartsCount})`,
         res.richProducesMany === true
     );
-    check("V18.211 (S3b) Alle Rich-Parts holz oder laub (V17.16-Wand strukturell)", res.richAllHolzOrLaub === true);
+    check("(S3b) Alle Rich-Parts holz oder laub (V17.16-Wand strukturell)", res.richAllHolzOrLaub === true);
     check(
-        "V18.211 (S3c) Foliage AT TIPS: ≥10 laub-Parts, alle vom Stamm weg (Plan-§3.3)",
+        "(S3c) Foliage AT TIPS: ≥10 laub-Parts, alle vom Stamm weg (Plan-§3.3)",
         res.richFoliageAtTips === true
     );
     check(
-        "V18.211 (S5a) Snapshot grownBlueprints trägt Metadata (_grownSpecies + _grownSeed)",
+        "(S5a) Snapshot grownBlueprints trägt Metadata (_grownSpecies + _grownSeed)",
         res.snapshotHasMetadata === true
     );
-    check("V18.211 (S5b) Snapshot grownBlueprints OHNE parts-Array (re-wächst f(seed))", res.snapshotNoParts === true);
+    check("(S5b) Snapshot grownBlueprints OHNE parts-Array (re-wächst f(seed))", res.snapshotNoParts === true);
     check(
-        "V18.211 (S5c) Snapshot-Eintrag pro grown-Bauplan < 500 Bytes (Plan-§2.5-konform)",
+        "(S5c) Snapshot-Eintrag pro grown-Bauplan < 500 Bytes (Plan-§2.5-konform)",
         res.snapshotGrownEntrySmall === true
     );
 }
@@ -1033,8 +1033,8 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
     });
 
     // Ω-K2
-    check("V18.212 (K2a) Baum-Fuß-Flare existiert (sockel-laub-Part, x-stretched)", res.k2HasFlare === true);
-    check("V18.212 (K2b) Flare am Stamm-Ursprung (|x|, |z| < 0.5m)", res.k2FlareAtTrunkBase === true);
+    check("(K2a) Baum-Fuß-Flare existiert (sockel-laub-Part, x-stretched)", res.k2HasFlare === true);
+    check("(K2b) Flare am Stamm-Ursprung (|x|, |z| < 0.5m)", res.k2FlareAtTrunkBase === true);
 
     // Ω-W
     check("K19 (W1) Wind: die Spitze biegt quadratisch (ζ², der EINE Term)", res.wQuadraticCrown === true);
@@ -1043,10 +1043,10 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
 
     if (res.hHarvestHasProvenance !== undefined) {
         check(
-            "V18.212 (H3) Behavioral: grown-Baum-Ernte trägt provenance.bornFrom='world-genesis'",
+            "(H3) Behavioral: grown-Baum-Ernte trägt provenance.bornFrom='world-genesis'",
             res.hHarvestHasProvenance === true
         );
-        check("V18.212 (H4) Behavioral: provenance.species = baum_eiche", res.hProvenanceCarriesSpecies === true);
+        check("(H4) Behavioral: provenance.species = baum_eiche", res.hProvenanceCarriesSpecies === true);
     }
 
     // Ω-C — N7.4: die Shell ist geschnitten; die Bänder prüfen die Abwesenheit.
@@ -1111,7 +1111,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         res.totholzFort === true
     );
     check(
-        "V18.215 (W5a) Tanne _isGrown: brennbar +0.1 angewandt (computeCompoundTags-Δ)",
+        "(W5a) Tanne _isGrown: brennbar +0.1 angewandt (computeCompoundTags-Δ)",
         res.tannenVariationApplied === true
     );
     check(
@@ -1212,7 +1212,7 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
 
     // (A) KARST
     check("K24 (A1) baum_karst ist die Studio-Art karst (_phytoArt)", res.grammarHasKarst === true);
-    check("V18.216 (A7) Karst-Anlauf 0,9 aus dem Gesetz (Sockel knorrig)", res.karstFlareAmp === true);
+    check("(A7) Karst-Anlauf 0,9 aus dem Gesetz (Sockel knorrig)", res.karstFlareAmp === true);
 
     // (B) Drei Büsche
     check("K24 (B1) busch_hazel ist der Studio-Strauch (_phytoArt)", res.grammarHasHazel === true);
@@ -1220,22 +1220,22 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
     check("K24 (B3) blume_gross ist die Studio-Blume (_phytoArt)", res.grammarHasBlume === true);
 
     // (C) Wachstum
-    check(`V18.216 (C1) Karst-rich-Grow ≥30 parts (gemessen ${res.karstPartsCount})`, res.karstPartsValid === true);
-    check("V18.216 (C2) Karst alle parts holz/laub (V17.16-Wand strukturell)", res.karstAllHolzOrLaub === true);
-    check(`V18.216 (C3) Hazel-Grow ≥10 parts (gemessen ${res.hazelPartsCount})`, res.hazelPartsValid === true);
-    check(`V18.216 (C4) Farn-Grow ≥6 parts (gemessen ${res.farnPartsCount})`, res.farnPartsValid === true);
-    check(`V18.216 (C5) Farn ≥3 foliage-anchors (gemessen ${res.farnAnchors})`, res.farnHasAnchors === true);
-    check(`V18.216 (C6) Blume-Grow ≥4 parts (gemessen ${res.blumePartsCount})`, res.blumePartsValid === true);
+    check(`(C1) Karst-rich-Grow ≥30 parts (gemessen ${res.karstPartsCount})`, res.karstPartsValid === true);
+    check("(C2) Karst alle parts holz/laub (V17.16-Wand strukturell)", res.karstAllHolzOrLaub === true);
+    check(`(C3) Hazel-Grow ≥10 parts (gemessen ${res.hazelPartsCount})`, res.hazelPartsValid === true);
+    check(`(C4) Farn-Grow ≥6 parts (gemessen ${res.farnPartsCount})`, res.farnPartsValid === true);
+    check(`(C5) Farn ≥3 foliage-anchors (gemessen ${res.farnAnchors})`, res.farnHasAnchors === true);
+    check(`(C6) Blume-Grow ≥4 parts (gemessen ${res.blumePartsCount})`, res.blumePartsValid === true);
 
     // (D) V17.16-VARIATIONS-Wand passiert
     check(
-        "V18.216 (D1) Karst spawnable (V17.16-VARIATIONS-Wand passiert: dichte+0.10 deklariert)",
+        "(D1) Karst spawnable (V17.16-VARIATIONS-Wand passiert: dichte+0.10 deklariert)",
         res.karstSpawnable === true
     );
-    check("V18.216 (D2) Karst-Bauplan ist _isGrown + _grownSpecies=baum_karst", res.karstBpIsGrown === true);
-    check("V18.216 (D3) Hazel spawnable", res.hazelSpawnable === true);
-    check("V18.216 (D4) Farn spawnable", res.farnSpawnable === true);
-    check("V18.216 (D5) Blume spawnable", res.blumeSpawnable === true);
+    check("(D2) Karst-Bauplan ist _isGrown + _grownSpecies=baum_karst", res.karstBpIsGrown === true);
+    check("(D3) Hazel spawnable", res.hazelSpawnable === true);
+    check("(D4) Farn spawnable", res.farnSpawnable === true);
+    check("(D5) Blume spawnable", res.blumeSpawnable === true);
 }
 
 // Varianten-Pool: N=VARIANTS_PER_SPECIES Varianten je Spezies, gefroren als Genese-Konstante in
@@ -1383,7 +1383,7 @@ async function checkBandV18217VariantenPool(ctx) {
     });
 
     // (B) Fresh-Welt
-    check("V18.217 (B1) Fresh-Welt-Meta trägt variantSeed-Pool", res.freshHasPool === true);
+    check("(B1) Fresh-Welt-Meta trägt variantSeed-Pool", res.freshHasPool === true);
     check(
         `K24 (B2) der Pool wächst je Pflanze des Gesetzbuchs, nie für Fels (gemessen ${res.freshPoolSpeciesCount} Arten)`,
         res.allGrammarSpeciesInPool === true
@@ -1391,31 +1391,31 @@ async function checkBandV18217VariantenPool(ctx) {
 
     // (C) Determinismus
     check(
-        "V18.217 (C1) Pool-Generierung deterministisch (gleicher Seed → gleicher Pool)",
+        "(C1) Pool-Generierung deterministisch (gleicher Seed → gleicher Pool)",
         res.poolDeterministic === true
     );
-    check("V18.217 (C2) Verschiedene worldSeeds erzeugen DISTINKTE Pools", res.poolDistinctSeeds === true);
+    check("(C2) Verschiedene worldSeeds erzeugen DISTINKTE Pools", res.poolDistinctSeeds === true);
 
     // (D) Spawn-Pipeline
-    check("V18.217 (D1) Gleicher regionSeed → gleicher Bauplan-Key", res.sameRegionSameKey === true);
-    check("V18.217 (D2) Bauplan-Key folgt `grown_<species>_v<idx>`-Form", res.keyHasVariantForm === true);
+    check("(D1) Gleicher regionSeed → gleicher Bauplan-Key", res.sameRegionSameKey === true);
+    check("(D2) Bauplan-Key folgt `grown_<species>_v<idx>`-Form", res.keyHasVariantForm === true);
     check(
-        "V18.217 (D4) bp._grownSeed === variantSeed[species][index] (Re-Wachstum bit-genau)",
+        "(D4) bp._grownSeed === variantSeed[species][index] (Re-Wachstum bit-genau)",
         res.bpGrownSeedIsVariantSeed === true
     );
 
     // (E) Snapshot
-    check("V18.217 (E1) Snapshot trägt worldMeta.variantSeed", res.snapshotCarriesPool === true);
-    check("V18.217 (E2) Snapshot-Pool ist bit-identisch zur Live-Welt", res.snapshotPoolMatchesLive === true);
+    check("(E1) Snapshot trägt worldMeta.variantSeed", res.snapshotCarriesPool === true);
+    check("(E2) Snapshot-Pool ist bit-identisch zur Live-Welt", res.snapshotPoolMatchesLive === true);
 
     // (F) Migration
     check(
-        "V18.217 (F1) Migration: alte Welt ohne variantSeed bekommt lazy einen Pool",
+        "(F1) Migration: alte Welt ohne variantSeed bekommt lazy einen Pool",
         res.migrationFillsPool === true
     );
 
     // (G) Performance
-    check(`V18.217 (G1) Pool-JSON-Größe < 30 KB (gemessen ${res.poolJsonSize} Bytes)`, res.poolSizeUnder30K === true);
+    check(`(G1) Pool-JSON-Größe < 30 KB (gemessen ${res.poolJsonSize} Bytes)`, res.poolSizeUnder30K === true);
 }
 
 // LOD-Stufen: 3 LODs pro Variante (Hero/Mittel/Far) — Geometrie-Beschneidung + Variant-LOD-Builder
@@ -1572,16 +1572,16 @@ async function checkBandV18218LODStufen(ctx) {
     // (A) Source
 
     // (B) Distanz-Chooser
-    check(`V18.218 (B1) chooseLOD(0.6·t01)=0 (Hero-Nähe)`, res.choose50 === true);
-    check(`V18.218 (B2) chooseLOD((t01+t12)/2)=1 (Mittel)`, res.choose100 === true);
-    check(`V18.218 (B3) chooseLOD(1.25·t12)=2 (Far)`, res.choose200 === true);
-    check(`V18.218 (B4) chooseLOD(0)=0 (Spieler-Position)`, res.choose0 === true);
-    check("V18.218 (B5) Hysterese cur=0 + dist=t01+h/2 → bleibt 0 (kein Flackern)", res.hyst0to1Below === true);
-    check("V18.218 (B6) Hysterese cur=0 + dist=t01+2h → wechselt 1", res.hyst0to1Above === true);
-    check("V18.218 (B7) Hysterese cur=1 + dist=t01−2h → kehrt zu 0", res.hyst1to0Below === true);
-    check("V18.218 (B8) Hysterese cur=1 + dist=t01−h/2 → bleibt 1", res.hyst1to0Above === true);
+    check(`(B1) chooseLOD(0.6·t01)=0 (Hero-Nähe)`, res.choose50 === true);
+    check(`(B2) chooseLOD((t01+t12)/2)=1 (Mittel)`, res.choose100 === true);
+    check(`(B3) chooseLOD(1.25·t12)=2 (Far)`, res.choose200 === true);
+    check(`(B4) chooseLOD(0)=0 (Spieler-Position)`, res.choose0 === true);
+    check("(B5) Hysterese cur=0 + dist=t01+h/2 → bleibt 0 (kein Flackern)", res.hyst0to1Below === true);
+    check("(B6) Hysterese cur=0 + dist=t01+2h → wechselt 1", res.hyst0to1Above === true);
+    check("(B7) Hysterese cur=1 + dist=t01−2h → kehrt zu 0", res.hyst1to0Below === true);
+    check("(B8) Hysterese cur=1 + dist=t01−h/2 → bleibt 1", res.hyst1to0Above === true);
     check(
-        "V18.526 Mehrstufen-Sprung: cur=0 jenseits t12+h → 2, cur=2 unter t01−h → 0",
+        "Mehrstufen-Sprung: cur=0 jenseits t12+h → 2, cur=2 unter t01−h → 0",
         res.sprung0to2 === true && res.sprung2to0 === true
     );
     check(
@@ -1590,36 +1590,36 @@ async function checkBandV18218LODStufen(ctx) {
     );
 
     // (C) Variant-LOD-Bauplane
-    check("V18.218 (C1) _buildVariantLODs liefert 3 Bauplan-Keys", res.lodKeysReturned === true);
-    check("V18.218 (C2) Key-Form LOD0 `grown_<species>_v<idx>`", res.key0Form === true);
-    check("V18.218 (C3) Key-Form LOD1 `grown_<species>_v<idx>_lod1`", res.key1Form === true);
-    check("V18.218 (C4) Key-Form LOD2 `grown_<species>_v<idx>_lod2`", res.key2Form === true);
-    check("V18.218 (C5) LOD1-Bauplan in state.blueprints", res.bp1Exists === true);
-    check("V18.218 (C6) LOD2-Bauplan in state.blueprints", res.bp2Exists === true);
-    check("V18.218 (C7) bp._lodLevel gesetzt", res.bp1HasLodLevel === true && res.bp2HasLodLevel === true);
+    check("(C1) _buildVariantLODs liefert 3 Bauplan-Keys", res.lodKeysReturned === true);
+    check("(C2) Key-Form LOD0 `grown_<species>_v<idx>`", res.key0Form === true);
+    check("(C3) Key-Form LOD1 `grown_<species>_v<idx>_lod1`", res.key1Form === true);
+    check("(C4) Key-Form LOD2 `grown_<species>_v<idx>_lod2`", res.key2Form === true);
+    check("(C5) LOD1-Bauplan in state.blueprints", res.bp1Exists === true);
+    check("(C6) LOD2-Bauplan in state.blueprints", res.bp2Exists === true);
+    check("(C7) bp._lodLevel gesetzt", res.bp1HasLodLevel === true && res.bp2HasLodLevel === true);
     check(
-        "V18.218 (C8) 3 LOD-Bauplane teilen denselben _variantIndex (Form-Identität)",
+        "(C8) 3 LOD-Bauplane teilen denselben _variantIndex (Form-Identität)",
         res.lodsShareVariantIndex === true
     );
     check(
-        "V18.218 (C9) 3 LOD-Bauplane teilen denselben _grownSeed (Re-Wachstum bit-genau)",
+        "(C9) 3 LOD-Bauplane teilen denselben _grownSeed (Re-Wachstum bit-genau)",
         res.lodsShareSeed === true
     );
 
     // (D) Geometrie-Reduktion
-    check(`V18.218 (D1) LOD0 ≥50 Parts (Hero, gemessen ${res.lod0Parts})`, res.lod0FullParts === true);
-    check(`V18.218 (D2) LOD1 reduziert auf ≤20 Parts (gemessen ${res.lod1Parts})`, res.lod1Reduced === true);
-    check(`V18.218 (D3) LOD2 ≤10 Parts (Far, gemessen ${res.lod2Parts})`, res.lod2Tiny === true);
-    check(`V18.218 (D4) Parts-Anzahl strict monoton: LOD0 > LOD1 > LOD2`, res.lodPartsMonotone === true);
-    check(`V18.218 (D5) Default-LOD ohne opts ist LOD0 (Backward-Kompat)`, res.lodDefaultIsLod0 === true);
+    check(`(D1) LOD0 ≥50 Parts (Hero, gemessen ${res.lod0Parts})`, res.lod0FullParts === true);
+    check(`(D2) LOD1 reduziert auf ≤20 Parts (gemessen ${res.lod1Parts})`, res.lod1Reduced === true);
+    check(`(D3) LOD2 ≤10 Parts (Far, gemessen ${res.lod2Parts})`, res.lod2Tiny === true);
+    check(`(D4) Parts-Anzahl strict monoton: LOD0 > LOD1 > LOD2`, res.lodPartsMonotone === true);
+    check(`(D5) Default-LOD ohne opts ist LOD0 (Backward-Kompat)`, res.lodDefaultIsLod0 === true);
     check(
-        `V18.218 (D6) LOD2 Parts ≤ 15 % von LOD0 (Plan §3.6 „≤ 10 % Triangle-Count Toleranz")`,
+        `(D6) LOD2 Parts ≤ 15 % von LOD0 (Plan §3.6 „≤ 10 % Triangle-Count Toleranz")`,
         res.lod2UnderCap === true
     );
 
     // (F) V17.16-Tag-Wand
-    check("V18.218 (F1) LOD0 + LOD1 → identische compoundTags (Tag-Neutralität)", res.tagNeutralLOD01 === true);
-    check("V18.218 (F2) LOD0 + LOD2 → identische compoundTags (Tag-Neutralität)", res.tagNeutralLOD02 === true);
+    check("(F1) LOD0 + LOD1 → identische compoundTags (Tag-Neutralität)", res.tagNeutralLOD01 === true);
+    check("(F2) LOD0 + LOD2 → identische compoundTags (Tag-Neutralität)", res.tagNeutralLOD02 === true);
 }
 
 // Gigant-Vollendung (eine Wand-Funktion): LOD-Activation per Frame · GPU-Feld-Bake-Region-Cache ·
@@ -1707,38 +1707,38 @@ async function checkBandV18219bisVollendung(ctx) {
     });
 
     // LOD-Activation
-    check("V18.218.1 (L3) _gameLoopTick ruft _tickArchitectureLOD (Verdrahtung)", res.lodTickInLoop === true);
-    check("V18.218.1 (L4) atmosphere.treeLOD=true Default", res.lodFlagDefault === true);
+    check("(L3) _gameLoopTick ruft _tickArchitectureLOD (Verdrahtung)", res.lodTickInLoop === true);
+    check("(L4) atmosphere.treeLOD=true Default", res.lodFlagDefault === true);
     check(
-        "V18.218.1 (L6) spawnArchitecture markiert grown-tree-Entry mit _lod-Feldern",
+        "(L6) spawnArchitecture markiert grown-tree-Entry mit _lod-Feldern",
         res.spawnedEntryHasLodFields === true
     );
-    check("V18.218.1 (L7) _lodSpecies = baum_eiche (Identitäts-Mark)", res.spawnedEntrySpeciesIsEiche === true);
-    check("V18.218.1 (L8) _switchArchitectureLOD wechselt zu LOD2", res.lodSwitchedToLOD2 === true);
-    check("V18.218.1 (L9) entry.type endet auf `_lod2`", res.lodTypeChanged === true);
-    check("V18.218.1 (L10) Zurück zu LOD0 (Form-Identität bewahrt)", res.lodSwitchedBack === true);
+    check("(L7) _lodSpecies = baum_eiche (Identitäts-Mark)", res.spawnedEntrySpeciesIsEiche === true);
+    check("(L8) _switchArchitectureLOD wechselt zu LOD2", res.lodSwitchedToLOD2 === true);
+    check("(L9) entry.type endet auf `_lod2`", res.lodTypeChanged === true);
+    check("(L10) Zurück zu LOD0 (Form-Identität bewahrt)", res.lodSwitchedBack === true);
 
-    check("V18.219 (B11) Invalidation setzt dirty=true", res.invalidationSetDirty === true);
+    check("(B11) Invalidation setzt dirty=true", res.invalidationSetDirty === true);
 
     // Scatter-Bitmask + Cap + Lookup
-    check("V18.220 (S6) markiertes Cell ist promoted=true", res.markedThenIsPromoted === true);
-    check("V18.220 (S7) Distant cell promoted=false (kein false-positive)", res.distantNotPromoted === true);
-    check("V18.220 (S8) Lookup species=baum_birke", res.lookupSpecies === true);
-    check("V18.220 (S9) Lookup variantIndex=7", res.lookupVariantIndex === true);
-    check("V18.220 (S10) Counter inkrementiert", res.counterIncrements === true);
-    check("V18.220 (S11) Counter nicht am Cap nach 1 Inc", res.counterNotAtCap === true);
+    check("(S6) markiertes Cell ist promoted=true", res.markedThenIsPromoted === true);
+    check("(S7) Distant cell promoted=false (kein false-positive)", res.distantNotPromoted === true);
+    check("(S8) Lookup species=baum_birke", res.lookupSpecies === true);
+    check("(S9) Lookup variantIndex=7", res.lookupVariantIndex === true);
+    check("(S10) Counter inkrementiert", res.counterIncrements === true);
+    check("(S11) Counter nicht am Cap nach 1 Inc", res.counterNotAtCap === true);
 
-    check("V18.221 (P2) Snapshot trägt worldMeta.scatterPromoted (Array)", res.snapshotCarriesPromoted === true);
+    check("(P2) Snapshot trägt worldMeta.scatterPromoted (Array)", res.snapshotCarriesPromoted === true);
 
     // Canopy chunk-streaming
-    check("V18.222 (C5) _gameLoopTick ruft _tickCanopyStreaming (Verdrahtung)", res.canopyTickInLoop === true);
-    check("V18.222 (C6) atmosphere.canopyStreaming Default false (OPT-IN)", res.canopyFlagDefault === true);
-    check("V18.222 (C8) _canopyEnsureChunk baut Mesh+Geometry+Material", res.canopyMeshBuilt === true);
-    check("V18.222 (C9) Canopy-Mesh hat color-Attribute (vertexColors)", res.canopyMeshHasColor === true);
-    check("V18.222 (C10) Canopy-Mesh userData.kind=canopyChunk", res.canopyMeshHasUserdata === true);
-    check("V18.222 (C11) Canopy-Mesh in state.canopyChunks-Map", res.canopyMeshInMap === true);
+    check("(C5) _gameLoopTick ruft _tickCanopyStreaming (Verdrahtung)", res.canopyTickInLoop === true);
+    check("(C6) atmosphere.canopyStreaming Default false (OPT-IN)", res.canopyFlagDefault === true);
+    check("(C8) _canopyEnsureChunk baut Mesh+Geometry+Material", res.canopyMeshBuilt === true);
+    check("(C9) Canopy-Mesh hat color-Attribute (vertexColors)", res.canopyMeshHasColor === true);
+    check("(C10) Canopy-Mesh userData.kind=canopyChunk", res.canopyMeshHasUserdata === true);
+    check("(C11) Canopy-Mesh in state.canopyChunks-Map", res.canopyMeshInMap === true);
     check(
-        "V18.222 (C12) Disposal entfernt das Mesh aus der Map",
+        "(C12) Disposal entfernt das Mesh aus der Map",
         res.canopyDisposed === true && res.canopyMeshGoneFromMap === true
     );
 }
@@ -1905,41 +1905,41 @@ async function checkBandV18224ScatterPromotion(ctx) {
     });
 
     // (A) Source + Config
-    check("V18.224 (A7) _gameLoopTick ruft _tickScatterStreaming (Verdrahtung)", res.tickInLoop === true);
+    check("(A7) _gameLoopTick ruft _tickScatterStreaming (Verdrahtung)", res.tickInLoop === true);
 
     // (B) Determinismus
-    check("V18.224 (B1) pcg2d deterministisch (gleicher Input → gleicher Hash)", res.pcgDeterministic === true);
-    check("V18.224 (B2) pcg2d distinkt (verschiedene Inputs → verschieden)", res.pcgDistinct === true);
-    check("V18.224 (B3) pcg2d liefert uint32", res.pcgIsUint === true);
+    check("(B1) pcg2d deterministisch (gleicher Input → gleicher Hash)", res.pcgDeterministic === true);
+    check("(B2) pcg2d distinkt (verschiedene Inputs → verschieden)", res.pcgDistinct === true);
+    check("(B3) pcg2d liefert uint32", res.pcgIsUint === true);
     check(
-        "V18.224 (B4) _scatterCellTransform deterministisch (bit-genau, Promotion-Match)",
+        "(B4) _scatterCellTransform deterministisch (bit-genau, Promotion-Match)",
         res.transformDeterministic === true
     );
-    check("V18.224 (B5) Transform: scale 0.7..1.36, yaw 0..2π (in der Cell)", res.transformInCell === true);
+    check("(B5) Transform: scale 0.7..1.36, yaw 0..2π (in der Cell)", res.transformInCell === true);
 
     // (C) Echte Instanzen
-    check("V18.224 (C1) _scatterRegion baut eine Region", res.regionBuilt === true);
+    check("(C1) _scatterRegion baut eine Region", res.regionBuilt === true);
     check(
-        `V18.224 (C2) Region erzeugt ECHTE Instanzen (gemessen ${res.regionInstanceCount})`,
+        `(C2) Region erzeugt ECHTE Instanzen (gemessen ${res.regionInstanceCount})`,
         res.regionInstanceCount > 0
     );
-    check("V18.224 (C3) Region trägt Cells", res.regionHasCells === true);
+    check("(C3) Region trägt Cells", res.regionHasCells === true);
     check(
-        `V18.224 (C4) HISM-Gruppen tragen LIVE-Instanzen (count>0, gemessen ${res.liveInstanceCount})`,
+        `(C4) HISM-Gruppen tragen LIVE-Instanzen (count>0, gemessen ${res.liveInstanceCount})`,
         res.hasLiveInstances === true
     );
-    check("V18.224 (C5) Cell trägt species (Promotion-Identität)", res.cellHasSpecies === true);
-    check("V18.224 (C6) Cell trägt variantIndex", res.cellHasVariant === true);
-    check("V18.224 (C7) Cell trägt HISM-Slots (echte Instanz-Referenzen)", res.cellHasSlots === true);
+    check("(C5) Cell trägt species (Promotion-Identität)", res.cellHasSpecies === true);
+    check("(C6) Cell trägt variantIndex", res.cellHasVariant === true);
+    check("(C7) Cell trägt HISM-Slots (echte Instanz-Referenzen)", res.cellHasSlots === true);
     check(
-        "V18.224 (C8) Lookup-Buffer ist LEBENDIG (V18.220-Passagier geheilt — Konsument liest ihn)",
+        "(C8) Lookup-Buffer ist LEBENDIG (V18.220-Passagier geheilt — Konsument liest ihn)",
         res.lookupAlive === true || res.lookupAlive === "no-tree-cell"
     );
-    check("V18.224 (C9) _scatterRegion idempotent (cached)", res.regionIdempotent === true);
+    check("(C9) _scatterRegion idempotent (cached)", res.regionIdempotent === true);
 
     // (M) V18.225 MEHRSCHICHT-DICHTE (Plan §13 „≥hunderte/Chunk + 5 Strata")
     check(
-        `V18.224 (M1) ≥3 Scatter-Strata konfiguriert (V18.227: +Fels = 4, gemessen ${res.scatterLayerCount})`,
+        `(M1) ≥3 Scatter-Strata konfiguriert (V18.227: +Fels = 4, gemessen ${res.scatterLayerCount})`,
         res.scatterLayerCount >= 3
     );
     check(
@@ -1971,23 +1971,23 @@ async function checkBandV18224ScatterPromotion(ctx) {
     );
 
     // (D) Species-Determinismus
-    check("V18.224 (D1) Species-Wahl deterministisch (P2P-konsistent)", res.speciesDeterministic === true);
+    check("(D1) Species-Wahl deterministisch (P2P-konsistent)", res.speciesDeterministic === true);
 
     // (E) Promotion
-    check("V18.224 (E1) _promoteScatterCell liefert echten Eintrag (Touch→Real)", res.promoteReturnsEntry === true);
-    check("V18.224 (E2) Architektur-Anzahl +1 (echter Bauplan entstand)", res.archCountIncreased === true);
+    check("(E1) _promoteScatterCell liefert echten Eintrag (Touch→Real)", res.promoteReturnsEntry === true);
+    check("(E2) Architektur-Anzahl +1 (echter Bauplan entstand)", res.archCountIncreased === true);
     check(
-        "V18.224 (E3) Eintrag trägt Provenienz bornFrom=world-genesis-cell (Plan §2)",
+        "(E3) Eintrag trägt Provenienz bornFrom=world-genesis-cell (Plan §2)",
         res.entryHasProvenance === true
     );
-    check("V18.224 (E4) Provenienz-Species == Scatter-Species", res.provenanceSpecies === true);
+    check("(E4) Provenienz-Species == Scatter-Species", res.provenanceSpecies === true);
     check(
-        "V18.224 (E5) Eintrag nutzt grown_-Bauplan derselben Species (KEIN visueller Sprung)",
+        "(E5) Eintrag nutzt grown_-Bauplan derselben Species (KEIN visueller Sprung)",
         res.entryUsesGrownBp === true
     );
-    check("V18.224 (E6) Eintrag-Variante == Scatter-Variante (Form-Identität)", res.entryVariantMatches === true);
-    check("V18.224 (E7) Deko-Slots freigegeben bei Promotion (kein Doppel-Mesh)", res.cellSlotsFreed === true);
-    check("V18.224 (E8) Cell jetzt promoted (Bitmask — kein zweiter Deko-Spawn)", res.cellNowPromoted === true);
+    check("(E6) Eintrag-Variante == Scatter-Variante (Form-Identität)", res.entryVariantMatches === true);
+    check("(E7) Deko-Slots freigegeben bei Promotion (kein Doppel-Mesh)", res.cellSlotsFreed === true);
+    check("(E8) Cell jetzt promoted (Bitmask — kein zweiter Deko-Spawn)", res.cellNowPromoted === true);
 
     // (F) Streaming + Cleanup
 }
@@ -2112,12 +2112,12 @@ async function checkBandWahrerAnblickLaub(ctx) {
     check("Ω-OPSIS S3-Laub (B1) gewachsener Baum baut die Rinden-Tube", res.tubeOk === true);
     check("Ω-OPSIS S6-Laub (B2) gewachsener Baum baut die Foliage-Card", res.cardOk === true);
     check(
-        "V18.386 Neues Kleid (B3) die Blatt-Form lebt in der Atlas-Silhouette (Cluster-Quad, uv-geroutet)",
+        "Neues Kleid (B3) die Blatt-Form lebt in der Atlas-Silhouette (Cluster-Quad, uv-geroutet)",
         res.taperProven === true
     );
 }
 
-// Die Scheiben-Byte-Wand (W3.3b/3c) — eingefaltet aus gate:scatter-slice (D3b): `_scatterRegion` baut mit Deadline in ZEIT-
+// Die Scheiben-Byte-Wand (W3.3b/3c) — eingefaltet aus gate:scatter-slice: `_scatterRegion` baut mit Deadline in ZEIT-
 // SCHEIBEN (Fortsetzung `region._cont`: Bake-Phase → Zellen-Phase). Dieselbe Region One-Shot vs in N Scheiben: `region.cells`
 // byte-gleich bei echten Scheiben, die HISM-Slot-Bilanz identisch (ein Doppel-Add wäre im cells-Vergleich unsichtbar), der
 // Kalt-Bake gescheibt + Float32-byte-gleich ohne halben Bake in der Map, das Dispose-Storno, der Wecker der aufgeschobenen
@@ -2286,7 +2286,7 @@ async function checkBandScatterScheibe(ctx) {
             wecker.threw = String((e && e.message) || e);
         }
         o.wecker = wecker;
-        // ── (6) DER STOFF DES WALDS (K60-3): die Gestalt der Streu wartet auf die Darts des Fadens ──
+        // ── (6) DER STOFF DES WALDS: die Gestalt der Streu wartet auf die Darts des Fadens ──
         const stoff = {
             buch: false,
             wahr: false,

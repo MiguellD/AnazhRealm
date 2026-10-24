@@ -3299,6 +3299,93 @@
     // keyLight und Spiegel-Farbe, Welt: WEATHER_TINTS.lightMul); den Himmel der Welt dimmt die Sonne der Zeile selbst (skyMul).
     var WX_LICHT = { sockel: 0.35, sonne: 0.65 };
 
+    // DER EINE WIND UND DIE FRONT (wetter.K5 · wetter.K1, rein additiv — kein bestehender Wert bewegt sich). Die RICHTUNG des
+    // Winds ist eine Funktion der Saat und der Zeit: θ(t) = θ0 + 0,5·sin(0,009·t + φ1) + 0,22·sin(0,0257·t + φ2), ±41° Mäander
+    // um die Grundrichtung θ0; θ0 · φ1 · φ2 aus FNV-1a über saat + "-wind-dir" (ein eigener Strom der Saat). Der Vektor
+    // (sin θ, cos θ) zeigt, wohin der Wind weht. Bis wetter.K5 rechnete der Stamm sie selbst (`_windDirAt`, dieselben Bytes).
+    // DIE FRONT: das Wetter am Ort zur Zeit ist EINE Funktion wetterAt(saat, x, z, t) — Bänder der Saat (drei Wellen längs
+    // der Grundrichtung θ0, die Front-Linie quer gebogen), die mit dem Höhenwind `zugMS` windab ziehen: was an A regnet,
+    // regnet am Ort d windab nach d / zugMS. Die Front-Stärke (0…1) wählt die Zeile der Tafel WX_GESETZ — sturm · regen ·
+    // bewoelkt über den `stufen`, darunter nebel, wo die Feuchte (eine Welle von `feuchteM`) über `stufen.nebel` steht, sonst
+    // klar. Gerechnet über 300 Saaten × 400 Orte: klar 27 % · nebel 15 % · bewoelkt 21 % · regen 25 % · sturm 13 %; über
+    // 20 min an zwei Orten 3 km windab regnet es an A bei trockenem B in 23–40 % der Zeit (403 Saaten, kein Fenster unter
+    // 20 %). zugMS: der Zug der Fronten im Höhenwind (850 hPa, 30–50 km/h). `sturmMS` ist der Wind am Ort in m/s bei U = 1
+    // (der Wind-Kanal der Sturm-Zeile, Böe 1): Beaufort 9–10 (20,8–28,4 m/s). Leser: die Welt (`_windAt`, `_wetterAmOrt`,
+    // der Wetter-Zug) und das Labor (worlds/terrain, das Wetterspiel).
+    var WIND_FELD = Object.freeze({
+        sturmMS: 24,
+        front: Object.freeze({
+            zugMS: 11,
+            wellen: Object.freeze([Object.freeze([6600, 1]), Object.freeze([4100, 0.45]), Object.freeze([2500, 0.25])]),
+            biegeM: 600,
+            querM: 21000,
+            feuchteM: 31000,
+            stufen: Object.freeze({ sturm: 0.79, regen: 0.6, bewoelkt: 0.43, nebel: 0.72 }),
+        }),
+    });
+    function saatFnv(s) {
+        var h = 2166136261 >>> 0;
+        for (var i = 0; i < s.length; i++) h = ((h ^ s.charCodeAt(i)) * 16777619) >>> 0;
+        return h;
+    }
+    var _windSaatMerk = { saat: null, w: null };
+    function windSaat(saat) {
+        if (_windSaatMerk.saat === saat) return _windSaatMerk.w;
+        var h = saatFnv(saat + "-wind-dir");
+        var g = saatFnv(saat + "-front") || 1;
+        var lcg = function () {
+            g = (Math.imul(g, 1664525) + 1013904223) >>> 0;
+            return (g / 4294967296) * Math.PI * 2;
+        };
+        var w = {
+            t0: (h / 4294967296) * Math.PI * 2,
+            p1: (((h >>> 5) & 1023) / 1023) * Math.PI * 2,
+            p2: (((h >>> 15) & 1023) / 1023) * Math.PI * 2,
+            wellen: WIND_FELD.front.wellen.map(lcg),
+            biege: lcg(),
+            feuchte: lcg(),
+        };
+        _windSaatMerk.saat = saat;
+        _windSaatMerk.w = w;
+        return w;
+    }
+    function windRichtung(saat, t) {
+        var w = windSaat(saat);
+        var tt = Number.isFinite(t) ? t : 0;
+        var theta = w.t0 + 0.5 * Math.sin(tt * 0.009 + w.p1) + 0.22 * Math.sin(tt * 0.0257 + w.p2);
+        return { x: Math.sin(theta), z: Math.cos(theta) };
+    }
+    // Die Grundrichtung θ0 als Vektor: wohin die Fronten ziehen (das Zeit-Mittel des Mäanders)
+    function windGrund(saat) {
+        var w = windSaat(saat);
+        return { x: Math.sin(w.t0), z: Math.cos(w.t0) };
+    }
+    function wetterAt(saat, x, z, t) {
+        if (!(Number.isFinite(x) && Number.isFinite(z) && Number.isFinite(t)))
+            throw new Error("wetterAt: Ort und Zeit sind endlich (" + x + ", " + z + ", " + t + ")");
+        var F = WIND_FELD.front;
+        var w = windSaat(saat);
+        var dx = Math.sin(w.t0),
+            dz = Math.cos(w.t0);
+        var q = x * dz - z * dx;
+        var s = x * dx + z * dz - F.zugMS * t + F.biegeM * Math.sin((2 * Math.PI * q) / F.querM + w.biege);
+        var f = 0,
+            sw = 0;
+        for (var i = 0; i < F.wellen.length; i++) {
+            f += F.wellen[i][1] * Math.sin((2 * Math.PI * s) / F.wellen[i][0] + w.wellen[i]);
+            sw += F.wellen[i][1];
+        }
+        f = 0.5 + (0.5 * f) / sw;
+        var feuchte = 0.5 + 0.5 * Math.sin((2 * Math.PI * s) / F.feuchteM + w.feuchte);
+        var st = F.stufen;
+        var zeile = "klar";
+        if (f >= st.sturm) zeile = "sturm";
+        else if (f >= st.regen) zeile = "regen";
+        else if (f >= st.bewoelkt) zeile = "bewoelkt";
+        else if (feuchte >= st.nebel) zeile = "nebel";
+        return { zeile: zeile, front: f, feuchte: feuchte };
+    }
+
     // ===================== DIE KARTE (W6): der Codec des EINEN Karten-Atlas — rein, THREE-frei =====================
     // Die Fernstufe einer Art ist EINE Schicht im Array-Atlas des Hosts, im Studio-Layout (bakeImpostorAtlas,
     // __replyBakeImpostor): die V Ansichten VERTIKAL gestapelt, Zeilen bottom-up (GL-readPixels) — ohne Umdrehen
@@ -5056,6 +5143,10 @@
         WX_GESETZ: WX_GESETZ,
         WX_VIS: WX_VIS,
         WX_LICHT: WX_LICHT,
+        WIND_FELD: WIND_FELD, // wetter.K5 · K1 — der Wind am Ort in m/s und die Front
+        windRichtung: windRichtung, // wetter.K5 — DIE EINE Wind-Richtung (Saat, Zeit)
+        windGrund: windGrund, // wetter.K1 — die Grundrichtung, mit der die Fronten ziehen
+        wetterAt: wetterAt, // wetter.K1 — DAS Wetter am Ort (Saat, Ort, Zeit) → Zeile von WX_GESETZ
         treePhenotype: treePhenotype,
         artPhaenotyp: artPhaenotyp, // K24 — der Phänotyp einer Art: Gesetz ⊕ Phänotyp-Zeile (Wirt, Linsen, treeParams)
         treeParams: treeParams, // K24 — DIE EINE Ableitung Dials → P (Studio, Foundry-Worker)

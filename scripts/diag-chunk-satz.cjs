@@ -972,7 +972,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     inhalt: ws.iSumme === altIdx && ws.bloecke.size === altBereiche && ab.treu && !ab.ueberlapp,
                 };
             }
-            // der Hörer fällt im Register (D3c): ein Stub-Renderer in der r184-Form (gate:vendor-anker) —
+            // der Hörer fällt im Register: ein Stub-Renderer in der r184-Form (gate:vendor-anker) —
             // die neue Geometrie behält keinen Entsorgungs-Hörer, der beim Tausch ihre GPU-Puffer mitnähme
             {
                 const h = () => {};

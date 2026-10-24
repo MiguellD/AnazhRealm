@@ -1,6 +1,6 @@
-// diag-mp-sync.cjs — DIE MEHRSPIELER-WAND (K04, 11.10.; `npm run gate:mp-sync`). Die CI-Wand der Zwei-Seiten-Familie
+// diag-mp-sync.cjs — DIE MEHRSPIELER-WAND (`npm run gate:mp-sync`). Die CI-Wand der Zwei-Seiten-Familie
 // (smoke-webrtc · smoke-copresence: zwei echte Seiten, ein echter signaling-server; der Bit-Beweis des Leibs aus smoke-lockstep
-// fiel in (e)) — die Smokes liefen in keinem Workflow, die Tür des Mehrspielers war Wachsamkeit.
+// fiel in (e)).
 //
 // Zwei Klassen beim Namen:
 //   (a) URSPRUNG  der Mitspieler erscheint nie im Weltursprung: `_p2pEnsurePeerEntry` legte Leib und Schild bei
@@ -36,8 +36,7 @@
 // Konsum-Leser: `_p2pUpdatePeer` (zeichnet den Peer je Takt) und der close-Zweig von `initP2PSync` (plant den Rejoin).
 //
 // Selbsttest (`--selftest`): die alte Tür wieder eingesetzt (initP2PSync lässt `enabled`, wie es war) → (b) ROT. Die
-// Selbsttests von (c), (d) und (e) laufen im Hauptlauf (die erste Fassung von (c) aus K23 fragte nur „jeder Edit von A auch
-// bei B" und blieb bei einer Doppel-Anwendung grün).
+// Selbsttests von (c), (d) und (e) laufen im Hauptlauf.
 // Ports: MP_SYNC_PORT (save-server), MP_SYNC_SIGNAL_PORT (signaling), sonst freie des Systems. `--roh <datei>`
 // schreibt die Zahlen als JSON.
 //
@@ -79,7 +78,7 @@ function netzLog() {
         let t = "?";
         try {
             t = String(JSON.parse(d).type);
-        } catch (_e) {
+        } catch {
             /* kein JSON: die Art bleibt „?" */
         }
         log[t] = (log[t] | 0) + 1;
@@ -269,7 +268,7 @@ function installiere(alteTuer) {
     window.__mpPumpe = setInterval(() => {
         try {
             r._gameLoopTick(performance.now());
-        } catch (_e) {
+        } catch {
             /* der Loop trägt seine eigene Fehlerwand */
         }
     }, 16);
@@ -475,18 +474,9 @@ function bericht(p) {
         await waitFor(pageA, (id) => window.anazhRealm.state.p2p.peers.has(id), "A kennt B", idB);
         await waitFor(pageB, (id) => window.anazhRealm.state.p2p.peers.has(id), "B kennt A", idA);
         check("B verbunden über den Boot, beide kennen einander", true, `A=${idA} B=${idB}`);
-        // W13 P3 am echten Broker: A's Vibe-Pass reist mit dem peerId-Stempel des Servers, B verifiziert die Signatur über ihn
-        const vibeMs = await waitFor(
-            pageB,
-            (id) => !!(window.anazhRealm.state.p2p.peers.get(id) || {}).vibeVerified,
-            "B verifiziert A's Vibe-Pass",
-            idA
-        ).catch(() => -1);
-        check(
-            "W13 P3: der Broker relayt den Vibe-Pass mit peerId-Stempel, B verifiziert A",
-            vibeMs >= 0,
-            `${vibeMs} ms`
-        );
+        // am echten Broker: A's Vibe-Pass reist mit dem peerId-Stempel des Servers, B verifiziert die Signatur über ihn
+        const vibeMs = await waitFor(pageB, (id) => !!(window.anazhRealm.state.p2p.peers.get(id) || {}).vibeVerified, "B verifiziert A's Vibe-Pass", idA).catch(() => -1);
+        check("W13 P3: der Broker relayt den Vibe-Pass mit peerId-Stempel, B verifiziert A", vibeMs >= 0, `${vibeMs} ms`);
 
         // A steht: der Ladeschirm ist gefallen (erst dann gehören die Tasten dem Spieler), die Höhe ruhig.
         const ladeMs = await waitFor(pageA, () => !window.anazhRealm._ladeschirmSteht(), "A: Ladeschirm weg");

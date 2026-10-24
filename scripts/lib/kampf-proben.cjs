@@ -205,6 +205,8 @@ async function WELLE_L(ort) {
         if (s.buildMode && s.buildMode.active) r._clearBuildMode();
 
         // ═══ Q8 — TREFFER ═══
+        // die Glieder jeder getroffenen Gattung im Vorrat (der Leerlauf) — eine kalte trägt kein Treffer-Volumen
+        await Promise.all(["wesen", "fuchs", "wolf", "baer"].map((seele) => r._gliederBestellen(seele)));
         const hirsch = setze("wesen");
         const fuchs = setze("fuchs");
         if (!hirsch || !fuchs) throw new Error("Kreatur-Spawn fehlgeschlagen");
@@ -298,7 +300,7 @@ async function WELLE_L(ort) {
             };
             A._steuerGesetz = () => steht;
             try {
-                // wie der Loop: der feste Sim-Schritt trägt den Stoß (0710-5), dann der Kreatur-Takt
+                // wie der Loop: der feste Sim-Schritt trägt den Stoß, dann der Kreatur-Takt
                 for (let k = 0; k < 90; k++) {
                     r._kreaturStossSchritt(1 / 60);
                     r._leibKontakte();
@@ -903,64 +905,6 @@ async function WELLE_L(ort) {
             r.removeCreature(frisch);
             tiere.splice(tiere.indexOf(frisch), 1);
         }
-        // (T11) der KALTE ERSTE TREFFER je Gattung (Lehre 14): ein Tier einer Gattung, deren Treffer-Glieder noch niemand
-        // kennt, steht in der Welt, die Welt läuft 60 Spiel-Takte, dann der erste Hieb — gezählt werden die Haut-Vertices,
-        // die der Hieb SELBST zerlegt (_kreaturGliederGruppen im Treffer-Pfad). Vorgebacken (die EINE Bake-Uhr): 0.
-        const gattungVon = (c) => {
-            const ud = c.userData || {};
-            return (
-                ud.gattung ||
-                ud.recipe ||
-                ud.preset ||
-                (A.TETRAPODA_SOUL_MAP && A.TETRAPODA_SOUL_MAP[ud.soul || "wesen"]) ||
-                ud.soul ||
-                "wesen"
-            );
-        };
-        const kalterTreffer = (seele) => {
-            ausruesten("klinge_langschwert");
-            const c = setze(seele);
-            if (!c) return { traf: false, zerlegt: null };
-            if (r._trefferGliedNamen) r._trefferGliedNamen.delete(gattungVon(c));
-            stelle(c, 9, 4);
-            for (let k = 0; k < 60; k++) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (_e) {}
-            }
-            p._swing = null;
-            p._hitStopUntil = 0;
-            let zerlegt = 0;
-            const svG = r._kreaturGliederGruppen;
-            r._kreaturGliederGruppen = function (cr) {
-                const G = svG.call(this, cr);
-                if (G) for (const [, g] of G.gruppen) zerlegt += g.verts;
-                return G;
-            };
-            let t = null;
-            try {
-                stelle(c, 1.6);
-                zielen(punkt(c, null));
-                t = traf(schwung(), c);
-            } finally {
-                r._kreaturGliederGruppen = svG;
-                delete r._kreaturGliederGruppen;
-            }
-            parke(c);
-            return { traf: !!t, zerlegt, gattung: gattungVon(c) };
-        };
-        w.z.kalt = kalterTreffer("baer");
-        w.c.kaltVorgebacken = w.z.kalt.traf && w.z.kalt.zerlegt === 0;
-        // (S8) SELBST-TEST mit dem Täter: ohne das Vorbacken zerlegt der erste Hieb die Haut (die Linse zählt den Hieb)
-        if (fn("_tickTrefferGliederVorbacken")) {
-            r._tickTrefferGliederVorbacken = () => {};
-            try {
-                w.z.s8 = kalterTreffer("wolf");
-            } finally {
-                delete r._tickTrefferGliederVorbacken;
-            }
-            w.c.s8 = w.z.s8.traf && w.z.s8.zerlegt > 0;
-        }
         // (G1)(G3) KONSUM am Zähl-Spion (Lehre 6): der Klingen-Sweep liest die EINE Vorwärts-Richtung (_blickVorn) und fragt das
         // EINE Grob-Tor (_trefferErreichbar), der Pfeil auch, und das Tor liest den kreatur-Leib (_kreaturLeib)
         const ruft = (lauf, k) => {
@@ -1021,7 +965,6 @@ async function WELLE_L(ort) {
                 "_kreaturTrefferGlieder",
                 "_kreaturGliedTreffer",
                 "_kreaturGattung",
-                "_tickTrefferGliederVorbacken",
                 "_bauModusFuer",
                 "_kampfKlingenAchse",
                 "_kampfUrteil",
@@ -1788,7 +1731,7 @@ async function WELLE_L(ort) {
             // die Ich-Regel bleibt rückstandsfrei: 3rd → 1st → 3rd stellt jede Sichtbarkeit UND Ebene des Leibs wieder her, und
             // im 1st zeichnet keine Haut (die Kamera sitzt im Leib) außer dem Gerät in der Hand. „Zeichnet" fragt, was r184s
             // _projectObject fragt: jeder Ahne sichtbar UND die eigene Ebene in der Haupt-Kamera — die Ich-Regel ist die
-            // Ebenen-Regel (0910-5): die Haut verlässt Ebene 0 und bleibt sichtbar, damit sie in den Kaskaden wirft
+            // Ebenen-Regel: die Haut verlässt Ebene 0 und bleibt sichtbar, damit sie in den Kaskaden wirft
             {
                 const heldR = pm.userData.heldMesh;
                 const unterGeraet = (o) => {
@@ -1985,7 +1928,7 @@ async function WELLE_L(ort) {
             if (r.getGameMode() !== modeA) r.setGameMode(modeA);
             w.z.ausdauer = zehr;
         });
-        // (T27) Lebenswerte sind Zustand (K27): ein Biss senkt hp, ein Hieb die Ausdauer, dann jeder Rufer der
+        // (T27) Lebenswerte sind Zustand: ein Biss senkt hp, ein Hieb die Ausdauer, dann jeder Rufer der
         // Neuberechnung einmal (Gerät · Panel · Boost · Tod-Takt); erlaubt Regen·dt, voll setzen nur Wandlung und Rückkehr.
         // (S11) die alte Zeile → equipHeld.
         await teil("T27", async () => {
@@ -2288,6 +2231,7 @@ async function WELLE_L(ort) {
                 r._fieldGradient = fgRoh;
                 delete r._fieldGradient;
             }
+            r._todLageTick({ timeRemaining: () => Infinity });
             const K = A._arenaGesetz().gefuehl;
             for (let k = 0; k < Math.ceil((K.kippDauerSec + 0.2) / 0.05); k++) r.updateCreatures(0.05);
             hT.updateMatrixWorld(true);
@@ -2495,7 +2439,7 @@ async function WELLE_L(ort) {
             const mitBiss = { spieler: null, tier: null, kitz: null };
             const dpGate = r.damagePlayer;
             const dcGate = r.damageCreature;
-            // WER BEISST (K13): gezählt wird nur der Biss des Tiers der Probe — das Schnappen (_kreaturBissTakt) nennt den
+            // WER BEISST: gezählt wird nur der Biss des Tiers der Probe — das Schnappen (_kreaturBissTakt) nennt den
             // Beißer; ein Wild-Tier der Welt, das den Spieler im selben Takt beißt, ist nicht der Wolf der Probe
             const btRoh = r._kreaturBissTakt;
             let beisser = null;
@@ -2642,7 +2586,7 @@ async function WELLE_L(ort) {
                         ([ox, oz]) =>
                             j2 &&
                             r2 &&
-                            // EBEN (K16): Reh, beide Absprung-Orte und die Flanken liegen in 0,12 m — am Hang (−14|14 im neuen
+                            // EBEN: Reh, beide Absprung-Orte und die Flanken liegen in 0,12 m — am Hang (−14|14 im neuen
                             // Gelände) stand der Wolf 0,76 m über dem Gesetz, der Kopf zielte an die Klemme
                             eben(P.x + ox, P.z + oz) &&
                             trocken(r2, P.x + ox, P.z + oz + 1.6) &&
@@ -2725,7 +2669,7 @@ async function WELLE_L(ort) {
                     // die Rest-Summe: zehnmal _kreaturBissKopf ohne Takt in der Stand-Pose — die gezeigte Pose steht still;
                     // die Gier des Rehs (π/2 − 0,4) hält das Glied im Band des Hinterschenkels.
                     if (j2 && r2 && ortR && j2.userData._tierBaum) {
-                        // EINE HÖHE (K16): beide Leiber stehen auf dem Grund des Wolfs — die Probe misst das Zielen, nie den Hang.
+                        // EINE HÖHE: beide Leiber stehen auf dem Grund des Wolfs — die Probe misst das Zielen, nie den Hang.
                         // Die Gier des Rehs kommt aus einer festen Reihe ab π/2 − 0,4: die erste, deren
                         // erster Rest im Band der Klemme liegt (Rand 0,05 rad = REH_SOLL.kopfRest), trägt die Probe; ihr Glied steht im Bericht.
                         const R0 = { x: P.x + ortR[0], z: P.z + ortR[1] + 1.6 };
@@ -2796,52 +2740,8 @@ async function WELLE_L(ort) {
                     msJeTakt: null,
                     simsAnspruenge: null,
                     simsSek: 10,
-                    kaltZerlegt: null,
                 };
                 await teil("T24", async () => {
-                    // (c) DIE KALTE GATTUNG (Nachbesserung 3, Lehre 14): ein Wolf und ein Fuchs 35 m vor ihm, beide Gattungen kalt
-                    // (wie eine Gattung, die nie nah beim Spieler stand — das Namen-Memo vergessen, danach wiederhergestellt);
-                    // gezählt, wie oft die Wahl der Beute eine Gestalt synchron zerlegt (_kreaturGliederGruppen) und wie viele
-                    // Vertices.
-                    {
-                        const J1 = { x: P.x + 60, z: P.z - 60 };
-                        const wolfC = neu("wolf", J1.x, J1.z, 1);
-                        const fuchsC = neu("fuchs", J1.x + 35, J1.z, 1);
-                        if (wolfC && fuchsC) {
-                            wolfC.position.y = r.getTerrainHeightAt(J1.x, J1.z);
-                            fuchsC.position.y = r.getTerrainHeightAt(J1.x + 35, J1.z);
-                            const memo = r._trefferGliedNamen || new Map();
-                            const gesichert = new Map();
-                            for (const c of [wolfC, fuchsC]) {
-                                const g = r._kreaturGattung(c);
-                                if (memo.has(g)) gesichert.set(g, memo.get(g));
-                                memo.delete(g);
-                                delete c.userData._trefferGlieder;
-                            }
-                            const grRoh = r._kreaturGliederGruppen;
-                            let zerlegt = 0,
-                                verts = 0;
-                            r._kreaturGliederGruppen = function (cr) {
-                                zerlegt++;
-                                const G = grRoh.call(this, cr);
-                                if (G) for (const [, g] of G.gruppen) verts += g.verts || 0;
-                                return G;
-                            };
-                            try {
-                                wolfC.userData.nextHuntStrikeAt = 0;
-                                wolfC.userData._verhaltenAktion = null;
-                                r._tickCreatureScentStrike(wolfC);
-                            } finally {
-                                r._kreaturGliederGruppen = grRoh;
-                                delete r._kreaturGliederGruppen;
-                                for (const [g, n] of gesichert) memo.set(g, n);
-                            }
-                            reich.kaltZerlegt = zerlegt;
-                            reich.kaltVerts = verts;
-                        }
-                        if (wolfC) r.removeCreature(wolfC);
-                        if (fuchsC) r.removeCreature(fuchsC);
-                    }
                     {
                         const J0 = { x: P.x - 60, z: P.z - 60 };
                         const wolfK = neu("wolf", J0.x, J0.z, 1);

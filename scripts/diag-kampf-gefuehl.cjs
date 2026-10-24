@@ -393,11 +393,6 @@ function bissReichVerdict(R, reh) {
         v.push(
             `biss-kopf: ohne Pose-Fortschritt wandert das Ziel der Kopf-Neigung in ${K.takte} Takten ${K.drift} rad (${K.reihe.join(" → ")}) — der Rest summiert sich auf das Ziel des Vor-Takts`
         );
-    if (R.kaltZerlegt === null) v.push("biss-kalt keine Probe (Wolf und Fuchs, 35 m, kalt)");
-    else if (R.kaltZerlegt > 0)
-        v.push(
-            `biss-kalt: die Wahl der Beute zerlegt ${R.kaltZerlegt} Gestalten noch kalter Gattungen synchron im Kreatur-Takt (${R.kaltVerts} Vertices, Jäger und Beute 35 m außer Reichweite) — an der Bake-Uhr vorbei`
-        );
     if (R.gestaltenJeTakt === null) v.push("biss-kosten keine Probe (Wolf und 15 Beutetiere)");
     else if (R.gestaltenJeTakt > 0)
         v.push(
@@ -561,7 +556,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             await window.__weltStehtNach(() => {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
             }); // die Welt steht (welt-boot)
         });
 
@@ -888,6 +883,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             // = 1 − 2(qx² + qz²), kein THREE nötig.
             const upY = (c) => 1 - 2 * (c.quaternion.x * c.quaternion.x + c.quaternion.z * c.quaternion.z);
             const kill = r.damageCreature(cTod, 99999, { source: "world" });
+            r._todLageTick({ timeRemaining: () => Infinity });
             // der Gefallene liegt: nicht mehr unter den Wesen, in der Liste der Gefallenen, in der Szene
             const liegt = (c) => (s.leichname || []).indexOf(c) !== -1 && s.creatures.indexOf(c) === -1 && !!c.parent;
             o.checks.dKillKipptErst = !!kill.killed && !!cTod.userData.dying && liegt(cTod);
@@ -1053,9 +1049,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         console.log(
             `       Waffen-Schadens-Pfade ${z.schadensPfade} · ohne _kampfRohSchaden: ${z.schadensZwillinge} · Täter S7 nennt ${z.s7 || "–"} · trefferZone fehlt → ${z.kernOhneZone} (mit Kern ${z.kernMitZone} Glieder)`
         );
-        console.log(
-            `       kalter erster Treffer ${z.kalt ? z.kalt.gattung + ": traf " + z.kalt.traf + ", zerlegt " + z.kalt.zerlegt + " Vertices" : "–"} · Täter S8 ${z.s8 ? z.s8.gattung + ": zerlegt " + z.s8.zerlegt : "–"} · Sweep Math.sin/cos ${z.sweepFormel} · typeof-Selbst ${z.typeofSelbst}`
-        );
+        console.log(`       Sweep Math.sin/cos ${z.sweepFormel} · typeof-Selbst ${z.typeofSelbst}`);
         const gr = z.grob || {};
         const jeL = gr.jeL
             ? Object.entries(gr.jeL)
@@ -1646,7 +1640,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         const brv = bissReichVerdict(z.bissReich, z.bissReh);
         check(
             brv.length === 0,
-            "LF Posten 5 (Nachbesserung 2 + 3): der Biss kostet, was in Reichweite steht (0 Gestalten außer Reichweite je Takt, keine kalte Gattung zerlegt), springt nie ins Leere (0 Ansprünge auf den Sims) und trifft ein stehendes Reh (≥ 5 von 6, das Ziel des Kopfs aus der gezeigten Pose)" +
+            "LF Posten 5 (Nachbesserung 2 + 3): der Biss kostet, was in Reichweite steht (0 Gestalten außer Reichweite je Takt, springt nie ins Leere (0 Ansprünge auf den Sims) und trifft ein stehendes Reh (≥ 5 von 6, das Ziel des Kopfs aus der gezeigten Pose)" +
                 (brv.length ? " — " + brv.join(" · ") : "")
         );
         const brvAlt = bissReichVerdict(
@@ -1658,8 +1652,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                 simsUeber: 1.0,
                 simsWaagrecht: 0.9,
                 simsReich: 2.6,
-                kaltZerlegt: 2,
-                kaltVerts: 61392,
             },
             {
                 versuche: 6,
@@ -1681,8 +1673,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                 simsUeber: 1.0,
                 simsWaagrecht: 0.9,
                 simsReich: 2.6,
-                kaltZerlegt: 0,
-                kaltVerts: 0,
             },
             {
                 versuche: 6,
@@ -1697,7 +1687,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         );
         // der Befund Gegenprüfung 3: der erste Rest an der Klemme 1,0 — die alte Summe zeigte dort 1 → 1 → 1 (drift 0)
         const brvKlemme = bissReichVerdict(
-            { gestaltenJeTakt: 0, msJeTakt: 0, simsAnspruenge: 0, kaltZerlegt: 0 },
+            { gestaltenJeTakt: 0, msJeTakt: 0, simsAnspruenge: 0 },
             {
                 versuche: 6,
                 anspruenge: 6,
@@ -1710,10 +1700,10 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         check(
             brvGut.length === 0 &&
                 brvKlemme.some((x) => x.startsWith("biss-kopf-probe:") && /Klemme/.test(x)) &&
-                ["biss-kosten:", "biss-sims:", "biss-reh:", "biss-kopf:", "biss-kalt:"].every((t) =>
+                ["biss-kosten:", "biss-sims:", "biss-reh:", "biss-kopf:"].every((t) =>
                     brvAlt.some((x) => x.startsWith(t))
                 ),
-            "Selbst-Test T24: die Befunde (15 Gestalten je Takt, 6 Ansprünge unter dem Sims, 0 Bisse am Reh, ein Kopf-Ziel, das ohne Pose-Fortschritt 0,69 rad wandert, 2 kalte Gattungen zerlegt) nennen Kosten, Sims, Reh, Kopf und Kälte; ein erster Rest an der Klemme (1,0) heißt vakuös; ein Biss nur in Reichweite, der trifft, bleibt grün"
+            "Selbst-Test T24: die Befunde (15 Gestalten je Takt, 6 Ansprünge unter dem Sims, 0 Bisse am Reh, ein Kopf-Ziel, das ohne Pose-Fortschritt 0,69 rad wandert) nennen Kosten, Sims, Reh und Kopf; ein erster Rest an der Klemme (1,0) heißt vakuös; ein Biss nur in Reichweite, der trifft, bleibt grün"
         );
         check(
             c.bogenVerschleiss,
@@ -1726,10 +1716,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         check(
             c.kernPflichtZone,
             "Q8 K-D3: fehlt tetrapoda trefferZone, bricht der Treffer-Test laut und benannt (nie still null je Tier)"
-        );
-        check(
-            c.kaltVorgebacken,
-            "Q8 Lehre 14: der erste Treffer auf eine Gattung zerlegt keine Haut — die Treffer-Glieder sind vorgebacken (die EINE Bake-Uhr)"
         );
         check(c.sweepBlickVorn, "Q10: der Klingen-Sweep liest _blickVorn (keine Inline-Kopie der Vorwärts-Formel)");
         check(
@@ -1783,10 +1769,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         check(
             c.s7 === true,
             "SELBST-TEST (S7): ein Wurf-Täter setzt Kraft × Wirkung × Zone selbst zusammen → die Klassen-Linse nennt ihn"
-        );
-        check(
-            c.s8 === true,
-            "SELBST-TEST (S8): ohne das Vorbacken zerlegt der erste Hieb die Haut (die Linse zählt den Hieb)"
         );
         check(
             c.s9 === true,

@@ -12,7 +12,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### W13 Phase 1 — Vibe-Pass: die souveräne Avatar-Identität ###
+    // ### Vibe-Pass: die souveräne Avatar-Identität ###
     const w13p1Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -107,7 +107,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("W13 P1: Vibe-Pass-Tests laufen", false, w13p1Results ? w13p1Results.error : "no result");
     }
 
-    // ### W13 Phase 2 — Bauplan-Signaturen ###
+    // ### Bauplan-Signaturen ###
     const w13p2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -177,8 +177,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.cloneUnsigned = !!clone && !clone.signature && !clone.authorPubKey;
         // verifyBlueprintSignature ist defensiv.
         out.verifyDefensive = (await r.verifyBlueprintSignature(null)) === "unsigned";
-        // UI: Signatur-Sektion in der MACH-ZONE (Step 1, V18.41 — die Signatur wanderte aus dem
-        // Readout-Panel in den „Werk"-Block #workshop-action-zone, über FERTIGEN).
+        // UI: die Signatur-Sektion steht im „Werk"-Block #workshop-action-zone, über FERTIGEN.
         r.selectBlueprintForEdit("_w13p2");
         const machZone =
             document.getElementById("workshop-action-zone") || document.getElementById("workshop-stats-panel");
@@ -215,7 +214,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("W13 P2: Bauplan-Signatur-Tests laufen", false, w13p2Results ? w13p2Results.error : "no result");
     }
 
-    // ### W13 Phase 3 — Vibe-Pass-Identität im Multi-User ###
+    // ### Vibe-Pass-Identität im Multi-User ###
     const w13p3Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -341,14 +340,14 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("W13 P3: Vibe-Pass-Multi-User-Tests laufen", false, w13p3Results ? w13p3Results.error : "no result");
     }
 
-    // W13 P3 — den Relay des signaling-servers (vibe mit peerId-Stempel) urteilt gate:mp-sync am echten Broker.
+    // den Relay des signaling-servers (vibe mit peerId-Stempel) urteilt gate:mp-sync am echten Broker.
 
-    // ### W14 Phase 1 — Bibliothek: browsbare Welt-Registry ###
+    // ### Bibliothek: browsbare Welt-Registry ###
     const w14Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
         const REG = r.constructor.WORLD_REGISTRY;
-        // Jeder Registry-Eintrag trägt jetzt eine Beschreibung (W14).
+        // Jeder Registry-Eintrag trägt jetzt eine Beschreibung.
         out.registryHasDesc = Object.values(REG).every((w) => typeof w.desc === "string" && w.desc.length > 0);
         // Tab + Drawer im DOM.
         out.tabInDom = !!document.querySelector('#topbar .tab[data-tab="bibliothek"]');
@@ -360,8 +359,8 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         const fluidCard = Array.from(cards).find((c) => /Strom-Welt/.test(c.textContent));
         out.cardShowsDsl =
             !!fluidCard && /sturm/.test(fluidCard.textContent) && /übersetzt/.test(fluidCard.textContent);
-        // === Bib-A0/A/B/D — der Welt-Browser auf Werkstatt-/Hof-/Ich-Niveau ===
-        // Bib-A0: _worldProfile bündelt den GEMESSENEN Welt-Vektor (EIN Vektor, viele Leser; KONSUM V17.31).
+        // === der Welt-Browser auf Werkstatt-/Hof-/Ich-Niveau ===
+        // _worldProfile bündelt den GEMESSENEN Welt-Vektor (EIN Vektor, viele Leser).
         const wpRef = REG.fluid;
         const wp = r._worldProfile(wpRef);
         out.worldProfileBundles =
@@ -372,7 +371,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             (wp.trust === "trusted" || wp.trust === "sandboxed") &&
             typeof wp.searchText === "string" &&
             wp.searchText.includes("sturm");
-        // Bib-A: die Karte ist eine WELT-SPEC-CARD (geteiltes .spec-*-Design + Trust-Siegel + Betreten-Akt).
+        // die Karte ist eine WELT-SPEC-CARD (geteiltes .spec-*-Design + Trust-Siegel + Betreten-Akt).
         out.cardIsSpecCard =
             !!fluidCard &&
             fluidCard.classList.contains("lib-spec-sheet") &&
@@ -508,8 +507,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             // die Bühne idle lassen (kein RAF läuft ohne Drawer-Öffnen); Fokus zurücksetzen für spätere Bands.
             r.state.feedFocusId = null;
         }
-        // der Drawer-Fit: box-sizing:border-box, sonst überläuft das max-height um padding (die V18.64-
-        // Wurzel, GEMESSEN: der Drawer war 858 statt 816 → ragte unten aus dem Bild + der Resize-Griff unerreichbar).
+        // der Drawer-Fit: box-sizing:border-box, sonst überläuft das max-height um padding (der Drawer ragt unten aus dem Bild).
         const bibDrawer = document.querySelector('.drawer[data-drawer="bibliothek"]');
         out.drawerBoxSizing = !!bibDrawer && getComputedStyle(bibDrawer).boxSizing === "border-box";
         // die Omnibox `welt:` surfaced die einzelnen Welten (wie `b:` die Baupläne, §D.4-Konsistenz).
@@ -524,7 +522,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.feedTrends = !!document.querySelector("#feed-trends .feed-trend-row");
         r._setFeedRating("world:fluid", 5); // Toggle zurück → sauber
         r._renderFeedTrends();
-        // Bib-D / V18.65: die Suche TREIBT den Feed (KONSUM auf Feature-Ebene — kein toter Knopf).
+        // die Suche TREIBT den Feed (KONSUM auf Feature-Ebene — kein toter Knopf).
         const libSearch = document.getElementById("library-search");
         if (libSearch) {
             libSearch.value = "strom";
@@ -608,7 +606,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             w14Results.cardIsSpecCard
         );
         check(
-            "V18.77: die Karte ist Profi-leicht — EINE Meta-Zeile (DSL), keine Datenblatt-Spalten-Labels",
+            "die Karte ist Profi-leicht — EINE Meta-Zeile (DSL), keine Datenblatt-Spalten-Labels",
             w14Results.cardLightened
         );
         check(
@@ -679,7 +677,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("W14 P1: Bibliothek-Tests laufen", false, w14Results ? w14Results.error : "no result");
     }
 
-    // ### W14 Phase 2 Teil A — Welt-Manifest-Signatur ###
+    // ### Welt-Manifest-Signatur ###
     const w14p2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -796,7 +794,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("W14 P2: Manifest-Signatur-Tests laufen", false, w14p2Results ? w14p2Results.error : "no result");
     }
 
-    // ### W14 Phase 2 Teil B — W13 V2: das Schaffen reist mit ###
+    // ### das Schaffen reist mit ###
     const w13v2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -844,7 +842,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("W13 V2: enter-Payload-Tests laufen", false, w13v2Results ? w13v2Results.error : "no result");
     }
 
-    // ### W14 Phase 3 — fremde Welten empfangen ###
+    // ### fremde Welten empfangen ###
     const w14p3Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -956,7 +954,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             const reA = r.setVec(r.state.tmpVec2, 0, -1000, 0);
             const hit = r._runRaycast(rsA, reA, (_cb, h) => h);
             out.raycastNullSafe = typeof hit === "boolean";
-        } catch (e) {
+        } catch {
             out.raycastNullSafe = false;
         }
         // localStorage-Rundlauf.
@@ -1764,8 +1762,7 @@ async function checkBandPhiArchipelV2(ctx) {
         out.roomMüllRegion = r._regionRoomId("welt-abc", "kaputt") === "welt-abc";
         out.roomNoWorld = r._regionRoomId("", "r0_0") === null;
 
-        // (Q4) Default OFF: eine frische Welt hat regionsActive=false → identisches
-        // Verhalten zu V18.188 (eine Welt = ein Raum, kein Region-Suffix).
+        // (Q4) Default OFF: eine frische Welt hat regionsActive=false → eine Welt = ein Raum, kein Region-Suffix.
         const wmBefore = r.state.worldMeta;
         out.regionsDefaultOff = wmBefore && wmBefore.regionsActive === false;
 

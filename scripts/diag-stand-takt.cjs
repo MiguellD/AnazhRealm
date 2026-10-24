@@ -19,7 +19,7 @@
 //   (B) BAKE-SCHULD — solange die Bake-Uhr Fits abweist, steht die Welt nicht, und ihr Grund nennt die Felder;
 //   (D) DORF — die Welt steht erst nach dem letzten Haus eines Dorf-Akts (`spawnSettlement`); der Nexus ruht;
 //   (P) kein Page-Error. Dass jeder Takt die Wache fragt und seinen Gang meldet, beweisen (S) und (X) am Verhalten (ein
-//       Takt ohne Frage nennt keine Runde, einer ohne Meldung geht 0); keine Probe liest Quelltext (D3c).
+//       Takt ohne Frage nennt keine Runde, einer ohne Meldung geht 0); keine Probe liest Quelltext.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Arbeit in Ruhe, stumpfe Linse,
 // ein verschlafener Wechsel, eine halbe oder wachsende Runde, ein ungesehener Täter, ein Bau, der nicht weckt, starres
 // Gehen, verhungernder Strom, eine Sim, die in Ruhe zählt oder nach ihrem Ereignis nicht schläft, ein Automat, der am
@@ -1662,7 +1662,7 @@ const TAT = process.argv.includes("--tat");
                         const am = () => r.auraAt(MESS.x, MESS.z);
                         const Z = (W.brand = { zellen: [], einheiten: [], asche: -asche(), glut: 0, licht: false, lebVor: +am().lebendig.toFixed(3) });
                         const glut0 = am().glut;
-                        Z.start = !!r._brandEntfachen(MESS.x, MESS.z);
+                        Z.start = typeof r._brandEntfachen === "function" && !!r._brandEntfachen(MESS.x, MESS.z); // ohne Brand im Stamm: LEER
                         S.frame();
                         for (let i = 0; i < 600 && st.brandFeld && st.brandFeld.size; i++) {
                             Z.zellen.push(st.brandFeld.size);

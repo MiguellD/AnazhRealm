@@ -58,14 +58,14 @@ async function checkBandV1721LivingFieldAura(ctx) {
         }
         return out;
     });
-    check("V17.21 lebendiges Feld: auraAt umhüllt das eingefrorene worldFieldAt (Kern bit-gleich)", res.auraWrapsField);
+    check("lebendiges Feld: auraAt umhüllt das eingefrorene worldFieldAt (Kern bit-gleich)", res.auraWrapsField);
     check(
-        "V17.21 lebendiges Feld: eine lebendige Region HEBT peace (der Kreis schließt sich)",
+        "lebendiges Feld: eine lebendige Region HEBT peace (der Kreis schließt sich)",
         res.peaceRose,
         `bestLebendig=${res.bestLebendig}, peace=${res.peaceVal}`
     );
     check(
-        "V17.21 lebendiges Feld: die Aura bleibt UNTER der 0.7-Trigger-Schwelle (stimmt, löst nie selbst aus)",
+        "lebendiges Feld: die Aura bleibt UNTER der 0.7-Trigger-Schwelle (stimmt, löst nie selbst aus)",
         res.peaceBelowTrigger,
         `peace=${res.peaceVal}`
     );
@@ -128,19 +128,19 @@ async function checkBandV1727WritableField(ctx) {
         if (r.state.lifeField) r.state.lifeField.clear(); // sauberes Ende — keine Pollution für Folge-Bands
         return out;
     });
-    check("V17.27 Schreib-Feld: die Geburt (spawn_creature) deponiert Leben (_depositLife)", res.spawnDeposits);
-    check("V17.27 Schreib-Feld: leerer Overlay → auraAt == worldFieldAt (backward-compatible)", res.emptyEqualsFrozen);
+    check("Schreib-Feld: die Geburt (spawn_creature) deponiert Leben (_depositLife)", res.spawnDeposits);
+    check("Schreib-Feld: leerer Overlay → auraAt == worldFieldAt (backward-compatible)", res.emptyEqualsFrozen);
     check(
-        "V17.27 Schreib-Feld: ein Deposit HEBT lebendig über dem frozen Kern (frozen + pulse)",
+        "Schreib-Feld: ein Deposit HEBT lebendig über dem frozen Kern (frozen + pulse)",
         res.depositRaises && res.depositExact
     );
-    check("V17.27 Schreib-Feld: Decay senkt zurück zum Substrat (Homöostase, ein Garten will Pflege)", res.decayLowers);
-    check("V17.27 Schreib-Feld: Sättigung kappt exakt bei LIFE_FIELD.max (nie über die Wurzel hinaus)", res.saturates);
+    check("Schreib-Feld: Decay senkt zurück zum Substrat (Homöostase, ein Garten will Pflege)", res.decayLowers);
+    check("Schreib-Feld: Sättigung kappt exakt bei LIFE_FIELD.max (nie über die Wurzel hinaus)", res.saturates);
     check(
-        "V17.27 Schreib-Feld: der at_field_need-LOOP schließt sich — Leben spreizt, der alte Bedarf weicht",
+        "Schreib-Feld: der at_field_need-LOOP schließt sich — Leben spreizt, der alte Bedarf weicht",
         res.loopSpreads
     );
-    check("V17.27 Schreib-Feld: der alte Bedarf-Punkt ist gehoben (der Mangel sinkt wirklich)", res.p1Raised);
+    check("Schreib-Feld: der alte Bedarf-Punkt ist gehoben (der Mangel sinkt wirklich)", res.p1Raised);
 }
 
 // Kreatur-Trickle: NUR getragene Kreaturen (tendsLife) träufeln Leben in ihre Zelle → die Region
@@ -177,10 +177,10 @@ async function checkBandV1729CreatureTrickle(ctx) {
         if (r.state.lifeField) r.state.lifeField.clear(); // sauberes Ende
         return out;
     });
-    check("V17.29 Trickle: eine tendende Kreatur traeufelt Leben in ihre Zelle (sustainiert)", res.tendingDeposits);
-    check("V17.29 Trickle: rate-limitiert (kein Deposit-Sturm pro Frame)", res.rateLimited);
-    check("V17.29 Trickle: nach dem Intervall traeufelt sie wieder (lebendiger Pfad)", res.tickedAgain);
-    check("V17.29 Trickle: ambiente Fauna traeufelt NICHT (kein Feedback-Runaway, V17.27-Disziplin)", res.ambientInert);
+    check("Trickle: eine tendende Kreatur traeufelt Leben in ihre Zelle (sustainiert)", res.tendingDeposits);
+    check("Trickle: rate-limitiert (kein Deposit-Sturm pro Frame)", res.rateLimited);
+    check("Trickle: nach dem Intervall traeufelt sie wieder (lebendiger Pfad)", res.tickedAgain);
+    check("Trickle: ambiente Fauna traeufelt NICHT (kein Feedback-Runaway, V17.27-Disziplin)", res.ambientInert);
 }
 
 // Räumliche Emotion: `_feelAction` prägt die Emotion an der Spieler-Zelle ein, auraAt blendet den
@@ -239,14 +239,14 @@ async function checkBandV1732SpatialEmotion(ctx) {
         return out;
     });
     check(
-        "V17.32 raeumliche Emotion: leeres Overlay → auraAt.emotion == globale Stimmung (backward-compat)",
+        "raeumliche Emotion: leeres Overlay → auraAt.emotion == globale Stimmung (backward-compat)",
         res.emptyIsGlobal
     );
-    check("V17.32 raeumliche Emotion: ein Deposit praegt die lokale Emotion ein", res.depositImprints);
-    check("V17.32 raeumliche Emotion: der Abdruck ist RAEUMLICH (Ort A traegt sorrow, Ort B nicht)", res.spatial);
-    check("V17.32 raeumliche Emotion: der Abdruck zerfaellt (das Gefuehl verblasst)", res.decays);
+    check("raeumliche Emotion: ein Deposit praegt die lokale Emotion ein", res.depositImprints);
+    check("raeumliche Emotion: der Abdruck ist RAEUMLICH (Ort A traegt sorrow, Ort B nicht)", res.spatial);
+    check("raeumliche Emotion: der Abdruck zerfaellt (das Gefuehl verblasst)", res.decays);
     check(
-        "V17.32 KONSUM (kein Passagier): ein raeumlicher sorrow-Abdruck faerbt den Welt-Tint (grayt)",
+        "KONSUM (kein Passagier): ein raeumlicher sorrow-Abdruck faerbt den Welt-Tint (grayt)",
         res.tintColors,
         `freshSat=${res.freshSat} imprintedSat=${res.imprintedSat}`
     );
@@ -323,19 +323,19 @@ async function checkBandV1742Wohl(ctx) {
     });
 
     check(
-        "V17.42 Wertung: das Wohl-Maß — Struktur = lebendig, Erlebt = Valenz (joy + / sorrow − / awe neutral)",
+        "Wertung: das Wohl-Maß — Struktur = lebendig, Erlebt = Valenz (joy + / sorrow − / awe neutral)",
         res.wohlStruktur && res.wohlErlebtValence
     );
     check(
-        "V17.42 Wertung: die Feld-Baseline Cold-Start = die erste Beobachtung (keine Überraschung anfangs)",
+        "Wertung: die Feld-Baseline Cold-Start = die erste Beobachtung (keine Überraschung anfangs)",
         res.coldStart
     );
-    check("V17.42 Wertung: stabiler Input → die Baseline HÄLT (EMA driftet nicht ohne Änderung)", res.stableHolds);
+    check("Wertung: stabiler Input → die Baseline HÄLT (EMA driftet nicht ohne Änderung)", res.stableHolds);
     check(
-        "V17.42 Wertung: ein Sprung → die Baseline TRACKT, aber LAGGT weit darunter (das EMA-Wesen, zeit-korrigiert)",
+        "Wertung: ein Sprung → die Baseline TRACKT, aber LAGGT weit darunter (das EMA-Wesen, zeit-korrigiert)",
         res.tracksAndLags
     );
-    check("V17.42 Wertung: die Baseline-Map wird gepruned (lange nicht beobachtete Zelle → weg, bounded)", res.prunes);
+    check("Wertung: die Baseline-Map wird gepruned (lange nicht beobachtete Zelle → weg, bounded)", res.prunes);
 }
 
 // Emotion als APPRAISAL: δ = Situation − Spieler-Baseline; Situation = Welt um den Spieler (lebendig)
@@ -454,31 +454,31 @@ async function checkBandV1744Appraisal(ctx) {
     });
 
     check(
-        "V17.44 Appraisal: _playerSituationWohl IGNORIERT die Stimmung (kein Feedback-Input — die Wurzel gegen Runaway)",
+        "Appraisal: _playerSituationWohl IGNORIERT die Stimmung (kein Feedback-Input — die Wurzel gegen Runaway)",
         res.situationIgnoresMood
     );
     check(
-        "V17.44 Appraisal: die Situation STEIGT mit dem Leben der Welt (deposit_life → lebendig)",
+        "Appraisal: die Situation STEIGT mit dem Leben der Welt (deposit_life → lebendig)",
         res.situationRisesWithLife
     );
     check(
-        "V17.44 Appraisal: die Spieler-Baseline trackt die SITUATION, nicht die Stimmung (Cold-Start = lebendig@player, nicht die ~1 Stimmung)",
+        "Appraisal: die Spieler-Baseline trackt die SITUATION, nicht die Stimmung (Cold-Start = lebendig@player, nicht die ~1 Stimmung)",
         res.baselineTracksSituation
     );
     check(
-        "V17.44 Appraisal: eine Situations-Verbesserung (Region blüht auf) gibt einen joy-Puls (Überraschung, δ>0)",
+        "Appraisal: eine Situations-Verbesserung (Region blüht auf) gibt einen joy-Puls (Überraschung, δ>0)",
         res.surpriseRaisesJoy
     );
     check(
-        "V17.44 Appraisal: GEWÖHNUNG — konstante Situation → Baseline holt auf (δ→0) → kein weiterer joy-Zuwachs",
+        "Appraisal: GEWÖHNUNG — konstante Situation → Baseline holt auf (δ→0) → kein weiterer joy-Zuwachs",
         res.habituatesBaselineConverges && res.habituatedNoMoreJoy
     );
     check(
-        "V17.44 Appraisal: KEIN Runaway — eine konstante Situation pinnt joy nicht auf 1.0 (feedback-frei bewiesen)",
+        "Appraisal: KEIN Runaway — eine konstante Situation pinnt joy nicht auf 1.0 (feedback-frei bewiesen)",
         res.noRunaway
     );
     check(
-        "V17.44 Appraisal: V17.30 bleibt heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle + feuert (δ ist ADDITIV)",
+        "Appraisal: V17.30 bleibt heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle + feuert (δ ist ADDITIV)",
         res.triggerPreserved
     );
 }
@@ -566,23 +566,23 @@ async function checkBandV1750Klammer(ctx) {
         return out;
     });
     check(
-        "V17.50 Klammer: ANTI-GAMING-Wurzel — appraisalDelta trackt die SITUATION (steigt mit Leben)",
+        "Klammer: ANTI-GAMING-Wurzel — appraisalDelta trackt die SITUATION (steigt mit Leben)",
         res.deltaTracksSituationUp
     );
     check(
-        "V17.50 Klammer: ANTI-GAMING-Wurzel — appraisalDelta IGNORIERT die Emotion (hohe Stimmung, flache Situation → ~0)",
+        "Klammer: ANTI-GAMING-Wurzel — appraisalDelta IGNORIERT die Emotion (hohe Stimmung, flache Situation → ~0)",
         res.deltaIgnoresEmotion
     );
     check(
-        "V17.50 Klammer: KONSUM — eine Regel NAH am Spieler + positiver δ_spieler bekommt MEHR Wert (die Klammer)",
+        "Klammer: KONSUM — eine Regel NAH am Spieler + positiver δ_spieler bekommt MEHR Wert (die Klammer)",
         res.clampRewardsNearPositive
     );
     check(
-        "V17.50 Klammer: der Proximity-Gate — eine FERNE Regel bekommt KEINEN Bonus (δ_spieler ändert nichts)",
+        "Klammer: der Proximity-Gate — eine FERNE Regel bekommt KEINEN Bonus (δ_spieler ändert nichts)",
         res.proximityGate
     );
     check(
-        "V17.50 Klammer: ANTI-GAMING — eine nahe Regel ohne echte Situations-Verbesserung (δ≤0) bekommt KEINEN Bonus",
+        "Klammer: ANTI-GAMING — eine nahe Regel ohne echte Situations-Verbesserung (δ≤0) bekommt KEINEN Bonus",
         res.noGamingWhenNoSituation
     );
 }
@@ -696,7 +696,7 @@ async function checkBandWelle6APolish(ctx) {
 
     if (wave6aResults) {
         check(
-            "V18.279: der Physik-Doom-Loop ist weg — _loopSelfAnalysis ruft nicht mehr optimizePhysics (kein churn/spam/leck bei niedriger fps)",
+            "der Physik-Doom-Loop ist weg — _loopSelfAnalysis ruft nicht mehr optimizePhysics (kein churn/spam/leck bei niedriger fps)",
             wave6aResults.noDoomLoopInSelfAnalysis && wave6aResults.nexusProcessOptGone
         );
         if (wave6aResults.archEntrySpawned) {
@@ -1204,7 +1204,7 @@ async function checkBandWelle6APolish(ctx) {
         check("Welle 6.F1: starke Verbindung (≥1.5) = grün 0x66ff88", wave6fResults.colorStrongIsGreen);
         check("Welle 6.F1: Bauplan mit Connection erhält THREE.Line im Group", wave6fResults.lineExists);
         check(
-            "V18.153: die Gelenk-Linien sind WERKSTATT-Werkzeug — die Welt bleibt rein",
+            "die Gelenk-Linien sind WERKSTATT-Werkzeug — die Welt bleibt rein",
             wave6fResults.worldClean
         );
         check("Welle 6.F1: Line trägt userData.isConnectionLine-Flag", wave6fResults.lineHasUserDataFlag);
@@ -1285,7 +1285,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const islandsBefore = r.state.floatingIslands.length;
         const ufosBefore = r.state.ufos ? r.state.ufos.length : 0;
         const playerPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
-        // der Ort des Baums liegt auf dem LAND (Schau-2: die Natur-Wand lässt keinen Baum ins Wasser — der feste Versatz
+        // der Ort des Baums liegt auf dem LAND (die Natur-Wand lässt keinen Baum ins Wasser — der feste Versatz
         // +50/+50 lag im Wasser, der Baum fiel benannt „wasser")
         let tx = playerPos.x + 50;
         const ty = playerPos.y;
@@ -1311,7 +1311,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
 
         const newTreeArch = archsAfter > archsBefore ? r.state.architectures[archsAfter - 1] : null;
         out.newTreeIsBaumEiche = !!(newTreeArch && newTreeArch.type === "baum_eiche");
-        // DER WALD PLANT IM TAKT (K69): die Gestalt des Baums wartet auf den Plan der Wald-Zellen um seinen Ort, wie auf ein
+        // DER WALD PLANT IM TAKT: die Gestalt des Baums wartet auf den Plan der Wald-Zellen um seinen Ort, wie auf ein
         // kaltes Buch — die Schlange des Walds (`_tickWaldPlan`) plant sie im Takt, dann steht er mit Gestalt und Hülle. Der
         // Band läuft den Takt, bis er steht (höchstens 900 Takte), und nennt, wie lange er wartete.
         out.newTreeWaldWartet = !!(newTreeArch && !r._waldPlanSteht(newTreeArch.position.x, newTreeArch.position.z));
@@ -1431,10 +1431,10 @@ async function checkBandWelle6GHylomorphism(ctx) {
             })();
             return out;
         });
-        check("V9.42-a: _islandDensityAt liefert fest in der Mitte (> 0)", r42a.solidInCenter);
-        check("V9.42-a: _islandDensityAt liefert Luft außerhalb des Radius", r42a.airFarAway);
-        check("V9.42-a: _islandDensityAt liefert Luft weit über der Insel", r42a.airAbove);
-        check("V9.42-a: _voxelChunkGeometry akzeptiert densityFn-Callback", !!r42a.mesherAcceptsDensity);
+        check("_islandDensityAt liefert fest in der Mitte (> 0)", r42a.solidInCenter);
+        check("_islandDensityAt liefert Luft außerhalb des Radius", r42a.airFarAway);
+        check("_islandDensityAt liefert Luft weit über der Insel", r42a.airAbove);
+        check("_voxelChunkGeometry akzeptiert densityFn-Callback", !!r42a.mesherAcceptsDensity);
         // Skirt-Disziplin im Smooth-Pass: Naht-Vertices (Rand-Zellen i==0/dimX-1, k==0/dimZ-1) bleiben
         // unverschoben, sonst zerstört Laplacian die Skirt-Überlappung der Nachbar-Chunks. Probe: zwei
         // benachbarte Chunks bauen — an der gemeinsamen Naht teilen >50 % der Vertices die Position
@@ -1456,7 +1456,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             return { chunks: chunks.length, unique: seen.size, duplicates: dup };
         });
         check(
-            `V9.42-b: Skirt-Naht — ${r42bSkirt.duplicates || 0} Vertices teilen identische Position zwischen ${r42bSkirt.chunks || 0} Nachbar-Chunks (Smooth respektiert Naht)`,
+            `Skirt-Naht — ${r42bSkirt.duplicates || 0} Vertices teilen identische Position zwischen ${r42bSkirt.chunks || 0} Nachbar-Chunks (Smooth respektiert Naht)`,
             (r42bSkirt.duplicates || 0) >= 200
         );
         // Insel-Höhen-Amplitude skaliert mit `height`.
@@ -1471,7 +1471,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             return { small, big, ratio: small > 0 ? big / small : 0 };
         });
         check(
-            `V9.42-b: Insel-Amplitude skaliert mit height (ratio ${(r42bIslandAmp.ratio || 0).toFixed(2)}x bei height 20 vs 5)`,
+            `Insel-Amplitude skaliert mit height (ratio ${(r42bIslandAmp.ratio || 0).toFixed(2)}x bei height 20 vs 5)`,
             r42bIslandAmp.ratio > 1.5
         );
         // DSL spawn_island akzeptiert 5. `size`-Argument.
@@ -1486,7 +1486,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             return { spawned: after === before + 1, width: bbox.max.x - bbox.min.x };
         });
         check(
-            `V9.42-b: DSL spawn_island mit size=30 baut eine grosse Insel (${(r42bDsl.width || 0).toFixed(1)} m breit)`,
+            `DSL spawn_island mit size=30 baut eine grosse Insel (${(r42bDsl.width || 0).toFixed(1)} m breit)`,
             r42bDsl.spawned && r42bDsl.width > 24
         );
         // Insel-Material wie der Voxel-Boden: MeshToon + vertexColors (kein Terrain-ShaderMaterial — das
@@ -1785,14 +1785,14 @@ async function checkBandWelle6GHylomorphism(ctx) {
             } else {
                 detail = "Bauplan fehlt oder keine Tags gemessen";
             }
-            check(`V17.18: Tags von '${name}' stabil (Spawn-Ort + Resonanz unverschoben)`, ok, detail);
+            check(`Tags von '${name}' stabil (Spawn-Ort + Resonanz unverschoben)`, ok, detail);
         }
         // der felsturm ist ein EISEN-Mast → broadcasting-Affordanz (Antenne/
         // Relais): sichert die neue Funktion ab (geht sie verloren, war's eine
         // Regression). Gegenprobe: felsbogen (stein, nicht leitfähig) ist es NICHT.
         const bc = wave6gP2Results.archBroadcasting || {};
-        check("V17.18: felsturm ist broadcasting (eisen-Mast = Antenne/Relais)", bc.felsturm === true);
-        check("V17.18: felsbogen ist NICHT broadcasting (stein, nicht leitfähig)", bc.felsbogen === false);
+        check("felsturm ist broadcasting (eisen-Mast = Antenne/Relais)", bc.felsturm === true);
+        check("felsbogen ist NICHT broadcasting (stein, nicht leitfähig)", bc.felsbogen === false);
     }
 
     // ### Felsformationen ###
@@ -2247,28 +2247,28 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
         return out;
     });
 
-    check("V18.203 (F1b) Vier verschiedene Wellenlängen (Spreizung)", res.allDifferent === true);
-    check("V18.203 (F1c) Alle Wellenlängen positiv", res.allPositive === true);
+    check("(F1b) Vier verschiedene Wellenlängen (Spreizung)", res.allDifferent === true);
+    check("(F1c) Alle Wellenlängen positiv", res.allPositive === true);
     check(
-        "V18.203 (F2) LEGACY gen=1: bit-identisch zu manueller s=0.005-Berechnung (Pre-V18.203)",
+        "(F2) LEGACY gen=1: bit-identisch zu manueller s=0.005-Berechnung (Pre-V18.203)",
         res.legacyBitIdentical === true
     );
     check(
-        "V18.203 (F3) GEN=3: Werte verschieden zu Legacy (Frequenz-Fächer aktiv)",
+        "(F3) GEN=3: Werte verschieden zu Legacy (Frequenz-Fächer aktiv)",
         res.gen3DiffersFromLegacy === true
     );
-    check("V18.203 (F4) GEN=3: Werte endlich (kein NaN durch Warp/Fächer)", res.gen3ValuesFinite === true);
-    check("V18.203 (F5) GEN=2 (Γ1-Feuchte-Tor) bleibt Legacy (kein Γ3-Charakter)", res.gen2StaysLegacy === true);
+    check("(F4) GEN=3: Werte endlich (kein NaN durch Warp/Fächer)", res.gen3ValuesFinite === true);
+    check("(F5) GEN=2 (Γ1-Feuchte-Tor) bleibt Legacy (kein Γ3-Charakter)", res.gen2StaysLegacy === true);
     check(
-        `V18.203 (F6) magieleitung (λ160) variabler als dichte (λ340) über 200 m (Δmagie ${res.totalDeltaMagie} > Δdichte ${res.totalDeltaDichte})`,
+        `(F6) magieleitung (λ160) variabler als dichte (λ340) über 200 m (Δmagie ${res.totalDeltaMagie} > Δdichte ${res.totalDeltaDichte})`,
         res.magieMoreVariable === true
     );
-    check("V18.204 (F9a) Warp ändert den gelesenen Wert (Sample-Position verschoben)", res.warpChangesValue === true);
+    check("(F9a) Warp ändert den gelesenen Wert (Sample-Position verschoben)", res.warpChangesValue === true);
     check(
-        "V18.204 (F9b) Implementierung matched manuelle Warp-Berechnung (bit-identisch)",
+        "(F9b) Implementierung matched manuelle Warp-Berechnung (bit-identisch)",
         res.warpedMatchesActual === true
     );
-    check("V18.204 (F11) gen<3: kein Warp angewendet (Legacy clean, kein Drift)", res.legacyNoWarp === true);
+    check("(F11) gen<3: kein Warp angewendet (Legacy clean, kein Drift)", res.legacyNoWarp === true);
 }
 
 module.exports = {

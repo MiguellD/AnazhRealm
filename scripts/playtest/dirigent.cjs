@@ -127,19 +127,19 @@ async function checkBandV1778LadderCut(ctx) {
         return out;
     });
     check(
-        "V17.78 Welle 2 Schritt 2: die generische Leiter ist GEFALLEN (feuerstein/hammer/feile/polierscheibe RAUS)",
+        "Welle 2 Schritt 2: die generische Leiter ist GEFALLEN (feuerstein/hammer/feile/polierscheibe RAUS)",
         res.removedGone
     );
     check(
-        "V17.88: hände (domain-neutrale Baseline, 0.4) ist der EINZIGE Starter; die 5 Domain-Ops bleiben als Werkstatt-Op-Bibliothek (isStarter:false)",
+        "hände (domain-neutrale Baseline, 0.4) ist der EINZIGE Starter; die 5 Domain-Ops bleiben als Werkstatt-Op-Bibliothek (isStarter:false)",
         res.keptPresent && res.handeNeutral
     );
     check(
-        "V17.78: die Op-Klassen-Abdeckung ist intakt (subtractive/plastic/additive/phaseChange je ein behaltenes Tool)",
+        "die Op-Klassen-Abdeckung ist intakt (subtractive/plastic/additive/phaseChange je ein behaltenes Tool)",
         res.allOpClasses
     );
     check(
-        "V17.78 KONSUM: ein Material ist weiter bearbeitbar (hände subtractive auf eisen) — der Crafting-Pfad lebt",
+        "KONSUM: ein Material ist weiter bearbeitbar (hände subtractive auf eisen) — der Crafting-Pfad lebt",
         res.stillRefinable
     );
 }
@@ -181,15 +181,15 @@ async function checkBandV18278LoopErrorBoundary(ctx) {
         return out;
     });
     if (res.error) {
-        check("V18.278: Loop-Error-Boundary (realm)", false, res.error);
+        check("Loop-Error-Boundary (realm)", false, res.error);
         return;
     }
     check(
-        "V18.278 CONSUM: ein werfender Frame-Schritt erstarrt den Loop NICHT (abgefangen, weiter — kein Welt-Freeze)",
+        "CONSUM: ein werfender Frame-Schritt erstarrt den Loop NICHT (abgefangen, weiter — kein Welt-Freeze)",
         res.loopSurvivesThrow
     );
     check(
-        "V18.278 CONSUM: der abgefangene Fehler wird gezählt (_loopErrorCount steigt, die Wurzel sichtbar)",
+        "CONSUM: der abgefangene Fehler wird gezählt (_loopErrorCount steigt, die Wurzel sichtbar)",
         res.errorCounted
     );
 }
@@ -267,7 +267,7 @@ async function checkBandWellePerfENexusGovernor(ctx) {
             r._estimatePerfCost("creature", 10) > r._estimatePerfCost("creature", 2) &&
             r._estimatePerfCost("creature", 10) === 0.5;
 
-        // (6) V18.268 — die NEUEN AUGEN: perfSense SIEHT die GPU-Render-Last + die per-Subsystem-Spikes. CONSUM: der
+        // (6) die NEUEN AUGEN: perfSense SIEHT die GPU-Render-Last + die per-Subsystem-Spikes. CONSUM: der
         // Fold füllt die Felder, Loop + Overlay lesen sie.
         out.hasRenderFields =
             typeof st.perfSense.renderCalls === "number" &&
@@ -338,7 +338,7 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.settledThrottlesStream = st._voxelStreamBudgetMs < L.streamBudgetMs[1] - 0.01;
         st.voxelMeshPending = pendingSnap;
 
-        // (9) V18.281 — DER ATEM-TOTBAND: im Komfort-Band [growMs, throttleMs] HÄLT der
+        // (9) DER ATEM-TOTBAND: im Komfort-Band [growMs, throttleMs] HÄLT der
         // Regler (er frisst den fps-Überschuss NICHT als Last → das System atmet über 60,
         // statt am 59er-Anschlag zu parken). Drei Regime, EIN Regler:
         st.perfSense = r._perfSenseInit();
@@ -380,79 +380,79 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         return out;
     });
     if (res.error) {
-        check("V18.263: Perf-Regelkreis-Band (realm)", false, res.error);
+        check("Perf-Regelkreis-Band (realm)", false, res.error);
         return;
     }
     check("V12.0-perf.e: kein `gravity *= 0.9`-Pflaster in selfAwarenessAnalyze", res.noGravityPflaster);
     check(
-        "V18.263: KEIN Parallel-Governor — selfAwarenessAnalyze ruft _nexusAdaptiveQuality NICHT (EIN Regler)",
+        "KEIN Parallel-Governor — selfAwarenessAnalyze ruft _nexusAdaptiveQuality NICHT (EIN Regler)",
         res.noParallelGovernor
     );
     check(
-        "V18.263: FPS-Druck strafft ALLE Stellgrößen (Radius + Budget + Stream-Budget)",
+        "FPS-Druck strafft ALLE Stellgrößen (Radius + Budget + Stream-Budget)",
         res.tightenedRadius && res.tightenedBudget && res.tightenedStream
     );
-    check("V18.263: anhaltender Druck bounded (Radius ≥ MIN, Budget ≥ 1)", res.radiusFloor && res.budgetFloor);
+    check("anhaltender Druck bounded (Radius ≥ MIN, Budget ≥ 1)", res.radiusFloor && res.budgetFloor);
     check(
         "V12.0-perf.e: Gravitation NIE angetastet (die Wurzel-Heilung)",
         res.gravityUntouchedLow && res.gravityUntouchedHigh
     );
     check(
-        "V18.263: FPS-Luft relaxt ALLE Stellgrößen zum Maximum",
+        "FPS-Luft relaxt ALLE Stellgrößen zum Maximum",
         res.relaxedRadius && res.relaxedBudget && res.relaxedStream
     );
     check(
-        `V18.263: SYNERGIE — das teuerste Subsystem gibt zuerst nach (streamPos ${res.synergyStreamPos} < radiusPos ${res.synergyRadiusPos})`,
+        `SYNERGIE — das teuerste Subsystem gibt zuerst nach (streamPos ${res.synergyStreamPos} < radiusPos ${res.synergyRadiusPos})`,
         res.synergyStreamThrottledMore
     );
-    check("V18.263: ungültige FPS (0) ändert nichts (headless-Schutz)", res.zeroFpsNoChange);
-    check("V18.263: Kosten-Schätzung skaliert mit n (Produktions-Ökonomie-Keim)", res.estimateScales);
+    check("ungültige FPS (0) ändert nichts (headless-Schutz)", res.zeroFpsNoChange);
+    check("Kosten-Schätzung skaliert mit n (Produktions-Ökonomie-Keim)", res.estimateScales);
     check(
-        "V18.268: perfSense SIEHT die Render-Last + Spikes (renderCalls/renderTris/renderCallsMax/phaseMax)",
+        "perfSense SIEHT die Render-Last + Spikes (renderCalls/renderTris/renderCallsMax/phaseMax)",
         res.hasRenderFields
     );
     check(
-        "V18.268: CONSUM — der Fold füllt die GPU-Last (calls+tris EWMA) + den abklingenden Max",
+        "CONSUM — der Fold füllt die GPU-Last (calls+tris EWMA) + den abklingenden Max",
         res.foldRenderLoad && res.foldRenderMax
     );
     check(
-        "V18.268: CONSUM — der Fold fängt den Subsystem-Spike (phaseMax neben der wegmittelnden EWMA)",
+        "CONSUM — der Fold fängt den Subsystem-Spike (phaseMax neben der wegmittelnden EWMA)",
         res.foldPhaseSpike
     );
     check(
-        `V18.269: unter MODERATER Render-Last drosselt der Regler ARCH/Schatten (archPos ${res.renderArchPos}) MEHR als Streaming (streamPos ${res.renderStreamPos}) — Durchsatz geschützt, die Welt lädt weiter`,
+        `unter MODERATER Render-Last drosselt der Regler ARCH/Schatten (archPos ${res.renderArchPos}) MEHR als Streaming (streamPos ${res.renderStreamPos}) — Durchsatz geschützt, die Welt lädt weiter`,
         res.renderLoadThrottlesArch
     );
     check(
-        `V18.282: STREAMING IST HEILIG — hohe Render-Last (1100 Calls) drosselt das Streaming bei Rückstau NICHT (streamPos ${res.renderStreamPosBound} = MAX) — die Bewegung verhungert NIE am Render-Druck (Heilung des V18.276-Lauf-Freeze)`,
+        `STREAMING IST HEILIG — hohe Render-Last (1100 Calls) drosselt das Streaming bei Rückstau NICHT (streamPos ${res.renderStreamPosBound} = MAX) — die Bewegung verhungert NIE am Render-Druck (Heilung des V18.276-Lauf-Freeze)`,
         res.renderLoadProtectsStreaming
     );
     check(
-        "V18.269: die Render-Last verlängert das Schatten-Intervall (der 613k-Schatten-Pass läuft seltener unter GPU-Last)",
+        "die Render-Last verlängert das Schatten-Intervall (der 613k-Schatten-Pass läuft seltener unter GPU-Last)",
         res.renderLoadLengthensShadow
     );
     check(
-        "V18.270: bei Bau-Rückstau lädt die Welt mit MAX Streaming-Budget — der PID drosselt NICHT den Bau, der das frameMs erzeugt (kein Pendeln, keine Lade-Hemmung)",
+        "bei Bau-Rückstau lädt die Welt mit MAX Streaming-Budget — der PID drosselt NICHT den Bau, der das frameMs erzeugt (kein Pendeln, keine Lade-Hemmung)",
         res.loadingPinsStreamMax
     );
     check(
-        "V18.270: settled (kein Rückstau) drosselt derselbe Druck das Streaming wieder (smooth exploration — der Hebel lebt, wo er sinnvoll ist)",
+        "settled (kein Rückstau) drosselt derselbe Druck das Streaming wieder (smooth exploration — der Hebel lebt, wo er sinnvoll ist)",
         res.settledThrottlesStream
     );
     check(
-        `V18.281: im Totband HÄLT der Regler (loadScale ${res.deadbandLoadScale} bleibt ~0.5) — das System atmet über 60, kein 59er-Anschlag`,
+        `im Totband HÄLT der Regler (loadScale ${res.deadbandLoadScale} bleibt ~0.5) — das System atmet über 60, kein 59er-Anschlag`,
         res.deadbandHolds
     );
     check(
-        `V18.281: klarer Kopfraum lässt die Schönheit wachsen (loadScale ${res.headroomLoadScale} → Maximum)`,
+        `klarer Kopfraum lässt die Schönheit wachsen (loadScale ${res.headroomLoadScale} → Maximum)`,
         res.headroomGrows
     );
     check(
-        `V18.281: über der Decke schützt der fps-Boden (loadScale ${res.ceilingLoadScale} fällt) — der Regler drosselt`,
+        `über der Decke schützt der fps-Boden (loadScale ${res.ceilingLoadScale} fällt) — der Regler drosselt`,
         res.ceilingThrottles
     );
     check(
-        "V18.281: die toten Bang-Bang-Schwellen (ARCH_QUALITY_FPS_LOW/HIGH) sind gekehrt — kein Passagier",
+        "die toten Bang-Bang-Schwellen (ARCH_QUALITY_FPS_LOW/HIGH) sind gekehrt — kein Passagier",
         res.deadConstantsGone
     );
 }
@@ -585,11 +585,11 @@ async function checkBandV18149Statusbar(ctx) {
         return out;
     });
     check(
-        "V18.149 Statusbar: Essenz (Welt·Wetter·Modus·Zeit) + 6 Dev-Items markiert",
+        "Statusbar: Essenz (Welt·Wetter·Modus·Zeit) + 6 Dev-Items markiert",
         res.essenceClean && res.devMarked
     );
-    check("V18.149 Statusbar: Dev ruht unsichtbar, bleibt aber im DOM (P17)", res.devHiddenHides && res.stillInDom);
-    check("V18.149 Statusbar: der ···-Toggle flippt + persistiert", res.toggleShows && res.toggleHides);
+    check("Statusbar: Dev ruht unsichtbar, bleibt aber im DOM (P17)", res.devHiddenHides && res.stillInDom);
+    check("Statusbar: der ···-Toggle flippt + persistiert", res.toggleShows && res.toggleHides);
 }
 
 // HUD-Regel: auf schmalen Schirmen sitzt der Chat ÜBER der Hotbar-Ebene (Konsole und Hotbar
@@ -613,7 +613,7 @@ async function checkBandV18163DetailTiefe(ctx) {
         return out;
     });
     check(
-        "V18.163 HUD: die Konsole weicht der Hotbar auf schmalen Schirmen (GEMESSEN: ab 1366px kollidierten sie — Chat über der Hotbar-Ebene)",
+        "HUD: die Konsole weicht der Hotbar auf schmalen Schirmen (GEMESSEN: ab 1366px kollidierten sie — Chat über der Hotbar-Ebene)",
         res.hudRegel
     );
 }
@@ -694,18 +694,18 @@ async function checkBandV18177AAA(ctx) {
         return out;
     });
     check(
-        "V18.177 AAA: AERIAL ist frozen + ohne static-get-Schatten (Welle 6-Nachhol Sub 3g)",
+        "AAA: AERIAL ist frozen + ohne static-get-Schatten (Welle 6-Nachhol Sub 3g)",
         res.frozen === true && res.noGetterShadow === true
     );
     check(
-        `V18.177 AAA: microStrength === 0.14 (war 0.1 — GEMESSEN ${res.microStrength})`,
+        `AAA: microStrength === 0.14 (war 0.1 — GEMESSEN ${res.microStrength})`,
         Math.abs(res.microStrength - 0.14) < 1e-9
     );
     check(
-        `V18.177 AAA: aoStrength === 0.38 (war 0.35 — GEMESSEN ${res.aoStrength})`,
+        `AAA: aoStrength === 0.38 (war 0.35 — GEMESSEN ${res.aoStrength})`,
         Math.abs(res.aoStrength - 0.38) < 1e-9
     );
-    check(`V18.177 AAA: aoCap === 0.18 (war 0.16 — GEMESSEN ${res.aoCap})`, Math.abs(res.aoCap - 0.18) < 1e-9);
+    check(`AAA: aoCap === 0.18 (war 0.16 — GEMESSEN ${res.aoCap})`, Math.abs(res.aoCap - 0.18) < 1e-9);
 }
 
 // Verdrahtungs-Band — KONSUM, nicht Existenz: A1 _growTreeBlueprintForSpawn (Worldgen-Hook) ·
@@ -762,7 +762,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             out.a1TagNeutral = neutral;
         }
         // (A1g) Memory-Cap: nach 300 verschiedenen seeds bleibt der Ring
-        // ≤ 256 (V18.210 Audit-Heilung #2: CAP 64→256, Architektur-bewusste
+        // ≤ 256 (Audit-Heilung #2: CAP 64→256, Architektur-bewusste
         // Eviction — der bounded Memory-Schutz hält weiter).
         for (let s = 0; s < 300; s++) r._growTreeBlueprintForSpawn("baum_eiche", 90000 + s);
         out.a1RingCap = !r._growTreeRing || r._growTreeRing.length <= 256;
@@ -1030,7 +1030,7 @@ async function checkBandV18210Verdrahtung(ctx) {
     });
 
     // A1 — Worldgen-Hook
-    check("V18.216 FRESH-Welt genVersion = 9 (KARST + Büsche aktiv; war 8)", res.a1FreshGenIs4 === true);
+    check("FRESH-Welt genVersion = 9 (KARST + Büsche aktiv; war 8)", res.a1FreshGenIs4 === true);
     check("V18.210-A1c Determinismus: (species, seed) → derselbe cacheKey", res.a1Deterministic === true);
     check("V18.210-A1d Cache-Reuse: SELBE seed → SELBES Bauplan-Object", res.a1CacheReuse === true);
     check("V18.210-A1e 6 seeds → ≥5 unique cache keys", res.a1ManyVariants === true);
@@ -1272,7 +1272,7 @@ async function checkBandV18331ReplayDeterminism(ctx) {
     );
 }
 
-// Perf-Panel + Perf-Export — eingefaltet aus gate:perf-panel (D3b): Schöpfer V18.472 „optimiere das perf-panel … damit ich
+// Perf-Panel + Perf-Export — eingefaltet aus gate:perf-panel: Schöpfer V18.472 „optimiere das perf-panel … damit ich
 // spielen kann, einen screenshot erstellen kann … einen button für den export der daten". (P) das Panel füllt seine Felder
 // aus den EINEN Quellen (perfSense · Flugschreiber · Impostor-Zensus), der Kopf trägt die VERSION; (E) der Export liefert
 // denselben Flugschreiber-Trace als Datei; SELBST-TEST: ein leerer Flugschreiber liest als „kein Export".
@@ -1337,7 +1337,7 @@ async function checkBandPerfPanel(ctx) {
     check("Perf-Panel SELBST-TEST: ohne Flugschreiber kein Export (die Linse feuert)", o.selbstTestKeinTrace === true);
 }
 
-// Existenz-Boden des Dispatchers — eingefaltet aus gate:existenz-boden (D3b): ein Budget ≤ 0 lässt die Substanz-Queues
+// Existenz-Boden des Dispatchers — eingefaltet aus gate:existenz-boden: ein Budget ≤ 0 lässt die Substanz-Queues
 // nie monoton wachsen. Lehre 13: Existenz vor Framerate — Substanz (prio 1: waterIso) läuft bei leerem Budget
 // JEDEN Frame, Deko (prio ≥ 2) jeden 4.; K40 der Dauer-Strom: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4.
 async function checkBandExistenzBoden(ctx) {
@@ -1410,7 +1410,7 @@ async function checkBandExistenzBoden(ctx) {
     check("Existenz-Boden (e) SELBST-TEST: im Nicht-4er-Takt mit Terrain-Bau wartet die Deko (Terrain zuerst)", o.terrainZuerst === true);
 }
 
-// Godrays (V8 Kür) — eingefaltet aus gate:godray (D3b): der volumetrische Screen-Space-Light-Shaft im EINEN Post-FX-Pass.
+// Godrays (V8 Kür) — eingefaltet aus gate:godray: der volumetrische Screen-Space-Light-Shaft im EINEN Post-FX-Pass.
 // (A) die reine `_godrayFrameGate` remappt Höhe×Wetter (dass der March im Ausgabe-Bild zeichnet, beweist gate:post-kette an
 // und aus); (B) der Perf-Hebel als ZAHL: Last → 0, Kopfraum → MAX, headless → MAX.
 async function checkBandGodray(ctx) {
@@ -1450,7 +1450,7 @@ async function checkBandGodray(ctx) {
     );
 }
 
-// Die EINE Szenen-Skala + die Laub-Layer-Trennung — eingefaltet aus gate:foliage-res (D3b): bis K50 rechnete der Regler
+// Die EINE Szenen-Skala + die Laub-Layer-Trennung — eingefaltet aus gate:foliage-res: bis K50 rechnete der Regler
 // einen Laub-Faktor (`_foliageResScale`), den kein Pass las — er fiel. (1) `_szeneSkalaWirk`: mit zeitlicher Auflösung der Wert
 // des Spielers, geklemmt auf [SZENE_SKALA_MIN, 1], ohne Wert SZENE_SKALA, ohne TRAA 1; (2) `_markFoliageLayer` und die echten
 // Gruppen: Laub trägt FOLIAGE_LAYER + Layer 0, Platziertes nur Layer 0; (3) der Regler trägt die Auflösung nicht; (4) der
@@ -1522,7 +1522,7 @@ async function checkBandSzeneSkala(ctx) {
     check("Szenen-Skala (3) der Regler trägt die Auflösung nicht (Last und Ruhe lassen 0,8 stehen), (4) der Snapshot nennt sie", g.nachLast === 0.8 && g.nachRuhe === 0.8 && typeof g.snapshotSkala === "number", `${g.nachLast} → ${g.nachRuhe} · Snapshot ${g.snapshotSkala}`);
 }
 
-// Die Regler-Simulation mit ehrlichen Zahlen (W1) — eingefaltet aus gate:regler-sim (D3b): die ECHTE Kette `_perfSenseFoldFrame`
+// Die Regler-Simulation mit ehrlichen Zahlen (W1) — eingefaltet aus gate:regler-sim: die ECHTE Kette `_perfSenseFoldFrame`
 // → `_nexusPerfRegulate` → `_nexusPerfActuate` über tausende synthetische Frames, der headless-Zweig gelüftet, die zwei
 // GPU-Anwender gestubbt, alles gesichert und wiederhergestellt. S1 schwache GPU drosselt und konvergiert (Studio-Regime ohne
 // Rebuild-Schleife) · S2 Streaming ist heilig · S3 starke GPU erholt · S4 Session-Zeit-Invarianz · S5 der Geräte-Seed (Klassen,
@@ -1624,7 +1624,7 @@ async function checkBandReglerSim(ctx) {
             o.s4Invariant = s4MaxDrift < 0.001;
             o.s4 = { a: s4a, b: s4b };
             o.gpuAppliersDrove = rsApplied > 0; // die Sim fuhr die echten Zweige (nicht vakuös)
-            // ── S5: DER GERÄTE-SEED (18.07., „das Geräte-Profil ist Telemetrie,
+            // ── S5: DER GERÄTE-SEED („das Geräte-Profil ist Telemetrie,
             // kein Regler-Seed" fiel) — die EINE Profil-Quelle urteilt Klassen,
             // der Sense-Init KONSUMIERT den Seed, headless bleibt byte-alt. ──
             {
@@ -1686,7 +1686,7 @@ async function checkBandReglerSim(ctx) {
                 r._geraeteProfilMemo = null;
                 st.perfSense = null; // die finally-Faltung initialisiert headless-ehrlich neu
             }
-            // ── S6: DER GRENZZYKLUS-SCHNITT (18.07., vierter Schöpfer-Trace: Radius
+            // ── S6: DER GRENZZYKLUS-SCHNITT (vierter Schöpfer-Trace: Radius
             // atmete 58↔130 m und baute dieselben Rand-Zellen im Kreis) — GEPULSTER
             // Kopfraum (kurze Ruhe-Fenster zwischen Über-Budget-Wellen) bewegt den
             // Radius NICHT mehr; ANHALTENDER Kopfraum wächst weiter (S3 bleibt). ──

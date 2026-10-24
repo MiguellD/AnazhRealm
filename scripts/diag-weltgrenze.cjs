@@ -230,7 +230,7 @@ function seitenPruefer() {
             const pm = r.state.playerMesh;
             const x = pm ? pm.position.x + 6 : 6;
             const z = pm ? pm.position.z + 6 : 6;
-            // DIE LICHT-GEDÄCHTNISSE (K11) über ihre echten Schreiber: das wache Tor (`_tickPortalLicht`) und der Licht-Pool,
+            // DIE LICHT-GEDÄCHTNISSE über ihre echten Schreiber: das wache Tor (`_tickPortalLicht`) und der Licht-Pool,
             // der es hält (`_leuchtTakt`) — die Laterne eines Plans ist ein Eintrag der Welt (`laterne_dorf`), kein Gedächtnis
             r._tickPortalLicht({
                 entry: { position: { x, y: r.getTerrainHeightAt(x, z) + 1, z }, scale: 1 },

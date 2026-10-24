@@ -38,6 +38,7 @@ export default [
                 cancelAnimationFrame: "readonly",
                 ResizeObserver: "readonly",
                 Worker: "readonly",
+                MessageChannel: "readonly", // der Port, über den der Voxel-Faden einem Neben-Faden die Regionen reicht
                 Blob: "readonly",
                 URL: "readonly",
                 console: "readonly",

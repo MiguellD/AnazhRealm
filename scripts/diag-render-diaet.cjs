@@ -264,7 +264,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         } catch (e) {
             res.farbe = { err: String((e && e.message) || e) };
         }
-        // ── Q am Ruf (D3c): die EINE Slot-Farb-Naht in beiden Slot-Schreibern, der Merge-Pfad zieht
+        // ── Q am Ruf: die EINE Slot-Farb-Naht in beiden Slot-Schreibern, der Merge-Pfad zieht
         // das geteilte Material, der blockierte Pfad lässt es stehen (die Glüh-Antwort misst F am Slot)
         if (neu.probeFlat) {
             const zaehl = (k, fn) => {

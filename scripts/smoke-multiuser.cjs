@@ -77,7 +77,7 @@ async function run() {
             name: "Aria",
             bodyParts: [{ shape: "box" }],
             worldRole: "host",
-            // W16 Phase 2: der Welt-Katalog reist im soul-Kanal mit.
+            // der Welt-Katalog reist im soul-Kanal mit.
             catalog: [{ id: "smoke-cat-w16", label: "Smoke-Welt", hash: "abc123", multiplayer: true }],
         })
     );
@@ -89,7 +89,7 @@ async function run() {
     wsA.send(JSON.stringify({ type: "soul" }));
     await sync();
 
-    // W13 Phase 3: Vibe-Pass-Identität. A teilt vibePassId + proof → B
+    // Vibe-Pass-Identität. A teilt vibePassId + proof → B
     // bekommt beides mit dem peerId-Stempel des Servers. (Die echte
     // ed25519-Verifikation prüft der Playtest — hier nur der Relay.)
     wsA.send(JSON.stringify({ type: "vibe", vibePassId: "ed25519:" + "ab".repeat(32), proof: "cd".repeat(64) }));
@@ -99,7 +99,7 @@ async function run() {
     wsA.send(JSON.stringify({ type: "vibe" }));
     await sync();
 
-    // W7 Phase 1: WebRTC-Signaling. A sendet einen rtc-offer an B (targeted),
+    // WebRTC-Signaling. A sendet einen rtc-offer an B (targeted),
     // B antwortet mit rtc-answer an A, A schickt einen ICE-Kandidaten an B.
     // Server stempelt die Sender-peerId + reicht zielgerichtet durch.
     wsA.send(JSON.stringify({ type: "rtc-offer", to: "peerB", sdp: { type: "offer", sdp: "v=0..." } }));
@@ -115,7 +115,7 @@ async function run() {
     wsA.send(JSON.stringify({ type: "rtc-offer", to: "peerB" }));
     await sync();
 
-    // Ring 11.5: world-request (broadcast) + world-snapshot (targeted).
+    // world-request (broadcast) + world-snapshot (targeted).
     // B sendet world-request → A bekommt es → A antwortet mit world-snapshot
     // to=peerB. Server forwarded zielgerichtet — andere Peers (hier nur A
     // und B) sehen den Snapshot nicht doppelt.
@@ -125,7 +125,7 @@ async function run() {
     wsA.send(JSON.stringify({ type: "world-snapshot", to: "peerB", state: { hello: "world", v: 1 } }));
     await sync();
 
-    // W7 Phase 4: Public-Lobby. A veröffentlicht test-room, B browst die
+    // Public-Lobby. A veröffentlicht test-room, B browst die
     // Lobby → bekommt eine lobby-rooms-Antwort mit A's Raum.
     wsA.send(JSON.stringify({ type: "lobby-publish", label: "Anazhs Probe-Raum" }));
     await sync();
@@ -136,13 +136,13 @@ async function run() {
     wsA.send(JSON.stringify({ type: "creature-pos", list: [{ id: "c1", x: 4, y: 6, z: 4, yaw: 0, soul: "wesen" }] }));
     await sync();
 
-    // W11 Phase 4: Voice-Sync. A's Begleiter spricht → B empfängt companion-say.
+    // Voice-Sync. A's Begleiter spricht → B empfängt companion-say.
     // Defensive: companion-say ohne text wird verworfen.
     wsA.send(JSON.stringify({ type: "companion-say", text: "Ich träume mit dir.", voice: "Aria" }));
     wsA.send(JSON.stringify({ type: "companion-say", voice: "Aria" }));
     await sync();
 
-    // W17 Phase B-Relay: der Sub-Welt-Verkehr eines Multiplayer-Portals.
+    // der Sub-Welt-Verkehr eines Multiplayer-Portals.
     // A's ws-send fliesst als subworld-net durchs Mesh → B empfängt es.
     // Defensive: subworld-net ohne data / ohne worldId wird verworfen.
     wsA.send(JSON.stringify({ type: "subworld-net", worldId: "worlds/_test/index.html", data: "subnet-payload" }));
@@ -150,7 +150,7 @@ async function run() {
     wsA.send(JSON.stringify({ type: "subworld-net", data: "subnet-payload" }));
     await sync();
 
-    // W17 Phase C: das Gruppen-Portal. A öffnet ein Multiplayer-Portal →
+    // das Gruppen-Portal. A öffnet ein Multiplayer-Portal →
     // B bekommt die portal-invite. Defensive: ohne worldId wird verworfen.
     wsA.send(JSON.stringify({ type: "portal-invite", worldId: "skeleton", label: "Skelett-Welt" }));
     wsA.send(JSON.stringify({ type: "portal-invite", label: "ohne worldId" }));
@@ -202,7 +202,6 @@ async function run() {
     const aNotEchoedOwnDsl = !events.a.some((e) => e.type === "dsl");
     const bRejectedBadDsl = events.b.filter((e) => e.type === "dsl").length === 1; // genau das eine gute, keine kaputten
 
-    // Ring 11.5 Assertions
     const aGotWorldRequest = events.a.some((e) => e.type === "world-request" && e.peerId === "peerB");
     const bGotWorldSnapshot = events.b.some(
         (e) => e.type === "world-snapshot" && e.peerId === "peerA" && e.state && e.state.hello === "world"
@@ -210,14 +209,13 @@ async function run() {
     const aNotEchoedOwnRequest = !events.a.some((e) => e.type === "world-request" && e.peerId === "peerA");
     // Targeted-delivery: A sollte sein EIGENES world-snapshot NICHT zurückbekommen
     const aNotEchoedOwnSnapshot = !events.a.some((e) => e.type === "world-snapshot");
-    // lanAddresses im welcome-Message (Ring 11.5)
+    // lanAddresses im welcome-Message
     const welcomeHasLanAddresses = events.a.some((e) => e.type === "welcome" && Array.isArray(e.lanAddresses));
 
     // M8 Assertions — die Knoten-Gesamtzahl (2 Peers in 1 Raum), nur an den Anfrager.
     const aGotStats = events.a.some((e) => e.type === "stats" && e.rooms === 1 && e.peers === 2);
     const bNotStats = !events.b.some((e) => e.type === "stats");
 
-    // Ring 11 V3 Assertions
     const bGotSoulFromA = events.b.some(
         (e) =>
             e.type === "soul" &&
@@ -226,7 +224,7 @@ async function run() {
             e.name === "Aria" &&
             e.worldRole === "host"
     );
-    // W16 Phase 2: der Welt-Katalog überlebt den WS-Relay.
+    // der Welt-Katalog überlebt den WS-Relay.
     const bGotCatalogFromA = events.b.some(
         (e) =>
             e.type === "soul" &&
@@ -240,7 +238,6 @@ async function run() {
     // Genau die EINE gute soul-Nachricht (kaputte wurden verworfen).
     const bRejectedBadSoul = events.b.filter((e) => e.type === "soul").length === 1;
 
-    // W13 Phase 3 Assertions
     const bGotVibeFromA = events.b.some(
         (e) =>
             e.type === "vibe" &&
@@ -251,7 +248,7 @@ async function run() {
     const aNotEchoedOwnVibe = !events.a.some((e) => e.type === "vibe");
     const bRejectedBadVibe = events.b.filter((e) => e.type === "vibe").length === 1;
 
-    // W7 Phase 1 Assertions — WebRTC-Signaling, zielgerichtet.
+    // WebRTC-Signaling, zielgerichtet.
     const bGotRtcOfferFromA = events.b.some(
         (e) => e.type === "rtc-offer" && e.peerId === "peerA" && e.sdp && e.sdp.type === "offer"
     );
@@ -296,7 +293,6 @@ async function run() {
     console.log("W7P1 Server verwirft rtc-offer ohne to/sdp:", bRejectedBadRtcOffer);
     console.log("M8 A bekommt Broker-stats (1 Raum, 2 Peers, nur Anfrager):", aGotStats && bNotStats);
 
-    // W7 Phase 4 + Kreatur-Sync Assertions
     const bGotLobbyRooms = events.b.some(
         (e) =>
             e.type === "lobby-rooms" &&
@@ -311,14 +307,13 @@ async function run() {
             e.list.some((c) => c.id === "c1")
     );
     const aNotEchoedOwnCreaturePos = !events.a.some((e) => e.type === "creature-pos");
-    // W11 Phase 4: Voice-Sync.
+    // Voice-Sync.
     const bGotCompanionSay = events.b.some(
         (e) =>
             e.type === "companion-say" && e.peerId === "peerA" && e.text === "Ich träume mit dir." && e.voice === "Aria"
     );
     const aNotEchoedOwnCompanionSay = !events.a.some((e) => e.type === "companion-say");
     const bRejectedBadCompanionSay = events.b.filter((e) => e.type === "companion-say").length === 1;
-    // W17 Phase B-Relay Assertions.
     const bGotSubworldNet = events.b.some(
         (e) =>
             e.type === "subworld-net" &&
@@ -328,7 +323,6 @@ async function run() {
     );
     const aNotEchoedOwnSubworldNet = !events.a.some((e) => e.type === "subworld-net");
     const bRejectedBadSubworldNet = events.b.filter((e) => e.type === "subworld-net").length === 1;
-    // W17 Phase C Assertions.
     const bGotPortalInvite = events.b.some(
         (e) =>
             e.type === "portal-invite" && e.peerId === "peerA" && e.worldId === "skeleton" && e.label === "Skelett-Welt"

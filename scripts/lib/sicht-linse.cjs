@@ -1,4 +1,4 @@
-// sicht-linse.cjs — DIE SICHT-LINSE (Welle C): was die Sicht-Kette je Frame ARBEITET. Die Draw-Ersparnis der Sicht fraß
+// sicht-linse.cjs — DIE SICHT-LINSE: was die Sicht-Kette je Frame ARBEITET. Die Draw-Ersparnis der Sicht fraß
 // sich selbst wieder auf. Kein Gate sah es: jede Zahl im Flugschreiber war „der Frame".
 //
 // Die Linse hüllt die Leser der Sicht-Kette (Prototyp-Methoden, wie die Takt-Linse) und zählt je Frame: die Pässe, die
@@ -41,7 +41,7 @@ const SICHT_NEU = ["_satzAbschnittMerke", "_instanzWahlMerke", "_werferWahlMerke
 // (`dicht`), das Umlegen aller Abschnitte (`umlegen`). Der Grund ist der innerste Schreiber im Stapel.
 const SICHT_GRUND = ["_chunkSatzRuht", "_chunkSatzUmlegen"];
 const SICHT_SCHREIB = "_chunkSatzSchreib";
-// DAS NEULEGEN BEIM GRUND (K71): seit der vergleichende Schreiber (`_satzSetze`) nur geänderte Indizes lädt, kostet ein
+// DAS NEULEGEN BEIM GRUND: seit der vergleichende Schreiber (`_satzSetze`) nur geänderte Indizes lädt, kostet ein
 // Abschnitt, der sich ohne Schuld dicht neu legt, kein Byte mehr — wohl aber den Gang über jede seiner Zellen. Die Linse
 // bucht darum den Gang selbst (die Indizes, die `_chunkSatzDicht` ab der ersten Abweichung prüft) beim Grund wie die Bytes.
 const SICHT_LEGE = "_chunkSatzDicht";
@@ -850,7 +850,7 @@ function sichtPhase(frames, ab) {
         bytesOhneJe: klasseJe("ohne"),
         bytesOhne: st((f) => f.klasse.ohne),
         ohneFrames: fs.filter((f) => f.klasse.ohne > 0).length,
-        // die neu gelegten Indizes ohne Grund (K71): je „Familie Grund Pass" über die Phase, je Frame, die Frames
+        // die neu gelegten Indizes ohne Grund: je „Familie Grund Pass" über die Phase, je Frame, die Frames
         legeOhneJe: klasseJe("ohne", "legeKlasse"),
         legeOhne: st((f) => f.legeKlasse.ohne),
         legeOhneFrames: fs.filter((f) => f.legeKlasse.ohne > 0).length,
@@ -987,7 +987,7 @@ function sichtUrteil(b) {
                         .map(([k, n]) => `${k} ${n} B`)
                         .join(" · ")
             );
-        // das Neulegen ohne Grund (K71): der vergleichende Schreiber lädt kein Byte, doch der Pass geht jede Zelle seines
+        // das Neulegen ohne Grund: der vergleichende Schreiber lädt kein Byte, doch der Pass geht jede Zelle seines
         // Abschnitts durch — Arbeit ohne Änderung, beim Namen („Familie Grund Pass")
         if (R.legeOhneFrames > 0)
             v.push(

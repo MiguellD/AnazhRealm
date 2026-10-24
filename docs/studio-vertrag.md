@@ -640,9 +640,13 @@ Wirts-Zeilen zu `AnazhRealm.KIND_POLICY` — jeder Leser (Register, Werkstatt, W
 Tafel, keine Zeile im Wirt. Disjunkt: eine Art mit Wirts-Zeile (die Verben des Wirts — grown, role, handAxis, donorTool, synchron vor
 dem Buch für den Lockstep: tree · shrub · vehicle · gate · weapon · haus) behält sie, die Buch-Zeile fällt laut. Fail-closed je
 Zeile (G4.2): Art-Name, Präfix, Substanz — eine kaputte Zeile registriert nichts. Nur `prefix` und `substanz` reisen; eine
-Buch-Zeile trägt keine Wirts-Verben (grown · builtIn falsch, placeExtra null — die Platzierung sagt `fx.place`, B3).
+Buch-Zeile trägt keine Wirts-Verben (grown · builtIn falsch, placeExtra null — die Platzierung sagt `fx.place`, B3). Der Prompt
+der KI nennt die Wörter einer Buch-Art unter ihrem `substanz.label` (`_studioWordsForPrompt`).
 Beweis: `gate:nervensystem` E — das neue Gesetzbuch `worlds/neuntes-buch/stele-core.js` (die Stele, kein Spiel-Manifest) steht über
-die Werkstatt in der Welt, mit Kosten-Leiste, Stufen-Kette und Speicher-Rundlauf, und der Wirt nennt die Art nie beim Namen.
+die Werkstatt in der Welt, mit Kosten-Leiste, Stufen-Kette und Speicher-Rundlauf, und der Wirt nennt die Art nie beim Namen; E2 —
+dasselbe Werk auf jedem Weg mit dem Bau-Hash der gezeigten Stufe: KI-Satz (`spawn_studio` mit Reglern über `_studioStampFor`),
+Foundry (`build-asset` L0–L2), P2P (der Mitspieler baut es byte-gleich), und der Atlas (`npm run atlas -- --find neuntes`)
+nennt das Buch als die EINE Quelle der Art.
 
 ## §4 Die Empfänger-Gesetze (Taille-Erbe)
 
@@ -963,9 +967,9 @@ je Lage über `landformRegler` —, das Flussnetz mit den Kanten `NETZ_KANTE`, s
 den benannten Seen `benannteSeen`, die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, der Mäander `MAEANDER`, das
 Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die Schneegrenze `SCHNEE`/`schnee`, die
 Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DIE HYDROSPHÄRE (Karte hydro-faden): das
-Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, Kanal-Index, Wasser-Feld; `H` das Gesetz des
-Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet sie), die Bett-Tiefe `flussTiefe` und das Wasser-Band
-`hydroBand`. DER FELS-STOFF (K17): das Aussehen
+Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, der gepackte Kanal `kanal` mit
+`KANAL_FELDER` Zahlen je Segment, Wasser-Feld; `H` das Gesetz des Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet
+sie), die Bett-Tiefe `flussTiefe` und das Wasser-Band `hydroBand`. DER FELS-STOFF (K17): das Aussehen
 des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden je Chunk im Worker), `felsNetz` (die Gestalten),
 `felsBasis`, `felsFarbe`, `felsKruemmung`, `felsLage`, `felsMittel`/`felsMittelWerte` (die Ferne), `felsFein` (der
 Detail-Term des Shaders) mit seiner Welle `felsWelle` (K17-3: der Shader liest sie EINMAL im Rausch-Atlas und reicht sie
@@ -985,7 +989,9 @@ Schutt), DER GRUND DER HÄUSER (S4: die Art `grund` — der Körper-Satz und der
 Plan im Foundry-Faden, Kanal `grund-plan` → `grundPlan`) mit
 seinem Grundriss-Leser `erdbauGrund`, dem hohlen Keller `erdbauHohl` (das Feld des Wirts, je Spalte gefragt über `erdbauKeller`) und dem Schnitt des gezeichneten
 Bodens `erdbauSchnitt` (Voxel-Faden und Sync-Bau), der Lese-Kontext eines Orts `ortCtx` (Höhe samt Erdbau, Fläche, Welt-Wasser — EIN ctx für Wirt,
-Fachwerk-Studio und Linse), die Lage einer Welt ohne Wirt `LAGE_GRUND`/`lageGrund` und die Hang-Suche eines Orts `hangOrt`.
+Fachwerk-Studio und Linse), die Lage einer Welt ohne Wirt `LAGE_GRUND`/`lageGrund` und die Hang-Suche eines Orts `hangOrt`. DER WIND AM GELÄNDE
+(wetter.K5): der Faktor `windForm` mit seinem Gesetz `WIND_FORM` — Lee hinter dem Kamm, Tal-Düse zwischen zwei Flanken an der Höhe
+des Wirts; ihn liest der EINE Wind der Welt (`_windAt`).
 DIE FORM DES EDITS (F2a „hoch bauen", editform-kern): jeder Spieler-Edit ist die Säule `editForm` seines Maßes `EDIT_FORM` —
 der Punkt `mitEdits`, das Gitter `editsImGitter`, die Reichweite `editReich` (Edit-Karte, Weckung, Fern-Ring), die Krone
 `editKrone` (die Garantie-Luft der Flächen-Probe) und das Band des
