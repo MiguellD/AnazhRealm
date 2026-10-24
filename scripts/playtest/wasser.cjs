@@ -75,17 +75,10 @@ async function checkBandHydrosphere(ctx) {
             }
             return true;
         });
-        // Jeder Fluss endet am Meer, am Rand der Kachel, in einem See (K16: die Senke des Netzes ist ein benannter See) oder als
-        // Zufluss auf der Rinne seines Hauptlaufs.
-        out.riverMouths = h1.rivers.every((rv) => ["sea", "border", "see", "zufluss"].includes(rv.mouth));
-        // K16 — ein Fluss mündet in den See des Wasser-Orts (Land → See), sein Spiegel endet auf dem des Sees — gemessen an
-        // der Kachel des Wasser-Orts (`__wasserOrt`).
+        // Wo jeder Lauf endet (in See oder Meer, über Kachel und Mündung verfolgt), misst gate:wasser-leben K4 LÄUFE.
         const seeOrt = await window.__wasserOrt("see");
         const meerOrt = await window.__wasserOrt("meer");
-        out.seeOrt = seeOrt ? `${Math.round(seeOrt.x)},${Math.round(seeOrt.z)}` : "keiner";
         out.meerOrt = meerOrt ? `${Math.round(meerOrt.x)},${Math.round(meerOrt.z)}` : "keiner";
-        out.riverThroughLake =
-            !!seeOrt && seeOrt.hydro.rivers.some((rv) => rv.mouth === "see" && rv.points.every((p) => !p.inLake));
         // Flow-Accumulation stromab monoton → Breite wächst
         out.widthGrows = h1.rivers.every((rv) => {
             for (let k = 0; k + 1 < rv.points.length; k++) {
@@ -209,12 +202,6 @@ async function checkBandHydrosphere(ctx) {
         check(
             "Voxel V9.43-b: jeder Fluss steigt strikt monoton ab (Quelle → Mündung, die Sohle des Netzes)",
             hb.riversDescend
-        );
-        check("Voxel V9.43-b: jeder Fluss endet an Meer, See, Hauptlauf oder Region-Rand", hb.riverMouths);
-        check(
-            "K16: ein Fluss des Netzes mündet in einen See (Land → See)",
-            hb.riverThroughLake,
-            `See-Ort ${hb.seeOrt}`
         );
         check("Voxel V9.43-b: Fluss-Breite wächst stromab (Einzugsgebiet des Netzes monoton)", hb.widthGrows);
         check("Voxel V9.43-b: jeder See — Füll-Level über dem Boden, unter der Rand-Höhe", hb.lakesValid);

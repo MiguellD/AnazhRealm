@@ -1043,7 +1043,7 @@ async function lauf() {
                 befund.mutation = await page.evaluate((o) => window.__wasserMutation({ ort: o.see.ufer }), ORTE);
             // GELÄNDE K4 STAFFEL 2 — überall: die Läufe des Gesetzes bis zu ihrer Senke, die Mutation an Zufalls-Orten der Karte,
             // die Strömung an Fluss-Punkten der Karte (je Ort die Welt dort gestreamt)
-            if (soll("laeufe")) befund.laeufe = await page.evaluate(() => window.__wasserLaeufe({}));
+            if (soll("laeufe")) befund.laeufe = await page.evaluate(() => window.__wasserLaeufe());
             for (const [art, fluss, n] of [["ueberall", false, 5], ["treibt", true, 4]]) {
                 if (!soll(art)) continue;
                 const orte = await page.evaluate((fl, k) => window.__wasserKarte({ fluss: fl, n: k }), fluss, n);
