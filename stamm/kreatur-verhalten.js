@@ -2839,7 +2839,7 @@ class AnazhRealm_kreatur_verhalten {
         u._kzNah = u._kzNah === true ? d2 < N.aus * N.aus : d2 < N.ein * N.ein;
         if (u._kzNah) {
             u._kzNahGewesen = true; // das Studio-Tier stand schon im Bild — sein Satz übernimmt später, ohne Einblenden
-            if (vorab && !u._kzGlieder && !u._kzVersuch && this._weltBakeErlaubt(d2)) {
+            if (vorab && !u._kzGlieder && !u._kzVersuch && this._gattungGlieder(cr) && this._weltBakeErlaubt(d2)) {
                 u._kzVersuch = true;
                 this._leibMatrix(cr);
                 u._kzGlieder = this._kreaturGliederBacken(cr, false);
@@ -2858,7 +2858,8 @@ class AnazhRealm_kreatur_verhalten {
                 cr.visible = false;
                 return;
             }
-            if (!this._weltBakeErlaubt(d2)) return; // getaktet — bis dahin trägt der Körper
+            // getaktet, oder die Gattung kalt (ihr Vorrat im Leerlauf bestellt, `_gattungGlieder`): bis dahin trägt der Körper
+            if (!this._gattungGlieder(cr) || !this._weltBakeErlaubt(d2)) return;
             u._kzVersuch = true;
             this._leibMatrix(cr);
             // Fern geboren (nie nah im Bild, kein Satz trug ihn): die Glieder blenden bei ihrer Geburt ein, statt zu ploppen.
@@ -2924,18 +2925,17 @@ class AnazhRealm_kreatur_verhalten {
     }
 
     // ═══ KAMPF-GEFÜHL — DER LEICHNAM (Welle LF kampf, Posten 7) ═══
-    // Ein Gefallener (state.leichname, _kreaturFaellt) hat keine KI, keinen Gang und keine Stimme: er kippt (~83° smoothstep
-    // über kippDauerSec) auf die beim Tod gemerkte Flanke, die Wurzel steigt nach der Tod-Lage (_todHebeTafel), dann liegt
-    // er gefuehl.leichnamSec und sinkt in der letzten Spanne um die Höhe seines Leibs in die Erde — DANN removeCreature. Je
-    // Takt wählt er seine Sicht wie jeder Leib im Bild (_leibSicht: die Stufe nach dem Abstand). Rein optisch — kein
-    // Sim-/Replay-Pfad liest die Lage; der Mehrspieler-Strom trägt sie (q).
+    // Ein Gefallener (state.leichname, _kreaturFaellt) ohne KI, Gang und Stimme: steht seine Tod-Lage (`_todLageTick`), kippt
+    // er (~83° smoothstep über kippDauerSec, Uhr `fall`) auf ihre Flanke, liegt bis zur Frist (`t` ab dem Tod), sinkt, DANN
+    // removeCreature; je Takt seine Sicht (_leibSicht). Rein optisch — kein Sim-Pfad liest die Lage, der Strom trägt sie (q).
     _tickLeichname(delta, playerPos) {
         const L = this.state.leichname;
         for (let i = L.length - 1; i >= 0; i--) {
             const creature = L[i];
             const dying = creature.userData.dying;
             dying.t += delta;
-            const u = Math.min(1, dying.t / Math.max(1e-6, dying.dauer));
+            if (dying.hebe !== undefined) dying.fall += delta;
+            const u = Math.min(1, dying.fall / Math.max(1e-6, dying.dauer));
             const ang = AnazhRealm.TOD_KIPP_RAD * u * u * (3 - 2 * u); // ~83° — gekippt, nicht vergraben
             const axis = this._kampfTipAxis || (this._kampfTipAxis = new THREE.Vector3());
             axis.set(dying.dirZ, 0, -dying.dirX).normalize(); // ⊥ Kipp-Richtung: up kippt AUF sie zu

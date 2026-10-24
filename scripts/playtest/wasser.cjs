@@ -942,20 +942,20 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         );
         check("Welle C.2 V9.72: Iso-Mesh nutzt das geteilte hydroSurfaceMaterial", res.sampleMeshUsesHydroMat === true);
         check(
-            "V18.92 → Welle L: Wasser-Mesh trägt userData.hydroKind='chunk-water-cellsheet' (der EINE Render-Pfad)",
+            "→ Welle L: Wasser-Mesh trägt userData.hydroKind='chunk-water-cellsheet' (der EINE Render-Pfad)",
             res.sampleMeshUserData === true
         );
         check(
-            "V18.1 W1: Wasser-Material ist BackSide (einseitige Flaeche, kein Volumen, kein Wasser-von-unten)",
+            "W1: Wasser-Material ist BackSide (einseitige Flaeche, kein Volumen, kein Wasser-von-unten)",
             res.waterMatBackSide === true
         );
         check(
-            "V18.4 W1: Wasser-Iso trägt KEINE Unterseiten-Dreiecke (ny>0.2 verworfen; Ufer/Fluss-Drops bleiben)",
+            "W1: Wasser-Iso trägt KEINE Unterseiten-Dreiecke (ny>0.2 verworfen; Ufer/Fluss-Drops bleiben)",
             res.waterUndersideTris === 0,
             `Unterseite=${res.waterUndersideTris}, Oberseite=${res.waterTopsTris}`
         );
         check(
-            "V18.3 W1: Wasser-Iso trägt Oberseiten-Dreiecke (von oben über die Rückseite sichtbar)",
+            "W1: Wasser-Iso trägt Oberseiten-Dreiecke (von oben über die Rückseite sichtbar)",
             typeof res.waterTopsTris === "number" && res.waterTopsTris > 0,
             `Oberseite=${res.waterTopsTris}`
         );
@@ -1152,31 +1152,31 @@ async function checkBandV17117FarWater(ctx) {
         return out;
     });
     if (res.error) {
-        check("V17.117 H3: Far-Water-Band (realm verfügbar)", false, res.error);
+        check("H3: Far-Water-Band (realm verfügbar)", false, res.error);
         return;
     }
     check(
-        "V17.117 H3: beyond-region Ozean-Chunk gefunden (am Meer-Ort des Gesetzes)",
+        "H3: beyond-region Ozean-Chunk gefunden (am Meer-Ort des Gesetzes)",
         res.foundOcean,
         `Meer-Ort ${res.meerOrt}`
     );
-    check("V17.117 H3: beyond-region Ozean — Gate true", res.oceanGate === true);
+    check("H3: beyond-region Ozean — Gate true", res.oceanGate === true);
     check(
-        "V17.117 H3: beyond-region Ozean trägt Wasser-Cells (Heilung)",
+        "H3: beyond-region Ozean trägt Wasser-Cells (Heilung)",
         res.oceanWaterCells > 0,
         `cells=${res.oceanWaterCells}`
     );
-    check("V17.117 H3: beyond-region Land-Chunk gefunden (Hochland ohne Wasser des Gesetzes)", res.foundLand === true);
+    check("H3: beyond-region Land-Chunk gefunden (Hochland ohne Wasser des Gesetzes)", res.foundLand === true);
     if (res.foundLand) {
-        check("V17.117 H3: beyond-region Land — Gate false (kein Mehraufwand)", res.landGate === false);
+        check("H3: beyond-region Land — Gate false (kein Mehraufwand)", res.landGate === false);
         check(
-            "V17.117 H3: beyond-region Land — keine Wasser-Cells",
+            "H3: beyond-region Land — keine Wasser-Cells",
             res.landWaterCells === 0,
             `cells=${res.landWaterCells}`
         );
     }
     check(
-        "V17.117 H3: Worker<->Main Wasser-Cells bit-identisch beyond-region (Naht-Wand)",
+        "H3: Worker<->Main Wasser-Cells bit-identisch beyond-region (Naht-Wand)",
         res.workerMainIdentical === true,
         `mism=${res.cellMismatches} count=${res.mainCellCount}/${res.workerCellCount}`
     );
@@ -1253,12 +1253,12 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         "Welle L: Helper liest keine zweite Wahrheit (_waterLevelAt / _isAboveWaterAt)",
         res.ohneZweiteWahrheit === true
     );
-    check("V17.113: erster Boden-Zugriff scannt (Budget dekrementiert)", res.gFirstScan === true);
-    check("V17.113: gleiche Position → Cache-Hit (kein Scan)", res.gCacheHit === true);
-    check("V17.113: Bewegung < 0.5 m → Cache-Hit (kein Scan)", res.gCacheNear === true);
-    check("V17.113: Bewegung > 0.5 m → Refresh (ein Scan)", res.gRefreshOnMove === true);
+    check("erster Boden-Zugriff scannt (Budget dekrementiert)", res.gFirstScan === true);
+    check("gleiche Position → Cache-Hit (kein Scan)", res.gCacheHit === true);
+    check("Bewegung < 0.5 m → Cache-Hit (kein Scan)", res.gCacheNear === true);
+    check("Bewegung > 0.5 m → Refresh (ein Scan)", res.gRefreshOnMove === true);
     check(
-        "V17.113: Budget erschöpft → die Gewanderte trägt ihr Cache, nur die Frische scannt einmal (FPS-Bound, Welle L)",
+        "Budget erschöpft → die Gewanderte trägt ihr Cache, nur die Frische scannt einmal (FPS-Bound, Welle L)",
         res.gBudgetBound === true
     );
 }
@@ -1464,15 +1464,15 @@ async function checkBandV18129HochBecken(ctx) {
         return out;
     });
     if (!res) {
-        check("V18.129 Hoch-Becken: Sonde lief", false, "evaluate warf");
+        check("Hoch-Becken: Sonde lief", false, "evaluate warf");
         return;
     }
-    check("V18.129 Hoch-Becken: CA_STAU-Konfiguration steht (frozen, vollständig)", res.config);
-    check("V18.129 Hoch-Becken: der Spill-Scan hält das GESCHLOSSENE Becken (Krone-Pegel)", res.basinHolds);
-    check("V18.129 Hoch-Becken: außerhalb der Wand gilt der Außenwelt-Pegel (keine Badewanne)", res.outsideOpen);
-    check("V18.129 Hoch-Becken: EIN Loch im Ring → kein Stau (der Damm/Pfeiler-Diskriminator)", res.gapDrains);
+    check("Hoch-Becken: CA_STAU-Konfiguration steht (frozen, vollständig)", res.config);
+    check("Hoch-Becken: der Spill-Scan hält das GESCHLOSSENE Becken (Krone-Pegel)", res.basinHolds);
+    check("Hoch-Becken: außerhalb der Wand gilt der Außenwelt-Pegel (keine Badewanne)", res.outsideOpen);
+    check("Hoch-Becken: EIN Loch im Ring → kein Stau (der Damm/Pfeiler-Diskriminator)", res.gapDrains);
     check(
-        "V18.129 Hoch-Becken: die Empfänger-Kappe hält im Automaten (nichts über cap, darunter füllt es)",
+        "Hoch-Becken: die Empfänger-Kappe hält im Automaten (nichts über cap, darunter füllt es)",
         res.capHolds && res.capFillsBelow,
         `overCap=${res.overCap}`
     );

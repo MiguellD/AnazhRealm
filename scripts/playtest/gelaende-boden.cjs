@@ -91,21 +91,21 @@ async function checkBandV1749Adventure(ctx) {
         pm.z = savedPos.z;
         return out;
     });
-    check("V17.49 Abenteuer: EXPLORE-Config (Neuheit > Wiederkehr, max > min)", res.config);
-    check("V17.49 Abenteuer: KONSUM — eine NEUE Region staunt mehr als eine Wiederkehr (Neuheit)", res.noveltyGrades);
+    check("Abenteuer: EXPLORE-Config (Neuheit > Wiederkehr, max > min)", res.config);
+    check("Abenteuer: KONSUM — eine NEUE Region staunt mehr als eine Wiederkehr (Neuheit)", res.noveltyGrades);
     check(
-        "V17.49 Abenteuer: KONSUM — kühnes Erkunden (neu+fern+karg) ≫ vertrautes Pendeln (das Wagnis graduiert)",
+        "Abenteuer: KONSUM — kühnes Erkunden (neu+fern+karg) ≫ vertrautes Pendeln (das Wagnis graduiert)",
         res.adventureGrades
     );
     check(
-        "V17.49 Abenteuer: KONSUM — in eine karge Aura wagen staunt mehr (Kühnheit liest das Feld)",
+        "Abenteuer: KONSUM — in eine karge Aura wagen staunt mehr (Kühnheit liest das Feld)",
         res.boldnessGrades
     );
     check(
-        "V17.49 Abenteuer: KONSUM — die explore-Tat skaliert mit der Magnitude (awe graduiert, nicht binär)",
+        "Abenteuer: KONSUM — die explore-Tat skaliert mit der Magnitude (awe graduiert, nicht binär)",
         res.exploreScales
     );
-    check("V17.49 Abenteuer: visitedRegions bounded (Prune beim Überlauf)", res.bounded);
+    check("Abenteuer: visitedRegions bounded (Prune beim Überlauf)", res.bounded);
 }
 
 // Der Voxel-Boden (P1 + P2b) und die Abwesenheit des Heightfields.
@@ -644,13 +644,13 @@ async function checkBandVoxelTerrainCore(ctx) {
             "N3 (Naht §12): LOD-Hysterese — Verfeinern sofort, Vergröbern erst jenseits bis + vorlauf + halt (K51-2, Meter) → kein Flip-Flop am Grat",
             voxelP2bResults.lodHysteresis === true
         );
-        check("V17.114 U1: DETAIL_CASCADE ist frozen (kein Drift)", voxelP2bResults.cascadeFrozen === true);
+        check("U1: DETAIL_CASCADE ist frozen (kein Drift)", voxelP2bResults.cascadeFrozen === true);
         check(
-            "V17.115 U3: das Band trägt aiDiv (nah jeden Frame=1, fern seltener: Band2=3, Band3=6)",
+            "U3: das Band trägt aiDiv (nah jeden Frame=1, fern seltener: Band2=3, Band3=6)",
             voxelP2bResults.bandAiDiv === true
         );
         check(
-            "V17.115 U3: Kreaturen cachen die KI-Richtung nach einem Tick (creature.userData.aiDir)",
+            "U3: Kreaturen cachen die KI-Richtung nach einem Tick (creature.userData.aiDir)",
             voxelP2bResults.creatureAiCached === true
         );
         check(
@@ -1132,10 +1132,10 @@ async function checkBandV18130CsmShadow(ctx) {
         return out;
     });
     if (!res) {
-        check("V18.130 CSM: Sonde lief", false, "evaluate warf");
+        check("CSM: Sonde lief", false, "evaluate warf");
         return;
     }
-    check("V18.130 CSM: das r184-Addon ist vendort + angebunden (THREE.CSMShadowNode)", res.vendorSymbol);
+    check("CSM: das r184-Addon ist vendort + angebunden (THREE.CSMShadowNode)", res.vendorSymbol);
     check(
         "schatten.K1 CSM: 3 Kaskaden aktiv als shadowNode des Sonnen-Lichts (fade an)",
         res.active && res.cascades === 3 && res.fade && res.isShadowNode
@@ -1146,7 +1146,7 @@ async function checkBandV18130CsmShadow(ctx) {
         `breaks=${res.breaks} maxFar=${res.maxFar}`
     );
     check(
-        "V18.510 CSM: jede Kaskade hinter der Kontakt-Kaskade trägt ≥ 10 % der Tiefe (kein Streifen-Durchgang)",
+        "CSM: jede Kaskade hinter der Kontakt-Kaskade trägt ≥ 10 % der Tiefe (kein Streifen-Durchgang)",
         res.active && res.minAnteil >= 0.1,
         `min=${res.minAnteil} breaks=${res.breaks}`
     );
@@ -1202,22 +1202,22 @@ async function checkBandV18132FerneSeen(ctx) {
         return out;
     });
     if (!res) {
-        check("V18.132 Ferne Seen: Sonde lief", false, "evaluate warf");
+        check("Ferne Seen: Sonde lief", false, "evaluate warf");
         return;
     }
     if (!res.unmeasurable) {
         check(
-            "V18.132 Ferne Seen: die WEST-Kachel baut mit Substanz (Fluesse+Seen > 0)",
+            "Ferne Seen: die WEST-Kachel baut mit Substanz (Fluesse+Seen > 0)",
             res.tileBuilt && res.tileSubstanz > 0,
             `substanz=${res.tileSubstanz}`
         );
-        check("V18.132 Ferne Seen: die HEIMAT-Region bleibt bit-identisch (Welt-Identitaet)", res.homeIdentical);
+        check("Ferne Seen: die HEIMAT-Region bleibt bit-identisch (Welt-Identitaet)", res.homeIdentical);
         check(
-            "V18.132 Ferne Seen: hydroBand deckt jeden Spiegel — Seen und Flüsse der Heimat und jeder Kachel (global, V9.77)",
+            "Ferne Seen: hydroBand deckt jeden Spiegel — Seen und Flüsse der Heimat und jeder Kachel (global, V9.77)",
             res.bandCovers,
             `Band-Oberkante ${res.bandTop} · höchster Spiegel ${res.maxSpiegel} (Täter: _computeHydroBand)`
         );
-        check("V18.132 Ferne Seen: der Worker-Snapshot traegt die Kachel (Determinismus-Wand)", res.snapCarries);
+        check("Ferne Seen: der Worker-Snapshot traegt die Kachel (Determinismus-Wand)", res.snapCarries);
     }
 }
 
@@ -1333,22 +1333,22 @@ async function checkBandV18150Ride(ctx) {
         }
         return out;
     });
-    check("V18.150 Fahr-Tiefe: das Profil emergiert (4× Rad → Tempo ×>1.3 · rollt aus · träge)", res.profile);
+    check("Fahr-Tiefe: das Profil emergiert (4× Rad → Tempo ×>1.3 · rollt aus · träge)", res.profile);
     check(
-        "V18.150 Fahr-Tiefe: der Sattel ruht die Kollision (die Kapsel im gerittenen Wagen bleibt stehen) + liest das Profil",
+        "Fahr-Tiefe: der Sattel ruht die Kollision (die Kapsel im gerittenen Wagen bleibt stehen) + liest das Profil",
         res.collisionRests && res.profileConsumed,
         res.kapselSchub
     );
     check(
-        "V18.150 Fahr-Tiefe: Reiter + Gefährt sind EINS (unerntbar · kein Sammler-Ziel)",
+        "Fahr-Tiefe: Reiter + Gefährt sind EINS (unerntbar · kein Sammler-Ziel)",
         res.unharvestable && res.noGatherTarget
     );
     check(
-        "V18.150 Fahr-Tiefe: das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg)",
+        "Fahr-Tiefe: das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg)",
         res.orients && res.wheelsRoll,
         res.orients && res.wheelsRoll ? "" : res.fahrZahlen
     );
-    check("V18.150 Fahr-Tiefe: Absteigen gibt frei", res.dismounts);
+    check("Fahr-Tiefe: Absteigen gibt frei", res.dismounts);
 }
 
 async function checkBandGammaGenese(ctx) {
@@ -1664,20 +1664,20 @@ async function checkBandV18199GammaMLichen(ctx) {
         return out;
     });
 
-    check("V18.199 (L1b) LICHEN-Konstanten sinnvoll (lo<hi, strength∈(0,1), tint=3er)", res.constsSensible === true);
+    check("(L1b) LICHEN-Konstanten sinnvoll (lo<hi, strength∈(0,1), tint=3er)", res.constsSensible === true);
     check(
-        `V18.199 (L3a) feucht+steinig → lichen sichtbar (gemessen avg ${res.lichenAvgWetStone && res.lichenAvgWetStone.toFixed(4)})`,
+        `(L3a) feucht+steinig → lichen sichtbar (gemessen avg ${res.lichenAvgWetStone && res.lichenAvgWetStone.toFixed(4)})`,
         res.lichenWetStonePositive === true
     );
     check(
-        `V18.199 (L3b) trocken+steinig → lichen unsichtbar (gemessen avg ${res.lichenAvgDryStone && res.lichenAvgDryStone.toFixed(4)})`,
+        `(L3b) trocken+steinig → lichen unsichtbar (gemessen avg ${res.lichenAvgDryStone && res.lichenAvgDryStone.toFixed(4)})`,
         res.lichenDryStoneZero === true
     );
     check(
-        `V18.199 (L3c) feucht+erde → lichen unsichtbar (gemessen avg ${res.lichenAvgWetErde && res.lichenAvgWetErde.toFixed(4)})`,
+        `(L3c) feucht+erde → lichen unsichtbar (gemessen avg ${res.lichenAvgWetErde && res.lichenAvgWetErde.toFixed(4)})`,
         res.lichenWetErdeZero === true
     );
-    check("V18.199 (L4) lichen ≤ LICHEN.strength (Math-Sicherheit, kein Overshoot)", res.lichenBoundedAtFull === true);
+    check("(L4) lichen ≤ LICHEN.strength (Math-Sicherheit, kein Overshoot)", res.lichenBoundedAtFull === true);
 }
 
 // Pfade: Fluss-Bänke sind getrampelte Erde, lawful aus dem Drainage-Netz: _pathFieldAt → der Boden
@@ -2038,7 +2038,7 @@ async function checkBandTodZensus(ctx) {
                 );
             if (taeter === "lage")
                 decke(
-                    "_todHebeTafel",
+                    "_todHaut",
                     (alt) =>
                         function (c, ...rest) {
                             if (c.visible === false) return null;
@@ -2145,6 +2145,7 @@ async function checkBandTodZensus(ctx) {
             const kill = r.damageCreature(tB, 1e9, { source: "player" });
             tC.visible = false;
             r._creatureNaturalDeath(tC);
+            r._todLageTick({ timeRemaining: () => Infinity });
             o.last = { soll: lastSoll, zurueck: holzZurueck, journal: lastJournal };
             o.raeumt = raeumt;
             // kein Zweit-Räumer: keine andere Methode nimmt ein Zeichen über dem Leib aus der Szene und gibt sein Material frei

@@ -9,7 +9,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Voxel V9.36 — modify_terrain stirbt, voxel_carve/_fill leben ###
+    // ### modify_terrain stirbt, voxel_carve/_fill leben ###
     // Die Absenz der modify_terrain-Schicht trägt gate:altlasten (KI2);
     // die Welt-Mod läuft über die broadcastbaren voxel_carve/voxel_fill (Chat `grabe loch`/`hebe hügel`
     // mit Spieler-Position; CREATURE_PROPOSED_OPS führt sie statt modify_terrain).
@@ -100,7 +100,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
     }
 
-    // ### Ring 11 V1 — Multi-User Position-Sync (Daten + UI + Sandbox) ###
+    // ### Multi-User Position-Sync (Daten + UI + Sandbox) ###
     // Nur Position + Rotation (kein DSL-Sync). Geprüft: Datenstruktur, Sandbox-Grenze (kein neuer
     // eval-Pfad), CSP ws://, UI-Toggle; ohne echten WebSocket: initP2PSync ohne worldId lehnt ab, mit
     // worldId steht die Datenstruktur, auch wenn die Connection scheitert.
@@ -283,7 +283,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         check("Ring 11 V1: Toggle-Klick wechselt aria-pressed", ring11Results.toggleFlipsAriaPressed);
     }
 
-    // ### W7 Phase 1 — WebRTC-Mesh (Compute-Sharing) ###
+    // ### WebRTC-Mesh (Compute-Sharing) ###
     // Signaling ist nur Handshake-Rendezvous; Position/DSL/Soul fließen über RTCDataChannels P2P.
     // Geprüft: Datenstruktur, Mesh-Komplett-Wand (_p2pMeshReady), peerId-Stempelung am Kanal
     // (anti-spoof), Transport-Wechsel in p2pSend, RTC-Handler + CSP; zwei Browser: smoke-webrtc.cjs.
@@ -460,7 +460,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         check("W7 P1: UI-Status zeigt 'Server-Relay' bei Fallback", w7Results.uiShowsRelay);
     }
 
-    // ### W7 Phase 2 — Welt-Snapshot über das Mesh ###
+    // ### Welt-Snapshot über das Mesh ###
     // Ein Guest holt die Host-Welt in P2P_WORLD_CHUNK_SIZE-Stücken; Annahme-Wand: nur Stücke vom
     // gepullten Peer + nur bei pending. Geprüft: Reassembly, worldRole im soul-Kanal,
     // _p2pApplyWorldSnapshot, Resync-Fehlerpfade; echter Transfer: smoke-webrtc.cjs.
@@ -605,7 +605,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         }
         r.activeWorldSet(zeiger0);
 
-        // W7 P2 Härtung — Rate-Limit-Datenstruktur + Konstante.
+        // die Härtung: Rate-Limit-Datenstruktur + Konstante.
         out.pullCooldownFields =
             p2p._pullServedAt instanceof Map &&
             Number.isInteger(r.constructor.P2P_PULL_COOLDOWN_MS) &&
@@ -666,7 +666,7 @@ async function checkBandW16Distribution(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### W16 Phase 1 — Mesh-Welt-Verteilung ###
+    // ### Mesh-Welt-Verteilung ###
     // Eine vendorte Welt reist P2P (Transport spiegelt den W7-P2-world-pull). Geprüft: Sender,
     // Empfänger, Annahme-Wand, Rate-Limit, kanal-exklusiv; Zwei-Browser-Transfer: smoke-webrtc.cjs.
     const w16Results = await safeEvaluate(page, async () => {
@@ -887,7 +887,7 @@ async function checkBandW16Distribution(ctx) {
         out.bundlePullOnChannelPath = pullSpy === 1;
         r._p2pHandleWorldBundlePull = origPull;
 
-        // ### W16-Politur — Hash-Verifikation + Pull-Timeout ###
+        // ### Hash-Verifikation + Pull-Timeout ###
         // requestWorldBundleFromPeer trägt Katalog-Hash + startedAt im pendingBundlePull (Hash-Prüfung nach
         // dem Pull + weicher Timeout).
         sent.length = 0;
@@ -948,7 +948,7 @@ async function checkBandW16Distribution(ctx) {
         r._vendorPostBundle = origPostBundle;
         out.vendorReturnsHash = !!vwbRes && vwbRes.ok === true && vwbRes.bundleHash === "deadbeef";
 
-        // ### W16 Phase 2 — der Welt-Katalog ###
+        // ### der Welt-Katalog ###
         // _p2pBuildCatalog — nur vendored-Welten (eine importierte
         // Manifest-Welt hat kein teilbares Bündel).
         r.state.customWorlds["cat-vendored-w16"] = {
@@ -1143,7 +1143,7 @@ async function checkBandW16Distribution(ctx) {
             "W16: world-bundle-pull ist kanal-exklusiv (nicht über den WS-Pfad)",
             w16Results.bundlePullNotOnWsPath && w16Results.bundlePullOnChannelPath
         );
-        // ── W16-Politur — Hash-Verifikation + Pull-Timeout ──
+        // ── Hash-Verifikation + Pull-Timeout ──
         check(
             "W16-Politur: requestWorldBundleFromPeer trägt Katalog-Hash + startedAt im pendingBundlePull",
             w16Results.pullCarriesHash
@@ -1158,7 +1158,7 @@ async function checkBandW16Distribution(ctx) {
         check("W16-Politur: _meshWorldReasonText kennt timeout + hash_mismatch", w16Results.reasonTextHasPolish);
         check("W16-Politur: P2P_BUNDLE_PULL_TIMEOUT_MS definiert", w16Results.bundleTimeoutConst);
         check("W16-Politur: vendorWorldBundle reicht den save-server-Content-Hash durch", w16Results.vendorReturnsHash);
-        // ── W16 Phase 2 — der Welt-Katalog ──
+        // ── der Welt-Katalog ──
         check(
             "W16 P2: _p2pBuildCatalog liefert nur vendored-Welten (id/label/hash)",
             w16Results.catalogBuildsVendoredOnly
@@ -1201,13 +1201,11 @@ async function checkBandLateMultiUser(ctx) {
     // ### Multi-User-Bau-Sync — Strukturen synchron platzieren + abbauen ###
     // confirmBuild + tryMouseBreak broadcasten; eine geteilte string-archId macht Spieler-Bauten
     // peer-übergreifend identifizierbar. Geprüft: opts.id, spawn_blueprint mit archId + Idempotenz,
-    // remove_architecture, confirmBuild-Broadcast (das reisende Programm `_werkProgramm`: gate:praegung-welt (T)), Persistenz.
+    // remove_architecture, Persistenz; das Setzen beim echten Mitspieler: gate:nervensystem E2 (P2P).
     const buildSyncResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        const origBuildMode = r.state.buildMode;
-
         out.newArchIdUnique = typeof r._newArchId() === "string" && r._newArchId() !== r._newArchId();
 
         // spawnArchitecture mit opts.id → string-id; ohne → numerisch.
@@ -1239,47 +1237,6 @@ async function checkBandLateMultiUser(ctx) {
         const nb = window.AnazhRealm ? window.AnazhRealm.NON_BROADCASTABLE_OPS : r.constructor.NON_BROADCASTABLE_OPS;
         out.opsAreBroadcastable = !nb.has("spawn_blueprint") && !nb.has("remove_architecture");
 
-        // confirmBuild broadcastet spawn_blueprint mit string-archId.
-        const sent = [];
-        const origBroadcast = r.p2pBroadcastDsl;
-        r.p2pBroadcastDsl = (prog) => sent.push(prog);
-        r.state.p2p.enabled = true;
-        r.setGameMode("schöpfer"); // Gates frei
-        // Das Phantom ist ein Object3D wie im Spiel: das Setzen zieht das nächste Phantom
-        // (`_bauPhantomNeu`), und `_disposeSoulGroup` entsorgt das alte — ein Stub `{ position }` warf dort
-        // („group.traverse is not a function") und riss 21 Folgetests mit.
-        const phantomBei = (x, y, z) => {
-            const g = new window.THREE.Group();
-            g.position.set(x, y, z);
-            return g;
-        };
-        r.state.buildMode = {
-            active: true,
-            blueprintName: "stein_block",
-            phantomMesh: phantomBei(30, 4, 30),
-            phantomOnGround: true,
-        };
-        const builtOk = r.confirmBuild();
-        const builtInProg = sent[sent.length - 1];
-        out.confirmBuildBroadcasts =
-            builtOk === true &&
-            Array.isArray(builtInProg) &&
-            builtInProg[0] === "spawn_blueprint" &&
-            builtInProg[1] === "stein_block" &&
-            typeof builtInProg[4] === "string" &&
-            builtInProg[4].length > 2;
-        // Die lokal gebaute Struktur trägt dieselbe string-id.
-        out.confirmBuildLocalSharedId = r.state.architectures.some((a) => a && a.id === builtInProg[4]);
-
-        r.p2pBroadcastDsl = origBroadcast;
-        r.state.p2p.enabled = false;
-        // das Phantom, das das Setzen gezogen hat, verlässt die Szene (kein Geist bleibt für die Tests danach)
-        r._clearBuildMode();
-        // buildMode-Original wiederherstellen (Tests danach lesen
-        // sein phantomOnGround-Feld); aktiv aus.
-        r.state.buildMode = origBuildMode;
-        r.state.buildMode.active = false;
-
         // Persistenz: buildStateSnapshot trägt die arch-id.
         const snap = r.buildStateSnapshot();
         out.snapshotKeepsArchId =
@@ -1310,12 +1267,10 @@ async function checkBandLateMultiUser(ctx) {
         );
         check("Bau-Sync: describeProgram kennt remove_architecture", buildSyncResults.describeRemove);
         check("Bau-Sync: spawn_blueprint + remove_architecture broadcasten", buildSyncResults.opsAreBroadcastable);
-        check("Bau-Sync: confirmBuild broadcastet spawn_blueprint mit archId", buildSyncResults.confirmBuildBroadcasts);
-        check("Bau-Sync: die lokal gebaute Struktur trägt die geteilte id", buildSyncResults.confirmBuildLocalSharedId);
         check("Bau-Sync: buildStateSnapshot persistiert die arch-id", buildSyncResults.snapshotKeepsArchId);
     }
 
-    // ### W7 Phase 3 — LLM-Pool: eine Stimme über das Mesh teilen ###
+    // ### LLM-Pool: eine Stimme über das Mesh teilen ###
     // Ein Peer mit aktivem LLM teilt seine Stimme, ein schlüsselloser routet Chat darüber. Sicherheit:
     // Opt-in (voiceShared), Rate-Limit, dslRun-Sandbox für das Antwort-Programm; Annahme-Wand
     // not_sharing/rate_limited/wrong-peer.
@@ -1484,7 +1439,7 @@ async function checkBandLateMultiUser(ctx) {
         check("W7 P3: 'Stimme teilen'-Knopf im DOM", w7p3Results.voiceButtonExists);
     }
 
-    // ### W7 Phase 4 — Public-Lobby + Kreatur-Sicht-Sync ###
+    // ### Public-Lobby + Kreatur-Sicht-Sync ###
     // Lobby: lobby-publish/list/join. Jeder Peer streamt SEINE Kreaturen; Mitspieler rendern sie als
     // Sicht-Schicht (remoteCreatures, NICHT in state.creatures).
     const w7p4Results = await safeEvaluate(page, () => {
@@ -1493,7 +1448,7 @@ async function checkBandLateMultiUser(ctx) {
         const out = {};
         const p2p = r.state.p2p;
 
-        // ── W7 P4 — Lobby ──
+        // ── Lobby ──
         out.lobbyState =
             !!p2p.lobby &&
             p2p.lobby.published === false &&
@@ -1626,7 +1581,7 @@ async function checkBandLateMultiUser(ctx) {
         check("Kreatur-Sync: creature-pos ist kanal-zustellbar", w7p4Results.creaturePosChannelAllowed);
     }
 
-    // ### W11 Phase 4 — Voice-Sync (companion-say) ###
+    // ### Voice-Sync (companion-say) ###
     // grokRender ist der EINE Sprech-Engpass; spricht der Begleiter, reist der Text via companion-say an
     // alle Mitspieler (SpeechSynthesis, gegated auf deren Stimme-Toggle). Eigener Kanal wie soul/aura.
     const w11v4Results = await safeEvaluate(page, () => {
@@ -1777,7 +1732,7 @@ async function checkBandLateMultiUser(ctx) {
         check("W11 V4: Voice-Wahl persistiert in companionVoice + localStorage", w11v4Results.voiceChangePersists);
     }
 
-    // ### Ring 11 V2 — DSL-AST-Broadcast (Welt-Sync) ###
+    // ### DSL-AST-Broadcast (Welt-Sync) ###
     // human-dslRun broadcastet via p2pSend (enabled+connected); remote-dslRun (source="remote:*") läuft
     // durch dslRun OHNE Re-Broadcast (sonst Endlos-Echo). So wirken voxel_carve/voxel_fill auf beiden
     // Welten.
@@ -1905,7 +1860,7 @@ async function checkBandLateMultiUser(ctx) {
         );
     }
 
-    // ### Ring 11 V2.1 — LAN-Fähigkeit + Sync-Korrektheit ###
+    // ### LAN-Fähigkeit + Sync-Korrektheit ###
     // 1. signaling-server bindet 0.0.0.0 (LAN)  2. CSP ws:/wss: (Custom-IPs)  3. Raum-Override
     // (state.p2p.roomOverride)  4. spawn_*-Chat-Patterns embedden Position+Seed → der Empfänger spawnt
     // am SENDER-Ort  5. Non-broadcastable-Filter: player_*-Ops bleiben lokal.
@@ -2063,7 +2018,7 @@ async function checkBandLateMultiUser(ctx) {
         check("Ring 11 V2.1: Chat 'spawne kreaturen N' embed at-Position", ring11V21Results.kreatureHasAt);
         check("Ring 11 V2.1: Chat 'baue fraktal X' embed at+rootSeed", ring11V21Results.fraktalHasSeed);
         check(
-            "V9.74.1: Chat 'baue damm hier' routet über spawn_blueprint(damm, at, seed)",
+            "Chat 'baue damm hier' routet über spawn_blueprint(damm, at, seed)",
             ring11V21Results.dammHasSpawnBlueprint
         );
         check(
@@ -2076,7 +2031,7 @@ async function checkBandLateMultiUser(ctx) {
         );
     }
 
-    // ### Ring 11.5 — Intuitives Multi-User-Setup ###
+    // ### Intuitives Multi-User-Setup ###
     // Mode/Rolle im New-World-Dialog, Einladungs-Code, Auto-Host/Guest, world-snapshot-Empfang nur bei
     // pending=true, role-State in worldMeta + p2p.
     const ring115Results = await safeEvaluate(page, () => {
@@ -2220,8 +2175,7 @@ async function checkBandLateMultiUser(ctx) {
         out.modeRadiosExist = document.querySelectorAll('input[name="new-world-mode"]').length === 2;
         out.roleRadiosExist = document.querySelectorAll('input[name="new-world-role"]').length === 2;
         out.inviteInputExists = !!document.getElementById("new-world-invite");
-        // die V9.23-Heightfield-Opt-out-Checkbox ist GELÖSCHT
-        // (Voxel permanent + irreversibel — Toggle-Tod).
+        // die Heightfield-Opt-out-Checkbox fehlt (Voxel ist permanent).
         out.heightfieldCheckboxGone = !document.getElementById("new-world-heightfield");
         out.hostBannerExists = !!document.getElementById("world-host-banner");
         out.guestBannerExists = !!document.getElementById("world-guest-banner");
@@ -2285,7 +2239,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Ring 11 V3: Soul-Sync (Peer-Avatar = echte Seele) ###
+    // ### Soul-Sync (Peer-Avatar = echte Seele) ###
     const v834Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -2454,29 +2408,29 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     });
 
     if (v834Results && !v834Results.error) {
-        check("V8.34: frischer Peer ist Cone+Sphere-Platzhalter", v834Results.placeholderKind);
-        check("V8.34: Platzhalter-Mesh hat 2 Teile (Kegel+Kugel)", v834Results.placeholderMesh);
-        check("V8.34: Peer-Entry trägt die V3-Felder", v834Results.entryHasV3Fields);
-        check("V8.34: soul-Nachricht setzt soulName (Compound)", v834Results.builtinSoulName);
-        check("V8.34 (NULL): Peer-Seele reist als Compound (meshKind 'soul-custom', YXZ)", v834Results.builtinMeshKind);
-        check("V8.34: Peer-Seele hat animierbare Parts (Flügel-Anker)", v834Results.builtinHasParts);
-        check("V8.34: Name-Schild wird aus dem Avatar-Namen erzeugt", v834Results.nameLabelCreated);
+        check("frischer Peer ist Cone+Sphere-Platzhalter", v834Results.placeholderKind);
+        check("Platzhalter-Mesh hat 2 Teile (Kegel+Kugel)", v834Results.placeholderMesh);
+        check("Peer-Entry trägt die V3-Felder", v834Results.entryHasV3Fields);
+        check("soul-Nachricht setzt soulName (Compound)", v834Results.builtinSoulName);
+        check("(NULL): Peer-Seele reist als Compound (meshKind 'soul-custom', YXZ)", v834Results.builtinMeshKind);
+        check("Peer-Seele hat animierbare Parts (Flügel-Anker)", v834Results.builtinHasParts);
+        check("Name-Schild wird aus dem Avatar-Namen erzeugt", v834Results.nameLabelCreated);
         check(
-            "V8.34: Soul-Wechsel baut den Peer-Avatar neu (→ Vierläufer + Schwanz-Rolle)",
+            "Soul-Wechsel baut den Peer-Avatar neu (→ Vierläufer + Schwanz-Rolle)",
             v834Results.soulChangeRebuilt
         );
-        check("V8.34: Custom-Seele → meshKind 'soul-custom'", v834Results.customMeshKind);
-        check("V8.34: Custom-Seele wird aus bodyParts gebaut", v834Results.customMeshBuilt);
-        check("V8.34 (SYNERGIE): aura-Nachricht ist must-ignore (kein Aura-State)", v834Results.auraReceived);
-        check("V8.34 (SYNERGIE): _p2pUpdatePeer erzeugt KEINEN Aura-Sprite", v834Results.auraSpriteCreated);
-        check("V8.34: _p2pBroadcastSoul sendet {type:soul, soulName, name}", v834Results.broadcastSoulPayload);
-        check("V8.34: player_soul bleibt NON_BROADCASTABLE (Soul-Sync ≠ DSL)", v834Results.playerSoulStillLocal);
-        check("V8.34: _p2pRemovePeer entfernt Peer + Avatar + Schild", v834Results.peersRemoved);
+        check("Custom-Seele → meshKind 'soul-custom'", v834Results.customMeshKind);
+        check("Custom-Seele wird aus bodyParts gebaut", v834Results.customMeshBuilt);
+        check("(SYNERGIE): aura-Nachricht ist must-ignore (kein Aura-State)", v834Results.auraReceived);
+        check("(SYNERGIE): _p2pUpdatePeer erzeugt KEINEN Aura-Sprite", v834Results.auraSpriteCreated);
+        check("_p2pBroadcastSoul sendet {type:soul, soulName, name}", v834Results.broadcastSoulPayload);
+        check("player_soul bleibt NON_BROADCASTABLE (Soul-Sync ≠ DSL)", v834Results.playerSoulStillLocal);
+        check("_p2pRemovePeer entfernt Peer + Avatar + Schild", v834Results.peersRemoved);
     } else {
-        check("V8.34: Soul-Sync Tests laufen", false, v834Results ? v834Results.error : "no result");
+        check("Soul-Sync Tests laufen", false, v834Results ? v834Results.error : "no result");
     }
 
-    // ### Welle 11 ext.: Substanz-Rolle (Rolle aus der Substanz) ###
+    // ### Substanz-Rolle (Rolle aus der Substanz) ###
     const v835Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -2593,34 +2547,34 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     });
 
     if (v835Results && !v835Results.error) {
-        check("V8.35: bilateral-symmetrisches Glieder-Compound ist body-shaped", v835Results.bodyIsShaped);
-        check("V8.35: Körper-Form emergiert als Rolle 'soul'", v835Results.bodyRoleSoul);
-        check("V8.35: gestapelter Turm (symmetrisch, keine Glieder) ist KEIN Körper", v835Results.towerNotBody);
-        check("V8.35: Turm emergiert als 'architecture' (Default)", v835Results.towerRoleArchitecture);
-        check("V8.35: asymmetrisches Compound ist KEIN Körper", v835Results.asymNotBody);
-        check("V8.35: lebendig+weiche Substanz ist food-like", v835Results.foodIsFoodLike);
-        check("V8.35: lebendige Substanz emergiert als Rolle 'consumable'", v835Results.foodRoleConsumable);
-        check("V8.35: Stein-Substanz ist KEINE Nahrung", v835Results.stoneNotFood);
-        check("V8.35: Stein-Block emergiert als 'architecture'", v835Results.stoneRoleArchitecture);
+        check("bilateral-symmetrisches Glieder-Compound ist body-shaped", v835Results.bodyIsShaped);
+        check("Körper-Form emergiert als Rolle 'soul'", v835Results.bodyRoleSoul);
+        check("gestapelter Turm (symmetrisch, keine Glieder) ist KEIN Körper", v835Results.towerNotBody);
+        check("Turm emergiert als 'architecture' (Default)", v835Results.towerRoleArchitecture);
+        check("asymmetrisches Compound ist KEIN Körper", v835Results.asymNotBody);
+        check("lebendig+weiche Substanz ist food-like", v835Results.foodIsFoodLike);
+        check("lebendige Substanz emergiert als Rolle 'consumable'", v835Results.foodRoleConsumable);
+        check("Stein-Substanz ist KEINE Nahrung", v835Results.stoneNotFood);
+        check("Stein-Block emergiert als 'architecture'", v835Results.stoneRoleArchitecture);
         check(
-            "V8.35: Priorität — Körper aus lebendigem Material ist Seele, nicht Nahrung",
+            "Priorität — Körper aus lebendigem Material ist Seele, nicht Nahrung",
             v835Results.priorityBodyBeatsFood
         );
         check(
-            "V8.35: _refreshBlueprintRoleEmergent — Körper-Bauplan → 'soul' (ohne Op)",
+            "_refreshBlueprintRoleEmergent — Körper-Bauplan → 'soul' (ohne Op)",
             v835Results.refreshEmergesSoul
         );
         check(
-            "V8.35: _refreshBlueprintRoleEmergent — Nahrungs-Bauplan → 'consumable' (ohne Op)",
+            "_refreshBlueprintRoleEmergent — Nahrungs-Bauplan → 'consumable' (ohne Op)",
             v835Results.refreshEmergesFood
         );
-        check("V8.35: manueller Rollen-Override schlägt die Emergenz weiterhin", v835Results.roleManualStillWins);
+        check("manueller Rollen-Override schlägt die Emergenz weiterhin", v835Results.roleManualStillWins);
         check(
-            "V8.35: activateConsumable funktioniert ohne consumableMeta (emergente Nahrung essbar)",
+            "activateConsumable funktioniert ohne consumableMeta (emergente Nahrung essbar)",
             v835Results.metaLessConsumableWorks
         );
     } else {
-        check("V8.35: Substanz-Rolle Tests laufen", false, v835Results ? v835Results.error : "no result");
+        check("Substanz-Rolle Tests laufen", false, v835Results ? v835Results.error : "no result");
     }
 
     // ### Browser-Test-Bug-Fixes (Wurzel-Fixes) ###
@@ -2696,11 +2650,11 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     if (v836Results && !v836Results.error) {
         // P3 — die Player-Body-Sleep-Checks (DISABLE_DEACTIVATION / forceActivationState)
         // sind gestrichen: es gibt keinen Ammo-Body mehr (feld-nativer Controller).
-        check("V8.36: die Killplane fängt einen Durchfall und stellt den Körper auf die Oberfläche", v836Results.waterGate);
-        check("V8.36: das aufgeklappte Logbuch teilt die Konsole 50/50 (verdeckt den Chat nicht)", v836Results.logCssRule);
-        check("V8.36: neue Werkstatt-Parts landen im Ursprung (0,0,0)", v836Results.partAtOrigin);
+        check("die Killplane fängt einen Durchfall und stellt den Körper auf die Oberfläche", v836Results.waterGate);
+        check("das aufgeklappte Logbuch teilt die Konsole 50/50 (verdeckt den Chat nicht)", v836Results.logCssRule);
+        check("neue Werkstatt-Parts landen im Ursprung (0,0,0)", v836Results.partAtOrigin);
     } else {
-        check("V8.36: Browser-Test-Bug-Fix Tests laufen", false, v836Results ? v836Results.error : "no result");
+        check("Browser-Test-Bug-Fix Tests laufen", false, v836Results ? v836Results.error : "no result");
     }
 
     // ### Werkstatt-Lesbarkeit + Einstellungen-Faltung ###
@@ -2793,19 +2747,19 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     });
 
     if (v837Results && !v837Results.error) {
-        check("V8.37: Bau-Kosten-Sektion im Werkstatt-Panel sichtbar", v837Results.costPanelShown);
-        check("V8.37: Bau-Kosten zeigt den computeBuildCost-Wert pro Material", v837Results.costPanelValue);
-        check("V8.37: Werkstatt-Preview hat ein Maß-Raster (GridHelper)", v837Results.gridInScene);
-        check("V8.37: Werkstatt-Preview hat ein Achsenkreuz (AxesHelper)", v837Results.axesInScene);
-        check("V8.37: Raster + Achsen sind raycast-stumm (stören Part-Auswahl nicht)", v837Results.helperRaycastNoop);
-        check("V8.37: Einstellungen-Sektionen haben faltbare Header (≥11)", v837Results.collapsibleHeaders);
-        check("V8.37: Klick auf einen Sektion-Header faltet/entfaltet", v837Results.collapseToggles);
-        check("V8.37: neu-gerenderte Werkzeug-Karte bleibt draggable", v837Results.toolCardDraggable);
-        check("V8.37: FPS ist ein gleitender Durchschnitt (90 Frames @60 → fps=60)", v837Results.fpsRollingAvg);
-        check("V8.37: FPS-Rechnung nutzt nicht mehr Einzel-Frame 1/delta", v837Results.fpsNotSingleFrame);
-        check("V8.37: abnormaler Delta (Tab-Pause) verwirft das FPS-Fenster", v837Results.fpsResetsOnStall);
+        check("Bau-Kosten-Sektion im Werkstatt-Panel sichtbar", v837Results.costPanelShown);
+        check("Bau-Kosten zeigt den computeBuildCost-Wert pro Material", v837Results.costPanelValue);
+        check("Werkstatt-Preview hat ein Maß-Raster (GridHelper)", v837Results.gridInScene);
+        check("Werkstatt-Preview hat ein Achsenkreuz (AxesHelper)", v837Results.axesInScene);
+        check("Raster + Achsen sind raycast-stumm (stören Part-Auswahl nicht)", v837Results.helperRaycastNoop);
+        check("Einstellungen-Sektionen haben faltbare Header (≥11)", v837Results.collapsibleHeaders);
+        check("Klick auf einen Sektion-Header faltet/entfaltet", v837Results.collapseToggles);
+        check("neu-gerenderte Werkzeug-Karte bleibt draggable", v837Results.toolCardDraggable);
+        check("FPS ist ein gleitender Durchschnitt (90 Frames @60 → fps=60)", v837Results.fpsRollingAvg);
+        check("FPS-Rechnung nutzt nicht mehr Einzel-Frame 1/delta", v837Results.fpsNotSingleFrame);
+        check("abnormaler Delta (Tab-Pause) verwirft das FPS-Fenster", v837Results.fpsResetsOnStall);
     } else {
-        check("V8.37: Werkstatt-Lesbarkeit Tests laufen", false, v837Results ? v837Results.error : "no result");
+        check("Werkstatt-Lesbarkeit Tests laufen", false, v837Results ? v837Results.error : "no result");
     }
 
     // ### Werkstatt-UX: Hover-Kosten + sichtbare Verbindungen + Preview-Höhe ###
@@ -2906,19 +2860,19 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     });
 
     if (v838Results && !v838Results.error) {
-        check("V8.38: Kosten-Tooltip nennt Bau-Kosten + Material + 'hast'", v838Results.costTooltipText);
-        check("V8.38: gefüllter Hotbar-Slot trägt den Kosten-Tooltip", v838Results.hotbarSlotTitle);
-        check("V8.38: Bauplan-Inventar-Slot trägt den Kosten-Tooltip", v838Results.invSlotTitle);
-        check("V8.38: Verbindung rendert eine Linie im 3D-Preview", v838Results.connHasLine);
-        check("V8.38: Verbindung rendert einen Mittelpunkt-Marker", v838Results.connHasMarker);
-        check("V8.38: Verbindungs-Linie + Marker sind depthTest-frei (immer sichtbar)", v838Results.connDepthTestOff);
+        check("Kosten-Tooltip nennt Bau-Kosten + Material + 'hast'", v838Results.costTooltipText);
+        check("gefüllter Hotbar-Slot trägt den Kosten-Tooltip", v838Results.hotbarSlotTitle);
+        check("Bauplan-Inventar-Slot trägt den Kosten-Tooltip", v838Results.invSlotTitle);
+        check("Verbindung rendert eine Linie im 3D-Preview", v838Results.connHasLine);
+        check("Verbindung rendert einen Mittelpunkt-Marker", v838Results.connHasMarker);
+        check("Verbindungs-Linie + Marker sind depthTest-frei (immer sichtbar)", v838Results.connDepthTestOff);
         check(
-            "V8.38: Verbindungen werden NICHT als Part gezählt (partMeshes korrekt)",
+            "Verbindungen werden NICHT als Part gezählt (partMeshes korrekt)",
             v838Results.connNotCountedAsPart
         );
-        check("V8.38: Preview-Canvas hat aspect-ratio 5/3 (Stats-Panel ohne Scrollen)", v838Results.previewAspect);
+        check("Preview-Canvas hat aspect-ratio 5/3 (Stats-Panel ohne Scrollen)", v838Results.previewAspect);
     } else {
-        check("V8.38: Werkstatt-UX Tests laufen", false, v838Results ? v838Results.error : "no result");
+        check("Werkstatt-UX Tests laufen", false, v838Results ? v838Results.error : "no result");
     }
 
     // ### Werkzeug-Klassen + Präzision→Qualität ###
@@ -3024,19 +2978,19 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     });
 
     if (v839Results && !v839Results.error) {
-        check("V8.39: BLUEPRINT_ROLE_COLORS-Konstante mit allen Rollen", v839Results.roleColorsExist);
-        check("V8.39: unbearbeiteter Bauplan hat Qualität 1.0 (geboren)", v839Results.qualityUnworked);
-        check("V8.39: bearbeiteter Bauplan trägt seine Werkzeug-Präzision als Qualität", v839Results.qualityWorked);
-        check("V8.39: Werkzeug-Op-Stamina skaliert mit cap (stumpf teurer als fein)", v839Results.staminaScales);
-        check("V8.39: Rollen-Chip leuchtet in der Rollen-Farbe", v839Results.roleChipGlow);
-        check("V8.39: Werkstatt-Stats-Panel zeigt eine Qualität-Zeile", v839Results.qualityRow);
-        check("V8.39: Bauplan-Liste-Zeile leuchtet in der Rollen-Farbe", v839Results.listRowGlow);
+        check("BLUEPRINT_ROLE_COLORS-Konstante mit allen Rollen", v839Results.roleColorsExist);
+        check("unbearbeiteter Bauplan hat Qualität 1.0 (geboren)", v839Results.qualityUnworked);
+        check("bearbeiteter Bauplan trägt seine Werkzeug-Präzision als Qualität", v839Results.qualityWorked);
+        check("Werkzeug-Op-Stamina skaliert mit cap (stumpf teurer als fein)", v839Results.staminaScales);
+        check("Rollen-Chip leuchtet in der Rollen-Farbe", v839Results.roleChipGlow);
+        check("Werkstatt-Stats-Panel zeigt eine Qualität-Zeile", v839Results.qualityRow);
+        check("Bauplan-Liste-Zeile leuchtet in der Rollen-Farbe", v839Results.listRowGlow);
         check(
             "W-C(f)/R-008: der Umwidmen-Rest im Ich ist ersatzlos gefallen (kein details/Verweis — die Intent-Akte leben in der Werkstatt)",
             v839Results.equipHint
         );
     } else {
-        check("V8.39: Werkzeug-Klassen Tests laufen", false, v839Results ? v839Results.error : "no result");
+        check("Werkzeug-Klassen Tests laufen", false, v839Results ? v839Results.error : "no result");
     }
 }
 
