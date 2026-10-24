@@ -2117,7 +2117,7 @@ async function checkBandWahrerAnblickLaub(ctx) {
     );
 }
 
-// Die Scheiben-Byte-Wand (W3.3b/3c) — eingefaltet aus gate:scatter-slice (D3b): `_scatterRegion` baut mit Deadline in ZEIT-
+// Die Scheiben-Byte-Wand (W3.3b/3c) — eingefaltet aus gate:scatter-slice: `_scatterRegion` baut mit Deadline in ZEIT-
 // SCHEIBEN (Fortsetzung `region._cont`: Bake-Phase → Zellen-Phase). Dieselbe Region One-Shot vs in N Scheiben: `region.cells`
 // byte-gleich bei echten Scheiben, die HISM-Slot-Bilanz identisch (ein Doppel-Add wäre im cells-Vergleich unsichtbar), der
 // Kalt-Bake gescheibt + Float32-byte-gleich ohne halben Bake in der Map, das Dispose-Storno, der Wecker der aufgeschobenen
@@ -2286,7 +2286,7 @@ async function checkBandScatterScheibe(ctx) {
             wecker.threw = String((e && e.message) || e);
         }
         o.wecker = wecker;
-        // ── (6) DER STOFF DES WALDS (K60-3): die Gestalt der Streu wartet auf die Darts des Fadens ──
+        // ── (6) DER STOFF DES WALDS: die Gestalt der Streu wartet auf die Darts des Fadens ──
         const stoff = {
             buch: false,
             wahr: false,

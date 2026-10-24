@@ -132,7 +132,7 @@ function albedoSicht(opts) {
                         window.__buehne();
                         if (window.__ortSchritt) window.__ortSchritt();
                         r._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                     await sleep(50);
                 }
             };

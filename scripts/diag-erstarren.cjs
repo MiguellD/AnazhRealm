@@ -55,7 +55,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 res.settleTicks = await window.__weltStehtNach(() => {
                     try {
                         r._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                 }); // die Welt steht (welt-boot)
             }
 
@@ -118,7 +118,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 }
                 try {
                     r._gameLoopTick(t);
-                } catch (_e) {}
+                } catch {}
                 const w = performance.now() - w0;
                 wall[i] = w;
                 if (w > STALL_MS) {

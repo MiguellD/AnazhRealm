@@ -167,6 +167,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     console.error("DIAG-FEHLER:", e);
     try {
         server.close();
-    } catch (_e) {}
+    } catch {}
     process.exit(1);
 });

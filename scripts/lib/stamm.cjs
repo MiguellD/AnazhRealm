@@ -251,7 +251,7 @@ function fuegeDomaene(teile, nimm, out) {
     return out.join("");
 }
 
-// ── DIE ORDNUNG NACH DOMÄNE (D2) ──────────────────────────────────────────────────────────────────────────────────────
+// ── DIE ORDNUNG NACH DOMÄNE ──────────────────────────────────────────────────────────────────────────────────────
 // `ordne(T, karte)` stellt jedes Glied der Klasse und jede Außen-Anweisung in die Zone ihres Schlüssels aus der Karte
 // (spec/stamm/modul-karte.json: `mod` Name → „Modul[/teil]", ein Außen-Ziel als „AnazhRealm.X"; `ordnung` [[Schlüssel,
 // Themen], …] die Datei-Ordnung, ihr erster trägt den Konstruktor). Rein und ein Fixpunkt: gleiche Karte und gleicher Text
@@ -1108,7 +1108,7 @@ if (require.main === module && process.argv.includes("--selftest")) {
         pruef("ersetze: im Glied, als Kette", R2 === R.replace('x: "}"', 'x: "{"') && treffer(R2, "_p", "x:").index === R2.indexOf("x:"));
         pruef("treffer: zwei Treffer werfen, keiner ist null", wirft(() => treffer(R, "_a", "this._p(e)"), /2×/) && treffer(R, "_p", "fehlt") === null);
         pruef("ersetze: vakuös und mehrdeutig werfen", wirft(() => ersetze(R, "_p", "fehlt", ""), /vakuös/) && wirft(() => ersetze(R, null, "_p(e", ""), /Reihenfolge/));
-        // R3) der EINE Absenz-Helfer (D3d): im Glied, außerhalb der Engstelle, gewandelt; ein Toter wirft, nie still wahr
+        // R3) der EINE Absenz-Helfer: im Glied, außerhalb der Engstelle, gewandelt; ein Toter wirft, nie still wahr
         const F = (g, re, q) => fehlt(g, re, q === undefined ? R : q);
         pruef(
             "fehlt: im Glied mit dem Täter beim Namen · ausser der Engstelle · gewandelt · ein Toter wirft",

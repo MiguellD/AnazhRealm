@@ -28,7 +28,7 @@ function staticLaws(manifestSrc) {
     let manifest = null;
     try {
         manifest = JSON.parse(manifestSrc);
-    } catch (_e) {}
+    } catch {}
     for (const id of ["klang", "koerper", "tetrapoda"]) {
         const c = Array.isArray(manifest) ? manifest.find((x) => x && x.id === id) : null;
         out.push([

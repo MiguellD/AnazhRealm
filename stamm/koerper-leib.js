@@ -2731,7 +2731,7 @@ class AnazhRealm_koerper_leib {
         return h >>> 0;
     }
     // VERHALTENS-TICK (je nahe Kreatur): Stimmung aus dem echten Zustand (jagd/flucht/schwimmen →
-    // Emotions-Achsen → Tag/Nacht-Bedürfnis), im deterministischen Takt (alle=[min,max] s, Hash aus Index
+    // Emotions-Achsen → die Tätigkeit des Tags), im deterministischen Takt (alle=[min,max] s, Hash aus Index
     // + Zeit-Bucket) eine AKTION aus dem Buch an ud._verhaltenAktion; _animateTierBaum trägt sie, tempo
     // und hop wirken im Bewegungs-Pfad. Flucht/Schwimmen tragen keine Aktion.
     _tickKreaturVerhalten(creature, i, nowS) {
@@ -2746,6 +2746,7 @@ class AnazhRealm_koerper_leib {
         }
         const V = this._tetrapodaVerhalten();
         if (!V) return;
+        const Z = ud._gezeigt ? AnazhRealm._lebensraumGesetz().E.zeigt[ud._gezeigt] : null;
         let mood;
         if (z === "jagd") {
             mood = "jagd";
@@ -2759,10 +2760,10 @@ class AnazhRealm_koerper_leib {
             if (em && (Number(em.chaos) || 0) >= SW.chaos) mood = "alert";
             else if (em && (Number(em.joy) || 0) >= SW.joy) mood = "joy";
             else {
-                // die Sonnenhöhe der EINEN Tag-Achse (`_sonnenRichtung`, sin der Höhe): tiefe Nacht = Ruhe; am Tag weiden
-                // Pflanzenfresser (diet ≤ weideDiet, _kreaturDiet).
-                const nacht = this._sonnenRichtung().y < SW.nachtSin;
-                mood = nacht ? "nacht" : this._kreaturDiet(creature) <= SW.weideDiet ? "tag" : "idle";
+                // DIE TÄTIGKEIT ZEIGT SICH (Tiere K4, tetrapoda ETHOGRAMM_GESETZ.zeigt): wer wandernd ruht, ruht (nacht), wer
+                // äst, grast (tag), sonst zieht das Tier (idle) — der Tag aus seinen Pegeln (`_kreaturTaetigkeit`). Vorher
+                // ruhte jedes Tier, solange die Sonne unter nachtSin stand, und am Tag weidete jeder Pflanzenfresser.
+                mood = Z ? Z.stimmung : "idle";
             }
         }
         const A = ud._verhaltenAktion;
@@ -2770,12 +2771,14 @@ class AnazhRealm_koerper_leib {
         const row = V.stimmung[mood] || V.stimmung.idle;
         if (!row || !Array.isArray(row.aktionen) || !row.aktionen.length) return;
         const alle = Array.isArray(row.alle) && row.alle.length === 2 ? row.alle : [6, 12];
+        // eine Tätigkeit mit Aktion (ruhen, äsen) trägt sie ohne Pause: das ruhende Tier liegt, das äsende grast
+        const fort = !!(Z && Z.aktion && Z.stimmung === mood);
         if (ud._verhaltenMood !== mood || !Number.isFinite(ud._verhaltenNext)) {
-            // Stimmungs-Wechsel: neuen Takt würfeln (deterministisch), noch keine Aktion.
+            // Stimmungs-Wechsel: neuen Takt würfeln (deterministisch), noch keine Aktion — die einer Tätigkeit beginnt sofort.
             ud._verhaltenMood = mood;
             const h0 = this._verhaltenHash(i + 1, (nowS * 10) | 0);
-            ud._verhaltenNext = nowS + alle[0] + ((h0 % 1000) / 1000) * (alle[1] - alle[0]);
-            return;
+            ud._verhaltenNext = nowS + (fort ? 0 : alle[0] + ((h0 % 1000) / 1000) * (alle[1] - alle[0]));
+            if (!fort) return;
         }
         if (nowS < ud._verhaltenNext) return;
         const h = this._verhaltenHash((i + 1) * 2654435761, nowS | 0);
@@ -2788,7 +2791,7 @@ class AnazhRealm_koerper_leib {
         // hop: die Aktion springt — über das EINE Sprung-Gesetz (creatureJump: Höhe aus der Freude, Abflug √(2·g·h)); der
         // Würfel je Frame ist gefallen, ein Sprung startet nur hier.
         if (def.hop === true) this.creatureJump(creature);
-        ud._verhaltenNext = nowS + dauer + alle[0] + ((h % 977) / 977) * (alle[1] - alle[0]);
+        ud._verhaltenNext = nowS + dauer + (fort ? 0 : alle[0] + ((h % 977) / 977) * (alle[1] - alle[0]));
     }
     // DER EINE BRÜCKEN-RESOLVER (MOTION_EMOTION_PROFILES, Vorrang-Zeilen; keine Achse über der Schwelle
     // → MOTION_PROFILE_MAP-Default). Beide Leser (_koerperMotionProfile + _motionStudioProfile) fließen
@@ -2936,6 +2939,7 @@ class AnazhRealm_koerper_leib {
             }
             c.position.set(a.x + nx, a.y + ny, a.z + nz);
         };
+        let wind = null; // der Wind am Ort des Tuchs, einmal je Aufruf
         for (let i = 0; i < roles.length && i < kids.length; i++) {
             const r = roles[i];
             if (!r) continue;
@@ -3005,8 +3009,10 @@ class AnazhRealm_koerper_leib {
                         : 0;
                 c.rotation.x = b.rx + Math.sin(t * 1.6) * 0.05 + (moving ? 0.04 : 0) + dHead;
             } else if (r.role === "segel") {
-                // C2 — das Tuch/Segel FLATTERT (Wind): kleine schnelle Wellen.
-                c.rotation.z = b.rz + Math.sin(t * 4.2 + r.phase + i) * 0.07;
+                // C2 — das Tuch/Segel FLATTERT im EINEN Wind am Ort (`_windAt`, die Bild-Uhr): der Ausschlag wächst mit Stärke
+                // und Böe (Sturm 0,14–0,23 rad, Regen ~0,05, klar ~0,01); ohne Wind hängt es still.
+                if (!wind) wind = this._windAt(group.position.x, group.position.z, this._bildZeit);
+                c.rotation.z = b.rz + Math.sin(t * 4.2 + r.phase + i) * 0.2 * wind.staerke * wind.boe;
             }
         }
     }

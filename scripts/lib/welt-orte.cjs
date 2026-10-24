@@ -18,7 +18,7 @@ function messort(id) {
     return { id, x: o.spieler[0], z: o.spieler[1], blick: { x: b[0], z: b[1] }, wiese: o.wiese || null };
 }
 
-// DIE WIESE (K55): ein Messort der Art Wiese trägt ihr Gesetz im Haushalt (`messorte[].wiese`) — gemessen wird an EINER
+// DIE WIESE: ein Messort der Art Wiese trägt ihr Gesetz im Haushalt (`messorte[].wiese`) — gemessen wird an EINER
 // Funktion mit zwei Wirten: in der Seite die Welt selbst (`werkbank umstellen --ort`, die Suche `__weltOrt("wiese")`), ohne
 // Browser der Wirt am Gesetz (`wirtAmGesetz`: gelaende-core, phyto-core und die Wald-Methoden aus dem Stamm-Text —
 // gate:profiband H1). Gemessen am Ort (x, z) mit Blick-Punkt `blick` ([x, z]; null = die beste von 16 Richtungen) über den Ring `ring` m:
@@ -203,7 +203,7 @@ function wieseUrteil(m, S, mitGras) {
     return f;
 }
 
-// In der Seite: die Stellen der gewünschten Art, gesucht in Ringen um die MITTE DER WELT (K55-2): den Ursprung des
+// In der Seite: die Stellen der gewünschten Art, gesucht in Ringen um die MITTE DER WELT: den Ursprung des
 // Gesetzes — dort kommt jede Welt an (die Start-Plattform steht an der nächsten freien Stelle um ihn, `_genesisMitte`; ihr
 // Ort hängt am Takt des Boots und taugt nicht als Mitte einer Suche, die je Lauf dieselbe Stelle finden muss), nie ein Messort. Jede Art ist EIN Gesetz am Gelände der Welt (Gesetz-Höhe, Dichtefeld,
 // Land, Bauten):
@@ -225,7 +225,7 @@ function wieseUrteil(m, S, mitGras) {
 //               Richtungen, Fels vom Fuß + Stufe bis 2,1 m darüber) — zurück `grund`, `dach`, `wand` { dx, dz, d } oder null
 //   ufer      — eine trockene, flache Stelle (Neigung ≤ `fussMax` Grad, Vorgabe 8), vor der binnen `bis` m (Vorgabe 30) Wasser
 //               steht (`_nassAt`: Wasser über dem Boden) und über `breite` m (Vorgabe 10) Wasser bleibt — ein Gewässer, keine
-//               Pfütze; zurück kommen `gier` zum Wasser und `wasserBei` (m) — der Bild-Ort der Soll-Tafel für das Wasser (K63-n4)
+//               Pfütze; zurück kommen `gier` zum Wasser und `wasserBei` (m) — der Bild-Ort der Soll-Tafel für das Wasser
 //   wiese     — das Gesetz der Mess-Wiese (`o.wiese`, Vorgabe die Schwellen des Messorts `__wieseGesetz`)
 // opts: { mitte: [x, z] (Vorgabe die Mitte der Welt), rMax (m, Vorgabe 400), schritt (m, Vorgabe 6), anzahl (Vorgabe 1),
 // abstand (m zwischen zwei Funden, Vorgabe 5), ... }. Findet die Suche nichts, kommt eine leere Liste (die Probe nennt das

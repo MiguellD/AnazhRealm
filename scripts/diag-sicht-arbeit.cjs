@@ -844,7 +844,7 @@ const server = statikServer();
             const takt = () => {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
             };
             st.playerMesh.position.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
             // einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`)

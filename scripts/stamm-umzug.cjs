@@ -1,6 +1,6 @@
 "use strict";
 /* global process, console, __dirname */
-// scripts/stamm-umzug.cjs — der Umzug des Stamms NACH DOMÄNE (D2). Die Karte spec/stamm/modul-karte.json ordnet jedes Glied der
+// scripts/stamm-umzug.cjs — der Umzug des Stamms NACH DOMÄNE. Die Karte spec/stamm/modul-karte.json ordnet jedes Glied der
 // Klasse und jede Außen-Anweisung einem Modul[/teil] zu; `ordne` (scripts/lib/stamm.cjs) stellt den virtuellen Stamm danach,
 // S schreibt stamm/<modul>[-<teil>].js. DETERMINISTISCH: gleiche Karte und gleicher Stamm geben dieselben Dateien — der
 // Integrator fährt den Umzug am Merge-Tag am dann aktuellen Kopf neu (der Zweig trägt ihn als EINEN Commit obenauf).
@@ -204,7 +204,7 @@ function werkzeugLauf(root, art, basis) {
     return r.status === 0 ? 0 : 1;
 }
 
-// ── --richter: der Richter nach Domäne (D3b) ──────────────────────────────────────────────────────────────────────────
+// ── --richter: der Richter nach Domäne ──────────────────────────────────────────────────────────────────────────
 // Der Läufer scripts/playtest.cjs behält Boot, Seite, Reihenfolge und Summe; jeder Band `check*` lebt in
 // scripts/playtest/<domaene>[-<teil>].cjs. Heimat = das Modul der Karte, dessen Glieder er am meisten ruft (r.<name>,
 // r[window.__anker.X], r.constructor.X, AnazhRealm.X); Gleichstand → das Modul, das sein Titel nennt, dann die Ordnung;

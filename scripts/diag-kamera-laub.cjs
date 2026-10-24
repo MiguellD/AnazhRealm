@@ -1,4 +1,4 @@
-// diag-kamera-laub.cjs — DIE KAMERA STECKT NIE IN LAUB, STRAUCH ODER FELS (Leben-Schau 2, 09.10., Befund §6 #5,
+// diag-kamera-laub.cjs — DIE KAMERA STECKT NIE IN LAUB, STRAUCH ODER FELS (09.10., Befund §6 #5,
 // V1-Lücke „laufen und sehen"). Die Linse fährt die echte Welt (headless, Foundry an, Null-Renderer) an die Orte der
 // Schau — die Ankunft (A 27), das Ufer mit dem Eichenhain des Satzes (−872/−1127, A 41–47) und den 30°-Hang
 // (−744/−1356, B 28–31, C 05–12) — und stellt dort an jeder nahen Pflanze den Spieler in acht Richtungen auf: zu Fuß in
@@ -719,7 +719,7 @@ async function leibGang(G) {
 function ninja(arg) {
     const out = { posen: [] };
     try {
-        // die Studio-Kamera liest DEN Block des Kerns (fx.bewegung.kamera), kein Lab-Literal (D3c)
+        // die Studio-Kamera liest DEN Block des Kerns (fx.bewegung.kamera), kein Lab-Literal
         out.kernBlock = typeof _KAM !== "undefined" && _KAM === window.__koerperCore.bewegung.kamera;
         enterPlay();
         resetRun();
@@ -906,7 +906,7 @@ async function probe(arg) {
         try {
             const tS = performance.now();
             r.setCameraMode("third");
-            // DIE KRONEN-STELLUNG (K20): der Bestandsbaum trägt seine Krone auf dem Schaft (phyto-core schaftHub) — am
+            // DIE KRONEN-STELLUNG: der Bestandsbaum trägt seine Krone auf dem Schaft (phyto-core schaftHub) — am
             // Stamm-Fuß steht kein Laub in der Nah-Kugel, der Schmuggel dort maß 0,0 % und die Linse war blind. Die Stellung
             // steigt je 1 m am Stamm hinauf (der Spieler schwebt, die 3rd-Kamera folgt), bis das Laub ohne Durchsicht die Linse
             // deckt; an DERSELBEN Stellung muss die Durchsicht es wieder öffnen (≤ NAH_DECKUNG_MAX).

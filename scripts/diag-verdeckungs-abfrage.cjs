@@ -237,7 +237,7 @@ function sammlerInstall() {
                 dev.addEventListener("uncapturederror", (ev) =>
                     buche("gpu", (ev.error && ev.error.message) || ev.error)
                 );
-            } catch (_e) {}
+            } catch {}
             return dev;
         };
     }
@@ -370,7 +370,7 @@ async function verdeckungPhase(opts) {
     const frei = async () => {
         try {
             await be.device.queue.onSubmittedWorkDone();
-        } catch (_e) {}
+        } catch {}
         await warte(0);
     };
     const render = async (n, vor) => {
@@ -586,7 +586,7 @@ async function verdeckungPhase(opts) {
         for (const f of aufraeumen.reverse())
             try {
                 f();
-            } catch (_e) {}
+            } catch {}
         RP.beginOcclusionQuery = bQ;
         be.copyFramebufferToTexture = bruchVor;
         be.beginRender = anfangVor;

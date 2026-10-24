@@ -182,7 +182,7 @@ async function bootRealm(port) {
     const close = async () => {
         try {
             await browser.close();
-        } catch (_e) {}
+        } catch {}
         server.close();
     };
     return { browser, page, server, pageErrors, close };

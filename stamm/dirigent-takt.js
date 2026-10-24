@@ -1026,11 +1026,15 @@ class AnazhRealm_dirigent_takt {
         this._tickBewohner(delta); // die Bewohner der Siedlungen (Meisterkarte mensch.K1)
         this._perfSenseLap("creatures", _ct);
         this.state.weatherEffectTime += delta;
+        // DIE WETTER-UHR der Welt (wetter.K1): die Spiel-Zeit, in der die Fronten ziehen — Welt-Gedächtnis (`worldMeta.wetterUhr`,
+        // reist im Snapshot und zum Gast), nie die Wanduhr.
+        const wm = this.state.worldMeta || (this.state.worldMeta = {});
+        wm.wetterUhr = (Number(wm.wetterUhr) || 0) + delta;
         // Auto-Zug: zieht das Wort, das die Welt sich wünscht (`wetterWunsch` — Nexus, seine Gesetze, die Emotion, die
-        // Wesen schreiben nie selbst), sonst eines aus dem Vokabular (nie zweimal dasselbe Wort), und geht sanft über die
-        // Transition. Takt `WETTER_ZUG_SEK` (120 s): mit der 45-s-Transition STEHT das Wetter ~75 s. Steht das Wort des
-        // Spielers (`wetterWort`), ruht der Zug. Wartet auf die Bühne (nur der Wechsel-Tick; weatherEffectTime
-        // akkumuliert weiter → danach EIN weicher Zug). Headless sofort.
+        // Wesen schreiben nie selbst), sonst das Wetter der Front am Ort, und geht sanft über die Transition. Takt
+        // `WETTER_ZUG_SEK` (120 s): mit der 45-s-Transition STEHT das Wetter ~75 s. Steht das Wort des Spielers (`wetterWort`),
+        // ruht der Zug. Wartet auf die Bühne (nur der Wechsel-Tick; weatherEffectTime akkumuliert weiter → danach EIN weicher
+        // Zug). Headless sofort.
         if (
             !this.state.wetterWort &&
             this.state.weatherEffectTime >= AnazhRealm.WETTER_ZUG_SEK &&
@@ -1038,20 +1042,19 @@ class AnazhRealm_dirigent_takt {
         ) {
             const wunsch = this.state.wetterWunsch;
             this.state.wetterWunsch = null;
-            // DAS WORT DER SAAT (Wetter H1): Wetter = f(Saat, Zug) ⊕ Schreib-Akte, für alle gleich, nie aus der Wanduhr — jeder
-            // Zug zieht den nächsten Samen der Welt (`_bauSame("wetter")`, der Zähler reist im Snapshot und zum Gast), auch der,
-            // der einen Wunsch erfüllt. Bis V18.546.31 wählten drei Sinus über performance.now: dieselbe Saat zog je Boot und
-            // Tempo eine andere Folge (gate:wetter-wache (Z)).
-            const u = this._samenStrom(this._bauSame("wetter"))();
-            const words = Object.keys(AnazhRealm.WEATHER_INTENSITY).filter((w) => w !== this.state.weather);
+            // DAS WORT DES ORTS (wetter.K1): Wetter = f(Saat, Ort, Zeit) ⊕ Schreib-Akte, für alle gleich, nie aus der Wanduhr —
+            // ohne Wunsch zieht der Zug das Wetter der Front über dem Spieler (`_wetterAmOrt`: phyto-core wetterAt über Saat, Ort
+            // und Wetter-Uhr); ein Wunsch der Welt ist ein Schreib-Akt und steht einen Takt. Bis wetter.K1 zog jeder Zug den
+            // nächsten Samen der Welt — EIN globales Wort ohne Ort.
+            const pm = this.state.playerMesh;
             const next =
                 wunsch && wunsch.wort in AnazhRealm.WEATHER_INTENSITY
                     ? wunsch.wort
-                    : words[Math.floor(u * words.length)];
+                    : this._wetterAmOrt(pm ? pm.position.x : 0, pm ? pm.position.z : 0);
             if (next !== this.state.weather) {
                 this._setWeather(next, "auto-zug");
                 this.log(`Das Wetter zieht zu ${next}${wunsch ? ` (Wunsch: ${wunsch.quelle})` : ""}`, "INFO");
-            } else this.log(`Das Wetter bleibt ${next} (Wunsch: ${wunsch.quelle})`, "INFO");
+            } else if (wunsch) this.log(`Das Wetter bleibt ${next} (Wunsch: ${wunsch.quelle})`, "INFO");
             this.state.weatherEffectTime = 0;
         }
     }
@@ -1447,15 +1450,8 @@ class AnazhRealm_dirigent_takt {
         this._weltLichtTakt();
         const knotenUhr = this.state.renderer && this.state.renderer._nodes && this.state.renderer._nodes.nodeFrame;
         if (knotenUhr) knotenUhr.time = bildZeit;
-        // Kontinuierlicher Böen-Drift (Math.random-frei): layered-sine auf der Bild-Uhr (~±18 % um die Wort-Basis), ein
-        // Instanz-Feld (nicht serialisiert; Klang und Wind lesen es) — bis A9 auf der Uhr des Wetter-Zugs, die bei jedem Zug
-        // auf 0 sprang.
-        this._weatherWob =
-            1 +
-            0.18 *
-                (Math.sin(bildZeit * 0.19) * 0.6 +
-                    Math.sin(bildZeit * 0.47 + 1.3) * 0.3 +
-                    Math.sin(bildZeit * 1.13 + 3.7) * 0.1);
+        // die Böen-Drift am Bild (`_windWob` auf der Bild-Uhr; die Uhr-Wache liest sie)
+        this._weatherWob = this._windWob(bildZeit);
         // `uEmotion` füttern: die Stimmung hebt den Schaum (s. `_ensureHydroSurfaceMaterial`) — positive
         // Gefühle beleben das Wasser, Trauer dämpft.
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.emotion) {
@@ -1471,21 +1467,15 @@ class AnazhRealm_dirigent_takt {
                 : 0;
             this.state.hydroSurfaceUniforms.emotion.value = vital;
         }
-        // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich,
-        // uWindStrength emergiert aus weather (rainy = kräftiger).
+        // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich; Stärke und Richtung sind der EINE Wind am Auge (`_windAt`:
+        // der Wind-Kanal des Wetter-Felds × die Böen-Drift `_weatherWob` × die Form des Geländes; stormy 1.0·AMP, sunny
+        // 0.06·AMP, AMP=0.55), auf der Bild-Uhr wie uWindTime; uBend = Spieler/Ritt/nahe Kreaturen (`_tickGrasBend`).
         if (this.state.windUniforms) {
             this.state.windUniforms.uWindTime.value = bildZeit;
-            // Böen-Amplitude = wind-Kanal des Wetter-Felds (stormy 1.0·AMP, sunny 0.06·AMP; AMP=0.55) ×
-            // Böen-Drift `_weatherWob` (oben, auf der Bild-Uhr).
-            this.state.windUniforms.uWindStrength.value =
-                this._weatherFieldFor(this.state.weather).wind * AnazhRealm.WEATHER_WIND_AMP * this._weatherWob;
-            // Die EINE Wind-Richtungs-Quelle + Interaktions-Sphären ticken mit dem Wind-Uniform: uWindDir =
-            // seeded Mäander `_windDirAt` (auf der Bild-Uhr wie uWindTime), uBend =
-            // Spieler/Ritt/nahe Kreaturen (`_tickGrasBend`, render-rein).
-            if (this.state.windUniforms.uWindDir) {
-                const _wdir = this._windDirAt(bildZeit);
-                this.state.windUniforms.uWindDir.value.set(_wdir.x, _wdir.z);
-            }
+            const auge = (this.state.camera || this.state.playerMesh || { position: { x: 0, z: 0 } }).position;
+            const w = this._windAt(auge.x, auge.z, bildZeit);
+            this.state.windUniforms.uWindStrength.value = w.staerke * AnazhRealm.WEATHER_WIND_AMP;
+            if (this.state.windUniforms.uWindDir) this.state.windUniforms.uWindDir.value.set(w.x, w.z);
             this._tickGrasBend();
         }
         // uLodRef spiegelt live die EINE Quelle `state.lodRef` (Slider ohne Mesh-Rebuild; dieselbe Zahl

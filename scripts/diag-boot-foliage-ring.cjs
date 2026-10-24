@@ -26,7 +26,7 @@ const server = statikServer();
         st.foliageRadius = 70;
         const { span } = r._voxelChunkConfig();
         for (let i = 0; i < 160; i++) {
-            try { r._gameLoopTick(performance.now()); } catch (_e) {}
+            try { r._gameLoopTick(performance.now()); } catch {}
             await new Promise((res) => setTimeout(res, 4));
         }
         return {

@@ -315,7 +315,7 @@ function zielZensus(k) {
                 ),
             };
         });
-        // DAS GERÄT (0910-1 B): ob es rg11b10ufloat rendert — das Urteil über das Ausgabe-Format liest es.
+        // DAS GERÄT: ob es rg11b10ufloat rendert — das Urteil über das Ausgabe-Format liest es.
         const geraet = {
             rg11b10: !!(be.device && be.device.features && be.device.features.has("rg11b10ufloat-renderable")),
             ausgabe: st._ausgabeFormat || null,
@@ -481,7 +481,7 @@ function zielSchmuggel(an) {
     const leser = ziel("zensus-selbsttest:leser", 8, 8);
     const paarA = ziel("zensus-selbsttest:paar-a", 128, 128);
     const paarB = ziel("zensus-selbsttest:paar-b", 128, 128);
-    // das ausgewiesene Szenen-Ziel in 64 bit (0910-3 B): für die Dauer des Schmuggels weist es sich als Szenen-Ziel aus
+    // das ausgewiesene Szenen-Ziel in 64 bit: für die Dauer des Schmuggels weist es sich als Szenen-Ziel aus
     // (`__zielAusgabe`), das echte bleibt unberührt (ein Format-Wechsel des echten Ziels zur Laufzeit bricht die Bündel)
     const ausgabe = ziel("zensus-selbsttest:ausgabe", W, H, { type: T.HalfFloatType });
     const kopie = ziel("zensus-selbsttest:kopie-ziel", 4, 4, { depthBuffer: true });
@@ -739,7 +739,7 @@ function zielUrteil(z, lesen) {
                 `KANAL: ${name} (${x.format}) — Kanal ${konst.map((c) => "rgba"[c] + "=" + l.min[c]).join(", ")} an diesem Ort konstant`
             );
     }
-    // DAS AUSGABE-FORMAT (0910-1 B): das Szenen-Ziel `output` (r184 PassNode) trägt lineares Licht ≥ 0 und einen Kanal a, den
+    // DAS AUSGABE-FORMAT: das Szenen-Ziel `output` (r184 PassNode) trägt lineares Licht ≥ 0 und einen Kanal a, den
     // kein Leser wertet (TRAA reicht ihn durch, vendor/TRAANode.js clipAABB). Rendert das Gerät rg11b10ufloat, trägt das dieselben
     // drei Kanäle in der Hälfte — 64 bit dort sind ein Täter (`_ausgabeFormat` griff nicht; r184 `PassNode.setup` stellt den Typ
     // je Bau zurück). Fehlt das Feature, nennt der Zensus die Adapter-Bedingung LAUT, ohne Rot: dann hält das Gerät die 64 bit.

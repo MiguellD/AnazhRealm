@@ -71,7 +71,7 @@ const ROOM = "smoke-lockstep-room";
             window.__lsPump = setInterval(() => {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (e) {
+                } catch {
                     /* Boot-Randfälle — der Loop hat seine eigene Error-Boundary */
                 }
             }, 16);

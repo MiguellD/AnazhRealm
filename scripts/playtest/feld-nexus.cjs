@@ -973,7 +973,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         const origMode = r.getGameMode();
         const chatOutput = document.getElementById("chat-output");
 
-        // Test schöpfer-Auto (Gegenprüfung uhr-wetter): das Wesen handelt VON SELBST — ohne Zusage des Spielers ist es Welt
+        // Test schöpfer-Auto (uhr-wetter): das Wesen handelt VON SELBST — ohne Zusage des Spielers ist es Welt
         // (`_himmelSchreiber`): gegen das stehende Wort des Spielers hält das Wetter (der Hinweis sagt es); ohne Wort
         // wünscht es nur (gate:wetter-wache (G)/(B)).
         r.setGameMode("schöpfer");

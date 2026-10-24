@@ -237,7 +237,7 @@ async function proben(phasen) {
         for (let k = 0; k < n; k++) {
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             if (k % 8 === 0) await warte(10);
         }
     };
@@ -248,7 +248,7 @@ async function proben(phasen) {
         try {
             for (let k = 0, weiter = window.__deckel("haus-welt", max); !(ja = bis()) && weiter() && k++ < 4 * max;)
                 await pumpe(n).then(() => ms && warte(ms));
-        } catch (_e) {}
+        } catch {}
         return ja;
     };
     // ── das Drehbuch-Dorf 7/18, der Akt des Chats „dorf 7 18" — AN EINEM HANG: der nächste 16-m-Ring (160–480 m um den
@@ -2192,7 +2192,7 @@ function zeile(o) {
                 window.__weltStehtNach(() => {
                     try {
                         window.anazhRealm._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                 })
             );
             if (BILD) await page.evaluate(require("./lib/ausgabe-aufnahme.cjs").AUSGABE_INSTALL);

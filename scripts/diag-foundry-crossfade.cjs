@@ -353,7 +353,7 @@ async function runPartB() {
         const loopTakt = async () => {
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             await sleep(120);
         };
         const waerme = (name, e, preset, stufen, w) =>

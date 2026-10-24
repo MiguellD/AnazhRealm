@@ -627,7 +627,7 @@ function pruefRaum(echt) {
             for (const o of s)
                 try {
                     o.dispose();
-                } catch (_e) {
+                } catch {
                     /* wie `_loopRender` */
                 }
         };

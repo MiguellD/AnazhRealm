@@ -9,13 +9,13 @@ class AnazhRealm_vegetation_baum {
     // Auftrag rechnet mindestens am Zustand, der vor ihm reiste. Der Faden rechnet nah zuerst nach `rang` (Abstand² der nächsten
     // Zelle beim Senden, ohne Rang zuerst). Leser: die Schlange des Walds (`_waldFadenSchicken`).
     _voxelWorkerWaldDarts(zellen, seedInt, extras, rang) {
-        return this._nebenAuftrag("wald", { type: "wald-darts", zellen, seedInt, extras, F: AnazhRealm.FOREST, rang }, [
-            zellen.buffer,
-        ]).then((msg) => ({
-            anzahl: new Int32Array(msg.anzahl),
-            werte: new Float64Array(msg.werte),
-            arten: msg.arten,
-        }));
+        return this._nebenAuftrag("wald", { type: "wald-darts", zellen, seedInt, extras, rang }, [zellen.buffer]).then(
+            (msg) => ({
+                anzahl: new Int32Array(msg.anzahl),
+                werte: new Float64Array(msg.werte),
+                arten: msg.arten,
+            })
+        );
     }
 
     // Trägt die Wildnis den Ort? Das EINE Prädikat an den WÜRFEN des Feldes (Wald, Streu, Nah-Streu, Geburts-Ort, Dorf-
@@ -1828,14 +1828,19 @@ class AnazhRealm_vegetation_baum {
         return gitter;
     }
 
-    // Ist der Eintrag Natur? Die Art steht am Eintrag (`_lodSpecies` des Walds, die Bauplan-Präfixe baum_/busch_/grown_,
-    // der Totholz-Stamm) — unabhängig davon, ob das Studio-Buch schon geladen ist; sonst trägt das Gesetzbuch des
+    // Natur nach ihrer ART am Eintrag (`_lodSpecies` des Walds, die Bauplan-Präfixe baum_/busch_/grown_, der Totholz-Stamm).
+    _naturArt(e) {
+        return !!e._lodSpecies || e.type === "stamm_gefallen" || /^(baum_|busch_|grown_)/.test(e.type);
+    }
+
+    // Ist der Eintrag Natur? Die Art steht am Eintrag (`_naturArt`) — unabhängig davon, ob das Studio-Buch schon geladen
+    // ist; sonst trägt das Gesetzbuch des
     // Terrain-Studios seine Art (`terrain:PHYTO_PRESETS`: Baum, Strauch, Fels, Farn, Totholz …; der Kern ist Pflicht —
     // unlesbar ist ein lauter Bruch, nie ein stilles „keine Natur", das nichts mehr räumt). Tor und Wagen sind nie Natur
     // (sie tragen auch eine Impostor-Zeile — die frühere Frage `_foundryPresetIsTree` hätte sie geräumt).
     _istNatur(e) {
         if (!e || typeof e.type !== "string") return false;
-        if (e._lodSpecies || e.type === "stamm_gefallen" || /^(baum_|busch_|grown_)/.test(e.type)) return true;
+        if (this._naturArt(e)) return true;
         const tab =
             AnazhRealm.Gesetz("terrain:PHYTO_PRESETS", null) || AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS");
         const pr = this._foundryPresetForEntry(e);

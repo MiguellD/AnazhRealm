@@ -1285,7 +1285,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const islandsBefore = r.state.floatingIslands.length;
         const ufosBefore = r.state.ufos ? r.state.ufos.length : 0;
         const playerPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
-        // der Ort des Baums liegt auf dem LAND (Schau-2: die Natur-Wand lässt keinen Baum ins Wasser — der feste Versatz
+        // der Ort des Baums liegt auf dem LAND (die Natur-Wand lässt keinen Baum ins Wasser — der feste Versatz
         // +50/+50 lag im Wasser, der Baum fiel benannt „wasser")
         let tx = playerPos.x + 50;
         const ty = playerPos.y;
@@ -1311,7 +1311,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
 
         const newTreeArch = archsAfter > archsBefore ? r.state.architectures[archsAfter - 1] : null;
         out.newTreeIsBaumEiche = !!(newTreeArch && newTreeArch.type === "baum_eiche");
-        // DER WALD PLANT IM TAKT (K69): die Gestalt des Baums wartet auf den Plan der Wald-Zellen um seinen Ort, wie auf ein
+        // DER WALD PLANT IM TAKT: die Gestalt des Baums wartet auf den Plan der Wald-Zellen um seinen Ort, wie auf ein
         // kaltes Buch — die Schlange des Walds (`_tickWaldPlan`) plant sie im Takt, dann steht er mit Gestalt und Hülle. Der
         // Band läuft den Takt, bis er steht (höchstens 900 Takte), und nennt, wie lange er wartete.
         out.newTreeWaldWartet = !!(newTreeArch && !r._waldPlanSteht(newTreeArch.position.x, newTreeArch.position.z));

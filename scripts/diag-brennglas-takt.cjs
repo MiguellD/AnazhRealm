@@ -597,7 +597,7 @@ async function probe() {
         try {
             const a = r.computeBlueprintAffordances(bps[n]);
             return a && a.focusing;
-        } catch (_e) {
+        } catch {
             return false;
         }
     });
@@ -609,7 +609,7 @@ async function probe() {
                 (r.computeCompoundTags(bps[n]).brennbar || 0) >= AR.BRENNBAR_TAG_MIN &&
                 !(r.computeBlueprintAffordances(bps[n]) || {}).focusing
             );
-        } catch (_e) {
+        } catch {
             return false;
         }
     });

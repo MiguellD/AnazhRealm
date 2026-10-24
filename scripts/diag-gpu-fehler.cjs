@@ -87,7 +87,7 @@ async function gegendruck([name, spaet]) {
     await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: "domcontentloaded" });
     const out = await page.evaluate(probe);
-    // DIE ABGABE (K6), Stillstand 1,5 s: 3 s spät, aber laufend abgegeben, wartet sie; ohne Bild nennt sie das Bild; hängt
+    // DIE ABGABE, Stillstand 1,5 s: 3 s spät, aber laufend abgegeben, wartet sie; ohne Bild nennt sie das Bild; hängt
     // ein Gerät, während ein zweites weiter abgibt, nennt sie das hängende
     const abgabe = async (t0 = Date.now()) => ({
         m: await Promise.race([
