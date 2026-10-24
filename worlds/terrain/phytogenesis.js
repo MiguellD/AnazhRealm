@@ -3182,13 +3182,12 @@ const _rN = new THREE.Vector3(0, 1, 0),
 // Sonne folgt einem echten Bogen (Auf-/Untergang aus Tageslaenge je Jahreszeit), Himmel/Licht/Dunst/Laub leiten sich ab.
 let WTIME = 10.0; // Tageszeit 0..24 h
 let WSEASON = 0.28; // 0 Fruehling · .25 Sommer · .5 Herbst · .75 Winter (kontinuierlich)
-let WWEATHER = "klar"; // klar | bewoelkt | nebel | sturm
+let WWEATHER = "klar"; // klar | bewoelkt | nebel | regen | sturm — die Zeilen von WX_GESETZ
 let WPLAY = false,
     WSPEED = 1.2; // Zeit-Autoplay (Stunden pro Sekunde)
 let WSEASONPLAY = false,
     WSEASONSPEED = 0.01; // Jahreszeit-Drift (Anteil pro Sekunde)
-let WXPLAY = false; // Wetter-Autoplay: Wolkenfelder ziehen durch (kontinuierlicher Drift statt hartem Preset-Sprung)
-const _wxPh = [1.7, 4.1, 0.3, 2.9]; // Phasen-Offsets fuer unabhaengige Drift je Kanal (Fog/Sun/Grey/Wind)
+let WXPLAY = false; // Wetter-Autoplay: die Front des Kerns zieht ueber das Auge (phyto-core wetterAt, wetter.K1)
 let _lastSeasonBuild = 0.28;
 let wxFog = 0.16,
     wxFogT = 0.16,
@@ -3210,7 +3209,7 @@ const _w1 = new THREE.Color(),
     _wSun = new THREE.Color(),
     _wSunPos = new THREE.Vector3();
 let _lastShadowSun = null,
-    _wxT = 0,
+    _wxUhr = 0,
     _camUnder = false,
     _shSince = 99,
     _heavyNow = false,
@@ -3261,9 +3260,7 @@ if (!_WX_LICHT || ![_WX_LICHT.sockel, _WX_LICHT.sonne].every(isFinite)) throw ne
 const _wxLicht = (s) => _WX_LICHT.sockel + _WX_LICHT.sonne * s;
 let _wxBase = _wxPick("klar");
 function weatherTargets(w) {
-    if (w === "klar" || w === "bewoelkt" || w === "nebel" || w === "sturm") {
-        _wxBase = _wxPick(w);
-    }
+    if (Object.hasOwn(window.__phytoCore.WX_GESETZ, w)) _wxBase = _wxPick(w);
 }
 weatherTargets(WWEATHER);
 function seasonColors(t) {
@@ -3306,23 +3303,18 @@ function updateWorld(dt) {
     if (WPLAY || WSEASONPLAY) welteZeigen(); // die Regler der Hülle folgen der laufenden Zeit
     // KONTINUITAET STATT REBUILD (Profi-Gesetz): im Autoplay NIE synchron neu bauen -- uLeafPresence, uBloom und uSeasonMul tragen das Jahr kontinuierlich; ein echter Wald baut sich auch nicht um. Manuelle Saison-Wahl backt weiterhin exakt.
     if (WXPLAY) {
-        _wxT += dt * 0.05; // langsame Wolkenfeld-Drift, eigenes Tempo (unabhaengig von Zeit-/Jahreszeit-Speed)
-        const n = (ph) =>
-            Math.sin(_wxT + ph) * 0.5 +
-            Math.sin(_wxT * 0.61 + ph * 1.7) * 0.32 +
-            Math.sin(_wxT * 1.9 + ph * 0.4) * 0.18; // 3 Frequenzen ueberlagert, [-1,1], wirkt wie ziehende Wolkenfelder statt reinem Sinus
-        wxFogT = clamp(_wxBase.fog + n(_wxPh[0]) * 0.28, 0, 1);
-        wxSunT = clamp(_wxBase.sun - Math.max(0, n(_wxPh[1])) * 0.55, 0.08, 1); // Sonne kann nur GEDAEMPFT werden (Wolke vor Sonne), nie ueber Basis hinaus aufhellen
-        wxGreyT = clamp(_wxBase.grey + Math.max(0, n(_wxPh[2])) * 0.3, 0, 1);
-        wxWindT = clamp(_wxBase.wind + n(_wxPh[3]) * 0.22, 0.02, 1);
-        wxRainT = _wxBase.rain; // Regen bleibt an der Preset-Wahl (kein Nieseln aus heiterem Himmel)
-    } else {
-        wxFogT = _wxBase.fog;
-        wxSunT = _wxBase.sun;
-        wxGreyT = _wxBase.grey;
-        wxWindT = _wxBase.wind;
-        wxRainT = _wxBase.rain;
+        // DAS WETTERSPIEL ist die Front des Kerns (phyto-core wetterAt, wetter.K1 — dieselbe Funktion wie die Welt) ueber dem
+        // Auge, im Zeitraffer x30 (eine Front von 6,6 km zieht in 20 s vorbei): ihre Zeile ist das Ziel, die Kanaele gleiten
+        // wie bei der Preset-Wahl. Bis wetter.K1 drifteten hier drei eigene Sinus um das Preset.
+        _wxUhr += dt * 30;
+        WWEATHER = window.__phytoCore.wetterAt("labor:" + SEED, camera.position.x, camera.position.z, _wxUhr).zeile;
+        _wxBase = _wxPick(WWEATHER);
     }
+    wxFogT = _wxBase.fog;
+    wxSunT = _wxBase.sun;
+    wxGreyT = _wxBase.grey;
+    wxWindT = _wxBase.wind;
+    wxRainT = _wxBase.rain;
     wxFog += (wxFogT - wxFog) * 0.02;
     wxSun += (wxSunT - wxSun) * 0.02;
     wxGrey += (wxGreyT - wxGrey) * 0.02;

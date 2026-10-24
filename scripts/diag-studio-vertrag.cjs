@@ -225,7 +225,7 @@ function loadCore(entry) {
     return ctx.__manifest;
 }
 
-// §9 (K09a) — DER GESETZ-KERN (reiner Funktions-Kern): er trägt ein GESETZ als reine Funktionen (die Gelände-Höhe),
+// §9 — DER GESETZ-KERN (reiner Funktions-Kern): er trägt ein GESETZ als reine Funktionen (die Gelände-Höhe),
 // keine Rezepte, keine Gestalt, keine Regler. Der Namensraum erklärt FUNKTION = 1 (und STUDIO_VERTRAG = 1), die
 // Manifest-Zeile `"funktion": true` — beide Seiten stimmen überein. Die Brücke liest ihn generisch (kein PRESETS → kein
 // Buch-Eintrag, kein build-asset-Dispatch). → Verletzungsliste.
@@ -984,7 +984,7 @@ function validateManifest(m) {
         ohneGestalten.join(", ")
     );
 
-    // U (K64-n2) — DER EINGEFRORENE UMSCHLAG IM PULS: was ein Kern deklariert (Rezepte · Welt-Palette · Stufen und
+    // U — DER EINGEFRORENE UMSCHLAG IM PULS: was ein Kern deklariert (Rezepte · Welt-Palette · Stufen und
     // Budget jeder Art), reist im EINEN Umschlag (get-book) zum Wirt; seine drei Daten-Kanäle sind eingefroren
     // (spec/asset-contract/v1/golden, Re-Mint = Vertrags-Akt). Hier antwortet DERSELBE Kanal der Brücke im Node-vm
     // (umschlagImVm, dieselben Dateien wie der Worker) und jede Abweichung steht beim Schlüssel; gate:asset-contract
@@ -1039,7 +1039,7 @@ function validateManifest(m) {
         stammLib.fehlt.wo
     );
 
-    // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen sind Vertrag. Fehlt der Block im
+    // DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen sind Vertrag. Fehlt der Block im
     // tragenden Kern, ist das ROT.
     const pflicht = {
         "koerper-core.js": (m) =>

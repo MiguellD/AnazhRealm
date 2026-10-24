@@ -917,7 +917,7 @@ function wand(src) {
     const fehltIn = (name, re) => {
         try {
             return stammLib.fehlt(name, re, src);
-        } catch (_e) {
+        } catch {
             return !fehlt.push(name);
         }
     };
@@ -1055,7 +1055,7 @@ async function probe(arg) {
         for (let i = 0; i < n; i++) {
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             await sleep(ms || 30);
         }
     };

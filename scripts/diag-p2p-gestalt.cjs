@@ -76,7 +76,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // Der eigene Avatar existiert (playerMesh) — Fingerabdruck VOR jedem Peer.
         try {
             r.applyPlayerSoul("human");
-        } catch (_e) {}
+        } catch {}
         res.e.eigenVorher = fpGroup(r.state.playerMesh);
 
         const peerMesh = (pid) => {
@@ -165,7 +165,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         // Erneuter EIGENER Guss nach all den Peer-Güssen ⇒ Default (die eigene Übergabe ist leer).
         try {
             r.applyPlayerSoul("human");
-        } catch (_e) {}
+        } catch {}
         const cLocalNach = colorsOf(r.state.playerMesh);
         res.e.eigenKeineFremdHaut = !cLocalNach.has(porzellanLin);
 
@@ -196,7 +196,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         };
         try {
             r._p2pMsgSoul({ peerId: "K", soulName: "human", uebergabe: { koerper: { height: 1 } } }, r.state.p2p);
-        } catch (_e) {}
+        } catch {}
         delete r._studioWerkPruefen;
         res.k.einValidator = validiert > 0;
 
@@ -259,6 +259,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     console.error("DIAG-FEHLER:", e);
     try {
         server.close();
-    } catch (_e) {}
+    } catch {}
     process.exit(1);
 });

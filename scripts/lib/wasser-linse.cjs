@@ -1028,7 +1028,7 @@ function wasserBild(opts) {
             WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
             r._weltLicht().U.ambientFarbe.value.setScalar(Math.PI); // das Licht der Welt E/π = 1 (allein Ambient π)
             U.light.value = 0;
-            // DAS BILD OHNE SCHAUM (K10 × K16 × K40): derselbe Frame mit dem Schaum-Faktor des Gesetzes auf 0 (foamD × (1 +
+            // DAS BILD OHNE SCHAUM: derselbe Frame mit dem Schaum-Faktor des Gesetzes auf 0 (foamD × (1 +
             // uEmotion), uEmotion −1) — „hell" zählt nur, wo der SCHAUM das Pixel hebt, nie der Himmel im Fresnel des
             // Streiflichts
             U.emotion.value = -1;
@@ -1282,7 +1282,7 @@ function wasserHoehle(opts) {
                 if (beispiele.length < 4) beispiele.push([R(h.x, 1), R(h.z, 1), R(h.boden), R(w)]);
             }
         }
-        // DER WAGEN (Schau-2 wasser-wahrheit): die Tiefe am Wagen (`_fahrTiefe`, der Wasser-Term des Fahr-Schritts) an jedem
+        // DER WAGEN (wasser-wahrheit): die Tiefe am Wagen (`_fahrTiefe`, der Wasser-Term des Fahr-Schritts) an jedem
         // Höhlen-Boden — ein Wagen, der dort steht, steht trocken.
         let wagenNass = 0,
             wagenMax = 0;

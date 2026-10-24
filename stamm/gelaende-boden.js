@@ -284,7 +284,7 @@ class AnazhRealm_gelaende_boden {
         return this._hydroBestellen("heim", null).then((hydro) => {
             if (!hydro) return null;
             this.log(
-                `V9.43-b: Hydrosphäre aus dem Faden — ${hydro.rivers.length} Flüsse, ${hydro.lakes.length} Seen, ${hydro.waterfalls.length} Wasserfälle`,
+                `V9.43-b: Hydrosphäre aus dem Faden — ${hydro.fluesse} Flüsse, ${hydro.seen} Seen, ${hydro.waterfalls.length} Wasserfälle`,
                 "INFO"
             );
             try {
@@ -300,25 +300,26 @@ class AnazhRealm_gelaende_boden {
 
     // DIE BESTELLUNG EINER REGION (Karte hydro-faden): die Heimat (`key` "heim", `origin` null) oder eine ferne Kachel entsteht
     // im Faden — der EINE Sender des Zustands (`_voxelZustandPost`) trägt den Auftrag an jeden Faden an DERSELBEN Stelle seiner
-    // Reihe (jeder Auftrag dahinter liest sie), der Voxel-Faden antwortet per Transfer (`_hydroAn`). Der Haupt-Faden rechnet
-    // sie nie: ohne Faden bricht es laut (`_bruchMelden`); kommt der Faden über den Blob-Weg, wartet die Bestellung auf ihn.
+    // Reihe (jeder Auftrag dahinter liest sie; ein später geborener Neben-Faden bekommt sie vom Voxel-Faden, `_nebenFaden`),
+    // der Voxel-Faden antwortet per Transfer (`_hydroAn`). Der Haupt-Faden rechnet sie nie: ohne Faden bricht es laut
+    // (`_bruchMelden`); kommt der Faden über den Blob-Weg, wartet die Bestellung auf ihn.
     // → das Versprechen der Region (eine schon bestellte gibt ihres zurück; null, wenn eine neuere Welt ihr zuvorkam).
     _hydroBestellen(key, origin) {
         const B = this._hydroBestellt || (this._hydroBestellt = new Map());
         const da = B.get(key);
         if (da) return da.zusage;
         const welt = this._hydroWelt | 0;
-        const e = { faeden: null, ab: null };
+        const e = { ab: null, origin, gepostet: false };
         const zusage = new Promise((ok, ab) => {
             e.ab = ab;
             e.post = () => {
+                e.gepostet = true; // ein später geborener Voxel-Faden bekommt sie bestellt (`_getVoxelWorker`)
                 const requestId = this.state.voxelWorkerNextRequestId++;
                 this.state.voxelWorkerPending.set(requestId, { resolve: ok, reject: ab });
-                e.faeden = new Set(this._nebenFaeden ? this._nebenFaeden.keys() : []);
                 this._voxelZustandPost({ type: "hydro", key, origin, requestId });
             };
         });
-        e.zusage = zusage.then((msg) => this._hydroAn(key, msg.region, welt, e.faeden));
+        e.zusage = zusage.then((msg) => this._hydroAn(key, msg.region, welt));
         B.set(key, e);
         if (this.state.voxelWorker) e.post();
         else if (this._voxelWeltWartet) (this._hydroWarte || (this._hydroWarte = [])).push(e.post);
@@ -338,23 +339,15 @@ class AnazhRealm_gelaende_boden {
     }
 
     // DER EMPFANG EINER REGION (Karte hydro-faden): die Region der eigenen Welt geht in den Zustand (Heimat oder Kachel), das
-    // globale Band folgt (`_computeHydroBand`). Ein Neben-Faden, der nach der Bestellung geboren wurde, trug ihren Auftrag
-    // nicht — er bekommt die Region (sein Geburts-Stand kannte sie noch nicht); jeder andere Faden rechnete sie selbst.
-    _hydroAn(key, h, welt, faeden) {
+    // globale Band folgt (`_computeHydroBand`). Jeder Faden trägt sie schon (selbst gerechnet oder vom Voxel-Faden).
+    _hydroAn(key, h, welt) {
         if (welt !== (this._hydroWelt | 0) || !h) return null; // eine Region einer alten Welt fällt
         if (key === "heim") this.state.hydrosphere = h;
         else {
             this.state.hydroTiles.set(key, h);
-            this.log(
-                `A3: Hydro-Kachel ${key} aus dem Faden (${h.rivers.length} Fluesse, ${h.lakes.length} Seen)`,
-                "INFO"
-            );
+            this.log(`A3: Hydro-Kachel ${key} aus dem Faden (${h.fluesse} Fluesse, ${h.seen} Seen)`, "INFO");
         }
         this._computeHydroBand();
-        if (this._nebenFaeden)
-            for (const [name, f] of this._nebenFaeden)
-                if (!faeden || !faeden.has(name))
-                    f.worker.postMessage({ type: "state-update", delta: { hydroRegion: { key, h } } });
         return h;
     }
 
@@ -2717,6 +2710,25 @@ class AnazhRealm_gelaende_boden {
             delete wmU.erdbau;
             this._erdbauStand = (this._erdbauStand || 0) + 1;
         }
+        // DIE GRUBEN ZIEHEN MIT, vor den Bauten (die auf dem gegrabenen Grund stehen): der Hieb traf den alten Boden, die oberste
+        // Grube (die unterste Schüttung) einer Säule lag an ihm. Jeder Edit steht danach in seiner Lage zu ihr auf dem Gesetz
+        // (`_terrainMacroSurfaceY`, ohne Edits) — bis 24.10. blieb er in der Höhe des alten Bodens, ~30 m unter dem neuen (der
+        // Korpus, speicher.K5: kein Loch des Spielers kam sichtbar zurück).
+        const eds = wmU && Array.isArray(wmU.voxelEdits) ? wmU.voxelEdits : [];
+        const zelle = new Map();
+        const schluessel = (x, z) => Math.floor(x / 4) + "," + Math.floor(z / 4);
+        for (const e of eds) zelle.set(schluessel(e.x, e.z), (zelle.get(schluessel(e.x, e.z)) || []).concat(e));
+        if (eds.length)
+            wmU.voxelEdits = eds.map((e) => {
+                const fuellt = e.mode === "fill";
+                let ref = e.y;
+                for (let i = -4; i <= 4; i += 4)
+                    for (let j = -4; j <= 4; j += 4)
+                        for (const f of zelle.get(schluessel(e.x + i, e.z + j)) || [])
+                            if ((f.mode === "fill") === fuellt && Math.hypot(f.x - e.x, f.z - e.z) < f.r)
+                                ref = fuellt ? Math.min(ref, f.y) : Math.max(ref, f.y);
+                return { ...e, y: this._terrainMacroSurfaceY(e.x, e.z) + e.y - ref };
+            });
         const geerdet = this._erdbauAltOrte(liste, (a) => {
             const p = a.position;
             const g = Number.isFinite(p.x) && Number.isFinite(p.z) ? this._voxelSurfaceY(p.x, p.z) : NaN;

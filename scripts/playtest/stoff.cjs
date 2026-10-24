@@ -14,7 +14,7 @@ async function checkBandV18136Audit(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // (1) der Slider treibt unter CSM die Kaskaden-Reichweite (kein toter Knopf). V18.352 — der
+        // (1) der Slider treibt unter CSM die Kaskaden-Reichweite (kein toter Knopf). Der
         // `csm.maxFar`-Antrieb wanderte in `_applyEffectiveShadowRange` (DIE EINE Anwende-Quelle, die
         // setShadowRange UND der Perf-Regler rufen) — am Ruf: der Pfad des Reglers treibt maxFar, der Setter ruft die Quelle.
         const savedCsm = r.state.csmNode;
@@ -201,7 +201,7 @@ async function checkBandV18223PbrKohaerenz(ctx) {
             if (typeof mStein.dispose === "function") mStein.dispose();
         }
 
-        // GLUT-Material (brennbar 0.95) → emissiv-glühend. V18.234 — das PBR-Emissiv
+        // GLUT-Material (brennbar 0.95) → emissiv-glühend. Das PBR-Emissiv
         // folgt der glimmen-Achse (waermeleitung·brennbar, wie Toon) → realistische Glut.
         const mGlut = r._buildPbrNodeMaterial({ color: 0xff5020, tags: { brennbar: 0.95, waermeleitung: 0.9 } });
         if (mGlut) {

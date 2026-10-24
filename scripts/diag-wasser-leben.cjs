@@ -4,11 +4,11 @@
 // Täter mit ihren Zahlen stehen im Selbsttest, die Chronik in git):
 //   F (Q7-Gestalt)  der Fluss-Spiegel steigt stromab nie und liegt quer waagrecht; ein Wasserfall steht EINMAL je Ort.
 //   K (Q6-Körper)   wer in den See geht, geht nie am Grund; in Ruhe treibt er an der Brustkorb-Linie; Kraulen hält das
-//                   Gesetz; das Eintauchen klingt; die Kamera taucht nur unter dem Spiegel (K5); ein Tier liegt an seiner
-//                   Wasserlinie, auch ohne Gestalt-Baum (K6); ein Mitspieler lehnt sich ins Wasser (K7).
+//                   Gesetz; das Eintauchen klingt; die Kamera taucht nur unter dem Spiegel; ein Tier liegt an seiner
+//                   Wasserlinie, auch ohne Gestalt-Baum; ein Mitspieler lehnt sich ins Wasser.
 //   B (Q7-Bild)     das Wasser-Material zerfällt mit der Wasser-Uhr nicht (kein weißes Zebra), der ruhige Fluss schäumt
 //                   nicht, der Sturm-Regen zeichnet Schlieren; das Rauschen rechnet ohne sin (B6); unter Wasser kennt das
-//                   Licht Tag und Nacht, der Tauchgang färbt den Himmel nicht (K9).
+//                   Licht Tag und Nacht, der Tauchgang färbt den Himmel nicht.
 //   U (Q7-Gestalt)  die Ufer-Farbe quer zum Fluss springt nie, Worker und Main färben gleich; der Schilf-Bezug springt nie (U3).
 //   K10 · K11 · W2  die Decke über trockenen Höhlen (Spieler, Kamera, Tier, Wagen lesen dort kein Wasser); der Wagen watet,
 //                   das Boot treibt ohne Nicken mit dem Grund, auch im Rand-Streifen des Sees.
@@ -260,7 +260,7 @@ function urteil(b) {
                 v.push(
                     `K10 TIER: in ${ti.schwimmt} von ${ti.proben} trockenen Höhlen schwimmt das Tier auf dem Höhlen-Boden`
                 );
-            // der Wagen (Schau-2 wasser-wahrheit): die Tiefe des Fahr-Schritts am Höhlen-Boden
+            // der Wagen (wasser-wahrheit): die Tiefe des Fahr-Schritts am Höhlen-Boden
             const wa = hh.wagen;
             if (!wa) v.push("K10 WAGEN LEER: keine Tiefe am Wagen (`_fahrTiefe`) im Stand");
             else if (wa.nass > 0)
@@ -1019,7 +1019,7 @@ async function lauf() {
                     (o) => window.__wasserKoerper({ see: o.see.mitte, start: o.see.ufer, ziel: o.see.mitte }),
                     ORTE
                 );
-            // am See der Mess-Wiese: die Höhlen darunter und daneben (D11), das Gefährt (D10, W-W2)
+            // am See der Mess-Wiese: die Höhlen darunter und daneben, das Gefährt (D10, W-W2)
             if (soll("hoehle")) befund.hoehle = await page.evaluate(() => window.__wasserHoehle({}));
             if (soll("wagen"))
                 befund.wagen = await page.evaluate(

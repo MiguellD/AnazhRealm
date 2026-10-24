@@ -1,24 +1,15 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-kopplung.cjs — DIE KOPPLUNGS-LINSE (npm run gate:kopplung)
-//
-// KOPPLUNG: die Welt fasst den Körper an — drei Fäden, eine Linse (F1, die Strömung, misst gate:wasser-leben K4 STRÖMUNG):
-//   F2 GLEITEN STATT VOLLSTOPP (PM_ClipVelocity, Quake/Source): 45°-Anlauf
-//      auf eine Wand behält ~Tempo/2 entlang der Absicht (v −= n·(v·n) je
-//      Kontaktebene, bis 3) statt 0; STEILHANG: Gravitation entlang der
-//      Ebene → der Körper rutscht, statt magnetisch zu haften.
-//   F3 WIND-RICHTUNG: EIN uWindDir (seeded, langsam wandernd) treibt die
-//      Phase als dot(worldXZ, windDir) — zwei Punkte QUER zur Windrichtung
-//      teilen die Phase exakt, LÄNGS verschieden; die Richtung dreht mit.
-//   F4 GRAS-INTERAKTION: die uBend-Sphären biegen Halme RADIAL weg (GoT-
-//      Interaktions-Sphären), render-rein; die CPU-Seite (`_tickGrasBend`)
-//      füllt Spieler/Ritt/nahe Kreaturen.
-//
-// Jede Fixture läuft durch die ECHTEN Methoden (Shim = Object.create(realm)
-// mit synthetischem Dichtefeld/Wasser-Kontext — die wasser-wahrheit-Disziplin)
-// und trägt ihren SELBST-TEST: der Fix wird an seinem Gesetz abgeschaltet
-// (SLIDE_CLIP_PLANES 0, Hang-Grenze −1) — die Fixture MUSS dann
-// rot sehen. Exit 1 bei jedem Fail; alle Zahlen explizit.
+// diag-kopplung.cjs — DIE KOPPLUNGS-LINSE (npm run gate:kopplung): die Welt fasst den Körper an (F1, die Strömung, misst
+// gate:wasser-leben K4 STRÖMUNG).
+//   F2 GLEITEN (PM_ClipVelocity): eine 45°-Wand behält ~Tempo/2 entlang der Absicht; am STEILHANG rutscht der Körper.
+//   F3 WIND: EIN uWindDir (seeded, langsam) treibt die Phase als dot(worldXZ, windDir) — quer gleich, längs verschieden, die
+//      Richtung dreht mit; das FELD (wetter.K5): der EINE Wind am Ort `_windAt`, vom Gelände geformt (Lee −40 %, Tal-Düse
+//      +20 %), und jeder Leser (Wasser, Regen, Tuch, Rauch, Wagen) ruft ihn und folgt seiner Mutation.
+//   F4 GRAS: die uBend-Sphären biegen Halme RADIAL weg, die CPU-Seite (`_tickGrasBend`) füllt Spieler, Ritt, nahe Kreaturen.
+// Jede Fixture läuft durch die ECHTEN Methoden (Shim = Object.create(realm) mit synthetischem Dichtefeld/Wasser) und trägt
+// ihren SELBST-TEST: der Fix am Gesetz abgeschaltet (SLIDE_CLIP_PLANES 0, Hang-Grenze −1) MUSS rot sehen.
+// Exit 1 bei jedem Fail.
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 
@@ -46,9 +37,7 @@ const server = statikServer();
             const fail = (msg) => o.fails.push(msg);
             const DT = 1 / 60;
 
-            // ── Der Bewegungs-Shim: ECHTE `_stepCharacter`/`_loopPlayerMovement` auf
-            //    synthetischem Dichtefeld + Wasser-Kontext (reine Welt-Ersatzquelle,
-            //    die KONSUM-Kette selbst bleibt die echte). ──
+            // ── Der Bewegungs-Shim: ECHTE `_stepCharacter`/`_loopPlayerMovement` auf synthetischem Dichtefeld + Wasser ──
             const mkVel = () => ({
                 _x: 0,
                 _y: 0,
@@ -83,8 +72,6 @@ const server = statikServer();
                     _fieldVy: 0,
                     waterLevel: -50,
                     terrainBaseHeight: 0,
-                    // der Begehbarkeits-Winkel ist kein State-Feld: _stepCharacter liest das Steilhang-Gesetz
-                    // (hang.maxSlopeY) aus dem Kern.
                     worldMeta: { voxelTerrain: true },
                     forward: new THREE.Vector3(),
                     right: new THREE.Vector3(),
@@ -114,13 +101,9 @@ const server = statikServer();
             };
 
             // ══ FIXTURE 2 (F2) — GLEITEN STATT VOLLSTOPP ══
-            // (a) 45°-Anlauf auf die vertikale Wand x=8 (Normale −x). Der Anlauf (1,0,1)/√2
-            //     trifft die Ebene mit 45° Einfall → PM_ClipVelocity behält die Tangente:
-            //     Fortschritt entlang der ABSICHT ≈ Tempo/2 statt 0. Kugel-Auflösung im
-            //     Shim aus (Isolation: HIER spricht allein der Velocity-Klip). Die Wand
-            //     SCHWEBT ab y=0.25 (min-CSG) — ihr Fuß färbt sonst die Boden-Normale am
-            //     Wandfuß steil (Gradient mischt Boden+Wand über e=0.6) und der
-            //     PRE-EXISTENTE Slope-Penalty (Input × 0.2) verdünnte die Klip-Messung.
+            // (a) 45°-Anlauf (1,0,1)/√2 auf die Wand x=8 (Normale −x): PM_ClipVelocity behält die Tangente, Fortschritt entlang
+            //     der ABSICHT ≈ Tempo/2 statt 0; Kugel-Auflösung aus (es spricht allein der Klip); die Wand SCHWEBT ab y=0.25,
+            //     damit ihr Fuß die Boden-Normale nicht steil färbt.
             const wallDens = (x, y) => Math.max(0 - y, Math.min((x - 8) * 2, (y - 0.25) * 4));
             const mkWallShim = () => {
                 const s = mkShim(wallDens);
@@ -148,9 +131,8 @@ const server = statikServer();
                         `F2a: 45°-Wand-Gleiten aus dem Takt — Absichts-Tempo ${(ratio * 100).toFixed(0)} % der freien Fahrt (soll ~50 %, Band 30–75 %)`
                     );
                 if (!(wRes.x < 8.01)) fail(`F2a: der Klip ließ die Wand durch (x=${wRes.x.toFixed(2)} ≥ 8)`);
-                // Selbst-Test F2a: das Gesetz der Klip-Schleife auf 0 Ebenen (SLIDE_CLIP_PLANES, `_wandGleiten` liest es
-                // je Ruf) → fail-closed Voll-Stopp → der Fortschritt MUSS kollabieren. Die Schleife ist DIE des
-                // Kontakt-Lösers (Kapsel 5b und Wagen-Hülle teilen sie), der echte `_stepCharacter` ruft sie.
+                // Selbst-Test F2a: die Klip-Schleife des Kontakt-Lösers auf 0 Ebenen (SLIDE_CLIP_PLANES, `_wandGleiten`) → der
+                // Fortschritt MUSS kollabieren.
                 const k0 = AR.SLIDE_CLIP_PLANES;
                 AR.SLIDE_CLIP_PLANES = 0;
                 let stopped;
@@ -166,11 +148,8 @@ const server = statikServer();
                         `F2a-Selbsttest: Voll-Stopp glitt trotzdem (${(deadRatio * 100).toFixed(0)} % — die Fixture sähe den alten Bug nicht)`
                     );
             }
-            // (b) STEILHANG: Ebene fällt mit Gradient 2,5 (~68°, Normale ny≈0.37 <
-            //     hang.maxSlopeY 0.5, Kern-Gesetz) in +x — ohne Input rutscht der Körper bergab
-            //     (Gravitation entlang der Ebene), statt magnetisch zu haften. Kugel-
-            //     Auflösung aus (Isolation: sie kriecht am 68°-Hang ~1 mm/Tick
-            //     positional — pre-existent, hier spricht allein der Gravitations-Term).
+            // (b) STEILHANG: Gradient 2,5 (~68°, ny≈0.37 < hang.maxSlopeY 0.5) in +x — ohne Input rutscht der Körper bergab,
+            //     statt zu haften; Kugel-Auflösung aus (es spricht allein der Gravitations-Term).
             const mkSlopeShim = () => {
                 const s = mkShim((x, y) => -2.5 * x - y);
                 s._fieldResolveSphere = () => false;
@@ -184,8 +163,7 @@ const server = statikServer();
                 if (!(sp.x > 0.3))
                     fail(`F2b: Steilhang-Rutsch nur ${sp.x.toFixed(3)} m in 120 Ticks (soll > 0,3 m bergab)`);
                 if (!(sp.y < 0.4)) fail(`F2b: der Rutsch folgte der Fläche nicht abwärts (y=${sp.y.toFixed(2)})`);
-                // Selbst-Test F2b: die Hang-Grenze des Kern-Gesetzes auf −1 (`_stepCharacter` liest hang.maxSlopeY je
-                // Schritt über `_bewegungsBlock`) → kein Hang ist steil → der Körper MUSS haften.
+                // Selbst-Test F2b: die Hang-Grenze auf −1 (hang.maxSlopeY über `_bewegungsBlock`) → der Körper MUSS haften.
                 const B0 = AR._bewegungsBlock;
                 AR._bewegungsBlock = function (k, f) {
                     const b = B0.call(this, k, f);
@@ -230,8 +208,7 @@ const server = statikServer();
             const bendOff = () => ({ x: N(0), y: N(-1e6), z: N(0), w: N(0) });
             const mkWindShim = (dirX, dirZ, bend0) => {
                 const s = Object.create(r);
-                // Die Naht Vorlage ↔ Welt (`_weltNaht`) ist hier die Einheit: der Skalar-Harness reicht die Welt-Lage
-                // selbst; die Naht an der echten Instanz misst gate:foundry-impostor C4 (echter Renderer).
+                // Die Naht Vorlage ↔ Welt (`_weltNaht`) ist hier die Einheit; an der echten Instanz misst sie gate:foundry-impostor C4.
                 s._weltNaht = (T) => ({ lage: T.positionWorld, vorlage: (w) => w });
                 s.state = {
                     windUniforms: {
@@ -246,36 +223,21 @@ const server = statikServer();
             const evalSway = (shim, wx, wz, localY) => {
                 mockTSL.positionWorld = { x: N(wx), y: N(0.5), z: N(wz) };
                 mockTSL.positionLocal = { x: N(0), y: N(localY), z: N(0) };
-                // Das Höhen-Gewicht liest seit W7 die Geometrie-Position (Wurzel bei y = 0; Lehre 22: r184 rechnet den
-                // positionNode vor der Instanz-Matrix).
+                // Das Höhen-Gewicht liest die Geometrie-Position (Wurzel bei y = 0, Lehre 22).
                 mockTSL.positionGeometry = { x: N(0), y: N(localY), z: N(0) };
                 const res = r._windSwayOffset.call(shim, mockTSL, {});
                 return { x: res.x.v, z: res.z.v };
             };
             {
-                const L = 40;
-                // Wind aus +x: quer (Δz) teilt die Phase EXAKT, längs (Δx) nicht.
-                const sx = mkWindShim(1, 0);
-                const aX = evalSway(sx, 0, 0, 0.8);
-                const quX = evalSway(sx, 0, L, 0.8);
-                const laX = evalSway(sx, L, 0, 0.8);
-                // Wind aus +z: die ROLLEN TAUSCHEN (dieselben Punkte!) → richtungs-getrieben.
-                const sz = mkWindShim(0, 1);
-                const aZ = evalSway(sz, 0, 0, 0.8);
-                const quZ = evalSway(sz, L, 0, 0.8);
-                const laZ = evalSway(sz, 0, L, 0.8);
-                const eq = (p, q) => Math.abs(p.x - q.x) < 1e-9 && Math.abs(p.z - q.z) < 1e-9;
-                const ne = (p, q) => Math.abs(p.x - q.x) > 1e-4 || Math.abs(p.z - q.z) > 1e-4;
-                o.zahlen.wind = { aX, quX, laX, aZ, quZ, laZ };
-                if (!eq(aX, quX)) fail("F3: Wind +x — zwei Punkte QUER zur Windrichtung teilen die Phase NICHT");
-                if (!ne(aX, laX))
-                    fail("F3: Wind +x — zwei Punkte LÄNGS der Windrichtung sind phasengleich (kein Orts-Term?)");
-                if (!eq(aZ, quZ)) fail("F3: Wind +z — die Quer-Paarung folgt der GEDREHTEN Richtung nicht");
-                if (!ne(aZ, laZ)) fail("F3: Wind +z — die Längs-Paarung folgt der GEDREHTEN Richtung nicht");
-                // (der Rollen-Tausch ist der Selbst-Test: ohne uWindDir-Konsum rechneten beide Richtungen dieselben
-                // Fallback-Konstanten, und die Quer-Paarung bräche in einer der beiden)
-                // Die CPU-Richtungs-Quelle: seeded (gleicher Seed = gleicher Wind, anderer
-                // Seed = anderer), langsam (< 0.02 rad/s Drift) und einheitslang.
+                // Wind aus +x, dann aus +z: quer teilt die Phase EXAKT, längs nicht — die ROLLEN TAUSCHEN an denselben Punkten
+                // (der Selbst-Test: ohne uWindDir-Konsum bräche die Quer-Paarung in einer Richtung)
+                const ab = (p, q) => Math.max(Math.abs(p.x - q.x), Math.abs(p.z - q.z));
+                for (const [d, qu, la] of [[[1, 0], [0, 40], [40, 0]], [[0, 1], [40, 0], [0, 40]]]) {
+                    const [a, q, l] = [[0, 0], qu, la].map(([x, z]) => evalSway(mkWindShim(...d), x, z, 0.8));
+                    if (!(ab(a, q) < 1e-9 && ab(a, l) > 1e-4))
+                        fail(`F3: Wind ${d} — quer ${ab(a, q)} (Soll 0), längs ${ab(a, l)} (Soll ≠ 0): die Phase folgt der Richtung nicht`);
+                }
+                // Die CPU-Richtungs-Quelle: seeded, langsam (< 0.02 rad/s Drift) und einheitslang.
                 const d10 = r._windDirAt(10);
                 const d10b = r._windDirAt(10);
                 const d11 = r._windDirAt(11);
@@ -290,6 +252,58 @@ const server = statikServer();
                     fail(`F3: der Wind dreht zu schnell (${ang(d10, d11).toFixed(4)} rad/s — soll langsam wandern)`);
                 if (!(ang(d10, dOther) > 1e-3))
                     fail("F3: anderer worldSeed ergab dieselbe Wind-Grundrichtung (nicht seeded?)");
+            }
+
+            // ══ F3 FELD (wetter.K5) — der EINE Wind am Ort `_windAt`, vom Gelände geformt: hinter dem Kamm und in der Tal-Düse des
+            //    Gesetzes (Wind +x, Bühnen-Höhe), an 41 × 41 Orten der Welt; „×0" zieht jeden Leser — Gras und Krone über die Uniform,
+            //    den Regen bis zum Boden seines Gesetzes (der Wind mindestens 0,1) ══
+            {
+                const U = (H, x, z) =>
+                    Object.assign(Object.create(r), { _terrainMacroSurfaceY: H, _windDirAt: () => ({ x: 1, z: 0 }) })._windAt(x, z, 0)
+                        .staerke;
+                const eben = U(() => 0, 104, 8);
+                const lee = U((x) => 60 * Math.exp(-((x / 120) ** 2)), 104, 8) / eben - 1;
+                const duese = U((x, z) => 40 * (1 - Math.exp(-((z / 80) ** 2))), 8, 8) / eben - 1;
+                const [st, P] = [r.state, r.state.playerMesh.position];
+                const form = Array.from({ length: 1681 }, (_, i) => r._windAt(P.x + (i % 41) * 64 - 1280, P.z + ((i / 41) | 0) * 64 - 1280, 9).form);
+                const alt = [st.weather, st.dorfRauch, st.hydroSurfaceUniforms];
+                [st.weather, st.weatherTransition, st.hydroSurfaceUniforms] = ["stormy", null, { wind: { value: 0 } }];
+                const g = new THREE.Group().add(new THREE.Object3D());
+                g.position.copy(P);
+                const { vc } = AR._fahrSchrittGesetz();
+                const T = { x: P.x, y: 9, z: P.z };
+                const leser = {
+                    gras: () => (r._loopRender(), st.windUniforms.uWindStrength.value),
+                    wasser: () => (r._dayNightApplyWaterMaterials(P), st.hydroSurfaceUniforms.wind.value),
+                    regen: () => (r._tickRain(), r._rainSystem.uDrift.value.length()),
+                    tuch: () => (r._animateCompoundMotion(g, [{ role: "segel", phase: 0 }], 1.3), Math.abs(g.children[0].rotation.z)),
+                    rauch: () => {
+                        st.dorfRauch = { quellen: [], teilchen: [Object.assign(T, { x: P.x, z: P.z, vy: 0, dx: 0, a: 0.5, s: 1 })] };
+                        r._updateDorfRauch(0.5);
+                        return Math.hypot(T.x - P.x, T.z - P.z);
+                    },
+                    // die Flanke im Wind (vehicle-core fahrKraefte; im Flug ist aLat die Kraft des Winds allein)
+                    wagen: () => {
+                        const w = r._fahrWind(P);
+                        const z = Object.assign(vc.fahrZustand(0, 0, Math.atan2(-w.x, -w.z)), { luft: true });
+                        vc.fahrKraefte(z, { wind: w }, vc.fahrGesetz(vc.exportDrive(Object.assign({}, vc.DEFAULT_P, vc.presetPatch("gt")))), DT);
+                        return Math.abs(z.aLat);
+                    },
+                };
+                const [echt, m, L] = [r._windAt, { x0: false }, {}];
+                r._windAt = function (...a) {
+                    return Object.assign({}, echt.apply(this, a), m.x0 ? { staerke: 0, ms: 0 } : {});
+                };
+                try {
+                    for (const [k, f] of Object.entries(leser)) L[k] = [((m.x0 = false), f()), ((m.x0 = true), f())];
+                } finally {
+                    delete r._windAt;
+                    [st.weather, st.dorfRauch, st.hydroSurfaceUniforms] = alt;
+                }
+                const folgt = Object.keys(L).filter((k) => L[k][0] > 1e-4 && L[k][1] <= (k === "regen" ? 0.15 : 0) * L[k][0]);
+                const fd = (o.zahlen.feld = { lee, duese, min: Math.min(...form), max: Math.max(...form), L, folgt });
+                if (!(Math.abs(lee + 0.4) < 0.02 && Math.abs(duese - 0.2) < 0.02 && fd.min <= 0.7 && fd.max >= 1.1 && folgt.length === 6))
+                    fail(`F3: das Gelände formt den Wind nicht oder ein Leser folgt ihm nicht: ${JSON.stringify(fd)}`);
             }
 
             // ══ FIXTURE 4 (F4) — GRAS-INTERAKTION (radiales Wegbiegen) ══
@@ -310,8 +324,8 @@ const server = statikServer();
                 if (!(nearR.x > nearR0.x + 1e-3)) fail("F4: Halm rechts der Sphäre biegt nicht RADIAL WEG (+x)");
                 if (!(Math.abs(root.x - root0.x) < 1e-9)) fail("F4: die WURZEL biegt sich (hf-Gewichtung fehlt)");
                 if (!(Math.abs(far.x - far0.x) < 1e-9)) fail("F4: die Sphäre wirkt außerhalb ihres Radius");
-                // CPU-Seite: der Frame-Tick (`_loopRender`) speist uWindDir aus `_windDirAt(t)` und füllt über
-                // `_tickGrasBend` Slot 0 mit dem Spieler; tote Slots ruhen.
+                // CPU-Seite: der Frame-Tick (`_loopRender`) speist uWindDir aus dem EINEN Wind (`_windAt`, Richtung
+                // `_windDirAt(t)`) und füllt über `_tickGrasBend` Slot 0 mit dem Spieler; tote Slots ruhen.
                 if (window.THREE && THREE.TSL && r.state.windUniforms) {
                     r._ensureWindCoupling(THREE.TSL);
                     const wu = r.state.windUniforms;
@@ -389,6 +403,12 @@ const server = statikServer();
         );
     if (z.windDir)
         console.log(`  F3 Wind: quer-invariant + richtungs-getrieben · Drift ${z.windDir ? "seeded/langsam" : "?"}`);
+    const fd = z.feld;
+    if (fd)
+        console.log(
+            `  F3 Feld: Lee ${(100 * fd.lee).toFixed(0)} % · Tal-Düse +${(100 * fd.duese).toFixed(0)} % · Welt ${fd.min.toFixed(2)}–${fd.max.toFixed(2)} · Leser ${fd.folgt.length}/${Object.keys(fd.L).length} folgen ×0 (` +
+                Object.entries(fd.L).map(([n, [a, b]]) => `${n} ${a.toFixed(3)} → ${b.toFixed(3)}`).join(" · ") + ")"
+        );
     if (z.bend)
         console.log(
             `  F4 Gras: Biegung links ${z.bend.dLinks.toFixed(3)} / rechts +${z.bend.dRechts.toFixed(3)} · Tick ${typeof z.tick === "string" ? z.tick : "Slot 0 = Spieler"}`

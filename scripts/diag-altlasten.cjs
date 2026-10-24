@@ -813,6 +813,8 @@ const FORBIDDEN = [
     },
     { token: "_settlementCount", fiel: "Welle L — der Bau-Same je Art (_bauSame)" },
     { token: "_bauSameZaehler", fiel: "Gegenprüfung 08.10. — der Zähler des Welt-Stroms reist in worldMeta.bauSame" },
+    { token: "_windBoeAt", fiel: "wetter.K5 — der EINE Wind am Ort (_windAt)" },
+    { token: "_worldWindDirAt", fiel: "wetter.K5 — der EINE Wind am Ort (_windAt)" },
     {
         token: "Math.imul(seedNum, 131)",
         fiel: "Gegenprüfung 08.10. — EIN Same je Werk (_werkSame), vier Kopien fielen",
@@ -1200,7 +1202,7 @@ const ZWILLINGE = [
     // kontinentale Basis der Schnee-Prominenz) lebt in gelaende-core.js; Stamm, voxel-worker und jede Linse RUFEN sie.
     // Die Abdrücke sind MUSTER, nie ein Variablen-Name: die Prüfung 1 fand `(x + _wpX) * 0.00014 + 7.2` in beiden Farb-
     // Pfaden am engen Abdruck `wx * 0.00014 + 7.2` vorbei. Verboten in jeder Wurzel-Datei und jedem Skript
-    // (`gelaendeLeser`); der WGSL-Seh-Spiegel fiel (K16, der Feld-Zeichner liest den Kern), das Terrain-Studio liest ihn mit G2 (K09b).
+    // (`gelaendeLeser`); der WGSL-Seh-Spiegel fiel (K16, der Feld-Zeichner liest den Kern), das Terrain-Studio liest ihn mit G2.
     ...[
         [/\*\s*0\.00026\s*\+\s*(?:11\.3|41\.7)\b/, "der Domain-Warp des Wildnis-Terms"],
         [/255\s*\+\s*12\s*\*\s*Math\.tanh\(/, "der Sicherheits-Deckel der Makro-Höhe"],
@@ -1407,7 +1409,7 @@ function scanLabBuster() {
         errs.push(
             `AnazhRealm.VERSION trägt stale "${vm[1]}" (package.json ${version}) — Trace/Panel lügen über die Version`
         );
-    // DOKU=VERSION (19.07., Schöpfer-Karte §5.6 „Doku = Version"): der Stand-Kopf
+    // DOKU=VERSION (Schöpfer-Karte §5.6 „Doku = Version"): der Stand-Kopf
     // von CLAUDE.md ist die Chronik-Spitze — trägt er eine andere Version als
     // package.json, LÜGT die Doku relativ zum Code (die 18.490/18.491-Drift-
     // Klasse). DIESELBE Wand, ein weiterer Träger.
@@ -1759,7 +1761,7 @@ function scanNormalWand(srcRoh) {
     return errs;
 }
 
-// DIE STOFF-WAND (K22): kein stiller Fang im Render- und Stoff-Bau. Ein FANG ist:
+// DIE STOFF-WAND: kein stiller Fang im Render- und Stoff-Bau. Ein FANG ist:
 //   (a) ein catch im Stoff- oder Render-Bau, der weder wirft noch ERROR meldet (der Fehler verschwindet, das Bild zeichnet
 //       byte-alt weiter);
 //   (b) eine Fehler-Variable `window.__…Error` (der Fehler wandert in ein Fach, das kein Spiel-Leser liest);
@@ -2892,7 +2894,7 @@ function markerDateien(root) {
 // die Welt (buildInstance). Die Abbildung Stufe → Rezept wohnt in `stufenRezept` (foundry-core); `__lod` schreiben nur
 // buildInstance (die Stufe, roh, wie der Labor-Knopf) und emitTree (das Rezept für den Bau, danach zurück auf die Stufe),
 // deriveParamsPlant reicht die rohe Stufe an das Gesetz `treeParams` (phyto-core), das sie über dieselbe Abbildung liest
-// (K24). Jede weitere Zuweisung an `__lod` im Kern ist eine zweite Bedeutung — rot mit Zeile; fehlt ein Anker, ist die
+//. Jede weitere Zuweisung an `__lod` im Kern ist eine zweite Bedeutung — rot mit Zeile; fehlt ein Anker, ist die
 // Abbildung aus emitTree gewandert oder deriveParamsPlant reicht dem Gesetz eine andere als die rohe Stufe.
 const STUFEN_ANKER = [
     "__lod = lod;",
@@ -3024,7 +3026,7 @@ function scanHuellenFormWand(dateien) {
     }
     return errs;
 }
-// DIE ORTS-WAND (K16): eine Probe, die Spieler, Kamera oder Tier an ein Zahlen-Literal (x, z) setzt, trägt
+// DIE ORTS-WAND: eine Probe, die Spieler, Kamera oder Tier an ein Zahlen-Literal (x, z) setzt, trägt
 // einen Ort der Welt, in der sie geschrieben wurde — die Landform des Kerns verschob ihn, und drei Gruppen der CI wurden rot
 // (der Biss am Hang, der Baum im Haus, die Ankunft im Ursprung). Der Ort kommt aus der Welt (die nächste ebene Stelle, der
 // nächste See, `_weltBetreten`), oder die Zeile ist als Bühnen-Station deklariert: `// BÜHNE: <Grund>` auf ihr oder in den
@@ -3092,7 +3094,7 @@ function ortsName(code, i) {
     const m = /([A-Za-z_$][\w$]*)\s*[:=]\s*(?:\w+\s*\?\s*)?$/.exec(code.slice(Math.max(0, j - 80), j));
     return m ? m[1] : "";
 }
-// DIE ABSCHRIFT DES MESSORTS (K55): der Platz eines Band-Orts ohne Anker und ohne eigene Welt (die Mess-Wiese, das
+// DIE ABSCHRIFT DES MESSORTS: der Platz eines Band-Orts ohne Anker und ohne eigene Welt (die Mess-Wiese, das
 // Dorf) steht NUR im Haushalt (spec/profiband/haushalt.json, gelesen über scripts/lib/welt-orte.cjs `messort`) — und
 // ein gefallener Platz nirgends mehr. Zwei Zahlen-Literale, die ihn nennen (x, dann z binnen 60 Zeichen, Code ohne
 // Kommentare), sind eine Abschrift, gleich in welcher Form und ob die Datei setzt: `stelle(x, z)`, `umstellen(x, z)`,
@@ -3529,7 +3531,7 @@ function main() {
             ["scripts/b.cjs", 'r.spawnArchitecture("haus", { x: 400, y: 0, z: 400 });\n' + SETZT],
             ["scripts/w.cjs", "const MESS = { x: -640, z: -410 };\n"],
         ]);
-        // DIE ABSCHRIFT DES MESSORTS (K55): der Platz der Mess-Wiese aus dem Haushalt und der gefallene Platz, je als Aufruf und
+        // DIE ABSCHRIFT DES MESSORTS: der Platz der Mess-Wiese aus dem Haushalt und der gefallene Platz, je als Aufruf und
         // als Konstanten-Paar über zwei Zeilen — rot, auch ohne Setzen; derselbe Platz um 1 m versetzt und hinter BÜHNE still.
         const MW = messortPaare()[0];
         const MG = MESSORT_GEFALLEN[0];
@@ -3601,7 +3603,7 @@ function main() {
         console.log(
             `✅ SELBST-TEST: die Linsen stehen in der Wand (${linsenDateien(root).length} Dateien in scripts/lib, der tote Aufruf der Fernwald-Linse erkannt)`
         );
-        // Die Stoff-Wand muss feuern (K22): (1) JEDER laute Bruch des Stamms, wieder still gemacht
+        // Die Stoff-Wand muss feuern: (1) JEDER laute Bruch des Stamms, wieder still gemacht
         // (sein catch meldet nur WARN, die Zeilen bleiben), ist rot an seiner Zeile — die Wand sieht jeden ihrer Schnitte,
         // gleich ob der Versuch TSL liest, ein Render-Objekt baut, den Graphen läuft oder einen Bauer ruft (bis hierher
         // prüfte der Selbsttest drei Methoden, und vier Schnitte fielen still aus der Wand); (2) je Art ein eingeschmuggelter

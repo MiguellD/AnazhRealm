@@ -59,7 +59,7 @@ class AnazhRealm_wasser_zellen {
                 }
             }
             // (3) Fluss-Bucket im Footprint
-            if (h.riverBuckets) {
+            if (h.kanal) {
                 const b0i = Math.floor((ox - h.originX) / h.bucketSize);
                 const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
                 const b0j = Math.floor((oz - h.originZ) / h.bucketSize);
@@ -67,8 +67,8 @@ class AnazhRealm_wasser_zellen {
                 for (let bj = b0j; bj <= b1j; bj++) {
                     for (let bi = b0i; bi <= b1i; bi++) {
                         if (bi < 0 || bj < 0 || bi >= h.bucketsDim || bj >= h.bucketsDim) continue;
-                        const list = h.riverBuckets[bi + bj * h.bucketsDim];
-                        if (list && list.length) return true;
+                        const kb = bi + bj * h.bucketsDim;
+                        if (h.kanal.ab[kb + 1] > h.kanal.ab[kb]) return true;
                     }
                 }
             }

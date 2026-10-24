@@ -207,7 +207,7 @@ function installiere(alteTuer) {
     window.__mpPumpe = setInterval(() => {
         try {
             r._gameLoopTick(performance.now());
-        } catch (_e) {
+        } catch {
             /* der Loop trägt seine eigene Fehlerwand */
         }
     }, 16);

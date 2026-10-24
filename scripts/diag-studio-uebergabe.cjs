@@ -63,7 +63,7 @@ function weltBau(w, kind, preset, weltSame) {
         );
         try {
             r._buildHumanGroup();
-        } catch (_e) {
+        } catch {
             /* der Not-Körper hinter dem Ofen braucht eine Szene — der Fang steht davor */
         }
         return (

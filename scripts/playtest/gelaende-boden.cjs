@@ -1179,7 +1179,7 @@ async function checkBandV18132FerneSeen(ctx) {
         await window.__weltDa(() => !r._ensureHydroTilesAround(-2048, 0, 10)); // Kachel WEST (-1,0) aus dem Faden
         const tile = r.state.hydroTiles ? r.state.hydroTiles.get("-1,0") : null;
         out.tileBuilt = !!(tile && tile.ready);
-        out.tileSubstanz = tile ? (tile.rivers ? tile.rivers.length : 0) + (tile.lakes ? tile.lakes.length : 0) : 0;
+        out.tileSubstanz = tile ? tile.fluesse + tile.seen : 0;
         out.homeIdentical = fp() === before;
         // hydroBand deckt JEDEN Spiegel (das Band ist global) — die Seen UND die Flüsse (Punkt-Spiegel S) der Heimat
         // und jeder Kachel. K16: das Band kannte nur die Seen (23,7 m), die Flüsse der Landform steigen bis 55 m — der
@@ -1195,7 +1195,26 @@ async function checkBandV18132FerneSeen(ctx) {
         out.maxSpiegel = maxSpiegel;
         out.bandTop = r.state.hydroBand ? r.state.hydroBand.top : null;
         out.bandCovers = !Number.isFinite(maxSpiegel) || (r.state.hydroBand && r.state.hydroBand.top >= maxSpiegel);
-        // die Leser der Kachel in Haupt-Faden und Worker misst gate:worker-dichte `--kern` (am See in seiner Kachel)
+        // die Leser der Kachel im Haupt-Faden misst gate:worker-dichte `--kern` (am See in seiner Kachel)
+        const cfg = r._voxelChunkConfig(0);
+        // DER WORKER SPIEGELT DIE KACHEL (Lehre 7), auch ein nach ihr geborener (`_getVoxelWorker` bestellt sie ihm): bit-gleich.
+        const fl = ((tile && tile.rivers) || []).find((f) => f.points && f.points.length > 4);
+        const p = fl ? fl.points[fl.points.length >> 1] : { x: -2048, z: 0 };
+        const cx = Math.floor(p.x / cfg.span);
+        const cz = Math.floor(p.z / cfg.span);
+        const g = [cx * cfg.span - cfg.step, (r.state.terrainBaseHeight || 0) - cfg.floorDrop, cz * cfg.span - cfg.step];
+        g.push(cfg.dim + 3, cfg.dimY, cfg.dim + 3, cfg.step);
+        const main = r._voxelEditedDensityGrid(`ferne-seen|${cx},${cz}`, ...g);
+        r.state.voxelBaseDensityCache.delete(`ferne-seen|${cx},${cz}`);
+        const alt = r.state.voxelWorker;
+        r.state.voxelWorker = null;
+        const neu = r._getVoxelWorker();
+        const wk = await r._voxelWorkerComputeDensity(...g).catch((e) => String(e));
+        neu.terminate();
+        r.state.voxelWorker = alt;
+        const bits = (a) => new Uint32Array(a.buffer, a.byteOffset, a.length);
+        out.workerMirror =
+            !wk || typeof wk === "string" ? String(wk) : main.length === wk.length && bits(main).every((v, i) => v === bits(wk)[i]);
         return out;
     });
     if (!res) {
@@ -1203,6 +1222,11 @@ async function checkBandV18132FerneSeen(ctx) {
         return;
     }
     if (!res.unmeasurable) {
+        check(
+            "Ferne Seen: der Worker spiegelt die Kachel — das Dichte-Gitter am Kachel-Fluss ist in Main und Worker bit-gleich",
+            res.workerMirror === true,
+            String(res.workerMirror)
+        );
         check(
             "Ferne Seen: die WEST-Kachel baut mit Substanz (Fluesse+Seen > 0)",
             res.tileBuilt && res.tileSubstanz > 0,
@@ -1795,7 +1819,7 @@ async function checkBandSeamNormal(ctx) {
     check("G1 Seam-Normal: same-LOD-Rand-Normalen konform ≤ 1° (keine Lichtungs-Naht)", fails.length === 0, fails.join(" · ") || `x ${out.xFace.max}° · z ${out.zFace.max}° an ${out.xFace.matched}+${out.zFace.matched} Verts`);
 }
 
-// Der Tod-Zensus — eingefaltet aus gate:tod-zensus (D3b): ein Leichnam behielt 90 s die Darstellung
+// Der Tod-Zensus — eingefaltet aus gate:tod-zensus: ein Leichnam behielt 90 s die Darstellung
 // des lebenden Tiers (Fern-Guss ohne Schatten auf 2 m, Aura und Traglast); jetzt liegt der Gefallene in der Stufe seines Abstands,
 // wirft nah Schatten, ohne Aura, Traglast, Wesen-Takt und Stimme. Selbsttest im selben Boot: je Täter der alte Defekt eingespielt —
 // jede Probe liest ROT aus ihrem Grund.
@@ -2410,7 +2434,7 @@ async function checkBandTodZensus(ctx) {
     check(`Tod-Zensus SELBSTTEST: ${TAETER.length} Täter beim Namen (der alte Defekt je Probe ROT aus ihrem Grund)`, blind.length === 0, blind.join(" · "));
 }
 
-// Die Bewegungs-Garantie unter Last (P1) — eingefaltet aus gate:move-under-load (D3b): `_gameLoopTick(t)` mit 330-ms-Sprüngen (die 3-FPS-Realität), W gehalten: (a) die Bewegung
+// Die Bewegungs-Garantie unter Last (P1) — eingefaltet aus gate:move-under-load: `_gameLoopTick(t)` mit 330-ms-Sprüngen (die 3-FPS-Realität), W gehalten: (a) die Bewegung
 // verhungert nie an der Last (der Fixed-Step ist unbedingt) · (b) ohne gebauten Spieler-Chunk (gestallter Worker, Fern-Teleport)
 // trägt die feld-native Kollision · (c) nie im Soliden, nie Void · (d) die Pause: nach 10 s ohne Takt springt kein Wolf weiter
 // als Sprint × TAKT_DECKEL_S; Selbsttests: die gepinnte Position und der fehlende Takt-Deckel werden rot, dieser an JEDEM Wolf (W10).

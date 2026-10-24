@@ -232,7 +232,7 @@ async function weltRuht(page) {
 // (1) DAS LAYOUT: eine Probe-Gestalt (eine Tafel in der LINKEN OBEREN Viertel-Fläche) backt durch den ECHTEN Bake
 //     (`_karteWeltBacken`, BC wenn der Adapter es kann, sonst rgba8) in den Atlas — das Bild MUSS links oben stehen (die
 //     Karte steht richtig herum und ist nicht gespiegelt).
-// (2) DIE KAMERA-KLEBER-WAND (18.07., Schöpfer: „Felsen/Kristalle/Autos/Feueresse hängen an der Kamera"): Wurzel war
+// (2) DIE KAMERA-KLEBER-WAND (Schöpfer: „Felsen/Kristalle/Autos/Feueresse hängen an der Kamera"): Wurzel war
 //     der FREIE Slot — seine Null-3×3 mit lebender Translation machte den Normal-Probe des Impostor-positionNode
 //     singulär, der tote Slot wurde ein welt-spannendes camera-facing Quad. Seit 05.10. gibt es keinen freien Slot mehr:
 //     _archGroupFree verdichtet (die letzte Instanz zieht mit Matrix, Farbe und Karte in die Lücke, count sinkt), der
@@ -445,7 +445,7 @@ async function kleberProbe(page, fmtWunsch) {
     }, fmtWunsch);
 }
 
-// ===== TEIL C2 — DIE VERGRÖSSERTE KARTE (K20) =====
+// ===== TEIL C2 — DIE VERGRÖSSERTE KARTE =====
 // Die Stufe 0 der Karte ist binär (Karten-Gesetz, BC1). Bilinear gelesen schnitt der alphaTest jede vergrößerte Krone in
 // Texel-Treppen (Werkbank, Radeon, Bestand von innen: Texel bis 3,3 px, Blöcke mit rechteckigen Löchern). Die Probe zeichnet
 // eine Karte mit einer DIAGONALEN Kante so nah, dass ein Texel ~4 px misst, und liest die Kontur je Zeile: die Treppe ist
@@ -550,7 +550,7 @@ async function vergroessertProbe(page, fmtWunsch) {
     }, fmtWunsch);
 }
 
-// ===== TEIL C3 — DIE KARTE SIEHT DAS AUGE (K20) =====
+// ===== TEIL C3 — DIE KARTE SIEHT DAS AUGE =====
 // r184 setzt den positionNode VOR die Instanz-Matrix (WGSL der Karte gelesen): las das Quad dort positionLocal und den
 // Normal-Probe, blickte es aus dem Vorlagen-Raum und die Matrix drehte es danach mit dem Baum — jede Karte stand als
 // feste Tafel in der Drehung ihrer Instanz (die Solitär-Eiche aus 22 m ein Strich, aus 70 m breit). Die Probe stellt
@@ -651,7 +651,7 @@ async function blickProbe(page) {
     }, BLICK_DREHUNGEN);
 }
 
-// ===== TEIL C4 — DER WIND WEHT IN DER WELT (K20-N1) =====
+// ===== TEIL C4 — DER WIND WEHT IN DER WELT =====
 // Dieselbe r184-Reihenfolge trägt jeder Stoff einer InstancedMesh (`_instanzMesh`): der positionNode läuft VOR der
 // Instanz-Matrix. Addiert der Wind dort einen Versatz in Welt-Metern und Welt-Richtung, drehte und skalierte ihn die
 // Matrix danach mit jedem Baum — jeder Baum bog sich in die Richtung seiner eigenen Drehung. Die Probe stellt EINE

@@ -930,7 +930,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         r.state.lifeField = savedLifeRing3;
 
         // (c) Schwellen-Trigger: sorrow > 0.7 → Regen. lastTick nahe currentTime, damit der Decay sorrow nicht vor dem
-        // Trigger unter die Schwelle drückt. UHR UND WETTER GEHÖREN DEM SPIELER (Leben-Schau 2): die Emotion ist eine
+        // Trigger unter die Schwelle drückt. UHR UND WETTER GEHÖREN DEM SPIELER: die Emotion ist eine
         // Stimme der Welt — sie WÜNSCHT das Wort, der Wetter-Zug zieht es in seinem Takt (ohne stehendes Wort des Spielers).
         r._wetterFreigeben("human");
         r.state.weather = "sunny";
@@ -1043,7 +1043,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.aweTriggersSkybox = !!r.state.skyTint && r.state.skyTintTarget > 0 && r.state.skyTint.getHex() === 0xd4a3ff;
 
         // (b) hope > 0.7 → wetter sunny + kreaturen happy (das Wetter wünscht die Emotion, der Wetter-Zug zieht es —
-        // Leben-Schau 2: die Welt schreibt das Wetter nie selbst)
+        // die Welt schreibt das Wetter nie selbst)
         for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
         p.emotions.hope = 0.9;
         r._wetterFreigeben("human");
@@ -2427,7 +2427,7 @@ async function checkBandWCIchWahrheit(ctx) {
     );
 }
 
-// W-A1 der Rezept-Katalog — eingefaltet aus gate:rezept-katalog (D3b): die B4-Tabellen reisen als DATEN (`paramsByKind`: gate ·
+// W-A1 der Rezept-Katalog — eingefaltet aus gate:rezept-katalog: die B4-Tabellen reisen als DATEN (`paramsByKind`: gate ·
 // vehicle · flower · grass, gate-Länge = porta-core.PARAMS), der ov-Kanal baut cache-frei eine ANDERE Geometrie (drachentor mass,
 // blume height/bloomCount), der Katalog zeigt die Studio-Rezepte (gras) und verabschiedet die Donoren (wagen 17 · tor 4 Parts in
 // der Substanz-Tabelle), die Regler des Tors kommen aus der PARAMS-Tabelle und treiben die Vorschau, das Interim ist ehrlich

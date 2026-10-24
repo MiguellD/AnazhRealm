@@ -315,7 +315,7 @@ class AnazhRealm_wasser_hydro {
     // `depth` und centerness des nächsten Segments, dazu die Wasser-Oberfläche `surfaceY`: der Spiegel der Segmente
     // (`_hydroRiverSpiegel`, linear zwischen ihren Enden — stromab nie steigend, quer waagrecht), gemittelt mit einem
     // Gewicht, das zur Krone stetig auf 0 fällt — ein breiter Fluss überdeckt in der Biegung mehrere Segmente, das
-    // nächste allein gäbe dort eine Stufe. O(1) über `riverBuckets`; das Gesetz des Kerns (gelaende-core `flussAm`).
+    // nächste allein gäbe dort eine Stufe. O(1) über den Kanal (`kanal`); das Gesetz des Kerns (gelaende-core `flussAm`).
     _hydroRiverAt(x, z) {
         return globalThis.__gelaendeCore.flussAm(this._gelaende(), x, z);
     }
