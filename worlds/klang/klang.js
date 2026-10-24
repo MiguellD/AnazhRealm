@@ -4474,7 +4474,7 @@ applyHashSession();                                              // #s=…&p=…
     { k:'regen', lab:'Regen', min:0, max:1, step:0.01, fmt: v => Math.round(v * 100) + ' %' },
     { k:'sonne', lab:'Sonne', min:-1, max:1, step:0.01, fmt: v => v.toFixed(2) },
     { k:'lebendig', lab:'Leben', min:0, max:1, step:0.01, fmt: v => v.toFixed(2) },
-    { k:'saisonPhase', lab:'Jahr', min:0, max:0.995, step:0.005, fmt: v => ['Frühling','Sommer','Herbst','Winter'][Math.floor((v % 1) * 4)] },
+    { k:'temperatur', lab:'Luft', min:-20, max:35, step:0.5, fmt: v => v.toFixed(1) + ' °C' },
     // Abstands-Regler: am Anschlag (aus) schweigt die Quelle; basis = ihre übrigen Lage-Felder.
     { k:'ufer.d', lab:'Ufer', min:1, max:50, step:0.5, aus:50, basis:{ anteil:0.3, pan:0 }, fmt: v => v >= 50 ? '—' : v.toFixed(1) + ' m' },
     { k:'fall.d', lab:'Fall', min:1, max:90, step:0.5, aus:90, basis:{ hoehe:12, pan:0 }, fmt: v => v >= 90 ? '—' : v.toFixed(1) + ' m' },

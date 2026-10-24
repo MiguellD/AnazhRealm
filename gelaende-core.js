@@ -1112,7 +1112,11 @@
     // 3 km tragen; 0,11 K/m).
     // DIE TRÄGHEIT (`traegTage`): ein Stoff mit Wärme-Gedächtnis (das Wasser) sieht die Luft durch einen Tiefpass erster
     // Ordnung mit der Zeitkonstante τ in Tagen — jede Schwingung gedämpft um 1/√(1 + (ωτ)²) und verspätet um atan(ωτ),
-    // geschlossen gerechnet (die Welt bleibt eine Funktion): am See ±0,4 °C Tagesgang, 6 h verspätet.
+    // geschlossen gerechnet (die Welt bleibt eine Funktion). Die Trägheit gehört dem Körper, der die Luft sieht (das Eis:
+    // `eisDicke` aus der Säule des Wassers).
+    // DAS FELD IN WELLEN (`temperaturFeld`): an der Höhe y das Mittel, die Kühlung der Höhe und je Welle (Jahr, Tag) die
+    // Amplitude, der Gipfel und die Verspätung nach dem Tiefpass — `temperaturAus` wertet es zu Saison und Uhr aus
+    // (`temperatur` = beides, bit-gleich zur Formel vor stoffe.K3-2), das Eis integriert seine Jahres-Welle geschlossen.
     const TEMPERATUR = Object.freeze({
         sommer: 18,
         winter: -4,
@@ -1120,24 +1124,110 @@
         tagAmp: 5,
         tagGipfel: 0.625,
         jahrTage: 365,
-        gefrierpunkt: 0,
-        wasserTraegTage: 2,
     });
-    function temperatur(L, y, saison, uhr, traegTage) {
-        if (!Number.isFinite(y) || !Number.isFinite(saison) || !Number.isFinite(uhr))
-            throw new Error("gelaende-core temperatur: Höhe, Saison oder Uhr fehlt");
+    function temperaturFeld(L, y, traegTage) {
+        if (!Number.isFinite(y)) throw new Error("gelaende-core temperaturFeld: die Höhe fehlt");
         const T = TEMPERATUR;
         const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
-        const welle = (amp, phase, perioden) => {
+        const welle = (amp, gipfel, perioden) => {
             const wt = 2 * Math.PI * (traegTage > 0 ? traegTage : 0) * perioden;
-            return (amp / Math.sqrt(1 + wt * wt)) * Math.cos(2 * Math.PI * phase - Math.atan(wt));
+            return { amp: amp / Math.sqrt(1 + wt * wt), gipfel, spaet: Math.atan(wt) };
         };
-        return (
-            (T.sommer + T.winter) / 2 +
-            welle((T.sommer - T.winter) / 2, saison - T.sommerPhase, 1 / T.jahrTage) +
-            welle(T.tagAmp, uhr - T.tagGipfel, 1) -
-            (T.sommer / ((SCHNEE.start + SCHNEE.voll) / 2)) * (y - wl)
-        );
+        return {
+            mittel: (T.sommer + T.winter) / 2,
+            kuehlung: (T.sommer / ((SCHNEE.start + SCHNEE.voll) / 2)) * (y - wl),
+            jahr: welle((T.sommer - T.winter) / 2, T.sommerPhase, 1 / T.jahrTage),
+            tag: welle(T.tagAmp, T.tagGipfel, 1),
+        };
+    }
+    function temperaturAus(F, saison, uhr) {
+        if (!Number.isFinite(saison) || !Number.isFinite(uhr)) throw new Error("gelaende-core temperaturAus: Saison oder Uhr fehlt");
+        const welle = (W, phase) => W.amp * Math.cos(2 * Math.PI * (phase - W.gipfel) - W.spaet);
+        return F.mittel + welle(F.jahr, saison) + welle(F.tag, uhr) - F.kuehlung;
+    }
+    function temperatur(L, y, saison, uhr, traegTage) {
+        return temperaturAus(temperaturFeld(L, y, traegTage), saison, uhr);
+    }
+
+    // DAS EIS (stoffe.K3): die feste Phase des Wassers als DICKE in Metern — eine Funktion des Wasserkörpers, des Felds und
+    // der Saison.
+    // DER KÖRPER: sein Gefrierpunkt aus dem Salz (T_f = −0,054 K·kg/g × S: das Meer mit 35 g/kg friert bei −1,9 °C, Süßwasser
+    // bei 0 °C), seine Trägheit aus der Masse je Fläche (τ = ρc·h / α: die Wärme der Säule h gegen die Kopplung α der
+    // Oberfläche an die Luft, fühlbar + latent + langwellig): ein Teich von 1 m folgt der Luft mit 1,9 Tagen, der See der
+    // Mess-Wiese (3,4 m) mit 6,6, das Meer mit seiner Durchmischungs-Schicht von 50 m mit 97 — seine Jahres-Welle dämpft auf
+    // 53 %, sein Winter bleibt über −1,9 °C. Das Meer ist das Wasser auf Meereshöhe; im Brack (`brack` über dem Meer) gehen
+    // Salz und Schicht stetig in das Süßwasser und seine Säule über.
+    // DER GANG: das Eis setzt ein, wenn das träge Wasser den Gefrierpunkt erreicht, und wächst nach STEFAN mit den Frost-Graden
+    // der Luft (h²/2k + h/H = ∫(T_f − T_Luft) dt / ρL: Leitung durch das Eis, Übergang an die Luft); ist die Luft wärmer,
+    // schmilzt es an der Oberfläche (dh/dt = −H·(T_Luft − T_f) / ρL). Ein Wasser, das nie über den Gefrierpunkt kommt, trägt
+    // sein Eis durchs Jahr (der Kreis, in dem Wachsen und Schmelzen sich die Waage halten); friert die Luft immer, friert die
+    // Säule durch. Gerechnet geschlossen auf der Jahres-Welle des Tagesmittels: das Eis integriert den Tag (sein Gang trägt
+    // höchstens A_Tag/ω_Tag ≈ 0,8 K·d), kein Flackern am Tagesgang; ein See wächst in ~6 Tagen vom ersten Eis zum tragenden.
+    // `feld(traegTage)` ist das Temperatur-Feld an der Höhe (die Naht des Wirts; ohne sie das Feld des Kerns).
+    // `traegt`: die Dicke, die den Menschen trägt (GOLD: P = A·h², A = 3,5 kg/cm² — 80 kg auf 4,8 cm).
+    const EIS = Object.freeze({
+        salzMeer: 35,
+        gefrierJeSalz: -0.054,
+        brack: [0.8, 2.8],
+        waermeJeM3: 4.18e6,
+        kopplung: 25,
+        saeule: [0.1, 30],
+        meerSchicht: 50,
+        leitung: 2.2,
+        uebergang: 20,
+        schmelzJeM3: 917 * 334000,
+        traegt: 0.05,
+    });
+    // Der Wasserkörper mit dem Spiegel y über der Säule `tiefe`: sein Meer-Anteil, sein Gefrierpunkt (°C) und seine Trägheit
+    // (Tage) — Leser: `eisDicke` und die Linse, die das Wasser des Körpers misst.
+    function wasserKoerper(L, y, tiefe) {
+        if (!Number.isFinite(y) || !Number.isFinite(tiefe)) throw new Error("gelaende-core wasserKoerper: Höhe oder Tiefe fehlt");
+        const E = EIS;
+        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
+        const meer = 1 - glatt(E.brack[0], E.brack[1], y - wl);
+        const saeule = Math.min(E.saeule[1], Math.max(E.saeule[0], tiefe));
+        return {
+            meer,
+            gefrier: E.gefrierJeSalz * E.salzMeer * meer,
+            traegTage: ((saeule + (E.meerSchicht - saeule) * meer) * E.waermeJeM3) / E.kopplung / 86400,
+        };
+    }
+    function eisDicke(L, y, saison, tiefe, feld) {
+        if (!Number.isFinite(saison)) throw new Error("gelaende-core eisDicke: die Saison fehlt");
+        const E = EIS;
+        const K = wasserKoerper(L, y, tiefe);
+        const F = feld || ((tr) => temperaturFeld(L, y, tr));
+        const luft = F(0);
+        const wasser = F(K.traegTage);
+        const tf = K.gefrier;
+        const zuB = (W) => tf - W.mittel + W.kuehlung;
+        const A = luft.jahr.amp;
+        const ca = zuB(luft) / A;
+        const cw = zuB(wasser) / wasser.jahr.amp;
+        if (ca <= -1 || cw <= -1) return 0;
+        if (ca >= 1) return tiefe;
+        const tage = TEMPERATUR.jahrTage / (2 * Math.PI);
+        const frost = (a, b) =>
+            (tage * 86400 * (zuB(luft) * (b - a) - A * (Math.sin(b - luft.jahr.spaet) - Math.sin(a - luft.jahr.spaet)))) /
+            E.schmelzJeM3;
+        const kH = E.leitung / E.uebergang;
+        const g = (h) => (h * h) / (2 * E.leitung) + h / E.uebergang;
+        const stefan = (q) => Math.sqrt(kH * kH + 2 * E.leitung * Math.max(0, q)) - kH;
+        const psiA = luft.jahr.spaet + Math.acos(ca);
+        const psiB = luft.jahr.spaet + 2 * Math.PI - Math.acos(ca);
+        let psiAn = wasser.jahr.spaet + Math.acos(cw);
+        let h0 = 0;
+        if (cw >= 1) {
+            const M = -E.uebergang * frost(psiB, psiA + 2 * Math.PI);
+            psiAn = psiA;
+            h0 = Math.max(0, ((frost(psiA, psiB) - M / E.uebergang - (M * M) / (2 * E.leitung)) * E.leitung) / M);
+        }
+        if (!(psiAn < psiB)) return 0;
+        const psi = 2 * Math.PI * (saison - luft.jahr.gipfel);
+        const p = psiAn + (((psi - psiAn) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+        if (p <= psiB) return Math.min(tiefe, stefan(g(h0) + frost(psiAn, p)));
+        const hB = stefan(g(h0) + frost(psiAn, psiB));
+        return Math.min(tiefe, Math.max(0, hB + E.uebergang * frost(psiB, p)));
     }
 
     function wildnisY(L, x, z, mitDetail, aus) {
@@ -4875,6 +4965,11 @@
         schnee: schnee,
         TEMPERATUR: TEMPERATUR,
         temperatur: temperatur,
+        temperaturFeld: temperaturFeld,
+        temperaturAus: temperaturAus,
+        EIS: EIS,
+        wasserKoerper: wasserKoerper,
+        eisDicke: eisDicke,
         grossform: grossformAus,
         landformRegler: landformRegler,
         benannteSeen: benannteSeen,

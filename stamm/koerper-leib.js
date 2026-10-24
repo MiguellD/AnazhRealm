@@ -565,8 +565,8 @@ class AnazhRealm_koerper_leib {
     _standSicht(x, z, traegerY, struktur) {
         if (struktur === true) return traegerY;
         const band = AnazhRealm.STAND_SICHT_BAND;
-        const eis = this._eisAt(x, z, traegerY + band, 2 * band);
         const karte = this._bodenSichtAt(x, z);
+        const eis = this._eisAt(x, z, traegerY + band, 2 * band, karte);
         const k = eis !== null && !(karte >= eis) ? eis : karte;
         if (!Number.isFinite(traegerY)) return Number.isFinite(k) ? k : NaN;
         if (!Number.isFinite(k)) return traegerY;

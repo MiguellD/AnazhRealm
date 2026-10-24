@@ -597,19 +597,46 @@ class AnazhRealm_wasser_hydro {
     }
 
     // DAS EIS (stoffe.K3): die feste Phase der EINEN Wasser-Wahrheit — der Spiegel am Körper (`_koerperWasser` über jedem
-    // Grund), dessen Wasser unter dem Gefrierpunkt liegt (`_temperaturAt` an seiner Höhe, mit der Trägheit des Wassers),
-    // trägt als Fläche: der Grund unter `y0` binnen `maxDist` (wie `_fieldSurfaceBelow`; ohne `y0` von oben), sonst null.
-    // Kein zweites Wasser: dieselbe Fläche, die das Auge sieht und durch die der Körper taucht, solange sie flüssig ist.
-    // Der billige Beweis zuerst (Lehre 25): ist das Wasser an `y0` warm, ist es jede Fläche darunter (die Luft kühlt mit
-    // der Höhe). Leser: der Grund jedes Körpers (`_koerperGrund`, `_koerperBodenUnter`) und die Sicht des Stands.
-    _eisAt(x, z, y0, maxDist) {
-        const TW = globalThis.__gelaendeCore.TEMPERATUR;
-        const gefroren = (y) => this._temperaturAt(y, TW.wasserTraegTage) < TW.gefrierpunkt;
+    // Grund) trägt als Fläche, wo das Bild tragendes Eis zeigt: über der Linie `voll` des Gesetzes (`_eisLinien`) an der
+    // Säule unter ihm (`_eisLinieBei`, dieselbe Deckung wie der Stoff, `_eisDeckung`). Rückgabe: der Grund unter `y0` binnen
+    // `maxDist` (wie `_fieldSurfaceBelow`; ohne `y0` von oben), sonst null. Kein zweites Wasser: dieselbe Fläche, die das Auge
+    // sieht und durch die der Körper taucht, solange sie offen ist.
+    // DIE BILLIGEN FILTER ZUERST (Lehre 25): unter der tiefsten tragenden Linie der Welt (`traegtAb`, die flachste Säule)
+    // trägt kein Wasser — im Sommer und an jedem Ort unter ihr zahlt der Leser einen Vergleich; dann die Obergrenze der
+    // Wahrheit (`_koerperWasser`), und nur, wo die Linie von der Säule abhängt, der Grund: der, den der Leser schon las
+    // (`grund`: die Karte des Stands, der Fels unter dem Körper, die Oberkante der Säule), sonst `_voxelSurfaceY`. Leser:
+    // der Grund jedes Körpers (`_koerperGrund`, `_koerperBodenUnter`), der Stand der Sicht (`_standSicht`), der Schritt-Klang.
+    _eisAt(x, z, y0, maxDist, grund) {
+        const E = this._eisLinien();
         const mitRef = Number.isFinite(y0);
-        if (mitRef && !gefroren(y0)) return null;
+        if (!(E.traegtAb < Infinity) || (mitRef && !(y0 >= E.traegtAb))) return null;
         const spiegel = this._koerperWasser(x, z, -Infinity);
-        if (!(spiegel > -Infinity) || (mitRef && !(spiegel <= y0 && y0 - spiegel <= maxDist))) return null;
-        return gefroren(spiegel) ? spiegel : null;
+        if (!(spiegel >= E.traegtAb) || (mitRef && !(spiegel <= y0 && y0 - spiegel <= maxDist))) return null;
+        if (spiegel >= E.voll[3]) return spiegel;
+        const g = Number.isFinite(grund) ? grund : this._voxelSurfaceY(x, z);
+        return g !== null && spiegel >= this._eisLinieBei(E.voll, spiegel - g) ? spiegel : null;
+    }
+
+    // Die Linie (`_eisLinien`: je Knoten der Säule eine Höhe) an der Säule `tiefe` — logarithmisch zwischen den Knoten
+    // (`EIS.saeule`, ein Teich und ein tiefer See liegen Faktoren auseinander), geklemmt an die Enden.
+    _eisLinieBei(linie, tiefe) {
+        const S = globalThis.__gelaendeCore.EIS.saeule;
+        const t = Math.max(0, Math.min(3, (3 * Math.log(Math.max(tiefe, S[0]) / S[0])) / Math.log(S[1] / S[0])));
+        const i = Math.min(2, Math.floor(t));
+        return linie[i] + (linie[i + 1] - linie[i]) * (t - i);
+    }
+
+    // DIE DECKUNG DES EISES (EIN Baustein für den Wasser-Stoff und den Fern-Ring): 0 offenes Wasser … 1 tragendes Eis an der
+    // Welt-Höhe `y` über der Säule `tiefe` — zwischen den Linien des Gesetzes (`U.eisNull`: das Eis beginnt, `U.eisVoll`: es
+    // trägt; je Knoten der Säule, interpoliert wie `_eisLinieBei`) wächst es stetig: das dünne Eis klar, das tragende deckend.
+    _eisDeckung(TSL, U, y, tiefe) {
+        const { float, vec4, clamp, abs, max, log, dot } = TSL;
+        const S = globalThis.__gelaendeCore.EIS.saeule;
+        const t = clamp(log(max(tiefe, float(S[0])).div(S[0])).mul(3 / Math.log(S[1] / S[0])), 0.0, 3.0);
+        const w = max(float(1.0).sub(abs(vec4(t).sub(vec4(0.0, 1.0, 2.0, 3.0)))), vec4(0.0));
+        const y0 = dot(U.eisNull, w);
+        const a = clamp(y.sub(y0).div(max(dot(U.eisVoll, w).sub(y0), float(1e-3))), 0.0, 1.0);
+        return a.mul(a).mul(float(3.0).sub(a.mul(2.0)));
     }
 
     // Der Spiegel am Körper (die Wahrheit ohne Gestalt) — nur `_koerperWasser` ruft ihn. Wo ein Chunk geladen ist, ist es das
@@ -653,9 +680,9 @@ class AnazhRealm_wasser_hydro {
     // DER BLICK DES WASSERS (K16, EIN Baustein für den Wasser-Stoff und den Fern-Ring): was die Fläche mit der Normale `n`
     // dem Auge `viewDir` zurückwirft, über dem Grund mit dem Durchlass `T` — der Körper im Licht des Orts (R∞ × E/π), soweit
     // er den Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Liefert { eigen, fres }.
-    // DAS EIS (stoffe.K3): über der Höhe, über der das Wasser gefriert (`o.eisNull`), ist die Fläche gefroren — deckend, ihr
-    // Körper der Schnee der Boden-Palette im Licht des Orts, der Himmel nach demselben Fresnel (n Eis 1,31 ≈ n Wasser 1,33);
-    // dieselbe Fläche trägt den Körper (`_eisAt`).
+    // DAS EIS (stoffe.K3): die Deckung `o.eis` (`_eisDeckung`) legt über das Wasser die gefrorene Fläche — deckend, ihr Körper
+    // der Schnee der Boden-Palette im Licht des Orts, der Himmel nach demselben Fresnel (n Eis 1,31 ≈ n Wasser 1,33); wo sie
+    // deckt, trägt dieselbe Fläche den Körper (`_eisAt`).
     _wasserBlick(TSL, WG, o) {
         const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step, mix } = TSL;
         const HG =
@@ -705,7 +732,7 @@ class AnazhRealm_wasser_hydro {
             .mul(float(1.0).sub(fres))
             .add(himmel.mul(fres))
             .add(glanz);
-        const eis = step(o.eisNull, o.ort.y);
+        const eis = o.eis;
         return {
             eigen: mix(eigen, mix(vec3(...AnazhRealm.BODEN_FARBE.schnee).mul(o.irr), himmel, fres), eis),
             fres: mix(fres, float(1.0), eis),

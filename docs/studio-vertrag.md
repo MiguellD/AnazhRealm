@@ -970,7 +970,9 @@ K16: Großform-Splines `grossform` an den Knoten `OFFSET_KNOTEN`/`RELIEF_KNOTEN`
 je Lage über `landformRegler` —, das Flussnetz mit den Kanten `NETZ_KANTE`, seinen Läufen `flussLaeufe` und seinen Senken als
 den benannten Seen `benannteSeen`, die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, der Mäander `MAEANDER`, das
 Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die Schneegrenze `SCHNEE`/`schnee`, die
-Temperatur `TEMPERATUR`/`temperatur` (stoffe.K3: Höhe × Saison × Uhr, mit der Trägheit eines Stoffs — das Eis liest sie), die
+Temperatur `TEMPERATUR`/`temperatur` (stoffe.K3: Höhe × Saison × Uhr; das Feld in Wellen `temperaturFeld`, mit der Trägheit
+eines Körpers, ausgewertet von `temperaturAus` — die Grillen lesen sie), das Eis `EIS`/`eisDicke` (stoffe.K3-2: die Dicke nach
+Stefan aus dem Wasserkörper `wasserKoerper` — Salz, Säule, Trägheit — und der Jahres-Welle des Felds), die
 Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DIE HYDROSPHÄRE (Karte hydro-faden): das
 Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, der gepackte Kanal `kanal` mit
 `KANAL_FELDER` Zahlen je Segment, Wasser-Feld; `H` das Gesetz des Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet
@@ -1003,6 +1005,6 @@ der Punkt `mitEdits`, das Gitter `editsImGitter`, die Reichweite `editReich` (Ed
 Gitters `bandOben`/`bandUnten`, das die Edits deckt (`bandUmEdits`); Stamm und voxel-worker rufen dieselben Funktionen.
 DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
 Geladen vom Stamm (vor `stamm/`), vom Terrain-Labor (vor `foundry-core.js`), vom voxel-worker (`importScripts` mit `?v=`),
-vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, das Eis `temperatur`, der Feld-Zeichner und der Fern-Ring `hoehe`, die
+vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, das Bild und der Körper `eisDicke`, der Feld-Zeichner und der Fern-Ring `hoehe`, die
 Zahl-Leiste und die Gelände-Wände `MESSUNG`); die Zwillings-Wand in `gate:altlasten` sucht sie als Muster in jeder
 Wurzel-Datei und jedem Skript.
