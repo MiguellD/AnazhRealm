@@ -77,11 +77,8 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getUpdateType(){return this.updateType}", organ: "AnazhRealm._diaetGeteiltSchreiben (Knoten-Takt render/frame/object)" },
     { file: "vendor/three.webgpu.min.js", sub: "_update(e,t){const{backend:r}=this;let s=!1,i=!0,n=0,a=0;for(const t of e.bindings){if(!1!==this.nodes.updateGroup(t)){", organ: "AnazhRealm._diaetGeteiltSchreiben (rend._bindings._update je Gruppe)" },
     { file: "vendor/three.webgpu.min.js", sub: "getBindings(){return this._bindings||(this._bindings=this.getNodeBuilderState().createBindings())}", organ: "AnazhRealm._diaetGeteiltSchreiben (ro.getBindings)" },
-    // DER WERT-BLICK: die render-Gruppe lädt wie `_update` (je Uniform updateByType), der Wert einer Uniform ist der ihres Knotens
-    { file: "vendor/three.webgpu.min.js", sub: "for(const t of this.uniforms)!0===this.updateByType(t)&&(e=!0)", organ: "_diaetGruppeLaden" },
+    // DIE GRUPPE MIT FELD-PUFFER (_diaetGruppeLaden): der Vendor-Körper je Puffer, der Feld-Puffer lädt r184 immer ganz
     { file: "vendor/three.webgpu.min.js", sub: "t.update()&&r.updateBinding(t)", organ: "_diaetGruppeLaden" },
-    { file: "vendor/three.webgpu.min.js", sub: "getValue(){return this.nodeUniform.value}", organ: "_wertBlick" },
-    { file: "vendor/three.webgpu.min.js", sub: "this.node=r}get value(){return this.node.value}", organ: "_wertBlick" },
     { file: "vendor/three.webgpu.min.js", sub: "get buffer(){return this._buffer}update(){return!0}", organ: "_diaetGruppeLaden (Feld-Puffer)" },
     { file: "vendor/three.webgpu.min.js", sub: "get buffer(){return this.nodeUniform.value}", organ: "_diaetGruppeLaden (Feld-Puffer)" },
     { file: "vendor/three.webgpu.min.js", sub: "this.updateNodes=n,this.updateBeforeNodes=a,this.updateAfterNodes=o,this.observer=u", organ: "AnazhRealm._diaetRefresh (NodeBuilderState: updateNodes · updateAfterNodes · observer) · Diät (6) Vorher-Textur-Wächter (die Vorher-Knoten am NodeBuilderState)" },

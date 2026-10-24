@@ -106,13 +106,6 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         const typ = n.getUpdateType();
         if (typ !== "object") (jeZeichen(n, typ) ? eigenKnoten : knoten).push(n);
     }
-    // der Wert-Blick: ein Vorher-Knoten je Zeichen-Objekt oder ein Knoten je Zeichen-Objekt, dessen Uniform nicht in einer
-    // eigenen Gruppe liegt, stellt geteilte Werte je Objekt — sein Gang hebt die Epoche
-    const eigenStellt =
-        eigenVor.length > 0 ||
-        eigenKnoten.some(
-            (n) => !(n.node && n.node.isUniformNode === true && n.node.groupNode && n.node.groupNode.shared !== true)
-        );
     const gruppen = [];
     for (const g of ro.getBindings()) {
         const b0 = g.bindings && g.bindings[0];
@@ -222,8 +215,21 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         stoffUniform,
         stoffLiest,
         objektVoll,
-        eigenStellt,
+        satz: AnazhRealm._diaetSatz(knoten, (n) => n.id),
+        fremdSatz: AnazhRealm._diaetSatz(fremd, (n) => n.node.id),
     };
+};
+// DER SATZ (E-Bauart, 24.10.): die Programme eines Bilds tragen dieselben render-/frame-Knoten (Kamera · Lichter · Zeit) und
+// dieselben fremden Verweise — der Gang ging sie je Programm Stempel für Stempel durch (Radeon, Genesis Third, Stand, Kopf
+// 9768286c: 57 Gänge je Bild, ~26 Einträge je Gang; der Gang ohne Laden und Melder 0,6 von 7,4 ms Szene unter Fremdlast). Jetzt
+// trägt jede gleiche Liste EINEN Satz mit EINEM Stempel je Render-Abschnitt; ein Satz, der im Abschnitt schon ging, fällt ganz
+// (jeder seiner Knoten trägt dann denselben Stempel). Die Tafel hält ihre Sätze schwach (ein gefallenes Programm hält nichts).
+AnazhRealm._diaetSatz = function (liste, id) {
+    const T = AnazhRealm._diaetSaetze || (AnazhRealm._diaetSaetze = new Map());
+    const k = liste.map(id).join(",");
+    let s = T.has(k) ? T.get(k).deref() : undefined;
+    if (!s) T.set(k, new WeakRef((s = { liste, rid: -1, ruf: -1 })));
+    return s;
 };
 // DAS REGISTER DER REGUNG (E-Bauart, 21.10.): die Diät HÖRT, statt jedes Render-Objekt in jedem Pass zu fragen. Bis hier ging jede
 // Prüfung alles durch, was sich ändern KÖNNTE (Instanz · Geometrie · Texturen · freie Uniforms · Lage · Stoff; ~85 Prüfungen je
@@ -432,7 +438,7 @@ AnazhRealm._diaetStoffBlick = function (md, stoff, rid) {
     }
 };
 // DER WERT-STAND: die Zahlen eines Uniform-Werts in einen Stand `w` (`w.z` ab `w.i`, `w.anders` hebt jeder Wechsel) — die EINE
-// Abflachung für den Wert-Blick und die Verweise (Zahl · Wahrheit · Textur Id+Version · Matrix · Farbe · Vektor, sonst
+// Abflachung für den Programm-Melder und die Verweise (Zahl · Wahrheit · Textur Id+Version · Matrix · Farbe · Vektor, sonst
 // die Identität).
 AnazhRealm._diaetZahl = function (w, x) {
     if (w.z[w.i] !== x) {
@@ -459,61 +465,23 @@ AnazhRealm._diaetWert = function (w, v) {
         z(w, v.w === undefined ? 0 : v.w);
     } else z(w, v);
 };
-// DER WERT-BLICK (E-Bauart, 24.10.): r184 fragt jeden Wert JEDES Programms — beim Laden einer render-Gruppe jede Uniform gegen
-// ihren Puffer (`Bindings._update` → `UniformsGroup.update` → updateByType), dazu verglich der Programm-Melder je Programm
-// seine Texturen: am Kopf 9768286c (Radeon, Genesis Third, Stand) 29 render-Gruppen mit 1 752 Uniforms und 356 Texturen je
-// Bild, in jeder Gruppe dieselben Kamera-, Licht- und Schatten-Knoten. Jetzt blickt jeder KNOTEN EINMAL je Abschnitt (Render-Id ·
-// `info.calls` · Wert-Epoche) und meldet einen Wechsel an sich selbst (`_anazhWertR`, die Zahl `_wertN`); Gruppe und Programm
-// gehen nur die Gemeldeten. Im Abschnitt stellt ein Knoten seinen Wert im Gang seines Programms, bevor eine Gruppe ihn lädt
-// (wer die Uniform trägt, trägt ihren Knoten); was darüber hinaus Werte stellen kann — ein Vorher-Knoten, ein Voll-Refresh über
-// die Vendor-Bahn — hebt die Epoche, und jeder Knoten blickt neu.
-AnazhRealm._wertN = 0;
-AnazhRealm._wertEpoche = 0;
-AnazhRealm._wertBlick = function (n, rid, ruf) {
-    const ep = AnazhRealm._wertEpoche;
-    if (n._anazhBlickRid === rid && n._anazhBlickRuf === ruf && n._anazhBlickEp === ep) return;
-    n._anazhBlickRid = rid;
-    n._anazhBlickRuf = ruf;
-    n._anazhBlickEp = ep;
-    const w = n._anazhWertW || (n._anazhWertW = { z: [], i: 0, anders: false });
-    w.i = 0;
-    w.anders = false;
-    AnazhRealm._diaetWert(w, n.value);
-    if (w.anders) n._anazhWertR = ++AnazhRealm._wertN;
-};
-// DIE GETEILTE GRUPPE LÄDT DIE GEMELDETEN: derselbe Vendor-Vergleich (updateByType, ein Upload je geändertem Puffer, die
-// Bereiche danach leer — r184 `_update` + `UniformsGroup.update`), nur für die Uniforms, deren Knoten sich seit dem letzten Laden
-// der Gruppe meldete (beim ersten Mal jede), einen Feld-Puffer, wenn sich ein Byte seit seinem letzten Laden änderte. Eine Gruppe
-// außerhalb des render-Takts, mit Texturen, Samplern oder Speicher-Puffern lädt der Vendor.
-AnazhRealm._diaetGruppeLaden = function (rend, g, alle, rid, ruf) {
-    if (g._anazhWertArt === undefined)
-        g._anazhWertArt = g.bindings.every(
-            (b) =>
-                (b.isNodeUniformsGroup === true || b.isNodeUniformBuffer === true) &&
-                b.groupNode.updateType === "render" &&
-                (b.isNodeUniformBuffer === true ||
-                    b.uniforms.every(
-                        (u) =>
-                            u.nodeUniform &&
-                            u.nodeUniform.node &&
-                            (u.isNumberUniform ||
-                                u.isVector2Uniform ||
-                                u.isVector3Uniform ||
-                                u.isVector4Uniform ||
-                                u.isColorUniform ||
-                                u.isMatrix3Uniform ||
-                                u.isMatrix4Uniform) === true
-                    ))
-        );
-    if (g._anazhWertArt !== true) {
-        rend._bindings._update(g, alle);
-        return;
-    }
-    const r = g._anazhWertR === undefined ? -1 : g._anazhWertR;
-    const ep = AnazhRealm._wertEpoche;
+// DIE GETEILTE GRUPPE MIT FELD-PUFFER (E-Bauart, 24.10.): r184 lädt einen Feld-Puffer (`uniformArray`, ein Verweis auf ein Feld —
+// die Kaskaden der CSM, `reference('_cascades')` je Empfänger) bei jedem Laden seiner Gruppe ganz hoch (`Buffer.update` ist immer
+// wahr): am Kopf 9768286c (Radeon, Genesis Third, Stand) 18 Kaskaden-Puffer je Bild, 17,6 davon Byte für Byte unverändert. Jetzt
+// lädt er, wenn sich ein Byte seit seinem letzten Laden änderte; jede andere Bindung der Gruppe geht den Vendor-Körper (`_update`:
+// die Versions-Wand, `update` → `updateBinding`, die Bereiche danach leer). Gruppen mit Texturen, Samplern oder Speicher-Puffern
+// lädt der Vendor ganz.
+AnazhRealm._diaetGruppeLaden = function (rend, g, alle) {
+    if (g._anazhFeld === undefined)
+        g._anazhFeld =
+            g.bindings.some((b) => b.isNodeUniformBuffer === true) &&
+            g.bindings.every((b) => b.isUniformBuffer === true);
+    if (g._anazhFeld !== true) return rend._bindings._update(g, alle);
     for (const b of g.bindings) {
-        if (b.isNodeUniformBuffer === true) {
-            // r184 lädt einen Feld-Puffer (uniformArray, ein Verweis auf ein Feld) in jedem Render ganz: `Buffer.update` ist wahr
+        if (rend._bindings.nodes.updateGroup(b) === false) continue;
+        if (b.isNodeUniformBuffer !== true) {
+            if (b.update()) rend.backend.updateBinding(b);
+        } else {
             const q = b.buffer;
             let s = b._anazhSicht;
             if (!s || s.buffer !== q.buffer || s.byteOffset !== q.byteOffset || s.length !== q.byteLength)
@@ -525,40 +493,27 @@ AnazhRealm._diaetGruppeLaden = function (rend, g, alle, rid, ruf) {
                 rend.backend.updateBinding(b);
                 b._anazhKopie = s.slice();
             }
-            if (b.updateRanges.length > 0) b.clearUpdateRanges();
-            continue;
         }
-        let neu = false;
-        for (const u of b.uniforms) {
-            const n = u.nodeUniform.node;
-            if (n._anazhBlickEp !== ep || n._anazhBlickRuf !== ruf || n._anazhBlickRid !== rid)
-                AnazhRealm._wertBlick(n, rid, ruf);
-            if (n._anazhWertR > r && b.updateByType(u) === true) neu = true;
-        }
-        if (neu) rend.backend.updateBinding(b);
         if (b.updateRanges.length > 0) b.clearUpdateRanges();
     }
-    g._anazhWertR = AnazhRealm._wertN;
 };
-// DER PROGRAMM-MELDER: die Texturen (6) und die freien Uniforms (9) eines Programms melden sich nicht — der Gang fragt EINMAL je
-// Programm und Render ihren Wert-Blick und meldet einen Wechsel seit seinem letzten Gang am Programm: `_anazhTexR` ·
-// `_anazhFreiR`, an denen jedes Render-Objekt seinen Verbrauch misst (`_diaetVorTextur`, `_diaetFreiAnders`).
-AnazhRealm._diaetProgrammMelder = function (nbs, k, rid, ruf) {
+// DER PROGRAMM-MELDER: die Texturen (6) und die freien Uniforms (9) eines Programms melden sich nicht — der Gang vergleicht sie
+// EINMAL je Programm und Render (alle Render-Objekte des Programms binden dieselben Knoten) und meldet den Wechsel am Programm:
+// `_anazhTexR` · `_anazhFreiR`, an denen jedes Render-Objekt seinen Verbrauch misst (`_diaetVorTextur`, `_diaetFreiAnders`).
+AnazhRealm._diaetProgrammMelder = function (nbs, k) {
     if (k.texturen.length === 0 && k.frei.length === 0) return;
-    const r = k.wertR === undefined ? -1 : k.wertR;
-    let tex = false,
-        frei = false;
+    const w = k.stand || (k.stand = { z: [], i: 0, anders: false });
+    w.i = 0;
+    w.anders = false;
     for (const n of k.texturen) {
-        AnazhRealm._wertBlick(n, rid, ruf);
-        if (n._anazhWertR > r) tex = true;
+        const t = n.value;
+        AnazhRealm._diaetZahl(w, t ? t.id : -1);
+        AnazhRealm._diaetZahl(w, t ? t.version : -1);
     }
-    for (const u of k.frei) {
-        AnazhRealm._wertBlick(u.nodeUniform.node, rid, ruf);
-        if (u.nodeUniform.node._anazhWertR > r) frei = true;
-    }
-    k.wertR = AnazhRealm._wertN;
-    if (tex) nbs._anazhTexR = AnazhRealm._regt(nbs);
-    if (frei) nbs._anazhFreiR = AnazhRealm._regt(nbs);
+    if (w.anders) nbs._anazhTexR = AnazhRealm._regt(nbs);
+    w.anders = false;
+    for (const u of k.frei) AnazhRealm._diaetWert(w, u.getValue());
+    if (w.anders) nbs._anazhFreiR = AnazhRealm._regt(nbs);
 };
 // (11) DER OBJEKT-GANG (E1, Lehre 25): ein Objekt, das sich bewegt (Welt-Matrix), atmet (ein Objekt-Verweis) oder Knochen
 // trägt, ändert nur seine EIGENEN Werte — die geteilten stellt der Gang je Render (`_diaetGeteiltSchreiben`). Bis E1 frischte
@@ -572,7 +527,6 @@ AnazhRealm._diaetProgrammMelder = function (nbs, k, rid, ruf) {
 AnazhRealm._diaetObjektGang = function (rend, ro, k, voll) {
     const nf = rend._nodes.getNodeFrameForRender(ro);
     for (const n of k.eigenVor) nf.updateBeforeNode(n);
-    if (k.eigenStellt) AnazhRealm._wertEpoche++;
     const alle = ro.getBindings();
     if (voll === true || k.objektVoll === true) {
         for (const n of k.objekt) nf.updateNode(n);
@@ -630,47 +584,54 @@ AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
     // gate:kamera-treue ÄNDERUNG 0,10 statt 1). Der Stempel ist der RENDER-ABSCHNITT (rid, `rend.info.calls`, s. (5)):
     // ein Vorher-Knoten trägt den Abschnitt NACH seinem Ruf (der Render, den er verschachtelt, ist dann vorbei), Knoten
     // und Gruppen den Abschnitt nach allen Vorher-Knoten.
-    // Ein Vorher-Knoten und ein Knoten je Zeichen-Objekt dürfen Werte stellen, die schon geblickt sind: sie heben die Epoche.
     let nf = null;
     for (const n of k.vor) {
         if (n._anazhVorRid === rid && n._anazhVorRuf === rend.info.calls) continue;
         rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);
         n._anazhVorRid = rid;
         n._anazhVorRuf = rend.info.calls;
-        AnazhRealm._wertEpoche++;
     }
     for (const n of k.eigenVor) rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);
     const ruf = rend.info.calls;
-    for (const n of k.knoten) {
-        if (n._anazhRid === rid && n._anazhRuf === ruf) continue;
-        n._anazhRid = rid;
-        n._anazhRuf = ruf;
-        (nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateNode(n);
+    const satz = k.satz;
+    if (satz.rid !== rid || satz.ruf !== ruf) {
+        satz.rid = rid;
+        satz.ruf = ruf;
+        for (const n of satz.liste) {
+            if (n._anazhRid === rid && n._anazhRuf === ruf) continue;
+            n._anazhRid = rid;
+            n._anazhRuf = ruf;
+            (nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateNode(n);
+        }
     }
     if (k.eigenKnoten.length) {
         nf = nf || rend._nodes.getNodeFrameForRender(ro);
         for (const n of k.eigenKnoten) nf.updateNode(n);
     }
-    if (k.eigenStellt) AnazhRealm._wertEpoche++;
     // (12) DER FREMDE VERWEIS (E-Diät, s. (11)): EIN Wert je Render-Abschnitt, gestempelt an seiner geteilten Uniform (jedes
     // Programm trägt seinen eigenen Verweis-Knoten auf dieselbe Uniform) — vor den Gruppen, die sie laden. `_schattenBias` und
     // die Kaskaden-Karten setzen bias · normalBias · mapSize zur Laufzeit: der Wert folgt im nächsten Abschnitt.
-    for (const n of k.fremd) {
-        const u = n.node;
-        if (u._anazhFremdRid === rid && u._anazhFremdRuf === ruf) continue;
-        u._anazhFremdRid = rid;
-        u._anazhFremdRuf = ruf;
-        (nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateNode(n);
+    const fremdSatz = k.fremdSatz;
+    if (fremdSatz.rid !== rid || fremdSatz.ruf !== ruf) {
+        fremdSatz.rid = rid;
+        fremdSatz.ruf = ruf;
+        for (const n of fremdSatz.liste) {
+            const u = n.node;
+            if (u._anazhFremdRid === rid && u._anazhFremdRuf === ruf) continue;
+            u._anazhFremdRid = rid;
+            u._anazhFremdRuf = ruf;
+            (nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateNode(n);
+        }
     }
     let alle = null;
     for (const g of k.gruppen) {
         if (g._anazhRid === rid && g._anazhRuf === ruf) continue;
         g._anazhRid = rid;
         g._anazhRuf = ruf;
-        AnazhRealm._diaetGruppeLaden(rend, g, alle || (alle = ro.getBindings()), rid, ruf);
+        AnazhRealm._diaetGruppeLaden(rend, g, alle || (alle = ro.getBindings()));
     }
     // DAS REGISTER: der Gang meldet, was sich am Programm ohne Melder änderte (Texturen nach den Vorher-Knoten, freie Uniforms)
-    AnazhRealm._diaetProgrammMelder(nbs, k, rid, ruf);
+    AnazhRealm._diaetProgrammMelder(nbs, k);
 };
 // (8) GETRAGEN (K71): trägt die GPU die Version dieses Attributs schon? r184 lädt ein Attribut EINMAL je Version für alle
 // Render-Objekte (`Attributes.update`: Daten je Attribut-Objekt, `version` die hochgeladene) — hat ein anderer Pass es
@@ -698,11 +659,7 @@ AnazhRealm._diaetStoffVerpasst = function (od, stoff, md, vorR, rid, liest, v) {
         AnazhRealm._regt(stoff);
     }
     if (!v && liest && stoff && stoff._anazhStoffR > (od._anazhVollR === undefined ? -1 : od._anazhVollR)) v = true;
-    // der Voll-Refresh stellt danach über die Vendor-Bahn jeden Knoten seines Programms: eine Wert-Epoche
-    if (v) {
-        od._anazhVollR = rid;
-        AnazhRealm._wertEpoche++;
-    }
+    if (v) od._anazhVollR = rid;
     return v;
 };
 AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
