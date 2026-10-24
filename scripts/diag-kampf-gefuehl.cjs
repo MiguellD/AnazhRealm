@@ -9,7 +9,7 @@
 // Die Leben-Prüfung „Kampf" (WELLE_L, scripts/lib/kampf-proben.cjs) spielt wie ein Mensch — das Fadenkreuz durch die echte
 // Kamera, der Klick über den EINEN Dispatcher, gezählt nur mitlaufend: Q8 Treffer · Q9 Maus · Q10 Blick · Q11 das Gesetz
 // des Haltens · Q12 der ballistische Bogen · G3/T12 das Grob-Tor · T13–T27 die Posten der Leben-Schau; die Selbst-Tests
-// S3–S14 feuern je an ihrer Naht, jede Naht restauriert. Aufruf: node scripts/diag-kampf-gefuehl.cjs
+// S3–S16 feuern je an ihrer Naht, jede Naht restauriert. Aufruf: node scripts/diag-kampf-gefuehl.cjs
 const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 // Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
