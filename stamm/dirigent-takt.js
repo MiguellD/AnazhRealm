@@ -8,6 +8,28 @@ class AnazhRealm_dirigent_takt {
             // undefined → NaN in delta/frameMs vergiftet die frameMs-EWMA für immer (der Regler säße still im
             // Totband). Bewacht von `gate:regler-sim`.
             const t = Number.isFinite(time) ? time : performance.now();
+            // DER GEHALTENE TAKT (E-Bauart, 24.10.; die Phase des Takts, B3): sind GPU_FRAMES_IM_FLUG Bilder unterwegs und
+            // lädt die Welt nicht, zeichnet dieser Takt kein Bild — und ist seit dem letzten Rechnen der Welt kein Schritt ihrer
+            // Sim verstrichen (`FIXED_DT`), rechnet er sie nicht: was er rechnete, zeigte erst das nächste Bild. Er trägt nur das
+            // Netz, das dem Mitspieler gehört (K60), und lässt die Wanduhr stehen (`lastTime`): der nächste Takt rechnet die Welt
+            // EINMAL über die ganze Spanne (Eingabe, Spiel-Takt, Fix-Schritt, Strom, Laden). Die Bewegung folgt der Wanduhr, nie
+            // dem Render-Signal (Lehre 13): die Welt rechnet mindestens im Schritt ihrer Sim, wie langsam die GPU auch zeichnet,
+            // und ein 120-Hz-Schirm über einer 60-fps-GPU rechnet wie ein 60-Hz-Schirm. Bis hier rechnete jeder gehaltene Takt die
+            // ganze Welt (Radeon, Genesis Third, Stand, Kopf 8e6f2ce0: 1 141 gehaltene Takte zu 1,59 ms neben 1 213 zeichnenden,
+            // die Belegung je Bild trug sie mit).
+            if (
+                !this._portalOverlay &&
+                t - lastTime < AnazhRealm.FIXED_DT * 1000 &&
+                this._gpuLeineStraff() &&
+                !this._ladeTakt()
+            ) {
+                try {
+                    this.p2pTick(performance.now());
+                } catch (err) {
+                    this._loopErrorBoundary(err);
+                }
+                return;
+            }
             // DIE WANDUHR UND DER SPIEL-TAKT (K21, Lehre 13): EINE Obergrenze des Takts, HIER an der Wurzel. Eine Pause
             // (versteckter Tab, Debugger, Lade-Stau) ist eine Pause — die Welt läuft danach mit höchstens EINEM Schritt
             // von `TAKT_DECKEL_S` weiter (vorher trug der ungedeckelte Takt jedes laufende Tier um Tempo × Pause: 73 m bis
@@ -264,9 +286,9 @@ class AnazhRealm_dirigent_takt {
                 // VOR dem Render: entscheiden, ob die Schatten-Map neu muss (im Stand gecacht). Eine erste Zeichnung baut
                 // verteilt und kompiliert asynchron (die Erst-Zeichnung, `_configureRenderer`) — kein Vorwärmen.
                 this._kernPflichtWand();
-                // DIE GPU-LEINE: sind schon GPU_FRAMES_IM_FLUG Frames unterwegs, schickt dieser Takt nichts an die GPU
-                // (Simulation, Eingabe und Streaming laufen weiter) — sonst lief die CPU der GPU davon (`bild`, die Phase
-                // des Takts oben).
+                // DIE GPU-LEINE: sind schon GPU_FRAMES_IM_FLUG Frames unterwegs, schickt dieser Takt nichts an die GPU — sonst
+                // lief die CPU der GPU davon (`bild`, die Phase des Takts oben; ein gespielter Takt kehrt dann schon am Eingang
+                // um, der gehaltene Takt).
                 if (bild) {
                     _pt = performance.now();
                     this._loopShadowUpdate();
