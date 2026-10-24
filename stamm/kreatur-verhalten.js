@@ -1379,7 +1379,9 @@ class AnazhRealm_kreatur_verhalten {
         ud._wasserlinie = tb && tb.bein ? tb.bein[0].h * (creature.scale.x || 1) : W.schwimmTiefeM;
         if (!Number.isFinite(boden)) return null;
         const spiegel = this._koerperWasser(creature.position.x, creature.position.z, boden);
-        return spiegel - boden > Math.max(W.schwimmTiefeM, ud._wasserlinie) && this._leibGetragen(false) ? spiegel : null;
+        return spiegel - boden > Math.max(W.schwimmTiefeM, ud._wasserlinie) && this._leibGetragen(false)
+            ? spiegel
+            : null;
     }
     // DIE SCHWIMM-LINIE: die Sohle eines schwimmenden Leibs hängt um seine Wasserlinie unter dem Spiegel (das Paddeln trägt
     // der Gang, MOTION.schwimmen) — Leser: der Frame-Takt und der Stoß-Schritt (beide ohne Welle).

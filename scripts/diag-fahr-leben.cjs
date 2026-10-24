@@ -501,7 +501,7 @@ function koerperVerdict(k) {
     if (!k || k.err || !k.vor || !k.nach) return { s1: [`keine Probe (${k && k.err})`], s2: ["keine Probe"] };
     const [V, N, s1, s2] = [k.vor, k.nach, [], []];
     const nie = (b, out, t) => b || out.push(t);
-    nie(k.mutiert > 0, s1, "die Mutation fasste nichts");
+    nie(k.mutiert > 0, s1, "keine Mutation");
     const traegt = (x) => (x.anteil >= 0 ? x.anteil < 1 : x.traegt);
     const koerper = (n, out, wasser, lab) => {
         const [a, b] = [V[n], N[n]];
@@ -521,7 +521,7 @@ function koerperVerdict(k) {
     nie(sp.kg >= 60 && sp.kg <= 90, s1, `Mensch ${sp.kg} kg außer 60–90`);
     nie(wa.kg >= 1100 && wa.kg <= 1600, s1, `Wagen ${wa.kg} kg außer 1100–1600`);
     nie(wa.rho === k.rhoBlech, s1, `wagen: liegt nach ${wa.rho}, nicht nach ρ(blech)`);
-    nie(N.wagen && Math.abs((2 * N.wagen.wasserK) / wa.wasserK - 1) <= K1.m, s1, "wagen: Wasser-Term mit eigener Masse");
+    nie(N.wagen && Math.abs((2 * N.wagen.wasserK) / wa.wasserK - 1) <= K1.m, s1, "wagen: Wasser-Term");
     for (const M of [V, N]) {
         const q = M.stoss || {};
         nie(q.J > 0 && Math.abs((q.dvA / q.dvB) * (M.spieler.kg / M.wolf.kg) - 1) <= K1.dv, s1, "Stoß: Δv ≠ Massen-Verhältnis");
@@ -543,7 +543,7 @@ function koerperBericht(k) {
     const [h, w, q] = [V.holz || {}, V.wagen || {}, V.stoss || {}];
     const zahl = [
         ["spieler", "wolf", "wagen"].map(z).join(" · ") +
-            ` · Labor Mensch ${(+k.labMensch).toFixed(1)}, Wolf ${k.refKg}, Wagen ${(+w.kernKg).toFixed(0)} kg · Brustkorb ${(+k.brustM).toFixed(2)} m · Δv Spieler/Wolf ${(q.dvA / q.dvB).toFixed(3)}`,
+            ` · Labor Mensch ${(+k.labMensch).toFixed(1)}, Wolf ${k.refKg}, Wagen ${(+w.kernKg).toFixed(0)} kg · Brustkorb ${(+k.brustM).toFixed(2)} m · Δv ${(q.dvA / q.dvB).toFixed(3)}`,
         ["holz", "stein", "geschmiedet", "lose"].map(z).join(" · ") +
             ` · Holz ${(h.tief / h.H).toFixed(3)} der Höhe (ρ/ρw ${(h.rho / k.rhoW).toFixed(2)}) · Labor Keule ${(+(V.geschmiedet || {}).labKg).toFixed(3)} kg`,
     ];
