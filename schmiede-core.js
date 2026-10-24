@@ -2788,10 +2788,7 @@
         const wBase = cl((0.024 * Z) / bm.E + 0.012, 0.018, 0.058); // Breite aus Zugkraft ÷ Steifigkeit
         const draw = 0.3 + A * 0.62;
         const zugN = Z * 320; // Zugkraft = Ziel, in Newton
-        const curveF = 1.0 + recurve * 0.26; // Recurve lädt die Kraft-Weg-Kurve vorn
-        const stored = 0.5 * zugN * draw * curveF; // gespeicherte Energie [J] = Fläche unter Kraft-Weg
-        const eta = 0.46 + recurve * 0.2; // Wirkungsgrad
-        const energie = stored * eta; // Pfeilenergie [J] — SI, kein Fudge, gegen Stretton 114J geeicht
+        const { stored, eta, energie } = bogenArbeit(zugN, draw, recurve);
         return {
             limbLen,
             recurve,
@@ -2805,6 +2802,14 @@
             eta,
             bogenMat: t.material,
         };
+    }
+    // DIE ARBEIT DES BOGENS aus seiner Form (halten.K3, aus ableitenBogen gehoben, byte-gleich): Zugkraft zugN über den Auszug
+    // draw, die Recurve lädt die Kurve vorn und hebt den Wirkungsgrad — bogenEnergie liest sie an der präparierten Gestalt.
+    function bogenArbeit(zugN, draw, recurve) {
+        const curveF = 1.0 + recurve * 0.26; // Recurve lädt die Kraft-Weg-Kurve vorn
+        const stored = 0.5 * zugN * draw * curveF; // gespeicherte Energie [J] = Fläche unter Kraft-Weg
+        const eta = 0.46 + recurve * 0.2; // Wirkungsgrad
+        return { stored, eta, energie: stored * eta }; // Pfeilenergie [J] — SI, kein Fudge, gegen Stretton 114J geeicht
     }
     // Aufgabe → Form: füllt die Form-Parameter aus der Aufgabe (vor snapBases). Gattung = Aufgabe, Form folgt.
     function applyTask(P) {
@@ -3412,6 +3417,24 @@
         return !!front && (front.art === "blatt" || (front.art === "stoss" && front.rKontaktM < ARENA.werk.buendelM));
     }
 
+    // DER STOFF DES WERKS (halten.K3 Staffel 2, additiv): woraus der Teil ist, der am Ziel arbeitet und sich abnutzt — der
+    // Werkstoff der Gestalt (Klinge, Kopf, Blatt: Tradition × Aufgabe), die Keule ihr Holz (headModel wiegt ihren Kopf mit
+    // RHO.holz), der Bogen sein Wurfarm aus Holz (buildBogen). Der Wirt liest die Zeile dieses Stoffs. null = kein Rezept.
+    function werkStoff(rezeptId, ov) {
+        var tp = prepP(rezeptId, ov);
+        if (!tp) return null;
+        if (tp.modus === "bogen" || tp.kopfTyp === "keule") return "holz";
+        return (tp.task && tp.task.werkstoff) || tp.werkstoff || "stahl";
+    }
+
+    // DIE PFEIL-ENERGIE EINES BOGENS (halten.K3 Staffel 2, additiv): die Arbeit seiner präparierten Gestalt samt Prägung —
+    // dieselbe Zahl wie ableitenBogen(task).energie, solange die Form die Aufgabe trägt; eine umgeformte Recurve, ein anderer
+    // Auszug schießen nach der neuen Form. null = kein Bogen.
+    function bogenEnergie(rezeptId, ov) {
+        var tp = prepP(rezeptId, ov);
+        return tp && tp.modus === "bogen" ? bogenArbeit(tp.zugN, tp.draw, tp.recurve).energie : null;
+    }
+
     // DER ZIEL-STOFF eines Dings in der Welt: der häufigste seiner Stoffe mit eigener Zeile in ZIELMAT (stoffe = {Name:
     // Anzahl}); trägt keiner eine Zeile, die Zeile der nächsten Härte (haerte = die Härte der Welt, 0..1).
     function zielStoff(stoffe, haerte) {
@@ -3605,6 +3628,8 @@
         trefferUrteil: trefferUrteil,
         werkUrteil: werkUrteil,
         oeffnetBoden: oeffnetBoden,
+        werkStoff: werkStoff,
+        bogenEnergie: bogenEnergie,
         zielStoff: zielStoff,
         metallRho: metallRho,
         PFEIL: PFEIL,
@@ -3625,7 +3650,7 @@
         // matHaerte/matResilienz/pobZiel waren ganz tot und fielen mit
         // (Def + Export in EINER Welle). buildInstance ist byte-unberuehrt
         // (Goldens gate:asset-contract gruen — kein Re-Mint noetig).
-        // BOGENMAT + ableitenBogen LEBEN seit V18.488 im Wirt.
+        // BOGENMAT + ableitenBogen LEBEN seit V18.488 im Wirt (der Schuss seit halten.K3 über bogenEnergie, die Gestalt).
         BANDS: BANDS,
         bandFor: bandFor,
         measure: measure,

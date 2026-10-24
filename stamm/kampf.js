@@ -963,17 +963,18 @@ class AnazhRealm_kampf {
             Number.isFinite(A.minAuszugFrac) ? A.minAuszugFrac : 1,
             Math.min(1, A.auszugSec > 0 ? held / A.auszugSec : 1)
         );
-        this._beginPlayerShot(rec, frac);
+        this._beginPlayerShot(frac);
     }
 
     // Klick = EIN Pfeil. Spann-Cooldown = _playerSwingDauer (∝ √I, die EINE Quelle). DIE EINE SCHUSS-PHYSIK (Welle L,
-    // K-D8): E = ableitenBogen(task).energie — die Pfeil-Energie des Studios (SI, gegen Stretton 114 J geeicht),
+    // K-D8): E = bogenEnergie(Gestalt, Prägung) — die Pfeil-Energie des Studios aus der Form des gehaltenen Bogens (SI, gegen
+    // Stretton 114 J geeicht; halten.K3: vorher die Aufgabe des Rezepts beim Namen, eine umgeformte Recurve schoss gleich),
     // v0 = √(2·E/mArrow) × Auszug; die Welt-Eichung zugJouleRef (28,9 J·zug·aus, 25–41 % der Studio-Energie) ist
     // GEFALLEN. Richtung = vom Mündungs-Punkt auf den Fadenkreuz-Punkt (_blickZiel — 1st und 3rd zielen durch
     // dieselbe Kamera). Deterministisch; Stamina + Affekt wie der Hieb. Der Bogen ist eine geführte Waffe wie die Klinge
     // (Welle L, K-D6): dieselbe Werkzeug-Wand, der Pfeil trägt die Kraft der Führung (_kampfKraft, mit Verschleiß) in
     // das EINE Roh-Schaden-Gesetz, und jeder Schuss zehrt den Bogen (_kampfVerschleiss).
-    _beginPlayerShot(rec, drawFrac) {
+    _beginPlayerShot(drawFrac) {
         const p = this.state.player;
         const pm = this.state.playerMesh;
         if (!p || !pm) return false;
@@ -987,19 +988,13 @@ class AnazhRealm_kampf {
         this._consumeMouseStamina();
         const heldName = p.equipped && p.equipped.held;
         this._feelAction("attack", heldName ? { blueprint: heldName } : undefined);
-        const task = rec && rec.fx && rec.fx.task ? rec.fx.task : null;
-        const zug = task && Number.isFinite(task.zugkraft) && task.zugkraft > 0 ? task.zugkraft : 1;
-        const aus = task && Number.isFinite(task.auszug) && task.auszug > 0 ? task.auszug : 1;
         const AB = AnazhRealm._arenaGesetz().bogen;
-        // Fail-closed: ein Kern ohne ableitenBogen ist ein BRUCH; ein Wurfarm-Material, das das lebende Buch nicht
-        // trägt, schießt mit dem holz-Anker (die legitime Weiche, BOGENMAT.holz lebt im Buch immer).
+        // Fail-closed: ein Kern ohne bogenEnergie oder ein Bogen ohne Arbeit ist ein BRUCH (ein Wurfarm-Material, das das
+        // Buch nicht trägt, schießt im Kern mit dem holz-Anker).
         const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
-        if (!sc || typeof sc.ableitenBogen !== "function" || !AnazhRealm.Gesetz("schmiede:BOGENMAT.holz", null))
-            AnazhRealm._kernPflichtBruch("schmiede:BOGENMAT/ableitenBogen");
-        const bmName = task && typeof task.material === "string" ? task.material : "holz";
-        const material = AnazhRealm.Gesetz("schmiede:BOGENMAT." + bmName, null) ? bmName : "holz";
-        const E = sc.ableitenBogen({ auszug: aus, zugkraft: zug, material }).energie;
-        if (!(Number.isFinite(E) && E > 0)) AnazhRealm._kernPflichtBruch("schmiede:ableitenBogen.energie");
+        if (!sc || typeof sc.bogenEnergie !== "function") AnazhRealm._kernPflichtBruch("schmiede:bogenEnergie");
+        const E = sc.bogenEnergie(this._schmiedeGestalt(bp), this._artifactStudioOv(bp) || undefined);
+        if (!(Number.isFinite(E) && E > 0)) AnazhRealm._kernPflichtBruch("schmiede:bogenEnergie");
         let v0 = Math.sqrt((2 * E) / Math.max(0.001, AB.mArrow));
         if (Number.isFinite(drawFrac)) v0 *= Math.max(0, Math.min(1, drawFrac));
         const K = AnazhRealm._arenaGesetz().schwung;
@@ -1899,7 +1894,7 @@ class AnazhRealm_kampf {
             // Halten spannt (der Harvest-Kadenz-Tick spannt nicht neu), Loslassen löst (_bogenRelease skaliert
             // v0 mit dem Auszug-Anteil). Kern kalt → auszugSec 0 → sofort voller Schuss.
             const AB = AnazhRealm._arenaGesetz().bogen;
-            if (!(AB.auszugSec > 0)) return this._beginPlayerShot(bogenRec);
+            if (!(AB.auszugSec > 0)) return this._beginPlayerShot();
             const pB = this.state.player;
             if (pB._bogenDraw) return true; // spannt schon (Halte-Tick)
             const nowB = performance.now() / 1000;
@@ -1999,6 +1994,10 @@ class AnazhRealm_kampf {
             this.log("Abbauen: kein Ziel in Reichweite.", "INFO");
             return false;
         }
+        // DIE WERKZEUG-WAND und DER VERSCHLEISS auch am Boden (halten.K3): jeder Grabe-Hieb zehrt das Gerät wie Hieb, Abbau und
+        // Mahd (_kampfVerschleiss, modus-unabhängig, nach der Ausdauer), ein verbrauchtes gräbt nicht — vorher grub es ewig neu.
+        const heldG = this._heldImplementBlueprint();
+        if (this._geraetVerbraucht(heldG, "Graben")) return false;
         // V17.55 W1 — auch der Boden leistet Widerstand: die Stamina pro Grabe-Hieb skaliert
         // invers zur Tauglichkeit (ein gutes Werkzeug gräbt billig, die bloße Faust teuer).
         if ((typeof this.getGameMode === "function" ? this.getGameMode() : "frieden") === "pfad") {
@@ -2020,6 +2019,7 @@ class AnazhRealm_kampf {
                 return false;
             }
             this.state.player.stamina = Math.max(0, have - perStrike);
+            this._kampfVerschleiss(heldG);
             // Graben spricht dieselbe Mühe-Sprache: Fortschritt ∝ Tauglichkeit (Faust mehrere Hiebe, gutes Gerät
             // einer); Reset, wenn das Ziel > 2.5 m wandert. frieden + schöpfer bleiben instant.
             const dig = this.state.player._dig || (this.state.player._dig = { x: 0, y: 0, z: 0, progress: 0 });
@@ -2036,7 +2036,7 @@ class AnazhRealm_kampf {
                 return true;
             }
             dig.progress = 0;
-        }
+        } else this._kampfVerschleiss(heldG);
         // Der Grabe-Hieb schnitzt das 3D-Dichte-Feld (echtes Loch): die Säule r 3,5 m (gelaende-core `editForm`, Radius und
         // halbe Höhe) — eine begehbare Grube mit ebenem Grund; kleiner wäre eine Nadel.
         const carveRadius = 3.5;

@@ -541,91 +541,7 @@ async function WELLE_L(ort) {
             w.z.keSpanne = ke.length ? +(ke[ke.length - 1] / ke[0]).toFixed(1) : null;
             w.c.hitStopEnergie = ke.length >= 15 && gruppe <= 3;
         }
-        // (G3) das Werk nach der Form über tryMouseBreak: Klicks, bis die Eiche fällt, der Fels bricht, der Boden ein Loch
-        // trägt (null: der Klick schwingt); die Form-Mutation des Kerns (ov) und (S13) eine Art-Tafel neben dem Gesetz.
-        {
-            const nix = () => null;
-            let erde = null;
-            for (let ring = 8; !erde && ring <= 320; ring += 8)
-                for (let k = 0; !erde && k < 16; k++) {
-                    const x = pm.position.x + ring * Math.cos(k * 0.3927),
-                        z = pm.position.z + ring * Math.sin(k * 0.3927),
-                        y = r._voxelSurfaceY(x, z);
-                    if (Number.isFinite(y) && r._terrainMaterialAt(x, z, y) === "erde") erde = { hit: true, x, y, z };
-                }
-            if (!erde) w.fehler.push("Q11: keine Erde im Umkreis 320 m");
-            const klicks = (name, typ, ov) => {
-                ausruesten(name);
-                const bp = name ? s.blueprints[name] : null,
-                    alt = bp ? bp.studioOv : undefined;
-                if (ov) bp.studioOv = ov;
-                if (bp) r._setBlueprintWear(bp, 1);
-                r._kampfMaszeMemo = null;
-                r.setGameMode(typ ? "frieden" : "pfad");
-                const c0 = zaehl.carve;
-                const a =
-                    typ &&
-                    r.spawnArchitecture(
-                        typ,
-                        { x: pm.position.x, y: pm.position.y, z: pm.position.z + 9 },
-                        { silent: true }
-                    );
-                const steht = () => (typ ? s.architectures.indexOf(a) !== -1 : zaehl.carve === c0);
-                const buehne = { _pickCreatureAtCrosshair: nix, _kampfKegelZiel: nix, _pickScatterAtCrosshair: nix };
-                buehne._pickArchitectureAtCrosshair = () => (typ && steht() ? { entry: a, point: a.position } : null);
-                buehne._raycastWorldHit = () => erde || { hit: false };
-                Object.assign(r, buehne);
-                let n = 0;
-                try {
-                    p._dig = null;
-                    for (; n < 60 && steht(); n++) {
-                        p._swing = null;
-                        p.stamina = 1e6;
-                        r.tryMouseBreak();
-                    }
-                } finally {
-                    for (const k in buehne) delete r[k];
-                    if (typ && steht()) r.removeArchitecture(a);
-                    if (ov) alt === undefined ? delete bp.studioOv : (bp.studioOv = alt);
-                    r._kampfMaszeMemo = p._swing = null;
-                    r.setGameMode(saved.mode);
-                }
-                return steht() ? null : n;
-            };
-            const werk = (GS.werk = {});
-            for (const [typ, namen] of [
-                ["baum_eiche", ["faellaxt", "langschwert", "spitzhacke", "vorschlaghammer", "spaten", null]],
-                ["stein_block", ["spitzhacke", "vorschlaghammer", "faellaxt", "langschwert", "spaten", null]],
-                [null, ["spaten", "schaufel", "spitzhacke", "langschwert", "vorschlaghammer", "faellaxt", null]],
-            ])
-                werk[typ || "boden"] = Object.fromEntries(
-                    namen.map((n) => [n || "hand", klicks(n && "klinge_" + n, typ)])
-                );
-            const form = () => {
-                const je = (name, ov) => ({ baum: klicks(name, "baum_eiche", ov), boden: klicks(name, null, ov) });
-                const blatt = { kopfTyp: "grabeblatt" },
-                    axt = { kopfTyp: "axt", beta: 30, reach: 0.08, edgeLen: 0.1 };
-                return {
-                    axt: je("klinge_faellaxt"),
-                    axtBlatt: je("klinge_faellaxt", blatt),
-                    spaten: je("klinge_spaten"),
-                    spatenAxt: je("klinge_spaten", axt),
-                };
-            };
-            werk.form = form();
-            r._geraetGraebt = (bp) => {
-                const g = bp && sc.GATTUNGEN[sc.REZEPT_ZU_GATTUNG[r._schmiedeGestalt(bp)]];
-                return !bp || !!(g && g.task && (g.task.art === "graben" || g.task.art === "pick"));
-            };
-            r._implementProfile = () => ({ minePower: 1.6, cutPower: 1.6 });
-            try {
-                werk.s13 = form();
-            } finally {
-                delete r._geraetGraebt;
-                delete r._implementProfile;
-            }
-            w.z.gesetz = GS;
-        }
+        w.z.gesetz = GS;
         // (T5) die Gegenwehr folgt dem TEMPERAMENT DER GATTUNG: 20 Treffer mit Rückstoß aus 1,6 m
         // im Modus pfad — der Bär (wehrhaft) schlägt zurück, der Hirsch derselben Größe (scheu, ein Fluchttier) nie.
         r.setGameMode("pfad");
@@ -686,23 +602,6 @@ async function WELLE_L(ort) {
         w.z.panzer = `defense ${leer.d.toFixed(2)}→${st1.defense.toFixed(2)} · hpMax ${leer.hp.toFixed(1)}→${st1.hpMax.toFixed(1)} · damage ${leer.dmg.toFixed(2)}→${st1.damage.toFixed(2)}`;
         // ein Werk der Schmiede faltet auch nicht in den Angriff (halten-gesetz): seinen Treffer urteilt der Kern
         w.c.keinPanzer = st1.defense === leer.d && st1.hpMax === leer.hp && st1.damage === leer.dmg;
-        // (T7) Verschleiß: 16 Treffer zehren die Klinge, ein verbrauchtes Gerät schlägt nicht
-        const bpL = s.blueprints.klinge_langschwert;
-        r._setBlueprintWear(bpL, 1);
-        let n7 = 0;
-        for (let i = 0; i < 16; i++) {
-            stelle(hirsch, 1.6);
-            zielen(punkt(hirsch, null));
-            if (traf(schwung(), hirsch)) n7++;
-        }
-        w.z.wear16 = r._blueprintWear(bpL);
-        w.z.treffer16 = n7;
-        r._setBlueprintWear(bpL, 0.02);
-        stelle(hirsch, 1.6);
-        zielen(punkt(hirsch, null));
-        w.z.trefferVerbraucht = traf(schwung(), hirsch) ? 1 : 0;
-        r._setBlueprintWear(bpL, 1);
-        w.c.verschleiss = n7 >= 12 && w.z.wear16 < 0.99 && w.z.trefferVerbraucht === 0;
         // (T8) der Pfeil: Impuls im Schaden, die Wand hält ihn
         ausruesten("klinge_langbogen");
         const rec = r._heldBogenRecipe();
@@ -712,7 +611,7 @@ async function WELLE_L(ort) {
             const vorher = list.length;
             p._shotCooldownUntil = 0;
             p._swing = null;
-            r._beginPlayerShot(rec, frac);
+            r._beginPlayerShot(frac);
             const pf = (s._pfeile || [])[vorher];
             if (!pf) return { flog: false, treffer: null };
             for (let k = 1; k <= 360 && s._pfeile.includes(pf); k++) r._tickPfeile(pf.born + k / 120);
@@ -760,67 +659,6 @@ async function WELLE_L(ort) {
             const frei = schuss(1, hirsch);
             w.z.pfeilFrei = frei.treffer ? 1 : 0;
             w.c.pfeilWand = !!wand && w.z.pfeilHinterWand === 0 && w.z.pfeilFrei === 1;
-            // (T7b) der Bogen ist eine geführte Waffe wie die Klinge: sein Verschleiß wirkt im Schaden
-            // (wear 0,5 → _wearStatFactor 0,65 des vollen), jeder Schuss zehrt ihn, ein verbrauchter Bogen (wear 0,02,
-            // unter WEAR_KAPUTT_SCHWELLE) löst nicht — dieselbe Wand wie Hieb und Abbau.
-            const bpB = s.blueprints.klinge_langbogen;
-            const bogenBei = (wear) => {
-                r._setBlueprintWear(bpB, wear);
-                stelle(hirsch, 2.5);
-                zielen(punkt(hirsch, null));
-                const sh = schuss(1, hirsch);
-                return {
-                    flog: sh.flog,
-                    amount: sh.treffer ? sh.treffer.amount : null,
-                    kraft: sh.treffer ? sh.treffer.kraft : null,
-                    nach: r._blueprintWear(bpB),
-                };
-            };
-            const bogenProbe = () => {
-                const b1 = bogenBei(1),
-                    b5 = bogenBei(0.5),
-                    b02 = bogenBei(0.02);
-                r._setBlueprintWear(bpB, 1);
-                const F = A.WEAR_STAT_FLOOR;
-                const soll = F + (1 - F) * 0.5;
-                const verh = b1.kraft && b5.kraft != null ? b5.kraft / b1.kraft : null; // die Kraft, nie der Schaden: die Zone des Treffers wechselt
-                return {
-                    voll: b1.amount,
-                    halb: b5.amount,
-                    verh,
-                    soll,
-                    zehrtVoll: 1 - b1.nach,
-                    zehrtHalb: 0.5 - b5.nach,
-                    verbrauchtFlog: b02.flog ? 1 : 0,
-                    verbrauchtTraf: b02.amount !== null ? 1 : 0,
-                    ok:
-                        verh !== null &&
-                        Math.abs(verh - soll) < 0.01 &&
-                        b1.nach < 1 &&
-                        b5.nach < 0.5 &&
-                        !b02.flog &&
-                        b02.amount === null,
-                };
-            };
-            w.z.bogen = bogenProbe();
-            w.c.bogenVerschleiss = w.z.bogen.ok;
-            // (S6) SELBST-TEST mit dem Täter: der Pfeil ohne Verschleiß (Faktor ≡ 1, kein Zehren — der alte Zwilling)
-            {
-                const svF = r._wearStatFactor,
-                    svV = r._kampfVerschleiss;
-                r._wearStatFactor = () => 1;
-                r._kampfVerschleiss = () => {};
-                try {
-                    w.z.s6 = bogenProbe();
-                } finally {
-                    r._wearStatFactor = svF;
-                    r._kampfVerschleiss = svV;
-                    delete r._wearStatFactor;
-                    delete r._kampfVerschleiss;
-                    r._setBlueprintWear(bpB, 1);
-                }
-                w.c.s6 = w.z.s6.ok === false;
-            }
         }
         // (T7c) die KLASSE der Waffen-Schadens-Pfade: jeder Schaden im Namen des Spielers (Hieb und Pfeil trafen oben) IST der
         // Rückgabewert des EINEN Roh-Schaden-Gesetzes _kampfRohSchaden — kein Pfad setzt Kraft × Wirkung × Zone selbst
@@ -997,7 +835,7 @@ async function WELLE_L(ort) {
             ausruesten("klinge_langbogen");
             p._shotCooldownUntil = 0;
             p._swing = null;
-            r._beginPlayerShot(rec, 1);
+            r._beginPlayerShot(1);
             const pf = s._pfeile[s._pfeile.length - 1];
             konsum.pfeilTor = !!pf && ruft(() => r._tickPfeile(pf.born + 1 / 120), "_trefferErreichbar");
             if (pf && s._pfeile.includes(pf)) (r._pfeilDespawn(pf), s._pfeile.splice(s._pfeile.indexOf(pf), 1));
@@ -1059,7 +897,6 @@ async function WELLE_L(ort) {
                 Boolean
             );
             w.z.grobFremd = window.__fehlt(grobPfade, /\.scale\.x\b/) ? 0 : 1;
-            w.z.grobKonsum = konsum;
             w.c.grobLiestLeib = konsum.sweepTor && konsum.pfeilTor && konsum.torLeib && w.z.grobFremd === 0;
         }
         // (T12) das Grob-Tor deckt die Gestalt: jede Gattung in jeder Größen-Grenze, 90 Takte, je Kapsel-Ende (+ Radius) —
@@ -1325,7 +1162,7 @@ async function WELLE_L(ort) {
             const weite = Z.distanceTo(cam);
             const vorher = (s._pfeile || []).length;
             p._shotCooldownUntil = 0;
-            r._beginPlayerShot(rec, 1);
+            r._beginPlayerShot(1);
             const pf = (s._pfeile || [])[vorher];
             if (pf) {
                 for (let k = 1; k <= 2400 && s._pfeile.includes(pf); k++) {
@@ -1598,7 +1435,7 @@ async function WELLE_L(ort) {
                 const ortAlt = pm.position.clone();
                 const ernteSteine = [];
                 const gepflueckt = [];
-                const erde = [];
+                const [erde, dslZ] = [[], r.dslRun]; // der Zähler der Voxel-Ops kehrt zurück, nie der echte Schnitt
                 try {
                     r.setCameraMode("third");
                     const geraet = (name) => {
@@ -1710,7 +1547,7 @@ async function WELLE_L(ort) {
                             abC <= armLaenge,
                         abC
                     );
-                    delete r.dslRun;
+                    r.dslRun = dslZ;
                     // fern: der Pfeiler 8 m voraus jenseits der Arm-Länge, das Fadenkreuz waagrecht auf ihm, der Wolf 1,3 m voraus
                     geraet("klinge_langschwert");
                     neige(0);
@@ -1734,7 +1571,7 @@ async function WELLE_L(ort) {
                 } finally {
                     delete r._pickScatterAtCrosshair;
                     delete r._harvestScatterPick;
-                    delete r.dslRun;
+                    r.dslRun = dslZ;
                     for (const x of ernteSteine) {
                         if (x.e) r.removeArchitecture(x.e);
                         delete s.blueprints[x.nm];
@@ -2207,7 +2044,7 @@ async function WELLE_L(ort) {
             if (recP) {
                 const n0 = (s._pfeile || []).length;
                 p._shotCooldownUntil = 0;
-                r._beginPlayerShot(recP, 1);
+                r._beginPlayerShot(1);
                 const pf = (s._pfeile || [])[n0];
                 if (pf && pf.mesh) {
                     pf.mesh.updateMatrixWorld(true);
@@ -2980,7 +2817,7 @@ async function WELLE_L(ort) {
                 p._shotCooldownUntil = 0;
                 r._setBlueprintWear(s.blueprints.klinge_langbogen, 1);
                 const n = s._pfeile ? s._pfeile.length : 0;
-                r._beginPlayerShot(rec, 1);
+                r._beginPlayerShot(1);
                 const pf = (s._pfeile || [])[n];
                 return pf && { pf, p0: [pf.x, pf.y, pf.z], v0: [pf.vx, pf.vy, pf.vz] };
             };
@@ -3093,9 +2930,9 @@ async function WELLE_L(ort) {
             for (const z of [z1, z2]) if (z) fliege(z, 60, 0.02);
             K4.zug = { v1: Math.hypot(...z1.v0), vS1, v2: Math.hypot(...z2.v0), vS2 };
         });
-        // ═══ (Q11 halten.K3 Sichel) an der Mess-Wiese (`ort`): das Fadenkreuz auf dem Fuß eines Büschels 2–3,5 m voraus (kein
-        // Bau, keine Streu im Strahl), EIN Klick über tryMouseBreak je Form: Sichel, Sichel gerade, Säbel hohl ═══
-        await teil("Q11 Sichel", async () => {
+        // ═══ (Q11 halten.K3) DER WERKZEUG-SATZ an der Mess-Wiese: jede Gestalt der Schmiede und die Hand, je Ziel EIN Klick
+        // (Eiche und Fels 60 m hinten, jenseits der Nah-Wiese) ═══
+        await teil("Q11 Satz", async () => {
             pm.position.set(
                 ort.spieler[0],
                 r.getTerrainHeightAt(...ort.spieler) + A.PLAYER_FOOT_OFFSET,
@@ -3103,36 +2940,175 @@ async function WELLE_L(ort) {
             );
             await window.__weltStehtNach();
             zielen(V3().set(ort.blick[0], pm.position.y, ort.blick[1]));
-            const [d, P] = [camDir(), pm.position];
+            const [d, P, wild] = [camDir(), pm.position, setze("wesen")];
             const alle = () => [...s.nahWiese.kacheln.values()].flatMap((k) => k.bueschel);
             const ab = (b, q = P) => Math.hypot(b.x - q.x, b.z - q.z);
-            const ziel = alle()
+            const halm = alle()
                 .filter((b) => ab(b) > 2 && ab(b) < 3.5 && (b.x - P.x) * d.x + (b.z - P.z) * d.z > 0.9 * ab(b))
                 .find((b) => (zielen(b), !r._pickArchitectureAtCrosshair() && !r._pickScatterAtCrosshair()));
-            const um = () => alle().filter((b) => ab(b, ziel) < 4).length;
+            const um = () => alle().filter((b) => ab(b, halm) < 4).length;
             const kraut = () => p.inventory.reduce((n, x) => n + (x && x.material === "kraut" ? x.count : 0), 0);
-            const klick = async (name, ov) => {
-                ausruesten(name);
-                Object.assign(s.blueprints[name], { studioOv: ov, wear: 1 });
-                zielen(ziel);
-                const v = [um(), kraut()];
-                r.tryMouseBreak();
-                const x = { verb: p._mausVerb, kraut: kraut() - v[1] };
-                await window.__weltStehtNach();
-                x.fehlen = v[0] - um();
-                r._tickScatterRegrow(Infinity);
-                await window.__weltStehtNach();
-                return Object.assign(x, { wieder: um() === v[0] });
+            let erde = null;
+            for (let ring = 32; !erde && ring <= 320; ring += 8)
+                for (let k = 0; !erde && k < 16; k++) {
+                    const x = P.x + ring * Math.cos(k * 0.3927),
+                        z = P.z + ring * Math.sin(k * 0.3927),
+                        y = r._voxelSurfaceY(x, z);
+                    if (Number.isFinite(y) && r._terrainMaterialAt(x, z, y) === "erde") erde = { hit: true, x, y, z };
+                }
+            if (!erde) w.fehler.push("Q11: keine Erde im Umkreis 320 m");
+            const nix = () => null;
+            const sc = globalThis.__schmiedeCore;
+            const bp = (id) => s.blueprints["klinge_" + id];
+            const ids = Object.keys(sc.REZEPT_ZU_GATTUNG).filter(bp);
+            const klick = async (id, ziel, ov, wear = 1) => {
+                const b = id ? bp(id) : null;
+                ausruesten(b && b.name);
+                if (b) b.studioOv = ov;
+                if (b && wear !== null) r._setBlueprintWear(b, wear);
+                const w0 = r._blueprintWear(b);
+                p._swing = p._dig = null;
+                p._shotCooldownUntil = 0;
+                p.stamina = 1e6;
+                const x = { verb: null, wirk: 0 };
+                if (ziel === "schuss") {
+                    const n = (s._pfeile || []).length;
+                    r._beginPlayerShot(1);
+                    const pf = (s._pfeile || [])[n];
+                    if (pf) {
+                        Object.assign(x, { verb: ziel, wirk: Math.hypot(pf.vx, pf.vy, pf.vz), kraft: pf.kraft });
+                        r._pfeilDespawn(s._pfeile.splice(n, 1)[0]);
+                    }
+                } else if (ziel === "kreatur") {
+                    stelle(wild, 1.5);
+                    zielen(punkt(wild, null));
+                    const t = traf(schwung(), wild);
+                    if (t) Object.assign(x, { verb: "hieb", wirk: t.amount / t.kraft, kraft: t.kraft });
+                    parke(wild);
+                } else if (ziel === "wiese") {
+                    await window.__weltStehtNach();
+                    zielen(halm);
+                    const v = [um(), kraut()];
+                    r.tryMouseBreak();
+                    Object.assign(x, { verb: p._mausVerb, kraut: kraut() - v[1] });
+                    if (x.verb === "pfluecken") {
+                        await window.__weltStehtNach();
+                        x.wirk = v[0] - um();
+                        r._tickScatterRegrow(Infinity);
+                        await window.__weltStehtNach();
+                        x.wieder = um() === v[0];
+                    }
+                } else {
+                    const typ = ziel !== "boden" && ziel;
+                    r.setGameMode(typ ? "frieden" : "pfad");
+                    const c0 = zaehl.carve;
+                    const a =
+                        typ &&
+                        r.spawnArchitecture(typ, { x: P.x - 60 * d.x, y: P.y, z: P.z - 60 * d.z }, { silent: true });
+                    const buehne = {
+                        _pickCreatureAtCrosshair: nix,
+                        _kampfKegelZiel: nix,
+                        _pickScatterAtCrosshair: nix,
+                        _pickArchitectureAtCrosshair: () => a && { entry: a, point: a.position },
+                        _raycastWorldHit: () => erde || { hit: false },
+                    };
+                    Object.assign(r, buehne);
+                    try {
+                        r.tryMouseBreak();
+                    } finally {
+                        for (const k in buehne) delete r[k];
+                        r.setGameMode(saved.mode);
+                    }
+                    x.verb = p._mausVerb;
+                    x.wirk = typ ? a.harvestProgress || 0 : zaehl.carve > c0 ? 1 : (p._dig && p._dig.progress) || 0;
+                    if (typ && s.architectures.indexOf(a) !== -1) r.removeArchitecture(a);
+                }
+                x.zehrt = w0 - r._blueprintWear(b);
+                return x;
             };
-            const form = async () => ({
-                sichel: await klick("klinge_sichel"),
-                gerade: await klick("klinge_sichel", { kruemmung: 0 }),
-                hohl: await klick("klinge_saebel", { kruemmung: -0.3 }),
-            });
-            w.z.sichel = await form();
-            r._ernteBand = (bp) => (/sichel/.test(bp && bp.name) ? 0.6 : 0); // (S15) ein Namens-Sonderfall
-            w.z.sichel.s15 = await form();
-            delete r._ernteBand;
+            // das Ziel ihrer Aufgabe (ein Werkzeug ohne Stoff der Fels, eine Waffe das Wild)
+            const ZIELE = ["baum_eiche", "stein_block", "boden", "wiese", "kreatur"];
+            const zielVon = { holz: "baum_eiche", stein: "stein_block", erde: "boden", kraut: "wiese" };
+            const zeile = async (id) => {
+                const [G, km] = [sc.GATTUNGEN[sc.REZEPT_ZU_GATTUNG[id]], sc.kampfMasze(id)];
+                const t = G.task || {};
+                const g = {
+                    ziel: zielVon[t.ziel] || (t.art === "bogen" ? "schuss" : G.tool ? "stein_block" : "kreatur"),
+                    oeffnet: !!km && sc.oeffnetBoden(km.front),
+                    fasst: !!km && sc.werkUrteil(km, { vLat: 1, ziel: "kraut" }).fangM > 0,
+                };
+                for (const z of km ? ZIELE : ["schuss"]) g[z] = await klick(id, z);
+                if (g.ziel === "kreatur" || g.ziel === "schuss") g.halb = await klick(id, g.ziel, undefined, 0.5);
+                g.leer = await klick(id, g.ziel, undefined, 0.02);
+                return g;
+            };
+            const MUT = [
+                ["axt", "faellaxt", undefined, ["baum_eiche", "boden"]],
+                ["spaten", "spaten", undefined, ["baum_eiche", "boden"]],
+                ["axtBlatt", "faellaxt", { kopfTyp: "grabeblatt" }, ["baum_eiche", "boden"]],
+                [
+                    "spatenAxt",
+                    "spaten",
+                    { kopfTyp: "axt", beta: 30, reach: 0.08, edgeLen: 0.1 },
+                    ["baum_eiche", "boden"],
+                ],
+                ["gerade", "sichel", { kruemmung: 0 }, ["wiese"]],
+                ["hohl", "saebel", { kruemmung: -0.3 }, ["wiese"]],
+                ["recurve", "langbogen", { recurve: 0.6 }, ["schuss"]],
+            ];
+            const form = async (M) => {
+                const F = {};
+                for (const [k, id, ov, zs] of M) {
+                    F[k] = {};
+                    for (const z of zs) F[k][z] = await klick(id, z, ov);
+                }
+                return F;
+            };
+            const stoff = async () => {
+                const V = {};
+                for (const trad of ["Frank", "Nihon", "Urvolk"]) {
+                    const [ov, st, reihe] = [{ __tradition: trad }, sc.tradWerkstoff(sc.TRADITIONEN[trad]), []];
+                    for (let i = 0; i < 16; i++) reihe.push(await klick("spitzhacke", "stein_block", ov, i ? null : 1));
+                    V[trad] = {
+                        stoff: st,
+                        haerte: s.materials[st].tags.härte,
+                        zehrt: reihe[0].zehrt,
+                        wear: r._blueprintWear(bp("spitzhacke")),
+                        wirk: [reihe[0].wirk, reihe[15].wirk],
+                    };
+                }
+                const [t, h] = [s.materials.stahl.tags, s.materials.stahl.tags.härte];
+                t.härte = h * 0.5;
+                try {
+                    V.weich = (await klick("spitzhacke", "stein_block", { __tradition: "Frank" })).zehrt;
+                } finally {
+                    t.härte = h;
+                }
+                return V;
+            };
+            const stumm = { _wearStatFactor: () => 1, _kampfVerschleiss: () => {} }; // (S6) der Pfeil ohne Verschleiß
+            const tafel = {
+                _geraetGraebt: (b) => {
+                    const g = b && sc.GATTUNGEN[sc.REZEPT_ZU_GATTUNG[r._schmiedeGestalt(b)]];
+                    return !b || !!(g && g.task && (g.task.art === "graben" || g.task.art === "pick"));
+                }, // (S13) eine Art-Tafel: graben nach task.art, ein Abbau-Profil für alle
+                _implementProfile: () => ({ minePower: 1.6, cutPower: 1.6 }),
+                _ernteBand: (b) => (/sichel/.test(b && b.name) ? 0.6 : 0), // (S15) ein Namens-Sonderfall
+                _wearPerStrike: () => A.WEAR_PER_STRIKE_BASE / 5, // (S16) der Spender
+            };
+            try {
+                const satz = { hand: { halb: A.WEAR_STAT_FLOOR + (1 - A.WEAR_STAT_FLOOR) / 2 } };
+                for (const z of ZIELE.slice(0, 4)) satz.hand[z] = await klick(null, z);
+                for (const id of ids) satz[id] = await zeile(id);
+                Object.assign(w.z, { satz, form: await form(MUT.slice(2)), stoff: await stoff(), selbst: {} });
+                Object.assign(r, stumm);
+                w.z.selbst.bogen = await zeile("langbogen");
+                for (const k in stumm) delete r[k];
+                Object.assign(r, tafel);
+                Object.assign(w.z.selbst, { form: await form(MUT), stoff: await stoff() });
+            } finally {
+                for (const k in Object.assign({}, stumm, tafel)) delete r[k];
+            }
         });
     } catch (e) {
         w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));
