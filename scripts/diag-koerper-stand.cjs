@@ -25,7 +25,7 @@
 //   K8  EINE BODEN-HÖHE JE ROLLE (Gelände H5, Lehre 22, Welt mit Foundry): an der Mess-Wiese und am 25°-Hang (der nächste
 //       trockene Hang 24–26° um sie) steht jeder Kontakt auf den gezeichneten Dreiecken (`__gezeichnet`), je Rolle 200, p95 ≤ 3 cm:
 //       der Fuß (der tiefste Vertex, den der Knöchel trägt, im Fuß-Lock des Gangs), der Huf (je Größen-Band das Reh im Stand je
-//       Bein, das schlechteste), das Rad
+//       Bein, das schlechteste; seine Sohle liegt dem Boden an, `_gaitSohlenKipp`), das Rad
 //       (der tiefste Vertex je Reifen des GT in Fahrt), der Fuß der Streu (jede Instanz im Stand, nach Gang und Fahrt); die
 //       Feinform (Mesh gegen `_voxelSurfaceY`) ≤ 5 cm. Über dem Soll hält die Ratsche spec/profiband/ratsche-boden-rolle.json
 //   --selftest: je Defekt trägt die Welt den Leser vor seiner Heilung als Laufzeit-Stub (`taeter`) — GENAU
@@ -186,6 +186,8 @@ function taeter(inj) {
             return out;
         };
     }
+    // sohle (K8): die Sohle der Pfote kippt nicht mit dem Boden unter ihr (vor K8 huf hielt sie die Lage des Rumpfs)
+    if (inj === "sohle") r._gaitSohlenKipp = (...a) => (a[4] ? { laengs: 0, quer: 0 } : P._gaitSohlenKipp.apply(r, a));
 }
 
 const server = statikServer({ root: ROOT });
@@ -208,7 +210,7 @@ async function proben(mitWiese, umfang) {
     const takt = () => {
         try {
             r._gameLoopTick(performance.now());
-        } catch (_e) {}
+        } catch {}
     };
     const rig = pm && pm.userData && pm.userData.rig;
     if (!rig || !rig.hips) return { fehler: "Spieler-Rig fehlt" };
@@ -820,7 +822,7 @@ async function rollen(n) {
     const takt = () => {
         try {
             r._gameLoopTick((uhr += 1000 / 60));
-        } catch (_e) {}
+        } catch {}
     };
     const cm = (a, f) => {
         const b = a.slice().sort((x, y) => x - y);
@@ -1077,7 +1079,7 @@ const K8_ROLLEN = Object.freeze({
     fein: [5, "die Feinform des Meshs gegen das Gesetz (das Surface-Nets-Mesh des Workers)"],
     streu: [3, "der Fuß der Streu (_streuFuss: der gezeichnete Boden, dem Auge nach)"],
     fuss: [3, "der Fuß des Spielers (die Sohle des Leibs gegen _gaitBodenY)"],
-    huf: [3, "der Huf (_kreaturFussBoden)"],
+    huf: [3, "der Huf (_kreaturFussBoden, seine Sohle _gaitSohlenKipp)"],
     rad: [3, "das Rad (_archRadMatrix: der Reifen auf _standSicht)"],
 });
 // DIE RATSCHE (spec/profiband/ratsche-boden-rolle.json, Ort × Rolle p95 cm am Kopf): eine Rolle über ihrem Soll darf nicht
@@ -1162,7 +1164,7 @@ function zeile(o) {
                 window.__weltStehtNach(() => {
                     try {
                         window.anazhRealm._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                 })
             );
             const o = k8
@@ -1182,10 +1184,12 @@ function zeile(o) {
                 rand: ["K6 Leser im Rand-Streifen"],
                 wiese: ["K7 Wiese im Rand-Streifen", "K7 Streu im Rand-Streifen"],
                 rolle: ["K8 streu wiese", "K8 streu hang", "K8 huf hang", "K8 rad hang"],
+                sohle: ["K8 huf hang"],
             };
             for (const inj of Object.keys(soll)) {
-                const { o } = await lauf(inj, inj === "rolle");
-                const f = inj === "rolle" ? urteilK8(o, K8_UMFANG) : urteil(o);
+                const k8 = soll[inj][0].startsWith("K8");
+                const { o } = await lauf(inj, k8);
+                const f = k8 ? urteilK8(o, K8_UMFANG) : urteil(o);
                 const fehlt = soll[inj].filter((x) => !f.some((y) => y.startsWith(x)));
                 const ok = fehlt.length === 0;
                 const beleg = soll[inj].map((x) => f.find((y) => y.startsWith(x)) || `${x}: grün (blind!)`).join(" | ");
