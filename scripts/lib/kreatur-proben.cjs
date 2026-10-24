@@ -2171,8 +2171,8 @@ async function kreaturProben(r, T, opts) {
     // DIE GESTALT AUS DER RUHE: die Treffer-Kapseln einer Gattung (_kreaturTrefferGlieder) sind EINE Passung — zwei Wölfe,
     // der zweite größer und gedreht, beide mitten im Schritt: jede Kapsel bit-gleich, die laufende Pose danach unverändert.
     // DER VORRAT (dorf-takt-z13, Lehre 14): der Ofen-Vorrat legt die Glieder jeder Gattung des Lebensraums, und eine kalte
-    // Gattung zerlegt ihre Gestalt nie im Takt — Kreatur-Takt, Ziegel des fernen Leibs und Treffer lesen sie kalt (der Leib
-    // trägt seinen Satz, der Ruf zählt), erst der Leerlauf baut sie.
+    // Gattung zerlegt ihre Gestalt nie im Takt — Kreatur-Takt und Ziegel des fernen Leibs lesen sie kalt (der Leib trägt seinen
+    // Satz, der Ruf zählt), erst der Leerlauf baut sie; der Treffer bricht kalt laut (gate:kampf-gefuehl T11).
     await buehne("gestalt", async (restore) => {
         const altK = r._gliedKapseln,
             altN = r._trefferGliedNamen;
@@ -2221,10 +2221,8 @@ async function kreaturProben(r, T, opts) {
             const [z0, k0] = [zerlegt, r._gliederKalt | 0];
             takt(1 / 60);
             r._kzLeib(c, { x: c.position.x + 500, z: c.position.z });
-            const kalt = r._kreaturTrefferGlieder(c);
             const takt0 = {
                 zerlegt: zerlegt - z0,
-                volumen: kalt ? kalt.length : 0,
                 satz: c.visible && !c.userData._kzVersuch,
                 ruf: (r._gliederKalt | 0) - k0,
             };
@@ -3310,8 +3308,8 @@ function urteil(name, z) {
         );
         const K = z.takt;
         soll(
-            K.zerlegt === 0 && K.volumen === 0 && K.satz && K.ruf > 0,
-            `der Takt zerlegt die Gestalt einer kalten Gattung: ${K.zerlegt}× zerlegt, Treffer-Volumen ${K.volumen} Glieder, Satz ${K.satz}, ${K.ruf} kalte Rufe (Soll 0× · 0 · true · > 0)`
+            K.zerlegt === 0 && K.satz && K.ruf > 0,
+            `der Takt zerlegt die Gestalt einer kalten Gattung: ${K.zerlegt}× zerlegt, Satz ${K.satz}, ${K.ruf} kalte Rufe (Soll 0× · true · > 0)`
         );
     }
     if (name === "todlage") {
