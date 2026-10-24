@@ -1,0 +1,64 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c set -u
+WP=7771; SP=$((7771 + 20000)); LP=$((7771 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=
+weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n "$SPID" ] && kill "$SPID" 2> /dev/null; SPID=; for p in $(netstat -ano 2> /dev/null | grep -aE ":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }
+trap weg EXIT
+boot() { weg; PORT=$SP node save-server.js > "$L/save.log" 2>&1 & SPID=$!; for t in $(seq 1 30); do curl -s -o /dev/null "http://localhost:$SP/" && break; sleep 1; done; $W start --echt --port $WP --seite "http://localhost:$SP" "$@" > "$L/wb.log" 2>&1 & for t in $(seq 1 120); do grep -qE "WERKBANK bereit|FEHLER|Error" "$L/wb.log" && break; sleep 5; done; grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil HAKEN $W eval 'const L = (window.__hs = { n: 0, dauer: [], takte: 0, gleit: 0 }); const pj = r._kampfHitJuice.bind(r); r._kampfHitJuice = function (c, now, u, ke) { const v = pj(c, now, u, ke); L.n++; L.dauer.push(r.state.player._hitStopUntil - now); return v; }; const pm = r.state.playerMesh, V = new T.Vector3(); let vor = null; const tick = r._gameLoopTick.bind(r); r._gameLoopTick = function (t) { const v = tick(t); const p = r.state.player; if (p && p._hitStopUntil > performance.now() / 1000) { const w = pm.userData.rig.armR.wrist.getWorldPosition(V).sub(pm.position).toArray(); if (vor && vor.id === p._hitStopUntil) { L.takte++; L.gleit = Math.max(L.gleit, Math.hypot(w[0] - vor.w[0], w[1] - vor.w[1], w[2] - vor.w[2])); } vor = { id: p._hitStopUntil, w }; } return v; }; return 1;'
+teil LATENZ $W latenz --verb hieb --sicht third,ego --proben 30 --json "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\1d9164e9-radeon\halten.K2_1.json"
+teil SPIEL $W eval 'const L = window.__hs; return { gesetzt: L.n, dauerMs: [Math.min(...L.dauer), Math.max(...L.dauer)].map((x) => Math.round(x * 1000)), haltTakte: L.takte, gleitMm: Math.round(L.gleit * 10000) / 10 };'
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:23:14+02:00 pid=14068 (1 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:23:14+02:00 pid=14068 (66 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:23:14+02:00 pid=14068 (136 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:26:36+02:00 pid=2668 (4 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:26:36+02:00 pid=2668 (73 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:26:36+02:00 pid=2668 (141 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:30:00+02:00 pid=28848 (2 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:30:00+02:00 pid=28848 (69 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:30:00+02:00 pid=28848 (137 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:30:00+02:00 pid=28848 (202 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:33:55+02:00 pid=3572 (34 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:33:55+02:00 pid=3572 (96 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:33:55+02:00 pid=3572 (166 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:37:27+02:00 pid=25144 (19 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:37:27+02:00 pid=25144 (82 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:37:27+02:00 pid=25144 (149 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:41:02+02:00 pid=17120 (2 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:41:02+02:00 pid=17120 (66 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:41:02+02:00 pid=17120 (131 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:41:02+02:00 pid=17120 (201 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:44:45+02:00 pid=29496 (44 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:44:45+02:00 pid=29496 (110 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:44:45+02:00 pid=29496 (178 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:48:16+02:00 pid=8012 (34 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:48:16+02:00 pid=8012 (96 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T17:48:16+02:00 pid=8012 (162 s)
+gpu-lauf: Schloss punkte-radeon nach 1677 s
+@@PUNKTE@@ HAKEN
+{
+ "ergebnis": 1,
+ "ms": 2
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ LATENZ
+third/hieb {"n":30,"fehlt":0,"p50":30.9,"p95":61.3,"max":70.4,"eingabe":6.6,"hoerer":4.8,"kette":22.2,"kurve":0,"takte":3,"halt":11}
+ego/hieb {"n":30,"fehlt":0,"p50":19.8,"p95":32.9,"max":33.7,"eingabe":1.6,"hoerer":2.1,"kette":11.3,"kurve":0,"takte":3,"halt":11}
+LATENZ ROT (Bild 15.9 ms) third/hieb p95 61.3 ms > 50 (fehlt 0) — Täter kette 22.2 ms, 3 Takte
+@@PUNKTE@@ EXIT 1
+@@PUNKTE@@ SPIEL
+{
+ "ergebnis": {
+  "gesetzt": 60,
+  "dauerMs": [
+   154,
+   176
+  ],
+  "haltTakte": 1022,
+  "gleitMm": 0
+ },
+ "ms": 2
+}
+@@PUNKTE@@ EXIT 0

@@ -1,0 +1,58 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-fall-waechter.cjs
+=== DER FALL-WÄCHTER (Leben-Schau 2) — Null-Renderer, echter Spiel-Takt, Spaltgrund + Höhle ===
+[stall-akte] Seite #2: der Puls kehrt zurück nach 22.1 s — complete · renderer bereit · weltbild da · frames 6328 · welt 6328 Takte · Ruhe 0 · zuletzt Bau-Regung · programme 0 · gl-sync 0
+[stall-akte] ═══ diag-fall-waechter.cjs · Seite #2 http://127.0.0.1:7753/index.html · der Puls steht seit 20.3 s
+[stall-akte] offen evaluate(probe) seit 94.9 s
+[stall-akte] Puls 63×, zuletzt vor 20.4 s — complete · renderer bereit · weltbild da · frames 6328 · welt 6328 Takte · Ruhe 0 · zuletzt Bau-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 3260 121 % · GPU 10468 2 % · browser 30072 2 % · storage.mojom.StorageService 9812 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 07:36 gpu 2/r 114 · 07:38 gpu 1/r 134 · 07:40 gpu 0/r 110 · 07:42 gpu 1/r 131 · 07:44 gpu 1/r 118 · 07:46 gpu 1/r 152 · 07:48 gpu 1/r 264 · 07:50 gpu 0/r 152 · 07:52 gpu 1/r 115 · 07:54 gpu 1/r 124 · 07:56 gpu 1/r 127 · 07:58 gpu 2/r 133 · 08:00 gpu 1/r 114 · 08:02 gpu 1/r 109 · 08:04 gpu 2/r 103 · 08:06 gpu 2/r 101 · 08:08 gpu 1/r 104 · 08:10 gpu 3/r 123 · 08:12 gpu 5/r 241 · 08:14 gpu 1/r 186 · 08:16 gpu 1/r 115 · 08:18 gpu 1/r 108 · 08:20 gpu 1/r 104 · 08:22 gpu 1/r 102 · 08:24 gpu 1/r 104 · 08:26 gpu 1/r 102 · 08:28 gpu 1/r 102 · 08:30 gpu 1/r 109 · 08:32 gpu 1/r 102 · 08:34 gpu 1/r 104
+[stall-akte] Stapel flaeche :959 < wildnisY :1112 < hoeheGrund :2026 < hoehe :2006 < _terrainMacroSurfaceY :570 < _terrainColumnContextIn :1059 < _terrainColumnContext :1049 < _voxelSurfaceY :2304
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [INFO] Eingestiegen in „fahrzeug_gt" (4× Rad — rollt · Tempo ×1.60 · träge)
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [INFO] Emotion 'joy' triggert Welt-Effekt (Wert 1.00)
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [INFO] Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [INFO] Spieler-Sichtbarkeit auf true gesetzt
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [INFO] Ausgestiegen
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [INFO] Emotion 'hope' triggert Welt-Effekt (Wert 0.99)
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [INFO] WERK IM WASSER: glutbrunnen bei -153/244 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [INFO] WERK IM WASSER: glutbrunnen bei -127/235 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [INFO] Emotion 'sorrow' triggert Welt-Effekt (Wert 0.70)
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_29, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [INFO] Tempo-Hauch (emotion:chaos): 5 Tiere ×1.5 im Wander-Band
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [INFO] Emotion 'chaos' triggert Welt-Effekt (Wert 0.70)
+[stall-akte] Stderr [30072:32844:1024/160758.572:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [30072:32844:1024/160758.583:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [30072:32844:1024/160823.377:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in flaeche :959
+  O1 Wagen unter dem Überhang          Wagen fahrzeug_gt#1657 bei 5.5/-23.4: am Ende y 48.74 · Grund 48.74 · Oberkante 91.31 · tiefste Lage unter dem Grund 0.00 m · y min 48.74
+  O2 Schau-Fahrt über die Spaltkante   Wagen fahrzeug_gt#1659 bei 8.5/-22.2: am Ende y 91.29 · Grund 91.29 · Oberkante 91.30 · tiefste Lage unter dem Grund 0.00 m · y min 91.03
+  O3 Wagen in der Höhle                Wagen fahrzeug_gt#1660 bei 5.5/-23.4: am Ende y 49.04 · Grund 48.74 · Oberkante 91.31 · tiefste Lage unter dem Grund -0.30 m · y min 49.04
+  O3 Wolf in der Höhle                 Tier wolf#5671 (gestoßen an die Wand 2.3 m) bei 0.3/72.1: am Ende y 45.86 · Grund 45.86 · Oberkante 86.25 · tiefste Lage unter dem Grund 0.00 m · y min 45.86
+  O3 Wolf läuft in die Wand            Tier wolf#5752 (läuft an die Wand 2.3 m) bei 0.2/72.4: am Ende y 45.82 · Grund 45.82 · Oberkante 86.23 · tiefste Lage unter dem Grund 0.00 m · y min 45.82 · Stirn -0.200 m über dem Heck (Anlauf -0.200 m, je 0.258 m, Deckel 0.353 m)
+  O3 Wolf stirbt in der Höhle          Tier wolf#5833 (stirbt, Gier 0°) bei 2.0/71.4: am Ende y 46.76 · Grund 46.51 · Oberkante 86.26 · tiefste Lage unter dem Grund 0.00 m · y min 46.53 · Tod: Haut über dem Fels im Stand -0.020 m, liegend -0.020 m, im Kippen -0.020 … -0.020 m
+  O3 Wolf stirbt in der Höhle          Tier wolf#5914 (stirbt, Gier 45°) bei 2.6/71.2: am Ende y 47.14 · Grund 46.74 · Oberkante 86.27 · tiefste Lage unter dem Grund 0.00 m · y min 46.77 · Tod: Haut über dem Fels im Stand -0.020 m, liegend -0.020 m, im Kippen -0.020 … -0.020 m
+  O3 Wolf stirbt in der Höhle          Tier wolf#5995 (stirbt, Gier 90°) bei 2.4/71.4: am Ende y 46.91 · Grund 46.66 · Oberkante 86.26 · tiefste Lage unter dem Grund 0.00 m · y min 46.66 · Tod: Haut über dem Fels im Stand -0.020 m, liegend -0.020 m, im Kippen -0.020 … -0.020 m
+  O3 Wolf stirbt in der Höhle          Tier wolf#6076 (stirbt, Gier 135°) bei 2.4/71.4: am Ende y 46.91 · Grund 46.61 · Oberkante 86.26 · tiefste Lage unter dem Grund 0.00 m · y min 46.65 · Tod: Haut über dem Fels im Stand -0.020 m, liegend 0.020 m, im Kippen -0.020 … 0.020 m
+  O3 Wolf stirbt in der Höhle          Tier wolf#6157 (stirbt, Gier 180°) bei 2.0/71.4: am Ende y 46.75 · Grund 46.50 · Oberkante 86.26 · tiefste Lage unter dem Grund 0.00 m · y min 46.53 · Tod: Haut über dem Fels im Stand -0.020 m, liegend 0.020 m, im Kippen -0.020 … 0.020 m
+  O3 Wolf stirbt in der Höhle          Tier wolf#6238 (stirbt, Gier 225°) bei 2.6/71.2: am Ende y 47.04 · Grund 46.74 · Oberkante 86.27 · tiefste Lage unter dem Grund 0.00 m · y min 46.77 · Tod: Haut über dem Fels im Stand -0.020 m, liegend 0.020 m, im Kippen -0.020 … 0.020 m
+  O3 Wolf stirbt in der Höhle          Tier wolf#6319 (stirbt, Gier 270°) bei 2.4/71.4: am Ende y 46.90 · Grund 46.65 · Oberkante 86.26 · tiefste Lage unter dem Grund 0.00 m · y min 46.66 · Tod: Haut über dem Fels im Stand 0.020 m, liegend 0.020 m, im Kippen -0.020 … 0.020 m
+  O3 Wolf stirbt in der Höhle          Tier wolf#6400 (stirbt, Gier 315°) bei 2.4/71.4: am Ende y 46.86 · Grund 46.61 · Oberkante 86.26 · tiefste Lage unter dem Grund 0.00 m · y min 46.65 · Tod: Haut über dem Fels im Stand -0.020 m, liegend -0.020 m, im Kippen -0.020 … -0.020 m
+  O3 Spieler in der Höhle              Spieler bei 2.6/69.0: am Ende y 47.68 · Grund 47.68 · Oberkante 86.41 · tiefste Lage unter dem Grund 0.00 m · y min 46.65
+  Lebender Stand am Wandfuß: 0 von 8 Wölfen tiefer als 0.15 m im Fels, Haut -0.02 … 0.02 m über dem Fels
+  Zensus: 12 Überhang-Spalten, 24 Proben, 0 Täter
+    · 5.5/-23.4 (Grund 48.8, Oberkante 91.3)
+    · -2.1/-25.9 (Grund 42.7, Oberkante 91.3)
+    · 26.8/-41.6 (Grund 62.7, Oberkante 92.0)
+    · 31.9/-41.5 (Grund 62.7, Oberkante 91.9)
+    · 9.1/-59.2 (Grund 64.4, Oberkante 92.6)
+    · 33.2/-46.3 (Grund 61.8, Oberkante 92.0)
+    · 4.0/73.3 (Grund 47.0, Oberkante 86.1)
+    · 10.2/69.5 (Grund 49.4, Oberkante 86.3)
+    · 30.9/81.9 (Grund 56.1, Oberkante 85.4)
+    · 15.7/105.5 (Grund 50.2, Oberkante 83.8)
+    · 11.4/108.9 (Grund 51.6, Oberkante 83.6)
+    · 21.2/107.4 (Grund 46.3, Oberkante 83.4)
+  Schmuggel (T): {"rot":true,"mass":"99.00 m unter dem Grund, am Ende y -28.24"}
+  B-ZAHL {"art":"eben","x":39.27719607833576,"z":45.357489659635775,"y":87.78058416750049,"abstand":60,"mitte":[0,0],"spanne":0.66,"bloecke":20,"y0":88.2734375,"hoehe":70,"nach":{"edits":20,"loecher":0,"sohle":0.04110891860764809,"hoehe":70},"hub":[3.4921875,3.515625],"sohle":0.022431871144135584,"befunde":[]}
+  Quelle: die Körper-Schritte lesen den Boden unter dem Körper
+
+✅ FALL-WÄCHTER GRÜN — jeder Körper steht auf dem Boden unter ihm: keiner fällt durch, keiner springt aufs Dach.

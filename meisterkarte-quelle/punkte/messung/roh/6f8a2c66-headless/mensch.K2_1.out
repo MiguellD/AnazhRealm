@@ -1,0 +1,35 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben bewohner
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7718/index.html · der Puls steht seit 20.3 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 38.5 s
+[stall-akte] Puls 29×, zuletzt vor 20.3 s — complete · renderer bereit · weltbild da · frames 788 · welt 788 Takte · Ruhe 0 · zuletzt Bau-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 564 115 % · browser 29092 1 % · GPU 27692 0 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 07:48 gpu 9/r 242 · 07:50 gpu 2/r 260 · 07:52 gpu 1/r 693 · 07:54 gpu 3/r 628 · 07:56 gpu 1/r 215 · 07:58 gpu 2/r 137 · 08:00 gpu 2/r 123 · 08:02 gpu 2/r 571 · 08:04 gpu 1/r 415 · 08:06 gpu 1/r 691 · 08:08 gpu 1/r 714 · 08:10 gpu 1/r 377 · 08:12 gpu 1/r 162 · 08:14 gpu 1/r 180 · 08:16 gpu 0/r 196 · 08:19 gpu 0/r 120 · 08:21 gpu 0/r 113 · 08:23 gpu 0/r 113 · 08:25 gpu 0/r 102 · 08:27 gpu 0/r 105 · 08:29 gpu 0/r 103 · 08:31 gpu 0/r 102 · 08:33 gpu 0/r 100 · 08:35 gpu 0/r 101 · 08:37 gpu 0/r 116
+[stall-akte] Stapel _tickBewohner :544 < takt :2576 < (anonym) :2618
+[stall-akte] Konsole log: [AnazhRealm V18.546.82] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — Cannot read properties of undefined (reading 'enabled')
+[stall-akte] Konsole log: [AnazhRealm V18.546.82] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.82] [WARN] Der Rundblick steht nach 120 Takten ohne: 1 Bäume und Bauten wachsen · 311 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.82] [INFO] Siedlung „Steintal" gewachsen (Zelle start, 18 Slots).
+[stall-akte] Konsole log: [AnazhRealm V18.546.82] [INFO] KAMIN-RAUCH: 18 Quelle(n) live (chimney→rauchQuelle)
+[stall-akte] Konsole log: [AnazhRealm V18.546.82] [WARN] FPS-Einbruch: 14 (zuvor ~36)
+[stall-akte] Konsole log: [AnazhRealm V18.546.82] [WARN] FPS-Einbruch: 21 (zuvor ~34)
+[stall-akte] Konsole log: [AnazhRealm V18.546.82] [INFO] WERK IM WASSER: glutbrunnen bei -127/235 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.82] [WARN] FPS-Einbruch: 21 (zuvor ~32)
+[stall-akte] Konsole log: [AnazhRealm V18.546.82] [WARN] FPS-Einbruch: 17 (zuvor ~31)
+[stall-akte] Konsole log: [AnazhRealm V18.546.82] [INFO] WERK IM WASSER: glutbrunnen bei -153/244 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.82] [INFO] Emotion 'sorrow' triggert Welt-Effekt (Wert 0.70)
+[stall-akte] Stderr [29092:27512:1024/140805.433:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [29092:27512:1024/140805.437:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [29092:27512:1024/140805.481:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [29092:27512:1024/140805.542:ERROR:google_apis\gcm\engine\mcs_client.cc:702]   Error code: 401  Error message: Authentication Failed: wrong_secret
+[stall-akte] Stderr [29092:27512:1024/140805.542:ERROR:google_apis\gcm\engine\mcs_client.cc:704] Failed to log in to GCM, resetting connection.
+[stall-akte] Stderr [29092:27512:1024/140834.711:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _tickBewohner :544
+[stall-akte] Seite #2: der Puls kehrt zurück nach 66.4 s — complete · renderer bereit · weltbild da · frames 803 · welt 803 Takte · Ruhe 0 · zuletzt Bau-Regung · programme 0 · gl-sync 0
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ bewohner  {"sprungN":0,"alsLeib":4,"schmiede10":2,"schmiede2":0,"dorf":"Steintal","haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":40,"third":37},"nahLeiber":4,"plan":true,"planGleich":true,"bewohner":81,"trefferMin":0.983,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.022,"wegLeib":1070.1,"spuren":84},"blick":{"n":163,"quote":0.963,"sektorMax":0.178},"ohnePlatz":0,"ohnePlatzWer":[],"takt":{"n":1800,"p95":0.9,"mittel":0.438},"huellen":18,"wege":{"wandN":0,"wand":[],"durch":259,"tuer":259,"falsch":[],"aufWeg":0.947,"wegeMin":4,"wegeMax":8,"ausserN":0,"ausser":[],"streckeMin":46,"kurzN":0,"kurz":[]},"stall":null,"sek":82.5,"wiederkehr":{"n":1296,"maxM":0.949,"ueberN":0,"ueber":[]}}
+
+  (170 s) — Sekunden je Probe: bewohner: 153
+
+✅ GRÜN — bewohner

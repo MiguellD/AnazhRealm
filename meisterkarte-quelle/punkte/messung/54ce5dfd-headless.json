@@ -1,0 +1,37 @@
+{
+ "sha": "54ce5dfd783188cbb0a55e738eef98624e125406",
+ "geraet": "headless",
+ "zeit": "2026-10-24T16:46:02.450Z",
+ "host": "MiguellD",
+ "je": {
+  "studios.K5#1": {
+   "gruen": true,
+   "zahl": "3/3 Baupläne · Stufen L0 160 · L1 32 · L2 14 △ · Kosten pass/pass/pass · Neuladen steht · der Wirt nennt die Art 0×",
+   "exit": 0,
+   "minuten": 0.44,
+   "zeit": "2026-10-24T16:46:02.601Z",
+   "abdruck": "060cdf4401e9",
+   "port": 7755
+  },
+  "studios.K5#2": {
+   "gruen": true,
+   "zahl": "4/4 Wege (✓ Werkstatt 6f1c8c0a/1 · ✓ KI-Satz a996fd2b/1 · ✓ Foundry 6f1c8c0a/1 · af97477e/1 · dbd19cd4/1 · ✓ P2P 6f1c8c0a/1) · Atlas worlds/neuntes-buch/stele-core.js · der Wirt nennt die Art 0×",
+   "exit": 0,
+   "minuten": 0.44,
+   "zeit": "2026-10-24T16:46:02.601Z",
+   "abdruck": "fde1d0fb1103",
+   "port": 7755,
+   "zwilling": "studios.K5#1"
+  },
+  "stoffe.K3#1": {
+   "gruen": false,
+   "zahl": "keine Eis-Probe in der Ausgabe (Exit 0)",
+   "exit": 0,
+   "minuten": 0.54,
+   "grund": "ROT: keine Eis-Probe in der Ausgabe (Exit 0)",
+   "zeit": "2026-10-24T16:46:02.450Z",
+   "abdruck": "7feb9a80b64d",
+   "port": 7718
+  }
+ }
+}

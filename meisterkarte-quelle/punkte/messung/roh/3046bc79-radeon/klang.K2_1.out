@@ -1,0 +1,16 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-radeon'); K=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination'); A=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\3046bc79-radeon\klang.K2_1.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; (PORT=7779 node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:7779/ && break; sleep 1; done; export SPIEL_URL=http://localhost:7779; node "$D/m15-wind.cjs" 60
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T15:40:02+02:00 pid=592 (2 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T15:40:02+02:00 pid=592 (65 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T15:40:02+02:00 pid=592 (128 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T15:40:02+02:00 pid=592 (194 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T15:40:02+02:00 pid=592 (258 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T15:40:02+02:00 pid=592 (320 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T15:46:13+02:00 pid=32544 (14 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T15:46:13+02:00 pid=32544 (78 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T15:46:13+02:00 pid=32544 (143 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T15:46:13+02:00 pid=32544 (208 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T15:46:13+02:00 pid=32544 (270 s)
+gpu-lauf: warte auf stadt-takt-z15d 2026-10-24T15:46:13+02:00 pid=32544 (334 s)
+SCHLOSS VERWAIST (stadt-takt-z15d 2026-10-24T15:46:13+02:00 pid=32544: Halter pid=32544 lebt nicht) — gelöst
+gpu-lauf: Schloss punkte-radeon nach 723 s
+{"stand":{"ctx":"running","enabled":true,"um":true,"paare":71,"steht":true},"wahl":{"hz":256.98944091796875,"kand":1,"zensus":[["wind",-35],["glut",-37.4],["vogel",-45.4]]},"fpsVor":60.1,"bilder":1124,"fenster":119,"r0":{"lagS":0,"r":0.8745030744995751,"n":119,"cvX":0.2554882658511438,"cvY":0.551912788276495},"best":{"lagS":-0.5,"r":0.8970290273312725,"n":118,"cvX":0.25655887404825845,"cvY":0.5539853543736254}}
