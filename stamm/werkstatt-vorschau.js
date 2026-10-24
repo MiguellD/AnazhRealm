@@ -556,7 +556,8 @@ class AnazhRealm_werkstatt_vorschau {
     // _edgeContinuity), kein erfundener Richter. STEHENDES Werk → Standfestigkeit, GEHALTENES →
     // Schwung + Schneide; jedes → Lastpfad (ein schwebendes Teil ist immer falsch).
     // Bau-/Edit-Zeit gerechnet und gecacht — der RAF-Tick liest nur den Cache.
-    _workshopPhysicsVerdict(bp) {
+    // `boden`: der Grund im Plan (Werkstatt und Setzen: y = 0; nach einem Fall sein tiefstes Teil, `_werkGesetzSetzen`).
+    _workshopPhysicsVerdict(bp, boden = 0) {
         const out = { lean: 0, leanDir: { x: 0, z: 0 }, floatingParts: [], buckles: false, swingDrag: 0, lines: [] };
         if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return out;
         const role = (typeof this._displayRole === "function" && this._displayRole(bp)) || bp.role || "";
@@ -568,8 +569,9 @@ class AnazhRealm_werkstatt_vorschau {
             role === "soul" ||
             role === "portal";
         const wielded = role === "held" || role === "weapon" || role === "tool" || role === "brecher";
-        // Ω-Φ5 Lastpfad — universell (ein schwebendes Teil trägt nichts, egal die Rolle).
-        const lp = this._loadPath(bp);
+        // Ω-Φ5 Lastpfad — universell (ein schwebendes Teil trägt nichts, egal die Rolle); was steht, steht auf dem Grund des
+        // Plans (y = 0, das Gitter und der Boden der Welt), was man hält, hängt am eigenen Zusammenhalt.
+        const lp = this._loadPath(bp, standing ? boden : undefined);
         out.floatingParts = Array.isArray(lp.floatingParts) ? lp.floatingParts.slice() : [];
         if (out.floatingParts.length) {
             out.lines.push({
@@ -579,7 +581,7 @@ class AnazhRealm_werkstatt_vorschau {
         }
         // Ω-Φ2 Stabilität — für STEHENDE Werke (kippt → wankt). Ein Schwert „kippt" nicht.
         if (standing) {
-            const stab = this._stability(bp);
+            const stab = this._stability(bp, boden);
             if (!stab.inside) {
                 out.lean = 1;
                 out.lines.push({ sev: "warn", text: "kippt — der Schwerpunkt liegt außerhalb der Standfläche" });
@@ -590,7 +592,7 @@ class AnazhRealm_werkstatt_vorschau {
                 out.lines.push({ sev: "ok", text: "steht — der Schwerpunkt sitzt sicher über der Standfläche" });
             }
             // Kipp-Richtung: vom Stützpolygon-Schwerpunkt zum CoM.xz (dorthin überhängt das Gewicht).
-            const poly = this._supportPolygon(bp);
+            const poly = this._supportPolygon(bp, boden);
             if (poly && poly.hull && poly.hull.length && stab.com) {
                 let cx = 0,
                     cz = 0;

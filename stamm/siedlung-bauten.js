@@ -524,6 +524,7 @@ class AnazhRealm_siedlung_bauten {
                 1
             );
             if (rp || rr) this._archRittNeigung(entry, m, rp, rr);
+            if (entry._gesetz) this._werkPoseMal(entry, m); // der Sturz und das Rollen des Werks (`_werkGesetzSetzen`)
             return m;
         }
         // compose(T, R=identity, S) — direkt gesetzt (schneller als compose).
@@ -532,6 +533,7 @@ class AnazhRealm_siedlung_bauten {
         m.elements[13] = baseY;
         m.elements[14] = entry.position.z || 0;
         if (rp || rr) this._archRittNeigung(entry, m, rp, rr);
+        if (entry._gesetz) this._werkPoseMal(entry, m);
         return m;
     }
 
