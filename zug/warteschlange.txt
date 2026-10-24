@@ -41,3 +41,4 @@ z20-gtx 1 punkte sha=1d9164e9144d15f70c40e8e5876cf98a2f0cacc8 geraet=gtx
 z1920-abab 1 abab A=6f8a2c6638623a037f69bf110358f36b68b343d6 B=1d9164e9144d15f70c40e8e5876cf98a2f0cacc8 zellen=w-ego,d-ego
 z23-abab 1 abab A=79c0fae296ec982fe5ad2673a85157eb9f7ea313 B=54ce5dfd783188cbb0a55e738eef98624e125406 zellen=w-ego,d-ego,stadt
 z23-punkte 2 punkte sha=54ce5dfd783188cbb0a55e738eef98624e125406 geraet=gtx
+z24-abab 1 abab A=54ce5dfd783188cbb0a55e738eef98624e125406 B=b8952e9b3bb1f49da8080c4f0029642c079208c8 zellen=w-ego,d-ego,stadt
