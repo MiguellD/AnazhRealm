@@ -1,0 +1,14 @@
+10:32:32 SERIE START A=833bbc244[0] B=056330d8a[0] Instrument=056330d8a ZELLEN=d-takt
+10:32:39 d-takt-A1 start FP=2bd7aa210ec1c3de 66 52 gpu[66, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/messplatz/serie.sh: line 136: 27072 Terminated              nvidia-smi --query-gpu=timestamp,clocks.gr,clocks.mem,temperature.gpu,power.draw,pstate,clocks_throttle_reasons.active,memory.used --format=csv,noheader -l 1 > $1 2> /dev/null
+10:35:47 d-takt-A1 ende gpu[81, 923 MHz, 3802 MHz, P2, 0x0000000000000001] steht: fps 79.1 F95 16.7 C95 5 k0 0.21 |  takt[TAKT-SPITZE: CPU-Takt {"p50":4.4,"p95":5.7,"p99":7,"max":11.7} ms (K2 8 ms), 217 Takte ab p95 (217 mit Proben), Weg 0 m]
+10:36:18 d-takt-B1 start FP=bd279833f9e298d2 66 52 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/messplatz/serie.sh: line 136: 27239 Terminated              nvidia-smi --query-gpu=timestamp,clocks.gr,clocks.mem,temperature.gpu,power.draw,pstate,clocks_throttle_reasons.active,memory.used --format=csv,noheader -l 1 > $1 2> /dev/null
+10:39:33 d-takt-B1 ende gpu[81, 923 MHz, 3802 MHz, P2, 0x0000000000000001] steht: fps 74.7 F95 16.8 C95 5.8 k0 0.18 |  takt[TAKT-SPITZE: CPU-Takt {"p50":5.2,"p95":6.6,"p99":8,"max":51.6} ms (K2 8 ms), 244 Takte ab p95 (244 mit Proben), Weg 0 m]
+10:40:05 d-takt-A2 start FP=2bd7aa210ec1c3de 66 52 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/messplatz/serie.sh: line 136: 27383 Terminated              nvidia-smi --query-gpu=timestamp,clocks.gr,clocks.mem,temperature.gpu,power.draw,pstate,clocks_throttle_reasons.active,memory.used --format=csv,noheader -l 1 > $1 2> /dev/null
+10:43:18 d-takt-A2 ende gpu[81, 923 MHz, 3802 MHz, P2, 0x0000000000000001] steht: fps 77.5 F95 16.8 C95 5.4 k0 0.21 |  takt[TAKT-SPITZE: CPU-Takt {"p50":4.7,"p95":6.1,"p99":7.7,"max":16.8} ms (K2 8 ms), 243 Takte ab p95 (243 mit Proben), Weg 0 m]
+10:43:54 d-takt-B2 start FP=bd279833f9e298d2 66 52 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/messplatz/serie.sh: line 136: 27527 Terminated              nvidia-smi --query-gpu=timestamp,clocks.gr,clocks.mem,temperature.gpu,power.draw,pstate,clocks_throttle_reasons.active,memory.used --format=csv,noheader -l 1 > $1 2> /dev/null
+10:47:07 d-takt-B2 ende gpu[82, 936 MHz, 3802 MHz, P2, 0x0000000000000001] steht: fps 74.8 F95 16.8 C95 5.7 k0 0.18 |  takt[TAKT-SPITZE: CPU-Takt {"p50":4.7,"p95":5.8,"p99":7.1,"max":29.7} ms (K2 8 ms), 218 Takte ab p95 (218 mit Proben), Weg 0 m]
+10:47:32 SERIE ENDE A-status[0] B-status[0]

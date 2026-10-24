@@ -1,0 +1,44 @@
+CPU-Takt p95 A 5.7 / 6.1 · B 6.6 / 5.8 ms; p50 A 4.4 / 4.7 · B 5.2 / 4.7
+Spitzen-Takte mit Proben A 217/217 243/243 · B 244/244 218/218
+
+SELBST ms je Takt ab p95 — größtes Δ B−A (A · B):
+    0.063  0.085 · 0.148  updateMatrixWorld [three.core.min.js]  [vendor/three.core.min.js]
+    0.051  0.02 · 0.071  _bodenSichtAt  [stamm/gelaende-boden.js]
+    0.045  0.037 · 0.082  updateCreatures  [stamm/kreatur-verhalten.js]
+    0.041  0 · 0.041  (anonym) [stamm/studio-bruecke.js:2327]  [stamm/studio-bruecke.js]
+    0.029  0.107 · 0.136  AnazhRealm._diaetGeteiltSchreiben  [stamm/bild-diaet.js]
+    0.027  0.023 · 0.05  _loopWeatherAndGrowth  [stamm/dirigent-takt.js]
+    0.026  0.044 · 0.07  traverse [three.core.min.js]  [vendor/three.core.min.js]
+    0.025  0.031 · 0.056  writeTexture
+    0.024  0.097 · 0.12  AnazhRealm._diaetRefresh  [stamm/bild-diaet.js]
+    0.024  0.041 · 0.065  setBindGroup
+    0.023  0.021 · 0.044  O.updateMatrix  [stamm/bild-diaet.js]
+    0.017  0.032 · 0.049  _passSicht  [stamm/bild-kosten.js]
+
+GESAMT ms je Takt ab p95 — größtes Δ B−A (A · B):
+    0.223  0.293 · 0.516  _loopWeatherAndGrowth  [stamm/dirigent-takt.js]
+    0.203  0.201 · 0.404  updateCreatures  [stamm/kreatur-verhalten.js]
+    0.174  0 · 0.174  tickFaunaLifecycle  [stamm/kreatur-leben.js]
+    0.153  4.754 · 4.907  _loopRender  [stamm/dirigent-takt.js]
+    0.152  0 · 0.152  _creatureNaturalDeath  [stamm/kreatur-leben.js]
+     0.15  0 · 0.15  _kreaturFaellt  [stamm/kreatur-leben.js]
+     0.15  0 · 0.15  _todKippWahl  [stamm/kreatur-leben.js]
+    0.147  0 · 0.147  _todHebeTafel  [stamm/kreatur-leben.js]
+    0.139  2.073 · 2.212  needsRefresh [three.webgpu.min.js]  [vendor/three.webgpu.min.js]
+    0.128  2.069 · 2.197  o.needsRefresh  [stamm/stoff-material.js]
+    0.127  0 · 0.127  spalt  [stamm/kreatur-leben.js]
+    0.124  4.523 · 4.646  _renderScene [three.webgpu.min.js]  [vendor/three.webgpu.min.js]
+
+SELBST ms je Takt (alle) — größtes Δ B−A (A · B):
+    0.031  0.074 · 0.105  updateMatrixWorld [three.core.min.js]  [vendor/three.core.min.js]
+    0.031  0.012 · 0.042  writeTexture
+    0.022  0.039 · 0.061  updateCreatures  [stamm/kreatur-verhalten.js]
+    0.013  0.147 · 0.16  update [three.webgpu.min.js]  [vendor/three.webgpu.min.js]
+     0.01  0.111 · 0.12  updateByType [three.webgpu.min.js]  [vendor/three.webgpu.min.js]
+    0.009  0.001 · 0.009  _weltFeldMatrix  [stamm/dienst.js]
+    0.008  0.025 · 0.033  _loopWeatherAndGrowth  [stamm/dirigent-takt.js]
+    0.008  0.115 · 0.123  get [three.webgpu.min.js]  [vendor/three.webgpu.min.js]
+    0.008  0.01 · 0.018  _kreaturHuellenKontakt  [stamm/kreatur-verhalten.js]
+    0.007  0.032 · 0.039  multiplyMatrices [three.core.min.js]  [vendor/three.core.min.js]
+    0.007  0.003 · 0.01  _kaskadeFit  [stamm/bild-kosten.js]
+    0.007  0.038 · 0.045  _kaskadenWerferOben  [stamm/bild-kosten.js]

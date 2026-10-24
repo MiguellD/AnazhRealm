@@ -1,0 +1,33 @@
+TAKT-SPITZE: CPU-Takt {"p50":4.7,"p95":5.8,"p99":7.1,"max":29.7} ms (K2 8 ms), 218 Takte ab p95 (218 mit Proben), Weg 0 m
+  Spitze  Mitte  ms je Takt, Rahmen ≥ 0,25 ms
+    4.34   3.02  renderer._renderScene
+    4.31   3.01    _renderScene [three.webgpu.min.js]
+    2.17   1.61      _renderObjects [three.webgpu.min.js]
+    1.47   1.14        renderer.renderObject
+    1.46   1.13          renderObject [three.webgpu.min.js]
+    1.39   1.08            rend._renderObjectDirect [werkbank]
+    1.35   1.05              renderer._renderObjectDirect
+    1.14   0.86                zeichne
+    0.63   0.49                  needsRefresh [three.webgpu.min.js]
+    0.62   0.48                    o.needsRefresh
+    0.62   0.48                      AnazhRealm._diaetRefresh
+    0.42   0.34                        AnazhRealm._diaetGeteiltSchreiben
+    0.26   0.21                          _update [three.webgpu.min.js]
+    0.69   0.46        i [three.webgpu.min.js]
+    0.68   0.45          renderer.renderObject
+    0.66   0.44            renderObject [three.webgpu.min.js]
+    0.54   0.36              rend._renderObjectDirect [werkbank]
+    0.51   0.35                renderer._renderObjectDirect
+    0.41   0.31                  zeichne
+    0.74   0.42      scene.onBeforeRender
+    0.73   0.42        _passSicht
+    0.26   0.23          _instanzWahlPass
+    0.46   0.28  _loopWeatherAndGrowth
+    0.34   0.22    updateCreatures
+     0.4    0.1  _loopRender
+    0.34   0.32  mark
+    0.26    0.2  _loopVoxelStreaming
+    0.26   0.19    _runFrameScheduler
+TÄTER (Spitze − Mitte ≥ 1 ms): keiner
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\omen-z13-takt\takt\d-takt-B2-takt.json

@@ -1,0 +1,169 @@
+{
+ "echt": true,
+ "boot": {
+  "art": "erst",
+  "ladungen": 1
+ },
+ "cpuMs": {
+  "p50": 4.4,
+  "p95": 5.7,
+  "p99": 7,
+  "max": 11.7
+ },
+ "takte": 7169,
+ "spitzeN": 217,
+ "gedeckt": 217,
+ "bahnM": 0,
+ "zeilen": [
+  {
+   "tiefe": 0,
+   "name": "renderer._renderScene",
+   "spitzeMs": 4.33,
+   "mitteMs": 2.79
+  },
+  {
+   "tiefe": 1,
+   "name": "_renderScene [three.webgpu.min.js]",
+   "spitzeMs": 4.31,
+   "mitteMs": 2.78
+  },
+  {
+   "tiefe": 2,
+   "name": "_renderObjects [three.webgpu.min.js]",
+   "spitzeMs": 2.29,
+   "mitteMs": 1.49
+  },
+  {
+   "tiefe": 3,
+   "name": "renderer.renderObject",
+   "spitzeMs": 1.61,
+   "mitteMs": 1.06
+  },
+  {
+   "tiefe": 4,
+   "name": "renderObject [three.webgpu.min.js]",
+   "spitzeMs": 1.6,
+   "mitteMs": 1.05
+  },
+  {
+   "tiefe": 5,
+   "name": "rend._renderObjectDirect [werkbank]",
+   "spitzeMs": 1.52,
+   "mitteMs": 1.01
+  },
+  {
+   "tiefe": 6,
+   "name": "renderer._renderObjectDirect",
+   "spitzeMs": 1.45,
+   "mitteMs": 0.97
+  },
+  {
+   "tiefe": 7,
+   "name": "zeichne",
+   "spitzeMs": 1.18,
+   "mitteMs": 0.81
+  },
+  {
+   "tiefe": 8,
+   "name": "needsRefresh [three.webgpu.min.js]",
+   "spitzeMs": 0.63,
+   "mitteMs": 0.46
+  },
+  {
+   "tiefe": 9,
+   "name": "o.needsRefresh",
+   "spitzeMs": 0.63,
+   "mitteMs": 0.46
+  },
+  {
+   "tiefe": 10,
+   "name": "AnazhRealm._diaetRefresh",
+   "spitzeMs": 0.62,
+   "mitteMs": 0.45
+  },
+  {
+   "tiefe": 11,
+   "name": "AnazhRealm._diaetGeteiltSchreiben",
+   "spitzeMs": 0.41,
+   "mitteMs": 0.34
+  },
+  {
+   "tiefe": 3,
+   "name": "i [three.webgpu.min.js]",
+   "spitzeMs": 0.67,
+   "mitteMs": 0.42
+  },
+  {
+   "tiefe": 4,
+   "name": "renderer.renderObject",
+   "spitzeMs": 0.66,
+   "mitteMs": 0.42
+  },
+  {
+   "tiefe": 5,
+   "name": "renderObject [three.webgpu.min.js]",
+   "spitzeMs": 0.64,
+   "mitteMs": 0.4
+  },
+  {
+   "tiefe": 6,
+   "name": "rend._renderObjectDirect [werkbank]",
+   "spitzeMs": 0.53,
+   "mitteMs": 0.35
+  },
+  {
+   "tiefe": 7,
+   "name": "renderer._renderObjectDirect",
+   "spitzeMs": 0.52,
+   "mitteMs": 0.33
+  },
+  {
+   "tiefe": 8,
+   "name": "zeichne",
+   "spitzeMs": 0.44,
+   "mitteMs": 0.28
+  },
+  {
+   "tiefe": 2,
+   "name": "scene.onBeforeRender",
+   "spitzeMs": 0.73,
+   "mitteMs": 0.4
+  },
+  {
+   "tiefe": 3,
+   "name": "_passSicht",
+   "spitzeMs": 0.73,
+   "mitteMs": 0.39
+  },
+  {
+   "tiefe": 4,
+   "name": "_instanzWahlPass",
+   "spitzeMs": 0.27,
+   "mitteMs": 0.2
+  },
+  {
+   "tiefe": 0,
+   "name": "_loopRender",
+   "spitzeMs": 0.38,
+   "mitteMs": 0.11
+  },
+  {
+   "tiefe": 0,
+   "name": "mark",
+   "spitzeMs": 0.33,
+   "mitteMs": 0.32
+  },
+  {
+   "tiefe": 0,
+   "name": "_loopWeatherAndGrowth",
+   "spitzeMs": 0.3,
+   "mitteMs": 0.22
+  }
+ ],
+ "taeter": [],
+ "marken": 7169,
+ "profil": true,
+ "posten": [],
+ "befunde": [],
+ "tabelle": "TAKT-SPITZE: CPU-Takt {\"p50\":4.4,\"p95\":5.7,\"p99\":7,\"max\":11.7} ms (K2 8 ms), 217 Takte ab p95 (217 mit Proben), Weg 0 m\n  Spitze  Mitte  ms je Takt, Rahmen ≥ 0,25 ms\n    4.33   2.79  renderer._renderScene\n    4.31   2.78    _renderScene [three.webgpu.min.js]\n    2.29   1.49      _renderObjects [three.webgpu.min.js]\n    1.61   1.06        renderer.renderObject\n     1.6   1.05          renderObject [three.webgpu.min.js]\n    1.52   1.01            rend._renderObjectDirect [werkbank]\n    1.45   0.97              renderer._renderObjectDirect\n    1.18   0.81                zeichne\n    0.63   0.46                  needsRefresh [three.webgpu.min.js]\n    0.63   0.46                    o.needsRefresh\n    0.62   0.45                      AnazhRealm._diaetRefresh\n    0.41   0.34                        AnazhRealm._diaetGeteiltSchreiben\n    0.67   0.42        i [three.webgpu.min.js]\n    0.66   0.42          renderer.renderObject\n    0.64    0.4            renderObject [three.webgpu.min.js]\n    0.53   0.35              rend._renderObjectDirect [werkbank]\n    0.52   0.33                renderer._renderObjectDirect\n    0.44   0.28                  zeichne\n    0.73    0.4      scene.onBeforeRender\n    0.73   0.39        _passSicht\n    0.27    0.2          _instanzWahlPass\n    0.38   0.11  _loopRender\n    0.33   0.32  mark\n     0.3   0.22  _loopWeatherAndGrowth\nTÄTER (Spitze − Mitte ≥ 1 ms): keiner"
+}

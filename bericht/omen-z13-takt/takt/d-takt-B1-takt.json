@@ -1,0 +1,301 @@
+{
+ "echt": true,
+ "boot": {
+  "art": "erst",
+  "ladungen": 1
+ },
+ "cpuMs": {
+  "p50": 5.2,
+  "p95": 6.6,
+  "p99": 8,
+  "max": 51.6
+ },
+ "takte": 7150,
+ "spitzeN": 244,
+ "gedeckt": 244,
+ "bahnM": 0,
+ "zeilen": [
+  {
+   "tiefe": 0,
+   "name": "renderer._renderScene",
+   "spitzeMs": 4.89,
+   "mitteMs": 3.38
+  },
+  {
+   "tiefe": 1,
+   "name": "_renderScene [three.webgpu.min.js]",
+   "spitzeMs": 4.87,
+   "mitteMs": 3.36
+  },
+  {
+   "tiefe": 2,
+   "name": "_renderObjects [three.webgpu.min.js]",
+   "spitzeMs": 2.48,
+   "mitteMs": 1.78
+  },
+  {
+   "tiefe": 3,
+   "name": "renderer.renderObject",
+   "spitzeMs": 1.72,
+   "mitteMs": 1.29
+  },
+  {
+   "tiefe": 4,
+   "name": "renderObject [three.webgpu.min.js]",
+   "spitzeMs": 1.71,
+   "mitteMs": 1.29
+  },
+  {
+   "tiefe": 5,
+   "name": "rend._renderObjectDirect [werkbank]",
+   "spitzeMs": 1.67,
+   "mitteMs": 1.23
+  },
+  {
+   "tiefe": 6,
+   "name": "renderer._renderObjectDirect",
+   "spitzeMs": 1.62,
+   "mitteMs": 1.19
+  },
+  {
+   "tiefe": 7,
+   "name": "zeichne",
+   "spitzeMs": 1.38,
+   "mitteMs": 1
+  },
+  {
+   "tiefe": 8,
+   "name": "needsRefresh [three.webgpu.min.js]",
+   "spitzeMs": 0.82,
+   "mitteMs": 0.63
+  },
+  {
+   "tiefe": 9,
+   "name": "o.needsRefresh",
+   "spitzeMs": 0.81,
+   "mitteMs": 0.62
+  },
+  {
+   "tiefe": 10,
+   "name": "AnazhRealm._diaetRefresh",
+   "spitzeMs": 0.8,
+   "mitteMs": 0.62
+  },
+  {
+   "tiefe": 11,
+   "name": "AnazhRealm._diaetGeteiltSchreiben",
+   "spitzeMs": 0.46,
+   "mitteMs": 0.37
+  },
+  {
+   "tiefe": 8,
+   "name": "P.draw",
+   "spitzeMs": 0.3,
+   "mitteMs": 0.19
+  },
+  {
+   "tiefe": 9,
+   "name": "draw [three.webgpu.min.js]",
+   "spitzeMs": 0.28,
+   "mitteMs": 0.17
+  },
+  {
+   "tiefe": 10,
+   "name": "_draw [three.webgpu.min.js]",
+   "spitzeMs": 0.25,
+   "mitteMs": 0.16
+  },
+  {
+   "tiefe": 3,
+   "name": "i [three.webgpu.min.js]",
+   "spitzeMs": 0.75,
+   "mitteMs": 0.47
+  },
+  {
+   "tiefe": 4,
+   "name": "renderer.renderObject",
+   "spitzeMs": 0.73,
+   "mitteMs": 0.46
+  },
+  {
+   "tiefe": 5,
+   "name": "renderObject [three.webgpu.min.js]",
+   "spitzeMs": 0.71,
+   "mitteMs": 0.45
+  },
+  {
+   "tiefe": 6,
+   "name": "rend._renderObjectDirect [werkbank]",
+   "spitzeMs": 0.6,
+   "mitteMs": 0.39
+  },
+  {
+   "tiefe": 7,
+   "name": "renderer._renderObjectDirect",
+   "spitzeMs": 0.57,
+   "mitteMs": 0.37
+  },
+  {
+   "tiefe": 8,
+   "name": "zeichne",
+   "spitzeMs": 0.48,
+   "mitteMs": 0.31
+  },
+  {
+   "tiefe": 2,
+   "name": "scene.onBeforeRender",
+   "spitzeMs": 0.76,
+   "mitteMs": 0.45
+  },
+  {
+   "tiefe": 3,
+   "name": "_passSicht",
+   "spitzeMs": 0.75,
+   "mitteMs": 0.45
+  },
+  {
+   "tiefe": 4,
+   "name": "_instanzWahlPass",
+   "spitzeMs": 0.3,
+   "mitteMs": 0.21
+  },
+  {
+   "tiefe": 2,
+   "name": "renderer._renderBundles",
+   "spitzeMs": 0.3,
+   "mitteMs": 0.21
+  },
+  {
+   "tiefe": 3,
+   "name": "_renderBundles [three.webgpu.min.js]",
+   "spitzeMs": 0.29,
+   "mitteMs": 0.2
+  },
+  {
+   "tiefe": 4,
+   "name": "renderer._renderBundle",
+   "spitzeMs": 0.29,
+   "mitteMs": 0.2
+  },
+  {
+   "tiefe": 5,
+   "name": "_renderBundle [three.webgpu.min.js]",
+   "spitzeMs": 0.28,
+   "mitteMs": 0.19
+  },
+  {
+   "tiefe": 6,
+   "name": "needsRefresh [three.webgpu.min.js]",
+   "spitzeMs": 0.27,
+   "mitteMs": 0.19
+  },
+  {
+   "tiefe": 7,
+   "name": "o.needsRefresh",
+   "spitzeMs": 0.27,
+   "mitteMs": 0.19
+  },
+  {
+   "tiefe": 8,
+   "name": "AnazhRealm._diaetRefresh",
+   "spitzeMs": 0.27,
+   "mitteMs": 0.19
+  },
+  {
+   "tiefe": 2,
+   "name": "updateMatrixWorld [three.core.min.js]",
+   "spitzeMs": 0.28,
+   "mitteMs": 0.18
+  },
+  {
+   "tiefe": 2,
+   "name": "_renderTransparents [three.webgpu.min.js]",
+   "spitzeMs": 0.27,
+   "mitteMs": 0.17
+  },
+  {
+   "tiefe": 3,
+   "name": "_renderObjects [three.webgpu.min.js]",
+   "spitzeMs": 0.27,
+   "mitteMs": 0.17
+  },
+  {
+   "tiefe": 4,
+   "name": "renderer.renderObject",
+   "spitzeMs": 0.27,
+   "mitteMs": 0.17
+  },
+  {
+   "tiefe": 5,
+   "name": "renderObject [three.webgpu.min.js]",
+   "spitzeMs": 0.26,
+   "mitteMs": 0.17
+  },
+  {
+   "tiefe": 0,
+   "name": "_loopWeatherAndGrowth",
+   "spitzeMs": 0.57,
+   "mitteMs": 0.36
+  },
+  {
+   "tiefe": 1,
+   "name": "updateCreatures",
+   "spitzeMs": 0.47,
+   "mitteMs": 0.28
+  },
+  {
+   "tiefe": 0,
+   "name": "_loopRender",
+   "spitzeMs": 0.36,
+   "mitteMs": 0.11
+  },
+  {
+   "tiefe": 0,
+   "name": "mark",
+   "spitzeMs": 0.34,
+   "mitteMs": 0.32
+  },
+  {
+   "tiefe": 0,
+   "name": "tickFaunaLifecycle",
+   "spitzeMs": 0.33,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 1,
+   "name": "_creatureNaturalDeath",
+   "spitzeMs": 0.3,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 2,
+   "name": "_kreaturFaellt",
+   "spitzeMs": 0.3,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 3,
+   "name": "_todKippWahl",
+   "spitzeMs": 0.3,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 4,
+   "name": "_todHebeTafel",
+   "spitzeMs": 0.29,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 5,
+   "name": "spalt",
+   "spitzeMs": 0.25,
+   "mitteMs": 0
+  }
+ ],
+ "taeter": [],
+ "marken": 7150,
+ "profil": true,
+ "posten": [],
+ "befunde": [],
+ "tabelle": "TAKT-SPITZE: CPU-Takt {\"p50\":5.2,\"p95\":6.6,\"p99\":8,\"max\":51.6} ms (K2 8 ms), 244 Takte ab p95 (244 mit Proben), Weg 0 m\n  Spitze  Mitte  ms je Takt, Rahmen ≥ 0,25 ms\n    4.89   3.38  renderer._renderScene\n    4.87   3.36    _renderScene [three.webgpu.min.js]\n    2.48   1.78      _renderObjects [three.webgpu.min.js]\n    1.72   1.29        renderer.renderObject\n    1.71   1.29          renderObject [three.webgpu.min.js]\n    1.67   1.23            rend._renderObjectDirect [werkbank]\n    1.62   1.19              renderer._renderObjectDirect\n    1.38      1                zeichne\n    0.82   0.63                  needsRefresh [three.webgpu.min.js]\n    0.81   0.62                    o.needsRefresh\n     0.8   0.62                      AnazhRealm._diaetRefresh\n    0.46   0.37                        AnazhRealm._diaetGeteiltSchreiben\n     0.3   0.19                  P.draw\n    0.28   0.17                    draw [three.webgpu.min.js]\n    0.25   0.16                      _draw [three.webgpu.min.js]\n    0.75   0.47        i [three.webgpu.min.js]\n    0.73   0.46          renderer.renderObject\n    0.71   0.45            renderObject [three.webgpu.min.js]\n     0.6   0.39              rend._renderObjectDirect [werkbank]\n    0.57   0.37                renderer._renderObjectDirect\n    0.48   0.31                  zeichne\n    0.76   0.45      scene.onBeforeRender\n    0.75   0.45        _passSicht\n     0.3   0.21          _instanzWahlPass\n     0.3   0.21      renderer._renderBundles\n    0.29    0.2        _renderBundles [three.webgpu.min.js]\n    0.29    0.2          renderer._renderBundle\n    0.28   0.19            _renderBundle [three.webgpu.min.js]\n    0.27   0.19              needsRefresh [three.webgpu.min.js]\n    0.27   0.19                o.needsRefresh\n    0.27   0.19                  AnazhRealm._diaetRefresh\n    0.28   0.18      updateMatrixWorld [three.core.min.js]\n    0.27   0.17      _renderTransparents [three.webgpu.min.js]\n    0.27   0.17        _renderObjects [three.webgpu.min.js]\n    0.27   0.17          renderer.renderObject\n    0.26   0.17            renderObject [three.webgpu.min.js]\n    0.57   0.36  _loopWeatherAndGrowth\n    0.47   0.28    updateCreatures\n    0.36   0.11  _loopRender\n    0.34   0.32  mark\n    0.33      0  tickFaunaLifecycle\n     0.3      0    _creatureNaturalDeath\n     0.3      0      _kreaturFaellt\n     0.3      0        _todKippWahl\n    0.29      0          _todHebeTafel\n    0.25      0            spalt\nTÄTER (Spitze − Mitte ≥ 1 ms): keiner"
+}
