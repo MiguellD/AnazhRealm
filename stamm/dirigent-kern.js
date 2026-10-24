@@ -693,7 +693,7 @@ class AnazhRealm {
                 tierRufe: 0, // Ereignis-Zähler der Tier-Rufe (headless messbar)
                 // W4 V2/V3 — die Lofi-Pad-Schicht: eine seed- + emotion-
                 // getriebene Akkordfolge (~60 BPM), lazy in initSymphony.
-                lofi: null, // { gain, filter, melodyGain, grooveGain, bassGain, noiseBuffer, degree, lastChordAt, rngState }
+                lofi: null, // { gain, filter, melodyGain, grooveGain, bassGain, noiseBuffer, degree, einsatz, rngState }
                 // Welle 5 Klang — die Klang-Welt (klang:UMWELT), lazy in initSymphony. Runtime-only, NIE im Save.
                 umwelt: null, // { kern, bus, graph, ring, glut, letzteMischung, rufSaat, lage, mix }
                 // Leben-Schau 2 — die Stimme der Fahrt (klang:FAHRT), nur im Sattel (_fahrtKlangTick). Runtime-only.

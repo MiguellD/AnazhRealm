@@ -559,9 +559,13 @@ const STAMM_WURZEL =
     UEBER && (fs.existsSync(path.join(UEBER, stammLib.ALT)) || fs.existsSync(path.join(UEBER, stammLib.DIR)))
         ? UEBER
         : root;
-// die EINE Absenz über den Helfer: außerhalb der Wirt-Leser baut keine Stelle eine Quelle; `q` die Wandlung des Vor-Stands
+// die EINE Absenz über den Helfer: außerhalb der Wirt-Leser (und des Pools, der für sie baut) baut keine Stelle eine Quelle;
+// `q` die Wandlung des Vor-Stands
 function stammQuellen(q) {
-    const ok = stammLib.fehlt({ ausser: Object.keys(WIRT_LESER) }, QUELL_BAU, { wurzel: STAMM_WURZEL, wandel: q });
+    const ok = stammLib.fehlt({ ausser: [...Object.keys(WIRT_LESER), "_klangStimme"] }, QUELL_BAU, {
+        wurzel: STAMM_WURZEL,
+        wandel: q,
+    });
     return {
         rot: ok ? [] : [`G Stamm: ${stammLib.fehlt.wo} baut eine Klang-Quelle ohne Gesetz (außerhalb der Wirt-Leser)`],
     };
@@ -1132,7 +1136,8 @@ const TAKT_TEILE = [
     "_lofiPlayGroove",
     "_lofiPlayBass",
     "_lofiRaum",
-    "_umweltLage",
+    "_umweltOrtLage",
+    "_umweltLuftLage",
     "_tierRufTakt",
     "_fahrtKlangTick",
     "_schrittMaterialAt",

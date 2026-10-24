@@ -167,8 +167,9 @@ class AnazhRealm_klang {
     }
 
     // DER EINE UMWELT-TAKT (aus symphonyTick, jeden Frame): Proben fortsetzen (konstant je Frame), im Misch-Takt die
-    // Lage, im nächsten Bild die Mischung, dann der Graph, dann die Tier-Rufe — je Bild höchstens EIN Teil des Misch-Takts
-    // (klang.K5: alle in einem Bild trugen jedes sechste Bild über 0,2 ms, diag-klang-zensus --takt).
+    // Lage am Ort, im nächsten Bild die Lage der Luft mit den Tier-Rufen, dann die Mischung, dann der Graph — je Bild
+    // höchstens EIN Teil des Misch-Takts (klang.K5: alle in einem Bild trugen jedes sechste Bild über 0,2 ms; die ganze
+    // Lage in einem Bild trug es noch über 0,15 ms, diag-klang-zensus --takt).
     _umweltKlangTick() {
         const s = this.state.symphony;
         const um = s.umwelt;
@@ -180,15 +181,17 @@ class AnazhRealm_klang {
         const teil = um.folge;
         if (teil) {
             um.folge = (teil + 1) % 4;
-            if (teil === 1) um.mix = um.kern.umweltMischung(um.lage);
-            else if (teil === 2) um.graph.anwenden(um.mix, jetzt);
-            else this._tierRufTakt(um.rufDt);
+            if (teil === 1) {
+                um.lage = Object.assign(um.werdend, this._umweltLuftLage());
+                this._tierRufTakt(um.rufDt);
+            } else if (teil === 2) um.mix = um.kern.umweltMischung(um.lage);
+            else um.graph.anwenden(um.mix, jetzt);
             return;
         }
         if (jetzt - um.letzteMischung < O.mischSek) return;
         um.rufDt = Number.isFinite(um.letzteMischung) ? Math.min(1, jetzt - um.letzteMischung) : 0;
         um.letzteMischung = jetzt;
-        um.lage = this._umweltLage();
+        um.werdend = this._umweltOrtLage();
         um.folge = 1;
     }
 
@@ -260,13 +263,18 @@ class AnazhRealm_klang {
     // Feld der Platzierung sagt nur, wo Bäume wachsen DÜRFEN), Sonne (Tageszeit), Jahres-Phase, Leben (auraAt), der
     // Hör-Ring (Ufer/Fluss), der nächste Wasserfall der Region, die nächste Glut (Brenn-Fläche).
     _umweltLage() {
+        const ort = this._umweltOrtLage();
+        return ort && Object.assign(ort, this._umweltLuftLage());
+    }
+
+    // Die Lage am Ort (der Misch-Takt rechnet sie im ersten Bild): der Hör-Ring, der nächste Fall, die nächste Glut —
+    // Abstand und Richtung zum Ohr.
+    _umweltOrtLage() {
         const um = this.state.symphony.umwelt;
         const pm = this.state.playerMesh;
         if (!um || !pm) return null;
         const px = pm.position.x;
         const pz = pm.position.z;
-        const wf = this._weatherFieldFor(this.state.weather);
-        const aura = this.auraAt(px, pz);
         const re = this._umweltRechts();
         const pan = (ux, uz) => Math.max(-1, Math.min(1, ux * re.x + uz * re.z));
         // Der Ring: stilles Wasser (Ufer) und fließendes (Fluss) — Abstand, Anteil, Richtung.
@@ -322,6 +330,15 @@ class AnazhRealm_klang {
                 glut.pan = d > 1e-3 ? pan((e.position.x - px) / d, (e.position.z - pz) / d) : 0;
             }
         }
+        return { ufer, fluss, fall, glut };
+    }
+
+    // Die Lage der Luft (im zweiten Bild): Wetter-Feld × Böen-Drift, die Böe am Ort, die Kronen-Deckung, Sonne, Jahr, Leben.
+    _umweltLuftLage() {
+        const pm = this.state.playerMesh;
+        const px = pm.position.x;
+        const pz = pm.position.z;
+        const wf = this._weatherFieldFor(this.state.weather);
         return {
             windFeld: wf.wind * (this._weatherWob || 1),
             boe: this._windBoeAt(px, pz, this._bildZeit), // die Böe am Ort auf der Bild-Uhr (A9), wie der Wind im Bild
@@ -329,11 +346,7 @@ class AnazhRealm_klang {
             regen: wf.rain,
             sonne: this._sonnenRichtung().y, // die Sonnenhöhe (sin) der EINEN Tag-Achse, mit der Neigung der Bahn
             saisonPhase: typeof this.state.seasonPhase === "number" ? this.state.seasonPhase : 0.375,
-            lebendig: Math.max(0, Math.min(1, aura.lebendig)),
-            ufer,
-            fluss,
-            fall,
-            glut,
+            lebendig: Math.max(0, Math.min(1, this.auraAt(px, pz).lebendig)),
         };
     }
 
@@ -556,7 +569,8 @@ class AnazhRealm_klang {
     }
 
     // Die Stimme: gefilterter Rausch-Burst über state.symphony.masterGain (KEIN zweiter AudioContext;
-    // Symphonie aus → stumm). EIN geteilter Rausch-Buffer je Kontext, zufälliger Start-Offset.
+    // Symphonie aus → stumm) auf einer Rausch-Stimme des Pools (`_klangStimme`, je Filter-Art). EIN geteilter
+    // Rausch-Buffer je Kontext, in Schleife: jeder Schritt hört ein anderes Stück davon.
     // Math.random ist hier legal: reiner Klang-Körper, keine Welt-Substanz.
     _playSchrittOneShot(param) {
         const s = this.state.symphony;
@@ -572,23 +586,62 @@ class AnazhRealm_klang {
             s._schrittNoiseCtx = ctx;
         }
         const t = ctx.currentTime;
-        const src = ctx.createBufferSource();
-        src.buffer = buf;
-        const filt = ctx.createBiquadFilter();
-        filt.type = param.filter;
-        filt.frequency.value = param.freq;
-        filt.Q.value = param.q;
-        const gain = ctx.createGain();
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(param.gain, t + 0.004);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + param.dauer);
-        src.connect(filt);
-        filt.connect(gain);
-        gain.connect(s.masterGain);
-        const spielraum = buf.duration - param.dauer - 0.02;
-        src.start(t, spielraum > 0 ? Math.random() * spielraum : 0);
-        src.stop(t + param.dauer + 0.02);
+        const ende = t + param.dauer + 0.02;
+        const v = this._klangStimme(s.masterGain, "rausch:" + param.filter, t, ende, buf);
+        v.f.frequency.setValueAtTime(param.freq, t);
+        v.f.Q.setValueAtTime(param.q, t);
+        const g = v.g.gain;
+        g.setValueAtTime(0, t);
+        g.linearRampToValueAtTime(param.gain, t + 0.004);
+        g.exponentialRampToValueAtTime(0.0001, t + param.dauer);
+        g.setValueAtTime(0, ende);
         return true;
+    }
+
+    // DER STIMMEN-POOL (klang.K5): ein Klang-Ereignis baut keinen Graphen. Je Ziel-Bus und Art (`ton:<Welle>` ·
+    // `rausch:<Filter>`) leben Stimmen — Quelle → (Filter) → Hülle → Ziel; ein Ton, ein Schlag, ein Schritt ist nur die
+    // Automation einer Stimme, die ab `t` frei ist (`frei` = das Ende ihres letzten Ereignisses), sonst eine neue. Jeder
+    // Ruf schiebt ihren Stop auf `ende` + STIMME_NACHKLANG_S: sie kostet, solange sie klingt, und fällt danach. Bis dahin
+    // baute jede Note, jeder Schlag und jeder Schritt 2–5 Knoten (15–38 µs je Knoten im Spiel, der Groove eines Akkords
+    // 1,5 ms in einem Bild).
+    _klangStimme(ziel, art, t, ende, puffer) {
+        const s = this.state.symphony;
+        const ctx = s.ctx;
+        const je = s.stimmen || (s.stimmen = new WeakMap());
+        let arten = je.get(ziel);
+        if (!arten) je.set(ziel, (arten = new Map()));
+        let liste = arten.get(art);
+        if (!liste) arten.set(art, (liste = []));
+        // gestoppt (oder im nächsten Render-Quantum): sie nimmt keinen Ruf mehr an
+        const jetzt = ctx.currentTime + 0.05;
+        let v = null;
+        for (let i = liste.length - 1; i >= 0; i--) {
+            if (liste[i].stop < jetzt) liste.splice(i, 1);
+            else if (!v && liste[i].frei <= t) v = liste[i];
+        }
+        if (!v) {
+            const ton = art.startsWith("ton:");
+            const q = ton ? ctx.createOscillator() : ctx.createBufferSource();
+            const g = ctx.createGain();
+            g.gain.value = 0;
+            let f = null;
+            if (ton) q.type = art.slice(4);
+            else {
+                q.buffer = puffer;
+                q.loop = true;
+                f = ctx.createBiquadFilter();
+                f.type = art.slice(7);
+                q.connect(f);
+            }
+            (f || q).connect(g);
+            g.connect(ziel);
+            q.start(t);
+            v = { q, f, g, frei: t, stop: 0 };
+            liste.push(v);
+        }
+        v.frei = ende;
+        if (ende + AnazhRealm.STIMME_NACHKLANG_S > v.stop) v.q.stop((v.stop = ende + AnazhRealm.STIMME_NACHKLANG_S));
+        return v;
     }
 
     // Symphonie-Tick (jeden Frame): die Lofi-Musik (eigener Akkord-Takt) und die Klang-Welt (eigener Misch-Takt).
@@ -720,7 +773,7 @@ class AnazhRealm_klang {
             noiseBuffer,
             degree: 0,
             bar: 0, // ZENSUS-REST V18.488 — der Takt-Zähler der progressionDeg-Wanderung
-            lastChordAt: -Infinity,
+            einsatz: -Infinity, // der Einsatz des nächsten Akkords auf der Audio-Uhr (`_lofiTick`)
             rngState: seedNum,
         };
     }
@@ -869,35 +922,35 @@ class AnazhRealm_klang {
         return notes;
     }
 
-    // W4 V3 Phase 2 — die Melodie-Phrase spielen: je Note ein Sinus-Oszillator
+    // Ein Ton der Musik auf einer Stimme des Pools (`_klangStimme`): die Frequenz ab t, die Hülle von 0 linear durch die
+    // Punkte [Sekunden ab t, Pegel]; der letzte Punkt (Pegel 0) ist das Ende des Tons.
+    _lofiTon(ziel, welle, freq, t, punkte) {
+        const v = this._klangStimme(ziel, "ton:" + welle, t, t + punkte[punkte.length - 1][0]);
+        v.q.frequency.setValueAtTime(freq, t);
+        v.g.gain.setValueAtTime(0, t);
+        for (const [dt, pegel] of punkte) v.g.gain.linearRampToValueAtTime(pegel, t + dt);
+    }
+
+    // W4 V3 Phase 2 — die Melodie-Phrase spielen: je Note ein Sinus-Ton
     // (klare, weiche Lead-Stimme über dem Dreieck-Pad) mit Pluck-Hüllkurve.
     _lofiPlayMelody(degree, durSec, t0) {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx || !s.lofi || !s.lofi.melodyGain) return;
-        const ctx = s.ctx;
-        const now = t0 != null ? t0 : ctx.currentTime;
+        const now = t0 != null ? t0 : s.ctx.currentTime;
         // GENRE-STIMMEN (18.07.) — die LEAD-Stimme des Gesetzbuchs (inst.lead
         // wählt Wellenform/Pegel/Anschlag; tilt.lead mischt) — Flöte singt,
         // LeadSynth sticht, Rhodes perlt. Fail-soft byte-alt (sine, Faktor 1).
         const ST = this._lofiInstStimme("lead");
         for (const note of this._lofiMelodyNotes(degree, durSec)) {
-            const osc = ctx.createOscillator();
-            osc.type = ST.type;
-            osc.frequency.value = note.freq;
-            const env = ctx.createGain();
-            const t0 = now + note.start;
             // V8.88 — eine SINGENDE Hüllkurve (Anschlag → Halt → Ausklang).
             // V8.90 — der Spitzen-Pegel folgt der Noten-Dynamik (note.vel):
             // ein starker Takt-Schritt klingt lauter, ein schwacher leiser.
             const vel = note.vel * ST.gain;
-            env.gain.setValueAtTime(0, t0);
-            env.gain.linearRampToValueAtTime(vel, t0 + 0.05 * ST.attackMul);
-            env.gain.linearRampToValueAtTime(vel * 0.6, t0 + note.dur * 0.7);
-            env.gain.linearRampToValueAtTime(0, t0 + note.dur);
-            osc.connect(env);
-            env.connect(s.lofi.melodyGain);
-            osc.start(t0);
-            osc.stop(t0 + note.dur + 0.05);
+            this._lofiTon(s.lofi.melodyGain, ST.type, note.freq, now + note.start, [
+                [0.05 * ST.attackMul, vel],
+                [note.dur * 0.7, vel * 0.6],
+                [note.dur, 0],
+            ]);
         }
     }
 
@@ -918,90 +971,61 @@ class AnazhRealm_klang {
     }
 
     // Synthetische Kick: Sinus mit Tonhöhen-Abfall 200 → 70 Hz + kurzer Noise-Klick als Transient.
-    // Nie tiefer (etwa 140 → 48 Hz) — auf Laptop-Lautsprechern praktisch stumm.
-    _lofiKick(t) {
+    // Nie tiefer (etwa 140 → 48 Hz) — auf Laptop-Lautsprechern praktisch stumm. `TB` reicht der Groove je Akkord.
+    _lofiKick(t, TB = this._lofiDrumTimbre()) {
         const s = this.state.symphony;
         if (!s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
-        const ctx = s.ctx;
-        const TB = this._lofiDrumTimbre(); // ZENSUS-REST V18.488 — inst.drums färbt
-        // Körper: Sinus mit schnellem Tonhöhen-Abfall.
-        const osc = ctx.createOscillator();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(200, t);
-        osc.frequency.exponentialRampToValueAtTime(70, t + 0.08);
-        const env = ctx.createGain();
-        env.gain.setValueAtTime(0.0001, t);
-        env.gain.exponentialRampToValueAtTime(0.85 * (TB.gainMul || 1), t + 0.006);
-        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.24 * TB.kickDauer);
-        osc.connect(env);
-        env.connect(s.lofi.grooveGain);
-        osc.start(t);
-        osc.stop(t + 0.28 * TB.kickDauer);
+        // Körper: Sinus mit schnellem Tonhöhen-Abfall (ZENSUS-REST V18.488 — inst.drums färbt).
+        const ende = t + 0.28 * TB.kickDauer;
+        const v = this._klangStimme(s.lofi.grooveGain, "ton:sine", t, ende);
+        v.q.frequency.setValueAtTime(200, t);
+        v.q.frequency.exponentialRampToValueAtTime(70, t + 0.08);
+        const g = v.g.gain;
+        g.setValueAtTime(0.0001, t);
+        g.exponentialRampToValueAtTime(0.85 * (TB.gainMul || 1), t + 0.006);
+        g.exponentialRampToValueAtTime(0.0001, t + 0.24 * TB.kickDauer);
+        g.setValueAtTime(0, ende);
         // Klick: ein sehr kurzer hoch-gefilterter Noise-Tick — der Transient,
         // der den Schlag auch ohne Tiefbass-Wiedergabe trägt.
-        const click = ctx.createBufferSource();
-        click.buffer = s.lofi.noiseBuffer;
-        const hp = ctx.createBiquadFilter();
-        hp.type = "highpass";
-        hp.frequency.value = 1600;
-        const cenv = ctx.createGain();
-        cenv.gain.setValueAtTime(0.0001, t);
-        cenv.gain.exponentialRampToValueAtTime(0.5, t + 0.002);
-        cenv.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
-        click.connect(hp);
-        hp.connect(cenv);
-        cenv.connect(s.lofi.grooveGain);
-        click.start(t);
-        click.stop(t + 0.05);
+        this._lofiRauschStoss(t, 1600, 0.5, 0.002, 0.03, 0.05);
+    }
+
+    // Ein Rausch-Stoß des Grooves (Klick · Snare · Hihat): Hochpass hpHz, die Hülle 0,0001 → spitze in `an` s → 0,0001 in
+    // `ab` s, still ab `aus` s — auf einer Rausch-Stimme des Pools.
+    _lofiRauschStoss(t, hpHz, spitze, an, ab, aus) {
+        const L = this.state.symphony.lofi;
+        const v = this._klangStimme(L.grooveGain, "rausch:highpass", t, t + aus, L.noiseBuffer);
+        v.f.frequency.setValueAtTime(hpHz, t);
+        v.g.gain.setValueAtTime(0.0001, t);
+        v.g.gain.exponentialRampToValueAtTime(spitze, t + an);
+        v.g.gain.exponentialRampToValueAtTime(0.0001, t + ab);
+        v.g.gain.setValueAtTime(0, t + aus);
     }
 
     // W4 V3 Phase 3 — eine synthetische Snare: ein White-Noise-Burst durch
     // einen Hochpass, kurze scharfe Hüllkurve.
-    _lofiSnare(t) {
+    _lofiSnare(t, TB = this._lofiDrumTimbre()) {
         const s = this.state.symphony;
         if (!s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
-        const ctx = s.ctx;
-        const TB = this._lofiDrumTimbre(); // ZENSUS-REST V18.488 — inst.drums färbt
-        const src = ctx.createBufferSource();
-        src.buffer = s.lofi.noiseBuffer;
-        const hp = ctx.createBiquadFilter();
-        hp.type = "highpass";
-        hp.frequency.value = 1200 * TB.snareHp;
-        const env = ctx.createGain();
-        env.gain.setValueAtTime(0.0001, t);
-        env.gain.exponentialRampToValueAtTime(0.5 * (TB.gainMul || 1), t + 0.005);
-        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.18 * TB.snareDauer);
-        src.connect(hp);
-        hp.connect(env);
-        env.connect(s.lofi.grooveGain);
-        src.start(t);
-        src.stop(t + 0.22 * TB.snareDauer);
+        this._lofiRauschStoss(
+            t,
+            1200 * TB.snareHp,
+            0.5 * (TB.gainMul || 1),
+            0.005,
+            0.18 * TB.snareDauer,
+            0.22 * TB.snareDauer
+        );
     }
 
     // W4 V3 Phase 3 — ein synthetisches Hihat: ein sehr kurzer, hoch-
-    // gefilterter White-Noise-Tick.
-    _lofiHihat(t) {
+    // gefilterter White-Noise-Tick. W4 V4 Sub-Schritt 1 — eine glut-Region schärft es: der
+    // Hochpass steigt 7000..9500 Hz (dünner, „tssss" — eine Spur
+    // Spannung in der Klangfarbe, ohne eine einzige Note zu ändern).
+    _lofiHihat(t, TB = this._lofiDrumTimbre(), glut = this._lofiWorldField().glut) {
         const s = this.state.symphony;
         if (!s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
-        const ctx = s.ctx;
-        const TB = this._lofiDrumTimbre(); // ZENSUS-REST V18.488 — inst.drums färbt
-        const src = ctx.createBufferSource();
-        src.buffer = s.lofi.noiseBuffer;
-        const hp = ctx.createBiquadFilter();
-        hp.type = "highpass";
-        // W4 V4 Sub-Schritt 1 — eine glut-Region schärft das Hihat: der
-        // Hochpass steigt 7000..9500 Hz (dünner, „tssss" — eine Spur
-        // Spannung in der Klangfarbe, ohne eine einzige Note zu ändern).
-        hp.frequency.value = (7000 + this._lofiWorldField().glut * 2500) * TB.hihatHp;
-        const env = ctx.createGain();
-        env.gain.setValueAtTime(0.0001, t);
-        env.gain.exponentialRampToValueAtTime(0.22 * TB.hihatGain * (TB.gainMul || 1), t + 0.004);
-        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
-        src.connect(hp);
-        hp.connect(env);
-        env.connect(s.lofi.grooveGain);
-        src.start(t);
-        src.stop(t + 0.08);
+        const hp = (7000 + glut * 2500) * TB.hihatHp;
+        this._lofiRauschStoss(t, hp, 0.22 * TB.hihatGain * (TB.gainMul || 1), 0.004, 0.045, 0.08);
     }
 
     // Das Genre wählt den Groove: RHYTHMUS_MUSTER (klang-Gesetzbuch) je LAWS.rhythm-Option, gewählt
@@ -1105,12 +1129,15 @@ class AnazhRealm_klang {
         const emotions = (this.state.player && this.state.player.emotions) || {};
         const peace = Math.max(0, Math.min(1, emotions.peace || 0));
         const swing = this._grooveSwing(); // ZENSUS 17.07. — das Genre führt den Shuffle
+        // Timbre und Glut je Akkord (alle Schläge planen im selben Bild): einmal gelesen, nie je Schlag
+        const TB = this._lofiDrumTimbre();
+        const glut = this._lofiWorldField().glut;
         for (let step = 0; step < STEPS; step++) {
             const t = now + this._grooveStepTime(step, stepDur, swing);
-            if (pat.kick.indexOf(step) >= 0) this._lofiKick(t);
-            if (pat.snare.indexOf(step) >= 0) this._lofiSnare(t);
+            if (pat.kick.indexOf(step) >= 0) this._lofiKick(t, TB);
+            if (pat.snare.indexOf(step) >= 0) this._lofiSnare(t, TB);
             // peace > 0.6 lässt die Off-Beat-Hihats aus — ein ruhigerer Groove.
-            if (pat.hihat.indexOf(step) >= 0 && !(peace > 0.6 && step % 2 === 1)) this._lofiHihat(t);
+            if (pat.hihat.indexOf(step) >= 0 && !(peace > 0.6 && step % 2 === 1)) this._lofiHihat(t, TB, glut);
         }
     }
 
@@ -1299,8 +1326,7 @@ class AnazhRealm_klang {
     _lofiPlayBass(degree, durSec, t0) {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx || !s.lofi || !s.lofi.bassGain) return;
-        const ctx = s.ctx;
-        const now = t0 != null ? t0 : ctx.currentTime;
+        const now = t0 != null ? t0 : s.ctx.currentTime;
         const stepDur = durSec / 8;
         const chord = this._lofiChordFromDegree(degree);
         const rootOffset = chord[0];
@@ -1319,20 +1345,12 @@ class AnazhRealm_klang {
                       { freq: subFreq, attackPeak: 0.5, sustainPeak: 0.32 },
                       { freq: subFreq * 2, attackPeak: 0.46, sustainPeak: 0.3 },
                   ];
-            for (const voice of voices) {
-                const osc = ctx.createOscillator();
-                osc.type = ST.type;
-                osc.frequency.value = voice.freq;
-                const env = ctx.createGain();
-                env.gain.setValueAtTime(0, t);
-                env.gain.linearRampToValueAtTime(voice.attackPeak * ST.gain, t + 0.03);
-                env.gain.linearRampToValueAtTime(voice.sustainPeak * ST.gain, t + dur * 0.6);
-                env.gain.linearRampToValueAtTime(0, t + dur);
-                osc.connect(env);
-                env.connect(s.lofi.bassGain);
-                osc.start(t);
-                osc.stop(t + dur + 0.05);
-            }
+            for (const voice of voices)
+                this._lofiTon(s.lofi.bassGain, ST.type, voice.freq, t, [
+                    [0.03, voice.attackPeak * ST.gain],
+                    [dur * 0.6, voice.sustainPeak * ST.gain],
+                    [dur, 0],
+                ]);
         };
         // Das Genre führt den Bass (studio.bass = LAWS.bass-Option; Tabelle vor if): Walking 1-3-5-7,
         // RootFive Grundton/Quinte, Achtel jeden Schritt, FunkRiff synkopiert, Riddim betont die Drei,
@@ -1379,15 +1397,12 @@ class AnazhRealm_klang {
         }
     }
 
-    // Einen Akkord spielen: je Ton ein Dreieck-Oszillator (weich, pad-artig)
-    // durch eine eigene Hüllkurve (langsamer Anschlag + Ausklang) in die
-    // Lofi-Schicht. Die Oszillatoren stoppen selbst nach dem Akkord.
-    _lofiPlayChord(offsets, t0) {
+    // Einen Akkord spielen: je Ton ein Dreieck-Ton (weich, pad-artig) mit eigener Hüllkurve (langsamer Anschlag +
+    // Ausklang) in die Lofi-Schicht; der Akkord endet mit seiner Dauer, die Stimme trägt den nächsten.
+    _lofiPlayChord(offsets, t0, durSec = this._lofiChordDurationMs() / 1000) {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx || !s.lofi) return;
-        const ctx = s.ctx;
-        const now = t0 != null ? t0 : ctx.currentTime;
-        const durSec = this._lofiChordDurationMs() / 1000;
+        const now = t0 != null ? t0 : s.ctx.currentTime;
         const emotions = (this.state.player && this.state.player.emotions) || {};
         const majorLean = (emotions.hope || 0) > 0.6;
         const freqs = this._lofiChordFreqs(offsets, majorLean);
@@ -1404,44 +1419,23 @@ class AnazhRealm_klang {
         // Anschlag, Rhodes weich; tilt.harmony mischt). Byte-alt: triangle/1/1.
         const ST = this._lofiInstStimme("harmony");
         const attack = 0.8 * ST.attackMul;
-        const release = 1.4;
-        const sustainAt = now + Math.max(attack, durSec - release);
+        const halt = Math.max(attack, durSec - 1.4); // der Ausklang: 1,4 s
+        const ton = (freq, peak) =>
+            this._lofiTon(s.lofi.filter, ST.type, freq, now, [
+                [attack, peak],
+                [halt, peak],
+                [durSec, 0],
+            ]);
         for (const freq of freqs) {
-            for (const mult of voiceMults) {
-                const peak = (mult === 1 ? 0.25 : 0.1) * ST.gain; // die Oktav-Dopplung leiser
-                const osc = ctx.createOscillator();
-                osc.type = ST.type;
-                osc.frequency.value = freq * mult;
-                const env = ctx.createGain();
-                env.gain.setValueAtTime(0, now);
-                env.gain.linearRampToValueAtTime(peak, now + attack);
-                env.gain.setValueAtTime(peak, sustainAt);
-                env.gain.linearRampToValueAtTime(0, now + durSec);
-                osc.connect(env);
-                env.connect(s.lofi.filter);
-                osc.start(now);
-                osc.stop(now + durSec + 0.1);
-            }
-            if (shimmer) {
-                const osc = ctx.createOscillator();
-                osc.type = ST.type;
-                osc.frequency.value = freq * 2 * 1.006; // Oktave, leicht verstimmt
-                const env = ctx.createGain();
-                env.gain.setValueAtTime(0, now);
-                env.gain.linearRampToValueAtTime(0.045 * ST.gain, now + attack);
-                env.gain.setValueAtTime(0.045 * ST.gain, sustainAt);
-                env.gain.linearRampToValueAtTime(0, now + durSec);
-                osc.connect(env);
-                env.connect(s.lofi.filter);
-                osc.start(now);
-                osc.stop(now + durSec + 0.1);
-            }
+            for (const mult of voiceMults) ton(freq * mult, (mult === 1 ? 0.25 : 0.1) * ST.gain); // die Oktav-Dopplung leiser
+            if (shimmer) ton(freq * 2 * 1.006, 0.045 * ST.gain); // Oktave, leicht verstimmt
         }
     }
 
-    // Lofi-Scheduler (aus symphonyTick): LOFI_VORLAUF_S vor dem Einsatz des nächsten Akkords (der letzte Einsatz + die
-    // Akkord-Dauer) den Akkord der aktuellen Stufe planen, dann die nächste Stufe über _lofiNextDegree wählen. Pad, Melodie,
-    // Bass, Groove und der Raum fallen je in EIN Bild, alle auf denselben Einsatz der Audio-Uhr
+    // Lofi-Scheduler (aus symphonyTick): LOFI_VORLAUF_S vor dem Einsatz des nächsten Akkords den Akkord der aktuellen Stufe
+    // planen, dann die nächste Stufe über _lofiNextDegree wählen. Die Musik plant voraus: der Einsatz des nächsten Akkords
+    // (`L.einsatz` = dieser Einsatz + seine Dauer) steht mit dem Plan fest — ein Bild ohne Einsatz liest nur die Uhr. Pad,
+    // Melodie, Bass, Groove und der Raum fallen je in EIN Bild, alle auf denselben Einsatz der Audio-Uhr
     // (klang.K5: in einem Bild trugen sie die Spitze des Klang-Takts, 2,6–3,4 ms auf der Radeon, diag-klang-zensus --takt).
     _lofiTick() {
         const s = this.state.symphony;
@@ -1449,16 +1443,15 @@ class AnazhRealm_klang {
         const L = s.lofi;
         if (L.folge && L.folge.length) return void L.folge.shift()();
         const now = s.ctx.currentTime;
-        const durSec = this._lofiChordDurationMs() / 1000;
         const V = AnazhRealm.LOFI_VORLAUF_S;
-        const einsatz = Number.isFinite(L.lastChordAt) ? L.lastChordAt + durSec : -Infinity;
-        if (einsatz - now > V) return;
+        if (L.einsatz - now > V) return;
         // verspätet (der erste Akkord, ein Hänger): ein voller Vorlauf ab jetzt — die Folge endet vor dem Einsatz
-        const t0 = einsatz - now >= V / 2 ? einsatz : now + V;
+        const t0 = L.einsatz - now >= V / 2 ? L.einsatz : now + V;
+        const durSec = this._lofiChordDurationMs() / 1000;
         const degree = L.degree;
-        L.lastChordAt = t0;
+        L.einsatz = t0 + durSec;
         L.degree = this._lofiNextDegree(degree);
-        this._lofiPlayChord(this._lofiChordFromDegree(degree), t0);
+        this._lofiPlayChord(this._lofiChordFromDegree(degree), t0, durSec);
         L.folge = [
             () => this._lofiPlayMelody(degree, durSec, t0),
             () => this._lofiPlayBass(degree, durSec, t0),
@@ -1695,6 +1688,7 @@ AnazhRealm.LOFI_DARK_DEGREES = Object.freeze([0, 1, 3]); // i, ii°, iv
 AnazhRealm.KLANG_HOST_RECIPE = "lofi";
 AnazhRealm.LOFI_CHORD_BEATS = 4; // ein Akkord je 4 Schläge
 AnazhRealm.LOFI_VORLAUF_S = 0.3; // so weit vor seinem Einsatz plant `_lofiTick` den Akkord: seine Stimmen fallen je in ein Bild
+AnazhRealm.STIMME_NACHKLANG_S = 4; // so lange lebt eine Stimme des Pools nach ihrem letzten Ton (`_klangStimme`): über die Lücke zum nächsten Akkord
 // Das Trommel-Muster wohnt im klang-Gesetzbuch (RHYTHMUS_MUSTER, Leser _lofiGroovePattern), der
 // Swing in fx.klang.dna.swing je Genre (Leser _grooveSwing) — beide fail-closed.
 AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu Fuß

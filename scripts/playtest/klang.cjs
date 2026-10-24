@@ -168,34 +168,24 @@ async function checkBandW4LofiPad(ctx) {
                 }
             }
             out.melodyRhythmDynamics = durSet.size >= 2 && velSet.size >= 2;
-            let melOk = true;
-            try {
-                r._lofiPlayMelody(0, 4);
-            } catch (e) {
-                melOk = false;
-                void e;
-            }
-            out.melodyPlayRuns = melOk;
-            // W4 V3 Phase 3 — der Groove spielt wurf-frei.
-            let grooveOk = true;
-            try {
-                r._lofiPlayGroove(4);
-            } catch (e) {
-                grooveOk = false;
-                void e;
-            }
-            out.groovePlayRuns = grooveOk;
-            // W4 V3 Phase 4 — der Bass spielt wurf-frei (folgt der
-            // Akkord-Wurzel auf den Kick-Schritten).
-            let bassOk = true;
-            try {
-                r._lofiPlayBass(0, 4);
-                r._lofiPlayBass(3, 4);
-            } catch (e) {
-                bassOk = false;
-                void e;
-            }
-            out.bassPlayRuns = bassOk;
+            // klang.K5 — die Musik spielt auf Stimmen (`_klangStimme`): der gleiche zweite Takt (mit Raum und Welt-Timbre)
+            // baut keine Hülle
+            const C = BaseAudioContext.prototype;
+            const huelle = C.createGain;
+            let n = 0;
+            C.createGain = (...a) => (n++, huelle.apply(sym.ctx, a));
+            const t0 = sym.ctx.currentTime;
+            const takte = [0.3, 4.3].map((t) => {
+                sym.lofi.rngState = 7;
+                r._lofiPlayChord(r._lofiChordFromDegree(0), t0 + t, 4);
+                r._lofiPlayMelody(0, 4, t0 + t);
+                r._lofiPlayBass(0, 4, t0 + t);
+                r._lofiPlayGroove(4, t0 + t);
+                r._lofiRaum(4);
+                return n;
+            });
+            C.createGain = huelle;
+            out.musikAufStimmen = takte[0] > 0 && takte[1] === takte[0];
             // W4 V4 — die Musik hört die Welt: das Welt-Feld
             // liefert vier geclampte Achsen.
             const wf = r._lofiWorldField();
@@ -204,15 +194,6 @@ async function checkBandW4LofiPad(ctx) {
                 ["lebendig", "dichte", "glut", "magieleitung"].every(
                     (k) => typeof wf[k] === "number" && wf[k] >= 0 && wf[k] <= 1
                 );
-            // W4 V4 Sub-Schritt 1 — die Timbre-Modulation läuft wurf-frei.
-            let timbreOk = true;
-            try {
-                r._lofiApplyWorldTimbre(4);
-            } catch (e) {
-                timbreOk = false;
-                void e;
-            }
-            out.worldTimbreRuns = timbreOk;
             // W4 V4 Sub-Schritt 3 — Resonanz-Nähe liefert einen Boolean.
             let nearResOk = true;
             let nearResBool = false;
@@ -292,13 +273,13 @@ async function checkBandW4LofiPad(ctx) {
             out.emotionBiasesHarmony = brightJoy > brightSorrow;
             r._klangStudioPreset = prevKSP;
             sym.lofi.bar = 0;
-            // _lofiTick spielt den ersten Akkord (lastChordAt=
+            // _lofiTick spielt den ersten Akkord (einsatz=
             // -Infinity → sofort fällig) + wählt die nächste Stufe.
             sym.lofi.degree = 0;
-            sym.lofi.lastChordAt = -Infinity;
+            sym.lofi.einsatz = -Infinity;
             r._lofiTick();
             out.tickPlaysChord =
-                sym.lofi.lastChordAt > -Infinity &&
+                sym.lofi.einsatz > -Infinity &&
                 Number.isInteger(sym.lofi.degree) &&
                 sym.lofi.degree >= 0 &&
                 sym.lofi.degree <= 6;
@@ -375,14 +356,8 @@ async function checkBandW4LofiPad(ctx) {
                 "W4 V3 Phase 2: Melodie hat Rhythmus + Dynamik (verschiedene Noten-Längen + Lautstärken)",
                 w4v2Results.melodyRhythmDynamics
             );
-            check("W4 V3 Phase 2: _lofiPlayMelody spielt die Phrase wurf-frei", w4v2Results.melodyPlayRuns);
-            check("W4 V3 Phase 3: _lofiPlayGroove spielt den Groove wurf-frei", w4v2Results.groovePlayRuns);
-            check(
-                "W4 V3 Phase 4: _lofiPlayBass spielt den Bass wurf-frei (folgt der Akkord-Wurzel)",
-                w4v2Results.bassPlayRuns
-            );
+            check("klang.K5: der gleiche zweite Takt der Musik baut keine Stimme", w4v2Results.musikAufStimmen);
             check("W4 V4: _lofiWorldField liefert vier geclampte Welt-Achsen (0..1)", w4v2Results.worldFieldShape);
-            check("W4 V4 Sub-1: _lofiApplyWorldTimbre moduliert die Klangfarbe wurf-frei", w4v2Results.worldTimbreRuns);
             check(
                 "W4 V4 Sub-3: _lofiNearResonantArchitecture liefert einen Boolean wurf-frei",
                 w4v2Results.nearResonantBoolean
