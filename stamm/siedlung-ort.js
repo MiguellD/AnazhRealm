@@ -1442,10 +1442,8 @@ class AnazhRealm_siedlung_ort {
         // blieb er: am Start-Dorf schnitt der Grund des Alpenchalets, das am Brunnen des eigenen Plans fällt (Bau-Wand), ein
         // Loch ins Leere (53,7/108,4, gate:haus-welt W9 Waise).
         const zu = () => (this._erdbauGrundFaellt({ position: { x: wx, z: wz } }), false);
-        const rec = f && f.recipes ? f.recipes[slot.kultur] : null;
-        const pol = rec && AnazhRealm.KIND_POLICY[rec.kind];
-        const name = pol && pol.prefix ? pol.prefix + slot.kultur : null;
-        if (!name || !this.state.blueprints[name]) return zu(); // fail-closed
+        const name = this._slotBauplan(slot, f);
+        if (!name) return zu(); // fail-closed
         const ry = slot.phi || 0;
         const tu = slot.tuer;
         const { fundament, fp } = AnazhRealm._slotGrundriss(slot);
@@ -2470,12 +2468,56 @@ class AnazhRealm_siedlung_ort {
             return this._ortWahl(plan, Object.assign({}, anker), false, null).then(() => {
                 const v2 = this._ortPlaene.get(AnazhRealm._ortSchluessel(plan, anker));
                 v.wasser = this._dorfWasserUrteil(v2 ? v2.erdbau : null);
+                v.v2 = v2;
                 v.da = true;
                 return { plan, anker, wasser: v.wasser };
             });
         });
         M.set(key, v);
         return v.fertig;
+    }
+    // DAS ERSTE HAUS STEHT SOFORT (siedlung.K5, Lehre 14: im Idle vorgebacken): ist der Vorrat einer Zelle bereit, bestellt der Takt
+    // die Studio-Stufen der `AUTO_SETTLEMENT.vorbackHaeuser` Häuser, die dem Ort ihres Erwachens am nächsten liegen (der Ring `nah`
+    // auf dem Weg vom Spieler zum Anker) — in der Mesh-Zone die Stufe, die die Kette dort wählt (`_foundryLodForEntry` am Auge des
+    // Erwachens), dahinter die Fernform des Gesetzbuchs — über DENSELBEN Chokepoint wie das gesetzte Haus (`_foundryFlattenFor`).
+    // Bis hier bestellte erst das gesetzte Haus, nach dem Erdbau, und der Faden trug fremde Aufträge: das erste Haus stand nach
+    // 148–518 ms (nH 12, Hülle) bzw. 474–800 ms (nH 300, Mesh; Radeon, Station dorf). Rückgabe: ob bestellt ist (sonst fragt der Takt neu).
+    _dorfVorbacken(w, p) {
+        const f = this._foundry;
+        if (!w.v2 || !f || !f.recipes) return false;
+        const A = AnazhRealm.AUTO_SETTLEMENT;
+        const o = w.v2.ort;
+        const d = Math.hypot(p.x - o.x, p.z - o.z) || 1;
+        const k = (A.nearM + (w.mehrM || 0)) / d;
+        const auge = { x: o.x + (p.x - o.x) * k, z: o.z + (p.z - o.z) * k };
+        const d2 = (e) => (e.position.x - auge.x) ** 2 + (e.position.z - auge.z) ** 2;
+        const haeuser = [];
+        for (const sl of w.v2.slots) {
+            const type = this._slotBauplan(sl, f);
+            const position = { x: o.x + sl.x, y: sl.y + 0.5, z: o.z + sl.z };
+            if (type) haeuser.push({ type, seed: sl.seed >>> 0, position, studioOv: AnazhRealm._stempelVon(sl.ov) });
+        }
+        haeuser.sort((a, b) => d2(a) - d2(b));
+        const R = this.state.architectureCullingRadius;
+        for (const e of haeuser.slice(0, A.vorbackHaeuser)) {
+            const preset = this._foundryPresetForEntry(e);
+            if (!preset) continue;
+            const fern = d2(e) > R * R;
+            this._foundryFlattenFor(
+                e,
+                preset,
+                fern ? this._foundryFernStufe(preset) : this._foundryLodForEntry(e, auge)
+            );
+        }
+        return true;
+    }
+    // Der Bauplan eines Slots: das Präfix seiner Studio-Art (KIND_POLICY) vor seiner Kultur, wenn die Welt ihn kennt — sonst null.
+    // Leser: die Slot-Quelle (`_spawnSettlementSlot`) und der Vorrat (`_dorfVorbacken`).
+    _slotBauplan(slot, f) {
+        const rec = f && f.recipes ? f.recipes[slot.kultur] : null;
+        const pol = rec && AnazhRealm.KIND_POLICY[rec.kind];
+        const name = pol && pol.prefix ? pol.prefix + slot.kultur : null;
+        return name && this.state.blueprints[name] ? name : null;
     }
     // DER RANG DES ZUGS (siedlung.K5): die Häuser eines Plans heben in der Reihe ihres Abstands zum Spieler (`reihe`, das
     // nächste zuerst, gleich weit die Slot-Folge) — bis K5 in der Slot-Folge des Layouts, die vom Kern des Dorfs nach außen
@@ -2708,6 +2750,7 @@ class AnazhRealm_siedlung_ort {
                 this._dorfWasserSchritt(w.wasser);
                 rate = 0;
             }
+            if (w.da && !w.vorgebacken && V.has(k)) w.vorgebacken = this._dorfVorbacken(w, playerPos);
         }
         // die Zellen um den Spieler: der Ring 1 (jeder Ort), dann der Ring 2 — dort nur die Stadt des Rang-Gesetzes (siedlung.K2):
         // sie erwacht um ihr `mehrM` früher, ihr Rand liegt so viel weiter vom Anker als der eines Dorfs
@@ -2853,6 +2896,8 @@ AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     siteProbeR: Object.freeze([0.15, 0.3]),
     startRadiusM: Object.freeze([110, 130, 150, 170]),
     perTick: 2,
+    // so viele Häuser des Vorrats bestellen ihre Studio-Stufen vor dem Erwachen (`_dorfVorbacken`)
+    vorbackHaeuser: 4,
     // über so viel ms eines Zug-Schritts trägt der Takt kein Haus mehr (`_dorfZugSchritt`, stadt-erwachen)
     taktMs: 8,
     // die Laternen je Rate des Erlebnis-Gangs (`_dorfErlebnis`, stadt-erwachen)

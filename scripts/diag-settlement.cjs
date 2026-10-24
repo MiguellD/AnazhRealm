@@ -1837,7 +1837,11 @@ const FIXTURES = [
                     _autoSettlementQueue: null,
                 });
                 delete wm.settlementCells[key];
-                let [wach, erst, haus, haupt] = [false, null, -1, 1];
+                let [wach, erst, haus, haupt, vor] = [false, null, -1, 1, 0];
+                r._foundryFlattenFor = function (e, ...a) {
+                    vor += !wach && /^haus_/.test(e.type);
+                    return r.constructor.prototype._foundryFlattenFor.call(this, e, ...a);
+                };
                 FC.ortPlan = function (p, ...a) {
                     haupt += wach && p && p.slots ? 1 : 0;
                     return ortPlan0.call(this, p, ...a);
@@ -1880,6 +1884,7 @@ const FIXTURES = [
                         nH,
                         plaene: haupt + r._ortWahlMass.kandidaten,
                         haus,
+                        vor,
                     }
                 );
             };
@@ -1892,6 +1897,7 @@ const FIXTURES = [
                     ["alt300", 301, 1, 1],
                 ])
                     res.c.k5[k] = await lauf(nH, v, alt);
+                delete r._foundryFlattenFor;
                 res.c.k5.drossel = A.drosselTakte;
                 const y = r.state.yaw;
                 const slot = (d, w) => ({ x: d * Math.sin(y + w), z: d * Math.cos(y + w), obb: { ex: 3, ez: 3 } });
@@ -2938,8 +2944,8 @@ const FIXTURES = [
     const soll = Math.floor((0.5 * 41) / k5.drossel);
     const je = (n, f) => n.every((k) => k5[k] && f(k5[k]));
     check(
-        `C-K5: DAS NÄCHSTE HAUS ZUERST — nH 12 und 300 heben es nach dem Vorlauf ≤ 0,5 s (${soll} Takte) nach dem Erwachen`,
-        je(["vorlauf12", "vorlauf300"], (w) => w.haus >= 0 && w.haus <= soll),
+        `C-K5: DAS NÄCHSTE HAUS ZUERST — nH 12 und 300 heben es nach dem Vorlauf ≤ 0,5 s (${soll} Takte) nach dem Erwachen, ihre Stufen bestellt vor ihm`,
+        je(["vorlauf12", "vorlauf300"], (w) => w.haus >= 0 && w.haus <= soll && w.vor > 0),
         z5
     );
     check(

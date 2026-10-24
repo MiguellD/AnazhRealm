@@ -989,21 +989,11 @@ class AnazhRealm_koerper_seele {
                 : null;
         if (!preset) return;
         const ov = typeof this._workshopStudioOvFor === "function" ? this._workshopStudioOvFor(preset) : null;
-        let gestempelt = false;
-        if (ov) {
-            try {
-                const json = JSON.stringify(ov);
-                // Dieselbe 8-KiB-Taille-Wand wie _deserializeBlueprint: ein Riesen-Kanal stempelt gar nicht erst —
-                // sonst lebte er live und würde beim Reload still gewaschen.
-                if (json && json.length <= AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) {
-                    bp.studioOv = JSON.parse(json);
-                    gestempelt = true;
-                }
-            } catch (_e) {
-                /* nicht-serialisierbar → kein Stempel (fail-closed) */
-            }
-        }
-        if (!gestempelt && bp.studioOv !== undefined) delete bp.studioOv;
+        // dieselbe 8-KiB-Taille-Wand wie _deserializeBlueprint (`_stempelVon`): ein Riesen-Kanal stempelt gar nicht erst — sonst
+        // lebte er live und würde beim Reload still gewaschen
+        const stempel = AnazhRealm._stempelVon(ov);
+        if (stempel) bp.studioOv = stempel;
+        else if (bp.studioOv !== undefined) delete bp.studioOv;
     }
 
     // Werkstatt-Gate am Mach-Akt: ein domain-tragender Bauplan (forging → Esse, alchemy → Brennkolben)

@@ -763,16 +763,8 @@ class AnazhRealm_speicher_welten {
         // PRÄGUNG-WELT — der Guss-Stempel kehrt zurück (Gegenstück zu _serializeBlueprint):
         // NUR ein non-leeres plain object, tief kopiert + größen-bewacht (dieselbe
         // 8-KiB-Taille-Wand wie _carryUnknown — kein Save-/Peer-Riesenstempel).
-        if (data.studioOv && typeof data.studioOv === "object" && !Array.isArray(data.studioOv)) {
-            try {
-                const json = JSON.stringify(data.studioOv);
-                if (json && json.length > 2 && json.length <= AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) {
-                    restored.studioOv = JSON.parse(json);
-                }
-            } catch (_e) {
-                /* nicht-serialisierbar → fällt still (fail-closed) */
-            }
-        }
+        const stempel = AnazhRealm._stempelVon(data.studioOv);
+        if (stempel) restored.studioOv = stempel;
         this._carryUnknown(data, restored, AnazhRealm.BLUEPRINT_KNOWN_KEYS);
         return restored;
     }
