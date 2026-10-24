@@ -1108,7 +1108,7 @@
     //    verklingt beim Abbau (diese drei: die Zahlen wanderten byte-gleich aus dem Stamm). Wasser stroemt zurueck:
     //    ein Chor aus MINNAERT-Blasen (f0 = 3,26/r, Daempfung β = 0,043·f0 + 0,0014·f0^1,5, Zirp f0·(1 + σ·β·t)),
     //    die Blasen wachsen ueber das Ereignis (das Gurgeln faellt wie der alte 700 → 200-Hz-Bandpass) — Oszillatoren
-    //    im Audio-Thread, kein Sample im Aufrufer. Der Wirt reicht nur Tags und Ausgang.
+    //    im Audio-Thread, kein Sample im Aufrufer. Der Wirt reicht Tags und seine Stimmen.
     //    Das INVENTAR (Integration W5-Klang): ein Ding in der Hand klingt nach seiner staerksten Substanz-Achse — ab
     //    der Schwelle, die Tonhoehe je Achse (resoniert C5 klar · magieleitung F5 · brennbar E4 warm, Saegezahn ·
     //    lebendig A4), die Reihenfolge der Achsen entscheidet Gleichstand; abstandSek drosselt das Wischen ueber die
@@ -1122,8 +1122,10 @@
         inventar: { achsenHz: { resoniert: 523, magieleitung: 698, brennbar: 330, lebendig: 440 }, welle: { brennbar: "sawtooth" },
                     schwelle: 0.5, abstandSek: 0.05, gain: 0.07, anSek: 0.005, abSek: 0.18, stopSek: 0.2 }
     };
-    // substanzKlang(ctx, ausgang, art, tags) → { quelle, hz } — die Einmal-Quelle des Ereignisses.
-    function substanzKlang(ctx, ausgang, art, tags) {
+    // substanzKlang(ctx, stimme, art, tags) → { quelle, hz } — das Ereignis auf Stimmen des Wirts (klang.K5: kein Graph
+    // je Ereignis): stimme(welle, t, ende) → { q, g } ein Oszillator der Welle mit seiner Huelle am Ausgang, frei ab t;
+    // das Gesetz schreibt Frequenz und Huelle bis ende, ab ende schweigt die Huelle.
+    function substanzKlang(ctx, stimme, art, tags) {
         var S = SUBSTANZ[art], T = tags || {}, t = ctx.currentTime;
         if (!S) return null;
         if (art === "wasser") {
@@ -1134,17 +1136,13 @@
                 var f0 = 3.26 / (rMm / 1000), beta = 0.043 * f0 + 0.0014 * Math.pow(f0, 1.5);
                 var dauer = Math.min(4.6 / beta, S.maxSek), ti = t + S.sek * u * (0.85 + 0.3 * rnd());
                 var amp = S.gain * (1 - 0.5 * u) * (0.6 + 0.4 * rnd());
-                var o = ctx.createOscillator(), gb = ctx.createGain();
-                o.type = "sine";
+                var ende = ti + dauer + 0.02, v = stimme("sine", ti, ende), o = v.q, gb = v.g;
                 o.frequency.setValueAtTime(f0, ti);
                 o.frequency.linearRampToValueAtTime(f0 * (1 + S.sigma * beta * dauer), ti + dauer);
                 gb.gain.setValueAtTime(0, ti);
                 gb.gain.linearRampToValueAtTime(amp, ti + S.anSek);
                 gb.gain.exponentialRampToValueAtTime(amp * 0.01, ti + dauer);
-                o.connect(gb);
-                gb.connect(ausgang);
-                o.start(ti);
-                o.stop(ti + dauer + 0.02);
+                gb.gain.setValueAtTime(0, ende);
                 if (!erste) {
                     erste = o;
                     hz0 = f0;
@@ -1159,43 +1157,35 @@
             for (var ak in S.achsenHz) if ((T[ak] || 0) > max) { max = T[ak] || 0; achse = ak; }
             if (!(max >= S.schwelle)) return null;
         }
-        var g = ctx.createGain(), src, hz;
-        src = ctx.createOscillator();
+        var welle, hz;
         if (art === "inventar") {
-            src.type = S.welle[achse] || "sine";
+            welle = S.welle[achse] || "sine";
             hz = S.achsenHz[achse];
-            src.frequency.value = hz;
-            g.gain.setValueAtTime(0, t);
-            g.gain.linearRampToValueAtTime(S.gain, t + S.anSek);
-            g.gain.exponentialRampToValueAtTime(0.0001, t + S.abSek);
         } else if (art === "treffer") {
             var haerte = T["härte"] || 0, dichte = T.dichte || 0, lebendig = T.lebendig || 0;
-            src.type = haerte >= Math.max(dichte, lebendig) ? "sawtooth" : lebendig >= dichte ? "sine" : "triangle";
+            welle = haerte >= Math.max(dichte, lebendig) ? "sawtooth" : lebendig >= dichte ? "sine" : "triangle";
             hz = Math.max(S.hzMin, S.hzBasis + haerte * S.hzHaerte + dichte * S.hzDichte);
-            src.frequency.value = hz;
-            g.gain.setValueAtTime(0, t);
-            g.gain.linearRampToValueAtTime(S.gain, t + S.anSek);
-            g.gain.exponentialRampToValueAtTime(0.0001, t + S.abSek);
         } else if (art === "singen") {
-            src.type = "sine";
+            welle = "sine";
             hz = S.hzBasis + ((T.resoniert || 0) / S.resonanzSkala) * S.hzSpanne;
-            src.frequency.value = hz;
-            g.gain.value = 0;
-            g.gain.linearRampToValueAtTime(S.gain, t + S.anSek);
-            g.gain.linearRampToValueAtTime(0, t + S.abSek);
         } else {
-            src.type = "sine";
+            welle = "sine";
             hz = S.hzBasis + Math.min(S.resonanzMax, T.resoniert || 0) * S.hzResonanz;
-            src.frequency.setValueAtTime(hz, t);
+        }
+        var w = stimme(welle, t, t + S.stopSek), src = w.q, g = w.g;
+        src.frequency.setValueAtTime(hz, t);
+        if (art === "abschied") {
             src.frequency.exponentialRampToValueAtTime(Math.max(S.hzGlissMin, hz * S.glissEnde), t + S.abSek);
             g.gain.setValueAtTime(0.0001, t);
             g.gain.linearRampToValueAtTime(S.gain, t + S.anSek);
             g.gain.exponentialRampToValueAtTime(0.0005, t + S.abSek);
+        } else {
+            g.gain.setValueAtTime(0, t);
+            g.gain.linearRampToValueAtTime(S.gain, t + S.anSek);
+            if (art === "singen") g.gain.linearRampToValueAtTime(0, t + S.abSek);
+            else g.gain.exponentialRampToValueAtTime(0.0001, t + S.abSek);
         }
-        src.connect(g);
-        g.connect(ausgang);
-        src.start(t);
-        src.stop(t + S.stopSek);
+        g.gain.setValueAtTime(0, t + S.stopSek);
         return { quelle: src, hz: hz };
     }
 

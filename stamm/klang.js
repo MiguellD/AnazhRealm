@@ -452,13 +452,14 @@ class AnazhRealm_klang {
         return this._substanzKlang("treffer", tags);
     }
 
-    // DER EINE EREIGNIS-KLANG-CHOKEPOINT: art (treffer · singen · abschied · wasser · inventar) × Tags → die Einmal-
-    // Quelle des klang-Gesetzbuchs (substanzKlang) am Master. Stumm ohne Symphonie. Was ein TIER tut (Auftrag, Stufe,
-    // Spawn, Tod), klingt nicht hier, sondern mit seiner Stimme (`_tierRuf`).
+    // DER EINE EREIGNIS-KLANG-CHOKEPOINT: art (treffer · singen · abschied · wasser · inventar) × Tags → das Ereignis des
+    // klang-Gesetzbuchs (substanzKlang) auf Ton-Stimmen des Pools am Master (`_klangStimme`). Stumm ohne Symphonie. Was
+    // ein TIER tut (Auftrag, Stufe, Spawn, Tod), klingt nicht hier, sondern mit seiner Stimme (`_tierRuf`).
     _substanzKlang(art, tags) {
         const s = this.state.symphony;
         if (!s || !s.enabled || !s.ctx || !s.masterGain) return false;
-        return !!AnazhRealm._umweltGesetz().kern.substanzKlang(s.ctx, s.masterGain, art, tags || {});
+        const stimme = (welle, t, ende) => this._klangStimme(s.masterGain, "ton:" + welle, t, ende);
+        return !!AnazhRealm._umweltGesetz().kern.substanzKlang(s.ctx, stimme, art, tags || {});
     }
 
     // ═══ SCHRITT-KLANG ═══

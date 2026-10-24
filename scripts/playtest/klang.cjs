@@ -168,8 +168,8 @@ async function checkBandW4LofiPad(ctx) {
                 }
             }
             out.melodyRhythmDynamics = durSet.size >= 2 && velSet.size >= 2;
-            // klang.K5 — die Musik spielt auf Stimmen (`_klangStimme`): der gleiche zweite Takt (mit Raum und Welt-Timbre)
-            // baut keine Hülle
+            // klang.K5 — Musik und Ereignisse spielen auf Stimmen (`_klangStimme`): der gleiche zweite Takt (mit Raum und
+            // Welt-Timbre) baut keine Hülle, die gleiche zweite Runde der Ereignisse (klang:SUBSTANZ, ihre Uhr gestellt) auch nicht
             const C = BaseAudioContext.prototype;
             const huelle = C.createGain;
             let n = 0;
@@ -184,8 +184,21 @@ async function checkBandW4LofiPad(ctx) {
                 r._lofiRaum(4);
                 return n;
             });
+            let jetzt = t0;
+            Object.defineProperty(sym.ctx, "currentTime", { get: () => jetzt, configurable: true });
+            const runden = [10, 12].map((t) => {
+                jetzt = t0 + t;
+                r._substanzKlang("treffer", { härte: 1 });
+                r._substanzKlang("singen", { resoniert: 2 });
+                r._substanzKlang("abschied", { resoniert: 2 });
+                r._substanzKlang("inventar", { resoniert: 1 });
+                r._substanzKlang("wasser", null);
+                return n;
+            });
+            delete sym.ctx.currentTime;
             C.createGain = huelle;
-            out.musikAufStimmen = takte[0] > 0 && takte[1] === takte[0];
+            out.musikAufStimmen =
+                takte[0] > 0 && takte[1] === takte[0] && runden[0] > takte[1] && runden[1] === runden[0];
             // W4 V4 — die Musik hört die Welt: das Welt-Feld
             // liefert vier geclampte Achsen.
             const wf = r._lofiWorldField();
@@ -356,7 +369,10 @@ async function checkBandW4LofiPad(ctx) {
                 "W4 V3 Phase 2: Melodie hat Rhythmus + Dynamik (verschiedene Noten-Längen + Lautstärken)",
                 w4v2Results.melodyRhythmDynamics
             );
-            check("klang.K5: der gleiche zweite Takt der Musik baut keine Stimme", w4v2Results.musikAufStimmen);
+            check(
+                "klang.K5: der gleiche zweite Takt der Musik und die zweite Runde der Ereignisse bauen keine Stimme",
+                w4v2Results.musikAufStimmen
+            );
             check("W4 V4: _lofiWorldField liefert vier geclampte Welt-Achsen (0..1)", w4v2Results.worldFieldShape);
             check(
                 "W4 V4 Sub-3: _lofiNearResonantArchitecture liefert einen Boolean wurf-frei",
