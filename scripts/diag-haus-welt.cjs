@@ -19,7 +19,7 @@
 //       Kachel-Pflanze; der Hain der KI wächst weder dort noch im Grundriss eines Dorf-Hauses (Gegenprobe 150 m weiter: er
 //       wächst), jede Absage nennt die Lichtung. DER GENESIS-PLATZ: die Sohle liegt ≤ 0,3 m über dem Boden, die Lichtung ist
 //       der Platz des Rings (Tore + 4 m), ein Damm räumt den Hain aus seinen Boxen.
-//   W10 SPIELGANG: Tür, Keller, jeder Lauf bis zum Dachboden, auch am Spur-Rand — kein Hub > 0,3 m je Schritt
+//   W10 SPIELGANG: Tür, Keller, jeder Lauf bis zum Dachboden, auch am Spur-Rand — kein Hub > 0,3 m je Schritt, kein Tier im Haus
 //   W9  DAS GRUND-DATUM (S4): je Box des Körper-Satzes (fachwerk `grundVon`) kein Büschel der Nah-Wiese, dessen Halme
 //       hineinreichen, keine Erde über der Diele; `--bild`: Halm- und Boden-Pixel je Box 0.
 //       ABBAU · PLAN · WAISE · ZUG · AUSSTATTUNG: der Grund fällt mit dem Bau, liegt vor seiner Hülle, trägt stets einen Bau;
@@ -28,7 +28,7 @@
 //   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · sohle · lichtung · bau · w4 · w4b · w6), der Hauptlauf alle.
 //   node scripts/diag-haus-welt.cjs [--selftest [--nur=promotion,nahstreu]] [--phasen=lichtung]
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, warteAufWelt, ROOT } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, warteAufWelt, teilAus, ROOT } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -122,6 +122,13 @@ const BASIS = {
             "        if (entry) this.state.architectures.splice(this.state.architectures.indexOf(entry), 1);",
         ],
     ],
+    // W9: der Schnappschuss lässt den Gang offen — nach dem Reload fehlen Brunnen und Stände
+    gangschluss: [
+        [
+            "        for (const q = this._autoSettlementQueue; q && q.gang;) if (q.gang.next().done) q.gang = null;",
+            "        void 0;",
+        ],
+    ],
     // W9: der Plan stellt den Brunnen ungeprüft vor ein Haus
     ausstattung: [["/fachwerk-core.js", "        lay.brunnen = neu;\n        return aus;", "        return aus;"]],
     // W9: der Wege-Rebuild nach dem Reload reiht die offenen Slots nicht ein
@@ -157,7 +164,7 @@ const BASIS = {
         ],
     ],
     // die Siedlung baut ohne Bau-Wand (ein Haus darf in einem bestehenden Bau stehen): die Slot-Quelle und die Ort-Wahl
-    // (am Sieger des Ort-Fadens, `_ortTraegtWirt`, K10-6) lesen dieselbe Wand — der Defekt nimmt sie beiden
+    // (`_ortTraegtWirt`) lesen dieselbe Wand — der Defekt nimmt sie beiden
     bauwand: [
         ["if (!this._bauFrei(wx, wz, ry,", "if (false && !this._bauFrei(wx, wz, ry,"],
         ["if (!this._bauFrei(wx, wz, sl.phi || 0,", "if (false && !this._bauFrei(wx, wz, sl.phi || 0,"],
@@ -165,6 +172,11 @@ const BASIS = {
     ],
     // W10: der Stab (die Brüstung) trägt · der Spieler klettert an jeder gestreiften Wand · an keiner
     kletter: [["-Math.SQRT1_2 &&", "Infinity &&"]],
+    // W10: der Bau räumt den Wurf des Felds nicht, am Deckel der Tiere
+    tierbau: [
+        ['if (wo && wo !== "weg") fallen.push(c);', "if (false) fallen.push(c);"],
+        ["            maxCreatures: 20,", "            maxCreatures: 6,"],
+    ],
     wand: [["-Math.SQRT1_2 &&", "-2 &&"]],
     stab: [
         [
@@ -178,24 +190,16 @@ const BASIS = {
 const patchZiel = (z) =>
     z.length === 3 ? z : ["/" + (stammLib.dateiMit(ROOT, z[0]) || stammLib.dateien(ROOT)[0]), z[0], z[1]];
 
-// DIE WELTEN NEBENEINANDER: HAUS_WELT_PARALLEL Welten zugleich (Vorgabe: die Kerne, höchstens 4); jeder Platz im Pool trägt
-// seinen EIGENEN Server (HAUS_WELT_PORT + Platz, sonst ein freier Port) mit dem Patch SEINER Welt und je Welt einen eigenen
-// Browser-Kontext — kein Patch reist in eine fremde Welt.
+// DIE WELTEN NEBENEINANDER (HAUS_WELT_PARALLEL, höchstens 4): je Platz ein EIGENER Server (HAUS_WELT_PORT + Platz) mit dem
+// Patch SEINER Welt, je Welt ein eigener Browser-Kontext
 const PARALLEL = Math.max(1, Number(process.env.HAUS_WELT_PARALLEL) || Math.min(4, require("os").cpus().length));
 const PORT_BASIS = Number(process.env.HAUS_WELT_PORT) || 0;
 // --teil=k/n: die CI fährt die Welten in n Gruppen — Teil k trägt die Welten i (0 = der Hauptlauf, dann die Selbsttests)
-// mit i mod n = k - 1; jede Welt urteilt in GENAU einem Teil. Ohne --teil alle.
-const TEIL = (() => {
-    const a = process.argv.find((x) => x.startsWith("--teil="));
-    if (!a) return null;
-    const m = /^--teil=(\d+)\/(\d+)$/.exec(a);
-    if (!m || !(+m[1] >= 1 && +m[1] <= +m[2])) throw new Error(`${a}: erwartet --teil=k/n mit 1 <= k <= n`);
-    return { k: +m[1], n: +m[2] };
-})();
+// mit i mod n = k - 1; jede Welt urteilt in GENAU einem Teil.
+const TEIL = teilAus(process.argv);
 const imTeil = (i) => !TEIL || i % TEIL.n === TEIL.k - 1;
-// eine Patch-Zeile [geheilt, basis] gilt dem Stamm — der Datei, die die Zeile trägt (scripts/lib/stamm.cjs `dateiMit`; trägt
-// sie keine, der ersten: dort meldet der Lauf die fehlende Zeile) —, [datei, geheilt, basis] der genannten Datei (das
-// Gesetzbuch reist über den Foundry-Worker: /fachwerk-core.js)
+// eine Patch-Zeile [geheilt, basis] gilt der Stamm-Datei, die sie trägt (`dateiMit`), [datei, geheilt, basis] der genannten
+// (das Gesetzbuch reist über den Foundry-Worker: /fachwerk-core.js)
 const machServer = (platz) =>
     statikServer({
         root: ROOT,
@@ -236,6 +240,16 @@ async function proben(phasen) {
             } catch (_e) {}
             if (k % 8 === 0) await warte(10);
         }
+    };
+    // DAS WARTEN IM EREIGNIS (welt-boot `__deckel`): Takt um Takt, bis `bis()` gilt — der Deckel zählt nur Takte, in denen die
+    // Welt nichts offen hat (`_weltOffen`): unter Last wartet die Probe auf den Bau, nie auf eine Takt-Zahl; `ms` Pause je Gang
+    const warteBis = async (bis, n, max, ms) => {
+        let ja = false;
+        try {
+            for (let k = 0, weiter = window.__deckel("haus-welt", max); !(ja = bis()) && weiter() && k++ < 4 * max;)
+                await pumpe(n).then(() => ms && warte(ms));
+        } catch (_e) {}
+        return ja;
     };
     // ── das Drehbuch-Dorf 7/18, der Akt des Chats „dorf 7 18" — AN EINEM HANG: der nächste 16-m-Ring (160–480 m um den
     // Start) mit einem trockenen Ort (kein Wasser im 40-m-Kreis), dessen Gefälle über ±8 m 0,3–0,6 ist, darin der steilste ──
@@ -281,10 +295,7 @@ async function proben(phasen) {
     const dorfHaeuser = () =>
         s.architectures.filter((e) => e.type && e.type.startsWith("haus_") && e.tuer && e.fundament);
     // der Export reist durch den Foundry-Worker, der Akt hebt über den Zug: warten, bis er steht
-    for (let k = 0; k < 120 && !steht; k++) {
-        await pumpe(4);
-        await warte(100);
-    }
+    await warteBis(() => steht, 4, 120, 100);
     const H = dorfHaeuser();
     o.gesamt = H.length;
     const dorfMitte = { x: start.x, z: start.z };
@@ -336,7 +347,7 @@ async function proben(phasen) {
         for (const [x, z] of vor ? orte : []) {
             if (!r._landAt(x, z, 0.5) || !r._ortFrei(x, z, 14)) continue;
             stell(x, r.getTerrainHeightAt(x, z) + 2, z);
-            for (let k = 0; k < 200 && !r._bodenSichtChunks(x - 8, z - 8, x + 8, z + 8); k++) await pumpe(5);
+            await warteBis(() => !!r._bodenSichtChunks(x - 8, z - 8, x + 8, z + 8), 5, 200);
             if (!gut(x, z)) continue;
             // ein eigener Körper (der Steuer-Passagier `__w9`)
             const ov = { id, seed: vor.seed, studioOv: Object.assign({}, vor.studioOv, { __w9: id }), rotationY: 0.6 };
@@ -375,6 +386,20 @@ async function proben(phasen) {
         }
         const tu = e.tuer;
         const base = e.position.y - 0.5;
+        // W10 TIER IM HAUS: kein Leib in der Fundament-Box vor dem Gang (der Wurf des Felds weicht dem Bau, `_naturRaeumen`)
+        const fu = e.fundament;
+        // die Saat: ein Wurf des Felds genau in der Box (`precise`, ohne Spieler-Klemme), am Deckel weicht der fernste Leib
+        const sp = welt(e, fu.ox || 0, fu.oz || 0);
+        const weit = (c) => Math.hypot(c.position.x - sp.x, c.position.z - sp.z);
+        for (let k = 0; k < 64 && s.creatures.length >= s.maxCreatures; k++)
+            r.removeCreature(s.creatures.reduce((m, c) => (weit(c) > weit(m) ? c : m)));
+        const saat = r.spawnCreatureAt(sp.x, e.position.y + 1, sp.z, undefined, null, { precise: true });
+        if (saat) saat.userData.feldWurf = true;
+        h.saat = !!saat && r._grundrissRaeumen(e) >= 0;
+        h.tiere = s.creatures
+            .map((c) => [c, lokal(e, c.position.x, c.position.z)])
+            .filter(([, q]) => Math.abs(q.x - (fu.ox || 0)) <= fu.ex && Math.abs(q.z - (fu.oz || 0)) <= fu.ez)
+            .map(([c]) => c.userData.gattung + " " + (c.position.y - base).toFixed(2));
         // W10 DER SPIELGANG (siedlung.K1): EIN Gang ohne Versetzen, je Sim-Schritt der Hub, je Ziel Rest und Fuß
         const dm = Hh.dims || {};
         const fls = (dm.flights || []).filter((f) => f.x1 - f.x0 > 0.3);
@@ -550,10 +575,8 @@ async function proben(phasen) {
         }
         [s.keys.w, g.wand] = [false, Math.round((wmax - wy) * 100) / 100];
     }
-    // W9 DAS GRUND-DATUM (S4): je Haus des Drehbuch-Dorfs und je Box seines Körper-Satzes die Büschel der Nah-Wiese, deren
-    // Halme in die Box reichen, Erde 5 cm über der Diele (Raster 0,25 m); `--bild`: je Box
-    // zwei Blicke aus dem Ausgabe-Pfad, Halm-Pixel (gegen das Bild ohne die Büschel der Box) und Boden-Pixel (die Maske des
-    // Boden-Satzes, deren Strahl den Boden in der Box trifft), die Bilder unter artifacts/haus-welt/grund-*.png
+    // W9 (Kopf): Erde 5 cm über der Diele, Raster 0,25 m; `--bild`: je Box zwei Blicke aus dem Ausgabe-Pfad (Halm-Pixel gegen
+    // das Bild ohne die Büschel der Box, Boden-Pixel aus der Maske des Boden-Satzes), artifacts/haus-welt/grund-*.png
     // das Grund-Datum eines Hauses (fachwerk `grundVon`): die Boxen des Körper-Satzes (`traegt` 0: der Grund ist ihr Boden)
     const grundDes = (e) => {
         const Hh = gesetz(e);
@@ -663,10 +686,8 @@ async function proben(phasen) {
                 kartenDa() &&
                 (!BILD || (s.nahWiese && s.nahWiese.offen === 0 && s.nahWiese.kacheln.size > 0));
             stell(e.position.x, e.position.y + 1, e.position.z);
-            for (let k = 0, ruhig = 0; k < 120 && ruhig < 3; k++) {
-                await pumpe(5);
-                ruhig = steht() ? ruhig + 1 : 0;
-            }
+            let ruhig = 0;
+            await warteBis(() => (ruhig = steht() ? ruhig + 1 : 0) >= 3, 5, 120);
             [h.stufe, h.steht] = [e._servedLod, !!steht()];
             const bueschel = bueschelIn(mx0 - 2, mz0 - 2, mx1 + 2, mz1 + 2);
             h.ring = bueschel.length;
@@ -936,17 +957,8 @@ async function proben(phasen) {
         }
         return { zellen, imHaus: n, je };
     };
-    // W8 DIE LICHTUNG: die Genesis-Plattform ist ein Grundriss der EINEN Natur-Wand
-    // (`_naturSetzen`) — über ihrer Stein-Scheibe steht keine Krone (`_naturKrone`: die Krone des Wald-Gesetzes × Größe,
-    // × die Welt-Skala der Art, mit der der Baum gezeichnet wird) und auf ihr keine Streu. Der Spieler steht auf der
-    // Plattform, bis Chunk, Wald-Schlange und Nah-Streu ruhen (die Kachel-Pflanzen), dann 120 m daneben, bis die Regionen
-    // über ihr neu gebaut sind (die Streu-Zellen, die Baum-Schichten mit ihrer Krone — innerhalb 64 m baut keine Streu), dann
-    // wieder auf ihr, bis der Promotions-Ring promotet ist (die Natur-Einträge). Dann der Hain der KI
-    // (`spawn_tree` 4 Bäume, `spawn_studio` eine Eiche genau am Ort) mitten auf der Plattform UND mitten im Grundriss eines
-    // Hauses des Dorfs — nichts wächst in Lichtung oder Grundriss; derselbe Hain 150 m weiter wächst (sonst ist die Probe
-    // blind).
-    // DER GENESIS-PLATZ: nach der ersten Ruhe baut der Ort-Takt den Ring der Kern-Portale (`_genesisPortalRing`), und die
-    // Lichtung ist der PLATZ: der gemessene Kreis der Tore + 4 m — darauf keine Krone, Streu, Natur, Kachel-Pflanze.
+    // W8 DIE LICHTUNG (Kopf): auf der Plattform, bis Chunk, Wald-Schlange und Nah-Streu ruhen, 120 m daneben, bis die
+    // Regionen über ihr neu bauen (innerhalb 64 m baut keine Streu), wieder auf ihr, bis der Promotions-Ring promotet ist.
     // der Hain der KI: je Ort `spawn_tree` (4 Bäume im 2,5-m-Kreis) und `spawn_studio` (eine Eiche genau am Ort); `bleibt`
     // lässt ihn stehen (sonst fällt er nach der Zählung)
     const hain = (x, z, bleibt, quelle = "test") => {
@@ -1024,37 +1036,47 @@ async function proben(phasen) {
             stell(L.x, plat.position.y + 2.2, L.z);
             const span = r._voxelChunkConfig(0).span;
             let ruhig = 0;
-            for (let k = 0; k < 1500 && ruhig < 20; k++) {
-                await pumpe(4);
-                const e = s.voxelChunks && s.voxelChunks.get(`${Math.floor(L.x / span)},${Math.floor(L.z / span)}`);
-                const ns = s.nahStreu;
-                const steht =
-                    k > 60 &&
-                    e &&
-                    e.surfMap &&
-                    !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
-                    ns &&
-                    ns.kacheln.size > 0 &&
-                    ns.offen === 0;
-                ruhig = steht ? ruhig + 1 : 0;
-            }
+            let k8 = 0;
+            await warteBis(
+                () => {
+                    const e = s.voxelChunks && s.voxelChunks.get(`${Math.floor(L.x / span)},${Math.floor(L.z / span)}`);
+                    const ns = s.nahStreu;
+                    const steht =
+                        k8++ > 60 &&
+                        e &&
+                        e.surfMap &&
+                        !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
+                        ns &&
+                        ns.kacheln.size > 0 &&
+                        ns.offen === 0;
+                    return (ruhig = steht ? ruhig + 1 : 0) >= 20;
+                },
+                4,
+                1500
+            );
             w8.ruhe = ruhig >= 20;
             // DER RING: der Ort-Takt baut ihn am Genesis-Ort (headless ruht der Takt, die Probe ruft die Stamm-Methode);
             // die Lichtung der Probe ist ab hier der Platz — der gemessene Kreis der Tore + 4 m
             r._genesisPortalRing(pm.position);
             // die Tore räumen, die Nah-Streu wächst durch die Wand nach: ruhen lassen wie zuvor
-            for (let k = 0, ruhe2 = 0; k < 1500 && ruhe2 < 20; k++) {
-                await pumpe(4);
-                const ns = s.nahStreu;
-                ruhe2 =
-                    k > 20 &&
-                    !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
-                    ns &&
-                    ns.kacheln.size > 0 &&
-                    ns.offen === 0
-                        ? ruhe2 + 1
-                        : 0;
-            }
+            let [ruhe2, k2] = [0, 0];
+            await warteBis(
+                () => {
+                    const ns = s.nahStreu;
+                    return (
+                        (ruhe2 =
+                            k2++ > 20 &&
+                            !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
+                            ns &&
+                            ns.kacheln.size > 0 &&
+                            ns.offen === 0
+                                ? ruhe2 + 1
+                                : 0) >= 20
+                    );
+                },
+                4,
+                1500
+            );
             const tore = s.architectures.filter(
                 (a) => a && /^welt_/.test(a.type) && Math.hypot(a.position.x - L.x, a.position.z - L.z) < 30
             );
@@ -1096,7 +1118,7 @@ async function proben(phasen) {
                     for (const k of keys) r._disposeScatterRegion(k);
                     keysW8 = keys;
                     const steht = () => [...keys].every((q) => !r._streuRegionWartet(q));
-                    for (let k = 0; k < 1500 && !steht(); k++) await pumpe(2);
+                    await warteBis(steht, 2, 1500);
                     await pumpe(10);
                     w8.streuSteht = steht();
                 }
@@ -1137,7 +1159,7 @@ async function proben(phasen) {
                 };
                 window.__anazhGateNoFoundry = true;
                 try {
-                    for (let k = 0; k < 1500 && rest() > 0; k++) await pumpe(4);
+                    await warteBis(() => rest() <= 0, 4, 1500);
                 } finally {
                     window.__anazhGateNoFoundry = false;
                 }
@@ -1255,8 +1277,7 @@ async function proben(phasen) {
         stell(dorfMitte.x, (r.getTerrainHeightAt(dorfMitte.x, dorfMitte.z) || start.y) + 3, dorfMitte.z);
         await pumpe(200);
         // DER WURF IN DEN GRUNDRISS: je Haus ein Wurf jeder Art des Felds in seine Mitte, durch die EINE Natur-Wand
-        // (`_naturSetzen`) — keiner steht. Ohne ihn hing W4 an der Natur, die zufällig im Grundriss wuchs (der Selbsttest
-        // „grundriss" sah 1 Busch, nach dem Umzug des Dorfs keinen: blind).
+        // (`_naturSetzen`) — keiner steht
         const wurf = [];
         for (const hs of H) {
             const f = hs.fundament;
@@ -1346,15 +1367,12 @@ async function proben(phasen) {
         o.fernOrt = { x: Math.round(fx), z: Math.round(fz) };
     }
     if (P.has("w4b")) {
-        // W4b DAS FERNE DORF: es entsteht 300 m vom Spieler (das Auto-Dorf entsteht ab 260 m, `AUTO_SETTLEMENT.nearM`) — die
-        // Streu der Region stand schon (Fern-Bäume, Unterholz, Fels). Dann läuft der Spieler hin: der Promotions-Ring (64 m)
-        // macht aus Streu-Bäumen echte Bäume, der Wald des neuen Rings wirft.
+        // W4b (Kopf): 300 m vom Spieler (das Auto-Dorf ab 260 m, `AUTO_SETTLEMENT.nearM`), die Streu steht schon; dann
+        // läuft der Spieler hin, der Promotions-Ring (64 m) macht aus Streu-Bäumen echte Bäume
         stell(start.x, start.y + 3, start.z);
         await pumpe(60);
-        // die Streu steht, bevor das Dorf kommt (wie im Spiel: das Auto-Dorf ab 260 m, die Streu bis 384 m): gewartet wird, bis
-        // jede Region unter dem Dorf-Ort gebaut ist, ohne Foundry-Aufschub (die Regel je Region der Welt, `_streuRegionWartet`;
-        // eine aufgeschobene Region baut nach der Lieferung neu, dann durch die Wand — eine frische Welt verlor so ihre Zellen
-        // unter den Häusern; die Vorphasen trugen das sonst zufällig mit)
+        // die Streu steht vor dem Dorf (wie im Spiel): jede Region unter dem Dorf-Ort gebaut, ohne Foundry-Aufschub
+        // (`_streuRegionWartet`)
         const RMd = A.SCATTER.regionM;
         const regionenUm = (x, z) => {
             const q = new Set();
@@ -1363,12 +1381,10 @@ async function proben(phasen) {
             return q;
         };
         const steht = (q) => [...q].every((k) => !r._streuRegionWartet(k));
-        // der Ort des fernen Dorfs aus der stehenden Streu: jede Region in Reichweite steht (`_streuWartet`), dann der
-        // dichteste 40-m-Kreis der Zellen 200–360 m vom Start (fern hinter dem Promotions-Ring), auf Land, jede Region unter ihm
-        // in Reichweite — die Probe braucht Zellen unter den Häusern (an 212/212 trug der Kreis 0 Zellen; der Start liegt an der
-        // Ecke vier gebauter Regionen, Reichweite 240 m: ab 260 m trug kein Kreis mehr alle Regionen in der Reichweite)
+        // der Ort des fernen Dorfs: der dichteste 40-m-Kreis der Zellen 200–360 m vom Start, auf Land, jede Region unter ihm
+        // in Reichweite (`_streuWartet`) — die Probe braucht Zellen unter den Häusern
         const p0 = { x: start.x, z: start.z };
-        for (let k = 0; k < 1500 && r._streuWartet(p0) > 0; k++) await pumpe(4);
+        await warteBis(() => !(r._streuWartet(p0) > 0), 4, 1500);
         const voll = [];
         for (const region of (s.scatterRegions && s.scatterRegions.values()) || [])
             for (const c of region.cells || []) if ((c.slots && c.slots.length) || c.feld) voll.push(c);
@@ -1389,7 +1405,7 @@ async function proben(phasen) {
         }
         const dorfRegionen = regionenUm(fx, fz);
         const streuSteht = () => steht(dorfRegionen);
-        for (let k = 0; k < 1500 && !streuSteht(); k++) await pumpe(4);
+        await warteBis(streuSteht, 4, 1500);
         let vorZellen = 0;
         for (const region of (s.scatterRegions && s.scatterRegions.values()) || [])
             for (const c of region.cells || [])
@@ -1401,10 +1417,7 @@ async function proben(phasen) {
         );
         const fernHaeuser = () =>
             s.architectures.filter((e) => !vorDorf.has(e) && e.type && e.type.startsWith("haus_") && e.fundament);
-        for (let k = 0; k < 120 && !fernSteht; k++) {
-            await pumpe(4);
-            await warte(100);
-        }
+        await warteBis(() => fernSteht, 4, 120, 100);
         const FH = fernHaeuser();
         o.w4b = { haeuser: FH.length, streuVorher: { steht: streuSteht(), zellen: vorZellen }, fern: streuImHaus(FH) };
         // unter den Häusern: die Zellen, die das Haus geräumt hat, und die, die noch leben (ohne Zellen dort ist W4b blind)
@@ -1420,8 +1433,7 @@ async function proben(phasen) {
             const RM = A.SCATTER.regionM;
             const keys = new Set();
             // nur Regionen in der Reichweite des Spielers: eine Region außer Reichweite fehlt nach der Regel der Welt und baut
-            // nie neu (das Dorf an −206/1 reichte mit zwei Häusern in −2,−1 und −2,0, das an 215/1 in 1,0 und 1,−1 — die
-            // Vorphasen hatten sie gebaut, am Start fielen sie aus der Reichweite; der Neubau kam nie zur Ruhe)
+            // nie neu
             for (const hs of FH) {
                 const rx = Math.floor(hs.position.x / RM);
                 const rz = Math.floor(hs.position.z / RM);
@@ -1429,7 +1441,7 @@ async function proben(phasen) {
             }
             for (const k of keys) r._disposeScatterRegion(k);
             const neuSteht = () => [...keys].every((q) => !r._streuRegionWartet(q));
-            for (let k = 0; k < 1500 && !neuSteht(); k++) await pumpe(2);
+            await warteBis(neuSteht, 2, 1500);
             await pumpe(10);
             o.w4b.neubau = streuImHaus(FH);
             o.w4b.neubau.steht = neuSteht();
@@ -1447,21 +1459,24 @@ async function proben(phasen) {
         const span = r._voxelChunkConfig(0).span;
         // (1) mit warmer Foundry: der Chunk unter dem Spieler steht, die Wald-Schlange ist leer und die Nah-Streu hat jede
         // gewollte Kachel gebaut (`nahStreu.offen` 0) — 20 Proben in Folge; gezählt wird der Konsum, nie eine feste Takt-Zahl
-        let ruhig = 0;
-        for (let k = 0; k < 1500 && ruhig < 20; k++) {
-            await pumpe(4);
-            const e = s.voxelChunks && s.voxelChunks.get(`${Math.floor(mx / span)},${Math.floor(mz / span)}`);
-            const ns = s.nahStreu;
-            const steht =
-                k > 60 &&
-                e &&
-                e.surfMap &&
-                !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
-                ns &&
-                ns.kacheln.size > 0 &&
-                ns.offen === 0;
-            ruhig = steht ? ruhig + 1 : 0;
-        }
+        let [ruhig, k4] = [0, 0];
+        await warteBis(
+            () => {
+                const e = s.voxelChunks && s.voxelChunks.get(`${Math.floor(mx / span)},${Math.floor(mz / span)}`);
+                const ns = s.nahStreu;
+                const steht =
+                    k4++ > 60 &&
+                    e &&
+                    e.surfMap &&
+                    !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
+                    ns &&
+                    ns.kacheln.size > 0 &&
+                    ns.offen === 0;
+                return (ruhig = steht ? ruhig + 1 : 0) >= 20;
+            },
+            4,
+            1500
+        );
         o.w4b.ruhe = ruhig >= 20;
         o.w4b.nahStreu = streuImHaus(FH);
         // die Nah-Streu um die Kamera (Farn, Blume, Kiesel der Kachel): keine Pflanze im Grundriss
@@ -1475,10 +1490,8 @@ async function proben(phasen) {
                 }
             o.w4b.kachel = { pflanzen: n, imHaus };
         }
-        // (2) DIE PROMOTION lebt nur ohne warme Foundry: sie kennt jede Art der Baum-Schicht, `_buildVariantLODs` liefert dann
-        // nichts, `_promoteScatterCell` endet vor dem Spawn (im Spiel: der Boot-Spalt vor dem Buch). Die Probe stellt diesen
-        // Zustand über den Gate-Schalter her (`__anazhGateNoFoundry`, für die Scatter-Promotion vorgesehen) und wartet, bis
-        // jede Baum-Zelle im Promotions-Ring promotet ist; die Wand der Promotion (`_naturSetzen`) misst so ihren echten Takt.
+        // (2) DIE PROMOTION lebt nur ohne warme Foundry (im Spiel der Boot-Spalt vor dem Buch): der Gate-Schalter
+        // `__anazhGateNoFoundry`, gewartet, bis jede Baum-Zelle im Promotions-Ring promotet ist
         {
             const PR = A.SCATTER.promoteM;
             const ring = () => {
@@ -1496,7 +1509,7 @@ async function proben(phasen) {
             o.w4b.promoWarm = ring();
             window.__anazhGateNoFoundry = true;
             try {
-                for (let k = 0; k < 1500 && ring().rest > 0; k++) await pumpe(4);
+                await warteBis(() => ring().rest <= 0, 4, 1500);
             } finally {
                 window.__anazhGateNoFoundry = false;
             }
@@ -1506,14 +1519,9 @@ async function proben(phasen) {
         o.w4b.nah = naturImHaus(FH);
     }
     if (P.has("w6")) {
-        // W6 DER FRONTALE ANLAUF AUF DIE TÜR: je Kultur (Hof-Grundriss marokkanisch, viktorianisch mit Veranda, alemannisch)
-        // steht ein Haus mit Tür-Zeile und Fundament wie ein Siedlungs-Slot auf dem Hang, die Front bergauf (das Gelände der Welt
-        // ist bis 420 m nirgends eben; bergauf liegt das Podest vorn auf Gelände-Höhe — ein höheres Podest ist ohne Sprung nie
-        // betretbar, offen: Hang-Zugang). Der Spieler läuft 6 m vor der Front los, frontal durch die Tür bis 1,8 m dahinter
-        // (beim Hof-Haus durch das Tor, am Brunnen vorbei, über den Hof): (a) vor der ersten Studio-Stufe (im selben Takt wie
-        // der Spawn — die Foundry liefert erst im nächsten): die Kern-Hülle; (b) während die FERNSTUFE steht (der Spieler wartet
-        // 60 m bzw. 20 m vor der Mitte, bis die Foundry die Stufe 2 bzw. 1 liefert — der Sim-Schritt ruft keinen LOD-Takt, die
-        // Stufe bleibt im Anlauf). Soll: 1 m hinter der Schwelle.
+        // W6 (Kopf): je Kultur (marokkanisch, viktorianisch, alemannisch) ein Haus wie ein Slot am Hang, die Front bergauf;
+        // der Lauf beginnt 6 m vor der Front, (a) im Takt des Spawns (die Kern-Hülle), (b) 60 m bzw. 20 m vor der Mitte, bis
+        // die Stufe 2 bzw. 1 steht (der Sim-Schritt ruft keinen LOD-Takt).
         o.w6 = [];
         const KULT = ["marokkanisch", "viktorianisch", "alemannisch"];
         const r0 = (x, z) => r.getTerrainHeightAt(x, z);
@@ -1585,8 +1593,7 @@ async function proben(phasen) {
                     ))
                         continue;
                     // der Anlauf-Korridor ist begehbar (2 m breit um die Tür-Achse, 7 m vor der Front bis zur Front, 0,5-m-Raster):
-                    // die oberste Feld-Fläche (`getTerrainHeightAt`) stetig — höchstens 1 m je Schritt; an einer Überhang-Kante
-                    // sprang sie 10,7 m in 1 cm, der Anlauf begann am Fuß der Klippe und lief unter sie — und 1 m darunter solide (die
+                    // die oberste Feld-Fläche (`getTerrainHeightAt`) stetig — höchstens 1 m je Schritt — und 1 m darunter solide (die
                     // Fläche interpoliert das 1,2-m-Raster des Felds)
                     let grund = null;
                     for (const lx of [tu.x - 1, tu.x, tu.x + 1]) {
@@ -1774,17 +1781,13 @@ async function proben(phasen) {
             const karten = () => r._bodenSichtChunks(x - 10, z - 10, x + 10, z + 10);
             // der Boden um das Haus steht, geschnitten im Grund: 3 ruhige Takte
             stell(x, e.position.y + 1, z);
-            for (let k = 0, ruhig = 0; k < 120 && ruhig < 3; k++) {
-                await pumpe(5);
-                ruhig = k >= 6 && karten() && lage().offen ? ruhig + 1 : 0;
-            }
+            let [ruhig, k9] = [0, 0];
+            await warteBis(() => (ruhig = k9++ >= 6 && karten() && lage().offen ? ruhig + 1 : 0) >= 3, 5, 120);
             a.vorher = lage();
             a.boxen = mitten.length;
             a.weg = r.removeArchitecture(e);
-            for (let k = 0; k < 60; k++) {
-                await pumpe(5);
-                if (k >= 6 && karten() && !lage().offen) break;
-            }
+            k9 = 0;
+            await warteBis(() => k9++ >= 6 && karten() && !lage().offen, 5, 60);
             a.nachher = lage();
         }
         // W9 WAISE: das Start-Dorf wächst, ein Bau sperrt seinen letzten Slot, nach dem dritten Haus fällt der Zug wie mit der
@@ -1796,19 +1799,21 @@ async function proben(phasen) {
         stell(start.x, start.y + 1, start.z);
         const zellen = () => (s.worldMeta && s.worldMeta.settlementCells) || {};
         let q = null;
-        for (let k = 0; k < 600 && !(q = r._autoSettlementQueue) && !zellen().start; k++) await pumpe(1);
+        await warteBis(() => !!(q = r._autoSettlementQueue) || !!zellen().start, 1, 600);
         const sl = q && q.plan.slots[q.plan.slots.length - 1];
         const ort = sl && { x: q.origin.x + sl.x, y: sl.y + 0.5, z: q.origin.z + sl.z };
         const sperre = ort && r.spawnArchitecture("brunnen_dorf", ort, { silent: true });
-        for (let k = 0; k < 1200 && q && r._autoSettlementQueue === q && q.idx < 3; k++) await pumpe(1);
+        await warteBis(() => !(q && r._autoSettlementQueue === q && q.idx < 3), 1, 1200);
         const reload = !!q && r._autoSettlementQueue === q && q.idx < q.plan.slots.length ? q.idx : 0;
         if (reload) {
+            // der Reload des Spiels: der Schnappschuss schließt den Gang (`_dorfGangSchliessen`), nie die Uhr eines Speicherns
+            r._dorfGangSchliessen();
             r._autoSettlementQueue = null;
             r._stlWegeKeys.delete(q.cellKey);
         }
         // der Zug des Start-Dorfs (samt seinem Rebuild) ist leer, bevor der Takt ein nächstes Dorf beginnt
         const zugLebt = () => r._autoSettlementQueue || r._stlWegePending || (q && !r._stlWegeKeys.has(q.cellKey));
-        for (let k = 0; k < 1200 && (zugLebt() || !zellen().start); k++) await pumpe(1);
+        const zugOffen = !(await warteBis(() => !zugLebt() && !!zellen().start, 1, 1200));
         window.__anazhAutoSettlement = takt;
         const an = (x, z, typ) => (e) =>
             e !== sperre &&
@@ -1847,6 +1852,7 @@ async function proben(phasen) {
             slots: slots.length,
             haeuser,
             reload,
+            zugOffen,
             ausstattung,
             verblasst: !!verblasst,
             ms: Math.round(performance.now() - t0),
@@ -1886,6 +1892,9 @@ function urteil(o) {
         const gang = hs.filter((h) => h.gang);
         if (gang.length < 3 || !gang.some((h) => h.gang.keller) || !gang.some((h) => h.gang.dach))
             f.push(`W10 Aufbau: ${gang.length} Gänge (Soll ≥ 3, mit Keller, mit Dachboden)`);
+        const tier = hs.filter((h) => h.tiere && h.tiere.length);
+        if (hs.some((h) => !h.saat)) f.push("W10 Saat blind");
+        if (tier.length) f.push(`W10 Tier im Haus: ${tier.map((h) => h.typ + " " + h.tiere).join(" · ")}`);
         const hub = gang.filter((h) => !(h.gang.hub <= 0.3));
         if (hub.length) f.push(`W10 Anti-Clip-Hub: ${hub.map((h) => h.typ + " " + h.gang.wo).join(" · ")}`);
         const wand = gang.filter((h) => !(h.gang.wand > 0.5));
@@ -2119,7 +2128,8 @@ function urteil(o) {
                 `W9 Waise: blind — Start, Gründe, Sperre, Reload, Verblassen ${[wa.start, wa.gruende, wa.gesperrt, wa.reload, wa.verblasst]}`
             );
         else if (wa.ohne.length) f.push(`W9 Waise: ${wa.ohne.length} von ${wa.gruende} Gründen ohne Bau (${wa.ohne})`);
-        if (wa.gesperrt && wa.haeuser < wa.slots - 1)
+        if (wa.zugOffen) f.push("W9 Zug: blind — der Zug lebt");
+        else if (wa.gesperrt && wa.haeuser < wa.slots - 1)
             f.push(`W9 Zug: ${wa.haeuser} von ${wa.slots - 1} freien Slots stehen`);
         if (wa.start && !(au && au.brunnen[1] && au.laternen[1]))
             f.push("W9 Ausstattung: blind — kein Brunnen, keine Laterne");
@@ -2242,13 +2252,15 @@ function zeile(o) {
                 bauwand: ["haus", "W7 Bau im Bau"],
                 stab: ["haus", "W10 Anti-Clip-Hub"],
                 kletter: ["haus", "W10 Spielgang"],
+                tierbau: ["haus", "W10 Tier im Haus"],
                 wand: ["haus", "W10 Wand"],
                 grundkeller: ["grund", "W9 Dichte"],
                 grundbueschel: ["grund", "W9 Büschel"],
                 abbau: ["grund", "W9 Abbau"],
                 grundplan: ["grund", "W9 Plan"],
                 waise: ["grund", "W9 Waise"],
-                ausstattung: ["grund", "W9 Zug"],
+                ausstattung: ["grund", "W9 Zug|W9 Ausstattung"],
+                gangschluss: ["grund", "W9 Ausstattung"],
                 zugreload: ["grund", "W9 Waise", "W9 Zug"],
                 verblassen: ["grund", "W9 Waise"],
             };
@@ -2273,9 +2285,12 @@ function zeile(o) {
                 const soll = { [inj]: selbst[i].soll };
                 const { o, pf } = selbstErg[i];
                 const f = urteil(o);
-                const fehlt = soll[inj].filter((x) => !f.some((y) => y.startsWith(x)));
+                const trifft = (x) => f.find((y) => x.split("|").some((a) => y.startsWith(a)));
+                const fehlt = soll[inj].filter((x) => !trifft(x));
                 const ok = pf.length === 0 && fehlt.length === 0;
-                const beleg = soll[inj].map((x) => f.find((y) => y.startsWith(x)) || `${x}: grün (blind!)`).join(" | ");
+                const beleg = soll[inj]
+                    .map((x) => trifft(x) || `${x}: grün (blind! ${f.join(" | ") || "kein Urteil"})`)
+                    .join(" | ");
                 console.log(
                     `  ${ok ? "✅" : "❌"} Selbsttest „${inj}" macht ${soll[inj].join(" + ")} rot — ${pf.length ? pf.join("; ") : beleg}`
                 );

@@ -1429,14 +1429,76 @@ class AnazhRealm_bau_vorlagen {
     // 6 Built-ins von weich-organisch (leder, holz) über mineralisch (stein, eisen, bronze) bis kristallin
     // (quarz); mehr via DSL-Op `define_material`. Tag-Werte 0..1 = Potenzial; die Aktivierung je Form
     // macht FORM_TAG_ACTIVATION.
+    //
+    // DIE STOFF-ZEILE TRÄGT kg (physik K1): je Stoff die Dichte ρ in kg/m³ (SI) — die EINE Zahl, aus der jedes Ding wiegt und
+    // im Wasser liegt (`_stoffRho`: Teile, Eigenwerke, Leiber, Wagen, Gefährte). Wo ein Gesetzbuch den Stoff wiegt, IST die
+    // Zeile sein Eintrag: Holz und die Metalle der Schmiede (RHO.holz · MAT.stahl/eisen/bronze, ein Zugriff — wer die Zeile
+    // ändert, ändert die Klinge, Labor = Welt), das Fleisch der Tiere aus ihrem Gewebe (tetrapoda MASSSTAB.dichteKgM3), der
+    // Leib des Menschen samt der Luft seiner Lunge aus dem Körper-Kern (koerper LEIB.dichteKgM3), das Blech des Wagens aus der Hülle des Fahr-Kerns (FAHR.huelleDichte × FAHR.wasser.rho: der
+    // Stoff-Mix, wenn die Kabine voll läuft). Die übrigen sind Tafel-Werte: Granit und Quarz 2 650, Leder 860, kompakter
+    // Knochen 1 900, Keratin-Schuppen 1 300, Federkleid 50, Holzkohlen-Glut 400, Laub 300, Boden 1 500, Kraut 400, die Essenz
+    // eine Flüssigkeit wie Wasser 1 000. Jede Änderung einer Zeile zählt den Stoff-Stand (`AnazhRealm._stoffStand`), an dem
+    // die Gedächtnisse der Masse hängen. Die Tag-Achse `dichte` [0,1] bleibt Potenzial der Tag-Sprache (Rolle, Kampf-Stats)
+    // und wiegt nichts.
     _defaultMaterials() {
-        const make = (name, label, color, tags) => ({
-            name,
-            label,
-            builtIn: true,
-            color,
-            tags: { ...AnazhRealm.MATERIAL_TAG_DEFAULTS, ...tags },
-        });
+        const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+        if (!sc || !sc.RHO || !sc.MAT || !sc.MAT.stahl) AnazhRealm._kernPflichtBruch("schmiede:RHO/MAT");
+        const T = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+        const fleisch = T && T.MASSSTAB ? T.MASSSTAB.dichteKgM3 : NaN;
+        if (!(fleisch > 0)) AnazhRealm._kernPflichtBruch("tetrapoda:MASSSTAB.dichteKgM3");
+        const K = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
+        const leib = K && K.LEIB ? K.LEIB.dichteKgM3 : NaN;
+        if (!(leib > 0)) AnazhRealm._kernPflichtBruch("koerper:LEIB.dichteKgM3");
+        const FG = AnazhRealm._fahrGesetz();
+        const im = (o, k) => ({ get: () => o[k], set: (v) => (o[k] = v) });
+        const RHO = {
+            stein: 2650,
+            holz: im(sc.RHO, "holz"),
+            eisen: im(sc.MAT.eisen, "rho"),
+            bronze: im(sc.MAT.bronze, "rho"),
+            stahl: im(sc.MAT.stahl, "rho"),
+            quarz: 2650,
+            leder: 860,
+            knochen: 1900,
+            fleisch,
+            leib,
+            federn: 50,
+            schuppen: 1300,
+            glut: 400,
+            laub: 300,
+            erde: 1500,
+            kraut: 400,
+            essenz: 1000,
+            blech: FG.huelleDichte * FG.wasserRho,
+        };
+        // Stahl, Blech und Leib sind Stoffe der Körper (die Klinge der Schmiede, die Hülle des Wagens, der Mensch), keine
+        // Bau-Stoffe: die Welt hat keine Quelle, aus der man sie sammelt, die Werkstatt bietet sie nicht an (`bauStoff`).
+        const nurKoerper = ["stahl", "blech", "leib"];
+        const make = (name, label, color, tags) => {
+            const z = {
+                name,
+                label,
+                builtIn: true,
+                color,
+                tags: { ...AnazhRealm.MATERIAL_TAG_DEFAULTS, ...tags },
+            };
+            if (nurKoerper.includes(name)) z.bauStoff = false;
+            const q = typeof RHO[name] === "object" ? RHO[name] : { wert: RHO[name] };
+            if (!q.get) {
+                if (!(q.wert > 0)) throw new Error("STOFF-ZEILE ohne Dichte: " + name);
+                q.get = () => q.wert;
+                q.set = (v) => (q.wert = v);
+            }
+            Object.defineProperty(z, "rho", {
+                enumerable: true,
+                get: q.get,
+                set: (v) => {
+                    q.set(v);
+                    AnazhRealm._stoffStand = (AnazhRealm._stoffStand || 0) + 1;
+                },
+            });
+            return z;
+        };
         const list = [
             make("stein", "Stein", 0x7a7a7a, {
                 härte: 0.65,
@@ -1472,6 +1534,15 @@ class AnazhRealm_bau_vorlagen {
                 magieleitung: 0.25,
                 resoniert: 0.75,
             }),
+            // stahl: die Klingen der Schmiede (MAT.stahl) — härter und spröder als Eisen.
+            make("stahl", "Stahl", 0x6d7179, {
+                härte: 0.85,
+                dichte: 0.9,
+                zähigkeit: 0.55,
+                wärmeleitung: 0.6,
+                stromleitung: 0.8,
+                resoniert: 0.7,
+            }),
             make("quarz", "Quarz", 0xcce6f5, {
                 härte: 0.7,
                 dichte: 0.65,
@@ -1498,6 +1569,15 @@ class AnazhRealm_bau_vorlagen {
                 lebendig: 1.0,
             }),
             make("fleisch", "Fleisch", 0xb55050, {
+                härte: 0.15,
+                dichte: 0.4,
+                zähigkeit: 0.75,
+                wärmeleitung: 0.45,
+                brennbar: 0.35,
+                lebendig: 1.0,
+            }),
+            // leib: der Leib des Menschen (Gewebe samt der Luft der Lunge) — wie das Fleisch, knapp leichter als Wasser.
+            make("leib", "Leib", 0xc98f73, {
                 härte: 0.15,
                 dichte: 0.4,
                 zähigkeit: 0.75,
@@ -1578,6 +1658,15 @@ class AnazhRealm_bau_vorlagen {
                 transparent: 0.8,
                 resoniert: 0.8,
                 lebendig: 0.6,
+            }),
+            // blech: die Hülle des Wagens (Stahl, Aluminium, Kunststoff, Gummi, Glas, Fluide — der Mix des Fahr-Kerns).
+            make("blech", "Blech", 0x8c9196, {
+                härte: 0.5,
+                dichte: 0.75,
+                zähigkeit: 0.7,
+                wärmeleitung: 0.6,
+                stromleitung: 0.8,
+                resoniert: 0.65,
             }),
         ];
         const out = {};
