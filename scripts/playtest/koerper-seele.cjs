@@ -3279,7 +3279,6 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
     );
 }
 
-// Γ1-LESART-5 Ψ2-NASE Foundation:
 // das Geruch-Feld der Welt als FÜNFTE Welt-Stimme, sein Wind der EINE Wind am Ort (`_windAt`, gate:kopplung F3); ihr Konsum
 // (Jagd, Kadaver) lebt in gate:kreatur-takt jagdkreis — hier das Gesetz von Wind und Abstand.
 async function checkBandV18202GeruchFeld(ctx) {
