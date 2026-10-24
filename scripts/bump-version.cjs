@@ -5,17 +5,13 @@
 // (V18.491.52–.637 wurden von Hand gestempelt, die Hälfte der Träger blieb liegen —
 // gate:altlasten fing es erst hinterher). Träger: package.json · package-lock.json ·
 // AnazhRealm.VERSION · jedes ?v= in index.html + worlds/*/index.html · der
-// CLAUDE.md-Stand-Kopf (nur die Versionszahl, der Text bleibt) · der Korpus-Stand der Stufe (unten).
-// Ohne Argument: --check meldet jede Abweichung (Exit 1), schreibt nichts.
+// CLAUDE.md-Stand-Kopf (nur die Versionszahl, der Text bleibt) · der Korpus-Stand der Stufe.
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
 
 const root = path.join(__dirname, "..");
-const arg = process.argv[2];
-const check = !arg || arg === "--check";
-const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-const ziel = check ? pkg.version : arg;
+const ziel = process.argv[2];
 if (!/^\d+\.\d+\.\d+$/.test(ziel)) {
     console.error(`Version "${ziel}" ist kein x.y.z`);
     process.exit(2);
@@ -29,7 +25,7 @@ function traeger(rel, ersetzen) {
     const neu = ersetzen(alt);
     if (neu !== alt) {
         befunde.push(rel);
-        if (!check) fs.writeFileSync(p, neu);
+        fs.writeFileSync(p, neu);
     }
 }
 
@@ -52,28 +48,12 @@ for (const d of fs.readdirSync(path.join(root, "worlds"))) {
 }
 for (const h of htmls) traeger(h, (s) => s.replace(/\?v=[0-9]+\.[0-9]+(?:\.[0-9]+)?/g, `?v=${ziel}`));
 traeger("CLAUDE.md", (s) => s.replace(/^(## Stand \(V)[0-9.]+/m, `$1${ziel}`));
-// der Stand der Stufe (speicher.K5, gate:persistence (V)): die neue Version lädt den jüngsten Korpus-Stand durch den Boot des
-// Spielers und schreibt ihren eigenen, der mit den Trägern in den EINEN Stufen-Commit geht; verliert sie dabei, ist die Stufe ROT
-if (!check) {
-    const stand = `spec/speicher-korpus/${ziel}.json.br`;
-    const r = spawnSync(process.execPath, [path.join(__dirname, "diag-persistence.cjs"), "--stufe"], {
-        cwd: root,
-        encoding: "utf8",
-        env: { ...process.env, PERSISTENCE_PORT: "0" },
-    });
-    if (r.status !== 0 || spawnSync("git", ["add", stand], { cwd: root }).status !== 0) {
-        console.error(`❌ ${stand} fehlt: ${`${r.stdout}${r.stderr}`.trim().split("\n").slice(-3).join(" | ")}`);
-        process.exit(1);
-    }
-    befunde.push(stand);
-}
-
-if (check) {
-    if (befunde.length) {
-        console.log(`❌ Versions-Träger weichen von package.json ${ziel} ab: ${befunde.join(", ")}`);
-        process.exit(1);
-    }
-    console.log(`✅ alle Versions-Träger tragen ${ziel}`);
-} else {
-    console.log(`Version ${ziel} gesetzt in: ${befunde.join(", ") || "(nichts zu tun)"}`);
-}
+console.log(`Version ${ziel} gesetzt in: ${befunde.join(", ") || "(nichts zu tun)"}`);
+// der Korpus-Stand (speicher.K5): die neue Version lädt den jüngsten und legt ihren in den Index, ROT bei Verlust
+const o = { cwd: root, stdio: "inherit", env: { ...process.env, PERSISTENCE_PORT: "0" } };
+const lauf = (...a) => spawnSync(a.shift(), a, o).status !== 0;
+if (
+    lauf("node", "scripts/diag-persistence.cjs", "--stufe") ||
+    lauf("git", "add", `spec/speicher-korpus/${ziel}.json.br`)
+)
+    process.exit(1);

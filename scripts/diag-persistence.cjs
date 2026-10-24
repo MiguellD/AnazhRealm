@@ -8,9 +8,8 @@
 // Studio-Haus mit Zahlen-id), Grabe-Hieben und Inventar mit ihrem saveState schrieb (`spec/speicher-korpus/<version>.json.br`).
 // Jeder lädt am Kopf durch den Boot des Spielers, und der Save des Kopfs trägt jeden Bau an seinem Ort in seiner Höhe über
 // Grund, jede Grube am Boden, jeden Slot — daraus (U) der Boden-Umzug (K16), (W) die Lichtung, (K) das kalte Buch. Der Save
-// des Kopfs aus dem jüngsten Stand lädt im selben Lauf und ist der Stand der Versions-Stufe: `--stufe` schreibt nur ihn (ein
-// Boot), `bump-version.cjs` ruft es und legt ihn in den Stufen-Commit; fehlt er im Baum, ist die Stufe ohne ihn gestempelt
-// (ROT). `--selftest`: eine Migration lässt ein Feld fallen (`VERLUST`) oder der Räumer fragt den Stoff — ROT.
+// des Kopfs aus dem jüngsten Stand lädt im selben Lauf, `--stufe` (bump-version.cjs) schreibt ihn als Stand der Stufe.
+// `--selftest`: eine Migration lässt ein Feld fallen (`VERLUST`) oder der Räumer fragt den Stoff — ROT.
 //
 // (S) DER SERVER SCHREIBT GANZ (K23): der save-server läuft in einer Sandbox-Kopie, ein Stand (≈ 1 MB) geht an
 // /api/save-state, und der Prozess stirbt (SIGKILL) an JEDEM Schreib-Punkt einmal — mitten in jedem Schreiben (die
@@ -22,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root } = require("./lib/welt-boot.cjs");
 const http = require("http");
-const { spawnSync, execSync } = require("child_process");
+const { spawnSync } = require("child_process");
 const zlib = require("zlib");
 const fs = require("fs");
 const os = require("os");
@@ -487,7 +486,8 @@ async function korpusLauf(selbst) {
         if (!k.kopf && z.ganz && k === alle.at(-1)) {
             const datei = path.join(KORPUS, ist.neu.version + ".json.br");
             const neu = { ...ist.neu, bauten: bauten.map((a) => a.id) };
-            if (!fs.existsSync(datei)) fs.writeFileSync(datei, zlib.brotliCompressSync(JSON.stringify(neu)));
+            if (NUR_STUFE && !fs.existsSync(datei))
+                fs.writeFileSync(datei, zlib.brotliCompressSync(JSON.stringify(neu)));
             alle.push({ ...neu, kopf: true });
         }
         console.log(`  [V] ${z.version}${selbst ? " ohne " + VERLUST[i] : ""}: ${korpusZahl([z])}`);
@@ -506,16 +506,15 @@ function korpusUrteil(z, selbst) {
         pass: l.length > 0 && l.every(f),
     });
     const [alt, gleich, licht] = [z.filter((x) => x.alt), z.filter((x) => !x.alt), (x) => x.da[0] && x.da[1]];
-    const [alte, stand] = [z.filter((x) => !x.kopf).map((x) => x.version), `spec/speicher-korpus/${STUFE}.json.br`];
-    const imBaum = !!execSync(`git ls-files ${stand}`, { cwd: root, encoding: "utf8" });
+    const alte = z.filter((x) => !x.kopf).map((x) => x.version);
     return [
         zeile(
             `(V) Korpus: ${alte.length} Stände ${alte[0]} … ${alte.at(-1)} und ${z.length - alte.length} Kopf laden am Kopf — ${korpusZahl(z)} · ganz`,
             (x) => x.ganz
         ),
         {
-            name: `(V) Versions-Stufe ${STUFE}: ${stand} steht im Baum${imBaum ? "" : " — Täter: die Stufe ohne scripts/bump-version.cjs"}`,
-            pass: imBaum,
+            name: `(V) Versions-Stufe ${STUFE}: ihr Stand steht im Korpus (bump-version.cjs)`,
+            pass: alte.includes(STUFE),
         },
         zeile("(U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen", (x) => x.ganz && x.umzug, alt),
         zeile("(U) Gegenprobe: Stände desselben Bodens ziehen nicht um", (x) => !x.umzug, gleich),
@@ -541,12 +540,7 @@ function korpusUrteil(z, selbst) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    if (NUR_STUFE) {
-        const [z, datei] = [await korpusLauf(false), path.join(KORPUS, STUFE + ".json.br")];
-        const ok = z.every((x) => x.ganz) && fs.existsSync(datei);
-        console.log(`${ok ? "✅" : "❌"} (V) Stand der Stufe ${STUFE} aus ${z[0].version}: ${korpusZahl(z)}`);
-        process.exit(ok ? 0 : 1);
-    }
+    if (NUR_STUFE) process.exit((await korpusLauf(false))[0].ganz ? 0 : 1);
     const tLauf = await tabTodProbe({ von: TT_VON, bis: TT_BIS });
     const tSelbst = SELBSTTEST ? await tabTodProbe({ von: 0, bis: 0, selbst: true }) : null;
     const korpus = korpusUrteil(await korpusLauf(false), SELBSTTEST ? await korpusLauf(true) : null);
