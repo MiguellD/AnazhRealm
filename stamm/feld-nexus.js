@@ -1314,7 +1314,8 @@ class AnazhRealm_feld_nexus {
             }
         }
         if (Array.isArray(reply.program) && reply.program.length > 0) {
-            const result = this.dslRun(reply.program, { source: "llm:grok" });
+            // das Wort des Spielers ist die Ursache der Tat der KI (die Stimme des Felds nennt es, `_tatWerten`)
+            const result = this.dslRun(reply.program, { source: "llm:grok", grund: userText });
             // Die KI als Regel-Schreiberin: ein LLM-rule-Programm registriert eine stehende Regel (ephemer
             // per Default, whitelist-gesichert); ihre Fitness läuft über das Lebens-Fenster, NICHT über den
             // 5-s-Gesten-Finalizer (der nur die Registrierung mäße).
