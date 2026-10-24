@@ -2447,6 +2447,329 @@ class AnazhRealm_bau_teile {
         return 0x66ff88;
     }
 
+    // ═══ DAS WERK GEHORCHT DEM GESETZ IN DER WELT (Meisterkarte Bauen K3) ═══
+    // Beim Setzen (die Wurzel `spawnArchitecture`: Bau-Modus, Satz, KI, Mitspieler, Reload) urteilt die EINE Statik —
+    // `_workshopPhysicsVerdict`, dieselbe, die die Werkstatt zeigt, am Grund des Plans — über jedes Werk, dessen Form seine
+    // Teile sind: was kippt, knickt oder Teile schweben lässt, stürzt in Ereignis-Zeit (`_tickWerkGesetz`) und bricht; was den
+    // Grund nirgends berührt, fällt, landet und wird neu geurteilt (`boden`: sein tiefstes Teil). Der Spieler hört den Grund in
+    // den Worten der Werkstatt. Was nur auf Rollen steht (`_rollableFraction` 1; ein Fahrzeug fährt nach seinem
+    // Gesetz), rollt den Hang hinab; eine Mulde der Form (`_gefaessFassung`) fängt Regen und hält ihn. Ein Studio-Werk trägt
+    // seine Form aus dem Gesetzbuch (seine Teile sind Spender-Substanz), Natur wurzelt. Befund: das Urteil fiel nur in der
+    // Werkstatt — in der Welt stand der überlange Kragarm, die Brücke ohne Pfeiler schwebte.
+    _werkGesetzSetzen(entry, bp, boden = 0) {
+        if (
+            !(Array.isArray(bp.parts) && bp.parts.length) ||
+            this._istNatur(entry) ||
+            this._foundryPresetForEntry(entry) ||
+            typeof bp.studioGestalt === "string" ||
+            this._foundryNeedsBookForType(entry.type)
+        )
+            return;
+        const v = this._workshopPhysicsVerdict(bp, boden);
+        const faellt = v.floatingParts.length === bp.parts.length;
+        const grund = faellt
+            ? "faellt"
+            : v.floatingParts.length
+              ? "schwebt"
+              : v.lean >= 1
+                ? "kippt"
+                : v.buckles
+                  ? "knickt"
+                  : null;
+        const name = String(bp.label || entry.type).split(/\s[·—(]/)[0];
+        const g = { pose: { q: new THREE.Quaternion(), um: { x: 0, y: 0, z: 0 }, sinken: 0 } };
+        if (grund) {
+            const text = v.lines.find((l) => l.sev === "warn" && (grund !== "knickt" || /knickt/.test(l.text))).text;
+            g.sturz = { grund, name, text, t: 0, w: 0, theta: 0, boden };
+            if (faellt || grund === "schwebt") {
+                // was schwebt, fällt, bis sein tiefstes Stück den Grund erreicht
+                const unten = v.floatingParts.map((i) => this._partWorldAABB(bp.parts[i]).min.y);
+                g.sturz.hoehe = Math.max(0, Math.min(...unten) - boden);
+            } else {
+                // um die Kante der Standfläche, über die der Schwerpunkt hängt (knickt: das Glied gibt nach, ein Hauch)
+                const d = Math.hypot(v.leanDir.x, v.leanDir.z) > 1e-6 ? v.leanDir : { x: 1, z: 0 };
+                const poly = this._supportPolygon(bp, boden);
+                const kante = poly.hull.reduce((a, h) => (h.x * d.x + h.z * d.z > a.x * d.x + a.z * d.z ? h : a));
+                const com = this._compoundCenterOfMass(bp).com;
+                const ueber = (com.x - kante.x) * d.x + (com.z - kante.z) * d.z;
+                Object.assign(g.sturz, {
+                    achse: new THREE.Vector3(d.z, 0, -d.x),
+                    hebel: Math.max(0.3, Math.hypot(ueber, com.y - poly.boden)),
+                    phi0: Math.max(grund === "knickt" ? 0.08 : 0.01, Math.atan2(ueber, com.y - poly.boden)),
+                });
+                g.pose.um = { x: kante.x, y: poly.boden, z: kante.z };
+            }
+            this._spielerSagt(`${name}: ${text} — ${faellt ? "es fällt" : "es stürzt ein"}.`);
+        } else {
+            const rollen = [];
+            if (!(entry.affordances && entry.affordances.moveable) && this._rollableFraction(bp, rollen) >= 1) {
+                const achsen = new Set(
+                    rollen.filter((p) => p.shape !== "sphere").map((p) => this._cylinderWorldAxis(p))
+                );
+                const boxen = rollen.map((p) => this._partWorldAABB(p));
+                const r = Math.max(...boxen.map((a) => (a.max.y - a.min.y) / 2));
+                if (achsen.size <= 1) g.roll = { achse: achsen.size ? [...achsen][0] : null, r, v: 0, stempel: null };
+                const n = boxen.length;
+                const mitte = (k) => boxen.reduce((s, a) => s + a.min[k] + a.max[k], 0) / (2 * n);
+                g.pose.um = { x: mitte("x"), y: mitte("y"), z: mitte("z") };
+            }
+            g.gefaess = this._gefaessFassung(bp);
+        }
+        if (!g.sturz && !g.roll && !g.gefaess) return;
+        entry._gesetz = g;
+        (this._werkGesetzImTakt || (this._werkGesetzImTakt = new Set())).add(entry);
+    }
+
+    // Der Takt des Gesetzes (aus `tickAffordances`, Ereignis-Zeit `dt`): nur die Werke, die es trägt. Die Schwere ist die der
+    // Welt (`state.gravity`, ein Wort des Spielers ändert sie).
+    _tickWerkGesetz(dt) {
+        const B = this._werkGesetzImTakt;
+        if (!B || !B.size) return;
+        const schwere = Number.isFinite(this.state.gravity) ? Math.max(0, -this.state.gravity) : 9.81;
+        const wf = this._weatherFieldFor(this.state.weather);
+        for (const e of B) {
+            const g = e._gesetz;
+            if (g.sturz) this._werkSturzSchritt(e, g, schwere, dt);
+            else {
+                if (g.roll) this._werkRollSchritt(e, g, schwere, dt);
+                if (g.gefaess) this._gefaessSchritt(e, g.gefaess, wf, dt);
+            }
+        }
+    }
+
+    // Das Werk stürzt: es kippt um die Kante (φ'' = g/L · sin φ, φ der Winkel des Schwerpunkts über der Kante) oder fällt frei
+    // (½ g t²), bis es liegt — dann bricht es (der Abbau ohne Stimme, die Zerstörung nennt sich im Journal). Was ganz fiel,
+    // landet: sein tiefstes Teil ist der Grund, die Blocker ziehen mit, das Gesetz urteilt neu.
+    _werkSturzSchritt(e, g, schwere, dt) {
+        const s = g.sturz;
+        const frei = s.grund === "faellt" || s.grund === "schwebt";
+        s.t += dt;
+        if (frei) g.pose.sinken = Math.min(s.hoehe, 0.5 * schwere * s.t * s.t);
+        else {
+            s.w += (schwere / s.hebel) * Math.sin(s.phi0 + s.theta) * dt;
+            s.theta = Math.min(Math.PI / 2, s.theta + s.w * dt);
+            g.pose.q.setFromAxisAngle(s.achse, s.theta);
+        }
+        this._werkPoseZeigen(e);
+        if (frei ? g.pose.sinken < s.hoehe : s.theta < Math.PI / 2) return;
+        const bp = this.state.blueprints && this.state.blueprints[e.type];
+        if (s.grund === "faellt" && bp) {
+            this._werkGesetzAus(e);
+            delete e._gesetz;
+            e.position.y -= s.hoehe;
+            this._blockerBewegt(e);
+            if (e.blockerAABBs) this._populateBlockerAABBs(e);
+            this._werkGesetzSetzen(e, bp, s.boden + s.hoehe);
+            return this._werkPoseZeigen(e);
+        }
+        this.removeArchitecture(e, { still: true });
+        this.journalAppend("loss", `${s.name} stürzte ein: ${s.text}.`, { type: e.type, id: e.id, grund: s.grund });
+    }
+
+    // Das Werk rollt: der Hang treibt es längs seiner Roll-Richtung (quer zur Achse; die Kugel die Falllinie hinab) mit
+    // g · sin θ · k (k: was rollt statt dreht — Walze 2/3, Kugel 5/7), der Rollwiderstand des Fahr-Gesetzes (vehicle:FAHR
+    // .rollDecel) hält es; es ruht, wo der Hang den Widerstand nicht überwindet, und bleibt am Wasser liegen. Der Boden ist der
+    // unter dem Werk (`_werkBoden`), die Drehung um die Achse folgt dem Weg (φ = s / r).
+    _werkRollSchritt(e, g, schwere, dt) {
+        const R = g.roll;
+        const boden = this._werkBoden(e);
+        const { x, z } = e.position;
+        const gx = boden(x + 0.5, z) - boden(x - 0.5, z);
+        const gz = boden(x, z + 0.5) - boden(x, z - 0.5);
+        const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+        const [c, sn] = [Math.cos(ry), Math.sin(ry)];
+        let pd = R.achse === "x" ? { x: 0, z: 1 } : R.achse === "z" ? { x: 1, z: 0 } : null;
+        if (!pd) {
+            const n = Math.hypot(gx, gz);
+            if (!(n > 1e-6)) return;
+            pd = { x: (-gx * c + gz * sn) / n, z: (-gx * sn - gz * c) / n };
+        }
+        const d = { x: pd.x * c + pd.z * sn, z: -pd.x * sn + pd.z * c };
+        const steig = gx * d.x + gz * d.z;
+        const kos = 1 / Math.sqrt(1 + steig * steig);
+        const hang = -schwere * steig * kos * (R.achse ? 2 / 3 : 5 / 7);
+        const halt = AnazhRealm._fahrSchrittGesetz().vc.FAHR.rollDecel * kos;
+        if (R.v === 0 && Math.abs(hang) <= halt) return;
+        R.v += hang * dt;
+        R.v -= Math.sign(R.v) * Math.min(Math.abs(R.v), halt * dt);
+        const nx = x + d.x * R.v * dt;
+        const nz = z + d.z * R.v * dt;
+        const ny = boden(nx, nz);
+        if (!Number.isFinite(ny) || this._nassAt(nx, nz)) R.v = 0;
+        if (R.v === 0) return;
+        Object.assign(e.position, { x: nx, y: ny + 0.5, z: nz });
+        const dq = this._werkPoseTmpQ || (this._werkPoseTmpQ = new THREE.Quaternion());
+        const ax = (this._werkPoseTmpV || (this._werkPoseTmpV = new THREE.Vector3())).set(pd.z, 0, -pd.x);
+        g.pose.q.premultiply(dq.setFromAxisAngle(ax, (R.v * dt) / R.r));
+        this._blockerBewegt(e);
+        if (e.blockerAABBs && !(R.stempel && Math.hypot(R.stempel.x - nx, R.stempel.z - nz) < 0.5)) {
+            this._populateBlockerAABBs(e);
+            R.stempel = { x: nx, z: nz };
+        }
+        this._werkPoseZeigen(e);
+    }
+
+    // DIE POSE DES WERKS (Sturz, Rollen): die Drehung `q` um den Punkt `um` und das Sinken, im Rahmen des Plans — nach
+    // T · R_y · S der Instanz-Matrix (`_archEntryWorldMatrix`, der EINE Weg jedes Bilds des Werks).
+    _werkPoseMal(entry, m) {
+        const P = entry._gesetz.pose;
+        const t = (this._werkPoseTmpM || (this._werkPoseTmpM = new THREE.Matrix4())).makeRotationFromQuaternion(P.q);
+        const [e, u] = [t.elements, P.um];
+        e[12] = u.x - (e[0] * u.x + e[4] * u.y + e[8] * u.z);
+        e[13] = u.y - (e[1] * u.x + e[5] * u.y + e[9] * u.z) - P.sinken;
+        e[14] = u.z - (e[2] * u.x + e[6] * u.y + e[10] * u.z);
+        m.multiply(t);
+    }
+    _werkPoseZeigen(e) {
+        if (e.mesh) this._werkWeltMatrix(e).decompose(e.mesh.position, e.mesh.quaternion, e.mesh.scale);
+        else if (e.instanced) this._archInstanceUpdate(e);
+        if (e._gesetz && e._gesetz.gefaess) this._gefaessWasserZeigen(e, e._gesetz.gefaess);
+    }
+    _werkWeltMatrix(e) {
+        return this._archEntryWorldMatrix(e, this._werkPoseTmpW || (this._werkPoseTmpW = new THREE.Matrix4()));
+    }
+    // Der Abbau nimmt das Werk aus dem Takt des Gesetzes, sein Wasser mit.
+    _werkGesetzAus(entry) {
+        if (!entry._gesetz || !this._werkGesetzImTakt) return;
+        this._werkGesetzImTakt.delete(entry);
+        if (entry._gesetz.gefaess) this._gefaessLeeren(entry._gesetz.gefaess);
+    }
+    _gefaessLeeren(F) {
+        if (F.mesh && this.state.scene) this.state.scene.remove(F.mesh);
+        F.mesh = null;
+    }
+
+    // DIE MULDE DER FORM: die Teile als Zellen (je Achse ≤ 24, ihre Welt-Hüllen), von außen geflutet — Wasser läuft über
+    // jede Seite und den Grund aus, nie nach oben (Prioritäts-Flut: je Zelle die niedrigste Schicht, über die sie ausläuft);
+    // was darunter liegt, hält Wasser, was den Himmel sieht, fängt Regen. Eine Schale mit Loch, eine Platte, ein Turm fassen
+    // nichts. → null oder { volumen (m³), flaeche (m², die offene Mulde), boden, rand (m im Plan), mitte, breite, tiefe }.
+    _gefaessFassung(bp) {
+        const boxen = bp.parts.map((p) => this._partWorldAABB(p)).filter(Boolean);
+        const lo = { x: Infinity, y: Infinity, z: Infinity };
+        const hi = { x: -Infinity, y: -Infinity, z: -Infinity };
+        for (const a of boxen)
+            for (const k of ["x", "y", "z"]) [lo[k], hi[k]] = [Math.min(lo[k], a.min[k]), Math.max(hi[k], a.max[k])];
+        const c = Math.max(0.05, Math.max(hi.x - lo.x, hi.y - lo.y, hi.z - lo.z) / 24);
+        const [nx, ny, nz] = ["x", "y", "z"].map((k) => Math.ceil((hi[k] - lo[k]) / c) + 2);
+        const id = (i, j, k) => (j * nz + k) * nx + i;
+        const fest = new Uint8Array(nx * ny * nz);
+        const zellen = (a, k, n) => [
+            Math.max(0, Math.ceil((a.min[k] - lo[k]) / c + 0.5)),
+            Math.min(n - 1, Math.floor((a.max[k] - lo[k]) / c + 0.5)),
+        ];
+        for (const a of boxen) {
+            const [[i0, i1], [j0, j1], [k0, k1]] = [zellen(a, "x", nx), zellen(a, "y", ny), zellen(a, "z", nz)];
+            for (let j = j0; j <= j1; j++)
+                for (let k = k0; k <= k1; k++) for (let i = i0; i <= i1; i++) fest[id(i, j, k)] = 1;
+        }
+        const aus = new Int16Array(fest.length).fill(32767);
+        const eimer = Array.from({ length: ny }, () => []);
+        for (let j = 0; j < ny; j++)
+            for (let k = 0; k < nz; k++)
+                for (let i = 0; i < nx; i++)
+                    if ((j === 0 || i === 0 || k === 0 || i === nx - 1 || k === nz - 1) && !fest[id(i, j, k)])
+                        ((aus[id(i, j, k)] = j), eimer[j].push(id(i, j, k)));
+        for (let L = 0; L < ny; L++)
+            for (let q = eimer[L]; q.length;) {
+                const n = q.pop();
+                if (aus[n] < L) continue;
+                const [i, k, j] = [n % nx, Math.floor(n / nx) % nz, Math.floor(n / (nx * nz))];
+                for (const [a, b, d] of [
+                    [i - 1, j, k],
+                    [i + 1, j, k],
+                    [i, j - 1, k],
+                    [i, j + 1, k],
+                    [i, j, k - 1],
+                    [i, j, k + 1],
+                ]) {
+                    if (a < 0 || b < 0 || d < 0 || a >= nx || b >= ny || d >= nz) continue;
+                    const m = id(a, b, d);
+                    const Lm = Math.max(L, b);
+                    if (!fest[m] && Lm < aus[m]) ((aus[m] = Lm), eimer[Lm].push(m));
+                }
+            }
+        let [zahl, offen, unten, rand] = [0, 0, Infinity, 0];
+        const xz = { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity };
+        for (let k = 0; k < nz; k++)
+            for (let i = 0; i < nx; i++) {
+                let himmel = true;
+                for (let j = ny - 1; j >= 0; j--) {
+                    const n = id(i, j, k);
+                    if (fest[n]) himmel = false;
+                    else if (aus[n] > j && aus[n] < 32767) {
+                        if (himmel) ((offen += 1), (himmel = false));
+                        zahl++;
+                        [unten, rand] = [Math.min(unten, j), Math.max(rand, aus[n])];
+                        [xz.x0, xz.x1, xz.z0, xz.z1] = [
+                            Math.min(xz.x0, i),
+                            Math.max(xz.x1, i),
+                            Math.min(xz.z0, k),
+                            Math.max(xz.z1, k),
+                        ];
+                    }
+                }
+            }
+        if (!offen) return null;
+        const y = (j) => lo.y + (j - 1) * c;
+        return {
+            volumen: zahl * c * c * c,
+            flaeche: offen * c * c,
+            boden: y(unten),
+            rand: y(rand),
+            mitte: { x: lo.x + ((xz.x0 + xz.x1) / 2 - 0.5) * c, z: lo.z + ((xz.z0 + xz.z1) / 2 - 0.5) * c },
+            breite: (xz.x1 - xz.x0 + 1) * c,
+            tiefe: (xz.z1 - xz.z0 + 1) * c,
+            wasser: 0,
+            mesh: null,
+        };
+    }
+
+    // Die Schale im Wetter: Regen füllt sie über ihre offene Mulde (GEFAESS.regenMproS × rain des Wetter-Felds), die Sonne
+    // verdunstet sie (GEFAESS.verdunstenMproS × sun); was sie fasst, hält sie — sie läuft nur über.
+    _gefaessSchritt(e, F, wf, dt) {
+        const G = AnazhRealm.GEFAESS;
+        const alt = F.wasser;
+        F.wasser = Math.max(
+            0,
+            Math.min(F.volumen, alt + (wf.rain * G.regenMproS - wf.sun * G.verdunstenMproS) * F.flaeche * dt)
+        );
+        if (F.wasser !== alt) this._gefaessWasserZeigen(e, F);
+    }
+    // Der Spiegel in der Schale: eine Fläche über der Mulde auf der Höhe ihres Wassers, im Stoff des Wasser-Gesetzes (die
+    // Farbe der flachen Schicht, Beer-Lambert exp(−wK · flach), `terrain:WASSER_GESETZ`); leer ist sie fort.
+    _gefaessWasserZeigen(e, F) {
+        if (!(F.wasser > 0) || !this.state.scene) return this._gefaessLeeren(F);
+        if (!F.mesh) {
+            if (!this._gefaessStoff) {
+                const WG =
+                    AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) ||
+                    AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+                const f = WG.wK.map((k) => Math.exp(-k * WG.flach));
+                this._gefaessStoff = new THREE.MeshStandardNodeMaterial({
+                    roughness: 0.06,
+                    metalness: 0,
+                    transparent: true,
+                    opacity: WG.alpha[1],
+                });
+                this._gefaessStoff.color.setRGB(f[0], f[1], f[2], THREE.LinearSRGBColorSpace);
+                this._leuchtStoff(this._gefaessStoff, null);
+            }
+            // EINE Fläche (1 × 1) für jede Schale, ihre Maße trägt die Matrix — nichts je Schale zu entsorgen
+            const flaeche =
+                this._gefaessFlaeche || (this._gefaessFlaeche = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2));
+            F.mesh = new THREE.Mesh(flaeche, this._gefaessStoff);
+            F.mesh.name = "gefaess-wasser";
+            F.mesh.matrixAutoUpdate = false;
+            F.mesh.userData.sharedMat = true;
+            this.state.scene.add(F.mesh);
+        }
+        const hoehe = F.boden + (F.wasser / F.volumen) * (F.rand - F.boden);
+        const T = (this._werkPoseTmpN || (this._werkPoseTmpN = new THREE.Matrix4())).makeScale(F.breite, 1, F.tiefe);
+        T.setPosition(F.mitte.x, hoehe, F.mitte.z);
+        F.mesh.matrix.multiplyMatrices(this._werkWeltMatrix(e), T);
+        F.mesh.matrixWorldNeedsUpdate = true;
+    }
+
     // VISUELLE Spanne (positions ± size); _compoundBBox (positions-only) unterschätzt z. B. einen 8 m
     // hohen Wasserfall. Für den greifbar-vs-groß-Schalter; O(parts), ignoriert Rotation.
     _compoundVisualExtent(bp) {
@@ -2622,3 +2945,6 @@ AnazhRealm.WORKSHOP_DOMAIN_SIGNATURES = Object.freeze({
     textile: Object.freeze({ zähigkeit: 1.0, lebendig: 1.0, härte: -1.0 }),
 });
 AnazhRealm.WORKSHOP_DOMAIN_RESONANCE_FLOOR = 2.0;
+// DIE SCHALE IM WETTER (`_gefaessSchritt`): Regen füllt die offene Mulde um regenMproS × rain des Wetter-Felds (m Wasser je
+// Sekunde, die Zeit des Spiels: ein Regen-Zug füllt eine Schale), die Sonne verdunstet ein Zehntel davon × sun.
+AnazhRealm.GEFAESS = Object.freeze({ regenMproS: 0.005, verdunstenMproS: 0.0005 });

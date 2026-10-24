@@ -3381,6 +3381,7 @@ class AnazhRealm_siedlung_satz {
             // W10 ext. Politur — die Affordance-Stärke wird wie das Profil
             // EINMAL beim Spawn eingefroren (Substanz-Schnappschuss).
             entry.affordanceStrength = this.computeAffordanceStrength(bp, entry.affordances, tags);
+            this._werkGesetzSetzen(entry, bp); // das Werk gehorcht der EINEN Statik in der Welt: es steht, stürzt, rollt, fängt Regen
             // Gewachsene Bäume tragen Species + VariantIndex am Eintrag → `_tickArchitectureLOD` wechselt die
             // Stufe per Distanz ohne Identitätsverlust. Der Wald reicht `_lodSpecies` + `_lodVariantIndex`
             // EXPLIZIT herein, ohne Varianten-Geometrie eager zu bauen; `_rebuildArchitectureMesh` wählt die
@@ -3716,20 +3717,21 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
                 size: { x: 0.12852911676524673, y: 0.62, z: 0.12852911676524673 },
                 opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
             },
+            // die Achsstöcke tragen das Bett (als Latten von 0,13 m ließen sie es 0,25 m schweben — die Statik ließ es stürzen)
             {
                 shape: "box",
                 material: "holz",
                 color: 5913890,
-                position: { x: 0, y: 0.36, z: 0.8 },
-                size: { x: 1.5818968217261136, y: 0.13, z: 0.14830282703682313 },
+                position: { x: 0, y: 0.49, z: 0.8 },
+                size: { x: 1.5818968217261136, y: 0.38, z: 0.14830282703682313 },
                 opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
             },
             {
                 shape: "box",
                 material: "holz",
                 color: 5913890,
-                position: { x: 0, y: 0.36, z: -0.8 },
-                size: { x: 1.5818968217261136, y: 0.13, z: 0.14830282703682313 },
+                position: { x: 0, y: 0.49, z: -0.8 },
+                size: { x: 1.5818968217261136, y: 0.38, z: 0.14830282703682313 },
                 opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
             },
             {

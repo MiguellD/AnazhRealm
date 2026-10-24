@@ -42,41 +42,7 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
             /Basis|Standfläche/.test(h.stability || "") &&
             /Lastpfad/.test(h.loadSound || "") &&
             /Räder|Achse/.test(h.rollable || "");
-        const narrow = P([pt(0, 0, 0, 1, 0.5, 1), pt(0, 2, 0, 2, 2, 2)], "architecture");
-        const wide = P([pt(0, 0, 0, 4, 0.5, 4), pt(0, 2, 0, 2, 2, 2)], "architecture");
-        o.w2Promise = r._stability(wide).margin > r._stability(narrow).margin;
-        // ── Ω-Φ5 floatingParts offengelegt (EINE Quelle, additiv) ──
-        const floatTower = P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(0, 5, 0, 1, 1, 1)], "architecture");
-        o.floatIdx =
-            Array.isArray(r._loadPath(floatTower).floatingParts) && r._loadPath(floatTower).floatingParts.includes(2);
-        // ── Ω-W3 das Verdikt (rollen-bewusst) ──
-        const leaner = P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(1.5, 2, 0, 3, 1, 3)], "architecture");
-        const vLean = r._workshopPhysicsVerdict(leaner);
-        o.leanWankt =
-            vLean.lean > 0.5 &&
-            lineHas(vLean, /kippt|wackelig/) &&
-            vLean.floatingParts.length === 0 &&
-            Math.abs(vLean.leanDir.x) + Math.abs(vLean.leanDir.z) > 0.1;
-        const vFloat = r._workshopPhysicsVerdict(floatTower);
-        o.floatMarked = vFloat.floatingParts.length > 0 && lineHas(vFloat, /schwebend|Lastpfad/);
-        const vSlender = r._workshopPhysicsVerdict(P([pt(0, 0, 0, 0.2, 5, 0.2)], "architecture"));
-        o.slenderKnickt = vSlender.buckles === true && lineHas(vSlender, /schlank|knickt/);
-        const table = P(
-            [
-                pt(-2, 0, -2, 0.4, 1.6, 0.4),
-                pt(2, 0, -2, 0.4, 1.6, 0.4),
-                pt(-2, 0, 2, 0.4, 1.6, 0.4),
-                pt(2, 0, 2, 0.4, 1.6, 0.4),
-                pt(0, 0.9, 0, 4, 0.3, 4, light),
-            ],
-            "architecture"
-        );
-        const vStable = r._workshopPhysicsVerdict(table);
-        o.stableRuht =
-            vStable.lean === 0 &&
-            vStable.floatingParts.length === 0 &&
-            lineHas(vStable, /steht/) &&
-            !lineHas(vStable, /kippt|wackelig/);
+        // ── Ω-W3 das Verdikt (rollen-bewusst; was steht: der Prüf-Satz, gate:werkstatt-weg) ──
         const vWeapon = r._workshopPhysicsVerdict(
             P([pt(0, 0.5, 0, 0.3, 1, 0.3, light), pt(0, 3, 0, 0.4, 4, 0.4, dense)], "weapon")
         );
@@ -88,12 +54,6 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
         return o;
     });
     check("Ω-W2: physik-wahre Optimierungs-Verben (Standfestigkeit/Lastpfad/Rollfähigkeit)", res.w2Verbs === true);
-    check("Ω-W2: die Tat verschiebt die GERECHNETE Größe (Basis breit → stabiler)", res.w2Promise === true);
-    check("Ω-Φ5: _loadPath legt die schwebenden Teil-Indizes offen (EINE Quelle)", res.floatIdx === true);
-    check("⟡ Ω-W3: kippliges Bauwerk WANKT (lean>0.5, kippt/wackelig, Richtung)", res.leanWankt === true);
-    check("Ω-W3: schwebendes Teil markiert + Lastpfad-Warnung", res.floatMarked === true);
-    check("Ω-W3: zu schlanke Säule knickt (Versagen sichtbar)", res.slenderKnickt === true);
-    check("Ω-W3: stabiles Bauwerk RUHT (lean 0, steht, keine Warnung)", res.stableRuht === true);
     check("Ω-W3 ROLLEN-bewusst: kopflastige Waffe → traeger Schwung, nicht kippt", res.weaponTraege === true);
 }
 
@@ -101,7 +61,7 @@ async function checkBandCadWorkshop(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Welle 6.B Phase 1+2 — CAD-Werkstatt (3D-Preview + Manipulator-Gizmo) ###
+    // ### CAD-Werkstatt (3D-Preview + Manipulator-Gizmo) ###
     const wave6bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -279,7 +239,7 @@ async function checkBandCadWorkshop(ctx) {
                 // rotate 3×(ring+picker) = 6 · scale 3×(cube+shaft+picker) + 2×(center+picker) = 11.
                 out.gizmoHasPickers = tCount >= 9 && rCount >= 6 && sCount >= 8;
 
-                // --- Bug-Fix V7.99: Gizmo-Sichtbarkeit bei Built-in vs. eigen ---
+                // --- Gizmo-Sichtbarkeit bei Built-in vs. eigen ---
                 // Bauplan ist aktuell stein_block (Built-in). Sync rufen
                 // und prüfen dass Gizmo versteckt ist.
                 r.selectBlueprintForEdit("stein_block");
@@ -433,11 +393,8 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            // Welle 6.X.2 V8.15 — Konsole-Handle ist jetzt
-            // top-right statt bottom-right (unten verdeckt von
-            // Hotbar + Stats-HUD).
             const consoleEl = document.getElementById("console");
-            // die Konsole sitzt jetzt UNTEN-LINKS (bottom-verankert); der Resize-Griff ist
+            // die Konsole sitzt UNTEN-LINKS (bottom-verankert); der Resize-Griff ist
             // „tr" (oben-rechts, wächst nach oben), nicht mehr „br". Der Test wandert mit.
             out.consoleHasHandle = !!(consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-tr"));
             // die V18-Drawer tragen einen HÖHEN-only Griff (.resize-b), NICHT den alten
@@ -471,7 +428,7 @@ async function checkBandCadWorkshop(ctx) {
                 werkstatt.style.height = "";
                 localStorage.removeItem("anazh.resize.werkstatt");
             }
-            // Background-Fix: .drawer hat jetzt direkt ein background statt nur ::before.
+            // .drawer hat direkt ein background statt nur ::before.
             // Wir prüfen das via computed style — background sollte 'none' nicht sein.
             // (UI-Putz: Welt-Drawer aufgelöst → wir prüfen den Einstellungen-Drawer.)
             const w = document.querySelector('[data-drawer="einstellungen"]');
@@ -547,7 +504,7 @@ async function checkBandCadWorkshop(ctx) {
             // wieder schließen
             window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
             out.escCloses = !!overlay && overlay.hidden === true;
-            // (6) V18.47 — der Maus-Trigger in der Topbar öffnet das Overlay (Maus-Parität)
+            // (6) der Maus-Trigger in der Topbar öffnet das Overlay (Maus-Parität)
             const trigger = document.getElementById("omnibox-trigger");
             if (trigger && overlay) {
                 trigger.click();
@@ -662,7 +619,7 @@ async function checkBandCadWorkshop(ctx) {
         check(`V8.01: evaluate-Fehler — ${v801Results.error}`, false);
     }
 
-    // ### V8.02 Phase 3 — Shape-Drag-Drop + Klick-Klick-Connection ###
+    // ### Shape-Drag-Drop + Klick-Klick-Connection ###
     const v802Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1336,7 +1293,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.topbarInDom = !!topbar;
         out.statusbarInDom = !!statusbar;
 
-        // Emotion-Rows leben jetzt im Spieler-Drawer
+        // Emotion-Rows leben im Spieler-Drawer
         const rows = ichRaum ? ichRaum.querySelectorAll("#status-emotions .emotion") : [];
         out.emotionRowCount = rows.length;
         out.allSixAxes = rows.length === 6;
@@ -1829,7 +1786,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.logInside = panel && panel.querySelector("#log") !== null;
         out.chatInputInside = panel && panel.querySelector("#chat-input") !== null;
 
-        // der FADING-FEED (der freie Bildschirm): die Konsole startet jetzt EINGEKLAPPT
+        // der FADING-FEED (der freie Bildschirm): die Konsole startet EINGEKLAPPT
         // (ein schlankes Chat-Widget), neue Nachrichten verblassen im #chat-feed. Der Test wandert
         // mit: die Toggle-Kette ist umgekehrt (collapsed → klick → open → klick → collapsed).
         out.chatFeedInside = panel && panel.querySelector("#chat-feed") !== null;
@@ -2490,7 +2447,7 @@ async function checkBandWCIchWahrheit(ctx) {
                 equipHost.querySelector(".equip-slot") ? equipHost.querySelector(".equip-slot").title : ""
             );
         // (e) LABEL == TAT: der Fahrzeug-Knopf sagt „Fertigen" (der Wagen log „In die Hand").
-        // AUSLÖSCHUNGS-WELLE — der Wagen fiel; das lebende Fahrzeug-Built-in (Holzross) trägt die Probe.
+        // der Wagen fiel; das lebende Fahrzeug-Built-in (Holzross) trägt die Probe.
         const row = r._recipeRow("reittier_holzross", "vehicle");
         out.vehicleLabel =
             !!row && /Fertigen/.test(row.querySelector("button") ? row.querySelector("button").textContent : "");
@@ -2641,7 +2598,7 @@ async function checkBandRezeptKatalog(ctx) {
             res.b.addedCache = addedCache;
             res.b.cacheClean = addedCache.every((k) => k.indexOf("drachentor|") !== 0);
             res.b.requestedClean = addedReq.every((k) => k.indexOf("drachentor|") !== 0);
-            // ERFINDER-WELLE — der ov-Kanal erreicht jetzt auch den PFLANZEN-Pfad
+            // der ov-Kanal erreicht auch den PFLANZEN-Pfad
             // (Bruecke reicht msg.ov an foundry-core.buildInstance): die Blume formt.
             const bKeysBefore = new Set(f.cache.keys());
             const b0 = await Promise.race([r._foundryRequest("blume", 3, 0), sleep(45000)]);
@@ -2670,7 +2627,7 @@ async function checkBandRezeptKatalog(ctx) {
             res.c.recipeRows = list ? list.querySelectorAll(".workshop-studio-recipe-row").length : -1;
             res.c.wagenRow = !!(list && list.querySelector('[data-blueprint="fahrzeug_wagen"]'));
             res.c.torBasisRow = !!(list && list.querySelector('[data-blueprint="tor_basis"]'));
-            // AUSLÖSCHUNGS-WELLE: die Alt-Donoren sind ABWESEND, die Substanz-Tabelle traegt sie.
+            // die Alt-Donoren sind ABWESEND, die Substanz-Tabelle traegt sie.
             const KS = r.constructor.KIND_SUBSTANCE || {};
             res.c.wagenAbsent = !(r.state.blueprints && r.state.blueprints.fahrzeug_wagen);
             res.c.torBasisAbsent = !(r.state.blueprints && r.state.blueprints.tor_basis);
