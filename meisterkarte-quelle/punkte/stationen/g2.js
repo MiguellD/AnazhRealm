@@ -458,6 +458,37 @@ const stationen = [
         ],
         quelle: "1 = ≥ 0,9 der Geburten in der Boden-Klasse der Gattung, mit Gegenprobe bei anderem Seed",
     },
+
+    // ───────── affekt.K1 — die Wertung antwortet am Ort (affekt-k1-ort) ─────────
+    {
+        kriterium: "affekt.K1",
+        staffel: 1,
+        geraet: "headless",
+        // gate:weltakt-wache (T) an der Mess-Wiese, Null-Renderer, der Leib steht — 10× „pflege das land" je 30 s Spielzeit über den
+        // echten Weg (processChatCommand → dslEval → _tatWerten), δ aus der Situation (`_playerSituationWohl`), die Antwort im
+        // Vogel-Chor der Lage, die der Ausgabe-Pfad abtastet, gegen 32 m daneben; die gestempelte Freude trägt 0 (Schlupfloch)
+        befehl: ["node", "scripts/diag-weltakt-wache.cjs"],
+        env: { WELTAKT_WACHE_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const z = jsonZeile(lauf.stdout, /^\s*(✅|❌) tat-k1 \{/);
+            if (!z || !Array.isArray(z.delta) || !z.delta.length || !Array.isArray(z.antwortDb))
+                return { gruen: false, zahl: "keine Zeile tat-k1 (Exit " + lauf.exit + ")" };
+            const [d1, dn] = [z.delta[0], z.delta[z.delta.length - 1]];
+            const st = z.stempel || {};
+            const gruen = z.gruen === true && d1 > 0 && Math.abs(dn) <= 0.3 * d1 && z.antwortDb[0] > 0 && z.nachbarDb <= 0.5 && !st.delta && !st.antwort;
+            return {
+                gruen,
+                zahl:
+                    "δ Tat 1 " + d1 + " → Tat " + z.delta.length + " " + dn + " (" + (Math.abs(dn) / d1).toFixed(3) + " ≤ 0,3), Vogel-Chor am Ort " +
+                    z.antwortDb[0] + " dB, Nachbar " + z.nachbarDb + " dB, Stempel " + st.delta + "/" + st.antwort,
+            };
+        },
+        pfad: ["stamm/feld-sprache.js", "stamm/feld-dsl.js", "stamm/feld-leben.js", "stamm/klang.js", "klang-core.js",
+            "stamm/dirigent-takt.js", "scripts/diag-weltakt-wache.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/ausgabe-aufnahme.cjs"],
+        quelle: "1 = Gewöhnung (δ von Tat 10 ≤ 0,3 × Tat 1) und Antwort am Ort (ΔE ≥ 2 am Ort der Tat gegen die Nachbarzelle, oder ein Klang-Parameter am Ort) an einer Pose",
+    },
 ];
 
 // Nicht als Station fassbar (heute): je Kriterium und Staffel der Grund beim Namen. Sie tragen keine Punkte der Maschine;
