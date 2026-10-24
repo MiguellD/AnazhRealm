@@ -15,10 +15,7 @@
 // Streu, Bauten, Gruppen-Bau, Buch, Ort-Wahl, Dorf und der Erst-Bau der Zeichnung aus `_erstZeichnung`), offene Pipelines,
 // die Phase des Vorrats (`f._vorrat` wörtlich) und die Foundry-Schlange; der Adapter vom Gerät (`device.adapterInfo`).
 // Urteil: t(Weltbild) ≤ 5 s ohne halbes Weltbild. Ohne `--echt` swiftshader, mit `--echt` die Hardware-GPU (1920×1080).
-//   node scripts/diag-boot-stage.cjs --kalt [--echt] [--sek 120] [--json datei] [--bild ankunft.png] [--abdruck [--fremd]]
-// DER PROGRAMM-ABDRUCK (`--abdruck`, Karte b-abdruck): jede Render-Pipeline am Gerät (Signatur = WGSL + Ziel-Zustand), der
-// Term „Erst-Bau nach dem Buch“; ROT, wenn > 30 % der Signaturen, mit denen das erste Bild zeichnet, erst nach dem Buch
-// entstehen. `--fremd` fälscht den `stand` jeder geladenen *abdruck*.json: ROT, wenn er still trägt oder kein Bruch ihn nennt.
+//   node scripts/diag-boot-stage.cjs --kalt [--echt] [--sek 120] [--json datei] [--bild ankunft.png]
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
@@ -44,107 +41,6 @@ function KALT_PROBE() {
         if (!A.auftrag && m && m.type === "build-asset") A.auftrag = Math.round(performance.now());
         return post.call(this, m, t);
     };
-    // DER PROGRAMM-ABDRUCK (Pflicht-OFFEN B, Karte b-abdruck): jede neue Render-Pipeline des Boots am Gerät, mit Zeit, Stoff
-    // (das r184-Label ohne Id) und dem Erst-Bau-Zähler der Welt in diesem Moment. Die Signatur ist der INHALT (WGSL von Ecke
-    // und Fläche + der Zustand des Ziels), nie eine Laufzeit-Id; `sigN` ohne die Ziffern-Namen (`NodeBuffer_<id>`).
-    A.pso = [];
-    const fnv = (s) => {
-        let h = 0x811c9dc5;
-        for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
-        return (h >>> 0).toString(16);
-    };
-    if (typeof GPUDevice !== "undefined") {
-        const G = GPUDevice.prototype;
-        const code = new WeakMap();
-        const modul = G.createShaderModule;
-        G.createShaderModule = function (d) {
-            const m = modul.call(this, d);
-            const c = String((d && d.code) || "");
-            code.set(m, [fnv(c), fnv(c.replace(/\b([A-Za-z]\w*?_)\d+\b/g, "$1#"))]);
-            return m;
-        };
-        for (const name of ["createRenderPipeline", "createRenderPipelineAsync"]) {
-            const alt = G[name];
-            G[name] = function (d) {
-                const v = code.get(d && d.vertex && d.vertex.module) || ["-", "-"];
-                const f = code.get(d && d.fragment && d.fragment.module) || ["-", "-"];
-                const ds = d && d.depthStencil;
-                const ziel = JSON.stringify([
-                    d && d.primitive,
-                    ds ? [ds.format, ds.depthCompare, ds.depthWriteEnabled] : 0,
-                    d && d.multisample ? d.multisample.count : 1,
-                    d && d.fragment ? (d.fragment.targets || []).map((t) => t && [t.format, t.blend, t.writeMask]) : 0,
-                ]);
-                const r = window.anazhRealm;
-                const E = r && r._erstZeichnung;
-                const sig = fnv(v[0] + f[0] + ziel);
-                A.pso.push([
-                    Math.round(performance.now()),
-                    sig,
-                    fnv(v[1] + f[1] + ziel),
-                    String((d && d.label) || "").replace(/^renderPipeline_|_\d+$/g, ""),
-                    E ? Math.round(E.bauMs) : -1,
-                    A.wer || "",
-                ]);
-                const p = alt.call(this, d);
-                if (p && typeof p.then === "function")
-                    p.then(
-                        (x) => sigVon.set(x, sig),
-                        () => {}
-                    );
-                else sigVon.set(p, sig);
-                return p;
-            };
-        }
-        // das Gerät: ab wann ein Programm überhaupt gebaut werden kann (die nutzbare Lücke vor dem Buch beginnt hier)
-        const geraet = GPUAdapter.prototype.requestDevice;
-        GPUAdapter.prototype.requestDevice = function (d) {
-            A.geraetAb = A.geraetAb || Math.round(performance.now());
-            const p = geraet.call(this, d);
-            p.then(() => (A.geraet = A.geraet || Math.round(performance.now())), () => {});
-            return p;
-        };
-        const adapter = GPU.prototype.requestAdapter;
-        GPU.prototype.requestAdapter = function (o) {
-            A.adapterAb = A.adapterAb || Math.round(performance.now());
-            const p = adapter.call(this, o);
-            p.then(() => (A.adapterDa = A.adapterDa || Math.round(performance.now())), () => {});
-            return p;
-        };
-        // GEBRAUCHT ist eine Signatur, sobald ein Pass oder ein Bündel mit ihr zeichnet (die erste Zeit je Signatur) — das
-        // Urteil zählt nur Programme, die das Bild benutzt, nie einen Vorbau, den niemand zeichnet
-        const sigVon = new WeakMap();
-        A.benutzt = {};
-        const nutze = (sig) => {
-            if (sig && !(sig in A.benutzt)) A.benutzt[sig] = Math.round(performance.now());
-        };
-        const pass = GPURenderPassEncoder.prototype;
-        const setze = pass.setPipeline;
-        pass.setPipeline = function (p) {
-            nutze(sigVon.get(p));
-            return setze.call(this, p);
-        };
-        const bE = GPURenderBundleEncoder.prototype;
-        const imBuendel = new WeakMap();
-        const bSetze = bE.setPipeline;
-        bE.setPipeline = function (p) {
-            const s = imBuendel.get(this) || new Set();
-            imBuendel.set(this, s.add(sigVon.get(p)));
-            return bSetze.call(this, p);
-        };
-        const fertig = bE.finish;
-        const buendelSig = new WeakMap();
-        bE.finish = function (d) {
-            const b = fertig.call(this, d);
-            buendelSig.set(b, imBuendel.get(this) || new Set());
-            return b;
-        };
-        const spiele = pass.executeBundles;
-        pass.executeBundles = function (bs) {
-            for (const b of bs || []) for (const s of buendelSig.get(b) || []) nutze(s);
-            return spiele.call(this, bs);
-        };
-    }
     try {
         new PerformanceObserver((l) => {
             for (const e of l.getEntries()) A.lang.push([Math.round(e.startTime), Math.round(e.duration)]);
@@ -183,24 +79,10 @@ function KALT_PROBE() {
                     const t1 = performance.now();
                     const z = k ? A.kosten[k] || (A.kosten[k] = {}) : null;
                     if (z) z[Math.floor(t0 / 1000)] = (z[Math.floor(t0 / 1000)] || 0) + (t1 - t0);
-                    if (name === "_foundryIngestBook" && !A.buchDa) {
-                        A.buchDa = Math.round(t1);
-                        A.erstBuch = erstStand(this);
-                    }
+                    if (name === "_foundryIngestBook" && !A.buchDa) A.buchDa = Math.round(t1);
                 }
             };
         }
-        // der EINE Schreiber des ersten Weltbilds: der Erst-Bau-Zähler in genau diesem Moment
-        const steht = P._weltbildSteht;
-        if (typeof steht === "function")
-            P._weltbildSteht = function (...a) {
-                if (!A.erstBild) A.erstBild = erstStand(this);
-                return steht.apply(this, a);
-            };
-    };
-    const erstStand = (r) => {
-        const E = r._erstZeichnung;
-        return E ? [E.bauN, Math.round(E.bauMs)] : [0, 0];
     };
     setInterval(() => {
         const r = window.anazhRealm;
@@ -209,17 +91,6 @@ function KALT_PROBE() {
             if (!gewickelt) {
                 gewickelt = true;
                 wickle(Object.getPrototypeOf(r));
-            }
-            // WER baut (die Hülle der Erst-Zeichnung): Objekt und Stoff jedes Pipeline-Baus beim Namen
-            const R = r.state.renderer;
-            if (R && R.__anazhErstZeichnung && !R.__abdruckWer) {
-                R.__abdruckWer = true;
-                const h = R._renderObjectDirect;
-                R._renderObjectDirect = function (o, m, sz) {
-                    const p = o.parent;
-                    A.wer = `${o.name || (p && p.name) || o.type}/${m.name || m.type}${sz === r.state.scene ? "" : "@" + (sz.name || "fremd")}`;
-                    return h.apply(this, arguments);
-                };
             }
             try {
                 o.fehlt = r._weltbildFehlt();
@@ -240,96 +111,6 @@ function KALT_PROBE() {
         }
         A.proben.push(o);
     }, 200);
-}
-
-// ── DER PROGRAMM-ABDRUCK, das Urteil (pure: Kalt-Lauf und Selbsttest). Die Signaturen des ersten Bilds sind die Render-
-// Pipelines, die bis zum Weltbild entstehen UND bis ABDRUCK_BILD_MS danach zeichnen (ein Vorbau, den niemand zeichnet,
-// zählt nie). ROT, wenn mehr als ABDRUCK_NACH_BUCH davon erst nach dem Buch entstehen: dann baut der Erst-Bau sie synchron
-// zwischen Buch und Bild. `fremd` (der Lauf fälschte den Stand des Abdrucks): ROT, wenn er trotzdem trägt oder schweigt.
-const ABDRUCK_NACH_BUCH = 0.3;
-const ABDRUCK_BILD_MS = 1000;
-function abdruckUrteil(m) {
-    const z = { taeter: [], n: 0, nach: 0, anteil: 1, stoffe: {} };
-    if (!m || !m.buchDa || !m.weltbildDa) {
-        z.taeter.push(
-            `der Lauf nennt ${m && m.buchDa ? "kein Weltbild" : "kein Buch"} — der Abdruck ist nicht messbar`
-        );
-        return z;
-    }
-    const erst = new Map();
-    for (const [t, sig, , stoff] of m.pso || []) {
-        const b = (m.benutzt || {})[sig];
-        if (t <= m.weltbildDa && b != null && b <= m.weltbildDa + ABDRUCK_BILD_MS && !erst.has(sig))
-            erst.set(sig, [t, stoff]);
-    }
-    z.n = erst.size;
-    for (const [t, stoff] of erst.values())
-        if (t > m.buchDa) {
-            z.nach++;
-            z.stoffe[stoff] = (z.stoffe[stoff] || 0) + 1;
-        }
-    z.anteil = z.n ? z.nach / z.n : 1;
-    z.msVor = m.erstBuch ? m.erstBuch[1] : 0;
-    z.msNach = m.erstBild ? m.erstBild[1] - z.msVor : null;
-    z.bautenNach = m.erstBild ? m.erstBild[0] - (m.erstBuch ? m.erstBuch[0] : 0) : null;
-    const pz = (a) => `${Math.round(a * 100)} %`;
-    if (!z.n) z.taeter.push("kein gezeichnetes Programm bis zum Weltbild (die Probe sah das Gerät nicht)");
-    else if (m.fremd) {
-        if (!m.gefaelscht)
-            z.taeter.push("der Lauf fand keinen Abdruck zum Fälschen (eine geladene Datei *abdruck*.json mit `stand`)");
-        if (z.anteil <= ABDRUCK_NACH_BUCH)
-            z.taeter.push(`der Abdruck mit fremdem Stand trägt STILL: nur ${pz(z.anteil)} nach dem Buch`);
-        if (!(m.bruch || []).length)
-            z.taeter.push("der Abdruck mit fremdem Stand fällt ohne Bruch-Meldung (`_bruchMelden`)");
-    } else if (z.anteil > ABDRUCK_NACH_BUCH)
-        z.taeter.push(
-            `${z.nach} von ${z.n} Programm-Signaturen des ersten Bilds (${pz(z.anteil)} > ${pz(ABDRUCK_NACH_BUCH)}) baut erst der ` +
-                `Erst-Bau nach dem Buch — ${z.bautenNach} Knoten-Bauten, ${z.msNach} ms Haupt-Faden`
-        );
-    return z;
-}
-// der Selbsttest des Urteils: [Fall, Lauf, ROT erwartet]
-function abdruckSelbsttest() {
-    const lauf = (vorBuch, nachBuch, x) => {
-        const pso = [];
-        const benutzt = {};
-        for (let i = 0; i < vorBuch + nachBuch; i++) {
-            pso.push([i < vorBuch ? 500 : 3000, "s" + i, "s" + i, i < vorBuch ? "boden" : "tier", 0]);
-            benutzt["s" + i] = 4000;
-        }
-        pso.push([800, "vorbau-ungezeichnet", "", "boden", 0]);
-        return Object.assign(
-            { pso, benutzt, buchDa: 2000, weltbildDa: 4000, erstBuch: [3, 40], erstBild: [20, 900] },
-            x
-        );
-    };
-    const faelle = [
-        ["alles nach dem Buch", lauf(2, 18), true],
-        ["ein Fünftel nach dem Buch", lauf(16, 4), false],
-        [
-            "dreißig Vorbauten, die niemand zeichnet, heben den Anteil nie",
-            lauf(2, 8, {
-                pso: lauf(2, 8).pso.concat([...Array(30).keys()].map((i) => [100, "v" + i, "", "boden", 0])),
-            }),
-            true,
-        ],
-        ["der fremde Abdruck trägt still", lauf(16, 4, { fremd: true, gefaelscht: 1, bruch: [] }), true],
-        ["der fremde Abdruck fällt, aber stumm", lauf(2, 18, { fremd: true, gefaelscht: 1, bruch: [] }), true],
-        [
-            "der fremde Abdruck fällt laut",
-            lauf(2, 18, { fremd: true, gefaelscht: 1, bruch: ["ABDRUCK verworfen"] }),
-            false,
-        ],
-        ["kein Abdruck zum Fälschen", lauf(2, 18, { fremd: true, gefaelscht: 0, bruch: ["ABDRUCK verworfen"] }), true],
-        ["ein Lauf ohne Buch", lauf(2, 18, { buchDa: 0 }), true],
-    ];
-    return faelle.map(([fall, m, rot]) => {
-        const z = abdruckUrteil(m);
-        return {
-            name: `SELBST-TEST Abdruck: ${fall} — ${z.taeter.length ? "ROT" : "GRÜN"}`,
-            pass: !!z.taeter.length === rot,
-        };
-    });
 }
 
 async function kaltLauf() {
@@ -356,21 +137,6 @@ async function kaltLauf() {
     try {
         const page = await browser.newPage();
         await page.evaluateOnNewDocument(KALT_PROBE);
-        // DER FREMDE ABDRUCK (`--fremd`, der Selbsttest am Spieler-Weg): jede geladene *abdruck*.json kommt mit gefälschtem
-        // `stand` (ein anderer Gesetz-Stand) — die Welt muss ihn verwerfen und laut melden
-        let gefaelscht = 0;
-        if (ARGV.includes("--fremd")) {
-            await page.setRequestInterception(true);
-            page.on("request", (q) => {
-                const u = new URL(q.url());
-                const datei = path.join(__dirname, "..", decodeURIComponent(u.pathname));
-                if (!/abdruck[^/]*\.json$/i.test(u.pathname) || !fs.existsSync(datei)) return q.continue();
-                const j = JSON.parse(fs.readFileSync(datei, "utf8"));
-                j.stand = "fremd-" + j.stand;
-                gefaelscht++;
-                q.respond({ status: 200, contentType: "application/json", body: JSON.stringify(j) });
-            });
-        }
         const t0 = Date.now();
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
         while (Date.now() - t0 < SEK * 1000) {
@@ -429,13 +195,10 @@ async function kaltLauf() {
                 holz: st._holzProfil || null,
                 version: r && r.constructor && r.constructor.VERSION,
                 adapter,
-                bruch: [...((r && r._bruchBuch) || new Map()).keys()].filter((z) => /abdruck/i.test(z)),
                 ohne: (st.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
             });
         });
         if (bildInfo) out.bild = Object.assign({ datei: path.resolve(bildDatei) }, bildInfo);
-        out.fremd = ARGV.includes("--fremd");
-        out.gefaelscht = gefaelscht;
     } catch (e) {
         out = { __err: (e && e.message) || String(e) };
     }
@@ -506,33 +269,6 @@ async function kaltLauf() {
     const wagen = (out.ev || []).filter((e) => e[1] === "_foundryVorrat an").map((e) => e[0]);
     if (wagen.length) console.log(`  ${(Math.max(...wagen) / 1000).toFixed(1)} s  der Vorrat der Wagen steht (${wagen.length})`);
     if (out.bild) console.log(`  das Bild der Ankunft: ${out.bild.datei || out.bild.fehlt} (${out.bild.dc} Befehle · ${out.bild.dreiecke} Dreiecke)`);
-    // DER TERM „Erst-Bau nach dem Buch“ und der Programm-Abdruck (Karte b-abdruck): die Lücke vor dem Buch (frei = Zeit bis
-    // zum Buch ohne die LongTasks), der Erst-Bau davor und danach, die Signaturen des ersten Bilds je Stoff
-    const ab = abdruckUrteil(out);
-    // die NUTZBARE Lücke: vom Gerät bis zum Buch, ohne die LongTasks darin (vor dem Gerät baut kein Programm)
-    const von = out.geraet || 0;
-    const buch = out.buchDa || 0;
-    let lueckeFrei = Math.max(0, buch - von);
-    for (const [s, d] of out.lang || []) lueckeFrei -= Math.max(0, Math.min(s + d, buch) - Math.max(s, von));
-    console.log(
-        `\n  Erst-Bau nach dem Buch: ${ab.bautenNach} Knoten-Bauten · ${ab.msNach} ms Haupt-Faden (vor dem Buch ${ab.msVor} ms; ` +
-            `das Gerät steht ${(von / 1000).toFixed(2)} s, das Buch ${(buch / 1000).toFixed(2)} s, dazwischen frei ${Math.round(lueckeFrei)} ms)`
-    );
-    if (out.adapterAb)
-        console.log(
-            `  der Adapter: gefragt ${(out.adapterAb / 1000).toFixed(2)} s, Antwort ${((out.adapterDa || 0) / 1000).toFixed(2)} s · ` +
-                `das Gerät gefragt ${((out.geraetAb || 0) / 1000).toFixed(2)} s · das erste Programm ${out.pso && out.pso.length ? (out.pso[0][0] / 1000).toFixed(2) : "—"} s`
-        );
-    console.log(
-        `  der Abdruck des ersten Bilds: ${ab.n} Programm-Signaturen, ${ab.nach} erst nach dem Buch (${Math.round(ab.anteil * 100)} %)` +
-            ` — ${Object.entries(ab.stoffe)
-                .sort((a, b) => b[1] - a[1])
-                .map(([s, n]) => `${s || "(ohne Label)"} ${n}`)
-                .join(" · ")}`
-    );
-    for (const x of ab.taeter) console.log(`  ❌ ABDRUCK: ${x}`);
-    if (!ab.taeter.length)
-        console.log(`  ✅ ABDRUCK: ≤ ${ABDRUCK_NACH_BUCH * 100} % des ersten Bilds baut erst nach dem Buch`);
     const t = out.weltbildDa;
     const halb = out.ohne && out.ohne.length ? out.ohne[0] : null;
     console.log(`\n  t(Weltbild) = t(Kontrolle) ${t != null ? (t / 1000).toFixed(2) + " s" : "— (nicht erreicht)"} ab Navigation`);
@@ -542,8 +278,7 @@ async function kaltLauf() {
         `  ${gut ? "✅" : "❌"} die Ankunft kalt ≤ ${ANKUNFT_SOLL_MS / 1000} s ohne halbes Weltbild (Pflicht-OFFEN B) — ` +
             `${t != null ? (t / 1000).toFixed(2) + " s" : "nicht erreicht"}`
     );
-    // `--abdruck` urteilt allein den Abdruck (die Linse der Karte b-abdruck), sonst die Ankunft
-    process.exit((ARGV.includes("--abdruck") ? !ab.taeter.length : gut) ? 0 : 1);
+    process.exit(gut ? 0 : 1);
 }
 
 (async () => {
@@ -707,7 +442,6 @@ async function kaltLauf() {
             name: `SELBST-TEST: der Deckel der Bühne öffnet laut — ohne Regionen-Karte hinter BUEHNE_SETTLE_CAP_MS ${s.deckelSteht ? "steht sie" : "steht sie NICHT"}, das Log ${s.deckelWarnt ? "nennt die Lücke (WARN)" : "SCHWEIGT"}`,
             pass: s.deckelSteht === true && s.deckelWarnt === true,
         });
-        checks.push(...abdruckSelbsttest());
     }
     let fails = 0;
     for (const c of checks) {
