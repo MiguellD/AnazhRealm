@@ -79,6 +79,101 @@ class AnazhRealm_stoff_material {
         return mat;
     }
 
+    // DIE KARTE DER WIESE (vegetation K1): jenseits der Studio-Stufen trägt der Boden die Wiese (fernform „boden") — hier
+    // steht seine Halm-Schicht auf: zwei Tafeln je Büschel (`_nahWieseKarte`), deren Halme dieses Fragment rechnet. Die Halme
+    // liegen in Welt-Metern auf der Tafel (Abstand, Fuß-Breite und Lehne aus der Studio-L2, `_nahWieseKarteMasse`): eine
+    // verbreiterte Tafel (das Tsushima-Gesetz, `_nahWieseWahl`) trägt mehr Halme, keine breiteren. Je Halm aus dem Hash seiner
+    // Nummer und der Instanz: Höhe (55–100 % der Tafel), Fuß-Versatz, Lehne, Helligkeit 0,72–1,28, Ton gelb ↔ blaugrün und ob
+    // er trocken steht (das Gesetz der Wiesen-Farbe des Studios). Farbe: Wurzel → grüne oder trockene Spitze der Studio-L2 im
+    // gemessenen Anteil (linear, als Uniform — ein neues Asset legt sie neu) × die Saison × der Tint je Büschel (W1). Der Wind: der EINE Term `_windSwayOffset` mit der
+    // Höhe über der Wurzel in Metern. Die Deckung schneidet colorNode.a (alphaTest, Lehre 26); die Karte wirft nicht.
+    _wiesenKarteStoff(M) {
+        const st = this.state;
+        if (!st._wiesenKarteStoff) {
+            const T = THREE.TSL;
+            if (!st.windUniforms) this._grassInstanceMat();
+            const u = {
+                wurzel: T.uniform(new THREE.Vector3()),
+                spitze: T.uniform(new THREE.Vector3()),
+                trocken: T.uniform(new THREE.Vector3()),
+                anteil: T.uniform(0.3),
+                abstand: T.uniform(0.1),
+                halb: T.uniform(0.02),
+                lehne: T.uniform(0.1),
+            };
+            const naht = this._weltNaht(T);
+            const hoehe = naht.spalte(1).length();
+            const mat = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide, roughness: 0.7, metalness: 0 });
+            mat.positionNode = T.positionLocal.add(
+                this._windSwayOffset(T, { ampX: 1.5, hoehe: T.positionGeometry.y.mul(hoehe) })
+            );
+            const vBreite = T.varying(naht.spalte(0).length(), "vWiesenKarteBreite");
+            // die Saat der Instanz: ganzzahlig aus ihrem Welt-Ort (unter 2^24 auch mit der Halm-Nummer — der Hash liest uint)
+            const vSaat = T.varying(
+                T.floor(T.fract(naht.anker.x.mul(0.0731).add(naht.anker.z.mul(0.1137))).mul(4093.0)),
+                "vWiesenKarteSaat"
+            );
+            const uvK = T.uv();
+            const xm = uvK.x.mul(vBreite);
+            const i0 = T.floor(xm.div(u.abstand));
+            let deck = T.float(0.0),
+                fh = T.float(0.0),
+                hell = T.float(0.0),
+                ton = T.float(0.0),
+                duerr = T.float(0.0);
+            for (let k = -2; k <= 2; k++) {
+                const i = i0.add(T.float(k));
+                const saat = vSaat
+                    .mul(T.float(256.0))
+                    .add(i.add(T.float(8.0)))
+                    .mul(T.float(8.0));
+                const r = (j) => T.hash(saat.add(T.float(j)));
+                const h = T.mix(T.float(0.55), T.float(1.0), r(0));
+                const fb = uvK.y.div(h);
+                const fuss = i
+                    .add(T.float(0.5))
+                    .add(r(1).sub(0.5).mul(T.float(0.8)))
+                    .mul(u.abstand);
+                const mitte = fuss.add(r(2).sub(0.5).mul(u.lehne).mul(fb));
+                const halb = u.halb.mul(T.float(1.0).sub(fb.mul(fb).mul(fb).mul(T.float(0.86))));
+                // ein Halm steht nur mit dem Fuß auf seiner Tafel
+                const trifft = T.step(xm.sub(mitte).abs(), halb)
+                    .mul(T.step(fb, T.float(1.0)))
+                    .mul(T.step(T.float(0.0), fuss))
+                    .mul(T.step(fuss, vBreite));
+                const neu = trifft.mul(T.float(1.0).sub(deck));
+                deck = deck.add(neu);
+                fh = fh.add(neu.mul(fb));
+                hell = hell.add(neu.mul(T.mix(T.float(0.72), T.float(1.28), r(3))));
+                ton = ton.add(neu.mul(r(4).sub(0.5)));
+                duerr = duerr.add(neu.mul(T.step(r(5), u.anteil)));
+            }
+            const c = T.mix(u.wurzel, T.mix(u.spitze, u.trocken, duerr), fh).mul(hell);
+            const farbe = T.vec3(
+                c.x.mul(T.float(1.0).add(ton)),
+                c.y,
+                c.z.mul(T.float(1.0).sub(ton.mul(T.float(1.2))))
+            ).mul(this._ensureSeasonUniforms().uSeasonMul);
+            mat.colorNode = T.vec4(farbe, deck);
+            mat.alphaTest = 0.5;
+            mat.userData.poren = AnazhRealm.NAESSE.poren.grass; // der Halm trägt Wachs (die Nässe, `_naesseImStoff`)
+            mat.userData.wiesenKarte = u;
+            this._leuchtStoff(mat, null);
+            st._wiesenKarteStoff = mat;
+        }
+        const mat = st._wiesenKarteStoff;
+        const u = mat.userData.wiesenKarte;
+        u.wurzel.value.fromArray(M.wurzel);
+        u.spitze.value.fromArray(M.spitze);
+        u.trocken.value.fromArray(M.trocken);
+        u.anteil.value = M.trockenAnteil;
+        u.abstand.value = M.abstand;
+        u.halb.value = M.breite / 2;
+        u.lehne.value = M.lehne;
+        mat.roughness = M.rauh;
+        return mat;
+    }
+
     // DIE KANONISCHE WIND-SWAY-GRÖSSE — jeder Wind-Leser LIEST sie;
     // Charakter als Parameter: `ampX` (Gras 1.5), `windScale` (Wipfel-Dämpfen, fehlt → 1).
     // phase = uWindTime·1.7 + dot(worldXZ, uWindDir)·0.35; hf = max(positionLocal.y, 0);
@@ -2233,11 +2328,16 @@ class AnazhRealm_stoff_material {
                 const _wanderX = _blick.x.div(_steil).mul(_halmHoch);
                 const _wanderZ = _blick.z.div(_steil).mul(_halmHoch);
                 const _f = _T.float(9.0); // Halm-Frequenz (~11 cm — Armlängen-lesbar)
+                // DER WIND IM RELIEF (vegetation K2): die Halm-Schicht wiegt mit dem EINEN Term `_windSwayOffset` (Böe, Richtung,
+                // Biegung des Spielers) — der Versatz der Spitzen (Höhe `_halmHoch`) schert das Höhenfeld, jede Schicht um ihren
+                // Anteil der Höhe (der Term ist linear in der Höhe): die Böe wandert über die Wiese jenseits der Büschel wie über
+                // ihre Halme. Bis K2 stand die Schicht still, die Wiese wiegte nur, wo Büschel standen.
+                const _boe = this._windSwayOffset(_T, { ampX: 1.5, hoehe: _halmHoch });
                 // Büschel-Maske (2.7/m, in halber Wander-Tiefe abgetastet): Halme
                 // wachsen in Büscheln, die Lücken dazwischen zeigen den Wurzelgrund —
                 // die Wiese liest auch auf 10-30 m als Wiese, nicht als Rauschen.
-                const _bX = wp.x.add(_wanderX.mul(_T.float(0.5)));
-                const _bZ = wp.z.add(_wanderZ.mul(_T.float(0.5)));
+                const _bX = wp.x.add(_wanderX.mul(_T.float(0.5))).sub(_boe.x.mul(_T.float(0.5)));
+                const _bZ = wp.z.add(_wanderZ.mul(_T.float(0.5))).sub(_boe.z.mul(_T.float(0.5)));
                 const _tuft = _T.smoothstep(
                     _T.float(0.3),
                     _T.float(0.62),
@@ -2255,8 +2355,8 @@ class AnazhRealm_stoff_material {
                 let _trefH = _T.float(0.0); // Halm-Höhe des Treffers (0 = Wurzelgrund)
                 for (let _s = 0; _s < 8; _s++) {
                     const _li = 1.0 - _s / 8.0; // Schicht von oben (1.0) nach unten (0.125)
-                    const _px = wp.x.add(_wanderX.mul(_T.float(_s / 8.0)));
-                    const _pz = wp.z.add(_wanderZ.mul(_T.float(_s / 8.0)));
+                    const _px = wp.x.add(_wanderX.mul(_T.float(_s / 8.0))).sub(_boe.x.mul(_T.float(_li)));
+                    const _pz = wp.z.add(_wanderZ.mul(_T.float(_s / 8.0))).sub(_boe.z.mul(_T.float(_li)));
                     const _hN = _ra
                         .ebene(_T.vec2(_px.mul(_f), _pz.mul(_f)), 11, "y")
                         .mul(0.5)

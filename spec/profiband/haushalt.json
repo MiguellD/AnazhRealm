@@ -393,7 +393,7 @@
             "dreiecke": 80000,
             "regeln": [
                 {
-                    "muster": "^nahWiese:L[12]$"
+                    "muster": "^nahWiese:(L[12]|karte)$"
                 }
             ]
         },

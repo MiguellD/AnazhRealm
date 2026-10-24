@@ -14,9 +14,8 @@
 //      auf eine Wand behält ~Tempo/2 entlang der Absicht (v −= n·(v·n) je
 //      Kontaktebene, bis 3) statt 0; STEILHANG: Gravitation entlang der
 //      Ebene → der Körper rutscht, statt magnetisch zu haften.
-//   F3 WIND-RICHTUNG: EIN uWindDir (seeded, langsam wandernd) treibt die
-//      Phase als dot(worldXZ, windDir) — zwei Punkte QUER zur Windrichtung
-//      teilen die Phase exakt, LÄNGS verschieden; die Richtung dreht mit.
+//   F3 WIND-RICHTUNG: EIN uWindDir (seeded, langsam wandernd, deterministisch); dass
+//      die Böe LÄNGS dieser Richtung im Bild wandert, misst `werkbank bild --zeit`.
 //   F4 GRAS-INTERAKTION: die uBend-Sphären biegen Halme RADIAL weg (GoT-
 //      Interaktions-Sphären), render-rein; die CPU-Seite (`_tickGrasBend`)
 //      füllt Spieler/Ritt/nahe Kreaturen.
@@ -288,9 +287,7 @@ const server = statikServer();
                     );
             }
 
-            // ══ FIXTURE 3 (F3) — WIND-RICHTUNG (dot-getriebene Phase) ══
-            // Skalar-Mock-TSL: derselbe Knoten-Baum, numerisch ausgewertet — die ECHTE
-            // `_windSwayOffset`-Quelle rechnet, kein Nachbau.
+            // ══ FIXTURE 3 (F3) — WIND-RICHTUNG ══ (der Skalar-Mock-TSL rechnet die ECHTE `_windSwayOffset`-Quelle für F4)
             const val = (x) => (x && typeof x === "object" ? x.v : x);
             const N = (v) => ({
                 v,
@@ -337,27 +334,6 @@ const server = statikServer();
                 return { x: res.x.v, z: res.z.v };
             };
             {
-                const L = 40;
-                // Wind aus +x: quer (Δz) teilt die Phase EXAKT, längs (Δx) nicht.
-                const sx = mkWindShim(1, 0);
-                const aX = evalSway(sx, 0, 0, 0.8);
-                const quX = evalSway(sx, 0, L, 0.8);
-                const laX = evalSway(sx, L, 0, 0.8);
-                // Wind aus +z: die ROLLEN TAUSCHEN (dieselben Punkte!) → richtungs-getrieben.
-                const sz = mkWindShim(0, 1);
-                const aZ = evalSway(sz, 0, 0, 0.8);
-                const quZ = evalSway(sz, L, 0, 0.8);
-                const laZ = evalSway(sz, 0, L, 0.8);
-                const eq = (p, q) => Math.abs(p.x - q.x) < 1e-9 && Math.abs(p.z - q.z) < 1e-9;
-                const ne = (p, q) => Math.abs(p.x - q.x) > 1e-4 || Math.abs(p.z - q.z) > 1e-4;
-                o.zahlen.wind = { aX, quX, laX, aZ, quZ, laZ };
-                if (!eq(aX, quX)) fail("F3: Wind +x — zwei Punkte QUER zur Windrichtung teilen die Phase NICHT");
-                if (!ne(aX, laX))
-                    fail("F3: Wind +x — zwei Punkte LÄNGS der Windrichtung sind phasengleich (kein Orts-Term?)");
-                if (!eq(aZ, quZ)) fail("F3: Wind +z — die Quer-Paarung folgt der GEDREHTEN Richtung nicht");
-                if (!ne(aZ, laZ)) fail("F3: Wind +z — die Längs-Paarung folgt der GEDREHTEN Richtung nicht");
-                // (der Rollen-Tausch ist der Selbst-Test: ohne uWindDir-Konsum rechneten beide Richtungen dieselben
-                // Fallback-Konstanten, und die Quer-Paarung bräche in einer der beiden)
                 // Die CPU-Richtungs-Quelle: seeded (gleicher Seed = gleicher Wind, anderer
                 // Seed = anderer), langsam (< 0.02 rad/s Drift) und einheitslang.
                 const d10 = r._windDirAt(10);
@@ -492,7 +468,7 @@ const server = statikServer();
             `  F2 Gleiten: 45°-Wand ${(z.klip.ratio * 100).toFixed(0)} % Absichts-Tempo (frei ${z.klip.frei.toFixed(2)} m → Wand ${z.klip.wand.toFixed(2)} m) · Voll-Stopp-Kontrolle ${(z.klipTot ? z.klipTot.ratio * 100 : NaN).toFixed(0)} % · Steilhang-Rutsch ${z.steilhang ? z.steilhang.x.toFixed(2) : "?"} m`
         );
     if (z.windDir)
-        console.log(`  F3 Wind: quer-invariant + richtungs-getrieben · Drift ${z.windDir ? "seeded/langsam" : "?"}`);
+        console.log("  F3 Wind: seeded · langsam · deterministisch");
     if (z.bend)
         console.log(
             `  F4 Gras: Biegung links ${z.bend.dLinks.toFixed(3)} / rechts +${z.bend.dRechts.toFixed(3)} · Tick ${typeof z.tick === "string" ? z.tick : "Slot 0 = Spieler"}`

@@ -78,12 +78,11 @@ function installWieseSicht() {
     };
     // DAS SOLL JE SENKE: wie viele Büschel der Sicht-Satz MINDESTENS legt — der Fuß des
     // Büschels im Frustum der Linsen-Kamera (die Sicht-Kugel des Büschels umschließt ihren Fuß: jeder solche Büschel
-    // trifft), das Rand-Band dünnt wie im Satz (Würfel-Ordnung gegen den Anteil), die Stufe nur, wo sie ohne Hysterese
-    // feststeht (≤ stufe1 sicher L1, > stufe1 + stufe1Rand sicher L2). Ein dünner Ring (der Waldboden unter der
+    // trifft), Anteil und Stufe nach DEMSELBEN Gesetz wie der Satz (`_nahWieseWahl`, `_nahWieseStufe` ohne Hysterese: im
+    // Band um stufe1 unbestimmt; L2 zeichnet die erste Vorlage, die Karte beide). Ein dünner Ring (der Waldboden unter der
     // Kronen-Karte) trägt Senken, deren Stufe im Blick keinen Büschel hat — leer ist dort richtig; leer bei Soll > 0 nie.
     window.__wieseErwartet = (r, kam, fr) => {
         const nw = r.state.nahWiese;
-        const NW = r.constructor.NAH_WIESE;
         const soll = {};
         if (!nw) return soll;
         for (const a of nw.senken.values()) soll[a.name] = 0;
@@ -91,13 +90,14 @@ function installWieseSicht() {
         const p = new window.THREE.Vector3();
         const ax = kam.position.x,
             az = kam.position.z;
+        const wahl = { hoehe: 0, breite: 1 };
         for (const k of nw.kacheln.values())
             for (const b of k.bueschel) {
                 const d = Math.hypot(b.x - ax, b.z - az);
-                if (b.ordnung >= Math.max(0, Math.min(1, (NW.radius - d) / NW.rand + 0.5))) continue;
-                const stufe = d <= NW.stufe1 ? 1 : d > NW.stufe1 + NW.stufe1Rand ? 2 : 0;
+                if (!r._nahWieseWahl(b, d, wahl)) continue;
+                const stufe = r._nahWieseStufe(b, d, null);
                 if (!stufe || !fr.containsPoint(p.set(b.x, b.y, b.z))) continue;
-                const key = `${b.vorlage}:L${stufe}`;
+                const key = stufe === 3 ? "karte" : `${stufe === 1 ? b.vorlage : 0}:L${stufe}`;
                 je[key] = (je[key] || 0) + 1;
             }
         for (const [key, n] of Object.entries(je)) {

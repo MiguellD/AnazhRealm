@@ -1207,58 +1207,36 @@ function bildMessungFehler(me) {
 const pixelSumme = (me, re) =>
     Object.entries(me.klassen).reduce((a, [n, k]) => a + (!re || re.test(n) ? k.pixel || 0 : 0), 0);
 const flaeche = (me) => me.leinwand[0] * me.leinwand[1];
-// DIE FESTEN RINGE der Wiese (vegetation K1): je Ring 2–5 / 5–10 / 10–20 / 20–40 m aus den Bändern der Messung Halm, Grund,
-// Lücke, cos θ (Pixel-Mittel) und LAI; ein Ring, dessen Kanten die Messung nicht trägt oder der kein Boden-Pixel zeigt, bricht
-// beim Namen. Der Saum-Sprung ist |ΔLAI| zwischen Nachbar-Ringen über dem größeren (ein Ring ohne Lücke trägt nur seine
-// Untergrenze: ist er der niedrigere, ist der Sprung unbewiesen).
-const LAI_RINGE = Object.freeze([[2, 5], [5, 10], [10, 20], [20, 40]]);
+// DIE FESTEN RINGE der Wiese (vegetation K1): je Band der Messung, das ein Ring ist, Halm, Grund, Lücke, cos θ und LAI; der
+// Sprung zum vorigen Ring über dem größeren (unbewiesen, wenn der niedrigere keine Lücke zeigt — dort nur die Untergrenze).
+const LAI_RINGE = Object.freeze([2, 5, 10, 20, 40]);
 function laiRinge(ab, rc) {
     const halm = new RegExp(rc.halm),
         grund = new RegExp(rc.grund);
     const out = [];
-    for (const [von, bis] of LAI_RINGE) {
-        const i0 = ab.baender.indexOf(von),
-            i1 = ab.baender.indexOf(bis);
-        if (i0 < 0 || i1 <= i0)
-            return { fehler: `die Messung trägt den festen Ring ${von}–${bis} m nicht (Bänder ${ab.baender.join(", ")})` };
-        let h = 0,
-            g = 0,
-            cs = 0;
+    for (let i = 1; i < LAI_RINGE.length; i++) {
+        const [von, bis] = [LAI_RINGE[i - 1], LAI_RINGE[i]];
+        const b = ab.baender.indexOf(von);
+        if (b < 0 || ab.baender[b + 1] !== bis) return { fehler: `die Messung trägt den festen Ring ${von}–${bis} m nicht` };
         const wer = {};
-        for (let b = i0; b < i1; b++) {
-            let hb = 0,
-                gb = 0;
-            for (const [n, z] of Object.entries(ab.klassen)) {
-                if (halm.test(n)) {
-                    hb += z[b] || 0;
-                    wer[n] = (wer[n] || 0) + (z[b] || 0);
-                } else if (grund.test(n)) gb += z[b] || 0;
-            }
-            h += hb;
-            g += gb;
-            cs += (ab.cos[b] || 0) * (hb + gb);
-        }
-        const nb = h + g;
-        if (!nb) return { fehler: `kein Boden-Pixel im Ring ${von}–${bis} m` };
-        const c = cs / nb,
-            P = Math.max(g, 0.5) / nb;
-        out.push({ von, bis, halm: h, grund: g, P, cos: c, lai: (-Math.log(P) * c) / rc.G, geschlossen: g === 0, wer });
-    }
-    for (let i = 1; i < out.length; i++) {
-        const [a, b] = [out[i - 1], out[i]];
-        const hoch = Math.max(a.lai, b.lai);
-        const offen = (a.lai < b.lai ? a : b).geschlossen; // der niedrigere ohne Lücke: der Sprung ist unbewiesen
-        b.sprung = hoch > 0 && !offen ? Math.abs(a.lai - b.lai) / hoch : 0;
+        let [h, g] = [0, 0];
+        for (const [n, z] of Object.entries(ab.klassen))
+            if (halm.test(n)) h += wer[n] = z[b] || 0;
+            else if (grund.test(n)) g += z[b] || 0;
+        if (!(h + g)) return { fehler: `kein Boden-Pixel im Ring ${von}–${bis} m` };
+        const P = Math.max(g, 0.5) / (h + g);
+        const z = { von, bis, halm: h, grund: g, P, cos: ab.cos[b], lai: (-Math.log(P) * ab.cos[b]) / rc.G, geschlossen: !g, wer };
+        const v = out[out.length - 1];
+        z.sprung = v && !(v.lai < z.lai ? v : z).geschlossen ? Math.abs(v.lai - z.lai) / Math.max(v.lai, z.lai) : 0;
+        out.push(z);
     }
     return out;
 }
 const MASS_RECHNER = {
     // DIE DECKUNG DER WIESE als wirksamer Blatt-Flächen-Index (Nilson 1971: Lücke P(θ) = exp(−G·LAI/cos θ)): je FESTEM Ring
-    // (`laiRinge`, vegetation K1 — nie der Radius einer Welt) die Lücke P = Grund / (Halm + Grund) und cos θ des Blicks, LAI =
-    // −ln P · cos θ / G. Das Ist ist der SCHWÄCHSTE Ring: die Wiese steht in jedem. Ein Ring ohne Grund-Pixel widerlegt kein
-    // Soll — seine Rechnung mit der halben Pixel-Lücke ist nur die Auflösung des Bilds (im Streifblick 20–40 m aus Augenhöhe
-    // ≈ 1,5 bei 1920 × 1080), er zählt mit max(Rechnung, Soll). Der Täter ist der Ring, der am meisten freien Grund zeigt,
-    // den das Soll nicht zeigen dürfte (Pixel × (LAI-Soll − LAI)), und die Halm-Klasse, die dort zeichnet.
+    // (`laiRinge`, nie der Radius einer Welt) LAI = −ln P · cos θ / G; das Ist ist der SCHWÄCHSTE Ring. Ein Ring ohne Grund-Pixel
+    // widerlegt kein Soll (die halbe Pixel-Lücke ist nur die Auflösung: im Streifblick 20–40 m ≈ 1,5), er zählt max(Rechnung,
+    // Soll). Der Täter ist der Ring mit dem meisten freien Grund über dem Soll und die Halm-Klasse, die dort zeichnet.
     laiWirk(ma, q, band) {
         const me = ma.messung,
             rc = ma.rechnung || {};
@@ -2139,19 +2117,19 @@ function sollTafelSelbsttest(tafel, q) {
     };
     const lai = MASS_RECHNER.laiWirk({ messung: laiMe, rechnung: { G: 0.5, halm: "^halm:", grund: "^grund$" } });
     if (!(Math.abs(lai.ist - 2) < 0.02)) v.push(`Maß laiWirk: eine Wiese mit LAI 2 liest ${lai.ist}${lai.fehler ? " — " + lai.fehler : ""}`);
-    // der Saum (vegetation K1): der Ring 20–40 m halb so dicht liest dort LAI 1 (Täter beim Ring, Sprung 50 %), ohne Lücke das
-    // Soll (die Auflösung widerlegt es nicht), eine Messung mit dem Ring einer Welt (14 m) bricht beim Namen
+    // der Saum (vegetation K1): 20–40 m halb so dicht liest dort LAI 1 (Täter beim Ring, Sprung 50 %), ohne Lücke das Soll,
+    // der Ring einer Welt (14 m) bricht beim Namen
+    const rcL = { G: 0.5, halm: "^halm:", grund: "^grund$" };
     const saum = JSON.parse(JSON.stringify(laiMe));
     saum.abstand.klassen.grund[4] = Math.round(1e6 * Math.exp(-0.5 / 0.15));
     saum.abstand.klassen["halm:L0"][4] = 1e6 - saum.abstand.klassen.grund[4];
-    const lsaum = MASS_RECHNER.laiWirk({ messung: saum, rechnung: { G: 0.5, halm: "^halm:", grund: "^grund$" } }, null, [1.7, null]);
-    const rsaum = laiRinge(saum.abstand, { G: 0.5, halm: "^halm:", grund: "^grund$" });
-    saum.abstand.klassen.grund[4] = 0;
-    saum.abstand.cos[4] = 0.05;
-    const lzu = MASS_RECHNER.laiWirk({ messung: saum, rechnung: { G: 0.5, halm: "^halm:", grund: "^grund$" } }, null, [1.7, null]);
-    const l14 = MASS_RECHNER.laiWirk({ messung: Object.assign({}, laiMe, { abstand: Object.assign({}, laiMe.abstand, { baender: [0, 2, 5, 10, 14, 30] }) }), rechnung: { G: 0.5, halm: "^halm:", grund: "^grund$" } });
-    if (!(Math.abs(lsaum.ist - 1) < 0.02 && /^20–40 m/.test(lsaum.taeter) && Math.abs(rsaum[3].sprung - 0.5) < 0.01 && lzu.ist === 1.7 && /10–20 m nicht/.test(l14.fehler || "")))
-        v.push(`Maß laiWirk Saum: halb ${lsaum.ist} (${lsaum.taeter}), Sprung ${rsaum[3] && rsaum[3].sprung}, ohne Lücke ${lzu.ist}, Ring 14 ${l14.fehler || l14.ist}`);
+    const [lsaum, rsaum] = [MASS_RECHNER.laiWirk({ messung: saum, rechnung: rcL }, null, [1.7]), laiRinge(saum.abstand, rcL)];
+    [saum.abstand.klassen.grund[4], saum.abstand.cos[4]] = [0, 0.05];
+    const lzu = MASS_RECHNER.laiWirk({ messung: saum, rechnung: rcL }, null, [1.7]);
+    saum.abstand.baender[4] = 14;
+    const l14 = MASS_RECHNER.laiWirk({ messung: saum, rechnung: rcL });
+    if (!(Math.abs(lsaum.ist - 1) < 0.02 && /^20–40 m/.test(lsaum.taeter) && Math.abs(rsaum[3].sprung - 0.5) < 0.01 && lzu.ist === 1.7 && /10–20 m nicht/.test(l14.fehler)))
+        v.push(`Maß laiWirk Saum: halb ${lsaum.ist} (${lsaum.taeter}), Sprung ${rsaum[3].sprung}, ohne Lücke ${lzu.ist}, Ring 14 ${l14.fehler}`);
     // die Farbton-Streuung: ein grauer Block zählt nicht (C* ≤ 5), ein grüner ja; eine Kachel aus zwei Tönen ±10° liest
     // sqrt(−2 ln cos 10°) = 10,03°, eine einfarbige 0° — das Ist ist das Proben-Mittel, der Täter die einfarbige Kachel
     const block = (rgb) => new Uint8Array(16).map((_, j) => (j % 4 < 3 ? rgb[j % 4] : 255));

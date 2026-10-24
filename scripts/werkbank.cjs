@@ -7,7 +7,7 @@
 //                                                           `messorte`): Spieler, Blick, Dorf-Zug, Ort-Takt und Sicht; buehne betritt ihre Welt
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                      [--uhr 0..1] [--wetter rainy] [--saison winter] Bühne + echter Frame (Ausgabe-Pfad)
-//                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]] [--fov v]
+//                                      [--klasse <regex>] [--spieler] [--abstand [--zeit Δt[,n]]] [--ist <id>[:L<n>|:wirkung]] [--fov v]
 //                                                           DIE KLASSEN IM BILD (spec/abnahme/soll-tafel.json): Teilung, Rauschen und Maße je Klasse;
 //                                                           `--ist` schreibt in die Tafel, `--arm <m>` die Kamera <m> vor die Fläche des Ego-Blicks
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus dem Stamm live tauschen
@@ -1462,8 +1462,7 @@ async function starte() {
                     let abstand = null;
                     if (k.abstand) {
                         const T = window.THREE;
-                        // DIE FESTEN RINGE (vegetation K1): 2–5 / 5–10 / 10–20 / 20–40 m, nie der Radius einer Welt — ein
-                        // kleinerer Ring der Nah-Wiese machte die Linse grüner und den Saum dahinter blind
+                        // DIE FESTEN RINGE (vegetation K1), nie der Radius einer Welt (ein kleinerer machte den Saum blind)
                         const baender = [0, 2, 5, 10, 20, 40, 80, 200];
                         const zahl = {},
                             cosS = baender.slice(1).map(() => 0),
@@ -1471,6 +1470,8 @@ async function starte() {
                             ftK = new Map(); // DIE FARBTON-STREUUNG (W1): je 2-m-Kachel des Bodens in 2–5 m die Proben
                         const pos = cam.position.clone();
                         const v = new T.Vector3();
+                        const ZEIT_RING = 15; // vegetation K2 Staffel 1: die Böe nah (0–15 m)
+                        const zeitBl = k.zeit ? [] : null;
                         const band = (d) => {
                             for (let b = 0; b < baender.length - 1; b++) if (d < baender[b + 1]) return b;
                             return -1;
@@ -1512,6 +1513,7 @@ async function starte() {
                                 }
                                 if (hit < 0) continue;
                                 const d = Math.hypot(v.x * hit, v.z * hit);
+                                if (zeitBl && d < ZEIT_RING && x0 + 1 < W && y0 + 1 < H) zeitBl.push(y0 * W + x0, pos.x + v.x * hit, pos.z + v.z * hit);
                                 const bi = band(d);
                                 if (bi < 0) continue;
                                 const kk = d >= 2 && d < 5 && x0 + 1 < W && y0 + 1 < H && `${Math.floor((pos.x + v.x * hit) / 2)},${Math.floor((pos.z + v.z * hit) / 2)}`;
@@ -1535,6 +1537,81 @@ async function starte() {
                             farbton: { kachel: 2, band: [2, 5], belichtung: +r.state.renderer.toneMappingExposure.toFixed(4) },
                         };
                         abstand.farbton.kacheln = [...ftK].map(([kk, a]) => [kk, a[0], +a[1].toFixed(3), +a[2].toFixed(3), a[3]]);
+                        // DIE ZEIT (`--zeit Δt[,n]`, vegetation K2): n + 1 Bilder, die Bild-Uhr je Schuss um Δt weiter, dieselbe Reihe bei
+                        // Wind 0 (der Rausch-Boden); je Block binnen ZEIT_RING m die Luma-Varianz, und je 1,5-m-Streifen längs
+                        // `_windDirAt` die Phase der Unruhe |ΔL| bei WIND_BOE.omega — ihr Gang über die Strecke ist k, das Tempo ω/k.
+                        if (k.zeit) {
+                            const [dt, nz] = String(k.zeit).split(",").map(Number);
+                            const N = nz >= 8 ? nz : 32,
+                                S = window.__buehneUhr,
+                                B = zeitBl.length / 3,
+                                T0 = S.T;
+                            if (!(dt > 0) || B < 100) throw new Error(`--zeit ${k.zeit}: Δt > 0 und ≥ 100 Blöcke binnen ${ZEIT_RING} m (${B})`);
+                            const reihe = async (still) => {
+                                const wetter = r._weatherFieldFor;
+                                if (still) r._weatherFieldFor = (w) => Object.assign({}, wetter.call(r, w), { wind: 0 });
+                                const out = [];
+                                try {
+                                    for (let i = 0; i <= N; i++) {
+                                        S.T = T0 + i * dt;
+                                        const u = await schuss([]);
+                                        out.push(Float32Array.from({ length: B }, (_, b) => [0, 1, W, W + 1].reduce((s, q) => s + ((p) => 0.2126 * u[p * 4] + 0.7152 * u[p * 4 + 1] + 0.0722 * u[p * 4 + 2])(zeitBl[b * 3] + q), 0) / 4));
+                                    }
+                                } finally {
+                                    r._weatherFieldFor = wetter;
+                                    S.T = T0;
+                                }
+                                return out;
+                            };
+                            const varianz = (R) => R[0].reduce((s, _, b) => s + R.reduce((a, L) => a + L[b] * L[b], 0) / R.length - (R.reduce((a, L) => a + L[b], 0) / R.length) ** 2, 0) / B;
+                            const wind = await reihe(false),
+                                vW = varianz(wind),
+                                vS = varianz(await reihe(true));
+                            const wd = r._windDirAt(T0),
+                                WB = r.constructor.WIND_BOE;
+                            const sB = Array.from({ length: B }, (_, b) => zeitBl[b * 3 + 1] * wd.x + zeitBl[b * 3 + 2] * wd.z);
+                            const s0 = Math.min(...sB);
+                            const streifen = new Map();
+                            sB.forEach((s, b) => {
+                                const j = Math.floor((s - s0) / 1.5);
+                                if (!streifen.has(j)) streifen.set(j, []);
+                                streifen.get(j).push(b);
+                            });
+                            const phasen = [];
+                            for (const [j, g] of [...streifen].sort((a, b2) => a[0] - b2[0])) {
+                                if (g.length < 50) continue;
+                                let c1 = 0,
+                                    c2 = 0;
+                                for (let i = 0; i < N; i++) {
+                                    const u = g.reduce((s, b) => s + Math.abs(wind[i + 1][b] - wind[i][b]), 0) / g.length,
+                                        t = WB.omega * (T0 + (i + 0.5) * dt);
+                                    c1 += u * Math.sin(t);
+                                    c2 += u * Math.cos(t);
+                                }
+                                let p = Math.atan2(c2, c1);
+                                const vor = phasen.length ? phasen[phasen.length - 1][2] : p;
+                                p += 2 * Math.PI * Math.round((vor - p) / (2 * Math.PI));
+                                phasen.push([s0 + (j + 0.5) * 1.5, g.length * Math.hypot(c1, c2), p]);
+                            }
+                            // die Steigung der entfalteten Phase über s (gewichtet nach Blöcken × Amplitude) ist −k
+                            const sum = (f) => phasen.reduce((a, z) => a + z[1] * f(z), 0);
+                            const [sw, sx, sy, sxx, sxy] = [() => 1, (z) => z[0], (z) => z[2], (z) => z[0] * z[0], (z) => z[0] * z[2]].map(sum);
+                            const kIst = sw * sxx - sx * sx > 0 ? -(sw * sxy - sx * sy) / (sw * sxx - sx * sx) : null;
+                            abstand.zeit = {
+                                dt,
+                                n: N,
+                                ring: ZEIT_RING,
+                                bloecke: B,
+                                wind: [+wd.x.toFixed(4), +wd.z.toFixed(4), +r.state.windUniforms.uWindStrength.value.toFixed(4)],
+                                varianz: +vW.toFixed(4),
+                                boden: +vS.toFixed(4),
+                                verhaeltnis: vS > 0 ? +(vW / vS).toFixed(2) : null,
+                                soll: +(WB.omega / WB.k).toFixed(3),
+                                tempo: kIst > 0 ? +(WB.omega / kIst).toFixed(3) : null,
+                                strecke: phasen.length ? +(phasen[phasen.length - 1][0] - phasen[0][0]).toFixed(2) : 0,
+                                phasen: phasen.map((z) => z.map((v2) => +v2.toFixed(3))),
+                            };
+                        }
                     }
                     // die Maske: jede Klasse in ihrem Ton über dem Bild, der Rest blau-grau
                     const ton = [
@@ -2963,6 +3040,7 @@ async function starte() {
             klasse: opt("--klasse"),
             spieler: argv.includes("--spieler"),
             abstand: argv.includes("--abstand"),
+            zeit: opt("--zeit"),
             gesicht: opt("--gesicht"),
             arm: opt("--arm"),
             ist: opt("--ist"),

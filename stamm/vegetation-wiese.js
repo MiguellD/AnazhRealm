@@ -55,6 +55,7 @@ class AnazhRealm_vegetation_wiese {
         const out = [];
         const Gb = globalThis.__gelaendeCore;
         const E = this._erdbauLage();
+        const weitMax = NW.radius / NW.dicht;
         for (let gj = Math.ceil(z0 / step); gj * step < z0 + NW.kachel; gj++) {
             for (let gi = Math.ceil(x0 / step); gi * step < x0 + NW.kachel; gi++) {
                 let hs = ((gi * 73856093) ^ (gj * 19349663) ^ seedInt ^ 0x6a09e667) >>> 0 || 1;
@@ -91,8 +92,20 @@ class AnazhRealm_vegetation_wiese {
                 const sb = sk * (m > 0.8 ? 1.45 : 1);
                 // der Kreis des Büschels vor dem Grund der Häuser (S4, `erdbauGrund`: jede Box des Körper-Satzes)
                 if (Gb.erdbauGrund(E, x, z, NW.reich * sb)) continue;
+                // die Weite, um die das Büschel in der Ferne wachsen darf (`_nahWieseWahl`): nur so weit, wie sein Kreis
+                // dann noch frei vom Grund der Häuser und vom Wasser bleibt
+                const rw = NW.reich * sb * weitMax;
+                const weit =
+                    weitMax > 1 &&
+                    !Gb.erdbauGrund(E, x, z, rw) &&
+                    !this._nassAt(x + rw, z, 0.1) &&
+                    !this._nassAt(x - rw, z, 0.1) &&
+                    !this._nassAt(x, z + rw, 0.1) &&
+                    !this._nassAt(x, z - rw, 0.1)
+                        ? weitMax
+                        : 1;
                 const f = WT(x, z, L, m, [1, 1, 1], 0);
-                out.push({ x, y, z, s: sb, rot, vorlage, ordnung, f });
+                out.push({ x, y, z, s: sb, rot, vorlage, ordnung, weit, f });
             }
         }
         // Zufällige Ordnung: ein Präfix der Liste ist eine gleichmäßige Ausdünnung (das Rand-Band).
@@ -168,8 +181,9 @@ class AnazhRealm_vegetation_wiese {
         // brach jeder Deko-Takt bis zum Buch an `phyto:lod.budget (gras)` und riss Nah-Streu und Hydro-Kacheln mit.
         // Der Rang der Vorlage ist der Ort ihres Lesers, das Auge (`wo`, B5): ohne Ort stand sie auf ∞ und wartete vor dem
         // ersten Bild auf eine leere Bahn (GTX kalt 8,5 s), während die Streu-Lücke im Blick auf sie wartete.
+        // die Befehle der Wiese (Haushalt nahWiese ≤ 4): L1 in beiden Vorlagen, L2 in der ersten, die Karte für beide
         for (const stufe of [1, 2]) {
-            for (let v = 0; v < 2; v++) {
+            for (let v = 0; v < (stufe === 1 ? 2 : 1); v++) {
                 const fl = this._foundryFlattenFor({ seed: v + 1, wo: cam }, "gras", stufe);
                 if (!(fl && Array.isArray(fl.leaves) && fl.leaves.length)) {
                     nw.offen++; // das Studio-Asset kommt noch (Buch kalt oder die Foundry-Anfrage läuft)
@@ -182,6 +196,7 @@ class AnazhRealm_vegetation_wiese {
                 this._nahWieseSenken(v, stufe, fl);
             }
         }
+        if (nw.vorlagen.has("0:L2")) this._nahWieseKarte(nw.vorlagen.get("0:L2").flat);
         // das Takt-Budget in vollen Kacheln: eine ferne Kachel kostet ihre Grenze (sie fragt nur ihren Anteil der Zellen)
         let gebaut = 0,
             kosten = 0;
@@ -204,7 +219,10 @@ class AnazhRealm_vegetation_wiese {
             const wasser = this._wasserKennungen(x0, z0, x0 + NW.kachel + 0.68, z0 + NW.kachel + 0.68);
             nw.kacheln.set(
                 w.key,
-                Object.assign({ chunkKarten, wasser, grenze: w.grenze }, this._nahWieseKachelDaten(w.tx, w.tz, bueschel))
+                Object.assign(
+                    { chunkKarten, wasser, grenze: w.grenze },
+                    this._nahWieseKachelDaten(w.tx, w.tz, bueschel)
+                )
             );
             nw.neu = true;
             gebaut++;
@@ -302,6 +320,121 @@ class AnazhRealm_vegetation_wiese {
         nw.neu = true;
     }
 
+    // DIE KARTE DER WIESE (vegetation K1): jenseits von `NW.karte` trägt jedes Büschel statt der Studio-L2 ihre Karte — ein
+    // Kreuz aus zwei senkrechten Tafeln (`_nahWieseKarteForm`), deren Halme der Stoff rechnet (`_wiesenKarteStoff`). EINE
+    // Senke für beide Vorlagen (`nahWiese:karte`); ihre Maße misst sie an der Studio-L2 der ersten Vorlage (Labor = Welt:
+    // Höhe, Fuß-Breite, Lehne, Wurzel- und Spitzen-Ton des Halms), ein neues Studio-Asset (Saison) legt sie neu.
+    _nahWieseKarte(fl) {
+        const nw = this.state.nahWiese;
+        const alt = nw.vorlagen.get("karte");
+        if (alt && alt.flat === fl) return;
+        if (alt) for (const a of alt.senken) this._nahWieseSenkeFaellt(a);
+        const M = this._nahWieseKarteMasse(fl);
+        const a = {
+            key: "karte",
+            name: "nahWiese:karte:0",
+            geo: this._nahWieseKarteForm(),
+            mat: this._wiesenKarteStoff(M),
+            lokal: new THREE.Matrix4(),
+            leafKey: fl.leaves[0].leafKey, // die Identität der Studio-L2, an der sie misst (Inventur und Linsen)
+            quelle: null,
+            mesh: null,
+            kap: 0,
+            anzahl: 0,
+            anders: false,
+            wachse: 0,
+        };
+        this._senkeMesh(a, 1024, this.state.scene);
+        nw.senken.set(a.key, a);
+        nw.vorlagen.set("karte", {
+            flat: fl,
+            senken: [a],
+            cy: M.hoehe / 2,
+            r: Math.hypot(M.tafel / 2, M.hoehe / 2),
+            M,
+        });
+        nw.neu = true;
+    }
+
+    // Die Maße der Karte an der Studio-L2 (Welt-Meter bei Büschel-Skala 1, über die lokale Matrix des Teils): je Halm (ein
+    // Viereck aus vier Ecken, Fuß-Zeile und Spitzen-Zeile) Fuß-Breite und Lehne, die Höhe des Büschels, die Weite seiner
+    // Halme (die Tafel) und der Halm-Abstand, mit dem die zwei Tafeln so viele Halme tragen wie das Büschel. Die Töne (linear):
+    // die Wurzel (Mittel der Fuß-Ecken), die Spitzen in zwei Gruppen nach ihrem Rot zu Grün geteilt (grün und trocken —
+    // das Gesetz der Wiesen-Farbe des Studios zieht trockene Halme), dazu der Anteil der trockenen.
+    _nahWieseKarteMasse(fl) {
+        const lf = fl.leaves[0];
+        const g = lf.geom;
+        const P = g.attributes.position,
+            C = g.attributes.color;
+        if (!P || !C || P.count % 4)
+            throw new Error(
+                "Nah-Wiese: die Karte misst die Studio-L2 in Vierecken mit Farbe — die Vorlage trägt sie nicht"
+            );
+        const sk = new THREE.Vector3().setFromMatrixScale(lf.localMatrix).x;
+        let yMax = 0,
+            weit = 0;
+        for (let i = 0; i < P.count; i++) {
+            yMax = Math.max(yMax, P.getY(i));
+            weit = Math.max(weit, Math.hypot(P.getX(i), P.getZ(i)));
+        }
+        const fuesse = [],
+            lehnen = [],
+            wurzel = [0, 0, 0],
+            spitzen = [];
+        for (let q = 0; q < P.count; q += 4) {
+            if (P.getY(q) > 0.05 * yMax) continue; // ein Viereck, das nicht am Grund steht (die Rispe), ist kein Halm
+            fuesse.push(Math.hypot(P.getX(q + 1) - P.getX(q), P.getZ(q + 1) - P.getZ(q)));
+            const mx = (P.getX(q + 2) + P.getX(q + 3) - P.getX(q) - P.getX(q + 1)) / 2,
+                mz = (P.getZ(q + 2) + P.getZ(q + 3) - P.getZ(q) - P.getZ(q + 1)) / 2;
+            lehnen.push(Math.hypot(mx, mz));
+            for (let c = 0; c < 3; c++) wurzel[c] += (C.getComponent(q, c) + C.getComponent(q + 1, c)) / 2;
+            spitzen.push([0, 1, 2].map((c) => (C.getComponent(q + 2, c) + C.getComponent(q + 3, c)) / 2));
+        }
+        const median = (a) => a.slice().sort((x, y) => x - y)[a.length >> 1];
+        if (!fuesse.length)
+            throw new Error("Nah-Wiese: die Studio-L2 trägt keinen Halm am Grund — die Karte hat kein Maß");
+        // die Spitzen nach Rot zu Grün: die Grenze in der Mitte ihrer Spanne teilt grün und trocken
+        const q = spitzen.map((c) => c[0] / Math.max(c[1], 1e-4));
+        const grenze = (Math.min(...q) + Math.max(...q)) / 2;
+        const mittel = (sel) => {
+            const g = spitzen.filter((_c, i) => sel(q[i]));
+            return g.length ? [0, 1, 2].map((c) => g.reduce((a, x) => a + x[c], 0) / g.length) : null;
+        };
+        const gruen = mittel((x) => x <= grenze),
+            trocken = mittel((x) => x > grenze) || gruen;
+        const tafel = 2 * weit * sk;
+        return {
+            hoehe: yMax * sk,
+            tafel,
+            breite: median(fuesse) * sk,
+            lehne: 2 * median(lehnen) * sk,
+            abstand: (2 * tafel) / fuesse.length,
+            halme: fuesse.length,
+            wurzel: wurzel.map((v) => v / fuesse.length),
+            spitze: gruen,
+            trocken,
+            trockenAnteil: q.filter((x) => x > grenze).length / q.length,
+            rauh: typeof lf.mat.roughness === "number" ? lf.mat.roughness : 0.7,
+        };
+    }
+
+    // Die Form der Karte: zwei senkrechte Tafeln im Kreuz (x und z), Breite 1 um die Achse, Höhe 1 über dem Grund — die
+    // Instanz-Matrix trägt Tafel und Höhe in Metern, die Drehung des Büschels und den Ort.
+    _nahWieseKarteForm() {
+        if (this._wiesenKarteForm) return this._wiesenKarteForm;
+        const pos = [-0.5, 0, 0, 0.5, 0, 0, 0.5, 1, 0, -0.5, 1, 0, 0, 0, -0.5, 0, 0, 0.5, 0, 1, 0.5, 0, 1, -0.5];
+        const uv = [0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1];
+        const nor = [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0];
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+        g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+        g.setIndex([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7]);
+        g.computeBoundingSphere();
+        this._wiesenKarteForm = g;
+        return g;
+    }
+
     // Eine Senke fällt (ihre Vorlage wurde ersetzt): die Mesh verlässt die Szene, die Studio-Referenz geht zurück — war
     // die Cache-Gruppe geräumt (LRU), fällt ihre Geometrie jetzt.
     _nahWieseSenkeFaellt(a) {
@@ -317,13 +450,29 @@ class AnazhRealm_vegetation_wiese {
 
     // DIE WAHL EINES BÜSCHELS (vegetation K1, rein — der Satz und jede Linse lesen sie): sein Anteil im Abstand d (bis
     // `dicht` 1, dahinter dicht/d, vor `radius` das Rand-Band), die Höhe (1; im Band `sinken` unter seiner Schwelle sinkt es
-    // auf 0 — 0 heißt, es steht nicht) und die Breite d/dicht (≥ 1: die Halm-Fläche je m² bleibt). Schreibt nach `aus`.
-    _nahWieseWahl(ordnung, d, aus) {
+    // auf 0 — 0 heißt, es steht nicht) und die Breite d/dicht (≥ 1: die Halm-Fläche je m² bleibt; höchstens seine `weit`,
+    // vor Haus und Wasser 1). Schreibt nach `aus`.
+    _nahWieseWahl(b, d, aus) {
         const NW = AnazhRealm.NAH_WIESE;
-        const anteil = Math.min(NW.dicht / Math.max(d, NW.dicht), Math.max(0, Math.min(1, (NW.radius - d) / NW.rand + 0.5)));
-        aus.hoehe = ordnung >= anteil ? 0 : anteil >= 1 ? 1 : Math.min(1, (anteil - ordnung) / (NW.sinken * anteil));
-        aus.breite = Math.max(1, d / NW.dicht);
+        const anteil = Math.min(
+            NW.dicht / Math.max(d, NW.dicht),
+            Math.max(0, Math.min(1, (NW.radius - d) / NW.rand + 0.5))
+        );
+        aus.hoehe =
+            b.ordnung >= anteil ? 0 : anteil >= 1 ? 1 : Math.min(1, (anteil - b.ordnung) / (NW.sinken * anteil));
+        aus.breite = Math.min(b.weit, Math.max(1, d / NW.dicht));
         return aus.hoehe > 0;
+    }
+
+    // DIE STUFE EINES BÜSCHELS im Abstand d (rein, der Satz und jede Linse): L1 im Kreis `stufe1` (Austritt erst `stufe1Rand`
+    // dahinter; `l1` = die Stufe davor, null = ohne Hysterese, im Band dann 0 = unbestimmt), die Studio-L2 bis `karte`,
+    // dahinter die Karte (3) — im Band ±`karteRand` je Büschel nach seiner Drehung gewürfelt, keine Kante im Bild.
+    _nahWieseStufe(b, d, l1) {
+        const NW = AnazhRealm.NAH_WIESE;
+        if (d <= NW.stufe1 || (l1 && d <= NW.stufe1 + NW.stufe1Rand)) return 1;
+        if (l1 == null && d <= NW.stufe1 + NW.stufe1Rand) return 0;
+        const w = ((b.rot * 13) / (2 * Math.PI)) % 1;
+        return (d - NW.karte + NW.karteRand) / (2 * NW.karteRand) > w ? 3 : 2;
     }
 
     // Die Grenze einer Kachel, deren nächster Rand dmin vor dem Auge liegt: der Anteil dort, gestuft in Halben (die ferne
@@ -351,9 +500,9 @@ class AnazhRealm_vegetation_wiese {
         nw.gen = L.gen;
         const NW = AnazhRealm.NAH_WIESE;
         const we = kamera.matrixWorld.elements;
-        // Je Stufe × Vorlage die Senken samt Sicht-Kugel (fehlt eine, kommt ihr Studio-Asset noch).
-        const ziel = [null, [null, null], [null, null]];
-        let rMax = 0;
+        // Je Stufe × Vorlage die Senken samt Sicht-Kugel (fehlt eine, kommt ihr Studio-Asset noch); die Karte (3) für beide.
+        const ziel = [null, [null, null], [null, null], nw.vorlagen.get("karte") || null];
+        let rMax = ziel[3] ? ziel[3].r + Math.abs(ziel[3].cy) : 0;
         for (const stufe of [1, 2])
             for (let v = 0; v < 2; v++) {
                 const vl = nw.vorlagen.get(`${v}:L${stufe}`) || null;
@@ -379,8 +528,11 @@ class AnazhRealm_vegetation_wiese {
             const n = k.bueschel.length;
             // die Breite des fernsten Büschels der Kachel weitet ihre Kugel
             const dk = Math.hypot(k.mx - ax, k.mz - az);
-            const weit = Math.max(1, (dk + H * 1.42) / NW.dicht);
-            if (!n || !this._passTrifft(L, k.mx, (k.y0 + k.y1) / 2, k.mz, H, (k.y1 - k.y0) / 2, H, k.sMax * rMax * weit))
+            const breitK = Math.max(1, (dk + H * 1.42) / NW.dicht);
+            if (
+                !n ||
+                !this._passTrifft(L, k.mx, (k.y0 + k.y1) / 2, k.mz, H, (k.y1 - k.y0) / 2, H, k.sMax * rMax * breitK)
+            )
                 continue;
             // die Büschel liegen nach ihrer Ordnung: jenseits des Anteils am nächsten Rand steht keines mehr
             const grenze = Math.min(1, NW.dicht / Math.max(dk - H * 1.42, NW.dicht));
@@ -388,17 +540,20 @@ class AnazhRealm_vegetation_wiese {
                 const b = k.bueschel[i];
                 if (b.ordnung >= grenze) break;
                 const d = Math.hypot(b.x - ax, b.z - az);
-                if (!this._nahWieseWahl(b.ordnung, d, wahl)) continue;
-                const l1 = k.l1[i] ? d <= NW.stufe1 + NW.stufe1Rand : d <= NW.stufe1;
-                k.l1[i] = l1 ? 1 : 0;
-                const vl = ziel[l1 ? 1 : 2][b.vorlage];
-                if (!vl || !this._passTrifft(L, b.x, b.y + vl.cy * b.s, b.z, 0, 0, 0, vl.r * b.s * wahl.breite)) continue;
+                if (!this._nahWieseWahl(b, d, wahl)) continue;
+                const stufe = this._nahWieseStufe(b, d, k.l1[i]);
+                k.l1[i] = stufe === 1 ? 1 : 0;
+                const vl = stufe === 3 ? ziel[3] : ziel[stufe][stufe === 1 ? b.vorlage : 0];
+                if (!vl || !this._passTrifft(L, b.x, b.y + vl.cy * b.s, b.z, 0, 0, 0, vl.r * b.s * wahl.breite))
+                    continue;
                 m4.fromArray(k.basis, i * 16);
-                // die Breite weitet die waagrechten Achsen des Büschels, die Höhe sinkt an der Schwelle
-                if (wahl.breite !== 1 || wahl.hoehe !== 1) {
+                // die Karte trägt Tafel und Höhe in Metern; die Breite weitet die waagrechten Achsen, die Höhe sinkt an der Schwelle
+                const qx = stufe === 3 ? vl.M.tafel * wahl.breite : wahl.breite,
+                    qy = stufe === 3 ? vl.M.hoehe * wahl.hoehe : wahl.hoehe;
+                if (qx !== 1 || qy !== 1) {
                     const e4 = m4.elements;
-                    for (const j of [0, 1, 2, 8, 9, 10]) e4[j] *= wahl.breite;
-                    for (const j of [4, 5, 6]) e4[j] *= wahl.hoehe;
+                    for (const j of [0, 1, 2, 8, 9, 10]) e4[j] *= qx;
+                    for (const j of [4, 5, 6]) e4[j] *= qy;
                 }
                 for (const a of vl.senken) {
                     if (a.anzahl >= a.kap) {

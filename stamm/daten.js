@@ -416,12 +416,13 @@ class AnazhRealm_daten {
     // 19.10. an der GEZEICHNETEN Vorlage (Geometrie × lokale Matrix des Teils, beide Vorlagen, L1/L2) 0,606–0,683 m, dazu der
     // Hub im Sturm (WIND_GESETZ 0,035 m); die 0,17 vom 17.10. lasen das Studio-Gras ohne die Matrix — ein Büschel 0,4 m vor der
     // Wand steckte seine Halme durch sie in den Anbau (gate:haus-welt W9 misst die Weite an der Vorlage).
-    // DIE WIESE BIS ZUM SAUM (vegetation K1, das Tsushima-Gesetz in festen Ringen): die Büschel stehen bis `radius` 40 m, bis
-    // `dicht` jedes; dahinter trägt der Abstand d den Anteil dicht/d (ein Präfix der Würfel-Ordnung), jedes stehende Büschel
-    // um d/dicht breiter (`_nahWieseWahl`) — die Halm-Fläche je m² (der LAI) bleibt, die Dreiecke je Meter Ring bleiben die von
-    // `dicht`. Eine ferne Kachel trägt nur den Anteil ihres nächsten Rands (gestuft in Halben, Tsushima: die ferne Kachel mit
-    // doppelter Kante bei gleicher Büschelzahl), `sinken` = das Band der Ordnung, in dem ein Büschel an seiner Schwelle auf
-    // null sinkt statt zu ploppen. Bis K1 endeten die Büschel bei 14 + 4 m (Saum: LAI 1,58 → 0,09 über 14 m).
+    // DIE WIESE BIS ZUM SAUM (vegetation K1, das Tsushima-Gesetz in festen Ringen): die Büschel stehen bis `radius` 40 m —
+    // L1 im Kreis `stufe1`, die Studio-L2 bis `karte`, dahinter die Karte der Wiese (`_nahWieseKarte`: zwei Tafeln, deren
+    // Halme der Stoff rechnet; im Band ±`karteRand` gewürfelt). Bis `dicht` steht jedes Büschel; dahinter trägt der Abstand d
+    // den Anteil dicht/d (ein Präfix der Würfel-Ordnung), jedes stehende um d/dicht breiter (`_nahWieseWahl`) — die Halm-
+    // Fläche je m² (der LAI) bleibt. Eine ferne Kachel trägt nur den Anteil ihres nächsten Rands (gestuft in Halben, Tsushima:
+    // die ferne Kachel mit doppelter Kante bei gleicher Büschelzahl), `sinken` = das Band der Ordnung, in dem ein Büschel an
+    // seiner Schwelle auf null sinkt statt zu ploppen. Bis K1 endeten die Büschel bei 14 + 4 m (LAI 1,58 → 0,09 über 14 m).
     static get NAH_WIESE() {
         return this._einmal(
             "NAH_WIESE",
@@ -429,7 +430,9 @@ class AnazhRealm_daten {
                 kachel: 6,
                 stufe1: 5,
                 stufe1Rand: 0.5,
-                dicht: 8,
+                karte: 10,
+                karteRand: 2,
+                dicht: 20,
                 radius: 40,
                 rand: 4,
                 sinken: 0.2,
