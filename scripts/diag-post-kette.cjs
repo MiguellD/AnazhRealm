@@ -105,6 +105,9 @@ function urteil(z) {
                 `TIEFE: ${s.name} — die Bild-Mitte ist ${JSON.stringify(m)}, nicht die nahe rote Kiste (Tiefentest fehlt)`
             );
     }
+    const b = z.buehne || {};
+    if (!(b.wasserY < b.eisNull))
+        v.push(`BÜHNE: ihr Wasser (${b.wasserY} m) liegt über der Eis-Linie (${b.eisNull} m) — Saum und Wasser messen Eis`);
     const w = z.wasser;
     const abst = (a, b) => (a && b ? Math.max(...[0, 1, 2].map((c) => Math.abs(a[c] - b[c]))) : NaN);
     if (!w) v.push("WASSER: die Probe Abbild gegen r184s Viewport-Tiefe lief nicht");
@@ -274,6 +277,7 @@ function selbsttest() {
         gpuFehler: [],
         ausgabe,
         godray: { staerke: 0.6, aenderungPct: 14, rauschenPct: 0 },
+        buehne: { boden: 90.3, wasserY: 147.1, eisNull: 157.1 },
         wasser: {
             umgehaengt: [1, 1],
             abbild: [60, 90, 80],
@@ -387,6 +391,8 @@ function selbsttest() {
             muss: /das Wasser liest eine andere Tiefe/,
         },
         { name: "Wasser-Probe blind", z: mit((z) => (z.wasser.ohneGrund = z.wasser.abbild)), muss: /Probe ist blind/ },
+        // stoffe-k3-phasen a3b87db1: die Bühne 160 m über Genesis (247,3 m) über der Eis-Linie 157,1 m
+        { name: "Bühne im Eis", z: mit((z) => (z.buehne.wasserY = 247.3)), muss: /über der Eis-Linie/ },
         { name: "Wasser nicht umgehängt", z: mit((z) => (z.wasser.umgehaengt = [0, 1])), muss: /nicht umgehängt/ },
         { name: "Wasser-Probe fehlt", z: mit((z) => delete z.wasser), muss: /lief nicht/ },
         {
@@ -474,7 +480,7 @@ const server = statikServer();
 // Zeile zu Zeile die Spalte, also beide Paritäten). Je Wasser-Zeile das Pixel links an der Kante des Pfahls, mit dem
 // Tiefen-Abbild und mit r184s Viewport-Tiefe bei festen Uhren, in voller Auflösung: liest das Wasser den Block, der sein
 // Pixel enthält, ist es dasselbe Wasser; liest es den Nachbar-Block (der Pfahl, nah), ist es durchsichtig — ein heller Saum.
-function saumProbe() {
+function saumProbe(ort) {
     return (async () => {
         const r = window.anazhRealm,
             st = r.state,
@@ -487,9 +493,7 @@ function saumProbe() {
         const gpuHoer = (e) => gpuFehler.push(String((e.error && e.error.message) || e.message || e).slice(0, 240));
         dev.addEventListener("uncapturederror", gpuHoer);
         const cam = st.camera;
-        const x0 = cam.position.x,
-            z0 = cam.position.z;
-        const y0 = r._voxelSurfaceY(x0, z0) + 160;
+        const { x: x0, y: y0, z: z0 } = ort; // die Bühne der Wand (`buehne`): ihr Wasser ist flüssig
         const setzeKamera = () => {
             cam.position.set(x0, y0, z0);
             cam.up.set(0, 1, 0);
@@ -595,11 +599,15 @@ function buehne(nFrames, nachtLicht) {
         const dev = rend.backend.device;
         const gpuHoer = (e) => gpuFehler.push(String((e.error && e.error.message) || e.message || e).slice(0, 240));
         dev.addEventListener("uncapturederror", gpuHoer);
-        // Die Kamera hoch über dem Boden (nichts von der Welt zwischen ihr und der Bühne), Blick waagrecht nach −z.
+        // Die Kamera hoch über dem Boden (nichts von der Welt zwischen ihr und der Bühne), Blick waagrecht nach −z — und das
+        // Wasser der Bühne flüssig (stoffe.K3): 10 m unter der Höhe, über der es gefriert (`eisNull`, der Uniform des Stoffs;
+        // über Genesis 67 m über dem Boden, 160 m darüber stand Eis).
         const cam = st.camera;
         const x0 = cam.position.x,
             z0 = cam.position.z;
-        const y0 = r._voxelSurfaceY(x0, z0) + 160;
+        const boden = r._voxelSurfaceY(x0, z0),
+            eisNull = st.hydroSurfaceUniforms.eisNull.value;
+        const y0 = Math.min(boden + 160, eisNull - 7);
         const setzeKamera = () => {
             cam.position.set(x0, y0, z0);
             cam.up.set(0, 1, 0);
@@ -625,7 +633,7 @@ function buehne(nFrames, nachtLicht) {
         const wasser = new T.Mesh(wg, r._ensureHydroSurfaceMaterial());
         wasser.position.set(x0, y0 - 3, z0 - 14);
         // Der Grund 0,3 m unter dem Spiegel, weiß: der optische Weg ist endlich und kurz, der Grund scheint durch, die Farbe
-        // des Wassers hängt an der Szenen-Tiefe (ohne Grund läge dahinter die Welt 160 m tiefer — der Durchlass 0, jede
+        // des Wassers hängt an der Szenen-Tiefe (ohne Grund läge dahinter die Welt über Genesis 57 m tiefer — der Durchlass 0, jede
         // Tiefe gäbe dieselbe Farbe).
         const grund = new T.Mesh(new T.PlaneGeometry(24, 24), stoff(0xffffff));
         grund.rotation.x = -Math.PI / 2;
@@ -734,7 +742,7 @@ function buehne(nFrames, nachtLicht) {
             } else s.abbild = { fehlt: true };
             schritte.push(s);
         };
-        const aus = { schritte, gpuFehler };
+        const aus = { schritte, gpuFehler, buehne: { x: x0, y: y0, z: z0, boden, eisNull, wasserY: y0 - 3 } };
         try {
             // (a) Post-Kette — der Normalfall.
             await schritt("Post-Kette");
@@ -956,7 +964,9 @@ function buehne(nFrames, nachtLicht) {
                 await new Promise((q) => setTimeout(q, 50));
             }
         });
-        out.saum = await page.evaluate(saumProbe);
+        const b = out.buehne;
+        log(`Bühne: Boden ${b.boden.toFixed(1)} m · Wasser ${b.wasserY.toFixed(1)} m · Eis-Linie ${b.eisNull.toFixed(1)} m`);
+        out.saum = await page.evaluate(saumProbe, b);
         if (out.saum)
             log(
                 `Saum (ungerade Leinwand ${out.saum.leinwand.join("×")}): ${out.saum.abweichend} von ${out.saum.kanten} Kanten-Pixeln links am Pfahl weichen > 8 Luma ab (größte ${out.saum.dMax}, Paritäten ${out.saum.paritaeten})${out.saum.abbruch ? " · ABBRUCH " + out.saum.abbruch : ""}`

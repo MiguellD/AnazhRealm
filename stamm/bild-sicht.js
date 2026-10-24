@@ -1101,9 +1101,9 @@ class AnazhRealm_bild_sicht {
         // `_dayNightApplyWaterMaterials`). Bis V18.531 las die Welt die Zeile nicht: Sturm und Sonne zeigten denselben See.
         const uWind = uniform(0.06);
         // DAS EIS (stoffe.K3): die Höhe, über der das Wasser gefriert (`_dayNightApplyWaterMaterials`; ohne Schreiber nie) —
-        // gefrorenes Wasser wogt und kräuselt nicht (`fluessig` 0).
+        // gefrorenes Wasser wogt und kräuselt nicht (`fluessig` 0) — an der Welt-Höhe, die auch die Farbe liest.
         const uEisNull = uniform(1e9);
-        const fluessig = float(1.0).sub(step(uEisNull, positionLocal.y));
+        const fluessig = float(1.0).sub(step(uEisNull, modelWorldMatrix.mul(vec4(positionLocal, 1.0)).y));
         const windF = float(WG.wind[0]).add(uWind.mul(WG.wind[1]));
 
         // 2D-Hash + Value-Noise. Der Hash ist pcg2d (Jarzynski & Olano 2020, derselbe wie `_pcg2d`) auf dem ganzzahligen
