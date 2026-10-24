@@ -372,10 +372,8 @@ class AnazhRealm {
             skyTintTo: null,
             skyTintStrength: 0,
             skyTintTarget: 0,
-            // Welle 6.G3 (V8.24) — Fauna-Lifecycle. Bei Unterpopulation
-            // (< TARGET) gebären sich Kreaturen langsam, bei Überpopulation
-            // (> MAX) verabschieden sich die ältesten mit Trauer-Effekt.
-            faunaLifecycle: { lastTick: 0, lastBirthAt: 0, lastDeathAt: 0 },
+            // Der Fauna-Lebenszyklus (Ökologie K2): der Takt der Bestands-Bilanz in der Spiel-Zeit (tickFaunaLifecycle).
+            faunaLifecycle: { lastTick: 0 },
             nexusEvolutionQueue: [],
             nexusLastEvolution: 0,
             nexusEvolutionInterval: 24.0, // V18.302 — ruhiger (war 10 s = die „endlose Churn"); perf-gestreckt unter Last
@@ -1805,7 +1803,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.77";
+AnazhRealm.VERSION = "18.546.78";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

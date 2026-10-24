@@ -98,9 +98,9 @@ class AnazhRealm_dirigent_takt {
                     // Cross-Fade über 45 s. No-op wenn kein Übergang aktiv.
                     this.tickWeatherTransition(currentTime);
 
-                    // ### Fauna-Lifecycle (Welle 6.G3.c) ###
-                    // Alle 10 s: Geburt bei < TARGET, Tod bei > MAX mit Trauer.
-                    this.tickFaunaLifecycle(currentTime);
+                    // ### Fauna-Lifecycle (Ökologie K2) ###
+                    // je Takt der Spiel-Zeit die Bilanz des Bestands: Geburt unter, Hunger über der Kapazität aus Nahrung × Lebensraum.
+                    this.tickFaunaLifecycle();
 
                     // ### Boot-Phase 3 (V18.308) — die deferierte Boot-Arbeit progressiv ###
                     // Spawnt die Initial-Kreaturen NACH der Kontrolle, einen Atem pro Wesen,
