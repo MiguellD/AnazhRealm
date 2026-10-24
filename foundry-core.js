@@ -5559,6 +5559,57 @@ function __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJo
     return geo;
 }
 
+// DAS VOLUMEN EINER VEREINIGUNG (physik K1, rein additiv): geschlossene Dreiecks-Netze (je ein Feld der Ecken, je drei ein
+// Dreieck, in EINEM Rahmen) im Raster h gezählt — je Netz und Strahl längs x die Kreuzungen, innen liegt, was zwischen zweien
+// liegt; eine Zelle zählt einmal, gleich wie viele Netze sie decken. Leser: das Volumen des Leibs (`bakeMenschInstance`).
+function __vereinigungsVolumen(netze, h) {
+    const lo = [Infinity, Infinity, Infinity];
+    const hi = [-Infinity, -Infinity, -Infinity];
+    for (const T of netze)
+        for (let i = 0; i < T.length; i += 3)
+            for (let k = 0; k < 3; k++) {
+                if (T[i + k] < lo[k]) lo[k] = T[i + k];
+                if (T[i + k] > hi[k]) hi[k] = T[i + k];
+            }
+    if (!(hi[0] > lo[0] && hi[1] > lo[1] && hi[2] > lo[2])) return 0;
+    const nx = Math.ceil((hi[0] - lo[0]) / h) + 1;
+    const ny = Math.ceil((hi[1] - lo[1]) / h) + 1;
+    const nz = Math.ceil((hi[2] - lo[2]) / h) + 1;
+    const voll = new Uint8Array(nx * ny * nz);
+    const zelle = (w, d, n) => Math.min(n - 1, Math.max(0, Math.floor((w - lo[d]) / h)));
+    for (const T of netze) {
+        const kreuz = new Map();
+        for (let t = 0; t + 8 < T.length; t += 9) {
+            const ay = T[t + 1], az = T[t + 2], by = T[t + 4], bz = T[t + 5], cy = T[t + 7], cz = T[t + 8];
+            const dd = (by - ay) * (cz - az) - (cy - ay) * (bz - az);
+            if (Math.abs(dd) < 1e-14) continue;
+            const j0 = zelle(Math.min(ay, by, cy), 1, ny), j1 = zelle(Math.max(ay, by, cy), 1, ny);
+            const k0 = zelle(Math.min(az, bz, cz), 2, nz), k1 = zelle(Math.max(az, bz, cz), 2, nz);
+            for (let j = j0; j <= j1; j++)
+                for (let k = k0; k <= k1; k++) {
+                    const y = lo[1] + (j + 0.5) * h + 1.1e-7, z = lo[2] + (k + 0.5) * h + 2.3e-7;
+                    const u = ((y - ay) * (cz - az) - (cy - ay) * (z - az)) / dd;
+                    const v = ((by - ay) * (z - az) - (y - ay) * (bz - az)) / dd;
+                    if (u < 0 || v < 0 || u + v > 1) continue;
+                    const key = j * nz + k;
+                    let L = kreuz.get(key);
+                    if (!L) kreuz.set(key, (L = []));
+                    L.push(T[t] + u * (T[t + 3] - T[t]) + v * (T[t + 6] - T[t]));
+                }
+        }
+        for (const [key, L] of kreuz) {
+            L.sort((p, q) => p - q);
+            const j = Math.floor(key / nz), k = key % nz;
+            for (let m = 0; m + 1 < L.length; m += 2)
+                for (let i = Math.max(0, Math.ceil((L[m] - lo[0]) / h - 0.5)); i <= Math.min(nx - 1, Math.floor((L[m + 1] - lo[0]) / h - 0.5)); i++)
+                    voll[i + nx * (j + ny * k)] = 1;
+        }
+    }
+    let n = 0;
+    for (let i = 0; i < voll.length; i++) n += voll[i];
+    return n * h * h * h;
+}
+
 // DER STOFF AUS DER HAUT (K45-2, das Lab-Gesetz `_garmentFromSkin` — „Kleidung wird AUS der Haut extrudiert", in den Ofen
 // gezogen): jede Haut-Ecke gehört dem Teil, dessen Zentrum ihr am nächsten liegt; die Ecken der Zonen-Teile bilden die Region,
 // zweimal nach Mehrheit geglättet (keine ausgefransten Saum-Inseln) und bis zu dreimal gefüllt (Inseln mit ≥ 80 % gewählten
@@ -7130,7 +7181,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         hair: { c: hairCol, r: 0.85, seh: "haar" },
     });
     const fein = (lod | 0) >= 1;
-    let leibV = 0; // das Volumen der geschlossenen Haut (1310-15), der Beipack trägt es zur Masse
+    let leibV = 0; // das Volumen des Leibs (1310-15, physik K1), der Beipack trägt es zur Masse
     // die Mengen-Stufe (lod 2, mensch.K1): jede Kugel im Raster ihrer Größe (`__kugelRaster`, das Gesetz des Tiers; die Lab-Höhe
     // des Menschen ~6 Einheiten) — Stufe 0 und 1 byte-gleich
     const menge = (lod | 0) >= 2;
@@ -7191,6 +7242,18 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 ? new THREE.Group()
                 : new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, segZ, 1), matFuer(k)),
     };
+    // die Form jedes Teils, wie das Gesetz sie nennt (physik K1): das Volumen des Leibs misst sie im Netz der Nah-Stufe, gleich
+    // welche Stufe gegossen wird — auch ein Teil, das die Menge fallen lässt (eine leere Gruppe), zählt zum Leib
+    const formen = new Map();
+    for (const [art, bau] of [
+        ["kugel", F.kugel],
+        ["zylinder", F.zylinder],
+    ])
+        F[art] = (...a) => {
+            const n = bau(...a);
+            formen.set(n, art === "kugel" ? { r: a[0], k: a[1], sc: a[2] } : { rt: a[0], rb: a[1], h: a[2], k: a[3] });
+            return n;
+        };
     const B = kern.bauMensch(F);
     kern.morphAuf(B, dials);
     // Die gemalten Shorts: dieselbe Teil-Namen-Regel wie der Stamm zuvor.
@@ -7534,27 +7597,6 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             pa.needsUpdate = true;
             mesh.geometry.computeVertexNormals();
         }
-        // DAS VOLUMEN DER GESCHLOSSENEN HAUT (1310-15): die Masse des Menschen liest das Volumen seiner Haut
-        // (`_leibVolumen`, Divergenz-Satz Σ a · (b × c) / 6 je Dreieck, in der Ruhe-Pose) — die Haut ist nach dem Stoff-Schnitt
-        // offen, also misst der Ofen sie vorher und gibt die Zahl im Beipack mit (`leibV`, Geometrie-Einheiten³). Nur was der
-        // Schnitt öffnet: Kopf und Hände bleiben geschlossen, die misst der Wirt selbst neben der Zahl (A4, `_leibVolumen`).
-        if (hautHuelle && hautImStoff) {
-            const g = hautHuelle.geometry;
-            const p = g.attributes.position.array;
-            const ix = g.index.array;
-            let v = 0;
-            for (let t = 0; t + 2 < ix.length; t += 3) {
-                const a = ix[t] * 3,
-                    b = ix[t + 1] * 3,
-                    c = ix[t + 2] * 3;
-                v +=
-                    (p[a] * (p[b + 1] * p[c + 2] - p[b + 2] * p[c + 1]) -
-                        p[a + 1] * (p[b] * p[c + 2] - p[b + 2] * p[c]) +
-                        p[a + 2] * (p[b] * p[c + 1] - p[b + 1] * p[c])) /
-                    6;
-            }
-            leibV = Math.abs(v);
-        }
         if (hautHuelle && hautImStoff) {
             const g = hautHuelle.geometry;
             const pa = g.attributes.position;
@@ -7800,6 +7842,38 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 }
             }
     }
+    // DAS VOLUMEN DES LEIBS (1310-15, physik K1): die Masse des Menschen liest das Volumen seines Leibs — die Vereinigung seiner
+    // Teile unter der Haut (skin · shorts · joint, Kopf, Hände und Füße eingeschlossen) in der Ruhe-Pose, je Teil das Netz der
+    // Nah-Stufe (20 × 14 Segmente, in jeder Stufe dasselbe), im Raster gezählt (`__vereinigungsVolumen`: was zwei Teile decken,
+    // zählt einmal); der Beipack trägt sie (`leibV`, Einheiten³), der Wirt liest nur sie (`_leibVolumen`). Bis physik K1 maß
+    // der Ofen die Haut-Hülle: sie liegt um Raster, Feld-Schwelle und CLR-Abstand AUS dem Leib (L0 Spreiz-Pose 6,21 gegen 4,42
+    // E³), dazu Kopf und Hände beim Wirt — der Spieler wog 117,3 statt 89,0 kg.
+    {
+        B.character.updateMatrixWorld(true);
+        const invC = new THREE.Matrix4().copy(B.character.matrixWorld).invert();
+        const netze = [];
+        const m4 = new THREE.Matrix4();
+        const pv = new THREE.Vector3();
+        for (const [node, fo] of formen) {
+            const kl = node.material && node.material.userData ? node.material.userData.__klasse : fo.k;
+            if (kl !== "skin" && kl !== "shorts" && kl !== "joint") continue;
+            m4.multiplyMatrices(invC, node.matrixWorld);
+            if (!node.isMesh && fo.sc) m4.multiply(new THREE.Matrix4().makeScale(fo.sc[0], fo.sc[1], fo.sc[2]));
+            const g = fo.r > 0 ? new THREE.SphereGeometry(fo.r, 20, 14) : new THREE.CylinderGeometry(fo.rt, fo.rb, fo.h, 14, 1);
+            const pa = g.attributes.position;
+            const ix = g.index;
+            const T = new Float32Array(ix.count * 3);
+            for (let t = 0; t < ix.count; t++) {
+                pv.fromBufferAttribute(pa, ix.getX(t)).applyMatrix4(m4);
+                T[3 * t] = pv.x;
+                T[3 * t + 1] = pv.y;
+                T[3 * t + 2] = pv.z;
+            }
+            g.dispose();
+            netze.push(T);
+        }
+        leibV = __vereinigungsVolumen(netze, 0.06); // 0,06 E (1,6 cm): ±0,1 % gegen 0,02 E
+    }
     return __bakeGelenkBaum(B.character, "mensch", nodeName, fein, {
         art: presetId,
         base: skinCol,
@@ -7807,7 +7881,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         skinJoints: skinJoints,
         // die Hand-Mitte je Hand im Hand-Raum (nur nah gegossen) — der Griff der Faust
         ...(fein ? {} : { handMitte }),
-        // das Volumen der geschlossenen Haut am Gelenk der Hülle (1310-15) — die Masse liest es, nie die offene Fläche
+        // das Volumen des Leibs am Gelenk der Hülle (1310-15, physik K1) — die Masse liest es
         ...(leibV > 0 ? { leibV } : {}),
     });
 }
