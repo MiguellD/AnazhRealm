@@ -547,9 +547,21 @@ class AnazhRealm_speicher_laden {
         }
     }
 
-    // Die Höhe eines gespeicherten Orts über dem Boden des Gesetzes (cm-genau; undefined ohne Boden).
+    // Die Höhe eines gespeicherten Orts über dem Boden des Gesetzes (cm-genau; undefined ohne Boden). Ein Haus auf seinem
+    // EIGENEN Grund (S4, die Mitte auf dem Eintrag) misst den Boden unter dem Erdbau (`hoehe` ohne seinen Term), auf dem der
+    // Boden-Umzug es wieder setzt, nie den Keller, den sein Grund gräbt — bis 24.10. schrieb ein Save nach dem Grund die Tiefe
+    // des Kellers (2,26 m, ein Save davor 0; der Korpus, speicher.K5), und der Umzug stellte das Haus um sie über den Boden.
     _ueberGrund(p) {
-        const g = p ? this._voxelSurfaceY(p.x, p.z) : NaN;
+        const G = globalThis.__gelaendeCore;
+        const E = p ? this._erdbauLage() : null;
+        const Z = G.ERDBAU.zelleM;
+        const je = E ? E.grundZellen.get((Math.floor(p.x / Z) + 32768) * 65536 + (Math.floor(p.z / Z) + 32768)) : null;
+        const eigen = (je || []).some(
+            (i) => Math.abs(E.gruende[i].cx - p.x) < 0.05 && Math.abs(E.gruende[i].cz - p.z) < 0.05
+        );
+        const roh =
+            eigen && (this._gelaendeRoh || (this._gelaendeRoh = Object.create(this._gelaende(), { erdbau: {} })));
+        const g = !p ? NaN : roh ? G.hoehe(roh, p.x, p.z, true) : this._voxelSurfaceY(p.x, p.z);
         return Number.isFinite(g) && Number.isFinite(p.y) ? Math.round((p.y - g) * 100) / 100 : undefined;
     }
 
@@ -636,7 +648,7 @@ class AnazhRealm_speicher_laden {
     }
 
     // Ring 6.5 Hotbar (9 Slots, ungültige Bauplan-Refs → null), Welle 6.C1
-    // Inventar (27 Slots, count clampt [1, 999]), Welle 4 P3 Werkzeug-Besitz
+    // Inventar (27 Slots, count ≥ 1, ganz), Welle 4 P3 Werkzeug-Besitz
     // (Starter bleiben, eigene zugefügt via Set-Union).
     _loadStateRestoreHotbarAndInventory(state) {
         if (Array.isArray(state.hotbar)) {

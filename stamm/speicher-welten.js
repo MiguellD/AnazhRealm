@@ -1076,7 +1076,7 @@ class AnazhRealm_speicher_welten {
             hotbar: Array.isArray(this.state.hotbar) ? this.state.hotbar.slice(0, 9) : [],
             // Welle 6.C1 — Inventar persistiert. 27 Slots, jeweils {blueprintName,
             // count}, ein Material-Slot {kind, material, count}, oder null. Bei Reload defensive Validierung (unbekannte
-            // Namen werden zu null, count auf 1..999 geclampt). Bis 24.10. schrieb der Material-Slot nur {count}: jedes Laden
+            // Namen werden zu null, count ≥ 1, ganz). Bis 24.10. schrieb der Material-Slot nur {count}: jedes Laden
             // verlor, was Graben, Ernte und Beute gaben (der Korpus, speicher.K5).
             playerInventory: Array.isArray(this.state.player && this.state.player.inventory)
                 ? this.state.player.inventory
