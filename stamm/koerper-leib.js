@@ -561,11 +561,14 @@ class AnazhRealm_koerper_leib {
     // unter Fels (nur dort tastet das Feld); ohne Karte (fern, ungebaut) trägt der Träger. Leser: Fuß-IK des Menschen
     // (`_gaitBodenY`) und des Tiers (`_kreaturFussBoden`), Tier-Lage (`_creatureSlopeProben`, die Mitte im Frame-Takt), der
     // Stoß-Schritt, die Tod-Lage. Die Karte am Punkt liest `_bodenSichtAt` (am Chunk-Rand die des Nachbarn).
+    // Über einem gefrorenen Spiegel (`_eisAt`, stoffe.K3) sieht das Auge das Eis, nie den Grund unter ihm.
     _standSicht(x, z, traegerY, struktur) {
         if (struktur === true) return traegerY;
-        const k = this._bodenSichtAt(x, z);
-        if (!Number.isFinite(traegerY)) return Number.isFinite(k) ? k : NaN;
         const band = AnazhRealm.STAND_SICHT_BAND;
+        const eis = this._eisAt(x, z, traegerY + band, 2 * band);
+        const karte = this._bodenSichtAt(x, z);
+        const k = eis !== null && !(karte >= eis) ? eis : karte;
+        if (!Number.isFinite(traegerY)) return Number.isFinite(k) ? k : NaN;
         if (!Number.isFinite(k)) return traegerY;
         if (Math.abs(k - traegerY) <= band) return k;
         const g = this._koerperBodenUnter(x, traegerY, z);

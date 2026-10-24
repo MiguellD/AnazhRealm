@@ -528,8 +528,10 @@ class AnazhRealm_klang {
     }
 
     // Material am Fuß — NASS SCHLÄGT FEST: unter dem Wasserspiegel (watender Ufer-Schritt) platscht er. Das EINE Urteil
-    // „ist hier Wasser" (`_nassAt`, der Fuß ist sein Grund), `_terrainMaterialAt` die EINE Boden-Wahrheit.
+    // „ist hier Wasser" (`_nassAt`, der Fuß ist sein Grund), `_terrainMaterialAt` die EINE Boden-Wahrheit; der Fuß auf dem
+    // gefrorenen Spiegel (`_eisAt`, stoffe.K3) klingt Eis.
     _schrittMaterialAt(x, z, y) {
+        if (this._eisAt(x, z, y + 0.02, 0.05) !== null) return "eis";
         return this._nassAt(x, z, 0.02, y) ? "wasser" : this._terrainMaterialAt(x, z, y);
     }
 

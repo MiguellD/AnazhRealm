@@ -1099,6 +1099,8 @@ class AnazhRealm_bild_sicht {
         // skaliert Kräuselung, Dünung und Glitzer — `uWind` ist der Wind des Wetters (0 ruhig … 1 Sturm, Schreiber
         // `_dayNightApplyWaterMaterials`). Bis V18.531 las die Welt die Zeile nicht: Sturm und Sonne zeigten denselben See.
         const uWind = uniform(0.06);
+        // DAS EIS (stoffe.K3): die Höhe, über der das Wasser gefriert (`_dayNightApplyWaterMaterials`; ohne Schreiber nie).
+        const uEisNull = uniform(1e9);
         const windF = float(WG.wind[0]).add(uWind.mul(WG.wind[1]));
 
         // 2D-Hash + Value-Noise. Der Hash ist pcg2d (Jarzynski & Olano 2020, derselbe wie `_pcg2d`) auf dem ganzzahligen
@@ -1330,6 +1332,7 @@ class AnazhRealm_bild_sicht {
             sunCol: uSunCol,
             sunDir: uSunDir,
             light: uLight,
+            eisNull: uEisNull,
         });
         const fw = foamD.mul(0.7);
         // DIE DECKUNG (Standard-Blending: Bild = C·α + Grund·(1−α)): der Grund kommt mit T·(1−F)·(1−fw) durch, also
@@ -1379,6 +1382,7 @@ class AnazhRealm_bild_sicht {
             depthFoam: uDepthFoam,
             lakeRipple: uLakeRipple,
             wind: uWind,
+            eisNull: uEisNull,
         };
         // UNIFORM-HEIMAT (Pflicht-Paar der Diät, die jeder Welt-Stoff bei seiner Erst-Zeichnung trägt): alle Takt-Uniforms
         // des Wassers sind geteilt → der Monitor darf auf die equals()-Bahn.
