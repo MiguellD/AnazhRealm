@@ -11,7 +11,7 @@
 // t(Kontrolle) von außen (W über CDP bewegt den Leib) ≤ 5 s in einem ganzen Bild; `--echt` die Hardware-GPU (1920×1080).
 //   node scripts/diag-boot-stage.cjs --kalt [--echt] [--sek 120] [--json datei] [--bild ankunft.png] [--profil ordner]
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, halteBis } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -137,17 +137,15 @@ async function kaltLauf() {
     try {
         const page = await browser.newPage();
         await page.evaluateOnNewDocument(KALT_PROBE);
-        const t0 = Date.now();
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
-        // DIE HAND DES SPIELERS: W, frisch gedrückt je 100 ms über CDP, bis der Leib folgt (`__kalt.kontrolle`)
-        let kontrolle = 0;
-        while (!kontrolle && Date.now() - t0 < SEK * 1000) {
-            await page.keyboard.up("KeyW");
-            await page.keyboard.down("KeyW");
-            await new Promise((r) => setTimeout(r, 100));
-            kontrolle = await page.evaluate(() => window.__kalt.kontrolle || 0).catch(() => 0);
-        }
-        await page.keyboard.up("KeyW");
+        // DIE HAND DES SPIELERS: sobald der Ladeschirm weicht (die DOM-Wahrheit), hält sie W über CDP, bis der Leib folgt
+        const weg = () => {
+            const el = document.getElementById("ladeschirm");
+            return !el || el.hidden || el.classList.contains("weg");
+        };
+        if (await page.waitForFunction(weg, { timeout: SEK * 1000, polling: 100 }).then(() => 1, () => 0))
+            await halteBis(page, { taste: "KeyW", ziel: () => window.__kalt.kontrolle, frist: 15000 });
+        const kontrolle = await page.evaluate(() => window.__kalt.kontrolle || 0);
         // DAS BILD BEI DER KONTROLLE: der Blick 1 s danach aus dem Ausgabe-Pfad (scripts/lib/ausgabe-aufnahme.cjs; Mittag · Sonne ·
         // Sommer) gegen dieselbe Pose nach KONTROLLE_RUHE_S, in denen die Welt weiterläuft; `--bild` legt das erste ab
         const bildDatei = OPT("--bild", null);
