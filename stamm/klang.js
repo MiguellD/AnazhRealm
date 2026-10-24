@@ -263,7 +263,8 @@ class AnazhRealm_klang {
     // Wetter-Feld (transition-aware) × Böen-Drift, die Böe am Ort, die Kronen-Deckung der STEHENDEN Bäume (die
     // Kronen-Karte `_kronenStreuAt` — dieselben Bytes, aus denen Boden und Nah-Wiese den Wald lesen; das Kronenlicht-
     // Feld der Platzierung sagt nur, wo Bäume wachsen DÜRFEN), Sonne (Tageszeit), Jahres-Phase, Leben (auraAt), der
-    // Hör-Ring (Ufer/Fluss), der nächste Wasserfall der Region, die nächste Glut (Brenn-Fläche).
+    // Hör-Ring (Ufer/Fluss), der nächste Wasserfall der Region, die nächste Glut (Brenn-Fläche) — und die ANTWORT der Wertung
+    // (`_tatAntwortAm`: das abklingende δ der Tat, die hier am stärksten wirkt; affekt K1).
     _umweltLage() {
         const ort = this._umweltOrtLage();
         return ort && Object.assign(ort, this._umweltLuftLage());
@@ -335,7 +336,8 @@ class AnazhRealm_klang {
         return { ufer, fluss, fall, glut };
     }
 
-    // Die Lage der Luft (im zweiten Bild): Wetter-Feld × Böen-Drift, die Böe am Ort, die Kronen-Deckung, Sonne, Jahr, Leben.
+    // Die Lage der Luft (im zweiten Bild): Wetter-Feld × Böen-Drift, die Böe am Ort, die Kronen-Deckung, Sonne, Jahr, Leben,
+    // die Antwort der Wertung.
     _umweltLuftLage() {
         const pm = this.state.playerMesh;
         const px = pm.position.x;
@@ -349,6 +351,7 @@ class AnazhRealm_klang {
             sonne: this._sonnenRichtung().y, // die Sonnenhöhe (sin) der EINEN Tag-Achse, mit der Neigung der Bahn
             saisonPhase: typeof this.state.seasonPhase === "number" ? this.state.seasonPhase : 0.375,
             lebendig: Math.max(0, Math.min(1, this.auraAt(px, pz).lebendig)),
+            antwort: this._tatAntwortAm(px, pz),
         };
     }
 

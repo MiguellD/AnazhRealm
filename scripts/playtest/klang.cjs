@@ -130,7 +130,7 @@ async function checkBandW4LofiPad(ctx) {
                 typeof sym.lofi.rngState === "number";
             // W4 V3 Phase 2 — die Melodie: Form (startet + endet
             // auf einem Akkord-Ton, aufsteigende Startzeiten, über
-            // dem Pad), emotion-gesteuerte Dichte, wurf-frei.
+            // dem Pad), emotion-gesteuerte Dichte.
             const mel = r._lofiMelodyNotes(0, 4);
             const chordTones = [0, 2, 4, 6];
             let melAsc = true;

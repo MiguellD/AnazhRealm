@@ -49,14 +49,14 @@ const BLAETTER = [
 // Fege-Takt.
 const EIGENE_UHR = ["_tickFoliageGrowth"];
 
-// DIE LANGSAMEN SIMULATIONEN (feld.K3): Takte mit eigener Uhr außerhalb der Stand-Wache — Name → [Takte, Zellen]. In Ruhe
+// DIE LANGSAMEN SIMULATIONEN (feld.K3): Takte mit eigener Uhr außerhalb der Stand-Wache — Name → [Takte, Zellen (Pfade im state)]. In Ruhe
 // arbeitet keine. Eine Einheit = ein Ruf einer Stamm-Methode unter dem Takt oder ein Element seiner Zellen, das er durchgeht;
 // unter einem Schreib-Akt (AKTE) zählt die Arbeit der Tat (`akt`), nie der Ruhe.
 const SIMS = {
     wasser: [["_tickWorldWaterCA"], ["waterCAActive"]],
     regen: [["_tickRain", "tickWeatherTransition"], []],
     saison: [["_tickSeason"], []],
-    nachwuchs: [["_tickScatterRegrow"], ["scatterHarvested"]],
+    nachwuchs: [["_tickScatterRegrow"], ["worldMeta.taten"]],
     wuchs: [["_tickFoliageGrowth"], ["pendingFoliageChunks"]],
     feld: [
         ["_pruneLifeField", "_pruneEmotionField", "_pruneWohlBaseline"],
@@ -123,7 +123,7 @@ function simLinseAn(sims, akte) {
         };
     };
     const legen = () => {
-        for (const n of namen) for (const z of sims[n][1]) huelle(r.state[z], "·" + z);
+        for (const n of namen) for (const z of sims[n][1]) huelle(z.split(".").reduce((o, k) => o && o[k], r.state), "·" + z);
     };
     legen();
     return {

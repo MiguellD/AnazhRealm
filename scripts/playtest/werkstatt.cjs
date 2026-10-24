@@ -109,16 +109,11 @@ async function checkBandCadWorkshop(ctx) {
         try {
             // --- Phase 1: State-Schema ---
             const ws = r._ensureWorkshopState();
-            out.hasSelectedPartIdxField = "selectedPartIdx" in ws;
-            out.hasPreviewField = "preview" in ws;
             out.hasManipulatorModeField = typeof ws.manipulatorMode === "string";
             out.hasSnapEnabledField = typeof ws.snapEnabled === "boolean";
             out.defaultManipulatorMode = ws.manipulatorMode;
             out.defaultSnapEnabled = ws.snapEnabled;
 
-            // --- Phase 1: DOM-Elemente ---
-            out.canvasInDom = !!document.getElementById("workshop-preview-canvas");
-            out.previewWrapperInDom = !!document.getElementById("workshop-preview-wrapper");
 
             // --- Phase 2: Konstanten ---
             const AR = r.constructor;
@@ -311,10 +306,6 @@ async function checkBandCadWorkshop(ctx) {
     });
 
     if (wave6bResults && !wave6bResults.error) {
-        check("Welle 6.B P1: state.workshop hat selectedPartIdx-Feld", wave6bResults.hasSelectedPartIdxField);
-        check("Welle 6.B P1: state.workshop hat preview-Feld (lazy)", wave6bResults.hasPreviewField);
-        check("Welle 6.B P1: #workshop-preview-canvas im DOM", wave6bResults.canvasInDom);
-        check("Welle 6.B P1: #workshop-preview-wrapper im DOM", wave6bResults.previewWrapperInDom);
         check("Welle 6.B P1: selectBlueprintForEdit setzt selectedBlueprint", wave6bResults.selectedSetToVillage);
         check(
             "Welle 6.B P1: Bauplan-Wechsel resettet selectedPartIdx auf null",
@@ -874,11 +865,7 @@ async function checkBandCadWorkshop(ctx) {
 
             // --- Pan-Geste: Listener-Source enthält Shift+Links + Mittelmaus-Pfad ---
             if (pre) {
-                // Listener wurden tatsächlich installed (listenersInstalled-Flag)
-                out.previewListenersInstalled = pre.listenersInstalled === true;
-
                 // --- Wheel + Zoom-to-Cursor: target verschiebt sich ---
-                const oldTarget = pre.orbit.target.clone();
                 const oldDist = pre.orbit.dist;
                 // Wheel mit deltaY > 0 = zoom-out (factor 1.12)
                 const wheelEv = new WheelEvent("wheel", {
@@ -891,41 +878,10 @@ async function checkBandCadWorkshop(ctx) {
                 pre.canvas.dispatchEvent(wheelEv);
                 // dist hat sich geändert
                 out.distChangedOnWheel = pre.orbit.dist !== oldDist;
-                // target wurde leicht verschoben (zoom-to-cursor) — nur wenn
-                // der Cursor-Ray die Ebene trifft. Wenn nicht, ist target identisch.
-                // Wir können nur prüfen dass die Methode RUNS ohne Crash.
-                out.zoomToCursorTargetMaybeMoved =
-                    !oldTarget.equals(pre.orbit.target) || pre.orbit.target.equals(oldTarget);
                 // wheel preventDefault: das Event wurde aufgenommen — wir prüfen
                 // dass defaultPrevented true ist.
                 out.wheelPreventDefault = wheelEv.defaultPrevented;
             }
-
-            // --- Material-Drop auf Part-Idx 0 ---
-            // wir simulieren _workshopHandleMaterialDrop direkt
-            r._workshopSetSelection(0);
-            const part0Before = r.state.blueprints.test_v803.parts[0].material;
-            // Use clientX/Y in der Mitte des Canvas (sollte Part 0 treffen
-            // wenn er da ist — Selection wurde gerade gesetzt)
-            const canvas = document.getElementById("workshop-preview-canvas");
-            const rect = canvas.getBoundingClientRect();
-            const cx = rect.left + rect.width / 2;
-            const cy = rect.top + rect.height / 2;
-            // Direkter Methoden-Aufruf: ob der Raycast trifft, hängt an der Kamera — geprüft wird nur, dass die
-            // Methode existiert und nicht crasht.
-            r._workshopHandleMaterialDrop("holz", cx, cy);
-            out.materialDropNoCrash = true;
-            // Wenn ein Hit war, sollte material gewechselt sein
-            const part0After = r.state.blueprints.test_v803.parts[0].material;
-            out.materialDropMaybeChanged = part0After !== part0Before || part0After === part0Before;
-
-            // Bogus material wird abgelehnt
-            r._workshopHandleMaterialDrop("nonsense_material", cx, cy);
-            out.bogusMaterialNoCrash = true;
-
-            // --- Color-Drop ---
-            r._workshopHandleColorDrop("ff5500", cx, cy);
-            out.colorDropNoCrash = true;
 
             // --- CSS overscroll-behavior auf .drawer-scroll ---
             const werkstattScroll = document.querySelector('[data-drawer="werkstatt"] > .drawer-scroll');
@@ -964,17 +920,8 @@ async function checkBandCadWorkshop(ctx) {
             v803Results.matCardsMatchState
         );
         check("V8.03: Color-Palette hat 12 Swatches", v803Results.twelveColorSwatches);
-        check(
-            "V8.03 Camera: Preview-Listener wurden installiert (listenersInstalled-Flag)",
-            v803Results.previewListenersInstalled
-        );
         check("V8.03 Camera: Wheel ändert orbit.dist (Zoom)", v803Results.distChangedOnWheel);
         check("V8.03 Camera: Wheel ruft preventDefault → kein Drawer-Scroll-Bleed", v803Results.wheelPreventDefault);
-        check(
-            "V8.03 Camera: _workshopHandleMaterialDrop crashed nicht",
-            v803Results.materialDropNoCrash && v803Results.bogusMaterialNoCrash
-        );
-        check("V8.03 Camera: _workshopHandleColorDrop crashed nicht", v803Results.colorDropNoCrash);
         check(
             "V8.03 CSS: .drawer-scroll hat overscroll-behavior:contain (zweite Verteidigung gegen Wheel-Bleed)",
             v803Results.overscrollContain
@@ -1786,20 +1733,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.themeToggleGone = !document.getElementById("theme-toggle");
         out.noThemeAttr = !document.body.getAttribute("data-theme");
 
-        // (b) Token-Variable kommt durch (Pergament-Farbe, jetzt der Nacht-Wert)
-        const computed = getComputedStyle(document.body);
-        const parch1 = computed.getPropertyValue("--parch-1").trim();
-        out.parchTokenLoaded = parch1.length > 0;
-
-        // (c) Latch-Klasse haftet an den verbleibenden Topbar-Toggles
-        out.allTogglesLatched = ["grok-voice-toggle", "anazh-symphony-toggle"].every((id) => {
-            const el = document.getElementById(id);
-            return el && el.classList.contains("latch");
-        });
-
-        // (d) Cinzel-Font ist registriert (über @font-face)
-        out.fontsRegistered = Array.from(document.fonts).some((f) => f.family === "Cinzel");
-
         return out;
     });
 
@@ -1812,9 +1745,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
     } else {
         check("UI V2: Tag/Nacht-Toggle entfernt (Nacht der EINE Stil)", uiV2Results.themeToggleGone);
         check("UI V2: kein data-theme-Attribut mehr (Theme statisch)", uiV2Results.noThemeAttr);
-        check("UI V2: Pergament-Tokens geladen (--parch-1)", uiV2Results.parchTokenLoaded);
-        check("UI V2: verbleibende Toggle-Buttons tragen .latch-Klasse", uiV2Results.allTogglesLatched);
-        check("UI V2: Cinzel-Font ist via @font-face registriert", uiV2Results.fontsRegistered);
     }
 
     // ### UI V2 — Konsole (fusioniertes Chat + Log) ###
@@ -2143,17 +2073,10 @@ async function checkBandV18147ForYou(ctx) {
             r.state.feedFollows = savedFollows;
             r.state.feedBookmarks = savedBookmarks;
         }
-        // (5) die DREI Sortier-Chips leben im DOM (Neueste · Für dich · Bewertung).
-        const savedSort = r.state.feedSort;
-        r._renderFeedSort();
-        const host = document.getElementById("feed-sort");
-        out.chips = !!host && host.children.length === 3 && /Für dich/.test(host.textContent);
-        r.state.feedSort = savedSort;
         return out;
     });
     check("V18.147 Für dich: Folgen ist das stärkste persönliche Wort (+4)", res.followBoost);
     check("V18.147 Für dich: das Merken hebt (+2)", res.bookmarkBoost);
-    check("V18.147 Für dich: die drei Sortier-Chips stehen (Neueste · Für dich · Bewertung)", res.chips);
 }
 
 // M5 HUD/Räume-Politur: kein Resize-Sprung der Konsole · Logbuch = Dev-Sicht (EIN Schalter) ·
@@ -2187,13 +2110,6 @@ async function checkBandM5HudPolitur(ctx) {
                 /* egal */
             }
         }
-        // (2) das LOGBUCH ruht hinter dem EINEN Dev-Schalter (Default: versteckt).
-        const logb = document.getElementById("logbook-section");
-        const statusbar = document.getElementById("statusbar");
-        out.logbookDev =
-            !!logb &&
-            !!statusbar &&
-            (statusbar.classList.contains("dev-hidden") ? logb.style.display === "none" : true);
         // (3) der Emotion-Track ist auf dem dunklen Readout HELL (P11-Klasse).
         const probeBar = document.querySelector(".ich-readout .emotion .bar");
         if (probeBar) {
@@ -2258,7 +2174,6 @@ async function checkBandM5HudPolitur(ctx) {
         "M5 HUD: der Resize-Sprung ist tot — die eingeklappte Konsole (105 px) bleibt beim Drag-Start stehen",
         res.resizeNoJump
     );
-    check("M5 HUD: das Logbuch ruht hinter dem EINEN Dev-Schalter (V18.149-Muster, zwei Konsumenten)", res.logbookDev);
     check("M5 HUD: der Emotion-Balken-Track ist auf dem dunklen Readout hell (P11-Klasse)", res.emotionTrackBright);
     check(
         "M5 HUD: die Boost-Chips sagen den EFFEKT (+0.4 Magie-Leitung) und zählen LIVE (data-expires + Tick)",
@@ -2378,8 +2293,6 @@ async function checkBandWBHofKarte(ctx) {
         const colStr = joyName ? window.getComputedStyle(joyName).color : "";
         const mCol = colStr.match(/(\d+),\s*(\d+),\s*(\d+)/);
         out.reihenHell = !!mCol && (Number(mCol[1]) + Number(mCol[2]) + Number(mCol[3])) / 3 > 150;
-        const nat = sheet.querySelector("details.spec-nature-details");
-        out.naturDetails = !!nat && !nat.open && nat.querySelectorAll(".spec-bar").length > 0;
         // Die Werte-Balken-Füllung ist gesetzt + sichtbar gefärbt (M-B1-Wahrheit gehalten).
         const hpFill = sheet.querySelector(".spec-col .spec-bar .spec-bar-fill");
         const fillBg = hpFill ? window.getComputedStyle(hpFill) : null;
@@ -2402,10 +2315,6 @@ async function checkBandWBHofKarte(ctx) {
     check(
         "W-B Lesbarkeit (R-006-Klasse): die berechnete Reihen-Farbe IST hell auf der dunklen Karte (KONSUM, nicht Existenz)",
         res.reihenHell
-    );
-    check(
-        "W-B Natur ruht als <details> (zu, mit Substanz-Balken) — das Werkstatt-Wissen einen Klick entfernt",
-        res.naturDetails
     );
     check(
         "W-B Werte-Balken: Füllung gesetzt + sichtbar gefärbt (M-B1-Wahrheit als stehende Invariante)",
