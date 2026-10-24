@@ -605,9 +605,10 @@ class AnazhRealm_siedlung_bewohner {
                         (u._kzNah === true ? bd2 >= N.aus * N.aus : bd2 < N.ein * N.ein))
                 )
                     this._kzLeib(g, p, true); // die Glieder backen vorab: wer hinausgeht, trägt sein Feld ab dem ersten Schritt
-                // DER NAH-KREIS (diesseits trägt kein Feld; ohne Bild jeder): darin der Satz, die Nächsten leben (`nahM`);
-                // wer drinnen ist, steht in keinem Kreis
-                const kreis = !b.drinnen && (!echt || u._kzNah === true);
+                // DER NAH-KREIS: wer draußen keinem Feld gehört (`_kzBesitztFeld` — diesseits der Nah-Grenze, ohne Bild und
+                // fern, bis der Bake-Takt seine Glieder backt: bis dahin trägt der Körper), steht darin: der Satz, die Nächsten
+                // leben (`nahM`); wer drinnen ist, steht in keinem Kreis
+                const kreis = !b.drinnen && !(echt && this._kzBesitztFeld(g));
                 if (kreis !== b.kreis) anders = true;
                 b.kreis = kreis;
                 const rN = b.nah ? BW.nahM + BW.nahHystM : BW.nahM;

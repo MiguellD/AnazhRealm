@@ -2821,8 +2821,8 @@ class AnazhRealm_kreatur_verhalten {
             if (!this._weltBakeErlaubt(d2)) return; // getaktet — bis dahin trägt der Körper
             u._kzVersuch = true;
             this._leibMatrix(cr);
-            // Fern geboren (nie nah im Bild): die Glieder blenden bei ihrer Geburt ein, statt zu ploppen.
-            u._kzGlieder = this._kreaturGliederBacken(cr, !u._kzNahGewesen);
+            // Fern geboren (nie nah im Bild, kein Satz trug ihn): die Glieder blenden bei ihrer Geburt ein, statt zu ploppen.
+            u._kzGlieder = this._kreaturGliederBacken(cr, !u._kzNahGewesen && !u._satz);
             if (!u._kzGlieder) {
                 cr.visible = false;
                 return;
