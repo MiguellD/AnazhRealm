@@ -2481,7 +2481,8 @@ class AnazhRealm_siedlung_ort {
     // auf dem Weg vom Spieler zum Anker) — in der Mesh-Zone die Stufe, die die Kette dort wählt (`_foundryLodForEntry` am Auge des
     // Erwachens), dahinter die Fernform des Gesetzbuchs — über DENSELBEN Chokepoint wie das gesetzte Haus (`_foundryFlattenFor`).
     // Bis hier bestellte erst das gesetzte Haus, nach dem Erdbau, und der Faden trug fremde Aufträge: das erste Haus stand nach
-    // 148–518 ms (nH 12, Hülle) bzw. 474–800 ms (nH 300, Mesh; Radeon, Station dorf). Rückgabe: ob jede Stufe steht (sonst fragt der Takt neu).
+    // 148–518 ms (nH 12, Hülle) bzw. 474–800 ms (nH 300, Mesh; Radeon, Station dorf), vorgebacken nach 42–59 bzw. 119–294 ms.
+    // Rückgabe: ob jede Stufe steht (sonst fragt der Takt neu).
     _dorfVorbacken(w, p) {
         const f = this._foundry;
         if (!w.v2 || !f || !f.recipes) return false;
