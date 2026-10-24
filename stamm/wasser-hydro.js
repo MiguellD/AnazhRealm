@@ -633,8 +633,9 @@ class AnazhRealm_wasser_hydro {
     // DER BLICK DES WASSERS (K16, EIN Baustein für den Wasser-Stoff und den Fern-Ring): was die Fläche mit der Normale `n`
     // dem Auge `viewDir` zurückwirft, über dem Grund mit dem Durchlass `T` — der Körper im Licht des Orts (R∞ × E/π), soweit
     // er den Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Liefert { eigen, fres }.
-    // DAS EIS (stoffe.K3): über der Höhe, über der das Wasser gefriert (`o.eisNull`), ist die Fläche gefroren — deckend (F = 1),
-    // matt im Licht des Orts mit dem Schnee der Boden-Palette; dieselbe Fläche trägt den Körper (`_eisAt`).
+    // DAS EIS (stoffe.K3): über der Höhe, über der das Wasser gefriert (`o.eisNull`), ist die Fläche gefroren — deckend, ihr
+    // Körper der Schnee der Boden-Palette im Licht des Orts, der Himmel nach demselben Fresnel (n Eis 1,31 ≈ n Wasser 1,33);
+    // dieselbe Fläche trägt den Körper (`_eisAt`).
     _wasserBlick(TSL, WG, o) {
         const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step, mix } = TSL;
         const HG =
@@ -686,7 +687,7 @@ class AnazhRealm_wasser_hydro {
             .add(glanz);
         const eis = step(o.eisNull, o.ort.y);
         return {
-            eigen: mix(eigen, vec3(...AnazhRealm.BODEN_FARBE.schnee).mul(o.irr), eis),
+            eigen: mix(eigen, mix(vec3(...AnazhRealm.BODEN_FARBE.schnee).mul(o.irr), himmel, fres), eis),
             fres: mix(fres, float(1.0), eis),
         };
     }

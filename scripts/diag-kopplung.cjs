@@ -90,6 +90,8 @@ const server = statikServer();
                     _fieldVy: 0,
                     waterLevel: -50,
                     terrainBaseHeight: 0,
+                    seasonPhase: 0.375, // Sommer-Mittag: das Temperatur-Feld des Eises (stoffe.K3) friert nichts
+                    timeOfDay: 0.5,
                     // der Begehbarkeits-Winkel ist kein State-Feld: _stepCharacter liest das Steilhang-Gesetz
                     // (hang.maxSlopeY) aus dem Kern.
                     worldMeta: { voxelTerrain: true },
