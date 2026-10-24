@@ -2207,15 +2207,19 @@ class AnazhRealm_bild_kosten {
     // Vergleich), ihr Mittel längs des Lichts in Metern (`anazhTiefeM`, orthographisch linear); dann der Vergleich wie r184-PCF
     // (5 Vogel-Punkte, gedreht je Bildpunkt) im Radius max(Halbschatten/2, Boden). Ohne Suche (k0 ab 15 m, k1: `sucheM` 0; WebGL2:
     // GLSL lädt keine Tiefe aus sampler2DShadow, gate:webgl-probe W5) bleibt der Boden-Radius, der r184-PCF. Box + Tiefe: `_kaskadeFit`.
+    // DIE DREHUNG WANDERT je Frame mit der Phase der Stufen-Blende (`uDitherT`, golden-ratio unter der zeitlichen Auflösung): das IGN
+    // kehrt nach 9 Szenen-Pixeln quer und 13 hoch fast wieder (52,98 · 0,0671 · 9 = 32,001) — fest je Bildpunkt stand es nach dem
+    // Resolve als Gewebe im Takt 12 × 17 Ausgabe-Pixel auf jedem Halbschatten (material.K2 Kachel 0,49 am Boden, 0,78 an der Rinde).
     _schattenFilter(i) {
         const T = THREE.TSL;
         const K = AnazhRealm.SCHATTEN_KASKADE;
         const je = (l) => l[Math.min(i, l.length - 1)];
         const sucheM = je(K.sucheM);
+        const dreh = this._ensureLodUniforms().uDitherT;
         return T.Fn(({ depthTexture, shadowCoord, shadow }, builder) => {
             const ref = (n, t) => T.reference(n, t, shadow).setGroup(T.renderGroup);
             const [box, karte] = [ref("anazhBoxM", "vec2"), ref("mapSize", "vec2")];
-            const phi = T.interleavedGradientNoise(T.screenCoordinate.xy).mul(6.28318530718);
+            const phi = T.fract(T.interleavedGradientNoise(T.screenCoordinate.xy).add(dreh)).mul(6.28318530718);
             const z = shadowCoord.z;
             const vogel = (k, r) => shadowCoord.xy.add(T.vogelDiskSample(k, 5, phi).mul(r));
             let r = T.vec2(je(K.filterTexel)).div(karte);

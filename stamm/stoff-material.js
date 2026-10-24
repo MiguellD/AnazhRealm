@@ -1848,14 +1848,15 @@ class AnazhRealm_stoff_material {
     }
 
     // DAS MIKRO-RELIEF (TERRAIN_BUMP, material.K2): Neigung und Kavität einer Fläche aus dem Rausch-Gesetz in Oktaven, die der
-    // Pixel trägt. Drei Oktaven folgen der Größe des Ausgabe-Pixels (`fwidth` der Welt-Lage × Szenen-Skala): die feinste Zelle misst `mikroPx` davon,
+    // Pixel trägt. Drei Oktaven folgen der Größe des Ausgabe-Pixels (`fwidth` der Lage × Szenen-Skala): die feinste Zelle misst `mikroPx` davon,
     // jede weitere die halbe Frequenz, und zwischen zwei Stufen blendet die feinste ein, die gröbste aus (Gewichte fract · 1 ·
     // 1 − fract — die Summe bleibt, keine Frequenz springt am Schirm). Was feiner als ein Pixel ist, flimmert und kostet; was
     // gröber ist, fehlt bei Armlänge: die EINE Regel bindet beides an den Schirm, nie an die Weltgröße (Gebot 7). Jede Oktave
     // ist EINE Probe mit Wert und Neigung (`ebeneNeigung`), die Lage modulo ihrer Periode (P Zellen) hält die Zahl klein, der
-    // Versatz im Zell-Raum trennt die Gitter der Oktaven (Perlin ist 0 auf jedem Gitterpunkt). `n` (Welt, Einheit): ohne sie die
-    // Ebene (x, z) des Bodens mit seinen festen Oktaven (Klumpen `freq`, Kiesel `freq2`), mit ihr die Fläche in jeder Lage
-    // (dreiplanar nach |n|⁴, in ihre Tangential-Ebene gelegt). Rückgabe { neigung (Welt, kippt die Normale gegen den Gradienten),
+    // Versatz im Zell-Raum trennt die Gitter der Oktaven (Perlin ist 0 auf jedem Gitterpunkt). `wp` die Lage (der Boden: Welt; die
+    // Gestalt: ihre Vorlage), `n` die Normale in derselben Lage (Einheit): ohne sie die Ebene (x, z) des Bodens mit seinen festen
+    // Oktaven (Klumpen `freq`, Kiesel `freq2`), mit ihr die Fläche in jeder Lage (dreiplanar nach |n|⁴, in ihre Tangential-Ebene
+    // gelegt). Rückgabe { neigung (in der Lage von `wp`, kippt die Normale gegen den Gradienten),
     // hoehe (die Höhe der Oktaven am Schirm, mittelfrei in −1 … 1) } — die Höhe trägt KAVITÄT und KORN (`_mikroStoff`): unter der
     // Mittags-Sonne kippt die Normale das Licht nur zweiter Ordnung (cos), im Schatten sieht das Auge nur das Himmels-Licht.
     _mikroRelief(T, wp, n) {
@@ -1921,20 +1922,34 @@ class AnazhRealm_stoff_material {
         mat.colorNode = T.vec4(c.rgb.mul(T.float(1.0).add(hoehe.mul(B.korn)).max(0.0)), c.a);
     }
 
-    // DIE GESTALT mit ihrem Mikro-Relief (der Fels: Vertex-Stoff und Studio-Fels) setzt normalNode, aoNode und Korn des Stoffs: die
-    // Geometrie-Normale × Seite (Lehre 26, nie `normalWorld`) — facettiert (`flach`) die Normale der Facette aus den Ableitungen
-    // der Welt-Lage, zum Auge gewandt —, in ihrer Tangential-Ebene gekippt, fern mit dem Bump des Bodens ausgeblendet
-    // (lodNear … lodFar), mal `staerke` (Knoten oder Zahl), in Sicht-Lage (normalNode ist VIEW-space).
+    // DIE GESTALT mit ihrem Mikro-Relief (jeder feste Stoff: Fels, Rinde, Haut, Putz, Holz — `_foundryTreeMaterial`, der
+    // Vertex-Fels) setzt normalNode, aoNode und Korn des Stoffs. Das Relief KLEBT AN DER GESTALT: es liegt in ihrer eigenen Lage
+    // (`positionGeometry`, die Vorlage vor Instanz, Skin und Wind), so schwimmt es nie über einen gehenden Leib, einen wiegenden
+    // Stamm oder die Instanzen eines Walds; die Neigung dreht mit der kleinsten Drehung von der Vorlagen- zur Welt-Normale
+    // (Rodrigues) in die Welt. Normale: Geometrie × Seite (Lehre 26, nie `normalWorld`), facettiert (`flach`) die der Facette
+    // aus den Ableitungen, zum Auge gewandt; fern mit dem Bump des Bodens ausgeblendet (lodNear … lodFar), mal `staerke`.
     _mikroGestalt(T, mat, flach, staerke) {
         const B = AnazhRealm.TERRAIN_BUMP;
         const wp = T.positionWorld;
+        const pg = T.positionGeometry;
         const zumAuge = T.cameraPosition.sub(wp);
-        const nF = T.normalize(T.cross(T.dFdx(wp), T.dFdy(wp)));
-        const n = flach ? nF.mul(T.sign(nF.dot(zumAuge))) : T.normalize(T.normalWorldGeometry.mul(T.faceDirection));
+        const fW = T.normalize(T.cross(T.dFdx(wp), T.dFdy(wp)));
+        const s = T.sign(fW.dot(zumAuge));
+        const nW = flach ? fW.mul(s) : T.normalize(T.normalWorldGeometry.mul(T.faceDirection));
+        const nG = flach
+            ? T.normalize(T.cross(T.dFdx(pg), T.dFdy(pg))).mul(s)
+            : T.normalize(T.normalGeometry.mul(T.faceDirection));
         const nah = T.float(1.0).sub(T.smoothstep(T.float(B.lodNear), T.float(B.lodFar), zumAuge.length()));
         const k = nah.mul(staerke == null ? 1.0 : staerke);
-        const m = this._mikroRelief(T, wp, n);
-        mat.normalNode = T.cameraViewMatrix.transformDirection(T.normalize(n.add(m.neigung.mul(k))));
+        const m = this._mikroRelief(T, pg, nG);
+        const c = nG.dot(nW);
+        const a = T.cross(nG, nW);
+        const g = m.neigung;
+        const gW = g
+            .mul(c)
+            .add(T.cross(a, g))
+            .add(a.mul(a.dot(g).div(c.add(1.0).max(1e-4))));
+        mat.normalNode = T.cameraViewMatrix.transformDirection(T.normalize(nW.add(gW.mul(k))));
         this._mikroStoff(T, mat, m.hoehe.mul(k));
     }
 

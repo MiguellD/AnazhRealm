@@ -2864,10 +2864,10 @@ class AnazhRealm_studio_bruecke {
         // Wicklung frei ist: sie lesen die Seite (r184 faceDirection), sonst läge jeder zweite Wedel im Dunkel.
         if (_krone) this._laubStoffNormale(TSL, mat);
         if (isBark) {
-            // KEIN Normal-Override auf Vegetations-Stämmen: r184-NodeMaterial-Tangenten (UV-Derivate) kippen auf
+            // KEINE Tangenten-Normale auf Vegetations-Stämmen: r184-NodeMaterial-Tangenten (UV-Derivate) kippen auf
             // gestreckten Tube-UVs die Normale → der Stamm liest schwarz. Die Rinde lebt über Albedo (Studio-
-            // Vertex-Farben) + Roughness 0.93. Ihr Spiegel der Studio-Rinden-Normale (`_foundryBarkNormalTexture`) hatte
-            // keinen Leser und fiel mit K60-2; die Normale lebt im Studio (foundry-core `makeBarkNormal`).
+            // Vertex-Farben) + Roughness 0.93 und das Mikro-Relief der Gestalt (unten, ohne Tangenten). Ihr Spiegel der
+            // Studio-Rinden-Normale (`_foundryBarkNormalTexture`) hatte keinen Leser und fiel mit K60-2.
             mat.colorNode = TSL.vec4(vcol, 1.0);
         } else if (kind === "foliageTex") {
             // Blatt-Atlas: Alpha schneidet die Blattform aus (kein solides Quad), RGB × Vertex-Farbe (die
@@ -3056,12 +3056,23 @@ class AnazhRealm_studio_bruecke {
             mat.userData = mat.userData || {};
             mat.userData.satzSchluessel = key;
         }
-        // DAS MIKRO-RELIEF DER FACETTE (material.K2, `_mikroGestalt`): der facettierte Studio-Stein (Fels, Kristall: kind
-        // „unknown" mit flatShading) kippt seine Facetten in den Oktaven am Schirm, gewogen mit seiner Rauheit (glatt ≤ 0,3 nichts,
-        // matt ≥ 0,6 ganz) — im Satz die Rauheit je Ecke, sonst die des Stoffs
-        if (flat && kind === "unknown") {
+        // DAS MIKRO-RELIEF JEDER FESTEN GESTALT (material.K2, `_mikroGestalt`): Rinde, Fels, Haut, Putz, Holz, Stoff kippen ihre
+        // Fläche in den Oktaven am Schirm, gewogen mit ihrer Rauheit (glatt ≤ 0,3 nichts, matt ≥ 0,6 ganz; im Satz je Ecke) —
+        // nur die dünne Fläche (Laub, Gras, Karte, Wurf), die Strähne, das Auge, das Glas und die Glut nicht. Bis K2#2 trug es
+        // nur der facettierte Stein: die Rinde stand glatt (Mammut L0 auf 0,5/1/2 m glatt 0,90/0,86/0,80), die Haut 0,66/0,55.
+        const duenn = R.k === "foliage" || R.k === "foliageTex" || R.k === "grass" || R.k === "schatten";
+        const strang = R.k === "hair" || R.k === "fellSchale" || R.k.indexOf("straehne") === 0;
+        const seh = globalThis.__phytoCore.budgetSeh(mp);
+        if (
+            !duenn &&
+            !strang &&
+            R.op >= 1 &&
+            !emis &&
+            !(mp && mp.leucht > 0) &&
+            !/^(haar|auge|glas|glut)$/.test(seh || "")
+        ) {
             const rauh = satz ? TSL.attribute("aRegler", "vec3").x : TSL.float(rough);
-            this._mikroGestalt(TSL, mat, true, TSL.smoothstep(0.3, 0.6, rauh));
+            this._mikroGestalt(TSL, mat, flat, TSL.smoothstep(0.3, 0.6, rauh));
         }
         // Studio-Dither-Blende auf den Foundry-3D-Stufen: Fade-out L0 + Fade-in L1 (Laub überlappend, Rinde
         // exakte Partition); die Maske faltet in die Alpha (TSL statt discard, alphaTest cullt). Formeln = die
