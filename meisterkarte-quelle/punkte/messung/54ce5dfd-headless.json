@@ -1,7 +1,7 @@
 {
  "sha": "54ce5dfd783188cbb0a55e738eef98624e125406",
  "geraet": "headless",
- "zeit": "2026-10-24T16:46:02.450Z",
+ "zeit": "2026-10-24T16:46:02.512Z",
  "host": "MiguellD",
  "je": {
   "studios.K5#1": {
@@ -32,6 +32,93 @@
    "zeit": "2026-10-24T16:46:02.450Z",
    "abdruck": "7feb9a80b64d",
    "port": 7718
+  },
+  "siedlung.K1#1": {
+   "gruen": true,
+   "zahl": "1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0",
+   "exit": 0,
+   "minuten": 0.57,
+   "zeit": "2026-10-24T16:46:29.258Z",
+   "abdruck": "768e344398dc",
+   "port": 7762
+  },
+  "ultiversum.K5#2": {
+   "gruen": true,
+   "zahl": "✅ FEIND Wand: jede Erinnerung trägt ihre Namen als Datum — 0 ungetarnt | ✅ FEIND erreicht: keine Injektion erreicht das Modell — 0 von 7 (Rufe {\"stimme\":1,\"wesen\":1,\"journal\":8}) | ✅ FEIND ausgeführt: 0 fremde Anweisungen — 0 Taten | ✅ FEIND Signatur: die Manipulation schlägt an — valid,modified,forged | ✅ FEIND Anzeige: der Spieler liest den Namen — „Ich kenne ⁨Kanarie5Gewitter⁩.“",
+   "exit": 0,
+   "minuten": 0.12,
+   "zeit": "2026-10-24T16:47:03.514Z",
+   "abdruck": "f4a20aeb208e",
+   "port": 7777
+  },
+  "halten.K1#1": {
+   "gruen": true,
+   "zahl": "(A) I1=349.920 → 0.763 s · I2=699.840 → 1.080 s · Ratio 1.414 (soll √(I2/I1)=1.414) · 0 von 5 Proben ROT",
+   "exit": 0,
+   "minuten": 0.77,
+   "zeit": "2026-10-24T16:46:34.807Z",
+   "abdruck": "b00553750d26",
+   "port": 7771
+  },
+  "halten.K3#1": {
+   "gruen": true,
+   "zahl": "Q11 grün (form {\"axt\":{\"baum\":2,\"boden\":null},\"axtBlatt\":{\"baum\":5,\"boden\":3},\"spaten\":{\"baum\":6,\"boden\":3},\"spatenAxt\":{\"baum\":3,\"boden\":null}}) · Sichel grün",
+   "exit": 0,
+   "minuten": 0.77,
+   "zeit": "2026-10-24T16:46:34.807Z",
+   "abdruck": "362f09a124ce",
+   "port": 7771,
+   "zwilling": "halten.K1#1"
+  },
+  "halten.K3#2": {
+   "gruen": false,
+   "zahl": "keine Zeile Q11 halten.K3 Staffel 2 (Exit 0)",
+   "exit": 0,
+   "minuten": 0.77,
+   "grund": "ROT: keine Zeile Q11 halten.K3 Staffel 2 (Exit 0)",
+   "zeit": "2026-10-24T16:46:34.807Z",
+   "abdruck": "5e17b9ade5f0",
+   "port": 7771,
+   "zwilling": "halten.K1#1"
+  },
+  "halten.K4#1": {
+   "gruen": true,
+   "zahl": "(Q12) Bahn 25°/30Hz 0.0% · 25°/60Hz 0.0% · 25°/144Hz 0.0% · 0°/30Hz 0.0% · 0°/60Hz 0.0% · 0°/144Hz 0.0% · -8°/30Hz 0.0% · -8°/60Hz 0.0% · -8°/144Hz 0.0% · Treffer-Ort 0.18 % · steckt Wand 1 Boden 3 Hirsch 1 (folgt 2.00 m) · Speicher Tier 1 → 1, Welt 5 → 5 · Zug 56.37 → 59.73 m/s",
+   "exit": 0,
+   "minuten": 0.77,
+   "zeit": "2026-10-24T16:46:34.807Z",
+   "abdruck": "5e7b3fc00aba",
+   "port": 7771,
+   "zwilling": "halten.K1#1"
+  },
+  "halten.K4#2": {
+   "gruen": true,
+   "zahl": "(Q12) Bahn 25°/30Hz 0.0% · 25°/60Hz 0.0% · 25°/144Hz 0.0% · 0°/30Hz 0.0% · 0°/60Hz 0.0% · 0°/144Hz 0.0% · -8°/30Hz 0.0% · -8°/60Hz 0.0% · -8°/144Hz 0.0% · Treffer-Ort 0.18 % · steckt Wand 1 Boden 3 Hirsch 1 (folgt 2.00 m) · Speicher Tier 1 → 1, Welt 5 → 5 · Zug 56.37 → 59.73 m/s",
+   "exit": 0,
+   "minuten": 0.77,
+   "zeit": "2026-10-24T16:46:34.807Z",
+   "abdruck": "fb23409cd4ee",
+   "port": 7771,
+   "zwilling": "halten.K1#1"
+  },
+  "mensch.K3#1": {
+   "gruen": true,
+   "zahl": "Durchdringung 0, Tür 260/260, Hüllen 18/18, Gangzeit auf Wegen 0.947",
+   "exit": 0,
+   "minuten": 1.77,
+   "zeit": "2026-10-24T16:46:02.512Z",
+   "abdruck": "20aa4a506500",
+   "port": 7719
+  },
+  "mensch.K2#1": {
+   "gruen": true,
+   "zahl": "Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0",
+   "exit": 0,
+   "minuten": 1.77,
+   "zeit": "2026-10-24T16:46:02.512Z",
+   "abdruck": "4f12d3fe361a",
+   "port": 7719,
+   "zwilling": "mensch.K3#1"
   }
  }
 }

@@ -1,0 +1,21 @@
+{
+ "ergebnis": {
+  "uhr": 0.3333,
+  "tod": 0.3384,
+  "sicht": "third",
+  "stand": [
+   20.2,
+   115.2
+  ],
+  "platz": [
+   7.8,
+   115.2
+  ],
+  "leiber": 81,
+  "imBild": 30,
+  "gehendImBild": 9,
+  "fps": 109.3,
+  "version": "18.546.85"
+ },
+ "ms": 18007
+}
