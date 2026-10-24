@@ -108,30 +108,30 @@ async function checkBandV1755HarvestEffort(ctx) {
         return out;
     });
     check(
-        "V17.55 W1: minePower — ein hartes Werkzeug schlägt die bloße Faust (das gehaltene Ding bestimmt die Kraft)",
+        "minePower — ein hartes Werkzeug schlägt die bloße Faust (das gehaltene Ding bestimmt die Kraft)",
         res.toolBeatsHand
     );
-    check("V17.55 W1: ein hartes Bauwerk leistet Widerstand (> Basis)", res.hardResists);
+    check("ein hartes Bauwerk leistet Widerstand (> Basis)", res.hardResists);
     check(
-        "V17.55 W1: KONSUM — die Tauglichkeit DIFFERENZIERT die vier Kanäle (gutes Werkzeug: mehr Tempo+Ertrag, weniger Stamina)",
+        "KONSUM — die Tauglichkeit DIFFERENZIERT die vier Kanäle (gutes Werkzeug: mehr Tempo+Ertrag, weniger Stamina)",
         res.fitnessDifferentiates
     );
     check(
-        "V17.55 W1/M6: die bloße Faust an HARTEM erntet den SOCKEL (yieldMin — Mühe wird bezahlt, das Werkzeug macht ergiebiger)",
+        "W1/M6: die bloße Faust an HARTEM erntet den SOCKEL (yieldMin — Mühe wird bezahlt, das Werkzeug macht ergiebiger)",
         res.handYieldsNothingOnHard
     );
-    check("V17.55 W1: KONSUM — Abbauen kostet MÜHE (die Faust braucht VIELE Hiebe, kein Instant)", res.multiStrikeHand);
-    check("V17.55 W1: ein Bauwerk fällt schließlich (der Fortschritt vollendet sich)", res.brokeEventually);
+    check("KONSUM — Abbauen kostet MÜHE (die Faust braucht VIELE Hiebe, kein Instant)", res.multiStrikeHand);
+    check("ein Bauwerk fällt schließlich (der Fortschritt vollendet sich)", res.brokeEventually);
     check(
-        "V17.55 W1: KONSUM — ein gutes Werkzeug bricht SCHNELLER (weniger Hiebe als die Faust)",
+        "KONSUM — ein gutes Werkzeug bricht SCHNELLER (weniger Hiebe als die Faust)",
         res.toolFasterThanHand
     );
     check(
-        "V17.55 W1: KONSUM — der ERTRAG skaliert mit der Tauglichkeit (Werkzeug füllt das Inventar, die Faust ~nicht)",
+        "KONSUM — der ERTRAG skaliert mit der Tauglichkeit (Werkzeug füllt das Inventar, die Faust ~nicht)",
         res.yieldScalesWithFitness
     );
-    check("V17.55 W1: der Hold-Tick ist gegated (ohne gehaltenes Abbauen passiert nichts)", res.tickGuarded);
-    check("V17.55 W1: KONSUM — ein Hieb zieht Stamina (pfad, ∝ invers zur Effizienz)", res.staminaDrains);
+    check("der Hold-Tick ist gegated (ohne gehaltenes Abbauen passiert nichts)", res.tickGuarded);
+    check("KONSUM — ein Hieb zieht Stamina (pfad, ∝ invers zur Effizienz)", res.staminaDrains);
 }
 
 // das FORM-bewusste Fähigkeits-Profil + alles-für-alles: DIESELBE
@@ -223,29 +223,29 @@ async function checkBandV1755W2Profile(ctx) {
         return out;
     });
     check(
-        "V17.56 W2: die FORM treibt das Profil — DIESELBE Materie wird zur Klinge (schneidet) ODER zur Keule (wuchtet)",
+        "die FORM treibt das Profil — DIESELBE Materie wird zur Klinge (schneidet) ODER zur Keule (wuchtet)",
         res.formDrivesProfile
     );
-    check("V17.56 W2: die bloße Faust ist an beidem schwach (kein Gerät, kein Profil)", res.handWeakBoth);
+    check("die bloße Faust ist an beidem schwach (kein Gerät, kein Profil)", res.handWeakBoth);
     check(
-        "V17.56 W2: KONSUM — die Klinge glänzt am Weichen (cut) + scheitert am Harten; das Material wählt den Kanal",
+        "KONSUM — die Klinge glänzt am Weichen (cut) + scheitert am Harten; das Material wählt den Kanal",
         res.bladeCutsSoft
     );
-    check("V17.56 W2: KONSUM — die Keule wuchtet das Harte (mine) + schlägt dort die Klinge", res.maulMinesHard);
-    check("V17.56 W2: jedes Gerät ist an SEINEM Material überlegen (das richtige Werkzeug zählt)", res.rightToolWins);
+    check("KONSUM — die Keule wuchtet das Harte (mine) + schlägt dort die Klinge", res.maulMinesHard);
+    check("jedes Gerät ist an SEINEM Material überlegen (das richtige Werkzeug zählt)", res.rightToolWins);
     check(
-        "V17.56 W2: ALLES-FÜR-ALLES — eine ausgerüstete Waffe ist das gehaltene Gerät, man erntet mit ihr",
+        "ALLES-FÜR-ALLES — eine ausgerüstete Waffe ist das gehaltene Gerät, man erntet mit ihr",
         res.weaponIsHeld && res.weaponHarvests
     );
     check(
-        "V17.56 W2: der W1-Bug behoben — ein echtes Werkzeug (sourceBlueprint-Instanz) löst zu seinem Bauplan auf (nicht die Faust)",
+        "der W1-Bug behoben — ein echtes Werkzeug (sourceBlueprint-Instanz) löst zu seinem Bauplan auf (nicht die Faust)",
         res.toolInstanceResolves
     );
     check(
-        "V17.56 W2: KONSUM — am ECHTEN Fels gewinnt die Keule (Wucht) klar über die Klinge (Fels ist unschneidbar)",
+        "KONSUM — am ECHTEN Fels gewinnt die Keule (Wucht) klar über die Klinge (Fels ist unschneidbar)",
         res.maulBeatsBladeOnRock
     );
-    check("V17.56 W2: die Keule bricht das echte Bauwerk end-to-end (der ganze Abbau-Pfad läuft)", res.maulBreaksRock);
+    check("die Keule bricht das echte Bauwerk end-to-end (der ganze Abbau-Pfad läuft)", res.maulBreaksRock);
 }
 
 // die Werkstatt erkennt JEDE Lesart: der emergente Fähigkeits-Readout
@@ -313,18 +313,18 @@ async function checkBandV1759CapabilityReadout(ctx) {
         delete blu.__cap_struct;
         return out;
     });
-    check("V17.59 S1: ein greifbares spitzes Geraet liest Klinge (schneidet)", res.bladeKlinge);
-    check("V17.59 S1: ein greifbarer stumpfer Klotz liest Brecher (wuchtet)", res.maulBrecher);
+    check("ein greifbares spitzes Geraet liest Klinge (schneidet)", res.bladeKlinge);
+    check("ein greifbarer stumpfer Klotz liest Brecher (wuchtet)", res.maulBrecher);
     check(
-        "V17.59 S1: DER HEAL — ein Bauplan der Rolle Bauwerk (architecture) zeigt TROTZDEM die Geraete-Faehigkeit Brecher (rollen-unabhaengig)",
+        "DER HEAL — ein Bauplan der Rolle Bauwerk (architecture) zeigt TROTZDEM die Geraete-Faehigkeit Brecher (rollen-unabhaengig)",
         res.healNurBauwerk
     );
     check(
-        "V17.59 S1: eine grosse Struktur (>6 m gespreizt) zeigt KEINE in-der-Hand-Lesart (kein Brecher auf einem Dorf)",
+        "eine grosse Struktur (>6 m gespreizt) zeigt KEINE in-der-Hand-Lesart (kein Brecher auf einem Dorf)",
         res.structNoImplement
     );
     check(
-        "V17.59 S1: KONSUM — _workshopAppendRoleRow rendert die Faehigkeit-Zeile mit der Brecher-Lesart ins DOM",
+        "KONSUM — _workshopAppendRoleRow rendert die Faehigkeit-Zeile mit der Brecher-Lesart ins DOM",
         res.domShowsCapability
     );
 }
@@ -411,18 +411,18 @@ async function checkBandV1775MakeActCost(ctx) {
         r.recomputePlayerStats();
         return out;
     });
-    check("V17.75: _makeActCostSuffix — schöpfer (Gott-Modus) zeigt keinen Kosten-Marker (frei)", res.schoepferFree);
-    check("V17.75: pfad ohne Material → das Fehlende STICHT heraus (✗ fehlt …) am Dropdown-Eintrag", res.pfadMissing);
-    check("V17.75: pfad MIT Material → bereit-Marker (· ✓)", res.pfadReady);
+    check("_makeActCostSuffix — schöpfer (Gott-Modus) zeigt keinen Kosten-Marker (frei)", res.schoepferFree);
+    check("pfad ohne Material → das Fehlende STICHT heraus (✗ fehlt …) am Dropdown-Eintrag", res.pfadMissing);
+    check("pfad MIT Material → bereit-Marker (· ✓)", res.pfadReady);
     check(
-        "V17.75 KERN: ein gescheitertes Verkörpern (kein Material) ändert die Seele NICHT (player.soul bleibt) — der Avatar-Bug",
+        "KERN: ein gescheitertes Verkörpern (kein Material) ändert die Seele NICHT (player.soul bleibt) — der Avatar-Bug",
         res.embodyFailsClean
     );
     check(
-        "V17.75: die Seele-Select RENDERT den Material-Mangel sichtbar im Option-Text (kein stiller Fehlschlag)",
+        "die Seele-Select RENDERT den Material-Mangel sichtbar im Option-Text (kein stiller Fehlschlag)",
         res.optionShowsMissing
     );
-    check("V17.75: ein geschmiedetes Gerät zeigt keinen Kosten-Marker (der Gebrauch ist frei)", res.forgedFree);
+    check("ein geschmiedetes Gerät zeigt keinen Kosten-Marker (der Gebrauch ist frei)", res.forgedFree);
 }
 
 // Rollen-Klassifikation an der Wurzel: eine greifbare Geräte-Form (spitz/griff-elongiert) wird über
@@ -491,32 +491,32 @@ async function checkBandV1783ImplementClassification(ctx) {
         return out;
     });
     check(
-        "V17.83 U4 KERN: ein spitzes greifbares Gerät → Waffe (die scharfe Klinge ist KEIN Bauwerk mehr — das Schöpfer-Beispiel an der Wurzel)",
+        "U4 KERN: ein spitzes greifbares Gerät → Waffe (die scharfe Klinge ist KEIN Bauwerk mehr — das Schöpfer-Beispiel an der Wurzel)",
         res.spikeWeapon,
         `spike=${res.spikeRole}`
     );
     check(
-        "V17.83 U4: ein STUMPFES griff-elongiertes Ding bleibt Bauwerk (form-mehrdeutig — nur eine SPITZE ist eindeutig ein Gerät, konservativ)",
+        "ein STUMPFES griff-elongiertes Ding bleibt Bauwerk (form-mehrdeutig — nur eine SPITZE ist eindeutig ein Gerät, konservativ)",
         res.handleArch,
         `handle=${res.handleRole}`
     );
     check(
-        "V17.83 U4: eine große Struktur (nicht greifbar) → Bauwerk (unverändert)",
+        "eine große Struktur (nicht greifbar) → Bauwerk (unverändert)",
         res.largeArch,
         `large=${res.largeRole}`
     );
     check(
-        "V17.83 U4: ein Würfel (greifbar, aber keine Geräte-Form) → Bauwerk — U4 ändert NUR Geräte-Formen",
+        "ein Würfel (greifbar, aber keine Geräte-Form) → Bauwerk — U4 ändert NUR Geräte-Formen",
         res.cubeArch,
         `cube=${res.cubeRole}`
     );
     check(
-        "V17.83 U4: ein Körper → Seele (die Form-Rollen soul/portal/consumable unverändert)",
+        "ein Körper → Seele (die Form-Rollen soul/portal/consumable unverändert)",
         res.bodySoul,
         `body=${res.bodyRole}`
     );
     check(
-        "V17.83 U4: die Greifbar-Implement-Erkennung (spitz/elongiert + klein vs großer Block/Würfel)",
+        "die Greifbar-Implement-Erkennung (spitz/elongiert + klein vs großer Block/Würfel)",
         res.graspDetect
     );
 }
@@ -567,7 +567,7 @@ async function checkBandV1786WorkshopCoherence(ctx) {
         return out;
     });
     check(
-        "V17.86 Samen: die Schwert-Substanz (KIND_SUBSTANCE) existiert + emergiert als gehaltenes Gerät (tool/weapon aus der Klingen-Form)",
+        "Samen: die Schwert-Substanz (KIND_SUBSTANCE) existiert + emergiert als gehaltenes Gerät (tool/weapon aus der Klingen-Form)",
         res.schwertExists && res.schwertHeld,
         `role=${res.schwertRole}`
     );
@@ -577,12 +577,12 @@ async function checkBandV1786WorkshopCoherence(ctx) {
         `chip=${res.esseRoleChip}`
     );
     check(
-        "V17.86 Kohärenz: die Affordanzen (vergrößernd/strahlend) sind NICHT mehr in der Rolle-Zeile — die Rolle-Zeile zeigt NUR die Rolle",
+        "Kohärenz: die Affordanzen (vergrößernd/strahlend) sind NICHT mehr in der Rolle-Zeile — die Rolle-Zeile zeigt NUR die Rolle",
         res.esseRoleRowClean,
         `affordanzen in Rolle-Zeile=${res.esseRoleRowAffordances}`
     );
     check(
-        "V17.86 Kohärenz: die Affordanzen wandern in die FÄHIGKEIT-Zeile — alle Fähigkeiten an EINEM Ort (der gebundene Faden)",
+        "Kohärenz: die Affordanzen wandern in die FÄHIGKEIT-Zeile — alle Fähigkeiten an EINEM Ort (der gebundene Faden)",
         res.esseCapRowHasAffordance
     );
 }

@@ -4,7 +4,7 @@
 
 // ── WELLE L — die Proben der Leben-Prüfung „Kampf" (Seiten-Funktion; läuft auf JEDEM Stand: fehlt eine Naht, misst
 // die Probe das Verhalten trotzdem — so ist die Linse auf dem alten Stand rot und benennt den Defekt) ──
-async function WELLE_L() {
+async function WELLE_L(ort) {
     const r = window.anazhRealm,
         s = r.state,
         A = r.constructor,
@@ -3092,6 +3092,47 @@ async function WELLE_L() {
             }
             for (const z of [z1, z2]) if (z) fliege(z, 60, 0.02);
             K4.zug = { v1: Math.hypot(...z1.v0), vS1, v2: Math.hypot(...z2.v0), vS2 };
+        });
+        // ═══ (Q11 halten.K3 Sichel) an der Mess-Wiese (`ort`): das Fadenkreuz auf dem Fuß eines Büschels 2–3,5 m voraus (kein
+        // Bau, keine Streu im Strahl), EIN Klick über tryMouseBreak je Form: Sichel, Sichel gerade, Säbel hohl ═══
+        await teil("Q11 Sichel", async () => {
+            pm.position.set(
+                ort.spieler[0],
+                r.getTerrainHeightAt(...ort.spieler) + A.PLAYER_FOOT_OFFSET,
+                ort.spieler[1]
+            );
+            await window.__weltStehtNach();
+            zielen(V3().set(ort.blick[0], pm.position.y, ort.blick[1]));
+            const [d, P] = [camDir(), pm.position];
+            const alle = () => [...s.nahWiese.kacheln.values()].flatMap((k) => k.bueschel);
+            const ab = (b, q = P) => Math.hypot(b.x - q.x, b.z - q.z);
+            const ziel = alle()
+                .filter((b) => ab(b) > 2 && ab(b) < 3.5 && (b.x - P.x) * d.x + (b.z - P.z) * d.z > 0.9 * ab(b))
+                .find((b) => (zielen(b), !r._pickArchitectureAtCrosshair() && !r._pickScatterAtCrosshair()));
+            const um = () => alle().filter((b) => ab(b, ziel) < 4).length;
+            const kraut = () => p.inventory.reduce((n, x) => n + (x && x.material === "kraut" ? x.count : 0), 0);
+            const klick = async (name, ov) => {
+                ausruesten(name);
+                Object.assign(s.blueprints[name], { studioOv: ov, wear: 1 });
+                zielen(ziel);
+                const v = [um(), kraut()];
+                r.tryMouseBreak();
+                const x = { verb: p._mausVerb, kraut: kraut() - v[1] };
+                await window.__weltStehtNach();
+                x.fehlen = v[0] - um();
+                r._tickScatterRegrow(Infinity);
+                await window.__weltStehtNach();
+                return Object.assign(x, { wieder: um() === v[0] });
+            };
+            const form = async () => ({
+                sichel: await klick("klinge_sichel"),
+                gerade: await klick("klinge_sichel", { kruemmung: 0 }),
+                hohl: await klick("klinge_saebel", { kruemmung: -0.3 }),
+            });
+            w.z.sichel = await form();
+            r._ernteBand = (bp) => (/sichel/.test(bp && bp.name) ? 0.6 : 0); // (S15) ein Namens-Sonderfall
+            w.z.sichel.s15 = await form();
+            delete r._ernteBand;
         });
     } catch (e) {
         w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));

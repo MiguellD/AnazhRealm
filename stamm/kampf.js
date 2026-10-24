@@ -856,6 +856,19 @@ class AnazhRealm_kampf {
         return this._implementAffordanceLabel(bp) !== "Klinge";
     }
 
+    // MÄHT DIESES GERÄT? (halten.K3) — das Band, das ein Zug am nachgebenden Halm des Stoffs `stoff` schneidet (m): ein Werk
+    // der Schmiede nach seiner Schneide (schmiede werkUrteil gegen die Zeile des Stoffs: fangM, die Länge der hohlen
+    // Schneide, deren Zug-Winkel den Reibungswinkel des Halms übersteigt — die Sichel fasst ihn, die gerade Klinge schiebt
+    // ihn weg, Blatt und Kopf fassen ihn nie). 0: es mäht nicht (die leere Hand pflückt, ein Eigenwerk schwingt).
+    _ernteBand(bp, stoff) {
+        const km = bp && this._schmiedeWerk(bp) ? this._schmiedeKampfMasze(bp) : null;
+        if (!km || !stoff) return 0;
+        const sc = globalThis.__schmiedeCore;
+        const haerte = (((this.state.materials || {})[stoff] || {}).tags || {}).härte || 0;
+        const u = sc.werkUrteil(km, { vLat: this._werkSchlagTempo(), ziel: sc.zielStoff({ [stoff]: 1 }, haerte) });
+        return u && u.W > 0 && u.fangM > 0 ? u.fangM : 0;
+    }
+
     // EIN WERK DER SCHMIEDE? (halten-gesetz) — seine Gestalt steht in der Gattungs-Tafel des Kerns: Treffer, Schuss und
     // das Werk am Stoff urteilt das Gesetzbuch (kampfMasze · trefferUrteil · werkUrteil), nie die Tags oder Teile des
     // Spenders, den es klont (KIND_POLICY.weapon: geraet_schwert, mit fx.tool geraet_spitzhacke).
@@ -1867,7 +1880,8 @@ class AnazhRealm_kampf {
 
     // DIE MAUS-ABSICHT (Welle L 06.10., Klasse Q9) — der EINE Dispatcher des linken Klicks. Beim DRÜCKEN liest er das
     // Ziel am Fadenkreuz und das gehaltene Gerät: Kreatur in Nahkampf-Weite vom SCHULTERGELENK (nie von der Kamera: in
-    // der 3rd-Person lagen 8,1 m zwischen Kamera und Hirsch, Tor 6 m) → Hieb · Bau → Abbau · Klein-Flora → Pflücken ·
+    // der 3rd-Person lagen 8,1 m zwischen Kamera und Hirsch, Tor 6 m) → Hieb · Bau → Abbau · Klein-Flora → Pflücken (ein
+    // Gerät, dessen Schneide den Halm fasst, mäht sie und die Wiese — halten.K3, `_ernteZiel`) ·
     // sonst gräbt nur ein Grab-Gerät (Spaten, Schaufel, Spitzhacke) oder die leere Hand; jedes andere Gerät schwingt
     // ins Leere (Luftschlag). `gehalten` = das Verb des Drückens (der Halte-Tick): es wiederholt sich, nie ein anderes —
     // ein Hieb bleibt Hieb, ein gefallener Bau beendet das Abbauen. Vorher: 3rd-Person 10 Klicks → 0 Schwünge,
@@ -1933,8 +1947,9 @@ class AnazhRealm_kampf {
             if (pick && pick.entry) {
                 verb = "abbau";
                 ort = pick.point;
-            } else if ((flora = this._pickScatterAtCrosshair())) {
-                // S6-B (V18.133) — FORAGING vor dem Graben: wer auf die Blüte zielt, will sie, kein Loch darunter
+            } else if ((flora = this._ernteZiel())) {
+                // S6-B (V18.133) — FORAGING vor dem Graben: wer auf die Blüte zielt, will sie, kein Loch darunter; ein Gerät,
+                // dessen Schneide den Halm fasst, mäht ihn auch unter dem Fadenkreuz in der Wiese (halten.K3, `_ernteZiel`)
                 verb = "pfluecken";
                 ort = flora.point;
             } else if (this._geraetGraebt(this._heldImplementBlueprint())) {
@@ -1978,7 +1993,7 @@ class AnazhRealm_kampf {
         // abgetragen (Tempo/Stamina/Ertrag ∝ Werkzeug-vs-Material), kein Instant mehr. Der
         // Multi-User-Sync + das Loot + das Gefühl leben in _strikeArchitecture (bei Bruch).
         if (verb === "abbau") return this._strikeArchitecture(pick.entry);
-        if (verb === "pfluecken") return this._harvestScatterPick(flora);
+        if (verb === "pfluecken") return flora.mahd ? this._maehen(flora.mahd) : this._harvestScatterPick(flora);
         const target = boden || this._raycastWorldHit(30);
         if (!target.hit) {
             this.log("Abbauen: kein Ziel in Reichweite.", "INFO");
