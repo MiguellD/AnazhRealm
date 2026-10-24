@@ -8,7 +8,7 @@
 //   S (statisch, Node, Absenzen): der Auto-Register-Chokepoint vergleicht keinen kind-String (M8) ·
 //     die Donor-Zeile geraet_schwert traegt kein portalMeta/roleManual (der Alt-Blueprint ist PHYSISCH
 //     gefallen) · die Hand waermt keine Pipeline vor. --selftest: das Faust-Verdikt (H-F).
-//   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 21 Klingen-
+//   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 22 Klingen-
 //     Rezepte (Waffen UND Werkzeuge) · kindStages.weapon == [0] gemerged (tree/
 //     vehicle/gate unberuehrt) · Auto-Blueprint klinge_langschwert entsteht am
 //     EINEN Chokepoint (Donor-Klon, KEIN _grownSpecies) · die generische
@@ -410,10 +410,10 @@ function staticLaws(q) {
         String(out.b.kind)
     );
     check("B: die Regler-Daten fliessen (langschwert.s.griff == 0.24)", out.b.griff === 0.24, String(out.b.griff));
-    check("B: alle 21 Klingen-Gattungen im Buch", out.b.weaponCount === 21, String(out.b.weaponCount));
+    check("B: alle 22 Klingen-Gattungen im Buch", out.b.weaponCount === 22, String(out.b.weaponCount));
     check(
-        "B: die Werkzeug-Marke reist (8 tool:true — Messer/Faellaxt/Spaltmaul/Vorschlaghammer/Beil/Spitzhacke/Spaten/Schaufel)",
-        out.b.toolCount === 8,
+        "B: die Werkzeug-Marke reist (9 tool:true — Messer/Faellaxt/Spaltmaul/Vorschlaghammer/Beil/Spitzhacke/Spaten/Schaufel/Sichel)",
+        out.b.toolCount === 9,
         String(out.b.toolCount)
     );
     check(

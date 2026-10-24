@@ -470,7 +470,7 @@ Komponenten-SÄTZE, keine Klassen):
   der Wirt fährt damit FAHRZEUG-EIGEN (W/S entlang der Gier, Grip frisst
   Quer-Slip, Shift = Handbremse); ohne `lenkung` byte-alt richtungs-folgend.
 - **`ARENA` (V18.483, schmiede-core, Namensraum-Export):** das Arena-Gefühl
-  als Daten (`schwung { dauerProSqrtI min max hand } · gefuehl { freezeMin/Max
+  als Daten (`schwung { dauerProSqrtIKg min max hand } · gefuehl { freezeMin/Max
 dipMin/Max keRefJ } · bogen { mArrow auszugSec fovZug fovRuhe
 minAuszugFrac }`) — Leser `AnazhRealm._arenaGesetz()`, fail-closed
   (Kern-Pflicht: `ARENA_FALLBACK` + `SWING_/BOGEN_LAWS` sind
@@ -774,7 +774,7 @@ rein additiv): **`TUER_GESETZ { offen }`** = der Flügel-Öffnungswinkel (rad)
 — Shell (`DOOR_OPEN`) UND Wirt (`AnazhRealm._tuerOffenRad()`, Fallback
 `TOR_FLUEGEL_OFFEN`) lesen die EINE Quelle (der 1.95-Zahlen-Zwilling ist
 geschlossen). `schmiede-core.js` (W-A4a, ε —
-GEBAUT: B1 21 Gattungen `kind:"weapon"` [Waffen UND Werkzeuge, die
+GEBAUT: B1 22 Gattungen `kind:"weapon"` [Waffen UND Werkzeuge, die
 tool:true-Marke reist in fx] · B2 `buildInstance` + `kindStages:{weapon:[0]}` +
 Goldens `spec/asset-contract/v5/` (`gate:schmiede-contract`, seed-invariant
 cv:5) · B4 PARAMS (PARAMS_BLADE+PARAMS_IMPACT, def aus dem Lab-Startzustand) ·
@@ -926,8 +926,8 @@ kindStages` auf seinem Namensraum tragen. Die Zeile deklariert die
 **Stand der MESHFREI-Kerne:** `klang-core.js` (`__klangCore` — B1 22 Genres ·
 B4 bpm+6 DNA-Dials · fx.klang) · `koerper-core.js` (`__koerperCore` — B1
 `mensch` · B4 8 Morph-Dials · fx.gestalt + fx.motion + **fx.bewegung**
-[schwimmen · parkour · slidePose · speed/jump/stamina, §8.2+] · `LEIB { dichteKgM3 armAnteil }` — die Masse des
-Menschen aus dem Volumen seiner Haut; `armAnteil` (Welle LF kampf, rein additiv: 5,0 % nach Dempster) ist der Arm samt
+[schwimmen · parkour · slidePose · speed/jump/stamina, §8.2+] · `LEIB { dichteKgM3 armAnteil }` — die Dichte
+des Leibs (die Zeile leib der Stoff-Zeile des Wirts, physik K1: Masse = das Volumen des Leibs aus dem Ofen × ρ); `armAnteil` (Welle LF kampf, rein additiv: 5,0 % nach Dempster) ist der Arm samt
 Hand, mit dem die Ausdauer einer Maus-Arm-Aktion wächst, (m_Arm + m_Gerät) / m_Arm, Wirt `_mausAusdauer`) ·
 `tetrapoda-core.js` (`__tetrapodaCore` — B1 4 Gattungen · B4 5 allometrische
 Dials · fx.motion + **VERHALTEN** [12 Aktionen · 6 Stimmungen, B6]).

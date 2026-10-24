@@ -2674,3 +2674,18 @@ AnazhRealm.ARCH_LEAF_MAT_SHARED = true;
 // DER FUSS DER STADTMAUER (siedlung.K2, `_stlMauerBuild`): so tief (m) reicht Wand und Turm unter den tiefsten Boden-Punkt
 // unter ihnen — die Kiste folgt dem Hang als Sehne, der Fuß deckt die Mulde dazwischen (das Labor steht auf seinem Boden-Gitter).
 AnazhRealm.STADTMAUER_FUSS_M = 1.5;
+
+// DER STEMPEL EINES EINTRAGS (`studioOv`): eine tiefe JSON-Kopie der Prägung, höchstens TAILLE_UNKNOWN_FIELD_MAX Zeichen, sonst
+// keiner (nicht-serialisierbar oder zu groß: fail-closed). Leser: die Wurzel `spawnArchitecture` und der Vorrat des Dorfs
+// (`_dorfVorbacken`: derselbe Stempel nennt denselben Körper der Foundry).
+AnazhRealm._stempelVon = function (ov) {
+    if (!ov || typeof ov !== "object" || Array.isArray(ov)) return undefined;
+    try {
+        const json = JSON.stringify(ov);
+        return json && json.length > 2 && json.length <= AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX
+            ? JSON.parse(json)
+            : undefined;
+    } catch (_e) {
+        return undefined;
+    }
+};

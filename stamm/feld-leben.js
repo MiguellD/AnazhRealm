@@ -1401,6 +1401,7 @@ class AnazhRealm_feld_leben {
         if (this._parseCreatureAddress && this._parseCreatureAddress(command)) {
             // „Name, text" oder „Name: text" geht an die Kreatur (nicht an Grok).
             this.maybeAnswerCreature(command, appendChatOutput).catch((err) => {
+                this._bruchMelden("Kreatur-Antwort: " + (err.message || err));
                 appendChatOutput(`(Kreatur-Fehler: ${err.message || err})`);
             });
             return;

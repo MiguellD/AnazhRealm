@@ -120,7 +120,7 @@ async function checkBandV1769RoleResonance(ctx) {
     });
     check("R2/R3: FORM_ROLE_SIGNATURES steht", res.signaturen);
     check(
-        "R2: der Produkt-Vektor trägt die räumliche Schicht (bodyShape/portalShape) neben den Tags",
+        "der Produkt-Vektor trägt die räumliche Schicht (bodyShape/portalShape) neben den Tags",
         res.vectorHasSpatial
     );
     check(
@@ -140,7 +140,7 @@ async function checkBandV1769RoleResonance(ctx) {
         res.substanceFlip
     );
     check(
-        "R3: die opChain-DOMÄNE behält Vorrang (ein forging-Gerät bleibt tool/armor, nicht die Form-Resonanz)",
+        "die opChain-DOMÄNE behält Vorrang (ein forging-Gerät bleibt tool/armor, nicht die Form-Resonanz)",
         res.domainPriority
     );
 }
@@ -202,7 +202,7 @@ async function checkBandV1771ToolOpFromForm(ctx) {
         return out;
     });
     check(
-        "S10: OP_CLASS_SIGNATURES steht; der Produkt-Vektor trägt pointedFraction",
+        "OP_CLASS_SIGNATURES steht; der Produkt-Vektor trägt pointedFraction",
         res.signaturen && res.vectorHasPointed
     );
     check(
@@ -218,7 +218,7 @@ async function checkBandV1771ToolOpFromForm(ctx) {
         res.autoDerives && res.registersEmergent
     );
     check(
-        "S10: eine explizite opClass bleibt der Schöpfer-Override (manuell, additive erzwingbar) + die Validierung ist unbroken",
+        "eine explizite opClass bleibt der Schöpfer-Override (manuell, additive erzwingbar) + die Validierung ist unbroken",
         res.manualOverride && res.rejectsBadClass
     );
 }
@@ -231,24 +231,8 @@ async function checkBandOmegaPhi1CoM(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
-        const mats = r.state.materials || {};
-        let dense = null,
-            light = null,
-            dd = -1,
-            ld = 2;
-        for (const name in mats) {
-            const d = mats[name] && mats[name].tags && mats[name].tags.dichte;
-            if (typeof d !== "number") continue;
-            if (d > dd) {
-                dd = d;
-                dense = name;
-            }
-            if (d < ld) {
-                ld = d;
-                light = name;
-            }
-        }
-        out.haveMats = !!dense && !!light && dense !== light && dd > ld;
+        // (die Masse in kg aus ρ der Stoff-Zeile und ihre Mutation misst gate:kampf-gefuehl (A), physik K1)
+        const dense = "stein";
         const mk = (parts) => ({ parts });
         // (1) symmetrisch: zwei identische Teile bei ±x → CoM.x ≈ 0
         const cSym = r._compoundCenterOfMass(
@@ -266,30 +250,12 @@ async function checkBandOmegaPhi1CoM(ctx) {
             ])
         );
         out.volShiftsCoM = cVol.com.x > 0.5;
-        // (3) dichteres Material bei +x → CoM verschiebt sich dorthin (dichte → Masse)
-        const cDch = r._compoundCenterOfMass(
-            mk([
-                { position: { x: -2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: light },
-                { position: { x: 2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: dense },
-            ])
-        );
-        out.dichteShiftsCoM = out.haveMats ? cDch.com.x > 0 : true;
-        // (4) Masse skaliert mit dichte (gleiche Form, dense > light)
-        const mDense = r._compoundCenterOfMass(
-            mk([{ position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: dense }])
-        ).mass;
-        const mLight = r._compoundCenterOfMass(
-            mk([{ position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: light }])
-        ).mass;
-        out.massScalesDichte = out.haveMats ? mDense > mLight : true;
-        // (5) leerer/ungültiger Bauplan → sicher 0 (keine Division durch 0)
+        // (3) leerer/ungültiger Bauplan → sicher 0 (keine Division durch 0)
         out.emptySafe = r._compoundCenterOfMass({ parts: [] }).mass === 0 && r._compoundCenterOfMass(null).mass === 0;
         return out;
     });
     check("Ω-Φ1: symmetrischer Bauplan → CoM zentriert (x≈0)", res.symCentered === true);
     check("Ω-Φ1: größeres Teil → CoM verschiebt sich dorthin (Volumen→Masse)", res.volShiftsCoM === true);
-    check("Ω-Φ1: dichteres Material → CoM verschiebt sich dorthin (dichte→Masse)", res.dichteShiftsCoM === true);
-    check("Ω-Φ1: Masse skaliert mit dichte (dense > light)", res.massScalesDichte === true);
     check("Ω-Φ1: leerer/ungültiger Bauplan → Masse 0 (sicher, keine Div/0)", res.emptySafe === true);
 }
 
@@ -600,17 +566,17 @@ async function checkBandV1780FormAxes(ctx) {
         return out;
     });
     check(
-        "U1: die 4 Form-Achsen sind im Produkt-Vektor (elongation/hollowness/axialSymmetry/spread)",
+        "die 4 Form-Achsen sind im Produkt-Vektor (elongation/hollowness/axialSymmetry/spread)",
         res.hasAxes
     );
-    check("U1: elongation — eine Klinge ist gestreckter als ein Würfel", res.elongation, res.elongVals);
-    check("U1: spread — eine Trag-Basis spreizt mehr als eine Säule", res.spread, res.spreadVals);
+    check("elongation — eine Klinge ist gestreckter als ein Würfel", res.elongation, res.elongVals);
+    check("spread — eine Trag-Basis spreizt mehr als eine Säule", res.spread, res.spreadVals);
     check(
-        "U1: axialSymmetry — ein symmetrischer Körper > ein asymmetrischer Klumpen",
+        "axialSymmetry — ein symmetrischer Körper > ein asymmetrischer Klumpen",
         res.symmetry,
         res.symVals
     );
-    check("U1: hollowness — ein Behälter (Wände um Leere) > ein Vollblock", res.hollow, res.hollowVals);
+    check("hollowness — ein Behälter (Wände um Leere) > ein Vollblock", res.hollow, res.hollowVals);
     check(
         "U1 / V17.83 U4: ein WÜRFEL (keine Geräte-Form) bleibt Bauwerk — U4 ändert nur greifbare Geräte-Formen",
         res.noRegress
@@ -681,11 +647,11 @@ async function checkBandV1781RoleRegister(ctx) {
         return out;
     });
     check(
-        "U2: das Rollen-Register hat ALLE Rollen (held/weapon/tool/brecher/armor/consumable/soul/portal/vehicle/machine/workshop/architecture)",
+        "das Rollen-Register hat ALLE Rollen (held/weapon/tool/brecher/armor/consumable/soul/portal/vehicle/machine/workshop/architecture)",
         res.allRoles
     );
     check(
-        "U2: die Signaturen sind VOLL (≥4 Achsen — über die gesamte Resonanz, nicht eine Achse)",
+        "die Signaturen sind VOLL (≥4 Achsen — über die gesamte Resonanz, nicht eine Achse)",
         res.fullSignatures
     );
     check(
@@ -693,13 +659,13 @@ async function checkBandV1781RoleRegister(ctx) {
         res.depth && res.roleRelative,
         res.depthVals
     );
-    check("U2: held — eine Klinge passt besser als ein Klotz (V1779-Kern, jetzt tiefer)", res.heldDiscriminates);
+    check("held — eine Klinge passt besser als ein Klotz (V1779-Kern, jetzt tiefer)", res.heldDiscriminates);
     check(
         "U2 BALANCE: die Passung bleibt in [min,max], ein gut geformtes Werk ist ein Buff (>1.05)",
         res.inRange && res.goodFitBuff
     );
     check(
-        "U2: vehicle — eine Trag-Basis passt besser als ein Mast (die neuen Form-Achsen tragen die neue Rolle)",
+        "vehicle — eine Trag-Basis passt besser als ein Mast (die neuen Form-Achsen tragen die neue Rolle)",
         res.vehicleDiscriminates,
         res.vehVals
     );
@@ -753,7 +719,7 @@ async function checkBandV1782CatalystReadout(ctx) {
         return out;
     });
     check(
-        "U3: das Rollen-Spektrum — die Klinge ist eine starke Waffe (>0.85), diskriminiert gegen eine weiche Kugel, sortiert",
+        "das Rollen-Spektrum — die Klinge ist eine starke Waffe (>0.85), diskriminiert gegen eine weiche Kugel, sortiert",
         res.weaponHigh && res.discriminates && res.sorted,
         res.specVals
     );
@@ -1141,8 +1107,8 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
         check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
         check(
-            "Welle 4 P1: Built-in-Anzahl exakt 15 (6 Bau + 5 Körper + laub + erde + kraut/essenz V18.133)",
-            wave4p1Results.builtInCount === 15
+            "Welle 4 P1: Built-in-Anzahl exakt 18 (6 Bau + 5 Körper + laub + erde + kraut/essenz + stahl/blech/leib)",
+            wave4p1Results.builtInCount === 18
         );
         check("Welle 4 P1: Alle Tag-Werte 0..1", wave4p1Results.tagsInRange);
         check(

@@ -431,6 +431,7 @@
                 "stamm/bild-kosten.js",
                 "stamm/bild-sicht.js",
                 "phyto-core.js",
+                "stamm/siedlung-bauten.js",
                 "stamm/siedlung-satz.js",
                 "stamm/feld-leben.js"
             ],

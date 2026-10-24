@@ -949,6 +949,36 @@ async function eigenePorte(...variablen) {
     }
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// DER EINE RUF an die Werkbank (POST JSON, ohne Frist; kein JSON: `{ roh }`)
+function werkbankRuf(port, weg, nutzlast) {
+    return new Promise((res, rej) => {
+        const req = http.request(
+            { host: "127.0.0.1", port, path: weg, method: "POST", headers: { "Content-Type": "application/json" } },
+            (r) => {
+                let d = "";
+                r.on("data", (c) => (d += c));
+                r.on("end", () => {
+                    try {
+                        res(JSON.parse(d));
+                    } catch (_e) {
+                        res({ roh: d });
+                    }
+                });
+            }
+        );
+        req.on("error", rej);
+        req.setTimeout(0);
+        req.end(JSON.stringify(nutzlast || {}));
+    });
+}
+// --teil=k/n: Teil k von n Gruppen der CI, ohne --teil null (alles)
+function teilAus(argv) {
+    const a = argv.find((x) => x.startsWith("--teil="));
+    if (!a) return null;
+    const m = /^--teil=(\d+)\/(\d+)$/.exec(a);
+    if (!m || !(+m[1] >= 1 && +m[1] <= +m[2])) throw new Error(`${a}: erwartet --teil=k/n mit 1 <= k <= n`);
+    return { k: +m[1], n: +m[2] };
+}
 // DIE WERKBANK ALS TOR: `werkbank start`, bereit am Ereignis; jeder Befehl ohne Frist (ein Hänger endet am protocolTimeout der Seite)
 function werkbankTor(port, zusatz = []) {
     const cp = require("child_process");
@@ -1083,6 +1113,8 @@ module.exports = {
     sleep,
     waitFor,
     werkbankTor,
+    werkbankRuf,
+    teilAus,
     selbsttest: (name) => (sammlung.selbsttest = name),
 };
 

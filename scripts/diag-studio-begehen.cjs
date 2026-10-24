@@ -6,10 +6,7 @@
 //   B2  TÜR: aus 2 m vor der Haustür geht der Körper (W, echte Lab-Physik) bis 1 m hinter die Schwelle
 //   B3  TREPPE: auf jeder Treppe (Geschoss- und Speichertreppe, seitlicher Versatz −0,10 … +0,10 m) endet kein Schritt
 //       mit dem Körper in einem Solid, das kein Tritt ist (die Klemme), und JEDER Lauf (mittig) erreicht seine Höhe —
-//       EG→OG, OG→2.OG und Speicher (die Speichertreppe stieß mit der Zylinder-Kante an den Estrich: 0 von 3 oben; der
-//       Lauf ins 2. OG lag ohne Speicher und Keller auf einer Null-Spur: 0 m breit, 44 von 270 Siedlungs-Häusern); am
-//       Austritt steht der Körper (PH) unter der sichtbaren Decke (der Speicherlauf dreigeschossiger Häuser trat unter der
-//       Schräge aus: Kopfraum 1,2 m)
+//       EG→OG, OG→2.OG und Speicher; am Austritt steht der Körper (PH) unter der sichtbaren Decke
 //   B4  KELLER: der erste Strahl-Treffer aus dem Keller nach oben ist nie die Dorf-Boden-Platte
 //   B5  WELTGRUND: das Labor plant das Dorf auf der Welt-Zelle — es trägt den Plan v2 (fachwerk ortPlan, ein Slot je
 //       Haus, Plan-Hash Labor = Kern über gelaende-core lageGrund + ortCtx), die Häuser stehen nicht eben (Spanne ≥ 1 m), und
@@ -50,7 +47,13 @@ const BASIS = {
     // die Null-Spur: ohne Speicher und Keller hatte die rechte Spur 0 m
     spur: [[KERN, "||P.keller||levels.length>=3) ? 0.90 : 0;", "||P.keller) ? 0.90 : 0;"]],
     // der Speicherlauf folgte stur der Kehre — bei drei Geschossen trat er unter der Schräge aus (Kopfraum 1,2 m)
-    austritt: [[KERN, "    if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;", ""]],
+    austritt: [
+        [
+            KERN,
+            "    if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;\n    if(austritt(dir)<=zBandTop){",
+            "    {",
+        ],
+    ],
     // K10: das Dorf stand flach — der Dorf-Boden 0 und jedes Haus auf y = 0, gleich wo die Welt es trug
     flach: [
         [
