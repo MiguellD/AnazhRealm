@@ -223,7 +223,7 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
         for (const e of archs.slice(vorherAll).reverse()) {
             try {
                 r.removeArchitecture(e);
-            } catch (_e) {}
+            } catch {}
         }
         out.aufgeraeumt = archs.length === vorherAll;
         return out;
@@ -282,7 +282,7 @@ async function checkBandFoundrySpeicherFlach(ctx) {
                 takt: async () => {
                     try {
                         window.anazhRealm._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                     await sleep(6);
                 },
                 max: 2000,
@@ -297,7 +297,7 @@ async function checkBandFoundrySpeicherFlach(ctx) {
                 r._gameLoopTick && r._gameLoopTick(performance.now());
                 const pp = r.state.playerMesh && r.state.playerMesh.position;
                 if (pp) r._tickScatterStreaming(pp);
-            } catch (_e) {}
+            } catch {}
             await sleep(6);
         }
         // REF-GUARD-Instrument: bei JEDEM _disposeFoundryGroupGeom die _liveRefs prüfen.
@@ -331,7 +331,7 @@ async function checkBandFoundrySpeicherFlach(ctx) {
                     r._foundryFlattenFor({ seed: s, position: { x: 0, y: 0, z: 0 } }, sp, 0);
                 }
             }
-            for (let it = 0; it < 400; it++) { r.state._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch (_e) {} if (f.pending.size === 0 && !(f.warte && f.warte.length) && it > 30) break; await sleep(6); }
+            for (let it = 0; it < 400; it++) { r.state._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch {} if (f.pending.size === 0 && !(f.warte && f.warte.length) && it > 30) break; await sleep(6); }
             cycles.push(snap());
         }
         r.constructor.FOUNDRY_CACHE_CAP = CAP0;
@@ -412,7 +412,7 @@ async function checkBandKeinZweiterBaumbaecker(ctx) {
                 takt: async () => {
                     try {
                         window.anazhRealm._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                     await sleep(6);
                 },
                 max: 2000,
@@ -429,7 +429,7 @@ async function checkBandKeinZweiterBaumbaecker(ctx) {
                 r._gameLoopTick && r._gameLoopTick(performance.now());
                 const pp = r.state.playerMesh && r.state.playerMesh.position;
                 if (pp) r._tickScatterStreaming(pp);
-            } catch (_e) {}
+            } catch {}
             await sleep(10);
         }
         // Instanz-Gruppen enumerieren: Schlüssel = Bauplan-Name#leaf[@region].
@@ -495,7 +495,7 @@ async function checkBandLeistungsVertrag(ctx) {
             for (let i = 0; i < 200; i++) {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
                 if (i % 15 === 0) await sleep(15);
             }
             // DIE WARTENDEN REGIONEN: eine Streu-Region mit einem Baum-Platz, dessen Karte fehlt, bleibt
@@ -516,7 +516,7 @@ async function checkBandLeistungsVertrag(ctx) {
                             for (let i = 0; i < 30; i++) {
                                 try {
                                     r._gameLoopTick(performance.now());
-                                } catch (_e) {}
+                                } catch {}
                             }
                             await sleep(30);
                         },
@@ -616,7 +616,7 @@ async function checkBandLeistungsVertrag(ctx) {
                             for (let i = 0; i < 100; i++) {
                                 try {
                                     r._gameLoopTick(performance.now());
-                                } catch (_e) {}
+                                } catch {}
                                 feed(150);
                                 if (i % 20 === 0) await sleep(15);
                             }
@@ -646,7 +646,7 @@ async function checkBandLeistungsVertrag(ctx) {
             for (let i = 0; i < 400; i++) {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
                 feed(150);
                 if (st.archInstanceGroups && st.archInstanceGroups.size > groupsMax)
                     groupsMax = st.archInstanceGroups.size;

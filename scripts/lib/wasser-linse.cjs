@@ -647,7 +647,7 @@ function wasserStrom(ort, hoehe) {
         for (let last = -1, still = 0, weiter = window.__deckel("der Ring am Wasser", 9000); weiter(); await new Promise((res) => setTimeout(res, 0))) {
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             const n = st.voxelChunks ? st.voxelChunks.size : 0;
             still = n === last ? still + 1 : 0;
             last = n;

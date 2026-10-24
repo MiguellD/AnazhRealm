@@ -2196,7 +2196,7 @@ async function checkBandTodZensus(ctx) {
                     let f;
                     try {
                         f = r[nm];
-                    } catch (_e) {
+                    } catch {
                         return false;
                     }
                     if (typeof f !== "function") return false;
@@ -2376,7 +2376,7 @@ async function checkBandTodZensus(ctx) {
             for (const f of restore.reverse())
                 try {
                     f();
-                } catch (_e) {
+                } catch {
                     /* Aufräumen bleibt best effort, die Zahl steht schon */
                 }
             for (const c of s.creatures.slice()) r.removeCreature(c);
@@ -2467,7 +2467,7 @@ async function checkBandBewegungUnterLast(ctx) {
         const tick = (t) => {
             try {
                 r._gameLoopTick(t);
-            } catch (_e) {}
+            } catch {}
         };
     
         // einen settled LAND-Spot finden (deterministisch, über Wasser) — nahe (Szenario a)

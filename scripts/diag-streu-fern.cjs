@@ -114,7 +114,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         const istKarte = (p) => {
             try {
                 return r._foundryFernForm(p) === "karte";
-            } catch (_e) {
+            } catch {
                 return false;
             }
         };
@@ -198,7 +198,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     let soll;
                     try {
                         soll = r._foundryFernForm(preset);
-                    } catch (e) {
+                    } catch {
                         soll = "BRUCH";
                     }
                     if (soll === "karte") continue;
@@ -484,7 +484,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             }
             try {
                 neuBau(flipKey);
-            } catch (_e) {}
+            } catch {}
         }
         res.st2 = st2;
 

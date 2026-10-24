@@ -277,7 +277,7 @@ function leibInstall(cfg) {
         for (let i = 0; i < n; i++) {
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             await sleep(ms || 30);
         }
     };
@@ -828,7 +828,7 @@ async function probe(arg) {
         for (let i = 0; i < n; i++) {
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             await sleep(ms || 30);
         }
     };
