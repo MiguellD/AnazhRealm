@@ -71,7 +71,7 @@ async function kreaturProben(r, T, opts) {
             for (const f of restore.reverse()) {
                 try {
                     f();
-                } catch (_e) {
+                } catch {
                     /* Aufräumen bleibt best effort, die Zahl steht schon */
                 }
             }
@@ -2393,7 +2393,7 @@ async function kreaturProben(r, T, opts) {
             for (const weiter = W.__deckel("bewohner: die Leiber", 120); weiter() && offen();) {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {
+                } catch {
                     /* der Takt meldet selbst */
                 }
                 await schlaf(16);

@@ -178,7 +178,7 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
         let p;
         try {
             p = decodeURIComponent(req.url.split("?")[0]);
-        } catch (_e) {
+        } catch {
             res.statusCode = 400;
             return res.end();
         }
@@ -309,7 +309,7 @@ function pulsSeite() {
     const sende = (art, text) => {
         try {
             B(`${art}\t${String(text).slice(0, 300)}`);
-        } catch (_e) {
+        } catch {
             // das Binding ist fort: die Seite geht
         }
     };
@@ -409,7 +409,7 @@ function zeichnetHaken() {
         function (...a) {
             try {
                 window.top.__gpuGenutzt = true;
-            } catch (_e) {
+            } catch {
                 window.__gpuGenutzt = true;
             }
             return f.apply(this, a);
@@ -551,11 +551,11 @@ function faedenProbe(pid) {
                     name: st.slice(st.indexOf("(") + 1, st.lastIndexOf(")")),
                     ticks: Number(rest[11]) + Number(rest[12]),
                 });
-            } catch (_e) {
+            } catch {
                 // der Faden endete zwischen Liste und Lesen
             }
         }
-    } catch (_e) {
+    } catch {
         return null;
     }
     return m;
@@ -714,7 +714,7 @@ async function starteBrowser(opts = {}) {
                 }
                 vor = jetzt;
                 fVor = fJetzt;
-            } catch (_e) {
+            } catch {
                 // die Browser-Sitzung geht mit dem Browser
             }
         }, 2000);
@@ -744,7 +744,7 @@ async function starteBrowser(opts = {}) {
         try {
             const p = await t.page();
             if (p) await akteAnSeite(fehlerSammler(p), b);
-        } catch (_e) {
+        } catch {
             // ein Ziel, das vor dem Anheften stirbt, meldet sich über disconnected/close
         }
     });
@@ -938,7 +938,7 @@ function werkbankRuf(port, weg, nutzlast) {
                 r.on("end", () => {
                     try {
                         res(JSON.parse(d));
-                    } catch (_e) {
+                    } catch {
                         res({ roh: d });
                     }
                 });
