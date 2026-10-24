@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // gate:worker-dichte — DER DICHTE-SPIEGEL Main ↔ voxel-worker ist BYTE-GENAU.
 //
-// Der Worker baut die Dichte-Gitter der Chunks OFF-THREAD (`computeDensityGrid`, Spiegel von
-// `_voxelEditedDensityGrid`); der Main baut den Spieler-Chunk und jeden Edit-Rebuild selbst. Weichen beide ab,
+// Der Worker baut die Dichte-Gitter der Chunks OFF-THREAD (`computeDensityGrid`), der Main den Spieler-Chunk und jeden
+// Edit-Rebuild selbst (`_voxelEditedDensityGrid`); beide rufen das EINE Gesetz des Kerns (gelaende-core `dichteGitter` ·
+// `gitterMitEdits`). Weichen beide ab,
 // lebt der Boden auf zwei Wahrheiten (Naht, Kollision gegen ein anderes Bild).
 //
 // Je Welt (Standard: der Boot-Seed; Bühne: spec/pruefbuehne/welt.json, importiert wie im Spiel) und je Ort (die
