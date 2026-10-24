@@ -2521,8 +2521,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_werkstatt_sozial]);
 // mit der Vibe-Pass-Identität (unfälschbar); LWW (neuestes t je (id, pub)) macht sie CRDT-tauglich.
 // Kanal-exklusiv (DataChannel, nicht WS-injizierbar), R1-rate-gegated, revozierte Schlüssel fallen
 // aus der Aggregation. Global in localStorage (anazh.socialRatings), NIE im Welt-Snapshot.
-// FORAGE (unten) — Klein-Vegetation ist pflückbar: reach = Arm-Länge (kürzer als der Abbau-Ray),
-// regrowMs = Nachwachsen (Session-Gedächtnis, nicht persistiert); der Index ist stabil
+// FORAGE (unten) — Klein-Vegetation ist pflückbar: reach = Arm-Länge (kürzer als der Abbau-Ray), die Ernte eine Tat
+// der Welt (`worldMeta.taten`, feld.K4); der Index ist stabil
 // (deterministisches per-Chunk-RNG, Geerntetes → Skala 0, nie umnummeriert).
 // CA_STAU (unten) — Stau-Regel des Wasser-Automaten: ein Spieler-Werk über dem Ruhe-Spiegel öffnet
 // die Kappe LOKAL; ein bounded Spill-Scan (Priority-Flood) liefert je Spalte den Halte-Pegel
