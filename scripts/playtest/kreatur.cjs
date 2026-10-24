@@ -16,7 +16,7 @@ async function checkBandV1725FieldReaders(ctx) {
         out.lofiReadsAura = window.__consumes(r, "_lofiWorldField", r, "auraAt");
         return out;
     });
-    check("V17.25 mehr Leser: _lofiWorldField liest auraAt (living)", res.lofiReadsAura);
+    check("mehr Leser: _lofiWorldField liest auraAt (living)", res.lofiReadsAura);
 }
 
 // Kombat-Stats: knockback/attackSpeed/defense EMERGIEREN aus der Substanz (Tags → STAT_FROM_TAGS) wie
@@ -73,35 +73,35 @@ async function checkBandV1751CombatStats(ctx) {
         return out;
     });
     check(
-        "V17.51 Kampf A: KONSUM — eine schwere dichte Keule hat MEHR Rückschlag als eine leichte Klinge (Masse)",
+        "Kampf A: KONSUM — eine schwere dichte Keule hat MEHR Rückschlag als eine leichte Klinge (Masse)",
         res.heavyMoreKnockback
     );
     check(
-        "V17.51 Kampf A: KONSUM — eine leichte Klinge schlägt SCHNELLER als eine schwere Keule (leicht = flink)",
+        "Kampf A: KONSUM — eine leichte Klinge schlägt SCHNELLER als eine schwere Keule (leicht = flink)",
         res.lightFasterAttack
     );
     check(
-        "V17.51 Kampf A: KONSUM — eine harte Klinge macht MEHR Schaden als eine stumpfe Keule (härte schneidet)",
+        "Kampf A: KONSUM — eine harte Klinge macht MEHR Schaden als eine stumpfe Keule (härte schneidet)",
         res.hardMoreDamage
     );
     check(
-        "V17.51 Kampf A: KONSUM — dichte/harte Substanz blockt MEHR (defense), ein weiches Wesen ~0 (base-los)",
+        "Kampf A: KONSUM — dichte/harte Substanz blockt MEHR (defense), ein weiches Wesen ~0 (base-los)",
         res.denseMoreDefense && res.softNoDefense
     );
     check(
-        "V17.51 Kampf A: attackSpeed bleibt positiv (kein negativer Cooldown); magieleitung macht flink",
+        "Kampf A: attackSpeed bleibt positiv (kein negativer Cooldown); magieleitung macht flink",
         res.attackSpeedPositive && res.magicFlink
     );
     check(
-        "V17.51 Kampf A: KONSUM — die ECHTE Spieler-Pipeline (computePlayerStats) berechnet das Kampf-Trio",
+        "Kampf A: KONSUM — die ECHTE Spieler-Pipeline (computePlayerStats) berechnet das Kampf-Trio",
         res.playerComputes
     );
     check(
-        "V17.51 Kampf A: KONSUM — die Kreatur-Pipeline (computeCreatureStats) berechnet es symmetrisch (eine Pipeline)",
+        "Kampf A: KONSUM — die Kreatur-Pipeline (computeCreatureStats) berechnet es symmetrisch (eine Pipeline)",
         res.creatureComputes
     );
     check(
-        "V18.312 (Gesetz #0): EINE kanonische Stat-Pipeline — Spieler + Kreatur rufen _applyBoostsToStatTags · _statsFromTags · _applySizeMultipliersToStats (§1.3 fraktal, kein Parallelpfad)",
+        "(Gesetz #0): EINE kanonische Stat-Pipeline — Spieler + Kreatur rufen _applyBoostsToStatTags · _statsFromTags · _applySizeMultipliersToStats (§1.3 fraktal, kein Parallelpfad)",
         res.pipelineShared
     );
 }
@@ -198,21 +198,21 @@ async function checkBandV1753CreatureCombat(ctx) {
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
-    check("V17.53 Kampf C: eine frische Kreatur hat hp == hpMax (init aus DERSELBEN Stat-Pipeline)", res.hpInit);
-    check("V17.53 Kampf C: KONSUM — damageCreature dämpft (roh² / (roh + defense), Welle L K-D5)", res.damageReduces);
-    check("V17.53 Kampf C: ein winziger Treffer wirkt winzig, nie 0 (keine Unverwundbarkeit)", res.damageFloor);
-    check("V17.53 Kampf C: ein Nicht-Kreatur-Ziel wird abgelehnt (not_creature)", res.rejectsNonCreature);
-    check("V17.53 Kampf C: der Loot sind die Body-Materialien der Kreatur (nicht leer)", res.lootNonEmpty);
+    check("Kampf C: eine frische Kreatur hat hp == hpMax (init aus DERSELBEN Stat-Pipeline)", res.hpInit);
+    check("Kampf C: KONSUM — damageCreature dämpft (roh² / (roh + defense), Welle L K-D5)", res.damageReduces);
+    check("Kampf C: ein winziger Treffer wirkt winzig, nie 0 (keine Unverwundbarkeit)", res.damageFloor);
+    check("Kampf C: ein Nicht-Kreatur-Ziel wird abgelehnt (not_creature)", res.rejectsNonCreature);
+    check("Kampf C: der Loot sind die Body-Materialien der Kreatur (nicht leer)", res.lootNonEmpty);
     check(
-        "V17.53 Kampf C: KONSUM — ein Spieler-Kill (hp≤0) KIPPT die Kreatur (dying), der Abschied räumt sie nach der Frist",
+        "Kampf C: KONSUM — ein Spieler-Kill (hp≤0) KIPPT die Kreatur (dying), der Abschied räumt sie nach der Frist",
         res.killRemoves
     );
     check(
-        "V17.53 Kampf C: KONSUM — der Loot eines Spieler-Kills fällt ins Inventar (Erlegen ≡ Ernten)",
+        "Kampf C: KONSUM — der Loot eines Spieler-Kills fällt ins Inventar (Erlegen ≡ Ernten)",
         res.lootToInventory
     );
-    check("V17.53 Kampf C: ein Welt-/DSL-Tod gibt KEIN Loot (nur der Spieler erntet)", res.noLootForWorldKill);
-    check("V17.53 Kampf C: KONSUM — der damage_creature-DSL-Op schädigt eine Kreatur per Index", res.dslOpDamages);
+    check("Kampf C: ein Welt-/DSL-Tod gibt KEIN Loot (nur der Spieler erntet)", res.noLootForWorldKill);
+    check("Kampf C: KONSUM — der damage_creature-DSL-Op schädigt eine Kreatur per Index", res.dslOpDamages);
 }
 
 // LMB-Angriff: `_playerAttackCreature` konsumiert damageCreature (attackSpeed-Cooldown + Stamina +
@@ -334,28 +334,28 @@ async function checkBandV1754PlayerAttack(ctx) {
         return out;
     });
     check(
-        "V17.54 Kampf D: KONSUM — der LMB löst den Schwung aus, der Klingen-Sweep der Strike-Phase schädigt",
+        "Kampf D: KONSUM — der LMB löst den Schwung aus, der Klingen-Sweep der Strike-Phase schädigt",
         res.attackDamages
     );
-    check("V17.54 Kampf D: der Angriff feuert den Zorn-Affekt (chaos — die Kampf-Intensität)", res.attackFeelsChaos);
+    check("Kampf D: der Angriff feuert den Zorn-Affekt (chaos — die Kampf-Intensität)", res.attackFeelsChaos);
     check(
-        "V17.54 Kampf D: Schwung-Cooldown (Dauer ∝ √I) — ein Klick WÄHREND des Schwungs prallt ab (kein Schaden)",
+        "Kampf D: Schwung-Cooldown (Dauer ∝ √I) — ein Klick WÄHREND des Schwungs prallt ab (kein Schaden)",
         res.cooldownGates
     );
     check(
-        "V17.54 Kampf D: KONSUM — die SCHULD ist lebendig-gegated (Spieler-Kill eines lebendig-Wesens → sorrow)",
+        "Kampf D: KONSUM — die SCHULD ist lebendig-gegated (Spieler-Kill eines lebendig-Wesens → sorrow)",
         res.guiltGatedByLiving
     );
     check(
-        "V17.54 Kampf D (NULL): das Schuld-Gate lebt über die lebendig-Schwelle (Material-Wesen gefallen)",
+        "Kampf D (NULL): das Schuld-Gate lebt über die lebendig-Schwelle (Material-Wesen gefallen)",
         res.noGuiltForMaterial
     );
     check(
-        "V17.54 Kampf D: der Rückstoß-Pfad (fromPos + stoss) läuft, schädigt und stößt das Ziel vom Angreifer weg",
+        "Kampf D: der Rückstoß-Pfad (fromPos + stoss) läuft, schädigt und stößt das Ziel vom Angreifer weg",
         res.knockbackRuns
     );
     check(
-        "V17.54 Kampf D (Gegenprobe 0710-5): das tote Feld knockback stößt nicht — ein Check damit allein wäre leer",
+        "Kampf D (Gegenprobe 0710-5): das tote Feld knockback stößt nicht — ein Check damit allein wäre leer",
         res.knockbackTotFeld
     );
 }
@@ -675,7 +675,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             wave6hP2b2Results.listHasBuildClass && wave6hP2b2Results.listShowsBaut
         );
         check(
-            "V18.48 Hof-C: der inline Auftrag-Select am Wesen traegt >=3 Bau-Optionen + Task-Knoepfe",
+            "Hof-C: der inline Auftrag-Select am Wesen traegt >=3 Bau-Optionen + Task-Knoepfe",
             wave6hP2b2Results.uiBuildSelectExists &&
                 wave6hP2b2Results.uiBuildSelectHasOptions &&
                 wave6hP2b2Results.uiBuildButtonsCount
@@ -1853,19 +1853,19 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
     });
 
     check(
-        `V18.208 (C2) AnazhRealm.CREATURE_SOULS existiert (${res.soulCount} Seelen)`,
+        `(C2) AnazhRealm.CREATURE_SOULS existiert (${res.soulCount} Seelen)`,
         res.creatureSoulsExists === true
     );
-    check(`V18.208 (C3a) HP-Monotonie über Kreatur-Spektrum (größer = mehr HP)`, res.hpMonotone === true);
-    check(`V18.208 (C3b) Speed-Monotonie (größer = langsamer)`, res.speedMonotone === true);
+    check(`(C3a) HP-Monotonie über Kreatur-Spektrum (größer = mehr HP)`, res.hpMonotone === true);
+    check(`(C3b) Speed-Monotonie (größer = langsamer)`, res.speedMonotone === true);
     // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal (war „Floor ≥ 2" / Spanne 0.5).
     check(
-        `V18.208 (C4) Floor speed ≥ (2/7)·Gesetz-base (${res.speedFloor && res.speedFloor.toFixed(3)}) für alle Kreatur-Seelen`,
+        `(C4) Floor speed ≥ (2/7)·Gesetz-base (${res.speedFloor && res.speedFloor.toFixed(3)}) für alle Kreatur-Seelen`,
         res.allSpeedAtFloor === true
     );
-    check(`V18.208 (C5a) HP variiert über Kreaturen (kein einheitlicher Wert)`, res.hpVariesAmongCreatures === true);
+    check(`(C5a) HP variiert über Kreaturen (kein einheitlicher Wert)`, res.hpVariesAmongCreatures === true);
     check(
-        `V18.208 (C5b) Speed variiert über Kreaturen (Spanne ${res.speedRange && res.speedRange.toFixed(3)} > 0.5·base/7)`,
+        `(C5b) Speed variiert über Kreaturen (Spanne ${res.speedRange && res.speedRange.toFixed(3)} > 0.5·base/7)`,
         res.speedVariesAmongCreatures === true
     );
 }

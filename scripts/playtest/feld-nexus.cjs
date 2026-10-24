@@ -188,19 +188,19 @@ async function checkBandRing2Extended(ctx) {
             phase3Results.savedNoLegacyAbilitiesList
         );
         check(
-            "V18.53 Gesten: ✦-Abzeichen + 'vor Xs' (einmalige Tat, sichtbar WANN sie wirkte)",
+            "Gesten: ✦-Abzeichen + 'vor Xs' (einmalige Tat, sichtbar WANN sie wirkte)",
             phase3Results.gestenKindBadge && phase3Results.gestenWhen
         );
         check(
-            "V18.53 Gesten: jede Geste direkt vergessbar (✕) + die Liste hat 'leeren'",
+            "Gesten: jede Geste direkt vergessbar (✕) + die Liste hat 'leeren'",
             phase3Results.gestenHasForget && phase3Results.gestenClearBtn
         );
         check(
-            "V18.53 Gesten: Liste auf 6 gekappt + '+N ältere' (wächst nicht aus dem Bild)",
+            "Gesten: Liste auf 6 gekappt + '+N ältere' (wächst nicht aus dem Bild)",
             phase3Results.gestenCapped
         );
-        check("V18.53 Gesten: ✕ vergisst eine Geste wirklich", phase3Results.gestenForgetWorks);
-        check("V18.53 Gesten: 'leeren' verwirft alle Nexus-Gesten", phase3Results.gestenClearWorks);
+        check("Gesten: ✕ vergisst eine Geste wirklich", phase3Results.gestenForgetWorks);
+        check("Gesten: 'leeren' verwirft alle Nexus-Gesten", phase3Results.gestenClearWorks);
     }
 
     // ### Ring 2 Phase 6 – CSP ###
@@ -426,11 +426,11 @@ async function checkBandV1722NexusEyes(ctx) {
         out.composesValid = Array.isArray(prog) && typeof prog[0] === "string";
         return out;
     });
-    check("V17.22 Nexus-Augen: magie-leitender Ort → magisches Lila", res.magieColor);
-    check("V17.22 Nexus-Augen: glühender Ort → warmes Feuer", res.glutColor);
-    check("V17.22 Nexus-Augen: lebendiger Ort → frisches Grün", res.lebendigColor);
-    check("V17.22 Nexus-Augen: neutrales Feld → freie erkundende Palette", res.neutralPalette);
-    check("V17.22 Nexus-Augen: komponiert weiter valide DSL (backward-compat)", res.composesValid);
+    check("Nexus-Augen: magie-leitender Ort → magisches Lila", res.magieColor);
+    check("Nexus-Augen: glühender Ort → warmes Feuer", res.glutColor);
+    check("Nexus-Augen: lebendiger Ort → frisches Grün", res.lebendigColor);
+    check("Nexus-Augen: neutrales Feld → freie erkundende Palette", res.neutralPalette);
+    check("Nexus-Augen: komponiert weiter valide DSL (backward-compat)", res.composesValid);
 }
 
 async function checkBandWelle6HCreatureLlm(ctx) {
@@ -1390,15 +1390,15 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check("V8.07: Mode-Buttons (Move/...) disabled bei built-in", v807Results.modeBtnDisabledOnBuiltIn);
         check("V8.07: Mode-Buttons enabled bei eigenem Bauplan", v807Results.modeBtnEnabledOnCustom);
         check(
-            `V18.44 Spec-Sheet: ${v807Results.tagChipsCount} Profil-/Resonanz-Balken mit Fill + Stufen-Klasse`,
+            `Spec-Sheet: ${v807Results.tagChipsCount} Profil-/Resonanz-Balken mit Fill + Stufen-Klasse`,
             v807Results.tagChipsHaveStars && v807Results.tagChipsHaveLevelClass
         );
-        check("V18.44 Spec-Sheet: Qualitäts-Sterne sind ★/☆ (5 Zeichen)", v807Results.starsAreGlyphs);
+        check("Spec-Sheet: Qualitäts-Sterne sind ★/☆ (5 Zeichen)", v807Results.starsAreGlyphs);
         check(
-            "V18.42: _workshopApplyDefaultSizeOnce räumt die stale Resize-Größe + Inline (CSS-Rahmen trägt jetzt)",
+            "_workshopApplyDefaultSizeOnce räumt die stale Resize-Größe + Inline (CSS-Rahmen trägt jetzt)",
             v807Results.defaultOverridesStale
         );
-        check("V18.42: idempotent — zweiter Apply lässt keine Inline-Größe zurück", v807Results.idempotentAfterApply);
+        check("idempotent — zweiter Apply lässt keine Inline-Größe zurück", v807Results.idempotentAfterApply);
     } else if (v807Results && v807Results.error) {
         check(`V8.07: evaluate-Fehler — ${v807Results.error}`, false);
     }

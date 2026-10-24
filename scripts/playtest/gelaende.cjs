@@ -891,63 +891,63 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Welle 6.C1: Inventar hat exakt 27 Slots", wave6c1Results.inventoryHas27Slots);
         check("Welle 6.C1: Inventar initial leer (alle 27 null)", wave6c1Results.initiallyEmpty);
         check(
-            "V18.57 Ich: _selfProfile bündelt die gemessenen Vektoren (soul/stats/emotions/mood/boosts)",
+            "Ich: _selfProfile bündelt die gemessenen Vektoren (soul/stats/emotions/mood/boosts)",
             wave6c1Results.selfProfileBundles
         );
         check(
-            "V18.57 Ich: die Selbst-Bühne (Canvas) + das geteilte Spec-Sheet im Overlay",
+            "Ich: die Selbst-Bühne (Canvas) + das geteilte Spec-Sheet im Overlay",
             wave6c1Results.ichStageCanvas && wave6c1Results.ichSpecSheet
         );
         check(
-            "V18.57 Ich: das Spec-Sheet trägt Header (Name) + Zwei-Spalten-Body + WERTE-Balken (Werte führen)",
+            "Ich: das Spec-Sheet trägt Header (Name) + Zwei-Spalten-Body + WERTE-Balken (Werte führen)",
             wave6c1Results.ichSpecHeaderName && wave6c1Results.ichSpecBody2Col && wave6c1Results.ichWerteBars
         );
         check(
-            "V18.57 Ich: die reiche 6-Achsen-Emotion ist prominent (live, ≠ Kreatur binär)",
+            "Ich: die reiche 6-Achsen-Emotion ist prominent (live, ≠ Kreatur binär)",
             wave6c1Results.ichEmotion6
         );
         check(
-            "V18.61 Ich-F: die Chronik/Reise wandert in den Hof (Welt-Stimme), das Ich trägt keine Reise mehr (H.1)",
+            "Ich-F: die Chronik/Reise wandert in den Hof (Welt-Stimme), das Ich trägt keine Reise mehr (H.1)",
             wave6c1Results.ichHasNoReise && wave6c1Results.hofChronikInDom && wave6c1Results.hofChronikRenders
         );
         check(
-            "V18.68 Ich-J6: SELF (Viewer+Worn) | HABE (Inventar zentral) | WERK (Rezepte) + STATSBAR (Spec+Emotion) unten",
+            "Ich-J6: SELF (Viewer+Worn) | HABE (Inventar zentral) | WERK (Rezepte) + STATSBAR (Spec+Emotion) unten",
             wave6c1Results.ichThreeZones
         );
         check(
-            "V18.68 Ich-J6: Was-du-trägst sitzt UNTER dem Viewer in der Selbst-Insel",
+            "Ich-J6: Was-du-trägst sitzt UNTER dem Viewer in der Selbst-Insel",
             wave6c1Results.ichWornUnderViewer
         );
         check(
-            "V18.68 Ich-J6: die STATSBAR (Verfassung·Werte·Natur·Emotion) liegt VOLLBREIT UNTER den Spalten (unten, nicht links gequetscht)",
+            "Ich-J6: die STATSBAR (Verfassung·Werte·Natur·Emotion) liegt VOLLBREIT UNTER den Spalten (unten, nicht links gequetscht)",
             wave6c1Results.ichStatsbarBelowCols
         );
         check(
-            "V18.62 Ich-H: der Soul-Select sitzt im Header (Körper-Bar) + ein Hinweis zeigt auf die Werkstatt",
+            "Ich-H: der Soul-Select sitzt im Header (Körper-Bar) + ein Hinweis zeigt auf die Werkstatt",
             wave6c1Results.ichSoulBarInHeader && wave6c1Results.ichSoulHint
         );
         check(
-            "V18.65 Ich: EINE Selbst-Suche im Header (kein toter Omnibox-Knopf mehr)",
+            "Ich: EINE Selbst-Suche im Header (kein toter Omnibox-Knopf mehr)",
             wave6c1Results.ichSearchExists && wave6c1Results.ichNoDeadOmniboxButton
         );
         check(
-            "V18.65 Ich: die Selbst-Suche TREIBT das Rezeptbuch (tippen → Nicht-Treffer aus, das Werkstatt-Loop)",
+            "Ich: die Selbst-Suche TREIBT das Rezeptbuch (tippen → Nicht-Treffer aus, das Werkstatt-Loop)",
             wave6c1Results.ichSearchDrivesRecipes
         );
         check(
-            "V18.65 Ich: die Selbst-Suche dimmt Nicht-Treffer in der Habe + räumt sauber (leer = alles sichtbar)",
+            "Ich: die Selbst-Suche dimmt Nicht-Treffer in der Habe + räumt sauber (leer = alles sichtbar)",
             wave6c1Results.ichSearchDrivesInventory && wave6c1Results.ichSearchClears
         );
         check(
-            "V18.63 Ich-I: das Rezeptbuch trägt die geteilte Rollen-Farbe wie die Werkstatt (H.5)",
+            "Ich-I: das Rezeptbuch trägt die geteilte Rollen-Farbe wie die Werkstatt (H.5)",
             wave6c1Results.recipeRowsRoleColor
         );
         check(
-            "V18.64 Ich: das Fenster passt VOLLSTÄNDIG in den Viewport (kein Über-den-Rand)",
+            "Ich: das Fenster passt VOLLSTÄNDIG in den Viewport (kein Über-den-Rand)",
             wave6c1Results.ichOverlayFitsViewport
         );
         check(
-            "V18.68 Ich-J6: die drei Spalten (SELF|HABE|WERK) sind nebeneinander (gleiche Reihe)",
+            "Ich-J6: die drei Spalten (SELF|HABE|WERK) sind nebeneinander (gleiche Reihe)",
             wave6c1Results.ichZonesSideBySide
         );
         check("Welle 6.C1: addToInventory legt Eintrag in ersten leeren Slot", wave6c1Results.slot0HasBaum);
@@ -965,7 +965,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Welle 6.C1: toggleInventoryOverlay(true) öffnet Overlay", wave6c1Results.overlayVisibleAfterToggle);
         check("Welle 6.C1: Grid rendert 27 Slot-Elemente", wave6c1Results.gridRendered27);
         check(
-            "V18.60 Ich: gefüllter Inventar-Slot ist ziehbar (Drag&Drop inv→Hotbar, Spielerperspektive)",
+            "Ich: gefüllter Inventar-Slot ist ziehbar (Drag&Drop inv→Hotbar, Spielerperspektive)",
             wave6c1Results.filledSlotDraggable
         );
         check("Welle 6.C1: kristall_geode-Slot bekommt tag-magieleitung Klasse", wave6c1Results.geodeHasMagieClass);
@@ -2065,12 +2065,12 @@ async function checkBandV17118WorkerEngaged(ctx) {
         };
     });
     if (res.error) {
-        check("V17.118 E3: Worker-Engaged-Band (realm verfügbar)", false, res.error);
+        check("E3: Worker-Engaged-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("V17.118 E3: der Voxel-Worker ist gespawnt (nicht mehr dormant)", res.workerSpawned === true);
+    check("E3: der Voxel-Worker ist gespawnt (nicht mehr dormant)", res.workerSpawned === true);
     check(
-        "V17.118 E3: voxelWorkerWorldgenSynced nach Warmup (Streaming nutzt den Worker, Mesh off-thread)",
+        "E3: voxelWorkerWorldgenSynced nach Warmup (Streaming nutzt den Worker, Mesh off-thread)",
         res.worldgenSynced === true
     );
     const sn = res.spielerNeubau;
