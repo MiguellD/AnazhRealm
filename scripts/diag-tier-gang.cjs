@@ -503,11 +503,13 @@ const KREUZ = [
     { name: "Trauer", emotions: { sorrow: 1 } },
     { name: "Jagd", zustand: "jagd" },
 ];
+// der Abstand zweier Phasen im Kreis (Zyklen)
+const kreis = (a, b) => Math.min(Math.abs(a - b), 1 - Math.abs(a - b));
 const zyklus = (ph) => ph.map((q) => ((((q - ph[0]) / (2 * Math.PI)) % 1) + 1) % 1);
 // Aufsetzen bei Phase π (gangFuss): ein größerer Versatz setzt früher auf
 function gangart(ph) {
     const rel = zyklus(ph);
-    const d = (a, b) => Math.min(Math.abs(rel[a] - rel[b]), 1 - Math.abs(rel[a] - rel[b]));
+    const d = (a, b) => kreis(rel[a], rel[b]);
     const aus = (art) => ({ art, rel: rel.map((x) => +x.toFixed(2)) });
     if (d(0, 3) < 0.1 && d(1, 2) < 0.1 && d(0, 1) > 0.4) return aus("trab");
     if (d(0, 1) < 0.25 && d(2, 3) < 0.25 && d(0, 2) >= 0.25 && d(1, 3) >= 0.25) return aus("galopp");
@@ -581,7 +583,7 @@ const GANG = (k) => {
             tast = z.tast === null || (z.tast >= lo && z.tast <= hi);
         const ab = Object.entries(vergleich).map(([n, v]) => [
             n,
-            Math.max(...zyklus(v.ph).map((x, i) => Math.min(Math.abs(x - g.rel[i]), 1 - Math.abs(x - g.rel[i])))),
+            Math.max(...zyklus(v.ph).map((x, i) => kreis(x, g.rel[i]))),
         ]);
         const nah = ab.every(([, d]) => d <= 0.05);
         const ok = art && tast && nah;
