@@ -489,22 +489,117 @@ const stationen = [
             "stamm/dirigent-takt.js", "scripts/diag-weltakt-wache.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/ausgabe-aufnahme.cjs"],
         quelle: "1 = Gewöhnung (δ von Tat 10 ≤ 0,3 × Tat 1) und Antwort am Ort (ΔE ≥ 2 am Ort der Tat gegen die Nachbarzelle, oder ein Klang-Parameter am Ort) an einer Pose",
     },
+
+    // ───────── oekologie.K2 / K1 / K5 — Zweig oeko-bestand-k2 (tetrapoda BESTAND_GESETZ, UMWEG_GESETZ) ─────────
+    // Proben der Kreatur-Linse (Null-Renderer, R3: sie messen ein Gesetz). bestand und kaskade: der echte Lebenszyklus
+    // (tickFaunaLifecycle) im Zeitraffer an EINEM Ort, die Bühne leer, der Spieler ruhig; folgen: „folge mir“ über die
+    // Chat-DSL, der Spieler geht 10 min mit W im echten Sim-Schritt um Wand und gedrehtes Haus, über einen Sockel. An main
+    // fehlen die Proben (ROT „keine Zeile“).
+    {
+        kriterium: "oekologie.K2",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "bestand"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "bestand");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe bestand (Exit " + lauf.exit + ")" };
+            if (z.fehler || !z.voll || !z.halb) return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne voll/halb") };
+            const { voll: V, halb: H } = z;
+            const gruen =
+                V.bestand >= 4 && H.bestand <= 0.7 * V.bestand && V.hunger <= 0.7 * V.bestand && V.tode[1] >= 1 && z.kappe === 0;
+            return {
+                gruen,
+                zahl:
+                    "Bestand voll " + V.bestand + " · halbe Nahrung " + H.bestand + " · nach dem Halbieren " + V.hunger +
+                    " mit " + V.tode[1] + " Hungertoden · Takte an der Kappe " + z.kappe,
+            };
+        },
+        pfad: [...KREATUR],
+        quelle: "1 = Geburt und Tod folgen der Nahrung an einem Ort (Mutante Nahrung halbiert → Bestand fällt)",
+    },
+    {
+        kriterium: "oekologie.K1",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "kaskade"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "kaskade");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe kaskade (Exit " + lauf.exit + ")" };
+            if (z.fehler || !Array.isArray(z.saaten)) return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne saaten") };
+            const paare = z.saaten.flatMap((je) => Object.values(je));
+            const da = paare.filter(([a]) => a >= 1);
+            const bruch = paare.filter(([a, e]) => (a >= 1 ? !(e >= a / 3 && e <= 3 * a) : e > 3));
+            const q = da.map(([a, e]) => e / a);
+            return {
+                gruen: z.saaten.length >= 8 && da.length >= 16 && !bruch.length && z.kappe === 0,
+                zahl:
+                    z.saaten.length + " Saaten · " + da.length + " ansässige Bestände · Stunde 8 gegen 2: " +
+                    (q.length ? Math.min(...q).toFixed(2) + "–" + Math.max(...q).toFixed(2) + "×" : "–") + " · außer Band " +
+                    bruch.length + " · Takte an der Kappe " + z.kappe,
+            };
+        },
+        pfad: [...KREATUR],
+        quelle: "1 = jede Art bleibt in [⅓×, 3×] des Starts, ohne Aussterben und ohne Ausbruch, über ≥ 8 Seeds",
+    },
+    {
+        kriterium: "oekologie.K5",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "folgen"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "folgen");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe folgen (Exit " + lauf.exit + ")" };
+            if (z.fehler || !z.hindernisse) return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne hindernisse") };
+            const W = z.hindernisse.filter((h) => h.art !== "sockel");
+            const S = z.hindernisse.find((h) => h.art === "sockel") || {};
+            const halt =
+                W.length >= 3 && W.every((h) => h.kontakt > 0 && h.drin === 0 && h.quer === 0 && h.vornMinM > 0) &&
+                S.ueber >= 30 && !S.imSockel;
+            const gruen =
+                z.bindung[0] > 0 && z.bindung[1] > z.bindung[0] && z.proben >= 600 && z.aufgabe === z.proben &&
+                z.abstand.p95 <= 10 && halt && z.gegenlauf.abstandM >= 30;
+            return {
+                gruen,
+                zahl:
+                    z.proben + " s gebunden (bond " + z.bindung.join(" → ") + "): Abstand p50 " + z.abstand.p50 + " · p95 " +
+                    z.abstand.p95 + " · max " + z.abstand.max + " m · " + W.length + " Wände ohne Durchdringung, Sockel " +
+                    S.ueber + " Takte darüber · Hang > 15° " + z.steilS + " s, nass " + z.nassS + " s · ungebunden " +
+                    z.gegenlauf.abstandM + " m",
+            };
+        },
+        pfad: [
+            ...KREATUR,
+            "stamm/koerper-bewegung.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/feld-sprache.js",
+            "stamm/feld-dsl.js",
+        ],
+        quelle: "1 = ein gebundenes Tier folgt ≥ 10 min über Hindernisse",
+    },
 ];
 
 // Nicht als Station fassbar (heute): je Kriterium und Staffel der Grund beim Namen. Sie tragen keine Punkte der Maschine;
 // was hier steht, bucht weiter die Hand oder bleibt 0, bis das Werkzeug steht.
 const fehlt = [
     {
-        kriterium: "oekologie.K5",
+        kriterium: "oekologie.K4",
         staffel: 1,
         geraet: ["radeon", "gtx"],
         befehl: null,
         grund:
-            "Werkzeug fehlt im Spiel-Baum: M19 lief als Scratch `bericht/2110-messschuld-radeon-2/skripte/m14-spielgang.cjs` " +
-            "(NUR_TIER) + `m19-weg.cjs`, beide hart auf den gelöschten Baum `mess-2110b` (WT) und einen eigenen save-server " +
-            "(SPIEL_URL :7960) gebunden, 10 min Spielgang über R5; keine Probe der Kreatur-Linse misst das Folgen ≥ 10 min " +
-            "über Hindernisse (follow_player nur in Kurz-Proben)",
-        quelle: "1 = ein gebundenes Tier folgt ≥ 10 min über Hindernisse",
+            "Mechanik und Werkzeug fehlen: der Spieler ist Ziel einer Jagd nur in jagd.radius 12 m (_creatureHuntDrive), die Witterung " +
+            "(_creatureScentHuntDir) liest nur Tiere — ein Rudel aus der Geburt (≥ 130 m, Leine am Geburtsort) wird nicht zum Spieler gezogen; " +
+            "ungemessen, „im Bild\" verlangt eine Radeon-Station",
+        quelle: "1 = im Wolfsrevier wird der Spieler in 10 Spielminuten ≥ 1× gepirscht und umstellt (im Bild)",
     },
     {
         kriterium: "oekologie.K5",
