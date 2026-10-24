@@ -585,7 +585,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         let abgelegt = null;
         try {
             abgelegt = applyRes.ok ? JSON.parse(localStorage.getItem(r.worldStorageKey(applyRes.worldId))) : null;
-        } catch (_e) {
+        } catch {
             abgelegt = null;
         }
         out.applyExtractedWorks =

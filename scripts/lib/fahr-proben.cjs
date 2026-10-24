@@ -24,7 +24,7 @@ async function probeLeben(expected) {
         };
         try {
             lauf();
-        } catch (_e) {
+        } catch {
             /* der Ruf zählt */
         } finally {
             if (eigen) o[k] = f0;
