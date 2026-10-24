@@ -116,60 +116,6 @@ function wasserFluss() {
     };
 }
 
-// ── Q7-Gestalt: der Kanal ist EINE Dichte (Lehre 7, Worker-Spiegel) ──
-// Main und Worker rechnen das Dichte-Gitter an Fluss-Punkten (der Kanal formt dort das Gelände) — bit-gleich verlangt.
-function wasserKanalParitaet(opts) {
-    return (async () => {
-        const o = opts || {};
-        const r = window.anazhRealm;
-        const st = r.state;
-        const h = st.hydrosphere;
-        if (!h || !h.ready) return { fehler: "kein Worker-Pfad" };
-        if (!r._getVoxelWorker()) return { fehler: "kein Worker" };
-        await r._voxelWorkerSyncState({ op: "init" });
-        const cfg = r._voxelChunkConfig(0);
-        const punkte = [];
-        for (const rv of h.rivers)
-            for (let k = 0; k + 1 < rv.points.length && punkte.length < (o.n || 6); k += 7) {
-                const p = rv.points[k];
-                if (!p.inLake && !rv.points[k + 1].inLake) punkte.push(p);
-            }
-        // NaN ist nie ein Befund: eine NaN-Zelle ist eine kaputte Probe, nie der Kanal; sie wird beim Namen gezählt
-        // (`nanMain`, `nanWorker`).
-        let zellen = 0,
-            abweichend = 0,
-            maxDelta = 0,
-            nanMain = 0,
-            nanWorker = 0;
-        for (const p of punkte) {
-            const ox = Math.floor(p.x / cfg.step) * cfg.step - 8 * cfg.step;
-            const oz = Math.floor(p.z / cfg.step) * cfg.step - 8 * cfg.step;
-            // die Höhe des Spiegels
-            const sy = Number.isFinite(p.S) ? p.S : Number.isFinite(p.voxelY) ? p.voxelY : p.y;
-            const oy = Math.floor((sy - 8) / cfg.step) * cfg.step;
-            const n = 16,
-                ny = 10;
-            const main = r._voxelSampleDensityGrid(ox, oy, oz, n, ny, n, cfg.step, (x, y, z) =>
-                r._terrainDensityAt(x, y, z)
-            );
-            const wrk = await r._voxelWorkerComputeDensity(ox, oy, oz, n, ny, n, cfg.step);
-            for (let i = 0; i < main.length; i++) {
-                zellen++;
-                const nm = !Number.isFinite(main[i]),
-                    nw = !(wrk && Number.isFinite(wrk[i]));
-                if (nm) nanMain++;
-                if (nw) nanWorker++;
-                if (nm || nw) continue;
-                if (main[i] !== wrk[i]) {
-                    abweichend++;
-                    maxDelta = Math.max(maxDelta, Math.abs(main[i] - wrk[i]));
-                }
-            }
-        }
-        return { punkte: punkte.length, zellen, abweichend, maxDelta, nanMain, nanWorker };
-    })();
-}
-
 // ── Q6-Körper ──
 function wasserKoerper(opts) {
     return (async () => {
@@ -2813,6 +2759,202 @@ function wasserMutation(opts) {
     })();
 }
 
+// ── GELÄNDE K4 STAFFEL 2: ÜBERALL ── DIE ORTE ÜBER DIE KARTE: aus der Saat der Probe `n` Orte (±6 km um die Mitte der Welt, je
+// ≥ 1,5 km auseinander) — trockenes Land (`_landAt`, 2 m Marge; die Mutation sucht dort ihre Punkte) oder je der Fluss-Punkt
+// der Region nächst dem Wurf, an dem das Wasser ≥ 1,2 m über dem gezeichneten Bett steht und die Strömung trägt (`fluss`).
+async function wasserKarte(opts) {
+    const o = opts || {};
+    const r = window.anazhRealm;
+    let hs = 0x51ed270b;
+    const zufall = () => {
+        hs = (hs + 0x6d2b79f5) >>> 0;
+        let t = Math.imul(hs ^ (hs >>> 15), hs | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const tief = (p) => r._atlasWaterLevelAt(p.x, p.z, r._voxelSurfaceY(p.x, p.z)) - r._voxelSurfaceY(p.x, p.z);
+    const orte = [];
+    for (let v = 0; v < 400 && orte.length < (o.n || 5); v++) {
+        const [x, z] = [(zufall() * 2 - 1) * 6000, (zufall() * 2 - 1) * 6000];
+        if (orte.some(([a, b]) => Math.hypot(a - x, b - z) < 1500)) continue;
+        await window.__weltDa(() => !r._ensureHydroTilesAround(x, z, 300));
+        if (!o.fluss) {
+            if (r._landAt(x, z, 2)) orte.push([x, z]);
+            continue;
+        }
+        const P = (r._hydroFor(x, z).rivers || []).flatMap((rv) => rv.points.slice(4, -4)).filter((p) => !p.inLake);
+        P.sort((a, b) => Math.hypot(a.x - x, a.z - z) - Math.hypot(b.x - x, b.z - z));
+        const p = P.slice(0, 400).find((q) => r._waterFlowAt(q.x, q.z) && tief(q) >= 1.2);
+        if (p) orte.push([p.x, p.z]);
+    }
+    return orte;
+}
+
+// DIE LÄUFE ENDEN IN SEE ODER MEER: jeder Lauf des Gesetzes (`flussLaeufe`, ±`weite` um die Mitte der Welt) verfolgt bis zu seiner
+// Senke — über den Fenster-Rand (der Lauf desselben Netzes ab seinem letzten Knoten) und die Mündung (der Lauf der Ebene darunter,
+// dessen Bahn die Mündung trägt); die Welt trägt an jeder Senke Wasser über dem gezeichneten Grund (`_atlasWaterLevelAt`, an
+// der Senke oder einer Zelle daneben), und der Spiegel jedes Flusses der Regionen steigt stromab nie.
+async function wasserLaeufe(opts) {
+    const o = opts || {};
+    const r = window.anazhRealm;
+    const G = window.__gelaendeCore;
+    const L = r._gelaende();
+    const [W, schritt] = [o.weite || 3072, 16];
+    const start = G.flussLaeufe(L, -W, -W, W, W, schritt);
+    const folge = (lf) => {
+        let [gl, ende, k] = [lf.glieder, lf.ende, lf.k];
+        for (let n = 0; n < 400; n++) {
+            const { bx: x, bz: z } = gl[gl.length - 1];
+            if (ende === "see" || ende === "meer") return { ende, x, z };
+            const nk = ende === "muendung" ? k - 1 : k;
+            const weiter = G.flussLaeufe(L, x - 1, z - 1, x + 1, z + 1, schritt)
+                .filter((l) => l.k === nk)
+                .map((l) => {
+                    const i = l.glieder.findIndex((q) =>
+                        ende === "muendung" ? q.bahn.some((b) => Math.hypot(b.x - x, b.z - z) < schritt) : q.ax === x && q.az === z
+                    );
+                    const e = l.glieder[l.glieder.length - 1];
+                    // an einer Senke beginnt kein Glied: der Lauf, der an ihr endet, trägt sie
+                    if (i < 0 && ende === "rand" && e.bx === x && e.bz === z && l.ende !== "rand") return [[e], l.ende, l.k];
+                    return i < 0 ? null : [l.glieder.slice(i), l.ende, l.k];
+                })
+                .find(Boolean);
+            if (!weiter) return { ende: "verloren", x, z };
+            [gl, ende, k] = weiter;
+        }
+        return { ende: "verloren" };
+    };
+    const aus = { laeufe: start.length, ende: {}, senken: 0, nass: 0, trocken: [], schritte: 0, steigt: 0 };
+    const senken = new Map();
+    for (const lf of start) {
+        const e = folge(lf);
+        aus.ende[e.ende] = (aus.ende[e.ende] || 0) + 1;
+        if (e.ende !== "verloren") senken.set(e.x + "," + e.z, e);
+        else if (aus.trocken.length < 6) aus.trocken.push(["verloren", Math.round(e.x), Math.round(e.z)]);
+    }
+    for (const e of senken.values()) {
+        await window.__weltDa(() => !r._ensureHydroTilesAround(e.x, e.z, 32));
+        aus.senken++;
+        const nass = [[0, 0], [16, 0], [-16, 0], [0, 16], [0, -16]].some(([dx, dz]) => {
+            const b = r._voxelSurfaceY(e.x + dx, e.z + dz);
+            return r._atlasWaterLevelAt(e.x + dx, e.z + dz, b) > b;
+        });
+        if (nass) aus.nass++;
+        else aus.trocken.push([e.ende, Math.round(e.x), Math.round(e.z)]);
+    }
+    const st = r.state;
+    for (const h of [st.hydrosphere, ...st.hydroTiles.values()])
+        for (const rv of h.rivers || [])
+            for (let i = 0; i + 1 < rv.points.length; i++, aus.schritte++) if (rv.points[i + 1].S > rv.points[i].S) aus.steigt++;
+    return aus;
+}
+
+// DIE STRÖMUNG TREIBT (gate:kopplung F1 in der Welt): am Fluss-Punkt `ort` (die Welt dort gestreamt) je Körper 90 Takte ohne
+// Eingabe, einmal mit und einmal ohne Strömung (`_waterFlowAt` schweigt); sein Weg längs des Laufs ohne den eigenen Gang (das Tier
+// steuert selbst: Σ Gier × Tempo des Steuer-Gesetzes) ist die Drift. Der Schwimmer (`_stepFixedSim`, unter dem Spiegel), das
+// gerittene Boot (das Probe-Werk der Wagen-Probe, `_rittSchritt` im Sim-Schritt) und der Wolf in der Kanal-Mitte
+// (`updateCreatures`) treiben > 0,5 m und ohne Strömung nicht; der Läufer am trockenen Ufer nie.
+async function wasserTreibt(opts) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const A = r.constructor;
+    const pm = st.playerMesh;
+    const [x, z] = opts.ort;
+    await window.__wasserStrom([x, z], 3);
+    const f = r._waterFlowAt(x, z);
+    const rv = r._hydroRiverAt(x, z);
+    if (!f || !rv) return { fehler: "kein Fluss am Ort " + x + "/" + z };
+    const m = Math.hypot(f.x, f.z);
+    const [fx, fz] = [f.x / m, f.z / m];
+    const S = r._atlasWaterLevelAt(x, z, r._voxelSurfaceY(x, z));
+    const R = (v) => Math.round(v * 1000) / 1000;
+    // das trockene Ufer: quer zum Lauf jenseits der Krone die erste Spalte ohne Wasser
+    let ufer = null;
+    for (let d = rv.depth + 6; d < 80 && !ufer; d += 1)
+        for (const sg of [1, -1]) {
+            const [ux, uz] = [x - fz * d * sg, z + fx * d * sg];
+            if (!ufer && !r._nassAt(ux, uz) && !r._hydroRiverAt(ux, uz)) ufer = [ux, uz];
+        }
+    const [posAlt, keysAlt, loopAlt] = [pm.position.clone(), st.keys, r._loopFixedStep];
+    r._loopFixedStep = () => 0;
+    st.keys = {};
+    let t = Number.isFinite(st._fixedSimTime) ? st._fixedSimTime : 0;
+    const sim = () => {
+        r._stepFixedSim(t, A.FIXED_DT);
+        st._fixedSimTime = t += A.FIXED_DT;
+    };
+    const spieler = (px, py, pz) => {
+        pm.position.set(px, py, pz);
+        if (st._fixedSimPos) st._fixedSimPos.copy(pm.position);
+        st._fixedPrevPos = null;
+        st.playerVel.setValue(0, 0, 0);
+        st._fieldVy = 0;
+        st.isInAir = false;
+        return pm;
+    };
+    // je Körper: setzen, 90 Takte, der Weg längs des Laufs ohne den eigenen Gang — mit und ohne Strömung
+    const lauf = (setze, takt, fort) => {
+        const weg = [];
+        for (const mit of [true, false]) {
+            if (!mit) r._waterFlowAt = () => null;
+            const k = setze();
+            if (!k) return { fehler: "der Körper steht nicht" };
+            let w = -(k.position.x * fx + k.position.z * fz);
+            for (let n = 0; n < 90; n++) {
+                takt(k);
+                const s = k.userData && k.userData._steuer;
+                if (s) w -= (Math.sin(s.gier) * fx + Math.cos(s.gier) * fz) * s.v * A.FIXED_DT;
+            }
+            weg.push(w + k.position.x * fx + k.position.z * fz);
+            delete r._waterFlowAt;
+            if (fort) fort(k);
+        }
+        return { mit: R(weg[0]), ohne: R(weg[1]) };
+    };
+    const BOOT = "__wasser_boot_treibt";
+    st.blueprints[BOOT] = {
+        name: BOOT,
+        parts: [{ shape: "box", material: "holz", size: { x: 3, y: 0.6, z: 1.4 }, position: { x: 0, y: 0, z: 0 } }],
+        connections: [],
+    };
+    const aus = { ort: [R(x), R(z)], spiegel: R(S), strom: R(m) };
+    try {
+        aus.schwimmer = lauf(() => spieler(x, S - 0.9, z), sim);
+        if (ufer) aus.land = lauf(() => spieler(ufer[0], r._voxelSurfaceY(...ufer) + A.PLAYER_FOOT_OFFSET + 0.02, ufer[1]), sim);
+        aus.boot = lauf(
+            () => {
+                spieler(x, S + 1, z);
+                const e = r.spawnArchitecture(BOOT, { x, y: r._voxelSurfaceY(x, z), z }, { silent: true, precise: true });
+                if (!e) return null;
+                e.affordances = Object.assign({}, e.affordances, { moveable: true });
+                const ok = r.mountArchitecture(e);
+                return ok && ok.ok ? e : (r.removeArchitecture(e), null);
+            },
+            () => {
+                sim();
+                r._tickMountedMovement(A.FIXED_DT);
+            },
+            (e) => {
+                r.dismountArchitecture();
+                r.removeArchitecture(e);
+            }
+        );
+        if (ufer) spieler(ufer[0], r._voxelSurfaceY(...ufer) + 1, ufer[1]);
+        aus.tier = lauf(
+            () => r.spawnCreatureAt(x, S, z, "happy", "wolf", { precise: true, bodySize: 1 }),
+            () => r.updateCreatures(A.FIXED_DT),
+            (c) => r.removeCreature(c)
+        );
+    } finally {
+        delete r._waterFlowAt;
+        delete st.blueprints[BOOT];
+        r._loopFixedStep = loopAlt;
+        st.keys = keysAlt || {};
+        spieler(posAlt.x, posAlt.y, posAlt.z);
+    }
+    return aus;
+}
+
 // ── DIE ORTE DES WASSERS AUS DER WELT ── nie als Literale der Proben: gesucht am Gesetz nächst der
 // Mess-Wiese (`mess`): der See (die nächste benannte Senke des Gelände-Gesetzes, deren Kachel einen See über dem Meer trägt,
 // tiefste Stelle ≥ 3 m), sein Ostufer (von der tiefsten Stelle nach +x die erste trockene Spalte, 4 m landein — der Weg
@@ -3003,6 +3145,9 @@ module.exports = {
         `window.__wasserOrte = ${wasserOrte.toString()};` +
         `window.__wasserLeser = ${wasserLeser.toString()};` +
         `window.__wasserMutation = ${wasserMutation.toString()};` +
+        `window.__wasserKarte = ${wasserKarte.toString()};` +
+        `window.__wasserLaeufe = ${wasserLaeufe.toString()};` +
+        `window.__wasserTreibt = ${wasserTreibt.toString()};` +
         `window.__wasserHoehle = ${wasserHoehle.toString()};` +
         `window.__wasserWagen = ${wasserWagen.toString()};` +
         `window.__wasserSichtNetz = ${wasserSichtNetz.toString()};` +
@@ -3014,7 +3159,6 @@ module.exports = {
         `window.__wasserBank = ${wasserBank.toString()};` +
         `window.__wasserFluss = ${wasserFluss.toString()};` +
         `window.__wasserKroneVon = ${__wasserKroneVon.toString()};` +
-        `window.__wasserKanalParitaet = ${wasserKanalParitaet.toString()};` +
         `window.__wasserUfer = ${wasserUfer.toString()};` +
         `window.__wasserStrom = ${wasserStrom.toString()};` +
         `window.__wasserFlussNah = ${__wasserFlussNah.toString()};` +

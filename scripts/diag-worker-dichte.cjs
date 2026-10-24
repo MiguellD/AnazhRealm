@@ -15,8 +15,10 @@
 // sind SHA Main = Worker.
 //
 //   node scripts/diag-worker-dichte.cjs [--welten standard,buehne] [--json datei]
-//   node scripts/diag-worker-dichte.cjs --selftest     ein verfälschter Worker-Term (die Basis-Höhe + 1 cm,
-//                                                      nur im Worker) MUSS rot werden; der saubere Lauf grün
+//   node scripts/diag-worker-dichte.cjs --selftest     der Faden lädt einen verfälschten Kern (die Höhe + 1 cm) — er
+//                                                      MUSS rot werden; der saubere Lauf grün
+//   node scripts/diag-worker-dichte.cjs --kern [--selftest] [--json datei]
+//                                                      die Kern-Probe (gelaende.K1 Staffel 2, Kopf von `kernProbe`)
 //   node scripts/diag-worker-dichte.cjs --abdruck datei [--wurzel dir]
 //                                                      der BYTE-ABDRUCK beider Welten (SHA-256 je Gitter, Main UND
 //                                                      Worker, und der Makro-Höhe auf einem 64×64-Gitter für drei
@@ -284,12 +286,11 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
             // Spielpfad (`_addVoxelEdit`, r 3,5 wie der Hieb), jeder auf der Krone des vorigen (`_voxelSurfaceY`),
             // hebt sich je Edit um r (−0,1 … +0,3 m, die Interpolation der Flächen-Probe) und steht als EINE Hülle (in jeder Höhe
             // 0,5 m innerhalb des Rands Fels, 0,6 m außerhalb Luft) — bis über das Band (+19,2 m); dazu ein Graben an seinem Fuß.
-            // Jeder Leser trägt das Gesetz über die ganze Liste: der Haupt-Faden im Punkt (`_terrainDensityAt`, `_fieldDensityAt`
-            // mit und ohne Spalten-Kontext) und im Gitter (`_voxelEditedDensityGrid`), der Worker = Main (LOD 0–3), und die Wache
-            // des Fern-Rings (`_fernRingDeckWache` auf einer Naht aus 640 Probe-Ecken) weckt genau die Ecken in der Reichweite;
-            // jenseits ändert sich keine Fläche. An der Basis e3dd2b67 stapelte jeder Edit an vier Stellen einen additiven Kegel
-            // der Stärke 48: 10 Blöcke hoben 24,5 m (Hub 3,26 → 1,90 m). `zwilling` (Selbsttest): der Kegel im Punkt des
-            // Haupt-Fadens (`_mitEdits`) und die alte Reichweite r + 4 m in der Wache — beide MÜSSEN beim Namen rot werden.
+            // Der Worker = Main (LOD 0–3), und die Wache des Fern-Rings (`_fernRingDeckWache` auf einer Naht aus 640 Probe-Ecken)
+            // weckt genau die Ecken in der Reichweite; jenseits ändert sich keine Fläche (Punkt und Gitter des Haupt-Fadens gegen
+            // den Kern misst `--kern`). An der Basis e3dd2b67 stapelte jeder Edit an vier Stellen einen additiven Kegel der
+            // Stärke 48: 10 Blöcke hoben 24,5 m (Hub 3,26 → 1,90 m). `zwilling` (Selbsttest): der Kegel im Punkt des Haupt-Fadens
+            // (`_mitEdits`) und die alte Reichweite r + 4 m in der Wache — TURM und FERN-RING MÜSSEN beim Namen rot werden.
             const o0 = orte[0];
             s.worldMeta.voxelEdits = [];
             await r._voxelWorkerSyncState({ op: "state-set" });
@@ -332,45 +333,8 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                     if (r._terrainDensityAt(tx + Math.cos(w) * q, y, tz + Math.sin(w) * q) > 0 !== a < 8) loch++;
                 }
             if (loch) out.befunde.push(`HÜLLE: ${loch} Proben am Rand des Turms falsch (innen Luft oder außen Fels)`);
-            if (!G.editForm)
-                return (out.befunde.push("KERN: gelaende-core trägt die Form des Edits nicht (editForm)"), out);
-            let ab = 0;
-            for (let i = 0; i < 3000; i++) {
-                const x = tx - 12 + ((i * 7919) % 2400) / 100;
-                const z = tz - 12 + ((i * 104729) % 2400) / 100;
-                const y = y0 - 6 + ((i * 0.618034) % 1) * (krone - y0 + 12);
-                const [K, d] = [r._kellerLage(x, z), G.mitEdits(r._terrainBaseDensityAt(x, y, z), x, y, z, alle)];
-                const soll = K ? G.erdbauHohl(K, x, y, z, d) : d;
-                const c = r._terrainColumnContext(x, z);
-                for (const ist of [
-                    r._terrainDensityAt(x, y, z),
-                    r._fieldDensityAt(x, y, z),
-                    r._fieldDensityAt(x, y, z, c),
-                ])
-                    if (!Object.is(ist, soll)) ab++;
-            }
-            if (ab)
-                out.befunde.push(
-                    `HAUPT-FADEN PUNKT (_terrainDensityAt · _fieldDensityAt): ${ab} von 9000 Proben ≠ Gesetz`
-                );
-            const L = r._gelaende();
             const turm = { id: o0.id + "+turm", x: tx, z: tz, zeilen: [] };
-            for (let lod = 0; lod <= 3; lod++) {
-                turm.zeilen.push(await vergleiche(turm, lod, "turm"));
-                const cfg = r._voxelChunkConfig(lod);
-                const [ox, oz] = [
-                    Math.floor(tx / cfg.span) * cfg.span - cfg.step,
-                    Math.floor(tz / cfg.span) * cfg.span - cfg.step,
-                ];
-                const g = [ox, base - cfg.floorDrop, oz, cfg.dim + 3, cfg.dimY, cfg.dim + 3, cfg.step];
-                const N = [cfg.dim + 4, cfg.dimY + 1, cfg.dim + 4, cfg.step];
-                const main = new Uint32Array(r._voxelEditedDensityGrid("linse-turm", ...g).buffer);
-                s.voxelBaseDensityCache.delete("linse-turm");
-                const b = G.dichteGitter(L, ox, g[1], oz, ...N);
-                const soll = new Uint32Array(G.gitterMitEdits(L, b, ox, g[1], oz, ...N, alle).buffer);
-                const n = main.filter((w, i) => w !== soll[i]).length;
-                if (n) out.befunde.push(`HAUPT-FADEN GITTER (_voxelEditedDensityGrid): L${lod} ${n} Ecken ≠ Gesetz`);
-            }
+            for (let lod = 0; lod <= 3; lod++) turm.zeilen.push(await vergleiche(turm, lod, "turm"));
             out.orte.push(turm);
             const fr = {
                 zoneVerts: 640,
@@ -664,41 +628,23 @@ async function strom(page, urform) {
     }, urform);
 }
 
-// Der Selbsttest: EIN Term nur im Worker verfälscht (die Basis-Höhe, die das Gesetzbuch `hoehe` liest, um 1 cm — die Steilheit
-// las es seit K16 nicht mehr, der Selbsttest war blind) — die Linse MUSS das beim Ort und Gitter nennen.
-async function verfaelsche(page, an) {
-    return page.evaluate(async (an) => {
-        const r = window.anazhRealm;
-        const s = r.state;
-        if (!an) return r._voxelWorkerSyncState({ op: "state-set" });
-        const delta = { baseHeight: (s.terrainBaseHeight || 0) + 0.01 };
-        return r._voxelFadenAuftrag(s.voxelWorker, { type: "state-update", delta });
-    }, an);
+// Der Selbsttest: der Voxel-Faden lädt einen verfälschten Kern (die Höhe + 1 cm, `KERN_MODUS.faden`) — dieselbe Probe MUSS ihn
+// bei Ort und Gitter nennen, an den Höhen der Ferne und am Stoff des Walds.
+async function probeVerfaelscht(page, url) {
+    KERN_MODUS.faden = "Höhen-Versatz";
+    try {
+        await frischBoot(page, url);
+        return await probe(page, "standard", false, true);
+    } finally {
+        KERN_MODUS.faden = null;
+    }
 }
-
-// Ein Lauf mit verfälschtem Worker: dieselbe Probe, nur der Worker-Zustand ist nach dem state-set verfälscht.
-async function probeVerfaelscht(page) {
-    // Die Probe synct den Worker vor jedem Teil neu (state-set) — darum verfälscht dieser Lauf den Spiegel in der
-    // Seite: _voxelWorkerSyncState hängt die Verfälschung an jeden Snapshot.
-    await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const orig = r._voxelWorkerSnapshotState;
-        r.__dichteOrig = orig;
-        r._voxelWorkerSnapshotState = function () {
-            const snap = orig.call(this);
-            snap.baseHeight = (snap.baseHeight || 0) + 0.01;
-            return snap;
-        };
-    });
-    await verfaelsche(page, true);
-    const rep = await probe(page, "standard", false, true);
-    await page.evaluate(() => {
-        const r = window.anazhRealm;
-        r._voxelWorkerSnapshotState = r.__dichteOrig;
-        delete r.__dichteOrig;
-    });
-    await verfaelsche(page, false);
-    return rep;
+// Eine frische Standard-Welt (der Boot-Seed, kein Rest einer früheren Welt im Profil), bis Main und Faden stehen.
+async function frischBoot(page, url) {
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.evaluate(() => localStorage.clear());
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
+    if (!(await boote(page)).ok) throw new Error("der Boot stand nicht (" + JSON.stringify(KERN_MODUS) + ")");
 }
 
 function zeige(rep) {
@@ -731,306 +677,187 @@ function zeige(rep) {
         );
 }
 
-// ── DIE KERN-PROBE (`--kern`, Meisterkarte gelaende.K1 Staffel 2): dichte, editForm und Wasser-Spiegel sind EIN Gesetz des Kerns
-// (gelaende-core `dichte` · `mitEdits` · `wasserSpiegel` · `atlasSpiegel` · `flussAm`; das Gitter `dichteGitter` + `gitterMitEdits`).
-// An 10⁵ Punkten (je 2·10⁴ in einer Höhle, am Fluss-Kanal, im See-Becken, um 20 Edits über den Spielpfad und verstreut um die
-// Mess-Wiese) und an Gittern dort rechnen der Stamm-Leser (`_terrainDensityAt`, `_waterLevelAt`, `_atlasWaterLevelAt`,
-// `_hydroRiverAt`, `_voxelEditedDensityGrid`), jeder Voxel-Faden (seine Leser über CDP, das Gitter über den Auftrag
-// `density-grid`) und eine frische Instanz des Kerns (dieselbe Quelle, über CDP geladen) Wort für Wort gleich. Dann die FESTE Mutations-
-// Liste: der Server liefert den Kern verändert aus, je Mutation ein Boot — jede ändert den Ausgang von Stamm-Leser UND
-// Worker-Feld (Punkt-Diff ≠ 0), und beide bleiben = Kern; ein Leser mit eigener Abschrift folgt nicht. Selbsttest: der Faden (A)
-// bzw. der Haupt-Faden (B) lädt den unveränderten Kern — die Probe MUSS ihn beim Namen rot nennen.
-const KERN_MUTATIONEN = [
-    { name: "Edit-Stärke", art: "dichte", tausch: [["tiefeM: 4, rundM: 1", "tiefeM: 5, rundM: 1"]] },
-    {
-        name: "Edit-Radius",
-        art: "dichte",
-        tausch: [["- ed.r + c;\n        const qy = Math.abs(dy) - ed.r + c;", "- ed.r * 1.1 + c;\n        const qy = Math.abs(dy) - ed.r * 1.1 + c;"]],
-    },
-    { name: "Dichte-Versatz", art: "dichte", tausch: [["let d = surf - y;", "let d = surf - y + 0.25;"]] },
-    { name: "See-Spiegel", art: "spiegel", tausch: [["return h.water.waterY[i];", "return h.water.waterY[i] + 0.5;"]] },
-];
-const KERN_MODUS = { haupt: null, faden: null, probe: null }; // je Boot: die Mutation im Haupt-Faden, im Voxel-Faden, in der Probe
+// ── DIE KERN-PROBE (`--kern`, gelaende.K1 Staffel 2): dichte, editForm und Wasser-Spiegel sind EIN Gesetz des Kerns. An 10⁵
+// Punkten (je 2·10⁴ in einer Höhle, am Kanal, im See-Becken, um 20 Edits des Spielpfads, verstreut um die Mess-Wiese) und an
+// Gittern dort rechnen der Stamm-Leser, jeder Voxel-Faden (seine Leser über CDP, das Gitter über `density-grid`) und eine frische
+// Instanz des Kerns Wort für Wort gleich. Der Server liefert den Kern je Boot verändert aus (die feste Liste): jede Mutation zieht
+// Stamm-Leser UND Worker-Feld, beide bleiben = Kern. Selbsttest: lädt der Faden (der Haupt-Faden) den unveränderten Kern, nennt
+// die Probe ihn beim Namen.
+const KERN_MUTATIONEN = {
+    "Edit-Stärke": [["tiefeM: 4, rundM: 1", "tiefeM: 5, rundM: 1"]],
+    "Edit-Radius": [["- ed.r + c;\n        const qy = Math.abs(dy) - ed.r + c;", "- ed.r * 1.1 + c;\n        const qy = Math.abs(dy) - ed.r * 1.1 + c;"]],
+    "Dichte-Versatz": [["let d = surf - y;", "let d = surf - y + 0.25;"]],
+    "See-Spiegel": [["return h.water.waterY[i];", "return h.water.waterY[i] + 0.5;"]],
+};
+const KERN_SELBST = { "Höhen-Versatz": [["let h = hoeheGrund(L, x, z, mitDetail, aus);", "let h = hoeheGrund(L, x, z, mitDetail, aus) + 0.01;"]] };
+const KERN_MODUS = { haupt: null, faden: null, probe: null }; // je Boot die Mutation im Haupt-Faden, im Voxel-Faden, in der Probe
 const kernQuelle = () => fs.readFileSync(path.join(root, "gelaende-core.js"), "utf8");
-const kernAnker = (m, q) => m.tausch.every(([a]) => q.split(a).length === 2);
-function kernMutiert(roh, name) {
-    const m = KERN_MUTATIONEN.find((k) => k.name === name);
-    return m ? m.tausch.reduce((t, [a, b]) => t.replace(a, b), String(roh)) : roh;
-}
+const kernMutiert = (roh, name) => (KERN_MUTATIONEN[name] || KERN_SELBST[name] || []).reduce((t, [a, b]) => t.replace(a, b), String(roh));
 function kernWandle(p, roh) {
-    if (p === "/gelaende-core.js") return kernMutiert(roh, KERN_MODUS.haupt);
+    if (p === "/gelaende-core.js" && KERN_MODUS.haupt) return kernMutiert(roh, KERN_MODUS.haupt);
     if (p === "/gelaende-core.faden.js") return kernMutiert(kernQuelle(), KERN_MODUS.faden);
     if (p === "/voxel-worker.js" && roh && KERN_MODUS.faden !== KERN_MODUS.haupt)
         return String(roh).replace('"gelaende-core.js"', '"gelaende-core.faden.js"');
     return roh;
 }
-const KERN_N = 20000; // Punkte je Ort (Höhle, Kanal, See, Edit, Zufall)
-const KERN_WERTE = ["dichte", "spiegel", "koerper", "fluss"];
+// in Seite und Faden: Float-Felder als Base64 und die Leser an den Punkten (je Leser ein Float64-Feld)
+const KERN_HILFE = `self.__kern = {
+    an: (a) => { const u = new Uint8Array(a.buffer, a.byteOffset, a.byteLength); let t = "";
+        for (let i = 0; i < u.length; i += 32768) t += String.fromCharCode.apply(null, u.subarray(i, i + 32768)); return btoa(t); },
+    ab: (b) => Uint8Array.from(atob(b), (c) => c.charCodeAt(0)).buffer,
+    lies: (fn, b) => { const P = new Float64Array(self.__kern.ab(b));
+        return fn.map((f) => { const a = new Float64Array(P.length / 3);
+            for (let i = 0; i < a.length; i++) a[i] = f(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]); return self.__kern.an(a); }); },
+    fluss: (f) => (f ? f.surfaceY : NaN),
+};`;
 
-// Der Plan (am unveränderten Kern): die Orte aus der Welt, 20 Edits, 10⁵ Punkte (je Ort KERN_N, über keinem Keller).
-async function kernPlan(page, mitte) {
+// Der Plan am unveränderten Kern: Höhle, Kanal und See nächst der Mess-Wiese, 20 Edits, 10⁵ Punkte über keinem Keller.
+async function kernPlan(page, M, N) {
     return page.evaluate(
         async (MX, MZ, N) => {
             const r = window.anazhRealm;
-            const h = r.state.hydrosphere;
-            const L = r._gelaende();
-            await window.__weltDa(() => !r._ensureHydroTilesAround(MX, MZ, 700));
             let hs = 0x2545f491;
-            const zufall = () => {
+            const zufall = (w = 1) => {
                 hs = (hs + 0x6d2b79f5) >>> 0;
                 let t = Math.imul(hs ^ (hs >>> 15), hs | 1);
                 t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+                return ((((t ^ (t >>> 14)) >>> 0) / 4294967296) * 2 - 1) * w;
             };
             const nah = (a, b) => Math.hypot(a.x - MX, a.z - MZ) - Math.hypot(b.x - MX, b.z - MZ);
             const zelle = (g, i) => ({ x: g.originX + ((i % g.dim) + 0.5) * g.cell, z: g.originZ + (((i / g.dim) | 0) + 0.5) * g.cell });
-            const kanal = (h.rivers || [])
-                .flatMap((f) => (f.points || []).slice(2, -2))
-                .filter((q) => r._hydrosphereCarveAt(q.x, q.z))
-                .sort(nah)[0];
-            // der See: die nächste benannte Senke des Gesetzes, deren Region einen See über dem Meer trägt (wie `__wasserOrte`)
+            await window.__weltDa(() => !r._ensureHydroTilesAround(MX, MZ, 700));
+            const h = r.state.hydrosphere;
+            const kanal = h.rivers.flatMap((f) => f.points.slice(2, -2)).filter((q) => r._hydrosphereCarveAt(q.x, q.z)).sort(nah)[0];
             let see = null;
-            const kand = globalThis.__gelaendeCore
-                .benannteSeen(L, -12000, -12000, 64, 375)
+            for (const k of globalThis.__gelaendeCore.benannteSeen(r._gelaende(), -12000, -12000, 64, 375)
                 .map((k) => ({ x: -12000 + (k % 375) * 64, z: -12000 + ((k / 375) | 0) * 64 }))
-                .sort(nah);
-            for (const k of kand) {
+                .sort(nah)) {
                 await window.__weltDa(() => !r._ensureHydroTilesAround(k.x, k.z, 0));
                 const g = r._hydroFor(k.x, k.z);
-                const lake = g && (g.lakes || []).find((l) => l.level > (r.state.waterLevel || 0) + 2 && l.cells && l.cells.length >= 16);
-                see = lake && lake.cells.map((i) => zelle(g, i)).filter((q) => r._hydrosphereLakeAt(q.x, q.z)).sort(nah)[0];
-                if (see) break;
+                const l = (g.lakes || []).find((l) => l.level > (r.state.waterLevel || 0) + 2 && l.cells.length >= 16);
+                if ((see = l && l.cells.map((i) => zelle(g, i)).filter((q) => r._hydrosphereLakeAt(q.x, q.z)).sort(nah)[0])) break;
             }
             let hoehle = null;
-            for (let i = -20; i <= 20; i++)
-                for (let k = -20; k <= 20; k++) {
-                    const [x, z] = [MX + i * 24, MZ + k * 24];
-                    const f = r._terrainMacroSurfaceY(x, z);
-                    if (r._hydrosphereCarveAt(x, z) || r._hydrosphereLakeAt(x, z)) continue;
+            for (let i = -400; i <= 400; i += 24)
+                for (let k = -400; k <= 400; k += 24)
                     for (let t = 4; t <= 30; t += 2) {
-                        const fraese = f - (f - t) - r._terrainBaseDensityAt(x, f - t, z);
-                        if (!hoehle || fraese > hoehle.fraese) hoehle = { x, y: f - t, z, fraese };
+                        const [x, z, f] = [MX + i, MZ + k, r._terrainMacroSurfaceY(MX + i, MZ + k)];
+                        const fraese = t - r._terrainBaseDensityAt(x, f - t, z);
+                        if (!r._hydrosphereCarveAt(x, z) && (!hoehle || fraese > hoehle.fraese)) hoehle = { x, y: f - t, z, fraese };
                     }
-                }
-            if (!kanal || !see || !hoehle) return { fehler: `die Welt trägt nahe der Mess-Wiese ${!kanal ? "keinen Kanal" : !see ? "kein See-Becken" : "keine Höhle"}` };
-            const boden = (x, z) => r._voxelSurfaceY(x, z);
+            if (!kanal || !see || !hoehle) return { fehler: "die Welt trägt nahe der Mess-Wiese keinen Kanal, See oder keine Höhle" };
             const edits = [];
-            const setze = (o, n, weit, unter) => {
+            for (const [o, n, w] of [[kanal, 6, 10], [see, 4, 16], [hoehle, 4, 6], [{ x: MX, z: MZ }, 6, 30]])
                 for (let i = 0; i < n; i++) {
-                    const [x, z] = [o.x + (zufall() * 2 - 1) * weit, o.z + (zufall() * 2 - 1) * weit];
-                    const y = unter ? o.y + (zufall() * 2 - 1) * 3 : boden(x, z) + (zufall() - 0.5);
-                    edits.push({ x, y, z, r: 1.5 + zufall() * 3, mode: i % 2 ? "fill" : "carve" });
+                    const [x, z] = [o.x + zufall(w), o.z + zufall(w)];
+                    const y = o === hoehle ? o.y + zufall(3) : r._voxelSurfaceY(x, z) + zufall(0.5);
+                    edits.push({ x, y, z, r: 3 + zufall(1.5), mode: i % 2 ? "fill" : "carve" });
                 }
-            };
-            setze(kanal, 6, 10, false);
-            setze(see, 4, 16, false);
-            setze(hoehle, 4, 6, true);
-            setze({ x: MX, z: MZ }, 6, 30, false);
+            const [fk, bett] = [r._terrainMacroSurfaceY(kanal.x, kanal.z), r._hydrosphereLakeAt(see.x, see.z).bedY];
+            const wurf = [
+                () => [hoehle.x + zufall(12), hoehle.y + zufall(8), hoehle.z + zufall(12)],
+                () => [kanal.x + zufall(12), fk - 2 + zufall(6), kanal.z + zufall(12)],
+                () => [see.x + zufall(24), bett + zufall(6), see.z + zufall(24)],
+                (i) => ((e) => [e.x + zufall(e.r + 3), e.y + zufall(e.r + 3), e.z + zufall(e.r + 3)])(edits[i % 20]),
+                () => ((x, z) => [x, r._terrainMacroSurfaceY(x, z) - 10 + zufall(20), z])(MX + zufall(600), MZ + zufall(600)),
+            ];
             const P = new Float64Array(5 * N * 3);
             const kat = new Uint8Array(5 * N);
-            let n = 0;
-            const legen = (k, x, y, z) => {
-                if (r._kellerLage(x, z)) return false;
-                P.set([x, y, z], n * 3);
-                kat[n++] = k;
-                return true;
-            };
-            const kasten = (k, o, weit, y0, y1) => {
-                for (let i = 0; i < N; )
-                    if (legen(k, o.x + (zufall() * 2 - 1) * weit, y0 + zufall() * (y1 - y0), o.z + (zufall() * 2 - 1) * weit)) i++;
-            };
-            const fk = r._terrainMacroSurfaceY(kanal.x, kanal.z);
-            const bett = r._hydrosphereLakeAt(see.x, see.z).bedY;
-            kasten(0, hoehle, 12, hoehle.y - 8, hoehle.y + 8);
-            kasten(1, kanal, 12, fk - 8, fk + 4);
-            kasten(2, see, 24, bett - 6, r._waterLevelAt(see.x, see.z) + 3);
-            for (let i = 0; i < N; ) {
-                const e = edits[i % edits.length];
-                const R = e.r + 3;
-                if (legen(3, e.x + (zufall() * 2 - 1) * R, e.y + (zufall() * 2 - 1) * R, e.z + (zufall() * 2 - 1) * R)) i++;
+            for (let n = 0, i = 0; n < 5 * N; i++) {
+                const p = wurf[(n / N) | 0](i);
+                if (!r._kellerLage(p[0], p[2])) P.set(p, n * 3), (kat[n++] = (n / N) | 0);
             }
-            for (let i = 0; i < N; ) {
-                const [x, z] = [MX + (zufall() * 2 - 1) * 600, MZ + (zufall() * 2 - 1) * 600];
-                if (legen(4, x, r._terrainMacroSurfaceY(x, z) - 30 + zufall() * 40, z)) i++;
-            }
-            const b64 = (a) => {
-                const u = new Uint8Array(a.buffer);
-                let t = "";
-                for (let i = 0; i < u.length; i += 0x8000) t += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
-                return btoa(t);
-            };
-            const R1 = (v) => Math.round(v * 10) / 10;
-            return {
-                orte: { hoehle: [R1(hoehle.x), R1(hoehle.y), R1(hoehle.z)], kanal: [R1(kanal.x), R1(kanal.z)], see: [R1(see.x), R1(see.z)] },
-                edits,
-                punkte: b64(P),
-                kat: b64(kat),
-            };
+            const R1 = (o) => [o.x, o.y, o.z].filter(Number.isFinite).map((v) => Math.round(v * 10) / 10);
+            return { orte: [hoehle, kanal, see].map(R1), edits, punkte: __kern.an(P), kat: __kern.an(kat) };
         },
-        mitte.x,
-        mitte.z,
-        KERN_N
+        M.x,
+        M.z,
+        N
     );
 }
 
-// Ein Lauf: die Edits des Plans über den Spielpfad (`_addVoxelEdit`), dann je Punkt dichte, Spiegel, Körper-Spiegel und Fluss
-// aus dem Stamm-Leser, der Kern-Probe und jedem Voxel-Faden; die Gitter an den Orten aus allen dreien.
+// Ein Lauf: die Edits des Plans über den Spielpfad (`_addVoxelEdit`), dann je Punkt dichte, Bezug, Spiegel und Fluss aus dem
+// Stamm-Leser, der Kern-Probe und jedem Voxel-Faden, die Gitter an den Orten (LOD 0 und 1) aus allen dreien.
 async function kernLesen(page, plan) {
-    // die Kern-Probe: eine frische Instanz der Quelle (mit der Mutation der Probe), über CDP neben den Kern der Seite gelegt
     await page.evaluate(`(function (self) {\n${kernMutiert(kernQuelle(), KERN_MODUS.probe)}\n})(window.__kernProbe = {});`);
     const seite = await page.evaluate(async (plan) => {
-        const r = window.anazhRealm;
-        const s = r.state;
+        const [r, s, G] = [window.anazhRealm, window.anazhRealm.state, globalThis.__gelaendeCore];
         r._gameLoopTick = () => {};
-        for (const [x, z, R] of [[plan.mitte.x, plan.mitte.z, 700], [plan.orte.see[0], plan.orte.see[1], 64]])
+        for (const [x, z, R] of [[plan.orte[1][0], plan.orte[1][1], 700], [plan.orte[2][0], plan.orte[2][1], 64]])
             await window.__weltDa(() => !r._ensureHydroTilesAround(x, z, R));
         for (const e of plan.edits) r._addVoxelEdit(e.x, e.y, e.z, e.r, e.mode);
         const alle = s.worldMeta.voxelEdits;
-        const roh = (b) => Uint8Array.from(atob(b), (c) => c.charCodeAt(0)).buffer;
-        const b64 = (a) => {
-            const u = new Uint8Array(a.buffer, a.byteOffset, a.byteLength);
-            let t = "";
-            for (let i = 0; i < u.length; i += 0x8000) t += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
-            return btoa(t);
-        };
-        const P = new Float64Array(roh(plan.punkte));
-        const kat = new Uint8Array(roh(plan.kat));
-        const n = P.length / 3;
-        const K = window.__kernProbe.__gelaendeCore;
-        const L = r._gelaende();
-        const fehlt = ["dichte", "editKarte", "editsAm", "wasserSpiegel", "atlasSpiegel", "flussAm", "dichteGitter", "gitterMitEdits"].filter(
-            (f) => typeof K[f] !== "function"
-        );
-        const quellen = {
-            stamm: [
-                (x, y, z) => r._terrainDensityAt(x, y, z),
-                (x, y, z) => r._waterLevelAt(x, z),
-                (x, y, z) => r._atlasWaterLevelAt(x, z, y),
-                (x, y, z) => ((f) => (f ? f.surfaceY : NaN))(r._hydroRiverAt(x, z)),
-            ],
-        };
-        const karte = fehlt.length ? null : K.editKarte(null, alle, r._voxelChunkConfig().span, null);
-        if (!fehlt.length)
-            quellen.kern = [
-                (x, y, z) => K.dichte(L, x, y, z, K.editsAm(karte, x, z)),
-                (x, y, z) => K.wasserSpiegel(L, x, z),
-                (x, y, z) => K.atlasSpiegel(L, x, z, y),
-                (x, y, z) => ((f) => (f ? f.surfaceY : NaN))(K.flussAm(L, x, z)),
-            ];
-        const out = { n, fehlt, werte: {}, gitter: [], wirkt: [0, 0, 0, 0, 0], je: [0, 0, 0, 0, 0] };
-        for (const [q, fn] of Object.entries(quellen)) {
-            const W = fn.map(() => new Float64Array(n));
-            for (let i = 0; i < n; i++) for (let w = 0; w < fn.length; w++) W[w][i] = fn[w](P[i * 3], P[i * 3 + 1], P[i * 3 + 2]);
-            out.werte[q] = W.map(b64);
-        }
-        // der Ort wirkt: die Höhle fräst (> 1 m unter Fläche − y), der Kanal und das Becken stehen, der Edit ändert die Dichte
-        const G = globalThis.__gelaendeCore;
-        for (let i = 0; i < n; i++) {
-            const [x, y, z] = [P[i * 3], P[i * 3 + 1], P[i * 3 + 2]];
-            const k = kat[i];
+        const [K, L] = [window.__kernProbe.__gelaendeCore, r._gelaende()];
+        const fehlt = ["dichte", "editKarte", "editsAm", "wasserSpiegel", "atlasSpiegel", "flussAm", "dichteGitter", "gitterMitEdits"];
+        const out = { fehlt: fehlt.filter((f) => typeof K[f] !== "function"), gitter: [], wirkt: [0, 0, 0, 0, 0] };
+        const karte = out.fehlt.length ? null : K.editKarte(null, alle, r._voxelChunkConfig().span, null);
+        const { lies, fluss } = __kern;
+        out.stamm = lies([(x, y, z) => r._terrainDensityAt(x, y, z), (x, y, z) => r._waterLevelAt(x, z),
+            (x, y, z) => r._atlasWaterLevelAt(x, z, y), (x, y, z) => fluss(r._hydroRiverAt(x, z))], plan.punkte);
+        if (karte)
+            out.kern = lies([(x, y, z) => K.dichte(L, x, y, z, K.editsAm(karte, x, z)), (x, y, z) => K.wasserSpiegel(L, x, z),
+                (x, y, z) => K.atlasSpiegel(L, x, z, y), (x, y, z) => fluss(K.flussAm(L, x, z))], plan.punkte);
+        // der Ort wirkt: die Höhle fräst (> 1 m), Kanal und Becken stehen, der Edit ändert die Dichte
+        const [P, kat] = [new Float64Array(__kern.ab(plan.punkte)), new Uint8Array(__kern.ab(plan.kat))];
+        for (let i = 0; i < kat.length; i++) {
+            const [x, y, z] = P.subarray(i * 3, i * 3 + 3);
             const b = r._terrainBaseDensityAt(x, y, z);
-            const w = [
-                () => r._terrainMacroSurfaceY(x, z) - y - b > 1,
-                () => !!r._hydrosphereCarveAt(x, z),
-                () => !!r._hydrosphereLakeAt(x, z),
-                () => G.mitEdits(b, x, y, z, alle) !== b,
-                () => true,
-            ][k]();
-            out.je[k]++;
-            if (w) out.wirkt[k]++;
+            const w = [r._terrainMacroSurfaceY(x, z) - y - b > 1, !!r._hydrosphereCarveAt(x, z), !!r._hydrosphereLakeAt(x, z),
+                G.mitEdits(b, x, y, z, alle) !== b, true];
+            out.wirkt[kat[i]] += w[kat[i]];
         }
-        // die Gitter an den Orten (LOD 0 und 1): Stamm, Faden (Auftrag `density-grid`) und Kern, Wort für Wort
-        const hex = async (a) =>
-            Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", a.slice().buffer)))
-                .map((v) => v.toString(16).padStart(2, "0"))
-                .join("");
-        const base = s.terrainBaseHeight || 0;
-        for (const [k, o] of [[0, plan.orte.hoehle], [1, plan.orte.kanal], [2, plan.orte.see], [3, [plan.edits[0].x, 0, plan.edits[0].z]]])
+        const hex = async (a) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", a.slice().buffer))].map((v) => v.toString(16).padStart(2, "0")).join("");
+        for (const [k, o] of [...plan.orte, [plan.edits[0].x, plan.edits[0].z]].entries())
             for (const lod of [0, 1]) {
                 const cfg = r._voxelChunkConfig(lod);
-                const [x, z] = o.length === 3 ? [o[0], o[2]] : o;
-                const g = [Math.floor(x / cfg.span) * cfg.span - cfg.step, base - cfg.floorDrop, Math.floor(z / cfg.span) * cfg.span - cfg.step];
-                g.push(cfg.dim + 3, cfg.dimY, cfg.dim + 3, cfg.step);
-                const key = `kern-probe|${k},${lod}`;
-                const stamm = r._voxelEditedDensityGrid(key, ...g);
-                s.voxelBaseDensityCache.delete(key);
-                const faden = await r._voxelWorkerComputeDensity(...g);
+                const [x, z] = [o[0], o[o.length - 1]];
+                const g = [Math.floor(x / cfg.span) * cfg.span - cfg.step, (s.terrainBaseHeight || 0) - cfg.floorDrop];
+                g.push(Math.floor(z / cfg.span) * cfg.span - cfg.step, cfg.dim + 3, cfg.dimY, cfg.dim + 3, cfg.step);
+                const stamm = r._voxelEditedDensityGrid("kern-probe", ...g);
+                s.voxelBaseDensityCache.delete("kern-probe");
                 const N3 = [g[3] + 1, g[4] + 1, g[5] + 1, g[6]];
-                const kern = fehlt.length ? null : K.gitterMitEdits(L, K.dichteGitter(L, g[0], g[1], g[2], ...N3), g[0], g[1], g[2], ...N3, alle);
-                const ab = (a) => (a ? stamm.reduce((m, v, i) => m + (Object.is(v, a[i]) ? 0 : 1), 0) + Math.abs(a.length - stamm.length) : null);
-                out.gitter.push({ ort: k, lod, n: stamm.length, faden: ab(faden), kern: ab(kern), sha: await hex(stamm) });
+                const ab = (a) => (a ? stamm.reduce((m, v, i) => m + !Object.is(v, a[i]), Math.abs(a.length - stamm.length)) : 0);
+                const kern = karte && K.gitterMitEdits(L, K.dichteGitter(L, g[0], g[1], g[2], ...N3), g[0], g[1], g[2], ...N3, alle);
+                out.gitter.push({ ort: k, lod, n: stamm.length, ab: ab(await r._voxelWorkerComputeDensity(...g)) + ab(kern), sha: await hex(stamm) });
             }
         return out;
     }, plan);
-    // jeder Voxel-Faden: seine Leser über CDP (dieselben Funktionen, die sein Chunk-Bau ruft), nachdem er die Edits trägt
-    seite.werte.faden = [];
+    // jeder Voxel-Faden: seine Leser über CDP (dieselben, die sein Chunk-Bau ruft), sobald er die Edits trägt
+    seite.faden = [];
     for (const w of page.workers()) {
         const W = await w
-            .evaluate(
-                async (punkte, nEdits) => {
-                    if (typeof terrainDensityAt !== "function") return null;
-                    for (let t = 0; t < 200 && state.voxelEdits.length < nEdits; t++) await new Promise((res) => setTimeout(res, 25));
-                    const P = new Float64Array(Uint8Array.from(atob(punkte), (c) => c.charCodeAt(0)).buffer);
-                    const n = P.length / 3;
-                    const fn = [
-                        (x, y, z) => terrainDensityAt(x, y, z),
-                        (x, y, z) => waterLevelAt(x, z),
-                        (x, y, z) => atlasWaterLevelAt(x, z, y),
-                        (x, y, z) => ((f) => (f ? f.surfaceY : NaN))(hydroRiverAt(x, z)),
-                    ];
-                    return fn.map((f) => {
-                        const a = new Float64Array(n);
-                        for (let i = 0; i < n; i++) a[i] = f(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]);
-                        const u = new Uint8Array(a.buffer);
-                        let t = "";
-                        for (let i = 0; i < u.length; i += 0x8000) t += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
-                        return btoa(t);
-                    });
-                },
-                plan.punkte,
-                plan.edits.length
-            )
+            .evaluate(async (hilfe, punkte, n) => {
+                if (typeof terrainDensityAt !== "function") return null;
+                eval(hilfe); // eslint-disable-line no-eval -- der Faden kennt keine CSP
+                for (let t = 0; t < 200 && state.voxelEdits.length < n; t++) await new Promise((res) => setTimeout(res, 25));
+                return __kern.lies([(x, y, z) => terrainDensityAt(x, y, z), (x, y, z) => waterLevelAt(x, z),
+                    (x, y, z) => atlasWaterLevelAt(x, z, y), (x, y, z) => __kern.fluss(hydroRiverAt(x, z))], punkte);
+            }, KERN_HILFE, plan.punkte, plan.edits.length)
             .catch(() => null);
-        if (W) seite.werte.faden.push(W);
+        if (W) seite.faden.push(W);
     }
-    const f64 = (b) => {
-        const u = Buffer.from(b, "base64");
-        return new Float64Array(u.buffer, u.byteOffset, u.length / 8);
-    };
-    for (const q of Object.keys(seite.werte))
-        seite.werte[q] = q === "faden" ? seite.werte[q].map((W) => W.map(f64)) : seite.werte[q].map(f64);
+    const f64 = (b) => ((u) => new Float64Array(u.buffer, u.byteOffset, u.length / 8))(Buffer.from(b, "base64"));
+    for (const q of ["stamm", "kern"]) if (seite[q]) seite[q] = seite[q].map(f64);
+    seite.faden = seite.faden.map((W) => W.map(f64));
     return seite;
 }
 
-// a gegen b, Wort für Wort (Object.is: −0 ≠ 0, NaN = NaN): wie viele weichen ab, die größte endliche Abweichung
+// a gegen b Wort für Wort (Object.is: −0 ≠ 0, NaN = NaN): wie viele weichen ab, die größte endliche Abweichung
 function kernVergleich(a, b) {
-    let ab = 0;
-    let maxDiff = 0;
+    const v = { ab: 0, maxDiff: 0 };
     for (let i = 0; i < a.length; i++)
-        if (!Object.is(a[i], b[i])) {
-            ab++;
-            const d = Math.abs(a[i] - b[i]);
-            if (d > maxDiff || !(d === d)) maxDiff = d === d ? d : Infinity;
-        }
-    return { ab, maxDiff };
+        if (!Object.is(a[i], b[i])) (v.ab++, (v.maxDiff = Math.max(v.maxDiff, Math.abs(a[i] - b[i]) || 0)));
+    return v;
 }
-
-// Das Urteil eines Laufs: je Wert der Stamm-Leser und jeder Faden gegen den Kern (ohne Kern gegen den Stamm-Leser); die Gitter
+// je Leser (Stamm, jeder Faden) die Abweichungen gegen den Kern (ohne Kern gegen den Stamm-Leser); die Gitter
 function kernGleich(lauf) {
-    const out = { abweichend: 0, maxDiff: 0, je: {}, gitter: 0, stamm: 0, faden: 0 };
-    KERN_WERTE.forEach((wert, w) => {
-        const K = lauf.werte.kern && lauf.werte.kern[w];
-        const paare = [["stamm", lauf.werte.stamm[w], K], ...lauf.werte.faden.map((F, i) => ["faden", F[w], K || lauf.werte.stamm[w], i])];
-        for (const [wer, a, b, i = ""] of paare) {
-            if (!b) continue;
-            const v = kernVergleich(a, b);
-            out.je[`${wert} ${wer}${i}`] = v.ab;
-            out[wer] += v.ab;
-            out.abweichend += v.ab;
-            out.maxDiff = Math.max(out.maxDiff, v.maxDiff);
-        }
-    });
-    for (const g of lauf.gitter) out.gitter += (g.faden || 0) + (g.kern || 0);
+    const out = { stamm: 0, faden: 0, maxDiff: 0, gitter: lauf.gitter.reduce((m, g) => m + g.ab, 0) };
+    for (let w = 0; w < 4; w++) {
+        const K = lauf.kern ? lauf.kern[w] : lauf.stamm[w];
+        for (const [wer, a] of [["stamm", lauf.kern && lauf.stamm[w]], ...lauf.faden.map((F) => ["faden", F[w]])])
+            if (a) ((v) => ((out[wer] += v.ab), (out.maxDiff = Math.max(out.maxDiff, v.maxDiff))))(kernVergleich(a, K));
+    }
+    out.abweichend = out.stamm + out.faden + out.gitter;
     return out;
 }
 
@@ -1038,104 +865,67 @@ async function kernProbe(page, fehler, url) {
     const t0 = Date.now();
     const boot = async (modus) => {
         Object.assign(KERN_MODUS, modus);
-        await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
-        await page.evaluate(() => localStorage.clear());
-        await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
-        const b = await boote(page);
-        if (!b.ok) throw new Error("der Boot stand nicht (" + JSON.stringify(modus) + ")");
+        await frischBoot(page, url);
+        await page.evaluate(KERN_HILFE);
     };
+    // wie viele Werte zieht die Mutation am Leser (dichte, oder Bezug und Spiegel) gegen den unveränderten Lauf
+    const zieht = (a, b, name) => (name === "See-Spiegel" ? [1, 2] : [0]).reduce((m, w) => m + kernVergleich(a[w], b[w]).ab, 0);
     const befunde = [];
-    console.log("\n========= DIE KERN-PROBE — dichte · editForm · Spiegel: Stamm-Leser = Worker-Feld = Kern, und die Mutation zieht beide =========");
+    console.log("\n========= DIE KERN-PROBE — dichte · editForm · Spiegel: Stamm-Leser = Worker-Feld = Kern, die Mutation zieht beide =========");
     await boot({ haupt: null, faden: null, probe: null });
-    const plan = await kernPlan(page, messort("wiese"));
+    const plan = await kernPlan(page, messort("wiese"), 20000);
     if (plan.fehler) throw new Error(plan.fehler);
-    plan.mitte = messort("wiese");
     const rein = await kernLesen(page, plan);
     const g0 = kernGleich(rein);
-    const N = rein.n;
+    const N = rein.stamm[0].length;
     const ORT = ["höhle", "kanal", "see", "edit", "zufall"];
-    console.log(`  Orte: Höhle ${plan.orte.hoehle} · Kanal ${plan.orte.kanal} · See ${plan.orte.see} · ${plan.edits.length} Edits · ${N} Punkte`);
-    console.log(`  Der Ort wirkt: ${ORT.map((o, k) => `${o} ${rein.wirkt[k]}/${rein.je[k]}`).join(" · ")}`);
-    console.log(`  Quellen: Stamm-Leser · Kern ${rein.fehlt.length ? "FEHLT (" + rein.fehlt.join(", ") + ")" : "(frische Instanz der Quelle)"} · ${rein.werte.faden.length} Voxel-Fäden`);
-    console.log(`  Unverändert: ${g0.abweichend} abweichende Werte (maxDiff ${g0.maxDiff}) · Gitter ${rein.gitter.length} (${rein.gitter.reduce((m, g) => m + g.n, 0)} Ecken), abweichend ${g0.gitter}`);
+    console.log(`  Orte: Höhle ${plan.orte[0]} · Kanal ${plan.orte[1]} · See ${plan.orte[2]} · ${plan.edits.length} Edits · ${N} Punkte`);
+    console.log(`  Der Ort wirkt: ${ORT.map((o, k) => `${o} ${rein.wirkt[k]}/${N / 5}`).join(" · ")} · ${rein.faden.length} Voxel-Fäden`);
+    console.log(`  Unverändert: ≠ Kern Stamm ${g0.stamm} · Faden ${g0.faden} · Gitter-Ecken ${g0.gitter} von ${rein.gitter.reduce((m, g) => m + g.n, 0)}`);
     if (rein.fehlt.length) befunde.push(`KERN: das Gesetz fehlt im Kern (${rein.fehlt.join(", ")}) — Dichte und Spiegel sind Abschrift`);
-    if (!rein.werte.faden.length) befunde.push("WORKER-FELD: kein Voxel-Faden antwortete über CDP");
-    if (g0.abweichend || g0.gitter) befunde.push(`UNVERÄNDERT: ${g0.abweichend} Werte, ${g0.gitter} Gitter-Ecken weichen ab (${JSON.stringify(g0.je)})`);
-    ORT.forEach((o, k) => {
-        if (!(rein.wirkt[k] >= rein.je[k] * 0.2)) befunde.push(`ORT ${o}: nur ${rein.wirkt[k]} von ${rein.je[k]} Punkten tragen ihn — die Probe misst ihn nicht`);
-    });
+    if (!rein.faden.length) befunde.push("WORKER-FELD: kein Voxel-Faden antwortete über CDP");
+    if (g0.abweichend) befunde.push(`UNVERÄNDERT: ${g0.abweichend} Werte oder Gitter-Ecken weichen ab (maxDiff ${g0.maxDiff})`);
+    ORT.forEach((o, k) => rein.wirkt[k] < N / 25 && befunde.push(`ORT ${o}: nur ${rein.wirkt[k]} von ${N / 5} Punkten tragen ihn`));
     const quelle = kernQuelle();
-    const zieht = (a, b, art) => {
-        const ws = art === "spiegel" ? [1, 2] : [0];
-        return ws.reduce((m, w) => m + kernVergleich(a[w], b[w]).ab, 0);
-    };
-    // die Mutations-Liste: je Mutation ein Boot mit dem veränderten Kern in Haupt-Faden, Voxel-Faden und Probe
     const mutationen = [];
-    for (const m of KERN_MUTATIONEN) {
-        const z = { name: m.name, anker: kernAnker(m, quelle) };
+    for (const [name, tausch] of Object.entries(KERN_MUTATIONEN)) {
+        const z = { name, anker: tausch.every(([a]) => quelle.split(a).length === 2) };
         if (z.anker) {
-            await boot({ haupt: m.name, faden: m.name, probe: m.name });
+            await boot({ haupt: name, faden: name, probe: name });
             const lauf = await kernLesen(page, plan);
-            const g = kernGleich(lauf);
-            z.stamm = zieht(lauf.werte.stamm, rein.werte.stamm, m.art);
-            z.faden = Math.min(...lauf.werte.faden.map((F) => zieht(F, rein.werte.stamm, m.art)));
-            z.abweichend = g.abweichend + g.gitter;
-            z.maxDiff = g.maxDiff;
-            z.gitter = lauf.gitter.filter((q, i) => q.sha !== rein.gitter[i].sha).length;
+            Object.assign(z, kernGleich(lauf), { zugStamm: zieht(lauf.stamm, rein.stamm, name) });
+            z.zugFaden = Math.min(...lauf.faden.map((F) => zieht(F, rein.stamm, name)));
+            z.gitterZug = lauf.gitter.filter((q, i) => q.sha !== rein.gitter[i].sha).length;
         }
+        z.gut = z.anker && z.zugStamm > 0 && z.zugFaden > 0 && z.abweichend === 0;
         mutationen.push(z);
-        const gut = z.anker && z.stamm > 0 && z.faden > 0 && z.abweichend === 0;
-        console.log(
-            `  ${gut ? "✓" : "⛔"} Mutation ${m.name.padEnd(15)} ${z.anker ? `Stamm-Leser ${z.stamm} · Worker-Feld ${z.faden} Punkte gezogen · Gitter ${z.gitter} · Stamm = Faden = Kern ${z.abweichend ? "NEIN (" + z.abweichend + ", maxDiff " + z.maxDiff + ")" : "maxDiff 0"}` : "der Anker fehlt im Kern — kein Kern-Gesetz zu mutieren"}`
-        );
-        if (!gut)
-            befunde.push(
-                `MUTATION ${m.name}: ` +
-                    (!z.anker ? "kein Kern-Gesetz (Anker fehlt)" : z.abweichend ? `Stamm ≠ Faden ≠ Kern (${z.abweichend})` : `${!(z.stamm > 0) ? "STAMM-LESER" : "WORKER-FELD"} folgt nicht`)
-            );
+        console.log(`  ${z.gut ? "✓" : "⛔"} Mutation ${name.padEnd(15)} ` + (z.anker
+            ? `zieht Stamm-Leser ${z.zugStamm} · Worker-Feld ${z.zugFaden} Werte · ${z.gitterZug} Gitter · ≠ Kern ${z.abweichend} (maxDiff ${z.maxDiff})`
+            : "der Anker fehlt im Kern — kein Kern-Gesetz zu mutieren"));
+        if (!z.gut) befunde.push(`MUTATION ${name}: ` + (!z.anker ? "kein Kern-Gesetz" : z.abweichend ? `${z.abweichend} Werte ≠ Kern` : "ein Leser folgt nicht"));
     }
     // der Selbsttest: ein Leser mit eigener (unveränderter) Abschrift MUSS beim Namen rot werden
     let selbsttest = null;
     if (SELBSTTEST && !rein.fehlt.length) {
-        const m = KERN_MUTATIONEN.find((k) => k.name === "Dichte-Versatz");
         selbsttest = {};
-        for (const [wer, modus] of [["WORKER-FELD", { haupt: m.name, faden: null, probe: m.name }], ["STAMM-LESER", { haupt: null, faden: m.name, probe: m.name }]]) {
-            await boot(modus);
-            const lauf = await kernLesen(page, plan);
-            const stamm = zieht(lauf.werte.stamm, rein.werte.stamm, m.art);
-            const faden = Math.min(...lauf.werte.faden.map((F) => zieht(F, rein.werte.stamm, m.art)));
-            const g = kernGleich(lauf);
-            const nennt = wer === "WORKER-FELD" ? g.faden > 0 && g.stamm === 0 : g.stamm > 0 && g.faden === 0;
-            selbsttest[wer] = { stamm, faden, stammKern: g.stamm, fadenKern: g.faden, nennt };
-            console.log(
-                `  SELBSTTEST (${wer} liest den unveränderten Kern): ≠ Kern Stamm-Leser ${g.stamm} · Worker-Feld ${g.faden} → ${nennt ? "beim Namen ROT" : "BLIEB BLIND"}`
-            );
+        for (const [wer, modus] of [["WORKER-FELD", { haupt: "Dichte-Versatz" }], ["STAMM-LESER", { faden: "Dichte-Versatz" }]]) {
+            await boot(Object.assign({ haupt: null, faden: null, probe: "Dichte-Versatz" }, modus));
+            const g = kernGleich(await kernLesen(page, plan));
+            selbsttest[wer] = { stamm: g.stamm, faden: g.faden, nennt: wer === "WORKER-FELD" ? g.faden > 0 && !g.stamm : g.stamm > 0 && !g.faden };
+            console.log(`  SELBSTTEST (${wer} liest den unveränderten Kern): ≠ Kern Stamm ${g.stamm} · Faden ${g.faden} → ${selbsttest[wer].nennt ? "beim Namen ROT" : "BLIEB BLIND"}`);
         }
-        selbsttest.sieht = Object.values(selbsttest).every((v) => v.nennt);
-        if (!selbsttest.sieht) befunde.push("SELBSTTEST: eine Abschrift im Worker oder Stamm blieb unentdeckt");
+        if (!(selbsttest.sieht = Object.values(selbsttest).every((v) => v.nennt))) befunde.push("SELBSTTEST: eine Abschrift blieb unentdeckt");
     }
     Object.assign(KERN_MODUS, { haupt: null, faden: null, probe: null });
     if (fehler()) befunde.push("PAGE-ERROR: " + fehler());
-    const hash = (W) => crypto.createHash("sha256").update(Buffer.concat(W.map((a) => Buffer.from(a.buffer, a.byteOffset, a.byteLength)))).digest("hex");
-    const kern = {
-        punkte: N,
-        edits: plan.edits.length,
-        orte: plan.orte,
-        wirkt: Object.fromEntries(ORT.map((o, k) => [o, [rein.wirkt[k], rein.je[k]]])),
-        faeden: rein.werte.faden.length,
-        fehlt: rein.fehlt,
-        rein: g0,
-        gitter: rein.gitter,
-        mutationen,
-        selbsttest,
-        sha: { stamm: hash(rein.werte.stamm), faden: rein.werte.faden.map(hash) },
-        sekunden: Math.round((Date.now() - t0) / 1000),
-    };
+    const sha = (W) => crypto.createHash("sha256").update(Buffer.concat(W.map((a) => Buffer.from(a.buffer, a.byteOffset, a.byteLength)))).digest("hex");
+    const kern = { punkte: N, edits: plan.edits.length, orte: plan.orte, wirkt: rein.wirkt, faeden: rein.faden.length, fehlt: rein.fehlt, rein: g0,
+        mutationen, selbsttest, sha: { stamm: sha(rein.stamm), faden: rein.faden.map(sha), gitter: rein.gitter.map((g) => g.sha) },
+        sekunden: Math.round((Date.now() - t0) / 1000) };
     for (const b of befunde) console.log("  ⛔", b);
-    const gruen = !befunde.length;
-    console.log(`\n${gruen ? "✅ KERN-PROBE GRÜN" : "⛔ KERN-PROBE ROT"}: ${N} Punkte, ${mutationen.filter((z) => z.anker && z.stamm > 0 && z.faden > 0 && !z.abweichend).length}/${KERN_MUTATIONEN.length} Mutationen ziehen Stamm-Leser und Worker-Feld · ${kern.sekunden} s\n`);
+    console.log(`\n${befunde.length ? "⛔ KERN-PROBE ROT" : "✅ KERN-PROBE GRÜN"}: ${N} Punkte, ${mutationen.filter((z) => z.gut).length}/4 Mutationen ziehen Stamm-Leser und Worker-Feld · ${kern.sekunden} s\n`);
     if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ kern }, null, 1));
-    return gruen ? 0 : 1;
+    return befunde.length ? 1 : 0;
 }
 
 // ── DIE GELÄNDE-LINSE (K16, `--realismus`): die Wand der Natur-Zahlen am Gelände-Gesetzbuch — ohne Browser, das Gesetz
@@ -2608,17 +2398,17 @@ async function faden(page, fehler, url) {
         if (welt === "standard" && (!wa || !(wa.darts > 0) || wa.abweichend > 0)) rot = true;
         if (rep.abweichend > 0 || rep.befunde.length) rot = true;
         if (SELBSTTEST && welt === "standard") {
-            const v = await probeVerfaelscht(page);
+            const v = await probeVerfaelscht(page, url);
             selbst = {
                 abweichend: v.abweichend,
                 maxDiff: v.maxDiff,
                 gitter: v.gitter,
                 ferne: v.ferne ? v.ferne.abweichend : 0,
                 wald: v.wald ? v.wald.abweichend : 0,
-                namen: ["HAUPT-FADEN PUNKT", "FERN-RING"].filter((n) => v.befunde.some((b) => b.startsWith(n))).join(),
+                namen: ["TURM", "FERN-RING"].filter((n) => v.befunde.some((b) => b.startsWith(n))).join(),
             };
             console.log(
-                `\n  SELBSTTEST (Basis-Höhe + 1 cm nur im Worker): ${v.abweichend} abweichende Ecken in ${v.gitter} Gittern, maxDiff ${v.maxDiff}`
+                `\n  SELBSTTEST (der Faden lädt den Kern mit der Höhe + 1 cm): ${v.abweichend} abweichende Ecken in ${v.gitter} Gittern, maxDiff ${v.maxDiff}`
             );
         }
     }
@@ -2658,7 +2448,7 @@ async function faden(page, fehler, url) {
     let pass;
     if (SELBSTTEST) {
         // die Höhen der Ferne (K60) fallen mit demselben verfälschten Worker-Term rot, die Zwillinge der Form beim Namen
-        console.log(`  SELBSTTEST Zwillinge der Form (2): rot ${selbst ? selbst.namen : "?"} (Soll HAUPT-FADEN PUNKT,FERN-RING)`);
+        console.log(`  SELBSTTEST Zwillinge der Form (2): rot ${selbst ? selbst.namen : "?"} (Soll TURM,FERN-RING)`);
         pass =
             !rot &&
             selbst &&
@@ -2667,7 +2457,7 @@ async function faden(page, fehler, url) {
             selbst.wald > 0 &&
             urform &&
             urform !== STROM_SOLL &&
-            selbst.namen === "HAUPT-FADEN PUNKT,FERN-RING";
+            selbst.namen === "TURM,FERN-RING";
         console.log(`  SELBSTTEST Stoff des Walds: ${selbst ? selbst.wald : "?"} abweichende Zellen (Soll > 0)`);
         console.log(`  SELBSTTEST Höhen der Ferne: ${selbst ? selbst.ferne : "?"} abweichende Punkte (Soll > 0)`);
         console.log(
