@@ -24,7 +24,8 @@ class AnazhRealm_gelaende_chunks {
                 this._voxelFadenBlobWeg();
                 return null;
             }
-            this.state.voxelWorkerPending = new Map();
+            // die EINE Tafel der Rückfragen: ein nachgeborener Faden behält sie, die Antworten des alten (eine Kachel im Flug) kommen an
+            if (!this.state.voxelWorkerPending) this.state.voxelWorkerPending = new Map();
             worker.onmessage = (e) => {
                 const msg = e.data;
                 if (!msg || !msg.type) return;
