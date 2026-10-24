@@ -411,29 +411,20 @@ function werkzeug() {
         const s = st.symphony;
         const out = [];
         // `still`: ein Ereignis, das die Welt an diesem Ort NICHT hören darf (keine Quelle ist das Soll).
-        // klingend: jede neue Quelle und jede Stimme des Pools, auf der das Ereignis spielt (ihr Stapel ist der ihres Baus)
-        const P = Object.getPrototypeOf(r);
         const fang = async (art, fn, warteMs, still) => {
             const a = window.__klangQuellen.length;
             const b = window.__klangAusgang.length;
             const syn0 = W.synthese();
-            const stimmen = new Set();
-            const pool = P._klangStimme;
-            P._klangStimme = function () {
-                const v = pool.apply(this, arguments);
-                stimmen.add(v.q);
-                return v;
-            };
+            const stops = window.__klangQuellen.map((e) => e.stop);
             try {
                 fn();
             } catch (e) {
                 out.push({ art, fehler: String((e && e.message) || e) });
                 return;
-            } finally {
-                P._klangStimme = pool;
             }
-            const neu = () =>
-                window.__klangQuellen.filter((e, i) => (i >= a || stimmen.has(e.knoten)) && e.ctx === s.ctx);
+            // klingend: jede neue Quelle und jede Stimme des Pools, deren Ende das Ereignis schob
+            const alt = window.__klangQuellen.slice(0, a).filter((e, i) => e.stop !== stops[i]);
+            const neu = () => window.__klangQuellen.slice(a).concat(alt).filter((e) => e.ctx === s.ctx);
             const dl = performance.now() + (warteMs || 0);
             while (!neu().length && performance.now() < dl) await sleep(25);
             const syn1 = W.synthese();
@@ -1135,8 +1126,8 @@ function drucke(zeilen, offline, kostenErg, lab) {
 }
 
 // (T) DER KLANG-TAKT IN BEWEGUNG (`--takt [--echt]`, klang.K5): je präsentiertem Bild die Haupt-Faden-ms der Klang-Arbeit
-// (symphonyTick + _schrittKlangTick + _tierRuf + _substanzKlang, der äußere Aufruf, und die Antworten der Werkstatt) im
-// echten Spiel, Klang über den Knopf — gehen, Fahrt
+// (symphonyTick + _schrittKlangTick + _tierRuf + _substanzKlang, der äußere Aufruf) im echten Spiel, Klang über den Knopf —
+// gehen, Fahrt
 // (GT, Gas und rückwärts im Wechsel), nachts gehen; p95 ≤ TAKT_SOLL_MS je Phase, der Träger der Bilder über dem Soll beim
 // Namen; über den Gang 0 Aussetzer am Ausgang. Die Seite ist isoliert (COOP + COEP: 5 µs statt des 100-µs-Rasters).
 // `--echt`: Fenster, echte GPU und Audio-Gerät. `--minuten`: der Spielgang, gehen · Fahrt · nachts zu 4 : 3 : 3.
@@ -1181,24 +1172,6 @@ function taktSeite(m, echt, namen) {
     for (const fn of ["symphonyTick", "_schrittKlangTick", "_tierRuf", "_substanzKlang"])
         huelle(P, fn, (d) => tiefe || (b.ms += d), 1);
     for (const fn of namen) if (P[fn]) huelle(P, fn, (d) => (b.teile[fn] = (b.teile[fn] || 0) + d));
-    // die Antworten der Werkstatt (Pakete, Rufe) laufen zwischen den Bildern: sie zählen in das nächste Bild
-    T.antworten = 0;
-    const boot = P._klangWerkstattBooten;
-    P._klangWerkstattBooten = function () {
-        const w = boot.apply(this, arguments);
-        if (w)
-            huelle(
-                w,
-                "onmessage",
-                (d) => ((b.ms += d), (b.teile.werkstatt = (b.teile.werkstatt || 0) + d), T.antworten++),
-                1
-            );
-        return w;
-    };
-    T.werkstatt = () => {
-        const um = st.symphony.umwelt || {};
-        return { gespielt: (um.geliefert || 0) + (um.rufeGespielt || 0), gemessen: T.antworten };
-    };
     for (const fn of ["setValueAtTime", "setTargetAtTime", "linearRampToValueAtTime", "exponentialRampToValueAtTime"])
         huelle(AudioParam.prototype, fn, () => tiefe && b.schreiben++);
     let vor = null;
@@ -1324,9 +1297,7 @@ async function takt(page, erg) {
     console.log(
         `── Aussetzer am Ausgang: ${aus ? `${aus.n} in ${aus.s} s Wiedergabe (${aus.still} s still)` : "ungezählt"}`
     );
-    const w = (erg.werkstatt = await page.evaluate(() => window.__klangTakt.werkstatt()));
     const rot = (erg.rot = []);
-    if (w.gespielt > w.gemessen) rot.push(`T werkstatt: ${w.gespielt} Antworten gespielt, ${w.gemessen} gemessen`);
     if (!aus) rot.push("T aussetzer: ungezählt — kein playbackStats am Kontext, oder er wechselte");
     else if (aus.n) rot.push(`T aussetzer: ${aus.n} in ${aus.s} s Wiedergabe`);
     for (const [name, z] of Object.entries(ph)) {

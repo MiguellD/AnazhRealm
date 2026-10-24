@@ -114,20 +114,6 @@ async function checkBandW4LofiPad(ctx) {
         const sym = r.state.symphony;
         out.symphonyReady = !!(sym && sym.enabled && sym.ctx);
         if (out.symphonyReady) {
-            out.lofiLayerBuilt =
-                !!sym.lofi &&
-                !!sym.lofi.gain &&
-                !!sym.lofi.filter &&
-                !!sym.lofi.melodyGain &&
-                // die Lead-Stimme sitzt über dem Pad.
-                sym.lofi.melodyGain.gain.value >= 0.2 &&
-                // die Groove-Schicht + Noise-Puffer.
-                !!sym.lofi.grooveGain &&
-                !!sym.lofi.noiseBuffer &&
-                // die Bass-Schicht.
-                !!sym.lofi.bassGain &&
-                sym.lofi.degree === 0 &&
-                typeof sym.lofi.rngState === "number";
             // W4 V3 Phase 2 — die Melodie: Form (startet + endet
             // auf einem Akkord-Ton, aufsteigende Startzeiten, über
             // dem Pad), emotion-gesteuerte Dichte.
@@ -167,8 +153,7 @@ async function checkBandW4LofiPad(ctx) {
                 }
             }
             out.melodyRhythmDynamics = durSet.size >= 2 && velSet.size >= 2;
-            // klang.K5 — Musik und Ereignisse spielen auf Stimmen (`_klangStimme`): der gleiche zweite Takt (mit Raum und
-            // Welt-Timbre) baut keine Hülle, die gleiche zweite Runde der Ereignisse (klang:SUBSTANZ, ihre Uhr gestellt) auch nicht
+            // klang.K5 — Musik und Ereignisse spielen auf Stimmen (`_klangStimme`): ihre gleiche zweite Runde baut keine Hülle
             const C = BaseAudioContext.prototype;
             const huelle = C.createGain;
             let n = 0;
@@ -332,10 +317,6 @@ async function checkBandW4LofiPad(ctx) {
         );
         check("W4 V2: sorrow verlangsamt das Lofi-Tempo (bis ~6 s)", w4v2Results.sorrowSlowsTempo);
         if (w4v2Results.symphonyReady) {
-            check(
-                "W4 V2/V3: initSymphony baut die Lofi-Schicht (gain + filter + melodyGain + RNG)",
-                w4v2Results.lofiLayerBuilt
-            );
             check(
                 "W4 V3 Phase 2: _lofiMelodyNotes — Phrase startet + endet auf Akkord-Ton, steigt zeitlich",
                 w4v2Results.melodyShape

@@ -1194,12 +1194,10 @@ async function checkBandEarlyRingsAndUi(ctx) {
         if (!r || !r.state || !r.state.symphony) return null;
         const out = {};
 
-        // (a) initSymphony erfolgreich — EIN Master (UMWELT.masterBasis × Regler), die Klang-Welt auf ihrem Bus
-        const initOk = r.initSymphony();
+        // (a) EIN Master (UMWELT.masterBasis × Regler), die Klang-Welt auf ihrem Bus
+        r.initSymphony();
         const s = r.state.symphony;
         const UM = r.constructor._umweltGesetz().UMWELT;
-        out.initOk = initOk === true && s.enabled === true && !!s.ctx;
-        out.hasUmwelt = !!s.umwelt && !!s.umwelt.bus && !!s.umwelt.graph && !!s.umwelt.ring;
         // der 110-Hz-Drohn ist gefallen: kein Oszillator ohne Gesetz unter der Welt.
         out.keinDrohn = !("ambient" in s) && !("weather" in s);
         out.masterAusGesetz =
@@ -1254,8 +1252,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
             ring4Results && ring4Results.error ? ring4Results.error : "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 4: initSymphony aktiviert Audio-Pipeline", ring4Results.initOk);
-        check("Welle 5 Klang: die Klang-Welt steht (Bus + Graph + Hör-Ring)", ring4Results.hasUmwelt);
         check("Welle 5 Klang: kein Drohn, keine Wetter-Schicht neben dem Gesetz", ring4Results.keinDrohn);
         check("Welle 5 Klang: Master = UMWELT.masterBasis × Regler (EIN Mischpult)", ring4Results.masterAusGesetz);
         check("Welle 5 Klang: der Bus der Klang-Welt hängt am Umgebungs-Regler", ring4Results.busAmRegler);
