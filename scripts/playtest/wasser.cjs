@@ -2248,9 +2248,7 @@ async function checkBandWasserSheetSpiegel(ctx) {
             ok: true,
             msgs: [],
             compared: 0,
-            waterChunks: 0,
-            withCells: 0,
-            withWater: 0,
+            zwei: 0,
             maxDiff: 0,
             mismatches: [],
         };
@@ -2280,16 +2278,6 @@ async function checkBandWasserSheetSpiegel(ctx) {
             const cz = parseInt(key.slice(ci + 1), 10);
             const entry = r.state.voxelChunks.get(key);
             if (!entry || !entry.waterCells || entry.waterCells.length === 0) continue;
-            out.withCells++;
-            // hat die Spalten-Zelle echtes WATER (CELL_STATE.WATER=1)?
-            let anyWater = false;
-            for (let q = 0; q < entry.waterCells.length; q++) {
-                if (entry.waterCells[q] === 1) {
-                    anyWater = true;
-                    break;
-                }
-            }
-            if (anyWater) out.withWater++;
             if (!r._waterSheetCaFree(cx, cz)) continue;
             let mainData = null;
             try {
@@ -2302,7 +2290,6 @@ async function checkBandWasserSheetSpiegel(ctx) {
             cand.push({ cx, cz, key, mainData });
             if (cand.length >= 24) break;
         }
-        out.waterChunks = cand.length;
         if (cand.length === 0) {
             out.ok = false;
             out.msgs.push("KEIN CA-freier Wasser-Chunk gefunden (Welt ohne Wasser im Ring?)");
@@ -2346,10 +2333,19 @@ async function checkBandWasserSheetSpiegel(ctx) {
             }
         };
     
+        // ZWEI FEHLRUNDEN (streaming.K5): je Blatt verfehlt in den ersten zwei Runden ein Verweis den Faden
+        let n = 0;
+        r._voxelFadenAuftrag = function (w, m) {
+            const z = n < 2 && m.cells && m.cells.find((c) => c && c.zid);
+            if (z) (n++, (z.zid = 1e9));
+            return r.constructor.prototype._voxelFadenAuftrag.call(this, w, m);
+        };
         for (const c of cand) {
             let wd = null;
+            n = 0;
             try {
                 wd = await r._workerBuildWaterSheet(c.cx, c.cz);
+                out.zwei += n > 1;
             } catch (e) {
                 out.ok = false;
                 out.msgs.push(`worker-throw ${c.key}: ${e.message}`);
@@ -2368,11 +2364,12 @@ async function checkBandWasserSheetSpiegel(ctx) {
             cmpF("aSlope", c.mainData.aSlope, wd.aSlope, c.key);
             out.compared++;
         }
+        delete r._voxelFadenAuftrag;
         return out;
     })) || { ok: false, msgs: ["keine Antwort der Seite"], mismatches: [] };
     check(
-        `Wasser-Sheet-Spiegel: Worker == Main byte-identisch (maxDiff ${report.maxDiff}) über ${report.compared} CA-freie Wasser-Chunks am Wasser ${steer && !steer.err ? `(${steer.x}, ${steer.z})` : ""}`,
-        !!steer && !steer.err && report.ok && report.compared > 0 && report.maxDiff === 0,
+        `Wasser-Sheet-Spiegel: Worker == Main byte-identisch (maxDiff ${report.maxDiff}) über ${report.compared} CA-freie Wasser-Chunks am Wasser ${steer && !steer.err ? `(${steer.x}, ${steer.z})` : ""}, ${report.zwei} nach zwei Fehlrunden`,
+        !!steer && !steer.err && report.ok && report.compared > 0 && report.maxDiff === 0 && report.zwei > 0,
         [steer && steer.err, ...report.msgs, ...report.mismatches].filter(Boolean).join(" · ").slice(0, 300)
     );
 }

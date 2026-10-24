@@ -439,9 +439,13 @@ class AnazhRealm_gelaende_chunks {
                 ? Math.round(this.state.atmosphere.waterSheetSmooth)
                 : 4;
         const smoothPasses = Math.max(0, Math.min(6, smoothRaw));
+        // die Plätze, die den Faden verfehlten, wachsen, bis keiner mehr fehlt (höchstens neun Runden): fiel ein Verweis zwischen
+        // zwei Runden (der Deckel des Fadens, `zellen-frei` beim Neubau), kam `{ fehlt }` als Blatt an — ein leeres Netz
         const auftrag = (ganz) =>
-            this._voxelFadenAuftrag(worker, { type: "water-sheet", cx, cz, smoothPasses, cells: zellen(ganz) });
-        return auftrag(null).then((r) => (r && r.fehlt ? auftrag(r.fehlt) : r));
+            this._voxelFadenAuftrag(worker, { type: "water-sheet", cx, cz, smoothPasses, cells: zellen(ganz) }).then(
+                (r) => (r && r.fehlt ? auftrag((ganz || []).concat(r.fehlt)) : r)
+            );
+        return auftrag(null);
     }
 
     // Off-thread (statischer Flood-Sheet) nur, wenn Chunk + 8 Nachbarn nicht in `waterCAActive` sind und

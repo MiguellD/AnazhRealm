@@ -1886,7 +1886,6 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         const syncIdx = syncFresh.mesh.geometry.getIndex();
         out.syncIdxCount = syncIdx ? syncIdx.count : 0;
         out.workerIdxCount = workerMesh.indices.length;
-        out.idxCountMatch = (syncIdx ? syncIdx.count : 0) === workerMesh.indices.length;
         let idxMismatches = 0;
         if (syncIdx) {
             const syncIdxArr = syncIdx.array;
