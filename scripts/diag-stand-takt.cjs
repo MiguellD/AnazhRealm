@@ -475,7 +475,11 @@ function selbsttest() {
             (b) => Object.assign(b.simWecken.feld.wellen[1], { groesse: 1110, tote: 537 }),
             /FELD-TOTE: nach den Wellen trägt die Karte 0 von 540 · 537 von 1110/,
         ],
-        ["die Räumung geht jede Zelle durch", (b) => (b.simWecken.feld.welle.akt = 5000), /FELD-BESUCH: die Wellen kosteten 5000 Einheiten für 2160/],
+        [
+            "die Räumung geht jede Zelle durch (die Basis)",
+            (b) => Object.assign(b.simWecken.feld.welle, { akt: 1680, aktAlle: { "·lifeField": 1670 } }),
+            /FELD-BESUCH: die Wellen kosteten 1680 Einheiten für 2160 geschriebene Zellen, die Räumung ging über die ganze Karte \(·lifeField 1670\)/,
+        ],
         ["der Brand prüft in Ruhe", (b) => (b.simRuhe.sims.brand = simPh(1, 3600).sims.brand), /RUHE-SIM: brand \(_tickBrand\) arbeitet in Ruhe/],
         ["kein Brand fängt (die Basis: kein Takt im Stamm)", (b) => (b.simWecken.brand.start = false), /LEER: an der Mess-Wiese fing kein Brand/],
         ["der Brand ohne Takt", (b) => b.simWecken.brand.einheiten.fill(0), /STUMPF: der Brand brennt, die Sim-Linse sieht keinen Takt/],

@@ -1760,18 +1760,20 @@ class AnazhRealm_feld_leben {
     // DIE RÄUMUNG KOSTET NUR DIE TOTEN (feld.K3#2): jede Karte des Felds — Leben, Gefühl, Wohl-Baseline (sie veraltet nach
     // `pruneAgeSec` ohne Blick), Tat-Erwartung — trägt ihr Todes-Rad `karte.tod`: je Zelle der Eimer (`FELD_TOD_EIMER_S`), in
     // dem sie unter ihr epsilon zerfällt oder veraltet, gesetzt von dem Schreiber, der sie schreibt (`tod` in Spielzeit). Danach
-    // räumt er die fälligen Eimer und besucht dabei nur Zellen, deren Tod fällig ist (eine neu geschriebene trägt ihren neuen
-    // Eimer, ihr alter Eintrag geht leer). In Ruhe schreibt niemand, und nichts wird besucht. Bis feld.K3#2 ging die Räumung
+    // räumt er die fälligen Eimer und besucht dabei nur Zellen, deren Tod fällig ist (eine neu geschriebene zieht in ihren neuen
+    // Eimer um). In Ruhe schreibt niemand, und nichts wird besucht. Bis feld.K3#2 ging die Räumung
     // über der doppelten Zahl der Lebenden JEDE Zelle der Karte durch (Mess-Wiese, vier Wellen zu 60 Taten: bis 1 110 Zellen
     // bei 573 lebenden).
     _feldTod(karte, key, zelle, tod, jetzt) {
         const E = AnazhRealm.FELD_TOD_EIMER_S;
         const rad = karte.tod || (karte.tod = new Map());
         const b = Math.floor(tod / E);
-        zelle.tod = b;
-        const eimer = rad.get(b);
-        if (eimer) eimer.push(key);
-        else rad.set(b, [key]);
+        if (zelle.tod !== b) {
+            if (rad.has(zelle.tod)) rad.get(zelle.tod).delete(key); // neu beschrieben: der alte Eimer kennt sie nicht mehr
+            if (rad.has(b)) rad.get(b).add(key);
+            else rad.set(b, new Set([key]));
+            zelle.tod = b;
+        }
         if (!(karte.todAb <= b)) karte.todAb = b;
         const faellig = Math.floor(jetzt / E);
         if (!(karte.todAb < faellig)) return;
@@ -1832,8 +1834,8 @@ class AnazhRealm_feld_leben {
                     cur = e.a * Math.exp(-cfg.decayPerSec * dt);
                 }
                 const a = Math.max(cfg.kahl, Math.min(cfg.max, cur + add));
-                const zelle = { a, t: now };
-                lf.set(key, zelle);
+                const zelle = e ? Object.assign(e, { a, t: now }) : { a, t: now };
+                if (!e) lf.set(key, zelle);
                 // die Tat räumt (`_feldTod`): die Zelle stirbt, wo |a| · e^(−λ·Δt) unter epsilon fällt
                 this._feldTod(
                     lf,

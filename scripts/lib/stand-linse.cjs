@@ -58,7 +58,7 @@ const SIMS = {
     saison: [["_tickSeason"], []],
     nachwuchs: [["_tickScatterRegrow"], ["worldMeta.taten"]],
     wuchs: [["_tickFoliageGrowth"], ["pendingFoliageChunks"]],
-    feld: [["_feldTod"], ["lifeField.tod", "emotionField.tod", "wohlBaseline.tod"]],
+    feld: [["_feldTod"], ["lifeField", "emotionField", "wohlBaseline", "lifeField.tod", "emotionField.tod", "wohlBaseline.tod"]],
     brand: [["_tickBrand"], ["brandFeld"]],
 };
 const AKTE = ["_depositLife", "_depositEmotion", "_observeFieldWohl", "_brandEntfachen"];
@@ -151,7 +151,7 @@ function simPhase(frames, spielS) {
             for (const [m, k] of Object.entries(f.je[n])) je[m] = (je[m] | 0) + k;
         }
         const t = { summe, mitArbeit, je: Object.entries(je).sort((a, b) => b[1] - a[1]).slice(0, 4) };
-        if (n === "akt") [aus.akt, aus.aktJe, aus.aktSchreib] = [summe, t.je, je._feldTod | 0];
+        if (n === "akt") [aus.akt, aus.aktJe, aus.aktSchreib, aus.aktAlle] = [summe, t.je, je._feldTod | 0, je];
         else aus.sims[n] = t;
     }
     return aus;
@@ -452,7 +452,8 @@ function simUrteil(b, v) {
     }
     if (W.nachwuchs && !W.nachwuchs.nachgewachsen) v.push("NACHWUCHS: die Ernte wuchs zu ihrer Zeit nicht nach");
     // (feld.K3#2) das Feld: vier Wellen Taten, vor jeder ist die vorige tot (die Spielzeit springt) — danach trägt die Karte keine
-    // Tote (die Tat räumte die fälligen Eimer), und die Räumung kostete höchstens zwei Einheiten je geschriebener Zelle
+    // Tote (die Tat räumte die fälligen Eimer), die Räumung ging nie über eine ganze Karte (`·lifeField` …: jede Zelle, auch die
+    // lebende, die keine Tat berührt) und kostete höchstens zwei Einheiten je geschriebener Zelle
     const F = W.feld;
     if (!F || !F.wellen || F.wellen.length < 4 || !(F.geschrieben > 0)) v.push("LEER: die Feld-Probe schrieb keine vier Wellen");
     else {
@@ -460,7 +461,10 @@ function simUrteil(b, v) {
         if (!(arbeit > 0)) v.push("STUMPF: die Taten im Feld zeigen der Sim-Linse keine Räumung");
         if (F.wellen.some((w) => w.tote > 0))
             v.push(`FELD-TOTE: nach den Wellen trägt die Karte ${F.wellen.map((w) => w.tote + " von " + w.groesse).join(" · ")} tote Zellen — sie räumt nach einer Schwelle, nicht am Tod`);
-        if (arbeit > 2 * F.geschrieben) v.push(`FELD-BESUCH: die Wellen kosteten ${arbeit} Einheiten für ${F.geschrieben} geschriebene Zellen — die Räumung besucht Unberührte`);
+        const karte = Object.entries(F.welle.aktAlle || {}).filter(([m]) => /^·[A-Za-z]+$/.test(m));
+        if (karte.length || arbeit > 2 * F.geschrieben)
+            v.push(`FELD-BESUCH: die Wellen kosteten ${arbeit} Einheiten für ${F.geschrieben} geschriebene Zellen` +
+                (karte.length ? `, die Räumung ging über die ganze Karte (${karte.map((x) => x.join(" ")).join(", ")})` : "") + " — sie besucht Unberührte");
     }
     // (feld.K3#2) der Brand: gezündet an der Mess-Wiese, je Bild ein Schritt — er arbeitet nur in brennenden Zellen (je Zelle und
     // Schritt höchstens BRAND_JE Einheiten), erlischt von selbst, hinterlässt Asche, leuchtet und glüht im Feld und schläft danach
