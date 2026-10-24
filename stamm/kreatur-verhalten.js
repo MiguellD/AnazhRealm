@@ -1531,7 +1531,6 @@ class AnazhRealm_kreatur_verhalten {
     _creatureCharacterWander(creature, direction, speed, zeigt = true) {
         const K = AnazhRealm._verhaltenGesetz().wandern;
         const ud = creature.userData || {};
-        ud._gezeigt = (zeigt && ud._taetigkeit) || null; // das Wandern zeigt die Tätigkeit des Tiers (Tiere K4, _kreaturTaetigkeit)
         const em = ud.emotions;
         let amp = 1 + (em ? (em.chaos || 0) * K.chaosGain - (em.sorrow || 0) * K.sorrowDamp : 0);
         if (amp < K.ampFloor) amp = K.ampFloor;
@@ -1552,6 +1551,9 @@ class AnazhRealm_kreatur_verhalten {
         const dx = ud.wanderAnchor.x - creature.position.x;
         const dz = ud.wanderAnchor.z - creature.position.z;
         const d = Math.hypot(dx, dz);
+        // das Wandern zeigt die Tätigkeit des Tiers (Tiere K4, _kreaturTaetigkeit) — in seiner Leine; jenseits zieht es heim:
+        // es ruht und äst nur in seinem Revier (vorher graste das scheue Kitz 45 m vor dem Anker im Tempo des Grasens weiter)
+        ud._gezeigt = zeigt && ud._taetigkeit ? (d > leash ? "ziehen" : ud._taetigkeit) : null;
         if (d > leash) {
             const pull = K.anchorPull * speed * Math.min(1, (d - leash) / Math.max(1, leash));
             direction.x += (dx / d) * pull;
