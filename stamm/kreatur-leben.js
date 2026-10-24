@@ -217,6 +217,7 @@ class AnazhRealm_kreatur_leben {
             bodySize: Number.isFinite(ud.bodySize) ? ud.bodySize : 1,
             // S6 — der Verband und sein Revier reisen mit (ohne sie zerfiele die Herde beim Reload)
             verband: ud.verband != null ? String(ud.verband) : undefined,
+            feldWurf: ud.feldWurf === true ? true : undefined, // die Herkunft weicht dem Bau auch nach dem Reload
             revier:
                 ud.wanderAnchor && Number.isFinite(ud.wanderAnchor.x) && Number.isFinite(ud.wanderAnchor.z)
                     ? { x: ud.wanderAnchor.x, z: ud.wanderAnchor.z }
@@ -289,6 +290,7 @@ class AnazhRealm_kreatur_leben {
         }
         if (snap.revier && Number.isFinite(snap.revier.x) && Number.isFinite(snap.revier.z))
             c.userData.wanderAnchor = { x: snap.revier.x, z: snap.revier.z };
+        if (snap.feldWurf === true) c.userData.feldWurf = true;
         // die Wunde als Anteil des Lebens, das der Leib jetzt hat; ein Stand vor dem Anteil (Q12 bis Welle LF kampf Nachbesserung 2)
         // trug hp gegen das Leben VOR dem Massen-Gesetz (Substanz × Größen-Symmetrie, computeCreatureStats.hpOhneMasse) —
         // vorher stand ein voller Hirsch danach bei 124/168, ein voller Bär bei 159/391 (verwundet, ohne Wunde)
@@ -653,7 +655,7 @@ class AnazhRealm_kreatur_leben {
             this._applySizeMultipliersToStats(stats, Math.sqrt(creatureSize));
         }
         // DIE KAMPF-GRÖSSE DES LEIBS (Welle LF 09.10., Posten 6 / K-D18): Biss, Haut und Leben folgen der EINEN Masse des Leibs
-        // (_leibMasse — das Volumen der Gestalt × MASSSTAB.dichteKgM3: Gattung UND Größe, dieselbe Masse wie Stoß, Beute und
+        // (_leibMasse — das Volumen der Gestalt × ρ(fleisch) der Stoff-Zeile: Gattung UND Größe, dieselbe Masse wie Stoß, Beute und
         // Temperament) gegen die Bezugs-Masse des tetrapoda-Gesetzbuchs (KAMPF.refKg, der Wolf der Größe 1): damage ×
         // (m/ref)^biss, defense × (m/ref)^haut, hpMax = Leben der Substanz × (m/ref)^leben. Vorher damage 19,75 und defense 11,9
         // für jede Gattung und Größe (die Tiere sind tag-gleich), hpMax nur 99,8–158,9 von Fuchs 0,62 bis Bär 2. Ein Leib ohne
@@ -1383,9 +1385,7 @@ class AnazhRealm_kreatur_leben {
                     this._handleCreatureProposedProgram(creature, name, reply.program);
                 }
             })
-            .catch(() => {
-                /* silent — rare-event-llm ist nice-to-have */
-            });
+            .catch((e) => this._bruchMelden("Kreatur-Ereignis (LLM): " + ((e && e.message) || e)));
         return true;
     }
 
@@ -1716,6 +1716,9 @@ class AnazhRealm_kreatur_leben {
             const c = this.spawnCreatureAt(x, (Number.isFinite(gY) ? gY : p.y) + 1, z, emotion, soul);
             if (!c) break; // die Obergrenze oder die Gestalt: der Rest des Wurfs fällt mit
             c.userData.wanderAnchor = { x: ort.x, z: ort.z };
+            // DIE MARKE DES WURFS (`feldWurf`, wie am Wurf eines Werks, im Save): ein Bau, der nach der Geburt kommt, räumt das
+            // Tier aus seinem Grundriss (`_weichtDemBau`, `_naturRaeumen`)
+            c.userData.feldWurf = true;
             if (k === 0) abstand = (W.abstandRaum * 2 * this._kreaturRaum(c)) / c.userData.bodySize;
             geboren.push(c);
         }

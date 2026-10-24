@@ -3074,9 +3074,10 @@ AnazhRealm._gaitReich = function (kette) {
 AnazhRealm._landungGesetz = function () {
     return AnazhRealm._bewegungsBlock("landung", ["dipProV", "dipMax", "minTempo", "erholK", "kameraK"]);
 };
-// DIE MASSE KOMMT AUS DEM KERN (0710-4): der Wirt hält keine Dichte. Tier · Mensch · Wagen tragen ihre Dichte in ihrem
-// Gesetzbuch (tetrapoda MASSSTAB.dichteKgM3 · koerper LEIB.dichteKgM3 · vehicle FAHR.masseDichte), das Volumen ist ihre
-// Gestalt (`_leibVolumen` der geschlossenen Haut, carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
+// DIE MASSE KOMMT AUS DER GESTALT UND DER STOFF-ZEILE (0710-4, physik K1): der Wirt hält keine Dichte. Das Tier ist Fleisch,
+// der Mensch Leib, der Wagen Blech — ρ aus der EINEN Stoff-Zeile, deren Zeilen die Gesetzbücher tragen (tetrapoda MASSSTAB ·
+// koerper LEIB · vehicle FAHR.huelleDichte), das Volumen ist ihre Gestalt (`_leibVolumen`: die Haut des Tiers, der Leib des
+// Menschen aus dem Ofen; carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
 // (dichteLeib 1000 über eine Kapsel aus der Hüft-Höhe — der Hirsch wog 436 kg, der Bär 255 —, dichteWagen 150).
 AnazhRealm.LEIB_KLASSEN = Object.freeze(["fell", "haut"]); // die Material-Klassen der geschlossenen Haut eines Leibs
 // Das Volumen einer GESCHLOSSENEN Fläche (m³ im Rahmen ihrer Geometrie) über den Divergenz-Satz, Σ a · (b × c) / 6 je
@@ -3120,10 +3121,11 @@ AnazhRealm._geschlossenesVolumen = function (geo) {
         }
     return { v: Math.abs(v), geschlossen };
 };
-// DAS VOLUMEN EINER GESTALT (m³ im Rahmen `rahmen`): die geschlossene Haut (LEIB_KLASSEN) unter `teil` — die Nah-Gestalt,
+// DAS VOLUMEN EINER GESTALT (m³ im Rahmen `rahmen`): der Leib, den der Ofen maß (`__leibV`, der Mensch), sonst die
+// geschlossene Haut (LEIB_KLASSEN) unter `teil` — die Nah-Gestalt,
 // nie die Fern-Gestalt daneben. Offene Teile und der Schalen-Stapel des Fells (`fellSchale`: N Kopien der Haut) tragen
 // keine Masse. Je Geometrie gemerkt (jede Kreatur teilt die Geometrien ihrer Vorlage). Gemessen bei Größe 1: Fuchs 0,015 ·
-// Wolf 0,064 · Hirsch 0,094 · Bär 0,335 · Mensch 0,117 m³ (Spieler).
+// Wolf 0,064 · Hirsch 0,094 · Bär 0,335 · Mensch 0,090 m³ (Spieler).
 AnazhRealm._leibVolumen = function (teil, rahmen) {
     if (!teil || typeof THREE === "undefined") return 0;
     const memo = AnazhRealm._leibVolumenMemo || (AnazhRealm._leibVolumenMemo = new WeakMap());
@@ -3131,15 +3133,17 @@ AnazhRealm._leibVolumen = function (teil, rahmen) {
     r.updateMatrixWorld(true);
     const inv = new THREE.Matrix4().copy(r.matrixWorld).invert();
     const m = new THREE.Matrix4();
-    // DAS GEMESSENE VOLUMEN DES OFENS (1310-15): der Mensch-Guss schneidet die Haut unter dem Stoff (danach ist sie offen) und
-    // misst sie vorher — die Zahl hängt am Gelenk der Hülle (`__leibV`, Geometrie-Einheiten³) und zählt NEBEN jeder
-    // geschlossenen Haut: Kopf und Hände sind eigene Häute (A4: die Zahl galt allein — der Spieler wog 111,5 statt 115,5 kg).
+    // DAS GEMESSENE VOLUMEN DES OFENS (1310-15, physik K1): der Mensch-Guss misst seinen Leib selbst — die Vereinigung aller
+    // Teile unter der Haut, Kopf und Hände eingeschlossen — und hängt die Zahl ans Gelenk der Hülle (`__leibV`, Einheiten³):
+    // sie ist der GANZE Leib, keine Haut zählt daneben. Bis physik K1 maß der Ofen die Haut-Hülle und der Wirt Kopf und Hände
+    // dazu (A4) — der Spieler wog 117,3 kg.
     let v = 0;
     teil.traverse((o) => {
         if (!(o.userData && o.userData.__leibV > 0)) return;
         m.multiplyMatrices(inv, o.matrixWorld);
         v += o.userData.__leibV * Math.abs(m.determinant());
     });
+    if (v > 0) return v;
     teil.traverse((o) => {
         if (!o.isMesh || !o.geometry) return;
         const kl = o.material && o.material.userData ? o.material.userData.foundryKind : null;

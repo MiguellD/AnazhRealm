@@ -63,7 +63,7 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { statikServer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, werkbankRuf, ROOT: root } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -182,34 +182,7 @@ const ECHT_SEITE = (() => {
 const SERIE = opt("--serie", process.env.WERKBANK_SERIE || "");
 
 // ── Client ──────────────────────────────────────────────────────────────────────────────────────
-function rufe(weg, nutzlast) {
-    return new Promise((res, rej) => {
-        const body = JSON.stringify(nutzlast || {});
-        const req = http.request(
-            {
-                host: "127.0.0.1",
-                port: PORT,
-                path: weg,
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-            },
-            (r) => {
-                let d = "";
-                r.on("data", (c) => (d += c));
-                r.on("end", () => {
-                    try {
-                        res(JSON.parse(d));
-                    } catch (_e) {
-                        res({ roh: d });
-                    }
-                });
-            }
-        );
-        req.on("error", rej);
-        req.setTimeout(0);
-        req.end(body);
-    });
-}
+const rufe = (weg, nutzlast) => werkbankRuf(PORT, weg, nutzlast);
 // `--eigen`: die Welt als Kind von `start`, bereit, wenn die Steuerung antwortet (erst nach dem Boot)
 async function eigeneWelt() {
     const k = require("child_process").spawn(process.execPath, [__filename, "start", "--port", String(PORT)], { stdio: "inherit" });
