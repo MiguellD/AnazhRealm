@@ -1489,11 +1489,9 @@ async function starte() {
                     let abstand = null;
                     if (k.abstand) {
                         const T = window.THREE;
-                        // die Bänder: der Ring der Nah-Wiese (ihr Radius in DIESER Welt) ist eine Kante
-                        const ring = r.constructor.NAH_WIESE ? r.constructor.NAH_WIESE.radius : null;
-                        const baender = [...new Set([0, 2, 5, 10, ring, 30, 80, 200].filter((x) => x != null))].sort(
-                            (a, b2) => a - b2
-                        );
+                        // DIE FESTEN RINGE (vegetation K1): 2–5 / 5–10 / 10–20 / 20–40 m, nie der Radius einer Welt — ein
+                        // kleinerer Ring der Nah-Wiese machte die Linse grüner und den Saum dahinter blind
+                        const baender = [0, 2, 5, 10, 20, 40, 80, 200];
                         const zahl = {},
                             cosS = baender.slice(1).map(() => 0),
                             cosN = baender.slice(1).map(() => 0),
@@ -1558,7 +1556,6 @@ async function starte() {
                             }
                         abstand = {
                             baender,
-                            ring,
                             augeUeberBoden: +(pos.y - (r._bodenSichtAt(pos.x, pos.z) || 0)).toFixed(2),
                             cos: cosS.map((s, b) => (cosN[b] ? +(s / cosN[b]).toFixed(4) : null)),
                             klassen: zahl,

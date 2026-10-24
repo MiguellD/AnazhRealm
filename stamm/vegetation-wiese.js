@@ -28,9 +28,11 @@ class AnazhRealm_vegetation_wiese {
     // die Boden-Funktion Wiese zeichnet). Skala Studio: (0,7 + w·0,7) · (m > 0,8 ? 1,45 : 1), zwei Vorlagen. Jedes Büschel
     // trägt den Tint des Kerns (terrain:wiesenTint, `f`: der Faktor je Kanal, die Instanz-Farbe der Senke) — W1.
     // Fuß, Hang und Grün auf dem GERENDERTEN Boden (der EINE Leser `_bodenSichtAt`, am Chunk-Rand die Karte des
-    // Nachbarn). Die Würfe hängen nur an der Zelle (Γ5) — dieselbe Wiese bei jedem Besuch. Gibt die Büschel-Liste
-    // zurück oder null, solange ein Chunk, den die Kachel liest (`_bodenSichtChunks`), noch keine Boden-Karte hat.
-    _nahWieseKachelBueschel(tx, tz) {
+    // Nachbarn). Die Würfe hängen nur an der Zelle (Γ5) — dieselbe Wiese bei jedem Besuch. `grenze` (≤ 1): die ferne Kachel
+    // trägt nur die Büschel, deren Würfel-Ordnung darunter liegt (`_nahWieseGrenze`) — ein Präfix derselben Wiese, die
+    // teuren Leser fragt nur, wer steht. Gibt die Büschel-Liste zurück oder null, solange ein Chunk, den die Kachel liest
+    // (`_bodenSichtChunks`), noch keine Boden-Karte hat.
+    _nahWieseKachelBueschel(tx, tz, grenze = 1) {
         const NW = AnazhRealm.NAH_WIESE;
         const uCfg = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.understory;
         const step = uCfg && Number.isFinite(uCfg.grassStep) ? uCfg.grassStep : 0.72;
@@ -70,6 +72,7 @@ class AnazhRealm_vegetation_wiese {
                 const sk = 0.7 + w() * 0.7;
                 const rot = w() * Math.PI * 2;
                 const ordnung = w();
+                if (ordnung >= grenze) continue;
                 const y = this._bodenSichtAt(x, z, grund);
                 if (y === null) continue;
                 const gruen = grund.gruen;
@@ -140,11 +143,14 @@ class AnazhRealm_vegetation_wiese {
                 const tz = tcz + dz;
                 const d = Math.hypot((tx + 0.5) * NW.kachel - cam.x, (tz + 0.5) * NW.kachel - cam.z);
                 if (d > NW.radius + NW.kachel * 0.71) continue;
-                wunsch.push({ key: `${tx},${tz}`, tx, tz, d });
+                // die Grenze der Kachel aus ihrem nächsten Rand (halbe Diagonale vor der Mitte)
+                wunsch.push({ key: `${tx},${tz}`, tx, tz, d, grenze: this._nahWieseGrenze(d - NW.kachel * 0.71) });
             }
         }
-        const gewollt = new Set(wunsch.map((w) => w.key));
-        for (const key of [...nw.kacheln.keys()]) if (!gewollt.has(key) && this._nahWieseKachelFaellt(key)) gefallen++;
+        const gewollt = new Map(wunsch.map((w) => [w.key, w.grenze]));
+        // eine Kachel fällt, wenn sie den Ring verlässt oder das Auge ihr näher kam, als ihre Grenze trägt
+        for (const [key, k] of [...nw.kacheln])
+            if ((!gewollt.has(key) || k.grenze < gewollt.get(key)) && this._nahWieseKachelFaellt(key)) gefallen++;
         wunsch.sort((a, b) => a.d - b.d);
         // Buch und Render-Config docken in EINER Nachricht (wie `_nahStreuArten`): solange beide fehlen, wartet die Wiese —
         // ein Budget vor dem Buch ist kein Bruch, sondern noch nicht da. Bis Welle K las sie das Budget im ersten Takt nach
@@ -176,14 +182,16 @@ class AnazhRealm_vegetation_wiese {
                 this._nahWieseSenken(v, stufe, fl);
             }
         }
-        let gebaut = 0;
+        // das Takt-Budget in vollen Kacheln: eine ferne Kachel kostet ihre Grenze (sie fragt nur ihren Anteil der Zellen)
+        let gebaut = 0,
+            kosten = 0;
         for (const w of wunsch) {
             if (nw.kacheln.has(w.key)) continue;
-            if (gebaut >= NW.kachelnJeTakt || (deadline && performance.now() > deadline)) {
+            if (kosten >= NW.kachelnJeTakt || (deadline && performance.now() > deadline)) {
                 nw.offen++; // das Takt-Budget ist leer
                 continue;
             }
-            const bueschel = this._nahWieseKachelBueschel(w.tx, w.tz);
+            const bueschel = this._nahWieseKachelBueschel(w.tx, w.tz, w.grenze);
             if (!bueschel) {
                 nw.offen++;
                 continue;
@@ -196,10 +204,11 @@ class AnazhRealm_vegetation_wiese {
             const wasser = this._wasserKennungen(x0, z0, x0 + NW.kachel + 0.68, z0 + NW.kachel + 0.68);
             nw.kacheln.set(
                 w.key,
-                Object.assign({ chunkKarten, wasser }, this._nahWieseKachelDaten(w.tx, w.tz, bueschel))
+                Object.assign({ chunkKarten, wasser, grenze: w.grenze }, this._nahWieseKachelDaten(w.tx, w.tz, bueschel))
             );
             nw.neu = true;
             gebaut++;
+            kosten += w.grenze;
         }
         this._standMeldet("nahWiese", 1, gebaut + gefallen > 0, nw.offen > 0);
         return gebaut;
@@ -306,6 +315,24 @@ class AnazhRealm_vegetation_wiese {
         this._foundryLoslassen(a.quelle);
     }
 
+    // DIE WAHL EINES BÜSCHELS (vegetation K1, rein — der Satz und jede Linse lesen sie): sein Anteil im Abstand d (bis
+    // `dicht` 1, dahinter dicht/d, vor `radius` das Rand-Band), die Höhe (1; im Band `sinken` unter seiner Schwelle sinkt es
+    // auf 0 — 0 heißt, es steht nicht) und die Breite d/dicht (≥ 1: die Halm-Fläche je m² bleibt). Schreibt nach `aus`.
+    _nahWieseWahl(ordnung, d, aus) {
+        const NW = AnazhRealm.NAH_WIESE;
+        const anteil = Math.min(NW.dicht / Math.max(d, NW.dicht), Math.max(0, Math.min(1, (NW.radius - d) / NW.rand + 0.5)));
+        aus.hoehe = ordnung >= anteil ? 0 : anteil >= 1 ? 1 : Math.min(1, (anteil - ordnung) / (NW.sinken * anteil));
+        aus.breite = Math.max(1, d / NW.dicht);
+        return aus.hoehe > 0;
+    }
+
+    // Die Grenze einer Kachel, deren nächster Rand dmin vor dem Auge liegt: der Anteil dort, gestuft in Halben (die ferne
+    // Kachel trägt die Hälfte, ein Viertel … ihrer Zellen — sie baut erst neu, wenn das Auge sie über eine Stufe holt).
+    _nahWieseGrenze(dmin) {
+        const a = AnazhRealm.NAH_WIESE.dicht / Math.max(dmin, 1e-6);
+        return a >= 1 ? 1 : Math.pow(2, Math.ceil(Math.log2(a)));
+    }
+
     // DER SICHT-SATZ (`_passSicht`, der Haupt-Pass jedes Frames, vor der Projektion): je Büschel die Stufe (L1 im Kreis
     // `stufe1` um das Auge, Austritt erst `stufe1Rand` dahinter), das Rand-Band (seine Würfel-Ordnung gegen den Anteil
     // seiner EIGENEN Distanz — ein Präfix der zufälligen Ordnung ist eine gleichmäßige Ausdünnung) und die Sicht (die Kachel
@@ -347,19 +374,32 @@ class AnazhRealm_vegetation_wiese {
         // die Stufen-Hysterese gilt dem stetigen Auge: nach einem Sprung (`_augeSprung`) wählt jedes Büschel aus dem Jetzt
         if (this._augeSprung(nw, ax, we[13], az)) for (const k of nw.kacheln.values()) k.l1.fill(0);
         const H = NW.kachel * 0.5;
+        const wahl = this._tmpWieseWahl || (this._tmpWieseWahl = { hoehe: 0, breite: 1 });
         for (const k of nw.kacheln.values()) {
             const n = k.bueschel.length;
-            if (!n || !this._passTrifft(L, k.mx, (k.y0 + k.y1) / 2, k.mz, H, (k.y1 - k.y0) / 2, H, k.sMax * rMax))
+            // die Breite des fernsten Büschels der Kachel weitet ihre Kugel
+            const dk = Math.hypot(k.mx - ax, k.mz - az);
+            const weit = Math.max(1, (dk + H * 1.42) / NW.dicht);
+            if (!n || !this._passTrifft(L, k.mx, (k.y0 + k.y1) / 2, k.mz, H, (k.y1 - k.y0) / 2, H, k.sMax * rMax * weit))
                 continue;
+            // die Büschel liegen nach ihrer Ordnung: jenseits des Anteils am nächsten Rand steht keines mehr
+            const grenze = Math.min(1, NW.dicht / Math.max(dk - H * 1.42, NW.dicht));
             for (let i = 0; i < n; i++) {
                 const b = k.bueschel[i];
+                if (b.ordnung >= grenze) break;
                 const d = Math.hypot(b.x - ax, b.z - az);
-                if (b.ordnung >= Math.max(0, Math.min(1, (NW.radius - d) / NW.rand + 0.5))) continue;
+                if (!this._nahWieseWahl(b.ordnung, d, wahl)) continue;
                 const l1 = k.l1[i] ? d <= NW.stufe1 + NW.stufe1Rand : d <= NW.stufe1;
                 k.l1[i] = l1 ? 1 : 0;
                 const vl = ziel[l1 ? 1 : 2][b.vorlage];
-                if (!vl || !this._passTrifft(L, b.x, b.y + vl.cy * b.s, b.z, 0, 0, 0, vl.r * b.s)) continue;
+                if (!vl || !this._passTrifft(L, b.x, b.y + vl.cy * b.s, b.z, 0, 0, 0, vl.r * b.s * wahl.breite)) continue;
                 m4.fromArray(k.basis, i * 16);
+                // die Breite weitet die waagrechten Achsen des Büschels, die Höhe sinkt an der Schwelle
+                if (wahl.breite !== 1 || wahl.hoehe !== 1) {
+                    const e4 = m4.elements;
+                    for (const j of [0, 1, 2, 8, 9, 10]) e4[j] *= wahl.breite;
+                    for (const j of [4, 5, 6]) e4[j] *= wahl.hoehe;
+                }
                 for (const a of vl.senken) {
                     if (a.anzahl >= a.kap) {
                         this._senkeMesh(a, Math.ceil(a.kap * 1.5), this.state.scene);
