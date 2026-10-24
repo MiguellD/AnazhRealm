@@ -907,7 +907,7 @@ class AnazhRealm_siedlung_ort {
     // Quellen aus Settlement-Einträgen mit rauchQuelle; Lab-Partikel (matte Box) wenn THREE+scene da,
     // sonst Quellen-Liste + einmaliger Log/Flugschreiber-Stempel. Invariante: Rauch ⟺ chimney.
     // Haus-Türen: _tickHausTueren dreht nahe Häuser (< 40 m) durch DENSELBEN _tickTorFluegel.
-    _updateDorfRauch(_dt) {
+    _updateDorfRauch(dt) {
         // RAUCH_VIS.host = "box-lambert" — Feel .125; Box+Lambert via RAUCH_GESETZ (sprites = Redesign).
         const st = this.state;
         if (!st) return;
@@ -986,10 +986,15 @@ class AnazhRealm_siedlung_ort {
                 a: G.a0,
             });
         }
+        // DER RAUCH DES FEUERS ZIEHT MIT DEM EINEN WIND (`_windAt` am Teilchen, die Bild-Uhr): Steigen und Streuen bleiben das
+        // Gefühl des Labors je Frame, der Wind trägt jedes Teilchen mit seiner Geschwindigkeit in m/s × dt windab.
+        const s = Number.isFinite(dt) && dt > 0 ? dt : 0;
         for (let k = dr.teilchen.length - 1; k >= 0; k--) {
             const T2 = dr.teilchen[k];
+            const w = this._windAt(T2.x, T2.z, this._bildZeit);
             T2.y += T2.vy;
-            T2.x += T2.dx;
+            T2.x += T2.dx + w.x * w.ms * s;
+            T2.z += w.z * w.ms * s;
             T2.a -= G.fade;
             T2.s *= G.scaleMul;
             if (T2.a <= G.aKill) dr.teilchen.splice(k, 1);
@@ -1929,7 +1934,7 @@ class AnazhRealm_siedlung_ort {
     // Art "stadt". Leser: `spawnSettlement` (Chat `dorf`), jeder Chat-Satz mit Same (`baue … hier`, Insel, Fraktal, der
     // Studio-Hain — der Same reist im Programm), der Strom jedes Programms ohne eigenen Seed (`dslCtx`), der Standard-Same
     // der Wurzel `spawnArchitecture` (Bau einer Kreatur, Plattform, Portal), der Würfel der Werkstatt, die Komposition des
-    // Nexus, das Wort des Wetter-Zugs (Art "wetter"). Der Zähler ist Welt-Gedächtnis (`worldMeta.bauSame`, reist im
+    // Nexus. Der Zähler ist Welt-Gedächtnis (`worldMeta.bauSame`, reist im
     // Snapshot und zum Gast): als Sitzungs-Feld begann er nach jedem Reload neu, und derselbe Satz am selben Ort stellte einen
     // deckungsgleichen zweiten Hain.
     _bauSame(art) {

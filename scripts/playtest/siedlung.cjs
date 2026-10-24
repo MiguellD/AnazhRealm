@@ -1523,7 +1523,7 @@ async function checkBandWHWald(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // (1) V18.257 — die statischen Gestalt-Varianten (baum_*_breit/jung/schlank)
+        // (1) die statischen Gestalt-Varianten (baum_*_breit/jung/schlank)
         // sind GESCHNITTEN; die Tag-Wahrheit lebt in der frozen SPECIES_TAG_REFERENCE,
         // die Form-Vielfalt voll in der Grammatik (sizeClass/age-Genom). Kein „rundes Ding" mehr.
         const refTbl = window.anazhRealm.constructor.SPECIES_TAG_REFERENCE || {};

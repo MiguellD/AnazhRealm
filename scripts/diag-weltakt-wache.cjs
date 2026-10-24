@@ -337,7 +337,7 @@ function urteil(S, pageErrors) {
         rot.push(
             `(F) FREI: der Nexus wirkt ohne Halt nicht (${JSON.stringify(fn.vorher)} → ${JSON.stringify(fn.nachher)})`
         );
-    // Die Uhr gehört dem Spieler (Leben-Schau 2, `_himmelSchreiber`, gate:wetter-wache): auch ohne Halt stellt der Nexus sie nie.
+    // Die Uhr gehört dem Spieler (`_himmelSchreiber`, gate:wetter-wache): auch ohne Halt stellt der Nexus sie nie.
     if (fn.nachher.zeit !== fn.vorher.zeit)
         rot.push(
             `(F) FREI: der Nexus stellt die Uhr (${fn.vorher.zeit} → ${fn.nachher.zeit}) — sie gehört dem Spieler`

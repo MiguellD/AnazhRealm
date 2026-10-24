@@ -151,9 +151,9 @@ function albedoSicht(opts) {
                     for (const e of st.architectures || [])
                         if (e && e.type === ex.name && e.position) {
                             const d = Math.hypot(e.position.x - pp.x, e.position.z - pp.z);
-                            // `nah` (K63-n4): nur ein Exemplar so nah am Spieler, dass es in seiner Mesh-Stufe zeichnet — ein fernes
+                            // `nah`: nur ein Exemplar so nah am Spieler, dass es in seiner Mesh-Stufe zeichnet — ein fernes
                             // trägt die Karte des Atlas (fimp), deren Stoff keine Zeile trennt; sonst setzt die Linse es
-                            // `nah: 0` (K63-n6): nie ein fremdes — die Zeile setzt ihr Exemplar mit ihrer Saat (der Lack des GT
+                            // `nah: 0`: nie ein fremdes — die Zeile setzt ihr Exemplar mit ihrer Saat (der Lack des GT
                             // folgt dem LACK_GESETZ der Saat; ein Wagen der Welt trug am 15.10. Orange gegen das Schwarz des Labors)
                             if (d <= (ex.nah != null ? ex.nah : 80) && (!best || d < best.d)) best = { e, d };
                         }
@@ -426,7 +426,7 @@ function albedoSicht(opts) {
             const c = bb.getCenter(new T.Vector3());
             return { c, rad: bb.getSize(new T.Vector3()).length() / 2, d: Math.hypot(c.x - um.x, c.z - um.z) };
         };
-        // DER SATZ DES EXEMPLARS (K63-n6): ein Stoff-Satz trägt viele Exemplare in EINEM Mesh (`_bauSatzBlock`: je lebende Instanz ihre
+        // DER SATZ DES EXEMPLARS: ein Stoff-Satz trägt viele Exemplare in EINEM Mesh (`_bauSatzBlock`: je lebende Instanz ihre
         // n Ecken ab dem Bereichs-Anfang, `slotEntry[i]` ihr Eintrag) — sonst zeichnete der Schuss die Nachbarn mit. Ein Ausschnitt zeichnet
         // nur die Dreiecke der Instanzen des Exemplars (Ecken kompakt, derselbe Stoff); ein Satz ohne sie fällt aus der Wahl (null), ein
         // Mesh, das kein Satz ist, bleibt. DIE BASIS IM SATZ: der Satz-Stoff liest sein Metall je Ecke (`aRegler.y`) — `metalness = 0`
@@ -604,7 +604,7 @@ function albedoSicht(opts) {
                     for (const [mt, v] of metallAlt) mt.metalness = v;
                     metallAlt.clear();
                     const a = window.__albedoAuswerten(s.hell, s.dunkel, W, H * stellungen.length, 0, z.id);
-                    // DIE STUFEN DES SCHUSSES (K63-n7): je Zug seine Foundry-Stufe (`:L<n>` der Täter-Klasse, im Satz
+                    // DIE STUFEN DES SCHUSSES: je Zug seine Foundry-Stufe (`:L<n>` der Täter-Klasse, im Satz
                     // die Gruppen des Exemplars)
                     const stufen = new Set();
                     for (const m of sel) {
@@ -1119,7 +1119,7 @@ function nahFernSicht(opts) {
             fogAlt = sc.fog;
         sc.environment = null;
         sc.fog = null;
-        // DIE LUFT AUS (K53): die EINE Luft lebt im `scene.fogNode` (`_luftEnsure`), nie in `scene.fog` — über 420 m Weg ließ
+        // DIE LUFT AUS: die EINE Luft lebt im `scene.fogNode` (`_luftEnsure`), nie in `scene.fog` — über 420 m Weg ließ
         // sie beiden Schüssen nur 0,94 ihrer Albedo (eine 18-%-Karte im Boden-Stoff las 0,167, ohne Luft 0,180) und hielt so
         // ein Fünftel des Wiesen-Grunds unter dem Band. Ihre Dichte (`beta`) ruht für die Schüsse; kein Programm wechselt.
         const luftU = st.luft && st.luft.U && st.luft.U.beta ? st.luft.U.beta : null;
@@ -1163,7 +1163,7 @@ function nahFernSicht(opts) {
         const maskeAlt = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
         const istNah = (m) => m.name === "bodenSatz";
         const istFern = (m) => m.userData && m.userData.inventar === "fern-ring";
-        // DER RING WEICHT DEM GEBAUTEN (K16): unter einem gezeichneten Chunk trägt die Schale 0 kein Dreieck (`_fernRingTeilung`
+        // DER RING WEICHT DEM GEBAUTEN: unter einem gezeichneten Chunk trägt die Schale 0 kein Dreieck (`_fernRingTeilung`
         // Klasse 2) — der Fern-Schuss im Quadrat der Chunks war seither leer (0 px). Für die Schüsse der Linse zeichnet der
         // freie Teil der Schale 0 ihr volles Index-Muster (der Träger `geos[0]`, dieselbe Länge), der Naht-Teil ruht; danach
         // steht die Teilung wieder, wie sie war.
@@ -2097,7 +2097,7 @@ function laubLichtUrteil(messung, band) {
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, zeilen };
 }
 
-// DIE KRONE VON OBEN (K68-N3): die Reflexion einer dichten Krone folgt aus dem Blatt, nie aus der Karte. Ein Blatt mit der
+// DIE KRONE VON OBEN: die Reflexion einer dichten Krone folgt aus dem Blatt, nie aus der Karte. Ein Blatt mit der
 // Albedo A und dem Durchlass tau (phyto-core LAUB_LICHT: T = tau · R) streut ω = A · (1 + tau); eine dichte, isotrop streuende
 // Blattschicht wirft davon R∞ = (1 − √(1−ω)) / (1 + √(1−ω)) zurück (Zwei-Strom / Kubelka–Munk: Meador & Weaver 1980, J. Atmos.
 // Sci. 37:630; Sellers 1985, Int. J. Remote Sens. 6:1335 — die Natur: Nadelwald sichtbar 0,03–0,05, Laubwald 0,04–0,06, wo

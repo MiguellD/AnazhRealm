@@ -378,7 +378,6 @@ class AnazhRealm_kreatur_verhalten {
         // sizeFactor PRO SEELE memoizen (hängt nur an den frozen Body-Parts der Soul): lazy
         // `this._scentSizeBySoul: Map<soulName, sizeFactor>` statt je Tick × Quelle neu rechnen.
         const sizeBySoul = this._scentSizeBySoul || (this._scentSizeBySoul = new Map());
-        const t = (performance.now() || 0) / 1000;
         let best = null,
             bestS = 0;
         for (let i = 0; i < creatures.length; i++) {
@@ -401,7 +400,7 @@ class AnazhRealm_kreatur_verhalten {
             quelle[0].x = other.position.x;
             quelle[0].z = other.position.z;
             quelle[0].strength = sizeFactor;
-            const witterung = this._scentAt(cx, cz, quelle, { time: t });
+            const witterung = this._scentAt(cx, cz, quelle);
             if (witterung > bestS) {
                 bestS = witterung;
                 best = other;
@@ -438,7 +437,6 @@ class AnazhRealm_kreatur_verhalten {
         const cx = creature.position.x,
             cz = creature.position.z;
         const quelle = this._aasQuelle || (this._aasQuelle = [{ x: 0, z: 0, strength: 1 }]);
-        const t = (performance.now() || 0) / 1000;
         let best = null,
             bestS = 0;
         for (const k of L) {
@@ -450,7 +448,7 @@ class AnazhRealm_kreatur_verhalten {
             quelle[0].x = k.position.x;
             quelle[0].z = k.position.z;
             quelle[0].strength = K.fleisch;
-            const w = this._scentAt(cx, cz, quelle, { time: t });
+            const w = this._scentAt(cx, cz, quelle);
             if (w > bestS) {
                 bestS = w;
                 best = k;

@@ -38,7 +38,7 @@
 //                                                           Urteil gegen das Labor-Ist der Tafel; Nachzug mit
 //                                                           diag-albedo-tafel.cjs --nachziehen
 //   node scripts/werkbank.cjs licht [--ist <id>]           DIE LICHT-BILANZ (18-%-Karte, je Licht); `--ist` schreibt
-//                                                           E alle / E Umgebung in die Soll-Tafel (K63-n1)
+//                                                           E alle / E Umgebung in die Soll-Tafel
 //   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] | --selbsttest  DIE LUFT IM BILD (Koschmieder je Kanal, Rand)
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] | --selbsttest  DAS LAUB IM GEGENLICHT (K19, phyto-core
 //                                                           `laubDurchlass`): Luma Gegenlicht/Auflicht je Art ≥ 1,3;
@@ -171,7 +171,7 @@
 //                                                           DIE RATSCHE AUS EINER SERIE (nur Node): ≥ 4 Läufe der echten GPU
 //                                                           an EINEM Ort × Gerät × Sicht und EINER Version, eingeschwungen,
 //                                                           Erst- und Zweit-Boot — die Hülle zieht nach (setzt, senkt, hebt
-//                                                           nie), nur bei sauberer LINSE; `--neu` = der RE-MINT (K26): die
+//                                                           nie), nur bei sauberer LINSE; `--neu` = der RE-MINT: die
 //                                                           Ratsche wird die Hülle, auch nach oben, jede gehobene Zeile beim
 //                                                           Namen
 //   node scripts/werkbank.cjs gpu-fehler                     DIE GPU-FEHLER-LINSE: jede WebGPU-Validierung (Device-Meldung mit
@@ -214,7 +214,7 @@ const BAND = require("./lib/band-urteil.cjs");
 const ZL = require("./lib/zerlege-linse.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
-// DIE WIESE des Messorts (K55): die EINE Messung und ihr Urteil, in die Seite getragen beim Umstellen
+// DIE WIESE des Messorts: die EINE Messung und ihr Urteil, in die Seite getragen beim Umstellen
 const { WIESE_INSTALL } = require("./lib/welt-orte.cjs");
 // DER VRAM-ABGRIFF (jede GPU-Allokation beim Namen, dazu der Grund des Ziel-Zensus) — EINE Quelle für Werkbank und Gates.
 const { vramAbgriff } = require("./lib/vram-abgriff.cjs");
@@ -232,7 +232,7 @@ const sollAblage = (ziel, endung) => {
     fs.mkdirSync(d, { recursive: true });
     return path.join(d, String(ziel).replace(/:/g, "-") + endung);
 };
-// der Stand des Arbeitsbaums für das Begleit-JSON eines Bilds (K32) und jede Messung der Tafeln: `gitStand` (SHA, „+geaendert"
+// der Stand des Arbeitsbaums für das Begleit-JSON eines Bilds und jede Messung der Tafeln: `gitStand` (SHA, „+geaendert"
 // bei Änderungen an versionierten Dateien außer den Tafeln) und der Code-Abdruck jeder Quelle — EINE Quelle, abnahme-urteil
 const { stammVersion, pruefsumme, kernStand, sollQuelle, gitStand } = require("./lib/abnahme-urteil.cjs").standLeser(root);
 // DER EINE SCHUSS (W1-n1, abnahme-urteil `schussVon`): das erste Ziel von „a,b:L1,…" trägt den Schuss mit dem Abdruck der
@@ -987,7 +987,7 @@ async function starte() {
     // der Ort-Takt ist leer.
     // Der Ort, an dem die Werkbank zuletzt umstellte (`umstellen --ort`) — die Albedo-Tafel nennt ihn.
     let aktOrt = null;
-    // DIE SICHT des gestellten Orts (K26): Ego oder Third-Person — der Ort wird in ihr aufgestellt, die Band richtet die
+    // DIE SICHT des gestellten Orts: Ego oder Third-Person — der Ort wird in ihr aufgestellt, die Band richtet die
     // Ratsche dieses Orts × Geräts × Sicht.
     let aktSicht = null;
     // DIE WELT DES ORTS (Toggle-Ort, haushalt.json `welt`): die Prüfbühne ist eine geborene Welt — sie betritt die
@@ -1233,7 +1233,7 @@ async function starte() {
                 }
             }
             if (r.state.playerMesh) r.state.playerMesh.visible = !!k.spieler;
-            // DAS ZIEL des Bilds ist der Blick-Punkt (K32): die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
+            // DAS ZIEL des Bilds ist der Blick-Punkt: die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
             // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42; `--wahl 0` schießt nur die genannte Pose)
             const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel" };
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
@@ -1991,7 +1991,7 @@ async function starte() {
                             gruendung: ort.gruendung || null,
                             bahn: ort.bahn || null,
                         });
-                        // DIE WIESE (K55): ein Ort mit Wiesen-Gesetz (`wiese`) hält es in der Welt, die eben stand — dieselbe
+                        // DIE WIESE: ein Ort mit Wiesen-Gesetz (`wiese`) hält es in der Welt, die eben stand — dieselbe
                         // Messung wie gate:profiband H1 (scripts/lib/welt-orte.cjs), dazu das Gras der gebauten Boden-Karte. Ein
                         // Ort, der keine Wiese ist, bricht die Aufstellung laut.
                         let wiese = null;
@@ -2033,14 +2033,14 @@ async function starte() {
                     fs.mkdirSync(path.dirname(datei), { recursive: true });
                     fs.writeFileSync(datei, Buffer.from(o.png.split(",")[1], "base64"));
                     delete o.png;
-                    // DIE KLASSE (K63): die Maske neben dem Bild, die Maße im Begleit-JSON
+                    // DIE KLASSE: die Maske neben dem Bild, die Maße im Begleit-JSON
                     if (o.klasse) {
                         const mdatei = datei.replace(/\.png$/i, "") + ".maske.png";
                         fs.writeFileSync(mdatei, Buffer.from(o.klasse.maske.split(",")[1], "base64"));
                         o.klasse.maske = mdatei;
                         o.abnahme.klasse = o.klasse;
                     }
-                    // DAS BEGLEIT-JSON (K32): die Abnahme des Bilds mit dem Stand des Arbeitsbaums (SHA, geändert ja/nein)
+                    // DAS BEGLEIT-JSON: die Abnahme des Bilds mit dem Stand des Arbeitsbaums (SHA, geändert ja/nein)
                     o.abnahme.stand.sha = gitStand();
                     // DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `--ist <id>[:L<n>|:wirkung]`)
                     if (b.ist) {
@@ -2157,7 +2157,7 @@ async function starte() {
                         };
                         let q = quadrat(),
                             takte = 0;
-                        // DIE KARTE GEHÖRT DIESEM ORT (K53): ihr Anker ist die Chunk-Mitte des Spielers in der Größe des Rings
+                        // DIE KARTE GEHÖRT DIESEM ORT: ihr Anker ist die Chunk-Mitte des Spielers in der Größe des Rings
                         // (`_fernKroneNahTakt`) — bereit 1 ohne Job hiess nach dem Umstellen zweimal von acht: die Karte des alten
                         // Orts (Welt stand nach 2 Takten), dann füllte sie neu und der Boden mischte im Schuss nichts (ROT „Karte“).
                         const karteHier = (k) => {
@@ -2613,7 +2613,7 @@ async function starte() {
                     // und Ratsche (spec/profiband).
                     // Ein Toggle-Ort (bank) trägt keine Ratsche: das Band bricht VOR dem Messen laut.
                     BAND.ratscheVon(BAND.ladeSpec(b.ort));
-                    // DAS GERÄT und DIE SICHT (K26): sie wählen die Ratsche — der Adapter-Text gegen die Muster des Haushalts, der
+                    // DAS GERÄT und DIE SICHT: sie wählen die Ratsche — der Adapter-Text gegen die Muster des Haushalts, der
                     // Kamera-Modus des Stamms; ohne Schlüssel richtet keine Ratsche (das Urteil nennt es `ungemessen`).
                     const hh = BAND.ladeSpec(b.ort).haushalt;
                     const geraetText = await geraetInfo();
@@ -3444,7 +3444,7 @@ async function starte() {
         console.log(`LUFT ${u.urteil} · ${Object.entries(u.staffel).map((e) => e.join(" ")).join(" · ")} (offen: ${Object.keys(ref.offen).join(", ")})`);
         process.exit(u.urteil === "GRUEN" ? 0 : 1);
     } else if (cmd === "licht" && argv.includes("--laub")) {
-        // DAS LAUB IM GEGENLICHT (K19): je Art der nächste Baum, der Spieler am Augen-Ort (die Stufe folgt ihm), Gegenlicht
+        // DAS LAUB IM GEGENLICHT: je Art der nächste Baum, der Spieler am Augen-Ort (die Stufe folgt ihm), Gegenlicht
         // gegen Auflicht; das Urteil `laubLichtUrteil` (≥ 1,3, Labor ± 10 % wo gemessen). `--selbsttest` ohne Welt.
         const LL = require("./lib/licht-linsen.cjs");
         if (argv.includes("--selbsttest")) {
@@ -3486,7 +3486,7 @@ async function starte() {
                 [LL.laubLichtUrteil({ welt: { "ring@0.5": fz(1.038, 0.96, -5.6), "ring@0": fz(1.047, 0.45, -2.82) } }).urteil, "GRUEN"],
                 [JSON.stringify(LL.laubLichtUrteil({ welt: { "haus@0.5": fz(0.788, -5.35, -1.7), "haus@0": fz(0.763, -4.17, 1.04) } }).zeilen[1]), /"karte":0\.968.*"mittag":0\.788/],
                 [LL.laubLichtUrteil({ welt: { "haus@0": fz(0.763, -4.17, 1.04) } }).befunde.join(), /FERN haus@0: ohne die Zeile zu Mittag/],
-                // die Krone von oben (K68-N3): Zwei-Strom-Band über der gemessenen Blatt-Albedo
+                // die Krone von oben: Zwei-Strom-Band über der gemessenen Blatt-Albedo
                 [LL.kronenReflexionSoll(0.164, [0.5, 1]).join("/"), "0.0705/0.099"],
                 [LL.kronenObenUrteil({ welt: { fichte: { oben: { R: 0.08, A: 0.164, tau: [0.5, 1] } } } }).urteil, "GRUEN"],
                 [
@@ -3506,7 +3506,7 @@ async function starte() {
         // Das Exemplar je Art: das nächste zum Messort Wiese (spec/profiband/haushalt.json) — derselbe Baum in jedem Lauf.
         // `--ort genesis`: die Bäume der Ankunft (A7, die Karte gegen ihre Gestalt)
         const wiese = require("../spec/profiband/haushalt.json").messorte.find((m) => m.id === (opt("--ort") || "wiese"));
-        // `--oben` (K68-N3): dasselbe Exemplar lotrecht von oben, die Reflexion der Krone gegen das Zwei-Strom-Band
+        // `--oben`: dasselbe Exemplar lotrecht von oben, die Reflexion der Krone gegen das Zwei-Strom-Band
         // (`kronenObenUrteil`). Die Arten stehen hinter `--laub`, ohne Liste eiche,birke (ein folgender Schalter ist keine Art).
         const oben = argv.includes("--oben");
         const arten = opt("--laub") && !String(opt("--laub")).startsWith("--") ? opt("--laub") : "eiche,birke";
@@ -3681,7 +3681,7 @@ async function starte() {
     } else if (cmd === "ratsche") {
         // DIE RATSCHE AUS EINER SERIE (nur Node, keine Welt nötig): jede Datei ist eine Band-Messung der echten GPU am Messort
         // (`band --datei` oder das JSON eines Boots der Messfolge, ihr Schritt „band"), eingeschwungen; die Serie trägt
-        // mindestens vier Läufe aus Erst- UND Zweit-Boot, alle an EINEM Ort × Gerät × Sicht und an EINER Version (K26). Die
+        // mindestens vier Läufe aus Erst- UND Zweit-Boot, alle an EINEM Ort × Gerät × Sicht und an EINER Version. Die
         // Hülle (Maximum je Klasse × Pass, VRAM je Erzeuger) wird gegen den Haushalt von heute geurteilt — nur bei sauberer
         // LINSE zieht sie nach (setzt ungemessene Felder, senkt gemessene, hebt nie). `--neu` ist der RE-MINT: die Ratsche
         // wird die Hülle der Serie, auch nach oben (die alte Ratsche richtet ihn nicht, nur Haushalt, Namen und Lecks).

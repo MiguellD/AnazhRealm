@@ -29,7 +29,7 @@ async function checkRing2Dsl(ctx) {
         out.slugSet = typeof m.slug === "string" && m.slug.length > 0;
 
         const jpBefore = r.state.jumpPower;
-        // UHR UND WETTER GEHÖREN DEM SPIELER (Leben-Schau 2): die Probe spricht als Spieler — ein Programm ohne Quelle ist
+        // UHR UND WETTER GEHÖREN DEM SPIELER: die Probe spricht als Spieler — ein Programm ohne Quelle ist
         // eine Stimme der Welt und wünscht das Wetter nur (der Wetter-Zug zieht es in seinem Takt).
         const res0 = r.dslRun(["weather", "stormy"]);
         out.weltWuenscht =

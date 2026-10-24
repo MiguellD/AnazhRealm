@@ -1924,7 +1924,7 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
     );
 }
 
-// DER HÜPFER LANDET (Blick-Tour 3): der feld-native Hüpfer (`creatureJump`, die Verhaltens-Aktion
+// DER HÜPFER LANDET (3): der feld-native Hüpfer (`creatureJump`, die Verhaltens-Aktion
 // `hop`) integrierte die Höhe nur, solange der Impuls stieg — im Fall fror `_hopH` am Scheitel ein (der Körper sprang
 // auf den Boden zurück) und der nächste Sprung begann dort: an der Mess-Wiese stand ein Bär 7,6 m über dem Boden.
 // Wand: zwei Sprünge hintereinander am echten Kreatur-Takt (updateCreatures) — jeder endet mit dem Versatz 0 auf

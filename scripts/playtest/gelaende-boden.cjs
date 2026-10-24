@@ -1083,7 +1083,7 @@ async function checkBandWelle993WaterLodSeam(ctx) {
 // Kaskade 0 endet an der DETAIL_CASCADE-Band-0-Kante, Kaskade 1 an maxFar = Reichweite ×
 // SCHATTEN_FERN_FAKTOR. Jede Kaskade zeichnet jeden Werfer ihrer Box — die Wand: über die ganze geregelte
 // Reichweite (MIN..MAX) und die User-Decke (400 m) trägt JEDE Kaskade ≥ 10 % der Tiefe (kein Streifen, der
-// einen vollen Werfer-Durchgang kostet; V18.130–509 klemmte die dritte auf einen 5-%-Streifen). Die CSM-Init
+// einen vollen Werfer-Durchgang kostet; 509 klemmte die dritte auf einen 5-%-Streifen). Die CSM-Init
 // ist LAZY (erster echter Material-Build) → hier Konstruktion + Vertrag; Look + Maps misst die Sonde diag-csm (git-Archiv).
 async function checkBandV18130CsmShadow(ctx) {
     const { page, check } = ctx;
@@ -1838,7 +1838,7 @@ async function checkBandSeamNormal(ctx) {
     check("G1 Seam-Normal: same-LOD-Rand-Normalen konform ≤ 1° (keine Lichtungs-Naht)", fails.length === 0, fails.join(" · ") || `x ${out.xFace.max}° · z ${out.zFace.max}° an ${out.xFace.matched}+${out.zFace.matched} Verts`);
 }
 
-// Der Tod-Zensus — eingefaltet aus gate:tod-zensus (D3b): ein Leichnam behielt 90 s die Darstellung
+// Der Tod-Zensus — eingefaltet aus gate:tod-zensus: ein Leichnam behielt 90 s die Darstellung
 // des lebenden Tiers (Fern-Guss ohne Schatten auf 2 m, Aura und Traglast); jetzt liegt der Gefallene in der Stufe seines Abstands,
 // wirft nah Schatten, ohne Aura, Traglast, Wesen-Takt und Stimme. Selbsttest im selben Boot: je Täter der alte Defekt eingespielt —
 // jede Probe liest ROT aus ihrem Grund.
@@ -2454,7 +2454,7 @@ async function checkBandTodZensus(ctx) {
     check(`Tod-Zensus SELBSTTEST: ${TAETER.length} Täter beim Namen (der alte Defekt je Probe ROT aus ihrem Grund)`, blind.length === 0, blind.join(" · "));
 }
 
-// Die Bewegungs-Garantie unter Last (P1) — eingefaltet aus gate:move-under-load (D3b): `_gameLoopTick(t)` mit 330-ms-Sprüngen (die 3-FPS-Realität), W gehalten: (a) die Bewegung
+// Die Bewegungs-Garantie unter Last (P1) — eingefaltet aus gate:move-under-load: `_gameLoopTick(t)` mit 330-ms-Sprüngen (die 3-FPS-Realität), W gehalten: (a) die Bewegung
 // verhungert nie an der Last (der Fixed-Step ist unbedingt) · (b) ohne gebauten Spieler-Chunk (gestallter Worker, Fern-Teleport)
 // trägt die feld-native Kollision · (c) nie im Soliden, nie Void · (d) die Pause: nach 10 s ohne Takt springt kein Wolf weiter
 // als Sprint × TAKT_DECKEL_S; Selbsttests: die gepinnte Position und der fehlende Takt-Deckel werden rot, dieser an JEDEM Wolf (W10).

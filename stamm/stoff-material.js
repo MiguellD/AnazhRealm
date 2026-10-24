@@ -83,7 +83,7 @@ class AnazhRealm_stoff_material {
     // Charakter als Parameter: `ampX` (Gras 1.5), `windScale` (Wipfel-Dämpfen, fehlt → 1).
     // phase = uWindTime·1.7 + dot(worldXZ, uWindDir)·0.35; hf = max(positionLocal.y, 0);
     // gust = sin(uWindTime·omega − dot(worldXZ, uWindDir)·k)·amp + mitte — die wandernde Böe, Zahlen aus WIND_BOE (das Ohr
-    // liest dieselben, `_windBoeAt`).
+    // liest dieselben, `_windAt`).
     // uBend-Sphären biegen Halme radial weg (min(hf,1)). Render-rein; gibt den vec3-Versatz zurück.
     _windSwayOffset(TSL, opts = {}) {
         const wu = this._windUniformsEnsure();
@@ -106,7 +106,7 @@ class AnazhRealm_stoff_material {
         // keine Instanz — die Nah-Streu) liest dieselbe Naht (die Einheit). Die Geometrie-Position (`positionGeometry`,
         // Wurzel bei y = 0) trägt die Halm-Höhe; `opts.hoehe` reicht eine eigene Höhe in Metern.
         const hf = max(opts.hoehe || TSL.positionGeometry.y, float(0.0));
-        // Die Böe liest WIND_BOE — dieselben Zahlen hört das Ohr (`_windBoeAt`).
+        // Die Böe liest WIND_BOE — dieselben Zahlen hört das Ohr (`_windAt`).
         const B = AnazhRealm.WIND_BOE;
         const gust = sin(
             wu.uWindTime
@@ -152,20 +152,51 @@ class AnazhRealm_stoff_material {
         return naht.vorlage(vec3(offX, float(0.0), offZ));
     }
 
-    // CPU-Seite der EINEN Wind-Richtung: θ(t) = θ0(seed) + 0.5·sin(t·0.009 + φ1) + 0.22·sin(t·0.0257
-    // + φ2) (±~41° Mäander um die Seed-Grundrichtung). Seed per FNV-1a über worldSeed+"-wind-dir"
-    // (eigener Stream, Γ5). Reine Funktion (seed, t) → Peers/Replays sehen denselben Wind.
-    // Liefert {x, z} (Einheitsvektor in XZ).
+    // CPU-Seite der EINEN Wind-Richtung: der Kern (phyto-core `windRichtung`, ±~41° Mäander um die Grundrichtung der Saat,
+    // eigener Strom Γ5). Reine Funktion (Saat, t) → Peers/Replays sehen denselben Wind. Liefert {x, z} (Einheitsvektor in XZ,
+    // wohin der Wind weht).
     _windDirAt(tSec) {
-        const seedStr = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + "-wind-dir";
-        let h = 2166136261 >>> 0;
-        for (let i = 0; i < seedStr.length; i++) h = ((h ^ seedStr.charCodeAt(i)) * 16777619) >>> 0;
-        const base = (h / 4294967296) * Math.PI * 2;
-        const p1 = (((h >>> 5) & 1023) / 1023) * Math.PI * 2;
-        const p2 = (((h >>> 15) & 1023) / 1023) * Math.PI * 2;
-        const t = Number.isFinite(tSec) ? tSec : 0;
-        const theta = base + 0.5 * Math.sin(t * 0.009 + p1) + 0.22 * Math.sin(t * 0.0257 + p2);
-        return { x: Math.sin(theta), z: Math.cos(theta) };
+        return globalThis.__phytoCore.windRichtung(
+            (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed",
+            tSec
+        );
+    }
+
+    // DER EINE WIND AM ORT (wetter.K5) — jeder Wind-Leser der Welt liest ihn (Gras und Krone über die Uniforms, Wasser,
+    // Regen, Tuch, Rauch, Wagen, Ohr, Nase): die Richtung `_windDirAt`, die Stärke U des Wetters (der Wind-Kanal des
+    // Wetter-Felds × die Böen-Drift `_weatherWob`, 0 ruhig … 1 Sturm) vom Gelände geformt (gelaende-core `windForm`: Lee bis
+    // −40 %, Tal-Düse bis +20 %, an der Höhe des Gesetzes ohne Detail) und die wandernde Böe am Ort (WIND_BOE, dieselben Zahlen
+    // wie der Shader). `staerke` = U · Form (die Böen-Amplitude am Ort ist staerke · WIND_BOE.amp), `ms` der Wind in m/s
+    // (staerke · Böe · WIND_FELD.sturmMS). t: die Wind-Uhr (die Bild-Uhr, A9).
+    _windAt(x, z, t) {
+        const tt = Number.isFinite(t) ? t : 0;
+        const d = this._windDirAt(tt);
+        const B = AnazhRealm.WIND_BOE;
+        const boe = Math.sin(tt * B.omega - (x * d.x + z * d.z) * B.k) * B.amp + B.mitte;
+        const form = this._windForm(x, z, d);
+        const staerke = this._weatherFieldFor(this.state.weather).wind * (this._weatherWob || 1) * form;
+        return { x: d.x, z: d.z, staerke, boe, form, ms: staerke * boe * globalThis.__phytoCore.WIND_FELD.sturmMS };
+    }
+    // Die Form des Geländes je Zelle von 16 m und 1/64 Drehung, gemerkt je Stand des Gesetzes (Saat, Erbgut, Erdbau — ein
+    // neuer Ort formt den Wind neu); der Merker gehört der Instanz.
+    _windForm(x, z, d) {
+        const L = this._gelaende();
+        const stand = [L.seed, L.erbgut, L.erdbau];
+        let M = Object.hasOwn(this, "_windFormMerk") ? this._windFormMerk : null;
+        if (!M || M.stand.some((s, i) => s !== stand[i]) || M.karte.size > 4096)
+            M = this._windFormMerk = { stand, karte: new Map() };
+        const ci = Math.floor(x / 16);
+        const cj = Math.floor(z / 16);
+        const di = (Math.round((Math.atan2(d.x, d.z) / (2 * Math.PI)) * 64) + 64) % 64;
+        const k = ci + "," + cj + "," + di;
+        let f = M.karte.get(k);
+        if (f === undefined) {
+            const a = (di / 64) * 2 * Math.PI;
+            const H = (hx, hz) => this._terrainMacroSurfaceY(hx, hz, false);
+            f = globalThis.__gelaendeCore.windForm(H, (ci + 0.5) * 16, (cj + 0.5) * 16, Math.sin(a), Math.cos(a));
+            M.karte.set(k, f);
+        }
+        return f;
     }
 
     // Geteilte Kopplungs-Uniforms auf dem EINEN windUniforms-Slot: `uWindDir` (vec2; Leser: Gras/Streu

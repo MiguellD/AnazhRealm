@@ -19,7 +19,7 @@ const path = require("path");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZeile } = require("./software-gpu.cjs");
 const { ohneKommentare, ast, wandere, zeileVon } = require("./stamm.cjs");
 
-// DAS EINE __codeOf (D3): jede Seite trägt vor ihrem ersten Skript `window.__codeOf` (Code ohne Kommentare, der EINE Stripper
+// DAS EINE __codeOf: jede Seite trägt vor ihrem ersten Skript `window.__codeOf` (Code ohne Kommentare, der EINE Stripper
 // aus stamm.cjs), `window.__dokuOf` (ungestrippt, für Marker im Kommentar) und `window.__fehlt(fn, re)` (true = das Muster
 // fehlt im Code; was keine Funktion ist, wirft). Die Wand: gate:betriebsgesetz STRIPPER-WAND.
 // DAS EINE WARTEN DER LINSEN (K-WANDUHR, Lehre 26: in Bau-Ereignissen, nie in Wanduhr-Sekunden) — Seiten-Funktionen als Text

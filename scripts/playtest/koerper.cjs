@@ -295,7 +295,7 @@ async function checkBandRing5Soul(ctx) {
         const statusEl = document.getElementById("status-soul");
         out.statusBarShowsLabel = statusEl && /Wolf/.test(statusEl.textContent || "");
 
-        // V2-Animation: die Beine des Menschen gehen nach dem EINEN Gang-Gesetz (K07). Der Schritt kommt aus dem EINEN
+        // V2-Animation: die Beine des Menschen gehen nach dem EINEN Gang-Gesetz. Der Schritt kommt aus dem EINEN
         // Gang-Tick (`_gaitTick`, derselbe Chokepoint wie Peer und Bewohner): 1 s Gehen mit 1,15 m/s, die Beine müssen
         // ihre rotation.x ändern. Ohne Schritt (kein gait) schwingt seit K07 kein Bein mehr — der Sinus um einen 3,4-m-
         // Schritt fiel; der direkte Aufruf ohne gait maß diesen Zwilling.
@@ -565,7 +565,7 @@ async function checkBandRing5Soul(ctx) {
     }
     if (cameraPitch) {
         // Mit height=2.0 und dist=6: pitch=+30° → cam-player = 2-3 = -1.
-        // pitch=-30° → cam-player = 2+3 = 5. Der Deckel greift am sichtbaren Boden + r (K06).
+        // pitch=-30° → cam-player = 2+3 = 5. Der Deckel greift am sichtbaren Boden + r.
         check(
             "Ring 5 V2-Prep: Pitch invertiert — Maus hoch senkt Kamera (3rd)",
             cameraPitch.upDelta < 2,
@@ -1308,7 +1308,7 @@ async function checkBandKonvergenzTierBaum(ctx) {
             out.arten[art] = a;
         }
         // (3) CONSUM — der Chokepoint geht den Gang: das KNIE faltet (die Lab-Mathe legt das Leben in die
-        // Unter-Gelenke) und das Gegenbein schwingt. Das Gang-Gesetz (Welle 5) misst die Geschwindigkeit aus dem WEG
+        // Unter-Gelenke) und das Gegenbein schwingt. Das Gang-Gesetz misst die Geschwindigkeit aus dem WEG
         // des Leibs: der Leib läuft wie im Spiel (1,6 m/s, 60 Takte je Sekunde, 1 s) in seine Blickrichtung (Blick +x,
         // Lauf +x — wie gate:tier-gang), gewertet wird die zweite Hälfte; ein STEHENDER Leib (derselbe Aufruf ohne Weg)
         // faltet und schwingt nicht. Die Takt-Lage der Beine richtet gate:tier-gang am Pfoten-Schlupf.
@@ -1764,7 +1764,7 @@ async function checkBandKoerperBewegung(ctx) {
             o.checks.pitchPur = p30 < 0 && Math.abs(Math.abs(o.pitchPurDeg) - 30) <= 5;
             o.checks.pitchNaNWand = r._slopePitch(NaN, 0, 2) === 0 && r._slopePitch(1, 0, 0) === 0;
         }
-        // ── Das Gang-Gesetz pur (K07): ω = 2π·v/Λ, Stand und NaN ⇒ 0 ──
+        // ── Das Gang-Gesetz pur: ω = 2π·v/Λ, Stand und NaN ⇒ 0 ──
         {
             const rg = s.playerMesh && s.playerMesh.userData && s.playerMesh.userData.rig;
             const g3 = rg ? r._gaitGesetz(rg, 3) : null;
@@ -1951,7 +1951,7 @@ async function checkBandKoerperBewegung(ctx) {
             if (!c) return { error: "Tier-Spawn fehlgeschlagen" };
             const savedSurf = r._koerperBodenUnter;
             r._koerperBodenUnter = (x, _y, z) => ebene(x, z);
-            // der Ruf liest seinen ersten Grund selbst (Leben-Schau 2) — der gestubbte Boden gilt ab jetzt
+            // der Ruf liest seinen ersten Grund selbst — der gestubbte Boden gilt ab jetzt
             delete c.userData.cachedGroundY;
             // gepinnt: Ort UND Gier (bergauf, +z) — der Nick misst den Hang längs des Leibs; die Gier des Wanderns
             // drehte ihn quer (main 7dd944e6: +34,4°, talwärts; 832b4cf4: −16,2° bei ~60° Gier — kein Hang-Fehler)

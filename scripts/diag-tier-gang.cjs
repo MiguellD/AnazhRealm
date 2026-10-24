@@ -7,12 +7,12 @@
 // UNTER LAST (Integration W5-Körper): das Zielgerät läuft 30 fps, das Wesen steht im 1/4-Band der Anim-Raten-Leiter
 // (_creatureAnimDiv auf 0,8 × Fern-Distanz, mit dem Takt des Gangs) — gemessen wird zwischen zwei Auswertungen (der
 // Leib zieht jeden Frame weiter).
-//   DER SPIELER-LEIB (K07): derselbe Aufsetz-Punkt, dieselbe Schwelle am Menschen (LEIB, unten), dazu Kadenz und Töne,
+//   DER SPIELER-LEIB: derselbe Aufsetz-Punkt, dieselbe Schwelle am Menschen (LEIB, unten), dazu Kadenz und Töne,
 //   das BECKEN (Hub und Tiefe unter der Ruhe, in Beinlängen: Gehen ≤ 0,07 / 0,15, Laufen ≤ 0,12 / 0,25 — Gard 2004,
 //   Cavagna 1976, Lee & Farley 1998) und die LOCK-LÖSER im Stand-Fenster (Soll 0: der stehende Fuß löst nie an der
 //   Reichweite, die das Gesetz ihm selbst gibt).
-//   DAS KÖRPER-STUDIO (K07): derselbe Schlupf am Menschen des Labors im Spiel-Modus (STUDIO, unten) — geduckt, gehen, Sprint.
-//   DIE SCHWERE (K07): Mensch und Tier gehen nach der Schwere der Welt, Schritt und Becken aus EINER Zeile (SCHWERE, unten).
+//   DAS KÖRPER-STUDIO: derselbe Schlupf am Menschen des Labors im Spiel-Modus (STUDIO, unten) — geduckt, gehen, Sprint.
+//   DIE SCHWERE: Mensch und Tier gehen nach der Schwere der Welt, Schritt und Becken aus EINER Zeile (SCHWERE, unten).
 //   --selftest: das Gang-Gesetz gestubbt (fester Takt, feste Auslenkung — der Vor-Welle-Gang) → der Schlupf steigt
 //   über die Schwelle, die Linse feuert; die Zeile ohne die Schwere der Welt → die Schwere-Wand feuert.
 //   node scripts/diag-tier-gang.cjs [--selftest]
@@ -23,7 +23,7 @@ const PORT = Number(process.env.TIER_GANG_PORT) || 4449;
 const SELBST = process.argv.includes("--selftest");
 // TIER_GANG_TEIL=studio: nur das Labor (der Entwicklungs-Lauf; das Gate fährt beide)
 const NUR_STUDIO = process.env.TIER_GANG_TEIL === "studio";
-// die Ratsche (K07): 0,2 → 0,05 — der Fuß im Stand steht (Gleiten < 5 %), Tier und Mensch an EINER Schwelle
+// die Ratsche: 0,2 → 0,05 — der Fuß im Stand steht (Gleiten < 5 %), Tier und Mensch an EINER Schwelle
 const SCHWELLE = 0.05;
 const KADENZ_GEHEN = 1.5; // Schritte/s bei 1,15 m/s (physio-pedia, Weidmann 1993)
 const TON_TOLERANZ = 0.15; // Töne = 2·v·t/Λ ± 15 %
@@ -299,7 +299,7 @@ const LEIB = (k) => {
     mesh.position.copy(pos0);
     mesh.rotation.y = rot0;
     const taeter = "_gaitGesetz (fx.bewegung.gang)";
-    // der flache Fuß (K07): ohne das Abrollen über den Ballen (tetrapoda gangRolle, fx.bewegung.gang rollWinkel) sinkt das
+    // der flache Fuß: ohne das Abrollen über den Ballen (tetrapoda gangRolle, fx.bewegung.gang rollWinkel) sinkt das
     // Becken im Doppel-Stand so tief, wie ein flacher Fuß hinten und vorn die Kette verlangt — das Knie knickt ein
     const gangZ = r._gangZeile ? r._gangZeile(true) : null;
     const beckenTaeter =
@@ -377,7 +377,7 @@ const SCHWERE = (k) => {
     return o;
 };
 
-// DAS KÖRPER-STUDIO (K07): derselbe Mensch im Labor (worlds/koerperstudio, Spiel-Modus) — die Taste geht, playInput
+// DAS KÖRPER-STUDIO: derselbe Mensch im Labor (worlds/koerperstudio, Spiel-Modus) — die Taste geht, playInput
 // und playPhysics ziehen den Leib mit festem Takt 1/60 s über ebenen Boden (die Park-Boxen ruhen), je Takt das Fuß-
 // gelenk beider Beine in der Welt. Derselbe Schlupf (Weg des Stand-Fußes / Weg des Leibs, Stand = unterste 5 % der
 // Beinlänge), dazu die Kadenz aus der Phase.

@@ -1551,11 +1551,11 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         out.snowLowProminOk = out.snowLowProminMean < 0.02;
 
         // (G3) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (`_koerperWasser`, Welle L Q6), und sie kennt die DECKE
-        // (D11): die Zellen halten Höhlen unter und neben Seen trocken (caveDry, `_skyOpenWaterFilter`). Die Probe sucht
+        // die Zellen halten Höhlen unter und neben Seen trocken (caveDry, `_skyOpenWaterFilter`). Die Probe sucht
         // in den geladenen Wasser-Chunks jede erste LUFT-Zelle über FEST, deren Mitte unter dem Spiegel des Gesetzes liegt
         // und über der eine FEST-Zelle steht (eine trockene Höhle), und stellt einen Körper auf ihren Boden: er liest dort
         // nie Wasser.
-        // Plus: Worker-Mirror baut waterCells via Flood (V13.12 Vertikal-Open).
+        // Plus: Worker-Mirror baut waterCells via Flood (Vertikal-Open).
         const hoehle = { unter: 0, neben: 0, nassUnter: 0, nassNeben: 0 };
         // Der Höhlen-Chunk unter dem See des Gesetzes (`__wasserChunk("hoehle")`: die Heimat trägt seit K16 keinen See).
         out.hoehlenChunk = await window.__wasserChunk("hoehle");
@@ -2061,7 +2061,7 @@ async function checkBandWasserWahrheit(ctx) {
     check("Wasser-Wahrheit: F1 Höhen-Gate · F2 Rim-Wand · F4 Stau · F5 Ruhe-Fixpunkt auch nach dem Schnitt · F6 geleerte Spalte · F7 Netz, Selbsttest an den Nähten F4 · F5 · F7", out.fails.length === 0, out.fails.join(" · ").slice(0, 400));
 }
 
-// Die Byte-Wand des Scatter-Wasser-Gates (W3.3a) — eingefaltet aus gate:scatter-ab (D3b): das Wasser-Verdikt der Streu liest das
+// Die Byte-Wand des Scatter-Wasser-Gates (W3.3a) — eingefaltet aus gate:scatter-ab: das Wasser-Verdikt der Streu liest das
 // Feld (`_sampleBakedField`, ~30× billiger als der Voll-Scan `_voxelSurfaceY`) mit konservativem Exakt-Fallback im Ufer-Band. Der
 // Korpus mit erzwungenen Klassen (Ufer · Steilhang · Fluss · Spieler-Region; ohne Ufer-Klasse fail-closed), A/B byte-exakt je
 // Region (Referenz-Hook `__scatterExactWater` gegen den Produktions-Pfad) und der Selbsttest:
@@ -2196,7 +2196,7 @@ async function checkBandScatterWasserAB(ctx) {
     check("Scatter-Wasser A/B SELBSTTEST: ein injiziert-falsches Wasser-Verdikt macht den Diff rot", out.selftestFires === true, JSON.stringify(out.selftestRegion));
 }
 
-// B1 der Wasser-Sheet-Worker-Spiegel ist BYTE-IDENTISCH — eingefaltet aus gate:worker-watersheet (D3b): der Worker baut den
+// B1 der Wasser-Sheet-Worker-Spiegel ist BYTE-IDENTISCH — eingefaltet aus gate:worker-watersheet: der Worker baut den
 // Wasser-Zell-Oberkanten-Sheet OFF-THREAD (`buildWaterSheetGeometry`) und MUSS bit-identisch zum Main-Sync-Pfad
 // (`_computeWaterSheetData`) sein, sonst lebt das Wasser auf zwei Wahrheiten (Lehre 7). Am nächsten Wasser der Welt (`__wasserOrte`):
 // je CA-freiem Wasser-Chunk Main gegen Worker-Round-Trip, positions/indices/aFlow/aWave/aDepth/aSlope byte-für-byte, maxDiff 0.

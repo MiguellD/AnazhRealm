@@ -1407,7 +1407,7 @@ async function checkBandPhaseEThreat(ctx) {
     check("Phase E Bedrohung: FURCHT bei niedriger HP + TRIUMPH beim Fall des Jägers", res.fearFelt && res.triumphFelt);
 }
 
-// Die Tiere entstapeln + differenzieren sich — eingefaltet aus gate:tier-separation (D3b): am ECHTEN Chokepoint (updateCreatures):
+// Die Tiere entstapeln + differenzieren sich — eingefaltet aus gate:tier-separation: am ECHTEN Chokepoint (updateCreatures):
 // (A) zwei identische Wesen auf DEMSELBEN Punkt sind nach 200 Ticks > Körperradius getrennt, beschränkt · (B) verschiedene Stats →
 // messbar verschiedene Bewegung (speedMul, Leine aus Mut × Größe) · (C) Selbsttest · (D–F, 0710-4) Leib an Leib: keine Durchdringung,
 // Impuls nach Masse, der Spieler bekommt seinen Stoß, Lockstep; Selbsttests C2 (ohne Leib-Kontakt) und D (der alte Befund).

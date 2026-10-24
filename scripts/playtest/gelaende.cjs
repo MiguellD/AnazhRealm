@@ -35,7 +35,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
                 Array.isArray(snap.worldMeta.voxelEdits) &&
                 snap.worldMeta.voxelEdits.length >= 1
             );
-            // Kein Edit fällt still (K23): 270 Schnitte → 270 Edits.
+            // Kein Edit fällt still: 270 Schnitte → 270 Edits.
             r.state.worldMeta.voxelEdits = [];
             for (let i = 0; i < 270; i++) r.carveVoxel(i * 3, base, i * 3, 3);
             out.capHeld = r.state.worldMeta.voxelEdits.length === 270;
@@ -2219,7 +2219,7 @@ async function checkBandPhaseAFundament(ctx) {
     );
 }
 
-// Carve über den Worker — eingefaltet aus gate:carve (D3b): `Gegraben: 5× erde` → `FPS: 4` am Schöpfer-Holz; der Neubau
+// Carve über den Worker — eingefaltet aus gate:carve: `Gegraben: 5× erde` → `FPS: 4` am Schöpfer-Holz; der Neubau
 // des Spieler-Chunks (und jedes Chunks mit einem Schnitt im 3×3) geht über den Worker, auch bei gesundem Frame (K69-2: am
 // Erdbau eines Dorfs um den Spieler baute er sonst 154–409 ms in EINEM Takt). Synchron baut nur ein ausdrückliches forceSync.
 async function checkBandCarveWorker(ctx) {

@@ -754,7 +754,7 @@ function buehne(nFrames, nachtLicht) {
                 throw new Error("gate:post-kette — erzwungener Render-Fehler der Kette");
             };
             await schritt("Render-Fehler");
-            // (g) DIE DRIFT (Gegenprüfung 0910-1 A): fehlt r184s Abschied am Leinwand-Ziel (der dispose-Hörer, den
+            // (g) DIE DRIFT (0910-1 A): fehlt r184s Abschied am Leinwand-Ziel (der dispose-Hörer, den
             // `_getFrameBufferTarget` anhängt), fällt das Rahmen-Ziel des Rückfalls trotzdem — LAUT: `_rahmenZielAbschied` meldet
             // ERROR. Die Wand nimmt den Hörer fort, kehrt zur Kette zurück und verlangt beides; ihre ERROR-Zeile ist die einzige,
             // die das Urteil duldet.

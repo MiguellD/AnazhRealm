@@ -1492,26 +1492,14 @@ class AnazhRealm_koerper_seele {
         return { ok: true, name: safe };
     }
 
-    // Wind-Vektor an (x, z): deterministisch aus dem Welt-Seed (_voxelNoise), dreht sanft über
-    // km-Distanzen (windScale = 1/1000). windTimeRate = 0 → statischer Wind je Welt (deterministisch).
-    _worldWindDirAt(x, z, t) {
-        const n = this._gelaende().noise;
-        const S = AnazhRealm.SCENT;
-        const tt = (typeof t === "number" ? t : 0) * S.windTimeRate;
-        // Wind-Phase: Noise als Winkel-Quelle (0..2π).
-        const phase = (n.noise2D(x * S.windScale + tt, z * S.windScale - tt) + 1) * Math.PI;
-        return { x: Math.cos(phase), z: Math.sin(phase) };
-    }
-
     // Geruch an (x, z) aus `sources` [{x, z, strength}], Σ über alle Quellen, ∈ [0, ∞) — cappen und
     // deuten die Konsumenten. Je Quelle: decay = exp(−dist/rangeM); dot = toRecv · windDir (toRecv =
-    // Einheitsvektor Quelle→Empfänger, windDir = Wind an der Quelle; positiv = downwind);
-    // windMod = max(minDirectional, (1−windFactor) + windFactor · max(0, dot));
-    // geruch = strength · decay · windMod.
-    _scentAt(x, z, sources, opts) {
+    // Einheitsvektor Quelle→Empfänger, windDir = der EINE Wind an der Quelle, `_windAt` auf der Bild-Uhr — die Nase riecht
+    // den Wind, den das Gras zeigt; positiv = downwind); windMod = max(minDirectional, (1−windFactor) + windFactor ·
+    // max(0, dot)); geruch = strength · decay · windMod.
+    _scentAt(x, z, sources) {
         if (!Array.isArray(sources) || sources.length === 0) return 0;
         const S = AnazhRealm.SCENT;
-        const t = opts && typeof opts.time === "number" ? opts.time : 0;
         let total = 0;
         for (const src of sources) {
             if (!src || typeof src.x !== "number" || typeof src.z !== "number") continue;
@@ -1523,7 +1511,7 @@ class AnazhRealm_koerper_seele {
             if (dist > S.rangeM * 4) continue; // jenseits 4× range vernachlässigbar
             const decay = Math.exp(-dist / S.rangeM);
             // Wind an der Quelle (der Wind, der den Geruch wegträgt)
-            const wind = this._worldWindDirAt(src.x, src.z, t);
+            const wind = this._windAt(src.x, src.z, this._bildZeit);
             // Normierter Vektor von Source zum Receiver
             const norm = dist > 0.001 ? 1 / dist : 0;
             const dirX = dx * norm;
@@ -1719,12 +1707,6 @@ AnazhRealm.SCENT = Object.freeze({
     // Minimaler Richtungs-Faktor (gegen Wind): nie ganz 0, sonst wäre der
     // Geruch upwind invisible — eine Schwelle, die "Restduft" trägt.
     minDirectional: 0.2,
-    // Wind-Skala — Position-Modulation (langsame regionale Variation,
-    // λ~1000 m). Der Wind dreht über große Distanzen, nicht von Schritt
-    // zu Schritt.
-    windScale: 1 / 1000,
-    // Wind-Drehrate: 0 = statisch pro Welt (deterministisch testbar); positive Werte drehen über Zeit.
-    windTimeRate: 0,
 });
 
 // Emotion→Tag-Mapping für Boosts: jede der 6 Emotionen koppelt an einen MATERIAL_TAG_KEY; über 0.7

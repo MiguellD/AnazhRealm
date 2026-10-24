@@ -267,7 +267,7 @@ async function checkBandWellePerfENexusGovernor(ctx) {
             r._estimatePerfCost("creature", 10) > r._estimatePerfCost("creature", 2) &&
             r._estimatePerfCost("creature", 10) === 0.5;
 
-        // (6) V18.268 — die NEUEN AUGEN: perfSense SIEHT die GPU-Render-Last + die per-Subsystem-Spikes. CONSUM: der
+        // (6) die NEUEN AUGEN: perfSense SIEHT die GPU-Render-Last + die per-Subsystem-Spikes. CONSUM: der
         // Fold füllt die Felder, Loop + Overlay lesen sie.
         out.hasRenderFields =
             typeof st.perfSense.renderCalls === "number" &&
@@ -338,7 +338,7 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.settledThrottlesStream = st._voxelStreamBudgetMs < L.streamBudgetMs[1] - 0.01;
         st.voxelMeshPending = pendingSnap;
 
-        // (9) V18.281 — DER ATEM-TOTBAND: im Komfort-Band [growMs, throttleMs] HÄLT der
+        // (9) DER ATEM-TOTBAND: im Komfort-Band [growMs, throttleMs] HÄLT der
         // Regler (er frisst den fps-Überschuss NICHT als Last → das System atmet über 60,
         // statt am 59er-Anschlag zu parken). Drei Regime, EIN Regler:
         st.perfSense = r._perfSenseInit();
@@ -762,7 +762,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             out.a1TagNeutral = neutral;
         }
         // (A1g) Memory-Cap: nach 300 verschiedenen seeds bleibt der Ring
-        // ≤ 256 (V18.210 Audit-Heilung #2: CAP 64→256, Architektur-bewusste
+        // ≤ 256 (Audit-Heilung #2: CAP 64→256, Architektur-bewusste
         // Eviction — der bounded Memory-Schutz hält weiter).
         for (let s = 0; s < 300; s++) r._growTreeBlueprintForSpawn("baum_eiche", 90000 + s);
         out.a1RingCap = !r._growTreeRing || r._growTreeRing.length <= 256;
@@ -1278,7 +1278,7 @@ async function checkBandV18331ReplayDeterminism(ctx) {
     );
 }
 
-// Perf-Panel + Perf-Export — eingefaltet aus gate:perf-panel (D3b): Schöpfer V18.472 „optimiere das perf-panel … damit ich
+// Perf-Panel + Perf-Export — eingefaltet aus gate:perf-panel: Schöpfer V18.472 „optimiere das perf-panel … damit ich
 // spielen kann, einen screenshot erstellen kann … einen button für den export der daten". (P) das Panel füllt seine Felder
 // aus den EINEN Quellen (perfSense · Flugschreiber · Impostor-Zensus), der Kopf trägt die VERSION; (E) der Export liefert
 // denselben Flugschreiber-Trace als Datei; SELBST-TEST: ein leerer Flugschreiber liest als „kein Export".
@@ -1343,7 +1343,7 @@ async function checkBandPerfPanel(ctx) {
     check("Perf-Panel SELBST-TEST: ohne Flugschreiber kein Export (die Linse feuert)", o.selbstTestKeinTrace === true);
 }
 
-// Existenz-Boden des Dispatchers — eingefaltet aus gate:existenz-boden (D3b): ein Budget ≤ 0 lässt die Substanz-Queues
+// Existenz-Boden des Dispatchers — eingefaltet aus gate:existenz-boden: ein Budget ≤ 0 lässt die Substanz-Queues
 // nie monoton wachsen. Lehre 13: Existenz vor Framerate — Substanz (prio 1: waterIso) läuft bei leerem Budget
 // JEDEN Frame, Deko (prio ≥ 2) jeden 4.; K40 der Dauer-Strom: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4.
 async function checkBandExistenzBoden(ctx) {
@@ -1416,7 +1416,7 @@ async function checkBandExistenzBoden(ctx) {
     check("Existenz-Boden (e) SELBST-TEST: im Nicht-4er-Takt mit Terrain-Bau wartet die Deko (Terrain zuerst)", o.terrainZuerst === true);
 }
 
-// Godrays (V8 Kür) — eingefaltet aus gate:godray (D3b): der volumetrische Screen-Space-Light-Shaft im EINEN Post-FX-Pass.
+// Godrays (V8 Kür) — eingefaltet aus gate:godray: der volumetrische Screen-Space-Light-Shaft im EINEN Post-FX-Pass.
 // (A) die reine `_godrayFrameGate` remappt Höhe×Wetter (dass der March im Ausgabe-Bild zeichnet, beweist gate:post-kette an
 // und aus); (B) der Perf-Hebel als ZAHL: Last → 0, Kopfraum → MAX, headless → MAX.
 async function checkBandGodray(ctx) {
@@ -1456,7 +1456,7 @@ async function checkBandGodray(ctx) {
     );
 }
 
-// Die EINE Szenen-Skala + die Laub-Layer-Trennung — eingefaltet aus gate:foliage-res (D3b): bis K50 rechnete der Regler
+// Die EINE Szenen-Skala + die Laub-Layer-Trennung — eingefaltet aus gate:foliage-res: bis K50 rechnete der Regler
 // einen Laub-Faktor (`_foliageResScale`), den kein Pass las — er fiel. (1) `_szeneSkalaWirk`: mit zeitlicher Auflösung der Wert
 // des Spielers, geklemmt auf [SZENE_SKALA_MIN, 1], ohne Wert SZENE_SKALA, ohne TRAA 1; (2) `_markFoliageLayer` und die echten
 // Gruppen: Laub trägt FOLIAGE_LAYER + Layer 0, Platziertes nur Layer 0; (3) der Regler trägt die Auflösung nicht; (4) der
@@ -1528,7 +1528,7 @@ async function checkBandSzeneSkala(ctx) {
     check("Szenen-Skala (3) der Regler trägt die Auflösung nicht (Last und Ruhe lassen 0,8 stehen), (4) der Snapshot nennt sie", g.nachLast === 0.8 && g.nachRuhe === 0.8 && typeof g.snapshotSkala === "number", `${g.nachLast} → ${g.nachRuhe} · Snapshot ${g.snapshotSkala}`);
 }
 
-// Die Regler-Simulation mit ehrlichen Zahlen (W1) — eingefaltet aus gate:regler-sim (D3b): die ECHTE Kette `_perfSenseFoldFrame`
+// Die Regler-Simulation mit ehrlichen Zahlen (W1) — eingefaltet aus gate:regler-sim: die ECHTE Kette `_perfSenseFoldFrame`
 // → `_nexusPerfRegulate` → `_nexusPerfActuate` über tausende synthetische Frames, der headless-Zweig gelüftet, die zwei
 // GPU-Anwender gestubbt, alles gesichert und wiederhergestellt. S1 schwache GPU drosselt und konvergiert (Studio-Regime ohne
 // Rebuild-Schleife) · S2 Streaming ist heilig · S3 starke GPU erholt · S4 Session-Zeit-Invarianz · S5 der Geräte-Seed (Klassen,
@@ -1630,7 +1630,7 @@ async function checkBandReglerSim(ctx) {
             o.s4Invariant = s4MaxDrift < 0.001;
             o.s4 = { a: s4a, b: s4b };
             o.gpuAppliersDrove = rsApplied > 0; // die Sim fuhr die echten Zweige (nicht vakuös)
-            // ── S5: DER GERÄTE-SEED (18.07., „das Geräte-Profil ist Telemetrie,
+            // ── S5: DER GERÄTE-SEED („das Geräte-Profil ist Telemetrie,
             // kein Regler-Seed" fiel) — die EINE Profil-Quelle urteilt Klassen,
             // der Sense-Init KONSUMIERT den Seed, headless bleibt byte-alt. ──
             {
@@ -1692,7 +1692,7 @@ async function checkBandReglerSim(ctx) {
                 r._geraeteProfilMemo = null;
                 st.perfSense = null; // die finally-Faltung initialisiert headless-ehrlich neu
             }
-            // ── S6: DER GRENZZYKLUS-SCHNITT (18.07., vierter Schöpfer-Trace: Radius
+            // ── S6: DER GRENZZYKLUS-SCHNITT (vierter Schöpfer-Trace: Radius
             // atmete 58↔130 m und baute dieselben Rand-Zellen im Kreis) — GEPULSTER
             // Kopfraum (kurze Ruhe-Fenster zwischen Über-Budget-Wellen) bewegt den
             // Radius NICHT mehr; ANHALTENDER Kopfraum wächst weiter (S3 bleibt). ──

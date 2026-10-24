@@ -3597,7 +3597,7 @@ async function checkBandV18164AutoConnect(ctx) {
 }
 
 // Skeleton-Mesh: echte Tube-Geometrie (bark mit lobed flare) + Foliage-Cards (normalBend) + der EINE
-// Wind-Term im Stoff (K19) + Slope/Höhen-Toleranzen. Reine Render-Vertiefung — bp.parts bleibt
+// Wind-Term im Stoff + Slope/Höhen-Toleranzen. Reine Render-Vertiefung — bp.parts bleibt
 // unverändert (tag-neutral).
 async function checkBandV18214SkeletonMesh(ctx) {
     const { page, check } = ctx;

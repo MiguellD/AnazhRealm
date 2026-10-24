@@ -203,7 +203,7 @@ function urteil(b) {
             if (t.stehtM === null || t.liegtM === null || t.kippMin === null)
                 v.push(`LEER: ${p.name} — keine Haut gemessen (Stand ${t.stehtM}, Lage ${t.liegtM})`);
             else {
-                // DER LEBENDE STAND (K02a): am Fuß der Höhlenwand steht der Wolf vor dem Tod nie mit der Haut im Fels — die
+                // DER LEBENDE STAND: am Fuß der Höhlenwand steht der Wolf vor dem Tod nie mit der Haut im Fels — die
                 // Pfoten lesen den Boden unter sich, nie die Höhe des Leibs
                 if (t.stehtM < -TOD_M)
                     v.push(

@@ -5,11 +5,11 @@
 //
 //   D10 — DER SAME EINES SATZES: „pflanz mir einen eichenhain", „setze insel hier", „baue fraktal tempel" und ein KI-Programm
 //     ohne Seed ziehen ihre Welt-Substanz (Same, Streuung, Drehung, Größe) aus dem Welt-Strom (`_bauSame`, Γ5), nie aus
-//     Math.random. Gemessen: Math.random-Züge je Satz (Befund: Hain 1 + 24, Insel 1, Fraktal 1, KI ohne Seed 13) und die
+//     Math.random. Gemessen: Math.random-Züge je Satz (Hain 1 + 24, Insel 1, Fraktal 1, KI ohne Seed 13) und die
 //     Wiederholung: derselbe Satz an derselben Stelle der Welt-Geschichte ergibt denselben Samen und dieselben Orte.
 //
 //   L-WORTSCHATZ — DER WORT-KATALOG IST DER REZEPT-KATALOG: jedes Wort löst über die Studio-Arten auf (Rezept-ids, Werk-Namen,
-//     Art-Wörter des Art-Gesetzes, Studio-Namen), nie über eine Hand-Liste. Befund: „bau mir ein fachwerkhaus" →
+//     Art-Wörter des Art-Gesetzes, Studio-Namen), nie über eine Hand-Liste. „bau mir ein fachwerkhaus" →
 //     „Unbekannter Befehl. Meintest du 'baue dorf hier'?", `_studioBlueprintForWord` null für fachwerkhaus · wagen. Gemessen:
 //     die Wörter des Befunds, jede platzierbare Studio-Art ihr Rezept-Wort, „bau mir ein fachwerkhaus" stellt ein Haus in
 //     die Welt, und ein unbekanntes Wort („scheune") sagt dem Spieler im Chat, was die Studios kennen.
@@ -32,7 +32,7 @@
 //     (`confirmBuild`) stellt die Gestalt, Drehung und Tönung, die das Phantom zeigt (EIN Same je Werk, `_werkSame` — dieselbe
 //     Gestalt wie Werkstatt-Vorschau und Hand), würfelt nichts aus Math.random, und die Nachricht an den Mitspieler trägt
 //     Same und Drehung des Werks: dort steht dasselbe Werk. Der Zähler des Welt-Stroms (`_bauSame`) reist im Welt-Gedächtnis
-//     (`worldMeta`): nach einem Reload wiederholt der Strom nie seinen ersten Samen. Befund: der Standard-Same der Wurzel
+//     (`worldMeta`): nach einem Reload wiederholt der Strom nie seinen ersten Samen. der Standard-Same der Wurzel
 //     `spawnArchitecture` war Math.random, der Broadcast schickte den Samen 0 (immer Gestalt 1), das Phantom zeigte die
 //     Gestalt des Bauplan-Namens und blickte zum Spieler, das Werk stand mit Drehung 0.
 //

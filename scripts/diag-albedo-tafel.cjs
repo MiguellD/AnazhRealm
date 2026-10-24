@@ -242,7 +242,7 @@ async function selbsttest() {
     const t = (name, ok) => tests.push({ name, ok: !!ok });
     const T0 = tafelZumTest();
     const hatRot = (u, art) => u.rot.some((r) => r.art === art);
-    // S0 — DER STAND (K63-n4): beide Seiten am Code-
+    // S0 — DER STAND: beide Seiten am Code-
     // Abdruck von heute → kein Befund; eine Quelle geändert seit der Messung → `veraltet seit <Commit>` beim Namen; eine Messung
     // ohne Abdrücke → `ungeprüft`. Die Zeilen-Quellen sind Pflicht des Schemas.
     {
@@ -254,7 +254,7 @@ async function selbsttest() {
         S0.gemessen = { welt: seite(), labor: seite() };
         const frisch = AT.tafelStand(S0, pruefsumme);
         const d0 = S0.zeilen[0].quellen[0];
-        // DER CODE-ABDRUCK (K63-n8): dieselbe Quelle mit Kommentarzeilen und neuem Leerraum → kein Befund; ein Token mehr
+        // DER CODE-ABDRUCK: dieselbe Quelle mit Kommentarzeilen und neuem Leerraum → kein Befund; ein Token mehr
         // → `veraltet seit 01234567` beim Namen der Datei, in BEIDEN Seiten jeder Zeile, die sie trägt
         const text0 = fs.readFileSync(path.join(__dirname, "..", d0), "utf8");
         const mit = (neu) => (d) => (d === d0 ? AU.codeAbdruck(neu, d) : pruefsumme(d));
@@ -511,7 +511,7 @@ function gespeichert(t) {
     return m;
 }
 
-// DIE NEUMESSUNG DER VERALTETEN ZEILEN (K63-n8): auf der Karte — der Job `echt` des Messplatzes (CI, die Weiche fährt die
+// DIE NEUMESSUNG DER VERALTETEN ZEILEN: auf der Karte — der Job `echt` des Messplatzes (CI, die Weiche fährt die
 // Karte, K65) oder lokal `--neu` unter dem GPU-Schloss — misst die Wand selbst: EINE Welt (werkbank `start` auf
 // ALBEDO_WERKBANK_PORT, Standard 4589, die Seite einen Port darunter) am Ort der gespeicherten Messung, `albedo --tafel`; dann
 // die Labor-Seite jedes Studios. Das Urteil der frischen Zahlen (Ratsche + Rand, Eichung, Stufe): ROT heißt, der Code hat die
@@ -636,7 +636,7 @@ async function main() {
             console.log("\nTafel NICHT nachgezogen: " + r.grund);
             process.exit(1);
         }
-        // DER SCHREIBER PRÜFT DEN STAND (K63-n8): in die Tafel fällt nur eine Messung am Code von heute — eine ältere schriebe eine
+        // DER SCHREIBER PRÜFT DEN STAND: in die Tafel fällt nur eine Messung am Code von heute — eine ältere schriebe eine
         // veraltete Zeile
         const sn = AT.standWand(AT.tafelStand(r.tafel, pruefsumme));
         if (sn.brueche.length || sn.neu.length) {

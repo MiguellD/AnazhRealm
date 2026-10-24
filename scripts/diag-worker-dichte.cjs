@@ -10,7 +10,7 @@
 // Main (`_voxelEditedDensityGrid`, frischer Cache-Schlüssel) und im Worker (`density-grid`) gebaut und Wort für
 // Wort (Float32-Bitmuster) verglichen — zuerst ohne Edits, dann DIE HÜLLE am ersten Ort: ein Turm aus Füll-Edits bis
 // ÜBER das Band und ein Graben (der Main legt den Edit auf jede Ecke seines Kastens, der Worker ebenso über dem Band),
-// Main = Worker = das Gesetz des Kerns. Dazu DIE EDIT-WAHRHEIT (K23): 300 Edits
+// Main = Worker = das Gesetz des Kerns. Dazu DIE EDIT-WAHRHEIT: 300 Edits
 // über den Spielpfad (`carveVoxel`), danach hält der Main alle 300 und die Gitter am Ort und an zwei Nachbarn
 // sind SHA Main = Worker.
 //
@@ -189,7 +189,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                 for (let lod = 0; lod <= 3; lod++) zeilen.push(await vergleiche(ort, lod, "rein"));
                 out.orte.push({ id: ort.id, x: ort.x, z: ort.z, zeilen });
             }
-            // (1b) DIE FLUT-SAAT (K69-2): der Neubau eines Chunks mit einem Schnitt im 3×3 geht über den Worker, die Flut über
+            // (1b) DIE FLUT-SAAT: der Neubau eines Chunks mit einem Schnitt im 3×3 geht über den Worker, die Flut über
             // die Naht reist als Saat mit dem Auftrag (`_flutSaat`). Am Chunk des ersten Orts, unter einem Wassertisch 20 m über
             // seinem höchsten Grund (jede Spalte ist Grundwasser-Quelle, `_aquiferTrocken`), dieselbe Saat (jede Rand-Spalte
             // nass) im Sync-Bau des Mains (`_buildVoxelChunkWaterCells`) und im Worker (`chunk-mesh`, samt dem Stempel der Werke,
@@ -392,7 +392,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                     `FERN-RING (_fernRingDeckWache): ${fehlt} Ecken der Naht gegen die Reichweite geweckt`
                 );
             if (jenseits) out.befunde.push(`REICHWEITE (editReich): ${jenseits} Flächen ändern sich jenseits von ihr`);
-            // (3) DIE EDIT-WAHRHEIT (K23): 300 Edits über den Spielpfad (`carveVoxel` → `_addVoxelEdit` → das Delta an den
+            // (3) DIE EDIT-WAHRHEIT: 300 Edits über den Spielpfad (`carveVoxel` → `_addVoxelEdit` → das Delta an den
             // Worker), 20 × 15 im 2-m-Raster über die Chunk-Naht des ersten Orts. Kein Edit fällt still: der Main hält alle 300,
             // und die Gitter des Orts und seiner zwei Nachbarn sind Main = Worker byte-gleich (SHA je Gitter). Der FIFO-Deckel
             // (256) verdrängte die ersten 44 nur im Main — der Worker hielt sie: zwei Böden ab Edit 257.
@@ -471,7 +471,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
             // Der Abdruck der Makro-Höhe für den Byte-Beweis: die Punkte des Kerns (`abdruckFeld`), die Höhe der Welt.
             const makroSha = async () =>
                 hex(Float64Array.from(punkte, ([x, z, mitDetail]) => r._terrainMacroSurfaceY(x, z, mitDetail)));
-            // DIE LESER der Formeln, die der Kern seit der Prüfung 1 trägt (K09a): die Boden-Farbe des Mains auf 32×32
+            // DIE LESER der Formeln, die der Kern seit der Prüfung 1 trägt: die Boden-Farbe des Mains auf 32×32
             // Punkten in drei Höhen über der Makro-Höhe (die Schneegrenze `schnee` des Kerns greift erst
             // hoch), die Fels-Exposition (die Steilheit an der Makro-Höhe statt am Chunk-Cache) und die
             // Normalform des Erbguts (`erbgutNormal`); dazu die Farben, die der Worker in
@@ -520,7 +520,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                 out.shaMakro = await makroSha();
                 out.shaLeser = await leserSha();
                 out.shaLeser.worker = await workerFarbeSha();
-                // DREI WELT-SAATEN (K09a): der Boot-Seed und zwei frische Saaten in der Form `w-<12>-<6>` — je Saat die
+                // DREI WELT-SAATEN: der Boot-Seed und zwei frische Saaten in der Form `w-<12>-<6>` — je Saat die
                 // chirurgische Regenesis (die Ströme; das Netz des Gesetzbuchs ist je Saat gemerkt), dann der Abdruck.
                 if (welt === "standard") {
                     out.shaSaaten = { [s.worldMeta.seed]: out.shaMakro };
@@ -594,7 +594,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                     }
                 }
             }
-            // TEIL W — DER STOFF DES WALDS (K60-3): die Darts der Wald-Zellen um jeden Ort (9 × 9 Zellen) im Main
+            // TEIL W — DER STOFF DES WALDS: die Darts der Wald-Zellen um jeden Ort (9 × 9 Zellen) im Main
             // (`_forestCellDarts`, frisches Gedächtnis) und im Voxel-Faden (`_voxelWorkerWaldDarts`, entpackt über
             // `_waldDartsEntpacken`, wie die Schlange des Walds sie ins Gedächtnis legt) — jede Zelle Wort für Wort gleich (JSON ihrer Darts). Die Streu wartet auf die Darts des Fadens;
             // drifteten sie, stünde die Gestalt der Ferne auf einer anderen Wahrheit als der Wald der Nähe.
@@ -836,7 +836,7 @@ function spaltenKosten(G, L, H, n, S, A, usKalt, last = 0) {
         imBudget: alle <= SPALTEN_BUDGET.alle && ebenen <= SPALTEN_BUDGET.ebenen,
     };
 }
-// DIE LANDSCHAFTEN AN DEN DREI SAATEN (K16b): jede benannte Landschaft der Bedienung des Studios (worlds/gelaende/
+// DIE LANDSCHAFTEN AN DEN DREI SAATEN: jede benannte Landschaft der Bedienung des Studios (worlds/gelaende/
 // bedienung.json `landschaften`) als EIN Plan je Saat der Linse (`planLage` des gemessenen Gesetzes — dieselbe Lage, die die
 // Welt aus dem Plan gebiert), dieselbe Messung und dasselbe Urteil wie die Saaten (die Linse dieses Baums). Das Urteil spricht
 // `presetBefunde` (dieselbe Wand wie die Knöpfe der Studio-Probe): kein Ziel false, und je Saat trägt mindestens eine
@@ -924,8 +924,8 @@ function realismus() {
         const oz = sm.z;
         const schicht = sm.baender;
         // Der Korridor ist EINE Quelle (`urteil`/`KORRIDOR` im Kern — dieselbe Zahl-Leiste wie im Studio); die Wand verlangt
-        // jedes Ziel, auch das Schicht-Gesetz (ohne Schicht-Ort: null = rot), und die Kosten je Spalte (K16).
-        // DER MÄANDER (K16): die Bahnen der Flachland-Glieder des inneren Felds (`maeanderZahl`, die Bahn im 8-m-Schritt) —
+        // jedes Ziel, auch das Schicht-Gesetz (ohne Schicht-Ort: null = rot), und die Kosten je Spalte.
+        // DER MÄANDER: die Bahnen der Flachland-Glieder des inneren Felds (`maeanderZahl`, die Bahn im 8-m-Schritt) —
         // Sinuosität ≥ 1,3, Wellenlänge 10–14 Breiten, Rc 2–3 Breiten (Leopold & Wolman 1960, Nordstern §4.1), ≥ 3 Glieder.
         const laeufe = G.flussLaeufe(L, -HALB, -HALB, HALB, HALB, 8);
         const maeander = Z.maeanderZahl(laeufe);
@@ -1557,7 +1557,7 @@ async function gebaut(page, fehler) {
                 theta: st.flint.theta,
                 r2: st.flint.r2,
             });
-            // DER MÄANDER IM WASSER (K16): die Fluss-Punkte der Hydrosphäre (Kanal und Spiegel liegen darauf) in Fenstern von
+            // DER MÄANDER IM WASSER: die Fluss-Punkte der Hydrosphäre (Kanal und Spiegel liegen darauf) in Fenstern von
             // 400 m Bogen, flach (Gefälle < 0,4 %, nicht im See) — die Sinuosität Bogen / Sehne je Fenster, ihr Median.
             const maeanderWasser = (h) => {
                 const sin = [];
@@ -2250,7 +2250,7 @@ async function faden(page, fehler, url) {
     if (pageErr) rot = true;
     let pass;
     if (SELBSTTEST) {
-        // die Höhen der Ferne (K60) fallen mit demselben verfälschten Worker-Term rot, die Zwillinge der Form beim Namen
+        // die Höhen der Ferne fallen mit demselben verfälschten Worker-Term rot, die Zwillinge der Form beim Namen
         console.log(`  SELBSTTEST Zwillinge der Form (2): rot ${selbst ? selbst.namen : "?"} (Soll HAUPT-FADEN PUNKT,FERN-RING)`);
         pass =
             !rot &&

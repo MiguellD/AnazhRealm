@@ -1288,7 +1288,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.state.player.respawnGraceUntil = -Infinity;
         r.state.player.hp = 1;
         r._playerDeathRespawn("test");
-        // Der feld-native Tod (K27): die Rückkehr setzt die Lebenswerte voll — gemessen am Respawn selbst, bevor der
+        // Der feld-native Tod: die Rückkehr setzt die Lebenswerte voll — gemessen am Respawn selbst, bevor der
         // Vitals-Takt die Wunde heilt (er hebt hpMax, nie hp).
         out.respawnHpFull = r.state.player.hp === r.state.player.hpMax && r.state.player.hp > 1;
         out.woundSetAt1 = Math.abs(r.state.player.deathWoundIntensity - 1.0) < 0.001;
@@ -3280,23 +3280,13 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
 }
 
 // Γ1-LESART-5 Ψ2-NASE Foundation:
-// das Geruch-Feld der Welt als FÜNFTE Welt-Stimme. _worldWindDirAt + _scentAt
-// als reine Math-Helper; ihr Konsum (Jagd, Kadaver) lebt in gate:kreatur-takt jagdkreis — hier das Gesetz von Wind und Abstand.
+// das Geruch-Feld der Welt als FÜNFTE Welt-Stimme, sein Wind der EINE Wind am Ort (`_windAt`, gate:kopplung F3); ihr Konsum
+// (Jagd, Kadaver) lebt in gate:kreatur-takt jagdkreis — hier das Gesetz von Wind und Abstand.
 async function checkBandV18202GeruchFeld(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-
-        // (N2) Wind-Vektor: normalisiert, deterministisch, variiert über Position
-        const w1 = r._worldWindDirAt(0, 0, 0);
-        const w2 = r._worldWindDirAt(0, 0, 0);
-        out.windDeterministic = w1.x === w2.x && w1.z === w2.z;
-        out.windNormalized = Math.abs(Math.hypot(w1.x, w1.z) - 1) < 1e-6;
-        // Variiert über große Distanzen (1000m) — nicht-konstant
-        const w3 = r._worldWindDirAt(2000, 0, 0);
-        const dot13 = w1.x * w3.x + w1.z * w3.z;
-        out.windVariesOverDistance = Math.abs(dot13) < 0.999;
 
         // (N3) Geruch: einzelne Quelle, Distanz-Decay
         const src = [{ x: 0, z: 0, strength: 1.0 }];
@@ -3313,7 +3303,7 @@ async function checkBandV18202GeruchFeld(ctx) {
         // (N5) Wind-Modulation: downwind > upwind — eine Quelle an fester Position, gesampelt EXAKT downwind und upwind
         const sx = 100,
             sz = 100;
-        const wind = r._worldWindDirAt(sx, sz, 0);
+        const wind = r._windAt(sx, sz, r._bildZeit);
         // Downwind = in Wind-Richtung von Source aus
         const dRecv = { x: sx + wind.x * 50, z: sz + wind.z * 50 };
         const uRecv = { x: sx - wind.x * 50, z: sz - wind.z * 50 };
@@ -3328,12 +3318,6 @@ async function checkBandV18202GeruchFeld(ctx) {
         return out;
     });
 
-    check("V18.202 (N2a) Wind deterministisch (zwei Aufrufe gleich)", res.windDeterministic === true);
-    check("V18.202 (N2b) Wind normalisiert (Länge ≈ 1)", res.windNormalized === true);
-    check(
-        "V18.202 (N2c) Wind variiert über 2000 m Distanz (kein konstanter Vektor)",
-        res.windVariesOverDistance === true
-    );
     check("V18.202 (N3a) Geruch nah > 0.3 (volle Stärke nahe Quelle)", res.scentNearStrong === true);
     check("V18.202 (N3b) Distanz-Decay monoton (20>50>100)", res.scentDistantWeaker === true);
     check("V18.202 (N3c) Bei 300 m: Geruch sehr schwach < 0.05 (decay × windMod)", res.scentFarVanishes === true);

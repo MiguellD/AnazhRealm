@@ -429,7 +429,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
             erstStand = b.erst;
         }
         Object.assign(setup, { warmupCompiles: stand, nachzuegler: stand - nachStart, warmupExtra: extra, ruhe: ruhig >= 8 });
-        // DIE VERFEHLTE RUHE beim Namen (Gegenprüfung K haenger): was das letzte unruhige Bild bewegte — Compiles, der Stand
+        // DIE VERFEHLTE RUHE beim Namen (K haenger): was das letzte unruhige Bild bewegte — Compiles, der Stand
         // der Erst-Zeichnung (gebaut|verschoben|wartend, offene Pipelines) und der wartende Draw
         if (!setup.ruhe && letztes) {
             const { b, vorTot, vorErst } = letztes;
