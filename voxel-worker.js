@@ -697,8 +697,9 @@ function applyStateSnapshot(snap) {
     }
     if (typeof snap.baseHeight === "number") state.baseHeight = snap.baseHeight;
     if (typeof snap.waterLevel === "number") state.waterLevel = snap.waterLevel;
-    // eine neue Welt räumt die Regionen (der Stand trägt keine: jeder Faden rechnet sie, ein Neben-Faden bekommt sie vom Voxel-Faden)
-    if (snap.hydroWelt !== state.hydroWelt) {
+    // eine neue Welt räumt die Regionen (der Stand trägt keine: jeder Faden rechnet sie, ein Neben-Faden bekommt sie vom Voxel-Faden);
+    // ein Delta ohne Welt (`applyStateDelta`) räumt nichts
+    if (snap.hydroWelt !== undefined && snap.hydroWelt !== state.hydroWelt) {
         state.hydroWelt = snap.hydroWelt;
         state.hydrosphere = null;
         state.hydroTiles = null;
