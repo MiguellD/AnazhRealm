@@ -115,7 +115,7 @@ class AnazhRealm_speicher_welten {
             });
         }
         if (fresh) {
-            this.journalAppend("genesis", `Ich erwache als ${m.slug}.`, { worldId: m.worldId });
+            this.journalAppend("genesis", AnazhRealm._datum`Ich erwache als ${m.slug}.`, { worldId: m.worldId });
             // Ring 8: frische Welt im Index registrieren. Reload-Migration
             // (legacy single-key) ruft ensureWorldMeta nach Pre-Load auf;
             // dort ist worldId schon gesetzt und dieser Pfad bleibt aus.
@@ -1454,9 +1454,13 @@ class AnazhRealm_speicher_welten {
         const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
         if (myKey) this._appendProvenance(manifest, myKey);
         this.triggerStateDownload(manifest, `anazh-welt-${entry.id}.json`);
-        this.journalAppend("share", `Ich teilte die ${entry.label} — ihr signiertes Manifest ging hinaus.`, {
-            world: entry.id,
-        });
+        this.journalAppend(
+            "share",
+            AnazhRealm._datum`Ich teilte die ${entry.label} — ihr signiertes Manifest ging hinaus.`,
+            {
+                world: entry.id,
+            }
+        );
         return { ok: true, id: entry.id, manifest };
     }
 
@@ -1494,10 +1498,14 @@ class AnazhRealm_speicher_welten {
         if (!this.state.customWorlds) this.state.customWorlds = {};
         this.state.customWorlds[clean.id] = clean;
         this._saveCustomWorlds();
-        this.journalAppend("growth", `Eine fremde Welt fand den Weg in deine Bibliothek: „${clean.label}".`, {
-            world: clean.id,
-            signature: signatureStatus,
-        });
+        this.journalAppend(
+            "growth",
+            AnazhRealm._datum`Eine fremde Welt fand den Weg in deine Bibliothek: „${clean.label}".`,
+            {
+                world: clean.id,
+                signature: signatureStatus,
+            }
+        );
         return { ok: true, id: clean.id, signatureStatus, reachable };
     }
 
@@ -1587,9 +1595,13 @@ class AnazhRealm_speicher_welten {
         if (!this.state.customWorlds) this.state.customWorlds = {};
         this.state.customWorlds[clean.id] = clean;
         this._saveCustomWorlds();
-        this.journalAppend("growth", `Der KI-Übersetzer trug eine Welt in deine Bibliothek: „${clean.label}".`, {
-            world: clean.id,
-        });
+        this.journalAppend(
+            "growth",
+            AnazhRealm._datum`Der KI-Übersetzer trug eine Welt in deine Bibliothek: „${clean.label}".`,
+            {
+                world: clean.id,
+            }
+        );
         return { ok: true, id: clean.id, label: clean.label };
     }
 
@@ -1737,9 +1749,13 @@ class AnazhRealm_speicher_welten {
         w.world = AnazhRealm.PORTAL_TRANSLATED_WORLD;
         w.reachable = true;
         this._saveCustomWorlds();
-        this.journalAppend("growth", `Der KI-Übersetzer gab „${w.label}" einen Körper — die Welt ist nun betretbar.`, {
-            world: w.id,
-        });
+        this.journalAppend(
+            "growth",
+            AnazhRealm._datum`Der KI-Übersetzer gab „${w.label}" einen Körper — die Welt ist nun betretbar.`,
+            {
+                world: w.id,
+            }
+        );
         return { ok: true, id: w.id, label: w.label };
     }
 
@@ -1880,9 +1896,13 @@ class AnazhRealm_speicher_welten {
         if (!this.state.customWorlds) this.state.customWorlds = {};
         this.state.customWorlds[entry.id] = entry;
         this._saveCustomWorlds();
-        this.journalAppend("growth", `Eine fremde Welt dockte an deine Bibliothek an: „${entry.label}".`, {
-            world: entry.id,
-        });
+        this.journalAppend(
+            "growth",
+            AnazhRealm._datum`Eine fremde Welt dockte an deine Bibliothek an: „${entry.label}".`,
+            {
+                world: entry.id,
+            }
+        );
         // Die Bibliothek wuchs: Welt-Katalog neu annoncieren (self-guarded — _p2pBroadcastSoul ruht ohne Mesh)
         // und den eigenen Katalog-Drawer auffrischen, damit Mitspieler die neue Welt als „✓ vorhanden" sehen.
         this._p2pBroadcastSoul();
