@@ -1,5 +1,6 @@
 // diag-mp-sync.cjs — DIE MEHRSPIELER-WAND (`npm run gate:mp-sync`). Die CI-Wand der Zwei-Seiten-Familie
-// (smoke-lockstep · smoke-webrtc · smoke-copresence: zwei echte Seiten, ein echter signaling-server).
+// (smoke-webrtc · smoke-copresence: zwei echte Seiten, ein echter signaling-server; der Bit-Beweis des Leibs aus smoke-lockstep
+// fiel in (e)).
 //
 // Zwei Klassen beim Namen:
 //   (a) URSPRUNG  der Mitspieler erscheint nie im Weltursprung: `_p2pEnsurePeerEntry` legte Leib und Schild bei
@@ -11,23 +12,27 @@
 //                 scheitert (signaling-server aus), heilte nie. Probe: Server beim Aufbau 3 s aus, dann an; Rejoin
 //                 ≤ 31 s (Backoff-Deckel 30 s + Jitter). Täter, wenn ROT: der Rejoin liest eine Absicht, die die Tür
 //                 nie setzte.
-//   (c) GRABEN    das Chat-Graben reist: A tippt „voxel carve“ und „voxel fill“ im Gespräch, B trägt GENAU dieselben
-//                 zwei Edits (Ort, Radius, Art) — keiner fehlt (Täter `_chatTryVoxelDebugCommand`: schnitzt direkt statt
-//                 über dslRun) und keiner doppelt (Täter: der Empfang wendet eine Graben-Nachricht mehrfach an).
+//   (c) GRABEN    das Chat-Graben reist: A tippt „voxel carve" und „voxel fill" im Gespräch, B trägt GENAU dieselben Edits —
+//                 geurteilt im Abdruck von (e) (Täter, wenn einer fehlt: `_chatTryVoxelDebugCommand` schnitzt direkt statt über
+//                 dslRun; wenn B mehr trägt: der Empfang wendet eine Akt-Nachricht mehrfach an).
 //   (d) LANGE TAKTE B trägt Takte, in denen je Takt mindestens 2 × `aufholJeSchritt` Schritte von A ankommen: B sieht A
 //                 an dessen Ort, und JEDER Takt hält das Gesetz (`taktBruch`): er verbraucht bis zur Kappe der Wanduhr
 //                 ceil(aufholJeSchritt × dt/FIXED_DT) oder bis zur Jitter-Reserve, nie weniger, nie mehr (Täter
 //                 `_lockstepTickPeers`: die Kappe zählt Frames statt Wanduhr). Der Selbsttest im Hauptlauf setzt die alte
 //                 Kappe ein → (d) ROT am Gesetz; der aufgenommene Schub vor dem Fenster (`SCHUB_VOR_DEM_FENSTER`) hält es.
+//   (e) GLEICH FÜR ALLE (feld.K2) Saat + Schreib-Akte = Welt: A gräbt (c) und baut per Chat („bau mir ein haus" →
+//                 spawn_studio); B trägt denselben `abdruck`, nach einem Reload von B derselbe. Das Netz-Log zählt jede Sendung
+//                 am Draht: jede Art außer `NETZ_ERLAUBT` ist eine Zustands-Nachricht. Der Leib: B's Ghost rechnet jeden Schritt
+//                 von A bit-gleich (je seq). Selbsttests: B wendet jede Akt-Nachricht doppelt an und verschiebt den Samen des
+//                 Baus → Edits und Bauten ROT; A sendet eine Wetter-Nachricht → das Netz-Log ROT.
 // Dazu der Spielpfad: Seite A über den KNOPF (`#p2p-toggle`, zweiter Klick im Aufbau startet kein zweites Init, der
 // Knopf liest die EINE Absicht), Seite B über den BOOT (die gemerkte Absicht aus `p2pPersist`). A läuft nach dem
 // Ladeschirm über die Tastatur (`_stepCharacter`; A bootete zuerst, sein Ladeschirm fällt zuerst), B sieht A an dessen
 // Ort (±0,3 m waagrecht); die Latenz (A bewegt sich → B sieht es) wird berichtet.
 // Konsum-Leser: `_p2pUpdatePeer` (zeichnet den Peer je Takt) und der close-Zweig von `initP2PSync` (plant den Rejoin).
 //
-// Selbsttest (`--selftest`): die alte Tür wieder eingesetzt (initP2PSync lässt `enabled`, wie es war) → (b) ROT. Der
-// Selbsttest von (c) läuft im Hauptlauf gleich nach (c): B wendet jede Graben-Nachricht doppelt an (`_p2pMsgDsl` zweimal)
-// → (c) ROT an der Länge.
+// Selbsttest (`--selftest`): die alte Tür wieder eingesetzt (initP2PSync lässt `enabled`, wie es war) → (b) ROT. Die
+// Selbsttests von (c), (d) und (e) laufen im Hauptlauf.
 // Ports: MP_SYNC_PORT (save-server), MP_SYNC_SIGNAL_PORT (signaling), sonst freie des Systems. `--roh <datei>`
 // schreibt die Zahlen als JSON.
 //
@@ -55,6 +60,56 @@ const LAUF_FRIST_MS = 30000;
 const ZUFLUSS_FAKTOR = 2;
 // Nachlauf nach dem Eintreffen der Edits bei B: eine zweite Anwendung derselben Nachricht kann nach der ersten landen.
 const GRABEN_NACHLAUF_MS = 800;
+// (e) die erlaubten Arten am Draht — Schreib-Akt, der Leib des Spielers, die Sicht der eigenen Wesen, die Leitung
+const NETZ_ERLAUBT = {
+    dsl: "Schreib-Akt",
+    ...Object.fromEntries(["pos", "input", "soul", "vibe"].map((t) => [t, "Leib"])),
+    ...Object.fromEntries(["creature-pos", "companion-say"].map((t) => [t, "Sicht"])),
+    ...Object.fromEntries(["join", "rtc-offer", "rtc-answer", "rtc-ice", "stats"].map((t) => [t, "Leitung"])),
+};
+// Das Netz-Log der Seite (vor ihrem ersten Skript, über jeden Reload): jede Sendung am Draht nach ihrer Art
+function netzLog() {
+    const log = (window.__netz = {});
+    const zaehle = (d) => {
+        let t = "?";
+        try {
+            t = String(JSON.parse(d).type);
+        } catch {
+            /* kein JSON: die Art bleibt „?" */
+        }
+        log[t] = (log[t] | 0) + 1;
+    };
+    for (const K of [window.WebSocket, window.RTCDataChannel]) {
+        const send = K && K.prototype.send;
+        if (send)
+            K.prototype.send = function (d) {
+                zaehle(d);
+                return send.call(this, d);
+            };
+    }
+}
+// Der Abdruck der Welt aus den Schreib-Akten (Seite): die Edits, die Bauten der Akte (`bauten`, je eine Kennung) und der Boden an
+// jedem Edit — verglichen als JSON-Text, byte-gleich oder nicht
+function abdruck(bauten) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const edits = (st.worldMeta.voxelEdits || []).map((e) => [e.mode, e.r, e.x, e.y, e.z]);
+    const B = (st.architectures || [])
+        .filter((e) => bauten.includes(String(e.id)))
+        .map((e) => [
+            String(e.id),
+            e.type,
+            e.position.x,
+            e.position.y,
+            e.position.z,
+            e.rotationY,
+            e.scale,
+            e.seed,
+            e.studioOv || null,
+        ]);
+    const boden = edits.map(([, , x, y, z]) => [r._terrainDensityAt(x, y, z), r._voxelSurfaceY(x, z)]);
+    return { edits, bauten: B.sort(), boden };
+}
 
 // (d) DAS GESETZ JE TAKT, wie `_lockstepTickPeers` es trägt: ein Takt von dt ms (seit dem vorigen Verbrauchs-Takt) verbraucht
 // höchstens ceil(aufholJeSchritt × max(1, dt / FIXED_DT)) Schritte und hört davor nur an der Jitter-Reserve auf. Gebrochen ist
@@ -66,7 +121,8 @@ function taktBruch(t, g) {
     const k = kappeDesGesetzes(t.dt, g);
     const wo = `dt ${t.dt === null ? "n/a" : Math.round(t.dt) + " ms"}, Kappe ${k}`;
     if (t.n > k) return `${t.n} Schritte über der Kappe (${wo})`;
-    if (t.n < k && t.nach > g.reserve) return `${t.n} Schritte bei Puffer ${t.nach} über der Reserve ${g.reserve} (${wo})`;
+    if (t.n < k && t.nach > g.reserve)
+        return `${t.n} Schritte bei Puffer ${t.nach} über der Reserve ${g.reserve} (${wo})`;
     return null;
 }
 const dTaeter = (m) =>
@@ -95,7 +151,7 @@ const SCHUB_VOR_DEM_FENSTER = [
 ].map(([dt, n, nach]) => ({ dt, n, nach, anschluss: true }));
 const SCHUB_GESETZ = { reserve: 2, aufhol: 10, fixMs: 1000 / 60 }; // das Gesetz, unter dem er aufgenommen wurde
 
-// Im Seiten-Kontext: Render ruht (zwei Seiten auf swiftshader verhungern sonst den Event-Loop, s. smoke-lockstep),
+// Im Seiten-Kontext: Render ruht (zwei Seiten auf swiftshader verhungern sonst den Event-Loop),
 // der Loop läuft voll über die Pumpe; die Probe hängt am Spiel-Takt `p2pTick` und am Empfang `_p2pMsgPos`.
 function installiere(alteTuer) {
     const r = window.anazhRealm;
@@ -104,6 +160,7 @@ function installiere(alteTuer) {
         if (typeof r.state.renderer.renderAsync === "function") r.state.renderer.renderAsync = () => Promise.resolve();
     }
     r.state.postProcessingFailed = true;
+    r.state.p2p.lockstepDebug = true; // die Spuren des Leibs (A je seq, der Ghost bei B) für (e)
     const mp = (window.__mp = {
         takte: 0,
         peerTakte: 0,
@@ -261,13 +318,27 @@ function bericht(p) {
                 ` · fester Verzug max ${verzugMax} ${verzugMax > festGrenze ? ">" : "≤"} ${festGrenze}`
         );
     }
-    const saveServer = await startProc("save-server.js", /läuft/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
+    const saveServer = await startProc("save-server.js", /läuft/, {
+        PORT: String(PORT),
+        ANAZH_SIGNALING_PORT: String(SIGNAL_PORT),
+    });
     let signaling = null;
-    const browser = await starteBrowser({ art: "webgl", frist: 180000, zusatz: ["--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required", "--disable-background-timer-throttling", "--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding"] });
+    const browser = await starteBrowser({
+        art: "webgl",
+        frist: 180000,
+        zusatz: [
+            "--ignore-gpu-blocklist",
+            "--autoplay-policy=no-user-gesture-required",
+            "--disable-background-timer-throttling",
+            "--disable-backgrounding-occluded-windows",
+            "--disable-renderer-backgrounding",
+        ],
+    });
     try {
         // ── Seite A: frisch, der signaling-server ist AUS ──
         const pageA = await browser.newPage();
         await pageA.setViewport({ width: 640, height: 400 });
+        await pageA.evaluateOnNewDocument(netzLog);
         await pageA.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
         await waitFor(
             pageA,
@@ -297,7 +368,10 @@ function bericht(p) {
         const vorTuer = await pageA.evaluate(() => window.anazhRealm.state.p2p.enabled === true);
         await pageA.evaluate(() => window.anazhRealm.initP2PSync(null));
         await sleep(3000);
-        signaling = await startProc("signaling-server.js", /lauscht/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
+        signaling = await startProc("signaling-server.js", /lauscht/, {
+            PORT: String(PORT),
+            ANAZH_SIGNALING_PORT: String(SIGNAL_PORT),
+        });
         const tAn = Date.now();
         let rejoinS = null;
         let ohnePlan = 0;
@@ -379,6 +453,7 @@ function bericht(p) {
         console.log("Seite B bootet mit der gemerkten Absicht ...");
         const pageB = await browser.newPage();
         await pageB.setViewport({ width: 640, height: 400 });
+        await pageB.evaluateOnNewDocument(netzLog);
         await pageB.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
         await waitFor(
             pageB,
@@ -396,8 +471,17 @@ function bericht(p) {
         await waitFor(pageB, (id) => window.anazhRealm.state.p2p.peers.has(id), "B kennt A", idA);
         check("B verbunden über den Boot, beide kennen einander", true, `A=${idA} B=${idB}`);
         // am echten Broker: A's Vibe-Pass reist mit dem peerId-Stempel des Servers, B verifiziert die Signatur über ihn
-        const vibeMs = await waitFor(pageB, (id) => !!(window.anazhRealm.state.p2p.peers.get(id) || {}).vibeVerified, "B verifiziert A's Vibe-Pass", idA).catch(() => -1);
-        check("W13 P3: der Broker relayt den Vibe-Pass mit peerId-Stempel, B verifiziert A", vibeMs >= 0, `${vibeMs} ms`);
+        const vibeMs = await waitFor(
+            pageB,
+            (id) => !!(window.anazhRealm.state.p2p.peers.get(id) || {}).vibeVerified,
+            "B verifiziert A's Vibe-Pass",
+            idA
+        ).catch(() => -1);
+        check(
+            "W13 P3: der Broker relayt den Vibe-Pass mit peerId-Stempel, B verifiziert A",
+            vibeMs >= 0,
+            `${vibeMs} ms`
+        );
 
         // A steht: der Ladeschirm ist gefallen (erst dann gehören die Tasten dem Spieler), die Höhe ruhig.
         const ladeMs = await waitFor(pageA, () => !window.anazhRealm._ladeschirmSteht(), "A: Ladeschirm weg");
@@ -457,7 +541,12 @@ function bericht(p) {
             // B urteilt nach seinem EREIGNIS: zwei eigene Takte, seit A steht — nie nach der Uhr des Läufers (ein Hintergrund-
             // Takt unter Last kam lokal 1,9 s nach dem Stand noch nicht: Abstand 1,905 m bei Rückstau 111, K60-N3/mp-3.txt)
             const takteB = await pageB.evaluate(() => window.__mp.lsTakte);
-            await waitFor(pageB, (n) => window.__mp.lsTakte >= n + 2, "B: zwei Ghost-Takte nach dem Stand von A", takteB);
+            await waitFor(
+                pageB,
+                (n) => window.__mp.lsTakte >= n + 2,
+                "B: zwei Ghost-Takte nach dem Stand von A",
+                takteB
+            );
             const wahrA = await pageA.evaluate(() => {
                 const p = window.anazhRealm.state.playerMesh.position;
                 return { x: p.x, y: p.y, z: p.z, bewegtAm: window.__mp.eigenBewegtAm };
@@ -487,6 +576,24 @@ function bericht(p) {
         const l0 = await laufUndSicht();
         roh.lauf = Object.assign({ ladeschirmMs: ladeMs }, l0);
         check("A lief über die Tastatur (> 1 m)", l0.lauf > 1, `${l0.lauf.toFixed(2)} m nach ${l0.haltMs} ms W`);
+        // (e) der Leib aus seinen Eingaben: B's Ghost rechnet jeden Schritt von A bit-gleich nach (je seq, die Spuren des Laufs)
+        const spurA = new Map(
+            (await pageA.evaluate(() => window.anazhRealm.state.p2p._lockstepTrace || [])).map((q) => [q.q, q])
+        );
+        const spurB = await pageB.evaluate(
+            (id) => ((window.anazhRealm.state.p2p.peers.get(id) || {}).lockstep || {}).trace || [],
+            idA
+        );
+        const geteilt = spurB.filter((g) => spurA.has(g.q));
+        const dMax = Math.max(
+            0,
+            ...geteilt.map((g) => ["x", "y", "z"].reduce((m, k) => Math.max(m, Math.abs(g[k] - spurA.get(g.q)[k])), 0))
+        );
+        check(
+            "(e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq)",
+            geteilt.length > 60 && dMax === 0,
+            `${geteilt.length} geteilte Schritte, maxΔ ${dMax}`
+        );
         check(
             `B sieht A an dessen Ort (±${ABSTAND_M} m waagrecht)`,
             l0.sichtB.sichtbar && l0.abstand <= ABSTAND_M,
@@ -583,7 +690,8 @@ function bericht(p) {
             if (!l.sichtB.sichtbar) m.push("A bei B unsichtbar");
             if (l.abstand > ABSTAND_M) m.push(`Abstand ${l.abstand.toFixed(3)} m > ${ABSTAND_M} m`);
             const brueche = g.map((t) => taktBruch(t, lsGesetz)).filter(Boolean);
-            if (brueche.length) m.push(`GESETZ gebrochen in ${brueche.length} von ${g.length} Takten (erster: ${brueche[0]})`);
+            if (brueche.length)
+                m.push(`GESETZ gebrochen in ${brueche.length} von ${g.length} Takten (erster: ${brueche[0]})`);
             return m;
         };
         const fensterSatz = (f) => {
@@ -617,7 +725,8 @@ function bericht(p) {
         check(
             `(d) lange Takte bei B (je ${ZUFLUSS_SOLL} Schritte von A): B sieht A an dessen Ort (±${ABSTAND_M} m waagrecht), jeder Takt hält das Gesetz`,
             m1.length === 0,
-            `Lauf ${l1.lauf.toFixed(2)} m · ${sichtSatz(l1)} · ${fensterSatz(f1)}` + (m1.length ? ` — ${m1.join(" · ")}${dTaeter(m1)}` : "")
+            `Lauf ${l1.lauf.toFixed(2)} m · ${sichtSatz(l1)} · ${fensterSatz(f1)}` +
+                (m1.length ? ` — ${m1.join(" · ")}${dTaeter(m1)}` : "")
         );
         await sleep(1500); // B holt bei kurzen Takten auf
         await langeTakte(true, true);
@@ -637,101 +746,88 @@ function bericht(p) {
         );
         await sleep(1500);
 
-        // ── (c) DAS CHAT-GRABEN REIST ──
-        // A öffnet das Gespräch mit der Chat-Taste und tippt „voxel carve" und „voxel fill" (der Spielpfad); B muss
-        // GENAU dieselben zwei Edits tragen (Ort, Radius, Art), wie bei jedem Graben mit der Hand — keiner fehlt, keiner
-        // doppelt. Täter, wenn einer fehlt: `_chatTryVoxelDebugCommand` schnitzt direkt (carveVoxel/fillVoxel)
-        // statt über dslRun, das broadcastet; wenn B mehr trägt: der Empfang wendet eine Graben-Nachricht mehrfach an.
-        const editsVon = (p) =>
-            p.evaluate(() => (window.anazhRealm.state.worldMeta.voxelEdits || []).map((e) => ({ ...e })));
-        const chatGraben = async () => {
-            const vorA = (await editsVon(pageA)).length;
-            const vorB = (await editsVon(pageB)).length;
+        // ── (c)+(e) GLEICH FÜR ALLE (feld.K2): A gräbt, schüttet und baut im Gespräch (die Chat-Taste, der Spielpfad) ──
+        // B trägt denselben Abdruck der Schreib-Akte (`abdruck`). Täter, wenn B einen Edit weniger trägt: `_chatTryVoxelDebugCommand`
+        // schnitzt direkt statt über dslRun (kein Broadcast); wenn mehr: der Empfang wendet eine Akt-Nachricht mehrfach an
+        // (`_p2pMsgDsl`); wenn der Bau fehlt oder anders heißt: seine Kennung ist keine Funktion des Akts.
+        const sage = async (satz) => {
             await pageA.bringToFront();
-            for (const satz of ["voxel carve", "voxel fill"]) {
-                await pageA.keyboard.press("Enter");
-                await sleep(150);
-                // Öffnete die Taste das Feld nicht (der Zeiger-Fang nach dem ersten Senden), klickt der Spieler hinein.
-                const offen = await pageA.evaluate(
-                    () => document.activeElement && document.activeElement.id === "chat-input"
-                );
-                if (!offen) await pageA.click("#chat-input");
-                // Der Voxel-Befehl lässt seinen Satz im Feld stehen (Wiederholung mit Enter): der Spieler markiert ihn und tippt neu.
-                await pageA.keyboard.down("Control");
-                await pageA.keyboard.press("KeyA");
-                await pageA.keyboard.up("Control");
-                await pageA.keyboard.type(satz);
-                await pageA.keyboard.press("Enter");
-                await sleep(300);
-            }
-            const neuA = (await editsVon(pageA)).slice(vorA);
-            const zaehle = (neuB) =>
-                neuA.filter((a) =>
-                    neuB.some(
-                        (b) =>
-                            b.mode === a.mode &&
-                            b.r === a.r &&
-                            Math.abs(b.x - a.x) < 1e-6 &&
-                            Math.abs(b.y - a.y) < 1e-6 &&
-                            Math.abs(b.z - a.z) < 1e-6
-                    )
-                ).length;
-            let neuB = [];
-            const tGrab = Date.now();
-            while (Date.now() - tGrab < 6000) {
-                neuB = (await editsVon(pageB)).slice(vorB);
-                if (neuA.length > 0 && zaehle(neuB) === neuA.length) break;
-                await sleep(150);
-            }
-            await sleep(GRABEN_NACHLAUF_MS);
-            neuB = (await editsVon(pageB)).slice(vorB);
-            return { neuA, neuB, gleich: zaehle(neuB) };
+            await pageA.keyboard.press("Enter");
+            await sleep(150);
+            // Öffnete die Taste das Feld nicht (der Zeiger-Fang nach dem ersten Senden), klickt der Spieler hinein.
+            const offen = await pageA.evaluate(
+                () => document.activeElement && document.activeElement.id === "chat-input"
+            );
+            if (!offen) await pageA.click("#chat-input");
+            // Der Voxel-Befehl lässt seinen Satz im Feld stehen (Wiederholung mit Enter): der Spieler markiert ihn und tippt neu.
+            await pageA.keyboard.down("Control");
+            await pageA.keyboard.press("KeyA");
+            await pageA.keyboard.up("Control");
+            await pageA.keyboard.type(satz);
+            await pageA.keyboard.press("Enter");
+            await sleep(300);
         };
-        // Das Urteil: jeder Edit von A bei B UND B trägt keinen mehr — ohne die Länge bliebe eine Doppel-Anwendung grün.
-        const grabenGleich = (g) => g.neuA.length === 2 && g.gleich === g.neuA.length && g.neuB.length === 2;
-        const graben = await chatGraben();
-        roh.chatGraben = graben;
-        check(
-            "A gräbt und schüttet per Chat (zwei Edits bei A)",
-            graben.neuA.length === 2,
-            `${graben.neuA.length} Edits bei A`
-        );
-        check(
-            "(c) B sieht das Chat-Graben (genau dieselben Edits wie A, keiner doppelt)",
-            grabenGleich(graben),
-            `${graben.gleich}/${graben.neuA.length} bei B, B trägt ${graben.neuB.length} neue` +
-                (graben.gleich < graben.neuA.length
-                    ? " — Täter _chatTryVoxelDebugCommand: schnitzt direkt statt über dslRun (kein Broadcast)"
-                    : graben.neuB.length > graben.neuA.length
-                      ? " — Täter: B wendet eine Graben-Nachricht mehrfach an (Empfang _p2pMsgDsl → dslRun je Ankunft)"
-                      : "")
-        );
-        // Der Selbsttest von (c): B wendet jede DSL-Nachricht doppelt an — (c) muss ROT werden, und zwar an der Länge
-        // (die alte Probe, nur „jeder Edit von A auch bei B“, bleibt dabei grün). Danach trägt B wieder den echten Empfang.
-        await pageB.evaluate(() => {
-            const r = window.anazhRealm;
-            const echt = r._p2pMsgDsl;
-            window.__mpDslEcht = echt;
-            r._p2pMsgDsl = function (msg, p2p) {
-                echt.call(this, msg, p2p);
-                return echt.call(this, msg, p2p);
+        const bautenVon = (p) =>
+            p.evaluate(() => (window.anazhRealm.state.architectures || []).map((e) => String(e.id)));
+        // die drei Akte, bis B den Abdruck von A trägt (höchstens 8 s), dann der Nachlauf (eine zweite Anwendung landet danach)
+        const werke = () => (window.anazhRealm.state.architectures || []).filter((e) => e.werk).length;
+        const akte = async () => {
+            const [vorA, nA, wB] = [
+                await bautenVon(pageA),
+                (await pageA.evaluate(abdruck, [])).edits.length,
+                await pageB.evaluate(werke),
+            ];
+            for (const satz of ["voxel carve", "voxel fill", "bau mir ein haus"]) await sage(satz);
+            const a = (await bautenVon(pageA)).filter((id) => !vorA.includes(id));
+            // B trägt so viele Edits wie A und je Bau von A ein neues Werk (das Ereignis, nie die Uhr)
+            const n = (await pageA.evaluate(abdruck, [])).edits.length;
+            await waitFor(
+                pageB,
+                (n, w) => {
+                    const st = window.anazhRealm.state;
+                    return (
+                        (st.worldMeta.voxelEdits || []).length >= n &&
+                        st.architectures.filter((e) => e.werk).length >= w
+                    );
+                },
+                "B trägt die Akte von A",
+                n,
+                wB + a.length
+            ).catch(() => {});
+            await sleep(GRABEN_NACHLAUF_MS);
+            const [A, B] = [await pageA.evaluate(abdruck, a), await pageB.evaluate(abdruck, a)];
+            return {
+                a,
+                edits: A.edits.length - nA,
+                A,
+                B,
+                gleich: (k) => JSON.stringify(A[k]) === JSON.stringify(B[k]),
             };
-        });
-        const doppelt = await chatGraben();
-        await pageB.evaluate(() => {
-            window.anazhRealm._p2pMsgDsl = window.__mpDslEcht;
-            delete window.__mpDslEcht;
-        });
-        roh.chatGrabenDoppelt = doppelt;
-        const altGruen = doppelt.neuA.length === 2 && doppelt.gleich === doppelt.neuA.length;
+        };
+        const g = await akte();
+        roh.gleich = { A: g.A, B: g.B };
+        const teile = ["edits", "bauten", "boden"];
         check(
-            "(c) Selbsttest: eine doppelt angewendete Graben-Nachricht macht (c) ROT",
-            altGruen && !grabenGleich(doppelt),
-            `B trägt ${doppelt.neuB.length} neue für ${doppelt.neuA.length} von A (${doppelt.gleich}/${doppelt.neuA.length} gefunden)` +
-                ` — (c) ${grabenGleich(doppelt) ? "GRÜN, die Linse ist blind" : "ROT"}, die alte Probe ${altGruen ? "grün" : "rot"}`
+            "A gräbt, schüttet und baut per Chat (zwei Edits und ein Bau bei A)",
+            g.edits === 2 && g.a.length === 1,
+            `${g.edits} Edits, Bauten ${g.a.join(",") || "—"}`
+        );
+        check(
+            "(e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B",
+            g.a.length > 0 && teile.every(g.gleich),
+            teile.map((k) => `${k} ${g.gleich(k) ? "gleich" : "VERSCHIEDEN"}`).join(" · ") +
+                (g.B.edits.length < g.A.edits.length
+                    ? " — Täter _chatTryVoxelDebugCommand: schnitzt direkt statt über dslRun"
+                    : "") +
+                (g.B.edits.length > g.A.edits.length
+                    ? " — Täter: B wendet eine Akt-Nachricht mehrfach an (_p2pMsgDsl)"
+                    : "") +
+                (g.gleich("bauten")
+                    ? ""
+                    : ` — Bau bei A ${JSON.stringify(g.A.bauten)}, bei B ${JSON.stringify(g.B.bauten)}: die Kennung ist keine Funktion des Akts`)
         );
 
-        // ── (a) URSPRUNG ──
+        // ── (a) URSPRUNG ── (vor dem Reload von B: seine Zähler leben in der Seite)
         const endA = await bericht(pageA);
         const endB = await bericht(pageB);
         roh.ursprung = { A: endA, B: endB };
@@ -749,6 +845,83 @@ function bericht(p) {
                         : "")
             );
         }
+
+        // (e) der Reload von B: sein Speicher (saveState, derselbe Schreiber wie die Sicherung), dann die Seite neu, bis ihre Welt
+        // steht und den Bau trägt
+        const netzB = await pageB.evaluate(() => Object.assign({}, window.__netz));
+        await pageB.evaluate(() => window.anazhRealm.saveState());
+        await pageB.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
+        const steht = (ids) => {
+            const r = window.anazhRealm;
+            const da = r && r.state.playerMesh && !r._ladeSperre && r.state.p2p.connected;
+            return !!da && ids.every((id) => (r.state.architectures || []).some((e) => String(e.id) === id));
+        };
+        let nachReload = false; // reißt der Rahmen (die Seite lädt sich beim Betreten der Welt selbst neu), fragt sie erneut
+        for (let i = 0; i < 3 && !nachReload; i++)
+            nachReload = await waitFor(pageB, steht, "B nach dem Reload mit dem Bau", g.a).then(
+                () => true,
+                () => false
+            );
+        const R = nachReload ? await pageB.evaluate(abdruck, g.a) : null;
+        roh.gleich.reload = R;
+        check(
+            "(e) Reload: B trägt nach dem Neuladen denselben Abdruck",
+            !!R && JSON.stringify(R) === JSON.stringify(g.A),
+            R
+                ? teile
+                      .map((k) => `${k} ${JSON.stringify(R[k]) === JSON.stringify(g.A[k]) ? "gleich" : "VERSCHIEDEN"}`)
+                      .join(" · ")
+                : "B stand nach dem Reload nicht mit dem Bau"
+        );
+        // der Selbsttest: B wendet jede Akt-Nachricht doppelt an und nimmt den Samen des Baus um eins verschoben — die Edits UND die
+        // Bauten des Abdrucks fallen ROT (die Probe sieht beide)
+        await pageB.evaluate(() => {
+            const r = window.anazhRealm;
+            const echt = r._p2pMsgDsl;
+            const schiebe = (n) =>
+                Array.isArray(n)
+                    ? n[0] === "spawn_studio"
+                        ? [...n.slice(0, 4), (n[4] + 1) >>> 0, ...n.slice(5)]
+                        : n.map(schiebe)
+                    : n;
+            r._p2pMsgDsl = function (msg, p2p) {
+                const m = Object.assign({}, msg, { program: schiebe(msg.program) });
+                echt.call(this, m, p2p);
+                return echt.call(this, m, p2p);
+            };
+        });
+        const s = await akte();
+        check(
+            "(e) Selbsttest: B wendet jede Akt-Nachricht doppelt an und verschiebt den Samen des Baus → Edits und Bauten ROT",
+            s.a.length > 0 && !s.gleich("edits") && !s.gleich("bauten"),
+            `edits ${s.gleich("edits") ? "GRÜN, die Linse ist blind" : "ROT"} · bauten ${s.gleich("bauten") ? "GRÜN, die Linse ist blind" : "ROT"}`
+        );
+        // DAS NETZ-LOG beider Seiten (B vor und nach dem Reload): jede Art ist erlaubt, sonst eine Zustands-Nachricht
+        const netz = async () => {
+            const n = { A: await pageA.evaluate(() => window.__netz), B: Object.assign({}, netzB) };
+            for (const [t, k] of Object.entries(await pageB.evaluate(() => window.__netz))) n.B[t] = (n.B[t] | 0) + k;
+            return n;
+        };
+        const fremd = (n) =>
+            Object.entries(n).flatMap(([seite, log]) =>
+                Object.keys(log)
+                    .filter((t) => !NETZ_ERLAUBT[t])
+                    .map((t) => `${seite} ${t}×${log[t]}`)
+            );
+        const n0 = await netz();
+        roh.gleich.netz = n0;
+        check(
+            "(e) Netz-Log: keine Zustands-Nachricht, nur Schreib-Akte, Leib, Sicht und Leitung",
+            fremd(n0).length === 0 && n0.A.dsl > 0,
+            JSON.stringify(n0) + (fremd(n0).length ? " — Zustand: " + fremd(n0).join(", ") : "")
+        );
+        await pageA.evaluate(() => window.anazhRealm.p2pSend({ type: "wetter", weather: "stormy" }));
+        const n1 = fremd(await netz());
+        check(
+            "(e) Selbsttest: eine Wetter-Nachricht von A macht das Netz-Log ROT",
+            n1.some((x) => x.startsWith("A wetter")),
+            n1.join(", ") || "GRÜN, die Linse ist blind"
+        );
         roh.dauerS = (Date.now() - t0) / 1000;
     } catch (err) {
         check("Lauf", false, err && err.message ? err.message : String(err));

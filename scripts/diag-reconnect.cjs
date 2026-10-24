@@ -623,7 +623,7 @@ function makeRealmA(env, initSrcOverride) {
         const HAND = /\b(?:p2p|this\.state\.p2p|st\.p2p)\.enabled\s*=\s*true\b/;
         const tuer = (q) => [stammLib.fehlt({ ausser: "initP2PSync" }, HAND, q), stammLib.fehlt.wo];
         check("D Tür: kein Hand-Setzer der Absicht außerhalb der Tür (Knopf, Boot)", ...tuer());
-        const smokes = ["smoke-copresence.cjs", "smoke-lockstep.cjs", "smoke-webrtc.cjs"].filter(
+        const smokes = ["smoke-copresence.cjs", "smoke-webrtc.cjs"].filter(
             (f) => !stammLib.fehlt(null, /p2p\.enabled\s*=\s*true/, { datei: "scripts/" + f })
         );
         check("D Tür: die Zwei-Seiten-Smokes rufen die Tür ohne Hand-Setzer", smokes.length === 0, smokes.join(", "));
