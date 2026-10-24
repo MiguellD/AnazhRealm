@@ -43,7 +43,7 @@
                     "G": 0.5,
                     "halm": "^(nahWiese:.*|streuSatz)$",
                     "grund": "^bodenSatz$",
-                    "quelle": "G 0,5 = kugelige Blatt-Winkel (Campbell & Norman 1998, Kap. 15); gezählt im Ring der Nah-Wiese (`abstand.ring` = AnazhRealm.NAH_WIESE.radius der gemessenen Welt) — jenseits zeichnet der Boden-Satz das Gras"
+                    "quelle": "G 0,5 = kugelige Blatt-Winkel (Campbell & Norman 1998, Kap. 15); gezählt je festem Ring 2–5 / 5–10 / 10–20 / 20–40 m (`laiRinge`, vegetation K1), das Ist ist der schwächste Ring; ein Ring ohne Lücke zählt sein Soll"
                 },
                 "werkzeug": "werkbank bild -278 +1.7 -1038 -276 +1.2 -1026 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah (Mess-Wiese K55)",
                 "messung": {

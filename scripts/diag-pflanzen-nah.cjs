@@ -1300,7 +1300,7 @@ function windUrteil(fall, T, skala, deltaMul) {
     if (st.some(([, ok]) => !ok)) fails.push("Selbsttest der Pflanzen-Linse feuert nicht");
 
     console.log(
-        "=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt- und Nadel-Maß · L1-Krone · Fracht · Wind · Teppich ==="
+        "=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt- und Nadel-Maß · L1-Krone · Fracht · Wind · Wurzel ==="
     );
     if (fails.length) {
         console.error("\n❌ ROT:");

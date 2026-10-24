@@ -422,7 +422,9 @@ class AnazhRealm_daten {
     // den Anteil dicht/d (ein Präfix der Würfel-Ordnung), jedes stehende um d/dicht breiter (`_nahWieseWahl`) — die Halm-
     // Fläche je m² (der LAI) bleibt. Eine ferne Kachel trägt nur den Anteil ihres nächsten Rands (gestuft in Halben, Tsushima:
     // die ferne Kachel mit doppelter Kante bei gleicher Büschelzahl), `sinken` = das Band der Ordnung, in dem ein Büschel an
-    // seiner Schwelle auf null sinkt statt zu ploppen. Bis K1 endeten die Büschel bei 14 + 4 m (LAI 1,58 → 0,09 über 14 m).
+    // seiner Schwelle auf null sinkt statt zu ploppen. `karteHalme`: der Anteil der Halme der Studio-L2, den die Karte trägt —
+    // so deckt sie wie die L1 (laiWirk, Radeon 24.10., Mess-Wiese Ego: die Karte mit allen Halmen allein 3,2–3,8, die L1 2,59,
+    // die L2 1,74–1,86). Bis K1 endeten die Büschel bei 14 + 4 m (LAI 1,58 → 0,09 über 14 m).
     static get NAH_WIESE() {
         return this._einmal(
             "NAH_WIESE",
@@ -430,8 +432,9 @@ class AnazhRealm_daten {
                 kachel: 6,
                 stufe1: 5,
                 stufe1Rand: 0.5,
-                karte: 10,
+                karte: 7,
                 karteRand: 2,
+                karteHalme: 0.77,
                 dicht: 20,
                 radius: 40,
                 rand: 4,

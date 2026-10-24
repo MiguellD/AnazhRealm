@@ -358,7 +358,7 @@ class AnazhRealm_vegetation_wiese {
 
     // Die Maße der Karte an der Studio-L2 (Welt-Meter bei Büschel-Skala 1, über die lokale Matrix des Teils): je Halm (ein
     // Viereck aus vier Ecken, Fuß-Zeile und Spitzen-Zeile) Fuß-Breite und Lehne, die Höhe des Büschels, die Weite seiner
-    // Halme (die Tafel) und der Halm-Abstand, mit dem die zwei Tafeln so viele Halme tragen wie das Büschel. Die Töne (linear):
+    // Halme (die Tafel) und der Halm-Abstand, mit dem die zwei Tafeln den Anteil `karteHalme` seiner Halme tragen. Die Töne (linear):
     // die Wurzel (Mittel der Fuß-Ecken), die Spitzen in zwei Gruppen nach ihrem Rot zu Grün geteilt (grün und trocken —
     // das Gesetz der Wiesen-Farbe des Studios zieht trockene Halme), dazu der Anteil der trockenen.
     _nahWieseKarteMasse(fl) {
@@ -408,7 +408,7 @@ class AnazhRealm_vegetation_wiese {
             tafel,
             breite: median(fuesse) * sk,
             lehne: 2 * median(lehnen) * sk,
-            abstand: (2 * tafel) / fuesse.length,
+            abstand: (2 * tafel) / (fuesse.length * AnazhRealm.NAH_WIESE.karteHalme),
             halme: fuesse.length,
             wurzel: wurzel.map((v) => v / fuesse.length),
             spitze: gruen,
