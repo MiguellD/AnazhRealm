@@ -339,7 +339,7 @@ async function welt() {
     };
 
     const messung = await reihe();
-    // die EINE Quelle liest den Zeichenpuffer am Ruf (D3c)
+    // die EINE Quelle liest den Zeichenpuffer am Ruf
     const quelleLiest = await page.evaluate(() => {
         const r = window.anazhRealm,
             ren = r.state.renderer,

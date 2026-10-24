@@ -12,9 +12,9 @@
 //   (d) fiel mit K50: die Vortiefe der zeitlichen Auflösung lebt im Kanal a ihrer Geschichte (`_zeitAufloesung`), kein
 //       eigenes Tiefen-Ziel und kein Kopier-Ruf mehr.
 //   (c) SELBSTTEST IM FRAME — je Klasse ein eingeschmuggelter Täter nach jedem `_loopRender` (`__zielSchmuggel`): jeder
-//       fällt beim Namen rot, nach dem Abbau steht kein Name des Selbsttests mehr im Zensus. Dazu (0910-3 B) ein eigenes
+//       fällt beim Namen rot, nach dem Abbau steht kein Name des Selbsttests mehr im Zensus. Dazu ein eigenes
 //       64-bit-Ziel, das sich für die Dauer als Szenen-Ziel ausweist (`__zielAusgabe`): AUSGABE-FORMAT nennt es beim Namen.
-//   (r) DIE RUNDUNG DES AUSGABE-ZIELS (0910-3 B). Quelle (Absenz): das Szenen-Bild wird in der Post-Kette höchstens EINMAL
+//   (r) DIE RUNDUNG DES AUSGABE-ZIELS. Quelle (Absenz): das Szenen-Bild wird in der Post-Kette höchstens EINMAL
 //       abgetastet. Echter Frame: die Sonde lief, ihr Faktor passt zur Rundung des Geräts (gegen null: 1 + 2⁻⁷ · 1/(2 ln 2),
 //       Blau 1 + 2⁻⁶ · 1/(2 ln 2); zum nächsten: 1), die Post-Kette liest DENSELBEN Vektor und VERBRAUCHT ihn (×2 hebt das
 //       Mittel des Ausgabe-Bilds, zurückgestellt steht es bit-gleich wieder — drei Bilder EINES Frames, W9).

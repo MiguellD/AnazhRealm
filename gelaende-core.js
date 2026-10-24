@@ -1958,6 +1958,40 @@
         return null;
     }
 
+    // DER WIND AM GELÄNDE (wetter.K5, rein additiv): der Faktor, mit dem das Gelände den EINEN Wind am Ort (x, z) formt, der
+    // nach (dx, dz) weht (Einheitsvektor); `H(x, z)` ist die Höhe des Wirts (die Welt: `hoehe` ohne Detail). LEE: der
+    // steilste Blick gegen den Wind (der Schutz-Index Sx nach Winstral 2002: max über r von (H(o − r·d) − H(o)) / r) — steht
+    // ein Kamm windauf über dem Ort, fällt der Wind um bis zu `lee.max` (−40 %; hinter Hügeln 30–60 %). TAL-DÜSE: steigen
+    // BEIDE Flanken quer zum Wind (die schwächere zählt, je Flanke ihr steilster Anstieg über `duese.seite`), drängt das Tal
+    // die Strömung zusammen — der Wind steigt um bis zu `duese.max` (+20 %), im Lee nie. Glatt zwischen `von` und `bis`
+    // (tan der Böschung); flach und frei genau 1. Leser: der Wind der Welt (`_windAt`).
+    const WIND_FORM = Object.freeze({
+        lee: Object.freeze({ abstaende: Object.freeze([40, 80, 160, 320]), von: 0.05, bis: 0.25, max: 0.4 }),
+        duese: Object.freeze({ seite: Object.freeze([60, 120]), von: 0.08, bis: 0.25, max: 0.2 }),
+    });
+    function windForm(H, x, z, dx, dz) {
+        const glatt = (a, b, v) => {
+            const u = Math.max(0, Math.min(1, (v - a) / (b - a)));
+            return u * u * (3 - 2 * u);
+        };
+        const h0 = H(x, z);
+        const L = WIND_FORM.lee;
+        const D = WIND_FORM.duese;
+        let sx = -Infinity;
+        for (const r of L.abstaende) sx = Math.max(sx, (H(x - r * dx, z - r * dz) - h0) / r);
+        let links = -Infinity;
+        let rechts = -Infinity;
+        for (const r of D.seite) {
+            links = Math.max(links, (H(x - r * dz, z + r * dx) - h0) / r);
+            rechts = Math.max(rechts, (H(x + r * dz, z - r * dx) - h0) / r);
+        }
+        const lee = glatt(L.von, L.bis, sx);
+        const duese = glatt(D.von, D.bis, Math.min(links, rechts)) * (1 - lee);
+        const f = 1 - L.max * lee + D.max * duese;
+        if (!Number.isFinite(f)) throw new Error("windForm: die Höhe des Wirts ist nicht endlich bei " + x + ", " + z);
+        return f;
+    }
+
     // DIE EINE 2D-HÖHE der Welt = der Term-Auswerter ihres Erbguts: der erste Term setzt den Startwert (die Wildnis oder
     // eine Insel), jeder weitere legt sich nach seiner Art darauf — die Rampe addiert, die Bucht schneidet (Minimum).
     // Eine Welt ohne Erbgut trägt [wildnis]. Fehlt der Lage ihr Erbgut, wirft der Auswerter (fail-closed, nie still
@@ -4792,6 +4826,8 @@
         LAGE_GRUND: LAGE_GRUND,
         lageGrund: lageGrund,
         hangOrt: hangOrt,
+        WIND_FORM: WIND_FORM,
+        windForm: windForm,
         HOEHLEN_MUND: HOEHLEN_MUND,
         hoehlenMund: hoehlenMund,
         BODEN_GENERATION: BODEN_GENERATION,

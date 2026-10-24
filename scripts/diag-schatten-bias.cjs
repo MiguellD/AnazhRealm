@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-schatten-bias.cjs — KLEINE WERFER WERFEN IHREN SCHATTEN (0710-12). Der Boden fragte die Karte 1 m über sich
+// diag-schatten-bias.cjs — KLEINE WERFER WERFEN IHREN SCHATTEN. Der Boden fragte die Karte 1 m über sich
 // selbst ab: kein Werfer unter ~1 m Höhe erreichte ihn — Wolf, Fuchs, Busch, Zaun-Pfosten, die Beine des Spielers
 // warfen im Spielbild keinen sichtbaren Schatten (Boden-IoU ≈ 0). Die Kaskaden tragen an der Mess-Wiese 0,11 m (k0) und
 // 0,19–0,25 m (k1) je Texel: 1 m waren 4–9 Texel. Die Wand (echter Renderer: NUR `--echt`, die GPU des Rechners mit

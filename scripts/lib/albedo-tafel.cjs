@@ -141,13 +141,13 @@ function tafelPruefen(t) {
         }
         if (z.ratsche !== null && z.ratsche !== undefined && !zahl(z.ratsche))
             f.push(`${z.id}: ratsche ist weder null noch Zahl`);
-        // DIE STUFEN-PFLICHT (K63-n7): eine Welt-Klasse der Foundry (`:L<n>`, der Bau-Satz) erklärt die Stufen ihres Exemplars —
+        // DIE STUFEN-PFLICHT: eine Welt-Klasse der Foundry (`:L<n>`, der Bau-Satz) erklärt die Stufen ihres Exemplars —
         // eine Klasse, die still weitere Stufen zulässt, misst die gefaltete Stufe
         const wk = String((z.welt && z.welt.klasse) || "");
         const st = z.welt && z.welt.stufen;
         if (/:L|bauSatz/.test(wk) && !(Array.isArray(st) && st.length && st.every((s) => Number.isInteger(s) && s >= 0)))
             f.push(`${z.id}: welt.stufen fehlt — die Klasse ${wk} zeigt Foundry-Stufen, die Zeile erklärt keine`);
-        // DIE QUELLEN der Zeile (K63-n4): die Kerne und Stamm-Zonen, deren Bytes ihre Albedo tragen — der Stand des Ists
+        // DIE QUELLEN der Zeile: die Kerne und Stamm-Zonen, deren Bytes ihre Albedo tragen — der Stand des Ists
         if (!(Array.isArray(z.quellen) && z.quellen.length && z.quellen.every((d) => typeof d === "string" && d)))
             f.push(`${z.id}: quellen fehlen (die Dateien, deren Bytes die Albedo der Zeile tragen)`);
         else
@@ -170,7 +170,7 @@ function tafelPruefen(t) {
     return f;
 }
 
-// DER STAND DES ISTS (K63-n4, K63-n8): je Zeile und Seite die EINE Regel der Soll-Tafel (`messStand`) gegen den `kernStand`
+// DER STAND DES ISTS: je Zeile und Seite die EINE Regel der Soll-Tafel (`messStand`) gegen den `kernStand`
 // der Messung (`gemessen.welt|labor`): ohne Version, Commit oder Abdruck `ungeprüft`, ein fremder Abdruck `veraltet` — jeder
 // fremde beim Namen. `pruefsumme(d)` liest den Baum von heute.
 function tafelStand(t, pruefsumme) {
@@ -189,7 +189,7 @@ function tafelStand(t, pruefsumme) {
         }
     return rot;
 }
-// DIE WAND DES STANDS (K63-n8): ungeprüft bricht, veraltet benannt ohne Bruch; `neu`: die Neumessung.
+// DIE WAND DES STANDS: ungeprüft bricht, veraltet benannt ohne Bruch; `neu`: die Neumessung.
 function standWand(rot) {
     const brueche = rot.filter((r) => r.art !== "veraltet").map((r) => r.text);
     const veraltet = {};
@@ -218,7 +218,7 @@ function tafelUrteil(t, messung) {
             rot.push({ art: "stumm", text: `${z.id}: das Labor maß nichts (${(L && L.fehler) || "keine Zeile"})` });
         if (!W || !zahl(W.Y) || !(W.Y > 0))
             rot.push({ art: "stumm", text: `${z.id}: die Welt maß nichts (${(W && W.fehler) || "keine Zeile"})` });
-        // DIE STUFE DES EXEMPLARS (K63-n7): eine Zeile erklärt die Stufen, in denen die Welt ihr Exemplar zeigt
+        // DIE STUFE DES EXEMPLARS: eine Zeile erklärt die Stufen, in denen die Welt ihr Exemplar zeigt
         // (`welt.stufen`); zeichnet der Schuss eine andere, misst er einen anderen Stoff
         const ds = z.welt && Array.isArray(z.welt.stufen) ? z.welt.stufen : null;
         if (ds && W && zahl(W.Y)) {
@@ -284,7 +284,7 @@ function tafelUrteil(t, messung) {
 
 // DER NACHZUG (nur aus einer Messung beider Seiten mit grüner Eichung und ohne stumme Zeile): Ist setzen, die Ratsche
 // SENKEN (nie heben — eine Zeile über der Ratsche ist ROT, heben ist ein begründeter Akt von Hand im Commit).
-// EINE STUMME ZEILE (K63-n5) hält den Nachzug nicht mehr auf: der Stand reist je Messung in die Tafel (`gemessen`, die Wand
+// EINE STUMME ZEILE hält den Nachzug nicht mehr auf: der Stand reist je Messung in die Tafel (`gemessen`, die Wand
 // prüft ihn je Zeile), und ein altes Ist unter dem neuen Stand wäre still veraltet — darum FÄLLT ihr Ist (die Wand: „ohne Ist",
 // ROT beim Namen), die Ratsche bleibt. Nur eine falsche Eichung zieht nichts.
 function tafelNachziehen(t, messung, gemessen) {
@@ -300,7 +300,7 @@ function tafelNachziehen(t, messung, gemessen) {
             aenderungen.push(`${z.id}: das Ist fällt (${r ? r.text : "stumm"})`);
             continue;
         }
-        // die Stufen der Welt reisen mit dem Ist (K63-n7): die Wand prüft sie gegen `welt.stufen` auch am gespeicherten Stand
+        // die Stufen der Welt reisen mit dem Ist: die Wand prüft sie gegen `welt.stufen` auch am gespeicherten Stand
         const knapp = (m) => Object.assign({ Y: m.Y, rgb: m.rgb, pixel: m.pixel }, Array.isArray(m.stufen) ? { stufen: m.stufen } : {});
         z.ist = { labor: knapp(e.labor), welt: knapp(e.welt), verhaeltnis: e.verhaeltnis };
         if (z.ratsche == null || e.abweichung < z.ratsche) {

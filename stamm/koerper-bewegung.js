@@ -1393,6 +1393,7 @@ class AnazhRealm_koerper_bewegung {
                         hand: T.handbremse,
                         tiefe: this._fahrTiefe(z), // das Wasser am Wagen (Schau-2: Widerstand, Ansaugung)
                         haft: this._fahrHaft(), // die Nässe am Reibkreis (feld.K1)
+                        wind: this._fahrWind(z), // der EINE Wind auf der Flanke (wetter.K5)
                     },
                     fahrG,
                     nowDt

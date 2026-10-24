@@ -2939,6 +2939,7 @@ class AnazhRealm_koerper_leib {
             }
             c.position.set(a.x + nx, a.y + ny, a.z + nz);
         };
+        let wind = null; // der Wind am Ort des Tuchs, einmal je Aufruf
         for (let i = 0; i < roles.length && i < kids.length; i++) {
             const r = roles[i];
             if (!r) continue;
@@ -3008,8 +3009,10 @@ class AnazhRealm_koerper_leib {
                         : 0;
                 c.rotation.x = b.rx + Math.sin(t * 1.6) * 0.05 + (moving ? 0.04 : 0) + dHead;
             } else if (r.role === "segel") {
-                // C2 — das Tuch/Segel FLATTERT (Wind): kleine schnelle Wellen.
-                c.rotation.z = b.rz + Math.sin(t * 4.2 + r.phase + i) * 0.07;
+                // C2 — das Tuch/Segel FLATTERT im EINEN Wind am Ort (`_windAt`, die Bild-Uhr): der Ausschlag wächst mit Stärke
+                // und Böe (Sturm 0,14–0,23 rad, Regen ~0,05, klar ~0,01); ohne Wind hängt es still.
+                if (!wind) wind = this._windAt(group.position.x, group.position.z, this._bildZeit);
+                c.rotation.z = b.rz + Math.sin(t * 4.2 + r.phase + i) * 0.2 * wind.staerke * wind.boe;
             }
         }
     }

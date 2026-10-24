@@ -9,7 +9,7 @@
 // Stamm-Text der Spitze; darauf `git merge-file --diff-algorithm=histogram` (der Algorithmus von merge-ort), danach S in
 // die Form des Ziels. Weil der Merge auf demselben Text wie git läuft, sind die Konflikte per Konstruktion die von git;
 // benannt werden sie nach dem Glied, das den Hunk trägt. Alles außerhalb des Stamms merged git selbst. Steht das Ziel nach
-// DOMÄNE (D2), stellt `ordne` Basis und Zweig vor dem Merge in die Ordnung der Karte des Ziels (ein Umzug ist dann kein
+// DOMÄNE, stellt `ordne` Basis und Zweig vor dem Merge in die Ordnung der Karte des Ziels (ein Umzug ist dann kein
 // Konflikt, nur eine Ordnung); ein neues Glied des Zweigs nimmt die Karte beim Vorgänger auf (`heileKarte`, benannt).
 //
 //   node scripts/stamm-rehome.cjs [--auf origin/main] [--trocken] [--immer]

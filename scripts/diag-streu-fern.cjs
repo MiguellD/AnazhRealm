@@ -27,7 +27,7 @@
 //   G BAHNWECHSEL  der Spieler tritt an einen fernen Gesetz-Fels: der EINE Bahnwechsel des LOD-Ticks tauscht jede
 //              Fernform-Zelle diesseits der Grenze auf ihr Studio-Mesh (mit Instanzen); zurück an der Mess-Wiese zieht
 //              sie jenseits des Totbands wieder ins Gesetz.
-//   H VOR DEM BUCH  (0710-2) kommt das Buch nach dem Ring (im Browser steht der Ring nach ~1 s, das Buch nach 5–8 s), liest
+//   H VOR DEM BUCH  kommt das Buch nach dem Ring (im Browser steht der Ring nach ~1 s, das Buch nach 5–8 s), liest
 //              kein Deko-Takt das Budget, bevor es dockt: eine zweite Seite hält die Buch-Nachricht zurück, der echte
 //              Spiel-Takt (`_gameLoopTick` → Deko-Job) läuft, bis die Nah-Wiese 8× kalt getaktet hat — die Loop-Grenze
 //              fängt 0 Fehler; nach dem Buch legt die Nah-Wiese ihre 4 Studio-Vorlagen, wieder ohne Fehler. Jeder
