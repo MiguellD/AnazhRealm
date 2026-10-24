@@ -4,6 +4,32 @@ const { WELT_ORTE_INSTALL } = require("./welt-orte.cjs");
 // über ihr. Werkbank (echte GPU, sichtbar): `werkbank eval` mit WASSER_INSTALL.
 ("use strict");
 
+// DIE RUNDUNG der Befunde: `n` Nachkommastellen, nicht Endliches wird null
+function wasserRund(n) {
+    return (x, m = n) => (Number.isFinite(x) ? Math.round(x * 10 ** m) / 10 ** m : null);
+}
+// DAS PROBE-BOOT: ein Teile-Werk aus Holz (Rumpf und Sitz) im Buch — zurück sein Name
+function wasserBoot(st) {
+    st.blueprints.__wasser_boot = {
+        name: "__wasser_boot",
+        parts: [
+            { shape: "box", material: "holz", size: { x: 3, y: 0.6, z: 1.4 }, position: { x: 0, y: 0, z: 0 } },
+            { shape: "box", material: "holz", size: { x: 0.4, y: 0.4, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
+        ],
+        connections: [],
+    };
+    return "__wasser_boot";
+}
+// DER ZUFALL der Proben (mulberry32 aus der Saat `hs`): je Ruf eine Zahl in [0, 1)
+function wasserZufall(hs) {
+    return () => {
+        hs = (hs + 0x6d2b79f5) >>> 0;
+        let t = Math.imul(hs ^ (hs >>> 15), hs | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
 // ── Q7-Gestalt ──
 function wasserFluss() {
     const r = window.anazhRealm;
@@ -148,7 +174,7 @@ function wasserKoerper(opts) {
         // `_loopFixedStep` je Frame ruft (`_stepFixedSim`). Der Loop ruht, solange die Probe steppt.
         const leib = window.__wasserLeib();
         const [schritt, setze] = [leib.takt, leib.setze];
-        const R = (x, n = 3) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
+        const R = wasserRund(3);
         const aus = {
             see: { mitte: [R(mx, 1), R(mz, 1)], spiegel: R(spiegel, 2), tiefeMitte: R(tiefeMitte, 2) },
             brust: R(brust),
@@ -393,7 +419,7 @@ function wasserLicht(opts) {
         const spiegel = seeAm.see.level;
         const mx = ziel[0];
         const mz = (o.start || (await window.__wasserOrte({})).see.ufer)[1];
-        const R = (x, n = 3) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
+        const R = wasserRund(3);
         const aus = {};
         // DAS LICHT AM WASSER (W-L-a, W-L-b): die Farbe der Luft (das Medium, das die Unterwasser-Sicht trägt) zur
         // Mitternacht und zu Mittag, über und unter dem Spiegel; und die Himmels-Umgebung (die IBL jedes Stoffs und
@@ -1208,7 +1234,7 @@ function wasserHoehle(opts) {
         const oy = (st.terrainBaseHeight || 0) - floorDrop;
         const S = A.CELL_STATE;
         const dq = dim * dim;
-        const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
+        const R = wasserRund(2);
         const hoehlen = [];
         for (const [key, e] of st.voxelChunks || []) {
             if (!e || !e.waterCells) continue;
@@ -1355,18 +1381,10 @@ function wasserWagen(opts) {
         }
         if (!see) return { fehler: "kein See" };
         const S = see.level;
-        const R = (x, n = 3) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
+        const R = wasserRund(3);
         await window.__weltDa(() => st.blueprints && st.blueprints.fahrzeug_gt);
         if (!(st.blueprints && st.blueprints.fahrzeug_gt)) return { fehler: "kein Studio-Wagen im Buch (fahrzeug_gt)" };
-        const BOOT = "__wasser_boot";
-        st.blueprints[BOOT] = {
-            name: BOOT,
-            parts: [
-                { shape: "box", material: "holz", size: { x: 3, y: 0.6, z: 1.4 }, position: { x: 0, y: 0, z: 0 } },
-                { shape: "box", material: "holz", size: { x: 0.4, y: 0.4, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
-            ],
-            connections: [],
-        };
+        const BOOT = wasserBoot(st);
         const pm = st.playerMesh.position;
         const posAlt = pm.clone();
         const fahre = (typ, x, z, takte) => {
@@ -1772,7 +1790,7 @@ async function wasserQuelle(opts) {
     const st = r.state;
     if (!st.hydrosphere || !st.hydrosphere.ready) return { fehler: "keine Hydrosphäre" };
     const HC = r.constructor.HYDROSPHERE;
-    const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
+    const R = wasserRund(2);
     // die Hülle des Gesetzes (fehlt eine Größe im Stand, gilt die des Gesetzes von heute)
     const F = Number.isFinite(HC.spiegelFreibord) ? HC.spiegelFreibord : 0.25;
     const sN = Number.isFinite(HC.bankNeigung) ? HC.bankNeigung : 0.7;
@@ -2145,7 +2163,7 @@ const BACH_PROBE_M = 200;
 async function wasserBach(opts) {
     const o = opts || {};
     const r = window.anazhRealm;
-    const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
+    const R = wasserRund(2);
     const bachOrt = Number.isFinite(o.x) && Number.isFinite(o.z) ? null : (await window.__wasserOrte({})).bach;
     const ZX = bachOrt ? bachOrt.x : o.x,
         ZZ = bachOrt ? bachOrt.z : o.z;
@@ -2336,7 +2354,7 @@ async function wasserBank(opts) {
     const h = st.hydrosphere;
     if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre" };
     const G = r.constructor.TERRAIN_GEOLOGY;
-    const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
+    const R = wasserRund(2);
     const grad = (steile) => (Math.acos(1 - steile) * 180) / Math.PI;
     const felsGrad = grad(G.rockLo),
         geroellGrad = grad(G.schuttKandidat);
@@ -2551,9 +2569,8 @@ function wasserLeser(opts) {
     })();
 }
 
-// DER LEIB DER PROBE (EIN Gestell für jede Probe am Spieler): der Spiel-Takt ruht (`_loopFixedStep`), `setze` stellt den Leib
-// ruhend an (x, y, z), `takt` geht mit den Tasten einen festen Sim-Schritt (`_stepFixedSim`, derselbe wie je Frame), `zurueck`
-// stellt Ort, Tasten, Takt und Kamera wieder her.
+// DER LEIB DER PROBE (EIN Gestell): der Spiel-Takt ruht, `setze` stellt den Leib ruhend an (x, y, z), `takt` geht mit den Tasten
+// einen festen Sim-Schritt (`_stepFixedSim`), `zurueck` stellt Ort, Tasten, Takt und Kamera wieder her.
 function wasserLeib() {
     const [r, A] = [window.anazhRealm, window.anazhRealm.constructor];
     const [st, pm] = [r.state, r.state.playerMesh];
@@ -2596,16 +2613,9 @@ function wasserMutation(opts) {
         const sicht = window.__wasserSichtNetz();
         const arten = r._nahStreuArten();
         const baum = Object.keys(A.FOREST.crown)[0];
-        let hs = 0x2545f491;
-        const zufall = () => {
-            hs = (hs + 0x6d2b79f5) >>> 0;
-            let t = Math.imul(hs ^ (hs >>> 15), hs | 1);
-            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+        const zufall = wasserZufall(0x2545f491);
         const drin = (x, z) => punkte.some((p) => (x - p.x) ** 2 + (z - p.z) ** 2 <= RHO * RHO);
-        // unter dem Spiegel einer Scheibe steht eine Pflanze, die in ihr tiefer wurzelt als ihr Spiegel (am Hang ragt der Rand
-        // der Scheibe über ihn: dort steht die Wiese zu Recht)
+        // im Wasser einer Scheibe steht, was in ihr unter ihrem Spiegel wurzelt (am Hang ragt ihr Rand über ihn)
         const unter = (it) => punkte.some((p) => (it.x - p.x) ** 2 + (it.z - p.z) ** 2 <= RHO * RHO && it.y < p.b + TIEF);
         const punkte = [];
         let versuche = 0;
@@ -2725,21 +2735,13 @@ function wasserMutation(opts) {
     })();
 }
 
-// ── GELÄNDE K4 STAFFEL 2: ÜBERALL ── DIE ORTE ÜBER DIE KARTE: `n` Würfe aus der Saat der Probe (±6 km um die Mitte der Welt, je
-// ≥ 1,5 km auseinander) — trockenes Land (`_landAt`, 2 m Marge) oder der Fluss-Punkt seiner Region nächst dem Wurf, an dem die
-// Strömung trägt und das Wasser ≥ 1,2 m über dem gezeichneten Bett steht (`fluss`); an jedem die Mutation oder die Strömung.
+// ── GELÄNDE K4 STAFFEL 2: ÜBERALL ── `n` Würfe über die Karte (±6 km, je ≥ 1,5 km auseinander): trockenes Land (`_landAt`) oder
+// der Fluss-Punkt nächst dem Wurf mit Strömung und ≥ 1,2 m Wasser (`fluss`); an jedem die Mutation oder die Strömung.
 async function wasserKarte(o) {
     const r = window.anazhRealm;
-    let hs = 0x51ed270b;
-    const zufall = () => {
-        hs = (hs + 0x6d2b79f5) >>> 0;
-        let t = Math.imul(hs ^ (hs >>> 15), hs | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return (((t ^ (t >>> 14)) >>> 0) / 4294967296) * 12000 - 6000;
-    };
-    const orte = [];
+    const [orte, zufall] = [[], wasserZufall(0x51ed270b)];
     for (let v = 0; v < 400 && orte.length < o.n; v++) {
-        const [x, z] = [zufall(), zufall()];
+        const [x, z] = [zufall() * 12000 - 6000, zufall() * 12000 - 6000];
         if (orte.some(([a, b]) => Math.hypot(a - x, b - z) < 1500)) continue;
         await window.__weltDa(() => !r._ensureHydroTilesAround(x, z, 300));
         const tief = (q, b = r._voxelSurfaceY(q.x, q.z)) => r._waterFlowAt(q.x, q.z) && r._atlasWaterLevelAt(q.x, q.z, b) - b >= 1.2;
@@ -2752,16 +2754,14 @@ async function wasserKarte(o) {
     return aus;
 }
 
-// DIE LÄUFE ENDEN IN SEE ODER MEER: jeder Lauf des Gesetzes (`flussLaeufe` ±3 km um die Mitte der Welt) bis zu seiner Senke
-// verfolgt — über den Fenster-Rand (derselbe Lauf ab seinem letzten Knoten; an einer Senke beginnt kein Glied, der Lauf, der an ihr
-// endet, trägt sie) und die Mündung (der Lauf der Ebene darunter, dessen Bahn sie trägt); an jeder Senke (dazu jede benannte des
-// Netzes, `benannteSeen`) trägt die Welt Wasser über dem gezeichneten Grund (`_atlasWaterLevelAt`, dort oder eine Zelle daneben);
-// stromab fällt die Sohle jedes Flusses der Regionen streng, sein Spiegel steigt nie.
+// DIE LÄUFE ENDEN IN SEE ODER MEER: jeder Lauf des Gesetzes (`flussLaeufe` ±3 km) bis zu seiner Senke verfolgt, über den
+// Fenster-Rand und die Mündung (der Lauf der Ebene darunter, dessen Bahn sie trägt); jede Senke (auch jede `benannteSeen`) ist
+// nass (`_nassAt`, dort oder daneben); stromab fällt die Sohle jedes Flusses der Regionen streng, sein Spiegel steigt nie.
 async function wasserLaeufe() {
     const r = window.anazhRealm;
     const [G, L] = [window.__gelaendeCore, r._gelaende()];
     const start = G.flussLaeufe(L, -3072, -3072, 3072, 3072, 16);
-    const aus = { laeufe: start.length, ende: {}, senken: 0, nass: 0, trocken: [], schritte: 0, steigt: 0 };
+    const aus = { laeufe: start.length, ende: {}, nass: 0, trocken: [], schritte: 0, steigt: 0 };
     const senken = new Map();
     for (let [gl, ende, k, n] of start.map((l) => [l.glieder, l.ende, l.k, 0])) {
         let { bx: x, bz: z } = gl[gl.length - 1];
@@ -2786,20 +2786,18 @@ async function wasserLaeufe() {
     for (const k of G.benannteSeen(L, -3072, -3072, 16, 385)) senken.set(k, ["see", -3072 + (k % 385) * 16, -3072 + ((k / 385) | 0) * 16]);
     for (const [ende, x, z] of senken.values()) {
         await window.__weltDa(() => !r._ensureHydroTilesAround(x, z, 32));
-        aus.senken++;
-        const b = (dx, dz) => r._voxelSurfaceY(x + dx, z + dz);
-        if ([[0, 0], [16, 0], [-16, 0], [0, 16], [0, -16]].some(([dx, dz]) => r._atlasWaterLevelAt(x + dx, z + dz, b(dx, dz)) > b(dx, dz))) aus.nass++;
+        if ([[0, 0], [16, 0], [-16, 0], [0, 16], [0, -16]].some(([dx, dz]) => r._nassAt(x + dx, z + dz))) aus.nass++;
         else aus.trocken.push([ende, Math.round(x), Math.round(z)]);
     }
+    aus.senken = senken.size;
     for (const h of [r.state.hydrosphere, ...r.state.hydroTiles.values()])
         for (const P of (h.rivers || []).map((rv) => rv.points)) for (let i = 1; i < P.length; i++, aus.schritte++) aus.steigt += P[i].S > P[i - 1].S || P[i].y >= P[i - 1].y;
     return aus;
 }
 
-// DIE STRÖMUNG TREIBT (gate:kopplung F1 in der Welt): am Fluss-Punkt `ort` (die Welt dort gestreamt) je Körper 90 Takte ohne
-// Eingabe, einmal mit und einmal ohne Strömung (`_waterFlowAt` schweigt); sein Weg längs des Laufs ist die Drift — der Schwimmer
-// (`_stepFixedSim`, unter dem Spiegel), das gerittene Probe-Boot (`_rittSchritt` im Sim-Schritt) und der Wolf in der Kanal-Mitte
-// (`updateCreatures`, sein Steuer-Gesetz rudert nicht: der Gang des Leibs trägt nur die Strömung) treiben, ohne Strömung nicht.
+// DIE STRÖMUNG TREIBT (gate:kopplung F1 in der Welt): am Fluss-Punkt `ort` je Körper 90 Takte ohne Eingabe, mit und ohne Strömung
+// (`_waterFlowAt` schweigt); der Weg längs des Laufs ist die Drift — Schwimmer (`_stepFixedSim`), geritten das Probe-Boot und der
+// Wolf (`updateCreatures`, sein Steuer-Gesetz rudert nicht) treiben, ohne Strömung nicht.
 async function wasserTreibt(o) {
     const [r, A] = [window.anazhRealm, window.anazhRealm.constructor];
     const [x, z] = o.ort;
@@ -2809,7 +2807,6 @@ async function wasserTreibt(o) {
     const m = Math.hypot(f.x, f.z);
     const S = r._atlasWaterLevelAt(x, z, r._voxelSurfaceY(x, z));
     const [st, leib, SG] = [r.state, window.__wasserLeib(), A._steuerGesetz()];
-    // je Körper: setzen, 90 Takte, der Weg längs des Laufs — mit und ohne Strömung
     const lauf = (setze, takt, fort) => {
         const weg = [];
         for (const mit of [true, false]) {
@@ -2824,9 +2821,8 @@ async function wasserTreibt(o) {
         }
         return { mit: weg[0], ohne: weg[1] };
     };
-    const BOOT = "__wasser_boot_treibt";
-    st.blueprints[BOOT] = { name: BOOT, parts: [{ shape: "box", material: "holz", size: { x: 3, y: 0.6, z: 1.4 }, position: { x: 0, y: 0, z: 0 } }], connections: [] };
-    const aus = { ort: [x, z], spiegel: S, strom: m };
+    const BOOT = wasserBoot(st);
+    const aus = { ort: [x, z], strom: m };
     try {
         aus.schwimmer = lauf(() => leib.setze(x, S - 0.9, z), () => leib.takt());
         aus.boot = lauf(
@@ -2840,7 +2836,7 @@ async function wasserTreibt(o) {
             (e) => (r.dismountArchitecture(), r.removeArchitecture(e))
         );
         A._steuerGesetzMemo = Object.assign({}, SG, { steuerSchritt: (s) => (s.v = 0) });
-        leib.setze(x, S + 30, z); // der Spieler aus dem Weg: sein Leib schöbe den Wolf
+        leib.setze(x, S + 30, z); // sein Leib schöbe den Wolf
         aus.tier = lauf(() => r.spawnCreatureAt(x, S, z, "happy", "wolf", { precise: true, bodySize: 1 }), () => r.updateCreatures(A.FIXED_DT), (c) => r.removeCreature(c));
     } finally {
         delete r._waterFlowAt;
@@ -3038,6 +3034,9 @@ module.exports = {
     WASSER_INSTALL:
         WELT_ORTE_INSTALL +
         `var BACH_PROBE_M = ${BACH_PROBE_M};` +
+        wasserRund.toString() +
+        wasserZufall.toString() +
+        wasserBoot.toString() +
         `window.__wasserOrte = ${wasserOrte.toString()};` +
         `window.__wasserLeser = ${wasserLeser.toString()};` +
         `window.__wasserLeib = ${wasserLeib.toString()};` +

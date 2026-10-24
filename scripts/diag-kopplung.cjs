@@ -2,8 +2,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-kopplung.cjs — DIE KOPPLUNGS-LINSE (npm run gate:kopplung)
 //
-// KOPPLUNG: die Welt fasst den Körper an — drei Fäden, eine Linse (F1, die Strömung, misst die Welt selbst: gate:wasser-leben
-// K4 STRÖMUNG an Fluss-Orten der Karte — Schwimmer, Boot und Tier treiben, ohne Strömung nicht):
+// KOPPLUNG: die Welt fasst den Körper an — drei Fäden, eine Linse (F1, die Strömung, misst gate:wasser-leben K4 STRÖMUNG):
 //   F2 GLEITEN STATT VOLLSTOPP (PM_ClipVelocity, Quake/Source): 45°-Anlauf
 //      auf eine Wand behält ~Tempo/2 entlang der Absicht (v −= n·(v·n) je
 //      Kontaktebene, bis 3) statt 0; STEILHANG: Gravitation entlang der

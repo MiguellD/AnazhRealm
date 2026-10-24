@@ -44,15 +44,13 @@ async function checkBandHydrosphere(ctx) {
         const t0 = performance.now();
         const h2 = (await r._voxelFadenAuftrag(r.state.voxelWorker, { type: "hydro", key: "heim", origin: null })).region;
         out.perfMs = performance.now() - t0;
-        // Dass das Netz der Heimat und jeder Kachel Flüsse trägt und der Stamm sie liest (statt dass Felder bloß stehen), misst
-        // gate:wasser-leben K4 LÄUFE (≥ 100 Läufe über ±3 km).
+        // dass Heimat und Kacheln Flüsse tragen, die der Stamm liest, misst gate:wasser-leben K4 LÄUFE
         // Determinismus — zwei Läufe, byte-identisches Netz
         out.deterministic =
             JSON.stringify(h1.rivers) === JSON.stringify(h2.rivers) &&
             JSON.stringify(h1.lakes) === JSON.stringify(h2.lakes) &&
             JSON.stringify(h1.waterfalls) === JSON.stringify(h2.waterfalls);
-        // Wo jeder Lauf endet (in See oder Meer, über Kachel und Mündung verfolgt), dass jede Senke des Netzes Wasser trägt und
-        // Sohle und Spiegel jedes Flusses der Heimat und jeder Kachel stromab fallen, misst gate:wasser-leben K4 LÄUFE.
+        // das Ende jedes Laufs, das Wasser jeder Senke und das Gefälle von Sohle und Spiegel misst gate:wasser-leben K4 LÄUFE
         const seeOrt = await window.__wasserOrt("see");
         const meerOrt = await window.__wasserOrt("meer");
         out.meerOrt = meerOrt ? `${Math.round(meerOrt.x)},${Math.round(meerOrt.z)}` : "keiner";
@@ -234,7 +232,7 @@ async function checkBandHydrosphere(ctx) {
         out.hydroReady = !!(hydro && hydro.ready);
         if (!out.hydroReady) return out;
         if (r.state.worldMeta) r.state.worldMeta.voxelEdits = [];
-        // (2) dass der Kern den Carve-Index liest (Kanal und See-Becken an 20 000 Punkten je), misst gate:worker-dichte `--kern`
+        // (2) den Carve-Index liest der Kern (gate:worker-dichte `--kern`)
         // Den Fluss-Mittelpunkt finden: der BREITESTE Punkt mit echter Flow-Richtung — NICHT in einem See (See-
         // Durchquerungen werden nicht gecarvt) und mit nicht-See-Nachbar, damit das Segment rp→next im Carve-Index liegt.
         // Der erste Punkt des ersten Flusses ist eine Quelle (Breite 1,2 m, Tiefe 0,4 m) — kein Fluss-Mittelpunkt.
@@ -274,8 +272,7 @@ async function checkBandHydrosphere(ctx) {
             // von `_voxelSurfaceY`, 1,2 m).
             const sKanal = r._voxelSurfaceY(rx, rz);
             out.surfaceLowered = !!kanal && Number.isFinite(sKanal) && Math.abs(sKanal - kanal.P) < 1.3;
-            // (8) wie der Kanal das Gelände formt, ist EIN Gesetz des Kerns (gelaende-core `gewaesserForm`): Stamm-Leser =
-            // Worker-Feld = Kern an 20 000 Kanal-Punkten und die Mutation der Dichte misst gate:worker-dichte `--kern`.
+            // (8) die Form des Kanals ist EIN Gesetz des Kerns (`gewaesserForm`, gate:worker-dichte `--kern`)
             // (9) ohne Hydrosphäre kein Kanal (bit-identisch zum Feld ohne Carve)
             const savedHydro = r.state.hydrosphere;
             r.state.hydrosphere = null;

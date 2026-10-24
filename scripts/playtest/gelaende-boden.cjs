@@ -1195,8 +1195,7 @@ async function checkBandV18132FerneSeen(ctx) {
         out.maxSpiegel = maxSpiegel;
         out.bandTop = r.state.hydroBand ? r.state.hydroBand.top : null;
         out.bandCovers = !Number.isFinite(maxSpiegel) || (r.state.hydroBand && r.state.hydroBand.top >= maxSpiegel);
-        // die Leser der Kachel (gelaende-core `hydroRegion`) im Haupt-Faden und im Worker misst die Kern-Probe am See in seiner
-        // Kachel (gate:worker-dichte `--kern`)
+        // die Leser der Kachel in Haupt-Faden und Worker misst gate:worker-dichte `--kern` (am See in seiner Kachel)
         return out;
     });
     if (!res) {

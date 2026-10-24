@@ -15,10 +15,10 @@
 //   F5 · F8 · F10   jede Quelle ein Rinnsal aus der Hülle des Gesetzes; Körper und Bild je Punkt gleich nass (Quelle, Bach,
 //                   See-Fenster) — Breite gegen Breite, nie je Querschnitt. F9: keine Pflanze im gezeichneten Wasser.
 //   F7 · K12        die Bank nie steiler als der Fels; Klang und Küsten-Sheet lesen die EINE Wahrheit, und an 50 Zufalls-Punkten
-//                   folgt ihrer Mutation jeder Leser (K12 M: Leib, Tier, Wagen, Scheu, Trink-Ziel, Klang, Natur) — am See der
-//                   Mess-Wiese und an 5 Zufalls-Orten der Karte (K4 ÜBERALL). K8: keine Ufer-Flut nach dem Wecken des Automaten.
-//   K4 LÄUFE        jeder Lauf des Gesetzes endet in See oder Meer, jede Senke trägt Wasser, Sohle und Spiegel steigen nie;
-//   K4 STRÖMUNG     an 4 Fluss-Orten der Karte treiben Schwimmer, Boot und Tier > 0,5 m in 90 Takten, ohne Strömung nicht.
+//                   folgt ihrer Mutation jeder Leser (K12 M: Leib, Tier, Wagen, Scheu, Trink-Ziel, Klang, Natur), am See der
+//                   Mess-Wiese und überall (K4). K8: keine Ufer-Flut nach dem Wecken des Automaten.
+//   K4 LÄUFE        jeder Lauf endet in See oder Meer, jede Senke ist nass, Sohle und Spiegel steigen nie; K4 STRÖMUNG: an 4
+//                   Fluss-Orten treiben Schwimmer, Boot und Tier > 0,5 m in 90 Takten, ohne Strömung nicht.
 //   G (F3)          der Graben am Fluss (1 m und 3 m jenseits der Krone, der Weg des Grabe-Hiebs): EINE Wasser-Fläche, nie über
 //                   dem Spiegel, in Ruhe auf ihm; der Automat ruht binnen Takten; die Wiese daneben fällt nie.
 // Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_atlasWaterLevelAt`), den
@@ -322,8 +322,8 @@ function urteil(b) {
                 );
         }
     }
-    // K12 M — die Mutation der EINEN Wahrheit (Gelände K4): jeder Leser liest vorher trocken und folgt im Takt danach — am See
-    // der Mess-Wiese und an jedem Zufalls-Ort der Karte (K4 ÜBERALL, Staffel 2)
+    // K12 M — die Mutation der EINEN Wahrheit (Gelände K4): jeder Leser liest vorher trocken und folgt im Takt danach (am See
+    // der Mess-Wiese, K4 ÜBERALL an Zufalls-Orten der Karte)
     const mutation = (m, wo) => {
         if (m.fehler) return v.push(`${wo}: ${m.fehler}`);
         if (!(m.punkte >= 50)) v.push(`${wo} LEER: nur ${m.punkte} Punkte trockenen Lands (${m.versuche} Versuche)`);
@@ -353,7 +353,7 @@ function urteil(b) {
     if (b.laeufe) {
         const l = b.laeufe;
         const ende = (l.ende.see || 0) + (l.ende.meer || 0);
-        if (!(l.laeufe >= 100 && l.schritte > 10000)) v.push(`K4 LÄUFE LEER: ${l.laeufe} Läufe, ${l.schritte} Lauf-Schritte`);
+        if (!(l.laeufe >= 100 && l.schritte > 10000)) v.push(`K4 LÄUFE LEER: ${l.laeufe} Läufe, ${l.schritte} Schritte`);
         if (ende !== l.laeufe) v.push(`K4 LÄUFE: ${l.laeufe - ende} von ${l.laeufe} enden in keinem See und Meer (${JSON.stringify(l.trocken)})`);
         if (l.nass !== l.senken) v.push(`K4 SENKE TROCKEN: ${l.senken - l.nass} von ${l.senken} Senken ohne Wasser (${JSON.stringify(l.trocken)})`);
         if (l.steigt > 0) v.push(`K4 BERGAUF: an ${l.steigt} von ${l.schritte} Lauf-Schritten steigt der Spiegel oder die Sohle stromab`);
@@ -681,7 +681,7 @@ function selbsttest() {
             sturmVerhaeltnis: 1.8,
         },
     };
-    gut.ueberall = [[-404, 1635], [-4852, -1713], [-1883, -3574], [-3462, -771], [426, 4323]].map((ort) => ({ ort, ...gut.mutation }));
+    gut.ueberall = [1, 2, 3, 4, 5].map((i) => ({ ort: [i * 900, i * 700], ...gut.mutation }));
     const kopie = () => JSON.parse(JSON.stringify(gut));
     const taeter = [
         ["F1 BERGAUF", (b) => Object.assign(b.fluss, { steigend: 551, anteilSteigend: 0.142, anstiegM: 133.2 })],
@@ -759,7 +759,7 @@ function selbsttest() {
         ["K12 M WIESE", (b) => (b.mutation.flora.nach.wiese = 12)],
         ["K12 M LEER", (b) => (b.mutation.punkte = 31)],
         ["K12 M LEER: TIER", (b) => (b.mutation.leser.tier.n = 0)],
-        ["K4 ÜBERALL -4852,-1713 KLANG", (b) => (b.ueberall[1].leser.klang.nach = 0)],
+        ["K4 ÜBERALL 1800,1400 KLANG", (b) => (b.ueberall[1].leser.klang.nach = 0)],
         ["K4 ÜBERALL LEER", (b) => b.ueberall.pop()],
         ["K4 LÄUFE: 58", (b) => Object.assign(b.laeufe, { ende: { see: 233, meer: 2, verloren: 58 } })],
         ["K4 SENKE TROCKEN", (b) => (b.laeufe.nass = 8)],
@@ -1037,8 +1037,7 @@ async function lauf() {
                 befund.leser = await page.evaluate((o) => window.__wasserLeser({ orte: [o.see.ufer, o.kueste] }), ORTE);
             if (soll("mutation"))
                 befund.mutation = await page.evaluate((o) => window.__wasserMutation({ ort: o.see.ufer }), ORTE);
-            // GELÄNDE K4 STAFFEL 2 — überall: die Läufe des Gesetzes bis zu ihrer Senke, die Mutation an Zufalls-Orten der Karte,
-            // die Strömung an Fluss-Punkten der Karte (je Ort die Welt dort gestreamt)
+            // K4 Staffel 2 über die Karte: die Läufe, die Mutation an Zufalls-Orten, die Strömung an Fluss-Orten
             if (soll("laeufe")) befund.laeufe = await page.evaluate(() => window.__wasserLaeufe());
             for (const [art, fluss, n] of [["ueberall", false, 5], ["treibt", true, 4]])
                 if (soll(art)) befund[art] = await page.evaluate((fluss, n) => window.__wasserKarte({ fluss, n }), fluss, n);
