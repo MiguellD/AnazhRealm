@@ -10,3 +10,4 @@ z10b-abab 1 abab A=13c95713e286923682dc8986505a581c9c8467db B=833bbc244711329e2e
 z10b-punkte 2 punkte sha=833bbc244711329e2e23305ed857d7e53a47e20e geraet=gtx
 z9c-punkte 0 storno
 b-kalt-833b 3 station sha=833bbc244711329e2e23305ed857d7e53a47e20e lauf=ankunft-kalt.sh
+z13-abab 1 abab A=833bbc244711329e2e23305ed857d7e53a47e20e B=18a846491377cb9898af2b5bb930234c249fa6ad zellen=w-ego,d-ego,stadt
