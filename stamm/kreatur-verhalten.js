@@ -2827,7 +2827,7 @@ class AnazhRealm_kreatur_verhalten {
         u._kzNah = u._kzNah === true ? d2 < N.aus * N.aus : d2 < N.ein * N.ein;
         if (u._kzNah) {
             u._kzNahGewesen = true; // das Studio-Tier stand schon im Bild — sein Satz übernimmt später, ohne Einblenden
-            if (vorab && !u._kzGlieder && !u._kzVersuch && this._weltBakeErlaubt(d2)) {
+            if (vorab && !u._kzGlieder && !u._kzVersuch && this._gattungGlieder(cr) && this._weltBakeErlaubt(d2)) {
                 u._kzVersuch = true;
                 this._leibMatrix(cr);
                 u._kzGlieder = this._kreaturGliederBacken(cr, false);
@@ -2846,7 +2846,8 @@ class AnazhRealm_kreatur_verhalten {
                 cr.visible = false;
                 return;
             }
-            if (!this._weltBakeErlaubt(d2)) return; // getaktet — bis dahin trägt der Körper
+            // getaktet, oder die Gattung kalt (ihr Vorrat im Leerlauf bestellt, `_gattungGlieder`): bis dahin trägt der Körper
+            if (!this._gattungGlieder(cr) || !this._weltBakeErlaubt(d2)) return;
             u._kzVersuch = true;
             this._leibMatrix(cr);
             // Fern geboren (nie nah im Bild): die Glieder blenden bei ihrer Geburt ein, statt zu ploppen.

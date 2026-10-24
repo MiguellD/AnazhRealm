@@ -1633,6 +1633,14 @@ class AnazhRealm_koerper_leib {
             }
         }
         await Promise.all(auftraege);
+        // DER GLIED-VORRAT (dorf-takt-z13): jede Gattung, die der Lebensraum gebären kann, zerlegt ihre Gestalt im Leerlauf, bevor
+        // ein Tier entsteht (`_kreaturenBereit` wartet auf diesen Vorrat) — der Takt liest danach nur das Memo (`_gattungGlieder`)
+        const L = AnazhRealm._lebensraumGesetz().L;
+        await Promise.all(
+            Object.keys(map)
+                .filter((s) => map[s] in L.gattung)
+                .map((s) => this._gliederBestellen(s))
+        );
         this._ofenVorratSteht = true;
     }
     // DAS BEIN-MASS der Gestalt (Welle 5, die Zwei-Knochen-IK des Gang-Gesetzes): je Bein an der Vorlage in der Ruhe-Pose

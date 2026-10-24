@@ -1005,8 +1005,6 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-
-
     // ── nacht: die Ruhe-Aktion hält den Leib an ──
     await buehne("nacht", async (restore) => {
         r.setGameMode("frieden");
@@ -1891,7 +1889,6 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-
     // ── querhang: die Beine stehen lotrecht, der Leib rollt — Wolf und Hirsch QUER zur Fall-Linie eines Hangs von 20–30°
     // (je Bein Winkel gegen das Lot, Sohle über dem Boden), dann längs der Höhenlinie: der Stand-Schlupf ──
     await buehne("querhang", async (restore) => {
@@ -2233,6 +2230,9 @@ async function kreaturProben(r, T, opts) {
 
     // DIE GESTALT AUS DER RUHE: die Treffer-Kapseln einer Gattung (_kreaturTrefferGlieder) sind EINE Passung — zwei Wölfe,
     // der zweite größer und gedreht, beide mitten im Schritt: jede Kapsel bit-gleich, die laufende Pose danach unverändert.
+    // DER VORRAT (dorf-takt-z13, Lehre 14): der Ofen-Vorrat legt die Glieder jeder Gattung des Lebensraums, und eine kalte
+    // Gattung zerlegt ihre Gestalt nie im Takt — Kreatur-Takt, Ziegel des fernen Leibs und Treffer lesen sie kalt (der Leib
+    // trägt seinen Satz, der Ruf zählt), erst der Leerlauf baut sie.
     await buehne("gestalt", async (restore) => {
         const altK = r._gliedKapseln,
             altN = r._trefferGliedNamen;
@@ -2240,6 +2240,16 @@ async function kreaturProben(r, T, opts) {
             r._gliedKapseln = altK;
             r._trefferGliedNamen = altN;
         });
+        if (taeter === "gestalt-vorrat") decke(restore, "_gliederBestellen", () => () => Promise.resolve(null));
+        r._trefferGliedNamen = new Map();
+        await r._ofenPrefetchKreaturen();
+        const vorrat = Object.keys(r.constructor._lebensraumGesetz().L.gattung).filter(
+            (g) => !r._trefferGliedNamen.has(g)
+        );
+        // der Täter: der Leser zerlegt selbst (der Bau der Glieder im Takt, bis dorf-takt-z13)
+        if (taeter === "gestalt-takt") decke(restore, "_gattungGlieder", () => (cr) => r._gattungGliederBacken(cr));
+        let zerlegt = 0;
+        decke(restore, "_kreaturGliederGruppen", (f) => (cr) => (zerlegt++, f.call(r, cr)));
         if (taeter === "gestalt")
             decke(
                 restore,
@@ -2250,7 +2260,7 @@ async function kreaturProben(r, T, opts) {
                         return (n) => (n.updateWorldMatrix(true, false), n.matrixWorld);
                     }
             );
-        const passung = (dx, dz, groesse, pose) => {
+        const passung = async (dx, dz, groesse, pose) => {
             r._gliedKapseln = new Map();
             r._trefferGliedNamen = new Map();
             const o = frei(dx, dz, 6) || land(dx, dz);
@@ -2268,17 +2278,28 @@ async function kreaturProben(r, T, opts) {
                     .sort()
                     .map((nm) => T[nm].quaternion.toArray().join() + T[nm].matrixWorld.elements.join())
                     .join("|");
+            const [z0, k0] = [zerlegt, r._gliederKalt | 0];
+            takt(1 / 60);
+            r._kzLeib(c, { x: c.position.x + 500, z: c.position.z });
+            const kalt = r._kreaturTrefferGlieder(c);
+            const takt0 = {
+                zerlegt: zerlegt - z0,
+                volumen: kalt ? kalt.length : 0,
+                satz: c.visible && !c.userData._kzVersuch,
+                ruf: (r._gliederKalt | 0) - k0,
+            };
             const vorher = lage();
+            await r._gliederBestellen(c);
             const gl = r._kreaturTrefferGlieder(c);
             const nachher = lage();
             const kaps = new Map();
             for (const [key, kp] of r._gliedKapseln)
                 if (kp) kaps.set(key, [kp.a.x, kp.a.y, kp.a.z, kp.b.x, kp.b.y, kp.b.z, kp.r]);
             r.removeCreature(c);
-            return { kaps, n: gl ? gl.length : 0, gehalten: vorher === nachher };
+            return { kaps, n: gl ? gl.length : 0, gehalten: vorher === nachher, takt0 };
         };
-        const A = passung(30, 30, 1, 0);
-        const B = passung(-40, 60, 1.3, 1);
+        const A = await passung(30, 30, 1, 0);
+        const B = await passung(-40, 60, 1.3, 1);
         let maxAbw = 0,
             glied = null;
         const fehlt = [];
@@ -2304,6 +2325,8 @@ async function kreaturProben(r, T, opts) {
             maxAbw,
             glied,
             gehalten: A.gehalten && B.gehalten,
+            vorrat,
+            takt: A.takt0,
         };
     });
 
@@ -3330,6 +3353,15 @@ function urteil(name, z) {
             `die Treffer-Gestalt hängt am ersten Tier: die Kapsel ${z.glied} weicht ${z.maxAbw} ab (gepasst in Lage, Pose und Größe des Tiers statt in der Ruhe seiner Gattung)`
         );
         soll(z.gehalten === true, "die Passung verstellt die laufende Pose des Tiers");
+        soll(
+            z.vorrat.length === 0,
+            `der Vorrat legt keine Glieder für ${z.vorrat.join(", ")} (Soll: jede Gattung des Lebensraums)`
+        );
+        const K = z.takt;
+        soll(
+            K.zerlegt === 0 && K.volumen === 0 && K.satz && K.ruf > 0,
+            `der Takt zerlegt die Gestalt einer kalten Gattung: ${K.zerlegt}× zerlegt, Treffer-Volumen ${K.volumen} Glieder, Satz ${K.satz}, ${K.ruf} kalte Rufe (Soll 0× · 0 · true · > 0)`
+        );
     }
     if (name === "jagdkreis") {
         const b = z.sprinter;
@@ -3485,7 +3517,11 @@ const TAETER = {
         ["ferngang", /ferner Gang gleitet/],
         ["ferngang-bindung", /ferner Gang gleitet: Grobstufen-Zone/],
     ],
-    gestalt: [["gestalt", /hängt am ersten Tier/]],
+    gestalt: [
+        ["gestalt", /hängt am ersten Tier/],
+        ["gestalt-vorrat", /Vorrat legt keine Glieder/],
+        ["gestalt-takt", /der Takt zerlegt die Gestalt einer kalten Gattung: [1-9]/],
+    ],
     tiersatz: [
         ["tiersatz-kopf", /hängen an der Kopfzahl/],
         ["tiersatz-gleiten", /der Satz gleitet/],
