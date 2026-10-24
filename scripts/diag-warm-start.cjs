@@ -27,7 +27,7 @@ const server = statikServer();
 
 // Startet `fn(arg)` DETACHED im Page-Kontext und pollt das Ergebnis — kein
 // langlebiges CDP-Promise (die „Promise was collected"-Falle bei Minuten-Jobs).
-async function runJob(page, fn, arg, timeoutMs) {
+async function runJob(page, fn, arg) {
     await page.evaluate(
         (src, a) => {
             window.__jobDone = false;
@@ -288,7 +288,7 @@ async function jobSelbsttest(kaltIn) {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     // ===== BAND 1: KALT =====
-    const kalt = await runJob(page, jobKalt, undefined, 240000);
+    const kalt = await runJob(page, jobKalt);
     if (kalt.err) {
         console.error("ROT — Kalt-Lauf: " + kalt.err);
         process.exit(1);
@@ -296,7 +296,7 @@ async function jobSelbsttest(kaltIn) {
 
     // ===== BAND 2+3: WARM (Reload) — Hits + Byte-Gleichheit + Edit-Bypass =====
     await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
-    const warm = await runJob(page, jobWarm, kalt, 240000);
+    const warm = await runJob(page, jobWarm, kalt);
     if (warm.err) {
         console.error("ROT — Warm-Lauf: " + warm.err);
         process.exit(1);
@@ -304,7 +304,7 @@ async function jobSelbsttest(kaltIn) {
 
     // ===== BAND 4: verfälschter Stempel → clear greift =====
     await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
-    const selbsttest = await runJob(page, jobSelbsttest, kalt, 180000);
+    const selbsttest = await runJob(page, jobSelbsttest, kalt);
 
     await browser.close();
     server.close();

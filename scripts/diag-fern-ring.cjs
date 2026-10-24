@@ -591,7 +591,7 @@ const server = statikServer();
                 r.state._activeRingRadius = ziel9;
                 try {
                     r._gameLoopTick();
-                } catch (_e) {
+                } catch {
                     /* ein Takt-Fehler zählt im pageerror-Band */
                 }
                 if (t % 5 === 0) await sleep9(0);

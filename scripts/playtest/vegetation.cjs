@@ -379,7 +379,7 @@ async function checkBandNahStreu(ctx) {
             };
             try {
                 r._foundryTreeMaterial(u.foundryKind, u.foundryMp, true, null, u.krone === true);
-            } catch (_e) {
+            } catch {
                 /* der Ruf vor dem Wurf zählt */
             } finally {
                 delete r._windSwayOffset;
@@ -2032,7 +2032,7 @@ async function checkBandWahrerAnblickFels(ctx) {
         try {
             const tags = r.computeCompoundTags(bp.stein_block);
             out.steinTagsFinite = !!(tags && Number.isFinite(tags.dichte) && tags.dichte > 0);
-        } catch (_e) {
+        } catch {
             out.steinTagsFinite = false;
         }
 

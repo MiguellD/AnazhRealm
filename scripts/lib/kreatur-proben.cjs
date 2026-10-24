@@ -498,8 +498,7 @@ async function kreaturProben(r, T, opts) {
         let frames = 0,
             luft = 0,
             starts = 0,
-            ausAktion = 0,
-            scheitel = 0;
+            ausAktion = 0;
         const warLuft = tiere.map(() => false);
         const flugNun = tiere.map(() => null); // je Tier der laufende Sprung: {soll, top}
         const fehler = [];
@@ -523,7 +522,6 @@ async function kreaturProben(r, T, opts) {
                     fehler.push(Math.abs(flugNun[i].top / flugNun[i].soll - 1));
                     flugNun[i] = null;
                 }
-                if (h > scheitel) scheitel = h;
                 warLuft[i] = istLuft;
             }
         }
@@ -560,7 +558,6 @@ async function kreaturProben(r, T, opts) {
             starts,
             ausAktion,
             rufe: rufeImLauf,
-            scheitelM: +scheitel.toFixed(3),
             gesetzFehler: fehler.length ? +Math.max(...fehler).toFixed(3) : null,
             hopHochM: F.hopHochM,
             hopBasisM: F.hopBasisM,
@@ -840,14 +837,7 @@ async function kreaturProben(r, T, opts) {
                         return alt.call(this, c, tx, tz, ...rest);
                     }
             );
-        let jagdFrames = 0,
-            kontakt = 0,
-            achs = 0,
-            achs5 = 0,
-            achsWasser = 0,
-            imWasser = 0;
-        const achsOrt = { gierAchse: 0, rein: 0, ansprung: 0, stoss: 0, beispiele: [] };
-        let achsZiel = 0; // Achsen-Takte, in denen der Wolf geradewegs auf sein Ziel läuft (es liegt auf derselben Linie)
+        let [jagdFrames, achs] = [0, 0];
         let wv = { x: wolf.position.x, z: wolf.position.z };
         for (let k = 0; k < 1800; k++) {
             takt(dt);
@@ -856,8 +846,6 @@ async function kreaturProben(r, T, opts) {
             const jagt = wolf.userData._motionZustand === "jagd" || wolf.userData._motionZustand === "hetzen";
             const anprall = geschoben.has(wolf.position);
             geschoben.clear();
-            if (jagt && anprall) kontakt++;
-            if (jagt && r._nassAt(wolf.position.x, wolf.position.z)) imWasser++; // die Jagd im Wasser (Diagnose)
             if (jagt && !anprall && Math.hypot(dx, dz) / dt > 0.3) {
                 jagdFrames++;
                 const h = Math.atan2(dx, dz);
@@ -870,51 +858,22 @@ async function kreaturProben(r, T, opts) {
                     (c) =>
                         Math.abs(wrap(h - Math.atan2(c.position.x - wv.x, c.position.z - wv.z))) < (1 * Math.PI) / 180
                 );
-                if (grad(m) < 0.25 && aufZiel) achsZiel++;
-                else if (grad(m) < 0.25) {
-                    achs++;
-                    // DER ORT DES ACHSEN-TAKTS (die Linse nennt die Quelle): Wasser, Gier auf der Achse, reiner Achsen-Schritt,
-                    // Ansprung, getragener Stoß; dazu drei Beispiele
-                    const ud = wolf.userData;
-                    const gier = ud._steuer ? ud._steuer.gier : wolf.rotation.y;
-                    let mg = Infinity;
-                    for (let q = 0; q < 4; q++) mg = Math.min(mg, Math.abs(wrap(gier - (q * Math.PI) / 2)));
-                    if (r._creatureWaterContextAt(wolf, r._creatureGroundY(wolf)).inWater) achsWasser++;
-                    if (grad(mg) < 0.25) achsOrt.gierAchse++;
-                    if (dx === 0 || dz === 0) achsOrt.rein++;
-                    if (ud._verhaltenAktion && ud._verhaltenAktion.biss) achsOrt.ansprung++;
-                    if (ud._stossV) achsOrt.stoss++;
-                    if (achsOrt.beispiele.length < 3)
-                        achsOrt.beispiele.push({
-                            k,
-                            zs: ud._motionZustand,
-                            ziel: ud._jagdZiel ? String(ud._jagdZiel).slice(0, 8) : null,
-                            v: ud._steuer ? +ud._steuer.v.toFixed(2) : null,
-                            gierGrad: +grad(gier).toFixed(2),
-                            dx: +dx.toFixed(4),
-                            dz: +dz.toFixed(4),
-                        });
-                }
-                if (grad(m) < 5) achs5++;
+                if (grad(m) < 0.25 && !aufZiel) achs++;
             }
             wv = { x: wolf.position.x, z: wolf.position.z };
         }
-        return {
-            jagdFrames,
-            kontaktFrames: kontakt,
-            wasserFrames: imWasser,
-            achsAnteil: jagdFrames ? +(achs / jagdFrames).toFixed(3) : null,
-            achsZielAnteil: jagdFrames ? +(achsZiel / jagdFrames).toFixed(3) : null,
-            achsAnteil5Grad: jagdFrames ? +(achs5 / jagdFrames).toFixed(3) : null,
-            achsImWasser: achsWasser,
-            achsOrt,
-            bisse: beute.filter((c) => c.userData.hp < 9999).length,
-        };
+        return { jagdFrames, achsAnteil: jagdFrames ? +(achs / jagdFrames).toFixed(3) : null };
     });
 
     // ── herde: der Verband des ECHTEN Wurfs (`_kreaturWurf`, fünf scheue Hirsche) hält beim Wandern und auf der Flucht
-    // (Anteil der Glieder binnen fensterRaum × Paar-Raum vom Mittel); ein fremder Verband derselben Art zieht nie, und die
-    // Bewegung hängt nie am Blick ──
+    // (Anteil der Glieder binnen fensterRaum × Paar-Raum vom Mittel), und die Bewegung hängt nie am Blick. Auf der Flucht (der
+    // Spieler geht von 30 m, außerhalb der Witterung, mit 1,4 m/s durch die Herde, Tiere K1 b–c): die Ausrichtung Φ = |Σv̂|/N
+    // der laufenden Glieder (v aus dem Weg je Takt, ab 1 m/s), der Beginn jedes Flüchters (sein erster Takt in Flucht und Lauf;
+    // ob er selbst wittert oder der Alarm ihn aus zweiter Hand trifft) und sein Fluchtweg (die weiteste Strecke vom Beginn
+    // eines Flucht-Abschnitts). Neben einem fremden Verband derselben Art, 30 m daneben (Tiere K1 d): 600 s Spielzeit im
+    // Kreatur-Takt, der Spieler geht ab 100 s südlich des einen und ab 300 s nördlich des anderen vorbei und treibt den
+    // Flüchtenden in den fremden; je Spielsekunde sind die Glieder, die das Gesetz liest (`_kreaturVerbandGlieder`), dieselben
+    // Leiber des Wurfs, kein fremder dazu ──
     await buehne("herde", async (restore) => {
         r.setGameMode("frieden");
         if (taeter === "herde")
@@ -937,6 +896,20 @@ async function kreaturProben(r, T, opts) {
                         return this.state.creatures.filter((o) => this._kreaturGattung(o) === this._kreaturGattung(c));
                     }
             );
+        // die alten Defekte: der Verband ohne seinen Zug (Ausrichtung und Kohäsion), ohne den Alarm aus zweiter Hand, die
+        // Flucht endet am Radius
+        if (taeter === "herde-zerfall") decke(restore, "_kreaturVerbandZug", () => () => {});
+        if (taeter === "herde-alarm")
+            decke(
+                restore,
+                "_kreaturVerbandAlarm",
+                () => (c, NAT, von, w) => ((c.userData._alarmEigen = w >= NAT.fleeThreshold), w)
+            );
+        if (taeter === "herde-fluchtweg") {
+            const FG = A._furchtGesetz();
+            A._furchtGesetzMemo = Object.freeze({ ...FG, fluchtRadius: (B) => B.r });
+            restore.push(() => (A._furchtGesetzMemo = FG));
+        }
         const VH = A._verhaltenGesetz().herde;
         const heim = frei(0, 70, 40);
         if (!heim) throw new Error("kein freies Land für die Herde (frei(0, 70, 40))");
@@ -948,21 +921,11 @@ async function kreaturProben(r, T, opts) {
             Object.assign(r, { _creatureAiFrame: 0, _faunaStroeme: null });
             pm.set(heim.x + 140, heim.y, heim.z);
             kamera(1, 0);
-            let glieder = r._kreaturWurf({ x: heim.x, z: heim.z }, "wesen", "happy", r._faunaRng("verband"), 7);
+            const glieder = r._kreaturWurf({ x: heim.x, z: heim.z }, "wesen", "happy", r._faunaRng("verband"), 7);
             const fremd =
                 art === "fremd"
                     ? r._kreaturWurf({ x: heim.x, z: heim.z + 30 }, "wesen", "happy", r._faunaRng("fremd"), 7)
                     : [];
-            // der alte Defekt: derselbe Wurf (Orte, Seele, Anker), aber jedes Tier für sich geboren, ungebunden
-            if (taeter === "herde-zerfall")
-                glieder = glieder.map((c) => {
-                    const { x, y, z } = c.position;
-                    const anker = c.userData.wanderAnchor;
-                    r.removeCreature(c);
-                    const n = r.spawnCreatureAt(x, y, z, "happy", c.userData.soul);
-                    n.userData.wanderAnchor = anker;
-                    return n;
-                });
             const anteil = () => {
                 const mx = glieder.reduce((m, c) => m + c.position.x, 0) / glieder.length;
                 const mz = glieder.reduce((m, c) => m + c.position.z, 0) / glieder.length;
@@ -972,23 +935,43 @@ async function kreaturProben(r, T, opts) {
                 return d.filter((v) => v <= VH.fensterRaum).length / glieder.length;
             };
             const t = { n: glieder.length, fremdN: fremd.length, wurf: anteil(), summe: 0, bilder: 0, fluchtTakte: 0 };
-            Object.assign(t, { fs: 0, fb: 0, fMin: 1 });
-            for (let k = 0; k < (art === "fremd" || art === "blick" ? 1200 : 3600); k++) {
-                const q = neben(heim.x + (flucht ? -12 + (1.4 * k) / 60 : 45), heim.z);
+            Object.assign(t, { fs: 0, fb: 0, fMin: 1, phi: [0, 0], lauf: [], weg: glieder.map(() => 0), id: [0, 0] });
+            const [alt, ab] = [glieder.map((c) => c.position.clone()), []];
+            for (let k = 0; k < (art === "blick" ? 1200 : fremd.length ? 36000 : 3600); k++) {
+                const g0 = fremd.length && [6000, 18000].find((k0) => k >= k0 && k < k0 + 3600);
+                const x = flucht ? -30 + (1.4 * k) / 60 : g0 ? -30 + (1.4 * (k - g0)) / 60 : 45;
+                const q = neben(heim.x + x, heim.z + (g0 ? (g0 > 6000 ? 42 : -12) : 0));
                 pm.set(q.x, q.y, q.z);
                 if (k % 600 === 0) kamera(flucht || art === "blick" ? 1 : -1, 0);
                 takt(1 / 60);
                 if (k === 1199) t.lage = glieder.map((c) => ({ x: c.position.x, z: c.position.z }));
+                if (fremd.length && k % 60 === 0)
+                    [glieder, fremd].forEach((g, h) => {
+                        const L = r._kreaturVerbandGlieder(g[0]) || [];
+                        if (L.length !== g.length || L.some((c) => !g.includes(c)))
+                            t.bruch = t.bruch || [k / 60, h, L.length];
+                        if (g.some((c) => c.userData._motionZustand === "flucht")) t.id[h]++;
+                    });
                 const fliehen = glieder.filter((c) => c.userData._motionZustand === "flucht").length;
                 const a = anteil();
                 t.fluchtTakte += fliehen;
                 if (k >= 600) ((t.summe += a), t.bilder++);
                 if (fliehen) ((t.fs += a), t.fb++, (t.fMin = Math.min(t.fMin, a)));
+                let [sx, sz, nl] = [0, 0, 0];
+                glieder.forEach((c, i) => {
+                    const [p, fl] = [c.position, c.userData._motionZustand === "flucht"];
+                    const d = Math.hypot(p.x - alt[i].x, p.z - alt[i].z);
+                    if (d > 1 / 60) ((sx += (p.x - alt[i].x) / d), (sz += (p.z - alt[i].z) / d), nl++);
+                    alt[i].copy(p);
+                    if (fl && d > 1 / 60) t.lauf[i] = t.lauf[i] || [k, c.userData._alarmEigen];
+                    ab[i] = fl ? ab[i] || p.clone() : null;
+                    if (ab[i]) t.weg[i] = Math.max(t.weg[i], Math.hypot(p.x - ab[i].x, p.z - ab[i].z));
+                });
+                if (fliehen && nl >= 3) ((t.phi[0] += Math.hypot(sx, sz) / nl), t.phi[1]++);
             }
             return t;
         };
         const [W, F, X, B] = ["wander", "flucht", "fremd", "blick"].map(lauf);
-        const abw = (u, v) => Math.max(...u.lage.map((p, i) => Math.hypot(p.x - v.lage[i].x, p.z - v.lage[i].z)));
         const zahl = (t) => ({
             n: t.n,
             wurfAnteil: +t.wurf.toFixed(3),
@@ -997,11 +980,20 @@ async function kreaturProben(r, T, opts) {
             fluchtMittel: t.fb ? +(t.fs / t.fb).toFixed(3) : null,
             fluchtMin: t.fb ? +t.fMin.toFixed(3) : null,
         });
+        const L = F.lauf.filter(Boolean);
+        const k = L.map((x) => x[0]);
         return {
             fremdN: X.fremdN,
-            artFremdZugM: +abw(W, X).toFixed(4),
-            blickDiffM: +abw(W, B).toFixed(4),
+            blickDiffM: +Math.max(...W.lage.map((p, i) => Math.hypot(p.x - B.lage[i].x, p.z - B.lage[i].z))).toFixed(4),
             verband: { fensterRaum: VH.fensterRaum, wander: zahl(W), flucht: zahl(F) },
+            ausrichtung: { mittel: +(F.phi[0] / F.phi[1]).toFixed(3), takte: F.phi[1] },
+            alarm: {
+                laufen: L.length,
+                zweiteHand: L.filter((x) => !x[1]).length,
+                letzterS: L.length < F.n ? null : +((Math.max(...k) - Math.min(...k)) / 60).toFixed(2),
+            },
+            fluchtWegM: +Math.min(...F.weg).toFixed(1),
+            id: { bruch: X.bruch || null, fluchtS: X.id },
         };
     });
 
@@ -1483,7 +1475,6 @@ async function kreaturProben(r, T, opts) {
         let minLeib = Infinity,
             minSpieler = Infinity,
             erbeMax = 0,
-            ueberFrames = 0,
             durchFrames = 0,
             spielerFrames = 0;
         const nnRaum = []; // je Tier und Takt (die zweite Hälfte): der nächste Nachbar in Körper-Kugeln
@@ -1518,8 +1509,7 @@ async function kreaturProben(r, T, opts) {
                     nnRaum.push(m);
                 }
             let durch = false,
-                imSp = false,
-                ueber = false;
+                imSp = false;
             for (let i = 0; i < S.length; i++) {
                 const gs = pS(pm.x, pm.z, S[i]) - S[i].r - RP;
                 if (gs < minSpieler) minSpieler = gs;
@@ -1527,7 +1517,6 @@ async function kreaturProben(r, T, opts) {
                 for (let j = i + 1; j < S.length; j++) {
                     const g = sS(S[i], S[j]) - S[i].r - S[j].r;
                     if (g < minLeib) minLeib = g;
-                    if (g < -0.02) ueber = true;
                     const erbe = -g - schritt[i] - schritt[j];
                     if (g < -0.02 && erbe > 0.002) durch = true;
                     if (g < 0) erbeMax = Math.max(erbeMax, erbe);
@@ -1535,7 +1524,6 @@ async function kreaturProben(r, T, opts) {
             }
             if (durch) durchFrames++;
             if (imSp) spielerFrames++;
-            if (ueber) ueberFrames++;
         }
         // am Ende die zwei nächsten Mitten der Schar (der Satz „kein persönlicher Raum“ nennt sie)
         const paar = tiere.flatMap((a, i) => tiere.slice(i + 1).map((b) => a.position.distanceTo(b.position)));
@@ -1545,9 +1533,8 @@ async function kreaturProben(r, T, opts) {
             durchFrames,
             minSpielerLueckeM: +minSpieler.toFixed(3),
             spielerFrames,
-            // die Tiefe zweier Leiber über ihrem Frame-Schritt (geerbt) und die Takte mit einer Lücke unter −2 cm (auch frisch)
+            // die Tiefe zweier Leiber über ihrem Frame-Schritt (geerbt)
             erbeMaxM: +erbeMax.toFixed(3),
-            ueberFrames,
             paarMinM: +Math.min(...paar).toFixed(2),
             nachbarRaumP10: +quantil(nnRaum, 0.1).toFixed(3),
             nachbarRaumP50: +quantil(nnRaum, 0.5).toFixed(3),
@@ -3177,17 +3164,21 @@ function urteil(name, z) {
         soll(z.jagdFrames >= 60, `nur ${z.jagdFrames} Jagd-Frames (Probe vakuös)`);
         soll(
             z.achsAnteil !== null && z.achsAnteil < 0.1,
-            `Jagd auf den Achsen (0,25°, der Lauf neben der Peilung des Ziels) ${(z.achsAnteil * 100).toFixed(1)} % (5°: ${(z.achsAnteil5Grad * 100).toFixed(1)} %; auf das Ziel ${(z.achsZielAnteil * 100).toFixed(1)} %; davon im Wasser ${z.achsImWasser} Takte; Ort ${JSON.stringify(z.achsOrt || null)})`
+            `Jagd auf den Achsen (0,25°, der Lauf neben der Peilung des Ziels) ${(z.achsAnteil * 100).toFixed(1)} %`
         );
     }
     if (name === "herde") {
-        soll(z.artFremdZugM < 0.01, `ein fremder Verband verschmilzt: die Herde liegt ${z.artFremdZugM} m anders`);
         soll(z.blickDiffM < 1e-6, `Bewegung hängt am Blick: ${z.blickDiffM} m Unterschied`);
-        // höchstens ein Nachzügler je fünf Glieder
+        // höchstens ein Nachzügler je fünf Glieder; Φ über die Takte, in denen die Herde flieht und ≥ 3 Glieder laufen; die
+        // Kette trägt erst, wenn ein Glied aus zweiter Hand flieht
         const { wander: W, flucht: F, fensterRaum: FR } = z.verband;
+        const { ausrichtung: R, alarm: K } = z;
         soll(
-            Math.min(W.n, F.n, z.fremdN) >= 3 && F.fluchtAnteil >= 0.1 && W.fluchtAnteil === 0,
-            `Probe vakuös: Glieder ${W.n} / ${F.n} / fremd ${z.fremdN}, in Flucht ${F.fluchtAnteil} (Soll ≥ 0,1), wandernd ${W.fluchtAnteil} (Soll 0)`
+            Math.min(W.n, F.n, z.fremdN, ...z.id.fluchtS) >= 3 &&
+                F.fluchtAnteil >= 0.1 &&
+                W.fluchtAnteil === 0 &&
+                K.zweiteHand >= 1,
+            `Probe vakuös: Glieder ${W.n} / ${F.n} / fremd ${z.fremdN}, in Flucht ${F.fluchtAnteil} (Soll ≥ 0,1), wandernd ${W.fluchtAnteil} (Soll 0), aus zweiter Hand ${K.zweiteHand}, neben dem fremden ${z.id.fluchtS} s`
         );
         soll(
             W.mittel >= 0.9,
@@ -3197,6 +3188,14 @@ function urteil(name, z) {
             F.fluchtMittel !== null && F.fluchtMittel >= 0.8,
             `Verband zerfällt auf der Flucht: im Mittel ${F.fluchtMittel} der ${F.n} Glieder binnen ${FR} Paar-Räumen vom Mittel, solange die Herde flieht (Soll ≥ 0,8; am wenigsten ${F.fluchtMin}, Wurf ${F.wurfAnteil})`
         );
+        soll(R.takte >= 60 && R.mittel >= 0.8, `Verband flieht ungerichtet: Φ ${R.mittel} über ${R.takte} Takte`);
+        soll(
+            K.letzterS <= 1 && K.letzterS !== null,
+            `Alarm-Kette reißt: der letzte von ${K.laufen} Flüchtern läuft ${K.letzterS} s nach dem ersten`
+        );
+        soll(z.fluchtWegM >= 30, `Fluchtweg ${z.fluchtWegM} m`);
+        const I = z.id.bruch || [];
+        soll(!I.length, `Verbands-ID bricht nach ${I[0]} s: Verband ${I[1]} liest ${I[2]} Leiber`);
     }
     if (name === "reload") {
         soll(Math.abs(z.hpNach - z.hpVor) < 0.01, `hp vor dem Reload ${z.hpVor}, danach ${z.hpNach} (geheilt)`);
@@ -3440,9 +3439,10 @@ const TAETER = {
     ],
     herde: [
         ["herde", /am Blick/],
-        ["herde-artfremd", /fremder Verband verschmilzt/],
-        // der Wurf ohne Bindung — der Verband zerfällt beim Wandern UND auf der Flucht
-        ["herde-zerfall", /Verband zerfällt beim Wandern[\s\S]*Verband zerfällt auf der Flucht/],
+        ["herde-artfremd", /Verbands-ID bricht nach 0 s: Verband 0 liest 10 Leiber/],
+        ["herde-zerfall", /zerfällt beim Wandern[\s\S]*zerfällt auf der Flucht[\s\S]*flieht ungerichtet/],
+        ["herde-alarm", /Alarm-Kette reißt: der letzte von 5 Flüchtern läuft [1-9]/],
+        ["herde-fluchtweg", /Fluchtweg \d\.\d m/],
     ],
     peer: [["peer", /Sicht-Kopie/]],
     zufall: [["zufall", /Math\.random im Kreatur-Leben: _pickCreatureName/]],
