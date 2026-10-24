@@ -637,8 +637,6 @@ async function checkBandV18197GammaMStrata(ctx) {
             `(S8) MIGRATION: 2-arg Aufruf = 3-arg mit y=surfY (bit-identisch zu Pre-V18.197)`,
             res.migrationConsistent === true
         );
-    } else {
-        check("(S4-S8) Erde-Punkt nicht gefunden — Welt ohne Erde-Region (skip)", true);
     }
 }
 
@@ -754,8 +752,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
             "(I6b) Bei flacher Tiefe bleibt es stein (Iron-Schwelle nicht erreicht)",
             res.midDepthStaysStein === true
         );
-    } else {
-        check("(I6) Kein Iron-Ader-Punkt in 1000 Samples gefunden (skip)", true);
     }
 }
 

@@ -1474,7 +1474,7 @@ class AnazhRealm_kreatur_leben {
             if (g !== null) return g;
         }
         const oben = this._voxelSurfaceY(x, z);
-        const eis = this._eisAt(x, z, NaN);
+        const eis = this._eisAt(x, z, NaN, Infinity, oben);
         return eis !== null && !(oben >= eis) ? eis : oben;
     }
 
@@ -1483,7 +1483,7 @@ class AnazhRealm_kreatur_leben {
     // `_koerperSchritt`, der Ausstieg vom Wagen (`_aussteigOrt`).
     _koerperGrund(x, y0, z, maxDist) {
         const g = this._fieldSurfaceBelow(x, y0, z, maxDist);
-        const e = this._eisAt(x, z, y0, maxDist);
+        const e = this._eisAt(x, z, y0, maxDist, g);
         return e !== null && !(g >= e) ? e : g;
     }
 
