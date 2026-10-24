@@ -3264,7 +3264,7 @@ AnazhRealm.KIND_POLICY = Object.freeze({
         placeExtra: null,
         role: "portal",
     }),
-    // Waffen-/Werkzeug-Domäne (schmiede-core, kind:"weapon", 21 Gattungen): fx.place mode "hand" →
+    // Waffen-/Werkzeug-Domäne (schmiede-core, kind:"weapon", 22 Gattungen): fx.place mode "hand" →
     // placeExtra null; Donor = Substanz-Datenblock (Tags · Ω-PHYSIS · wield), die Gestalt aus dem
     // Appear-Pfad. handAxis: das Lab baut entlang +X — der Hand-Konsument (_heldFoundryGroup/buildHand)
     // mappt Template-X auf lange Achse +Y, Griff unten; ohne handAxis unrotiert. donorTool: Rezepte mit
