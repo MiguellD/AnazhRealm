@@ -33,3 +33,4 @@ z20-abab 1 abab A=9aef4612eb08d799328fe73b51b5ba38e6bcfa76 B=1d9164e9144d15f70c4
 z20-punkte 2 punkte sha=1d9164e9144d15f70c40e8e5876cf98a2f0cacc8 geraet=gtx
 z19-punkte 0 storno
 z21-punkte 2 punkte sha=79c0fae296ec982fe5ad2673a85157eb9f7ea313 geraet=gtx
+z21-punkte 0 storno
