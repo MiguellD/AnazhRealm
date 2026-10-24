@@ -1661,7 +1661,7 @@ class AnazhRealm_feld_leben {
     auraAt(x, z, t = 0) {
         const f = this.worldFieldAt(x, z);
         const e = (this.state.player && this.state.player.emotions) || {};
-        // SCHREIB-Seite: das Leben-Overlay HEBT lebendig über dem frozen Substrat (min(., 1), nie
+        // SCHREIB-Seite: das Leben-Overlay HEBT lebendig über dem frozen Substrat, der Fraß senkt es (geklemmt auf 0..1, nie
         // überschreiben); leerer Overlay → lebendig == frozen. at_field_need + FIELD_TO_EMOTION lesen es mit.
         const overlay = this._lifeOverlayAt(x, z);
         // DIE NARBE DER TAT (feld.K4) senkt es am Ort der Tat, bis sie heilt (`_narbeAt`) — leer → lebendig == frozen + overlay.
@@ -1678,7 +1678,7 @@ class AnazhRealm_feld_leben {
             }
         }
         return {
-            lebendig: overlay > 0 || narbe > 0 ? Math.max(0, Math.min(1, f.lebendig + overlay - narbe)) : f.lebendig,
+            lebendig: overlay || narbe > 0 ? Math.max(0, Math.min(1, f.lebendig + overlay - narbe)) : f.lebendig,
             dichte: f.dichte,
             glut: f.glut,
             magieleitung: f.magieleitung,
@@ -1782,7 +1782,7 @@ class AnazhRealm_feld_leben {
         return Math.floor(x / cs) + "," + Math.floor(z / cs);
     }
 
-    // Die aktuelle (zerfallene) Overlay-Menge an (x,z) — 0, wenn keine Zelle oder sie unter `epsilon` zerfiel (tot: die
+    // Die aktuelle (zerfallene) Overlay-Menge an (x,z) — 0, wenn keine Zelle oder ihr Betrag unter `epsilon` zerfiel (tot: die
     // Räumung ist nur Gedächtnis, sie entscheidet nie, was gelesen wird).
     _lifeOverlayAt(x, z) {
         const lf = this.state.lifeField;
@@ -1791,16 +1791,15 @@ class AnazhRealm_feld_leben {
         if (!e) return 0;
         const dt = Math.max(0, this.state.spielZeit - e.t);
         const a = dt === 0 ? e.a : e.a * Math.exp(-AnazhRealm.LIFE_FIELD.decayPerSec * dt);
-        return a < AnazhRealm.LIFE_FIELD.epsilon ? 0 : a;
+        return Math.abs(a) < AnazhRealm.LIFE_FIELD.epsilon ? 0 : a;
     }
 
     // Leben deponieren: ein 3×3-Kernel um (x,z), jede Zelle decay-then-add,
-    // geklemmt auf LIFE_FIELD.max (Sättigung → der Nexus zieht weiter). Die EINE
-    // Schreib-API — wer Leben in die Welt trägt (Geburt heute; später Spieler-
-    // Pflege, Kreatur-Trickle) ruft sie. Harmonisch: sie HEBT nur, der Decay
-    // senkt → nie Überschreiben (V17.23/V17.21-Prinzip, jetzt im Feld selbst).
+    // geklemmt auf [LIFE_FIELD.kahl, LIFE_FIELD.max] (Sättigung → der Nexus zieht weiter). Die EINE
+    // Schreib-API — wer Leben in die Welt trägt (Geburt, Pflege, Kreatur-Trickle) und wer es frisst (der Fraß
+    // des Bestands, negativ; Ökologie K1) ruft sie. Der Decay führt beides zum Substrat zurück → nie Überschreiben.
     _depositLife(x, z, amount = AnazhRealm.LIFE_FIELD.pulseCenter) {
-        if (!(amount > 0)) return;
+        if (!amount || !Number.isFinite(amount)) return;
         if (!this.state.lifeField) this.state.lifeField = new Map();
         const lf = this.state.lifeField;
         const cfg = AnazhRealm.LIFE_FIELD;
@@ -1818,7 +1817,7 @@ class AnazhRealm_feld_leben {
                     const dt = Math.max(0, now - e.t);
                     cur = e.a * Math.exp(-cfg.decayPerSec * dt);
                 }
-                lf.set(key, { a: Math.min(cfg.max, cur + add), t: now });
+                lf.set(key, { a: Math.max(cfg.kahl, Math.min(cfg.max, cur + add)), t: now });
             }
         }
         if (lf.size > (this._lebenRaeumAb || cfg.raeumAb)) this._pruneLifeField();
@@ -1835,7 +1834,7 @@ class AnazhRealm_feld_leben {
         const now = this.state.spielZeit;
         for (const [key, e] of lf) {
             const dt = Math.max(0, now - e.t);
-            if (e.a * Math.exp(-cfg.decayPerSec * dt) < cfg.epsilon) lf.delete(key);
+            if (Math.abs(e.a * Math.exp(-cfg.decayPerSec * dt)) < cfg.epsilon) lf.delete(key);
         }
         this._lebenRaeumAb = Math.max(cfg.raeumAb, 2 * lf.size);
     }
@@ -2373,6 +2372,7 @@ AnazhRealm.LIFE_FIELD = Object.freeze({
     pulseCenter: 0.25, // eine Geburt hebt die Zelle (sparse ~0.1 → ~0.35, nicht mehr Minimum)
     pulseNeighbor: 0.1, // 3×3-Kernel-Rand (weiche räumliche Ausbreitung, kein Block)
     max: 0.7, // Sättigung pro Zelle (frozen+overlay → ~1; Wiederhol-Pulse sättigen → Nexus zieht weiter)
+    kahl: -1, // der Boden des Fraßes: eine abgeäste Zelle trägt lebendig 0, nie weniger (auraAt klemmt)
     epsilon: 0.004, // darunter wird eine Zelle gepruned (die Map bleibt bounded)
     raeumAb: 64, // Zellen, ab denen die Tat das Tote räumt (danach die doppelte Zahl der Lebenden, `_pruneLifeField`)
     // Kreatur-Trickle: nur Nexus/Spieler-getragene Kreaturen (tendsLife) träufeln Leben, wo sie wohnen —

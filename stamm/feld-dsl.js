@@ -10,7 +10,7 @@ class AnazhRealm_feld_dsl {
         if (now - grok.lastSpoke < grok.minGapSeconds) return false;
         if (cfg && now - cfg.lastFired < cfg.cooldown) return false;
         if (this.state.llm && this.state.llm.enabled) {
-            const prompt = `In dir geschah gerade etwas: "${entry.text}" (Typ: ${entry.type}). Kommentiere es in einem kurzen Satz, in erster Person. Gib KEIN program — nur say.`;
+            const prompt = `In dir geschah gerade etwas: ${this._erinnerungFuerKi(entry)}. Kommentiere es in einem kurzen Satz, in erster Person. Gib KEIN program — nur say.`;
             // Async ohne await: das Tick darf nicht blockieren.
             this.llmCall(prompt, null, { hintergrund: true }).then((reply) => {
                 if (!reply || !reply.say) return;
@@ -813,7 +813,11 @@ class AnazhRealm_feld_dsl {
         } catch {
             desc = "ein Gesetz";
         }
-        this.journalAppendOnce(`ruleAwoke:${rule._sig || rule.id}`, "rule", `Dein Gesetz erwachte — ${desc}.`);
+        this.journalAppendOnce(
+            `ruleAwoke:${rule._sig || rule.id}`,
+            "rule",
+            AnazhRealm._datum`Dein Gesetz erwachte — ${desc}.`
+        );
     }
 
     // DIE KREATUR EINES VERBS (Karte KI2, 16.10.): `indexOrId` ist, was die Form verspricht — der Platz in `state.creatures`
@@ -1297,7 +1301,9 @@ class AnazhRealm_feld_dsl {
                     const fremd = /^(remote:|teilen)/.test(String(ctx.source));
                     this.journalAppend(
                         "growth",
-                        fremd ? "Ein Bauplan kam von außen." : `Ein neuer Bauplan entstand: ${result.name}.`,
+                        fremd
+                            ? "Ein Bauplan kam von außen."
+                            : AnazhRealm._datum`Ein neuer Bauplan entstand: ${result.name}.`,
                         {
                             name: result.name,
                             parts: valid.parts.length,
@@ -1550,7 +1556,7 @@ class AnazhRealm_feld_dsl {
                     });
                 }
                 if (result.ok) {
-                    this.journalAppend("growth", `Ein neues Konsumabel entstand: ${result.name}.`, {
+                    this.journalAppend("growth", AnazhRealm._datum`Ein neues Konsumabel entstand: ${result.name}.`, {
                         name: result.name,
                     });
                 }
@@ -1583,7 +1589,7 @@ class AnazhRealm_feld_dsl {
                     reason: result.reason,
                 });
                 if (result.ok) {
-                    this.journalAppend("growth", `Eine neue Seele entstand: ${result.name}.`, {
+                    this.journalAppend("growth", AnazhRealm._datum`Eine neue Seele entstand: ${result.name}.`, {
                         name: result.name,
                         parts: valid.parts.length,
                     });
@@ -1603,7 +1609,7 @@ class AnazhRealm_feld_dsl {
                     reason: result.reason,
                 });
                 if (result.ok) {
-                    this.journalAppend("growth", `Eine neue Substanz wurde benannt: ${result.name}.`, {
+                    this.journalAppend("growth", AnazhRealm._datum`Eine neue Substanz wurde benannt: ${result.name}.`, {
                         name: result.name,
                     });
                 }
@@ -1633,7 +1639,7 @@ class AnazhRealm_feld_dsl {
                 if (r.ok) {
                     this.journalAppend(
                         "growth",
-                        `Ein eigenes Werkzeug entstand: ${blueprintName} (Cap ${r.precisionCap.toFixed(2)}).`,
+                        AnazhRealm._datum`Ein eigenes Werkzeug entstand: ${blueprintName} (Cap ${r.precisionCap.toFixed(2)}).`,
                         { tool: blueprintName, cap: r.precisionCap }
                     );
                 }
@@ -1696,7 +1702,9 @@ class AnazhRealm_feld_dsl {
                     return;
                 }
                 this.addNewAbility(safeName, program, "llm");
-                this.journalAppend("growth", `Eine neue Fähigkeit ruht in mir: ${safeName}.`, { name: safeName });
+                this.journalAppend("growth", AnazhRealm._datum`Eine neue Fähigkeit ruht in mir: ${safeName}.`, {
+                    name: safeName,
+                });
                 ctx.log.push({ event: "defined_ability", name: safeName });
             },
             // Fraktal-Bau: eine Wurzel, hexagonal von 6 Sub-Strukturen (× ratio) umringt, rekursiv bis
