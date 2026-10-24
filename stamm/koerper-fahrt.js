@@ -1569,10 +1569,14 @@ class AnazhRealm_koerper_fahrt {
                 `Die Sonne entzündete durch „${name(quelle)}" „${name(t)}"${d != null ? ` (${Math.round(d)} m von dir)` : ""}.`
             );
             if (this.journalAppend) {
-                this.journalAppend("loss", `Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`, {
-                    type: t.type,
-                    linse: quelle.type,
-                });
+                this.journalAppend(
+                    "loss",
+                    AnazhRealm._datum`Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`,
+                    {
+                        type: t.type,
+                        linse: quelle.type,
+                    }
+                );
             }
             this.removeArchitecture(t);
         }

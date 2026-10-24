@@ -2,7 +2,7 @@
 // Spiel-Takt (`_gameLoopTick` — Akkumulator, Sim-Schritte, Interpolation, Frame-Tick), nie an ihm vorbei, und sie ruft
 // den Fahr-Schritt des Kerns selbst (vehicle-core), nie einen Nachbau. Die Befunde je Zeile tragen die Commit-Messages.
 //
-//   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --koerper]   Port: FAHR_LEBEN_PORT (Standard 4413)
+//   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper]   Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const path = require("path");
@@ -217,7 +217,56 @@ function kernProbe(VC) {
         hubGt > 0 && v45.pen <= hubGt + 1e-9 && s45.pen <= 1e-9 && Math.abs(v10.y) <= 1e-9,
         `GT tau 0,45: ${v45.pen.toFixed(3)} m im Boden (Federweg ${hubGt.toFixed(3)}) · starr tau 0,45: ${s45.pen.toFixed(3)} m · GT tau 0,10: Hub ${v10.y.toFixed(3)} m`,
     ]);
+    const r8 = (out.reifen = reifenMessung(VC)); // die Zeile REIFEN liest die Station fahrzeug.K1
+    const v8 = reifenVerdict(r8);
+    out.push([
+        "K8 Reifen (fahrzeug.K1): Spitze je Achse und Rezept bei 6–10°, bis 30° ≥ 15 % Abfall; Takt ≥ 240 Hz, ≤ 50 µs je Schritt",
+        !v8.length,
+        `Takt ${r8.hz} Hz · ${r8.kostenUs} µs ${v8.join(" · ")}`,
+    ]);
     return out;
+}
+// ── K8 DER REIFEN: die Seitenkraft je 0,1° Schlupf bis 30°, vorn vlat = c·ω, hinten −b·ω (die andere Achse schlupffrei);
+// der Takt ist die gröbste Teilung, deren Unter-Schritte nichts mehr ändern ──
+const REIFEN = { spitze: [6, 10], abfall: 0.15, hz: 240, kostenUs: 50 };
+function reifenMessung(VC) {
+    const m = { achsen: [], hz: 60 };
+    let G;
+    for (const pid of Object.keys(VC.PRESETS)) {
+        G = VC.fahrGesetz(VC.exportDrive(Object.assign({}, VC.DEFAULT_P, VC.presetPatch(pid))));
+        for (const [wo, hebel] of [
+            ["vorn", G.c],
+            ["hinten", -G.b],
+        ]) {
+            const f = [];
+            for (let g = 1; g <= 300; g++) {
+                const w = ((15 + G.slipEps) * Math.tan((g * Math.PI) / 1800)) / G.L;
+                const z = Object.assign(VC.fahrZustand(0, 0, 0), { vlong: 15, yawRate: w, vlat: hebel * w });
+                f.push(Math.abs(VC.fahrKraefte(z, {}, G, 0).aLat));
+            }
+            const i = f.indexOf(Math.max(...f));
+            m.achsen.push({ wo: pid + " " + wo, spitze: (i + 1) / 10, abfall: 1 - f[299] / f[i] });
+        }
+    }
+    const takt = (n, z = Object.assign(VC.fahrZustand(0, 0, 0), { vlong: 12 })) => {
+        for (let k = 0; k < n; k++) VC.fahrKraefte(z, { throttle: 1, steer: 1 }, G, 1 / (60 * n));
+        return [z.vlong, z.vlat, z.yawRate, z.yaw, z.steer].join();
+    };
+    for (let n = 2; n <= 16 && takt(n) === takt(1); n *= 2) m.hz = 60 * n;
+    const [z, t0] = [VC.fahrZustand(0, 0, 0), process.hrtime.bigint()];
+    for (let i = 0; i < 20000; i++) VC.fahrKraefte(z, { throttle: 1, steer: i & 64 ? 1 : -1 }, G, 1 / 60);
+    m.kostenUs = +(Number(process.hrtime.bigint() - t0) / 2e7).toFixed(2);
+    return m;
+}
+function reifenVerdict(m) {
+    const out = [];
+    for (const a of m.achsen) {
+        if (!(a.spitze >= REIFEN.spitze[0] && a.spitze <= REIFEN.spitze[1])) out.push(`spitze ${a.wo} ${a.spitze}°`);
+        if (!(a.abfall >= REIFEN.abfall)) out.push(`abfall ${a.wo} ${Math.round(a.abfall * 100)} %`);
+    }
+    if (!(m.hz >= REIFEN.hz)) out.push(`takt ${m.hz} Hz`);
+    if (!(m.kostenUs <= REIFEN.kostenUs)) out.push(`kosten ${m.kostenUs} µs`);
+    return m.achsen.length ? out : ["reifen ohne Achse"];
 }
 
 // ── DAS STATIONS-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). ──
@@ -257,9 +306,7 @@ const STATION = {
     schwimmTiefM: 0.25, // m: so tief darf ein gleitender Schwimmer unter seiner Schwimm-Linie liegen (die Wellen ±0,2)
     hautAussen: 0.005, // Anteil der Haut des Reiters, der je Richtung außerhalb der Hülle des Wagens liegen darf
     spielerDv: 0.3, // m/s: so viel bekommt der Spieler mindestens vom rutschenden GT
-    spielerTiefM: 0.12, // m: höchstens EIN Frame der Anfahrt (zwei Sim-Schritte bei 3,5 m/s) zwischen Kapsel und Blocker-Box — die
-    // Lage des Spielers setzt sein Sim-Schritt (der Stoß trägt ihn im nächsten fort), die Blocker-Boxen des rutschenden Wagens
-    // folgen je Frame; gemessen 0,05–0,10 m je nach Kadenz, die Basis 0,14 m mit 0 m/s
+    spielerTiefM: 0.12, // m: höchstens EIN Frame der Anfahrt (zwei Sim-Schritte bei 3,5 m/s) zwischen Kapsel und Blocker-Box
 };
 function stationVerdict(s) {
     const out = [];
@@ -1041,8 +1088,7 @@ async function probeBahn(B) {
     phase("F1");
     // ════ F3 — DIE NATUR-WAND KENNT DEN WAGEN: eine Tanne 1,5 m vor dem Ursprung eines stehenden GT ════
     const wandProbe = () => {
-        // außerhalb der Lichtung des Genesis-Platzes samt der Krone einer Tanne (K52: die Lichtung trägt den Ring der Tore,
-        // 15 m — bei M + 14/14 urteilte die Wand „lichtung", bevor sie den Wagen fragte)
+        // außerhalb der Lichtung des Genesis-Platzes samt der Krone einer Tanne (die Lichtung trägt den Ring der Tore, 15 m)
         const sx = M.x + 30;
         const sz = M.z + 30;
         const e = r.spawnArchitecture(
@@ -1184,9 +1230,7 @@ async function probeBahn(B) {
             m.grund = `kein ${zielTyp} vor dem Bug`;
             return m;
         }
-        // JEDER VERSUCH VON DER STATION: der Wagen steht je Seite neu am Ort der Schau, Bug auf das Ziel. Fuhr der zweite
-        // Versuch dort los, wo die Befreiung des ersten endete, lag das Ziel um deren Lenk-Drehung schief vor dem Bug (K16:
-        // 19,4° — bei 5,7 m Abstand 1,9 m quer, mehr als halbe Wagen-Breite + Ring-Radius, der GT fuhr 23 m vorbei).
+        // JEDER VERSUCH VON DER STATION: der Wagen steht je Seite neu am Ort der Schau, Bug auf das Ziel.
         const wagenAnDerStation = async () => {
             const e = r.spawnArchitecture(
                 "fahrzeug_gt",
@@ -2177,6 +2221,21 @@ function quellenAbgriff() {
                     sAlt.some((t) => /vmax 800 U\/min ≠ Begrenzer/.test(t)),
                     sAlt.slice(0, 2).join(" · ")
                 );
+                // K8: der Kern verstimmt; Kosten, keine Achse
+                const R8 = VCs.FAHR.reifen;
+                const alt8 = [R8.spitzeGrad, R8.C, R8.taktHz];
+                Object.assign(R8, { spitzeGrad: 12, C: 1.1, taktHz: 60 });
+                const k8 = reifenVerdict(reifenMessung(VCs)).join(" · ");
+                [R8.spitzeGrad, R8.C, R8.taktHz] = alt8;
+                const p8 = [[], [{ spitze: 8, abfall: 1 }]].map((achsen) =>
+                    reifenVerdict({ achsen, hz: 240, kostenUs: 180 })
+                );
+                check(
+                    "Selbst-Test K8: Spitze 12°, C 1,1, Takt 60 Hz, 180 µs, keine Achse → beim Namen",
+                    /^spitze gt vorn 12° · abfall gt vorn 0 %.* · takt 60 Hz$/.test(k8) &&
+                        p8.join() === "reifen ohne Achse,kosten 180 µs",
+                    `${k8.slice(0, 40)} … ${k8.slice(-10)} · ${p8.join(" · ")}`
+                );
             }
         }
         if (errs.length) {
@@ -2191,7 +2250,10 @@ function quellenAbgriff() {
 
     console.log("=== K — DER EINE FAHR-SCHRITT (Q13 · F-D6 F-D7): der Kern selbst (Node) ===");
     require(path.join(root, "vehicle-core.js"));
-    for (const [name, ok, detail] of kernProbe(globalThis.__vehicleCore)) check(name, ok, detail);
+    const kern = kernProbe(globalThis.__vehicleCore);
+    for (const [name, ok, detail] of kern) check(name, ok, detail);
+    console.log("REIFEN " + JSON.stringify(kern.reifen));
+    if (process.argv.includes("--kern")) process.exit(errs.length ? 1 : 0); // Station K allein
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({
