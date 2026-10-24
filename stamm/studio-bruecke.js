@@ -2542,7 +2542,9 @@ class AnazhRealm_studio_bruecke {
     }
     _gliederVorratTick() {
         const Q = this._gliederAuftraege;
-        const [g, a] = Q.entries().next().value;
+        const e = Q.entries().next().value;
+        if (!e) return;
+        const [g, a] = e;
         Q.delete(g);
         const seele = typeof a.leib === "string";
         let probe = null;
