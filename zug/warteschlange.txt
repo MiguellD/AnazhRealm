@@ -44,3 +44,4 @@ z23-punkte 2 punkte sha=54ce5dfd783188cbb0a55e738eef98624e125406 geraet=gtx
 z24-abab 1 abab A=54ce5dfd783188cbb0a55e738eef98624e125406 B=b8952e9b3bb1f49da8080c4f0029642c079208c8 zellen=w-ego,d-ego,stadt
 z24-punkte 2 punkte sha=b8952e9b3bb1f49da8080c4f0029642c079208c8 geraet=gtx
 z25-abab 1 abab A=b8952e9b3bb1f49da8080c4f0029642c079208c8 B=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 zellen=w-ego,d-ego,stadt
+z25-punkte 2 punkte sha=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 geraet=gtx
