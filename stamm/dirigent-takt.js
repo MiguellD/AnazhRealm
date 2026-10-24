@@ -329,11 +329,14 @@ class AnazhRealm_dirigent_takt {
         // DIE LADE-PUMPE (ankunft.K1): unter dem Ladeschirm (`_ladeTakt`) zeigt kein Takt die Welt, und Chrome hält rAF hinter dem
         // GPU-Prozess an — Radeon kalt (e5554c62) nach jedem Lade-Bild 0,5–1,1 s ohne rAF bei freiem Haupt-Faden, von 2 bis 10 s
         // 1–9 Takte je Sekunde, und jeder Leser des ersten Weltbilds lief mit ihnen. Vergeht LADE_PUMPE_MS ohne Takt, ruft die
-        // Pumpe ihn selbst als Takt ohne Bild (`gepumpt`: das Bild bleibt beim rAF); mit dem ersten Weltbild endet sie.
+        // Pumpe ihn selbst als Takt ohne Bild (`gepumpt`: das Bild bleibt beim rAF); mit dem ersten Weltbild endet sie, und
+        // wer den Loop anhält (`setAnimationLoop(null)`, jede Sonde), hält auch sie an.
         const pumpe = () => {
             const st = this.state;
-            if (st._weltbildDa || (st.renderer && st.renderer._isHeadlessNull)) return;
-            if (this._ladeTakt() && performance.now() - lastTime >= AnazhRealm.LADE_PUMPE_MS)
+            const r = st.renderer;
+            if (st._weltbildDa || (r && r._isHeadlessNull)) return;
+            const laeuft = !!(r && r._animation && r._animation._animationLoop === loop);
+            if (laeuft && this._ladeTakt() && performance.now() - lastTime >= AnazhRealm.LADE_PUMPE_MS)
                 loop(performance.now(), true);
             setTimeout(pumpe, AnazhRealm.LADE_PUMPE_MS);
         };
