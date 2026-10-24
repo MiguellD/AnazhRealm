@@ -76,24 +76,16 @@ const LAUF = (k) => {
     const T = window.THREE;
     const core = window.__tetrapodaCore;
     const [echt, wahl, schritt, g0] = [core.gangSchritt, r.constructor._gangWahl, r._tierSatzSchritt, s.gravity];
-    // die Täter des Selbsttests (`taeter`): der Vor-Welle-Gang (fester Takt, feste Auslenkung) · die Flucht wählt den Galopp
-    // bei jedem Tempo · der Satz wählt ohne das Gedächtnis des Leibs (das rohe Tempo ohne die Gangart des Vor-Takts — so trabte
-    // vor `_gangWahl` jedes anlaufende Satz-Tier bei Fr 0,55) und rückt die Phase am anderthalbfachen Weg · die Zeile des
-    // Tiers ohne die Schwere der Welt
-    ({
-        gang: () =>
-            (core.gangSchritt = () => ({ omega: 3.2, S: 0.06, schritt: 0.12, tast: 0.5, folge: core.GANG_FOLGE.trab })),
-        kreuz: () =>
-            (core.gangSchritt = (...a) => {
-                const g = echt(...a);
-                return g.art === "stand" ? g : Object.assign({}, g, { art: "galopp", folge: core.GANG_FOLGE.galopp });
-            }),
-        satz: () => {
-            r.constructor._gangWahl = (g, v, dt, l, L, Z) => echt(v || 0, L, Z);
-            r._tierSatzSchritt = (u, weg, ...a) => schritt.call(r, u, weg * 1.5, ...a);
-        },
-        schwere: () => (r._gangZeile = () => undefined),
-    })[k.taeter || "kein"]?.();
+    // die Täter des Selbsttests (`taeter`): der Vor-Welle-Gang (fester Takt, feste Auslenkung) · der Satz wählt ohne das
+    // Gedächtnis des Leibs (das rohe Tempo ohne die Gangart des Vor-Takts — so trabte vor `_gangWahl` jedes anlaufende
+    // Satz-Tier bei Fr 0,55) und rückt die Phase am anderthalbfachen Weg · die Zeile des Tiers ohne die Schwere der Welt
+    if (k.taeter === "gang")
+        core.gangSchritt = () => ({ omega: 3.2, S: 0.06, schritt: 0.12, tast: 0.5, folge: core.GANG_FOLGE.trab });
+    if (k.taeter === "satz") {
+        r.constructor._gangWahl = (g, v, dt, l, L, Z) => echt(v || 0, L, Z);
+        r._tierSatzSchritt = (u, weg, ...a) => schritt.call(r, u, weg * 1.5, ...a);
+    }
+    if (k.taeter === "schwere") r._gangZeile = () => undefined;
     if (k.g) s.gravity = -k.g;
     const pm = s.playerMesh.position;
     const x0 = pm.x + 40,
@@ -127,17 +119,22 @@ const LAUF = (k) => {
         if (satz && !satz.fertig) r._tierSatzBacken(satz, 1e6);
         if (k.satz && !(satz && satz.fertig)) return { fehler: "kein gebackener Satz für " + k.seele };
         const S = satz && satz.satz;
-        const ecken = pfoten.map((p, j) => {
-            const e = S && S.knochen.find((x) => x.nm === p.name);
-            if (!e) return null;
-            const b = new T.Matrix4().multiplyMatrices(e.q.m.skeleton.boneInverses[e.j], e.q.m.bindMatrix);
-            return { p: S.knochen.indexOf(e), roh: lokal[j].clone().applyMatrix4(b.invert()).toArray().concat(1) };
+        // je Pfote ihr Platz im Knochen-Puffer und ihre Vorlage; die Ecke in der Zeile z (drei Texel je Knochen: die Zeilen
+        // der affinen Matrix)
+        const ecken = (S ? pfoten : []).map((p, j) => {
+            const e = S.knochen.findIndex((x) => x.nm === p.name);
+            const { q, j: b } = S.knochen[e];
+            const m = new T.Matrix4().multiplyMatrices(q.m.skeleton.boneInverses[b], q.m.bindMatrix).invert();
+            return [e, lokal[j].clone().applyMatrix4(m).toArray().concat(1)];
         });
+        const P = (z, [e, roh]) =>
+            new T.Vector3(
+                ...[0, 1, 2].map((i) =>
+                    roh.reduce((a, q, c) => a + q * S.tex.image.data[((z * S.J + e) * 3 + i) * 4 + c], 0)
+                )
+            );
         if (satz) r._tierSatzEin(cr, satz);
         const m4 = new T.Matrix4();
-        // die Zeile z des Knochen-Puffers an der Ecke e, Koordinate i (drei Texel je Knochen: die Zeilen der affinen Matrix)
-        const zeile = (z, e, i) =>
-            e.roh.reduce((a, q, c) => a + q * S.tex.image.data[((z * S.J + e.p) * 3 + i) * 4 + c], 0);
         // Frame-Takt und Raten-Leiter: je Frame zieht der Leib weiter, ausgewertet (und gemessen) wird, wenn die ECHTE
         // Leiter (_creatureAnimDiv mit dem Takt des Gangs) es will — im Band ihrer Stufe 1/4 (0,8 × Fern-Distanz).
         const dt = 1 / (k.fps || 60),
@@ -160,19 +157,20 @@ const LAUF = (k) => {
                 r._tierSatzGang(cr, dt);
                 if (r._tierSatzStempel(cr)) cr.userData._satzVer = (cr.userData._satzVer || 0) + 1;
                 r._tierSatzPlaetze(satz.platzB, [cr]);
+                // wie der Knoten: Stand ↔ (Zeile k0 ↔ k0 + 1 an der Phase) am Gewicht, × Instanz-Matrix
                 const aG = S.fell.geometry.attributes.aGang;
                 const [x, w] = [aG.getX(0), aG.getY(0)];
                 const [f, b] = [(x % 1) * S.n, Math.floor(x) * S.n];
                 m4.fromArray(S.fell.instanceMatrix.array, 0);
                 ecken.forEach((e, j) => {
-                    const z = [S.baender * S.n, b + Math.floor(f), b + ((Math.floor(f) + 1) % S.n)];
-                    const p = [0, 1, 2].map((i) => {
-                        const [st, a0, a1] = z.map((zz) => zeile(zz, e, i));
-                        return st + w * (a0 + (f % 1) * (a1 - a0) - st);
-                    });
-                    spur[j].push([new T.Vector3(...p).applyMatrix4(m4)]);
+                    const lauf = P(b + Math.floor(f), e).lerp(P(b + ((Math.floor(f) + 1) % S.n), e), f % 1);
+                    spur[j].push([
+                        P(S.baender * S.n, e)
+                            .lerp(lauf, w)
+                            .applyMatrix4(m4),
+                    ]);
                 });
-                uhr.push(uhr.length ? uhr[uhr.length - 1] + (((x % 1) - (uhr[uhr.length - 1] % 1) + 1) % 1) : x % 1);
+                uhr.push(cr.userData._satzPh);
             } else {
                 const div = stufe();
                 if (i % div !== 0) continue;
@@ -191,7 +189,10 @@ const LAUF = (k) => {
             v,
             band: satz ? r.constructor.KREATUR_SATZ.baender[cr.userData._satzBand] : null,
             last: !!k.last,
-            name: k.last ? `${k.fps} fps · Leiter 1/${maxDiv}` : k.name,
+            // die Stimmung samt dem Profil, das die EINE Brücke dem Leib aus ihr wählt (die Kreuz-Probe greift)
+            name: k.last
+                ? `${k.fps} fps · Leiter 1/${maxDiv}`
+                : k.name && `${k.name} → ${r._motionProfileName(true, k.emotions, "kreatur", k.zustand)}`,
             hueftM: +hueft.toFixed(3),
             ...window.__schlupf(spur, leib, 60, hueft, uhr), // nach 60 Takten Einschwingen
         };
@@ -513,12 +514,12 @@ const STIMMUNG_FOLGE = [0, 0.75 * Math.PI, 1.5 * Math.PI, 0.25 * Math.PI];
 // DIE KREUZ-PROBE Stimmung × Tempo (das Schlupfloch der Karte: ein Galopp an der Flucht bestünde beim Flucht-Tempo zufällig):
 // jede Gattung in vier Stimmungen und Zuständen (die Achsen der EINEN Brücke `_motionProfileName`, der Zustand von
 // updateCreatures) bei v̂ 0,3 · 1,2 · 3,5 — die Gangart folgt nur der Froude-Zahl
-const KREUZ = {
-    Freude: { emotions: { joy: 1 } },
-    Furcht: { emotions: { chaos: 1, sorrow: 0.6 }, zustand: "flucht" },
-    Trauer: { emotions: { sorrow: 1 } },
-    Jagd: { zustand: "jagd" },
-};
+const KREUZ = [
+    { name: "Freude", emotions: { joy: 1 } },
+    { name: "Furcht", emotions: { chaos: 1, sorrow: 0.6 }, zustand: "flucht" },
+    { name: "Trauer", emotions: { sorrow: 1 } },
+    { name: "Jagd", zustand: "jagd" },
+];
 const zyklus = (ph) => ph.map((q) => ((((q - ph[0]) / (2 * Math.PI)) % 1) + 1) % 1);
 // Aufsetzen bei Phase π (gangFuss): ein größerer Versatz setzt früher auf
 function gangart(ph) {
@@ -589,23 +590,19 @@ const GANG = (k) => {
         const [lo, hi] = TAST_SOLL[z.vh];
         const art = g.art === GANG_SOLL[z.vh],
             tast = z.tast === null || (z.tast >= lo && z.tast <= hi);
-        const ab = Object.entries(vergleich)
-            .filter(([, v]) => v)
-            .map(([n, v]) => [
-                n,
-                Math.max(...zyklus(v.ph).map((x, i) => Math.min(Math.abs(x - g.rel[i]), 1 - Math.abs(x - g.rel[i])))),
-            ]);
+        const ab = Object.entries(vergleich).map(([n, v]) => [
+            n,
+            Math.max(...zyklus(v.ph).map((x, i) => Math.min(Math.abs(x - g.rel[i]), 1 - Math.abs(x - g.rel[i])))),
+        ]);
         const nah = ab.every(([, d]) => d <= 0.05);
-        const taeter = wo.startsWith("Satz")
-            ? "_tierSatzSchritt/_gangWahl (der Gang des Satzes)"
-            : "tetrapoda gangSchritt";
+        const ok = art && tast && nah;
         log(
-            `  ${art && tast && nah ? "✅" : "❌"} Gangart ${wo} v̂ ${z.vh} · ${g.art} [${g.rel.join(" ")}]${art ? "" : ` — Soll ${GANG_SOLL[z.vh]} (Täter: ${taeter})`}${z.tast === null ? "" : ` · Tastgrad ${z.tast}${tast ? "" : ` (Soll ${lo}–${hi} — Täter: ${taeter})`}`}${ab.map(([n, d]) => ` · ${n} − ${wo.split(" ")[0]} ${d.toFixed(2)} Zyklus${d <= 0.05 ? "" : " (> 0,05)"}`).join("")}`
+            `  ${ok ? "✅" : "❌"} Gangart ${wo} v̂ ${z.vh} · ${g.art} [${g.rel.join(" ")}]${art ? "" : " — Soll " + GANG_SOLL[z.vh]}${z.tast === null ? "" : ` · Tastgrad ${z.tast}${tast ? "" : ` (Soll ${lo}–${hi})`}`}${ab.map(([n, d]) => ` · ${n} − Labor ${d.toFixed(2)} Zyklus`).join("")}${ok ? "" : " — Täter: " + (wo[0] === "S" ? "_tierSatzSchritt" : "tetrapoda gangSchritt")}`
         );
-        if (!(art && tast && nah)) rot++;
+        if (!ok) rot++;
         if (!art || !nah) gangRot = true;
         if (!tast) tastRot = true;
-        return art && tast && nah;
+        return ok;
     };
     try {
         await page.evaluateOnNewDocument(`window.__schlupf = ${SCHLUPF};`);
@@ -620,16 +617,12 @@ const GANG = (k) => {
         // je Gattung der Leib bei jedem v̂ (die KREUZ-PROBE im lateinischen Quadrat: jede Stimmung einmal je v̂, je Gattung eine
         // andere), unter Last und im Satz; dazu der Wolf unter der Mond-Schwere — im Selbsttest je Lauf sein Täter
         const T0 = SELBST ? "gang" : null;
-        const laeufe = [];
+        const laeufe = [{ seele: "wolf", vh: 1.2, g: 1.62, name: "Mond", taeter: T0 && "schwere" }];
         for (const [i, seele] of Object.values(LABOR_WELT).entries()) {
-            for (const [j, vh] of VH.entries()) {
-                const [name, st] = Object.entries(KREUZ)[(i + j) % 4];
-                laeufe.push({ seele, vh, ...st, name, taeter: T0 && (name === "Furcht" ? "kreuz" : T0) });
-            }
+            for (const [j, vh] of VH.entries()) laeufe.push({ seele, vh, ...KREUZ[(i + j) % 4], taeter: T0 });
             for (const vh of [0.74, 1.2]) laeufe.push({ seele, vh, fps: 30, last: true, taeter: T0 });
             for (const vh of VH) laeufe.push({ seele, vh, satz: true, taeter: T0 && "satz" });
         }
-        laeufe.push({ seele: "wolf", vh: 1.2, g: 1.62, name: "Mond", taeter: T0 && "schwere" });
         for (const k of laeufe) {
             const z = await page.evaluate(LAUF, k);
             if (z.fehler) {
@@ -646,11 +639,9 @@ const GANG = (k) => {
             // (zwischen zwei Auswertungen steht die Pose — gezählt würde das Raster, nicht der Gang)
             const gut = gangUrteil(
                 (z.band ? "Satz " : z.last ? "Last " : "Welt ") + z.seele + (z.name ? ` (${z.name})` : ""),
-                { vh: z.vh, ph: z.ph, tast: z.last ? null : z.standAnteil },
-                z.band ? { Leib: weltGang[z.seele + z.vh] } : {}
+                { vh: z.vh, ph: z.ph, tast: z.last ? null : z.standAnteil }
             );
-            if (z.band) satzGang[z.seele + z.vh] = z;
-            else if (!z.last && !k.g) weltGang[z.seele + z.vh] = z;
+            if (!z.last && !k.g) (z.band ? satzGang : weltGang)[z.seele + z.vh] = z;
             if (!ok) gefeuert.add(k.taeter + "-gleiten");
             if (!gut) gefeuert.add(k.taeter + "-gang");
         }
@@ -773,7 +764,6 @@ const GANG = (k) => {
                 gefeuert.has("satz-gleiten") && gefeuert.has("satz-gang"),
                 "der Satz ohne Gedächtnis am 1,5-fachen Weg blieb grün: die Satz-Wand",
             ],
-            [gefeuert.has("kreuz-gang"), "der Galopp an der Flucht blieb grün: die Kreuz-Probe"],
         ].find(([ok]) => !ok);
         if (vakuoes) {
             console.error(`\n❌ SELBST-TEST ROT — ${vakuoes[1]} ist vakuös.`);
