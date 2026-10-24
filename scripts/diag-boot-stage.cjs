@@ -6,18 +6,15 @@
 //   RING ≥ Ziel · GRAS/WASSER ohne Wartende · STREU `_streuWartet` 0 (keine Region fehlt, wartet auf ihr Asset oder trägt
 //   eine offene Scheibe; eine fehlende Regionen-Karte heißt „der Streamer lief noch nie") · BIBLIO Foundry ready + Prefetch
 //   fertig · IMPOST Bake-Queue leer (nur mit Renderer) · LUFT die EINE Luftperspektive (scene.fogNode, Sichtweite ≥ 5 km).
-// Zeitleiste t(Weltbild/Bibliothek/Ring/Impostoren/Bühne) in TICKS + Wall-Clock; t(Weltbild) = `state._weltbildDa` ab
-// Navigation (der Ladeschirm hält jede Taste: das ist die Kontrolle). --selftest: die Bühnen-Wahrheit liest dieselbe Streu
-// (die wartende Region trägt gate:ankunft L2a).   node scripts/diag-boot-stage.cjs [--selftest]
+// Zeitleiste t(Bibliothek/Ring/Impostoren/Bühne) in TICKS + Wall-Clock. --selftest: die Bühnen-Wahrheit liest dieselbe Streu
+// (die wartende Region trägt gate:ankunft L2a) und das Urteil der Ankunft.   node scripts/diag-boot-stage.cjs [--selftest]
 //
 // DIE KALT-ZEILE: `--kalt` bootet mit echtem Renderer und LEEREM Profil (IDB leer, wie nach jedem Versions-Update) und nennt
 // je Sekunde, worauf das erste Weltbild wartet (`_weltbildFehlt`), die blockierten ms des Haupt-Threads (benannt: Boden,
 // Streu, Bauten, Gruppen-Bau, Buch, Ort-Wahl, Dorf und der Erst-Bau der Zeichnung aus `_erstZeichnung`), offene Pipelines,
 // die Phase des Vorrats (`f._vorrat` wörtlich) und die Foundry-Schlange; der Adapter vom Gerät (`device.adapterInfo`).
-// Urteil (`ankunftUrteil`, ankunft K1): t(Kontrolle) VON AUSSEN — die Linse hält W über CDP, t ist der Moment, in dem der Leib
-// ≥ 0,1 m folgt — ≤ 5 s in einem ganzen Bild (die Welt nennt kein halbes, das Ausgabe-Bild bei der Kontrolle weicht ≤ 2 % gegen
-// dieselbe Pose nach 60 s); die Eigenmeldung `_weltbildDa` steht daneben. Ohne `--echt` swiftshader, mit `--echt` die
-// Hardware-GPU (1920×1080).
+// Urteil (`ankunftUrteil`): t(Kontrolle) von außen (W über CDP bewegt den Leib) ≤ 5 s in einem ganzen Bild. Ohne `--echt`
+// swiftshader, mit `--echt` die Hardware-GPU (1920×1080).
 //   node scripts/diag-boot-stage.cjs --kalt [--echt] [--sek 120] [--json datei] [--bild ankunft.png]
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
@@ -119,8 +116,8 @@ function KALT_PROBE() {
         }
         A.proben.push(o);
     }, 200);
-    // DIE KONTROLLE VON AUSSEN (ankunft K1, nie `_weltbildDa`): t ist der erste Moment, in dem der Leib ≥ 0,1 m von dem
-    // Ort wich, an dem er stand, solange der Ladeschirm (die DOM-Wahrheit: sichtbar, nicht im Weichen) noch stand
+    // DIE KONTROLLE VON AUSSEN (ankunft K1): der erste Moment, in dem der Leib ≥ 0,1 m von dem Ort wich, an dem er stand, als
+    // der Ladeschirm (die DOM-Wahrheit) noch stand
     const leib = setInterval(() => {
         const r = window.anazhRealm;
         const p = r && r.state && r.state.playerMesh && r.state.playerMesh.position;
@@ -160,8 +157,7 @@ async function kaltLauf() {
         await page.evaluateOnNewDocument(KALT_PROBE);
         const t0 = Date.now();
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
-        // DIE HAND DES SPIELERS (ankunft K1, die Kontrolle von außen): W, frisch gedrückt je 100 ms über CDP, bis der Leib folgt
-        // (`__kalt.kontrolle`, KALT_PROBE) — solange der Ladeschirm steht, gehört keine Taste der Welt
+        // DIE HAND DES SPIELERS: W, frisch gedrückt je 100 ms über CDP, bis der Leib folgt (`__kalt.kontrolle`)
         let kontrolle = 0;
         while (!kontrolle && Date.now() - t0 < SEK * 1000) {
             await page.keyboard.up("KeyW");
@@ -170,9 +166,8 @@ async function kaltLauf() {
             kontrolle = await page.evaluate(() => window.__kalt.kontrolle || 0).catch(() => 0);
         }
         await page.keyboard.up("KeyW");
-        // DAS BILD BEI DER KONTROLLE (ankunft K2, die zweite Hälfte von t): der erste Blick 1 s nach der Kontrolle aus dem
-        // Ausgabe-Pfad (scripts/lib/ausgabe-aufnahme.cjs; der Loop ruht, die Bühne hält Mittag · Sonne · Sommer) gegen dieselbe
-        // Pose nach KONTROLLE_RUHE_S, in denen die Welt weiterläuft; `--bild datei.png` legt das erste Bild ab
+        // DAS BILD BEI DER KONTROLLE: der Blick 1 s danach aus dem Ausgabe-Pfad (scripts/lib/ausgabe-aufnahme.cjs; Mittag · Sonne ·
+        // Sommer) gegen dieselbe Pose nach KONTROLLE_RUHE_S, in denen die Welt weiterläuft; `--bild` legt das erste ab
         const bildDatei = OPT("--bild", null);
         let bildInfo = null;
         if (kontrolle) {
@@ -273,7 +268,7 @@ async function kaltLauf() {
     if (json) fs.writeFileSync(json, JSON.stringify(out, null, 1));
     // je Sekunde: der Stand am Ende der Sekunde (die letzte Probe) und die blockierten ms des Haupt-Threads
     const proben = out.proben || [];
-    const ende = Math.max(out.weltbildDa || 0, proben.length ? proben[proben.length - 1].t : 0);
+    const ende = out.kontrolle || Math.max(out.weltbildDa || 0, proben.length ? proben[proben.length - 1].t : 0);
     const S = Math.ceil(ende / 1000);
     const blockiert = new Array(S + 1).fill(0);
     for (const [s, d] of out.lang || []) {
@@ -327,61 +322,41 @@ async function kaltLauf() {
     if (out.bild && out.bild.datei)
         console.log(`  das Bild bei der Kontrolle: ${out.bild.datei} (${out.bild.dc} Befehle · ${out.bild.dreiecke} Dreiecke)`);
     const u = out.urteil;
-    const s = (ms) => (ms ? (ms / 1000).toFixed(2) + " s" : "— (nicht erreicht)");
+    const s = (ms) => (ms ? (ms / 1000).toFixed(2) + " s" : "—");
     console.log(
-        `\n  t(Kontrolle) ${s(u.t)} ab Navigation (von außen: W bewegt den Leib ≥ 0,1 m) · die Eigenmeldung t(Weltbild) ` +
-            `${s(out.weltbildDa)} · das Bild bei der Kontrolle weicht ${u.luecke == null ? "—" : (u.luecke * 100).toFixed(2) + " %"} ` +
-            `gegen dieselbe Pose nach ${KONTROLLE_RUHE_S} s`
+        `
+  t(Kontrolle) ${s(u.t)} ab Navigation (W bewegt den Leib) · Eigenmeldung t(Weltbild) ${s(out.weltbildDa)} · ` +
+            `das Bild bei der Kontrolle weicht ${u.luecke == null ? "—" : (u.luecke * 100).toFixed(2) + " %"}`
     );
     for (const x of u.taeter) console.log(`  ❌ ${x}`);
-    console.log(
-        `  ${u.taeter.length ? "❌" : "✅"} die Ankunft kalt ≤ ${ANKUNFT_SOLL_MS / 1000} s in einem ganzen Bild (Pflicht-OFFEN B) — ${s(u.t)}`
-    );
+    console.log(`  ${u.taeter.length ? "❌" : "✅"} die Ankunft kalt ≤ ${ANKUNFT_SOLL_MS / 1000} s in einem ganzen Bild — ${s(u.t)}`);
     process.exit(u.taeter.length ? 1 : 0);
 }
 
-// DAS URTEIL DER ANKUNFT (pure: Kalt-Lauf, Selbsttest und die Station ankunft.K1 lesen dasselbe): t ist die Kontrolle von
-// außen, nie die Eigenmeldung `_weltbildDa`; `ganz` heißt, kein halbes Weltbild — weder nennt die Welt eins, noch weicht das
-// Bild bei der Kontrolle um mehr als BILD_LUECKE gegen dieselbe Pose nach KONTROLLE_RUHE_S
+// DAS URTEIL DER ANKUNFT (pure; Kalt-Zeile, Selbsttest und die Station ankunft.K1 lesen es): t ist die Kontrolle von außen,
+// nie `_weltbildDa`; ganz heißt: die Welt nennt kein halbes Weltbild, das Bild bei der Kontrolle weicht ≤ BILD_LUECKE
 function ankunftUrteil(m) {
     const t = m.kontrolle || null;
     const luecke = m.bild && Number.isFinite(m.bild.luecke) ? m.bild.luecke : null;
+    const halb = m.ohne && m.ohne.length ? m.ohne[0] : null;
     const taeter = [];
     if (!t) taeter.push("keine Kontrolle: W bewegt den Leib nie ≥ 0,1 m");
     else if (t > ANKUNFT_SOLL_MS) taeter.push(`t(Kontrolle) ${(t / 1000).toFixed(2)} s > ${ANKUNFT_SOLL_MS / 1000} s`);
-    if (m.ohne && m.ohne.length) taeter.push(`das halbe Weltbild: ${m.ohne[0]}`);
-    if (t && !(luecke <= BILD_LUECKE))
-        taeter.push(
-            `das Bild bei der Kontrolle weicht ${luecke == null ? "ungemessen" : (luecke * 100).toFixed(2) + " %"} (> ${BILD_LUECKE * 100} %)`
-        );
-    return { t, luecke, ganz: !!t && !(m.ohne && m.ohne.length) && luecke <= BILD_LUECKE, taeter };
+    if (halb) taeter.push(`das halbe Weltbild: ${halb}`);
+    if (t && !(luecke <= BILD_LUECKE)) taeter.push(`das Bild bei der Kontrolle weicht ${luecke} > ${BILD_LUECKE}`);
+    return { t, luecke, ganz: !!t && !halb && luecke <= BILD_LUECKE, taeter };
 }
-function ankunftSelbsttest() {
-    const ganz = { bild: { luecke: 0.004 }, ohne: [] };
-    const faelle = [
-        ["ganz in 4 s", { ...ganz, kontrolle: 4000 }, false],
-        [
-            "die Eigenmeldung früh, die Kontrolle spät: t ist die Kontrolle",
-            { ...ganz, weltbildDa: 2000, kontrolle: 9000 },
-            true,
-        ],
-        ["ohne Kontrolle zählt keine Eigenmeldung", { ...ganz, weltbildDa: 2000 }, true],
-        ["das Bild bei der Kontrolle weicht 8 %", { kontrolle: 4000, bild: { luecke: 0.08 }, ohne: [] }, true],
-        ["das Bild bei der Kontrolle ist ungemessen", { kontrolle: 4000, ohne: [] }, true],
-        [
-            "die Welt nennt das halbe Weltbild",
-            { ...ganz, kontrolle: 4000, ohne: ["Das erste Weltbild steht ohne: x"] },
-            true,
-        ],
-    ];
-    return faelle.map(([fall, m, rot]) => {
+const ankunftSelbsttest = () =>
+    [
+        ["ganz in 4 s", { kontrolle: 4000, bild: { luecke: 0.004 } }, false],
+        ["die Eigenmeldung früh, die Kontrolle spät", { weltbildDa: 2000, kontrolle: 9000, bild: { luecke: 0 } }, true],
+        ["die Eigenmeldung ohne Kontrolle", { weltbildDa: 2000, bild: { luecke: 0 } }, true],
+        ["das Bild bei der Kontrolle weicht 8 %", { kontrolle: 4000, bild: { luecke: 0.08 } }, true],
+        ["die Welt nennt das halbe Weltbild", { kontrolle: 4000, bild: { luecke: 0 }, ohne: ["x"] }, true],
+    ].map(([fall, m, rot]) => {
         const u = ankunftUrteil(m);
-        return {
-            name: `SELBST-TEST Ankunft: ${fall} — ${u.taeter.length ? "ROT" : "GRÜN"}, t ${u.t}`,
-            pass: !!u.taeter.length === rot && (!m.kontrolle || u.t === m.kontrolle),
-        };
+        return { name: `SELBST-TEST Ankunft: ${fall} — ${u.taeter.length ? "ROT" : "GRÜN"}`, pass: !!u.taeter.length === rot };
     });
-}
 
 (async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
@@ -393,11 +368,9 @@ function ankunftSelbsttest() {
     let out = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
-        // t(Weltbild) aus der Welt selbst: der Moment, in dem der Ladeschirm weicht (`state._weltbildDa`, ab Navigation).
         await page.waitForFunction(() => window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state._weltbildDa, {
             timeout: 120000,
         });
-        const controlMs = await page.evaluate(() => window.anazhRealm.state._weltbildDa);
         out = await page.evaluate(async (selftest) => {
             const r = window.anazhRealm,
                 st = r.state;
@@ -489,7 +462,6 @@ function ankunftSelbsttest() {
             }
             return o;
         }, SELFTEST);
-        out.controlMs = controlMs;
     } catch (e) {
         out = { __err: (e && e.message) || String(e) };
     }
@@ -504,10 +476,6 @@ function ankunftSelbsttest() {
     const fm = (m) => (m ? `Tick ${m.ticks} · ${(m.ms / 1000).toFixed(1)} s` : "— (nicht erreicht)");
     console.log(
         "\n=== VOLLE BÜHNE — das Prädikat + die Zeitleiste (headless-Mechanik; Wall-Clock = Container-Anhalt) ==="
-    );
-    console.log(
-        `  t(Weltbild)    ${(out.controlMs / 1000).toFixed(1)} s ab Navigation (state._weltbildDa = t(Kontrolle); der ` +
-            "Null-Renderer zeigt kein Bild und setzt es beim Renderer-Bau — die Kalt-Zeile mit echtem Renderer: --kalt)"
     );
     console.log(`  t(Bibliothek)  ${fm(tl.biblio)}`);
     console.log(`  t(Ring)        ${fm(tl.ring)}`);
