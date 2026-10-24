@@ -51,7 +51,6 @@ async function checkBandHydrosphere(ctx) {
             JSON.stringify(h1.lakes) === JSON.stringify(h2.lakes) &&
             JSON.stringify(h1.waterfalls) === JSON.stringify(h2.waterfalls);
         // das Ende jedes Laufs, das Wasser jeder Senke und das Gefälle von Sohle und Spiegel misst gate:wasser-leben K4 LÄUFE
-        const seeOrt = await window.__wasserOrt("see");
         const meerOrt = await window.__wasserOrt("meer");
         out.meerOrt = meerOrt ? `${Math.round(meerOrt.x)},${Math.round(meerOrt.z)}` : "keiner";
         // Flow-Accumulation stromab monoton → Breite wächst
@@ -113,26 +112,11 @@ async function checkBandHydrosphere(ctx) {
             !!(h2.water && h2.water.waterKind) &&
             wf.waterKind.length === h2.water.waterKind.length &&
             wf.waterKind.every((v, i) => v === h2.water.waterKind[i]);
-        // das Wasser-Level-Feld `_waterLevelAt` an der ersten Ozean-Zelle der Meer-Kachel und der ersten
-        // See-Zelle der See-Kachel (der Leser löst die Kachel selbst auf, `_hydroFor`).
-        out.waterLevelOceanOk = false;
-        out.waterLevelLakeOk = false;
-        const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
-        const erste = (h, kind) => {
-            const q = h.water.waterKind.indexOf(kind);
-            if (q < 0) return null;
-            return [h.originX + ((q % h.dim) + 0.5) * h.cell, h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell];
-        };
-        const m = meerOrt && erste(meerOrt.hydro, 1);
-        if (m) {
-            const lv = r._waterLevelAt(m[0], m[1]);
-            out.waterLevelOceanOk = Number.isFinite(lv) && Math.abs(lv - wl) < 0.01;
-        }
-        const s = seeOrt && erste(seeOrt.hydro, 2);
-        if (s) {
-            const lv = r._waterLevelAt(s[0], s[1]);
-            out.waterLevelLakeOk = Number.isFinite(lv) && lv >= wl;
-        }
+        // das Wasser-Level-Feld `_waterLevelAt` an der ersten Ozean-Zelle der Meer-Kachel (der Leser löst die Kachel selbst
+        // auf, `_hydroFor`); an der See-Zelle misst V9.43-c.2 den Füllstand
+        const [h, q] = meerOrt ? [meerOrt.hydro, meerOrt.hydro.water.waterKind.indexOf(1)] : [null, -1];
+        const lv = q >= 0 ? r._waterLevelAt(h.originX + ((q % h.dim) + 0.5) * h.cell, h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell) : NaN;
+        out.waterLevelOceanOk = Number.isFinite(lv) && Math.abs(lv - (r.state.waterLevel || 0)) < 0.01;
         return out;
     });
 
@@ -159,7 +143,6 @@ async function checkBandHydrosphere(ctx) {
         );
         check("Voxel V9.49-a: das Wasser-Feld ist deterministisch", hb.waterFieldDeterministic);
         check("Voxel V9.50-a: `_waterLevelAt` an einer Ozean-Zelle == waterLevel", hb.waterLevelOceanOk);
-        check("Voxel V9.50-a: `_waterLevelAt` an einer See-Zelle ≥ waterLevel (der See-Spiegel)", hb.waterLevelLakeOk);
     }
 
     // ### Das Wasser wird synergetisch ###
@@ -311,10 +294,7 @@ async function checkBandHydrosphere(ctx) {
                 out.lakeBedWatertight = bedOk && solidBelow && surfOnBed;
             }
         }
-        // (11) Re-Compute ist zirkel-frei: der Faden hält den Carve aus seiner Rechnung — ein zweiter Lauf liefert dasselbe Netz.
-        const reHydro = (await r._voxelFadenAuftrag(r.state.voxelWorker, { type: "hydro", key: "heim", origin: null }))
-            .region;
-        out.recomputeStable = JSON.stringify(reHydro.rivers) === JSON.stringify(hydro.rivers);
+        // (11) den zweiten Lauf im Faden (zirkel-frei: dasselbe Netz) misst V9.43-b „deterministisch“
         // (13) Das Wasser-Cell-Feld fragt den ATLAS-STRIKTEN Spiegel (`_buildVoxelChunkWaterCells` ruft
         // `_atlasWaterLevelAt` je xz-Spalte), nicht das dilatierende `_waterLevelAt` — sonst
         // Wasserschatten an Hängen.
@@ -354,7 +334,6 @@ async function checkBandHydrosphere(ctx) {
             "Voxel V9.45-b: der See-Boden ist wasserdicht — über dem Meer, unter dem Spiegel, fester Grund",
             d.lakeBedWatertight
         );
-        check("Voxel V9.43-d: ein Re-Compute im Faden bleibt zirkel-frei (gleiches Netz wie die Weltgen)", d.recomputeStable);
         check(
             "Voxel V13.1: das Wasser-Cell-Feld ruft den Atlas-strikten Spiegel (`_atlasWaterLevelAt`), nie das dilatierende `_waterLevelAt`",
             d.unifiedQueriesRivers

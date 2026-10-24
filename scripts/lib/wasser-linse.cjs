@@ -117,7 +117,7 @@ function wasserFluss() {
     buckel.sort((x, y) => x - y);
     stufen.sort((x, y) => x - y);
     const q = (p, A = quer) => (A.length ? A[Math.min(A.length - 1, Math.floor(p * A.length))] : 0);
-    const R = (x, n = 3) => Math.round(x * 10 ** n) / 10 ** n;
+    const R = wasserRund(3);
     // Wasserfall-Doppel: ein Sturz je Ort (der geteilte Unterlauf zieht ihn sonst je Quelle).
     const wf = Array.isArray(h.waterfalls) ? h.waterfalls : [];
     const orte = new Set(wf.map((f) => Math.round(f.x) + "," + Math.round(f.z)));
@@ -554,12 +554,12 @@ function wasserUfer(opts) {
                             geflutet++;
                             if (w - boden > maxFlut) maxFlut = w - boden;
                             if (beispiele.length < 4)
-                                beispiele.push([Math.round(x), Math.round(z), Math.round((w - boden) * 100) / 100]);
+                                beispiele.push([Math.round(x), Math.round(z), wasserRund(2)(w - boden)]);
                         }
                     }
             }
         }
-        return { ort: [best.x, best.z], trocken, geflutet, maxFlutM: Math.round(maxFlut * 100) / 100, beispiele };
+        return { ort: [best.x, best.z], trocken, geflutet, maxFlutM: wasserRund(2)(maxFlut), beispiele };
     })();
 }
 
@@ -625,7 +625,7 @@ function wasserGraben(opts) {
         const K = r.constructor.NAH_WIESE.kachel;
         const HIEB = 3.5; // das Maß des Grabe-Hiebs
         const AUSSEN = HIEB + 4 * r._voxelChunkConfig(0).step;
-        const f2 = (v) => Math.round(v * 100) / 100;
+        const f2 = wasserRund(2);
         const { p: a, vor: b } = __wasserFlussNah(r, o.fluss.x, o.fluss.z);
         if (!a || !b) return { fehler: "kein Fluss am Ort" };
         const nl = Math.hypot(a.x - b.x, a.z - b.z) || 1;
@@ -728,6 +728,7 @@ function wasserUferFarbe(opts) {
         const h = st.hydrosphere;
         if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
         const L = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        const R = wasserRund(1);
         const proben = [];
         for (const rv of h.rivers)
             for (let k = 3; k + 1 < rv.points.length && proben.length < (o.n || 24); k += 9) {
@@ -786,12 +787,7 @@ function wasserUferFarbe(opts) {
                             if (st2 > 0.1) {
                                 sSpruenge++;
                                 if (sBeispiele.length < 5)
-                                    sBeispiele.push([
-                                        Math.round(x * 10) / 10,
-                                        Math.round(z * 10) / 10,
-                                        Math.round(d * 100) / 100,
-                                        Math.round(st2 * 100) / 100,
-                                    ]);
+                                    sBeispiele.push([R(x), R(z), R(d, 2), R(st2, 2)]);
                             }
                         }
                         vorS = s;
@@ -805,11 +801,7 @@ function wasserUferFarbe(opts) {
                         if (s > 0.02) {
                             spruenge++;
                             if (beispiele.length < 5)
-                                beispiele.push([
-                                    Math.round(x * 10) / 10,
-                                    Math.round(z * 10) / 10,
-                                    Math.round(d * 100) / 100,
-                                ]);
+                                beispiele.push([R(x), R(z), R(d, 2)]);
                         }
                     }
                     vorL = l;
@@ -869,7 +861,7 @@ function wasserUferFarbe(opts) {
             proben: proben.length,
             schritte,
             spruenge,
-            maxSprung: Math.round(maxSprung * 1000) / 1000,
+            maxSprung: R(maxSprung, 3),
             beispiele,
             paritaet,
             schilf: schilfA
@@ -877,7 +869,7 @@ function wasserUferFarbe(opts) {
                       art: schilfA.id,
                       schritte: sSchritte,
                       spruenge: sSpruenge,
-                      maxSprung: Math.round(sMax * 1000) / 1000,
+                      maxSprung: R(sMax, 3),
                       beispiele: sBeispiele,
                   }
                 : { fehler: "keine Nah-Streu-Art mit Ufer-Band (Buch oder Render-Config fehlt)" },
@@ -1106,7 +1098,7 @@ function wasserBild(opts) {
             maskMat.dispose();
             rt.dispose();
         }
-        const R = (x, n = 3) => Math.round(x * 10 ** n) / 10 ** n;
+        const R = wasserRund(3);
         const Z = (z) => ({
             kantenDichte: R(z.kantenDichte),
             weissAnteil: R(z.weissAnteil, 4),
@@ -1209,9 +1201,9 @@ function wasserRegen(opts) {
                 if (lit[p + W - 1]) links++;
             }
         return {
-            litAnteil: Math.round((n / (W * H)) * 1e5) / 1e5,
+            litAnteil: wasserRund(5)(n / (W * H)),
             schlieren,
-            neigung: rechts + links > 0 ? Math.round(((rechts - links) / (rechts + links)) * 1000) / 1000 : 0,
+            neigung: rechts + links > 0 ? wasserRund(3)((rechts - links) / (rechts + links)) : 0,
         };
     })();
 }
@@ -1385,8 +1377,7 @@ function wasserWagen(opts) {
         await window.__weltDa(() => st.blueprints && st.blueprints.fahrzeug_gt);
         if (!(st.blueprints && st.blueprints.fahrzeug_gt)) return { fehler: "kein Studio-Wagen im Buch (fahrzeug_gt)" };
         const BOOT = wasserBoot(st);
-        const pm = st.playerMesh.position;
-        const posAlt = pm.clone();
+        const [pm, leib] = [st.playerMesh.position, window.__wasserLeib()];
         const fahre = (typ, x, z, takte) => {
             const boden = r._voxelSurfaceY(x, z);
             pm.set(x, Math.max(S, boden) + 1, z);
@@ -1481,9 +1472,7 @@ function wasserWagen(opts) {
             }
         } finally {
             delete st.blueprints[BOOT];
-            pm.copy(posAlt);
-            if (st.playerVel) st.playerVel.setValue(0, 0, 0);
-            st._fieldVy = 0;
+            leib.zurueck();
         }
         return aus;
     })();
@@ -1731,7 +1720,7 @@ function wasserSichtNetz() {
             unsichtbarN = 0;
         const bspP = [],
             bspU = [];
-        const R2 = (v) => Math.round(v * 100) / 100;
+        const R2 = wasserRund(2);
         for (let z = z0; z <= z1; z += d)
             for (let x = x0; x <= x1; x += d) {
                 const s = at(x, z);
@@ -2116,7 +2105,7 @@ function quellTeileVereinen(teile) {
         return {
             fehler: `die Teile der Quell-Probe sehen verschiedene Kacheln (${abdruck(teile[0])} gegen ${abdruck(fremd)})`,
         };
-    const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
+    const R = wasserRund(2);
     const p50 = (A) => (A.length ? A.slice().sort((x, y) => x - y)[A.length >> 1] : 0);
     const summe = (k) => teile.reduce((s, t) => s + (t[k] || 0), 0);
     const breiten0 = [].concat(...teile.map((t) => t.breiten0 || []));
@@ -2247,6 +2236,28 @@ async function wasserSee(opts) {
 // ── Q7-Bild: die Pflanzen im gezeichneten Wasser ──
 // Je Kachel im Gebiet (ein Fenster [x0, z0, x1, z1] oder der Korridor ±radius um einen Lauf) die Pflanzen, wie die Welt sie
 // setzt: die Nah-Streu (`_nahStreuKachel`, jede Art ohne Ufer-Band) und die Nah-Wiese (`_nahWieseKachelBueschel`, das Gras).
+// DIE PFLANZEN DER NÄHE (EIN Gang): jede Kachel der Nah-Streu und der Nah-Wiese über den Kästen [x0, z0, x1, z1] (ihre Chunks baut
+// `sicht.at`, synchron — die Probe misst hier), je Pflanze `je(art, it, A)` (art "streu" | "wiese", A die Art der Streu);
+// zurück je art die gebauten und die wartenden Kacheln
+function wasserPflanzen(sicht, kaesten, je) {
+    const [r, n] = [window.anazhRealm, {}];
+    const arten = r._nahStreuArten();
+    for (const [K, art] of [[r.constructor.NAH_STREU.kachel, "streu"], [r.constructor.NAH_WIESE.kachel, "wiese"]]) {
+        const kacheln = new Set();
+        for (const [x0, z0, x1, z1] of kaesten)
+            for (let tz = Math.floor(z0 / K); tz <= Math.floor(z1 / K); tz++)
+                for (let tx = Math.floor(x0 / K); tx <= Math.floor(x1 / K); tx++) kacheln.add(tx + "," + tz);
+        n[art] = { kacheln: 0, warten: 0 };
+        for (const [tx, tz] of [...kacheln].map((k) => k.split(",").map(Number))) {
+            sicht.at((tx + 0.5) * K, (tz + 0.5) * K);
+            const satz = art === "streu" ? r._nahStreuKachel(tx, tz, arten) : r._nahWieseKachelBueschel(tx, tz);
+            n[art][satz ? "kacheln" : "warten"]++;
+            for (const it of satz ? satz.items || satz : []) je(art, it, arten[it.art]);
+        }
+    }
+    return n;
+}
+
 // Im Wasser steht eine Pflanze, über deren Fuß (der gerenderte Boden, auf dem sie steht) die Welt mehr als 5 cm Wasser
 // zeichnet — über dem gezeichneten Boden an ihrem Ort, sichtbar (ein Sheet unter dem Gelände trägt keine Pflanze). Arten mit Ufer-Band (Schilf) stehen dort nach ihrem Gesetz — gezählt, nicht geurteilt.
 function wasserFlora(opts) {
@@ -2255,7 +2266,7 @@ function wasserFlora(opts) {
     const sicht = o.sicht || window.__wasserSichtNetz();
     const arten = r._nahStreuArten();
     if (!arten) return { fehler: "die Nah-Streu hat keine Arten (das Buch fehlt)" };
-    const R2 = (v) => Math.round(v * 100) / 100;
+    const R2 = wasserRund(2);
     let x0, z0, x1, z1, imGebiet;
     if (o.fenster) {
         [x0, z0, x1, z1] = o.fenster;
@@ -2286,55 +2297,19 @@ function wasserFlora(opts) {
         const G = s.boden !== null ? Math.max(y, s.boden) : y;
         return s.wasser > G + 0.05 ? s.wasser - y : 0;
     };
-    const streu = { kacheln: 0, warten: 0, pflanzen: 0, ufer: 0, imWasser: 0, maxM: 0, jeArt: {}, bsp: [] };
-    const KS = r.constructor.NAH_STREU.kachel;
-    for (let tz = Math.floor(z0 / KS); tz <= Math.floor(z1 / KS); tz++)
-        for (let tx = Math.floor(x0 / KS); tx <= Math.floor(x1 / KS); tx++) {
-            sicht.at((tx + 0.5) * KS, (tz + 0.5) * KS); // die Chunks der Kachel bauen (synchron, die Probe misst hier)
-            const satz = r._nahStreuKachel(tx, tz, arten);
-            if (!satz) {
-                streu.warten++;
-                continue;
-            }
-            streu.kacheln++;
-            for (const it of satz.items) {
-                if (!imGebiet(it.x, it.z)) continue;
-                streu.pflanzen++;
-                const A = arten[it.art];
-                const w = imWasser(it.x, it.y, it.z);
-                if (!w) continue;
-                if (A.zeile && A.zeile.ufer) {
-                    streu.ufer++;
-                    continue;
-                }
-                streu.imWasser++;
-                streu.maxM = Math.max(streu.maxM, R2(w));
-                streu.jeArt[A.id] = (streu.jeArt[A.id] || 0) + 1;
-                if (streu.bsp.length < 4) streu.bsp.push([A.id, R2(it.x), R2(it.z), R2(w)]);
-            }
-        }
-    const wiese = { kacheln: 0, warten: 0, bueschel: 0, imWasser: 0, maxM: 0, bsp: [] };
-    const KW = r.constructor.NAH_WIESE.kachel;
-    for (let tz = Math.floor(z0 / KW); tz <= Math.floor(z1 / KW); tz++)
-        for (let tx = Math.floor(x0 / KW); tx <= Math.floor(x1 / KW); tx++) {
-            sicht.at((tx + 0.5) * KW, (tz + 0.5) * KW);
-            const satz = r._nahWieseKachelBueschel(tx, tz);
-            if (!satz) {
-                wiese.warten++;
-                continue;
-            }
-            wiese.kacheln++;
-            for (const it of satz) {
-                if (!imGebiet(it.x, it.z)) continue;
-                wiese.bueschel++;
-                const w = imWasser(it.x, it.y, it.z);
-                if (!w) continue;
-                wiese.imWasser++;
-                wiese.maxM = Math.max(wiese.maxM, R2(w));
-                if (wiese.bsp.length < 4) wiese.bsp.push([R2(it.x), R2(it.z), R2(w)]);
-            }
-        }
-    return { streu, wiese };
+    const streu = { pflanzen: 0, ufer: 0, imWasser: 0, maxM: 0, jeArt: {}, bsp: [] };
+    const wiese = { bueschel: 0, imWasser: 0, maxM: 0, bsp: [] };
+    const kacheln = wasserPflanzen(sicht, [[x0, z0, x1, z1]], (art, it, A) => {
+        if (!imGebiet(it.x, it.z)) return;
+        const [b, w] = [art === "streu" ? streu : wiese, imWasser(it.x, it.y, it.z)];
+        b[art === "streu" ? "pflanzen" : "bueschel"]++;
+        if (!w || (art === "streu" && A.zeile && A.zeile.ufer && ++streu.ufer)) return;
+        b.imWasser++;
+        b.maxM = Math.max(b.maxM, R2(w));
+        if (art === "streu") streu.jeArt[A.id] = (streu.jeArt[A.id] || 0) + 1;
+        if (b.bsp.length < 4) b.bsp.push([...(art === "streu" ? [A.id] : []), R2(it.x), R2(it.z), R2(w)]);
+    });
+    return { streu: Object.assign(kacheln.streu, streu), wiese: Object.assign(kacheln.wiese, wiese) };
 }
 
 // ── Q7-Gestalt: die Bank ──
@@ -2527,7 +2502,7 @@ function wasserLeser(opts) {
             kueste: { sichtbar: 0, trocken: 0 },
         };
         const bsp = { klang: [], kueste: [] };
-        const R1 = (v) => Math.round(v * 10) / 10;
+        const R1 = wasserRund(1);
         for (const [px, pz] of o.orte || (({ see, kueste }) => [see.ufer, kueste])(await window.__wasserOrte({}))) {
             await window.__wasserStrom([px, pz], 3);
             aus.orte.push([px, pz, st.voxelChunks.size]);
@@ -2611,9 +2586,8 @@ function wasserMutation(opts) {
         const ort = o.ort || (await window.__wasserOrte({})).see.ufer;
         await window.__wasserStrom(ort, 3);
         const sicht = window.__wasserSichtNetz();
-        const arten = r._nahStreuArten();
         const baum = Object.keys(A.FOREST.crown)[0];
-        const zufall = wasserZufall(0x2545f491);
+        const [zufall, R] = [wasserZufall(0x2545f491), wasserRund(1)];
         const drin = (x, z) => punkte.some((p) => (x - p.x) ** 2 + (z - p.z) ** 2 <= RHO * RHO);
         // im Wasser einer Scheibe steht, was in ihr unter ihrem Spiegel wurzelt (am Hang ragt ihr Rand über ihn)
         const unter = (it) => punkte.some((p) => (it.x - p.x) ** 2 + (it.z - p.z) ** 2 <= RHO * RHO && it.y < p.b + TIEF);
@@ -2630,23 +2604,11 @@ function wasserMutation(opts) {
             punkte.push({ x, z, b });
         }
         const flora = () => {
-            const n = { wiese: 0, streu: 0, warten: 0 };
-            for (const [K, art] of [[A.NAH_WIESE.kachel, "wiese"], [A.NAH_STREU.kachel, "streu"]]) {
-                const kacheln = new Set();
-                for (const p of punkte)
-                    for (let tz = Math.floor((p.z - RHO) / K); tz <= Math.floor((p.z + RHO) / K); tz++)
-                        for (let tx = Math.floor((p.x - RHO) / K); tx <= Math.floor((p.x + RHO) / K); tx++)
-                            kacheln.add(tx + "," + tz);
-                for (const k of kacheln) {
-                    const [tx, tz] = k.split(",").map(Number);
-                    sicht.at((tx + 0.5) * K, (tz + 0.5) * K);
-                    const satz = art === "wiese" ? r._nahWieseKachelBueschel(tx, tz) : r._nahStreuKachel(tx, tz, arten);
-                    if (!satz) n.warten++;
-                    else
-                        for (const it of satz.items || satz)
-                            if ((art === "wiese" || !arten[it.art].zeile.ufer) && unter(it)) n[art]++;
-                }
-            }
+            const n = { wiese: 0, streu: 0 };
+            const k = wasserPflanzen(sicht, punkte.map((p) => [p.x - RHO, p.z - RHO, p.x + RHO, p.z + RHO]), (art, it, A) => {
+                if ((art === "wiese" || !A.zeile.ufer) && unter(it)) n[art]++;
+            });
+            n.warten = k.streu.warten + k.wiese.warten;
             return n;
         };
         const LESER = {
@@ -2705,7 +2667,7 @@ function wasserMutation(opts) {
             for (const k of Object.keys(u)) {
                 if (feld === "vor") leser[k].n++;
                 if (u[k]) leser[k][feld]++;
-                else if (feld === "nach" && !leser[k].bsp) leser[k].bsp = [Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10];
+                else if (feld === "nach" && !leser[k].bsp) leser[k].bsp = [R(p.x), R(p.z)];
             }
         };
         const aus = { punkte: punkte.length, versuche, rho: RHO, tief: TIEF, leser, flora: { vor: flora() } };
@@ -2815,7 +2777,7 @@ async function wasserTreibt(o) {
             if (!k) return { fehler: "der Körper steht nicht" };
             const w = k.position.x * f.x + k.position.z * f.z;
             for (let n = 0; n < 90; n++) takt(k);
-            weg.push(Math.round(((k.position.x * f.x + k.position.z * f.z - w) / m) * 1000) / 1000);
+            weg.push(wasserRund(3)((k.position.x * f.x + k.position.z * f.z - w) / m));
             delete r._waterFlowAt;
             if (fort) fort(k);
         }
@@ -2862,7 +2824,7 @@ async function wasserOrte(opts) {
     if (!mitte) throw new Error("__wasserOrte: keine Mitte (weder opts.mess noch __messWiese)");
     const [MX, MZ] = mitte;
     const wl = st.waterLevel || 0;
-    const R1 = (v) => Math.round(v * 10) / 10;
+    const R1 = wasserRund(1);
     const tiefe = (x, z) => {
         const g = r._voxelSurfaceY(x, z);
         if (!Number.isFinite(g)) return -Infinity;
@@ -3037,6 +2999,7 @@ module.exports = {
         wasserRund.toString() +
         wasserZufall.toString() +
         wasserBoot.toString() +
+        wasserPflanzen.toString() +
         `window.__wasserOrte = ${wasserOrte.toString()};` +
         `window.__wasserLeser = ${wasserLeser.toString()};` +
         `window.__wasserLeib = ${wasserLeib.toString()};` +

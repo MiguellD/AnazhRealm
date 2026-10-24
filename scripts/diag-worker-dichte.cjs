@@ -29,7 +29,6 @@ const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
-const crypto = require("crypto");
 
 const argv = process.argv.slice(2);
 const opt = (k, d) => {
@@ -563,15 +562,15 @@ function zeige(rep) {
 // (der Server liefert den Kern verändert aus) ziehen beide Leser. Selbsttest: liest einer den unveränderten Kern, nennt die
 // Probe ihn beim Namen.
 const KERN_MUTATIONEN = {
-    "Edit-Stärke": [["tiefeM: 4, rundM: 1", "tiefeM: 5, rundM: 1"]],
-    "Edit-Radius": [["if (!(ed.r > 0)) return n;", "if (!(ed.r > 0)) return n;\n        ed = { ...ed, r: ed.r * 1.1 };"]],
-    "Dichte-Versatz": [["let d = surf - y;", "let d = surf - y + 0.25;"]],
-    "See-Spiegel": [["return h.water.waterY[i];", "return h.water.waterY[i] + 0.5;"]],
-    "Höhen-Versatz": [["let h = hoeheGrund(L, x, z, mitDetail, aus);", "let h = hoeheGrund(L, x, z, mitDetail, aus) + 0.01;"]],
+    "Edit-Stärke": ["tiefeM: 4, rundM: 1", "tiefeM: 5, rundM: 1"],
+    "Edit-Radius": ["if (!(ed.r > 0)) return n;", "if (!(ed.r > 0)) return n;\n        ed = { ...ed, r: ed.r * 1.1 };"],
+    "Dichte-Versatz": ["let d = surf - y;", "let d = surf - y + 0.25;"],
+    "See-Spiegel": ["return h.water.waterY[i];", "return h.water.waterY[i] + 0.5;"],
+    "Höhen-Versatz": ["let h = hoeheGrund(L, x, z, mitDetail, aus);", "let h = hoeheGrund(L, x, z, mitDetail, aus) + 0.01;"],
 };
 const KERN_MODUS = { haupt: null, faden: null, probe: null }; // je Boot die Mutation im Haupt-Faden, im Voxel-Faden, in der Probe
 const kernQuelle = (wurzel = root) => fs.readFileSync(path.join(wurzel, "gelaende-core.js"), "utf8"); // der EINE Leser des Kerns
-const kernMutiert = (roh, name) => (KERN_MUTATIONEN[name] || []).reduce((t, [a, b]) => t.replace(a, b), String(roh));
+const kernMutiert = (roh, name) => String(roh).replace(...(KERN_MUTATIONEN[name] || ["", ""]));
 function kernWandle(p, roh) {
     if (p === "/gelaende-core.js" && KERN_MODUS.haupt) return kernMutiert(roh, KERN_MODUS.haupt);
     if (p === "/gelaende-core.faden.js") return kernMutiert(kernQuelle(), KERN_MODUS.faden);
@@ -700,7 +699,8 @@ async function kernProbe(page, fehler, url) {
     if (plan.fehler) throw new Error(plan.fehler);
     const rein = await kernLesen(page, { ...plan, liste: true });
     const [g0, N] = [kernGleich(rein), rein.stamm[0].length];
-    console.log(`  Orte: Höhle ${plan.orte[0].map(Math.round)} · Kanal ${plan.orte[1].map(Math.round)} · See ${plan.orte[2].map(Math.round)} · ${plan.edits.length} Edits (der Stamm hält ${rein.haelt}) · ${N} Punkte · ${rein.faden.length} Voxel-Fäden`);
+    const [ho, ka, se] = plan.orte.map((o) => o.map(Math.round));
+    console.log(`  Orte: Höhle ${ho} · Kanal ${ka} · See ${se} · ${plan.edits.length} Edits (der Stamm hält ${rein.haelt}) · ${N} Punkte · ${rein.faden.length} Voxel-Fäden`);
     console.log(`  Der Ort wirkt (Höhle, Kanal, See, Edit, Zufall): ${rein.wirkt.join(" · ")} von je ${N / 5} · unverändert ≠ Kern Stamm ${g0.stamm} · Faden ${g0.faden}`);
     for (const [rot, b] of [
         [rein.haelt !== plan.edits.length, `EDIT-WAHRHEIT: der Stamm hält ${rein.haelt} von ${plan.edits.length} Edits`],
@@ -711,7 +711,7 @@ async function kernProbe(page, fehler, url) {
     ])
         if (rot) befunde.push(b);
     for (const name of ["Edit-Stärke", "Edit-Radius", "Dichte-Versatz", "See-Spiegel"]) {
-        const z = { name, anker: KERN_MUTATIONEN[name].every(([a]) => kernQuelle().split(a).length === 2) };
+        const z = { name, anker: kernQuelle().split(KERN_MUTATIONEN[name][0]).length === 2 };
         const m = z.anker && (await lauf(name));
         if (m) Object.assign(z, kernGleich(m), { zugStamm: zieht([m.stamm], name), zugFaden: zieht(m.faden, name) });
         mutationen.push(Object.assign(z, { gut: z.anker && z.zugStamm > 0 && z.zugFaden > 0 && z.abweichend === 0 }));
@@ -727,9 +727,8 @@ async function kernProbe(page, fehler, url) {
     }
     if (selbsttest && !(selbsttest.sieht = selbsttest["WORKER-FELD"].nennt && selbsttest["STAMM-LESER"].nennt)) befunde.push("SELBSTTEST: eine Abschrift blieb unentdeckt");
     if (fehler()) befunde.push("PAGE-ERROR: " + fehler());
-    const sha = (W) => crypto.createHash("sha256").update(Buffer.concat(W.map((a) => Buffer.from(a.buffer)))).digest("hex");
     const kern = { punkte: N, edits: plan.edits.length, haelt: rein.haelt, orte: plan.orte, wirkt: rein.wirkt, faeden: rein.faden.length, rein: g0, mutationen, selbsttest,
-        sha: { stamm: sha(rein.stamm), faden: rein.faden.map(sha) }, sekunden: Math.round((Date.now() - t0) / 1000) };
+        sekunden: Math.round((Date.now() - t0) / 1000) };
     for (const b of befunde) console.log("  ⛔", b);
     console.log(`\n${befunde.length ? "⛔ KERN-PROBE ROT" : "✅ KERN-PROBE GRÜN"}: ${N} Punkte, ${mutationen.filter((z) => z.gut).length}/4 Mutationen ziehen beide Leser · ${kern.sekunden} s\n`);
     if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ kern }, null, 1));
