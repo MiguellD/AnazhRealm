@@ -164,21 +164,9 @@ class AnazhRealm_bild_kosten {
                 const rb = this._bundles.get(bundle.bundleGroup, bundle.camera, this._currentRenderContext);
                 const daten = this.backend.get(rb);
                 const replay = daten.bundleGPU !== undefined && bundle.bundleGroup.version === daten.version;
-                // DAS BÜNDEL HÖRT ZU (`_buendelHoerer`): ein ruhendes Bündel geht im Replay nur seine Hörer — der Vendor-Gang
-                // liest die Liste der Aufnahme (`renderObjects`, vendor-anker), für ihn steht dort die Liste der Hörer
-                const alle = daten.renderObjects;
-                const r0 = AnazhRealm._regungN;
-                const hoerer = replay ? AnazhRealm._buendelHoerer(this, bundle.bundleGroup, daten) : null;
-                if (hoerer !== null) daten.renderObjects = hoerer;
-                let aus;
-                try {
-                    aus = replayRoh.call(this, bundle, sceneRef, lightsNode);
-                } finally {
-                    if (hoerer !== null) daten.renderObjects = alle;
-                }
-                if (replay && hoerer === null) AnazhRealm._buendelGehoert(bundle.bundleGroup, daten, r0);
-                if (replay && alle)
-                    for (const ro of alle) {
+                const aus = replayRoh.call(this, bundle, sceneRef, lightsNode);
+                if (replay && daten.renderObjects)
+                    for (const ro of daten.renderObjects) {
                         const dp = ro.getDrawParameters();
                         if (dp) this.info.update(ro.object, dp.vertexCount, dp.instanceCount);
                     }

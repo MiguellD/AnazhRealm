@@ -34,10 +34,7 @@ class AnazhRealm_bild_diaet {
             const roh = O.updateMatrix;
             O.updateMatrix = function () {
                 roh.call(this);
-                if (this.matrixAutoUpdate !== false) return;
-                const n = AnazhRealm._regt(this);
-                // die Lage eines statischen Kinds hört jedes Bündel, das es trägt (`_buendelHoerer`), es selbst eingeschlossen
-                for (let o = this; o; o = o.parent) if (o.isBundleGroup === true) o._anazhHaltR = n;
+                if (this.matrixAutoUpdate === false) AnazhRealm._regt(this);
             };
             O.updateMatrix.__anazhRegung = true;
         }
@@ -229,7 +226,8 @@ AnazhRealm._diaetGang = function (ro, nbs) {
 // (jeder seiner Knoten trägt dann denselben Stempel). Die Tafel hält ihre Sätze schwach (ein gefallenes Programm hält nichts)
 // und vergisst den Schlüssel eines gefallenen Satzes (`ende`, die Sammlung meldet ihn; bis hier blieb jeder Schlüssel stehen).
 // Gemessen (Radeon, Stand, ABAB in einer Welt): von 1 620 Einträgen je Bild fallen 1 328 (Genesis Third), von 574 fallen 357
-// (Wiese Ego). Der Wert-Blick davor (ein Vergleich je Knoten statt je Uniform) fiel: ein Gang langsamer, 1,29 → 1,58 ms.
+// (Wiese Ego). Der Wert-Blick davor (ein Vergleich je Knoten statt je Uniform) fiel: ein Gang langsamer, 1,29 → 1,58 ms. Ein
+// Bündel, das im Replay nur seine Hörer ging (24.10.), fiel gemessen: an Genesis Third ruhten 3,3 Render-Objekte je Bild.
 AnazhRealm._diaetSatz = function (liste, id) {
     let T = AnazhRealm._diaetSaetze;
     if (T === undefined) {
@@ -277,11 +275,7 @@ AnazhRealm._regtHalter = function (q, n) {
     const z = n === undefined ? ++AnazhRealm._regungN : n;
     for (let i = 0; i < h.length; i++) {
         const o = h[i].deref();
-        if (o === undefined) continue;
-        o._anazhHaltR = z;
-        // das Bündel hört mit, was seine Render-Objekte hören (`_buendelHoerer`; r184 merkt am Render-Objekt sein Bündel)
-        const b = o.bundle;
-        if (b != null && b.isBundleGroup === true) b._anazhHaltR = z;
+        if (o !== undefined) o._anazhHaltR = z;
     }
 };
 // Anmelden räumt die Gefallenen aus der Liste (sie wächst nur mit lebenden Haltern).
@@ -307,82 +301,6 @@ AnazhRealm._buendelSpieltAb = function (rend, bg, kamera) {
     if (rend.backend.beginBundle === undefined || bg.userData._creatureSkin === true) return false;
     const d = rend.backend.get(rend._bundles.get(bg, kamera, rend._currentRenderContext));
     return d.bundleGPU !== undefined && d.version === bg.version;
-};
-// DAS BÜNDEL HÖRT ZU (E-Bauart, 24.10.): r184 fragt im Replay JEDES aufgenommene Render-Objekt, ob es frischen muss
-// (`needsRefresh`) — ein ruhendes Bündel bezahlte so je Pass und Bild jedes seiner Render-Objekte (Kopf 8e6f2ce0, Radeon,
-// Genesis Third, Stand: der Replay 0,68 ms je Bild, das Tor `_diaetRuhig` darin 0,27). Jetzt hört das Bündel, was seine
-// Render-Objekte hören: jede Regung einer ihrer Quellen (`_regtHalter`) und jede Lage eines statischen Kinds (`_regungMelder`)
-// stempelt es. Ohne Regung seit seinem letzten vollen Gang geht der Replay nur die Render-Objekte ohne Melder (`immer`:
-// Bewegliche, Verweise je Objekt, Animation, Stoffe ohne Diät-Stand); die geteilten Gruppen schreibt je Programm EIN Vertreter,
-// den Stoff-Blick tut je Stoff EIN Vertreter — eine Regung daraus stempelt das Bündel, bevor es entscheidet. Rückgabe: die
-// Liste der Hörer oder null (der volle Gang; danach ordnet `_buendelGehoert`). Der Leib geht immer ganz (`_leibBuendelStand`).
-AnazhRealm._buendelHoerer = function (rend, bg, d) {
-    const H = d._anazhHoer;
-    const ros = d.renderObjects;
-    if (H === undefined || H.ros !== ros || H.n !== ros.length || H.eltern !== bg.parent || bg._anazhHaltR > H.r)
-        return null;
-    for (let i = 0; i < H.kette.length; i++) if (H.kette[i]._anazhRegung > H.r) return null;
-    const rid = rend._nodes.nodeFrame.renderId;
-    const V = H.vertreter;
-    if (V.length > 0 && rend._anazhVelR !== rid) {
-        rend._anazhVelR = rid;
-        rend._anazhVel = V[0]._anazhObs.needsVelocity(rend);
-    }
-    if (rend._anazhVel === true) return null;
-    for (let i = 0; i < V.length; i++) {
-        const obs = V[i]._anazhObs;
-        if (obs.renderId === rid) continue;
-        obs.renderId = rid;
-        AnazhRealm._diaetGeteiltSchreiben(rend, V[i], rid);
-    }
-    for (let i = 0; i < H.stoffe.length; i++) {
-        const m = H.stoffe[i];
-        if (m._anazhBlickR === rid) continue;
-        m._anazhBlickR = rid;
-        AnazhRealm._diaetStoffBlick(H.stoffDaten[i], m, rid);
-    }
-    return bg._anazhHaltR > H.r ? null : H.immer;
-};
-// DIE ORDNUNG DER HÖRER nach einem vollen Gang (`r0` die Zahl des Registers VOR ihm: eine Regung im Gang geht beim nächsten
-// Replay wieder ganz). Ruhen kann, wer einen Diät-Stand seines Beobachters trägt, statisch ist und keine Verweise je Objekt
-// und keine Animation liest — genau die Render-Objekte, deren Tor nur Stempel liest (`_diaetRuhig`).
-AnazhRealm._buendelGehoert = function (bg, d, r0) {
-    const ros = d.renderObjects;
-    if (!ros || bg.userData._creatureSkin === true) return void (d._anazhHoer = undefined);
-    const immer = [],
-        vertreter = [],
-        stoffe = [],
-        stoffDaten = [],
-        kette = [];
-    const gesehen = new Set();
-    for (const ro of ros) {
-        const obs = ro._anazhObs;
-        const stand = obs != null && obs === ro.getMonitor() && ro._anazhR !== undefined;
-        if (stand && !gesehen.has(obs)) {
-            gesehen.add(obs);
-            vertreter.push(ro);
-        }
-        const m = ro.material;
-        const senke = ro._anazhSenke;
-        const ruht =
-            stand &&
-            ro._anazhBeweglich !== true &&
-            ro._anazhVw !== true &&
-            obs.hasAnimation !== true &&
-            ro.attributes !== null &&
-            ro.attributes === ro._anazhAtt &&
-            ro.geometry === ro._anazhGeo &&
-            senke.instanceMatrix === ro._anazhIM &&
-            senke.instanceColor === ro._anazhIC;
-        if (!ruht) immer.push(ro);
-        else if (m && !gesehen.has(m)) {
-            gesehen.add(m);
-            stoffe.push(m);
-            stoffDaten.push(ro._anazhMd);
-        }
-    }
-    for (let o = bg.parent; o && o.isScene !== true; o = o.parent) kette.push(o);
-    d._anazhHoer = { ros, n: ros.length, r: r0, eltern: bg.parent, immer, vertreter, stoffe, stoffDaten, kette };
 };
 // DER STAND: jeder Ausgang der Diät verbraucht — das Render-Objekt merkt die Zahl des Registers und, was ihm das Tor liest:
 // Beobachter · r184-Daten (je Objekt und Stoff fest) · Index · Instanz-Puffer · ob es sich bewegen KANN: BEWEGLICH ist eine Kette
