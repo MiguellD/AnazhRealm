@@ -46,7 +46,7 @@ class AnazhRealm_wasser_hydro {
         return { t: lo, g: gLo };
     }
 
-    // DER BEZUG DER UFER-BÄNDER (der Boden-Farbe, Bank und Schilf; bit-gleich im Worker): MAX aus Ozean (`waterLevel`,
+    // DER BEZUG DER UFER-BÄNDER (der Boden-Farbe, Bank und Schilf; gelaende-core `wasserSpiegel`): MAX aus Ozean (`waterLevel`,
     // Default überall), See-Becken (`lake.level`) und Fluss-Bett-Profil. KEINE Wasser-Probe: „ist hier Wasser / wie tief"
     // fragt jeder Leser die EINE Wahrheit (`_nassAt` · `_koerperWasser`); bis Schau-2 (09.10.) urteilte über diesen Bezug
     // eine Zwillings-Probe des Lands, blind für das gezeichnete Wasser. `aus` (optional) bekommt die beiden Bezüge der
@@ -55,106 +55,17 @@ class AnazhRealm_wasser_hydro {
     // × `ufer` — stetig über die Krone, wo der Fluss-Spiegel endet (bis Welle L lasen die Bänder das Maximum der Spiegel:
     // an der Krone sprang der Bezug auf den Meeresspiegel, die Bank trug ein Rauten-Schachbrett).
     _waterLevelAt(x, z, aus) {
-        let level = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-        if (h && h.ready && h.water && h.water.waterKind) {
-            // See: 3×3 der 16-m-Zellen (1-Zell-Dilatation gegen den quantisierten Becken-Rand); der
-            // `_voxelSurfaceY`-Test klemmt danach exakt (ein Rand-Vertex über dem Spiegel testet trocken).
-            const dim = h.dim;
-            const cell = h.cell;
-            const ci = Math.floor((x - h.originX) / cell);
-            const cj = Math.floor((z - h.originZ) / cell);
-            const wK = h.water.waterKind;
-            const wY = h.water.waterY;
-            for (let dj = -1; dj <= 1; dj++) {
-                for (let di = -1; di <= 1; di++) {
-                    const ni = ci + di;
-                    const nj = cj + dj;
-                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
-                    const idx = ni + nj * dim;
-                    if (wK[idx] === 2 && wY[idx] > level) level = wY[idx];
-                }
-            }
-        }
-        const river = this._hydroRiverAt(x, z);
-        if (aus) {
-            aus.see = level;
-            aus.fluss = river ? river.surfaceY : null;
-            aus.ufer = river ? river.ufer : 0;
-        }
-        if (river && river.surfaceY > level) level = river.surfaceY;
-        return level;
+        return globalThis.__gelaendeCore.wasserSpiegel(this._gelaende(), x, z, aus);
     }
 
-    // Wasser-Spiegel für die Voxel-Cell-Klassifikation (ohne den Schatten der 3×3-Dilatation von
+    // Wasser-Spiegel für die Voxel-Cell-Klassifikation (gelaende-core `atlasSpiegel`; ohne den Schatten der 3×3-Dilatation von
     // `_waterLevelAt`): Atlas-Ozean/-See → voller Spiegel, beliebige Tiefe; Fluss → Bett-Profil; Atlas-
     // LAND neben einem Körper (3×3) → dessen Spiegel, wenn `terrainTopY < rim` (Mulde bis zum Terrain
     // gefüllt, keine Ufer-Wand), sonst trocken. `terrainTopY` reicht der Aufrufer (Density-Grid bzw.
     // `_voxelSurfaceY`); Rückgabe -Infinity = „hier nie Wasser".
     // `aus` (optional) bekommt den Spiegel der Wasser-KÖRPER ohne den Fluss: `aus.koerper` (Meer, See; −Infinity = keiner).
     _atlasWaterLevelAt(x, z, terrainTopY, aus) {
-        let level = -Infinity;
-        let inRegion = false;
-        const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-        if (h && h.ready && h.water && h.water.waterKind) {
-            const dim = h.dim;
-            const cell = h.cell;
-            const ci = Math.floor((x - h.originX) / cell);
-            const cj = Math.floor((z - h.originZ) / cell);
-            if (ci >= 0 && cj >= 0 && ci < dim && cj < dim) {
-                inRegion = true;
-                const wK = h.water.waterKind;
-                const wY = h.water.waterY;
-                const here = wK[ci + cj * dim];
-                if (here === 1 || here === 2) {
-                    // echter Wasser-Körper an dieser Spalte — voller Spiegel.
-                    level = wY[ci + cj * dim];
-                } else {
-                    // Atlas-Land neben einem Wasser-Körper: 16-m-Rand-Kandidat aus
-                    // dem 3×3 (der Body-Spiegel der priority-flood-Konnektivität).
-                    let rim = -Infinity;
-                    for (let dj = -1; dj <= 1; dj++) {
-                        for (let di = -1; di <= 1; di++) {
-                            const ni = ci + di;
-                            const nj = cj + dj;
-                            if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
-                            const nk = wK[ni + nj * dim];
-                            if ((nk === 1 || nk === 2) && wY[ni + nj * dim] > rim) rim = wY[ni + nj * dim];
-                        }
-                    }
-                    // Verbundenes Wasser: Spalte bis zum Spiegel füllen, wenn ihr Terrain darunter liegt — JEDE Tiefe
-                    // (ein Tiefen-Cap verwechselt „tief" mit „steiler Hang" → Wasser-AIR-Wände). Nur bei ENDLICHEM
-                    // terrainTopY: „unbekannt" (−Infinity, z. B. `_ensureFarWaterSheet`) heißt KEINE Rim-Erweiterung,
-                    // nie „immer nass" (sonst schweben Fern-Quads über trockenem Ufer). Mirror byte-identisch im
-                    // Worker; Linse: `gate:wasser-wahrheit` Fixture 2.
-                    if (Number.isFinite(terrainTopY) && rim > -Infinity && terrainTopY < rim) {
-                        level = rim;
-                    }
-                }
-            }
-        }
-        // V17.117 (H3) — der OZEAN ist GLOBAL: jenseits der region-bound Atlas-
-        // Domäne (±1024 m) ist der Meeresspiegel der Default-Wasserkörper, genau
-        // wie eine Atlas-Ozean-Zelle (waterKind===1 → waterLevel). Der Flood + die
-        // soliden Terrain-Cells trennen Land/Wasser von selbst (eine Land-Spalte
-        // hat unter waterLevel nur SOLID → kein AIR → kein Wasser; eine submerse
-        // Spalte flutet bis waterLevel). In-Region bleibt der getunte V13-Atlas
-        // UNANGETASTET (Determinismus, keine Küsten-Regression). CLAUDE.md-Gotcha:
-        // „Worldgen lebt nur in ±1024 m … den Ozean-Default global vom waterLevel
-        // ableiten (entkoppelt vom Atlas)". Seen/Flüsse bleiben region-lokal.
-        if (h && h.ready && !inRegion) {
-            const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-            level = waterLevel;
-        }
-        if (aus) aus.koerper = level;
-        const river = this._hydroRiverAt(x, z);
-        if (river && river.surfaceY > level) {
-            // Auch beim Fluss: `_hydroRiverAt` trifft die volle Carve-Breite inkl. Bank-Rampe, deren surfaceY
-            // oft ÜBER dem Boden liegt. Bei terrainTopY === −Infinity (Boden unbekannt) zählt daher nur der
-            // Kanal-KERN (centerness > 0); +Infinity (Existenz-Probe) und endliches Terrain: volle Breite.
-            if (terrainTopY !== -Infinity || river.centerness > 0) level = river.surfaceY;
-        }
-        return level;
+        return globalThis.__gelaendeCore.atlasSpiegel(this._gelaende(), x, z, terrainTopY, aus);
     }
 
     // ═══ KOPPLUNG (1) — DIE EINE STRÖMUNGS-QUELLE ═══
@@ -404,102 +315,17 @@ class AnazhRealm_wasser_hydro {
     // `depth` und centerness des nächsten Segments, dazu die Wasser-Oberfläche `surfaceY`: der Spiegel der Segmente
     // (`_hydroRiverSpiegel`, linear zwischen ihren Enden — stromab nie steigend, quer waagrecht), gemittelt mit einem
     // Gewicht, das zur Krone stetig auf 0 fällt — ein breiter Fluss überdeckt in der Biegung mehrere Segmente, das
-    // nächste allein gäbe dort eine Stufe. O(1) über `riverBuckets`. Worker bit-identisch (speist die Zellen).
+    // nächste allein gäbe dort eine Stufe. O(1) über `riverBuckets`; das Gesetz des Kerns (gelaende-core `flussAm`).
     _hydroRiverAt(x, z) {
-        const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-        if (!h || !h.ready || !h.riverBuckets) return null;
-        const bs = h.bucketSize;
-        const bd = h.bucketsDim;
-        const bi = Math.floor((x - h.originX) / bs);
-        const bj = Math.floor((z - h.originZ) / bs);
-        if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
-        const list = h.riverBuckets[bj * bd + bi];
-        if (!list) return null;
-        const HC = AnazhRealm.HYDROSPHERE;
-        let bestD = Infinity;
-        let dirX = 0;
-        let dirZ = 0;
-        let depth = 0;
-        let bestHalfW = 1;
-        let gSumme = 0;
-        let sSumme = 0;
-        let ufer = 0;
-        for (let s = 0; s < list.length; s++) {
-            const seg = list[s];
-            const ex = seg.bx - seg.ax;
-            const ez = seg.bz - seg.az;
-            const len2 = ex * ex + ez * ez || 1;
-            let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
-            if (t < 0) t = 0;
-            else if (t > 1) t = 1;
-            const px = seg.ax + ex * t;
-            const pz = seg.az + ez * t;
-            const dist = Math.hypot(x - px, z - pz);
-            const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
-            const D = seg.dA + (seg.dB - seg.dA) * t;
-            const krone = halfW + D / HC.bankNeigung;
-            if (dist > krone) continue;
-            const g = (1 - dist / krone) * (1 - dist / krone) + 1e-6;
-            gSumme += g;
-            sSumme += g * (seg.sA + (seg.sB - seg.sA) * t);
-            // Die Kronen-Blende: 1 bis zur Kanal-Kante, smoothstep auf 0 an der Krone (das Maximum der Segmente).
-            const u = dist <= halfW ? 0 : (dist - halfW) / (krone - halfW);
-            const uS = 1 - u * u * (3 - 2 * u);
-            if (uS > ufer) ufer = uS;
-            if (dist < bestD) {
-                bestD = dist;
-                const len = Math.sqrt(len2);
-                dirX = ex / len;
-                dirZ = ez / len;
-                depth = D;
-                bestHalfW = halfW;
-            }
-        }
-        if (bestD === Infinity) return null;
-        return {
-            flowX: dirX,
-            flowZ: dirZ,
-            depth,
-            surfaceY: sSumme / gSumme,
-            // Zentrums-Nähe [0..1] (1 Mittellinie, 0 Kanal-Kante): die Strömung trägt nur im Kanal.
-            centerness: Math.max(0, 1 - bestD / Math.max(bestHalfW, 1)),
-            // Die Kronen-Blende [0..1]: die Ufer-Bänder (Strand, Schlick, Pfad, Höhen-Feuchte) über diesem Spiegel
-            // laufen mit ihr zur Krone aus — dort endet der Spiegel, der Bezug springt auf den Meeresspiegel.
-            ufer,
-        };
+        return globalThis.__gelaendeCore.flussAm(this._gelaende(), x, z);
     }
 
     // DER SPIEGEL QUER (Gegenprüfung 07.10., Runde 3): der Spiegel des nächsten Fluss-Segments an (x, z), auch jenseits der
     // Krone — der Fluss-Spiegel liegt quer waagrecht (`_hydroRiverSpiegel`). Nur das Wasser-Sheet liest ihn, für Rand-Vertices
     // jenseits der Krone (dort taucht das Sheet unter den Boden; das Mittel oder ein Extrem der Nachbar-Dächer setzte das Ende
-    // eines steilen Laufs zu tief oder zu hoch). −Infinity ohne Segment im Bucket. Worker bit-identisch (`hydroSpiegelQuer`).
+    // eines steilen Laufs zu tief oder zu hoch). −Infinity ohne Segment im Bucket (gelaende-core `spiegelQuer`).
     _hydroSpiegelQuer(x, z) {
-        const h = this._hydroFor(x, z);
-        if (!h || !h.ready || !h.riverBuckets) return -Infinity;
-        const bs = h.bucketSize;
-        const bd = h.bucketsDim;
-        const bi = Math.floor((x - h.originX) / bs);
-        const bj = Math.floor((z - h.originZ) / bs);
-        if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return -Infinity;
-        const list = h.riverBuckets[bj * bd + bi];
-        if (!list) return -Infinity;
-        let bestD = Infinity;
-        let spiegel = -Infinity;
-        for (let s = 0; s < list.length; s++) {
-            const seg = list[s];
-            const ex = seg.bx - seg.ax;
-            const ez = seg.bz - seg.az;
-            const len2 = ex * ex + ez * ez || 1;
-            let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
-            if (t < 0) t = 0;
-            else if (t > 1) t = 1;
-            const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
-            if (dist < bestD) {
-                bestD = dist;
-                spiegel = seg.sA + (seg.sB - seg.sA) * t;
-            }
-        }
-        return spiegel;
+        return globalThis.__gelaendeCore.spiegelQuer(this._gelaende(), x, z);
     }
 
     // === Die Hydrosphäre wird sichtbar ===

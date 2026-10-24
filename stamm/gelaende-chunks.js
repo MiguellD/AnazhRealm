@@ -2350,7 +2350,7 @@ class AnazhRealm_gelaende_chunks {
     // > 0 solide, ≤ 0 Luft/Wasser. Liest die Edits → ein gecarvter Tunnel ist SOFORT
     // begehbar (kein BVH-Rebuild, der heute teure Edit-Pfad).
     _fieldDensityAt(x, y, z, ctx) {
-        const base = ctx ? this._terrainBaseDensityAtCol(x, y, z, ctx) : this._terrainBaseDensityAt(x, y, z);
+        const base = ctx ? globalThis.__gelaendeCore.dichteBasis(x, y, z, ctx) : this._terrainBaseDensityAt(x, y, z);
         const d = this._mitEdits(base, x, y, z);
         // der Keller ist hohl (S4, `erdbauHohl`) — dieselbe Dichte wie `_terrainDensityAt`; ob die Spalte über einem Keller
         // steht, trägt ihr Kontext (`keller`, EINMAL je Spalte gefragt): die Probe des Heiß-Pfads `_voxelSurfaceY` zahlt einen

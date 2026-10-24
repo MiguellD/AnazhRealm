@@ -1198,30 +1198,21 @@ async function checkBandV18132FerneSeen(ctx) {
         // Der Worker-Snapshot traegt die Kachel.
         const snap = r._voxelWorkerSnapshotState();
         out.snapCarries = !!(snap.hydroTiles && snap.hydroTiles["-1,0"]);
-        // KONSUM: jeder Hydro-Leser löst seine Region über _hydroFor auf — Spion am Ruf; wer _hydroRiverAt ruft,
-        // läuft mit dessen Schatten, damit nur sein EIGENER Ruf zählt.
-        const K = (m, a, schatten) => {
-            if (schatten) r._hydroRiverAt = () => null;
-            try {
-                return window.__consumes(r, m, r, "_hydroFor", a);
-            } finally {
-                if (schatten) delete r._hydroRiverAt;
-            }
-        };
+        // DIE LESER LESEN DIE KACHEL (die Region des Kerns, gelaende-core `hydroRegion`): am Fluss der WEST-Kachel tragen Kanal,
+        // Fluss, Bezug, Spiegel und der Chunk sein Wasser — die Heimat allein kennt dort keinen Fluss.
         const cfg = r._voxelChunkConfig(0);
-        out.readersResolved = [
-            ["_hydrosphereCarveAt", [-2048, 0]],
-            ["_hydrosphereLakeAt", [-2048, 0]],
-            ["_waterLevelAt", [-2048, 0], true],
-            ["_atlasWaterLevelAt", [-2048, 0, -Infinity], true],
-            ["_hydroRiverAt", [-2048, 0]],
-            ["_voxelChunkHasAnyWater", [Math.floor(-2048 / cfg.span), 0]],
-        ].every(([m, a, schatten]) => K(m, a, schatten));
-        // DER WORKER SPIEGELT DIE KACHEL (Lehre 7): am Fluss der WEST-Kachel ist das Dichte-Gitter von Main und Worker bit-gleich.
         const fl = ((tile && tile.rivers) || []).find((f) => f.points && f.points.length > 4);
         const p = fl ? fl.points[fl.points.length >> 1] : { x: -2048, z: 0 };
         const cx = Math.floor(p.x / cfg.span);
         const cz = Math.floor(p.z / cfg.span);
+        const rv = r._hydroRiverAt(p.x, p.z);
+        out.readersResolved =
+            !!rv &&
+            !!r._hydrosphereCarveAt(p.x, p.z) &&
+            r._waterLevelAt(p.x, p.z) >= rv.surfaceY &&
+            r._atlasWaterLevelAt(p.x, p.z, -Infinity) >= rv.surfaceY &&
+            r._voxelChunkHasAnyWater(cx, cz);
+        // DER WORKER SPIEGELT DIE KACHEL (Lehre 7): am Fluss der WEST-Kachel ist das Dichte-Gitter von Main und Worker bit-gleich.
         const g = [cx * cfg.span - cfg.step, (r.state.terrainBaseHeight || 0) - cfg.floorDrop, cz * cfg.span - cfg.step];
         g.push(cfg.dim + 3, cfg.dimY, cfg.dim + 3, cfg.step);
         const main = r._voxelEditedDensityGrid(`ferne-seen|${cx},${cz}`, ...g);
@@ -1237,7 +1228,7 @@ async function checkBandV18132FerneSeen(ctx) {
         return;
     }
     if (!res.unmeasurable) {
-        check("V18.132 Ferne Seen: alle 6 Hydro-Leser rufen die Region-Aufloesung _hydroFor (KONSUM am Ruf)", res.readersResolved);
+        check("V18.132 Ferne Seen: die Hydro-Leser lesen die Kachel (Kanal, Fluss, Bezug, Spiegel, Chunk am Kachel-Fluss)", res.readersResolved);
         check(
             "V18.132 Ferne Seen: der Worker spiegelt die Kachel — das Dichte-Gitter am Kachel-Fluss ist in Main und Worker bit-gleich",
             res.workerMirror === true,

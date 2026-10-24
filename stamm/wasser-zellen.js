@@ -132,16 +132,9 @@ class AnazhRealm_wasser_zellen {
     // Spiegel quer (`_hydroSpiegelQuer`). Den Raum, den der Graben am Fluss öffnet, flutet so das Gesetz selbst bis zum
     // Spiegel des Flusses — nur, wo er durch freie Zellen mit einer Quelle verbunden ist (die Flut unten), und das Sheet
     // zeichnet dort denselben Spiegel (`_computeWaterSheetData`): EINE Fläche mit dem Fluss. −Infinity ohne Schnitt (die
-    // Welt ohne Graben bleibt Bit für Bit). Worker bit-identisch (`schnittSpiegel`).
+    // Welt ohne Graben bleibt Bit für Bit). Das Gesetz des Kerns (gelaende-core `schnittSpiegel`).
     _schnittSpiegel(x, z, step) {
-        const span = this._voxelChunkConfig(0).span;
-        const ed = this._voxelEditsNah(Math.floor(x / span), Math.floor(z / span));
-        for (let e = 0; e < ed.length; e++) {
-            const s = ed[e];
-            if (s && s.mode === "carve" && Math.hypot(x - s.x, z - s.z) <= s.r + 0.71 * step)
-                return this._hydroSpiegelQuer(x, z);
-        }
-        return -Infinity;
+        return globalThis.__gelaendeCore.schnittSpiegel(this._gelaende(), this._voxelEditKarte(), x, z, step);
     }
 
     // `preDensity` = das Grid des Boden-Meshers ((dim+4)·(dimY+1)·(dim+4), Origin `ox-step, oy,
