@@ -483,26 +483,27 @@ AnazhRealm._wertBlick = function (n, rid, ruf) {
 };
 // DIE GETEILTE GRUPPE LÄDT DIE GEMELDETEN: derselbe Vendor-Vergleich (updateByType, ein Upload je geändertem Puffer, die
 // Bereiche danach leer — r184 `_update` + `UniformsGroup.update`), nur für die Uniforms, deren Knoten sich seit dem letzten Laden
-// der Gruppe meldete (beim ersten Mal jede). Eine Gruppe außerhalb des render-Takts, mit Texturen, Samplern oder Puffern ohne
-// Uniform-Liste lädt der Vendor.
+// der Gruppe meldete (beim ersten Mal jede), einen Feld-Puffer, wenn sich ein Byte seit seinem letzten Laden änderte. Eine Gruppe
+// außerhalb des render-Takts, mit Texturen, Samplern oder Speicher-Puffern lädt der Vendor.
 AnazhRealm._diaetGruppeLaden = function (rend, g, alle, rid, ruf) {
     if (g._anazhWertArt === undefined)
         g._anazhWertArt = g.bindings.every(
             (b) =>
-                b.isNodeUniformsGroup === true &&
+                (b.isNodeUniformsGroup === true || b.isNodeUniformBuffer === true) &&
                 b.groupNode.updateType === "render" &&
-                b.uniforms.every(
-                    (u) =>
-                        u.nodeUniform &&
-                        u.nodeUniform.node &&
-                        (u.isNumberUniform ||
-                            u.isVector2Uniform ||
-                            u.isVector3Uniform ||
-                            u.isVector4Uniform ||
-                            u.isColorUniform ||
-                            u.isMatrix3Uniform ||
-                            u.isMatrix4Uniform) === true
-                )
+                (b.isNodeUniformBuffer === true ||
+                    b.uniforms.every(
+                        (u) =>
+                            u.nodeUniform &&
+                            u.nodeUniform.node &&
+                            (u.isNumberUniform ||
+                                u.isVector2Uniform ||
+                                u.isVector3Uniform ||
+                                u.isVector4Uniform ||
+                                u.isColorUniform ||
+                                u.isMatrix3Uniform ||
+                                u.isMatrix4Uniform) === true
+                    ))
         );
     if (g._anazhWertArt !== true) {
         rend._bindings._update(g, alle);
@@ -511,6 +512,22 @@ AnazhRealm._diaetGruppeLaden = function (rend, g, alle, rid, ruf) {
     const r = g._anazhWertR === undefined ? -1 : g._anazhWertR;
     const ep = AnazhRealm._wertEpoche;
     for (const b of g.bindings) {
+        if (b.isNodeUniformBuffer === true) {
+            // r184 lädt einen Feld-Puffer (uniformArray, ein Verweis auf ein Feld) in jedem Render ganz: `Buffer.update` ist wahr
+            const q = b.buffer;
+            let s = b._anazhSicht;
+            if (!s || s.buffer !== q.buffer || s.byteOffset !== q.byteOffset || s.length !== q.byteLength)
+                s = b._anazhSicht = new Uint8Array(q.buffer, q.byteOffset, q.byteLength);
+            const k = b._anazhKopie;
+            let gleich = !!k && k.length === s.length;
+            for (let i = 0; gleich && i < s.length; i++) gleich = k[i] === s[i];
+            if (!gleich) {
+                rend.backend.updateBinding(b);
+                b._anazhKopie = s.slice();
+            }
+            if (b.updateRanges.length > 0) b.clearUpdateRanges();
+            continue;
+        }
         let neu = false;
         for (const u of b.uniforms) {
             const n = u.nodeUniform.node;

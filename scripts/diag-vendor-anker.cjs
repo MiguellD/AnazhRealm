@@ -82,6 +82,8 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "t.update()&&r.updateBinding(t)", organ: "_diaetGruppeLaden" },
     { file: "vendor/three.webgpu.min.js", sub: "getValue(){return this.nodeUniform.value}", organ: "_wertBlick" },
     { file: "vendor/three.webgpu.min.js", sub: "this.node=r}get value(){return this.node.value}", organ: "_wertBlick" },
+    { file: "vendor/three.webgpu.min.js", sub: "get buffer(){return this._buffer}update(){return!0}", organ: "_diaetGruppeLaden (Feld-Puffer)" },
+    { file: "vendor/three.webgpu.min.js", sub: "get buffer(){return this.nodeUniform.value}", organ: "_diaetGruppeLaden (Feld-Puffer)" },
     { file: "vendor/three.webgpu.min.js", sub: "this.updateNodes=n,this.updateBeforeNodes=a,this.updateAfterNodes=o,this.observer=u", organ: "AnazhRealm._diaetRefresh (NodeBuilderState: updateNodes · updateAfterNodes · observer) · Diät (6) Vorher-Textur-Wächter (die Vorher-Knoten am NodeBuilderState)" },
     { file: "vendor/three.webgpu.min.js", sub: "equals(e,t,r){const{object:s,material:i,geometry:n}=e,a=this.getRenderObjectData(e);", organ: "AnazhRealm._diaetRefresh (obs.equals)" },
     // (7) DER WÄCHTER IST DIE GEOMETRIE-PRÜFUNG: equals() prüft die Geometrie je Geometrie und Render (Stempel `_renderId`,
