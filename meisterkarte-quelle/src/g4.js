@@ -119,11 +119,12 @@ module.exports = {
         },
         {
           name: "Wärme: Platte und Gesetz-SHA tragen jede Lieferung",
-          punkte: 1,
+          punkte: 0,
           staffel: "1 = build-asset kommt beim Zweit-Boot zu ≥ 95 % von der Platte · 2 = jede Lieferung (Blatt-Atlas, Dorf-Export, Karten) 100 %, ein geänderter Kern-SHA baut nur seine Art neu (0 fremde Neubauten), beide Geräte",
           messung: "diag-boot-stage --echt, Zweit-Boot, ≥ 4 Läufe je Gerät, mit dem Bau-Instrument: Bau-Ereignisse im Worker UND im Haupt-Faden, nie die Treffer-Zahl der Platte. Die Sekunden zählt Ankunft K3.",
-          beleg: "107–109 von 108–110 build-asset-Lieferungen kommen von der Platte (GTX, `bericht/1810-b5-befund.md`, integ f45ee994); der gemessene Pfad (`_foundrySchale`, `stamm/studio-bruecke.js:480-487`) ist seither unberührt — K22 f645a8bf änderte zwei andere Zeilen der Datei: frisch nach dem Abdruck des Pfads. Blatt-Atlas, Dorf-Export und Karten laufen jedes Boot live.",
-          schlupfloch: "Treffer zählen, obwohl der Haupt-Faden danach neu rechnet: gezählt werden Bau-Ereignisse in Worker UND Haupt-Faden."
+          beleg: "FIEL 24.10. AUF 0 (R10, Prüfung der Buchung 61 → 80): keine Station misst am Kopf — beide Staffeln stehen in `punkte/stationen/g4.js` fehlt (diag-boot-stage --kalt --echt --profil zählt keine Lieferung und kein Bau-Ereignis); der Punkt stützte sich nur auf ein Instrument-Patch der GTX vom 18.10. (bericht/1810-b5/befund/lieferung-patch.cjs über die OMEN-Serie serie2.sh), das Platten-Treffer zählte, wo die Messung Bau-Ereignisse in Worker UND Haupt-Faden verlangt. Davor: 107–109 von 108–110 build-asset-Lieferungen kommen von der Platte (GTX, `bericht/1810-b5-befund.md`, integ f45ee994); der gemessene Pfad (`_foundrySchale`, `stamm/studio-bruecke.js:480-487`) ist seither unberührt — K22 f645a8bf änderte zwei andere Zeilen der Datei: frisch nach dem Abdruck des Pfads. Blatt-Atlas, Dorf-Export und Karten laufen jedes Boot live.",
+          schlupfloch: "Treffer zählen, obwohl der Haupt-Faden danach neu rechnet: gezählt werden Bau-Ereignisse in Worker UND Haupt-Faden.",
+          aenderung: "24.10. R10: der Hand-Punkt ohne Station am Kopf fällt 1 → 0."
         },
         {
           name: "EIN Bauer auf der Engine der Welt",

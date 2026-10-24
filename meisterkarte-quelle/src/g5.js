@@ -60,7 +60,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = ein Fluss (Bauplan oder Welt) an einem Gerät: A teilt, B (anderes Gerät, frisches Profil, IDB leer) öffnet; das Werk steht an B's Pose mit gleichem Bau-Hash und studioOv, Signatur gültig, ≤ 10 s · 2 = beide Flüsse (Welt per Einladungs-Code, Kontrolle ≤ 5 s) an beiden Geräten, Bauplan ≤ 4 KB",
           messung: "Spielgang-Station teilen.",
-          beleg: "Ungemessen; die Mechanik steht: signBlueprint (`stamm/netz-identitaet.js:546`, gerufen `werkstatt-bauen.js:1799`), makeInvitationCode (`netz-p2p.js:60`, gerufen `werkstatt-sozial.js:238`), world-bundle-Pull (`netz-p2p.js:911`); v1-Schritt 5 „als Bauplan teilen“ hat im Drehbuch (`docs/abnahme-drehbuch.md`, 18 Schritte) keinen Schritt.",
+          beleg: "Ungemessen; die Probe (T) von gate:praegung-welt zählt nicht (24.10.: die Buchung 61 → 80 zählte sie als 1, sie fällt auf 0): B ist ein zweiter BrowserContext im selben Chrome (`scripts/diag-praegung-welt.cjs:297`), „an B's Pose“ eine NDC-Projektion am Null-Renderer (`:421`, `:505`), kein anderes Gerät und kein Bild. Die Mechanik steht: signBlueprint (`stamm/netz-identitaet.js:546`, gerufen `werkstatt-bauen.js:1799`), makeInvitationCode (`netz-p2p.js:60`, gerufen `werkstatt-sozial.js:238`), world-bundle-Pull (`netz-p2p.js:911`); v1-Schritt 5 „als Bauplan teilen“ hat im Drehbuch (`docs/abnahme-drehbuch.md`, 18 Schritte) keinen Schritt.",
           schlupfloch: "JSON exportieren und im selben Profil wieder importieren, oder ok zählen: frisches Profil auf dem anderen Gerät, Bau-Hash und Bild an B's Pose.",
           aenderung: "EIN Heim des Bauplans zwischen Geräten (vorher auch Bauen K5, Speicher K5; V17)."
         }
