@@ -23,7 +23,7 @@
 //     Ansichten wie die Bild-Deckung, je Pixel-Mitte jede Karte, die sie überdeckt (Quad-Lage), und jede, deren Atlas-
 //     Alpha dort die Schwelle hält (Alpha-Lage); gemittelt über die Pixel mit mindestens einer Lage.
 //       bildLagen(krone, atlas, px) → { quad, alpha, je: [{ quad, alpha }] }
-//     bildAus(meshes) → die ganze Stufe als Bild (Krone UND Rinde: die Rinde deckt voll) — die L0-Deckungs-Tafel (D0).
+//     bildAus(meshes) → die ganze Stufe als Bild (Krone UND Rinde: die Rinde deckt voll) — die L0-Deckungs-Tafel.
 "use strict";
 
 const AZIMUTE = 8;
@@ -122,7 +122,7 @@ function bildDeckung(meshes, atlas, px) {
             if (bild) je.push(bild.reduce((n, x) => n + x, 0) * px * px);
             bild = W ? new Uint8Array(W * H) : null;
             if (!bild) je.push(0);
-            // DER BODEN (Gegenprüfung S3): das Bild ist, was über dem Boden der Vorlage steht (y ≥ 0) — die Wurzeln tauchen
+            // DER BODEN (S3): das Bild ist, was über dem Boden der Vorlage steht (y ≥ 0) — die Wurzeln tauchen
             // ab, kein Spieler sieht sie im Boden, und eine Ansicht von unten sähe sie sonst von unter der Erde.
             return (o, w0, w1, w2, m, a, b, c) => {
                 const p = m.pos;
@@ -135,7 +135,7 @@ function bildDeckung(meshes, atlas, px) {
     if (bild) je.push(bild.reduce((n, x) => n + x, 0) * px * px);
     return { je, mittel: je.reduce((s, x) => s + x, 0) / je.length, hebung: jeHebung(je) };
 }
-// Das Bild JE BLICK-HEBUNG (Gegenprüfung S3 R1): das Mittel über die acht Azimute je Hebung (0°, 30°, 60° von
+// Das Bild JE BLICK-HEBUNG (S3 R1): das Mittel über die acht Azimute je Hebung (0°, 30°, 60° von
 // unten) — das Mittel über alle 24 Ansichten wog die Seitenansicht mit einem Drittel: die flachen Wedel der Koniferen
 // deckten von unten 12–35 % mehr, als die Seitenansicht verlor (Tanne-L1 0° 0,70 des Bilds von V18.536, Mittel 0,93).
 function jeHebung(je) {
@@ -184,7 +184,7 @@ function bildLagen(meshes, atlas, px) {
     return { quad: nQ ? sQ / nQ : 0, alpha: nA ? sA / nA : 0, je };
 }
 
-// Die ganze Stufe als Bild (D0): die Krone mit ihrer Atlas-Alpha, die Rinde (und jedes andere Teil) deckt voll.
+// Die ganze Stufe als Bild: die Krone mit ihrer Atlas-Alpha, die Rinde (und jedes andere Teil) deckt voll.
 function bildAus(meshes) {
     const dek = (b64, Typ) => {
         const b = Buffer.from(b64, "base64");

@@ -46,7 +46,7 @@ const server = statikServer();
                 for (const weiter = window.__deckel("die Vorschau der Werkstatt", 1000); weiter(); ) {
                     try {
                         r._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                     grp = r._workshopFoundryPreviewGroup(treeBp); // wirft nicht
                     if (grp && grp.children && grp.children.length) break;
                     await new Promise((res2) => setTimeout(res2, 40));

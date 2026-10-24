@@ -556,7 +556,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             await window.__weltStehtNach(() => {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
             }); // die Welt steht (welt-boot)
         });
 

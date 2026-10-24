@@ -126,7 +126,7 @@ const welt = async (seite) => {
             wm.gameMode = "schöpfer";
             try {
                 r.wieldBlueprint("klinge_langschwert");
-            } catch (_e) {
+            } catch {
                 /* headless-Equip-Nebenwege dürfen scheitern — der Stempel sitzt VOR equipHeld */
             }
             res.g.stamped = bp.studioOv?.__tradition === "Nihon";

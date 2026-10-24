@@ -228,7 +228,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     console.error("❌ Linse abgestürzt:", e && e.stack ? e.stack : e);
     try {
         server.close();
-    } catch (_e) {
+    } catch {
         /* bereits zu */
     }
     process.exit(1);

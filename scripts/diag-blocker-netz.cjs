@@ -768,7 +768,7 @@ async function probe() {
         };
         try {
             r[fn](...args);
-        } catch (_e) {
+        } catch {
             /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
         }
         delete r[nach];

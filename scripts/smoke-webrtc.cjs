@@ -721,7 +721,7 @@ const W17JS_WORLD_HTML = `<!doctype html>
                 if (!po || !po.lastSrvState) return false;
                 try {
                     return JSON.parse(po.lastSrvState.data).total === 12;
-                } catch (_e) {
+                } catch {
                     return false;
                 }
             },

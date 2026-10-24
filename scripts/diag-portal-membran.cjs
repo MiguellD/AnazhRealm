@@ -33,7 +33,7 @@
 //          was der Film dem Ziel hinzufügt, nie ein blasses Ziel): sie zeigt das Ziel durch den Film
 //       HS Selbsttest: der Milch-Leser (die Öffnung als helles Weiß, das Bild des Stands vor D8) MUSS in H rot werden — in
 //          DERSELBEN Seite, gegen dieselbe Maske
-//       HM (K64-n3) die Maske zeichnet ohne kaltes Programm (je Bild gezählt: neue Vertex-/Fragment-Programme), HMS Selbsttest:
+//       HM die Maske zeichnet ohne kaltes Programm (je Bild gezählt: neue Vertex-/Fragment-Programme), HMS Selbsttest:
 //          derselbe Zähler sieht das kalte Programm des Milch-Lesers
 //
 //   node scripts/diag-portal-membran.cjs [--ohne-blick]
@@ -166,11 +166,11 @@ async function blickProbe(opts) {
 // H (K64-n1, die Hellen Tafeln; D8 das Tor als Fenster): aus der Ring-Mitte (der Spieler am Spawn, die Tore wach) liest der
 // AUSGABE-Pfad die Pixel jeder Membran. EINE Seite, EIN Blick, die Uhr steht — drei Bilder:
 //   A    die Welt, wie sie die Membran zeigt: der Ausgabe-Pfad der Welt (TRAA, Tonung, Belichtung aus dem Licht), gezeichnet
-//        werden nur die gemessenen Bürger — Membran und Himmel (K64-n3). Die Membran ist deckend, wirft und empfängt keinen
+//        werden nur die gemessenen Bürger — Membran und Himmel. Die Membran ist deckend, wirft und empfängt keinen
 //        Schatten (`_membranBauFor`): ihr Pixel hängt an keinem anderen Bürger. Die ganze Welt im Bild baute auf swiftshader jedes
 //        Programm im Blick, das die Bühne neu lichtet, und jedes, das während H ankam (CI Lauf 38674187005: A 10 kalt 113 s,
 //        M 6 kalt 227 s). Die Lichter bleiben (kein Programm wechselt seinen Licht-Schlüssel).
-//   M    die Maske OHNE Programm (K64-n3): dieselbe Welt mit verborgenen Membranen — Membran-Pixel sind die, in denen die Welt
+//   M    die Maske OHNE Programm: dieselbe Welt mit verborgenen Membranen — Membran-Pixel sind die, in denen die Welt
 //        mit Membran sichtbar anders steht (ein Kanal ≥ STUFE). HM zählt die kalten Programme je Bild und hält die Maske bei 0.
 // H läuft VOR den Blicken B: deren Frames stoßen die Programme der ganzen Welt an, die der GPU-Prozess sonst während H übersetzt.
 //   R    der Milch-Leser (HS, EIN Programm): die Öffnung als helles Weiß — das Bild des Stands vor D8, in derselben Maske.
@@ -200,7 +200,7 @@ async function hellProbe() {
             rec.mesh.material.colorNode = fm(rec);
             rec.mesh.material.needsUpdate = true;
         });
-    // NUR DIE GEMESSENEN BÜRGER zeichnen (K64-n3): jedes Objekt der Szene außer Membran und Himmel fällt aus dem Zeichnen
+    // NUR DIE GEMESSENEN BÜRGER zeichnen: jedes Objekt der Szene außer Membran und Himmel fällt aus dem Zeichnen
     // (die Render-Objekt-Funktion des Renderers; die Ausgabe-Kette und der Hintergrund hängen nicht in der Szene und zeichnen)
     const nur = new Set();
     for (const rec of recs) nur.add(rec.mesh);
@@ -351,7 +351,7 @@ async function blickStufe(check) {
             waitUntil: "domcontentloaded",
             timeout: 60000,
         });
-        // H und sein Selbsttest HS in DERSELBEN Seite (eine Maske), VOR den Blicken B (K64-n3); die Seite des
+        // H und sein Selbsttest HS in DERSELBEN Seite (eine Maske), VOR den Blicken B; die Seite des
         // alten Culling-Stands (BS) zählt nur Befehle
         let hell = null;
         if (!alt) {
@@ -708,7 +708,7 @@ async function blickStufe(check) {
     check("Boot + warmes Buch (geisttor im LIVE-Buch)", out.boot && out.warm);
     check("welt_portal gespawnt + Tor-Gesetz aufgelöst", out.spawned && out.torGesetz, `gestalt=${out.gestalt}`);
     if (out.k) {
-        // je Seite (Leben-Schau 2, `TOR_HUELLE` des Gesetzbuchs): Pfosten bis zur Kämpferlinie · Rahmen darüber · Schulter · die
+        // je Seite (`TOR_HUELLE` des Gesetzbuchs): Pfosten bis zur Kämpferlinie · Rahmen darüber · Schulter · die
         // halbe Krone — eine Ruine trägt hier einen Stein, dort keinen
         check(
             "K: Gesetz-Hülle trägt 8 Boxen (je Seite Pfosten · Rahmen · Schulter · halbe Krone)",

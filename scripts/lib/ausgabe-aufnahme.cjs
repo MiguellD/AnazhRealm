@@ -149,7 +149,7 @@ function wetterBuch(seit) {
 // Die Bühne setzt das Wetter IHRER Messung: der Halter selbst ist der eine Schreiber, den der Halt durchlässt — die Uhr
 // taut für DIESEN Zug (im Buch Quelle „buehne") und steht danach wieder, wie sie stand (oder eingefroren). Der Cross-Fade
 // fällt. Die Bühne spricht wie der Spieler („setze wetter sonnig", wie jede Spur der Leben-Schau): das Gesetz der Schreiber
-// (Leben-Schau 2) lässt die Welt das Wetter nie direkt schreiben — sie wünscht nur das nächste Wort des Zugs.
+// lässt die Welt das Wetter nie direkt schreiben — sie wünscht nur das nächste Wort des Zugs.
 function wetterSetzen(wort) {
     const r = window.anazhRealm;
     const st = r.state;
@@ -505,7 +505,7 @@ function tiereHalten() {
 // Pause für den GPU-Prozess, bis ein Frame nichts mehr baut oder verschiebt, kein Draw auf seine Pipeline wartet und keine
 // Pipeline offen ist. Steht die Erst-Zeichnung `opt.erstFristMs` (120 s) ohne Fortschritt oder fünfmal so lange insgesamt,
 // bricht `wer` LAUT ab und nennt jede offene Pipeline beim Namen. Ohne Erst-Zeichnung (Null-Renderer) null.
-// `opt.nurGezeichnete` (K64-n3): ein Bild, das nur einen Teil der Szene zeichnet (eine Render-Objekt-Funktion lässt Bürger
+// `opt.nurGezeichnete`: ein Bild, das nur einen Teil der Szene zeichnet (eine Render-Objekt-Funktion lässt Bürger
 // aus), wartet nur auf das, was es zeichnet — der Frame baut nichts, verschiebt nichts, kein Draw wartet; offene Pipelines
 // ausgelassener Bürger (die Welt stieß sie vor dem Bild an) zählen nicht.
 function erstRuhe(frame, opt, wer) {

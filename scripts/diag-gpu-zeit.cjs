@@ -62,7 +62,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 t += 16.7;
                 try {
                     r._gameLoopTick(t);
-                } catch (_e) {
+                } catch {
                     /* die Loop-Fehler-Grenze fängt selbst; die Linse zählt Page-Errors */
                 }
             }

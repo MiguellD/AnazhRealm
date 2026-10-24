@@ -448,7 +448,8 @@ jobs:
               if: matrix.gruppe == 12
               # speicher.K1: der Browser stirbt hart (im Schreiber oder zufällig), der nächste Boot lädt EIN Schreiben, <= 10 s alt,
               # keine halbe Welt, jedes Loch steht (die Linie über 256, K23); der Selbsttest schreibt den Platz in zwei Zügen und
-              # sieht ROT. Dazu (K) (U) der Lade-Pfad, (S) (C) der save-server. Basis b9537781 ROT: 10 von 21 Boots halb.
+              # sieht ROT. Dazu der Korpus (speicher.K5: je Versions-Stufe ein Stand ihrer Version lädt am Kopf, daraus (U) (W) (K)),
+              # (S) (C) der save-server. Basis b9537781 ROT: 10 von 21 Boots halb.
               run: npm run gate:persistence
 
             - name: Persistenz-Härtung Teil 2 (Tab-Tod 8-19 ohne save-server)
@@ -1087,14 +1088,15 @@ jobs:
               # (scripts/lib/kreatur-proben.cjs; dieselben Proben laufen mit --werkbank im sichtbaren Fenster der
               # echten GPU). Die Proben: geister · sattel · reload (Q12) · huepfer (Q1, das Sprung-Gesetz)
               # · wachsen · zufall (Q2, kein Math.random im Kreatur-Leben über window.__codeOf) · gier (Q3, auch Gas ↔
-              # Bremse) · jagd (Q3/Q11, Beute-Flucht) · herde (Q11, gleichartig, nie am Blick) · nacht (Ruhe hält den Leib) · peer (Sicht-Kopie) · nexus (Welle LF: kein Würfel
+              # Bremse) · jagd (Q3/Q11, Beute-Flucht) · herde (Q11, gleichartig, nie am Blick) · peer (Sicht-Kopie) · nexus (Welle LF: kein Würfel
               # schreibt ein Körper-Gesetz, Ops nur im Gesetz-Band, Nexus-Geburt fern) · temperament (Welle LF: Gattung × Größe,
               # Fluchttier flieht, der Kampf liest dasselbe) · abstand (Welle LF: der persönliche Raum je Leib, nie
               # Durchdringung, die Neugier stellt sich an) · jagdkreis (die Riss-Quote je Jagd im Band von MacNulty: ein Wolf,
-              # vier, das Kitz; der Kadaver, Fuchs und Bär; der Sprinter wird eingeholt) · rudel (das Rudel umstellt) · querhang (Welle LF: die Beine stehen im Lot, der stehende Fuß
+              # vier, das Kitz; der Kadaver, das Mahl ≥ 60 s, Fuchs und Bär; der Sprinter wird eingeholt) · rudel (das Rudel umstellt) · querhang (Welle LF: die Beine stehen im Lot, der stehende Fuß
               # gleitet nicht — Schlupf ≤ 0,05, Ratsche K07; ein Fuß an der Grenze seiner Kette hebt ab) · ferngang (Welle LF: ferne Tiere gehen — die gelenkige Grobstufe trägt die Knochen der feinen,
               # wer läuft, wird ausgewertet) · furcht (Ökologie K3: das Gedächtnis, der Ort, die Aura) · lebensraum (Tiere K4: die
-              # Art wählt der Ort, Gegenprobe in anderer Saat; die Geburt fern, außer Blick, in Gruppen) · durst · bestand (Ökologie K2:
+              # Art wählt der Ort, Gegenprobe in anderer Saat; die Geburt fern, außer Blick, in Gruppen; der Bär am Fluss) · tagesbudget
+              # (Tiere K4: das Ethogramm je Gattung über 24 Spielstunden, Trinken aus Durst, die Ruhe steht) · bestand (Ökologie K2:
               # Geburt und Tod aus der Nahrung) · kaskade (K1: acht Saaten im Band) · folgen (K5: zehn Minuten über Wand, gedrehtes Haus
               # und Sockel — kein Strahl, der EINE Leib, die Auflage, nie die Parkour-Wand des Spielers). --selftest zuerst: je Probe spielt
               # jeder alte Defekt als Täter ein, die Linse muss ROT lesen und ihn beim Namen nennen.

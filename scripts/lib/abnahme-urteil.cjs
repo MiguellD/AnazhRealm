@@ -692,7 +692,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         if (ohne && weissIn(ohne, p)) wtZiel++;
         else wt++;
     }
-    // DIE KANTE DER SILHOUETTE (K68-n2): je Rand-Pixel der Klasse,
+    // DIE KANTE DER SILHOUETTE: je Rand-Pixel der Klasse,
     // das ans Außen grenzt (`aussen`: kein gemessener Teil — Himmel, Boden, Holz; ohne `aussen` jedes Pixel außerhalb der
     // Klasse), die Kohärenz des Struktur-Tensors der geglätteten Maske (Gauß σ 2 px, Fenster 17 × 17 px):
     // ((Jxx − Jyy)² + 4 Jxy²) / (Jxx + Jyy)² — die gerade Kante einer Karte → 1, ein Umriss aus Blättern, Zweigen und Lücken
@@ -1165,7 +1165,7 @@ const SOLL_MASSE = Object.freeze([
     "gesicht",
     "spiegelTreue",
 ]);
-// DIE AUFLÖSUNG je Maß (K63-n2): der kleinste Unterschied, den es trägt — der Abstand zum Band ist |ln((Ist + e)/(Rand + e))|,
+// DIE AUFLÖSUNG je Maß: der kleinste Unterschied, den es trägt — der Abstand zum Band ist |ln((Ist + e)/(Rand + e))|,
 // endlich auch an einem Rand 0 (ein Raster-Anteil Soll 0, ein Ist 0; Prüfer K63 R2: Ist 0 gab die Wirkung „Infinity").
 const MASS_AUFLOESUNG = Object.freeze({
     laiWirk: 0.05,
@@ -1184,7 +1184,7 @@ const MASS_AUFLOESUNG = Object.freeze({
     // die Spiegel-Treue ist ein r in [−1, 1]: der Versatz 1 trägt den Abstand auch für ein negatives r (ln über (0, 2])
     spiegelTreue: 1,
 });
-// DER ORT EINES BILDS der Tafel (K63-n8): relativ zur
+// DER ORT EINES BILDS der Tafel: relativ zur
 // Wurzel des Baums unter `artifacts/` (gitignored, lokal, beim Namen — der Schreiber legt es nach `artifacts/soll-tafel/`), nie
 // absolut, nie mit `..`, nie mit Backslash.
 function bildPfadFehler(p) {
@@ -1561,7 +1561,7 @@ function albedoZeile(ma, q) {
     // beide Seiten tragen ihren Stand (`kernStand`, geschrieben von werkbank `albedo --tafel` und `--labor --datei`)
     return { t, z, stand: `${String(w.datum || "?").slice(0, 10)} ${w.geraet || "?"}`, bloecke: [w, l], quellen: z.quellen || [] };
 }
-// DER STAND einer Messung (K63-n2): ein Ist gilt für den CODE der Quellen seiner Klasse (`klasse.quellen`: das Gesetzbuch und der Ofen; `messung.quellen`
+// DER STAND einer Messung: ein Ist gilt für den CODE der Quellen seiner Klasse (`klasse.quellen`: das Gesetzbuch und der Ofen; `messung.quellen`
 // die Code-Abdrücke, die das Werkzeug beim Schreiben nimmt, `codeAbdruck`) — nicht für die Version des Stamms (K63-n8: jede
 // Integration hebt VERSION und machte jede Zeile veraltet, ohne dass ihr Code sich rührte; Version und Commit stehen als Beleg).
 // Ein Block ohne Version, Commit oder Abdruck ist ungeprüft, einer mit fremdem Abdruck „veraltet seit <Commit der Messung>" —
@@ -1677,7 +1677,7 @@ function codeAbdruck(text, datei) {
     return "c:" + h.digest("hex").slice(0, 16);
 }
 
-// DER STAND-LESER (K63-n2): die EINE Stelle, an der Werkzeug (werkbank `--ist`, `albedo --tafel`, diag-albedo-tafel `--labor`)
+// DER STAND-LESER: die EINE Stelle, an der Werkzeug (werkbank `--ist`, `albedo --tafel`, diag-albedo-tafel `--labor`)
 // und Linse (K5, gate:albedo-tafel) Version, Commit und Abdrücke lesen — AnazhRealm.VERSION aus der Naht des Stamms, der
 // Code-Abdruck einer Datei des Baums (`codeAbdruck`); das Urteil ist CI-fest (keine git-Geschichte), nur der Schreiber nimmt
 // den Commit, an dem er misst (`gitStand`: SHA, „+geaendert" bei Änderungen an versionierten Dateien außer den Tafeln).
@@ -1803,7 +1803,7 @@ function sollTafelUrteil(tafel, q) {
         ids.add(k.id);
         if (!(k.referenz || []).some((r) => r.titel && r.technik))
             fehler.push(`${wo}: keine benannte AAA-Referenz (Titel + Technik)`);
-        // DIE VORLAGE (K63-n2): ein Soll, das schon im System steht (K57 KOPF_SOLL, K58 BLATT_ATLAS_WEDEL), wird REFERENZIERT —
+        // DIE VORLAGE: ein Soll, das schon im System steht (K57 KOPF_SOLL, K58 BLATT_ATLAS_WEDEL), wird REFERENZIERT —
         // die Linse liest das Symbol im Kern; eine Vorlage ins Leere ist ein Bruch (Prüfer K63 R2: der K58-Verweis fiel still).
         for (const vl of k.vorlage || []) {
             const w = vl && vl.symbol && q.kern ? q.kern(vl.datei, vl.symbol) : undefined;
@@ -1888,7 +1888,7 @@ function sollTafelUrteil(tafel, q) {
             urteil = "ROT";
             grund = grund ? `${grund} · ${r.offen}` : `${ma.name} ${ist} — ${r.offen}`;
         }
-        // DER BENANNTE MANGEL (K63-n2): trägt die Klasse einen Mangel mit Quelle (Augen-Befund, Plan), muss ihr Maß ihn sehen. DER GEHEILTE MANGEL (K63-n3) trägt
+        // DER BENANNTE MANGEL: trägt die Klasse einen Mangel mit Quelle (Augen-Befund, Plan), muss ihr Maß ihn sehen. DER GEHEILTE MANGEL trägt
         // Befund, Quelle, Bild-Paar und Warum in Zahlen. Widerspricht ein GEMESSENES Maß dem Stand der Klasse (GRÜN neben dem
         // Mangel: blind oder geheilt ohne Bild-Paar; ROT neben geheilt: der Mangel ist zurück), urteilt die ZEILE ROT beim Namen —
         // nie ein Bruch der Tafel (ein abgewiesenes ehrliches ROT wäre fail-soft); veraltet steht ohnehin ROT bis zur Neumessung
@@ -2152,7 +2152,7 @@ function sollTafelSelbsttest(tafel, q) {
         k.wirkung.geheilt = { befund: k.wirkung.mangel.befund, quelle: k.wirkung.mangel.quelle, warum: "x", bildPaar };
         delete k.wirkung.mangel;
     };
-    // DIE MASSE DES MANGELS (K63-n2): das Raster aus zwei Tönen ist Zweiton 1, ein Verlauf 0, Bilder ohne Muster 0; die
+    // DIE MASSE DES MANGELS: das Raster aus zwei Tönen ist Zweiton 1, ein Verlauf 0, Bilder ohne Muster 0; die
     // Stufen-Treue ohne Stufen-Wechsel ist ein Bruch, mit Wechsel ein Verhältnis; das Gesicht nennt den Zug außerhalb
     const zw = klassenMasse(
         bild((x, y) => ((x + y) & 1 ? 40 : 200)),
@@ -2173,7 +2173,7 @@ function sollTafelSelbsttest(tafel, q) {
     const zb = sollRechnung({ art: "zweiton1f", beta: [0, 2.4] });
     if (!(zb.band && zb.band[1] === 0))
         v.push(`Rechnung zweiton1f: Bilder ohne Muster tragen Raster (${JSON.stringify(zb)})`);
-    // DIE KANTE DER SILHOUETTE (K68-n2): die Karte (ein Quadrat, gerade und gedreht gleich) liest gerade, der Umriss einer
+    // DIE KANTE DER SILHOUETTE: die Karte (ein Quadrat, gerade und gedreht gleich) liest gerade, der Umriss einer
     // Höhenlinie natürlichen Rauschens (1/f^β, β 1–3: Mischwald 0,160 ≈ β 2,4, Rudka 0,218 ≈ β 3) zerfranst und im Band der
     // Laub-Silhouette; nur der Rand gegen das Außen zählt
     {
@@ -2461,7 +2461,7 @@ function sollTafelSelbsttest(tafel, q) {
         k4.wirkung.mangel = undefined;
         const gruen = sollTafelUrteil(t4, q).zeilen.find((x) => x.id === k4.id);
         const zeile = (qq) => sollTafelUrteil(t4, qq).zeilen.find((x) => x.id === k4.id);
-        // DER CODE-ABDRUCK (K63-n8): die erste Quelle der Klasse mit einer Kommentarzeile und neuem Leerraum → derselbe Stand
+        // DER CODE-ABDRUCK: die erste Quelle der Klasse mit einer Kommentarzeile und neuem Leerraum → derselbe Stand
         // (GRÜN bleibt GRÜN); mit einem Token mehr → ROT „veraltet seit <Commit der Messung>" beim Namen der Datei
         const d0 = (k4.quellen || [])[0];
         const text0 = d0 && q.lesen ? q.lesen(d0) : null;

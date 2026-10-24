@@ -806,7 +806,7 @@ function bogenLinse() {
         `fünf Ausstattungs-Rezepte (kind ausstattung) mit Stufen [0,1,3] (3 = NUR-WURF) und Gestalten (${AUS.join(", ")})`,
         AUS.length === 5 && JSON.stringify(AUS_LODS) === "[0,1,3]" && AUS_CASES.length >= 25
     );
-    // DIE LATERNE (K10 × K11): der Leib und das Licht EINER Quelle — das Rezept trägt das Datum LICHT_GESETZ.laterne, und der
+    // DIE LATERNE: der Leib und das Licht EINER Quelle — das Rezept trägt das Datum LICHT_GESETZ.laterne, und der
     // Glas-Kopf (Seh-Klasse glas, die Rolle des Fensters: er zündet nachts) umschließt die Licht-Höhe `hoeheM` je Stufe 0/1.
     // Die Wandlaterne trägt dasselbe: fx.licht = LICHT_GESETZ.wandlaterne, der Kopf um ihre Licht-Höhe.
     for (const rz of ["laterne", "wandlaterne"]) {

@@ -669,7 +669,7 @@ const server = statikServer();
             const takt = () => {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
             };
             // einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`)
             const schwinge = () => window.__weltStehtNach(takt);

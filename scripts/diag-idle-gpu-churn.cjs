@@ -96,14 +96,14 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 if (r && r.state && r.state.rendererReady && typeof r._gameLoopTick === "function") {
                     r.state.autoSeason = false; // die Saison hält (Bühne)
                     window.__wetterHalten(); // das Wetter hält (die EINE Wetter-Wache)
-                    try { r._gameLoopTick(performance.now()); } catch (_e) {}
+                    try { r._gameLoopTick(performance.now()); } catch {}
                     // die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`) — je Scheibe höchstens 120 ruhige Takte
                     S.sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
                     try {
                         await window.__weltStehtNach(() => {
                             try {
                                 r._gameLoopTick(performance.now());
-                            } catch (_e) {}
+                            } catch {}
                         }, 120);
                         S.done = true;
                     } catch (e) {
@@ -120,7 +120,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     }
     await ruf("Settle-Drain", () => {
         const r = window.anazhRealm;
-        try { r._drainPendingWaterIso && r._drainPendingWaterIso(); r._drainPendingGrass && r._drainPendingGrass(); } catch (_e) {}
+        try { r._drainPendingWaterIso && r._drainPendingWaterIso(); r._drainPendingGrass && r._drainPendingGrass(); } catch {}
     });
 
     // PHASE 1 — Compiler auf Prototyp-Ebene wrappen + Warmup (alle Pipelines EINMAL kompilieren)
@@ -149,7 +149,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 // und das OBJEKT, dessen Zeichnung kompiliert (der Haken an renderObject unten): Art · Stoff · Pfad
                 const ob = window.__ccObjekt;
                 let lichter = 0;
-                try { window.anazhRealm.state.scene.traverseVisible((o) => { if (o.isLight) lichter++; }); } catch (_e) {}
+                try { window.anazhRealm.state.scene.traverseVisible((o) => { if (o.isLight) lichter++; }); } catch {}
                 const wer = ob ? ` · Objekt ${window.__ccName ? window.__ccName(ob) : ob.type} · sichtbare Lichter ${lichter}` : "";
                 console.log("[Linse] Compile außerhalb des Schlüssel-Warmups (" + (wdh ? "Wiederholung" : "neu") + ", " + Math.round(fp.length / 1024) + " KB): " + [z[0]].concat(stamm.length ? stamm : z.slice(1, 6)).join(" < ") + wer);
             }
@@ -157,13 +157,13 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         if (typeof GPUDevice !== "undefined" && GPUDevice.prototype) {
             const code = new WeakMap();
             const oM = GPUDevice.prototype.createShaderModule;
-            if (typeof oM === "function") GPUDevice.prototype.createShaderModule = function (d) { const m = oM.call(this, d); try { code.set(m, (d && d.code) || ""); } catch (_e) {} return m; };
+            if (typeof oM === "function") GPUDevice.prototype.createShaderModule = function (d) { const m = oM.call(this, d); try { code.set(m, (d && d.code) || ""); } catch {} return m; };
             for (const m of ["createRenderPipeline", "createRenderPipelineAsync"]) {
                 const o = GPUDevice.prototype[m];
                 if (typeof o === "function") GPUDevice.prototype[m] = function (d, ...rest) {
                     window.__cc.gpuPipeline++;
                     let fp = "?";
-                    try { fp = JSON.stringify([code.get(d.vertex && d.vertex.module), d.vertex && d.vertex.entryPoint, code.get(d.fragment && d.fragment.module), d.fragment && d.fragment.entryPoint, d.fragment && d.fragment.targets, d.primitive, d.depthStencil, d.multisample, d.vertex && d.vertex.buffers]); } catch (_e) {}
+                    try { fp = JSON.stringify([code.get(d.vertex && d.vertex.module), d.vertex && d.vertex.entryPoint, code.get(d.fragment && d.fragment.module), d.fragment && d.fragment.entryPoint, d.fragment && d.fragment.targets, d.primitive, d.depthStencil, d.multisample, d.vertex && d.vertex.buffers]); } catch {}
                     zaehle(fp);
                     return o.call(this, d, ...rest);
                 };
@@ -174,13 +174,13 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
             WebGL2RenderingContext.prototype.linkProgram = function (prog) {
                 window.__cc.glLink++;
                 let fp = "?";
-                try { fp = (this.getAttachedShaders(prog) || []).map((sh) => this.getShaderSource(sh)).join("\n----\n"); } catch (_e) {}
+                try { fp = (this.getAttachedShaders(prog) || []).map((sh) => this.getShaderSource(sh)).join("\n----\n"); } catch {}
                 zaehle(fp);
                 return o.call(this, prog);
             };
         }
         let backend = "?";
-        try { const b = s.renderer.backend; if (b) backend = b.isWebGPUBackend ? "WebGPU" : b.isWebGLBackend ? "WebGL2" : (b.constructor && b.constructor.name) || "?"; } catch (_e) {}
+        try { const b = s.renderer.backend; if (b) backend = b.isWebGPUBackend ? "WebGPU" : b.isWebGLBackend ? "WebGL2" : (b.constructor && b.constructor.name) || "?"; } catch {}
         s.renderer.render = window.__origRender;
         s.postProcessingFailed = true;
         // Der App-Loop RUHT: die Linse treibt ihre Frames selbst (sonst rendert er parallel mit und
@@ -229,7 +229,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         // Op jedes gehaltenen und jedes, der trotzdem durchging; die Bühnen-Wand nennt beide.
         window.__weltaktSpion();
         window.__weltaktSeq0 = window.__weltaktBuch(0).seq;
-        try { r._ensureSkyEnvironment(true); } catch (_e) {}
+        try { r._ensureSkyEnvironment(true); } catch {}
         const cnt = () => window.__cc.gpuPipeline + window.__cc.glLink;
         window.__cnt = cnt;
         // DER SCHLÜSSEL-WARMUP: auf swiftshader kostet EIN schwerer Erst-Compile 50–90 s, und ein Aufruf trägt die
@@ -299,7 +299,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 const v0 = E ? E.verschoben : 0,
                     w0 = E ? E.wartetN : 0;
                 window.__imWarm = true;
-                try { r._loopRender(); } catch (_e) {} finally { window.__imWarm = false; }
+                try { r._loopRender(); } catch {} finally { window.__imWarm = false; }
                 let lichter = 0;
                 s.scene.traverseVisible((o) => { if (o.isLight) lichter++; });
                 objs.forEach((o, i) => (o.visible = vorher[i]));
@@ -334,14 +334,14 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 window.__wetterHalten(); // das Wetter hält (die EINE Wetter-Wache)
                 s.timeOfDay = window.__buehne0.zeit; // Mittag hält (ein Takt rückt die Uhr bis 1 s vor)
             }
-            try { r._gameLoopTick(performance.now()); } catch (_e) {} finally { if (eigen) r._loopRender = echt; else delete r._loopRender; }
+            try { r._gameLoopTick(performance.now()); } catch {} finally { if (eigen) r._loopRender = echt; else delete r._loopRender; }
             return { cc: cnt() - c0 };
         };
         // je Bild auch der Stand der Erst-Zeichnung (Bauten · verschoben · wartende Draws · offene Pipelines): die Ruhe vor dem
         // Leerlauf verlangt, dass sie still steht — nichts baut, nichts verschiebt, kein Draw wartet
         window.__bild = () => {
             const c0 = cnt();
-            try { r._loopRender(); } catch (_e) {}
+            try { r._loopRender(); } catch {}
             const E = r._erstZeichnung;
             // der wartende Draw beim Namen: das Label seiner Pipeline (WebGPU, `_erstWartet`) oder der Stoff ihres Programms
             const p = E ? E.wartetAuf : null;
@@ -429,7 +429,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
             erstStand = b.erst;
         }
         Object.assign(setup, { warmupCompiles: stand, nachzuegler: stand - nachStart, warmupExtra: extra, ruhe: ruhig >= 8 });
-        // DIE VERFEHLTE RUHE beim Namen (Gegenprüfung K haenger): was das letzte unruhige Bild bewegte — Compiles, der Stand
+        // DIE VERFEHLTE RUHE beim Namen (K haenger): was das letzte unruhige Bild bewegte — Compiles, der Stand
         // der Erst-Zeichnung (gebaut|verschoben|wartend, offene Pipelines) und der wartende Draw
         if (!setup.ruhe && letztes) {
             const { b, vorTot, vorErst } = letztes;
@@ -470,9 +470,9 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 const r = window.anazhRealm, s = r.state;
                 s.skyboxUniforms.himmelTint.value.setRGB(c[0], c[1], c[2]);
                 s._skyEnvLastRegenMs = -1e9; // die Raten-Drossel umgehen → echte Regenerierung erzwingen
-                try { r._ensureSkyEnvironment(true); } catch (_e) {}
+                try { r._ensureSkyEnvironment(true); } catch {}
                 if (window.__selbsttestChurn && s.scene && s.scene.environment) s.scene.environment = s.scene.environment.clone();
-                try { r._loopRender(); } catch (_e) {}
+                try { r._loopRender(); } catch {}
             }, c);
         }
         const b1 = await stand();

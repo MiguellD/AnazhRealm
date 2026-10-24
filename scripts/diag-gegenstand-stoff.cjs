@@ -130,7 +130,7 @@ function lackGestalten() {
 }
 
 
-// Der Transport am Gesetz der Regler (D3c): Klarlack und Durchsicht eines
+// Der Transport am Gesetz der Regler: Klarlack und Durchsicht eines
 // Stoffs werden die Material-Zahlen, aus denen der Wirt baut (phyto-core `budgetRegler`)
 const LACK_GLAS = { clearcoat: 1, clearcoatRoughness: 0.1, opacity: 0.4 };
 function transport(R) {

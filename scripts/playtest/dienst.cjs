@@ -69,7 +69,7 @@ async function checkBandW3UiPuls(ctx) {
     );
 }
 
-// Die Stellvertreter-Wand — eingefaltet aus gate:feld-stellvertreter (D3b): der Feld-Pass zeichnet keinen Vollbild-Draw
+// Die Stellvertreter-Wand — eingefaltet aus gate:feld-stellvertreter: der Feld-Pass zeichnet keinen Vollbild-Draw
 // mit Fragment-Tiefe und Discard. Die Heilung im Pass (`_feldPassEnsure`): MARCH je Satz ein
 // Stellvertreter (Rückseiten seiner Hülle, EIN instanzierter Draw), PANORAMA ein Vollbild-Dreieck ohne Fragment-Tiefe. Die ECHTEN
 // Organ-Methoden: O1/O2 die Obergrenze folgt dem höchsten belegten Slot, freie Slots kehren zurück · T1 der Takt aus EINER Matrix ·

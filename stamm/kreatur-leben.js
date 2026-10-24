@@ -1825,6 +1825,72 @@ class AnazhRealm_kreatur_leben {
         return false;
     }
 
+    // DER TAG DES TIERS (Tiere K4, tetrapoda ETHOGRAMM_GESETZ): je KI-Takt die Pegel über die Zeit seit dem Vor-Takt mit der
+    // Tätigkeit, die das Tier in ihr ZEIGTE (`_gezeigt`, gestempelt vom Wandern, `_creatureCharacterWander` — Flucht, Jagd,
+    // Kadaver und Auftrag zeigen keine: wach): der Magen (`_kreaturMagen`) und, wer weidet (diet bis weideDiet), seine Äsung;
+    // der Ruhe-Pegel. Dann die Tätigkeit aus Pegel und Lichtphase — im Verband die des Leittiers (die Herde ruht und äst
+    // beisammen). Eine Gattung ohne Zeile im Ethogramm hat keine (null). Vorher ruhte jedes Tier, solange die Sonne unter
+    // nachtSin stand, und weidete am Tag in Aktionen mit Pausen dazwischen (das Rotwild äste ~ 15 % des Tages).
+    _kreaturTaetigkeit(creature) {
+        const ud = creature.userData;
+        const LG = AnazhRealm._lebensraumGesetz();
+        const G = LG.E.gattung[AnazhRealm.TETRAPODA_SOUL_MAP[ud.soul]];
+        const gez = ud._gezeigt;
+        ud._gezeigt = null;
+        if (!G) return (ud._taetigkeit = null);
+        const now = this.state.creatureAnimationTime;
+        const dt = Number.isFinite(ud._taetigT) ? Math.max(0, now - ud._taetigT) : 0;
+        ud._taetigT = now;
+        const VG = AnazhRealm._verhaltenGesetz();
+        const voll = this._kreaturMagenVoll(creature);
+        const weidet = this._kreaturDiet(creature) <= VG.stimmung.schwellen.weideDiet;
+        let magen = this._kreaturMagen(creature);
+        if (gez === "nahrung" && weidet && voll > 0)
+            magen = ud.magen = Math.min(voll, magen + LG.aesung(voll, VG.aas.verdauSec, G) * dt);
+        // der erste Pegel aus der Identität (deterministisch, kein Zufall): die Tiere eines Orts ruhen nicht im Gleichschritt
+        if (!Number.isFinite(ud._ruhe)) {
+            const id = parseInt(String(ud.netId || "c0").slice(1), 10) || 0;
+            ud._ruhe = ((this._verhaltenHash(id, 4099) % 1000) / 1000) * LG.E.schwelle.ruhig;
+        }
+        ud._ruhe = LG.ruhePegel(ud._ruhe, gez === "ruhen", dt, G);
+        const leit = this._kreaturLeittier(creature);
+        if (leit !== creature && leit.userData._taetigkeit) return (ud._taetigkeit = leit.userData._taetigkeit);
+        if (this._lichtUhr !== this.state.timeOfDay) {
+            this._lichtUhr = this.state.timeOfDay;
+            this._lichtPhase = LG.lichtPhase(this._sonnenRichtung().y, VG.stimmung.schwellen.nachtSin, LG.E);
+        }
+        const anteil = voll > 0 ? magen / voll : 1;
+        return (ud._taetigkeit = LG.taetigkeit(
+            ud._taetigkeit,
+            ud._ruhe,
+            anteil,
+            this._lichtPhase,
+            weidet,
+            G,
+            LG.E,
+            VG.aas.hungerAnteil
+        ));
+    }
+    // DAS LEITTIER eines Verbands: das Glied, dessen netId der Verband trägt (der Erstgeborene des Wurfs), fiel es, das erste
+    // Glied; ohne Verband das Tier selbst.
+    _kreaturLeittier(creature) {
+        const glieder = this._kreaturVerbandGlieder(creature);
+        if (!glieder || glieder.length < 2) return creature;
+        const vb = creature.userData.verband;
+        for (const g of glieder) if (g.userData.netId === vb) return g;
+        return glieder[0];
+    }
+    // DAS TEMPO DER TÄTIGKEIT, die das Wandern zeigt: das ihrer Aktion (ETHOGRAMM_GESETZ.zeigt — ruhen steht, äsen geht im
+    // Tempo des Grasens; ziehen wandert); spielt eine Aktion, trägt sie ihr eigenes Tempo (1 hier, der Aktions-Block danach).
+    _kreaturTaetigkeitTempo(creature) {
+        const ud = creature.userData;
+        const VA = ud._verhaltenAktion;
+        if (VA && this.state.creatureAnimationTime < VA.bis) return 1;
+        const zeigt = ud._gezeigt && AnazhRealm._lebensraumGesetz().E.zeigt[ud._gezeigt];
+        const def = zeigt && zeigt.aktion && AnazhRealm._verhaltenGesetz().aktionen[zeigt.aktion];
+        return def && Number.isFinite(def.tempo) ? Math.max(0, def.tempo) : 1;
+    }
+
     // DIE NAHRUNG EINES ORTS für den Bestand (Ökologie K2): die Äsung = das Leben des Felds (`auraAt`.lebendig — das Substrat
     // und das Leben-Overlay, das die Taten schreiben), 0..1.
     _kreaturNahrung(x, z) {
@@ -2297,6 +2363,28 @@ class AnazhRealm_kreatur_leben {
         Z.leib = null;
         this._gangSatzAbschied(Z.satz);
     }
+    // DER MAGEN (kg, VERHALTEN.aas) — der EINE Hunger: so viel frisst ein Tier auf einmal — magenAnteil × die EINE Masse seines
+    // Leibs; ein Leib ohne gemessene Gestalt hat keinen (0). Er leert sich in verdauSec auf der Kreatur-Uhr (gerechnet, wenn ihn
+    // einer liest) und füllt sich am Kadaver (`_kreaturAasZug`) und, wer weidet, beim Äsen (`_kreaturTaetigkeit`).
+    _kreaturMagenVoll(creature) {
+        const tb = creature.userData && creature.userData._tierBaum;
+        return tb && tb.leibV > 0 ? AnazhRealm._verhaltenGesetz().aas.magenAnteil * this._leibMasse(creature) : 0;
+    }
+    _kreaturMagen(creature) {
+        const ud = creature.userData;
+        const now = this.state.creatureAnimationTime;
+        const dt = Number.isFinite(ud._magenT) ? Math.max(0, now - ud._magenT) : 0;
+        ud._magenT = now;
+        if (!(ud.magen > 0)) return (ud.magen = 0);
+        const voll = this._kreaturMagenVoll(creature);
+        ud.magen = Math.max(0, ud.magen - (voll / AnazhRealm._verhaltenGesetz().aas.verdauSec) * dt);
+        return ud.magen;
+    }
+    // SATT (VERHALTEN.aas.hungerAnteil): wer mehr als diesen Anteil seines Magens trägt, jagt keine Beute und frisst nicht an.
+    _kreaturSatt(creature) {
+        const voll = this._kreaturMagenVoll(creature);
+        return voll > 0 && this._kreaturMagen(creature) >= AnazhRealm._verhaltenGesetz().aas.hungerAnteil * voll;
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_kreatur_leben]);
 
@@ -2511,8 +2599,9 @@ AnazhRealm.TOD_BODEN_ZELLE = 0.5;
 // (Radeon, Dorf Ego, unter Fremdlast): ein Tod kostete den Takt 28–84 ms, jetzt 0,3–0,6 ms; die Lage läuft in Fenstern von
 // höchstens 9,7 ms, die Tafel steht 0,13–0,58 s nach dem Tod.
 AnazhRealm.TOD_LAGE = Object.freeze({ fristMs: 50, scheibeMs: 2 });
-// DER LEBENSRAUM (tetrapoda LEBENSRAUM_GESETZ + bodenKlasse · lebensraum · lebensraumWahl, DURST_GESETZ + durst, Tiere K4): die Boden-Klasse eines Orts und die Eignung
-// je Gattung. Fail-closed.
+// DER LEBENSRAUM (tetrapoda LEBENSRAUM_GESETZ + bodenKlasse · lebensraum · lebensraumWahl, DURST_GESETZ + durst,
+// ETHOGRAMM_GESETZ + lichtPhase · ruhePegel · aesung · taetigkeit, Tiere K4): Art × Ort × Uhr — die Boden-Klasse eines Orts, die
+// Eignung je Gattung und ihr Tag. Fail-closed.
 AnazhRealm._lebensraumGesetz = function () {
     if (AnazhRealm._lebensraumMemo) return AnazhRealm._lebensraumMemo;
     const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
@@ -2527,7 +2616,10 @@ AnazhRealm._lebensraumGesetz = function () {
         typeof k.lebensraumWahl === "function" &&
         k.DURST_GESETZ &&
         [k.DURST_GESETZ.durstS, k.DURST_GESETZ.suchPauseS].every(Number.isFinite) &&
-        typeof k.durst === "function"
+        typeof k.durst === "function" &&
+        k.ETHOGRAMM_GESETZ &&
+        Number.isFinite(k.ETHOGRAMM_GESETZ.daemmerSin) &&
+        ["lichtPhase", "ruhePegel", "aesung", "taetigkeit"].every((f) => typeof k[f] === "function")
     ) {
         AnazhRealm._lebensraumMemo = Object.freeze({
             L,
@@ -2536,6 +2628,11 @@ AnazhRealm._lebensraumGesetz = function () {
             wahl: k.lebensraumWahl,
             D: k.DURST_GESETZ,
             durst: k.durst,
+            E: k.ETHOGRAMM_GESETZ,
+            lichtPhase: k.lichtPhase,
+            ruhePegel: k.ruhePegel,
+            aesung: k.aesung,
+            taetigkeit: k.taetigkeit,
         });
         return AnazhRealm._lebensraumMemo;
     }
