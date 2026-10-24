@@ -72,7 +72,6 @@ const HYDRO_PFAD = [
 const SPEICHER_PFAD = [
     "stamm/dienst.js",
     "stamm/speicher-*.js",
-    "speicher-worker.js",
     "stamm/dirigent-takt.js",
     "stamm/dirigent-regler.js",
     "stamm/dirigent-kern.js",
@@ -165,7 +164,8 @@ module.exports = [
                     (speicher ? "ja" : "nein") + " (Fäden: " + faeden.slice(0, 120) + ")",
             };
         },
-        pfad: HYDRO_PFAD.concat(["stamm/dienst.js", "stamm/speicher-*.js", "speicher-worker.js"]),
+        // der Speicher-Faden (speicher-worker.js) steht nur im Zweig speicher-journal — am Kopf trifft sein Glob keine Datei (Wand PFAD)
+        pfad: HYDRO_PFAD.concat(["stamm/dienst.js", "stamm/speicher-*.js"]),
         quelle: "2 = ≤ 1 MB/min, 0 Kopien nach dem Empfang, Speichern im Worker",
     },
 
@@ -457,19 +457,23 @@ module.exports = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         // M38: derselbe Tab-Tod, 4 Zyklen (davon 2 mit erwachender Zelle): die Hülle um `saveState` zählt die Haupt-Faden-ms je
-        // Ruf, Σ je rAF-Bild p95 — die Leck-Probe des Flugschreibers (`_imLeerlauf`) liegt außerhalb der Hülle, ein eigener Posten
+        // Ruf — die Leck-Probe des Flugschreibers (`_imLeerlauf`) liegt außerhalb der Hülle, ein eigener Posten.
+        // DAS URTEIL liest das SPEICHER-BILD (Messung: „Haupt-Faden-ms des Speicher-Bilds“), also die Kosten je Save: p95 der Rufe
+        // ≤ 0,3 ms. Das p95 über ALLE Bilder (echt-k1 `jeBild`: die Rufe mit Nullen auf die Bildzahl aufgefüllt) ist per
+        // Konstruktion blind — 97 Rufe in 9888 Bildern geben immer 0 —, es steht nur in der Zahl. Ein Ruf ist eine untere Schranke
+        // des Speicher-Bilds (zwei Rufe in einem Bild zählen einzeln).
         befehl: ["bash", "-c", ECHT_K1 + '4 k2; E=$?; cp "$D/echt-k1-k2.json" "$A" 2>/dev/null; exit $E'],
         gpu: true,
         minuten: 4,
         urteil: (j, lauf) => {
-            const b = j && j.jeBild;
-            if (!b || !(j.bilder > 0)) return { gruen: false, zahl: "keine Bild-Zählung (Exit " + lauf.exit + ")" };
-            const gruen = j.bilder >= 1000 && j.saveRufe >= 10 && b.p95 != null && b.p95 <= 0.3;
+            const s = j && j.saveMs;
+            if (!s || !(j.bilder > 0)) return { gruen: false, zahl: "keine Save-Zählung (Exit " + lauf.exit + ")" };
+            const gruen = j.bilder >= 1000 && j.saveRufe >= 10 && s.p95 != null && s.p95 <= 0.3;
             return {
                 gruen,
                 zahl:
-                    "je Bild p95 " + b.p95 + " / p99 " + b.p99 + " ms (" + j.bilder + " Bilder, " + j.saveRufe + " Rufe); je Ruf p50 " +
-                    j.saveMs.p50 + " / p95 " + j.saveMs.p95 + " / max " + j.saveMs.max + " ms",
+                    "je Speicher-Bild (Ruf) p50 " + s.p50 + " / p95 " + s.p95 + " / max " + s.max + " ms (Soll p95 ≤ 0,3; " + j.saveRufe +
+                    " Rufe in " + j.bilder + " Bildern; aufgefüllt je Bild p95 " + (j.jeBild ? j.jeBild.p95 : "—") + ", blind)",
             };
         },
         pfad: SPEICHER_PFAD,

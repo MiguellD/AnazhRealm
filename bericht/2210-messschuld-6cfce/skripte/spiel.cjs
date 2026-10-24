@@ -4,7 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const WT = "C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce";
 const puppeteer = require(WT + "/node_modules/puppeteer");
-const { echteWebGpuArgs } = require(WT + "/scripts/lib/software-gpu.cjs");
+const { echteWebGpuArgs, adapterZeile } = require(WT + "/scripts/lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require(WT + "/scripts/lib/ausgabe-aufnahme.cjs");
 const URL0 = process.env.SPIEL_URL || "http://localhost:7970";
 
@@ -19,6 +19,7 @@ async function oeffne({ profil, neu = true, vorDoc = [], headless = false } = {}
         args: [...echteWebGpuArgs(), "--window-size=1940,1200", "--autoplay-policy=no-user-gesture-required"],
     });
     const page = (await browser.pages())[0] || (await browser.newPage());
+    await adapterZeile(browser); // `[linse-gpu] <Hersteller>/<Architektur>`: der Zeuge der Karte (Wand GPU, punkte.cjs)
     const fehler = [];
     page.on("pageerror", (e) => fehler.push(String(e.message || e).split("\n")[0]));
     for (const f of vorDoc) await page.evaluateOnNewDocument(f);

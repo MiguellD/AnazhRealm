@@ -1,0 +1,50 @@
+{
+ "ergebnis": {
+  "gesamt": 6,
+  "arten": {
+   "deer": 6
+  },
+  "zustand": {
+   "-": 6
+  },
+  "jaeger": 0,
+  "wuerfeAb2": 1,
+  "tiereInWuerfen": 6,
+  "gruppen": [
+   {
+    "wurf": "deer@-968.3,-764.6",
+    "n": 6,
+    "mitte": [
+     -971.8,
+     -765.6
+    ],
+    "spanneM": 3.7,
+    "spielerM": 161.9
+   }
+  ],
+  "verbandFeld": true,
+  "verbaendeAb2": 1,
+  "verbaende": [
+   {
+    "vb": "c1",
+    "n": 6,
+    "art": {
+     "deer": 6
+    },
+    "leitLebt": true,
+    "mitte": [
+     -971.8,
+     -765.6
+    ],
+    "spanneM": 3.7,
+    "spielerM": 161.9
+   }
+  ],
+  "verbaendeMap": 1,
+  "spieler": [
+   -841,
+   -861
+  ]
+ },
+ "ms": 2
+}

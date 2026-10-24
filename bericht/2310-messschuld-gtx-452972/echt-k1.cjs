@@ -10,7 +10,7 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 const WT = process.env.WT || "C:/Users/micha/Desktop/AnazhRealm-OMEN/n2010-b2b";
 const puppeteer = require(WT + "/node_modules/puppeteer");
-const { echteWebGpuArgs } = require(WT + "/scripts/lib/software-gpu.cjs");
+const { echteWebGpuArgs, adapterZeile } = require(WT + "/scripts/lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require(WT + "/scripts/lib/ausgabe-aufnahme.cjs");
 const { statikServer } = require(WT + "/scripts/lib/welt-boot.cjs");
 const png = require("C:/Users/micha/Desktop/AnazhRealm-OMEN/koordination/bericht/2110-messschuld-radeon-2/skripte/png.cjs");
@@ -95,6 +95,7 @@ async function oeffne(profil, neu) {
         args: [...echteWebGpuArgs(), "--window-size=1940,1200", "--autoplay-policy=no-user-gesture-required"],
     });
     const page = (await browser.pages())[0];
+    await adapterZeile(browser); // `[linse-gpu] <Hersteller>/<Architektur>`: der Zeuge der Karte (Wand GPU, punkte.cjs)
     const log = [];
     page.on("console", (m) => log.push(m.text()));
     await page.evaluateOnNewDocument(haken);
