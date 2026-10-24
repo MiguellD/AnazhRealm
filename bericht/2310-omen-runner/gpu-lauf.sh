@@ -19,7 +19,8 @@ done
 printf '%s\npid=%s\n' "$NAME" "$(cat /proc/$$/winpid 2>/dev/null)" > "$GPU_SCHLOSS/besitzer.txt"
 trap 'kill $HERZ 2>/dev/null; schloss_loesen "$NAME"' EXIT
 ci_ruhe
-( while sleep 300; do [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt"; done ) & HERZ=$!
+# der Herzschlag hält keine Ausgabe offen: sonst wartete jeder Leser der Ausgabe auf sein `sleep 300` (jede GTX-Station dauerte k × 5 min)
+( while sleep 300; do [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt"; done ) >/dev/null 2>&1 </dev/null & HERZ=$!
 "$@" & KIND=$!
 WK=$(cat /proc/$KIND/winpid 2>/dev/null)
 ENDE=$(( $(date +%s) + MAX ))
