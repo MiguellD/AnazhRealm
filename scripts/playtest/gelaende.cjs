@@ -24,21 +24,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
                 r._terrainDensityAt(0, base - 33, 0) < 0 &&
                 r._terrainDensityAt(11.5, base - 33, 0) < 0 &&
                 r._terrainDensityAt(12.5, base - 33, 0) > 0;
-            out.editStored = r.state.worldMeta.voxelEdits.length === 1;
-            // Persistenz: der Edit reist im Welt-Snapshot.
-            r.state.worldMeta.voxelEdits = [];
-            r.carveVoxel(10, base, 10, 5);
-            const snap = r.buildStateSnapshot();
-            out.snapshotHasEdit = !!(
-                snap &&
-                snap.worldMeta &&
-                Array.isArray(snap.worldMeta.voxelEdits) &&
-                snap.worldMeta.voxelEdits.length >= 1
-            );
-            // Kein Edit fällt still (K23): 270 Schnitte → 270 Edits.
-            r.state.worldMeta.voxelEdits = [];
-            for (let i = 0; i < 270; i++) r.carveVoxel(i * 3, base, i * 3, 3);
-            out.capHeld = r.state.worldMeta.voxelEdits.length === 270;
+            // Die Edits über Save und Reload (der Turm): gate:fall-waechter B; kein Edit fällt still: gate:worker-dichte (3).
             // Chat-Befehl `voxel carve` fügt einen Edit hinzu.
             // voxelTerrainActive ist permanent — kein Setup nötig.
             r.state.worldMeta.voxelEdits = [];
@@ -56,9 +42,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
             "Voxel P3: der Schnitt nimmt die Säule r aus dem Fels (Kern und Rand Luft, außerhalb Fels)",
             voxelP3Results.carveSubtracts
         );
-        check("Voxel P3: der Schnitt-Edit landet in worldMeta.voxelEdits", voxelP3Results.editStored);
-        check("Voxel P3: der Schnitt-Edit reist im Welt-Snapshot (überlebt Reload)", voxelP3Results.snapshotHasEdit);
-        check("Voxel P3: kein Edit fällt still — 270 Schnitte, 270 Edits (K23)", voxelP3Results.capHeld);
         check("Voxel P3: der Chat-Befehl `voxel carve` schnitzt eine Mulde", voxelP3Results.chatCarveAddsEdit);
     }
 
@@ -367,26 +350,13 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("V9.40-e: Streaming-Counter geräumt nach give-up", voxelV940eResults.streamCounterClearedAfterGiveUp);
     }
 
-    // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ###
-    // `fillVoxel` vereinigt eine Säule mit dem Boden (Aufschütten).
+    // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ### (die Säule des Füll-Edits über die Maus und den Reload: gate:fall-waechter B)
     const voxelP3bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         if (r.state.worldMeta) {
             const base = r.state.terrainBaseHeight || 0;
-            // Die Füllung ist die Säule r in der Luft (20 m über dem Boden): ihr Kern und 0,5 m innerhalb ihres Rands Fels,
-            // 0,5 m außerhalb bleibt Luft Luft.
-            r.state.worldMeta.voxelEdits = [];
-            const fy = r._terrainMacroSurfaceY(70, 70) + 20;
-            const aussen = r._terrainDensityAt(82.5, fy, 70);
-            r.fillVoxel(70, fy, 70, 12);
-            out.fillAdds =
-                r._terrainDensityAt(70, fy, 70) > 0 &&
-                r._terrainDensityAt(81.5, fy, 70) > 0 &&
-                (aussen > 0 || r._terrainDensityAt(82.5, fy, 70) < 0);
-            out.editIsFillMode =
-                r.state.worldMeta.voxelEdits.length === 1 && r.state.worldMeta.voxelEdits[0].mode === "fill";
             // Backward-Compat: ein mode-loser Alt-Edit gilt als carve.
             r.state.worldMeta.voxelEdits = [];
             const dPre = r._terrainDensityAt(120, base - 33, 120);
@@ -411,11 +381,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
     });
 
     if (voxelP3bResults && !voxelP3bResults.error) {
-        check(
-            "Voxel P3b: die Füllung ist die Säule r (Kern und Rand fest, außerhalb bleibt Luft Luft)",
-            voxelP3bResults.fillAdds
-        );
-        check("Voxel P3b: der Füll-Edit trägt mode:fill", voxelP3bResults.editIsFillMode);
         check("Voxel P3b: ein mode-loser Alt-Edit gilt als carve (Backward-Compat)", voxelP3bResults.modelessIsCarve);
         check("Voxel P3b: der Chat-Befehl `voxel fill` schüttet auf", voxelP3bResults.chatFillAddsEdit);
     }
@@ -1902,8 +1867,7 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         out.idxMismatches = idxMismatches;
         out.idxBitIdentical = idxMismatches === 0;
         // Colors bit-identisch? Der Worker-Weg ist das Worker-Mesh UND sein Haupt-Thread-Schritt (die Himmels-Sicht und
-        // der Fels-Stoff, `_felsStoff`, K17): verglichen wird der FERTIGE Bau beider Wege — vorher las
-        // der Vergleich die rohen Worker-Farben gegen den fertigen Sync-Bau (8 328 Abweichungen am Spawn-Chunk, 0,071).
+        // der Fels-Stoff, `_felsStoff`, K17): verglichen wird der FERTIGE Bau beider Wege.
         // Die Zellen reisen als Kopie (der Bau stempelt sie, der Zellen-Vergleich unten liest die ungestempelten).
         const wFertig = r._buildVoxelChunkDataFromWorkerMesh(
             cx,
@@ -2083,7 +2047,7 @@ async function checkBandV17118WorkerEngaged(ctx) {
 
 // PHASE A — das Fundament watertight: A1 Morph-Cap+Stitch-Band ·
 // A2 Edit-Lokalität (der „Reset" ist GEMESSEN unsichtbar) · A5 Luft↔Ring-Kante ·
-// A6 Körper-Kollision (Begraben-Rettung + Decken-Sprung-Klemme + Kamera-Clip).
+// A6 Körper-Kollision (Decken-Sprung-Klemme + Kamera-Clip; die Rettung aus dem Fill hebt den Turm, gate:fall-waechter B).
 async function checkBandPhaseAFundament(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -2161,26 +2125,6 @@ async function checkBandPhaseAFundament(ctx) {
         // als String-Sentinel "inf" transportieren (freier Himmel = kein Treffer).
         const a6h = r._ceilingHeadroom();
         out.a6Headroom = Number.isFinite(a6h) ? a6h : "inf";
-        {
-            const pm = r.state.playerMesh;
-            const saved = { x: pm.position.x, y: pm.position.y, z: pm.position.z };
-            const { span } = r._voxelChunkConfig();
-            const bx = Math.floor(saved.x / span) * span + span / 2;
-            const bz = Math.floor(saved.z / span) * span + span / 2;
-            const bs = r._voxelSurfaceY(bx, bz);
-            if (typeof bs === "number") {
-                // Spieler IN den Fels setzen (3 m unter der Oberfläche) → Rettung muss heben.
-                pm.position.set(bx, bs - 3, bz);
-                r._rescuePlayerFromEditSolid(bx, bs - 3, bz, 2);
-                out.a6Rescue = { liftedY: pm.position.y, surf: bs, lifted: pm.position.y > bs - 1.6 };
-            }
-            // Spieler zurücksetzen (feld-nativ: Mesh + Velocity — zustands-neutral für Folge-Bands).
-            pm.position.set(saved.x, saved.y, saved.z);
-            if (r.state.playerVel) {
-                r.state.playerVel.setValue(0, 0, 0);
-                r.state._fieldVy = 0;
-            }
-        }
         return out;
     });
     if (res.error) {
@@ -2212,16 +2156,10 @@ async function checkBandPhaseAFundament(ctx) {
         "A6b: _ceilingHeadroom liefert eine Zahl/Infinity (Ammo-Raycast trägt)",
         res.a6Headroom === "inf" || (typeof res.a6Headroom === "number" && res.a6Headroom >= 0)
     );
-    check(
-        "A6a: die Begraben-Rettung HEBT einen im Fels steckenden Spieler (behavioral)",
-        res.a6Rescue && res.a6Rescue.lifted === true,
-        res.a6Rescue ? `y=${res.a6Rescue.liftedY.toFixed(1)} surf=${res.a6Rescue.surf.toFixed(1)}` : "kein Surf"
-    );
 }
 
-// Carve über den Worker — eingefaltet aus gate:carve (D3b): `Gegraben: 5× erde` → `FPS: 4` am Schöpfer-Holz; der Neubau
-// des Spieler-Chunks (und jedes Chunks mit einem Schnitt im 3×3) geht über den Worker, auch bei gesundem Frame (K69-2: am
-// Erdbau eines Dorfs um den Spieler baute er sonst 154–409 ms in EINEM Takt). Synchron baut nur ein ausdrückliches forceSync.
+// Carve über den Worker: der Neubau des Spieler-Chunks (und jedes Chunks mit einem Schnitt im 3×3) geht über den Worker,
+// auch bei gesundem Frame (K69-2). Synchron baut nur ein ausdrückliches forceSync.
 async function checkBandCarveWorker(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
