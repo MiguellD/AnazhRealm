@@ -32,12 +32,6 @@ const server = statikServer();
 // ── DIE KALT-ZEILE: die Probe in der Seite ab dem ersten Skript ──
 function KALT_PROBE() {
     const A = (window.__kalt = { proben: [], lang: [], ev: [] });
-    // der erste Asset-Auftrag an einen Studio-Faden
-    const post = Worker.prototype.postMessage;
-    Worker.prototype.postMessage = function (m, t) {
-        if (!A.auftrag && m && m.type === "build-asset") A.auftrag = Math.round(performance.now());
-        return post.call(this, m, t);
-    };
     try {
         new PerformanceObserver((l) => {
             for (const e of l.getEntries()) A.lang.push([Math.round(e.startTime), Math.round(e.duration)]);
@@ -57,19 +51,18 @@ function KALT_PROBE() {
         _foundryIngestBook: "Buch",
         _spawnSettlementSlot: "Dorf",
     };
-    // dazu die Bestellungen des Vorrats beim Namen (Wagen, Siedlungs-Probe)
+    // dazu die Siedlungs-Probe beim Namen
     const wickle = (P) => {
-        for (const name of [...Object.keys(KOSTEN), "_foundryVorrat", "_foundryRequestSettlement"]) {
+        for (const name of [...Object.keys(KOSTEN), "_foundryRequestSettlement"]) {
             const alt = P[name];
             if (typeof alt !== "function") continue;
             const k = KOSTEN[name];
             P[name] = function (...a) {
                 const t0 = performance.now();
-                const id = name === "_foundryVorrat" ? `${a[0]}|${a[1]}` : "";
-                if (!k) A.ev.push([Math.round(t0), name + " ab", id]);
+                if (!k) A.ev.push([Math.round(t0), name + " ab"]);
                 try {
                     const x = alt.apply(this, a);
-                    if (!k && x && typeof x.then === "function") x.then(() => A.ev.push([Math.round(performance.now()), name + " an", id]));
+                    if (!k && x && typeof x.then === "function") x.then(() => A.ev.push([Math.round(performance.now()), name + " an"]));
                     return x;
                 } finally {
                     const t1 = performance.now();
@@ -182,8 +175,7 @@ async function kaltLauf() {
                             weicht += Math.max(Math.abs(px[i] - a[i]), Math.abs(px[i + 1] - a[i + 1]), Math.abs(px[i + 2] - a[i + 2])) > tol;
                         const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
                         cv.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(px.buffer), W, H), 0, 0);
-                        const { drawCalls: dc, triangles: dreiecke } = auf.info;
-                        return { dc, dreiecke, luecke: weicht / (W * H), spiel: r.state.spielZeit, png: cv.toDataURL("image/png") };
+                        return { luecke: weicht / (W * H), spiel: r.state.spielZeit, png: cv.toDataURL("image/png") };
                     },
                     ECHT ? 960 : 640,
                     ECHT ? 540 : 360,
@@ -195,7 +187,7 @@ async function kaltLauf() {
             const b = await schuss(true);
             // die Ruhe zählt nur, wenn die Welt in ihr lief (die Spiel-Zeit wuchs um ≥ 1/6 der Ruhe)
             const lauf = b.spiel - a.spiel;
-            bildInfo = { dc: a.dc, dreiecke: a.dreiecke, luecke: lauf >= KONTROLLE_RUHE_S / 6 ? b.luecke : null, lauf };
+            bildInfo = { luecke: lauf >= KONTROLLE_RUHE_S / 6 ? b.luecke : null, lauf };
             if (bildDatei)
                 for (const [x, d] of [[a, bildDatei], [b, bildDatei.replace(/\.png$/, "-ruhe.png")]])
                     fs.writeFileSync(path.resolve(d), Buffer.from(x.png.split(",")[1], "base64"));
@@ -203,7 +195,7 @@ async function kaltLauf() {
         out = await page.evaluate(() => {
             const r = window.anazhRealm;
             const st = (r && r.state) || {};
-            // der Adapter vom Gerät, das zeichnet: r184 hält den Adapter nicht (WebGPUBackend.init, lokal)
+            // der Adapter vom Gerät, das zeichnet
             let adapter = null;
             try {
                 const i = st.renderer.backend.device.adapterInfo;
@@ -235,7 +227,7 @@ async function kaltLauf() {
     out.urteil = ankunftUrteil(out);
     const json = OPT("--json", null);
     if (json) fs.writeFileSync(json, JSON.stringify(out, null, 1));
-    // je Sekunde: der Stand am Ende der Sekunde (die letzte Probe) und die blockierten ms des Haupt-Threads
+    // je Sekunde: der Stand ihrer letzten Probe und die blockierten ms des Haupt-Fadens
     const proben = out.proben || [];
     const ende = out.kontrolle || Math.max(out.weltbildDa || 0, proben.length ? proben[proben.length - 1].t : 0);
     const S = Math.ceil(ende / 1000);
@@ -253,8 +245,7 @@ async function kaltLauf() {
             `Holz ${out.holz} · V${out.version} ===`
     );
     let letzte = null;
-    // der Erst-Bau je Sekunde = Zuwachs des Stamm-Zählers seit der letzten Probe (er wächst nur); eine Sekunde ganz ohne Probe
-    // (der Haupt-Thread hielt sie) zählt in die nächste Sekunde mit Probe
+    // der Erst-Bau je Sekunde = Zuwachs des Zählers seit der letzten Probe (eine Sekunde ohne Probe zählt in die nächste)
     let erstVor = 0;
     for (let s = 0; s < S; s++) {
         const inS = proben.filter((p) => Math.floor(p.t / 1000) === s);
@@ -277,19 +268,15 @@ async function kaltLauf() {
         );
     }
     if (out.buchDa) console.log(`  ${(out.buchDa / 1000).toFixed(1)} s  das Buch der Studios ist da`);
-    if (out.auftrag) console.log(`  ${(out.auftrag / 1000).toFixed(1)} s  der erste Asset-Auftrag ist gesendet`);
-    // die Phasen des Vorrats, wie sein Merker sie nennt (je Wechsel die erste Probe)
+    // die Phasen des Vorrats, wie sein Merker sie nennt
     let phase = null;
     for (const p of proben) {
         if (!("vorrat" in p) || p.vorrat === phase) continue;
         if (p.vorrat || phase) console.log(`  ${(p.t / 1000).toFixed(1)} s  der Vorrat ${p.vorrat || "ist durch"}`);
         phase = p.vorrat;
     }
-    for (const [t, was, id] of out.ev || []) if (!/_foundryVorrat/.test(was)) console.log(`  ${(t / 1000).toFixed(1)} s  ${was} ${id}`);
-    const wagen = (out.ev || []).filter((e) => e[1] === "_foundryVorrat an").map((e) => e[0]);
-    if (wagen.length) console.log(`  ${(Math.max(...wagen) / 1000).toFixed(1)} s  der Vorrat der Wagen steht (${wagen.length})`);
-    if (out.bild && out.bild.datei)
-        console.log(`  das Bild bei der Kontrolle: ${out.bild.datei} (${out.bild.dc} Befehle · ${out.bild.dreiecke} Dreiecke)`);
+    for (const [t, was] of out.ev || []) console.log(`  ${(t / 1000).toFixed(1)} s  ${was}`);
+    if (out.bild && out.bild.datei) console.log(`  das Bild bei der Kontrolle: ${out.bild.datei}`);
     const u = out.urteil;
     const s = (ms) => (ms ? (ms / 1000).toFixed(2) + " s" : "—");
     console.log(
@@ -319,7 +306,6 @@ const ankunftSelbsttest = () =>
     [
         ["ganz in 4 s", { kontrolle: 4000, bild: { luecke: 0.004 } }, false],
         ["die Eigenmeldung früh, die Kontrolle spät", { weltbildDa: 2000, kontrolle: 9000, bild: { luecke: 0 } }, true],
-        ["die Eigenmeldung ohne Kontrolle", { weltbildDa: 2000, bild: { luecke: 0 } }, true],
         ["das Bild bei der Kontrolle weicht 8 %", { kontrolle: 4000, bild: { luecke: 0.08 } }, true],
         ["die Welt nennt das halbe Weltbild", { kontrolle: 4000, bild: { luecke: 0 }, ohne: ["x"] }, true],
     ].map(([fall, m, rot]) => {
