@@ -316,6 +316,7 @@
     if(lRun>availRun){ lGo=clamp(availRun/lN, 0.20, lGo); lRun=lN*lGo; } // passt der Speicherlauf nicht in die Tiefe → Auftritt kürzen (steiler), bleibt im Haus
     lW=loftW; }
   const zBandTop = (Dp/2)*(1 - NORM.kopfSpar/Math.max(0.6,ridgeY-eaveY));         // wo das Dach 1.9 m über Estrich liegt
+  const KNIESTOCK = Math.abs(zBandTop)>0.6 && Math.abs(zBandTop)<(Dp/2-0.08)-0.3;                               // steht dort der Kniestock (die Drempelwand des Estrichs, boeden), oder liegt der Stehraum bis an die Wand
   // GESETZ Austritt-Podest: Haupttreppe mündet so weit hinten, dass HINTER ihr ein freier OG-Boden ≥ NORM.podest bleibt → man kommt in den ersten Stock. Loft (RECHTS daneben) kehrt -z zum First zurück.
   let stZ0  = hasLoft ? clamp(DiF-NORM.podest, -Dp/2+NORM.eingang+stRun, DiF-0.4) - stRun
                       : clamp(Math.min(zBandTop-0.45, 1.3) - stRun, -Dp/2+NORM.eingang, -0.6);
@@ -335,12 +336,13 @@
     flights.push({base:levels[0].y, tr:'L', x0:TRACK.L[0], x1:TRACK.L[1], zFoot:stZ0, dir:1, N:stN, rise:stRise, go:stGo, isLoft:false, atLevel:'attic', topEdge:'back', footEdge:'front'}); }
   let LOFT=null;
   if(hasLoft){ const i=levels.length-1, tr=(i%2===0)?'L':'R'; let dir=(i%2===0)?1:-1;          // Speicherlauf top→Dachboden (Raumspar)
-    const austritt=(d)=>Math.abs(((d>0)?stZ0:wz1)+d*(lRun+0.3));                            // KOPFRAUM-GESETZ (Welle L): der Speicherlauf mündet im STEHRAUM (|z| ≤ zBandTop: Dach ≥ kopfSpar über dem Estrich) — trüge die Kehre ihn unter die Schräge, läuft er vom anderen Schacht-Ende zum First (vorher bei drei Geschossen Kopfraum 1,2 m am Austritt: der Kopf stak im Dach)
+    const austritt=(d)=>Math.abs(((d>0)?stZ0:wz1)+d*(lRun+(KNIESTOCK?NORM.podest:0.3)));                    // KOPFRAUM-GESETZ (Welle L): der Speicherlauf mündet im STEHRAUM (|z| ≤ zBandTop: Dach ≥ kopfSpar über dem Estrich) — vor dem Kniestock MIT seinem Austritt-Podest (NORM.podest, wie die Haupttreppe), ohne ihn 0,3 m Kopfraum — trüge die Kehre ihn unter die Schräge, läuft er vom anderen Schacht-Ende zum First (vorher bei drei Geschossen Kopfraum 1,2 m am Austritt: der Kopf stak im Dach; bis siedlung-k5-nah reichten 0,3 m: der Körper stand am Kniestock)
     if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;
+    if(austritt(dir)<=zBandTop){                                                             // KEIN SPEICHERLAUF OHNE STEHRAUM AM AUSTRITT: trägt keine Richtung ihn samt Podest in den Stehraum, bleibt der Estrich geschlossen wie unter dem flachen Dach (bis siedlung-k5-nah endete er 0,46 m vor dem Kniestock: kein Körper kam vom Lauf)
     const zFoot=(dir>0)?stZ0:wz1, zTop=zFoot+dir*lRun, z0=Math.min(zFoot,zTop), z1=Math.max(zFoot,zTop);
     LOFT={x0:TRACK[tr][0],x1:TRACK[tr][1],z0,z1,xc:(TRACK[tr][0]+TRACK[tr][1])/2,base:levels[i].y,top:eaveY,N:lN,rise:lRise,go:lGo,dir,zFoot};
     flights.push({base:levels[i].y, tr, x0:TRACK[tr][0], x1:TRACK[tr][1], zFoot, dir, N:lN, rise:lRise, go:lGo, isLoft:true, atLevel:'attic', topEdge:(dir>0)?'back':'front', footEdge:(dir>0)?'front':'back'});
-    addCircR(LOFT.x0-0.1, LOFT.z0-0.1, LOFT.x1+0.1, LOFT.z1+0.3, i, 'speichertreppe'); }
+    addCircR(LOFT.x0-0.1, LOFT.z0-0.1, LOFT.x1+0.1, LOFT.z1+0.3, i, 'speichertreppe'); } }
   const levelOpen=levels.map(()=>({front:false,back:false}));                              // offene Geländerkante je Geschoss (wo ein Lauf an-/austritt)
   flights.forEach(f=>{ if(typeof f.atLevel==='number') levelOpen[f.atLevel][f.topEdge]=true;
     const lvF=levels.findIndex(L=>Math.abs(L.y-f.base)<0.01); if(lvF>=0) levelOpen[lvF][f.footEdge]=true; });
@@ -785,16 +787,16 @@
     for(let k=1;k<levels.length;k++) floorWithStair(levels[k].y, levelOpen[k]);          // jedes OG mit Podest-Kehre
     // ── Dachboden (Estrich) auf eaveY: VOLL begehbar; niedriger Traufkopfraum = real ──
     if(levels.length===1){ if(hasAttic) floorWithStair(eaveY,{front:false,back:true}); else rect(eaveY-0.05,-Wi,Wi,-Di,Di,'boden'); }   // Estrich nur bei nutzbarem Dachraum; flaches Dach → geschlossene Decke
-    else if(!LOFT){ rect(eaveY-0.05,-Wi,Wi,-Di,Di,'boden'); }                                          // flaches Dach, ≥2 Geschosse: geschlossene Estrich-Decke, kein Speicherloch/Kniestock
+    else if(!LOFT){ rect(eaveY-0.05,-Wi,Wi,-Di,Di,'boden'); }                                          // ≥2 Geschosse ohne Speicherlauf (flaches Dach oder kein Stehraum am Austritt): geschlossene Estrich-Decke, kein Speicherloch/Kniestock
     else { levelTop=eaveY; const L=LOFT;                                     // Estrich voll minus Loch der Speichertreppe (LOFT)
       rect(eaveY-0.05,-Wi,L.x0,-Di,Di,'boden'); rect(eaveY-0.05,L.x1,Wi,-Di,Di,'boden');
       rect(eaveY-0.05,L.x0,L.x1,-Di,L.z0,'boden'); rect(eaveY-0.05,L.x0,L.x1,L.z1,Di,'boden');
-      const hclx=(L.x0+L.x1)/2,hclz=(L.z0+L.z1)/2; railSeg(L.x0,L.z1,L.x1,L.z1,hclx,hclz); railSeg(L.x0,L.z0,L.x0,L.z1,undefined,hclz); railSeg(L.x1,L.z0,L.x1,L.z1,undefined,hclz);
+      const hclx=(L.x0+L.x1)/2,hclz=(L.z0+L.z1)/2,zR=(L.dir>0)?L.z0:L.z1; railSeg(L.x0,zR,L.x1,zR,hclx,hclz); railSeg(L.x0,L.z0,L.x0,L.z1,undefined,hclz); railSeg(L.x1,L.z0,L.x1,L.z1,undefined,hclz);   // BRÜSTUNG NUR WO KEIN LAUF AUSTRITT (wie floorWithStair): der Speicherlauf mündet in seiner Laufrichtung (dir > 0 an z1) — bis siedlung-k5-nah stand die Brüstung immer an z1 und schloss jeden Lauf nach +z
       // ── KNIESTOCK (Drempelwand) bei ±zBandTop: Barriere zum niedrigen Traufkopfraum → Spieler bleibt im Stehraum ≥1.9 m (schliesst den Trauf-Anstoss); Lücke an der Speichertreppenspur ──
-      [-zBandTop,zBandTop].forEach(zc=>{ if(!(Math.abs(zc)>0.6&&Math.abs(zc)<Di-0.3))return; const kH=1.15,y0=eaveY,yc=y0+kH/2, crosses=(zc>L.z0-0.3&&zc<L.z1+0.3);
+      [-zBandTop,zBandTop].forEach(zc=>{ if(!KNIESTOCK)return; const kH=1.15,y0=eaveY,yc=y0+kH/2, crosses=(zc>L.z0-0.3&&zc<L.z1+0.3);
         (crosses?[[-Wi,L.x0-0.1],[L.x1+0.1,Wi]]:[[-Wi,Wi]]).forEach(([x0,x1])=>{ if(x1-x0<0.3)return; const xc=(x0+x1)/2,len=x1-x0;
           beam(g,xc,y0+0.05,zc,len,0.08,0.12,'holz'); beam(g,xc,y0+kH,zc,len,0.10,0.12,'holz'); beam(g,xc,yc,zc,len,kH-0.22,0.06,'lehm');
-          for(let x=x0+0.12;x<=x1-0.1;x+=1.0)beam(g,x,yc,zc,0.10,kH,0.10,'holz'); addSolid(xc,yc,zc,len,kH,0.14,'kniestock'); }); }); }   // 3-seitig; Seiten-Brüstung OHNE Innenversatz → Austritt (-z) bleibt frei für Körper
+          for(let x=x0+0.12;x<=x1-0.1;x+=1.0)beam(g,x,yc,zc,0.10,kH,0.10,'holz'); addSolid(xc,yc,zc,len,kH,0.14,'kniestock'); }); }); }   // 3-seitig; Seiten-Brüstung OHNE Innenversatz → der Austritt in Laufrichtung bleibt frei für Körper
     return g; }
 
   function bohle(g,cx,cy,cz,w,h,horiz,role){ const nb=Math.max(3,Math.round(w/0.22));
@@ -1475,7 +1477,7 @@
     for(let t=0;t<nT;t++){ const ins=t*W*_ir, w=Math.max(1.4,W-2*ins), dd=Math.max(1.4,Dp-2*ins), cx=asym*ins, cz=-(Dp-dd)/2;
       if(t===0&&LOFT){ const hx0=LOFT.x0-0.05,hx1=LOFT.x1+0.05,hz0=LOFT.z0-0.05,hz1=LOFT.z1+0.05;   // TREPPENAUGE-GESETZ: von innen erschlossen — der Speicherlauf mündet in Tier 0, SIA-Ring ums Auge
         [[pcx-pw/2,hx0,pcz-pd/2,pcz+pd/2],[hx1,pcx+pw/2,pcz-pd/2,pcz+pd/2],[hx0,hx1,pcz-pd/2,hz0],[hx0,hx1,hz1,pcz+pd/2]].forEach(([a,b2,c2,d2])=>{ if(b2-a>0.06&&d2-c2>0.06) beam(g,(a+b2)/2,y+0.07,(c2+d2)/2,b2-a,0.14,d2-c2,'boden'); });
-        bruestungRect(g,hx0,hx1,hz0,hz1,y+0.14,grl); }
+        const zA=(LOFT.dir>0)?hz0:hz1; bruestungSeg(g,'z',hx0,hx1,zA,zA,y+0.14,grl); bruestungSeg(g,'x',hx0,hx0,hz0,hz1,y+0.14,grl); bruestungSeg(g,'x',hx1,hx1,hz0,hz1,y+0.14,grl); }   // 3-seitig: der Austritt bleibt frei
       else beam(g,pcx,y+0.07,pcz,pw,0.14,pd,'boden');                                                // GESCHOSSPLATTE über den VORHERIGEN Footprint
       const wy=y+tH*0.5, wh=1.0, nx=Math.max(1,Math.round(w/2.8)), nz=Math.max(1,Math.round(dd/2.8));
       const fx=[],bx=[],sz2=[];
