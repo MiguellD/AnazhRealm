@@ -601,7 +601,8 @@ class AnazhRealm_speicher_laden {
                 // 22.10.) trug keine Marke — der Satz des Spielers setzte Zahlen-ids, und die Lichtung räumte sein Werk nach Stoff
                 // (der Korpus, speicher.K5: der Stein-Block von V18.546.53 fiel). Dort ist Werk, was weder das Feld warf noch
                 // nach Art Natur ist.
-                werk: a.werk === true || (state.herkunft !== 1 && a.feldWurf !== true && !this._naturArt({ type: typ })),
+                werk:
+                    a.werk === true || (state.herkunft !== 1 && a.feldWurf !== true && !this._naturArt({ type: typ })),
                 // PRÄGUNG-WELT — der Guss-Stempel reist durch den Reload mit
                 // (spawnArchitecture ist der EINE Sanitize-Chokepoint).
                 studioOv: a.studioOv,

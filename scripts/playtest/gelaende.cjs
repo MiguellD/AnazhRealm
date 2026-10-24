@@ -25,16 +25,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
                 r._terrainDensityAt(11.5, base - 33, 0) < 0 &&
                 r._terrainDensityAt(12.5, base - 33, 0) > 0;
             out.editStored = r.state.worldMeta.voxelEdits.length === 1;
-            // Persistenz: der Edit reist im Welt-Snapshot.
-            r.state.worldMeta.voxelEdits = [];
-            r.carveVoxel(10, base, 10, 5);
-            const snap = r.buildStateSnapshot();
-            out.snapshotHasEdit = !!(
-                snap &&
-                snap.worldMeta &&
-                Array.isArray(snap.worldMeta.voxelEdits) &&
-                snap.worldMeta.voxelEdits.length >= 1
-            );
             // Kein Edit fällt still (K23): 270 Schnitte → 270 Edits.
             r.state.worldMeta.voxelEdits = [];
             for (let i = 0; i < 270; i++) r.carveVoxel(i * 3, base, i * 3, 3);
@@ -57,7 +47,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
             voxelP3Results.carveSubtracts
         );
         check("Voxel P3: der Schnitt-Edit landet in worldMeta.voxelEdits", voxelP3Results.editStored);
-        check("Voxel P3: der Schnitt-Edit reist im Welt-Snapshot (überlebt Reload)", voxelP3Results.snapshotHasEdit);
         check("Voxel P3: kein Edit fällt still — 270 Schnitte, 270 Edits (K23)", voxelP3Results.capHeld);
         check("Voxel P3: der Chat-Befehl `voxel carve` schnitzt eine Mulde", voxelP3Results.chatCarveAddsEdit);
     }

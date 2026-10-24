@@ -83,8 +83,8 @@ const OBERKANTE_BENANNT = {
     _creatureWaterContextAt: [["_voxelSurfaceY"], "Ufer-Suche: Land in den Nachbar-Spalten, nie der Boden des Leibs"],
     _bergSchattenVerdeckt: [["_terrainMacroSurfaceY"], "Sicht: die Berg-Verdeckung einer Region (kein Leib)"],
     _bodenUmzug: [
-        ["_voxelSurfaceY"],
-        "Platzierung: ein Save eines alten Bodens setzt Bauten und Spieler auf die Oberfläche des neuen (K16)",
+        ["_voxelSurfaceY", "_terrainMacroSurfaceY"],
+        "Platzierung: ein Save eines alten Bodens setzt Bauten, Gruben und Spieler auf die Oberfläche des neuen (K16)",
     ],
 };
 
@@ -407,7 +407,9 @@ function selbsttest() {
     const amStamm = quellenWand(stamm);
     console.log(`  ${amStamm.length ? "❌" : "✅"} Quellen-Wand am Stamm: ${amStamm.join(" · ") || "sauber"}`);
     if (amStamm.length) fehler.push("die Quellen-Wand ist am Stamm rot: " + amStamm.join(" · "));
-    const kopie = stammLib.ersetze(stamm, null,
+    const kopie = stammLib.ersetze(
+        stamm,
+        null,
         /(\n {4}_werkBoden\([^)]*\) \{)/,
         "$1\n        if (entry.__schmuggel) return () => this.getTerrainHeightAt(0, 0);"
     );
@@ -419,7 +421,9 @@ function selbsttest() {
     if (!genannt) fehler.push("die Quellen-Wand nennt den eingeschleusten Dach-Leser nicht");
     // ein unbenannter neuer Leser der Oberkante an einem Leib, und ein veralteter Name
     {
-        const k3 = stammLib.ersetze(stamm, null,
+        const k3 = stammLib.ersetze(
+            stamm,
+            null,
             /(\n {4}_todHebeTafel\([^)]*\) \{)/,
             "\n    _schmuggelLeib(c) {\n        c.position.y = this.getTerrainHeightAt(c.position.x, c.position.z);\n    }\n$1"
         );
@@ -460,7 +464,7 @@ async function probe(K) {
         r._gameLoopTick(tMs);
     };
     const f = r._ensureAssetFoundry();
-    await window.__weltDa(() => (f && f.ready && f.recipes && f.recipes.gt && st.blueprints.fahrzeug_gt));
+    await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints.fahrzeug_gt);
     const todesEbene = (st.terrainBaseHeight || 0) - 88;
     // DIE BODEN-WAHRHEIT: das Dichtefeld selbst — der erste Fels unter einem Punkt (0,05-m-Schritte), unabhängig von jedem
     // Leser des Spiels. Startet der Punkt im Fels, ist der Körper darin: Grund = +Infinity (er liegt unter ihm).

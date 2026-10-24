@@ -448,7 +448,8 @@ jobs:
               if: matrix.gruppe == 1
               # speicher.K1: der Browser stirbt hart (im Schreiber oder zufällig), der nächste Boot lädt EIN Schreiben, <= 10 s alt,
               # keine halbe Welt, jedes Loch steht (die Linie über 256, K23); der Selbsttest schreibt den Platz in zwei Zügen und
-              # sieht ROT. Dazu (K) (U) der Lade-Pfad, (S) (C) der save-server. Basis b9537781 ROT: 10 von 21 Boots halb.
+              # sieht ROT. Dazu der Korpus (speicher.K5: je Versions-Stufe ein Stand ihrer Version lädt am Kopf, daraus (U) (W) (K)),
+              # (S) (C) der save-server. Basis b9537781 ROT: 10 von 21 Boots halb.
               run: npm run gate:persistence
 
             - name: Persistenz-Härtung Teil 2 (Tab-Tod 8-19 ohne save-server)
