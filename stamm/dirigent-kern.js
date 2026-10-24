@@ -557,7 +557,7 @@ class AnazhRealm {
                 // der Sender batcht pro Fixed-Step (seq · yaw · Tasten-Bitmask), der
                 // Empfänger simuliert den Fremd-Charakter durch DENSELBEN Schritt-Pfad.
                 lockstep: true,
-                lockstepDebug: false, // Smoke-/Diag-Haken: zeichnet Sende-/Ghost-Traces auf
+                lockstepDebug: false, // der Haken von gate:mp-sync (e): zeichnet Sende- und Ghost-Spuren auf
                 _lockstepSeq: -1,
                 _lockstepOut: null,
                 _lockstepLastFlush: 0,
@@ -1711,6 +1711,27 @@ class AnazhRealm {
                 phase: (((p.x * 12.9898 + p.z * 78.233) % 6.2832) + 6.2832) % 6.2832,
             });
         }
+        // DER BRAND (feld.K3#2): jede glühende Zelle des Felds leuchtet als Feuer über ihrer Mitte, die Masse folgt der Glut
+        const bf = this.state.brandFeld;
+        if (bf && bf.size) {
+            const cs = AnazhRealm.LIFE_FIELD.cell;
+            const Lf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+            for (const b of bf.values()) {
+                const [bx, bz] = [(b.cx + 0.5) * cs, (b.cz + 0.5) * cs];
+                if (!(b.glut > 0) || (bx - x) * (bx - x) + (bz - z) * (bz - z) > R * R) continue;
+                const phase = (((bx * 12.9898 + bz * 78.233) % 6.2832) + 6.2832) % 6.2832;
+                if (b.y == null) b.y = this._voxelSurfaceY(bx, bz) || 0;
+                nimm(b, {
+                    quelle: "brand",
+                    x: bx,
+                    y: b.y + 1,
+                    z: bz,
+                    L: Lf,
+                    masse: AnazhRealm.BRAND.licht * b.glut,
+                    phase,
+                });
+            }
+        }
         const tor = this._portalLeuchte;
         if (tor) nimm(tor, Object.assign({}, tor));
         return out;
@@ -1798,7 +1819,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.86";
+AnazhRealm.VERSION = "18.546.87";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

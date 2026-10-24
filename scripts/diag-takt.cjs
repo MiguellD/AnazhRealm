@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 // diag-takt.cjs — DIE TAKT-WAND: ein Takt-Subsystem rechnet Teures nur für das, was es betrifft — nie je Takt für
-// die ganze Welt (`werkbank takt` 02.10.: `_tickFocusingAffordances` rechnete die Compound-Tags aller ~120 Bauten vor der
-// Reichweite, Ø 20 ms; Reichweite zuerst: Spiel-Takt p50 31 → 13 ms). Das Gesetz ist eine ZÄHLUNG, keine Zeit (CI-fest): in einer Welt mit 300 brennbaren Bauten und EINEM Brennglas
-//   T1  steht kein Bau in seiner Reichweite → der Brennglas-Takt ruft computeCompoundTags 0-mal
-//   T2  stehen 3 Bauten in Reichweite → je Takt 1 bis 3 Rufe (genau die Betroffenen); am Mittag ≥ 1 Brennpunkt, sonst bricht sie ab
+// die ganze Welt. Das Gesetz ist eine ZÄHLUNG, keine Zeit (CI-fest). Den Brennglas-Takt (T1/T2, die Tags nur der Bauten in
+// Reichweite) zählt seit feld-k2k3 allein gate:brennglas-takt (A) und (N): jeder Griff an einen Unbetroffenen, nicht nur die Tags.
 //   T3  der Feld-Bake-Takt (`_weltBakeErlaubt`) geht NAH zuerst über alle Verbraucher: wer im Vor-Fenster nah abgewiesen
 //       wurde, bekommt im nächsten zuerst (eine gesetzte Eiche in 170 m blieb sonst 200 Takte ohne Feld)
 //   T4  und nie verhungert: was in der zweiten Fenster-Hälfte übrig ist, bekommt auch der Ferne (die Schwelle über das
@@ -22,7 +20,7 @@
 //       je Lade-Frame (`_ladeFrist`); Ring-Boden und Fern-Ring (Lade-Takt) auch nach ihr; der Selbsttest nennt jeden vakuösen Leser.
 //   T10 DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2, B3a): die Buch-Frage reist IN der Geburt des Werks (Name „buch"), nie als
 //       Nachricht (Chrome reicht sie erst weiter, wenn der volle Haupt-Faden „Skript gelaufen" liest); seine Helfer kommen mit ihm.
-// --selftest: der Takt mit den Tags ALLER Bauten macht T1 rot, der Wer-zuerst-fragt-Takt T3, die Schwelle über das ganze Fenster
+// --selftest: der Wer-zuerst-fragt-Takt macht T3 rot, die Schwelle über das ganze Fenster
 // T4, die FIFO-Pumpe und die FIFO-Freigabe T5, die Nur-der-Nächste-Wahl (Pumpe UND Freigabe) T6, die löschende Frist T8, die Kappe
 // allein T9 (je Leser).
 //
@@ -42,77 +40,7 @@ const SELBST = process.argv.includes("--selftest");
         aus = await realm.page.evaluate(async (selbst) => {
             const r = window.anazhRealm;
             const st = r.state;
-            st.weather = "sunny";
             if (!r._buehneSteht()) return { fehler: "Bühne steht nicht" };
-            const typ = "baum_eiche";
-            if (!st.blueprints[typ]) return { fehler: "kein " + typ };
-            const tags = r.computeCompoundTags(st.blueprints[typ]);
-            if (!((tags.brennbar || 0) >= r.constructor.BRENNBAR_TAG_MIN))
-                return { fehler: typ + " ist nicht brennbar" };
-            // 300 brennbare Bauten weit vom Brennglas bei (2000, 2000), alle `silent` (die Lage exakt); das Brennglas ist ein Bauplan,
-            // der wirklich bündelt.
-            const bauten = [];
-            for (let i = 0; i < 300; i++) {
-                const x = 400 + (i % 20) * 9,
-                    z = 400 + Math.floor(i / 20) * 9;
-                bauten.push(r.spawnArchitecture(typ, { x, y: 0, z }, { rotationY: 0, silent: true }));
-            }
-            const glasTyp = Object.keys(st.blueprints).find((n) => {
-                try {
-                    const a = r.computeBlueprintAffordances(st.blueprints[n]);
-                    return !!(a && a.focusing);
-                } catch {
-                    return false;
-                }
-            });
-            if (!glasTyp) return { fehler: "kein Bauplan bündelt (focusing)" };
-            const glas = r.spawnArchitecture(glasTyp, { x: 2000, y: 0, z: 2000 }, { rotationY: 0, silent: true });
-            if (!glas) return { fehler: "Brennglas nicht gesetzt" };
-            st.timeOfDay = 0.5;
-            if (st.world) st.world.timeOfDay = 0.5;
-            const sonne = r._sonnenRichtung();
-            const brennpunkte = sonne && sonne.y > 0 ? r._brennpunkte(glas, sonne).length : 0;
-            if (!brennpunkte)
-                return { fehler: `das Brennglas (${glasTyp}) hat am Mittag keinen Brennpunkt — T1/T2 wären vakuös` };
-            // Zählung: computeCompoundTags-Rufe, die AUS dem Brennglas-Takt kommen.
-            let imTakt = false,
-                rufe = 0;
-            const roh = r.computeCompoundTags;
-            r.computeCompoundTags = function (bp) {
-                if (imTakt) rufe++;
-                return roh.call(this, bp);
-            };
-            const takt = r._tickFocusingAffordances;
-            const tick = selbst
-                ? function (dt) {
-                      // Die alte Klasse: Tags aller Bauten vor jeder Reichweiten-Prüfung.
-                      for (const t of this.state.architectures) {
-                          const bp = this.state.blueprints[t.type];
-                          if (bp) this.computeCompoundTags(bp);
-                      }
-                      return takt.call(this, dt);
-                  }
-                : takt;
-            const lauf = (n) => {
-                rufe = 0;
-                for (let i = 0; i < n; i++) {
-                    imTakt = true;
-                    try {
-                        tick.call(r, 0.001); // dt winzig: keine Zündung, nur der Takt
-                    } finally {
-                        imTakt = false;
-                    }
-                }
-                return rufe;
-            };
-            const t1 = lauf(10);
-            // T2: drei brennbare Bauten neben das Brennglas.
-            const nah = [];
-            for (let i = 0; i < 3; i++)
-                nah.push(r.spawnArchitecture(typ, { x: 2000 + 1 + i, y: 0, z: 2000 }, { rotationY: 0, silent: true }));
-            const t2 = lauf(10);
-            r.computeCompoundTags = roh;
-            for (const e of bauten.concat(nah, [glas])) if (e) r.removeArchitecture(e);
             // T3/T4 — der Feld-Bake-Takt: Fenster 1 verbrauchen ferne Fits das Budget, ein naher wird abgewiesen; im
             // Fenster 2 bekommt zuerst der nahe (T3), und was in der zweiten Fenster-Hälfte übrig ist, auch der ferne (T4).
             const werZuerst = function () {
@@ -412,8 +340,6 @@ const SELBST = process.argv.includes("--selftest");
 
             return {
                 t10,
-                t1,
-                t2,
                 t3,
                 t5,
                 t5i,
@@ -421,10 +347,6 @@ const SELBST = process.argv.includes("--selftest");
                 t6: { ...t6, frei: t6i.frei },
                 t8,
                 t9,
-                n: bauten.length,
-                reichweite: r.constructor.FOCUSING_HEAT_RANGE_M,
-                glasTyp,
-                brennpunkte,
             };
         }, SELBST);
     } finally {
@@ -434,8 +356,6 @@ const SELBST = process.argv.includes("--selftest");
         console.error("❌ FEHLER:", aus ? aus.fehler : "keine Antwort");
         process.exit(1);
     }
-    const T1 = aus.t1 === 0;
-    const T2 = aus.t2 >= 10 && aus.t2 <= 3 * 10; // die Betroffenen werden gerechnet (nicht vakuös), nie mehr
     const t3 = aus.t3;
     const T3 = t3.fernJa === 4 && t3.nah1 === false && t3.nah2 === true && t3.fern2 === false;
     const T4 = t3.fern3 === true;
@@ -457,10 +377,9 @@ const SELBST = process.argv.includes("--selftest");
     const T10 = t10.geboren && t10.name === "buch" && !t10.post.includes("get-book") && t10.helfer === t10.helferSoll;
     if (SELBST) {
         const vakuoes = Object.keys(frist).filter((k) => frist[k]); // je Leser rot beim Namen, sonst geht er an `_kappeOffen` vorbei
-        const ok = !T1 && !T3 && !T4 && !T5 && !T6 && !T8 && !T5i && !T5a && !T9 && !vakuoes.length && !t9.gang.some(Boolean) && !T10;
+        const ok = !T3 && !T4 && !T5 && !T6 && !T8 && !T5i && !T5a && !T9 && !vakuoes.length && !t9.gang.some(Boolean) && !T10;
         console.log(
-            `${ok ? "✅" : "❌"} SELBST-TEST: der Takt mit den Tags ALLER Bauten ruft ${aus.t1}× in 10 Takten → T1 ${T1 ? "grün (vakuös!)" : "rot"}; ` +
-                `der Wer-zuerst-fragt-Takt gibt Fenster 2 dem Fernen (${t3.fern2}) → T3 ${T3 ? "grün (vakuös!)" : "rot"}; ` +
+            `${ok ? "✅" : "❌"} SELBST-TEST: der Wer-zuerst-fragt-Takt gibt Fenster 2 dem Fernen (${t3.fern2}) → T3 ${T3 ? "grün (vakuös!)" : "rot"}; ` +
                 `die Schwelle über das ganze Fenster verweigert dem Fernen das übrige Budget (${t3.fern3}) → T4 ${T4 ? "grün (vakuös!)" : "rot"}; ` +
                 `die FIFO-Pumpe sendet ${t5.folge.join("·")}, die FIFO-Freigabe gibt ${aus.t5i.frei[0]} zuerst, der eingefrorene Rang gibt den Anhänger als ${aus.t5a.erster === 10 ? "ersten (vakuös!)" : `Nr. ${aus.t5a.erster}`} → T5 ${T5 ? "grün (vakuös!)" : "rot"}; ` +
                 `die Nur-der-Nächste-Wahl sendet ${t6.folge.join("·")}, gibt ${t6.frei.join("·")} frei → T6 ${T6 ? "grün (vakuös!)" : "rot"}; ` +
@@ -471,9 +390,7 @@ const SELBST = process.argv.includes("--selftest");
         process.exit(ok ? 0 : 1);
     }
     const zeile = (ok, text) => console.log(`  ${ok ? "✅" : "❌"} ${text}`); // EIN Drucker je Prüfzeile
-    console.log("=== DIE TAKT-WAND — der Brennglas-Takt rechnet nur die Betroffenen ===");
-    zeile(T1, `T1 ${aus.n} Bauten, keiner in Reichweite: ${aus.t1} Tag-Rufe in 10 Takten (Soll 0)`);
-    zeile(T2, `T2 3 Bauten in Reichweite (${aus.reichweite} m) von ${aus.glasTyp} (${aus.brennpunkte} Brennpunkte): ${aus.t2} Tag-Rufe in 10 Takten (10–30)`);
+    console.log("=== DIE TAKT-WAND — Takte rechnen nur die Betroffenen ===");
     zeile(T3, `T3 Feld-Bake-Takt nah zuerst: Fenster 1 fern ${t3.fernJa}/4 · nah ${t3.nah1} → Fenster 2 nah ${t3.nah2} · fern ${t3.fern2}`);
     zeile(T4, `T4 nie verhungert: zweite Fenster-Hälfte, übriges Budget → fern ${t3.fern3}`);
     zeile(T5, `T5 Worker-Schlange nah zuerst: nach ${t5.K} im Worker + 10 Vorrat gesendet ${t5.folge.join(" · ")} (der nachpriorisierte Schlüssel in 5 m, dann der Bau in 10 m) · Nummer beim Senden ${t5.nummernSteigen} · im Flug ${t5.imFlug} · die Freigabe gibt ${aus.t5i.frei[0]} von ${aus.t5i.n} zuerst frei (Soll e10, am Ort des Spielers) · der Anhänger am Wächter (ein naher Leser am fernen Zug, ${aus.t5a.n} Ergebnisse am Wächter, Soll 11) geht als ${aus.t5a.erster === 10 ? "erster" : `Nr. ${aus.t5a.erster} statt erster — Täter: der eingefrorene Rang (_foundryNaeher hebt nur die Wartenden)`} frei`);
@@ -500,7 +417,7 @@ const SELBST = process.argv.includes("--selftest");
                 ? ""
                 : " — Täter _ensureAssetFoundry: die Buch-Frage reist nicht in der Geburt (Name „buch\"), sie wartet auf den Haupt-Faden")
     );
-    if (!(T1 && T2 && T3 && T4 && T5 && T6 && T8 && T9 && T10)) {
+    if (!(T3 && T4 && T5 && T6 && T8 && T9 && T10)) {
         console.error("\n❌ ROT — ein Takt rechnet Teures für die ganze Welt.");
         process.exit(1);
     }

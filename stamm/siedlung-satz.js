@@ -3203,6 +3203,15 @@ class AnazhRealm_siedlung_satz {
 
     // Restore); centerY wird aus pos.y abgeleitet, mit Boden-Heuristik
     // (pos.y - 0.5 ≈ Spielerfußhöhe falls at_player benutzt wurde).
+    // Die Kennung eines Werks aus Art und Same; trägt die Welt sie schon (derselbe Akt zweimal), die nächste freie Folge.
+    _werkKennung(type, seed) {
+        const basis = "w-" + type + "-" + (seed >>> 0).toString(36);
+        const da = (id) => this.state.architectures.some((e) => e.id === id);
+        let id = basis;
+        for (let k = 2; da(id); k++) id = basis + "~" + k;
+        return id;
+    }
+
     spawnArchitecture(type, position, opts = {}) {
         // JEDE ABSAGE DER WURZEL TRÄGT IHREN GRUND (Schau-2, Gegenprüfung Runde 3): `opts.absage(grund)` — der Setz-Op zählt sie,
         // der Satz des Ergebnisses (`_ergebnisSatz`, `SETZ_GRUND`) sagt sie; vorher fiel ein Wurf hier still.
@@ -3275,8 +3284,17 @@ class AnazhRealm_siedlung_satz {
             );
             return nein("wasser");
         }
+        // DIE KENNUNG EINES WERKS AUS EINEM AKT ist eine Funktion des Akts (feld.K2): Art und Same reisen mit dem Programm, jeder
+        // Peer und jeder Reload nennt es gleich, der Abbau eines Mitspielers trifft es (`remove_architecture`). Bis feld-k2k3 zählte
+        // die Seite (`architectureNextId`): „bau mir ein haus" hieß bei A 463, bei B 471 (gate:mp-sync (e)).
+        const kennung =
+            typeof opts.id === "string" && opts.id
+                ? opts.id
+                : opts.werk === true && Number.isFinite(opts.seed)
+                  ? this._werkKennung(type, opts.seed)
+                  : this.state.architectureNextId++;
         const entry = {
-            id: typeof opts.id === "string" && opts.id ? opts.id : this.state.architectureNextId++,
+            id: kennung,
             type,
             position: { x: position.x || 0, y: position.y || 0, z: position.z || 0 },
             seed,

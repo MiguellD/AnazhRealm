@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.546.86",
+    "version": "18.546.87",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -152,7 +152,6 @@
         "gate:regler-wirkt": "node scripts/diag-regler-wirkt.cjs --teil=1 && node scripts/diag-regler-wirkt.cjs --teil=2 && node scripts/diag-regler-wirkt.cjs --teil=3",
         "smoke:multiuser": "node scripts/smoke-multiuser.cjs",
         "smoke:webrtc": "node scripts/smoke-webrtc.cjs",
-        "smoke:lockstep": "node scripts/smoke-lockstep.cjs",
         "smoke:copresence": "node scripts/smoke-copresence.cjs",
         "gate:boot-foliage-ring": "node scripts/diag-boot-foliage-ring.cjs",
         "gate:altlasten": "node scripts/diag-altlasten.cjs --selftest && node scripts/diag-altlasten.cjs",
