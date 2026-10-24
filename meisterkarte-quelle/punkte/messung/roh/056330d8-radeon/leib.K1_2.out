@@ -1,0 +1,49 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c set -u
+WP=7763; SP=$((7763 + 20000)); LP=$((7763 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=
+weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n "$SPID" ] && kill "$SPID" 2> /dev/null; SPID=; for p in $(netstat -ano 2> /dev/null | grep -aE ":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }
+trap weg EXIT
+boot() { weg; PORT=$SP node save-server.js > "$L/save.log" 2>&1 & SPID=$!; for t in $(seq 1 30); do curl -s -o /dev/null "http://localhost:$SP/" && break; sleep 1; done; $W start --echt --port $WP --seite "http://localhost:$SP" "$@" > "$L/wb.log" 2>&1 & for t in $(seq 1 120); do grep -qE "WERKBANK bereit|FEHLER|Error" "$L/wb.log" && break; sleep 5; done; grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ $W latenz --proben 50 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\056330d8-radeon\leib.K1_2.json"
+gpu-lauf: warte auf b-abdruck 2026-10-24T10:51:31+02:00 pid=34016 (8 s)
+gpu-lauf: warte auf lod-k1 2026-10-24T10:52:30+02:00 pid=27444 (18 s)
+gpu-lauf: warte auf lod-k1 2026-10-24T10:52:30+02:00 pid=27444 (78 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T10:54:29+02:00 pid=20172 (28 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T10:54:29+02:00 pid=20172 (95 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T10:54:29+02:00 pid=20172 (166 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T10:54:29+02:00 pid=20172 (239 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T10:54:29+02:00 pid=20172 (314 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T10:54:29+02:00 pid=20172 (388 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T10:54:29+02:00 pid=20172 (455 s)
+gpu-lauf: warte auf lod-k1-exp2 2026-10-24T11:02:31+02:00 pid=27500 (45 s)
+gpu-lauf: warte auf lod-k1-exp2 2026-10-24T11:02:31+02:00 pid=27500 (117 s)
+gpu-lauf: warte auf lod-k1-exp1 2026-10-24T11:05:17+02:00 pid=31888 (21 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T11:06:22+02:00 pid=4516 (21 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T11:06:22+02:00 pid=4516 (83 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T11:06:22+02:00 pid=4516 (146 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T11:06:22+02:00 pid=4516 (215 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T11:06:22+02:00 pid=4516 (282 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T11:06:22+02:00 pid=4516 (349 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T11:06:22+02:00 pid=4516 (410 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T11:06:22+02:00 pid=4516 (483 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T11:06:22+02:00 pid=4516 (543 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T11:06:22+02:00 pid=4516 (604 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T11:06:22+02:00 pid=4516 (668 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T11:06:22+02:00 pid=4516 (735 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T11:06:22+02:00 pid=4516 (803 s)
+gpu-lauf: warte auf material-k2-mikro 2026-10-24T11:06:22+02:00 pid=4516 (863 s)
+gpu-lauf: Schloss punkte-radeon nach 1825 s
+@@PUNKTE@@ LATENZ
+ego/gehen {"n":50,"fehlt":0,"p50":36,"p95":50,"max":79.8,"eingabe":0.6,"hoerer":0.1,"kette":14.7,"kurve":16.8,"takte":4}
+ego/springen {"n":50,"fehlt":0,"p50":21.4,"p95":39.4,"max":46.6,"eingabe":0.5,"hoerer":0.2,"kette":17.9,"kurve":0,"takte":3}
+ego/einsteigen {"n":50,"fehlt":0,"p50":20.9,"p95":33.1,"max":78.1,"eingabe":0.5,"hoerer":0.6,"kette":20.5,"kurve":0,"takte":2}
+ego/hieb {"n":50,"fehlt":0,"p50":22,"p95":41.4,"max":44,"eingabe":0.6,"hoerer":2,"kette":13.6,"kurve":0,"takte":3,"halt":7}
+third/gehen {"n":50,"fehlt":0,"p50":31.9,"p95":49.6,"max":62.1,"eingabe":0.6,"hoerer":0,"kette":13.4,"kurve":16.7,"takte":4}
+third/springen {"n":50,"fehlt":0,"p50":18.9,"p95":34.3,"max":37,"eingabe":0.6,"hoerer":0.2,"kette":11.6,"kurve":0,"takte":2}
+third/einsteigen {"n":50,"fehlt":0,"p50":15.5,"p95":24.1,"max":30.1,"eingabe":0.6,"hoerer":0.4,"kette":13.9,"kurve":0,"takte":1}
+third/hieb {"n":50,"fehlt":0,"p50":19.1,"p95":31.5,"max":38.7,"eingabe":1.6,"hoerer":1.5,"kette":12.3,"kurve":0,"takte":2,"halt":14}
+LATENZ GRÜN (Bild 16.7 ms) 
+@@PUNKTE@@ EXIT 0

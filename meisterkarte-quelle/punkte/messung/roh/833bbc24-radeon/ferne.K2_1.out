@@ -1,0 +1,46 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --luft --eigen --port 7724 --datei C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\833bbc24-radeon\ferne.K2_1.json
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (643 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (704 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (779 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (850 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (914 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (974 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (1038 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (1108 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (1176 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (1241 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (1310 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (1373 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (1457 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (1517 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (1597 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (1688 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (1753 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (1868 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (1943 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (2009 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (2093 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (2163 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (2229 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (2296 s)
+gpu-lauf: warte auf ci-runner 40039001126/2 echt (2384 s)
+gpu-lauf: warte auf Vorfahrt: der echt-Job (Runner.Worker) läuft (0 s)
+gpu-lauf: warte auf mensch-bewohner-k5 2026-10-24T02:35:21+02:00 pid=30828 (53 s)
+gpu-lauf: warte auf siedlung-k5 2026-10-24T02:36:38+02:00 pid=34100 (44 s)
+gpu-lauf: warte auf siedlung-k5 2026-10-24T02:36:38+02:00 pid=34100 (105 s)
+gpu-lauf: warte auf Vorfahrt: der echt-Job (Runner.Worker) läuft (0 s)
+gpu-lauf: warte auf ferne-blau-ring 2026-10-24T02:39:45+02:00 pid=34632 (53 s)
+gpu-lauf: warte auf ferne-blau-ring 2026-10-24T02:39:45+02:00 pid=34632 (121 s)
+gpu-lauf: Schloss punkte-radeon nach 2275 s
+SELBSTTEST GRÜN: grauer β, Kante 21 % und leere Messung beim Namen ROT
+[linse-gpu] amd/rdna-3
+[seite] 2026-10-24T00:43:00.638Z navigiert http://127.0.0.1:7723/index.html
+WERKBANK bereit: Steuer 127.0.0.1:7724 · Seite :7723
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 0° 8 km: 21.18° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 90° 8 km: 26.88° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 180° 8 km: 29.33° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 270° 8 km: 25.23° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.27 (Sonne 7.2°) Azimut 180° 8 km: 10.67° von der In-Streuung > 10°
+LUFT GRUEN · K1-1 GRUEN · K1-2 ROT · K2-1 GRUEN (offen: FARBTON)
+[seite] 2026-10-24T00:45:45.380Z GESCHLOSSEN
+[seite] 2026-10-24T00:45:45.439Z Browser getrennt

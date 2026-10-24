@@ -1,0 +1,27 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\18a84649-radeon\mensch.K2_2.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7732 )); W=$(( 7732 + 20000 )); export WERKBANK_PORT=$W
+raeum() { for p in $(netstat -ano | grep -E ":($S|$W|$((W - 1))) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }
+stand() { mkdir -p "$B-stand"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json "$B-stand/" 2> /dev/null; }
+ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }
+trap ende EXIT; trap 'exit 143' INT TERM
+raeum; stand
+(PORT=$S node save-server.js > "$B-save.log" 2>&1 &)
+for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done
+(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > "$B-werkbank.log" 2>&1 &)
+for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' "$B-werkbank.log" 2> /dev/null && break; sleep 5; done
+grep -E 'WERKBANK bereit' "$B-werkbank.log" || { echo 'WERKBANK startet nicht'; tail -5 "$B-werkbank.log"; exit 1; }
+node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner
+gpu-lauf: Schloss punkte-radeon nach 1 s
+WERKBANK bereit: Steuer 127.0.0.1:27732 · Seite :27731
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27732) =====
+
+  ❌ bewohner  {"sprungN":0,"alsLeib":4,"schmiede10":2,"schmiede2":0,"dorf":"Steintal","haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":41,"third":37},"nahLeiber":4,"plan":true,"planGleich":true,"tagSek":35.6,"bewohner":81,"trefferMin":0.896,"unter":["wohnhaus/feld #45665: 90 %","wohnhaus/feld #45665: 90 %"],"unterN":2,"stationen":2,"satzGang":{"schlupf":0.023,"wegLeib":562.9,"spuren":48},"blick":{"n":163,"quote":0.969,"sektorMax":0.178},"ohnePlatz":0,"ohnePlatzWer":[],"takt":{"n":1800,"p95":0.3,"mittel":0.15},"huellen":18,"wege":{"wandN":0,"wand":[],"durch":250,"tuer":250,"falsch":[],"aufWeg":0.943,"wegeMin":4,"wegeMax":7,"ausserN":0,"ausser":[],"streckeMin":46,"kurzN":0,"kurz":[]},"stall":null,"sek":61.4}
+       ↳ Soll-Orte über 24 Spielstunden: min 0.896 (Soll ≥ 0,9 je Bewohner; 2 darunter: wohnhaus/feld #45665: 90 % · wohnhaus/feld #45665: 90 %)
+
+  (61 s)
+
+❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable

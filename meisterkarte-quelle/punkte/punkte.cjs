@@ -4,9 +4,12 @@
 //
 //   node punkte.cjs run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--port-basis 7700]
 //        fährt jede Station des Geräts im Spiel-Baum am SHA, schreibt messung/<sha8>-<geraet>.json
+//        --offen: nur die Stationen ohne frische Messung am SHA (das Frische-Urteil der Buchung) · --trocken: nur nennen
+//        Zwillinge (gleicher Befehl und Umgebung) fahren EINMAL; headless bis zu 3 Bahnen in eigenen Bäumen (--bahnen N)
 //   node punkte.cjs buchen --kopf <sha>
 //        liest alle messung/*.json, urteilt R6 (Pfad unberührt seit der Messung) und R10, schreibt stand.json
-//   node punkte.cjs liste        die registrierten Stationen, geprüft gegen src/gN.js
+//   node punkte.cjs liste [--kopf <sha>]   die registrierten Stationen, geprüft gegen src/gN.js und jeder pfad-Glob gegen den
+//        Kopf (sonst origin/main des Spiel-Klons)
 //   node punkte.cjs selbsttest   jeder Fall beim Namen
 //
 // FORMAT (stationen/g1.js .. g6.js, module.exports = [ … ]), je Eintrag:
@@ -22,6 +25,12 @@
 // der Station gleicht und deren Pfad zwischen Mess-SHA und Kopf in Welt-Bytes unberührt ist (weltDateien). 1 = jede
 // Staffel-1-Station auf mindestens einem ihrer Geräte grün · 2 = dazu jede Staffel-2-Station auf JEDEM ihrer Geräte grün ·
 // sonst 0. Ein jüngeres ROT schlägt ein älteres GRÜN; ungemessen ist 0.
+// ZWEI WÄNDE (24.10., Prüfung der Buchung 61 → 80): (PFAD) jeder `pfad`-Glob trifft am Mess-SHA und am Kopf mindestens eine
+// Datei, sonst ist die Station ROT — ein toter Glob macht R6 blind (die KAMPF-Liste nannte einen Schmiede-Kern, den es nicht gab);
+// (GPU) eine GPU-Station zählt nur, wenn ihr Lauf beweist, dass eine Linse auf der Karte zeichnete: ein Adapter eines Herstellers
+// in `[linse-gpu]` und keine Weiche „zeichnet nie“ (leib.K4#1 war als GPU gebucht, die Linse zeichnete nie — welt-boot
+// „das Rezept ist null“). Den Zeugen sammelt gpu-zeuge.cjs aus jedem node-Prozess der Station; eine ältere Messung ohne ihn
+// zeugt nur über ihre Roh-Ausgabe (messung/roh), sonst ist sie ungemessen.
 "use strict";
 const fs = require("fs");
 const os = require("os");
@@ -159,6 +168,30 @@ function globRegex(g) {
     return new RegExp("^" + r + "$");
 }
 const trifftPfad = (datei, pfad) => pfad.some((g) => globRegex(g).test(datei));
+// DIE WAND PFAD: die Globs der Station, die in `dateien` (git ls-tree am SHA) keine Datei treffen
+const toteGlobs = (pfad, dateien) => pfad.filter((g) => { const re = globRegex(g); return !dateien.some((f) => re.test(f)); });
+const pfadGrund = (tot, wo) => "pfad-Glob trifft " + wo + " keine Datei (R6 blind): " + tot.join(", ");
+
+// ───────────────────────────────── Zeuge der Karte (Wand GPU) ─────────────────────────────────
+const ZEUGE_DATEI = path.join(DIR, "gpu-zeuge.cjs");
+const KARTE = /^\[linse-gpu\] ((?:amd|nvidia|intel|apple|qualcomm|arm)\/\S+)/i;
+const OHNE_KARTE = /^\[linse-gpu\] .*(swiftshader|llvmpipe|software|kein navigator\.gpu|kein Adapter|kein webgl2)/i;
+// liest die Zeilen eines Laufs (stdout, stderr, Zeugen-Datei oder Roh-Ausgabe): { karte, fremd, nie }
+function gpuZeuge(text) {
+    const z = String(text || "").split(/\r?\n/);
+    const karten = [...new Set(z.map((l) => (KARTE.exec(l) || [])[1]).filter(Boolean))];
+    const fremd = [...new Set(z.filter((l) => OHNE_KARTE.test(l)).map((l) => l.slice(12).trim()))];
+    const nie = new Set(z.filter((l) => /^\[welt-boot\] FEHLER klasse:.*zeichnet nie/.test(l))).size; // je Linse EINE Zeile, wie oft gesammelt auch
+    return { karte: karten.join(" ") || null, fremd: fremd.join(" ") || null, nie };
+}
+// null = die Linse zeichnete auf der Karte, sonst der Grund beim Namen
+function gpuWand(z) {
+    if (!z) return "kein Zeuge der Karte im Lauf";
+    if (z.nie) return "die Linse zeichnet nie (welt-boot: das Rezept ist „null“, " + z.nie + "×)";
+    if (z.fremd) return "eine Linse zeichnet ohne Karte ([linse-gpu] " + z.fremd + ")";
+    if (!z.karte) return "keine Linse nennt eine Karte ([linse-gpu] <Hersteller>/…)";
+    return null;
+}
 
 // ───────────────────────────────── git ─────────────────────────────────
 function git(args, cwd) {
@@ -215,9 +248,16 @@ const SCHLOSS_WARTE_S = 2700; // gpu-lauf.sh GPU_LAUF_WARTE_S
 // fährt EINE Station; ctx = { baum, koord, port, aus, roh, geraet, gpuLauf, bash, deckelMinS }
 // Rückgabe { gruen, zahl, exit, minuten, grund? } — ein Fehler, ein Absturz, ein Deckel ist ROT mit Grund, nie still.
 function fahreStation(st, ctx) {
-    return new Promise((fertig) => {
+    return fahreGruppe([st], ctx).then((r) => r[0]);
+}
+// fährt den Befehl der ERSTEN Station EINMAL und urteilt jede Station der Gruppe über denselben Lauf — Zwillinge (gleicher
+// Befehl, gleiche Umgebung, z. B. Staffel 1 und 2 aus EINER Linse) kosten nie zwei Läufe; Rückgabe je Station ein Ergebnis
+function fahreGruppe(sts, ctx) {
+    const st = sts[0];
+    return new Promise((ganz) => {
         const t0 = Date.now();
         const min = () => +((Date.now() - t0) / 60000).toFixed(2);
+        const fertig = (e) => ganz(sts.map(() => e));
         const rot = (grund, exit = null, zahl = "") => fertig({ gruen: false, zahl: zahl || grund, exit, minuten: min(), grund });
         const deckelS = Math.max(ctx.deckelMinS != null ? ctx.deckelMinS : 120, Math.ceil(st.minuten * 60 * 2));
         let argv = st.befehl.map((a) => ersetze(a, ctx));
@@ -234,6 +274,7 @@ function fahreStation(st, ctx) {
             if (!exe) return rot("keine Git-bash gefunden (PUNKTE_BASH)");
         }
         argv = argv.slice(1);
+        const zeugeDatei = st.gpu ? ctx.aus + ".gpu-zeuge.txt" : null;
         if (st.gpu) {
             if (!ctx.gpuLauf || !fs.existsSync(ctx.gpuLauf)) return rot("gpu-lauf.sh fehlt — eine GPU-Station läuft nie ohne Schloss");
             if (!ctx.bash) return rot("keine Git-bash gefunden (PUNKTE_BASH) für gpu-lauf.sh");
@@ -241,8 +282,12 @@ function fahreStation(st, ctx) {
             exe = ctx.bash;
             env.GPU_LAUF_MAX_S = String(deckelS);
             warteS = Number(env.GPU_LAUF_WARTE_S || SCHLOSS_WARTE_S);
+            // der Zeuge der Karte in JEDEM node-Prozess der Station (die Werkbank schreibt in ihr eigenes Log)
+            env.PUNKTE_GPU_ZEUGE = zeugeDatei;
+            env.NODE_OPTIONS = ((env.NODE_OPTIONS || "") + ' --require "' + ZEUGE_DATEI.split(path.sep).join("/") + '"').trim();
         }
         try { fs.rmSync(ctx.aus, { force: true }); } catch (_e) {}
+        if (zeugeDatei) try { fs.rmSync(zeugeDatei, { force: true }); } catch (_e) {}
         portRaeumen(ctx.port);
         let out = "", err = "", tot = false;
         let kind;
@@ -260,9 +305,13 @@ function fahreStation(st, ctx) {
         kind.on("close", (code, sig) => {
             clearTimeout(uhr);
             portRaeumen(ctx.port);
+            // die Zeugen-Zeilen gehen in die Roh-Ausgabe (die Buchung liest sie dort), die Datei fällt
+            const zeugeText = zeugeDatei && fs.existsSync(zeugeDatei) ? fs.readFileSync(zeugeDatei, "utf8") : "";
+            if (zeugeDatei) try { fs.rmSync(zeugeDatei, { force: true }); } catch (_e) {}
             if (ctx.roh) {
                 fs.mkdirSync(path.dirname(ctx.roh), { recursive: true });
-                fs.writeFileSync(ctx.roh, "$ " + [exe, ...argv].join(" ") + "\n" + out + (err ? "\n--- stderr ---\n" + err : ""));
+                fs.writeFileSync(ctx.roh, "$ " + [exe, ...argv].join(" ") + "\n" + out + (err ? "\n--- stderr ---\n" + err : "") +
+                    (zeugeText ? "\n--- gpu-zeuge ---\n" + zeugeText : ""));
             }
             if (tot) return rot("Deckel " + (deckelS + warteS) + " s überschritten — beendet", code);
             if (sig) return rot("Absturz: Signal " + sig, code);
@@ -271,15 +320,24 @@ function fahreStation(st, ctx) {
             let j = null;
             if (fs.existsSync(ctx.aus))
                 try { j = JSON.parse(fs.readFileSync(ctx.aus, "utf8")); } catch (_e) { j = null; }
-            let u;
-            try {
-                u = st.urteil(j, { exit: code, stdout: out, stderr: err });
-            } catch (e) {
-                return rot("Urteil warf: " + String((e && e.message) || e).split("\n")[0], code);
-            }
-            if (!u || typeof u.gruen !== "boolean" || typeof u.zahl !== "string" || !u.zahl)
-                return rot("Urteil ungültig (verlangt { gruen: bool, zahl: Text })", code);
-            fertig({ gruen: u.gruen, zahl: u.zahl, exit: code, minuten: min(), ...(u.gruen ? {} : { grund: "ROT: " + u.zahl }) });
+            const m = min();
+            // DIE WAND GPU: ohne Zeugen der Karte ist das Urteil einer GPU-Station ROT beim Grund
+            const zeuge = st.gpu ? gpuZeuge(zeugeText + "\n" + out + "\n" + err) : null;
+            const wand = zeuge && gpuWand(zeuge);
+            const gz = zeuge ? { gpu: zeuge.karte, ...(zeuge.fremd ? { gpuFremd: zeuge.fremd } : {}), ...(zeuge.nie ? { gpuNie: zeuge.nie } : {}) } : {};
+            ganz(sts.map((s) => {
+                const r = (grund) => ({ gruen: false, zahl: grund, exit: code, minuten: m, grund, ...gz });
+                let u;
+                try {
+                    u = s.urteil(j, { exit: code, stdout: out, stderr: err });
+                } catch (e) {
+                    return r("Urteil warf: " + String((e && e.message) || e).split("\n")[0]);
+                }
+                if (!u || typeof u.gruen !== "boolean" || typeof u.zahl !== "string" || !u.zahl)
+                    return r("Urteil ungültig (verlangt { gruen: bool, zahl: Text })");
+                if (wand) return { gruen: false, zahl: "Wand GPU: " + wand + " · " + u.zahl, exit: code, minuten: m, grund: "Wand GPU: " + wand, ...gz };
+                return { gruen: u.gruen, zahl: u.zahl, exit: code, minuten: m, ...(u.gruen ? {} : { grund: "ROT: " + u.zahl }), ...gz };
+            }));
         });
     });
 }
@@ -301,7 +359,34 @@ function baumAmSha(repo, geraet, sha) {
     return baum;
 }
 
+// die Sperre des Spiel-Baums: ein Ordner mit der pid des Halters; eine tote pid gilt als verwaist, gelöst wird beim Prozess-Ende
+async function baumSperre(repo, geraet) {
+    const sperre = path.join(repo, ".claude", "worktrees", "punkte-" + geraet + ".sperre");
+    const lebt = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === "EPERM"; } };
+    for (let gemeldet = false; ; ) {
+        try {
+            fs.mkdirSync(sperre);
+            fs.writeFileSync(path.join(sperre, "pid"), String(process.pid));
+            process.on("exit", () => fs.rmSync(sperre, { recursive: true, force: true }));
+            return;
+        } catch (e) {
+            if (e.code !== "EEXIST") throw e;
+            const pid = Number((fs.existsSync(path.join(sperre, "pid")) && fs.readFileSync(path.join(sperre, "pid"), "utf8")) || 0);
+            if (pid && !lebt(pid)) { fs.rmSync(sperre, { recursive: true, force: true }); continue; }
+            if (!gemeldet) { console.log("Punkte-Maschine: der Spiel-Baum " + geraet + " ist belegt (pid " + pid + "), warte"); gemeldet = true; }
+            await new Promise((r) => setTimeout(r, 30000));
+        }
+    }
+}
+
 const messDatei = (sha, geraet, mdir = path.join(DIR, "messung")) => path.join(mdir, sha.slice(0, 8) + "-" + geraet + ".json");
+// die Dateien am Stand (Wand PFAD)
+const dateienAm = (repo, sha) => git(["ls-tree", "-r", "--name-only", sha], repo).split(/\r?\n/).filter(Boolean);
+// die Roh-Ausgabe einer Messung (Wand GPU für Messungen ohne eigenen Zeugen); "" wenn keine
+const rohAus = (mdir = path.join(DIR, "messung")) => (sha, g, id) => {
+    const f = path.join(mdir, "roh", String(sha).slice(0, 8) + "-" + g, id.replace("#", "_") + ".out");
+    return fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "";
+};
 
 async function run(opt) {
     if (!opt.sha) throw new Error("--sha fehlt");
@@ -313,40 +398,97 @@ async function run(opt) {
     const ports = new Map();
     let p = Number(opt.portBasis || 7700);
     for (const st of stationen) { if (p === TABU_PORT) p++; ports.set(schluessel(st), p++); }
-    const meine = stationen.filter((st) => geraeteVon(st).includes(opt.geraet) && (!nur || nur.has(schluessel(st))));
+    let meine = stationen.filter((st) => geraeteVon(st).includes(opt.geraet) && (!nur || nur.has(schluessel(st))));
     if (nur) for (const id of nur) if (!meine.some((st) => schluessel(st) === id)) throw new Error("--nur " + id + ": keine Station auf " + opt.geraet);
     if (!meine.length) throw new Error("keine Station auf " + opt.geraet);
     const repo = spielRepo();
     const sha = voll(repo, opt.sha);
+    const dateien = dateienAm(repo, sha);
+    const tot = (st) => toteGlobs(st.pfad, dateien);
+    // --offen: nur die Stationen, die die Buchung am SHA nicht frisch fände — ein Zug misst, was er berührt, nie die ganze Liste
+    if (opt.offen) {
+        const frisch = frischUrteil(ladeMessungen(), (s) =>
+            weltDateien(git(["diff", "--name-only", s, sha], repo), git(["diff", "-U0", "--no-color", s, sha], repo)), hilfeText(),
+            { tot, roh: rohAus() });
+        meine = meine.filter((st) => frisch(st, opt.geraet).ungemessen);
+        if (!meine.length) {
+            console.log("Punkte-Maschine: am " + sha.slice(0, 8) + " ist jede Station auf " + opt.geraet + " frisch gemessen");
+            return null;
+        }
+    }
+    if (opt.trocken) {
+        console.log("Punkte-Maschine (trocken): " + meine.length + " Station(en) auf " + opt.geraet + " am " + sha.slice(0, 8) + ", " +
+            meine.reduce((s, st) => s + (st.minuten || 0), 0) + " min: " + meine.map(schluessel).join(" "));
+        return null;
+    }
+    // EIN Lauf je Spiel-Baum: ein zweiter Lauf auf demselben Gerät checkte sonst seinen SHA in den Baum des ersten
+    await baumSperre(repo, opt.geraet);
     const baum = baumAmSha(repo, opt.geraet, sha);
     const datei = messDatei(sha, opt.geraet);
     const rohDir = path.join(DIR, "messung", "roh", sha.slice(0, 8) + "-" + opt.geraet);
     let m = fs.existsSync(datei) ? JSON.parse(fs.readFileSync(datei, "utf8")) : null;
     if (!m || m.sha !== sha) m = { sha, geraet: opt.geraet, zeit: null, host: os.hostname(), je: {} };
     const hilfe = hilfeText();
+    // DIE WAND PFAD: eine Station mit totem Glob am SHA fährt nie — sie ist ROT beim Glob (R6 wäre für ihn blind)
+    for (const st of meine.filter((s) => tot(s).length)) {
+        const grund = pfadGrund(tot(st), "am " + sha.slice(0, 8));
+        m.je[schluessel(st)] = { gruen: false, zahl: grund, exit: null, minuten: 0, grund, zeit: new Date().toISOString(), abdruck: abdruck(st, hilfe) };
+        console.log("  ROT  " + schluessel(st) + " · " + grund);
+    }
+    meine = meine.filter((s) => !tot(s).length);
+    if (!meine.length) {
+        m.zeit = new Date().toISOString();
+        fs.writeFileSync(datei, JSON.stringify(m, null, 1) + "\n");
+        return m;
+    }
     const ctx0 = { baum, koord: KOORD, geraet: opt.geraet, bash: findeBash(),
         gpuLauf: process.env.PUNKTE_GPU_LAUF || path.join(repo, "artifacts", "profiband", "werkzeug", "gpu-lauf.sh") };
-    console.log("Punkte-Maschine: " + meine.length + " Station(en) auf " + opt.geraet + " am " + sha.slice(0, 8) + " (Baum " + baum + ")");
+    // Zwillinge (gleicher Befehl, gleiche Umgebung) fahren EINMAL; headless fahren bis zu drei Gruppen zugleich, jede Bahn im
+    // EIGENEN Spiel-Baum (Spielstände, Rohdateien), eine GPU-Station wartet ohnehin am Schloss — dort EINE Bahn
+    const gruppen = [];
+    const je = new Map();
     for (const st of meine) {
-        const id = schluessel(st);
-        const datei2 = id.replace("#", "_");
-        const ctx = { ...ctx0, port: ports.get(id), aus: path.join(rohDir, datei2 + ".json"), roh: path.join(rohDir, datei2 + ".out") };
-        fs.mkdirSync(rohDir, { recursive: true });
-        const zeit = new Date().toISOString();
-        const e = await fahreStation(st, ctx);
-        m.je[id] = { ...e, zeit, abdruck: abdruck(st, hilfe), port: ctx.port };
-        m.zeit = zeit;
-        m.host = os.hostname();
-        fs.writeFileSync(datei, JSON.stringify(m, null, 1) + "\n");
-        console.log("  " + (e.gruen ? "GRÜN" : "ROT ") + " " + id + " · " + e.zahl + " · Exit " + e.exit + " · " + e.minuten + " min");
+        const k = JSON.stringify([st.befehl, st.env || {}, !!st.gpu]);
+        if (!je.has(k)) { je.set(k, []); gruppen.push(je.get(k)); }
+        je.get(k).push(st);
     }
+    const bahnen = Math.max(1, Math.min(gruppen.length, Number(opt.bahnen || (opt.geraet === "headless" ? 3 : 1))));
+    const baeume = [baum];
+    for (let i = 2; i <= bahnen; i++) baeume.push(baumAmSha(repo, opt.geraet + "-" + i, sha));
+    console.log("Punkte-Maschine: " + meine.length + " Station(en) in " + gruppen.length + " Läufen auf " + opt.geraet + " am " +
+        sha.slice(0, 8) + ", " + bahnen + " Bahn(en) (Baum " + baeume.join(", ") + ")");
+    fs.mkdirSync(rohDir, { recursive: true });
+    const schlange = gruppen.slice();
+    const bahn = async (b) => {
+        for (let g = schlange.shift(); g; g = schlange.shift()) {
+            const ids = g.map(schluessel);
+            const ctx = { ...ctx0, baum: b, port: ports.get(ids[0]), aus: path.join(rohDir, ids[0].replace("#", "_") + ".json"),
+                roh: path.join(rohDir, ids[0].replace("#", "_") + ".out") };
+            const zeit = new Date().toISOString();
+            const es = await fahreGruppe(g, ctx);
+            g.forEach((st, i) => {
+                const id = ids[i];
+                if (i > 0 && fs.existsSync(ctx.roh)) fs.copyFileSync(ctx.roh, path.join(rohDir, id.replace("#", "_") + ".out"));
+                m.je[id] = { ...es[i], zeit, abdruck: abdruck(st, hilfe), port: ctx.port, ...(i > 0 ? { zwilling: ids[0] } : {}) };
+                console.log("  " + (es[i].gruen ? "GRÜN" : "ROT ") + " " + id + " · " + es[i].zahl + " · Exit " + es[i].exit + " · " +
+                    es[i].minuten + " min" + (i > 0 ? " (Zwilling von " + ids[0] + ")" : ""));
+            });
+            m.zeit = zeit;
+            m.host = os.hostname();
+            fs.writeFileSync(datei, JSON.stringify(m, null, 1) + "\n");
+        }
+    };
+    await Promise.all(baeume.map((b) => bahn(b)));
     console.log("→ " + path.relative(KOORD, datei));
     return m;
 }
 
 // ───────────────────────────────── Buchung ─────────────────────────────────
 // messungen: Liste {sha, geraet, je}; geaendert(messSha) → Liste der Dateien bis zum Kopf (wirft, wenn unbekannt)
-function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehlt = []) {
+// die jüngste frische Messung je Station und Gerät (Abdruck gleich, Pfad seit der Messung in Welt-Bytes unberührt) — das EINE
+// Frische-Urteil für die Buchung und für `run --offen`. opt.tot(st) → die toten Globs am Ziel-Stand (Wand PFAD) · opt.roh(sha,
+// geraet, id) → die Roh-Ausgabe einer Messung ohne eigenen Zeugen (Wand GPU; "" wenn keine)
+function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
     const diffCache = new Map();
     const diff = (sha) => {
         if (!diffCache.has(sha)) {
@@ -354,11 +496,12 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
         }
         return diffCache.get(sha);
     };
-    // die jüngste frische Messung je Station und Gerät
-    const stand = (st, g) => {
+    return (st, g) => {
         const id = schluessel(st);
+        const tot = opt.tot ? opt.tot(st) : [];
+        if (tot.length) return { gruen: false, ungemessen: true, grund: pfadGrund(tot, "am Kopf") };
         const ab = abdruck(st, hilfe);
-        let alt = 0, fremd = 0, unbekannt = 0, taeter = [];
+        let alt = 0, fremd = 0, unbekannt = 0, ohneZeugen = null, taeter = [];
         const frisch = [];
         for (const m of messungen) {
             if (m.geraet !== g || !m.je || !m.je[id]) continue;
@@ -368,12 +511,23 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
             if (d.fehler) { unbekannt++; continue; }
             const t = d.dateien.filter((f) => trifftPfad(f, st.pfad));
             if (t.length) { alt++; taeter = t; continue; }
+            // ein GRÜN einer GPU-Station trägt den Zeugen der Karte: im Eintrag (seit der Wand) oder in seiner Roh-Ausgabe
+            if (st.gpu && e.gruen) {
+                const z = "gpu" in e ? { karte: e.gpu, fremd: e.gpuFremd || null, nie: e.gpuNie || 0 } : gpuZeuge(opt.roh ? opt.roh(m.sha, g, id) : "");
+                const w = gpuWand(z);
+                if (w) { ohneZeugen = w; continue; }
+            }
             frisch.push({ ...e, sha: m.sha, geraet: g });
         }
         frisch.sort((a, b) => String(b.zeit).localeCompare(String(a.zeit)));
         if (frisch.length) return frisch[0];
-        return { gruen: false, ungemessen: true, grund: alt ? "Pfad seit der Messung geändert (R6: " + taeter.slice(0, 3).join(", ") + (taeter.length > 3 ? " +" + (taeter.length - 3) : "") + ")" : unbekannt ? "Mess-SHA unbekannt — kein R6-Urteil" : fremd ? "Station seit der Messung geändert" : "ungemessen (R10)" };
+        // der Grund der jüngsten verworfenen Art zuerst: ein GRÜN ohne Zeugen vor dem R6 einer älteren Messung
+        return { gruen: false, ungemessen: true, grund: ohneZeugen ? "Wand GPU: " + ohneZeugen : alt ? "Pfad seit der Messung geändert (R6: " + taeter.slice(0, 3).join(", ") + (taeter.length > 3 ? " +" + (taeter.length - 3) : "") + ")" : unbekannt ? "Mess-SHA unbekannt — kein R6-Urteil" : fremd ? "Station seit der Messung geändert" : "ungemessen (R10)" };
     };
+}
+
+function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehlt = [], opt = {}) {
+    const stand = frischUrteil(messungen, geaendert, hilfe, opt);
     const je = {};
     const kriterien = [...new Set(stationen.map((s) => s.kriterium))].sort();
     for (const k of kriterien) {
@@ -453,9 +607,10 @@ function buchenCli(opt) {
     if (fehler.length) throw new Error("Stationen ROT:\n - " + fehler.join("\n - "));
     const repo = spielRepo();
     const kopfVoll = voll(repo, opt.kopf);
+    const dateien = dateienAm(repo, kopfVoll);
     const s = buchen(kopfVoll.slice(0, 8), stationen, ladeMessungen(), (sha) =>
         weltDateien(git(["diff", "--name-only", sha, kopfVoll], repo), git(["diff", "-U0", "--no-color", sha, kopfVoll], repo)),
-        hilfeText(), fehlt);
+        hilfeText(), fehlt, { tot: (st) => toteGlobs(st.pfad, dateien), roh: rohAus() });
     s.kopfVoll = kopfVoll;
     s.zeit = new Date().toISOString();
     fs.writeFileSync(path.join(DIR, "stand.json"), JSON.stringify(s, null, 1) + "\n");
@@ -556,8 +711,22 @@ async function selbsttest() {
         const falsch = path.join(tmp, "gpu-lauf.sh");
         fs.writeFileSync(falsch, '#!/bin/bash\nN="$1"; shift\necho "schloss $N $GPU_LAUF_MAX_S"\n"$@"\n');
         const c = { ...ctx("schloss"), gpuLauf: falsch };
-        e = await fahreStation({ ...st0, geraet: "radeon", gpu: true, befehl: schreib({ n: 0 }), urteil: (j, l) => ({ gruen: j.n === 0 && /schloss punkte-radeon 120/.test(l.stdout), zahl: l.stdout.trim().split("\n")[0] }) }, { ...c, deckelMinS: 120 });
-        pruef("LÄUFER GPU über das Schloss", e.gruen === true, JSON.stringify(e));
+        const mitKarte = (zeilen) => ["node", "-e", "for (const z of " + JSON.stringify(zeilen) + ") console.log(z); require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: 0 }))", "{AUS}"];
+        e = await fahreStation({ ...st0, geraet: "radeon", gpu: true, befehl: mitKarte(["[linse-gpu] amd/rdna-3"]), urteil: (j, l) => ({ gruen: j.n === 0 && /schloss punkte-radeon 120/.test(l.stdout), zahl: l.stdout.trim().split("\n")[0] }) }, { ...c, deckelMinS: 120 });
+        pruef("LÄUFER GPU über das Schloss", e.gruen === true && e.gpu === "amd/rdna-3", JSON.stringify(e));
+        // (3b) DIE WAND GPU: ohne Zeugen der Karte, mit Software-Adapter, mit „zeichnet nie" ROT; der Zeuge aus dem Log eines Kindes GRÜN
+        const gs = { ...st0, geraet: "radeon", gpu: true, urteil: lies };
+        e = await fahreStation({ ...gs, befehl: schreib({ n: 0 }) }, { ...ctx("ohne-zeugen"), gpuLauf: falsch });
+        pruef("WAND GPU ohne Zeugen der Karte → ROT", e.gruen === false && /Wand GPU: keine Linse nennt eine Karte/.test(e.grund) && e.gpu === null, JSON.stringify(e));
+        e = await fahreStation({ ...gs, befehl: mitKarte(["[linse-gpu] google/swiftshader"]) }, { ...ctx("software"), gpuLauf: falsch });
+        pruef("WAND GPU Software-Adapter → ROT", e.gruen === false && /ohne Karte \(\[linse-gpu\] google\/swiftshader\)/.test(e.grund), JSON.stringify(e));
+        e = await fahreStation({ ...gs, befehl: mitKarte(["[linse-gpu] amd/rdna-3", "[welt-boot] FEHLER klasse: x.cjs startet „linse“ und zeichnet nie (keine seiner 1 Seiten arbeitet auf der GPU): das Rezept ist „null“"]) }, { ...ctx("nie"), gpuLauf: falsch });
+        pruef("WAND GPU die Linse zeichnet nie → ROT", e.gruen === false && /Wand GPU: die Linse zeichnet nie/.test(e.grund) && e.gpuNie === 1, JSON.stringify(e));
+        const kind = "const cp = require('child_process'), fs = require('fs'); const fd = fs.openSync(process.argv[1] + '.log', 'w'); " +
+            "cp.spawnSync(process.execPath, ['-e', " + JSON.stringify("console.log('[linse-gpu] nvidia/pascal')") + "], { stdio: ['ignore', fd, 'inherit'] }); " +
+            "fs.writeFileSync(process.argv[1], JSON.stringify({ n: 0 }))";
+        e = await fahreStation({ ...gs, befehl: ["node", "-e", kind, "{AUS}"], urteil: (j, l) => ({ gruen: j.n === 0 && !/linse-gpu/.test(l.stdout), zahl: "n " + j.n }) }, { ...ctx("kind"), gpuLauf: falsch });
+        pruef("WAND GPU der Zeuge liest das Log eines Kind-Prozesses → GRÜN", e.gruen === true && e.gpu === "nvidia/pascal", JSON.stringify(e));
         const c2 = { ...ctx("blockiert"), gpuLauf: path.join(tmp, "blockiert.sh") };
         fs.writeFileSync(c2.gpuLauf, "#!/bin/bash\necho SCHLOSS BLOCKIERT\nexit 75\n");
         e = await fahreStation({ ...st0, geraet: "radeon", gpu: true, urteil: () => ({ gruen: true, zahl: "x" }) }, c2);
@@ -572,8 +741,22 @@ async function selbsttest() {
     const h = "hilfe";
     const s1 = { ...st0, geraet: ["radeon", "gtx"], gpu: true, pfad: ["stamm/wasser-*.js"] };
     const s2 = { ...s1, staffel: 2, quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" };
-    const M = (sha, g, id, st, gruen, zeit = "2026-10-23T10:00:00Z") => ({ sha, geraet: g, je: { [id]: { gruen, zahl: gruen ? "z" : "rot", zeit, abdruck: abdruck(st, h) } } });
+    const M = (sha, g, id, st, gruen, zeit = "2026-10-23T10:00:00Z", gpu = { gpu: "amd/rdna-3" }) => ({ sha, geraet: g, je: { [id]: { gruen, zahl: gruen ? "z" : "rot", zeit, abdruck: abdruck(st, h), ...gpu } } });
     const keine = () => [];
+    // DIE WAND PFAD und die Wand GPU an der Buchung
+    {
+        const tg = toteGlobs(["stamm/kampf.js", "worlds/schmiede/schmiede-core.js", "stamm/kreatur-*.js"], ["stamm/kampf.js", "stamm/kreatur-leben.js", "schmiede-core.js"]);
+        pruef("WAND PFAD der tote Glob beim Namen", tg.join() === "worlds/schmiede/schmiede-core.js", tg.join());
+        let w = buchen("kopf", [s1], [M("a1", "radeon", "gelaende.K4#1", s1, true)], keine, h, [], { tot: () => ["worlds/schmiede/schmiede-core.js"] });
+        pruef("WAND PFAD toter Glob am Kopf → 0", w.je["gelaende.K4"].punkte === 0 && /trifft am Kopf keine Datei \(R6 blind\): worlds\/schmiede/.test(w.je["gelaende.K4"].beleg), w.je["gelaende.K4"].beleg);
+        const alt = [M("a1", "radeon", "gelaende.K4#1", s1, true, undefined, {})];
+        w = buchen("kopf", [s1], alt, keine, h, [], { roh: () => "" });
+        pruef("WAND GPU Grün ohne Zeugen (vor der Wand, Roh leer) → 0", w.je["gelaende.K4"].punkte === 0 && /Wand GPU: keine Linse nennt eine Karte/.test(w.je["gelaende.K4"].beleg), w.je["gelaende.K4"].beleg);
+        w = buchen("kopf", [s1], alt, keine, h, [], { roh: () => "$ befehl\n[linse-gpu] amd/rdna-3\nGRÜN\n" });
+        pruef("WAND GPU Grün mit dem Zeugen in der Roh-Ausgabe → 1", w.je["gelaende.K4"].punkte === 1, w.je["gelaende.K4"].beleg);
+        w = buchen("kopf", [s1], alt, keine, h, [], { roh: () => "[linse-gpu] amd/rdna-3\n[welt-boot] FEHLER klasse: x.cjs startet „linse“ und zeichnet nie (keine seiner 1 Seiten arbeitet auf der GPU): das Rezept ist „null“\n" });
+        pruef("WAND GPU Roh zeigt „zeichnet nie“ → 0", w.je["gelaende.K4"].punkte === 0 && /zeichnet nie/.test(w.je["gelaende.K4"].beleg), w.je["gelaende.K4"].beleg);
+    }
     let b = buchen("kopf", [s1, s2], [M("a1", "radeon", "gelaende.K4#1", s1, true)], keine, h);
     pruef("BUCHUNG 1 Gerät → 1", b.je["gelaende.K4"].punkte === 1, b.je["gelaende.K4"].beleg);
     b = buchen("kopf", [s1, s2], [M("a1", "radeon", "gelaende.K4#1", s1, true), M("a1", "radeon", "gelaende.K4#2", s2, true)], keine, h);
@@ -627,6 +810,14 @@ if (require.main === module) {
         else if (verb === "buchen") buchenCli(o);
         else if (verb === "liste") {
             const { stationen, fehler, fehlt } = ladeGeprueft();
+            // DIE WAND PFAD am Kopf (--kopf, sonst origin/main des Spiel-Klons): jeder Glob trifft eine Datei
+            const repo = spielRepo();
+            const kopf = voll(repo, o.kopf || "origin/main");
+            const dateien = dateienAm(repo, kopf);
+            for (const st of stationen) {
+                const t = toteGlobs(st.pfad, dateien);
+                if (t.length) fehler.push(schluessel(st) + ": " + pfadGrund(t, "am Kopf " + kopf.slice(0, 8)));
+            }
             for (const st of stationen) console.log("  " + schluessel(st) + " · " + geraeteVon(st).join("+") + (st.gpu ? " · GPU" : "") + " · " + st.minuten + " min · " + st.befehl.join(" ") + " · " + abdruck(st));
             for (const e of fehlt) console.log("  FEHLT " + e.kriterium + "#" + e.staffel + " · " + String(e.grund).slice(0, 140));
             for (const f of fehler) console.log("  ROT " + f);
@@ -634,7 +825,7 @@ if (require.main === module) {
             process.exitCode = fehler.length ? 1 : 0;
         } else if (verb === "selbsttest") process.exitCode = await selbsttest();
         else {
-            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--port-basis 7700] · buchen --kopf <sha> · liste · selbsttest");
+            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--trocken] [--port-basis 7700] · buchen --kopf <sha> · liste [--kopf <sha>] · selbsttest");
             process.exitCode = 2;
         }
     })().catch((e) => {
@@ -643,4 +834,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { liesStand, maschinenKriterium, standPruefen, buchen, pruefeStationen, trifftPfad, abdruck };
+module.exports = { liesStand, maschinenKriterium, standPruefen, buchen, pruefeStationen, trifftPfad, toteGlobs, gpuZeuge, gpuWand, abdruck, fahreStation };

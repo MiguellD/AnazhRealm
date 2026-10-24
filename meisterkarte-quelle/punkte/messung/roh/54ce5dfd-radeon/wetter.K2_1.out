@@ -1,0 +1,61 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --naesse --eigen --port 7708 --datei C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\54ce5dfd-radeon\wetter.K2_1.json
+gpu-lauf: warte auf z22-eis-bild 2026-10-24T18:46:45+02:00 pid=24240 (69 s)
+gpu-lauf: warte auf z22-eis-bild 2026-10-24T18:46:45+02:00 pid=24240 (131 s)
+gpu-lauf: warte auf z22-eis-bild 2026-10-24T18:46:45+02:00 pid=24240 (192 s)
+gpu-lauf: warte auf z22-eis-bild 2026-10-24T18:46:45+02:00 pid=24240 (253 s)
+gpu-lauf: warte auf z22-eis-bild 2026-10-24T18:46:45+02:00 pid=24240 (316 s)
+gpu-lauf: Schloss punkte-radeon nach 273 s
+NÄSSE Selbsttest: 5/5
+[linse-gpu] amd/rdna-3
+[seite] 2026-10-24T16:52:28.931Z navigiert http://127.0.0.1:7707/index.html
+WERKBANK bereit: Steuer 127.0.0.1:7708 · Seite :7707
+{
+ "wiese": {
+  "ort": "wiese",
+  "haus": null,
+  "naesse": 0.992,
+  "innen": {
+   "n": 0,
+   "verhaeltnis": null
+  },
+  "aussen": {
+   "n": 1600,
+   "verhaeltnis": 0.772
+  },
+  "dicht": 1,
+  "glanz": 16,
+  "regen": {
+   "innen": 0,
+   "aussen": 130
+  },
+  "regenbild": 0.644
+ },
+ "dorf": {
+  "ort": "dorf",
+  "haus": "haus_griechisch",
+  "naesse": 0.992,
+  "innen": {
+   "n": 865,
+   "verhaeltnis": 1
+  },
+  "aussen": {
+   "n": 336,
+   "verhaeltnis": 0.763
+  },
+  "dicht": 1,
+  "glanz": 16,
+  "regen": {
+   "innen": 0,
+   "aussen": 83
+  },
+  "regenbild": 0.695,
+  "dachBauten": {
+   "n": 2,
+   "trocken": 2,
+   "arten": [
+    "marktstand_dorf"
+   ]
+  }
+ }
+}
+NÄSSE GRUEN

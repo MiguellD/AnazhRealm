@@ -1,0 +1,44 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c set -u
+WP=7768; SP=$((7768 + 20000)); LP=$((7768 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=
+weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n "$SPID" ] && kill "$SPID" 2> /dev/null; SPID=; for p in $(netstat -ano 2> /dev/null | grep -aE ":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }
+trap weg EXIT
+boot() { weg; PORT=$SP node save-server.js > "$L/save.log" 2>&1 & SPID=$!; for t in $(seq 1 30); do curl -s -o /dev/null "http://localhost:$SP/" && break; sleep 1; done; $W start --echt --port $WP --seite "http://localhost:$SP" "$@" > "$L/wb.log" 2>&1 & for t in $(seq 1 120); do grep -qE "WERKBANK bereit|FEHLER|Error" "$L/wb.log" && break; sleep 5; done; grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil HAKEN $W eval 'const L = (window.__hs = { n: 0, dauer: [], takte: 0, gleit: 0 }); const pj = r._kampfHitJuice.bind(r); r._kampfHitJuice = function (c, now, u, ke) { const v = pj(c, now, u, ke); L.n++; L.dauer.push(r.state.player._hitStopUntil - now); return v; }; const pm = r.state.playerMesh, V = new T.Vector3(); let vor = null; const tick = r._gameLoopTick.bind(r); r._gameLoopTick = function (t) { const v = tick(t); const p = r.state.player; if (p && p._hitStopUntil > performance.now() / 1000) { const w = pm.userData.rig.armR.wrist.getWorldPosition(V).sub(pm.position).toArray(); if (vor && vor.id === p._hitStopUntil) { L.takte++; L.gleit = Math.max(L.gleit, Math.hypot(w[0] - vor.w[0], w[1] - vor.w[1], w[2] - vor.w[2])); } vor = { id: p._hitStopUntil, w }; } return v; }; return 1;'
+teil LATENZ $W latenz --verb hieb --sicht third,ego --proben 30 --json "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\056330d8-radeon\halten.K2_1.json"
+teil SPIEL $W eval 'const L = window.__hs; return { gesetzt: L.n, dauerMs: [Math.min(...L.dauer), Math.max(...L.dauer)].map((x) => Math.round(x * 1000)), haltTakte: L.takte, gleitMm: Math.round(L.gleit * 10000) / 10 };'
+gpu-lauf: warte auf lod-k1-bank 2026-10-24T11:54:41+02:00 pid=14480 (1 s)
+gpu-lauf: warte auf lod-k1-bank 2026-10-24T11:54:41+02:00 pid=14480 (69 s)
+gpu-lauf: warte auf dorf-takt-z13-frost 2026-10-24T11:56:42+02:00 pid=8664 (16 s)
+gpu-lauf: warte auf lod-k1-bank 2026-10-24T11:58:01+02:00 pid=1092 (3 s)
+gpu-lauf: warte auf lod-k1-bank 2026-10-24T11:58:01+02:00 pid=1092 (67 s)
+SCHLOSS VERWAIST (lod-k1-bank 2026-10-24T11:58:01+02:00 pid=1092: Halter pid=1092 lebt nicht) — gelöst
+gpu-lauf: Schloss punkte-radeon nach 296 s
+@@PUNKTE@@ HAKEN
+{
+ "ergebnis": 1,
+ "ms": 3
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ LATENZ
+third/hieb {"n":30,"fehlt":0,"p50":20.6,"p95":43.9,"max":45.6,"eingabe":0.6,"hoerer":3.6,"kette":18.9,"kurve":0,"takte":3,"halt":7}
+ego/hieb {"n":30,"fehlt":0,"p50":13,"p95":31.5,"max":31.7,"eingabe":0.6,"hoerer":1.5,"kette":12,"kurve":0,"takte":2,"halt":8}
+LATENZ GRÜN (Bild 17.7 ms) 
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ SPIEL
+{
+ "ergebnis": {
+  "gesetzt": 54,
+  "dauerMs": [
+   72,
+   179
+  ],
+  "haltTakte": 943,
+  "gleitMm": 0
+ },
+ "ms": 2
+}
+@@PUNKTE@@ EXIT 0

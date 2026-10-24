@@ -1,7 +1,7 @@
 // Stationen der Gruppe I (src/g1.js): je Kriterium und Staffel EINE Station — Befehl im Spiel-Baum am SHA, Urteil über
 // seine Ausgabe, Pfad für R6. Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst ist jedes Kriterium der Gruppe mit Punkten (gelaende K1–K5, wetter K1 K2 K5, physik K1 K2, feld K2 K3; physik K2
-// ist zugleich das Ziel des Zweigs kontakt-tempo). Die Messschuld M30–M43 trägt kein Kriterium der Gruppe I.
+// Erfasst ist jedes Kriterium der Gruppe mit Punkten (gelaende K1–K5, wetter K1 K2 K5, physik K1 K2, feld K2 K3, stoffe K3;
+// physik K2 ist zugleich das Ziel des Zweigs kontakt-tempo). Die Messschuld M30–M43 trägt kein Kriterium der Gruppe I.
 // Was kein Werkzeug im Spiel-Baum misst, steht NICHT in der Liste (der Läufer verlangt ein argv), sondern in
 // `module.exports.fehlt` mit befehl: null und dem Grund — das Kriterium bleibt dort Hand-Buchung, bis das Werkzeug steht.
 "use strict";
@@ -85,6 +85,11 @@ const k8Zahl = (p) =>
     ["wiese", "hang"]
         .map((o) => o + " " + ["fein", ...K8_KONTAKT].map((r) => r + " " + (p(o, r) == null ? "?" : p(o, r))).join(" · "))
         .join(" | ") + " cm (p95, schlechtere Sicht)";
+
+// feld.K4 (gate:stand-takt --tat): die Tat, ihr Gedächtnis im worldMeta, Save und Reload, die Uhr, die Nah-Streu und der Wald
+const TAT_PFAD = ["stamm/feld-*.js", "stamm/vegetation-*.js", "stamm/werkstatt-bauen.js", "stamm/kampf.js", "stamm/bild-himmel.js",
+    "stamm/dienst.js", "stamm/speicher-*.js", "stamm/dirigent-*.js", "stamm/daten.js", "foundry-core.js",
+    "scripts/diag-stand-takt.cjs", "scripts/lib/stand-linse.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"];
 
 module.exports = [
     // ── gelaende.K1 ──
@@ -360,7 +365,9 @@ module.exports = [
             "2 = alle Rollen an Mess-Wiese und 25°-Hang, in Fahrt, beide Geräte, jede Rolle ruft benannt EINE Funktion (Ratsche)",
     },
 
-    // ── wetter.K1 ── gate:wetter-wache (Z): 20 min Spiel-Zeit, Saat × Ort (3 km) × Wanduhr (steht | 120 s je Takt)
+    // ── wetter.K1 ── gate:wetter-wache (Z): 20 min Spiel-Zeit in Takten des Zugs, Saat × Ort (3 km windab) × Wanduhr (steht |
+    // 120 s je Takt). Staffel 2 (die Front am Ort) hebt das globale Wort auf: die Folge gleicht sich JE ORT über die Wanduhren,
+    // die andere Saat zieht eine andere; jeder Wechsel geht über `_setWeather` (überblendet).
     {
         kriterium: "wetter.K1",
         staffel: 1,
@@ -380,18 +387,20 @@ module.exports = [
             const b = l.filter((x) => x.saat === "saat-b");
             if (a.length < 4 || !b.length) return { gruen: false, zahl: "Saat-Zeilen fehlen: " + a.length + " × a, " + b.length + " × b (Exit " + lauf.exit + ")" };
             const zuege = a[0].folge.split(" ").length;
-            const voll = l.every((x) => x.folge.split(" ").length === zuege && x.fade === zuege);
-            const orte = new Set(a.map((x) => x.ort)).size;
+            const wechsel = (f) => f.split(" ").filter((w, i, x) => w !== (i ? x[i - 1] : "sunny")).length;
+            const voll = l.every((x) => x.folge.split(" ").length === zuege && x.fade === wechsel(x.folge) && x.fade > 0);
+            const je = new Map();
+            for (const x of a) je.set(x.ort, (je.get(x.ort) || []).concat(x.folge));
             const uhren = new Set(a.map((x) => x.uhr)).size;
-            const gleich = a.every((x) => x.folge === a[0].folge);
-            const anders = b.every((x) => x.folge !== a[0].folge);
+            const gleich = [...je.values()].every((f) => f.every((y) => y === f[0]));
+            const anders = b.every((x) => x.folge !== (je.get(x.ort) || [""])[0]);
             const saatRot = /\(Z\) SAAT/.test(lauf.stderr || "");
-            const gruen = zuege >= 10 && voll && orte >= 2 && uhren >= 2 && gleich && anders && !saatRot;
+            const gruen = zuege >= 10 && voll && je.size >= 2 && uhren >= 2 && gleich && anders && !saatRot;
             return {
                 gruen,
                 zahl:
-                    "saat-a an " + orte + " Orten × " + uhren + " Wanduhren " + (gleich ? "gleich" : "VERSCHIEDEN") + " (" + zuege +
-                    " Züge: " + a[0].folge + "), saat-b " + (anders ? "anders" : "GLEICH") + (voll ? "" : ", ein Zug nicht überblendet"),
+                    "saat-a je Ort (" + je.size + ") über " + uhren + " Wanduhren " + (gleich ? "gleich" : "VERSCHIEDEN") + " (" + zuege +
+                    " Takte: " + a[0].folge + "), saat-b " + (anders ? "anders" : "GLEICH") + (voll ? "" : ", ein Wechsel nicht überblendet"),
             };
         },
         pfad: [
@@ -405,6 +414,48 @@ module.exports = [
             "scripts/lib/welt-boot.cjs",
         ],
         quelle: "1 = das Wetter-Wort entsteht aus Saat + Spielzeit + Schreib-Akten statt aus der Wanduhr (global, gemessen)",
+    },
+
+    // ── wetter.K1 ── gate:wetter-wache (F): die Front am Ort — 20 min Spiel-Zeit in Ereignis-Takten von 5 s an A (der Spieler) und
+    // B (3 km windab) über `_wetterAmOrt`, die Worte an 4 096 Orten, der Sturm des Kerns (phyto-core wetterAt) im Zug der Welt und
+    // im Wetterspiel des Labors (worlds/terrain, Rechnung ohne Bild)
+    {
+        kriterium: "wetter.K1",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-wetter-wache.cjs"],
+        env: { WETTER_WACHE_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const m = /^\s*Front · Regen an A bei trockenem B (\d+) % · Lag (\d+) s \(Soll (\d+) s ±20 %\) · Worte (\d)\/5 \(([^)]*)\) · Mutation des Kerns: Welt (\w+), Labor (\w+)\s*$/m.exec(
+                String(lauf.stdout || "")
+            );
+            if (!m) return { gruen: false, zahl: "keine Front-Zeile (Exit " + lauf.exit + ")" };
+            const [nass, lag, soll, worte, welt, labor] = [+m[1], +m[2], +m[3], +m[4], m[6], m[7]];
+            const rot = /\(F\) /.test(lauf.stderr || "");
+            const gruen = nass >= 20 && Math.abs(lag - soll) <= 0.2 * soll && worte === 5 && welt === "stormy" && labor === "sturm" && !rot;
+            return {
+                gruen,
+                zahl:
+                    "Regen an A bei trockenem B " + nass + " % · Lag " + lag + " s (Soll " + soll + " s ±20 %) · Worte " + worte + "/5 (" +
+                    m[5] + ") · Mutation des Kerns: Welt " + welt + ", Labor " + labor,
+            };
+        },
+        pfad: [
+            "stamm/dirigent-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/feld-*.js",
+            "stamm/daten.js",
+            "phyto-core.js",
+            "foundry-core.js",
+            "worlds/terrain/phytogenesis.js",
+            "worlds/terrain/index.html",
+            "scripts/diag-wetter-wache.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = die Front am Ort: Regen an A bei trockenem B ≥ 20 % der Zeit, Lag = Abstand ÷ Wind ±20 %, alle 5 Labor-Zeilen erreichbar, die Mutation der Kern-Funktion zieht Labor und Welt",
     },
 
     // ── wetter.K2 ── gate:naesse:echt: klar gegen 10 min Regen als Spieler-Wort aus dem Ausgabe-Pfad (echter Renderer)
@@ -489,38 +540,111 @@ module.exports = [
         quelle: "1 = EIN Term, global, die Richtung aus der Saat am Verhalten gemessen",
     },
 
-    // ── physik.K2 ── diag-fahr-leben L7/L8 (Null-Renderer, Mechanik, als solche benannt): der gestoßene Bär (13,7 m/s) vor der
-    // 0,35-m-Wand bei 60 fps, 30 fps und gemischten Frames, und die Lage nach 200 Sim-Schritten je Bildrate
+    // ── wetter.K5 ── gate:kopplung F3 Feld: der EINE Wind am Ort (`_windAt`), vom Gelände geformt (gelaende-core windForm) —
+    // Lee und Tal-Düse am Gesetz (Bühnen-Höhe), die Form an 41 × 41 Orten der Welt, und die Mutation „Wind ×0" zieht jeden der
+    // fünf Leser (Wasser-Kräusel, Regen-Drift bis zum Boden seines Gesetzes, Tuch, Rauch des Feuers, Wagen-Seitenkraft)
+    {
+        kriterium: "wetter.K5",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kopplung.cjs"],
+        env: { KOPPLUNG_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const m = /^\s*F3 Feld: Lee (-?\d+) % · Tal-Düse \+(-?\d+) % · Welt ([\d.]+)–([\d.]+) · Leser (\d+)\/(\d+) folgen ×0 \((.*)\)\s*$/m.exec(out);
+            if (!m) return { gruen: false, zahl: "keine F3-Feld-Zeile (Exit " + lauf.exit + ")" };
+            const [lee, duese, min, max, folgen, leser] = [+m[1], +m[2], +m[3], +m[4], +m[5], +m[6]];
+            const fuenf = ["wasser", "regen", "tuch", "rauch", "wagen"].filter((n) => new RegExp("(^| )" + n + " ").test(m[7]));
+            const f3 = out.split(/\r?\n/).filter((z) => /❌\s*F3/.test(z));
+            const gruen =
+                Math.abs(lee + 40) <= 2 && Math.abs(duese - 20) <= 2 && min <= 0.7 && max >= 1.1 && folgen === leser && fuenf.length === 5 &&
+                !f3.length && !/PAGE-ERROR|FEHLER pageerror/.test(out);
+            return {
+                gruen,
+                zahl:
+                    "Lee " + lee + " % · Tal-Düse +" + duese + " % · Welt " + min + "–" + max + " · " + folgen + "/" + leser + " Leser folgen ×0, " +
+                    fuenf.length + "/5 benannt (" + m[7] + ")",
+            };
+        },
+        pfad: [
+            "stamm/stoff-material.js",
+            "stamm/bild-*.js",
+            "stamm/koerper-*.js",
+            "stamm/siedlung-ort.js",
+            "stamm/dirigent-takt.js",
+            "stamm/daten.js",
+            "gelaende-core.js",
+            "phyto-core.js",
+            "vehicle-core.js",
+            "scripts/diag-kopplung.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = Lee −40 %, Tal-Düse +20 %, und jeder Leser außer Pflanze und Ohr (Wasser-Kräusel, Regen-Drift, Tuch, Feuer, Wagen-Seitenkraft) liest dieselbe Funktion (Mutation)",
+    },
+
+    // ── physik.K2 ── (Null-Renderer, Mechanik, als solche benannt) ZWEI Linsen in EINEM Lauf: das Durchdringen misst
+    // gate:kollision-bild (V) — Fuchs · Wolf · Bär · Riese bei 144/60/30 fps + Takt-Deckel, der Spieler gehend und im Sprint,
+    // der gestoßene Bär und der Fall gegen Mauer · Fels · Haus · Baum · Leib (die L7-Probe der Fahr-Linse wanderte mit
+    // 4ef668954 dorthin); die Lage nach 200 Sim-Schritten je Bildrate misst diag-fahr-leben L8. Die Zeile gt ist Staffel 2.
     {
         kriterium: "physik.K2",
         staffel: 1,
         geraet: "headless",
-        befehl: ["node", "scripts/diag-fahr-leben.cjs"],
-        env: { FAHR_LEBEN_PORT: "{PORT}" },
+        befehl: [
+            "bash",
+            "-c",
+            'FAHR_LEBEN_PORT={PORT} node scripts/diag-fahr-leben.cjs; E1=$?; echo "FAHR-LEBEN EXIT $E1"; KOLLISION_BILD_PORT={PORT} node scripts/diag-kollision-bild.cjs; E2=$?; echo "KOLLISION-BILD EXIT $E2"; exit $(( E1 > E2 ? E1 : E2 ))',
+        ],
         gpu: false,
         minuten: 10,
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/);
-            const l7 = z.find((x) => /^\s*(✅|❌) L7 /.test(x));
+            // L8 (diag-fahr-leben): der Wagen gegen den Bären, 200 Sim-Schritte bei 60 fps und gemischten Frames
             const l8 = z.find((x) => /^\s*(✅|❌) L8 /.test(x));
-            if (!l7 || !l8) return { gruen: false, zahl: "L7/L8 fehlen in der Ausgabe (Exit " + lauf.exit + ")" };
-            const wand = [...l7.matchAll(/(60|30|gemischt): (\d+)\/(\d+) durch/g)].map((m) => ({ k: m[1], durch: +m[2], n: +m[3] }));
-            const baer = /Bär (-?[\d.e-]+) m/.exec(l8);
-            const wagen = /Abweichung Wagen (-?[\d.e-]+) m/.exec(l8);
-            const gruen =
-                /✅/.test(l7) &&
-                /✅/.test(l8) &&
-                wand.length === 3 &&
-                wand.every((w) => w.durch === 0 && w.n >= 8) &&
-                !!baer &&
-                Math.abs(+baer[1]) <= 0.01 &&
-                !!wagen &&
-                Math.abs(+wagen[1]) <= 0.01;
+            const baer = l8 && /Bär (-?[\d.e-]+) m/.exec(l8);
+            const wagen = l8 && /Abweichung Wagen (-?[\d.e-]+) m/.exec(l8);
+            const l8ok = !!l8 && /✅/.test(l8) && !!baer && Math.abs(+baer[1]) <= 0.01 && !!wagen && Math.abs(+wagen[1]) <= 0.01;
+            // (V) (gate:kollision-bild): je Leib die Takte der Matrix, kein Durchtritt, Eindringen ≤ 1 cm, Spalt ≤ 5 cm
+            const LEIB_N = { fuchs: 20, wolf: 20, baer: 20, riese: 20, gehen: 10, sprint: 10, gestossen: 2, fall: 2 };
+            const kopf = z.find((x) => /^\s*\(V\) Kontakt beim Tempo: \d+\/\d+ Zeilen/.test(x));
+            const sm = kopf && /Schmuggel (\{.*\})\s*$/.exec(kopf);
+            let schmuggel = null;
+            try { schmuggel = sm ? JSON.parse(sm[1]) : null; } catch (_e) { schmuggel = null; }
+            const je = {};
+            for (const x of z) {
+                const m = /^\s+(\S+)\s+(\S+) m\/s · Durchtritt (\d+)\/(\d+) · Eindringen max (\S+) m · Spalt max (\S+) m/.exec(x);
+                if (m) je[m[1]] = { v: +m[2], durch: +m[3], n: +m[4], tief: +m[5], spalt: +m[6] };
+            }
+            const leiber = Object.keys(LEIB_N);
+            const verstoss = z.filter((x) => {
+                const m = /^\s*\(V\) (ZEILE FEHLT|DURCHTRITT|EINDRINGEN|VAKUÖS): ([a-zäöüß]+)/.exec(x);
+                return m && leiber.includes(m[2]);
+            });
+            const stumpf = z.some((x) => /LINSE STUMPF: \(V\)/.test(x));
+            const fehlt = leiber.filter((k) => !je[k] || je[k].n < LEIB_N[k]);
+            const L = leiber.filter((k) => je[k]).map((k) => je[k]);
+            const durch = L.reduce((s, w) => s + w.durch, 0);
+            const takte = L.reduce((s, w) => s + w.n, 0);
+            const tief = L.length ? Math.max(...L.map((w) => w.tief)) : NaN;
+            const spalt = L.length ? Math.max(...L.map((w) => w.spalt)) : NaN;
+            const vok = !!kopf && !!schmuggel && schmuggel.durch === true && !stumpf && !fehlt.length && !verstoss.length &&
+                durch === 0 && tief <= 0.01 && spalt <= 0.05;
+            if (!kopf && !l8) return { gruen: false, zahl: "weder (V) noch L8 in der Ausgabe (Exit " + lauf.exit + ")" };
+            const gt = je.gt;
             return {
-                gruen,
+                gruen: l8ok && vok,
                 zahl:
-                    "Durchdringen " + (wand.map((w) => w.k + " " + w.durch + "/" + w.n).join(" · ") || "?") + ", Lage nach 200 Schritten Bär " +
-                    (baer ? baer[1] : "?") + " m, Wagen " + (wagen ? wagen[1] : "?") + " m",
+                    (kopf
+                        ? "(V) Leiber " + (takte - durch) + "/" + takte + " Takte ohne Durchtritt, Eindringen max " + tief + " m, Spalt max " + spalt +
+                          " m (gestoßener Bär " + (je.gestossen ? je.gestossen.v : "?") + " m/s, Riese " + (je.riese ? je.riese.v : "?") + " m/s)" +
+                          (fehlt.length ? ", fehlen " + fehlt.join("/") : "") + (verstoss.length ? ", " + verstoss.length + " Verstöße" : "") +
+                          ", Schmuggel " + (schmuggel && schmuggel.durch === true ? "durch" : "STUMPF")
+                        : "(V) fehlt in der Ausgabe") +
+                    " · " +
+                    (l8 ? "L8 nach 200 Schritten Bär " + (baer ? baer[1] : "?") + " m, Wagen " + (wagen ? wagen[1] : "?") + " m" : "L8 fehlt") +
+                    (gt ? " · gt (Staffel 2) " + gt.v + " m/s Durchtritt " + gt.durch + "/" + gt.n : ""),
             };
         },
         pfad: [
@@ -532,8 +656,10 @@ module.exports = [
             "vehicle-core.js",
             "koerper-core.js",
             "scripts/diag-fahr-leben.cjs",
+            "scripts/diag-kollision-bild.cjs",
             "scripts/lib/fahr-proben.cjs",
             "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
         ],
         quelle: "1 = die Leiber (Mechanik, als solche benannt)",
     },
@@ -582,6 +708,91 @@ module.exports = [
         quelle: "1 = der Wasser-Automat hat 0 Takte in 60 s Ruhe",
     },
 
+    // ── feld.K3 Staffel 2 ── gate:stand-takt (RS, WS) am Kopf: in 60 s Ruhe arbeitet keine der sieben Sims (der Brand
+    // eingeschlossen), ein Akt kostet höchstens zwei Einheiten je geschriebener Zelle (RUHE-TAT), das Feld räumt am Tod (nach
+    // vier Wellen 0 Tote: FELD-TOTE, FELD-BESUCH), der Brand arbeitet nur in brennenden Zellen, erlischt, hinterlässt Asche,
+    // leuchtet und glüht (BRAND-*) — die Wand grün nur, wenn jede Sim-Probe hält. An main 6f8a2c66 ROT: Taten 46 802
+    // Einheiten in 60 s Ruhe (der Blick des Spielers je Bild), das Feld bis 1 110 Zellen bei 573 lebenden, kein Brand im Stamm
+    // (feld-k2k3)
+    {
+        kriterium: "feld.K3",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-stand-takt.cjs"],
+        env: { STAND_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const z = (n) => (new RegExp("^\\s*" + n + ": (.*)$", "m").exec(out) || [])[1];
+            const [ruhe, feld, brand] = [z("Sim-Ruhe 60 s"), z("Sim-Wecken feld"), z("Sim-Wecken brand")];
+            if (!ruhe || !feld || !brand) return { gruen: false, zahl: "keine Sim-Ruhe-, Feld- oder Brand-Zeile (Exit " + lauf.exit + ")" };
+            const rot = (out.split("❌ STAND-TAKT ROT:")[1] || "").split("\n").map((x) => x.trim()).filter(Boolean);
+            return {
+                gruen: lauf.exit === 0 && /✅ STAND-TAKT GRÜN/.test(out) && / brand 0 /.test(ruhe + " "),
+                zahl: "Ruhe 60 s: " + ruhe + " · Feld: " + feld.split(" — ")[0] + " · Brand: " + brand.split(" — ")[0] +
+                    (rot.length ? " · ROT: " + rot.slice(0, 3).join(" | ") : ""),
+            };
+        },
+        pfad: [
+            "stamm/wasser-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/feld-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/vegetation-*.js",
+            "stamm/koerper-fahrt.js",
+            "stamm/dienst.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "scripts/diag-stand-takt.cjs",
+            "scripts/lib/stand-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = jede langsame Simulation (Wasser, Overlays, Wetter, Brand, Wachstum) hat 0 Einheiten in Ruhe und arbeitet nur in berührten Zellen",
+    },
+
+    // ── feld.K2 ── gate:mp-sync (e) (zwei Seiten einer Maschine, ein echter Broker): A gräbt, schüttet und baut im Gespräch,
+    // B trägt denselben Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden an jedem Edit), nach dem Reload von B
+    // derselbe; das Netz-Log beider Seiten trägt keine Zustands-Nachricht; der Leib rechnet bit-gleich aus seinen Eingaben; je
+    // Probe ein Selbsttest. An main 6f8a2c66 fehlt (e); am Schnitt ROT: die Kennung eines Akt-Baus war der Zähler der Seite
+    // (A 463, B 471) (feld-k2k3)
+    {
+        kriterium: "feld.K2",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-mp-sync.cjs"],
+        env: { MP_SYNC_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const e = String(lauf.stdout || "").split(/\r?\n/).filter((x) => /^\s*(OK|ROT)\s+\(e\)/.test(x));
+            if (e.length < 6) return { gruen: false, zahl: "(e) trägt " + e.length + " von 6 Proben (Exit " + lauf.exit + ")" };
+            const rot = e.filter((x) => /^\s*ROT/.test(x));
+            return {
+                gruen: lauf.exit === 0 && rot.length === 0,
+                zahl: (rot.length ? rot.length + " von " + e.length + " (e)-Proben ROT: " : e.length + " (e)-Proben GRÜN: ") +
+                    (rot.length ? rot : e.slice(0, 3)).map((x) => x.replace(/^\s*(OK|ROT)\s+/, "").slice(0, 140)).join(" | "),
+            };
+        },
+        pfad: [
+            "stamm/netz-*.js",
+            "stamm/feld-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/speicher-*.js",
+            "stamm/werkstatt-*.js",
+            "stamm/dienst.js",
+            "stamm/dirigent-*.js",
+            "signaling-server.js",
+            "save-server.js",
+            "voxel-worker.js",
+            "gelaende-core.js",
+            "scripts/diag-mp-sync.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = Edits und Bauten aus Schreib-Akten byte-gleich über Peers und Reload, gemessen",
+    },
+
     // ── feld.K1 ── gate:fahr-leben W (Zweig wetter-kette-k1): Sturm → Regen-Feld → Nässe → Grip, je Glied die Festhalte-Probe
     // (`ketteVerdict`: ein Glied zählt, wenn es mit dem Sturm zieht UND steht, solange sein Vorgänger gehalten wird); das
     // Urteil liest die Zeile `KETTE {"tiefe":N,…}` — an main fehlt `--kette` (ROT „keine KETTE-Zeile")
@@ -617,6 +828,144 @@ module.exports = [
         ],
         quelle: "1 = Tiefe 2–3 mit Festhalte-Probe",
     },
+
+    // ── feld.K4 ── gate:stand-takt --tat (Null-Renderer, Mess-Wiese): 10 Bäume fällen, 30 Pflanzen pflücken mit tryMouseBreak;
+    // gezählt, was die Welt zeichnet, nach 1 h, nach Save → Reload, nach Reload + 1 h und nach 36 h mehr. Die Linse urteilt die
+    // Stunde vor dem Reload (`✅ TAT GRÜN`), Station 2 liest Reload, Reload + Stunde und Heilung aus `TAT {…}` —
+    // an main 833bbc24 ROT: 0 Stümpfe für 10, Feld 0, nach dem Reload 30 von 30 Pflanzen zurück (feld-k4-tat 08b943ca)
+    {
+        kriterium: "feld.K4", staffel: 1, geraet: "headless",
+        befehl: ["node", "scripts/diag-stand-takt.cjs", "--tat"], env: { STAND_TAKT_PORT: "{PORT}" }, gpu: false, minuten: 4,
+        urteil: (j, lauf) => {
+            const T = jsonZeile(lauf.stdout, /^TAT {/);
+            const h = T && T.stunde;
+            if (!h) return { gruen: false, zahl: "keine TAT-Zeile (Exit " + lauf.exit + ")" };
+            const gruen = /✅ TAT GRÜN/.test(lauf.stdout) && T.gefaellt >= 8 && T.gepflueckt >= 25 &&
+                h.baeume <= 0.3 * T.baeumeVorher && h.pflanzen === 0 && h.stuempfe >= T.gefaellt && h.narbe <= -0.05;
+            return { gruen, zahl: "nach der Stunde vor dem Reload: " + h.baeume + " von " + T.baeumeVorher + " Bäumen, " + h.pflanzen +
+                " von " + T.gepflueckt + " Pflanzen zurück, " + h.stuempfe + " Stümpfe für " + T.gefaellt + ", Feld " + h.narbe + " unter frozen" };
+        },
+        pfad: TAT_PFAD,
+        quelle: "1 = die Spur hält bis zum Reload",
+    },
+    {
+        kriterium: "feld.K4", staffel: 2, geraet: "headless",
+        befehl: ["node", "scripts/diag-stand-takt.cjs", "--tat"], env: { STAND_TAKT_PORT: "{PORT}" }, gpu: false, minuten: 4,
+        urteil: (j, lauf) => {
+            const T = jsonZeile(lauf.stdout, /^TAT {/);
+            const [a, r, g] = T ? [T.reload, T.reloadStunde, T.heilung] : [];
+            if (!a || !r || !g) return { gruen: false, zahl: "keine TAT-Zeile mit Reload und Heilung (Exit " + lauf.exit + ")" };
+            const haelt = (h) => h.baeume <= 0.3 * T.baeumeVorher && h.pflanzen === 0 && h.stuempfe >= T.gefaellt && h.narbe <= -0.05;
+            const gruen = T.gefaellt >= 8 && T.gepflueckt >= 25 && haelt(a) && haelt(r) &&
+                g.pflanzen >= 0.9 * T.gepflueckt && g.narbe >= r.narbe / 2 && g.taten < r.taten;
+            const z = (h) => h.baeume + "/" + T.baeumeVorher + " Bäume, " + h.pflanzen + " Pflanzen, " + h.stuempfe + " Stümpfe, Feld " + h.narbe;
+            return { gruen, zahl: "nach dem Reload " + z(a) + " · nach Reload und Stunde " + z(r) + " · nach 36 Stunden " + g.pflanzen +
+                " von " + T.gepflueckt + " Pflanzen zurück, Feld " + r.narbe + " → " + g.narbe + ", Taten " + r.taten + " → " + g.taten };
+        },
+        pfad: TAT_PFAD,
+        quelle: "2 = sie hält nach Reload UND nach 1 Spielstunde und wächst über das Feld nach",
+    },
+
+    // ── physik.K1 ── gate:fahr-leben --koerper (Null-Renderer): die EINE Stoff-Zeile (state.materials) trägt ρ in kg/m³, Teile wiegen
+    // ihr Mesh-Volumen, der Mensch die Vereinigung seiner Glieder unter der Haut; Mutation ρ ×2 → Masse ×2 und Eintauchtiefe in der
+    // Welt; Bänder der Messung: Mensch 60–90 kg, Wagen 1,1–1,6 t, Δv ±5 %, Holz ρ/ρw ±10 %, Stein sinkt, Labor = Welt ≤ 1 %
+    // (physik-k1-kg 0530894e; an main ROT: Massen ×1,000 unter ρ ×2, Spieler 117 kg)
+    {
+        kriterium: "physik.K1",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["bash", "-c", 'FAHR_LEBEN_PORT={PORT} node scripts/diag-fahr-leben.cjs --koerper; echo "KOERPER EXIT $?"'],
+        gpu: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const l = String(lauf.stdout || "").split(/\r?\n/).find((x) => /^\s*(✅|❌) K1#1 /.test(x));
+            if (!l) return { gruen: false, zahl: "K1#1 fehlt in der Ausgabe (Exit " + lauf.exit + ")" };
+            return { gruen: /^\s*✅/.test(l), zahl: l.replace(/^\s*(✅|❌) K1#1 \(physik\.K1\) /, "") };
+        },
+        pfad: ["stamm/bau-*.js", "stamm/kreatur-*.js", "stamm/koerper-*.js", "stamm/kampf.js", "stamm/wasser-*.js", "stamm/dirigent-*.js",
+            "stamm/daten.js", "foundry-core.js", "tetrapoda-core.js", "koerper-core.js", "vehicle-core.js", "schmiede-core.js",
+            "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/lib/wasser-linse.cjs"],
+        quelle: "1 = die Leiber (Spieler, Tier, Wagen) gemessen",
+    },
+    {
+        kriterium: "physik.K1",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["bash", "-c", 'FAHR_LEBEN_PORT={PORT} node scripts/diag-fahr-leben.cjs --koerper; echo "KOERPER EXIT $?"'],
+        gpu: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const z = String(lauf.stdout || "").split(/\r?\n/);
+            const l1 = z.find((x) => /^\s*(✅|❌) K1#1 /.test(x));
+            const l2 = z.find((x) => /^\s*(✅|❌) K1#2 /.test(x));
+            if (!l1 || !l2) return { gruen: false, zahl: "K1#1/K1#2 fehlen in der Ausgabe (Exit " + lauf.exit + ")" };
+            return {
+                gruen: /^\s*✅/.test(l1) && /^\s*✅/.test(l2) && /KOERPER EXIT 0\b/.test(lauf.stdout),
+                zahl: l2.replace(/^\s*(✅|❌) K1#2 \(physik\.K1\) /, "") + (/^\s*✅/.test(l1) ? "" : " · K1#1 ROT"),
+            };
+        },
+        pfad: ["stamm/bau-*.js", "stamm/kreatur-*.js", "stamm/koerper-*.js", "stamm/kampf.js", "stamm/werkstatt-*.js", "stamm/wasser-*.js",
+            "stamm/dirigent-*.js", "stamm/daten.js", "foundry-core.js", "tetrapoda-core.js", "koerper-core.js", "vehicle-core.js",
+            "schmiede-core.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/lib/wasser-linse.cjs"],
+        quelle: "2 = jedes Ding (gebaut, geschmiedet, lose); die Mutation von ρ in der EINEN Stoff-Zeile zieht Masse und Eintauchtiefe in der Welt",
+    },
+
+    // ── stoffe.K3 ── das Eis, die feste Phase der EINEN Wasser-Wahrheit (gate:wasser-leben E im Block koerper, Null-Renderer:
+    // Mechanik am Spieler-Weg, R3): im Winter (Saison 0,875, das Temperatur-Feld des Gelände-Kerns am Spiegel unter 0 °C)
+    // geht der Spieler mit W über den See der Mess-Wiese und steht auf dem Eis, Wolf, Fuchs und Bär stehen auf ihm; das Feld
+    // +10 °C an seiner EINEN Naht (`_temperaturAt`) bricht ihn ein — er schwimmt wie im Sommer. Am main 6f8a2c66 ROT (keine
+    // Eis-Probe; im Winter schwamm der Spieler, die Füße bis 1,227 m unter dem Spiegel), am Zweig stoffe-k3-phasen GRÜN.
+    {
+        kriterium: "stoffe.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-wasser-leben.cjs", "--nur", "koerper"],
+        env: { WASSER_LEBEN_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const b = jsonBlock(lauf.stdout);
+            const e = b && b.koerper && b.koerper.eis;
+            if (!e || !e.winter || !e.mutation)
+                return { gruen: false, zahl: "keine Eis-Probe in der Ausgabe (Exit " + lauf.exit + ")" };
+            const w = e.winter;
+            const m = e.mutation;
+            const tier = Array.isArray(e.tier) ? e.tier : [];
+            const tierTraegt = tier.filter((t) => !t.schwimmt && Math.abs(t.sohleUnterSpiegel) <= 0.05).length;
+            const gruen =
+                lauf.exit === 0 &&
+                /WASSER-LEBEN GRÜN/.test(lauf.stdout) &&
+                w.temperatur < 0 &&
+                w.seeFrames >= 120 &&
+                w.schwimmFrames === 0 &&
+                w.luft === 0 &&
+                w.maxM <= 0.05 &&
+                tier.length === 3 &&
+                tierTraegt === 3 &&
+                m.temperatur >= 0 &&
+                m.schwimmFrames > 0;
+            return {
+                gruen,
+                zahl:
+                    "Winter " + w.temperatur + " °C am Spiegel: " + w.seeFrames + " Schritte auf dem See, die Füße bis " +
+                    w.maxM + " m vom Spiegel, " + w.schwimmFrames + " schwimmend · " + tierTraegt + " von " + tier.length +
+                    " Tieren am Spiegel · Feld +10 °C (" + m.temperatur + " °C): " + m.schwimmFrames + " Schritte schwimmend",
+            };
+        },
+        pfad: [
+            "gelaende-core.js",
+            "stamm/wasser-*.js",
+            "stamm/koerper-*.js",
+            "stamm/kreatur-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/daten.js",
+            "scripts/diag-wasser-leben.cjs",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = eine Phase mit Körper-Folge (das Eis trägt den Spieler, y am Spiegel ±5 cm)",
+    },
 ];
 
 // ── NICHT FASSBAR (befehl: null): kein Werkzeug im Spiel-Baum misst das Soll dieser Staffel als EIN Befehl am SHA ──
@@ -625,14 +974,9 @@ module.exports.fehlt = [
     { kriterium: "gelaende.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: Damm (b) und Ferne (d, byte-Diff am Ring) misst keine Linse; Ego und GTX ungemessen" },
     { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug fehlt: 12 Posen (Ego/Third × Mittag/Nacht/Regen × beide Geräte) und die Fließ-Anisotropie (ohne Soll im Code)" },
     { kriterium: "gelaende.K4", staffel: 2, befehl: null, grund: "Werkzeug fehlt: die Mutation läuft nur am See der Mess-Wiese (nicht überall); „jeder Lauf endet in See oder Meer“ und „die Strömung treibt“ (gate:kopplung F1) sind getrennte Linsen ohne gemeinsames Urteil" },
-    { kriterium: "wetter.K1", staffel: 2, befehl: null, grund: "nicht gebaut: das Wetter bleibt EIN globales Wort (`_setWeather`), keine Front am Ort; die Welt kennt 3 der 5 Zeilen von WX_GESETZ" },
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Pfützen in den Mulden, keine Trocken-Kurve, kein Third" },
-    { kriterium: "wetter.K5", staffel: 2, befehl: null, grund: "nicht gebaut: kein Gelände formt den Wind (Lee, Tal-Düse); die Leser-Mutation von `_windAt` misst keine Linse" },
-    { kriterium: "physik.K1", staffel: 1, befehl: null, grund: "Werkzeug fehlt: keine Stoß-Matrix (Δv-Verhältnis = Massen-Verhältnis ±5 %, Masse aus Volumen × ρ) im Baum; der Beleg zitiert Code (`_stossPaar`, `_leibMasse`), die Kreatur-Probe temperament prüft nur, dass Temperament und Beute die EINE Masse lesen (R3)" },
-    { kriterium: "physik.K1", staffel: 2, befehl: null, grund: "nicht gebaut: Gebautes wiegt nichts (bau-buch dichte [0,1]-normiert), die Schmiede trägt ρ für 4 Stoffe — zwei Skalen" },
     { kriterium: "physik.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: der Wagen bei vmax × 1,2 gegen die 0,35-m-Mauer und die Bild-Probe (Spalt Leib–Wand ≤ 5 cm) auf beiden Geräten — gate:kollision-bild läuft auf dem Null-Renderer" },
-    { kriterium: "feld.K2", staffel: 1, befehl: null, grund: "Werkzeug fehlt für das ganze Soll: gate:mp-sync (c) trägt nur zwei Chat-Edits über Peers, keine Bauten; kein Werkzeug misst Edits und Bauten byte-gleich über einen Reload (gate:reload-treue prüft den Guss-Pin der Kreatur)" },
-    { kriterium: "feld.K2", staffel: 2, befehl: null, grund: "nicht gebaut: Wetter am Ort, Pegel, Overlays, Brand ohne Zustands-Nachricht über Peers ungemessen; Reload mitten im Sturm ohne Linse" },
+    { kriterium: "feld.K2", staffel: 2, befehl: null, grund: "nicht gebaut: das Netz-Log steht (gate:mp-sync (e), keine Zustands-Nachricht), aber die Uhren der Teil-Simulationen sind je Seite — der Auto-Zug des Wetters zählt die Sitzung (`weatherEffectTime`) und den Wunsch des eigenen Nexus, Overlays und Brand die Spielzeit der Seite (`spielZeit`), die Tageszeit ist Spieler-Wort (set_time_of_day nicht broadcastbar); ohne geteilte Welt-Uhr ist Wetter am Ort keine Funktion von Saat und Akten, und ein Reload mitten im Sturm setzt nur das Wort fort (der Übergang reist nicht)" },
     { kriterium: "feld.K1", staffel: 2, befehl: null, grund: "Werkzeug fehlt: `diag-fahr-leben --kette` kennt drei Glieder (Regen-Feld, Nässe, Grip) und misst Tiefe ≥ 4 nie; das vierte Glied (Unterstand und Tränke der Tiere aus Nässe und Pegel statt `_weatherIsWet`, oder der Pegel aus dem Regen) ist nicht gebaut" },
-    { kriterium: "feld.K3", staffel: 2, befehl: null, grund: "Werkzeug fehlt: `werkbank stand --sim` misst die Ruhe, nicht „nur in berührten Zellen“ (unter Taten 32 805 Einheiten); der Brand hat keinen Takt im Stamm" },
+    { kriterium: "stoffe.K3", staffel: 2, befehl: null, grund: "nicht gebaut: der Schnee schmilzt nicht (die Schneegrenze ist Höhe allein, kein Pegel liest Schmelze), Lava erstarrt nicht (die glut-Achse ist eine eingefrorene Feld-Achse), der Stahl der Esse liest das Temperatur-Feld nicht; nur das Eis steht (Staffel 1)" },
 ];

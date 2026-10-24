@@ -147,6 +147,152 @@ return [+best.h.toFixed(2), +best.x.toFixed(2), +best.y.toFixed(2), +best.z.toFi
 
 const ARM = ["0.5", "1", "2"];
 
+// DIE ALBEDO-TAFEL BEIDER SEITEN ECHT (material.K1): die Welt-Seite wie diag-albedo-tafel neuMessen, aber auf der echten GPU
+// (`werkbank start --echt` gegen den eigenen save-server auf {PORT}+20000 mit frischem Stand, am Ort der gespeicherten Messung,
+// 10 s Ruhe, `albedo --tafel`), danach die Labor-Seite
+// `diag-albedo-tafel.cjs --labor --echt` je Studio (Port {PORT}+2). Gerechnet wird je Zeile der Tafel am SHA: Welt/Labor und
+// beide Seiten im realen Band ihrer Klasse (`plan.baender`, fest in der Station mit Quelle — der Baum trägt kein Band, und eine
+// Zeile ohne Band hier ist ROT); dazu die Eichung beider Seiten gegen die Karte der Tafel. Nach {AUS}:
+// `{ adapter, welt: { echt, geraet, eichung }, labor: { echt, geraet, eichung }, zeilen: [{ id, L, W, v, band, quelle, inBand }],
+// eichung: { soll, rand, welt, labor }, fehler }`. Exit 1 nur, wenn eine Seite nichts misst; das Urteil fällt die Station.
+// eslint-disable-next-line max-lines-per-function
+async function albedoTafelEcht(plan) {
+    const fs = require("fs");
+    const path = require("path");
+    const cp = require("child_process");
+    const [AUS] = process.argv.slice(1);
+    const DIR = AUS + ".d";
+    fs.mkdirSync(DIR, { recursive: true });
+    const P = String(process.env.WERKBANK_PORT);
+    const WB = path.join("scripts", "werkbank.cjs");
+    const aus = { plan: plan.name, adapter: null, welt: null, labor: null, zeilen: [], eichung: null, fehler: null };
+    const wb = (args, ms) =>
+        cp.spawnSync(process.execPath, [WB, ...args, "--port", P], { encoding: "utf8", timeout: ms || 900000, maxBuffer: 1 << 28 });
+    const warte = (ms) => new Promise((r) => setTimeout(r, ms));
+    const rest = (r) => String((r.stdout || "") + (r.stderr || "")).slice(-300);
+    const log = path.join(DIR, "werkbank.log");
+    const SP = String(Number(P) + 20000);
+    let t = null, Wm = null, Lm = null, w = null, sv = null;
+    try {
+        t = JSON.parse(fs.readFileSync(path.join("spec", "farbe", "albedo-tafel.json"), "utf8"));
+        for (const d of ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"]) fs.rmSync(d, { force: true });
+        const slog = fs.openSync(path.join(DIR, "save.log"), "w");
+        sv = cp.spawn(process.execPath, ["save-server.js"], { env: { ...process.env, PORT: SP }, stdio: ["ignore", slog, slog] });
+        const lebt = () =>
+            new Promise((r) => require("http").get("http://localhost:" + SP + "/", (x) => (x.resume(), r(true))).on("error", () => r(false)));
+        for (let s = 0; !(await lebt()); s++) {
+            if (sv.exitCode != null || s > 60) throw new Error("der save-server auf " + SP + " steht nicht (Exit " + sv.exitCode + ")");
+            await warte(1000);
+        }
+        w = cp.spawn(process.execPath, [WB, "start", "--echt", "--port", P, "--seite", "http://localhost:" + SP], {
+            stdio: ["ignore", fs.openSync(log, "w"), fs.openSync(log, "a")],
+        });
+        for (let s = 0; !/WERKBANK bereit/.test(fs.readFileSync(log, "utf8")); s += 2) {
+            if (w.exitCode != null) throw new Error("die Werkbank startet nicht (Exit " + w.exitCode + "): " + fs.readFileSync(log, "utf8").slice(-300));
+            if (s > 900) throw new Error("die Werkbank steht nach 900 s nicht");
+            await warte(2000);
+        }
+        aus.adapter = (/\[linse-gpu\][^\r\n]*/.exec(fs.readFileSync(log, "utf8")) || [null])[0];
+        const gw = (t.gemessen && t.gemessen.welt) || {};
+        const um = wb(gw.ort ? ["umstellen", "--ort", gw.ort] : ["umstellen", ...(gw.spieler || [0, 0]).map(String)]);
+        if (um.status !== 0) throw new Error("umstellen: Exit " + um.status + " " + rest(um));
+        wb(["eval", "await new Promise((x) => setTimeout(x, 10000)); return 1"]);
+        const wd = path.join(DIR, "welt.json");
+        const al = wb(["albedo", "--tafel", "--datei", wd, "--ordner", path.join(DIR, "albw")]);
+        if (!fs.existsSync(wd)) throw new Error("albedo --tafel ohne Messung: Exit " + al.status + " " + rest(al));
+        Wm = JSON.parse(fs.readFileSync(wd, "utf8"));
+        // die echte Welt nennt ihren Adapter in der Messung (werkbank geraetInfo), nicht als [linse-gpu]-Zeile
+        aus.adapter = aus.adapter || (Wm.geraet ? "[echt] " + (typeof Wm.geraet === "string" ? Wm.geraet : JSON.stringify(Wm.geraet)) : null);
+    } catch (e) {
+        aus.fehler = "Welt: " + String((e && e.message) || e);
+    } finally {
+        if (w) {
+            wb(["stop"], 60000);
+            await warte(2000);
+            if (w.exitCode == null) w.kill();
+        }
+        if (sv && sv.exitCode == null) sv.kill();
+    }
+    if (!aus.fehler) {
+        const ld = path.join(DIR, "labor.json");
+        const r = cp.spawnSync(process.execPath, [path.join("scripts", "diag-albedo-tafel.cjs"), "--labor", "--echt", "--datei", ld], {
+            encoding: "utf8",
+            timeout: 1500000,
+            maxBuffer: 1 << 28,
+            env: { ...process.env, ALBEDO_PORT: String(Number(P) + 2) },
+        });
+        if (fs.existsSync(ld)) Lm = JSON.parse(fs.readFileSync(ld, "utf8"));
+        else aus.fehler = "Labor ohne Messung: Exit " + r.status + " " + rest(r);
+    }
+    if (Wm && Lm) {
+        const W = Wm.welt || {}, L = Lm.labor || {};
+        aus.welt = { echt: Wm.echt === true, geraet: Wm.geraet || null, eichung: Wm.eichung };
+        aus.labor = { echt: Lm.echt === true, geraet: Lm.geraet || null, eichung: (Lm.eichung && Lm.eichung.labor) || {}, fehler: Lm.fehler || [] };
+        const k = t.karte || {};
+        const ok = (y) => typeof y === "number" && Math.abs(y - k.albedo) <= k.eichRand;
+        aus.eichung = {
+            soll: k.albedo,
+            rand: k.eichRand,
+            welt: Wm.eichung,
+            labor: aus.labor.eichung,
+            gruen: ok(Wm.eichung) && Object.keys(aus.labor.eichung).length > 0 && Object.values(aus.labor.eichung).every(ok),
+        };
+        for (const z of t.zeilen) {
+            const l = L[z.id] && L[z.id].Y, y = W[z.id] && W[z.id].Y;
+            const e = plan.baender[z.id] || null;
+            const b = e && e.slice(0, 2);
+            const bandOk = !!e;
+            aus.zeilen.push({
+                id: z.id,
+                L: l > 0 ? l : null,
+                W: y > 0 ? y : null,
+                v: l > 0 && y > 0 ? +(y / l).toFixed(4) : null,
+                band: b,
+                quelle: e && e[2],
+                bandOk,
+                inBand: bandOk && l > 0 && y > 0 && [l, y].every((x) => x >= b[0] && x <= b[1]),
+            });
+        }
+    }
+    fs.writeFileSync(AUS, JSON.stringify(aus, null, 1));
+    console.log(aus.adapter || "[linse-gpu] ungenannt");
+    console.log(aus.fehler ? "ALBEDO-TAFEL ROT: " + aus.fehler : "ALBEDO-TAFEL " + aus.zeilen.length + " Zeilen beider Seiten");
+    process.exit(aus.fehler ? 1 : 0);
+}
+// DAS REALE BAND je Zeile der Tafel (lineare Albedo-Luminanz, bei Metallen F0): Fels, Rinde und Laub wörtlich aus dem aaaa der
+// Karte (src/g3.js material), die Dielektrika aus Frostbite (die Referenz der Karte unter „beste“), die Metalle aus dem Band der
+// Natur des Spiels (scripts/diag-gegenstand-stoff.cjs BAND, PBR-Tafeln).
+const DIEL = [0.0123, 0.871, "Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871"];
+const BAENDER = {
+    rinde: [0.07, 0.12, "Karte material (aaaa): Rinde 0,07–0,12"],
+    laub: [0.15, 0.26, "Karte material (aaaa): Laub/Gras 0,15–0,26"],
+    fels: [0.1, 0.3, "Karte material (aaaa): Fels 0,10–0,30 (PSU EARTH 103, spec/abnahme/soll-tafel.json)"],
+    boden: DIEL,
+    haus: DIEL,
+    "haus-l1": DIEL,
+    "haus-l2": DIEL,
+    lack: DIEL,
+    haut: DIEL,
+    fell: DIEL,
+    tor: [0.25, 0.95, "Buntmetall (gegenstand-stoff BAND buntmetall; PBR-Tafeln: Messing/Bronze F0 ~0,8)"],
+    klinge: [0.3, 0.95, "blankes Metall (gegenstand-stoff BAND blank; PBR-Tafeln: Eisen F0 0,56)"],
+};
+const ALBEDO_TAFEL_ECHT = [
+    "node",
+    "-e",
+    "(" + albedoTafelEcht.toString() + ")(" + JSON.stringify({ name: "material.K1", baender: BAENDER }) + ")",
+    "{AUS}",
+];
+const ALBEDO_PFAD = [
+    ...BILD,
+    "*-core.js",
+    "stamm/**",
+    "worlds/**",
+    "spec/farbe/albedo-tafel.json",
+    "scripts/lib/albedo-tafel.cjs",
+    "scripts/diag-albedo-tafel.cjs",
+];
+
 const stationen = [
     {
         kriterium: "licht.K2",
@@ -397,6 +543,98 @@ const stationen = [
         ],
         quelle: "1 = Haus und Fels Stufe/L0 0,95–1,05 bei Uhr 0,5 an einem Gerät",
     },
+    {
+        kriterium: "material.K1",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // material-lack (Zug 5) hob Haut Labor/Welt 0,857 → 0,997 und Tiefschwarz ins Band, gemessen nur am Zweig-Kopf. Die Station
+        // misst beide Seiten echt am SHA: jede Zeile Welt/Labor 0,9–1,1 und beidseits im realen Band ihrer Klasse (BAENDER), die
+        // Seiten auf der Karte (nie ein Ersatz-Renderer).
+        befehl: ALBEDO_TAFEL_ECHT,
+        env: envDer,
+        gpu: true,
+        minuten: 10,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            if (j.fehler) return { gruen: false, zahl: j.fehler };
+            const soft = /swiftshader|llvmpipe|lavapipe|software|subzero/i;
+            const Z = j.zeilen || [];
+            const echt = !!j.adapter && !soft.test(j.adapter) && !!j.welt && j.welt.echt && !!j.labor && j.labor.echt && !soft.test(String(j.labor.geraet || ""));
+            const imV = Z.filter((z) => z.v != null && z.v >= 0.9 && z.v <= 1.1);
+            const imB = Z.filter((z) => z.inBand);
+            const raus = Z.filter((z) => !imV.includes(z) || !z.inBand).map((z) =>
+                z.id + " " + (z.v == null ? "stumm" : z.v) + (z.bandOk ? (z.inBand ? "" : " ∉ [" + z.band.join(", ") + "] L " + z.L + " W " + z.W) : " ohne reales Band")
+            );
+            const gruen = echt && Z.length >= 10 && imV.length === Z.length && imB.length === Z.length;
+            const zahl =
+                "Welt/Labor 0,9–1,1: " + imV.length + "/" + Z.length + " · im realen Band beidseits: " + imB.length + "/" + Z.length +
+                (raus.length ? " — " + raus.join(" · ") : "") + " · echt " + (echt ? "beide Seiten" : "NEIN") + " · " + (j.adapter || "Adapter ungenannt");
+            return { gruen, zahl };
+        },
+        pfad: ALBEDO_PFAD,
+        quelle: "1 = alle Zeilen Welt/Labor 0,9–1,1 und im realen Band, beide Seiten --echt, an einem Gerät",
+    },
+    {
+        kriterium: "material.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // dieselbe Messung; dazu liest die 18-%-Karte auf beiden Seiten 0,180 (± eichRand der Tafel), je Gerät
+        befehl: ALBEDO_TAFEL_ECHT,
+        env: envDer,
+        gpu: true,
+        minuten: 10,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            if (j.fehler) return { gruen: false, zahl: j.fehler };
+            const soft = /swiftshader|llvmpipe|lavapipe|software|subzero/i;
+            const Z = j.zeilen || [];
+            const echt = !!j.adapter && !soft.test(j.adapter) && !!j.welt && j.welt.echt && !!j.labor && j.labor.echt && !soft.test(String(j.labor.geraet || ""));
+            const alle = Z.length >= 10 && Z.every((z) => z.v != null && z.v >= 0.9 && z.v <= 1.1 && z.inBand);
+            const e = j.eichung || {};
+            const lab = Object.entries(e.labor || {}).map(([s, y]) => s + " " + y);
+            const gruen = echt && alle && e.gruen === true;
+            const zahl =
+                "Karte Welt " + e.welt + " · Labor " + (lab.join(", ") || "stumm") + " · Soll " + e.soll + " ± " + e.rand +
+                " · Zeilen " + (alle ? "alle im Soll und Band" : "NICHT alle im Soll und Band") + " · echt " + (echt ? "beide Seiten" : "NEIN") +
+                " · " + (j.adapter || "Adapter ungenannt");
+            return { gruen, zahl };
+        },
+        pfad: ALBEDO_PFAD,
+        quelle: "2 = beide Geräte, Eichung Karte 0,180",
+    },
+    {
+        kriterium: "schatten.K1",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // schatten-k1-kontakt: werkbank licht --kontakt (scripts/lib/licht-linsen.cjs `kontaktSicht` + `kontaktUrteil`): Pfosten
+        // 0,5 × 0,5 × 3 m auf der Prüfbühne, A Welt / B ohne Pfosten / C ohne Sonne aus dem Ausgabe-Pfad, Halbschatten 10–90 % am
+        // Fuß je Pose bei Uhr 0,5; am Kopf vor dem Zweig kennt licht kein --kontakt (ROT beim Namen)
+        befehl: befehlDer({
+            name: "schatten.K1#1",
+            schritte: [
+                { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+                { name: "kontakt", args: ["licht", "--kontakt"], ms: 900000 },
+            ],
+        }),
+        env: envDer,
+        gpu: true,
+        minuten: 8,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            const k = j.schritte && j.schritte.kontakt;
+            const w = k && k.json;
+            if (j.fehler || !w) return { gruen: false, zahl: "Folge: " + String(j.fehler || (k && k.rest) || "").slice(-200) };
+            const z = ["ego", "third"].map((p) => {
+                const f = (((w["0.5"] || {}).posen || {})[p] || {}).fuss || {};
+                return [p, f.halbschattenCm, f.kanten || 0];
+            });
+            const gruen = hw && k.exit === 0 && z.every(([, cm, n]) => cm != null && cm <= 3 && n >= 6);
+            return { gruen, zahl: z.map(([p, cm, n]) => `Uhr 0.5 ${p} ${cm} cm (${n} Kanten)`).join(" · ") + ", " + (j.adapter || "Adapter ungenannt") };
+        },
+        pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "spec/pruefbuehne/**"],
+        quelle: "1 = Halbschatten am Fuß ≤ 3 cm an einem Gerät",
+    },
 ];
 
 // Was sich nicht als Station fassen lässt. Steht neben der Liste; der Läufer liest es nicht.
@@ -434,31 +672,6 @@ stationen.fehlt = [
         quelle: "2 = keine waagrechte Kanten-Linie (Struktur-Tensor am Horizont), Hügel und Gipfel, im Boden-Haushalt, beide Geräte",
     },
     {
-        kriterium: "material.K1",
-        staffel: 1,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "„im realen Band“ hat keine externe Referenz je Klasse. spec/farbe/albedo-tafel.json führt nur die Toleranz Labor/Welt und die " +
-            "Eichung 0,180; spec/abnahme/soll-tafel.json hat ein Albedo-Band nur für den Fels (0,1–0,3, PSU EARTH 103), keines für Rinde, " +
-            "Laub, Boden, Haus, Lack, Tor, Haut, Fell oder Klinge. Ohne das Band wäre es genau das Schlupfloch der Karte (Labor = Welt bei " +
-            "falscher Eichung). Messbar ist schon die Hälfte Welt/Labor beider Seiten echt, mit dem Teil-Befehl unten; das Urteil ist " +
-            "AT.tafelUrteil frisch gegen frisch, jede Zeile imSoll, Eichung grün.",
-        teil: [
-            "node scripts/werkbank.cjs start --echt  ·  umstellen 0 0  ·  albedo --tafel --datei welt.json",
-            "node scripts/diag-albedo-tafel.cjs --labor --echt --datei labor.json",
-        ],
-        quelle: "1 = alle Zeilen Welt/Labor 0,9–1,1 und im realen Band, beide Seiten --echt, an einem Gerät",
-    },
-    {
-        kriterium: "material.K1",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund: "wie material.K1#1, weil das reale Band je Klasse fehlt; dazu müssen beide Geräte gemessen sein und die Eichung der Karte 0,180 lesen.",
-        quelle: "2 = beide Geräte, Eichung Karte 0,180",
-    },
-    {
         kriterium: "material.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
@@ -477,6 +690,17 @@ stationen.fehlt = [
             "Die Albedo-Tafel hat keine Stufen-Zeilen für Birke, Fichte und Karte und keine Spalte für Uhr 0,27; dazu sind hochhaus und " +
             "volle_moderne (L1 ≠ L0) offen (material.K3 beleg).",
         quelle: "2 = Haus, Birke, Fichte, Fels, L0/L1/L2/Karte, Uhr 0,5 und 0,27, beide Geräte",
+    },
+    {
+        kriterium: "schatten.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: null,
+        grund:
+            "Werkzeug fehlt: licht --kontakt misst den Zuwachs je m nicht als Urteil (3 m hinter dem Pfosten 2,5 cm aus 2/6 Kanten), " +
+            "bei Uhr 0,3 brechen dunkle Bodenflecken der Prüfbühne die Linie (2/12 Kanten gültig); die Kosten ≤ +0,3 ms an der GTX " +
+            "misst kein ABAB der Station.",
+        quelle: "2 = Zuwachs ≈ 0,9 cm je m, Uhr 0,5 und 0,3, Kosten ≤ +0,3 ms an der GTX, beide Geräte",
     },
 ];
 

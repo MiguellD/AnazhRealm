@@ -1,0 +1,51 @@
+TAKT-SPITZE: CPU-Takt {"p50":5.2,"p95":6.6,"p99":8,"max":51.6} ms (K2 8 ms), 244 Takte ab p95 (244 mit Proben), Weg 0 m
+  Spitze  Mitte  ms je Takt, Rahmen ≥ 0,25 ms
+    4.89   3.38  renderer._renderScene
+    4.87   3.36    _renderScene [three.webgpu.min.js]
+    2.48   1.78      _renderObjects [three.webgpu.min.js]
+    1.72   1.29        renderer.renderObject
+    1.71   1.29          renderObject [three.webgpu.min.js]
+    1.67   1.23            rend._renderObjectDirect [werkbank]
+    1.62   1.19              renderer._renderObjectDirect
+    1.38      1                zeichne
+    0.82   0.63                  needsRefresh [three.webgpu.min.js]
+    0.81   0.62                    o.needsRefresh
+     0.8   0.62                      AnazhRealm._diaetRefresh
+    0.46   0.37                        AnazhRealm._diaetGeteiltSchreiben
+     0.3   0.19                  P.draw
+    0.28   0.17                    draw [three.webgpu.min.js]
+    0.25   0.16                      _draw [three.webgpu.min.js]
+    0.75   0.47        i [three.webgpu.min.js]
+    0.73   0.46          renderer.renderObject
+    0.71   0.45            renderObject [three.webgpu.min.js]
+     0.6   0.39              rend._renderObjectDirect [werkbank]
+    0.57   0.37                renderer._renderObjectDirect
+    0.48   0.31                  zeichne
+    0.76   0.45      scene.onBeforeRender
+    0.75   0.45        _passSicht
+     0.3   0.21          _instanzWahlPass
+     0.3   0.21      renderer._renderBundles
+    0.29    0.2        _renderBundles [three.webgpu.min.js]
+    0.29    0.2          renderer._renderBundle
+    0.28   0.19            _renderBundle [three.webgpu.min.js]
+    0.27   0.19              needsRefresh [three.webgpu.min.js]
+    0.27   0.19                o.needsRefresh
+    0.27   0.19                  AnazhRealm._diaetRefresh
+    0.28   0.18      updateMatrixWorld [three.core.min.js]
+    0.27   0.17      _renderTransparents [three.webgpu.min.js]
+    0.27   0.17        _renderObjects [three.webgpu.min.js]
+    0.27   0.17          renderer.renderObject
+    0.26   0.17            renderObject [three.webgpu.min.js]
+    0.57   0.36  _loopWeatherAndGrowth
+    0.47   0.28    updateCreatures
+    0.36   0.11  _loopRender
+    0.34   0.32  mark
+    0.33      0  tickFaunaLifecycle
+     0.3      0    _creatureNaturalDeath
+     0.3      0      _kreaturFaellt
+     0.3      0        _todKippWahl
+    0.29      0          _todHebeTafel
+    0.25      0            spalt
+TÄTER (Spitze − Mitte ≥ 1 ms): keiner
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\omen-z13-takt\takt\d-takt-B1-takt.json

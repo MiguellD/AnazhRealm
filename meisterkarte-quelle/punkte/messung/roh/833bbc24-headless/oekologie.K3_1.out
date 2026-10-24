@@ -1,0 +1,9 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben furcht
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ furcht    {"erinnert":{"kontrolle":{"medianM":14,"naeherM":0.13,"erinnerungen":[0,0,0,0]},"geschlagen":{"medianM":49,"naeherM":0.12,"erinnerungen":[1,1,1,1]},"gefuettert":{"medianM":1.77,"naeherM":6.21,"erinnerungen":[2,1,1,1]},"gebunden":{"medianM":7.77,"naeherM":2.49,"erinnerungen":[0,0,0,0]},"baerRuhig":{"medianM":1.55,"naeherM":6.38,"erinnerungen":[0,0,0,0]},"baerZornig":{"medianM":8.77,"naeherM":1.06,"erinnerungen":[0,0,0,0]},"baerFrieden":{"medianM":1.55,"naeherM":6.4,"erinnerungen":[0,0,0,0]}},"ort":{"aufenthalt":0.02,"gegenlauf":0.985}}
+
+  (12 s)
+
+✅ GRÜN — furcht

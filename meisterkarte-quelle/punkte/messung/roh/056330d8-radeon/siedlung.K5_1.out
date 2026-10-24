@@ -1,0 +1,166 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c set -u
+WP=7759; SP=$((7759 + 20000)); LP=$((7759 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=
+weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n "$SPID" ] && kill "$SPID" 2> /dev/null; SPID=; for p in $(netstat -ano 2> /dev/null | grep -aE ":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }
+trap weg EXIT
+boot() { weg; PORT=$SP node save-server.js > "$L/save.log" 2>&1 & SPID=$!; for t in $(seq 1 30); do curl -s -o /dev/null "http://localhost:$SP/" && break; sleep 1; done; $W start --echt --port $WP --seite "http://localhost:$SP" "$@" > "$L/wb.log" 2>&1 & for t in $(seq 1 120); do grep -qE "WERKBANK bereit|FEHLER|Error" "$L/wb.log" && break; sleep 5; done; grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+boot --ort dorf
+timeout 60 $W fenster 1920 1080 > /dev/null 2>&1
+timeout 120 $W umstellen --ort dorf --sicht ego > /dev/null 2>&1
+timeout 300 $W lauf 10 --ein 20 --ruhe 120 --regler frei --tiere frei > /dev/null 2>&1
+teil NH12 $W eval "window.__m36 = { zelle: [-4, -6], nH: 12, start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2410-siedlung-k5/m36-stufe.js")"
+boot --ort dorf
+timeout 60 $W fenster 1920 1080 > /dev/null 2>&1
+timeout 120 $W umstellen --ort dorf --sicht ego > /dev/null 2>&1
+timeout 300 $W lauf 10 --ein 20 --ruhe 120 --regler frei --tiere frei > /dev/null 2>&1
+teil NH300 $W eval "window.__m36 = { zelle: [-4, -6], nH: 300, start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2410-siedlung-k5/m36-stufe.js")"
+gpu-lauf: Schloss punkte-radeon nach 3 s
+@@PUNKTE@@ NH12
+{
+ "ergebnis": {
+  "gesetzt": {
+   "ms": 7.2,
+   "bilder": 0
+  },
+  "imRadius": {
+   "ms": 32994,
+   "bilder": 3245,
+   "radius": 105.52617512705555
+  },
+  "latenzMs": 124.4,
+  "erstesMesh": {
+   "ms": 33118.4,
+   "bilder": 3259,
+   "stufe": "mesh",
+   "typ": "haus_fraenkisch",
+   "same": 905543,
+   "ort": [
+    -828.52,
+    -1350.34
+   ],
+   "abstand": 105.1,
+   "auge": [
+    -839.9,
+    43.4,
+    -1245.9
+   ]
+  },
+  "radius": 105.52617512705555,
+  "zelle": [
+   -4,
+   -6
+  ],
+  "nH": 12,
+  "same": 29749318,
+  "anker": [
+   -839.5,
+   -1373.1
+  ],
+  "erwacht": {
+   "bild": 3650,
+   "d": 259.7
+  },
+  "erstes": {
+   "ms": 171.2,
+   "bilder": 8,
+   "stufe": "huelle",
+   "typ": "haus_alemannisch",
+   "same": 540317,
+   "ort": [
+    -795.45,
+    -1343.13
+   ],
+   "abstand": 233.4,
+   "auge": [
+    -840.3,
+    43.8,
+    -1114.1
+   ]
+  },
+  "hash": "99282f35",
+  "bilder": 6909,
+  "reserviert": {
+   "seed": 29749318,
+   "nH": 12,
+   "x": -839.5294117647059,
+   "z": -1373.113725490196
+  }
+ },
+ "ms": 80712
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ NH300
+{
+ "ergebnis": {
+  "gesetzt": {
+   "ms": 39.3,
+   "bilder": 0
+  },
+  "imRadius": {
+   "ms": 1512.3,
+   "bilder": 23,
+   "radius": 105
+  },
+  "latenzMs": 5482.1,
+  "erstesMesh": {
+   "ms": 6994.4,
+   "bilder": 195,
+   "stufe": "mesh",
+   "typ": "haus_fraenkisch",
+   "same": 428695,
+   "ort": [
+    -840.03,
+    -1162.66
+   ],
+   "abstand": 21.3,
+   "auge": [
+    -840.2,
+    45.3,
+    -1141.4
+   ]
+  },
+  "radius": 105,
+  "zelle": [
+   -4,
+   -6
+  ],
+  "nH": 300,
+  "same": 29749318,
+  "anker": [
+   -839.5,
+   -1373.1
+  ],
+  "erwacht": {
+   "bild": 2875,
+   "d": 259.6
+  },
+  "erstes": {
+   "ms": 6994.4,
+   "bilder": 195,
+   "stufe": "mesh",
+   "typ": "haus_fraenkisch",
+   "same": 428695,
+   "ort": [
+    -840.03,
+    -1162.66
+   ],
+   "abstand": 21.3,
+   "auge": [
+    -840.2,
+    45.3,
+    -1141.4
+   ]
+  },
+  "hash": "d3621130",
+  "bilder": 3070,
+  "reserviert": {
+   "seed": 29749318,
+   "nH": 300,
+   "x": -839.5294117647059,
+   "z": -1373.113725490196
+  }
+ },
+ "ms": 54625
+}
+@@PUNKTE@@ EXIT 0

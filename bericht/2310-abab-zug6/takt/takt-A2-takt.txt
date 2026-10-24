@@ -1,0 +1,176 @@
+TAKT-SPITZE: CPU-Takt {"p50":16,"p95":30.4,"p99":42.3,"max":104.9} ms (K2 8 ms), 75 Takte ab p95 (75 mit Proben), Weg 123 m
+  Spitze  Mitte  ms je Takt, Rahmen ≥ 0,25 ms
+   19.51   4.98  _loopVoxelStreaming
+   19.51   4.97    _runFrameScheduler
+   11.95   1.24      _dispatchFrameJobs
+   11.94   1.23        run
+    6.18   0.06          _tickVoxelChunkStreaming
+       3      0            _rebuildVoxelChunk
+    2.51      0              _completeVoxelRebuild
+    2.51      0                _finalizeVoxelChunkBuild
+    1.33      0                  _applyCrossLodGeomorph
+    0.45      0                    trefferVon
+    0.31      0                    _rebuildLodStitchBand
+    0.78      0                  _buildVoxelChunkWaterIsoSurface
+    0.78      0                    _buildVoxelChunkWaterCellSheet
+    0.72      0                      _computeWaterSheetData
+    0.29      0                  _chunkSatzEin
+    0.38      0              _acquireVoxelChunkBuild
+    0.38      0                _buildVoxelChunkDataFromWorkerMesh
+     0.3      0                  _bodenKarteNaht
+    0.27      0                    _bodenKarteAusMesh
+     2.1      0            _tickFoliageGrowth
+    2.07      0              _populateVoxelChunkVegetation
+     1.2      0                _vegetationSampleSpawn
+    0.45      0                  _placementDensityFactor
+    0.37      0                    _slopeAt
+    0.37      0                      (anonym) [stamm/gelaende-boden.js:500]
+    0.35      0                        _voxelSurfaceY
+    0.25      0                  _growTreeBlueprintForSpawn
+    0.71      0                _forestPlantChunk
+    0.29      0                  _slopeAt
+    0.29      0                    (anonym) [stamm/gelaende-boden.js:500]
+    0.26      0                      _voxelSurfaceY
+    0.91      0            _ensureVoxelChunkAt
+    0.87      0              _finalizeVoxelChunkBuild
+    0.82      0                _populateVoxelChunkVegetation
+    0.38      0                  _vegetationSampleSpawn
+    0.35      0                  _forestPlantChunk
+    3.68   0.08          _tickScatterStreaming
+    3.33      0            _scatterRegion
+    3.33      0              _scatterRegionWork
+    3.33      0                _scatterRegionScheibe
+     2.9      0                  _scatterPass
+    1.09      0                    _sampleBakedField
+    1.04      0                      _bakeRegionFields
+    0.67      0                        _slopeAt
+    0.66      0                          (anonym) [stamm/vegetation-streu.js:97]
+    0.66      0                            getTerrainHeightAt
+    0.62      0                              _voxelSurfaceY
+    0.36      0                                _terrainColumnContextIn
+    0.66      0                    _scatterSichtHoehe
+    0.61      0                      _ortGestaltSame
+    0.57      0                        (anonym) [stamm/vegetation-baum.js:903]
+    0.31      0                          _forestStehtFrei
+    0.26      0                            _forestDartSteht
+    0.43      0                    _naturSetzen
+    0.27      0                      (anonym) [stamm/vegetation-streu.js:763]
+     0.3      0                    _landAt
+    0.39      0                  _bakeRegionFields
+    0.26      0                    _slopeAt
+    0.25      0                      (anonym) [stamm/vegetation-streu.js:97]
+    0.27   0.02            _tickBlueprintPrebake
+       1   0.87          _tickNahStreu
+    0.34   0.29            _nahStreuBloecke
+    0.31   0.28              _streuNahEin
+    0.31   0.27                _streuNahSatz
+    0.31   0.27                  _bauSatzLege
+    0.63   0.02          _tickMorphFolge
+    0.61   0.02            _applyCrossLodGeomorph
+    0.33   0.13          _tickNahWiese
+     4.9    2.9      _tickArchitectureLOD
+    2.15   1.11        _lodTreeVisHeight
+    1.74   0.85          _foundrySichtHoehe
+    1.32   0.57            _foundryGestaltFor
+    1.12   0.41              _ortGestaltSame
+    0.52   0.01                (anonym) [stamm/vegetation-baum.js:903]
+    0.37   0.01                  _waldPlanSteht
+    0.35   0.01                    _waldPlanKasten
+    1.73   1.24        _updateFoundryLodBand
+    1.36      1          _foundryLodBandPartner
+    0.88   0.63            _foundryBaumHoehe
+    0.48   0.36              _foundryGestaltFor
+    0.29    0.2                _ortGestaltSame
+    0.25    0.1        _maybeRebuildOcclusionGrid
+    0.87   0.04      _tickPendingVegSpawns
+    0.86   0.04        _naturSetzen
+    0.79   0.03          spawnArchitecture
+    0.34   0.01            _populateBlockerAABBs
+    0.84   0.53      _tickScatterLod
+    0.42   0.28        _scatterSichtHoehe
+    0.42   0.09      _tickFernRing
+    0.28      0      _tickWegeKarte
+   13.37   8.27  renderer._renderScene
+   13.32   8.25    _renderScene [three.webgpu.min.js]
+    7.14   4.61      scene.onBeforeRender
+    7.14   4.61        _passSicht
+     4.4   2.87          _chunkSatzPass
+    3.34   2.16            _hoehlenSicht
+       3   1.93              _hoehlenSichtLicht
+    0.35   0.22                _passTrifftBox
+    0.91   0.58            _chunkSatzAbschnitt
+    1.79   1.01          _instanzWahlPass
+    0.67   0.51            _instanzBehalten
+    0.56    0.2            _arenaTakt
+    0.54   0.18              _takt
+    0.31   0.11                _ordnen
+    0.36   0.29          _kaskadenPassen
+    0.35   0.28          _nahWieseSicht
+    4.29   2.24      _renderObjects [three.webgpu.min.js]
+    2.35   1.39        renderer.renderObject
+    2.33   1.38          renderObject [three.webgpu.min.js]
+    2.27   1.33            rend._renderObjectDirect [werkbank]
+     2.2   1.29              renderer._renderObjectDirect
+    1.98   1.09                zeichne
+    0.97   0.59                  needsRefresh [three.webgpu.min.js]
+    0.96   0.59                    o.needsRefresh
+    0.94   0.58                      AnazhRealm._diaetRefresh
+     0.5   0.38                        AnazhRealm._diaetGeteiltSchreiben
+    0.37   0.24                          _update [three.webgpu.min.js]
+    0.27   0.16                            update [three.webgpu.min.js]
+    0.29   0.08                        AnazhRealm._diaetObjektGang
+    0.73   0.28                  updateForRender [three.webgpu.min.js]
+    0.33   0.05                    updateAttributes [three.webgpu.min.js]
+    0.31   0.04                      updateAttribute [three.webgpu.min.js]
+    0.31   0.04                        update [three.webgpu.min.js]
+    1.93   0.83        i [three.webgpu.min.js]
+    1.92   0.81          renderer.renderObject
+    1.89   0.77            renderObject [three.webgpu.min.js]
+    1.74   0.63              rend._renderObjectDirect [werkbank]
+    1.71   0.59                renderer._renderObjectDirect
+    1.55    0.5                  zeichne
+    0.73   0.05                    updateForRender [three.webgpu.min.js]
+    0.66   0.02                      updateAttributes [three.webgpu.min.js]
+    0.66   0.02                        updateAttribute [three.webgpu.min.js]
+    0.65   0.02                          update [three.webgpu.min.js]
+    0.44      0                            createAttribute [three.webgpu.min.js]
+    0.44      0                              createAttribute [three.webgpu.min.js]
+    0.36      0                                P.createBuffer
+    0.35      0                                  createBuffer
+     0.5    0.3                    needsRefresh [three.webgpu.min.js]
+    0.48   0.29                      o.needsRefresh
+    0.47   0.28                        AnazhRealm._diaetRefresh
+    0.42   0.29      renderer._renderBundles
+     0.4   0.27        _renderBundles [three.webgpu.min.js]
+     0.4   0.27          renderer._renderBundle
+    0.37   0.26            _renderBundle [three.webgpu.min.js]
+    0.26   0.22              needsRefresh [three.webgpu.min.js]
+    0.26   0.22                o.needsRefresh
+    0.26   0.22                  AnazhRealm._diaetRefresh
+     0.3   0.22      _projectObject [three.webgpu.min.js]
+     0.3    0.2      beginRender [three.webgpu.min.js]
+    1.72   0.44  tickArchitectureCulling
+    0.52   0.13    _archKartenPreset
+    0.82   0.35  _loopRender
+    0.39   0.12    _tickChunkSatz
+    0.51   0.08  (garbage collector)
+    0.48   0.33  _loopWeatherAndGrowth
+    0.47   0.31    updateCreatures
+     0.4   0.21  _loopFixedStep
+     0.4    0.2    _stepFixedSim
+     0.3   0.17      _stepCharacter
+TÄTER (Spitze − Mitte ≥ 1 ms): _loopVoxelStreaming › _runFrameScheduler (Rest) 2.65 · 0.83 | _scatterRegionScheibe › _scatterPass (Rest) 1.81 · 0 | _finalizeVoxelChunkBuild › _applyCrossLodGeomorph 1.33 · 0 | tickArchitectureCulling 1.72 · 0.44 | _populateVoxelChunkVegetation › _vegetationSampleSpawn 1.2 · 0 | _completeVoxelRebuild › _finalizeVoxelChunkBuild (Rest) 1.18 · 0 | _hoehlenSicht › _hoehlenSichtLicht 3 · 1.93 | renderer._renderObjectDirect › zeichne 1.55 · 0.5 | _sampleBakedField › _bakeRegionFields 1.04 · 0 | run › _tickVoxelChunkStreaming (Rest) 1.08 · 0.06
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\n2210\zug6\takt\takt-A2-takt.json
+
+LINSE ROT:
+  Spitzen-Täter _loopVoxelStreaming › _runFrameScheduler (Rest): 2.65 ms je Takt ab p95, Mitte 0.83 ms
+  Spitzen-Täter _scatterRegionScheibe › _scatterPass (Rest): 1.81 ms je Takt ab p95, Mitte 0 ms
+  Spitzen-Täter _finalizeVoxelChunkBuild › _applyCrossLodGeomorph: 1.33 ms je Takt ab p95, Mitte 0 ms
+  Spitzen-Täter tickArchitectureCulling: 1.72 ms je Takt ab p95, Mitte 0.44 ms
+  Spitzen-Täter _populateVoxelChunkVegetation › _vegetationSampleSpawn: 1.2 ms je Takt ab p95, Mitte 0 ms
+  Spitzen-Täter _completeVoxelRebuild › _finalizeVoxelChunkBuild (Rest): 1.18 ms je Takt ab p95, Mitte 0 ms
+  Spitzen-Täter _hoehlenSicht › _hoehlenSichtLicht: 3 ms je Takt ab p95, Mitte 1.93 ms
+  Spitzen-Täter renderer._renderObjectDirect › zeichne: 1.55 ms je Takt ab p95, Mitte 0.5 ms
+  Spitzen-Täter _sampleBakedField › _bakeRegionFields: 1.04 ms je Takt ab p95, Mitte 0 ms
+  Spitzen-Täter run › _tickVoxelChunkStreaming (Rest): 1.08 ms je Takt ab p95, Mitte 0.06 ms

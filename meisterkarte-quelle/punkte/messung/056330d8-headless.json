@@ -1,0 +1,473 @@
+{
+ "sha": "056330d8a70fcdc617df8c3ff62ec174c5d33995",
+ "geraet": "headless",
+ "zeit": "2026-10-24T05:44:54.097Z",
+ "host": "MiguellD",
+ "je": {
+  "gelaende.K1#1": {
+   "gruen": true,
+   "zahl": "Welt = Studio byte-gleich (Makro 1d05ef660c4a7994), Statistik gleich, 18 Regler, tot 0, Selbsttest sieht",
+   "exit": 0,
+   "minuten": 1.74,
+   "zeit": "2026-10-24T05:18:07.164Z",
+   "abdruck": "6f7eb4149e5b",
+   "port": 7700
+  },
+  "gelaende.K4#1": {
+   "gruen": true,
+   "zahl": "10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0",
+   "exit": 0,
+   "minuten": 0.81,
+   "zeit": "2026-10-24T05:19:51.707Z",
+   "abdruck": "a049a8dbebf9",
+   "port": 7703
+  },
+  "gelaende.K5#1": {
+   "gruen": true,
+   "zahl": "im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 1.2 · huf 3.2 · rad 2.4 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 2.82,
+   "zeit": "2026-10-24T05:20:40.382Z",
+   "abdruck": "f729c64e18ed",
+   "port": 7704
+  },
+  "wetter.K1#1": {
+   "gruen": true,
+   "zahl": "saat-a je Ort (2) über 2 Wanduhren gleich (10 Takte: rainy stormy rainy sunny stormy rainy sunny stormy sunny rainy), saat-b anders",
+   "exit": 0,
+   "minuten": 0.53,
+   "zeit": "2026-10-24T05:23:29.631Z",
+   "abdruck": "c69389bcf98b",
+   "port": 7706
+  },
+  "wetter.K1#2": {
+   "gruen": false,
+   "zahl": "keine Front-Zeile (Exit 0)",
+   "exit": 0,
+   "minuten": 0.39,
+   "grund": "ROT: keine Front-Zeile (Exit 0)",
+   "zeit": "2026-10-24T05:24:01.155Z",
+   "abdruck": "27f38395f50c",
+   "port": 7707
+  },
+  "wetter.K5#1": {
+   "gruen": true,
+   "zahl": "F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam",
+   "exit": 0,
+   "minuten": 0.12,
+   "zeit": "2026-10-24T05:24:24.380Z",
+   "abdruck": "531ff2d7aefb",
+   "port": 7709
+  },
+  "wetter.K5#2": {
+   "gruen": false,
+   "zahl": "keine F3-Feld-Zeile (Exit 0)",
+   "exit": 0,
+   "minuten": 0.13,
+   "grund": "ROT: keine F3-Feld-Zeile (Exit 0)",
+   "zeit": "2026-10-24T05:24:31.833Z",
+   "abdruck": "9b3c4a3a2e0f",
+   "port": 7710
+  },
+  "feld.K1#1": {
+   "gruen": true,
+   "zahl": "Tiefe 3 mit Festhalte-Probe · Verzögerung trocken 11.877592824935345 → Sturm 8.383590849553562 m/s² (Regen gehalten 11.877592824935345, Nässe gehalten 11.877592824935345) · Exit 0",
+   "exit": 0,
+   "minuten": 0.6,
+   "zeit": "2026-10-24T05:29:26.195Z",
+   "abdruck": "2b8c666c94fd",
+   "port": 7713
+  },
+  "feld.K4#1": {
+   "gruen": true,
+   "zahl": "nach der Stunde vor dem Reload: 3 von 13 Bäumen, 0 von 30 Pflanzen zurück, 10 Stümpfe für 10, Feld -0.165 unter frozen",
+   "exit": 0,
+   "minuten": 1.07,
+   "zeit": "2026-10-24T05:30:02.367Z",
+   "abdruck": "14797979c49b",
+   "port": 7714
+  },
+  "feld.K4#2": {
+   "gruen": true,
+   "zahl": "nach dem Reload 3/13 Bäume, 0 Pflanzen, 10 Stümpfe, Feld -0.164 · nach Reload und Stunde 3/13 Bäume, 0 Pflanzen, 10 Stümpfe, Feld -0.152 · nach 36 Stunden 30 von 30 Pflanzen zurück, Feld -0.152 → -0.05, Taten 40 → 10",
+   "exit": 0,
+   "minuten": 1.07,
+   "zeit": "2026-10-24T05:30:02.367Z",
+   "abdruck": "b670b457ca72",
+   "port": 7714,
+   "zwilling": "feld.K4#1"
+  },
+  "feld.K3#1": {
+   "gruen": true,
+   "zahl": "Wasser-Automat 0 Einheiten in 60 s Ruhe (Akte 46800); alle Sims: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0",
+   "exit": 0,
+   "minuten": 1.93,
+   "zeit": "2026-10-24T05:29:26.120Z",
+   "abdruck": "7e159c07a4ac",
+   "port": 7712
+  },
+  "mensch.K2#1": {
+   "gruen": true,
+   "zahl": "Soll-Orte über 24 Spielstunden min 1 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0",
+   "exit": 0,
+   "minuten": 1.87,
+   "zeit": "2026-10-24T05:31:22.184Z",
+   "abdruck": "4f12d3fe361a",
+   "port": 7719
+  },
+  "oekologie.K3#1": {
+   "gruen": true,
+   "zahl": "geschlagen 49 m gegen Kontrolle 14 m · gefüttert 1.77 m, selbst 6.21 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.02 gegen Gegenlauf 0.985",
+   "exit": 0,
+   "minuten": 0.57,
+   "zeit": "2026-10-24T05:33:14.407Z",
+   "abdruck": "e4495b597fc8",
+   "port": 7724
+  },
+  "oekologie.K3#2": {
+   "gruen": true,
+   "zahl": "geschlagen 49 m gegen Kontrolle 14 m · gefüttert 1.77 m, selbst 6.21 m näher · Gedächtnis nach dem Laden 1,1,1,1 / 2,1,1,1 · Riss-Zelle Aufenthalt 0.02 gegen Gegenlauf 0.985",
+   "exit": 0,
+   "minuten": 0.57,
+   "zeit": "2026-10-24T05:33:14.407Z",
+   "abdruck": "707aab875711",
+   "port": 7724,
+   "zwilling": "oekologie.K3#1"
+  },
+  "physik.K1#1": {
+   "gruen": false,
+   "zahl": "K1#1 fehlt in der Ausgabe (Exit 0)",
+   "exit": 0,
+   "minuten": 3.73,
+   "grund": "ROT: K1#1 fehlt in der Ausgabe (Exit 0)",
+   "zeit": "2026-10-24T05:31:06.443Z",
+   "abdruck": "798f8e3468e0",
+   "port": 7716
+  },
+  "physik.K1#2": {
+   "gruen": false,
+   "zahl": "K1#1/K1#2 fehlen in der Ausgabe (Exit 0)",
+   "exit": 0,
+   "minuten": 3.73,
+   "grund": "ROT: K1#1/K1#2 fehlen in der Ausgabe (Exit 0)",
+   "zeit": "2026-10-24T05:31:06.443Z",
+   "abdruck": "4a5f82d6dfd3",
+   "port": 7716,
+   "zwilling": "physik.K1#1"
+  },
+  "tiere.K4#1": {
+   "gruen": true,
+   "zahl": "im Lebensraum 783/783 = 1 (Saat anazh-realm-seed, {\"deer\":538,\"wolf\":180,\"bear\":41,\"fox\":24}) · Gegenprobe 774/774 = 1 (Saat lebensraum-gegen)",
+   "exit": 0,
+   "minuten": 0.68,
+   "zeit": "2026-10-24T05:34:50.265Z",
+   "abdruck": "43ec24093c78",
+   "port": 7727
+  },
+  "tiere.K2#1": {
+   "gruen": true,
+   "zahl": "Riss je Jagd einWolf 0/20 (HP 168) · rudel 19/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 39.8 s",
+   "exit": 0,
+   "minuten": 1.81,
+   "zeit": "2026-10-24T05:33:48.704Z",
+   "abdruck": "e7ae22bd6811",
+   "port": 7726
+  },
+  "physik.K2#1": {
+   "gruen": true,
+   "zahl": "(V) Leiber 104/104 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 13.77 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m · gt (Staffel 2) 16 m/s Durchtritt 0/10",
+   "exit": 0,
+   "minuten": 6.55,
+   "zeit": "2026-10-24T05:29:26.053Z",
+   "abdruck": "fefe280e8f4d",
+   "port": 7711
+  },
+  "oekologie.K2#1": {
+   "gruen": true,
+   "zahl": "Bestand voll 7.36 · halbe Nahrung 3.2 · nach dem Halbieren 4.27 mit 30 Hungertoden · Takte an der Kappe 0",
+   "exit": 0,
+   "minuten": 0.38,
+   "zeit": "2026-10-24T05:35:37.049Z",
+   "abdruck": "431a006d3401",
+   "port": 7729
+  },
+  "affekt.K1#1": {
+   "gruen": true,
+   "zahl": "δ Tat 1 0.0964 → Tat 10 -0.0011 (0.011 ≤ 0,3), Vogel-Chor am Ort 3.81 dB, Nachbar 0 dB, Stempel 0/0",
+   "exit": 0,
+   "minuten": 0.67,
+   "zeit": "2026-10-24T05:35:31.115Z",
+   "abdruck": "26ec81aaf46f",
+   "port": 7728
+  },
+  "oekologie.K5#1": {
+   "gruen": true,
+   "zahl": "600 s gebunden (bond 0.12 → 1): Abstand p50 3.57 · p95 5.82 · max 8.8 m · 3 Wände ohne Durchdringung, Sockel 208 Takte darüber · Hang > 15° 301 s, nass 43 s · ungebunden 111.1 m",
+   "exit": 0,
+   "minuten": 0.31,
+   "zeit": "2026-10-24T05:36:00.006Z",
+   "abdruck": "9c2482f09dba",
+   "port": 7731
+  },
+  "pipeline.K1#1": {
+   "gruen": true,
+   "zahl": "8/8 Studio-Seiten mit gleichem Bau-Hash in der Welt (Arten 10/10, Saat 1818809091), Konsum im Spiel grün",
+   "exit": 0,
+   "minuten": 0.7,
+   "zeit": "2026-10-24T05:36:11.281Z",
+   "abdruck": "3d9098938a84",
+   "port": 7742
+  },
+  "pipeline.K1#2": {
+   "gruen": true,
+   "zahl": "8/8 Studio-Seiten mit gleichem Bau-Hash in der Welt (Arten 10/10, Saat 1818809091), Konsum im Spiel grün",
+   "exit": 0,
+   "minuten": 0.7,
+   "zeit": "2026-10-24T05:36:11.281Z",
+   "abdruck": "ffb332cdd4b3",
+   "port": 7742,
+   "zwilling": "pipeline.K1#1"
+  },
+  "oekologie.K1#1": {
+   "gruen": true,
+   "zahl": "8 Saaten · 24 ansässige Bestände · Stunde 8 gegen 2: 0.79–1.48× · außer Band 0 · Takte an der Kappe 0",
+   "exit": 0,
+   "minuten": 2.66,
+   "zeit": "2026-10-24T05:35:59.059Z",
+   "abdruck": "3e7b35d77622",
+   "port": 7730
+  },
+  "ki.K1#1": {
+   "gruen": true,
+   "zahl": "22 von 32 Positiv-Sätzen mit Welt-Prädikat, Negativ 8/8 ohne Tat, Brüche 0, Ratsche hält (Mitschnitt qwen3:4b-instruct @ 127.0.0.1:11434 2026-10-20)",
+   "exit": 0,
+   "minuten": 2.61,
+   "zeit": "2026-10-24T05:36:53.530Z",
+   "abdruck": "94c6bf784f0c",
+   "port": 7746
+  },
+  "ki.K2#1": {
+   "gruen": true,
+   "zahl": "73 von 112 Zeilen (65.2 %) aus einem KI-Programm, Bau-Hash folgt",
+   "exit": 0,
+   "minuten": 1.76,
+   "zeit": "2026-10-24T05:38:38.489Z",
+   "abdruck": "fe4014fd2be5",
+   "port": 7747
+  },
+  "studios.K5#1": {
+   "gruen": true,
+   "zahl": "3/3 Baupläne · Stufen L0 160 · L1 32 · L2 14 △ · Kosten pass/pass/pass · Neuladen steht · der Wirt nennt die Art 0×",
+   "exit": 0,
+   "minuten": 0.53,
+   "zeit": "2026-10-24T05:40:24.148Z",
+   "abdruck": "060cdf4401e9",
+   "port": 7751
+  },
+  "studios.K5#2": {
+   "gruen": false,
+   "zahl": "keine Wege in der E-ZAHL (Exit 0)",
+   "exit": 0,
+   "minuten": 0.53,
+   "grund": "ROT: keine Wege in der E-ZAHL (Exit 0)",
+   "zeit": "2026-10-24T05:40:24.148Z",
+   "abdruck": "fde1d0fb1103",
+   "port": 7751,
+   "zwilling": "studios.K5#1"
+  },
+  "bauen.K1#1": {
+   "gruen": true,
+   "zahl": "72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–2) · hotbar 24/24 (Eingaben 2–2)",
+   "exit": 0,
+   "minuten": 2.13,
+   "zeit": "2026-10-24T05:39:30.406Z",
+   "abdruck": "5e2b75b2f19a",
+   "port": 7748
+  },
+  "bauen.K3#1": {
+   "gruen": true,
+   "zahl": "Wirkung aus der Form: Plattform: steht nach 480 s (max. Wärme 0) · Linse: glimmt 11 s, brennt 20 s („Die Sonne entzündete durch „Prüf-Linse\" „Eiche\" (30 m von di\") · Nacht Wärme 0 · ",
+   "exit": 0,
+   "minuten": 2.13,
+   "zeit": "2026-10-24T05:39:30.406Z",
+   "abdruck": "3417ba572459",
+   "port": 7748,
+   "zwilling": "bauen.K1#1"
+  },
+  "bauen.K3#2": {
+   "gruen": false,
+   "zahl": "keine Prüf-Satz-Zeile (Exit 0)",
+   "exit": 0,
+   "minuten": 2.13,
+   "grund": "ROT: keine Prüf-Satz-Zeile (Exit 0)",
+   "zeit": "2026-10-24T05:39:30.406Z",
+   "abdruck": "56980a869193",
+   "port": 7748,
+   "zwilling": "bauen.K1#1"
+  },
+  "siedlung.K1#1": {
+   "gruen": true,
+   "zahl": "1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0",
+   "exit": 0,
+   "minuten": 0.96,
+   "zeit": "2026-10-24T05:40:55.744Z",
+   "abdruck": "768e344398dc",
+   "port": 7758
+  },
+  "pipeline.K3#1": {
+   "gruen": true,
+   "zahl": "über Budget 0 (Staffel 1 ≤ 3) in 6559 Bauten, leer 0, Exits 0/0/0",
+   "exit": 0,
+   "minuten": 6.91,
+   "zeit": "2026-10-24T05:36:18.792Z",
+   "abdruck": "6fe6b3dfbbbf",
+   "port": 7744
+  },
+  "pipeline.K3#2": {
+   "gruen": true,
+   "zahl": "über Budget 0, Quote max L1/L0 0.49 · L2/L0 0.15",
+   "exit": 0,
+   "minuten": 6.91,
+   "zeit": "2026-10-24T05:36:18.792Z",
+   "abdruck": "c1f33002c114",
+   "port": 7744,
+   "zwilling": "pipeline.K3#1"
+  },
+  "siedlung.K3#1": {
+   "gruen": false,
+   "zahl": "keine Zeile C-K3 (Exit 0)",
+   "exit": 0,
+   "minuten": 2.67,
+   "grund": "ROT: keine Zeile C-K3 (Exit 0)",
+   "zeit": "2026-10-24T05:41:38.268Z",
+   "abdruck": "93b98270aa5f",
+   "port": 7761
+  },
+  "leib.K5#1": {
+   "gruen": true,
+   "zahl": "✅ Gehen ∝ Auslenkung 0.000/0.316/0.710/1.342 m/s (W 1.342/1.000, Sprint 6.038), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.403/0.919/1.667 m/s, Auslauf 0.913/1.870 m/s ohne/mit Handbremse, Rumble 1.000",
+   "exit": 0,
+   "minuten": 2.46,
+   "zeit": "2026-10-24T05:41:53.484Z",
+   "abdruck": "8b8f364c3d1b",
+   "port": 7765
+  },
+  "leib.K5#2": {
+   "gruen": true,
+   "zahl": "✅ jedes Verb liest NUR die Tafel — rohe Tasten-Leser []; SELBSTTEST Zwilling-Leser ROT | ✅ Gehen ∝ Auslenkung 0.000/0.316/0.710/1.342 m/s (W 1.342/1.000, Sprint 6.038), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.403/0.919/1.667 m/s, Auslauf 0.913/1.870 m/s ohne/mit Handbremse, Rumble 1.000 | ✅ jeder Knopf über _verbTaste (ohne [], {\"tor\":3,\"toggleMountAtPlayer\":1,\"swapHands\":1,\"tryMousePlace\":1,\"tryMouseBreak\":1,\"setZoomActive\":2,\"setCameraMode\":1,\"toggleInventoryOverlay\":1,\"confirmBuild\":1,\"selectHotbarSlot\":2}), Belegung Pad3/Pad0/Pad11 frei, Rumble 0.000/0.107 ruhig → Treffer",
+   "exit": 0,
+   "minuten": 2.46,
+   "zeit": "2026-10-24T05:41:53.484Z",
+   "abdruck": "da2802ee5836",
+   "port": 7765,
+   "zwilling": "leib.K5#1"
+  },
+  "ultiversum.K5#2": {
+   "gruen": true,
+   "zahl": "✅ FEIND Wand: jede Erinnerung trägt ihre Namen als Datum — 0 ungetarnt | ✅ FEIND erreicht: keine Injektion erreicht das Modell — 0 von 7 (Rufe {\"stimme\":1,\"wesen\":1,\"journal\":8}) | ✅ FEIND ausgeführt: 0 fremde Anweisungen — 0 Taten | ✅ FEIND Signatur: die Manipulation schlägt an — valid,modified,forged | ✅ FEIND Anzeige: der Spieler liest den Namen — „Ich kenne ⁨Kanarie5Gewitter⁩.“",
+   "exit": 0,
+   "minuten": 0.17,
+   "zeit": "2026-10-24T05:44:18.283Z",
+   "abdruck": "f4a20aeb208e",
+   "port": 7771
+  },
+  "halten.K4#1": {
+   "gruen": true,
+   "zahl": "(Q12) Bahn 25°/30Hz 0.0% · 25°/60Hz 0.0% · 25°/144Hz 0.0% · 0°/30Hz 0.0% · 0°/60Hz 0.0% · 0°/144Hz 0.0% · -8°/30Hz 0.0% · -8°/60Hz 0.0% · -8°/144Hz 0.0% · Treffer-Ort 0.18 % · steckt Wand 1 Boden 3 Hirsch 1 (folgt 2.00 m) · Speicher Tier 1 → 1, Welt 5 → 5 · Zug 56.37 → 59.73 m/s",
+   "exit": 0,
+   "minuten": 0.49,
+   "zeit": "2026-10-24T05:44:20.884Z",
+   "abdruck": "7b4360378d94",
+   "port": 7772
+  },
+  "halten.K4#2": {
+   "gruen": true,
+   "zahl": "(Q12) Bahn 25°/30Hz 0.0% · 25°/60Hz 0.0% · 25°/144Hz 0.0% · 0°/30Hz 0.0% · 0°/60Hz 0.0% · 0°/144Hz 0.0% · -8°/30Hz 0.0% · -8°/60Hz 0.0% · -8°/144Hz 0.0% · Treffer-Ort 0.18 % · steckt Wand 1 Boden 3 Hirsch 1 (folgt 2.00 m) · Speicher Tier 1 → 1, Welt 5 → 5 · Zug 56.37 → 59.73 m/s",
+   "exit": 0,
+   "minuten": 0.49,
+   "zeit": "2026-10-24T05:44:20.884Z",
+   "abdruck": "4b4972d3afc8",
+   "port": 7772,
+   "zwilling": "halten.K4#1"
+  },
+  "ultiversum.K5#1": {
+   "gruen": true,
+   "zahl": "✅ op:rule — op:rule · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:rule). | ✅ P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden) | ✅ 0 Schreibe: Baupläne, Bauten, Regeln, Edits, Same, Erinnerung unverändert — true",
+   "exit": 0,
+   "minuten": 1.67,
+   "zeit": "2026-10-24T05:43:13.622Z",
+   "abdruck": "35f691f5a6b7",
+   "port": 7770
+  },
+  "streaming.K4#1": {
+   "gruen": true,
+   "zahl": "Hydrosphären 2 aus dem Faden · 0 im Haupt-Faden · Bauten 6 an Sync-Stellen · 0 sonst",
+   "exit": 0,
+   "minuten": 0.8,
+   "zeit": "2026-10-24T05:44:28.333Z",
+   "abdruck": "738e092db189",
+   "port": 7775
+  },
+  "streaming.K5#1": {
+   "gruen": false,
+   "zahl": "keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit 0",
+   "exit": 0,
+   "minuten": 0.8,
+   "grund": "ROT: keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit 0",
+   "zeit": "2026-10-24T05:44:28.333Z",
+   "abdruck": "08885852a938",
+   "port": 7775,
+   "zwilling": "streaming.K4#1"
+  },
+  "streaming.K5#2": {
+   "gruen": false,
+   "zahl": "keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit 0",
+   "exit": 0,
+   "minuten": 0.8,
+   "grund": "ROT: keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit 0",
+   "zeit": "2026-10-24T05:44:28.333Z",
+   "abdruck": "654d544c2bbb",
+   "port": 7775,
+   "zwilling": "streaming.K4#1"
+  },
+  "klang.K5#1": {
+   "gruen": true,
+   "zahl": "Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":167.15} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst",
+   "exit": 0,
+   "minuten": 1.62,
+   "zeit": "2026-10-24T05:44:50.145Z",
+   "abdruck": "3ed436f90cd1",
+   "port": 7781
+  },
+  "speicher.K4#1": {
+   "gruen": true,
+   "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück (Einträge 4 → 4) | ✅ (K) Gegenprobe: ein FRISCHER Studio-Spawn bei kaltem Buch bleibt blockiert (die Kalt-Probe | ✅ (W) Werke auf der Lichtung nach dem Reload 2/2 | ✅ Dichte über den Reload: Linie 434 Löcher, 0 korrupt",
+   "exit": 0,
+   "minuten": 2.04,
+   "zeit": "2026-10-24T05:44:54.097Z",
+   "abdruck": "e7c7ab7308a9",
+   "port": 7786
+  },
+  "speicher.K5#1": {
+   "gruen": true,
+   "zahl": "✅ (U) Boden-Umzug: ein Save des alten Bodens steht auf dem neuen (4 Bauten, größte Abweichung von der Fuß-Höhe 0 m; Bericht {\"von\":0,\"nach\":2, | ✅ (U) Gegenprobe: ein Save desselben Bodens zieht nicht um (Bericht null)",
+   "exit": 0,
+   "minuten": 2.04,
+   "zeit": "2026-10-24T05:44:54.097Z",
+   "abdruck": "17ab0236c8fb",
+   "port": 7786,
+   "zwilling": "speicher.K4#1"
+  },
+  "speicher.K5#2": {
+   "gruen": false,
+   "zahl": "Teil (V) fehlt in der Ausgabe (Exit 0)",
+   "exit": 0,
+   "minuten": 2.04,
+   "grund": "ROT: Teil (V) fehlt in der Ausgabe (Exit 0)",
+   "zeit": "2026-10-24T05:44:54.097Z",
+   "abdruck": "b99d725e4b28",
+   "port": 7786,
+   "zwilling": "speicher.K4#1"
+  }
+ }
+}

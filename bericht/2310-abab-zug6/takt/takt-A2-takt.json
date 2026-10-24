@@ -1,0 +1,1041 @@
+{
+ "echt": true,
+ "boot": {
+  "art": "erst",
+  "ladungen": 1
+ },
+ "cpuMs": {
+  "p50": 16,
+  "p95": 30.4,
+  "p99": 42.3,
+  "max": 104.9
+ },
+ "takte": 1731,
+ "spitzeN": 75,
+ "gedeckt": 75,
+ "bahnM": 123,
+ "zeilen": [
+  {
+   "tiefe": 0,
+   "name": "_loopVoxelStreaming",
+   "spitzeMs": 19.51,
+   "mitteMs": 4.98
+  },
+  {
+   "tiefe": 1,
+   "name": "_runFrameScheduler",
+   "spitzeMs": 19.51,
+   "mitteMs": 4.97
+  },
+  {
+   "tiefe": 2,
+   "name": "_dispatchFrameJobs",
+   "spitzeMs": 11.95,
+   "mitteMs": 1.24
+  },
+  {
+   "tiefe": 3,
+   "name": "run",
+   "spitzeMs": 11.94,
+   "mitteMs": 1.23
+  },
+  {
+   "tiefe": 4,
+   "name": "_tickVoxelChunkStreaming",
+   "spitzeMs": 6.18,
+   "mitteMs": 0.06
+  },
+  {
+   "tiefe": 5,
+   "name": "_rebuildVoxelChunk",
+   "spitzeMs": 3,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 6,
+   "name": "_completeVoxelRebuild",
+   "spitzeMs": 2.51,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 7,
+   "name": "_finalizeVoxelChunkBuild",
+   "spitzeMs": 2.51,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 8,
+   "name": "_applyCrossLodGeomorph",
+   "spitzeMs": 1.33,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 9,
+   "name": "trefferVon",
+   "spitzeMs": 0.45,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 9,
+   "name": "_rebuildLodStitchBand",
+   "spitzeMs": 0.31,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 8,
+   "name": "_buildVoxelChunkWaterIsoSurface",
+   "spitzeMs": 0.78,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 9,
+   "name": "_buildVoxelChunkWaterCellSheet",
+   "spitzeMs": 0.78,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 10,
+   "name": "_computeWaterSheetData",
+   "spitzeMs": 0.72,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 8,
+   "name": "_chunkSatzEin",
+   "spitzeMs": 0.29,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 6,
+   "name": "_acquireVoxelChunkBuild",
+   "spitzeMs": 0.38,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 7,
+   "name": "_buildVoxelChunkDataFromWorkerMesh",
+   "spitzeMs": 0.38,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 8,
+   "name": "_bodenKarteNaht",
+   "spitzeMs": 0.3,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 9,
+   "name": "_bodenKarteAusMesh",
+   "spitzeMs": 0.27,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 5,
+   "name": "_tickFoliageGrowth",
+   "spitzeMs": 2.1,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 6,
+   "name": "_populateVoxelChunkVegetation",
+   "spitzeMs": 2.07,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 7,
+   "name": "_vegetationSampleSpawn",
+   "spitzeMs": 1.2,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 8,
+   "name": "_placementDensityFactor",
+   "spitzeMs": 0.45,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 9,
+   "name": "_slopeAt",
+   "spitzeMs": 0.37,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 10,
+   "name": "(anonym) [stamm/gelaende-boden.js:500]",
+   "spitzeMs": 0.37,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 11,
+   "name": "_voxelSurfaceY",
+   "spitzeMs": 0.35,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 8,
+   "name": "_growTreeBlueprintForSpawn",
+   "spitzeMs": 0.25,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 7,
+   "name": "_forestPlantChunk",
+   "spitzeMs": 0.71,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 8,
+   "name": "_slopeAt",
+   "spitzeMs": 0.29,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 9,
+   "name": "(anonym) [stamm/gelaende-boden.js:500]",
+   "spitzeMs": 0.29,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 10,
+   "name": "_voxelSurfaceY",
+   "spitzeMs": 0.26,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 5,
+   "name": "_ensureVoxelChunkAt",
+   "spitzeMs": 0.91,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 6,
+   "name": "_finalizeVoxelChunkBuild",
+   "spitzeMs": 0.87,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 7,
+   "name": "_populateVoxelChunkVegetation",
+   "spitzeMs": 0.82,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 8,
+   "name": "_vegetationSampleSpawn",
+   "spitzeMs": 0.38,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 8,
+   "name": "_forestPlantChunk",
+   "spitzeMs": 0.35,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 4,
+   "name": "_tickScatterStreaming",
+   "spitzeMs": 3.68,
+   "mitteMs": 0.08
+  },
+  {
+   "tiefe": 5,
+   "name": "_scatterRegion",
+   "spitzeMs": 3.33,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 6,
+   "name": "_scatterRegionWork",
+   "spitzeMs": 3.33,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 7,
+   "name": "_scatterRegionScheibe",
+   "spitzeMs": 3.33,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 8,
+   "name": "_scatterPass",
+   "spitzeMs": 2.9,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 9,
+   "name": "_sampleBakedField",
+   "spitzeMs": 1.09,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 10,
+   "name": "_bakeRegionFields",
+   "spitzeMs": 1.04,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 11,
+   "name": "_slopeAt",
+   "spitzeMs": 0.67,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 12,
+   "name": "(anonym) [stamm/vegetation-streu.js:97]",
+   "spitzeMs": 0.66,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 13,
+   "name": "getTerrainHeightAt",
+   "spitzeMs": 0.66,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 14,
+   "name": "_voxelSurfaceY",
+   "spitzeMs": 0.62,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 15,
+   "name": "_terrainColumnContextIn",
+   "spitzeMs": 0.36,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 9,
+   "name": "_scatterSichtHoehe",
+   "spitzeMs": 0.66,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 10,
+   "name": "_ortGestaltSame",
+   "spitzeMs": 0.61,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 11,
+   "name": "(anonym) [stamm/vegetation-baum.js:903]",
+   "spitzeMs": 0.57,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 12,
+   "name": "_forestStehtFrei",
+   "spitzeMs": 0.31,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 13,
+   "name": "_forestDartSteht",
+   "spitzeMs": 0.26,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 9,
+   "name": "_naturSetzen",
+   "spitzeMs": 0.43,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 10,
+   "name": "(anonym) [stamm/vegetation-streu.js:763]",
+   "spitzeMs": 0.27,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 9,
+   "name": "_landAt",
+   "spitzeMs": 0.3,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 8,
+   "name": "_bakeRegionFields",
+   "spitzeMs": 0.39,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 9,
+   "name": "_slopeAt",
+   "spitzeMs": 0.26,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 10,
+   "name": "(anonym) [stamm/vegetation-streu.js:97]",
+   "spitzeMs": 0.25,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 5,
+   "name": "_tickBlueprintPrebake",
+   "spitzeMs": 0.27,
+   "mitteMs": 0.02
+  },
+  {
+   "tiefe": 4,
+   "name": "_tickNahStreu",
+   "spitzeMs": 1,
+   "mitteMs": 0.87
+  },
+  {
+   "tiefe": 5,
+   "name": "_nahStreuBloecke",
+   "spitzeMs": 0.34,
+   "mitteMs": 0.29
+  },
+  {
+   "tiefe": 6,
+   "name": "_streuNahEin",
+   "spitzeMs": 0.31,
+   "mitteMs": 0.28
+  },
+  {
+   "tiefe": 7,
+   "name": "_streuNahSatz",
+   "spitzeMs": 0.31,
+   "mitteMs": 0.27
+  },
+  {
+   "tiefe": 8,
+   "name": "_bauSatzLege",
+   "spitzeMs": 0.31,
+   "mitteMs": 0.27
+  },
+  {
+   "tiefe": 4,
+   "name": "_tickMorphFolge",
+   "spitzeMs": 0.63,
+   "mitteMs": 0.02
+  },
+  {
+   "tiefe": 5,
+   "name": "_applyCrossLodGeomorph",
+   "spitzeMs": 0.61,
+   "mitteMs": 0.02
+  },
+  {
+   "tiefe": 4,
+   "name": "_tickNahWiese",
+   "spitzeMs": 0.33,
+   "mitteMs": 0.13
+  },
+  {
+   "tiefe": 2,
+   "name": "_tickArchitectureLOD",
+   "spitzeMs": 4.9,
+   "mitteMs": 2.9
+  },
+  {
+   "tiefe": 3,
+   "name": "_lodTreeVisHeight",
+   "spitzeMs": 2.15,
+   "mitteMs": 1.11
+  },
+  {
+   "tiefe": 4,
+   "name": "_foundrySichtHoehe",
+   "spitzeMs": 1.74,
+   "mitteMs": 0.85
+  },
+  {
+   "tiefe": 5,
+   "name": "_foundryGestaltFor",
+   "spitzeMs": 1.32,
+   "mitteMs": 0.57
+  },
+  {
+   "tiefe": 6,
+   "name": "_ortGestaltSame",
+   "spitzeMs": 1.12,
+   "mitteMs": 0.41
+  },
+  {
+   "tiefe": 7,
+   "name": "(anonym) [stamm/vegetation-baum.js:903]",
+   "spitzeMs": 0.52,
+   "mitteMs": 0.01
+  },
+  {
+   "tiefe": 8,
+   "name": "_waldPlanSteht",
+   "spitzeMs": 0.37,
+   "mitteMs": 0.01
+  },
+  {
+   "tiefe": 9,
+   "name": "_waldPlanKasten",
+   "spitzeMs": 0.35,
+   "mitteMs": 0.01
+  },
+  {
+   "tiefe": 3,
+   "name": "_updateFoundryLodBand",
+   "spitzeMs": 1.73,
+   "mitteMs": 1.24
+  },
+  {
+   "tiefe": 4,
+   "name": "_foundryLodBandPartner",
+   "spitzeMs": 1.36,
+   "mitteMs": 1
+  },
+  {
+   "tiefe": 5,
+   "name": "_foundryBaumHoehe",
+   "spitzeMs": 0.88,
+   "mitteMs": 0.63
+  },
+  {
+   "tiefe": 6,
+   "name": "_foundryGestaltFor",
+   "spitzeMs": 0.48,
+   "mitteMs": 0.36
+  },
+  {
+   "tiefe": 7,
+   "name": "_ortGestaltSame",
+   "spitzeMs": 0.29,
+   "mitteMs": 0.2
+  },
+  {
+   "tiefe": 3,
+   "name": "_maybeRebuildOcclusionGrid",
+   "spitzeMs": 0.25,
+   "mitteMs": 0.1
+  },
+  {
+   "tiefe": 2,
+   "name": "_tickPendingVegSpawns",
+   "spitzeMs": 0.87,
+   "mitteMs": 0.04
+  },
+  {
+   "tiefe": 3,
+   "name": "_naturSetzen",
+   "spitzeMs": 0.86,
+   "mitteMs": 0.04
+  },
+  {
+   "tiefe": 4,
+   "name": "spawnArchitecture",
+   "spitzeMs": 0.79,
+   "mitteMs": 0.03
+  },
+  {
+   "tiefe": 5,
+   "name": "_populateBlockerAABBs",
+   "spitzeMs": 0.34,
+   "mitteMs": 0.01
+  },
+  {
+   "tiefe": 2,
+   "name": "_tickScatterLod",
+   "spitzeMs": 0.84,
+   "mitteMs": 0.53
+  },
+  {
+   "tiefe": 3,
+   "name": "_scatterSichtHoehe",
+   "spitzeMs": 0.42,
+   "mitteMs": 0.28
+  },
+  {
+   "tiefe": 2,
+   "name": "_tickFernRing",
+   "spitzeMs": 0.42,
+   "mitteMs": 0.09
+  },
+  {
+   "tiefe": 2,
+   "name": "_tickWegeKarte",
+   "spitzeMs": 0.28,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 0,
+   "name": "renderer._renderScene",
+   "spitzeMs": 13.37,
+   "mitteMs": 8.27
+  },
+  {
+   "tiefe": 1,
+   "name": "_renderScene [three.webgpu.min.js]",
+   "spitzeMs": 13.32,
+   "mitteMs": 8.25
+  },
+  {
+   "tiefe": 2,
+   "name": "scene.onBeforeRender",
+   "spitzeMs": 7.14,
+   "mitteMs": 4.61
+  },
+  {
+   "tiefe": 3,
+   "name": "_passSicht",
+   "spitzeMs": 7.14,
+   "mitteMs": 4.61
+  },
+  {
+   "tiefe": 4,
+   "name": "_chunkSatzPass",
+   "spitzeMs": 4.4,
+   "mitteMs": 2.87
+  },
+  {
+   "tiefe": 5,
+   "name": "_hoehlenSicht",
+   "spitzeMs": 3.34,
+   "mitteMs": 2.16
+  },
+  {
+   "tiefe": 6,
+   "name": "_hoehlenSichtLicht",
+   "spitzeMs": 3,
+   "mitteMs": 1.93
+  },
+  {
+   "tiefe": 7,
+   "name": "_passTrifftBox",
+   "spitzeMs": 0.35,
+   "mitteMs": 0.22
+  },
+  {
+   "tiefe": 5,
+   "name": "_chunkSatzAbschnitt",
+   "spitzeMs": 0.91,
+   "mitteMs": 0.58
+  },
+  {
+   "tiefe": 4,
+   "name": "_instanzWahlPass",
+   "spitzeMs": 1.79,
+   "mitteMs": 1.01
+  },
+  {
+   "tiefe": 5,
+   "name": "_instanzBehalten",
+   "spitzeMs": 0.67,
+   "mitteMs": 0.51
+  },
+  {
+   "tiefe": 5,
+   "name": "_arenaTakt",
+   "spitzeMs": 0.56,
+   "mitteMs": 0.2
+  },
+  {
+   "tiefe": 6,
+   "name": "_takt",
+   "spitzeMs": 0.54,
+   "mitteMs": 0.18
+  },
+  {
+   "tiefe": 7,
+   "name": "_ordnen",
+   "spitzeMs": 0.31,
+   "mitteMs": 0.11
+  },
+  {
+   "tiefe": 4,
+   "name": "_kaskadenPassen",
+   "spitzeMs": 0.36,
+   "mitteMs": 0.29
+  },
+  {
+   "tiefe": 4,
+   "name": "_nahWieseSicht",
+   "spitzeMs": 0.35,
+   "mitteMs": 0.28
+  },
+  {
+   "tiefe": 2,
+   "name": "_renderObjects [three.webgpu.min.js]",
+   "spitzeMs": 4.29,
+   "mitteMs": 2.24
+  },
+  {
+   "tiefe": 3,
+   "name": "renderer.renderObject",
+   "spitzeMs": 2.35,
+   "mitteMs": 1.39
+  },
+  {
+   "tiefe": 4,
+   "name": "renderObject [three.webgpu.min.js]",
+   "spitzeMs": 2.33,
+   "mitteMs": 1.38
+  },
+  {
+   "tiefe": 5,
+   "name": "rend._renderObjectDirect [werkbank]",
+   "spitzeMs": 2.27,
+   "mitteMs": 1.33
+  },
+  {
+   "tiefe": 6,
+   "name": "renderer._renderObjectDirect",
+   "spitzeMs": 2.2,
+   "mitteMs": 1.29
+  },
+  {
+   "tiefe": 7,
+   "name": "zeichne",
+   "spitzeMs": 1.98,
+   "mitteMs": 1.09
+  },
+  {
+   "tiefe": 8,
+   "name": "needsRefresh [three.webgpu.min.js]",
+   "spitzeMs": 0.97,
+   "mitteMs": 0.59
+  },
+  {
+   "tiefe": 9,
+   "name": "o.needsRefresh",
+   "spitzeMs": 0.96,
+   "mitteMs": 0.59
+  },
+  {
+   "tiefe": 10,
+   "name": "AnazhRealm._diaetRefresh",
+   "spitzeMs": 0.94,
+   "mitteMs": 0.58
+  },
+  {
+   "tiefe": 11,
+   "name": "AnazhRealm._diaetGeteiltSchreiben",
+   "spitzeMs": 0.5,
+   "mitteMs": 0.38
+  },
+  {
+   "tiefe": 12,
+   "name": "_update [three.webgpu.min.js]",
+   "spitzeMs": 0.37,
+   "mitteMs": 0.24
+  },
+  {
+   "tiefe": 13,
+   "name": "update [three.webgpu.min.js]",
+   "spitzeMs": 0.27,
+   "mitteMs": 0.16
+  },
+  {
+   "tiefe": 11,
+   "name": "AnazhRealm._diaetObjektGang",
+   "spitzeMs": 0.29,
+   "mitteMs": 0.08
+  },
+  {
+   "tiefe": 8,
+   "name": "updateForRender [three.webgpu.min.js]",
+   "spitzeMs": 0.73,
+   "mitteMs": 0.28
+  },
+  {
+   "tiefe": 9,
+   "name": "updateAttributes [three.webgpu.min.js]",
+   "spitzeMs": 0.33,
+   "mitteMs": 0.05
+  },
+  {
+   "tiefe": 10,
+   "name": "updateAttribute [three.webgpu.min.js]",
+   "spitzeMs": 0.31,
+   "mitteMs": 0.04
+  },
+  {
+   "tiefe": 11,
+   "name": "update [three.webgpu.min.js]",
+   "spitzeMs": 0.31,
+   "mitteMs": 0.04
+  },
+  {
+   "tiefe": 3,
+   "name": "i [three.webgpu.min.js]",
+   "spitzeMs": 1.93,
+   "mitteMs": 0.83
+  },
+  {
+   "tiefe": 4,
+   "name": "renderer.renderObject",
+   "spitzeMs": 1.92,
+   "mitteMs": 0.81
+  },
+  {
+   "tiefe": 5,
+   "name": "renderObject [three.webgpu.min.js]",
+   "spitzeMs": 1.89,
+   "mitteMs": 0.77
+  },
+  {
+   "tiefe": 6,
+   "name": "rend._renderObjectDirect [werkbank]",
+   "spitzeMs": 1.74,
+   "mitteMs": 0.63
+  },
+  {
+   "tiefe": 7,
+   "name": "renderer._renderObjectDirect",
+   "spitzeMs": 1.71,
+   "mitteMs": 0.59
+  },
+  {
+   "tiefe": 8,
+   "name": "zeichne",
+   "spitzeMs": 1.55,
+   "mitteMs": 0.5
+  },
+  {
+   "tiefe": 9,
+   "name": "updateForRender [three.webgpu.min.js]",
+   "spitzeMs": 0.73,
+   "mitteMs": 0.05
+  },
+  {
+   "tiefe": 10,
+   "name": "updateAttributes [three.webgpu.min.js]",
+   "spitzeMs": 0.66,
+   "mitteMs": 0.02
+  },
+  {
+   "tiefe": 11,
+   "name": "updateAttribute [three.webgpu.min.js]",
+   "spitzeMs": 0.66,
+   "mitteMs": 0.02
+  },
+  {
+   "tiefe": 12,
+   "name": "update [three.webgpu.min.js]",
+   "spitzeMs": 0.65,
+   "mitteMs": 0.02
+  },
+  {
+   "tiefe": 13,
+   "name": "createAttribute [three.webgpu.min.js]",
+   "spitzeMs": 0.44,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 14,
+   "name": "createAttribute [three.webgpu.min.js]",
+   "spitzeMs": 0.44,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 15,
+   "name": "P.createBuffer",
+   "spitzeMs": 0.36,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 16,
+   "name": "createBuffer",
+   "spitzeMs": 0.35,
+   "mitteMs": 0
+  },
+  {
+   "tiefe": 9,
+   "name": "needsRefresh [three.webgpu.min.js]",
+   "spitzeMs": 0.5,
+   "mitteMs": 0.3
+  },
+  {
+   "tiefe": 10,
+   "name": "o.needsRefresh",
+   "spitzeMs": 0.48,
+   "mitteMs": 0.29
+  },
+  {
+   "tiefe": 11,
+   "name": "AnazhRealm._diaetRefresh",
+   "spitzeMs": 0.47,
+   "mitteMs": 0.28
+  },
+  {
+   "tiefe": 2,
+   "name": "renderer._renderBundles",
+   "spitzeMs": 0.42,
+   "mitteMs": 0.29
+  },
+  {
+   "tiefe": 3,
+   "name": "_renderBundles [three.webgpu.min.js]",
+   "spitzeMs": 0.4,
+   "mitteMs": 0.27
+  },
+  {
+   "tiefe": 4,
+   "name": "renderer._renderBundle",
+   "spitzeMs": 0.4,
+   "mitteMs": 0.27
+  },
+  {
+   "tiefe": 5,
+   "name": "_renderBundle [three.webgpu.min.js]",
+   "spitzeMs": 0.37,
+   "mitteMs": 0.26
+  },
+  {
+   "tiefe": 6,
+   "name": "needsRefresh [three.webgpu.min.js]",
+   "spitzeMs": 0.26,
+   "mitteMs": 0.22
+  },
+  {
+   "tiefe": 7,
+   "name": "o.needsRefresh",
+   "spitzeMs": 0.26,
+   "mitteMs": 0.22
+  },
+  {
+   "tiefe": 8,
+   "name": "AnazhRealm._diaetRefresh",
+   "spitzeMs": 0.26,
+   "mitteMs": 0.22
+  },
+  {
+   "tiefe": 2,
+   "name": "_projectObject [three.webgpu.min.js]",
+   "spitzeMs": 0.3,
+   "mitteMs": 0.22
+  },
+  {
+   "tiefe": 2,
+   "name": "beginRender [three.webgpu.min.js]",
+   "spitzeMs": 0.3,
+   "mitteMs": 0.2
+  },
+  {
+   "tiefe": 0,
+   "name": "tickArchitectureCulling",
+   "spitzeMs": 1.72,
+   "mitteMs": 0.44
+  },
+  {
+   "tiefe": 1,
+   "name": "_archKartenPreset",
+   "spitzeMs": 0.52,
+   "mitteMs": 0.13
+  },
+  {
+   "tiefe": 0,
+   "name": "_loopRender",
+   "spitzeMs": 0.82,
+   "mitteMs": 0.35
+  },
+  {
+   "tiefe": 1,
+   "name": "_tickChunkSatz",
+   "spitzeMs": 0.39,
+   "mitteMs": 0.12
+  },
+  {
+   "tiefe": 0,
+   "name": "(garbage collector)",
+   "spitzeMs": 0.51,
+   "mitteMs": 0.08
+  },
+  {
+   "tiefe": 0,
+   "name": "_loopWeatherAndGrowth",
+   "spitzeMs": 0.48,
+   "mitteMs": 0.33
+  },
+  {
+   "tiefe": 1,
+   "name": "updateCreatures",
+   "spitzeMs": 0.47,
+   "mitteMs": 0.31
+  },
+  {
+   "tiefe": 0,
+   "name": "_loopFixedStep",
+   "spitzeMs": 0.4,
+   "mitteMs": 0.21
+  },
+  {
+   "tiefe": 1,
+   "name": "_stepFixedSim",
+   "spitzeMs": 0.4,
+   "mitteMs": 0.2
+  },
+  {
+   "tiefe": 2,
+   "name": "_stepCharacter",
+   "spitzeMs": 0.3,
+   "mitteMs": 0.17
+  }
+ ],
+ "taeter": [
+  {
+   "name": "_loopVoxelStreaming › _runFrameScheduler (Rest)",
+   "spitzeMs": 2.65,
+   "mitteMs": 0.83
+  },
+  {
+   "name": "_scatterRegionScheibe › _scatterPass (Rest)",
+   "spitzeMs": 1.81,
+   "mitteMs": 0
+  },
+  {
+   "name": "_finalizeVoxelChunkBuild › _applyCrossLodGeomorph",
+   "spitzeMs": 1.33,
+   "mitteMs": 0
+  },
+  {
+   "name": "tickArchitectureCulling",
+   "spitzeMs": 1.72,
+   "mitteMs": 0.44
+  },
+  {
+   "name": "_populateVoxelChunkVegetation › _vegetationSampleSpawn",
+   "spitzeMs": 1.2,
+   "mitteMs": 0
+  },
+  {
+   "name": "_completeVoxelRebuild › _finalizeVoxelChunkBuild (Rest)",
+   "spitzeMs": 1.18,
+   "mitteMs": 0
+  },
+  {
+   "name": "_hoehlenSicht › _hoehlenSichtLicht",
+   "spitzeMs": 3,
+   "mitteMs": 1.93
+  },
+  {
+   "name": "renderer._renderObjectDirect › zeichne",
+   "spitzeMs": 1.55,
+   "mitteMs": 0.5
+  },
+  {
+   "name": "_sampleBakedField › _bakeRegionFields",
+   "spitzeMs": 1.04,
+   "mitteMs": 0
+  },
+  {
+   "name": "run › _tickVoxelChunkStreaming (Rest)",
+   "spitzeMs": 1.08,
+   "mitteMs": 0.06
+  }
+ ],
+ "marken": 1731,
+ "profil": true,
+ "posten": [],
+ "befunde": [
+  "Spitzen-Täter _loopVoxelStreaming › _runFrameScheduler (Rest): 2.65 ms je Takt ab p95, Mitte 0.83 ms",
+  "Spitzen-Täter _scatterRegionScheibe › _scatterPass (Rest): 1.81 ms je Takt ab p95, Mitte 0 ms",
+  "Spitzen-Täter _finalizeVoxelChunkBuild › _applyCrossLodGeomorph: 1.33 ms je Takt ab p95, Mitte 0 ms",
+  "Spitzen-Täter tickArchitectureCulling: 1.72 ms je Takt ab p95, Mitte 0.44 ms",
+  "Spitzen-Täter _populateVoxelChunkVegetation › _vegetationSampleSpawn: 1.2 ms je Takt ab p95, Mitte 0 ms",
+  "Spitzen-Täter _completeVoxelRebuild › _finalizeVoxelChunkBuild (Rest): 1.18 ms je Takt ab p95, Mitte 0 ms",
+  "Spitzen-Täter _hoehlenSicht › _hoehlenSichtLicht: 3 ms je Takt ab p95, Mitte 1.93 ms",
+  "Spitzen-Täter renderer._renderObjectDirect › zeichne: 1.55 ms je Takt ab p95, Mitte 0.5 ms",
+  "Spitzen-Täter _sampleBakedField › _bakeRegionFields: 1.04 ms je Takt ab p95, Mitte 0 ms",
+  "Spitzen-Täter run › _tickVoxelChunkStreaming (Rest): 1.08 ms je Takt ab p95, Mitte 0.06 ms"
+ ],
+ "tabelle": "TAKT-SPITZE: CPU-Takt {\"p50\":16,\"p95\":30.4,\"p99\":42.3,\"max\":104.9} ms (K2 8 ms), 75 Takte ab p95 (75 mit Proben), Weg 123 m\n  Spitze  Mitte  ms je Takt, Rahmen ≥ 0,25 ms\n   19.51   4.98  _loopVoxelStreaming\n   19.51   4.97    _runFrameScheduler\n   11.95   1.24      _dispatchFrameJobs\n   11.94   1.23        run\n    6.18   0.06          _tickVoxelChunkStreaming\n       3      0            _rebuildVoxelChunk\n    2.51      0              _completeVoxelRebuild\n    2.51      0                _finalizeVoxelChunkBuild\n    1.33      0                  _applyCrossLodGeomorph\n    0.45      0                    trefferVon\n    0.31      0                    _rebuildLodStitchBand\n    0.78      0                  _buildVoxelChunkWaterIsoSurface\n    0.78      0                    _buildVoxelChunkWaterCellSheet\n    0.72      0                      _computeWaterSheetData\n    0.29      0                  _chunkSatzEin\n    0.38      0              _acquireVoxelChunkBuild\n    0.38      0                _buildVoxelChunkDataFromWorkerMesh\n     0.3      0                  _bodenKarteNaht\n    0.27      0                    _bodenKarteAusMesh\n     2.1      0            _tickFoliageGrowth\n    2.07      0              _populateVoxelChunkVegetation\n     1.2      0                _vegetationSampleSpawn\n    0.45      0                  _placementDensityFactor\n    0.37      0                    _slopeAt\n    0.37      0                      (anonym) [stamm/gelaende-boden.js:500]\n    0.35      0                        _voxelSurfaceY\n    0.25      0                  _growTreeBlueprintForSpawn\n    0.71      0                _forestPlantChunk\n    0.29      0                  _slopeAt\n    0.29      0                    (anonym) [stamm/gelaende-boden.js:500]\n    0.26      0                      _voxelSurfaceY\n    0.91      0            _ensureVoxelChunkAt\n    0.87      0              _finalizeVoxelChunkBuild\n    0.82      0                _populateVoxelChunkVegetation\n    0.38      0                  _vegetationSampleSpawn\n    0.35      0                  _forestPlantChunk\n    3.68   0.08          _tickScatterStreaming\n    3.33      0            _scatterRegion\n    3.33      0              _scatterRegionWork\n    3.33      0                _scatterRegionScheibe\n     2.9      0                  _scatterPass\n    1.09      0                    _sampleBakedField\n    1.04      0                      _bakeRegionFields\n    0.67      0                        _slopeAt\n    0.66      0                          (anonym) [stamm/vegetation-streu.js:97]\n    0.66      0                            getTerrainHeightAt\n    0.62      0                              _voxelSurfaceY\n    0.36      0                                _terrainColumnContextIn\n    0.66      0                    _scatterSichtHoehe\n    0.61      0                      _ortGestaltSame\n    0.57      0                        (anonym) [stamm/vegetation-baum.js:903]\n    0.31      0                          _forestStehtFrei\n    0.26      0                            _forestDartSteht\n    0.43      0                    _naturSetzen\n    0.27      0                      (anonym) [stamm/vegetation-streu.js:763]\n     0.3      0                    _landAt\n    0.39      0                  _bakeRegionFields\n    0.26      0                    _slopeAt\n    0.25      0                      (anonym) [stamm/vegetation-streu.js:97]\n    0.27   0.02            _tickBlueprintPrebake\n       1   0.87          _tickNahStreu\n    0.34   0.29            _nahStreuBloecke\n    0.31   0.28              _streuNahEin\n    0.31   0.27                _streuNahSatz\n    0.31   0.27                  _bauSatzLege\n    0.63   0.02          _tickMorphFolge\n    0.61   0.02            _applyCrossLodGeomorph\n    0.33   0.13          _tickNahWiese\n     4.9    2.9      _tickArchitectureLOD\n    2.15   1.11        _lodTreeVisHeight\n    1.74   0.85          _foundrySichtHoehe\n    1.32   0.57            _foundryGestaltFor\n    1.12   0.41              _ortGestaltSame\n    0.52   0.01                (anonym) [stamm/vegetation-baum.js:903]\n    0.37   0.01                  _waldPlanSteht\n    0.35   0.01                    _waldPlanKasten\n    1.73   1.24        _updateFoundryLodBand\n    1.36      1          _foundryLodBandPartner\n    0.88   0.63            _foundryBaumHoehe\n    0.48   0.36              _foundryGestaltFor\n    0.29    0.2                _ortGestaltSame\n    0.25    0.1        _maybeRebuildOcclusionGrid\n    0.87   0.04      _tickPendingVegSpawns\n    0.86   0.04        _naturSetzen\n    0.79   0.03          spawnArchitecture\n    0.34   0.01            _populateBlockerAABBs\n    0.84   0.53      _tickScatterLod\n    0.42   0.28        _scatterSichtHoehe\n    0.42   0.09      _tickFernRing\n    0.28      0      _tickWegeKarte\n   13.37   8.27  renderer._renderScene\n   13.32   8.25    _renderScene [three.webgpu.min.js]\n    7.14   4.61      scene.onBeforeRender\n    7.14   4.61        _passSicht\n     4.4   2.87          _chunkSatzPass\n    3.34   2.16            _hoehlenSicht\n       3   1.93              _hoehlenSichtLicht\n    0.35   0.22                _passTrifftBox\n    0.91   0.58            _chunkSatzAbschnitt\n    1.79   1.01          _instanzWahlPass\n    0.67   0.51            _instanzBehalten\n    0.56    0.2            _arenaTakt\n    0.54   0.18              _takt\n    0.31   0.11                _ordnen\n    0.36   0.29          _kaskadenPassen\n    0.35   0.28          _nahWieseSicht\n    4.29   2.24      _renderObjects [three.webgpu.min.js]\n    2.35   1.39        renderer.renderObject\n    2.33   1.38          renderObject [three.webgpu.min.js]\n    2.27   1.33            rend._renderObjectDirect [werkbank]\n     2.2   1.29              renderer._renderObjectDirect\n    1.98   1.09                zeichne\n    0.97   0.59                  needsRefresh [three.webgpu.min.js]\n    0.96   0.59                    o.needsRefresh\n    0.94   0.58                      AnazhRealm._diaetRefresh\n     0.5   0.38                        AnazhRealm._diaetGeteiltSchreiben\n    0.37   0.24                          _update [three.webgpu.min.js]\n    0.27   0.16                            update [three.webgpu.min.js]\n    0.29   0.08                        AnazhRealm._diaetObjektGang\n    0.73   0.28                  updateForRender [three.webgpu.min.js]\n    0.33   0.05                    updateAttributes [three.webgpu.min.js]\n    0.31   0.04                      updateAttribute [three.webgpu.min.js]\n    0.31   0.04                        update [three.webgpu.min.js]\n    1.93   0.83        i [three.webgpu.min.js]\n    1.92   0.81          renderer.renderObject\n    1.89   0.77            renderObject [three.webgpu.min.js]\n    1.74   0.63              rend._renderObjectDirect [werkbank]\n    1.71   0.59                renderer._renderObjectDirect\n    1.55    0.5                  zeichne\n    0.73   0.05                    updateForRender [three.webgpu.min.js]\n    0.66   0.02                      updateAttributes [three.webgpu.min.js]\n    0.66   0.02                        updateAttribute [three.webgpu.min.js]\n    0.65   0.02                          update [three.webgpu.min.js]\n    0.44      0                            createAttribute [three.webgpu.min.js]\n    0.44      0                              createAttribute [three.webgpu.min.js]\n    0.36      0                                P.createBuffer\n    0.35      0                                  createBuffer\n     0.5    0.3                    needsRefresh [three.webgpu.min.js]\n    0.48   0.29                      o.needsRefresh\n    0.47   0.28                        AnazhRealm._diaetRefresh\n    0.42   0.29      renderer._renderBundles\n     0.4   0.27        _renderBundles [three.webgpu.min.js]\n     0.4   0.27          renderer._renderBundle\n    0.37   0.26            _renderBundle [three.webgpu.min.js]\n    0.26   0.22              needsRefresh [three.webgpu.min.js]\n    0.26   0.22                o.needsRefresh\n    0.26   0.22                  AnazhRealm._diaetRefresh\n     0.3   0.22      _projectObject [three.webgpu.min.js]\n     0.3    0.2      beginRender [three.webgpu.min.js]\n    1.72   0.44  tickArchitectureCulling\n    0.52   0.13    _archKartenPreset\n    0.82   0.35  _loopRender\n    0.39   0.12    _tickChunkSatz\n    0.51   0.08  (garbage collector)\n    0.48   0.33  _loopWeatherAndGrowth\n    0.47   0.31    updateCreatures\n     0.4   0.21  _loopFixedStep\n     0.4    0.2    _stepFixedSim\n     0.3   0.17      _stepCharacter\nTÄTER (Spitze − Mitte ≥ 1 ms): _loopVoxelStreaming › _runFrameScheduler (Rest) 2.65 · 0.83 | _scatterRegionScheibe › _scatterPass (Rest) 1.81 · 0 | _finalizeVoxelChunkBuild › _applyCrossLodGeomorph 1.33 · 0 | tickArchitectureCulling 1.72 · 0.44 | _populateVoxelChunkVegetation › _vegetationSampleSpawn 1.2 · 0 | _completeVoxelRebuild › _finalizeVoxelChunkBuild (Rest) 1.18 · 0 | _hoehlenSicht › _hoehlenSichtLicht 3 · 1.93 | renderer._renderObjectDirect › zeichne 1.55 · 0.5 | _sampleBakedField › _bakeRegionFields 1.04 · 0 | run › _tickVoxelChunkStreaming (Rest) 1.08 · 0.06"
+}

@@ -1,0 +1,29 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben bewohner
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7718/index.html · der Puls steht seit 20.1 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 33.3 s
+[stall-akte] Puls 22×, zuletzt vor 20.1 s — complete · renderer bereit · weltbild da · frames 618 · welt 618 Takte · Ruhe 0 · zuletzt Bau-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 12524 105 % · browser 29104 1 % · GPU 32888 0 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 59:35 gpu 4/r 351 · 59:37 gpu 1/r 664 · 59:39 gpu 1/r 198 · 59:41 gpu 2/r 118 · 59:43 gpu 2/r 675 · 59:45 gpu 1/r 674 · 59:47 gpu 1/r 584 · 59:49 gpu 1/r 463 · 59:51 gpu 1/r 248 · 59:53 gpu 1/r 184 · 59:55 gpu 1/r 112 · 59:57 gpu 1/r 115 · 59:59 gpu 1/r 110 · 00:01 gpu 1/r 108 · 00:03 gpu 0/r 105 · 00:05 gpu 0/r 105 · 00:07 gpu 0/r 101 · 00:09 gpu 0/r 100 · 00:11 gpu 0/r 99 · 00:13 gpu 0/r 105
+[stall-akte] Stapel wegeMessen :2574 < takt :2585 < (anonym) :2642
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [WARN] Der Rundblick steht nach 120 Takten ohne: 1 Bäume und Bauten wachsen · 342 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [INFO] Siedlung „Steintal" gewachsen (Zelle start, 18 Slots).
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [INFO] KAMIN-RAUCH: 18 Quelle(n) live (chimney→rauchQuelle)
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [WARN] FPS-Einbruch: 11 (zuvor ~48)
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [WARN] FPS-Einbruch: 20 (zuvor ~45)
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [WARN] FPS-Einbruch: 27 (zuvor ~42)
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [WARN] FPS-Einbruch: 22 (zuvor ~41)
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [INFO] WERK IM WASSER: glutbrunnen bei -127/235 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [WARN] FPS-Einbruch: 19 (zuvor ~39)
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [WARN] FPS-Einbruch: 17 (zuvor ~37)
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [WARN] FPS-Einbruch: 14 (zuvor ~35)
+[stall-akte] Konsole log: [AnazhRealm V18.546.84] [INFO] WERK IM WASSER: glutbrunnen bei -153/244 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in wegeMessen :2574
+[stall-akte] Seite #2: der Puls kehrt zurück nach 58.6 s — complete · renderer bereit · weltbild da · frames 636 · welt 636 Takte · Ruhe 0 · zuletzt Bau-Regung · programme 0 · gl-sync 0
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ bewohner  {"sprungN":0,"alsLeib":4,"schmiede10":2,"schmiede2":0,"dorf":"Steintal","haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":40,"third":37},"nahLeiber":4,"plan":true,"planGleich":true,"bewohner":81,"trefferMin":0.983,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.02,"wegLeib":1073.2,"spuren":86},"blick":{"n":162,"quote":0.969,"sektorMax":0.181},"ohnePlatz":0,"ohnePlatzWer":[],"takt":{"n":1800,"p95":0.4,"mittel":0.222},"huellen":18,"wege":{"wandN":0,"wand":[],"durch":259,"tuer":259,"falsch":[],"aufWeg":0.945,"wegeMin":4,"wegeMax":8,"ausserN":0,"ausser":[],"streckeMin":46,"kurzN":0,"kurz":[]},"stall":null,"sek":69.7,"wiederkehr":{"n":1296,"maxM":1.241,"ueberN":0,"ueber":[]}}
+
+  (128 s) — Sekunden je Probe: bewohner: 117
+
+✅ GRÜN — bewohner

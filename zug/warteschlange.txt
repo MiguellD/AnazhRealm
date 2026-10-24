@@ -1,0 +1,64 @@
+# Messplatz GTX — Warteschlange (Gesetz: zug/messplatz.md). <id> <prio> <art> schluessel=wert …
+# Zug 6 (A 7c6f4b49 · B 6579e8f4) fährt die OMEN-Sitzung noch von Hand zu Ende; die Zeile in zug/abab.txt ist das Landetor.
+z6-punkte 2 punkte sha=6579e8f409c5234276210ace7e19798e63ad423c geraet=gtx
+z7-abab 1 abab A=f7dd313c5e8d716b3f28df3d0f1420e78c12e2c4 B=877d3e04ea99e07f27e71600df4e4564c1378187 zellen=w-ego,g-third,d-ego,stadt,fahrt
+z9-abab 1 abab A=f7dd313c5e8d716b3f28df3d0f1420e78c12e2c4 B=a2b28770a83f96fb18d6657131c741312fcef266 zellen=w-ego,g-third,d-ego,stadt,fahrt
+w6-material-gtx 2 punkte sha=f7dd313c5e8d716b3f28df3d0f1420e78c12e2c4 geraet=gtx nur=material.K1#1,material.K1#2
+z9c-abab 1 abab A=f7dd313c5e8d716b3f28df3d0f1420e78c12e2c4 B=13c95713e286923682dc8986505a581c9c8467db zellen=w-ego,g-third,d-ego,stadt,fahrt
+z9c-punkte 2 punkte sha=13c95713e286923682dc8986505a581c9c8467db geraet=gtx
+z10b-abab 1 abab A=13c95713e286923682dc8986505a581c9c8467db B=833bbc244711329e2e23305ed857d7e53a47e20e zellen=w-ego,d-ego,stadt
+z10b-punkte 2 punkte sha=833bbc244711329e2e23305ed857d7e53a47e20e geraet=gtx
+z9c-punkte 0 storno
+b-kalt-833b 3 station sha=833bbc244711329e2e23305ed857d7e53a47e20e lauf=ankunft-kalt.sh
+z13-abab 1 abab A=833bbc244711329e2e23305ed857d7e53a47e20e B=18a846491377cb9898af2b5bb930234c249fa6ad zellen=w-ego,d-ego,stadt
+z13-punkte 2 punkte sha=18a846491377cb9898af2b5bb930234c249fa6ad geraet=gtx
+z14c-abab 1 abab A=18a846491377cb9898af2b5bb930234c249fa6ad B=056330d8a70fcdc617df8c3ff62ec174c5d33995 zellen=w-ego,d-ego,stadt
+z14c-punkte 2 punkte sha=056330d8a70fcdc617df8c3ff62ec174c5d33995 geraet=gtx
+omen-z13-takt 1 station sha=056330d8a70fcdc617df8c3ff62ec174c5d33995 lauf=omen-z13-takt.sh
+z15d-abab 1 abab A=056330d8a70fcdc617df8c3ff62ec174c5d33995 B=3d2b3276b43471f4f38f8859a3c92ed62ca15abc zellen=w-ego,d-ego,stadt
+z15d-punkte 2 punkte sha=3d2b3276b43471f4f38f8859a3c92ed62ca15abc geraet=gtx
+z16b-abab 1 abab A=3d2b3276b43471f4f38f8859a3c92ed62ca15abc B=3046bc79f6863760692afe9ce161798215cbd8cb zellen=w-ego,d-ego,stadt
+z16b-punkte 2 punkte sha=3046bc79f6863760692afe9ce161798215cbd8cb geraet=gtx
+z17-abab 1 abab A=3046bc79f6863760692afe9ce161798215cbd8cb B=6f8a2c6638623a037f69bf110358f36b68b343d6 zellen=w-ego,d-ego,stadt
+z17-punkte 2 punkte sha=6f8a2c6638623a037f69bf110358f36b68b343d6 geraet=gtx
+z14c-punkte 0 storno
+z15d-punkte 0 storno
+z16b-punkte 0 storno
+z13-dorf-takt 1 abab A=6f8a2c6638623a037f69bf110358f36b68b343d6 B=cfff4685ee87b240c071569fc70311b37925ce79 zellen=d-ego,w-ego
+z19-abab 1 abab A=6f8a2c6638623a037f69bf110358f36b68b343d6 B=9aef4612eb08d799328fe73b51b5ba38e6bcfa76 zellen=w-ego,d-ego,stadt
+z19-punkte 2 punkte sha=9aef4612eb08d799328fe73b51b5ba38e6bcfa76 geraet=gtx
+z17-punkte 0 storno
+z13-dorf-takt 0 storno
+z20-abab 1 abab A=9aef4612eb08d799328fe73b51b5ba38e6bcfa76 B=1d9164e9144d15f70c40e8e5876cf98a2f0cacc8 zellen=w-ego,d-ego,stadt
+z20-punkte 2 punkte sha=1d9164e9144d15f70c40e8e5876cf98a2f0cacc8 geraet=gtx
+z19-punkte 0 storno
+z21-punkte 2 punkte sha=79c0fae296ec982fe5ad2673a85157eb9f7ea313 geraet=gtx
+z21-punkte 0 storno
+z20-punkte 0 storno
+z19-abab 0 storno
+z20-abab 0 storno
+z20-gtx 1 punkte sha=1d9164e9144d15f70c40e8e5876cf98a2f0cacc8 geraet=gtx
+z1920-abab 1 abab A=6f8a2c6638623a037f69bf110358f36b68b343d6 B=1d9164e9144d15f70c40e8e5876cf98a2f0cacc8 zellen=w-ego,d-ego
+z23-abab 1 abab A=79c0fae296ec982fe5ad2673a85157eb9f7ea313 B=54ce5dfd783188cbb0a55e738eef98624e125406 zellen=w-ego,d-ego,stadt
+z23-punkte 2 punkte sha=54ce5dfd783188cbb0a55e738eef98624e125406 geraet=gtx
+z24-abab 1 abab A=54ce5dfd783188cbb0a55e738eef98624e125406 B=b8952e9b3bb1f49da8080c4f0029642c079208c8 zellen=w-ego,d-ego,stadt
+z24-punkte 2 punkte sha=b8952e9b3bb1f49da8080c4f0029642c079208c8 geraet=gtx
+z25-abab 1 abab A=b8952e9b3bb1f49da8080c4f0029642c079208c8 B=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 zellen=w-ego,d-ego,stadt
+z25-punkte 2 punkte sha=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 geraet=gtx
+z23-punkte 0 storno
+z24-punkte 0 storno
+z25-punkte 0 storno
+z24-abab 0 storno
+z25-abab 0 storno
+z25-gtx 1 punkte sha=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 geraet=gtx
+z2425-abab 1 abab A=54ce5dfd783188cbb0a55e738eef98624e125406 B=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 zellen=w-ego,g-third,d-ego
+z20-gtx 0 storno
+z23-abab 0 storno
+z2425-abab 0 storno
+z25-gtx 0 storno
+takt1-gtx 1 punkte sha=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 geraet=gtx
+takt1-abab 1 abab A=79c0fae296ec982fe5ad2673a85157eb9f7ea313 B=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 zellen=w-ego,g-third,d-ego,stadt
+takt1-gtx 0 storno
+takt1-abab 0 storno
+takt1b-gtx 1 punkte sha=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 geraet=gtx
+takt1b-abab 1 abab A=79c0fae296ec982fe5ad2673a85157eb9f7ea313 B=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 zellen=w-ego,g-third,d-ego,stadt

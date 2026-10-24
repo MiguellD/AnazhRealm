@@ -1,0 +1,10 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-nervensystem.cjs
+  ✅ phytogenesis: kein lokales SCALE-Literal
+
+=== TEIL C, E: der lebende Draht (Browser, foundry-ON) ===
+  ✅ C: die Welt-Skala liest die Daten (4.16·0.82) — 3.4112
+  ✅ C: LIVE GEWINNT — scale.eiche ×2 → 8.32·0.82 — 6.8224
+E-ZAHL {"regler":7,"bauplaene":3,"wort":"stele_meilenstein","ort":"weg","kosten":[{"klasse":"pass","text":"160 / 200 △ · 1 Stoffe / 1 Befehle · Wurf L0"},{"klasse":"pass","text":"32 / 60 △ · 1 Stoffe / 1 Befehle · Wurf L1"},{"klasse":"pass","text":"14 / 24 △ · 1 Stoffe / 1 Befehle · Wurf L2"}],"steht":true,"lod":[{"d":4,"ist":0,"tris":160},{"d":25,"ist":1,"tris":32},{"d":50,"ist":2,"tris":14}],"stelle":{"x":40,"z":3.1202518543484876,"r":0.01},"geladen":true,"nennt":0,"taeter":[]}
+  ✅ E: das neue Gesetzbuch steht über die Werkstatt in der Welt, ohne eine Zeile im Wirt
+
+✅ GRÜN — DAS NERVENSYSTEM LEBT: die Welt liest die Daten des Buchs LIVE, und ein neues Gesetzbuch steht in ihr, ohne dass der Wirt es kennt.

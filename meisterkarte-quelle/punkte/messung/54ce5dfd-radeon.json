@@ -1,0 +1,101 @@
+{
+ "sha": "54ce5dfd783188cbb0a55e738eef98624e125406",
+ "geraet": "radeon",
+ "zeit": "2026-10-24T17:13:17.853Z",
+ "host": "MiguellD",
+ "je": {
+  "wetter.K2#1": {
+   "gruen": true,
+   "zahl": "Dorf porös draußen 0.763 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 83 (n 336/865), Wiese draußen 0.772",
+   "exit": 0,
+   "minuten": 6.56,
+   "zeit": "2026-10-24T16:47:54.350Z",
+   "abdruck": "e03a045fab93",
+   "port": 7708
+  },
+  "mensch.K1#1": {
+   "gruen": true,
+   "zahl": "Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 30 Menschen im Bild, 9 gehend, 109.3 fps",
+   "exit": 0,
+   "minuten": 2.21,
+   "zeit": "2026-10-24T16:54:27.944Z",
+   "abdruck": "5b2b0b3745f2",
+   "port": 7723
+  },
+  "vegetation.K4#1": {
+   "gruen": true,
+   "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59112 px; ungemessen (ohne freies Auge) haus_skandinavisch 14-0 haupt · haus_provenzalisch 19-0 haupt · haus_italienisch 22-0 haupt · haus_italienisch 33-0 haupt",
+   "exit": 1,
+   "minuten": 3.54,
+   "zeit": "2026-10-24T16:56:40.476Z",
+   "abdruck": "e53d97783caf",
+   "port": 7724
+  },
+  "mensch.K2#2": {
+   "gruen": true,
+   "zahl": "Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.069 m), Sprünge 0, Plan bit-gleich true",
+   "exit": 0,
+   "minuten": 1.1,
+   "zeit": "2026-10-24T17:00:13.015Z",
+   "abdruck": "ca42240b7c1b",
+   "port": 7735
+  },
+  "material.K3#1": {
+   "gruen": true,
+   "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.985 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 2.41,
+   "zeit": "2026-10-24T17:01:19.314Z",
+   "abdruck": "c1c161cacf47",
+   "port": 7740
+  },
+  "material.K1#1": {
+   "gruen": true,
+   "zahl": "Welt/Labor 0,9–1,1: 12/12 · im realen Band beidseits: 12/12 · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 3.35,
+   "zeit": "2026-10-24T17:03:44.107Z",
+   "abdruck": "7d958f1a0783",
+   "port": 7741
+  },
+  "material.K1#2": {
+   "gruen": true,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 3.35,
+   "zeit": "2026-10-24T17:03:44.107Z",
+   "abdruck": "03c706724ee9",
+   "port": 7741,
+   "zwilling": "material.K1#1"
+  },
+  "siedlung.K5#1": {
+   "gruen": true,
+   "zahl": "nH 12 erstes Haus nach 56 ms (haus_alemannisch, huelle in 234.2 m, Bau-Hash 99282f35) · nH 300 erstes Haus nach 99.7 ms (haus_fraenkisch, mesh in 21.3 m, Bau-Hash ed9b6932)",
+   "exit": 0,
+   "minuten": 6.21,
+   "zeit": "2026-10-24T17:07:05.227Z",
+   "abdruck": "1bf868639fe6",
+   "port": 7763
+  },
+  "siedlung.K5#2": {
+   "gruen": true,
+   "zahl": "nH 12 erstes Haus nach 56 ms (haus_alemannisch, huelle in 234.2 m, Bau-Hash 99282f35) · nH 300 erstes Haus nach 99.7 ms (haus_fraenkisch, mesh in 21.3 m, Bau-Hash ed9b6932)",
+   "exit": 0,
+   "minuten": 6.21,
+   "zeit": "2026-10-24T17:07:05.227Z",
+   "abdruck": "607c1995be2b",
+   "port": 7763,
+   "zwilling": "siedlung.K5#1"
+  },
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "0 von 4 Sitzungen ohne Frame > 100 ms (max 242.7 · 209 · 226.1 · 209.1 ms; Hänger 1/1/1/1)",
+   "exit": 0,
+   "minuten": 12.34,
+   "grund": "ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 242.7 · 209 · 226.1 · 209.1 ms; Hänger 1/1/1/1)",
+   "zeit": "2026-10-24T17:13:17.853Z",
+   "abdruck": "3b1e54b5711e",
+   "port": 7784
+  }
+ }
+}

@@ -1,0 +1,26 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-v1-pfad.cjs --feind
+=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===
+  ✅ W2 jeder Neben-Renderer zeichnet über die Bühne (jeder Ruf der Render-Funktion — direkt, .call/.apply, .bind, Alias, Feld, Parameter, Rückgabe — lebt in `_buehneRender` oder `_loopRender`) — 0 direkt
+  ✅ W3 der Orts-Vertrag sitzt an der Engstelle (`dslEvalPos` liefert nie null; den benannten Grund und den Default-Spawn ohne Knoten fährt V-k5)
+  ✅ W4 keine Op bewacht ihren Ort selbst (0 `if (!pos)` in den DSL-Effekten — sie lesen die Engstelle)
+  ✅ W5 die Genesis-Plattform hat EINE Quelle (`_genesisPlattform` sucht sie; Spawn-Idempotenz und Rückkehr-Anker lesen sie) — 0 Suche(n) nach start_plattform neben _genesisPlattform
+  ✅ W6 die Auflöser kennen keinen Ersatz-Ort (dslPositions: 0 `_defaultSpawnPos()`, 0 `dslClamp`, 0 `Number(`; Voxel-Ops ohne eigene Koordinaten-Leser, kein Ursprung statt Spieler; `_dslRulePos` ohne Array-Ersatz) — ohne Ersatz dslPositions/dslEffects/_dslRulePos true/true/true
+  ✅ W7 der Foundry-Pfad pollt nicht (am AST, über alle Glieder, die die Familie erreicht: kein Zeit-Kreis, keine Schleife, die auf Zeit wartet, kein setInterval, kein Warten auf ein pollendes Glied; frei nur die Frist-Kette `_foundryUhren` · `_foundryAblauf` · `_foundryPumpe`) — 116 Methoden · Polls: 0
+=== V-D1 (Q15) — DIE ANKUNFT AUF DER LICHTUNG ===
+  ✅ V-D1 die Plattform steht auf einer Lichtung (keine Krone über der Scheibe), der Genesis-Ring um sie — Plattform [0,0] · 30 Bäume im 40-m-Kreis · nächster Stamm 20.9 m (baum_tanne) · Kronen über der Scheibe 0 · Ring 10 Portale, Mitte 0 m
+=== V-k4 · V-D6 · V-k5 · V-k6 · V-D8 (Q15) — DIE EINZELSCHNITTE DES V1-PFADS ===
+  ✅ V-k4 der Fensterwechsel löst die gehaltene Taste — W gedrückt true · nach blur false
+  ✅ V-D6 der KI-Fehler nennt die Ursache (lokaler Dienst läuft nicht, nicht CORS) — „Keine Antwort von 127.0.0.1:7760 — der lokale Dienst läuft nicht (starte ihn: `ollama serv"
+  ✅ V-k5 V-k6 V-D8 der Satz trifft die Welt: kein Wasser → laute Absage · der Ort reist aufgelöst · das Label im Chat · keine Telemetrie — ohne Wasser 0 Eichen („Kein Wasser im Umkreis von 80 m — am Wasser wächst hier nichts. Geh näher an ein Ufer.") · Absender 2 Birken („2× Birke aus dem Studio vor dir gewachsen") · Ort ["at",400,116.88333573625428,10] · Empfänger 2 Birken 8.6 m vom Absender · Telemetrie false
+=== V-k5-KLASSE (Q15) — DER VERLANGTE ORT, DEN ES NICHT GIBT ===
+  ✅ V-k5-Klasse jede Op mit near_water 60 m in trockener Welt scheitert benannt (0 Würfe, 0 Welt-Akte, die chain meldet ehrlich, kein Dorf beim Spieler) — spawn_creature benannt · spawn_tree benannt · spawn_studio benannt · spawn_island benannt · spawn_ufo benannt · spawn_village benannt · spawn_temple benannt · spawn_waterfall benannt · spawn_blueprint benannt · spawn_fractal benannt · deposit_life benannt · deposit_emotion benannt · chain abgesagt · Dorf-Aufträge 0
+=== V-k5-KLASSE, DER REST — JEDER UNGÜLTIGE ORT SCHEITERT BENANNT ===
+  ✅ V-k5-Klasse (Rest) jeder ungültige Ort scheitert benannt (23 Programme: kein Knoten · at ohne Zahl · Text statt Zahl · kein Spieler · Voxel), die Defaults der Auflöser gelten — 23/23 benannt · 0 Welt-Akte ohne Ort · near_water ohne Radius „kein Wasser im Umkreis von 60 m“ · vorn ohne Abstand 5 m · Bedarf ohne Radius 50 m · Mess-Ort ohne Spieler null
+=== R2 — DIE WASSER-SUCHE SCANNT NUR, WO WASSER SEIN KANN ===
+  ✅ R2 das Wasser-Urteil ist bit-gleich zum vollen Scan, die Suche scannt trocken höchstens wie die 8-Strahlen-Suche — 0 von 4500 Urteilen abweichend (48 nass) · trinken@trocken 40 m: 351 Proben/0 Scans · trinken@plattform 40 m: 351 Proben/0 Scans · chat@trocken 80 m: 1330 Proben/0 Scans · chat@plattform 80 m: 1330 Proben/0 Scans · ki@trocken 200 m: 2243 Proben/1 Scans (Wasser) · ki@plattform 200 m: 8037 Proben/0 Scans · ki@trocken-voll 200 m: 7981 trockene Proben/0 Scans (56 nasse ohne Zählung; ganz trocken hochgerechnet 0)
+=== V-D3 (Q14) — DIE WERKSTATT-VORSCHAU ZEIGT IHR WERK ===
+  ✅ V-D3 die Eiche der Werkstatt-Vorschau steht im Bild (Masken-Gesetz über die Vorschau-Vertices ≥ 99 %) — 1537 Proben · 100.0 % behalten · Maske im Render 0 · Welt-Auge 400 m
+  ✅ V-D3 Fremder Zug jeder Wartende erwacht nach der Ankunft eines fremd gezogenen Körpers, jede Stufe der Vorschau nach ihrem Stoff (am Ereignis, nie an der Uhr) — vorschau eiche|3|0 fremd true · 164 ms · hand beil|1|0 fremd true · 108 ms · Stufen L0 167 ms · L1 150 ms · L2 148 ms (Box 14.14 m, Höhen-Stufe 17.32 m) · Vorrat findling|1|0 im Flug true · 1× bestellt
+  ✅ V-D3 Rahmen jede Gestalt füllt die Vorschau (projizierte Box3 in [0.5; 0.9] der Bildkante) — 236 gemessen (21/21 Waffen: min 0.7 · median 0.7 · max 0.7; alle: min 0.7 · median 0.7 · max 0.792) · 22 ehrlich leer · Aspekt 2.322 · 33560 ms
+
+✅ GRÜN — der v1-Pfad trägt seine benannten Schnitte.

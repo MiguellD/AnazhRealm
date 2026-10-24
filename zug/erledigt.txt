@@ -1,0 +1,16 @@
+z6-punkte gemessen punkte 6579e8f4 gtx: 20 grün / 8 rot
+z7-abab LANGSAMER abab 877d3e04 gegen f7dd313c: w-ego 4+4 nicht-langsamer · g-third 4+4 nicht-langsamer · d-ego 4+4 LANGSAMER · stadt 4+4 nicht-langsamer · fahrt 4+4 nicht-langsamer
+z9-abab nicht-langsamer abab a2b28770 gegen f7dd313c: w-ego 2+2 nicht-langsamer · g-third 2+2 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 2+2 nicht-langsamer · fahrt 4+4 nicht-langsamer
+z9-abab-berichtigt UNENTSCHIEDEN die Zeile 'nicht-langsamer' von z9-abab ist falsch: alle A-Boots leer (das Instrument aus B bootete A nicht), der Richter liess leere Kern-Groessen fallen statt UNENTSCHIEDEN zu urteilen (behoben)
+z9c-abab nicht-langsamer abab 13c95713 gegen f7dd313c: w-ego 4+4 nicht-langsamer · g-third 2+2 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer · fahrt 4+4 nicht-langsamer
+z10b-abab nicht-langsamer abab 833bbc24 gegen 13c95713: w-ego 2+2 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer
+w6-material-gtx gemessen punkte f7dd313c gtx: keine Mess-Datei
+z13-abab LANGSAMER abab 18a84649 gegen 833bbc24: w-ego 4+4 nicht-langsamer · d-ego 4+4 LANGSAMER · stadt 2+2 nicht-langsamer
+z10b-punkte gemessen punkte 833bbc24 gtx: 23 grün / 6 rot
+z14c-abab nicht-langsamer abab 056330d8 gegen 18a84649: w-ego 2+2 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 2+2 nicht-langsamer
+omen-z13-takt Exit0 station omen-z13-takt.sh an 056330d8
+z13-punkte gemessen punkte 18a84649 gtx: 27 grün / 5 rot
+z15d-abab LANGSAMER abab 3d2b3276 gegen 056330d8: w-ego 2+2 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 4+4 LANGSAMER
+z16b-abab LANGSAMER abab 3046bc79 gegen 3d2b3276: w-ego 4+4 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 4+4 LANGSAMER
+z17-abab LANGSAMER abab 6f8a2c66 gegen 3046bc79: w-ego 4+4 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 4+4 LANGSAMER
+z1920-abab nicht-langsamer abab 1d9164e9 gegen 6f8a2c66: w-ego 4+4 nicht-langsamer · d-ego 2+2 nicht-langsamer

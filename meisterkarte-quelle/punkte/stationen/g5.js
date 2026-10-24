@@ -1,7 +1,7 @@
 // Stationen der Gruppe V (src/g5.js) — Welten und Wege. Format und Regeln: punkte/punkte.cjs (Kopf).
 // Erfasst: jedes Kriterium mit Punkten > 0 (fahrzeug.K3/K4, siedlung.K1, leib.K1/K4, halten.K1/K2), die Messschuld M36
 // (siedlung.K5) und was ein Zweig im Stau kippen soll (stadt-erwachen-2 siedlung.K5, halten-gesetz halten.K1/K3,
-// teilen-sicher tore.K5/ultiversum.K5, gamepad-verben leib.K5). Was sich nicht als Station fassen lässt, steht in
+// teilen-sicher ultiversum.K5, gamepad-verben leib.K5; tore.K5 steht seit 24.10. ganz in fehlt: kein anderes Gerät). Was sich nicht als Station fassen lässt, steht in
 // `module.exports.fehlt` (befehl null, grund) — außerhalb der Liste, damit `run` der anderen Gruppen nicht an ihr bricht.
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
@@ -74,7 +74,7 @@ const KAMPF = [
     "stamm/kreatur-*.js",
     "stamm/koerper-*.js",
     "stamm/daten.js",
-    "worlds/schmiede/schmiede-core.js",
+    "schmiede-core.js",
     "scripts/diag-kampf-gefuehl.cjs",
     "scripts/lib/kampf-proben.cjs",
     "scripts/lib/welt-boot.cjs",
@@ -143,8 +143,39 @@ const HIT_LESEN =
     "const L = window.__hs; return { gesetzt: L.n, dauerMs: [Math.min(...L.dauer), Math.max(...L.dauer)].map((x) => Math.round(x * 1000)), haltTakte: L.takte, gleitMm: Math.round(L.gleit * 10000) / 10 };";
 
 // latenz-Reihen: je Sicht × Verb fehlt 0 und p95 ≤ 50 ms
-const reihenZahl = (j, ids) =>
-    ids.map((id) => id + " " + (j.reihen[id] ? j.reihen[id].p95 + (j.reihen[id].fehlt ? " (fehlt " + j.reihen[id].fehlt + ")" : "") : "—")).join(" · ");
+// DIE LATENZ IST BILDRATEN-FEST (24.10., Prüfung der Buchung 61 → 80: leib.K1#1 kippte an EINEM SHA 056330d8 von ROT auf GRÜN,
+// p95 75,8 ms bei Bildzeit 32,9 ms gegen 43,3 ms bei 16,6 ms an 1d9164e9): die Bildzeit eines Laufs hängt an Gerät und Last
+// (8,7–32,9 ms an der Radeon), das Kriterium an keiner. Jede Latenz-Station fährt LAEUFE eigene Boots (Sitzung je Boot,
+// `{N}` = die Nummer) und urteilt über den SCHLECHTESTEN; jede Bildzeit steht in der Zahl.
+const LAEUFE = 3;
+const lauf = (n, zeilen) => zeilen.map((z) => z.replace(/\{N\}/g, String(n)));
+const latenzLaeufe = (...zeilen) => {
+    const json = Array.from({ length: LAEUFE }, (_, i) => '"{AUS}.lauf' + (i + 1) + '.json"').join(" ");
+    return [
+        "rm -f " + json,
+        ...Array.from({ length: LAEUFE }, (_, i) => lauf(i + 1, zeilen)).flat(),
+        // die Läufe in EINE Datei {AUS}: { laeufe: [ latenz-JSON | null ] }
+        "node -e 'const fs = require(\"fs\"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: " +
+            "f.map((x) => { try { return JSON.parse(fs.readFileSync(x, \"utf8\")); } catch (_e) { return null; } }) }));' \"{AUS}\" " + json,
+    ];
+};
+// über alle Läufe: GRÜN nur, wenn JEDER Lauf jede Reihe hält; die Zahl nennt je Reihe das schlechteste p95 und jede Bildzeit
+function latenzSchlechtester(j, ids, n, soll = 50) {
+    const da = ((j && j.laeufe) || []).filter((l) => l && l.reihen);
+    if (da.length < LAEUFE) return { gruen: false, zahl: "latenz-JSON in " + da.length + " von " + LAEUFE + " Läufen" };
+    const haelt = (l) => ids.every((id) => l.reihen[id] && l.reihen[id].fehlt === 0 && l.reihen[id].n >= n && l.reihen[id].p95 <= soll);
+    const schlecht = (id) => {
+        const r = da.map((l) => l.reihen[id]);
+        if (r.some((x) => !x)) return id + " —";
+        const fehlt = r.reduce((s, x) => s + x.fehlt, 0);
+        return id + " " + Math.max(...r.map((x) => x.p95)) + (fehlt ? " (fehlt " + fehlt + ")" : "");
+    };
+    return {
+        gruen: da.every(haelt),
+        zahl: "schlechtester von " + LAEUFE + " Läufen p95 ms " + ids.map(schlecht).join(" · ") + " · Bild " + da.map((l) => l.bildMs).join("/") + " ms",
+        da,
+    };
+}
 
 const stationen = [
     // ───────── fahrzeug.K3 — die Kamera atmet das Tempo ─────────
@@ -368,25 +399,29 @@ const stationen = [
             "foundry-core.js",
             "scripts/diag-haus-welt.cjs",
             "scripts/lib/welt-boot.cjs",
+            "stamm/kreatur-*.js",
+            "stamm/vegetation-baum.js",
         ],
         quelle: "1 = der Spieler geht durch die Tür bis Keller und Dachboden ohne Vertikal-Sprung > 0,3 m in einem Frame (Anti-Clip-Hub = ROT), an einem Haus",
     },
 
-    // ───────── siedlung.K5 — das erste Haus steht sofort (M36) ─────────
+    // ───────── siedlung.K5 — das erste Haus steht sofort (M36, die Stufe am Abstand) ─────────
+    // Station dorf wie M36: Werkbank --echt --ort dorf, Regler frei, die Zelle −4,−6 per Zell-Info nH 12 bzw. 300, der Spieler geht mit
+    // 4 m/s ab 450 m durch den Vorlauf-Ring, bis sie erwacht; je nH ein frischer Boot. Gezählt: Erwachen → erstes Haus der Zelle im
+    // Kegel, gezeichnet in der Stufe, die seine Studio-Kette für seinen Abstand wählt — in der Mesh-Zone sein Mesh, dahinter die Hülle
+    // seines Gesetzbuchs im Welt-March (fernform "huelle"); der Feld-Satz einer Brücke in der Mesh-Zone zählt nie —, dazu der Bau-Hash
+    // (bericht/2410-siedlung-k5/m36-stufe.js = artifacts/siedlung-k5/m36-stufe.js; `erstesMesh` trägt die alte Lesung mit).
     ...[1, 2].map((staffel) => ({
         kriterium: "siedlung.K5",
         staffel,
         geraet: ["radeon", "gtx"],
-        // Station dorf wie M36 (bericht/2210-messschuld-gtx-6cfce/m36.sh): Werkbank --echt --ort dorf, Regler frei, die Zelle
-        // −4,−6 per Zell-Info nH 12 bzw. 300, der Spieler geht mit 4 m/s ab 450 m durch den Vorlauf-Ring, bis sie erwacht; je nH
-        // ein frischer Boot; Zeit Erwachen → erstes Haus gezeichnet im Kegel, Bau-Hash (m36-erstes-haus.js)
         befehl: sitzung(
             ...[12, 300].flatMap((nh) => [
                 "boot --ort dorf",
                 "timeout 60 $W fenster 1920 1080 > /dev/null 2>&1",
                 "timeout 120 $W umstellen --ort dorf --sicht ego > /dev/null 2>&1",
                 "timeout 300 $W lauf 10 --ein 20 --ruhe 120 --regler frei --tiere frei > /dev/null 2>&1",
-                "teil NH" + nh + ' $W eval "window.__m36 = { zelle: [-4, -6], nH: ' + nh + ', start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2210-messschuld-gtx-6cfce/m36-erstes-haus.js")"',
+                "teil NH" + nh + ' $W eval "window.__m36 = { zelle: [-4, -6], nH: ' + nh + ', start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2410-siedlung-k5/m36-stufe.js")"',
             ])
         ),
         env: K,
@@ -402,37 +437,84 @@ const stationen = [
                 return {
                     nh,
                     ok: ms != null && ms <= 500 && !!e.hash,
-                    text: "nH " + nh + " erstes Haus nach " + (ms == null ? "—" : ms + " ms") + " (" + (e.erstes ? e.erstes.typ : "kein Haus") + ", Bau-Hash " + e.hash + ")",
+                    text: "nH " + nh + " erstes Haus nach " + (ms == null ? "—" : ms + " ms") + " (" + (e.erstes ? e.erstes.typ + ", " + e.erstes.stufe + " in " + e.erstes.abstand + " m" : "kein Haus") + ", Bau-Hash " + e.hash + ")",
                 };
             });
             return { gruen: je.every((x) => x.ok), zahl: je.map((x) => x.text).join(" · ") };
         },
-        pfad: [...DORF, "scripts/lib/welt-orte.cjs"],
+        pfad: [...DORF, "stamm/stoff-instanz.js", "stamm/studio-*.js", "stamm/vegetation-baum.js", "scripts/lib/welt-orte.cjs"],
         quelle:
             staffel === 1
                 ? "1 = erstes Haus sichtbar ≤ 0,5 s nach dem Erwachen der Zelle, unabhängig von nH (12 gegen 300), als Studio-L-Kette (Bau-Hash im Bild), an einem Gerät"
                 : "2 = beide Geräte",
     })),
 
+    // ───────── siedlung.K3 — die Gassen folgen dem Grund am Ort des Plans (Zweig siedlung-k3-trasse) ─────────
+    // gate:settlement C-K3 (Browser, Null-Renderer, ≤ 3 min): die drei Vorräte am Mess-Ort dorf, das Auto-Dorf der Zelle −4,−4 und
+    // der Akt am Hang — je Plan v2 der Abstand vom Ort seines Höhen-Rasters (Soll 0), die Lese-Punkte außerhalb des Rasters (Soll 0)
+    // und das Gassen-Gefälle p95 am Grund ohne Erdbau (`gassenGefaelle`, Soll ≤ ORT_GESETZ.gefaelle = 12 %); Selbsttest: jeder
+    // Export am Raster des Wunschs, den die Ort-Wahl rückt (bis siedlung-k3-trasse) → ROT.
+    {
+        kriterium: "siedlung.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-settlement.cjs"],
+        env: { SETTLEMENT_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const z = /^\s*(✅|❌) C-K3: DIE TRASSE AM ORT — (\d+) Dörfer[^\n]* — (\[.*\])\s*$/m.exec(out);
+            const s = /^\s*(✅|❌) C-K3 Selbsttest/m.exec(out);
+            let t = [];
+            try {
+                t = z ? JSON.parse(z[3]) : [];
+            } catch (_e) {
+                t = [];
+            }
+            const gruen = !!z && z[1] === "✅" && +z[2] >= 4 && !!s && s[1] === "✅" && lauf.exit === 0;
+            return {
+                gruen,
+                zahl: z
+                    ? z[2] + " Dörfer, Gassen-Gefälle p95 " + t.map((x) => x.zelle + " " + x.p95 + " %").join(" · ") +
+                      ", Versatz " + t.map((x) => x.versatzM).join("/") + " m, Selbsttest " + (s ? s[1] : "—") + ", Exit " + lauf.exit
+                    : "keine Zeile C-K3 (Exit " + lauf.exit + ")",
+            };
+        },
+        pfad: [
+            "fachwerk-core.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "foundry-bruecke.js",
+            "stamm/siedlung-ort.js",
+            "stamm/gelaende-boden.js",
+            "worlds/fachwerk/fachwerk.js",
+            "scripts/diag-settlement.cjs",
+            "spec/asset-contract/v6/golden/siedlung.json",
+        ],
+        quelle: "1 = Gassen-Gefälle p95 ≤ 12 % VOR der Erdbau-Glättung in ≥ 4 Saaten",
+    },
+
     // ───────── leib.K1 — Taste → Leib im Bild ─────────
     {
         kriterium: "leib.K1",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        // werkbank latenz an der Mess-Wiese: CDP-Taste bis zum ersten Ausgabe-Bild mit Leib/Kamera ≥ 1 cm bewegt, je 50 Proben
+        // werkbank latenz an der Mess-Wiese: CDP-Taste bis zum ersten Ausgabe-Bild mit Leib/Kamera ≥ 1 cm bewegt, je 50 Proben —
+        // in LAEUFE eigenen Boots, geurteilt über den schlechtesten (bildraten-fest)
         befehl: sitzung(
-            "boot",
-            "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
-            'teil LATENZ $W latenz --proben 50 --sicht ego,third --verb gehen,wechsel --json "{AUS}"'
+            ...latenzLaeufe(
+                "boot",
+                "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
+                'teil LATENZ{N} $W latenz --proben 50 --sicht ego,third --verb gehen,wechsel --json "{AUS}.lauf{N}.json"'
+            )
         ),
         env: K,
         gpu: true,
-        minuten: 6,
+        minuten: 10,
         urteil: (j) => {
-            if (!j || !j.reihen) return { gruen: false, zahl: "keine latenz-JSON" };
-            const ids = ["ego/gehen", "third/gehen", "ego/wechsel", "third/wechsel"];
-            const gruen = ids.every((id) => j.reihen[id] && j.reihen[id].fehlt === 0 && j.reihen[id].n >= 50 && j.reihen[id].p95 <= 50);
-            return { gruen, zahl: "p95 ms " + reihenZahl(j, ids) };
+            const { gruen, zahl } = latenzSchlechtester(j, ["ego/gehen", "third/gehen", "ego/wechsel", "third/wechsel"], 50);
+            return { gruen, zahl };
         },
         pfad: LATENZ,
         quelle: "1 = Taste → bewegter Leib im Ausgabe-Bild p95 ≤ 50 ms an einem Gerät (gehen, Sicht-Wechsel)",
@@ -441,20 +523,21 @@ const stationen = [
         kriterium: "leib.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        // dieselbe Linse über jedes Verb der Staffel (schwingen = hieb), EIN Ruf
+        // dieselbe Linse über jedes Verb der Staffel (schwingen = hieb), EIN Ruf je Boot, LAEUFE Boots, der schlechteste urteilt
         befehl: sitzung(
-            "boot",
-            "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
-            'teil LATENZ $W latenz --proben 50 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "{AUS}"'
+            ...latenzLaeufe(
+                "boot",
+                "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
+                'teil LATENZ{N} $W latenz --proben 50 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "{AUS}.lauf{N}.json"'
+            )
         ),
         env: K,
         gpu: true,
-        minuten: 10,
+        minuten: 24,
         urteil: (j) => {
-            if (!j || !j.reihen) return { gruen: false, zahl: "keine latenz-JSON" };
             const ids = ["gehen", "springen", "einsteigen", "hieb"].flatMap((v) => ["ego/" + v, "third/" + v]);
-            const gruen = ids.every((id) => j.reihen[id] && j.reihen[id].fehlt === 0 && j.reihen[id].n >= 50 && j.reihen[id].p95 <= 50);
-            return { gruen, zahl: "p95 ms " + reihenZahl(j, ids) };
+            const { gruen, zahl } = latenzSchlechtester(j, ids, 50);
+            return { gruen, zahl };
         },
         pfad: LATENZ,
         quelle: "2 = jedes Verb (gehen, springen, schwingen, einsteigen), beide Geräte",
@@ -473,17 +556,27 @@ const stationen = [
         env: { KAMERA_LAUB_PORT: "{PORT}", LINSE_GPU: "hardware" },
         gpu: true,
         minuten: 6,
+        // DAS URTEIL (24.10., Prüfung der Buchung): das Kriterium misst Pixel „an einem Gerät“ — die Linse zeichnet unter `--bild`
+        // nie (scripts/diag-kamera-laub.cjs setzt `__anazhHeadlessNullRenderer` auch dann; welt-boot: „das Rezept ist null“), ihre
+        // Nah-Pixel kommen aus dem CPU-Raster von kamera-nah: das ist ROT (Wand GPU in punkte.cjs und hier), bis die Linse zeichnet.
+        // „nie … in der Wand“: die Messung prüft Fels UND Wand vor der Kamera — Bau-Pixel im Nahbereich (der offene Tür-Flügel
+        // trägt keinen Leib) zählen, die gate:kamera-leib nur nennt. Die Kugel im Stamm (Fels oder Wand nennt das Kriterium nicht)
+        // und der Ruck-Höchstwert (das Kriterium misst p95) stehen in der Zahl.
         urteil: (j, lauf) => {
             const z = lauf.stdout.split(/\r?\n/).find((l) => /^\s*(✅|❌) K4 der Gang in Third/.test(l));
             if (!z) return { gruen: false, zahl: "keine Zeile K4 der Gang (Exit " + lauf.exit + ")" };
-            const gaenge = lauf.stdout.split(/\r?\n/).filter((l) => /^\s+(stamm|fels|haus)\s/.test(l)).map((l) => l.trim().replace(/\s+/g, " "));
-            // der Gang misst am Gesetz (Kugel gegen Feld und Boxen, Nah-Deckung im Raster von kamera-nah), wie die Hand-Messung —
-            // die Seite fährt den Null-Renderer; welt-boot meldet das als Klasse (Exit 2), es steht in der Zahl, nie im Urteil
-            const wb = (/^\s*· (klasse: .*)$/m.exec(lauf.stdout) || [])[1];
-            return {
-                gruen: /✅/.test(z),
-                zahl: (gaenge.join(" | ") || "keine Gang-Zeile") + (/❌/.test(z) ? " — " + z.split(" — ").slice(1).join(" — ") : "") + (wb ? " · welt-boot " + wb.slice(0, 90) : ""),
-            };
+            const zeilen = lauf.stdout.split(/\r?\n/).filter((l) => /^\s+(stamm|fels|haus)\s/.test(l));
+            const gaenge = zeilen.map((l) => l.trim().replace(/\s+/g, " "));
+            const wand = zeilen.reduce((s, l) => {
+                const m = /Nah-Pixel (\{[^}]*\})/.exec(l);
+                let n = {};
+                try { n = m ? JSON.parse(m[1]) : {}; } catch (_e) { n = { kaputt: 1 }; }
+                return s + Object.entries(n).filter(([k]) => /: Bau$|kaputt/.test(k)).reduce((a, [, v]) => a + v, 0);
+            }, 0);
+            const nie = /^\[welt-boot\] FEHLER klasse:.*zeichnet nie/m.test(lauf.stdout);
+            const rot = [/❌/.test(z) ? z.split(" — ").slice(1).join(" — ") : null, wand ? "Wand-Pixel (Bau) im Nahbereich in " + wand + " Proben" : null,
+                nie ? "die Linse zeichnet nie (welt-boot: Rezept null)" : null].filter(Boolean);
+            return { gruen: /✅/.test(z) && !rot.length, zahl: (gaenge.join(" | ") || "keine Gang-Zeile") + (rot.length ? " — ROT: " + rot.join(" · ") : "") };
         },
         pfad: [
             "stamm/koerper-*.js",
@@ -551,32 +644,34 @@ const stationen = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         // werkbank latenz --verb hieb (halten-latenz): Klick per CDP bis zur Marke getCurrentTexture, an der die rechte Hand ≥ 1 cm
-        // steht; Hit-Stop = präsentierte Bilder mit stehender Schwung-Uhr und Hand (halt)
+        // steht; Hit-Stop = präsentierte Bilder mit stehender Schwung-Uhr und Hand (halt) — in LAEUFE eigenen Boots, der
+        // schlechteste urteilt (bildraten-fest, wie leib.K1)
         befehl: sitzung(
-            "boot",
-            "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
-            "teil HAKEN $W eval '" + HIT_HAKEN + "'",
-            'teil LATENZ $W latenz --verb hieb --sicht third,ego --proben 30 --json "{AUS}"',
-            "teil SPIEL $W eval '" + HIT_LESEN + "'"
+            ...latenzLaeufe(
+                "boot",
+                "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
+                "teil HAKEN{N} $W eval '" + HIT_HAKEN + "'",
+                'teil LATENZ{N} $W latenz --verb hieb --sicht third,ego --proben 30 --json "{AUS}.lauf{N}.json"',
+                "teil SPIEL{N} $W eval '" + HIT_LESEN + "'"
+            )
         ),
         env: K,
         gpu: true,
-        minuten: 6,
+        minuten: 14,
         urteil: (j, lauf) => {
-            if (!j || !j.reihen) return { gruen: false, zahl: "keine latenz-JSON" };
             const ids = ["third/hieb", "ego/hieb"];
-            const r = ids.map((id) => j.reihen[id]);
-            const halt = Math.max(0, ...r.filter(Boolean).map((x) => x.halt || 0));
-            const gruen = r.every((x) => x && x.fehlt === 0 && x.n >= 30 && x.p95 <= 50) && halt >= 2;
+            const r = latenzSchlechtester(j, ids, 30);
+            if (!r.da) return r;
+            // der Hit-Stop je Lauf (die längere Sicht), der schlechteste Lauf urteilt
+            const halt = Math.min(...r.da.map((l) => Math.max(0, ...ids.map((id) => (l.reihen[id] && l.reihen[id].halt) || 0))));
             const out = String(lauf.stdout || "");
-            const sp = out.indexOf("@@PUNKTE@@ SPIEL");
-            const s = sp >= 0 ? jsonBlock(out.slice(sp)) : null;
-            const e = s && s.ergebnis;
-            const spiel = e
-                ? " · im Spiel: Halt gesetzt " + e.gesetzt + "-mal" + (e.gesetzt ? " (" + e.dauerMs.join("–") + " ms)" : "") + ", " +
-                  (e.gesetzt ? "die Hand gleitet im Halt bis " + e.gleitMm + " mm je Takt (" + e.haltTakte + " Takte)" : "kein Treffer am Ziel (Werkzeug)")
-                : " · im Spiel ungezählt";
-            return { gruen, zahl: "p95 ms " + reihenZahl(j, ids) + " · Hit-Stop " + r.map((x) => (x ? x.halt : "—")).join("/") + " Bilder (Third/Ego)" + spiel };
+            const spiel = Array.from({ length: LAEUFE }, (_, i) => {
+                const sp = out.indexOf("@@PUNKTE@@ SPIEL" + (i + 1));
+                const s = sp >= 0 ? jsonBlock(out.slice(sp)) : null;
+                const e = s && s.ergebnis;
+                return e ? e.gesetzt + "-mal" + (e.gesetzt ? " (" + e.dauerMs.join("–") + " ms, gleitet bis " + e.gleitMm + " mm je Takt)" : "") : "ungezählt";
+            });
+            return { gruen: r.gruen && halt >= 2, zahl: r.zahl + " · Hit-Stop im schlechtesten Lauf " + halt + " Bilder · im Spiel Halt gesetzt " + spiel.join(" / ") };
         },
         pfad: LATENZ,
         quelle: "1 = Eingabe → erstes Schwung-Bild ≤ 50 ms und Hit-Stop sichtbar im Ausgabe-Bild an einem Gerät",
@@ -601,11 +696,44 @@ const stationen = [
             const form = l.find((x) => /^\s+form \{/.test(x));
             return {
                 gruen: /✅/.test(q) && !!sichel && /✅/.test(sichel),
-                zahl: "Q11 " + (/✅/.test(q) ? "grün" : "ROT") + " (" + (form ? form.trim() : "keine Form-Zeile") + ") · Sichel " + (sichel ? (/✅/.test(sichel) ? "grün" : "ROT") : "ungemessen (keine Probe)"),
+                zahl: "Q11 " + (/✅/.test(q) ? "grün" : "ROT") + " (" + (form ? form.trim().slice(0, 240) : "keine Form-Zeile") + ") · Sichel " + (sichel ? (/✅/.test(sichel) ? "grün" : "ROT") : "ungemessen (keine Probe)"),
             };
         },
         pfad: KAMPF,
         quelle: "1 = Axt fällt, Spaten gräbt, Sichel erntet über die echte Eingabe, und eine umgeformte Klinge (Axt mit Spaten-Blatt) wirkt nach der neuen Form",
+    },
+    // gate:kampf-gefuehl Q11 (der Werkzeug-Satz an der Mess-Wiese): jede der 22 Gestalten des Gesetzbuchs und die Hand, je Ziel EIN
+    // Klick über die echte Eingabe — Eiche, Fels, Erde, Wiese, Wild, Schuss —, gezählt Wirkung und Verschleiß, am Ziel der Aufgabe
+    // dazu wear 0,5 (der Faktor in der Kraft) und 0,02 (die Wand); die Form-Mutation (Grab-Blatt, Axt-Kopf, Krümmung, Recurve)
+    // und der Stoff (Stahl, Eisen, Bronze aus der Tradition, 16 Hiebe in Folge, die halbe Härte der Stahl-Zeile). Die Selbst-Tests
+    // S6 (Pfeil ohne Verschleiß), S13 (Art-Tafel), S15 (Name), S16 (Spender) müssen feuern. An main 6f8a2c66 ROT: 19 von 22,
+    // Stahl, Eisen und Bronze zehren je 0,0032, Graben zehrt nicht und kennt keine Wand, die Recurve schießt gleich.
+    {
+        kriterium: "halten.K3",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kampf-gefuehl.cjs"],
+        env: { KAMPF_GEFUEHL_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const l = lauf.stdout.split(/\r?\n/);
+            const q = l.find((x) => /^\s*(✅|❌) Q11 halten\.K3 Staffel 2/.test(x));
+            if (!q) return { gruen: false, zahl: "keine Zeile Q11 halten.K3 Staffel 2 (Exit " + lauf.exit + ")" };
+            const selbst = ["S6", "S13", "S15", "S16"].map((k) => [k, l.find((x) => x.includes("SELBST-TEST (" + k + ")"))]);
+            const stumm = selbst.filter(([, x]) => !x || !/✅/.test(x)).map(([k]) => k);
+            const [, gut, alle] = q.match(/\((\d+) von (\d+)\)/) || [];
+            const stoff = (q.match(/Stoff-Zeile \(([^)]*)\)/) || [])[1];
+            return {
+                gruen: /✅/.test(q) && +gut === +alle && +alle >= 22 && !stumm.length,
+                zahl:
+                    (gut || "?") + " von " + (alle || "?") + " Gestalten · zehrt " + (stoff || "ungemessen") +
+                    (/❌/.test(q) ? " · ROT: " + q.split(" — ").slice(1).join(" — ").slice(0, 300) : "") +
+                    (stumm.length ? " · Selbst-Test stumm: " + stumm.join(", ") : ""),
+            };
+        },
+        pfad: KAMPF.concat(["stamm/vegetation-wiese.js", "stamm/bau-vorlagen.js"]),
+        quelle: "2 = jede Werkzeug-Form der Schmiede, Verschleiß aus dem Stoff",
     },
 
     // ───────── ultiversum.K5 — Vertrauen (teilen-sicher) ─────────
@@ -639,6 +767,84 @@ const stationen = [
         ],
         quelle: "1 = eine geteilte Regel oder Welt mit verbotenen Ops wird beim Laden benannt abgewiesen (RULE_FORBIDDEN_EFFECT_OPS), 0 Schreibe auf den frozen Kern",
     },
+    {
+        kriterium: "ultiversum.K5",
+        staffel: 2,
+        geraet: "headless",
+        // ultiversum-k5-korpus: gate:v1-pfad --feind schickt den Korpus spec/abnahme/ki-feind-korpus.json (Kanarie-Marker in Bauplan,
+        // Namen, Regeln, Tür) durch die echten Eingänge zu einem gehorsamen Modell; die Wand liest jede Erinnerung im ganzen Stamm
+        befehl: ["node", "scripts/diag-v1-pfad.cjs", "--feind"],
+        env: { V1_PFAD_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const l = lauf.stdout.split(/\r?\n/);
+            const soll = ["Wand", "erreicht", "ausgeführt", "Signatur", "Anzeige"].map((k) => new RegExp("^\\s*(✅|❌) FEIND " + k + ":"));
+            const je = soll.map((re) => l.find((x) => re.test(x)));
+            if (je.some((x) => !x)) return { gruen: false, zahl: "Zeile fehlt (Exit " + lauf.exit + ")" };
+            return { gruen: lauf.exit === 0 && je.every((x) => /✅/.test(x)), zahl: je.map((x) => x.trim().slice(0, 120)).join(" | ") };
+        },
+        pfad: [
+            "stamm/*.js",
+            "scripts/diag-v1-pfad.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/stamm.cjs",
+            "spec/abnahme/ki-feind-korpus.json",
+            "spec/golden/v1/blueprint-signed.json",
+        ],
+        quelle: "2 = ein Korpus aus Prompt-Injektionen in Bauplänen, Namen und Regeln lenkt die KI nicht (0 ausgeführte fremde Anweisungen), die Signatur-Prüfung schlägt bei Manipulation an",
+    },
+
+    // ───────── halten.K4 — der Bogen (halten-k4-bogen) ─────────
+    // gate:kampf-gefuehl Q12 (headless, 3 Winkel × 30/60/144 Hz): Staffel 1 die Bahn gegen die Parabel des Abschusses, Staffel 2 der
+    // steckende Pfeil (Wand, Boden, Hirsch) über den Speicher-Rundlauf und die Zug-Kraft aus BOGENMAT; S14 nennt die alte Bahn beim
+    // Namen. Am Kopf vor dem Zweig fehlt Q12 (ROT beim Namen). schmiede-core.js liegt im Baum an der Wurzel (KAMPF nennt worlds/schmiede/)
+    ...[1, 2].map((staffel) => ({
+        kriterium: "halten.K4",
+        staffel,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kampf-gefuehl.cjs"],
+        env: { KAMPF_GEFUEHL_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const l = lauf.stdout.split(/\r?\n/);
+            const q = l.find((x) => new RegExp("^\\s*(✅|❌) Q12 halten\\.K4 Staffel " + staffel).test(x));
+            const s = l.find((x) => /^\s*(✅|❌) SELBST-TEST \(S14\)/.test(x));
+            const z = l.find((x) => /^\s*\(Q12\) Bahn /.test(x));
+            if (!q) return { gruen: false, zahl: "keine Zeile Q12 halten.K4 Staffel " + staffel + " (Exit " + lauf.exit + ")" };
+            return { gruen: /✅/.test(q) && !!s && /✅/.test(s), zahl: (z ? z.trim() : "") + (/❌/.test(q) ? " · " + q.trim() : "") };
+        },
+        pfad: [...KAMPF, "schmiede-core.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js", "stamm/gelaende-chunks.js", "stamm/dirigent-takt.js", "stamm/dirigent-kern.js"],
+        quelle:
+            staffel === 1
+                ? "1 = Flugbahn folgt Abschuss-Tempo und Schwerkraft (±5 % gegen die Parabel)"
+                : "2 = der Pfeil steckt im getroffenen Ding und bleibt über den Reload, Zug-Kraft aus dem Bogen-Gesetz",
+    })),
+    // ───────── fahrzeug.K1 — das Fahr-Gesetz: der Reifen mit Spitze (Staffel 1 Weg (a), fahrzeug-k1-reifen 2d01a8a7) ─────────
+    // gate:fahr-leben K8 Reifen (--kern, Node): je Rezept und Achse die Seitenkraft des Kerns (`fahrKraefte`, dieselbe Funktion wie
+    // Probefahrt und Welt) über den Schlupf 0,1–30°; das Urteil liest `REIFEN {achsen:[{wo, spitze, abfall}], hz, kostenUs}` —
+    // an main 833bbc24 ROT: Spitze 8,7–11,5° (Plateau), Abfall 0 % an allen 10 Achsen
+    {
+        kriterium: "fahrzeug.K1", staffel: 1, geraet: "headless",
+        befehl: ["node", "scripts/diag-fahr-leben.cjs", "--kern"], env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: false, minuten: 1,
+        urteil: (j, lauf) => {
+            const m = jsonZeile(lauf.stdout, /^REIFEN {/);
+            const A = (m && m.achsen) || [];
+            if (!A.length) return { gruen: false, zahl: "keine REIFEN-Zeile (Exit " + lauf.exit + ")" };
+            const aus = A.filter((a) => !(a.spitze >= 6 && a.spitze <= 10 && a.abfall >= 0.15));
+            const sp = A.map((a) => a.spitze);
+            const ab = A.map((a) => Math.round(a.abfall * 100));
+            return {
+                gruen: A.length >= 10 && aus.length === 0,
+                zahl: A.length + " Achsen (" + A.length / 2 + " Rezepte): Spitze " + Math.min(...sp) + "–" + Math.max(...sp) +
+                    "°, Abfall bis 30° " + Math.min(...ab) + "–" + Math.max(...ab) + " %" +
+                    (aus.length ? " · außer Soll: " + aus.map((a) => a.wo + " " + a.spitze + "°/" + Math.round(a.abfall * 100) + " %").join(", ") : ""),
+            };
+        },
+        pfad: ["vehicle-core.js", "scripts/diag-fahr-leben.cjs"],
+        quelle: "1 = (a) Seitenkraft mit Spitze bei 6–10° Schlupf und ≥ 15 % Abfall",
+    },
 ];
 
 module.exports = stationen;
@@ -647,11 +853,15 @@ module.exports = stationen;
 module.exports.fehlt = [
     {
         kriterium: "tore.K5", staffel: 1, befehl: null,
-        grund: "B ist ein ANDERES Gerät mit frischem Profil — die Maschine fährt je Lauf EIN Gerät; gate:praegung-welt (T) misst A = B in zwei Kontexten einer Maschine (Bau-Hash 9c183437, teilen-sicher), nie zwei Geräte",
+        grund: "die Probe (T) von gate:praegung-welt misst KEIN anderes Gerät: B ist ein zweiter BrowserContext im selben Chrome " +
+            "(scripts/diag-praegung-welt.cjs:297 createBrowserContext — derselbe Prozess, derselbe GPU-Prozess, dieselbe Maschine), " +
+            "und „steht an B's Pose“ ist eine NDC-Projektion am Null-Renderer (:421, :505), kein Bild an B's Pose (Schlupfloch der " +
+            "Karte: Bau-Hash und Bild); ein anderes Gerät verlangt mindestens einen eigenen Browser-Prozess mit eigenem Profil und " +
+            "Speicher, besser die OMEN als B über die Warteschlange — gemessen an 1d9164e9: Code 530 Zeichen, Bau-Hash A = B 9c183437/12, 640 ms",
     },
     {
         kriterium: "tore.K5", staffel: 2, befehl: null,
-        grund: "der Welt-Fluss (Einladungs-Code, Kontrolle ≤ 5 s) hat keine Linse (teilen-sicher: Welt-Fluss 0 %), dazu zwei Geräte",
+        grund: "der Welt-Fluss hat keine Linse: der Einladungs-Code lädt die Seite neu (joinWorldFromCode → _weltWechselNeuLaden), Kontrolle ≤ 5 s verlangt das Welt-Tor ohne Neuladen; dazu beide Flüsse an zwei Geräten (#1 steht ebenfalls hier: B ist kein anderes Gerät)",
     },
     {
         kriterium: "siedlung.K1", staffel: 2, befehl: null,
@@ -672,13 +882,5 @@ module.exports.fehlt = [
     {
         kriterium: "halten.K2", staffel: 2, befehl: null,
         grund: "kein Klang-Abgriff je Stoff-Paar (Stahl/Holz, Stahl/Stein, Holz/Fell) und keine Funken-Probe; latenz zählt nur den Hit-Stop",
-    },
-    {
-        kriterium: "halten.K3", staffel: 2, befehl: null,
-        grund: "keine Probe über jede Werkzeug-Form der Schmiede und keine für den Verschleiß aus dem Stoff",
-    },
-    {
-        kriterium: "ultiversum.K5", staffel: 2, befehl: null,
-        grund: "der Injektions-Korpus von gate:praegung-welt trägt nur den Namen (der System-Prompt sieht ihn nie); Injektionen in Bauplänen und Regeln gegen den KI-Lauf fehlen (KI-Lauf mit Schlüssel 0 %)",
     },
 ];

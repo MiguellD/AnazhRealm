@@ -1,0 +1,14 @@
+HÄNGER-LINSE: 1 Frames > 100 ms in 60 s (3838 Frames, 6000 Takte; Frame p50/p95/p99/max 16.6/25/33.3/108.4 ms) — TAKT 0 · NEBEN 0 · GC 1 · GPU 0
+Lauf: Regler frei · Tiere frei (9) · Wandern bahn · loadScale 0.32 · Chunks 90 · Wetter sunny · Proben ja (6000 Takt-Marken)
+Pipelines im Lauf: 0 synchron in 0 Takten · 0 async · 0 Shader-Module
+Erst-Zeichnung: 0 Knoten-Bauten im Pass (Σ 0 ms) · 0 auf den nächsten Aufruf verschoben · 0 Pipelines asynchron · 0 offen · 0 Neubauten gezeichneter Objekte (im Frame)
+Knoten-Bau synchron: 0 Bauten · Σ 0 ms · max 0 ms · 0 über 16,7 ms
+
+   n    Σ ms   max ms  Ursache
+   1     108      108  GC: Garbage-Collector
+
+Je Hänger (t = ms seit Mess-Beginn):
+  t=23079 dt=108.4 ms (2 Takte, 1 ohne Bild) [TAKT 12 · NEBEN 3 · GC 79 · GPU 11] GC: Garbage-Collector
+      Gerät: texKB 512
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\n2310\ms\m39-6579\b4-haenger.json

@@ -1,0 +1,18 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c set -u
+WP=7765; SP=$((7765 + 20000)); LP=$((7765 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=
+weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n "$SPID" ] && kill "$SPID" 2> /dev/null; SPID=; for p in $(netstat -ano 2> /dev/null | grep -aE ":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }
+trap weg EXIT
+boot() { weg; PORT=$SP node save-server.js > "$L/save.log" 2>&1 & SPID=$!; for t in $(seq 1 30); do curl -s -o /dev/null "http://localhost:$SP/" && break; sleep 1; done; $W start --echt --port $WP --seite "http://localhost:$SP" "$@" > "$L/wb.log" 2>&1 & for t in $(seq 1 120); do grep -qE "WERKBANK bereit|FEHLER|Error" "$L/wb.log" && break; sleep 5; done; grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ $W latenz --proben 50 --sicht ego,third --verb gehen,wechsel --json "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\1d9164e9-radeon\leib.K1_1.json"
+gpu-lauf: Schloss punkte-radeon nach 1 s
+@@PUNKTE@@ LATENZ
+ego/gehen {"n":50,"fehlt":0,"p50":32.4,"p95":43.3,"max":46.1,"eingabe":0.6,"hoerer":0,"kette":14.1,"kurve":16.5,"takte":4}
+ego/wechsel {"n":50,"fehlt":0,"p50":10.8,"p95":25.6,"max":26.2,"eingabe":0.6,"hoerer":0.4,"kette":8.6,"kurve":0,"takte":1}
+third/gehen {"n":50,"fehlt":0,"p50":31.4,"p95":43.6,"max":47.3,"eingabe":0.5,"hoerer":0,"kette":12.9,"kurve":16.6,"takte":4}
+third/wechsel {"n":50,"fehlt":0,"p50":9.3,"p95":25.5,"max":27.8,"eingabe":0.7,"hoerer":0.3,"kette":7.5,"kurve":0,"takte":1}
+LATENZ GRÜN (Bild 16.6 ms) 
+@@PUNKTE@@ EXIT 0

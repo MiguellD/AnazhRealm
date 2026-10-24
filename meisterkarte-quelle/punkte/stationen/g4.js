@@ -6,6 +6,8 @@
 // Ein Eintrag mit befehl: null ist eine Staffel, die kein Werkzeug im Spiel-Baum messen kann — grund nennt, was fehlt.
 "use strict";
 
+const { jsonZeile } = require("../hilfe.cjs");
+
 const zeilen = (t) => String(t || "").split(/\r?\n/);
 const SOFT = { LINSE_GPU: "software" };
 
@@ -546,22 +548,91 @@ const alle = [
         kriterium: "bauen.K3",
         staffel: 2,
         geraet: "headless",
-        befehl: null,
-        grund:
-            "kein Prüf-Satz in der Welt: das Statik-Urteil fällt nur beim Fertigen (`_workshopPhysicsVerdict`), beim Setzen zählt nur " +
-            "„Phantom auf dem Boden“ (`_setzUrteil`); Turm, Kragarm, Brücke, Bogen und Rad/Schale baut keine Linse",
-        quelle: "2 = ein Prüf-Satz aus 10 Konstruktionen (5 stabil, 5 instabil) wird in der Welt 10/10 richtig geurteilt",
+        // DER PRÜF-SATZ (diag-werkstatt-weg, spec/pruefsatz/bauen-k3.json): zehn Konstruktionen über den Bau-Weg des Spielers
+        // (Hotbar, Phantom, confirmBuild) — das Stabile steht nach 150 Takten, das Instabile stürzt sichtbar (die gezeichnete
+        // Lage kippt ≥ 30° oder fällt ≥ 0,3 m), bricht und nennt den Grund (die EINE Statik beim Setzen, `_werkGesetzSetzen`);
+        // Wirkung: Brennglas mittags und nachts, das Rad rollt den Hang hinab (der Klotz nicht), die Schale hält Regen (die mit
+        // Loch nicht), der Gründer legt den Aufruhr (der Stapel derselben Steine nicht). Am main 833bbc24: Statik 5/10, Wirkung 3/5.
+        befehl: WEG_BEFEHL,
+        env: WEG_ENV,
+        gpu: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const l = zeilen(lauf.stdout).find((x) => /^\s*(✅|❌) Prüf-Satz über den Bau-Weg/.test(x));
+            if (!l) return { gruen: false, zahl: "keine Prüf-Satz-Zeile (Exit " + lauf.exit + ")" };
+            const m = l.match(/Statik (\d+)\/10 · Wirkung (\d+)\/5/);
+            if (!m) return { gruen: false, zahl: "keine Zahl in der Prüf-Satz-Zeile" };
+            return {
+                gruen: /^\s*✅/.test(l) && m[1] === "10" && m[2] === "5",
+                zahl: `Statik ${m[1]}/10 richtig, Wirkung ${m[2]}/5`,
+            };
+        },
+        pfad: [
+            "stamm/bau-*.js",
+            "stamm/werkstatt-*.js",
+            "stamm/siedlung-satz.js",
+            "stamm/siedlung-bauten.js",
+            "stamm/koerper-fahrt.js",
+            "stamm/bild-himmel.js",
+            "stamm/wasser-hydro.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/studio-bruecke.js",
+            "stamm/vegetation-baum.js",
+            "stamm/dienst.js",
+            "stamm/daten.js",
+            "foundry-core.js",
+            "foundry-bruecke.js",
+            "vehicle-core.js",
+            "spec/pruefsatz/bauen-k3.json",
+            "scripts/diag-werkstatt-weg.cjs",
+            "scripts/lib/stamm.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = ein Prüf-Satz aus 10 Konstruktionen (5 stabil, 5 instabil) wird in der Welt 10/10 richtig geurteilt mit sichtbarer Folge, und 5 Wirkungs-Konstruktionen halten 100 %",
     },
+    // gate:fall-waechter (B) DER TURM (bauen-k4-editform): je Klick der rechten Maus am Canvas (`tryMousePlace`, der Blick senkrecht
+    // nach unten) ein Block r 3,5 unter dem Spieler — Hub je Block, die Sohlen der Fuß-IK neben dem gebauten Mesh (`_bodenSichtAt`),
+    // die Höhe über dem Gelände; Save, Reload: die Edits des Turms, ihre Hülle (Löcher), Sohle und Stand. Gelesen wird die B-ZAHL
+    // (die Probe B allein: ein rotes O1–O3 des Wächters ist nicht der Turm).
     {
         kriterium: "bauen.K4",
         staffel: 1,
         geraet: "headless",
-        befehl: null,
-        grund:
-            "kein Werkzeug fährt 20 Blöcke ≥ 60 m mit dem Fuß auf dem Mesh: gate:worker-dichte (2) DIE HÜLLE (editform-kern) baut 10 " +
-            "Füll-Edits r 3,5 (N_TURM fest, Hub je Edit, keine Sohle), gate:persistence (L) zählt 300 Löcher über den Reload ohne Turm, " +
-            "der Fall-Wächter trägt seit editform-kern keinen Turm; der Beleg 69,5 m / Fuß 0,04–0,15 m (hoch-bauen 9d987a93) war ein " +
-            "Hand-Lauf an der Radeon",
+        befehl: ["node", "scripts/diag-fall-waechter.cjs"],
+        env: { ...SOFT, FALL_WAECHTER_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const b = jsonZeile(lauf.stdout, /^\s*B-ZAHL \{/);
+            if (!b) return { gruen: false, zahl: "keine B-ZAHL-Zeile (Exit " + lauf.exit + ")" };
+            const [n, f] = [b.nach || {}, (x) => (Number.isFinite(x) ? x.toFixed(2) : "?")];
+            const befunde = b.befunde || ["keine Befund-Liste"];
+            return {
+                gruen:
+                    befunde.length === 0 && b.bloecke === 20 && b.hoehe >= 60 && b.sohle <= 0.15 &&
+                    n.edits === 20 && n.loecher === 0 && n.sohle <= 0.15,
+                zahl:
+                    `Turm aus ${b.bloecke}/20 Blöcken über die Maus ${f(b.hoehe)} m über dem Gelände · Hub ${f((b.hub || [])[0])}–` +
+                    `${f((b.hub || [])[1])} m je Block · Sohle ≤ ${f(b.sohle)} m neben dem Mesh · nach dem Reload ${n.edits} Edits, ` +
+                    `${n.loecher} Löcher, Sohle ${f(n.sohle)} m` + (befunde.length ? " — " + befunde.slice(0, 3).join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "stamm/gelaende-*.js",
+            "stamm/koerper-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/speicher-*.js",
+            "stamm/kampf.js",
+            "stamm/feld-dsl.js",
+            "stamm/werkstatt-bauen.js",
+            "stamm/dienst.js",
+            "scripts/diag-fall-waechter.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/lib/stamm.cjs",
+        ],
         quelle: "1 = ein Turm aus 20 Blöcken trägt ≥ 60 m über dem Gelände (Fuß ≤ 0,15 m über dem Mesh) und hält über den Reload (0 Löcher)",
     },
     {
@@ -573,6 +644,85 @@ const alle = [
             "kein Werkzeug setzt den Turm auf Dach, Fels und Brücke (`_bodenSichtAt`) und misst den Fern-Ring-Edit ≤ 1 s per byte-Diff " +
             "in Ego und Third",
         quelle: "2 = auch auf Dach, Fels und Brücke (oberste Fläche, `_bodenSichtAt`), der Fern-Ring zeigt den Edit ≤ 1 s (byte-Diff), Ego und Third, beide Geräte",
+    },
+    // ── studios.K5 ── das Probe-Gesetzbuch (Fixture-Kern in spec/) über die Werkstatt in der Welt (gate:nervensystem E)
+    {
+        kriterium: "studios.K5",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-nervensystem.cjs"],
+        env: { ...SOFT, NERV_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const e = jsonZeile(lauf.stdout, /^E-ZAHL \{/);
+            if (!e) return { gruen: false, zahl: "keine E-ZAHL-Zeile (Exit " + lauf.exit + ")" };
+            const lod = (e.lod || []).map((x) => "L" + x.ist + " " + x.tris).join(" · ");
+            const taeter = e.taeter || [];
+            return {
+                gruen: lauf.exit === 0 && taeter.length === 0,
+                zahl:
+                    `${e.bauplaene}/3 Baupläne · Stufen ${lod || "keine"} △ · Kosten ${(e.kosten || []).map((k) => k.klasse).join("/") || "keine"} · ` +
+                    `Neuladen ${e.geladen === true ? "steht" : "fehlt"} · der Wirt nennt die Art ${e.nennt}×` +
+                    (taeter.length ? " — " + taeter.join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "stamm/",
+            "index.html",
+            "cores.manifest.json",
+            "*-core.js",
+            "foundry-bruecke.js",
+            "worlds/neuntes-buch/",
+            "worlds/huelle/huelle.js",
+            "worlds/terrain/lib/",
+            "signaling-server.js",
+            "scripts/diag-nervensystem.cjs",
+            "scripts/diag-atlas.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/stamm.cjs",
+        ],
+        quelle: "1 = ein Probe-Gesetzbuch (Fixture-Kern in spec/ mit PARAMS_BY_KIND und Bauer) steht über die Werkstatt in der Welt mit LOD-Kette, Kosten-Leiste und Speicher-Rundlauf, `git diff stamm/` = 0",
+    },
+    // gate:nervensystem E2: je Weg der Bau-Hash der gezeigten Stufe (Werkstatt · KI-Satz mit festem DSL-Text, das Prompt lehrt
+    // das Wort · Foundry build-asset L0–L2 = die gezeigten Stufen · P2P: der Mitspieler baut das Werk byte-gleich), der Atlas
+    // (`--find neuntes`) nennt die EINE Quelle, der Wirt nennt die Art 0×
+    {
+        kriterium: "studios.K5",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-nervensystem.cjs"],
+        env: { ...SOFT, NERV_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const e = jsonZeile(lauf.stdout, /^E-ZAHL \{/);
+            if (!e || !Array.isArray(e.wege)) return { gruen: false, zahl: "keine Wege in der E-ZAHL (Exit " + lauf.exit + ")" };
+            const auf = e.wege.filter((w) => w.ok).length;
+            return {
+                gruen:
+                    lauf.exit === 0 && !(e.taeter || []).length && auf === 4 && e.atlas === "worlds/neuntes-buch/stele-core.js" && e.nennt === 0,
+                zahl:
+                    `${auf}/4 Wege (${e.wege.map((w) => `${w.ok ? "✓" : "✗"} ${w.weg} ${w.bau || "kein Bau"}`).join(" · ")}) · ` +
+                    `Atlas ${e.atlas || "kein Gesetzbuch"} · der Wirt nennt die Art ${e.nennt}×`,
+            };
+        },
+        pfad: [
+            "stamm/",
+            "index.html",
+            "cores.manifest.json",
+            "*-core.js",
+            "foundry-bruecke.js",
+            "signaling-server.js",
+            "worlds/neuntes-buch/",
+            "worlds/huelle/huelle.js",
+            "worlds/terrain/lib/",
+            "scripts/diag-nervensystem.cjs",
+            "scripts/diag-atlas.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/stamm.cjs",
+        ],
+        quelle: "2 = auf allen Wegen (Werkstatt, KI-Satz, Foundry, P2P), und der Atlas nennt seine EINE Quelle",
     },
 ];
 

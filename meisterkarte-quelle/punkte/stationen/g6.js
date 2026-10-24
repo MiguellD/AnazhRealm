@@ -72,7 +72,6 @@ const HYDRO_PFAD = [
 const SPEICHER_PFAD = [
     "stamm/dienst.js",
     "stamm/speicher-*.js",
-    "speicher-worker.js",
     "stamm/dirigent-takt.js",
     "stamm/dirigent-regler.js",
     "stamm/dirigent-kern.js",
@@ -156,15 +155,17 @@ module.exports = [
             if (!f) return { gruen: false, zahl: "keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit " + lauf.exit };
             const kopie = phasen.filter((p) => p[1] !== "selbst").reduce((s, p) => s + +p[4], 0);
             const speicher = /speicher/i.test(faeden);
-            const gruen = !blind && +f[2] <= 1 && kopie === 0 && speicher;
+            // f[2] die Dauer der Fahrt, f[3] ihre MB/min (bis streaming-k5 verglich das Urteil die Sekunden mit 1 MB/min)
+            const gruen = !blind && +f[2] >= 55 && +f[3] <= 1 && kopie === 0 && speicher;
             return {
                 gruen,
                 zahl:
-                    f[3] + " MB/min in der Fahrt · Kopie " + kopie.toFixed(2) + " MB · Speicher-Faden " +
+                    f[3] + " MB/min in " + f[2] + " s Fahrt · Kopie " + kopie.toFixed(2) + " MB · Speicher-Faden " +
                     (speicher ? "ja" : "nein") + " (Fäden: " + faeden.slice(0, 120) + ")",
             };
         },
-        pfad: HYDRO_PFAD.concat(["stamm/dienst.js", "stamm/speicher-*.js", "speicher-worker.js"]),
+        // der Speicher-Faden (speicher-worker.js) steht nur im Zweig speicher-journal — am Kopf trifft sein Glob keine Datei (Wand PFAD)
+        pfad: HYDRO_PFAD.concat(["stamm/dienst.js", "stamm/speicher-*.js"]),
         quelle: "2 = ≤ 1 MB/min, 0 Kopien nach dem Empfang, Speichern im Worker",
     },
 
@@ -456,19 +457,23 @@ module.exports = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         // M38: derselbe Tab-Tod, 4 Zyklen (davon 2 mit erwachender Zelle): die Hülle um `saveState` zählt die Haupt-Faden-ms je
-        // Ruf, Σ je rAF-Bild p95 — die Leck-Probe des Flugschreibers (`_imLeerlauf`) liegt außerhalb der Hülle, ein eigener Posten
+        // Ruf — die Leck-Probe des Flugschreibers (`_imLeerlauf`) liegt außerhalb der Hülle, ein eigener Posten.
+        // DAS URTEIL liest das SPEICHER-BILD (Messung: „Haupt-Faden-ms des Speicher-Bilds“), also die Kosten je Save: p95 der Rufe
+        // ≤ 0,3 ms. Das p95 über ALLE Bilder (echt-k1 `jeBild`: die Rufe mit Nullen auf die Bildzahl aufgefüllt) ist per
+        // Konstruktion blind — 97 Rufe in 9888 Bildern geben immer 0 —, es steht nur in der Zahl. Ein Ruf ist eine untere Schranke
+        // des Speicher-Bilds (zwei Rufe in einem Bild zählen einzeln).
         befehl: ["bash", "-c", ECHT_K1 + '4 k2; E=$?; cp "$D/echt-k1-k2.json" "$A" 2>/dev/null; exit $E'],
         gpu: true,
         minuten: 4,
         urteil: (j, lauf) => {
-            const b = j && j.jeBild;
-            if (!b || !(j.bilder > 0)) return { gruen: false, zahl: "keine Bild-Zählung (Exit " + lauf.exit + ")" };
-            const gruen = j.bilder >= 1000 && j.saveRufe >= 10 && b.p95 != null && b.p95 <= 0.3;
+            const s = j && j.saveMs;
+            if (!s || !(j.bilder > 0)) return { gruen: false, zahl: "keine Save-Zählung (Exit " + lauf.exit + ")" };
+            const gruen = j.bilder >= 1000 && j.saveRufe >= 10 && s.p95 != null && s.p95 <= 0.3;
             return {
                 gruen,
                 zahl:
-                    "je Bild p95 " + b.p95 + " / p99 " + b.p99 + " ms (" + j.bilder + " Bilder, " + j.saveRufe + " Rufe); je Ruf p50 " +
-                    j.saveMs.p50 + " / p95 " + j.saveMs.p95 + " / max " + j.saveMs.max + " ms",
+                    "je Speicher-Bild (Ruf) p50 " + s.p50 + " / p95 " + s.p95 + " / max " + s.max + " ms (Soll p95 ≤ 0,3; " + j.saveRufe +
+                    " Rufe in " + j.bilder + " Bildern; aufgefüllt je Bild p95 " + (j.jeBild ? j.jeBild.p95 : "—") + ", blind)",
             };
         },
         pfad: SPEICHER_PFAD,
@@ -478,7 +483,8 @@ module.exports = [
         kriterium: "speicher.K4",
         staffel: 1,
         geraet: "headless",
-        // gate:persistence: (K) das Haus mit Zahlen-id übersteht den Reload mit kaltem Buch, (W) zwei Werke auf der Lichtung,
+        // gate:persistence aus dem Korpus (spec/speicher-korpus/, je Stand ein echter Boot): (K) das Haus mit Zahlen-id übersteht
+        // den Reload mit kaltem Buch, (W) zwei Werke auf der Lichtung,
         // aus (T) die Dichte: nach dem letzten echten Reload steht die Linie der Löcher (> 256 von 300) und kein Stand ist korrupt.
         // Die halbe Welt von (T) urteilt den Tod mitten im Schreiben — das ist Speicher K1 (echt-k1), nicht der Rundlauf; unter
         // Windows meldet (T) sie zudem als Rennen der Linse (taskkill /T erreicht den Baum verzögert, Bericht 2210-messschuld-6cfce).
@@ -505,15 +511,15 @@ module.exports = [
                     " | " + (dichte ? "✅" : "❌") + " Dichte über den Reload: Linie " + linie[1] + " Löcher, " + korrupt[1] + " korrupt",
             };
         },
-        pfad: SPEICHER_PFAD.concat(["stamm/studio-bruecke.js", "stamm/vegetation-baum.js", "scripts/diag-persistence.cjs"]),
+        pfad: SPEICHER_PFAD.concat(["stamm/studio-bruecke.js", "stamm/vegetation-baum.js", "scripts/diag-persistence.cjs", "spec/speicher-korpus/*"]),
         quelle: "1 = der Zahlen-Rundlauf (Dichte, Bauten) über einen echten Reload ist bewiesen",
     },
     {
         kriterium: "speicher.K5",
         staffel: 1,
         geraet: "headless",
-        // gate:persistence (U): der Save eines alten Bodens lädt durch `loadState` auf den neuen (Bauten in Fuß-Höhe),
-        // Gegenprobe: ein Save desselben Bodens zieht nicht um
+        // gate:persistence (U) aus dem Korpus: die Stände eines alten Bodens (V18.530–V18.541, vor K16) laden durch den Boot des
+        // Spielers auf den neuen (Bauten in ihrer Höhe über Grund, Gruben am Boden), Gegenprobe: die Stände desselben Bodens ziehen nicht um
         befehl: ["node", "scripts/diag-persistence.cjs"],
         env: { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_SERVER_PORT: "2{PORT}" },
         gpu: false,
@@ -525,8 +531,33 @@ module.exports = [
             if (t.some((x) => !x)) return { gruen: false, zahl: "Teil (U) fehlt in der Ausgabe (Exit " + lauf.exit + ")" };
             return { gruen: t.every((x) => x.ok), zahl: t.map((x) => (x.ok ? "✅ " : "❌ ") + x.l.replace(/^(✅|❌)\s*/, "").slice(0, 140)).join(" | ") };
         },
-        pfad: ["stamm/dienst.js", "stamm/speicher-*.js", "stamm/gelaende-boden.js", "stamm/siedlung-satz.js", "gelaende-core.js", "scripts/diag-persistence.cjs", "scripts/lib/welt-boot.cjs"],
+        pfad: ["stamm/dienst.js", "stamm/speicher-*.js", "stamm/gelaende-boden.js", "stamm/siedlung-satz.js", "gelaende-core.js", "scripts/diag-persistence.cjs", "scripts/lib/welt-boot.cjs", "spec/speicher-korpus/*"],
         quelle: "1 = eine Migrations-Klasse bewiesen",
+    },
+    {
+        kriterium: "speicher.K5",
+        staffel: 2,
+        geraet: "headless",
+        // gate:persistence (V): der Korpus spec/speicher-korpus/ — je Versions-Stufe EIN Stand, den ihre Version selbst schrieb
+        // (Bauten, Grabe-Hiebe, Inventar), lädt am Kopf durch den Boot des Spielers ohne Verlust; die Versions-Stufe trägt ihren
+        // Stand im Baum (fehlt er, schreibt ihn der Kopf und die Zeile ist ROT, bis er committet ist)
+        befehl: ["node", "scripts/diag-persistence.cjs"],
+        env: { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_SERVER_PORT: "2{PORT}" },
+        gpu: false,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            const z = String(lauf.stdout || "").split(/\r?\n/);
+            const teil = (re) => { const l = z.find((x) => re.test(x)); return l ? { ok: /✅/.test(l), l: l.trim() } : null; };
+            const t = [teil(/^\s*(✅|❌) \(V\) Korpus:/), teil(/^\s*(✅|❌) \(V\) Versions-Stufe/)];
+            const n = t[0] && /(\d+) Stände/.exec(t[0].l);
+            if (t.some((x) => !x) || !n) return { gruen: false, zahl: "Teil (V) fehlt in der Ausgabe (Exit " + lauf.exit + ")" };
+            return {
+                gruen: t.every((x) => x.ok) && +n[1] >= 10,
+                zahl: t.map((x) => (x.ok ? "✅ " : "❌ ") + x.l.replace(/^(✅|❌)\s*/, "").slice(0, 160)).join(" | "),
+            };
+        },
+        pfad: ["stamm/dienst.js", "stamm/speicher-*.js", "stamm/gelaende-boden.js", "stamm/siedlung-satz.js", "stamm/vegetation-baum.js", "gelaende-core.js", "scripts/diag-persistence.cjs", "scripts/lib/welt-boot.cjs", "spec/speicher-korpus/*"],
+        quelle: "2 = ein Korpus aus ≥ 10 alten Versionen (aus git gezogen, unter spec/) lädt am Kopf ohne Verlust, der Korpus wächst je Versions-Stufe",
     },
 ];
 
@@ -573,12 +604,6 @@ module.exports.fehlt = [
         staffel: 2,
         befehl: null,
         grund: "m16-k2k4 (bild-diff 6,75 % am 21.10., Radeon) setzt Bau und Edit, bringt aber kein Wasser sicher ins Bild: der Pflicht-Inhalt der Staffel (Bauten, Edits, Wasser) ist im Urteil nicht prüfbar",
-    },
-    {
-        kriterium: "speicher.K5",
-        staffel: 2,
-        befehl: null,
-        grund: "kein Korpus alter Stände unter spec/ und kein Korpus-Lauf; (U) beweist nur den Boden-Umzug",
     },
     {
         kriterium: "streaming.K4",

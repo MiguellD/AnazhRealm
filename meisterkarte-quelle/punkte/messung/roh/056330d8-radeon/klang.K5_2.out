@@ -1,0 +1,52 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:\Program Files\nodejs\node.exe scripts/diag-klang-zensus.cjs --takt --echt --minuten 10 --json C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\056330d8-radeon\klang.K5_2.json
+gpu-lauf: warte auf vegetation-wiese 2026-10-24T12:27:45+02:00 pid=21264 (2 s)
+gpu-lauf: warte auf vegetation-wiese 2026-10-24T12:27:45+02:00 pid=21264 (67 s)
+gpu-lauf: Schloss punkte-radeon nach 111 s
+[linse-gpu] amd/rdna-3
+Klang-Takt: {"isoliert":true,"tiere":0}
+[stall-akte] ═══ diag-klang-zensus.cjs · Seite #3 http://127.0.0.1:7782/index.html · waitForFunction(ziel) riss nach 180.0 s: Waiting failed: 180000ms exceeded
+[stall-akte] offen waitForFunction(ziel) seit 182.1 s
+[stall-akte] Puls 184×, zuletzt vor 0.3 s — complete · renderer bereit · weltbild da · frames 7729 · welt 9085 Takte · Ruhe 4892 · zuletzt Felder offen 3 · programme 100 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #100 renderPipeline_MeshBasicNodeMaterial_1066
+[stall-akte] Stempel 10:30:29.646 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5977 fs 66883 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:30:29.647 gpu.createRenderPipelineAsync #95 renderPipeline_MeshStandardNodeMaterial_59
+[stall-akte] Stempel 10:30:29.844 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5977 fs 66883 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:30:29.844 gpu.createRenderPipelineAsync #96 renderPipeline_MeshStandardNodeMaterial_60
+[stall-akte] Stempel 10:30:29.975 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5977 fs 66882 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:30:29.975 gpu.createRenderPipelineAsync #97 renderPipeline_MeshStandardNodeMaterial_61
+[stall-akte] Stempel 10:30:30.158 Pipeline MeshPhysicalNodeMaterial · SkinnedMesh · vs 11755 fs 66787 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:30:30.158 gpu.createRenderPipelineAsync #98 renderPipeline_MeshPhysicalNodeMaterial_199
+[stall-akte] Stempel 10:30:30.375 Pipeline MeshPhysicalNodeMaterial · SkinnedMesh · vs 5262 fs 66758 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:30:30.375 gpu.createRenderPipelineAsync #99 renderPipeline_MeshPhysicalNodeMaterial_58
+[stall-akte] Stempel 10:31:13.995 Pipeline MeshBasicNodeMaterial · geometrie-arena · vs 4267 fs 6819 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:31:13.995 gpu.createRenderPipelineAsync #100 renderPipeline_MeshBasicNodeMaterial_1066
+[stall-akte] CPU (2 s) renderer 14100 114 % · GPU 25564 51 % · browser 21804 3 % · audio.mojom.AudioService 23100 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 31:49 gpu 53/r 121 · 31:51 gpu 42/r 137 · 31:53 gpu 36/r 90 · 31:55 gpu 43/r 105 · 31:57 gpu 48/r 132 · 31:59 gpu 47/r 106 · 32:01 gpu 51/r 108 · 32:03 gpu 44/r 123 · 32:05 gpu 42/r 143 · 32:07 gpu 47/r 146 · 32:09 gpu 48/r 111 · 32:11 gpu 51/r 111 · 32:13 gpu 43/r 108 · 32:15 gpu 41/r 140 · 32:17 gpu 43/r 110 · 32:19 gpu 43/r 120 · 32:21 gpu 57/r 112 · 32:23 gpu 44/r 113 · 32:25 gpu 40/r 115 · 32:27 gpu 45/r 119 · 32:29 gpu 46/r 158 · 32:31 gpu 49/r 146 · 32:33 gpu 42/r 139 · 32:35 gpu 45/r 110 · 32:37 gpu 47/r 113 · 32:39 gpu 52/r 113 · 32:41 gpu 47/r 109 · 32:43 gpu 42/r 114 · 32:45 gpu 43/r 111 · 32:47 gpu 46/r 110
+[stall-akte] Stapel (kein Debugger: Zeit-Linse)
+[stall-akte] Konsole log: [AnazhRealm V18.546.79] [INFO] Stern-Feld erstellt — 2803 InstancedMesh-Billboards (V10.0-i.a, WGSL-konformer Soft-Falloff)
+[stall-akte] Konsole log: [AnazhRealm V18.546.79] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_1, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.79] [INFO] Siedlung „Westerfeld" (markt, Seed 1668000145): 20 Häuser platziert, 0 Slots übersprungen; Mitte 46 m Radius.
+[stall-akte] Konsole log: [AnazhRealm V18.546.79] [INFO] Bauten n=874 haus=20 ziegel=0 nah=haus_mittelalterlich @-6/21/-1253 d=344m
+[stall-akte] Konsole log: [AnazhRealm V18.546.79] [INFO] Nexus-Evolution (Regel) registriert: evo_2
+[stall-akte] Konsole log: [AnazhRealm V18.546.79] [WARN] FPS-Einbruch: 30 (zuvor ~47)
+[stall-akte] Konsole log: [AnazhRealm V18.546.79] [INFO] Grok: Du bist seit einer Weile still. Geht's dir gut?
+[stall-akte] Konsole log: [AnazhRealm V18.546.79] [INFO] Nexus-Evolution (Regel) registriert: evo_3
+[stall-akte] Konsole log: [AnazhRealm V18.546.79] [INFO] Das Wetter bleibt sunny (Wunsch: rule:nexus)
+[stall-akte] Konsole log: [AnazhRealm V18.546.79] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Novadunum" von -139.1/-1138.8 zu -312.1/-1144.5
+[stall-akte] Konsole log: [AnazhRealm V18.546.79] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Novadunum" von -201.1/-1142.9 zu -310.0/-1129.6
+[stall-akte] Konsole log: [AnazhRealm V18.546.79] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_4, fitness=1.00
+[stall-akte] Stderr [21804:25944:1024/122958.875:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [21804:25944:1024/122958.912:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [21804:25944:1024/122958.912:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [21804:25944:1024/123019.668:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [21804:25944:1024/123119.299:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [21804:25944:1024/123242.376:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL AWAIT — der Haupt-Thread lebt (Puls vor 0.3 s), ein Versprechen der Seite kehrt nie zurück; zuletzt 10:31:13.995 gpu.createRenderPipelineAsync #100 renderPipeline_MeshBasicNodeMaterial_1066
+── ein: Klang-ms je Bild p95 0.83 · max 8.47 (307 Bilder, 10 m) · 2.25 Parameter-Schreibungen je Bild · über dem Soll trägt _lofiPlayGroove 0.19 · _umweltLage 0.11 · _playSchrittOneShot 0.10
+── gehen: Klang-ms je Bild p95 0.48 · max 10.15 (11470 Bilder, 263 m) · 1.24 Parameter-Schreibungen je Bild · über dem Soll trägt _umweltLage 0.10 · _playSchrittOneShot 0.08 · _lofiPlayGroove 0.07
+── fahrt: Klang-ms je Bild p95 0.34 · max 25.18 (7327 Bilder, 865 m) · 4.85 Parameter-Schreibungen je Bild · über dem Soll trägt _lofiPlayGroove 0.14 · _umweltLage 0.10 · _fahrtKlangTick 0.07
+── nacht: Klang-ms je Bild p95 0.22 · max 4.37 (12250 Bilder, 190 m) · 1.17 Parameter-Schreibungen je Bild · über dem Soll trägt _lofiPlayGroove 0.15 · _playSchrittOneShot 0.12 · _lofiPlayChord 0.09
+── Aussetzer am Ausgang: 0 in 601 s Wiedergabe (0 s still)
+   T gehen: Klang-ms je Bild p95 0.48 > 0.2 (max 10.15; trägt _umweltLage 0.10 · _playSchrittOneShot 0.08 · _lofiPlayGroove 0.07)
+   T fahrt: Klang-ms je Bild p95 0.34 > 0.2 (max 25.18; trägt _lofiPlayGroove 0.14 · _umweltLage 0.10 · _fahrtKlangTick 0.07)
+   T nacht: Klang-ms je Bild p95 0.22 > 0.2 (max 4.37; trägt _lofiPlayGroove 0.15 · _playSchrittOneShot 0.12 · _lofiPlayChord 0.09)
+❌ ROT — Klang-Takt in Bewegung: 3 Befund(e)

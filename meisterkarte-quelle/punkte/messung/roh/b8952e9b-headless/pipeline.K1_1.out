@@ -1,0 +1,37 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-studio-uebergabe.cjs --welt
+
+=== (K) KANAL — Saat 1863030169, 10 Arten aus PARAMS_BY_KIND ===
+  ✅ vehicle: das Werk des Studios steht byte-gleich in der Welt — gt Same 17: Studio aa371931eb (12 Teile) = Welt aa371931eb (12 Teile, Gestalt 17, derselbe Auftrag)
+  ✅ gate: das Werk des Studios steht byte-gleich in der Welt — drachentor Same 5: Studio 84c44d6a9f (9 Teile) = Welt 84c44d6a9f (9 Teile, Gestalt 5, derselbe Auftrag)
+  ✅ weapon: das Werk des Studios steht byte-gleich in der Welt — langschwert Same 15: Studio 02465de89e (25 Teile) = Welt 02465de89e (25 Teile, Gestalt 15, derselbe Auftrag)
+  ✅ haus: das Werk des Studios steht byte-gleich in der Welt — alemannisch Same 25: Studio 0dba56a3b7 (12 Teile) = Welt 0dba56a3b7 (12 Teile, Gestalt 25, derselbe Auftrag)
+  ✅ ausstattung: das Werk des Studios steht byte-gleich in der Welt — feuerstelle Same 25: Studio d97a3047ea (2 Teile) = Welt d97a3047ea (2 Teile, Gestalt 25, derselbe Auftrag)
+  ✅ klang: das Werk des Studios steht byte-gleich in der Welt — blues: 7 Zeilen im Genre der Welt
+  ✅ koerper: das Werk des Studios steht byte-gleich in der Welt — mensch Same 16: Studio d27aec07a1 (16 Teile) = Welt d27aec07a1 (16 Teile, Gestalt 0, derselbe Auftrag)
+  ✅ kreatur: das Werk des Studios steht byte-gleich in der Welt — wolf Same 48: Studio 2f0596ac3d (26 Teile) = Welt 2f0596ac3d (26 Teile, Gestalt 0, derselbe Auftrag)
+  ✅ flower: das Werk des Studios steht byte-gleich in der Welt — blume Same 42: Studio a79ac80795 (2 Teile) = Welt a79ac80795 (2 Teile, Gestalt 42, derselbe Auftrag)
+  ✅ grass: das Werk des Studios steht byte-gleich in der Welt — gras Same 18: Studio e7c3550362 (1 Teile) = Welt e7c3550362 (1 Teile, Gestalt 18, derselbe Auftrag)
+      10/10 Arten über den EINEN Kanal
+
+=== (S) SONDERWEG-WAND ===
+  ✅ nur die Hülle postet eine Übergabe — kein Studio hat einen eigenen Weg — 0 Studio-Posts
+  ✅ die Heimat leitet die Übergabe an genau EINEN Empfänger (_studioUebergabeEmpfang) — 1 Route(n)
+
+=== (W) WÄNDE ===
+  ✅ kaputte Werke fallen (fremde Art · fremdes Rezept · Riesen-Payload · Nicht-Objekt) — []
+  ✅ der Kern klemmt (height 99 → max), fremde Schlüssel · Passagiere · erfundene Wahlen · ein krummer Same fallen — {"height":1.15,"skinTone":"ebenholz"}
+
+=== SELBSTTEST — ein Sonderweg ist ROT ===
+  ✅ SELBST-TEST: der Empfänger leitet die Blume in einen eigenen Speicher → die Blume ist ROT
+  ✅ SELBST-TEST: ein Studio, das selbst postet, ist ROT bei Datei:Zeile — worlds/probe/probe.js:1
+      (K) 17.4 s
+
+=== --welt — der Konsum im echten Spiel ===
+  ✅ ohne Prägung liefern die Leser die Buch-Referenz (vor und nach der Linse)
+  ✅ die Welt nimmt das Werk des Körper-Studios an
+  ✅ der LEBENDE Avatar gießt neu und trägt die Gestalt (rot nur mit Prägung · Haut ebenholz · Größen-Faktor ≠ 1) — {"refVorher":true,"koerperAn":true,"rot":true,"haut":true,"groesse":true,"kreaturAn":true,"spawnFaktor":1.4644050835581268,"snap":true,"restore":true,"refNachher":true}
+  ✅ ein Kreatur-Spawn trägt das Werk der Gattung (size 3.5 ⇒ Welt-Gestalt ×3.5/2.4, wurf-normalisiert) — Faktor 1.4644050835581268
+  ✅ der Snapshot trägt den Prägungs-Speicher
+  ✅ der Restore läuft durch DENSELBEN Prüfer: height 99 → max, erfundene Farbe und fremdes Rezept fallen
+
+✅ GRÜN — DER EINE ÜBERGABE-KANAL TRÄGT: jede Art reist von der Hülle in den EINEN Prägungs-Speicher, der Leser baut byte-gleich.

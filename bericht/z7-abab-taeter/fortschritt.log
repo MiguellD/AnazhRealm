@@ -1,0 +1,12 @@
+17:30:50 SERIE START A=f7dd313c5[0] B=877d3e04e[0] Instrument=877d3e04e ZELLEN=dz
+17:30:57 dz-A1 start FP=51521a27b29c0349 66 52 gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:32:59 dz-A1 ende gpu[78, 1404 MHz, 4006 MHz, P0, 0x0000000000000000] steht: fps 78.8 F95 16.8 C95 5.2 k0 0.21 |  zaehlen[{  "gesamt": {   "cmd": 102,   "tris": 398662  },  "passe": {   "OrthographicCamera": {    "cmd": 3,    "tris": 3,    "ro": 3   },   "haupt": {    "cmd": 69,    "tris": 286308,    "ro": 39   },   "k0": {    "cmd": 17,    "tris": 65747,    "ro": 17   },   "k1": {    "cmd": 13,    "tris": 46604,    "r]
+17:33:31 dz-B1 start FP=31ffbd008d8c53d5 66 52 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:35:39 dz-B1 ende gpu[77, 923 MHz, 3802 MHz, P2, 0x0000000000000001] steht: fps 74.2 F95 16.8 C95 5.8 k0 0.22 |  zaehlen[{  "gesamt": {   "cmd": 105,   "tris": 439640  },  "passe": {   "OrthographicCamera": {    "cmd": 3,    "tris": 3,    "ro": 3   },   "haupt": {    "cmd": 72,    "tris": 326256,    "ro": 40   },   "k0": {    "cmd": 17,    "tris": 66628,    "ro": 17   },   "k1": {    "cmd": 13,    "tris": 46753,    "r]
+17:36:03 SERIE START A=f7dd313c5[0] B=877d3e04e[0] Instrument=877d3e04e ZELLEN=dz
+17:36:04 SERIE ENDE A-status[0] B-status[0]
+ZAEHLEN EXIT=0
+17:36:09 dz-A2 start FP=51521a27b29c0349 66 52 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:38:13 dz-A2 ende gpu[78, 1404 MHz, 4006 MHz, P0, 0x0000000000000000] steht: fps 78.7 F95 16.8 C95 5.3 k0 0.21 |  zaehlen[{  "gesamt": {   "cmd": 102,   "tris": 398750  },  "passe": {   "OrthographicCamera": {    "cmd": 3,    "tris": 3,    "ro": 3   },   "haupt": {    "cmd": 69,    "tris": 286296,    "ro": 39   },   "k0": {    "cmd": 17,    "tris": 65797,    "ro": 17   },   "k1": {    "cmd": 13,    "tris": 46654,    "r]
+17:38:45 dz-B2 start FP=31ffbd008d8c53d5 66 52 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:40:52 dz-B2 ende gpu[77, 923 MHz, 3802 MHz, P2, 0x0000000000000001] steht: fps 74.2 F95 16.8 C95 5.4 k0 0.22 |  zaehlen[{  "gesamt": {   "cmd": 105,   "tris": 439600  },  "passe": {   "OrthographicCamera": {    "cmd": 3,    "tris": 3,    "ro": 3   },   "haupt": {    "cmd": 72,    "tris": 326232,    "ro": 40   },   "k0": {    "cmd": 17,    "tris": 66634,    "ro": 17   },   "k1": {    "cmd": 13,    "tris": 46731,    "r]

@@ -59,6 +59,24 @@
    "abdruck": "e53d97783caf",
    "port": 7717
   },
+  "tiere.K2#2": {
+   "gruen": true,
+   "zahl": "Fressen 73.42 s nach dem Riss bei 27.6 s, am Aas fuchs 20.1 s, baer 17.3 s · Wolfsrevier wald, Riss 13.6 s, 3 fressen: tier:wolf 13920 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.19 m · Luma 82.3 σ 38 schwarz 0.0 % weiß 0.0 % · Stand 18.546.87 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 3 Posen",
+   "exit": 0,
+   "minuten": 1.89,
+   "zeit": "2026-10-24T18:36:26.246Z",
+   "abdruck": "6f4d55252639",
+   "port": 7732
+  },
+  "mensch.K2#2": {
+   "gruen": true,
+   "zahl": "Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 0.929 m), Sprünge 0, Plan bit-gleich true",
+   "exit": 0,
+   "minuten": 1.3,
+   "zeit": "2026-10-24T18:38:19.883Z",
+   "abdruck": "ca42240b7c1b",
+   "port": 7737
+  },
   "licht.K2#1": {
    "gruen": true,
    "zahl": "Verhältnis 5.005 (5–12,5), Schatten-Anteil 0.1998 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
@@ -104,6 +122,34 @@
    "zeit": "2026-10-24T19:34:25.407Z",
    "abdruck": "c1c161cacf47",
    "port": 7726
+  },
+  "material.K1#1": {
+   "gruen": true,
+   "zahl": "Welt/Labor 0,9–1,1: 12/12 · im realen Band beidseits: 12/12 · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 2.42,
+   "zeit": "2026-10-24T18:48:48.873Z",
+   "abdruck": "7d958f1a0783",
+   "port": 7743
+  },
+  "material.K1#2": {
+   "gruen": true,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 2.42,
+   "zeit": "2026-10-24T18:48:48.873Z",
+   "abdruck": "03c706724ee9",
+   "port": 7743,
+   "zwilling": "material.K1#1"
+  },
+  "schatten.K1#1": {
+   "gruen": true,
+   "zahl": "Uhr 0.5 ego 2.4 cm (12 Kanten) · Uhr 0.5 third 2.4 cm (12 Kanten), [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.91,
+   "zeit": "2026-10-24T18:51:14.061Z",
+   "abdruck": "5e5cfa6d8c00",
+   "port": 7745
   },
   "fahrzeug.K3#1": {
    "gruen": true,

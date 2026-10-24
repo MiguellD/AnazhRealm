@@ -1,0 +1,32 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben jagdkreis
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7726/index.html · der Puls steht seit 20.1 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 21.8 s
+[stall-akte] Puls 12×, zuletzt vor 20.1 s — complete · renderer bereit · weltbild da · frames 340 · welt 340 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 22604 108 % · browser 34100 1 % · GPU 34624 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 20:53 gpu 8/r 240 · 20:55 gpu 2/r 344 · 20:57 gpu 2/r 662 · 20:59 gpu 3/r 432 · 21:01 gpu 1/r 191 · 21:03 gpu 3/r 112 · 21:05 gpu 2/r 157 · 21:07 gpu 2/r 126 · 21:09 gpu 2/r 124 · 21:11 gpu 2/r 126 · 21:13 gpu 2/r 114 · 21:15 gpu 3/r 106 · 21:17 gpu 3/r 130 · 21:20 gpu 2/r 146 · 21:22 gpu 1/r 121 · 21:24 gpu 1/r 109
+[stall-akte] Stapel _terrainColumnContextIn :1062 < _terrainBaseDensityAt :1158 < _fieldDensityAt :2353 < _fieldSolid :2363 < _feldKanteGenau :1483 < _kreaturStossSchritt :1328 < takt :239 < (anonym) :1719
+[stall-akte] Konsole log: [AnazhRealm V18.546.83] [INFO] State-Import (Lade Datei) initialisiert
+[stall-akte] Konsole log: [AnazhRealm V18.546.83] [INFO] Hauptschleife gestartet – Ultiversum pulsiert!
+[stall-akte] Konsole log: [AnazhRealm V18.546.83] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
+[stall-akte] Konsole log: [AnazhRealm V18.546.83] [INFO] Nervensystem: 70 neue Studio-Art(en) automatisch registriert.
+[stall-akte] Konsole log: [AnazhRealm V18.546.83] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.83] [WARN] AUSGABE: rg11b10ufloat ist auf diesem Gerät nicht renderbar (Feature rg11b10ufloat-renderable fehlt) — das Szenen-Ziel bleibt rgba16float, +7,9 MB bei 1080p
+[stall-akte] Konsole log: [AnazhRealm V18.546.83] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
+[stall-akte] Konsole log: [AnazhRealm V18.546.83] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — Cannot read properties of undefined (reading 'enabled')
+[stall-akte] Konsole log: [AnazhRealm V18.546.83] [WARN] FPS-Einbruch: 14 (zuvor ~36)
+[stall-akte] Konsole log: [AnazhRealm V18.546.83] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.83] [WARN] Der Rundblick steht nach 120 Takten ohne: 312 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.83] [INFO] Welt-Beziehung: Pfad
+[stall-akte] Stderr [34100:24984:1024/152057.482:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [34100:24984:1024/152057.517:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [34100:24984:1024/152057.531:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [34100:24984:1024/152125.050:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _terrainColumnContextIn :1062
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ jagdkreis {"riss":{"quote":{"einWolf":{"jagden":20,"risse":0,"erschoepft":20,"hp0":168},"rudel":{"jagden":60,"risse":19,"erschoepft":41,"hp0":168},"kitz":{"jagden":20,"risse":20,"erschoepft":0,"hp0":60}},"rissS":39.8,"fleisch0":56.5,"fleischEnde":0,"fressS":98.64,"gaeste":[{"seele":"fuchs","kommtS":19.8,"frissS":29.14},{"seele":"baer","kommtS":16.8,"frissS":37.14}]},"sprinter":{"sprintMs":5.17,"abstand0":6,"abstandEnde":2.2,"abstandMin":1.1,"bisse":4,"wolfSprintMs":7.45,"bahn":[-54,53]}}
+
+  (72 s) — Sekunden je Probe: jagdkreis: 56
+
+✅ GRÜN — jagdkreis

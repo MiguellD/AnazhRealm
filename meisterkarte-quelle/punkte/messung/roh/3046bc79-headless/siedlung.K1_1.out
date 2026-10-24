@@ -1,0 +1,4 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-haus-welt.cjs --phasen=haus
+  Dorf-Ort -129/-94 (Gefälle 0.598, der Spieler bei 0/0) · 8 Häuser (-123° 99° 9° 95° 185° 95° 9° -172°) · W1 (Vorplatz über der Diele -0.36/-0.37/-0.37/-0.36/-0.37/-0.36/-0.37/-0.36 m) · W2 Diele 0/0/0/0/0/0/0/0 cm · W4 Natur im Grundriss ? · W4 Weg ? · W4c Überstand 0/0/0/0/0/0/0/0 m · W4b (fern 212/212) Streu vorher ? Zellen im Dorf-Kreis, unter den Häusern ?, fern ? Streu, nah ? Natur + ? Streu, Neubau ?, Nah-Streu ?, Promotion ? (? Häuser) · W5 Optik 100/100/100/99.8/100/100/100/100 % · W8 Lichtung ? · W7 Bau im Bau 0/24, zweites Dorf 0/29 · W6 Tür frontal 
+  1 Welten, 4 zugleich, 78 s
+✅ gate:haus-welt grün
