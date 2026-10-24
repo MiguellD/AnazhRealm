@@ -4,8 +4,8 @@
 // sind GESCHNITTEN. Zwei Teile:
 //   A (Null-Renderer, HART): die MECHANIK — `_foundryEnsureImpostorRecord` legt eine Atlas-Zelle mit Rahmen an (aus
 //     der L1-Geometrie; headless bäckt nie jemand); Eiche + Fichte teilen Quad, Material und EINE Karten-Gruppe, die
-//     Schicht und der Rahmen reisen je Instanz (aKarte) über beide Slot-Chokepoints; KEIN asset-foundry-iframe im DOM; die
-//     gefallenen Methoden wacht gate:constitution (G3).
+//     Schicht und der Rahmen reisen je Instanz (aKarte) über beide Slot-Chokepoints; das Bake-iframe
+//     und die gefallenen Methoden wacht gate:constitution (G3).
 //   C (echter Renderer — CI: WebGL2 auf swiftshader, lokal WebGPU auf der Karte; HART): das LAYOUT — eine Probe-Gestalt (links oben eine Tafel) backt durch den ECHTEN Bake
 //     (`_karteWeltBacken`: Bühne, MRT, Ablage BC bzw. rgba8) und steht links oben (nicht gedreht, nicht gespiegelt) — und
 //     die Kamera-Kleber-Wand (ein befreiter Slot zeichnet nie: die Gruppe verdichtet, der Lebende zieht mit Matrix und Karte
@@ -101,7 +101,7 @@ async function installiereBacke(page) {
 async function driveImpostor(page) {
     return await page.evaluate(async () => {
         const r = window.anazhRealm;
-        const out = { ready: false, rec: null, err: null, hasIframe: null };
+        const out = { ready: false, rec: null, err: null };
         try {
             const f = r._ensureAssetFoundry();
             await window.__weltDa(() => !(f && !f.ready));
@@ -202,8 +202,6 @@ async function driveImpostor(page) {
             out.strich = strich(r._impostorAtlasMaterial());
             const uS = THREE.TSL.uv();
             out.strichSelbst = strich({ colorNode: atS.mapNode.sample(uS).depth(0).add(atS.mapNode.sample(uS).grad(uS.dFdx(), uS.dFdy())) });
-            // Kein asset-foundry-iframe im DOM (das Bake-iframe ist geschnitten).
-            out.hasIframe = !!document.querySelector('iframe[src*="asset-foundry"]');
         } catch (e) {
             out.err = (e && e.message) || String(e);
         }
@@ -810,7 +808,6 @@ async function windProbe(page) {
     console.log(`  Atlas-Zelle: ${JSON.stringify(A.rec)}`);
     console.log(`  Atlas (Quad/Material geteilt, Schichten): ${JSON.stringify(A.atlas)}`);
     console.log(`  Gruppen (Streu ×2 Arten + gesetzt): ${JSON.stringify(A.gruppen)}`);
-    console.log(`  asset-foundry-iframe im DOM: ${A.hasIframe} (erwartet false)`);
     if (A.err) console.log(`  Fehler: ${A.err}`);
     if (errA.length) console.log("  Seiten-Fehler A:", errA.slice(0, 3));
 
@@ -864,7 +861,6 @@ async function windProbe(page) {
         if (!(A.strichSelbst && A.strichSelbst.ohne === 1 && A.strichSelbst.springend === 1))
             errs.push("A-SELBSTTEST: ein Atlas-Stoff ohne Gradienten oder mit springender Ableitung bleibt ungesehen");
     } else if (A.ready) errs.push("A: die Strich-Proben liefen nicht");
-    if (A.hasIframe) errs.push("A: ein asset-foundry-iframe LEBT noch im DOM (P3b nicht geschnitten)");
     if (errA.length) errs.push(`A: ${errA.length} Seiten-Fehler`);
 
     console.log(`\n  RUHE VOR TEIL C: die Welt steht nach ${ruhe.takte} Takten · mit einer wartenden Karte: ${ruhe.karte}`);
@@ -1002,7 +998,7 @@ async function windProbe(page) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — die Welt-Fernstufe liest die im Welt-Renderer gebackene Karte über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich); Bäcker-Kanal, RTT-Nachbau, Bake-iframe und Canvas-Atlas je Karte sind geschnitten."
+        "\n✅ GRÜN — die Welt-Fernstufe liest die im Welt-Renderer gebackene Karte über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich)."
     );
     process.exit(0);
 })().catch((e) => {

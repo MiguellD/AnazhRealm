@@ -888,12 +888,6 @@ class AnazhRealm_stoff_material {
                                     // gröberen gemischten Stufe Abstand (≈ 1 fwidth der Ansichts-Höhe), vergrößert mindestens einen
                                     // halben Texel der Stufe 0 (ein fwidth ist dort kleiner als der bilineare Fußabdruck).
                                     const _halb = _Ta.max(_Ta.fwidth(_uv.y), _Ta.float(0.5 / _at.ch)).clamp(0.0, 0.25);
-                                    const _vIn = _uv.y.clamp(_halb, _Ta.float(1.0).sub(_halb));
-                                    // Die Schicht liegt, wie der Welt-Renderer sie zeichnet (S2): die Zeile 0 oben (die Ansicht v in
-                                    // der Zelle v von oben, ihr Wipfel zuerst) — die Zellen-Höhe läuft gespiegelt.
-                                    const _vZ = _Ta.float(1.0).sub(_vIn);
-                                    const _uvA = _Ta.vec2(_uv.x, _vZ.add(_v0).div(_V));
-                                    const _uvB = _Ta.vec2(_uv.x, _vZ.add(_v1).div(_V));
                                     // DER STAMM-STRICH (Echt-GPU 05.10., Höhen-Sonde): die Anker-Peilung ist für das ganze Quad
                                     // dieselbe; steht sie GENAU auf einer Ansichts-Grenze, kippt ihr Rundungs-Rauschen einzelne Pixel
                                     // auf die Nachbar-Ansicht (v0 springt um 1 bzw. 7). Die Hardware-Ableitung des 2×2-Blocks las den
@@ -904,6 +898,74 @@ class AnazhRealm_stoff_material {
                                     const _uvStetig = _Ta.vec2(_uv.x, _uv.y.div(_V));
                                     const _gX = _uvStetig.dFdx();
                                     const _gY = _uvStetig.dFdy();
+                                    // die Texel der Stufe 0 je Pixel (die kubische Zelle `_kubW`, die Grob-Probe des Saums)
+                                    const _kubX = _Ta.float(_at.cw),
+                                        _kubY = _Ta.float(_at.ch);
+                                    const _gpX = _Ta.vec2(_gX.x.mul(_kubX), _gX.y.mul(_V).mul(_kubY)).length();
+                                    const _gpY = _Ta.vec2(_gY.x.mul(_kubX), _gY.y.mul(_V).mul(_kubY)).length();
+                                    // DER SAUM (lod.K1, phyto-core KARTEN_GESETZ.saum): die Zelle trägt den Umriss nur in ihrer
+                                    // Auflösung — die Deckung wandert um Werte-Rauschen im Korn der Art (`_karteArt` y, Vorlagen-
+                                    // Maß); Farbe, Normale und Sonnen-Sicht lesen die Zelle ohne Saum. Er gehört dem Laub: das Gesetz
+                                    // färbt jedes Laub grün (phyto-core LC), kein Holz — Grün über Rot und Blau der Albedo, drei
+                                    // Stufen gröber gelesen; Stamm und Äste bleiben gerade, der Strauch (z) trägt ihn ganz. Sein Fuß
+                                    // sinkt bis zu amp/2 Korn in den Saum, jenseits des Rahmens ist die Karte leer; unter zwei Pixeln
+                                    // je Korn schweigt er (kein Flimmern der Ferne).
+                                    const _art = this._karteArt(_Ta).element(_schicht.toInt());
+                                    const _SG = globalThis.__phytoCore.KARTEN_GESETZ.saum;
+                                    const _rM = _rahmen.mul(_Ta.vec2(2.0, 1.0)); // die Zelle im Vorlagen-Maß (Breite, Höhe)
+                                    const _korn = _art.y.max(1e-4);
+                                    const _pS = _uv.mul(_rM).div(_korn);
+                                    const _hS = (i) =>
+                                        _Ta.fract(
+                                            _Ta
+                                                .sin(
+                                                    _Ta.vec2(
+                                                        i.dot(_Ta.vec2(127.1, 311.7)),
+                                                        i.dot(_Ta.vec2(269.5, 183.3))
+                                                    )
+                                                )
+                                                .mul(43758.5453)
+                                        );
+                                    const _rS = (p) => {
+                                        const i = _Ta.floor(p),
+                                            f = _Ta.fract(p),
+                                            u = f.mul(f).mul(_Ta.vec2(3.0).sub(f.mul(2.0)));
+                                        const z0 = _Ta.mix(_hS(i), _hS(i.add(_Ta.vec2(1, 0))), u.x);
+                                        return _Ta.mix(
+                                            z0,
+                                            _Ta.mix(_hS(i.add(_Ta.vec2(0, 1))), _hS(i.add(_Ta.vec2(1, 1))), u.x),
+                                            u.y
+                                        );
+                                    };
+                                    let _nS = _Ta.vec2(-0.5);
+                                    _SG.oktaven.forEach(
+                                        ([g, d], k) => (_nS = _nS.add(_rS(_pS.mul(d).add(17.0 * k)).mul(g)))
+                                    );
+                                    const _vZ0 = _Ta.float(1.0).sub(_uv.y.clamp(_halb, _Ta.float(1.0).sub(_halb)));
+                                    const _uvA0 = _Ta.vec2(_uv.x, _vZ0.add(_v0).div(_V));
+                                    const _uvB0 = _Ta.vec2(_uv.x, _vZ0.add(_v1).div(_V));
+                                    const _grob = _at.mapNode
+                                        .sample(_uvA0)
+                                        .depth(_schicht)
+                                        .level(_gpX.max(_gpY).max(1e-4).log2().add(3.0).max(0.0));
+                                    const _cS = _grob.rgb.div(_grob.a.max(1e-3));
+                                    const _pxS = _korn.div(_rM.x).div(_Ta.vec2(_gX.x, _gY.x).length().max(1e-6));
+                                    const _hubS = _korn
+                                        .mul(_SG.amp)
+                                        .mul(_Ta.smoothstep(0.0, 0.03, _cS.g.sub(_cS.r.max(_cS.b))).max(_art.z))
+                                        .mul(_Ta.smoothstep(1.0, 3.0, _pxS))
+                                        .mul(_Ta.step(1e-3, _art.y));
+                                    const _uvS = _uv.add(_nS.mul(_hubS).div(_rM));
+                                    const _imRahmen = _Ta.step(
+                                        _rS(_Ta.vec2(_pS.x, 7.3)).x.mul(_hubS).mul(0.5),
+                                        _uvS.y.mul(_rM.y)
+                                    );
+                                    const _vIn = _uvS.y.clamp(_halb, _Ta.float(1.0).sub(_halb));
+                                    // Die Schicht liegt, wie der Welt-Renderer sie zeichnet (S2): die Zeile 0 oben (die Ansicht v in
+                                    // der Zelle v von oben, ihr Wipfel zuerst) — die Zellen-Höhe läuft gespiegelt.
+                                    const _vZ = _Ta.float(1.0).sub(_vIn);
+                                    const _uvA = _Ta.vec2(_uvS.x, _vZ.add(_v0).div(_V));
+                                    const _uvB = _Ta.vec2(_uvS.x, _vZ.add(_v1).div(_V));
                                     const _probeA = (tex, uv) =>
                                         tex
                                             .sample(this._laubVersatz(_Ta, uv, _gX, _gY))
@@ -915,17 +977,13 @@ class AnazhRealm_stoff_material {
                                     // jede Krone in Texel-Treppen — Blöcke von 3–10 px mit rechteckigen Löchern zwischen 30 und 60 m
                                     // (Werkbank, Radeon: Texel bis 3,3 px). Die geglättete Deckung trägt die Kante zwischen den
                                     // Texeln; unter einem Pixel je Texel bleibt die deckungstreue Mip-Wahl allein (Gewicht `_kubW`).
-                                    const _kubX = _Ta.float(_at.cw),
-                                        _kubY = _Ta.float(_at.ch);
-                                    const _gpX = _Ta.vec2(_gX.x.mul(_kubX), _gX.y.mul(_V).mul(_kubY)).length();
-                                    const _gpY = _Ta.vec2(_gY.x.mul(_kubX), _gY.y.mul(_V).mul(_kubY)).length();
                                     const _kubW = _Ta
                                         .float(1.0)
                                         .div(_gpX.max(_gpY).max(_Ta.float(1e-4)))
                                         .sub(_Ta.float(1.0))
                                         .clamp(0.0, 1.0);
                                     const _kubisch = (tex, vAns) => {
-                                        const cx = _uv.x.mul(_kubX).sub(_Ta.float(0.5));
+                                        const cx = _uvS.x.mul(_kubX).sub(_Ta.float(0.5));
                                         const cy = _vZ.mul(_kubY).sub(_Ta.float(0.5));
                                         const ix = _Ta.floor(cx),
                                             iy = _Ta.floor(cy);
@@ -977,7 +1035,7 @@ class AnazhRealm_stoff_material {
                                     );
                                     // die Deckung an der Codec-Schwelle (alphaTest unten); ihre Probe trägt den Versatz des Laubs
                                     // (`_probeA` über `_laubVersatz`, A3) wie jede Karte der Klasse
-                                    _alpha = _samp.a;
+                                    _alpha = _samp.a.mul(_imRahmen);
                                     // fin-Einblendung des Billboards aus der EINEN Quelle `__phytoCore.lodCrossfadeMask` lod=2 (via
                                     // `_lodCrossfadeMaskNode`); Distanz = Fragment-Anker-Peilung (√_hl2), Sichthöhe = der Stempel
                                     // |aKarte.w| (die Höhe der Höhen-Stufe × Instanz-Skala — dieselbe Zahl wie der aH0-Stempel der L1
@@ -1009,7 +1067,17 @@ class AnazhRealm_stoff_material {
                                     // Saum auf keiner Mip-Stufe. Der Atlas trägt die volle Baumfarbe, vertex-color = weiß. Seit A7
                                     // ist er reine Albedo (linear, ohne Tonkurve): das Licht kommt allein aus der EINEN Licht-Kette —
                                     // die Tag-Licht-Achse, die ein eingebackenes Tageslicht mit der Sonne fallen ließ, fiel mit ihm.
-                                    const _rgbK = _samp.rgb.div(_samp.a.max(_Ta.float(1e-3)));
+                                    // die Farbe der Zelle ohne Saum; nur wo der Saum über den Umriss hinaus deckt, die gewanderte
+                                    const _sampF = _Ta.mix(
+                                        _probeA(_at.mapNode, _uvA0),
+                                        _probeA(_at.mapNode, _uvB0),
+                                        _fb
+                                    );
+                                    const _rgbK = _Ta.mix(
+                                        _samp.rgb.div(_samp.a.max(_Ta.float(1e-3))),
+                                        _sampF.rgb.div(_sampF.a.max(_Ta.float(1e-3))),
+                                        _Ta.smoothstep(0.1, 0.5, _sampF.a)
+                                    );
                                     // Die Karte ist Golden-Sommer gebacken; das Jahr färbt sie wie der Studio-Impostor:
                                     // alb × mix(1, uSeasonMul, SAISON_GESETZ.kartenGewicht) (V18.527, kein Neubau).
                                     const _suK = this._ensureSeasonUniforms();
@@ -1031,7 +1099,7 @@ class AnazhRealm_stoff_material {
                                     // nie — dieselbe Stelle des Quads trifft in zwei Ansichten 45° auseinander verschiedene Blätter,
                                     // ihr Mittel kippte die lichte Krone zum Auge (Radeon, Genesis Ego, Birke: Zenit-Sonne 54 %,
                                     // Seiten-Sonne 63–70 %, Front 111 % ihrer L1 — Karte/Gestalt 0,64 → 1,04)
-                                    const _nP = _probeA(_at.nmapNode, _Ta.select(_fb.lessThan(0.5), _uvA, _uvB));
+                                    const _nP = _probeA(_at.nmapNode, _Ta.select(_fb.lessThan(0.5), _uvA0, _uvB0));
                                     const _nxy = (_vm ? _nP.xy.div(_nP.z.max(_Ta.float(1e-3))) : _nP.xy)
                                         .mul(_Ta.float(2.0))
                                         .sub(_Ta.float(1.0));
@@ -1076,7 +1144,11 @@ class AnazhRealm_stoff_material {
                                     //    darüber zum Zenit, im Sinus der Höhe. Das eine Mittel aller Richtungen ließ die
                                     //    Mittagssonne durch die hohe Fichte wie durch ihre Flanke (ihr Sonnen-Licht 1,42 × das der
                                     //    Gestalt).
-                                    const _lP = _Ta.mix(_probeA(_at.lmapNode, _uvA), _probeA(_at.lmapNode, _uvB), _fb);
+                                    const _lP = _Ta.mix(
+                                        _probeA(_at.lmapNode, _uvA0),
+                                        _probeA(_at.lmapNode, _uvB0),
+                                        _fb
+                                    );
                                     const _s2 = _vm
                                         ? _Ta
                                               .vec2(_lP.r, _lP.b)
@@ -1158,8 +1230,8 @@ class AnazhRealm_stoff_material {
                                     // Schicht-Upload und Wachsen sieht der Textur-Wächter der Diät (`_diaetVorTextur`): EIN Refresh.
                                     // DAS LAUB-LICHT DER KARTE (K19): die ferne Stufe lichtet mit dem EINEN Laub-Licht-Term der
                                     // nahen (phyto-core `laubDurchlass`) über der Normale des Normal-Atlas; die Nadel trägt ihre
-                                    // Schicht (`_karteNadel`). Bis K19 leuchtete die nahe Krone im Gegenlicht, ihre Karte nicht.
-                                    this._laubLichtStoff(mat, () => this._karteNadel(_Ta).element(_schicht.toInt()));
+                                    // Schicht (`_karteArt`). Bis K19 leuchtete die nahe Krone im Gegenlicht, ihre Karte nicht.
+                                    this._laubLichtStoff(mat, () => _art.x);
                                 }
                             } catch (_e) {
                                 // die Karten-Verdrahtung fällt nie in die Fernstufen-Geometrie: ihr Bruch bricht den Bau

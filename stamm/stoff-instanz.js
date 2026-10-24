@@ -240,7 +240,7 @@ class AnazhRealm_stoff_instanz {
         };
         z.ende = new Promise((r) => (z._endeLoes = r));
         at.zellen.set(key, z);
-        this._karteNadel(null, z);
+        this._karteArt(null, z);
         if (at.map && z.idx >= at.cap) this._impostorAtlasTexturen(at, z.idx + 1);
         const rend = this.state && this.state.renderer;
         if (rend && !rend._isHeadlessNull) {
@@ -1063,7 +1063,7 @@ class AnazhRealm_stoff_instanz {
     // Vorderseite (diffuseColor/π ausgeschrieben — ein Fn-Aufruf ohne Layout baute seinen Rumpf erst im Compiler). Kein
     // Szenen-Licht, kein zweiter Stoff: das Laub bleibt EIN Programm je Stoff. `nadel`: true — die Blatt-Karte erkennt die
     // Nadel an ihrer Atlas-Zelle (u ≥ LAUB_LICHT.nadelAbU); false — Klinge und Blatt-Geometrie sind Laub; eine Funktion — die
-    // ferne Karte liest die Nadel ihrer Schicht (`_karteNadel`), der Knoten entsteht je Programm-Bau.
+    // ferne Karte liest die Nadel ihrer Schicht (`_karteArt`), der Knoten entsteht je Programm-Bau.
     _laubLichtStoff(mat, nadel) {
         if (!mat || mat.isNodeMaterial !== true) throw new Error("_laubLichtStoff: kein Knoten-Stoff");
         const T = THREE.TSL;
@@ -1079,45 +1079,41 @@ class AnazhRealm_stoff_instanz {
                       : T.float(0)
             );
         const schluessel = mat.customProgramCacheKey;
-        const at = art === "karte" ? this._impostorAtlas() : null;
         mat.customProgramCacheKey = function () {
-            return (
-                schluessel.call(this) +
-                (art === "laub" ? "|laubLicht" : "|laubLicht:" + art) +
-                (at && at.nadelU ? ":" + at.nadelU.array.length : "")
-            );
+            return schluessel.call(this) + (art === "laub" ? "|laubLicht" : "|laubLicht:" + art);
         };
         mat.userData = mat.userData || {};
         mat.userData.laubLicht = art;
         return mat;
     }
 
-    // DIE NADEL DER KARTE (K19): je Atlas-Schicht 1 für die Nadel-Art (der Phänotyp der Zelle, K24), sonst 0 — EINE
-    // Uniform-Reihe für jede Karte jeder Art. Wächst der Atlas über die Reihe, wächst sie mit (verdoppelnd) und die Karte baut
-    // ihr Programm neu (die Länge steht im Programm-Schlüssel); ohne Wachsen kostet sie nichts.
-    _karteNadel(T, z) {
+    // DIE ART DER KARTE (K19, lod.K1): je Atlas-Schicht (Nadel, Korn, Strauch, 0) — die Nadel-Art 1 (der Phänotyp der Zelle,
+    // K24) für das Laub-Licht, Korn (phyto-core `karteSaum`, Vorlagen-Maß) und Strauch 1 (ohne Stamm) für den Saum. EINE
+    // Uniform-Reihe für jede Karte
+    // jeder Art, so lang, wie eine Array-Textur Schichten trägt — sie wächst nie, kein Stoff hält eine alte Reihe.
+    _karteArt(T, z) {
         const at = this._impostorAtlas();
         const tab = globalThis.__terrainCore && globalThis.__terrainCore.PHYTO_PRESETS;
         if (!tab) return AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS");
-        let n = at.nadelU ? at.nadelU.array.length : 0;
-        if (n < Math.max(at.n, 1)) {
-            const alt = at.nadelU ? at.nadelU.array : [];
-            while (n < Math.max(at.n, 1)) n = Math.max(32, n * 2);
-            const a = new Array(n).fill(0);
-            for (let i = 0; i < alt.length; i++) a[i] = alt[i];
-            at.nadelU = (T || THREE.TSL).uniformArray(a, "float");
-            if (at.mat) at.mat.needsUpdate = true;
+        if (!at.artU) {
+            const a = Array.from({ length: AnazhRealm.KARTEN_SCHICHTEN_MAX }, () => new THREE.Vector4());
+            at.artU = (T || THREE.TSL).uniformArray(a, "vec4");
         }
         if (z) {
+            if (z.idx >= at.artU.array.length)
+                throw this._stoffBruch(`die Karte ${z.key}: Schicht ${z.idx} jenseits der Art-Reihe`);
             const rec = tab[z.preset];
-            // Die Nadel-Art ist der Phänotyp der Art (K24: phyto-core artPhaenotyp, dieselbe Quelle wie der Baum).
             const pc = globalThis.__phytoCore;
-            at.nadelU.array[z.idx] =
-                rec && rec.s && (rec.kind === "tree" || rec.kind === "shrub") && pc.artPhaenotyp(rec.s, rec).conifer
-                    ? 1
-                    : 0;
+            const pflanze = !!(rec && rec.s && (rec.kind === "tree" || rec.kind === "shrub"));
+            const nadel = pflanze && pc.artPhaenotyp(rec.s, rec).conifer ? 1 : 0;
+            at.artU.array[z.idx].set(
+                nadel,
+                pflanze ? pc.karteSaum(rec.s, rec) : 0,
+                pflanze && rec.kind === "shrub" ? 1 : 0,
+                0
+            );
         }
-        return at.nadelU;
+        return at.artU;
     }
 
     // Das Lichtmodell des Laubs (K19): die Klasse ist die des Standard-Stoffs selbst (sein `setupLightingModel` liefert sie
@@ -3475,6 +3471,8 @@ AnazhRealm._studioPlatzKern = function () {
 // Der Karten-Atlas wächst je 2 Schichten (`_impostorAtlasTexturen`, Start 8): je Schicht ~0,25 MB, das Wachsen kopiert nur beim
 // Einzug einer Art (BC1-Albedo 170 KB + RGTC2-Normale 85 KB je Schicht, 512 px samt Mips; Mess-Wiese 18 Karten in 18 Schichten).
 AnazhRealm.KARTEN_ATLAS_SCHRITT = 2;
+// Die Schichten, die eine Array-Textur tragen kann (WebGPU maxTextureArrayLayers, Vorgabe 256) — die Länge der Art-Reihe (`_karteArt`).
+AnazhRealm.KARTEN_SCHICHTEN_MAX = 256;
 // Das Budget-Fenster der Welt-Karte je Takt (ms Haupt-Faden; die erste Karte eines Takts backt immer — Spike S1).
 AnazhRealm.KARTE_WELT_MS = 4;
 // Die Bühne gibt ihren Speicher frei, wenn die Schlange so lange leer ist (ms; `_karteBuehneRuhe`).

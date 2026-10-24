@@ -3320,6 +3320,10 @@
     //   lichtTeiler   die Sonnen-Sicht der Krone (A7, das Alpha der Studio-Normale) liegt auf 1/lichtTeiler der Albedo-
     //                 Auflösung als rg8 (Zenit, 45°-Kranz; F6), Stufe 0 (die GPU zieht die Mips) — ein weiches
     //                 Licht-Feld der Krone
+    //   saum          DER SAUM (lod.K1): die Zelle trägt den Umriss nur in ihrer Auflösung — die Karte las als glatter Fleck
+    //                 mit geradem Fuß (laub-kante 0,265 an der Tafel-Pose, ihre Gestalten 0,16–0,18). Der Leser verschiebt
+    //                 die Probe des Laubs um Werte-Rauschen im Korn der Art (`karteSaum`: das Blatt der Stufe 1 / teil),
+    //                 amp × Korn weit, Oktaven als [Gewicht, Dehnung]; was jenseits des Rahmens liegt, ist leer
     var KARTEN_GESETZ = {
         schwelle: 0.34,
         normalTeiler: 2,
@@ -3328,7 +3332,21 @@
         glaette: 4,
         glaetteBis: 2,
         lichtTeiler: 4,
+        saum: {
+            amp: 2,
+            teil: 4,
+            oktaven: [
+                [0.65, 1],
+                [0.35, 2.13],
+            ],
+        },
     };
+    // Das Korn des Saums einer Karten-Art (Vorlagen-Maß): das Blatt der Stufe 1, aus der die Karte backt, durch saum.teil —
+    // die Blätter ihrer Büschel-Karte; ohne Laub (Totholz) 0
+    function karteSaum(dials, art) {
+        const P = treeParams(dials, 0, 1, art);
+        return P.tot ? 0 : P.leafSize / KARTEN_GESETZ.saum.teil;
+    }
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
         const v = x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
@@ -5095,6 +5113,7 @@
         KARTEN_GESETZ: KARTEN_GESETZ, // W6 — der Karten-Atlas: Schwelle · Normal-Teiler · kleinste Mip-Seite
         karteMasse: karteMasse,
         karteGlaetteGaenge: karteGlaetteGaenge,
+        karteSaum: karteSaum,
         impostorMips: impostorMips,
         normalMips: normalMips,
         bc1Kodiere: bc1Kodiere,
