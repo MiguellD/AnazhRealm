@@ -169,7 +169,8 @@ class AnazhRealm_klang {
     // DER EINE UMWELT-TAKT (aus symphonyTick, jeden Frame): Proben fortsetzen (konstant je Frame), im Misch-Takt die
     // Lage am Ort, im nächsten Bild die Lage der Luft mit den Tier-Rufen, dann die Mischung, dann der Graph — je Bild
     // höchstens EIN Teil des Misch-Takts (klang.K5: alle in einem Bild trugen jedes sechste Bild über 0,2 ms; die ganze
-    // Lage in einem Bild trug es noch über 0,15 ms, diag-klang-zensus --takt).
+    // Lage in einem Bild trug es noch über 0,15 ms, diag-klang-zensus --takt). Wahr in den schweren Bildern (die Lage am
+    // Ort, der Graph) — dort schweigt die Stimme der Fahrt (`symphonyTick`).
     _umweltKlangTick() {
         const s = this.state.symphony;
         const um = s.umwelt;
@@ -185,14 +186,15 @@ class AnazhRealm_klang {
                 um.lage = Object.assign(um.werdend, this._umweltLuftLage());
                 this._tierRufTakt(um.rufDt);
             } else if (teil === 2) um.mix = um.kern.umweltMischung(um.lage);
-            else um.graph.anwenden(um.mix, jetzt);
-            return;
+            else return (um.graph.anwenden(um.mix, jetzt), true);
+            return false;
         }
-        if (jetzt - um.letzteMischung < O.mischSek) return;
+        if (jetzt - um.letzteMischung < O.mischSek) return false;
         um.rufDt = Number.isFinite(um.letzteMischung) ? Math.min(1, jetzt - um.letzteMischung) : 0;
         um.letzteMischung = jetzt;
         um.werdend = this._umweltOrtLage();
         um.folge = 1;
+        return true;
     }
 
     // Der Hör-Ring: je Frame `n` Punkte (rund um die Uhr), je Punkt nass (`_nassAt`) und Strömung (die EINE
@@ -251,10 +253,10 @@ class AnazhRealm_klang {
     _umweltRechts() {
         const cam = this.state.camera;
         if (!cam) return { x: 0, z: 0 };
-        const v = this._umweltBlick || (this._umweltBlick = new THREE.Vector3());
-        cam.getWorldDirection(v);
-        const l = Math.hypot(v.x, v.z);
-        return l > 1e-6 ? { x: -v.z / l, z: v.x / l } : { x: 0, z: 0 };
+        // die Blickrichtung (−z der Welt-Matrix, die das letzte Bild hält) — getWorldDirection rechnete je Ruf die Kette neu
+        const e = cam.matrixWorld.elements;
+        const l = Math.hypot(e[8], e[10]);
+        return l > 1e-6 ? { x: e[10] / l, z: -e[8] / l } : { x: 0, z: 0 };
     }
 
     // DIE LAGE AM OHR — die Eingabe des Klang-Gesetzes (umweltMischung). Alles gelesen, nichts erfunden: das
@@ -644,13 +646,16 @@ class AnazhRealm_klang {
         return v;
     }
 
-    // Symphonie-Tick (jeden Frame): die Lofi-Musik (eigener Akkord-Takt) und die Klang-Welt (eigener Misch-Takt).
+    // Symphonie-Tick (jeden Frame): die Lofi-Musik (eigener Akkord-Takt), die Klang-Welt (eigener Misch-Takt) und die
+    // Fahrt. Trug die Musik oder die Welt in diesem Bild einen schweren Teil, schreibt die Fahrt ihre Ziele im nächsten: ihre
+    // Rampe (klang:FAHRT.rampeSek, 60 ms) trägt über die Lücke von ein, zwei Bildern (klang.K5: Fahrt und Lage am Ort in
+    // einem Bild trugen die Fahrt über 0,2 ms, diag-klang-zensus --takt).
     symphonyTick() {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx) return;
-        this._lofiTick();
-        this._umweltKlangTick();
-        this._fahrtKlangTick();
+        const musik = this._lofiTick();
+        const welt = this._umweltKlangTick();
+        this._fahrtKlangTick(musik || welt);
     }
 
     // DIE STIMME DER FAHRT (Leben-Schau 2, fahr-bahn — Befund: Fahren war stumm): im Sattel eines Gesetz-Wagens klingt seine
@@ -658,7 +663,7 @@ class AnazhRealm_klang {
     // Tempo; die Quellen baut klang-core `fahrtStimme`) auf dem Welt-Master. Der Wirt reicht nur die Lage: das Tempo des
     // Fahr-Zustands, die Deckel des Fahr-Satzes (vmax, rückwärts vehicle:FAHR.schritt.rueckVmax), das Gas aus den Fahr-
     // Tasten (W, rückwärts S), den Flug. Absteigen oder ein Wagen-Wechsel stoppt sie. Kosten: eine Stimme, nur im Sattel.
-    _fahrtKlangTick() {
+    _fahrtKlangTick(schwer) {
         const s = this.state.symphony;
         const pl = this.state.player;
         const e = pl && pl.mountedArch != null ? this._mountedEntry : null;
@@ -670,6 +675,7 @@ class AnazhRealm_klang {
         }
         if (!fz) return;
         if (!s.fahrt) s.fahrt = { entry: e, stimme: AnazhRealm._umweltGesetz().kern.fahrtStimme(s.ctx, s.masterGain) };
+        if (schwer) return;
         const S = AnazhRealm._fahrSchrittGesetz().S;
         const T = this.state.verbTafel; // Gas analog aus der Verb-Tafel; die Bremse unter bremsV treibt rückwärts
         const gas = Math.max(T.gas, fz.vlong <= S.bremsV ? T.bremse : 0);
@@ -1439,12 +1445,12 @@ class AnazhRealm_klang {
     // (klang.K5: in einem Bild trugen sie die Spitze des Klang-Takts, 2,6–3,4 ms auf der Radeon, diag-klang-zensus --takt).
     _lofiTick() {
         const s = this.state.symphony;
-        if (!s.enabled || !s.ctx || !s.lofi) return;
+        if (!s.enabled || !s.ctx || !s.lofi) return false;
         const L = s.lofi;
-        if (L.folge && L.folge.length) return void L.folge.shift()();
+        if (L.folge && L.folge.length) return (L.folge.shift()(), true);
         const now = s.ctx.currentTime;
         const V = AnazhRealm.LOFI_VORLAUF_S;
-        if (L.einsatz - now > V) return;
+        if (L.einsatz - now > V) return false;
         // verspätet (der erste Akkord, ein Hänger): ein voller Vorlauf ab jetzt — die Folge endet vor dem Einsatz
         const t0 = L.einsatz - now >= V / 2 ? L.einsatz : now + V;
         const durSec = this._lofiChordDurationMs() / 1000;
@@ -1458,6 +1464,7 @@ class AnazhRealm_klang {
             () => this._lofiPlayGroove(durSec, t0),
             () => this._lofiRaum(durSec),
         ];
+        return true;
     }
 
     // Der Raum des Akkords und das Welt-Timbre — das letzte Bild seiner Folge (`_lofiTick`).
