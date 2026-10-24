@@ -5,10 +5,11 @@
 // (V18.491.52–.637 wurden von Hand gestempelt, die Hälfte der Träger blieb liegen —
 // gate:altlasten fing es erst hinterher). Träger: package.json · package-lock.json ·
 // AnazhRealm.VERSION · jedes ?v= in index.html + worlds/*/index.html · der
-// CLAUDE.md-Stand-Kopf (nur die Versionszahl, der Text bleibt).
+// CLAUDE.md-Stand-Kopf (nur die Versionszahl, der Text bleibt) · der Korpus-Stand der Stufe (unten).
 // Ohne Argument: --check meldet jede Abweichung (Exit 1), schreibt nichts.
 const fs = require("fs");
 const path = require("path");
+const { spawnSync } = require("child_process");
 
 const root = path.join(__dirname, "..");
 const arg = process.argv[2];
@@ -51,6 +52,21 @@ for (const d of fs.readdirSync(path.join(root, "worlds"))) {
 }
 for (const h of htmls) traeger(h, (s) => s.replace(/\?v=[0-9]+\.[0-9]+(?:\.[0-9]+)?/g, `?v=${ziel}`));
 traeger("CLAUDE.md", (s) => s.replace(/^(## Stand \(V)[0-9.]+/m, `$1${ziel}`));
+// der Stand der Stufe (speicher.K5, gate:persistence (V)): die neue Version lädt den jüngsten Korpus-Stand durch den Boot des
+// Spielers und schreibt ihren eigenen, der mit den Trägern in den EINEN Stufen-Commit geht; verliert sie dabei, ist die Stufe ROT
+if (!check) {
+    const stand = `spec/speicher-korpus/${ziel}.json.br`;
+    const r = spawnSync(process.execPath, [path.join(__dirname, "diag-persistence.cjs"), "--stufe"], {
+        cwd: root,
+        encoding: "utf8",
+        env: { ...process.env, PERSISTENCE_PORT: "0" },
+    });
+    if (r.status !== 0 || spawnSync("git", ["add", stand], { cwd: root }).status !== 0) {
+        console.error(`❌ ${stand} fehlt: ${`${r.stdout}${r.stderr}`.trim().split("\n").slice(-3).join(" | ")}`);
+        process.exit(1);
+    }
+    befunde.push(stand);
+}
 
 if (check) {
     if (befunde.length) {

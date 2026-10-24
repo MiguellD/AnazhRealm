@@ -8,8 +8,9 @@
 // Studio-Haus mit Zahlen-id), Grabe-Hieben und Inventar mit ihrem saveState schrieb (`spec/speicher-korpus/<version>.json.br`).
 // Jeder lädt am Kopf durch den Boot des Spielers, und der Save des Kopfs trägt jeden Bau an seinem Ort in seiner Höhe über
 // Grund, jede Grube am Boden, jeden Slot — daraus (U) der Boden-Umzug (K16), (W) die Lichtung, (K) das kalte Buch. Der Save
-// des Kopfs aus dem jüngsten Stand lädt im selben Lauf; fehlt der Stand der Versions-Stufe, ist er es (ROT, bis er im Baum
-// steht). `--selftest`: eine Migration lässt ein Feld fallen (`VERLUST`) oder der Räumer fragt den Stoff — ROT.
+// des Kopfs aus dem jüngsten Stand lädt im selben Lauf und ist der Stand der Versions-Stufe: `--stufe` schreibt nur ihn (ein
+// Boot), `bump-version.cjs` ruft es und legt ihn in den Stufen-Commit; fehlt er im Baum, ist die Stufe ohne ihn gestempelt
+// (ROT). `--selftest`: eine Migration lässt ein Feld fallen (`VERLUST`) oder der Räumer fragt den Stoff — ROT.
 //
 // (S) DER SERVER SCHREIBT GANZ (K23): der save-server läuft in einer Sandbox-Kopie, ein Stand (≈ 1 MB) geht an
 // /api/save-state, und der Prozess stirbt (SIGKILL) an JEDEM Schreib-Punkt einmal — mitten in jedem Schreiben (die
@@ -31,6 +32,7 @@ const path = require("path");
 const PORT = Number(process.env.PERSISTENCE_PORT || 4326);
 const SERVER_PORT = Number(process.env.PERSISTENCE_SERVER_PORT || 4327);
 const SELBSTTEST = process.argv.includes("--selftest");
+const NUR_STUFE = process.argv.includes("--stufe");
 
 // (S) Der Tod an einem Schreib-Punkt: ein Vorlade-Haken (`node -r`) im Sandbox-Prozess zählt jeden Datei-Schreiber des
 // Servers (writeFile · copyFile · rename, Rückruf-, Sync- und Promise-Form). Je Schreiber zwei Punkte: MITTEN (ein
@@ -452,13 +454,14 @@ async function korpusLauf(selbst) {
         .map((f) => JSON.parse(zlib.brotliDecompressSync(fs.readFileSync(path.join(KORPUS, f)))));
     const [browser, zeilen] = [await starteBrowser({ art: "null" }), []];
     alle.sort((a, b) => a.version.localeCompare(b.version, "en", { numeric: true }));
-    for (const [i, k] of (selbst ? alle.slice(0, VERLUST.length) : alle).entries()) {
+    const port = server.address().port;
+    for (const [i, k] of (selbst ? alle.slice(0, VERLUST.length) : NUR_STUFE ? alle.slice(-1) : alle).entries()) {
         const [page, s] = [await browser.newPage(), korpusSoll(k)];
         await nullRenderer(page);
         await page.evaluateOnNewDocument(korpusHaken, selbst ? VERLUST[i] : null);
-        await page.goto(`http://127.0.0.1:${PORT}/cores.manifest.json`);
+        await page.goto(`http://127.0.0.1:${port}/cores.manifest.json`);
         await page.evaluate((ls) => Object.assign((localStorage.clear(), localStorage), ls), k.ls);
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
+        await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded" });
         const ist = await page.evaluate(korpusIst, s);
         await page.close();
         const kopf = korpusSave(ist.neu.ls);
@@ -504,14 +507,15 @@ function korpusUrteil(z, selbst) {
     });
     const [alt, gleich, licht] = [z.filter((x) => x.alt), z.filter((x) => !x.alt), (x) => x.da[0] && x.da[1]];
     const [alte, stand] = [z.filter((x) => !x.kopf).map((x) => x.version), `spec/speicher-korpus/${STUFE}.json.br`];
+    const imBaum = !!execSync(`git ls-files ${stand}`, { cwd: root, encoding: "utf8" });
     return [
         zeile(
             `(V) Korpus: ${alte.length} Stände ${alte[0]} … ${alte.at(-1)} und ${z.length - alte.length} Kopf laden am Kopf — ${korpusZahl(z)} · ganz`,
             (x) => x.ganz
         ),
         {
-            name: `(V) Versions-Stufe ${STUFE}: ${stand} steht im Baum`,
-            pass: !!execSync(`git ls-files ${stand}`, { cwd: root, encoding: "utf8" }),
+            name: `(V) Versions-Stufe ${STUFE}: ${stand} steht im Baum${imBaum ? "" : " — Täter: die Stufe ohne scripts/bump-version.cjs"}`,
+            pass: imBaum,
         },
         zeile("(U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen", (x) => x.ganz && x.umzug, alt),
         zeile("(U) Gegenprobe: Stände desselben Bodens ziehen nicht um", (x) => !x.umzug, gleich),
@@ -537,6 +541,12 @@ function korpusUrteil(z, selbst) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
+    if (NUR_STUFE) {
+        const [z, datei] = [await korpusLauf(false), path.join(KORPUS, STUFE + ".json.br")];
+        const ok = z.every((x) => x.ganz) && fs.existsSync(datei);
+        console.log(`${ok ? "✅" : "❌"} (V) Stand der Stufe ${STUFE} aus ${z[0].version}: ${korpusZahl(z)}`);
+        process.exit(ok ? 0 : 1);
+    }
     const tLauf = await tabTodProbe({ von: TT_VON, bis: TT_BIS });
     const tSelbst = SELBSTTEST ? await tabTodProbe({ von: 0, bis: 0, selbst: true }) : null;
     const korpus = korpusUrteil(await korpusLauf(false), SELBSTTEST ? await korpusLauf(true) : null);
