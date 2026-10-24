@@ -821,6 +821,7 @@ class AnazhRealm_stoff_material {
                         // Vegetation (Rinde + Laub) trägt die Per-Vertex-Albedo EXPLIZIT als colorNode (VOR der Response) —
                         // sonst fällt sie aus `_T.output` und die Krone wäscht zur reinen Licht-Farbe.
                         let _alpha = _Ta.float(1.0);
+                        let _holzW = null;
                         if (opts.impostorAtlas) {
                             // DIE KARTE (der EINE Karten-Atlas, `_impostorAtlas`): der ferne LOD2-Baum ist EIN camera-facing
                             // Quad, das die ZWEI angrenzenden Peilungs-Ansichten SEINER Atlas-Schicht (aKarte.x) sampelt (Blend
@@ -911,6 +912,9 @@ class AnazhRealm_stoff_material {
                                     // sinkt bis zu amp/2 Korn in den Saum, jenseits des Rahmens ist die Karte leer; unter zwei Pixeln
                                     // je Korn schweigt er (kein Flimmern der Ferne).
                                     const _art = this._karteArt(_Ta).element(_schicht.toInt());
+                                    // DAS LAUB EINER FARBE DER ZELLE (phyto-core LC: jedes Laub grün, kein Holz; der Strauch ganz):
+                                    // der Saum liest es drei Stufen gröber, die Teilung der Messung je Texel (`_at.ohneLaub`)
+                                    const _laubW = (c) => _Ta.smoothstep(0.0, 0.03, c.g.sub(c.r.max(c.b))).max(_art.z);
                                     const _SG = globalThis.__phytoCore.KARTEN_GESETZ.saum;
                                     const _rM = _rahmen.mul(_Ta.vec2(2.0, 1.0)); // die Zelle im Vorlagen-Maß (Breite, Höhe)
                                     const _korn = _art.y.max(1e-4);
@@ -952,7 +956,7 @@ class AnazhRealm_stoff_material {
                                     const _pxS = _korn.div(_rM.x).div(_Ta.vec2(_gX.x, _gY.x).length().max(1e-6));
                                     const _hubS = _korn
                                         .mul(_SG.amp)
-                                        .mul(_Ta.smoothstep(0.0, 0.03, _cS.g.sub(_cS.r.max(_cS.b))).max(_art.z))
+                                        .mul(_laubW(_cS))
                                         .mul(_Ta.smoothstep(1.0, 3.0, _pxS))
                                         .mul(_Ta.step(1e-3, _art.y));
                                     const _uvS = _uv.add(_nS.mul(_hubS).div(_rM));
@@ -1036,6 +1040,10 @@ class AnazhRealm_stoff_material {
                                     // die Deckung an der Codec-Schwelle (alphaTest unten); ihre Probe trägt den Versatz des Laubs
                                     // (`_probeA` über `_laubVersatz`, A3) wie jede Karte der Klasse
                                     _alpha = _samp.a.mul(_imRahmen);
+                                    // HOLZ IST AUSSEN (laub-kante, lod.K1): ohne ihr Laub zeichnet die Karte nur Stamm und Äste — die
+                                    // Teilung der Messung verbirgt von ihr das Laub allein, ihr Holz steht wie die Rinde der Gestalt
+                                    // außerhalb jeder Laub-Klasse (`__karteOhneLaub`, scripts/lib/ausgabe-aufnahme.cjs)
+                                    _holzW = _Ta.float(1.0).sub(_laubW(_samp.rgb.div(_samp.a.max(1e-3))));
                                     // fin-Einblendung des Billboards aus der EINEN Quelle `__phytoCore.lodCrossfadeMask` lod=2 (via
                                     // `_lodCrossfadeMaskNode`); Distanz = Fragment-Anker-Peilung (√_hl2), Sichthöhe = der Stempel
                                     // |aKarte.w| (die Höhe der Höhen-Stufe × Instanz-Skala — dieselbe Zahl wie der aH0-Stempel der L1
@@ -1281,6 +1289,7 @@ class AnazhRealm_stoff_material {
                             if (_rb.roughNode) mat.roughnessNode = _rb.roughNode;
                         }
                         mat.colorNode = _Ta.vec4(albedoNode, _alpha);
+                        if (_holzW) this._impostorAtlas().ohneLaub = _Ta.vec4(albedoNode, _alpha.mul(_holzW));
                     }
                     // DIE VERTEX-FARBE EINMAL (der EINE Ort der Klasse „Albedo = Farbe²"): r184 setupDiffuseColor
                     // multipliziert den colorNode mit der Vertex-Farbe, solange vertexColors an ist und die Geometrie ein

@@ -1145,8 +1145,12 @@ async function starte() {
                         }
                     return n ? kz / n : 0;
                 };
+                // HOLZ IST AUSSEN (laub-kante, lod.K1): Rinde und Stängel einer Gestalt (`budgetRegler` rinde) heißen `holz:<Klasse>`
+                // und stehen außerhalb jeder Klasse ihres Laubs; die Karte verbirgt in der Teilung nur ihr Laub (`__karteOhneLaub`)
                 const teilName = (o) => {
                     const kl = r._taeterKlasse(o);
+                    const art = o.material && o.material.userData && o.material.userData.foundryKind;
+                    if (art && window.__phytoCore.budgetRegler(art).rinde) return "holz:" + kl;
                     if (k.gesicht == null || kl !== "spieler") return kl;
                     const auge =
                         o.isSkinnedMesh && o.skeleton && o.skeleton.bones.some((b) => /^iris[LR]$/.test(b.name));
@@ -1188,8 +1192,11 @@ async function starte() {
                 const alle = [].concat(...teile.values());
                 // der Wurf eines Bereichs ist der seines Satzes: der Satz wirft für die Messung nicht
                 const wurf = new Map(alle.map((o) => (o.bereich ? o.mesh : o)).map((o) => [o, o.castShadow]));
-                const verbirg = (o) => (o.bereich ? r._chunkSatzAus(o.art, o.key) : (o.visible = false));
-                const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : (o.visible = true));
+                const karteStoff = (r._impostorAtlas() || {}).mat || null;
+                const istKarte = (o) => !o.bereich && !!karteStoff && o.material === karteStoff;
+                const verbirg = (o) =>
+                    o.bereich ? r._chunkSatzAus(o.art, o.key) : istKarte(o) ? null : (o.visible = false);
+                const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : istKarte(o) ? null : (o.visible = true));
                 const bundlesNeu = () =>
                     r.state.scene.traverse((o) => {
                         if (o.isBundleGroup) o.needsUpdate = true;
@@ -1199,12 +1206,14 @@ async function starte() {
                 r._tickNahWiese = () => 0;
                 const schuss = async (aus) => {
                     for (const o of aus) verbirg(o);
+                    const ohneLaub = aus.some(istKarte) && window.__karteOhneLaub(true);
                     bundlesNeu();
                     try {
                         r._schattenAlleNeu();
                         return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
                     } finally {
                         for (const o of aus) zeig(o);
+                        if (ohneLaub) window.__karteOhneLaub(false);
                         r._tickBauSatz(Infinity);
                         bundlesNeu();
                     }
