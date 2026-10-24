@@ -75,16 +75,13 @@ const LAUF = (k) => {
         s = r.state;
     const T = window.THREE;
     const core = window.__tetrapodaCore;
-    const [echt, wahl, schritt, g0] = [core.gangSchritt, r.constructor._gangWahl, r._tierSatzSchritt, s.gravity];
+    const [echt, wahl, g0] = [core.gangSchritt, r.constructor._gangWahl, s.gravity];
     // die Täter des Selbsttests (`taeter`): der Vor-Welle-Gang (fester Takt, feste Auslenkung) · der Satz wählt ohne das
     // Gedächtnis des Leibs (das rohe Tempo ohne die Gangart des Vor-Takts — so trabte vor `_gangWahl` jedes anlaufende
-    // Satz-Tier bei Fr 0,55) und rückt die Phase am anderthalbfachen Weg · die Zeile des Tiers ohne die Schwere der Welt
+    // Satz-Tier bei Fr 0,55) · die Zeile des Tiers ohne die Schwere der Welt
     if (k.taeter === "gang")
         core.gangSchritt = () => ({ omega: 3.2, S: 0.06, schritt: 0.12, tast: 0.5, folge: core.GANG_FOLGE.trab });
-    if (k.taeter === "satz") {
-        r.constructor._gangWahl = (g, v, dt, l, L, Z) => echt(v || 0, L, Z);
-        r._tierSatzSchritt = (u, weg, ...a) => schritt.call(r, u, weg * 1.5, ...a);
-    }
+    if (k.taeter === "satz") r.constructor._gangWahl = (g, v, dt, l, L, Z) => echt(v || 0, L, Z);
     if (k.taeter === "schwere") r._gangZeile = () => undefined;
     if (k.g) s.gravity = -k.g;
     const pm = s.playerMesh.position;
@@ -115,22 +112,22 @@ const LAUF = (k) => {
         });
         const hueft = new T.Vector3().setFromMatrixPosition(Tt.legHL.matrixWorld).y - boden;
         const v = k.vh * Math.sqrt(-s.gravity * tb.beinL * (cr.scale.x || 1));
-        const satz = k.satz ? r._tierSatzFuer(cr) : null;
+        const satz = k.satz && r._tierSatzFuer(cr);
         if (satz && !satz.fertig) r._tierSatzBacken(satz, 1e6);
-        if (k.satz && !(satz && satz.fertig)) return { fehler: "kein gebackener Satz für " + k.seele };
+        if (k.satz && !(satz && satz.fertig)) return { fehler: "kein Satz für " + k.seele };
         const S = satz && satz.satz;
         // je Pfote ihr Platz im Knochen-Puffer und ihre Vorlage; die Ecke in der Zeile z (drei Texel je Knochen: die Zeilen
         // der affinen Matrix)
         const ecken = (S ? pfoten : []).map((p, j) => {
             const e = S.knochen.findIndex((x) => x.nm === p.name);
             const { q, j: b } = S.knochen[e];
-            const m = new T.Matrix4().multiplyMatrices(q.m.skeleton.boneInverses[b], q.m.bindMatrix).invert();
-            return [e, lokal[j].clone().applyMatrix4(m).toArray().concat(1)];
+            const m = new T.Matrix4().multiplyMatrices(q.m.skeleton.boneInverses[b], q.m.bindMatrix);
+            return [e, lokal[j].clone().applyMatrix4(m.invert())];
         });
-        const P = (z, [e, roh]) =>
+        const P = (z, [e, v]) =>
             new T.Vector3(
                 ...[0, 1, 2].map((i) =>
-                    roh.reduce((a, q, c) => a + q * S.tex.image.data[((z * S.J + e) * 3 + i) * 4 + c], 0)
+                    [v.x, v.y, v.z, 1].reduce((a, q, c) => a + q * S.tex.image.data[((z * S.J + e) * 3 + i) * 4 + c], 0)
                 )
             );
         if (satz) r._tierSatzEin(cr, satz);
@@ -158,15 +155,15 @@ const LAUF = (k) => {
                 if (r._tierSatzStempel(cr)) cr.userData._satzVer = (cr.userData._satzVer || 0) + 1;
                 r._tierSatzPlaetze(satz.platzB, [cr]);
                 // wie der Knoten: Stand ↔ (Zeile k0 ↔ k0 + 1 an der Phase) am Gewicht, × Instanz-Matrix
-                const aG = S.fell.geometry.attributes.aGang;
-                const [x, w] = [aG.getX(0), aG.getY(0)];
-                const [f, b] = [(x % 1) * S.n, Math.floor(x) * S.n];
+                const a = S.fell.geometry.attributes.aGang;
+                const [f, b] = [(a.getX(0) % 1) * S.n, Math.floor(a.getX(0)) * S.n];
+                const k0 = Math.floor(f);
                 m4.fromArray(S.fell.instanceMatrix.array, 0);
                 ecken.forEach((e, j) => {
-                    const lauf = P(b + Math.floor(f), e).lerp(P(b + ((Math.floor(f) + 1) % S.n), e), f % 1);
+                    const lauf = P(b + k0, e).lerp(P(b + ((k0 + 1) % S.n), e), f - k0);
                     spur[j].push([
                         P(S.baender * S.n, e)
-                            .lerp(lauf, w)
+                            .lerp(lauf, a.getY(0))
                             .applyMatrix4(m4),
                     ]);
                 });
@@ -189,18 +186,13 @@ const LAUF = (k) => {
             v,
             band: satz ? r.constructor.KREATUR_SATZ.baender[cr.userData._satzBand] : null,
             last: !!k.last,
-            // die Stimmung samt dem Profil, das die EINE Brücke dem Leib aus ihr wählt (die Kreuz-Probe greift)
-            name: k.last
-                ? `${k.fps} fps · Leiter 1/${maxDiv}`
-                : k.name && `${k.name} → ${r._motionProfileName(true, k.emotions, "kreatur", k.zustand)}`,
+            name: k.last ? `${k.fps} fps · Leiter 1/${maxDiv}` : k.name,
             hueftM: +hueft.toFixed(3),
             ...window.__schlupf(spur, leib, 60, hueft, uhr), // nach 60 Takten Einschwingen
         };
     } finally {
         [core.gangSchritt, r.constructor._gangWahl, s.gravity] = [echt, wahl, g0];
-        delete r._tierSatzSchritt;
         delete r._gangZeile;
-        if (cr && cr.userData._satz) r._tierSatzAus(cr);
         if (cr) r.removeCreature(cr);
     }
 };
@@ -268,10 +260,7 @@ const LEIB = (k) => {
     // misst ihn, nie die steigende Ferse. Ohne Abrollen in der Zeile liegt der Ballen auf der Ferse (die Messung von vorher).
     const zeileB = r._gangZeile(true);
     const massB = r._gaitBeinMass(rig);
-    const ballenL =
-        zeileB && zeileB.ballen > 0 && massB && core.gangReich
-            ? zeileB.ballen * core.gangReich(massB.l1 + massB.l2)
-            : 0;
+    const ballenL = zeileB && zeileB.ballen > 0 ? zeileB.ballen * core.gangReich(massB.l1 + massB.l2) : 0;
     const lokalB = lokal.map((v) => v.clone().add(new T.Vector3(0, 0, ballenL)));
     const beinM = massB.L;
     // die LOCK-LÖSER: je Takt und Bein, das im Stand-Fenster des Gesetzes geht (w ≥ 0,35) — trug es den Lock und
@@ -294,6 +283,7 @@ const LEIB = (k) => {
     };
     const hw = new T.Vector3();
     const huefte = () => (rig.hips.getWorldPosition(hw), hw.y - sohle());
+    const klang = () => (s._schrittKlang ? s._schrittKlang.schritte : 0);
     const ruheH = huefte();
     const zeilen = [];
     for (const [name, v] of [
@@ -318,7 +308,7 @@ const LEIB = (k) => {
             r.animatePlayerSoul((t += dt));
             mesh.updateMatrixWorld(true);
             if (i === 30) {
-                ton0 = s._schrittKlang ? s._schrittKlang.schritte : 0;
+                ton0 = klang();
                 ph0 = p.walkPhase;
             }
             leib.push({ x: mesh.position.x, z: mesh.position.z });
@@ -332,7 +322,7 @@ const LEIB = (k) => {
             }
         }
         const sek = (N - 1 - 30) * dt;
-        const toene = (s._schrittKlang ? s._schrittKlang.schritte : 0) - ton0;
+        const toene = klang() - ton0;
         const kadenz = (p.walkPhase - ph0) / Math.PI / sek;
         // Λ = der Doppelschritt, den der Chokepoint dem Leib gibt
         const lam = r._gaitGesetz(rig, v).schritt;
@@ -367,13 +357,10 @@ const LEIB = (k) => {
     const taeter = "_gaitGesetz (fx.bewegung.gang)";
     // der flache Fuß: ohne das Abrollen über den Ballen (tetrapoda gangRolle, fx.bewegung.gang rollWinkel) sinkt das
     // Becken im Doppel-Stand so tief, wie ein flacher Fuß hinten und vorn die Kette verlangt — das Knie knickt ein
-    const gangZ = r._gangZeile ? r._gangZeile(true) : null;
     const beckenTaeter =
-        typeof core.gangBecken !== "function"
-            ? "_animateHumanoidRig (Becken-Senke über beide Füße, der Schwung-Fuß zieht mit)"
-            : gangZ && gangZ.rollWinkel > 0
-              ? "tetrapoda gangBecken (das Becken des Gesetzes)"
-              : "tetrapoda gangFuss/gangBecken (der flache Fuß, kein Abrollen über den Ballen: gangRolle)";
+        zeileB && zeileB.rollWinkel > 0
+            ? "tetrapoda gangBecken (das Becken des Gesetzes)"
+            : "tetrapoda gangFuss/gangBecken (der flache Fuß, kein Abrollen über den Ballen: gangRolle)";
     const loeserTaeter = "_gaitLegIK (die Reichweiten-Wand löst den stehenden Fuß)";
     return { zeilen, taeter, beckenTaeter, loeserTaeter };
 };
@@ -392,7 +379,6 @@ const SCHWERE = (k) => {
     const core = window.__tetrapodaCore;
     const G_MOND = 1.62;
     const rig = s.playerMesh.userData.rig;
-    if (!rig) return { fehler: "Spieler ohne Rig" };
     const block = A._bewegungsBlock("gang", A.GANG_FELDER);
     const zeileEcht = r._gangZeile;
     if (k.stub) r._gangZeile = (mensch) => (mensch ? block : undefined);
@@ -431,7 +417,7 @@ const SCHWERE = (k) => {
 const STUDIO = (k) => {
     /* eslint-disable no-undef */
     const core = window.__tetrapodaCore;
-    if (k.stub && core) {
+    if (k.stub) {
         window.__gangEcht = core.gangSchritt;
         core.gangSchritt = () => ({ omega: 3.2, S: 0.06, schritt: 0.12, tast: 0.5, hub: 0.1 });
     }
@@ -465,7 +451,7 @@ const STUDIO = (k) => {
         character.updateMatrixWorld(true);
         ["ankle1", "ankle-1"].forEach((n, j) => {
             // Ferse und Ballen (K07, wie in der Welt): die Sohle footBelowAnkle unter dem Knöchel, der Ballen ballen × R davor
-            const ballenE = _GZ && _GZ.ballen > 0 && core && core.gangReich ? _GZ.ballen * core.gangReich(L1 + L2) : 0;
+            const ballenE = _GZ && _GZ.ballen > 0 ? _GZ.ballen * core.gangReich(L1 + L2) : 0;
             const f = parts[n].localToWorld(w.set(0, -footBelowAnkle, 0)).clone();
             const b = parts[n].localToWorld(w.set(0, -footBelowAnkle, ballenE)).clone();
             spur[j].push([f, b]);
@@ -476,7 +462,7 @@ const STUDIO = (k) => {
     }
     for (const c of Object.keys(keys)) delete keys[c];
     parkBoxes.splice(0, parkBoxes.length, ...boxen);
-    if (k.stub && core) core.gangSchritt = window.__gangEcht;
+    if (k.stub) core.gangSchritt = window.__gangEcht;
     const sl = window.__schlupf(spur, leib, EIN, bein);
     let yMin = Infinity,
         yMax = -Infinity;
@@ -493,10 +479,7 @@ const STUDIO = (k) => {
         ...sl,
         kadenz: +((2 * phase) / zeit).toFixed(2),
         beckenHub: +((yMax - yMin) / bein).toFixed(3),
-        taeter:
-            typeof gangGesetz === "function"
-                ? "gangGesetz (tetrapoda gangSchritt/gangFuss)"
-                : "playGait (cad = sp·0,155, eigenes Modell)",
+        taeter: "gangGesetz (tetrapoda gangSchritt/gangFuss)",
     };
     /* eslint-enable no-undef */
 };
@@ -572,9 +555,15 @@ const GANG = (k) => {
 (async () => {
     await new Promise((res) => server.listen(PORT, res));
     const browser = await starteBrowser({ art: "null", frist: 300000 });
-    const page = await browser.newPage();
-    page.setDefaultTimeout(280000);
-    page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
+    // je Seite dieselbe Frist, ihr Fehler beim Namen und (wo sie gemessen wird) der EINE Schlupf
+    const seite = async (b, wer, schlupf) => {
+        const p = await b.newPage();
+        p.setDefaultTimeout(280000);
+        p.on("pageerror", (e) => console.log(`[${wer}PAGE-ERROR]`, (e.stack || e.message).split("\n")[0]));
+        if (schlupf) await p.evaluateOnNewDocument(`window.__schlupf = ${SCHLUPF};`);
+        return p;
+    };
+    const page = await seite(browser, "", true);
     await nullRenderer(page);
     let rot = 0;
     let schwereRot = false;
@@ -605,7 +594,6 @@ const GANG = (k) => {
         return ok;
     };
     try {
-        await page.evaluateOnNewDocument(`window.__schlupf = ${SCHLUPF};`);
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
         await warteAufWelt(page, 120000);
         await page.waitForFunction(
@@ -642,8 +630,7 @@ const GANG = (k) => {
                 { vh: z.vh, ph: z.ph, tast: z.last ? null : z.standAnteil }
             );
             if (!z.last && !k.g) (z.band ? satzGang : weltGang)[z.seele + z.vh] = z;
-            if (!ok) gefeuert.add(k.taeter + "-gleiten");
-            if (!gut) gefeuert.add(k.taeter + "-gang");
+            if (!gut) gefeuert.add(k.taeter);
         }
         const leib = await page.evaluate(LEIB, { stub: SELBST });
         if (leib.fehler) {
@@ -671,34 +658,26 @@ const GANG = (k) => {
             }
         }
         const sw = await page.evaluate(SCHWERE, { stub: SELBST });
-        if (sw.fehler) {
-            log("  ❌ Schwere:", sw.fehler);
+        const taeter = [
+            Math.abs(sw.mensch - 1) <= 1e-6
+                ? null
+                : "_gaitGesetz (der Schritt des Menschen liest nicht die Schwere der Welt)",
+            sw.becken === 1.62
+                ? null
+                : "_animateHumanoidRig (das Becken bekommt nicht die Zeile mit der Schwere der Welt)",
+            ...sw.zwillinge,
+        ].filter(Boolean);
+        log(
+            `  ${taeter.length ? "❌" : "✅"} Schwere 1,62 m/s² · Takt Mensch ${sw.mensch.toFixed(4)} × Gesetz · Becken-Zeile g ${sw.becken} · Literal-Zwillinge ${sw.zwillinge.length}${taeter.length ? " — Täter: " + taeter.join(" · ") : ""}`
+        );
+        if (taeter.length) {
             rot++;
             schwereRot = true;
-        } else {
-            const gleich = (q) => typeof q === "number" && Math.abs(q - 1) <= 1e-6;
-            const taeter = [
-                gleich(sw.mensch) ? null : "_gaitGesetz (der Schritt des Menschen liest nicht die Schwere der Welt)",
-                sw.becken === 1.62
-                    ? null
-                    : "_animateHumanoidRig (das Becken bekommt nicht die Zeile mit der Schwere der Welt)",
-                ...sw.zwillinge,
-            ].filter(Boolean);
-            log(
-                `  ${taeter.length ? "❌" : "✅"} Schwere 1,62 m/s² · Takt Mensch ${typeof sw.mensch === "number" ? sw.mensch.toFixed(4) : sw.mensch} × Gesetz · Becken-Zeile g ${sw.becken} · Literal-Zwillinge ${sw.zwillinge.length}${taeter.length ? " — Täter: " + taeter.join(" · ") : ""}`
-            );
-            if (taeter.length) {
-                rot++;
-                schwereRot = true;
-            }
         }
         // das Labor braucht WebGL (r128): ein eigener Browser mit dem Software-Holz
         const sb = await starteBrowser({ art: "linse", frist: 300000 });
         try {
-            const sp = await sb.newPage();
-            sp.setDefaultTimeout(280000);
-            sp.on("pageerror", (e) => console.log("[STUDIO-PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
-            await sp.evaluateOnNewDocument(`window.__schlupf = ${SCHLUPF};`);
+            const sp = await seite(sb, "STUDIO-", true);
             await sp.goto(`http://127.0.0.1:${PORT}/worlds/koerperstudio/index.html`, {
                 waitUntil: "domcontentloaded",
                 timeout: 240000,
@@ -728,9 +707,7 @@ const GANG = (k) => {
                 if (!ok) rot++;
             }
             // dieselbe Gangart im Labor der Tiere (Labor = Welt)
-            const tp = await sb.newPage();
-            tp.setDefaultTimeout(280000);
-            tp.on("pageerror", (e) => console.log("[TETRAPODA-PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
+            const tp = await seite(sb, "TETRAPODA-");
             await tp.goto(`http://127.0.0.1:${PORT}/worlds/tetrapoda/index.html`, {
                 waitUntil: "domcontentloaded",
                 timeout: 240000,
@@ -754,16 +731,10 @@ const GANG = (k) => {
         // je Wand ihr Täter — feuert er nicht, ist die Wand vakuös
         const vakuoes = [
             [rot > 0, "mit gestubbtem Gang-Gesetz glitt keine Pfote: die Linse"],
-            [
-                schwereRot && gefeuert.has("schwere-gang"),
-                "die Zeile ohne die Schwere der Welt blieb grün: die Schwere-Wand",
-            ],
+            [schwereRot && gefeuert.has("schwere"), "die Zeile ohne die Schwere der Welt blieb grün: die Schwere-Wand"],
             [gangRot, "das Muster der Stimmung blieb grün: die Gangart-Wand"],
             [tastRot, "der halbe Stand (Tastgrad 0,5) blieb grün: die Tastgrad-Wand"],
-            [
-                gefeuert.has("satz-gleiten") && gefeuert.has("satz-gang"),
-                "der Satz ohne Gedächtnis am 1,5-fachen Weg blieb grün: die Satz-Wand",
-            ],
+            [gefeuert.has("satz"), "der Satz ohne das Gedächtnis des Leibs blieb grün: die Satz-Wand"],
         ].find(([ok]) => !ok);
         if (vakuoes) {
             console.error(`\n❌ SELBST-TEST ROT — ${vakuoes[1]} ist vakuös.`);
