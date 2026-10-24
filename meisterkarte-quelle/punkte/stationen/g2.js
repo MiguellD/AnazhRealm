@@ -585,6 +585,78 @@ const stationen = [
         ],
         quelle: "1 = ein gebundenes Tier folgt ≥ 10 min über Hindernisse",
     },
+
+    // ───────── mensch.K2 Staffel 2 — die Ankunft der Bewohner (mensch-bewohner-k5 1e4e725a) ─────────
+    {
+    kriterium: "mensch.K2",
+    staffel: 2,
+    geraet: ["radeon", "gtx"],
+    // die Ankunft (`_bewohnerAnkunft`, mensch-bewohner-k5) im Fenster der echten GPU, wie M40: EINE Werkbank-Sitzung `--echt`
+    // gegen einen eigenen save-server, darin `diag-kreatur-takt --werkbank --proben bewohner` — alle Bewohner des Start-Dorfs
+    // über 24 Spielstunden je ≥ 0,9 ihrer Soll-Orte (unterN 0), 4–10 Wege je Bewohner und Tag, und je 1,5 h die Lage, die sah,
+    // wer blieb, gegen die, die findet, wer 1 h fort war (16 Prüf-Stunden, die Liste neu, die Uhr gesprungen): jeder ±2 m.
+    // Das Schlupfloch Teleport fällt an sprungN, der Plan bit-gleich je Same. Ports: save-server {PORT}, Werkbank {PORT}+20000.
+    befehl: [
+        "bash",
+        "-c",
+        [
+            "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
+            "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+            "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
+            "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
+            "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
+            "trap ende EXIT; trap 'exit 143' INT TERM",
+            "raeum; stand",
+            "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
+            "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
+            "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
+            "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
+            "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
+            "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner",
+        ].join("\n"),
+    ],
+    gpu: true,
+    minuten: 10,
+    urteil: (j, lauf) => {
+        const z = probeZeile(lauf.stdout, "bewohner");
+        if (!z) return { gruen: false, zahl: "keine Zeile der Probe bewohner im Fenster (Exit " + lauf.exit + ")" };
+        if (z.fehler) return { gruen: false, zahl: "Probe-Fehler: " + z.fehler };
+        const w = z.wege || {};
+        const k = z.wiederkehr || {};
+        const alle = z.bewohner > 0 && z.unterN === 0 && typeof z.trefferMin === "number" && z.trefferMin >= 0.9;
+        const wege = w.ausserN === 0 && w.wegeMin >= 4 && w.wegeMax <= 10;
+        const zurueck = k.n >= z.bewohner && k.ueberN === 0 && k.maxM <= 2;
+        const gruen = z.plan === true && z.planGleich === true && z.sprungN === 0 && alle && wege && zurueck;
+        return {
+            gruen,
+            zahl:
+                "Soll-Orte alle " + (z.bewohner - z.unterN) + "/" + z.bewohner + " ≥ 0,9 (min " + z.trefferMin +
+                "), Wege je Tag " + w.wegeMin + "–" + w.wegeMax + " (außer 4–10: " + w.ausserN + "), Wiederkehr nach 1 h " +
+                k.ueberN + " von " + k.n + " Lagen über ±2 m (max " + k.maxM + " m), Sprünge " + z.sprungN +
+                ", Plan bit-gleich " + z.planGleich,
+        };
+    },
+    pfad: [
+        "stamm/siedlung-*.js",
+        "stamm/kreatur-*.js",
+        "stamm/koerper-*.js",
+        "stamm/stoff-instanz.js",
+        "stamm/studio-bruecke.js",
+        "stamm/gelaende-kollision.js",
+        "stamm/bild-himmel.js",
+        "stamm/daten.js",
+        "koerper-core.js",
+        "fachwerk-core.js",
+        "foundry-bruecke.js",
+        "save-server.js",
+        "scripts/diag-kreatur-takt.cjs",
+        "scripts/werkbank.cjs",
+        "scripts/lib/kreatur-proben.cjs",
+        "scripts/lib/software-gpu.cjs",
+        "scripts/lib/welt-boot.cjs",
+    ],
+    quelle: "2 = alle Bewohner einer Siedlung, 4–10 Wege am Tag, Wiederkehr nach 1 h Abwesenheit auf ±2 m",
+    },
 ];
 
 // Nicht als Station fassbar (heute): je Kriterium und Staffel der Grund beim Namen. Sie tragen keine Punkte der Maschine;
@@ -643,16 +715,6 @@ const fehlt = [
             "Werkzeug und Welt fehlen: keine Stadt ≥ 200 Bewohner mit ≥ 40 nah animiert in einer Linse (die Probe bewohner " +
             "kennt nur das Start-Dorf), das ABAB an der GTX ist ein Lauf des Richter-Zugs, keine Station",
         quelle: "2 = Stadt ≥ 200 mit ≥ 40 nah animiert, ABAB an der GTX nicht schlechter",
-    },
-    {
-        kriterium: "mensch.K2",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "Werkzeug fehlt: die Wiederkehr nach 1 h Abwesenheit auf ±2 m misst keine Linse; dazu ist „alle Bewohner“ im " +
-            "Fenster der Radeon ROT benannt (trefferMin 0,825, M32)",
-        quelle: "2 = alle Bewohner einer Siedlung, 4–10 Wege am Tag, Wiederkehr nach 1 h Abwesenheit auf ±2 m",
     },
     {
         kriterium: "mensch.K3",
