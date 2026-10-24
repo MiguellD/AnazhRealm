@@ -79,6 +79,7 @@ const server = statikServer();
                     moveDirection: new THREE.Vector3(),
                     architectures: [],
                     floatingIslands: null,
+                    materials: r.state.materials,
                 };
                 shim._mountedEntry = null;
                 shim._fieldDensityAt = (x, y, z) => densityAt(x, y, z);

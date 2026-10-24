@@ -2201,7 +2201,8 @@
         //    das Material traegt): Masse-Anteile Stahl 0,65 · Aluminium 0,10 · Kunststoff 0,10 · Gummi 0,05 ·
         //    Glas 0,03 · Fluide 0,07 ueber ihre Dichten (7,85 · 2,7 · 1,1 · 1,2 · 2,5 · 1,0) geben 1/Σ(w/ρ) ≈ 3,0.
         //    Ueber 1 traegt das Wasser die Huelle nie: ein Strassenwagen watet und sinkt, er schwimmt nicht. Das
-        //    Lab kennt kein Wasser; der Wirt liest sie ueber exportDrive.huelle.dichte. ──
+        //    Lab kennt kein Wasser; der Wirt liest sie als Stoff seines Blechs (physik K1: die Zeile blech der Stoff-Zeile,
+        //    huelleDichte × wasser.rho). ──
         huelleDichte: 3.0,
         // ── PHYSIK-NAHT (N6.5b, rein additive DATEN-Zeile — Praezedenz: §8.5-Stufen-Zeile) —
         // DIE HOST-EMERGENZ-KOEFFIZIENTEN: die Fallback-Fahr-Formel des Wirts (ein Werk OHNE
@@ -2747,8 +2748,10 @@
                 bauch: Number.isFinite(a.bauch) ? a.bauch : 0,
                 hub: a.hub > 0 ? a.hub : 0, // der Federweg je Rad (fahrAufstand); ein starres Werk federt kein Rad einzeln
             },
-            wasser: fahrWasser(a, zs.mass * FAHR.masseDichte), // SCHAU-2 (rein additiv): die Huelle im Wasser, EINE Masse
-            luft: fahrLuft(a, zs.mass * FAHR.masseDichte), // wetter.K5 (rein additiv): die Flanke im Wind, dieselbe Masse
+            // SCHAU-2 (rein additiv): die Huelle im Wasser, EINE Masse — physik K1 (rein additiv): reicht der Wirt die Masse
+            // des Werks (d.masseKg: Gestalt × Stoff-Zeile), traegt der Wasser-Term sie; ohne sie das Volumen × masseDichte.
+            wasser: fahrWasser(a, d.masseKg > 0 ? d.masseKg : zs.mass * FAHR.masseDichte),
+            luft: fahrLuft(a, d.masseKg > 0 ? d.masseKg : zs.mass * FAHR.masseDichte), // wetter.K5 (rein additiv): die Flanke im Wind, dieselbe Masse
             reifen: fahrReifen(zs), // K1 (rein additiv): die Kurve mit Spitze je Achse
         };
     }

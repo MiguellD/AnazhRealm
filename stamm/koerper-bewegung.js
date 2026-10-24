@@ -526,7 +526,7 @@ class AnazhRealm_koerper_bewegung {
         // seiner Stoß-Zahl zurück; ein Wagen und ein Leib bekommen ihren Impuls nach Masse (Kern und Leib), der Wagen behält,
         // was ihm bleibt. Vorher nahm die Hülle der Fahrt nur die Komponente in die Berührung — ein Stopp ohne Folge.
         const ST = AnazhRealm.STOSS;
-        const mW = this._fahrMasse(entry._fahrSatz);
+        const mW = this._fahrMasse(entry, entry._fahrSatz && entry._fahrSatz.m);
         const gegner = this._fahrStossGegner || (this._fahrStossGegner = new Map());
         gegner.clear();
         for (let i = 0; i < k.schub.length; i += 2) {
@@ -667,7 +667,9 @@ class AnazhRealm_koerper_bewegung {
         //    Grund unter dem Körper). Der Körper liegt nach seiner GESTALT im Wasser: er SCHWIMMT, sobald die Säule über
         //    dem Grund seine Brustkorb-Linie übersteigt (`_schwimmBrustM`, koerper-core) — der Auftrieb hält dann die
         //    Wasserlinie am Brustkorb; flacher WATET er (geerdet, der Fuß im Wasser, der Schritt platscht). Schwimmen ist
-        //    ein eigener Zustand: nicht Luft (Beschleunigung, Landung) und nie vom Boden-Snap gegriffen.
+        //    ein eigener Zustand: nicht Luft (Beschleunigung, Landung) und nie vom Boden-Snap gegriffen. Das trägt nur, was
+        //    nicht dichter ist als Wasser (`_leibGetragen`, ρ der Stoff-Zeile, physik K1): ein dichterer Leib sinkt und geht
+        //    auf dem Grund.
         const feet0 = mesh.position.y - footDrop;
         const brustM = AnazhRealm._schwimmBrustM();
         const grund0 = this._fieldSurfaceBelow(
@@ -679,9 +681,12 @@ class AnazhRealm_koerper_bewegung {
         // Ohne Grund in Reichweite (tiefes Wasser, eine hohe Höhlen-Halle) urteilt die Wahrheit an den Füßen — die Decke
         // (D11) gilt auch dort.
         const waterY = this._koerperWasser(mesh.position.x, mesh.position.z, grund0 !== null ? grund0 : feet0);
-        const schwimmt = waterY > feet0 && (waterY - feet0 > brustM || grund0 === null || waterY - grund0 > brustM);
+        const schwimmt =
+            waterY > feet0 &&
+            (waterY - feet0 > brustM || grund0 === null || waterY - grund0 > brustM) &&
+            this._leibGetragen(true);
         s.playerUnderwater = schwimmt;
-        s.playerEyesUnderwater = schwimmt && mesh.position.y + 1.6 < waterY;
+        s.playerEyesUnderwater = waterY > feet0 && mesh.position.y + 1.6 < waterY;
 
         // 4. Vertikale Integration. Im Wasser: Schwimm-Auftrieb (dieselbe reine Funktion) zur Brustkorb-Linie;
         //    an Land: Schwerkraft, gecappt (Anti-Tunneling, wie der Ammo-Fall-Cap −25).
@@ -2393,9 +2398,8 @@ AnazhRealm._bewegungsBlock = function (block, felder) {
 // DAS EINE IMPULS-GESETZ (0710-2: der Stoß der Fahrt und der Rückstoß des Kampfs, K-D9): jeder Stoß zweier Körper —
 // Wagen an Fels, Wagen an Wagen, Wagen an Tier, Klinge und Pfeil am Tier — tauscht Impuls längs der Stoß-Normalen,
 // J = (1 + e) · v_rel / (1/mA + 1/mB) (ein starrer Gegner: 1/mB = 0), mit der Stoß-Zahl e des Paars. Die Masse kommt
-// aus dem Leib (Tier und Mensch: das Volumen der geschlossenen Haut mal der Dichte des Kerns, `_leibMasse`) und aus dem
-// Kern (der Wagen: carPhys-Volumen mal FAHR.masseDichte, `_fahrMasse`; der Schlag: die wirksame Masse des
-// Schmiede-Urteils). Was ein Leib an Geschwindigkeit bekommt, trägt ihn im festen Sim-Schritt, bis die Reibung am Boden
+// aus der EINEN Stoff-Zeile (das Tier: seine geschlossene Haut mal ρ(fleisch), der Mensch: sein Leib aus dem Ofen mal ρ(leib), `_leibMasse`; der Wagen:
+// sein Blech-Anteil am carPhys-Volumen mal ρ(blech), `_fahrMasse`; der Schlag: die wirksame Masse des Schmiede-Urteils). Was ein Leib an Geschwindigkeit bekommt, trägt ihn im festen Sim-Schritt, bis die Reibung am Boden
 // sie aufzehrt (`_kreaturStossSchritt`, der Weg gegen die EINE Hülle) — der Bär rutscht wenig, der Fuchs fliegt; ein
 // gestoßener Wagen rutscht mit der Handbremse (`_fahrNachlauf`). Vorher stand der Wagen in EINEM Frame
 // (Leben-Schau 07.10.: Baum 10,41 → 0,16, GT 11,28 → 0,00, Bär 9,27 → 0,17 m/s), und jeder Treffer versetzte jedes

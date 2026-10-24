@@ -42,7 +42,7 @@
 // Der save-server läuft vorher (`npm start`, :4312 — am OMEN der Mess-Klon); die Werkbank startet und stoppt die Folge selbst
 // (ein Boot je Aufruf; `--serie` hält das Profil für den Zweit-Boot).
 "use strict";
-const http = require("http");
+const { werkbankRuf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -560,28 +560,6 @@ function laufKurz(l) {
 }
 
 // ── der Lauf gegen die Werkbank ─────────────────────────────────────────────────────────────────────────────────────
-function rufe(port, weg, nutzlast) {
-    return new Promise((res, rej) => {
-        const body = JSON.stringify(nutzlast || {});
-        const req = http.request(
-            { host: "127.0.0.1", port, path: weg, method: "POST", headers: { "Content-Type": "application/json" } },
-            (r) => {
-                let d = "";
-                r.on("data", (c) => (d += c));
-                r.on("end", () => {
-                    try {
-                        res(JSON.parse(d));
-                    } catch (_e) {
-                        res({ roh: d });
-                    }
-                });
-            }
-        );
-        req.on("error", rej);
-        req.setTimeout(0);
-        req.end(body);
-    });
-}
 
 // DER NEULAUF: ein Boot, dessen Band nicht einschwingt (nach dem Deckel baut die Welt noch — ein Dorf-Plan,
 // eine Schlange), misst eine andere Szene als seine Geschwister und trägt kein Urteil (1510-k72-abab: an Genesis 7 von 16
@@ -711,7 +689,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
         log.push(`[werkbank] Ende mit ${c}`);
         bereit(false);
     });
-    const R = (weg, n) => rufe(PORT, weg, n);
+    const R = (weg, n) => werkbankRuf(PORT, weg, n);
     let vor = null;
     let gehalten = false;
     const gefahren = [];
