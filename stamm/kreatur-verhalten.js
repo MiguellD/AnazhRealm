@@ -472,7 +472,7 @@ class AnazhRealm_kreatur_verhalten {
         if (rest > lK.halb) {
             ud._fressT = null;
             this._kreaturZustandStempel(creature, null); // wer zum Kadaver geht, jagt nicht (und frisst noch nicht)
-            this._kreaturZiel(direction, dx, dz, rest, speed);
+            this._kreaturZiel(direction, dx, dz, rest, speed, null, creature);
             return true;
         }
         this._kreaturZustandStempel(creature, "fressen");
@@ -618,7 +618,7 @@ class AnazhRealm_kreatur_verhalten {
         }
         const qx = tx + Math.sin(platz) * J.hetzM - p.x,
             qz = tz + Math.cos(platz) * J.hetzM - p.z;
-        this._kreaturZiel(direction, qx, qz, Math.hypot(qx, qz), v);
+        this._kreaturZiel(direction, qx, qz, Math.hypot(qx, qz), v, null, creature);
     }
 
     // DIE JAGD HAT EIN ENDE (Tiere K2, tetrapoda JAGD_GESETZ): die erste Hetze auf ein Ziel beginnt die Jagd (ruhte die Hetze
@@ -640,21 +640,6 @@ class AnazhRealm_kreatur_verhalten {
         ud._jagd = null;
         ud._erschoepftBis = now + J.ruheS;
         return true;
-    }
-    // DER DURST (Tiere K4, tetrapoda durst): die Zeit seit dem letzten Trinken auf der Kreatur-Uhr (ab der Geburt); nach einer
-    // Suche ohne Wasser ruht er suchPauseS.
-    _kreaturDurstig(creature) {
-        const ud = creature.userData;
-        const now = this.state.creatureAnimationTime;
-        if (!Number.isFinite(ud._getrunken)) ud._getrunken = now;
-        if (now < ud._durstSucheBis) return false;
-        const LG = AnazhRealm._lebensraumGesetz();
-        if (LG.durst(now - ud._getrunken, LG.D) < 1) return false;
-        // kein Fluss im Umkreis der Suche (der Rand aus `_hydroDistAt`, ein Blick in die Eimer): keine Suche über das Gelände
-        const h = this._hydroDistAt(creature.position.x, creature.position.z);
-        if (h.dist - Math.max(1, h.halfW) <= AnazhRealm.CREATURE_DRINK_SEARCH_RADIUS) return true;
-        ud._durstSucheBis = now + LG.D.suchPauseS;
-        return false;
     }
     _kreaturErschoepft(creature) {
         const b = creature.userData && creature.userData._erschoepftBis;
@@ -890,12 +875,34 @@ class AnazhRealm_kreatur_verhalten {
     // Pirsch, Neugier, Sammeln, Bauen und Trinken lesen es; vorher war jeder dieser Wege Gas oder Bremse (R-D17: 4 m/s
     // oder 0, Tempo-Sprünge ~290 m/s²). DER PERSÖNLICHE RAUM (Welle LF): der Halt kommt früher, wenn der Weg vorher in den
     // Paar-Raum eines anderen Tiers führt (_kreaturFreierWeg) — wer folgt, stellt sich an, statt in den Vordermann zu laufen.
-    _kreaturZiel(out, dx, dz, rest, vMax, creature) {
+    // DER UMWEG (Ökologie K5, tetrapoda umwegSeite): hielt eine Wand das Tier eben (`_halt`) und zeigt der Wunsch fast frontal in
+    // sie, geht es längs der Wand um sie herum — `umweg` ist das Tier (auch wo der Paar-Raum nicht gilt: Pirsch, Aas).
+    _kreaturZiel(out, dx, dz, rest, vMax, creature, umweg = creature) {
         if (creature) rest = Math.min(rest, this._kreaturFreierWeg(creature, dx, dz, this._kreaturRaum(creature)));
         const d = Math.hypot(dx, dz);
         if (!(d > 1e-6) || !(rest > 0) || !(vMax > 0)) return out.set(0, 0, 0);
         const v = AnazhRealm._steuerGesetz().ankunftTempo(rest, vMax);
-        return out.set((dx / d) * v, 0, (dz / d) * v);
+        let [ux, uz] = [dx / d, dz / d];
+        const h = umweg && umweg.userData._halt;
+        const t = this.state.creatureAnimationTime;
+        const U = h && AnazhRealm._umwegGesetz();
+        if (h && t - h.t <= U.UMWEG_GESETZ.haltS && ux * h.nx + uz * h.nz < 0) {
+            const p = umweg.position;
+            const alt = t - h.umweg <= U.UMWEG_GESETZ.haltS ? h.seite : 0;
+            h.seite = U.umwegSeite(ux, uz, h.nx, h.nz, p.x - h.cx, p.z - h.cz, alt);
+            if (h.seite) [h.umweg, ux, uz] = [t, -h.nz * h.seite, h.nx * h.seite];
+        }
+        return out.set(ux * v, 0, uz * v);
+    }
+
+    // DER HALT AN DER WAND (der Umweg liest ihn): ein Schub aus einer Hülle merkt seine Normale (nx, nz) und die Mitte (cx, cz)
+    // der Box auf der Kreatur-Uhr. Die Fels-Wand (`_wandHalt`) hält längs des Schritts, ihre Ebene ist keine Normale der Wand.
+    _kreaturHaltMerken(creature, nx, nz, cx, cz) {
+        const n = Math.hypot(nx, nz);
+        if (!(n > 1e-9)) return;
+        const ud = creature.userData;
+        const h = ud._halt || (ud._halt = { t: -Infinity, nx: 0, nz: 0, cx: 0, cz: 0, seite: 0, umweg: -Infinity });
+        [h.t, h.nx, h.nz, h.cx, h.cz] = [this.state.creatureAnimationTime, nx / n, nz / n, cx, cz];
     }
 
     // DER LEIB DES TIERS (D2, Welle L): EINE benannte Größe je Tier, gelesen von jedem Körper, der ein Tier berührt (der
@@ -1397,6 +1404,10 @@ class AnazhRealm_kreatur_verhalten {
     _kreaturHuellenKontakt(creature, L, px0, pz0) {
         const ud = creature.userData;
         const p = creature.position;
+        // DIE GIER VOR DEM SCHRITT: „schon im Kasten“ misst die Achse in Lage UND Gier vor dem Schritt — sonst trug eine Drehung
+        // die End-Achse in die Wand und machte sie frei (der Umweg dreht an der Wand: die Schnauze 0,4 m im Stein, Probe folgen)
+        const gierVor = ud && Number.isFinite(ud._gierKontakt) ? ud._gierKontakt : creature.rotation.y || 0;
+        if (ud) ud._gierKontakt = creature.rotation.y || 0;
         // DIE FELS-WAND (`_creatureGroundY`): die Ebene vor der Wand hält den Leib — er geht seitlich und zurück, nie hinein
         const wh = ud && ud._wandHalt;
         if (wh) {
@@ -1440,6 +1451,7 @@ class AnazhRealm_kreatur_verhalten {
         const q = this._kreaturAchse || (this._kreaturAchse = { x: 0, z: 0 });
         const fx = leib.fx,
             fz = leib.fz;
+        const [f0x, f0z] = [Math.sin(gierVor), Math.cos(gierVor)];
         // Eine Wand hält nur, wer von AUSSEN kommt: stand die Achse schon vor dem Schritt im Kasten (geboren, gestoßen,
         // eine Boden-Stufe machte eine flache Box zur Wand), stößt der Kasten sie nicht quer durch sich hinaus — sie
         // geht frei heraus. Sonst sprang ein Tier je Frame um Meter (gemessen: Tempo-Sprünge bis 7000 m/s²).
@@ -1458,7 +1470,7 @@ class AnazhRealm_kreatur_verhalten {
                 if (this._boxAbstand2(box, p.x, p.z) > reich2) continue;
                 for (let o = -1; o <= 1; o++) {
                     const off = o * halb;
-                    if (this._boxAbstand2(box, px0 + fx * off, pz0 + fz * off) < rInnen2) continue;
+                    if (this._boxAbstand2(box, px0 + f0x * off, pz0 + f0z * off) < rInnen2) continue;
                     q.x = p.x + fx * off;
                     q.z = p.z + fz * off;
                     const ax = q.x,
@@ -1466,6 +1478,14 @@ class AnazhRealm_kreatur_verhalten {
                     this._resolveCapsuleVsAABB(box, q, feetY, headY, radius, -Infinity, k);
                     p.x += q.x - ax;
                     p.z += q.z - az;
+                    if (q.x !== ax || q.z !== az)
+                        this._kreaturHaltMerken(
+                            creature,
+                            q.x - ax,
+                            q.z - az,
+                            (box.minX + box.maxX) / 2,
+                            (box.minZ + box.maxZ) / 2
+                        );
                 }
             }
         }
@@ -3776,6 +3796,15 @@ AnazhRealm._verhaltenGesetz = function () {
 // rudelPlatz, S6): der EINE Steuer-Schritt je Tier und Takt, das Ankunfts-Gesetz, die Tempo-Einheit √(g·L), der Verband
 // und der Platz im Rudel; dazu das Temperament
 // der Gattung (temperamentDerGattung, Welle LF). Fail-closed.
+// DER UMWEG (Ökologie K5): der EINE Leser von tetrapoda UMWEG_GESETZ + umwegSeite, fail-closed.
+AnazhRealm._umwegGesetz = function () {
+    if (AnazhRealm._umwegGesetzMemo) return AnazhRealm._umwegGesetzMemo;
+    const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    const U = k && k.UMWEG_GESETZ;
+    if (U && [U.haltS, U.quer].every(Number.isFinite) && typeof k.umwegSeite === "function")
+        return (AnazhRealm._umwegGesetzMemo = k);
+    return AnazhRealm._kernPflichtBruch("tetrapoda:UMWEG_GESETZ");
+};
 AnazhRealm._steuerGesetz = function () {
     if (AnazhRealm._steuerGesetzMemo) return AnazhRealm._steuerGesetzMemo;
     const S = AnazhRealm.Gesetz("tetrapoda:STEUER_GESETZ", null);
@@ -3843,36 +3872,6 @@ AnazhRealm._jagdGesetz = function () {
         return AnazhRealm._jagdGesetzMemo;
     }
     return AnazhRealm._kernPflichtBruch("tetrapoda:JAGD_GESETZ");
-};
-// DER LEBENSRAUM (tetrapoda LEBENSRAUM_GESETZ + bodenKlasse · lebensraum · lebensraumWahl, DURST_GESETZ + durst, Tiere K4): die Boden-Klasse eines Orts und die Eignung
-// je Gattung. Fail-closed.
-AnazhRealm._lebensraumGesetz = function () {
-    if (AnazhRealm._lebensraumMemo) return AnazhRealm._lebensraumMemo;
-    const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
-    const L = k && k.LEBENSRAUM_GESETZ;
-    if (
-        L &&
-        [L.flussM, L.hangTan, L.waldSd, L.randSd].every(Number.isFinite) &&
-        L.gattung &&
-        L.haeufigkeit &&
-        typeof k.bodenKlasse === "function" &&
-        typeof k.lebensraum === "function" &&
-        typeof k.lebensraumWahl === "function" &&
-        k.DURST_GESETZ &&
-        [k.DURST_GESETZ.durstS, k.DURST_GESETZ.suchPauseS].every(Number.isFinite) &&
-        typeof k.durst === "function"
-    ) {
-        AnazhRealm._lebensraumMemo = Object.freeze({
-            L,
-            bodenKlasse: k.bodenKlasse,
-            lebensraum: k.lebensraum,
-            wahl: k.lebensraumWahl,
-            D: k.DURST_GESETZ,
-            durst: k.durst,
-        });
-        return AnazhRealm._lebensraumMemo;
-    }
-    return AnazhRealm._kernPflichtBruch("tetrapoda:LEBENSRAUM_GESETZ");
 };
 // die Gänge des EINEN Leib-Lösers je Sim-Schritt (`_leibKontakte`): eine Klemme in der dichten Schar löst sich in wenigen
 AnazhRealm.LEIB_GAENGE = 8;

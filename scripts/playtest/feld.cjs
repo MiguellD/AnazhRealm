@@ -2018,10 +2018,7 @@ async function checkBandV1748Social(ctx) {
         const joyUnbonded = p.emotions.joy;
         out.bondWeights = joyBonded > joyUnbonded + 0.005;
 
-        // (4) BINDUNG wächst, während eine FOLGENDE Kreatur nah ist (gemeinsame Zeit); WARTEN nicht
-        inject("happy", 0, "follow_player");
-        r._tickEmotionContagion(2);
-        out.bondGrows = r.state.creatures[0].userData.bond > 0;
+        // (4) eine WARTENDE Kreatur baut keine Bindung auf (das Wachsen misst gate:kreatur-takt folgen)
         inject("happy", 0, "wait");
         r._tickEmotionContagion(2);
         out.waitNoBond = r.state.creatures[0].userData.bond === 0;
@@ -2076,7 +2073,6 @@ async function checkBandV1748Social(ctx) {
         "V17.48 Soziales: KONSUM — die BINDUNG gewichtet die Contagion (gebunden färbt mehr als fremd)",
         res.bondWeights
     );
-    check("V17.48 Soziales: KONSUM — die Bindung WÄCHST, während eine folgende Kreatur nah ist", res.bondGrows);
     check("V17.48 Soziales: eine WARTENDE Kreatur baut keine Bindung auf (nur gemeinsame Zeit zählt)", res.waitNoBond);
     check(
         "V17.48 Soziales: KONSUM — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (Trauer ∝ Bindung)",
