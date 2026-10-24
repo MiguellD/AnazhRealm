@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-boot-stage.cjs — „VOLLE BÜHNE" ALS PRÄDIKAT + ZEITLEISTE (W2) und DIE KALT-ZEILE (K30, Pflicht-OFFEN B)
+// diag-boot-stage.cjs — „VOLLE BÜHNE" ALS PRÄDIKAT und DIE KALT-ZEILE (Pflicht-OFFEN B)
 //
 // Die volle Bühne ist ein PRÄDIKAT aus kanonischen Quellen (nichts hartkodiert, die Impostor-Erwartung aus der Bibliothek):
 //   RING ≥ Ziel · GRAS/WASSER ohne Wartende · STREU `_streuWartet` 0 (keine Region fehlt, wartet auf ihr Asset oder trägt
 //   eine offene Scheibe; eine fehlende Regionen-Karte heißt „der Streamer lief noch nie") · BIBLIO Foundry ready + Prefetch
 //   fertig · IMPOST Bake-Queue leer (nur mit Renderer) · LUFT die EINE Luftperspektive (scene.fogNode, Sichtweite ≥ 5 km).
-// Zeitleiste t(Bibliothek/Ring/Impostoren/Bühne) in TICKS + Wall-Clock. --selftest: die Bühnen-Wahrheit liest dieselbe Streu
-// (die wartende Region trägt gate:ankunft L2a) und das Urteil der Ankunft.   node scripts/diag-boot-stage.cjs [--selftest]
+// --selftest: die Bühnen-Wahrheit liest dieselbe Streu (die wartende Region trägt gate:ankunft L2a), dazu das Urteil der
+// Ankunft.   node scripts/diag-boot-stage.cjs [--selftest]
 //
 // DIE KALT-ZEILE: `--kalt` bootet mit echtem Renderer und LEEREM Profil (IDB leer, wie nach jedem Versions-Update) und nennt
 // je Sekunde, worauf das erste Weltbild wartet (`_weltbildFehlt`), die blockierten ms des Haupt-Threads (benannt: Boden,
@@ -355,7 +355,7 @@ const ankunftSelbsttest = () =>
         out = await page.evaluate(async (selftest) => {
             const r = window.anazhRealm,
                 st = r.state;
-            const o = { terms: {}, timeline: {}, selftest: null };
+            const o = { terms: {}, selftest: null };
             const headless = !!(st.renderer && st.renderer._isHeadlessNull);
             // ── DAS PRÄDIKAT (jeder Term aus der kanonischen Quelle) ──
             const terms = () => {
@@ -376,41 +376,28 @@ const ankunftSelbsttest = () =>
                 };
             };
             const sichtM = () => (st.luft ? r._luftSichtM(st.playerMesh ? st.playerMesh.position.y : 0) : -1);
-            // ── PUMPEN + MEILENSTEINE (Ticks + ms) ──
-            const t0 = performance.now();
+            // ── PUMPEN bis zur Bühne (Ticks) ──
             let ticks = 0;
-            const mark = {};
-            const MAXT = 6000;
-            while (ticks < MAXT) {
+            o.stage = null;
+            while (ticks < 6000) {
                 try {
                     r._gameLoopTick();
                 } catch (_e) {}
                 ticks++;
                 const T = terms();
                 const luftSteht = !!(st.scene && st.scene.fogNode) && sichtM() >= 5000;
-                if (!mark.biblio && T.biblio) mark.biblio = { ticks, ms: performance.now() - t0 };
-                if (!mark.ring && T.ring) mark.ring = { ticks, ms: performance.now() - t0 };
-                if (!mark.impost && T.impost && T.biblio) mark.impost = { ticks, ms: performance.now() - t0 };
                 if (T.ring && T.grass && T.water && T.streu && T.biblio && T.impost && luftSteht) {
-                    mark.stage = { ticks, ms: performance.now() - t0 };
+                    o.stage = { ticks };
                     o.terms = T;
                     break;
                 }
                 if (ticks % 5 === 0) await new Promise((res) => setTimeout(res, 0));
             }
-            if (!mark.stage) o.terms = terms();
-            o.headless = headless;
+            if (!o.stage) o.terms = terms();
             o.sichtM = Math.round(sichtM());
-            o.timeline = {
-                biblio: mark.biblio || null,
-                ring: mark.ring || null,
-                impost: mark.impost || null,
-                stage: mark.stage || null,
-                totalTicks: ticks,
-            };
             o.chunks = st.voxelChunks ? st.voxelChunks.size : 0;
             o.impostorRecords = r._kartenAtlas ? r._kartenAtlas.zellen.size : 0;
-            if (selftest && mark.stage) {
+            if (selftest && o.stage) {
                 const map = st.scatterRegions;
                 o.selftest = {};
                 // die Bühnen-Wahrheit der Welt (`_buehneSteht`, das Prädikat live) liest dieselbe Antwort: ohne Regionen-Karte
@@ -453,18 +440,9 @@ const ankunftSelbsttest = () =>
         console.log(`⛔ Bühnen-Linse fehlgeschlagen: ${out ? out.__err : "?"}`);
         process.exit(2);
     }
-    const tl = out.timeline;
-    const fm = (m) => (m ? `Tick ${m.ticks} · ${(m.ms / 1000).toFixed(1)} s` : "— (nicht erreicht)");
     console.log(
-        "\n=== VOLLE BÜHNE — das Prädikat + die Zeitleiste (headless-Mechanik; Wall-Clock = Container-Anhalt) ==="
-    );
-    console.log(`  t(Bibliothek)  ${fm(tl.biblio)}`);
-    console.log(`  t(Ring)        ${fm(tl.ring)}`);
-    console.log(
-        `  t(Impostoren)  ${fm(tl.impost)}${out.headless ? "  (headless: RTT-Term übersprungen, gate-treu)" : ""}`
-    );
-    console.log(
-        `  t(BÜHNE)       ${fm(tl.stage)}   (${out.chunks} Chunks · ${out.impostorRecords} Impostor-Records · Sichtweite ${out.sichtM} m)`
+        `\n=== VOLLE BÜHNE (headless-Mechanik) — Tick ${out.stage ? out.stage.ticks : "—"} · ${out.chunks} Chunks · ` +
+            `${out.impostorRecords} Impostor-Records · Sichtweite ${out.sichtM} m ===`
     );
     const T = out.terms;
     const checks = [
@@ -481,7 +459,7 @@ const ankunftSelbsttest = () =>
             name: `BIBLIOTHEK warm (${T.biblio}) · IMPOSTOREN idle (${T.impost})`,
             pass: T.biblio === true && T.impost === true,
         },
-        { name: "die BÜHNE wurde erreicht (das Prädikat schloss)", pass: !!tl.stage },
+        { name: "die BÜHNE wurde erreicht (das Prädikat schloss)", pass: !!out.stage },
     ];
     if (SELFTEST) {
         const s = out.selftest || {};
@@ -505,6 +483,6 @@ const ankunftSelbsttest = () =>
         console.log("⛔ Die volle Bühne steht nicht (oder die Linse ist stumpf) — Kriterium 2 ist nicht abnehmbar.");
         process.exit(1);
     }
-    console.log(`✅ „Volle Bühne" ist jetzt ein Prädikat mit Zeitleiste — Kriterium 2 ist messbar.`);
+    console.log(`✅ „Volle Bühne" ist ein Prädikat — Kriterium 2 ist messbar.`);
     process.exit(0);
 })();
