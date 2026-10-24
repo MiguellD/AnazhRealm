@@ -370,10 +370,14 @@ class AnazhRealm_koerper_seele {
         // Die Lebenswerte kehren voll zurück (das Maximum der verwundeten Gestalt) — die WUNDE (Stat-Penalty,
         // 10-min-Regen) trägt die Erinnerung, nicht ein HP-Malus.
         this.recomputePlayerStats({ voll: true });
-        this.journalAppend("loss", `Der Körper fiel ${source ? `(${source}) ` : ""}— am Ursprung kehrt er wieder.`, {
-            source: source || null,
-            at: now,
-        });
+        this.journalAppend(
+            "loss",
+            AnazhRealm._datum`Der Körper fiel ${source ? `(${source}) ` : ""}— am Ursprung kehrt er wieder.`,
+            {
+                source: source || null,
+                at: now,
+            }
+        );
         this.log(`Tod (${source || "unbekannt"}) → Rückkehr am Anker (${ax.toFixed(0)}, ${az.toFixed(0)})`, "INFO");
     }
 
@@ -1419,7 +1423,7 @@ class AnazhRealm_koerper_seele {
         this.journalAppendOnce(
             `portalObtained:${entry.id}`,
             "growth",
-            `Ein Tor zur ${entry.label} fand den Weg in deine Sammlung.`,
+            AnazhRealm._datum`Ein Tor zur ${entry.label} fand den Weg in deine Sammlung.`,
             { world: entry.id }
         );
         this.saveState();

@@ -105,29 +105,6 @@ class AnazhRealm_daten {
     static get WETTER_ZUG_SEK() {
         return 120;
     }
-    // Fauna-Lifecycle: TARGET = untere Schwelle für Geburten, MAX = obere für sanften Tod; Check alle
-    // 10 s, unabhängig von DAY_LENGTH.
-    static get FAUNA_TICK_INTERVAL_MS() {
-        return 10000; // 10 s — fauna lebt langsam
-    }
-    static get FAUNA_TARGET_POPULATION() {
-        return 8; // wenn weniger → langsame Geburten
-    }
-    static get FAUNA_MAX_POPULATION() {
-        return 20; // wenn mehr → langsame Todesfälle
-    }
-    static get FAUNA_BIRTH_PROBABILITY() {
-        return 0.18; // pro 10s-Check (~1.08/min Max-Rate)
-    }
-    static get FAUNA_DEATH_PROBABILITY() {
-        return 0.12; // pro 10s-Check
-    }
-    static get FAUNA_BIRTH_COOLDOWN_MS() {
-        return 25000; // mind. 25 s zwischen Geburten
-    }
-    static get FAUNA_DEATH_COOLDOWN_MS() {
-        return 35000; // mind. 35 s zwischen Toden — Welt soll nicht massensterben
-    }
     // D3 (gigant-plan §5 — G4-3): die natürliche Lebens-Spanne eines Wesens.
     // Jenseits davon kehrt es zur Erde zurück (der Tod nährt das lebendig-Feld)
     // — natürlicher Umschlag statt ewiger Wesen. ~35 min Echtzeit.

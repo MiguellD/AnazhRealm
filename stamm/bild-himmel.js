@@ -2689,6 +2689,11 @@ class AnazhRealm_bild_himmel {
         }
         // ein Schreiber außer dem Gang springt: der Himmel malt sich beim nächsten Anwenden des Tags neu (`_ensureSkyEnvironment`)
         if (quelle !== "uhr" && v !== this.state.timeOfDay) this._himmelSprung = true;
+        // DER TAG DER WELT (feld.K4, `_weltStunde`): kreuzt die Uhr Mitternacht (der kürzere Bogen), zählt der Tag vor oder
+        // zurück; das Laden setzt nur die Uhr — der Tag reist im worldMeta
+        const d = v - this.state.timeOfDay;
+        const wm = this.state.worldMeta;
+        if (quelle !== "laden" && wm && Math.abs(d) > 0.5) wm.tag = (wm.tag || 0) + (d < 0 ? 1 : -1);
         this.state.timeOfDay = v;
         return true;
     }

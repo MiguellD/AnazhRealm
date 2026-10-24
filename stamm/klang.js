@@ -250,7 +250,8 @@ class AnazhRealm_klang {
     // EINE Wind am Ohr (`_windAt`), die Kronen-Deckung der STEHENDEN Bäume (die
     // Kronen-Karte `_kronenStreuAt` — dieselben Bytes, aus denen Boden und Nah-Wiese den Wald lesen; das Kronenlicht-
     // Feld der Platzierung sagt nur, wo Bäume wachsen DÜRFEN), Sonne (Tageszeit), Jahres-Phase, Leben (auraAt), der
-    // Hör-Ring (Ufer/Fluss), der nächste Wasserfall der Region, die nächste Glut (Brenn-Fläche).
+    // Hör-Ring (Ufer/Fluss), der nächste Wasserfall der Region, die nächste Glut (Brenn-Fläche) — und die ANTWORT der Wertung
+    // (`_tatAntwortAm`: das abklingende δ der Tat, die hier am stärksten wirkt; affekt K1).
     _umweltLage() {
         const um = this.state.symphony.umwelt;
         const pm = this.state.playerMesh;
@@ -329,6 +330,7 @@ class AnazhRealm_klang {
             fluss,
             fall,
             glut,
+            antwort: this._tatAntwortAm(px, pz),
         };
     }
 

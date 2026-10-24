@@ -98,9 +98,9 @@ class AnazhRealm_dirigent_takt {
                     // Cross-Fade über 45 s. No-op wenn kein Übergang aktiv.
                     this.tickWeatherTransition(currentTime);
 
-                    // ### Fauna-Lifecycle (Welle 6.G3.c) ###
-                    // Alle 10 s: Geburt bei < TARGET, Tod bei > MAX mit Trauer.
-                    this.tickFaunaLifecycle(currentTime);
+                    // ### Fauna-Lifecycle (Ökologie K2) ###
+                    // je Takt der Spiel-Zeit die Bilanz des Bestands: Geburt unter, Hunger über der Kapazität aus Nahrung × Lebensraum.
+                    this.tickFaunaLifecycle();
 
                     // ### Boot-Phase 3 (V18.308) — die deferierte Boot-Arbeit progressiv ###
                     // Spawnt die Initial-Kreaturen NACH der Kontrolle, einen Atem pro Wesen,
@@ -601,13 +601,16 @@ class AnazhRealm_dirigent_takt {
                     }
                     this.state.nexusWirk -= wirkCost;
                 }
-                const result = this.dslRun(evolution.program, { source: evolution.source || "nexus" });
+                // das Programm trägt den Namen seiner Evolution — die Stimme des Felds nennt ihn als Gesetz der Tat (`_tatWerten`)
+                const result = this.dslRun(evolution.program, {
+                    source: evolution.source || "nexus",
+                    programId: evolution.name,
+                });
                 // Eine REGEL-Evolution registriert (rule-Op) eine stehende Regel in state.worldRules; ihre Fitness
                 // läuft über deren Lebens-Fenster (_worldRuleFitness), NICHT über den 5-s-Gesten-Finalizer →
                 // nicht in pendingOutcomes/Gesten-History.
                 if (evolution.program[0] === "rule") {
                     this.log(`Nexus-Evolution (Regel) registriert: ${evolution.name}`, "INFO");
-                    this.grokSpeak("nexus");
                     return;
                 }
                 // Schicht 1 — Initiale Fitness aus FPS allein. Endgültiger
@@ -651,7 +654,8 @@ class AnazhRealm_dirigent_takt {
             } else {
                 this.log(`Nexus-Evolution ohne DSL-Programm verworfen: ${evolution.name}`, "WARNING");
             }
-            this.grokSpeak("nexus");
+            // was der Nexus tat, sagt die Stimme des Felds mit Ort, Ursache und Gesetz (`_feldStimme`); die generische
+            // Pool-Zeile („Ich habe etwas verschoben …") nach jeder Evolution war ihr Zwilling und überschrieb sie
         }
     }
 
@@ -1248,7 +1252,7 @@ class AnazhRealm_dirigent_takt {
                     const _sct = performance.now();
                     this._tickScatterStreaming(playerPos, _dl);
                     this._tickPendingGrass(lade ? Infinity : 1, lade ? _dl : undefined);
-                    this._tickScatterRegrow(performance.now());
+                    this._tickScatterRegrow(this._weltStunde());
                     this._tickNahWiese(_dl);
                     this._tickNahStreu(_dl);
                     this._perfSenseLap("scatter", _sct);

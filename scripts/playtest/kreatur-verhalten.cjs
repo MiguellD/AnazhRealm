@@ -55,18 +55,8 @@ async function checkBandWelle6HCreatures(ctx) {
         const waitDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
         out.waitGivesZeroDir = waitDir && waitDir.x === 0 && waitDir.z === 0;
 
-        // follow_player: weit weg → Richtung zum Spieler
+        // (das Folgen misst gate:kreatur-takt folgen)
         const p = r.state.playerMesh.position;
-        c1.position.set(p.x + 10, p.y, p.z + 10);
-        r.assignCreatureTask(c1, "follow_player");
-        const fdir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
-        out.followDirectionToPlayer = fdir.x < 0 && fdir.z < 0 && Math.hypot(fdir.x, fdir.z) > 0;
-
-        // follow_player: innerhalb haltDist → direction = (0,0,0)
-        c1.position.set(p.x + 0.3, p.y, p.z + 0.3);
-        const stopDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
-        out.followStopsAtHalt = stopDir.x === 0 && stopDir.z === 0;
-
         // wander → null (Caller fällt auf Emotion-Logik)
         r.assignCreatureTask(c1, "wander");
         const wDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
@@ -106,12 +96,6 @@ async function checkBandWelle6HCreatures(ctx) {
         out.nbCreatureTaskAll = nbs.has("creature_task_all");
 
         // Chat-Patterns
-        const folge = r.parseChatToDsl("folge mir");
-        out.chatFolgeMir =
-            folge &&
-            Array.isArray(folge.program) &&
-            folge.program[0] === "creature_task_nearest" &&
-            folge.program[1] === "follow_player";
         const warte = r.parseChatToDsl("warte");
         out.chatWarte = warte && warte.program[0] === "creature_task_nearest" && warte.program[1] === "wait";
         const erkunde = r.parseChatToDsl("erkunde");
@@ -167,11 +151,6 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Welle 6.H Phase 1: assignCreatureTask lehnt unbekannten Task ab", wave6hResults.unknownRejected);
         check("Welle 6.H Phase 1: wait-Task liefert direction (0,0,0)", wave6hResults.waitGivesZeroDir);
         check(
-            "Welle 6.H Phase 1: follow_player-Direction zeigt zum Spieler (weit weg)",
-            wave6hResults.followDirectionToPlayer
-        );
-        check("Welle 6.H Phase 1: follow_player stoppt am haltDist (direction=0)", wave6hResults.followStopsAtHalt);
-        check(
             "Welle 6.H Phase 1: wander-Direction liefert null (Fallback auf Emotion-Logik)",
             wave6hResults.wanderReturnsNull
         );
@@ -184,7 +163,6 @@ async function checkBandWelle6HCreatures(ctx) {
             "Welle 6.H Phase 1: creature_task* in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
             wave6hResults.nbCreatureTask && wave6hResults.nbCreatureTaskNearest && wave6hResults.nbCreatureTaskAll
         );
-        check("Welle 6.H Phase 1: Chat 'folge mir' → creature_task_nearest follow_player", wave6hResults.chatFolgeMir);
         check("Welle 6.H Phase 1: Chat 'warte' → creature_task_nearest wait", wave6hResults.chatWarte);
         check("Welle 6.H Phase 1: Chat 'erkunde' → creature_task_nearest wander", wave6hResults.chatErkunde);
         check("Welle 6.H Phase 1: Chat 'komm her' → follow_player mit distance=1.5", wave6hResults.chatKommHer);

@@ -726,6 +726,12 @@ class AnazhRealm_werkstatt_bauen {
         const blueprintName = entry.type;
         const removed = this.removeArchitecture(entry);
         if (!removed) return null;
+        // DIE TAT BLEIBT (feld.K4): ein gefällter Baum ist eine Tat der Welt am Ort — Narbe im Feld, Stumpf in der Nah-Streu, und
+        // der Wald pflanzt ihn nicht neu, bis sie heilt (`_tatSchreiben`)
+        if (/baum/.test(entry._lodSpecies || blueprintName) && this._istNatur(entry))
+            this._tatSchreiben("faellen", entry.position.x, entry.position.z, {
+                s: Number.isFinite(entry.scale) ? +entry.scale.toFixed(2) : 1,
+            });
         // Nur der Spieler fühlt die Ernte (joy + hope, skaliert mit dem Ertrag); Kreaturen nicht.
         if (harvester === "player") {
             const mag =
@@ -756,15 +762,20 @@ class AnazhRealm_werkstatt_bauen {
             };
             // V18.212 — Ω-H: die Welt-Genese-Spur wandert in den Journal-
             // Eintrag. „aus Welt-Genese bei (Region X, Y)" lesbar.
-            let journalText = `${harvester} erntete „${blueprintName}" → ${matSummary}.`;
+            let werk = blueprintName;
             if (grownProvenance) {
                 journalDetails.provenance = grownProvenance;
-                const speciesLabel = String(grownProvenance.species || "")
+                werk = String(grownProvenance.species || "")
                     .replace(/^baum_/, "")
                     .replace(/^./, (c) => c.toUpperCase());
-                journalText = `${harvester} erntete „${speciesLabel}" (aus Welt-Genese gewachsen) → ${matSummary}.`;
             }
-            this.journalAppend("growth", journalText, journalDetails);
+            this.journalAppend(
+                "growth",
+                grownProvenance
+                    ? AnazhRealm._datum`${harvester} erntete „${werk}" (aus Welt-Genese gewachsen) → ${matSummary}.`
+                    : AnazhRealm._datum`${harvester} erntete „${werk}" → ${matSummary}.`,
+                journalDetails
+            );
         }
         const result = { materials, blueprint: blueprintName, parts: totalParts };
         if (grownProvenance) result.provenance = grownProvenance;
@@ -831,7 +842,7 @@ class AnazhRealm_werkstatt_bauen {
         if (this._fahrLos) this._fahrLos.delete(entry); // ein abgebauter Wagen fällt nicht weiter (`_fahrNachlauf`)
         this._kronenStreuWeg("a:" + entry.id); // ein gefällter Baum nimmt seine Krone aus der Karte
         if (!still && typeof this.journalAppend === "function") {
-            this.journalAppend("loss", `Eine ${entry.type}-Struktur wurde abgebaut.`, {
+            this.journalAppend("loss", AnazhRealm._datum`Eine ${entry.type}-Struktur wurde abgebaut.`, {
                 type: entry.type,
                 id: entry.id,
             });

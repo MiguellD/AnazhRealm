@@ -5,72 +5,18 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// Die Logik-Konsumenten lesen die lebendige auraAt-API (nicht das eingefrorene worldFieldAt); die
-// Fauna liest die VOLLEN Achsen (lebendig hebt, glut dämpft); Beweis: Konsum + behavioral.
+// Die Logik-Konsumenten lesen die lebendige auraAt-API (nicht das eingefrorene worldFieldAt; den Bestand misst
+// gate:kreatur-takt bestand).
 async function checkBandV1725FieldReaders(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — die Fauna-Behavioral-Probe misst den frozen Kern
-        // KONSUM-Beweis statt Quelltext-Zitat: die Leser rufen auraAt WIRKLICH (Spy-Swap __consumes), und eine glühende
-        // Aura senkt Ziel und Deckel der Fauna (dieselbe Lebendigkeit, nur die glut-Achse wechselt).
-        const glutWirkt = (fn) => {
-            try {
-                r.auraAt = () => ({ lebendig: 0.5, glut: 0 });
-                const kalt = r[fn]();
-                r.auraAt = () => ({ lebendig: 0.5, glut: 1 });
-                return r[fn]() < kalt;
-            } finally {
-                delete r.auraAt;
-            }
-        };
-        out.faunaReadsAura = window.__consumes(r, "_currentFaunaTarget", r, "auraAt") && glutWirkt("_currentFaunaTarget");
-        out.faunaMaxReadsAura = window.__consumes(r, "_currentFaunaMax", r, "auraAt") && glutWirkt("_currentFaunaMax");
         out.lofiReadsAura = window.__consumes(r, "_lofiWorldField", r, "auraAt");
-        const pm = r.state.playerMesh && r.state.playerMesh.position;
-        if (pm) {
-            const ox = pm.x,
-                oz = pm.z;
-            let lebSpot = null,
-                lebBest = -2,
-                glutSpot = null,
-                glutBest = -2;
-            for (let gx = -2000; gx <= 2000; gx += 200) {
-                for (let gz = -2000; gz <= 2000; gz += 200) {
-                    const f = r.worldFieldAt(gx, gz);
-                    if (f.lebendig - f.glut > lebBest) {
-                        lebBest = f.lebendig - f.glut;
-                        lebSpot = { x: gx, z: gz };
-                    }
-                    if (f.glut - f.lebendig > glutBest) {
-                        glutBest = f.glut - f.lebendig;
-                        glutSpot = { x: gx, z: gz };
-                    }
-                }
-            }
-            pm.x = lebSpot.x;
-            pm.z = lebSpot.z;
-            const targetLeb = r._currentFaunaTarget();
-            pm.x = glutSpot.x;
-            pm.z = glutSpot.z;
-            const targetGlut = r._currentFaunaTarget();
-            pm.x = ox; // Restore
-            pm.z = oz;
-            out.faunaDiffers = targetLeb > targetGlut;
-            out.targetLeb = targetLeb;
-            out.targetGlut = targetGlut;
-        }
         return out;
     });
-    check("V17.25 mehr Leser: _currentFaunaTarget liest auraAt + glut (volle Achsen, §5)", res.faunaReadsAura);
-    check("V17.25 mehr Leser: _currentFaunaMax liest auraAt + glut", res.faunaMaxReadsAura);
     check("V17.25 mehr Leser: _lofiWorldField liest auraAt (living)", res.lofiReadsAura);
-    check(
-        "V17.25 mehr Leser: lebendige Region trägt MEHR Fauna als glühende (glut dämpft, alle Achsen)",
-        res.faunaDiffers,
-        `leb=${res.targetLeb} vs glut=${res.targetGlut}`
-    );
 }
 
 // Kombat-Stats: knockback/attackSpeed/defense EMERGIEREN aus der Substanz (Tags → STAT_FROM_TAGS) wie

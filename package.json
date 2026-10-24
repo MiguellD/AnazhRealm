@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.546.77",
+    "version": "18.546.79",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -120,7 +120,7 @@
         "gate:weg-boden": "node scripts/diag-weg-boden.cjs --selftest",
         "gate:foundry-impostor": "node scripts/diag-foundry-impostor.cjs",
         "gate:foundry-crossfade": "node scripts/diag-foundry-crossfade.cjs --selftest && node scripts/diag-foundry-crossfade.cjs",
-        "gate:v1-pfad": "node scripts/diag-v1-pfad.cjs --selftest && node scripts/diag-v1-pfad.cjs && node scripts/diag-v1-pfad.cjs --korpus",
+        "gate:v1-pfad": "node scripts/diag-v1-pfad.cjs --selftest && node scripts/diag-v1-pfad.cjs && node scripts/diag-v1-pfad.cjs --korpus && node scripts/diag-v1-pfad.cjs --feind",
         "gate:werkstatt-weg": "node scripts/diag-werkstatt-weg.cjs --selftest && node scripts/diag-werkstatt-weg.cjs",
         "gate:ankunft": "node scripts/diag-ankunft.cjs --selftest && node scripts/diag-ankunft.cjs",
         "gate:kamera-laub": "node scripts/diag-kamera-laub.cjs --selftest && node scripts/diag-kamera-laub.cjs --teile laub",

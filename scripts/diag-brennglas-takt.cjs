@@ -252,7 +252,7 @@ function quellWand(quelle) {
         }
         // die Schreiber beim Namen (D3c: der Freibrief „ruft _blockerNetzSetzen" am Rumpf fiel; dass das Tor das Verzeichnis
         // nachzieht, beweist (V) am Aufruf)
-        const darfZiel = name === "spawnArchitecture" || name === "setBlueprintAsPortal" || name === "_hausHuelleSetzen"; // B3c: der Kamin aus der Hülle, gestempelt
+        const darfZiel = name === "spawnArchitecture" || name === "setBlueprintAsPortal" || name === "_hausHuelleSetzen"; // der Kamin aus der Hülle, gestempelt
         const darfHitze = name === "_tickFocusingAffordances";
         const harmlosUserData = (links, rechts) => {
             if (rechts.type === "ObjectExpression")
@@ -539,7 +539,7 @@ async function probe() {
                 `Die Sonne entzündete durch „${name(quelle)}" „${name(t)}"${d != null ? ` (${Math.round(d)} m von dir)` : ""}.`
             );
             if (r.journalAppend)
-                r.journalAppend("loss", `Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`, {
+                r.journalAppend("loss", AR._datum`Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`, {
                     type: t.type,
                     linse: quelle.type,
                 });
@@ -646,7 +646,7 @@ async function probe() {
         return n;
     };
     aus.imPunkt = indiePunkte(0.5, 3);
-    // DAS FERNZIEL (0710-10: ein halber Radius blieb grün): ein fünftes Glas 5,9 m hinter einer Zellgrenze, ein
+    // DAS FERNZIEL (ein halber Radius blieb grün): ein fünftes Glas 5,9 m hinter einer Zellgrenze, ein
     // gestrecktes Brennbares, dessen Position 3,9 m daneben in der NACHBAR-Zelle steht — sein Körper trägt den Brennpunkt, sein
     // Platz (Position ± Blocker-Reichweite) liegt außerhalb der halben Frage: nur die volle Reichweite findet ihn. Die Art sucht
     // die Wand unter den brennbaren (Probe-Spawn, die Blocker-Reichweite unter 1,6 m — eine Eiche trägt 10 m Krone als Blocker)
@@ -726,7 +726,7 @@ async function probe() {
             r.removeArchitecture(e);
         }
     }
-    // DER BEWEGER (0710-10: ohne die Beweger blieb die Wand grün): ein Brennbares, weit weg gestempelt, dann in
+    // DER BEWEGER (ohne die Beweger blieb die Wand grün): ein Brennbares, weit weg gestempelt, dann in
     // einen Brennpunkt getragen (`_blockerBewegt`, wie das gerittene Werk) — sein Platz steht noch am alten Ort
     aus.beweger = { gesetzt: false };
     let bewegt = null;

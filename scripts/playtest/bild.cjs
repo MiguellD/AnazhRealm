@@ -69,7 +69,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
     void errors;
     void finalState;
     // ### Welle 6.G3 — Welt-Lebendigkeit ###
-    // (a) Tag-Nacht-Zyklus, (b) sanfter Wetter-Übergang, (c) Fauna-Lifecycle mit Geburt + Tod —
+    // (a) Tag-Nacht-Zyklus, (b) sanfter Wetter-Übergang —
     // Konstanten, Methoden, Persistenz, DSL-Op, UI-DOM.
     const wave6g3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
@@ -166,46 +166,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         r.tickWeatherTransition(0);
         out.transitionClearedOnComplete = r.state.weatherTransition === null;
 
-        // --- c) Fauna-Lifecycle
-        // (die Geburt misst gate:kreatur-takt lebensraum am Takt; ihre Zahlen stehen im Gesetz, nie als Spiegel im Test)
-
-        // _findOldestCreature liefert die älteste (kleinster bornAt). Test-Isolation: ALLE Kreaturen auf
-        // `now`, dann c0 + c1 gezielt älter — Worldgen-Kreaturen würden mit der Test-Laufzeit älter als c1.
-        if (r.state.creatures.length >= 2) {
-            const now = Date.now();
-            for (const c of r.state.creatures) {
-                if (!c.userData) c.userData = {};
-                c.userData.bornAt = now;
-            }
-            const c0 = r.state.creatures[0];
-            const c1 = r.state.creatures[1];
-            c0.userData.bornAt = now - 5000;
-            c1.userData.bornAt = now - 10000;
-            const oldest = r._findOldestCreature();
-            out.oldestIsOlder = oldest === c1;
-        } else {
-            out.oldestIsOlder = true; // skip wenn keine Kreaturen
-        }
-
-        // _creatureNaturalDeath effektiviert (sorrow +0.2, journal-loss, removeCreature)
-        if (r.state.creatures.length > 0) {
-            const beforeCount = r.state.creatures.length;
-            // Bei gesättigter Stimmung (sorrow == 1.0) clampt der +0.2-Stempel von _creatureNaturalDeath → der
-            // strikte „>"-Vergleich wäre falsch. Den INTENT isolieren (Tod ADDIERT sorrow): sorrow auf einen
-            // bekannten sub-Sättigungs-Wert setzen.
-            if (r.state.player.emotions) r.state.player.emotions.sorrow = 0.1;
-            const beforeSorrow = (r.state.player.emotions && r.state.player.emotions.sorrow) || 0;
-            const beforeJournalLoss = (r.state.worldJournal.entries || []).filter((e) => e.type === "loss").length;
-            r._creatureNaturalDeath(r.state.creatures[0]);
-            out.deathReducesCount = r.state.creatures.length === beforeCount - 1;
-            out.deathIncreasesSorrow = (r.state.player.emotions && r.state.player.emotions.sorrow) > beforeSorrow;
-            const afterJournalLoss = (r.state.worldJournal.entries || []).filter((e) => e.type === "loss").length;
-            out.deathAddsLossJournal = afterJournalLoss > beforeJournalLoss;
-        } else {
-            out.deathReducesCount = true;
-            out.deathIncreasesSorrow = true;
-            out.deathAddsLossJournal = true;
-        }
+        // --- c) den Fauna-Lifecycle (Geburt, Hungertod des Ältesten, Trauer, Journal) misst gate:kreatur-takt bestand
 
         return out;
     });
@@ -263,12 +224,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             "Welle 6.G3.b: tickWeatherTransition löscht Transition bei progress=1",
             wave6g3Results.transitionClearedOnComplete
         );
-
-        // --- c) Fauna-Lifecycle
-        check("Welle 6.G3.c: _findOldestCreature wählt kleinste bornAt", wave6g3Results.oldestIsOlder);
-        check("Welle 6.G3.c: _creatureNaturalDeath reduziert Kreaturen-Anzahl", wave6g3Results.deathReducesCount);
-        check("Welle 6.G3.c: _creatureNaturalDeath erhöht player.emotions.sorrow", wave6g3Results.deathIncreasesSorrow);
-        check("Welle 6.G3.c: _creatureNaturalDeath schreibt loss-Journal", wave6g3Results.deathAddsLossJournal);
     } else {
         check("Welle 6.G3: alle Tests laufen", false, wave6g3Results ? wave6g3Results.error : "no result");
     }
@@ -397,26 +352,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.peaceSlowsWeather = peaceDur > defaultDur * 1.2;
         out.chaosSpeedsWeather = chaosDur < defaultDur * 0.7;
 
-        // --- Vision 7: FAUNA_TARGET skaliert mit lebendig
-        // Simuliere zwei Positionen mit verschiedenem lebendig
-        const origWFA = r.worldFieldAt;
-        r.worldFieldAt = function (x) {
-            if (x < 0) return { lebendig: 0.95, dichte: 0.1, glut: 0.1, magieleitung: 0.1 };
-            return { lebendig: 0.1, dichte: 0.95, glut: 0.1, magieleitung: 0.1 };
-        };
-        // Das Leben-Overlay isolieren: _currentFaunaTarget liest auraAt = frozen-Mock + Leben-Overlay, und
-        // der Nexus deponiert aktiv Leben → ein Deposit nahe der kargen Testzelle verfälschte den Mock.
-        // Getestet wird die frozen→Fauna-Abbildung isoliert.
-        if (r.state.lifeField) r.state.lifeField.clear();
-        // BÜHNE: die Fauna-Abbildung einer Testzelle (Life-Feld geleert, kein Boden)
-        r.state.playerMesh.position.x = -100;
-        const targetLiv = r._currentFaunaTarget();
-        // BÜHNE: die Fauna-Abbildung einer Testzelle (Life-Feld geleert, kein Boden)
-        r.state.playerMesh.position.x = 100;
-        const targetKarg = r._currentFaunaTarget();
-        out.liveRegionHasHigherTarget = targetLiv > targetKarg;
-        out.targetInExpectedRange = targetLiv >= 10 && targetKarg <= 6;
-        r.worldFieldAt = origWFA;
         // BÜHNE: zurück an den Ursprung der Testzelle
         r.state.playerMesh.position.x = 0;
 
@@ -461,6 +396,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // --- Vision 10: Sky-Tint moduliert mit Welt-Feld (magie-Region)
         // (auraTintStrength=1 gilt noch aus dem Block-Anfang — Mechanismus-Marge.)
         // Mock worldFieldAt für hohe magieleitung
+        const origWFA = r.worldFieldAt;
         r.worldFieldAt = function () {
             return { lebendig: 0.1, dichte: 0.1, glut: 0.1, magieleitung: 0.9 };
         };
@@ -509,14 +445,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         check("Welle 6.G3 V2 Vision: sorrow=1 reduziert Sky-Sättigung", wave6g3v2Results.sorrowReducesSaturation);
         check("Welle 6.G3 V2 Vision: peace=1 verlängert Wetter-Dauer (>120%)", wave6g3v2Results.peaceSlowsWeather);
         check("Welle 6.G3 V2 Vision: chaos=1 verkürzt Wetter-Dauer (<70%)", wave6g3v2Results.chaosSpeedsWeather);
-        check(
-            "Welle 6.G3 V2 Vision: lebendig-Region hat höheres FAUNA_TARGET als karge",
-            wave6g3v2Results.liveRegionHasHigherTarget
-        );
-        check(
-            "Welle 6.G3 V2 Vision: FAUNA_TARGET-Range plausibel (lebendig ≥10, karg ≤6)",
-            wave6g3v2Results.targetInExpectedRange
-        );
         check(
             "Welle 6.G3 V2 Vision: Stern-Feld-Opacity existiert (V8.28 THREE.Points)",
             wave6g3v2Results.starIntensityExists
