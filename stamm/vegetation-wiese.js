@@ -53,8 +53,12 @@ class AnazhRealm_vegetation_wiese {
         const out = [];
         const Gb = globalThis.__gelaendeCore;
         const E = this._erdbauLage();
+        // die gemähten Büschel (halten.K3, `_maehen`) fehlen, bis sie nachwachsen — Identität ist die Gitter-Zelle gi|gj
+        const sh = this.state.scatterHarvested;
+        const gemaeht = sh ? sh.get("wiese:" + tx + "," + tz) : null;
         for (let gj = Math.ceil(z0 / step); gj * step < z0 + NW.kachel; gj++) {
             for (let gi = Math.ceil(x0 / step); gi * step < x0 + NW.kachel; gi++) {
+                if (gemaeht && gemaeht.has(gi + "|" + gj)) continue;
                 let hs = ((gi * 73856093) ^ (gj * 19349663) ^ seedInt ^ 0x6a09e667) >>> 0 || 1;
                 const w = () => {
                     hs = (hs + 0x6d2b79f5) >>> 0;
@@ -89,7 +93,7 @@ class AnazhRealm_vegetation_wiese {
                 // der Kreis des Büschels vor dem Grund der Häuser (S4, `erdbauGrund`: jede Box des Körper-Satzes)
                 if (Gb.erdbauGrund(E, x, z, NW.reich * sb)) continue;
                 const f = WT(x, z, L, m, [1, 1, 1], 0);
-                out.push({ x, y, z, s: sb, rot, vorlage, ordnung, f });
+                out.push({ x, y, z, s: sb, rot, vorlage, ordnung, f, gi, gj });
             }
         }
         // Zufällige Ordnung: ein Präfix der Liste ist eine gleichmäßige Ausdünnung (das Rand-Band).
@@ -430,6 +434,7 @@ class AnazhRealm_vegetation_wiese {
                 reed: "kraut",
                 brush: "kraut",
                 flower: "kraut",
+                grass: "kraut", // die Büschel der Nah-Wiese — sie gibt nur die Mahd (halten.K3), die Hand pflückt kein Gras
                 rock: "stein",
                 deadwood: "holz",
             })
@@ -1060,37 +1065,135 @@ class AnazhRealm_vegetation_wiese {
         const ns = this.state.nahStreu;
         const a = ns ? ns.senken.get(pick.senke) : null;
         if (!a || !a.ernte) return false;
-        const kachel = ns.kacheln.get(pick.key);
-        if (!kachel || !kachel.items.some((it) => it.id === pick.id)) return false;
-        // Session-Gedächtnis: Kachel → Identität → Ernte-Zeit (der Kachel-Bau + der Regrow-Tick lesen es). NICHT
-        // persistiert (Flora wächst nach).
-        if (!this.state.scatterHarvested) this.state.scatterHarvested = new Map();
-        let jeKachel = this.state.scatterHarvested.get(pick.key);
-        if (jeKachel && jeKachel.has(pick.id)) return false; // schon gepflückt (Doppel-Klick-Race)
-        this._weltRegt(); // die Ernte ändert die Kachel: die Nah-Streu baut sie neu (der Weckruf vor jedem Schreiben)
-        if (!jeKachel) {
-            jeKachel = new Map();
-            this.state.scatterHarvested.set(pick.key, jeKachel);
-        }
-        const t = performance.now();
-        jeKachel.set(pick.id, t);
-        // der Nachwuchs schläft bis zur ersten fälligen Ernte (`_tickScatterRegrow`, feld.K3)
-        this._nachwuchsFaellig = Math.min(this._nachwuchsFaellig ?? Infinity, t + AnazhRealm.FORAGE.regrowMs);
-        // Die Pflanze verschwindet SOFORT in jedem ihrer Teile (Stiel + Blüte, Rute + Laub): sie tritt aus dem Block
-        // ihrer Kachel in jeder Senke aus, der Bereich im Satz legt sich neu (`_streuNahLuecke`).
-        for (const sk of kachel.senken) {
-            const s = ns.senken.get(sk);
-            const b = s ? s.bloecke.get(pick.key) : null;
-            const i = b ? b.ids.indexOf(pick.id) : -1;
-            if (i < 0) continue;
-            this._streuNahLuecke(s, pick.key, i);
-        }
+        if (!this._streuNehmen(pick.key, pick.id)) return false;
         const got = this.addMaterialToInventory(a.ernte, 1);
         this.log(
             got ? `Gepflückt: ${a.preset} → 1× ${a.ernte}` : `Gepflückt: ${a.preset} — aber das Inventar ist voll`,
             "INFO"
         );
         // Die Tat prägt (V17.30-Substrat — sanft, wie das Sammeln).
+        if (typeof this._feelAction === "function") this._feelAction("harvest");
+        return true;
+    }
+
+    // Die Pflanze `id` der Nah-Streu-Kachel `key` verlässt die Welt (Pflücken und Mahd): ins Ernte-Gedächtnis
+    // (`_ernteMerken`), und sie verschwindet SOFORT in jedem ihrer Teile (Stiel + Blüte, Rute + Laub) — sie tritt aus dem
+    // Block ihrer Kachel in jeder Senke aus, der Bereich im Satz legt sich neu (`_streuNahLuecke`). false: keine solche
+    // Pflanze, oder schon geerntet (Doppel-Klick-Race).
+    _streuNehmen(key, id) {
+        const ns = this.state.nahStreu;
+        const kachel = ns ? ns.kacheln.get(key) : null;
+        if (!kachel || !kachel.items.some((it) => it.id === id)) return false;
+        if (!this._ernteMerken(key, id)) return false;
+        for (const sk of kachel.senken) {
+            const s = ns.senken.get(sk);
+            const b = s ? s.bloecke.get(key) : null;
+            const i = b ? b.ids.indexOf(id) : -1;
+            if (i < 0) continue;
+            this._streuNahLuecke(s, key, i);
+        }
+        return true;
+    }
+
+    // DAS ERNTE-GEDÄCHTNIS der Sitzung: Kachel → Identität → Ernte-Zeit — die Nah-Streu unter ihrem Kachel-Schlüssel, die
+    // Büschel der Nah-Wiese unter „wiese:<Kachel>" (der Kachel-Bau und der Regrow-Tick lesen es). NICHT persistiert (Flora
+    // wächst nach). false: schon geerntet.
+    _ernteMerken(key, id) {
+        if (!this.state.scatterHarvested) this.state.scatterHarvested = new Map();
+        let jeKachel = this.state.scatterHarvested.get(key);
+        if (jeKachel && jeKachel.has(id)) return false;
+        this._weltRegt(); // die Ernte ändert die Kachel: Streu und Wiese bauen sie neu (der Weckruf vor jedem Schreiben)
+        if (!jeKachel) {
+            jeKachel = new Map();
+            this.state.scatterHarvested.set(key, jeKachel);
+        }
+        const t = performance.now();
+        jeKachel.set(id, t);
+        // der Nachwuchs schläft bis zur ersten fälligen Ernte (`_tickScatterRegrow`, feld.K3)
+        this._nachwuchsFaellig = Math.min(this._nachwuchsFaellig ?? Infinity, t + AnazhRealm.FORAGE.regrowMs);
+        return true;
+    }
+
+    // DAS ZIEL DER ERNTE unter dem Fadenkreuz (der Klick-Dispatcher `tryMouseBreak`, Verb pfluecken): die getroffene Pflanze
+    // der Nah-Streu — die Hand pflückt sie. Fasst die Schneide des gehaltenen Geräts den Halm ihres Stoffs (`_ernteBand`,
+    // halten.K3: die Sichel), trägt das Ziel die MAHD: der Zug geht durch die Pflanze, ohne Pflanze durch den Boden unter dem
+    // Fadenkreuz, wo er die Büschel der Nah-Wiese fasst (ihr Stoff: STREU_ERNTE der Studio-Art des Grases). Der Zug ist der
+    // Bogen des EINEN Schwungs (ARENA.schwung.arcHalfRad zu beiden Seiten) mit der Reichweite der Klinge (`_kampfBladeReach`)
+    // als Radius, seine Mitte die Reichweite vor dem Zielpunkt zum Spieler hin; geschnitten wird im Band der fassenden
+    // Schneide (|Abstand zur Mitte − Radius| ≤ Band/2, höchstens die Reichweite über oder unter dem Zielpunkt) jeder
+    // ungeerntete Halm des Stoffs. null: nichts zu ernten.
+    _ernteZiel() {
+        const ns = this.state.nahStreu;
+        const flora = this._pickScatterAtCrosshair();
+        const senke = flora && ns ? ns.senken.get(flora.senke) : null;
+        const buch = this._foundry ? this._foundry.recipes : null;
+        const gras = buch && buch.gras ? AnazhRealm.STREU_ERNTE[buch.gras.kind] || null : null;
+        const stoff = flora ? senke && senke.ernte : gras;
+        const band = this._ernteBand(this._heldImplementBlueprint(), stoff);
+        if (!(band > 0)) return flora;
+        const k0 = flora ? ns.kacheln.get(flora.key) : null;
+        const h = flora ? null : this._raycastWorldHit(30);
+        const ort = flora ? k0 && k0.items.find((it) => it.id === flora.id) : h.hit ? h : null;
+        if (!ort) return flora;
+        const R = this._kampfBladeReach();
+        const pm = this.state.playerMesh.position;
+        const F = this._fadenkreuzStrahl();
+        const [ux, uz] = Math.hypot(ort.x - pm.x, ort.z - pm.z) > 1e-6 ? [ort.x - pm.x, ort.z - pm.z] : [F.d.x, F.d.z];
+        const ul = Math.hypot(ux, uz) || 1;
+        const [ex, ez] = [ux / ul, uz / ul];
+        const [cx, cz] = [ort.x - R * ex, ort.z - R * ez];
+        const cosA = Math.cos(AnazhRealm._arenaGesetz().schwung.arcHalfRad);
+        const imZug = (x, y, z) => {
+            const [dx, dz] = [x - cx, z - cz];
+            const d = Math.hypot(dx, dz);
+            return Math.abs(d - R) <= band / 2 && dx * ex + dz * ez >= cosA * d && Math.abs(y - ort.y) <= R;
+        };
+        // grob: die Kachel berührt den Kreis um die Mitte mit Radius R + Band
+        const nah = (key, K) => {
+            const [tx, tz] = key.split(",").map(Number);
+            const w = R + band;
+            return !((tx + 1) * K < cx - w || tx * K > cx + w || (tz + 1) * K < cz - w || tz * K > cz + w);
+        };
+        const mahd = { stoff, band, streu: [], wiese: [] };
+        const arten = this._nahStreuArten();
+        const sh = this.state.scatterHarvested;
+        for (const [key, k] of ns && arten ? ns.kacheln : []) {
+            if (!nah(key, AnazhRealm.NAH_STREU.kachel)) continue;
+            const alt = sh ? sh.get(key) : null;
+            for (const it of k.items)
+                if (arten[it.art].ernte === stoff && !(alt && alt.has(it.id)) && imZug(it.x, it.y, it.z))
+                    mahd.streu.push({ key, id: it.id });
+        }
+        const nw = this.state.nahWiese;
+        for (const [key, k] of nw && stoff === gras ? nw.kacheln : []) {
+            if (!nah(key, AnazhRealm.NAH_WIESE.kachel)) continue;
+            for (const b of k.bueschel) if (imZug(b.x, b.y, b.z)) mahd.wiese.push({ key, id: b.gi + "|" + b.gj });
+        }
+        if (!mahd.streu.length && !mahd.wiese.length) return flora;
+        return { point: flora ? flora.point : ort, mahd };
+    }
+
+    // DIE MAHD (halten.K3, das Ziel aus `_ernteZiel`): jeder Halm des Zugs verlässt die Welt über dasselbe Ernte-Gedächtnis
+    // wie das Pflücken und wächst mit ihm nach — die Pflanze der Nah-Streu tritt aus ihren Blöcken (`_streuNehmen`), die
+    // Kachel der Nah-Wiese fällt und baut sich ohne ihre gemähten Büschel neu (`_nahWieseKachelBueschel`); der Ertrag ist je
+    // Halm eine Einheit seines Stoffs. Das Gerät verschleißt je Zug — dieselbe Wand und derselbe Verschleiß wie Hieb und Abbau.
+    _maehen(mahd) {
+        const bp = this._heldImplementBlueprint();
+        if (this._geraetVerbraucht(bp, "Mähen")) return false;
+        let n = 0;
+        for (const h of mahd.streu) if (this._streuNehmen(h.key, h.id)) n++;
+        for (const h of mahd.wiese)
+            if (this._ernteMerken("wiese:" + h.key, h.id)) {
+                this._nahWieseKachelFaellt(h.key);
+                n++;
+            }
+        if (!n) return false;
+        this._kampfVerschleiss(bp);
+        const got = this.addMaterialToInventory(mahd.stoff, n);
+        this.log(
+            got ? `Gemäht: ${n} Halme → ${n}× ${mahd.stoff}` : `Gemäht: ${n} Halme — aber das Inventar ist voll`,
+            "INFO"
+        );
         if (typeof this._feelAction === "function") this._feelAction("harvest");
         return true;
     }
@@ -1115,6 +1218,8 @@ class AnazhRealm_vegetation_wiese {
             this._weltRegt(); // die Flora wächst nach: die Nah-Streu baut die Kachel neu (der Weckruf vor jedem Schreiben)
             for (const id of alt) jeKachel.delete(id);
             if (jeKachel.size === 0) sh.delete(key);
+            // die gemähte Wiese (halten.K3): ihre Kachel fällt und baut sich mit den nachgewachsenen Büscheln neu
+            if (key.startsWith("wiese:")) this._nahWieseKachelFaellt(key.slice(6));
             const k = ns ? ns.kacheln.get(key) : null;
             if (k) k.zustand = null;
         }
