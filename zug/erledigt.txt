@@ -6,3 +6,4 @@ z9c-abab nicht-langsamer abab 13c95713 gegen f7dd313c: w-ego 4+4 nicht-langsamer
 z10b-abab nicht-langsamer abab 833bbc24 gegen 13c95713: w-ego 2+2 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer
 w6-material-gtx gemessen punkte f7dd313c gtx: keine Mess-Datei
 z13-abab LANGSAMER abab 18a84649 gegen 833bbc24: w-ego 4+4 nicht-langsamer · d-ego 4+4 LANGSAMER · stadt 2+2 nicht-langsamer
+z10b-punkte gemessen punkte 833bbc24 gtx: 23 grün / 6 rot
