@@ -2,20 +2,14 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-boot-stage.cjs — „VOLLE BÜHNE" ALS PRÄDIKAT und DIE KALT-ZEILE (Pflicht-OFFEN B)
 //
-// Die volle Bühne ist ein PRÄDIKAT aus kanonischen Quellen (nichts hartkodiert, die Impostor-Erwartung aus der Bibliothek):
-//   RING ≥ Ziel · GRAS/WASSER ohne Wartende · STREU `_streuWartet` 0 (keine Region fehlt, wartet auf ihr Asset oder trägt
-//   eine offene Scheibe; eine fehlende Regionen-Karte heißt „der Streamer lief noch nie") · BIBLIO Foundry ready + Prefetch
-//   fertig · IMPOST Bake-Queue leer (nur mit Renderer) · LUFT die EINE Luftperspektive (scene.fogNode, Sichtweite ≥ 5 km).
-// --selftest: die Bühnen-Wahrheit liest dieselbe Streu (die wartende Region trägt gate:ankunft L2a), dazu das Urteil der
-// Ankunft.   node scripts/diag-boot-stage.cjs [--selftest]
+// Die volle Bühne (Null-Renderer) ist ein Prädikat aus kanonischen Quellen: RING ≥ Ziel · GRAS/WASSER ohne Wartende · STREU
+// `_streuWartet` 0 · BIBLIO Foundry warm · IMPOST Bake-Queue leer · LUFT Sichtweite ≥ 5 km. --selftest: die Bühnen-Wahrheit
+// liest dieselbe Streu, dazu das Urteil der Ankunft.   node scripts/diag-boot-stage.cjs [--selftest]
 //
-// DIE KALT-ZEILE: `--kalt` bootet mit echtem Renderer und LEEREM Profil (IDB leer, wie nach jedem Versions-Update) und nennt
-// je Sekunde, worauf das erste Weltbild wartet (`_weltbildFehlt`), die blockierten ms des Haupt-Threads (benannt: Boden,
-// Streu, Bauten, Gruppen-Bau, Buch, Ort-Wahl, Dorf und der Erst-Bau der Zeichnung aus `_erstZeichnung`), offene Pipelines,
-// die Phase des Vorrats (`f._vorrat` wörtlich) und die Foundry-Schlange; der Adapter vom Gerät (`device.adapterInfo`).
-// Urteil (`ankunftUrteil`): t(Kontrolle) von außen (W über CDP bewegt den Leib) ≤ 5 s in einem ganzen Bild. Ohne `--echt`
-// swiftshader, mit `--echt` die Hardware-GPU (1920×1080).
-//   node scripts/diag-boot-stage.cjs --kalt [--echt] [--sek 120] [--json datei] [--bild ankunft.png]
+// DIE KALT-ZEILE (`--kalt`: echter Renderer, leeres Profil): je Sekunde, worauf das erste Weltbild wartet (`_weltbildFehlt`),
+// die blockierten ms des Haupt-Fadens beim Namen, offene Pipelines, Vorrat und Foundry-Schlange. Urteil (`ankunftUrteil`):
+// t(Kontrolle) von außen (W über CDP bewegt den Leib) ≤ 5 s in einem ganzen Bild; `--echt` die Hardware-GPU (1920×1080).
+//   node scripts/diag-boot-stage.cjs --kalt [--echt] [--sek 120] [--json datei] [--bild ankunft.png] [--profil ordner]
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
@@ -28,19 +22,17 @@ const OPT = (k, d) => {
     const i = ARGV.indexOf(k);
     return i >= 0 ? ARGV[i + 1] : d;
 };
-// Das Soll der Ankunft (docs/PFLICHT-OFFEN.md B, roadmap §0.v1 Schritt 1): kalt bis Kontrolle ≤ 5 s.
 const ANKUNFT_SOLL_MS = 5000;
-// Das Bild bei der Kontrolle (ankunft K2): gegen dieselbe Pose nach KONTROLLE_RUHE_S Ruhe weicht höchstens BILD_LUECKE der
-// Pixel um mehr als BILD_TOL (je Kanal, 0–255)
+// das Bild bei der Kontrolle: gegen dieselbe Pose nach KONTROLLE_RUHE_S weicht ≤ BILD_LUECKE der Pixel um > BILD_TOL je Kanal
 const KONTROLLE_RUHE_S = 60;
 const BILD_TOL = 40;
 const BILD_LUECKE = 0.02;
 const server = statikServer();
 
-// ── DIE KALT-ZEILE (`--kalt`): die Probe je 200 ms in der Seite, ab dem ersten Skript ──
+// ── DIE KALT-ZEILE: die Probe in der Seite ab dem ersten Skript ──
 function KALT_PROBE() {
     const A = (window.__kalt = { proben: [], lang: [], ev: [] });
-    // der erste Asset-Auftrag an einen Studio-Faden (B3a: bis dahin ruht die Werkstatt)
+    // der erste Asset-Auftrag an einen Studio-Faden
     const post = Worker.prototype.postMessage;
     Worker.prototype.postMessage = function (m, t) {
         if (!A.auftrag && m && m.type === "build-asset") A.auftrag = Math.round(performance.now());
@@ -54,7 +46,7 @@ function KALT_PROBE() {
         A.ohneLang = true;
     }
     let gewickelt = false;
-    // die Haupt-Thread-Zeit je Sekunde der schweren Ankunfts-Arbeiter (synchron gemessen; verschachtelt zählt doppelt)
+    // die Haupt-Faden-Zeit je Sekunde der schweren Arbeiter (verschachtelt zählt doppelt)
     A.kosten = {};
     const KOSTEN = {
         _buildVoxelChunkDataFromWorkerMesh: "Boden",
@@ -65,8 +57,7 @@ function KALT_PROBE() {
         _foundryIngestBook: "Buch",
         _spawnSettlementSlot: "Dorf",
     };
-    // dazu die Bestellungen des Vorrats beim Namen (Wagen, Siedlungs-Probe); WANN er wartet und bestellt, sagt sein Merker
-    // (`f._vorrat`) — der Aufruf von `_foundryPrefetchLibrary` beim Worker-Start ist nie sein Bestell-Beginn
+    // dazu die Bestellungen des Vorrats beim Namen (Wagen, Siedlungs-Probe)
     const wickle = (P) => {
         for (const name of [...Object.keys(KOSTEN), "_foundryVorrat", "_foundryRequestSettlement"]) {
             const alt = P[name];
@@ -104,12 +95,12 @@ function KALT_PROBE() {
             }
             const f = r._foundry;
             if (f) {
-                o.vorrat = f._vorrat || null; // die Phase wörtlich (VORRAT_PHASE), null = steht nicht an oder ist durch
+                o.vorrat = f._vorrat || null;
                 let werk = 0;
                 for (const k of (f.pending && f.pending.keys()) || []) if (!String(k).startsWith("imp")) werk++;
                 o.schlange = `${(f.warte || []).length} wartend · ${werk} im Werk · ${(f.pending ? f.pending.size : 0) - werk} im Bäcker`;
             }
-            // der Erst-Bau der Zeichnung (der Stamm zählt ihn selbst, `_erstZeichnung`): Bauten · ms Haupt-Thread · offene Pipelines
+            // der Erst-Bau der Zeichnung (`_erstZeichnung`): Bauten · ms · offene Pipelines
             const E = r._erstZeichnung;
             if (E) o.erst = [E.bauN, Math.round(E.bauMs), E.offen ? E.offen.size : 0];
             o.da = r.state._weltbildDa ? Math.round(r.state._weltbildDa) : 0;
@@ -135,11 +126,8 @@ function KALT_PROBE() {
 async function kaltLauf() {
     const ECHT = ARGV.includes("--echt");
     const SEK = Number(OPT("--sek", 120));
-    // ohne `--echt` die EINE Weiche (K40: lokal der Hardware-Adapter, die CI swiftshader, `LINSE_GPU=software` der Rückweg),
-    // und der Lauf nennt seinen Adapter, damit keine Kalt-Zeile ein swiftshader-Ergebnis als Radeon ausgibt
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    // DIE ZWEIT-ZEILE (1310-16): `--profil <ordner>` hält das Profil (die Foundry-Platte, der HTTP-Cache) über den Lauf hinaus —
-    // der erste Lauf in einem neuen Ordner ist kalt, jeder weitere ein Zweit-Boot; ohne die Option ein leeres Wegwerf-Profil.
+    // DIE ZWEIT-ZEILE: `--profil <ordner>` hält die Platte über den Lauf hinaus (der erste Lauf darin ist kalt)
     const profilBenannt = OPT("--profil", null);
     const zweit = !!(profilBenannt && fs.existsSync(profilBenannt));
     const profil = profilBenannt ? path.resolve(profilBenannt) : fs.mkdtempSync(path.join(os.tmpdir(), "kalt-zeile-"));
