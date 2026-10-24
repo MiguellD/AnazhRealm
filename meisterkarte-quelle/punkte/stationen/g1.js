@@ -690,6 +690,50 @@ module.exports = [
         pfad: TAT_PFAD,
         quelle: "2 = sie hält nach Reload UND nach 1 Spielstunde und wächst über das Feld nach",
     },
+
+    // ── physik.K1 ── gate:fahr-leben --koerper (Null-Renderer): die EINE Stoff-Zeile (state.materials) trägt ρ in kg/m³, Teile wiegen
+    // ihr Mesh-Volumen, der Mensch die Vereinigung seiner Glieder unter der Haut; Mutation ρ ×2 → Masse ×2 und Eintauchtiefe in der
+    // Welt; Bänder der Messung: Mensch 60–90 kg, Wagen 1,1–1,6 t, Δv ±5 %, Holz ρ/ρw ±10 %, Stein sinkt, Labor = Welt ≤ 1 %
+    // (physik-k1-kg 0530894e; an main ROT: Massen ×1,000 unter ρ ×2, Spieler 117 kg)
+    {
+        kriterium: "physik.K1",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["bash", "-c", 'FAHR_LEBEN_PORT={PORT} node scripts/diag-fahr-leben.cjs --koerper; echo "KOERPER EXIT $?"'],
+        gpu: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const l = String(lauf.stdout || "").split(/\r?\n/).find((x) => /^\s*(✅|❌) K1#1 /.test(x));
+            if (!l) return { gruen: false, zahl: "K1#1 fehlt in der Ausgabe (Exit " + lauf.exit + ")" };
+            return { gruen: /^\s*✅/.test(l), zahl: l.replace(/^\s*(✅|❌) K1#1 \(physik\.K1\) /, "") };
+        },
+        pfad: ["stamm/bau-*.js", "stamm/kreatur-*.js", "stamm/koerper-*.js", "stamm/kampf.js", "stamm/wasser-*.js", "stamm/dirigent-*.js",
+            "stamm/daten.js", "foundry-core.js", "tetrapoda-core.js", "koerper-core.js", "vehicle-core.js", "schmiede-core.js",
+            "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/lib/wasser-linse.cjs"],
+        quelle: "1 = die Leiber (Spieler, Tier, Wagen) gemessen",
+    },
+    {
+        kriterium: "physik.K1",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["bash", "-c", 'FAHR_LEBEN_PORT={PORT} node scripts/diag-fahr-leben.cjs --koerper; echo "KOERPER EXIT $?"'],
+        gpu: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const z = String(lauf.stdout || "").split(/\r?\n/);
+            const l1 = z.find((x) => /^\s*(✅|❌) K1#1 /.test(x));
+            const l2 = z.find((x) => /^\s*(✅|❌) K1#2 /.test(x));
+            if (!l1 || !l2) return { gruen: false, zahl: "K1#1/K1#2 fehlen in der Ausgabe (Exit " + lauf.exit + ")" };
+            return {
+                gruen: /^\s*✅/.test(l1) && /^\s*✅/.test(l2) && /KOERPER EXIT 0\b/.test(lauf.stdout),
+                zahl: l2.replace(/^\s*(✅|❌) K1#2 \(physik\.K1\) /, "") + (/^\s*✅/.test(l1) ? "" : " · K1#1 ROT"),
+            };
+        },
+        pfad: ["stamm/bau-*.js", "stamm/kreatur-*.js", "stamm/koerper-*.js", "stamm/kampf.js", "stamm/werkstatt-*.js", "stamm/wasser-*.js",
+            "stamm/dirigent-*.js", "stamm/daten.js", "foundry-core.js", "tetrapoda-core.js", "koerper-core.js", "vehicle-core.js",
+            "schmiede-core.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/lib/wasser-linse.cjs"],
+        quelle: "2 = jedes Ding (gebaut, geschmiedet, lose); die Mutation von ρ in der EINEN Stoff-Zeile zieht Masse und Eintauchtiefe in der Welt",
+    },
 ];
 
 // ── NICHT FASSBAR (befehl: null): kein Werkzeug im Spiel-Baum misst das Soll dieser Staffel als EIN Befehl am SHA ──
@@ -701,8 +745,6 @@ module.exports.fehlt = [
     { kriterium: "wetter.K1", staffel: 2, befehl: null, grund: "nicht gebaut: das Wetter bleibt EIN globales Wort (`_setWeather`), keine Front am Ort; die Welt kennt 3 der 5 Zeilen von WX_GESETZ" },
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Pfützen in den Mulden, keine Trocken-Kurve, kein Third" },
     { kriterium: "wetter.K5", staffel: 2, befehl: null, grund: "nicht gebaut: kein Gelände formt den Wind (Lee, Tal-Düse); die Leser-Mutation von `_windAt` misst keine Linse" },
-    { kriterium: "physik.K1", staffel: 1, befehl: null, grund: "Werkzeug fehlt: keine Stoß-Matrix (Δv-Verhältnis = Massen-Verhältnis ±5 %, Masse aus Volumen × ρ) im Baum; der Beleg zitiert Code (`_stossPaar`, `_leibMasse`), die Kreatur-Probe temperament prüft nur, dass Temperament und Beute die EINE Masse lesen (R3)" },
-    { kriterium: "physik.K1", staffel: 2, befehl: null, grund: "nicht gebaut: Gebautes wiegt nichts (bau-buch dichte [0,1]-normiert), die Schmiede trägt ρ für 4 Stoffe — zwei Skalen" },
     { kriterium: "physik.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: der Wagen bei vmax × 1,2 gegen die 0,35-m-Mauer und die Bild-Probe (Spalt Leib–Wand ≤ 5 cm) auf beiden Geräten — gate:kollision-bild läuft auf dem Null-Renderer" },
     { kriterium: "feld.K2", staffel: 1, befehl: null, grund: "Werkzeug fehlt für das ganze Soll: gate:mp-sync (c) trägt nur zwei Chat-Edits über Peers, keine Bauten; kein Werkzeug misst Edits und Bauten byte-gleich über einen Reload (gate:reload-treue prüft den Guss-Pin der Kreatur)" },
     { kriterium: "feld.K2", staffel: 2, befehl: null, grund: "nicht gebaut: Wetter am Ort, Pegel, Overlays, Brand ohne Zustands-Nachricht über Peers ungemessen; Reload mitten im Sturm ohne Linse" },
