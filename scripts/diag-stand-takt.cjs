@@ -120,6 +120,7 @@ function selbsttest() {
                 mesh: { fern: 2, gehalten: 2 },
             },
             stand: { key: "-11,-27", vor: "3|0", nach: "3|0", gleich: true },
+            nah: { key: "-7,-24", lod: 0, vor: "3|0", nach: "3|0", gleich: true },
             plan: 140,
             maxTaktMs: 21,
             raeumung: { abbau: 5, saves: 0, saveMs: 0 },
@@ -321,6 +322,12 @@ function selbsttest() {
             (b) => Object.assign(b.ort.stand, { nach: "4|0", gleich: false }),
             /ORT: der Erdbau bei \(-182,-1038\) verwarf die Worker-Antworten des fernen Chunks -11,-27 \(Stand 3\|0 → 4\|0\)/,
         ],
+        [
+            "der Spieler-Chunk verwirft in seiner Stufe",
+            (b) => Object.assign(b.ort.nah, { nach: "3|7", gleich: false }),
+            /ORT: der Erdbau bei \(-182,-1038\) verwarf die Worker-Antworten des Spieler-Chunks -7,-24 in seiner Stufe L0 \(Stand 3\|0 → 3\|7\)/,
+        ],
+        ["die Ort-Phase findet den Spieler-Chunk nicht", (b) => (b.ort.nah = null), /LEER: die Ort-Phase fand den Spieler-Chunk nicht/],
         [
             "jeder Abbau speichert die Welt synchron",
             (b) => Object.assign(b.ort.raeumung, { saves: 5, saveMs: 420 }),
@@ -968,6 +975,11 @@ const server = statikServer();
                         }
                     const standOf = (k) => r._voxelStand(...k.split(",").map(Number));
                     O.stand = { key: standKey, vor: standKey ? standOf(standKey) : null };
+                    // der Spieler-Chunk IN SEINER STUFE (der Boden der Ankunft): 96 m vor ihm trifft der Erdbau sein Gitter nie
+                    const [pcx, pcz] = [Math.floor(pm.x / span), Math.floor(pm.z / span)];
+                    const pch = st.voxelChunks.get(`${pcx},${pcz}`);
+                    const plod = pch && Number.isFinite(pch.lod) ? pch.lod : 0;
+                    O.nah = pch ? { key: `${pcx},${pcz}`, lod: plod, vor: r._voxelStand(pcx, pcz, plod) } : null;
                     const core = globalThis.__phytoCore;
                     const pfcRoh = core.planForestCell;
                     let pfc = 0;
@@ -1003,6 +1015,10 @@ const server = statikServer();
                         if (standKey) {
                             O.stand.nach = standOf(standKey);
                             O.stand.gleich = O.stand.nach === O.stand.vor;
+                        }
+                        if (O.nah) {
+                            O.nah.nach = r._voxelStand(pcx, pcz, O.nah.lod);
+                            O.nah.gleich = O.nah.nach === O.nah.vor;
                         }
                         let max = 0;
                         for (let i = 0; i < O.takte; i++) {

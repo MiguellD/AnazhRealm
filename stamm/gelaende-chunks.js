@@ -507,7 +507,7 @@ class AnazhRealm_gelaende_chunks {
         if (!this.state.voxelDensityPending) this.state.voxelDensityPending = new Set();
         if (this.state.voxelDensityPending.has(cacheKey)) return null;
         this.state.voxelDensityPending.add(cacheKey);
-        const expectedStateGen = this._voxelStand(cx, cz);
+        const expectedStateGen = this._voxelStand(cx, cz, lod);
         // Origin + Sample-Dimensions IDENTISCH zur Main-Thread-Geometry-Calls
         // (V9.42-d-Pad: ox-step + dim+3 in X/Z, vertikal dimY).
         this._voxelWorkerComputeDensity(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step)
@@ -515,7 +515,7 @@ class AnazhRealm_gelaende_chunks {
                 this.state.voxelDensityPending.delete(cacheKey);
                 // Stale-Result-Filter: änderte sich der Stand des Chunks während des Roundtrips (ein Edit in
                 // seinem 3×3, ein Welt-Sync), ist das Grid gegen alten State berechnet — verwerfen.
-                if (this._voxelStand(cx, cz) !== expectedStateGen) return;
+                if (this._voxelStand(cx, cz, lod) !== expectedStateGen) return;
                 if (!this.state.voxelDensityCache) this.state.voxelDensityCache = new Map();
                 this.state.voxelDensityCache.set(cacheKey, density);
             })
@@ -594,7 +594,7 @@ class AnazhRealm_gelaende_chunks {
         if (!this.state.voxelMeshGenAtRequest) this.state.voxelMeshGenAtRequest = new Map();
         if (this.state.voxelMeshPending.has(cacheKey)) return null;
         this.state.voxelMeshPending.add(cacheKey);
-        const expectedStateGen = this._voxelStand(cx, cz);
+        const expectedStateGen = this._voxelStand(cx, cz, lod);
         this.state.voxelMeshGenAtRequest.set(cacheKey, expectedStateGen);
         // die Platte NUR für edit-freie Footprints bei stehender Worldgen-Wahrheit (Lesen und Stiften, auch `empty:true`)
         const platte =
@@ -604,7 +604,7 @@ class AnazhRealm_gelaende_chunks {
         this._voxelWorkerComputeChunkMesh(cx, cz, lod, platte)
             .then((meshData) => {
                 this.state.voxelMeshPending.delete(cacheKey);
-                if (this._voxelStand(cx, cz) !== expectedStateGen) {
+                if (this._voxelStand(cx, cz, lod) !== expectedStateGen) {
                     this.state.voxelMeshGenAtRequest.delete(cacheKey);
                     return;
                 }

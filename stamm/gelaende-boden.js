@@ -758,9 +758,15 @@ class AnazhRealm_gelaende_boden {
             for (let b = la; b <= lb; b++) {
                 if (!trifft(a, b, 3)) continue;
                 const key = `${a},${b}`;
-                genKarte.set((a + 32768) * 65536 + (b + 32768), this._editGenZaehler);
+                // die Generation JE STUFE (b-abdruck): fällt ein Gedächtnis der Stufe, fällt dort auch die Antwort im Flug
+                const gk = (a + 32768) * 65536 + (b + 32768);
+                const g = genKarte.get(gk) || [0, 0, 0, 0];
+                genKarte.set(gk, g);
                 for (let lod = 0; lod <= 3; lod++)
-                    if (trifft(a, b, lod)) for (const c of caches) if (c && c.size) c.delete(`${key},${lod}`);
+                    if (trifft(a, b, lod)) {
+                        g[lod] = this._editGenZaehler;
+                        for (const c of caches) if (c && c.size) c.delete(`${key},${lod}`);
+                    }
                 const ch = gezeichnet && gezeichnet.get(key);
                 if (ch && trifft(a, b, Number.isFinite(ch.lod) ? ch.lod : 0)) this.state.dirtyVoxelChunks.add(key);
                 if (trifft(a, b, 0)) this.state.grassDirtyChunks.add(key);
@@ -1254,19 +1260,26 @@ class AnazhRealm_gelaende_boden {
     }
 
     // Der Stand eines Chunks für den Stale-Filter der Worker- und Platten-Antworten: der Welt-Sync
-    // (`voxelWorkerStateGen`) und die jüngste Generation eines Edits oder eines Erdbaus (`_erdbauSetzen`, K69) im 3×3 um
-    // ihn. Ein Edit und ein Ort verwerfen nur die Antworten ihrer Nachbarschaft, nie die der ganzen Welt.
-    _voxelStand(cx, cz) {
+    // (`voxelWorkerStateGen`) und die jüngste Generation eines Edits im 3×3 um ihn (seine Flut-Saat liest die Nachbarn) und
+    // eines Erdbaus (`_erdbauSetzen`, K69). Ein Edit und ein Ort verwerfen nur die Antworten ihrer Nachbarschaft.
+    // DER ERDBAU IN DER STUFE (b-abdruck): eine Antwort der Stufe `lod` (Mesh, Dichte) fällt genau, wo ihr Gedächtnis fällt —
+    // die Generation des Chunks selbst in dieser Stufe (`_erdbauWirkt`: die Wirkung trifft sein Gitter samt Probe-Rand). Bis
+    // dahin las jede Antwort die gröbste Stufe im 3×3 (Rand 59 m und ein Chunk): der Grund des Vorschau-Hauses am Tor
+    // (4 × 5 m) verwarf beim Boot 26 von 50 Antworten des ersten Bodens, der Boden kam ein zweites Mal (Radeon kalt
+    // 1,84 s bestellt, 3,71 s neu bestellt). Ohne Stufe (das Wasser-Blatt liest die Zellen des 3×3) die gröbste im 3×3.
+    _voxelStand(cx, cz, lod) {
         const gen = this._voxelEditKarte().gen;
         const erd = this._erdbauGenKarte;
+        const stufe = lod >= 0 && lod <= 3 ? lod | 0 : -1;
         let g = 0;
         for (let dx = -1; dx <= 1; dx++) {
             for (let dz = -1; dz <= 1; dz++) {
                 const k = (cx + dx + 32768) * 65536 + (cz + dz + 32768);
                 const v = gen.get(k);
                 if (v > g) g = v;
-                const w = erd ? erd.get(k) : undefined;
-                if (w > g) g = w;
+                const w = erd && (stufe < 0 || (dx === 0 && dz === 0)) ? erd.get(k) : undefined;
+                const e = w ? w[stufe < 0 ? 3 : stufe] : 0;
+                if (e > g) g = e;
             }
         }
         return `${this.state.voxelWorkerStateGen}|${g}`;
