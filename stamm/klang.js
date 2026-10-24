@@ -55,9 +55,9 @@ class AnazhRealm_klang {
         }
         s.ctx = null;
         s.enabled = false;
-        // Die Lofi-Oszillatoren und die Umwelt-Quellen sind transient (auto-stop); Gain + Filter räumt der GC
-        // mit dem geschlossenen ctx.
+        // Die Stimmen des Pools und die Umwelt-Quellen sterben mit dem geschlossenen ctx; Gain + Filter räumt der GC.
         s.lofi = null;
+        s.stimmen = null;
         s.umwelt = null;
         s.fahrt = null; // die Stimme der Fahrt starb mit dem Kontext
         s.masterGain = null;
@@ -923,9 +923,9 @@ class AnazhRealm_klang {
     }
 
     // Ein Ton der Musik auf einer Stimme des Pools (`_klangStimme`): die Frequenz ab t, die Hülle von 0 linear durch die
-    // Punkte [Sekunden ab t, Pegel]; der letzte Punkt (Pegel 0) ist das Ende des Tons.
+    // Punkte [Sekunden ab t, Pegel]; sein Ende ist der späteste Punkt (ein Anschlag länger als der Ton liegt dahinter).
     _lofiTon(ziel, welle, freq, t, punkte) {
-        const v = this._klangStimme(ziel, "ton:" + welle, t, t + punkte[punkte.length - 1][0]);
+        const v = this._klangStimme(ziel, "ton:" + welle, t, t + Math.max(...punkte.map((pt) => pt[0])));
         v.q.frequency.setValueAtTime(freq, t);
         v.g.gain.setValueAtTime(0, t);
         for (const [dt, pegel] of punkte) v.g.gain.linearRampToValueAtTime(pegel, t + dt);
