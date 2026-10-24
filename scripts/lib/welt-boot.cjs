@@ -4,7 +4,6 @@
 //                    + der FEHLER-SAMMLER an jeder Seite: pageerror (auch unbehandelte Rejections), console.error,
 //                    Absturz der Seite, Trennung des Browsers ohne Abbau — jeder Fehler macht den Lauf ROT mit Namen,
 //                    nie Exit 0 (die Wache sitzt am Prozess-Ende: ein Exit 0 mit gesammeltem Fehler wird Exit 1)
-//   oeffneWelt()     Seite laden und auf die Welt warten (anazhRealm mit _gameLoopTick), wahlweise Null-Renderer
 //   halteBis()       eine Taste halten, bis ihr Ereignis eintritt (nie nach der Wanduhr, gate:apparat Klinge 5)
 //   buehne()         die Bühne (Mittag · Sonne · Sommer, scripts/lib/ausgabe-aufnahme.cjs)
 //   uferStellen      (Seite) ein Leser der Szenen-Tiefe im Blick, der zeichnet: das Wasser am Bach der Mess-Wiese
@@ -179,7 +178,7 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
         let p;
         try {
             p = decodeURIComponent(req.url.split("?")[0]);
-        } catch (_e) {
+        } catch {
             res.statusCode = 400;
             return res.end();
         }
@@ -310,7 +309,7 @@ function pulsSeite() {
     const sende = (art, text) => {
         try {
             B(`${art}\t${String(text).slice(0, 300)}`);
-        } catch (_e) {
+        } catch {
             // das Binding ist fort: die Seite geht
         }
     };
@@ -410,7 +409,7 @@ function zeichnetHaken() {
         function (...a) {
             try {
                 window.top.__gpuGenutzt = true;
-            } catch (_e) {
+            } catch {
                 window.__gpuGenutzt = true;
             }
             return f.apply(this, a);
@@ -552,11 +551,11 @@ function faedenProbe(pid) {
                     name: st.slice(st.indexOf("(") + 1, st.lastIndexOf(")")),
                     ticks: Number(rest[11]) + Number(rest[12]),
                 });
-            } catch (_e) {
+            } catch {
                 // der Faden endete zwischen Liste und Lesen
             }
         }
-    } catch (_e) {
+    } catch {
         return null;
     }
     return m;
@@ -715,7 +714,7 @@ async function starteBrowser(opts = {}) {
                 }
                 vor = jetzt;
                 fVor = fJetzt;
-            } catch (_e) {
+            } catch {
                 // die Browser-Sitzung geht mit dem Browser
             }
         }, 2000);
@@ -745,7 +744,7 @@ async function starteBrowser(opts = {}) {
         try {
             const p = await t.page();
             if (p) await akteAnSeite(fehlerSammler(p), b);
-        } catch (_e) {
+        } catch {
             // ein Ziel, das vor dem Anheften stirbt, meldet sich über disconnected/close
         }
     });
@@ -772,27 +771,6 @@ async function warteAufWelt(page, frist = 120000) {
     await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
         timeout: frist,
     });
-}
-
-// Die Seite der Welt: Null-Renderer wahlweise, laden, auf die Welt warten.
-async function oeffneWelt(
-    browser,
-    {
-        port,
-        pfad = "/index.html",
-        nullRenderer: ohneBild = false,
-        viewport,
-        frist = 120000,
-        warteBis = "networkidle0",
-        warten = true,
-    } = {}
-) {
-    const page = await browser.newPage();
-    if (viewport) await page.setViewport(viewport);
-    if (ohneBild) await nullRenderer(page);
-    await page.goto(`http://127.0.0.1:${port}${pfad}`, { waitUntil: warteBis, timeout: frist });
-    if (warten) await warteAufWelt(page, frist);
-    return page;
 }
 
 // Eine Taste HALTEN, bis `ziel` auf `seite` (Page oder Frame) wahr wird — nie nach der Wanduhr (gate:apparat Klinge 5); `taste`
@@ -960,7 +938,7 @@ function werkbankRuf(port, weg, nutzlast) {
                 r.on("end", () => {
                     try {
                         res(JSON.parse(d));
-                    } catch (_e) {
+                    } catch {
                         res({ roh: d });
                     }
                 });
@@ -1101,7 +1079,6 @@ module.exports = {
     WARTEN_SEITE,
     statikServer,
     starteBrowser,
-    oeffneWelt,
     warteAufWelt,
     nullRenderer,
     halteBis,

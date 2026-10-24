@@ -82,7 +82,7 @@ function parseKey(key) {
 
     const realm = await PK.bootRealm(PORT);
     try {
-        const rd = await PK.waitFoundryReady(realm.page, 90000);
+        const rd = await PK.waitFoundryReady(realm.page);
         if (!rd.ready || !(rd.recipeCount > 0)) {
             console.error(`❌ Foundry nicht bereit (ready=${rd.ready}, recipes=${rd.recipeCount}).`);
             process.exit(2);
@@ -113,7 +113,7 @@ function parseKey(key) {
                 },
             ];
         } else {
-            const lib = await PK.waitLibraryWarm(realm.page, 180000);
+            const lib = await PK.waitLibraryWarm(realm.page);
             if (!lib.warm) {
                 console.error("❌ Bibliothek wurde nicht warm (Prefetch hängt) — kein Inventar zu minten.");
                 process.exit(2);

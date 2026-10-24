@@ -278,7 +278,7 @@ async function buehneBauen() {
     await window.__weltStehtNach(() => {
         try {
             r._gameLoopTick(performance.now());
-        } catch (_e) {}
+        } catch {}
     }); // die Welt steht (das EINE Einschwingen, welt-boot)
     for (const c of [...st.creatures]) if (Math.hypot(c.position.x - bx, c.position.z - bz) < 80) r.removeCreature(c);
     window.__sb = { bx, bz };
@@ -311,7 +311,7 @@ async function probe(cfg) {
         for (let t = 0; t < n; t++) {
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             uhrHalten();
             await sleep(25);
         }

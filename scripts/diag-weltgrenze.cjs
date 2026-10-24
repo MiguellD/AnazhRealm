@@ -90,7 +90,7 @@ function startFang() {
     try {
         const id = localStorage.getItem("anazhRealmActiveWorld");
         window.__grenzeStart = { id, json: id ? localStorage.getItem("anazhRealmState_" + id) : null };
-    } catch (_e) {
+    } catch {
         window.__grenzeStart = { id: null, json: null };
     }
 }
@@ -185,7 +185,7 @@ function seitenPruefer() {
             setTimeout(() => {
                 try {
                     r.saveState();
-                } catch (_e) {
+                } catch {
                     /* ein Wurf zählt der Page-Error */
                 }
             }, 300);

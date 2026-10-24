@@ -2938,8 +2938,8 @@ function scanPortWand(dateien, anschluss = ANSCHLUSS) {
     }
     return errs;
 }
-// DIE BOOT-WAND (Z2b-1): Server und Browser jeder Linse startet scripts/lib/welt-boot.cjs (statikServer · starteBrowser
-// · oeffneWelt) — mit dem EINEN Fehler-Sammler, der jeden Seitenfehler, jeden Absturz und jedes console.error ROT mit
+// DIE BOOT-WAND (Z2b-1): Server und Browser jeder Linse startet scripts/lib/welt-boot.cjs (statikServer · starteBrowser)
+// — mit dem EINEN Fehler-Sammler, der jeden Seitenfehler, jeden Absturz und jedes console.error ROT mit
 // Namen macht. Ein eigener Start (`puppeteer.launch(` · `http.createServer(` · ein `spawn` des save- oder
 // signaling-servers, K-WANDUHR: der EINE ist `startProc`, am Ereignis; Kommentare und Texte zählen nicht) ist ROT mit
 // Datei; die Rest-Liste nennt die noch nicht gezogenen und darf nur SCHRUMPFEN: eine Zeile, deren Datei nicht mehr
@@ -2962,7 +2962,7 @@ function eigenBoots(dateien) {
                 if ((o === "puppeteer" && p === "launch") || (o === "http" && p === "createServer")) ja = true;
                 if (/spawn/.test(c.name || p) && /(?:save|signaling)-server\.js/.test(src.slice(n.start, n.end))) ja = true;
             });
-        } catch (_e) {
+        } catch {
             return /\bpuppeteer\s*\.\s*launch\s*\(|\bhttp\s*\.\s*createServer\s*\(/.test(stripComments(src));
         }
         return ja;

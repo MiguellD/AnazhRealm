@@ -285,7 +285,7 @@ async function probe() {
             try {
                 kopie = JSON.parse(JSON.stringify(bp));
                 stoffe = JSON.parse(JSON.stringify(echteStoffe));
-            } catch (_e) {
+            } catch {
                 continue;
             }
             const lr = new Set(),
