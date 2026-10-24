@@ -374,21 +374,23 @@ const stationen = [
         quelle: "1 = der Spieler geht durch die Tür bis Keller und Dachboden ohne Vertikal-Sprung > 0,3 m in einem Frame (Anti-Clip-Hub = ROT), an einem Haus",
     },
 
-    // ───────── siedlung.K5 — das erste Haus steht sofort (M36) ─────────
+    // ───────── siedlung.K5 — das erste Haus steht sofort (M36, die Stufe am Abstand) ─────────
+    // Station dorf wie M36: Werkbank --echt --ort dorf, Regler frei, die Zelle −4,−6 per Zell-Info nH 12 bzw. 300, der Spieler geht mit
+    // 4 m/s ab 450 m durch den Vorlauf-Ring, bis sie erwacht; je nH ein frischer Boot. Gezählt: Erwachen → erstes Haus der Zelle im
+    // Kegel, gezeichnet in der Stufe, die seine Studio-Kette für seinen Abstand wählt — in der Mesh-Zone sein Mesh, dahinter die Hülle
+    // seines Gesetzbuchs im Welt-March (fernform "huelle"); der Feld-Satz einer Brücke in der Mesh-Zone zählt nie —, dazu der Bau-Hash
+    // (bericht/2410-siedlung-k5/m36-stufe.js = artifacts/siedlung-k5/m36-stufe.js; `erstesMesh` trägt die alte Lesung mit).
     ...[1, 2].map((staffel) => ({
         kriterium: "siedlung.K5",
         staffel,
         geraet: ["radeon", "gtx"],
-        // Station dorf wie M36 (bericht/2210-messschuld-gtx-6cfce/m36.sh): Werkbank --echt --ort dorf, Regler frei, die Zelle
-        // −4,−6 per Zell-Info nH 12 bzw. 300, der Spieler geht mit 4 m/s ab 450 m durch den Vorlauf-Ring, bis sie erwacht; je nH
-        // ein frischer Boot; Zeit Erwachen → erstes Haus gezeichnet im Kegel, Bau-Hash (m36-erstes-haus.js)
         befehl: sitzung(
             ...[12, 300].flatMap((nh) => [
                 "boot --ort dorf",
                 "timeout 60 $W fenster 1920 1080 > /dev/null 2>&1",
                 "timeout 120 $W umstellen --ort dorf --sicht ego > /dev/null 2>&1",
                 "timeout 300 $W lauf 10 --ein 20 --ruhe 120 --regler frei --tiere frei > /dev/null 2>&1",
-                "teil NH" + nh + ' $W eval "window.__m36 = { zelle: [-4, -6], nH: ' + nh + ', start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2210-messschuld-gtx-6cfce/m36-erstes-haus.js")"',
+                "teil NH" + nh + ' $W eval "window.__m36 = { zelle: [-4, -6], nH: ' + nh + ', start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2410-siedlung-k5/m36-stufe.js")"',
             ])
         ),
         env: K,
@@ -404,17 +406,63 @@ const stationen = [
                 return {
                     nh,
                     ok: ms != null && ms <= 500 && !!e.hash,
-                    text: "nH " + nh + " erstes Haus nach " + (ms == null ? "—" : ms + " ms") + " (" + (e.erstes ? e.erstes.typ : "kein Haus") + ", Bau-Hash " + e.hash + ")",
+                    text: "nH " + nh + " erstes Haus nach " + (ms == null ? "—" : ms + " ms") + " (" + (e.erstes ? e.erstes.typ + ", " + e.erstes.stufe + " in " + e.erstes.abstand + " m" : "kein Haus") + ", Bau-Hash " + e.hash + ")",
                 };
             });
             return { gruen: je.every((x) => x.ok), zahl: je.map((x) => x.text).join(" · ") };
         },
-        pfad: [...DORF, "scripts/lib/welt-orte.cjs"],
+        pfad: [...DORF, "stamm/stoff-instanz.js", "stamm/studio-*.js", "stamm/vegetation-baum.js", "scripts/lib/welt-orte.cjs"],
         quelle:
             staffel === 1
                 ? "1 = erstes Haus sichtbar ≤ 0,5 s nach dem Erwachen der Zelle, unabhängig von nH (12 gegen 300), als Studio-L-Kette (Bau-Hash im Bild), an einem Gerät"
                 : "2 = beide Geräte",
     })),
+
+    // ───────── siedlung.K3 — die Gassen folgen dem Grund am Ort des Plans (Zweig siedlung-k3-trasse) ─────────
+    // gate:settlement C-K3 (Browser, Null-Renderer, ≤ 3 min): die drei Vorräte am Mess-Ort dorf, das Auto-Dorf der Zelle −4,−4 und
+    // der Akt am Hang — je Plan v2 der Abstand vom Ort seines Höhen-Rasters (Soll 0), die Lese-Punkte außerhalb des Rasters (Soll 0)
+    // und das Gassen-Gefälle p95 am Grund ohne Erdbau (`gassenGefaelle`, Soll ≤ ORT_GESETZ.gefaelle = 12 %); Selbsttest: jeder
+    // Export am Raster des Wunschs, den die Ort-Wahl rückt (bis siedlung-k3-trasse) → ROT.
+    {
+        kriterium: "siedlung.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-settlement.cjs"],
+        env: { SETTLEMENT_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const z = /^\s*(✅|❌) C-K3: DIE TRASSE AM ORT — (\d+) Dörfer[^\n]* — (\[.*\])\s*$/m.exec(out);
+            const s = /^\s*(✅|❌) C-K3 Selbsttest/m.exec(out);
+            let t = [];
+            try {
+                t = z ? JSON.parse(z[3]) : [];
+            } catch (_e) {
+                t = [];
+            }
+            const gruen = !!z && z[1] === "✅" && +z[2] >= 4 && !!s && s[1] === "✅" && lauf.exit === 0;
+            return {
+                gruen,
+                zahl: z
+                    ? z[2] + " Dörfer, Gassen-Gefälle p95 " + t.map((x) => x.zelle + " " + x.p95 + " %").join(" · ") +
+                      ", Versatz " + t.map((x) => x.versatzM).join("/") + " m, Selbsttest " + (s ? s[1] : "—") + ", Exit " + lauf.exit
+                    : "keine Zeile C-K3 (Exit " + lauf.exit + ")",
+            };
+        },
+        pfad: [
+            "fachwerk-core.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "foundry-bruecke.js",
+            "stamm/siedlung-ort.js",
+            "stamm/gelaende-boden.js",
+            "worlds/fachwerk/fachwerk.js",
+            "scripts/diag-settlement.cjs",
+            "spec/asset-contract/v6/golden/siedlung.json",
+        ],
+        quelle: "1 = Gassen-Gefälle p95 ≤ 12 % VOR der Erdbau-Glättung in ≥ 4 Saaten",
+    },
 
     // ───────── leib.K1 — Taste → Leib im Bild ─────────
     {
