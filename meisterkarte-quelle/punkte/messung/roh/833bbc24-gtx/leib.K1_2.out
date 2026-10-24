@@ -1,0 +1,27 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx C:/Program Files/Git/bin/bash.exe -c set -u
+WP=7749; SP=$((7749 + 20000)); LP=$((7749 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=
+weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n "$SPID" ] && kill "$SPID" 2> /dev/null; SPID=; for p in $(netstat -ano 2> /dev/null | grep -aE ":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }
+trap weg EXIT
+boot() { weg; PORT=$SP node save-server.js > "$L/save.log" 2>&1 & SPID=$!; for t in $(seq 1 30); do curl -s -o /dev/null "http://localhost:$SP/" && break; sleep 1; done; $W start --echt --port $WP --seite "http://localhost:$SP" "$@" > "$L/wb.log" 2>&1 & for t in $(seq 1 120); do grep -qE "WERKBANK bereit|FEHLER|Error" "$L/wb.log" && break; sleep 5; done; grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ $W latenz --proben 50 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\833bbc24-gtx\leib.K1_2.json"
+@@PUNKTE@@ LATENZ
+ego/gehen {"n":50,"fehlt":0,"p50":30.1,"p95":45,"max":56.6,"eingabe":0.3,"hoerer":0,"kette":16.4,"kurve":13,"takte":4}
+ego/springen {"n":50,"fehlt":0,"p50":21.5,"p95":32.6,"max":34,"eingabe":0.3,"hoerer":0.1,"kette":9.9,"kurve":15.8,"takte":3}
+ego/einsteigen {"n":50,"fehlt":0,"p50":13.8,"p95":27.2,"max":163.9,"eingabe":0.3,"hoerer":0.4,"kette":11,"kurve":0,"takte":1}
+ego/hieb {"n":50,"fehlt":0,"p50":14.1,"p95":27.1,"max":37.6,"eingabe":0.3,"hoerer":3.5,"kette":12.9,"kurve":0,"takte":2,"halt":12}
+third/gehen {"n":50,"fehlt":0,"p50":21.7,"p95":39.2,"max":47.7,"eingabe":0.3,"hoerer":0,"kette":12.4,"kurve":8.2,"takte":3}
+third/springen {"n":50,"fehlt":0,"p50":12.7,"p95":20.3,"max":25.6,"eingabe":0.3,"hoerer":0.1,"kette":12.4,"kurve":0,"takte":2}
+third/einsteigen {"n":50,"fehlt":0,"p50":12.2,"p95":21.4,"max":22.8,"eingabe":0.3,"hoerer":0.2,"kette":11.8,"kurve":0,"takte":1}
+third/hieb {"n":50,"fehlt":0,"p50":22.8,"p95":34.2,"max":35.4,"eingabe":6.9,"hoerer":2,"kette":17.9,"kurve":0,"takte":3,"halt":18}
+LATENZ GRÜN (Bild 10.2 ms) 
+@@PUNKTE@@ EXIT 0
+
+--- stderr ---
+environment: line 3:  9301 Terminated              PORT=$SP node save-server.js > "$L/save.log" 2>&1
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 28:  9283 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
