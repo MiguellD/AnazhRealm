@@ -325,6 +325,26 @@ class AnazhRealm_stoff_instanz {
         return mat;
     }
 
+    // DAS LAUB VERBERGEN (laub-kante, lod.K1 — Holz ist Außen): die Teilung der Klassen (werkbank `bild --klasse`) verbirgt von
+    // einem Baum nur sein Laub. Die Karte zeichnet dann den Knoten ihres Atlas, der nur Stamm und Äste trägt (`ohneLaub`, das
+    // Laub-Gesetz je Texel), die Rinde einer Gestalt (`budgetRegler` rinde) bleibt stehen; `an` false zeigt das Laub wieder.
+    // Zurück, ob `o` so geteilt wird — sonst verbirgt die Teilung es ganz.
+    _laubVerbergen(o, an) {
+        const at = this._impostorAtlas();
+        if (!at.mat || o.material !== at.mat) {
+            const art = (o.material.userData || {}).foundryKind;
+            const kl = this._taeterKlasse(o).split(":");
+            return !!art && globalThis.__phytoCore.budgetRegler(art).rinde && this._foundryPresetIsTree(kl[1]);
+        }
+        if (!at.ohneLaub) throw this._stoffBruch("der Karten-Stoff trägt keinen Knoten ohne Laub");
+        if (!!at.mitLaub !== an) {
+            if (an) [at.mitLaub, at.mat.colorNode] = [at.mat.colorNode, at.ohneLaub];
+            else [at.mat.colorNode, at.mitLaub] = [at.mitLaub, null];
+            at.mat.needsUpdate = true;
+        }
+        return true;
+    }
+
     // Das Karten-Leaf einer Zelle: Einheits-Quad + Atlas-Material, Schicht, Rahmen (Halbbreite, Höhe — template-lokal)
     // und Sichthöhe (`sicht`: die Höhe der Höhen-Stufe, × Instanz-Skala gestempelt — dieselbe Zahl wie der aH0-Stempel
     // der L1) reisen als Instanz-Werte über `_lodSlotStamp`, die Gruppe ist die EINE Atlas-Gruppe. Ohne Sichthöhe keine

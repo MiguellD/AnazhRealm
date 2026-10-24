@@ -479,25 +479,6 @@ function membranOhneFilm(an) {
     return { n, ohneZiel };
 }
 
-// DIE KARTE OHNE LAUB (laub-kante, lod.K1 — Holz ist Außen): `an` setzt dem EINEN Karten-Stoff den Knoten seines Atlas, der
-// nur Stamm und Äste zeichnet (`_impostorAtlas().ohneLaub`, das Laub-Gesetz der Karte je Texel), `an` false den Stoff
-// zurück. So verbirgt die Teilung der Klassen (werkbank `bild --klasse`) von der Karte nur ihr Laub, wie sie von der Gestalt
-// nur das Laub zählt (die Rinde steht außerhalb); ohne Karte im Bild ist es nichts. Zurück: ob ein Stoff wechselte.
-function karteOhneLaub(an) {
-    const at = window.anazhRealm._impostorAtlas();
-    if (!at || !at.mat) return false;
-    if (!at.ohneLaub) throw new Error("der Karten-Stoff trägt keinen Knoten ohne Laub (_impostorAtlas().ohneLaub)");
-    if (an) {
-        at.__farbeMitLaub = at.mat.colorNode;
-        at.mat.colorNode = at.ohneLaub;
-    } else if (Object.prototype.hasOwnProperty.call(at, "__farbeMitLaub")) {
-        at.mat.colorNode = at.__farbeMitLaub;
-        delete at.__farbeMitLaub;
-    } else return false;
-    at.mat.needsUpdate = true;
-    return true;
-}
-
 // DIE TIERE HALTEN STILL: zwischen Blick-Wahl und Schuss liegen hunderte Takte, in denen Tiere wandern
 // (ein Tier liefe in die Kamera). Nach jedem Kreatur-Tick fallen x/z auf den Stand davor zurück; Animation, Haut, Boden-Höhe
 // und LOD laufen weiter.
@@ -1412,6 +1393,5 @@ module.exports = {
         `window.__buehne = ${buehne.toString()};` +
         `window.__tiereHalten = ${tiereHalten.toString()};` +
         `window.__membranOhneFilm = ${membranOhneFilm.toString()};` +
-        `window.__karteOhneLaub = ${karteOhneLaub.toString()};` +
         `(${saisonFest.toString()})();`,
 };
