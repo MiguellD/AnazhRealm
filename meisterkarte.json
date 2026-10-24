@@ -3,11 +3,11 @@
   "kopf": "056330d8",
   "version": "V18.546.79",
   "skala": "2.0",
-  "summe": 57,
+  "summe": 61,
   "max": 330,
   "maschine": {
     "kopf": "056330d8",
-    "zeit": "2026-10-24T08:20:26.476Z",
+    "zeit": "2026-10-24T08:56:07.997Z",
     "kriterien": [
       "affekt.K1",
       "bauen.K1",
@@ -111,7 +111,7 @@
     {
       "key": "sicht",
       "titel": "III · SICHT UND VISUELLE TIEFE — Licht, Ferne, Material, Schatten, Stufen",
-      "summe": 4,
+      "summe": 6,
       "max": 50,
       "bereiche": [
         "licht",
@@ -138,7 +138,7 @@
     {
       "key": "wege",
       "titel": "V · WELTEN UND WEGE — Tore, Fahrt, Siedlung, Leib, Halten, der gespielte Pfad, das Ultiversum",
-      "summe": 10,
+      "summe": 12,
       "max": 70,
       "bereiche": [
         "tore",
@@ -2053,7 +2053,7 @@
       "key": "material",
       "titel": "Material-Tiefe — PBR aus dem Gesetz, Mikro-Detail, Stufen, Spiegelung",
       "gruppe": "sicht",
-      "punkte": 1,
+      "punkte": 2,
       "pfad": "v1 (sehen) · A (haus, boden-nah)",
       "dateien": "`stamm/stoff-material.js` (Substanz-Kern) · `stamm/stoff-instanz.js` · `spec/farbe/albedo-tafel.json` · `foundry-core.js` FARB-GESETZ",
       "aaaa": "Jede Fläche zeigt im Ausgabe-Bild ihre Physik: die Albedo liegt im realen Band (Fels 0,10–0,30, Rinde 0,07–0,12, Laub/Gras 0,15–0,26), Labor = Welt gilt ±5 % in der Albedo, und jede Stufe hat dieselbe Albedo (Stufe/L0 0,95–1,05). Bis zur Armlänge (0,5 m) trägt jeder Stoff Korn, Kavität und Rauheit aus seinen Tags; keine Fläche ist glatt (Nyquist-Anteil ≥ 0,15, glatte 8×8-Blöcke ≤ 10 %, Leistungsspektrum 1/f^β). Glas, Lack, Metall und nasser Stein spiegeln aus EINER Quelle. Rauheit und Glanz sind Daten der Stoff-Zeile, im realen Band gemessen. **Wo wir die Besten schlagen:** Megascans fotografiert jeden Stein, Remember Me malt Pfützen-Masken; wir leiten das Material aus Tags und Stoff-Zeile ab, für jedes Asset, das ein Studio je erzeugt.",
@@ -2066,10 +2066,10 @@
       "kriterien": [
         {
           "name": "Albedo im realen Band, Labor = Welt, echt auf beiden Geräten",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = alle Zeilen Welt/Labor 0,9–1,1 und im realen Band, beide Seiten --echt, an einem Gerät · 2 = beide Geräte, Eichung Karte 0,180",
           "messung": "werkbank albedo --tafel + diag-albedo-tafel.cjs --labor --echt, beide Seiten auf echter GPU, ≤ 3 min je Gerät.",
-          "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +60) · material.K1#1 gtx: Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +25) · material.K1#2 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, index.html +60) · material.K1#2 gtx: Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +25)",
+          "beleg": "Maschine: Welt/Labor 0,9–1,1: 12/12 · im realen Band beidseits: 12/12 · echt beide Seiten · [linse-gpu] amd/rdna-3 an 056330d8 radeon · Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3 an 056330d8 radeon — offen: material.K1#2 gtx: Pfad seit der Messung geändert (R6: klang-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +25)",
           "schlupfloch": "Labor und Welt mit derselben falschen Eichung wären gleich und trotzdem falsch: zusätzlich das reale Band je Klasse; der Ersatz-Renderer verbirgt Präzision und Ton: beide Seiten --echt.",
           "maschine": true
         },
@@ -2197,7 +2197,7 @@
       "key": "schatten",
       "titel": "Schatten und indirektes Licht",
       "gruppe": "sicht",
-      "punkte": 0,
+      "punkte": 1,
       "pfad": "v1 (sehen) · A · E",
       "dateien": "`stamm/bild-kosten.js` (Kaskaden, Takt) · `stamm/stoff-material.js` (receivedShadowNode, aoNode) · `stamm/bild-himmel.js` (Hemi) · `stamm/dirigent-kern.js` (`_leuchtTakt`)",
       "aaaa": "Schatten sind am Kontakt scharf und werden mit dem Abstand zum Werfer weich wie unter der echten Sonne (Halbschatten ≈ 0,9 cm je Meter bei 0,53°). Die ersten 15 m zeichnen mit Texel ≤ 5 cm (heute 17 cm), ohne Flimmern beim Gehen, Drehen und bei laufender Sonne. Jedes Ding steht: unter Fuß, Sockel, Stamm und Halm sitzt eine Kontakt-Verdeckung (30–60 % des freien Bodens), jede Fläche liest ihre Himmels-Sicht. Licht springt einmal: die sonnige Wiese hellt die Schattenseite der Hauswand um ≥ 10 % auf, durch die Tür ist der Innenraum lesbar, und nachts wirft das nächste Feuer Schatten. Alles ≤ 2,5 ms auf der GTX. **Wo wir die Besten schlagen:** Lumen braucht 4 ms auf der Konsole, Tsushima backt die Himmels-Sicht; wir lesen Himmels-Sicht und Horizont aus dem Gelände-Kern als Funktion, für jeden Ort, ohne Bake.",
@@ -2210,10 +2210,10 @@
       "kriterien": [
         {
           "name": "Schatten scharf am Kontakt, weich mit Abstand",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = Halbschatten am Fuß ≤ 3 cm an einem Gerät · 2 = Zuwachs ≈ 0,9 cm je m, Uhr 0,5 und 0,3, Kosten ≤ +0,3 ms an der GTX, beide Geräte",
           "messung": "Prüfbühne (spec/pruefbuehne): Pfosten 3 m auf ebenem Boden, Ego aus 2 m und Third; Breite des Halbschattens (10–90 % Luma) am Fuß und in 3 m Abstand.",
-          "beleg": "Maschine: 0 — offen: schatten.K1#1 radeon: ungemessen (R10) · schatten.K1#1 gtx: Pfad seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/bild-kosten.js, stamm/daten.js +3)",
+          "beleg": "Maschine: Uhr 0.5 ego 2.4 cm (12 Kanten) · Uhr 0.5 third 2.4 cm (12 Kanten), [linse-gpu] amd/rdna-3 an 056330d8 radeon — offen: schatten.K1#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Ein Filter, der alle Kanten gleich schärft, flimmert unter Bewegung (K2); am Mittag sind Schatten kurz: Uhr 0,3 verlangt die lange Kante.",
           "maschine": true
         },
@@ -3157,7 +3157,7 @@
       "key": "fahrzeug",
       "titel": "Fahrzeuge und Fahrgefühl — Reifen, Weg, Kamera, Übergänge, Rückmeldung",
       "gruppe": "wege",
-      "punkte": 1,
+      "punkte": 3,
       "pfad": "v1 (benutzen: fahren)",
       "dateien": "`vehicle-core.js` (fahrSchritt, chaseKamera, LACK_GESETZ) · `stamm/koerper-fahrt.js` · `stamm/koerper-bewegung.js` (FIXED_DT, `_loopCamera`) · `worlds/garage` · `scripts/diag-fahr-leben.cjs`",
       "aaaa": "Ein Wagen aus dem Gesetz (vehicle-core) fährt auf dem Wegenetz durch Wiese, Wald und Dorf, ohne steckenzubleiben. Die Reifen haben eine Kurve mit Spitze bei 6–10° und ≥ 15 % Abfall und greifen auf Weg, Gras, Schotter, Nässe und Schnee anders (Bremsweg Gras/Weg ≥ 1,5×, nass ≥ 1,3×), aus derselben Stoff-Zeile, die den Boden malt; der Kern rechnet mit ≥ 240 Hz. Die Rig-Kamera aus dem Kern atmet das Tempo (FOV +≥ 8°, Arm +≥ 15 %, Azimut auf dem Fahrtvektor), jeder Übergang — Ego↔Third, Auf- und Absteigen in Fahrt, Hang — bleibt ohne Sprung. Klang, Federung, Spur, Staub, Spritzwasser und Rumble lesen denselben Fahr-Zustand. Lücken und Tempo-Decke richtet Streaming, das Band Profiband. **Wo wir die Besten schlagen:** Forza und BeamNG tunen jeden Wagen und jede Strecke einzeln; bei uns folgen Kamera und Grip aus den Maßen und dem Boden-Gesetz — jedes prozedurale Fahrzeug ist ab dem ersten Bild getunt.",
@@ -3189,20 +3189,20 @@
         },
         {
           "name": "Die Kamera atmet das Tempo — EIN Rig aus dem Kern",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = FOV (+≥ 8°) und Arm (+≥ 15 %) aus v/vmax in Garage UND Welt gemessen · 2 = dazu Azimut auf dem Fahrtvektor im Drift (Fehler ≤ 15°), Maus-Orbit mit Rückkehr nach 1–1,5 s, seitlicher Ruck p95 ≤ 0,02 m je Bild, EIN FOV-Schreiber",
           "messung": "Garage G7 + gate:fahr-leben (Familie kamera), Welt und Garage; der Leser-Grep über `window.__codeOf` zählt die FOV-Schreiber.",
-          "beleg": "Maschine: 0 — offen: fahrzeug.K3#1 radeon: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-takt.js, stamm/koerper-bewegung.js +6) · fahrzeug.K3#1 gtx: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-takt.js, stamm/koerper-bewegung.js +6) · fahrzeug.K3#2 radeon: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-takt.js, stamm/koerper-bewegung.js +4) · fahrzeug.K3#2 gtx: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-takt.js, stamm/koerper-bewegung.js +4)",
+          "beleg": "Maschine: Garage FOV +9.06° Arm +18.1 % bei 15.20/16.00 m/s · Welt FOV +9.4° Arm +18.2 % bei 15.09 m/s (Ende ok) an 056330d8 radeon · Drift Kamera ≤ 6.2° neben dem Fahrtvektor (Schlupf bis 4.3°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.017 m (165) · FOV-Schreiber [_kamFov] an 056330d8 radeon — offen: fahrzeug.K3#2 gtx: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-takt.js, stamm/koerper-bewegung.js +4)",
           "schlupfloch": "Ein FOV-Sprung misst +8° und ruckelt; ein fünfter FOV-Schreiber streitet mit Kampf und Fernglas: Ruck-p95, Azimut-Fehler und die Ein-Schreiber-Regel.",
           "aenderung": "Die 1 der Synthese war „chaseKamera im Kern“ (Existenz, B58) → 0. Am Kopf 57a9f2ab in Welt UND Garage bei 0,94–0,95 vmax gemessen → 1; die 2 wartet auf die GTX (M27).",
           "maschine": true
         },
         {
           "name": "Übergänge unter Bewegung: Sicht-Wechsel, Auf- und Absteigen, Hang",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = an einem Gerät im Bild gehalten · 2 = an beiden Geräten im Bild, und bei jeder neuen vmax-Stufe neu gemessen",
           "messung": "gate:fahr-leben T4 (Mechanik) + Station fahrt im Bild: nach Ego → Third in voller Fahrt steht der Azimut binnen 10 Bildern ≤ 10° an der Gier, jede zeichnende Stufe ≤ 2 m an der Physik-Lage, Bild-Deckung in Third 1; Auf- und Absteigen in Fahrt und am Hang ohne Kamera-Sprung > 0,5 m je Bild.",
-          "beleg": "Maschine: 0 — offen: fahrzeug.K4#1 radeon: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-takt.js, stamm/koerper-bewegung.js +6) · fahrzeug.K4#1 gtx: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-takt.js, stamm/koerper-bewegung.js +6) · fahrzeug.K4#2 radeon: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-takt.js, stamm/koerper-bewegung.js +6) · fahrzeug.K4#2 gtx: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-takt.js, stamm/koerper-fahrt.js +2)",
+          "beleg": "Maschine: nach Ego → Third im Bild 3/3, Azimut 1.3/5.8/8.4°, Stufe ≤ 1.72 m · T4 Absteigen 0.26 m je Bild, Azimut nach 10 Bildern 2.2° · Hang 17.4° an 056330d8 radeon · nach Ego → Third im Bild 3/3, Azimut 1.3/5.8/8.4°, Stufe ≤ 1.72 m · T4 Absteigen 0.26 m je Bild, Azimut nach 10 Bildern 2.2° · Hang 17.4° an 056330d8 radeon — offen: fahrzeug.K4#2 gtx: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-takt.js, stamm/koerper-fahrt.js +2)",
           "schlupfloch": "Bei 6–10 m/s gemessen könnte derselbe Rig bei höherer vmax brechen: die 2 fällt automatisch, wenn eine neue vmax-Stufe ohne T4 im Bild gemergt wird.",
           "aenderung": "Synthese gab 2 ohne Staffel; im Bild ist nur ein Gerät belegt → 1 (B57); das Radeon-Bild am Kopf 21.10. → 2 (M8).",
           "maschine": true
@@ -3299,7 +3299,7 @@
           "punkte": 1,
           "staffel": "1 = in ≥ 6 von 8 Saaten mit zufälligem Spawn steht binnen 2 km eine ummauerte Stadt (Auto-Zellen, nie Chat), sichtbar vom Hügel an einem Gerät · 2 = Zipf-Exponent 0,8–1,2 über 32 × 32 km mit Konfidenz-Intervall, Export trägt mauer und graph, mittags und in der Dämmerung, beide Geräte",
           "messung": "diag-settlement, neuer Teil C: Zensus der Auto-Zellen mit Größen-Histogramm weiler…metropole; Bild vom Hügel aus dem Ausgabe-Pfad.",
-          "beleg": "Maschine: Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 92 · Schuss vom acker 106 m vor der Mitte, 3.6 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 105.58 m · Luma 99.9 σ 44 schwarz 0.0 % weiß 0.0 % · S an 833bbc24 gtx — offen: siedlung.K2#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 92 · Schuss vom acker 106 m vor der Mitte, 3.6 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 105.58 m · Luma 99.9 σ 44 schwarz 0.0 % weiß 0.0 % · S an 056330d8 radeon · Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 92 · Schuss vom acker 106 m vor der Mitte, 3.6 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 105.58 m · Luma 99.9 σ 44 schwarz 0.0 % weiß 0.0 % · S an 833bbc24 gtx — offen: siedlung.K2#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Eine Sonderregel am Genesis-Spawn bestünde „Stadt binnen 2 km“, ein Zipf-Fit über 8 × 8 km wäre Rauschen (B61): zufällige Spawns über 8 Saaten, 32 × 32 km mit Intervall; eine Chat-Stadt zählt nicht.",
           "aenderung": "Saaten-Pflicht und größeres Fenster (B61); die Jahrhunderte wanderten nach K4.",
           "maschine": true
@@ -3328,7 +3328,7 @@
           "punkte": 0,
           "staffel": "1 = erstes Haus sichtbar ≤ 0,5 s nach dem Erwachen der Zelle, unabhängig von nH (12 gegen 300), als Studio-L-Kette (Bau-Hash im Bild), an einem Gerät · 2 = beide Geräte",
           "messung": "Station dorf: Zelle wecken bei nH 12 und 300, Zeit bis zum ersten Haus mit seinem Bau-Hash im Ausgabe-Bild. Die Stadt im Profi-Band ist eine Zelle von Profiband K1.",
-          "beleg": "Maschine: 0 — offen: siedlung.K5#1 radeon: Station seit der Messung geändert · siedlung.K5#1 gtx: Station seit der Messung geändert · siedlung.K5#2 radeon: Station seit der Messung geändert · siedlung.K5#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: siedlung.K5#1 radeon: ROT: nH 12 erstes Haus nach 171.2 ms (haus_alemannisch, huelle in 233.4 m, Bau-Hash 99282f35) · nH 300 erstes Haus nach 6994.4 ms (haus_fraenkisch, mesh in 21.3 m, Bau-Hash d3621130) an 056330d8 · siedlung.K5#1 gtx: Station seit der Messung geändert · siedlung.K5#2 radeon: ROT: nH 12 erstes Haus nach 171.2 ms (haus_alemannisch, huelle in 233.4 m, Bau-Hash 99282f35) · nH 300 erstes Haus nach 6994.4 ms (haus_fraenkisch, mesh in 21.3 m, Bau-Hash d3621130) an 056330d8 · siedlung.K5#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Ein schneller Platzhalter-Würfel als erstes Haus ist fail-soft: der Bau-Hash der Studio-L-Kette im Bild.",
           "aenderung": "Die Last der Stadt zählt Profiband K1 (Messort stadt; V26), die Bewohner zählen Menschen.",
           "maschine": true
@@ -3436,7 +3436,7 @@
           "punkte": 0,
           "staffel": "1 = Taste → bewegter Leib im Ausgabe-Bild p95 ≤ 50 ms an einem Gerät (gehen, Sicht-Wechsel) · 2 = jedes Verb (gehen, springen, schwingen, einsteigen), beide Geräte",
           "messung": "Spielgang-Station leib: Eingabe-Ereignis (CDP) bis zum ersten Ausgabe-Bild mit Bewegung im Leib-Band, je 50 Proben, Ego und Third.",
-          "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +11) · leib.K1#1 gtx: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +6) · leib.K1#2 radeon: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +11) · leib.K1#2 gtx: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +6)",
+          "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: ROT: p95 ms ego/gehen 75.8 · third/gehen 53.1 · ego/wechsel 74.1 · third/wechsel 61.6 an 056330d8 · leib.K1#1 gtx: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +6) · leib.K1#2 radeon: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +11) · leib.K1#2 gtx: Pfad seit der Messung geändert (R6: stamm/daten.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +6)",
           "schlupfloch": "Taste bis Sim-Schritt wäre die Eigenmeldung: gezählt wird bis zum Pixel (das Maß von LDAT).",
           "aenderung": "Neu (V02); 22.10. jedes Verb an beiden Geräten gemessen 1 → 2.",
           "maschine": true
@@ -4953,10 +4953,10 @@
     {
       "stand": "2026-10-24",
       "kopf": "056330d8",
-      "summe": 57,
+      "summe": 61,
       "max": 330,
       "skala": "2.0",
-      "was": "main-Vorlauf f7dd313c..056330d8 (Züge 9c, 10b, 13, 14c; je Nachwache, z13 LANGSAMER im Dorf +0,25 ms CPU-Takt, Täter in Zerlegung): gelandet schatten-k1-kontakt, ultiversum-k5-korpus, oeko-bestand-k2, fahrzeug-k1-reifen, affekt-k1-ort, feld-k4-tat, halten-k4-bogen, studios-k5-fixture. Gemessen am Kopf durch die Punkte-Maschine: headless 42 Stationen in 17,6 min (drei Bahnen, Zwillinge einmal), Radeon --offen, GTX an 833bbc24. Neue Stationen: Ökologie K1/K2/K5, Feld K4 #1/#2, Fahrzeug K1, Affekt K1, Physik K1, Siedlung K3/K5, Mensch K2 #2, Wetter K1/K5 #2, Bauen K3 #2, Studios K5 #2, Streaming K5, Speicher K5 #2. Gebaut, auf dem Weg nach main: Physik K1 (Spieler 89 kg), Siedlung K5 (erstes Haus 39 ms) und die Speicher-Treppen, Bewohner-Wiederkehr, Sichel, Studios-Wege, Wetter-Front, Prüf-Satz Statik, Bytes per Transfer, 15 alte Versionen."
+      "was": "main-Vorlauf f7dd313c..056330d8 (Züge 9c, 10b, 13, 14c; je Nachwache, z13 LANGSAMER im Dorf +0,25 ms CPU-Takt, Täter in Zerlegung): gelandet schatten-k1-kontakt, ultiversum-k5-korpus, oeko-bestand-k2, fahrzeug-k1-reifen, affekt-k1-ort, feld-k4-tat, halten-k4-bogen, studios-k5-fixture. Gemessen am Kopf durch die Punkte-Maschine: headless 42 Stationen in 17,6 min (drei Bahnen, Zwillinge einmal), Radeon --offen am Kopf (läuft), GTX an 18a84649 (27 grün / 5 rot). Neue Stationen: Ökologie K1/K2/K5, Feld K4 #1/#2, Fahrzeug K1, Affekt K1, Physik K1, Siedlung K3/K5, Mensch K2 #2, Wetter K1/K5 #2, Bauen K3 #2, Studios K5 #2, Streaming K5, Speicher K5 #2. Gebaut, auf dem Weg nach main: Physik K1 (Spieler 89 kg), Siedlung K5 (erstes Haus 39 ms) und die Speicher-Treppen, Bewohner-Wiederkehr, Sichel, Studios-Wege, Wetter-Front, Prüf-Satz Statik, Bytes per Transfer, 15 alte Versionen."
     }
   ],
   "text": {
