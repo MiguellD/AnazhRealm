@@ -726,6 +726,12 @@ class AnazhRealm_werkstatt_bauen {
         const blueprintName = entry.type;
         const removed = this.removeArchitecture(entry);
         if (!removed) return null;
+        // DIE TAT BLEIBT (feld.K4): ein gefällter Baum ist eine Tat der Welt am Ort — Narbe im Feld, Stumpf in der Nah-Streu, und
+        // der Wald pflanzt ihn nicht neu, bis sie heilt (`_tatSchreiben`)
+        if (/baum/.test(entry._lodSpecies || blueprintName) && this._istNatur(entry))
+            this._tatSchreiben("faellen", entry.position.x, entry.position.z, {
+                s: Number.isFinite(entry.scale) ? +entry.scale.toFixed(2) : 1,
+            });
         // Nur der Spieler fühlt die Ernte (joy + hope, skaliert mit dem Ertrag); Kreaturen nicht.
         if (harvester === "player") {
             const mag =

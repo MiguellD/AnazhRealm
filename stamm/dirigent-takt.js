@@ -1249,7 +1249,7 @@ class AnazhRealm_dirigent_takt {
                     const _sct = performance.now();
                     this._tickScatterStreaming(playerPos, _dl);
                     this._tickPendingGrass(lade ? Infinity : 1, lade ? _dl : undefined);
-                    this._tickScatterRegrow(performance.now());
+                    this._tickScatterRegrow(this._weltStunde());
                     this._tickNahWiese(_dl);
                     this._tickNahStreu(_dl);
                     this._perfSenseLap("scatter", _sct);
