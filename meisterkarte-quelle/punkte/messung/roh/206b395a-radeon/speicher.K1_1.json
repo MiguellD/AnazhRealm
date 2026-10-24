@@ -1,0 +1,7301 @@
+{
+ "tode": 20,
+ "alterMax": 3.341,
+ "ueber10": 0,
+ "halbe": 0,
+ "korrupt": 0,
+ "ohneAlter": [],
+ "versetztMaxMm": 24,
+ "alterAmGelesen": [
+  {
+   "z": 9,
+   "alterS": 0.001,
+   "versetztMm": 24
+  }
+ ],
+ "bauFehler": 0,
+ "erwachen": [
+  {
+   "z": 1,
+   "erwachen": {
+    "key": "-1,0",
+    "nH": 11,
+    "d": 134,
+    "x": -119.71764705882353,
+    "z": 79.56078431372549,
+    "gangAktiv": true
+   },
+   "tod": "idb",
+   "alterS": 1.464
+  },
+  {
+   "z": 2,
+   "erwachen": {
+    "key": "-1,0",
+    "nH": 11,
+    "d": 128,
+    "x": -119.71764705882353,
+    "z": 79.56078431372549,
+    "gangAktiv": true
+   },
+   "tod": "erwachen-hart",
+   "alterS": 0.315,
+   "dorfGeladen": {
+    "reserviert": false,
+    "haeuser": 19
+   },
+   "dorfNach10s": {
+    "reserviert": false,
+    "haeuser": 19
+   }
+  },
+  {
+   "z": 3,
+   "tod": "erwachen-idb",
+   "alterS": 0.331,
+   "dorfGeladen": {
+    "reserviert": false,
+    "haeuser": 19
+   },
+   "dorfNach10s": {
+    "reserviert": false,
+    "haeuser": 19
+   }
+  }
+ ],
+ "saveRufe": 363,
+ "saveMs": {
+  "p50": 6.9,
+  "p95": 14.8,
+  "max": 19.8
+ },
+ "bilder": 22366,
+ "jeBild": {
+  "p95": 0,
+  "p99": 0,
+  "mittel": 0.095
+ },
+ "zyklen": [
+  {
+   "z": 0,
+   "bootMs": 11829,
+   "g": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "bauFehler": []
+  },
+  {
+   "z": 1,
+   "bootMs": 8541,
+   "g": {
+    "x": 0,
+    "z": 11632,
+    "b": 0,
+    "e": 6,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 1.464,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792873940763,
+     "rec": {
+      "x": 0,
+      "z": 11632,
+      "b": 0,
+      "e": 6
+     },
+     "geschrieben": "fest",
+     "alterS": 1.464,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 0,
+      "z": 0,
+      "b": 0,
+      "e": 0
+     },
+     "geschrieben": "fest",
+     "alterS": 13.834,
+     "versetztMm": 11632
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 0,
+      "z": 0,
+      "b": 0,
+      "e": 0
+     },
+     "geschrieben": "fest",
+     "alterS": 13.834,
+     "versetztMm": 11632
+    },
+    {
+     "quelle": "idb",
+     "at": 1792873940763,
+     "rec": {
+      "x": 0,
+      "z": 11632,
+      "b": 0,
+      "e": 6
+     },
+     "geschrieben": "fest",
+     "alterS": 1.464,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "idb",
+     "at": 1792873945752,
+     "rec": {
+      "x": 0,
+      "z": 11632,
+      "b": 0,
+      "e": 6
+     },
+     "geschrieben": "fest",
+     "alterS": 1.464,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 6,
+   "tod": "idb",
+   "bauFehler": [],
+   "erwachen": {
+    "key": "-1,0",
+    "nH": 11,
+    "d": 134,
+    "x": -119.71764705882353,
+    "z": 79.56078431372549,
+    "gangAktiv": true
+   }
+  },
+  {
+   "z": 2,
+   "bootMs": 7046,
+   "g": {
+    "x": 0,
+    "z": 18837,
+    "b": 3,
+    "e": 10,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 0.315,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792873959965,
+     "rec": {
+      "x": 0,
+      "z": 18837,
+      "b": 3,
+      "e": 10
+     },
+     "geschrieben": "fest",
+     "alterS": 0.315,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 0,
+      "z": 11632,
+      "b": 0,
+      "e": 6
+     },
+     "geschrieben": "fest",
+     "alterS": 7.931,
+     "versetztMm": 7205
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 0,
+      "z": 11632,
+      "b": 0,
+      "e": 6
+     },
+     "geschrieben": "fest",
+     "alterS": 7.931,
+     "versetztMm": 7205
+    },
+    {
+     "quelle": "idb",
+     "at": 1792873959965,
+     "rec": {
+      "x": 0,
+      "z": 18837,
+      "b": 3,
+      "e": 10
+     },
+     "geschrieben": "fest",
+     "alterS": 0.315,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 10,
+   "tod": "erwachen-hart",
+   "dorfGeladen": {
+    "reserviert": false,
+    "haeuser": 19
+   },
+   "dorfNach10s": {
+    "reserviert": false,
+    "haeuser": 19
+   },
+   "bauFehler": [],
+   "erwachen": {
+    "key": "-1,0",
+    "nH": 11,
+    "d": 128,
+    "x": -119.71764705882353,
+    "z": 79.56078431372549,
+    "gangAktiv": true
+   }
+  },
+  {
+   "z": 3,
+   "bootMs": 7020,
+   "g": {
+    "x": 0,
+    "z": 35782,
+    "b": 12,
+    "e": 19,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 0.331,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792873995441,
+     "rec": {
+      "x": 0,
+      "z": 35782,
+      "b": 12,
+      "e": 19
+     },
+     "geschrieben": "fest",
+     "alterS": 0.331,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 0,
+      "z": 18837,
+      "b": 3,
+      "e": 10
+     },
+     "geschrieben": "fest",
+     "alterS": 17.991,
+     "versetztMm": 16945
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 0,
+      "z": 18837,
+      "b": 3,
+      "e": 10
+     },
+     "geschrieben": "fest",
+     "alterS": 17.991,
+     "versetztMm": 16945
+    },
+    {
+     "quelle": "idb",
+     "at": 1792873995441,
+     "rec": {
+      "x": 0,
+      "z": 35782,
+      "b": 12,
+      "e": 19
+     },
+     "geschrieben": "fest",
+     "alterS": 0.331,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 19,
+   "tod": "erwachen-idb",
+   "dorfGeladen": {
+    "reserviert": false,
+    "haeuser": 19
+   },
+   "dorfNach10s": {
+    "reserviert": false,
+    "haeuser": 19
+   },
+   "bauFehler": []
+  },
+  {
+   "z": 4,
+   "bootMs": 6720,
+   "g": {
+    "x": 317,
+    "z": 48351,
+    "b": 20,
+    "e": 27,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 0.265,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874028185,
+     "rec": {
+      "x": 317,
+      "z": 48351,
+      "b": 20,
+      "e": 27
+     },
+     "geschrieben": "fest",
+     "alterS": 0.265,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 0,
+      "z": 35782,
+      "b": 12,
+      "e": 19
+     },
+     "geschrieben": "fest",
+     "alterS": 15.325,
+     "versetztMm": 12573
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 0,
+      "z": 35782,
+      "b": 12,
+      "e": 19
+     },
+     "geschrieben": "fest",
+     "alterS": 15.325,
+     "versetztMm": 12573
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874028185,
+     "rec": {
+      "x": 317,
+      "z": 48351,
+      "b": 20,
+      "e": 27
+     },
+     "geschrieben": "fest",
+     "alterS": 0.265,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 27,
+   "tod": "zufall",
+   "bauFehler": []
+  },
+  {
+   "z": 5,
+   "bootMs": 6757,
+   "g": {
+    "x": 317,
+    "z": 57181,
+    "b": 23,
+    "e": 32,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 1.024,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874046191,
+     "rec": {
+      "x": 317,
+      "z": 57181,
+      "b": 23,
+      "e": 32
+     },
+     "geschrieben": "fest",
+     "alterS": 1.024,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 317,
+      "z": 48351,
+      "b": 20,
+      "e": 27
+     },
+     "geschrieben": "fest",
+     "alterS": 8.667,
+     "versetztMm": 8830
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 317,
+      "z": 48351,
+      "b": 20,
+      "e": 27
+     },
+     "geschrieben": "fest",
+     "alterS": 8.667,
+     "versetztMm": 8830
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874046191,
+     "rec": {
+      "x": 317,
+      "z": 57181,
+      "b": 23,
+      "e": 32
+     },
+     "geschrieben": "fest",
+     "alterS": 1.024,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 32,
+   "tod": "platz",
+   "bauFehler": []
+  },
+  {
+   "z": 6,
+   "bootMs": 7117,
+   "g": {
+    "x": -213,
+    "z": 71284,
+    "b": 23,
+    "e": 40,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 0.297,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874070484,
+     "rec": {
+      "x": -213,
+      "z": 71284,
+      "b": 23,
+      "e": 40
+     },
+     "geschrieben": "fest",
+     "alterS": 0.297,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 317,
+      "z": 57181,
+      "b": 23,
+      "e": 32
+     },
+     "geschrieben": "fest",
+     "alterS": 13.57,
+     "versetztMm": 14113
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 317,
+      "z": 57181,
+      "b": 23,
+      "e": 32
+     },
+     "geschrieben": "fest",
+     "alterS": 13.57,
+     "versetztMm": 14113
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874070484,
+     "rec": {
+      "x": -213,
+      "z": 71284,
+      "b": 23,
+      "e": 40
+     },
+     "geschrieben": "fest",
+     "alterS": 0.297,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 40,
+   "tod": "zufall",
+   "bauFehler": []
+  },
+  {
+   "z": 7,
+   "bootMs": 7099,
+   "g": {
+    "x": -213,
+    "z": 77949,
+    "b": 26,
+    "e": 43,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 1.476,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874086676,
+     "rec": {
+      "x": -213,
+      "z": 77949,
+      "b": 26,
+      "e": 43
+     },
+     "geschrieben": "fest",
+     "alterS": 1.476,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": -213,
+      "z": 71284,
+      "b": 23,
+      "e": 40
+     },
+     "geschrieben": "fest",
+     "alterS": 7.193,
+     "versetztMm": 6665
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": -213,
+      "z": 71284,
+      "b": 23,
+      "e": 40
+     },
+     "geschrieben": "fest",
+     "alterS": 7.193,
+     "versetztMm": 6665
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874086676,
+     "rec": {
+      "x": -213,
+      "z": 77949,
+      "b": 26,
+      "e": 43
+     },
+     "geschrieben": "fest",
+     "alterS": 1.476,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 43,
+   "tod": "idb",
+   "bauFehler": []
+  },
+  {
+   "z": 8,
+   "bootMs": 6874,
+   "g": {
+    "x": -213,
+    "z": 82882,
+    "b": 26,
+    "e": 45,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 3.341,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874102434,
+     "rec": {
+      "x": -213,
+      "z": 82882,
+      "b": 26,
+      "e": 45
+     },
+     "geschrieben": "fest",
+     "alterS": 3.341,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": -213,
+      "z": 77949,
+      "b": 26,
+      "e": 43
+     },
+     "geschrieben": "fest",
+     "alterS": 7.514,
+     "versetztMm": 4933
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": -213,
+      "z": 77949,
+      "b": 26,
+      "e": 43
+     },
+     "geschrieben": "fest",
+     "alterS": 7.514,
+     "versetztMm": 4933
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874102434,
+     "rec": {
+      "x": -213,
+      "z": 82882,
+      "b": 26,
+      "e": 45
+     },
+     "geschrieben": "fest",
+     "alterS": 3.341,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 45,
+   "tod": "zufall",
+   "bauFehler": []
+  },
+  {
+   "z": 9,
+   "bootMs": 7316,
+   "g": {
+    "x": -153,
+    "z": 93780,
+    "b": 26,
+    "e": 51,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 0.001,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874126310,
+     "rec": {
+      "x": -157,
+      "z": 93804,
+      "b": 26,
+      "e": 51
+     },
+     "geschrieben": "fest",
+     "alterS": 0.001,
+     "versetztMm": 24
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": -213,
+      "z": 82882,
+      "b": 26,
+      "e": 45
+     },
+     "geschrieben": "fest",
+     "alterS": 10.581,
+     "versetztMm": 10898
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": -213,
+      "z": 82882,
+      "b": 26,
+      "e": 45
+     },
+     "geschrieben": "fest",
+     "alterS": 10.581,
+     "versetztMm": 10898
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874126310,
+     "rec": {
+      "x": -157,
+      "z": 93804,
+      "b": 26,
+      "e": 51
+     },
+     "geschrieben": "fest",
+     "alterS": 0.001,
+     "versetztMm": 24
+    }
+   ],
+   "versetztMm": 24,
+   "alterAm": "gelesen",
+   "eGeladen": 51,
+   "tod": "fest",
+   "bauFehler": []
+  },
+  {
+   "z": 10,
+   "bootMs": 6643,
+   "g": {
+    "x": 870,
+    "z": 99488,
+    "b": 26,
+    "e": 56,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 0.337,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874145852,
+     "rec": {
+      "x": 870,
+      "z": 99488,
+      "b": 26,
+      "e": 56
+     },
+     "geschrieben": "fest",
+     "alterS": 0.337,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": -157,
+      "z": 93804,
+      "b": 26,
+      "e": 51
+     },
+     "geschrieben": "fest",
+     "alterS": 16.111,
+     "versetztMm": 5776
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": -157,
+      "z": 93804,
+      "b": 26,
+      "e": 51
+     },
+     "geschrieben": "fest",
+     "alterS": 16.111,
+     "versetztMm": 5776
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874145852,
+     "rec": {
+      "x": 870,
+      "z": 99488,
+      "b": 26,
+      "e": 56
+     },
+     "geschrieben": "fest",
+     "alterS": 0.337,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 56,
+   "tod": "zufall",
+   "bauFehler": []
+  },
+  {
+   "z": 11,
+   "bootMs": 8322,
+   "g": {
+    "x": 709,
+    "z": 116913,
+    "b": 26,
+    "e": 66,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 1.596,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874172226,
+     "rec": {
+      "x": 709,
+      "z": 116913,
+      "b": 26,
+      "e": 66
+     },
+     "geschrieben": "fest",
+     "alterS": 1.596,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 870,
+      "z": 99488,
+      "b": 26,
+      "e": 56
+     },
+     "geschrieben": "fest",
+     "alterS": 23.928,
+     "versetztMm": 17426
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 870,
+      "z": 99488,
+      "b": 26,
+      "e": 56
+     },
+     "geschrieben": "fest",
+     "alterS": 23.928,
+     "versetztMm": 17426
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874172226,
+     "rec": {
+      "x": 709,
+      "z": 116913,
+      "b": 26,
+      "e": 66
+     },
+     "geschrieben": "fest",
+     "alterS": 1.596,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874177364,
+     "rec": {
+      "x": 709,
+      "z": 116913,
+      "b": 26,
+      "e": 66
+     },
+     "geschrieben": "fest",
+     "alterS": 1.596,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 66,
+   "tod": "platz",
+   "bauFehler": []
+  },
+  {
+   "z": 12,
+   "bootMs": 6701,
+   "g": {
+    "x": 709,
+    "z": 121935,
+    "b": 26,
+    "e": 69,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 0.414,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874191153,
+     "rec": {
+      "x": 709,
+      "z": 121935,
+      "b": 26,
+      "e": 69
+     },
+     "geschrieben": "fest",
+     "alterS": 0.414,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 116913,
+      "b": 26,
+      "e": 66
+     },
+     "geschrieben": "fest",
+     "alterS": 7.43,
+     "versetztMm": 5022
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 116913,
+      "b": 26,
+      "e": 66
+     },
+     "geschrieben": "fest",
+     "alterS": 7.43,
+     "versetztMm": 5022
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874191153,
+     "rec": {
+      "x": 709,
+      "z": 121935,
+      "b": 26,
+      "e": 69
+     },
+     "geschrieben": "fest",
+     "alterS": 0.414,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 69,
+   "tod": "zufall",
+   "bauFehler": []
+  },
+  {
+   "z": 13,
+   "bootMs": 7246,
+   "g": {
+    "x": 709,
+    "z": 132533,
+    "b": 26,
+    "e": 75,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 2.728,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874211645,
+     "rec": {
+      "x": 709,
+      "z": 132533,
+      "b": 26,
+      "e": 75
+     },
+     "geschrieben": "fest",
+     "alterS": 2.728,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 121935,
+      "b": 26,
+      "e": 69
+     },
+     "geschrieben": "fest",
+     "alterS": 18.96,
+     "versetztMm": 10598
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 121935,
+      "b": 26,
+      "e": 69
+     },
+     "geschrieben": "fest",
+     "alterS": 18.96,
+     "versetztMm": 10598
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874211645,
+     "rec": {
+      "x": 709,
+      "z": 132533,
+      "b": 26,
+      "e": 75
+     },
+     "geschrieben": "fest",
+     "alterS": 2.728,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 75,
+   "tod": "idb",
+   "bauFehler": []
+  },
+  {
+   "z": 14,
+   "bootMs": 7604,
+   "g": {
+    "x": 709,
+    "z": 144115,
+    "b": 26,
+    "e": 81,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 0.914,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874234922,
+     "rec": {
+      "x": 709,
+      "z": 144115,
+      "b": 26,
+      "e": 81
+     },
+     "geschrieben": "fest",
+     "alterS": 0.914,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 132533,
+      "b": 26,
+      "e": 75
+     },
+     "geschrieben": "fest",
+     "alterS": 11.149,
+     "versetztMm": 11582
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 132533,
+      "b": 26,
+      "e": 75
+     },
+     "geschrieben": "fest",
+     "alterS": 11.149,
+     "versetztMm": 11582
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874234922,
+     "rec": {
+      "x": 709,
+      "z": 144115,
+      "b": 26,
+      "e": 81
+     },
+     "geschrieben": "fest",
+     "alterS": 0.914,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 81,
+   "tod": "zufall",
+   "bauFehler": []
+  },
+  {
+   "z": 15,
+   "bootMs": 7168,
+   "g": {
+    "x": 709,
+    "z": 155552,
+    "b": 27,
+    "e": 87,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 0.001,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874256749,
+     "rec": {
+      "x": 709,
+      "z": 155552,
+      "b": 27,
+      "e": 87
+     },
+     "geschrieben": "fest",
+     "alterS": 0.001,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 144115,
+      "b": 26,
+      "e": 81
+     },
+     "geschrieben": "fest",
+     "alterS": 10.564,
+     "versetztMm": 11437
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 144115,
+      "b": 26,
+      "e": 81
+     },
+     "geschrieben": "fest",
+     "alterS": 10.564,
+     "versetztMm": 11437
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874256749,
+     "rec": {
+      "x": 709,
+      "z": 155552,
+      "b": 27,
+      "e": 87
+     },
+     "geschrieben": "fest",
+     "alterS": 0.001,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 87,
+   "tod": "fest",
+   "bauFehler": []
+  },
+  {
+   "z": 16,
+   "bootMs": 7021,
+   "g": {
+    "x": 709,
+    "z": 165150,
+    "b": 32,
+    "e": 92,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 1.188,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874275738,
+     "rec": {
+      "x": 709,
+      "z": 165150,
+      "b": 32,
+      "e": 92
+     },
+     "geschrieben": "fest",
+     "alterS": 1.188,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 155552,
+      "b": 27,
+      "e": 87
+     },
+     "geschrieben": "fest",
+     "alterS": 10.247,
+     "versetztMm": 9598
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 155552,
+      "b": 27,
+      "e": 87
+     },
+     "geschrieben": "fest",
+     "alterS": 10.247,
+     "versetztMm": 9598
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874275738,
+     "rec": {
+      "x": 709,
+      "z": 165150,
+      "b": 32,
+      "e": 92
+     },
+     "geschrieben": "fest",
+     "alterS": 1.188,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 92,
+   "tod": "zufall",
+   "bauFehler": []
+  },
+  {
+   "z": 17,
+   "bootMs": 6809,
+   "g": {
+    "x": 709,
+    "z": 180513,
+    "b": 41,
+    "e": 101,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 1.48,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874301825,
+     "rec": {
+      "x": 709,
+      "z": 180513,
+      "b": 41,
+      "e": 101
+     },
+     "geschrieben": "fest",
+     "alterS": 1.48,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 165150,
+      "b": 32,
+      "e": 92
+     },
+     "geschrieben": "fest",
+     "alterS": 16.292,
+     "versetztMm": 15363
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 165150,
+      "b": 32,
+      "e": 92
+     },
+     "geschrieben": "fest",
+     "alterS": 16.292,
+     "versetztMm": 15363
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874301825,
+     "rec": {
+      "x": 709,
+      "z": 180513,
+      "b": 41,
+      "e": 101
+     },
+     "geschrieben": "fest",
+     "alterS": 1.48,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 101,
+   "tod": "platz",
+   "bauFehler": []
+  },
+  {
+   "z": 18,
+   "bootMs": 7416,
+   "g": {
+    "x": 709,
+    "z": 186900,
+    "b": 44,
+    "e": 104,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 1.014,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874318608,
+     "rec": {
+      "x": 709,
+      "z": 186900,
+      "b": 44,
+      "e": 104
+     },
+     "geschrieben": "fest",
+     "alterS": 1.014,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 180513,
+      "b": 41,
+      "e": 101
+     },
+     "geschrieben": "fest",
+     "alterS": 12.779,
+     "versetztMm": 6387
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 180513,
+      "b": 41,
+      "e": 101
+     },
+     "geschrieben": "fest",
+     "alterS": 12.779,
+     "versetztMm": 6387
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874318608,
+     "rec": {
+      "x": 709,
+      "z": 186900,
+      "b": 44,
+      "e": 104
+     },
+     "geschrieben": "fest",
+     "alterS": 1.014,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874323311,
+     "rec": {
+      "x": 709,
+      "z": 186900,
+      "b": 44,
+      "e": 104
+     },
+     "geschrieben": "fest",
+     "alterS": 1.014,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 104,
+   "tod": "zufall",
+   "bauFehler": []
+  },
+  {
+   "z": 19,
+   "bootMs": 7800,
+   "g": {
+    "x": 709,
+    "z": 201987,
+    "b": 45,
+    "e": 112,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 1.493,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874343246,
+     "rec": {
+      "x": 709,
+      "z": 201987,
+      "b": 45,
+      "e": 112
+     },
+     "geschrieben": "fest",
+     "alterS": 1.493,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 186900,
+      "b": 44,
+      "e": 104
+     },
+     "geschrieben": "fest",
+     "alterS": 15.551,
+     "versetztMm": 15087
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 186900,
+      "b": 44,
+      "e": 104
+     },
+     "geschrieben": "fest",
+     "alterS": 15.551,
+     "versetztMm": 15087
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874343246,
+     "rec": {
+      "x": 709,
+      "z": 201987,
+      "b": 45,
+      "e": 112
+     },
+     "geschrieben": "fest",
+     "alterS": 1.493,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874348360,
+     "rec": {
+      "x": 709,
+      "z": 201987,
+      "b": 45,
+      "e": 112
+     },
+     "geschrieben": "fest",
+     "alterS": 1.493,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 112,
+   "tod": "idb",
+   "bauFehler": []
+  },
+  {
+   "z": 20,
+   "bootMs": 7336,
+   "g": {
+    "x": 709,
+    "z": 208587,
+    "b": 46,
+    "e": 115,
+    "w": "cd63b108-a9c5-41bd-8eb5-be82df631171"
+   },
+   "befund": [],
+   "alterS": 0.755,
+   "verlorenBloecke": 0,
+   "verlorenEdits": 0,
+   "gelesen": [
+    {
+     "quelle": "idb",
+     "at": 1792874361044,
+     "rec": {
+      "x": 709,
+      "z": 208587,
+      "b": 46,
+      "e": 115
+     },
+     "geschrieben": "fest",
+     "alterS": 0.755,
+     "versetztMm": 0
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 201987,
+      "b": 45,
+      "e": 112
+     },
+     "geschrieben": "fest",
+     "alterS": 7.451,
+     "versetztMm": 6600
+    },
+    {
+     "quelle": "platz",
+     "rec": {
+      "x": 709,
+      "z": 201987,
+      "b": 45,
+      "e": 112
+     },
+     "geschrieben": "fest",
+     "alterS": 7.451,
+     "versetztMm": 6600
+    },
+    {
+     "quelle": "idb",
+     "at": 1792874361044,
+     "rec": {
+      "x": 709,
+      "z": 208587,
+      "b": 46,
+      "e": 115
+     },
+     "geschrieben": "fest",
+     "alterS": 0.755,
+     "versetztMm": 0
+    }
+   ],
+   "versetztMm": 0,
+   "eGeladen": 115,
+   "tod": "zufall"
+  }
+ ],
+ "alle": [
+  {
+   "t": 1792873922736,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   }
+  },
+  {
+   "t": 1792873922744,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   }
+  },
+  {
+   "t": 1792873922746,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   }
+  },
+  {
+   "t": 1792873925663,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   }
+  },
+  {
+   "t": 1792873926034,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   }
+  },
+  {
+   "t": 1792873926576,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   }
+  },
+  {
+   "t": 1792873928418,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   }
+  },
+  {
+   "t": 1792873928431,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   }
+  },
+  {
+   "t": 1792873928460,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 0,
+    "b": 0,
+    "e": 0
+   }
+  },
+  {
+   "t": 1792873933161,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 3122,
+    "b": 0,
+    "e": 1
+   }
+  },
+  {
+   "t": 1792873933190,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 3122,
+    "b": 0,
+    "e": 1
+   }
+  },
+  {
+   "t": 1792873933206,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 3122,
+    "b": 0,
+    "e": 1
+   }
+  },
+  {
+   "t": 1792873933457,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 3469,
+    "b": 0,
+    "e": 1
+   }
+  },
+  {
+   "t": 1792873933526,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 3469,
+    "b": 0,
+    "e": 1
+   }
+  },
+  {
+   "t": 1792873933537,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 3469,
+    "b": 0,
+    "e": 1
+   }
+  },
+  {
+   "t": 1792873934673,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 4865,
+    "b": 0,
+    "e": 2
+   }
+  },
+  {
+   "t": 1792873934695,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 4865,
+    "b": 0,
+    "e": 2
+   }
+  },
+  {
+   "t": 1792873934772,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 4865,
+    "b": 0,
+    "e": 2
+   }
+  },
+  {
+   "t": 1792873936449,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 6645,
+    "b": 0,
+    "e": 3
+   }
+  },
+  {
+   "t": 1792873936492,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 6645,
+    "b": 0,
+    "e": 3
+   }
+  },
+  {
+   "t": 1792873936517,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 6645,
+    "b": 0,
+    "e": 3
+   }
+  },
+  {
+   "t": 1792873937685,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 8089,
+    "b": 0,
+    "e": 4
+   }
+  },
+  {
+   "t": 1792873937712,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 8089,
+    "b": 0,
+    "e": 4
+   }
+  },
+  {
+   "t": 1792873937733,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 8089,
+    "b": 0,
+    "e": 4
+   }
+  },
+  {
+   "t": 1792873938548,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 9081,
+    "b": 0,
+    "e": 5
+   }
+  },
+  {
+   "t": 1792873938573,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 9081,
+    "b": 0,
+    "e": 5
+   }
+  },
+  {
+   "t": 1792873938594,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 9081,
+    "b": 0,
+    "e": 5
+   }
+  },
+  {
+   "t": 1792873939268,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 9908,
+    "b": 0,
+    "e": 5
+   }
+  },
+  {
+   "t": 1792873939290,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 9908,
+    "b": 0,
+    "e": 5
+   }
+  },
+  {
+   "t": 1792873939310,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 9908,
+    "b": 0,
+    "e": 5
+   }
+  },
+  {
+   "t": 1792873940763,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 11632,
+    "b": 0,
+    "e": 6
+   }
+  },
+  {
+   "t": 1792873940793,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 11632,
+    "b": 0,
+    "e": 6
+   }
+  },
+  {
+   "t": 1792873940830,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 11632,
+    "b": 0,
+    "e": 6
+   }
+  },
+  {
+   "t": 1792873942265,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 13354,
+    "b": 0,
+    "e": 7
+   }
+  },
+  {
+   "t": 1792873942292,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 13354,
+    "b": 0,
+    "e": 7
+   }
+  },
+  {
+   "t": 1792873945753,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 11632,
+    "b": 0,
+    "e": 6
+   }
+  },
+  {
+   "t": 1792873945831,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 11632,
+    "b": 0,
+    "e": 6
+   }
+  },
+  {
+   "t": 1792873945841,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 11632,
+    "b": 0,
+    "e": 6
+   }
+  },
+  {
+   "t": 1792873952329,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 11632,
+    "b": 0,
+    "e": 6
+   }
+  },
+  {
+   "t": 1792873952340,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 11632,
+    "b": 0,
+    "e": 6
+   }
+  },
+  {
+   "t": 1792873952418,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 11632,
+    "b": 0,
+    "e": 6
+   }
+  },
+  {
+   "t": 1792873955829,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 14083,
+    "b": 0,
+    "e": 7
+   }
+  },
+  {
+   "t": 1792873955884,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 14083,
+    "b": 0,
+    "e": 7
+   }
+  },
+  {
+   "t": 1792873955975,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 14083,
+    "b": 0,
+    "e": 7
+   }
+  },
+  {
+   "t": 1792873956457,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 14795,
+    "b": 0,
+    "e": 7
+   }
+  },
+  {
+   "t": 1792873956484,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 14795,
+    "b": 0,
+    "e": 7
+   }
+  },
+  {
+   "t": 1792873956510,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 14795,
+    "b": 0,
+    "e": 7
+   }
+  },
+  {
+   "t": 1792873957910,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 16469,
+    "b": 1,
+    "e": 8
+   }
+  },
+  {
+   "t": 1792873957936,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 16469,
+    "b": 1,
+    "e": 8
+   }
+  },
+  {
+   "t": 1792873957959,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 16469,
+    "b": 1,
+    "e": 8
+   }
+  },
+  {
+   "t": 1792873959441,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 18164,
+    "b": 2,
+    "e": 9
+   }
+  },
+  {
+   "t": 1792873959460,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 18164,
+    "b": 2,
+    "e": 9
+   }
+  },
+  {
+   "t": 1792873959477,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 18164,
+    "b": 2,
+    "e": 9
+   }
+  },
+  {
+   "t": 1792873959965,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 18837,
+    "b": 3,
+    "e": 10
+   }
+  },
+  {
+   "t": 1792873960005,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 18837,
+    "b": 3,
+    "e": 10
+   }
+  },
+  {
+   "t": 1792873960034,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 18837,
+    "b": 3,
+    "e": 10
+   }
+  },
+  {
+   "t": 1792873964021,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 18837,
+    "b": 3,
+    "e": 10
+   }
+  },
+  {
+   "t": 1792873964091,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 18837,
+    "b": 3,
+    "e": 10
+   }
+  },
+  {
+   "t": 1792873964102,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 18837,
+    "b": 3,
+    "e": 10
+   }
+  },
+  {
+   "t": 1792873970052,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 18837,
+    "b": 3,
+    "e": 10
+   }
+  },
+  {
+   "t": 1792873970435,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 18837,
+    "b": 3,
+    "e": 10
+   }
+  },
+  {
+   "t": 1792873970637,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 18837,
+    "b": 3,
+    "e": 10
+   }
+  },
+  {
+   "t": 1792873972893,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 18837,
+    "b": 3,
+    "e": 10
+   }
+  },
+  {
+   "t": 1792873972919,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 18837,
+    "b": 3,
+    "e": 10
+   }
+  },
+  {
+   "t": 1792873972955,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 18837,
+    "b": 3,
+    "e": 10
+   }
+  },
+  {
+   "t": 1792873977795,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 18837,
+    "b": 3,
+    "e": 10
+   }
+  },
+  {
+   "t": 1792873977814,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 18837,
+    "b": 3,
+    "e": 10
+   }
+  },
+  {
+   "t": 1792873977832,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 18837,
+    "b": 3,
+    "e": 10
+   }
+  },
+  {
+   "t": 1792873982807,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 21259,
+    "b": 4,
+    "e": 11
+   }
+  },
+  {
+   "t": 1792873982831,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 21259,
+    "b": 4,
+    "e": 11
+   }
+  },
+  {
+   "t": 1792873982866,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 21259,
+    "b": 4,
+    "e": 11
+   }
+  },
+  {
+   "t": 1792873983502,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 22048,
+    "b": 4,
+    "e": 11
+   }
+  },
+  {
+   "t": 1792873983530,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 22048,
+    "b": 4,
+    "e": 11
+   }
+  },
+  {
+   "t": 1792873983551,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 22048,
+    "b": 4,
+    "e": 11
+   }
+  },
+  {
+   "t": 1792873984823,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 23579,
+    "b": 5,
+    "e": 12
+   }
+  },
+  {
+   "t": 1792873984834,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 23579,
+    "b": 5,
+    "e": 12
+   }
+  },
+  {
+   "t": 1792873984847,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 23579,
+    "b": 5,
+    "e": 12
+   }
+  },
+  {
+   "t": 1792873986419,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 25416,
+    "b": 6,
+    "e": 13
+   }
+  },
+  {
+   "t": 1792873986436,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 25416,
+    "b": 6,
+    "e": 13
+   }
+  },
+  {
+   "t": 1792873986456,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 25416,
+    "b": 6,
+    "e": 13
+   }
+  },
+  {
+   "t": 1792873987800,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 27004,
+    "b": 7,
+    "e": 14
+   }
+  },
+  {
+   "t": 1792873987822,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 27004,
+    "b": 7,
+    "e": 14
+   }
+  },
+  {
+   "t": 1792873987838,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 27004,
+    "b": 7,
+    "e": 14
+   }
+  },
+  {
+   "t": 1792873987917,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 27139,
+    "b": 7,
+    "e": 14
+   }
+  },
+  {
+   "t": 1792873987940,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 27139,
+    "b": 7,
+    "e": 14
+   }
+  },
+  {
+   "t": 1792873987953,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 27139,
+    "b": 7,
+    "e": 14
+   }
+  },
+  {
+   "t": 1792873989423,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 28861,
+    "b": 8,
+    "e": 15
+   }
+  },
+  {
+   "t": 1792873989446,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 28861,
+    "b": 8,
+    "e": 15
+   }
+  },
+  {
+   "t": 1792873989463,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 28861,
+    "b": 8,
+    "e": 15
+   }
+  },
+  {
+   "t": 1792873990922,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 30584,
+    "b": 9,
+    "e": 16
+   }
+  },
+  {
+   "t": 1792873990951,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 30584,
+    "b": 9,
+    "e": 16
+   }
+  },
+  {
+   "t": 1792873990975,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 30584,
+    "b": 9,
+    "e": 16
+   }
+  },
+  {
+   "t": 1792873992422,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 32319,
+    "b": 10,
+    "e": 17
+   }
+  },
+  {
+   "t": 1792873992446,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 32319,
+    "b": 10,
+    "e": 17
+   }
+  },
+  {
+   "t": 1792873992468,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 32319,
+    "b": 10,
+    "e": 17
+   }
+  },
+  {
+   "t": 1792873992842,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 32798,
+    "b": 11,
+    "e": 18
+   }
+  },
+  {
+   "t": 1792873992883,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 32798,
+    "b": 11,
+    "e": 18
+   }
+  },
+  {
+   "t": 1792873992908,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 32798,
+    "b": 11,
+    "e": 18
+   }
+  },
+  {
+   "t": 1792873993945,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 34069,
+    "b": 11,
+    "e": 18
+   }
+  },
+  {
+   "t": 1792873993971,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 34069,
+    "b": 11,
+    "e": 18
+   }
+  },
+  {
+   "t": 1792873993989,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 34069,
+    "b": 11,
+    "e": 18
+   }
+  },
+  {
+   "t": 1792873995442,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 35782,
+    "b": 12,
+    "e": 19
+   }
+  },
+  {
+   "t": 1792873995454,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 35782,
+    "b": 12,
+    "e": 19
+   }
+  },
+  {
+   "t": 1792873995492,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 35782,
+    "b": 12,
+    "e": 19
+   }
+  },
+  {
+   "t": 1792873995731,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 36071,
+    "b": 13,
+    "e": 20
+   }
+  },
+  {
+   "t": 1792873995820,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 36071,
+    "b": 13,
+    "e": 20
+   }
+  },
+  {
+   "t": 1792873999391,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 35782,
+    "b": 12,
+    "e": 19
+   }
+  },
+  {
+   "t": 1792873999465,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 35782,
+    "b": 12,
+    "e": 19
+   }
+  },
+  {
+   "t": 1792873999476,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 35782,
+    "b": 12,
+    "e": 19
+   }
+  },
+  {
+   "t": 1792874005461,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 35782,
+    "b": 12,
+    "e": 19
+   }
+  },
+  {
+   "t": 1792874005630,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 35782,
+    "b": 12,
+    "e": 19
+   }
+  },
+  {
+   "t": 1792874005787,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 35782,
+    "b": 12,
+    "e": 19
+   }
+  },
+  {
+   "t": 1792874008160,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 35782,
+    "b": 12,
+    "e": 19
+   }
+  },
+  {
+   "t": 1792874008190,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 35782,
+    "b": 12,
+    "e": 19
+   }
+  },
+  {
+   "t": 1792874008218,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 35782,
+    "b": 12,
+    "e": 19
+   }
+  },
+  {
+   "t": 1792874013136,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 35782,
+    "b": 12,
+    "e": 19
+   }
+  },
+  {
+   "t": 1792874013155,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 35782,
+    "b": 12,
+    "e": 19
+   }
+  },
+  {
+   "t": 1792874013172,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 35782,
+    "b": 12,
+    "e": 19
+   }
+  },
+  {
+   "t": 1792874018161,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 38097,
+    "b": 13,
+    "e": 20
+   }
+  },
+  {
+   "t": 1792874018195,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 38097,
+    "b": 13,
+    "e": 20
+   }
+  },
+  {
+   "t": 1792874018220,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 38097,
+    "b": 13,
+    "e": 20
+   }
+  },
+  {
+   "t": 1792874020329,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 40454,
+    "b": 14,
+    "e": 21
+   }
+  },
+  {
+   "t": 1792874020355,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 40454,
+    "b": 14,
+    "e": 21
+   }
+  },
+  {
+   "t": 1792874020374,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 40454,
+    "b": 14,
+    "e": 21
+   }
+  },
+  {
+   "t": 1792874021839,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 42070,
+    "b": 15,
+    "e": 22
+   }
+  },
+  {
+   "t": 1792874021867,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 42070,
+    "b": 15,
+    "e": 22
+   }
+  },
+  {
+   "t": 1792874021888,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 42070,
+    "b": 15,
+    "e": 22
+   }
+  },
+  {
+   "t": 1792874023159,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 43474,
+    "b": 16,
+    "e": 23
+   }
+  },
+  {
+   "t": 1792874023169,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 43474,
+    "b": 16,
+    "e": 23
+   }
+  },
+  {
+   "t": 1792874023178,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 43474,
+    "b": 16,
+    "e": 23
+   }
+  },
+  {
+   "t": 1792874023331,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 43666,
+    "b": 16,
+    "e": 23
+   }
+  },
+  {
+   "t": 1792874023355,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 43666,
+    "b": 16,
+    "e": 23
+   }
+  },
+  {
+   "t": 1792874023370,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 43666,
+    "b": 16,
+    "e": 23
+   }
+  },
+  {
+   "t": 1792874024629,
+   "art": "platz",
+   "rec": {
+    "x": 0,
+    "z": 45169,
+    "b": 17,
+    "e": 24
+   }
+  },
+  {
+   "t": 1792874024661,
+   "art": "idb",
+   "rec": {
+    "x": 0,
+    "z": 45169,
+    "b": 17,
+    "e": 24
+   }
+  },
+  {
+   "t": 1792874024685,
+   "art": "fest",
+   "rec": {
+    "x": 0,
+    "z": 45169,
+    "b": 17,
+    "e": 24
+   }
+  },
+  {
+   "t": 1792874026377,
+   "art": "platz",
+   "rec": {
+    "x": 31,
+    "z": 46795,
+    "b": 18,
+    "e": 25
+   }
+  },
+  {
+   "t": 1792874026448,
+   "art": "idb",
+   "rec": {
+    "x": 31,
+    "z": 46795,
+    "b": 18,
+    "e": 25
+   }
+  },
+  {
+   "t": 1792874026548,
+   "art": "fest",
+   "rec": {
+    "x": 31,
+    "z": 46795,
+    "b": 18,
+    "e": 25
+   }
+  },
+  {
+   "t": 1792874027656,
+   "art": "platz",
+   "rec": {
+    "x": 317,
+    "z": 47841,
+    "b": 19,
+    "e": 26
+   }
+  },
+  {
+   "t": 1792874027679,
+   "art": "idb",
+   "rec": {
+    "x": 317,
+    "z": 47841,
+    "b": 19,
+    "e": 26
+   }
+  },
+  {
+   "t": 1792874027697,
+   "art": "fest",
+   "rec": {
+    "x": 317,
+    "z": 47841,
+    "b": 19,
+    "e": 26
+   }
+  },
+  {
+   "t": 1792874028186,
+   "art": "platz",
+   "rec": {
+    "x": 317,
+    "z": 48351,
+    "b": 20,
+    "e": 27
+   }
+  },
+  {
+   "t": 1792874028212,
+   "art": "idb",
+   "rec": {
+    "x": 317,
+    "z": 48351,
+    "b": 20,
+    "e": 27
+   }
+  },
+  {
+   "t": 1792874028232,
+   "art": "fest",
+   "rec": {
+    "x": 317,
+    "z": 48351,
+    "b": 20,
+    "e": 27
+   }
+  },
+  {
+   "t": 1792874032112,
+   "art": "platz",
+   "rec": {
+    "x": 317,
+    "z": 48351,
+    "b": 20,
+    "e": 27
+   }
+  },
+  {
+   "t": 1792874032190,
+   "art": "idb",
+   "rec": {
+    "x": 317,
+    "z": 48351,
+    "b": 20,
+    "e": 27
+   }
+  },
+  {
+   "t": 1792874032200,
+   "art": "fest",
+   "rec": {
+    "x": 317,
+    "z": 48351,
+    "b": 20,
+    "e": 27
+   }
+  },
+  {
+   "t": 1792874038307,
+   "art": "platz",
+   "rec": {
+    "x": 317,
+    "z": 48351,
+    "b": 20,
+    "e": 27
+   }
+  },
+  {
+   "t": 1792874038515,
+   "art": "idb",
+   "rec": {
+    "x": 317,
+    "z": 48351,
+    "b": 20,
+    "e": 27
+   }
+  },
+  {
+   "t": 1792874038613,
+   "art": "fest",
+   "rec": {
+    "x": 317,
+    "z": 48351,
+    "b": 20,
+    "e": 27
+   }
+  },
+  {
+   "t": 1792874041114,
+   "art": "platz",
+   "rec": {
+    "x": 317,
+    "z": 51551,
+    "b": 21,
+    "e": 28
+   }
+  },
+  {
+   "t": 1792874041146,
+   "art": "idb",
+   "rec": {
+    "x": 317,
+    "z": 51551,
+    "b": 21,
+    "e": 28
+   }
+  },
+  {
+   "t": 1792874041171,
+   "art": "fest",
+   "rec": {
+    "x": 317,
+    "z": 51551,
+    "b": 21,
+    "e": 28
+   }
+  },
+  {
+   "t": 1792874041182,
+   "art": "platz",
+   "rec": {
+    "x": 317,
+    "z": 51627,
+    "b": 21,
+    "e": 28
+   }
+  },
+  {
+   "t": 1792874041213,
+   "art": "idb",
+   "rec": {
+    "x": 317,
+    "z": 51627,
+    "b": 21,
+    "e": 28
+   }
+  },
+  {
+   "t": 1792874041258,
+   "art": "fest",
+   "rec": {
+    "x": 317,
+    "z": 51627,
+    "b": 21,
+    "e": 28
+   }
+  },
+  {
+   "t": 1792874042829,
+   "art": "platz",
+   "rec": {
+    "x": 317,
+    "z": 53360,
+    "b": 22,
+    "e": 29
+   }
+  },
+  {
+   "t": 1792874042882,
+   "art": "idb",
+   "rec": {
+    "x": 317,
+    "z": 53360,
+    "b": 22,
+    "e": 29
+   }
+  },
+  {
+   "t": 1792874042909,
+   "art": "fest",
+   "rec": {
+    "x": 317,
+    "z": 53360,
+    "b": 22,
+    "e": 29
+   }
+  },
+  {
+   "t": 1792874044117,
+   "art": "platz",
+   "rec": {
+    "x": 317,
+    "z": 54861,
+    "b": 23,
+    "e": 30
+   }
+  },
+  {
+   "t": 1792874044131,
+   "art": "idb",
+   "rec": {
+    "x": 317,
+    "z": 54861,
+    "b": 23,
+    "e": 30
+   }
+  },
+  {
+   "t": 1792874044144,
+   "art": "fest",
+   "rec": {
+    "x": 317,
+    "z": 54861,
+    "b": 23,
+    "e": 30
+   }
+  },
+  {
+   "t": 1792874045609,
+   "art": "platz",
+   "rec": {
+    "x": 317,
+    "z": 56574,
+    "b": 23,
+    "e": 31
+   }
+  },
+  {
+   "t": 1792874045644,
+   "art": "idb",
+   "rec": {
+    "x": 317,
+    "z": 56574,
+    "b": 23,
+    "e": 31
+   }
+  },
+  {
+   "t": 1792874045663,
+   "art": "fest",
+   "rec": {
+    "x": 317,
+    "z": 56574,
+    "b": 23,
+    "e": 31
+   }
+  },
+  {
+   "t": 1792874046192,
+   "art": "platz",
+   "rec": {
+    "x": 317,
+    "z": 57181,
+    "b": 23,
+    "e": 32
+   }
+  },
+  {
+   "t": 1792874046229,
+   "art": "idb",
+   "rec": {
+    "x": 317,
+    "z": 57181,
+    "b": 23,
+    "e": 32
+   }
+  },
+  {
+   "t": 1792874046256,
+   "art": "fest",
+   "rec": {
+    "x": 317,
+    "z": 57181,
+    "b": 23,
+    "e": 32
+   }
+  },
+  {
+   "t": 1792874047278,
+   "art": "platz",
+   "rec": {
+    "x": 317,
+    "z": 58422,
+    "b": 23,
+    "e": 32
+   }
+  },
+  {
+   "t": 1792874050744,
+   "art": "platz",
+   "rec": {
+    "x": 317,
+    "z": 57181,
+    "b": 23,
+    "e": 32
+   }
+  },
+  {
+   "t": 1792874050814,
+   "art": "idb",
+   "rec": {
+    "x": 317,
+    "z": 57181,
+    "b": 23,
+    "e": 32
+   }
+  },
+  {
+   "t": 1792874050824,
+   "art": "fest",
+   "rec": {
+    "x": 317,
+    "z": 57181,
+    "b": 23,
+    "e": 32
+   }
+  },
+  {
+   "t": 1792874056749,
+   "art": "platz",
+   "rec": {
+    "x": 317,
+    "z": 57181,
+    "b": 23,
+    "e": 32
+   }
+  },
+  {
+   "t": 1792874057106,
+   "art": "idb",
+   "rec": {
+    "x": 317,
+    "z": 57181,
+    "b": 23,
+    "e": 32
+   }
+  },
+  {
+   "t": 1792874057261,
+   "art": "fest",
+   "rec": {
+    "x": 317,
+    "z": 57181,
+    "b": 23,
+    "e": 32
+   }
+  },
+  {
+   "t": 1792874059725,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 59218,
+    "b": 23,
+    "e": 33
+   }
+  },
+  {
+   "t": 1792874059747,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 59218,
+    "b": 23,
+    "e": 33
+   }
+  },
+  {
+   "t": 1792874059776,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 59218,
+    "b": 23,
+    "e": 33
+   }
+  },
+  {
+   "t": 1792874059800,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 59305,
+    "b": 23,
+    "e": 33
+   }
+  },
+  {
+   "t": 1792874059810,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 59305,
+    "b": 23,
+    "e": 33
+   }
+  },
+  {
+   "t": 1792874059832,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 59305,
+    "b": 23,
+    "e": 33
+   }
+  },
+  {
+   "t": 1792874061317,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 61037,
+    "b": 23,
+    "e": 34
+   }
+  },
+  {
+   "t": 1792874061357,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 61037,
+    "b": 23,
+    "e": 34
+   }
+  },
+  {
+   "t": 1792874061390,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 61037,
+    "b": 23,
+    "e": 34
+   }
+  },
+  {
+   "t": 1792874062826,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 62779,
+    "b": 23,
+    "e": 35
+   }
+  },
+  {
+   "t": 1792874062854,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 62779,
+    "b": 23,
+    "e": 35
+   }
+  },
+  {
+   "t": 1792874062876,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 62779,
+    "b": 23,
+    "e": 35
+   }
+  },
+  {
+   "t": 1792874064538,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 64608,
+    "b": 23,
+    "e": 36
+   }
+  },
+  {
+   "t": 1792874064571,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 64608,
+    "b": 23,
+    "e": 36
+   }
+  },
+  {
+   "t": 1792874064607,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 64608,
+    "b": 23,
+    "e": 36
+   }
+  },
+  {
+   "t": 1792874064656,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 64743,
+    "b": 23,
+    "e": 37
+   }
+  },
+  {
+   "t": 1792874064677,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 64743,
+    "b": 23,
+    "e": 37
+   }
+  },
+  {
+   "t": 1792874064690,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 64743,
+    "b": 23,
+    "e": 37
+   }
+  },
+  {
+   "t": 1792874065829,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 66090,
+    "b": 23,
+    "e": 37
+   }
+  },
+  {
+   "t": 1792874065855,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 66090,
+    "b": 23,
+    "e": 37
+   }
+  },
+  {
+   "t": 1792874065885,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 66090,
+    "b": 23,
+    "e": 37
+   }
+  },
+  {
+   "t": 1792874067488,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 67927,
+    "b": 23,
+    "e": 38
+   }
+  },
+  {
+   "t": 1792874067511,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 67927,
+    "b": 23,
+    "e": 38
+   }
+  },
+  {
+   "t": 1792874067530,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 67927,
+    "b": 23,
+    "e": 38
+   }
+  },
+  {
+   "t": 1792874068973,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 69591,
+    "b": 23,
+    "e": 39
+   }
+  },
+  {
+   "t": 1792874068997,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 69591,
+    "b": 23,
+    "e": 39
+   }
+  },
+  {
+   "t": 1792874069016,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 69591,
+    "b": 23,
+    "e": 39
+   }
+  },
+  {
+   "t": 1792874069648,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 70331,
+    "b": 23,
+    "e": 40
+   }
+  },
+  {
+   "t": 1792874069678,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 70331,
+    "b": 23,
+    "e": 40
+   }
+  },
+  {
+   "t": 1792874069711,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 70331,
+    "b": 23,
+    "e": 40
+   }
+  },
+  {
+   "t": 1792874070484,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 71284,
+    "b": 23,
+    "e": 40
+   }
+  },
+  {
+   "t": 1792874070508,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 71284,
+    "b": 23,
+    "e": 40
+   }
+  },
+  {
+   "t": 1792874070534,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 71284,
+    "b": 23,
+    "e": 40
+   }
+  },
+  {
+   "t": 1792874074373,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 71284,
+    "b": 23,
+    "e": 40
+   }
+  },
+  {
+   "t": 1792874074448,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 71284,
+    "b": 23,
+    "e": 40
+   }
+  },
+  {
+   "t": 1792874074463,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 71284,
+    "b": 23,
+    "e": 40
+   }
+  },
+  {
+   "t": 1792874080617,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 71284,
+    "b": 23,
+    "e": 40
+   }
+  },
+  {
+   "t": 1792874080845,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 71284,
+    "b": 23,
+    "e": 40
+   }
+  },
+  {
+   "t": 1792874081008,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 71284,
+    "b": 23,
+    "e": 40
+   }
+  },
+  {
+   "t": 1792874083364,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 74146,
+    "b": 24,
+    "e": 41
+   }
+  },
+  {
+   "t": 1792874083387,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 74146,
+    "b": 24,
+    "e": 41
+   }
+  },
+  {
+   "t": 1792874083414,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 74146,
+    "b": 24,
+    "e": 41
+   }
+  },
+  {
+   "t": 1792874083660,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 74483,
+    "b": 24,
+    "e": 41
+   }
+  },
+  {
+   "t": 1792874083682,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 74483,
+    "b": 24,
+    "e": 41
+   }
+  },
+  {
+   "t": 1792874083702,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 74483,
+    "b": 24,
+    "e": 41
+   }
+  },
+  {
+   "t": 1792874085158,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 76206,
+    "b": 25,
+    "e": 42
+   }
+  },
+  {
+   "t": 1792874085187,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 76206,
+    "b": 25,
+    "e": 42
+   }
+  },
+  {
+   "t": 1792874085215,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 76206,
+    "b": 25,
+    "e": 42
+   }
+  },
+  {
+   "t": 1792874086677,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 77949,
+    "b": 26,
+    "e": 43
+   }
+  },
+  {
+   "t": 1792874086707,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 77949,
+    "b": 26,
+    "e": 43
+   }
+  },
+  {
+   "t": 1792874086725,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 77949,
+    "b": 26,
+    "e": 43
+   }
+  },
+  {
+   "t": 1792874088180,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 79681,
+    "b": 27,
+    "e": 44
+   }
+  },
+  {
+   "t": 1792874088200,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 79681,
+    "b": 27,
+    "e": 44
+   }
+  },
+  {
+   "t": 1792874091689,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 77949,
+    "b": 26,
+    "e": 43
+   }
+  },
+  {
+   "t": 1792874091769,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 77949,
+    "b": 26,
+    "e": 43
+   }
+  },
+  {
+   "t": 1792874091784,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 77949,
+    "b": 26,
+    "e": 43
+   }
+  },
+  {
+   "t": 1792874098032,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 77949,
+    "b": 26,
+    "e": 43
+   }
+  },
+  {
+   "t": 1792874098262,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 77949,
+    "b": 26,
+    "e": 43
+   }
+  },
+  {
+   "t": 1792874098299,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 77949,
+    "b": 26,
+    "e": 43
+   }
+  },
+  {
+   "t": 1792874100773,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 80975,
+    "b": 26,
+    "e": 44
+   }
+  },
+  {
+   "t": 1792874100808,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 80975,
+    "b": 26,
+    "e": 44
+   }
+  },
+  {
+   "t": 1792874100830,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 80975,
+    "b": 26,
+    "e": 44
+   }
+  },
+  {
+   "t": 1792874100923,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 81110,
+    "b": 26,
+    "e": 44
+   }
+  },
+  {
+   "t": 1792874100942,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 81110,
+    "b": 26,
+    "e": 44
+   }
+  },
+  {
+   "t": 1792874100955,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 81110,
+    "b": 26,
+    "e": 44
+   }
+  },
+  {
+   "t": 1792874102435,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 82882,
+    "b": 26,
+    "e": 45
+   }
+  },
+  {
+   "t": 1792874102449,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 82882,
+    "b": 26,
+    "e": 45
+   }
+  },
+  {
+   "t": 1792874102472,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 82882,
+    "b": 26,
+    "e": 45
+   }
+  },
+  {
+   "t": 1792874109430,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 82882,
+    "b": 26,
+    "e": 45
+   }
+  },
+  {
+   "t": 1792874109511,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 82882,
+    "b": 26,
+    "e": 45
+   }
+  },
+  {
+   "t": 1792874109523,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 82882,
+    "b": 26,
+    "e": 45
+   }
+  },
+  {
+   "t": 1792874115610,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 82882,
+    "b": 26,
+    "e": 45
+   }
+  },
+  {
+   "t": 1792874115871,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 82882,
+    "b": 26,
+    "e": 45
+   }
+  },
+  {
+   "t": 1792874115989,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 82882,
+    "b": 26,
+    "e": 45
+   }
+  },
+  {
+   "t": 1792874118550,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 86014,
+    "b": 26,
+    "e": 46
+   }
+  },
+  {
+   "t": 1792874118653,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 86014,
+    "b": 26,
+    "e": 46
+   }
+  },
+  {
+   "t": 1792874118792,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 86014,
+    "b": 26,
+    "e": 46
+   }
+  },
+  {
+   "t": 1792874119156,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 86774,
+    "b": 26,
+    "e": 47
+   }
+  },
+  {
+   "t": 1792874119195,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 86774,
+    "b": 26,
+    "e": 47
+   }
+  },
+  {
+   "t": 1792874119213,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 86774,
+    "b": 26,
+    "e": 47
+   }
+  },
+  {
+   "t": 1792874120120,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 87871,
+    "b": 26,
+    "e": 47
+   }
+  },
+  {
+   "t": 1792874120155,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 87871,
+    "b": 26,
+    "e": 47
+   }
+  },
+  {
+   "t": 1792874120174,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 87871,
+    "b": 26,
+    "e": 47
+   }
+  },
+  {
+   "t": 1792874121544,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 89507,
+    "b": 26,
+    "e": 48
+   }
+  },
+  {
+   "t": 1792874121581,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 89507,
+    "b": 26,
+    "e": 48
+   }
+  },
+  {
+   "t": 1792874121597,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 89507,
+    "b": 26,
+    "e": 48
+   }
+  },
+  {
+   "t": 1792874123690,
+   "art": "platz",
+   "rec": {
+    "x": -213,
+    "z": 91278,
+    "b": 26,
+    "e": 50
+   }
+  },
+  {
+   "t": 1792874123729,
+   "art": "idb",
+   "rec": {
+    "x": -213,
+    "z": 91278,
+    "b": 26,
+    "e": 50
+   }
+  },
+  {
+   "t": 1792874123749,
+   "art": "fest",
+   "rec": {
+    "x": -213,
+    "z": 91278,
+    "b": 26,
+    "e": 50
+   }
+  },
+  {
+   "t": 1792874126311,
+   "art": "platz",
+   "rec": {
+    "x": -157,
+    "z": 93804,
+    "b": 26,
+    "e": 51
+   }
+  },
+  {
+   "t": 1792874126542,
+   "art": "idb",
+   "rec": {
+    "x": -157,
+    "z": 93804,
+    "b": 26,
+    "e": 51
+   }
+  },
+  {
+   "t": 1792874126569,
+   "art": "fest",
+   "rec": {
+    "x": -157,
+    "z": 93804,
+    "b": 26,
+    "e": 51
+   }
+  },
+  {
+   "t": 1792874130054,
+   "art": "platz",
+   "rec": {
+    "x": -157,
+    "z": 93804,
+    "b": 26,
+    "e": 51
+   }
+  },
+  {
+   "t": 1792874130129,
+   "art": "idb",
+   "rec": {
+    "x": -157,
+    "z": 93804,
+    "b": 26,
+    "e": 51
+   }
+  },
+  {
+   "t": 1792874130140,
+   "art": "fest",
+   "rec": {
+    "x": -157,
+    "z": 93804,
+    "b": 26,
+    "e": 51
+   }
+  },
+  {
+   "t": 1792874136181,
+   "art": "platz",
+   "rec": {
+    "x": -153,
+    "z": 93780,
+    "b": 26,
+    "e": 51
+   }
+  },
+  {
+   "t": 1792874136497,
+   "art": "idb",
+   "rec": {
+    "x": -153,
+    "z": 93780,
+    "b": 26,
+    "e": 51
+   }
+  },
+  {
+   "t": 1792874136684,
+   "art": "fest",
+   "rec": {
+    "x": -153,
+    "z": 93780,
+    "b": 26,
+    "e": 51
+   }
+  },
+  {
+   "t": 1792874139287,
+   "art": "platz",
+   "rec": {
+    "x": 339,
+    "z": 93896,
+    "b": 26,
+    "e": 52
+   }
+  },
+  {
+   "t": 1792874139318,
+   "art": "idb",
+   "rec": {
+    "x": 339,
+    "z": 93896,
+    "b": 26,
+    "e": 52
+   }
+  },
+  {
+   "t": 1792874139340,
+   "art": "fest",
+   "rec": {
+    "x": 339,
+    "z": 93896,
+    "b": 26,
+    "e": 52
+   }
+  },
+  {
+   "t": 1792874139605,
+   "art": "platz",
+   "rec": {
+    "x": 404,
+    "z": 93908,
+    "b": 26,
+    "e": 52
+   }
+  },
+  {
+   "t": 1792874139627,
+   "art": "idb",
+   "rec": {
+    "x": 404,
+    "z": 93908,
+    "b": 26,
+    "e": 52
+   }
+  },
+  {
+   "t": 1792874139646,
+   "art": "fest",
+   "rec": {
+    "x": 404,
+    "z": 93908,
+    "b": 26,
+    "e": 52
+   }
+  },
+  {
+   "t": 1792874142861,
+   "art": "platz",
+   "rec": {
+    "x": 870,
+    "z": 96322,
+    "b": 26,
+    "e": 54
+   }
+  },
+  {
+   "t": 1792874142883,
+   "art": "idb",
+   "rec": {
+    "x": 870,
+    "z": 96322,
+    "b": 26,
+    "e": 54
+   }
+  },
+  {
+   "t": 1792874142903,
+   "art": "fest",
+   "rec": {
+    "x": 870,
+    "z": 96322,
+    "b": 26,
+    "e": 54
+   }
+  },
+  {
+   "t": 1792874144080,
+   "art": "platz",
+   "rec": {
+    "x": 870,
+    "z": 97583,
+    "b": 26,
+    "e": 55
+   }
+  },
+  {
+   "t": 1792874144110,
+   "art": "idb",
+   "rec": {
+    "x": 870,
+    "z": 97583,
+    "b": 26,
+    "e": 55
+   }
+  },
+  {
+   "t": 1792874144142,
+   "art": "fest",
+   "rec": {
+    "x": 870,
+    "z": 97583,
+    "b": 26,
+    "e": 55
+   }
+  },
+  {
+   "t": 1792874144364,
+   "art": "platz",
+   "rec": {
+    "x": 870,
+    "z": 97901,
+    "b": 26,
+    "e": 55
+   }
+  },
+  {
+   "t": 1792874144391,
+   "art": "idb",
+   "rec": {
+    "x": 870,
+    "z": 97901,
+    "b": 26,
+    "e": 55
+   }
+  },
+  {
+   "t": 1792874144415,
+   "art": "fest",
+   "rec": {
+    "x": 870,
+    "z": 97901,
+    "b": 26,
+    "e": 55
+   }
+  },
+  {
+   "t": 1792874145853,
+   "art": "platz",
+   "rec": {
+    "x": 870,
+    "z": 99488,
+    "b": 26,
+    "e": 56
+   }
+  },
+  {
+   "t": 1792874145885,
+   "art": "idb",
+   "rec": {
+    "x": 870,
+    "z": 99488,
+    "b": 26,
+    "e": 56
+   }
+  },
+  {
+   "t": 1792874145914,
+   "art": "fest",
+   "rec": {
+    "x": 870,
+    "z": 99488,
+    "b": 26,
+    "e": 56
+   }
+  },
+  {
+   "t": 1792874149852,
+   "art": "platz",
+   "rec": {
+    "x": 870,
+    "z": 99488,
+    "b": 26,
+    "e": 56
+   }
+  },
+  {
+   "t": 1792874149932,
+   "art": "idb",
+   "rec": {
+    "x": 870,
+    "z": 99488,
+    "b": 26,
+    "e": 56
+   }
+  },
+  {
+   "t": 1792874149942,
+   "art": "fest",
+   "rec": {
+    "x": 870,
+    "z": 99488,
+    "b": 26,
+    "e": 56
+   }
+  },
+  {
+   "t": 1792874155986,
+   "art": "platz",
+   "rec": {
+    "x": 870,
+    "z": 99568,
+    "b": 26,
+    "e": 56
+   }
+  },
+  {
+   "t": 1792874156368,
+   "art": "idb",
+   "rec": {
+    "x": 870,
+    "z": 99568,
+    "b": 26,
+    "e": 56
+   }
+  },
+  {
+   "t": 1792874156503,
+   "art": "fest",
+   "rec": {
+    "x": 870,
+    "z": 99568,
+    "b": 26,
+    "e": 56
+   }
+  },
+  {
+   "t": 1792874158666,
+   "art": "platz",
+   "rec": {
+    "x": 870,
+    "z": 102598,
+    "b": 26,
+    "e": 57
+   }
+  },
+  {
+   "t": 1792874158704,
+   "art": "idb",
+   "rec": {
+    "x": 870,
+    "z": 102598,
+    "b": 26,
+    "e": 57
+   }
+  },
+  {
+   "t": 1792874158727,
+   "art": "fest",
+   "rec": {
+    "x": 870,
+    "z": 102598,
+    "b": 26,
+    "e": 57
+   }
+  },
+  {
+   "t": 1792874158869,
+   "art": "platz",
+   "rec": {
+    "x": 870,
+    "z": 102838,
+    "b": 26,
+    "e": 57
+   }
+  },
+  {
+   "t": 1792874158895,
+   "art": "idb",
+   "rec": {
+    "x": 870,
+    "z": 102838,
+    "b": 26,
+    "e": 57
+   }
+  },
+  {
+   "t": 1792874158914,
+   "art": "fest",
+   "rec": {
+    "x": 870,
+    "z": 102838,
+    "b": 26,
+    "e": 57
+   }
+  },
+  {
+   "t": 1792874160165,
+   "art": "platz",
+   "rec": {
+    "x": 870,
+    "z": 104321,
+    "b": 26,
+    "e": 58
+   }
+  },
+  {
+   "t": 1792874160191,
+   "art": "idb",
+   "rec": {
+    "x": 870,
+    "z": 104321,
+    "b": 26,
+    "e": 58
+   }
+  },
+  {
+   "t": 1792874160217,
+   "art": "fest",
+   "rec": {
+    "x": 870,
+    "z": 104321,
+    "b": 26,
+    "e": 58
+   }
+  },
+  {
+   "t": 1792874163419,
+   "art": "platz",
+   "rec": {
+    "x": 870,
+    "z": 107601,
+    "b": 26,
+    "e": 60
+   }
+  },
+  {
+   "t": 1792874163447,
+   "art": "idb",
+   "rec": {
+    "x": 870,
+    "z": 107601,
+    "b": 26,
+    "e": 60
+   }
+  },
+  {
+   "t": 1792874163693,
+   "art": "fest",
+   "rec": {
+    "x": 870,
+    "z": 107601,
+    "b": 26,
+    "e": 60
+   }
+  },
+  {
+   "t": 1792874163849,
+   "art": "platz",
+   "rec": {
+    "x": 870,
+    "z": 107957,
+    "b": 26,
+    "e": 61
+   }
+  },
+  {
+   "t": 1792874163874,
+   "art": "idb",
+   "rec": {
+    "x": 870,
+    "z": 107957,
+    "b": 26,
+    "e": 61
+   }
+  },
+  {
+   "t": 1792874163916,
+   "art": "fest",
+   "rec": {
+    "x": 870,
+    "z": 107957,
+    "b": 26,
+    "e": 61
+   }
+  },
+  {
+   "t": 1792874164901,
+   "art": "platz",
+   "rec": {
+    "x": 870,
+    "z": 109160,
+    "b": 26,
+    "e": 61
+   }
+  },
+  {
+   "t": 1792874164935,
+   "art": "idb",
+   "rec": {
+    "x": 870,
+    "z": 109160,
+    "b": 26,
+    "e": 61
+   }
+  },
+  {
+   "t": 1792874164966,
+   "art": "fest",
+   "rec": {
+    "x": 870,
+    "z": 109160,
+    "b": 26,
+    "e": 61
+   }
+  },
+  {
+   "t": 1792874166402,
+   "art": "platz",
+   "rec": {
+    "x": 870,
+    "z": 110748,
+    "b": 26,
+    "e": 62
+   }
+  },
+  {
+   "t": 1792874166443,
+   "art": "idb",
+   "rec": {
+    "x": 870,
+    "z": 110748,
+    "b": 26,
+    "e": 62
+   }
+  },
+  {
+   "t": 1792874166467,
+   "art": "fest",
+   "rec": {
+    "x": 870,
+    "z": 110748,
+    "b": 26,
+    "e": 62
+   }
+  },
+  {
+   "t": 1792874167895,
+   "art": "platz",
+   "rec": {
+    "x": 830,
+    "z": 112289,
+    "b": 26,
+    "e": 63
+   }
+  },
+  {
+   "t": 1792874167925,
+   "art": "idb",
+   "rec": {
+    "x": 830,
+    "z": 112289,
+    "b": 26,
+    "e": 63
+   }
+  },
+  {
+   "t": 1792874167958,
+   "art": "fest",
+   "rec": {
+    "x": 830,
+    "z": 112289,
+    "b": 26,
+    "e": 63
+   }
+  },
+  {
+   "t": 1792874168859,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 113199,
+    "b": 26,
+    "e": 64
+   }
+  },
+  {
+   "t": 1792874168885,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 113199,
+    "b": 26,
+    "e": 64
+   }
+  },
+  {
+   "t": 1792874168918,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 113199,
+    "b": 26,
+    "e": 64
+   }
+  },
+  {
+   "t": 1792874169409,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 113834,
+    "b": 26,
+    "e": 64
+   }
+  },
+  {
+   "t": 1792874169428,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 113834,
+    "b": 26,
+    "e": 64
+   }
+  },
+  {
+   "t": 1792874169450,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 113834,
+    "b": 26,
+    "e": 64
+   }
+  },
+  {
+   "t": 1792874170939,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 115441,
+    "b": 26,
+    "e": 65
+   }
+  },
+  {
+   "t": 1792874170949,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 115441,
+    "b": 26,
+    "e": 65
+   }
+  },
+  {
+   "t": 1792874170966,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 115441,
+    "b": 26,
+    "e": 65
+   }
+  },
+  {
+   "t": 1792874172227,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 116913,
+    "b": 26,
+    "e": 66
+   }
+  },
+  {
+   "t": 1792874172253,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 116913,
+    "b": 26,
+    "e": 66
+   }
+  },
+  {
+   "t": 1792874172274,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 116913,
+    "b": 26,
+    "e": 66
+   }
+  },
+  {
+   "t": 1792874173869,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 118664,
+    "b": 26,
+    "e": 67
+   }
+  },
+  {
+   "t": 1792874177365,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 116913,
+    "b": 26,
+    "e": 66
+   }
+  },
+  {
+   "t": 1792874177434,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 116913,
+    "b": 26,
+    "e": 66
+   }
+  },
+  {
+   "t": 1792874177444,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 116913,
+    "b": 26,
+    "e": 66
+   }
+  },
+  {
+   "t": 1792874183919,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 116913,
+    "b": 26,
+    "e": 66
+   }
+  },
+  {
+   "t": 1792874184049,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 116913,
+    "b": 26,
+    "e": 66
+   }
+  },
+  {
+   "t": 1792874184242,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 116913,
+    "b": 26,
+    "e": 66
+   }
+  },
+  {
+   "t": 1792874188928,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 119279,
+    "b": 26,
+    "e": 68
+   }
+  },
+  {
+   "t": 1792874189039,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 119279,
+    "b": 26,
+    "e": 68
+   }
+  },
+  {
+   "t": 1792874189107,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 119279,
+    "b": 26,
+    "e": 68
+   }
+  },
+  {
+   "t": 1792874191154,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 121935,
+    "b": 26,
+    "e": 69
+   }
+  },
+  {
+   "t": 1792874191219,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 121935,
+    "b": 26,
+    "e": 69
+   }
+  },
+  {
+   "t": 1792874191258,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 121935,
+    "b": 26,
+    "e": 69
+   }
+  },
+  {
+   "t": 1792874195369,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 121935,
+    "b": 26,
+    "e": 69
+   }
+  },
+  {
+   "t": 1792874195443,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 121935,
+    "b": 26,
+    "e": 69
+   }
+  },
+  {
+   "t": 1792874195453,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 121935,
+    "b": 26,
+    "e": 69
+   }
+  },
+  {
+   "t": 1792874201498,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 122033,
+    "b": 26,
+    "e": 69
+   }
+  },
+  {
+   "t": 1792874201647,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 122033,
+    "b": 26,
+    "e": 69
+   }
+  },
+  {
+   "t": 1792874201762,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 122033,
+    "b": 26,
+    "e": 69
+   }
+  },
+  {
+   "t": 1792874204119,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 125114,
+    "b": 26,
+    "e": 70
+   }
+  },
+  {
+   "t": 1792874204158,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 125114,
+    "b": 26,
+    "e": 70
+   }
+  },
+  {
+   "t": 1792874204182,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 125114,
+    "b": 26,
+    "e": 70
+   }
+  },
+  {
+   "t": 1792874204289,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 125306,
+    "b": 26,
+    "e": 70
+   }
+  },
+  {
+   "t": 1792874204309,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 125306,
+    "b": 26,
+    "e": 70
+   }
+  },
+  {
+   "t": 1792874204327,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 125306,
+    "b": 26,
+    "e": 70
+   }
+  },
+  {
+   "t": 1792874207131,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 128039,
+    "b": 26,
+    "e": 72
+   }
+  },
+  {
+   "t": 1792874207157,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 128039,
+    "b": 26,
+    "e": 72
+   }
+  },
+  {
+   "t": 1792874207177,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 128039,
+    "b": 26,
+    "e": 72
+   }
+  },
+  {
+   "t": 1792874209530,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 130098,
+    "b": 26,
+    "e": 74
+   }
+  },
+  {
+   "t": 1792874209575,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 130098,
+    "b": 26,
+    "e": 74
+   }
+  },
+  {
+   "t": 1792874209601,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 130098,
+    "b": 26,
+    "e": 74
+   }
+  },
+  {
+   "t": 1792874211646,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 132533,
+    "b": 26,
+    "e": 75
+   }
+  },
+  {
+   "t": 1792874211671,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 132533,
+    "b": 26,
+    "e": 75
+   }
+  },
+  {
+   "t": 1792874211685,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 132533,
+    "b": 26,
+    "e": 75
+   }
+  },
+  {
+   "t": 1792874214382,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 135024,
+    "b": 26,
+    "e": 77
+   }
+  },
+  {
+   "t": 1792874214411,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 135024,
+    "b": 26,
+    "e": 77
+   }
+  },
+  {
+   "t": 1792874217930,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 132533,
+    "b": 26,
+    "e": 75
+   }
+  },
+  {
+   "t": 1792874218010,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 132533,
+    "b": 26,
+    "e": 75
+   }
+  },
+  {
+   "t": 1792874218021,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 132533,
+    "b": 26,
+    "e": 75
+   }
+  },
+  {
+   "t": 1792874224364,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 132533,
+    "b": 26,
+    "e": 75
+   }
+  },
+  {
+   "t": 1792874224606,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 132533,
+    "b": 26,
+    "e": 75
+   }
+  },
+  {
+   "t": 1792874224729,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 132533,
+    "b": 26,
+    "e": 75
+   }
+  },
+  {
+   "t": 1792874227198,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 135733,
+    "b": 26,
+    "e": 76
+   }
+  },
+  {
+   "t": 1792874227245,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 135733,
+    "b": 26,
+    "e": 76
+   }
+  },
+  {
+   "t": 1792874227318,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 135733,
+    "b": 26,
+    "e": 76
+   }
+  },
+  {
+   "t": 1792874227380,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 135973,
+    "b": 26,
+    "e": 76
+   }
+  },
+  {
+   "t": 1792874227405,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 135973,
+    "b": 26,
+    "e": 76
+   }
+  },
+  {
+   "t": 1792874227432,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 135973,
+    "b": 26,
+    "e": 76
+   }
+  },
+  {
+   "t": 1792874228726,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 137475,
+    "b": 26,
+    "e": 77
+   }
+  },
+  {
+   "t": 1792874228751,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 137475,
+    "b": 26,
+    "e": 77
+   }
+  },
+  {
+   "t": 1792874228767,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 137475,
+    "b": 26,
+    "e": 77
+   }
+  },
+  {
+   "t": 1792874231734,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 140718,
+    "b": 26,
+    "e": 79
+   }
+  },
+  {
+   "t": 1792874231763,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 140718,
+    "b": 26,
+    "e": 79
+   }
+  },
+  {
+   "t": 1792874231783,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 140718,
+    "b": 26,
+    "e": 79
+   }
+  },
+  {
+   "t": 1792874232266,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 141199,
+    "b": 26,
+    "e": 80
+   }
+  },
+  {
+   "t": 1792874232288,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 141199,
+    "b": 26,
+    "e": 80
+   }
+  },
+  {
+   "t": 1792874232312,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 141199,
+    "b": 26,
+    "e": 80
+   }
+  },
+  {
+   "t": 1792874233441,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 142546,
+    "b": 26,
+    "e": 80
+   }
+  },
+  {
+   "t": 1792874233489,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 142546,
+    "b": 26,
+    "e": 80
+   }
+  },
+  {
+   "t": 1792874233715,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 142546,
+    "b": 26,
+    "e": 80
+   }
+  },
+  {
+   "t": 1792874234923,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 144115,
+    "b": 26,
+    "e": 81
+   }
+  },
+  {
+   "t": 1792874234947,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 144115,
+    "b": 26,
+    "e": 81
+   }
+  },
+  {
+   "t": 1792874234964,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 144115,
+    "b": 26,
+    "e": 81
+   }
+  },
+  {
+   "t": 1792874239551,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 144115,
+    "b": 26,
+    "e": 81
+   }
+  },
+  {
+   "t": 1792874239637,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 144115,
+    "b": 26,
+    "e": 81
+   }
+  },
+  {
+   "t": 1792874239647,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 144115,
+    "b": 26,
+    "e": 81
+   }
+  },
+  {
+   "t": 1792874245935,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 144115,
+    "b": 26,
+    "e": 81
+   }
+  },
+  {
+   "t": 1792874246135,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 144115,
+    "b": 26,
+    "e": 81
+   }
+  },
+  {
+   "t": 1792874246231,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 144115,
+    "b": 26,
+    "e": 81
+   }
+  },
+  {
+   "t": 1792874248750,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 146911,
+    "b": 26,
+    "e": 82
+   }
+  },
+  {
+   "t": 1792874248782,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 146911,
+    "b": 26,
+    "e": 82
+   }
+  },
+  {
+   "t": 1792874248807,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 146911,
+    "b": 26,
+    "e": 82
+   }
+  },
+  {
+   "t": 1792874249045,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 147248,
+    "b": 26,
+    "e": 82
+   }
+  },
+  {
+   "t": 1792874249092,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 147248,
+    "b": 26,
+    "e": 82
+   }
+  },
+  {
+   "t": 1792874249114,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 147248,
+    "b": 26,
+    "e": 82
+   }
+  },
+  {
+   "t": 1792874250557,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 148970,
+    "b": 26,
+    "e": 83
+   }
+  },
+  {
+   "t": 1792874250594,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 148970,
+    "b": 26,
+    "e": 83
+   }
+  },
+  {
+   "t": 1792874250624,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 148970,
+    "b": 26,
+    "e": 83
+   }
+  },
+  {
+   "t": 1792874252352,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 150808,
+    "b": 26,
+    "e": 84
+   }
+  },
+  {
+   "t": 1792874252595,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 150808,
+    "b": 26,
+    "e": 84
+   }
+  },
+  {
+   "t": 1792874252615,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 150808,
+    "b": 26,
+    "e": 84
+   }
+  },
+  {
+   "t": 1792874253651,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 152193,
+    "b": 26,
+    "e": 85
+   }
+  },
+  {
+   "t": 1792874253671,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 152193,
+    "b": 26,
+    "e": 85
+   }
+  },
+  {
+   "t": 1792874253685,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 152193,
+    "b": 26,
+    "e": 85
+   }
+  },
+  {
+   "t": 1792874253762,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 152318,
+    "b": 26,
+    "e": 85
+   }
+  },
+  {
+   "t": 1792874253782,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 152318,
+    "b": 26,
+    "e": 85
+   }
+  },
+  {
+   "t": 1792874253800,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 152318,
+    "b": 26,
+    "e": 85
+   }
+  },
+  {
+   "t": 1792874255265,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 153935,
+    "b": 27,
+    "e": 86
+   }
+  },
+  {
+   "t": 1792874255287,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 153935,
+    "b": 27,
+    "e": 86
+   }
+  },
+  {
+   "t": 1792874255302,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 153935,
+    "b": 27,
+    "e": 86
+   }
+  },
+  {
+   "t": 1792874256749,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 155552,
+    "b": 27,
+    "e": 87
+   }
+  },
+  {
+   "t": 1792874256774,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 155552,
+    "b": 27,
+    "e": 87
+   }
+  },
+  {
+   "t": 1792874256794,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 155552,
+    "b": 27,
+    "e": 87
+   }
+  },
+  {
+   "t": 1792874260279,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 155552,
+    "b": 27,
+    "e": 87
+   }
+  },
+  {
+   "t": 1792874260385,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 155552,
+    "b": 27,
+    "e": 87
+   }
+  },
+  {
+   "t": 1792874260400,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 155552,
+    "b": 27,
+    "e": 87
+   }
+  },
+  {
+   "t": 1792874266491,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 155552,
+    "b": 27,
+    "e": 87
+   }
+  },
+  {
+   "t": 1792874266589,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 155552,
+    "b": 27,
+    "e": 87
+   }
+  },
+  {
+   "t": 1792874266726,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 155552,
+    "b": 27,
+    "e": 87
+   }
+  },
+  {
+   "t": 1792874269373,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 158560,
+    "b": 28,
+    "e": 88
+   }
+  },
+  {
+   "t": 1792874269410,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 158560,
+    "b": 28,
+    "e": 88
+   }
+  },
+  {
+   "t": 1792874269473,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 158560,
+    "b": 28,
+    "e": 88
+   }
+  },
+  {
+   "t": 1792874269534,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 158743,
+    "b": 28,
+    "e": 88
+   }
+  },
+  {
+   "t": 1792874269563,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 158743,
+    "b": 28,
+    "e": 88
+   }
+  },
+  {
+   "t": 1792874269586,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 158743,
+    "b": 28,
+    "e": 88
+   }
+  },
+  {
+   "t": 1792874271319,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 160571,
+    "b": 29,
+    "e": 89
+   }
+  },
+  {
+   "t": 1792874271561,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 160571,
+    "b": 29,
+    "e": 89
+   }
+  },
+  {
+   "t": 1792874271590,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 160571,
+    "b": 29,
+    "e": 89
+   }
+  },
+  {
+   "t": 1792874272755,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 161830,
+    "b": 30,
+    "e": 90
+   }
+  },
+  {
+   "t": 1792874272779,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 161830,
+    "b": 30,
+    "e": 90
+   }
+  },
+  {
+   "t": 1792874272802,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 161830,
+    "b": 30,
+    "e": 90
+   }
+  },
+  {
+   "t": 1792874274045,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 163313,
+    "b": 31,
+    "e": 91
+   }
+  },
+  {
+   "t": 1792874274064,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 163313,
+    "b": 31,
+    "e": 91
+   }
+  },
+  {
+   "t": 1792874274085,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 163313,
+    "b": 31,
+    "e": 91
+   }
+  },
+  {
+   "t": 1792874274336,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 163649,
+    "b": 31,
+    "e": 91
+   }
+  },
+  {
+   "t": 1792874274617,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 163649,
+    "b": 31,
+    "e": 91
+   }
+  },
+  {
+   "t": 1792874274660,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 163649,
+    "b": 31,
+    "e": 91
+   }
+  },
+  {
+   "t": 1792874275739,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 165150,
+    "b": 32,
+    "e": 92
+   }
+  },
+  {
+   "t": 1792874275769,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 165150,
+    "b": 32,
+    "e": 92
+   }
+  },
+  {
+   "t": 1792874275785,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 165150,
+    "b": 32,
+    "e": 92
+   }
+  },
+  {
+   "t": 1792874280551,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 165150,
+    "b": 32,
+    "e": 92
+   }
+  },
+  {
+   "t": 1792874280661,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 165150,
+    "b": 32,
+    "e": 92
+   }
+  },
+  {
+   "t": 1792874280670,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 165150,
+    "b": 32,
+    "e": 92
+   }
+  },
+  {
+   "t": 1792874286773,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 165150,
+    "b": 32,
+    "e": 92
+   }
+  },
+  {
+   "t": 1792874286854,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 165150,
+    "b": 32,
+    "e": 92
+   }
+  },
+  {
+   "t": 1792874287053,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 165150,
+    "b": 32,
+    "e": 92
+   }
+  },
+  {
+   "t": 1792874289628,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 168311,
+    "b": 33,
+    "e": 93
+   }
+  },
+  {
+   "t": 1792874289654,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 168321,
+    "b": 33,
+    "e": 93
+   }
+  },
+  {
+   "t": 1792874289667,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 168311,
+    "b": 33,
+    "e": 93
+   }
+  },
+  {
+   "t": 1792874289696,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 168311,
+    "b": 33,
+    "e": 93
+   }
+  },
+  {
+   "t": 1792874289708,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 168321,
+    "b": 33,
+    "e": 93
+   }
+  },
+  {
+   "t": 1792874289782,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 168321,
+    "b": 33,
+    "e": 93
+   }
+  },
+  {
+   "t": 1792874291163,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 170063,
+    "b": 34,
+    "e": 94
+   }
+  },
+  {
+   "t": 1792874291212,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 170063,
+    "b": 34,
+    "e": 94
+   }
+  },
+  {
+   "t": 1792874291242,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 170063,
+    "b": 34,
+    "e": 94
+   }
+  },
+  {
+   "t": 1792874294841,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 173324,
+    "b": 37,
+    "e": 97
+   }
+  },
+  {
+   "t": 1792874294889,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 173324,
+    "b": 37,
+    "e": 97
+   }
+  },
+  {
+   "t": 1792874294916,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 173324,
+    "b": 37,
+    "e": 97
+   }
+  },
+  {
+   "t": 1792874299816,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 178262,
+    "b": 40,
+    "e": 100
+   }
+  },
+  {
+   "t": 1792874299846,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 178262,
+    "b": 40,
+    "e": 100
+   }
+  },
+  {
+   "t": 1792874299871,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 178262,
+    "b": 40,
+    "e": 100
+   }
+  },
+  {
+   "t": 1792874301826,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 180513,
+    "b": 41,
+    "e": 101
+   }
+  },
+  {
+   "t": 1792874301849,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 180513,
+    "b": 41,
+    "e": 101
+   }
+  },
+  {
+   "t": 1792874301865,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 180513,
+    "b": 41,
+    "e": 101
+   }
+  },
+  {
+   "t": 1792874303343,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 182187,
+    "b": 42,
+    "e": 102
+   }
+  },
+  {
+   "t": 1792874306789,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 180513,
+    "b": 41,
+    "e": 101
+   }
+  },
+  {
+   "t": 1792874306892,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 180513,
+    "b": 41,
+    "e": 101
+   }
+  },
+  {
+   "t": 1792874306903,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 180513,
+    "b": 41,
+    "e": 101
+   }
+  },
+  {
+   "t": 1792874313090,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 180730,
+    "b": 41,
+    "e": 101
+   }
+  },
+  {
+   "t": 1792874313185,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 180730,
+    "b": 41,
+    "e": 101
+   }
+  },
+  {
+   "t": 1792874313257,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 180730,
+    "b": 41,
+    "e": 101
+   }
+  },
+  {
+   "t": 1792874315593,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 183666,
+    "b": 42,
+    "e": 102
+   }
+  },
+  {
+   "t": 1792874315664,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 183666,
+    "b": 42,
+    "e": 102
+   }
+  },
+  {
+   "t": 1792874315680,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 183666,
+    "b": 42,
+    "e": 102
+   }
+  },
+  {
+   "t": 1792874316239,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 184176,
+    "b": 43,
+    "e": 103
+   }
+  },
+  {
+   "t": 1792874316266,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 184176,
+    "b": 43,
+    "e": 103
+   }
+  },
+  {
+   "t": 1792874316291,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 184176,
+    "b": 43,
+    "e": 103
+   }
+  },
+  {
+   "t": 1792874317383,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 185495,
+    "b": 43,
+    "e": 103
+   }
+  },
+  {
+   "t": 1792874317423,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 185495,
+    "b": 43,
+    "e": 103
+   }
+  },
+  {
+   "t": 1792874317456,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 185495,
+    "b": 43,
+    "e": 103
+   }
+  },
+  {
+   "t": 1792874318609,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 186900,
+    "b": 44,
+    "e": 104
+   }
+  },
+  {
+   "t": 1792874318647,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 186900,
+    "b": 44,
+    "e": 104
+   }
+  },
+  {
+   "t": 1792874318668,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 186900,
+    "b": 44,
+    "e": 104
+   }
+  },
+  {
+   "t": 1792874323313,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 186900,
+    "b": 44,
+    "e": 104
+   }
+  },
+  {
+   "t": 1792874323420,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 186900,
+    "b": 44,
+    "e": 104
+   }
+  },
+  {
+   "t": 1792874323431,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 186900,
+    "b": 44,
+    "e": 104
+   }
+  },
+  {
+   "t": 1792874329143,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 186900,
+    "b": 44,
+    "e": 104
+   }
+  },
+  {
+   "t": 1792874329202,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 186900,
+    "b": 44,
+    "e": 104
+   }
+  },
+  {
+   "t": 1792874329234,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 186900,
+    "b": 44,
+    "e": 104
+   }
+  },
+  {
+   "t": 1792874332367,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 189668,
+    "b": 45,
+    "e": 105
+   }
+  },
+  {
+   "t": 1792874332391,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 189668,
+    "b": 45,
+    "e": 105
+   }
+  },
+  {
+   "t": 1792874332413,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 189668,
+    "b": 45,
+    "e": 105
+   }
+  },
+  {
+   "t": 1792874332731,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 190053,
+    "b": 45,
+    "e": 105
+   }
+  },
+  {
+   "t": 1792874332754,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 190053,
+    "b": 45,
+    "e": 105
+   }
+  },
+  {
+   "t": 1792874332772,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 190053,
+    "b": 45,
+    "e": 105
+   }
+  },
+  {
+   "t": 1792874334212,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 191795,
+    "b": 45,
+    "e": 106
+   }
+  },
+  {
+   "t": 1792874334236,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 191795,
+    "b": 45,
+    "e": 106
+   }
+  },
+  {
+   "t": 1792874334266,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 191795,
+    "b": 45,
+    "e": 106
+   }
+  },
+  {
+   "t": 1792874335744,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 193508,
+    "b": 45,
+    "e": 107
+   }
+  },
+  {
+   "t": 1792874335769,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 193508,
+    "b": 45,
+    "e": 107
+   }
+  },
+  {
+   "t": 1792874335789,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 193508,
+    "b": 45,
+    "e": 107
+   }
+  },
+  {
+   "t": 1792874336978,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 194972,
+    "b": 45,
+    "e": 108
+   }
+  },
+  {
+   "t": 1792874337010,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 194972,
+    "b": 45,
+    "e": 108
+   }
+  },
+  {
+   "t": 1792874337037,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 194972,
+    "b": 45,
+    "e": 108
+   }
+  },
+  {
+   "t": 1792874337223,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 195250,
+    "b": 45,
+    "e": 108
+   }
+  },
+  {
+   "t": 1792874337242,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 195250,
+    "b": 45,
+    "e": 108
+   }
+  },
+  {
+   "t": 1792874337266,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 195250,
+    "b": 45,
+    "e": 108
+   }
+  },
+  {
+   "t": 1792874338992,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 197087,
+    "b": 45,
+    "e": 109
+   }
+  },
+  {
+   "t": 1792874339018,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 197087,
+    "b": 45,
+    "e": 109
+   }
+  },
+  {
+   "t": 1792874339041,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 197087,
+    "b": 45,
+    "e": 109
+   }
+  },
+  {
+   "t": 1792874340263,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 198531,
+    "b": 45,
+    "e": 110
+   }
+  },
+  {
+   "t": 1792874340287,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 198531,
+    "b": 45,
+    "e": 110
+   }
+  },
+  {
+   "t": 1792874340312,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 198531,
+    "b": 45,
+    "e": 110
+   }
+  },
+  {
+   "t": 1792874341732,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 200245,
+    "b": 45,
+    "e": 111
+   }
+  },
+  {
+   "t": 1792874341754,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 200245,
+    "b": 45,
+    "e": 111
+   }
+  },
+  {
+   "t": 1792874341782,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 200245,
+    "b": 45,
+    "e": 111
+   }
+  },
+  {
+   "t": 1792874341986,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 200533,
+    "b": 45,
+    "e": 111
+   }
+  },
+  {
+   "t": 1792874342005,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 200533,
+    "b": 45,
+    "e": 111
+   }
+  },
+  {
+   "t": 1792874342030,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 200533,
+    "b": 45,
+    "e": 111
+   }
+  },
+  {
+   "t": 1792874343247,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 201987,
+    "b": 45,
+    "e": 112
+   }
+  },
+  {
+   "t": 1792874343276,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 201987,
+    "b": 45,
+    "e": 112
+   }
+  },
+  {
+   "t": 1792874343292,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 201987,
+    "b": 45,
+    "e": 112
+   }
+  },
+  {
+   "t": 1792874344750,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 203710,
+    "b": 45,
+    "e": 113
+   }
+  },
+  {
+   "t": 1792874344782,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 203710,
+    "b": 45,
+    "e": 113
+   }
+  },
+  {
+   "t": 1792874348361,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 201987,
+    "b": 45,
+    "e": 112
+   }
+  },
+  {
+   "t": 1792874348481,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 201987,
+    "b": 45,
+    "e": 112
+   }
+  },
+  {
+   "t": 1792874348497,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 201987,
+    "b": 45,
+    "e": 112
+   }
+  },
+  {
+   "t": 1792874354293,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 201987,
+    "b": 45,
+    "e": 112
+   }
+  },
+  {
+   "t": 1792874354368,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 201987,
+    "b": 45,
+    "e": 112
+   }
+  },
+  {
+   "t": 1792874354399,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 201987,
+    "b": 45,
+    "e": 112
+   }
+  },
+  {
+   "t": 1792874357351,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 204342,
+    "b": 45,
+    "e": 113
+   }
+  },
+  {
+   "t": 1792874357391,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 204342,
+    "b": 45,
+    "e": 113
+   }
+  },
+  {
+   "t": 1792874357420,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 204342,
+    "b": 45,
+    "e": 113
+   }
+  },
+  {
+   "t": 1792874358045,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 205141,
+    "b": 45,
+    "e": 113
+   }
+  },
+  {
+   "t": 1792874358072,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 205141,
+    "b": 45,
+    "e": 113
+   }
+  },
+  {
+   "t": 1792874358090,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 205141,
+    "b": 45,
+    "e": 113
+   }
+  },
+  {
+   "t": 1792874359547,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 206864,
+    "b": 45,
+    "e": 114
+   }
+  },
+  {
+   "t": 1792874359570,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 206864,
+    "b": 45,
+    "e": 114
+   }
+  },
+  {
+   "t": 1792874359584,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 206864,
+    "b": 45,
+    "e": 114
+   }
+  },
+  {
+   "t": 1792874361045,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 208587,
+    "b": 46,
+    "e": 115
+   }
+  },
+  {
+   "t": 1792874361073,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 208587,
+    "b": 46,
+    "e": 115
+   }
+  },
+  {
+   "t": 1792874361095,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 208587,
+    "b": 46,
+    "e": 115
+   }
+  },
+  {
+   "t": 1792874365558,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 208587,
+    "b": 46,
+    "e": 115
+   }
+  },
+  {
+   "t": 1792874365660,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 208587,
+    "b": 46,
+    "e": 115
+   }
+  },
+  {
+   "t": 1792874365671,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 208587,
+    "b": 46,
+    "e": 115
+   }
+  },
+  {
+   "t": 1792874371536,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 208587,
+    "b": 46,
+    "e": 115
+   }
+  },
+  {
+   "t": 1792874371548,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 208587,
+    "b": 46,
+    "e": 115
+   }
+  },
+  {
+   "t": 1792874371641,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 208587,
+    "b": 46,
+    "e": 115
+   }
+  },
+  {
+   "t": 1792874374411,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 208587,
+    "b": 46,
+    "e": 115
+   }
+  },
+  {
+   "t": 1792874374431,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 208587,
+    "b": 46,
+    "e": 115
+   }
+  },
+  {
+   "t": 1792874374459,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 208587,
+    "b": 46,
+    "e": 115
+   }
+  },
+  {
+   "t": 1792874379415,
+   "art": "platz",
+   "rec": {
+    "x": 709,
+    "z": 208587,
+    "b": 46,
+    "e": 115
+   }
+  },
+  {
+   "t": 1792874379435,
+   "art": "idb",
+   "rec": {
+    "x": 709,
+    "z": 208587,
+    "b": 46,
+    "e": 115
+   }
+  },
+  {
+   "t": 1792874379454,
+   "art": "fest",
+   "rec": {
+    "x": 709,
+    "z": 208587,
+    "b": 46,
+    "e": 115
+   }
+  }
+ ],
+ "todZeiten": [
+  1792873942294,
+  1792873960349,
+  1792873995823,
+  1792874028497,
+  1792874047280,
+  1792874070831,
+  1792874088201,
+  1792874105813,
+  1792874126570,
+  1792874146251,
+  1792874173870,
+  1792874191672,
+  1792874214413,
+  1792874235878,
+  1792874256795,
+  1792874276973,
+  1792874303345,
+  1792874319682,
+  1792874344785,
+  1792874361850
+ ]
+}

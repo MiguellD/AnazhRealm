@@ -1,0 +1,51 @@
+{
+ "seite": {
+  "isoliert": true,
+  "tiere": 0
+ },
+ "phasen": {
+  "gehen": {
+   "bilder": 27081,
+   "weg": 260,
+   "p95": 0.09,
+   "max": 1.31,
+   "schreiben": 0.55,
+   "traeger": [
+    "_lofiPlayGroove 0.10",
+    "_playSchrittOneShot 0.08",
+    "_lofiPlayChord 0.06"
+   ]
+  },
+  "fahrt": {
+   "bilder": 16449,
+   "weg": 569,
+   "p95": 0.1,
+   "max": 1.23,
+   "schreiben": 3.94,
+   "traeger": [
+    "_lofiPlayGroove 0.19",
+    "_lofiPlayChord 0.10",
+    "_lofiPlayBass 0.06"
+   ],
+   "sattel": true
+  },
+  "nacht": {
+   "bilder": 19764,
+   "weg": 193,
+   "p95": 0.09,
+   "max": 3.47,
+   "schreiben": 0.58,
+   "traeger": [
+    "_lofiPlayGroove 0.11",
+    "_playSchrittOneShot 0.08",
+    "_lofiPlayChord 0.07"
+   ]
+  }
+ },
+ "aussetzer": {
+  "n": 0,
+  "still": 0,
+  "s": 600.7
+ },
+ "rot": []
+}

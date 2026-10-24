@@ -1,0 +1,25 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:\Program Files\nodejs\node.exe scripts/diag-kamera-laub.cjs --teile leib,gang --bild
+gpu-lauf: Schloss punkte-radeon nach 2 s
+[linse-gpu] amd/rdna-3
+[welt-boot] FEHLER klasse: diag-kamera-laub.cjs startet „linse" und zeichnet nie (keine seiner 1 Seiten arbeitet auf der GPU): das Rezept ist „null"
+=== K2 DER LEIB DER KAMERA (Kugel der Linse 0.25 m): Mess-Wiese -280.4/-1045.6 und Prüfbühne s2-hang30 ===
+  wiese: Anker je Art {"haus":2,"fels":8,"baum":43}
+  wiese: Werke in 45 m {"felsturm":4,"glutbrunnen":12,"felsbogen":4,"baum_tanne":17,"baum_kiefer":9,"baum_birke":7,"baum_eiche":10,"grown_busch_hazel_v2":10,"grown_busch_hazel_v1":11,"haus_alemannisch":1,"haus_griechisch":1}
+  wiese: gesetzte Häuser ["haus_alemannisch","haus_griechisch"]
+    wiese fuss 0/40 Posen mit Täter · {}
+    wiese ritt 0/40 Posen mit Täter · {}
+    hang fuss 0/10 Posen mit Täter · {}
+    hang ritt 0/10 Posen mit Täter · {}
+  Feld-Proben je 3rd-Bild (341 Bilder): Mittel 32.9 · Median 35 · p95 51 · höchstens 70 (Vor-Stand Mittel 35.4 · Median 34 · höchstens 50) · Kamera-Sprünge > 2 m im Rundgang 4 (haus_alemannisch)
+  ✅ K2 die Linse steht nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box, nichts zwischen Ziel und Linse — 0 von 50 zu Fuß und im Verfolger-Ritt, Feld-Proben je 3rd-Bild und Sprünge ≤ Vor-Stand
+=== K4 DER GANG DER KAMERA (Third zu Fuß im echten Takt, Kugel 0.25 m): Mess-Wiese -280.4/-1045.6 ===
+  stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {"rückwärts: im Stamm baum_kiefer":19} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m
+  fels  felsturm: 1144 Bilder · heran 8.56 → 0.42 m · Kugel {"orbit fern: im Stamm baum_tanne":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m
+  haus  haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {"orbit: Bau":2,"orbit fern: Bau":3} · Ruck p95 0.0065 höchstens 2.968 m
+  der Arm ohne Kollision: 175 Bilder mit Täter
+  ✅ K4 der Gang in Third: die Kugel der Linse nie in Fels oder Bau, 0 Nah-Pixel von Fels, Gelände und Rinde, Ruck p95 ≤ 0,02 m, die Linse nennt den Arm ohne Kollision
+  Zeiten (ms): {"wiese":23982,"gang":19586,"hang":5928} · Lauf 51.7 s
+
+✅ GRÜN — die Kamera steckt nie in Laub, Strauch, Fels oder Boden.
+[welt-boot] ROT — 1 Fehler der Welt:
+  · klasse: diag-kamera-laub.cjs startet „linse" und zeichnet nie (keine seiner 1 Seiten arbeitet auf der GPU): das Rezept ist „null"
