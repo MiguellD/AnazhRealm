@@ -267,6 +267,25 @@ class AnazhRealm_bild_kosten {
                 };
                 renderer.__anazhBundleReihenfolge = true;
             }
+            // DIE RUHENDE PROJEKTION (E-Bauart, das Register): r184 projiziert in JEDEM Render jedes Kind jeder BundleGroup in
+            // die Liste des Bündels (`_projectObject`: Sicht, Ebene, Frustum, Sortier-Lage, Listen-Platz) — die Liste liest nur
+            // die AUFNAHME, der Replay zieht die aufgenommenen Render-Objekte. Ein Bündel, das abspielt, hat seine Änderung über
+            // seine Version gemeldet (`_buendelSpieltAb`): sein Kinder-Gang fällt, der Bürger-Gang des Replays bleibt.
+            if (typeof renderer._projectObject !== "function" || !renderer._renderLists || !renderer._bundles)
+                this.log("RUHENDE PROJEKTION: r184-Renderer._projectObject nicht gefunden (Vendor-Drift)", "ERROR");
+            else if (!renderer.__anazhRuhendeProjektion) {
+                const projRoh = renderer._projectObject;
+                renderer._projectObject = function (o, kamera, ordnung, liste, clip) {
+                    if (
+                        o.isBundleGroup !== true ||
+                        o.visible === false ||
+                        !AnazhRealm._buendelSpieltAb(this, o, kamera)
+                    )
+                        return projRoh.call(this, o, kamera, ordnung, liste, clip);
+                    liste.pushBundle({ bundleGroup: o, camera: kamera, renderList: this._renderLists.get(o, kamera) });
+                };
+                renderer.__anazhRuhendeProjektion = true;
+            }
             // EIN SCHREIBEN JE PUFFER: r184 lädt eine Uniform-Gruppe Bereich für Bereich hoch — je geänderter Uniform ein
             // eigenes writeBuffer (bindingUtils.updateBinding). Kamera-Matrizen, Licht-Richtung und Zeit ändern sich
             // zusammen: gemessen 07.10. (Mess-Wiese, Stand) 18 Gruppen-Uploads in 170 writeBuffer je Frame. Eine Gruppe

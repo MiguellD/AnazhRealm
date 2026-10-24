@@ -226,8 +226,8 @@ AnazhRealm._diaetGang = function (ro, nbs) {
 //     `.value` ohne Signal, der Gang vergleicht EINMAL je Programm und Render, nie je Render-Objekt;
 //   · jeder Stoff — der Stoff-Blick (`_diaetStoffBlick`, r184s Vergleich EINMAL je Stoff und Render) und sein Verbrauch (13).
 // Jedes Render-Objekt trägt am EIGENEN Feld den Stand, den es zuletzt verbrauchte (`_anazhR`, `_diaetStand`; ein verdeckter Pass
-// holt nach), das Tor (`_diaetRuhig`) liest nur die Stempel seiner Quellen. Ohne Melder bleibt, was three nicht meldet: die Lage
-// (16 Zahlen, nur wer sich bewegen KANN), die Verweise je Objekt (10), die Knochen.
+// holt nach) und die letzte Meldung seiner Quellen (`_anazhHaltR`): das Tor (`_diaetRuhig`) vergleicht zwei eigene Felder. Ohne
+// Melder bleibt, was three nicht meldet: die Lage (16 Zahlen, nur wer sich bewegen KANN), die Verweise je Objekt (10), die Knochen.
 AnazhRealm._regungN = 0;
 AnazhRealm._regt = function (q) {
     const n = ++AnazhRealm._regungN;
@@ -235,8 +235,9 @@ AnazhRealm._regt = function (q) {
     AnazhRealm._regtHalter(q, n);
     return n;
 };
-// DER HALTER hört die Regung seiner Quelle mit (`_anazhHaltR`) — die Werfer-Hülle eines Bündels die Puffer und die Sicht seiner
-// Kinder (`_bundleWerferHuelle`, der Leser der Pass-Sicht). Die Sicht einer Senke (`_instanzZahl`) meldet nur den Haltern.
+// DER HALTER hört die Regung seiner Quelle mit (`_anazhHaltR`) — das Render-Objekt seine Puffer, sein Programm und seinen Stoff
+// (`_diaetStand`), die Werfer-Hülle eines Bündels die Puffer und die Sicht seiner Kinder (`_bundleWerferHuelle`, der Leser der
+// Pass-Sicht). Die Sicht einer Senke (`_instanzZahl`) meldet nur den Haltern.
 // Die Quelle hält ihre Halter SCHWACH: sie lebt oft länger als jeder Halter (der Lager-Puffer einer Arena über jede neue
 // Fassade, `_geoNeu`; ein Kind über seine Bündel) — die starke Liste hielt jeden gefallenen Halter samt seinen Puffern
 // (`werkbank puffer --gang` 22.10.: +178 MB in 2 min am Pfad `renderer.info.memoryMap[k]._anazhHalter[]`).
@@ -264,6 +265,15 @@ AnazhRealm._regungHalter = function (q, h) {
     l.length = w;
     if (!da) l.push(new WeakRef(h));
 };
+// SPIELT DAS BÜNDEL AB? (die ruhende Projektion, `_configureRenderer`): seine Aufnahme steht in diesem Render-Kontext und seine
+// Version ist die aufgenommene — jeder Schreiber meldet eine Änderung über `needsUpdate` (`_archMeshBundleTouch`, der Stand des
+// Leibs `_leibBuendelStand`). Ein Render unter dem Override-Stoff sammelt keine Bündel (`beginBundle` fehlt, die Kinder zeichnen
+// direkt); der Leib liest seine frische Liste (`_leibBuendelStand`), er projiziert immer.
+AnazhRealm._buendelSpieltAb = function (rend, bg, kamera) {
+    if (rend.backend.beginBundle === undefined || bg.userData._creatureSkin === true) return false;
+    const d = rend.backend.get(rend._bundles.get(bg, kamera, rend._currentRenderContext));
+    return d.bundleGPU !== undefined && d.version === bg.version;
+};
 // DER STAND: jeder Ausgang der Diät verbraucht — das Render-Objekt merkt die Zahl des Registers und, was ihm das Tor liest:
 // Beobachter · r184-Daten (je Objekt und Stoff fest) · Index · Instanz-Puffer · ob es sich bewegen KANN: BEWEGLICH ist eine Kette
 // mit matrixAutoUpdate bis zur Szene (three rechnet ihre Welt-Matrix jeden Frame neu, ohne Signal — der Leib, die Tiere, das
@@ -273,7 +283,14 @@ AnazhRealm._regungHalter = function (q, h) {
 AnazhRealm._diaetStand = function (obs, ro, od, md) {
     ro._anazhR = AnazhRealm._regungN;
     const obj = ro.object;
-    const staendig = !!(od.morphTargetInfluences || (od.lights && od.lights.length > 0) || (obj && obj.center));
+    const stoff = ro.material;
+    // Transmission liest die Puffer-Größe je Render-Objekt (equals): ein solcher Stoff ist ständig
+    const staendig = !!(
+        od.morphTargetInfluences ||
+        (od.lights && od.lights.length > 0) ||
+        (obj && obj.center) ||
+        (stoff && stoff.transmission > 0)
+    );
     ro._anazhObs = staendig ? null : obs;
     if (staendig) return;
     ro._anazhOd = od;
@@ -281,24 +298,28 @@ AnazhRealm._diaetStand = function (obs, ro, od, md) {
     const senke = obj && obj.isInstanzZeichner === true ? obj.__instanzQuelle : obj;
     ro._anazhSenke = senke;
     const nbs = ro.getNodeBuilderState();
-    ro._anazhNbs = nbs;
     const geo = ro.geometry;
     const at = ro.attributes;
     const ix = geo ? geo.index : undefined,
         im = senke ? senke.instanceMatrix : undefined,
         ic = senke ? senke.instanceColor : undefined;
-    // DIE SAMMEL-STELLE (Spitze): die Puffer melden ihrem Halter — Attribute, die das Programm liest, und der Index ihrer
-    // Geometrie, die Instanz-Puffer ihrer Senke (`_regtHalter`). Das Tor liest EINEN Stempel je Halter statt jedes Puffers: jeder
-    // Puffer war ein Speicher-Zugriff im kalten Cache zwischen zwei Draws. Angemeldet wird, wenn ein Puffer neu am Render-Objekt hängt.
+    // DER HÖRER IST DAS RENDER-OBJEKT (E-Bauart): jede Quelle, die es liest, meldet IHM selbst (`_regtHalter`) — die Attribute,
+    // die sein Programm liest, der Index, die Instanz-Puffer seiner Senke, sein Programm (der Programm-Melder) und sein Stoff
+    // (Stoff-Blick und Verbrauch). Das Tor liest EINEN Stempel am eigenen Feld statt der Stempel an Geometrie, Senke, Programm
+    // und Stoff (je einer ein Zugriff im kalten Cache zwischen zwei Draws). Angemeldet wird, wenn eine Quelle neu am Render-Objekt hängt.
     const halte = AnazhRealm._regungHalter;
     if (geo && (ro._anazhAtt !== at || ro._anazhGeo !== geo || ro._anazhIx !== ix)) {
         if (at)
             for (let i = 0; i < at.length; i++)
-                halte(at[i].isInterleavedBufferAttribute === true ? at[i].data : at[i], geo);
-        if (ix) halte(ix, geo);
+                halte(at[i].isInterleavedBufferAttribute === true ? at[i].data : at[i], ro);
+        if (ix) halte(ix, ro);
     }
-    if (im && ro._anazhIM !== im) halte(im, senke);
-    if (ic && ro._anazhIC !== ic) halte(ic, senke);
+    if (im && ro._anazhIM !== im) halte(im, ro);
+    if (ic && ro._anazhIC !== ic) halte(ic, ro);
+    if (ro._anazhNbs !== nbs) halte(nbs, ro);
+    if (stoff && ro._anazhStoff !== stoff) halte(stoff, ro);
+    ro._anazhNbs = nbs;
+    ro._anazhStoff = stoff;
     ro._anazhIx = ix;
     ro._anazhIM = im;
     ro._anazhIC = ic;
@@ -323,11 +344,12 @@ AnazhRealm._diaetStand = function (obs, ro, od, md) {
     }
     ro._anazhLage = L || null;
 };
-// DAS TOR: trägt das Render-Objekt einen Stand und meldete keine seiner Quellen seither eine Regung (Attribute, die sein Programm
-// liest · Index · Instanz-Puffer · Programm · Stoff), ruht es — kein Nachschlag, kein equals(). Den Bau-Wechsel meldet r184 selbst
-// (`setGeometry` leert `attributes`), Index und Instanz-Puffer ihre Identität. Was three nicht meldet, stellt das Tor hier: die
-// Lage dessen, der sich bewegen kann, die Verweise je Objekt (10), die Knochen — der Objekt-Gang (11). true: es ruht (kein
-// Refresh); sonst geht die volle Prüfung (der Körper von `_diaetRefresh`).
+// DAS TOR: trägt das Render-Objekt einen Stand und meldete ihm keine seiner Quellen seither eine Regung (Attribute, die sein
+// Programm liest · Index · Instanz-Puffer · Programm · Stoff — EIN Stempel am eigenen Feld, `_diaetStand`), ruht es — kein
+// Nachschlag, kein equals(). Den Bau-Wechsel meldet r184 selbst (`setGeometry` leert `attributes`), Index und Instanz-Puffer ihre
+// Identität. Was three nicht meldet, stellt das Tor hier: den Stoff (der Blick EINMAL je Stoff und Render), die Lage dessen, der
+// sich bewegen kann, die Verweise je Objekt (10), die Knochen — der Objekt-Gang (11). true: es ruht (kein Refresh); sonst geht
+// die volle Prüfung (der Körper von `_diaetRefresh`).
 AnazhRealm._diaetRuhig = function (obs, ro, rend, rid) {
     const r = ro._anazhR;
     const at = ro.attributes;
@@ -338,23 +360,18 @@ AnazhRealm._diaetRuhig = function (obs, ro, rend, rid) {
         rend._anazhVel = obs.needsVelocity(rend);
     }
     if (rend._anazhVel === true) return false;
-    // die Puffer über ihre Halter (die Sammel-Stelle, `_diaetStand`): Attribute + Index an der Geometrie, Instanz an der Senke
     const geo = ro.geometry,
         senke = ro._anazhSenke;
-    if (geo !== ro._anazhGeo || (geo && (geo.index !== ro._anazhIx || geo._anazhHaltR > r))) return false;
-    if (senke.instanceMatrix !== ro._anazhIM || senke.instanceColor !== ro._anazhIC || senke._anazhHaltR > r)
-        return false;
-    const nbs = ro._anazhNbs;
+    if (geo !== ro._anazhGeo || (geo && geo.index !== ro._anazhIx)) return false;
+    if (senke.instanceMatrix !== ro._anazhIM || senke.instanceColor !== ro._anazhIC) return false;
+    // der Stoff-Blick meldet einen Wechsel jedem Render-Objekt des Stoffs, bevor das Tor seinen Stempel liest
     const m = ro.material;
-    if (nbs._anazhRegung > r) return false;
-    if (m) {
-        const md = ro._anazhMd;
-        if (
-            m._anazhRegung > r ||
-            (md._renderId === rid ? md._equal === false : AnazhRealm._diaetStoffBlick(md, m, rid))
-        )
-            return false;
+    if (m && m._anazhBlickR !== rid) {
+        m._anazhBlickR = rid;
+        AnazhRealm._diaetStoffBlick(ro._anazhMd, m, rid);
     }
+    if (ro._anazhHaltR > r) return false;
+    const nbs = ro._anazhNbs;
     const obj = ro.object;
     let og = obs.hasAnimation === true;
     if (ro._anazhBeweglich !== true) {
@@ -381,11 +398,10 @@ AnazhRealm._diaetRuhig = function (obs, ro, rend, rid) {
 // DER STOFF-BLICK: r184 vergleicht die Stoff-Daten EINMAL je Stoff und Render (equals: `_renderId` · `_equal` · jeder Schlüssel
 // gegen den Stoff; Farbe, Deckung … sind Klar-Felder ohne Melder). Zeichnet ein ruhendes Render-Objekt als erstes seines Stoffs
 // im Render, vergleicht das Tor — derselbe Vergleich (vendor-anker pinnt ihn), equals() liest danach sein Urteil. Ein Wechsel ist
-// die Regung des Stoffs (13: der Render seines Verbrauchs). Transmission (die Puffer-Größe je Render-Objekt) bleibt equals().
-// true: der Stoff wechselte in diesem Render.
+// die Regung des Stoffs (13: der Render seines Verbrauchs), sie erreicht jedes Render-Objekt des Stoffs (`_diaetStand`).
+// Transmission (die Puffer-Größe je Render-Objekt) ist ständig.
 AnazhRealm._diaetStoffBlick = function (md, stoff, rid) {
-    if (md._renderId === rid) return md._equal === false;
-    if (stoff.transmission > 0) return true;
+    if (md._renderId === rid) return;
     md._renderId = rid;
     md._equal = true;
     for (const e in md) {
@@ -404,9 +420,8 @@ AnazhRealm._diaetStoffBlick = function (md, stoff, rid) {
         md._equal = false;
         stoff._anazhStoffR = rid;
         AnazhRealm._regt(stoff);
-        return true;
+        return;
     }
-    return false;
 };
 // DER WERT-STAND: die Zahlen eines Uniform-Werts in einen Stand `w` (`w.z` ab `w.i`, `w.anders` hebt jeder Wechsel) — die EINE
 // Abflachung für den Programm-Melder und die Verweise (Zahl · Wahrheit · Textur Id+Version · Matrix · Farbe · Vektor, sonst
