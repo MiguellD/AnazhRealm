@@ -9,13 +9,13 @@ class AnazhRealm_vegetation_baum {
     // Auftrag rechnet mindestens am Zustand, der vor ihm reiste. Der Faden rechnet nah zuerst nach `rang` (Abstand² der nächsten
     // Zelle beim Senden, ohne Rang zuerst). Leser: die Schlange des Walds (`_waldFadenSchicken`).
     _voxelWorkerWaldDarts(zellen, seedInt, extras, rang) {
-        return this._nebenAuftrag("wald", { type: "wald-darts", zellen, seedInt, extras, F: AnazhRealm.FOREST, rang }, [
-            zellen.buffer,
-        ]).then((msg) => ({
-            anzahl: new Int32Array(msg.anzahl),
-            werte: new Float64Array(msg.werte),
-            arten: msg.arten,
-        }));
+        return this._nebenAuftrag("wald", { type: "wald-darts", zellen, seedInt, extras, rang }, [zellen.buffer]).then(
+            (msg) => ({
+                anzahl: new Int32Array(msg.anzahl),
+                werte: new Float64Array(msg.werte),
+                arten: msg.arten,
+            })
+        );
     }
 
     // Trägt die Wildnis den Ort? Das EINE Prädikat an den WÜRFEN des Feldes (Wald, Streu, Nah-Streu, Geburts-Ort, Dorf-
@@ -1079,6 +1079,7 @@ class AnazhRealm_vegetation_baum {
                     // Nur Darts, deren POSITION in DIESEN Chunk fällt (disjunkt → einmal).
                     if (d.x < ox || d.x >= ox + span || d.z < oz || d.z >= oz + span) continue;
                     if (!this._forestDartSteht(d, gx, gz, cellDarts)) continue;
+                    if (this._tatAm("faellen", d.x, d.z)) continue; // die Tat bleibt (feld.K4): hier fiel der Baum, er heilt erst
                     // die Genesis-Lichtung hält die EINE Natur-Wand frei (`_naturSetzen`, die Plattform ist ein Grundriss)
                     // Dichte = die Vorlage: das Studio dünnt den Wald NIE (volle Dichte, Last über LOD + Sicht-Kappung).
                     // Im Studio-Regime ist fd=1 → dieser Check feuert nie; sonst dünnt der Perf-Regler.
@@ -1827,14 +1828,19 @@ class AnazhRealm_vegetation_baum {
         return gitter;
     }
 
-    // Ist der Eintrag Natur? Die Art steht am Eintrag (`_lodSpecies` des Walds, die Bauplan-Präfixe baum_/busch_/grown_,
-    // der Totholz-Stamm) — unabhängig davon, ob das Studio-Buch schon geladen ist; sonst trägt das Gesetzbuch des
+    // Natur nach ihrer ART am Eintrag (`_lodSpecies` des Walds, die Bauplan-Präfixe baum_/busch_/grown_, der Totholz-Stamm).
+    _naturArt(e) {
+        return !!e._lodSpecies || e.type === "stamm_gefallen" || /^(baum_|busch_|grown_)/.test(e.type);
+    }
+
+    // Ist der Eintrag Natur? Die Art steht am Eintrag (`_naturArt`) — unabhängig davon, ob das Studio-Buch schon geladen
+    // ist; sonst trägt das Gesetzbuch des
     // Terrain-Studios seine Art (`terrain:PHYTO_PRESETS`: Baum, Strauch, Fels, Farn, Totholz …; der Kern ist Pflicht —
     // unlesbar ist ein lauter Bruch, nie ein stilles „keine Natur", das nichts mehr räumt). Tor und Wagen sind nie Natur
     // (sie tragen auch eine Impostor-Zeile — die frühere Frage `_foundryPresetIsTree` hätte sie geräumt).
     _istNatur(e) {
         if (!e || typeof e.type !== "string") return false;
-        if (e._lodSpecies || e.type === "stamm_gefallen" || /^(baum_|busch_|grown_)/.test(e.type)) return true;
+        if (this._naturArt(e)) return true;
         const tab =
             AnazhRealm.Gesetz("terrain:PHYTO_PRESETS", null) || AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS");
         const pr = this._foundryPresetForEntry(e);
@@ -1971,6 +1977,17 @@ class AnazhRealm_vegetation_baum {
             weg.push(e);
         }
         for (const e of weg) this.removeArchitecture(e);
+        // DAS TIER IM BAU: ein Wurf des Felds, geboren vor dem Bau, steht nie in ihm (`_weichtDemBau`) — vorher umschloss das
+        // Haus die Herde, der Erdbau des Kellers nahm ihr den Boden (gate:haus-welt W10: 3 Hirsche im Keller des
+        // haus_provenzalisch, einer auf der Diele, der Gang schob sie vor sich her und riss). Auf dem Weg geht ein Tier weiter.
+        const fallen = [];
+        for (const c of this.state.creatures || []) {
+            if (!c || !c.position || Math.abs(c.position.x - hx) > r + weit || Math.abs(c.position.z - hz) > r + weit)
+                continue;
+            const wo = this._weichtDemBau(c) ? this._imGrundriss(c.position.x, c.position.z, 0) : false;
+            if (wo && wo !== "weg") fallen.push(c);
+        }
+        for (const c of fallen) this.removeCreature(c);
         let n = weg.length;
         const map = this.state.scatterRegions;
         if (map && map.size) {

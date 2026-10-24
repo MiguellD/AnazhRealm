@@ -109,15 +109,15 @@ async function checkBandV1738RulePersistence(ctx) {
     });
 
     check(
-        "V17.38 Persistenz: buildStateSnapshot serialisiert worldRules (nur definierende Felder, keine Akkus)",
+        "Persistenz: buildStateSnapshot serialisiert worldRules (nur definierende Felder, keine Akkus)",
         res.snapSerializes
     );
-    check("V17.38 Persistenz: loadState-Restore stellt die Regeln her (frische Akkus, ttl erhalten)", res.restoreWorks);
-    check("V17.38 Persistenz: eine RESTAURIERTE Regel ist voll funktional (feuert rainy → sunny)", res.restoredFires);
-    check("V17.38 Persistenz: der Restore dedupt (zweimal dieselbe Regel → ein Eintrag)", res.restoreDedup);
-    check("V17.38 Persistenz: ein alter Save OHNE worldRules → no-op (state bleibt)", res.oldSaveNoop);
+    check("Persistenz: loadState-Restore stellt die Regeln her (frische Akkus, ttl erhalten)", res.restoreWorks);
+    check("Persistenz: eine RESTAURIERTE Regel ist voll funktional (feuert rainy → sunny)", res.restoredFires);
+    check("Persistenz: der Restore dedupt (zweimal dieselbe Regel → ein Eintrag)", res.restoreDedup);
+    check("Persistenz: ein alter Save OHNE worldRules → no-op (state bleibt)", res.oldSaveNoop);
     check(
-        "V17.38 Bibliothek: fuseWorlds VEREINIGT die Regel-Saetze (Union + Dedup — eine Welt IST ihr Regel-Satz)",
+        "Bibliothek: fuseWorlds VEREINIGT die Regel-Saetze (Union + Dedup — eine Welt IST ihr Regel-Satz)",
         res.mergeUnions
     );
 }
@@ -126,7 +126,7 @@ async function checkBandRing8(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Ring 8 — Multi-Welt-Verwaltung ###
+    // ### Multi-Welt-Verwaltung ###
     // Daten-Plane: Index, Per-Welt-Key, createNewWorld, switchToWorld, deleteWorld, Migration,
     // Player-Übernahme — mit reload:false, damit alle Pfade in einer Session laufen (Reload = UI).
     const ring8Results = await safeEvaluate(page, () => {
@@ -377,7 +377,7 @@ async function checkBandRing8(ctx) {
         check("Ring 8: Per-Welt-Save nach delete weg", ring8Results.deletedSaveGone);
     }
 
-    // ### Ring 8 UI ###
+    // ### Multi-Welt-Verwaltung: UI ###
     const ring8UiResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -427,7 +427,7 @@ async function checkBandRing8(ctx) {
         check("Ring 8 UI: Aktive Welt nicht in Andere-Welten-Liste", ring8UiResults.pickerHidesActive);
     }
 
-    // ### Ring 8.1 — Per-Welt-Seed ###
+    // ### Per-Welt-Seed ###
     // Jede Welt trägt ihren Seed in worldMeta; SimplexNoise wird damit gefüttert → verschiedene Welten
     // liefern verschiedene Geometrie.
     const ring81Results = await safeEvaluate(page, () => {
@@ -525,7 +525,7 @@ async function checkBandRing8(ctx) {
         );
     }
 
-    // ### Ring 8.2 — Status-Bar-Welt + der Erst-Spawn ### (der Lage-Rundlauf über echte Boots: gate:persistence (T))
+    // ### Status-Bar-Welt + der Erst-Spawn ### (der Lage-Rundlauf über echte Boots: gate:persistence (T))
     const ring82Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -569,12 +569,12 @@ async function checkBandRing8(ctx) {
             (ring82Results && ring82Results.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("V18.95: leerer Welt-Snapshot trägt playerPosition:null", ring82Results.emptySnapHasNoPosition);
+        check("leerer Welt-Snapshot trägt playerPosition:null", ring82Results.emptySnapHasNoPosition);
         check(
-            "V18.95: Save ohne playerPosition lässt terrainEverGenerated false (Erst-Spawn-Pfad)",
+            "Save ohne playerPosition lässt terrainEverGenerated false (Erst-Spawn-Pfad)",
             ring82Results.emptySnapKeepsFirstSpawn
         );
-        check("V18.95: Save ohne playerPosition bewegt den Spieler nicht", ring82Results.emptySnapKeepsPosition);
+        check("Save ohne playerPosition bewegt den Spieler nicht", ring82Results.emptySnapKeepsPosition);
         check("Ring 8.2: #status-slug im DOM", ring82Results.statusSlugInDom);
         check("Ring 8.2: Status-Bar-Label heißt 'Welt'", ring82Results.statusLabelIsWelt);
         check("Ring 8.2: Status-Bar zeigt aktive Welt-Slug", ring82Results.statusSlugShowsActiveWorld);
@@ -585,7 +585,7 @@ async function checkBandRing9to10(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Ring 9 — Welt-Tor (Drei-Wahl-Import-Dialog) ###
+    // ### Welt-Tor (Drei-Wahl-Import-Dialog) ###
     // Reload-UI indirekt über Daten-Methoden: importWorldBeside (Index-Eintrag + Per-Welt-Save mit
     // parentWorlds-Spur), Dialog-Markup im DOM, _openWeltTorDialog setzt pendingImport, Esc/cancel räumt.
     const ring9Results = await safeEvaluate(page, () => {
@@ -726,7 +726,7 @@ async function checkBandRing9to10(ctx) {
         );
     }
 
-    // ### Ring 10 — Welt-Fusion ###
+    // ### Welt-Fusion ###
     // Diskrimination: zwei Eltern mit JE einer eindeutigen Sache (Material, Bauplan, Emotion) — die
     // Fusion trägt beide, die drei Strategien zeigen unterscheidbare Emotion-Aggregation.
     const ring10Results = await safeEvaluate(page, () => {
@@ -1004,7 +1004,7 @@ async function checkBandRing9to10(ctx) {
         );
     }
 
-    // ### Ring 10.1 — Rezepte aus anderer Welt holen (ohne Fusion) ###
+    // ### Rezepte aus anderer Welt holen (ohne Fusion) ###
     // `importRecipesFromWorld(sourceId)` kopiert Baupläne + Materialien + Werkzeuge der Quelle in die
     // aktive Welt; Konflikte bekommen `-import`-Suffix, Cross-Refs (sourceBlueprint, refName) folgen.
     const recipeResults = await safeEvaluate(page, () => {
@@ -1131,7 +1131,7 @@ async function checkBandRing9to10(ctx) {
         delete r.state.tools["fremder-hammer"];
         delete r.state.tools["fremder-hammer-import"];
         // Workshop-DOM neu rendern, damit nachfolgende Tests
-        // (Ring 6.6) keine Geister-Einträge sehen.
+        // keine Geister-Einträge sehen.
         r._renderWorkshopDOM();
         const keepId = r.state.worldMeta.worldId;
         for (const e of r.worldsIndexLoad()) {
@@ -1733,7 +1733,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         check("Untrusted-Tor: V8.70-Tests laufen", false, sandboxResults ? sandboxResults.error : "no result");
     }
 
-    // ### W15 Phase 1: der Auto-Vendor-Pfad ###
+    // ### der Auto-Vendor-Pfad ###
     // _vendorPostBundle (der einzige Netz-Schritt) wird gestubbt —
     // der echte save-server-Round-Trip lebt in der Sonde smoke-vendor (git-Archiv).
     const vendorResults = await safeEvaluate(page, async () => {
@@ -1905,7 +1905,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         check("W15 Auto-Vendor: Phase-1-Tests laufen", false, vendorResults ? vendorResults.error : "no result");
     }
 
-    // ### W15 Phase 2: der GitHub-Fetch ###
+    // ### der GitHub-Fetch ###
     // _vendorPostRepo (der Netz-Schritt) wird gestubbt; der echte GitHub-Round-Trip lebt offline +
     // deterministisch in der Sonde smoke-vendor (git-Archiv) (lokales Fake-GitHub).
     const vendor2Results = await safeEvaluate(page, async () => {
@@ -2227,7 +2227,7 @@ async function checkBandV18151Idb(ctx) {
         };
     });
     check(
-        "V18.151 IndexedDB: die QUOTA-Wand fällt weich (kein Wurf, ehrliches WARN, der Akt landet in IndexedDB)",
+        "IndexedDB: die QUOTA-Wand fällt weich (kein Wurf, ehrliches WARN, der Akt landet in IndexedDB)",
         res.quotaSoft
     );
 }
@@ -2255,7 +2255,7 @@ async function checkBandV18207R5StructureTexture(ctx) {
     });
 
     check(
-        `V18.207 (R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`,
+        `(R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`,
         res.microBoostSensible === true
     );
 }

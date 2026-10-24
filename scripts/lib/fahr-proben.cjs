@@ -24,7 +24,7 @@ async function probeLeben(expected) {
         };
         try {
             lauf();
-        } catch (_e) {
+        } catch {
             /* der Ruf zählt */
         } finally {
             if (eigen) o[k] = f0;
@@ -94,13 +94,19 @@ async function probeLeben(expected) {
         if (z.an && st._fixedSimPos && !(st._fixedRenderPos && m.position.equals(st._fixedRenderPos))) z.teleport++;
         return P._loopFixedStep.call(this, realDt, ct);
     };
+    // die Eingabe, die der Welt-Schritt dem Kern gab (Verb-Tafel, Tiefe, Haft, Wind am Ort): die Labor-Spur fährt genau sie
+    const kraefte = VC.fahrKraefte;
+    VC.fahrKraefte = function (q, e, G, dt) {
+        if (z.spur && z.ent && q === z.ent._fahr) z.e = e;
+        return kraefte.call(this, q, e, G, dt);
+    };
     r._stepFixedSim = function (simTime, dt) {
         const m = st.playerMesh.position;
         const x0 = m.x;
         const z0 = m.z;
+        z.e = null;
         P._stepFixedSim.call(this, simTime, dt);
-        const T = st.verbTafel; // die Eingabe, die der Schritt las (die Verb-Tafel, leib.K5)
-        const e = { throttle: T.gas, brake: T.bremse, steer: T.lenken, hand: T.handbremse };
+        const e = z.e;
         if (z.an) {
             z.simWeg += Math.hypot(m.x - x0, m.z - z0);
             z.schritte++;
@@ -280,7 +286,7 @@ async function probeLeben(expected) {
             st.keys.s = true;
             for (let n = 0; n < K.bremsMax && e._fahr.vlong > bV; n++) frame(n);
             for (const q of z.spur) {
-                if (!q.e.brake || !(q.v > bV)) break;
+                if (!(q.e && q.e.brake) || !(q.v > bV)) break;
                 [t, v] = [t + q.dt, q.v];
             }
             [z.spur, z.ent, st.keys.s] = [null, null, false];
@@ -742,6 +748,10 @@ async function probeLeben(expected) {
                 }
                 VC.fahrStand(q, G, boden, spur[n].dt);
                 maxY = Math.max(maxY, Math.abs(q.y - spur[n].y));
+                if (!spur[n].e) {
+                    [maxM, bei] = [Infinity, n]; // der Welt-Schritt rief den Kern nicht: kein Labor-Ritt
+                    break;
+                }
                 VC.fahrKraefte(q, spur[n].e, G, spur[n].dt);
                 const d = Math.max(Math.hypot(q.x - spur[n].x, q.z - spur[n].z), Math.abs(q.yaw - spur[n].yaw));
                 if (d > maxM) {
@@ -1609,6 +1619,7 @@ async function probeLeben(expected) {
             try {
                 const ux = Math.sin(gasse.fahrt);
                 const uz = Math.cos(gasse.fahrt);
+                let simUhr;
                 const lockProbe = async (muster) => {
                     const gS = await setzen("fahrzeug_gt", gasse.x, gasse.z, gasse.fahrt);
                     if (!gS) return null;
@@ -1655,6 +1666,7 @@ async function probeLeben(expected) {
                     b.userData._steuer = { gier: b.rotation.y, v: 0 };
                     b.userData._stossV = null;
                     st._fixedAccumulator = 0;
+                    st._fixedSimTime = simUhr ??= st._fixedSimTime;
                     const PF = r._stepFixedSim;
                     let schritte = 0;
                     let lage = null;
@@ -2214,4 +2226,113 @@ function kernTempo(VC) {
     return kern.length ? m : Object.assign(m, { knick: +knick.toFixed(2) });
 }
 
-module.exports = { probeLeben, tempoVerdict, tempoSpion, kernTempo };
+// ── K1 (physik K1, `--koerper`): Masse und Eintauchtiefe am Spieler-Weg (Takt, `_fahrBoden`), dann jede Zeile ρ ×2.
+async function probeKoerper(opt) {
+    await window.__weltDa();
+    const r = window.anazhRealm;
+    const st = r.state;
+    const A = Object.getPrototypeOf(r).constructor;
+    const f = r._ensureAssetFoundry();
+    await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
+    const res = { err: null };
+    const hh = (a, b) => r.getTerrainHeightAt(a, b);
+    let tMs = performance.now();
+    try {
+        const see = (await window.__wasserOrte({ mess: opt.messort })).see;
+        const tief = (x, z) => r._koerperWasser(x, z, hh(x, z)) - hh(x, z);
+        let ort = null;
+        for (let ring = 0; see && ring <= 160 && !ort; ring++)
+            for (let k = 0; k < Math.max(1, ring * 6) && !ort; k++) {
+                const w = (k / Math.max(1, ring * 6)) * Math.PI * 2;
+                const [x, z] = [see.x + Math.cos(w) * ring * 3, see.z + Math.sin(w) * ring * 3];
+                if ([0, 2, 4, 6].every((d) => tief(x + d, z) > 2 && !r._waterFlowAt(x + d, z)))
+                    ort = { x, z, spiegel: r._koerperWasser(x, z, hh(x, z)) };
+            }
+        if (!(res.ort = ort)) throw new Error("kein See");
+        const steuerRoh = A._steuerGesetz;
+        const steht = Object.create(steuerRoh.call(A));
+        steht.steuerSchritt = (sw) => (sw.v = 0);
+        const mats = st.materials;
+        const alt = {};
+        for (const n of Object.keys(mats)) if (mats[n].builtIn) alt[n] = mats[n].rho;
+        const box = (m, sz, y) => ({ shape: "box", material: m, size: sz, position: { x: 0, y, z: 0 } });
+        for (const m of ["holz", "stein"]) st.blueprints["_k1_" + m] = { parts: [box(m, { x: 3, y: 0.6, z: 1.4 }, 0.3)] };
+        const eigen = { parts: [box("holz", { x: 0.15, y: 1.5, z: 0.15 }, 0), box("holz", { x: 0.6, y: 0.6, z: 0.6 }, 1.5)] };
+        const keule = st.blueprints.klinge_keule;
+        const messe = () => {
+            const pm = st.playerMesh;
+            pm.position.set(ort.x, ort.spiegel - 0.4 + A.PLAYER_FOOT_OFFSET, ort.z);
+            st.playerVel.setValue(0, 0, 0);
+            A._steuerGesetz = () => steht;
+            st.maxCreatures = st.creatures.length + 1;
+            const wolf = r.spawnCreatureAt(ort.x + 3, ort.spiegel, ort.z, "calm", "wolf", { precise: true, bodySize: 1 });
+            wolf.userData._steuer = { gier: 0, v: 0 };
+            for (let i = 0; i < 300; i++) r._gameLoopTick((tMs += 16.7));
+            A._steuerGesetz = steuerRoh;
+            const leib = (q, fuss, schwimmt, mensch) => {
+                const g = hh(q.position.x, q.position.z);
+                const sp = r._koerperWasser(q.position.x, q.position.z, g);
+                const [kg, traegt] = [r._stossKoerper(q, {}).m, r._leibGetragen(mensch)];
+                return { kg, tief: +(sp - fuss).toFixed(3), grund: +(sp - g).toFixed(3), schwimmt, traegt };
+            };
+            const o = { spieler: leib(pm, pm.position.y - A.PLAYER_FOOT_OFFSET, !!st.playerUnderwater, true) };
+            o.wolf = leib(wolf, wolf.position.y, r._kreaturSchwimmt(wolf, hh(wolf.position.x, wolf.position.z)) !== null);
+            st.playerVel.setValue(3, 0, 0);
+            wolf.userData._stossV = { x: 0, z: 0 };
+            o.stoss = { J: r._stossPaar(pm, wolf, 1, 0), dvA: 3 - st.playerVel.x(), dvB: wolf.userData._stossV.x };
+            st.playerVel.setValue(0, 0, 0);
+            r.removeCreature(wolf);
+            const werk = (typ) => {
+                const e = r.spawnArchitecture(typ, { x: ort.x, y: hh(ort.x, ort.z), z: ort.z }, { silent: true, precise: true });
+                try {
+                    const prof = r._vehicleProfile(e);
+                    const K = r._stossKoerper(e, {});
+                    const bp = st.blueprints[e.type];
+                    const hu = r._teileHuelle(bp);
+                    return {
+                        kg: K ? K.m : bp.parts.reduce((m, p) => m + r._teilMasse(p), 0),
+                        rho: prof.dichte,
+                        anteil: A._eintauchAnteil(prof.dichte),
+                        schwimmt: prof.floats,
+                        tief: +(ort.spiegel - r._fahrBoden(e)(ort.x, ort.z)).toFixed(3),
+                        grund: +(ort.spiegel - hh(ort.x, ort.z)).toFixed(3),
+                        kernKg: K && K.G.m * window.__vehicleCore.FAHR.masseDichte,
+                        wasserK: K && K.G.wasser.kStirn,
+                        H: hu.y1 - hu.y0,
+                    };
+                } finally {
+                    r.removeArchitecture(e);
+                }
+            };
+            [o.wagen, o.holz, o.stein] = ["fahrzeug_gt", "_k1_holz", "_k1_stein"].map(werk);
+            const lab = window.__schmiedeCore.kampfMasze("keule").masseKg;
+            o.geschmiedet = { kg: r._schmiedeKampfMasze(keule).masseKg, labKg: lab, dauer: r._swingDauerFuerBlueprint(keule) };
+            o.lose = { kg: r._geraetMasze(eigen).masseKg, dauer: r._swingDauerFuerBlueprint(eigen) };
+            return o;
+        };
+        res.vor = messe();
+        try {
+            for (const n of Object.keys(alt)) mats[n].rho = alt[n] * 2;
+            res.mutiert = Object.keys(alt).length;
+            res.nach = messe();
+        } finally {
+            for (const n of Object.keys(alt)) mats[n].rho = alt[n];
+            for (const m of ["holz", "stein"]) delete st.blueprints["_k1_" + m];
+        }
+        Object.assign(res, {
+            refKg: window.__tetrapodaCore.KAMPF.refKg,
+            rhoBlech: mats.blech.rho,
+            brustM: A._schwimmBrustM(),
+            rhoW: A._fahrGesetz().wasserRho,
+        });
+        // das Labor: der Guss des Körperstudios (Saat 0, Start-Dials), sein Leib in Metern (6 E = 8 Kopf-Einheiten) × ρ(leib)
+        const sk = BAKERS_BY_KIND.koerper(window.__koerperCore, "mensch", 0, 0, undefined).userData.__skelett;
+        const w = sk.joints.find((j) => j.name === sk.root).scale;
+        res.labMensch = sk.leibV * w[0] * w[1] * w[2] * ((8 * A.PLAYER_KH) / 6) ** 3 * mats.leib.rho;
+    } catch (e) {
+        res.err = String((e && e.stack) || e);
+    }
+    return res;
+}
+
+module.exports = { probeLeben, probeKoerper, tempoVerdict, tempoSpion, kernTempo };

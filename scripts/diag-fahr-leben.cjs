@@ -2,7 +2,7 @@
 // Spiel-Takt (`_gameLoopTick` — Akkumulator, Sim-Schritte, Interpolation, Frame-Tick), nie an ihm vorbei, und sie ruft
 // den Fahr-Schritt des Kerns selbst (vehicle-core), nie einen Nachbau. Die Befunde je Zeile tragen die Commit-Messages.
 //
-//   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern]   Port: FAHR_LEBEN_PORT (Standard 4413)
+//   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper]   Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const path = require("path");
@@ -541,9 +541,68 @@ function stationVerdict(s) {
     return out;
 }
 
+// K1 (physik.K1, `probeKoerper`): die Messung der Meisterkarte und ρ ×2 in der EINEN Stoff-Zeile (jede Masse ×2).
+const K1 = { m: 0.01, dv: 0.05, grund: 0.3, holz: 0.1, brust: 0.2 };
+function koerperVerdict(k) {
+    if (!k || k.err || !k.vor || !k.nach) return { s1: [`keine Probe (${k && k.err})`], s2: ["keine Probe"] };
+    const [V, N, s1, s2] = [k.vor, k.nach, [], []];
+    const nie = (b, out, t) => b || out.push(t);
+    nie(k.mutiert > 0, s1, "keine Mutation");
+    const traegt = (x) => (x.anteil >= 0 ? x.anteil < 1 : x.traegt);
+    const koerper = (n, out, wasser, lab) => {
+        const [a, b] = [V[n], N[n]];
+        if (!(a && b && a.kg > 0)) return out.push(`${n}: keine Masse`);
+        nie(Math.abs(b.kg / a.kg - 2) <= K1.m, out, `${n}: ρ ×2 → Masse ×${(b.kg / a.kg).toFixed(3)}`);
+        nie(lab === undefined || Math.abs(a.kg / lab - 1) <= K1.m, out, `${n}: Welt ${a.kg.toFixed(2)} ≠ Labor ${lab} kg`);
+        for (const x of wasser ? [a, b] : [])
+            nie(traegt(x) ? x.schwimmt && x.tief < x.grund - K1.grund : !x.schwimmt && Math.abs(x.tief - x.grund) <= K1.grund, out,
+                `${n} (${x === a ? "vorher" : "ρ ×2"}): ${traegt(x) ? "getragen" : "dichter als Wasser"}, ${x.tief} m tief`);
+    };
+    const [sp, wo, wa, h] = [V.spieler || {}, V.wolf || {}, V.wagen || {}, V.holz || {}];
+    koerper("spieler", s1, true, k.labMensch);
+    koerper("wolf", s1, true, k.refKg);
+    koerper("wagen", s1, true, wa.kernKg);
+    nie(sp.traegt && wo.traegt, s1, "vorher nicht getragen");
+    nie(Math.abs(sp.tief - k.brustM) <= K1.brust, s1, `spieler ${sp.tief} m tief ≠ Brustkorb ${k.brustM}`);
+    nie(sp.kg >= 60 && sp.kg <= 90, s1, `Mensch ${sp.kg} kg außer 60–90`);
+    nie(wa.kg >= 1100 && wa.kg <= 1600, s1, `Wagen ${wa.kg} kg außer 1100–1600`);
+    nie(wa.rho === k.rhoBlech, s1, `wagen: liegt nach ${wa.rho}, nicht nach ρ(blech)`);
+    nie(N.wagen && Math.abs((2 * N.wagen.wasserK) / wa.wasserK - 1) <= K1.m, s1, "wagen: Wasser-Term");
+    for (const M of [V, N]) {
+        const q = M.stoss || {};
+        nie(q.J > 0 && Math.abs((q.dvA / q.dvB) * (M.spieler.kg / M.wolf.kg) - 1) <= K1.dv, s1, "Stoß: Δv ≠ Massen-Verhältnis");
+    }
+    koerper("holz", s2, true);
+    koerper("stein", s2, true);
+    nie(Math.abs(h.tief / h.H / (h.rho / k.rhoW) - 1) <= K1.holz, s2, `holz: Eintauchtiefe ${h.tief} von ${h.H} m`);
+    nie(V.stein && !traegt(V.stein), s2, "stein: schwimmt");
+    koerper("geschmiedet", s2, false, (V.geschmiedet || {}).labKg);
+    koerper("lose", s2);
+    for (const n of ["geschmiedet", "lose"]) nie(V[n] && N[n] && N[n].dauer > V[n].dauer, s2, `${n}: der Schwung bleibt`);
+    return { s1, s2 };
+}
+function koerperBericht(k) {
+    const v = koerperVerdict(k);
+    const [V, N] = [(k && k.vor) || {}, (k && k.nach) || {}];
+    const z = (n) =>
+        V[n] && N[n] ? `${n} ${(+V[n].kg).toFixed(1)} → ${(+N[n].kg).toFixed(1)} kg` + (V[n].tief >= 0 ? `, tief ${V[n].tief} → ${N[n].tief} m` : "") : n;
+    const [h, w, q] = [V.holz || {}, V.wagen || {}, V.stoss || {}];
+    const zahl = [
+        ["spieler", "wolf", "wagen"].map(z).join(" · ") +
+            ` · Labor Mensch ${(+k.labMensch).toFixed(1)}, Wolf ${k.refKg}, Wagen ${(+w.kernKg).toFixed(0)} kg · Brustkorb ${(+k.brustM).toFixed(2)} m · Δv ${(q.dvA / q.dvB).toFixed(3)}`,
+        ["holz", "stein", "geschmiedet", "lose"].map(z).join(" · ") +
+            ` · Holz ${(h.tief / h.H).toFixed(3)} der Höhe (ρ/ρw ${(h.rho / k.rhoW).toFixed(2)}) · Labor Keule ${(+(V.geschmiedet || {}).labKg).toFixed(3)} kg`,
+    ];
+    ["s1", "s2"].forEach((s, i) =>
+        check(`K1#${i + 1} (physik.K1) ${i ? "DIE DINGE" : "DIE LEIBER"}: die Messung der Meisterkarte und ρ ×2`, !v[s].length,
+            zahl[i] + (v[s].length ? " — " + v[s].join(" · ") : ""))
+    );
+    return v;
+}
+
 const server = statikServer();
 
-const { probeLeben, tempoVerdict, tempoSpion, kernTempo } = require("./lib/fahr-proben.cjs");
+const { probeLeben, probeKoerper, tempoVerdict, tempoSpion, kernTempo } = require("./lib/fahr-proben.cjs");
 
 // W (feld.K1) DIE WETTER-KETTE: ein Glied zählt, wenn es mit dem Sturm ZIEHT und STEHT, solange sein Vorgänger gehalten wird
 // (`kette` in lib/fahr-proben.cjs); die Tiefe zählt von vorn (Staffel 1 = Tiefe 2–3, 2 = ≥ 4), der Grip zieht ab Bremsweg × `nass`.
@@ -574,7 +633,7 @@ function ketteBericht(k, err) {
     return v;
 }
 
-// ════ F — DIE FAHR-BAHN (K12), eigenes Boot: der Wagen, den die Welt hinstellt, steht auf fahrbarem Grund, kommt rückwärts
+// ════ F — DIE FAHR-BAHN, eigenes Boot: der Wagen, den die Welt hinstellt, steht auf fahrbarem Grund, kommt rückwärts
 // und nach einem Stoß frei, zeigt sein Tempo und klingt — FK/FK2 am Kern (rückwärts aus dem Stand, die Drehzahl), F1 der
 // Platz an jedem Tor, F2 die Vorschau, F3 die Natur-Wand, F4 Stoß und Befreiung, F5 Tacho, F6 Stimme, F7 Tasten; SCHMUGGEL
 // (Vorschau ohne Platz-Gesetz, Natur-Wand ohne Wagen) → ROT beim Namen. ════
@@ -1497,6 +1556,51 @@ function quellenAbgriff() {
             check(`Selbst-Test W ${soll} → Tiefe ${tiefe}`, v.tiefe === tiefe && soll.test(v.befunde.join()), v.befunde.join());
         }
 
+        // K1: ein grüner Lauf, je Täter ROT beim Namen
+        {
+            const lauf = (k) => {
+                const o = {};
+                for (const [n, kg, t, anteil] of [
+                    ["spieler", 89.06, 1.07],
+                    ["wolf", 64.01, 0.6],
+                    ["wagen", 1341.36, 3.43, 3],
+                    ["holz", 1814.4, 0.432, 0.72],
+                    ["stein", 6678, 3.43, 2.65],
+                ])
+                    o[n] = { kg: kg * k, tief: k > 1 ? 3.43 : t, grund: 3.43, schwimmt: k < 2 && t < 3, traegt: k < 2, anteil: anteil * k, H: 0.6 };
+                Object.assign(o.wagen, { rho: 3000, kernKg: 1341.36, wasserK: 0.7 / k });
+                o.holz.rho = 720 * k;
+                o.stoss = { J: 1, dvA: 0.7187, dvB: 1 };
+                o.geschmiedet = { kg: 2.1766 * k, labKg: 2.1766, dauer: k };
+                o.lose = { kg: 2.5846 * k, dauer: k };
+                return o;
+            };
+            const fall = (pfad, wert) => {
+                const k = { vor: lauf(1), nach: lauf(2), mutiert: 18, refKg: 64, rhoBlech: 3000, rhoW: 1000, brustM: 1.22, labMensch: 89.06 };
+                for (const M of [k.vor, k.nach]) delete M.spieler.anteil, delete M.wolf.anteil;
+                if (pfad) {
+                    const t = pfad.split(".");
+                    t.slice(0, -1).reduce((o, x) => o[x], k)[t[t.length - 1]] = wert;
+                }
+                return koerperVerdict(k);
+            };
+            const g = fall();
+            check("Selbst-Test K1: ein grüner Lauf bleibt grün", !g.s1.length && !g.s2.length, g.s1.concat(g.s2).join(" · "));
+            for (const [pfad, wert, s, soll] of [
+                ["nach.wolf.kg", 64.01, "s1", /wolf: ρ ×2 → Masse/],
+                ["nach.spieler.schwimmt", true, "s1", /spieler \(ρ ×2\): dichter als Wasser/],
+                ["labMensch", 117.29, "s1", /spieler: Welt/],
+                ["vor.spieler.kg", 117.29, "s1", /Mensch 117\.29 kg außer/],
+                ["vor.stoss.dvB", 0.7187, "s1", /Stoß: Δv/],
+                ["vor.holz.tief", 0.216, "s2", /holz: Eintauchtiefe 0\.216/],
+                ["vor.stein.anteil", 0.9, "s2", /stein: schwimmt/],
+                ["vor.geschmiedet.labKg", 2.5, "s2", /geschmiedet: Welt/],
+            ]) {
+                const v = fall(pfad, wert);
+                check(`Selbst-Test K1: ${pfad} = ${wert} → ROT`, v[s].some((x) => soll.test(x)), v[s].join(" · "));
+            }
+        }
+
         for (const [name, bruch, soll] of [
             ["der gerittene Wagen auf der Karte (Distanz-Wand)", { stufe: 2 }, "stufe"],
             ["der Eintrag bleibt hinter dem Reiter (Pin gerissen)", { versatz: 3.2 }, "versatz"],
@@ -2164,6 +2268,15 @@ function quellenAbgriff() {
     // die Orte des Wassers aus der Welt (L10: der See, `__wasserOrte`)
     await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
     await page.evaluate(`window.__tempoSpion = ${tempoSpion}`);
+    if (process.argv.includes("--koerper")) {
+        const o = await page.evaluate(probeKoerper, { messort });
+        await browser.close();
+        server.close();
+        console.log("=== K1 — DAS EINE KÖRPER-GESETZ (physik.K1) ===");
+        koerperBericht(o);
+        console.log(`KOERPER ${JSON.stringify(o)}`);
+        process.exit(errs.length ? 1 : 0);
+    }
     if (process.argv.includes("--kette")) {
         const o = await page.evaluate(probeLeben, { messort, nurKette: true, kette: KETTE });
         await browser.close();

@@ -371,7 +371,7 @@ const DATEN_KANAELE = [
     ["renderConfig", "render-config"],
 ];
 
-// DER KANAL OHNE BROWSER (K64-n2): DIESELBEN Dateien wie der Worker (WORKER_SCRIPTS: lib, Kerne in Manifest-Reihenfolge, die
+// DER KANAL OHNE BROWSER: DIESELBEN Dateien wie der Worker (WORKER_SCRIPTS: lib, Kerne in Manifest-Reihenfolge, die
 // Brücke zuletzt) laufen in EINEM Node-vm, und DERSELBE Kanal (`foundryKanal`) antwortet je Frage — der Umschlag (get-book,
 // gate:studio-vertrag U) und jeder Bau (build-asset, gate:studio-uebergabe), ~0,6 s statt eines Browser-Boots. Die Leinwand
 // des Blatt-Atlas (OffscreenCanvas) schluckt ein Absorber. `quellen`: { "<datei>": "<quelltext>" } ersetzt eine Datei.

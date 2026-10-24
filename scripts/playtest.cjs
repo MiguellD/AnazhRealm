@@ -344,14 +344,14 @@ if (require.main === module) (async () => {
                 };
                 try {
                     obj[methodName](...(args || []));
-                } catch (_e) {
+                } catch {
                     /* ein Throw NACH dem Provider-Ruf entwertet den Konsum-Beweis nicht */
                 } finally {
                     if (hadOwn) providerObj[providerKey] = original;
                     else delete providerObj[providerKey];
                 }
                 return fired > 0;
-            } catch (_e) {
+            } catch {
                 return false;
             }
         };
@@ -499,7 +499,7 @@ if (require.main === module) (async () => {
             for (;;) {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {
+                } catch {
                     // Ein einzelner Tick-Fehler darf den Warmup nicht
                     // abbrechen; die `pageerror`-Listener fangen ihn auf.
                 }
@@ -530,7 +530,7 @@ if (require.main === module) (async () => {
                         takt: async () => {
                             try {
                                 r._gameLoopTick(performance.now());
-                            } catch (_e) {
+                            } catch {
                                 // Ein einzelner Tick-Fehler darf den Warm-Anker nicht abbrechen.
                             }
                             await new Promise((resolve) => setTimeout(resolve, 25));
@@ -547,7 +547,7 @@ if (require.main === module) (async () => {
                 for (let s = 0; s < 40; s++) {
                     try {
                         r._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                     await new Promise((resolve) => setTimeout(resolve, 0));
                 }
             }
@@ -948,7 +948,7 @@ if (require.main === module) (async () => {
                         r.state.postProcessingFailed = false;
                         try {
                             r._gameLoopTick(performance.now());
-                        } catch (_e) {}
+                        } catch {}
                     }
                 });
                 fs.mkdirSync(ARTIFACT_DIR, { recursive: true });

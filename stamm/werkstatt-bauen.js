@@ -726,6 +726,12 @@ class AnazhRealm_werkstatt_bauen {
         const blueprintName = entry.type;
         const removed = this.removeArchitecture(entry);
         if (!removed) return null;
+        // DIE TAT BLEIBT (feld.K4): ein gefällter Baum ist eine Tat der Welt am Ort — Narbe im Feld, Stumpf in der Nah-Streu, und
+        // der Wald pflanzt ihn nicht neu, bis sie heilt (`_tatSchreiben`)
+        if (/baum/.test(entry._lodSpecies || blueprintName) && this._istNatur(entry))
+            this._tatSchreiben("faellen", entry.position.x, entry.position.z, {
+                s: Number.isFinite(entry.scale) ? +entry.scale.toFixed(2) : 1,
+            });
         // Nur der Spieler fühlt die Ernte (joy + hope, skaliert mit dem Ertrag); Kreaturen nicht.
         if (harvester === "player") {
             const mag =
@@ -835,6 +841,7 @@ class AnazhRealm_werkstatt_bauen {
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         if (this._fahrLos) this._fahrLos.delete(entry); // ein abgebauter Wagen fällt nicht weiter (`_fahrNachlauf`)
         this._kronenStreuWeg("a:" + entry.id); // ein gefällter Baum nimmt seine Krone aus der Karte
+        this._werkGesetzAus(entry); // ein Werk im Takt des Gesetzes (Sturz, Rollen, Schale) verlässt ihn
         if (!still && typeof this.journalAppend === "function") {
             this.journalAppend("loss", AnazhRealm._datum`Eine ${entry.type}-Struktur wurde abgebaut.`, {
                 type: entry.type,
@@ -930,13 +937,12 @@ class AnazhRealm_werkstatt_bauen {
     // DIE AUSDAUER EINER MAUS-ARM-AKTION (Welle LF 09.10., Posten 8 / K-L2): der Arm bewegt sich samt Gerät — die Kosten des
     // Gesetzbuchs (koerper fx.bewegung.aktionAusdauer: die leere Hand) wachsen mit der geschwungenen Masse,
     // (m_Arm + m_Gerät) / m_Arm; m_Arm = koerper LEIB.armAnteil × die EINE Leib-Masse des Spielers (_leibMasse), m_Gerät = die
-    // gemessene Masse des Schmiede-Geräts (kampfMasze.masseKg). Ein ungemessenes Gerät (Eigenwerk, Bogen) trägt keine Masse in
-    // kg und zehrt wie die Hand (derselbe Definitionsbereich wie Schwung-Dauer und Stoß). Vorher 5 je Hieb für Dolch und
+    // Masse des Geräts (`_geraetMasze`: die Messung der Schmiede, ein Eigenwerk seine Gestalt × ρ der Stoff-Zeile in der
+    // wahren Größe der Hand — physik K1; vorher zehrte ein Eigenwerk wie die leere Hand). Vorher 5 je Hieb für Dolch und
     // Vorschlaghammer gleich (Leben-Schau 07.10.).
     _mausAusdauer() {
         const basis = AnazhRealm._aktionAusdauer();
-        const bp = this._heldImplementBlueprint();
-        const km = bp ? this._schmiedeKampfMasze(bp) : null;
+        const km = this._geraetMasze(this._heldImplementBlueprint());
         const mG = km && km.masseKg > 0 ? km.masseKg : 0;
         if (!mG) return basis;
         const anteil = AnazhRealm.Gesetz("koerper:LEIB.armAnteil", null);
@@ -2256,6 +2262,7 @@ class AnazhRealm_werkstatt_bauen {
         };
         for (const name of Object.keys(materials)) {
             const mat = materials[name];
+            if (mat.bauStoff === false) continue; // ein Stoff der Körper, kein Bau-Stoff (_defaultMaterials)
             const card = document.createElement("div");
             card.className = "workshop-material-card";
             card.setAttribute("draggable", "true");

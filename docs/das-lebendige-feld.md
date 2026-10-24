@@ -91,7 +91,8 @@ Fünf Flecken, an denen die Vision einst flach war, erklären die heutige Form:
 2. **Emotion ist zweiseitig:** Welt→Spieler über `FIELD_TO_EMOTION`, Spieler aus TATEN
    (`ACTION_TO_EMOTION`), ZUSTAND (HP) und UMGEBUNG — über alle sechs Achsen.
 3. **Schreibbare Achsen sind Overlays** über dem frozen Kern (`auraAt = min(1, frozen +
-   overlay)`, nie überschreiben); dichte/glut/magieleitung bleiben bewusst frozen.
+   overlay)`, nie überschreiben); dichte/magieleitung bleiben bewusst frozen, glut hebt der Brand, solange seine Zelle brennt
+   (`_tickBrand`, feld.K3#2).
 4. **Eine Welt ist ihr Regel-Satz + Seed:** `rule` = ein nicht verfallendes `when`;
    Mensch · Nexus · KI (`source:"llm:grok"` → `dslRun`) schreiben in EINER Sprache.
 5. **Werten ist Vorhersagefehler** (TD-Fehler/Dopamin-Muster) — anti-gaming by construction,
@@ -134,6 +135,11 @@ schreibt, wer liest, welche Zahl) sind am Stamm vom 16.10. nachgelesen, nicht nu
 - **`_depositEmotion(x,z,emotionMap)`** — prägt die Tat-Emotion am Ort ein (6 Achsen,
   gekappt auf `EMOTION_FIELD.max` 0.8, schnellerer Decay als Leben). Schreiber:
   `_feelAction`, die DSL-Op `deposit_emotion`, die Pflege der KI (`_aiTendPlayer`).
+- **`_tatSchreiben(tat,x,z,…)`** (feld.K4) — die Tat am Lebendigen (ein Baum fällt, eine Pflanze wird gepflückt) ist ein
+  Schreib-Akt der Welt in `worldMeta.taten` und reist mit jedem Save und Reload. `auraAt` senkt lebendig um ihre Narbe
+  (`_narbeAt`, Tiefe je Klasse in `TAT_NARBE`), die linear in Welt-Stunden heilt (`_weltStunde`: Tag und Uhr), Dauer =
+  Stunden der Klasse / frozen lebendig des Orts; bis dahin lässt die Nah-Streu das Gepflückte weg und trägt den Stumpf, der
+  Wald pflanzt den gefällten Baum nicht neu.
 - **Disziplin (V17.27-Lehre):** NUR INTENTIONALE Akte schreiben (die Geburt, die Geste) —
   NIE die FOLGEN des Feldes (ambiente Fauna liest lebendig → spawnt; würde sie auch
   schreiben, gäbe es positives Feedback-Runaway). Sättigung (`max`-Cap) → das Leben
@@ -244,8 +250,8 @@ Wasser-Naturen · Licht+Terrain-Einheit.
   emergente, evolvierbare Regeln neu fassen, nicht als feste Trigger.
 - **Die anderen Feld-Achsen schreibbar — und der Spieler als Pfleger.** Heute schreiben
   Geburt, Tod, Nexus-Regel und Kreatur-Trickle ins lebendig-Overlay (§4.2); der Vektor: **DU trägst Leben** (Spieler-Pflege
-  als zweiter Schreib-Pfad = echte Co-Schöpfung). glut/dichte/magieleitung bleiben frozen,
-  bis die Vision sie verlangt (dann via `_depositLife`-Muster, kein Parallelpfad).
+  als zweiter Schreib-Pfad = echte Co-Schöpfung). dichte/magieleitung bleiben frozen,
+  bis die Vision sie verlangt (dann via `_depositLife`-Muster, kein Parallelpfad); glut schreibt der Brand (`_brandFangen`).
 - **Die KI als vollwertige Co-Schöpferin.** Das LLM schreibt schon Regeln (`source:"llm"`),
   aber opt-in. Der Vektor: die KI tiefer in den Kreis weben (sie liest das gewertete Feld,
   schlägt Regeln vor, lernt aus dem δ) — die Symbiose-Hälfte von Pfeiler 1 vollenden.

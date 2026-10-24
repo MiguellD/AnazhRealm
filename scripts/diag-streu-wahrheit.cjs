@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ============================================================================
-// DIE STREU-WAHRHEIT — gate:streu-wahrheit (04.10., Bild-Wahrheit (b); Integration Waldboden 05.10.)
+// DIE STREU-WAHRHEIT — gate:streu-wahrheit (Bild-Wahrheit (b); Integration Waldboden 05.10.)
 //
 // Die Nah-Streu liest ihr Licht (keine schwarzen Brocken auf der Wiese): die Linse liest die STUDIO-ARTEN der Nah-Streu
 // (foundry-core `placement.boden`, ring "nah") und hält die Klasse dort:

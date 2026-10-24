@@ -292,9 +292,13 @@ function finde(root, rx) {
             }
         }
     }
-    // die Kerne: benannte Funktionen, Methoden und Funktions-Felder — in ein sofort gerufenes Gehäuse hinein, in keinen Rumpf
+    // die Kerne: benannte Funktionen, Methoden und Funktions-Felder — in ein sofort gerufenes Gehäuse hinein, in keinen Rumpf; dazu
+    // die Gesetzbücher neben dem Spiel-Manifest (`worlds/<buch>/*-core.js`, sie docken über die Kern-Zeile an) und je Buch
+    // seine Arten (PARAMS_BY_KIND): eine Art in zwei Büchern hat zwei Quellen
     const kerne = JSON.parse(fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8")).flatMap((c) => c.scripts);
-    for (const k of [...new Set(kerne)]) {
+    const daneben = fs.readdirSync(path.join(root, "worlds"), { recursive: true }).map((f) => "worlds/" + f.replace(/\\/g, "/"))
+        .filter((f) => /^worlds\/[^/]+\/[^/]+-core\.js$/.test(f));
+    for (const k of [...new Set(kerne), ...daneben]) {
         const text = fs.readFileSync(path.join(root, k), "utf8");
         const ast = acorn.parse(text, { ecmaVersion: "latest", sourceType: "script", locations: true, allowHashBang: true });
         stammLib.wandere(ast, (n, ahnen) => {
@@ -308,6 +312,10 @@ function finde(root, rx) {
                         ? n.id.name
                         : null;
             if (name && rx.test(name)) treffer.push(`  ${(k + ":" + n.loc.start.line).padEnd(32)} ${name}  →  Kern ${k}`);
+            const arten = schluessel(n.key || n.id || {}) === "PARAMS_BY_KIND" && (n.value || n.init);
+            for (const p of (arten && arten.properties) || [])
+                if (rx.test(schluessel(p.key)) || rx.test(k))
+                    treffer.push(`  ${(k + ":" + p.loc.start.line).padEnd(32)} ${schluessel(p.key)}  →  Gesetzbuch ${daneben.includes(k) ? "neben dem" : "im"} Spiel-Manifest`);
             const iife = /Function/.test(n.type) && ahnen.length && ahnen[ahnen.length - 1].type === "CallExpression";
             return !(/Function/.test(n.type) && !iife) && !(n.type === "VariableDeclarator" && fnWert(n.init));
         });
@@ -446,10 +454,10 @@ function selbsttest() {
         const ok = ls.join(";") === ";D;F";
         console.log(`${ok ? "  ok " : "  ROT"} Lade-Leser: Funktion später, IIFE und Feld-Rückruf sofort — ${ls.join(";")}`);
         if (!ok) rot++;
-        // --find: die zugewiesene Methode und der Kern sind sichtbar
-        const f = finde(ROOT, /^(_gameLoopTick|treeParams)$/).join("\n");
-        const fok = /_gameLoopTick {2}→ {2}zugewiesen in startEternalLoop/.test(f) && /phyto-core\.js:\d+ +treeParams {2}→ {2}Kern/.test(f);
-        console.log(`${fok ? "  ok " : "  ROT"} --find: _gameLoopTick (zugewiesen) und treeParams (Kern) — ${f.replace(/\s+/g, " ")}`);
+        // --find: die zugewiesene Methode, der Kern und die Art bei ihrem Gesetzbuch sind sichtbar
+        const f = finde(ROOT, /^(_gameLoopTick|treeParams|haus)$/).join("\n");
+        const fok = /_gameLoopTick {2}→ {2}zugewiesen in startEternalLoop/.test(f) && /phyto-core\.js:\d+ +treeParams {2}→ {2}Kern/.test(f) && /fachwerk-core\.js:\d+ +haus {2}→ {2}Gesetzbuch im/.test(f);
+        console.log(`${fok ? "  ok " : "  ROT"} --find: _gameLoopTick (zugewiesen), treeParams (Kern), haus (Gesetzbuch) — ${f.replace(/\s+/g, " ")}`);
         if (!fok) rot++;
     } finally {
         fs.rmSync(tmp, { recursive: true, force: true });

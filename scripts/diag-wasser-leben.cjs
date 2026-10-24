@@ -4,11 +4,11 @@
 // Täter mit ihren Zahlen stehen im Selbsttest, die Chronik in git):
 //   F (Q7-Gestalt)  der Fluss-Spiegel steigt stromab nie und liegt quer waagrecht; ein Wasserfall steht EINMAL je Ort.
 //   K (Q6-Körper)   wer in den See geht, geht nie am Grund; in Ruhe treibt er an der Brustkorb-Linie; Kraulen hält das
-//                   Gesetz; das Eintauchen klingt; die Kamera taucht nur unter dem Spiegel (K5); ein Tier liegt an seiner
-//                   Wasserlinie, auch ohne Gestalt-Baum (K6); ein Mitspieler lehnt sich ins Wasser (K7).
+//                   Gesetz; das Eintauchen klingt; die Kamera taucht nur unter dem Spiegel; ein Tier liegt an seiner
+//                   Wasserlinie, auch ohne Gestalt-Baum; ein Mitspieler lehnt sich ins Wasser.
 //   B (Q7-Bild)     das Wasser-Material zerfällt mit der Wasser-Uhr nicht (kein weißes Zebra), der ruhige Fluss schäumt
 //                   nicht, der Sturm-Regen zeichnet Schlieren; das Rauschen rechnet ohne sin (B6); unter Wasser kennt das
-//                   Licht Tag und Nacht, der Tauchgang färbt den Himmel nicht (K9).
+//                   Licht Tag und Nacht, der Tauchgang färbt den Himmel nicht.
 //   U (Q7-Gestalt)  die Ufer-Farbe quer zum Fluss springt nie, Worker und Main färben gleich; der Schilf-Bezug springt nie (U3).
 //   K10 · K11 · W2  die Decke über trockenen Höhlen (Spieler, Kamera, Tier, Wagen lesen dort kein Wasser); der Wagen watet,
 //                   das Boot treibt ohne Nicken mit dem Grund, auch im Rand-Streifen des Sees.
@@ -17,6 +17,7 @@
 //   F7 · FP · K12   die Bank nie steiler als der Fels; der Kanal Main = Worker (NaN = Probe kaputt); Klang und Küsten-Sheet
 //                   lesen die EINE Wahrheit, und an 50 Zufalls-Punkten folgt ihrer Mutation jeder Leser (K12 M: Leib, Tier,
 //                   Wagen, Scheu, Trink-Ziel, Klang, Natur). K8: keine Ufer-Flut nach dem Wecken des Automaten.
+//   E (stoffe.K3)   im Winter trägt das Eis den Gang und die Tiere am Spiegel (±5 cm); das Feld +10 °C bricht ihn ein.
 //   G (F3)          der Graben am Fluss (1 m und 3 m jenseits der Krone, der Weg des Grabe-Hiebs): EINE Wasser-Fläche, nie über
 //                   dem Spiegel, in Ruhe auf ihm; der Automat ruht binnen Takten; die Wiese daneben fällt nie.
 // Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_atlasWaterLevelAt`), den
@@ -273,7 +274,7 @@ function urteil(b) {
                 v.push(
                     `K10 TIER: in ${ti.schwimmt} von ${ti.proben} trockenen Höhlen schwimmt das Tier auf dem Höhlen-Boden`
                 );
-            // der Wagen (Schau-2 wasser-wahrheit): die Tiefe des Fahr-Schritts am Höhlen-Boden
+            // der Wagen (wasser-wahrheit): die Tiefe des Fahr-Schritts am Höhlen-Boden
             const wa = hh.wagen;
             if (!wa) v.push("K10 WAGEN LEER: keine Tiefe am Wagen (`_fahrTiefe`) im Stand");
             else if (wa.nass > 0)
@@ -419,6 +420,12 @@ function urteil(b) {
                     `K6 BAUMLOS: ein Wesen ohne Gestalt-Baum treibt mit der Sohle ${bl.sohleUnterSpiegel} m unter dem Spiegel, ` +
                         `die Schwimm-Tiefe des Gesetzes ist ${bl.soll} m`
                 );
+            const { winter: w = {}, mutation: mu = {}, tier: et = [] } = k.eis || {};
+            if (!(w.seeFrames >= 120 && et.length === 3)) v.push(`E LEER: ${w.seeFrames} Schritte über dem See, ${et.length} Tiere`);
+            else if (!(w.temperatur < 0) || w.schwimmFrames || w.luft || !(w.maxM <= 0.05))
+                v.push(`E1 EINBRUCH: bei ${w.temperatur} °C ${w.schwimmFrames} Schritte schwimmend, ${w.luft} in der Luft, Füße bis ${w.maxM} m vom Spiegel`);
+            for (const t of et) if (t.schwimmt || !(Math.abs(t.sohleUnterSpiegel) <= 0.05)) v.push(`E3 TIER: ${t.seele} ${t.sohleUnterSpiegel} m im Eis`);
+            if (!(mu.temperatur >= 0 && mu.schwimmFrames > 0)) v.push(`E2 BLIND: +10 °C (${mu.temperatur} °C), ${mu.schwimmFrames} Schritte schwimmend`);
             if (!k.peer) v.push("K7 MITSPIELER: die Peer-Probe lief nicht");
             else if (!(Math.abs(k.peer.lehne) > 0.05))
                 v.push(`K7 MITSPIELER: der Peer-Körper an der Brustkorb-Linie schwimmt nicht (Lehne ${k.peer.lehne})`);
@@ -650,6 +657,11 @@ function selbsttest() {
             ),
             baumlos: { sohleUnterSpiegel: 0.5, soll: 0.5 },
             peer: { lehne: 0.4, meshKind: "soul" },
+            eis: {
+                winter: { temperatur: -4.7, seeFrames: 1152, schwimmFrames: 0, luft: 0, maxM: 0 },
+                tier: ["wolf", "fuchs", "baer"].map((seele) => ({ seele, sohleUnterSpiegel: 0 })),
+                mutation: { temperatur: 5.3, schwimmFrames: 900 },
+            },
         },
         licht: {
             nachtOben: 0.03,
@@ -731,6 +743,11 @@ function selbsttest() {
         ["K6 LAGE", (b) => Object.assign(b.koerper.tier[0], { sohleUnterSpiegel: 0.3, wasserlinie: 0.87 })],
         ["K6 LEER", (b) => (b.koerper.tier = [])],
         ["K7 MITSPIELER", (b) => (b.koerper.peer.lehne = 0)],
+        // stoffe.K3 an der Basis 6f8a2c66: kein Eis
+        ["E1 EINBRUCH", (b) => Object.assign(b.koerper.eis.winter, { schwimmFrames: 60, maxM: 1.227 })],
+        ["E2 BLIND", (b) => (b.koerper.eis.mutation.schwimmFrames = 0)],
+        ["E3 TIER", (b) => Object.assign(b.koerper.eis.tier[0], { sohleUnterSpiegel: 0.599, schwimmt: true })],
+        ["E LEER", (b) => (b.koerper.eis = null)],
         ["K9 NACHT", (b) => Object.assign(b.licht, { nachtUnten: 0.17 })],
         ["K9 LITERAL", (b) => Object.assign(b.licht, { nachtUnten: 0.17, mittagUnten: 0.17, nachtOben: 0.5 })],
         ["K9 HIMMEL", (b) => (b.licht.himmelGetaucht = [81, 132, 170])],
@@ -1003,7 +1020,7 @@ async function lauf() {
                     (o) => window.__wasserKoerper({ see: o.see.mitte, start: o.see.ufer, ziel: o.see.mitte }),
                     ORTE
                 );
-            // am See der Mess-Wiese: die Höhlen darunter und daneben (D11), das Gefährt (D10, W-W2)
+            // am See der Mess-Wiese: die Höhlen darunter und daneben, das Gefährt (D10, W-W2)
             if (soll("hoehle")) befund.hoehle = await page.evaluate(() => window.__wasserHoehle({}));
             if (soll("wagen"))
                 befund.wagen = await page.evaluate(

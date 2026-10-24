@@ -4,7 +4,7 @@
 
 // ── WELLE L — die Proben der Leben-Prüfung „Kampf" (Seiten-Funktion; läuft auf JEDEM Stand: fehlt eine Naht, misst
 // die Probe das Verhalten trotzdem — so ist die Linse auf dem alten Stand rot und benennt den Defekt) ──
-async function WELLE_L() {
+async function WELLE_L(ort) {
     const r = window.anazhRealm,
         s = r.state,
         A = r.constructor,
@@ -205,6 +205,8 @@ async function WELLE_L() {
         if (s.buildMode && s.buildMode.active) r._clearBuildMode();
 
         // ═══ Q8 — TREFFER ═══
+        // die Glieder jeder getroffenen Gattung im Vorrat (der Leerlauf) — eine kalte trägt kein Treffer-Volumen
+        await Promise.all(["wesen", "fuchs", "wolf", "baer"].map((seele) => r._gliederBestellen(seele)));
         const hirsch = setze("wesen");
         const fuchs = setze("fuchs");
         if (!hirsch || !fuchs) throw new Error("Kreatur-Spawn fehlgeschlagen");
@@ -298,7 +300,7 @@ async function WELLE_L() {
             };
             A._steuerGesetz = () => steht;
             try {
-                // wie der Loop: der feste Sim-Schritt trägt den Stoß (0710-5), dann der Kreatur-Takt
+                // wie der Loop: der feste Sim-Schritt trägt den Stoß, dann der Kreatur-Takt
                 for (let k = 0; k < 90; k++) {
                     r._kreaturStossSchritt(1 / 60);
                     r._leibKontakte();
@@ -324,118 +326,6 @@ async function WELLE_L() {
             baerDolch: rueck(baer, "klinge_dolch"),
             baerKeule: rueck(baer, "klinge_keule"),
         };
-        // (T14) DIE MASSE-TAFEL: je Gattung ein frisches Tier der Größe 1, der Spieler und ein GT — die Masse, mit
-        // der der Wirt stößt, gegen das Gewicht der Gestalt (die Linse misst die geschlossene Haut selbst).
-        {
-            const TC = globalThis.__tetrapodaCore;
-            const KC = globalThis.__koerperCore;
-            const VC = globalThis.__vehicleCore;
-            const dichteTier = TC && TC.MASSSTAB ? TC.MASSSTAB.dichteKgM3 : undefined;
-            const dichteMensch = KC && KC.LEIB ? KC.LEIB.dichteKgM3 : undefined;
-            const dichteWagen = VC && VC.FAHR ? VC.FAHR.masseDichte : undefined;
-            const kernFehlt = [];
-            if (!(dichteTier > 0)) kernFehlt.push("tetrapoda MASSSTAB.dichteKgM3");
-            if (!(dichteMensch > 0)) kernFehlt.push("koerper LEIB.dichteKgM3");
-            if (!(dichteWagen > 0)) kernFehlt.push("vehicle FAHR.masseDichte");
-            const zwillinge = [];
-            if (A.STOSS && A.STOSS.dichteLeib !== undefined) zwillinge.push("STOSS.dichteLeib " + A.STOSS.dichteLeib);
-            if (A.STOSS && A.STOSS.dichteWagen !== undefined)
-                zwillinge.push("STOSS.dichteWagen " + A.STOSS.dichteWagen);
-            if (typeof r._kreaturMasse === "function") zwillinge.push("_kreaturMasse (die Kapsel aus der Hüft-Höhe)");
-            // das Volumen der geschlossenen Haut (Klasse fell/haut, jede Kante gerade oft) im Rahmen von `rahmen` — dazu, was der
-            // Stoff-Schnitt des Ofens öffnet (`__leibV` am Gelenk der Hülle, vor dem Schnitt gemessen); Kopf und Hände misst die Linse
-            const hautVolumen = (teil, rahmen, klassen) => {
-                rahmen.updateMatrixWorld(true);
-                const inv = new THREE.Matrix4().copy(rahmen.matrixWorld).invert();
-                const mm = new THREE.Matrix4();
-                let vol = 0;
-                teil.traverse((o) => {
-                    if (o.userData && o.userData.__leibV > 0)
-                        vol += o.userData.__leibV * Math.abs(mm.multiplyMatrices(inv, o.matrixWorld).determinant());
-                    if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
-                    const kl = o.material && o.material.userData ? o.material.userData.foundryKind : null;
-                    if (!klassen.includes(kl)) return;
-                    const pa = o.geometry.attributes.position.array;
-                    const ix = o.geometry.index ? o.geometry.index.array : null;
-                    const n = ix ? ix.length : pa.length / 3;
-                    const kanten = new Map();
-                    let vv = 0;
-                    for (let t = 0; t + 2 < n; t += 3) {
-                        const ia = ix ? ix[t] : t;
-                        const ib = ix ? ix[t + 1] : t + 1;
-                        const ic = ix ? ix[t + 2] : t + 2;
-                        const [ax, ay, az] = [pa[3 * ia], pa[3 * ia + 1], pa[3 * ia + 2]];
-                        const [bx, by, bz] = [pa[3 * ib], pa[3 * ib + 1], pa[3 * ib + 2]];
-                        const [cx, cy, cz] = [pa[3 * ic], pa[3 * ic + 1], pa[3 * ic + 2]];
-                        vv += (ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx) + az * (bx * cy - by * cx)) / 6;
-                        for (const [u, q] of [
-                            [ia, ib],
-                            [ib, ic],
-                            [ic, ia],
-                        ]) {
-                            const key = u < q ? u + ":" + q : q + ":" + u;
-                            kanten.set(key, (kanten.get(key) || 0) + 1);
-                        }
-                    }
-                    for (const zz of kanten.values()) if (zz % 2) return; // offen: keine Masse
-                    mm.multiplyMatrices(inv, o.matrixWorld);
-                    vol += Math.abs(vv) * Math.abs(mm.determinant());
-                });
-                return vol;
-            };
-            const wirtLeib = (k) => r._leibMasse(k);
-            const leiber = {};
-            const ort = pm.position;
-            for (const [name, seele] of [
-                ["fuchs", "fuchs"],
-                ["wolf", "wolf"],
-                ["hirsch", "wesen"],
-                ["baer", "baer"],
-            ]) {
-                s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 2);
-                const c = r.spawnCreatureAt(ort.x + 320, ort.y, ort.z + 320, "calm", seele, { bodySize: 1 });
-                if (!c) continue;
-                const tb = c.userData._tierBaum;
-                const sk = new THREE.Vector3();
-                c.getWorldScale(sk);
-                // die feine Stufe allein (die Grobstufe unter demselben Wrap trägt die Haut noch einmal)
-                const gl = c.userData._gelenk;
-                const vol = tb && gl ? hautVolumen(gl.nah, c, ["fell"]) * sk.x * sk.y * sk.z : 0;
-                leiber[name] = { wirtKg: wirtLeib(c), gestaltKg: dichteTier > 0 ? vol * dichteTier : null, vM3: vol };
-                r.removeCreature(c);
-            }
-            {
-                // der Spieler: seine Nah-Gestalt (die Grobstufe daneben trägt dieselbe Haut noch einmal)
-                let nah = null;
-                pm.traverse((o) => {
-                    if (!nah && o.userData && o.userData._gelenk && o.userData._gelenk.nah)
-                        nah = o.userData._gelenk.nah;
-                });
-                const vol = hautVolumen(nah || pm, pm, ["haut"]);
-                leiber.mensch = {
-                    wirtKg: wirtLeib(pm),
-                    gestaltKg: dichteMensch > 0 ? vol * dichteMensch : null,
-                    vM3: vol,
-                };
-            }
-            {
-                const e = r.spawnArchitecture(
-                    "fahrzeug_gt",
-                    { x: ort.x + 330, y: r.getTerrainHeightAt(ort.x + 330, ort.z + 330) + 0.5, z: ort.z + 330 },
-                    { silent: true, precise: true }
-                );
-                const prof = e ? r._vehicleProfile(e) : null;
-                const G = prof ? r._fahrSatz(e, prof) : null;
-                if (G)
-                    leiber.gt = {
-                        wirtKg: r._fahrMasse(G),
-                        gestaltKg: dichteWagen > 0 ? G.m * dichteWagen : null,
-                        vM3: G.m,
-                    };
-                if (e) r.removeArchitecture(e);
-            }
-            w.z.masse = { leiber, kernFehlt, zwillinge };
-        }
         // (T15) der Biss als Stoß: je Jäger ein Biss auf ein Kitz (_tickCreatureScentStrike) und auf den Spieler
         // (_tickCreatureHuntStrike), der Takt läuft bis zum Schnappen (≤ 1,5 s); gemessen das Δv am Ziel.
         {
@@ -653,91 +543,7 @@ async function WELLE_L() {
             w.z.keSpanne = ke.length ? +(ke[ke.length - 1] / ke[0]).toFixed(1) : null;
             w.c.hitStopEnergie = ke.length >= 15 && gruppe <= 3;
         }
-        // (G3) das Werk nach der Form über tryMouseBreak: Klicks, bis die Eiche fällt, der Fels bricht, der Boden ein Loch
-        // trägt (null: der Klick schwingt); die Form-Mutation des Kerns (ov) und (S13) eine Art-Tafel neben dem Gesetz.
-        {
-            const nix = () => null;
-            let erde = null;
-            for (let ring = 8; !erde && ring <= 320; ring += 8)
-                for (let k = 0; !erde && k < 16; k++) {
-                    const x = pm.position.x + ring * Math.cos(k * 0.3927),
-                        z = pm.position.z + ring * Math.sin(k * 0.3927),
-                        y = r._voxelSurfaceY(x, z);
-                    if (Number.isFinite(y) && r._terrainMaterialAt(x, z, y) === "erde") erde = { hit: true, x, y, z };
-                }
-            if (!erde) w.fehler.push("Q11: keine Erde im Umkreis 320 m");
-            const klicks = (name, typ, ov) => {
-                ausruesten(name);
-                const bp = name ? s.blueprints[name] : null,
-                    alt = bp ? bp.studioOv : undefined;
-                if (ov) bp.studioOv = ov;
-                if (bp) r._setBlueprintWear(bp, 1);
-                r._kampfMaszeMemo = null;
-                r.setGameMode(typ ? "frieden" : "pfad");
-                const c0 = zaehl.carve;
-                const a =
-                    typ &&
-                    r.spawnArchitecture(
-                        typ,
-                        { x: pm.position.x, y: pm.position.y, z: pm.position.z + 9 },
-                        { silent: true }
-                    );
-                const steht = () => (typ ? s.architectures.indexOf(a) !== -1 : zaehl.carve === c0);
-                const buehne = { _pickCreatureAtCrosshair: nix, _kampfKegelZiel: nix, _pickScatterAtCrosshair: nix };
-                buehne._pickArchitectureAtCrosshair = () => (typ && steht() ? { entry: a, point: a.position } : null);
-                buehne._raycastWorldHit = () => erde || { hit: false };
-                Object.assign(r, buehne);
-                let n = 0;
-                try {
-                    p._dig = null;
-                    for (; n < 60 && steht(); n++) {
-                        p._swing = null;
-                        p.stamina = 1e6;
-                        r.tryMouseBreak();
-                    }
-                } finally {
-                    for (const k in buehne) delete r[k];
-                    if (typ && steht()) r.removeArchitecture(a);
-                    if (ov) alt === undefined ? delete bp.studioOv : (bp.studioOv = alt);
-                    r._kampfMaszeMemo = p._swing = null;
-                    r.setGameMode(saved.mode);
-                }
-                return steht() ? null : n;
-            };
-            const werk = (GS.werk = {});
-            for (const [typ, namen] of [
-                ["baum_eiche", ["faellaxt", "langschwert", "spitzhacke", "vorschlaghammer", "spaten", null]],
-                ["stein_block", ["spitzhacke", "vorschlaghammer", "faellaxt", "langschwert", "spaten", null]],
-                [null, ["spaten", "schaufel", "spitzhacke", "langschwert", "vorschlaghammer", "faellaxt", null]],
-            ])
-                werk[typ || "boden"] = Object.fromEntries(
-                    namen.map((n) => [n || "hand", klicks(n && "klinge_" + n, typ)])
-                );
-            const form = () => {
-                const je = (name, ov) => ({ baum: klicks(name, "baum_eiche", ov), boden: klicks(name, null, ov) });
-                const blatt = { kopfTyp: "grabeblatt" },
-                    axt = { kopfTyp: "axt", beta: 30, reach: 0.08, edgeLen: 0.1 };
-                return {
-                    axt: je("klinge_faellaxt"),
-                    axtBlatt: je("klinge_faellaxt", blatt),
-                    spaten: je("klinge_spaten"),
-                    spatenAxt: je("klinge_spaten", axt),
-                };
-            };
-            werk.form = form();
-            r._geraetGraebt = (bp) => {
-                const g = bp && sc.GATTUNGEN[sc.REZEPT_ZU_GATTUNG[r._schmiedeGestalt(bp)]];
-                return !bp || !!(g && g.task && (g.task.art === "graben" || g.task.art === "pick"));
-            };
-            r._implementProfile = () => ({ minePower: 1.6, cutPower: 1.6 });
-            try {
-                werk.s13 = form();
-            } finally {
-                delete r._geraetGraebt;
-                delete r._implementProfile;
-            }
-            w.z.gesetz = GS;
-        }
+        w.z.gesetz = GS;
         // (T5) die Gegenwehr folgt dem TEMPERAMENT DER GATTUNG: 20 Treffer mit Rückstoß aus 1,6 m
         // im Modus pfad — der Bär (wehrhaft) schlägt zurück, der Hirsch derselben Größe (scheu, ein Fluchttier) nie.
         r.setGameMode("pfad");
@@ -798,23 +604,6 @@ async function WELLE_L() {
         w.z.panzer = `defense ${leer.d.toFixed(2)}→${st1.defense.toFixed(2)} · hpMax ${leer.hp.toFixed(1)}→${st1.hpMax.toFixed(1)} · damage ${leer.dmg.toFixed(2)}→${st1.damage.toFixed(2)}`;
         // ein Werk der Schmiede faltet auch nicht in den Angriff (halten-gesetz): seinen Treffer urteilt der Kern
         w.c.keinPanzer = st1.defense === leer.d && st1.hpMax === leer.hp && st1.damage === leer.dmg;
-        // (T7) Verschleiß: 16 Treffer zehren die Klinge, ein verbrauchtes Gerät schlägt nicht
-        const bpL = s.blueprints.klinge_langschwert;
-        r._setBlueprintWear(bpL, 1);
-        let n7 = 0;
-        for (let i = 0; i < 16; i++) {
-            stelle(hirsch, 1.6);
-            zielen(punkt(hirsch, null));
-            if (traf(schwung(), hirsch)) n7++;
-        }
-        w.z.wear16 = r._blueprintWear(bpL);
-        w.z.treffer16 = n7;
-        r._setBlueprintWear(bpL, 0.02);
-        stelle(hirsch, 1.6);
-        zielen(punkt(hirsch, null));
-        w.z.trefferVerbraucht = traf(schwung(), hirsch) ? 1 : 0;
-        r._setBlueprintWear(bpL, 1);
-        w.c.verschleiss = n7 >= 12 && w.z.wear16 < 0.99 && w.z.trefferVerbraucht === 0;
         // (T8) der Pfeil: Impuls im Schaden, die Wand hält ihn
         ausruesten("klinge_langbogen");
         const rec = r._heldBogenRecipe();
@@ -824,7 +613,7 @@ async function WELLE_L() {
             const vorher = list.length;
             p._shotCooldownUntil = 0;
             p._swing = null;
-            r._beginPlayerShot(rec, frac);
+            r._beginPlayerShot(frac);
             const pf = (s._pfeile || [])[vorher];
             if (!pf) return { flog: false, treffer: null };
             for (let k = 1; k <= 360 && s._pfeile.includes(pf); k++) r._tickPfeile(pf.born + k / 120);
@@ -872,67 +661,6 @@ async function WELLE_L() {
             const frei = schuss(1, hirsch);
             w.z.pfeilFrei = frei.treffer ? 1 : 0;
             w.c.pfeilWand = !!wand && w.z.pfeilHinterWand === 0 && w.z.pfeilFrei === 1;
-            // (T7b) der Bogen ist eine geführte Waffe wie die Klinge: sein Verschleiß wirkt im Schaden
-            // (wear 0,5 → _wearStatFactor 0,65 des vollen), jeder Schuss zehrt ihn, ein verbrauchter Bogen (wear 0,02,
-            // unter WEAR_KAPUTT_SCHWELLE) löst nicht — dieselbe Wand wie Hieb und Abbau.
-            const bpB = s.blueprints.klinge_langbogen;
-            const bogenBei = (wear) => {
-                r._setBlueprintWear(bpB, wear);
-                stelle(hirsch, 2.5);
-                zielen(punkt(hirsch, null));
-                const sh = schuss(1, hirsch);
-                return {
-                    flog: sh.flog,
-                    amount: sh.treffer ? sh.treffer.amount : null,
-                    kraft: sh.treffer ? sh.treffer.kraft : null,
-                    nach: r._blueprintWear(bpB),
-                };
-            };
-            const bogenProbe = () => {
-                const b1 = bogenBei(1),
-                    b5 = bogenBei(0.5),
-                    b02 = bogenBei(0.02);
-                r._setBlueprintWear(bpB, 1);
-                const F = A.WEAR_STAT_FLOOR;
-                const soll = F + (1 - F) * 0.5;
-                const verh = b1.kraft && b5.kraft != null ? b5.kraft / b1.kraft : null; // die Kraft, nie der Schaden: die Zone des Treffers wechselt
-                return {
-                    voll: b1.amount,
-                    halb: b5.amount,
-                    verh,
-                    soll,
-                    zehrtVoll: 1 - b1.nach,
-                    zehrtHalb: 0.5 - b5.nach,
-                    verbrauchtFlog: b02.flog ? 1 : 0,
-                    verbrauchtTraf: b02.amount !== null ? 1 : 0,
-                    ok:
-                        verh !== null &&
-                        Math.abs(verh - soll) < 0.01 &&
-                        b1.nach < 1 &&
-                        b5.nach < 0.5 &&
-                        !b02.flog &&
-                        b02.amount === null,
-                };
-            };
-            w.z.bogen = bogenProbe();
-            w.c.bogenVerschleiss = w.z.bogen.ok;
-            // (S6) SELBST-TEST mit dem Täter: der Pfeil ohne Verschleiß (Faktor ≡ 1, kein Zehren — der alte Zwilling)
-            {
-                const svF = r._wearStatFactor,
-                    svV = r._kampfVerschleiss;
-                r._wearStatFactor = () => 1;
-                r._kampfVerschleiss = () => {};
-                try {
-                    w.z.s6 = bogenProbe();
-                } finally {
-                    r._wearStatFactor = svF;
-                    r._kampfVerschleiss = svV;
-                    delete r._wearStatFactor;
-                    delete r._kampfVerschleiss;
-                    r._setBlueprintWear(bpB, 1);
-                }
-                w.c.s6 = w.z.s6.ok === false;
-            }
         }
         // (T7c) die KLASSE der Waffen-Schadens-Pfade: jeder Schaden im Namen des Spielers (Hieb und Pfeil trafen oben) IST der
         // Rückgabewert des EINEN Roh-Schaden-Gesetzes _kampfRohSchaden — kein Pfad setzt Kraft × Wirkung × Zone selbst
@@ -1015,64 +743,6 @@ async function WELLE_L() {
             r.removeCreature(frisch);
             tiere.splice(tiere.indexOf(frisch), 1);
         }
-        // (T11) der KALTE ERSTE TREFFER je Gattung (Lehre 14): ein Tier einer Gattung, deren Treffer-Glieder noch niemand
-        // kennt, steht in der Welt, die Welt läuft 60 Spiel-Takte, dann der erste Hieb — gezählt werden die Haut-Vertices,
-        // die der Hieb SELBST zerlegt (_kreaturGliederGruppen im Treffer-Pfad). Vorgebacken (die EINE Bake-Uhr): 0.
-        const gattungVon = (c) => {
-            const ud = c.userData || {};
-            return (
-                ud.gattung ||
-                ud.recipe ||
-                ud.preset ||
-                (A.TETRAPODA_SOUL_MAP && A.TETRAPODA_SOUL_MAP[ud.soul || "wesen"]) ||
-                ud.soul ||
-                "wesen"
-            );
-        };
-        const kalterTreffer = (seele) => {
-            ausruesten("klinge_langschwert");
-            const c = setze(seele);
-            if (!c) return { traf: false, zerlegt: null };
-            if (r._trefferGliedNamen) r._trefferGliedNamen.delete(gattungVon(c));
-            stelle(c, 9, 4);
-            for (let k = 0; k < 60; k++) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (_e) {}
-            }
-            p._swing = null;
-            p._hitStopUntil = 0;
-            let zerlegt = 0;
-            const svG = r._kreaturGliederGruppen;
-            r._kreaturGliederGruppen = function (cr) {
-                const G = svG.call(this, cr);
-                if (G) for (const [, g] of G.gruppen) zerlegt += g.verts;
-                return G;
-            };
-            let t = null;
-            try {
-                stelle(c, 1.6);
-                zielen(punkt(c, null));
-                t = traf(schwung(), c);
-            } finally {
-                r._kreaturGliederGruppen = svG;
-                delete r._kreaturGliederGruppen;
-            }
-            parke(c);
-            return { traf: !!t, zerlegt, gattung: gattungVon(c) };
-        };
-        w.z.kalt = kalterTreffer("baer");
-        w.c.kaltVorgebacken = w.z.kalt.traf && w.z.kalt.zerlegt === 0;
-        // (S8) SELBST-TEST mit dem Täter: ohne das Vorbacken zerlegt der erste Hieb die Haut (die Linse zählt den Hieb)
-        if (fn("_tickTrefferGliederVorbacken")) {
-            r._tickTrefferGliederVorbacken = () => {};
-            try {
-                w.z.s8 = kalterTreffer("wolf");
-            } finally {
-                delete r._tickTrefferGliederVorbacken;
-            }
-            w.c.s8 = w.z.s8.traf && w.z.s8.zerlegt > 0;
-        }
         // (G1)(G3) KONSUM am Zähl-Spion (Lehre 6): der Klingen-Sweep liest die EINE Vorwärts-Richtung (_blickVorn) und fragt das
         // EINE Grob-Tor (_trefferErreichbar), der Pfeil auch, und das Tor liest den kreatur-Leib (_kreaturLeib)
         const ruft = (lauf, k) => {
@@ -1109,7 +779,7 @@ async function WELLE_L() {
             ausruesten("klinge_langbogen");
             p._shotCooldownUntil = 0;
             p._swing = null;
-            r._beginPlayerShot(rec, 1);
+            r._beginPlayerShot(1);
             const pf = s._pfeile[s._pfeile.length - 1];
             konsum.pfeilTor = !!pf && ruft(() => r._tickPfeile(pf.born + 1 / 120), "_trefferErreichbar");
             if (pf && s._pfeile.includes(pf)) (r._pfeilDespawn(pf), s._pfeile.splice(s._pfeile.indexOf(pf), 1));
@@ -1133,7 +803,6 @@ async function WELLE_L() {
                 "_kreaturTrefferGlieder",
                 "_kreaturGliedTreffer",
                 "_kreaturGattung",
-                "_tickTrefferGliederVorbacken",
                 "_bauModusFuer",
                 "_kampfKlingenAchse",
                 "_kampfUrteil",
@@ -1171,7 +840,6 @@ async function WELLE_L() {
                 Boolean
             );
             w.z.grobFremd = window.__fehlt(grobPfade, /\.scale\.x\b/) ? 0 : 1;
-            w.z.grobKonsum = konsum;
             w.c.grobLiestLeib = konsum.sweepTor && konsum.pfeilTor && konsum.torLeib && w.z.grobFremd === 0;
         }
         // (T12) das Grob-Tor deckt die Gestalt: jede Gattung in jeder Größen-Grenze, 90 Takte, je Kapsel-Ende (+ Radius) —
@@ -1437,7 +1105,7 @@ async function WELLE_L() {
             const weite = Z.distanceTo(cam);
             const vorher = (s._pfeile || []).length;
             p._shotCooldownUntil = 0;
-            r._beginPlayerShot(rec, 1);
+            r._beginPlayerShot(1);
             const pf = (s._pfeile || [])[vorher];
             if (pf) {
                 for (let k = 1; k <= 2400 && s._pfeile.includes(pf); k++) {
@@ -1710,7 +1378,7 @@ async function WELLE_L() {
                 const ortAlt = pm.position.clone();
                 const ernteSteine = [];
                 const gepflueckt = [];
-                const erde = [];
+                const [erde, dslZ] = [[], r.dslRun]; // der Zähler der Voxel-Ops kehrt zurück, nie der echte Schnitt
                 try {
                     r.setCameraMode("third");
                     const geraet = (name) => {
@@ -1822,7 +1490,7 @@ async function WELLE_L() {
                             abC <= armLaenge,
                         abC
                     );
-                    delete r.dslRun;
+                    r.dslRun = dslZ;
                     // fern: der Pfeiler 8 m voraus jenseits der Arm-Länge, das Fadenkreuz waagrecht auf ihm, der Wolf 1,3 m voraus
                     geraet("klinge_langschwert");
                     neige(0);
@@ -1846,7 +1514,7 @@ async function WELLE_L() {
                 } finally {
                     delete r._pickScatterAtCrosshair;
                     delete r._harvestScatterPick;
-                    delete r.dslRun;
+                    r.dslRun = dslZ;
                     for (const x of ernteSteine) {
                         if (x.e) r.removeArchitecture(x.e);
                         delete s.blueprints[x.nm];
@@ -1900,7 +1568,7 @@ async function WELLE_L() {
             // die Ich-Regel bleibt rückstandsfrei: 3rd → 1st → 3rd stellt jede Sichtbarkeit UND Ebene des Leibs wieder her, und
             // im 1st zeichnet keine Haut (die Kamera sitzt im Leib) außer dem Gerät in der Hand. „Zeichnet" fragt, was r184s
             // _projectObject fragt: jeder Ahne sichtbar UND die eigene Ebene in der Haupt-Kamera — die Ich-Regel ist die
-            // Ebenen-Regel (0910-5): die Haut verlässt Ebene 0 und bleibt sichtbar, damit sie in den Kaskaden wirft
+            // Ebenen-Regel: die Haut verlässt Ebene 0 und bleibt sichtbar, damit sie in den Kaskaden wirft
             {
                 const heldR = pm.userData.heldMesh;
                 const unterGeraet = (o) => {
@@ -2097,7 +1765,7 @@ async function WELLE_L() {
             if (r.getGameMode() !== modeA) r.setGameMode(modeA);
             w.z.ausdauer = zehr;
         });
-        // (T27) Lebenswerte sind Zustand (K27): ein Biss senkt hp, ein Hieb die Ausdauer, dann jeder Rufer der
+        // (T27) Lebenswerte sind Zustand: ein Biss senkt hp, ein Hieb die Ausdauer, dann jeder Rufer der
         // Neuberechnung einmal (Gerät · Panel · Boost · Tod-Takt); erlaubt Regen·dt, voll setzen nur Wandlung und Rückkehr.
         // (S11) die alte Zeile → equipHeld.
         await teil("T27", async () => {
@@ -2319,7 +1987,7 @@ async function WELLE_L() {
             if (recP) {
                 const n0 = (s._pfeile || []).length;
                 p._shotCooldownUntil = 0;
-                r._beginPlayerShot(recP, 1);
+                r._beginPlayerShot(1);
                 const pf = (s._pfeile || [])[n0];
                 if (pf && pf.mesh) {
                     pf.mesh.updateMatrixWorld(true);
@@ -2400,6 +2068,7 @@ async function WELLE_L() {
                 r._fieldGradient = fgRoh;
                 delete r._fieldGradient;
             }
+            r._todLageTick({ timeRemaining: () => Infinity });
             const K = A._arenaGesetz().gefuehl;
             for (let k = 0; k < Math.ceil((K.kippDauerSec + 0.2) / 0.05); k++) r.updateCreatures(0.05);
             hT.updateMatrixWorld(true);
@@ -2607,7 +2276,7 @@ async function WELLE_L() {
             const mitBiss = { spieler: null, tier: null, kitz: null };
             const dpGate = r.damagePlayer;
             const dcGate = r.damageCreature;
-            // WER BEISST (K13): gezählt wird nur der Biss des Tiers der Probe — das Schnappen (_kreaturBissTakt) nennt den
+            // WER BEISST: gezählt wird nur der Biss des Tiers der Probe — das Schnappen (_kreaturBissTakt) nennt den
             // Beißer; ein Wild-Tier der Welt, das den Spieler im selben Takt beißt, ist nicht der Wolf der Probe
             const btRoh = r._kreaturBissTakt;
             let beisser = null;
@@ -2754,7 +2423,7 @@ async function WELLE_L() {
                         ([ox, oz]) =>
                             j2 &&
                             r2 &&
-                            // EBEN (K16): Reh, beide Absprung-Orte und die Flanken liegen in 0,12 m — am Hang (−14|14 im neuen
+                            // EBEN: Reh, beide Absprung-Orte und die Flanken liegen in 0,12 m — am Hang (−14|14 im neuen
                             // Gelände) stand der Wolf 0,76 m über dem Gesetz, der Kopf zielte an die Klemme
                             eben(P.x + ox, P.z + oz) &&
                             trocken(r2, P.x + ox, P.z + oz + 1.6) &&
@@ -2837,7 +2506,7 @@ async function WELLE_L() {
                     // die Rest-Summe: zehnmal _kreaturBissKopf ohne Takt in der Stand-Pose — die gezeigte Pose steht still;
                     // die Gier des Rehs (π/2 − 0,4) hält das Glied im Band des Hinterschenkels.
                     if (j2 && r2 && ortR && j2.userData._tierBaum) {
-                        // EINE HÖHE (K16): beide Leiber stehen auf dem Grund des Wolfs — die Probe misst das Zielen, nie den Hang.
+                        // EINE HÖHE: beide Leiber stehen auf dem Grund des Wolfs — die Probe misst das Zielen, nie den Hang.
                         // Die Gier des Rehs kommt aus einer festen Reihe ab π/2 − 0,4: die erste, deren
                         // erster Rest im Band der Klemme liegt (Rand 0,05 rad = REH_SOLL.kopfRest), trägt die Probe; ihr Glied steht im Bericht.
                         const R0 = { x: P.x + ortR[0], z: P.z + ortR[1] + 1.6 };
@@ -2908,52 +2577,8 @@ async function WELLE_L() {
                     msJeTakt: null,
                     simsAnspruenge: null,
                     simsSek: 10,
-                    kaltZerlegt: null,
                 };
                 await teil("T24", async () => {
-                    // (c) DIE KALTE GATTUNG (Nachbesserung 3, Lehre 14): ein Wolf und ein Fuchs 35 m vor ihm, beide Gattungen kalt
-                    // (wie eine Gattung, die nie nah beim Spieler stand — das Namen-Memo vergessen, danach wiederhergestellt);
-                    // gezählt, wie oft die Wahl der Beute eine Gestalt synchron zerlegt (_kreaturGliederGruppen) und wie viele
-                    // Vertices.
-                    {
-                        const J1 = { x: P.x + 60, z: P.z - 60 };
-                        const wolfC = neu("wolf", J1.x, J1.z, 1);
-                        const fuchsC = neu("fuchs", J1.x + 35, J1.z, 1);
-                        if (wolfC && fuchsC) {
-                            wolfC.position.y = r.getTerrainHeightAt(J1.x, J1.z);
-                            fuchsC.position.y = r.getTerrainHeightAt(J1.x + 35, J1.z);
-                            const memo = r._trefferGliedNamen || new Map();
-                            const gesichert = new Map();
-                            for (const c of [wolfC, fuchsC]) {
-                                const g = r._kreaturGattung(c);
-                                if (memo.has(g)) gesichert.set(g, memo.get(g));
-                                memo.delete(g);
-                                delete c.userData._trefferGlieder;
-                            }
-                            const grRoh = r._kreaturGliederGruppen;
-                            let zerlegt = 0,
-                                verts = 0;
-                            r._kreaturGliederGruppen = function (cr) {
-                                zerlegt++;
-                                const G = grRoh.call(this, cr);
-                                if (G) for (const [, g] of G.gruppen) verts += g.verts || 0;
-                                return G;
-                            };
-                            try {
-                                wolfC.userData.nextHuntStrikeAt = 0;
-                                wolfC.userData._verhaltenAktion = null;
-                                r._tickCreatureScentStrike(wolfC);
-                            } finally {
-                                r._kreaturGliederGruppen = grRoh;
-                                delete r._kreaturGliederGruppen;
-                                for (const [g, n] of gesichert) memo.set(g, n);
-                            }
-                            reich.kaltZerlegt = zerlegt;
-                            reich.kaltVerts = verts;
-                        }
-                        if (wolfC) r.removeCreature(wolfC);
-                        if (fuchsC) r.removeCreature(fuchsC);
-                    }
                     {
                         const J0 = { x: P.x - 60, z: P.z - 60 };
                         const wolfK = neu("wolf", J0.x, J0.z, 1);
@@ -3092,7 +2717,7 @@ async function WELLE_L() {
                 p._shotCooldownUntil = 0;
                 r._setBlueprintWear(s.blueprints.klinge_langbogen, 1);
                 const n = s._pfeile ? s._pfeile.length : 0;
-                r._beginPlayerShot(rec, 1);
+                r._beginPlayerShot(1);
                 const pf = (s._pfeile || [])[n];
                 return pf && { pf, p0: [pf.x, pf.y, pf.z], v0: [pf.vx, pf.vy, pf.vz] };
             };
@@ -3204,6 +2829,186 @@ async function WELLE_L() {
             }
             for (const z of [z1, z2]) if (z) fliege(z, 60, 0.02);
             K4.zug = { v1: Math.hypot(...z1.v0), vS1, v2: Math.hypot(...z2.v0), vS2 };
+        });
+        // ═══ (Q11 halten.K3) DER WERKZEUG-SATZ an der Mess-Wiese: jede Gestalt der Schmiede und die Hand, je Ziel EIN Klick
+        // (Eiche und Fels 60 m hinten, jenseits der Nah-Wiese) ═══
+        await teil("Q11 Satz", async () => {
+            pm.position.set(
+                ort.spieler[0],
+                r.getTerrainHeightAt(...ort.spieler) + A.PLAYER_FOOT_OFFSET,
+                ort.spieler[1]
+            );
+            await window.__weltStehtNach();
+            zielen(V3().set(ort.blick[0], pm.position.y, ort.blick[1]));
+            const [d, P, wild] = [camDir(), pm.position, setze("wesen")];
+            const alle = () => [...s.nahWiese.kacheln.values()].flatMap((k) => k.bueschel);
+            const ab = (b, q = P) => Math.hypot(b.x - q.x, b.z - q.z);
+            const halm = alle()
+                .filter((b) => ab(b) > 2 && ab(b) < 3.5 && (b.x - P.x) * d.x + (b.z - P.z) * d.z > 0.9 * ab(b))
+                .find((b) => (zielen(b), !r._pickArchitectureAtCrosshair() && !r._pickScatterAtCrosshair()));
+            const um = () => alle().filter((b) => ab(b, halm) < 4).length;
+            const kraut = () => p.inventory.reduce((n, x) => n + (x && x.material === "kraut" ? x.count : 0), 0);
+            let erde = null;
+            for (let ring = 32; !erde && ring <= 320; ring += 8)
+                for (let k = 0; !erde && k < 16; k++) {
+                    const x = P.x + ring * Math.cos(k * 0.3927),
+                        z = P.z + ring * Math.sin(k * 0.3927),
+                        y = r._voxelSurfaceY(x, z);
+                    if (Number.isFinite(y) && r._terrainMaterialAt(x, z, y) === "erde") erde = { hit: true, x, y, z };
+                }
+            if (!erde) w.fehler.push("Q11: keine Erde im Umkreis 320 m");
+            const nix = () => null;
+            const sc = globalThis.__schmiedeCore;
+            const bp = (id) => s.blueprints["klinge_" + id];
+            const ids = Object.keys(sc.REZEPT_ZU_GATTUNG).filter(bp);
+            const klick = async (id, ziel, ov, wear = 1) => {
+                const b = id ? bp(id) : null;
+                ausruesten(b && b.name);
+                if (b) b.studioOv = ov;
+                if (b && wear !== null) r._setBlueprintWear(b, wear);
+                const w0 = r._blueprintWear(b);
+                p._swing = p._dig = null;
+                p._shotCooldownUntil = 0;
+                p.stamina = 1e6;
+                const x = { verb: null, wirk: 0 };
+                if (ziel === "schuss") {
+                    const n = (s._pfeile || []).length;
+                    r._beginPlayerShot(1);
+                    const pf = (s._pfeile || [])[n];
+                    if (pf) {
+                        Object.assign(x, { verb: ziel, wirk: Math.hypot(pf.vx, pf.vy, pf.vz), kraft: pf.kraft });
+                        r._pfeilDespawn(s._pfeile.splice(n, 1)[0]);
+                    }
+                } else if (ziel === "kreatur") {
+                    stelle(wild, 1.5);
+                    zielen(punkt(wild, null));
+                    const t = traf(schwung(), wild);
+                    if (t) Object.assign(x, { verb: "hieb", wirk: t.amount / t.kraft, kraft: t.kraft });
+                    parke(wild);
+                } else if (ziel === "wiese") {
+                    await window.__weltStehtNach();
+                    zielen(halm);
+                    const v = [um(), kraut()];
+                    r.tryMouseBreak();
+                    Object.assign(x, { verb: p._mausVerb, kraut: kraut() - v[1] });
+                    if (x.verb === "pfluecken") {
+                        await window.__weltStehtNach();
+                        x.wirk = v[0] - um();
+                        r._tickScatterRegrow(Infinity);
+                        await window.__weltStehtNach();
+                        x.wieder = um() === v[0];
+                    }
+                } else {
+                    const typ = ziel !== "boden" && ziel;
+                    r.setGameMode(typ ? "frieden" : "pfad");
+                    const c0 = zaehl.carve;
+                    const a =
+                        typ &&
+                        r.spawnArchitecture(typ, { x: P.x - 60 * d.x, y: P.y, z: P.z - 60 * d.z }, { silent: true });
+                    const buehne = {
+                        _pickCreatureAtCrosshair: nix,
+                        _kampfKegelZiel: nix,
+                        _pickScatterAtCrosshair: nix,
+                        _pickArchitectureAtCrosshair: () => a && { entry: a, point: a.position },
+                        _raycastWorldHit: () => erde || { hit: false },
+                    };
+                    Object.assign(r, buehne);
+                    try {
+                        r.tryMouseBreak();
+                    } finally {
+                        for (const k in buehne) delete r[k];
+                        r.setGameMode(saved.mode);
+                    }
+                    x.verb = p._mausVerb;
+                    x.wirk = typ ? a.harvestProgress || 0 : zaehl.carve > c0 ? 1 : (p._dig && p._dig.progress) || 0;
+                    if (typ && s.architectures.indexOf(a) !== -1) r.removeArchitecture(a);
+                }
+                x.zehrt = w0 - r._blueprintWear(b);
+                return x;
+            };
+            // das Ziel ihrer Aufgabe (ein Werkzeug ohne Stoff der Fels, eine Waffe das Wild)
+            const ZIELE = ["baum_eiche", "stein_block", "boden", "wiese", "kreatur"];
+            const zielVon = { holz: "baum_eiche", stein: "stein_block", erde: "boden", kraut: "wiese" };
+            const zeile = async (id) => {
+                const [G, km] = [sc.GATTUNGEN[sc.REZEPT_ZU_GATTUNG[id]], sc.kampfMasze(id)];
+                const t = G.task || {};
+                const g = {
+                    ziel: zielVon[t.ziel] || (t.art === "bogen" ? "schuss" : G.tool ? "stein_block" : "kreatur"),
+                    oeffnet: !!km && sc.oeffnetBoden(km.front),
+                    fasst: !!km && sc.werkUrteil(km, { vLat: 1, ziel: "kraut" }).fangM > 0,
+                };
+                for (const z of km ? ZIELE : ["schuss"]) g[z] = await klick(id, z);
+                if (g.ziel === "kreatur" || g.ziel === "schuss") g.halb = await klick(id, g.ziel, undefined, 0.5);
+                g.leer = await klick(id, g.ziel, undefined, 0.02);
+                return g;
+            };
+            const MUT = [
+                ["axt", "faellaxt", undefined, ["baum_eiche", "boden"]],
+                ["spaten", "spaten", undefined, ["baum_eiche", "boden"]],
+                ["axtBlatt", "faellaxt", { kopfTyp: "grabeblatt" }, ["baum_eiche", "boden"]],
+                [
+                    "spatenAxt",
+                    "spaten",
+                    { kopfTyp: "axt", beta: 30, reach: 0.08, edgeLen: 0.1 },
+                    ["baum_eiche", "boden"],
+                ],
+                ["gerade", "sichel", { kruemmung: 0 }, ["wiese"]],
+                ["hohl", "saebel", { kruemmung: -0.3 }, ["wiese"]],
+                ["recurve", "langbogen", { recurve: 0.6 }, ["schuss"]],
+            ];
+            const form = async (M) => {
+                const F = {};
+                for (const [k, id, ov, zs] of M) {
+                    F[k] = {};
+                    for (const z of zs) F[k][z] = await klick(id, z, ov);
+                }
+                return F;
+            };
+            const stoff = async () => {
+                const V = {};
+                for (const trad of ["Frank", "Nihon", "Urvolk"]) {
+                    const [ov, st, reihe] = [{ __tradition: trad }, sc.tradWerkstoff(sc.TRADITIONEN[trad]), []];
+                    for (let i = 0; i < 16; i++) reihe.push(await klick("spitzhacke", "stein_block", ov, i ? null : 1));
+                    V[trad] = {
+                        stoff: st,
+                        haerte: s.materials[st].tags.härte,
+                        zehrt: reihe[0].zehrt,
+                        wear: r._blueprintWear(bp("spitzhacke")),
+                        wirk: [reihe[0].wirk, reihe[15].wirk],
+                    };
+                }
+                const [t, h] = [s.materials.stahl.tags, s.materials.stahl.tags.härte];
+                t.härte = h * 0.5;
+                try {
+                    V.weich = (await klick("spitzhacke", "stein_block", { __tradition: "Frank" })).zehrt;
+                } finally {
+                    t.härte = h;
+                }
+                return V;
+            };
+            const stumm = { _wearStatFactor: () => 1, _kampfVerschleiss: () => {} }; // (S6) der Pfeil ohne Verschleiß
+            const tafel = {
+                _geraetGraebt: (b) => {
+                    const g = b && sc.GATTUNGEN[sc.REZEPT_ZU_GATTUNG[r._schmiedeGestalt(b)]];
+                    return !b || !!(g && g.task && (g.task.art === "graben" || g.task.art === "pick"));
+                }, // (S13) eine Art-Tafel: graben nach task.art, ein Abbau-Profil für alle
+                _implementProfile: () => ({ minePower: 1.6, cutPower: 1.6 }),
+                _ernteBand: (b) => (/sichel/.test(b && b.name) ? 0.6 : 0), // (S15) ein Namens-Sonderfall
+                _wearPerStrike: () => A.WEAR_PER_STRIKE_BASE / 5, // (S16) der Spender
+            };
+            try {
+                const satz = { hand: { halb: A.WEAR_STAT_FLOOR + (1 - A.WEAR_STAT_FLOOR) / 2 } };
+                for (const z of ZIELE.slice(0, 4)) satz.hand[z] = await klick(null, z);
+                for (const id of ids) satz[id] = await zeile(id);
+                Object.assign(w.z, { satz, form: await form(MUT.slice(2)), stoff: await stoff(), selbst: {} });
+                Object.assign(r, stumm);
+                w.z.selbst.bogen = await zeile("langbogen");
+                for (const k in stumm) delete r[k];
+                Object.assign(r, tafel);
+                Object.assign(w.z.selbst, { form: await form(MUT), stoff: await stoff() });
+            } finally {
+                for (const k in Object.assign({}, stumm, tafel)) delete r[k];
+            }
         });
     } catch (e) {
         w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));

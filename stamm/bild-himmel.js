@@ -931,8 +931,9 @@ class AnazhRealm_bild_himmel {
         // Die Uhr der Schlieren: die Bild-Uhr (s, A9), auf eine Stunde gefaltet (float-Genauigkeit im Vertex).
         const t = this._bildZeit % 3600;
         sys.uZeit.value = t;
-        const wd = this._windDirAt(t);
-        const v = RG.drift * Math.max(wf.wind, 0.1);
+        // Die Drift ist der EINE Wind am Auge (`_windAt` auf der Bild-Uhr), mindestens 0,1 wie im Labor (REGEN_GESETZ.drift).
+        const wd = cam ? this._windAt(cam.position.x, cam.position.z, this._bildZeit) : { x: 0, z: 0, staerke: 0 };
+        const v = RG.drift * Math.max(wd.staerke, 0.1);
         sys.uDrift.value.set(wd.x * v, wd.z * v);
         // Die Neigung im Bild: der Drift-Anteil quer zur Blickrichtung gegen das Fallen (Bild-Rechts = Spalte 0 der Kamera).
         if (cam) {
@@ -2531,10 +2532,20 @@ class AnazhRealm_bild_himmel {
             if (uniforms.sunDir) uniforms.sunDir.value.copy(lightDir);
             if (uniforms.light) uniforms.light.value = lightVal;
             if (uniforms.sunCol) uniforms.sunCol.value.copy(dl.color);
-            // Der Wind des Wetters (0 ruhig … 1 Sturm): die Böen-Amplitude der Welt ohne ihren Verstärker.
-            const wu = this.state.windUniforms;
-            if (uniforms.wind && wu && wu.uWindStrength)
-                uniforms.wind.value = Math.max(0, Math.min(1, wu.uWindStrength.value / AnazhRealm.WEATHER_WIND_AMP));
+            // Der Wind am Wasser (0 ruhig … 1 Sturm): der EINE Wind am Auge (`_windAt`, die Stärke ohne Verstärker) kräuselt es.
+            const cam = this.state.camera;
+            if (uniforms.wind && cam)
+                uniforms.wind.value = Math.max(
+                    0,
+                    Math.min(1, this._windAt(cam.position.x, cam.position.z, this._bildZeit).staerke)
+                );
+            // DAS EIS (stoffe.K3): die Höhe, über der das Wasser gefriert — das Feld ist linear in der Höhe (`_temperaturAt`)
+            if (uniforms.eisNull) {
+                const TW = globalThis.__gelaendeCore.TEMPERATUR;
+                const t0 = this._temperaturAt(0, TW.wasserTraegTage) - TW.gefrierpunkt;
+                const t100 = this._temperaturAt(100, TW.wasserTraegTage) - TW.gefrierpunkt;
+                uniforms.eisNull.value = (100 * t0) / (t0 - t100);
+            }
         };
         applyToTSL(this.state.hydroSurfaceUniforms);
     }
@@ -2685,6 +2696,11 @@ class AnazhRealm_bild_himmel {
         }
         // ein Schreiber außer dem Gang springt: der Himmel malt sich beim nächsten Anwenden des Tags neu (`_ensureSkyEnvironment`)
         if (quelle !== "uhr" && v !== this.state.timeOfDay) this._himmelSprung = true;
+        // DER TAG DER WELT (feld.K4, `_weltStunde`): kreuzt die Uhr Mitternacht (der kürzere Bogen), zählt der Tag vor oder
+        // zurück; das Laden setzt nur die Uhr — der Tag reist im worldMeta
+        const d = v - this.state.timeOfDay;
+        const wm = this.state.worldMeta;
+        if (quelle !== "laden" && wm && Math.abs(d) > 0.5) wm.tag = (wm.tag || 0) + (d < 0 ? 1 : -1);
         this.state.timeOfDay = v;
         return true;
     }
@@ -2776,11 +2792,31 @@ class AnazhRealm_bild_himmel {
         return { fog: f.fog, sun: f.sun, grey: f.grey, wind: f.wind, rain: f.rain };
     }
 
+    // DAS WETTER AM ORT (wetter.K1): das Wort der Front über (x, z) — der Kern (phyto-core `wetterAt` über die Saat der Welt,
+    // den Ort und die Zeit, ohne `t` die Wetter-Uhr `worldMeta.wetterUhr`) wählt die Zeile von WX_GESETZ, die Welt spricht ihr
+    // Wort (`WETTER_WORT`). Leser: der Wetter-Zug (`_loopWeatherAndGrowth`).
+    _wetterAmOrt(x, z, t) {
+        const wm = this.state.worldMeta || {};
+        const uhr = t == null ? Number(wm.wetterUhr) || 0 : t;
+        const zeile = globalThis.__phytoCore.wetterAt(wm.seed || "anazh-realm-seed", x, z, uhr).zeile;
+        const wort = AnazhRealm.WETTER_WORT[zeile];
+        if (!wort) throw new Error("_wetterAmOrt: die Zeile „" + zeile + "“ hat kein Wort der Welt (WETTER_ZEILE)");
+        return wort;
+    }
+
     // D5a (V18.128) — die wet-Frage: regnet es hier (rainy UND stormy)?
     // Ersetzt die binären ===\"rainy\"-Leser (Journal/Nexus/Spawn-Stimmung).
     _weatherIsWet(w) {
         const word = typeof w === "string" ? w : this.state.weather;
         return (AnazhRealm.WEATHER_INTENSITY[word] || 0) >= 1;
+    }
+
+    // DIE TEMPERATUR AN DER HÖHE y (stoffe.K3) — die EINE Naht zum Feld des Gelände-Kerns (`temperatur`) mit der Saison
+    // (`seasonPhase`) und der Uhr (`timeOfDay`) der Welt; `traegTage` reicht die Wärme-Trägheit eines Stoffs durch (das Wasser:
+    // TEMPERATUR.wasserTraegTage). Leser: das Eis (`_eisAt`) und sein Bild (`_dayNightApplyWaterMaterials`).
+    _temperaturAt(y, traegTage) {
+        const st = this.state;
+        return globalThis.__gelaendeCore.temperatur(this._gelaende(), y, st.seasonPhase, st.timeOfDay, traegTage);
     }
 
     // DIE NÄSSE (wetter.K2) — EIN Zustand der Welt aus dem Wetter-Feld (`state.naesse`, 0 trocken … 1 nass): Regen benetzt

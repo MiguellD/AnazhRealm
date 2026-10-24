@@ -220,7 +220,7 @@ function paarUrteil(a, b, S) {
     return { ok: rot.length === 0, rot, korr: korr == null ? null : +korr.toFixed(3) };
 }
 
-// PNG lesen und schreiben (Node, nur zlib) — die Fixture-Bilder der Linse. Lesen: 8 Bit, RGB oder RGBA, ohne Interlace.
+// PNG lesen (Node, nur zlib) — die Fixture-Bilder der Linse: 8 Bit, RGB oder RGBA, ohne Interlace.
 function pngLesen(buf) {
     if (buf.readUInt32BE(0) !== 0x89504e47) throw new Error("kein PNG");
     let p = 8,
@@ -276,59 +276,6 @@ function pngLesen(buf) {
         vor = cur;
     }
     return { W, H, u8: out };
-}
-
-function pngSchreiben(u8, W, H) {
-    const crcT = new Int32Array(256);
-    for (let n = 0; n < 256; n++) {
-        let c = n;
-        for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-        crcT[n] = c;
-    }
-    const crc = (b) => {
-        let c = -1;
-        for (const x of b) c = crcT[(c ^ x) & 255] ^ (c >>> 8);
-        return (c ^ -1) >>> 0;
-    };
-    const chunk = (art, d) => {
-        const kopf = Buffer.alloc(8);
-        kopf.writeUInt32BE(d.length, 0);
-        kopf.write(art, 4, "ascii");
-        const c = Buffer.alloc(4);
-        c.writeUInt32BE(crc(Buffer.concat([kopf.subarray(4), d])), 0);
-        return Buffer.concat([kopf, d, c]);
-    };
-    const ihdr = Buffer.alloc(13);
-    ihdr.writeUInt32BE(W, 0);
-    ihdr.writeUInt32BE(H, 4);
-    ihdr[8] = 8;
-    ihdr[9] = 6;
-    const roh = Buffer.alloc(H * (W * 4 + 1));
-    for (let y = 0; y < H; y++) Buffer.from(u8.buffer, u8.byteOffset + y * W * 4, W * 4).copy(roh, y * (W * 4 + 1) + 1);
-    return Buffer.concat([
-        Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-        chunk("IHDR", ihdr),
-        chunk("IDAT", zlib.deflateSync(roh, { level: 9 })),
-        chunk("IEND", Buffer.alloc(0)),
-    ]);
-}
-
-// Flächen-Mittel auf W×H (das Fixture-Bild der Linse aus dem Original).
-function verkleinern(b, W, H) {
-    const u8 = new Uint8Array(W * H * 4);
-    for (let y = 0; y < H; y++)
-        for (let x = 0; x < W; x++) {
-            const y0 = Math.floor((y * b.H) / H),
-                y1 = Math.max(y0 + 1, Math.floor(((y + 1) * b.H) / H));
-            const x0 = Math.floor((x * b.W) / W),
-                x1 = Math.max(x0 + 1, Math.floor(((x + 1) * b.W) / W));
-            const s = [0, 0, 0, 0];
-            for (let yy = y0; yy < y1; yy++)
-                for (let xx = x0; xx < x1; xx++) for (let k = 0; k < 4; k++) s[k] += b.u8[(yy * b.W + xx) * 4 + k];
-            const nn = (y1 - y0) * (x1 - x0);
-            for (let k = 0; k < 4; k++) u8[(y * W + x) * 4 + k] = Math.round(s[k] / nn);
-        }
-    return { W, H, u8 };
 }
 
 // DIE FIXTURES (spec/abnahme/faelle.json): die Beweisbilder vom 13.10. ohne freie Sicht — je Fall das verkleinerte Bild
@@ -471,10 +418,6 @@ function abnahmeSelbsttest(fixtureDir) {
     const b4 = gesund();
     b4.stand.sha = null;
     if (!paarUrteil(a, b4, SCHWELLEN).rot.some((x) => x.includes("SHA"))) v.push("Paar: Stand ohne SHA nicht ROT");
-    // PNG hin und zurück
-    const rt = pngLesen(pngSchreiben(bunt, W, H));
-    if (rt.W !== W || rt.H !== H || rt.u8.some((x, i) => x !== bunt[i]))
-        v.push("PNG: Hin und Zurück nicht byte-gleich");
     // DIE FIXTURES: die Beweisbilder vom 13.10. — jede fällt ROT mit ihrem erwarteten Grund
     if (fixtureDir) {
         const fs = require("fs");
@@ -692,7 +635,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         if (ohne && weissIn(ohne, p)) wtZiel++;
         else wt++;
     }
-    // DIE KANTE DER SILHOUETTE (K68-n2): je Rand-Pixel der Klasse,
+    // DIE KANTE DER SILHOUETTE: je Rand-Pixel der Klasse,
     // das ans Außen grenzt (`aussen`: kein gemessener Teil — Himmel, Boden, Holz; ohne `aussen` jedes Pixel außerhalb der
     // Klasse), die Kohärenz des Struktur-Tensors der geglätteten Maske (Gauß σ 2 px, Fenster 17 × 17 px):
     // ((Jxx − Jyy)² + 4 Jxy²) / (Jxx + Jyy)² — die gerade Kante einer Karte → 1, ein Umriss aus Blättern, Zweigen und Lücken
@@ -1165,7 +1108,7 @@ const SOLL_MASSE = Object.freeze([
     "gesicht",
     "spiegelTreue",
 ]);
-// DIE AUFLÖSUNG je Maß (K63-n2): der kleinste Unterschied, den es trägt — der Abstand zum Band ist |ln((Ist + e)/(Rand + e))|,
+// DIE AUFLÖSUNG je Maß: der kleinste Unterschied, den es trägt — der Abstand zum Band ist |ln((Ist + e)/(Rand + e))|,
 // endlich auch an einem Rand 0 (ein Raster-Anteil Soll 0, ein Ist 0; Prüfer K63 R2: Ist 0 gab die Wirkung „Infinity").
 const MASS_AUFLOESUNG = Object.freeze({
     laiWirk: 0.05,
@@ -1184,7 +1127,7 @@ const MASS_AUFLOESUNG = Object.freeze({
     // die Spiegel-Treue ist ein r in [−1, 1]: der Versatz 1 trägt den Abstand auch für ein negatives r (ln über (0, 2])
     spiegelTreue: 1,
 });
-// DER ORT EINES BILDS der Tafel (K63-n8): relativ zur
+// DER ORT EINES BILDS der Tafel: relativ zur
 // Wurzel des Baums unter `artifacts/` (gitignored, lokal, beim Namen — der Schreiber legt es nach `artifacts/soll-tafel/`), nie
 // absolut, nie mit `..`, nie mit Backslash.
 function bildPfadFehler(p) {
@@ -1561,7 +1504,7 @@ function albedoZeile(ma, q) {
     // beide Seiten tragen ihren Stand (`kernStand`, geschrieben von werkbank `albedo --tafel` und `--labor --datei`)
     return { t, z, stand: `${String(w.datum || "?").slice(0, 10)} ${w.geraet || "?"}`, bloecke: [w, l], quellen: z.quellen || [] };
 }
-// DER STAND einer Messung (K63-n2): ein Ist gilt für den CODE der Quellen seiner Klasse (`klasse.quellen`: das Gesetzbuch und der Ofen; `messung.quellen`
+// DER STAND einer Messung: ein Ist gilt für den CODE der Quellen seiner Klasse (`klasse.quellen`: das Gesetzbuch und der Ofen; `messung.quellen`
 // die Code-Abdrücke, die das Werkzeug beim Schreiben nimmt, `codeAbdruck`) — nicht für die Version des Stamms (K63-n8: jede
 // Integration hebt VERSION und machte jede Zeile veraltet, ohne dass ihr Code sich rührte; Version und Commit stehen als Beleg).
 // Ein Block ohne Version, Commit oder Abdruck ist ungeprüft, einer mit fremdem Abdruck „veraltet seit <Commit der Messung>" —
@@ -1677,7 +1620,7 @@ function codeAbdruck(text, datei) {
     return "c:" + h.digest("hex").slice(0, 16);
 }
 
-// DER STAND-LESER (K63-n2): die EINE Stelle, an der Werkzeug (werkbank `--ist`, `albedo --tafel`, diag-albedo-tafel `--labor`)
+// DER STAND-LESER: die EINE Stelle, an der Werkzeug (werkbank `--ist`, `albedo --tafel`, diag-albedo-tafel `--labor`)
 // und Linse (K5, gate:albedo-tafel) Version, Commit und Abdrücke lesen — AnazhRealm.VERSION aus der Naht des Stamms, der
 // Code-Abdruck einer Datei des Baums (`codeAbdruck`); das Urteil ist CI-fest (keine git-Geschichte), nur der Schreiber nimmt
 // den Commit, an dem er misst (`gitStand`: SHA, „+geaendert" bei Änderungen an versionierten Dateien außer den Tafeln).
@@ -1803,7 +1746,7 @@ function sollTafelUrteil(tafel, q) {
         ids.add(k.id);
         if (!(k.referenz || []).some((r) => r.titel && r.technik))
             fehler.push(`${wo}: keine benannte AAA-Referenz (Titel + Technik)`);
-        // DIE VORLAGE (K63-n2): ein Soll, das schon im System steht (K57 KOPF_SOLL, K58 BLATT_ATLAS_WEDEL), wird REFERENZIERT —
+        // DIE VORLAGE: ein Soll, das schon im System steht (K57 KOPF_SOLL, K58 BLATT_ATLAS_WEDEL), wird REFERENZIERT —
         // die Linse liest das Symbol im Kern; eine Vorlage ins Leere ist ein Bruch (Prüfer K63 R2: der K58-Verweis fiel still).
         for (const vl of k.vorlage || []) {
             const w = vl && vl.symbol && q.kern ? q.kern(vl.datei, vl.symbol) : undefined;
@@ -1888,7 +1831,7 @@ function sollTafelUrteil(tafel, q) {
             urteil = "ROT";
             grund = grund ? `${grund} · ${r.offen}` : `${ma.name} ${ist} — ${r.offen}`;
         }
-        // DER BENANNTE MANGEL (K63-n2): trägt die Klasse einen Mangel mit Quelle (Augen-Befund, Plan), muss ihr Maß ihn sehen. DER GEHEILTE MANGEL (K63-n3) trägt
+        // DER BENANNTE MANGEL: trägt die Klasse einen Mangel mit Quelle (Augen-Befund, Plan), muss ihr Maß ihn sehen. DER GEHEILTE MANGEL trägt
         // Befund, Quelle, Bild-Paar und Warum in Zahlen. Widerspricht ein GEMESSENES Maß dem Stand der Klasse (GRÜN neben dem
         // Mangel: blind oder geheilt ohne Bild-Paar; ROT neben geheilt: der Mangel ist zurück), urteilt die ZEILE ROT beim Namen —
         // nie ein Bruch der Tafel (ein abgewiesenes ehrliches ROT wäre fail-soft); veraltet steht ohnehin ROT bis zur Neumessung
@@ -2152,7 +2095,7 @@ function sollTafelSelbsttest(tafel, q) {
         k.wirkung.geheilt = { befund: k.wirkung.mangel.befund, quelle: k.wirkung.mangel.quelle, warum: "x", bildPaar };
         delete k.wirkung.mangel;
     };
-    // DIE MASSE DES MANGELS (K63-n2): das Raster aus zwei Tönen ist Zweiton 1, ein Verlauf 0, Bilder ohne Muster 0; die
+    // DIE MASSE DES MANGELS: das Raster aus zwei Tönen ist Zweiton 1, ein Verlauf 0, Bilder ohne Muster 0; die
     // Stufen-Treue ohne Stufen-Wechsel ist ein Bruch, mit Wechsel ein Verhältnis; das Gesicht nennt den Zug außerhalb
     const zw = klassenMasse(
         bild((x, y) => ((x + y) & 1 ? 40 : 200)),
@@ -2173,7 +2116,7 @@ function sollTafelSelbsttest(tafel, q) {
     const zb = sollRechnung({ art: "zweiton1f", beta: [0, 2.4] });
     if (!(zb.band && zb.band[1] === 0))
         v.push(`Rechnung zweiton1f: Bilder ohne Muster tragen Raster (${JSON.stringify(zb)})`);
-    // DIE KANTE DER SILHOUETTE (K68-n2): die Karte (ein Quadrat, gerade und gedreht gleich) liest gerade, der Umriss einer
+    // DIE KANTE DER SILHOUETTE: die Karte (ein Quadrat, gerade und gedreht gleich) liest gerade, der Umriss einer
     // Höhenlinie natürlichen Rauschens (1/f^β, β 1–3: Mischwald 0,160 ≈ β 2,4, Rudka 0,218 ≈ β 3) zerfranst und im Band der
     // Laub-Silhouette; nur der Rand gegen das Außen zählt
     {
@@ -2461,7 +2404,7 @@ function sollTafelSelbsttest(tafel, q) {
         k4.wirkung.mangel = undefined;
         const gruen = sollTafelUrteil(t4, q).zeilen.find((x) => x.id === k4.id);
         const zeile = (qq) => sollTafelUrteil(t4, qq).zeilen.find((x) => x.id === k4.id);
-        // DER CODE-ABDRUCK (K63-n8): die erste Quelle der Klasse mit einer Kommentarzeile und neuem Leerraum → derselbe Stand
+        // DER CODE-ABDRUCK: die erste Quelle der Klasse mit einer Kommentarzeile und neuem Leerraum → derselbe Stand
         // (GRÜN bleibt GRÜN); mit einem Token mehr → ROT „veraltet seit <Commit der Messung>" beim Namen der Datei
         const d0 = (k4.quellen || [])[0];
         const text0 = d0 && q.lesen ? q.lesen(d0) : null;
@@ -2585,7 +2528,6 @@ module.exports = {
     abnahmeUrteil,
     bildMasse,
     pngLesen,
-    verkleinern,
     fixtureMessung,
     abnahmeSelbsttest,
     ABNAHME_INSTALL:

@@ -24,7 +24,7 @@
 //   D6  DIE KI NENNT DIE URSACHE — „Aktivieren" fragt einen lokalen Dienst (der Status sagt, dass er nicht läuft, nie
 //       „Aktiv"), ohne Schlüssel sagt der Chat es, der Proxy ist der Ursprung der Seite (404 dort = „der Proxy fehlt").
 //   D9  DAS DORF VOR DIR — „dorf 7 18" an der Plattform: jedes Haus vor dem Spieler und im Bildwinkel; ein gesperrter Slot
-//       fällt an seinem Ort laut (K10); „baue dorf hier" baut bei einem Mitspieler dasselbe Dorf an derselben Stelle.
+//       fällt an seinem Ort laut; „baue dorf hier" baut bei einem Mitspieler dasselbe Dorf an derselben Stelle.
 // Die Befunde jeder Probe trägt git (Lehre 15).
 //
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
@@ -92,7 +92,7 @@ function ladeschirmVerdict(m) {
     const rb = m.rundblick;
     if (!rb || !(rb.N > 0)) out.push("der Rundblick nach der Kontrolle: keine Probe (`RUNDBLICK_BILDER` fehlt im Stamm)");
     else if (rb.loecher > 0) out.push(`der Rundblick nach der Kontrolle zählt ${rb.loecher} Löcher in ${rb.N} Takten — zuerst ${rb.erstes}`);
-    // DIE TERM-DECKUNG (K60): jeder Term von `WELTBILD_TERME` hat einen Fall, der den Ladeschirm hält; ein Fall nennt nur
+    // DIE TERM-DECKUNG: jeder Term von `WELTBILD_TERME` hat einen Fall, der den Ladeschirm hält; ein Fall nennt nur
     // Terme der Liste
     const terme = m.terme;
     if (!Array.isArray(terme) || !terme.length)
@@ -143,7 +143,7 @@ function ladeschirmVerdict(m) {
         if (A.nahDanach === 2) out.push("nach dem ersten Weltbild verfeinert die Gestalt nie (der nahe Baum bleibt Karte)");
         if (A.zwilling.length) out.push(`der Kalt-Schätzer wählt anders als der Stufen-Takt: ${A.zwilling.slice(0, 3).join(", ")}`);
     }
-    // DER VORRAT HAT KEINEN LESER IM ERSTEN BILD (K30): während er läuft, wartet das Bild auf nichts, was er bestellt, und
+    // DER VORRAT HAT KEINEN LESER IM ERSTEN BILD: während er läuft, wartet das Bild auf nichts, was er bestellt, und
     // er bestellt keine Karte (die Karte bestellt ihr Leser, nah zuerst)
     const v = m.vorrat;
     // ohne Phase im Stamm nennt die Linse das zuerst (am Vor-Stand sagte der Merker nur „an" — die Probe sieht ihn nicht anlaufen)
@@ -168,7 +168,7 @@ function ladeschirmVerdict(m) {
                 `vor dem ersten Weltbild bestellt der Vorrat ${v.vorBild.length} Aufträge ohne Leser des ersten Frames ` +
                     `(${v.vorBild.slice(0, 4).join(", ")}${v.vorBild.length > 4 ? ", …" : ""}) — die Leser warten in seiner Schlange`
             );
-        // DER MERKER NENNT DIE PHASE (K30-N1): wartend „wartet auf das erste Bild", je Bestellung „bestellt" (die Kalt-Zeile)
+        // DER MERKER NENNT DIE PHASE: wartend „wartet auf das erste Bild", je Bestellung „bestellt" (die Kalt-Zeile)
         const PH = v.PH;
         if (PH) {
             if (v.phaseStart !== PH.wartet || v.phaseVorBild !== PH.wartet)
@@ -373,7 +373,6 @@ function wand(quelle) {
     );
     return [
         ["W1 der Satz für Unbekanntes trägt keine Befehlsliste von Hand", fehlt("_chatHandleConversationalFallback", /'Setze Wetter rainy'/)],
-        ["W4 das Welt-Dorf schätzt keinen Anker (`_structureSpawnPos` in `_autoSettlementSpawnCell`)", fehlt("_autoSettlementSpawnCell", /_structureSpawnPos/)],
         ["W6 kein rohes Programm im Spieler-Chat (kein `JSON.stringify(reply.program)`)", fehlt(null, /JSON\.stringify\(reply\.program\)/)],
         ["W8 das Buch fragt die Köpfe der Ankunft (`_buchKoepfe` in `_foundryIngestBook`, B5)", !fehlt("_foundryIngestBook", /this\._buchKoepfe\(\)/)],
         [`W7 Streu-Pick, Lupe und Klingen-Achse rechnen keine eigene Richtung ab der Kamera (\`getWorldDirection\`)${kreuzEigen.length ? " — mit: " + kreuzEigen.join(", ") : ""}`, kreuzEigen.length === 0],
@@ -574,12 +573,12 @@ async function probe(arg) {
                 m.ohneFall.saat = hatteSaat
                     ? `der Chunk des Spielers (${saatKey}) wartet nach dem Boot noch auf seine Saat`
                     : `der Chunk des Spielers (${saatKey}) steht nach dem Boot nicht`;
-            // (4e) der Horizont steht nicht ganz (K60): der Ring gehört zur Welt (der Linsen-Hook, headless ruht er sonst) und
+            // (4e) der Horizont steht nicht ganz: der Ring gehört zur Welt (der Linsen-Hook, headless ruht er sonst) und
             // ist noch nicht voll gezeichnet (`fr.ready`)
             fallMit("horizont", [window, { __anazhFernRing: true }], [st, { fernRing: { ready: false, cursor: 0, totalVerts: 1 } }]);
             // (4e') die Belichtung schrieb noch nicht aus dem Licht (S7)
             fallMit("licht", [st, { _belichtungSteht: false }]);
-            // (4f) DAS DORF (K60-4): fällig, im Export oder mit Häusern in der Schlange hält es das Bild (headless trägt der Hook)
+            // (4f) DAS DORF: fällig, im Export oder mit Häusern in der Schlange hält es das Bild (headless trägt der Hook)
             const dorfAn = [window, { __anazhAutoSettlement: true }];
             fallMit("dorfExport", dorfAn, [r, { _autoSettlementPendingKey: "start" }]);
             const dorfPlan = { name: "linse:dorf", slots: [{ kultur: "linse:dorf", x: 0, z: 0, y: pm.y }] };
@@ -678,7 +677,7 @@ async function probe(arg) {
                     : null;
                 m.weichtGanz = { hidden: ls.hidden, display: cs.display, animationen: laufen };
             }
-            // (10) DER VORRAT HAT KEINEN LESER IM ERSTEN BILD (K30): er läuft noch einmal, jede Bestellung beim Namen und mit der
+            // (10) DER VORRAT HAT KEINEN LESER IM ERSTEN BILD: er läuft noch einmal, jede Bestellung beim Namen und mit der
             // Phase seines Merkers; währenddessen fragt die Probe das Tor und baut eine neue Streu-Region (Scheibe 0, nur die Weiche)
             {
                 const v = { ohneLeser: [], karten: 0, kartenBsp: [], phaseBestellung: [] };
@@ -1016,7 +1015,7 @@ async function probe(arg) {
             m.baum = baum.type;
             m.weltSkala = +r._foundryWorldScaleMatrix(r._foundryPresetForEntry(baum)).elements[0].toFixed(3);
             // die Skala des Stamm-Blockers gegen die Vorlage: die Breiten-Summe der Blocker-Boxen gegen dieselben festen Teile
-            // im Vorlagen-Maß (`_blockerComputePartAABB` ohne Welt-Skala). Dieselben Teile wie der Blocker (K20): der gefühlte
+            // im Vorlagen-Maß (`_blockerComputePartAABB` ohne Welt-Skala). Dieselben Teile wie der Blocker: der gefühlte
             // Baum ist das Skelett seiner Gestalt (`_baumGestaltTeile`), der Bauplan nur, wo das Studio keinen Baum zeichnet —
             // gegen den Bauplan gemessen, las die Ankunft am Kiefer-Individuum der Kern-Landform × 3,589 statt × 3,977.
             const bp = st.blueprints[baum.type];
@@ -1871,15 +1870,14 @@ async function probe(arg) {
         const kopfMit = (n, rein) => [null, new RegExp(`(\\n {4}${n}\\([^)]*\\) \\{)`), `$1 ${rein};`];
         const vorStand = (t) => stammLib.ersetze(t, [
             kopfMit("_chatHandleConversationalFallback", `"'Setze Wetter rainy'"`),
-            kopfMit("_autoSettlementSpawnCell", "this._structureSpawnPos"),
             ["maybeAnswerWithLlm", "(Welt verändert: ${compName} ${this.describeProgram(reply.program)}.)", "(Welt verändert: ${JSON.stringify(reply.program)})"],
             kopfMit("_hasMagnifyingInSight", "this.camera.getWorldDirection(this._v)"),
             ["_foundryIngestBook", "this._buchKoepfe();", ""],
         ]);
         const rot = wand(vorStand);
         check(
-            "Selbst-Test W: der Vor-Stand (Liste von Hand, geschätzter Dorf-Anker, rohes Programm, eine eigene Kamera-Richtung, ein Buch ohne Köpfe) → W1, W4, W6, W7, W8 feuern",
-            rot.filter((w) => !w[1]).length === 5,
+            "Selbst-Test W: der Vor-Stand (Liste von Hand, rohes Programm, eine eigene Kamera-Richtung, ein Buch ohne Köpfe) → W1, W6, W7, W8 feuern",
+            rot.filter((w) => !w[1]).length === 4,
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
         if (errs.length) {

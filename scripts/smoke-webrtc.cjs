@@ -1,4 +1,4 @@
-// W7 Phase 1 — End-to-End-Test des echten WebRTC-Mesh.
+// End-to-End-Test des echten WebRTC-Mesh.
 //
 // Startet save-server.js (liefert das Spiel) + signaling-server.js
 // (WebRTC-Rendezvous), öffnet ZWEI Browser-Seiten, lässt beide demselben
@@ -20,10 +20,10 @@ const fs = require("fs");
 // Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
 let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
 const ROOM = "smoke-webrtc-room";
-// W16 — die Test-Welt, die A vendort + B über das Mesh holt.
+// die Test-Welt, die A vendort + B über das Mesh holt.
 const W16_ID = "smoke-mesh-w16";
 const W16_DIR = path.join(ROOT, "worlds", W16_ID);
-// W17 — die Multiplayer-Test-Welt: ihr Sub-Welt-iframe öffnet einen Shim-
+// die Multiplayer-Test-Welt: ihr Sub-Welt-iframe öffnet einen Shim-
 // WebSocket; ein ws-send fliesst als subworld-net peer-to-peer übers Mesh.
 const W17_ID = "smoke-mesh-w17";
 const W17_DIR = path.join(ROOT, "worlds", W17_ID);
@@ -46,7 +46,7 @@ const W17_WORLD_HTML = `<!doctype html>
 </body>
 </html>
 `;
-// W17 Phase B-JS-Compute — die JS-Compute-Test-Welt. EINE index.html mit
+// die JS-Compute-Test-Welt. EINE index.html mit
 // zwei Zweigen: der CLIENT-Zweig öffnet einen Shim-WebSocket, der SERVER-
 // Zweig (beim Compute-Host, `?anazh-server=1` → window.__anazhRole) führt
 // eine echte autoritative Rechnung aus — eine laufende Summe. Ein blosser
@@ -284,7 +284,7 @@ const W17JS_WORLD_HTML = `<!doctype html>
         );
         check("Kreatur-Sicht floss peer-to-peer über das Mesh", true);
 
-        // W11 Phase 4 — Voice-Sync. A's Begleiter spricht (grokRender, der
+        // Voice-Sync. A's Begleiter spricht (grokRender, der
         // EINE Sprech-Engpass); der companion-say-Broadcast fliesst über das
         // Mesh zu B. B hakt den Empfangs-Handler ab, um den Durchlauf zu
         // beweisen (SpeechSynthesis selbst ist im Headless nicht prüfbar).
@@ -311,7 +311,7 @@ const W17JS_WORLD_HTML = `<!doctype html>
         );
         check("Begleiter-Stimme floss peer-to-peer über das Mesh", true);
 
-        // W7 Phase 3 — LLM-Pool. A teilt seine Stimme (llmCall gestubbt, da
+        // LLM-Pool. A teilt seine Stimme (llmCall gestubbt, da
         // im CI kein API-Key); B (ohne eigenes LLM) routet eine Chat-Anfrage
         // peer-to-peer über A. Der Mesh-Round-Trip ist der echte Beweis.
         await pageA.evaluate(() => {
@@ -343,7 +343,7 @@ const W17JS_WORLD_HTML = `<!doctype html>
             voiceReply
         );
 
-        // W7 Phase 2 — Welt-Snapshot über das Mesh. A wird Host, B Guest;
+        // Welt-Snapshot über das Mesh. A wird Host, B Guest;
         // B holt A's Welt in Stücken über den DataChannel (kein WS-Relay).
         const worldIdA = await pageA.evaluate(() => {
             const r = window.anazhRealm;
@@ -385,7 +385,7 @@ const W17JS_WORLD_HTML = `<!doctype html>
             `len=${snapLenB}`
         );
 
-        // W16 Phase 1 — Mesh-Welt-Verteilung. A vendort eine kleine Test-Welt
+        // Mesh-Welt-Verteilung. A vendort eine kleine Test-Welt
         // (der save-server schreibt worlds/<id>/); B hat sie nicht und holt
         // ihr Bündel peer-to-peer über das Mesh. B's customWorlds bekommt den
         // Eintrag — die Welt reiste über das Mesh, ohne Repo, ohne GitHub.
@@ -414,7 +414,7 @@ const W17JS_WORLD_HTML = `<!doctype html>
         );
         check("W16: B hat die Welt vor dem Mesh-Transfer nicht", bHasBefore === false);
 
-        // W16 Phase 2 — A's vendorte Welt erscheint in B's Welt-Katalog: A
+        // A's vendorte Welt erscheint in B's Welt-Katalog: A
         // annonciert sie über den soul-Kanal (_vendorRegisterWorld → soul-Re-
         // Broadcast), B's soul-Handler speichert sie am Peer-Eintrag.
         await waitFor(
@@ -488,7 +488,7 @@ const W17JS_WORLD_HTML = `<!doctype html>
             JSON.stringify(w16Entry)
         );
 
-        // W17 Phase B-Relay — der Sub-Welt-Verkehr fliesst peer-to-peer übers
+        // der Sub-Welt-Verkehr fliesst peer-to-peer übers
         // Mesh. Beide Seiten betreten dasselbe Multiplayer-Portal (eine Test-
         // Welt mit dem Transport-Shim); A's ws-send erscheint bei B als
         // ws-recv — das Mesh IST der Server, kein echter Server existiert.
@@ -563,7 +563,7 @@ const W17JS_WORLD_HTML = `<!doctype html>
         await pageA.evaluate(() => window.anazhRealm._disposePortalOverlay());
         await pageB.evaluate(() => window.anazhRealm._disposePortalOverlay());
 
-        // W17 Phase C — das Gruppen-Portal. A betritt ein Multiplayer-Portal
+        // das Gruppen-Portal. A betritt ein Multiplayer-Portal
         // und lädt die Mesh-Gruppe ein; B bekommt die Einladung + folgt ihr
         // ins SELBE Multiplayer-Portal (die B2-Sub-Raum-Eingrenzung verbindet).
         const w17cWorldA = await pageA.evaluate(() => {
@@ -601,7 +601,7 @@ const W17JS_WORLD_HTML = `<!doctype html>
         await pageA.evaluate(() => window.anazhRealm._disposePortalOverlay());
         await pageB.evaluate(() => window.anazhRealm._disposePortalOverlay());
 
-        // W17 Phase B-JS-Compute — eine JS-Compute-Welt: ein Peer wird
+        // eine JS-Compute-Welt: ein Peer wird
         // Compute-Host, sein Tab führt die autoritative Server-JS in einem
         // verborgenen Server-Kontext-iframe aus, das Mesh trägt den Verkehr.
         // A ist Host, B ist Gast. Die Server-JS rechnet eine laufende Summe —
@@ -721,7 +721,7 @@ const W17JS_WORLD_HTML = `<!doctype html>
                 if (!po || !po.lastSrvState) return false;
                 try {
                     return JSON.parse(po.lastSrvState.data).total === 12;
-                } catch (_e) {
+                } catch {
                     return false;
                 }
             },
@@ -766,7 +766,7 @@ const W17JS_WORLD_HTML = `<!doctype html>
         await browser.close();
         saveServer.kill();
         signaling.kill();
-        // W16 + W17 — die Test-Welt-Verzeichnisse wegräumen.
+        // die Test-Welt-Verzeichnisse wegräumen.
         fs.rmSync(W16_DIR, { recursive: true, force: true });
         fs.rmSync(W17_DIR, { recursive: true, force: true });
         fs.rmSync(W17JS_DIR, { recursive: true, force: true });

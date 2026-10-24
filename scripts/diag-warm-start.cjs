@@ -123,7 +123,7 @@ async function jobKalt() {
                     db.close();
                     resolve({ count: -1, hasKey: null });
                 };
-            } catch (_e) {
+            } catch {
                 db.close();
                 resolve({ count: -1, hasKey: null });
             }
@@ -228,7 +228,7 @@ async function jobWarm(kaltIn) {
                     db.close();
                     resolve(-1);
                 };
-            } catch (_e) {
+            } catch {
                 db.close();
                 resolve(-1);
             }
@@ -269,7 +269,7 @@ async function jobSelbsttest(kaltIn) {
                     db.close();
                     resolve({ err: "count scheiterte" });
                 };
-            } catch (_e) {
+            } catch {
                 db.close();
                 resolve({ err: "Transaktion scheiterte" });
             }

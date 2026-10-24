@@ -1401,6 +1401,7 @@ class AnazhRealm_feld_leben {
         if (this._parseCreatureAddress && this._parseCreatureAddress(command)) {
             // „Name, text" oder „Name: text" geht an die Kreatur (nicht an Grok).
             this.maybeAnswerCreature(command, appendChatOutput).catch((err) => {
+                this._bruchMelden("Kreatur-Antwort: " + (err.message || err));
                 appendChatOutput(`(Kreatur-Fehler: ${err.message || err})`);
             });
             return;
@@ -1664,10 +1665,15 @@ class AnazhRealm_feld_leben {
         // SCHREIB-Seite: das Leben-Overlay HEBT lebendig über dem frozen Substrat, der Fraß senkt es (geklemmt auf 0..1, nie
         // überschreiben); leerer Overlay → lebendig == frozen. at_field_need + FIELD_TO_EMOTION lesen es mit.
         const overlay = this._lifeOverlayAt(x, z);
+        // DIE NARBE DER TAT (feld.K4) senkt es am Ort der Tat, bis sie heilt (`_narbeAt`) — leer → lebendig == frozen + overlay.
+        const narbe = this._narbeAt(x, z);
         // V17.32 — die emotion-Achse ist RÄUMLICH: der lokale emotionale Abdruck
         // (das Gedächtnis des Ortes) blendet ÜBER die globale Stimmung. Leerer
         // Abdruck → emotion == globale Stimmung (backward-compatible, kein Alloc).
         const imp = this._emotionOverlayAt(x, z);
+        // DER BRAND (feld.K3#2) glüht in der glut seiner Zelle, solange sie brennt
+        const bf = this.state.brandFeld;
+        const brand = bf && bf.size ? bf.get(this._lifeCellKey(x, z)) : null;
         let emotion = e;
         if (imp) {
             emotion = {};
@@ -1676,9 +1682,9 @@ class AnazhRealm_feld_leben {
             }
         }
         return {
-            lebendig: overlay ? Math.max(0, Math.min(1, f.lebendig + overlay)) : f.lebendig,
+            lebendig: overlay || narbe > 0 ? Math.max(0, Math.min(1, f.lebendig + overlay - narbe)) : f.lebendig,
             dichte: f.dichte,
-            glut: f.glut,
+            glut: brand ? Math.min(1, f.glut + brand.glut) : f.glut,
             magieleitung: f.magieleitung,
             emotion,
             t,
@@ -1732,18 +1738,14 @@ class AnazhRealm_feld_leben {
         if (!this.state.wohlBaseline) this.state.wohlBaseline = new Map();
         const key = this._wohlCellKey(x, z);
         const obs = this._fieldWohlStruktur(this.auraAt(x, z, now));
-        const cur = this.state.wohlBaseline.get(key);
-        if (!cur) {
-            const wb = this.state.wohlBaseline;
-            wb.set(key, { b: obs, t: now });
-            if (wb.size > (this._wohlRaeumAb || AnazhRealm.WERTUNG.raeumAb)) this._pruneWohlBaseline(now);
-            return obs;
-        }
-        const dt = Math.max(0, now - cur.t);
-        const alpha = 1 - Math.exp(-dt / AnazhRealm.WERTUNG.fieldTau);
-        const before = cur.b;
-        cur.b = before + alpha * (obs - before);
+        const wb = this.state.wohlBaseline;
+        const W = AnazhRealm.WERTUNG;
+        let cur = wb.get(key);
+        const before = cur ? cur.b : obs;
+        if (cur) cur.b = before + (1 - Math.exp(-Math.max(0, now - cur.t) / W.fieldTau)) * (obs - before);
+        else wb.set(key, (cur = { b: obs }));
         cur.t = now;
+        this._feldTod(wb, key, cur, now + W.pruneAgeSec, now);
         return before;
     }
 
@@ -1755,18 +1757,34 @@ class AnazhRealm_feld_leben {
         return e ? e.b : 0;
     }
 
-    // Prune ferner Baseline-Zellen (bounded halten, wie _pruneLifeField). Eine EMA-Baseline
-    // „zerfällt" nicht von selbst (sie hält die letzte Schätzung) → wir prunen nach ALTER
-    // (lange nicht beobachtet → die Region ist fern/irrelevant). Die neue Zelle ruft ihn (`_observeFieldWohl`), sobald die
-    // Map ihre Räum-Schwelle überschreitet — kein Takt fegt (feld.K3).
-    _pruneWohlBaseline(now) {
-        const wb = this.state.wohlBaseline;
-        if (!wb) return;
-        const maxAge = AnazhRealm.WERTUNG.pruneAgeSec;
-        for (const [k, e] of wb) {
-            if (now - e.t > maxAge) wb.delete(k);
+    // DIE RÄUMUNG KOSTET NUR DIE TOTEN (feld.K3#2): jede Karte des Felds — Leben, Gefühl, Wohl-Baseline (sie veraltet nach
+    // `pruneAgeSec` ohne Blick), Tat-Erwartung — trägt ihr Todes-Rad `karte.tod`: je Zelle der Eimer (`FELD_TOD_EIMER_S`), in
+    // dem sie unter ihr epsilon zerfällt oder veraltet, gesetzt von dem Schreiber, der sie schreibt (`tod` in Spielzeit). Danach
+    // räumt er die fälligen Eimer und besucht dabei nur Zellen, deren Tod fällig ist (eine neu geschriebene zieht in ihren neuen
+    // Eimer um). In Ruhe schreibt niemand, und nichts wird besucht. Bis feld.K3#2 ging die Räumung
+    // über der doppelten Zahl der Lebenden JEDE Zelle der Karte durch (Mess-Wiese, vier Wellen zu 60 Taten: bis 1 110 Zellen
+    // bei 573 lebenden).
+    _feldTod(karte, key, zelle, tod, jetzt) {
+        const E = AnazhRealm.FELD_TOD_EIMER_S;
+        const rad = karte.tod || (karte.tod = new Map());
+        const b = Math.floor(tod / E);
+        if (zelle.tod !== b) {
+            if (rad.has(zelle.tod)) rad.get(zelle.tod).delete(key); // neu beschrieben: der alte Eimer kennt sie nicht mehr
+            if (rad.has(b)) rad.get(b).add(key);
+            else rad.set(b, new Set([key]));
+            zelle.tod = b;
         }
-        this._wohlRaeumAb = Math.max(AnazhRealm.WERTUNG.raeumAb, 2 * wb.size);
+        if (!(karte.todAb <= b)) karte.todAb = b;
+        const faellig = Math.floor(jetzt / E);
+        if (!(karte.todAb < faellig)) return;
+        let ab = Infinity;
+        for (const [e, keys] of rad)
+            if (e >= faellig) ab = Math.min(ab, e);
+            else {
+                rad.delete(e);
+                for (const k of keys) if ((karte.get(k) || AnazhRealm.FELD_LEER).tod === e) karte.delete(k);
+            }
+        karte.todAb = ab;
     }
 
     // === Das lebendige Feld — die SCHREIB-Seite ===
@@ -1815,26 +1833,19 @@ class AnazhRealm_feld_leben {
                     const dt = Math.max(0, now - e.t);
                     cur = e.a * Math.exp(-cfg.decayPerSec * dt);
                 }
-                lf.set(key, { a: Math.max(cfg.kahl, Math.min(cfg.max, cur + add)), t: now });
+                const a = Math.max(cfg.kahl, Math.min(cfg.max, cur + add));
+                const zelle = e ? Object.assign(e, { a, t: now }) : { a, t: now };
+                if (!e) lf.set(key, zelle);
+                // die Tat räumt (`_feldTod`): die Zelle stirbt, wo |a| · e^(−λ·Δt) unter epsilon fällt
+                this._feldTod(
+                    lf,
+                    key,
+                    zelle,
+                    now + Math.max(0, Math.log(Math.abs(a) / cfg.epsilon)) / cfg.decayPerSec,
+                    now
+                );
             }
         }
-        if (lf.size > (this._lebenRaeumAb || cfg.raeumAb)) this._pruneLifeField();
-    }
-
-    // DIE TAT RÄUMT (feld.K3): Zellen unter `epsilon` fallen, sobald eine Tat das Feld über seine Räum-Schwelle hebt — die
-    // doppelte Zahl der Zellen nach der letzten Räumung, mindestens `raeumAb` (amortisiert O(1) je Tat, die Map bleibt unter
-    // 2 × lebend + 9). In Ruhe fegt kein Takt: die Overlays zerfallen beim Lesen, und ohne Tat wächst die Map nicht. Bis feld.K3
-    // fegte `updatePlayerEmotions` alle 5 s jede Zelle (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 1 164 Besuche).
-    _pruneLifeField() {
-        const lf = this.state.lifeField;
-        if (!lf) return;
-        const cfg = AnazhRealm.LIFE_FIELD;
-        const now = this.state.spielZeit;
-        for (const [key, e] of lf) {
-            const dt = Math.max(0, now - e.t);
-            if (Math.abs(e.a * Math.exp(-cfg.decayPerSec * dt)) < cfg.epsilon) lf.delete(key);
-        }
-        this._lebenRaeumAb = Math.max(cfg.raeumAb, 2 * lf.size);
     }
 
     // Kreatur-Trickle: eine tendende Kreatur (userData.tendsLife) träufelt Leben in ihre Zelle,
@@ -1846,6 +1857,159 @@ class AnazhRealm_feld_leben {
         if (now - last < AnazhRealm.LIFE_FIELD.trickleEverySec) return;
         creature.userData.lastLifeTrickle = now;
         this._depositLife(creature.position.x, creature.position.z, AnazhRealm.LIFE_FIELD.trickle);
+    }
+
+    // === DER BRAND (feld.K3#2): das Feuer auf dem Feld — eine Sim mit Takt, der nur in brennenden Zellen arbeitet ===
+    // `state.brandFeld`: "cx,cz" (die 16-m-Zelle des Lebens) → { cx, cz, y, stoff, glut }. Er fängt, wo die Welt Feuer fängt
+    // (das Brennglas, `_tickFocusingAffordances`), greift nach dem Gesetz `BRAND` auf die Nachbarn über und hinterlässt die Tat
+    // `brand` (die Asche: ihre Narbe senkt lebendig, auf ihr brennt nichts, bis sie heilt). Nicht persistiert (reaktiv wie das
+    // Leben-Overlay), die Asche reist als Tat. Leser: `auraAt` (glut) und die Leuchtquellen (`_leuchtQuellen`).
+
+    // Der Brennstoff einer Zelle: ihr lebendig (die Vegetation samt Narbe), 0 auf Asche.
+    _brandStoff(cx, cz) {
+        const je = this._tatIndex().je.get(cx + "," + cz);
+        if (je && je.some((a) => a.tat === "brand")) return 0;
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        return this.auraAt((cx + 0.5) * cs, (cz + 0.5) * cs).lebendig;
+    }
+
+    // Die Zelle unter (x, z) fängt Feuer → die Zelle oder null (sie brennt schon, trägt keinen Brennstoff, die Welt ist nass).
+    _brandEntfachen(x, z) {
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        return this._brandFangen(Math.floor(x / cs), Math.floor(z / cs));
+    }
+
+    _brandFangen(cx, cz) {
+        const st = this.state;
+        const B = AnazhRealm.BRAND;
+        const bf = st.brandFeld || (st.brandFeld = new Map());
+        const key = cx + "," + cz;
+        if (bf.has(key) || (st.naesse || 0) >= B.loescht) return null;
+        const stoff = this._brandStoff(cx, cz);
+        if (!(stoff >= B.minStoff)) return null;
+        if (!bf.size) this._brandUhr = st.spielZeit;
+        const zelle = { cx, cz, y: null, stoff, glut: 0 }; // y: die Höhe des Herds, gefragt erst vom Licht (`_leuchtQuellen`)
+        bf.set(key, zelle);
+        return zelle;
+    }
+
+    // DER TAKT DES BRANDS: ohne Feuer kein Schritt und keine Arbeit (Ruhe ist Null); sonst je `schrittS` Spielzeit EIN Schritt
+    // über die brennenden Zellen — es kostet, was brennt (Lehre 25), die Welt drumherum nie.
+    _tickBrand() {
+        const bf = this.state.brandFeld;
+        if (!bf || !bf.size) return;
+        const S = AnazhRealm.BRAND.schrittS;
+        while (bf.size && this.state.spielZeit - this._brandUhr >= S) this._brandSchritt((this._brandUhr += S));
+    }
+
+    // Ein Schritt zur Spielzeit t: jede Zelle zehrt und glüht auf, greift über (die Würfel je Zelle und Schritt aus dem Hash
+    // `_pcgFloat` — gleich für jede Bildrate) und fällt ausgebrannt oder erstickt als Asche.
+    _brandSchritt(t) {
+        const st = this.state;
+        const B = AnazhRealm.BRAND;
+        const bf = st.brandFeld;
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const nass = (st.naesse || 0) >= B.loescht;
+        const n = Math.round(t / B.schrittS);
+        const neu = [];
+        for (const [key, z] of bf) {
+            z.stoff -= B.schrittS / B.brennS;
+            if (nass || z.stoff <= 0) {
+                bf.delete(key);
+                this._tatSchreiben("brand", (z.cx + 0.5) * cs, (z.cz + 0.5) * cs);
+                continue;
+            }
+            z.glut = Math.min(1, z.glut + B.schrittS / B.aufS);
+            for (const [dx, dz] of B.nachbarn) {
+                const [nx, nz] = [z.cx + dx, z.cz + dz];
+                if (bf.has(nx + "," + nz) || this._pcgFloat(nx, nz, n) >= B.greift * z.glut) continue;
+                const s = this._brandStoff(nx, nz);
+                if (this._pcgFloat(nz, nx, n) < s) neu.push(nx, nz);
+            }
+        }
+        for (let i = 0; i < neu.length; i += 2) this._brandFangen(neu[i], neu[i + 1]);
+    }
+
+    // === DIE TAT BLEIBT (feld.K4): das Gedächtnis der Taten — die EINE Quelle von Narbe, Ernte und Fällung ===
+    // Jede Tat am Lebendigen (ein Baum fällt, eine Pflanze der Nah-Streu wird gepflückt) ist ein SCHREIB-AKT der Welt: sie liegt
+    // in `worldMeta.taten` ({ tat, x, z, h, … }, `h` die Welt-Stunde) und reist mit jedem Save und Reload (der Speicher trägt
+    // das worldMeta). Aus ihr folgt alles: die NARBE im Feld (`auraAt` senkt lebendig um `_narbeAt`), die fehlende Pflanze
+    // (`_geerntetIn`), der Stumpf und der Wald, der den Baum nicht neu pflanzt (`_tatAm`). Sie heilt in SPIELZEIT, linear über
+    // ihre Dauer: die Stunden ihrer Klasse (`TAT_NARBE`) durch das frozen lebendig des Orts — der Nachwuchs folgt dem Feld, gleich
+    // für jeden Peer und jeden Reload; geheilt fällt sie (`_tickScatterRegrow`). Bis feld.K4 lebte die Ernte im Session-Gedächtnis
+    // (FORAGE.regrowMs, 300 s Wanduhr), das Fällen schrieb nichts ins Feld (Mess-Wiese, Null-Renderer, main f7dd313c: 8 Bäume
+    // und 23 Pflanzen mit tryMouseBreak — Δlebendig 0, kein Stumpf, nach dem Reload 23 von 23 Pflanzen zurück).
+
+    // DIE WELT-STUNDE: Stunden seit dem ersten Tag der Welt — ihr Tag (`worldMeta.tag`, `_uhrSetzen` zählt ihn) und die Uhr.
+    _weltStunde() {
+        const st = this.state;
+        return 24 * (((st.worldMeta && st.worldMeta.tag) || 0) + (st.timeOfDay || 0));
+    }
+
+    // Die Tat schreibt: an ihren Ort, zur Welt-Stunde; `mehr` trägt, was ihre Klasse braucht (die Ernte ihre Kachel und Kennung,
+    // das Fällen die Größe des Baums für den Stumpf). Der Nachwuchs wacht zu ihrem Ende, die nächste Sicherung trägt sie.
+    _tatSchreiben(tat, x, z, mehr) {
+        const wm = this.state.worldMeta;
+        if (!Array.isArray(wm.taten)) wm.taten = [];
+        const r2 = (v, k) => Math.round(v * k) / k;
+        const a = Object.assign({ tat, x: r2(x, 100), z: r2(z, 100), h: r2(this._weltStunde(), 1e4) }, mehr);
+        this._weltRegt(); // der Weckruf vor jedem Schreiben
+        wm.taten.push(a);
+        const ende = a.h + this._tatIndex().dauer.get(a);
+        if (!(this._nachwuchsFaellig <= ende)) this._nachwuchsFaellig = ende;
+        if (tat === "faellen") this._nahStreuTat(a);
+        if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
+        return a;
+    }
+
+    // Der Index der Taten (ein Cache der EINEN Liste): je 16-m-Zelle des Felds ihre Taten, je Nah-Streu-Kachel die gepflückten
+    // Kennungen, je Tat ihre Dauer in Stunden. Die Tat schreibt nur an (`_tatSchreiben`): eine neue Tat am Ende geht allein in
+    // den Index — sie kostet ihre Zelle, nie die Liste (feld.K3#2); eine andere Liste (die geladene Welt) oder eine Heilung
+    // (`_tatGen`, `_tickScatterRegrow`) baut ihn neu.
+    _tatIndex() {
+        const L = this.state.worldMeta && this.state.worldMeta.taten;
+        const n = Array.isArray(L) ? L.length : 0;
+        let J = this._tatIdx;
+        if (!J || J.L !== L || J.gen !== this._tatGen || J.n > n)
+            J = this._tatIdx = { L, n: 0, gen: this._tatGen, je: new Map(), kachel: new Map(), dauer: new Map() };
+        const N = AnazhRealm.TAT_NARBE;
+        for (; J.n < n; J.n++) {
+            const a = L[J.n];
+            if (!a || !N[a.tat] || !Number.isFinite(a.x + a.z + a.h)) continue;
+            J.dauer.set(a, N[a.tat].stunden / Math.max(N.lebMin, this.worldFieldAt(a.x, a.z).lebendig));
+            const k = this._lifeCellKey(a.x, a.z);
+            if (!J.je.has(k)) J.je.set(k, []);
+            J.je.get(k).push(a);
+            if (a.tat === "ernten" && typeof a.kachel === "string") {
+                if (!J.kachel.has(a.kachel)) J.kachel.set(a.kachel, new Set());
+                J.kachel.get(a.kachel).add(a.id);
+            }
+        }
+        return J;
+    }
+
+    // Die Narbe an (x,z): Σ Tiefe × Rest je Tat der Zelle (der Rest fällt linear von 1 auf 0 über ihre Dauer), gekappt.
+    _narbeAt(x, z) {
+        const I = this._tatIndex();
+        const je = I.n ? I.je.get(this._lifeCellKey(x, z)) : null;
+        if (!je) return 0;
+        const N = AnazhRealm.TAT_NARBE;
+        const h = this._weltStunde();
+        let s = 0;
+        for (const a of je) s += N[a.tat].tiefe * Math.min(1, Math.max(0, 1 - (h - a.h) / I.dauer.get(a)));
+        return Math.min(N.max, s);
+    }
+
+    // Die gepflückten Kennungen einer Nah-Streu-Kachel (leer, wenn keine) — die Kachel lässt sie weg.
+    _geerntetIn(kachel) {
+        return this._tatIndex().kachel.get(kachel) || AnazhRealm.TAT_LEER;
+    }
+
+    // Liegt eine Tat der Klasse `tat` binnen `r` m um (x,z)? (Der Wald fragt, ob hier ein Baum fiel.)
+    _tatAm(tat, x, z, r = 0.5) {
+        const I = this._tatIndex();
+        const je = I.n ? I.je.get(this._lifeCellKey(x, z)) : null;
+        return !!je && je.some((a) => a.tat === tat && Math.hypot(a.x - x, a.z - z) <= r);
     }
 
     // === die SCHREIB-Seite der emotion-Achse (das räumliche Gedächtnis) ===
@@ -1867,10 +2031,13 @@ class AnazhRealm_feld_leben {
             cell = { axes: {}, t: now };
             ef.set(key, cell);
         }
+        let m = 0;
         for (const axis of Object.keys(emotionMap)) {
             cell.axes[axis] = Math.min(cfg.max, (cell.axes[axis] || 0) + emotionMap[axis] * cfg.imprintScale);
         }
-        if (ef.size > (this._gefuehlRaeumAb || cfg.raeumAb)) this._pruneEmotionField();
+        for (const axis of Object.keys(cell.axes)) m = Math.max(m, cell.axes[axis]);
+        // die Tat räumt (`_feldTod`): die Zelle stirbt, wo ihre stärkste Achse unter epsilon zerfällt
+        this._feldTod(ef, key, cell, now + Math.max(0, Math.log(m / cfg.epsilon)) / cfg.decayPerSec, now);
     }
 
     // Der aktuelle (zerfallene) Emotions-Abdruck an (x,z) — null, wenn keine Zelle
@@ -1893,26 +2060,6 @@ class AnazhRealm_feld_leben {
             }
         }
         return lebt ? out : null;
-    }
-
-    // Die Räumung des Gefühls-Abdrucks — wie das Leben (`_pruneLifeField`): die Tat ruft sie über der Räum-Schwelle.
-    _pruneEmotionField() {
-        const ef = this.state.emotionField;
-        if (!ef) return;
-        const cfg = AnazhRealm.EMOTION_FIELD;
-        const now = this.state.spielZeit;
-        for (const [key, cell] of ef) {
-            const f = Math.exp(-cfg.decayPerSec * Math.max(0, now - cell.t));
-            let alive = false;
-            for (const k of Object.keys(cell.axes)) {
-                if (cell.axes[k] * f >= cfg.epsilon) {
-                    alive = true;
-                    break;
-                }
-            }
-            if (!alive) ef.delete(key);
-        }
-        this._gefuehlRaeumAb = Math.max(cfg.raeumAb, 2 * ef.size);
     }
 
     // Welt-Affinität (worldFieldAt: lebendig/dichte/glut/magie) pro Terrain-Vertex als vec4-Attribut;
@@ -2291,7 +2438,6 @@ AnazhRealm.LIFE_FIELD = Object.freeze({
     max: 0.7, // Sättigung pro Zelle (frozen+overlay → ~1; Wiederhol-Pulse sättigen → Nexus zieht weiter)
     kahl: -1, // der Boden des Fraßes: eine abgeäste Zelle trägt lebendig 0, nie weniger (auraAt klemmt)
     epsilon: 0.004, // darunter wird eine Zelle gepruned (die Map bleibt bounded)
-    raeumAb: 64, // Zellen, ab denen die Tat das Tote räumt (danach die doppelte Zahl der Lebenden, `_pruneLifeField`)
     // Kreatur-Trickle: nur Nexus/Spieler-getragene Kreaturen (tendsLife) träufeln Leben, wo sie wohnen —
     // die ambiente Fauna ist die FOLGE des Feldes (kein Runaway). Sanft + rate-limitiert; wandernde
     // Kreaturen ziehen einen zarten Lebens-Pfad.
@@ -2299,11 +2445,49 @@ AnazhRealm.LIFE_FIELD = Object.freeze({
     trickleEverySec: 3, // jede tendende Kreatur träufelt höchstens alle 3 s
 });
 
+// TAT_NARBE — die Narbe je Tat-Klasse (feld.K4, `_tatSchreiben`): `tiefe` senkt lebendig in der 16-m-Zelle der Tat, `stunden`
+// ist ihre Dauer in Welt-Stunden bei lebendig 1 (die Dauer = stunden / max(lebMin, frozen lebendig): wo das Feld lebt, heilt
+// es schneller). Ein Baum hält die Lichtung Spieltage, eine gepflückte Pflanze Stunden; `max` kappt die Narbe einer Zelle.
+AnazhRealm.TAT_NARBE = Object.freeze({
+    faellen: Object.freeze({ tiefe: 0.12, stunden: 48 }),
+    ernten: Object.freeze({ tiefe: 0.01, stunden: 3 }),
+    brand: Object.freeze({ tiefe: 0.3, stunden: 72 }), // die Asche (`_brandSchritt`): solange sie liegt, brennt die Zelle nicht
+    max: 0.6,
+    lebMin: 0.1,
+});
+AnazhRealm.TAT_LEER = Object.freeze(new Set()); // die Kachel ohne Ernte (`_geerntetIn`)
+
+// Die Scheibe des Todes-Rads einer Feld-Karte in Spielzeit-Sekunden (`_feldTod`): eine tote Zelle liegt höchstens so lange
+// über ihrem Tod in der Karte (gelesen ist sie schon tot); FELD_LEER die fehlende Zelle.
+AnazhRealm.FELD_TOD_EIMER_S = 8;
+AnazhRealm.FELD_LEER = Object.freeze({});
+
+// BRAND — das Feuer auf dem Feld (feld.K3#2, `_tickBrand`): eine brennende 16-m-Zelle des Felds zehrt ihren Brennstoff — das
+// lebendig ihres Orts (`auraAt`, die Vegetation samt Narbe; unter `minStoff` und auf Asche brennt nichts) — in `brennS`
+// Sekunden je Einheit, glüht in `aufS` auf und greift je Schritt (`schrittS` Spielzeit) mit `greift` × Brennstoff × Glut auf
+// jede der vier Nachbar-Zellen über. Die Übergangs-Wahrscheinlichkeit je Nachbar bleibt unter greift · brennS = 0,48 und damit
+// unter der Perkolations-Schwelle des Quadrat-Gitters (½): jedes Feuer erlischt von selbst. Nässe über `loescht` erstickt
+// es. Glut leuchtet als Feuer (LICHT_GESETZ.feuer, Masse `licht` × Glut) und hebt glut in `auraAt`.
+AnazhRealm.BRAND = Object.freeze({
+    schrittS: 1,
+    brennS: 24,
+    aufS: 4,
+    greift: 0.02,
+    minStoff: 0.15,
+    loescht: 0.35,
+    licht: 4,
+    nachbarn: Object.freeze([
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+    ]),
+});
+
 AnazhRealm.EMOTION_FIELD = Object.freeze({
     decayPerSec: 0.012, // Halbwertszeit ~58 s — Gefühle verblassen schneller als Leben
     imprintScale: 0.5, // wie viel der Tat-Emotion sich am Ort einprägt
     max: 0.8, // Sättigung pro Achse/Zelle (ein Ort wird nicht unendlich traurig)
     epsilon: 0.004, // darunter wird eine Zelle gepruned
-    raeumAb: 64, // wie LIFE_FIELD.raeumAb
     // cell = LIFE_FIELD.cell (16 m) — dieselbe Zell-Quelle (`_lifeCellKey`)
 });

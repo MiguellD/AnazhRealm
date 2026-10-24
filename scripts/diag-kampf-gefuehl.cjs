@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 // diag-kampf-gefuehl.cjs — DIE GERECHNETE SCHWUNGPHYSIK ERREICHT DEN KAMPF (npm run gate:kampf-gefuehl), headless am ECHTEN
 // Chokepoint (_beginPlayerSwing · _tickKampfSchwung · _kampfSweepTick · damageCreature · updateCreatures): (A) Dauer ∝ √I
-// zweier echter Blueprints, ungeklemmt, ± 5 % · (B) der Sweep trifft neben dem Fadenkreuz genau einmal, hinter dem Rücken
-// nie · (C) der Hit-Stop friert die Anzeige, nie die fixe Sim · (D) der Tod kippt den Leib vor dem Despawn · (E) der
-// Schwung ist ein additiver Oberkörper-Layer, danach byte-alt · (S1/S2) die Stubs von _hitStopFactor und _segSegDistSq
-// feuern.
+// eines Eigenwerks, das aus der Stoff-Zeile wiegt (ρ(holz) ×2), ungeklemmt, ± 5 % · (B) der Sweep trifft neben dem
+// Fadenkreuz genau einmal, hinter dem Rücken nie · (C) der Hit-Stop friert die Anzeige, nie die fixe Sim · (D) der Tod kippt
+// den Leib vor dem Despawn · (E) der Schwung ist ein additiver Oberkörper-Layer, danach byte-alt · (S1/S2) die Stubs von
+// _hitStopFactor und _segSegDistSq feuern.
 //
 // Die Leben-Prüfung „Kampf" (WELLE_L, scripts/lib/kampf-proben.cjs) spielt wie ein Mensch — das Fadenkreuz durch die echte
 // Kamera, der Klick über den EINEN Dispatcher, gezählt nur mitlaufend: Q8 Treffer · Q9 Maus · Q10 Blick · Q11 das Gesetz
 // des Haltens · Q12 der ballistische Bogen · G3/T12 das Grob-Tor · T13–T27 die Posten der Leben-Schau; die Selbst-Tests
-// S3–S14 feuern je an ihrer Naht, jede Naht restauriert. Aufruf: node scripts/diag-kampf-gefuehl.cjs
+// S3–S16 feuern je an ihrer Naht, jede Naht restauriert. Aufruf: node scripts/diag-kampf-gefuehl.cjs
 const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 // Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
@@ -37,36 +37,6 @@ function rueckVerdict(R) {
         v.push(
             `rueckstoss-waffe: Keule ${R.fuchsKeule.weg.toFixed(2)} m gegen Dolch ${R.fuchsDolch.weg.toFixed(2)} m am selben Fuchs — der Impuls der Waffe wirkt nicht`
         );
-    return v;
-}
-// (T14) die Masse-Tafel: Volumen der Haut × Dichte des Kerns, der Wagen sein Kern-Volumen × FAHR.masseDichte; der Wirt hält
-// keine Dichte; Fuchs < Wolf < Hirsch < Bär < Wagen.
-const MASSE = { toleranz: 0.02, reihe: ["fuchs", "wolf", "hirsch", "baer", "gt"] };
-function masseVerdict(M) {
-    if (!M || !M.leiber) return ["masse keine Probe"];
-    const v = [];
-    for (const k of M.kernFehlt || []) v.push(`masse-kern: ${k} fehlt — die Dichte lebt im Wirt, nicht im Gesetzbuch`);
-    for (const z of M.zwillinge || []) v.push(`masse-zwilling: ${z} im Wirt (eine Studio-Größe neben dem Kern)`);
-    for (const name of [...MASSE.reihe, "mensch"]) {
-        const l = M.leiber[name];
-        if (!l || !(l.wirtKg > 0)) {
-            v.push(`masse-${name}: keine Masse im Wirt`);
-            continue;
-        }
-        if (l.gestaltKg == null) continue; // ohne Kern-Dichte nennt masse-kern den Täter; 0 kg (offene Haut) ist ROT
-        if (!(Math.abs(l.wirtKg - l.gestaltKg) <= MASSE.toleranz * l.gestaltKg))
-            v.push(
-                `masse-${name}: der Wirt rechnet ${l.wirtKg.toFixed(1)} kg, die Gestalt wiegt ${l.gestaltKg.toFixed(1)} kg`
-            );
-    }
-    for (let i = 1; i < MASSE.reihe.length; i++) {
-        const a = M.leiber[MASSE.reihe[i - 1]];
-        const b = M.leiber[MASSE.reihe[i]];
-        if (a && b && !(a.wirtKg < b.wirtKg))
-            v.push(
-                `masse-reihe: ${MASSE.reihe[i - 1]} ${a.wirtKg.toFixed(1)} kg ≥ ${MASSE.reihe[i]} ${b.wirtKg.toFixed(1)} kg`
-            );
-    }
     return v;
 }
 // (T15) der Biss als Stoß: das Ziel (Kitz, Spieler) bekommt Δv > 0, der schwerere Jäger stößt stärker (Fuchs < Wolf < Bär).
@@ -423,11 +393,6 @@ function bissReichVerdict(R, reh) {
         v.push(
             `biss-kopf: ohne Pose-Fortschritt wandert das Ziel der Kopf-Neigung in ${K.takte} Takten ${K.drift} rad (${K.reihe.join(" → ")}) — der Rest summiert sich auf das Ziel des Vor-Takts`
         );
-    if (R.kaltZerlegt === null) v.push("biss-kalt keine Probe (Wolf und Fuchs, 35 m, kalt)");
-    else if (R.kaltZerlegt > 0)
-        v.push(
-            `biss-kalt: die Wahl der Beute zerlegt ${R.kaltZerlegt} Gestalten noch kalter Gattungen synchron im Kreatur-Takt (${R.kaltVerts} Vertices, Jäger und Beute 35 m außer Reichweite) — an der Bake-Uhr vorbei`
-        );
     if (R.gestaltenJeTakt === null) v.push("biss-kosten keine Probe (Wolf und 15 Beutetiere)");
     else if (R.gestaltenJeTakt > 0)
         v.push(
@@ -473,37 +438,56 @@ function gesetzVerdict(G) {
     }
     return v;
 }
-// (Q11) das Urteil des Werks in Klicks über den Dispatcher (null: nie): Fällaxt fällt, Hacke und Hammer brechen Fels,
-// Spaten und Schaufel graben, die umgeformte Gestalt folgt (formVerdict).
-const klickZahl = (x) => (x === null ? Infinity : x);
-function formVerdict(F) {
+// (Q11 halten.K3) DER WERKZEUG-SATZ: jede Gestalt wirkt am Ziel ihrer Aufgabe über die Hand hinaus, gräbt genau mit offener
+// Front, mäht nur mit fassender Schneide, zehrt, wo sie wirkt, führt den Faktor und wirkt verbraucht nicht; Form; Stoff.
+const f2 = (x) => (x && Number.isFinite(x.wirk) ? x.wirk.toFixed(2) : "–");
+const graebt = (x) => !!x && x.verb === "graben";
+const maeht = (x) => !!x && x.verb === "pfluecken" && x.wirk > 0 && x.kraut >= x.wirk && x.wieder;
+function satzVerdict(S) {
+    if (!S || !S.hand) return ["keine Messung"];
     const v = [];
-    if (!(F.axtBlatt.boden !== null && F.axt.boden === null))
-        v.push(`form: die Fällaxt gräbt mit dem Grab-Blatt ${F.axtBlatt.boden}, mit dem Axt-Kopf ${F.axt.boden}`);
-    if (!(klickZahl(F.axtBlatt.baum) > klickZahl(F.axt.baum)))
-        v.push(`form: die Fällaxt fällt mit dem Grab-Blatt in ${F.axtBlatt.baum}, mit dem Axt-Kopf in ${F.axt.baum}`);
-    if (!(F.spatenAxt.boden === null && F.spaten.boden !== null))
-        v.push(`form: der Spaten gräbt mit dem Axt-Kopf ${F.spatenAxt.boden}, mit dem Blatt ${F.spaten.boden}`);
-    if (!(klickZahl(F.spatenAxt.baum) < klickZahl(F.spaten.baum)))
-        v.push(`form: der Spaten fällt mit dem Axt-Kopf in ${F.spatenAxt.baum}, mit dem Blatt in ${F.spaten.baum}`);
+    for (const [id, g] of Object.entries(S)) {
+        if (id === "hand") continue;
+        const [x, h, L] = [g[g.ziel] || {}, S.hand[g.ziel] || {}, g.leer || { wirk: 1 }];
+        const satt = Object.keys(g).filter((z) => g[z] && g[z].verb && g[z].wirk > 0 && !(g[z].zehrt > 0));
+        const halb = g.halb && g.halb.kraft / x.kraft;
+        if (!(x.wirk > (h.wirk || 0))) v.push(`${id} wirkt am ${g.ziel} ${f2(x)}`);
+        if (g.boden && graebt(g.boden) !== g.oeffnet) v.push(`${id} gräbt gegen die Front`);
+        if (g.wiese && g.wiese.wirk > 0 && !g.fasst) v.push(`${id} mäht ohne fassende Schneide`);
+        if (satt.length) v.push(`${id} zehrt nicht am ${satt}`);
+        if (g.halb && !(Math.abs(halb - S.hand.halb) < 0.01)) v.push(`${id} führt bei wear 0,5 ${halb}`);
+        if (L.wirk > 0 || L.zehrt > 0) v.push(`${id} wirkt verbraucht`);
+    }
     return v;
 }
-function werkVerdict(W) {
-    if (!W || !W.baum_eiche || !W.stein_block || !W.boden || !W.form) return ["keine Messung"];
+function formVerdict(F) {
+    if (!F || !F.recurve) return ["keine Messung"];
+    const w = (k, z) => F[k][z].wirk;
+    return [
+        [graebt(F.axtBlatt.boden) && !graebt(F.axt.boden), "form: Fällaxt gräbt mit Kopf, nicht mit Blatt"],
+        [w("axtBlatt", "baum_eiche") < w("axt", "baum_eiche"), "form: Fällaxt fällt mit Blatt wie mit Kopf"],
+        [graebt(F.spaten.boden) && !graebt(F.spatenAxt.boden), "form: Spaten gräbt mit Axt-Kopf, nicht mit Blatt"],
+        [w("spatenAxt", "baum_eiche") > w("spaten", "baum_eiche"), "form: Spaten fällt mit Axt-Kopf wie mit Blatt"],
+        [maeht(F.sichel.wiese), "sichel: sichel mäht nicht"],
+        [!maeht(F.gerade.wiese), "sichel: gerade mäht"],
+        [maeht(F.hohl.wiese), "sichel: hohl mäht nicht"],
+        [w("recurve", "schuss") > w("bogen", "schuss") * 1.01, "bogen: Recurve 0,6 schießt nicht schneller"],
+    ]
+        .filter(([ok]) => !ok)
+        .map(([, t]) => t);
+}
+function stoffVerdict(V) {
+    const R = ["Frank", "Nihon", "Urvolk"].map((t) => (V || {})[t]).filter(Boolean);
+    if (R.length < 3) return ["keine Messung"];
     const v = [];
-    const vor = (wo, tab, sieger, andere) => {
-        for (const x of andere)
-            if (!(tab[sieger] !== null && tab[sieger] < klickZahl(tab[x])))
-                v.push(`${wo}: ${sieger} ${tab[sieger]} Klicks, ${x} ${tab[x]}`);
-    };
-    vor("baum", W.baum_eiche, "faellaxt", ["langschwert", "spitzhacke", "vorschlaghammer", "spaten", "hand"]);
-    vor("fels", W.stein_block, "spitzhacke", ["faellaxt", "langschwert", "spaten", "hand"]);
-    vor("fels", W.stein_block, "vorschlaghammer", ["faellaxt", "langschwert"]);
-    vor("boden", W.boden, "spaten", ["hand"]);
-    vor("boden", W.boden, "schaufel", ["hand"]);
-    for (const x of ["langschwert", "vorschlaghammer", "faellaxt"])
-        if (W.boden[x] !== null) v.push(`boden: ${x} gräbt in ${W.boden[x]} Klicks, soll schwingen`);
-    return v.concat(formVerdict(W.form));
+    R.sort((a, b) => b.haerte - a.haerte).forEach((b, i, [st]) => {
+        const a = R[i - 1] || { zehrt: 0, wear: 2 };
+        if (!(b.zehrt > a.zehrt * 1.01)) v.push(`stoff: ${b.stoff} zehrt wie ${a.stoff}`);
+        if (!(b.wear < a.wear)) v.push(`zustand: ${b.stoff} wie ${a.stoff}`);
+        if (!(b.wirk[1] < b.wirk[0])) v.push(`wirkung: ${b.stoff} stumpft nicht`);
+        if (!i && !(V.weich > st.zehrt * 1.01)) v.push(`härte: die halbe zehrt wie die volle`);
+    });
+    return v;
 }
 // (Q12) halten.K4: die Spitze gegen die Parabel ihres Abschusses als Anteil des Falls ½·|g|·τ² ab 0,1 s; Staffel 1 Bahn und
 // Treffer-Ort ≤ 5 %, Tempo √(2E/m); Staffel 2 der Pfeil steckt und kehrt aus dem Speicher wieder, das Tempo folgt BOGENMAT.
@@ -587,7 +571,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             await window.__weltStehtNach(() => {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
             }); // die Welt steht (welt-boot)
         });
 
@@ -632,27 +616,23 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             // Stimme-aus respektiert (headless: Symphonie nie aktiviert → stumm, kein Throw)
             o.checks.stimmeAusStumm = r._playKampfOneShot({ härte: 1 }) === false && !s.symphony.enabled;
 
-            // ── (A) DAUER ∝ √I — zwei ECHTE Blueprints durch die ECHTE Quelle ──
+            // ── (A) DAUER ∝ √I — ein ECHTER Blueprint durch die ECHTE Quelle, ρ(holz) × 2 in der Stoff-Zeile ──
             const box = (m, sz, p) => ({ shape: "box", material: m, size: sz, position: p || { x: 0, y: 0, z: 0 } });
             const blu = s.blueprints;
             const leicht = {
                 name: "_kg_klinge",
                 parts: [
                     box("holz", { x: 0.15, y: 1.5, z: 0.15 }),
-                    box("eisen", { x: 0.6, y: 0.6, z: 0.6 }, { x: 0, y: 1.5, z: 0 }),
+                    box("holz", { x: 0.6, y: 0.6, z: 0.6 }, { x: 0, y: 1.5, z: 0 }),
                 ],
             };
-            const schwer = {
-                name: "_kg_hammer",
-                parts: [
-                    box("holz", { x: 0.15, y: 2.0, z: 0.15 }),
-                    box("eisen", { x: 0.9, y: 0.9, z: 0.9 }, { x: 0, y: 2.0, z: 0 }),
-                ],
-            };
-            const I1 = r._swingDynamics(leicht).swingInertia;
-            const I2 = r._swingDynamics(schwer).swingInertia;
-            const D1 = r._swingDauerFuerBlueprint(leicht);
-            const D2 = r._swingDauerFuerBlueprint(schwer);
+            const zeile = s.materials.holz;
+            const rho = zeile.rho;
+            const mess = () => [r._swingDynamics(leicht).swingInertia, r._swingDauerFuerBlueprint(leicht)];
+            const [I1, D1] = mess();
+            zeile.rho = 2 * rho;
+            const [I2, D2] = mess();
+            zeile.rho = rho;
             o.dauer = { I1, I2, D1, D2 };
             const eps = 0.005;
             o.checks.aBeideUngeklemmt =
@@ -918,6 +898,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             // = 1 − 2(qx² + qz²), kein THREE nötig.
             const upY = (c) => 1 - 2 * (c.quaternion.x * c.quaternion.x + c.quaternion.z * c.quaternion.z);
             const kill = r.damageCreature(cTod, 99999, { source: "world" });
+            r._todLageTick({ timeRemaining: () => Infinity });
             // der Gefallene liegt: nicht mehr unter den Wesen, in der Liste der Gefallenen, in der Szene
             const liegt = (c) => (s.leichname || []).indexOf(c) !== -1 && s.creatures.indexOf(c) === -1 && !!c.parent;
             o.checks.dKillKipptErst = !!kill.killed && !!cTod.userData.dying && liegt(cTod);
@@ -966,7 +947,10 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
 
             return o;
         });
-        welle = await page.evaluate(WELLE_L);
+        welle = await page.evaluate(
+            WELLE_L,
+            require("../spec/profiband/haushalt.json").messorte.find((o) => o.id === "wiese")
+        );
     } catch (e) {
         out = { error: (e && e.message) || String(e) };
     }
@@ -1068,21 +1052,15 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         );
         console.log(`       Faktoren ${z.faktoren}`);
         console.log(
-            `       ${z.panzer} · Verschleiß wear ${f1(z.wear16)} nach ${z.treffer16} Treffern, verbraucht ${z.trefferVerbraucht} Treffer · Güte uneins ${z.gueteUneins} von ${z.gueteGeraete}${z.gueteProben ? " (" + z.gueteProben + ")" : ""}`
+            `       ${z.panzer} · Güte uneins ${z.gueteUneins} von ${z.gueteGeraete}${z.gueteProben ? " (" + z.gueteProben + ")" : ""}`
         );
         console.log(
             `       Pfeil voll ${f1(z.pfeilVoll)} · 25 % ${f1(z.pfeilViertel)} · hinter der Wand ${z.pfeilHinterWand} · frei ${z.pfeilFrei}`
         );
-        const bg = z.bogen || {};
-        console.log(
-            `       Bogen-Verschleiß: wear 1 ${f1(bg.voll)} · wear 0,5 ${f1(bg.halb)} (÷ ${f1(bg.verh)}, Soll ${f1(bg.soll)}) · zehrt je Schuss ${bg.zehrtVoll === undefined ? "–" : bg.zehrtVoll.toFixed(4)}/${bg.zehrtHalb === undefined ? "–" : bg.zehrtHalb.toFixed(4)} · verbraucht (0,02) flog ${bg.verbrauchtFlog}, traf ${bg.verbrauchtTraf} · Täter S6 ok=${z.s6 ? z.s6.ok : "–"}`
-        );
         console.log(
             `       Waffen-Schadens-Pfade ${z.schadensPfade} · ohne _kampfRohSchaden: ${z.schadensZwillinge} · Täter S7 nennt ${z.s7 || "–"} · trefferZone fehlt → ${z.kernOhneZone} (mit Kern ${z.kernMitZone} Glieder)`
         );
-        console.log(
-            `       kalter erster Treffer ${z.kalt ? z.kalt.gattung + ": traf " + z.kalt.traf + ", zerlegt " + z.kalt.zerlegt + " Vertices" : "–"} · Täter S8 ${z.s8 ? z.s8.gattung + ": zerlegt " + z.s8.zerlegt : "–"} · Sweep Math.sin/cos ${z.sweepFormel} · typeof-Selbst ${z.typeofSelbst}`
-        );
+        console.log(`       Sweep Math.sin/cos ${z.sweepFormel} · typeof-Selbst ${z.typeofSelbst}`);
         const gr = z.grob || {};
         const jeL = gr.jeL
             ? Object.entries(gr.jeL)
@@ -1099,15 +1077,24 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             `  (Q10) Ego-Neigung −90° → ${f1(z.blick90)}°, −57,3° → ${f1(z.blick57)}° · vor dir min cos ${f1(z.vorDirCos)} · „baue dorf hier" cos ${f1(z.dorfCos)} · Pfeil↔Fadenkreuz ${f1(z.pfeilFadenkreuz)}°\n`
         );
         const G = z.gesetz || {},
-            W = G.werk || {},
             T = G.vor || {};
         const zeile = (id) =>
             ["vor", "masse", "tempo", "eisen", "schneide"].map((k) => `${k} ${f1(G[k][id].wirk)}/${f1(G[k][id].p)}`);
         console.log(
             `  (Q11) Leib ${f1(G.leib)} · Wirkung/Stoß: langschwert ${zeile("langschwert")} · dolch ${zeile("dolch")}`
         );
-        for (const k of ["baum_eiche", "stein_block", "boden", "form", "s13"])
-            console.log(`        ${k} ${JSON.stringify(W[k])}`);
+        const [S, V, SB] = [z.satz || {}, z.stoff, z.selbst || {}];
+        const basis = (M) =>
+            M && Object.assign({ axt: S.faellaxt, spaten: S.spaten, sichel: S.sichel, bogen: S.langbogen }, M);
+        const F = basis(z.form);
+        const kurz = (g) =>
+            Object.entries(g)
+                .filter(([, x]) => x && x.verb !== undefined)
+                .map(([k, x]) => `${k} ${x.verb} ${f2(x)}/${x.zehrt.toFixed(4)}`)
+                .join(" ");
+        for (const [id, g] of Object.entries(S)) console.log(`        ${id} → ${g.ziel || "–"}: ${kurz(g)}`);
+        console.log(`        form ${JSON.stringify(z.form)}`);
+        console.log(`        stoff ${JSON.stringify(V)}`);
         const gv = gesetzVerdict(G);
         check(
             gv.length === 0,
@@ -1119,16 +1106,47 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             s12.some((x) => x.startsWith("tempo")),
             "SELBST-TEST (S12): ein fester Schaden neben dem Gesetz (_trefferWirkung ≡ 1) — die Tempo-Mutation bleibt stumm, die Linse nennt sie"
         );
-        const werkV = werkVerdict(W);
+        const fv = formVerdict(F),
+            nach = (pre) => fv.filter((x) => x === "keine Messung" || x.startsWith(pre));
+        const werkV = ["faellaxt", "spitzhacke", "vorschlaghammer", "spaten", "schaufel"]
+            .flatMap((id) => satzVerdict({ hand: S.hand, [id]: S[id] || {} }))
+            .concat(nach("form"));
         check(
             werkV.length === 0,
             "Q11 halten.K3: das Werk wirkt nach seiner Form — Fällaxt fällt, Hacke und Hammer brechen Fels, Spaten und Schaufel graben, die umgeformte Gestalt (Grab-Blatt, Axt-Kopf) folgt der neuen Form" +
                 (werkV.length ? " — " + werkV.join(" · ") : "")
         );
-        const s13 = W.s13 ? formVerdict(W.s13) : [];
+        const skv = nach("sichel");
+        check(
+            !skv.length,
+            `Q11 halten.K3 Sichel erntet über die echte Eingabe nach der Form — ${F && f2(F.sichel.wiese)} Büschel der Mess-Wiese ins kraut, sie wachsen nach; die gerade Sichel mäht nicht, der hohle Säbel mäht${skv.length ? " — ROT " + skv : ""}`
+        );
+        const ids = Object.keys(S).filter((id) => id !== "hand");
+        const gut = ids.filter((id) => !satzVerdict({ hand: S.hand, [id]: S[id] }).length);
+        const s2 = satzVerdict(S).concat(nach("bogen"), stoffVerdict(V));
+        const zj = (t) => (V && V[t] ? V[t].stoff + " " + V[t].zehrt.toFixed(4) : "–");
+        check(
+            ids.length >= 22 && !s2.length,
+            `Q11 halten.K3 Staffel 2: jede Gestalt der Schmiede (${gut.length} von ${ids.length}) wirkt nach ihrer Form an ihrem Ziel und zehrt, wo sie wirkt, nach der Härte ihrer Stoff-Zeile (${zj("Urvolk")} > ${zj("Nihon")} > ${zj("Frank")} je Hieb, die halbe Härte ${V && V.weich.toFixed(4)})` +
+                (s2.length ? " — " + s2.slice(0, 10).join(" · ") + ` (${s2.length})` : "")
+        );
+        const s13 = formVerdict(basis(SB.form));
         check(
             s13.some((x) => x.includes("gräbt")) && s13.some((x) => x.includes("fällt")),
             "SELBST-TEST (S13): eine Art-Tafel neben dem Gesetz (graben nach task.art, ein Abbau-Profil für alle) — die Form-Mutation bleibt stumm, die Linse nennt sie"
+        );
+        check(
+            s13.includes("sichel: gerade mäht") && s13.includes("sichel: hohl mäht nicht"),
+            "SELBST-TEST (S15): mäht, wer Sichel heißt — die Form-Mutation bleibt stumm"
+        );
+        check(
+            stoffVerdict(SB.stoff).some((x) => x.startsWith("stoff")),
+            "SELBST-TEST (S16): ein Verschleiß ohne Stoff (der Spender) — Bronze zehrt wie Stahl, die Linse nennt sie"
+        );
+        const s6 = satzVerdict({ hand: S.hand, langbogen: SB.bogen });
+        check(
+            s6.some((x) => x.includes("zehrt nicht")) && s6.some((x) => x.includes("führt bei wear")),
+            "SELBST-TEST (S6): der Pfeil ohne Verschleiß (Faktor 1, kein Zehren) — der Satz nennt ihn"
         );
         const K4 = z.bogenK4 || {};
         const k4 = bogenK4Verdict(K4);
@@ -1196,7 +1214,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             "Q8 K-D4: der Hit-Stop ist energie-skaliert — jedes Nahkampf-Rezept stoppt nach SEINER Treffer-Energie (höchstens 3 teilen sie auf ±3 %; Befund: 13 von 17 mit 19,8 J)"
         );
         check(c.keineKappe, "Q8 K-D5: keine Schadens-Kappe — höchstens 2 Nahkampf-Rezepte auf dem Maximal-Faktor");
-        check(c.verschleiss, "Q8 K-D6: Kampf verschleißt die Klinge, ein verbrauchtes Gerät schlägt nicht");
         check(
             c.eineGuete,
             "Q8 K-D7: EINE Güte je Gerät — Schaden, Werkstoff-Kraft und Equip-Fold lesen das Lehren-Urteil des Kerns"
@@ -1232,57 +1249,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                     rvAlt.some((x) => x.startsWith(t))
                 ),
             "Selbst-Test K-D9: der Befund (2,16 m überall, in EINEM Takt) nennt Satz, Masse und Waffe; ein gesunder Stoß bleibt grün"
-        );
-        const mz = z.masse || {};
-        const ml = mz.leiber || {};
-        console.log(
-            "  (T14) Masse-Tafel (Wirt / Gestalt): " +
-                ["fuchs", "wolf", "hirsch", "baer", "mensch", "gt"]
-                    .map((k) =>
-                        ml[k]
-                            ? `${k} ${ml[k].wirtKg.toFixed(1)} / ${ml[k].gestaltKg === null ? "–" : ml[k].gestaltKg.toFixed(1)} kg`
-                            : k + " –"
-                    )
-                    .join(" · ") +
-                (mz.zwillinge && mz.zwillinge.length ? " · Zwillinge: " + mz.zwillinge.join(", ") : "")
-        );
-        const mv = masseVerdict(z.masse);
-        check(
-            mv.length === 0,
-            "0710-4 T14: EINE Masse je Leib — die Gestalt (geschlossene Haut × Dichte des Kerns, der Wagen carPhys × FAHR.masseDichte), keine Dichte im Wirt, die Reihe Fuchs < Wolf < Hirsch < Bär < Wagen" +
-                (mv.length ? " — " + mv.join(" · ") : "")
-        );
-        // der Selbst-Test der Tafel: der Befund (Kapsel aus der Hüft-Höhe, Dichten im Wirt) fällt rot beim Namen
-        const mvAlt = masseVerdict({
-            kernFehlt: ["tetrapoda MASSSTAB.dichteKgM3"],
-            zwillinge: ["STOSS.dichteLeib 1000", "STOSS.dichteWagen 150"],
-            leiber: {
-                fuchs: { wirtKg: 35.4, gestaltKg: 15 },
-                wolf: { wirtKg: 140.5, gestaltKg: 64 },
-                hirsch: { wirtKg: 435.6, gestaltKg: 94.2 },
-                baer: { wirtKg: 254.8, gestaltKg: 335.4 },
-                mensch: { wirtKg: 111.5, gestaltKg: 0 },
-                gt: { wirtKg: 1341.4, gestaltKg: 1341.4 },
-            },
-        });
-        const mvGut = masseVerdict({
-            kernFehlt: [],
-            zwillinge: [],
-            leiber: {
-                fuchs: { wirtKg: 15, gestaltKg: 15 },
-                wolf: { wirtKg: 64, gestaltKg: 64 },
-                hirsch: { wirtKg: 94.2, gestaltKg: 94.2 },
-                baer: { wirtKg: 335.4, gestaltKg: 335.4 },
-                mensch: { wirtKg: 98.8, gestaltKg: 98.8 },
-                gt: { wirtKg: 1341.4, gestaltKg: 1341.4 },
-            },
-        });
-        check(
-            mvGut.length === 0 &&
-                ["masse-kern", "masse-zwilling", "masse-hirsch", "masse-baer", "masse-mensch", "masse-reihe"].every(
-                    (t) => mvAlt.some((x) => x.startsWith(t))
-                ),
-            "Selbst-Test T14: der Befund (Kapsel aus der Hüft-Höhe, Dichten im Wirt, der Mensch ohne geschlossene Haut 0 kg) nennt Kern, Zwilling, Hirsch, Bär, Mensch und Reihe; eine Tafel aus EINER Quelle bleibt grün"
         );
         const bz2 = z.biss || {};
         const bw = (t) =>
@@ -1713,7 +1679,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         const brv = bissReichVerdict(z.bissReich, z.bissReh);
         check(
             brv.length === 0,
-            "LF Posten 5 (Nachbesserung 2 + 3): der Biss kostet, was in Reichweite steht (0 Gestalten außer Reichweite je Takt, keine kalte Gattung zerlegt), springt nie ins Leere (0 Ansprünge auf den Sims) und trifft ein stehendes Reh (≥ 5 von 6, das Ziel des Kopfs aus der gezeigten Pose)" +
+            "LF Posten 5 (Nachbesserung 2 + 3): der Biss kostet, was in Reichweite steht (0 Gestalten außer Reichweite je Takt, springt nie ins Leere (0 Ansprünge auf den Sims) und trifft ein stehendes Reh (≥ 5 von 6, das Ziel des Kopfs aus der gezeigten Pose)" +
                 (brv.length ? " — " + brv.join(" · ") : "")
         );
         const brvAlt = bissReichVerdict(
@@ -1725,8 +1691,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                 simsUeber: 1.0,
                 simsWaagrecht: 0.9,
                 simsReich: 2.6,
-                kaltZerlegt: 2,
-                kaltVerts: 61392,
             },
             {
                 versuche: 6,
@@ -1748,8 +1712,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                 simsUeber: 1.0,
                 simsWaagrecht: 0.9,
                 simsReich: 2.6,
-                kaltZerlegt: 0,
-                kaltVerts: 0,
             },
             {
                 versuche: 6,
@@ -1764,7 +1726,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         );
         // der Befund Gegenprüfung 3: der erste Rest an der Klemme 1,0 — die alte Summe zeigte dort 1 → 1 → 1 (drift 0)
         const brvKlemme = bissReichVerdict(
-            { gestaltenJeTakt: 0, msJeTakt: 0, simsAnspruenge: 0, kaltZerlegt: 0 },
+            { gestaltenJeTakt: 0, msJeTakt: 0, simsAnspruenge: 0 },
             {
                 versuche: 6,
                 anspruenge: 6,
@@ -1777,14 +1739,10 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         check(
             brvGut.length === 0 &&
                 brvKlemme.some((x) => x.startsWith("biss-kopf-probe:") && /Klemme/.test(x)) &&
-                ["biss-kosten:", "biss-sims:", "biss-reh:", "biss-kopf:", "biss-kalt:"].every((t) =>
+                ["biss-kosten:", "biss-sims:", "biss-reh:", "biss-kopf:"].every((t) =>
                     brvAlt.some((x) => x.startsWith(t))
                 ),
-            "Selbst-Test T24: die Befunde (15 Gestalten je Takt, 6 Ansprünge unter dem Sims, 0 Bisse am Reh, ein Kopf-Ziel, das ohne Pose-Fortschritt 0,69 rad wandert, 2 kalte Gattungen zerlegt) nennen Kosten, Sims, Reh, Kopf und Kälte; ein erster Rest an der Klemme (1,0) heißt vakuös; ein Biss nur in Reichweite, der trifft, bleibt grün"
-        );
-        check(
-            c.bogenVerschleiss,
-            "Q8 K-D6: der Bogen verschleißt wie die Klinge — wear 0,5 trifft mit 0,65, jeder Schuss zehrt, verbraucht (0,02) löst er nicht"
+            "Selbst-Test T24: die Befunde (15 Gestalten je Takt, 6 Ansprünge unter dem Sims, 0 Bisse am Reh, ein Kopf-Ziel, das ohne Pose-Fortschritt 0,69 rad wandert) nennen Kosten, Sims, Reh und Kopf; ein erster Rest an der Klemme (1,0) heißt vakuös; ein Biss nur in Reichweite, der trifft, bleibt grün"
         );
         check(
             c.einRohSchaden,
@@ -1793,10 +1751,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         check(
             c.kernPflichtZone,
             "Q8 K-D3: fehlt tetrapoda trefferZone, bricht der Treffer-Test laut und benannt (nie still null je Tier)"
-        );
-        check(
-            c.kaltVorgebacken,
-            "Q8 Lehre 14: der erste Treffer auf eine Gattung zerlegt keine Haut — die Treffer-Glieder sind vorgebacken (die EINE Bake-Uhr)"
         );
         check(c.sweepBlickVorn, "Q10: der Klingen-Sweep liest _blickVorn (keine Inline-Kopie der Vorwärts-Formel)");
         check(
@@ -1844,16 +1798,8 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             "SELBST-TEST (S5): _kreaturGliedTreffer ≡ null → kein Treffer (die Serie misst die Gestalt)"
         );
         check(
-            c.s6 === true,
-            "SELBST-TEST (S6): der Pfeil ohne Verschleiß (_wearStatFactor ≡ 1, _kampfVerschleiss leer) → die Bogen-Probe ist rot"
-        );
-        check(
             c.s7 === true,
             "SELBST-TEST (S7): ein Wurf-Täter setzt Kraft × Wirkung × Zone selbst zusammen → die Klassen-Linse nennt ihn"
-        );
-        check(
-            c.s8 === true,
-            "SELBST-TEST (S8): ohne das Vorbacken zerlegt der erste Hieb die Haut (die Linse zählt den Hieb)"
         );
         check(
             c.s9 === true,

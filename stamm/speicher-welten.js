@@ -763,16 +763,8 @@ class AnazhRealm_speicher_welten {
         // PRÄGUNG-WELT — der Guss-Stempel kehrt zurück (Gegenstück zu _serializeBlueprint):
         // NUR ein non-leeres plain object, tief kopiert + größen-bewacht (dieselbe
         // 8-KiB-Taille-Wand wie _carryUnknown — kein Save-/Peer-Riesenstempel).
-        if (data.studioOv && typeof data.studioOv === "object" && !Array.isArray(data.studioOv)) {
-            try {
-                const json = JSON.stringify(data.studioOv);
-                if (json && json.length > 2 && json.length <= AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) {
-                    restored.studioOv = JSON.parse(json);
-                }
-            } catch (_e) {
-                /* nicht-serialisierbar → fällt still (fail-closed) */
-            }
-        }
+        const stempel = AnazhRealm._stempelVon(data.studioOv);
+        if (stempel) restored.studioOv = stempel;
         this._carryUnknown(data, restored, AnazhRealm.BLUEPRINT_KNOWN_KEYS);
         return restored;
     }
@@ -789,6 +781,8 @@ class AnazhRealm_speicher_welten {
                 : { x: 0, y: 5, z: 0 },
             // DIE BODEN-GENERATION (K16): unter welchem Gelände-Gesetz die Höhen dieses Saves stehen (`_bodenUmzug`).
             bodenGeneration: globalThis.__gelaendeCore.BODEN_GENERATION,
+            // DIE HERKUNFT: jedes Werk dieses Stands trägt `werk` (seit 22.10.); ohne die Zeile entscheidet das Laden.
+            herkunft: 1,
             spielerUeberGrund: this.state.playerMesh ? this._ueberGrund(this.state.playerMesh.position) : undefined,
             knowledgeBase: knowledgeBase,
             version: this.state.currentVersion,
@@ -1073,12 +1067,19 @@ class AnazhRealm_speicher_welten {
             // oder null. Default wird beim Init überschrieben.
             hotbar: Array.isArray(this.state.hotbar) ? this.state.hotbar.slice(0, 9) : [],
             // Welle 6.C1 — Inventar persistiert. 27 Slots, jeweils {blueprintName,
-            // count} oder null. Bei Reload defensive Validierung (unbekannte
-            // Bauplan-Namen werden zu null, count auf 1..999 geclampt).
+            // count}, ein Material-Slot {kind, material, count}, oder null. Bei Reload defensive Validierung (unbekannte
+            // Namen werden zu null, count ≥ 1, ganz). Bis 24.10. schrieb der Material-Slot nur {count}: jedes Laden
+            // verlor, was Graben, Ernte und Beute gaben (der Korpus, speicher.K5).
             playerInventory: Array.isArray(this.state.player && this.state.player.inventory)
                 ? this.state.player.inventory
                       .slice(0, 27)
-                      .map((s) => (s ? { blueprintName: s.blueprintName, count: s.count || 1 } : null))
+                      .map((s) =>
+                          s
+                              ? s.kind === "material"
+                                  ? { kind: "material", material: s.material, count: s.count || 1 }
+                                  : { blueprintName: s.blueprintName, count: s.count || 1 }
+                              : null
+                      )
                 : [],
         };
     }
@@ -2186,7 +2187,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
         ]),
         desc: "Das Tor-Labor: sieben Portal-Ordnungen aus der Stich-Schub-Dicke-Lehre, fraktal vertieft, mit öffnenden Türen.",
     }),
-    // Das KLINGEN-Labor: 21 Gattungen (Waffen + Werkzeuge), 4 Traditionen, Anschlag-Probe + Prüfstand.
+    // Das KLINGEN-Labor: 22 Gattungen (Waffen + Werkzeuge), 4 Traditionen, Anschlag-Probe + Prüfstand.
     // schmiede-core.js (__schmiedeCore) ist die EINE generative Quelle für Shell UND Foundry. DSL = echte
     // UI-Pfade: Gattungen + Traditionen (Umlaute ASCII-gefaltet: saebel/grossschwert/faellaxt) +
     // anschlagen + stahl.
@@ -2223,7 +2224,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
             "anschlagen",
             "stahl",
         ]),
-        desc: "Das Klingen-Labor: Rückgrat, Schnittprofil und Lehren urteilen die Waffe — 21 Gattungen, 4 Traditionen, Anschlag-Probe und Prüfstand.",
+        desc: "Das Klingen-Labor: Rückgrat, Schnittprofil und Lehren urteilen die Waffe — 22 Gattungen, 4 Traditionen, Anschlag-Probe und Prüfstand.",
     }),
     // Das HAUS-Labor: Fachwerkhaus, parametrisch + begehbar — 32 Kultur-Archetypen, Dorf-Modus
     // (Straßengraph, Mauer, Jahresringe). fachwerk-core.js (__fachwerkCore) ist die EINE generative

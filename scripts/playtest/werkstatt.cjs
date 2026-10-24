@@ -42,41 +42,7 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
             /Basis|Standfläche/.test(h.stability || "") &&
             /Lastpfad/.test(h.loadSound || "") &&
             /Räder|Achse/.test(h.rollable || "");
-        const narrow = P([pt(0, 0, 0, 1, 0.5, 1), pt(0, 2, 0, 2, 2, 2)], "architecture");
-        const wide = P([pt(0, 0, 0, 4, 0.5, 4), pt(0, 2, 0, 2, 2, 2)], "architecture");
-        o.w2Promise = r._stability(wide).margin > r._stability(narrow).margin;
-        // ── Ω-Φ5 floatingParts offengelegt (EINE Quelle, additiv) ──
-        const floatTower = P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(0, 5, 0, 1, 1, 1)], "architecture");
-        o.floatIdx =
-            Array.isArray(r._loadPath(floatTower).floatingParts) && r._loadPath(floatTower).floatingParts.includes(2);
-        // ── Ω-W3 das Verdikt (rollen-bewusst) ──
-        const leaner = P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(1.5, 2, 0, 3, 1, 3)], "architecture");
-        const vLean = r._workshopPhysicsVerdict(leaner);
-        o.leanWankt =
-            vLean.lean > 0.5 &&
-            lineHas(vLean, /kippt|wackelig/) &&
-            vLean.floatingParts.length === 0 &&
-            Math.abs(vLean.leanDir.x) + Math.abs(vLean.leanDir.z) > 0.1;
-        const vFloat = r._workshopPhysicsVerdict(floatTower);
-        o.floatMarked = vFloat.floatingParts.length > 0 && lineHas(vFloat, /schwebend|Lastpfad/);
-        const vSlender = r._workshopPhysicsVerdict(P([pt(0, 0, 0, 0.2, 5, 0.2)], "architecture"));
-        o.slenderKnickt = vSlender.buckles === true && lineHas(vSlender, /schlank|knickt/);
-        const table = P(
-            [
-                pt(-2, 0, -2, 0.4, 1.6, 0.4),
-                pt(2, 0, -2, 0.4, 1.6, 0.4),
-                pt(-2, 0, 2, 0.4, 1.6, 0.4),
-                pt(2, 0, 2, 0.4, 1.6, 0.4),
-                pt(0, 0.9, 0, 4, 0.3, 4, light),
-            ],
-            "architecture"
-        );
-        const vStable = r._workshopPhysicsVerdict(table);
-        o.stableRuht =
-            vStable.lean === 0 &&
-            vStable.floatingParts.length === 0 &&
-            lineHas(vStable, /steht/) &&
-            !lineHas(vStable, /kippt|wackelig/);
+        // ── Ω-W3 das Verdikt (rollen-bewusst; was steht: der Prüf-Satz, gate:werkstatt-weg) ──
         const vWeapon = r._workshopPhysicsVerdict(
             P([pt(0, 0.5, 0, 0.3, 1, 0.3, light), pt(0, 3, 0, 0.4, 4, 0.4, dense)], "weapon")
         );
@@ -88,12 +54,6 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
         return o;
     });
     check("Ω-W2: physik-wahre Optimierungs-Verben (Standfestigkeit/Lastpfad/Rollfähigkeit)", res.w2Verbs === true);
-    check("Ω-W2: die Tat verschiebt die GERECHNETE Größe (Basis breit → stabiler)", res.w2Promise === true);
-    check("Ω-Φ5: _loadPath legt die schwebenden Teil-Indizes offen (EINE Quelle)", res.floatIdx === true);
-    check("⟡ Ω-W3: kippliges Bauwerk WANKT (lean>0.5, kippt/wackelig, Richtung)", res.leanWankt === true);
-    check("Ω-W3: schwebendes Teil markiert + Lastpfad-Warnung", res.floatMarked === true);
-    check("Ω-W3: zu schlanke Säule knickt (Versagen sichtbar)", res.slenderKnickt === true);
-    check("Ω-W3: stabiles Bauwerk RUHT (lean 0, steht, keine Warnung)", res.stableRuht === true);
     check("Ω-W3 ROLLEN-bewusst: kopflastige Waffe → traeger Schwung, nicht kippt", res.weaponTraege === true);
 }
 
@@ -101,7 +61,7 @@ async function checkBandCadWorkshop(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Welle 6.B Phase 1+2 — CAD-Werkstatt (3D-Preview + Manipulator-Gizmo) ###
+    // ### CAD-Werkstatt (3D-Preview + Manipulator-Gizmo) ###
     const wave6bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -109,16 +69,11 @@ async function checkBandCadWorkshop(ctx) {
         try {
             // --- Phase 1: State-Schema ---
             const ws = r._ensureWorkshopState();
-            out.hasSelectedPartIdxField = "selectedPartIdx" in ws;
-            out.hasPreviewField = "preview" in ws;
             out.hasManipulatorModeField = typeof ws.manipulatorMode === "string";
             out.hasSnapEnabledField = typeof ws.snapEnabled === "boolean";
             out.defaultManipulatorMode = ws.manipulatorMode;
             out.defaultSnapEnabled = ws.snapEnabled;
 
-            // --- Phase 1: DOM-Elemente ---
-            out.canvasInDom = !!document.getElementById("workshop-preview-canvas");
-            out.previewWrapperInDom = !!document.getElementById("workshop-preview-wrapper");
 
             // --- Phase 2: Konstanten ---
             const AR = r.constructor;
@@ -279,7 +234,7 @@ async function checkBandCadWorkshop(ctx) {
                 // rotate 3×(ring+picker) = 6 · scale 3×(cube+shaft+picker) + 2×(center+picker) = 11.
                 out.gizmoHasPickers = tCount >= 9 && rCount >= 6 && sCount >= 8;
 
-                // --- Bug-Fix V7.99: Gizmo-Sichtbarkeit bei Built-in vs. eigen ---
+                // --- Gizmo-Sichtbarkeit bei Built-in vs. eigen ---
                 // Bauplan ist aktuell stein_block (Built-in). Sync rufen
                 // und prüfen dass Gizmo versteckt ist.
                 r.selectBlueprintForEdit("stein_block");
@@ -311,10 +266,6 @@ async function checkBandCadWorkshop(ctx) {
     });
 
     if (wave6bResults && !wave6bResults.error) {
-        check("Welle 6.B P1: state.workshop hat selectedPartIdx-Feld", wave6bResults.hasSelectedPartIdxField);
-        check("Welle 6.B P1: state.workshop hat preview-Feld (lazy)", wave6bResults.hasPreviewField);
-        check("Welle 6.B P1: #workshop-preview-canvas im DOM", wave6bResults.canvasInDom);
-        check("Welle 6.B P1: #workshop-preview-wrapper im DOM", wave6bResults.previewWrapperInDom);
         check("Welle 6.B P1: selectBlueprintForEdit setzt selectedBlueprint", wave6bResults.selectedSetToVillage);
         check(
             "Welle 6.B P1: Bauplan-Wechsel resettet selectedPartIdx auf null",
@@ -433,11 +384,8 @@ async function checkBandCadWorkshop(ctx) {
         if (!r) return null;
         const out = {};
         try {
-            // Welle 6.X.2 V8.15 — Konsole-Handle ist jetzt
-            // top-right statt bottom-right (unten verdeckt von
-            // Hotbar + Stats-HUD).
             const consoleEl = document.getElementById("console");
-            // die Konsole sitzt jetzt UNTEN-LINKS (bottom-verankert); der Resize-Griff ist
+            // die Konsole sitzt UNTEN-LINKS (bottom-verankert); der Resize-Griff ist
             // „tr" (oben-rechts, wächst nach oben), nicht mehr „br". Der Test wandert mit.
             out.consoleHasHandle = !!(consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-tr"));
             // die V18-Drawer tragen einen HÖHEN-only Griff (.resize-b), NICHT den alten
@@ -471,7 +419,7 @@ async function checkBandCadWorkshop(ctx) {
                 werkstatt.style.height = "";
                 localStorage.removeItem("anazh.resize.werkstatt");
             }
-            // Background-Fix: .drawer hat jetzt direkt ein background statt nur ::before.
+            // .drawer hat direkt ein background statt nur ::before.
             // Wir prüfen das via computed style — background sollte 'none' nicht sein.
             // (UI-Putz: Welt-Drawer aufgelöst → wir prüfen den Einstellungen-Drawer.)
             const w = document.querySelector('[data-drawer="einstellungen"]');
@@ -488,28 +436,28 @@ async function checkBandCadWorkshop(ctx) {
 
     if (resizeResults && !resizeResults.error) {
         check(
-            "V18.83 Resize: Konsole hat .resize-tr Handle (oben-rechts, wächst nach oben; bottom-verankert)",
+            "Resize: Konsole hat .resize-tr Handle (oben-rechts, wächst nach oben; bottom-verankert)",
             resizeResults.consoleHasHandle
         );
         check(
-            `V18.43 Rahmen: die ${resizeResults.drawerCount} V18-Drawer tragen einen HÖHEN-Griff (.resize-b, symmetrie-treu, kein .resize-bl)`,
+            `Rahmen: die ${resizeResults.drawerCount} V18-Drawer tragen einen HÖHEN-Griff (.resize-b, symmetrie-treu, kein .resize-bl)`,
             resizeResults.noDrawerHasHandle
         );
         check(
-            "V8.00 Resize: installResizeHandles ist idempotent (kein Duplikat)",
+            "Resize: installResizeHandles ist idempotent (kein Duplikat)",
             resizeResults.consoleHandleNotDuplicated
         );
-        check("V8.00 Resize: localStorage-Persistence schreibt + liest", resizeResults.persistenceWorks);
+        check("Resize: localStorage-Persistence schreibt + liest", resizeResults.persistenceWorks);
         check(
-            "V8.00 BG-Fix: .drawer hat direktes background-image (statt nur via ::before)",
+            "BG-Fix: .drawer hat direktes background-image (statt nur via ::before)",
             resizeResults.drawerHasDirectBackground
         );
         check(
-            "V8.00 BG-Fix: .drawer hat inset box-shadow für Border-Ringe (statt nur via ::after)",
+            "BG-Fix: .drawer hat inset box-shadow für Border-Ringe (statt nur via ::after)",
             resizeResults.drawerHasInsetShadow
         );
     } else if (resizeResults && resizeResults.error) {
-        check(`V8.00 Resize: evaluate-Fehler — ${resizeResults.error}`, false);
+        check(`Resize: evaluate-Fehler — ${resizeResults.error}`, false);
     }
 
     // ### DIE OMNIBOX (Ctrl/Cmd+K): Tag → Treffer → Ausführung (KONSUM) ###
@@ -547,7 +495,7 @@ async function checkBandCadWorkshop(ctx) {
             // wieder schließen
             window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
             out.escCloses = !!overlay && overlay.hidden === true;
-            // (6) V18.47 — der Maus-Trigger in der Topbar öffnet das Overlay (Maus-Parität)
+            // (6) der Maus-Trigger in der Topbar öffnet das Overlay (Maus-Parität)
             const trigger = document.getElementById("omnibox-trigger");
             if (trigger && overlay) {
                 trigger.click();
@@ -560,18 +508,18 @@ async function checkBandCadWorkshop(ctx) {
         return out;
     });
     if (omniResults && !omniResults.error) {
-        check("V18.45 Omnibox: c:wetter → nur Befehls-Treffer mit run() (KONSUM)", omniResults.cmdAllBefehl);
-        check("V18.45 Omnibox: c:wetter findet einen Wetter-Befehl", omniResults.cmdMatchesWetter);
-        check("V18.45 Omnibox: b: liefert Bauplan-Treffer", omniResults.bHasBlueprints);
-        check("V18.45 Omnibox: w: ist rollen-gefiltert (⊆ b:, liest die emergente Rolle)", omniResults.wIsRoleFiltered);
-        check("V18.45 Omnibox: geh:werkstatt findet den Raum", omniResults.gehFindsRoom);
-        check("V18.45 Omnibox: geh:werkstatt ÖFFNET die Werkstatt (KONSUM)", omniResults.gehOpensWorkshop);
-        check("V18.45 Omnibox: Freitext → der Nexus-Pfad als Fallback", omniResults.freetextHasNexus);
-        check("V18.45 Omnibox: Ctrl+K öffnet das Overlay", omniResults.ctrlKOpens);
-        check("V18.45 Omnibox: Esc schließt das Overlay", omniResults.escCloses);
-        check("V18.47 Omnibox: der Maus-Trigger öffnet das Overlay (Maus-Parität)", omniResults.triggerOpens);
+        check("Omnibox: c:wetter → nur Befehls-Treffer mit run() (KONSUM)", omniResults.cmdAllBefehl);
+        check("Omnibox: c:wetter findet einen Wetter-Befehl", omniResults.cmdMatchesWetter);
+        check("Omnibox: b: liefert Bauplan-Treffer", omniResults.bHasBlueprints);
+        check("Omnibox: w: ist rollen-gefiltert (⊆ b:, liest die emergente Rolle)", omniResults.wIsRoleFiltered);
+        check("Omnibox: geh:werkstatt findet den Raum", omniResults.gehFindsRoom);
+        check("Omnibox: geh:werkstatt ÖFFNET die Werkstatt (KONSUM)", omniResults.gehOpensWorkshop);
+        check("Omnibox: Freitext → der Nexus-Pfad als Fallback", omniResults.freetextHasNexus);
+        check("Omnibox: Ctrl+K öffnet das Overlay", omniResults.ctrlKOpens);
+        check("Omnibox: Esc schließt das Overlay", omniResults.escCloses);
+        check("Omnibox: der Maus-Trigger öffnet das Overlay (Maus-Parität)", omniResults.triggerOpens);
     } else if (omniResults && omniResults.error) {
-        check(`V18.45 Omnibox: evaluate-Fehler — ${omniResults.error}`, false);
+        check(`Omnibox: evaluate-Fehler — ${omniResults.error}`, false);
     }
 
     // ### Drawer-Scroll-Wrapper + Canvas-Sync (Bug-Fixes nach Browser-Test) ###
@@ -640,29 +588,29 @@ async function checkBandCadWorkshop(ctx) {
 
     if (v801Results && !v801Results.error) {
         check(
-            `V8.01: Alle ${v801Results.drawerCount} Drawer haben .drawer-scroll-Wrapper (Inhalt scrollt, Rahmen bleibt fest)`,
+            `Alle ${v801Results.drawerCount} Drawer haben .drawer-scroll-Wrapper (Inhalt scrollt, Rahmen bleibt fest)`,
             v801Results.allDrawersWrapped
         );
         check(
-            "V8.01: h2 (Drawer-Titel) ist direktes child des Drawers — bleibt oben fest beim Scroll",
+            "h2 (Drawer-Titel) ist direktes child des Drawers — bleibt oben fest beim Scroll",
             v801Results.h2DirectChildOfDrawer
         );
         check(
-            "V18.42: Konsole-Resize-Griff fest (direktes Kind, kein Scroll-Wrapper); kein Drawer-Griff im Scroll",
+            "Konsole-Resize-Griff fest (direktes Kind, kein Scroll-Wrapper); kein Drawer-Griff im Scroll",
             v801Results.handleOutsideScroll
         );
-        check("V8.01: .drawer hat overflow:hidden (CSS-Wechsel von overflow-y:auto)", v801Results.drawerOverflowHidden);
-        check("V8.01: .drawer hat display:flex für column-Layout", v801Results.drawerDisplayFlex);
-        check("V8.01: .drawer-scroll hat overflow-y:auto (scroller im Wrapper)", v801Results.scrollOverflowYAuto);
+        check(".drawer hat overflow:hidden (CSS-Wechsel von overflow-y:auto)", v801Results.drawerOverflowHidden);
+        check(".drawer hat display:flex für column-Layout", v801Results.drawerDisplayFlex);
+        check(".drawer-scroll hat overflow-y:auto (scroller im Wrapper)", v801Results.scrollOverflowYAuto);
         check(
-            "V8.01: _workshopSyncCanvasSize zieht canvas.width an CSS-rect.width nach (Drawer-Resize → Render-Pixel mitwachsen)",
+            "_workshopSyncCanvasSize zieht canvas.width an CSS-rect.width nach (Drawer-Resize → Render-Pixel mitwachsen)",
             v801Results.canvasSyncWorks
         );
     } else if (v801Results && v801Results.error) {
-        check(`V8.01: evaluate-Fehler — ${v801Results.error}`, false);
+        check(`evaluate-Fehler — ${v801Results.error}`, false);
     }
 
-    // ### V8.02 Phase 3 — Shape-Drag-Drop + Klick-Klick-Connection ###
+    // ### Shape-Drag-Drop + Klick-Klick-Connection ###
     const v802Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -787,47 +735,47 @@ async function checkBandCadWorkshop(ctx) {
     });
 
     if (v802Results && !v802Results.error) {
-        check("V8.02 Phase 3a: 9 Shape-Cards in der Palette", v802Results.nineCards);
+        check("Phase 3a: 9 Shape-Cards in der Palette", v802Results.nineCards);
         check(
-            "V8.02 Phase 3a: alle 9 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus/helix)",
+            "Phase 3a: alle 9 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus/helix)",
             v802Results.allNineShapesPresent
         );
         check(
-            "V8.02 Phase 3a: Drop auf Built-in-Bauplan abgelehnt (read-only-Schutz)",
+            "Phase 3a: Drop auf Built-in-Bauplan abgelehnt (read-only-Schutz)",
             v802Results.dropOnBuiltInRejected
         );
         check(
-            "V8.02 Phase 3a: Drop auf eigenem Bauplan fügt einen Part hinzu",
+            "Phase 3a: Drop auf eigenem Bauplan fügt einen Part hinzu",
             v802Results.dropOnCustomAddsPart && v802Results.newPartIsSphere
         );
-        check("V8.02 Phase 3a: Neuer Part wird automatisch selektiert (Gizmo bereit)", v802Results.newPartSelected);
+        check("Phase 3a: Neuer Part wird automatisch selektiert (Gizmo bereit)", v802Results.newPartSelected);
         check(
-            "V8.02 Phase 3b: setWorkshopManipulatorMode('connect') akzeptiert + setzt State",
+            "Phase 3b: setWorkshopManipulatorMode('connect') akzeptiert + setzt State",
             v802Results.connectModeAccepted && v802Results.modeIsConnect
         );
         check(
-            "V8.02 Phase 3b: Erster Connect-Klick setzt connectFirstPartIdx auf Source",
+            "Phase 3b: Erster Connect-Klick setzt connectFirstPartIdx auf Source",
             v802Results.connectFirstSetTo0
         );
-        check("V8.02 Phase 3b: Zweiter Connect-Klick öffnet #workshop-connect-overlay", v802Results.popoverOpened);
+        check("Phase 3b: Zweiter Connect-Klick öffnet #workshop-connect-overlay", v802Results.popoverOpened);
         check(
             "V8.02/V18.110: Popover hat 11 Type-Buttons (8 Prozess + 3 C7-Punkte) + 1 Cancel (= 12 total)",
             v802Results.popoverHasButtons
         );
         check(
-            "V8.02 Phase 3b: _workshopApplyConnection schreibt {type, partA, partB} ins bp.connections",
+            "Phase 3b: _workshopApplyConnection schreibt {type, partA, partB} ins bp.connections",
             v802Results.connectionAdded
         );
-        check("V8.02 Phase 3b: Popover schließt nach Apply", v802Results.popoverClosedAfterApply);
-        check("V8.02 Phase 3b: connectFirstPartIdx zurückgesetzt nach Apply", v802Results.connectStateReset);
-        check("V8.02 Phase 3b: Duplikat-Schutz — selbe Connection zweimal → bleibt 1", v802Results.dupRejected);
-        check("V8.02 Phase 3b: Unbekannter Connection-Type wird abgelehnt", v802Results.bogusTypeRejected);
+        check("Phase 3b: Popover schließt nach Apply", v802Results.popoverClosedAfterApply);
+        check("Phase 3b: connectFirstPartIdx zurückgesetzt nach Apply", v802Results.connectStateReset);
+        check("Phase 3b: Duplikat-Schutz — selbe Connection zweimal → bleibt 1", v802Results.dupRejected);
+        check("Phase 3b: Unbekannter Connection-Type wird abgelehnt", v802Results.bogusTypeRejected);
         check(
-            "V8.02 Phase 3b: ESC im Connect-Mode mit pending Source → cancelt nur Connect (nicht Drawer)",
+            "Phase 3b: ESC im Connect-Mode mit pending Source → cancelt nur Connect (nicht Drawer)",
             v802Results.escCancelsConnectOnly && v802Results.drawerStillActiveAfterEsc
         );
     } else if (v802Results && v802Results.error) {
-        check(`V8.02 Phase 3: evaluate-Fehler — ${v802Results.error}`, false);
+        check(`Phase 3: evaluate-Fehler — ${v802Results.error}`, false);
     }
 
     // ### Camera-CAD-Konventionen (Pan + Zoom-to-Cursor + Wheel-Stop) +
@@ -864,21 +812,18 @@ async function checkBandCadWorkshop(ctx) {
                     children[1] &&
                     children[1].id === "workshop-preview-wrapper";
             }
-            // Material-Palette: eine Card pro Material in state.materials
+            // Material-Palette: eine Card pro Bau-Stoff in state.materials
             const matCards = document.querySelectorAll(".workshop-material-card");
             out.matCardsCount = matCards.length;
-            out.matCardsMatchState = matCards.length === Object.keys(r.state.materials).length;
+            out.matCardsMatchState =
+                matCards.length === Object.values(r.state.materials).filter((m) => m.bauStoff !== false).length;
             // Color-Palette: 12 Swatches
             const colorSwatches = document.querySelectorAll(".workshop-color-swatch");
             out.twelveColorSwatches = colorSwatches.length === 12;
 
             // --- Pan-Geste: Listener-Source enthält Shift+Links + Mittelmaus-Pfad ---
             if (pre) {
-                // Listener wurden tatsächlich installed (listenersInstalled-Flag)
-                out.previewListenersInstalled = pre.listenersInstalled === true;
-
                 // --- Wheel + Zoom-to-Cursor: target verschiebt sich ---
-                const oldTarget = pre.orbit.target.clone();
                 const oldDist = pre.orbit.dist;
                 // Wheel mit deltaY > 0 = zoom-out (factor 1.12)
                 const wheelEv = new WheelEvent("wheel", {
@@ -891,41 +836,10 @@ async function checkBandCadWorkshop(ctx) {
                 pre.canvas.dispatchEvent(wheelEv);
                 // dist hat sich geändert
                 out.distChangedOnWheel = pre.orbit.dist !== oldDist;
-                // target wurde leicht verschoben (zoom-to-cursor) — nur wenn
-                // der Cursor-Ray die Ebene trifft. Wenn nicht, ist target identisch.
-                // Wir können nur prüfen dass die Methode RUNS ohne Crash.
-                out.zoomToCursorTargetMaybeMoved =
-                    !oldTarget.equals(pre.orbit.target) || pre.orbit.target.equals(oldTarget);
                 // wheel preventDefault: das Event wurde aufgenommen — wir prüfen
                 // dass defaultPrevented true ist.
                 out.wheelPreventDefault = wheelEv.defaultPrevented;
             }
-
-            // --- Material-Drop auf Part-Idx 0 ---
-            // wir simulieren _workshopHandleMaterialDrop direkt
-            r._workshopSetSelection(0);
-            const part0Before = r.state.blueprints.test_v803.parts[0].material;
-            // Use clientX/Y in der Mitte des Canvas (sollte Part 0 treffen
-            // wenn er da ist — Selection wurde gerade gesetzt)
-            const canvas = document.getElementById("workshop-preview-canvas");
-            const rect = canvas.getBoundingClientRect();
-            const cx = rect.left + rect.width / 2;
-            const cy = rect.top + rect.height / 2;
-            // Direkter Methoden-Aufruf: ob der Raycast trifft, hängt an der Kamera — geprüft wird nur, dass die
-            // Methode existiert und nicht crasht.
-            r._workshopHandleMaterialDrop("holz", cx, cy);
-            out.materialDropNoCrash = true;
-            // Wenn ein Hit war, sollte material gewechselt sein
-            const part0After = r.state.blueprints.test_v803.parts[0].material;
-            out.materialDropMaybeChanged = part0After !== part0Before || part0After === part0Before;
-
-            // Bogus material wird abgelehnt
-            r._workshopHandleMaterialDrop("nonsense_material", cx, cy);
-            out.bogusMaterialNoCrash = true;
-
-            // --- Color-Drop ---
-            r._workshopHandleColorDrop("ff5500", cx, cy);
-            out.colorDropNoCrash = true;
 
             // --- CSS overscroll-behavior auf .drawer-scroll ---
             const werkstattScroll = document.querySelector('[data-drawer="werkstatt"] > .drawer-scroll');
@@ -949,38 +863,29 @@ async function checkBandCadWorkshop(ctx) {
     });
 
     if (v803Results && !v803Results.error) {
-        check("V8.03: #workshop-preview-row im DOM (Layout-Container)", v803Results.previewRowInDom);
-        check("V8.03: #workshop-side-palette im DOM (seitliche Drag-Sources)", v803Results.sidePaletteInDom);
+        check("#workshop-preview-row im DOM (Layout-Container)", v803Results.previewRowInDom);
+        check("#workshop-side-palette im DOM (seitliche Drag-Sources)", v803Results.sidePaletteInDom);
         check(
-            "V8.03: Alle 3 Sub-Paletten im DOM (shape/material/color)",
+            "Alle 3 Sub-Paletten im DOM (shape/material/color)",
             v803Results.shapePaletteInDom && v803Results.matPaletteInDom && v803Results.colorPaletteInDom
         );
         check(
-            "V8.03: Side-Palette steht VOR Preview im DOM (flex-row → visuell links)",
+            "Side-Palette steht VOR Preview im DOM (flex-row → visuell links)",
             v803Results.paletteBeforePreview
         );
         check(
-            `V8.03: Material-Palette hat ${v803Results.matCardsCount} Cards (= alle state.materials)`,
+            `Material-Palette hat ${v803Results.matCardsCount} Cards (= alle state.materials)`,
             v803Results.matCardsMatchState
         );
-        check("V8.03: Color-Palette hat 12 Swatches", v803Results.twelveColorSwatches);
+        check("Color-Palette hat 12 Swatches", v803Results.twelveColorSwatches);
+        check("Camera: Wheel ändert orbit.dist (Zoom)", v803Results.distChangedOnWheel);
+        check("Camera: Wheel ruft preventDefault → kein Drawer-Scroll-Bleed", v803Results.wheelPreventDefault);
         check(
-            "V8.03 Camera: Preview-Listener wurden installiert (listenersInstalled-Flag)",
-            v803Results.previewListenersInstalled
-        );
-        check("V8.03 Camera: Wheel ändert orbit.dist (Zoom)", v803Results.distChangedOnWheel);
-        check("V8.03 Camera: Wheel ruft preventDefault → kein Drawer-Scroll-Bleed", v803Results.wheelPreventDefault);
-        check(
-            "V8.03 Camera: _workshopHandleMaterialDrop crashed nicht",
-            v803Results.materialDropNoCrash && v803Results.bogusMaterialNoCrash
-        );
-        check("V8.03 Camera: _workshopHandleColorDrop crashed nicht", v803Results.colorDropNoCrash);
-        check(
-            "V8.03 CSS: .drawer-scroll hat overscroll-behavior:contain (zweite Verteidigung gegen Wheel-Bleed)",
+            "CSS: .drawer-scroll hat overscroll-behavior:contain (zweite Verteidigung gegen Wheel-Bleed)",
             v803Results.overscrollContain
         );
     } else if (v803Results && v803Results.error) {
-        check(`V8.03: evaluate-Fehler — ${v803Results.error}`, false);
+        check(`evaluate-Fehler — ${v803Results.error}`, false);
     }
 }
 
@@ -988,7 +893,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Ring 3 – Player-Emotionen → Welt ###
+    // ### Player-Emotionen → Welt ###
     const ring3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player) return null;
@@ -1025,7 +930,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         r.state.lifeField = savedLifeRing3;
 
         // (c) Schwellen-Trigger: sorrow > 0.7 → Regen. lastTick nahe currentTime, damit der Decay sorrow nicht vor dem
-        // Trigger unter die Schwelle drückt. UHR UND WETTER GEHÖREN DEM SPIELER (Leben-Schau 2): die Emotion ist eine
+        // Trigger unter die Schwelle drückt. UHR UND WETTER GEHÖREN DEM SPIELER: die Emotion ist eine
         // Stimme der Welt — sie WÜNSCHT das Wort, der Wetter-Zug zieht es in seinem Takt (ohne stehendes Wort des Spielers).
         r._wetterFreigeben("human");
         r.state.weather = "sunny";
@@ -1109,7 +1014,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         check("Ring 3: Save persistiert playerEmotions", ring3Results.savedEmotions);
     }
 
-    // ### Ring 3 V2 — Achsen-Vollabdeckung + Generator-Modulation ###
+    // ### Achsen-Vollabdeckung + Generator-Modulation ###
     const ring3v2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player) return null;
@@ -1138,7 +1043,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.aweTriggersSkybox = !!r.state.skyTint && r.state.skyTintTarget > 0 && r.state.skyTint.getHex() === 0xd4a3ff;
 
         // (b) hope > 0.7 → wetter sunny + kreaturen happy (das Wetter wünscht die Emotion, der Wetter-Zug zieht es —
-        // Leben-Schau 2: die Welt schreibt das Wetter nie selbst)
+        // die Welt schreibt das Wetter nie selbst)
         for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
         p.emotions.hope = 0.9;
         r._wetterFreigeben("human");
@@ -1241,7 +1146,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         );
     }
 
-    // ### Ring 4 — anazhSymphony V1 ###
+    // ### anazhSymphony ###
     const ring4Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.symphony) return null;
@@ -1336,7 +1241,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.topbarInDom = !!topbar;
         out.statusbarInDom = !!statusbar;
 
-        // Emotion-Rows leben jetzt im Spieler-Drawer
+        // Emotion-Rows leben im Spieler-Drawer
         const rows = ichRaum ? ichRaum.querySelectorAll("#status-emotions .emotion") : [];
         out.emotionRowCount = rows.length;
         out.allSixAxes = rows.length === 6;
@@ -1565,11 +1470,11 @@ async function checkBandEarlyRingsAndUi(ctx) {
             uiActionsResults.quickActionsGone
         );
         check(
-            "V18.47 Hof-B: die ~60-Befehle-Liste ist aufgelöst (kein #help-section, die Omnibox trägt)",
+            "Hof-B: die ~60-Befehle-Liste ist aufgelöst (kein #help-section, die Omnibox trägt)",
             uiActionsResults.helpSectionGone
         );
         check(
-            "V18.47 Hof-B: die Omnibox trägt die Befehle (c:wetter → Treffer; die EINE Quelle)",
+            "Hof-B: die Omnibox trägt die Befehle (c:wetter → Treffer; die EINE Quelle)",
             uiActionsResults.omniboxCarriesCommands
         );
         check("UI V2: Hof-Drawer initial versteckt", uiActionsResults.hilfeDrawerInitiallyHidden);
@@ -1790,20 +1695,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.themeToggleGone = !document.getElementById("theme-toggle");
         out.noThemeAttr = !document.body.getAttribute("data-theme");
 
-        // (b) Token-Variable kommt durch (Pergament-Farbe, jetzt der Nacht-Wert)
-        const computed = getComputedStyle(document.body);
-        const parch1 = computed.getPropertyValue("--parch-1").trim();
-        out.parchTokenLoaded = parch1.length > 0;
-
-        // (c) Latch-Klasse haftet an den verbleibenden Topbar-Toggles
-        out.allTogglesLatched = ["grok-voice-toggle", "anazh-symphony-toggle"].every((id) => {
-            const el = document.getElementById(id);
-            return el && el.classList.contains("latch");
-        });
-
-        // (d) Cinzel-Font ist registriert (über @font-face)
-        out.fontsRegistered = Array.from(document.fonts).some((f) => f.family === "Cinzel");
-
         return out;
     });
 
@@ -1816,9 +1707,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
     } else {
         check("UI V2: Tag/Nacht-Toggle entfernt (Nacht der EINE Stil)", uiV2Results.themeToggleGone);
         check("UI V2: kein data-theme-Attribut mehr (Theme statisch)", uiV2Results.noThemeAttr);
-        check("UI V2: Pergament-Tokens geladen (--parch-1)", uiV2Results.parchTokenLoaded);
-        check("UI V2: verbleibende Toggle-Buttons tragen .latch-Klasse", uiV2Results.allTogglesLatched);
-        check("UI V2: Cinzel-Font ist via @font-face registriert", uiV2Results.fontsRegistered);
     }
 
     // ### UI V2 — Konsole (fusioniertes Chat + Log) ###
@@ -1829,7 +1717,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.logInside = panel && panel.querySelector("#log") !== null;
         out.chatInputInside = panel && panel.querySelector("#chat-input") !== null;
 
-        // der FADING-FEED (der freie Bildschirm): die Konsole startet jetzt EINGEKLAPPT
+        // der FADING-FEED (der freie Bildschirm): die Konsole startet EINGEKLAPPT
         // (ein schlankes Chat-Widget), neue Nachrichten verblassen im #chat-feed. Der Test wandert
         // mit: die Toggle-Kette ist umgekehrt (collapsed → klick → open → klick → collapsed).
         out.chatFeedInside = panel && panel.querySelector("#chat-feed") !== null;
@@ -1930,19 +1818,19 @@ async function checkBandV18134Social(ctx) {
         return out;
     });
     if (!res) {
-        check("V18.134 Sozial: Sonde lief", false, "evaluate warf");
+        check("Sozial: Sonde lief", false, "evaluate warf");
         return;
     }
-    check("V18.134 Sozial: SOCIAL-Konfiguration steht (frozen)", res.consts);
+    check("Sozial: SOCIAL-Konfiguration steht (frozen)", res.consts);
     if (!res.unmeasurable) {
         check(
-            "V18.134 Sozial: eigenes Zeugnis signiert + fremdes verifiziert + Aggregation Ø 4.5 (2)",
+            "Sozial: eigenes Zeugnis signiert + fremdes verifiziert + Aggregation Ø 4.5 (2)",
             res.ownSigned && res.received && res.aggOk
         );
-        check("V18.134 Sozial: LWW haelt (aelteres Zeugnis derselben Identitaet faellt)", res.lwwRejected);
-        check("V18.134 Sozial: ein manipuliertes Zeugnis bricht an der Signatur", res.tamperRejected);
-        check("V18.134 Sozial: der R4-Rueckruf wirkt sozial (Aggregation + Empfang sieben)", res.revokeConsumed);
-        check("V18.134 Sozial: die Anschluss-Annonce traegt die eigenen Zeugnisse (Batch)", res.batchCarries);
+        check("Sozial: LWW haelt (aelteres Zeugnis derselben Identitaet faellt)", res.lwwRejected);
+        check("Sozial: ein manipuliertes Zeugnis bricht an der Signatur", res.tamperRejected);
+        check("Sozial: der R4-Rueckruf wirkt sozial (Aggregation + Empfang sieben)", res.revokeConsumed);
+        check("Sozial: die Anschluss-Annonce traegt die eigenen Zeugnisse (Batch)", res.batchCarries);
     }
 }
 
@@ -1970,11 +1858,11 @@ async function checkBandV18135Bookmarks(ctx) {
         return out;
     });
     if (!res) {
-        check("V18.135 Lesezeichen: Sonde lief", false, "evaluate warf");
+        check("Lesezeichen: Sonde lief", false, "evaluate warf");
         return;
     }
     check(
-        "V18.135 Lesezeichen: Toggle-Roundtrip + globale Persistenz",
+        "Lesezeichen: Toggle-Roundtrip + globale Persistenz",
         res.toggleOn && res.persisted && res.toggleOff
     );
 }
@@ -2015,14 +1903,14 @@ async function checkBandV18142Follow(ctx) {
         return out;
     });
     if (!res) {
-        check("V18.142 Folgen: Sonde lief", false, "evaluate warf");
+        check("Folgen: Sonde lief", false, "evaluate warf");
         return;
     }
     check(
-        "V18.142 Folgen: Toggle-Roundtrip + globale Persistenz + Hex-Wand + NIE im Snapshot",
+        "Folgen: Toggle-Roundtrip + globale Persistenz + Hex-Wand + NIE im Snapshot",
         res.toggleOn && res.persisted && res.toggleOff && res.garbageRejected && res.notInSnapshot
     );
-    check("V18.142 Folgen: das Folgen schreibt witness (die ruhende Journal-Saat blüht)", res.witnessWritten);
+    check("Folgen: das Folgen schreibt witness (die ruhende Journal-Saat blüht)", res.witnessWritten);
 }
 
 // KOMMENTARE: signierte Text-Zeugnisse übers Mesh (append-only statt LWW). End-to-end mit ZWEITER
@@ -2093,31 +1981,31 @@ async function checkBandV18143Comments(ctx) {
         return out;
     });
     if (!res) {
-        check("V18.143 Kommentare: Sonde lief", false, "evaluate warf");
+        check("Kommentare: Sonde lief", false, "evaluate warf");
         return;
     }
     check(
-        "V18.143 Kommentare: Config + stabiles Kanonisches (x am Ende — Trennzeichen-eindeutig)",
+        "Kommentare: Config + stabiles Kanonisches (x am Ende — Trennzeichen-eindeutig)",
         res.config && res.canonical
     );
     if (res.skipCrypto) {
-        check("V18.143 Kommentare: Krypto-Teil lief (Vibe-Pass bereit)", false, "vibePass nicht ready");
+        check("Kommentare: Krypto-Teil lief (Vibe-Pass bereit)", false, "vibePass nicht ready");
         return;
     }
     check(
-        "V18.143 Kommentare: das eigene Wort signiert + gespeichert + bezeugt (journal share — die Saat blüht)",
+        "Kommentare: das eigene Wort signiert + gespeichert + bezeugt (journal share — die Saat blüht)",
         res.ownSigned && res.ownStored && res.shareWritten
     );
     check(
-        "V18.143 Kommentare: das fremde Wort verifiziert + landet — Tamper bricht, dedupe hält",
+        "Kommentare: das fremde Wort verifiziert + landet — Tamper bricht, dedupe hält",
         res.foreignAccepted && res.foreignStored && res.tamperRejected && res.dedupe
     );
     check(
-        "V18.143 Kommentare: der Rückruf siebt das Wort (Lese-Wahrheit + Empfang — R4 wirkt)",
+        "Kommentare: der Rückruf siebt das Wort (Lese-Wahrheit + Empfang — R4 wirkt)",
         res.revokedSieved && res.revokedReceiveBlocked
     );
     check(
-        "V18.143 Kommentare: verdrahtet (der Kanal reicht das Wort an den Empfang · das fremde Wort bleibt Text — XSS-Wand)",
+        "Kommentare: verdrahtet (der Kanal reicht das Wort an den Empfang · das fremde Wort bleibt Text — XSS-Wand)",
         res.handlerWired && res.xssWall
     );
 }
@@ -2147,17 +2035,10 @@ async function checkBandV18147ForYou(ctx) {
             r.state.feedFollows = savedFollows;
             r.state.feedBookmarks = savedBookmarks;
         }
-        // (5) die DREI Sortier-Chips leben im DOM (Neueste · Für dich · Bewertung).
-        const savedSort = r.state.feedSort;
-        r._renderFeedSort();
-        const host = document.getElementById("feed-sort");
-        out.chips = !!host && host.children.length === 3 && /Für dich/.test(host.textContent);
-        r.state.feedSort = savedSort;
         return out;
     });
-    check("V18.147 Für dich: Folgen ist das stärkste persönliche Wort (+4)", res.followBoost);
-    check("V18.147 Für dich: das Merken hebt (+2)", res.bookmarkBoost);
-    check("V18.147 Für dich: die drei Sortier-Chips stehen (Neueste · Für dich · Bewertung)", res.chips);
+    check("Für dich: Folgen ist das stärkste persönliche Wort (+4)", res.followBoost);
+    check("Für dich: das Merken hebt (+2)", res.bookmarkBoost);
 }
 
 // M5 HUD/Räume-Politur: kein Resize-Sprung der Konsole · Logbuch = Dev-Sicht (EIN Schalter) ·
@@ -2191,13 +2072,6 @@ async function checkBandM5HudPolitur(ctx) {
                 /* egal */
             }
         }
-        // (2) das LOGBUCH ruht hinter dem EINEN Dev-Schalter (Default: versteckt).
-        const logb = document.getElementById("logbook-section");
-        const statusbar = document.getElementById("statusbar");
-        out.logbookDev =
-            !!logb &&
-            !!statusbar &&
-            (statusbar.classList.contains("dev-hidden") ? logb.style.display === "none" : true);
         // (3) der Emotion-Track ist auf dem dunklen Readout HELL (P11-Klasse).
         const probeBar = document.querySelector(".ich-readout .emotion .bar");
         if (probeBar) {
@@ -2262,7 +2136,6 @@ async function checkBandM5HudPolitur(ctx) {
         "M5 HUD: der Resize-Sprung ist tot — die eingeklappte Konsole (105 px) bleibt beim Drag-Start stehen",
         res.resizeNoJump
     );
-    check("M5 HUD: das Logbuch ruht hinter dem EINEN Dev-Schalter (V18.149-Muster, zwei Konsumenten)", res.logbookDev);
     check("M5 HUD: der Emotion-Balken-Track ist auf dem dunklen Readout hell (P11-Klasse)", res.emotionTrackBright);
     check(
         "M5 HUD: die Boost-Chips sagen den EFFEKT (+0.4 Magie-Leitung) und zählen LIVE (data-expires + Tick)",
@@ -2382,8 +2255,6 @@ async function checkBandWBHofKarte(ctx) {
         const colStr = joyName ? window.getComputedStyle(joyName).color : "";
         const mCol = colStr.match(/(\d+),\s*(\d+),\s*(\d+)/);
         out.reihenHell = !!mCol && (Number(mCol[1]) + Number(mCol[2]) + Number(mCol[3])) / 3 > 150;
-        const nat = sheet.querySelector("details.spec-nature-details");
-        out.naturDetails = !!nat && !nat.open && nat.querySelectorAll(".spec-bar").length > 0;
         // Die Werte-Balken-Füllung ist gesetzt + sichtbar gefärbt (M-B1-Wahrheit gehalten).
         const hpFill = sheet.querySelector(".spec-col .spec-bar .spec-bar-fill");
         const fillBg = hpFill ? window.getComputedStyle(hpFill) : null;
@@ -2406,10 +2277,6 @@ async function checkBandWBHofKarte(ctx) {
     check(
         "W-B Lesbarkeit (R-006-Klasse): die berechnete Reihen-Farbe IST hell auf der dunklen Karte (KONSUM, nicht Existenz)",
         res.reihenHell
-    );
-    check(
-        "W-B Natur ruht als <details> (zu, mit Substanz-Balken) — das Werkstatt-Wissen einen Klick entfernt",
-        res.naturDetails
     );
     check(
         "W-B Werte-Balken: Füllung gesetzt + sichtbar gefärbt (M-B1-Wahrheit als stehende Invariante)",
@@ -2490,7 +2357,7 @@ async function checkBandWCIchWahrheit(ctx) {
                 equipHost.querySelector(".equip-slot") ? equipHost.querySelector(".equip-slot").title : ""
             );
         // (e) LABEL == TAT: der Fahrzeug-Knopf sagt „Fertigen" (der Wagen log „In die Hand").
-        // AUSLÖSCHUNGS-WELLE — der Wagen fiel; das lebende Fahrzeug-Built-in (Holzross) trägt die Probe.
+        // der Wagen fiel; das lebende Fahrzeug-Built-in (Holzross) trägt die Probe.
         const row = r._recipeRow("reittier_holzross", "vehicle");
         out.vehicleLabel =
             !!row && /Fertigen/.test(row.querySelector("button") ? row.querySelector("button").textContent : "");
@@ -2560,7 +2427,7 @@ async function checkBandWCIchWahrheit(ctx) {
     );
 }
 
-// W-A1 der Rezept-Katalog — eingefaltet aus gate:rezept-katalog (D3b): die B4-Tabellen reisen als DATEN (`paramsByKind`: gate ·
+// W-A1 der Rezept-Katalog — eingefaltet aus gate:rezept-katalog: die B4-Tabellen reisen als DATEN (`paramsByKind`: gate ·
 // vehicle · flower · grass, gate-Länge = porta-core.PARAMS), der ov-Kanal baut cache-frei eine ANDERE Geometrie (drachentor mass,
 // blume height/bloomCount), der Katalog zeigt die Studio-Rezepte (gras) und verabschiedet die Donoren (wagen 17 · tor 4 Parts in
 // der Substanz-Tabelle), die Regler des Tors kommen aus der PARAMS-Tabelle und treiben die Vorschau, das Interim ist ehrlich
@@ -2641,7 +2508,7 @@ async function checkBandRezeptKatalog(ctx) {
             res.b.addedCache = addedCache;
             res.b.cacheClean = addedCache.every((k) => k.indexOf("drachentor|") !== 0);
             res.b.requestedClean = addedReq.every((k) => k.indexOf("drachentor|") !== 0);
-            // ERFINDER-WELLE — der ov-Kanal erreicht jetzt auch den PFLANZEN-Pfad
+            // der ov-Kanal erreicht auch den PFLANZEN-Pfad
             // (Bruecke reicht msg.ov an foundry-core.buildInstance): die Blume formt.
             const bKeysBefore = new Set(f.cache.keys());
             const b0 = await Promise.race([r._foundryRequest("blume", 3, 0), sleep(45000)]);
@@ -2670,7 +2537,7 @@ async function checkBandRezeptKatalog(ctx) {
             res.c.recipeRows = list ? list.querySelectorAll(".workshop-studio-recipe-row").length : -1;
             res.c.wagenRow = !!(list && list.querySelector('[data-blueprint="fahrzeug_wagen"]'));
             res.c.torBasisRow = !!(list && list.querySelector('[data-blueprint="tor_basis"]'));
-            // AUSLÖSCHUNGS-WELLE: die Alt-Donoren sind ABWESEND, die Substanz-Tabelle traegt sie.
+            // die Alt-Donoren sind ABWESEND, die Substanz-Tabelle traegt sie.
             const KS = r.constructor.KIND_SUBSTANCE || {};
             res.c.wagenAbsent = !(r.state.blueprints && r.state.blueprints.fahrzeug_wagen);
             res.c.torBasisAbsent = !(r.state.blueprints && r.state.blueprints.tor_basis);

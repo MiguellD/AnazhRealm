@@ -1,43 +1,22 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-wetter-wache.cjs — DIE WACHE VON UHR UND WETTER: Halt heißt Halt, und frei gehören Uhr und Wetter dem Spieler. Der
-// EINE Wetter-Schreiber `_setWeather` verweigert jeden Zug, solange die Uhr unter 0 steht (der Halt der Bühne); das GESETZ DER
-// SCHREIBER (`_himmelSchreiber`) — die Uhr
-// schreibt nur ihr eigener Gang, der Spieler und das Laden (der EINE Uhr-Schreiber `_uhrSetzen`); das Wort des Spielers über
-// das Wetter steht, bis er es freigibt; die Welt (Nexus, seine Gesetze, die Emotion, die Wesen) schreibt die Uhr nie und das
-// Wetter nie direkt — sie wünscht das nächste Wort des Wetter-Zugs, der im Takt `WETTER_ZUG_SEK` zieht.
-// Die Wand (Null-Renderer, echte Welten):
-//   (H) HALT: unter der Bühne versucht jeder Schreiber-Weg des Spiels das Wetter zu drehen — Emotion (`updatePlayerEmotions`,
-//       sorrow), Nexus (`_loopNexusUpdate`), Gesetz (`_tickWorldRules`), Mensch, Mitspieler (DSL-Quelle `remote:`), Auto-Zug
-//       (`_loopWeatherAndGrowth`): das Wetter bleibt „sunny", die Uhr eingefroren, jeder Zug steht im Buch des Wetter-Spions
-//       als verweigert beim Namen seiner Quelle;
-//   (S) SCHARF: ein roher Schreiber am `_setWeather` vorbei (`state.weather = …`) fällt ROT und steht als ROH im Urteil;
-//   (Z) SAAT (Wetter H1): nach „frei" zieht der Auto-Zug in 20 min Spiel-Zeit je Saat dieselbe Folge, welche Wanduhr gilt, an
-//       zwei Orten 3 km auseinander;
-//   (G) GESETZ (eine frische Welt, das Spiel läuft getaktet mit seinem Nexus, `HIMMEL_MIN` Minuten Spiel-Zeit): der Spieler
-//       sagt „setze uhrzeit mittag" und „setze wetter sonnig" (der echte Chat-Pfad); die Täter der Schau schreiben dagegen —
-//       die Nexus-Gesetze auf die Uhr (der Zwilling `time_of_day` und `set_time_of_day`) und auf den Regen, die Würfel des
-//       Nexus auf Uhr und Sturm, die Emotion sorrow, und im Schöpfer-Modus ein Wesen, dessen Vorschlag von selbst läuft
-//       (`_handleCreatureProposedProgram` alle `WESEN_SEK`) — und JEDER Schreiber steht beim Namen (`himmelUrteil`): die Uhr geht nur ihren Gang im
-//       Gesetz der Tag-Länge, das Wetter bleibt sonnig, jeder Täter steht im Buch;
-//   (B) BAND: nach „setze wetter frei" schreibt nur der Wetter-Zug, nie schneller als sein Takt, und er zieht das Wort, das
-//       die Welt sich wünscht (auch das Wesen wünscht nur);
-//   (R) REGLER: der Tageszeit-Regler der Einstellungen zeigt die Welt-Zeit;
-//   (T) TAG: die Tag-Länge einer frischen Welt trägt eine Szene (von Mittag bis Sonnenuntergang ≥ `TAG_SZENE_MINUTEN`), und
-//       ein alter Spielstand setzt sie nicht zurück (die Wahl des Spielers lebt bei ihm, der Kopf trägt sie nur für die Taille);
-//   (Q) QUELLE: der Zwilling `time_of_day` ist fort (die Schreiber nennt (H)/(U) im Verhalten); kein NEUER Wurf des
-//       Nexus (4000 Atome, 4000 Gesetze, 4000 Mutationen) trägt einen Uhr-Op — was er aus seiner Geschichte erbt (die Uhr-Sätze
-//       des Spielers, `dslSelectByFitness` → `dslMutate`), wirft die Uhr weiter und steht in (G)/(B) als verweigert beim Namen;
-//   (U) UHR (A9): die Bühne hält NUR die EINE Bild-Uhr `_bildZeit`, der Loop läuft drei Frames weiter — jeder Leser
-//       (`__bildUhren`: Himmel, Wasser, Wind, Böe, Regen, Tor, Fell) steht mit ihr, jede Shader-Zeit zeichnet zu T, sonst steht
-//       er beim Namen; die Leser jeder Welt (Himmel, Wind, Böe — auch im Null-Renderer) stehen in der Liste, und der Loop schrieb
-//       die Bild-Uhr (verweigert); die Bühne zeichnet das Wort Regen, ein falsches bricht laut;
-//   (P) kein Page-Error.
-// SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Urteile der Wache (`wetterUrteil`, `himmelUrteil`) fallen bei
-// jedem eingeschmuggelten Täter rot — ein Schreiber, hin und zurück, roh, ohne Quelle, die tauende Uhr, ein blinder Spion; der
-// Nexus an der Uhr, ein roher Uhr-Schreiber, der Sprung, der lahme Gang, der Zug gegen das Wort, ein fehlender Täter, die Welt,
-// die selbst schreibt, der Zug im Galopp, die schweigende Welt, das Wesen gegen das Wort, das Wesen, das selbst schreibt, das
-// fehlende Wesen — und bleiben bei Bühne, Verweigerung und Wunsch grün.
+// diag-wetter-wache.cjs — DIE WACHE VON UHR UND WETTER: Halt heißt Halt, frei gehören Uhr und Wetter dem Spieler, und das
+// Wetter ist eine Funktion von Saat, Ort und Spiel-Zeit. Der EINE Wetter-Schreiber `_setWeather` verweigert jeden Zug unter der
+// Bühne (Uhr < 0); das GESETZ DER SCHREIBER (`_himmelSchreiber`): die Uhr schreiben ihr Gang, der Spieler und das Laden
+// (`_uhrSetzen`), das Wort des Spielers steht bis „frei", die Welt wünscht nur — der Zug zieht im Takt `WETTER_ZUG_SEK` ihren
+// Wunsch oder die Front am Ort. Die Wand (Null-Renderer, echte Welten):
+//   (H) HALT: unter der Bühne dreht kein Weg das Wetter (Emotion, Nexus, Gesetz, Mensch, Mitspieler, Zug), jeder steht beim
+//       Namen; (S) SCHARF: ein roher Schreiber am `_setWeather` vorbei fällt ROT;
+//   (Z) SAAT: frei zieht der Zug in 20 min Spiel-Zeit (Ereignis-Takte) je Saat und Ort dieselbe Folge, welche Wanduhr gilt;
+//   (F) FRONT im Zug: Regen an A bei trockenem B (3 km windab) ≥ 20 % der Zeit, Lag = Abstand ÷ Zug ±20 %, alle fünf Zeilen von
+//       WX_GESETZ erreichbar, der Sturm des Kerns (phyto-core wetterAt) zieht den Zug der Welt und das Wetterspiel des Labors;
+//   (G) GESETZ: eine frische Welt läuft `HIMMEL_MIN` Minuten getaktet — Nexus, Emotion und ein Wesen im Schöpfer-Modus gegen das
+//       Wort des Spielers, jeder Täter beim Namen (`himmelUrteil`); (B) BAND: frei schreibt nur der Zug, nie schneller als sein
+//       Takt; (R) REGLER zeigt die Welt-Zeit; (T) TAG trägt eine Szene, ein alter Stand setzt ihn nicht zurück; (Q) QUELLE: kein
+//       Wurf des Nexus trägt einen Uhr-Op; (U) UHR (A9): die Bühne hält NUR die Bild-Uhr, jeder Leser steht mit ihr; (P) kein
+//       Page-Error.
+// SELBSTTEST (--selftest, ohne Browser, in `npm run check`): jedes Urteil fällt bei jedem eingeschmuggelten Täter rot und bleibt
+// bei Bühne, Verweigerung und Wunsch grün.
 //   node scripts/diag-wetter-wache.cjs [--selftest]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
@@ -56,9 +35,6 @@ const HIMMEL_MIN = Number(process.env.HIMMEL_MIN || 6);
 const SCHRITT_SEK = 0.25;
 // Der Takt des Wesens im Schöpfer-Modus (Spiel-Sekunden): sechs Vorschläge je Fenster, zwei je Takt des Wetter-Zugs.
 const WESEN_SEK = 60;
-// Die Szene, wenn das Spiel keine nennt (der alte Stand): die längste Szene der Leben-Schau 2 außer C-8 (A-5 11 min, A-7 9 min,
-// C-9 12,3 min — aus den Zeitstempeln der Bilder).
-const SZENE_SCHAU_MIN = 15;
 
 if (process.argv.includes("--selftest")) {
     console.log("=== WETTER-WACHE — Selbsttest der Urteile (ohne Browser) ===");
@@ -81,25 +57,32 @@ if (process.argv.includes("--selftest")) {
         v.push(
             "uhr: die stehende Uhr ist nicht grün, der laufende Leser, der stumme Loop, der fehlende, der Leser neben T oder das stille Wort nicht rot"
         );
-    const Z = (...f) => ({ zuege: 2, laeufe: f.map((x, i) => [`L${i}`, { folge: x, fade: x.split(" ").length }]) });
-    const [g, s] = ["rainy sunny", "stormy sunny"];
+    const Z = (...f) => ({ zuege: 2, laeufe: f.map((x, i) => [`L${i}`, { folge: x, fade: wechsel(x) }]) });
+    const [g, s, h] = ["rainy sunny", "stormy sunny", "sunny cloudy"];
+    const stumm = Z(g, g, h, h, s);
+    stumm.laeufe[2][1].fade = 0;
     if (
-        saatRot(Z(g, g, g, g, s)).length ||
-        saatRot(Z(g, s, g, g, s)).length !== 1 ||
-        saatRot(Z(g, g, g, g, g)).length !== 1 ||
-        saatRot(Z(g, g, "rainy", "rainy", s)).length !== 2
+        saatRot(Z(g, g, h, h, s)).length ||
+        saatRot(Z(g, s, h, h, s)).length !== 1 ||
+        saatRot(Z(g, g, h, h, g)).length !== 1 ||
+        saatRot(Z(g, g, g, g, s)).length !== 1 ||
+        saatRot(Z(g, g, "rainy", "rainy", s)).length !== 2 ||
+        saatRot(Z("sunny sunny", "sunny sunny", h, h, s)).length !== 2 ||
+        saatRot(stumm).length !== 1
     )
-        v.push("saat: die Folge der Saat ist nicht grün, die Wanduhr, die blinde Saat oder der stumme Zug nicht rot");
+        v.push("saat: die Folge, Wanduhr, blinde Saat, blinder Ort, stehende Front oder stummer Zug");
+    const F = (o) => frontRot(Object.assign({ nassTrocken: 0.3, lag: 270, soll: 273, worte: [1, 2, 3, 4, 5], welt: "stormy", labor: "sturm" }, o));
+    if (
+        F({}).length ||
+        [{ nassTrocken: 0.1 }, { lag: 600 }, { worte: [1, 2, 3] }, { welt: "sunny" }, { labor: "klar" }].some((o) => F(o).length !== 1)
+    )
+        v.push("front: die Front, trockener Ort, falscher Lag, fehlende Zeile oder blinde Mutation");
     for (const x of v) console.log("  ❌ " + x);
     if (v.length) {
         console.log("\n❌ SELBSTTEST ROT — ein Urteil der Wache ist blind.");
         process.exit(1);
     }
-    console.log(
-        "✅ SELBSTTEST GRÜN — Schreiber, roh, tauende Uhr, blinder Spion; Nexus an der Uhr, Sprung, lahmer Gang, Zug gegen das " +
-            "Wort, fehlender Täter, die Welt schreibt selbst, Zug im Galopp, das Wesen gegen das Wort, das Wesen schreibt selbst, " +
-            "das Wesen fehlt, die Saat an der Wanduhr oder blind, der stumme Zug fallen rot; Bühne, Verweigerung und Wunsch grün."
-    );
+    console.log("✅ SELBSTTEST GRÜN — jeder eingeschmuggelte Täter fällt rot; Bühne, Verweigerung und Wunsch grün.");
     process.exit(0);
 }
 
@@ -160,30 +143,51 @@ function probe(o) {
     aus.roh = fenster(() => {
         st.weather = "rainy";
     });
-    // (Z) je Lauf (Saat, Ort dx, Wanduhr-Gang je Takt in ms) `zuege` Sprünge der Zug-Uhr; der Übergang (45 s) endet im Takt
+    // (Z) je Lauf (Saat, Ort d m windab, Wanduhr-Gang je Takt in ms) `zuege` Takte des Zugs; je Takt springt die Wetter-Uhr um
+    // WETTER_ZUG_SEK (Ereignis-Takte), die Folge ist das Wort nach jedem Takt
     const wm = st.worldMeta || (st.worldMeta = {});
-    const [saat0, pn, x0] = [wm.seed, performance.now, st.playerMesh.position.x];
-    const lauf = ([saat, dx, uhr]) => {
-        [wm.seed, st.playerMesh.position.x] = [saat, x0 + dx];
-        (wm.bauSame || (wm.bauSame = {})).wetter = 0;
+    const pm = st.playerMesh.position;
+    const [saat0, pn, x0, y0, uhr0, Z] = [wm.seed, performance.now, pm.x, pm.z, wm.wetterUhr, r.constructor.WETTER_ZUG_SEK];
+    const P = globalThis.__phytoCore;
+    const zug = (saat, d) => {
+        const g = P.windGrund(saat);
+        [wm.seed, pm.x, pm.z, wm.wetterUhr] = [saat, x0 + d * g.x, y0 + d * g.z, 0];
         window.__wetterSetzen("sunny");
-        st.weatherEffectTime = 0;
         r.dslRun(["weather", "frei"], { source: "human" });
-        const s0 = window.__wetterSpion().seq;
-        let fade = 0;
+    };
+    const lauf = ([saat, d, uhr]) => {
+        zug(saat, d);
+        const [folge, s0] = [[], window.__wetterSpion().seq];
         for (let i = 0; i < o.zuege; i++) {
             performance.now = () => pn.call(performance) + uhr * (i + 1);
-            st.weatherEffectTime = r.constructor.WETTER_ZUG_SEK;
+            [wm.wetterUhr, st.weatherEffectTime] = [Z * (i + 1), Z];
             r._loopWeatherAndGrowth(0);
-            fade += st.weatherTransition && st.weatherTransition.to === st.weather ? 1 : 0;
+            folge.push(st.weather);
             st.weatherTransition = null;
         }
         performance.now = pn;
         const buch = window.__wetterBuch(s0).buch.filter((e) => e.quelle === "auto-zug" && e.art === "schreiber");
-        return { folge: buch.map((e) => e.zu).join(" "), fade };
+        return { folge: folge.join(" "), fade: buch.length };
     };
     aus.saat = { zuege: o.zuege, laeufe: o.laeufe.map((l) => [l.join(" · "), lauf(l)]) };
-    [wm.seed, st.playerMesh.position.x] = [saat0, x0];
+    // (F) DIE FRONT im Zug der Welt: A = der erste Lauf, B = derselbe 3 km windab; der Lag ist die Verschiebung in Takten, um
+    // die B die Folge von A am besten wiederholt; die Worte des Kerns an 4 096 Orten; der Sturm des Kerns im Zug
+    const [A, B] = [0, 2].map((i) => aus.saat.laeufe[i][1].folge.split(" "));
+    const gleich = (k) => A.filter((w, i) => w === B[i + k]).length / (A.length - k);
+    let lag = 0;
+    for (let k = 1; k < A.length / 2; k++) if (gleich(k) > gleich(lag)) lag = k;
+    const worte = new Set(Array.from({ length: 4096 }, (_, i) => r._wetterAmOrt((i % 64) * 977, (i >> 6) * 977, i * 41)));
+    const kern = P.wetterAt;
+    P.wetterAt = () => ({ zeile: "sturm" });
+    zug("saat-a", 0);
+    [wm.wetterUhr, st.weatherEffectTime] = [Z, Z];
+    r._loopWeatherAndGrowth(0);
+    P.wetterAt = kern;
+    const nass = (w) => r._weatherIsWet(w);
+    aus.front = { nassTrocken: A.filter((w, i) => nass(w) && !nass(B[i])).length / A.length, lag: Z * lag, worte: [...worte] };
+    Object.assign(aus.front, { soll: 3000 / P.WIND_FELD.front.zugMS, welt: st.weather });
+    st.weatherTransition = null;
+    [wm.seed, pm.x, pm.z, wm.wetterUhr] = [saat0, x0, y0, uhr0];
     window.__buehne();
     aus.ende = { wetter: st.weather, uhr: st.weatherEffectTime };
     // (Q) der Zwilling `time_of_day` ist fort
@@ -200,8 +204,7 @@ function probe(o) {
         if (r._dslContainsAnyOp(m, uhrOps)) wuerfe.mutationen++;
     }
     aus.wuerfe = wuerfe;
-    // (U) die Leser der Bild-Uhr unter der Bühne (ein Takt vorher weckt das Wasser, ein Bild zeichnet zur gehaltenen Uhr), der
-    // Loop läuft drei Frames weiter — je Frame wie die Animations-Schleife des Vendors: die Knoten-Uhr, dann der Takt
+    // (U) die Leser der Bild-Uhr unter der Bühne, der Loop läuft drei Frames weiter (je Frame die Knoten-Uhr, dann der Takt)
     r._gameLoopTick(performance.now());
     window.__buehne();
     window.__buehne({ wetter: "rainy", saison: "winter" });
@@ -225,29 +228,56 @@ function probe(o) {
     return aus;
 }
 
-// (Z) das Urteil der Saat (rein), Läufe A, A+Uhr, B, B+Uhr, A mit Saat 2: jeder Zug schreibt über `_setWeather` und überblendet
+// (Z) das Urteil der Saat (rein), Läufe A, A+Uhr, B, B+Uhr, A mit Saat 2: jeder Wechsel über `_setWeather`, die Front zieht,
+// die Folge ist eine Funktion von Saat und Ort, nie der Wanduhr
+function wechsel(folge) {
+    return folge.split(" ").filter((w, i, x) => w !== (i ? x[i - 1] : "sunny")).length;
+}
 function saatRot(Z) {
     const [a, au, b, bu, c] = Z.laeufe;
     const rot = Z.laeufe
-        .filter(([, f]) => f.folge.split(" ").length !== Z.zuege || f.fade !== Z.zuege)
-        .map(
-            ([n, f]) =>
-                `(Z) SAAT ${n}: ${f.fade} von ${Z.zuege} Zügen über _setWeather überblendet (${f.folge || "keiner"})`
-        );
+        .filter(([, f]) => f.folge.split(" ").length !== Z.zuege || f.fade !== wechsel(f.folge) || !f.fade)
+        .map(([n, f]) => `(Z) SAAT ${n}: ${f.fade} Wechsel über _setWeather in ${Z.zuege} Takten (${f.folge || "keiner"})`);
     for (const [x, y] of [
         [a, au],
         [b, bu],
     ])
         if (x[1].folge !== y[1].folge)
             rot.push(`(Z) SAAT: die Folge hängt an der Wanduhr — ${x[0]}: ${x[1].folge} ≠ ${y[0]}: ${y[1].folge}`);
-    if (c[1].folge === a[1].folge)
-        rot.push(`(Z) SAAT: die Folge ist blind für die Saat — ${c[0]} = ${a[0]}: ${a[1].folge}`);
+    for (const [x, was] of [
+        [c, "die Saat"],
+        [b, "den Ort"],
+    ])
+        if (x[1].folge === a[1].folge) rot.push(`(Z) SAAT: die Folge ist blind für ${was} — ${x[0]} = ${a[0]}: ${a[1].folge}`);
     return rot;
 }
 
-// (U) das Urteil der Uhr-Wache (rein): jeder Leser steht mit der gehaltenen Bild-Uhr, jede Shader-Zeit (Himmel, Wasser, Wind,
-// Fell, Tor) zeichnet zu T; die Leser jeder Welt (der Null-Renderer der CI trägt kein Wasser und keine Knoten-Uhr) stehen in der
-// Liste, und der Loop schrieb die Bild-Uhr (verweigert).
+// (F) das Urteil der Front (rein)
+function frontRot(F) {
+    return [
+        [F.nassTrocken >= 0.2, "FRONT: Regen an A bei trockenem B unter 20 % der Zeit"],
+        [Math.abs(F.lag - F.soll) <= 0.2 * F.soll, "LAG: B wiederholt A nicht nach Abstand ÷ Zug ±20 %"],
+        [F.worte.length === 5, "WORTE: nicht alle 5 Zeilen erreichbar"],
+        [F.welt === "stormy" && F.labor === "sturm", "MUTATION: der Sturm des Kerns zieht Welt und Labor nicht beide"],
+    ]
+        .filter(([ok]) => !ok)
+        .map(([, t]) => `(F) ${t} (${JSON.stringify(F)})`);
+}
+
+// (F) DAS LABOR (worlds/terrain): sein Wetterspiel ruft denselben Kern — Rechnung ohne Bild (der Null-Renderer trägt kein WebGL,
+// `updateWorld` wählt das Wetter vor jedem Pixel)
+function laborProbe() {
+    const P = window.__phytoCore;
+    const kern = P.wetterAt;
+    WXPLAY = true;
+    P.wetterAt = () => ({ zeile: "sturm" });
+    updateWorld(0.05);
+    P.wetterAt = kern;
+    return WWEATHER;
+}
+
+// (U) das Urteil der Uhr-Wache (rein): jeder Leser steht mit der gehaltenen Bild-Uhr, jede Shader-Zeit zeichnet zu T, die Leser
+// jeder Welt stehen in der Liste, und der Loop schrieb die Bild-Uhr (verweigert).
 function uhrRot(U) {
     const rot = [];
     for (const [n, a] of Object.entries(U.vor))
@@ -262,14 +292,12 @@ function uhrRot(U) {
     return rot;
 }
 
-// Die Himmels-Probe im Seiten-Kontext (eine FRISCHE Welt): das Spiel läuft getaktet (`_gameLoopTick`, Spiel-Zeit in Schritten
-// von `o.schrittSek`), der Nexus und seine Gesetze, die Emotion und der Wetter-Zug laufen mit.
+// Die Himmels-Probe (eine FRISCHE Welt): das Spiel läuft getaktet (`_gameLoopTick` in Schritten von `o.schrittSek`).
 function himmelProbe(o) {
     const r = window.anazhRealm;
     const st = r.state;
     const aus = {};
-    // (T) die Tag-Länge einer frischen Welt, und was ein alter Spielstand (8-min-Tag, wie jeder Stand bis zur Schau) aus
-    // ihr macht — das Laden des echten Restore-Wegs (`_loadStateRestoreSoulAndAtmosphere`)
+    // (T) die Tag-Länge einer frischen Welt, und was ein alter Spielstand (8-min-Tag) über den echten Restore-Weg aus ihr macht
     const tagMin = st.dayLengthMinutes;
     let alterStand = null;
     try {
@@ -291,9 +319,8 @@ function himmelProbe(o) {
     const T0 = performance.now();
     let k = 0;
     window.__taktZeit = 0;
-    // DAS WESEN IM SCHÖPFER-MODUS: sein Vorschlag läuft von selbst, ohne Zusage des Spielers — auch
-    // ohne sein Zutun über den Level-Aufstieg. Es schlägt alle `WESEN_SEK` Spiel-Sekunden `wesenWort` vor, über den EINEN
-    // Weg aller Vorschläge (`_handleCreatureProposedProgram`, unter ihm die LLM-Antwort und der Level-Aufstieg).
+    // DAS WESEN IM SCHÖPFER-MODUS schlägt alle `WESEN_SEK` Spiel-Sekunden von selbst `wesenWort` vor, über den EINEN Weg aller
+    // Vorschläge (`_handleCreatureProposedProgram`).
     const pm = st.playerMesh.position;
     const wesen =
         r.spawnCreatureAt(pm.x + 30, pm.y, pm.z + 30, "happy", "wesen") ||
@@ -307,7 +334,7 @@ function himmelProbe(o) {
         for (let i = 0; i < n; i++) {
             k++;
             window.__taktZeit = k * o.schrittSek;
-            // ein trauriger Spieler: die Emotion sorrow wirkt auf das Wetter (ihr Weg der Schau)
+            // ein trauriger Spieler: die Emotion sorrow wirkt auf das Wetter
             st.player.emotions.sorrow = 1;
             r._gameLoopTick(T0 + k * o.schrittSek * 1000);
             if (wesen && wesenWort && k % WESEN_TAKTE === 0)
@@ -341,8 +368,7 @@ function himmelProbe(o) {
     r.processChatCommand("setze uhrzeit mittag");
     r.processChatCommand("setze wetter sonnig");
     aus.wort = { uhr: st.timeOfDay, wetter: st.weather };
-    // DIE TÄTER DER SCHAU: Nexus-Gesetze auf die Uhr (das Wort der Schau „Tageszeit 0,17" als der Zwilling `time_of_day` und
-    // als `set_time_of_day`) und auf den Regen (alle 4,7 s), die Würfel des Nexus auf Uhr und Sturm
+    // DIE TÄTER: Nexus-Gesetze auf die Uhr (`time_of_day`, `set_time_of_day`) und den Regen (alle 4,7 s), Würfel auf Uhr und Sturm
     st.nexusWirk = 1e6;
     const q = st.nexusEvolutionQueue;
     const regel = (wirkung) => ["rule", ["random_chance", 1], wirkung, { everySec: 4.7, ttlSec: 3600 }];
@@ -415,7 +441,7 @@ const hm = (t) => {
 function taeterGezaehlt(liste) {
     const g = new Map();
     for (const x of liste) {
-        const k = x.replace(/\d\d:\d\d/g, "hh:mm").replace(/\b(sunny|rainy|stormy) → (sunny|rainy|stormy)\b/g, "… → …");
+        const k = x.replace(/\d\d:\d\d/g, "hh:mm").replace(/\b[a-z]+ → [a-z]+\b/g, "… → …");
         const e = g.get(k);
         if (e) e[0]++;
         else g.set(k, [1, x]);
@@ -473,17 +499,16 @@ function urteil(S, H, pageErrors) {
         rot.push(`(R) REGLER: der Tageszeit-Regler zeigt ${R.text} (${R.wert}), die Welt steht bei ${R.label}`);
     // (T) die Tag-Länge trägt eine Szene, ein alter Spielstand setzt sie nicht zurück
     const T = H.tag;
-    const szene = Number.isFinite(T.szene) ? T.szene : SZENE_SCHAU_MIN;
-    if (!(0.25 * T.tagMin >= szene))
+    if (!(0.25 * T.tagMin >= T.szene))
         rot.push(
-            `(T) TAG: ein Tag von ${T.tagMin} min trägt von Mittag bis Sonnenuntergang ${(0.25 * T.tagMin).toFixed(1)} min — die Szene braucht ${szene} min`
+            `(T) TAG: ein Tag von ${T.tagMin} min trägt von Mittag bis Sonnenuntergang ${(0.25 * T.tagMin).toFixed(1)} min — die Szene braucht ${T.szene} min`
         );
     if (!Number.isFinite(T.szene)) rot.push("(T) TAG: das Spiel nennt die Szene nicht (`TAG_SZENE_MINUTEN`)");
     if (T.alterStand !== T.tagMin)
         rot.push(
             `(T) TAG: ein alter Spielstand (8-min-Tag) setzt die Tag-Länge auf ${T.alterStand} — er hält den alten Tag fest`
         );
-    rot.push(...uhrRot(S.uhren), ...saatRot(S.saat));
+    rot.push(...uhrRot(S.uhren), ...saatRot(S.saat), ...frontRot(S.front));
     for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
 }
@@ -502,7 +527,7 @@ async function boot(browser, pageErrors) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "null", frist: 900000 });
+    const browser = await starteBrowser({ art: "null", frist: 900000, erwartet: /Error creating WebGL context/ });
     const pageErrors = [];
     const page = await boot(browser, pageErrors);
     const S = await page.evaluate(probe, {
@@ -525,6 +550,10 @@ async function boot(browser, pageErrors) {
         wesenSek: WESEN_SEK,
     });
     const laufS = (Date.now() - t0) / 1000;
+    const lab = await browser.newPage();
+    await lab.goto(`http://127.0.0.1:${PORT}/worlds/terrain/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await lab.waitForFunction("typeof updateWorld === 'function' && typeof camera === 'object' && camera");
+    S.front.labor = await lab.evaluate(laborProbe);
     await browser.close();
     server.close();
 
@@ -542,7 +571,7 @@ async function boot(browser, pageErrors) {
         `  Würfel: Uhr-Ops in ${S.wuerfe.atome}/${S.wuerfe.n} Atomen, ${S.wuerfe.gesetze}/${S.wuerfe.n} Gesetzen, ${S.wuerfe.mutationen}/${S.wuerfe.n} Mutationen`
     );
     console.log(
-        `  Tag: ${H.tag.tagMin} min (Standard ${H.tag.standard}, Szene ${H.tag.szene ?? `– (Schau ${SZENE_SCHAU_MIN})`}), Mittag → Sonnenuntergang ${(0.25 * H.tag.tagMin).toFixed(1)} min; nach einem alten Stand (8 min): ${H.tag.alterStand} min`
+        `  Tag: ${H.tag.tagMin} min (Standard ${H.tag.standard}, Szene ${H.tag.szene}), Mittag → Sonnenuntergang ${(0.25 * H.tag.tagMin).toFixed(1)} min; nach einem alten Stand (8 min): ${H.tag.alterStand} min`
     );
     console.log(
         `  Wort des Spielers: Uhr ${hm(H.wort.uhr)}, Wetter ${H.wort.wetter} (getaktet ${HIMMEL_MIN} min je Fenster, ${laufS.toFixed(1)} s Wanduhr)`
@@ -566,6 +595,11 @@ async function boot(browser, pageErrors) {
     const uz = Object.entries(S.uhren.nach).map(([n, x]) => `${n} ${+(+x).toFixed(4)}`);
     console.log(`  Bild-Uhr ${S.uhren.T}: ${uz.join(" · ")}; verweigert ${S.uhren.verweigert}`);
     for (const [n, f] of S.saat.laeufe) console.log(`  Saat ${n.padEnd(22)} ${f.folge} (${f.fade} überblendet)`);
+    const F = S.front;
+    console.log(
+        `  Front · Regen an A bei trockenem B ${(100 * F.nassTrocken).toFixed(0)} % · Lag ${F.lag} s (Soll ${F.soll.toFixed(0)} s ±20 %)` +
+            ` · Worte ${F.worte.length}/5 (${F.worte.join(" ")}) · Mutation des Kerns: Welt ${F.welt}, Labor ${F.labor}`
+    );
     const rot = urteil(S, H, pageErrors);
     if (rot.length) {
         console.error(`\nROT (${rot.length}):`);

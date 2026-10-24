@@ -67,7 +67,7 @@ const server = statikServer();
             if (r0 && typeof r0._gameLoopTick === "function") {
                 try {
                     r0._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
                 const sz = r0.state.voxelChunks ? r0.state.voxelChunks.size : 0;
                 if (sz >= 25) break;
             }
@@ -84,13 +84,13 @@ const server = statikServer();
                 r._gameLoopTick && r._gameLoopTick(performance.now());
                 const pp = r.state.playerMesh && r.state.playerMesh.position;
                 if (pp && r._tickScatterStreaming) r._tickScatterStreaming(pp);
-            } catch (_e) {}
+            } catch {}
             await sleep(8);
         }
         try {
             r._drainPendingWaterIso && r._drainPendingWaterIso();
             r._drainPendingGrass && r._drainPendingGrass();
-        } catch (_e) {}
+        } catch {}
         // ── Inventur-Settle: die in-flight-Anfragen ausklingen lassen (ein Key, der nach
         // dem Deckel noch in f.pending hängt, IST das Verhungern-Symptom → zählt unten rot).
         if (f) {
@@ -99,7 +99,7 @@ const server = statikServer();
                 takt: async () => {
                     try {
                         r._gameLoopTick && r._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                     await sleep(50);
                 },
                 max: 400,

@@ -1426,6 +1426,25 @@ class AnazhRealm_bau_buch {
         return v;
     }
 
+    // DIE HÜLLE DER TEILE (Bauplan-Einheiten): die achsen-parallele Box über die rotations-bewussten Hüllen aller Teile
+    // (`_partWorldExtents`) — { x0, x1, y0, y1, z0, z1 } oder null. Leser: die Spanne eines Geräts (`_geraetSpanne`) und die
+    // Höhe eines Werks im Wasser (`_fahrzeugGestalt`).
+    _teileHuelle(bp) {
+        const h = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity, z0: Infinity, z1: -Infinity };
+        for (const p of (bp && bp.parts) || []) {
+            const e = this._partWorldExtents(p);
+            const q = p.position || {};
+            const [x, y, z] = [q.x || 0, q.y || 0, q.z || 0];
+            h.x0 = Math.min(h.x0, x - e.ex / 2);
+            h.x1 = Math.max(h.x1, x + e.ex / 2);
+            h.y0 = Math.min(h.y0, y - e.ey / 2);
+            h.y1 = Math.max(h.y1, y + e.ey / 2);
+            h.z0 = Math.min(h.z0, z - e.ez / 2);
+            h.z1 = Math.max(h.z1, z + e.ez / 2);
+        }
+        return h.x1 > h.x0 ? h : null;
+    }
+
     // ROTATIONS-BEWUSSTE Welt-Hülle eines Parts: konservative AABB |R|·s auf Three.js' EXAKTER Euler-XYZ-
     // Matrix (makeRotationFromEuler-Zeilen), damit sie dem Renderer entspricht. Liefert {ex, ey, ez} =
     // volle Welt-Ausdehnung je Achse.
@@ -1514,26 +1533,99 @@ class AnazhRealm_bau_buch {
         return Math.max(0, Math.min(1, Math.max(sMaxX - sMinX, sMaxZ - sMinZ) / compW));
     }
 
+    // DIE DICHTE EINES STOFFS (kg/m³, physik K1): die EINE Stoff-Zeile (`state.materials`, `_defaultMaterials`). Ein eigener
+    // Stoff (DSL `define_material`, eine geladene Welt) wiegt wie sein nächster Verwandter unter den eingebauten — der
+    // kleinste Abstand über die Tag-Achsen (MATERIAL_TAG_KEYS), an seiner Zeile gemerkt (`rhoVon`) und je Ruf aus dessen
+    // Zeile gelesen. Ein Teil ohne Stoff-Zeile wiegt nichts und meldet sich laut (der EINE Melder). Vorher wog jedes Teil
+    // Volumen × die Tag-Achse dichte [0,1] (Holz 0,4 · Stein 0,85 · Eisen 0,9 je Einheit, unbekannt 0,5): Stein wog 2,1 Holz
+    // statt 3,7, Eisen 2,25 statt 10,9.
+    _stoffRho(name) {
+        const mats = this.state.materials || {};
+        const z = mats[name];
+        if (!z) {
+            this._bruchMelden("STOFF-ZEILE fehlt: das Teil aus „" + name + "“ wiegt nichts");
+            return 0;
+        }
+        if (z.builtIn) return z.rho;
+        const von = z.rhoVon && mats[z.rhoVon];
+        if (von && von.builtIn) return von.rho;
+        const keys = AnazhRealm.MATERIAL_TAG_KEYS;
+        const t = z.tags || {};
+        let best = null,
+            bestD = Infinity;
+        for (const k of Object.keys(mats)) {
+            const b = mats[k];
+            if (!b || !b.builtIn) continue;
+            let d = 0;
+            for (const a of keys) d += ((t[a] || 0) - ((b.tags && b.tags[a]) || 0)) ** 2;
+            if (d < bestD) ((bestD = d), (best = b));
+        }
+        if (!best) {
+            this._bruchMelden("STOFF-ZEILE ohne Verwandten: „" + name + "“ wiegt nichts");
+            return 0;
+        }
+        z.rhoVon = best.name;
+        return best.rho;
+    }
+
+    // DAS VOLUMEN EINES TEILS (m³ in Bauplan-Einheiten): das Volumen seiner GESTALT — das Mesh, das `_makePartGeometry` für
+    // diese Form baut, über den Divergenz-Satz (Σ a · (b × c) / 6 je Dreieck; eine flache Form trägt keins), je Form und Maß
+    // gemerkt (eine Zahl je Form, das Netz fällt sofort). Vorher die Box der Größe für jede Form: ein Speichen-Rad wog wie seine volle Scheibe (Wagen-Rad 0,100 statt
+    // 0,031 m³), eine Kugel 1,9-fach.
+    _teilVolumen(p) {
+        if (!p) return 0;
+        const memo = this._teilVolumenMemo || (this._teilVolumenMemo = new Map());
+        // der Schlüssel ist die Form: alles am Teil außer Lage, Drehung, Stoff, Farbe und Werkzeug-Spur
+        const key = JSON.stringify(p, function (k, v) {
+            return this === p && AnazhRealm.TEIL_FORM_FREI.includes(k) ? undefined : v;
+        });
+        let v = memo.get(key);
+        if (v === undefined) {
+            const geo = this._makePartGeometry(p);
+            const pos = geo && geo.attributes && geo.attributes.position;
+            v = 0;
+            if (pos) {
+                const a = pos.array;
+                const ix = geo.index ? geo.index.array : null;
+                const n = ix ? ix.length : pos.count;
+                for (let t = 0; t + 2 < n; t += 3) {
+                    const i = 3 * (ix ? ix[t] : t);
+                    const j = 3 * (ix ? ix[t + 1] : t + 1);
+                    const k = 3 * (ix ? ix[t + 2] : t + 2);
+                    v +=
+                        (a[i] * (a[j + 1] * a[k + 2] - a[j + 2] * a[k + 1]) -
+                            a[i + 1] * (a[j] * a[k + 2] - a[j + 2] * a[k]) +
+                            a[i + 2] * (a[j] * a[k + 1] - a[j + 1] * a[k])) /
+                        6;
+                }
+                v = Math.abs(v);
+            }
+            if (geo && typeof geo.dispose === "function") geo.dispose();
+            memo.set(key, v); // je Form EINE Zahl, nie geleert: eine Welt trägt ~1 500 Formen (ein Deckel von 512 baute je Gang 1 450 Netze neu)
+        }
+        return v;
+    }
+
+    // DIE MASSE EINES TEILS (kg): das Volumen seiner Gestalt (`_teilVolumen`, die Bauplan-Einheit ist der Meter) × ρ seiner
+    // Stoff-Zeile (`_stoffRho`) — der EINE Leser, über den Schwerpunkt, Schwung-Trägheit, Lastpfad und das Gefährt im Wasser
+    // wiegen.
+    _teilMasse(p) {
+        return this._teilVolumen(p) * this._stoffRho(p.material);
+    }
+
     // ═══ Ω-PHYSIS · Ω-Φ1 — SCHWERPUNKT + MASSE ═══
-    // Der EINE Richter für Stabilität · Balance · Hebel: jedes Teil = Punktmasse am Zentrum, gewichtet mit
-    // Volumen·dichte. dichte ist [0,1]-normiert, kein kg/m³ → die Wahrheit ist RELATIV (vergleichend),
-    // nie absolute Newton. Bau-/Edit-Zeit, vom Aufrufer gecacht — nicht pro Frame.
+    // Der EINE Richter für Stabilität · Balance · Hebel: jedes Teil = Punktmasse am Zentrum, gewichtet mit seiner Masse
+    // in kg (`_teilMasse`: Volumen × ρ der Stoff-Zeile; die Bauplan-Einheit ist der Meter). Bau-/Edit-Zeit, vom Aufrufer
+    // gecacht — nicht pro Frame.
     _compoundCenterOfMass(bp) {
         const out = { com: { x: 0, y: 0, z: 0 }, mass: 0 };
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return out;
-        const mats = this.state.materials || {};
         let mx = 0,
             my = 0,
             mz = 0,
             mass = 0;
         for (const p of bp.parts) {
-            const s = p.size || { x: 1, y: 1, z: 1 };
-            const vol = Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1));
-            const mat = mats[p.material];
-            const dichte = mat && mat.tags && typeof mat.tags.dichte === "number" ? mat.tags.dichte : 0.5;
-            // dichte-Floor 0.05: ein dichte-0-Material (Geist/Luft) hat trotzdem Form-
-            // Masse > 0 (sonst kollabiert der CoM einer rein-leichten Struktur auf 0).
-            const m = vol * Math.max(0.05, dichte);
+            const m = this._teilMasse(p);
             const pos = p.position || { x: 0, y: 0, z: 0 };
             mx += (pos.x || 0) * m;
             my += (pos.y || 0) * m;
@@ -1616,7 +1708,11 @@ class AnazhRealm_bau_buch {
     // „Steht WIRKLICH" statt „Basis breit" (`_compoundSpread`): sitzt der Schwerpunkt über der konvexen
     // Hülle der Bodenkontakte? (ein breiter kopflastiger Turm kippt). Dasselbe Polygon beurteilt
     // Fahrzeug-Stabilität UND Kreatur-Stand (CoM über dem Fuß-Stützpolygon).
-    _supportPolygon(bp) {
+    // `boden` — DAS GESETZTE WERK: sein Grund ist die Höhe `boden` im Plan (beim Setzen 0, das Werkstatt-Gitter und der Grund,
+    // auf den das Setzen den Plan stellt; nach einem Fall sein tiefstes Teil); ein Plan, dessen tiefstes Teil über dem
+    // Kontakt-Band schwebt, hat keinen Bodenkontakt, ein Teil darunter steckt im Grund. Ohne: die Form an sich (ihr tiefstes
+    // Teil trägt — die Achse des Produkt-Vektors).
+    _supportPolygon(bp, boden) {
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return null;
         let minBottom = Infinity,
             maxTop = -Infinity;
@@ -1631,9 +1727,10 @@ class AnazhRealm_bau_buch {
         if (!aabbs.length) return null;
         const totalH = Math.max(0.001, maxTop - minBottom);
         const band = Math.max(0.1, totalH * AnazhRealm.PHYSIS.groundBandFrac);
+        const grund = Number.isFinite(boden) ? Math.min(boden, minBottom) : minBottom;
         const pts = [];
         for (const a of aabbs) {
-            if (a.min.y > minBottom + band) continue;
+            if (a.min.y > grund + band) continue;
             pts.push({ x: a.min.x, z: a.min.z });
             pts.push({ x: a.max.x, z: a.min.z });
             pts.push({ x: a.max.x, z: a.max.z });
@@ -1641,11 +1738,11 @@ class AnazhRealm_bau_buch {
         }
         const hull = this._convexHull2D(pts);
         const area = hull.length >= 3 ? this._polygonArea2D(hull) : 0;
-        return { hull, area, contactCount: pts.length / 4, minBottom, totalH };
+        return { hull, area, contactCount: pts.length / 4, boden: grund, totalH };
     }
-    _stability(bp) {
+    _stability(bp, boden) {
         const com = this._compoundCenterOfMass(bp);
-        const poly = this._supportPolygon(bp);
+        const poly = this._supportPolygon(bp, boden);
         if (!poly || poly.hull.length < 3 || poly.area < 1e-4) {
             // entartete Basis (ein Punkt/eine Linie — ein einbeiniger Mast) → kippt
             return { inside: false, margin: 0, area: poly ? poly.area : 0, com: com.com, mass: com.mass };
@@ -1655,7 +1752,7 @@ class AnazhRealm_bau_buch {
         const dEdge = this._distToPolygonEdge2D(p, poly.hull);
         // Static-Stability-Factor: tan(Kipp-Winkel) = horizontaler Abstand zur Kante / SCHWERPUNKT-HÖHE —
         // breiter flacher Tisch margin≈1, einbeiniger Mast margin≈0.
-        const comHeight = Math.max(0.05, com.com.y - poly.minBottom);
+        const comHeight = Math.max(0.05, com.com.y - poly.boden);
         const margin = inside ? Math.max(0, Math.min(1, dEdge / comHeight)) : 0;
         return { inside, margin, comHeight, area: poly.area, com: com.com, mass: com.mass };
     }
@@ -1695,44 +1792,63 @@ class AnazhRealm_bau_buch {
             Imax = Math.max(Ix, Iz);
         return { Ix, Iz, Imin, Imax, anisotropy: Imax / Math.max(1e-6, Imin), area: A };
     }
-    // (b) VERSAGEN: das schlankste last-tragende vertikale Glied + Euler-Knicken; kritische Schlankheit
-    // ∝ √(härte) (1:7-Säule hält, 1:25 knickt). Grob-Sanitäts-Richter, keine FEA.
+    // (b) VERSAGEN: knickt eine Ebene schlanker Glieder unter der LAST, die sie trägt? Euler: die kritische Spannung fällt
+    // mit dem Quadrat der Schlankheit, σ_krit = σ_ref · (λ_ref / λ)², λ_ref ∝ √(härte) (unter der Bezugs-Last
+    // `bucklingRefLoad` knickt die Stein-Säule ab 1:18). Die Last ist das Gewicht über der halben Höhe des Glieds (die
+    // Teile darüber und sein eigener oberer Teil), getragen von jedem Glied, das diese Ebene kreuzt — sie knicken, wenn sie
+    // die Summe ihrer kritischen Lasten übersteigt: ein Glied ohne Last (ein Zierstab, der Webstuhl-Pfosten) knickt nicht,
+    // die überladene Plattform schon; trägt ein gedrungenes Glied oder eine Wand die Ebene mit, knickt sie nie. Grob-Sanitäts-
+    // Richter, keine FEA.
     _failsUnderLoad(bp) {
         const out = { buckles: false, maxSlenderness: 0, criticalSlenderness: 0, slenderPart: -1 };
         if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return out;
+        const P = AnazhRealm.PHYSIS;
         const mats = this.state.materials || {};
-        let worst = 0,
-            worstIdx = -1,
-            worstCrit = Infinity;
-        for (let i = 0; i < bp.parts.length; i++) {
-            const p = bp.parts[i];
+        const glieder = bp.parts.map((p) => {
             const ext = this._partWorldExtents(p);
-            const h = ext.ey || 0;
+            const tags = (mats[p.material] && mats[p.material].tags) || {};
+            const s = p.size || { x: 1, y: 1, z: 1 };
             const w = Math.max(0.02, Math.min(ext.ex || 0, ext.ez || 0));
             const wmax = Math.max(0.02, Math.max(ext.ex || 0, ext.ez || 0));
-            if (h < w * 1.2) continue; // kein vertikales Glied (Platte/Klotz) → kein Knicken
-            // Ein WAND-/Platten-Glied (eine horizontale Dimension ≫ die andere, > wallBraceRatio) ist KEINE freie
-            // Euler-Säule — verstrebt durch Breite + Eck-Verbindungen, knickt nicht.
-            if (wmax > w * AnazhRealm.PHYSIS.wallBraceRatio) continue;
-            const slender = h / w;
-            const härte = (mats[p.material] && mats[p.material].tags && mats[p.material].tags.härte) || 0.5;
-            const crit = Math.max(
-                AnazhRealm.PHYSIS.bucklingSlendernessMin,
+            // ein WAND-/Platten-Glied (eine horizontale Dimension ≫ die andere, > wallBraceRatio) ist keine freie Säule
+            const saeule = (ext.ey || 0) >= w * 1.2 && wmax <= w * P.wallBraceRatio;
+            const lambdaRef = Math.max(
+                P.bucklingSlendernessMin,
                 Math.min(
-                    AnazhRealm.PHYSIS.bucklingSlendernessMax,
-                    AnazhRealm.PHYSIS.bucklingSlendernessBase * Math.sqrt(Math.max(0.05, härte) / 0.5)
+                    P.bucklingSlendernessMax,
+                    P.bucklingSlendernessBase * Math.sqrt(Math.max(0.05, tags.härte || 0.5) / 0.5)
                 )
             );
-            if (slender > worst) {
-                worst = slender;
-                worstIdx = i;
-                worstCrit = crit;
+            return {
+                a: this._partWorldAABB(p),
+                saeule,
+                lambda: (ext.ey || 0) / w,
+                lambdaRef,
+                flaeche: Math.max(1e-4, (ext.ex || 0) * (ext.ez || 0)),
+                masse:
+                    Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1)) *
+                    Math.max(0.05, typeof tags.dichte === "number" ? tags.dichte : 0.5),
+            };
+        });
+        for (let i = 0; i < glieder.length; i++) {
+            const g = glieder[i];
+            if (!g.saeule || !g.a) continue;
+            if (g.lambda > out.maxSlenderness) [out.maxSlenderness, out.slenderPart] = [g.lambda, i];
+            const y = (g.a.min.y + g.a.max.y) / 2;
+            let last = 0;
+            let kritisch = 0;
+            let gedrungen = false;
+            for (const t of glieder) {
+                if (!t.a || t.a.max.y <= y) continue;
+                last += t.masse * Math.min(1, (t.a.max.y - y) / Math.max(1e-6, t.a.max.y - t.a.min.y));
+                if (t.a.min.y >= y) continue;
+                if (!t.saeule) gedrungen = true;
+                kritisch += P.bucklingRefLoad * (t.lambdaRef / t.lambda) ** 2 * t.flaeche;
             }
+            if (gedrungen || last <= kritisch) continue;
+            out.buckles = true;
+            out.criticalSlenderness = g.lambda * Math.sqrt(kritisch / last); // die Schlankheit, die diese Last noch trüge
         }
-        out.maxSlenderness = worst;
-        out.criticalSlenderness = Number.isFinite(worstCrit) ? worstCrit : 0;
-        out.slenderPart = worstIdx;
-        out.buckles = worst > 0 && worst > worstCrit;
         return out;
     }
 
@@ -1769,13 +1885,9 @@ class AnazhRealm_bau_buch {
         const grip = gripPoint || this._inferGripPoint(bp, com);
         out.grip = grip;
         out.balance = Math.hypot(com.com.x - grip.x, com.com.y - grip.y, com.com.z - grip.z);
-        const mats = this.state.materials || {};
         let I = 0;
         for (const p of bp.parts) {
-            const s = p.size || { x: 1, y: 1, z: 1 };
-            const vol = Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1));
-            const d = (mats[p.material] && mats[p.material].tags && mats[p.material].tags.dichte) || 0.5;
-            const m = vol * Math.max(0.05, d);
+            const m = this._teilMasse(p);
             const pos = p.position || { x: 0, y: 0, z: 0 };
             I += m * ((pos.x - grip.x) ** 2 + (pos.y - grip.y) ** 2 + (pos.z - grip.z) ** 2);
         }
@@ -1787,12 +1899,13 @@ class AnazhRealm_bau_buch {
 
     // ═══ Ω-PHYSIS · Ω-Φ5 — LASTPFAD + KONNEKTIVITÄT ═══
     // Die Last muss den Boden erreichen: BFS über räumliche Adjazenz (AABB-Berührung) von den
-    // Boden-Kontakten; schwebende Teile tragen 0. Eine Klinge mit Lücke schneidet nicht.
-    _loadPath(bp) {
+    // Boden-Kontakten; schwebende Teile tragen 0. Eine Klinge mit Lücke schneidet nicht. `boden` wie `_supportPolygon`: am
+    // Grund des gesetzten Werks schwebt auch ein einzelnes Teil.
+    _loadPath(bp, boden) {
         // `floatingParts` = Indizes der schwebenden Teile (dieselbe `seen[]`-BFS) → die Werkstatt tintet sie
         // als Warnung. Additiv; intact/floatingFrac bleiben unberührt.
         const out = { intact: true, floatingFrac: 0, floatingCount: 0, groundCount: 0, floatingParts: [] };
-        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < 2) return out;
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < (Number.isFinite(boden) ? 1 : 2)) return out;
         const n = bp.parts.length;
         // Kosten-Wand: die Adjazenz ist O(n²). Ein sehr großer Bauplan (Baum 75+ Parts)
         // braucht den exakten Lastpfad nicht für die Rollen-Resonanz (er ist eindeutig
@@ -1826,7 +1939,7 @@ class AnazhRealm_bau_buch {
         const seen = new Array(n).fill(false);
         const q = [];
         for (let i = 0; i < n; i++) {
-            if (aabb[i] && aabb[i].min.y <= minBottom + band) {
+            if (aabb[i] && aabb[i].min.y <= (Number.isFinite(boden) ? Math.min(boden, minBottom) : minBottom) + band) {
                 seen[i] = true;
                 q.push(i);
                 out.groundCount++;
@@ -1836,15 +1949,10 @@ class AnazhRealm_bau_buch {
             const i = q.pop();
             for (const j of adj[i]) if (!seen[j]) ((seen[j] = true), q.push(j));
         }
-        const mats = this.state.materials || {};
         let total = 0,
             floating = 0;
         for (let i = 0; i < n; i++) {
-            const p = bp.parts[i];
-            const s = p.size || { x: 1, y: 1, z: 1 };
-            const m =
-                Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1)) *
-                Math.max(0.05, (mats[p.material] && mats[p.material].tags && mats[p.material].tags.dichte) || 0.5);
+            const m = this._teilMasse(bp.parts[i]);
             total += m;
             if (!seen[i]) {
                 floating += m;
@@ -1880,7 +1988,8 @@ class AnazhRealm_bau_buch {
     }
     // ROLL-PHYSIK: Anteil rollender Parts im Boden-Band — „Rad" emergiert aus der Roll-Geometrie am
     // Bodenkontakt, nicht aus Rundheit (ein Kuppel-Dach liegt nicht am Boden). Wagen → hoch, Tempel → 0.
-    _rollableFraction(bp) {
+    // `rollen` (optional) nimmt die rollenden Teile auf — das Rollen des gesetzten Werks (`_werkGesetzSetzen`).
+    _rollableFraction(bp, rollen) {
         if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return 0;
         const aabb = bp.parts.map((p) => this._partWorldAABB(p));
         let minB = Infinity,
@@ -1900,8 +2009,13 @@ class AnazhRealm_bau_buch {
             ground++;
             // Kugel rollt immer; Zylinder NUR mit HORIZONTALER Achse — ein vertikaler ist Stamm/Säule (sonst läse
             // ein Baumstamm als Fahrzeug).
-            if (p.shape === "sphere") roll++;
-            else if ((p.shape === "cylinder" || p.shape === "spokeWheel") && this._cylinderWorldAxis(p) !== "y") roll++;
+            if (
+                p.shape === "sphere" ||
+                ((p.shape === "cylinder" || p.shape === "spokeWheel") && this._cylinderWorldAxis(p) !== "y")
+            ) {
+                roll++;
+                if (rollen) rollen.push(p);
+            }
         }
         return ground > 0 ? Math.min(1, roll / ground) : 0;
     }
@@ -2309,6 +2423,8 @@ class AnazhRealm_bau_buch {
 _stammZonen(AnazhRealm, [AnazhRealm_bau_buch]);
 
 // ===== ATLAS · Bau/buch — Außen-Konstanten =====
+// Die Felder eines Teils, die seine Gestalt nicht formen (`_teilVolumen`: das Volumen gilt je Form und Maß).
+AnazhRealm.TEIL_FORM_FREI = Object.freeze(["position", "rotation", "material", "color", "opChain"]);
 AnazhRealm._bewegungsKoeff = function (stat) {
     const row = AnazhRealm.Gesetz("koerper:bewegung." + stat, null);
     if (row && Number.isFinite(row.base) && Number.isFinite(row.leicht) && Number.isFinite(row.mag)) return row;
@@ -2399,7 +2515,8 @@ AnazhRealm.PRODUCT_VECTOR_TAG_NORM = 3;
 // diese Schwellen kalibrieren die groben Verstöße (Kippen, Knicken). browser-justierbar.
 AnazhRealm.PHYSIS = {
     groundBandFrac: 0.15, // Ω-Φ2: das untere Höhen-Band, das als Bodenkontakt zählt
-    bucklingSlendernessBase: 16, // Ω-Φ3-b: krit. Schlankheit (height/width) bei härte 0.5
+    bucklingSlendernessBase: 16, // Ω-Φ3-b: krit. Schlankheit (height/width) bei härte 0.5 unter der Bezugs-Last
+    bucklingRefLoad: 8, //          die Bezugs-Last je Fläche: acht Meter Stoff der dichte 1 über dem Glied (die Meister-Esse braucht 6,4)
     bucklingSlendernessMin: 8, //          Boden (ein weiches Material knickt früher)
     bucklingSlendernessMax: 28, //          Decke (ein hartes Material trägt schlanker)
     wallBraceRatio: 4, // Ω-Φ3-b: ab dieser Breite:Dicke ist ein Glied eine WAND (verstrebt), keine Säule

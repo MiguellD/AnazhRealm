@@ -2201,7 +2201,8 @@
         //    das Material traegt): Masse-Anteile Stahl 0,65 · Aluminium 0,10 · Kunststoff 0,10 · Gummi 0,05 ·
         //    Glas 0,03 · Fluide 0,07 ueber ihre Dichten (7,85 · 2,7 · 1,1 · 1,2 · 2,5 · 1,0) geben 1/Σ(w/ρ) ≈ 3,0.
         //    Ueber 1 traegt das Wasser die Huelle nie: ein Strassenwagen watet und sinkt, er schwimmt nicht. Das
-        //    Lab kennt kein Wasser; der Wirt liest sie ueber exportDrive.huelle.dichte. ──
+        //    Lab kennt kein Wasser; der Wirt liest sie als Stoff seines Blechs (physik K1: die Zeile blech der Stoff-Zeile,
+        //    huelleDichte × wasser.rho). ──
         huelleDichte: 3.0,
         // ── PHYSIK-NAHT (N6.5b, rein additive DATEN-Zeile — Praezedenz: §8.5-Stufen-Zeile) —
         // DIE HOST-EMERGENZ-KOEFFIZIENTEN: die Fallback-Fahr-Formel des Wirts (ein Werk OHNE
@@ -2366,6 +2367,15 @@
         wasser: {
             rho: 1000, // kg/m³
             cw: 1.0,
+        },
+        // ── wetter.K5 (rein additive DATEN-Zeile — Praezedenz: wasser) — DER WAGEN IM WIND: das Lab kennt keinen Wind, der
+        //    Welt-Ritt reicht den EINEN Wind der Welt am Wagen (fahrKraefte e.wind: m/s in Welt-x/z, der Vektor, wohin er
+        //    weht). Die KRAFT ist die Seitenkraft der Flanke ½·rho·cSeite·A·v² auf die Quer-Komponente der Anstroemung (Wind
+        //    quer minus Fahrt quer), A = Laenge × Dach der Huelle (die Flanke steht ganz in der Luft); die TRAEGHEIT die EINE
+        //    Masse des Wagens. rho: Luft bei 15 °C; cSeite: die Flanke eines Kastens quer angestroemt (0,8–1,1). ──
+        luft: {
+            rho: 1.2, // kg/m³
+            cSeite: 0.9,
         },
         // ── K1 (23.10., rein additive DATEN-Zeile — Praezedenz: wasser) — DER REIFEN MIT SPITZE: die Seitenkraft je Achse
         //    ist die Magic Formula (Pacejka) F/N = D·sin(C·atan(B·α)), D = μ des Reibkreises (maxGrip · grip), B·C·D die
@@ -2677,6 +2687,13 @@
             ansaug: a.ansaug > 0 ? a.ansaug : Infinity,
         };
     }
+    // Die Huelle im Wind eines Fahr-Satzes (wetter.K5): die Flanke Laenge × Dach durch die EINE Masse — a = kFlanke · v²
+    // quer; ohne Dach (Teile-Werk ohne Huelle) kein Wind-Mass (null), der Wagen faehrt wie im Lab.
+    function fahrLuft(a, masse) {
+        const laenge = a.laenge > 0 ? a.laenge : a.vorn - a.hinten;
+        if (!(laenge > 0) || !(a.dach > 0) || !(masse > 0)) return null;
+        return { kFlanke: (0.5 * FAHR.luft.rho * FAHR.luft.cSeite * laenge * a.dach) / masse };
+    }
     function fahrGesetz(d, auf) {
         const zs = d && d.zweispur;
         const lk = d && d.lenkung;
@@ -2731,7 +2748,10 @@
                 bauch: Number.isFinite(a.bauch) ? a.bauch : 0,
                 hub: a.hub > 0 ? a.hub : 0, // der Federweg je Rad (fahrAufstand); ein starres Werk federt kein Rad einzeln
             },
-            wasser: fahrWasser(a, zs.mass * FAHR.masseDichte), // SCHAU-2 (rein additiv): die Huelle im Wasser, EINE Masse
+            // SCHAU-2 (rein additiv): die Huelle im Wasser, EINE Masse — physik K1 (rein additiv): reicht der Wirt die Masse
+            // des Werks (d.masseKg: Gestalt × Stoff-Zeile), traegt der Wasser-Term sie; ohne sie das Volumen × masseDichte.
+            wasser: fahrWasser(a, d.masseKg > 0 ? d.masseKg : zs.mass * FAHR.masseDichte),
+            luft: fahrLuft(a, d.masseKg > 0 ? d.masseKg : zs.mass * FAHR.masseDichte), // wetter.K5 (rein additiv): die Flanke im Wind, dieselbe Masse
             reifen: fahrReifen(zs), // K1 (rein additiv): die Kurve mit Spitze je Achse
         };
     }
@@ -2945,13 +2965,23 @@
         const kS = steerIn !== 0 ? G.steerK : G.steerZentrK;
         z.steer += (steerIn * G.maxSteer * sf - z.steer) * (1 - Math.pow(1 - kS, dt * 60));
         const cosN = Math.cos(z.steig || 0) * Math.cos(z.wank || 0); // der Normalkraft-Anteil am Hang
+        // DER WIND (wetter.K5, rein additiv — ohne e.wind byte-gleich): die Anstroemung quer im Koerperframe (links =
+        // (−sin, −cos) der Gier) minus die Fahrt quer, ihr Quadrat mit Vorzeichen auf die Flanke (G.luft). Am Boden zieht sie
+        // wie der Quer-Hangabtrieb (unter Schritttempo haelt sie die Haftung bis zum Reibkreis), im Flug frei.
+        let aW = 0;
+        if (G.luft && e && e.wind) {
+            const wq = -e.wind.x * Math.sin(z.yaw) - e.wind.z * Math.cos(z.yaw) - z.vlat;
+            aW = G.luft.kFlanke * wq * Math.abs(wq);
+            if (!Number.isFinite(aW)) aW = 0;
+        }
         if (z.luft) {
             // IM FLUG greift kein Reifen: nur der Luftwiderstand; die Gier dreht mit ihrer Rate weiter.
             const aD = -G.dragK * z.vlong * Math.abs(z.vlong);
             z.vlong += (aD + z.vlat * z.yawRate) * dt;
             z.vlat += -z.vlong * z.yawRate * dt;
+            if (aW) z.vlat += aW * dt;
             z.aLong = aD;
-            z.aLat = 0;
+            z.aLat = aW;
             z.slipF = 0;
             z.slipR = 0;
         } else {
@@ -3013,7 +3043,8 @@
             z.yawRate = z.yawRate * (1 - low) + ((z.vlong * Math.tan(z.steer)) / L) * low;
             // ── QUER-HANGABTRIEB g·sin(wank) zieht zur tiefen Seite; unter Schritttempo haelt ihn die Haftung bis zum
             //    Reibkreis (darueber rutscht der Wagen, die kinematische Blende ruht). Vorher: 0,00 m Abdrift bei 35°. ──
-            const aG = -g * Math.sin(z.wank || 0);
+            let aG = -g * Math.sin(z.wank || 0);
+            if (aW) aG += aW;
             const aS = cap * g * cosN;
             const rutscht = Math.abs(aG) > aS;
             z.vlat *= 1 - low * (rutscht ? 0 : G.lowLatK);

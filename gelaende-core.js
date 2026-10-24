@@ -11,7 +11,8 @@
 //   seed · noise (SimplexNoise des Stroms seed + ":voxel") · baseHeight · waterLevel · erbgut ({ terme, wildnis, hash }
 //   — die Normalform) · regionSize (die Kachel-Kante der Hydro-Regionen) · erdbau (die Normalform `erdbauNormal` der Orte
 //   oder null, K10).
-// Kein this, kein Zustand außer den Rausch-Strömen je Saat (aus der Saat abgeleitet, nie Math.random), keine Zeit.
+// Kein this, kein Zustand außer den Rausch-Strömen je Saat (aus der Saat abgeleitet, nie Math.random), keine Uhr (Saison
+// und Uhr der Temperatur reicht der Wirt als Argumente).
 //
 // GESETZ-KERN (studio-vertrag §9): STUDIO_VERTRAG = 1 und FUNKTION = 1 — keine Rezepte, keine Gestalt.
 (function (root) {
@@ -1103,6 +1104,42 @@
         return glatt(SCHNEE.start, SCHNEE.voll, y - wl + zunge);
     }
 
+    // DIE TEMPERATUR (stoffe.K3, Wetter H4): die Luft an der Höhe y in °C — EINE reine Funktion aus der Höhe über dem Meer,
+    // der Saison (`saison`, die Phase der Welt: Sommer-Mitte 0,375, Winter-Mitte 0,875) und der Uhr (`uhr`, Mittag 0,5).
+    // Das Klima ist gemäßigt-kontinental: im Tagesmittel am Meer 18 °C im Sommer, −4 °C im Winter, der Tagesgang ±5 °C, am
+    // wärmsten um 15 Uhr. Die Höhe kühlt mit dem Gradienten, der die Null-Grad-Linie des Sommer-Mittels auf die Mitte der
+    // SCHNEEGRENZE legt: wo der Schnee liegt, ist es kalt (die Welt staucht die Höhe — ihre 160 m tragen, was in den Alpen
+    // 3 km tragen; 0,11 K/m).
+    // DIE TRÄGHEIT (`traegTage`): ein Stoff mit Wärme-Gedächtnis (das Wasser) sieht die Luft durch einen Tiefpass erster
+    // Ordnung mit der Zeitkonstante τ in Tagen — jede Schwingung gedämpft um 1/√(1 + (ωτ)²) und verspätet um atan(ωτ),
+    // geschlossen gerechnet (die Welt bleibt eine Funktion): am See ±0,4 °C Tagesgang, 6 h verspätet.
+    const TEMPERATUR = Object.freeze({
+        sommer: 18,
+        winter: -4,
+        sommerPhase: 0.375,
+        tagAmp: 5,
+        tagGipfel: 0.625,
+        jahrTage: 365,
+        gefrierpunkt: 0,
+        wasserTraegTage: 2,
+    });
+    function temperatur(L, y, saison, uhr, traegTage) {
+        if (!Number.isFinite(y) || !Number.isFinite(saison) || !Number.isFinite(uhr))
+            throw new Error("gelaende-core temperatur: Höhe, Saison oder Uhr fehlt");
+        const T = TEMPERATUR;
+        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
+        const welle = (amp, phase, perioden) => {
+            const wt = 2 * Math.PI * (traegTage > 0 ? traegTage : 0) * perioden;
+            return (amp / Math.sqrt(1 + wt * wt)) * Math.cos(2 * Math.PI * phase - Math.atan(wt));
+        };
+        return (
+            (T.sommer + T.winter) / 2 +
+            welle((T.sommer - T.winter) / 2, saison - T.sommerPhase, 1 / T.jahrTage) +
+            welle(T.tagAmp, uhr - T.tagGipfel, 1) -
+            (T.sommer / ((SCHNEE.start + SCHNEE.voll) / 2)) * (y - wl)
+        );
+    }
+
     function wildnisY(L, x, z, mitDetail, aus) {
         const N = netzFuer(L);
         const n = L.noise;
@@ -1967,6 +2004,40 @@
                 if (land === 8) return { x, z, g };
             }
         return null;
+    }
+
+    // DER WIND AM GELÄNDE (wetter.K5, rein additiv): der Faktor, mit dem das Gelände den EINEN Wind am Ort (x, z) formt, der
+    // nach (dx, dz) weht (Einheitsvektor); `H(x, z)` ist die Höhe des Wirts (die Welt: `hoehe` ohne Detail). LEE: der
+    // steilste Blick gegen den Wind (der Schutz-Index Sx nach Winstral 2002: max über r von (H(o − r·d) − H(o)) / r) — steht
+    // ein Kamm windauf über dem Ort, fällt der Wind um bis zu `lee.max` (−40 %; hinter Hügeln 30–60 %). TAL-DÜSE: steigen
+    // BEIDE Flanken quer zum Wind (die schwächere zählt, je Flanke ihr steilster Anstieg über `duese.seite`), drängt das Tal
+    // die Strömung zusammen — der Wind steigt um bis zu `duese.max` (+20 %), im Lee nie. Glatt zwischen `von` und `bis`
+    // (tan der Böschung); flach und frei genau 1. Leser: der Wind der Welt (`_windAt`).
+    const WIND_FORM = Object.freeze({
+        lee: Object.freeze({ abstaende: Object.freeze([40, 80, 160, 320]), von: 0.05, bis: 0.25, max: 0.4 }),
+        duese: Object.freeze({ seite: Object.freeze([60, 120]), von: 0.08, bis: 0.25, max: 0.2 }),
+    });
+    function windForm(H, x, z, dx, dz) {
+        const glatt = (a, b, v) => {
+            const u = Math.max(0, Math.min(1, (v - a) / (b - a)));
+            return u * u * (3 - 2 * u);
+        };
+        const h0 = H(x, z);
+        const L = WIND_FORM.lee;
+        const D = WIND_FORM.duese;
+        let sx = -Infinity;
+        for (const r of L.abstaende) sx = Math.max(sx, (H(x - r * dx, z - r * dz) - h0) / r);
+        let links = -Infinity;
+        let rechts = -Infinity;
+        for (const r of D.seite) {
+            links = Math.max(links, (H(x - r * dz, z + r * dx) - h0) / r);
+            rechts = Math.max(rechts, (H(x + r * dz, z - r * dx) - h0) / r);
+        }
+        const lee = glatt(L.von, L.bis, sx);
+        const duese = glatt(D.von, D.bis, Math.min(links, rechts)) * (1 - lee);
+        const f = 1 - L.max * lee + D.max * duese;
+        if (!Number.isFinite(f)) throw new Error("windForm: die Höhe des Wirts ist nicht endlich bei " + x + ", " + z);
+        return f;
     }
 
     // DIE EINE 2D-HÖHE der Welt = der Term-Auswerter ihres Erbguts: der erste Term setzt den Startwert (die Wildnis oder
@@ -3893,7 +3964,7 @@
             rivers,
             lakes,
             waterfalls,
-            riverBuckets: carve.riverBuckets,
+            kanal: carve.kanal,
             bucketSize: carve.bucketSize,
             bucketsDim: carve.bucketsDim,
             lakeBedCell: carve.lakeBedCell,
@@ -4592,16 +4663,19 @@
         return waterfalls;
     }
 
-    // Carve-Index für `_hydrosphereCarveAt` + `_hydrosphereLakeAt`: (1) Fluss-Bucket-Grid (jedes Segment
-    // in alle Buckets seiner um die Kanal-Reichweite erweiterten BBox; eine Abfrage liest einen Bucket),
-    // (2) See-Raster `lakeBedCell`, `lakeW`, `lakeNear` (Early-Out). Pure Daten — kein
-    // `_terrainDensityAt`, kein Zirkel.
+    // Carve-Index für `_hydrosphereCarveAt` + `_hydrosphereLakeAt`: (1) DER KANAL `kanal` — jedes Segment in alle Buckets
+    // seiner um die Kanal-Reichweite erweiterten BBox (eine Abfrage liest einen Bucket), gepackt: `seg` je Segment
+    // KANAL_FELDER Zahlen (ax az bx bz · hwA hwB · dA dB · sA sB), die Nummern des Buckets k in `idx[ab[k] .. ab[k + 1]]`
+    // in der Reihe des Einsortierens — er reist per Transfer, kein Leser klont ihn (Lehre 24); (2) See-Raster
+    // `lakeBedCell`, `lakeW`, `lakeNear` (Early-Out). Pure Daten — kein `_terrainDensityAt`, kein Zirkel.
+    const KANAL_FELDER = 10;
     function hydroBuildCarveIndex(ctx, H, rivers, lakes) {
         const { dim, originX, originZ, size, waterLevel } = ctx;
         // --- Fluss-Bucket-Grid ---
         const bucketSize = H.carveBucketSize;
         const bucketsDim = Math.max(1, Math.ceil(size / bucketSize));
-        const riverBuckets = new Array(bucketsDim * bucketsDim);
+        const listen = new Array(bucketsDim * bucketsDim);
+        const zahlen = [];
         const addSeg = (seg) => {
             // die Reichweite des Kanals: Krone (halbe Breite + Tiefe / Neigung) + die Krone des Damms + die Böschung dahinter
             const reach =
@@ -4614,11 +4688,14 @@
             if (bj0 < 0) bj0 = 0;
             if (bi1 >= bucketsDim) bi1 = bucketsDim - 1;
             if (bj1 >= bucketsDim) bj1 = bucketsDim - 1;
+            if (bi1 < bi0 || bj1 < bj0) return; // kein Bucket trägt es (das Segment liegt jenseits der Region)
+            const si = zahlen.length / KANAL_FELDER;
+            zahlen.push(seg.ax, seg.az, seg.bx, seg.bz, seg.hwA, seg.hwB, seg.dA, seg.dB, seg.sA, seg.sB);
             for (let bj = bj0; bj <= bj1; bj++) {
                 for (let bi = bi0; bi <= bi1; bi++) {
                     const k = bj * bucketsDim + bi;
-                    if (!riverBuckets[k]) riverBuckets[k] = [];
-                    riverBuckets[k].push(seg);
+                    if (!listen[k]) listen[k] = [];
+                    listen[k].push(si);
                 }
             }
         };
@@ -4651,6 +4728,11 @@
                 });
             }
         }
+        const ab = new Int32Array(listen.length + 1);
+        for (let k = 0; k < listen.length; k++) ab[k + 1] = ab[k] + (listen[k] ? listen[k].length : 0);
+        const idx = new Int32Array(ab[listen.length]);
+        for (let k = 0; k < listen.length; k++) if (listen[k]) idx.set(listen[k], ab[k]);
+        const kanal = { seg: new Float64Array(zahlen), ab, idx };
         // --- See-Becken-Raster ---
         // `lakeBedCell` = flache Bett-Höhe `bedY` (2 Ringe propagiert für saubere bilineare Ufer-Ecken);
         // `lakeW` = Becken-Zugehörigkeit 0/1 (daraus rampt die Ufer-Mischung); `lakeNear` = 1-Ring-Maske.
@@ -4686,7 +4768,7 @@
                 }
             }
         }
-        return { riverBuckets, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear };
+        return { kanal, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear };
     }
 
     // Vereintes Wasser-Feld je Region-Zelle: flacher Spiegel `waterY` + `waterKind` (0 Land · 1 Ozean ·
@@ -4793,6 +4875,8 @@
         lageGrund: lageGrund,
         hoehenRaster: hoehenRaster,
         hangOrt: hangOrt,
+        WIND_FORM: WIND_FORM,
+        windForm: windForm,
         HOEHLEN_MUND: HOEHLEN_MUND,
         hoehlenMund: hoehlenMund,
         BODEN_GENERATION: BODEN_GENERATION,
@@ -4801,6 +4885,8 @@
         termY: termY,
         SCHNEE: SCHNEE,
         schnee: schnee,
+        TEMPERATUR: TEMPERATUR,
+        temperatur: temperatur,
         grossform: grossformAus,
         landformRegler: landformRegler,
         benannteSeen: benannteSeen,
@@ -4808,6 +4894,7 @@
         schichtOrt: schichtOrt,
         kachelSchluessel: kachelSchluessel,
         hydrosphaere: hydrosphaere,
+        KANAL_FELDER: KANAL_FELDER,
         flussTiefe: flussTiefe,
         hydroBand: hydroBand,
     });

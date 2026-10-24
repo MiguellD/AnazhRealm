@@ -187,7 +187,7 @@ class AnazhRealm_studio_bruecke {
         f.helfer = [];
         const n = this._foundryFaedenZahl();
         for (let k = 1; k < n; k++) {
-            const w = new Worker(f.bootUrl);
+            const w = new Worker(f.bootUrl, { name: "werk" });
             const h = { k, w, bereit: false };
             // ein Boot-/Laufzeit-Fehler eines Helfers bricht LAUT (K22) wie der des Werks
             w.onerror = (ev) =>
@@ -1411,6 +1411,10 @@ class AnazhRealm_studio_bruecke {
             ausstattung: "Ausstattung",
             weapon: "Klingen",
         };
+        // eine Art, deren Wirts-Zeile ihr Gesetzbuch bringt (B7, `_kindPolicyVereinen`), heißt, wie das Buch sie nennt —
+        // ohne sie fiel jedes Wort einer neuen Art still aus dem Prompt (studios.K5: die KI kannte das neunte Buch nie)
+        const KP = AnazhRealm.KIND_POLICY;
+        for (const a of Object.keys(KP)) if (KP[a].kern && !GRUPPE[a]) GRUPPE[a] = KP[a].substanz.label;
         const gruppen = {};
         for (const [w, nennung] of K.woerter) {
             const ziel = this._studioBlueprintForWord(w);
@@ -2435,8 +2439,7 @@ class AnazhRealm_studio_bruecke {
     }
 
     // DIE GATTUNG eines Tiers — Dedup Gattung×Glied (PFLICHT-OFFEN A): EINE kanonische Quelle für Fern-Satz, Treffer-
-    // Volumen und Vorbacken (_tickTrefferGliederVorbacken) — gattung/recipe/preset, sonst TETRAPODA_SOUL_MAP[soul],
-    // sonst soul.
+    // Volumen und Glied-Vorrat (_gliederBestellen) — gattung/recipe/preset, sonst TETRAPODA_SOUL_MAP[soul], sonst soul.
     _kreaturGattung(cr) {
         const ud = (cr && cr.userData) || {};
         const soul = ud.soul || "wesen";
@@ -2461,8 +2464,8 @@ class AnazhRealm_studio_bruecke {
     }
 
     // Der Fern-Satz einer Kreatur: je Glied EINE Kapsel im Welt-March (Ganz oder gar nicht: reicht der Atlas nicht,
-    // fällt das ganze Tier). Die Glieder liest er aus dem EINEN Namen-Memo der Gattung (`_gattungGlieder`): nur das erste
-    // Tier einer Gattung zerlegt die Gestalt — vorher zerlegte jeder Leib seine Haut neu (am Messort stadt jeder Bewohner,
+    // fällt das ganze Tier). Die Glieder liest er aus dem EINEN Namen-Memo der Gattung (`_gattungGlieder`): nur der Vorrat
+    // zerlegt die Gestalt, einmal je Gattung — vorher zerlegte jeder Leib seine Haut neu (am Messort stadt jeder Bewohner,
     // der in den Fern-Kreis trat: `_kreaturGliederGruppen` 1,75 ms je Takt ab p95, Radeon echt).
     _kreaturGliederBacken(cr, einblenden) {
         const namen = this._gattungGlieder(cr);
@@ -2491,10 +2494,23 @@ class AnazhRealm_studio_bruecke {
     }
 
     // DIE GLIEDER EINER GATTUNG (das EINE Namen-Memo `_trefferGliedNamen`, Fern-Satz und Treffer lesen es): je Glied der
-    // Name seines Ankers ("" = die Wurzel) und der Schlüssel seiner Kapsel, gepasst beim ersten Tier der Gattung
-    // (`_kreaturGliederGruppen` + `_gliedKapselMemo`); jedes weitere löst nur die Namen an SEINEN Teilen auf. null: keine Gestalt
-    // (nie gemerkt — ein Leib ohne Teile versucht es beim nächsten Ruf neu).
+    // Name seines Ankers ("" = die Wurzel) und der Schlüssel seiner Kapsel; jedes Tier löst nur die Namen an SEINEN Teilen
+    // auf. Der Takt LIEST nur (Lehre 14): ist die Gattung kalt, bestellt er ihren Vorrat im Leerlauf (`_gliederBestellen`),
+    // zählt den kalten Ruf (`_gliederKalt`) und bekommt null — der Leib trägt bis dahin seinen Satz. Bis dorf-takt-z13
+    // zerlegte der erste Leser die Gestalt im Takt: ein Fuchs, den das Bestands-Gesetz fern gebar, kostete die GTX im Dorf
+    // `_gattungGlieder` 0,07–0,10 ms je Takt ab p95 (der Zug 13 hob den CPU-Takt 4,72 → 4,97 ms).
     _gattungGlieder(cr) {
+        const namen = this._trefferGliedNamen && this._trefferGliedNamen.get(this._kreaturGattung(cr));
+        if (namen) return namen;
+        this._gliederKalt = (this._gliederKalt | 0) + 1;
+        this._gliederBestellen(cr);
+        return null;
+    }
+
+    // DER BAU DER GLIEDER (nur der Glied-Vorrat ruft ihn): die Zerlegung des Leibs (`_kreaturGliederGruppen`) und je Glied die
+    // Passung (`_gliedKapselMemo`) — die Ruhe der Gestalt macht sie unabhängig davon, welches Tier zuerst kam. null: keine
+    // Gestalt (nie gemerkt — ein Leib ohne Teile wird beim nächsten kalten Ruf neu bestellt).
+    _gattungGliederBacken(cr) {
         const gattung = this._kreaturGattung(cr);
         const memo = this._trefferGliedNamen || (this._trefferGliedNamen = new Map());
         if (memo.has(gattung)) return memo.get(gattung);
@@ -2510,12 +2526,50 @@ class AnazhRealm_studio_bruecke {
         return namen;
     }
 
+    // DER GLIED-VORRAT (Lehre 14 und 25): eine kalte Gattung wird im LEERLAUF des Haupt-Fadens gebaut (`_imLeerlauf`), EINE je
+    // Fenster, nie im Takt. `leib` ist ein Tier der Gattung oder der Name einer Seele — dann baut der Vorrat einen Probe-Leib
+    // aus dem EINEN Bau (`_buildCreatureGroup`) und gibt ihn zurück. Der Ofen-Vorrat bestellt so jede Gattung des
+    // Lebensraums, bevor ein Tier entsteht (`_ofenPrefetchKreaturen`); jeder kalte Ruf eines Lesers bestellt den Rest.
+    // Liefert das Versprechen der Glied-Namen.
+    _gliederBestellen(leib) {
+        const g = typeof leib === "string" ? AnazhRealm.TETRAPODA_SOUL_MAP[leib] : this._kreaturGattung(leib);
+        const memo = this._trefferGliedNamen;
+        if (memo && memo.has(g)) return Promise.resolve(memo.get(g));
+        const Q = this._gliederAuftraege || (this._gliederAuftraege = new Map());
+        let a = Q.get(g);
+        if (!a) {
+            Q.set(g, (a = { leib }));
+            a.da = new Promise((fertig) => (a.fertig = fertig));
+            if (Q.size === 1) this._imLeerlauf(() => this._gliederVorratTick(), 1000);
+        }
+        return a.da;
+    }
+    _gliederVorratTick() {
+        const Q = this._gliederAuftraege;
+        const e = Q.entries().next().value;
+        if (!e) return;
+        const [g, a] = e;
+        Q.delete(g);
+        const seele = typeof a.leib === "string";
+        let probe = null;
+        try {
+            // ohne Gestalt (der Bau meldet es laut, fail-closed) gibt es nichts zu zerlegen
+            if (seele && (probe = this._buildCreatureGroup(a.leib)))
+                Object.assign(probe.userData, { soul: a.leib, gattung: g });
+            const leib = seele ? probe : a.leib;
+            a.fertig(leib ? this._gattungGliederBacken(leib) : null);
+        } finally {
+            if (probe) this._disposeSoulGroup(probe);
+            if (Q.size) this._imLeerlauf(() => this._gliederVorratTick(), 1000);
+        }
+    }
+
     // DAS TREFFER-VOLUMEN eines Tiers (Welle L 06.10., Befund K-D3): seine Glieder-Kapseln — dieselbe Passung wie
     // das Fern-Bild (_gliedKapselMemo), jede mit der Zone ihres Glieds (tetrapoda trefferZone). Die senkrechte Säule
     // 0,1 L…1,4 L war gattungs- und höhenblind (Hirsch L 0,64 flach 1 Treffer aus 10, hangab 2 aus 8). Die Glied-Liste
-    // je Gattung entsteht EINMAL (die Gruppen-Bildung zerlegt die Haut je Bone — vorgebacken,
-    // _tickTrefferGliederVorbacken); jedes weitere Tier löst nur die Namen an SEINEN Teilen auf. Die laufende Pose
-    // trägt jeder Test über die Welt-Matrix des Ankers.
+    // je Gattung entsteht EINMAL im Glied-Vorrat (`_gliederBestellen`, im Leerlauf); jedes Tier löst nur die Namen an
+    // SEINEN Teilen auf, eine kalte Gattung hat bis dahin kein Volumen. Die laufende Pose trägt jeder Test über die
+    // Welt-Matrix des Ankers.
     _kreaturTrefferGlieder(cr) {
         const u = cr && cr.userData;
         if (!u) return null;
@@ -2530,7 +2584,7 @@ class AnazhRealm_studio_bruecke {
         const tb = u._tierBaum;
         if (!tb) return (u._trefferGlieder = null); // kein Studio-Leib (nur _buildCreatureGroup baut einen): keine Gestalt
         const namen = this._gattungGlieder(cr);
-        if (!namen) return (u._trefferGlieder = null);
+        if (!namen) return null; // kalt: bestellt, nie je Tier gespeichert
         const liste = [];
         for (const nm of namen) {
             const anker = this._gliedAnker(cr, nm.name);
@@ -2548,28 +2602,6 @@ class AnazhRealm_studio_bruecke {
         const tb = cr && cr.userData && cr.userData._tierBaum;
         if (!tb) return null;
         return teil ? (tb.teile && tb.teile[teil]) || null : tb.wrap || cr;
-    }
-
-    // DIE TREFFER-GLIEDER VORGEBACKEN (Welle L, Lehre 14): die Glied-Liste einer Gattung entstand beim ERSTEN Treffer —
-    // der Hieb zerlegte die Haut synchron (_kreaturGliederGruppen: 28–32 Tsd. Vertices je Gattung in 57–83 Bone-Stücke
-    // kopiert, dazu bis 12 Kapsel-Fits). Steht ein Tier einer noch kalten Gattung in der Welt, bäckt der Frame sie vor:
-    // das NÄCHSTE solche Tier zuerst, EINE Gattung je Erlaubnis der EINEN Bake-Uhr (_weltBakeErlaubt — derselbe Takt wie
-    // der Fern-Satz, der dieselbe Zerlegung je Tier trägt); der Treffer liest danach nur das Memo.
-    _tickTrefferGliederVorbacken() {
-        const namen = this._trefferGliedNamen;
-        let naechstes = null;
-        let naechstD2 = Infinity;
-        for (const cr of this.state.creatures || []) {
-            const u = cr && cr.userData;
-            if (!u || !u._tierBaum || u._trefferGlieder !== undefined) continue;
-            if (namen && namen.has(this._kreaturGattung(cr))) continue;
-            const d2 = this._spielerD2(cr.position.x, cr.position.z);
-            if (d2 < naechstD2) {
-                naechstD2 = d2;
-                naechstes = cr;
-            }
-        }
-        if (naechstes && this._weltBakeErlaubt(naechstD2)) this._kreaturTrefferGlieder(naechstes);
     }
 
     // DAS GROB-TOR DES TREFFERS (Integration Welle L, Gesetz #0): kann eine Strecke, die waagrecht höchstens `spanne` um
@@ -3264,7 +3296,7 @@ AnazhRealm.KIND_POLICY = Object.freeze({
         placeExtra: null,
         role: "portal",
     }),
-    // Waffen-/Werkzeug-Domäne (schmiede-core, kind:"weapon", 21 Gattungen): fx.place mode "hand" →
+    // Waffen-/Werkzeug-Domäne (schmiede-core, kind:"weapon", 22 Gattungen): fx.place mode "hand" →
     // placeExtra null; Donor = Substanz-Datenblock (Tags · Ω-PHYSIS · wield), die Gestalt aus dem
     // Appear-Pfad. handAxis: das Lab baut entlang +X — der Hand-Konsument (_heldFoundryGroup/buildHand)
     // mappt Template-X auf lange Achse +Y, Griff unten; ohne handAxis unrotiert. donorTool: Rezepte mit

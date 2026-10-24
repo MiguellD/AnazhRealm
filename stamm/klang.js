@@ -124,7 +124,7 @@ class AnazhRealm_klang {
             ")();";
         let w = null;
         try {
-            w = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
+            w = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })), { name: "klang" });
         } catch (e) {
             this.log(`Klang-Werkstatt startet nicht (${e && e.message}) — die Klang-Welt schweigt`, "WARNING");
             return null;
@@ -235,14 +235,6 @@ class AnazhRealm_klang {
         return a * sk * sk;
     }
 
-    // DIE WANDERNDE BÖE am Ort (x,z) zur Wind-Zeit t — dieselben Zahlen (WIND_BOE) und dieselbe Richtung
-    // (`_windDirAt`) wie `_windSwayOffset` im Shader: was das Gras biegt, rauscht im Ohr.
-    _windBoeAt(x, z, t) {
-        const B = AnazhRealm.WIND_BOE;
-        const d = this._windDirAt(t);
-        return Math.sin(t * B.omega - (x * d.x + z * d.z) * B.k) * B.amp + B.mitte;
-    }
-
     // Der RECHTS-Vektor des Ohrs (waagerecht, aus der Kamera-Blickrichtung): Panorama einer Richtung (ux, uz) =
     // ux·x + uz·z (−1 links … +1 rechts). Ohne Kamera {0, 0} — alles mittig.
     _umweltRechts() {
@@ -254,11 +246,12 @@ class AnazhRealm_klang {
         return l > 1e-6 ? { x: -v.z / l, z: v.x / l } : { x: 0, z: 0 };
     }
 
-    // DIE LAGE AM OHR — die Eingabe des Klang-Gesetzes (umweltMischung). Alles gelesen, nichts erfunden: das
-    // Wetter-Feld (transition-aware) × Böen-Drift, die Böe am Ort, die Kronen-Deckung der STEHENDEN Bäume (die
+    // DIE LAGE AM OHR — die Eingabe des Klang-Gesetzes (umweltMischung). Alles gelesen, nichts erfunden: der
+    // EINE Wind am Ohr (`_windAt`), die Kronen-Deckung der STEHENDEN Bäume (die
     // Kronen-Karte `_kronenStreuAt` — dieselben Bytes, aus denen Boden und Nah-Wiese den Wald lesen; das Kronenlicht-
     // Feld der Platzierung sagt nur, wo Bäume wachsen DÜRFEN), Sonne (Tageszeit), Jahres-Phase, Leben (auraAt), der
-    // Hör-Ring (Ufer/Fluss), der nächste Wasserfall der Region, die nächste Glut (Brenn-Fläche).
+    // Hör-Ring (Ufer/Fluss), der nächste Wasserfall der Region, die nächste Glut (Brenn-Fläche) — und die ANTWORT der Wertung
+    // (`_tatAntwortAm`: das abklingende δ der Tat, die hier am stärksten wirkt; affekt K1).
     _umweltLage() {
         const um = this.state.symphony.umwelt;
         const pm = this.state.playerMesh;
@@ -266,6 +259,7 @@ class AnazhRealm_klang {
         const px = pm.position.x;
         const pz = pm.position.z;
         const wf = this._weatherFieldFor(this.state.weather);
+        const wind = this._windAt(px, pz, this._bildZeit);
         const aura = this.auraAt(px, pz);
         const re = this._umweltRechts();
         const pan = (ux, uz) => Math.max(-1, Math.min(1, ux * re.x + uz * re.z));
@@ -323,8 +317,10 @@ class AnazhRealm_klang {
             }
         }
         return {
-            windFeld: wf.wind * (this._weatherWob || 1),
-            boe: this._windBoeAt(px, pz, this._bildZeit), // die Böe am Ort auf der Bild-Uhr (A9), wie der Wind im Bild
+            // der EINE Wind am Ohr (`_windAt` auf der Bild-Uhr, A9): die Stärke am Ort und die wandernde Böe — dieselben Zahlen
+            // (WIND_BOE) und dieselbe Richtung wie `_windSwayOffset` im Shader: was das Gras biegt, rauscht im Ohr
+            windFeld: wind.staerke,
+            boe: wind.boe,
             deckung: this._kronenStreuAt(px, pz),
             regen: wf.rain,
             sonne: this._sonnenRichtung().y, // die Sonnenhöhe (sin) der EINEN Tag-Achse, mit der Neigung der Bahn
@@ -334,6 +330,7 @@ class AnazhRealm_klang {
             fluss,
             fall,
             glut,
+            antwort: this._tatAntwortAm(px, pz),
         };
     }
 
@@ -526,8 +523,10 @@ class AnazhRealm_klang {
     }
 
     // Material am Fuß — NASS SCHLÄGT FEST: unter dem Wasserspiegel (watender Ufer-Schritt) platscht er. Das EINE Urteil
-    // „ist hier Wasser" (`_nassAt`, der Fuß ist sein Grund), `_terrainMaterialAt` die EINE Boden-Wahrheit.
+    // „ist hier Wasser" (`_nassAt`, der Fuß ist sein Grund), `_terrainMaterialAt` die EINE Boden-Wahrheit; der Fuß auf dem
+    // gefrorenen Spiegel (`_eisAt`, stoffe.K3) klingt Eis.
     _schrittMaterialAt(x, z, y) {
+        if (this._eisAt(x, z, y + 0.02, 0.05) !== null) return "eis";
         return this._nassAt(x, z, 0.02, y) ? "wasser" : this._terrainMaterialAt(x, z, y);
     }
 

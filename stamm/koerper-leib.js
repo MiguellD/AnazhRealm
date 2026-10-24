@@ -561,11 +561,14 @@ class AnazhRealm_koerper_leib {
     // unter Fels (nur dort tastet das Feld); ohne Karte (fern, ungebaut) trägt der Träger. Leser: Fuß-IK des Menschen
     // (`_gaitBodenY`) und des Tiers (`_kreaturFussBoden`), Tier-Lage (`_creatureSlopeProben`, die Mitte im Frame-Takt), der
     // Stoß-Schritt, die Tod-Lage. Die Karte am Punkt liest `_bodenSichtAt` (am Chunk-Rand die des Nachbarn).
+    // Über einem gefrorenen Spiegel (`_eisAt`, stoffe.K3) sieht das Auge das Eis, nie den Grund unter ihm.
     _standSicht(x, z, traegerY, struktur) {
         if (struktur === true) return traegerY;
-        const k = this._bodenSichtAt(x, z);
-        if (!Number.isFinite(traegerY)) return Number.isFinite(k) ? k : NaN;
         const band = AnazhRealm.STAND_SICHT_BAND;
+        const eis = this._eisAt(x, z, traegerY + band, 2 * band);
+        const karte = this._bodenSichtAt(x, z);
+        const k = eis !== null && !(karte >= eis) ? eis : karte;
+        if (!Number.isFinite(traegerY)) return Number.isFinite(k) ? k : NaN;
         if (!Number.isFinite(k)) return traegerY;
         if (Math.abs(k - traegerY) <= band) return k;
         const g = this._koerperBodenUnter(x, traegerY, z);
@@ -1633,6 +1636,14 @@ class AnazhRealm_koerper_leib {
             }
         }
         await Promise.all(auftraege);
+        // DER GLIED-VORRAT (dorf-takt-z13): jede Gattung, die der Lebensraum gebären kann, zerlegt ihre Gestalt im Leerlauf, bevor
+        // ein Tier entsteht (`_kreaturenBereit` wartet auf diesen Vorrat) — der Takt liest danach nur das Memo (`_gattungGlieder`)
+        const L = AnazhRealm._lebensraumGesetz().L;
+        await Promise.all(
+            Object.keys(map)
+                .filter((s) => map[s] in L.gattung)
+                .map((s) => this._gliederBestellen(s))
+        );
         this._ofenVorratSteht = true;
     }
     // DAS BEIN-MASS der Gestalt (Welle 5, die Zwei-Knochen-IK des Gang-Gesetzes): je Bein an der Vorlage in der Ruhe-Pose
@@ -2723,7 +2734,7 @@ class AnazhRealm_koerper_leib {
         return h >>> 0;
     }
     // VERHALTENS-TICK (je nahe Kreatur): Stimmung aus dem echten Zustand (jagd/flucht/schwimmen →
-    // Emotions-Achsen → Tag/Nacht-Bedürfnis), im deterministischen Takt (alle=[min,max] s, Hash aus Index
+    // Emotions-Achsen → die Tätigkeit des Tags), im deterministischen Takt (alle=[min,max] s, Hash aus Index
     // + Zeit-Bucket) eine AKTION aus dem Buch an ud._verhaltenAktion; _animateTierBaum trägt sie, tempo
     // und hop wirken im Bewegungs-Pfad. Flucht/Schwimmen tragen keine Aktion.
     _tickKreaturVerhalten(creature, i, nowS) {
@@ -2738,6 +2749,7 @@ class AnazhRealm_koerper_leib {
         }
         const V = this._tetrapodaVerhalten();
         if (!V) return;
+        const Z = ud._gezeigt ? AnazhRealm._lebensraumGesetz().E.zeigt[ud._gezeigt] : null;
         let mood;
         if (z === "jagd") {
             mood = "jagd";
@@ -2751,10 +2763,10 @@ class AnazhRealm_koerper_leib {
             if (em && (Number(em.chaos) || 0) >= SW.chaos) mood = "alert";
             else if (em && (Number(em.joy) || 0) >= SW.joy) mood = "joy";
             else {
-                // die Sonnenhöhe der EINEN Tag-Achse (`_sonnenRichtung`, sin der Höhe): tiefe Nacht = Ruhe; am Tag weiden
-                // Pflanzenfresser (diet ≤ weideDiet, _kreaturDiet).
-                const nacht = this._sonnenRichtung().y < SW.nachtSin;
-                mood = nacht ? "nacht" : this._kreaturDiet(creature) <= SW.weideDiet ? "tag" : "idle";
+                // DIE TÄTIGKEIT ZEIGT SICH (Tiere K4, tetrapoda ETHOGRAMM_GESETZ.zeigt): wer wandernd ruht, ruht (nacht), wer
+                // äst, grast (tag), sonst zieht das Tier (idle) — der Tag aus seinen Pegeln (`_kreaturTaetigkeit`). Vorher
+                // ruhte jedes Tier, solange die Sonne unter nachtSin stand, und am Tag weidete jeder Pflanzenfresser.
+                mood = Z ? Z.stimmung : "idle";
             }
         }
         const A = ud._verhaltenAktion;
@@ -2762,12 +2774,14 @@ class AnazhRealm_koerper_leib {
         const row = V.stimmung[mood] || V.stimmung.idle;
         if (!row || !Array.isArray(row.aktionen) || !row.aktionen.length) return;
         const alle = Array.isArray(row.alle) && row.alle.length === 2 ? row.alle : [6, 12];
+        // eine Tätigkeit mit Aktion (ruhen, äsen) trägt sie ohne Pause: das ruhende Tier liegt, das äsende grast
+        const fort = !!(Z && Z.aktion && Z.stimmung === mood);
         if (ud._verhaltenMood !== mood || !Number.isFinite(ud._verhaltenNext)) {
-            // Stimmungs-Wechsel: neuen Takt würfeln (deterministisch), noch keine Aktion.
+            // Stimmungs-Wechsel: neuen Takt würfeln (deterministisch), noch keine Aktion — die einer Tätigkeit beginnt sofort.
             ud._verhaltenMood = mood;
             const h0 = this._verhaltenHash(i + 1, (nowS * 10) | 0);
-            ud._verhaltenNext = nowS + alle[0] + ((h0 % 1000) / 1000) * (alle[1] - alle[0]);
-            return;
+            ud._verhaltenNext = nowS + (fort ? 0 : alle[0] + ((h0 % 1000) / 1000) * (alle[1] - alle[0]));
+            if (!fort) return;
         }
         if (nowS < ud._verhaltenNext) return;
         const h = this._verhaltenHash((i + 1) * 2654435761, nowS | 0);
@@ -2780,7 +2794,7 @@ class AnazhRealm_koerper_leib {
         // hop: die Aktion springt — über das EINE Sprung-Gesetz (creatureJump: Höhe aus der Freude, Abflug √(2·g·h)); der
         // Würfel je Frame ist gefallen, ein Sprung startet nur hier.
         if (def.hop === true) this.creatureJump(creature);
-        ud._verhaltenNext = nowS + dauer + alle[0] + ((h % 977) / 977) * (alle[1] - alle[0]);
+        ud._verhaltenNext = nowS + dauer + (fort ? 0 : alle[0] + ((h % 977) / 977) * (alle[1] - alle[0]));
     }
     // DER EINE BRÜCKEN-RESOLVER (MOTION_EMOTION_PROFILES, Vorrang-Zeilen; keine Achse über der Schwelle
     // → MOTION_PROFILE_MAP-Default). Beide Leser (_koerperMotionProfile + _motionStudioProfile) fließen
@@ -2928,6 +2942,7 @@ class AnazhRealm_koerper_leib {
             }
             c.position.set(a.x + nx, a.y + ny, a.z + nz);
         };
+        let wind = null; // der Wind am Ort des Tuchs, einmal je Aufruf
         for (let i = 0; i < roles.length && i < kids.length; i++) {
             const r = roles[i];
             if (!r) continue;
@@ -2997,8 +3012,10 @@ class AnazhRealm_koerper_leib {
                         : 0;
                 c.rotation.x = b.rx + Math.sin(t * 1.6) * 0.05 + (moving ? 0.04 : 0) + dHead;
             } else if (r.role === "segel") {
-                // C2 — das Tuch/Segel FLATTERT (Wind): kleine schnelle Wellen.
-                c.rotation.z = b.rz + Math.sin(t * 4.2 + r.phase + i) * 0.07;
+                // C2 — das Tuch/Segel FLATTERT im EINEN Wind am Ort (`_windAt`, die Bild-Uhr): der Ausschlag wächst mit Stärke
+                // und Böe (Sturm 0,14–0,23 rad, Regen ~0,05, klar ~0,01); ohne Wind hängt es still.
+                if (!wind) wind = this._windAt(group.position.x, group.position.z, this._bildZeit);
+                c.rotation.z = b.rz + Math.sin(t * 4.2 + r.phase + i) * 0.2 * wind.staerke * wind.boe;
             }
         }
     }
@@ -3066,9 +3083,10 @@ AnazhRealm._gaitReich = function (kette) {
 AnazhRealm._landungGesetz = function () {
     return AnazhRealm._bewegungsBlock("landung", ["dipProV", "dipMax", "minTempo", "erholK", "kameraK"]);
 };
-// DIE MASSE KOMMT AUS DEM KERN (0710-4): der Wirt hält keine Dichte. Tier · Mensch · Wagen tragen ihre Dichte in ihrem
-// Gesetzbuch (tetrapoda MASSSTAB.dichteKgM3 · koerper LEIB.dichteKgM3 · vehicle FAHR.masseDichte), das Volumen ist ihre
-// Gestalt (`_leibVolumen` der geschlossenen Haut, carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
+// DIE MASSE KOMMT AUS DER GESTALT UND DER STOFF-ZEILE (0710-4, physik K1): der Wirt hält keine Dichte. Das Tier ist Fleisch,
+// der Mensch Leib, der Wagen Blech — ρ aus der EINEN Stoff-Zeile, deren Zeilen die Gesetzbücher tragen (tetrapoda MASSSTAB ·
+// koerper LEIB · vehicle FAHR.huelleDichte), das Volumen ist ihre Gestalt (`_leibVolumen`: die Haut des Tiers, der Leib des
+// Menschen aus dem Ofen; carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
 // (dichteLeib 1000 über eine Kapsel aus der Hüft-Höhe — der Hirsch wog 436 kg, der Bär 255 —, dichteWagen 150).
 AnazhRealm.LEIB_KLASSEN = Object.freeze(["fell", "haut"]); // die Material-Klassen der geschlossenen Haut eines Leibs
 // Das Volumen einer GESCHLOSSENEN Fläche (m³ im Rahmen ihrer Geometrie) über den Divergenz-Satz, Σ a · (b × c) / 6 je
@@ -3112,10 +3130,11 @@ AnazhRealm._geschlossenesVolumen = function (geo) {
         }
     return { v: Math.abs(v), geschlossen };
 };
-// DAS VOLUMEN EINER GESTALT (m³ im Rahmen `rahmen`): die geschlossene Haut (LEIB_KLASSEN) unter `teil` — die Nah-Gestalt,
+// DAS VOLUMEN EINER GESTALT (m³ im Rahmen `rahmen`): der Leib, den der Ofen maß (`__leibV`, der Mensch), sonst die
+// geschlossene Haut (LEIB_KLASSEN) unter `teil` — die Nah-Gestalt,
 // nie die Fern-Gestalt daneben. Offene Teile und der Schalen-Stapel des Fells (`fellSchale`: N Kopien der Haut) tragen
 // keine Masse. Je Geometrie gemerkt (jede Kreatur teilt die Geometrien ihrer Vorlage). Gemessen bei Größe 1: Fuchs 0,015 ·
-// Wolf 0,064 · Hirsch 0,094 · Bär 0,335 · Mensch 0,117 m³ (Spieler).
+// Wolf 0,064 · Hirsch 0,094 · Bär 0,335 · Mensch 0,090 m³ (Spieler).
 AnazhRealm._leibVolumen = function (teil, rahmen) {
     if (!teil || typeof THREE === "undefined") return 0;
     const memo = AnazhRealm._leibVolumenMemo || (AnazhRealm._leibVolumenMemo = new WeakMap());
@@ -3123,15 +3142,17 @@ AnazhRealm._leibVolumen = function (teil, rahmen) {
     r.updateMatrixWorld(true);
     const inv = new THREE.Matrix4().copy(r.matrixWorld).invert();
     const m = new THREE.Matrix4();
-    // DAS GEMESSENE VOLUMEN DES OFENS (1310-15): der Mensch-Guss schneidet die Haut unter dem Stoff (danach ist sie offen) und
-    // misst sie vorher — die Zahl hängt am Gelenk der Hülle (`__leibV`, Geometrie-Einheiten³) und zählt NEBEN jeder
-    // geschlossenen Haut: Kopf und Hände sind eigene Häute (A4: die Zahl galt allein — der Spieler wog 111,5 statt 115,5 kg).
+    // DAS GEMESSENE VOLUMEN DES OFENS (1310-15, physik K1): der Mensch-Guss misst seinen Leib selbst — die Vereinigung aller
+    // Teile unter der Haut, Kopf und Hände eingeschlossen — und hängt die Zahl ans Gelenk der Hülle (`__leibV`, Einheiten³):
+    // sie ist der GANZE Leib, keine Haut zählt daneben. Bis physik K1 maß der Ofen die Haut-Hülle und der Wirt Kopf und Hände
+    // dazu (A4) — der Spieler wog 117,3 kg.
     let v = 0;
     teil.traverse((o) => {
         if (!(o.userData && o.userData.__leibV > 0)) return;
         m.multiplyMatrices(inv, o.matrixWorld);
         v += o.userData.__leibV * Math.abs(m.determinant());
     });
+    if (v > 0) return v;
     teil.traverse((o) => {
         if (!o.isMesh || !o.geometry) return;
         const kl = o.material && o.material.userData ? o.material.userData.foundryKind : null;

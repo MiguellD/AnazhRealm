@@ -404,17 +404,19 @@ class AnazhRealm_wasser_hydro {
     // `depth` und centerness des nächsten Segments, dazu die Wasser-Oberfläche `surfaceY`: der Spiegel der Segmente
     // (`_hydroRiverSpiegel`, linear zwischen ihren Enden — stromab nie steigend, quer waagrecht), gemittelt mit einem
     // Gewicht, das zur Krone stetig auf 0 fällt — ein breiter Fluss überdeckt in der Biegung mehrere Segmente, das
-    // nächste allein gäbe dort eine Stufe. O(1) über `riverBuckets`. Worker bit-identisch (speist die Zellen).
+    // nächste allein gäbe dort eine Stufe. O(1) über den Kanal (`kanal`). Worker bit-identisch (speist die Zellen).
     _hydroRiverAt(x, z) {
         const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-        if (!h || !h.ready || !h.riverBuckets) return null;
+        if (!h || !h.ready || !h.kanal) return null;
+        const kanal = h.kanal;
         const bs = h.bucketSize;
         const bd = h.bucketsDim;
         const bi = Math.floor((x - h.originX) / bs);
         const bj = Math.floor((z - h.originZ) / bs);
         if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
-        const list = h.riverBuckets[bj * bd + bi];
-        if (!list) return null;
+        const kb = bj * bd + bi;
+        if (kanal.ab[kb] === kanal.ab[kb + 1]) return null;
+        const KANAL_FELDER = globalThis.__gelaendeCore.KANAL_FELDER;
         const HC = AnazhRealm.HYDROSPHERE;
         let bestD = Infinity;
         let dirX = 0;
@@ -424,24 +426,34 @@ class AnazhRealm_wasser_hydro {
         let gSumme = 0;
         let sSumme = 0;
         let ufer = 0;
-        for (let s = 0; s < list.length; s++) {
-            const seg = list[s];
-            const ex = seg.bx - seg.ax;
-            const ez = seg.bz - seg.az;
+        for (let q = kanal.ab[kb]; q < kanal.ab[kb + 1]; q++) {
+            const o = kanal.idx[q] * KANAL_FELDER;
+            const ax = kanal.seg[o];
+            const az = kanal.seg[o + 1];
+            const bx = kanal.seg[o + 2];
+            const bz = kanal.seg[o + 3];
+            const hwA = kanal.seg[o + 4];
+            const hwB = kanal.seg[o + 5];
+            const dA = kanal.seg[o + 6];
+            const dB = kanal.seg[o + 7];
+            const sA = kanal.seg[o + 8];
+            const sB = kanal.seg[o + 9];
+            const ex = bx - ax;
+            const ez = bz - az;
             const len2 = ex * ex + ez * ez || 1;
-            let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+            let t = ((x - ax) * ex + (z - az) * ez) / len2;
             if (t < 0) t = 0;
             else if (t > 1) t = 1;
-            const px = seg.ax + ex * t;
-            const pz = seg.az + ez * t;
+            const px = ax + ex * t;
+            const pz = az + ez * t;
             const dist = Math.hypot(x - px, z - pz);
-            const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
-            const D = seg.dA + (seg.dB - seg.dA) * t;
+            const halfW = hwA + (hwB - hwA) * t;
+            const D = dA + (dB - dA) * t;
             const krone = halfW + D / HC.bankNeigung;
             if (dist > krone) continue;
             const g = (1 - dist / krone) * (1 - dist / krone) + 1e-6;
             gSumme += g;
-            sSumme += g * (seg.sA + (seg.sB - seg.sA) * t);
+            sSumme += g * (sA + (sB - sA) * t);
             // Die Kronen-Blende: 1 bis zur Kanal-Kante, smoothstep auf 0 an der Krone (das Maximum der Segmente).
             const u = dist <= halfW ? 0 : (dist - halfW) / (krone - halfW);
             const uS = 1 - u * u * (3 - 2 * u);
@@ -475,28 +487,36 @@ class AnazhRealm_wasser_hydro {
     // eines steilen Laufs zu tief oder zu hoch). −Infinity ohne Segment im Bucket. Worker bit-identisch (`hydroSpiegelQuer`).
     _hydroSpiegelQuer(x, z) {
         const h = this._hydroFor(x, z);
-        if (!h || !h.ready || !h.riverBuckets) return -Infinity;
+        if (!h || !h.ready || !h.kanal) return -Infinity;
+        const kanal = h.kanal;
         const bs = h.bucketSize;
         const bd = h.bucketsDim;
         const bi = Math.floor((x - h.originX) / bs);
         const bj = Math.floor((z - h.originZ) / bs);
         if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return -Infinity;
-        const list = h.riverBuckets[bj * bd + bi];
-        if (!list) return -Infinity;
+        const kb = bj * bd + bi;
+        if (kanal.ab[kb] === kanal.ab[kb + 1]) return -Infinity;
+        const KANAL_FELDER = globalThis.__gelaendeCore.KANAL_FELDER;
         let bestD = Infinity;
         let spiegel = -Infinity;
-        for (let s = 0; s < list.length; s++) {
-            const seg = list[s];
-            const ex = seg.bx - seg.ax;
-            const ez = seg.bz - seg.az;
+        for (let q = kanal.ab[kb]; q < kanal.ab[kb + 1]; q++) {
+            const o = kanal.idx[q] * KANAL_FELDER;
+            const ax = kanal.seg[o];
+            const az = kanal.seg[o + 1];
+            const bx = kanal.seg[o + 2];
+            const bz = kanal.seg[o + 3];
+            const sA = kanal.seg[o + 8];
+            const sB = kanal.seg[o + 9];
+            const ex = bx - ax;
+            const ez = bz - az;
             const len2 = ex * ex + ez * ez || 1;
-            let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+            let t = ((x - ax) * ex + (z - az) * ez) / len2;
             if (t < 0) t = 0;
             else if (t > 1) t = 1;
-            const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
+            const dist = Math.hypot(x - (ax + ex * t), z - (az + ez * t));
             if (dist < bestD) {
                 bestD = dist;
-                spiegel = seg.sA + (seg.sB - seg.sA) * t;
+                spiegel = sA + (sB - sA) * t;
             }
         }
         return spiegel;
@@ -576,6 +596,22 @@ class AnazhRealm_wasser_hydro {
         return spiegel;
     }
 
+    // DAS EIS (stoffe.K3): die feste Phase der EINEN Wasser-Wahrheit — der Spiegel am Körper (`_koerperWasser` über jedem
+    // Grund), dessen Wasser unter dem Gefrierpunkt liegt (`_temperaturAt` an seiner Höhe, mit der Trägheit des Wassers),
+    // trägt als Fläche: der Grund unter `y0` binnen `maxDist` (wie `_fieldSurfaceBelow`; ohne `y0` von oben), sonst null.
+    // Kein zweites Wasser: dieselbe Fläche, die das Auge sieht und durch die der Körper taucht, solange sie flüssig ist.
+    // Der billige Beweis zuerst (Lehre 25): ist das Wasser an `y0` warm, ist es jede Fläche darunter (die Luft kühlt mit
+    // der Höhe). Leser: der Grund jedes Körpers (`_koerperGrund`, `_koerperBodenUnter`) und die Sicht des Stands.
+    _eisAt(x, z, y0, maxDist) {
+        const TW = globalThis.__gelaendeCore.TEMPERATUR;
+        const gefroren = (y) => this._temperaturAt(y, TW.wasserTraegTage) < TW.gefrierpunkt;
+        const mitRef = Number.isFinite(y0);
+        if (mitRef && !gefroren(y0)) return null;
+        const spiegel = this._koerperWasser(x, z, -Infinity);
+        if (!(spiegel > -Infinity) || (mitRef && !(spiegel <= y0 && y0 - spiegel <= maxDist))) return null;
+        return gefroren(spiegel) ? spiegel : null;
+    }
+
     // Der Spiegel am Körper (die Wahrheit ohne Gestalt) — nur `_koerperWasser` ruft ihn. Wo ein Chunk geladen ist, ist es das
     // GEZEICHNETE Wasser (`_wasserBildAt`: das Sheet, auch der Küsten-Aquifer, das Live-Dach des Automaten, das flache Ufer)
     // unter der DECKE (D11), gelesen an der Zelle des Körpers (die erste nicht-feste über seinem Grund): ist sie geflutet,
@@ -617,8 +653,11 @@ class AnazhRealm_wasser_hydro {
     // DER BLICK DES WASSERS (K16, EIN Baustein für den Wasser-Stoff und den Fern-Ring): was die Fläche mit der Normale `n`
     // dem Auge `viewDir` zurückwirft, über dem Grund mit dem Durchlass `T` — der Körper im Licht des Orts (R∞ × E/π), soweit
     // er den Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Liefert { eigen, fres }.
+    // DAS EIS (stoffe.K3): über der Höhe, über der das Wasser gefriert (`o.eisNull`), ist die Fläche gefroren — deckend, ihr
+    // Körper der Schnee der Boden-Palette im Licht des Orts, der Himmel nach demselben Fresnel (n Eis 1,31 ≈ n Wasser 1,33);
+    // dieselbe Fläche trägt den Körper (`_eisAt`).
     _wasserBlick(TSL, WG, o) {
-        const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step } = TSL;
+        const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step, mix } = TSL;
         const HG =
             AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
         // Schlick-Fresnel (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2 — EIN Fresnel für Spiegel UND Durchlass.
@@ -666,7 +705,11 @@ class AnazhRealm_wasser_hydro {
             .mul(float(1.0).sub(fres))
             .add(himmel.mul(fres))
             .add(glanz);
-        return { eigen, fres };
+        const eis = step(o.eisNull, o.ort.y);
+        return {
+            eigen: mix(eigen, mix(vec3(...AnazhRealm.BODEN_FARBE.schnee).mul(o.irr), himmel, fres), eis),
+            fres: mix(fres, float(1.0), eis),
+        };
     }
 
     // DER BODEN UNTER EINEM WERK (Leben-Schau 2, 09.10.): der Boden des Körpers (`_koerperBodenUnter`) ab der Höhe des

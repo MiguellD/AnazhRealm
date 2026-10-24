@@ -119,7 +119,7 @@ function validateDaten(N, spec) {
         // structured-clone-Sicherheit (die Taille: reine Daten).
         try {
             JSON.parse(JSON.stringify(r));
-        } catch (_e) {
+        } catch {
             v.push(`§8: "${id}" nicht JSON-klonbar`);
         }
     }

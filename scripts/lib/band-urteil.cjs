@@ -15,9 +15,9 @@
 //     ratsche    eine Klasse × Pass (oder ein VRAM-Erzeuger, oder die Summe) über ihrem letzten Ist plus Toleranz
 //     leck       VRAM, den kein Bild trägt: Geometrie-Puffer, die nur der Foundry-Cache (`buf:ruhend`) oder nur r184s
 //                Attribut-Register (`buf:verwaist`) hält — der Täter beim Namen (W6); und das Rahmen-Ziel des Direktpfads
-//                (`tex:r184-ausgabe`), das eine Linse liegen ließ (0910-1)
-//     weit       eine Ratsche über der Messung × (1 + Toleranz): sie hielte einen Rückschritt bis zu ihr grün (K26)
-//     ungemessen keine gemessene Ratsche für diesen Ort × Gerät × Sicht (K26)
+//                (`tex:r184-ausgabe`), das eine Linse liegen ließ
+//     weit       eine Ratsche über der Messung × (1 + Toleranz): sie hielte einen Rückschritt bis zu ihr grün
+//     ungemessen keine gemessene Ratsche für diesen Ort × Gerät × Sicht
 //   Den Exit der Messfolge trägt JEDE Rot-Zeile (omen-messfolge `bandBefunde`, K26); die Ratsche ziehen nur unbenannt ·
 //   haushalt · ratsche · leck auf (`linse`), weit · stufe · ungemessen heilt der Nachzug bzw. der Re-Mint selbst.
 //
@@ -49,7 +49,7 @@ function ortOf(haushalt, id) {
     return o;
 }
 
-// DIE RATSCHE JE ORT × GERÄT × SICHT (K26): die Kosten eines Orts sind auf der Radeon (iGPU) andere als auf der GTX (alte
+// DIE RATSCHE JE ORT × GERÄT × SICHT: die Kosten eines Orts sind auf der Radeon (iGPU) andere als auf der GTX (alte
 // dGPU) und in der Ego-Sicht andere als in Third-Person.
 // Jede Ratsche ist EINE Datei `ratsche-<ort>-<gerät>-<sicht>.json`; die Geräte und Sichten nennt der Haushalt (`geraete`,
 // `sichten`), die Messung nennt, woran sie stand (`geraet`, `sicht`), und nur deren Ratsche richtet sie.
@@ -128,7 +128,7 @@ function ortGier(ort) {
 
 // DER GESTELLTE ORT eines Laufs (`werkbank band` zeichnet ihn auf: der Ort der letzten Aufstellung, der Dorf-Zug, der
 // Ort-Takt und die Gier beim Zählen) gegen den Ort, den der Lauf nennt — jede Abweichung beim Namen. Ein Lauf ohne
-// Aufzeichnung ist ungestellt. DIE SICHT (K26) gehört zum gestellten Ort: `sicht` ist die verlangte (ego | third), `z.sicht` die
+// Aufzeichnung ist ungestellt. DIE SICHT gehört zum gestellten Ort: `sicht` ist die verlangte (ego | third), `z.sicht` die
 // gezählte — ohne Verlangen prüft die Wache nur, dass die Messung ihre Sicht nennt.
 function ortGestellt(ort, z, sicht) {
     if (!z) return ["keine Aufzeichnung des gestellten Orts (ein Lauf vor der Orts-Wache)"];
@@ -292,7 +292,7 @@ const LINSEN_ARTEN = ["unbenannt", "haushalt", "ratsche", "leck"];
 // (`ruhend`) oder nur r184s Attribut-Register (`verwaist`) hält (`__pufferZensus`, draw-zaehler) — VRAM an der Geschichte
 // statt am Schirm. Jedes MB davon ist ein LECK, der Täter steht im Urteil beim Namen.
 const LECK_ERZEUGER = /^buf:(ruhend|verwaist)$/;
-// DAS RAHMEN-ZIEL DES DIREKTPFADS (0910-1): r184 legt es nur an, wenn ein Render MIT Tonemapping auf die Leinwand geht
+// DAS RAHMEN-ZIEL DES DIREKTPFADS: r184 legt es nur an, wenn ein Render MIT Tonemapping auf die Leinwand geht
 // (`_getFrameBufferTarget`: rgba16float + depth24plus, 15,8 + 7,9 MB bei 1080p, `isPostProcessingRenderTarget` → der Erzeuger
 // `r184-ausgabe`). Die Post-Kette tut das nie (r184 schaltet Tonemapping und Farbraum für ihr Quad ab), im Spiel lebt es also
 // nur im Rückfall ohne Kette. Steht es im Band, fuhr eine Linse den Direktpfad und ließ es liegen: in 0710-6 und 0710-9 trug
@@ -436,7 +436,7 @@ function bandHuelle(laeufe) {
     return { zensus, vram, texturen };
 }
 
-// DIE RENDER-ZIEL-KLASSE (K50): die Ziele der Bild-Kette — Szenen-Ziel und -Tiefe, Tiefen-Abbild, die Ziele der zeitlichen
+// DIE RENDER-ZIEL-KLASSE: die Ziele der Bild-Kette — Szenen-Ziel und -Tiefe, Tiefen-Abbild, die Ziele der zeitlichen
 // Auflösung, die Schatten-Kaskaden, das Rahmen-Ziel — zählen fest je Schirm, nie je Welt (bei 1080p 71,4 MB am Kopf 45f1eeae,
 // Genesis third). Ihr Haushalt (`renderZiele`: MB und das Muster ihrer Erzeuger) hält sie als EINE Klasse: darüber ROT mit
 // jedem Erzeuger beim Namen (Art `renderziele`, eine Haushalts-Verletzung wie die Stufen-Wand, keine Linsen-Art).
@@ -464,7 +464,7 @@ function haushaltPruefen(h) {
     for (const k of ["befehle", "dreiecke", "vramMB", "gpuMs"]) if (!(b[k] > 0)) f.push(`band.${k} fehlt`);
     const paesse = h && h.paesse;
     if (!Array.isArray(paesse) || !paesse.length) f.push("paesse fehlt");
-    // DIE GERÄTE und DIE SICHTEN (K26): je Gerät ein Titel und das Muster seines Adapter-Texts, je Sicht der Kamera-Modus
+    // DIE GERÄTE und DIE SICHTEN: je Gerät ein Titel und das Muster seines Adapter-Texts, je Sicht der Kamera-Modus
     // des Stamms — jede Ratsche gilt EINEM Ort × Gerät × Sicht.
     const ge = h && h.geraete;
     if (!ge || typeof ge !== "object" || !Object.keys(ge).length) f.push("geraete fehlt (je Gerät titel und muster)");
@@ -805,7 +805,7 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort, ratsc
             groesse: "vramMB",
             text: `VRAM ${speicher.gebunden} MB (gebunden) über der Ratsche ${rg.vramMB}`,
         });
-    // UNGEMESSEN (K26): ohne Ratsche dieses Orts × Geräts × Sicht richtet keine Zeile — rot beim Namen, nie still.
+    // UNGEMESSEN: ohne Ratsche dieses Orts × Geräts × Sicht richtet keine Zeile — rot beim Namen, nie still.
     if (!ratsche || ratsche.gemessen == null)
         rot.push({
             art: "ungemessen",
@@ -816,7 +816,7 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort, ratsc
                 `keine gemessene Ratsche${ratscheDatei ? " " + ratscheDatei : ""}${ort ? " am Ort " + ort.id : ""} — ` +
                 "dieser Ort × Gerät × Sicht ist ungemessen, die Re-Mint-Serie fehlt (werkbank ratsche --neu)",
         });
-    // ZU WEIT (K26): eine Ratsche über der Messung × (1 + Toleranz) hält keinen Gewinn — der Rückschritt bis zu ihr bliebe grün.
+    // ZU WEIT: eine Ratsche über der Messung × (1 + Toleranz) hält keinen Gewinn — der Rückschritt bis zu ihr bliebe grün.
     else rot.push(...ratscheWeit(ratsche, { klassen: [...zeilen.values()], summe: { gebunden }, vram: speicher }, paesse));
     // DAS BAND: jede Größe gegen ihr Soll — ROT, solange ein Ist darüber liegt.
     const B = haushalt.band;

@@ -141,7 +141,7 @@ function gpuFehlerObjekt() {
     return true;
 }
 
-// DIE ABGABE (K6): `seite` (Page oder Frame) wartet auf ein Bild, die Arbeit jedes Geräts (mit ihr jede Prüfung) und das Bild
+// DIE ABGABE: `seite` (Page oder Frame) wartet auf ein Bild, die Arbeit jedes Geräts (mit ihr jede Prüfung) und das Bild
 // danach, solange ein Gerät Submits von vor der Stufe abgibt; erst `stillMs` ohne Abgabe nennt den Stillstand — jedes Gerät,
 // das seine Arbeit hält (ein zweites verdeckt es nie), sonst die Stufe.
 async function gpuAbgabe(seite, stillMs = 600000) {

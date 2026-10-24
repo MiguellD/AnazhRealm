@@ -217,6 +217,7 @@ class AnazhRealm_kreatur_leben {
             bodySize: Number.isFinite(ud.bodySize) ? ud.bodySize : 1,
             // S6 — der Verband und sein Revier reisen mit (ohne sie zerfiele die Herde beim Reload)
             verband: ud.verband != null ? String(ud.verband) : undefined,
+            feldWurf: ud.feldWurf === true ? true : undefined, // die Herkunft weicht dem Bau auch nach dem Reload
             revier:
                 ud.wanderAnchor && Number.isFinite(ud.wanderAnchor.x) && Number.isFinite(ud.wanderAnchor.z)
                     ? { x: ud.wanderAnchor.x, z: ud.wanderAnchor.z }
@@ -289,6 +290,7 @@ class AnazhRealm_kreatur_leben {
         }
         if (snap.revier && Number.isFinite(snap.revier.x) && Number.isFinite(snap.revier.z))
             c.userData.wanderAnchor = { x: snap.revier.x, z: snap.revier.z };
+        if (snap.feldWurf === true) c.userData.feldWurf = true;
         // die Wunde als Anteil des Lebens, das der Leib jetzt hat; ein Stand vor dem Anteil (Q12 bis Welle LF kampf Nachbesserung 2)
         // trug hp gegen das Leben VOR dem Massen-Gesetz (Substanz × Größen-Symmetrie, computeCreatureStats.hpOhneMasse) —
         // vorher stand ein voller Hirsch danach bei 124/168, ein voller Bär bei 159/391 (verwundet, ohne Wunde)
@@ -653,7 +655,7 @@ class AnazhRealm_kreatur_leben {
             this._applySizeMultipliersToStats(stats, Math.sqrt(creatureSize));
         }
         // DIE KAMPF-GRÖSSE DES LEIBS (Welle LF 09.10., Posten 6 / K-D18): Biss, Haut und Leben folgen der EINEN Masse des Leibs
-        // (_leibMasse — das Volumen der Gestalt × MASSSTAB.dichteKgM3: Gattung UND Größe, dieselbe Masse wie Stoß, Beute und
+        // (_leibMasse — das Volumen der Gestalt × ρ(fleisch) der Stoff-Zeile: Gattung UND Größe, dieselbe Masse wie Stoß, Beute und
         // Temperament) gegen die Bezugs-Masse des tetrapoda-Gesetzbuchs (KAMPF.refKg, der Wolf der Größe 1): damage ×
         // (m/ref)^biss, defense × (m/ref)^haut, hpMax = Leben der Substanz × (m/ref)^leben. Vorher damage 19,75 und defense 11,9
         // für jede Gattung und Größe (die Tiere sind tag-gleich), hpMax nur 99,8–158,9 von Fuchs 0,62 bis Bär 2. Ein Leib ohne
@@ -891,19 +893,22 @@ class AnazhRealm_kreatur_leben {
         // die Haltung des Falls steht fest: die Tod-Lage rechnet mit der Pose dieses Augenblicks, und kein Stufen-Wechsel
         // stellt den Leib danach in die Ruhe der Gestalt (`_gelenkStufe`; beide Stufen tragen dieselben Knochen)
         ud._gelenk.haltungFest = true;
-        // wohin Platz ist: die Flanke hangab, steht dort eine Wand, die andere Flanke (_todKippWahl)
-        const kipp = this._todKippWahl(creature, hx, hz);
+        // wohin Platz ist (die Flanke hangab, steht dort eine Wand, die andere Flanke: `_todKippWahl`), rechnet der Leerlauf
+        // (`_todLageBestellen`): bis die Tafel steht, ist `hebe` undefined und der Leib steht in der Haltung seines Todes —
+        // `fall` (die Uhr des Kippens) zählt erst ab dann, `t` (die Uhr des Leichnams: Kadaver, Frist) ab dem Tod
         creature.userData.dying = {
             t: 0,
+            fall: 0,
             dauer: K.kippDauerSec,
             nachklang: K.leichnamSec,
             sinken: K.leichnamSinkSec,
-            dirX: kipp.hx,
-            dirZ: kipp.hz,
+            dirX: hx,
+            dirZ: hz,
             baseQuat: creature.quaternion.clone(),
             baseY: creature.position.y,
-            hebe: kipp.hebe,
+            hebe: undefined,
         };
+        this._todLageBestellen(creature, creature.userData.dying);
         // DER KADAVER (Meisterkarte Tiere H3, tetrapoda VERHALTEN.aas): der gefallene Leib trägt sein Fleisch (kg: fleischAnteil ×
         // die EINE Masse des Leibs, _leibMasse), sein Alter ist die Uhr seines Falls (dying.t). Fressen verbraucht es
         // (_kreaturAasZug), sein Geruch ruft jeden Nicht-Pflanzenfresser, ein leerer Kadaver sinkt (_tickLeichname). Ein Leib
@@ -932,8 +937,10 @@ class AnazhRealm_kreatur_leben {
     // nie in ihn, nie darüber. Punkte: die Haut der gezeigten Stufe in der Todes-Pose (Skin angewandt), höchstens TOD_KIPP_PUNKTE; die
     // Tafel trägt TOD_KIPP_STUETZ + 1 Winkel bis TOD_KIPP_RAD, der Kipp-Takt liest sie linear. Vorher hob eine Welt-AABB-
     // Flanke (flanke·sinθ) den Körper: präzise gemessen lag er am Ende 10,4 cm über seinem Stand-Kontakt und schwebte im
-    // Kippen bis 54,2 cm; ohne Hebung lag er 84 cm im Gelände (gate:koerper-stand K5). Einmal je Tod, nie je Frame.
-    _todHebeTafel(creature, hx, hz) {
+    // Kippen bis 54,2 cm; ohne Hebung lag er 84 cm im Gelände (gate:koerper-stand K5). Einmal je Tod, nie je Frame, nie im
+    // Takt: ein Gang (`yield` je Winkel), den der Leerlauf treibt (`_todLageTick`); die Haut liest `_todHaut` einmal je Tod,
+    // das Boden-Raster `zellen` um die Wurzel ist für jede Kipp-Richtung desselben Tods dasselbe.
+    *_todHebeTafel(creature, haut, zellen, hx, hz) {
         const n = AnazhRealm.TOD_KIPP_STUETZ;
         const wMax = AnazhRealm.TOD_KIPP_RAD;
         const px = creature.position.x;
@@ -941,39 +948,12 @@ class AnazhRealm_kreatur_leben {
         const pz = creature.position.z;
         const ax = hz; // die Kipp-Achse (horizontal, ⊥ h)
         const az = -hx;
-        const v = this._todV || (this._todV = new THREE.Vector3());
-        this._leibMatrix(creature);
-        let gesamt = 0;
-        const istHaut = (o) => o.isMesh && !o.isInstancedMesh && o.geometry && o.geometry.attributes.position;
-        // die Haut der gezeigten Stufe (Gestalt oder Fern-Guss, das Fell nach seinem Schirm-Gesetz) — die WURZEL zählt immer:
-        // fern verbirgt der Kreatur-Ziegel sie, das Feld trägt den Leib (_kzBesitztFeld), die Haut ist dieselbe. Vorher las
-        // traverseVisible eine verborgene Wurzel als „keine Haut": ein Tier, das jenseits der Mesh-Zone starb (der
-        // Lebenszyklus nimmt den Ältesten, wo er steht), lag ohne Tod-Lage — trat der Spieler heran, steckte die Flanke im Hang.
-        // Gezeigt heißt: auf der Ebene der Haupt-Kamera (0) — nah wirft die Grobstufe als Zwilling auf SHADOW_TWIN_LAYER
-        // und ist sichtbar, doch keine Haut im Bild (`_gelenkStufe`); sie zählte sonst ein zweites Mal mit.
-        const haut = [];
-        const sammle = (o) => {
-            if (istHaut(o) && o.layers.isEnabled(0)) haut.push(o);
-            for (const k of o.children) if (k.visible) sammle(k);
-        };
-        sammle(creature);
-        for (const o of haut) gesamt += o.geometry.attributes.position.count;
-        if (!gesamt) return null;
-        const schritt = Math.max(1, Math.ceil(gesamt / AnazhRealm.TOD_KIPP_PUNKTE));
         const pD = [];
-        const pY = [];
+        const pY = haut.y;
         const pE = [];
-        for (const o of haut) {
-            const pa = o.geometry.attributes.position;
-            for (let i = 0; i < pa.count; i += schritt) {
-                o.getVertexPosition(i, v);
-                v.applyMatrix4(o.matrixWorld);
-                const dx = v.x - px;
-                const dz = v.z - pz;
-                pD.push(dx * hx + dz * hz);
-                pY.push(v.y - py);
-                pE.push(dx * ax + dz * az);
-            }
+        for (let i = 0; i < pY.length; i++) {
+            pD.push(haut.x[i] * hx + haut.z[i] * hz);
+            pE.push(haut.x[i] * ax + haut.z[i] * az);
         }
         // DER BODEN UNTER JEDEM PUNKT (Leben-Schau 2, Gegenprüfung 10.10.): das Gesetz unter einem Punkt ist der Schritt-Boden
         // des Leibs von seiner Wurzel aus (`_koerperSchritt` vom Boden UNTER dem Leib, `_koerperBodenUnter`: über den Hang,
@@ -985,7 +965,6 @@ class AnazhRealm_kreatur_leben {
         // (gate:fall-waechter O3).
         const g0 = this._koerperBodenUnter(px, py - (creature.userData._hopH || 0), pz);
         const Z = AnazhRealm.TOD_BODEN_ZELLE;
-        const zellen = new Map();
         const zelle = (i, k) => {
             const key = (i + 512) * 1024 + (k + 512);
             let g = zellen.get(key);
@@ -1034,6 +1013,7 @@ class AnazhRealm_kreatur_leben {
         };
         const stand = spalt(0);
         if (!Number.isFinite(stand)) return null;
+        yield;
         // DAS SOLL DES KLEINSTEN ABSTANDS: was er im Stand war — stand der Leib schon im Boden (der Stand am Fuß einer Wand
         // steiler als 45°, stand < 0), geht das Soll im Kippen linear auf 0: der tote Leib legt sich AUF den Boden, nie
         // tiefer. Vorher hielt die Tafel den Stand-Fehler: ein Wolf, der 0,68 m im Hang stand, sank kippend 0,92 m in den Grund.
@@ -1042,8 +1022,50 @@ class AnazhRealm_kreatur_leben {
             const soll = stand < 0 ? stand * (1 - k / n) : stand;
             const sp = spalt(k);
             hebe[k] = Number.isFinite(sp) ? soll - sp : hebe[k - 1];
+            if (k < n) yield;
         }
         return hebe;
+    }
+
+    // DIE HAUT DER TOD-LAGE: die Punkte der gezeigten Stufe in der Haltung des Todes (Skin angewandt) relativ zur Wurzel,
+    // höchstens TOD_KIPP_PUNKTE — einmal je Tod, jede Kipp-Richtung liest sie. null: keine Haut.
+    _todHaut(creature) {
+        const px = creature.position.x;
+        const py = creature.position.y;
+        const pz = creature.position.z;
+        const v = this._todV || (this._todV = new THREE.Vector3());
+        this._leibMatrix(creature);
+        let gesamt = 0;
+        const istHaut = (o) => o.isMesh && !o.isInstancedMesh && o.geometry && o.geometry.attributes.position;
+        // die Haut der gezeigten Stufe (Gestalt oder Fern-Guss, das Fell nach seinem Schirm-Gesetz) — die WURZEL zählt immer:
+        // fern verbirgt der Kreatur-Ziegel sie, das Feld trägt den Leib (_kzBesitztFeld), die Haut ist dieselbe. Vorher las
+        // traverseVisible eine verborgene Wurzel als „keine Haut": ein Tier, das jenseits der Mesh-Zone starb (der
+        // Lebenszyklus nimmt den Ältesten, wo er steht), lag ohne Tod-Lage — trat der Spieler heran, steckte die Flanke im Hang.
+        // Gezeigt heißt: auf der Ebene der Haupt-Kamera (0) — nah wirft die Grobstufe als Zwilling auf SHADOW_TWIN_LAYER
+        // und ist sichtbar, doch keine Haut im Bild (`_gelenkStufe`); sie zählte sonst ein zweites Mal mit.
+        const haut = [];
+        const sammle = (o) => {
+            if (istHaut(o) && o.layers.isEnabled(0)) haut.push(o);
+            for (const k of o.children) if (k.visible) sammle(k);
+        };
+        sammle(creature);
+        for (const o of haut) gesamt += o.geometry.attributes.position.count;
+        if (!gesamt) return null;
+        const schritt = Math.max(1, Math.ceil(gesamt / AnazhRealm.TOD_KIPP_PUNKTE));
+        const x = [];
+        const y = [];
+        const z = [];
+        for (const o of haut) {
+            const pa = o.geometry.attributes.position;
+            for (let i = 0; i < pa.count; i += schritt) {
+                o.getVertexPosition(i, v);
+                v.applyMatrix4(o.matrixWorld);
+                x.push(v.x - px);
+                y.push(v.y - py);
+                z.push(v.z - pz);
+            }
+        }
+        return { x, y, z };
     }
 
     // DIE KIPP-RICHTUNG (Prüfung 2 K02a, Wolf am Wandfuß, Gier 225°): der Leib kippt auf die Flanke hangab (_kreaturFaellt)
@@ -1052,21 +1074,73 @@ class AnazhRealm_kreatur_leben {
     // er 0,84 m hinein). Dann fällt er dorthin, wo Platz ist: zuerst auf die andere Flanke, erst wo keine Flanke Platz hat
     // längs der Achse (der Leib liegt auf einer Flanke — längs der Achse stand der Hirsch auf dem Hinterteil, Bild ks09);
     // hat keine Richtung Platz, die mit dem kleinsten Hub. Hebt die erste Flanke höchstens eine Stufe, bleibt alles, wie es war.
-    _todKippWahl(creature, hx, hz) {
+    // Ein Gang wie die Tafel: die Haut und das Raster einmal, je Richtung ihre Tafel; am Ende { hx, hz, hebe }.
+    *_todKippWahl(creature, hx, hz) {
+        const haut = this._todHaut(creature);
+        if (!haut) return { hx, hz, hebe: null };
+        const zellen = new Map();
         const hub = (h) => (h ? Math.max(...h) : Infinity);
         const stufe = AnazhRealm.PLAYER_STEP_UP;
-        let best = { hx, hz, hebe: this._todHebeTafel(creature, hx, hz) };
+        let best = { hx, hz, hebe: yield* this._todHebeTafel(creature, haut, zellen, hx, hz) };
         if (!(hub(best.hebe) > stufe)) return best;
         for (const [x, z] of [
             [-hx, -hz],
             [hz, -hx],
             [-hz, hx],
         ]) {
-            const hebe = this._todHebeTafel(creature, x, z);
+            const hebe = yield* this._todHebeTafel(creature, haut, zellen, x, z);
             if (hub(hebe) < hub(best.hebe)) best = { hx: x, hz: z, hebe };
             if (!(hub(best.hebe) > stufe)) return best;
         }
         return best;
+    }
+
+    // DIE TOD-LAGE IM LEERLAUF (dorf-takt-z13, Lehre 14 und 25): jeder Tod bestellt seine Lage (`_kreaturFaellt`), der
+    // Leerlauf des Haupt-Fadens rechnet sie (`_imLeerlauf`) Winkel für Winkel, solange sein Fenster reicht, den Gefallenen
+    // nah am Spieler zuerst — nie im Takt. `fall` ist der Fall des Leibs (`dying`), `fall.lage` das Versprechen der Tafel.
+    // Bis dorf-takt-z13 rechnete der Tod sie im Takt: auf der Radeon 12–17 ms je Tafel, ein Hungertod im Dorf ein Takt von
+    // 41,3 ms (Tod-Lage 31,3 ms).
+    _todLageBestellen(creature, fall) {
+        const Q = this._todLagen || (this._todLagen = []);
+        const gang = this._todKippWahl(creature, fall.dirX, fall.dirZ);
+        fall.lage = new Promise((fertig) => Q.push({ creature, fall, gang, fertig }));
+        if (Q.length === 1) this._imLeerlauf((frist) => this._todLageTick(frist), AnazhRealm.TOD_LAGE.fristMs);
+    }
+    // Ein Fenster des Leerlaufs (`frist`, die IdleDeadline; ohne sie — die Frist lief ab, die API fehlt — eine Scheibe von
+    // TOD_LAGE.scheibeMs): je Schritt ein Winkel; steht die Tafel eines Gefallenen, beginnt sein Fall (`_tickLeichname`).
+    _todLageTick(frist) {
+        const Q = this._todLagen;
+        if (!Q || !Q.length) return;
+        const T = AnazhRealm.TOD_LAGE;
+        const ende = performance.now() + T.scheibeMs;
+        const offen =
+            frist && !frist.didTimeout && typeof frist.timeRemaining === "function"
+                ? () => frist.timeRemaining() > T.scheibeMs
+                : () => performance.now() < ende;
+        const p = this.state.playerMesh.position;
+        try {
+            do {
+                let j = 0;
+                let dj = Q[0].creature.position.distanceToSquared(p);
+                for (let i = 1; i < Q.length; i++) {
+                    const di = Q[i].creature.position.distanceToSquared(p);
+                    if (di < dj) [j, dj] = [i, di];
+                }
+                const a = Q[j];
+                const s = this.state.leichname.indexOf(a.creature) !== -1 ? a.gang.next() : { done: true, value: null };
+                if (s.done) {
+                    Q.splice(j, 1);
+                    if (s.value) {
+                        a.fall.dirX = s.value.hx;
+                        a.fall.dirZ = s.value.hz;
+                    }
+                    a.fall.hebe = s.value ? s.value.hebe : null;
+                    a.fertig(a.fall.hebe);
+                }
+            } while (Q.length && offen());
+        } finally {
+            if (Q.length) this._imLeerlauf((f) => this._todLageTick(f), T.fristMs);
+        }
     }
 
     // === Helper: kontext-abhängiges Args-Mapping für creature_task(paramArg) ===
@@ -1311,9 +1385,7 @@ class AnazhRealm_kreatur_leben {
                     this._handleCreatureProposedProgram(creature, name, reply.program);
                 }
             })
-            .catch(() => {
-                /* silent — rare-event-llm ist nice-to-have */
-            });
+            .catch((e) => this._bruchMelden("Kreatur-Ereignis (LLM): " + ((e && e.message) || e)));
         return true;
     }
 
@@ -1389,15 +1461,27 @@ class AnazhRealm_kreatur_leben {
     // (`_bewohnerGeburt`). gate:fall-waechter (Q) nennt
     // jede Methode beim Namen, die die Oberkante der Säule liest UND die Höhe eines Leibs berührt, ohne als Platzierung
     // (Geburt, Ersteh-Ort, Rettung aus der Leere) benannt zu sein.
+    // DAS EIS (stoffe.K3) trägt wie Fels: ein gefrorener Spiegel (`_eisAt`) über der Fels-Grenze ist der Grund.
     _koerperBodenUnter(x, yRef, z) {
         if (Number.isFinite(yRef)) {
             // eingegraben (der Hang stieg unter dem Schritt): nur eine Stufe aufwärts suchen — tiefer im Fels ist kein
             // Gang (ein Spawn im Gestein), dort trägt die Säule
             const y0 = yRef + AnazhRealm.PLAYER_STEP_UP;
-            const g = this._fieldSurfaceBelow(x, y0, z, this._fieldSolid(x, y0, z) ? 2 : 40);
+            const g = this._koerperGrund(x, y0, z, this._fieldSolid(x, y0, z) ? 2 : 40);
             if (g !== null) return g;
         }
-        return this._voxelSurfaceY(x, z);
+        const oben = this._voxelSurfaceY(x, z);
+        const eis = this._eisAt(x, z, NaN);
+        return eis !== null && !(oben >= eis) ? eis : oben;
+    }
+
+    // DER GRUND EINES KÖRPERS unter y0 binnen `maxDist`: die Fels-Grenze (`_fieldSurfaceBelow`) oder das Eis über ihr
+    // (`_eisAt`) — das Höhere trägt, null ohne beides. Leser: der Kapsel-Schritt (`_stepCharacter`), `_koerperBodenUnter`,
+    // `_koerperSchritt`, der Ausstieg vom Wagen (`_aussteigOrt`).
+    _koerperGrund(x, y0, z, maxDist) {
+        const g = this._fieldSurfaceBelow(x, y0, z, maxDist);
+        const e = this._eisAt(x, z, y0, maxDist);
+        return e !== null && !(g >= e) ? e : g;
     }
 
     // DIE KANTE GENAU: die Fels-Grenze um den gefundenen Grund `g` (`_fieldSurfaceBelow` liegt bis 7,8 mm darunter, je nach
@@ -1431,7 +1515,7 @@ class AnazhRealm_kreatur_leben {
         const y0 = vg + stufe;
         let g;
         if (!this._fieldSolid(x, y0, z)) {
-            g = this._fieldSurfaceBelow(x, y0, z, 40);
+            g = this._koerperGrund(x, y0, z, 40);
             if (g === null) return this._koerperBodenUnter(x, NaN, z);
         } else {
             g = this._koerperBodenUnter(x, vg, z);
@@ -1644,6 +1728,9 @@ class AnazhRealm_kreatur_leben {
             const c = this.spawnCreatureAt(x, (Number.isFinite(gY) ? gY : p.y) + 1, z, emotion, soul);
             if (!c) break; // die Obergrenze oder die Gestalt: der Rest des Wurfs fällt mit
             c.userData.wanderAnchor = { x: ort.x, z: ort.z };
+            // DIE MARKE DES WURFS (`feldWurf`, wie am Wurf eines Werks, im Save): ein Bau, der nach der Geburt kommt, räumt das
+            // Tier aus seinem Grundriss (`_weichtDemBau`, `_naturRaeumen`)
+            c.userData.feldWurf = true;
             if (k === 0) abstand = (W.abstandRaum * 2 * this._kreaturRaum(c)) / c.userData.bodySize;
             geboren.push(c);
         }
@@ -1736,6 +1823,72 @@ class AnazhRealm_kreatur_leben {
         if (h.dist - Math.max(1, h.halfW) <= AnazhRealm.CREATURE_DRINK_SEARCH_RADIUS) return true;
         ud._durstSucheBis = now + LG.D.suchPauseS;
         return false;
+    }
+
+    // DER TAG DES TIERS (Tiere K4, tetrapoda ETHOGRAMM_GESETZ): je KI-Takt die Pegel über die Zeit seit dem Vor-Takt mit der
+    // Tätigkeit, die das Tier in ihr ZEIGTE (`_gezeigt`, gestempelt vom Wandern, `_creatureCharacterWander` — Flucht, Jagd,
+    // Kadaver und Auftrag zeigen keine: wach): der Magen (`_kreaturMagen`) und, wer weidet (diet bis weideDiet), seine Äsung;
+    // der Ruhe-Pegel. Dann die Tätigkeit aus Pegel und Lichtphase — im Verband die des Leittiers (die Herde ruht und äst
+    // beisammen). Eine Gattung ohne Zeile im Ethogramm hat keine (null). Vorher ruhte jedes Tier, solange die Sonne unter
+    // nachtSin stand, und weidete am Tag in Aktionen mit Pausen dazwischen (das Rotwild äste ~ 15 % des Tages).
+    _kreaturTaetigkeit(creature) {
+        const ud = creature.userData;
+        const LG = AnazhRealm._lebensraumGesetz();
+        const G = LG.E.gattung[AnazhRealm.TETRAPODA_SOUL_MAP[ud.soul]];
+        const gez = ud._gezeigt;
+        ud._gezeigt = null;
+        if (!G) return (ud._taetigkeit = null);
+        const now = this.state.creatureAnimationTime;
+        const dt = Number.isFinite(ud._taetigT) ? Math.max(0, now - ud._taetigT) : 0;
+        ud._taetigT = now;
+        const VG = AnazhRealm._verhaltenGesetz();
+        const voll = this._kreaturMagenVoll(creature);
+        const weidet = this._kreaturDiet(creature) <= VG.stimmung.schwellen.weideDiet;
+        let magen = this._kreaturMagen(creature);
+        if (gez === "nahrung" && weidet && voll > 0)
+            magen = ud.magen = Math.min(voll, magen + LG.aesung(voll, VG.aas.verdauSec, G) * dt);
+        // der erste Pegel aus der Identität (deterministisch, kein Zufall): die Tiere eines Orts ruhen nicht im Gleichschritt
+        if (!Number.isFinite(ud._ruhe)) {
+            const id = parseInt(String(ud.netId || "c0").slice(1), 10) || 0;
+            ud._ruhe = ((this._verhaltenHash(id, 4099) % 1000) / 1000) * LG.E.schwelle.ruhig;
+        }
+        ud._ruhe = LG.ruhePegel(ud._ruhe, gez === "ruhen", dt, G);
+        const leit = this._kreaturLeittier(creature);
+        if (leit !== creature && leit.userData._taetigkeit) return (ud._taetigkeit = leit.userData._taetigkeit);
+        if (this._lichtUhr !== this.state.timeOfDay) {
+            this._lichtUhr = this.state.timeOfDay;
+            this._lichtPhase = LG.lichtPhase(this._sonnenRichtung().y, VG.stimmung.schwellen.nachtSin, LG.E);
+        }
+        const anteil = voll > 0 ? magen / voll : 1;
+        return (ud._taetigkeit = LG.taetigkeit(
+            ud._taetigkeit,
+            ud._ruhe,
+            anteil,
+            this._lichtPhase,
+            weidet,
+            G,
+            LG.E,
+            VG.aas.hungerAnteil
+        ));
+    }
+    // DAS LEITTIER eines Verbands: das Glied, dessen netId der Verband trägt (der Erstgeborene des Wurfs), fiel es, das erste
+    // Glied; ohne Verband das Tier selbst.
+    _kreaturLeittier(creature) {
+        const glieder = this._kreaturVerbandGlieder(creature);
+        if (!glieder || glieder.length < 2) return creature;
+        const vb = creature.userData.verband;
+        for (const g of glieder) if (g.userData.netId === vb) return g;
+        return glieder[0];
+    }
+    // DAS TEMPO DER TÄTIGKEIT, die das Wandern zeigt: das ihrer Aktion (ETHOGRAMM_GESETZ.zeigt — ruhen steht, äsen geht im
+    // Tempo des Grasens; ziehen wandert); spielt eine Aktion, trägt sie ihr eigenes Tempo (1 hier, der Aktions-Block danach).
+    _kreaturTaetigkeitTempo(creature) {
+        const ud = creature.userData;
+        const VA = ud._verhaltenAktion;
+        if (VA && this.state.creatureAnimationTime < VA.bis) return 1;
+        const zeigt = ud._gezeigt && AnazhRealm._lebensraumGesetz().E.zeigt[ud._gezeigt];
+        const def = zeigt && zeigt.aktion && AnazhRealm._verhaltenGesetz().aktionen[zeigt.aktion];
+        return def && Number.isFinite(def.tempo) ? Math.max(0, def.tempo) : 1;
     }
 
     // DIE NAHRUNG EINES ORTS für den Bestand (Ökologie K2): die Äsung = das Leben des Felds (`auraAt`.lebendig — das Substrat
@@ -2210,6 +2363,28 @@ class AnazhRealm_kreatur_leben {
         Z.leib = null;
         this._gangSatzAbschied(Z.satz);
     }
+    // DER MAGEN (kg, VERHALTEN.aas) — der EINE Hunger: so viel frisst ein Tier auf einmal — magenAnteil × die EINE Masse seines
+    // Leibs; ein Leib ohne gemessene Gestalt hat keinen (0). Er leert sich in verdauSec auf der Kreatur-Uhr (gerechnet, wenn ihn
+    // einer liest) und füllt sich am Kadaver (`_kreaturAasZug`) und, wer weidet, beim Äsen (`_kreaturTaetigkeit`).
+    _kreaturMagenVoll(creature) {
+        const tb = creature.userData && creature.userData._tierBaum;
+        return tb && tb.leibV > 0 ? AnazhRealm._verhaltenGesetz().aas.magenAnteil * this._leibMasse(creature) : 0;
+    }
+    _kreaturMagen(creature) {
+        const ud = creature.userData;
+        const now = this.state.creatureAnimationTime;
+        const dt = Number.isFinite(ud._magenT) ? Math.max(0, now - ud._magenT) : 0;
+        ud._magenT = now;
+        if (!(ud.magen > 0)) return (ud.magen = 0);
+        const voll = this._kreaturMagenVoll(creature);
+        ud.magen = Math.max(0, ud.magen - (voll / AnazhRealm._verhaltenGesetz().aas.verdauSec) * dt);
+        return ud.magen;
+    }
+    // SATT (VERHALTEN.aas.hungerAnteil): wer mehr als diesen Anteil seines Magens trägt, jagt keine Beute und frisst nicht an.
+    _kreaturSatt(creature) {
+        const voll = this._kreaturMagenVoll(creature);
+        return voll > 0 && this._kreaturMagen(creature) >= AnazhRealm._verhaltenGesetz().aas.hungerAnteil * voll;
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_kreatur_leben]);
 
@@ -2419,8 +2594,14 @@ AnazhRealm.TOD_KIPP_PUNKTE = 1500;
 // Tafel: 0,46–0,52 m darunter); je Tod kostet das Raster 180 (Höhle) bzw. 206 (Freiland) Feld-Proben neben den 25 568
 // Karten-Lesungen, die auch die alte Tafel trug.
 AnazhRealm.TOD_BODEN_ZELLE = 0.5;
-// DER LEBENSRAUM (tetrapoda LEBENSRAUM_GESETZ + bodenKlasse · lebensraum · lebensraumWahl, DURST_GESETZ + durst, Tiere K4): die Boden-Klasse eines Orts und die Eignung
-// je Gattung. Fail-closed.
+// DIE TOD-LAGE IM LEERLAUF (`_todLageTick`): die Frist, nach der ein Fenster auch ohne Leerlauf kommt (ms), und die Scheibe
+// (ms) — die Reserve, die ein Leerlauf-Fenster dem nächsten Bild lässt, und die Länge eines Fensters ohne Leerlauf. Gemessen
+// (Radeon, Dorf Ego, unter Fremdlast): ein Tod kostete den Takt 28–84 ms, jetzt 0,3–0,6 ms; die Lage läuft in Fenstern von
+// höchstens 9,7 ms, die Tafel steht 0,13–0,58 s nach dem Tod.
+AnazhRealm.TOD_LAGE = Object.freeze({ fristMs: 50, scheibeMs: 2 });
+// DER LEBENSRAUM (tetrapoda LEBENSRAUM_GESETZ + bodenKlasse · lebensraum · lebensraumWahl, DURST_GESETZ + durst,
+// ETHOGRAMM_GESETZ + lichtPhase · ruhePegel · aesung · taetigkeit, Tiere K4): Art × Ort × Uhr — die Boden-Klasse eines Orts, die
+// Eignung je Gattung und ihr Tag. Fail-closed.
 AnazhRealm._lebensraumGesetz = function () {
     if (AnazhRealm._lebensraumMemo) return AnazhRealm._lebensraumMemo;
     const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
@@ -2435,7 +2616,10 @@ AnazhRealm._lebensraumGesetz = function () {
         typeof k.lebensraumWahl === "function" &&
         k.DURST_GESETZ &&
         [k.DURST_GESETZ.durstS, k.DURST_GESETZ.suchPauseS].every(Number.isFinite) &&
-        typeof k.durst === "function"
+        typeof k.durst === "function" &&
+        k.ETHOGRAMM_GESETZ &&
+        Number.isFinite(k.ETHOGRAMM_GESETZ.daemmerSin) &&
+        ["lichtPhase", "ruhePegel", "aesung", "taetigkeit"].every((f) => typeof k[f] === "function")
     ) {
         AnazhRealm._lebensraumMemo = Object.freeze({
             L,
@@ -2444,6 +2628,11 @@ AnazhRealm._lebensraumGesetz = function () {
             wahl: k.lebensraumWahl,
             D: k.DURST_GESETZ,
             durst: k.durst,
+            E: k.ETHOGRAMM_GESETZ,
+            lichtPhase: k.lichtPhase,
+            ruhePegel: k.ruhePegel,
+            aesung: k.aesung,
+            taetigkeit: k.taetigkeit,
         });
         return AnazhRealm._lebensraumMemo;
     }

@@ -2,13 +2,14 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-persistence.cjs — DIE PERSISTENZ-HÄRTUNG (npm run gate:persistence)
 //
-// (T) DER TAB-TOD urteilt den Browser-Pfad, (K) (U) den Lade-Pfad, (S) (C) den save-server, (W) die Wiederkehr (ein Werk auf der Lichtung).
+// (T) DER TAB-TOD urteilt den Browser-Pfad, der KORPUS den Lade-Pfad über die Versionen, (S) (C) den save-server.
 //
-// (K) DER RELOAD MIT KALTEM BUCH: ein Studio-Haus der Welt (haus_*, Worldgen-id als ZAHL) muss
-// den Restore überstehen, auch wenn das Studio-Buch noch nicht da ist. Gegenprobe (nicht vakuös): ein FRISCHER Spawn bei kaltem Buch bleibt blockiert.
-// (U) DER BODEN-UMZUG (K16): ein Save eines alten Bodens (ohne Boden-Generation, ohne Höhe über Grund) lädt durch den
-// ganzen Lade-Pfad (`loadState`) — jeder Bau steht danach auf dem Boden des Gesetzes in Fuß-Höhe. Gegenprobe: ein Save
-// desselben Bodens bewegt nichts. Die Zahl: wie viele Bauten der Welt sich bewegen (`state.bodenUmzug`).
+// (V) DER KORPUS (speicher.K5): je Versions-Stufe der localStorage, den ihre Version nach Werken (zwei auf der Lichtung, ein
+// Studio-Haus mit Zahlen-id), Grabe-Hieben und Inventar mit ihrem saveState schrieb (`spec/speicher-korpus/<version>.json.br`).
+// Jeder lädt am Kopf durch den Boot des Spielers, und der Save des Kopfs trägt jeden Bau an seinem Ort in seiner Höhe über
+// Grund, jede Grube am Boden, jeden Slot — daraus (U) der Boden-Umzug (K16), (W) die Lichtung, (K) das kalte Buch. Der Save
+// des Kopfs aus dem jüngsten Stand lädt im selben Lauf, `--stufe` (bump-version.cjs) schreibt ihn als Stand der Stufe.
+// `--selftest`: eine Migration lässt ein Feld fallen (`VERLUST`) oder der Räumer fragt den Stoff — ROT.
 //
 // (S) DER SERVER SCHREIBT GANZ (K23): der save-server läuft in einer Sandbox-Kopie, ein Stand (≈ 1 MB) geht an
 // /api/save-state, und der Prozess stirbt (SIGKILL) an JEDEM Schreib-Punkt einmal — mitten in jedem Schreiben (die
@@ -18,16 +19,10 @@
 // `--selftest` setzt in der Kopie das direkte Schreiben wieder ein (`schreibeGanz` → fs.writeFile) und MUSS rot werden.
 // Ports: PERSISTENCE_PORT (Seite, Standard 4326), PERSISTENCE_SERVER_PORT (Sandbox-Server, Standard 4327).
 // ─────────────────────────────────────────────────────────────────────────
-const {
-    statikServer,
-    starteBrowser,
-    warteAufWelt,
-    nullRenderer,
-    startProc,
-    ROOT: root,
-} = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { spawnSync } = require("child_process");
+const zlib = require("zlib");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -36,7 +31,7 @@ const path = require("path");
 const PORT = Number(process.env.PERSISTENCE_PORT || 4326);
 const SERVER_PORT = Number(process.env.PERSISTENCE_SERVER_PORT || 4327);
 const SELBSTTEST = process.argv.includes("--selftest");
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const NUR_STUFE = process.argv.includes("--stufe");
 
 // (S) Der Tod an einem Schreib-Punkt: ein Vorlade-Haken (`node -r`) im Sandbox-Prozess zählt jeden Datei-Schreiber des
 // Servers (writeFile · copyFile · rename, Rückruf-, Sync- und Promise-Form). Je Schreiber zwei Punkte: MITTEN (ein
@@ -48,7 +43,7 @@ const TOD = Number(process.env.K23_TOD || 0);
 let n = 0;
 const sterben = () => process.kill(process.pid, "SIGKILL");
 const halb = (d) => (typeof d === "string" ? d.slice(0, d.length >> 1) : Buffer.from(d).subarray(0, d.length >> 1));
-const o = { wfs: fs.writeFileSync, cfs: fs.copyFileSync, rns: fs.renameSync };
+const o = { wfs: fs.writeFileSync };
 function punkt(mitten) {
     n++;
     if (n === TOD) { mitten(); sterben(); }
@@ -81,85 +76,34 @@ hakenP("copyFile", () => {});
 hakenP("rename", () => {});
 `;
 
-// (S) Ein Lauf: der save-server (Quelltext `quelle`) in einem frischen Sandbox-Ordner, der alte Stand liegt als Datei, ein
-// neuer Stand (≈ 1 MB) geht an /api/save-state; `tod` = der Schreib-Punkt, an dem der Prozess stirbt (0 = nie).
-async function serverLauf(quelle, tod) {
+// Der save-server (Quelltext `quelle`) in einem frischen Sandbox-Ordner mit `dateien`; der Start urteilt am Ereignis (welt-boot
+// `startProc`: bereit oder beendet, nie eine Frist). `frage(weg, kopf, körper)` → {status, etag, cc, n}, abgerissen ohne Antwort.
+async function sandbox(quelle, dateien, env = {}) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "k23-save-"));
-    const ziel = path.join(dir, "anazhRealmState.json");
-    fs.writeFileSync(path.join(dir, "save-server.js"), quelle, "utf8");
-    fs.writeFileSync(path.join(dir, "k23-haken.js"), HAKEN, "utf8");
-    fs.writeFileSync(ziel, JSON.stringify({ marker: "alt", n: 1 }), "utf8");
-    // der Start urteilt am Ereignis (welt-boot `startProc`: bereit oder beendet, nie eine Frist)
+    for (const [n, t] of Object.entries({ "save-server.js": quelle, ...dateien }))
+        fs.writeFileSync(path.join(dir, n), t, "utf8");
+    const vor = dateien["k23-haken.js"] ? ["-r", path.join(dir, "k23-haken.js")] : [];
     const proc = await startProc(
         path.join(dir, "save-server.js"),
         /Save-Server/i,
-        { PORT: String(SERVER_PORT), K23_TOD: String(tod) },
-        { vor: ["-r", path.join(dir, "k23-haken.js")], cwd: dir }
+        { PORT: String(SERVER_PORT), ...env },
+        { vor, cwd: dir }
     );
-    let tot = false;
-    const beendet = new Promise((r) => proc.on("exit", () => r((tot = true))));
-    const blob = [];
-    for (let i = 0; i < 9000; i++) blob.push(`zeile-${i}-` + "x".repeat(96));
-    const body = JSON.stringify({ state: { marker: "neu", blob } });
-    const status = await Promise.race([
-        new Promise((resolve) => {
+    const frage = (weg, headers = {}, body) =>
+        new Promise((ok) => {
             const req = http.request(
                 {
                     host: "127.0.0.1",
                     port: SERVER_PORT,
-                    path: "/api/save-state",
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+                    path: weg,
+                    method: body ? "POST" : "GET",
+                    headers,
                 },
-                (res) => {
-                    res.resume();
-                    res.on("end", () => resolve(res.statusCode));
-                }
-            );
-            req.on("error", () => resolve("abgerissen"));
-            req.end(body);
-        }),
-        sleep(30000).then(() => "zeitlos"),
-    ]);
-    if (!tot) proc.kill("SIGKILL");
-    await Promise.race([beendet, sleep(5000)]);
-    const lies = (f) => {
-        try {
-            const j = JSON.parse(fs.readFileSync(f, "utf8"));
-            return j && (j.marker === "alt" || j.marker === "neu") ? j.marker : "fremd";
-        } catch (_e) {
-            return fs.existsSync(f) ? `zerrissen (${fs.statSync(f).size} B)` : "fehlt";
-        }
-    };
-    const out = { tod, status, getoetet: status !== 200, ziel: lies(ziel), bak: lies(ziel + ".bak") };
-    fs.rmSync(dir, { recursive: true, force: true });
-    return out;
-}
-
-// (C) DER CACHE-KOPF AM ECHTEN SERVER (1310-16): der save-server (Quelltext `quelle`) in einem Sandbox-Ordner mit einer
-// gestempelten Skript-Datei. Jede statische Antwort trägt einen ETag des Inhalts und `Cache-Control: no-cache`; die Frage mit
-// `If-None-Match` bekommt 304 ohne Körper; ändert sich der Inhalt bei GLEICHEM Stempel, ändert sich der ETag (kein alter Code
-// unter derselben Version).
-async function cacheProbe(quelle) {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "k16-cache-"));
-    fs.writeFileSync(path.join(dir, "save-server.js"), quelle, "utf8");
-    fs.writeFileSync(path.join(dir, "probe.js"), "window.__probe = 1;\n", "utf8");
-    // der Start urteilt am Ereignis (welt-boot `startProc`: bereit oder beendet, nie eine Frist)
-    const proc = await startProc(
-        path.join(dir, "save-server.js"),
-        /Save-Server/i,
-        { PORT: String(SERVER_PORT) },
-        { cwd: dir }
-    );
-    const hole = (weg, kopf) =>
-        new Promise((resolve) => {
-            const req = http.request(
-                { host: "127.0.0.1", port: SERVER_PORT, path: weg, method: "GET", headers: kopf || {} },
                 (res) => {
                     let n = 0;
                     res.on("data", (c) => (n += c.length));
                     res.on("end", () =>
-                        resolve({
+                        ok({
                             status: res.statusCode,
                             etag: res.headers.etag || null,
                             cc: res.headers["cache-control"] || null,
@@ -168,9 +112,58 @@ async function cacheProbe(quelle) {
                     );
                 }
             );
-            req.on("error", () => resolve({ status: "abgerissen" }));
-            req.end();
+            req.on("error", () => ok({ status: "abgerissen" }));
+            req.end(body);
         });
+    const beendet = new Promise((ok) => proc.on("exit", ok));
+    // das Ende: der Prozess stirbt, `lesen` liest den Ordner, dann fällt er
+    const zu = async (lesen = () => null) => {
+        proc.kill("SIGKILL");
+        await Promise.race([beendet, sleep(5000)]);
+        const aus = lesen();
+        fs.rmSync(dir, { recursive: true, force: true });
+        return aus;
+    };
+    return { dir, frage, zu };
+}
+// (S) Ein Lauf: der save-server (Quelltext `quelle`) in einem frischen Sandbox-Ordner, der alte Stand liegt als Datei, ein
+// neuer Stand (≈ 1 MB) geht an /api/save-state; `tod` = der Schreib-Punkt, an dem der Prozess stirbt (0 = nie).
+async function serverLauf(quelle, tod) {
+    const alt = JSON.stringify({ marker: "alt", n: 1 });
+    const { dir, frage, zu } = await sandbox(
+        quelle,
+        { "k23-haken.js": HAKEN, "anazhRealmState.json": alt },
+        { K23_TOD: String(tod) }
+    );
+    const ziel = path.join(dir, "anazhRealmState.json");
+    const blob = [];
+    for (let i = 0; i < 9000; i++) blob.push(`zeile-${i}-` + "x".repeat(96));
+    const body = JSON.stringify({ state: { marker: "neu", blob } });
+    const kopf = {
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(body),
+    };
+    const { status } = await Promise.race([
+        frage("/api/save-state", kopf, body),
+        sleep(30000).then(() => ({ status: "zeitlos" })),
+    ]);
+    const lies = (f) => {
+        try {
+            const j = JSON.parse(fs.readFileSync(f, "utf8"));
+            return j && (j.marker === "alt" || j.marker === "neu") ? j.marker : "fremd";
+        } catch (_e) {
+            return fs.existsSync(f) ? `zerrissen (${fs.statSync(f).size} B)` : "fehlt";
+        }
+    };
+    return zu(() => ({ tod, status, getoetet: status !== 200, ziel: lies(ziel), bak: lies(ziel + ".bak") }));
+}
+
+// (C) DER CACHE-KOPF AM ECHTEN SERVER (1310-16): der save-server (Quelltext `quelle`) in einem Sandbox-Ordner mit einer
+// gestempelten Skript-Datei. Jede statische Antwort trägt einen ETag des Inhalts und `Cache-Control: no-cache`; die Frage mit
+// `If-None-Match` bekommt 304 ohne Körper; ändert sich der Inhalt bei GLEICHEM Stempel, ändert sich der ETag (kein alter Code
+// unter derselben Version).
+async function cacheProbe(quelle) {
+    const { dir, frage: hole, zu } = await sandbox(quelle, { "probe.js": "window.__probe = 1;\n" });
     try {
         const a = await hole("/probe.js?v=1");
         const b = a.etag ? await hole("/probe.js?v=1", { "If-None-Match": a.etag }) : { status: null };
@@ -192,9 +185,7 @@ async function cacheProbe(quelle) {
                 c.etag !== a.etag,
         };
     } finally {
-        proc.kill("SIGKILL");
-        await sleep(300);
-        fs.rmSync(dir, { recursive: true, force: true });
+        await zu();
     }
 }
 
@@ -317,12 +308,21 @@ async function tabTodProbe({ von, bis, selbst = false }) {
         await nullRenderer(page);
         await page.evaluateOnNewDocument(ttHaken);
         const tGoto = Date.now();
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
+        await page.goto(`http://127.0.0.1:${PORT}/index.html`, {
+            waitUntil: "domcontentloaded",
+            timeout: 120000,
+        });
         const g = (zeile.geladen = await page.evaluate(async () => {
             const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
             const loch = (o) => r._terrainDensityAt(o.x, o.y, o.z) + o.r; // das Zentrum liegt r m in der Luft (die Säule)
-            const g0 = window.__ttRec({ ...r.state, playerPosition: r.state.playerMesh.position });
-            return { ...g0, l: (r.state.worldMeta.voxelEdits || []).filter((o) => loch(o) < 0.01).length };
+            const g0 = window.__ttRec({
+                ...r.state,
+                playerPosition: r.state.playerMesh.position,
+            });
+            return {
+                ...g0,
+                l: (r.state.worldMeta.voxelEdits || []).filter((o) => loch(o) < 0.01).length,
+            };
         }));
         if (g.l !== g.e) zeile.befund.push(`Löcher: ${g.l}/${g.e}`);
         const tDa = Date.now();
@@ -331,7 +331,10 @@ async function tabTodProbe({ von, bis, selbst = false }) {
                 (e) => e.t <= vorher.tot && e.rec && "wxzeb".split("").every((k) => e.rec[k] === g[k])
             );
             zeile.alterS = ganz.length ? (vorher.tot - Math.max(...ganz.map((e) => e.t))) / 1000 : null;
-            Object.assign(zeile, { tod: vorher.art, halb: !ganz.length || g.w !== vorher.w });
+            Object.assign(zeile, {
+                tod: vorher.art,
+                halb: !ganz.length || g.w !== vorher.w,
+            });
         }
         // HALB: jeder Platz (synchron mit seinem Stand) trägt GENAU den Boot plus den Treiber
         const halbe = () => {
@@ -394,195 +397,190 @@ const ttZeile = (t) =>
 const ttOk = (t) => t.n > 0 && !t.alt && !t.korrupt && !t.halb && !t.verfehlt && t.linie > 256;
 const [TT_VON, TT_BIS] = (process.env.PERSISTENCE_TABTOD || "0-7").split("-").map(Number);
 const server = statikServer();
+const [KORPUS, STUFE] = [path.join(root, "spec", "speicher-korpus"), require("../package.json").version];
+
+// Was ein Save trägt (die Bauten des Stands nach Id), wie seine Version ihn schrieb — ein Slot ohne Art fiel schon dort.
+const korpusSlot = (x) => (x.material || x.blueprintName) + "×" + x.count;
+const korpusSave = (ls) => JSON.parse(ls["anazhRealmState_" + ls.anazhRealmActiveWorld]);
+function korpusSoll(k) {
+    const s = korpusSave(k.ls);
+    return {
+        welt: s.worldMeta.worldId,
+        boden: s.bodenGeneration,
+        bauten: k.bauten
+            .map((id) => s.architectures.find((a) => a.id === id))
+            .map((a) => [a.type, a.position.x, a.position.z, a.ueberGrund]),
+        edits: s.worldMeta.voxelEdits.map((e) => [e.x, e.z]),
+        inventar: s.playerInventory.filter((x) => x && (x.material || x.blueprintName)).map(korpusSlot),
+    };
+}
+// Am Kopf: liegt die Grube je Edit am Boden (die Oberfläche unter dem Gesetz)? Dann der Save des Kopfs (Material dazu, fehlt es).
+async function korpusIst(s) {
+    const r = await window.__weltDa((x) => x.state.worldMeta.worldId === s.welt);
+    if (!r.state.player.inventory.some((x) => x && x.kind === "material")) r.addMaterialToInventory("stein", 5);
+    r.saveState();
+    return {
+        alt: s.boden !== globalThis.__gelaendeCore.BODEN_GENERATION,
+        umzug: !!r.state.bodenUmzug,
+        kalt: window.__korpusKalt,
+        fuss: r.constructor.PLAYER_FOOT_OFFSET,
+        gruben: s.edits.map(([x, z]) => r._voxelSurfaceY(x, z) < r._terrainMacroSurfaceY(x, z) - 1),
+        neu: { version: r.constructor.VERSION, ls: { ...localStorage } },
+    };
+}
+// Der Haken am Laden aus dem Speicher, gleich vor dem Bau-Restore: blockiert das kalte Buch? Im Selbsttest die Pflanze.
+const VERLUST = ["architectures", "worldMeta.voxelEdits", "playerInventory", "_weichtDemBau"];
+function korpusHaken(feld) {
+    Object.defineProperty(window, "anazhRealm", {
+        configurable: true,
+        set(r) {
+            const lies = r._loadStateLoadFromStorage;
+            r._loadStateLoadFromStorage = function () {
+                window.__korpusKalt = !r.spawnArchitecture("haus_griechisch", { x: 1e4, y: 0, z: 1e4 }, { seed: 9 });
+                const [s, [a, b]] = [lies.call(this), String(feld).split(".")];
+                if (a === "_weichtDemBau") r[a] = (e) => r._istNatur(e);
+                else if (feld) delete (b ? s[a] : s)[b || a];
+                return s;
+            };
+            Object.defineProperty(window, "anazhRealm", { value: r, writable: true });
+        },
+    });
+}
+// Je Stand eine Seite, sein localStorage hinein (IndexedDB trug denselben Stand), der Boot des Spielers.
+async function korpusLauf(selbst) {
+    const alle = fs
+        .readdirSync(KORPUS)
+        .map((f) => JSON.parse(zlib.brotliDecompressSync(fs.readFileSync(path.join(KORPUS, f)))));
+    const [browser, zeilen] = [await starteBrowser({ art: "null" }), []];
+    alle.sort((a, b) => a.version.localeCompare(b.version, "en", { numeric: true }));
+    const port = server.address().port;
+    for (const [i, k] of (selbst ? alle.slice(0, VERLUST.length) : NUR_STUFE ? alle.slice(-1) : alle).entries()) {
+        const [page, s] = [await browser.newPage(), korpusSoll(k)];
+        await nullRenderer(page);
+        await page.evaluateOnNewDocument(korpusHaken, selbst ? VERLUST[i] : null);
+        await page.goto(`http://127.0.0.1:${port}/cores.manifest.json`);
+        await page.evaluate((ls) => Object.assign((localStorage.clear(), localStorage), ls), k.ls);
+        await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded" });
+        const ist = await page.evaluate(korpusIst, s);
+        await page.close();
+        const kopf = korpusSave(ist.neu.ls);
+        const inv = kopf.playerInventory.filter(Boolean).map(korpusSlot);
+        const bauten = s.bauten.map(([t, x, z, ue]) =>
+            kopf.architectures.find(
+                (a) =>
+                    a.type === t &&
+                    a.position.x === x &&
+                    a.position.z === z &&
+                    Math.abs(a.ueberGrund - (ue ?? ist.fuss)) <= 0.05
+            )
+        );
+        const z = { ...ist, version: k.version + (k.kopf ? " Kopf" : ""), kopf: k.kopf, da: bauten.map(Boolean) };
+        // eine Grube steht nur, wo ihr Edit steht; ein Schreiber, der Edits verliert, fällt am Stand des Kopfs im selben Lauf
+        z.n = [
+            bauten.filter(Boolean).length,
+            ist.gruben.filter(Boolean).length,
+            s.inventar.filter((x) => inv.includes(x)).length,
+        ];
+        z.soll = [s.bauten.length, s.edits.length, s.inventar.length];
+        z.ganz = z.soll.every((x, j) => x > 0 && z.n[j] === x);
+        if (!k.kopf && z.ganz && k === alle.at(-1)) {
+            const datei = path.join(KORPUS, ist.neu.version + ".json.br");
+            const neu = { ...ist.neu, bauten: bauten.map((a) => a.id) };
+            if (NUR_STUFE && !fs.existsSync(datei))
+                fs.writeFileSync(datei, zlib.brotliCompressSync(JSON.stringify(neu)));
+            alle.push({ ...neu, kopf: true });
+        }
+        console.log(`  [V] ${z.version}${selbst ? " ohne " + VERLUST[i] : ""}: ${korpusZahl([z])}`);
+        zeilen.push(z);
+    }
+    await browser.close();
+    return zeilen;
+}
+const korpusZahl = (l) =>
+    ["Bauten", "Gruben", "Inventar"]
+        .map((w, j) => `${w} ${l.reduce((s, x) => s + x.n[j], 0)}/${l.reduce((s, x) => s + x.soll[j], 0)}`)
+        .join(" · ");
+function korpusUrteil(z, selbst) {
+    const zeile = (name, f, l = z) => ({
+        name: `${name} ${l.filter(f).length}/${l.length}`,
+        pass: l.length > 0 && l.every(f),
+    });
+    const [alt, gleich, licht] = [z.filter((x) => x.alt), z.filter((x) => !x.alt), (x) => x.da[0] && x.da[1]];
+    const alte = z.filter((x) => !x.kopf).map((x) => x.version);
+    return [
+        zeile(
+            `(V) Korpus: ${alte.length} Stände ${alte[0]} … ${alte.at(-1)} und ${z.length - alte.length} Kopf laden am Kopf — ${korpusZahl(z)} · ganz`,
+            (x) => x.ganz
+        ),
+        {
+            name: `(V) Versions-Stufe ${STUFE}: ihr Stand steht im Korpus (bump-version.cjs)`,
+            pass: alte.includes(STUFE),
+        },
+        zeile("(U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen", (x) => x.ganz && x.umzug, alt),
+        zeile("(U) Gegenprobe: Stände desselben Bodens ziehen nicht um", (x) => !x.umzug, gleich),
+        zeile("(W) Werke auf der Lichtung nach dem Reload, Stände", licht),
+        zeile("(K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn", (x) => x.kalt),
+        zeile("(K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück", (x) => x.da[4]),
+        ...(selbst
+            ? [
+                  zeile(
+                      `(V) SELBSTTEST: eine Migration ohne ${VERLUST.slice(0, 3).join(" · ")} wird ROT`,
+                      (x) => !x.ganz,
+                      selbst.slice(0, 3)
+                  ),
+                  zeile(
+                      "(W) SELBSTTEST: der Räumer nach Stoff nimmt sie, Stände ohne die Werke",
+                      (x) => !licht(x),
+                      selbst.slice(3)
+                  ),
+              ]
+            : []),
+    ];
+}
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await starteBrowser({ art: "null" });
-    const page = await browser.newPage();
-    await nullRenderer(page, { foundry: true });
-    let out = null;
-    try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 60000 });
-        await warteAufWelt(page, 60000);
-        out = {};
-        // (W) zwei Werke auf der Lichtung (Satz, Bau-Modus), Save, Reload; Selbsttest: der Räumer nach Stoff
-        const w = (art) =>
-            page.evaluate(async (art) => {
-                const r = await window.__weltDa((x) => x._genesisPlattform());
-                const G = r._genesisMitte();
-                if (art === "setzen") {
-                    r.dslRun(["spawn_blueprint", "stein_block", ["at", G.x + 15, r._voxelSurfaceY(G.x + 15, G.z), G.z]], { source: "human" });
-                    r.spawnArchitecture("stein_block", { x: G.x, y: r._voxelSurfaceY(G.x, G.z + 15), z: G.z + 15 }, { id: r._newArchId() });
-                    r.saveState();
-                }
-                if (art === "stoff") {
-                    r._weichtDemBau = (e) => r._istNatur(e);
-                    r._loadStateRestoreArchitectures(r.buildStateSnapshot());
-                    delete r._weichtDemBau;
-                }
-                return r.state.architectures.filter((a) => a.type === "stein_block" && Math.hypot(a.position.x - G.x, a.position.z - G.z) < 16).length;
-            }, art);
-        out.w = { gesetzt: await w("setzen") };
-        await sleep(1500); // der IDB-Put des Saves landet (ein Reload schneidet sonst den Schreiber ab)
-        await page.reload({ waitUntil: "networkidle0", timeout: 60000 });
-        out.w.stehen = await w("laden");
-        if (SELBSTTEST) out.w.selbst = await w("stoff");
-        // (K) DER RELOAD MIT KALTEM BUCH: warten, bis das Studio-Buch die Häuser registriert hat, dann ein Haus mit
-        // Zahlen-id setzen, den Snapshot bei kaltem Buch zurückspielen (der Zweit-Boot) und zählen.
-        await page.waitForFunction(
-            () => {
-                const r = window.anazhRealm;
-                return !!(r._foundry && r._foundry.ready && r.state.blueprints && r.state.blueprints.haus_griechisch);
-            },
-            { timeout: 120000 }
-        );
-        Object.assign(
-            out,
-            await page.evaluate(() => {
-                const r = window.anazhRealm;
-                const k = {};
-                const id = 990001; // eine Zahlen-id (wie Worldgen) — der Spawn vergibt sie neu, gezählt wird die Stelle
-                const istHaus = (a) =>
-                    a &&
-                    a.type === "haus_griechisch" &&
-                    Math.abs(a.position.x - 52) < 0.01 &&
-                    Math.abs(a.position.z - 52) < 0.01;
-                const pos = { x: 52, y: r._voxelSurfaceY(52, 52), z: 52 };
-                const haus = r.spawnArchitecture("haus_griechisch", pos, { seed: 9, precise: true, id });
-                k.kGesetzt = !!haus;
-                const snap = r.buildStateSnapshot();
-                k.kImSnapshot = (snap.architectures || []).some(istHaus);
-                const f = r._foundry;
-                const warm = f.ready;
-                f.ready = false; // der Zweit-Boot: der Stand lädt, bevor das Buch kommt
-                try {
-                    k.kFrischBlockiert =
-                        r.spawnArchitecture("haus_griechisch", { x: 60, y: pos.y, z: 60 }, { seed: 9 }) === null;
-                    r._loadStateRestoreArchitectures({ architectures: snap.architectures });
-                } finally {
-                    f.ready = warm;
-                }
-                k.kZurueck = (r.state.architectures || []).some(istHaus);
-                k.kVorher = (snap.architectures || []).length;
-                k.kNachher = (r.state.architectures || []).length;
-                // (U) der alte Boden: jede Höhe 37,7 m daneben (die gemessene Verschiebung p50), ohne Generation und Höhe über Grund
-                const alt = JSON.parse(JSON.stringify(r.buildStateSnapshot()));
-                const gleich = JSON.parse(JSON.stringify(alt));
-                delete alt.bodenGeneration;
-                delete alt.spielerUeberGrund;
-                for (const a of alt.architectures || []) {
-                    delete a.ueberGrund;
-                    if (a.position) a.position.y += 37.7;
-                }
-                const fehl = (liste) => {
-                    let n = 0,
-                        max = 0;
-                    for (const a of liste || []) {
-                        if (!a || !a.position) continue;
-                        const g = r._voxelSurfaceY(a.position.x, a.position.z);
-                        if (!Number.isFinite(g)) continue;
-                        const d = Math.abs(a.position.y - (g + 0.5));
-                        n++;
-                        if (d > max) max = d;
-                    }
-                    return { n, max: Math.round(max * 100) / 100 };
-                };
-                r.state.bodenUmzug = null;
-                r.loadState(alt);
-                k.uAlt = fehl(r.state.architectures);
-                k.uBericht = r.state.bodenUmzug || null;
-                r.state.bodenUmzug = null;
-                const vorGleich = (r.state.architectures || []).map((a) => a.position.y);
-                r.loadState(gleich);
-                k.uGleichBericht = r.state.bodenUmzug || null;
-                k.uGleichN = vorGleich.length;
-                return k;
-            })
-        );
-    } catch (e) {
-        out = { __err: (e && e.message) || String(e) };
-    }
-    await browser.close();
+    if (NUR_STUFE) process.exit((await korpusLauf(false))[0].ganz ? 0 : 1);
     const tLauf = await tabTodProbe({ von: TT_VON, bis: TT_BIS });
     const tSelbst = SELBSTTEST ? await tabTodProbe({ von: 0, bis: 0, selbst: true }) : null;
+    const korpus = korpusUrteil(await korpusLauf(false), SELBSTTEST ? await korpusLauf(true) : null);
     server.close();
 
-    if (!out || out.__err) {
-        console.log(`⛔ Persistenz-Linse fehlgeschlagen: ${out ? out.__err : "?"}`);
-        process.exit(2);
-    }
-
-    // (S) Der save-server schreibt ganz — und im Selbsttest die alte Schreib-Art in der Kopie, die rot werden MUSS.
+    // (S) Der save-server schreibt ganz, (C) sein Cache-Kopf — im Selbsttest je die alte Art in der Kopie, die rot werden MUSS:
+    // das direkte Schreiben aufs Ziel, der Kopf ohne Validator. Fehlt der Anker einer Verfälschung, greift sie nicht (ROT).
     const quelle = fs.readFileSync(path.join(root, "save-server.js"), "utf8");
-    let s = null;
+    const verfaelscht = (anker, neu) => {
+        if (quelle.includes(anker)) return quelle.replace(anker, neu);
+        console.log(`⛔ SELBSTTEST: save-server.js trägt „${anker}" nicht — die Verfälschung greift nicht`);
+        process.exit(1);
+    };
+    const [KOPF, CK] = [
+        "function schreibeGanz(ziel, text, mitBak) {",
+        "const kopf = statischerKopf(body, contentType);",
+    ];
+    let s, selbst, cache, cacheSelbst;
     try {
         s = await serverProbe(quelle);
+        selbst =
+            SELBSTTEST &&
+            (await serverProbe(verfaelscht(KOPF, `${KOPF}\n    return fs.promises.writeFile(ziel, text, "utf8");`)));
+        cache = await cacheProbe(quelle);
+        cacheSelbst =
+            SELBSTTEST &&
+            (await cacheProbe(
+                verfaelscht(CK, `const kopf = { "Content-Type": contentType, "Access-Control-Allow-Origin": "*" };`)
+            ));
     } catch (e) {
-        console.log(`⛔ (S) Server-Probe fehlgeschlagen: ${(e && e.message) || e}`);
+        console.log(`⛔ (S)/(C) save-server-Probe fehlgeschlagen: ${(e && e.message) || e}`);
         process.exit(2);
     }
     const sZeile = (p) =>
         `voll: Ziel ${p.voll.ziel}, .bak ${p.voll.bak} · Tod an Punkt ${p.kills.map((k) => `${k.tod} → ${k.ziel}`).join(", ")}`;
-    let selbst = null;
-    if (SELBSTTEST) {
-        const KOPF = "function schreibeGanz(ziel, text, mitBak) {";
-        if (!quelle.includes(KOPF)) {
-            console.log(`⛔ SELBSTTEST: save-server.js trägt den Kopf „${KOPF}" nicht — die Verfälschung greift nicht`);
-            process.exit(1);
-        }
-        const alt = quelle.replace(KOPF, `${KOPF}\n    return fs.promises.writeFile(ziel, text, "utf8");`);
-        selbst = await serverProbe(alt);
-    }
-    // (C) Der Cache-Kopf am echten Server — und im Selbsttest der Kopf ohne Validator (der Stand vor 1310-16), der rot werden MUSS.
-    let cache = null,
-        cacheSelbst = null;
-    try {
-        cache = await cacheProbe(quelle);
-        if (SELBSTTEST) {
-            const CK = "const kopf = statischerKopf(body, contentType);";
-            if (!quelle.includes(CK)) {
-                console.log(`⛔ SELBSTTEST: save-server.js trägt „${CK}" nicht — die Verfälschung greift nicht`);
-                process.exit(1);
-            }
-            cacheSelbst = await cacheProbe(
-                quelle.replace(CK, `const kopf = { "Content-Type": contentType, "Access-Control-Allow-Origin": "*" };`)
-            );
-        }
-    } catch (e) {
-        console.log(`⛔ (C) Cache-Probe fehlgeschlagen: ${(e && e.message) || e}`);
-        process.exit(2);
-    }
     const cZeile = (p) =>
         `erst ${p.erst.status} ETag ${p.erst.etag ? "ja" : "nein"} „${p.erst.cc || "—"}" · nachgefragt ${p.frisch.status} (${p.frisch.n || 0} B) · Inhalt geändert ${p.geaendert.status}${p.geaendert.etag && p.geaendert.etag !== p.erst.etag ? " neuer ETag" : ""}`;
 
     const checks = [
-        {
-            name: "(K) Gegenprobe: ein FRISCHER Studio-Spawn bei kaltem Buch bleibt blockiert (die Kalt-Probe wirkt)",
-            pass: out.kGesetzt === true && out.kFrischBlockiert === true,
-        },
-        {
-            name: `(K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück (Einträge ${out.kVorher} → ${out.kNachher})`,
-            pass: out.kImSnapshot === true && out.kZurueck === true && out.kNachher === out.kVorher,
-        },
-        {
-            name:
-                `(U) Boden-Umzug: ein Save des alten Bodens steht auf dem neuen (${out.uAlt ? out.uAlt.n : "?"} Bauten, ` +
-                `größte Abweichung von der Fuß-Höhe ${out.uAlt ? out.uAlt.max : "?"} m; Bericht ${JSON.stringify(out.uBericht)})`,
-            pass:
-                !!out.uAlt &&
-                out.uAlt.n > 0 &&
-                out.uAlt.max <= 0.05 &&
-                !!out.uBericht &&
-                out.uBericht.bewegt === out.uAlt.n,
-        },
-        {
-            name: `(U) Gegenprobe: ein Save desselben Bodens zieht nicht um (Bericht ${JSON.stringify(out.uGleichBericht)})`,
-            pass: out.uGleichBericht === null,
-        },
-        {
-            name: `(W) Werke auf der Lichtung nach dem Reload ${out.w.stehen}/${out.w.gesetzt}${out.w.stehen < 2 ? " — Täter _weichtDemBau: Stoff statt Herkunft" : ""}`,
-            pass: out.w.gesetzt === 2 && out.w.stehen === 2,
-        },
+        ...korpus,
         {
             name: `(S) save-server: ein voller Save hält den Stand davor im .bak (${sZeile(s)})`,
             pass: s.vollOk,
@@ -602,10 +600,6 @@ const server = statikServer();
     ];
     if (SELBSTTEST)
         checks.push(
-            {
-                name: `(W) SELBSTTEST: der Räumer nach Stoff nimmt sie (${out.w.selbst}/${out.w.gesetzt})`,
-                pass: out.w.selbst === 0,
-            },
             {
                 name: `(S) SELBSTTEST: die alte Schreib-Art (fs.writeFile aufs Ziel) wird ROT (${sZeile(selbst)})`,
                 pass: !selbst.killsOk,

@@ -18,21 +18,38 @@ class AnazhRealm_daten {
         const zeile = (f) => Object.freeze({ skyMul: f.sun, lightMul: L.sockel + L.sonne * f.sun });
         return this._einmal(
             "WEATHER_TINTS",
-            Object.freeze({ sunny: zeile(F.sunny), rainy: zeile(F.rainy), stormy: zeile(F.stormy) })
+            Object.freeze(Object.fromEntries(Object.keys(F).map((w) => [w, zeile(F[w])])))
         );
     }
     // Wetter = INTENSITÄTS-ACHSE, kein Binär-Paar: jeder wetter-abhängige Skalar lerpt über sie
     // (`_weatherBlendedValue`); ein neues Wort = EIN Tabellen-Eintrag, alle Leser erben es. stormy
     // extrapoliert über rainy — [0,1]-Shader clampen lokal. Nässe-Frage nur über `_weatherIsWet`.
+    // Die Bedeckung des Himmels liest die Achse (cloudCover = 0,12 + 0,78 · I): Nebel 0,47, bewölkt 0,74; nass erst ab 1.
     static get WEATHER_INTENSITY() {
-        return this._einmal("WEATHER_INTENSITY", Object.freeze({ sunny: 0, rainy: 1, stormy: 1.35 }));
+        return this._einmal(
+            "WEATHER_INTENSITY",
+            Object.freeze({ sunny: 0, foggy: 0.45, cloudy: 0.8, rainy: 1, stormy: 1.35 })
+        );
+    }
+    // DIE WORTE DER WELT sind die Zeilen des Wetter-Gesetzes (phyto-core WX_GESETZ, wetter.K1): sunny = klar · cloudy =
+    // bewoelkt · foggy = nebel · rainy = regen · stormy = sturm — alle fünf Zeilen, die das Labor kennt. Leser: WEATHER_FIELD,
+    // die Front am Ort (`_wetterAmOrt` liest die Zeile des Kerns und spricht ihr Wort, `WETTER_WORT`).
+    static get WETTER_ZEILE() {
+        return this._einmal(
+            "WETTER_ZEILE",
+            Object.freeze({ sunny: "klar", cloudy: "bewoelkt", foggy: "nebel", rainy: "regen", stormy: "sturm" })
+        );
+    }
+    static get WETTER_WORT() {
+        const Z = AnazhRealm.WETTER_ZEILE;
+        return this._einmal("WETTER_WORT", Object.freeze(Object.fromEntries(Object.keys(Z).map((w) => [Z[w], w]))));
     }
     // Wetter als 5-Kanal-Feld {fog,sun,grey,wind,rain} je Wort; der EINE LOOK-Leser `_weatherFieldFor(w)`
     // interpoliert transition-aware (wie `_weatherBlendedValue`). grey entsättigt NUR das Licht, nie den
     // Himmel; wind = Böen-Amplitude; fog multipliziert fogMult; rain/sun Reserve.
     // `_weatherBlendedValue` bleibt für die Nicht-LOOK-Skalare. Die Zahlen SIND das Wetter-Gesetz des Kerns (phyto-core
-    // WX_GESETZ: sunny = klar · rainy = regen · stormy = sturm, das Labor liest dieselbe Tafel) — fail-closed, kein
-    // Zahlen-Zwilling (K2: der Sturm hatte hier Sonne 0,42 gegen 0,15 im Gesetz).
+    // WX_GESETZ, je Wort seine Zeile `WETTER_ZEILE`, das Labor liest dieselbe Tafel) — fail-closed, kein Zahlen-Zwilling (K2:
+    // der Sturm hatte hier Sonne 0,42 gegen 0,15 im Gesetz).
     static get WEATHER_FIELD() {
         const WX = globalThis.__phytoCore.WX_GESETZ;
         const zeile = (w) => {
@@ -41,13 +58,10 @@ class AnazhRealm_daten {
                 throw new Error("phyto-core fehlt: WX_GESETZ." + w + " (das Wetter-Feld der Welt)");
             return Object.freeze({ fog: r.fog, sun: r.sun, grey: r.grey, wind: r.wind, rain: r.rain });
         };
+        const Z = AnazhRealm.WETTER_ZEILE;
         return this._einmal(
             "WEATHER_FIELD",
-            Object.freeze({
-                sunny: zeile("klar"),
-                rainy: zeile("regen"),
-                stormy: zeile("sturm"),
-            })
+            Object.freeze(Object.fromEntries(Object.keys(Z).map((w) => [w, zeile(Z[w])])))
         );
     }
     // V6 — grey→Licht-Entsättigung: der grey-Kanal zieht das RICHTLICHT so weit
@@ -62,8 +76,8 @@ class AnazhRealm_daten {
         return 0.55;
     }
     // DIE WANDERNDE BÖE — EINE Quelle für Auge und Ohr: gust = sin(omega·t − k·dot(xz, windDir))·amp + mitte
-    // (λ = 2π/k ≈ 164 m, Periode 2π/omega ≈ 15,7 s). `_windSwayOffset` (Gras/Streu/Laub im Shader) und `_windBoeAt`
-    // (der Wind am Ohr, klang:UMWELT) lesen dieselben Zahlen.
+    // (λ = 2π/k ≈ 164 m, Periode 2π/omega ≈ 15,7 s). `_windSwayOffset` (Gras/Streu/Laub im Shader) und `_windAt`
+    // (der EINE Wind am Ort: Wasser, Regen, Tuch, Rauch, Wagen, Ohr, Nase) lesen dieselben Zahlen.
     static get WIND_BOE() {
         return globalThis.__phytoCore.WIND_GESETZ.boe; // die Zahlen leben im Wind-Gesetz des Kerns (K19) — das Labor liest sie dort
     }

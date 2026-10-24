@@ -1884,7 +1884,7 @@ class AnazhRealm_siedlung_satz {
     }
 
     // Die Flüsse EINER zentrierten Stufe malen (K16, die Naht des Wassers): leeren, jedes Segment der bereiten Regionen
-    // (`riverBuckets`, je Segment einmal) als Kasten-Filter seines Wassers über die Texel-Kante — der Anteil des Texels,
+    // (der Kanal `kanal`, je Segment einmal) als Kasten-Filter seines Wassers über die Texel-Kante — der Anteil des Texels,
     // den [−Halbbreite, +Halbbreite] quer zum Segment deckt (dieselbe Breite wie `_fernFlussDeckung`); EIN Upload.
     _flussKarteMalen(stufe, hydroN) {
         const fl = stufe.fluss;
@@ -1897,38 +1897,40 @@ class AnazhRealm_siedlung_satz {
         const z0w = stufe.mitteZ - S.fensterM / 2;
         const st = this.state;
         const regionen = [st.hydrosphere, ...(st.hydroTiles ? st.hydroTiles.values() : [])];
-        const gesehen = new Set();
         const daten = fl.daten;
+        const KANAL_FELDER = globalThis.__gelaendeCore.KANAL_FELDER;
         for (const h of regionen) {
-            if (!h || !h.ready || !h.riverBuckets) continue;
-            for (const list of h.riverBuckets) {
-                if (!list) continue;
-                for (const seg of list) {
-                    if (gesehen.has(seg)) continue;
-                    gesehen.add(seg);
-                    const r = Math.max(seg.hwA, seg.hwB) + t;
-                    const i0 = Math.max(0, Math.floor((Math.min(seg.ax, seg.bx) - r - x0w) / t));
-                    const i1 = Math.min(N - 1, Math.ceil((Math.max(seg.ax, seg.bx) + r - x0w) / t));
-                    const j0 = Math.max(0, Math.floor((Math.min(seg.az, seg.bz) - r - z0w) / t));
-                    const j1 = Math.min(N - 1, Math.ceil((Math.max(seg.az, seg.bz) + r - z0w) / t));
-                    if (i1 < i0 || j1 < j0) continue;
-                    const ex = seg.bx - seg.ax;
-                    const ez = seg.bz - seg.az;
-                    const len2 = ex * ex + ez * ez || 1;
-                    for (let j = j0; j <= j1; j++) {
-                        const pz = z0w + (j + 0.5) * t;
-                        for (let i = i0; i <= i1; i++) {
-                            const px = x0w + (i + 0.5) * t;
-                            let u = ((px - seg.ax) * ex + (pz - seg.az) * ez) / len2;
-                            u = u < 0 ? 0 : u > 1 ? 1 : u;
-                            const d = Math.hypot(px - (seg.ax + ex * u), pz - (seg.az + ez * u));
-                            const hw = seg.hwA + (seg.hwB - seg.hwA) * u;
-                            const c = Math.max(0, Math.min(d + t / 2, hw) - Math.max(d - t / 2, -hw)) / t;
-                            if (c <= 0) continue;
-                            const v = Math.round(Math.min(1, c) * 255);
-                            const k = j * N + i;
-                            if (v > daten[k]) daten[k] = v;
-                        }
+            if (!h || !h.ready || !h.kanal) continue;
+            const seg = h.kanal.seg;
+            for (let o = 0; o < seg.length; o += KANAL_FELDER) {
+                const ax = seg[o];
+                const az = seg[o + 1];
+                const bx = seg[o + 2];
+                const bz = seg[o + 3];
+                const hwA = seg[o + 4];
+                const hwB = seg[o + 5];
+                const r = Math.max(hwA, hwB) + t;
+                const i0 = Math.max(0, Math.floor((Math.min(ax, bx) - r - x0w) / t));
+                const i1 = Math.min(N - 1, Math.ceil((Math.max(ax, bx) + r - x0w) / t));
+                const j0 = Math.max(0, Math.floor((Math.min(az, bz) - r - z0w) / t));
+                const j1 = Math.min(N - 1, Math.ceil((Math.max(az, bz) + r - z0w) / t));
+                if (i1 < i0 || j1 < j0) continue;
+                const ex = bx - ax;
+                const ez = bz - az;
+                const len2 = ex * ex + ez * ez || 1;
+                for (let j = j0; j <= j1; j++) {
+                    const pz = z0w + (j + 0.5) * t;
+                    for (let i = i0; i <= i1; i++) {
+                        const px = x0w + (i + 0.5) * t;
+                        let u = ((px - ax) * ex + (pz - az) * ez) / len2;
+                        u = u < 0 ? 0 : u > 1 ? 1 : u;
+                        const d = Math.hypot(px - (ax + ex * u), pz - (az + ez * u));
+                        const hw = hwA + (hwB - hwA) * u;
+                        const c = Math.max(0, Math.min(d + t / 2, hw) - Math.max(d - t / 2, -hw)) / t;
+                        if (c <= 0) continue;
+                        const v = Math.round(Math.min(1, c) * 255);
+                        const k = j * N + i;
+                        if (v > daten[k]) daten[k] = v;
                     }
                 }
             }
@@ -3201,6 +3203,15 @@ class AnazhRealm_siedlung_satz {
 
     // Restore); centerY wird aus pos.y abgeleitet, mit Boden-Heuristik
     // (pos.y - 0.5 ≈ Spielerfußhöhe falls at_player benutzt wurde).
+    // Die Kennung eines Werks aus Art und Same; trägt die Welt sie schon (derselbe Akt zweimal), die nächste freie Folge.
+    _werkKennung(type, seed) {
+        const basis = "w-" + type + "-" + (seed >>> 0).toString(36);
+        const da = (id) => this.state.architectures.some((e) => e.id === id);
+        let id = basis;
+        for (let k = 2; da(id); k++) id = basis + "~" + k;
+        return id;
+    }
+
     spawnArchitecture(type, position, opts = {}) {
         // JEDE ABSAGE DER WURZEL TRÄGT IHREN GRUND (Schau-2, Gegenprüfung Runde 3): `opts.absage(grund)` — der Setz-Op zählt sie,
         // der Satz des Ergebnisses (`_ergebnisSatz`, `SETZ_GRUND`) sagt sie; vorher fiel ein Wurf hier still.
@@ -3273,8 +3284,17 @@ class AnazhRealm_siedlung_satz {
             );
             return nein("wasser");
         }
+        // DIE KENNUNG EINES WERKS AUS EINEM AKT ist eine Funktion des Akts (feld.K2): Art und Same reisen mit dem Programm, jeder
+        // Peer und jeder Reload nennt es gleich, der Abbau eines Mitspielers trifft es (`remove_architecture`). Bis feld-k2k3 zählte
+        // die Seite (`architectureNextId`): „bau mir ein haus" hieß bei A 463, bei B 471 (gate:mp-sync (e)).
+        const kennung =
+            typeof opts.id === "string" && opts.id
+                ? opts.id
+                : opts.werk === true && Number.isFinite(opts.seed)
+                  ? this._werkKennung(type, opts.seed)
+                  : this.state.architectureNextId++;
         const entry = {
-            id: typeof opts.id === "string" && opts.id ? opts.id : this.state.architectureNextId++,
+            id: kennung,
             type,
             position: { x: position.x || 0, y: position.y || 0, z: position.z || 0 },
             seed,
@@ -3317,16 +3337,8 @@ class AnazhRealm_siedlung_satz {
         // Der Guss-Stempel reist am Eintrag (Snapshot + P2P): NUR ein non-leeres plain object, tief
         // JSON-kopiert, max 8 KiB (dieselbe Taille-Wand wie _carryUnknown — ein Riesenstempel wäre ein
         // Quota-DoS). _foundryFlattenFor liest ihn als Unikat-ov.
-        if (opts.studioOv && typeof opts.studioOv === "object" && !Array.isArray(opts.studioOv)) {
-            try {
-                const json = JSON.stringify(opts.studioOv);
-                if (json && json.length > 2 && json.length <= AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) {
-                    entry.studioOv = JSON.parse(json);
-                }
-            } catch (_e) {
-                /* nicht-serialisierbar → kein Stempel (fail-closed) */
-            }
-        }
+        const praegung = AnazhRealm._stempelVon(opts.studioOv);
+        if (praegung) entry.studioOv = praegung;
         // DORF-IN-TERRAIN — der Fundament-Footprint reist am Eintrag (Snapshot + Restore):
         // die halben Ausdehnungen {ex,ez} und der Versatz seiner Mitte zum Haus-Ursprung {ox,oz}
         // (haus-lokal, Welle L — das Hof-Haus reicht 4 m vor seinen Ursprung; ein älterer Stand ohne
@@ -3381,6 +3393,7 @@ class AnazhRealm_siedlung_satz {
             // W10 ext. Politur — die Affordance-Stärke wird wie das Profil
             // EINMAL beim Spawn eingefroren (Substanz-Schnappschuss).
             entry.affordanceStrength = this.computeAffordanceStrength(bp, entry.affordances, tags);
+            this._werkGesetzSetzen(entry, bp); // das Werk gehorcht der EINEN Statik in der Welt: es steht, stürzt, rollt, fängt Regen
             // Gewachsene Bäume tragen Species + VariantIndex am Eintrag → `_tickArchitectureLOD` wechselt die
             // Stufe per Distanz ohne Identitätsverlust. Der Wald reicht `_lodSpecies` + `_lodVariantIndex`
             // EXPLIZIT herein, ohne Varianten-Geometrie eager zu bauen; `_rebuildArchitectureMesh` wählt die
@@ -3716,20 +3729,21 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
                 size: { x: 0.12852911676524673, y: 0.62, z: 0.12852911676524673 },
                 opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
             },
+            // die Achsstöcke tragen das Bett (als Latten von 0,13 m ließen sie es 0,25 m schweben — die Statik ließ es stürzen)
             {
                 shape: "box",
                 material: "holz",
                 color: 5913890,
-                position: { x: 0, y: 0.36, z: 0.8 },
-                size: { x: 1.5818968217261136, y: 0.13, z: 0.14830282703682313 },
+                position: { x: 0, y: 0.49, z: 0.8 },
+                size: { x: 1.5818968217261136, y: 0.38, z: 0.14830282703682313 },
                 opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
             },
             {
                 shape: "box",
                 material: "holz",
                 color: 5913890,
-                position: { x: 0, y: 0.36, z: -0.8 },
-                size: { x: 1.5818968217261136, y: 0.13, z: 0.14830282703682313 },
+                position: { x: 0, y: 0.49, z: -0.8 },
+                size: { x: 1.5818968217261136, y: 0.38, z: 0.14830282703682313 },
                 opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
             },
             {

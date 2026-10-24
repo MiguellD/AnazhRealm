@@ -86,7 +86,7 @@ function check(name, ok) {
             for (;;) {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
                 const elapsed = performance.now() - start;
                 const built = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
                 if (built !== lastBuilt) {

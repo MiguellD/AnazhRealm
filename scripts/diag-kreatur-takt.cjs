@@ -2,14 +2,12 @@
 // diag-kreatur-takt.cjs — DIE KREATUR-LINSE (npm run gate:kreatur-takt): das Leben der Tiere am ECHTEN Takt.
 // Die Proben wohnen in scripts/lib/kreatur-proben.cjs und rufen den ECHTEN Kreatur-Takt (updateCreatures); dieselbe
 // Seiten-Funktion läuft hier headless (Null-Renderer, Produktions-Boot) und mit `--werkbank <port>` im sichtbaren
-// Fenster der echten GPU (der Spiel-Loop ruht je Probe).
-//   node scripts/diag-kreatur-takt.cjs [--proben a,b] [--alle] [--selftest] [--werkbank <port>]
-//   --alle      jede Probe (auch die, deren Klasse noch nicht im Gate steht) — der Vorher-Lauf gegen die Basis
-//   --selftest  je Gate-Probe jeder alte Defekt als Täter eingespielt (TAETER): jede Probe muss ROT lesen, und zwar aus
-//               dem Grund, der den Täter beim Namen nennt
+// Fenster der echten GPU.
+//   node scripts/diag-kreatur-takt.cjs [--proben a,b] [--selftest] [--teil=k/n] [--werkbank <port>]
+//   --selftest  je Probe jeder alte Defekt als Täter (TAETER): er muss sie ROT machen, beim Namen genannt
+//   --teil=k/n  Teil k: die längste Probe (DAUER_S) zuerst in den leichtesten Teil, jede in GENAU einem
 "use strict";
-const { statikServer, starteBrowser, CODE_OF_SEITE, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
-const http = require("http");
+const { statikServer, starteBrowser, CODE_OF_SEITE, nullRenderer, werkbankRuf, teilAus, ROOT: root } = require("./lib/welt-boot.cjs"); // prettier-ignore
 const fs = require("fs");
 const path = require("path");
 const { KREATUR_PROBEN_SRC, PROBEN, TAETER, urteil } = require("./lib/kreatur-proben.cjs");
@@ -22,49 +20,55 @@ const opt = (k, d) => {
 };
 const SELBST = argv.includes("--selftest");
 const WERKBANK = opt("--werkbank", null);
-// DIE FESTE RAMPE: der Querhang misst auch an der Rampe der Prüfbühne (Station S2) — die Welt wählt
-// ihren Hang nach ihrem Bestand (im K16-Gelände 22,2° in der CI, lokal 22,2° oder 25,5°), die Rampe steht fest
+// DIE FESTE RAMPE der Prüfbühne (Station S2): jeder Lauf mit dem Querhang misst ihn dort ein zweites Mal, derselbe Täter
 const BUEHNE_DATEI = path.join(root, "spec", "pruefbuehne", "welt.json");
-const RAMPE = (() => {
-    const st = JSON.parse(
-        fs.readFileSync(path.join(root, "spec", "pruefbuehne", "stationen.json"), "utf8")
-    ).stationen.find((s) => s.id === "s2-hang30");
-    if (!st || !Number.isFinite(st.winkel))
-        throw new Error("die Rampe s2-hang30 fehlt in spec/pruefbuehne/stationen.json");
-    return { id: st.id, x: st.x, z: st.z, winkel: st.winkel };
+const RAMPE = JSON.parse(
+    fs.readFileSync(path.join(root, "spec", "pruefbuehne", "stationen.json"), "utf8")
+).stationen.find((s) => s.id === "s2-hang30");
+if (!RAMPE || !Number.isFinite(RAMPE.winkel))
+    throw new Error("die Rampe s2-hang30 fehlt in spec/pruefbuehne/stationen.json");
+// Sekunden je Probe samt Täter und fremder Welt, die Zeilen „Sekunden je Probe" ohne --teil (056330d8), unter 1 s zählt 1
+const DAUER_S = {
+    geister: 1,
+    sattel: 1,
+    reload: 1,
+    huepfer: 1,
+    wachsen: 1,
+    gier: 5,
+    jagd: 1,
+    herde: 7,
+    peer: 1,
+    zufall: 1,
+    nexus: 1,
+    temperament: 1,
+    abstand: 1,
+    jagdkreis: 281,
+    rudel: 1,
+    querhang: 13,
+    ferngang: 1,
+    gestalt: 1,
+    todlage: 1,
+    bewohner: 446,
+    tiersatz: 7,
+    furcht: 31,
+    lebensraum: 21,
+    tagesbudget: 15,
+    bestand: 4,
+    kaskade: 83,
+    folgen: 42,
+};
+const TEIL = teilAus(argv);
+const gewaehlt = (() => {
+    const alle = opt("--proben", null) ? opt("--proben").split(",") : PROBEN;
+    if (!TEIL) return alle;
+    const last = Array.from({ length: TEIL.n }, () => ({ s: 0, p: [] }));
+    for (const p of [...alle].sort((a, b) => DAUER_S[b] - DAUER_S[a])) {
+        if (!(DAUER_S[p] > 0)) throw new Error(`--teil: ${p} ohne gemessene Dauer in DAUER_S — der Teil wäre geraten`);
+        const g = last.reduce((m, x) => (x.s < m.s ? x : m));
+        [g.s, g.p] = [g.s + DAUER_S[p], g.p.concat(p)];
+    }
+    return alle.filter((p) => last[TEIL.k - 1].p.includes(p));
 })();
-// DAS GATE wächst je geschnittener Klasse: eine Probe steht hier, sobald ihr Schnitt im Stamm steht.
-const GATE_PROBEN = PROBEN; // jede Probe steht im Gate: jede Klasse der Familie ist geschnitten
-const gewaehlt = opt("--proben", null) ? opt("--proben").split(",") : argv.includes("--alle") ? PROBEN : GATE_PROBEN;
-
-function rufeWerkbank(code) {
-    return new Promise((res, rej) => {
-        const body = JSON.stringify({ code });
-        const req = http.request(
-            {
-                host: "127.0.0.1",
-                port: Number(WERKBANK),
-                path: "/eval",
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-            },
-            (r) => {
-                let d = "";
-                r.on("data", (c) => (d += c));
-                r.on("end", () => {
-                    try {
-                        res(JSON.parse(d));
-                    } catch (_e) {
-                        rej(new Error("Werkbank-Antwort: " + d.slice(0, 300)));
-                    }
-                });
-            }
-        );
-        req.on("error", rej);
-        req.setTimeout(0);
-        req.end(body);
-    });
-}
 
 async function headless(laeufe) {
     const server = statikServer();
@@ -75,8 +79,14 @@ async function headless(laeufe) {
     const fehler = [];
     page.on("pageerror", (e) => fehler.push((e.stack || e.message).split("\n")[0]));
     await nullRenderer(page);
-    const aus = [];
-    // Einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`), die Boden-Funktion trägt.
+    const [aus, dauer] = [[], {}];
+    const zeit = async (p, fn) => {
+        const t = Date.now();
+        const z = await fn();
+        dauer[p] = (dauer[p] || 0) + (Date.now() - t) / 1000;
+        return z;
+    };
+    // das EINE Einschwingen (welt-boot `__weltStehtNach`)
     const einschwingen = () =>
         page.evaluate(() =>
             window.__weltStehtNach(() => {
@@ -107,16 +117,10 @@ async function headless(laeufe) {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
         await bereit();
         await einschwingen();
-        for (const l of laeufe) aus.push(await lauf(l));
+        for (const l of laeufe) aus.push(await zeit(l.proben[0], () => lauf(l)));
         // eine fremde Welt aus json: frische Platte, importiert, aktiv, geladen, eingeschwungen
         const fremdeWelt = async (json) => {
-            await page.evaluate(() => {
-                try {
-                    localStorage.clear();
-                } catch (_e) {
-                    /* frische Platte */
-                }
-            });
+            await page.evaluate(() => localStorage.clear());
             await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
             await page.waitForFunction(() => window.anazhRealm && window.anazhRealm.importWorldBeside, {
                 timeout: 120000,
@@ -136,14 +140,14 @@ async function headless(laeufe) {
             await einschwingen();
         };
         const mit = (probe) => laeufe.map((l, li) => [l, li]).filter(([l]) => l.proben.includes(probe));
-        // DIE RAMPE DER PRÜFBÜHNE (K16-Q): jeder Lauf mit dem Querhang misst ihn ein zweites Mal an der festen Rampe — die
-        // Bühne geboren wie im Spiel (importWorldBeside + aktiv + Reload, der Spieler am Fuß der Station), derselbe Täter
         if (mit("querhang").length) {
             const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
             json.playerPosition = { x: RAMPE.x, y: 40, z: RAMPE.z - 8 };
-            await fremdeWelt(json);
+            await zeit("querhang", () => fremdeWelt(json));
             for (const [l, li] of mit("querhang")) {
-                const z = await lauf({ proben: ["querhang"], taeter: l.taeter, hangOrt: RAMPE });
+                const z = await zeit("querhang", () =>
+                    lauf({ proben: ["querhang"], taeter: l.taeter, hangOrt: RAMPE })
+                );
                 if (aus[li].querhang) aus[li].querhang.rampe = z.querhang || { fehler: "die Rampe lief nicht" };
             }
         }
@@ -157,9 +161,9 @@ async function headless(laeufe) {
                 seed: "lebensraum-gegen",
             });
             Object.assign(json, { architectures: [], creatures: [], playerPosition: { x: 0, y: 80, z: 0 } });
-            await fremdeWelt(json);
+            await zeit("lebensraum", () => fremdeWelt(json));
             for (const [l, li] of mit("lebensraum")) {
-                const z = await lauf({ proben: ["lebensraum"], taeter: l.taeter });
+                const z = await zeit("lebensraum", () => lauf({ proben: ["lebensraum"], taeter: l.taeter }));
                 if (aus[li].lebensraum) aus[li].lebensraum.gegen = z.lebensraum;
             }
         }
@@ -167,36 +171,25 @@ async function headless(laeufe) {
         await browser.close();
         server.close();
     }
-    return { aus, fehler };
+    return { aus, fehler, dauer };
 }
 
 async function imFenster(laeufe) {
     const aus = [];
     for (const l of laeufe) {
-        const o = await rufeWerkbank(
-            `if (!window.__fehlt) { ${CODE_OF_SEITE} } return await (${KREATUR_PROBEN_SRC})(r, T, ${JSON.stringify(l)});`
-        );
-        if (o.fehler) throw new Error(o.fehler);
+        const o = await werkbankRuf(Number(WERKBANK), "/eval", {
+            code: `if (!window.__fehlt) { ${CODE_OF_SEITE} } return await (${KREATUR_PROBEN_SRC})(r, T, ${JSON.stringify(l)});`,
+        });
+        if (!o.ergebnis) throw new Error(o.fehler || o.roh);
         aus.push(o.ergebnis);
     }
     return { aus, fehler: [] };
 }
 
 (async () => {
-    if (!gewaehlt.length) {
-        console.log("gate:kreatur-takt — noch keine Probe im Gate (GATE_PROBEN leer); --alle fährt jede Probe.");
-        process.exit(0);
-    }
-    // Der Selbsttest: je Probe jeder ihrer Täter in einem eigenen Lauf; das Wort, das ihn nennt, bleibt in Node.
-    const nennt = [];
-    const laeufe = SELBST
-        ? gewaehlt.flatMap((p) =>
-              (TAETER[p] || []).map(([t, re]) => {
-                  nennt.push(re);
-                  return { proben: [p], taeter: t };
-              })
-          )
-        : [{ proben: gewaehlt }];
+    if (!gewaehlt.length) throw new Error("keine Probe gewählt — ohne Messung ROT");
+    // je Probe ein Lauf, mit --selftest je Probe jeder ihrer Täter in einem eigenen; das Wort, das ihn nennt, bleibt in Node
+    const [laeufe, nennt] = [[], []];
     if (SELBST) {
         const ohne = gewaehlt.filter((p) => !(TAETER[p] && TAETER[p].length));
         if (ohne.length) {
@@ -204,41 +197,44 @@ async function imFenster(laeufe) {
             process.exit(1);
         }
     }
+    for (const p of gewaehlt)
+        for (const [t, re] of SELBST ? TAETER[p] : [[null]]) nennt[laeufe.push({ proben: [p], taeter: t }) - 1] = re;
     const t0 = Date.now();
-    const { aus, fehler } = WERKBANK ? await imFenster(laeufe) : await headless(laeufe);
+    const { aus, fehler, dauer } = WERKBANK ? await imFenster(laeufe) : await headless(laeufe);
     console.log(
         `\n===== DIE KREATUR-LINSE (gate:kreatur-takt) — ${WERKBANK ? "sichtbares Fenster, echte GPU (Werkbank :" + WERKBANK + ")" : "headless, Null-Renderer"}${SELBST ? " — SELBST-TEST (Täter eingespielt)" : ""} =====\n`
     );
     let rot = 0;
-    const zeilen = [];
     aus.forEach((erg, li) => {
-        for (const name of laeufe[li].proben) {
-            const z = erg[name];
-            const u = urteil(name, z);
-            zeilen.push({ name, z, u });
-            const gruen = SELBST ? !u.ok && nennt[li].test(u.grund) : u.ok;
-            if (!gruen) rot++;
-            const marke = u.ok ? "✅" : "❌";
-            const wer = SELBST ? ` [Täter ${laeufe[li].taeter}]` : "";
-            console.log(`  ${marke} ${name.padEnd(9)}${wer} ${JSON.stringify(z)}`);
-            if (!u.ok) console.log(`       ↳ ${u.grund}`);
-            if (SELBST)
-                console.log(
-                    `       ${
-                        gruen
-                            ? "✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn"
-                            : u.ok
-                              ? "❌ der Täter bleibt unsichtbar — die Linse ist blind"
-                              : `❌ rot, aber nicht aus seinem Grund (${nennt[li]}) — die Linse nennt ihn nicht`
-                    }`
-                );
-        }
+        const {
+            proben: [name],
+            taeter: t,
+        } = laeufe[li];
+        const z = erg[name];
+        const u = urteil(name, z);
+        const gruen = t ? !u.ok && nennt[li].test(u.grund) : u.ok;
+        if (!gruen) rot++;
+        console.log(`  ${u.ok ? "✅" : "❌"} ${name.padEnd(9)}${t ? ` [Täter ${t}]` : ""} ${JSON.stringify(z)}`);
+        if (!u.ok) console.log(`       ↳ ${u.grund}`);
+        if (t)
+            console.log(
+                `       ${
+                    gruen
+                        ? "✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn"
+                        : u.ok
+                          ? "❌ der Täter bleibt unsichtbar — die Linse ist blind"
+                          : `❌ rot, aber nicht aus seinem Grund (${nennt[li]}) — die Linse nennt ihn nicht`
+                }`
+            );
     });
     if (fehler.length) {
         console.log(`\n  ❌ Seiten-Fehler: ${fehler.slice(0, 3).join(" | ")}`);
         rot++;
     }
-    console.log(`\n  (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
+    const je = Object.entries(dauer || {}).map(([p, s]) => `${p}: ${Math.round(s)}`);
+    console.log(
+        `\n  (${((Date.now() - t0) / 1000).toFixed(0)} s)${je.length ? ` — Sekunden je Probe: ${je.join(", ")}` : ""}`
+    );
     if (rot) {
         console.log(
             SELBST
@@ -249,8 +245,8 @@ async function imFenster(laeufe) {
     }
     console.log(
         SELBST
-            ? `\n✅ SELBST-TEST GRÜN — jeder Täter macht seine Probe rot und wird beim Namen genannt (${zeilen.length} Täter).`
-            : `\n✅ GRÜN — ${zeilen.map((z) => z.name).join(" · ")}`
+            ? `\n✅ SELBST-TEST GRÜN — jeder Täter macht seine Probe rot und wird beim Namen genannt (${laeufe.length} Täter).`
+            : `\n✅ GRÜN — ${gewaehlt.join(" · ")}`
     );
     process.exit(0);
 })().catch((e) => {

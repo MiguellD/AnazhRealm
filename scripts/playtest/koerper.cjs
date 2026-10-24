@@ -91,22 +91,22 @@ async function checkBandV1764ForgeAvatar(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-    check("V17.64 S5: forgeAvatar verlangt role=soul (sonst blueprint_not_soul)", res.forgeAvatarRequiresSoul);
+    check("S5: forgeAvatar verlangt role=soul (sonst blueprint_not_soul)", res.forgeAvatarRequiresSoul);
     check(
-        "V17.64 S5: forgeAvatar in pfad OHNE Material → abgelehnt (kein Koerper geformt, Seele bleibt)",
+        "S5: forgeAvatar in pfad OHNE Material → abgelehnt (kein Koerper geformt, Seele bleibt)",
         res.pfadAvatarRejectsWithoutMaterial
     );
     check(
-        "V17.64 S5: KONSUM — forgeAvatar in pfad MIT Material → formt (zahlt + verkoerpert + friert ein)",
+        "S5: KONSUM — forgeAvatar in pfad MIT Material → formt (zahlt + verkoerpert + friert ein)",
         res.pfadAvatarForges
     );
     check(
-        "V17.64 S5: GEBRAUCH frei — eine geformte Seele verkoerpern kostet nichts (leeres Inventar)",
+        "S5: GEBRAUCH frei — eine geformte Seele verkoerpern kostet nichts (leeres Inventar)",
         res.embodyMadeFree
     );
-    check("V17.64 S5: schoepfer verkoerpert frei (ohne Material)", res.schoepferEmbodiesFree);
+    check("S5: schoepfer verkoerpert frei (ohne Material)", res.schoepferEmbodiesFree);
     check(
-        "V17.64 S5: fertigeBlueprint routet soul → forgeAvatar (formt + verkoerpert, nicht in die Hand)",
+        "S5: fertigeBlueprint routet soul → forgeAvatar (formt + verkoerpert, nicht in die Hand)",
         res.fertigeRoutesSoul
     );
 }
@@ -295,7 +295,7 @@ async function checkBandRing5Soul(ctx) {
         const statusEl = document.getElementById("status-soul");
         out.statusBarShowsLabel = statusEl && /Wolf/.test(statusEl.textContent || "");
 
-        // V2-Animation: die Beine des Menschen gehen nach dem EINEN Gang-Gesetz (K07). Der Schritt kommt aus dem EINEN
+        // V2-Animation: die Beine des Menschen gehen nach dem EINEN Gang-Gesetz. Der Schritt kommt aus dem EINEN
         // Gang-Tick (`_gaitTick`, derselbe Chokepoint wie Peer und Bewohner): 1 s Gehen mit 1,15 m/s, die Beine müssen
         // ihre rotation.x ändern. Ohne Schritt (kein gait) schwingt seit K07 kein Bein mehr — der Sinus um einen 3,4-m-
         // Schritt fiel; der direkte Aufruf ohne gait maß diesen Zwilling.
@@ -565,7 +565,7 @@ async function checkBandRing5Soul(ctx) {
     }
     if (cameraPitch) {
         // Mit height=2.0 und dist=6: pitch=+30° → cam-player = 2-3 = -1.
-        // pitch=-30° → cam-player = 2+3 = 5. Der Deckel greift am sichtbaren Boden + r (K06).
+        // pitch=-30° → cam-player = 2+3 = 5. Der Deckel greift am sichtbaren Boden + r.
         check(
             "Ring 5 V2-Prep: Pitch invertiert — Maus hoch senkt Kamera (3rd)",
             cameraPitch.upDelta < 2,
@@ -739,7 +739,7 @@ async function checkBandM3RittVollendet(ctx) {
 // W-F Fluss (Q7-Gestalt): der EINE Spiegel des Gesetzes (_atlasWaterLevelAt — der Fluss-Spiegel stromab nie
 // steigend, quer waagrecht, `_hydroRiverSpiegel`) mit seinen Konsumenten (Zell-Sheet · Körper · Boot-Schwimmen); die
 // geglättete Lauf-Fläche (_waterRunSurfaceAt) fiel mit dem monotonen Spiegel. Flow-Kräuselung im Shader,
-// Substanz-emergentes Schwimmen. Headless: Verdrahtung + Boot-Schwimmen.
+// Headless: Verdrahtung (das Schwimmen der Werke nach der Stoff-Zeile misst gate:fahr-leben --koerper, physik K1).
 // (checkBandWEFrequenzband unten: EIN Empfänger _applySubstanceResponse, Profile aus der Substanz
 // via _substanceResponseProfile; das additive Licht-Band fiel mit F6.)
 async function checkBandWFFluss(ctx) {
@@ -769,63 +769,11 @@ async function checkBandWFFluss(ctx) {
                 }
         }
         out.dryPassthrough = !!dryW && r._atlasWaterLevelAt(dryW.x, dryW.z, -Infinity) === -Infinity;
-        // (5) das BOOT-SCHWIMMEN ist Substanz-emergent: holz schwimmt, stein/
-        // eisen sinken (volumen-gewichtete Mittel-Dichte < 0.55). Behavioral.
-        const mkBoat = (mat) => ({
-            name: `__wf_boot_${mat}`,
-            parts: [
-                { shape: "box", material: mat, size: { x: 3, y: 0.6, z: 1.4 }, position: { x: 0, y: 0, z: 0 } },
-                { shape: "box", material: mat, size: { x: 0.4, y: 0.4, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
-            ],
-            connections: [],
-        });
-        const probeFloat = (mat) => {
-            const bp = mkBoat(mat);
-            r.state.blueprints[bp.name] = bp;
-            const prof = r._vehicleProfile({ type: bp.name, scale: 1, position: { x: 0, y: 0, z: 0 } });
-            delete r.state.blueprints[bp.name];
-            return prof ? prof.floats : null;
-        };
-        out.holzFloats = probeFloat("holz");
-        out.steinFloats = probeFloat("stein");
-        out.eisenFloats = probeFloat("eisen");
-        // (6) der Studio-Wagen liegt nach der Hülle des Fahrzeug-Kerns im Wasser (D10: exportDrive.huelle.dichte), nie nach
-        // dem Holzkarren-Spender, den sein Bauplan klont (bis 8f09227d schwamm der GT wie ein Holz-Boot).
-        const pGt = r._vehicleProfile({ type: "fahrzeug_gt", scale: 1, position: { x: 0, y: 0, z: 0 } });
-        out.gtFloats = pGt ? pGt.floats : null;
-        // (7) der Boden des Fahr-Schritts legt das Gefährt über die EINE Wahrheit am Körper mit seiner Gestalt ins Wasser
-        // (D4/D10): am See trägt das Holz-Boot genau Spiegel minus Wasserlinie, das Stein-Boot fährt auf dem Werk-Boden
-        // (den Ritt im Sim-Schritt beweist gate:wasser-leben am treibenden Boot).
-        const o = await window.__wasserOrt("see");
-        const boot = (mat) => {
-            const bp = mkBoat(mat);
-            r.state.blueprints[bp.name] = bp;
-            const e = r.spawnArchitecture(bp.name, { x: o.x, y: r.getTerrainHeightAt(o.x, o.z), z: o.z }, { silent: true, precise: true });
-            try {
-                const g = r._fahrzeugGestalt(e), w = r._werkBoden(e)(o.x, o.z), s = r._koerperWasser(o.x, o.z, w);
-                return { g, w, s, f: r._fahrBoden(e)(o.x, o.z) };
-            } finally {
-                if (e) r.removeArchitecture(e);
-                delete r.state.blueprints[bp.name];
-            }
-        };
-        const holz = o ? boot("holz") : null, stein = o ? boot("stein") : null;
-        out.tickFloatConsumed =
-            !!holz && holz.g.linie < Infinity && holz.s - holz.w > holz.g.linie && Math.abs(holz.f - (holz.s - holz.g.linie)) < 1e-6 &&
-            !!stein && stein.f === stein.w;
         return out;
     });
     check(
         "W-F Fluss: der EINE Spiegel-Leser _atlasWaterLevelAt lebt + erfindet kein Wasser",
         res.runExists && res.dryPassthrough
-    );
-    check(
-        "W-F Fluss BOOT: Schwimmen ist Substanz-emergent (holz schwimmt, stein/eisen sinken), der Studio-Wagen liest die Hülle des Kerns (GT sinkt) + der Fahr-Boden trägt das Holz-Boot auf seiner Wasserlinie",
-        res.holzFloats === true &&
-            res.steinFloats === false &&
-            res.eisenFloats === false &&
-            res.gtFloats === false &&
-            res.tickFloatConsumed
     );
 }
 
@@ -934,27 +882,27 @@ async function checkBandV18195AvatarSizeHp(ctx) {
     });
 
     check(
-        `V18.195 (S2) BUILT-IN NEUTRAL: human-Soul sizeFactor=1 → mul=1.0 (Δ ${res.humanNeutralDelta && res.humanNeutralDelta.toFixed(4)}, kein Balance-Bruch)`,
+        `(S2) BUILT-IN NEUTRAL: human-Soul sizeFactor=1 → mul=1.0 (Δ ${res.humanNeutralDelta && res.humanNeutralDelta.toFixed(4)}, kein Balance-Bruch)`,
         res.humanNeutralOk === true
     );
     check(
-        `V18.195 (S3a) CUSTOM SMALL: sizeFactor=${res.smallSizeFactor && res.smallSizeFactor.toFixed(3)} → hpMax folgt Formel sqrt(sizeFactor)`,
+        `(S3a) CUSTOM SMALL: sizeFactor=${res.smallSizeFactor && res.smallSizeFactor.toFixed(3)} → hpMax folgt Formel sqrt(sizeFactor)`,
         res.smallMatchesFormula === true
     );
     check(
-        `V18.195 (S3b) CUSTOM SMALL: kleiner Avatar hat weniger HP als die Tag-Direkt-Rechnung (Robustheit aus Substanz)`,
+        `(S3b) CUSTOM SMALL: kleiner Avatar hat weniger HP als die Tag-Direkt-Rechnung (Robustheit aus Substanz)`,
         res.smallHasLessHpThanDirect === true
     );
     check(
-        `V18.195 (S4a) CUSTOM LARGE: sizeFactor=${res.largeSizeFactor && res.largeSizeFactor.toFixed(3)} → hpMax > direkt (großer Avatar robuster)`,
+        `(S4a) CUSTOM LARGE: sizeFactor=${res.largeSizeFactor && res.largeSizeFactor.toFixed(3)} → hpMax > direkt (großer Avatar robuster)`,
         res.largeHasMoreHpThanDirect === true
     );
     check(
-        `V18.195 (S4b) small < large hpMax (kleiner Avatar ${res.smallHpMax && res.smallHpMax.toFixed(1)} < großer ${res.largeHpMax && res.largeHpMax.toFixed(1)})`,
+        `(S4b) small < large hpMax (kleiner Avatar ${res.smallHpMax && res.smallHpMax.toFixed(1)} < großer ${res.largeHpMax && res.largeHpMax.toFixed(1)})`,
         res.smallLessThanLarge === true
     );
     check(
-        "V18.195 (S6) Stamina folgt derselben Skalierung wie HP (sqrt(sizeFactor))",
+        "(S6) Stamina folgt derselben Skalierung wie HP (sqrt(sizeFactor))",
         res.staminaMatchesFormula === true
     );
 }
@@ -1038,20 +986,20 @@ async function checkBandV18196ManaSymmetry(ctx) {
     });
 
     check(
-        `V18.196 (M2) Formel-Werte: base 50, magieleitung 1→150, +resoniert 1→180 (gemessen ${res.manaBase}/${res.manaFullMag}/${res.manaFullBoth})`,
+        `(M2) Formel-Werte: base 50, magieleitung 1→150, +resoniert 1→180 (gemessen ${res.manaBase}/${res.manaFullMag}/${res.manaFullBoth})`,
         res.manaFormulaOk === true
     );
-    check("V18.196 (M4) computePlayerStats gibt stats.manaMax > 0", res.computeReturnsMana === true);
+    check("(M4) computePlayerStats gibt stats.manaMax > 0", res.computeReturnsMana === true);
     check(
-        `V18.196 (M5/NULL) Wolf-Körper hat mehr Mana als Mensch (${res.phoenixManaMax && res.phoenixManaMax.toFixed(1)} > ${res.humanManaMax && res.humanManaMax.toFixed(1)} — magieleitung emergent)`,
+        `(M5/NULL) Wolf-Körper hat mehr Mana als Mensch (${res.phoenixManaMax && res.phoenixManaMax.toFixed(1)} > ${res.humanManaMax && res.humanManaMax.toFixed(1)} — magieleitung emergent)`,
         res.phoenixMoreMana === true
     );
-    check("V18.196 (M6a) recomputePlayerStats setzt state.player.mana", res.statePlayerMana === true);
-    check("V18.196 (M6b) recomputePlayerStats setzt state.player.manaMax > 0", res.statePlayerManaMax === true);
-    check("V18.196 (M6c) mana = manaMax nach recompute (frischer Spawn voll)", res.manaAtMaxAfterRecompute === true);
-    check("V18.196 (M7a) Game-Loop-Regen wirkt (mana steigt nach 60 Ticks)", res.regenRunsInLoop === true);
+    check("(M6a) recomputePlayerStats setzt state.player.mana", res.statePlayerMana === true);
+    check("(M6b) recomputePlayerStats setzt state.player.manaMax > 0", res.statePlayerManaMax === true);
+    check("(M6c) mana = manaMax nach recompute (frischer Spawn voll)", res.manaAtMaxAfterRecompute === true);
+    check("(M7a) Game-Loop-Regen wirkt (mana steigt nach 60 Ticks)", res.regenRunsInLoop === true);
     check(
-        `V18.196 (M7b) Regen bleibt ≤ manaMax (mana ${res.regenAfter && res.regenAfter.toFixed(1)} ≤ max ${res.regenMaxAfter && res.regenMaxAfter.toFixed(1)})`,
+        `(M7b) Regen bleibt ≤ manaMax (mana ${res.regenAfter && res.regenAfter.toFixed(1)} ≤ max ${res.regenMaxAfter && res.regenMaxAfter.toFixed(1)})`,
         res.regenStaysBelowOrAtMax === true
     );
 }
@@ -1128,21 +1076,21 @@ async function checkBandV18201ManaKonsum(ctx) {
         return out;
     });
 
-    check("V18.201 (K2a) canPay: 50 ≤ 60 → true", res.canPayEnough === true);
-    check("V18.201 (K2b) canPay: 70 > 60 → false", res.canPayInsufficient === true);
-    check("V18.201 (K2c) canPay: 0 → true (no-op)", res.canPayZero === true);
-    check("V18.201 (K2d) canPay: negativ → true (no-op)", res.canPayNegative === true);
-    check("V18.201 (K3a) drainMana success returns true", res.drainSuccessReturnsTrue === true);
-    check("V18.201 (K3b) drainMana reduces mana exact (60-20=40)", res.drainReducesMana === true);
-    check("V18.201 (K4a) drainMana insufficient returns false", res.drainFailReturnsFalse === true);
-    check("V18.201 (K4b) drainMana insufficient leaves mana unchanged (atomar)", res.drainFailLeavesUnchanged === true);
-    check("V18.201 (K5) drainMana exact (5-5=0, kein Unter-Null)", res.drainExactlyDepletes === true);
-    check("V18.201 (K6a) Mode-Gate schöpfer: drainMana success ohne Drain", res.schoepferDrainSucceeds === true);
-    check("V18.201 (K6b) Mode-Gate schöpfer: mana unverändert", res.schoepferManaUnchanged === true);
-    check("V18.201 (K6c) Mode-Gate schöpfer: canPay immer true", res.schoepferCanPay === true);
-    check("V18.201 (K7) Anti-Scope §3: KEIN drain_mana/consume_mana DSL-Op (analog W5)", res.noDslDrainMana === true);
+    check("(K2a) canPay: 50 ≤ 60 → true", res.canPayEnough === true);
+    check("(K2b) canPay: 70 > 60 → false", res.canPayInsufficient === true);
+    check("(K2c) canPay: 0 → true (no-op)", res.canPayZero === true);
+    check("(K2d) canPay: negativ → true (no-op)", res.canPayNegative === true);
+    check("(K3a) drainMana success returns true", res.drainSuccessReturnsTrue === true);
+    check("(K3b) drainMana reduces mana exact (60-20=40)", res.drainReducesMana === true);
+    check("(K4a) drainMana insufficient returns false", res.drainFailReturnsFalse === true);
+    check("(K4b) drainMana insufficient leaves mana unchanged (atomar)", res.drainFailLeavesUnchanged === true);
+    check("(K5) drainMana exact (5-5=0, kein Unter-Null)", res.drainExactlyDepletes === true);
+    check("(K6a) Mode-Gate schöpfer: drainMana success ohne Drain", res.schoepferDrainSucceeds === true);
+    check("(K6b) Mode-Gate schöpfer: mana unverändert", res.schoepferManaUnchanged === true);
+    check("(K6c) Mode-Gate schöpfer: canPay immer true", res.schoepferCanPay === true);
+    check("(K7) Anti-Scope §3: KEIN drain_mana/consume_mana DSL-Op (analog W5)", res.noDslDrainMana === true);
     check(
-        "V18.201 (K8) opts.mode overschreibt getGameMode (für unit-tests + multi-context)",
+        "(K8) opts.mode overschreibt getGameMode (für unit-tests + multi-context)",
         res.optsModeOverride === true
     );
 }
@@ -1244,17 +1192,17 @@ async function checkBandV18206SpeedTrade(ctx) {
     });
 
     check(
-        `V18.206 (S2/S5a) Large (sizeFactor ${res.largeSizeFactor && res.largeSizeFactor.toFixed(2)}) langsamer als Small (sizeFactor ${res.smallSizeFactor && res.smallSizeFactor.toFixed(2)}): ${res.largeSpeed && res.largeSpeed.toFixed(2)} < ${res.smallSpeed && res.smallSpeed.toFixed(2)}`,
+        `(S2/S5a) Large (sizeFactor ${res.largeSizeFactor && res.largeSizeFactor.toFixed(2)}) langsamer als Small (sizeFactor ${res.smallSizeFactor && res.smallSizeFactor.toFixed(2)}): ${res.largeSpeed && res.largeSpeed.toFixed(2)} < ${res.smallSpeed && res.smallSpeed.toFixed(2)}`,
         res.largeSlower === true
     );
-    check("V18.206 (S5b) Large hat niedrigeren jumpPower als Small", res.largeJumpLower === true);
+    check("(S5b) Large hat niedrigeren jumpPower als Small", res.largeJumpLower === true);
     // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal (war „Floor speed ≥ 2").
     check(
-        `V18.206 (S6a) Floor speed ≥ (2/7)·Gesetz-base (Floor ${res.speedFloor && res.speedFloor.toFixed(3)}, gemessen large=${res.largeSpeed && res.largeSpeed.toFixed(2)})`,
+        `(S6a) Floor speed ≥ (2/7)·Gesetz-base (Floor ${res.speedFloor && res.speedFloor.toFixed(3)}, gemessen large=${res.largeSpeed && res.largeSpeed.toFixed(2)})`,
         res.speedFloorRespected === true
     );
     check(
-        `V18.206 (S6b) Floor attackSpeed ≥ 0.25 (gemessen large=${res.largeAttackSpeed && res.largeAttackSpeed.toFixed(2)})`,
+        `(S6b) Floor attackSpeed ≥ 0.25 (gemessen large=${res.largeAttackSpeed && res.largeAttackSpeed.toFixed(2)})`,
         res.attackSpeedFloorRespected === true
     );
 }
@@ -1308,7 +1256,7 @@ async function checkBandKonvergenzTierBaum(ctx) {
             out.arten[art] = a;
         }
         // (3) CONSUM — der Chokepoint geht den Gang: das KNIE faltet (die Lab-Mathe legt das Leben in die
-        // Unter-Gelenke) und das Gegenbein schwingt. Das Gang-Gesetz (Welle 5) misst die Geschwindigkeit aus dem WEG
+        // Unter-Gelenke) und das Gegenbein schwingt. Das Gang-Gesetz misst die Geschwindigkeit aus dem WEG
         // des Leibs: der Leib läuft wie im Spiel (1,6 m/s, 60 Takte je Sekunde, 1 s) in seine Blickrichtung (Blick +x,
         // Lauf +x — wie gate:tier-gang), gewertet wird die zweite Hälfte; ein STEHENDER Leib (derselbe Aufruf ohne Weg)
         // faltet und schwingt nicht. Die Takt-Lage der Beine richtet gate:tier-gang am Pfoten-Schlupf.
@@ -1764,7 +1712,7 @@ async function checkBandKoerperBewegung(ctx) {
             o.checks.pitchPur = p30 < 0 && Math.abs(Math.abs(o.pitchPurDeg) - 30) <= 5;
             o.checks.pitchNaNWand = r._slopePitch(NaN, 0, 2) === 0 && r._slopePitch(1, 0, 0) === 0;
         }
-        // ── Das Gang-Gesetz pur (K07): ω = 2π·v/Λ, Stand und NaN ⇒ 0 ──
+        // ── Das Gang-Gesetz pur: ω = 2π·v/Λ, Stand und NaN ⇒ 0 ──
         {
             const rg = s.playerMesh && s.playerMesh.userData && s.playerMesh.userData.rig;
             const g3 = rg ? r._gaitGesetz(rg, 3) : null;
@@ -1951,7 +1899,7 @@ async function checkBandKoerperBewegung(ctx) {
             if (!c) return { error: "Tier-Spawn fehlgeschlagen" };
             const savedSurf = r._koerperBodenUnter;
             r._koerperBodenUnter = (x, _y, z) => ebene(x, z);
-            // der Ruf liest seinen ersten Grund selbst (Leben-Schau 2) — der gestubbte Boden gilt ab jetzt
+            // der Ruf liest seinen ersten Grund selbst — der gestubbte Boden gilt ab jetzt
             delete c.userData.cachedGroundY;
             // gepinnt: Ort UND Gier (bergauf, +z) — der Nick misst den Hang längs des Leibs; die Gier des Wanderns
             // drehte ihn quer (main 7dd944e6: +34,4°, talwärts; 832b4cf4: −16,2° bei ~60° Gier — kein Hang-Fehler)

@@ -470,7 +470,7 @@ Komponenten-SÄTZE, keine Klassen):
   der Wirt fährt damit FAHRZEUG-EIGEN (W/S entlang der Gier, Grip frisst
   Quer-Slip, Shift = Handbremse); ohne `lenkung` byte-alt richtungs-folgend.
 - **`ARENA` (V18.483, schmiede-core, Namensraum-Export):** das Arena-Gefühl
-  als Daten (`schwung { dauerProSqrtI min max hand } · gefuehl { freezeMin/Max
+  als Daten (`schwung { dauerProSqrtIKg min max hand } · gefuehl { freezeMin/Max
 dipMin/Max keRefJ } · bogen { mArrow auszugSec fovZug fovRuhe
 minAuszugFrac }`) — Leser `AnazhRealm._arenaGesetz()`, fail-closed
   (Kern-Pflicht: `ARENA_FALLBACK` + `SWING_/BOGEN_LAWS` sind
@@ -505,6 +505,10 @@ radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
   (`schlagpunkt` nur bei voller Wirkung, sonst die Seite: `griffnah` · `hand` · `spitze`). `buildPfeil()` (rein
   additiv) ist die EINE Gestalt des Pfeils (Schaft, Bodkin-Spitze, Nocke, drei Federn; die Albedo im Vertex nach dem
   FARB-GESETZ, `PFEIL` trägt Masse und Paletten-Hexe) — die Shell und der Wirt (`_pfeilVorlage`) bauen keinen eigenen.
+  halten.K3 Staffel 2 (rein additiv): `werkStoff(rezeptId, ov?)` ist der Stoff des Teils, das am Ziel arbeitet (der Werkstoff
+  der Gestalt, Holz für Keule und Bogen) — der Wirt zehrt nach der Härte seiner Stoff-Zeile (`_wearPerStrike`);
+  `bogenEnergie(rezeptId, ov?)` ist die Pfeil-Energie der präparierten Gestalt samt Prägung — der Schuss des Wirts liest sie
+  statt der Aufgabe des Rezepts, `ableitenBogen` rechnet über dieselbe `bogenArbeit` (byte-gleich).
 - **`VERHALTEN` (V18.483, tetrapoda-core, Namensraum-Export):** die
   Verhaltens-Seele (`aktionen { <name>: { dauer profil dreh? kopfSweep?
 rollAmp/Rate? hop? tempo? } } · stimmung { <lage>: { aktionen[] alle[min,max] } }`)
@@ -640,9 +644,13 @@ Wirts-Zeilen zu `AnazhRealm.KIND_POLICY` — jeder Leser (Register, Werkstatt, W
 Tafel, keine Zeile im Wirt. Disjunkt: eine Art mit Wirts-Zeile (die Verben des Wirts — grown, role, handAxis, donorTool, synchron vor
 dem Buch für den Lockstep: tree · shrub · vehicle · gate · weapon · haus) behält sie, die Buch-Zeile fällt laut. Fail-closed je
 Zeile (G4.2): Art-Name, Präfix, Substanz — eine kaputte Zeile registriert nichts. Nur `prefix` und `substanz` reisen; eine
-Buch-Zeile trägt keine Wirts-Verben (grown · builtIn falsch, placeExtra null — die Platzierung sagt `fx.place`, B3).
+Buch-Zeile trägt keine Wirts-Verben (grown · builtIn falsch, placeExtra null — die Platzierung sagt `fx.place`, B3). Der Prompt
+der KI nennt die Wörter einer Buch-Art unter ihrem `substanz.label` (`_studioWordsForPrompt`).
 Beweis: `gate:nervensystem` E — das neue Gesetzbuch `worlds/neuntes-buch/stele-core.js` (die Stele, kein Spiel-Manifest) steht über
-die Werkstatt in der Welt, mit Kosten-Leiste, Stufen-Kette und Speicher-Rundlauf, und der Wirt nennt die Art nie beim Namen.
+die Werkstatt in der Welt, mit Kosten-Leiste, Stufen-Kette und Speicher-Rundlauf, und der Wirt nennt die Art nie beim Namen; E2 —
+dasselbe Werk auf jedem Weg mit dem Bau-Hash der gezeigten Stufe: KI-Satz (`spawn_studio` mit Reglern über `_studioStampFor`),
+Foundry (`build-asset` L0–L2), P2P (der Mitspieler baut es byte-gleich), und der Atlas (`npm run atlas -- --find neuntes`)
+nennt das Buch als die EINE Quelle der Art.
 
 ## §4 Die Empfänger-Gesetze (Taille-Erbe)
 
@@ -770,7 +778,7 @@ rein additiv): **`TUER_GESETZ { offen }`** = der Flügel-Öffnungswinkel (rad)
 — Shell (`DOOR_OPEN`) UND Wirt (`AnazhRealm._tuerOffenRad()`, Fallback
 `TOR_FLUEGEL_OFFEN`) lesen die EINE Quelle (der 1.95-Zahlen-Zwilling ist
 geschlossen). `schmiede-core.js` (W-A4a, ε —
-GEBAUT: B1 21 Gattungen `kind:"weapon"` [Waffen UND Werkzeuge, die
+GEBAUT: B1 22 Gattungen `kind:"weapon"` [Waffen UND Werkzeuge, die
 tool:true-Marke reist in fx] · B2 `buildInstance` + `kindStages:{weapon:[0]}` +
 Goldens `spec/asset-contract/v5/` (`gate:schmiede-contract`, seed-invariant
 cv:5) · B4 PARAMS (PARAMS_BLADE+PARAMS_IMPACT, def aus dem Lab-Startzustand) ·
@@ -922,8 +930,8 @@ kindStages` auf seinem Namensraum tragen. Die Zeile deklariert die
 **Stand der MESHFREI-Kerne:** `klang-core.js` (`__klangCore` — B1 22 Genres ·
 B4 bpm+6 DNA-Dials · fx.klang) · `koerper-core.js` (`__koerperCore` — B1
 `mensch` · B4 8 Morph-Dials · fx.gestalt + fx.motion + **fx.bewegung**
-[schwimmen · parkour · slidePose · speed/jump/stamina, §8.2+] · `LEIB { dichteKgM3 armAnteil }` — die Masse des
-Menschen aus dem Volumen seiner Haut; `armAnteil` (Welle LF kampf, rein additiv: 5,0 % nach Dempster) ist der Arm samt
+[schwimmen · parkour · slidePose · speed/jump/stamina, §8.2+] · `LEIB { dichteKgM3 armAnteil }` — die Dichte
+des Leibs (die Zeile leib der Stoff-Zeile des Wirts, physik K1: Masse = das Volumen des Leibs aus dem Ofen × ρ); `armAnteil` (Welle LF kampf, rein additiv: 5,0 % nach Dempster) ist der Arm samt
 Hand, mit dem die Ausdauer einer Maus-Arm-Aktion wächst, (m_Arm + m_Gerät) / m_Arm, Wirt `_mausAusdauer`) ·
 `tetrapoda-core.js` (`__tetrapodaCore` — B1 4 Gattungen · B4 5 allometrische
 Dials · fx.motion + **VERHALTEN** [12 Aktionen · 6 Stimmungen, B6]).
@@ -962,10 +970,11 @@ K16: Großform-Splines `grossform` an den Knoten `OFFSET_KNOTEN`/`RELIEF_KNOTEN`
 je Lage über `landformRegler` —, das Flussnetz mit den Kanten `NETZ_KANTE`, seinen Läufen `flussLaeufe` und seinen Senken als
 den benannten Seen `benannteSeen`, die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, der Mäander `MAEANDER`, das
 Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die Schneegrenze `SCHNEE`/`schnee`, die
+Temperatur `TEMPERATUR`/`temperatur` (stoffe.K3: Höhe × Saison × Uhr, mit der Trägheit eines Stoffs — das Eis liest sie), die
 Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DIE HYDROSPHÄRE (Karte hydro-faden): das
-Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, Kanal-Index, Wasser-Feld; `H` das Gesetz des
-Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet sie), die Bett-Tiefe `flussTiefe` und das Wasser-Band
-`hydroBand`. DER FELS-STOFF (K17): das Aussehen
+Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, der gepackte Kanal `kanal` mit
+`KANAL_FELDER` Zahlen je Segment, Wasser-Feld; `H` das Gesetz des Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet
+sie), die Bett-Tiefe `flussTiefe` und das Wasser-Band `hydroBand`. DER FELS-STOFF (K17): das Aussehen
 des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden je Chunk im Worker), `felsNetz` (die Gestalten),
 `felsBasis`, `felsFarbe`, `felsKruemmung`, `felsLage`, `felsMittel`/`felsMittelWerte` (die Ferne), `felsFein` (der
 Detail-Term des Shaders) mit seiner Welle `felsWelle` (K17-3: der Shader liest sie EINMAL im Rausch-Atlas und reicht sie
@@ -986,13 +995,15 @@ Plan im Foundry-Faden, Kanal `grund-plan` → `grundPlan`) mit
 seinem Grundriss-Leser `erdbauGrund`, dem hohlen Keller `erdbauHohl` (das Feld des Wirts, je Spalte gefragt über `erdbauKeller`) und dem Schnitt des gezeichneten
 Bodens `erdbauSchnitt` (Voxel-Faden und Sync-Bau), der Lese-Kontext eines Orts `ortCtx` (Höhe samt Erdbau, Fläche, Welt-Wasser — EIN ctx für Wirt,
 Fachwerk-Studio und Linse), die Lage einer Welt ohne Wirt `LAGE_GRUND`/`lageGrund`, die Hang-Suche eines Orts `hangOrt` und das
-Höhen-Raster der Trasse `hoehenRaster` (siedlung.K3: der Grund im Rahmen fachwerk `trasseRahmen` um den Ort, dem die Gassen folgen).
+Höhen-Raster der Trasse `hoehenRaster` (siedlung.K3: der Grund im Rahmen fachwerk `trasseRahmen` um den Ort, dem die Gassen folgen). DER WIND AM GELÄNDE
+(wetter.K5): der Faktor `windForm` mit seinem Gesetz `WIND_FORM` — Lee hinter dem Kamm, Tal-Düse zwischen zwei Flanken an der Höhe
+des Wirts; ihn liest der EINE Wind der Welt (`_windAt`).
 DIE FORM DES EDITS (F2a „hoch bauen", editform-kern): jeder Spieler-Edit ist die Säule `editForm` seines Maßes `EDIT_FORM` —
 der Punkt `mitEdits`, das Gitter `editsImGitter`, die Reichweite `editReich` (Edit-Karte, Weckung, Fern-Ring), die Krone
 `editKrone` (die Garantie-Luft der Flächen-Probe) und das Band des
 Gitters `bandOben`/`bandUnten`, das die Edits deckt (`bandUmEdits`); Stamm und voxel-worker rufen dieselben Funktionen.
 DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
 Geladen vom Stamm (vor `stamm/`), vom Terrain-Labor (vor `foundry-core.js`), vom voxel-worker (`importScripts` mit `?v=`),
-vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, der Feld-Zeichner und der Fern-Ring `hoehe`, die
+vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, das Eis `temperatur`, der Feld-Zeichner und der Fern-Ring `hoehe`, die
 Zahl-Leiste und die Gelände-Wände `MESSUNG`); die Zwillings-Wand in `gate:altlasten` sucht sie als Muster in jeder
 Wurzel-Datei und jedem Skript.

@@ -29,23 +29,57 @@ class AnazhRealm_kampf {
     }
 
     // ═══ KAMPF-GEFÜHL — DIE EINE SCHWUNG-DAUER-QUELLE ═══
-    // Dauer = dauerProSqrtI · √I (I = Σ m·r² um den Griff, aus _swingDynamics), geklemmt [min, max].
+    // Dauer = dauerProSqrtIKg · √I (I in kg·m² um den Griff), geklemmt [min, max] — für JEDES Gerät nach EINER Formel:
+    // die Studio-Klinge mit der Trägheit ihrer Messung (kampfMasze), das Eigenwerk mit der Trägheit seiner Gestalt in der
+    // Hand (`_geraetMasze`: die Teile × ρ der Stoff-Zeile in der wahren Größe). Vorher schwang das Eigenwerk eine
+    // Tag-Trägheit (Volumen × dichte [0,1]) unter einer eigenen Konstante dauerProSqrtI — eine zweite Einheit neben dem Kern.
     // gate:kampf-gefuehl hält das Verhältnis zweier Waffen auf √(I2/I1) ± 5 %.
     _swingDauerFuerBlueprint(bp) {
-        // ARENA-GEFÜHL — die Schwung-KONSTANTEN wohnen im schmiede-Gesetzbuch
-        // (ARENA.schwung, N6.6-Revision: EIN Regler für Arena UND Welt); die
-        // FORMEL bleibt Wirts-Gesetz (Ω-Φ4: dauer = dauerProSqrtI·√I, geklemmt).
         const S = AnazhRealm._arenaGesetz().schwung;
-        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return S.handDauerSec;
-        // Studio-Klingen schwingen ihre GEMESSENE Trägheit (kampfMasze, kg·m² → dauerProSqrtIKg);
-        // User-Eigenwerke behalten Ω-Φ4 (deren einzige Quelle — anderer Definitionsbereich, kein Zwilling).
-        const km = this._schmiedeKampfMasze(bp);
-        if (km && km.traegheit > 1e-9 && Number.isFinite(S.dauerProSqrtIKg)) {
-            return Math.min(S.maxDauerSec, Math.max(S.minDauerSec, S.dauerProSqrtIKg * Math.sqrt(km.traegheit)));
-        }
-        const I = this._swingDynamics(bp).swingInertia;
-        if (!(I > 1e-9)) return S.handDauerSec;
-        return Math.min(S.maxDauerSec, Math.max(S.minDauerSec, S.dauerProSqrtI * Math.sqrt(I)));
+        if (!Number.isFinite(S.dauerProSqrtIKg))
+            return AnazhRealm._kernPflichtBruch("schmiede:ARENA.schwung.dauerProSqrtIKg");
+        const km = this._geraetMasze(bp);
+        if (!km || !(km.traegheit > 1e-9)) return S.handDauerSec;
+        return Math.min(S.maxDauerSec, Math.max(S.minDauerSec, S.dauerProSqrtIKg * Math.sqrt(km.traegheit)));
+    }
+
+    // DIE MASZE DES GEHALTENEN (kg · kg·m² · m): die Messung der Schmiede (kampfMasze) für ihre Werke, sonst die Gestalt
+    // (`_eigenwerkMasze`); die Faust null. Die Leser: Schwung-Dauer, Ausdauer des Arms.
+    _geraetMasze(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return null;
+        return this._schmiedeKampfMasze(bp) || this._eigenwerkMasze(bp);
+    }
+
+    // DIE SPANNE EINES BAUPLANS (Bauplan-Einheiten): die längste Achse der Hülle seiner Teile (`_teileHuelle`, dieselbe Hülle
+    // wie der Kontakt).
+    _geraetSpanne(bp) {
+        const h = this._teileHuelle(bp);
+        return h ? Math.max(h.x1 - h.x0, h.y1 - h.y0, h.z1 - h.z0) : 0;
+    }
+
+    // DIE WAHRE GRÖSSE EINES EIGENWERKS (m je Bauplan-Einheit, W5): seine Spanne auf die Werkzeug-Spanne der Hand
+    // (HELD_MESH.targetSpanM), geklemmt [minScale, maxScale] — die Skala, mit der die Hand es ZEIGT (`applyPlayerSoul`)
+    // und mit der es WIEGT (`_eigenwerkMasze`).
+    _geraetWeltSkala(bp) {
+        const cfg = AnazhRealm.HELD_MESH;
+        const span = this._geraetSpanne(bp);
+        return span > 1e-4 ? Math.max(cfg.minScale, Math.min(cfg.maxScale, cfg.targetSpanM / span)) : 1;
+    }
+
+    // DIE MASSE EINES EIGENWERKS (physik K1): ein Gerät ohne Messung der Schmiede wiegt nach seiner Gestalt — Masse und
+    // Trägheit um den Griff aus den Teilen (`_swingDynamics`: Volumen × ρ der Stoff-Zeile) in der wahren Größe der Hand
+    // (k = `_geraetWeltSkala`): Masse × k³, Trägheit × k⁵, Länge × k. Dieselben Felder wie kampfMasze (masseKg ·
+    // traegheit · laengeM), dieselbe Einheit.
+    _eigenwerkMasze(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return null;
+        const k = this._geraetWeltSkala(bp);
+        const sw = this._swingDynamics(bp);
+        return {
+            skala: k,
+            masseKg: sw.mass * k * k * k,
+            traegheit: sw.swingInertia * k * k * k * k * k,
+            laengeM: this._geraetSpanne(bp) * k,
+        };
     }
     // die Dauer des GEHALTENEN Geräts (Faust → handDauerSec).
     _playerSwingDauer() {
@@ -663,12 +697,13 @@ class AnazhRealm_kampf {
         this._setBlueprintWear(bp, this._blueprintWear(bp) - this._wearPerStrike(bp));
     }
 
-    // Die Schwung-Energie eines Eigenwerks ohne Schmiede-Messung (Ω-Φ4: ½·I·ω², I aus _swingDynamics — deren einzige
-    // Quelle, anderer Definitionsbereich als kampfMasze); die Faust 0.
+    // Die Schwung-Energie eines Eigenwerks ohne Schmiede-Messung (½·I·ω² in Joule, I in kg·m² aus seiner Gestalt in der
+    // Hand, `_eigenwerkMasze` — dieselbe Einheit wie keRefJ der Arena); die Faust 0.
     _eigenwerkSchwungKE(bp) {
         if (!bp) return 0;
         const K = AnazhRealm._arenaGesetz().schwung;
-        const I = this._swingDynamics(bp).swingInertia;
+        const em = this._eigenwerkMasze(bp);
+        const I = em ? em.traegheit : 0;
         const sw = this.state.player && this.state.player._swing;
         const dauer = sw && Number.isFinite(sw.dauer) ? sw.dauer : this._playerSwingDauer();
         const omega = (2 * K.arcHalfRad) / Math.max(0.05, dauer * K.strikeFrac);
@@ -821,6 +856,19 @@ class AnazhRealm_kampf {
         return this._implementAffordanceLabel(bp) !== "Klinge";
     }
 
+    // MÄHT DIESES GERÄT? (halten.K3) — das Band, das ein Zug am nachgebenden Halm des Stoffs `stoff` schneidet (m): ein Werk
+    // der Schmiede nach seiner Schneide (schmiede werkUrteil gegen die Zeile des Stoffs: fangM, die Länge der hohlen
+    // Schneide, deren Zug-Winkel den Reibungswinkel des Halms übersteigt — die Sichel fasst ihn, die gerade Klinge schiebt
+    // ihn weg, Blatt und Kopf fassen ihn nie). 0: es mäht nicht (die leere Hand pflückt, ein Eigenwerk schwingt).
+    _ernteBand(bp, stoff) {
+        const km = bp && this._schmiedeWerk(bp) ? this._schmiedeKampfMasze(bp) : null;
+        if (!km || !stoff) return 0;
+        const sc = globalThis.__schmiedeCore;
+        const haerte = (((this.state.materials || {})[stoff] || {}).tags || {}).härte || 0;
+        const u = sc.werkUrteil(km, { vLat: this._werkSchlagTempo(), ziel: sc.zielStoff({ [stoff]: 1 }, haerte) });
+        return u && u.W > 0 && u.fangM > 0 ? u.fangM : 0;
+    }
+
     // EIN WERK DER SCHMIEDE? (halten-gesetz) — seine Gestalt steht in der Gattungs-Tafel des Kerns: Treffer, Schuss und
     // das Werk am Stoff urteilt das Gesetzbuch (kampfMasze · trefferUrteil · werkUrteil), nie die Tags oder Teile des
     // Spenders, den es klont (KIND_POLICY.weapon: geraet_schwert, mit fx.tool geraet_spitzhacke).
@@ -836,7 +884,8 @@ class AnazhRealm_kampf {
     // schmiede-core misst kampfMasze (Länge, Masse, Trägheit um den Pivot, mEff am Impact; prepP wie
     // gueteFaktor) → Schwung-Dauer, Reichweite, Schadens-Faktor der Studio-Klingen. Auflösung SYNCHRON
     // + Lockstep-fest (studioGestalt-Zeile oder KIND_POLICY.weapon-Präfix), NIE der async Buch-Stand;
-    // unbekannt → null (Emergenz-Pfad). Memo je Gestalt|ov-Hash.
+    // unbekannt → null (Emergenz-Pfad). Memo je Gestalt|ov-Hash|Stoff-Stand (die Schmiede wiegt mit den Zeilen der EINEN
+    // Stoff-Zeile — holz, stahl, eisen, bronze sind ihr RHO/MAT —, eine geänderte Dichte misst neu).
     _schmiedeKampfMasze(bp) {
         if (!bp) return null;
         const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
@@ -844,7 +893,7 @@ class AnazhRealm_kampf {
         const gestalt = this._schmiedeGestalt(bp);
         if (!gestalt) return null;
         const ov = typeof this._artifactStudioOv === "function" ? this._artifactStudioOv(bp) : null;
-        const key = gestalt + (ov ? "|ov:" + this._studioOvHash(ov) : "");
+        const key = gestalt + (ov ? "|ov:" + this._studioOvHash(ov) : "") + "|rho:" + (AnazhRealm._stoffStand || 0);
         const memo = this._kampfMaszeMemo || (this._kampfMaszeMemo = new Map());
         let v = memo.get(key);
         if (v === undefined) {
@@ -914,17 +963,18 @@ class AnazhRealm_kampf {
             Number.isFinite(A.minAuszugFrac) ? A.minAuszugFrac : 1,
             Math.min(1, A.auszugSec > 0 ? held / A.auszugSec : 1)
         );
-        this._beginPlayerShot(rec, frac);
+        this._beginPlayerShot(frac);
     }
 
     // Klick = EIN Pfeil. Spann-Cooldown = _playerSwingDauer (∝ √I, die EINE Quelle). DIE EINE SCHUSS-PHYSIK (Welle L,
-    // K-D8): E = ableitenBogen(task).energie — die Pfeil-Energie des Studios (SI, gegen Stretton 114 J geeicht),
+    // K-D8): E = bogenEnergie(Gestalt, Prägung) — die Pfeil-Energie des Studios aus der Form des gehaltenen Bogens (SI, gegen
+    // Stretton 114 J geeicht; halten.K3: vorher die Aufgabe des Rezepts beim Namen, eine umgeformte Recurve schoss gleich),
     // v0 = √(2·E/mArrow) × Auszug; die Welt-Eichung zugJouleRef (28,9 J·zug·aus, 25–41 % der Studio-Energie) ist
     // GEFALLEN. Richtung = vom Mündungs-Punkt auf den Fadenkreuz-Punkt (_blickZiel — 1st und 3rd zielen durch
     // dieselbe Kamera). Deterministisch; Stamina + Affekt wie der Hieb. Der Bogen ist eine geführte Waffe wie die Klinge
     // (Welle L, K-D6): dieselbe Werkzeug-Wand, der Pfeil trägt die Kraft der Führung (_kampfKraft, mit Verschleiß) in
     // das EINE Roh-Schaden-Gesetz, und jeder Schuss zehrt den Bogen (_kampfVerschleiss).
-    _beginPlayerShot(rec, drawFrac) {
+    _beginPlayerShot(drawFrac) {
         const p = this.state.player;
         const pm = this.state.playerMesh;
         if (!p || !pm) return false;
@@ -938,19 +988,13 @@ class AnazhRealm_kampf {
         this._consumeMouseStamina();
         const heldName = p.equipped && p.equipped.held;
         this._feelAction("attack", heldName ? { blueprint: heldName } : undefined);
-        const task = rec && rec.fx && rec.fx.task ? rec.fx.task : null;
-        const zug = task && Number.isFinite(task.zugkraft) && task.zugkraft > 0 ? task.zugkraft : 1;
-        const aus = task && Number.isFinite(task.auszug) && task.auszug > 0 ? task.auszug : 1;
         const AB = AnazhRealm._arenaGesetz().bogen;
-        // Fail-closed: ein Kern ohne ableitenBogen ist ein BRUCH; ein Wurfarm-Material, das das lebende Buch nicht
-        // trägt, schießt mit dem holz-Anker (die legitime Weiche, BOGENMAT.holz lebt im Buch immer).
+        // Fail-closed: ein Kern ohne bogenEnergie oder ein Bogen ohne Arbeit ist ein BRUCH (ein Wurfarm-Material, das das
+        // Buch nicht trägt, schießt im Kern mit dem holz-Anker).
         const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
-        if (!sc || typeof sc.ableitenBogen !== "function" || !AnazhRealm.Gesetz("schmiede:BOGENMAT.holz", null))
-            AnazhRealm._kernPflichtBruch("schmiede:BOGENMAT/ableitenBogen");
-        const bmName = task && typeof task.material === "string" ? task.material : "holz";
-        const material = AnazhRealm.Gesetz("schmiede:BOGENMAT." + bmName, null) ? bmName : "holz";
-        const E = sc.ableitenBogen({ auszug: aus, zugkraft: zug, material }).energie;
-        if (!(Number.isFinite(E) && E > 0)) AnazhRealm._kernPflichtBruch("schmiede:ableitenBogen.energie");
+        if (!sc || typeof sc.bogenEnergie !== "function") AnazhRealm._kernPflichtBruch("schmiede:bogenEnergie");
+        const E = sc.bogenEnergie(this._schmiedeGestalt(bp), this._artifactStudioOv(bp) || undefined);
+        if (!(Number.isFinite(E) && E > 0)) AnazhRealm._kernPflichtBruch("schmiede:bogenEnergie");
         let v0 = Math.sqrt((2 * E) / Math.max(0.001, AB.mArrow));
         if (Number.isFinite(drawFrac)) v0 *= Math.max(0, Math.min(1, drawFrac));
         const K = AnazhRealm._arenaGesetz().schwung;
@@ -1831,7 +1875,8 @@ class AnazhRealm_kampf {
 
     // DIE MAUS-ABSICHT (Welle L 06.10., Klasse Q9) — der EINE Dispatcher des linken Klicks. Beim DRÜCKEN liest er das
     // Ziel am Fadenkreuz und das gehaltene Gerät: Kreatur in Nahkampf-Weite vom SCHULTERGELENK (nie von der Kamera: in
-    // der 3rd-Person lagen 8,1 m zwischen Kamera und Hirsch, Tor 6 m) → Hieb · Bau → Abbau · Klein-Flora → Pflücken ·
+    // der 3rd-Person lagen 8,1 m zwischen Kamera und Hirsch, Tor 6 m) → Hieb · Bau → Abbau · Klein-Flora → Pflücken (ein
+    // Gerät, dessen Schneide den Halm fasst, mäht sie und die Wiese — halten.K3, `_ernteZiel`) ·
     // sonst gräbt nur ein Grab-Gerät (Spaten, Schaufel, Spitzhacke) oder die leere Hand; jedes andere Gerät schwingt
     // ins Leere (Luftschlag). `gehalten` = das Verb des Drückens (der Halte-Tick): es wiederholt sich, nie ein anderes —
     // ein Hieb bleibt Hieb, ein gefallener Bau beendet das Abbauen. Vorher: 3rd-Person 10 Klicks → 0 Schwünge,
@@ -1849,7 +1894,7 @@ class AnazhRealm_kampf {
             // Halten spannt (der Harvest-Kadenz-Tick spannt nicht neu), Loslassen löst (_bogenRelease skaliert
             // v0 mit dem Auszug-Anteil). Kern kalt → auszugSec 0 → sofort voller Schuss.
             const AB = AnazhRealm._arenaGesetz().bogen;
-            if (!(AB.auszugSec > 0)) return this._beginPlayerShot(bogenRec);
+            if (!(AB.auszugSec > 0)) return this._beginPlayerShot();
             const pB = this.state.player;
             if (pB._bogenDraw) return true; // spannt schon (Halte-Tick)
             const nowB = performance.now() / 1000;
@@ -1897,8 +1942,9 @@ class AnazhRealm_kampf {
             if (pick && pick.entry) {
                 verb = "abbau";
                 ort = pick.point;
-            } else if ((flora = this._pickScatterAtCrosshair())) {
-                // S6-B (V18.133) — FORAGING vor dem Graben: wer auf die Blüte zielt, will sie, kein Loch darunter
+            } else if ((flora = this._ernteZiel())) {
+                // S6-B (V18.133) — FORAGING vor dem Graben: wer auf die Blüte zielt, will sie, kein Loch darunter; ein Gerät,
+                // dessen Schneide den Halm fasst, mäht ihn auch unter dem Fadenkreuz in der Wiese (halten.K3, `_ernteZiel`)
                 verb = "pfluecken";
                 ort = flora.point;
             } else if (this._geraetGraebt(this._heldImplementBlueprint())) {
@@ -1942,12 +1988,16 @@ class AnazhRealm_kampf {
         // abgetragen (Tempo/Stamina/Ertrag ∝ Werkzeug-vs-Material), kein Instant mehr. Der
         // Multi-User-Sync + das Loot + das Gefühl leben in _strikeArchitecture (bei Bruch).
         if (verb === "abbau") return this._strikeArchitecture(pick.entry);
-        if (verb === "pfluecken") return this._harvestScatterPick(flora);
+        if (verb === "pfluecken") return flora.mahd ? this._maehen(flora.mahd) : this._harvestScatterPick(flora);
         const target = boden || this._raycastWorldHit(30);
         if (!target.hit) {
             this.log("Abbauen: kein Ziel in Reichweite.", "INFO");
             return false;
         }
+        // DIE WERKZEUG-WAND und DER VERSCHLEISS auch am Boden (halten.K3): jeder Grabe-Hieb zehrt das Gerät wie Hieb, Abbau und
+        // Mahd (_kampfVerschleiss, modus-unabhängig, nach der Ausdauer), ein verbrauchtes gräbt nicht — vorher grub es ewig neu.
+        const heldG = this._heldImplementBlueprint();
+        if (this._geraetVerbraucht(heldG, "Graben")) return false;
         // V17.55 W1 — auch der Boden leistet Widerstand: die Stamina pro Grabe-Hieb skaliert
         // invers zur Tauglichkeit (ein gutes Werkzeug gräbt billig, die bloße Faust teuer).
         if ((typeof this.getGameMode === "function" ? this.getGameMode() : "frieden") === "pfad") {
@@ -1969,6 +2019,7 @@ class AnazhRealm_kampf {
                 return false;
             }
             this.state.player.stamina = Math.max(0, have - perStrike);
+            this._kampfVerschleiss(heldG);
             // Graben spricht dieselbe Mühe-Sprache: Fortschritt ∝ Tauglichkeit (Faust mehrere Hiebe, gutes Gerät
             // einer); Reset, wenn das Ziel > 2.5 m wandert. frieden + schöpfer bleiben instant.
             const dig = this.state.player._dig || (this.state.player._dig = { x: 0, y: 0, z: 0, progress: 0 });
@@ -1985,7 +2036,7 @@ class AnazhRealm_kampf {
                 return true;
             }
             dig.progress = 0;
-        }
+        } else this._kampfVerschleiss(heldG);
         // Der Grabe-Hieb schnitzt das 3D-Dichte-Feld (echtes Loch): die Säule r 3,5 m (gelaende-core `editForm`, Radius und
         // halbe Höhe) — eine begehbare Grube mit ebenem Grund; kleiner wäre eine Nadel.
         const carveRadius = 3.5;
@@ -2209,8 +2260,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_kampf]);
 
 // ===== ATLAS · Kampf — Außen-Konstanten =====
 // ═══ KAMPF-GEFÜHL — DIE GESETZE DES SCHWUNGS ═══
-// Die EINE Schwung-Dauer-Quelle ist die gerechnete Trägheit (_swingDynamics: I = Σ m·r² um den
-// Griff), Dauer = dauerProSqrtI·√I, geklemmt; Cooldown/HUD/Werkstatt lesen sie (Kreaturen behalten
+// Die EINE Schwung-Dauer-Quelle ist die Trägheit in kg·m² um den Griff (Messung der Schmiede oder
+// Gestalt des Eigenwerks, _geraetMasze), Dauer = dauerProSqrtIKg·√I, geklemmt; Cooldown/HUD/Werkstatt lesen sie (Kreaturen behalten
 // ihr tag-emergentes attackSpeed). Dauer, Hieb-Geometrie, Reichweite, Stoß/Hit-Stop/Dip und
 // Pfeil-Flug-Physik wohnen im schmiede-Gesetzbuch (ARENA.schwung/.gefuehl/.bogen/.guete) — alle
 // Konsumenten lesen _arenaGesetz(), fail-closed. Die Mechanik hält gate:kampf-gefuehl.
@@ -2266,7 +2317,7 @@ AnazhRealm._arenaGesetz = function () {
         a.schwung &&
         a.gefuehl &&
         a.bogen &&
-        Number.isFinite(a.schwung.dauerProSqrtI) &&
+        Number.isFinite(a.schwung.dauerProSqrtIKg) &&
         Number.isFinite(a.schwung.windupFrac) &&
         Number.isFinite(a.schwung.zielKegelUntenRad) &&
         Number.isFinite(a.gefuehl.wucht) &&

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-weltakt-wache.cjs — DIE BÜHNE HÄLT DIE WELT (0710-7). Jeder solche Zug ist ein Welt-Akt der DSL, und alle laufen
+// diag-weltakt-wache.cjs — DIE BÜHNE HÄLT DIE WELT. Jeder solche Zug ist ein Welt-Akt der DSL, und alle laufen
 // durch EINE Engstelle: `dslEval`. Der Schnitt liegt dort: unter dem Halt einer Messung (`_messHalt`, dieselbe
 // eingefrorene Uhr wie der Wetter-Halt) verweigert `dslEval` jeden Welt-Akt (`AnazhRealm.DSL_WELTAKTE`) und nennt ihn
 // beim Namen seiner Quelle (`_weltaktGehalten`); im Spiel zählt die Uhr von 0 aufwärts — das Spiel bleibt, wie es ist.
@@ -19,21 +19,59 @@
 //       wirkt als KI an seiner Form (`_dslForm`, Werte aus der Welt), jede DSL-Liste (`*_OPS`, `DSL_*`) nennt nur lebende Ops
 //       (modify_terrain in einer Liste);
 //   (P) kein Page-Error.
+//   (T) DIE TAT (affekt K1/K4, ohne Halt): 10 Pflegen je 30 s — |δ₁₀| ≤ 0,3 δ₁, der Chor-Teil der Wertung am Ort ≥ 3 dB, 32 m
+//       daneben ≤ 0,5 dB, gestempelte Freude 0; Taten von Nexus und KI im Blick in ≤ 1 treuen Zeile je 30 s (`tat-k1`/`tat-k4`).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): `weltaktUrteil` fällt bei jedem durchgelaufenen Akt, beim blinden
 // und fehlenden Spion rot, bei Verweigerung grün; `kiUrteil` nennt das fehlende und das falsch gruppierte Verb, `formUrteil`
-// den brechenden Op, den stehenden Bau, den ungeprüften Op und den toten Listen-Namen.
+// den brechenden Op, den stehenden Bau, den ungeprüften Op und den toten Listen-Namen; `tatUrteil` jeden Bruch der Tat.
 //   node scripts/diag-weltakt-wache.cjs [--selftest]   (npm run gate:weltakt-wache; Port WELTAKT_WACHE_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL, weltaktUrteil, weltaktSelbsttest } = require("./lib/ausgabe-aufnahme.cjs");
+const MESS = require("./lib/welt-orte.cjs").messort("wiese");
 
 const PORT = Number(process.env.WELTAKT_WACHE_PORT || 4603);
 const FORM_BRUCH = /error|exception|budget|unknown|invalid|failed|oob|not_found|ignored|skipped|gehalten/;
 
+// (T) DAS URTEIL DER TAT (rein, über `tatProbe`) → Befunde
+function tatUrteil(T) {
+    const [t, S, rot] = [T.taten, T.stimme, []];
+    const [a, z] = [t[0], t[t.length - 1]];
+    if (!(a.delta > 0 && Math.abs(z.delta) <= 0.3 * a.delta)) rot.push(`K1 δ ${a.delta} → ${z.delta}: keine Wertung mit Gewöhnung`);
+    if (!(a.antwort >= 3 && Math.abs(z.antwort) <= 0.3 * a.antwort)) rot.push(`K1 Antwort am Ort ${a.antwort} → ${z.antwort} dB`);
+    if (t.some((x) => Math.abs(x.nachbar) > 0.5) || Math.abs(a.ausgabe - a.mischung) > 0.05 || T.stempel.delta || T.stempel.antwort)
+        rot.push(`K1 Nachbar, Graph oder Stempel: ${JSON.stringify([a, T.stempel])}`);
+    const soll = S.plan.reduce((n, p) => n + (p.welt && p.blick ? p.n : 0), 0);
+    const gedeckt = S.zeilen.reduce((n, x) => n + 1 + x.weitere, 0);
+    if (!soll || gedeckt !== soll || !S.plan.some((p) => p.welt && !p.blick) || S.plan.every((p) => p.welt))
+        rot.push(`K4 ${soll} Taten im Blick, gedeckt ${gedeckt}`);
+    S.zeilen.forEach((x, i) => {
+        if (x.falsch.length || (i && x.t - S.zeilen[i - 1].t < 30)) rot.push(`K4 ${x.t} s ${x.falsch.join(", ")}: ${x.text}`);
+    });
+    if (S.zeilen.length && S.box !== S.zeilen[S.zeilen.length - 1].text) rot.push(`K4 die Box zeigt „${S.box}“`);
+    return rot;
+}
+function tatSelbsttest() {
+    const gut = () => ({
+        taten: [{ delta: 0.2, antwort: 6, nachbar: 0, ausgabe: -4, mischung: -4 }, { delta: 0, antwort: 0, nachbar: 0 }],
+        stempel: { delta: 0, antwort: 0 },
+        stimme: { plan: [{ welt: true, blick: true, n: 2 }, { welt: true }, { blick: true }], zeilen: [{ t: 0, weitere: 1, falsch: [] }], box: undefined },
+    });
+    const faelle = { "taten.0.delta": null, "taten.1.delta": 0.2, "taten.0.antwort": 0.76, "taten.1.nachbar": 4, "taten.0.ausgabe": -9, "stempel.antwort": 4.8,
+        "stimme.plan.0.n": 3, "stimme.plan.1.blick": true, "stimme.plan.2.welt": true, "stimme.zeilen.0.falsch.0": "Ort", "stimme.zeilen.1": { t: 12, weitere: -1, falsch: [] }, "stimme.box": "Hallo." };
+    const rot = (pfad) => {
+        const [x, k] = [gut(), pfad.split(".")];
+        if (pfad) k.slice(0, -1).reduce((o, s) => o[s], x)[k[k.length - 1]] = faelle[pfad];
+        return tatUrteil(x).length > 0;
+    };
+    return [...(rot("") ? ["(T) tatUrteil rot am heilen Fall"] : []), ...Object.keys(faelle).filter((f) => !rot(f)).map((f) => `(T) tatUrteil blind: ${f}`)];
+}
+
 if (process.argv.includes("--selftest")) {
     console.log("=== WELT-WACHE — Selbsttest des Urteils (ohne Browser) ===");
     const v = weltaktSelbsttest();
+    v.push(...tatSelbsttest());
     const ki = (p) => kiUrteil(p, { "Welt-Akte": ["spawn_studio"], "Weitere Ops": ["when"], Orte: ["at"] }).join(" · ");
     const gut = "Welt-Akte: spawn_studio(what).\nWeitere Ops: when(c).\nOrte: at(x).";
     const weg = gut.replace("spawn_studio(what)", "");
@@ -49,7 +87,7 @@ if (process.argv.includes("--selftest")) {
         console.log("\n❌ SELBSTTEST ROT — das Urteil der Welt-Wache ist blind.");
         process.exit(1);
     }
-    console.log("✅ SELBSTTEST GRÜN — Akt durch, Spion blind/fehlend, KI-Verb fehlend/umgruppiert/formbrüchig, toter Listen-Name: jedes fällt rot.");
+    console.log("✅ SELBSTTEST GRÜN — Akt durch, Spion blind/fehlend, KI-Verb fehlend/umgruppiert/formbrüchig, toter Listen-Name, Tat ohne Wertung/Gewöhnung/Antwort/Zeile/Treue: jedes fällt rot.");
     process.exit(0);
 }
 
@@ -304,6 +342,81 @@ async function probe(GESCHICKT) {
     return aus;
 }
 
+// (T) DIE TAT auf frischer Welt: der Nexus ruht, die Probe schickt jede Tat über den echten Weg; die Zeit ist die Spielzeit,
+// die Misch-Uhr des Klangs wird je Messung fällig gestellt; die Wahrheit über K4 ist der Plan der Probe, nie das Buch.
+async function tatProbe(m) {
+    const [r, K] = [window.anazhRealm, window.__klangCore];
+    const [st, P, pm] = [r.state, Object.getPrototypeOf(r), r.state.playerMesh.position];
+    [r._loopNexusUpdate, r.evolveNexus, st.worldRules] = [() => {}, () => {}, []];
+    pm.set(m.x, r._voxelSurfaceY(m.x, m.z) + 1.8, m.z); // der Leib fällt einmal, je Takt hält die Probe x und z
+    const stelle = (n) => {
+        for (let i = 0; i < n; i++) pm.setX(m.x).setZ(m.z), r._gameLoopTick(performance.now()), pm.setX(m.x).setZ(m.z);
+    };
+    await window.__weltStehtNach(() => stelle(1));
+    window.__buehne();
+    st.weatherEffectTime = 0;
+    r._setWeather("sunny", "regler");
+    r.initSymphony();
+    const um = st.symphony.umwelt;
+    const D = (l) => K.umweltMischung(l).vogel.db;
+    // der Chor am Ohr x oder in der Lage l des Misch-Takts (ohne Antwort abgezogen: der Teil der Wertung)
+    const ohr = (x, l) => {
+        pm.x = x;
+        l = l || r._umweltLage();
+        pm.x = m.x;
+        return [D(l), D(l) - D({ ...l, antwort: null })];
+    };
+    const tat = (f) => (f(), st.taten ? +st.taten[st.taten.length - 1].delta.toFixed(4) : null);
+    const taten = [];
+    for (let n = 1, t0 = st.spielZeit; n <= 10; n++, st.spielZeit = t0 += 30) {
+        const delta = tat(() => r.processChatCommand("pflege das land"));
+        um.letzteMischung = -Infinity;
+        stelle(4);
+        const [mischung, antwort] = ohr(m.x, um.lage);
+        taten.push({ delta, antwort, nachbar: ohr(m.x + 32)[1], mischung, ausgabe: um.graph.zensus().find((v) => v.name === "vogel").db });
+    }
+    st.spielZeit += 120;
+    const stempel = { delta: tat(() => r.dslRun(["deposit_emotion", "joy", 0.8], { source: "human" })), antwort: ohr(m.x)[1] };
+    stelle(30);
+    [st.taten, st.nexusWirk, st.llm.enabled] = [[], 1e6, true];
+    delete r._loopNexusUpdate;
+    const [cam, W] = [st.camera, "pflege den Ort vor mir"];
+    const b = cam.getWorldDirection(new THREE.Vector3()).setY(0).normalize();
+    const vorn = (d, q) => ["at", +(m.x + b.x * d - b.z * q).toFixed(1), +pm.y.toFixed(1), +(m.z + b.z * d + b.x * q).toFixed(1)];
+    const O = [vorn(20, 0), vorn(26, 8), vorn(-25, 0), vorn(18, -6)];
+    r.llmCall = async () => ({ program: ["deposit_life", O[3]] });
+    const evo = (name, ort) => (st.nexusEvolutionQueue.push({ name, program: ["deposit_life", ort], source: "nexus" }), P._loopNexusUpdate.call(r));
+    let g;
+    const plan = {
+        0: () => evo("probe-a", O[0]),
+        5: () => (r.dslRun(["rule", ["field_below", "lebendig", 1.01], ["deposit_life", O[1]], { everySec: 10, ttlSec: 600 }], { source: "nexus" }), (g = st.worldRules[0])),
+        40: () => evo("probe-h", O[2]),
+        50: () => r.processChatCommand("pflege das land"),
+        95: () => (g.disabled = true),
+        110: () => r.maybeAnswerWithLlm(W, () => {}),
+    };
+    const t0 = st.spielZeit;
+    for (let s = 0, T = performance.now() / 1000; s <= 150; s += 5) {
+        st.spielZeit = t0 + s;
+        await (plan[s] || (() => {}))();
+        r._tickWorldRules((T += 5));
+        stelle(2);
+    }
+    const fr = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+    const plan2 = [["nexus", O[0], 1, "(Programm probe-a"], ["rule:nexus", O[1], g.fires, `weil lebendig am Ort niedrig ist (<1.01). (Gesetz Nr. ${g.id} des Nexus`], ["nexus", O[2], 1, "probe-h"], ["llm:grok", O[3], 1, `auf dein Wort „${W}“`], ["human", O[0], 1, "human"]];
+    const S = plan2.map(([wer, o, n, soll]) => ({ wer, n, soll, o, welt: wer !== "human", blick: fr.containsPoint(new THREE.Vector3(o[1], o[2], o[3])) }));
+    const RI = ["nördlich", "nordöstlich", "östlich", "südöstlich", "südlich", "südwestlich", "westlich", "nordwestlich"];
+    const zeilen = st.taten.filter((e) => e.zeile).sort((x, y) => x.gesprochen - y.gesprochen).map((e) => {
+        const p = S.find((q) => q.wer === e.wer && (e.wer !== "nexus" || q.soll.includes(e.programm)));
+        const [dx, dz] = [p.o[1] - m.x, p.o[3] - m.z];
+        const wo = ` — ${Math.round(Math.hypot(dx, dz))} m ${RI[Math.round((Math.atan2(dx, -dz) / Math.PI) * 4 + 8) % 8]} von dir, `;
+        const name = { nexus: "Der Nexus ", "rule:nexus": "Ein Gesetz des Nexus ", "llm:grok": "Die KI " }[e.wer];
+        const falsch = [wo, p.soll, ...(p.welt && p.blick ? [] : ["(im Blick)"])].filter((x) => !e.zeile.includes(x));
+        return { t: e.gesprochen - t0, text: e.zeile, weitere: e.weitere, falsch: e.zeile.startsWith(name) ? falsch : [name, ...falsch] };
+    });
+    return { taten, stempel, stimme: { plan: S.map(({ o, ...p }) => p), zeilen, box: document.getElementById("dialogue-box").textContent } };
+}
+
 function gleich(a, b) {
     return JSON.stringify(a) === JSON.stringify(b);
 }
@@ -337,7 +450,7 @@ function urteil(S, pageErrors) {
         rot.push(
             `(F) FREI: der Nexus wirkt ohne Halt nicht (${JSON.stringify(fn.vorher)} → ${JSON.stringify(fn.nachher)})`
         );
-    // Die Uhr gehört dem Spieler (Leben-Schau 2, `_himmelSchreiber`, gate:wetter-wache): auch ohne Halt stellt der Nexus sie nie.
+    // Die Uhr gehört dem Spieler (`_himmelSchreiber`, gate:wetter-wache): auch ohne Halt stellt der Nexus sie nie.
     if (fn.nachher.zeit !== fn.vorher.zeit)
         rot.push(
             `(F) FREI: der Nexus stellt die Uhr (${fn.vorher.zeit} → ${fn.nachher.zeit}) — sie gehört dem Spieler`
@@ -375,6 +488,15 @@ function urteil(S, pageErrors) {
     });
     await page.evaluate(AUSGABE_INSTALL);
     const S = await page.evaluate(probe, GESCHICKT);
+    await page.close();
+    // (T) DIE TAT auf einer frischen Seite (die Welt der Wand oben trägt ihre Bauten, Seelen und Gesetze)
+    const tatSeite = await browser.newPage();
+    await nullRenderer(tatSeite);
+    tatSeite.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
+    await tatSeite.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await tatSeite.evaluate(() => window.__weltDa((r) => r.state && r.state.rendererReady && r.state.blueprints && r.nexus));
+    await tatSeite.evaluate(AUSGABE_INSTALL);
+    const T = await tatSeite.evaluate(tatProbe, MESS);
     await browser.close();
     server.close();
 
@@ -399,6 +521,16 @@ function urteil(S, pageErrors) {
     );
     console.log(`  KI-Form: ${S.form.length} Läufe über ${S.ops.length} Ops, ${formUrteil(S.form, {}, []).length} Läufe scheitern an ihrer Form; Listen ${Object.entries(S.listen).map(([n, l]) => `${n} ${l.filter((x) => !S.ops.includes(x)).length}/${l.length} tot`).join(" · ")}`);
     const rot = urteil(S, pageErrors);
+    // (T) die Zahlen je Kriterium (`tat-k1 {…}`, `tat-k4 {…}` — die Punkte-Maschine liest sie), die Befunde im Urteil
+    const [tu, t, Z] = [tatUrteil(T), T.taten, T.stimme.zeilen];
+    for (const z of Z) console.log(`  [${z.t | 0} s] ${z.text}`);
+    const k1 = { delta: t.map((x) => x.delta), antwortDb: t.map((x) => +x.antwort.toFixed(2)), nachbarDb: Math.max(...t.map((x) => Math.abs(x.nachbar))), stempel: T.stempel };
+    const k4 = { imBlick: T.stimme.plan.reduce((n, p) => n + (p.welt && p.blick ? p.n : 0), 0), zeilen: Z.length, gedeckt: Z.reduce((n, z) => n + 1 + z.weitere, 0), falsch: Z.reduce((n, z) => n + z.falsch.length, 0) };
+    for (const [k, w] of [["K1", k1], ["K4", k4]]) {
+        w.gruen = !tu.some((x) => x.startsWith(k));
+        console.log(`  ${w.gruen ? "✅" : "❌"} tat-${k.toLowerCase()} ${JSON.stringify(w)}`);
+    }
+    rot.push(...tu.map((x) => "(T) " + x));
     if (rot.length) {
         console.error("\nROT:");
         for (const e of rot) console.error("  • " + e);
