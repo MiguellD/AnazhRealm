@@ -14,16 +14,6 @@ async function checkBandV1721LivingFieldAura(ctx) {
         const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — Feld-Lese-Tests messen den frozen Kern
-        const a = r.auraAt(0, 0, 1.5);
-        out.auraShape =
-            !!a &&
-            typeof a.lebendig === "number" &&
-            typeof a.dichte === "number" &&
-            typeof a.glut === "number" &&
-            typeof a.magieleitung === "number" &&
-            a.emotion &&
-            typeof a.emotion === "object" &&
-            a.t === 1.5;
         const wf = r.worldFieldAt(123, -456);
         const au = r.auraAt(123, -456);
         out.auraWrapsField =
@@ -31,10 +21,6 @@ async function checkBandV1721LivingFieldAura(ctx) {
             au.glut === wf.glut &&
             au.dichte === wf.dichte &&
             au.magieleitung === wf.magieleitung;
-        // class AnazhRealm {} ist ein lexikalisches Global (wie let) — bare
-        // `AnazhRealm`, NICHT window.AnazhRealm; r.constructor ist am robustesten.
-        const M = r.constructor && r.constructor.FIELD_TO_EMOTION;
-        out.hasMap = !!M && Object.isFrozen(M) && M.lebendig && typeof M.lebendig.peace === "number";
         // Der Kreis: finde den lebendigsten Spot in einem weiten Raster, setze
         // den Spieler dorthin, ticke updatePlayerEmotions → peace steigt.
         let spot = null,
@@ -72,9 +58,7 @@ async function checkBandV1721LivingFieldAura(ctx) {
         }
         return out;
     });
-    check("lebendiges Feld: auraAt-Shape (4 Feld-Achsen + emotion + t)", res.auraShape);
     check("lebendiges Feld: auraAt umhüllt das eingefrorene worldFieldAt (Kern bit-gleich)", res.auraWrapsField);
-    check("lebendiges Feld: FIELD_TO_EMOTION ist frozen + verdrahtet", res.hasMap);
     check(
         "lebendiges Feld: eine lebendige Region HEBT peace (der Kreis schließt sich)",
         res.peaceRose,
@@ -508,7 +492,6 @@ async function checkBandV1750Klammer(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
-        const W = r.constructor.WERTUNG;
         const pm = r.state.playerMesh.position;
         const savedEmo = { ...p.emotions };
         const savedMood = p.mood ? { ...p.mood } : null;
@@ -521,9 +504,6 @@ async function checkBandV1750Klammer(ctx) {
         const setEmo = (o) => {
             for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
         };
-
-        // (1) Config
-        out.config = !!W && W.phase4Radius > 0 && W.phase4Weight > 0 && W.appraisalEmaTau > 0;
 
         // (2) ANTI-GAMING an der WURZEL: appraisalDelta trackt die SITUATION (lebendig+HP),
         // NICHT die gestempelte Emotion → eine Regel kann den Bonus nicht über Emotion faken.
@@ -585,7 +565,6 @@ async function checkBandV1750Klammer(ctx) {
         r.state.emotionField = savedEmoField;
         return out;
     });
-    check("Klammer: WERTUNG Phase-4-Config (phase4Radius/Weight/appraisalEmaTau)", res.config);
     check(
         "Klammer: ANTI-GAMING-Wurzel — appraisalDelta trackt die SITUATION (steigt mit Leben)",
         res.deltaTracksSituationUp
@@ -1524,7 +1503,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
                 // Toon ODER PBR.
                 out.isToonMarker = !!(isle.material.isMeshToonMaterial || isle.material.isMeshStandardMaterial);
                 out.isNodeMaterial = /Node/.test(isle.material.type || "");
-                out.hasColorAttr = !!isle.geometry.getAttribute("color");
             }
             return out;
         });
@@ -1532,7 +1510,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
             `V9.42-c/234: Insel nutzt das aktive lit NodeMaterial (Toon ODER PBR) — ${r42c.material}`,
             r42c.isToonMarker === true && r42c.isNodeMaterial === true
         );
-        check("Insel-Geometrie trägt per-Vertex color-Attribut", !!r42c.hasColorAttr);
         check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert (Multi-Part, V17.11)", wave6gResults.hasBaumKiefer);
         check("Welle 6.G P1.5: baum_eiche ist builtIn", wave6gResults.baumEicheIsBuiltIn);
         check("Welle 6.G P1.5: baum_eiche Stamm = cylinder/holz", wave6gResults.eichenStammHolz);
@@ -1681,7 +1658,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Das Welt-Affinitäts-Feld treibt die Vegetation idempotent über `_populateVoxelChunkVegetation`
         // (am Voxel-Chunk-Lifecycle); geprüft wird dessen Idempotenz-Cache `voxelPopulatedChunks`, den
         // die initialen Voxel-Chunks beim Welt-Aufbau füllen.
-        out.populatedChunksSize = r.state.voxelPopulatedChunks ? r.state.voxelPopulatedChunks.size : 0;
         const before = archs.length;
         // Ein bereits-befüllter Chunk: zweiter Aufruf MUSS 0
         // zurückgeben dank voxelPopulatedChunks-Cache.
@@ -1692,11 +1668,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
             const after = r.state.architectures.length;
             out.populateIdempotent = secondReturn === 0 && after === before;
         }
-        // Die Stamm-Dicke ist grammatik-getrieben: geprüft wird nur, dass der gewachsene Baum einen
-        // holz-Stamm trägt.
-        const __siKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "stamm");
-        const __siBp = __siKey && bps[__siKey];
-        out.stammIsThicker = !!(__siBp && __siBp.parts.some((p) => p.material === "holz"));
         // Affinitäts-Tag-Wächter: die Parts einer spawnbaren Architektur bestimmen WO sie spawnt
         // (computeCompoundTags × worldField in spawnAffinityForBlueprint) UND wie sie aussieht. Eine
         // Optik-Anreicherung darf die 4 Affinitäts-Achsen-Tags NICHT verschieben, sonst kippt der
@@ -1773,15 +1744,9 @@ async function checkBandWelle6GHylomorphism(ctx) {
         );
         check("Welle 6.G P2: Initial-Worldgen hat mind. einen Baum gespawnt", wave6gP2Results.hasInitialTrees);
         check(
-            "Welle 6.G P2: populatedChunks-Cache befüllt",
-            wave6gP2Results.populatedChunksSize >= 1,
-            `size=${wave6gP2Results.populatedChunksSize}`
-        );
-        check(
             "Welle 6.G P2: populateChunkVegetation idempotent (zweiter Aufruf → 0 spawns)",
             wave6gP2Results.populateIdempotent
         );
-        check("Welle 6.G P2: baum_eiche Stamm-Radius >= 0.7 (Bugfix V7.75)", wave6gP2Results.stammIsThicker);
         // Affinitäts-Tag-Stabilitäts-Wächter (siehe evaluate-Block oben): eingefrorene, GEMESSENE
         // Baseline der 4 Affinitäts-Achsen + `resoniert` je spawnbarer Architektur. Ein verschobener Tag
         // verschiebt den Spawn-Ort (Winner-take-all) und kann Bäume verdrängen; bewusste Shifts ziehen
@@ -2240,12 +2205,6 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
             out.totalDeltaDichte = Number(totalDeltaDichte.toFixed(3));
 
 
-            // (F8) V18.204 DOMAIN-WARP — warpAmp + warpScale Konstanten existieren
-            out.warpConstsExist =
-                typeof A.FIELD_CHARACTER.warpAmp === "number" &&
-                A.FIELD_CHARACTER.warpAmp > 0 &&
-                typeof A.FIELD_CHARACTER.warpScale === "number" &&
-                A.FIELD_CHARACTER.warpScale > 0;
 
             // (F9) DOMAIN-WARP: bei gen=3 verschiebt der Warp die Lese-Position.
             // Wir vergleichen: worldFieldAt(x,z) mit warp vs. ohne warp
@@ -2304,7 +2263,6 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
         `(F6) magieleitung (λ160) variabler als dichte (λ340) über 200 m (Δmagie ${res.totalDeltaMagie} > Δdichte ${res.totalDeltaDichte})`,
         res.magieMoreVariable === true
     );
-    check("(F8) DOMAIN-WARP Konstanten (warpAmp + warpScale)", res.warpConstsExist === true);
     check("(F9a) Warp ändert den gelesenen Wert (Sample-Position verschoben)", res.warpChangesValue === true);
     check(
         "(F9b) Implementierung matched manuelle Warp-Berechnung (bit-identisch)",

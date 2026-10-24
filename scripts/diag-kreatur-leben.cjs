@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // gate:kreatur-leben — DIE LEBENS-LINSE: als Skript die Seele im Kern; als Stück der Seiten-Funktion der Kreatur-Proben
-// (`BUEHNEN` an ihrer Marke) Furcht, Durst und Lebensraum am ECHTEN Takt (gate:kreatur-takt).
+// (`BUEHNEN` an ihrer Marke) Furcht, Durst, Lebensraum, Bestand, Kaskade und Folgen am ECHTEN Takt (gate:kreatur-takt).
 "use strict";
 
 // ── furcht (Ökologie K3, tetrapoda FURCHT_GESETZ): (A) je Ort und Rolle ein Tier allein — geschlagen, gefüttert, gebunden,
@@ -138,6 +138,296 @@ async function lebenBuehnen(
         const mittel = (a) => +(a.reduce((p, q) => p + q, 0) / a.length).toFixed(3);
         return { erinnert, ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) } };
     });
+    // ── DER ZEITRAFFER (Ökologie K1/K2): `tickFaunaLifecycle` je 10 s Spiel-Zeit an EINEM Ort, ab Takt `ab` lebendig × ½ ──
+    const zeitraffer = (restore) => {
+        if (taeter === "bestand-nahrung") decke(restore, "_kreaturNahrung", () => () => 0.5);
+        if (taeter === "bestand-deckel")
+            decke(restore, "_kreaturBestand", (alt) => () => {
+                const b = alt.call(r);
+                for (const g in b) Object.assign(b[g], { geburt: 0.25, tod: 0 });
+                return b;
+            });
+        const alt = [s.spielZeit, s.faunaLifecycle];
+        restore.push(() => ([s.spielZeit, s.faunaLifecycle] = alt));
+        let halb = false;
+        decke(restore, "worldFieldAt", (wfa) => (x, z) => {
+            const f = wfa.call(r, x, z);
+            return halb ? Object.assign({}, f, { lebendig: f.lebendig / 2 }) : f;
+        });
+        const tod = { n: 0, aeltester: 0, trauer: 0, journal: 0 };
+        const gattung = (c) => A.TETRAPODA_SOUL_MAP[c.userData.soul];
+        decke(restore, "_creatureNaturalDeath", (dies) => (c, grund) => {
+            const aelteste = s.creatures.every((o) => gattung(o) !== gattung(c) || !(o.userData.bornAt < c.userData.bornAt));
+            const o = dies.call(r, c, grund);
+            const j = s.worldJournal.entries;
+            if (grund === "hunger")
+                Object.assign(tod, {
+                    n: tod.n + 1,
+                    aeltester: tod.aeltester + aelteste,
+                    trauer: tod.trauer + (s.player.emotions.sorrow > 0),
+                    journal: tod.journal + (j[j.length - 1].type === "loss"),
+                });
+            return o;
+        });
+        return (saat, takte, ab) => {
+            r._faunaStroeme = { seed: s.worldMeta.seed, rng: { fauna: r._streamRng("bestand-" + saat) } };
+            s.faunaLifecycle = { lastTick: s.spielZeit };
+            s.lifeField = undefined;
+            const n = [];
+            const tode = [0, 0];
+            let kappe = 0;
+            for (let k = 0; k < takte; k++) {
+                halb = k >= ab;
+                s.spielZeit += 10;
+                ruhigSpieler();
+                r.tickFaunaLifecycle();
+                tode[+halb] += s.leichname.length;
+                for (const c of s.leichname.slice()) r.removeCreature(c);
+                if (s.creatures.length >= s.maxCreatures) kappe++;
+                n.push(s.creatures.map(gattung));
+            }
+            for (const c of s.creatures.slice()) r.removeCreature(c);
+            const mittel = (a, b, g) =>
+                +(n.slice(a, b).reduce((p, je) => p + je.filter((x) => !g || x === g).length, 0) / (b - a)).toFixed(2);
+            return { tode, kappe, mittel, tod };
+        };
+    };
+    // ── bestand (Ökologie K2): voll ab Takt 180 halbiert, halb von Anfang an, dieselbe Saat ──
+    await buehne("bestand", async (restore) => {
+        const lauf = zeitraffer(restore);
+        const V = lauf(9, 360, 180);
+        const H = lauf(9, 180, 0);
+        return {
+            voll: { bestand: V.mittel(60, 180), hunger: V.mittel(300, 360), tode: V.tode },
+            halb: { bestand: H.mittel(60, 180) },
+            kappe: V.kappe + H.kappe,
+            hungertod: H.tod,
+        };
+    });
+    // ── kaskade (Ökologie K1): je Saat acht Stunden, je Gattung die zweite gegen die achte (die erste besiedelt) ──
+    await buehne("kaskade", async (restore) => {
+        const lauf = zeitraffer(restore);
+        const saaten = [];
+        let kappe = 0;
+        for (let i = 1; i <= (taeter ? 2 : 8); i++) {
+            const L = lauf(i, 2880, Infinity);
+            kappe += L.kappe;
+            const je = {};
+            for (const g in A._lebensraumGesetz().L.gattung) je[g] = [L.mittel(360, 720, g), L.mittel(2520, 2880, g)];
+            saaten.push(je);
+        }
+        return { saaten, kappe };
+    });
+    // ── folgen (Ökologie K5, der Parcours): „folge mir“, dann geht der Spieler 10 min mit W (`_stepFixedSim`) über Hang und
+    // Wasser, um Wand und gedrehtes Haus, über den Sockel; Gegenlauf ohne die Geste ──
+    await buehne("folgen", async (restore) => {
+        const um = (name, fn) => decke(restore, name, (alt) => fn(alt));
+        if (taeter === "folgen") um("_tickCreatureFollowPlayer", (alt) => (...a) => alt.apply(r, a).set(0, 0, 0));
+        if (taeter === "folgen-wand") um("_kreaturHuellenKontakt", () => () => {});
+        if (taeter === "sockel") um("_kreaturAuflage", () => () => -Infinity);
+        if (taeter === "gedreht-kontakt")
+            um("_resolveCapsuleVsAABB", (alt) => (b, pos, f, h, rad, st, k) => alt.call(r, b, pos, f, h, rad, st, b.obb ? null : k));
+        if (taeter === "gedreht-rahmen")
+            um("_boxAbstand2", (alt) => (b, x, z) => alt.call(r, { minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ }, x, z));
+        if (taeter === "hindernis")
+            um("updateCreatures", (alt) => (dt) => {
+                alt.call(r, dt);
+                for (const { position: p } of s.creatures) r._fieldRaycast(p.x, p.y + 0.5, p.z, p.x + 2, p.y + 0.5, p.z + 2);
+            });
+        if (taeter === "hindernis-leib")
+            um("_kreaturHuellenKontakt", (alt) => (...a) => {
+                const echt = r._kreaturLeib;
+                r._kreaturLeib = (...b) => A.prototype._kreaturLeib.apply(r, b); // der Zwilling: dieselben Zahlen, nicht der Leser
+                try {
+                    return alt.apply(r, a);
+                } finally {
+                    r._kreaturLeib = echt;
+                }
+            });
+        const n = { schub: 0, leib: 0, strahlen: 0, takt: 0, kontakt: 0, spielerWand: 0 };
+        const H = [];
+        um("_kreaturLeib", (alt) => (...a) => (n.kontakt && n.leib++, alt.apply(r, a)));
+        um("_kreaturHuellenKontakt", (alt) => (c, ...a) => {
+            const [x, z] = [c.position.x, c.position.z];
+            n.kontakt++;
+            try {
+                return alt.call(r, c, ...a);
+            } finally {
+                n.kontakt--;
+                if (c.position.x !== x || c.position.z !== z) {
+                    n.schub++;
+                    for (const h of H) if (Math.hypot(h.cx - x, h.cz - z) < 7) h.kontakt++;
+                }
+            }
+        });
+        um("_fieldRaycast", (alt) => (...a) => (n.takt && n.strahlen++, alt.apply(r, a)));
+        const WK = ["_wandKontaktAt", "_wandKontaktNx", "_wandKontaktNz"];
+        um("updateCreatures", (alt) => (dt) => {
+            const vor = WK.map((k) => s[k]);
+            for (const k of WK) s[k] = NaN;
+            n.takt++;
+            try {
+                return alt.call(r, dt);
+            } finally {
+                n.takt--;
+                if (WK.some((k) => !Number.isNaN(s[k]))) n.spielerWand++;
+                else WK.forEach((k, i) => (s[k] = vor[i]));
+            }
+        });
+        r.setGameMode("pfad");
+        const dt = 1 / 60;
+        const v = s.speed;
+        const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
+        const hang = (x, z) => {
+            const h = (dx, dz) => r.getTerrainHeightAt(x + dx, z + dz);
+            return (Math.atan(Math.hypot(h(1, 0) - h(-1, 0), h(0, 1) - h(0, -1)) / 2) * 180) / Math.PI;
+        };
+        const P = pm.clone();
+        const [sx, sz] = [
+            [1, 1],
+            [1, -1],
+            [-1, 1],
+            [-1, -1],
+        ].find(([a, b]) => [100, 200, 300].every((d) => r._landAt(P.x + a * d, P.z + b * d))) || [0, 0];
+        if (!sx) return { fehler: "kein Land auf einer Diagonale bis 300 m" };
+        const ziele = [];
+        let [wx, wz] = [P.x, P.z];
+        for (let i = 0; i < Math.ceil((v * 640) / 60); i++) {
+            const [ux, uz] = i % 2 ? [0, sz] : [sx, 0];
+            const art = i % 3 === 1 && ["wand", "haus", "sockel", "wand"][H.length];
+            if (art) {
+                const [mx, mz] = [wx + ux * 30, wz + uz * 30];
+                H.push({ art, cx: mx, cz: mz, ux, kontakt: 0, drin: 0, quer: 0, vornMinM: Infinity, seite: 0 });
+                if (art !== "sockel")
+                    for (const [a, b] of [
+                        [-3, 0],
+                        [-3, 1],
+                        [3, 1],
+                        [3, 0],
+                    ])
+                        ziele.push([mx + ux * a + (ux ? 0 : 5.5) * b, mz + uz * a + (ux ? 5.5 : 0) * b]);
+            }
+            [wx, wz] = [wx + ux * 60, wz + uz * 60];
+            ziele.push([wx, wz]);
+        }
+        // die Wand ragt überall 2,5 m, das Haus 34° gedreht, der Sockel 0,35 m über dem Boden
+        const gebaut = H.map((h, i) => {
+            const name = "_t_folgen_" + i;
+            const g = (f, q = 0) => r.getTerrainHeightAt(h.cx + (h.ux ? q : 4 * f), h.cz + (h.ux ? 4 * f : q));
+            const [lo, hi] = [Math.min(...[-1, -0.5, 0, 0.5, 1].map((f) => g(f))) - 0.2, Math.max(...[-1, 0, 1].map((f) => g(f)))];
+            const size = h.art === "sockel" ? { x: 0.1, y: 0.1, z: 0.1 } : { x: h.ux ? 0.8 : 8, y: hi - lo + 2.5, z: h.ux ? 8 : 0.8 };
+            s.blueprints[name] = { name, parts: [{ shape: "box", material: "stein", position: { x: 0, y: size.y / 2, z: 0 }, size }] };
+            restore.push(() => delete s.blueprints[name]);
+            const y = h.art === "wand" ? lo : g(0) + 0.5;
+            const e = r.spawnArchitecture(name, { x: h.cx, y, z: h.cz }, { silent: true, rotationY: h.art === "haus" ? 0.6 : 0 });
+            const unten = Math.min(...[-0.5, 0, 0.5].flatMap((f) => [-2, 0, 2].map((q) => g(f, q)))) - 0.3 - g(0);
+            const teil =
+                h.art === "haus"
+                    ? { c: [0, 0, 0], h: h.ux ? [0.4, 6, 4] : [4, 6, 0.4] }
+                    : h.art === "sockel" && { c: [0, (unten + 0.35) / 2, 0], h: [2, (0.35 - unten) / 2, 2] };
+            if (e && teil) r._hausHuelleSetzen(e, { stufe: 0, teile: [Object.assign({ art: "box", rolle: "fest" }, teil)] });
+            const b = e && (e.blockerAABBs || []).find((q) => h.art !== "haus" || q.obb);
+            const o = b && (b.obb || { cx: (b.minX + b.maxX) / 2, cz: (b.minZ + b.maxZ) / 2, c: 1, s: 0, hx: (b.maxX - b.minX) / 2, hz: (b.maxZ - b.minZ) / 2 });
+            Object.assign(h, { box: b, F: o });
+            return e;
+        });
+        restore.push(() => gebaut.forEach((e) => e && r.removeArchitecture(e)));
+        if (H.length < 4 || H.some((h) => !h.box)) return { fehler: "ein Hindernis ohne Hülle (" + H.length + " gebaut)" };
+        // steht der Spieler 1 s, lenkt er 1 s 60° zur Seite
+        const gehen = (sek, je) => {
+            pm.set(P.x, boden(P.x, P.z), P.z);
+            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+            const tasten = s.keys;
+            s.keys = { w: true };
+            const t0 = (s._simZeit || 0) + 1;
+            let [zi, seite, aus, mark] = [0, 1, 0, [pm.x, pm.z]];
+            try {
+                for (let k = 0; k < sek * 60; k++) {
+                    const [zx, zz] = ziele[Math.min(zi, ziele.length - 1)];
+                    if (Math.hypot(zx - pm.x, zz - pm.z) < 1.5) zi++;
+                    if (k % 60 === 59) {
+                        if (!aus && Math.hypot(pm.x - mark[0], pm.z - mark[1]) < 0.3 * v) [aus, seite] = [60, -seite];
+                        mark = [pm.x, pm.z];
+                    }
+                    s.yaw = Math.atan2(zx - pm.x, zz - pm.z) + (aus > 0 ? (seite * Math.PI) / 3 : 0);
+                    if (aus > 0) aus--;
+                    ruhigSpieler();
+                    r._stepFixedSim(t0 + k * dt, dt);
+                    r.updateCreatures(dt);
+                    je(k);
+                }
+            } finally {
+                s.keys = tasten;
+            }
+        };
+        const hirsch = (gebunden) => {
+            const [hx, hz] = [P.x - sx * 2.8, P.z - sz * 2.8];
+            const c = tier({ x: hx, y: boden(hx, hz), z: hz }, "wesen", 1);
+            ruhig(c);
+            if (gebunden) r.dslRun(r.parseChatToDsl("folge mir").program, { source: "human" });
+            return c;
+        };
+        const c = hirsch(true);
+        if ((c.userData.task || {}).name !== "follow_player") return { fehler: "die Geste „folge mir“ bindet nicht" };
+        const bond0 = c.userData.bond;
+        const z = { proben: 0, aufgabe: 0, nassS: 0, steilS: 0 };
+        const [abstand, leibVon, abstand2] = [[], A.prototype._kreaturLeib, A.prototype._boxAbstand2];
+        n.strahlen = 0;
+        gehen(600, (k) => {
+            const p = c.position;
+            const lb = leibVon.call(r, c);
+            const [vx, vz] = [p.x + lb.fx * lb.halb, p.z + lb.fz * lb.halb];
+            for (const h of H) {
+                const [b, F] = [h.box, h.F];
+                if (h.art === "sockel") {
+                    const stufe = b.topY - r.getTerrainHeightAt(p.x, p.z);
+                    if (abstand2.call(r, b, p.x, p.z) === 0 && stufe > 0.05 && stufe < A.PLAYER_STEP_UP) {
+                        h.ueber = (h.ueber || 0) + 1;
+                        const tief = b.topY - p.y;
+                        if (tief > 0.05) [h.imSockel, h.tiefMaxM] = [(h.imSockel || 0) + 1, +Math.max(h.tiefMaxM || 0, tief).toFixed(3)];
+                    }
+                    h.stufeM = +(b.topY - r.getTerrainHeightAt(h.cx, h.cz)).toFixed(2);
+                    continue;
+                }
+                const lok = (x, y) => [(x - F.cx) * F.c - (y - F.cz) * F.s, (x - F.cx) * F.s + (y - F.cz) * F.c];
+                const [a, q] = lok(p.x, p.z);
+                if (Math.abs(a) < F.hx && Math.abs(q) < F.hz) h.drin++;
+                const [lang, duenn] = F.hx > F.hz ? [Math.abs(a) < F.hx, q] : [Math.abs(q) < F.hz, a];
+                if (h.seite && Math.sign(duenn) && Math.sign(duenn) !== h.seite && lang) h.quer++;
+                h.seite = Math.sign(duenn) || h.seite;
+                const [va, vq] = lok(vx, vz);
+                const [oa, oq] = [Math.max(Math.abs(va) - F.hx, 0), Math.max(Math.abs(vq) - F.hz, 0)];
+                const innen = Math.min(F.hx - Math.abs(va), F.hz - Math.abs(vq));
+                h.vornMinM = Math.min(h.vornMinM, +(oa > 0 || oq > 0 ? Math.hypot(oa, oq) : -innen).toFixed(3));
+            }
+            if (k % 60 !== 59) return;
+            z.proben++;
+            abstand.push(Math.hypot(p.x - pm.x, p.z - pm.z));
+            if ((c.userData.task || {}).name === "follow_player") z.aufgabe++;
+            if (r._nassAt(p.x, p.z)) z.nassS++;
+            if (hang(p.x, p.z) > 15) z.steilS++;
+        });
+        Object.assign(z, {
+            abstand: {
+                p50: +quantil(abstand, 0.5).toFixed(2),
+                p95: +quantil(abstand, 0.95).toFixed(2),
+                max: +Math.max(...abstand).toFixed(1),
+            },
+            bindung: [+bond0.toFixed(2), +c.userData.bond.toFixed(2)],
+            hindernisse: H.map(({ art, kontakt, drin, quer, vornMinM, ueber, imSockel, tiefMaxM, stufeM }) =>
+                art === "sockel" ? { art, ueber: ueber || 0, imSockel: imSockel || 0, tiefMaxM: tiefMaxM || 0, stufeM } : { art, kontakt, drin, quer, vornMinM }
+            ),
+            schub: n.schub,
+            leibRufe: n.leib,
+            strahlenJeTakt: +(n.strahlen / 36000).toFixed(3),
+            spielerWand: n.spielerWand,
+        });
+        r.removeCreature(c);
+        const u = hirsch(false);
+        gehen(120, () => {});
+        z.gegenlauf = { abstandM: +Math.hypot(u.position.x - pm.x, u.position.z - pm.z).toFixed(1) };
+        return z;
+    });
     // ── durst (Tiere K4, DURST_GESETZ): drei Hirsche 15–30 m vom Fluss, 1,5 × durstS: ihre Trünke am Wasser ──
     await buehne("durst", async (restore) => {
         if (taeter === "durst") decke(restore, "_kreaturDurstig", () => () => false);
@@ -229,6 +519,68 @@ async function lebenBuehnen(
 }
 // das Soll der Lebens-Proben (`soll(bedingung, grund)` aus dem Urteil der Kreatur-Proben)
 function lebenUrteil(name, z, soll) {
+    if (name === "bestand" || name === "kaskade")
+        soll(
+            z.kappe === 0,
+            `der Bestand bricht an die Kosten-Kappe aus: ${z.kappe} Takte an ihr (Soll 0 — die Nahrung begrenzt, nie der Deckel)`
+        );
+    if (name === "bestand") {
+        const { voll: V, halb: H } = z;
+        soll(V.bestand >= 4, `das Revier trägt keinen Bestand: ${V.bestand} Tiere (vakuös)`);
+        soll(
+            H.bestand <= 0.7 * V.bestand,
+            `die Geburt folgt der Nahrung nicht: ${H.bestand} Tiere halb gegen ${V.bestand} voll`
+        );
+        soll(
+            V.hunger <= 0.7 * V.bestand && V.tode[1] >= 1,
+            `der Tod folgt der Nahrung nicht: halbiert ${V.hunger} Tiere, ${V.tode[1]} Tode`
+        );
+        const T = z.hungertod;
+        soll(
+            T.n >= 1 && T.aeltester === T.n && T.trauer === T.n && T.journal === T.n,
+            `der Hungertod nimmt nicht das Älteste, trauert nicht oder schreibt kein Journal: ${T.n} Tode, ${T.aeltester} die Ältesten, ${T.trauer} betrauert, ${T.journal} im Journal`
+        );
+    }
+    if (name === "kaskade") {
+        const paare = z.saaten.flatMap((je, i) =>
+            Object.entries(je).map(([g, [a, e]]) => ({ wo: `Saat ${i + 1} ${g} ${a} → ${e}`, a, e }))
+        );
+        const da = paare.filter((p) => p.a >= 1).length;
+        const bruch = paare.filter((p) => (p.a >= 1 ? !(p.e >= p.a / 3 && p.e <= 3 * p.a) : p.e > 3));
+        soll(
+            z.saaten.length >= 8 && da >= 16 && !bruch.length,
+            `der Bestand bricht aus oder stirbt aus: ${bruch.map((p) => p.wo).join(" · ") || da + " Bestände in " + z.saaten.length + " Saaten"} (Soll je Gattung in [⅓×, 3×], 8 Saaten)`
+        );
+    }
+    if (name === "folgen") {
+        soll(z.bindung[0] > 0 && z.bindung[1] > z.bindung[0], `die Geste bindet nicht: bond ${z.bindung}`);
+        soll(
+            z.proben >= 600 && z.aufgabe === z.proben && z.abstand.p95 <= 10,
+            `das gebundene Tier folgt nicht: ${z.aufgabe} von ${z.proben} s in der Aufgabe, Abstand p95 ${z.abstand.p95} m, max ${z.abstand.max} m (Soll p95 ≤ 10 m über 600 s)`
+        );
+        const W = z.hindernisse.filter((h) => h.art !== "sockel");
+        const bruch = W.filter((h) => !(h.kontakt > 0 && h.drin === 0 && h.quer === 0 && h.vornMinM > 0));
+        soll(
+            W.length >= 3 && !bruch.length,
+            `die Hindernisse halten nicht: ${bruch.map((h) => `${h.art === "haus" ? "in der gedrehten Wand" : "in der Wand"} ${h.drin} Takte, ${h.quer}× quer hindurch, die Schnauze ${-h.vornMinM} m, ${h.kontakt} Schübe`).join(" · ")}`
+        );
+        const S = z.hindernisse.find((h) => h.art === "sockel") || { ueber: 0 };
+        soll(S.ueber >= 30, `der Hirsch kommt nicht über den Sockel (${S.ueber} Takte, vakuös)`);
+        soll(
+            !S.imSockel,
+            `das Tier steht im Sockel: ${S.imSockel} von ${S.ueber} Takten über ihm, bis ${S.tiefMaxM} m tief (Oberkante ${S.stufeM} m über dem Boden)`
+        );
+        soll(z.strahlenJeTakt === 0, `${z.strahlenJeTakt} Feld-Strahlen je Takt im Kreatur-Takt (Lehre 25)`);
+        soll(z.leibRufe > 0, `der Hüllen-Kontakt liest keinen benannten Leib (_kreaturLeib: ${z.leibRufe} Rufe)`);
+        soll(
+            z.spielerWand === 0,
+            `${z.spielerWand} Takte des Tiers schrieben die Parkour-Wand des Spielers (state._wandKontakt*)`
+        );
+        soll(
+            z.gegenlauf.abstandM >= 30,
+            `das ungebundene Tier folgt auch (${z.gegenlauf.abstandM} m nach 2 min, vakuös)`
+        );
+    }
     if (name === "durst")
         soll(
             z.truenke.every((n) => n >= 1) && z.amWasser === z.truenke.reduce((a, b) => a + b, 0),
@@ -289,9 +641,23 @@ function lebenUrteil(name, z, soll) {
 const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
     BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil, kamera, imBlick);`,
-    PROBEN: ["furcht", "lebensraum", "durst"],
+    PROBEN: ["furcht", "lebensraum", "durst", "bestand", "kaskade", "folgen"],
     TAETER: {
         durst: [["durst", /kein Tier trinkt aus Durst/]],
+        bestand: [
+            ["bestand-nahrung", /die Geburt folgt der Nahrung nicht[\s\S]*der Tod folgt der Nahrung nicht/],
+            ["bestand-deckel", /Kosten-Kappe[\s\S]*die Geburt folgt der Nahrung nicht[\s\S]*der Tod folgt der Nahrung nicht/],
+        ],
+        kaskade: [["bestand-deckel", /an die Kosten-Kappe/]],
+        folgen: [
+            ["folgen", /das gebundene Tier folgt nicht/],
+            ["folgen-wand", /die Hindernisse halten nicht/],
+            ["hindernis", /Feld-Strahlen/],
+            ["hindernis-leib", /benannten Leib/],
+            ["sockel", /steht im Sockel/],
+            ["gedreht-kontakt", /Parkour-Wand des Spielers/],
+            ["gedreht-rahmen", /gedrehten Wand/],
+        ],
         lebensraum: [
             ["lebensraum", /Geburten außerhalb des Lebensraums[\s\S]*Gegenprobe Geburten außerhalb/],
             ["geburt", /vor dem Spieler/],

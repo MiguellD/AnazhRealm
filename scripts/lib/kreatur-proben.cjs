@@ -1005,276 +1005,7 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── hindernis (Lehre 25): kein Feld-Strahl je Tier und Takt, die Wand wird umgangen ──
-    await buehne("hindernis", async (restore) => {
-        r.setGameMode("frieden");
-        let strahlen = 0,
-            dichte = 0,
-            boden = 0;
-        const zaehle = (name, inc) =>
-            decke(
-                restore,
-                name,
-                (alt) =>
-                    function (...a) {
-                        inc();
-                        return alt.apply(this, a);
-                    }
-            );
-        zaehle("_fieldRaycast", () => strahlen++);
-        zaehle("_fieldSolid", () => dichte++);
-        zaehle("_voxelSurfaceY", () => boden++);
-        if (taeter === "hindernis")
-            decke(
-                restore,
-                "updateCreatures",
-                (alt) =>
-                    function (dt) {
-                        alt.call(this, dt);
-                        for (const c of this.state.creatures)
-                            this._fieldRaycast(
-                                c.position.x,
-                                c.position.y + 0.5,
-                                c.position.z,
-                                c.position.x + 2,
-                                c.position.y + 0.5,
-                                c.position.z + 2
-                            );
-                    }
-            );
-        kamera(1, 0);
-        for (let i = 0; i < 8; i++) {
-            const c = tier(land(14 + (i % 4) * 7, -16 + Math.floor(i / 4) * 14), i % 3 ? "wesen" : "fuchs");
-            ruhig(c);
-        }
-        for (let k = 0; k < 60; k++) takt(1 / 60); // eingeschwungen (Boden-Caches)
-        strahlen = 0;
-        dichte = 0;
-        boden = 0;
-        const N = 120;
-        for (let k = 0; k < N; k++) takt(1 / 60);
-        const kosten = {
-            tiere: s.creatures.length,
-            strahlenJeTakt: +(strahlen / N).toFixed(2),
-            dichteJeTakt: +(dichte / N).toFixed(1),
-            bodenJeTakt: +(boden / N).toFixed(1),
-        };
-        for (const c of s.creatures.slice()) r.removeCreature(c);
-        // Die Wand: 8 × 2,5 × 0,8 m Stein zwischen dem Folger und dem Spieler.
-        s.blueprints._t_linse_wand = {
-            name: "_t_linse_wand",
-            parts: [
-                { shape: "box", material: "stein", position: { x: 0, y: 1.25, z: 0 }, size: { x: 8, y: 2.5, z: 0.8 } },
-            ],
-        };
-        const wo = land(20, 20);
-        const e = r.spawnArchitecture("_t_linse_wand", wo, { silent: true });
-        restore.push(() => {
-            if (e) r.removeArchitecture(e);
-            delete s.blueprints._t_linse_wand;
-        });
-        if (!e || !Array.isArray(e.blockerAABBs) || !e.blockerAABBs.length)
-            return Object.assign(kosten, { fehler: "Wand ohne Hülle" });
-        const box = e.blockerAABBs[0];
-        const mz = (box.minZ + box.maxZ) / 2,
-            mx = (box.minX + box.maxX) / 2;
-        pm.set(mx, pm.y, mz + 10);
-        const c = tier({ x: mx + 0.3, y: wo.y, z: mz - 8 }, "wesen");
-        ruhig(c);
-        r.assignCreatureTask(c, "follow_player", {}, { silent: true });
-        // DER LEIB DES TIERS: EINE benannte Größe (_kreaturLeib), die der Hüllen-Kontakt liest — gezählt werden nur seine
-        // Rufe; die Probe misst, wie weit die Schnauze vor dem Stein bleibt.
-        let leibRufe = 0,
-            imKontakt = 0;
-        const leibVon = A.prototype._kreaturLeib;
-        decke(
-            restore,
-            "_kreaturLeib",
-            (alt) =>
-                function (...a) {
-                    if (imKontakt > 0) leibRufe++;
-                    return alt.apply(this, a);
-                }
-        );
-        decke(
-            restore,
-            "_kreaturHuellenKontakt",
-            (alt) =>
-                function (...a) {
-                    imKontakt++;
-                    try {
-                        return alt.apply(this, a);
-                    } finally {
-                        imKontakt--;
-                    }
-                }
-        );
-        // Der Zwilling: der Kontakt rechnet einen eigenen Leib (dieselben Zahlen, aber nicht die benannte Größe).
-        if (taeter === "hindernis-leib")
-            decke(
-                restore,
-                "_kreaturHuellenKontakt",
-                (alt) =>
-                    function (...a) {
-                        const spion = this._kreaturLeib;
-                        this._kreaturLeib = (cr, l, o) => {
-                            const q = o || {};
-                            q.L = l;
-                            q.radius = Math.max(0.12, 0.3 * l);
-                            q.halb = 0.8 * l;
-                            q.hoehe = Math.max(0.5, 1.8 * l);
-                            q.fx = Math.sin(cr.rotation.y);
-                            q.fz = Math.cos(cr.rotation.y);
-                            return q;
-                        };
-                        try {
-                            return alt.apply(this, a);
-                        } finally {
-                            this._kreaturLeib = spion;
-                        }
-                    }
-            );
-        let drin = 0,
-            durch = false,
-            vornMin = null;
-        const N2 = 900;
-        for (let k = 0; k < N2; k++) {
-            takt(1 / 60);
-            const p = c.position;
-            if (p.x > box.minX && p.x < box.maxX && p.z > box.minZ && p.z < box.maxZ) drin++;
-            if (p.z > box.maxZ + 1) durch = true;
-            if (leibVon) {
-                const lb = leibVon.call(r, c);
-                const qx = p.x + lb.fx * lb.halb,
-                    qz = p.z + lb.fz * lb.halb;
-                const ax = Math.max(box.minX - qx, 0, qx - box.maxX),
-                    az = Math.max(box.minZ - qz, 0, qz - box.maxZ);
-                const ab =
-                    ax > 0 || az > 0
-                        ? Math.hypot(ax, az)
-                        : -Math.min(qx - box.minX, box.maxX - qx, qz - box.minZ, box.maxZ - qz);
-                if (vornMin === null || ab < vornMin) vornMin = ab;
-            }
-        }
-        return Object.assign(kosten, {
-            wandFrames: drin,
-            wandAnteil: +(drin / N2).toFixed(3),
-            angekommen: durch,
-            leibRufe,
-            vornMinM: vornMin === null ? null : +vornMin.toFixed(3),
-        });
-    });
 
-    // ── gedreht: das Tier am GEDREHTEN Haus (`_hausHuelleSetzen` → `_hausObb`) — der Leib löst im Rahmen der Box und meldet
-    // seinen Kontakt an sich, nie an die Parkour-Wand des Spielers (state._wandKontakt*) ──
-    await buehne("gedreht", async (restore) => {
-        r.setGameMode("frieden");
-        // Täter 1: der OBB-Zweig reicht den Kontakt-Empfänger des Tiers nicht weiter.
-        if (taeter === "gedreht-kontakt")
-            decke(
-                restore,
-                "_resolveCapsuleVsAABB",
-                (alt) =>
-                    function (box, pos, f, h, rad, st, k) {
-                        return alt.call(this, box, pos, f, h, rad, st, box && box.obb ? null : k);
-                    }
-            );
-        // Täter 2: Innen-Test und Reichweite lesen die Welt-AABB der gedrehten Box (größer als die Box).
-        if (taeter === "gedreht-rahmen")
-            decke(
-                restore,
-                "_boxAbstand2",
-                (alt) =>
-                    function (box, x, z) {
-                        return alt.call(this, { minX: box.minX, maxX: box.maxX, minZ: box.minZ, maxZ: box.maxZ }, x, z);
-                    }
-            );
-        // Das Haus: eine Wand 8 × 0,8 m, 34° gedreht, als Hülle der Stufe (haus-lokal [x0,y0,z0,x1,y1,z1], in den Boden
-        // gesenkt, damit der Hang unter ihr nie eine Lücke lässt).
-        const PHI = 0.6;
-        s.blueprints._t_linse_haus = {
-            name: "_t_linse_haus",
-            parts: [
-                { shape: "box", material: "stein", position: { x: 0, y: 1.25, z: 0 }, size: { x: 8, y: 2.5, z: 0.8 } },
-            ],
-        };
-        const wo = frei(-60, 40, 30) || land(-60, 40);
-        const e = r.spawnArchitecture("_t_linse_haus", wo, { silent: true, rotationY: PHI });
-        restore.push(() => {
-            if (e) r.removeArchitecture(e);
-            delete s.blueprints._t_linse_haus;
-        });
-        if (!e) return { fehler: "Haus nicht gesetzt" };
-        // die EINE Hüllen-Form: die Wand als Kasten c ± h, rolle "fest"
-        r._hausHuelleSetzen(e, {
-            stufe: 0,
-            teile: [{ art: "box", c: [0, -0.25, 0], h: [4, 2.75, 0.4], rolle: "fest" }],
-        });
-        const box = (e.blockerAABBs || []).find((b) => b.obb);
-        if (!box) return { fehler: "die Hülle trägt keine gedrehte Box" };
-        const ob = box.obb;
-        const lokal = (x, z) => {
-            const dx = x - ob.cx,
-                dz = z - ob.cz;
-            return { x: dx * ob.c - dz * ob.s, z: dx * ob.s + dz * ob.c };
-        };
-        // die Normale der Wand (lokal z) in der Welt, die Längs-Achse (lokal x)
-        const nx = ob.s,
-            nz = ob.c,
-            lx = ob.c,
-            lz = -ob.s;
-        pm.set(ob.cx + nx * 10, pm.y, ob.cz + nz * 10);
-        const c = tier({ x: ob.cx - nx * 8 + lx * 0.3, y: wo.y, z: ob.cz - nz * 8 + lz * 0.3 }, "wesen");
-        ruhig(c);
-        r.assignCreatureTask(c, "follow_player", {}, { silent: true });
-        const geschoben = kontaktZaehler(restore);
-        const leibVon = A.prototype._kreaturLeib;
-        let drin = 0,
-            kontaktFrames = 0,
-            spielerWand = 0,
-            vornMin = null,
-            seiteVorher = null,
-            querDurch = 0;
-        // Die Parkour-Wand des Spielers trägt je Takt eine Marke (NaN): jeder Schreiber im Tier-Takt überschreibt sie — auch
-        // derselbe Wert in derselben Millisekunde zählt. Danach kehrt der Zustand des Spielers zurück.
-        const wandVorher = [s._wandKontaktAt, s._wandKontaktNx, s._wandKontaktNz];
-        restore.push(() => {
-            [s._wandKontaktAt, s._wandKontaktNx, s._wandKontaktNz] = wandVorher;
-        });
-        const N2 = 900;
-        for (let k = 0; k < N2; k++) {
-            s._wandKontaktAt = s._wandKontaktNx = s._wandKontaktNz = NaN;
-            geschoben.clear();
-            takt(1 / 60);
-            if (!Number.isNaN(s._wandKontaktAt) || !Number.isNaN(s._wandKontaktNx) || !Number.isNaN(s._wandKontaktNz))
-                spielerWand++;
-            if (geschoben.size) kontaktFrames++;
-            const p = c.position;
-            const q = lokal(p.x, p.z);
-            if (Math.abs(q.x) < ob.hx && Math.abs(q.z) < ob.hz) drin++;
-            // quer durch die Wand: das Vorzeichen der Wand-Normale kippt, während die Achse innerhalb der Wand-Länge liegt
-            const seite = Math.sign(q.z);
-            if (seiteVorher !== null && seite !== 0 && seite !== seiteVorher && Math.abs(q.x) < ob.hx) querDurch++;
-            if (seite !== 0) seiteVorher = seite;
-            if (leibVon) {
-                const lb = leibVon.call(r, c);
-                const v = lokal(p.x + lb.fx * lb.halb, p.z + lb.fz * lb.halb);
-                const ax = Math.max(Math.abs(v.x) - ob.hx, 0),
-                    az = Math.max(Math.abs(v.z) - ob.hz, 0);
-                const ab =
-                    ax > 0 || az > 0 ? Math.hypot(ax, az) : -Math.min(ob.hx - Math.abs(v.x), ob.hz - Math.abs(v.z));
-                if (vornMin === null || ab < vornMin) vornMin = ab;
-            }
-        }
-        return {
-            gierGrad: +grad(PHI).toFixed(1),
-            kontaktFrames,
-            wandFrames: drin,
-            querDurch,
-            spielerWand,
-            vornMinM: vornMin === null ? null : +vornMin.toFixed(3),
-        };
-    });
 
     // ── nacht: die Ruhe-Aktion hält den Leib an ──
     await buehne("nacht", async (restore) => {
@@ -2160,79 +1891,6 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── sockel: das Tier steht auf der Auflage der Bauten wie der Spieler — ein Hirsch folgt dem Spieler auf einem Sockel
-    // (0,35 m über dem Boden); je Takt, wie tief die Sohle unter der Oberkante liegt ──
-    await buehne("sockel", async (restore) => {
-        r.setGameMode("frieden");
-        if (taeter === "sockel") decke(restore, "_kreaturAuflage", () => () => -Infinity);
-        // der Sockel 4 × 4 m ohne Bau im Umkreis, Oberkante 0,35 m über dem Boden; gezählt wird nur, wo er eine STUFE ist
-        // (5 cm bis PLAYER_STEP_UP über dem Boden unter dem Hirsch).
-        const wo = frei(-40, -60, 6) || land(-40, -60);
-        wo.y = r.getTerrainHeightAt(wo.x, wo.z);
-        const hs = [-2, 0, 2].flatMap((dx) => [-2, 0, 2].map((dz) => r.getTerrainHeightAt(wo.x + dx, wo.z + dz)));
-        const unten = Math.min(...hs) - 0.3 - wo.y;
-        const oben = 0.35;
-        // Der Sockel ist die HÜLLE eines Hauses (`_hausHuelleSetzen`, sie ebnet den Boden nicht ein), der Bau ein Kiesel;
-        // spawnArchitecture legt die Basis 0,5 m unter den Ort.
-        s.blueprints._t_linse_sockel = {
-            name: "_t_linse_sockel",
-            parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0.05, z: 0 },
-                    size: { x: 0.1, y: 0.1, z: 0.1 },
-                },
-            ],
-        };
-        const e = r.spawnArchitecture("_t_linse_sockel", { x: wo.x, y: wo.y + 0.5, z: wo.z }, { silent: true });
-        restore.push(() => {
-            if (e) r.removeArchitecture(e);
-            delete s.blueprints._t_linse_sockel;
-        });
-        if (!e) return { fehler: "Sockel nicht gesetzt" };
-        // die EINE Hüllen-Form (N5, S3 haus): der Sockel als Kasten c ± h, rolle "fest" — 4 × 4 m, von `unten` bis `oben`
-        r._hausHuelleSetzen(e, {
-            stufe: 0,
-            teile: [{ art: "box", c: [0, (unten + oben) / 2, 0], h: [2, (oben - unten) / 2, 2], rolle: "fest" }],
-        });
-        if (!Array.isArray(e.blockerAABBs) || !e.blockerAABBs.length) return { fehler: "Sockel ohne Hülle" };
-        const box = e.blockerAABBs[0];
-        const mx = (box.minX + box.maxX) / 2,
-            mz = (box.minZ + box.maxZ) / 2;
-        // die Kreatur-Uhr fest (die Aktions-Wahl hasht sie): jeder Lauf sieht dieselben Schritte, gleich welche Probe vorher lief
-        pm.set(mx, box.topY + 0.5, mz + 1.6);
-        // der Hirsch auf der Mitte des Sockels: erst wartet er dort (die Mitte ist eine Stufe von 0,35 m), dann folgt er dem
-        // Spieler, der auf dem Sockel hin und her geht
-        const c = tier({ x: mx, y: wo.y, z: mz }, "wesen", 1);
-        ruhig(c);
-        r.assignCreatureTask(c, "wait", {}, { silent: true });
-        let ueber = 0,
-            imSockel = 0,
-            tiefMax = 0;
-        const dt = 1 / 60;
-        for (let k = 0; k < 900; k++) {
-            if (k === 300) r.assignCreatureTask(c, "follow_player", {}, { silent: true });
-            if (k >= 300) pm.z = mz + 1.6 * Math.cos((k - 300) / 120);
-            takt(dt);
-            if (k < 30) continue;
-            const stufe = box.topY - r.getTerrainHeightAt(c.position.x, c.position.z);
-            if (r._boxAbstand2(box, c.position.x, c.position.z) === 0 && stufe > 0.05 && stufe < A.PLAYER_STEP_UP) {
-                ueber++;
-                const tief = box.topY - c.position.y;
-                if (tief > 0.05) {
-                    imSockel++;
-                    tiefMax = Math.max(tiefMax, tief);
-                }
-            }
-        }
-        return {
-            ueberTakte: ueber,
-            imSockelTakte: imSockel,
-            tiefMaxM: +tiefMax.toFixed(3),
-            oberkanteUeberBodenM: +(box.topY - wo.y).toFixed(2),
-        };
-    });
 
     // ── querhang: die Beine stehen lotrecht, der Leib rollt — Wolf und Hirsch QUER zur Fall-Linie eines Hangs von 20–30°
     // (je Bein Winkel gegen das Lot, Sohle über dem Boden), dann längs der Höhenlinie: der Stand-Schlupf ──
@@ -3368,8 +3026,6 @@ const PROBEN = [
     "gier",
     "jagd",
     "herde",
-    "hindernis",
-    "gedreht",
     "nacht",
     "peer",
     "zufall",
@@ -3378,7 +3034,6 @@ const PROBEN = [
     "abstand",
     "jagdkreis",
     "rudel",
-    "sockel",
     "querhang",
     "ferngang",
     "gestalt",
@@ -3561,30 +3216,6 @@ function urteil(name, z) {
             `Verband zerfällt auf der Flucht: im Mittel ${F.fluchtMittel} der ${F.n} Glieder binnen ${FR} Paar-Räumen vom Mittel, solange die Herde flieht (Soll ≥ 0,8; am wenigsten ${F.fluchtMin}, Wurf ${F.wurfAnteil})`
         );
     }
-    if (name === "hindernis") {
-        soll(z.strahlenJeTakt === 0, `${z.strahlenJeTakt} Feld-Strahlen je Takt (${z.dichteJeTakt} Dichte-Proben)`);
-        soll(z.wandFrames === 0, `${z.wandFrames} Frames in der Wand (der Folger läuft durch den Stein)`);
-        soll(z.leibRufe > 0, `der Hüllen-Kontakt liest keinen benannten Leib (_kreaturLeib: ${z.leibRufe} Rufe)`);
-        soll(
-            z.vornMinM !== null && z.vornMinM > 0,
-            `die vordere Leib-Achse (Schnauze) ${z.vornMinM === null ? "ohne Leib" : -z.vornMinM + " m im Stein"}`
-        );
-    }
-    if (name === "gedreht") {
-        soll(z.kontaktFrames > 0, `kein Kontakt am gedrehten Haus (Probe vakuös)`);
-        soll(
-            z.wandFrames === 0 && z.querDurch === 0,
-            `${z.wandFrames} Frames in der gedrehten Wand, ${z.querDurch}× quer hindurch (der Folger läuft durch das Haus)`
-        );
-        soll(
-            z.vornMinM !== null && z.vornMinM > 0,
-            `die vordere Leib-Achse ${z.vornMinM === null ? "ohne Leib" : -z.vornMinM + " m in der gedrehten Wand"}`
-        );
-        soll(
-            z.spielerWand === 0,
-            `${z.spielerWand} Takte des Tiers schrieben die Parkour-Wand des Spielers (state._wandKontakt*)`
-        );
-    }
     if (name === "nacht") {
         soll(z.ruhFrames >= 300, `nur ${z.ruhFrames} Ruhe-Frames (Probe vakuös)`);
         soll(
@@ -3751,13 +3382,6 @@ function urteil(name, z) {
             `das Rudel umstellt nicht: beim ersten Biss ${z.lueckeBeimBiss}° Lücke`
         );
     }
-    if (name === "sockel") {
-        soll(z.ueberTakte >= 30, `der Hirsch kommt nicht über den Sockel (${z.ueberTakte} Takte, vakuös)`);
-        soll(
-            z.imSockelTakte === 0,
-            `das Tier steht im Sockel: ${z.imSockelTakte} von ${z.ueberTakte} Takten über ihm, bis ${z.tiefMaxM} m tief (Oberkante ${z.oberkanteUeberBodenM} m über dem Boden)`
-        );
-    }
     if (name === "ferngang") {
         for (const [zone, Z] of [
             ["Grobstufen-Zone 45–60 m", z.grobstufe],
@@ -3824,14 +3448,6 @@ const TAETER = {
         // der Wurf ohne Bindung — der Verband zerfällt beim Wandern UND auf der Flucht
         ["herde-zerfall", /Verband zerfällt beim Wandern[\s\S]*Verband zerfällt auf der Flucht/],
     ],
-    hindernis: [
-        ["hindernis", /Feld-Strahlen/],
-        ["hindernis-leib", /benannten Leib/],
-    ],
-    gedreht: [
-        ["gedreht-kontakt", /Parkour-Wand des Spielers/],
-        ["gedreht-rahmen", /gedrehten Wand/],
-    ],
     nacht: [["nacht", /bewegt während ruhen/]],
     peer: [["peer", /Sicht-Kopie/]],
     zufall: [["zufall", /Math\.random im Kreatur-Leben: _pickCreatureName/]],
@@ -3860,7 +3476,6 @@ const TAETER = {
         ["jagd-ohne-wunde", /reißt zu selten \(rudel\)/],
     ],
     rudel: [["rudel", /umstellt nicht/]],
-    sockel: [["sockel", /steht im Sockel/]],
     // je Täter nennen BEIDE Orte ihn: der Hang der Welt und die Rampe der Prüfbühne
     querhang: [
         ["querhang", /Bein-Lot am Querhang[\s\S]*Bein-Lot an der Rampe/],
