@@ -55,7 +55,7 @@ const ANKER = [
     // uLodAuge) hängen am PROGRAMM (NodeBuilderState), nie an der Welt; die renderId-Wand je Beobachter schreibt sie
     // je Programm und Render. Jede Abkürzung der Diät muss diese Gruppe je Programm und Render selbst schreiben.
     { file: "vendor/three.webgpu.min.js", sub: "getMonitor(){return this._monitor||(this._monitor=this.getNodeBuilderState().observer)}", organ: "AnazhRealm._diaetRefresh (Beobachter je Programm)" },
-    { file: "vendor/three.webgpu.min.js", sub: "createBindings(){const e=[];for(const t of this.bindings){if(!0!==t.bindings[0].groupNode.shared){", organ: "AnazhRealm._diaetRefresh (geteilte Gruppe je Programm)" },
+    { file: "vendor/three.webgpu.min.js", sub: "createBindings(){const e=[];for(const t of this.bindings){if(!0!==t.bindings[0].groupNode.shared){", organ: "AnazhRealm._diaetRefresh (geteilte Gruppe je Programm) · _uniformHeimatTeilen (Klon-Weiche)" },
     { file: "vendor/three.webgpu.min.js", sub: "if(this.renderId!==r)return this.renderId=r,!0;", organ: "AnazhRealm._diaetRefresh (renderId-Wand je Beobachter)" },
     // Die Schatten-Diät: EIN Schatten-Material je Licht, die Original-Knoten hängen je Objekt darin
     { file: "vendor/three.webgpu.min.js", sub: 't.isShadowPassMaterial=!0,t.name="ShadowMaterial"', organ: "Schatten-Diät (_configureRenderer, isShadowPassMaterial)" },
@@ -77,6 +77,11 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getUpdateType(){return this.updateType}", organ: "AnazhRealm._diaetGeteiltSchreiben (Knoten-Takt render/frame/object)" },
     { file: "vendor/three.webgpu.min.js", sub: "_update(e,t){const{backend:r}=this;let s=!1,i=!0,n=0,a=0;for(const t of e.bindings){if(!1!==this.nodes.updateGroup(t)){", organ: "AnazhRealm._diaetGeteiltSchreiben (rend._bindings._update je Gruppe)" },
     { file: "vendor/three.webgpu.min.js", sub: "getBindings(){return this._bindings||(this._bindings=this.getNodeBuilderState().createBindings())}", organ: "AnazhRealm._diaetGeteiltSchreiben (ro.getBindings)" },
+    // DER WERT-BLICK: die render-Gruppe lädt wie `_update` (je Uniform updateByType), der Wert einer Uniform ist der ihres Knotens
+    { file: "vendor/three.webgpu.min.js", sub: "for(const t of this.uniforms)!0===this.updateByType(t)&&(e=!0)", organ: "_diaetGruppeLaden" },
+    { file: "vendor/three.webgpu.min.js", sub: "t.update()&&r.updateBinding(t)", organ: "_diaetGruppeLaden" },
+    { file: "vendor/three.webgpu.min.js", sub: "getValue(){return this.nodeUniform.value}", organ: "_wertBlick" },
+    { file: "vendor/three.webgpu.min.js", sub: "this.node=r}get value(){return this.node.value}", organ: "_wertBlick" },
     { file: "vendor/three.webgpu.min.js", sub: "this.updateNodes=n,this.updateBeforeNodes=a,this.updateAfterNodes=o,this.observer=u", organ: "AnazhRealm._diaetRefresh (NodeBuilderState: updateNodes · updateAfterNodes · observer) · Diät (6) Vorher-Textur-Wächter (die Vorher-Knoten am NodeBuilderState)" },
     { file: "vendor/three.webgpu.min.js", sub: "equals(e,t,r){const{object:s,material:i,geometry:n}=e,a=this.getRenderObjectData(e);", organ: "AnazhRealm._diaetRefresh (obs.equals)" },
     // (7) DER WÄCHTER IST DIE GEOMETRIE-PRÜFUNG: equals() prüft die Geometrie je Geometrie und Render (Stempel `_renderId`,
@@ -118,7 +123,7 @@ const ANKER = [
     // die Matrix-Puffer des Objekts in den Graphen): die instanzierten Foundry-Teile bauen je Objekt, auch mit EINEM Graphen —
     // fällt dieser Term, teilen sie ihr Programm ohne Umbau.
     { file: "vendor/three.webgpu.min.js", sub: "customCacheKey(){return this.id}", organ: "EIN GRAPH JE SIGNATUR (_foundryTreeMaterial · _membranGraph: Programm-Schlüssel = Knoten-Identität)" },
-    { file: "vendor/three.webgpu.min.js", sub: '(e.isInstancedMesh||e.count>1||Array.isArray(e.morphTargetInfluences))&&(s+=e.uuid+",")', organ: "EIN GRAPH JE SIGNATUR (je InstancedMesh ein Programm — darum zeichnet die Senke über ihren Zeichner, `_instanzZeichner`)" },
+    { file: "vendor/three.webgpu.min.js", sub: '(e.isInstancedMesh||e.count>1||Array.isArray(e.morphTargetInfluences))&&(s+=e.uuid+",")', organ: "EIN GRAPH JE SIGNATUR (je InstancedMesh ein Programm — darum zeichnet die Senke über ihren Zeichner, `_instanzZeichner`) · _renderObjekteLoesen (nur ein Schlüssel mit uuid gehört dem Objekt)" },
     // DIE SENKE ZEICHNET ÜBER IHREN ZEICHNER (1410-1, `_instanzZeichner` · `_senkenKnoten` · der setupPosition-Haken in
     // `_configureRenderer`): ein LOD ohne Takt zeichnet nicht, seine Kinder schon; die Zahl eines Draws ist instanceCount der
     // InstancedBufferGeometry (die Senke projiziert als LOD ohne Takt, ihr Zeichner erbt die Reihe der Eltern); der Instanz-Knoten steht in setupPosition, wo r184s InstanceNode steht (sein setup legt die
@@ -128,7 +133,6 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "!0===r.isInstancedBufferGeometry?u=r.instanceCount", organ: "DIE SENKE (die Instanz-Zahl des Zeichners ist instanceCount seiner Fassade)" },
     { file: "vendor/three.webgpu.min.js", sub: "t.isInstancedMesh&&t.instanceMatrix&&!0===t.instanceMatrix.isInstancedBufferAttribute&&Sp(t).toStack(),null!==this.positionNode", organ: "DIE SENKE (setupPosition: der Haken stellt den EINEN Instanz-Knoten an die Stelle des InstanceNode)" },
     { file: "vendor/three.webgpu.min.js", sub: 't.instanceColor){s=kn("vec3","vInstanceColor").mul(s)}', organ: "DIE SENKE (die Instanz-Farbe liest r184 als vInstanceColor — der Instanz-Knoten schreibt sie aus `instanzFarbe`)" },
-    { file: "vendor/three.webgpu.min.js", sub: "n.attribute!==e&&(n.attribute=e,s=!0)", organ: "DIE SENKE (je Bindung das Attribut des Speicher-Knotens, ein Wechsel baut die Bindegruppe neu — die Matrix je Zeichen-Objekt)" },
     { file: "vendor/three.webgpu.min.js", sub: "get attribute(){return this.nodeUniform.value}", organ: "DIE SENKE (die Speicher-Bindung liest das Attribut aus dem Wert ihres Knotens — `_senkenKnoten` stellt ihn je Objekt)" },
     // DER POSITIONS-KNOTEN VOR DER INSTANZ-MATRIX: `setupPosition` legt die Zuweisung des
     // positionNode auf den Stapel, der Instanz-Knoten hängt sein `positionLocal = M × positionLocal` erst in seinem setup an,
@@ -151,10 +155,9 @@ const ANKER = [
     // Objekt eingerichtet und zurückgesetzt; eine BundleGroup ohne backend.beginBundle ist eine Gruppe.
     { file: "vendor/three.webgpu.min.js", sub: 'this.isBundleGroup=!0,this.type="BundleGroup",this.static=!0,this.version=0}set needsUpdate(e){!0===e&&this.version++}', organ: "_archRegionBundleFor (THREE.BundleGroup)" },
     { file: "vendor/three.webgpu.min.js", sub: "this._currentRenderBundle=o;const{transparentDoublePass:e,transparent:d,opaque:c}=n;", organ: "Bundle-Wahrheit (die Aufnahme setzt den Zeiger)" },
-    { file: "vendor/three.webgpu.min.js", sub: "this._currentRenderBundle=null,this.backend.finishBundle(a,o),u.version=s.version", organ: "Bundle-Wahrheit (die Aufnahme nullt den Zeiger, ohne Stapel)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this._currentRenderBundle=null,this.backend.finishBundle(a,o),u.version=s.version", organ: "Bundle-Wahrheit (die Aufnahme nullt den Zeiger, ohne Stapel) · _erstWartet (2): die Marke des Knoten-Baus fällt nach der Versiegelung" },
     { file: "vendor/three.webgpu.min.js", sub: "null!==this._currentRenderBundle){this.backend.get(this._currentRenderBundle).renderObjects.push(u),u.bundle=this._currentRenderBundle.bundleGroup}", organ: "Bundle-Wahrheit (verfolgt nur bei stehendem Zeiger)" },
     { file: "vendor/three.webgpu.min.js", sub: "i.renderId=n,this._currentRenderContext=a,this._currentRenderObjectFunction=o,this._handleObjectFunction=u,this._callDepth--", organ: "Bundle-Wahrheit (_renderScene stellt den Zeiger NICHT wieder her)" },
-    { file: "vendor/three.webgpu.min.js", sub: "if(!0===e.isBundleGroup&&void 0!==this.backend.beginBundle){", organ: "Bundle-Wahrheit (ohne beginBundle ist die BundleGroup eine Gruppe)" },
     { file: "vendor/three.webgpu.min.js", sub: "const{renderObjects:e}=u;for(let t=0,r=e.length;t<r;t++){const r=e[t];this._nodes.needsRefresh(r)&&(this._nodes.updateBefore(r),this._nodes.updateForRender(r),this._bindings.updateForRender(r),this._nodes.updateAfter(r))}", organ: "Bundle-Wahrheit (der Replay refresht ausserhalb von renderObject)" },
     { file: "vendor/three.webgpu.min.js", sub: "p&&(t.overrideMaterial.colorNode=l,t.overrideMaterial.depthNode=d,t.overrideMaterial.positionNode=c,t.overrideMaterial.side=h)", organ: "Bundle-Wahrheit (der Override-Stoff wird je Objekt zurückgesetzt)" },
     { file: "vendor/three.webgpu.min.js", sub: "n.overrideMaterial=$_(r),i.setRenderObjectFunction(", organ: "Bundle-Wahrheit (der Schatten-Render trägt overrideMaterial an der Szene)" },
@@ -167,7 +170,6 @@ const ANKER = [
     // DIE ERST-ZEICHNUNG (`_configureRenderer`): der Stamm bildet `_renderObjectDirect` nach (ändert r184 den Körper,
     // zieht die Nachbildung nach), baut den Stoff im Pass je Render-Aufruf (`info.calls`) höchstens einmal und lässt die
     // Pipeline asynchron entstehen (`getForRender(ro, promises)`); der Record droppt unfertige Draws und versiegelt danach.
-    { file: "vendor/three.webgpu.min.js", sub: "u.version=s.version", organ: "_erstWartet (2): die Marke des Knoten-Baus fällt nach der Versiegelung" },
     {
         file: "vendor/three.webgpu.min.js",
         sub: "_renderObjectDirect(e,t,r,s,i,n,a,o){const u=this._objects.get(e,t,r,s,i,this._currentRenderContext,a,o);if(u.drawRange=e.geometry.drawRange,u.group=n,null!==this._currentRenderBundle){this.backend.get(this._currentRenderBundle).renderObjects.push(u),u.bundle=this._currentRenderBundle.bundleGroup}const l=this._nodes.needsRefresh(u);l&&(this._nodes.updateBefore(u),this._geometries.updateForRender(u),this._nodes.updateForRender(u),this._bindings.updateForRender(u)),this._pipelines.updateForRender(u),this._pipelines.isReady(u)&&(this.backend.draw(u,this.info),l&&this._nodes.updateAfter(u))}",
@@ -177,8 +179,7 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "updateForRender(e){this.getForRender(e)}", organ: "Erst-Zeichnung (der Vendor-Draw baut die Pipeline ohne Versprechen = synchron)" },
     { file: "vendor/three.webgpu.min.js", sub: "getForRender(e,t=null){const{backend:r}=this,s=this.get(e);if(this._needsRenderUpdate(e))", organ: "Erst-Zeichnung (die Pipeline mit Versprechen-Liste)" },
     { file: "vendor/three.webgpu.min.js", sub: "null===t)h.pipeline=d.createRenderPipeline(A)", organ: "Erst-Zeichnung (ohne Liste synchron)" },
-    { file: "vendor/three.webgpu.min.js", sub: "h.pipeline=await d.createRenderPipelineAsync(A)", organ: "_erstWartet (1): die Zuweisung der fertigen Pipeline ist die Bereitschaft (der Setter am Zustand)" },
-    { file: "vendor/three.webgpu.min.js", sub: "h.pipeline=await d.createRenderPipelineAsync(A)}catch(e){}const t=await d.popErrorScope()", organ: "_erstWartet (1): das Vendor-Versprechen wartet danach auf den Fehler-Scope — an ihm hängt nichts; _erstAbsageWache: r184 verschluckt die Absage (catch(e){})" },
+    { file: "vendor/three.webgpu.min.js", sub: "h.pipeline=await d.createRenderPipelineAsync(A)}catch(e){}const t=await d.popErrorScope()", organ: "_erstWartet (1): die Zuweisung der fertigen Pipeline ist die Bereitschaft, das Vendor-Versprechen wartet danach auf den Fehler-Scope — an ihm hängt nichts; _erstAbsageWache: r184 verschluckt die Absage (catch(e){})" },
     { file: "vendor/three.webgpu.min.js", sub: "label:`renderPipeline_${s.name||s.type}_${s.id}`", organ: "_erstAbsageWache (das Label der Absage nennt den Stoff)" },
     { file: "vendor/three.webgpu.min.js", sub: "this._setupBindings(u,n),this.set(t,{programGPU:n,pipeline:n})", organ: "_erstWartet (WebGL2-Weiche: _completeCompile ersetzt das Datenobjekt, ein Setter feuerte nie)" },
     { file: "vendor/three.webgpu.min.js", sub: "isReady(e){const t=this.get(e).pipeline;if(void 0===t)return!1;const r=this.backend.get(t);return void 0!==r.pipeline&&null!==r.pipeline}", organ: "Erst-Zeichnung (gezeichnet wird ab der fertigen Pipeline)" },
@@ -188,7 +189,6 @@ const ANKER = [
     // Warum kein Vorwärmen: r184-compileAsync liest die Attribute (→ synchroner Knoten-Bau) VOR seinem asynchronen Bau
     { file: "vendor/three.webgpu.min.js", sub: "this._geometries.updateForRender(t),await this._nodes.getForRenderAsync(t)", organ: "Erst-Zeichnung (das Vendor-Kompilat baut synchron — kein Vorwärmen daneben)" },
     // Bundle-Pass-Physik (Wasser bleibt draußen, solange der Copy den Pass bricht)
-    { file: "vendor/three.webgpu.min.js", sub: "currentPass.end()", organ: "Wasser-Bundle-Wand (copyFramebufferToTexture-Pass-Bruch)" },
     // Bundle-Replay-Buchung: die Draw-Wahrheit im Info (der Replay zieht aufgenommene RenderObjects)
     { file: "vendor/three.webgpu.min.js", sub: "_renderBundle(e,t,r){const{bundleGroup:s,camera:i,renderList:n}=e,a=this._currentRenderContext,o=this._bundles.get(s,i,a),u=this.backend.get(o),l=s.version!==u.version;if(l||void 0===u.bundleGPU)", organ: "Bundle-Replay-Buchung · _buendelSpieltAb" },
     { file: "vendor/three.webgpu.min.js", sub: "getDrawParameters(){", organ: "Bundle-Replay-Buchung (Draw-Parameter)" },
@@ -200,8 +200,7 @@ const ANKER = [
     // beginnen) trägt den Abbild-Pass — seine Quelle ist die Tiefe des Kontexts, seine Kopie die EINE Encoder-Stelle, die
     // `_tiefenAbbild` für die Attrappe durch den Abbild-Pass ersetzt; der Knoten zieht je Render einmal; r32float bindet
     // r184 als (unfilterable-)float.
-    { file: "vendor/three.webgpu.min.js", sub: "i=t.renderTarget?e.isDepthTexture?this.get(t.depthTexture).texture", organ: "_tiefenAbbild (Quelle des Bruchs = die Tiefe des Kontexts)" },
-    { file: "vendor/three.webgpu.min.js", sub: 's.currentPass?(s.currentPass.end(),a=s.encoder):a=this.device.createCommandEncoder({label:"copyFramebufferToTexture_"+e.id}),a.copyTextureToTexture({texture:i,origin:[r.x,r.y,0]},{texture:n},[r.z,r.w])', organ: "_tiefenAbbild (Pass-Ende und die EINE Encoder-Kopie)" },
+    { file: "vendor/three.webgpu.min.js", sub: 's.currentPass?(s.currentPass.end(),a=s.encoder):a=this.device.createCommandEncoder({label:"copyFramebufferToTexture_"+e.id}),a.copyTextureToTexture({texture:i,origin:[r.x,r.y,0]},{texture:n},[r.z,r.w])', organ: "_tiefenAbbild (Pass-Ende und die EINE Encoder-Kopie) · Wasser-Bundle-Wand (der Pass-Bruch)" },
     { file: "vendor/three.webgpu.min.js", sub: "s.currentPass=a.beginRenderPass(e),s.currentSets={attributes:{},bindingGroups:[],pipeline:null,index:null}", organ: "_tiefenAbbild (der Neubeginn mit load)" },
     // DER VORHER-TEXTUR-WÄCHTER der Diät: r184 zerstört beim Neu-Anlegen einer Ziel-Textur (das Tiefen-Abbild
     // in neuer Größe) die alte GPU-Textur; die Diät liest die Texturen der Vorher-Knoten am NodeBuilderState.
@@ -229,7 +228,6 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "renderer.shadowMap.enabled||(e.shadow.camera.coordinateSystem!==", organ: "_loopShadowUpdate (Uniform nur ohne Map)" },
     { file: "vendor/three.webgpu.min.js", sub: "m=i.filterNode||this.getShadowFilterFn(t.shadowMap.type)", organ: "_schattenFilter (shadow.filterNode vor dem Typ-Filter)" },
     // Uniform-Heimat (shared-Gruppen-Klon-Weiche + renderGroup-Export)
-    { file: "vendor/three.webgpu.min.js", sub: "groupNode.shared", organ: "_uniformHeimatTeilen (Klon-Weiche)" },
     { file: "vendor/three.webgpu.min.js", sub: "setGroup(e){return this.groupNode=e,this}", organ: "_uniformHeimatTeilen (setGroup)" },
     // Der stabile Puffer-Name: InstanceNode baut die Matrix-Puffer, der WGSL-Builder nennt sie ohne Namen nach der id
     { file: "vendor/three.webgpu.min.js", sub: "_createInstanceMatrixNode(e,t){let r;const{instanceMatrix:s}=this", organ: "Instanz-Puffer-Name (InstanceNode._createInstanceMatrixNode → setName)" },
@@ -239,7 +237,6 @@ const ANKER = [
     // Knoten ihm reicht (die Eingangs-Größe), `setSize` stellt `_invSize` (die Ausgabe), `clearViewOffset` schaltet die
     // Folge; das Quad nimmt die Klasse des Quads der Post-Kette; die Reprojektion steht VOR dem Post-Render (der Versatz lebt
     // nur zwischen den Pipeline-Haken); die Aufnahme rendert eine Halton-Runde (31 Versätze) und schaltet den Node-Frame
-    { file: "vendor/three.webgpu.min.js", sub: "t.generation!==l.generation&&(t.generation=l.generation,s=!0)", organ: "_zeitAufloesung (die Lage ist die Generation: eine getauschte Textur bindet nur bei anderer Generation neu)" },
     { file: "vendor/TRAANode.js", sub: "viewOffset.offsetX + jitterOffset[ 0 ] - 0.5, viewOffset.offsetY + jitterOffset[ 1 ] - 0.5,", organ: "_zeitAufloesung (der Versatz in Pixeln der gereichten Größe, gelesen aus camera.view)" },
     { file: "vendor/TRAANode.js", sub: "this._invSize.value.set( 1 / width, 1 / height );", organ: "_zeitAufloesung (setSize stellt die Ausgabe-Größe des Resolve)" },
     { file: "vendor/three.webgpu.min.js", sub: 'this._quadMesh=new gx(r),this._quadMesh.name="Render Pipeline"', organ: "_zeitAufloesung (das Quad der Post-Kette — seine Klasse zeichnet den Resolve)" },
@@ -337,12 +334,12 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "this._geometries=new Dy(this._attributes,this.info)", organ: "_gpuKehraus (renderer._geometries)" },
     { file: "vendor/three.webgpu.min.js", sub: "this.attributeCall=new WeakMap", organ: "_gpuKehraus (die Zeichen-Spur je Attribut)" },
     { file: "vendor/three.webgpu.min.js", sub: "updateAttribute(e,t){const r=this.info.render.calls;", organ: "_gpuKehraus (attributeCall = render.calls des letzten Zeichnens)" },
-    { file: "vendor/three.webgpu.min.js", sub: "this.attributes.update(e,i),n.attribute!==e&&(n.attribute=e,s=!0)", organ: "_instanzAbschied (die Bindegruppe eines Speicher-Puffers folgt nur dem Attribut-Objekt — er fällt nur mit seiner Senke)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this.attributes.update(e,i),n.attribute!==e&&(n.attribute=e,s=!0)", organ: "DIE SENKE (ein Wechsel des Attributs baut die Bindegruppe neu — die Matrix je Zeichen-Objekt) · _instanzAbschied (die Bindegruppe eines Speicher-Puffers folgt nur dem Attribut-Objekt — er fällt nur mit seiner Senke)" },
     // Das Render-Objekt-Register: r184 baut Render-Objekte über die Instanz-Methode createRenderObject und hängt jedes an das
     // dispose-Ereignis von Stoff und Geometrie (der geteilte Stoff hielt sie für immer).
     { file: "vendor/three.webgpu.min.js", sub: "this._objects=new Sy(this,this._nodes,this._geometries,this._pipelines,this._bindings,this.info)", organ: "_renderObjektRegister (renderer._objects)" },
     { file: "vendor/three.webgpu.min.js", sub: "l=this.createRenderObject(this.nodes,this.geometries,this.renderer,e,t,r,s,i,n,a,o)", organ: "_renderObjektRegister (jedes Render-Objekt entsteht über createRenderObject)" },
-    { file: "vendor/three.webgpu.min.js", sub: 'this.onMaterialDispose=()=>{this.dispose()},this.onGeometryDispose=()=>{this.attributes=null,this.attributesId=null},this.material.addEventListener("dispose",this.onMaterialDispose),this.geometry.addEventListener("dispose",this.onGeometryDispose)', organ: "_instanzAbschied (Stoff und Geometrie halten das Render-Objekt über ihr dispose-Ereignis)" },
+    { file: "vendor/three.webgpu.min.js", sub: 'this.onMaterialDispose=()=>{this.dispose()},this.onGeometryDispose=()=>{this.attributes=null,this.attributesId=null},this.material.addEventListener("dispose",this.onMaterialDispose),this.geometry.addEventListener("dispose",this.onGeometryDispose)', organ: "_instanzAbschied · _renderObjekteLoesen (Stoff und Geometrie halten das Render-Objekt über ihr dispose-Ereignis)" },
     { file: "vendor/three.webgpu.min.js", sub: "delete(e){if(e.isRenderObject){const t=this.get(e).nodeBuilderState;void 0!==t&&(t.usedTimes--,0===t.usedTimes&&this.nodeBuilderCache.delete(this.getForRenderCacheKey(e)))}return super.delete(e)}", organ: "_instanzAbschied (der Knoten-Zustand einer Senke verlässt den nodeBuilderCache — er hält die Senke) · _renderObjekteLoesen (Nodes.delete wirft den Knoten-Bau beim letzten Nutzer aus dem Cache)" },
     { file: "vendor/three.webgpu.min.js", sub: "deleteBindGroupData(e){const{backend:t}=this,r=t.get(e);r.layout&&(r.layout.usedTimes--,0===r.layout.usedTimes&&this._bindGroupLayoutCache.delete(r.layoutKey)", organ: "_instanzAbschied (die eigenen Bindegruppen verlassen die Layout-Zählung)" },
     // Der Geometrie-Halter: initGeometry hängt EINEN dispose-Hörer je Geometrie, der das erste Render-Objekt einfängt und in
@@ -351,7 +348,7 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: 't.addEventListener("dispose",r),this._geometryDisposeListeners.set(t,r)}', organ: "_renderObjektRegister (der Hörer lebt in _geometryDisposeListeners)" },
     { file: "vendor/three.webgpu.min.js", sub: "updateForRender(e){!1===this.has(e)&&this.initGeometry(e),this.updateAttributes(e)}", organ: "_renderObjektRegister (initGeometry läuft über die Instanz, einmal je Geometrie)" },
     // Die Textur merkt jede Bindegruppe, die sie liest, und vergisst sie nie — _instanzAbschied nimmt die Gruppen der Senke heraus.
-    { file: "vendor/three.webgpu.min.js", sub: "l=this.textures.get(u);o&&(this.textures.updateTexture(u),t.generation!==l.generation&&(t.generation=l.generation,s=!0),l.bindGroups.add(e))", organ: "_instanzAbschied (die Textur hält die Bindegruppen ihrer Leser)" },
+    { file: "vendor/three.webgpu.min.js", sub: "l=this.textures.get(u);o&&(this.textures.updateTexture(u),t.generation!==l.generation&&(t.generation=l.generation,s=!0),l.bindGroups.add(e))", organ: "_instanzAbschied (die Textur hält die Bindegruppen ihrer Leser) · _zeitAufloesung (eine getauschte Textur bindet nur bei anderer Generation neu)" },
     { file: "vendor/three.webgpu.min.js", sub: "this._textures=new tb(this,r,this.info)", organ: "_instanzAbschied (renderer._textures)" },
     // DER EINE LEINWAND-WEG (`_leinwandWeg`, gestellt von der Weiche in `_loopRender`): der Leinwand-Pass trägt
     // eine Tiefe nur bei renderer.depth/stencil, updateSize verwirft seinen Deskriptor; das Rahmen-Ziel des Direktpfads
@@ -363,7 +360,7 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "this.isWebGPUBackend=!0", organ: "_leinwandWeg (Leinwand-Tiefe nur auf WebGPU)" },
     { file: "vendor/three.webgpu.min.js", sub: "{depth:a,stencil:o}=this,u=this._outputRenderTarget||this._canvasTarget;", organ: "_leinwandWeg (das Rahmen-Ziel des Direktpfads liest renderer.depth)" },
     { file: "vendor/three.webgpu.min.js", sub: "l.depthBuffer=a,l.stencilBuffer=o,", organ: "_leinwandWeg (das Rahmen-Ziel folgt renderer.depth je Frame)" },
-    { file: "vendor/three.webgpu.min.js", sub: "i=t.renderTarget?e.isDepthTexture?this.get(t.depthTexture).texture:", organ: "_leinwandWeg (die Tiefen-Kopie liest die Tiefen-Textur des Ziels — ohne sie der WeakMap-Absturz)" },
+    { file: "vendor/three.webgpu.min.js", sub: "i=t.renderTarget?e.isDepthTexture?this.get(t.depthTexture).texture:", organ: "_tiefenAbbild (Quelle des Bruchs) · _leinwandWeg (die Tiefen-Kopie liest die Tiefen-Textur des Ziels — ohne sie der WeakMap-Absturz)" },
     { file: "vendor/three.webgpu.min.js", sub: "a=r.renderer.currentSamples,o=s.depthTexture;", organ: "_leinwandWeg (die Leinwand-Tiefe ist die DepthTexture des Leinwand-Ziels)" },
     { file: "vendor/three.webgpu.min.js", sub: "getCanvasTarget(){return this._canvasTarget}", organ: "_leinwandWeg (das Leinwand-Ziel)" },
     { file: "vendor/three.webgpu.min.js", sub: "destroyTexture(e,t=!1){this.textureUtils.destroyTexture(e,t)}", organ: "_leinwandWeg (die GPU-Textur der Leinwand-Tiefe fällt in der Post-Kette)" },
@@ -404,13 +401,11 @@ const ANKER = [
     // DIE LÖSUNG DER RENDER-OBJEKTE (Frost-Nachbesserung 4): r184 hängt jedes Render-Objekt an das dispose-Ereignis seines
     // Stoffs (6:205594) und löst es selbst nur dort (6:210413) — ein geteilter Stoff fällt nie; das Register sitzt an der
     // Klasse (createRenderObject, 6:211320), die Lösung nimmt die Hörer in ihrem eigenen Renderer ab (ro.renderer, 6:205002).
-    { file: "vendor/three.webgpu.min.js", sub: 'this.onMaterialDispose=()=>{this.dispose()},this.onGeometryDispose=()=>{this.attributes=null,this.attributesId=null},this.material.addEventListener("dispose",this.onMaterialDispose),this.geometry.addEventListener("dispose",this.onGeometryDispose)', organ: "_renderObjekteLoesen (die Hörer, die ein Render-Objekt an Stoff und Geometrie hängt)" },
     { file: "vendor/three.webgpu.min.js", sub: 'dispose(){this.material.removeEventListener("dispose",this.onMaterialDispose),this.geometry.removeEventListener("dispose",this.onGeometryDispose),this.onDispose()}', organ: "_renderObjekteLoesen (r184 löst ein Render-Objekt nur beim Stoff-dispose)" },
     { file: "vendor/three.webgpu.min.js", sub: "createRenderObject(e,t,r,s,i,n,a,o,u,l,d){const c=this.getChainMap(d),h=new vy(e,t,r,s,i,n,a,o,u,l);return h.onDispose=", organ: "_renderObjektRegister (die Hülle an der Klasse der Render-Objekt-Verwaltung)" },
     { file: "vendor/three.webgpu.min.js", sub: "this.id=_y++,this._nodes=e,this._geometries=t,this.renderer=r,this.object=s", organ: "_renderObjekteLoesen (jedes Render-Objekt kennt seinen Renderer)" },
     // DER KNOTEN-BAU gehört seinem Schlüssel (Frost-Nachbesserung 5): Cache je initialCacheKey (6:378979), Auswurf beim letzten
     // Nutzer (6:380856), die uuid im Schlüssel nur bei Instanz-Senke · count > 1 · Morph (6:209550) — nur dort löst die Lösung ihn.
-    { file: "vendor/three.webgpu.min.js", sub: '(e.isInstancedMesh||e.count>1||Array.isArray(e.morphTargetInfluences))&&(s+=e.uuid+",")', organ: "_renderObjekteLoesen (nur ein Schlüssel mit uuid gehört dem Objekt)" },
     { file: "vendor/three.webgpu.min.js", sub: "draw(e,t){const{object:r,context:s,pipeline:i}=e,n=this.get(s),a=this.get(i),o=a.pipeline;", organ: "_indexWacheDraw (die Index-Wache am Draw jedes Backends)" },
     { file: "vendor/three.webgpu.min.js", sub: "getIndex(){return this._geometries.getIndex(this)}", organ: "_indexWacheDraw (der Index, den der Draw bindet)" },
     { file: "vendor/three.webgpu.min.js", sub: "async init(e){await super.init(e);const t=this.parameters;", organ: "_gpuWacheAn (das Device jedes Backends nach seinem init)" },
@@ -419,7 +414,7 @@ const ANKER = [
     // trifft, und projiziert die Kinder JEDES Knotens danach ohne Ebenen-Test (das Gerät in der Hand hängt an Knochen auf
     // SHADOW_TWIN_LAYER und zeichnet doch im Auge).
     { file: "vendor/three.webgpu.min.js", sub: "_projectObject(e,t,r,s,i){if(!1===e.visible)return;if(e.layers.test(t.layers))", organ: "_applyEgoSicht (jede Kamera zeichnet nur ihre Ebenen)" },
-    { file: "vendor/three.webgpu.min.js", sub: "if(!0===e.isBundleGroup&&void 0!==this.backend.beginBundle){const r=s;(s=this._renderLists.get(e,t)).begin(),r.pushBundle({bundleGroup:e,camera:t,renderList:s}),s.finish()}const n=e.children;for(let e=0,a=n.length;e<a;e++)this._projectObject(n[e],t,r,s,i)", organ: "_applyEgoSicht (Kinder ohne Ebenen-Test) · ruhende Projektion" },
+    { file: "vendor/three.webgpu.min.js", sub: "if(!0===e.isBundleGroup&&void 0!==this.backend.beginBundle){const r=s;(s=this._renderLists.get(e,t)).begin(),r.pushBundle({bundleGroup:e,camera:t,renderList:s}),s.finish()}const n=e.children;for(let e=0,a=n.length;e<a;e++)this._projectObject(n[e],t,r,s,i)", organ: "_applyEgoSicht (Kinder ohne Ebenen-Test) · ruhende Projektion · Bundle-Wahrheit (ohne beginBundle ist die BundleGroup eine Gruppe)" },
     // DIE WURF-EBENE: `castShadow` ist ein Accessor auf das Bit SHADOW_TWIN_LAYER — der Konstruktor legt die Ebenen VOR der
     // ersten Zuweisung an, `copy` trägt beide; die Schatten-Kamera behält eine Maske mit einem Bit jenseits der 0 (sonst nähme
     // r184 die Maske der Haupt-Kamera und die Kaskade sähe keinen Werfer); die Schatten-Funktion liest `castShadow`.

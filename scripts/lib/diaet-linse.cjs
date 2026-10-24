@@ -150,9 +150,9 @@ function diaetZaehler() {
         if (imGang) besuch("Vorher", n.id);
         return roh.vorher.call(this, n);
     });
-    haken("bu", rend._bindings, "_update", function (g, alle) {
-        if (imGang) besuch("Gruppe", g.id);
-        return roh.bu.call(this, g, alle);
+    haken("laden", A, "_diaetGruppeLaden", (...a) => {
+        if (imGang) besuch("Gruppe", a[1].id);
+        return roh.laden(...a);
     });
     haken("ub", be, "updateBinding", function (b) {
         zaehle(b && b.groupNode && b.groupNode.shared === true ? "uploadGeteilt" : "uploadEigen");
