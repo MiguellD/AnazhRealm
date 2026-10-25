@@ -56,9 +56,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         };
 
         // ── Warm-Anker: Boot → f.ready → mensch-Rezept ──
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return { fatal: "anazhRealm kam nie" };
+        const r = await window.__weltDa();
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.mensch && !f._vorrat);

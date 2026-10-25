@@ -1742,9 +1742,7 @@ async function probe(A) {
 // "reload": dieselbe Welt neu geladen, dieselben Takte, dann der Abbau. Gezählt: die nassen Punkte (`_nassAt`, 1-m-Gitter
 // ±A.R m um den Damm) ohne Damm, mit Damm, nach dem Reload; die Invalidierungen des Automaten beim Abbau. ──
 async function dammProbe(A) {
-    await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready));
-    const r = window.anazhRealm;
-    if (!r) return { fehler: "die Welt bootete nicht" };
+    const r = await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready));
     const st = r.state;
     if (st.renderer) {
         st.renderer.render = function () {};

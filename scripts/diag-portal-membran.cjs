@@ -459,14 +459,10 @@ async function blickStufe(check) {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
-        const res = { boot: false, warm: false };
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return res;
-        res.boot = true;
+        const res = {};
+        const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.geisttor);
-        res.warm = !!(f && f.ready && f.recipes && f.recipes.geisttor);
 
         // ── Bühne: ein Welt-Portal (geisttor-Gestalt) direkt vor dem Spieler ──
         const p = r.state.playerMesh.position;
@@ -705,7 +701,6 @@ async function blickStufe(check) {
     });
 
     console.log("=== V18.464 PORTAL-MEMBRAN — Kollision · Passage · Hindurchgehen ===");
-    check("Boot + warmes Buch (geisttor im LIVE-Buch)", out.boot && out.warm);
     check("welt_portal gespawnt + Tor-Gesetz aufgelöst", out.spawned && out.torGesetz, `gestalt=${out.gestalt}`);
     if (out.k) {
         // je Seite (`TOR_HUELLE` des Gesetzbuchs): Pfosten bis zur Kämpferlinie · Rahmen darüber · Schulter · die

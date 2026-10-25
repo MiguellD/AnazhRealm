@@ -319,9 +319,7 @@ async function runPartB() {
         const res = { samples: [], err: null };
         const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
         // ── Boot + Foundry abwarten ──
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return { err: "anazhRealm nicht gebootet" };
+        const r = await window.__weltDa();
         const st = r.state;
         const A = r.constructor;
         res.flagDefault = st.foundryCrossfade === true; // W5.4 — Maske+Band DEFAULT AN
@@ -329,8 +327,6 @@ async function runPartB() {
         res.lodLive = D ? [D.thresh01, D.thresh12, D.fade, D.fade0] : null;
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready);
-        res.foundryReady = !!(f && f.ready);
-        if (!res.foundryReady) return res;
         // ── der Proben-Baum (gewachsener Bauplan, ferner Fix-Spot) ──
         const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "w54-band-sweep");
         const px = 12345,
@@ -1493,7 +1489,7 @@ async function main() {
             JSON.stringify(out.lodLive) === JSON.stringify(lodKern),
             `live ${JSON.stringify(out.lodLive)} · Kern ${JSON.stringify(lodKern)}`
         );
-        check("Foundry ready + Preset aufgelöst", out.foundryReady === true && out.preset === "eiche", out.preset);
+        check("Preset aufgelöst", out.preset === "eiche", out.preset);
         check(
             "alle drei Stufen warm vor der Baseline (L0/L1/Impostor)",
             !!(out.warm && out.warm.l0 && out.warm.l1 && out.warm.l2),

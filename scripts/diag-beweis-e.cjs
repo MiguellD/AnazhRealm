@@ -220,9 +220,7 @@ const SCHUSS_FN = async (kam) => {
     // ── 1: Boot + Settle + Mittag + Buch warm ──
     const boot = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
-        const r = window.anazhRealm;
-        if (!r) return { fatal: "anazhRealm kam nie" };
+        const r = await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
         let stable = 0,
             last = -1;
         for (const weiter = window.__deckel("der Ring der Ankunft", 600); weiter(); ) {
