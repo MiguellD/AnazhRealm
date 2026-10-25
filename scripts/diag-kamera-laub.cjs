@@ -1109,6 +1109,17 @@ async function probe(arg) {
                             gt.mesh.updateMatrixWorld(true);
                         }
                     };
+                // DIE WAGEN-KLASSE SIEHT SEINE NAH-GESTALT (kamera-nah: der gerittene Wagen ist Täter bis 3 m): er steht an der Stelle
+                // des Spielers, bis er in der Stufe gezeichnet ist, die die Welt dort wählt (das EINE Warten, welt-boot `__gebautNach`;
+                // der Laub-Teil fährt headless, nie die Karte der GPU) — kalt baut ihn die Welt, in fremder Stufe wechselt sie ihn (die
+                // Stand-Wache des LOD-Takts schläft, der Wagen sprang nur). Vorher maß die Klasse an 0 von 448 Ritt-Stellungen seine
+                // Nah-Gestalt: an drei Orten trug er keine, am Hang die Karte aus 30 m.
+                rittStelle(P.x, hh(P.x, P.z), P.z, 0);
+                const stufe = () => r._foundryLodForEntry(gt);
+                await window.__gebautNach(gt, {
+                    fertig: () => r._archIsRendered(gt) && gt._lodLevel === stufe(),
+                    bau: () => (r._archIsRendered(gt) ? r._switchArchitectureLOD(gt, stufe()) : r._rebuildArchitectureMesh(gt)),
+                });
                 z.modi.ritt = messe("ritt", rittStelle, 3.0, [0, Math.PI / 2], [0]);
                 r.dismountArchitecture();
             } else z.modi.ritt = { n: 0, grund: gt ? "Aufsitzen scheiterte" : "kein GT" };
