@@ -101,3 +101,4 @@
 2026-10-25 17:28:20 nw3031-abab START 4 Zellen
 2026-10-25 17:49:57 nw3031-abab VORFAHRT w-ego-B1 gewartet 18.2
 2026-10-25 18:02:52 nw3031-abab w-ego VERLÄNGERN 34.5 · 1/4 (2+2)
+2026-10-25 18:13:54 nw3031-abab g-third nicht-langsamer 10.9 · 2/4 (2+2)
