@@ -627,6 +627,53 @@ const alle = [
             "die Radeon-Zeiten des Belegs (kalt 1 519 / 2 346 ms) sind ein Hand-Lauf, die GTX ungemessen",
         quelle: "2 = ≤ 3 Eingaben und p95 ≤ 1 s bis zum ersten Ausgabe-Bild in L0, kalt und warm, beide Geräte",
     },
+    // ── bauen.K2 ── W9 SLOT (gate:haus-welt, bauen-k2-slot): ein Haus über die echte Werkstatt (Taste B, Suche, Liste, FERTIGEN) am
+    // Hang (gelaende-core `hangOrt` ≥ 17 % über 16 m, am Haus gemessen ±4 m) gesetzt — sein Erdbau `haus:` (Platte, Grund, Vorplatz)
+    // byte-gleich dem Plan v2 (fachwerk `ortPlan`) eines Dorf-Slots derselben Gestalt am selben Ort (obb aus dem Mass-Bau, Tür-Zeile
+    // der Hülle, Grund-Datum), über dem Boden ohne den eigenen Erdbau. Am main 83df2052 ROT (Erdbau grund ≠ platte+grund+platte:vorplatz,
+    // Gefälle 0,276), am Zweig GRÜN. Headless wie bauen.K1/K3: die Linse urteilt Daten am Spieler-Weg im Null-Renderer.
+    {
+        kriterium: "bauen.K2",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-haus-welt.cjs", "--phasen=slot"],
+        env: { ...SOFT, HAUS_WELT_PORT: "{PORT}", HAUS_WELT_JSON: "{AUS}", HAUS_WELT_PARALLEL: "1" },
+        gpu: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const sl = j && j.slot;
+            if (!sl) return { gruen: false, zahl: "kein W9 Slot im JSON (Exit " + lauf.exit + ")" };
+            if (sl.fehler) return { gruen: false, zahl: "W9 Slot blind: " + sl.fehler };
+            return {
+                gruen: sl.gleich === true && sl.gefaelle >= 0.15,
+                zahl: "Erdbau " + sl.ist + (sl.gleich ? " = " : " ≠ ") + "Dorf-Slot " + sl.soll + " · Gefälle " + sl.gefaelle,
+            };
+        },
+        pfad: [
+            "stamm/gelaende-*.js",
+            "stamm/werkstatt-*.js",
+            "stamm/koerper-seele.js",
+            "stamm/siedlung-*.js",
+            "stamm/studio-bruecke.js",
+            "fachwerk-core.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "foundry-bruecke.js",
+            "scripts/diag-haus-welt.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = Erdbau und Vorplatz wie ein Dorf-Slot derselben Gestalt (Byte-Vergleich der ortPlan-Ausgabe), am Hang mit Gefälle ≥ 15 %",
+    },
+    {
+        kriterium: "bauen.K2",
+        staffel: 2,
+        geraet: "headless",
+        befehl: null,
+        grund:
+            "kein Werkzeug setzt das Haus im Ortsradius als Slot des Plans mit umgelegter Gasse und geht über die Treppe in den Keller " +
+            "(W10 misst den Gang nur in Dorf-Häusern)",
+        quelle: "2 = im Ortsradius Slot des Plans mit umgelegter Gasse, Keller über die Treppe ohne Anti-Clip-Hub",
+    },
     {
         kriterium: "bauen.K3",
         staffel: 1,
