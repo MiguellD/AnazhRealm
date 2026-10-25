@@ -57,15 +57,14 @@ const ratscheDatei = (ortId, geraet, sicht) => `ratsche-${ortId}-${geraet}-${sic
 // Ein Toggle-Ort (`bank`, die Prüfbühne) richtet die GPU-Zeit eines Schalters, nie das Band. Jeder andere Ort misst das Band (E an
 // JEDEM Messort) und wählt seine Ratsche; Pflicht (H2b) ist sie an den Orten ohne Anlauf — ein Ort mit Anlauf (`anlauf`: die Stadt,
 // die der Spieler gründet, Dach und Gipfel über der erwachten Stadt) urteilt `ungemessen`, bis die Serie seine Ratsche prägt.
-const istToggleOrt = (o) => !o || o.bank !== undefined;
-const istBandOrt = (o) => !istToggleOrt(o) && o.anlauf === undefined;
+const istBandOrt = (o) => o.bank === undefined && o.anlauf === undefined;
 
 function ladeSpec(ortId, wahl) {
     const haushalt = JSON.parse(fs.readFileSync(path.join(SPEC, "haushalt.json"), "utf8"));
     const ort = ortOf(haushalt, ortId);
     const spec = { haushalt, ort, ratsche: null, ratscheDatei: null };
     // Die Ratsche wählt nur, wer Gerät UND Sicht nennt; ein Toggle-Ort (`bank`) trägt keine (`ratscheVon` bricht laut).
-    if (wahl && !istToggleOrt(ort)) {
+    if (wahl && ort.bank === undefined) {
         if (!(haushalt.geraete || {})[wahl.geraet] || !(haushalt.sichten || {})[wahl.sicht])
             throw new Error(
                 `Ratschen-Wahl ${wahl.geraet} × ${wahl.sicht}: der Haushalt kennt die Geräte ` +
@@ -82,14 +81,7 @@ function ladeSpec(ortId, wahl) {
 // Die Ratsche eines Orts für ein Band-Urteil — ein Toggle-Ort hat keine, das Band richten die Band-Orte. `null` heißt
 // ungemessen (die Datei fehlt) und urteilt rot.
 function ratscheVon(spec) {
-    if (istToggleOrt(spec.ort))
-        throw new Error(
-            `Messort ${spec.ort.id} ist ein Toggle-Ort ohne Ratsche (bank) — das Band richten ` +
-                spec.haushalt.messorte
-                    .filter(istBandOrt)
-                    .map((o) => o.id)
-                    .join(", ")
-        );
+    if (spec.ort.bank !== undefined) throw new Error(`Messort ${spec.ort.id} ist ein Toggle-Ort ohne Ratsche (bank)`);
     return spec.ratsche;
 }
 
