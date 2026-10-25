@@ -1262,7 +1262,7 @@ class AnazhRealm_dienst {
         }
         // DIE SPERRE DES LADENS (speicher.K1): solange loadState die Welt zusammensetzt, ist sie halb — neun Setter riefen
         // hier vor dem Bau-Restore, jeder Boot legte eine Welt ohne Bauten ab (ein Tod vor dem ersten Takt: fort). Der Wunsch
-        // bleibt: loadState schreibt am Ende EINMAL die ganze Welt.
+        // bleibt: nach dem Laden schreibt EIN Stand die ganze Welt (im nächsten Leerlauf).
         if (this._ladeSperre) {
             this._ladeSperre.verlangt = true;
             return false;

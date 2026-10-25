@@ -1285,8 +1285,9 @@ class AnazhRealm_speicher_welten {
 
     // DIE ÄNDERUNG DES STANDS für den Speicher-Faden (Lehre 24): je Feld der Tafel sein JSON, gesendet nur, wenn es sich
     // änderte (eine Marke erspart den Bau); je Liste die Menge (ihre Ordnung nur, wenn sie sich änderte) und die Glieder, deren
-    // JSON sich änderte; die Edits als Anhang (x, y, z, r, Modus) seit dem letzten Stand. `voll`: alles (der Faden hält kein
-    // Modell dieser Welt). `takt` (die Sicherung des Takts): die Glieder hat der Besen im Leerlauf geprüft (`_standFegen`) —
+    // JSON sich änderte; die Edits als Anhang (x, y, z, r, Modus) seit dem letzten Stand. `voll`: alles SENDEN (der Faden hält
+    // kein Modell dieser Welt) — serialisiert wird auch dann nur, was sich seit dem Gedächtnis änderte (der Besen backt ab dem
+    // Boot vor). `takt` (die Sicherung des Takts): die Glieder hat der Besen im Leerlauf geprüft (`_standFegen`) —
     // gefragt werden nur neue, die Baupläne in der Hand und, wo das Inventar sich regte, jeder Bauplan (ein Akt, der Material
     // zahlt und einen Bauplan ändert, steht ganz im Stand oder gar nicht). → die Nachricht (die Teile als EINE Zeichenkette,
     // speicher-faden.js nennt die Zahl) und die Transfers der Edits.
@@ -1311,15 +1312,16 @@ class AnazhRealm_speicher_welten {
         const [stuecke, teile, listenStuecke, listen] = [[], [], [], {}];
         const feld = (z) => {
             const k = z[0];
-            const art = z[2];
             const alt = S.zeilen.get(k);
-            const marke = art && art.marke ? art.marke(K) : null;
-            if (!voll && marke && alt && gleich(alt.marke, marke)) return;
-            const v = z[1](true, K);
-            const json = v === undefined ? undefined : JSON.stringify(v);
-            S.zeilen.set(k, { marke, json });
-            if (!voll && alt && alt.json === json) return;
-            K.geaendert.add(k);
+            const marke = z[2].marke ? z[2].marke(K) : null;
+            let json = alt && alt.json;
+            if (!marke || !alt || !gleich(alt.marke, marke)) {
+                const v = z[1](true, K);
+                json = v === undefined ? undefined : JSON.stringify(v);
+                S.zeilen.set(k, { marke, json });
+                if (alt && alt.json !== json) K.geaendert.add(k);
+                else if (alt && !voll) return;
+            } else if (!voll) return;
             if (json === undefined) return;
             teile.push(k);
             stuecke.push(json);
@@ -1343,26 +1345,33 @@ class AnazhRealm_speicher_welten {
             const art = tafel[i][2];
             if (!art || !art.liste) continue;
             const L = this._standListe(k);
-            const ganz = voll || !takt || (art.alle && art.alle(K));
+            const ganz = !takt || (art.alle && art.alle(K));
             const neu = [];
+            // ein Glied geprüft: neu serialisiert, wenn es kein Gedächtnis hat oder seine Marke sich änderte → geändert?
             const pruefe = (g, m) => {
                 const marke = art.marke(g, m, K);
-                if (!voll && marke && gleich(m.marke, marke)) return;
+                if (m.json !== null && marke && gleich(m.marke, marke)) return false;
                 m.marke = marke;
                 const json = JSON.stringify(art.glied(g));
-                if (!voll && json === m.json) return;
+                if (json === m.json) return false;
                 m.json = json;
-                neu.push(m.s);
-                listenStuecke.push(json);
+                return true;
             };
+            // die Baupläne in der Hand zuerst (ein Hieb zehrt): ihre Änderung geht mit den gefegten
+            if (art.hand && !ganz)
+                for (const g of art.hand(K)) {
+                    const m = L.memo.get(g);
+                    if (m && pruefe(g, m)) L.gefegt.add(m);
+                }
             const menge = art.menge ? art.menge(K) : L.menge;
-            if (ganz || !L.glieder || !gleich(L.menge, menge)) {
-                const glieder = art.liste(K);
+            const neueMenge = ganz || !L.glieder || !gleich(L.menge, menge);
+            if (voll || neueMenge) {
+                const glieder = neueMenge ? art.liste(K) : L.glieder;
                 const ord = new Array(glieder.length);
                 for (let j = 0; j < glieder.length; j++) {
                     const m = this._standGlied(L, glieder[j]);
-                    if (ganz || m.json === null) pruefe(glieder[j], m);
-                    else if (L.gefegt.has(m)) {
+                    const geaendert = (ganz || m.json === null) && pruefe(glieder[j], m);
+                    if (voll || geaendert || L.gefegt.has(m)) {
                         neu.push(m.s);
                         listenStuecke.push(m.json);
                     }
@@ -1380,11 +1389,6 @@ class AnazhRealm_speicher_welten {
                 listen[k] = { teile: neu };
             }
             L.gefegt.clear();
-            if (art.hand && !ganz)
-                for (const g of art.hand(K)) {
-                    const m = L.memo.get(g);
-                    if (m) pruefe(g, m);
-                }
             if (neu.length || listen[k].ordnung) L.gen++;
             K.listenGen[k] = L.gen;
             K.listenZahl[k] = L.glieder.length;
@@ -1474,8 +1478,8 @@ class AnazhRealm_speicher_welten {
     // weiter. Eine Runde beginnt mit der frischen Menge der Baupläne (ein neuer oder gefallener ohne Inventar-Akt kommt so
     // spätestens eine Runde später); jedes Glied ist einmal je Sicherungs-Abstand dran, ein neues sofort.
     _standFegen(frist) {
-        const S = this._speicher;
-        if (!S || !S.welt) return;
+        const S = this._speicherZustand();
+        if (!this.state.worldMeta || !this.state.playerMesh) return;
         const F = S.fege || (S.fege = { reihe: [], i: 0, guthaben: 0, zeit: performance.now() });
         const K = this._standKontext();
         // das Guthaben: so viele Glieder, dass jedes einmal je Sicherungs-Abstand dran ist (ein neues prüft der Stand selbst)
@@ -1492,8 +1496,10 @@ class AnazhRealm_speicher_welten {
                 for (const [k, , art] of this._standTafel()) {
                     if (!art || !art.liste) continue;
                     const L = this._standListe(k);
-                    if (!L.glieder) continue;
-                    if (!art.menge) {
+                    if (!L.glieder) {
+                        L.glieder = art.liste(K);
+                        L.menge = art.menge ? art.menge(K) : [L.glieder];
+                    } else if (!art.menge) {
                         const frisch = art.liste(K);
                         if (frisch.length !== L.glieder.length || frisch.some((g, j) => g !== L.glieder[j]))
                             L.menge = null;
@@ -1504,10 +1510,10 @@ class AnazhRealm_speicher_welten {
             }
             const [L, art, g] = F.reihe[F.i++];
             F.guthaben--;
-            const m = L.memo.get(g);
-            if (!m || m.json === null) continue;
+            const m = this._standGlied(L, g);
             const marke = art.marke(g, m, K);
-            if (marke && marke.length === (m.marke || []).length && marke.every((v, j) => v === m.marke[j])) continue;
+            const gleich = m.json !== null && marke && marke.length === (m.marke || []).length;
+            if (gleich && marke.every((v, j) => v === m.marke[j])) continue;
             m.marke = marke;
             const json = JSON.stringify(art.glied(g));
             if (json !== m.json) ((m.json = json), L.gefegt.add(m));
@@ -1554,24 +1560,10 @@ class AnazhRealm_speicher_welten {
     // dieser Welt hält).
     _standSichern(welt, at, takt) {
         const S = this._speicherZustand();
+        // voll: der Faden hält kein Modell dieser Welt — die Gedächtnisse der Seite bleiben, gesendet wird alles
         const voll = S.welt !== welt;
-        if (voll)
-            Object.assign(S, {
-                zeilen: new Map(),
-                listen: new Map(),
-                edits: { ref: null, n: 0 },
-                ordnung: null,
-                fege: null,
-            });
-        if (!S.besen) {
-            // der Besen läuft ab dem ersten Stand in jedem Leerlauf-Fenster (ohne die API im nächsten Task: ohne Frist)
-            const lauf = (frist) => {
-                this._standFegen(frist || { timeRemaining: () => 0, didTimeout: true });
-                this._imLeerlauf(lauf, 1000);
-            };
-            S.besen = true;
-            this._imLeerlauf(lauf, 1000);
-        }
+        if (voll) Object.assign(S, { edits: { ref: null, n: 0 }, ordnung: null, kopf: null });
+        this._standBesen();
         const { nachricht, transfer } = this._standAenderung(voll, takt);
         Object.assign(nachricht, { op: "stand", welt, at, voll });
         S.welt = welt;
@@ -1596,6 +1588,18 @@ class AnazhRealm_speicher_welten {
                 ordnung: null,
             })
         );
+    }
+
+    // Der Besen läuft ab dem Boot in jedem Leerlauf-Fenster (ohne die API im nächsten Task: ohne Frist) — EINMAL gestartet.
+    _standBesen() {
+        const S = this._speicherZustand();
+        if (S.besen) return;
+        S.besen = true;
+        const lauf = (frist) => {
+            this._standFegen(frist || { timeRemaining: () => 0, didTimeout: true });
+            this._imLeerlauf(lauf, 1000);
+        };
+        this._imLeerlauf(lauf, 1000);
     }
 
     // Die Schranke des Fadens: löst, wenn alles davor Gesendete fest ist (der Welt-Wechsel wartet auf sie).

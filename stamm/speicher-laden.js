@@ -10,7 +10,7 @@ class AnazhRealm_speicher_laden {
             if (!state) return false;
         }
         // DIE SPERRE DES LADENS (speicher.K1): bis der letzte Restore lief, ist die Welt halb — jeder Schreiber, der in ihr
-        // ruft (die Stoff-Setter der Seele riefen neunmal vor den Bauten), wartet; danach schreibt EIN saveState die ganze.
+        // ruft (die Stoff-Setter der Seele riefen neunmal vor den Bauten), wartet; danach schreibt EIN Stand die ganze (im nächsten Leerlauf).
         const sperre = (this._ladeSperre = { verlangt: false });
         try {
             this._loadStateRestorePlayerPosition(state);
@@ -70,7 +70,9 @@ class AnazhRealm_speicher_laden {
         } finally {
             this._ladeSperre = null;
         }
-        if (sperre.verlangt) this.saveState();
+        // die Lade-Sicherung im nächsten Leerlauf-Fenster (Takt): der Boot trägt sie nicht, der Besen hat bis dahin vorgebacken —
+        // stirbt die Seite davor, liegt der geladene Stand noch ganz auf der Platte
+        if (sperre.verlangt) this._imLeerlauf(() => this.saveState(true), 2000);
         return true;
     }
 
