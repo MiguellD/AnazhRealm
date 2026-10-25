@@ -1088,7 +1088,7 @@ class AnazhRealm_feld_nexus {
 
     // === Kreatur-Persona-Prompt-Builder ===
     // Der Spieler spricht mit EINER Kreatur, sie antwortet aus IHRER Sicht. Der Prompt versammelt
-    // Name + Soul, bornAt, Stats, Specs, Equipped, Boosts, Memory und Welt-Kontext (Wetter, Slug).
+    // Name + Soul, Alter, Stats, Specs, Equipped, Boosts, Memory und Welt-Kontext (Wetter, Slug).
     // Ein program der Antwort läuft nur über _handleCreatureProposedProgram (Whitelist).
     _buildCreaturePersonaPrompt(creature) {
         if (!creature || !creature.userData) return null;
@@ -1097,8 +1097,8 @@ class AnazhRealm_feld_nexus {
         const soulName = ud.soul || "wesen";
         const soulDef = AnazhRealm.CREATURE_SOULS && AnazhRealm.CREATURE_SOULS[soulName];
         const soulLabel = (soulDef && soulDef.label) || soulName;
-        // Alter berechnen aus bornAt
-        const ageMs = ud.bornAt ? Date.now() - ud.bornAt : 0;
+        // das Alter in Spiel-Zeit (`alterS` des Lebenszyklus; bornAt ist nur Identität)
+        const ageMs = (ud.alterS || 0) * 1000;
         const ageStr =
             ageMs < 60000
                 ? `${Math.max(1, Math.floor(ageMs / 1000))} Sekunden`

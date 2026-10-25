@@ -6,7 +6,7 @@
 const { safeEvaluate } = require("../playtest.cjs");
 
 // Die Logik-Konsumenten lesen die lebendige auraAt-API (nicht das eingefrorene worldFieldAt; den Bestand misst
-// gate:kreatur-takt bestand).
+// gate:kreatur-takt kaskade).
 async function checkBandV1725FieldReaders(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -971,12 +971,13 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             { type: "gathered", content: { material: "holz" }, at: 2 },
             { type: "built", content: { blueprint: "stein_block" }, at: 3 },
         ];
+        c.userData.alterS = 770; // das Alter in Spiel-Zeit (der Lebenszyklus zählt es) reist mit
         const snap = r._serializeCreature(c);
         out.snapHasName = typeof snap.name === "string" && snap.name.length > 0;
         out.snapHasSoul = snap.soul === "wesen";
         out.snapHasMemory = Array.isArray(snap.memory) && snap.memory.length === 3;
         out.snapHasPosition = snap.position && Number.isFinite(snap.position.x);
-        out.snapHasBornAt = Number.isFinite(snap.bornAt);
+        out.snapHasBornAt = Number.isFinite(snap.bornAt) && snap.alterS === 770;
 
         // 5. _restoreCreatureFromSnapshot baut Kreatur aus Snapshot
         const beforeCount = r.state.creatures.length;
@@ -991,7 +992,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             restored &&
             Math.abs(restored.position.x - snap.position.x) < 0.001 &&
             Math.abs(restored.position.z - snap.position.z) < 0.001;
-        out.restoreBornAtOk = restored && restored.userData.bornAt === snap.bornAt;
+        out.restoreBornAtOk = restored && restored.userData.bornAt === snap.bornAt && restored.userData.alterS === 770;
 
         // 6. Specs werden aus restoriertem memory korrekt re-derived
         const specs = r._computeCreatureSpecializations(restored);
@@ -1083,7 +1084,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     if (wave6hP2d1Results && !wave6hP2d1Results.error) {
         check("spawnCreatureAt setzt bornAt-Identitäts-Marker", wave6hP2d1Results.bornAtSet);
         check(
-            "Snapshot enthält name + soul + memory + position + bornAt",
+            "Snapshot enthält name + soul + memory + position + bornAt + alterS",
             wave6hP2d1Results.snapHasName &&
                 wave6hP2d1Results.snapHasSoul &&
                 wave6hP2d1Results.snapHasMemory &&
@@ -1100,7 +1101,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         );
         check("Restore übernimmt Memory (Länge + Inhalt)", wave6hP2d1Results.restoreMemoryOk);
         check("Restore übernimmt Position", wave6hP2d1Results.restorePositionOk);
-        check("Restore übernimmt bornAt", wave6hP2d1Results.restoreBornAtOk);
+        check("Restore übernimmt bornAt + alterS", wave6hP2d1Results.restoreBornAtOk);
         check("Specs aus restoriertem Memory korrekt re-derived", wave6hP2d1Results.specsReDerived);
         check(
             "buildStateSnapshot trägt volles Kreatur-Schema",

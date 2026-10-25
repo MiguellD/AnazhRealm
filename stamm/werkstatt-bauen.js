@@ -732,6 +732,9 @@ class AnazhRealm_werkstatt_bauen {
             this._tatSchreiben("faellen", entry.position.x, entry.position.z, {
                 s: Number.isFinite(entry.scale) ? +entry.scale.toFixed(2) : 1,
             });
+        // ein anderer Wurf des Gesetzes (Fels, Busch, Glut, Bau eines Orts) bleibt abgebaut: der Boot wirft ihn neu, die Tat
+        // sperrt ihn (`_tatSperrt`, speicher.K3)
+        else if (entry._ausGesetz) this._tatSchreiben("abbauen", entry.position.x, entry.position.z);
         // Nur der Spieler fühlt die Ernte (joy + hope, skaliert mit dem Ertrag); Kreaturen nicht.
         if (harvester === "player") {
             const mag =

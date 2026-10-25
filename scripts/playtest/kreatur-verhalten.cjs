@@ -1647,8 +1647,8 @@ async function checkBandTierSeparation(ctx) {
                 stellen(b, spot.x + reichA + leib.halb + leib.radius + 0.8, spot.z);
                 a.userData._stossV = { x: v0, z: 0 };
                 const res = { minAbstand: Infinity, dvStoesser: 0, dvZiel: 0, massen: null, kontakt: -1 };
-                // die Reibung eines Takts (μ·g·dt) nimmt dem gleitenden Stoßer auch im Stoß-Takt Fahrt — sie zählt nicht
-                const reib = A.STOSS ? (A.STOSS.reibungLeib * Math.abs(s.gravity)) / 60 : 0;
+                // die Reibung eines Takts (μ·g·dt, μ des Stoffs unter ihm) nimmt dem gleitenden Stoßer auch im Stoß-Takt Fahrt — sie zählt nicht
+                const reib = (r._stoff(r._kontaktStoffAt(spot.x, spot.z, spot.y)).mu * Math.abs(s.gravity)) / 60;
                 const mA = masse(a);
                 const mB = masse(b);
                 res.massen = mA > 0 && mB > 0 ? mB / mA : null;

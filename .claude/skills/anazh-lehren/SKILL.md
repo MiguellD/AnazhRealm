@@ -52,8 +52,10 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   `_gpuKehraus` · `_foundryAuftrag` · `_foundrySchale` · BRUCH = EIN Melder (`_stoffBruch` → `_bruchMelden`) · ANKUNFT = EIN Schreiber des
   ersten Weltbilds (`_weltbildSteht`).
 - LEBEN EIN Leib-Löser, Gang EIN Gesetz (`gangSchritt`; heute geht das Labor `worlds/tetrapoda` noch eigenen PD-Sinus) · Kamera
-  `_loopCamera` (heute 4 Zweige ohne Rig; die EINE Kugel ist Gesetz, nicht Stand) · Tod `_kreaturFaellt` · Lebenswerte = Zustand
-  (`recomputePlayerStats`) · Blocker-Netz · Klang-Gesetz · Uhr + Wetter = Spieler-Wort · SPEICHER atomar (tmp + Rename + .bak).
+  `_loopCamera` (heute 4 Zweige ohne Rig; die EINE Kugel ist Gesetz, nicht Stand) · Sturz = das Aufprall-Tempo des Leib-Lösers
+  (`LEIB.sturz` in `_loopPhysicsSync`, nie ein Höhen-Zähler) · Tod `_kreaturFaellt`, seine Lage in Ereignis-Zeit (die Haut im Tod
+  gelesen, `TOD_LAGE.vorlaufSec`, `_todLageFrist`) · Lebenswerte = Zustand (`recomputePlayerStats`), sie und die Bindung reisen im
+  Stand · Blocker-Netz · Klang-Gesetz · Uhr + Wetter = Spieler-Wort · SPEICHER atomar (tmp + Rename + .bak).
 - PRÜFEN 6 Golden-Sätze + Ofen · Messorte (`spec/profiband/haushalt.json`): Wiese −280,4/−1045,6 (K55, bd38fb16; der alte Ort −900/−850
   ist seit K16 ein Nadelwald-Hang), Genesis-Ring (`_genesisMitte`), Dorf, Prüfbühne `spec/pruefbuehne` · 12 Ratschen Ort × Gerät × Sicht ·
   Linsen-Start `lib/software-gpu.cjs` (`linsenWebGpuArgs`: lokal die echte GPU, CI swiftshader) · das Beweisbild urteilt selbst

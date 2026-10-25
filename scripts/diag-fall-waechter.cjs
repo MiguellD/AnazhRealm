@@ -923,7 +923,6 @@ async function probe(K) {
                 r.removeCreature(w);
                 return { fehler: "der Wolf stirbt nicht" };
             }
-            r._todLageTick({ timeRemaining: () => Infinity });
             // der Gefallene verlässt die Liste der Wesen im Moment des Todes und liegt in state.leichname (Welle LF kampf)
             const dabei = () => st.creatures.includes(w) || (st.leichname || []).includes(w);
             let kippMin = Infinity,
@@ -938,7 +937,7 @@ async function probe(K) {
                 const unter = g === Infinity ? 99 : Number.isFinite(g) ? g - w.position.y : 99;
                 if (unter > tiefsteUnter) tiefsteUnter = unter;
                 if (w.position.y < yMin) yMin = w.position.y;
-                const fertig = dy.t >= dy.dauer;
+                const fertig = dy.fall >= dy.dauer;
                 if (i % 3 === 2 || fertig) {
                     const a = hautAbstand(w);
                     if (a !== null) {
@@ -1105,7 +1104,7 @@ async function probe(K) {
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await nullRenderer(page);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
-    let befund = null;
+    let befund;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
         await warteAufWelt(page, 180000);

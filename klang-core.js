@@ -302,11 +302,11 @@
     //    Burst, das Material ist der Filter). Wanderte aus dem Stamm
     //    (SCHRITT_KLANG.material, byte-gleiche Werte); die Bewegungs-SCHWELLE
     //    (klangTempoMin) wohnt getrennt im koerper-Gesetzbuch — Timbre ist
-    //    Klang-Wissen, Schwelle ist Koerper-Wissen. fallback = das Timbre
-    //    unbekannter Materialien. Der Wirt liest fail-soft byte-gleich. ──
+    //    Klang-Wissen, Schwelle ist Koerper-Wissen. stoffe.K1: JEDE Zeile der
+    //    Stoff-Tafel des Wirts traegt ihren Eintrag (ihre Klang-Spalte, ein
+    //    Zugriff), ein Stoff ohne Eintrag ist ein Bruch — kein Ersatz-Timbre. ──
     // prettier-ignore
     var SCHRITT_TIMBRE = {
-        fallback: 'stein',
         material: {
             erde:   { filter: 'lowpass',  freq: 420,  q: 0.8, dauer: 0.09, gain: 0.045 },
             stein:  { filter: 'bandpass', freq: 1500, q: 1.6, dauer: 0.06, gain: 0.055 },
@@ -315,7 +315,22 @@
             eisen:  { filter: 'bandpass', freq: 2100, q: 2.4, dauer: 0.07, gain: 0.055 },
             wasser: { filter: 'lowpass',  freq: 900,  q: 0.7, dauer: 0.16, gain: 0.06 },
             // stoffe.K3 (rein additiv): das Eis — hart, kurz und hell wie Stein, eine Terz höher
-            eis:    { filter: 'bandpass', freq: 1900, q: 2.0, dauer: 0.05, gain: 0.05 }
+            eis:    { filter: 'bandpass', freq: 1900, q: 2.0, dauer: 0.05, gain: 0.05 },
+            // stoffe.K1 (rein additiv): die übrigen Zeilen — Holz hohl, Gras und Laub raschelnd, Metall klirrend, Leib dumpf
+            holz:     { filter: 'bandpass', freq: 700,  q: 1.2, dauer: 0.08, gain: 0.055 },
+            gras:     { filter: 'bandpass', freq: 3200, q: 0.6, dauer: 0.12, gain: 0.035 },
+            laub:     { filter: 'bandpass', freq: 2600, q: 0.5, dauer: 0.15, gain: 0.045 },
+            kraut:    { filter: 'bandpass', freq: 2800, q: 0.6, dauer: 0.12, gain: 0.035 },
+            bronze:   { filter: 'bandpass', freq: 1800, q: 2.6, dauer: 0.08, gain: 0.05 },
+            stahl:    { filter: 'bandpass', freq: 2400, q: 2.8, dauer: 0.07, gain: 0.055 },
+            blech:    { filter: 'bandpass', freq: 1200, q: 3.0, dauer: 0.09, gain: 0.06 },
+            knochen:  { filter: 'bandpass', freq: 1300, q: 1.8, dauer: 0.05, gain: 0.05 },
+            schuppen: { filter: 'bandpass', freq: 1600, q: 1.4, dauer: 0.06, gain: 0.045 },
+            federn:   { filter: 'bandpass', freq: 4000, q: 0.5, dauer: 0.1,  gain: 0.02 },
+            leder:    { filter: 'lowpass',  freq: 600,  q: 0.8, dauer: 0.07, gain: 0.04 },
+            fleisch:  { filter: 'lowpass',  freq: 300,  q: 0.7, dauer: 0.08, gain: 0.04 },
+            leib:     { filter: 'lowpass',  freq: 320,  q: 0.7, dauer: 0.08, gain: 0.04 },
+            essenz:   { filter: 'lowpass',  freq: 1100, q: 0.9, dauer: 0.14, gain: 0.05 }
         }
     };
 
@@ -1027,6 +1042,52 @@
         };
     }
 
+    // ── DER SPEKTRAL-SCHWERPUNKT (stoffe.K1, rein additiv, Mathe): Σ f·P(f) / Σ P(f) in Hz über die Leistung einer Folge —
+    //    Hann-gefensterte FFT der Länge N (die größte Zweierpotenz ≤ 8192 und ≤ der Folge), gemittelt über ihre Blöcke; die
+    //    Farbe eines Klangs. Leser: die Klang-Linse (je Stimme) und die Stoff-Linse (der Schritt je Stoff). ──
+    function schwerpunkt(daten, sr) {
+        var N = 2;
+        while (N < 8192 && N * 2 <= daten.length) N *= 2;
+        var re = new Float64Array(N), im = new Float64Array(N), sw = 0, sf = 0;
+        for (var o = 0; o + N <= daten.length; o += N) {
+            for (var i = 0; i < N; i++) {
+                re[i] = daten[o + i] * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / N));
+                im[i] = 0;
+            }
+            for (var a = 1, j = 0; a < N; a++) {
+                var bit = N >> 1;
+                for (; j & bit; bit >>= 1) j ^= bit;
+                j ^= bit;
+                if (a < j) {
+                    var tr = re[a], ti = im[a];
+                    re[a] = re[j]; im[a] = im[j]; re[j] = tr; im[j] = ti;
+                }
+            }
+            for (var len = 2; len <= N; len <<= 1) {
+                var wr = Math.cos((-2 * Math.PI) / len), wi = Math.sin((-2 * Math.PI) / len);
+                for (var b = 0; b < N; b += len) {
+                    var cr = 1, ci = 0;
+                    for (var k = 0; k < len / 2; k++) {
+                        var h = b + k + len / 2, vr = re[h] * cr - im[h] * ci, vi = re[h] * ci + im[h] * cr;
+                        re[h] = re[b + k] - vr;
+                        im[h] = im[b + k] - vi;
+                        re[b + k] += vr;
+                        im[b + k] += vi;
+                        var nr = cr * wr - ci * wi;
+                        ci = cr * wi + ci * wr;
+                        cr = nr;
+                    }
+                }
+            }
+            for (var q = 1; q < N / 2; q++) {
+                var p = re[q] * re[q] + im[q] * im[q];
+                sw += p;
+                sf += (p * q * sr) / N;
+            }
+        }
+        return sf / Math.max(1e-20, sw);
+    }
+
     // ── DIE SPITZEN-WAND hinter dem Welt-Master (Wirt UND Lab), Zahlen aus UMWELT.spitze ──
     // Die Kennlinie (rein): f(x) = x bis T, darueber T + (C − T)·tanh((|x| − T)/(C − T)) — stetig mit stetiger
     // Steigung bei T, |f| < C fuer jedes x. Abgetastet ueber x ∈ [−H, H] (H = Kopfraum).
@@ -1362,6 +1423,7 @@
         umweltMischung: umweltMischung,
         umweltGraph: umweltGraph,
         umweltSpitze: umweltSpitze,
+        schwerpunkt: schwerpunkt,
         tierRufPuffer: tierRufPuffer,
         tierRufPegel: tierRufPegel,
         tierRuf: tierRuf,

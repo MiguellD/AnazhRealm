@@ -159,8 +159,8 @@ class AnazhRealm_kreatur_leben {
         // KEINE Persistenz — Boosts sind „Geste lebt im Moment".
         group.userData.boosts = [];
         // W4 (V17.48) — die BINDUNG (∈ [0,1]): wächst, während die Kreatur folgt + nah ist
-        // + bei der „folge mir"-Geste; gewichtet die Contagion + den Schmerz des Verlusts.
-        // Reaktiv, NICHT persistiert (wie der Task — die Beziehung wird gelebt, nicht gespeichert).
+        // + bei der „folge mir"-Geste; gewichtet die Contagion + den Schmerz des Verlusts. Sie ist Zustand und reist mit
+        // dem Folgen in den Speicher (`_serializeCreature` bindung, halten.K5).
         group.userData.bond = 0;
         // Kreatur-HP: init = hpMax aus DERSELBEN Stat-Pipeline wie der Spieler; der Snapshot trägt die Wunde
         // (_serializeCreature → _restoreCreatureFromSnapshot, Q12); damageCreature lazy-init't ebenfalls.
@@ -201,7 +201,7 @@ class AnazhRealm_kreatur_leben {
 
     // === Komponenten-Persistenz für Kreaturen ===
     // Komponenten-Snapshot statt Mesh: {name, soul, memory, position, bornAt, …} je Kreatur (~1 KB).
-    // NICHT persistiert: Specs (live aus memory abgeleitet), Tasks + carrying (reaktiv).
+    // NICHT persistiert: Specs (live aus memory abgeleitet), Tasks + carrying (reaktiv) — außer der Bindung.
     _serializeCreature(creature) {
         if (!creature || !creature.userData) return null;
         const ud = creature.userData;
@@ -215,6 +215,9 @@ class AnazhRealm_kreatur_leben {
                 z: creature.position ? creature.position.z : 0,
             },
             bornAt: Number.isFinite(ud.bornAt) ? ud.bornAt : Date.now(),
+            // DAS ALTER reist mit (Spiel-Zeit, `alterS` des Lebenszyklus — die EINE Uhr des Alters; bornAt ist nur Identität):
+            // ohne es kehrte jedes Tier 0 s alt wieder, der Alterstod kam erst nach FAUNA_MAX_AGE_MS ohne Reload
+            alterS: ud.alterS > 0 ? ud.alterS : undefined,
             // S7 — die Körpergröße reist mit (Restore re-spawnt mit NEUER netId → bodySize
             // MUSS persistiert werden, sonst änderte das Wesen beim Reload seine Größe).
             bodySize: Number.isFinite(ud.bodySize) ? ud.bodySize : 1,
@@ -235,6 +238,15 @@ class AnazhRealm_kreatur_leben {
                 : undefined,
             // halten.K4 — die Pfeile, die im Tier stecken, reisen mit (Glied + Lage im Glied, `_pfeileDesTiers`)
             pfeile: this._pfeileDesTiers(creature),
+            // halten.K5 — DIE BINDUNG an den Spieler ist Zustand: die Tiefe (bond) und das Folgen (die Argumente des Auftrags
+            // follow_player); vorher kehrte jedes gebundene Tier nach dem Reload ungebunden wieder (bond 0,12 → 0, folgt → wander)
+            bindung:
+                ud.bond > 0 || (ud.task && ud.task.name === "follow_player")
+                    ? {
+                          bond: +(ud.bond || 0).toFixed(4),
+                          folgt: ud.task && ud.task.name === "follow_player" ? { ...ud.task.args } : null,
+                      }
+                    : undefined,
             // Eingefrorene Guss-Dials reisen mit — nur wenn unter einer Studio-Übergabe gegossen (Default-
             // Kreaturen tragen das Feld nicht); der Restore pinnt sie als dialsOv.
             gussDials:
@@ -284,6 +296,9 @@ class AnazhRealm_kreatur_leben {
         if (Number.isFinite(snap.bornAt)) {
             c.userData.bornAt = snap.bornAt;
         }
+        // ein Stand vor heim-z29b trug kein alterS (das Alter war die Wanduhr seit bornAt, sie zählte Pause und Portal): er
+        // beginnt in der Spiel-Zeit bei 0
+        if (snap.alterS > 0) c.userData.alterS = snap.alterS;
         // S6 — der Verband kehrt gebunden wieder: seine alte Kennung zeigt auf die netId seines ersten Wiedergekehrten (die
         // Wiederkehr vergibt neue netIds; eine alte Kennung träfe sonst ein fremdes, neu geborenes Leittier), das Revier zurück
         if (snap.verband != null) {
@@ -310,6 +325,13 @@ class AnazhRealm_kreatur_leben {
             c.userData._steuer = { gier: snap.gier, v: 0 };
         }
         if (Array.isArray(snap.pfeile)) this._pfeileInsTierLaden(c, snap.pfeile); // halten.K4: die Pfeile stecken wieder
+        // halten.K5: die Bindung kehrt wieder — still (keine Geste, kein Sprung der Bindung, kein Ruf)
+        const B = snap.bindung;
+        if (B && typeof B === "object") {
+            if (Number.isFinite(B.bond)) c.userData.bond = Math.max(0, Math.min(1, B.bond));
+            if (B.folgt && typeof B.folgt === "object")
+                this.assignCreatureTask(c, "follow_player", B.folgt, { silent: true });
+        }
         // Equipped-Slots defensiv restoren: tool muss in state.tools existieren, armor role:"armor" tragen —
         // sonst null (die Welt kann sich zwischen Save und Load geändert haben).
         if (snap.equipped && typeof snap.equipped === "object") {
@@ -898,7 +920,8 @@ class AnazhRealm_kreatur_leben {
         ud._gelenk.haltungFest = true;
         // wohin Platz ist (die Flanke hangab, steht dort eine Wand, die andere Flanke: `_todKippWahl`), rechnet der Leerlauf
         // (`_todLageBestellen`): bis die Tafel steht, ist `hebe` undefined und der Leib steht in der Haltung seines Todes —
-        // `fall` (die Uhr des Kippens) zählt erst ab dann, `t` (die Uhr des Leichnams: Kadaver, Frist) ab dem Tod
+        // `fall` (die Uhr des Kippens) zählt ab TOD_LAGE.vorlaufSec nach dem Tod (`_todLageFrist`), `t` (die Uhr des
+        // Leichnams: Kadaver, Frist) ab dem Tod
         creature.userData.dying = {
             t: 0,
             fall: 0,
@@ -1077,9 +1100,9 @@ class AnazhRealm_kreatur_leben {
     // er 0,84 m hinein). Dann fällt er dorthin, wo Platz ist: zuerst auf die andere Flanke, erst wo keine Flanke Platz hat
     // längs der Achse (der Leib liegt auf einer Flanke — längs der Achse stand der Hirsch auf dem Hinterteil, Bild ks09);
     // hat keine Richtung Platz, die mit dem kleinsten Hub. Hebt die erste Flanke höchstens eine Stufe, bleibt alles, wie es war.
-    // Ein Gang wie die Tafel: die Haut und das Raster einmal, je Richtung ihre Tafel; am Ende { hx, hz, hebe }.
-    *_todKippWahl(creature, hx, hz) {
-        const haut = this._todHaut(creature);
+    // Ein Gang wie die Tafel: die Haut (im Tod gelesen, `_todLageBestellen`) und das Raster einmal, je Richtung ihre Tafel; am
+    // Ende { hx, hz, hebe }.
+    *_todKippWahl(creature, hx, hz, haut) {
         if (!haut) return { hx, hz, hebe: null };
         const zellen = new Map();
         const hub = (h) => (h ? Math.max(...h) : Infinity);
@@ -1105,7 +1128,9 @@ class AnazhRealm_kreatur_leben {
     // 41,3 ms (Tod-Lage 31,3 ms).
     _todLageBestellen(creature, fall) {
         const Q = this._todLagen || (this._todLagen = []);
-        const gang = this._todKippWahl(creature, fall.dirX, fall.dirZ);
+        // die Haut in der Haltung des Todes liest der Tod selbst (halten.K5, Ereignis-Zeit): rechnete erst der Leerlauf oder
+        // die Frist sie, trug die Tafel die Haltung jenes Augenblicks — unter Last 0,2 s später, 6 mm anders gelegt
+        const gang = this._todKippWahl(creature, fall.dirX, fall.dirZ, this._todHaut(creature));
         fall.lage = new Promise((fertig) => Q.push({ creature, fall, gang, fertig }));
         if (Q.length === 1) this._imLeerlauf((frist) => this._todLageTick(frist), AnazhRealm.TOD_LAGE.fristMs);
     }
@@ -1129,21 +1154,32 @@ class AnazhRealm_kreatur_leben {
                     const di = Q[i].creature.position.distanceToSquared(p);
                     if (di < dj) [j, dj] = [i, di];
                 }
-                const a = Q[j];
-                const s = this.state.leichname.indexOf(a.creature) !== -1 ? a.gang.next() : { done: true, value: null };
-                if (s.done) {
-                    Q.splice(j, 1);
-                    if (s.value) {
-                        a.fall.dirX = s.value.hx;
-                        a.fall.dirZ = s.value.hz;
-                    }
-                    a.fall.hebe = s.value ? s.value.hebe : null;
-                    a.fertig(a.fall.hebe);
-                }
+                if (this._todLageSchritt(Q[j])) Q.splice(j, 1);
             } while (Q.length && offen());
         } finally {
             if (Q.length) this._imLeerlauf((f) => this._todLageTick(f), T.fristMs);
         }
+    }
+    // EIN Winkel der Tafel eines Gefallenen; steht sie (oder liegt er nicht mehr), trägt sein Fall ihre Lage — dann true.
+    _todLageSchritt(a) {
+        const s = this.state.leichname.indexOf(a.creature) !== -1 ? a.gang.next() : { done: true, value: null };
+        if (!s.done) return false;
+        if (s.value) {
+            a.fall.dirX = s.value.hx;
+            a.fall.dirZ = s.value.hz;
+        }
+        a.fall.hebe = s.value ? s.value.hebe : null;
+        a.fertig(a.fall.hebe);
+        return true;
+    }
+    // DIE FRIST DER TOD-LAGE (halten.K5, Ereignis-Zeit): steht die Tafel TOD_LAGE.vorlaufSec nach dem Tod (Kreatur-Uhr) nicht,
+    // rechnet der Takt ihren Rest jetzt (`_tickLeichname`) — der Fall beginnt bei jeder Bildrate und Last im selben Augenblick.
+    _todLageFrist(creature) {
+        const Q = this._todLagen || [];
+        const j = Q.findIndex((a) => a.creature === creature);
+        if (j < 0) return;
+        while (!this._todLageSchritt(Q[j]));
+        Q.splice(j, 1);
     }
 
     // === Helper: kontext-abhängiges Args-Mapping für creature_task(paramArg) ===
@@ -1562,19 +1598,16 @@ class AnazhRealm_kreatur_leben {
         return LG.bodenKlasse(h.dist - Math.max(1, h.halfW), aus.hang || 0, this._forestStandDensity(x, z), LG.L);
     }
 
-    // Findet die älteste Kreatur (kleinster bornAt), mit gattung nur ihrer Gattung. Für die Tod-Wahl am Hunger und am Alter —
-    // wer am längsten da ist, geht zuerst. Defensiv gegen Kreaturen ohne bornAt (z.B. aus Legacy-Save).
-    _findOldestCreature(gattung) {
-        if (!this.state.creatures || this.state.creatures.length === 0) return null;
+    // Findet die älteste Kreatur — das größte Alter in Spiel-Zeit (`alterS`, gezählt im Lebenszyklus), bei Gleichstand die
+    // früher Geborene (die Liste trägt die Geburts-Folge) —, mit gattung nur ihrer Gattung, mit nur (Set) nur unter ihm. Für die
+    // Tod-Wahl am Hunger, am Riss und am Alter: wer am längsten da ist, geht zuerst. Vorher wählte die Wanduhr der Geburt
+    // (bornAt): Geschwister eines Wurfs teilten oder trennten ihre Millisekunde je nach Lauf, dieselbe Saat starb anders.
+    _findOldestCreature(gattung, nur = null) {
         let oldest = null;
-        let oldestBorn = Infinity;
         for (const c of this.state.creatures) {
-            if (gattung && AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul] !== gattung) continue;
-            const b = (c && c.userData && c.userData.bornAt) || 0;
-            if (b < oldestBorn) {
-                oldestBorn = b;
-                oldest = c;
-            }
+            if ((gattung && AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul] !== gattung) || (nur && !nur.has(c)))
+                continue;
+            if (!oldest || (c.userData.alterS || 0) > (oldest.userData.alterS || 0)) oldest = c;
         }
         return oldest;
     }
@@ -1585,8 +1618,7 @@ class AnazhRealm_kreatur_leben {
         if (!creature) return false;
         const name = (creature.userData && creature.userData.name) || "(unbenannt)";
         const soul = (creature.userData && creature.userData.soul) || "wesen";
-        const bornAt = (creature.userData && creature.userData.bornAt) || 0;
-        const ageSec = bornAt > 0 ? (Date.now() - bornAt) / 1000 : null;
+        const ageSec = (creature.userData && creature.userData.alterS) || 0; // das Alter in Spiel-Zeit (`alterS`)
         // Tags BEVOR das Wesen fällt
         const tags = this.computeCreatureCompoundTags(creature);
         // Trauer ∝ Bindung × Vitalität: eine gebundene Gefährtin zu verlieren schmerzt mehr. Der
@@ -1904,10 +1936,13 @@ class AnazhRealm_kreatur_leben {
     // DER BESTAND IM REVIER (Ökologie K2, tetrapoda BESTAND_GESETZ): je Gattung der Bestand n (die lebenden Tiere), die
     // Kapazität K des Reviers um den Spieler (die Zellen des Rasters rasterM bis revierM: je Zelle der Lebensraum der Gattung in
     // ihrer Boden-Klasse × Fläche × die Nahrung nach ihrer Ernährung — die Äsung des Orts `_kreaturNahrung`, die Beute = die
-    // Pflanzenfresser im Revier) und die Bilanz {geburt, tod} je Takt. Die Boden-Klasse einer Zelle ist eine Funktion der Welt
-    // (Gelände, Fluss, Wald): sie wird je Zelle EINMAL gefragt (die Kosten hängen an der Bewegung, nie am Takt).
-    // Liefert { gattung: { n, K, frass, geburt, tod } }.
-    _kreaturBestand() {
+    // Pflanzenfresser im Revier), den Riss (Ökologie K1: die Kost der wilden Jäger gegen die Dichte ihrer Beute — Beute ist,
+    // was `_kreaturIstBeute` einem Jäger zuspricht, dieselbe Frage wie die Jagd im Takt) und die Bilanz {geburt, tod} je
+    // Takt. Die Boden-Klasse einer Zelle ist eine Funktion der Welt (Gelände, Fluss, Wald): sie wird je Zelle EINMAL gefragt
+    // (die Kosten hängen an der Bewegung, nie am Takt). `zellen` (wenn gegeben) sammelt je Zelle den Ort und je Gattung
+    // Lebensraum × Äsung — den Jungwuchs, den ihr Fraß liest (`_kreaturFrass`).
+    // Liefert { gattung: { n, K, frass, riss, beute, geburt, tod } } (beute: die Tiere, die einem Jäger Beute sind).
+    _kreaturBestand(zellen) {
         const BG = AnazhRealm._bestandGesetz();
         const B = BG.B;
         const LG = AnazhRealm._lebensraumGesetz();
@@ -1917,17 +1952,28 @@ class AnazhRealm_kreatur_leben {
         const pz = pm ? pm.position.z : 0;
         const n = {};
         const diet = {};
+        const jaeger = {};
+        const gejagt = {};
         for (const g in LG.L.gattung) {
-            n[g] = 0;
+            n[g] = jaeger[g] = gejagt[g] = 0;
             const d = this._ofenKreaturDials(g);
             if (!d || !d.dials || !Number.isFinite(d.dials.diet))
                 return AnazhRealm._kernPflichtBruch("tetrapoda:GATTUNGEN." + g + ".diet");
             diet[g] = d.dials.diet;
         }
+        const gattung = (c) => AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul];
+        for (const c of this.state.creatures) if (gattung(c) in n) n[gattung(c)]++;
+        // der Riss: wer einem wilden Jäger Beute ist, je Gattung gezählt, und die Kost der Jäger je Gattung, die sie jagen
+        const beuteVon = new Set();
         for (const c of this.state.creatures) {
-            const g = AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul];
-            if (g in n) n[g]++;
+            const d = diet[gattung(c)];
+            if (!(d > 0) || this._creatureTemperament(c) !== "wild") continue;
+            const jagt = new Set();
+            for (const o of this.state.creatures)
+                if (gattung(o) in n && this._kreaturIstBeute(c, o)) (beuteVon.add(o), jagt.add(gattung(o)));
+            for (const g of jagt) jaeger[g] += d;
         }
+        for (const o of beuteVon) gejagt[gattung(o)]++;
         let beuteN = 0;
         for (const g in n) if (diet[g] <= pflanz) beuteN += n[g];
         const beute = Math.min(1, beuteN / B.beuteVoll);
@@ -1950,23 +1996,48 @@ class AnazhRealm_kreatur_leben {
                 let klasse = kl.map.get(key);
                 if (klasse === undefined) kl.map.set(key, (klasse = this._bodenKlasseAt(x, z)));
                 const aesung = this._kreaturNahrung(x, z);
+                const je = {};
                 for (const g in n) {
                     const l = LG.lebensraum(g, klasse, LG.L);
                     if (l > 0) K[g] += l * ha * BG.nahrung(diet[g], aesung, beute);
+                    je[g] = l * aesung;
                 }
+                if (zellen) zellen.push({ x, z, je });
             }
         const aus = {};
         for (const g in n) {
             const k = B.kopfJeHa * K[g];
-            aus[g] = Object.assign({ n: n[g], K: +k.toFixed(2), frass: BG.frass(diet[g], B) }, BG.bilanz(n[g], k, B));
+            const riss = BG.riss(jaeger[g], gejagt[g] / B.beuteVoll, B);
+            aus[g] = Object.assign(
+                {
+                    n: n[g],
+                    K: +k.toFixed(2),
+                    frass: BG.frass(diet[g], B),
+                    riss,
+                    beute: beuteVon,
+                },
+                BG.bilanz(n[g], k, B)
+            );
         }
         return aus;
+    }
+
+    // DER FRASS (Ökologie K1, tetrapoda bestandFrass): je Takt nimmt jede äsende Gattung n × frass vom Jungwuchs der Zellen, die
+    // ihr Bestand liest (`zellen` aus `_kreaturBestand`), je Zelle nach ihrem Anteil Lebensraum × Äsung — die Herde äst, wo der
+    // Jungwuchs steht, und die Kapazität liest, was sie ließ (negativ ins Feld). Vorher fraß jedes Tier an seinem Ort, den das
+    // Raster nie las (Zeitraffer am main 45c6aa19: ohne die Wölfe Jungwuchs −0,1 %).
+    _kreaturFrass(bestand, zellen) {
+        for (const g in bestand) {
+            const F = bestand[g].n * bestand[g].frass;
+            const summe = F > 0 ? zellen.reduce((s, c) => s + c.je[g], 0) : 0;
+            if (summe > 0) for (const c of zellen) if (c.je[g] > 0) this._depositLife(c.x, c.z, (-F * c.je[g]) / summe);
+        }
     }
 
     // DER LEBENSZYKLUS (Ökologie K2, tetrapoda BESTAND_GESETZ): je taktS s der Spiel-Zeit (`spielZeit`: das Portal friert sie
     // ein) die Bilanz des Reviers (`_kreaturBestand`) — je Gattung über ihrer Kapazität stirbt mit ihrer Chance das Älteste am
     // Hunger (die Trauer des Spielers hebt, sein Frieden dämpft), darunter wirft der Ort eine Gruppe (`_creatureNaturalBirth`);
-    // zuvor äst jedes Tier am Ort (der Fraß, Ökologie K1).
+    // zuvor äst die Herde den Jungwuchs ihres Reviers (`_kreaturFrass`), und die Jäger reißen ihre Beute (Ökologie K1).
     // Jenseits der Lebensspanne kehrt das älteste Wesen zur Erde zurück. Bis Ökologie K2 setzte ein Deckel den Bestand (Ziel
     // 4–14 und Deckel 4–28 Tiere aus dem Feld am Spieler, FAUNA_TARGET/MAX_POPULATION), getaktet in der Wanduhr (Abklingen 25
     // bzw. 35 s); kein Fraß, keine Beute änderte eine Geburt, gestorben wurde nur über dem Deckel und am Alter.
@@ -1975,30 +2046,31 @@ class AnazhRealm_kreatur_leben {
         const L = st.faunaLifecycle;
         if (st.spielZeit - (L.lastTick || 0) < AnazhRealm._bestandGesetz().B.taktS) return;
         L.lastTick = st.spielZeit;
-        const bestand = this._kreaturBestand();
-        // DER FRASS (Ökologie K1): jedes Tier nimmt je Takt nach seiner Äsung vom Leben seines Orts (negativ ins Feld)
-        for (const c of st.creatures) {
-            const b = bestand[AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul]];
-            if (b && b.frass > 0) this._depositLife(c.position.x, c.position.z, -b.frass);
-        }
+        // das Alter in Spiel-Zeit: je Takt taktS (dieselbe Uhr wie die Bilanz; vorher zählte die Wanduhr, Date.now − bornAt:
+        // im Portal und in der Pause alterte jedes Tier, im Zeitraffer keines)
+        for (const c of st.creatures)
+            c.userData.alterS = (c.userData.alterS || 0) + AnazhRealm._bestandGesetz().B.taktS;
+        const zellen = [];
+        const bestand = this._kreaturBestand(zellen);
+        this._kreaturFrass(bestand, zellen);
         const rng = this._faunaRng();
         for (const g in bestand) {
-            const p = bestand[g].tod;
-            if (!(p > 0) || !(rng() < this._emotionModulate(p, { sorrow: { mul: 1.5 }, peace: { mul: 0.7 } })))
-                continue;
-            const opfer = this._findOldestCreature(g);
-            if (opfer) this._creatureNaturalDeath(opfer, "hunger");
+            const { tod: p, riss, beute } = bestand[g];
+            if (p > 0 && rng() < this._emotionModulate(p, { sorrow: { mul: 1.5 }, peace: { mul: 0.7 } })) {
+                const alt = this._findOldestCreature(g);
+                if (alt) this._creatureNaturalDeath(alt, "hunger");
+            }
+            // DER RISS (Ökologie K1): die Jäger nehmen das Älteste ihrer Beute unter den Lebenden (nach dem Hungertod gewählt) —
+            // der Tod eines Bisses (`_creatureCombatDeath`, Quelle jagd: der Ort erinnert ihn, der Leib liegt für den Fraß der Jäger)
+            const opfer = riss > 0 && rng() < riss && this._findOldestCreature(g, beute);
+            if (opfer) this._creatureCombatDeath(opfer, "jagd");
         }
         // die Geburt folgt der EINEN Regel der Kreaturen (`_kreaturenBereit`, K60): unter dem Ladeschirm goss sie, sobald
         // Boot-Phase 3 wartete, die Gattung synchron (Radeon kalt 0,7 s vor dem ersten Bild)
         if (this._kreaturenBereit()) this._creatureNaturalBirth(bestand);
         // Alter zählt: jenseits der Lebensspanne kehrt das älteste Wesen zur Erde zurück, auch im Soll der Bilanz
-        if (st.creatures.length > 2) {
-            const oldest = this._findOldestCreature();
-            const bornAt = oldest && oldest.userData && oldest.userData.bornAt;
-            if (bornAt && Date.now() - bornAt > AnazhRealm.FAUNA_MAX_AGE_MS)
-                this._creatureNaturalDeath(oldest, "alter");
-        }
+        const alt = st.creatures.length > 2 && this._findOldestCreature();
+        if (alt && alt.userData.alterS * 1000 > AnazhRealm.FAUNA_MAX_AGE_MS) this._creatureNaturalDeath(alt, "alter");
     }
 
     // ═══ DER TIER-SATZ (profiband.K1 „Sturm mit 50 Tieren“: jedes Tier im Nah-Kreis war ein Leib — L0 8, L1 5 Draws je Tier
@@ -2062,7 +2134,6 @@ class AnazhRealm_kreatur_leben {
                 if (u._satz) this._tierSatzAus(cr);
             }
         }
-        const aus = st.creaturesHidden === true;
         for (const [key, Z] of M) {
             if (!Z) continue;
             if (!Z.fertig) this._tierSatzBacken(Z, K.backJeTakt);
@@ -2309,7 +2380,7 @@ class AnazhRealm_kreatur_leben {
         const band = Math.max(0, K.baender.indexOf(G && G.art));
         u._satz = Z;
         u._satzBand = band;
-        u._satzArt = G && G.art !== "stand" ? G.art : null;
+        u._satzWahl = { v: G ? G.v || 0 : 0, art: G ? G.art : undefined };
         u._satzPh = G ? (G.ph[0] - Z.ph0[band]) / (2 * Math.PI) : 0;
         u._satzW = G && G.schritt > 0 ? Math.min(1, G.schritt) : 0;
         u._satzX = cr.position.x;
@@ -2341,21 +2412,20 @@ class AnazhRealm_kreatur_leben {
         const v = dt > 0 ? AnazhRealm._lageTempo(dx, dz, dt) : 0;
         this._tierSatzSchritt(u, v === null ? 0 : Math.hypot(dx, dz), v || 0, dt, cr);
     }
-    // DER SCHRITT IM SATZ: die Gangart des Gang-Gesetzes zum Tempo (das Band; wer steht, behält es), das Gewicht des Gangs
-    // (`_gaitBlendStep`) und die Phase in Zyklen um Weg / Schritt des Bands × Größe
+    // DER SCHRITT IM SATZ: die Gangart aus der Wahl des Leibs (`_gangWahl`, Tempo und Hysterese wie im Leib — das Band; wer
+    // steht, behält es), das Gewicht des Gangs (`_gaitBlendStep`) und die Phase in Zyklen um Weg / Schritt des Bands × Größe
     _tierSatzSchritt(u, weg, v, dt, cr) {
         const K = AnazhRealm.KREATUR_SATZ;
         const Z = u._satz;
-        const gs = window.__tetrapodaCore.gangSchritt(
+        const gs = AnazhRealm._gangWahl(
+            u._satzWahl,
             v,
+            dt,
+            true,
             u._tierBaum.beinL * (cr.scale.x || 1),
-            this._gangZeile(false),
-            u._satzArt
+            this._gangZeile(false)
         );
-        if (gs.art !== "stand") {
-            u._satzArt = gs.art;
-            u._satzBand = Math.max(0, K.baender.indexOf(gs.art));
-        }
+        if (gs.art !== "stand") u._satzBand = Math.max(0, K.baender.indexOf(gs.art));
         u._satzW = this._gaitBlendStep(u._satzW, v, dt);
         u._satzPh += weg / (Z.schritt[u._satzBand] * (cr.scale.x || 1));
     }
@@ -2387,6 +2457,55 @@ class AnazhRealm_kreatur_leben {
     _kreaturSatt(creature) {
         const voll = this._kreaturMagenVoll(creature);
         return voll > 0 && this._kreaturMagen(creature) >= AnazhRealm._verhaltenGesetz().aas.hungerAnteil * voll;
+    }
+
+    // ═══ KAMPF-GEFÜHL — DER LEICHNAM (Welle LF kampf, Posten 7) ═══
+    // Ein Gefallener (state.leichname, _kreaturFaellt) ohne KI, Gang und Stimme: TOD_LAGE.vorlaufSec nach dem Tod (Kreatur-Uhr;
+    // die Tafel rechnete der Leerlauf oder `_todLageFrist`, halten.K5) kippt er (~83° smoothstep über kippDauerSec) auf ihre Flanke,
+    // liegt bis zur Frist, sinkt, DANN removeCreature; je Takt seine Sicht (_leibSicht). Rein optisch, der Strom trägt die Lage (q).
+    _tickLeichname(delta, playerPos) {
+        const L = this.state.leichname;
+        for (let i = L.length - 1; i >= 0; i--) {
+            const creature = L[i];
+            const dying = creature.userData.dying;
+            dying.t += delta;
+            if (dying.hebe === undefined && dying.t >= AnazhRealm.TOD_LAGE.vorlaufSec) this._todLageFrist(creature);
+            dying.fall = dying.hebe === undefined ? 0 : Math.max(0, dying.t - AnazhRealm.TOD_LAGE.vorlaufSec);
+            const u = Math.min(1, dying.fall / Math.max(1e-6, dying.dauer));
+            const ang = AnazhRealm.TOD_KIPP_RAD * u * u * (3 - 2 * u); // ~83° — gekippt, nicht vergraben
+            const axis = this._kampfTipAxis || (this._kampfTipAxis = new THREE.Vector3());
+            axis.set(dying.dirZ, 0, -dying.dirX).normalize(); // ⊥ Kipp-Richtung: up kippt AUF sie zu
+            const q = this._kampfTipQ || (this._kampfTipQ = new THREE.Quaternion());
+            q.setFromAxisAngle(axis, ang);
+            creature.quaternion.copy(q);
+            if (dying.baseQuat) creature.quaternion.multiply(dying.baseQuat);
+            const hebe = dying.hebe;
+            if (hebe && Number.isFinite(dying.baseY)) {
+                const f = (ang / AnazhRealm.TOD_KIPP_RAD) * (hebe.length - 1);
+                const k0 = Math.max(0, Math.min(hebe.length - 2, Math.floor(f)));
+                creature.position.y = dying.baseY + hebe[k0] + (hebe[k0 + 1] - hebe[k0]) * (f - k0);
+            }
+            // der leere Kadaver (sein Fleisch ist gefressen, _kreaturAasZug) sinkt jetzt: die Frist endet mit dem Versinken
+            const KF = creature.userData.kadaver;
+            if (KF && !(KF.fleisch > 0) && dying.t >= dying.dauer)
+                dying.nachklang = Math.min(dying.nachklang, dying.t - dying.dauer + dying.sinken);
+            // er sinkt in der letzten Spanne seiner Frist in die Erde (die Höhe seines Leibs), dann fällt er
+            const ende = dying.dauer + dying.nachklang;
+            if (dying.sinken > 0 && dying.t > ende - dying.sinken) {
+                if (!Number.isFinite(dying.liegeY)) dying.liegeY = creature.position.y;
+                const u2 = Math.min(1, (dying.t - (ende - dying.sinken)) / dying.sinken);
+                creature.position.y =
+                    dying.liegeY -
+                    u2 * u2 * this._kreaturLeib(creature, 0, this._sinkLeib || (this._sinkLeib = {})).hoehe;
+            }
+            if (dying.t >= ende) {
+                this.removeCreature(creature); // rückwärts: der Splice überspringt keinen
+                continue;
+            }
+            const dx = creature.position.x - playerPos.x,
+                dz = creature.position.z - playerPos.z;
+            this._leibSicht(creature, dx * dx + dz * dz, this.isInFrustum(creature));
+        }
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_kreatur_leben]);
@@ -2573,12 +2692,13 @@ AnazhRealm.ANALOG_NAH_M = 64;
 // ein nahendes Tier lief zwischen 55 und 64 m als Kapsel-Satz.
 AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: AnazhRealm.ANALOG_NAH_M, aus: AnazhRealm.ANALOG_NAH_M + 10 });
 // DER TIER-SATZ (profiband.K1, `_tickTierSatz`): `nahLeiber` Tiere leben im Nah-Kreis als Leib, jedes andere steht im Satz seiner
-// Gestalt — `phasen` Posen je Band, die Bänder sind die Gangarten der GANG_FOLGE, gebacken an der Froude-Zahl `froude` (die Mitte
+// Gestalt — `phasen` Posen je Band (der Knoten legt zwischen zwei Zeilen linear: mit 16 glitt der Stand-Fuß an den Kanten des
+// Stands, gate:tier-gang Satz Wolf im Schritt 0,054, mit 32 0,033), die Bänder sind die Gangarten der GANG_FOLGE, gebacken an der Froude-Zahl `froude` (die Mitte
 // jeder Gangart: Schritt unter froudeTrab 0,5, Trab bis froudeGalopp 2,5, Galopp darüber); `einschwingen` Gang-Schritte vor dem
 // Zyklus, `backJeTakt` Schritte je Takt (Lehre 14), `cap` Instanzen je Senke, `leerTakte` bis ein leerer Satz geht.
 AnazhRealm.KREATUR_SATZ = Object.freeze({
     nahLeiber: 4,
-    phasen: 16,
+    phasen: 32,
     baender: Object.freeze(["schritt", "trab", "galopp"]),
     froude: Object.freeze([0.25, 1.5, 4]),
     einschwingen: 150,
@@ -2600,8 +2720,10 @@ AnazhRealm.TOD_BODEN_ZELLE = 0.5;
 // DIE TOD-LAGE IM LEERLAUF (`_todLageTick`): die Frist, nach der ein Fenster auch ohne Leerlauf kommt (ms), und die Scheibe
 // (ms) — die Reserve, die ein Leerlauf-Fenster dem nächsten Bild lässt, und die Länge eines Fensters ohne Leerlauf. Gemessen
 // (Radeon, Dorf Ego, unter Fremdlast): ein Tod kostete den Takt 28–84 ms, jetzt 0,3–0,6 ms; die Lage läuft in Fenstern von
-// höchstens 9,7 ms, die Tafel steht 0,13–0,58 s nach dem Tod.
-AnazhRealm.TOD_LAGE = Object.freeze({ fristMs: 50, scheibeMs: 2 });
+// höchstens 9,7 ms, die Tafel steht 0,13–0,58 s nach dem Tod. `vorlaufSec` (halten.K5): so lange nach dem Tod (Kreatur-Uhr)
+// steht der Leib in der Haltung seines Todes, dann fällt er — steht die Tafel da nicht, rechnet der Takt ihren Rest
+// (`_todLageFrist`); vorher fiel er, wann der Leerlauf sie brachte (headless unbelastet 0,05 s, unter Last 15 Hz 0,67 s).
+AnazhRealm.TOD_LAGE = Object.freeze({ fristMs: 50, scheibeMs: 2, vorlaufSec: 0.2 });
 // DER LEBENSRAUM (tetrapoda LEBENSRAUM_GESETZ + bodenKlasse · lebensraum · lebensraumWahl, DURST_GESETZ + durst,
 // ETHOGRAMM_GESETZ + lichtPhase · ruhePegel · aesung · taetigkeit, Tiere K4): Art × Ort × Uhr — die Boden-Klasse eines Orts, die
 // Eignung je Gattung und ihr Tag. Fail-closed.
@@ -2649,16 +2771,20 @@ AnazhRealm._bestandGesetz = function () {
     const B = k && k.BESTAND_GESETZ;
     if (
         B &&
-        [B.taktS, B.revierM, B.rasterM, B.kopfJeHa, B.beuteVoll, B.geburt, B.tod, B.fress].every(Number.isFinite) &&
+        [B.taktS, B.revierM, B.rasterM, B.kopfJeHa, B.beuteVoll, B.geburt, B.tod, B.fress, B.riss, B.rissHalb].every(
+            Number.isFinite
+        ) &&
         typeof k.bestandNahrung === "function" &&
         typeof k.bestandBilanz === "function" &&
-        typeof k.bestandFrass === "function"
+        typeof k.bestandFrass === "function" &&
+        typeof k.bestandRiss === "function"
     ) {
         AnazhRealm._bestandGesetzMemo = Object.freeze({
             B,
             nahrung: k.bestandNahrung,
             bilanz: k.bestandBilanz,
             frass: k.bestandFrass,
+            riss: k.bestandRiss,
         });
         return AnazhRealm._bestandGesetzMemo;
     }

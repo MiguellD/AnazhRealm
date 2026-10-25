@@ -17,6 +17,24 @@
 //   lack-gestalt die Gestalten tragen nicht die acht Lacke des LACK_GESETZ (linear)
 //   transport    das Gesetz der Regler (phyto-core) macht aus Klarlack/Durchsicht nicht die Zahlen des Wirts
 //   node scripts/diag-gegenstand-stoff.cjs [--selftest]
+//
+// DIE TAFEL-PROBE (stoffe.K1, `--tafel`, Port GEGENSTAND_STOFF_PORT): die EINE Stoff-Tafel in SI (`state.materials`) und je
+// Stoff (holz, stein, eisen, gras, erde, laub, wasser) EINE Mutation je Wirkung mit beobachtbarer Folge in der echten Welt
+// (Null-Renderer, am Ufer des Sees der Welt: Wasser, Eis, Wiese und Bauplatz an einem Ort):
+//   rho      ρ × ½: die Masse eines Quaders aus dem Stoff (`_teilMasse`) halbiert, seine Eintauchtiefe im See folgt (am Grund,
+//            wer dichter bleibt als Wasser); beim Wasser liegt ein Holz-Quader tiefer
+//   mu       μ × ½: der Bremsweg eines mit 3 m/s gestoßenen Wolfs (`_kreaturStossSchritt`) auf einer Platte aus dem Stoff (das
+//            Gras: die Wiese am Ufer) verdoppelt sich
+//   albedo   OFFEN: die Luma braucht das Ausgabe-Bild der echten GPU, headless zählt sie nie
+//   klang    die Frequenz der Klang-Spalte × 2: der Spektral-Schwerpunkt des Schritts (die Stimme des Wirts im
+//            OfflineAudioContext) auf dem Stoff steigt (das Wasser: watend am Ufer)
+//   tZuend   T_zünd − 100 K: der Stoff im Brennpunkt einer Linse (`_tickFocusingAffordances`) fängt früher Feuer
+//   tSchmelz T_schmelz − 100 K: der See gefriert im Winter nicht (`_eisAt`)
+//   c        c × ½: der Stoff im Brennpunkt ist nach 2 s wärmer; das Wasser folgt der Luft schneller, der See trägt im Herbst
+//            über einen Tag früher (der Tag, ab dem `_eisAt` über den Linien `_eisLinien` trägt, auf die Stunde)
+// DIE SABOTAGE (Selbsttest im selben Lauf): der EINE Leser der Tafel (`_stoff`) liefert die Zeilen von vor der Mutation — ein
+// Leser, der ruft und verwirft —, und jede Wirkung jedes Stoffs ist ROT; eine, die grün bleibt, liest an der Tafel vorbei.
+// Staffel 1 = je Stoff ≥ 3 von 7 Wirkungen, Staffel 2 = 7/7; die Zeile `TAFEL {…}` trägt die Messung.
 "use strict";
 const path = require("path");
 
@@ -112,17 +130,13 @@ function lackGestalten() {
     for (let s = 1; s <= soll.length; s++) {
         const g = VC.buildInstance("gt", s, 0);
         let best = null;
-        let n = 0;
         g.traverse((o) => {
             // der Karosserie-Lack (lackStoff stempelt __lack; der Bremssattel ist Lack, aber nicht die Karosserie)
-            if (!o.isMesh || !o.material || !o.material.userData || !o.material.userData.__lack) return;
-            const c = [o.material.color.r, o.material.color.g, o.material.color.b];
-            const k = c.join(",");
-            n++;
-            if (!best) best = { k, c };
+            if (!best && o.isMesh && o.material && o.material.userData && o.material.userData.__lack)
+                best = [o.material.color.r, o.material.color.g, o.material.color.b];
         });
-        ist.push(best ? best.c : null);
-        if (!n) out.push(`lack-gestalt: Same ${s} trägt keinen Karosserie-Lack`);
+        ist.push(best);
+        if (!best) out.push(`lack-gestalt: Same ${s} trägt keinen Karosserie-Lack`);
     }
     const treffer = soll.filter((c) => ist.some((x) => x && x.every((v, i) => Math.abs(v - c[i]) < 1e-6))).length;
     if (treffer !== soll.length) out.push(`lack-gestalt: ${treffer}/${soll.length} Lacke des LACK_GESETZ in den Gestalten`);
@@ -163,30 +177,204 @@ function selbstTest() {
         return g;
     };
     if (urteil("t", roh(0x2a2c2f)).length !== 0) fehl.push("gesunder Reifen meldet");
+    // je Täter-Gestalt: das Urteil nennt seinen Täter, sonst bleibt er still
+    const still = (g, taeter, name) => urteil("t", g).some((s) => s.includes(taeter)) || fehl.push(name + " still");
     // der Reifen roh (r128 las 0x131519 als 0,08 linear)
-    if (!urteil("t", mk("gummi", 0x131519)).some((s) => s.includes("band gummi")))
-        fehl.push("roher Reifen bleibt still");
-    if (!urteil("t", mk("ton", 0x8d9499)).some((s) => s.includes("labor-stoff"))) fehl.push("Ton-Karosserie bleibt still");
+    still(mk("gummi", 0x131519), "band gummi", "roher Reifen bleibt");
+    still(mk("ton", 0x8d9499), "labor-stoff", "Ton-Karosserie bleibt");
     const lack = (name, metalness, cc) => {
         const g = mk("lack", 0x111319, { metalness });
         g.children[0].material.userData.__lack = name;
         g.children[0].material.clearcoat = cc;
         return g;
     };
-    if (!urteil("t", lack("Tiefschwarz", 0, 0)).some((s) => s.includes("klarlack")))
-        fehl.push("Lack ohne Klarlack bleibt still");
+    still(lack("Tiefschwarz", 0, 0), "klarlack", "Lack ohne Klarlack bleibt");
     // der Uni-Lack als gefärbter Spiegel (bis W5: jeder Lack metalness 0,85)
-    if (!urteil("t", lack("Signalrot", 0.85, 1)).some((s) => s.includes("lack-art")))
-        fehl.push("Uni-Lack als Metall bleibt still");
-    if (!urteil("t", mk("glas", 0x0a0f18)).some((s) => s.includes("durchsicht"))) fehl.push("blinde Scheibe bleibt still");
+    still(lack("Signalrot", 0.85, 1), "lack-art", "Uni-Lack als Metall bleibt");
+    still(mk("glas", 0x0a0f18), "durchsicht", "blinde Scheibe bleibt");
     const vc = mk("holz", 0x6b4a2a, { vertexColors: true });
     const geo = vc.children[0].geometry;
     geo.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(geo.attributes.position.count * 3).fill(0.2), 3));
-    if (!urteil("t", vc).some((s) => s.includes("toenung"))) fehl.push("getönte Vertex-Farben bleiben still");
-    if (!urteil("t", (() => { const g = mk("gummi", 0x2a2c2f); delete g.children[0].material.userData.__stoff; return g; })()).some((s) => s.includes("ohne-stoff")))
-        fehl.push("Stoff ohne Namen bleibt still");
+    still(vc, "toenung", "getönte Vertex-Farben bleiben");
+    const namenlos = mk("gummi", 0x2a2c2f);
+    delete namenlos.children[0].material.userData.__stoff;
+    still(namenlos, "ohne-stoff", "Stoff ohne Namen bleibt");
     if (!transport(PC.budgetRegler("unknown", {})).length) fehl.push("Transport ohne Klarlack bleibt still");
     return fehl;
+}
+
+const STOFFE = ["holz", "stein", "eisen", "gras", "erde", "laub", "wasser"];
+const WIRKUNGEN = ["rho", "mu", "albedo", "klang", "tZuend", "tSchmelz", "c"];
+async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const M = st.materials;
+    const pm = st.playerMesh;
+    const { see } = await window.__wasserOrte({});
+    const [UX, UZ] = see.ufer;
+    const [SX, SZ] = see.mitte;
+    const hh = (x, z) => r._voxelSurfaceY(x, z);
+    const setz = (x, z, y = hh(x, z)) => pm.position.set(x, y + r.constructor.PLAYER_FOOT_OFFSET, z);
+    await window.__weltStehtNach(() => (setz(UX, UZ), (st._fixedSimPos = null), r._gameLoopTick(performance.now())));
+    window.__buehne();
+    st.autoSeason = false;
+    // ein Werk `n` aus Quadern [Stoff, Breite, Höhe, Tiefe, Versatz x, Mitte y] bei (x, z, y); mit `fn` gemessen, dann abgerissen
+    const werk = async (n, teile, x, z, y, fn) => {
+        st.blueprints[n] = { parts: teile.map(([m, sx, sy, sz, px, py]) => ({ shape: "box", material: m, size: { x: sx, y: sy, z: sz }, position: { x: px, y: py, z: 0 } })) };
+        const e = r.spawnArchitecture(n, { x, y, z }, { silent: true, precise: true });
+        if (!fn) return e;
+        try {
+            return await fn(e);
+        } finally {
+            if (st.architectures.includes(e)) r.removeArchitecture(e);
+        }
+    };
+    const linse = await werk("_linse", [["eisen", 0.2, 2.2, 0.2, 0.7, 1.1], ["quarz", 0.8, 0.8, 0.8, 0, 2.6]], UX + 30, UZ, hh(UX + 30, UZ));
+    const grund = hh(SX, SZ);
+    const spiegel = r._koerperWasser(SX, SZ, grund);
+    const tiefe = spiegel - grund; // die Säule des Sees: der Körper, dessen Trägheit c trägt
+    let watX = UX; // das Ufer, an dem der Spieler watet
+    while (watX > UX - 30 && !(r._koerperWasser(watX, UZ, hh(watX, UZ)) > hh(watX, UZ) + 0.15)) watX -= 0.25;
+    // der Boden aus X: Gras und Laub der Natur (4 m trocken längs −z, die EINE Orts-Suche nach dem Stoff unter dem Fuß), sonst
+    // eine Platte 8 × 0,4 × 3 m an der Oberkante ihrer Hülle; `fn(x, z, y, längs x)`
+    const boden = (X, fn, o = ["gras", "laub"].includes(X) && window.__weltOrt("stoff", { stoff: X, mitte: [UX, UZ], rMax: 126, schritt: 3 })) =>
+        o ? fn(o.x, o.z, hh(o.x, o.z), 0) : werk("_platte", [[X, 8, 0.4, 3, 0, 0.2]], UX + 14, UZ, hh(UX + 14, UZ) + 0.5, (e) => fn(UX + 11, UZ, e.blockerAABBs[0].topY, 1));
+    // der Stoff im Brennpunkt der Linse: [Erwärmung nach `dauer` s, Zündzeit oder null]
+    const brenn = (X, dauer) => {
+        const p = r._brennpunkte(linse, r._sonnenRichtung())[0];
+        return werk("_ziel", [[X, 0.6, 0.6, 0.6, 0, 0]], p.x, p.z, p.y, (e) => {
+            let t = 0;
+            for (; t < dauer && st.architectures.includes(e); t += 0.25) r._tickFocusingAffordances(0.25);
+            if (st.brandFeld) st.brandFeld.clear();
+            return [e.heatBuildup, st.architectures.includes(e) ? null : t];
+        });
+    };
+    const um = (k, v, fn) => {
+        const alt = st[k];
+        st[k] = v;
+        try {
+            return fn();
+        } finally {
+            st[k] = alt;
+        }
+    };
+    // der Tag, ab dem der See trägt (Sommer 0,375 … Winter 0,875, halbiert auf die Stunde)
+    const traegt = (lo = 0.375, hi = 0.875) => {
+        for (let m; hi - lo > 1 / 8760; ) um("seasonPhase", (m = (lo + hi) / 2), () => r._eisAt(SX, SZ, NaN)) === null ? (lo = m) : (hi = m);
+        return hi * 365;
+    };
+    // je Wirkung [Mutation, Messung, Urteil (vorher, nachher)]
+    const W = {
+        rho: [
+            (z) => (z.rho *= 0.5),
+            (X) => werk("_tafel", [[X === "wasser" ? "holz" : X, 3, 0.6, 1.4, 0, 0.3]], SX, SZ, grund, (e) => [r._teilMasse(st.blueprints._tafel.parts[0]), spiegel - r._fahrBoden(e)(SX, SZ)]),
+            (X, v, n) => (X === "wasser" ? n[1] - v[1] > 0.05 : Math.abs(n[0] / v[0] - 0.5) < 0.005 && (v[1] - n[1] > 0.02 || n[1] > tiefe - 0.05)),
+        ],
+        mu: [
+            (z) => (z.mu *= 0.5),
+            (X) =>
+                boden(X, (x, z, y, ux) => {
+                    st.maxCreatures = st.creatures.length + 1;
+                    const w = r.spawnCreatureAt(x, y, z, "calm", "wolf", { precise: true, bodySize: 1 });
+                    w.position.y = y;
+                    w.userData._stossV = { x: 3 * ux, z: 3 * ux - 3 };
+                    for (let i = 0; i < 3000 && w.userData._stossV; i++) r._kreaturStossSchritt(r.constructor.FIXED_DT);
+                    r.removeCreature(w);
+                    return Math.hypot(w.position.x - x, w.position.z - z);
+                }),
+            (X, v, n) => v > 0.1 && Math.abs(n / v - 2) < 0.3,
+        ],
+        klang: [
+            (z) => (z.klang = { ...z.klang, freq: z.klang.freq * 2 }),
+            async (X) => {
+                const sym = st.symphony;
+                const alt = { ...sym };
+                const ctx = new OfflineAudioContext(1, 24000, 48000);
+                Object.assign(sym, { enabled: true, ctx, masterGain: ctx.destination });
+                const tritt = (x, z, y) => (setz(x, z, y), r._schrittKlangTick({ walkPhase: 0 }, 0, false, pm), r._schrittKlangEreignis(pm, false, 0));
+                await (X === "wasser" ? tritt(watX, UZ) : boden(X, tritt));
+                Object.assign(sym, alt);
+                return window.__klangCore.schwerpunkt((await ctx.startRendering()).getChannelData(0), 48000);
+            },
+            (X, v, n) => n / v > 1.4,
+        ],
+        tZuend: [(z) => (z.tZuend -= 100), async (X) => (await brenn(X, 120))[1], (X, v, n) => n > 0 && n < 0.85 * v],
+        tSchmelz: [
+            (z) => (z.tSchmelz -= 100),
+            (X) => {
+                if (X !== "wasser") throw new Error("offen: kein Leser der Phase von " + X);
+                return um("seasonPhase", 0.875, () => +(r._eisAt(SX, SZ, NaN) !== null));
+            },
+            (X, v, n) => v === 1 && n === 0,
+        ],
+        c: [
+            (z) => (z.c *= 0.5),
+            async (X) => (X === "wasser" ? traegt() : (await brenn(X, 2))[0]),
+            (X, v, n) => (X === "wasser" ? v - n > 1 : v > 0 && n / v > 1.5),
+        ],
+    };
+    const aus = {};
+    const leser = r._stoff;
+    for (const X of STOFFE)
+        for (const w of WIRKUNGEN) {
+            const z = M[X];
+            const alt = z && z[w];
+            const f = W[w];
+            aus[X] = aus[X] || {};
+            try {
+                if (!f) throw new Error("offen: die Luma braucht das Ausgabe-Bild (echte GPU)");
+                if (alt === null) throw new Error("offen: die Zeile " + X + " trägt kein " + w + " (keine Wirkung zu mutieren)");
+                const vor = await f[1](X);
+                if (sabotage) {
+                    const snap = Object.fromEntries(Object.keys(M).map((n) => [n, { ...M[n] }]));
+                    r._stoff = (n) => snap[n];
+                }
+                f[0](z);
+                const nach = await f[1](X);
+                aus[X][w] = { vor, nach, ok: !!f[2](X, vor, nach) };
+            } catch (e) {
+                aus[X][w] = { ok: false, fehler: String(e.message || e).slice(0, 140) };
+            } finally {
+                if (z) z[w] = alt;
+                r._stoff = leser;
+            }
+        }
+    r.removeArchitecture(linse);
+    return aus;
+}
+async function tafel() {
+    const { statikServer, starteBrowser, nullRenderer, warteAufWelt, buehne } = require("./lib/welt-boot.cjs");
+    const port = Number(process.env.GEGENSTAND_STOFF_PORT || 4677);
+    const server = statikServer().listen(port, "127.0.0.1");
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
+    try {
+        const page = await browser.newPage();
+        await nullRenderer(page);
+        await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 180000 });
+        await warteAufWelt(page, 180000);
+        await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
+        await buehne(page);
+        const echt = await page.evaluate(tafelProbe, STOFFE, WIRKUNGEN, false);
+        const sab = await page.evaluate(tafelProbe, STOFFE, WIRKUNGEN, true);
+        const je = {};
+        for (const X of STOFFE) console.log(X, (je[X] = WIRKUNGEN.filter((w) => echt[X][w].ok)).length + "/7", JSON.stringify(echt[X]));
+        // an der Tafel vorbei: grün trotz Sabotage; stumm: die Sabotage maß nicht (ein Absturz ist kein Rot)
+        const vorbei = STOFFE.flatMap((X) => WIRKUNGEN.filter((w) => sab[X][w].ok || (je[X].includes(w) && sab[X][w].fehler)).map((w) => X + "." + w));
+        console.log("TAFEL " + JSON.stringify({ je, vorbei }));
+        const gruen = !vorbei.length && STOFFE.every((X) => je[X].length >= 3);
+        console.log(gruen ? "✅ TAFEL GRÜN — Staffel " + (STOFFE.every((X) => je[X].length === 7) ? 2 : 1) : "❌ TAFEL ROT — an der Tafel vorbei oder stumm: " + vorbei);
+        return gruen ? 0 : 1;
+    } finally {
+        await browser.close();
+        server.close();
+    }
+}
+if (process.argv.includes("--tafel")) {
+    tafel().then(process.exit, (e) => {
+        console.error(e);
+        process.exit(2);
+    });
+    return;
 }
 
 const fehlSelbst = selbstTest();

@@ -101,6 +101,16 @@ async function probeLeben(expected) {
         if (z.spur && z.ent && q === z.ent._fahr) z.e = e;
         return kraefte.call(this, q, e, G, dt);
     };
+    // der Spion am Sim-Schritt: nach (und vor) jedem Schritt der Welt; der Rückgabewert stellt den vorigen wieder her
+    const nachSchritt = (nach, vor) => {
+        const echt = r._stepFixedSim;
+        r._stepFixedSim = function (simTime, dt) {
+            if (vor) vor(dt);
+            echt.call(this, simTime, dt);
+            nach(dt);
+        };
+        return () => (r._stepFixedSim = echt);
+    };
     r._stepFixedSim = function (simTime, dt) {
         const m = st.playerMesh.position;
         const x0 = m.x;
@@ -355,7 +365,7 @@ async function probeLeben(expected) {
     };
     // W (feld.K1) DIE WETTER-KETTE: das Wort Sturm, 20 min per Sprung des Nässe-Schreibers; je Lage Regen-Feld, Nässe (= Uniform
     // des Stoffs), Grip (der Bremsweg `s` der Vollbremsung ab 50 km/h bis bremsV in Sim-Schritten). Gehalten
-    // wird der VORGÄNGER; `stern` liest das Wort. K8 (fahrzeug.K1) auf demselben Gras: μ(kraut) halb in der Stoff-Zeile, dann
+    // wird der VORGÄNGER; `stern` liest das Wort. K8 (fahrzeug.K1) auf demselben Gras: μ(gras) halb in der Stoff-Zeile, dann
     // derselbe Streifen als Weg über den Hebel der Dörfer (`_stlWegeBuild`) trocken und im Sturm, darauf S1 (Labor = Welt, Takt).
     const kette = async (K) => {
         const [P0, bV, out] = [Object.getPrototypeOf(r), VC.FAHR.schritt.bremsV, {}];
@@ -401,8 +411,8 @@ async function probeLeben(expected) {
             r._fahrHaft = () => (r._weatherIsWet() ? 0.2 : 1);
             return () => los() && delete r._fahrHaft;
         });
-        const kraut = st.materials.kraut;
-        await lage("zeile", "sunny", () => ((kraut.mu /= 2), () => (kraut.mu *= 2)));
+        const gras = st.materials.gras;
+        await lage("zeile", "sunny", () => ((gras.muRad /= 2), () => (gras.muRad *= 2)));
         strasse(start.x, start.z, Math.PI / 2, 72);
         await lage("weg", "sunny");
         await lage("wegNass", "stormy");
@@ -679,9 +689,7 @@ async function probeLeben(expected) {
             let tauchBremse = 0;
             const spalte = [];
             let phase = "w";
-            const P5 = r._stepFixedSim;
-            r._stepFixedSim = function (simTime, dt) {
-                P5.call(this, simTime, dt);
+            const ab5 = nachSchritt((dt) => {
                 r._tickMountedMovement(dt);
                 r._archEntryWorldMatrix(gR, B);
                 const Binv = B.clone().invert();
@@ -741,7 +749,7 @@ async function probeLeben(expected) {
                     if (phase === "s" && p.front) tauchBremse = Math.max(tauchBremse, -d);
                 }
                 spalte.push(spalt);
-            };
+            });
             tasten(true, false);
             for (let i = 0; i < 90; i++) frame(i);
             phase = "s";
@@ -753,7 +761,7 @@ async function probeLeben(expected) {
             tasten(true, true);
             for (let i = 0; i < 60; i++) frame(i);
             tasten(false);
-            r._stepFixedSim = P5;
+            ab5();
             spalte.sort((a, b) => a - b);
             S.raeder = {
                 leaves: rad.length,
@@ -859,21 +867,19 @@ async function probeLeben(expected) {
                 let sprung = 0;
                 let luft = 0;
                 let schritte = 0;
-                const P2 = r._stepFixedSim;
-                r._stepFixedSim = function (simTime, dt) {
-                    P2.call(this, simTime, dt);
+                const ab2 = nachSchritt(() => {
                     sprung = Math.max(sprung, Math.abs(g2.position.y - yv));
                     yv = g2.position.y;
                     schritte++;
                     if (g2._fahr && g2._fahr.luft) luft++;
-                };
+                });
                 for (let i = 0; i < 420; i++) {
                     halteLinie(g2, kl);
                     frame(i);
                 }
                 tasten(false);
                 for (let i = 0; i < 60; i++) frame(i);
-                r._stepFixedSim = P2;
+                ab2();
                 const unterGrund = g2.position.y - 0.5 - hh(g2.position.x, g2.position.z);
                 S.klippe = {
                     sprung,
@@ -921,14 +927,12 @@ async function probeLeben(expected) {
                 r.dismountArchitecture();
                 let yv = g4.position.y;
                 let sprungAb = 0;
-                const P7 = r._stepFixedSim;
-                r._stepFixedSim = function (simTime, dt) {
-                    P7.call(this, simTime, dt);
+                const ab7 = nachSchritt(() => {
                     sprungAb = Math.max(sprungAb, Math.abs(g4.position.y - yv));
                     yv = g4.position.y;
-                };
+                });
                 for (let i = 0; i < 240; i++) frame(i);
-                r._stepFixedSim = P7;
+                ab7();
                 const eb = r._rittEbene(g4, g4.position.x, g4.position.z, g4._rideYaw);
                 const bodenY = eb ? eb.y : hh(g4.position.x, g4.position.z);
                 S.absteigen = {
@@ -959,9 +963,7 @@ async function probeLeben(expected) {
                 // Die QUER-ABDRIFT talwärts: je Sim-Schritt die Geschwindigkeit quer zum Bug, auf die tiefe Seite gezählt
                 // (ohne Quer-Hangabtrieb tötet der Reifen jede Quer-Fahrt: 0).
                 let drift = 0;
-                const P3 = r._stepFixedSim;
-                r._stepFixedSim = function (simTime, dt) {
-                    P3.call(this, simTime, dt);
+                const ab3 = nachSchritt((dt) => {
                     const ry = Number.isFinite(g3._rideYaw) ? g3._rideYaw : 0;
                     const lx = Math.cos(ry);
                     const lz = -Math.sin(ry);
@@ -970,11 +972,11 @@ async function probeLeben(expected) {
                     const steigLinks = (hh(x + lx, zz + lz) - hh(x - lx, zz - lz)) / 2;
                     const v = st.playerVel;
                     drift += (v.x() * lx + v.z() * lz) * -Math.sign(steigLinks) * dt;
-                };
+                });
                 tasten(true, false);
                 for (let i = 0; i < 100; i++) frame(i);
                 tasten(false);
-                r._stepFixedSim = P3;
+                ab3();
                 S.quer = { drift, weg: Math.hypot(g3.position.x - qh.x, g3.position.z - qh.z), wache: bahnWache.n };
                 weg(g3);
             }
@@ -1041,17 +1043,14 @@ async function probeLeben(expected) {
                     const cx = x0 + ux * d;
                     const cz = z0 + uz * d;
                     const cy = hh(cx, cz);
-                    const P6 = r._stepFixedSim;
-                    r._stepFixedSim = function (simTime, dt) {
-                        c.position.set(cx, cy, cz);
-                        c.rotation.y = quer;
-                        P6.call(this, simTime, dt);
+                    const halt = () => {
                         c.position.set(cx, cy, cz);
                         c.rotation.y = quer;
                     };
+                    const ab6 = nachSchritt(halt, halt);
                     tasten(false);
                     for (let i = 0; i < 60; i++) frame(i);
-                    r._stepFixedSim = P6;
+                    ab6();
                     S.huelleSchub = { weg: Math.hypot(gS.position.x - x0, gS.position.z - z0) };
                     // KONSUM (H5/H6): die Hülle gleitet über die EINE Schleife, Wagen und Tier lösen gegen den EINEN Leib
                     const k = [gS, r._fahrHuelle(gS), gS.position.x, gS.position.z, 0, 0, DT];
@@ -1194,10 +1193,7 @@ async function probeLeben(expected) {
                 }
                 return aus;
             };
-            const PF = r._stepFixedSim;
-            r._stepFixedSim = function (simTime, dt) {
-                zug.schub = 0;
-                PF.call(this, simTime, dt);
+            const abF = nachSchritt(() => {
                 const fz = gL._fahr;
                 if (!fz || !Number.isFinite(fz.y)) return;
                 m.schubMax = Math.max(m.schubMax, zug.schub);
@@ -1208,7 +1204,9 @@ async function probeLeben(expected) {
                     (gL.position.x - L.ort[0]) * Math.sin(L.gier) + (gL.position.z - L.ort[1]) * Math.cos(L.gier)
                 );
                 m.yMin = Math.min(m.yMin, fz.y);
-            };
+            }, () => {
+                zug.schub = 0;
+            });
             anfahren(gL, L.v0, L.gier);
             const x0 = gL.position.x;
             const z0 = gL.position.z;
@@ -1216,7 +1214,7 @@ async function probeLeben(expected) {
             for (let i = 0; i < n; i++) frame(i);
             tasten(false);
             r._stepCharacter = PC;
-            r._stepFixedSim = PF;
+            abF();
             VCl.fahrStand = standRoh;
             m.weg = Math.hypot(gL.position.x - x0, gL.position.z - z0);
             weg(gL);
@@ -1350,11 +1348,8 @@ async function probeLeben(expected) {
                     return evRoh.apply(this, a);
                 };
             st._landImpactPending = 0;
-            const PF = r._stepFixedSim;
             let vPrev = 0;
-            r._stepFixedSim = function (simTime, dt) {
-                schrittEv = [];
-                PF.call(this, simTime, dt);
+            const abF = nachSchritt(() => {
                 const v = st.playerVel.x() * ux + st.playerVel.z() * uz;
                 m.ruck = Math.max(m.ruck, st._landImpactPending || 0);
                 if (m.kontakt < 0 && vPrev > 2 && z.kontakt) {
@@ -1392,11 +1387,13 @@ async function probeLeben(expected) {
                 m.gasseTiere = Math.max(m.gasseTiere, n);
                 vPrev = v;
                 m.schritte++;
-            };
+            }, () => {
+                schrittEv = [];
+            });
             tasten(true, false);
             for (let i = 0; i < 150; i++) frame(i);
             tasten(false);
-            r._stepFixedSim = PF;
+            abF();
             if (typeof evRoh === "function") delete r._stossEreignis;
             delete r._fahrHuelleKontakt;
             delete r._kreaturStoss;
@@ -1657,12 +1654,10 @@ async function probeLeben(expected) {
                     b.userData._stossV = null;
                     st._fixedAccumulator = 0;
                     st._fixedSimTime = simUhr ??= st._fixedSimTime;
-                    const PF = r._stepFixedSim;
                     let schritte = 0;
                     let lage = null;
                     const spur = [];
-                    r._stepFixedSim = function (simTime, dt) {
-                        PF.call(this, simTime, dt);
+                    const abF = nachSchritt(() => {
                         schritte++;
                         {
                             const sv = b.userData._stossV;
@@ -1684,12 +1679,12 @@ async function probeLeben(expected) {
                         // die Sim-Lage des Reiters (im Schritt die Wahrheit; die Lage des Werks folgt ihr je Frame)
                         const pmS = st.playerMesh.position;
                         if (schritte === 200) lage = { x: pmS.x, z: pmS.z, bx: b.position.x, bz: b.position.z };
-                    };
+                    });
                     tasten(true);
                     try {
                         lauf(muster, 2000, () => lage === null);
                     } finally {
-                        r._stepFixedSim = PF;
+                        abF();
                         tasten(false);
                         st.maxCreatures = kappeL;
                     }
@@ -1817,20 +1812,18 @@ async function probeLeben(expected) {
                             g.position.z = ort.z;
                             st._fixedAccumulator = 0;
                             g.userData._stossV = { x: 4, z: 0 };
-                            const PFs = r._stepFixedSim;
                             let lage = null;
-                            r._stepFixedSim = function (simTime, dt) {
-                                PFs.call(this, simTime, dt);
+                            const abFs = nachSchritt(() => {
                                 k++;
                                 if (k === 20) lage = { x: g.position.x, z: g.position.z, y: g.position.y };
-                            };
+                            });
                             try {
                                 for (let i = 0; i < 400 && lage === null; i++) {
                                     tMs += muster[i % muster.length];
                                     r._gameLoopTick(tMs);
                                 }
                             } finally {
-                                r._stepFixedSim = PFs;
+                                abFs();
                             }
                             r.removeCreature(g);
                             return lage;
@@ -2232,7 +2225,7 @@ async function probeKoerper(opt) {
         steht.steuerSchritt = (sw) => (sw.v = 0);
         const mats = st.materials;
         const alt = {};
-        for (const n of Object.keys(mats)) if (mats[n].builtIn) alt[n] = mats[n].rho;
+        for (const n of Object.keys(mats)) if (mats[n].builtIn && n !== "wasser") alt[n] = mats[n].rho; // die Leiber und Dinge, nie das Medium
         const box = (m, sz, y) => ({ shape: "box", material: m, size: sz, position: { x: 0, y, z: 0 } });
         for (const m of ["holz", "stein"]) st.blueprints["_k1_" + m] = { parts: [box(m, { x: 3, y: 0.6, z: 1.4 }, 0.3)] };
         const eigen = { parts: [box("holz", { x: 0.15, y: 1.5, z: 0.15 }, 0), box("holz", { x: 0.6, y: 0.6, z: 0.6 }, 1.5)] };
@@ -2270,7 +2263,7 @@ async function probeKoerper(opt) {
                     return {
                         kg: K ? K.m : bp.parts.reduce((m, p) => m + r._teilMasse(p), 0),
                         rho: prof.dichte,
-                        anteil: A._eintauchAnteil(prof.dichte),
+                        anteil: r._eintauchAnteil(prof.dichte),
                         schwimmt: prof.floats,
                         tief: +(ort.spiegel - r._fahrBoden(e)(ort.x, ort.z)).toFixed(3),
                         grund: +(ort.spiegel - hh(ort.x, ort.z)).toFixed(3),

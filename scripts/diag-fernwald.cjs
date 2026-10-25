@@ -51,12 +51,9 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=voll`, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     const out = await page.evaluate(async () => {
-        const res = { boot: false };
+        const res = {};
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        await window.__weltDa((r) => r.state.blueprints);
-        const r = window.anazhRealm;
-        if (!r) return res;
-        res.boot = true;
+        const r = await window.__weltDa((r) => r.state.blueprints);
         const AR = r.constructor;
         const st = r.state;
         const f = r._ensureAssetFoundry();
@@ -578,8 +575,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     server.close();
 
     console.log("=== DER FERNWALD IST KARTE (gate:fernwald) ===");
-    if (!out.boot || !out.buch) {
-        console.log(`  ❌ Boot ${out.boot} · Buch ${out.buch}`);
+    if (!out.buch) {
+        console.log(`  ❌ Buch ${out.buch}`);
         process.exit(2);
     }
     const A = out.A;

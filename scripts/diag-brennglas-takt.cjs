@@ -477,7 +477,8 @@ async function probe() {
     const st = r.state;
     const AR = r.constructor;
     const P = Object.getPrototypeOf(r);
-    // DAS ORAKEL: der Brennglas-Takt von main V18.536 im Wortlaut — die Schleife über den ganzen Bestand
+    // DAS ORAKEL: der Brennglas-Takt von main V18.536 — die Schleife über den ganzen Bestand, je Ziel dasselbe Wärme-Gesetz
+    // (`_brennWaerme`, stoffe.K1)
     const orakel = (dt) => {
         if (!r._buehneSteht()) return;
         const archs = st.architectures || [];
@@ -486,9 +487,6 @@ async function probe() {
         const licht = sonne && sonne.y > 0 ? sonne : null;
         const punkte = [];
         if (licht) for (const fa of focusing) for (const p of r._brennpunkte(fa, licht)) punkte.push({ fa, p });
-        const heatRange2 = AR.FOCUSING_HEAT_RANGE_M * AR.FOCUSING_HEAT_RANGE_M;
-        const ignite = AR.FOCUSING_IGNITE_THRESHOLD;
-        const ratePerSec = AR.FOCUSING_HEAT_RATE_PER_SEC;
         const name = (e) => {
             const b = e && st.blueprints ? st.blueprints[e.type] : null;
             return String((b && b.label) || (e && e.type) || "?").split(/\s[·—(]/)[0];
@@ -496,41 +494,19 @@ async function probe() {
         const ignitions = [];
         const riddenId = st.player ? st.player.mountedArch : null;
         for (const target of archs) {
-            const warm = target.heatBuildup > 0;
-            if (!warm && !punkte.length) continue;
+            const vorher = target.heatBuildup || 0;
+            if (!(vorher > 0) && !punkte.length) continue;
             if (target.affordances && target.affordances.focusing) continue;
             if (riddenId !== null && riddenId !== undefined && target.id === riddenId) continue;
-            let quelle = null;
-            if (punkte.length) {
-                let inRange = false;
-                for (const fa of focusing) {
-                    const dx = fa.position.x - target.position.x;
-                    const dz = fa.position.z - target.position.z;
-                    if (dx * dx + dz * dz <= heatRange2) {
-                        inRange = true;
-                        break;
-                    }
-                }
-                const targetBp = inRange && st.blueprints ? st.blueprints[target.type] : null;
-                const tags = targetBp ? r.computeCompoundTags(targetBp) || {} : {};
-                if ((tags.brennbar || 0) >= AR.BRENNBAR_TAG_MIN)
-                    for (const { fa, p } of punkte)
-                        if (r._traegtPunkt(target, targetBp, p)) {
-                            quelle = fa;
-                            break;
-                        }
-            }
-            if (!quelle) {
-                if (warm) target.heatBuildup = Math.max(0, target.heatBuildup - ratePerSec * dt);
-                continue;
-            }
-            const vorher = target.heatBuildup || 0;
-            target.heatBuildup = vorher + ratePerSec * dt;
-            if (vorher < ignite / 2 && target.heatBuildup >= ignite / 2 && target.heatBuildup < ignite)
+            const w = r._brennWaerme(target, punkte, focusing, dt);
+            if (!w) continue;
+            target.heatBuildup = w.dT;
+            if (!w.quelle) continue;
+            if (vorher < w.zuend / 2 && w.dT >= w.zuend / 2 && w.dT < w.zuend)
                 r._spielerSagt(
-                    `„${name(target)}" glimmt im Brennpunkt von „${name(quelle)}" — rück es aus dem Licht, sonst fängt es Feuer.`
+                    `„${name(target)}" glimmt im Brennpunkt von „${name(w.quelle)}" — rück es aus dem Licht, sonst fängt es Feuer.`
                 );
-            if (target.heatBuildup >= ignite) ignitions.push({ t: target, quelle });
+            if (w.dT >= w.zuend) ignitions.push({ t: target, quelle: w.quelle });
         }
         const pm = st.playerMesh && st.playerMesh.position;
         for (const { t, quelle } of ignitions) {
@@ -606,7 +582,7 @@ async function probe() {
             return (
                 Array.isArray(bps[n].parts) &&
                 bps[n].parts.length > 0 &&
-                (r.computeCompoundTags(bps[n]).brennbar || 0) >= AR.BRENNBAR_TAG_MIN &&
+                bps[n].parts.some((p) => !!st.materials[p.material] && r._stoff(p.material).tZuend > 0) &&
                 !(r.computeBlueprintAffordances(bps[n]) || {}).focusing
             );
         } catch {

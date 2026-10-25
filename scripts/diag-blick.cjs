@@ -44,9 +44,7 @@ const server = statikServer();
         async (zeitArg, blickArg) => {
             const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
             const res = { schuesse: {} };
-            await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
-            const r = window.anazhRealm;
-            if (!r) return { fatal: "anazhRealm kam nie" };
+            const r = await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
             // Settle: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`, der Takt der Seite)
             await window.__weltStehtNach();
             const rend = r.state.renderer;

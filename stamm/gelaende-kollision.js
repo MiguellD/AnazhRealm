@@ -106,6 +106,7 @@ class AnazhRealm_gelaende_kollision {
                     maxZ,
                     topY,
                     botY,
+                    stoff: part.material,
                     obb: {
                         cx: ox + px * rc + pz * rs,
                         cz: oz - px * rs + pz * rc,
@@ -117,7 +118,7 @@ class AnazhRealm_gelaende_kollision {
                 };
             }
         }
-        return { minX, maxX, minZ, maxZ, topY, botY };
+        return { minX, maxX, minZ, maxZ, topY, botY, stoff: part.material };
     }
 
     // Die Welt-Skala eines Studio-Werks: dieselbe, mit der es gezeichnet wird (`_foundryWorldScaleMatrix` seines Presets) —
@@ -761,6 +762,54 @@ class AnazhRealm_gelaende_kollision {
         }
         if (out.length - n0 > 1) out.sort(AnazhRealm._nachBestand);
         return out;
+    }
+
+    // DER STOFF UNTER DEM KÖRPER (stoffe.K1): die Zeile der Stoff-Tafel, die einen Fuß, eine Pfote oder einen gleitenden Leib bei
+    // (x, z) in der Höhe y trägt. Die Auflage eines Baus — dieselbe Regel wie Kapsel und Tier: eine Oberkante im Band
+    // [y − PLAYER_GROUND_SNAP, y + PLAYER_STEP_UP] über dem Punkt, die höchste trägt — trägt den Stoff ihres Teils (`stoff`, aus
+    // `_blockerComputePartAABB`; eine Box ohne Teil, die Hülle des Hauses und des Tors, den Stoff ihres Werks, `_werkStoff`);
+    // sonst das Eis des gefrorenen Spiegels (`_eisAt`), das Laub des Waldbodens unter dem Kronendach (die EINE Wald-Lese-Stelle
+    // `_kronenStreuAt` ≥ ½), die Wiese, wo die Boden-Karte Gras zeichnet (der Grün-Kanal des EINEN Lesers `_bodenSichtAt` ≥ ½),
+    // darunter der Stoff des Felds (`_terrainMaterialAt`). Leser: der Schritt-Klang (`_schrittMaterialAt`) und die Reibung des
+    // gestoßenen Leibs (`_kreaturStossSchritt`).
+    _kontaktStoffAt(x, z, y) {
+        const lo = y - AnazhRealm.PLAYER_GROUND_SNAP;
+        const hi = y + AnazhRealm.PLAYER_STEP_UP;
+        const nah = this._blockerNahe(x, z, 0, -Infinity, []);
+        let top = -Infinity;
+        let stoff = null;
+        for (const e of nah)
+            for (const b of e.blockerAABBs || []) {
+                if (
+                    b.gedeckt === true ||
+                    !(b.topY >= lo && b.topY <= hi) ||
+                    b.topY <= top ||
+                    this._boxAbstand2(b, x, z) > 0
+                )
+                    continue;
+                top = b.topY;
+                stoff = b.stoff || this._werkStoff(e);
+            }
+        if (top > -Infinity) return stoff;
+        if (this._eisAt(x, z, y + 0.02, 0.05) !== null) return "eis";
+        if (this._kronenStreuAt(x, z) >= 0.5) return "laub";
+        const grund = {};
+        if (this._bodenSichtAt(x, z, grund) !== null && grund.gruen >= 0.5) return "gras";
+        return this._terrainMaterialAt(x, z, y);
+    }
+
+    // Der Stoff eines Werks: der Stoff seines größten festen Teils (Volumen der Gestalt, `_teilVolumen`; ohne festes Teil sein
+    // größtes), gemerkt am Eintrag. Leser: die Auflage ohne Teil (`_kontaktStoffAt`) und der kühlende Brennfleck (`_brennWaerme`).
+    _werkStoff(e) {
+        if (e._werkStoff !== undefined) return e._werkStoff;
+        const bp = this.state.blueprints && this.state.blueprints[e.type];
+        const je = {};
+        const teile = ((bp && bp.parts) || []).filter((p) => typeof p.material === "string");
+        const fest = teile.filter((p) => this._isPartSolid(p));
+        for (const p of fest.length ? fest : teile) je[p.material] = (je[p.material] || 0) + this._teilVolumen(p);
+        const best = Object.keys(je).sort((a, b) => je[b] - je[a])[0];
+        if (!best) this._bruchMelden("STOFF-ZEILE fehlt: das Werk „" + e.type + "“ trägt keinen Stoff");
+        return (e._werkStoff = best || null);
     }
 
     _blockerNetzLoesen(entry) {

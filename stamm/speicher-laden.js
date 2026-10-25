@@ -28,6 +28,7 @@ class AnazhRealm_speicher_laden {
             this._loadStateRestoreEmotionsAndDsl(state);
             this._loadStateRestoreWorldRules(state);
             this._loadStateRestoreMiscState(state);
+            this._loadStateRestoreLeben(state);
             // Portal-Hallen zurückbauen: jede läuft durch _admitForeignPortalHall — auch Selbst-Imports sind
             // „fremd" (die R4-Wand kann einen Eintrag nach Rückruf fallen lassen). Stellt die Map-Form her.
             if (Array.isArray(state.portalHalls)) {
@@ -205,17 +206,10 @@ class AnazhRealm_speicher_laden {
             // die Welt der Seite bleibt sie selbst.
             this.log("Save-Migration: kein worldMeta gefunden — die Welt der Seite bleibt", "INFO");
         }
-        // V18.221 — die SCATTER-PROMOTED-Set aus dem worldMeta-Array wiederherstellen.
-        // worldMeta.scatterPromoted wandert via Array, hier re-bilden wir das Set.
-        // Backward-kompat: alte Welten ohne Feld → leeres Set.
-        if (this.state.worldMeta && Array.isArray(this.state.worldMeta.scatterPromoted)) {
-            this.state.scatterPromoted = new Set(this.state.worldMeta.scatterPromoted);
-            // worldMeta.scatterPromoted entfernen (es lebt jetzt in state.scatterPromoted
-            // als Set; die nächste buildStateSnapshot serialisiert neu).
-            delete this.state.worldMeta.scatterPromoted;
-        } else {
-            this.state.scatterPromoted = new Set();
-        }
+        // Die Promotion der Streu rechnet der Weg neu (speicher.K3); ein älterer Stand trägt seine Liste
+        // (`worldMeta.scatterPromoted`) mit den Bäumen, die sie promotete — sie bleibt im worldMeta und reist weiter.
+        const promoviert = this.state.worldMeta && this.state.worldMeta.scatterPromoted;
+        this.state.scatterPromoted = new Set(Array.isArray(promoviert) ? promoviert : []);
         // Scatter-Counters + Lookup-Buffer beim Welt-Wechsel resetten; sie bauen sich beim Stream neu.
         // Nicht persistiert (Session-Tatsache, kein Welt-Erbgut).
         this.state.scatterCounters = { tree: 0, under: 0, stone: 0 };
@@ -387,6 +381,20 @@ class AnazhRealm_speicher_laden {
                 if (typeof this._refreshHeldMesh === "function") this._refreshHeldMesh();
             }
         }
+    }
+
+    // DIE LEBENSWERTE (halten.K5, `buildStateSnapshot` playerLeben): nach Seele und Gerät, die das Maximum setzen, die Wunde
+    // des Tods, dann Leben, Ausdauer und Mana als Anteil des neu gerechneten Maximums. Ein Stand ohne sie lädt voll.
+    _loadStateRestoreLeben(state) {
+        const L = state.playerLeben;
+        const pl = this.state.player;
+        if (!L || typeof L !== "object" || !pl) return;
+        const anteil = (v, leer) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : leer);
+        pl.deathWoundIntensity = anteil(L.wunde, 0);
+        this.recomputePlayerStats();
+        pl.hp = anteil(L.hp, 1) * pl.hpMax;
+        pl.stamina = anteil(L.ausdauer, 1) * pl.staminaMax;
+        pl.mana = anteil(L.mana, 1) * pl.manaMax;
     }
 
     // Crafting-Inventar — REIHENFOLGE: Materialien ZUERST (Part-Material-Referenzen in
@@ -644,6 +652,7 @@ class AnazhRealm_speicher_laden {
             if (this._grundrissVon(e)) geraeumt += this._grundrissRaeumen(e);
         if (geraeumt)
             this.log(`Grundriss: ${geraeumt} Natur-Stücke aus Häusern und Lichtung geräumt (älterer Stand).`, "INFO");
+        this._worldgenBuildVoxelChunkCache(); // das Gesetz wirft neu, was der Stand nicht trägt (speicher.K3)
         this.log(`Architekturen geladen: ${state.architectures.length}`);
     }
 

@@ -1794,17 +1794,17 @@ class AnazhRealm_koerper_leib {
         // Takt aus dem Gefühls-Profil (Freude 3,2 rad/s bei 0,06 rad Schritt, jede Geschwindigkeit): Schlupf 1,0. Ein
         // SPRUNG der Lage ist kein Lauf (`_lageTempo`): die Pfoten setzen am neuen Ort — vorher las der Gang einen Ruf über
         // 20 m als Lauf mit 8,5 m/s, und die Anker am alten Ort zogen die Beine 20 m zurück (gate:koerper-stand K5).
+        // Tempo und Gangart wählt `_gangWahl`, dieselbe Wahl wie im Satz.
         const lage = group.position;
+        let vLage;
         if (dtWeg > 0 && Number.isFinite(g.lageX)) {
-            const vLage = AnazhRealm._lageTempo(lage.x - g.lageX, lage.z - g.lageZ, dtWeg);
+            vLage = AnazhRealm._lageTempo(lage.x - g.lageX, lage.z - g.lageZ, dtWeg);
             if (vLage === null) g.fuss = null;
-            g.v = (g.v || 0) + ((vLage || 0) - (g.v || 0)) * (1 - Math.exp(-8 * dt));
         }
         g.lageX = lage.x;
         g.lageZ = lage.z;
         const skala = group.scale.x || 1;
-        const gs = core.gangSchritt(moving ? g.v || 0 : 0, tb.beinL * skala, this._gangZeile(false), g.art);
-        g.art = gs.art;
+        const gs = AnazhRealm._gangWahl(g, vLage, dt, moving, tb.beinL * skala, this._gangZeile(false));
         // die Länge des Schwungs im Takt (rad): der Stand füllt den Tastgrad des Gesetzes (im Galopp kürzer, gs.tast)
         const sw = 2 * Math.PI * (1 - gs.tast);
         const folge = zust === "schwimmen" ? core.GANG_FOLGE.paddeln : gs.folge;
@@ -3101,6 +3101,18 @@ AnazhRealm.GANG_FELDER = Object.freeze([
 AnazhRealm._lageTempo = function (dx, dz, dt) {
     const v = Math.hypot(dx, dz) / dt;
     return v <= globalThis.__tetrapodaCore.GANG_GESETZ.vMax ? v : null;
+};
+// DIE WAHL DES GANGS — EINE für jedes Tier, ob Leib (`_animateTierBaum`) oder Satz (`_tierSatzSchritt`): das Tempo des Wegs
+// geglättet (8/s, ein Takt zählt höchstens 0,1 s; ohne neue Lage `vLage` undefined bleibt es) und die Gangart des Gesetzes
+// über die Hysterese der Gangart des Vor-Takts, auch des Stands (wer stand, läuft im Schritt an). `g` trägt beides (v, art);
+// zurück kommt der Schritt des Gesetzes. Vorher wählte der Satz aus dem rohen Tempo und vergaß den Stand: ein Tier, das im
+// Satz anlief, trabte bei Fr 0,55, wo sein Leib schreitet (gate:tier-gang: Satz − Labor 0,24–0,25 Zyklus, Tastgrad 0,53).
+AnazhRealm._gangWahl = function (g, vLage, dt, laeuft, L, Z) {
+    if (vLage !== undefined)
+        g.v = (g.v || 0) + ((vLage || 0) - (g.v || 0)) * (1 - Math.exp(-8 * Math.max(0, Math.min(0.1, dt))));
+    const gs = globalThis.__tetrapodaCore.gangSchritt(laeuft ? g.v || 0 : 0, L, Z, g.art);
+    g.art = gs.art;
+    return gs;
 };
 // Die Reichweite R der Bein-Kette (K07, EINE Schwelle — tetrapoda gangReich, dieselbe im Körper-Studio): an ihr führt
 // tetrapoda gangBecken das Becken, an ihr hält die Fuß-IK den stehenden Fuß (`_gaitLegIK`, `_gaitLockBedarf`).

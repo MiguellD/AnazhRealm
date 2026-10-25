@@ -457,15 +457,8 @@ if (require.main === module) (async () => {
             // Phase 1 — auf den Game-Loop warten: das wahre Ready-Signal ist `_gameLoopTick` (von
             // `startEternalLoop` am Boot-Ende), NICHT `rendererReady` (feuert beim Null-Renderer sofort).
             // Geduldig, unabhängig von durationMs/CPU — ein zu kurzes Fenster ließ den
-            // Pump nie laufen (voxelChunks=0). Bleibt der Tick aus (echter Hänger): passiver Sleep.
-            await window.__weltDa();
-            const r = window.anazhRealm;
-            if (!r || typeof r._gameLoopTick !== "function") {
-                // Init nicht zeitig fertig (>BOOT_READY_CAP_MS = echter Hänger) →
-                // ehrlicher Fallback, kein Crash; die Folge-Invarianten fangen es.
-                await new Promise((resolve) => setTimeout(resolve, durationMs - (performance.now() - start)));
-                return;
-            }
+            // Pump nie laufen (voxelChunks=0). Bleibt der Tick aus (echter Hänger), nennt ihn die Stall-Akte (`__weltDa`).
+            const r = await window.__weltDa();
             // Nur den teuren GPU-Aufruf (`renderer.render`/`renderAsync`, swiftshader ~2.5 s/Frame) stubben,
             // NICHT `_loopRender`: die Bänder sind pixel-blind, lesen aber seine billigen Uniform-Updates
             // (skybox/starField, hydroSurfaceUniforms.time/.emotion); der Screenshot-Pfad stellt ihn wieder her.

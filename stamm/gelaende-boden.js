@@ -242,24 +242,32 @@ class AnazhRealm_gelaende_boden {
         }
     }
 
-    // Populated-Chunks-Cache aus dem Architektur-Altbestand ableiten (Reload → kein Doppel-Spawn).
+    // DIE BEPFLANZTEN CHUNKS (speicher.K3): ein Stand trägt keinen Wurf des Gesetzes, nur die Chunks, deren Würfe ein älterer
+    // Stand mitbrachte (`worldMeta.feldStand`) — jeder andere Chunk pflanzt neu, wie am ersten Tag. Ein Stand ohne die Liste
+    // trug jeden Wurf: seine Chunks leiten sich aus dem Bestand ab (kein Doppel-Wurf) und reisen als Liste weiter. Die Chunks,
+    // die schon stehen (ein Laden in der lebenden Seite, `_loadStateRestoreArchitectures`), pflanzen neu.
     // Vegetation streamt am Chunk-Lifecycle (`_populateVoxelChunkVegetation` in `_ensureVoxelChunkAt`).
     _worldgenBuildVoxelChunkCache() {
         try {
             const vspan = this._voxelChunkConfig().span;
-            this.state.voxelPopulatedChunks = new Set();
+            const wm = this.state.worldMeta || {};
             // V9.96 — Spawn-Queue beim Worldgen-Reset leeren. Pending-Tasks
             // aus der alten Welt sind nicht mehr relevant (Atlas + Surface
             // sind neu generiert, alte Positionen können kollidieren).
             this.state.pendingVegSpawns = [];
-            for (const a of this.state.architectures || []) {
-                if (!a || !a.position) continue;
-                const cx = Math.floor(a.position.x / vspan);
-                const cz = Math.floor(a.position.z / vspan);
-                this.state.voxelPopulatedChunks.add(`${cx},${cz}`);
+            if (!Array.isArray(wm.feldStand)) {
+                const alt = new Set();
+                for (const a of this.state.architectures || [])
+                    if (a && a.position)
+                        alt.add(`${Math.floor(a.position.x / vspan)},${Math.floor(a.position.z / vspan)}`);
+                wm.feldStand = [...alt];
             }
+            this.state.voxelPopulatedChunks = new Set(wm.feldStand);
+            for (const key of this.state.voxelChunks ? this.state.voxelChunks.keys() : [])
+                if (!this.state.voxelPopulatedChunks.has(key))
+                    (this.state.pendingFoliageChunks || (this.state.pendingFoliageChunks = new Set())).add(key);
             this.log(
-                `Welle 6.G P2: voxel-basierte Welt — Vegetation streamt mit den Voxel-Chunks (${this.state.voxelPopulatedChunks.size} Chunks aus Altbestand abgeleitet)`,
+                `Welle 6.G P2: voxel-basierte Welt — Vegetation streamt mit den Voxel-Chunks (${this.state.voxelPopulatedChunks.size} Chunks aus einem älteren Stand)`,
                 "INFO"
             );
         } catch (e) {
@@ -830,9 +838,10 @@ class AnazhRealm_gelaende_boden {
     // Haus; nH 12: 300, 1,4 s). Je Ort EIN Plan v2 (der zweite Akt am selben Anker liest sonst den Erdbau des ersten als
     // Gelände); zwei Rufer desselben Orts teilen EINE Wahl. `legen` false (der Vorlauf, `_dorfBereiten`): ihr Erdbau liegt erst,
     // wenn der Ort Welt wird (`_ortPlanSetzen`). `frei`: der Ort, den kein Haus berühren darf — ohne Angabe der Spieler (der
-    // Akt vor ihm), null keiner (die Zelle der Welt: ihr Ort ist eine Funktion von Saat und Gesetz, Lehre 7). Rückgabe: Promise
+    // Akt vor ihm), null keiner (die Zelle der Welt: ihr Ort ist eine Funktion von Saat und Gesetz, Lehre 7). `fest`: der Ort
+    // steht schon (er kehrt aus seinem Gedächtnis wieder, speicher.K3) — der Plan v2 an genau ihm, keine Wahl. Rückgabe: Promise
     // des Plans v2, `origin` rückt an seinen Ort.
-    async _ortWahl(plan, origin, legen = true, frei) {
+    async _ortWahl(plan, origin, legen = true, frei, fest) {
         if (plan && plan.version === 2) return plan;
         const key = AnazhRealm._ortSchluessel(plan, origin);
         const ple = this._ortPlaene || (this._ortPlaene = new Map());
@@ -840,7 +849,7 @@ class AnazhRealm_gelaende_boden {
             const flug = this._ortWahlFlug || (this._ortWahlFlug = new Map());
             let wahl = flug.get(key);
             if (!wahl) {
-                wahl = this._ortWahlImFaden(plan, { x: origin.x, z: origin.z }, frei).then(
+                wahl = this._ortWahlImFaden(plan, { x: origin.x, z: origin.z }, frei, fest).then(
                     (v2) => (ple.set(key, v2), flug.delete(key), v2),
                     (e) => (flug.delete(key), Promise.reject(e))
                 );
@@ -853,8 +862,8 @@ class AnazhRealm_gelaende_boden {
     static _ortSchluessel(plan, origin) {
         return "ort:" + (plan.seed >>> 0) + ":" + Math.round(origin.x) + "," + Math.round(origin.z);
     }
-    async _ortWahlImFaden(plan, origin, frei) {
-        const W = AnazhRealm.ORT_WAHL;
+    async _ortWahlImFaden(plan, origin, frei, fest) {
+        const W = fest ? Object.assign({}, AnazhRealm.ORT_WAHL, { ringe: 0 }) : AnazhRealm.ORT_WAHL;
         const mass = (this._ortWahlMass = { kandidaten: 0, scheiben: 0, ms: 0, maxMs: 0, abstandM: null });
         let reich = 0; // so weit reicht der Plan um seinen Ursprung (das Wasser jedes Kandidaten muss gekachelt sein)
         for (const s of plan.slots) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
@@ -890,6 +899,7 @@ class AnazhRealm_gelaende_boden {
             mass.kandidaten += r.kandidaten;
             mass.scheiben++;
             mass.ms += r.ms;
+            if (fest) return r.v2;
             if (r.index < 0) {
                 this.log(
                     `ORT: der Plan „${plan.name || "?"}" findet binnen ${W.ringe * W.schrittM} m um ` +
@@ -2832,8 +2842,8 @@ AnazhRealm.KEINE_EDITS = Object.freeze([]);
 // Siedlungs-Zelle fachwerk `SIEDLUNG.cellM`; auf jedem Ring Orte im Abstand ≤ `schrittM`), der nächste Ort, an dem der Plan
 // jedes Haus trägt (Ort-Faden `ortTraegt`, am Wirt `_ortTraegtWirt`), gewinnt. `grobM`: das Raster des ersten Urteils (die
 // Wand urteilt im halben Meter). `bodenTolM`: so weit darf die Gestalt des Gewässers (gelaende-core `gewaesserForm`) den Boden des Plans
-// unter einem Haus verschieben.
-AnazhRealm.ORT_WAHL = Object.freeze({ schrittM: 16, ringe: 8, grobM: 2, bodenTolM: 0.05 });
+// unter einem Haus verschieben. `trasseRunden`: so oft rechnet der Export am gewählten Ort neu (`_ortMitTrasse`, siedlung.K3).
+AnazhRealm.ORT_WAHL = Object.freeze({ schrittM: 16, ringe: 8, grobM: 2, bodenTolM: 0.05, trasseRunden: 6 });
 
 // DIE BODEN-STUFEN (K51, K51-2 CDLOD) — die Stufen-Kette des Chunk-Netzes (`_voxelChunkConfig(lod)`: Schritt 1,8 · 3,6 · 7,2 ·
 // 14,4 m) nach dem KASTEN-Abstand des Spielers zum Chunk-Quadrat (Chebyshev, `_voxelChunkLodFor`): `bis` die Grenze der Stufe,

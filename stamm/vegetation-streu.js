@@ -705,6 +705,8 @@ class AnazhRealm_vegetation_streu {
                 // promotable → ihre Bitmask bleibt leer; die Baum-Schicht schützt
                 // ihre realen Bäume)
                 if (this._scatterIsCellPromoted(tf.x, tf.z, layer.name)) continue;
+                // wo eine Tat den Baum der Zelle nahm, wächst keine Streu, bis sie heilt (`_tatSperrt`, speicher.K3)
+                if (layer.promotable && this._tatSperrt(tf.x, tf.z)) continue;
                 // Gate-Ordnung: billiges Feld zuerst, dann Slope, erst DANN das teure exakte Wasser-Verdikt (steile
                 // Zellen sparen den _voxelSurfaceY-Scan). Zwischen den Gates zieht nichts aus dem RNG → identischer
                 // Satz (gate:scatter-ab). Das Wasser-Verdikt bleibt die EXAKTE Spalten-Probe `_nassAt`: das Feld weicht
@@ -1510,6 +1512,7 @@ class AnazhRealm_vegetation_streu {
                 scale: tf.scale,
                 rotationY: tf.yaw,
                 seed: same,
+                ausGesetz: true, // die Promotion ist eine Funktion des Wegs: der Boot promotet neu, wo der Spieler naht
             }
         );
         if (entry) {
