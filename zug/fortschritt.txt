@@ -35,3 +35,4 @@
 2026-10-25 07:12:19 takt2-gtx leib.K4#1 ROT 5.0 · 27/36
 2026-10-25 07:22:25 takt2-gtx halten.K2#1 ROT 10.0 · 28/36
 2026-10-25 07:27:32 takt2-gtx tore.K3#1 GRÜN 5.0 · 29/36
+2026-10-25 07:42:39 takt2-gtx profiband.K4#1 GRÜN 15.1 · 30/36
