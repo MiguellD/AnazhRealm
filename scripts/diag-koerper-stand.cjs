@@ -27,7 +27,8 @@
 //       der Fuß (der tiefste Vertex, den der Knöchel trägt, im Fuß-Lock des Gangs), der Huf (je Größen-Band das Reh im Stand je
 //       Bein, das schlechteste; seine Sohle liegt dem Boden an, `_gaitSohlenKipp`), das Rad
 //       (der tiefste Vertex je Reifen des GT in Fahrt), der Fuß der Streu (jede Instanz im Stand, nach Gang und Fahrt); die
-//       Feinform (Mesh gegen `_voxelSurfaceY`) ≤ 5 cm. Über dem Soll hält die Ratsche spec/profiband/ratsche-boden-rolle.json
+//       Feinform (Mesh gegen `_voxelSurfaceY`) ≤ 5 cm. Über dem Soll hält die Ratsche spec/profiband/ratsche-boden-rolle.json.
+//       Gemessen wird erst, wenn die Welt steht — und dort steht der Ring an seinem Ziel (`_ringWaechst`, nie an der Bildrate)
 //   --selftest: je Defekt trägt die Welt den Leser vor seiner Heilung als Laufzeit-Stub (`taeter`) — GENAU
 //   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
@@ -191,6 +192,12 @@ function taeter(inj) {
     }
     // sohle (K8): die Sohle der Pfote kippt nicht mit dem Boden unter ihr (vor K8 huf hielt sie die Lage des Rumpfs)
     if (inj === "sohle") r._gaitSohlenKipp = (...a) => (a[4] ? { laengs: 0, quer: 0 } : P._gaitSohlenKipp.apply(r, a));
+    // ring (K8): der Ring bleibt am Boden des ersten Weltbilds stehen (vor gelaende-ring-wachstum: Radeon Ring 2 von 4)
+    if (inj === "ring")
+        r._ringWaechst = function () {
+            P._ringWaechst.call(this);
+            this.state._activeRingRadius = Math.min(2, this.state._activeRingRadius);
+        };
 }
 
 const server = statikServer({ root: ROOT });
@@ -883,7 +890,12 @@ async function rollen(n) {
             if (s.playerVel) s.playerVel.setValue(0, 0, 0);
         };
         await window.__weltStehtNach(() => (setz(), takt()));
-        const R = (o[ort] = { x: X, z: Z, neig: ort === "hang" ? hang.neigung : 0 });
+        const R = (o[ort] = {
+            x: X,
+            z: Z,
+            neig: ort === "hang" ? hang.neigung : 0,
+            ring: [s._activeRingRadius, s.chunkRingRadius],
+        });
         // die Feinform: das Mesh gegen das Gesetz an n Zufalls-Punkten 3–30 m um den Ort
         const fein = [];
         let saat = 7;
@@ -1091,7 +1103,10 @@ function urteilK8(o, umfang) {
     if (!o || !o.wiese || !o.hang) return ["K8 Aufbau: Mess-Wiese oder 25°-Hang fehlt"];
     const f = [];
     const rs = fs.existsSync(RATSCHE) ? JSON.parse(fs.readFileSync(RATSCHE, "utf8")) : {};
-    for (const ort of ["wiese", "hang"])
+    for (const ort of ["wiese", "hang"]) {
+        const [ring, ziel] = o[ort].ring || [];
+        if (!(ring >= ziel))
+            f.push(`K8 Ring ${ort}: ${ring} von ${ziel} — Täter: _ringWaechst (der Ring wächst bis zum Ziel)`);
         for (const [rolle, [soll, wer]] of Object.entries(K8_ROLLEN)) {
             // die Deko-Streu über den Chunks (64–194 m) trägt an der Wiese (einer Aue) gut 100 Instanzen: die Hälfte des Umfangs
             const m = o[ort][rolle];
@@ -1102,13 +1117,14 @@ function urteilK8(o, umfang) {
                     `K8 ${rolle} ${ort}: p95 ${m.p95} cm (Median ${m.median}, Soll ≤ ${soll}, Ratsche ${(rs[ort] || {})[rolle]}) — Täter: ${wer}`
                 );
         }
+    }
     return f;
 }
 const zeileK8 = (o) =>
     ["wiese", "hang"]
         .map((ort) =>
             o && o[ort]
-                ? `K8 ${ort} ${o[ort].x}/${o[ort].z} ${o[ort].neig}° · ` +
+                ? `K8 ${ort} ${o[ort].x}/${o[ort].z} ${o[ort].neig}° · Ring ${o[ort].ring.join(" von ")} · ` +
                   Object.keys(K8_ROLLEN)
                       .map(
                           (k) =>
@@ -1191,6 +1207,7 @@ function zeile(o) {
                 wiese: ["K7 Wiese im Rand-Streifen", "K7 Streu im Rand-Streifen"],
                 rolle: ["K8 streu wiese", "K8 streu hang", "K8 huf hang", "K8 rad hang"],
                 sohle: ["K8 huf hang"],
+                ring: ["K8 Ring wiese", "K8 Ring hang"],
             };
             for (const inj of Object.keys(soll)) {
                 const k8 = soll[inj][0].startsWith("K8");

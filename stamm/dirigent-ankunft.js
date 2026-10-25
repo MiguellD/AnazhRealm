@@ -1005,7 +1005,7 @@ class AnazhRealm_dirigent_ankunft {
     }
 
     // Was dem ersten Weltbild fehlt — leer heißt: es steht. Je Lücke ein Satz für die Stand-Zeile (mit ihrer Zahl, die sinkt,
-    // solange die Welt wächst): der Boden bis zum Existenz-Boden des Rings (RING_EXIST_FLOOR, die Ringe ohne fps-Tor), der
+    // solange die Welt wächst): der Boden bis zum Existenz-Boden des Rings (RING_EXIST_FLOOR, sein Sprung unter dem Ladeschirm), der
     // Horizont, der Leib, das Buch der Studios — und IM BLICK (`_imErstenBlick`, B3d) jeder Bau und Baum der Mesh-Zone
     // (`architectureCullingRadius`) gezeichnet, jede Streu-Region, die der Streamer holt, gebaut (`_streuWartet`: keine fehlt,
     // keine wartet auf ihr Asset), keine Karte offen, deren Leser im Blick steht, kein Dorf der Ankunft im Werden (fällig, im

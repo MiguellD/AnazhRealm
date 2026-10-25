@@ -371,7 +371,9 @@ class AnazhRealm_dirigent_takt {
                                 ? `Felder offen ${o.felder}`
                                 : o.dorf
                                   ? `Dorf offen ${o.dorf}`
-                                  : null;
+                                  : o.ankunft
+                                    ? `Ankunft gleitet ${o.ankunft}`
+                                    : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -401,7 +403,16 @@ class AnazhRealm_dirigent_takt {
         const st = this.state;
         const o =
             this._weltOffenWert ||
-            (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0, karten: 0, felder: 0, leiber: 0, dorf: 0 }); // je Takt, ohne Müll
+            (this._weltOffenWert = {
+                foundry: 0,
+                chunks: 0,
+                wald: 0,
+                karten: 0,
+                felder: 0,
+                leiber: 0,
+                dorf: 0,
+                ankunft: 0,
+            }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
               (f.warte ? f.warte.length : 0) +
@@ -418,6 +429,11 @@ class AnazhRealm_dirigent_takt {
         o.karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
         o.felder = this._weltBakeSchuld();
         o.dorf = this._dorfOffen();
+        // DIE ANKUNFT GLEITET (`_ankunftsFerne`, B2): bis ihr letztes Bild gezeichnet ist, misst jede Stufen-Wahl weiter, als das
+        // Auge steht — die Bilder, die ihr fehlen (tiere.K1: im Schuss der Werkbank stand sie bei 62 von 90, der Mammut 13,9 m
+        // vor dem Auge trug die Karte)
+        const gleit = st._ankunftGleit;
+        o.ankunft = gleit >= 0 && gleit < AnazhRealm.ANKUNFT_GLEIT_BILDER ? AnazhRealm.ANKUNFT_GLEIT_BILDER - gleit : 0;
         o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
         o.leiber = 0;
         if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull)
@@ -433,6 +449,18 @@ class AnazhRealm_dirigent_takt {
             return false;
         const o = this._weltOffen();
         for (const k in o) if (o[k]) return false; // jedes Feld, ohne Müll je Takt
+        // DER SPRUNG DES ANKERS: stand die Kamera einer Sonde (das Auge der Stufen, `_lodAuge` setzt es neu) oder der Spieler seit
+        // dem letzten Takt woanders, ginge jeder Fege-Takt, der dort an seinem Anker fegte, im nächsten eine Runde — bis dahin
+        // steht die Welt nicht (tiere.K1: der Schuss 43 m quer zum Spieler zeichnete den Mammut 14 m vor dem Auge als Karte)
+        this._lodAuge();
+        for (const t of this._standWache ? this._standWache.takte.values() : [])
+            if (
+                t.pos &&
+                t.anker &&
+                t.takt >= W.takte - 1 &&
+                (t.pos.x - t.anker.x) ** 2 + (t.pos.y - t.anker.y) ** 2 + (t.pos.z - t.anker.z) ** 2 > t.rand * t.rand
+            )
+                return false;
         return !this._standGeht();
     }
 
@@ -1034,6 +1062,7 @@ class AnazhRealm_dirigent_takt {
         const _ct = performance.now();
         this.updateCreatures(delta);
         this._tickBewohner(delta); // die Bewohner der Siedlungen (Meisterkarte mensch.K1)
+        this._vogelTakt(); // die Vögel des Hör-Kreises (Klang K1: jeder Ruf hat einen Leib)
         this._perfSenseLap("creatures", _ct);
         this.state.weatherEffectTime += delta;
         // DIE WETTER-UHR der Welt (wetter.K1): die Spiel-Zeit, in der die Fronten ziehen — Welt-Gedächtnis (`worldMeta.wetterUhr`,
@@ -1247,7 +1276,7 @@ class AnazhRealm_dirigent_takt {
                     if (this._dekoWartet()) return; // erst der Boden, dann der Wald — nie verhungert
                     // Scatter mit `_perfSenseLap`-Tap (phase.scatter in perfSense + Flugschreiber — neue welt-formende
                     // Last wird attribuiert). Das ms-Budget fließt durch: der Region-Bau läuft in ≤SCATTER_SLICE_MS-
-                    // Scheiben statt atomar (~54 ms), damit die Deko den Ring-Kopfraum-Timer nicht resetet.
+                    // Scheiben statt atomar (~54 ms).
                     // Headless: budget=Infinity → One-Shot; im Takt mit Terrain-Bau trägt die Deko nur ihren Boden.
                     // Der Lade-Takt (`_ladeTakt`) gibt der Deko das ganze Budget des Lade-Frames, das Gras baut darin.
                     // Im Lade-Takt ist die Deko ein Leser mit Kappe (K60-2): bis zur EINEN Frist des Lade-Frames, mindestens ihr Boden.

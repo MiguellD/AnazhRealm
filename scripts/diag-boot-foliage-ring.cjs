@@ -1,6 +1,6 @@
 // diag-boot-foliage-ring.cjs — BEWEIS: die Vegetation wächst MIT dem Boden, nie voraus.
-// Diese Linse treibt den NICHT-headless-Ramp-Pfad (Null-Renderer, `_isHeadlessNull=false`
-// erzwungen → perf-headroom auf ~0-frameMs, genau die Boot-Situation) und prüft: der foliageRadius
+// Diese Linse treibt den NICHT-headless-Pfad (Null-Renderer, `_isHeadlessNull=false` erzwungen: der Ring wächst
+// Schale um Schale, `_ringWaechst`, das Laub-Ziel ist auf seine Kante gekappt) und prüft: der foliageRadius
 // bleibt an der Ring-Kante, statt auf MAX zu rennen.
 //   node scripts/diag-boot-foliage-ring.cjs
 const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
@@ -19,8 +19,8 @@ const server = statikServer();
     });
     const S = await page.evaluate(async () => {
         const r = window.anazhRealm, st = r.state;
-        // den NICHT-headless-Ramp-Pfad erzwingen: der Null-Renderer gibt sich als echter aus, damit die
-        // foliageRadius-Ramp läuft (perf-headroom auf ~0-frameMs = die Boot-Situation).
+        // den NICHT-headless-Pfad erzwingen: der Null-Renderer gibt sich als echter aus, damit Ring und
+        // foliageRadius wachsen wie auf einer Karte (der Boot: Ring 0, Laub 70 m).
         if (st.renderer) st.renderer._isHeadlessNull = false;
         st._activeRingRadius = 0;
         st.foliageRadius = 70;

@@ -2505,10 +2505,14 @@ class AnazhRealm_gelaende_chunks {
                     // V18.464: + _blockerReach (Rand-Parts großer Bauwerke, s. _stepCharacterStructures)
                     const rcCull = 80 + (e._blockerReach || 0);
                     if (Math.abs(e.position.x - sx) > rcCull || Math.abs(e.position.z - sz) > rcCull) continue;
+                    // DER STRAHL KENNT JEDE GEZEICHNETE GESTALT (leib.K4): nach den Boxen des Eintrags seine Flügel, wie das Bild
+                    // sie zeigt (`_fluegelBoxenVon`: der Tür- und Tor-Flügel als Instanz) — in der Ordnung danach
                     const boxes = e.blockerAABBs;
+                    const fl = this._fluegelBoxenVon(e);
+                    const nB = boxes.length;
                     const seq = e._blockerSeq;
-                    for (let bi = 0; bi < boxes.length; bi++) {
-                        const bx = boxes[bi];
+                    for (let bi = 0, n = nB + fl.length; bi < n; bi++) {
+                        const bx = bi < nB ? boxes[bi] : fl[bi - nB];
                         if (durchPflanzen && bx.pflanze === true) continue;
                         if (
                             bx.maxX < qx0 ||
@@ -2521,7 +2525,7 @@ class AnazhRealm_gelaende_chunks {
                             continue;
                         if (rad > 0) {
                             const k = this._segmentKugelBox(sx, sy, sz, dx, dy, dz, bx, rad);
-                            if (k) (spannen || (spannen = [])).push(k);
+                            if (k) (spannen || (spannen = [])).push(Object.assign(k, { box: bx }));
                             continue;
                         }
                         const hitInfo = this._segmentAABB(sx, sy, sz, dx, dy, dz, bx);
@@ -2541,7 +2545,10 @@ class AnazhRealm_gelaende_chunks {
             // DIE STELLE DER KUGEL (K4): die Mitte hält vor jeder Box, die der dünne Strahl kreuzt, und vor der ersten Haut (der
             // um r aufgeblasenen Box), die die Strecke betritt. Eine Haut AM START (die Mitte steht schon an ihr, binnen 1 mm:
             // die Schulter an der Wand, der Abstieg neben dem GT) hält sie nur, wenn die Stelle noch in ihr läge — verlässt die
-            // Strecke sie (über die Kante, von der Wand fort), ist der Weg frei; sonst hält die Mitte an ihrem Eintritt.
+            // Strecke sie (über die Kante, von der Wand fort), ist der Weg frei; sonst hält die Mitte an ihrem Eintritt. Führt die
+            // Strecke in der Haut TIEFER an die Box (`_hautTiefer`: die Schulter am offenen Tür-Flügel, der Orbit streift ihn),
+            // stößt die Kugel sofort an: sie hält am Start — bis leib.K4 glitt der Arm dort durch die Haut (Dorf-Sonde, 3 von 18
+            // Häusern: die Linse 0,151 m vor dem Blatt).
             if (spannen) {
                 let st = 1;
                 for (const k of spannen) {
@@ -2552,7 +2559,11 @@ class AnazhRealm_gelaende_chunks {
                     }
                 }
                 for (const k of spannen)
-                    if (k.t * len <= 1e-3 && k.t < st && st < k.aus) {
+                    if (
+                        k.t * len <= 1e-3 &&
+                        k.t < st &&
+                        (st < k.aus || this._hautTiefer(sx, sy, sz, dx, dy, dz, k.box, Math.min(st, k.aus)))
+                    ) {
                         st = k.t;
                         sFace = k;
                     }
@@ -2739,6 +2750,37 @@ class AnazhRealm_gelaende_chunks {
         return h;
     }
 
+    // FÜHRT DIE STRECKE TIEFER AN DIE BOX? Der Abstand der Mitte zur Box (gedreht wie `_segmentAABB`) ist längs der Strecke
+    // konvex: sein Minimum auf [0, bis] (Goldener Schnitt) liegt mehr als 1 cm unter dem am Start — dann stößt die Kugel, die am
+    // Start schon an der Haut steht, sofort an (die Kante, an der sie entlang streicht, zählt nicht).
+    _hautTiefer(sx, sy, sz, dx, dy, dz, b, bis) {
+        const ob = b.obb;
+        const ab = (t) => {
+            const x = sx + dx * t;
+            const y = sy + dy * t;
+            const z = sz + dz * t;
+            const qx = ob ? x - ob.cx : x - (b.minX + b.maxX) / 2;
+            const qz = ob ? z - ob.cz : z - (b.minZ + b.maxZ) / 2;
+            const lx = ob ? qx * ob.c - qz * ob.s : qx;
+            const lz = ob ? qx * ob.s + qz * ob.c : qz;
+            return Math.hypot(
+                Math.max(0, Math.abs(lx) - (ob ? ob.hx : (b.maxX - b.minX) / 2)),
+                Math.max(0, b.botY - y, y - b.topY),
+                Math.max(0, Math.abs(lz) - (ob ? ob.hz : (b.maxZ - b.minZ) / 2))
+            );
+        };
+        const g = (Math.sqrt(5) - 1) / 2;
+        let lo = 0;
+        let hi = bis;
+        for (let i = 0; i < 24; i++) {
+            const m1 = hi - g * (hi - lo);
+            const m2 = lo + g * (hi - lo);
+            if (ab(m1) < ab(m2)) hi = m2;
+            else lo = m1;
+        }
+        return ab((lo + hi) / 2) < ab(0) - 0.01;
+    }
+
     // Segment-AABB-Schnitt (Slab-Methode) für den Struktur-Raycast. start + dir·t, t ∈ [0,1].
     // Liefert { t, nx, ny, nz } (Eintritts-t + Außen-Normale der getroffenen Fläche) oder null.
     _segmentAABB(sx, sy, sz, dx, dy, dz, b) {
@@ -2829,13 +2871,15 @@ class AnazhRealm_gelaende_chunks {
     _tickVoxelChunkStreaming(playerPos) {
         if (!this.state.voxelTerrainActive || !playerPos) return;
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
-        const { span, ringRadius } = this._voxelChunkConfig();
+        const { span } = this._voxelChunkConfig();
         const pcx = Math.floor(playerPos.x / span);
         // V9.92 (Phase 4 — Lazy-BVH): aktuelle Spieler-Chunk-Position
         // zwischenspeichern, damit `_ensureVoxelChunkAt` Lazy-BVH-Decision
         // treffen kann (r ≤ 1 = sofort BVH, r ≥ 2 = lazy).
         this._setLastPlayerVoxelChunk(pcx, Math.floor(playerPos.z / span));
         const pcz = Math.floor(playerPos.z / span);
+        this._ringWaechst(); // der Ring um die Zelle dieses Takts
+        const { ringRadius } = this._voxelChunkConfig();
         // DAS AUGE DER STUFEN (K51-2): derselbe Punkt wählt die Stufe jedes Chunks und treibt den Geomorph des Boden-Stoffs
         this._stufeAugeTakt(playerPos);
         // Velocity-Prefetch: die 1–2 Chunks in Laufrichtung ZUERST in die Worker-Queue (der Ring läuft in
