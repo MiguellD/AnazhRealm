@@ -121,7 +121,7 @@ function werkzeug() {
         try {
             window.__buehne();
             r._gameLoopTick(performance.now());
-        } catch (_e) {}
+        } catch {}
     };
     W.umstellen = async (x, z) => {
         st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
@@ -698,57 +698,10 @@ async function offlineRender(page, lage) {
                 q += l * l + rr * rr; // Leistung beider Kanäle (Panner gleich-leistig)
                 mono[i] = (l + rr) * 0.5;
             }
-            // Schwerpunkt über eine 8192-DFT-Mittelung (Hann).
-            const N = 8192;
-            let sw = 0;
-            let sf = 0;
-            const re = new Float64Array(N);
-            const im = new Float64Array(N);
-            for (let o = 0; o + N <= n; o += N) {
-                for (let i = 0; i < N; i++) {
-                    re[i] = mono[o + i] * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / N));
-                    im[i] = 0;
-                }
-                for (let i = 1, j = 0; i < N; i++) {
-                    let bit = N >> 1;
-                    for (; j & bit; bit >>= 1) j ^= bit;
-                    j ^= bit;
-                    if (i < j) {
-                        [re[i], re[j]] = [re[j], re[i]];
-                        [im[i], im[j]] = [im[j], im[i]];
-                    }
-                }
-                for (let len = 2; len <= N; len <<= 1) {
-                    const ang = (-2 * Math.PI) / len;
-                    const wr = Math.cos(ang);
-                    const wi = Math.sin(ang);
-                    for (let i = 0; i < N; i += len) {
-                        let cr = 1;
-                        let ci = 0;
-                        for (let j = 0; j < len / 2; j++) {
-                            const h = i + j + len / 2;
-                            const vr = re[h] * cr - im[h] * ci;
-                            const vi = re[h] * ci + im[h] * cr;
-                            re[h] = re[i + j] - vr;
-                            im[h] = im[i + j] - vi;
-                            re[i + j] += vr;
-                            im[i + j] += vi;
-                            const nr = cr * wr - ci * wi;
-                            ci = cr * wi + ci * wr;
-                            cr = nr;
-                        }
-                    }
-                }
-                for (let k = 1; k < N / 2; k++) {
-                    const p = re[k] * re[k] + im[k] * im[k];
-                    sw += p;
-                    sf += (p * k * sr) / N;
-                }
-            }
             out[name] = {
                 gesetzDb: +mix[name].db.toFixed(1),
                 gemessenDb: +(10 * Math.log10(q / n / 2 + 1e-20) + 3.01).toFixed(1),
-                schwerpunktHz: Math.round(sf / Math.max(1e-20, sw)),
+                schwerpunktHz: Math.round(K.schwerpunkt(mono, sr)),
             };
         }
         return out;
@@ -1472,23 +1425,44 @@ async function zensus(page, browser, ergebnis) {
         if (!k4.wachsen.some((t) => /^bauten/.test(t)))
             fehl.push("S4: der Voll-Umlauf über alle Bauten bleibt unbemerkt");
         // S5: ein Ereignis-Zwilling (Glocke aus dem Stamm, direkt an den Ausgang).
-        const e5 = await page.evaluate(async () => {
-            const r = window.anazhRealm;
-            const P = Object.getPrototypeOf(r);
-            const alt = P._playWaterReactionPing;
-            P._playWaterReactionPing = function zwillingGlocke() {
-                const ctx = this.state.symphony.ctx;
-                const o = ctx.createOscillator();
-                o.connect(ctx.destination);
-                o.start();
-                o.stop(ctx.currentTime + 0.05);
-            };
-            try {
-                return await window.__klangW.ereignisse();
-            } finally {
-                P._playWaterReactionPing = alt;
-            }
-        });
+        // die Ereignis-Tour mit einem Zwilling statt des Glieds `glied` (sein Funktions-Name ist der Täter-Name)
+        const mitZwilling = (glied, zwilling) =>
+            page.evaluate(
+                async (glied, zwilling) => {
+                    const P = Object.getPrototypeOf(window.anazhRealm);
+                    const alt = P[glied];
+                    P[glied] = {
+                        zwillingGlocke() {
+                            const ctx = this.state.symphony.ctx;
+                            const o = ctx.createOscillator();
+                            o.connect(ctx.destination);
+                            o.start();
+                            o.stop(ctx.currentTime + 0.05);
+                        },
+                        zwillingRuf(_c, stimmung) {
+                            const s = this.state.symphony;
+                            return s.umwelt.kern.tierRuf(s.ctx, s.umwelt.bus, {
+                                laengeM: 1,
+                                stimmung,
+                                d: 3,
+                                pan: 0,
+                                saat: 5,
+                            });
+                        },
+                        zwillingHauch() {
+                            this._substanzKlang("wasser", null);
+                        },
+                    }[zwilling];
+                    try {
+                        return await window.__klangW.ereignisse();
+                    } finally {
+                        P[glied] = alt;
+                    }
+                },
+                glied,
+                zwilling
+            );
+        const e5 = await mitZwilling("_playWaterReactionPing", "zwillingGlocke");
         const u5 = urteile({}, null, null, e5).rot;
         if (!u5.some((t) => /^E wasser: .*zwillingGlocke.*kein Gesetz/.test(t)))
             fehl.push("S5: der Ereignis-Zwilling bleibt unbenannt");
@@ -1502,26 +1476,7 @@ async function zensus(page, browser, ergebnis) {
                 fehl.push("S6: der Graph ohne Werkstatt bleibt unbemerkt");
         }
         // S7: ein Ruf, der im Haupt-Thread rechnet (der Zwilling ruft das Gesetzbuch direkt im Spiel-Takt).
-        const e7 = await page.evaluate(async () => {
-            const r = window.anazhRealm;
-            const P = Object.getPrototypeOf(r);
-            const alt = P._tierRuf;
-            P._tierRuf = function zwillingRuf(_c, stimmung) {
-                const s = this.state.symphony;
-                return s.umwelt.kern.tierRuf(s.ctx, s.umwelt.bus, {
-                    laengeM: 1,
-                    stimmung,
-                    d: 3,
-                    pan: 0,
-                    saat: 5,
-                });
-            };
-            try {
-                return await window.__klangW.ereignisse();
-            } finally {
-                P._tierRuf = alt;
-            }
-        });
+        const e7 = await mitZwilling("_tierRuf", "zwillingRuf");
         const u7 = urteile({}, null, null, e7).rot;
         if (!u7.some((t) => /^W tier: \d+ Samples im Haupt-Thread/.test(t)))
             fehl.push("S7: der Ruf im Haupt-Thread bleibt unbemerkt");
@@ -1549,19 +1504,7 @@ async function zensus(page, browser, ergebnis) {
                 fehl.push("S10: ein Wald ohne Bäume bleibt unbemerkt");
         } else fehl.push("S10: kein Wald-/Wiesen-Ort gemessen");
         // S11: ein Wasser-Hauch, der den Fußabdruck nicht liest (er klänge auch auf trockenem Land) — die Tour nennt es.
-        const e11 = await page.evaluate(async () => {
-            const r = window.anazhRealm;
-            const P = Object.getPrototypeOf(r);
-            const alt = P._playWaterReactionPing;
-            P._playWaterReactionPing = function zwillingHauch() {
-                this._substanzKlang("wasser", null);
-            };
-            try {
-                return await window.__klangW.ereignisse();
-            } finally {
-                P._playWaterReactionPing = alt;
-            }
-        });
+        const e11 = await mitZwilling("_playWaterReactionPing", "zwillingHauch");
         if (
             !urteile({}, null, null, e11).rot.some((t) =>
                 /^E wasserTrocken: \d+ Quelle\(n\), wo die Welt still ist/.test(t)

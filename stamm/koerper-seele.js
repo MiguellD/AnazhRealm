@@ -280,9 +280,9 @@ class AnazhRealm_koerper_seele {
         // Todes-Pfad bleiben unangefasst.
         const mode = this.getGameMode ? this.getGameMode() : "frieden";
         if (mode !== "pfad") return false;
-        // Respawn-Gnade: kein doppelter Tod (Spieler ist
-        // unverwundbar während der Heilungs-Phase, das ist Teil der Mythos).
-        const now = performance.now() / 1000;
+        // Respawn-Gnade: kein doppelter Tod (Spieler ist unverwundbar während der Heilungs-Phase, das ist Teil der Mythos) —
+        // auf der Spiel-Uhr (`spielZeit`, halten.K5): auf der Wanduhr endete sie unter Last früher als die Takte der Jäger.
+        const now = this.state.spielZeit;
         if ((this.state.player.respawnGraceUntil || -Infinity) > now) return false;
         // Resistenz: feuer/hitze-Quellen werden durch heatResist gedämpft.
         const stats = this.state.player.stats || {};
@@ -324,9 +324,9 @@ class AnazhRealm_koerper_seele {
 
     // Tod feld-nativ: HP=0 → _depositLife merkt den Ort, der Körper bleibt DERSELBE (Identität), Rückkehr
     // am Genesis-Anker; deathWoundIntensity trägt die Wunde als Stat-Penalty, respawnGraceUntil verhindert
-    // Ping-Pong-Tod. Deterministisch.
+    // Ping-Pong-Tod auf der Spiel-Uhr (`spielZeit`). Deterministisch.
     _playerDeathRespawn(source) {
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         if ((this.state.player.respawnGraceUntil || -Infinity) > now) return;
         this.state.player.respawnGraceUntil = now + AnazhRealm.RESPAWN_GRACE_SEC;
         // Welt-Trauer: zwei Achsen schwingen mit — Tod ist Verlust + Rückkehr.
@@ -370,10 +370,14 @@ class AnazhRealm_koerper_seele {
         // Die Lebenswerte kehren voll zurück (das Maximum der verwundeten Gestalt) — die WUNDE (Stat-Penalty,
         // 10-min-Regen) trägt die Erinnerung, nicht ein HP-Malus.
         this.recomputePlayerStats({ voll: true });
-        this.journalAppend("loss", `Der Körper fiel ${source ? `(${source}) ` : ""}— am Ursprung kehrt er wieder.`, {
-            source: source || null,
-            at: now,
-        });
+        this.journalAppend(
+            "loss",
+            AnazhRealm._datum`Der Körper fiel ${source ? `(${source}) ` : ""}— am Ursprung kehrt er wieder.`,
+            {
+                source: source || null,
+                at: now,
+            }
+        );
         this.log(`Tod (${source || "unbekannt"}) → Rückkehr am Anker (${ax.toFixed(0)}, ${az.toFixed(0)})`, "INFO");
     }
 
@@ -773,23 +777,9 @@ class AnazhRealm_koerper_seele {
             } catch (_e) {
                 /* Anker ohne Welt-Matrix — Welt = Anker-Raum */
             }
-            // die ECHTE Geometrie-Spanne (positions + sizes + rotation), robust auch bei Ein-Part-Geräten
-            // (anders als _compoundBBox, positions-only).
-            try {
-                mesh.updateMatrixWorld(true);
-                const box = new THREE.Box3().setFromObject(mesh);
-                if (box && Number.isFinite(box.min.x) && Number.isFinite(box.max.x)) {
-                    const span = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
-                    if (span > 1e-4) {
-                        const welt = isStudio
-                            ? 1
-                            : Math.max(cfg.minScale, Math.min(cfg.maxScale, cfg.targetSpanM / span));
-                        mesh.scale.setScalar(welt / ankerSkala);
-                    }
-                }
-            } catch (_e) {
-                /* headless/degeneriert — Skala 1 lassen, die Optik ist ohnehin der Browser */
-            }
+            // die wahre Größe: die Studio-Gestalt in Metern, ein Part-Bau in der EINEN Skala, mit der er auch wiegt
+            // (`_geraetWeltSkala`: die rotations-bewusste Spanne seiner Teile auf die Werkzeug-Spanne)
+            mesh.scale.setScalar((isStudio ? 1 : this._geraetWeltSkala(bp)) / ankerSkala);
             const sx = side === "left" ? -1 : 1;
             // V18.110 — C7: der GRIFF-Punkt liegt in der Hand — das Mesh wird so
             // verschoben, dass der griffigste Part (bzw. der explizite griff-
@@ -989,21 +979,11 @@ class AnazhRealm_koerper_seele {
                 : null;
         if (!preset) return;
         const ov = typeof this._workshopStudioOvFor === "function" ? this._workshopStudioOvFor(preset) : null;
-        let gestempelt = false;
-        if (ov) {
-            try {
-                const json = JSON.stringify(ov);
-                // Dieselbe 8-KiB-Taille-Wand wie _deserializeBlueprint: ein Riesen-Kanal stempelt gar nicht erst —
-                // sonst lebte er live und würde beim Reload still gewaschen.
-                if (json && json.length <= AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) {
-                    bp.studioOv = JSON.parse(json);
-                    gestempelt = true;
-                }
-            } catch (_e) {
-                /* nicht-serialisierbar → kein Stempel (fail-closed) */
-            }
-        }
-        if (!gestempelt && bp.studioOv !== undefined) delete bp.studioOv;
+        // dieselbe 8-KiB-Taille-Wand wie _deserializeBlueprint (`_stempelVon`): ein Riesen-Kanal stempelt gar nicht erst — sonst
+        // lebte er live und würde beim Reload still gewaschen
+        const stempel = AnazhRealm._stempelVon(ov);
+        if (stempel) bp.studioOv = stempel;
+        else if (bp.studioOv !== undefined) delete bp.studioOv;
     }
 
     // Werkstatt-Gate am Mach-Akt: ein domain-tragender Bauplan (forging → Esse, alchemy → Brennkolben)
@@ -1058,9 +1038,17 @@ class AnazhRealm_koerper_seele {
 
     // Verschleiß je Hieb = WEAR_PER_STRIKE_BASE × FLOOR / clamp(härte, FLOOR, CEIL)
     // (WEAR_HARDNESS_FLOOR · WEAR_HARDNESS_CEIL): harte Materialien zehren langsamer; CEIL klemmt
-    // unrealistisch harte (sonst unzerstörbar), FLOOR deckelt den Verschleiß weicher Materialien.
+    // unrealistisch harte (sonst unzerstörbar), FLOOR deckelt den Verschleiß weicher Materialien. Ein Werk der Schmiede
+    // zehrt aus der EINEN Stoff-Zeile seines Stoffs (schmiede werkStoff: der Werkstoff von Klinge, Kopf und Blatt, das Holz von
+    // Keule und Bogen) — die Bronze-Axt schneller als die Stahl-Axt (halten.K3); vorher las es die Teile seines Spenders
+    // (geraet_schwert, geraet_spitzhacke): zwei Raten für 22 Gestalten und jeden Stoff. Ein Eigenwerk liest seine Teile.
     _wearPerStrike(bp) {
-        const tags = bp && typeof this.computeCompoundTags === "function" ? this.computeCompoundTags(bp) : null;
+        const sc = this._schmiedeWerk(bp) ? globalThis.__schmiedeCore : null;
+        if (sc && typeof sc.werkStoff !== "function") AnazhRealm._kernPflichtBruch("schmiede:werkStoff");
+        const stoff = sc ? sc.werkStoff(this._schmiedeGestalt(bp), this._artifactStudioOv(bp) || undefined) : null;
+        const zeile = stoff ? (this.state.materials || {})[stoff] : null;
+        if (stoff && !zeile) this._bruchMelden("STOFF-ZEILE fehlt: das Werk aus „" + stoff + "“ zehrt ohne Härte");
+        const tags = zeile ? zeile.tags : !sc && bp ? this.computeCompoundTags(bp) : null;
         const haerte = tags && typeof tags["härte"] === "number" ? tags["härte"] : 0.5;
         const floor = AnazhRealm.WEAR_HARDNESS_FLOOR;
         const ceil = AnazhRealm.WEAR_HARDNESS_CEIL;
@@ -1419,7 +1407,7 @@ class AnazhRealm_koerper_seele {
         this.journalAppendOnce(
             `portalObtained:${entry.id}`,
             "growth",
-            `Ein Tor zur ${entry.label} fand den Weg in deine Sammlung.`,
+            AnazhRealm._datum`Ein Tor zur ${entry.label} fand den Weg in deine Sammlung.`,
             { world: entry.id }
         );
         this.saveState();
@@ -1492,26 +1480,14 @@ class AnazhRealm_koerper_seele {
         return { ok: true, name: safe };
     }
 
-    // Wind-Vektor an (x, z): deterministisch aus dem Welt-Seed (_voxelNoise), dreht sanft über
-    // km-Distanzen (windScale = 1/1000). windTimeRate = 0 → statischer Wind je Welt (deterministisch).
-    _worldWindDirAt(x, z, t) {
-        const n = this._gelaende().noise;
-        const S = AnazhRealm.SCENT;
-        const tt = (typeof t === "number" ? t : 0) * S.windTimeRate;
-        // Wind-Phase: Noise als Winkel-Quelle (0..2π).
-        const phase = (n.noise2D(x * S.windScale + tt, z * S.windScale - tt) + 1) * Math.PI;
-        return { x: Math.cos(phase), z: Math.sin(phase) };
-    }
-
     // Geruch an (x, z) aus `sources` [{x, z, strength}], Σ über alle Quellen, ∈ [0, ∞) — cappen und
     // deuten die Konsumenten. Je Quelle: decay = exp(−dist/rangeM); dot = toRecv · windDir (toRecv =
-    // Einheitsvektor Quelle→Empfänger, windDir = Wind an der Quelle; positiv = downwind);
-    // windMod = max(minDirectional, (1−windFactor) + windFactor · max(0, dot));
-    // geruch = strength · decay · windMod.
-    _scentAt(x, z, sources, opts) {
+    // Einheitsvektor Quelle→Empfänger, windDir = der EINE Wind an der Quelle, `_windAt` auf der Sim-Uhr — die Nase riecht
+    // den Wind, den das Gras zeigt, und das Verhalten hängt nie an der Bildrate; positiv = downwind); windMod = max(minDirectional, (1−windFactor) + windFactor ·
+    // max(0, dot)); geruch = strength · decay · windMod.
+    _scentAt(x, z, sources) {
         if (!Array.isArray(sources) || sources.length === 0) return 0;
         const S = AnazhRealm.SCENT;
-        const t = opts && typeof opts.time === "number" ? opts.time : 0;
         let total = 0;
         for (const src of sources) {
             if (!src || typeof src.x !== "number" || typeof src.z !== "number") continue;
@@ -1523,7 +1499,7 @@ class AnazhRealm_koerper_seele {
             if (dist > S.rangeM * 4) continue; // jenseits 4× range vernachlässigbar
             const decay = Math.exp(-dist / S.rangeM);
             // Wind an der Quelle (der Wind, der den Geruch wegträgt)
-            const wind = this._worldWindDirAt(src.x, src.z, t);
+            const wind = this._windAt(src.x, src.z, this.state._simZeit);
             // Normierter Vektor von Source zum Receiver
             const norm = dist > 0.001 ? 1 / dist : 0;
             const dirX = dx * norm;
@@ -1719,12 +1695,6 @@ AnazhRealm.SCENT = Object.freeze({
     // Minimaler Richtungs-Faktor (gegen Wind): nie ganz 0, sonst wäre der
     // Geruch upwind invisible — eine Schwelle, die "Restduft" trägt.
     minDirectional: 0.2,
-    // Wind-Skala — Position-Modulation (langsame regionale Variation,
-    // λ~1000 m). Der Wind dreht über große Distanzen, nicht von Schritt
-    // zu Schritt.
-    windScale: 1 / 1000,
-    // Wind-Drehrate: 0 = statisch pro Welt (deterministisch testbar); positive Werte drehen über Zeit.
-    windTimeRate: 0,
 });
 
 // Emotion→Tag-Mapping für Boosts: jede der 6 Emotionen koppelt an einen MATERIAL_TAG_KEY; über 0.7

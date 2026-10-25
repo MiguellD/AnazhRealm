@@ -90,7 +90,7 @@ function startFang() {
     try {
         const id = localStorage.getItem("anazhRealmActiveWorld");
         window.__grenzeStart = { id, json: id ? localStorage.getItem("anazhRealmState_" + id) : null };
-    } catch (_e) {
+    } catch {
         window.__grenzeStart = { id: null, json: null };
     }
 }
@@ -185,7 +185,7 @@ function seitenPruefer() {
             setTimeout(() => {
                 try {
                     r.saveState();
-                } catch (_e) {
+                } catch {
                     /* ein Wurf zählt der Page-Error */
                 }
             }, 300);
@@ -230,7 +230,7 @@ function seitenPruefer() {
             const pm = r.state.playerMesh;
             const x = pm ? pm.position.x + 6 : 6;
             const z = pm ? pm.position.z + 6 : 6;
-            // DIE LICHT-GEDÄCHTNISSE (K11) über ihre echten Schreiber: das wache Tor (`_tickPortalLicht`) und der Licht-Pool,
+            // DIE LICHT-GEDÄCHTNISSE über ihre echten Schreiber: das wache Tor (`_tickPortalLicht`) und der Licht-Pool,
             // der es hält (`_leuchtTakt`) — die Laterne eines Plans ist ein Eintrag der Welt (`laterne_dorf`), kein Gedächtnis
             r._tickPortalLicht({
                 entry: { position: { x, y: r.getTerrainHeightAt(x, z) + 1, z }, scale: 1 },

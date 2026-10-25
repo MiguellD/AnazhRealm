@@ -16,7 +16,7 @@ class AnazhRealm_feld_sprache {
                 // D5a (V18.128) — das Vokabular wächst mit der WEATHER_INTENSITY-
                 // Tabelle; deutsche Worte normalisieren auf die kanonischen. Das Wort des Spielers steht, bis er es
                 // freigibt: „setze wetter frei" (oder „wechselhaft") lässt den Wetter-Zug wieder ziehen.
-                re: /^setze\s+wetter\s+(sunny|rainy|stormy|sturm|stürmisch|sonnig|sonne|regen|regnerisch|frei|wechselhaft)\s*$/i,
+                re: /^setze\s+wetter\s+(sunny|cloudy|foggy|rainy|stormy|sturm|stürmisch|sonnig|sonne|bewölkt|bewoelkt|wolkig|nebel|neblig|regen|regnerisch|frei|wechselhaft)\s*$/i,
                 build: (m) => {
                     const raw = m[1].toLowerCase();
                     const map = {
@@ -24,6 +24,11 @@ class AnazhRealm_feld_sprache {
                         stürmisch: "stormy",
                         sonnig: "sunny",
                         sonne: "sunny",
+                        bewölkt: "cloudy",
+                        bewoelkt: "cloudy",
+                        wolkig: "cloudy",
+                        nebel: "foggy",
+                        neblig: "foggy",
                         regen: "rainy",
                         regnerisch: "rainy",
                         wechselhaft: "frei",
@@ -589,6 +594,8 @@ class AnazhRealm_feld_sprache {
         // D5a (V18.128): der Sturm VOR dem Regen — das spezifischere Wort gewinnt.
         if (/\bsturm|stürmisch|stuermisch|stormy|gewitter/.test(t)) return ["weather_is", "stormy"];
         if (/\bregn|\bregen\b|regnet|rainy|nass/.test(t)) return ["weather_is", "rainy"];
+        if (/\bnebel|neblig|foggy/.test(t)) return ["weather_is", "foggy"];
+        if (/bewölkt|bewoelkt|wolkig|cloudy/.test(t)) return ["weather_is", "cloudy"];
         if (/\bsonn|sunny|klar\b|heiter/.test(t)) return ["weather_is", "sunny"];
         // Stimmung (globale Spieler-Emotion)
         if (/traurig|trauer|sorrow|kummer|weinst/.test(t)) return ["emotion_above", "sorrow", 0.5];
@@ -848,8 +855,17 @@ class AnazhRealm_feld_sprache {
                 const aPl = 1 - Math.exp(-delta / AnazhRealm.WERTUNG.playerTau);
                 p.wohlBaseline += aPl * (sit - p.wohlBaseline);
             }
-            // Die Feld-Baseline-Map an der Spieler-Zelle füttern (für die Regel-Fitness, Phase 2).
-            this._observeFieldWohl(pm.x, pm.z, currentTime);
+            // Die Feld-Baseline-Map an der Spieler-Zelle füttern (für die Regel-Fitness, Phase 2): beim Betreten der Zelle und
+            // beim Verlassen — dazwischen trägt die lazy EMA die Zeit (ein Blick nach Δt gleicht jedem Blick dazwischen bei
+            // gleicher Lage). Bis feld.K3#2 sah der Spieler in JEDEM Bild hin (gate:stand-takt, 60 s Ruhe: 46 802 Einheiten).
+            const wz = this._wohlCellKey(pm.x, pm.z);
+            const vor = p.wohlZelle;
+            const wb = this.state.wohlBaseline;
+            if (!vor || vor.key !== wz || !(wb && wb.has(wz))) {
+                if (vor && vor.key !== wz) this._observeFieldWohl(vor.x, vor.z, currentTime);
+                this._observeFieldWohl(pm.x, pm.z, currentTime);
+                p.wohlZelle = { key: wz, x: pm.x, z: pm.z };
+            }
         }
 
         // === Der ZUSTAND-Kanal ===
@@ -1116,6 +1132,189 @@ class AnazhRealm_feld_sprache {
         const w = es.dominant === "chaos" || es.dominant === "sorrow" ? 1 : 0.5;
         return Math.max(0, 1 - Math.min(1, (es.intensity || 0) * w));
     }
+
+    // ═══ DIE TAT — die Wertung antwortet am Ort (affekt K1), die Welt sagt, was sie tat (affekt K4) ═══
+    // Jeder Welt-Akt (AnazhRealm.DSL_WELTAKTE) läuft durch die EINE Engstelle `dslEval`, gleich wer ihn schickt: Mensch, Nexus,
+    // KI, Gesetz, Emotion, Wesen. Dort wird er EINE Tat: ihr Ort ist der erste, den sie auflöst (`dslEvalPos` → `_tatOrt`, VOR
+    // ihrem Effekt), ihr ERTRAG die Änderung der SITUATION dort (`_playerSituationWohl`: lebendig + HP, nie die Emotion), ihr δ
+    // der Vorhersagefehler gegen die ERWARTUNG des Orts an genau diese Tat — die Gleichung der WERTUNG (δ = x − baseline): die
+    // Erwartung lernt je Tat mit `ruleValueBeta` (wie eine Regel ihren Wert) und vergisst in Spielzeit mit `tatTau`. Die zehnte
+    // gleiche Tat ist erwartet, ihr δ fällt (die Gewöhnung fällt umsonst heraus); bringt eine Tat weniger, als der Ort erwartet,
+    // ist ihr δ negativ. Das Buch `state.taten` (die letzten `tatBuch`, reaktiv wie die Overlays, nie gespeichert) lesen zwei:
+    //   der KLANG am Ohr (`_tatAntwortAm` → `_umweltLage().antwort` → klang:UMWELT.stimmen.vogel.antwort): der Chor des Orts singt
+    //   auf (δ > 0) oder verstummt (δ < 0), im nächsten Misch-Takt, und klingt mit `appraisalEmaTau` ab;
+    //   die STIMME des Felds (`_feldStimme`): eine Tat der Welt im Blick schreibt eine Zeile mit Ort, Ursache und Gesetz in die
+    //   Dialog-Box (`grokRender`), höchstens eine je `stimmeSek`.
+    // Bis 23.10. wertete die Welt keine Tat: die Vögel folgten nur dem Zustand am Ohr, und kein Akt der Welt sagte, was er tat.
+    _tatBeginnt(op, args, ctx) {
+        const tat = { op, args, aussen: ctx.tat || null, ort: null, knoten: null, sitVor: 0 };
+        ctx.tat = tat;
+        return tat;
+    }
+
+    // Der Ort der Tat (aus `dslEvalPos`: der erste Ort, den ihr Effekt auflöst, bevor er schreibt) und die Situation, die sie dort
+    // vorfindet. `knoten` ist der Auflöser (at_field_need, at_player …) — die Stimme nennt ihn als Ursache.
+    _tatOrt(tat, pos, knoten) {
+        tat.ort = { x: pos.x, z: pos.z };
+        tat.knoten = knoten;
+        tat.sitVor = this._playerSituationWohl(this.auraAt(pos.x, pos.z));
+    }
+
+    // Die Tat ist geschehen (aus `dslEval`, nach dem Effekt): werten, ins Buch, an die Stimme. Ein Effekt, der warf, ist keine Tat.
+    _tatWerten(tat, ctx, gelungen) {
+        ctx.tat = tat.aussen;
+        if (!gelungen) return null;
+        const W = AnazhRealm.WERTUNG;
+        const st = this.state;
+        const jetzt = st.spielZeit;
+        const e = {
+            op: tat.op,
+            args: tat.args,
+            wer: ctx.source,
+            programm: ctx.programId,
+            regel: ctx.regel ? ctx.regel.id : null,
+            grund: ctx.grund || null,
+            knoten: tat.knoten,
+            x: null,
+            z: null,
+            ertrag: 0,
+            delta: 0,
+            t: jetzt,
+        };
+        if (tat.ort) {
+            e.x = tat.ort.x;
+            e.z = tat.ort.z;
+            e.ertrag = this._playerSituationWohl(this.auraAt(e.x, e.z)) - tat.sitVor;
+            const erw = st.tatErwartung || (st.tatErwartung = new Map());
+            const key = this._wohlCellKey(e.x, e.z) + ":" + tat.op;
+            const alt = erw.get(key);
+            const erwartet = alt ? alt.e * Math.exp(-Math.max(0, jetzt - alt.t) / W.tatTau) : 0;
+            e.delta = e.ertrag - erwartet;
+            const neu = Object.assign(alt || {}, { e: erwartet + W.ruleValueBeta * e.delta, t: jetzt });
+            if (!alt) erw.set(key, neu);
+            // vergessen, wo |e| · e^(−Δt/τ) unter 1e-3 fällt — die Tat räumt (`_feldTod`)
+            this._feldTod(erw, key, neu, jetzt + W.tatTau * Math.max(0, Math.log(Math.abs(neu.e) / 1e-3)), jetzt);
+        }
+        const buch = st.taten || (st.taten = []);
+        buch.push(e);
+        if (buch.length > W.tatBuch) buch.splice(0, buch.length - W.tatBuch);
+        this._feldStimme(e);
+        return e;
+    }
+
+    // DIE ANTWORT AM OHR (x, z), der Leser des Klangs (`_umweltLage`): die Tat, deren abklingendes δ hier am stärksten wirkt —
+    // Reichweite und Lautstärke sind das Gesetz des Klangs (klang:UMWELT.stimmen.vogel.antwort), das Abklingen das der Wertung
+    // (`appraisalEmaTau`, die jüngste Erlebnis-Tendenz). { d, delta } oder null.
+    _tatAntwortAm(x, z) {
+        const buch = this.state.taten;
+        if (!buch || buch.length === 0) return null;
+        const reich = AnazhRealm._umweltGesetz().UMWELT.stimmen.vogel.antwort.dAus;
+        const tau = AnazhRealm.WERTUNG.appraisalEmaTau;
+        const jetzt = this.state.spielZeit;
+        let wahl = null;
+        let staerke = 0;
+        for (const e of buch) {
+            if (e.x == null || !e.delta) continue;
+            const d = Math.hypot(e.x - x, e.z - z);
+            if (!(d < reich)) continue;
+            const delta = e.delta * Math.exp(-Math.max(0, jetzt - e.t) / tau);
+            const w = Math.abs(delta) * (1 - d / reich);
+            if (w > staerke && Math.abs(delta) >= 1e-3) {
+                staerke = w;
+                wahl = { d, delta };
+            }
+        }
+        return wahl;
+    }
+
+    // DIE STIMME DES FELDS (affekt K4): eine Tat der WELT (`_himmelSchreiber` „welt": der Nexus und seine Gesetze, die Emotion,
+    // die Wesen) oder der KI („llm:…" und ihre Gesetze — das Schreiber-Gesetz zählt sie zur Hand des Spielers, weil sie seinen
+    // Satz ausführt; gesagt wird trotzdem, was sie tat), nie die eigene Hand des Spielers — im Blick des Spielers (ihr Ort im
+    // Frustum des Vor-Takts, `_kreaturImBlick`; eine Tat ohne Ort wirkt überall) wartet auf ihre Zeile. Die Stimme spricht
+    // höchstens eine je `stimmeSek` Spielzeit (`_feldStimmeTakt`, auch aus dem Takt der Stimme `grokTick`): die jüngste wartende
+    // Tat mit Ort, Ursache und Gesetz, dazu die Zahl der übrigen seit der letzten Zeile. Die Zeile steht in ihrem Eintrag
+    // (`zeile`, `spieler` = der Ort des Spielers, an dem sie gemessen ist) — jede Angabe prüfbar gegen state.
+    _feldStimme(e) {
+        if (this._himmelSchreiber(e.wer, "wetter") !== "welt" && !/^(rule:)*llm:/.test(String(e.wer))) return;
+        if (e.x != null && !this._kreaturImBlick(e.x, e.z)) return;
+        const S = this._stimme || (this._stimme = { t: -Infinity, wartet: null, weitere: 0 });
+        if (S.wartet) S.weitere++;
+        S.wartet = e;
+        this._feldStimmeTakt();
+    }
+
+    _feldStimmeTakt() {
+        const S = this._stimme;
+        if (!S || !S.wartet) return;
+        const jetzt = this.state.spielZeit;
+        if (jetzt - S.t < AnazhRealm.WERTUNG.stimmeSek) return;
+        const e = S.wartet;
+        e.weitere = S.weitere;
+        e.zeile = this._feldStimmeZeile(e);
+        e.gesprochen = jetzt;
+        S.t = jetzt;
+        S.wartet = null;
+        S.weitere = 0;
+        this.grokRender(e.zeile);
+    }
+
+    // Die Zeile einer Tat (Vorlage ohne Modell): WER · WAS (`describeProgram`) · WO (Abstand und Himmelsrichtung vom Spieler,
+    // Norden = −z) · URSACHE (die Bedingung ihres Gesetzes, das Wort an die KI, der Auflöser ihres Orts) · GESETZ (Nummer der
+    // Regel oder Name des Programms).
+    _feldStimmeZeile(e) {
+        const wer = this._tatSchreiber(e.wer);
+        let wo = "überall";
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (e.x != null && pm) {
+            e.spieler = { x: pm.x, z: pm.z };
+            const dx = e.x - pm.x;
+            const dz = e.z - pm.z;
+            const d = Math.round(Math.hypot(dx, dz));
+            const richtung = [
+                "nördlich",
+                "nordöstlich",
+                "östlich",
+                "südöstlich",
+                "südlich",
+                "südwestlich",
+                "westlich",
+                "nordwestlich",
+            ];
+            const sektor = Math.round((Math.atan2(dx, -dz) / (2 * Math.PI)) * 8 + 8) % 8;
+            wo = d < 2 ? "bei dir" : `${d} m ${richtung[sektor]} von dir`;
+        }
+        const regel = e.regel != null ? (this.state.worldRules || []).find((r) => r && r.id === e.regel) : null;
+        let ursache;
+        if (regel) ursache = `weil ${this._describeDslCondition(regel.cond)}`;
+        else if (e.grund) ursache = `auf dein Wort „${String(e.grund).slice(0, 60)}“`;
+        else if (e.knoten === "at_field_need") ursache = "weil das Feld dort am ärmsten war";
+        else ursache = "aus eigenem Antrieb";
+        const gesetz = e.regel != null ? `Gesetz Nr. ${e.regel}` : `Programm ${e.programm}`;
+        const weitere = e.weitere
+            ? `; dazu ${e.weitere} weitere Tat${e.weitere > 1 ? "en" : ""} seit der letzten Zeile`
+            : "";
+        return `${wer.nom} ${this.describeProgram([e.op, ...(e.args || [])])} — ${wo}, ${ursache}. (${gesetz}${regel ? " " + wer.gen : ""}${weitere})`;
+    }
+
+    // Der Name eines Schreibers (die DSL-Quelle): ein Gesetz trägt die Quelle seines Gebers („rule:nexus").
+    _tatSchreiber(quelle) {
+        let q = String(quelle || "?");
+        let gesetz = false;
+        while (q.startsWith("rule:")) {
+            q = q.slice(5);
+            gesetz = true;
+        }
+        let nom;
+        let gen;
+        if (q === "nexus") [nom, gen] = ["der Nexus", "des Nexus"];
+        else if (q.startsWith("llm")) [nom, gen] = ["die KI", "der KI"];
+        else if (q.startsWith("emotion:"))
+            [nom, gen] = [`die Stimmung „${q.slice(8)}“`, `der Stimmung „${q.slice(8)}“`];
+        else if (q.startsWith("creature:")) [nom, gen] = [`das Wesen „${q.slice(9)}“`, `des Wesens „${q.slice(9)}“`];
+        else [nom, gen] = [`„${q}“`, `von „${q}“`];
+        if (gesetz) nom = `ein Gesetz ${gen}`;
+        return { nom: nom[0].toUpperCase() + nom.slice(1), gen };
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_feld_sprache]);
 
@@ -1125,16 +1324,16 @@ _stammZonen(AnazhRealm, [AnazhRealm_feld_sprache]);
 //   cell        — Zell-Größe der Baseline-Map (= LIFE_FIELD.cell, 16 m)
 //   fieldTau    — ORTS-Baseline (s); ~120 s → ein Ort re-normalisiert langsam
 //   playerTau   — SPIELER-Baseline (s); ~30 s → Gewöhnung in einer Sitzung
-//   pruneAgeSec / raeumAb — die Baseline-Map bounded halten (eine neue Zelle über `raeumAb` räumt die alten)
+//   pruneAgeSec — die Baseline-Map bounded halten: eine Zelle ohne Blick veraltet und fällt (`_feldTod`)
 AnazhRealm.WERTUNG = Object.freeze({
     cell: 16,
     fieldTau: 120,
     playerTau: 30,
     pruneAgeSec: 180,
-    raeumAb: 64,
     // V17.43 Phase 2 — die EMA-Rate, mit der rule.value den per-Feuern gemessenen
     // Reward (lokaler struktureller δ) integriert. Eine Regel braucht mehrere Feuern,
-    // um sich als Heiler/Schädling zu beweisen (kein Snap-Urteil). value ∈ [−1, +1].
+    // um sich als Heiler/Schädling zu beweisen (kein Snap-Urteil). value ∈ [−1, +1]. Dieselbe Rate lernt die Erwartung eines
+    // Orts an eine Tat (`_tatWerten`): eine Gleichung, ein Lernen.
     ruleValueBeta: 0.3,
     // V17.44 Phase 3 — der Appraisal-Kanal (Emotion = Vorhersagefehler des ERLEBENS,
     // δ = Situation − Spieler-Baseline). gain = wie stark ein δ die Emotion bewegt (pro
@@ -1147,6 +1346,12 @@ AnazhRealm.WERTUNG = Object.freeze({
     appraisalEmaTau: 8, // s — die kurze EMA des Spieler-δ (die jüngste Erlebnis-Tendenz)
     phase4Radius: 40, // m — nur Regeln innerhalb dieses Radius vom Spieler bekommen den Bonus
     phase4Weight: 0.5, // wie stark ein positiver δ_spieler den Regel-Reward hebt (× Nähe)
+    // DIE TAT (`_tatWerten`, affekt K1/K4): die Erwartung eines Orts an eine Tat lernt je Tat mit ruleValueBeta und vergisst in
+    // Spielzeit mit tatTau (s) — nach 30 min Ruhe (3 τ) ist sie zu 95 % vergessen, die nächste Tat wieder neu. tatBuch = die
+    // letzten Taten, die Klang und Stimme lesen; stimmeSek = höchstens eine Zeile der Stimme je so viele Sekunden Spielzeit.
+    tatTau: 600,
+    tatBuch: 32,
+    stimmeSek: 30,
 });
 // Welt-Effekt-Schwellen (≥0.7 mild, ≥1.5 stark, ≥2.5 signatur), zentral für Tuning.
 // === Das lebendige Feld — die Welt→Spieler-Rückkopplung ===

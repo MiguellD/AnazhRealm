@@ -37,7 +37,7 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
         return out;
     });
     check(
-        "V17.31 Emotion→Welt: joy faerbt den Welt-Tint warm — durch die Feld-Achse (kontinuierlich)",
+        "Emotion→Welt: joy faerbt den Welt-Tint warm — durch die Feld-Achse (kontinuierlich)",
         res.joyWarmsWorld,
         `cold.r=${res.coldR} warm.r=${res.warmR}`
     );
@@ -48,7 +48,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
     void errors;
     void finalState;
     // ### Welle 6.G3 — Welt-Lebendigkeit ###
-    // (a) Tag-Nacht-Zyklus, (b) sanfter Wetter-Übergang, (c) Fauna-Lifecycle mit Geburt + Tod —
+    // (a) Tag-Nacht-Zyklus, (b) sanfter Wetter-Übergang —
     // Konstanten, Methoden, Persistenz, DSL-Op, UI-DOM.
     const wave6g3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
@@ -90,7 +90,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.setDayLengthClampedMin = r.state.dayLengthMinutes === 1;
         r.setDayLength(AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES); // zurück
 
-        // DSL-Op set_time_of_day — die Uhr gehört dem Spieler (Leben-Schau 2): sein Satz stellt sie, der Nexus nie
+        // DSL-Op set_time_of_day — die Uhr gehört dem Spieler: sein Satz stellt sie, der Nexus nie
         r.dslRun(["set_time_of_day", 0.7], { source: "human" });
         out.dslSetTimeOfDay = Math.abs(r.state.timeOfDay - 0.7) < 0.001;
         const nexusUhr = r.dslRun(["set_time_of_day", 0.1], { source: "nexus" });
@@ -113,7 +113,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
 
         // --- b) Sanfte Wetter-Übergänge
         const wxL = globalThis.__phytoCore.WX_LICHT; // K2: der Tint IST die Sonne der Wetter-Zeile, kein zweiter Wert
-        out.weatherTintsSunnyRainy = ["sunny", "rainy", "stormy"].every((w) => {
+        out.weatherTintsSunnyRainy = Object.keys(AnazhRealm.WEATHER_FIELD).every((w) => {
             const [s, t] = [AnazhRealm.WEATHER_FIELD[w].sun, AnazhRealm.WEATHER_TINTS[w]];
             return t.skyMul === s && t.lightMul === wxL.sockel + wxL.sonne * s;
         });
@@ -139,46 +139,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         r.tickWeatherTransition(0);
         out.transitionClearedOnComplete = r.state.weatherTransition === null;
 
-        // --- c) Fauna-Lifecycle
-        // (die Geburt misst gate:kreatur-takt lebensraum am Takt; ihre Zahlen stehen im Gesetz, nie als Spiegel im Test)
-
-        // _findOldestCreature liefert die älteste (kleinster bornAt). Test-Isolation: ALLE Kreaturen auf
-        // `now`, dann c0 + c1 gezielt älter — Worldgen-Kreaturen würden mit der Test-Laufzeit älter als c1.
-        if (r.state.creatures.length >= 2) {
-            const now = Date.now();
-            for (const c of r.state.creatures) {
-                if (!c.userData) c.userData = {};
-                c.userData.bornAt = now;
-            }
-            const c0 = r.state.creatures[0];
-            const c1 = r.state.creatures[1];
-            c0.userData.bornAt = now - 5000;
-            c1.userData.bornAt = now - 10000;
-            const oldest = r._findOldestCreature();
-            out.oldestIsOlder = oldest === c1;
-        } else {
-            out.oldestIsOlder = true; // skip wenn keine Kreaturen
-        }
-
-        // _creatureNaturalDeath effektiviert (sorrow +0.2, journal-loss, removeCreature)
-        if (r.state.creatures.length > 0) {
-            const beforeCount = r.state.creatures.length;
-            // Bei gesättigter Stimmung (sorrow == 1.0) clampt der +0.2-Stempel von _creatureNaturalDeath → der
-            // strikte „>"-Vergleich wäre falsch. Den INTENT isolieren (Tod ADDIERT sorrow): sorrow auf einen
-            // bekannten sub-Sättigungs-Wert setzen.
-            if (r.state.player.emotions) r.state.player.emotions.sorrow = 0.1;
-            const beforeSorrow = (r.state.player.emotions && r.state.player.emotions.sorrow) || 0;
-            const beforeJournalLoss = (r.state.worldJournal.entries || []).filter((e) => e.type === "loss").length;
-            r._creatureNaturalDeath(r.state.creatures[0]);
-            out.deathReducesCount = r.state.creatures.length === beforeCount - 1;
-            out.deathIncreasesSorrow = (r.state.player.emotions && r.state.player.emotions.sorrow) > beforeSorrow;
-            const afterJournalLoss = (r.state.worldJournal.entries || []).filter((e) => e.type === "loss").length;
-            out.deathAddsLossJournal = afterJournalLoss > beforeJournalLoss;
-        } else {
-            out.deathReducesCount = true;
-            out.deathIncreasesSorrow = true;
-            out.deathAddsLossJournal = true;
-        }
+        // --- c) den Fauna-Lifecycle (Geburt, Hungertod des Ältesten, Trauer, Journal) misst gate:kreatur-takt kaskade
 
         return out;
     });
@@ -192,8 +153,8 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         const L = wave6g3Results.atmoUhr || [];
         check("Welle 6.G3.a: der Durchlass zur Sonne mittags ≥ 0,7", L[0] >= 0.7, L[0]);
         check("Welle 6.G3.a: um Mitternacht unter 0,35 des Mittags", L[1] < 0.35 * L[0], L[1]);
-        check("V8.48: der Morgen um 0,32 steigt", L[4] - L[2] > 0.0018, L.join(" "));
-        check("V8.48: der Morgen um 0,32 knickt nicht (C1)", Math.abs(2 * L[3] - L[2] - L[4]) < 0.0018, L.join(" "));
+        check("der Morgen um 0,32 steigt", L[4] - L[2] > 0.0018, L.join(" "));
+        check("der Morgen um 0,32 knickt nicht (C1)", Math.abs(2 * L[3] - L[2] - L[4]) < 0.0018, L.join(" "));
         check("Welle 6.G3.a: setTimeOfDay(0.25) setzt state korrekt", wave6g3Results.setTimeOfDayWorks);
         check("Welle 6.G3.a: _timeOfDayLabel(0.25) zeigt 06:00", wave6g3Results.timeLabel0_25Hours);
         check("Welle 6.G3.a: tickDayNight schreitet timeOfDay voran", wave6g3Results.tickAdvances);
@@ -232,12 +193,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             "Welle 6.G3.b: tickWeatherTransition löscht Transition bei progress=1",
             wave6g3Results.transitionClearedOnComplete
         );
-
-        // --- c) Fauna-Lifecycle
-        check("Welle 6.G3.c: _findOldestCreature wählt kleinste bornAt", wave6g3Results.oldestIsOlder);
-        check("Welle 6.G3.c: _creatureNaturalDeath reduziert Kreaturen-Anzahl", wave6g3Results.deathReducesCount);
-        check("Welle 6.G3.c: _creatureNaturalDeath erhöht player.emotions.sorrow", wave6g3Results.deathIncreasesSorrow);
-        check("Welle 6.G3.c: _creatureNaturalDeath schreibt loss-Journal", wave6g3Results.deathAddsLossJournal);
     } else {
         check("Welle 6.G3: alle Tests laufen", false, wave6g3Results ? wave6g3Results.error : "no result");
     }
@@ -366,26 +321,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.peaceSlowsWeather = peaceDur > defaultDur * 1.2;
         out.chaosSpeedsWeather = chaosDur < defaultDur * 0.7;
 
-        // --- Vision 7: FAUNA_TARGET skaliert mit lebendig
-        // Simuliere zwei Positionen mit verschiedenem lebendig
-        const origWFA = r.worldFieldAt;
-        r.worldFieldAt = function (x) {
-            if (x < 0) return { lebendig: 0.95, dichte: 0.1, glut: 0.1, magieleitung: 0.1 };
-            return { lebendig: 0.1, dichte: 0.95, glut: 0.1, magieleitung: 0.1 };
-        };
-        // Das Leben-Overlay isolieren: _currentFaunaTarget liest auraAt = frozen-Mock + Leben-Overlay, und
-        // der Nexus deponiert aktiv Leben → ein Deposit nahe der kargen Testzelle verfälschte den Mock.
-        // Getestet wird die frozen→Fauna-Abbildung isoliert.
-        if (r.state.lifeField) r.state.lifeField.clear();
-        // BÜHNE: die Fauna-Abbildung einer Testzelle (Life-Feld geleert, kein Boden)
-        r.state.playerMesh.position.x = -100;
-        const targetLiv = r._currentFaunaTarget();
-        // BÜHNE: die Fauna-Abbildung einer Testzelle (Life-Feld geleert, kein Boden)
-        r.state.playerMesh.position.x = 100;
-        const targetKarg = r._currentFaunaTarget();
-        out.liveRegionHasHigherTarget = targetLiv > targetKarg;
-        out.targetInExpectedRange = targetLiv >= 10 && targetKarg <= 6;
-        r.worldFieldAt = origWFA;
         // BÜHNE: zurück an den Ursprung der Testzelle
         r.state.playerMesh.position.x = 0;
 
@@ -430,6 +365,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // --- Vision 10: Sky-Tint moduliert mit Welt-Feld (magie-Region)
         // (auraTintStrength=1 gilt noch aus dem Block-Anfang — Mechanismus-Marge.)
         // Mock worldFieldAt für hohe magieleitung
+        const origWFA = r.worldFieldAt;
         r.worldFieldAt = function () {
             return { lebendig: 0.1, dichte: 0.1, glut: 0.1, magieleitung: 0.9 };
         };
@@ -479,14 +415,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         check("Welle 6.G3 V2 Vision: peace=1 verlängert Wetter-Dauer (>120%)", wave6g3v2Results.peaceSlowsWeather);
         check("Welle 6.G3 V2 Vision: chaos=1 verkürzt Wetter-Dauer (<70%)", wave6g3v2Results.chaosSpeedsWeather);
         check(
-            "Welle 6.G3 V2 Vision: lebendig-Region hat höheres FAUNA_TARGET als karge",
-            wave6g3v2Results.liveRegionHasHigherTarget
-        );
-        check(
-            "Welle 6.G3 V2 Vision: FAUNA_TARGET-Range plausibel (lebendig ≥10, karg ≤6)",
-            wave6g3v2Results.targetInExpectedRange
-        );
-        check(
             "Welle 6.G3 V2 Vision: Stern-Feld-Opacity existiert (V8.28 THREE.Points)",
             wave6g3v2Results.starIntensityExists
         );
@@ -519,7 +447,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const out = {};
 
         // 1. HemisphereLight im Scene + state-cached
-        // Die In-Streuung der Luft IST der Himmel der EINEN Atmosphäre (D3): nach dem ersten _applyDayNightToScene trägt
+        // Die In-Streuung der Luft IST der Himmel der EINEN Atmosphäre: nach dem ersten _applyDayNightToScene trägt
         // die Tafel das Licht von Sonne oder Mond (die Farbe über Wasser liest himmelFarbe, nie ein eigenes Uniform)
         r._applyDayNightToScene();
         const atmoU = r._atmoLutBau().U;
@@ -615,19 +543,19 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             "V8.27/D3: die Luft streut den Himmel der EINEN Atmosphäre, _applyDayNightToScene setzt sein Licht",
             v827Results.fogColorSet
         );
-        check("V18.507: EIN Himmel — Hemi trägt nur den Nachthimmel-Boden (Mittag 0)", v827Results.hemiNurNachtboden);
+        check("EIN Himmel — Hemi trägt nur den Nachthimmel-Boden (Mittag 0)", v827Results.hemiNurNachtboden);
         check(
-            `V18.507: Belichtung aus dem Licht — mittags die Karte am Anker, nachts am Deckel (Mittag / Anker / Nacht ${v827Results.belichtungZahlen})`,
+            `Belichtung aus dem Licht — mittags die Karte am Anker, nachts am Deckel (Mittag / Anker / Nacht ${v827Results.belichtungZahlen})`,
             v827Results.belichtungAusLicht
         );
-        check("V8.27: HemisphereLight.groundColor.g hoch in lebendig-Region", v827Results.groundColorFollowsLebendig);
-        check("V8.27: HemisphereLight.groundColor.r hoch in glut-Region", v827Results.groundColorFollowsGlut);
+        check("HemisphereLight.groundColor.g hoch in lebendig-Region", v827Results.groundColorFollowsLebendig);
+        check("HemisphereLight.groundColor.r hoch in glut-Region", v827Results.groundColorFollowsGlut);
         check(
             "V8.28/234: Architektur-Material reagiert auf Licht (MeshToon ODER MeshStandard/PBR)",
             v827Results.architectureUsesLambert
         );
     } else {
-        check("V8.27: Tiefe-Welle Tests laufen", false, v827Results ? v827Results.error : "no result");
+        check("Tiefe-Welle Tests laufen", false, v827Results ? v827Results.error : "no result");
     }
 
     // ### V8.28 6.G4.b — Welt-Atem-Vollendung (Sterne/Terrain/Cel/Wind/Wolken/Wasser) ###
@@ -718,7 +646,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                     }
                 }
                 return false; // alles up → der Bake wäre zurück (Regression)
-            } catch (e) {
+            } catch {
                 return false;
             }
         })();
@@ -739,7 +667,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             try {
                 _structMat.color.setHex(0xc0392b);
                 _dynColorOk = _structMat.color.getHexString() === "c0392b";
-            } catch (_e) {
+            } catch {
                 _dynColorOk = false;
             }
         }
@@ -814,11 +742,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     });
 
     if (v828Results && !v828Results.error) {
-        check("V8.28 A: state.starField ist InstancedMesh (V10.0-i.a)", v828Results.starFieldIsPoints);
-        check("V8.28 A: Stern-Feld hat >1000 diskrete Sterne", v828Results.starFieldHasMany);
-        check("V8.28 A: Stern-Feld hat Rotation (sidereal)", v828Results.starFieldRotates);
-        check("V8.29 D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
-        check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
+        check("A: state.starField ist InstancedMesh (V10.0-i.a)", v828Results.starFieldIsPoints);
+        check("A: Stern-Feld hat >1000 diskrete Sterne", v828Results.starFieldHasMany);
+        check("A: Stern-Feld hat Rotation (sidereal)", v828Results.starFieldRotates);
+        check("D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
+        check("D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
         check(
             "V17.J3: die Sonne folgt der Kamera (|Pos−Kamera| ≈ skyOffset, nicht origin-orbit)",
             v828Results.sunFollowsCamera
@@ -828,7 +756,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             v828Results.sunNotAtOrigin
         );
         check(
-            `V17.12: Terrain-colorNode (triplanar-Textur) baut OHNE geschluckte Exception${v828Results.terrainColorNodeError ? " — " + v828Results.terrainColorNodeError : ""}`,
+            `Terrain-colorNode (triplanar-Textur) baut OHNE geschluckte Exception${v828Results.terrainColorNodeError ? " — " + v828Results.terrainColorNodeError : ""}`,
             v828Results.terrainColorNodeBuilds === true
         );
         // ===== WELLE J — Render-Harmonie (die EINE geteilte Aerial-Perspektive) =====
@@ -845,11 +773,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             v828Results.structDynamicColorPreserved
         );
         check(
-            "V18.113 B3: die 2.5D-Lichtung flacht die SHADING-Normale (normalNode, eingefrorene Konstante)",
+            "B3: die 2.5D-Lichtung flacht die SHADING-Normale (normalNode, eingefrorene Konstante)",
             v828Results.terrainNormalFlatten
         );
         check(
-            "V18.113 AKNE-WÄCHTER: die Chunk-GEOMETRIE trägt echte Oberflächen-Normalen (Schatten-Vertrag)",
+            "AKNE-WÄCHTER: die Chunk-GEOMETRIE trägt echte Oberflächen-Normalen (Schatten-Vertrag)",
             v828Results.terrainNormalsReal
         );
         check(
@@ -860,28 +788,28 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             `V17.J: kein still gefangener Aerial-Node-Fehler${v828Results.aerialOutputError ? " — " + v828Results.aerialOutputError : ""}`,
             v828Results.aerialNoError === true
         );
-        check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
+        check("state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
         check(
             "V17.J4: setCavityAO pusht live ins aoScale-Uniform + persistiert (Slider-KONSUM)",
             v828Results.cavityAOSetter
         );
         check("V17.J4: setEdgeSharp setzt die Post-FX-Kanten-Schärfe + persistiert", v828Results.edgeSharpSetter);
-        check("V17.103: setSurfaceTexture pusht live ins triplanar-Uniform + persistiert", v828Results.surfTexSetter);
+        check("setSurfaceTexture pusht live ins triplanar-Uniform + persistiert", v828Results.surfTexSetter);
         check(
-            "V17.104: setColorVariation pusht live ins tint-Uniform (die warm/kühl-Patches)",
+            "setColorVariation pusht live ins tint-Uniform (die warm/kühl-Patches)",
             v828Results.colorVarSetter
         );
         check("V17.J4: die beiden Render-Regler reisen im Snapshot mit", v828Results.j4SlidersPersist);
         check(
-            "V18.113 B3: Slider+Setter geschnitten; der Konsolen-Hebel lebt aus der Konstante",
+            "B3: Slider+Setter geschnitten; der Konsolen-Hebel lebt aus der Konstante",
             v828Results.terrainFlattenSetter
         );
         check(
-            "V17.109: Slider-Headroom — Kavitäts-AO/Oberflächen-Textur clampen auf 2.0, nicht 1.0",
+            "Slider-Headroom — Kavitäts-AO/Oberflächen-Textur clampen auf 2.0, nicht 1.0",
             v828Results.sliderHeadroom
         );
     } else {
-        check("V8.28: Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
+        check("Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
     }
 
     // ### Die lebendige Welt (Instanced-Gras, Avatar-Hide,
@@ -941,7 +869,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.grassCellsBookedHalmFree = grassCells > 0 && grassInstances === 0;
         out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
 
-        // V18.508 — DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft `_bodenSichtAt`
+        // DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft `_bodenSichtAt`
         // (der EINE Leser, K21) die Mesh-Oberfläche (Strahl von oben, beide Seiten — die Surface-Nets-Wicklung zeigt
         // oben nach unten). Das Gesetz `_voxelSurfaceY` liegt daneben — Gras und Streu darauf steckten im Boden. DIE
         // NAH-WIESE: die Büschel einer Kachel sind Γ5-stabil und stehen auf der Karte.
@@ -1034,31 +962,31 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         {
             const e = v829Results.egoEbene || {};
             check(
-                "V8.29.1 (0910-5): die Ego-Sicht ist EIN Ebenen-Schalter — 1st nimmt den Leib aus Ebene 0 auf SHADOW_TWIN_LAYER (er wirft), 3rd gibt die Maske zurück, visible wechselt nie",
+                "(0910-5): die Ego-Sicht ist EIN Ebenen-Schalter — 1st nimmt den Leib aus Ebene 0 auf SHADOW_TWIN_LAYER (er wirft), 3rd gibt die Maske zurück, visible wechselt nie",
                 e.leib > 0 && e.ego === true && e.zurueck === true,
                 JSON.stringify(e)
             );
         }
-        check("V8.29 (V9.39): state.voxelChunkGrass ist eine Map", v829Results.chunkGrassMap);
+        check("(V9.39): state.voxelChunkGrass ist eine Map", v829Results.chunkGrassMap);
         check(
-            "V8.29 (V18.492): Gras-Zellen verbucht, 0 Halm-InstancedMesh je Chunk (fern Boden-Funktion, nah die Nah-Wiese)",
+            "(V18.492): Gras-Zellen verbucht, 0 Halm-InstancedMesh je Chunk (fern Boden-Funktion, nah die Nah-Wiese)",
             v829Results.grassCellsBookedHalmFree
         );
         check(
-            `V18.508: die Boden-Karte ist der gerenderte Boden (${v829Results.bodenKarteZahl})`,
+            `die Boden-Karte ist der gerenderte Boden (${v829Results.bodenKarteZahl})`,
             v829Results.bodenKarteTrifftMesh
         );
         check(
-            `V18.508: Nah-Wiese Γ5-stabil, Fuß auf der Boden-Karte (${v829Results.nahWieseZahl})`,
+            `Nah-Wiese Γ5-stabil, Fuß auf der Boden-Karte (${v829Results.nahWieseZahl})`,
             v829Results.nahWieseStabil
         );
-        check("V8.29: Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
-        check("V8.29: Genesis-Plattform-Architektur nach Spawn vorhanden", v829Results.genesisArchExists);
-        check("V8.29: _ensureGenesisPlatform ist idempotent (keine Doppel-Plattform)", v829Results.genesisIdempotent);
-        check("V8.29: state.waterLevel ist gesetzt (adaptiv)", v829Results.waterAdaptive);
-        check("V8.29: Sterne haben Mindestgröße ≥3 px (flacker-sicher)", v829Results.starMinSize3);
+        check("Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
+        check("Genesis-Plattform-Architektur nach Spawn vorhanden", v829Results.genesisArchExists);
+        check("_ensureGenesisPlatform ist idempotent (keine Doppel-Plattform)", v829Results.genesisIdempotent);
+        check("state.waterLevel ist gesetzt (adaptiv)", v829Results.waterAdaptive);
+        check("Sterne haben Mindestgröße ≥3 px (flacker-sicher)", v829Results.starMinSize3);
     } else {
-        check("V8.29: Die lebendige Welt Tests laufen", false, v829Results ? v829Results.error : "no result");
+        check("Die lebendige Welt Tests laufen", false, v829Results ? v829Results.error : "no result");
     }
 
     // ### die Sterne testen gegen den Tiefenpuffer (kein Overlay mehr). Die Existenz-Proben des Wasser-Stoffs (sunDir,
@@ -1069,7 +997,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         return { starsDepthTest: !!(sf && sf.material && sf.material.depthTest === true) };
     });
     check(
-        "V8.30: Sterne testen gegen Tiefenpuffer (kein Overlay)",
+        "Sterne testen gegen Tiefenpuffer (kein Overlay)",
         !!(v830Results && v830Results.starsDepthTest),
         v830Results && v830Results.error
     );
@@ -1177,21 +1105,21 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     });
 
     if (v833Results && !v833Results.error) {
-        check("V8.33: Tauchen — Shift erzeugt Sink-Geschwindigkeit", v833Results.diveSinks);
-        check("V8.33: Auftauchen — Space erzeugt Aufwärts-Geschwindigkeit", v833Results.riseLifts);
-        check("V8.33: Neutral — natürlicher Auftrieb treibt zur Oberfläche", v833Results.neutralFloats);
-        check("V8.33: Tauchen sinkt unter den Neutral-Auftrieb (Diskrimination)", v833Results.diveBelowNeutral);
-        check("V8.33: Auftauchen hebt über den Neutral-Auftrieb (Diskrimination)", v833Results.riseAboveNeutral);
-        check("V8.33: An der Oberfläche kein Auftriebs-Drift (depth 0)", v833Results.surfaceNoDrift);
-        check("V8.33: im Charakter-Schritt sinkt Sprint und steigt Sprung unter Wasser (die Verb-Tafel)", v833Results.physicsUsesSwimFn);
-        check("V8.32: getaucht sind die Augen unter dem Spiegel (playerEyesUnderwater)", v833Results.eyesFlagComputed);
-        check("V8.33: Soul-Group nutzt YXZ-Rotation (lokaler Vorwärts-Lehnen)", v833Results.humanYXZ);
-        check("V8.33: Mensch neigt sich unter Wasser (Schwimm-Pose)", v833Results.humanSwimLean);
-        check("V8.33: Schwimm-Pose wird an Land zurückgesetzt (rotation.x=0)", v833Results.humanSwimReset);
-        check("V8.33 (NULL): Wolf-Körper neigt sich unter Wasser (Schwimm-Pose)", v833Results.phoenixSwimLean);
-        check("V8.33 (NULL): Bär-Körper neigt sich unter Wasser (Schwimm-Pose)", v833Results.dragonSwimLean);
+        check("Tauchen — Shift erzeugt Sink-Geschwindigkeit", v833Results.diveSinks);
+        check("Auftauchen — Space erzeugt Aufwärts-Geschwindigkeit", v833Results.riseLifts);
+        check("Neutral — natürlicher Auftrieb treibt zur Oberfläche", v833Results.neutralFloats);
+        check("Tauchen sinkt unter den Neutral-Auftrieb (Diskrimination)", v833Results.diveBelowNeutral);
+        check("Auftauchen hebt über den Neutral-Auftrieb (Diskrimination)", v833Results.riseAboveNeutral);
+        check("An der Oberfläche kein Auftriebs-Drift (depth 0)", v833Results.surfaceNoDrift);
+        check("im Charakter-Schritt sinkt Sprint und steigt Sprung unter Wasser (die Verb-Tafel)", v833Results.physicsUsesSwimFn);
+        check("getaucht sind die Augen unter dem Spiegel (playerEyesUnderwater)", v833Results.eyesFlagComputed);
+        check("Soul-Group nutzt YXZ-Rotation (lokaler Vorwärts-Lehnen)", v833Results.humanYXZ);
+        check("Mensch neigt sich unter Wasser (Schwimm-Pose)", v833Results.humanSwimLean);
+        check("Schwimm-Pose wird an Land zurückgesetzt (rotation.x=0)", v833Results.humanSwimReset);
+        check("(NULL): Wolf-Körper neigt sich unter Wasser (Schwimm-Pose)", v833Results.phoenixSwimLean);
+        check("(NULL): Bär-Körper neigt sich unter Wasser (Schwimm-Pose)", v833Results.dragonSwimLean);
     } else {
-        check("V8.33: Wasser-Vollendung Tests laufen", false, v833Results ? v833Results.error : "no result");
+        check("Wasser-Vollendung Tests laufen", false, v833Results ? v833Results.error : "no result");
     }
 }
 
@@ -1221,9 +1149,9 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
 
     if (v840Results && !v840Results.error) {
         check("V8.40/E2: Sicht-Ring-Regler 1–12, Default 4 (9×9)", v840Results.ringSliderRange);
-        check("V8.41: jede Stamm-Datei mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);
+        check("jede Stamm-Datei mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);
     } else {
-        check("V8.40: Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
+        check("Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
     }
 
     // ### Shadow-Bias gegen Shadow-Acne auf flachen Flächen (der Wetter-Blend V8.46 lebt in koerper-seele D5a) ###
@@ -1231,7 +1159,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         const sh = window.anazhRealm.state.directionalLight && window.anazhRealm.state.directionalLight.shadow;
         return { shadowAntiAcne: !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048 };
     });
-    check("V8.47: Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)", !!v847 && v847.shadowAntiAcne === true);
+    check("Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)", !!v847 && v847.shadowAntiAcne === true);
 
     // ### Terrain-Schatten + Tag-Nacht-Glättung ###
     const v848Results = await safeEvaluate(page, () => {
@@ -1294,14 +1222,14 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     });
 
     if (v848Results && !v848Results.error) {
-        check("V8.48: Light-Target im Szenengraph", v848Results.targetInScene);
-        check("V8.48: Shadow-Frustum folgt dem Spieler (Target = Spieler-xz, ±Texel)", v848Results.shadowFollowsPlayer);
+        check("Light-Target im Szenengraph", v848Results.targetInScene);
+        check("Shadow-Frustum folgt dem Spieler (Target = Spieler-xz, ±Texel)", v848Results.shadowFollowsPlayer);
         check(
-            "V9.85 Perf-2.b: Stable-Shadow-Snap — Sub-Texel-Bewegung verschiebt Target NICHT",
+            "Perf-2.b: Stable-Shadow-Snap — Sub-Texel-Bewegung verschiebt Target NICHT",
             v848Results.shadowSnapStable
         );
     } else {
-        check("V8.48: Terrain-Schatten-Tests laufen", false, v848Results ? v848Results.error : "no result");
+        check("Terrain-Schatten-Tests laufen", false, v848Results ? v848Results.error : "no result");
     }
 
     // ### updateCreatures-Politur (Off-Screen-Sparsamkeit + Distanz-LOD) ###
@@ -1347,11 +1275,11 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     });
 
     if (v849Results && !v849Results.error) {
-        check("V8.49: updateCreatures läuft mit 60 Kreaturen ohne Crash", v849Results.noCrash, v849Results.err);
-        check("V8.49: Kreaturen bewegen sich weiterhin (Verhalten erhalten)", v849Results.creaturesMoved);
-        check("V8.49: alle Kreatur-Positionen endlich (keine NaN)", v849Results.allFinite);
+        check("updateCreatures läuft mit 60 Kreaturen ohne Crash", v849Results.noCrash, v849Results.err);
+        check("Kreaturen bewegen sich weiterhin (Verhalten erhalten)", v849Results.creaturesMoved);
+        check("alle Kreatur-Positionen endlich (keine NaN)", v849Results.allFinite);
     } else {
-        check("V8.49: updateCreatures-Politur-Tests laufen", false, v849Results ? v849Results.error : "no result");
+        check("updateCreatures-Politur-Tests laufen", false, v849Results ? v849Results.error : "no result");
     }
 
     // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider ###
@@ -1505,11 +1433,11 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             "Welle 6.X.4 V8.16: Schmiede-Hammer-Anwendung erhöht forging-Count",
             wave6x4cResults.afterForgingHasDomain
         );
-        check("V18.44 Spec-Sheet: Stats hat die Rollen-Resonanz (Fingerabdruck)", wave6x4cResults.synergyRowRendered);
-        check("V18.44 Spec-Sheet: Stats hat den Wachstums-Hinweis (.spec-growth)", wave6x4cResults.growthRowRendered);
+        check("Spec-Sheet: Stats hat die Rollen-Resonanz (Fingerabdruck)", wave6x4cResults.synergyRowRendered);
+        check("Spec-Sheet: Stats hat den Wachstums-Hinweis (.spec-growth)", wave6x4cResults.growthRowRendered);
         check("Welle 6.X.4 V8.16: Growth-Text bei 0 Ops zeigt Emergenz-Hinweis", wave6x4cResults.growthShowsEmptyHint);
         check(
-            "V18.44 Spec-Sheet: der Wachstums-Hinweis spiegelt die Domain nach Schmiede-Hammer-Op",
+            "Spec-Sheet: der Wachstums-Hinweis spiegelt die Domain nach Schmiede-Hammer-Op",
             wave6x4cResults.domainBarsAppearAfterOp
         );
     } else {
@@ -1641,19 +1569,19 @@ async function checkBandV18164WarumLicht(ctx) {
         return out;
     });
     check(
-        "V18.164 §7.3(b) WARUM-Führung: der Hinweis ist arithmetisch EHRLICH (die Drehung hebt die Ziel-Rolle über den Sieger) + Konjunktions-Achsen sprechen als TAT (Sitz-Anker setzen → Fahrzeug)",
+        "§7.3(b) WARUM-Führung: der Hinweis ist arithmetisch EHRLICH (die Drehung hebt die Ziel-Rolle über den Sieger) + Konjunktions-Achsen sprechen als TAT (Sitz-Anker setzen → Fahrzeug)",
         res.hintGefunden && res.hintEhrlich && res.hintFlippt && res.tatHinweis && res.spektrumKeinTrank
     );
     check(
-        "V18.164 §7.5(b) GEMESSEN: die HISM-Bäume laufen durch den microTexture-Zweig (instanceable + Aerial-outputNode auf jedem Leaf-Material)",
+        "§7.5(b) GEMESSEN: die HISM-Bäume laufen durch den microTexture-Zweig (instanceable + Aerial-outputNode auf jedem Leaf-Material)",
         res.baumInstanced && res.baumMicro
     );
     check(
-        "V18.164 §7.5 M7-Regler-Persistenz GEHEILT (V8.59-Klasse): microStrength reist im Snapshot + der Restore liest sie",
+        "§7.5 M7-Regler-Persistenz GEHEILT (V8.59-Klasse): microStrength reist im Snapshot + der Restore liest sie",
         res.persistenz && res.restoreLiest
     );
     check(
-        "V18.164 §6.5 → V18.530: kein Lade-Nebel — die Luft liest keine Ring-Front (der Fern-Ring deckt Ungebautes); im warmen Ring steht der Spieler-Chunk",
+        "§6.5 → V18.530: kein Lade-Nebel — die Luft liest keine Ring-Front (der Fern-Ring deckt Ungebautes); im warmen Ring steht der Spieler-Chunk",
         res.ladeNebelKonsum && res.builtRing && res.fogDeckel
     );
 }
@@ -1664,7 +1592,6 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
         const out = {};
 
         // (IV) Büsche wachsen aus dem Gesetz (kein Kugel-Haufen) — der Studio-Strauch, K24
@@ -1679,7 +1606,7 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
             const keys = window.__withNoFoundry(() => r._buildVariantLODs("busch_hazel", 0));
             const bp = keys && r.state.blueprints[keys[0]];
             buschParts = bp && Array.isArray(bp.parts) ? bp.parts.length : 0;
-        } catch (_e) {
+        } catch {
             /* gen < 7 → Grammatik-Struktur trägt den Beweis */
         }
         out.buschParts = buschParts;
@@ -1773,14 +1700,14 @@ async function checkBandV18264ShadowCache(ctx) {
         out.fernSeltener = lichter.length < 2 || (z1[1] >= Math.floor(fern) - 1 && z1[1] <= Math.ceil(fern));
         return out;
     });
-    check("V18.524: _loopShadowUpdate fährt den Leser je Licht (autoUpdate aus)", res.autoUpdateOff);
+    check("_loopShadowUpdate fährt den Leser je Licht (autoUpdate aus)", res.autoUpdateOff);
     check(
         `1410-3: die nahe Schatten-Map in Ruhe jeden nahMax-ten Frame ohne Doppel-Frame, bewegt jeden Frame (Ruhe ${res.nah1}/30, ` +
             `doppelt ${res.doppelt1}, bewegt ${res.nahBewegt}/30, Intervall 4: ${res.nah4}/60)`,
         res.nahRuhe === true && res.nahBewegtJedenFrame === true && res.nahGedeckelt === true
     );
     check(
-        `V18.524: die ferne Kaskade rendert seltener (${res.fern1 == null ? "ohne CSM" : res.fern1 + "/30"})`,
+        `die ferne Kaskade rendert seltener (${res.fern1 == null ? "ohne CSM" : res.fern1 + "/30"})`,
         res.fernSeltener === true
     );
 }
@@ -1789,9 +1716,7 @@ async function checkBandV18264ShadowCache(ctx) {
 async function checkBandWetterVektor(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return { err: "keine Instanz" };
+        const r = await window.__weltDa();
         // Keine laufende Transition — die Wort-Vorgabe führt.
         r.state.weatherTransition = null;
         const sunny = r._weatherFieldFor("sunny");
@@ -1842,7 +1767,7 @@ async function checkBandWetterVektor(ctx) {
     );
 }
 
-// Look-Physik — eingefaltet aus look-lens (D3b): Schöpfer 25.06. „die Realität kann man messen — wieso also hängt der Look
+// Look-Physik — eingefaltet aus look-lens: Schöpfer 25.06. „die Realität kann man messen — wieso also hängt der Look
 // von MIR ab?" Die CPU-lesbaren Look-KONSTANTEN gegen reale physikalische Bereiche: Gras-Albedo (Vegetation ~0,15–0,30,
 // grün-dominant, MEADOW_GREEN linear), Wetter dimmt Licht monoton, Koschmieder-Luft, die Tonkurve der EINEN
 // Eichung (Lehre 21, F1) und lineares Farb-Management.
@@ -1901,12 +1826,12 @@ async function checkBandLookPhysik(ctx) {
     );
 }
 
-// Himmelskörper-Tag — eingefaltet aus gate:himmel-tag (D3b): kein Planet aus Math.random am Mittagshimmel; die
+// Himmelskörper-Tag — eingefaltet aus gate:himmel-tag: kein Planet aus Math.random am Mittagshimmel; die
 // Wandelsterne sind die hellsten PUNKTE des Sternfelds,
 // die Dämmerung setzt die Grenzgröße (Kanal `grenze` der EINEN Tag-Achse `_tagAchse`); die Probe liest DIESELBEN Größen wie der Stern-Knoten (`aMag` ·
 // `grenze`): 1 KÖRPER nur Sonne und Mond · 2 MITTAG kein Punkt · 3 DÄMMERUNG der Abendstern · 4 NACHT alle Punkte · 5 MOND Tag
 // blass, Nacht deckend · 6 ZEICHNEN genau dann, in EINEM Durchgang · 7 UNENDLICH Kuppel, Sterne, Sonne, Mond tragen den EINEN
-// Unendlich-Knoten (K16). Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge und eine Sonne ohne Knoten werden rot.
+// Unendlich-Knoten. Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge und eine Sonne ohne Knoten werden rot.
 async function checkBandHimmelTag(ctx) {
     const { page, check } = ctx;
     const probe = (stoerung) => {
@@ -2023,7 +1948,7 @@ async function checkBandHimmelTag(ctx) {
     );
 }
 
-// Die Schatten-Wand — eingefaltet aus gate:schatten-takt (D3b): r184 liest `shadow.needsUpdate || shadow.autoUpdate`
+// Die Schatten-Wand — eingefaltet aus gate:schatten-takt: r184 liest `shadow.needsUpdate || shadow.autoUpdate`
 // je Licht (`ShadowNode.updateBefore`), nie
 // `renderer.shadowMap.needsUpdate`. `_loopShadowUpdate` fährt je Kaskade den echten Leser; JE FRAME HÖCHSTENS EINE KASKADE
 // (1410-3), nur die bewegte Kamera lässt die nahe jeden Frame folgen. Der ECHTE `_loopShadowUpdate` gegen Schein-Kaskaden:

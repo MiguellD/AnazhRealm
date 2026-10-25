@@ -123,8 +123,9 @@
             fressen: { aktionen: ["fressen"], alle: [0, 0.4] },
             // SCHLUSS-WELLE (Spiegel-Zensus 17.07., rein additive DATEN-Zeile):
             // die SCHWELLEN des Verhaltens-Ticks — ab wann das Gemuet die
-            // Stimmung waehlt (chaos→alert, joy→joy), wann die Nacht ruht
-            // (Sonnen-Sinus unter nachtSin) und wer weidet (diet ≤ weideDiet).
+            // Stimmung waehlt (chaos→alert, joy→joy), wann Nacht ist (Sonnen-
+            // Sinus unter nachtSin: die Lichtphase des ETHOGRAMM_GESETZ, Tiere K4)
+            // und wer weidet (diet ≤ weideDiet).
             // KEINE Stimmungs-Zeile (kein aktionen/alle) — die Leser der
             // Stimmungs-Tabelle ueberspringen den Schluessel (must-ignore).
             schwellen: { chaos: 0.5, joy: 0.5, nachtSin: -0.15, weideDiet: 0.5 },
@@ -1660,6 +1661,18 @@
     function ankunftTempo(rest, vMax) {
         return Math.min(vMax, Math.sqrt(2 * STEUER_GESETZ.brems * GANG_GESETZ.g * Math.max(0, rest)));
     }
+    // DER UMWEG (Oekologie K5, 24.10., additiv): wer ein Ziel hat, eine Wand hielt ihn vor hoechstens haltS (n die Normale aus
+    // ihr), und sein Wunsch (ux, uz) steht fast frontal in ihr (|Wunsch · Tangente| <= quer — schraeg laesst ihn die Wand
+    // gleiten), geht laengs der Wand zur Seite, auf der er von ihrer Mitte (ox, oz) schon steht (der kuerzere Weg); die Seite
+    // alt haelt, solange der Umweg nicht laenger als haltS ruht. Liefert die Seite s (±1, 0 = kein Umweg), die Richtung ist
+    // s × (−nz, nx). Vorher stand ein Folger hinter einer Wand, bis der Spieler ihre Linie verliess (folgen: 30 s an 8 m).
+    var UMWEG_GESETZ = Object.freeze({ haltS: 0.5, quer: 0.25 });
+    function umwegSeite(ux, uz, nx, nz, ox, oz, alt) {
+        if (alt) return alt;
+        var q = uz * nx - ux * nz;
+        if (Math.abs(q) > UMWEG_GESETZ.quer) return 0;
+        return oz * nx - ox * nz < 0 ? -1 : 1;
+    }
     // DER VERBAND (S6 18.10.): das Rudel, die Herde — der Wurf, den die Geburt bindet — ist ein DATUM, kein Zufall der
     // Nachbarschaft. Die Form davor (herdeZug) zog nur Nachbarn derselben Gattung im Fenster fensterRaum × Paar-Raum: ein
     // Nachzuegler jenseits des Fensters blieb fuer immer zurueck, zwei fremde Herden derselben Art verschmolzen, und die
@@ -1783,11 +1796,15 @@
     // seiner Eintraege), nie eine Uhr: die Erinnerung reist im Speicherstand. DER ORT ERINNERT (furchtOrt): die Bedrohung des
     // Abdrucks in einer Zelle × ortGewicht; ein Riss praegt riss ein (die Emotion des Schadens, sorrow + chaos, bis zur
     // Saettigung der Zelle). Die Landschaft der Furcht meidet, wer Beute ist (Laundre et al. 2001), im Umkreis
-    // ortRadiusZellen Zellen um die Mitte der Zelle, linear zum Rand.
+    // ortRadiusZellen Zellen um die Mitte der Zelle, linear zum Rand. DER FLUCHTWEG (Tiere K1, 24.10., additiv): wer flieht,
+    // laeuft vom Ort der Bedrohung bis fluchtWegJeRadius Flucht-Radien jenseits des Radius — die Beute flieht eine Strecke, nicht
+    // bis zur Kante der Furcht, und wer frueher flieht, flieht weiter (Stankowich 2008, „distance fled"); vorher endete die
+    // Flucht am Radius selbst.
     var FURCHT_GESETZ = Object.freeze({
         erinnerung: Object.freeze({ geschlagen: 2, gefuettert: -1.5 }),
         deckel: 3,
         fluchtJeFurcht: 1.25,
+        fluchtWegJeRadius: 2.2,
         riss: Object.freeze({ chaos: 1.6, sorrow: 1.6 }),
         ortGewicht: 1,
         ortRadiusZellen: 1.5,
@@ -1816,6 +1833,18 @@
         if (!gefuehl) return 0;
         var m = bedrohung(gefuehl, NAT) * F.ortGewicht;
         return m > 0 ? m : 0;
+    }
+    // B = die Bedrohung {x, z, r} (Ort und Flucht-Radius), glieder = die Leiber des Verbands ({position}) oder null, eigen = das
+    // Wesen wittert selbst. Liefert den Radius der Flucht um B: wer selbst wittert, flieht, bis er und das fernste Glied seines
+    // Verbands fluchtWegJeRadius × B.r jenseits des Radius stehen; aus zweiter Hand traegt B die Flucht, die das Glied uebernimmt.
+    function fluchtRadius(B, glieder, eigen) {
+        if (!eigen) return B.r;
+        var r = B.r;
+        for (var i = 0; glieder && i < glieder.length; i++) {
+            var p = glieder[i].position;
+            r = Math.max(r, Math.sqrt((p.x - B.x) * (p.x - B.x) + (p.z - B.z) * (p.z - B.z)));
+        }
+        return r + FURCHT_GESETZ.fluchtWegJeRadius * B.r;
     }
 
     // DIE JAGD HAT EIN ENDE (Tiere K2, 23.10., additiv — JAGD_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): eine
@@ -1868,6 +1897,57 @@
     function durst(seitS, D) {
         return seitS > 0 ? seitS / D.durstS : 0;
     }
+    // DAS ETHOGRAMM (Tiere K4, 24.10., additiv — ETHOGRAMM_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): der
+    // Tag eines Tiers ist ein BUDGET aus drei Taetigkeiten — ruhen, nahrung (aesen, nur wer weidet: diet bis
+    // VERHALTEN.stimmung.schwellen.weideDiet) und ziehen (der Rest) —, getragen von Beduerfnis-Pegeln, nie von einem Zeitplan.
+    // DER HUNGER ist der Magen (VERHALTEN.aas): er leert sich in verdauSec; wer weidet, beginnt unter hungerAnteil zu aesen und
+    // aest, bis er voll ist — die Aesung fuellt ihn mit voll / (verdauSec × nahrung) je Sekunde (aesung), darum aest er im Mittel
+    // den Anteil nahrung (Gras ist karg: das Rotwild aest ~ 50 % des Tages, Clutton-Brock et al. 1982). DIE RUHE ist ein Pegel
+    // (ruhePegel, der Schlafdruck des Zwei-Prozess-Modells, Borbely 1982): wach steigt er in ruheTaktS × (1 − ruhen) auf 1,
+    // ruhend faellt er in ruheTaktS × ruhen auf 0 — im Mittel ruht die Gattung den Anteil ruhen. DER RHYTHMUS (lichtPhase: der
+    // Zeitgeber ist das Licht, die Hoehe der Sonne): in ihrer aktiven Lichtphase legt sich die Gattung erst bei schwelle.aktiv
+    // nieder, sonst schon bei schwelle.ruhig — die Schwelle verschiebt, WANN sie ruht, nie wie lange: das Budget haelt jede
+    // Uhr. Wer ruht, ruht, bis der Pegel leer ist; wer aest, aest, bis der Magen voll ist (taetigkeit). Das Rotwild aest in der
+    // Daemmerung (Georgii 1981), der Wolf zieht nachts und in der Daemmerung (Theuerkauf et al. 2003: aktiv ~ 40 %), der Fuchs
+    // nachts (Doncaster & Macdonald 1997), der Baer am Tag (Munro et al. 2006: aktiv ~ 55 %, das meiste Nahrungssuche). Jede
+    // Taetigkeit zeigt sich in einer Stimmung des Buchs und traegt das Tempo ihrer Aktion (zeigt; ziehen wandert).
+    var ETHOGRAMM_GESETZ = Object.freeze({
+        daemmerSin: 0.25,
+        schwelle: Object.freeze({ aktiv: 1.5, ruhig: 0.6 }),
+        zeigt: Object.freeze({
+            ruhen: Object.freeze({ stimmung: "nacht", aktion: "ruhen" }),
+            nahrung: Object.freeze({ stimmung: "tag", aktion: "grasen" }),
+            ziehen: Object.freeze({ stimmung: "idle", aktion: null }),
+        }),
+        gattung: Object.freeze({
+            deer: Object.freeze({ ruhen: 0.4, nahrung: 0.5, ruheTaktS: 360, aktiv: Object.freeze(["daemmerung"]) }),
+            bear: Object.freeze({ ruhen: 0.45, nahrung: 0.4, ruheTaktS: 360, aktiv: Object.freeze(["tag", "daemmerung"]) }),
+            wolf: Object.freeze({ ruhen: 0.6, nahrung: 0, ruheTaktS: 360, aktiv: Object.freeze(["nacht", "daemmerung"]) }),
+            fox: Object.freeze({ ruhen: 0.6, nahrung: 0, ruheTaktS: 360, aktiv: Object.freeze(["nacht"]) }),
+        }),
+    });
+    // sonneSin = die Hoehe der Sonne (sin), nachtSin = VERHALTEN.stimmung.schwellen.nachtSin. Liefert die Lichtphase.
+    function lichtPhase(sonneSin, nachtSin, E) {
+        return sonneSin < nachtSin ? "nacht" : sonneSin < E.daemmerSin ? "daemmerung" : "tag";
+    }
+    // p = der Ruhe-Pegel, ruht = ruhte das Tier in den letzten dtS Sekunden, G = die Zeile der Gattung. Liefert den neuen Pegel.
+    function ruhePegel(p, ruht, dtS, G) {
+        var q = ruht ? p - dtS / (G.ruheTaktS * G.ruhen) : p + dtS / (G.ruheTaktS * (1 - G.ruhen));
+        return q > 0 ? q : 0;
+    }
+    // voll = der volle Magen (kg), verdauSec = VERHALTEN.aas.verdauSec. Liefert die Aesung (kg je Sekunde).
+    function aesung(voll, verdauSec, G) {
+        return G.nahrung > 0 ? voll / (verdauSec * G.nahrung) : 0;
+    }
+    // vorher = die Taetigkeit des Vor-Takts, magenAnteil = der Magen durch den vollen, weidet = diet bis weideDiet,
+    // hungerAnteil = VERHALTEN.aas.hungerAnteil. Liefert "ruhen" · "nahrung" · "ziehen".
+    function taetigkeit(vorher, ruhe, magenAnteil, phase, weidet, G, E, hungerAnteil) {
+        var aest = weidet && G.nahrung > 0;
+        if (vorher === "ruhen" && ruhe > 0) return "ruhen";
+        if (vorher === "nahrung" && aest && magenAnteil < 1) return "nahrung";
+        if (ruhe >= (G.aktiv.indexOf(phase) >= 0 ? E.schwelle.aktiv : E.schwelle.ruhig)) return "ruhen";
+        return aest && magenAnteil < hungerAnteil ? "nahrung" : "ziehen";
+    }
     // DIE GEBURT AM ORT: aus dem Wurf u ∈ [0, 1) die Gattung nach ihrem lebensraum in der Klasse; die Luecke bis zur Summe des
     // reichsten Lebensraums traegt keine Geburt (null) — wo nur der Jaeger lebt, wird selten geboren, die Beute ist haeufig.
     var LEBENSRAUM_KLASSEN = ["fluss", "hang", "wald", "waldrand", "wiese"];
@@ -1884,6 +1964,57 @@
         var w = u * max;
         for (g in L.gattung) if ((w -= lebensraum(g, klasse, L)) < 0) return g;
         return null;
+    }
+
+    // DER BESTAND (Oekologie K2, 23.10., additiv — BESTAND_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): Geburt
+    // und Tod einer Gattung folgen ihrer Nahrung im Revier, nie einem Deckel. DIE NAHRUNG eines Orts (bestandNahrung) ist die
+    // Kost nach der Ernaehrung der Gattung (GATTUNGEN diet: 0 frisst Aesung, 1 Beute, dazwischen beides): Aesung = das Leben
+    // des Felds am Ort (0..1), Beute = der Bestand der Pflanzenfresser im Revier gegen beuteVoll Koepfe (auf 1 geklemmt) — die
+    // Zahl der Jaeger folgt der Zahl der Beute (die numerische Antwort: Messier 1994, Ecology 75:478). DIE KAPAZITAET des
+    // Reviers (revierM um den Spieler, je Zelle des Rasters rasterM) = kopfJeHa × Σ lebensraum (Eignung × Haeufigkeit) ×
+    // Flaeche (ha) × Nahrung — Nahrung × Lebensraum. DIE BILANZ (bestandBilanz) ist logistisch (Verhulst 1838) je taktS der
+    // Spiel-Zeit: unter der Kapazitaet K wirft die Gattung mit geburt × (1 − n/K), darueber stirbt mit tod × (n/K − 1)
+    // (geklemmt auf tod) einer am Hunger; ohne Nahrung (K = 0) stirbt jeder Bestand. DER FRASS (bestandFrass, Oekologie K1): je
+    // Takt nimmt jedes Tier nach seinem Anteil Aesung (1 − diet) fress vom Jungwuchs des Reviers, in den Zellen, die die
+    // Kapazitaet liest — negativ ins Feld; das Overlay zerfaellt zum Substrat zurueck, das ist das Nachwachsen (der Verbiss
+    // senkt die Aesung, die Aesung den Bestand: die Rueckkopplung ist negativ, wie das Feld sie erlaubt). DER RISS
+    // (bestandRiss, Oekologie K1): die Jaeger, deren Beute eine Gattung ist, nehmen je Takt mit riss × jaeger × D² / (rissHalb² + D²)
+    // eines ihrer Tiere — jaeger = die Kost (diet) der Jaeger-Koepfe, D = die Dichte ihrer Beute (n / beuteVoll): die Antwort
+    // saettigt und laesst seltene Beute liegen (Holling 1959, Typ III; der Jaeger wechselt zur haeufigen, Murdoch 1969). Die
+    // Kaskade folgt aus den Lesern: ohne Woelfe waechst das Rotwild bis an seine Aesung und verbeisst den Jungwuchs (Ripple &
+    // Beschta 2012).
+    var BESTAND_GESETZ = Object.freeze({
+        taktS: 10,
+        revierM: 200,
+        rasterM: 50,
+        kopfJeHa: 8,
+        beuteVoll: 30,
+        geburt: 0.1,
+        tod: 0.2,
+        fress: 0.05,
+        riss: 0.6,
+        rissHalb: 0.1,
+    });
+    function bestandFrass(diet, B) {
+        var d = diet > 0 ? (diet < 1 ? diet : 1) : 0;
+        return B.fress * (1 - d);
+    }
+    // jaeger = die Kost der Jaeger, deren Beute die Gattung ist (Σ diet), dichte = n / beuteVoll. Liefert die Chance je Takt.
+    function bestandRiss(jaeger, dichte, B) {
+        var d2 = dichte > 0 ? dichte * dichte : 0;
+        var p = jaeger > 0 ? (B.riss * jaeger * d2) / (B.rissHalb * B.rissHalb + d2) : 0;
+        return p < 1 ? p : 1;
+    }
+    function bestandNahrung(diet, aesung, beute) {
+        var d = diet > 0 ? (diet < 1 ? diet : 1) : 0;
+        return (1 - d) * aesung + d * beute;
+    }
+    // n = der Bestand der Gattung, K = ihre Kapazitaet im Revier. Liefert die Chancen je Takt {geburt, tod}.
+    function bestandBilanz(n, K, B) {
+        if (!(K > 0)) return { geburt: 0, tod: n > 0 ? B.tod : 0 };
+        if (n < K) return { geburt: B.geburt * (1 - n / K), tod: 0 };
+        var u = n / K - 1;
+        return { geburt: 0, tod: B.tod * (u < 1 ? u : 1) };
     }
 
     // Mit folge (GANG_FOLGE, die Gangart aus dem Tempo) zieht das Netz jedes Bein in DIESES Muster: jedes Bein an jedes, die
@@ -3301,6 +3432,8 @@
         sprintTempo: sprintTempo,
         steuerSchritt: steuerSchritt,
         ankunftTempo: ankunftTempo,
+        UMWEG_GESETZ: UMWEG_GESETZ,
+        umwegSeite: umwegSeite,
         VERBAND_GESETZ: VERBAND_GESETZ,
         verbandZug: verbandZug,
         rudelPlatz: rudelPlatz,
@@ -3309,6 +3442,7 @@
         bedrohung: bedrohung,
         furchtErinnert: furchtErinnert,
         furchtOrt: furchtOrt,
+        fluchtRadius: fluchtRadius,
         JAGD_GESETZ: JAGD_GESETZ,
         wundTempo: wundTempo,
         LEBENSRAUM_GESETZ: LEBENSRAUM_GESETZ,
@@ -3317,6 +3451,16 @@
         lebensraumWahl: lebensraumWahl,
         DURST_GESETZ: DURST_GESETZ,
         durst: durst,
+        ETHOGRAMM_GESETZ: ETHOGRAMM_GESETZ,
+        lichtPhase: lichtPhase,
+        ruhePegel: ruhePegel,
+        aesung: aesung,
+        taetigkeit: taetigkeit,
+        BESTAND_GESETZ: BESTAND_GESETZ,
+        bestandNahrung: bestandNahrung,
+        bestandBilanz: bestandBilanz,
+        bestandFrass: bestandFrass,
+        bestandRiss: bestandRiss,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         FELL_SCHALE: FELL_SCHALE,

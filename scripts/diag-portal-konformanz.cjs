@@ -2,8 +2,8 @@
 // diag-portal-konformanz.cjs — DIE KONFORMITÄTS-PROBE DER PORTAL-BRÜCKE (W1 c + e, gate:portal-konformanz).
 //
 // Das Protokoll (enter · ready · dsl · event · exit) hat EINEN Richter: die Heimat. Die Probe bootet die echte Heimat
-// (index.html, Null-Renderer, keine Foundry) und betritt JEDE Welt über den echten Weg (Bibliothek →
-// `obtainPortalForWorld` → `_buildPortalOverlay`, die übersetzte Welt über `acceptTranslatedManifest` +
+// (index.html, Null-Renderer, keine Foundry) und betritt JEDE Welt über den echten Weg (die zehn des Genesis-Rings durch
+// ihr Tor, K8; die übrigen über die Bibliothek → `obtainPortalForWorld` → `_buildPortalOverlay`, die übersetzte Welt über `acceptTranslatedManifest` +
 // `buildTranslatedWorld` mit gestubbtem LLM). Gemessen wird nur, was die Heimat KONSUMIERT, und was die Welt sichtbar
 // tut (Journal der Heimat, Zustand der Welt-UI):
 //   K1 ready      die Heimat empfängt die ready der Welt (der Handshake schließt); eine Soll-Welt (`manifest: true` in
@@ -18,6 +18,13 @@
 //   K5 Esc        Esc in der Welt bringt den Spieler heim (die Heimat schließt das Overlay)
 //   K6 fehlerfrei die Welt wirft keinen Seiten-Fehler, und die GPU verwirft keinen ihrer Befehle (WebGPU-Prüfung)
 //   K7 mitgebracht die Welt zeigt, was der Reisende mitbringt (der enter-Payload der Heimat, `MITGEBRACHT`)
+//   K8 getragen   was der Spieler trägt, reist mit (tore.K3): die Welten des Genesis-Rings betritt der Spieler über ihr Tor —
+//                 mit W durch die Apertur, wo das Tor ein Gesetz trägt (`_tickPortalMembranes` → enterPortal, die Probe taktet
+//                 die Heimat), sonst bis vor das Tor und E —, heim kommt er mit Esc (K5). Der ABDRUCK je Teil (Leib = Seele ·
+//                 Teile einer eigenen Seele · Prägung des Mensch-Rezepts; Inventar = Slots · Hotbar; wield = Haupt-, Neben-Hand,
+//                 Rüstung: kanonisches JSON + FNV-1a, `abdruck`) steht vor dem Tor aus dem Zustand der Heimat, drüben aus dem,
+//                 was die Hülle der Welt hält (`AnazhHuelle.reisender`), und nach der Heimkehr; ein Teil, dessen Bytes unterwegs
+//                 anders werden, ist rot beim Namen — nie ein ok-Flag der Übergabe. `--aus <datei>` schreibt die Tafel (Station).
 // Dazu zwei RATSCHEN (spec/vertraege/ratsche.json — Ist darf nur fallen, Soll daneben):
 //   dslEinzelwort  der Spieler tippt EIN Wort in die Konsole (`processChatCommand`, die Heimat schickt die flache Form
 //                  ["w"]): wirkt es sichtbar oder bleibt die Welt stumm?
@@ -44,7 +51,7 @@ const READY_FRIST_MS = 120000;
 // Welt-UI (same-origin: Selektor + Feld + Soll, der echte UI-Pfad der Studios); ohne `ui` = das Journal der Heimat
 // (die Welt antwortet mit einem Ereignis). begegnung versteht keine DSL (dsl []), ihre Wirkung ist der Ko-Präsenz-
 // Eintritt eines Gefährten (peer-join → Ereignis). `manifest: true` ist das SOLL der nativen Stufe: die Welt trägt ihr
-// worlds/<id>/manifest.json, liest es selbst und meldet es im ready (K1).
+// worlds/<id>/manifest.json, liest es selbst und meldet es im ready.
 const WELTEN = [
     { id: "skeleton", manifest: true, wort: "skybox_color 2a0a3a", mitgebracht: "voll" },
     { id: "fluid", manifest: true, wort: "flut", zusatz: stromZeichnet, mitgebracht: "pass" },
@@ -149,6 +156,31 @@ async function mitgebrachtPruefen(page, fr, art) {
     return { ok: !notiz.length, notiz };
 }
 
+// K8 — was der Spieler trägt: die Teile des Abdrucks, die Zeile, mit der die Hülle den Reisenden hält (die Fundstelle des
+// Täters), und der ABDRUCK (in Heimat und Welt derselbe Text): je Teil FNV-1a über das kanonische JSON (Schlüssel sortiert) —
+// `heim` liest den Zustand der Heimat (nie den Bauer der Übergabe), sonst was die Hülle der Welt hält.
+const TEILE = ["leib", "inventar", "wield"];
+const HALT = 'reisender = m.avatar && typeof m.avatar === "object" ? m.avatar : {};';
+function abdruck(heim) {
+    const st = heim && window.anazhRealm.state;
+    const p = st && st.player;
+    const g = st
+        ? {
+              leib: { seele: p.soul || "human", teile: (st.customSouls[p.soul || "human"] || {}).bodyParts || null, praegung: st.workshop.studioOv[anazhRealm.constructor.KOERPER_HOST_RECIPE] || null },
+              inventar: { slots: p.inventory, hotbar: st.hotbar },
+              wield: p.equipped,
+          }
+        : ((AnazhHuelle.reisender && AnazhHuelle.reisender()) || {}).gepaeck || {};
+    return Object.fromEntries(
+        ["leib", "inventar", "wield"].map((t) => {
+            let h = 0x811c9dc5;
+            for (const c of JSON.stringify(g[t] || null, (k, x) => (x && x.constructor === Object ? Object.fromEntries(Object.entries(x).sort()) : x)))
+                h = Math.imul(h ^ c.charCodeAt(0), 0x01000193);
+            return [t, h >>> 0];
+        })
+    );
+}
+
 // Die übersetzte Welt: Manifest + die Szene, die das gestubbte LLM liefert (die Säuberung bleibt die echte).
 const UEBERSETZT = {
     manifest: { id: "konformanz-lava", label: "Konformanz-Lava", desc: "Eine glühende Probe-Welt.", dsl: ["sturm"] },
@@ -181,11 +213,13 @@ const TAETER = {
     "worlds/huelle/huelle.js": [
         ['} else if (m.type === "dsl") wirke(m.program);', '} else if (m.type === "dsl") m.program.forEach(function (op) { wirke(op); });'],
         [
-            'if (m.type === "enter") {\n                if (opt.enter)',
-            'if (m.type === "enter") {\n                bereit(opt.dsl ? { label: opt.label, dsl: opt.dsl } : {});\n                if (opt.enter)',
+            'if (m.type === "enter") {',
+            'if (m.type === "enter") {\n                bereit(opt.dsl ? { label: opt.label, dsl: opt.dsl } : {});',
         ],
         // (d) die Brücke ohne Quellen-Prüfung — eine fremde Seite steuert jede Welt der Hülle (K3 rot, auch am UI-Pfad)
         ["if (ev.source !== eltern) return;\n            var m = ev.data;", "var m = ev.data;"],
+        // (e) die Hülle hält den Reisenden ohne das, was er in der Hand trägt (K8 rot am Teil wield, Leib und Inventar grün)
+        [HALT, HALT + " if (reisender.gepaeck) delete reisender.gepaeck.wield.held;"],
         [
             "var dsl = m && Array.isArray(m.dsl) ? m.dsl : null;",
             'var dsl = m && Array.isArray(m.dsl) ? m.dsl.filter(function (w) { return w !== "flut"; }) : null;',
@@ -272,7 +306,7 @@ const warte = (ms) => new Promise((r) => setTimeout(r, ms));
 // ── in der Heimat: eine Welt betreten (der echte Weg) und den Kanal zählen
 async function betreten(page, welt) {
     hinFrame = null;
-    return page.evaluate(
+    const b = await page.evaluate(
         async (welt, uebersetzt) => {
             const r = window.anazhRealm;
             if (r._portalOverlay) r.exitPortal();
@@ -290,7 +324,11 @@ async function betreten(page, welt) {
                 }
                 id = acc.id;
             }
-            const ob = r.obtainPortalForWorld(id);
+            // K8: eine Welt des Genesis-Rings betritt der Spieler über ihr Tor, jede andere über die Bibliothek
+            const tor = (window.__tor = r.state.architectures.find(
+                (e) => /^welt_/.test(e.type) && r.state.blueprints[e.type].portalMeta.world === `worlds/${id}/index.html`
+            ));
+            const ob = tor ? { ok: true, blueprint: tor.type } : r.obtainPortalForWorld(id);
             if (!ob.ok) return { fehler: "obtainPortalForWorld: " + ob.reason };
             const meta = r.state.blueprints[ob.blueprint].portalMeta;
             // Zähler: was die Welt der Heimat schickt (Quelle = das Portal-iframe) und wie oft die Heimat enter sendet
@@ -314,15 +352,37 @@ async function betreten(page, welt) {
                 k.enters++;
                 return orig.apply(this, arguments);
             };
-            r._buildPortalOverlay(meta, { computeRole: "host" });
             // Das load der Welt (das about:blank davor lädt synchron beim Einhängen, vor diesem Hörer): der load-Hörer
-            // der Heimat steht vor diesem und hat sein enter geschickt, wenn er zählt.
-            if (r._portalOverlay) r._portalOverlay.iframe.addEventListener("load", () => k.geladen++);
-            return { ok: true, label: r._portalOverlay && r._portalOverlay.label, worldId: id };
+            // der Heimat steht vor diesem und hat sein enter geschickt, wenn er zählt — gehängt im Bau des Overlays, auf
+            // jedem Weg dorthin (eine delegierende Hülle wie die Zählung).
+            const bau = r._buildPortalOverlay;
+            r._buildPortalOverlay = function () {
+                const o = bau.apply(this, arguments);
+                if (this._portalOverlay) this._portalOverlay.iframe.addEventListener("load", () => k.geladen++);
+                return o;
+            };
+            if (!tor) return (r._buildPortalOverlay(meta, { computeRole: "host" }), { ok: true });
+            // vor dem Tor: 4 m entlang seiner Normalen, der Blick hindurch
+            const ry = tor.rotationY || 0;
+            const [x, z] = [tor.position.x + 4 * Math.sin(ry), tor.position.z + 4 * Math.cos(ry)];
+            r.state.playerMesh.position.set(x, r.getTerrainHeightAt(x, z) + 1, z);
+            r.state.yaw = ry + Math.PI;
+            return { ok: true, weg: r._torGesetzFor(tor) ? "Apertur" : "E" };
         },
         welt,
         UEBERSETZT
     );
+    if (!b.weg) return b;
+    // W gehalten, die Probe taktet die Heimat (headless taktet sie nicht selbst), bis das Tor aufgeht: durch die Apertur, am
+    // Teile-Tor bis vor es, dort E
+    await halteBis(page, {
+        druck: () => page.evaluate('dispatchEvent(new KeyboardEvent("keydown", { key: "w" })); window.__takt = setInterval(() => anazhRealm._gameLoopTick(performance.now()), 20)'),
+        los: () => page.evaluate('clearInterval(__takt); dispatchEvent(new KeyboardEvent("keyup", { key: "w" }))'),
+        ziel: (e) => !!anazhRealm._portalOverlay || (e && anazhRealm.state.playerMesh.position.distanceTo(__tor.position) < 2.5),
+        args: [b.weg === "E"],
+    });
+    if (b.weg === "E") await page.evaluate('dispatchEvent(new KeyboardEvent("keydown", { code: "KeyE" }))');
+    return (await page.evaluate(() => !!anazhRealm._portalOverlay)) ? b : { fehler: `das Tor geht nicht auf (${b.weg})` };
 }
 
 const zaehler = (page) => page.evaluate(() => window.__konformanz.zaehler());
@@ -330,7 +390,7 @@ const zaehler = (page) => page.evaluate(() => window.__konformanz.zaehler());
 async function zaehlerAus(page) {
     await page.evaluate(() => {
         const r = window.anazhRealm;
-        if (Object.prototype.hasOwnProperty.call(r, "_portalSendEnter")) delete r._portalSendEnter;
+        delete r._portalSendEnter, delete r._buildPortalOverlay; // die eigenen Hüllen, nie die des Prototyps
         if (window.__kSpy) window.removeEventListener("message", window.__kSpy, true);
         window.__kSpy = null;
     });
@@ -475,9 +535,9 @@ async function zustand(page, welt) {
     const journal = await page.evaluate(() => window.__konformanz.journal());
     let ui = null;
     if (welt.ui) {
-        const fr = page.frames().find((f) => f.url().includes("worlds/" + welt.id + "/"));
-        ui = fr
-            ? await fr
+        // der Rahmen der Welt ist der des Rück-Hörers (`hinFrame`, gehängt in der ersten Schleuse je Welt)
+        ui = hinFrame
+            ? await hinFrame
                   .evaluate((u) => {
                       const el = document.querySelector(u.sel);
                       if (!el) return null;
@@ -517,6 +577,7 @@ async function fremdBereit(page, port) {
 async function pruefeWelt(page, welt, fehlerLog, lies) {
     const aus = { id: welt.id, k: {}, stumm: null, echo: null, notiz: [] };
     const fehlerVor = fehlerLog.length;
+    const vor = await page.evaluate(abdruck, true);
     const b = await betreten(page, welt);
     if (!b || !b.ok) {
         aus.k.K1 = false;
@@ -547,6 +608,9 @@ async function pruefeWelt(page, welt, fehlerLog, lies) {
     while (s.enterImFenster && s.zaehler.enters <= 3) s = await schleuse(page, "heimat", welt);
     z = s.zaehler;
     const ruhig = !s.enterImFenster;
+    // Der Rahmen der Welt ist der des Rück-Hörers (für K7, K8, die Zusatz-Proben, K6 und K5 derselbe). K8 drüben: der
+    // Handshake klang aus — jedes enter der Heimat ist gelesen, die Hülle hält den Reisenden
+    if (b.weg) Object.assign(aus, { weg: b.weg, vor, drueben: hinFrame ? await hinFrame.evaluate(abdruck, false) : {} });
     // Meldet die Welt ihr Wörterbuch in der ready, übernimmt die Heimat es (Stufe „nativ", `_portalReceiveManifest`).
     if (z.readyDsl && z.stufe !== "nativ") {
         aus.k.K1 = false;
@@ -590,8 +654,7 @@ async function pruefeWelt(page, welt, fehlerLog, lies) {
         }
     }
     if (welt.mitgebracht) {
-        const frM = page.frames().find((f) => f.url().includes("worlds/" + welt.id + "/"));
-        const k7 = frM ? await mitgebrachtPruefen(page, frM, welt.mitgebracht) : { ok: false, notiz: ["Welt-Frame nicht gefunden"] };
+        const k7 = hinFrame ? await mitgebrachtPruefen(page, hinFrame, welt.mitgebracht) : { ok: false, notiz: ["Welt-Frame nicht gefunden"] };
         aus.k.K7 = k7.ok;
         aus.notiz.push(...k7.notiz);
     }
@@ -643,22 +706,27 @@ async function pruefeWelt(page, welt, fehlerLog, lies) {
     const nach = await bisWirkung(page, welt, s4.nach, k4Pruef);
     let k4 = k4Pruef(nach);
     if (!k4) aus.notiz.push("die Heimat-Form chain wirkt nicht sichtbar");
-    const fr = page.frames().find((f) => f.url().includes("worlds/" + welt.id + "/"));
-    if (welt.zusatz && fr) {
-        const z2 = await welt.zusatz(page, fr);
+    if (welt.zusatz && hinFrame) {
+        const z2 = await welt.zusatz(page, hinFrame);
         aus.notiz.push(z2.notiz);
         k4 = k4 && z2.ok;
     }
     if (aus.k.K4 !== false) aus.k.K4 = k4;
     // K6 die GPU: nach einem Bild meldet jedes Gerät der Welt seine Arbeit und mit ihr jede Prüfung, die einen Befehl verwarf
-    const gpu = fr ? await GPU_ABGABE(fr) : [];
+    const gpu = hinFrame ? await GPU_ABGABE(hinFrame) : [];
     // K5: Esc in der Welt → die Heimat schließt das Overlay. Der Rück-Hörer drückt Esc und reicht die Marke dahinter
     // zurück: kommt sie an, hat die Heimat gelesen, was die Welt auf Esc schickte.
-    const offen = fr ? (await schleuse(page, "esc", null)).offen : true;
-    aus.k.K5 = !!fr && !offen;
+    const offen = hinFrame ? (await schleuse(page, "esc", null)).offen : true;
+    aus.k.K5 = !!hinFrame && !offen;
     if (!aus.k.K5) {
-        aus.notiz.push(fr ? "Esc bringt nicht heim" : "Welt-Frame nicht gefunden");
+        aus.notiz.push(hinFrame ? "Esc bringt nicht heim" : "Welt-Frame nicht gefunden");
         await page.evaluate(() => window.anazhRealm._portalOverlay && window.anazhRealm.exitPortal());
+    }
+    // K8 nach der Heimkehr: jeder Teil trägt vor dem Tor, drüben und daheim dieselben Bytes
+    if (b.weg) {
+        aus.nach = await page.evaluate(abdruck, true);
+        for (const t of TEILE) for (const o of ["drueben", "nach"]) if (aus[o][t] !== vor[t]) aus.notiz.push(`${t} ${o} ${aus[o][t]} statt ${vor[t]}`);
+        aus.k.K8 = aus.k.K5 && !aus.notiz.some((n) => TEILE.includes(n.split(" ")[0]));
     }
     const fehler = fehlerLog.slice(fehlerVor).concat(gpu.map((m) => "GPU: " + m.slice(0, 150)));
     aus.k.K6 = fehler.length === 0;
@@ -688,12 +756,22 @@ async function lauf(welten, taeter) {
             () => window.anazhRealm && window.anazhRealm.state && typeof window.anazhRealm._gameLoopTick === "function" && window.anazhRealm.state.blueprints,
             { timeout: 120000, polling: 200 }
         );
-        // Der Vibe-Pass steht (ed25519, asynchron im Boot); dann das Mitgebrachte in den Zustand der Heimat (K7).
+        // Der Vibe-Pass steht (ed25519, asynchron im Boot); dann das Mitgebrachte in den Zustand der Heimat.
         await page.evaluate(() => window.__weltDa((r) => !!(r.state.vibePass && r.state.vibePass.ready)));
         await page.evaluate((M) => {
             const st = window.anazhRealm.state;
             st.materials[M.material] = { builtIn: false, color: M.farbe, label: M.material, tags: {} };
             st.tools.konformanz_feile = { builtIn: false, label: M.werkzeug, opName: "konformanz_op", opClass: "subtractive" };
+            // K8: der Ring des Genesis-Orts (headless ruht sein Takt) und was der Spieler trägt — ein Kiesel in der Hand, eine
+            // Laterne in der Neben-Hand, der Brustpanzer, drei Dinge im Inventar, ein Platz der Hotbar, die Gestalt des Körpers
+            const r = window.anazhRealm;
+            r._genesisPortalRing(r._genesisMitte());
+            r.equipHeld("kiesel");
+            r.equipArmor("ruestung_brustpanzer");
+            st.player.equipped.offhand = "laterne_dorf";
+            for (const n of ["stein_block", "stein_block", "trank_lebenssaft"]) r.addToInventory(n);
+            st.hotbar[2] = "stein_block";
+            r._ensureWorkshopState().studioOv[r.constructor.KOERPER_HOST_RECIPE] = { height: 1.12, hairColor: "kupfer" };
         }, MITGEBRACHT);
         const bootFehler = fehlerLog.length;
         if (bootFehler) console.log(`  (Heimat-Boot: ${bootFehler} Seiten-Fehler — ${fehlerLog[0]})`);
@@ -726,7 +804,7 @@ function ratscheVergleich(gemessen, bekannt) {
 }
 
 function drucke(e) {
-    const k = ["K1", "K2", "K3", "K4", "K5", "K6", "K7"].map((x) => (e.k[x] === undefined ? "·" : e.k[x] ? "✓" : "✗")).join(" ");
+    const k = ["K1", "K2", "K3", "K4", "K5", "K6", "K7", "K8"].map((x) => (e.k[x] === undefined ? "·" : e.k[x] ? "✓" : "✗")).join(" ");
     const hs = e.handshake ? ` ready ${e.handshake.readys} · enter ${e.handshake.enters}` : "";
     const ew = e.stumm === null ? "" : e.stumm ? " · Einzelwort STUMM" : " · Einzelwort wirkt";
     // Die Zeit je Welt und ihrer Schleusen (der CI-Schritt trägt sonst nur seine Summe).
@@ -739,6 +817,7 @@ async function selbsttest() {
     const { ergebnisse, fehlend, weg } = await lauf(welten, true);
     ergebnisse.forEach(drucke);
     const by = Object.fromEntries(ergebnisse.map((e) => [e.id, e]));
+    const ring = ergebnisse.filter((e) => e.weg);
     const ratsche = ratscheLesen();
     const stumm = ergebnisse.filter((e) => e.stumm).map((e) => e.id);
     const v = ratscheVergleich(stumm, ratsche.dslEinzelwort.welten.filter((w) => by[w]));
@@ -765,6 +844,11 @@ async function selbsttest() {
         ["K6 rot: der Neubau der garage zerstört das Sprite-Quad — die GPU verwirft den Submit", by.garage && by.garage.k.K6 === false && by.garage.notiz.some((n) => /while destroyed/.test(n)), by.garage ? by.garage.notiz.filter((n) => /GPU/.test(n)).join("") : ""],
         ["K1 rot: garage trägt ein manifest.json ohne Soll-Zeile", by.garage && by.garage.k.K1 === false && by.garage.notiz.some((n) => /ohne Soll-Zeile/.test(n)), by.garage ? by.garage.notiz.filter((n) => /Soll-Zeile/.test(n)).join("") : ""],
         ["Soll-Wand rot: ein Manifest im Baum, dessen Welt WELTEN nicht kennt (fluid ohne Zeile)", manifestOhneZeile(WELTEN.filter((w) => w.id !== "fluid")).join() === "fluid", ""],
+        [
+            "K8 rot: die Hülle lässt das Gehaltene fallen — jede Ring-Welt nur am Teil wield drüben",
+            ring.length >= 5 && ring.every((e) => e.notiz.filter((n) => TEILE.includes(n.split(" ")[0])).map((n) => n.slice(0, 13)).join() === "wield drueben"),
+            ring.map((e) => e.id).join(),
+        ],
     ];
     let ok = true;
     for (const [n, gut, d] of proben) {
@@ -777,9 +861,13 @@ async function selbsttest() {
 (async () => {
     if (process.argv.includes("--selftest")) process.exit((await selbsttest()) ? 0 : 1);
     const { ergebnisse } = await lauf(WELTEN, false);
-    console.log("Portal-Konformanz: K1 ready (+ Manifest gegen das Soll) · K2 endlich · K3 Quelle · K4 wirkt · K5 Esc · K6 fehlerfrei · K7 mitgebracht");
+    console.log("Portal-Konformanz: K1 ready (+ Manifest gegen das Soll) · K2 endlich · K3 Quelle · K4 wirkt · K5 Esc · K6 fehlerfrei · K7 mitgebracht · K8 getragen");
     ergebnisse.forEach(drucke);
     const rot = [];
+    // die Tafel des Abdrucks (Station tore.K3): je Ring-Welt der Weg und je Ort die Abdrücke
+    const ring = ergebnisse.filter((e) => e.weg);
+    console.log("K8 " + JSON.stringify(ring.map((e) => [e.id, e.weg, e.vor, e.drueben, e.nach, e.k.K5])));
+    if (ring.length < 10) rot.push("K8 vakuös");
     for (const e of ergebnisse) for (const [k, v] of Object.entries(e.k)) if (v === false) rot.push(`${e.id} ${k}`);
     for (const id of manifestOhneZeile(WELTEN)) rot.push(`${id} K1 — worlds/${id}/manifest.json ohne Soll-Zeile in WELTEN`);
     const ratsche = ratscheLesen();
@@ -803,7 +891,7 @@ async function selbsttest() {
         for (const x of rot) console.log(`❌ ${x}`);
         process.exit(1);
     }
-    console.log(`✅ gate:portal-konformanz: ${ergebnisse.length} Welten K1–K7 grün · Ratschen gehalten`);
+    console.log(`✅ gate:portal-konformanz: ${ergebnisse.length} Welten K1–K8 grün · Ratschen gehalten`);
     process.exit(0);
 })().catch((e) => {
     console.error("portal-konformanz-Fehler:", (e && e.stack) || e);

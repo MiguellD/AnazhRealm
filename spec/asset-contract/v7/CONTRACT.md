@@ -19,7 +19,7 @@ der Host bleibt der OFEN, die Labs liefern Parameter):
   [0,1]) · `fx.motion` (presets: je Profil endliche Zahlen/Zahl-Listen) ·
   s-Dials innerhalb der B4-Bänder · JSON-Klonbarkeit (die Taille).
 - **Selbst-Test:** injizierte Verletzungen (bpm 0 · dna 7 · String im
-  motion-Profil · korruptes Golden) werden erkannt — die Linse ist nicht vakuös.
+  motion-Profil · eine Transzendente beim Laden) werden erkannt — die Linse ist nicht vakuös.
 
 Konsumenten: `fx.klang` → `_klangStudioPreset`/`_lofiChordDurationMs`
 (Stamm, EIN Audio-System); `fx.motion` → benannter Andock-Punkt
@@ -60,4 +60,4 @@ der Gestalt). Wächter: gate:studio-vertrag, gate:kreatur-takt jagdkreis und rud
 `jagdKg 21,5 · wehrKg 200 · kolossKg 600`, `jagd.beuteMasse` 1,25 → 2,0. Ohne diese Felder byte-gleich (geprüft). Das
 Gemüt und die Beute lesen die EINE Masse des Leibs (Volumen der Gestalt × `MASSSTAB.dichteKgM3`, Wirt `_leibMasse`), die
 auch das Impuls-Gesetz liest; `temperamentDerGattung(dials, kg, gattung)`. Wächter: gate:studio-vertrag (die Dial-Masse
-kehrt nicht zurück), gate:kreatur-takt temperament (Täter `temperament-masse`), gate:kampf-gefuehl (kein `_kreaturMasse`).
+kehrt nicht zurück), gate:kreatur-takt temperament (Täter `temperament-masse`), gate:fahr-leben --koerper (die Masse folgt der EINEN Stoff-Zeile, physik K1).

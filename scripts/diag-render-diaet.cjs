@@ -56,11 +56,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
-        const res = { boot: false };
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return res;
-        res.boot = true;
+        const res = {};
+        const r = await window.__weltDa();
         const AR = r.constructor;
         // Foundry warm ziehen (Produktions-Boot) + den WALD bauen (Scatter-Zellen).
         const f = r._ensureAssetFoundry();
@@ -264,7 +261,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         } catch (e) {
             res.farbe = { err: String((e && e.message) || e) };
         }
-        // ── Q am Ruf (D3c): die EINE Slot-Farb-Naht in beiden Slot-Schreibern, der Merge-Pfad zieht
+        // ── Q am Ruf: die EINE Slot-Farb-Naht in beiden Slot-Schreibern, der Merge-Pfad zieht
         // das geteilte Material, der blockierte Pfad lässt es stehen (die Glüh-Antwort misst F am Slot)
         if (neu.probeFlat) {
             const zaehl = (k, fn) => {
@@ -335,7 +332,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     check("Q: die EINE Slot-Farb-Naht — beide Slot-Schreiber rufen _archSlotColor", out.nahtAdd === true && out.nahtScatter === true, `add=${out.nahtAdd} streu=${out.nahtScatter}`);
     check("Q: der Merge-Pfad (_mergeBlueprintByMaterial) zieht das geteilte Tag-Signatur-Material", out.mergeGeteilt === true);
     check("Q: die Dispose-Wand — der blockierte Pfad in _archFlattenBlueprint lässt das geteilte Material stehen", out.disposeWand === true);
-    check("Boot + Wald gebaut (Scatter-Zellen)", out.boot && out.cells > 40, `zellen=${out.cells}`);
+    check("Wald gebaut (Scatter-Zellen)", out.cells > 40, `zellen=${out.cells}`);
     if (out.alt) {
         check(
             "S (Selbst-Test): die Linse ERKENNT das alte Muster — 6 Farben = 6 Materialien (je Farbe eins)",

@@ -171,7 +171,7 @@ async function bootRealm(port) {
     await new Promise((r) => server.listen(port, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "null", frist: 240000 });
     const page = await browser.newPage();
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
@@ -182,7 +182,7 @@ async function bootRealm(port) {
     const close = async () => {
         try {
             await browser.close();
-        } catch (_e) {}
+        } catch {}
         server.close();
     };
     return { browser, page, server, pageErrors, close };
@@ -190,33 +190,32 @@ async function bootRealm(port) {
 
 // Auf den Worker + das Rezeptbuch warten (der Rezept-Reply ist
 // ein EIGENER Round-Trip nach ready — auf die WAHRHEIT warten, nicht den Timing-Zufall).
-async function waitFoundryReady(page, timeoutMs) {
-    return page.evaluate(async (tmo) => {
+async function waitFoundryReady(page) {
+    return page.evaluate(async () => {
         const r = window.anazhRealm;
         const out = { ready: false, recipeCount: 0, readyMs: -1 };
         const f = r._ensureAssetFoundry();
         if (!f) return out;
         const t0 = performance.now();
         await window.__weltDa(() => !(!f.ready));
-        out.ready = !!f.ready;
-        out.readyMs = f.ready ? Math.round(performance.now() - t0) : -1;
-        if (!f.ready) return out;
+        out.ready = true;
+        out.readyMs = Math.round(performance.now() - t0);
         await window.__weltDa(() => f.recipeCount > 0);
         out.recipeCount = f.recipeCount || 0;
         return out;
-    }, timeoutMs || 90000);
+    });
 }
 
 // Auf die WARME Bibliothek warten (der Prefetch-Fächer ist durch): _vorrat false +
 // Cache gefüllt. Liefert die Cache-Schlüssel (das Inventar der Gestalt-Reise).
-async function waitLibraryWarm(page, timeoutMs) {
-    return page.evaluate(async (tmo) => {
+async function waitLibraryWarm(page) {
+    return page.evaluate(async () => {
         const r = window.anazhRealm;
         const f = r._foundry;
         await window.__weltDa(() => f && f.cache && f.cache.size > 0 && f._vorrat === false);
         const keys = f && f.cache ? Array.from(f.cache.keys()) : [];
         return { warm: !!(f && f.cache && f.cache.size > 0 && f._vorrat === false), keys };
-    }, timeoutMs || 180000);
+    });
 }
 
 // Den Live-Reply-Serialisierer in die Seite pflanzen: `window.__packSer(preset,seed,lod)`

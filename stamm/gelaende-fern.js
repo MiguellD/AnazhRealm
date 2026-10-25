@@ -903,7 +903,7 @@ class AnazhRealm_gelaende_fern {
     }
 
     // DIE NÄSSE DER FERNE (K16, die Naht: dieselbe Höhe UND dasselbe Wasser aus EINEM Gesetz): ein Punkt mit der Gesetzes-
-    // Höhe `law` trägt die Form des Gewässers, die die Dichte des Chunks trägt (`_gewaesserForm`: Kanal, Damm, See-Becken),
+    // Höhe `law` trägt die Form des Gewässers, die die Dichte des Chunks trägt (gelaende-core `gewaesserForm`: Kanal, Damm, See-Becken),
     // und sein Spiegel ist die EINE Wasser-Wahrheit (`_atlasWaterLevelAt`: Meer und See; jenseits der Kacheln der
     // Meeresspiegel; vor der Hydrosphäre der Meeresspiegel `wl`). Schreibt `aus.y` (die Fläche) und `aus.spiegel`
     // (−Infinity = trocken) und liefert, ob der Punkt nass ist. Der FLUSS taucht keinen Punkt: sein Kanal (4–17 m) ist
@@ -917,7 +917,12 @@ class AnazhRealm_gelaende_fern {
             aus.spiegel = wl;
             return law < wl;
         }
-        const y = AnazhRealm._gewaesserForm(law, 0, this._hydrosphereCarveAt(x, z), this._hydrosphereLakeAt(x, z));
+        const y = globalThis.__gelaendeCore.gewaesserForm(
+            law,
+            0,
+            this._hydrosphereCarveAt(x, z),
+            this._hydrosphereLakeAt(x, z)
+        );
         aus.y = y;
         this._atlasWaterLevelAt(x, z, y, aus);
         aus.spiegel = aus.koerper;
@@ -925,11 +930,12 @@ class AnazhRealm_gelaende_fern {
     }
 
     // Der Blick des Wassers für den Ring-Stoff: eine ruhige Fläche (Normale nach oben) über tiefem Wasser (T = 0), im Licht
-    // der Welt (`_weltLicht`) und im Glanz des Wasser-Stoffs (`hydroSurfaceUniforms`). Ohne Wasser-Stoff bricht er laut.
+    // der Welt (`_weltLicht`) und im Glanz des Wasser-Stoffs (`hydroSurfaceUniforms`), sein Eis an der Säule des
+    // Fern-Wassers (`FAR_WATER.depth`, `_eisDeckung`). Ohne Wasser-Stoff bricht er laut.
     _fernWasserBlickNode(_T) {
         this._ensureHydroSurfaceMaterial();
         const U = this.state.hydroSurfaceUniforms;
-        if (!U || !U.sunCol || !U.sunDir || !U.light)
+        if (!U || !U.sunCol || !U.sunDir || !U.light || !U.eisNull || !U.eisVoll)
             throw new Error("Fern-Ring: der Blick des Wassers braucht den Wasser-Stoff (hydroSurfaceUniforms)");
         const WG =
             AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
@@ -943,6 +949,7 @@ class AnazhRealm_gelaende_fern {
             sunCol: U.sunCol,
             sunDir: U.sunDir,
             light: U.light,
+            eis: this._eisDeckung(_T, U, _T.positionWorld.y, _T.float(AnazhRealm.FAR_WATER.depth)),
         }).eigen;
     }
     // Der Wasser-Körper R∞ des Gesetzes für die CPU-Leser der Ferne (`_wasserKoerper`, EINE Formel mit dem Wasser-Stoff).

@@ -44,9 +44,7 @@ const server = statikServer();
         async (zeitArg, blickArg) => {
             const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
             const res = { schuesse: {} };
-            await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
-            const r = window.anazhRealm;
-            if (!r) return { fatal: "anazhRealm kam nie" };
+            const r = await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
             // Settle: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`, der Takt der Seite)
             await window.__weltStehtNach();
             const rend = r.state.renderer;
@@ -100,12 +98,12 @@ const server = statikServer();
             // Zeit setzen (Tag/Nacht) über die eine Zeit-Quelle, falls vorhanden.
             try {
                 if (zeitArg && r.state.world) r.state.world.timeOfDay = Number(zeitArg) / 24;
-            } catch (_e) {}
+            } catch {}
             // Ein paar echte Loop-Ticks, damit Uniforms/Streaming den Blick tragen.
             for (let i = 0; i < 20; i++) {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
                 await sleep(30);
             }
             res.schuesse.haupt = await schuss("haupt");
@@ -144,6 +142,6 @@ const server = statikServer();
     console.error("DIAG-FEHLER:", e);
     try {
         server.close();
-    } catch (_e) {}
+    } catch {}
     process.exit(1);
 });

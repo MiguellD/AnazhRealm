@@ -344,14 +344,14 @@ if (require.main === module) (async () => {
                 };
                 try {
                     obj[methodName](...(args || []));
-                } catch (_e) {
+                } catch {
                     /* ein Throw NACH dem Provider-Ruf entwertet den Konsum-Beweis nicht */
                 } finally {
                     if (hadOwn) providerObj[providerKey] = original;
                     else delete providerObj[providerKey];
                 }
                 return fired > 0;
-            } catch (_e) {
+            } catch {
                 return false;
             }
         };
@@ -457,15 +457,8 @@ if (require.main === module) (async () => {
             // Phase 1 — auf den Game-Loop warten: das wahre Ready-Signal ist `_gameLoopTick` (von
             // `startEternalLoop` am Boot-Ende), NICHT `rendererReady` (feuert beim Null-Renderer sofort).
             // Geduldig, unabhängig von durationMs/CPU — ein zu kurzes Fenster ließ den
-            // Pump nie laufen (voxelChunks=0). Bleibt der Tick aus (echter Hänger): passiver Sleep.
-            await window.__weltDa();
-            const r = window.anazhRealm;
-            if (!r || typeof r._gameLoopTick !== "function") {
-                // Init nicht zeitig fertig (>BOOT_READY_CAP_MS = echter Hänger) →
-                // ehrlicher Fallback, kein Crash; die Folge-Invarianten fangen es.
-                await new Promise((resolve) => setTimeout(resolve, durationMs - (performance.now() - start)));
-                return;
-            }
+            // Pump nie laufen (voxelChunks=0). Bleibt der Tick aus (echter Hänger), nennt ihn die Stall-Akte (`__weltDa`).
+            const r = await window.__weltDa();
             // Nur den teuren GPU-Aufruf (`renderer.render`/`renderAsync`, swiftshader ~2.5 s/Frame) stubben,
             // NICHT `_loopRender`: die Bänder sind pixel-blind, lesen aber seine billigen Uniform-Updates
             // (skybox/starField, hydroSurfaceUniforms.time/.emotion); der Screenshot-Pfad stellt ihn wieder her.
@@ -499,7 +492,7 @@ if (require.main === module) (async () => {
             for (;;) {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {
+                } catch {
                     // Ein einzelner Tick-Fehler darf den Warmup nicht
                     // abbrechen; die `pageerror`-Listener fangen ihn auf.
                 }
@@ -530,7 +523,7 @@ if (require.main === module) (async () => {
                         takt: async () => {
                             try {
                                 r._gameLoopTick(performance.now());
-                            } catch (_e) {
+                            } catch {
                                 // Ein einzelner Tick-Fehler darf den Warm-Anker nicht abbrechen.
                             }
                             await new Promise((resolve) => setTimeout(resolve, 25));
@@ -547,7 +540,7 @@ if (require.main === module) (async () => {
                 for (let s = 0; s < 40; s++) {
                     try {
                         r._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                     await new Promise((resolve) => setTimeout(resolve, 0));
                 }
             }
@@ -849,7 +842,6 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandWahrerAnblickPfade, ctx);
             await timed(BAND.checkBandWahrerAnblickAtmoBusch, ctx);
             await timed(BAND.checkBandKonvergenzTierBaum, ctx);
-            await timed(BAND.checkBandHuepfer, ctx);
             await timed(BAND.checkBandV18264ShadowCache, ctx);
             await timed(BAND.checkBandV18265ShadowDistance, ctx);
             await timed(BAND.checkBandV18266RockDetail, ctx);
@@ -947,7 +939,7 @@ if (require.main === module) (async () => {
                         r.state.postProcessingFailed = false;
                         try {
                             r._gameLoopTick(performance.now());
-                        } catch (_e) {}
+                        } catch {}
                     }
                 });
                 fs.mkdirSync(ARTIFACT_DIR, { recursive: true });

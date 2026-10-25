@@ -25,21 +25,24 @@
 //   K8  EINE BODEN-HÖHE JE ROLLE (Gelände H5, Lehre 22, Welt mit Foundry): an der Mess-Wiese und am 25°-Hang (der nächste
 //       trockene Hang 24–26° um sie) steht jeder Kontakt auf den gezeichneten Dreiecken (`__gezeichnet`), je Rolle 200, p95 ≤ 3 cm:
 //       der Fuß (der tiefste Vertex, den der Knöchel trägt, im Fuß-Lock des Gangs), der Huf (je Größen-Band das Reh im Stand je
-//       Bein, das schlechteste), das Rad
+//       Bein, das schlechteste; seine Sohle liegt dem Boden an, `_gaitSohlenKipp`), das Rad
 //       (der tiefste Vertex je Reifen des GT in Fahrt), der Fuß der Streu (jede Instanz im Stand, nach Gang und Fahrt); die
 //       Feinform (Mesh gegen `_voxelSurfaceY`) ≤ 5 cm. Über dem Soll hält die Ratsche spec/profiband/ratsche-boden-rolle.json
 //   --selftest: je Defekt trägt die Welt den Leser vor seiner Heilung als Laufzeit-Stub (`taeter`) — GENAU
-//   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext (D3c).
+//   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";
 const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
-const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
+const { WELT_ORTE_INSTALL, messort } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
 const SELBST = process.argv.includes("--selftest");
 const NUR_K8 = process.argv.includes("--k8"); // nur K8 (die Welt mit Foundry)
+// `--bild`: die Welt zeichnet über die Weiche (Rezept `linse`), ohne den Null-Renderer — die Station eines Geräts (gelaende.K5)
+const BILD = process.argv.includes("--bild");
+const DORF_ZUG = messort("wiese").dorfZug;
 const K8_UMFANG = 200; // Kontakte je Ort × Rolle
 
 // DIE KARTE DES EIGNERS (das gezeichnete Mesh des Chunks, bilinear, null an einer leeren Ecke): seit K21 liest das Spiel nur
@@ -186,6 +189,8 @@ function taeter(inj) {
             return out;
         };
     }
+    // sohle (K8): die Sohle der Pfote kippt nicht mit dem Boden unter ihr (vor K8 huf hielt sie die Lage des Rumpfs)
+    if (inj === "sohle") r._gaitSohlenKipp = (...a) => (a[4] ? { laengs: 0, quer: 0 } : P._gaitSohlenKipp.apply(r, a));
 }
 
 const server = statikServer({ root: ROOT });
@@ -208,7 +213,7 @@ async function proben(mitWiese, umfang) {
     const takt = () => {
         try {
             r._gameLoopTick(performance.now());
-        } catch (_e) {}
+        } catch {}
     };
     const rig = pm && pm.userData && pm.userData.rig;
     if (!rig || !rig.hips) return { fehler: "Spieler-Rig fehlt" };
@@ -597,7 +602,7 @@ async function proben(mitWiese, umfang) {
             r.damageCreature(c, 1e6, {});
             const dy = c.userData.dying;
             if (dy) {
-                const nKipp = Math.ceil((dy.dauer + 0.05) / 0.02);
+                const nKipp = Math.ceil((dy.dauer + A.TOD_LAGE.vorlaufSec + 0.05) / 0.02);
                 let wegMin = Infinity;
                 let wegMax = -Infinity;
                 for (let k = 0; k < nKipp; k++) {
@@ -819,7 +824,7 @@ async function rollen(n) {
     const takt = () => {
         try {
             r._gameLoopTick((uhr += 1000 / 60));
-        } catch (_e) {}
+        } catch {}
     };
     const cm = (a, f) => {
         const b = a.slice().sort((x, y) => x - y);
@@ -1076,7 +1081,7 @@ const K8_ROLLEN = Object.freeze({
     fein: [5, "die Feinform des Meshs gegen das Gesetz (das Surface-Nets-Mesh des Workers)"],
     streu: [3, "der Fuß der Streu (_streuFuss: der gezeichnete Boden, dem Auge nach)"],
     fuss: [3, "der Fuß des Spielers (die Sohle des Leibs gegen _gaitBodenY)"],
-    huf: [3, "der Huf (_kreaturFussBoden)"],
+    huf: [3, "der Huf (_kreaturFussBoden, seine Sohle _gaitSohlenKipp)"],
     rad: [3, "das Rad (_archRadMatrix: der Reifen auf _standSicht)"],
 });
 // DIE RATSCHE (spec/profiband/ratsche-boden-rolle.json, Ort × Rolle p95 cm am Kopf): eine Rolle über ihrem Soll darf nicht
@@ -1137,10 +1142,10 @@ function zeile(o) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "null", frist: 900000 });
+    const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
     let rot = 0;
     try {
-        // `k8`: die Welt mit Foundry (Streu, Reh und GT tragen Studio-Gestalten), sie misst nur K8
+        // `k8`: sie misst nur K8 (Streu, Reh und GT tragen Studio-Gestalten der Foundry)
         const lauf = async (inj, k8) => {
             // je Lauf ein eigener Browser-Kontext: kein Speicherstand (Save, IndexedDB) des Vorlaufs reist in die nächste
             // Welt (ein gespeichertes Dorf stünde sonst unter dem neu gegründeten)
@@ -1149,7 +1154,11 @@ function zeile(o) {
             page.setDefaultTimeout(880000);
             const errs = [];
             page.on("pageerror", (e) => errs.push((e.message || String(e)).split("\n")[0]));
-            await nullRenderer(page, { foundry: k8 === true });
+            if (!BILD) await nullRenderer(page);
+            // die Mess-Wiese in IHREM Zustand (spec/profiband/haushalt.json `dorfZug`): ruht dort der Zug, wächst kein Auto-Dorf an
+            // Wiese und Hang — headless ruht er ohnehin (`_dorfTaktLebt`), auf der Karte lief er, und der 25°-Hang stand unter den
+            // Terrassen des Dorfs (Radeon: Feinform p95 21,1 statt 4,3 cm)
+            if (DORF_ZUG === false) await page.evaluateOnNewDocument(() => (window.__anazhAutoSettlement = false));
             await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
             await page.evaluateOnNewDocument(`window.__eignerKarte = ${eignerKarte.toString()};`);
             await page.evaluateOnNewDocument(`window.__gezeichnet = ${gezeichnet.toString()};`);
@@ -1161,7 +1170,7 @@ function zeile(o) {
                 window.__weltStehtNach(() => {
                     try {
                         window.anazhRealm._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                 })
             );
             const o = k8
@@ -1181,10 +1190,12 @@ function zeile(o) {
                 rand: ["K6 Leser im Rand-Streifen"],
                 wiese: ["K7 Wiese im Rand-Streifen", "K7 Streu im Rand-Streifen"],
                 rolle: ["K8 streu wiese", "K8 streu hang", "K8 huf hang", "K8 rad hang"],
+                sohle: ["K8 huf hang"],
             };
             for (const inj of Object.keys(soll)) {
-                const { o } = await lauf(inj, inj === "rolle");
-                const f = inj === "rolle" ? urteilK8(o, K8_UMFANG) : urteil(o);
+                const k8 = soll[inj][0].startsWith("K8");
+                const { o } = await lauf(inj, k8);
+                const f = k8 ? urteilK8(o, K8_UMFANG) : urteil(o);
                 const fehlt = soll[inj].filter((x) => !f.some((y) => y.startsWith(x)));
                 const ok = fehlt.length === 0;
                 const beleg = soll[inj].map((x) => f.find((y) => y.startsWith(x)) || `${x}: grün (blind!)`).join(" | ");

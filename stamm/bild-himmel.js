@@ -879,10 +879,14 @@ class AnazhRealm_bild_himmel {
         const pixelM = tiefe.mul(2).div(uProj.mul(T.viewportSize.y));
         const breiteM = pixelM.mul(RG.minPixel).max(RG.breite);
         const rand = T.length(T.vec2(x, z)).div(R[0] * 0.5);
+        // DER REGEN FÄLLT NICHT UNTER DEM DACH: die Schliere am Welt-Ort ihrer Mitte (der Kasten folgt dem Auge) liest die EINE
+        // Himmels-Sicht des Dach-Pools (`_offenerHimmel`), dieselbe, die den Boden darunter trocken hält
+        const himmel = this._offenerHimmel(T, T.modelWorldMatrix.mul(T.vec4(x, y, z, 1)).xyz);
         const blende = T.varying(
             T.min(T.float(RG.breite).div(breiteM), 1)
                 .mul(T.smoothstep(0.4, 2.0, tiefe))
                 .mul(T.float(1).sub(T.smoothstep(0.7, 1.0, rand)))
+                .mul(himmel)
         );
         const mat = new THREE.PointsNodeMaterial({ color: RG.farbe, transparent: true, depthWrite: false, opacity: 0 });
         mat.positionNode = T.vec3(x, y, z);
@@ -931,8 +935,9 @@ class AnazhRealm_bild_himmel {
         // Die Uhr der Schlieren: die Bild-Uhr (s, A9), auf eine Stunde gefaltet (float-Genauigkeit im Vertex).
         const t = this._bildZeit % 3600;
         sys.uZeit.value = t;
-        const wd = this._windDirAt(t);
-        const v = RG.drift * Math.max(wf.wind, 0.1);
+        // Die Drift ist der EINE Wind am Auge (`_windAt` auf der Bild-Uhr), mindestens 0,1 wie im Labor (REGEN_GESETZ.drift).
+        const wd = cam ? this._windAt(cam.position.x, cam.position.z, this._bildZeit) : { x: 0, z: 0, staerke: 0 };
+        const v = RG.drift * Math.max(wd.staerke, 0.1);
         sys.uDrift.value.set(wd.x * v, wd.z * v);
         // Die Neigung im Bild: der Drift-Anteil quer zur Blickrichtung gegen das Fallen (Bild-Rechts = Spalte 0 der Kamera).
         if (cam) {
@@ -2531,10 +2536,19 @@ class AnazhRealm_bild_himmel {
             if (uniforms.sunDir) uniforms.sunDir.value.copy(lightDir);
             if (uniforms.light) uniforms.light.value = lightVal;
             if (uniforms.sunCol) uniforms.sunCol.value.copy(dl.color);
-            // Der Wind des Wetters (0 ruhig … 1 Sturm): die Böen-Amplitude der Welt ohne ihren Verstärker.
-            const wu = this.state.windUniforms;
-            if (uniforms.wind && wu && wu.uWindStrength)
-                uniforms.wind.value = Math.max(0, Math.min(1, wu.uWindStrength.value / AnazhRealm.WEATHER_WIND_AMP));
+            // Der Wind am Wasser (0 ruhig … 1 Sturm): der EINE Wind am Auge (`_windAt`, die Stärke ohne Verstärker) kräuselt es.
+            const cam = this.state.camera;
+            if (uniforms.wind && cam)
+                uniforms.wind.value = Math.max(
+                    0,
+                    Math.min(1, this._windAt(cam.position.x, cam.position.z, this._bildZeit).staerke)
+                );
+            // DAS EIS (stoffe.K3): die Linien des Gesetzes je Knoten der Säule (`_eisLinien`) — dieselben, die den Körper tragen
+            if (uniforms.eisNull) {
+                const E = this._eisLinien();
+                uniforms.eisNull.value.fromArray(E.null);
+                uniforms.eisVoll.value.fromArray(E.voll);
+            }
         };
         applyToTSL(this.state.hydroSurfaceUniforms);
     }
@@ -2685,6 +2699,11 @@ class AnazhRealm_bild_himmel {
         }
         // ein Schreiber außer dem Gang springt: der Himmel malt sich beim nächsten Anwenden des Tags neu (`_ensureSkyEnvironment`)
         if (quelle !== "uhr" && v !== this.state.timeOfDay) this._himmelSprung = true;
+        // DER TAG DER WELT (feld.K4, `_weltStunde`): kreuzt die Uhr Mitternacht (der kürzere Bogen), zählt der Tag vor oder
+        // zurück; das Laden setzt nur die Uhr — der Tag reist im worldMeta
+        const d = v - this.state.timeOfDay;
+        const wm = this.state.worldMeta;
+        if (quelle !== "laden" && wm && Math.abs(d) > 0.5) wm.tag = (wm.tag || 0) + (d < 0 ? 1 : -1);
         this.state.timeOfDay = v;
         return true;
     }
@@ -2776,11 +2795,111 @@ class AnazhRealm_bild_himmel {
         return { fog: f.fog, sun: f.sun, grey: f.grey, wind: f.wind, rain: f.rain };
     }
 
+    // DAS WETTER AM ORT (wetter.K1): das Wort der Front über (x, z) — der Kern (phyto-core `wetterAt` über die Saat der Welt,
+    // den Ort und die Zeit, ohne `t` die Wetter-Uhr `worldMeta.wetterUhr`) wählt die Zeile von WX_GESETZ, die Welt spricht ihr
+    // Wort (`WETTER_WORT`). Leser: der Wetter-Zug (`_loopWeatherAndGrowth`).
+    _wetterAmOrt(x, z, t) {
+        const wm = this.state.worldMeta || {};
+        const uhr = t == null ? Number(wm.wetterUhr) || 0 : t;
+        const zeile = globalThis.__phytoCore.wetterAt(wm.seed || "anazh-realm-seed", x, z, uhr).zeile;
+        const wort = AnazhRealm.WETTER_WORT[zeile];
+        if (!wort) throw new Error("_wetterAmOrt: die Zeile „" + zeile + "“ hat kein Wort der Welt (WETTER_ZEILE)");
+        return wort;
+    }
+
     // D5a (V18.128) — die wet-Frage: regnet es hier (rainy UND stormy)?
     // Ersetzt die binären ===\"rainy\"-Leser (Journal/Nexus/Spawn-Stimmung).
     _weatherIsWet(w) {
         const word = typeof w === "string" ? w : this.state.weather;
         return (AnazhRealm.WEATHER_INTENSITY[word] || 0) >= 1;
+    }
+
+    // DIE TEMPERATUR AN DER HÖHE y (stoffe.K3) — die EINE Naht zum Feld des Gelände-Kerns: `_temperaturFeld` das Feld in
+    // Wellen (`temperaturFeld`; `traegTage` die Wärme-Trägheit eines Körpers), `_temperaturAt` sein Wert zur Saison
+    // (`seasonPhase`) und Uhr (`timeOfDay`) der Welt. Leser: das Eis (`_eisLinien`) und die Grillen (`_umweltLage`).
+    _temperaturFeld(y, traegTage) {
+        return globalThis.__gelaendeCore.temperaturFeld(this._gelaende(), y, traegTage);
+    }
+    _temperaturAt(y, traegTage) {
+        const st = this.state;
+        return globalThis.__gelaendeCore.temperaturAus(
+            this._temperaturFeld(y, traegTage),
+            st.seasonPhase,
+            st.timeOfDay
+        );
+    }
+
+    // DIE LINIEN DES EISES (stoffe.K3): das Gesetz des Kerns (`eisDicke` auf dem Feld dieser Naht) je Knoten der Säule
+    // (`EIS.saeule` logarithmisch: 0,1 · 0,67 · 4,5 · 30 m) als zwei Höhen — `null`, über der das Eis beginnt, und `voll`,
+    // über der es trägt (`EIS.traegt`). Das Eis wächst mit der Höhe (kälter) und schwindet mit der Säule (träger): je Säule
+    // ist jede Linie EINE Höhe (Halbierung auf 1 cm zwischen 10 m unter und 1 km über dem Meer, an den Enden geklemmt).
+    // `traegtAb` ist die tiefste tragende Höhe der Welt (die flachste Säule; Infinity: nirgends) — der billige Beweis jedes
+    // Lesers. Gerechnet je Welt-STUNDE der Saison (das Eis wächst in ~6 Tagen vom ersten zum tragenden; eine Stunde trägt
+    // unter 1 mm), je Feld (die Naht), Meer und Stoff (`_wasserStoff`: ρ, c, T_schmelz des Wassers, ρ, L, k des Eises) — nie je Bild;
+    // Bild und Körper lesen dieselbe Stunde. Der Leser zahlt sieben Vergleiche, solange Saison und Stoff stehen.
+    _eisLinien() {
+        const st = this.state;
+        const c = this._eisLinienStand;
+        const W = this._stoff("wasser");
+        const E = this._stoff("eis");
+        const gleich =
+            c &&
+            c.rho === W.rho &&
+            c.c === W.c &&
+            c.tSchmelz === W.tSchmelz &&
+            c.eisRho === E.rho &&
+            c.eisL === E.L &&
+            c.eisK === E.k;
+        if (gleich && c.phase === st.seasonPhase && c.feld === this._temperaturFeld && c.wasser === st.waterLevel)
+            return c;
+        const K = globalThis.__gelaendeCore;
+        const L = this._gelaende();
+        const stunden = K.TEMPERATUR.jahrTage * 24;
+        const saison = Math.floor(st.seasonPhase * stunden) / stunden;
+        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - K.GRUND.meerUnterBasis;
+        if (gleich && c.saison === saison && c.feld === this._temperaturFeld && c.wl === wl)
+            return Object.assign(c, { phase: st.seasonPhase, wasser: st.waterLevel });
+        const S = K.EIS.saeule;
+        const stoff = this._wasserStoff();
+        const [unten, oben] = [wl - 10, wl + 1000];
+        const linie = (tiefe, soll) => {
+            const dicke = (y) => K.eisDicke(L, y, saison, tiefe, (tr) => this._temperaturFeld(y, tr), stoff);
+            let [lo, hi] = [unten, oben];
+            if (dicke(lo) >= soll) return lo;
+            if (!(dicke(hi) >= soll)) return hi;
+            while (hi - lo > 0.01) {
+                const m = (lo + hi) / 2;
+                if (dicke(m) >= soll) hi = m;
+                else lo = m;
+            }
+            return hi;
+        };
+        const knoten = [0, 1, 2, 3].map((i) => S[0] * (S[1] / S[0]) ** (i / 3));
+        const voll = knoten.map((d) => linie(d, K.EIS.traegt));
+        return (this._eisLinienStand = {
+            phase: st.seasonPhase,
+            wasser: st.waterLevel,
+            saison,
+            feld: this._temperaturFeld,
+            wl,
+            rho: W.rho,
+            c: W.c,
+            tSchmelz: W.tSchmelz,
+            eisRho: E.rho,
+            eisL: E.L,
+            eisK: E.k,
+            null: knoten.map((d) => linie(d, 1e-3)),
+            voll,
+            traegtAb: voll[0] < oben ? voll[0] : Infinity,
+        });
+    }
+
+    // DER STOFF DES WASSERS (stoffe.K1 × K3): die Zeilen wasser und eis der Stoff-Tafel (`_stoff`) — ρ·c der Säule, T_schmelz
+    // und ρ, L, k des Eises sind die Zahlen, mit denen der Kern den Wasserkörper und sein Eis rechnet (`wasserKoerper`,
+    // `eisDicke`); dieselbe Eis-Zeile, die der Schritt-Klang und der gleitende Leib lesen. Leser: die Linien des Eises
+    // (`_eisLinien`) und die Linse des Meers.
+    _wasserStoff() {
+        return { wasser: this._stoff("wasser"), eis: this._stoff("eis") };
     }
 
     // DIE NÄSSE (wetter.K2) — EIN Zustand der Welt aus dem Wetter-Feld (`state.naesse`, 0 trocken … 1 nass): Regen benetzt

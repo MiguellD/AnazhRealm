@@ -195,27 +195,15 @@ class AnazhRealm_werkstatt_vorschau {
         const canvas = document.getElementById("workshop-preview-canvas");
         if (!canvas) return null;
 
-        const size = 320;
-        canvas.width = size;
-        canvas.height = size;
-        let renderer;
-        try {
-            // Derselbe WebGPURenderer wie die Haupt-Welt (eigenes Canvas, async init() + rendererReady-Gate):
-            // _buildFromBlueprint baut NodeMaterials, die NUR auf WebGPURenderer rendern — WebGL bliebe leer.
-            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, ...this._rendererGeraet() });
-        } catch (err) {
-            this.log(
-                `Workshop-Preview: WebGPU-Renderer fehlgeschlagen (${err && err.message}) — Preview deaktiviert`,
-                "ERROR"
-            );
-            return null;
-        }
-        // Stencil global aus (wie die Haupt-Welt, V10.0-j.b) — verhindert den
-        // WebGPU-stencilLoadOp-CommandEncoder-Crash bei Pure-Depth-Pässen.
-        renderer.stencil = false;
-        renderer.setSize(size, size, false);
-        renderer.setPixelRatio(window.devicePixelRatio || 1);
-        renderer.setClearColor(0x1a140a, 1);
+        // Derselbe WebGPURenderer wie die Haupt-Welt (eigenes Canvas, async init() + rendererReady-Gate):
+        // _buildFromBlueprint baut NodeMaterials, die NUR auf WebGPURenderer rendern — WebGL bliebe leer. Das init()
+        // gibt das Gate frei und zeichnet das erste Frame, sobald die GPU steht.
+        const renderer = this._buehneRenderer(canvas, 320, 320, 0x1a140a, "Workshop-Preview", () => {
+            preview.rendererReady = true;
+            preview.dirty = true;
+            if (preview.active) this._workshopRender();
+        });
+        if (!renderer) return null;
 
         const scene = new THREE.Scene();
         const amb = new THREE.AmbientLight(0xffffff, 0.55);
@@ -280,25 +268,6 @@ class AnazhRealm_werkstatt_vorschau {
             resizeObserver: null,
         };
         ws.preview = preview;
-        // WebGPU-Init async (wie die Haupt-Welt in init()): das Gate hält _workshopRender bis ready ruhig
-        // und rendert das erste Frame, sobald die GPU steht.
-        try {
-            renderer
-                .init()
-                .then(() => {
-                    preview.rendererReady = true;
-                    preview.dirty = true;
-                    if (preview.active) this._workshopRender();
-                })
-                .catch((err) => {
-                    this.log(
-                        `Workshop-Preview: WebGPU init() scheiterte (${err && err.message}) — Preview bleibt leer.`,
-                        "ERROR"
-                    );
-                });
-        } catch (err) {
-            this.log(`Workshop-Preview: init()-Start scheiterte (${err && err.message}).`, "ERROR");
-        }
         this._workshopInstallPreviewListeners();
         this._workshopBuildGizmo();
         this._workshopInstallUIListeners();
@@ -556,7 +525,8 @@ class AnazhRealm_werkstatt_vorschau {
     // _edgeContinuity), kein erfundener Richter. STEHENDES Werk → Standfestigkeit, GEHALTENES →
     // Schwung + Schneide; jedes → Lastpfad (ein schwebendes Teil ist immer falsch).
     // Bau-/Edit-Zeit gerechnet und gecacht — der RAF-Tick liest nur den Cache.
-    _workshopPhysicsVerdict(bp) {
+    // `boden`: der Grund im Plan (Werkstatt und Setzen: y = 0; nach einem Fall sein tiefstes Teil, `_werkGesetzSetzen`).
+    _workshopPhysicsVerdict(bp, boden = 0) {
         const out = { lean: 0, leanDir: { x: 0, z: 0 }, floatingParts: [], buckles: false, swingDrag: 0, lines: [] };
         if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return out;
         const role = (typeof this._displayRole === "function" && this._displayRole(bp)) || bp.role || "";
@@ -568,8 +538,9 @@ class AnazhRealm_werkstatt_vorschau {
             role === "soul" ||
             role === "portal";
         const wielded = role === "held" || role === "weapon" || role === "tool" || role === "brecher";
-        // Ω-Φ5 Lastpfad — universell (ein schwebendes Teil trägt nichts, egal die Rolle).
-        const lp = this._loadPath(bp);
+        // Ω-Φ5 Lastpfad — universell (ein schwebendes Teil trägt nichts, egal die Rolle); was steht, steht auf dem Grund des
+        // Plans (y = 0, das Gitter und der Boden der Welt), was man hält, hängt am eigenen Zusammenhalt.
+        const lp = this._loadPath(bp, standing ? boden : undefined);
         out.floatingParts = Array.isArray(lp.floatingParts) ? lp.floatingParts.slice() : [];
         if (out.floatingParts.length) {
             out.lines.push({
@@ -579,7 +550,7 @@ class AnazhRealm_werkstatt_vorschau {
         }
         // Ω-Φ2 Stabilität — für STEHENDE Werke (kippt → wankt). Ein Schwert „kippt" nicht.
         if (standing) {
-            const stab = this._stability(bp);
+            const stab = this._stability(bp, boden);
             if (!stab.inside) {
                 out.lean = 1;
                 out.lines.push({ sev: "warn", text: "kippt — der Schwerpunkt liegt außerhalb der Standfläche" });
@@ -590,7 +561,7 @@ class AnazhRealm_werkstatt_vorschau {
                 out.lines.push({ sev: "ok", text: "steht — der Schwerpunkt sitzt sicher über der Standfläche" });
             }
             // Kipp-Richtung: vom Stützpolygon-Schwerpunkt zum CoM.xz (dorthin überhängt das Gewicht).
-            const poly = this._supportPolygon(bp);
+            const poly = this._supportPolygon(bp, boden);
             if (poly && poly.hull && poly.hull.length && stab.com) {
                 let cx = 0,
                     cz = 0;
@@ -1359,6 +1330,33 @@ class AnazhRealm_werkstatt_vorschau {
         // `_buehneRender` laut beim Namen.
         if (!p.rendererReady) return;
         this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");
+    }
+
+    // DIE WAHL JEDES NEBEN-RENDERERS (Werkstatt-Vorschau, Feed-, Hof-, Ich-Bühne): dieselbe EINE Frage wie die Welt
+    // (`_nullRendererGewaehlt`) — unter dem Null-Renderer zeichnet die Seite nichts, auch keine Bühne. Bis 25.10. baute jede
+    // Bühne ihren WebGPURenderer selbst: in der Werkstatt-Weg-Linse (Null-Renderer, swiftshader) kompilierte jede Vorschau
+    // 10–70 s im GPU-Prozess, der Compositor stand, rAF und jede Animation froren, das Warten der Linse riss (0 von 4
+    // Läufen unter Last grün). Stencil aus wie die Haupt-Welt (V10.0-j.b: kein Pure-Depth-stencilLoadOp-Crash); `bereit`
+    // folgt dem init() (das Gate der Bühne); null, wenn der Renderer nicht entsteht.
+    _buehneRenderer(canvas, w, h, klar, wer, bereit) {
+        let renderer;
+        try {
+            renderer = this._nullRendererGewaehlt()
+                ? this._makeHeadlessRenderer(canvas)
+                : new THREE.WebGPURenderer({ canvas, antialias: true, ...this._rendererGeraet() });
+            renderer.stencil = false;
+            renderer.setSize(w, h, false);
+            renderer.setPixelRatio(window.devicePixelRatio || 1);
+            renderer.setClearColor(klar, 1);
+            renderer
+                .init()
+                .then(bereit)
+                .catch((err) => this.log(`${wer} init: ${err && err.message}`, "ERROR"));
+        } catch (err) {
+            this.log(`${wer}: WebGPU-Renderer fehlgeschlagen (${err && err.message})`, "ERROR");
+            return null;
+        }
+        return renderer;
     }
 
     // DIE BÜHNE ZEIGT IHR WERK GANZ (Welle L, Befund V-D3): ein Neben-Renderer (Werkstatt-Vorschau, Feed-, Hof-,

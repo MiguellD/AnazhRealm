@@ -125,5 +125,5 @@ MAJOR ist teuer (ein Zeitalter), MINOR ist die Welle (18.546 → 18.547). Pro We
 thematischer Commit — **die Commit-Message IST der Chronik-Eintrag** (git log = die Chronik).
 PATCH ist ein Fix INNERHALB einer Welle — nie eine Konstante, nie ein Stempel (September 2026:
 586 Patch-Versionen für Lab-Literal-Hebungen in 2 Sammel-Commits = die Narbe). Alle Träger
-setzt EIN Befehl: `npm run bump -- x.y.z` (`--check` meldet Drift).
+setzt EIN Befehl: `npm run bump -- x.y.z` (mit dem Korpus-Stand der Stufe; Drift meldet `gate:altlasten`).
 Eine dauerhafte Lehre → eine Zeile im Skill der Lehren, nie Epen.

@@ -9,7 +9,7 @@ async function checkBandW17Multiplayer(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### W17 Phase B-Relay — das Mesh-als-Server ###
+    // ### das Mesh-als-Server ###
     // Ein `ws-send` der fremden Welt wird ein subworld-net-Broadcast, jeder Peer im selben Sub-Welt-Raum
     // stellt ihn in sein iframe zu. Geprüft: Broadcast, Kanal-Verfolgung, Sub-Raum-Eingrenzung,
     // Rate-Limit + Deckel; Zwei-Browser-Durchlauf: smoke-webrtc.cjs.
@@ -246,7 +246,7 @@ async function checkBandW17Multiplayer(ctx) {
         );
     }
 
-    // ### W17 Phase B-JS-Compute — der Compute-Host ###
+    // ### der Compute-Host ###
     // Welten mit autoritativer Server-JS: ein Peer wird Compute-Host (Server-JS in einem verborgenen,
     // sandgesicherten iframe), Gäste routen an ihn (subworld-srv), Antworten kommen gezielt zurück
     // (subworld-cli). Geprüft: Routing-Methoden; Zwei-Browser-Durchlauf: smoke-webrtc.
@@ -544,7 +544,7 @@ async function checkBandW17Multiplayer(ctx) {
         check("W17 JS: serverMode überlebt den buildStateSnapshot-Rundlauf", w17jsResults.snapshotKeepsServerMode);
     }
 
-    // ### W17 Phase B-JS-Compute Phase 2 — Host-Migration ###
+    // ### Host-Migration ###
     // Verlässt der Compute-Host das Mesh, wählt jeder Gast aus dem zuletzt annoncierten Roster
     // deterministisch denselben Nachfolger (kleinste peerId); der baut einen frischen Server-Kontext.
     const w17mResults = await safeEvaluate(page, () => {
@@ -721,7 +721,7 @@ async function checkBandW17Multiplayer(ctx) {
         );
     }
 
-    // ### W17 Phase C — das Gruppen-Portal ###
+    // ### das Gruppen-Portal ###
     // Wer ein Multiplayer-Portal betritt, broadcastet portal-invite; Mitspieler bekommen „mitkommen?“,
     // „Ja“ holt + betritt das Portal.
     const w17cResults = await safeEvaluate(page, () => {
@@ -897,7 +897,7 @@ async function checkBandW17Multiplayer(ctx) {
         check("W17 C: portal-invite ist kanal-zustellbar (ALLOWED-Whitelist)", w17cResults.channelDeliverable);
     }
 
-    // ### W17 — die Multiplayer-Welt-Deklaration ###
+    // ### die Multiplayer-Welt-Deklaration ###
     // Die Multiplayer-Marke fließt durch _sanitizeImportedManifest, _vendorRegisterWorld, den
     // Welt-Katalog und aimBlueprintAtWorld → obtainPortalForWorld baut ein einladendes Multiplayer-Portal.
     const w17mpResults = await safeEvaluate(page, () => {
@@ -1006,7 +1006,7 @@ async function checkBandW17Multiplayer(ctx) {
         check("W17 MP: eine Single-Welt bekommt KEINE Multiplayer-Marke", w17mpResults.libraryNoMarkForSingle);
     }
 
-    // ### W17 P-Vendor — die serverMode-Vendor-Ketten-Naht ###
+    // ### die serverMode-Vendor-Ketten-Naht ###
     // serverMode fließt durch _sanitizeImportedManifest, _vendorRegisterWorld, _p2pBuildCatalog/-Sanitize
     // und den Welt-Katalog — sonst verlöre eine vendorte js-compute-Welt still ihren serverMode (→ relay).
     const w17svResults = await safeEvaluate(page, () => {
@@ -1114,7 +1114,7 @@ async function checkBandW12WorldPortal(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### W12 Phase 1 Commit 1 — Welt-Portal: Rolle + Built-in welt_portal ###
+    // ### Welt-Portal: Rolle + Built-in welt_portal ###
     const w12c1Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1277,7 +1277,7 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P1: Welt-Portal Commit 1 Tests laufen", false, w12c1Results ? w12c1Results.error : "no result");
     }
 
-    // ### W12 Phase 1 Commit 2 — Skelett-Welt + iframe-Overlay + CSP ###
+    // ### Skelett-Welt + iframe-Overlay + CSP ###
     const w12c2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1328,7 +1328,7 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P1 C2: Skelett-Welt Commit 2 Tests laufen", false, w12c2Results ? w12c2Results.error : "no result");
     }
 
-    // ### W12 Phase 1 Commit 3 — Betreten / Pause / Rückkehr ###
+    // ### Betreten / Pause / Rückkehr ###
     const w12c3Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1427,7 +1427,7 @@ async function checkBandW12WorldPortal(ctx) {
         );
     }
 
-    // ### W12 Phase 2 Commit 1 — Strom-Welt (three-fluid-fx) ###
+    // ### Strom-Welt (three-fluid-fx) ###
     const w12p2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1470,7 +1470,7 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P2 C1: Strom-Welt Tests laufen", false, w12p2Results ? w12p2Results.error : "no result");
     }
 
-    // ### W12 Phase 2 Commit 2 — DSL-Brücke (das Protokoll) ###
+    // ### DSL-Brücke (das Protokoll) ###
     const w12bridgeResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1559,7 +1559,7 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P2 C2: DSL-Brücke Tests laufen", false, w12bridgeResults ? w12bridgeResults.error : "no result");
     }
 
-    // ### W12 Phase 2 — zweite fremde Welt (dritte Gestalt: Phytogenesis & Lithos) ###
+    // ### zweite fremde Welt (dritte Gestalt: Phytogenesis & Lithos) ###
     const w12terrainResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1610,7 +1610,7 @@ async function checkBandW12WorldPortal(ctx) {
         );
     }
 
-    // ### W12 Phase 2 — Welt-Registry + Portal-Zielen ###
+    // ### Welt-Registry + Portal-Zielen ###
     const w12registryResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1690,7 +1690,7 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P2: Welt-Registry Tests laufen", false, w12registryResults ? w12registryResults.error : "no result");
     }
 
-    // ### W12 Phase 2 — Portal-Größe emergiert aus der Avatar-Größe ###
+    // ### Portal-Größe emergiert aus der Avatar-Größe ###
     const w12portalSizeResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1737,7 +1737,7 @@ async function checkBandW12WorldPortal(ctx) {
         );
     }
 
-    // ### W12 Phase 2 — Umwidmen: Portal-Geste erreichbar + umwidmbar ###
+    // ### Umwidmen: Portal-Geste erreichbar + umwidmbar ###
     // Das Umwidmen lebt in der WERKSTATT-Mach-Zone: geprüft werden die Werkstatt-Reihe des gewählten
     // Bauplans + der ✨-Emergent-Reset.
     const w12markResults = await safeEvaluate(page, () => {
@@ -1797,7 +1797,7 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P2: Markier-Sektion Tests laufen", false, w12markResults ? w12markResults.error : "no result");
     }
 
-    // ### W12 Phase 3 — Teil A: Ereignisse zurück (Sub-Welt → Journal) ###
+    // ### Teil A: Ereignisse zurück (Sub-Welt → Journal) ###
     const w12p3aResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
@@ -1834,7 +1834,7 @@ async function checkBandW12WorldPortal(ctx) {
         });
         out.onMessageDispatches = lastEntry().text === "Dispatch-Probe.";
         r._disposePortalOverlay();
-        // W12 P3-Härtung — der Rückkanal-Rate-Limit deckelt eine
+        // der Rückkanal-Rate-Limit deckelt eine
         // flutende fremde Welt: nach PORTAL_EVENT_RATE_MAX je
         // Fenster wird verworfen, das Journal nicht überrannt.
         r._portalOverlay = { label: "Flut-Welt", world: "worlds/skeleton/index.html", dsl: null };
@@ -1902,7 +1902,7 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P3a: Teil-A-Tests laufen", false, w12p3aResults ? w12p3aResults.error : "no result");
     }
 
-    // ### W12 Phase 3 — Teil B: die native Manifest-Stufe ###
+    // ### Teil B: die native Manifest-Stufe ###
     const w12p3bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};

@@ -17,7 +17,7 @@
 //   (5) DIE S4-PROBE: die Hindernis-Station (`s4-hindernisse` in spec/pruefbuehne/stationen.json — Würfel, Säule, Mauer,
 //       Gasse, Hausrumpf 45°, Engpass) steht, gesät über die Snapshot-Tür: je Körper die Blocker-Boxen ≤ 0,1 m an der
 //       Spec und im Blocker-Netz. Der Selbsttest rückt die Mauer 0,5 m — die Probe nennt sie, und nur sie.
-//   (6) DIE S0-PROBE (K11): die Feuerstelle, die der Mensch im Atrium setzt, leuchtet nachts — mit und ohne Klang
+//   (6) DIE S0-PROBE: die Feuerstelle, die der Mensch im Atrium setzt, leuchtet nachts — mit und ohne Klang
 //       ≥ 1 Licht ≤ 10 m (ein Platz des Licht-Pools), Bestrahlung in 2 m ≥ 2× die Nacht; die Laterne eines Plans nachts an,
 //       mittags aus; die Fenster-Glut nachts an, mittags aus; JEDER beleuchtete Stoff trägt den Pool (Bauer im Stamm und
 //       Stoffe der Szene), EIN Punktlicht-Gesetz, kein Punktlicht der Szene. Der Selbsttest nimmt der Feuerstelle ihr
@@ -85,7 +85,7 @@ async function boote(page) {
             if (r && typeof r._gameLoopTick === "function") {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {
+                } catch {
                     /* der Boot reift */
                 }
                 const s = r.state;
@@ -207,7 +207,7 @@ async function s4Probe(page, station, schein) {
 // (`userData.lichtPool`); EIN Punktlicht-Gesetz (`_lichtPoolTerm` ruft `_punktLichtBrdf`, kein anderer, kein Szenen-Licht); die
 // Laterne eines Plans (`laternen[]`, gehoben als Studio-Gestalt `laterne_dorf` im Hebe-Chokepoint `_spawnSettlementErlebnis`,
 // ihr Licht das Datum ihres Rezepts) leuchtet nachts und mittags nicht. Konsum-Leser: der Licht-Takt (`_leuchtTakt`) und jeder beleuchtete Stoff (`_leuchtStoff`).
-// DER HIMMEL FOLGT DEM SPRUNG (K10) misst im Bild-Lauf (`--licht`, `himmelProbe`): der Himmel lebt auf der GPU (D3).
+// DER HIMMEL FOLGT DEM SPRUNG misst im Bild-Lauf (`--licht`, `himmelProbe`): der Himmel lebt auf der GPU (D3).
 // `schein` (der Selbsttest): die Feuerstelle und die Laterne tragen kein Emitter-Datum (`_lichtDatum`), ein
 // Bauer `_scheinRueckfall` baut im Fang einen Stoff ohne Knoten, und ein Stoff ohne Pool steht als `pruef-schein` in der Szene — die Probe
 // MUSS jeden beim Namen nennen.
@@ -237,7 +237,7 @@ async function s0Probe(page, station, schein) {
                 for (let i = 0; i < n; i++) {
                     try {
                         r._gameLoopTick(performance.now());
-                    } catch (_e) {
+                    } catch {
                         /* ein Takt-Fehler zählt der Page-Error */
                     }
                     await new Promise((res) => setTimeout(res, 16));
@@ -251,7 +251,7 @@ async function s0Probe(page, station, schein) {
                     const T3 = THREE;
                     try {
                         return this._leuchtStoff(new T3.MeshStandardNodeMaterial({ color: 0xffffff }), null);
-                    } catch (_e) {
+                    } catch {
                         return new T3.MeshStandardMaterial({ color: 0xffffff });
                     }
                 };
@@ -280,7 +280,7 @@ async function s0Probe(page, station, schein) {
             };
             try {
                 r._lichtPoolTerm(THREE.TSL, r._ensureAtmoUniforms(), null);
-            } catch (_e) {
+            } catch {
                 /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
             }
             delete r._punktLichtBrdf;
@@ -497,7 +497,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                 for (let i = 0; i * 16 < ms; i++) {
                     try {
                         r._gameLoopTick(performance.now());
-                    } catch (_e) {
+                    } catch {
                         /* ein Takt-Fehler zählt der Page-Error */
                     }
                     await new Promise((res) => setTimeout(res, 16));
@@ -825,7 +825,7 @@ const S0_GESTALT_INSTALL = () => {
         let pr = null;
         try {
             pr = r._foundryPresetForEntry(feuer);
-        } catch (_e) {
+        } catch {
             pr = null;
         }
         const q = f.warte || [];
@@ -1036,7 +1036,7 @@ async function lichtLauf() {
                 localStorage.clear();
                 sessionStorage.setItem("__s0Leer", "1");
             }
-        } catch (_e) {
+        } catch {
             /* */
         }
     });
@@ -1112,7 +1112,7 @@ async function lichtLauf() {
                                 const t = performance.now();
                                 try {
                                     r._gameLoopTick(t);
-                                } catch (_e) {
+                                } catch {
                                     /* ein Takt-Fehler zählt der Page-Error */
                                 }
                                 laengsterTakt = Math.max(laengsterTakt, performance.now() - t);
@@ -1207,7 +1207,7 @@ async function lichtLauf() {
                 })
             );
         // die Schüsse: das Feuer um Mitternacht (sauber), die Nacht ohne das Feuer (`S0_NACHT`, unten) — und im
-        // Selbsttest das Feuer bis K11b, die Nacht ohne ihr Sternen-Licht und das Auge des Tages (K66). Die Nacht ohne Feuer ist
+        // Selbsttest das Feuer bis K11b, die Nacht ohne ihr Sternen-Licht und das Auge des Tages. Die Nacht ohne Feuer ist
         // zugleich der Schein „der Pool leer" (der Kreis fällt ohne das Feuer): EIN Schuss, zwei Urteile
         const schuesse = ergebnis.sauber ? [] : [false, "nacht", ...(SELBSTTEST ? ["farbe", "sterne", "tag"] : [])];
         for (const schein of schuesse) {
@@ -1246,7 +1246,7 @@ async function lichtLauf() {
                     }
                     // der Farb-Schein: der Platz des Feuers leuchtet wie bis K11b — in der Glut-Palette (sRGB → linear) und mit
                     // der Nacht-Stärke von damals (nacht 12 statt des Datums) — die Farbe des Stoffs statt der Farbtemperatur
-                    // der Tag-Schein (K66): das Auge des Tages — die Post-Kette ohne das Auge der Nacht (`nightFactor` 0, volle
+                    // der Tag-Schein: das Auge des Tages — die Post-Kette ohne das Auge der Nacht (`nightFactor` 0, volle
                     // Sättigung wie bis K66), über jede Anwendung der Uhr hinweg
                     const tagUhr = r._applyDayNightToScene;
                     if (schein === "tag")
@@ -1348,7 +1348,7 @@ async function lichtLauf() {
                                     nk++;
                                 }
                         }
-                    // DER FARBTON DES FEUERS (K11b): der Boden 1–3 m um die Feuerstelle (5 Ringe × 24 Winkel, 3×3 Pixel), die
+                    // DER FARBTON DES FEUERS: der Boden 1–3 m um die Feuerstelle (5 Ringe × 24 Winkel, 3×3 Pixel), die
                     // mittlere Farbe der Ausgabe — Farbton (Grad) und Sättigung (HSV: (max − min) / max)
                     // — derselbe Boden misst ohne das Feuer die Nacht (`S0_NACHT`): Luma (0–255) und der Anteil abgesoffen (< 4,
                     // wie `bildMasse` der Abnahme)
@@ -1675,7 +1675,7 @@ function zeige(rep) {
     });
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
-        // DER STOFF-ZENSUS (K11): jeder direkt beleuchtete Stoff der Szene (Standard, Physical, Lambert, Phong, Toon — Basic
+        // DER STOFF-ZENSUS: jeder direkt beleuchtete Stoff der Szene (Standard, Physical, Lambert, Phong, Toon — Basic
         // trägt in r184 nur das indirekte Licht) trägt den Licht-Pool (`userData.lichtPool`, `_leuchtStoff`) oder ist Quelle
         window.__stoffZensus = () => {
             const s = window.anazhRealm.state;
@@ -1705,7 +1705,7 @@ function zeige(rep) {
     await page.evaluate(() => {
         try {
             localStorage.clear();
-        } catch (_e) {
+        } catch {
             /* */
         }
     });
@@ -1755,7 +1755,7 @@ function zeige(rep) {
         berichte[welt + (schein ? "-schein" : "")] = rep;
         const wurfe = rep.wuerfe.filter((w) => w.zuwachs > 0);
         if (welt === "standard") {
-            // DER STOFF-ZENSUS der Wildnis (K11): jeder beleuchtete Stoff ihrer Häuser, Tiere, Bäume und Wasser trägt den Pool
+            // DER STOFF-ZENSUS der Wildnis: jeder beleuchtete Stoff ihrer Häuser, Tiere, Bäume und Wasser trägt den Pool
             const z = await page.evaluate(() => window.__stoffZensus());
             console.log(`    Stoffe der Wildnis: ${z.beleuchtet} beleuchtet, ohne Pool ${z.ohnePool.length ? z.ohnePool.join(", ") : "keiner"}`);
             if (z.ohnePool.length)

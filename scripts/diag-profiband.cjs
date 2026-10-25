@@ -10,7 +10,7 @@
 //       Sammelzeile (`rest`), jedes Muster verankert
 //   H2  die Ratsche trägt jede Haushalt-Klasse × Pass (null = ungemessen), ihre Toleranz und — wenn gemessen — eine
 //       eingeschwungene Messung
-//   H2b DIE FRISCHE (K26): jede Ratsche, die der Haushalt fordert (Band-Ort × Gerät × Sicht: Radeon und GTX, Ego und
+//   H2b DIE FRISCHE: jede Ratsche, die der Haushalt fordert (Band-Ort × Gerät × Sicht: Radeon und GTX, Ego und
 //       Third-Person), steht gemessen, an höchstens einer Version vor dem Kopf (package.json), an ihrem Ort, Gerät und in ihrer
 //       Sicht; ihre Gesamt-Zeile ist höchstens die Summe der Klassen (darüber feuert sie nie); `--messung <boot.json …>`
 //       (Boots der Messfolge oder Band-Dateien) richtet jede Ratsche gegen die Messung ihres Orts × Geräts × Sicht: eine
@@ -104,7 +104,7 @@ function buendelReiheWand(A) {
     const R = { setSize() {}, setPixelRatio() {}, setClearColor() {}, shadowMap: {}, setOpaqueSort: (fo) => (R.folge = fo) };
     try {
         A.prototype._configureRenderer.call(weltVon(A, {}), R);
-    } catch (_e) {
+    } catch {
         /* was nach der Folge kommt, braucht die Welt */
     }
     if (R.folge !== A._zeichenFolge) errs.push("_configureRenderer setzt die Zeichen-Reihe der losen Opaken nicht (setOpaqueSort) — die Objekt-id entscheidet");
@@ -154,7 +154,7 @@ function buendelReiheWand(A) {
 // Golden-Dreiecke je Art × Stufe (Hauptbild: die gezeichneten Teile; Kaskade: der Wurf-Teil der L1 — das Maximum über die
 // Golden-Samen) ≤ Haushalt der Klasse. Pflicht ab dem Vertrags-Akt (die
 // eingefrorene render-config trägt tree[0].lagen); vorher zeigt sie die Zahl.
-// H1 DIE WIESE (K55): jeder Messort mit Wiesen-Gesetz (`wiese`) hält es am GESETZ — der Wirt ohne Browser ist die echte Klasse im
+// H1 DIE WIESE: jeder Messort mit Wiesen-Gesetz (`wiese`) hält es am GESETZ — der Wirt ohne Browser ist die echte Klasse im
 // vm (scripts/lib/welt-orte.cjs `wirtAmGesetz`), gemessen von derselben Funktion, die `werkbank umstellen --ort` in der Welt ruft
 // (`wieseMessen`): Hang, Wasser, Kronen-Deckung, Waldrand, Blick und Horizont; das Gras der gebauten Boden-Karte urteilt die
 // Welt.
@@ -622,7 +622,7 @@ function selbsttest() {
             szene.form[0] === "buf:szene:bodenSatz" &&
             szene.form[1] === "buf:szene:spieler"
     );
-    // S17c — DAS RAHMEN-ZIEL DES DIREKTPFADS (0910-1): `tex:r184-ausgabe` im Band ist ein Linsen-Rest (0710-9 B: 23,7 MB in
+    // S17c — DAS RAHMEN-ZIEL DES DIREKTPFADS: `tex:r184-ausgabe` im Band ist ein Linsen-Rest (0710-9 B: 23,7 MB in
     // `band --ort genesis` nach `zerlegen`) → LINSE rot `leck` mit Zahl und Grund; ohne VRAM-Abgriff zählen die Textur-Objekte;
     // ein Band ohne Rahmen-Ziel bleibt sauber.
     const u17c = v17([
@@ -757,7 +757,7 @@ function selbsttest() {
     let unbekannt = false;
     try {
         BAND.ortOf(haushalt, "mond");
-    } catch (_e) {
+    } catch {
         unbekannt = true;
     }
     t(
@@ -805,7 +805,7 @@ function selbsttest() {
         "Tor-Hülle: f:drachentor:L0 368 000 im Hauptbild bei 2 Toren → 184 000 je Tor (3,07×), L1 und Fahrzeug nicht",
         s22.length === 1 && s22[0].huelle === 184000 && s22[0].exemplare === 2 && s22[0].faktor === 3.07
     );
-    // S20b — DIE WIESE (K55): das Wiesen-Gesetz fehlt der Mess-Wiese, eine Schwelle fehlt, der Kranz beginnt im Ring → rot (Schema);
+    // S20b — DIE WIESE: das Wiesen-Gesetz fehlt der Mess-Wiese, eine Schwelle fehlt, der Kranz beginnt im Ring → rot (Schema);
     // am Gesetz ist der gefallene Messort ein Hang (Hang, Horizont, Blick rot), der Ort des Haushalts eine Wiese.
     const w20 = (f) => {
         const h = JSON.parse(JSON.stringify(haushalt));
@@ -838,7 +838,7 @@ function selbsttest() {
 
     // S24 — die Orts-Wache: ein Lauf zählt für die Ratsche eines Orts nur, wenn er in dessen Zustand stand (Aufstellung,
     // Dorf-Zug, Ort-Takt, Gier, Sicht). Der gestellte Zustand ist sauber; laufender Dorf-Zug, eine Aufstellung ohne `--ort`, ein
-    // anderer Blick, ein fehlender Ort-Takt, eine andere oder keine Sicht (K26) und ein Lauf ohne Aufzeichnung werden je einzeln
+    // anderer Blick, ein fehlender Ort-Takt, eine andere oder keine Sicht und ein Lauf ohne Aufzeichnung werden je einzeln
     // beim Namen genannt.
     const wiese = BAND.ortOf(haushalt, "wiese");
     const gestellt = { ort: "wiese", dorfZug: false, ortTakt: [], gier: BAND.ortGier(wiese), sicht: "ego" };
@@ -1071,7 +1071,7 @@ function selbsttest() {
         );
     }
 
-    // S31 — H2b DIE FRISCHE (K26) an der Gegenprobe 1110-12 (spec/profiband/probe-1110-12.json): die Ratsche der Mess-Wiese,
+    // S31 — H2b DIE FRISCHE an der Gegenprobe 1110-12 (spec/profiband/probe-1110-12.json): die Ratsche der Mess-Wiese,
     // wie sie w2B auf der GTX richtete (ohne Version), ist ROT — ohne Version, mit fremder
     // Messung, mit einer Gesamt-Zeile über der Summe der Klassen und gegen w2B zu weit (baum haupt 385 630 gegen 60 976).
     {
@@ -1203,7 +1203,7 @@ function main() {
     const ratschen = BAND.ratschenAlle(haushalt);
     for (const e of ratschen.filter((x) => x.ratsche))
         for (const f of BAND.ratschePruefen(e.ratsche, haushalt)) errs.push(`H2 [${e.datei}] ${f}`);
-    // H2b DIE FRISCHE (K26): gemessen, höchstens eine Version alt, am eigenen Ort × Gerät × Sicht, die Gesamt-Zeile feuert, und
+    // H2b DIE FRISCHE: gemessen, höchstens eine Version alt, am eigenen Ort × Gerät × Sicht, die Gesamt-Zeile feuert, und
     // gegen jede gegebene Messung (`--messung`) keine Zeile zu weit.
     const version = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version;
     const messungen = [];

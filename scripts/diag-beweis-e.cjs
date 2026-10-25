@@ -73,7 +73,7 @@ const SICHT_FN = async (a) => {
     const bild = async () => {
         try {
             if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
-        } catch (_e) {}
+        } catch {}
         r._schattenAlleNeu();
         const rt = new THREE_.RenderTarget(160, 90, { depthBuffer: true, samples: 0 });
         const prev = rend.getRenderTarget ? rend.getRenderTarget() : null;
@@ -131,7 +131,7 @@ const SCHUSS_FN = async (kam) => {
     // marcht der Pass aus der Kamera des letzten Loop-Takts — falsche Gestalt).
     try {
         if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
-    } catch (_e) {}
+    } catch {}
     if (r.state.playerMesh) r.state.playerMesh.visible = false; // der eigene Körper steht nicht im Beweis
     // Die Schatten-Map markiert sonst nur der Loop (_loopShadowUpdate) — bei ruhendem Loop bliebe sie für
     // die neue Kamera veraltet.
@@ -201,7 +201,7 @@ const SCHUSS_FN = async (kam) => {
     zahlen.feldPass = fp ? { sichtbar: !!(fp.mesh && fp.mesh.visible), laeufe: fp.laeufe, pano: fp.panoLaeufe } : null;
     try {
         zahlen.zeile = String(r._analogEMetrologieZeile());
-    } catch (_e) {}
+    } catch {}
     return { ok: true, farben: set.size, nonzero, png: cv.toDataURL("image/png"), zahlen };
 };
 
@@ -220,9 +220,7 @@ const SCHUSS_FN = async (kam) => {
     // ── 1: Boot + Settle + Mittag + Buch warm ──
     const boot = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
-        const r = window.anazhRealm;
-        if (!r) return { fatal: "anazhRealm kam nie" };
+        const r = await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
         let stable = 0,
             last = -1;
         for (const weiter = window.__deckel("der Ring der Ankunft", 600); weiter(); ) {
@@ -276,7 +274,7 @@ const SCHUSS_FN = async (kam) => {
                 };
                 au.__linse = true;
             }
-        } catch (_e) {}
+        } catch {}
         return {
             version: r.constructor && r.constructor.VERSION,
             renderer: rend.isWebGPURenderer ? "webgpu" : rend.isWebGLRenderer ? "webgl" : "?",
@@ -309,7 +307,7 @@ const SCHUSS_FN = async (kam) => {
             try {
                 if (r.state.world) r.state.world.timeOfDay = 0.5;
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             takte++;
             const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
             if (sz === last) stable++;
@@ -333,7 +331,7 @@ const SCHUSS_FN = async (kam) => {
             try {
                 if (r.state.world) r.state.world.timeOfDay = 0.5;
                 r.state.timeOfDay = 0.5;
-            } catch (_e) {}
+            } catch {}
         };
         setzeMittag();
         const boden = (x, z) => {
@@ -445,7 +443,7 @@ const SCHUSS_FN = async (kam) => {
             setzeMittag();
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             takte++;
             const fp = r.state.feldPass;
             const fpVis = !!(fp && fp.mesh && fp.mesh.visible);
@@ -578,7 +576,7 @@ const SCHUSS_FN = async (kam) => {
                     try {
                         if (r.state.world) r.state.world.timeOfDay = 0.5;
                         r._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                     takte++;
                     const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
                     if (sz === last) stable++;
@@ -798,6 +796,6 @@ const SCHUSS_FN = async (kam) => {
     console.error("DIAG-FEHLER:", e);
     try {
         server.close();
-    } catch (_e) {}
+    } catch {}
     process.exit(1);
 });

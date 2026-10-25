@@ -125,7 +125,7 @@ function urteil(z) {
             await window.__weltDa(() => !(!r.state.rendererReady));
             // nach init(): fiel der r184-Renderer ohne Adapter auf WebGL2, steht das hier (kein stilles Grün)
             const backend = r._gpuComputeFaehig() ? "WebGPU" : "WebGL2-Rückfall (der Feld-Pass zeichnet nicht)";
-            // S am Ruf (D3c); der Selbsttest fährt einen Takt ohne Bäcker und eine Schlange in Ankunfts-Folge
+            // S am Ruf; der Selbsttest fährt einen Takt ohne Bäcker und eine Schlange in Ankunfts-Folge
             const sProbe = (sched, tick) => {
                 const wo = [], q = r._impostorBakeQueue, stubs = ["_foundryEnabled", "_ensureAssetFoundry", "_impostorAtlasTexturen", "_karteWeltBacken", "_gpuLeineStraff"];
                 let bake = 0;
@@ -367,6 +367,6 @@ function urteil(z) {
     console.error("DIAG-FEHLER:", e);
     try {
         server.close();
-    } catch (_e) {}
+    } catch {}
     process.exit(1);
 });

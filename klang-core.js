@@ -302,18 +302,35 @@
     //    Burst, das Material ist der Filter). Wanderte aus dem Stamm
     //    (SCHRITT_KLANG.material, byte-gleiche Werte); die Bewegungs-SCHWELLE
     //    (klangTempoMin) wohnt getrennt im koerper-Gesetzbuch — Timbre ist
-    //    Klang-Wissen, Schwelle ist Koerper-Wissen. fallback = das Timbre
-    //    unbekannter Materialien. Der Wirt liest fail-soft byte-gleich. ──
+    //    Klang-Wissen, Schwelle ist Koerper-Wissen. stoffe.K1: JEDE Zeile der
+    //    Stoff-Tafel des Wirts traegt ihren Eintrag (ihre Klang-Spalte, ein
+    //    Zugriff), ein Stoff ohne Eintrag ist ein Bruch — kein Ersatz-Timbre. ──
     // prettier-ignore
     var SCHRITT_TIMBRE = {
-        fallback: 'stein',
         material: {
             erde:   { filter: 'lowpass',  freq: 420,  q: 0.8, dauer: 0.09, gain: 0.045 },
             stein:  { filter: 'bandpass', freq: 1500, q: 1.6, dauer: 0.06, gain: 0.055 },
             glut:   { filter: 'bandpass', freq: 800,  q: 1.0, dauer: 0.11, gain: 0.05 },
             quarz:  { filter: 'bandpass', freq: 2600, q: 3.0, dauer: 0.08, gain: 0.045 },
             eisen:  { filter: 'bandpass', freq: 2100, q: 2.4, dauer: 0.07, gain: 0.055 },
-            wasser: { filter: 'lowpass',  freq: 900,  q: 0.7, dauer: 0.16, gain: 0.06 }
+            wasser: { filter: 'lowpass',  freq: 900,  q: 0.7, dauer: 0.16, gain: 0.06 },
+            // stoffe.K3 (rein additiv): das Eis — hart, kurz und hell wie Stein, eine Terz höher
+            eis:    { filter: 'bandpass', freq: 1900, q: 2.0, dauer: 0.05, gain: 0.05 },
+            // stoffe.K1 (rein additiv): die übrigen Zeilen — Holz hohl, Gras und Laub raschelnd, Metall klirrend, Leib dumpf
+            holz:     { filter: 'bandpass', freq: 700,  q: 1.2, dauer: 0.08, gain: 0.055 },
+            gras:     { filter: 'bandpass', freq: 3200, q: 0.6, dauer: 0.12, gain: 0.035 },
+            laub:     { filter: 'bandpass', freq: 2600, q: 0.5, dauer: 0.15, gain: 0.045 },
+            kraut:    { filter: 'bandpass', freq: 2800, q: 0.6, dauer: 0.12, gain: 0.035 },
+            bronze:   { filter: 'bandpass', freq: 1800, q: 2.6, dauer: 0.08, gain: 0.05 },
+            stahl:    { filter: 'bandpass', freq: 2400, q: 2.8, dauer: 0.07, gain: 0.055 },
+            blech:    { filter: 'bandpass', freq: 1200, q: 3.0, dauer: 0.09, gain: 0.06 },
+            knochen:  { filter: 'bandpass', freq: 1300, q: 1.8, dauer: 0.05, gain: 0.05 },
+            schuppen: { filter: 'bandpass', freq: 1600, q: 1.4, dauer: 0.06, gain: 0.045 },
+            federn:   { filter: 'bandpass', freq: 4000, q: 0.5, dauer: 0.1,  gain: 0.02 },
+            leder:    { filter: 'lowpass',  freq: 600,  q: 0.8, dauer: 0.07, gain: 0.04 },
+            fleisch:  { filter: 'lowpass',  freq: 300,  q: 0.7, dauer: 0.08, gain: 0.04 },
+            leib:     { filter: 'lowpass',  freq: 320,  q: 0.7, dauer: 0.08, gain: 0.04 },
+            essenz:   { filter: 'lowpass',  freq: 1100, q: 0.9, dauer: 0.14, gain: 0.05 }
         }
     };
 
@@ -438,12 +455,17 @@
             glut:   { textur: ["glut"], sr: 32000, sek: 7.9, saat: 71, quellen: 1, filter: "lowpass", gerichtet: true,
                       refDb: -18, dRef: 1.5, dMin: 0.6, bettRefM: 0.76, hoerweiteM: 26, hzFern: 4500, hzNah: 12000, hzHalbM: 8, kalibHz: 12000 },
             // Voegel: Morgenchor(Sonne) × √lebendig × Lebensraum(Deckung) × (1 − Regen)² × Windruhe.
+            // DIE ANTWORT DES ORTS (affekt K1): das gewertete δ einer Tat (lage.antwort = {d, delta}, der Wirt wertet sie am Ort
+            // und laesst sie abklingen) hebt oder senkt den Chor um dbJeDelta·δ dB (geklemmt dbMin..dbMax) — voll bis dVoll
+            // Meter von der Tat, still ab dAus: die Voegel DIESES Orts antworten, die der Nachbar-Zelle (16 m Raster) nicht.
             vogel:  { textur: ["vogelA", "vogelB"], sr: 24000, sek: [23.3, 17.9], saat: [83, 89], quellen: 2, spreizung: 0.55,
                       filter: "lowpass", refDb: -30, habitatBasis: 0.35, windStill: 0.8, hz: 9000, kalibHz: 9000,
-                      chor: [[-0.15, 0], [0, 0.7], [0.12, 1], [0.4, 0.6], [1, 0.55]] },
-            // Grillen: nachts × Waerme × offenes Gras; Zirp-Takt nach DOLBEAR (N/min = 7·(T − 10) + 40).
+                      chor: [[-0.15, 0], [0, 0.7], [0.12, 1], [0.4, 0.6], [1, 0.55]],
+                      antwort: { dbJeDelta: 40, dbMin: -24, dbMax: 9, dVoll: 8, dAus: 24 } },
+            // Grillen: nachts × Waerme × offenes Gras; Zirp-Takt nach DOLBEAR (N/min = 7·(T − 10) + 40) — T ist die Luft am Ohr
+            // (`lage.temperatur`, °C: in der Welt das EINE Temperatur-Feld des Gelaende-Kerns, stoffe.K3).
             grille: { textur: ["grille"], sr: 22050, sek: 4.3, saat: 97, quellen: 2, spreizung: 0.5, filter: "highpass",
-                      refDb: -34, tMin: 2, tMax: 24, tStumm: 12, tVoll: 16, nRef: 110, nachtAb: 0.05, nachtVoll: -0.15, hz: 2500, kalibHz: 2500 }
+                      refDb: -34, tStumm: 12, tVoll: 16, nRef: 110, nachtAb: 0.05, nachtVoll: -0.15, hz: 2500, kalibHz: 2500 }
         },
         // Der Tier-Ruf: f0 = fRef·(L/lRef)^−exponent, Formanten ∝ 1/L; Kontur je Stimmung.
         tier: {
@@ -460,18 +482,18 @@
         // DIE ORTE DES LABS (Lab = Welt): typische Lagen der vier Mess-Orte — das Lab
         // spielt sie ueber denselben Graphen, die Linse misst die echten Lagen der Welt.
         orte: {
-            wiese:   { windFeld: 0.06, boe: 0.7, deckung: 0.12, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.5 },
-            seeufer: { windFeld: 0.06, boe: 0.7, deckung: 0.2, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.55,
+            wiese:   { windFeld: 0.06, boe: 0.7, deckung: 0.12, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.5 },
+            seeufer: { windFeld: 0.06, boe: 0.7, deckung: 0.2, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.55,
                        ufer: { d: 3, anteil: 0.4, pan: 0.3 } },
-            wald:    { windFeld: 0.06, boe: 0.7, deckung: 0.85, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.7 },
-            dorf:    { windFeld: 0.06, boe: 0.7, deckung: 0.15, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.45,
+            wald:    { windFeld: 0.06, boe: 0.7, deckung: 0.85, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.7 },
+            dorf:    { windFeld: 0.06, boe: 0.7, deckung: 0.15, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.45,
                        glut: { d: 4, flaeche: 0.4536, pan: -0.4 } },
-            glutArm: { windFeld: 0.06, boe: 0.7, deckung: 0.15, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.45,
+            glutArm: { windFeld: 0.06, boe: 0.7, deckung: 0.15, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.45,
                        glut: { d: 1, flaeche: 0.4536, pan: -0.2 } },
-            fallArm: { windFeld: 0.06, boe: 0.7, deckung: 0.3, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.6,
+            fallArm: { windFeld: 0.06, boe: 0.7, deckung: 0.3, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.6,
                        fall: { d: 3, hoehe: 12, pan: 0.3 } },
-            sturm:   { windFeld: 1, boe: 1, deckung: 0.5, regen: 1, sonne: 0.4, saisonPhase: 0.6, lebendig: 0.5 },
-            nacht:   { windFeld: 0.06, boe: 0.7, deckung: 0.12, regen: 0, sonne: -0.6, saisonPhase: 0.375, lebendig: 0.5 }
+            sturm:   { windFeld: 1, boe: 1, deckung: 0.5, regen: 1, sonne: 0.4, temperatur: 14.720779115442543, lebendig: 0.5 },
+            nacht:   { windFeld: 0.06, boe: 0.7, deckung: 0.12, regen: 0, sonne: -0.6, temperatur: 24, lebendig: 0.5 }
         }
     };
 
@@ -801,8 +823,9 @@
     }
 
     // ── DIE MISCHUNG: Lage am Ohr → je Stimme {db, gain, hz, q, pan, rate} ──
-    // lage = { windFeld, boe, deckung, regen, sonne, saisonPhase, lebendig,
-    //          ufer:{d, anteil, pan}, fluss:{d, tempo, pan}, fall:{d, hoehe, pan}, glut:{d, flaeche (m², Brenn-Flaeche), pan} }
+    // lage = { windFeld, boe, deckung, regen, sonne, temperatur (°C, ohne sie keine Waerme), lebendig,
+    //          ufer:{d, anteil, pan}, fluss:{d, tempo, pan}, fall:{d, hoehe, pan}, glut:{d, flaeche (m², Brenn-Flaeche), pan},
+    //          antwort:{d, delta} (die Antwort der Wertung, optional) }
     function umweltMischung(lage) {
         var U = UMWELT, W = U.stimmen, L = lage || {};
         var zahl = function (v, d) { return typeof v === "number" && isFinite(v) ? v : d; };
@@ -811,7 +834,7 @@
         var glatt = function (a, b, v) { var t = c01((v - a) / (b - a)); return t * t * (3 - 2 * t); };
         var windFeld = Math.max(0, zahl(L.windFeld, 0)), boe = Math.max(0, zahl(L.boe, 0.7));
         var deck = c01(zahl(L.deckung, 0)), regen = c01(zahl(L.regen, 0)), sonne = Math.max(-1, Math.min(1, zahl(L.sonne, 1)));
-        var leb = c01(zahl(L.lebendig, 0.5)), phase = zahl(L.saisonPhase, 0.375);
+        var leb = c01(zahl(L.lebendig, 0.5)), T = zahl(L.temperatur, -Infinity);
         var v = W.wind.vMin + (W.wind.vMax - W.wind.vMin) * windFeld, vEff = Math.max(0.05, v * boe);
         var out = {};
         var setze = function (name, pegel, hz, q, pan, rate) {
@@ -855,10 +878,12 @@
         else if (sonne >= C[C.length - 1][0]) chor = C[C.length - 1][1];
         else for (var i = 1; i < C.length; i++) if (sonne <= C[i][0]) { chor = C[i - 1][1] + ((C[i][1] - C[i - 1][1]) * (sonne - C[i - 1][0])) / (C[i][0] - C[i - 1][0]); break; }
         var aktiv = chor * Math.sqrt(leb) * (Sv.habitatBasis + (1 - Sv.habitatBasis) * deck) * (1 - regen) * (1 - regen) * (1 - Sv.windStill * Math.min(1, windFeld));
-        setze("vogel", aktiv > 0 ? Sv.refDb + db(aktiv) : -Infinity, Sv.hz, 0.707);
+        // die Antwort des Orts: δ der Tat × Naehe (ohne lage.antwort 0 dB — die Lab-Orte bleiben byte-gleich)
+        var An = Sv.antwort, an = L.antwort || {}, dAn = zahl(an.d, Infinity), dlt = zahl(an.delta, 0);
+        var antwortDb = dlt !== 0 && dAn < An.dAus ? Math.max(An.dbMin, Math.min(An.dbMax, An.dbJeDelta * dlt * (1 - glatt(An.dVoll, An.dAus, dAn)))) : 0;
+        setze("vogel", aktiv > 0 ? Sv.refDb + db(aktiv) + antwortDb : -Infinity, Sv.hz, 0.707);
         // Grillen: nachts × Waerme × offenes Gras; DOLBEAR-Takt
-        var Sc = W.grille, waerme = 0.5 + 0.5 * Math.cos(2 * Math.PI * (phase - 0.375));
-        var T = Sc.tMin + (Sc.tMax - Sc.tMin) * waerme;
+        var Sc = W.grille;
         var nacht = glatt(Sc.nachtAb, Sc.nachtVoll, sonne);
         var aktivG = nacht * glatt(Sc.tStumm, Sc.tVoll, T) * (1 - regen) * (0.3 + 0.7 * (1 - deck));
         var zirp = Math.max(20, 7 * (T - 10) + 40);
@@ -1015,6 +1040,52 @@
                 for (var name in stimmen) stoppe(stimmen[name], zeit);
             },
         };
+    }
+
+    // ── DER SPEKTRAL-SCHWERPUNKT (stoffe.K1, rein additiv, Mathe): Σ f·P(f) / Σ P(f) in Hz über die Leistung einer Folge —
+    //    Hann-gefensterte FFT der Länge N (die größte Zweierpotenz ≤ 8192 und ≤ der Folge), gemittelt über ihre Blöcke; die
+    //    Farbe eines Klangs. Leser: die Klang-Linse (je Stimme) und die Stoff-Linse (der Schritt je Stoff). ──
+    function schwerpunkt(daten, sr) {
+        var N = 2;
+        while (N < 8192 && N * 2 <= daten.length) N *= 2;
+        var re = new Float64Array(N), im = new Float64Array(N), sw = 0, sf = 0;
+        for (var o = 0; o + N <= daten.length; o += N) {
+            for (var i = 0; i < N; i++) {
+                re[i] = daten[o + i] * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / N));
+                im[i] = 0;
+            }
+            for (var a = 1, j = 0; a < N; a++) {
+                var bit = N >> 1;
+                for (; j & bit; bit >>= 1) j ^= bit;
+                j ^= bit;
+                if (a < j) {
+                    var tr = re[a], ti = im[a];
+                    re[a] = re[j]; im[a] = im[j]; re[j] = tr; im[j] = ti;
+                }
+            }
+            for (var len = 2; len <= N; len <<= 1) {
+                var wr = Math.cos((-2 * Math.PI) / len), wi = Math.sin((-2 * Math.PI) / len);
+                for (var b = 0; b < N; b += len) {
+                    var cr = 1, ci = 0;
+                    for (var k = 0; k < len / 2; k++) {
+                        var h = b + k + len / 2, vr = re[h] * cr - im[h] * ci, vi = re[h] * ci + im[h] * cr;
+                        re[h] = re[b + k] - vr;
+                        im[h] = im[b + k] - vi;
+                        re[b + k] += vr;
+                        im[b + k] += vi;
+                        var nr = cr * wr - ci * wi;
+                        ci = cr * wi + ci * wr;
+                        cr = nr;
+                    }
+                }
+            }
+            for (var q = 1; q < N / 2; q++) {
+                var p = re[q] * re[q] + im[q] * im[q];
+                sw += p;
+                sf += (p * q * sr) / N;
+            }
+        }
+        return sf / Math.max(1e-20, sw);
     }
 
     // ── DIE SPITZEN-WAND hinter dem Welt-Master (Wirt UND Lab), Zahlen aus UMWELT.spitze ──
@@ -1352,6 +1423,7 @@
         umweltMischung: umweltMischung,
         umweltGraph: umweltGraph,
         umweltSpitze: umweltSpitze,
+        schwerpunkt: schwerpunkt,
         tierRufPuffer: tierRufPuffer,
         tierRufPegel: tierRufPegel,
         tierRuf: tierRuf,

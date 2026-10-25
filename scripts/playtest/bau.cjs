@@ -9,7 +9,7 @@ async function checkBandWaves1to3(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Welle 1 D — Welt-Journal ###
+    // ### Welt-Journal ###
     const journalResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -55,7 +55,7 @@ async function checkBandWaves1to3(ctx) {
         check("Welle 1 A: LLM-Prompt verlangt erste Person", journalResults.systemPromptFirstPerson);
     }
 
-    // ### Welle 2 B/C — Fraktale Baupläne + Schöpfer-DSL-Ops ###
+    // ### Fraktale Baupläne + Schöpfer-DSL-Ops ###
     const wave2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -157,7 +157,7 @@ async function checkBandWaves1to3(ctx) {
         check("Welle 2 B: define_ability legt neue Fähigkeit an", wave2Results.defineAbilityWorks);
     }
 
-    // ### Welle 3 E/F — Welt-Initiative + Welt-Tor ###
+    // ### Welt-Initiative + Welt-Tor ###
     const wave3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -170,7 +170,7 @@ async function checkBandWaves1to3(ctx) {
         out.hasEmotionShiftPool =
             Array.isArray(r.state.grok.pool.emotionShift) && r.state.grok.pool.emotionShift.length > 0;
         // E — grokSpeakFromJournal existiert
-        // F — die aktive Welt lebt jetzt als Insel in der BIBLIOTHEK (der Welt-Manager); die
+        // F — die aktive Welt lebt als Insel in der BIBLIOTHEK (der Welt-Manager); die
         // Einstellungen tragen keine Welt-Akte mehr (Profi-Struktur). Die alte
         // #world-info-Box ist entfernt → die „Diese Welt"-Insel (#feed-active-ident) ist die Heimat.
         // die Welt-VERWALTUNG (rein/raus) lebt im Welt-Manager: „Empfangen" (Snapshot ODER Manifest)
@@ -178,7 +178,7 @@ async function checkBandWaves1to3(ctx) {
         // wandert mit: er prüft die Verortung, nicht den alten Ort.
         out.worldImportInBibliothek = !!document.getElementById("library-import");
         out.worldExportInBibliothek = !!document.getElementById("action-export-state");
-        // F — updateWorldInfo treibt jetzt die Insel (kein #world-info mehr); sie zeigt den slug
+        // F — updateWorldInfo treibt die Insel (kein #world-info mehr); sie zeigt den slug
         r.updateWorldInfo();
         const islandText = (document.getElementById("feed-active-ident") || {}).textContent || "";
         out.worldInfoShowsSlug = islandText.includes(r.state.worldMeta.slug);
@@ -322,23 +322,23 @@ async function checkBandV1767WorkshopDomainEmergent(ctx) {
         return out;
     });
     check(
-        "V17.67 R1: der Resonanz-Kern rechnet ein gewichtetes Skalarprodukt (mit Invers-Achse: {a:2,b:3}·{a:1,b:-1} = -1)",
+        "R1: der Resonanz-Kern rechnet ein gewichtetes Skalarprodukt (mit Invers-Achse: {a:2,b:3}·{a:1,b:-1} = -1)",
         res.resonanceKernel
     );
     check(
-        "V17.67 S7-B: DER WÄCHTER — die 5 Built-in-Werkstätten emergieren (Resonanz-argmax) korrekt (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism) + KEIN hardcoded Feld",
+        "S7-B: DER WÄCHTER — die 5 Built-in-Werkstätten emergieren (Resonanz-argmax) korrekt (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism) + KEIN hardcoded Feld",
         res.esse && res.brennkolben && res.webstuhl && res.altar && res.drehbank && res.noHardcode
     );
     check(
-        "V17.67 S7-B: SUBSTANZ statt NAME — die Resonanz diskriminiert nach Form×Material (quarz-Gefäß→alchemy, dichte→forging, lone Block→null statt über-klassifiziert)",
+        "S7-B: SUBSTANZ statt NAME — die Resonanz diskriminiert nach Form×Material (quarz-Gefäß→alchemy, dichte→forging, lone Block→null statt über-klassifiziert)",
         res.quarzSphereAlchemy && res.steinBoxForging && res.holzBoxNull && res.knochenBoxNull
     );
     check(
-        "V17.67 S7-B: DER FLIP — dieselbe Struktur + ein quarz-Gefäß → forging WIRD alchemy (live Form×Material, kein Schloss)",
+        "S7-B: DER FLIP — dieselbe Struktur + ein quarz-Gefäß → forging WIRD alchemy (live Form×Material, kein Schloss)",
         res.substanceFlip
     );
     check(
-        "V17.67 S7-B: DAS GATE liest die EMERGENTE Domäne end-to-end — ein forging-Werk passt zur Esse, NICHT zum Brennkolben (alchemy)",
+        "S7-B: DAS GATE liest die EMERGENTE Domäne end-to-end — ein forging-Werk passt zur Esse, NICHT zum Brennkolben (alchemy)",
         res.workIsForging && res.esseMatchesForging && res.brennkolbenWrongDomain
     );
 }
@@ -391,7 +391,7 @@ async function checkBandOmegaGrammatik(ctx) {
                 entasis: 0.05,
             });
             o.flutedGeo = !!(g && g.getAttribute("position") && g.getAttribute("position").count > 100);
-        } catch (e) {
+        } catch {
             o.flutedGeo = false;
         }
         // PHYSIK-GARANT: steht, knickt nicht, Lastpfad schließt
@@ -437,7 +437,7 @@ async function checkBandOmegaGrammatik(ctx) {
                 fuller: 0.5,
             });
             o.bladeGeo = !!(bg && bg.getAttribute("position") && bg.getAttribute("position").count > 50);
-        } catch (e) {
+        } catch {
             o.bladeGeo = false;
         }
         // die Balance (Ω-Φ4) ist gerechnet + typ-abhängig (großes Schwert kopflastiger)
@@ -477,7 +477,7 @@ async function checkBandWave10b(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Welle 10b.1 — Compound-Tag-Affordances (Erkennung + UI) ###
+    // ### Compound-Tag-Affordances (Erkennung + UI) ###
     const wave10bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -645,19 +645,19 @@ async function checkBandWave10b(ctx) {
                 {
                     shape: "octahedron",
                     material: "quarz",
-                    position: { x: 0, y: 0, z: 0 },
+                    position: { x: 0, y: 0.3, z: 0 },
                     size: { x: 0.6, y: 0.6, z: 0.6 },
                 },
                 {
                     shape: "octahedron",
                     material: "quarz",
-                    position: { x: 0, y: 1, z: 0 },
+                    position: { x: 0, y: 0.9, z: 0 },
                     size: { x: 0.6, y: 0.6, z: 0.6 },
                 },
                 {
                     shape: "octahedron",
                     material: "quarz",
-                    position: { x: 0, y: 2, z: 0 },
+                    position: { x: 0, y: 1.5, z: 0 },
                     size: { x: 0.6, y: 0.6, z: 0.6 },
                 },
             ];
@@ -857,7 +857,7 @@ async function checkBandWave10b(ctx) {
                 (e) => e.type !== "test_10ext_radiator" && e.type !== "test_10ext_mast"
             );
 
-            // ── W10 ext. Welle 3/4 — balancing (gründende Form) ──
+            // ── W10 ext. balancing (gründende Form) ──
             out.balancingLabel = AR.AFFORDANCE_LABELS.balancing === "gründend";
             out.balancingThresholds =
                 !!AR.AFFORDANCE_THRESHOLDS.balancing &&
@@ -934,31 +934,10 @@ async function checkBandWave10b(ctx) {
             const balStrong = r.computeAffordanceStrength(r.state.blueprints.test_10ext_platform).balancing;
             const balWeak = r.computeAffordanceStrength(r.state.blueprints.test_10ext_platweak).balancing;
             out.balancingStrengthScales = typeof balWeak === "number" && balStrong > balWeak && balStrong <= 1;
-            // Welt-Reaktion: nahe einer gründenden Form sinkt chaos.
-            const balE = r.spawnArchitecture("test_10ext_platform", { x: 70, y: 0, z: 70 }, { silent: true });
-            out.balEntryAffordance = !!(balE && balE.affordances && balE.affordances.balancing === true);
-            out.balEntryStrength = !!(
-                balE &&
-                balE.affordanceStrength &&
-                typeof balE.affordanceStrength.balancing === "number"
-            );
-            if (pmR) {
-                pmR.x = 70;
-                pmR.y = 0;
-                pmR.z = 72;
-            }
-            emoR.chaos = 0.6;
-            for (let i = 0; i < 30; i++) r.tickAffordances(0.1);
-            out.balNearDrainsChaos = emoR.chaos < 0.6;
-            // Weit weg → kein chaos-Abbau.
-            if (pmR) pmR.z = 400;
-            const chaosFar = emoR.chaos;
-            for (let i = 0; i < 10; i++) r.tickAffordances(0.1);
-            out.balFarNoChange = Math.abs(emoR.chaos - chaosFar) < 0.0001;
-            r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_platform");
+            // die Welt-Reaktion: der Prüf-Satz (gate:werkstatt-weg)
             emoR.chaos = chaosBefore0;
 
-            // ── W10 ext. Welle 4/4 — lifting (Auftriebs-Feld) ──
+            // ── W10 ext. lifting (Auftriebs-Feld) ──
             out.liftingLabel = AR.AFFORDANCE_LABELS.lifting === "hebend";
             out.liftingThresholds =
                 !!AR.AFFORDANCE_THRESHOLDS.lifting &&
@@ -1070,7 +1049,7 @@ async function checkBandWave10b(ctx) {
             if (tab) tab.click();
             r.selectBlueprintForEdit("test_10b_car");
             r._renderWorkshopDOM();
-            // die Affordanzen werden jetzt in der „Fähigkeit"-Zeile des intuitiven Stats-Panels
+            // die Affordanzen werden in der „Fähigkeit"-Zeile des intuitiven Stats-Panels
             // angezeigt, nicht im entfernten Editor-Header-Status.
             const spCar = document.getElementById("workshop-stats-panel");
             out.statusShowsAffordance = !!spCar && spCar.textContent.includes("fahrbar");
@@ -1169,7 +1148,7 @@ async function checkBandWave10b(ctx) {
             "W10 ext.: weit weg vom Strahler keine Emotion-Änderung (Reichweite-Gate)",
             wave10bResults.radFarNoChange
         );
-        // ── W10 ext. Welle 2/4 — broadcasting ──
+        // ── W10 ext. broadcasting ──
         check(
             "W10 ext.: broadcasting trägt Label 'sendend' + Schwellen",
             wave10bResults.broadcastingLabel && wave10bResults.broadcastingThresholds
@@ -1220,7 +1199,7 @@ async function checkBandWave10b(ctx) {
             "W10 ext. Politur: ein starker Mast relais-verstärkt WEITER — er erreicht ihn (eine bessere Antenne)",
             wave10bResults.strongMastReachesFarther
         );
-        // ── W10 ext. Welle 3/4 — balancing ──
+        // ── W10 ext. balancing ──
         check(
             "W10 ext.: balancing trägt Label 'gründend' + Schwellen",
             wave10bResults.balancingLabel &&
@@ -1239,16 +1218,7 @@ async function checkBandWave10b(ctx) {
             "W10 ext.: eine dichtere Plattform gründet stärker (Stärke skaliert)",
             wave10bResults.balancingStrengthScales
         );
-        check(
-            "W10 ext.: spawnArchitecture speichert balancing-Affordance + Stärke am entry",
-            wave10bResults.balEntryAffordance && wave10bResults.balEntryStrength
-        );
-        check("W10 ext.: nahe einer gründenden Form sinkt chaos (Welt-Reaktion)", wave10bResults.balNearDrainsChaos);
-        check(
-            "W10 ext.: weit weg von der gründenden Form kein chaos-Abbau (Reichweite-Gate)",
-            wave10bResults.balFarNoChange
-        );
-        // ── W10 ext. Welle 4/4 — lifting ──
+        // ── W10 ext. lifting ──
         check(
             "W10 ext.: lifting trägt Label 'hebend' + Schwellen",
             wave10bResults.liftingLabel &&
@@ -1286,7 +1256,7 @@ async function checkBandWave10b(ctx) {
         check(`Welle 10b.1: evaluate-Fehler — ${wave10bResults.error}`, false);
     }
 
-    // ### Welle 10b.3 — Welt-Reaktionen (mount + zoom + focusing-Ignite) ###
+    // ### Welt-Reaktionen (mount + zoom + focusing-Ignite) ###
     const wave10b3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1756,13 +1726,13 @@ async function checkBandV18266RockDetail(ctx) {
         out.overrideHonored = out.overrideTris >= 60; // noiseDetail:1 erzwingt det 1 trotz kleiner Grösse
         return out;
     });
-    check(`V18.266: kleiner Kiesel ist low-poly (${res.smallTris} Dreiecke, det 0)`, res.smallLow === true);
+    check(`kleiner Kiesel ist low-poly (${res.smallTris} Dreiecke, det 0)`, res.smallLow === true);
     check(
-        `V18.266: grosser Brocken behält Facetten (${res.bigTris} Dreiecke) — nur kleine Steine schrumpfen`,
+        `grosser Brocken behält Facetten (${res.bigTris} Dreiecke) — nur kleine Steine schrumpfen`,
         res.bigHigher === true && res.smallCheaperThanBig === true
     );
     check(
-        "V18.266: explizites noiseDetail bleibt Intent-Override",
+        "explizites noiseDetail bleibt Intent-Override",
         res.overrideHonored === true
     );
 }

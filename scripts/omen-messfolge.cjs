@@ -42,7 +42,7 @@
 // Der save-server läuft vorher (`npm start`, :4312 — am OMEN der Mess-Klon); die Werkbank startet und stoppt die Folge selbst
 // (ein Boot je Aufruf; `--serie` hält das Profil für den Zweit-Boot).
 "use strict";
-const http = require("http");
+const { werkbankRuf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -58,7 +58,7 @@ const opt = (k, d) => {
 };
 
 // DIE FOLGE je Messort — fest; die Ordnung ist das Gesetz der Messung. Die Mess-Wiese trägt die volle Folge. Der Genesis-Ring
-// (0910-1) misst sein Band in einer EIGENEN frischen Sitzung (jeder Aufruf ist ein Boot): in 0710-6 und 0710-9 lief
+// misst sein Band in einer EIGENEN frischen Sitzung (jeder Aufruf ist ein Boot): in 0710-6 und 0710-9 lief
 // `band --ort genesis` in der Zerleg-Sitzung an der Wiese — die Band-Linse schrieb selbst „NICHT GESTELLT … aufgestellt am Ort
 // wiese", und das Band trug 23,7 MB Rahmen-Ziel des Direktpfads (`tex:r184-ausgabe`). Keine der beiden Zahlen war Genesis.
 const FOLGEN = {
@@ -301,7 +301,7 @@ async function mitTakt(fn) {
         proc = spawn("nvidia-smi", SMI_ABFRAGE, { windowsHide: true });
         proc.on("error", () => (proc = null));
         proc.stdout.on("data", (d) => zeilen.push(...String(d).split(/\r?\n/).filter(Boolean)));
-    } catch (_e) {
+    } catch {
         proc = null;
     }
     try {
@@ -526,10 +526,10 @@ async function beendeBaum(kind, frist) {
             kind.kill("SIGTERM");
             if (!(await warte(10000))) kind.kill("SIGKILL");
         }
-    } catch (_e) {
+    } catch {
         try {
             kind.kill("SIGKILL");
-        } catch (_e2) {}
+        } catch {}
     }
     return (await warte(10000)) || !lebt() ? "getoetet" : "waise";
 }
@@ -560,28 +560,6 @@ function laufKurz(l) {
 }
 
 // ── der Lauf gegen die Werkbank ─────────────────────────────────────────────────────────────────────────────────────
-function rufe(port, weg, nutzlast) {
-    return new Promise((res, rej) => {
-        const body = JSON.stringify(nutzlast || {});
-        const req = http.request(
-            { host: "127.0.0.1", port, path: weg, method: "POST", headers: { "Content-Type": "application/json" } },
-            (r) => {
-                let d = "";
-                r.on("data", (c) => (d += c));
-                r.on("end", () => {
-                    try {
-                        res(JSON.parse(d));
-                    } catch (_e) {
-                        res({ roh: d });
-                    }
-                });
-            }
-        );
-        req.on("error", rej);
-        req.setTimeout(0);
-        req.end(body);
-    });
-}
 
 // DER NEULAUF: ein Boot, dessen Band nicht einschwingt (nach dem Deckel baut die Welt noch — ein Dorf-Plan,
 // eine Schlange), misst eine andere Szene als seine Geschwister und trägt kein Urteil (1510-k72-abab: an Genesis 7 von 16
@@ -636,7 +614,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
     const git = (c) => {
         try {
             return execSync(`git ${c}`, { cwd: root, encoding: "utf8" }).trim();
-        } catch (_e) {
+        } catch {
             return null;
         }
     };
@@ -711,7 +689,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
         log.push(`[werkbank] Ende mit ${c}`);
         bereit(false);
     });
-    const R = (weg, n) => rufe(PORT, weg, n);
+    const R = (weg, n) => werkbankRuf(PORT, weg, n);
     let vor = null;
     let gehalten = false;
     const gefahren = [];
@@ -930,7 +908,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
             aus.befunde.push(`FOLGE: ${gefahren.length} von ${FOLGE.length} Schritten gefahren`);
         try {
             await Promise.race([R("/stop"), new Promise((res) => setTimeout(res, 30000))]);
-        } catch (_e) {}
+        } catch {}
         aus.werkbankEnde = await beendeBaum(kind, 30000);
         if (aus.werkbankEnde === "waise")
             aus.befunde.push(
@@ -1196,7 +1174,7 @@ async function selbsttest() {
         /WELTAKT lauf-voll: kein Welt-Akt-Spion/
     );
     pruefe("vor der Bühne zählen Welt-Akte nicht", wachenUrteil("umstellen", wache(), dorf, ort, false), null);
-    // DER GENESIS-RING (0910-1): seine Folge ist die eigene (Boot · Ort · Bühne · Lauf voll · Band — seit 1110-9 richtet E dort
+    // DER GENESIS-RING: seine Folge ist die eigene (Boot · Ort · Bühne · Lauf voll · Band — seit 1110-9 richtet E dort
     // auch Frame und CPU-Takt); eine Bank der Wiese an der Genesis fällt beim Namen, ein Lauf an der Wiese, der „genesis"
     // heißt, an der Ort-Wache und an der Aufzeichnung der Band — und ein liegen gelassenes Rahmen-Ziel des Direktpfads
     // (0710-9 B: `band --ort genesis` nach `zerlegen` in derselben Sitzung) beim Namen.
@@ -1322,7 +1300,7 @@ async function selbsttest() {
             try {
                 process.kill(pid, 0);
                 return true;
-            } catch (_e) {
+            } catch {
                 return false;
             }
         };
@@ -1339,7 +1317,7 @@ async function selbsttest() {
         if (kindLebt)
             try {
                 process.kill(kindPid, "SIGKILL");
-            } catch (_e) {}
+            } catch {}
         pruefe("hängender /stop: Werkbank und Kind sterben", v, null);
     }
     // DIE WIEDERHOLBARKEIT (1110-6): vier ruhige Sitzungen liegen im Soll; eine fünfte 0,3 ms daneben fällt an IHRER Pose;

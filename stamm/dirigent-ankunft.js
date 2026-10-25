@@ -432,10 +432,10 @@ class AnazhRealm_dirigent_ankunft {
         // Light-Target in den Szenengraph hängen, damit sein matrixWorld pro Frame aktualisiert wird —
         // _applyDayNightToScene setzt es auf den Spieler, das Shadow-Frustum folgt ihm.
         scene.add(directionalLight.target);
-        // Schatten-CSM: ZWEI Kaskaden innerhalb der Schatten-Reichweite (maxFar = die EINE Größe aus
-        // `_applyEffectiveShadowRange`, 180–306 m) — Kaskade 0 = Band 0 bis zur `DETAIL_CASCADE`-Kante
-        // (~108 m), Kaskade 1 = der Rest bis maxFar. Gemessen 02.10.: die Band-1-Kante (367 m) lag jenseits jeder
-        // geregelten Reichweite, die dritte Kaskade klemmte auf 0,95 und deckte einen 5-%-Streifen (285–300 m), für
+        // Schatten-CSM: DREI Kaskaden innerhalb der Schatten-Reichweite (maxFar = die EINE Größe aus
+        // `_applyEffectiveShadowRange`, 180–306 m) — die Kontakt-Kaskade bis `SCHATTEN_KASKADE.kontaktM` (15 m, schatten.K1),
+        // dann Band 0 bis zur `DETAIL_CASCADE`-Kante (~108 m), dann der Rest bis maxFar. Gemessen 02.10.: die Band-1-Kante
+        // (367 m) lag jenseits jeder geregelten Reichweite, die dritte Kaskade klemmte auf 0,95 und deckte einen 5-%-Streifen (285–300 m), für
         // den sie alle Werfer ein drittes Mal zeichnete. Die Box jeder Kaskade misst der Host (`_kaskadenPassen`
         // ersetzt das Addon-updateBefore: Frustum-Scheibe im Licht-Raum statt Diagonal-Quadrat), die Werfer wählt
         // jeder Pass selbst (`_passSicht` an scene.onBeforeRender); `fade` weicht den Übergang. Den Bias setzt jede
@@ -446,12 +446,14 @@ class AnazhRealm_dirigent_ankunft {
                 const bands = AnazhRealm.DETAIL_CASCADE;
                 const span = this._voxelChunkConfig(0).span; // 43.2 m
                 const e0 = (bands[0].maxRing + 0.5) * span; // Band-0-Kante ~108 m
+                // DIE KONTAKT-KASKADE davor (schatten.K1): die ersten `kontaktM` Meter in eigener Karte (`texelM[0]`).
+                const kontakt = AnazhRealm.SCHATTEN_KASKADE.kontaktM;
                 const csm = new THREE.CSMShadowNode(directionalLight, {
-                    cascades: 2,
+                    cascades: 3,
                     maxFar: _shRange * AnazhRealm.SCHATTEN_FERN_FAKTOR, // der Regler fährt es live nach
                     mode: "custom",
                     customSplitsCallback: (cascades, near, far, breaks) => {
-                        breaks.push(Math.min(0.85, e0 / far), 1);
+                        breaks.push(kontakt / far, Math.min(0.85, e0 / far), 1);
                     },
                 });
                 csm.fade = true;
@@ -863,17 +865,19 @@ class AnazhRealm_dirigent_ankunft {
             nah: Math.hypot(p.x - auge.x, p.z - auge.z) + E.nahM,
         });
     }
-    // Liegt ein Ding (Mitte x/z, Radius r in m) im Blick des ersten Bilds? Ohne Spieler liegt alles darin.
-    _imErstenBlick(x, z, r) {
+    // Liegt ein Ding (Mitte x/z, Radius r in m) im Blick des ersten Bilds? Ohne Spieler liegt alles darin. `schirm`: nur der
+    // Bildwinkel selbst, ohne den Rand ERSTER_BLICK.randGrad — was der Schirm JETZT zeigt (der Rang des Dorf-Zugs, `_dorfZug`).
+    _imErstenBlick(x, z, r, schirm) {
         const B = this._ersterBlick();
         if (!B) return true;
         const dx = x - B.ex;
         const dz = z - B.ez;
         const d = Math.hypot(dx, dz);
         const rr = r > 0 ? r : 0;
-        if (d <= B.nah + rr || B.halb >= Math.PI) return true;
+        const halb = schirm ? B.halb - (AnazhRealm.ERSTER_BLICK.randGrad * Math.PI) / 180 : B.halb;
+        if (d <= B.nah + rr || halb >= Math.PI) return true;
         const w = Math.acos(Math.max(-1, Math.min(1, (dx * B.fx + dz * B.fz) / d)));
-        return w - Math.asin(Math.min(1, rr / d)) <= B.halb;
+        return w - Math.asin(Math.min(1, rr / d)) <= halb;
     }
     // Der Schlüssel des Blicks im Rang der Foundry-Schlange (`_foundryAuftragD2`): bis das erste Weltbild steht, trägt ein Ding
     // außer Blick ERSTER_BLICK.ausserD2 obenauf — nah zuerst gilt in beiden Hälften; `_weltbildSteht` nimmt ihn wieder ab.
@@ -1003,6 +1007,9 @@ class AnazhRealm_dirigent_ankunft {
                 }
             if (haeuser) luecke("dorf", `${haeuser} Häuser des Dorfs wachsen`, false, haeuser);
             else if (this._autoSettlementPendingKey) luecke("dorf", "das Dorf wird geplant", true);
+            // der Ort aus dem Gedächtnis (speicher.K3): sein Export ist unterwegs, oder er ist fällig
+            else if (this._stlWegePending || (this._autoSettlementChannelLive() && this._dorfWiederkehrZelle(p)))
+                luecke("dorf", "das Dorf kehrt wieder", !!this._stlWegePending);
             else if (!q && this._autoSettlementChannelLive() && this._startDorfFaellig(p))
                 luecke("dorf", "das Dorf wird gegründet");
         }

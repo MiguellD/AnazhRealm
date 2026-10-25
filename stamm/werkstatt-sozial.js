@@ -822,9 +822,13 @@ class AnazhRealm_werkstatt_sozial {
         else delete this.state.feedFollows[key];
         this._saveFeedFollows();
         if (on && typeof this.journalAppend === "function") {
-            this.journalAppend("witness", `Ich folge nun ${this._vibeFingerprint(key)} — seine Werke begleiten mich.`, {
-                follow: key,
-            });
+            this.journalAppend(
+                "witness",
+                AnazhRealm._datum`Ich folge nun ${this._vibeFingerprint(key)} — seine Werke begleiten mich.`,
+                {
+                    follow: key,
+                }
+            );
         }
         return on;
     }
@@ -1044,9 +1048,13 @@ class AnazhRealm_werkstatt_sozial {
             this.p2pSend({ type: "social-comment", c });
         }
         if (typeof this.journalAppend === "function") {
-            this.journalAppend("share", `Ich liess ein Wort bei „${id}" zurueck: „${x.slice(0, 60)}"`, {
-                comment: id,
-            });
+            this.journalAppend(
+                "share",
+                AnazhRealm._datum`Ich liess ein Wort bei „${id}" zurueck: „${x.slice(0, 60)}"`,
+                {
+                    comment: id,
+                }
+            );
         }
         return c;
     }
@@ -1246,19 +1254,11 @@ class AnazhRealm_werkstatt_sozial {
         if (!canvas) return null;
         const w = 244;
         const h = 184;
-        canvas.width = w;
-        canvas.height = h;
-        let renderer;
-        try {
-            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, ...this._rendererGeraet() });
-        } catch (err) {
-            this.log(`Feed-Vorschau: WebGPU-Renderer fehlgeschlagen (${err && err.message})`, "ERROR");
-            return null;
-        }
-        renderer.stencil = false; // wie die Hof-Bühne (V10.0-j.b)
-        renderer.setSize(w, h, false);
-        renderer.setPixelRatio(window.devicePixelRatio || 1);
-        renderer.setClearColor(0x14110a, 1);
+        const renderer = this._buehneRenderer(canvas, w, h, 0x14110a, "Feed-Vorschau", () => {
+            stage.rendererReady = true;
+            if (stage.active) this._feedPreviewStartRAF();
+        });
+        if (!renderer) return null;
         const scene = new THREE.Scene();
         scene.add(new THREE.AmbientLight(0xffffff, 0.65));
         const key = new THREE.DirectionalLight(0xffe8c2, 0.95);
@@ -1283,17 +1283,6 @@ class AnazhRealm_werkstatt_sozial {
             rendererReady: false,
         };
         this.state.feedPreview = stage;
-        try {
-            renderer
-                .init()
-                .then(() => {
-                    stage.rendererReady = true;
-                    if (stage.active) this._feedPreviewStartRAF();
-                })
-                .catch((err) => this.log(`Feed-Vorschau init: ${err && err.message}`, "ERROR"));
-        } catch (err) {
-            this.log(`Feed-Vorschau init-Start: ${err && err.message}`, "ERROR");
-        }
         return stage;
     }
     _feedPreviewShow(item) {
@@ -2513,8 +2502,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_werkstatt_sozial]);
 // mit der Vibe-Pass-Identität (unfälschbar); LWW (neuestes t je (id, pub)) macht sie CRDT-tauglich.
 // Kanal-exklusiv (DataChannel, nicht WS-injizierbar), R1-rate-gegated, revozierte Schlüssel fallen
 // aus der Aggregation. Global in localStorage (anazh.socialRatings), NIE im Welt-Snapshot.
-// FORAGE (unten) — Klein-Vegetation ist pflückbar: reach = Arm-Länge (kürzer als der Abbau-Ray),
-// regrowMs = Nachwachsen (Session-Gedächtnis, nicht persistiert); der Index ist stabil
+// FORAGE (unten) — Klein-Vegetation ist pflückbar: reach = Arm-Länge (kürzer als der Abbau-Ray), die Ernte eine Tat
+// der Welt (`worldMeta.taten`, feld.K4); der Index ist stabil
 // (deterministisches per-Chunk-RNG, Geerntetes → Skala 0, nie umnummeriert).
 // CA_STAU (unten) — Stau-Regel des Wasser-Automaten: ein Spieler-Werk über dem Ruhe-Spiegel öffnet
 // die Kappe LOKAL; ein bounded Spill-Scan (Priority-Flood) liefert je Spalte den Halte-Pegel

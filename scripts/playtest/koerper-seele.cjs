@@ -85,27 +85,27 @@ async function checkBandV1757HeldSlot(ctx) {
         r.recomputePlayerStats();
         return out;
     });
-    check("V17.57 W2-B: das Test-Gerät trägt härte (die Substanz-Prämisse hält)", res.implHasHardness);
+    check("das Test-Gerät trägt härte (die Substanz-Prämisse hält)", res.implHasHardness);
     check(
-        "V17.57 W2-B: equipHeld nimmt JEDEN Bauplan — keine Markierung nötig (kein Rollen-Schloss)",
+        "equipHeld nimmt JEDEN Bauplan — keine Markierung nötig (kein Rollen-Schloss)",
         res.equipNoRoleNeeded
     );
-    check("V17.57 W2-B: equipHeld lehnt einen unbekannten Bauplan ab", res.rejectsUnknown);
-    check("V17.57 W2-B: equipHeld lehnt ein builtIn-Crafting-Tool ab (kein Welt-Gerät)", res.rejectsBuiltinTool);
+    check("equipHeld lehnt einen unbekannten Bauplan ab", res.rejectsUnknown);
+    check("equipHeld lehnt ein builtIn-Crafting-Tool ab (kein Welt-Gerät)", res.rejectsBuiltinTool);
     check(
-        "V17.57 W2-B: KONSUM — ein gehaltenes hartes Gerät HEBT den Schaden (Angriff-mit-jedem-Gerät, Substanz→Profil)",
+        "KONSUM — ein gehaltenes hartes Gerät HEBT den Schaden (Angriff-mit-jedem-Gerät, Substanz→Profil)",
         res.heldRaisesDamage
     );
     check(
         "Welle L K-D15: die Hand ist kein Panzer — das harte Gerät lässt Verteidigung und HP unberührt (nur Angriff)",
         res.heldKeinPanzer
     );
-    check("V17.57 W2-B: Gerät abnehmen → zurück auf die Baseline (kein Rest-Effekt)", res.unequipRestores);
+    check("Gerät abnehmen → zurück auf die Baseline (kein Rest-Effekt)", res.unequipRestores);
     check(
-        "V17.57 W2-B: DASSELBE Gerät treibt das Abbauen (_heldImplementBlueprint löst den held-Slot auf)",
+        "DASSELBE Gerät treibt das Abbauen (_heldImplementBlueprint löst den held-Slot auf)",
         res.heldDrivesHarvest
     );
-    check("V17.57 W2-B: Persistenz — der held-Slot reist im Snapshot", res.snapHasHeld);
+    check("Persistenz — der held-Slot reist im Snapshot", res.snapHasHeld);
 }
 
 // das Gerät SCHMIEDEN: F2 die Präzision moduliert das Abbauen
@@ -196,19 +196,19 @@ async function checkBandV1761ForgeImplement(ctx) {
         return out;
     });
     check(
-        "V17.61 S3: F2 — die Praezision moduliert die Abbau-Kraft (fein > grob, gleiche Form/Materie; die Rekursion schliesst)",
+        "F2 — die Praezision moduliert die Abbau-Kraft (fein > grob, gleiche Form/Materie; die Rekursion schliesst)",
         res.precisionModulatesMine
     );
     check(
-        "V17.61 S3: F3 — schmieden in pfad OHNE Material → abgelehnt (not_enough_material) + nicht ausgeruestet",
+        "F3 — schmieden in pfad OHNE Material → abgelehnt (not_enough_material) + nicht ausgeruestet",
         res.pfadForgeRejectsWithoutMaterial && res.notEquippedAfterFail
     );
     check(
-        "V17.61 S3: F3 KONSUM — schmieden in pfad MIT Material → erfolg + verbraucht Material + ausgeruestet",
+        "F3 KONSUM — schmieden in pfad MIT Material → erfolg + verbraucht Material + ausgeruestet",
         res.pfadForgeSucceeds && res.pfadForgeConsumes && res.forgeEquips
     );
-    check("V17.61 S3: F3 — schmieden friert die Praezision ein (forgedPrecision gesetzt)", res.forgeFreezesPrecision);
-    check("V17.61 S3: F3 — schoepfer schmiedet frei (ohne Material) + ruestet aus", res.schoepferForgesFree);
+    check("F3 — schmieden friert die Praezision ein (forgedPrecision gesetzt)", res.forgeFreezesPrecision);
+    check("F3 — schoepfer schmiedet frei (ohne Material) + ruestet aus", res.schoepferForgesFree);
 }
 
 // der Schmiede-Akt wird BEDEUTSAM: der Spieler-Equip-Pfad (wieldBlueprint)
@@ -289,23 +289,23 @@ async function checkBandV1762ForgeMeaningful(ctx) {
         return out;
     });
     check(
-        "V17.62 S3-B: forgedPrecision persistiert (serialize → deserialize; geschmiedet bleibt geschmiedet)",
+        "forgedPrecision persistiert (serialize → deserialize; geschmiedet bleibt geschmiedet)",
         res.forgedPrecisionPersists
     );
     check(
-        "V17.62 S3-B: DER HEAL — ein UNgeschmiedetes Geraet in pfad OHNE Material in die Hand → abgelehnt (schmieden noetig, nicht gratis)",
+        "DER HEAL — ein UNgeschmiedetes Geraet in pfad OHNE Material in die Hand → abgelehnt (schmieden noetig, nicht gratis)",
         res.pfadWieldRejectsUnforged
     );
     check(
-        "V17.62 S3-B: KONSUM — ein ungeschmiedetes in pfad MIT Material in die Hand → SCHMIEDET (zahlt + ruestet aus + friert ein)",
+        "KONSUM — ein ungeschmiedetes in pfad MIT Material in die Hand → SCHMIEDET (zahlt + ruestet aus + friert ein)",
         res.pfadWieldForgesUnforged
     );
     check(
-        "V17.62 S3-B: GEBRAUCH frei — ein GESCHMIEDETES Geraet in die Hand nehmen kostet NICHTS (leeres Inventar, trotzdem ok)",
+        "GEBRAUCH frei — ein GESCHMIEDETES Geraet in die Hand nehmen kostet NICHTS (leeres Inventar, trotzdem ok)",
         res.pfadWieldForgedIsFree
     );
     check(
-        "V17.62 S3-B: schoepfer nimmt ungeschmiedet frei in die Hand (Gott-Modus, kein Schmieden)",
+        "schoepfer nimmt ungeschmiedet frei in die Hand (Gott-Modus, kein Schmieden)",
         res.schoepferWieldsFree
     );
 }
@@ -405,27 +405,27 @@ async function checkBandV1763ForgeArmor(ctx) {
         return out;
     });
     check(
-        "V17.63 S4: forgeArmor verlangt einen als Ruestung markierten Bauplan (sonst not_marked_as_armor)",
+        "forgeArmor verlangt einen als Ruestung markierten Bauplan (sonst not_marked_as_armor)",
         res.forgeArmorRequiresRole && res.markedArmor
     );
     check(
-        "V17.63 S4: forgeArmor in pfad OHNE Material → abgelehnt + nicht getragen",
+        "forgeArmor in pfad OHNE Material → abgelehnt + nicht getragen",
         res.pfadArmorRejectsWithoutMaterial
     );
     check(
-        "V17.63 S4: KONSUM — forgeArmor in pfad MIT Material → webt (zahlt + traegt + friert ein)",
+        "KONSUM — forgeArmor in pfad MIT Material → webt (zahlt + traegt + friert ein)",
         res.pfadArmorForges
     );
     check(
-        "V17.63 S4: GEBRAUCH frei — eine gemachte Ruestung tragen kostet nichts (leeres Inventar)",
+        "GEBRAUCH frei — eine gemachte Ruestung tragen kostet nichts (leeres Inventar)",
         res.wearMadeArmorFree
     );
     check(
-        "V17.63 S4: fertigeBlueprint routet nach Rolle (Ruestung → armor-Slot, Geraet → held-Slot)",
+        "fertigeBlueprint routet nach Rolle (Ruestung → armor-Slot, Geraet → held-Slot)",
         res.fertigeArmorToArmorSlot && res.fertigeGeraetToHeldSlot
     );
     check(
-        "V17.63 S4: forgeBlueprint funktioniert nach dem Refactor noch (zahlt + in die Hand)",
+        "forgeBlueprint funktioniert nach dem Refactor noch (zahlt + in die Hand)",
         res.forgeBlueprintStillWorks
     );
 }
@@ -506,21 +506,21 @@ async function checkBandV1765BrewConsumable(ctx) {
         return out;
     });
     check(
-        "V17.65 S6: brewConsumable verlangt role=consumable (sonst not_a_consumable)",
+        "brewConsumable verlangt role=consumable (sonst not_a_consumable)",
         res.brewRequiresConsumable && res.markedConsumable
     );
-    check("V17.65 S6: brauen in pfad OHNE Zutaten → abgelehnt (kein Trank)", res.pfadBrewRejectsWithoutMaterial);
+    check("brauen in pfad OHNE Zutaten → abgelehnt (kein Trank)", res.pfadBrewRejectsWithoutMaterial);
     check(
-        "V17.65 S6: KONSUM — brauen in pfad MIT Zutaten → zieht Material + der Trank wirkt",
+        "KONSUM — brauen in pfad MIT Zutaten → zieht Material + der Trank wirkt",
         res.pfadBrewConsumesAndWorks
     );
     check(
-        "V17.65 S6: activateConsumable bleibt das freie Low-Level-Primitiv (wirkt ohne Material)",
+        "activateConsumable bleibt das freie Low-Level-Primitiv (wirkt ohne Material)",
         res.activateStillFree
     );
-    check("V17.65 S6: schoepfer braut frei (ohne Zutaten)", res.schoepferBrewsFree);
+    check("schoepfer braut frei (ohne Zutaten)", res.schoepferBrewsFree);
     check(
-        "V17.65 S6: fertigeBlueprint routet consumable → brewConsumable (Brau-Ablehnung, nicht Geraet)",
+        "fertigeBlueprint routet consumable → brewConsumable (Brau-Ablehnung, nicht Geraet)",
         res.fertigeRoutesConsumable
     );
 }
@@ -616,22 +616,22 @@ async function checkBandV1766FertigenFlow(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-    check("V17.66 S7: das forging-Geraet traegt die Domain (Voraussetzung fuers Maschine-Gate)", res.forgeHasDomain);
+    check("das forging-Geraet traegt die Domain (Voraussetzung fuers Maschine-Gate)", res.forgeHasDomain);
     check(
-        "V17.66 S7: (b) DAS MASCHINE-GATE — pfad + forging ohne Esse → no_workshop_station (Domain gemeldet + Material bleibt)",
+        "(b) DAS MASCHINE-GATE — pfad + forging ohne Esse → no_workshop_station (Domain gemeldet + Material bleibt)",
         res.pfadNoStationRejects && res.noStationReportsDomain && res.noStationKeepsMaterial
     );
     check(
-        "V17.66 S7: KONSUM — Esse beim Spieler → FERTIGEN gelingt + zieht Material (end-to-end, nicht nur confirmBuild)",
+        "KONSUM — Esse beim Spieler → FERTIGEN gelingt + zieht Material (end-to-end, nicht nur confirmBuild)",
         res.pfadWithStationMakes
     );
     check(
-        "V17.66 S7: ein domain-loses Geraet braucht KEINE Station (das Gate ist transparent — darum brechen die S3-S6-Bands nicht)",
+        "ein domain-loses Geraet braucht KEINE Station (das Gate ist transparent — darum brechen die S3-S6-Bands nicht)",
         res.domainlessNeedsNoStation
     );
-    check("V17.66 S7: frieden/schoepfer ueberspringen die Station (forging ohne Esse → ok)", res.schoepferSkipsStation);
+    check("frieden/schoepfer ueberspringen die Station (forging ohne Esse → ok)", res.schoepferSkipsStation);
     check(
-        "V17.66 S7: KONSUM — die FERTIGEN-Zeile rendert ins DOM; eine Station-Rolle (esse) rendert KEINE (Guard)",
+        "KONSUM — die FERTIGEN-Zeile rendert ins DOM; eine Station-Rolle (esse) rendert KEINE (Guard)",
         res.domHasFertigenButton && res.stationRoleNoFertigen
     );
 }
@@ -714,22 +714,22 @@ async function checkBandV1770WorkshopStationMark(ctx) {
         return out;
     });
     check(
-        "V17.70 R3-Schluss: die Markierung setzt role=workshop-station + roleManual (der Intent-Override); vorher emergiert der Apparat NICHT als Werkstatt",
+        "die Markierung setzt role=workshop-station + roleManual (der Intent-Override); vorher emergiert der Apparat NICHT als Werkstatt",
         res.markSetsRole && res.notStationBeforeMark
     );
     check(
-        "V17.70 R3-Schluss: KONSUM — die bediente Domäne EMERGIERT aus der Substanz (Quarz-Gefäß → alchemy via R1), nicht deklariert",
+        "KONSUM — die bediente Domäne EMERGIERT aus der Substanz (Quarz-Gefäß → alchemy via R1), nicht deklariert",
         res.domainEmerges
     );
     check(
-        "V17.70 R3-Schluss: Built-in (esse) + unbekannt werden abgelehnt (Saat unantastbar)",
+        "Built-in (esse) + unbekannt werden abgelehnt (Saat unantastbar)",
         res.rejectsBuiltin && res.rejectsUnknown
     );
     check(
-        "V17.70 R3-Schluss: end-to-end — ein vom SPIELER gebauter, markierter Apparat bedient das Werkstatt-Gate (ein alchemy-Werk passt zu ihm)",
+        "end-to-end — ein vom SPIELER gebauter, markierter Apparat bedient das Werkstatt-Gate (ein alchemy-Werk passt zu ihm)",
         res.forgeStationDomain && res.workIsForging && res.playerStationServes
     );
-    check("V17.70 R3-Schluss: der DSL-Op set_workshop_station markiert (Spiegel von set_armor_role)", res.dslMarks);
+    check("der DSL-Op set_workshop_station markiert (Spiegel von set_armor_role)", res.dslMarks);
 }
 
 async function checkBandV1772Library(ctx) {
@@ -804,31 +804,31 @@ async function checkBandV1772Library(ctx) {
         return out;
     });
     check(
-        "V17.72 A1: die drei Bibliotheks-Built-ins (Rüstung/Trank/Avatar) + die Geräte-Substanz (KIND_SUBSTANCE) existieren",
+        "die drei Bibliotheks-Built-ins (Rüstung/Trank/Avatar) + die Geräte-Substanz (KIND_SUBSTANCE) existieren",
         res.allExist
     );
     check(
-        "V17.72 A1: die Rollen sind deklariert — Gerät rollenlos (gehalten, W2-B), Rüstung/Trank/Avatar = armor/consumable/soul",
+        "die Rollen sind deklariert — Gerät rollenlos (gehalten, W2-B), Rüstung/Trank/Avatar = armor/consumable/soul",
         res.rolesDeclared
     );
     check(
-        "V17.72 A1 SUBSTANZ-EHRLICH: der Trank resoniert consumable + der Avatar soul (body-shaped) — ein Spieler-Klon emergierte zur selben Rolle",
+        "A1 SUBSTANZ-EHRLICH: der Trank resoniert consumable + der Avatar soul (body-shaped) — ein Spieler-Klon emergierte zur selben Rolle",
         res.trankHonest && res.avatarHonest
     );
     check(
-        "V17.72 A1 / V17.83 U4: die Rüstungs-Platte (stumpf) → Bauwerk (armor-Rolle = Intent-Override, V17.70); die Spitzhacke (spitz+gestreckt) → Gerät AUS DER FORM (U4 trennt Klinge vom Bauwerk)",
+        "A1 / V17.83 U4: die Rüstungs-Platte (stumpf) → Bauwerk (armor-Rolle = Intent-Override, V17.70); die Spitzhacke (spitz+gestreckt) → Gerät AUS DER FORM (U4 trennt Klinge vom Bauwerk)",
         res.armorIsTwin && res.geraetIsImplement
     );
     check(
-        "V17.72 A1: das Role-GATE beißt — forgeArmor/brewConsumable/forgeAvatar lehnen das rollenlose Gerät ab",
+        "das Role-GATE beißt — forgeArmor/brewConsumable/forgeAvatar lehnen das rollenlose Gerät ab",
         res.armorGate && res.brewGate && res.avatarGate
     );
     check(
-        "V17.72 A1: kein Worldgen-Litter — die vier sind deliberate Items (kein instanced-Flag, nicht in der Spawn-Kandidatenliste)",
+        "kein Worldgen-Litter — die vier sind deliberate Items (kein instanced-Flag, nicht in der Spawn-Kandidatenliste)",
         res.noLitter
     );
     check(
-        "V17.72 A1 KONSUM: die vier Mach-Akte FEUERN rollen-gerecht — fertigeBlueprint schmiedet Gerät (held) + webt Rüstung (armor) + braut Trank + formt Avatar",
+        "A1 KONSUM: die vier Mach-Akte FEUERN rollen-gerecht — fertigeBlueprint schmiedet Gerät (held) + webt Rüstung (armor) + braut Trank + formt Avatar",
         res.geraetForged && res.armorForged && res.trankBrewed && res.avatarEmbodied
     );
 }
@@ -919,25 +919,25 @@ async function checkBandV1773HeldMesh(ctx) {
         return out;
     });
     check(
-        "V17.73 S9: Hand-Mesh — Spieler-Mesh da + sauberer Start (kein Held-Mesh nach equipHeld(null))",
+        "Hand-Mesh — Spieler-Mesh da + sauberer Start (kein Held-Mesh nach equipHeld(null))",
         res.hasPlayerMesh && res.startNoMesh
     );
     check(
-        "V17.73 S9: ein Geräte-Bauplan (Spitzhacken-Substanz aus KIND_SUBSTANCE) erzeugt ein Hand-Mesh, an den Avatar geparentet (Arm/Flügel/Wurzel)",
+        "ein Geräte-Bauplan (Spitzhacken-Substanz aus KIND_SUBSTANCE) erzeugt ein Hand-Mesh, an den Avatar geparentet (Arm/Flügel/Wurzel)",
         res.equipOk && res.meshBuilt && res.parented && res.onAnchor
     );
-    check("V17.73 S9: das Hand-Mesh ist auf greifbare Hand-Größe skaliert (0 < scale ≤ maxScale)", res.scaled);
+    check("das Hand-Mesh ist auf greifbare Hand-Größe skaliert (0 < scale ≤ maxScale)", res.scaled);
     check(
-        "V17.73 S9: Equip-Wechsel tauscht das Mesh (neues Objekt) + das alte ist aus dem Szenen-Graph (kein Leak)",
+        "Equip-Wechsel tauscht das Mesh (neues Objekt) + das alte ist aus dem Szenen-Graph (kein Leak)",
         res.swapped && res.oldDetached
     );
-    check("V17.73 S9: ablegen (equipHeld(null)) entfernt das Hand-Mesh", res.unequipNoMesh);
+    check("ablegen (equipHeld(null)) entfernt das Hand-Mesh", res.unequipNoMesh);
     check(
-        "V17.73 S9: ein formloses builtIn-Crafting-Tool (schmiede-hammer) wird abgelehnt → kein Hand-Mesh (die Werkstatt-Schicht bleibt getrennt)",
+        "ein formloses builtIn-Crafting-Tool (schmiede-hammer) wird abgelehnt → kein Hand-Mesh (die Werkstatt-Schicht bleibt getrennt)",
         res.toolRejected && res.toolNoMesh
     );
     check(
-        "V17.73 S9 KONSUM: Körper-Wechsel (applyPlayerSoul) re-attached das Hand-Mesh am NEUEN Avatar (Restore-/Seelen-sicher)",
+        "S9 KONSUM: Körper-Wechsel (applyPlayerSoul) re-attached das Hand-Mesh am NEUEN Avatar (Restore-/Seelen-sicher)",
         res.reattached && res.reattachedNewBody
     );
 }
@@ -1009,16 +1009,16 @@ async function checkBandV1784AvatarFormFit(ctx) {
         return out;
     });
     check(
-        "V17.84 U6: der Gate — eine Built-in-Seele bleibt neutral (in playerSoulDefs, soulFit 1.0), ein Custom-Avatar bekommt die Form-Passung",
+        "der Gate — eine Built-in-Seele bleibt neutral (in playerSoulDefs, soulFit 1.0), ein Custom-Avatar bekommt die Form-Passung",
         res.builtinGate
     );
     check(
-        "V17.84 U6: die soul-Passung diskriminiert über die FORM — ein körper-förmiger Avatar > ein Klumpen (gleiches Material)",
+        "die soul-Passung diskriminiert über die FORM — ein körper-förmiger Avatar > ein Klumpen (gleiches Material)",
         res.soulDiscriminates && res.bodyShaped,
         res.soulVals
     );
     check(
-        "V17.84 U6 KONSUM: ein körper-förmiger Custom-Avatar hat höhere Basis-Stats als ein Klumpen-Avatar — die FORM erreicht die Avatar-Wirkung",
+        "U6 KONSUM: ein körper-förmiger Custom-Avatar hat höhere Basis-Stats als ein Klumpen-Avatar — die FORM erreicht die Avatar-Wirkung",
         res.konsum,
         res.konsumVals
     );
@@ -1113,10 +1113,6 @@ async function checkBandWelle6DSoul(ctx) {
         const wolfStats = embodyStats("koerper_wolf");
         const baerStats = embodyStats("koerper_baer");
 
-        out.humanStats = humanStats;
-        out.fuchsStats = fuchsStats;
-        out.baerStats = baerStats;
-
         out.fuchsFasterThanBaer = fuchsStats.speed > baerStats.speed;
         out.fuchsJumpsHigherThanBaer = fuchsStats.jumpPower > baerStats.jumpPower;
         out.baerHasMoreHpThanFuchs = baerStats.hpMax > fuchsStats.hpMax;
@@ -1138,37 +1134,22 @@ async function checkBandWelle6DSoul(ctx) {
         r.recomputePlayerStats();
         out.stateSpeedMatches = Math.abs(r.state.speed - humanStats.speed) < 0.001;
         out.stateJumpPowerMatches = Math.abs(r.state.jumpPower - humanStats.jumpPower) < 0.001;
-        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der
-        // Sprint-Faktor wohnt im koerper-Gesetz (fx.bewegung.sprintMul,
-        // Fallback 2 = byte-alt bei kaltem Kern), nicht mehr fix ×2.
-        const bewGesetz6d =
-            (globalThis.__koerperCore &&
-                globalThis.__koerperCore.PRESETS &&
-                globalThis.__koerperCore.PRESETS.mensch &&
-                globalThis.__koerperCore.PRESETS.mensch.fx &&
-                globalThis.__koerperCore.PRESETS.mensch.fx.bewegung) ||
-            null;
-        const sprintMul6d =
-            bewGesetz6d && Number.isFinite(bewGesetz6d.sprintMul) && bewGesetz6d.sprintMul > 0
-                ? bewGesetz6d.sprintMul
-                : 2;
+        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der Sprint-Faktor wohnt im koerper-Gesetz
+        // (fx.bewegung.sprintMul); ein kalter Kern wirft laut — kein Literal fährt als Zwilling (das Spiel liest ihn
+        // fail-closed, `_sprintMulGesetz`).
+        const sprintMul6d = globalThis.__koerperCore.PRESETS.mensch.fx.bewegung.sprintMul;
         out.stateSprintIsDoubleSpeed = Math.abs(r.state.sprintSpeed - humanStats.speed * sprintMul6d) < 1e-9;
         out.statePlayerStatsCached = r.state.player.stats && r.state.player.stats.hpMax === humanStats.hpMax;
-        // K27 — die Lebenswerte sind ZUSTAND: die Wandlung (applyPlayerSoul) füllt sie, eine Neuberechnung klemmt nur
-        // (verwundet bleibt verwundet; gate:kampf-gefuehl T27 geht jeden Rufer im Modus pfad).
+        // K27 — die Lebenswerte sind ZUSTAND: die Wandlung (applyPlayerSoul) füllt sie; dass eine Neuberechnung nur klemmt
+        // (verwundet bleibt verwundet), urteilt gate:kampf-gefuehl T27 an jedem Rufer im Modus pfad (S11 die heilende Hülle).
         const pl6d = r.state.player;
-        const vollNachWandlung =
+        out.statePlayerHasHpAndStamina =
             typeof pl6d.hp === "number" &&
             typeof pl6d.hpMax === "number" &&
             typeof pl6d.stamina === "number" &&
             typeof pl6d.staminaMax === "number" &&
             pl6d.hp === pl6d.hpMax &&
             pl6d.stamina === pl6d.staminaMax;
-        pl6d.hp = 0.5 * pl6d.hpMax;
-        pl6d.stamina = 0.25 * pl6d.staminaMax;
-        r.recomputePlayerStats();
-        out.statePlayerHasHpAndStamina =
-            vollNachWandlung && pl6d.hp === 0.5 * pl6d.hpMax && pl6d.stamina === 0.25 * pl6d.staminaMax;
         // Restore
         r.applyPlayerSoul(savedSoul);
         r.recomputePlayerStats();
@@ -1193,8 +1174,8 @@ async function checkBandWelle6DSoul(ctx) {
     });
 
     // ### Reflexions-Fixes ###
-    // (1) WASD-Mapping · (2) „damage X“ als Chat-Pattern · (3) Aura-Absenz · (4) Tod-Wunde persistent
-    // + linear regenerierend · (5) Werkzeug-Anwendung kostet Stamina · (6) Konsumables aus Compound-Tags.
+    // (1) WASD-Mapping · (2) „damage X“ als Chat-Pattern · (3) Aura-Absenz · (4) Tod und Wunde: gate:kampf-gefuehl Q13
+    // · (5) Werkzeug-Anwendung kostet Stamina · (6) Konsumables aus Compound-Tags.
     const reflexResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1216,7 +1197,7 @@ async function checkBandWelle6DSoul(ctx) {
             try {
                 r.p2pHandleMessage(JSON.stringify({ type: "aura", peerId: "fremd-alt-peer", hue: 12, intensity: 1 }));
                 return true;
-            } catch (_e) {
+            } catch {
                 return false;
             }
         })();
@@ -1244,21 +1225,10 @@ async function checkBandWelle6DSoul(ctx) {
         r.dslRun(["player_speed", r._koerperGesetzBand("speed").max], { source: "test" });
         out.speedAfterDsl = r.state.speed;
         out.sprintAfterDsl = r.state.sprintSpeed;
-        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der
-        // Sprint-Faktor kommt aus dem koerper-Gesetz (fx.bewegung.sprintMul,
-        // Fallback 2 = byte-alt bei kaltem Kern), nicht mehr fix ×2.
-        const bewGesetzReflex =
-            (globalThis.__koerperCore &&
-                globalThis.__koerperCore.PRESETS &&
-                globalThis.__koerperCore.PRESETS.mensch &&
-                globalThis.__koerperCore.PRESETS.mensch.fx &&
-                globalThis.__koerperCore.PRESETS.mensch.fx.bewegung) ||
-            null;
-        const sprintMulReflex =
-            bewGesetzReflex && Number.isFinite(bewGesetzReflex.sprintMul) && bewGesetzReflex.sprintMul > 0
-                ? bewGesetzReflex.sprintMul
-                : 2;
-        out.sprintFollowsSpeed = Math.abs(r.state.sprintSpeed - r.state.speed * sprintMulReflex) < 1e-9;
+        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der Sprint-Faktor kommt aus dem koerper-Gesetz
+        // (fx.bewegung.sprintMul); ein kalter Kern wirft laut, kein Literal fährt als Zwilling.
+        const bewGesetzReflex = globalThis.__koerperCore.PRESETS.mensch.fx.bewegung;
+        out.sprintFollowsSpeed = Math.abs(r.state.sprintSpeed - r.state.speed * bewGesetzReflex.sprintMul) < 1e-9;
         out.sprintActuallyFaster = r.state.sprintSpeed > r.state.speed;
         // Restore baseline mit explizitem Soul-Reset (frühere Tests
         // haben womöglich Boosts/Wunde/Custom-Soul-Reste hinterlassen)
@@ -1269,43 +1239,14 @@ async function checkBandWelle6DSoul(ctx) {
         r.recomputePlayerStats();
         const humanResult = r.computePlayerStats();
         out.humanSpeed = humanResult.stats.speed;
-        out.humanTags = JSON.stringify(humanResult.tags);
-        out.humanWound = r.state.player.deathWoundIntensity;
-        out.humanBoostCount = r.state.player.boosts.length;
         // Mensch ist „balanced“ (niedrige magieleitung, dichte clamped auf 1) ⇒ speed ≥ LEBENDE
-        // Gesetz-Base (fx.bewegung.speed.base; Fallback 7 bei kaltem Kern) — gesetz-relativ, kein
-        // Arcade-Literal.
-        const speedBaseReflex =
-            bewGesetzReflex && bewGesetzReflex.speed && Number.isFinite(bewGesetzReflex.speed.base)
-                ? bewGesetzReflex.speed.base
-                : 7;
+        // Gesetz-Base (fx.bewegung.speed.base) — gesetz-relativ, kein Arcade-Literal.
+        const speedBaseReflex = bewGesetzReflex.speed.base;
         out.humanSpeedBase = speedBaseReflex;
         out.humanSpeedRaised = humanResult.stats.speed >= speedBaseReflex - 1e-9;
 
-        // (4) Tod-Wunde persistent + regeneriert
-        r.state.player.deathWoundIntensity = 0;
-        r.state.player.respawnGraceUntil = -Infinity;
-        r.state.player.hp = 1;
-        r._playerDeathRespawn("test");
-        // Der feld-native Tod (K27): die Rückkehr setzt die Lebenswerte voll — gemessen am Respawn selbst, bevor der
-        // Vitals-Takt die Wunde heilt (er hebt hpMax, nie hp).
-        out.respawnHpFull = r.state.player.hp === r.state.player.hpMax && r.state.player.hp > 1;
-        out.woundSetAt1 = Math.abs(r.state.player.deathWoundIntensity - 1.0) < 0.001;
-        // ALTLASTEN-NULL: die Wunde drückt die Tags — der ROHE Stat-Rechner
-        // (computePlayerStats) zeigt sie; hp wurde vom Respawn voll gesetzt.
-        const woundedHpMax = r.computePlayerStats().stats.hpMax;
-        r.state.player.deathWoundIntensity = 0;
-        const baselineHpMax = r.computePlayerStats().stats.hpMax;
-        r.state.player.deathWoundIntensity = 1.0;
-        out.woundReducesHp = woundedHpMax < baselineHpMax;
-        // Regen-Tick (jetzt tickPlayerVitals): Wunde reduziert sich
-        r.state.player.deathLastTick = -Infinity;
-        r.tickPlayerVitals(performance.now() / 1000);
-        out.woundRegens = r.state.player.deathWoundIntensity < 1.0;
-        // Gnade steht + der Todesort trägt eine Lebens-Spur (das dritte Verb, KONSUM).
-        out.respawnGraceSet = r.state.player.respawnGraceUntil > performance.now() / 1000;
-        out.deathDepositsLife = !!(r.state.lifeField && r.state.lifeField.size > 0);
-        r.state.player.respawnGraceUntil = -Infinity;
+        // (4) Tod und Wunde misst gate:kampf-gefuehl Q13 am Biss des Wolfs (Rückkehr, Gnade, Lebens-Spur, die Wunde senkt hpMax,
+        // der Vitals-Takt heilt sie)
 
         // (5) Werkzeug-Kosten: applyOpToPart braucht Stamina
         r.state.player.deathWoundIntensity = 0;
@@ -1419,18 +1360,6 @@ async function checkBandWelle6DSoul(ctx) {
             "Welle 6.D Polish: Mensch-Speed mind. Gesetz-base (fx.bewegung.speed.base)",
             reflexResults.humanSpeedRaised,
             `speed=${(reflexResults.humanSpeed || 0).toFixed(2)} base=${(reflexResults.humanSpeedBase || 0).toFixed(2)}`
-        );
-        // (4) Wunde
-        check("Reflex 4: _playerDeathRespawn setzt deathWoundIntensity = 1.0", reflexResults.woundSetAt1);
-        check("Reflex 4: Diskrimination — Wunde reduziert hpMax (dichte+härte-Penalty)", reflexResults.woundReducesHp);
-        check("Reflex 4: tickPlayerVitals regeneriert Wunde linear", reflexResults.woundRegens);
-        check(
-            "Reflex 4 (ALTLASTEN-NULL): Respawn stellt HP voll + Gnade steht",
-            reflexResults.respawnHpFull && reflexResults.respawnGraceSet
-        );
-        check(
-            "Reflex 4 (ALTLASTEN-NULL): der Todesort trägt eine Lebens-Spur (das dritte Verb)",
-            reflexResults.deathDepositsLife
         );
         // (5) Werkzeug-Kosten
         check(
@@ -1609,15 +1538,15 @@ async function checkBandWelle6DSoul(ctx) {
         );
         check("Welle 6.D Etappe 3b: DSL-Op unequip(armor) entfernt Rüstung", wave6d3bResults.dslUnequipWorks);
         check(
-            "V17.57 W2-B: equipHeld lehnt ein builtIn-Crafting-Tool ab (kein Welt-Gerät)",
+            "equipHeld lehnt ein builtIn-Crafting-Tool ab (kein Welt-Gerät)",
             wave6d3bResults.equipBuiltinToolOk
         );
         check(
-            "V17.57 W2-B: nach der Ablehnung ist nichts gehalten (equipped.held leer)",
+            "nach der Ablehnung ist nichts gehalten (equipped.held leer)",
             wave6d3bResults.equippedToolIs
         );
         check(
-            "V17.57 W2-B: das abgelehnte builtIn-Tool ließ die Stats unberührt (ok)",
+            "das abgelehnte builtIn-Tool ließ die Stats unberührt (ok)",
             wave6d3bResults.builtinToolNoStatChange
         );
         check(
@@ -1638,11 +1567,8 @@ async function checkBandWelle6DSoul(ctx) {
         // Modus (Default frieden blockiert sonst Schaden + Stamina).
         r.setGameMode("pfad");
 
-        // --- Tod-Behandlung (ALTLASTEN-NULL: feld-nativ) ---
-        // U1 — Katalog-Existenz statt Namens-Wiederholung: der ANKER-
-        // KATALOG (window.__anker) trägt die Symbolnamen; zieht das Symbol um,
-        // wandert EINE Katalog-Zeile, nie N Proben.
-        out.hasPhoenixState = "respawnGraceUntil" in r.state.player;
+        // --- Schaden (der Tod — Rückkehr am Anker, Gnade, Trauer, Journal, Doppelt-Tod-Schutz — misst gate:kampf-gefuehl Q13
+        // am Biss des Wolfs) ---
         out.damageOpInNonBroadcast = C.NON_BROADCASTABLE_OPS.has("damage");
 
         // Setup
@@ -1650,55 +1576,16 @@ async function checkBandWelle6DSoul(ctx) {
         if (savedSoul !== "human") r.applyPlayerSoul("human");
         r.state.player.respawnGraceUntil = -Infinity;
 
-        const hpBefore = r.state.player.hp;
-        r.damagePlayer(20, "test");
-        out.hpDropped = r.state.player.hp === hpBefore - 20;
         // Heat-Quelle: heatResist (Mensch hat ~0.22) dämpft
         const hpAfterHeat = r.state.player.hp;
         r.damagePlayer(20, "fire-test");
         const hpDelta = hpAfterHeat - r.state.player.hp;
         out.heatResistReducesDamage = hpDelta < 20 - 1;
 
-        // Tod-Trigger: derselbe Körper kehrt am Anker zurück (kein Gestalt-Tausch)
-        const soulBefore = r.state.player.soul;
-        r.damagePlayer(99999, "kill-test");
-        out.killTriggersPhoenix = r.state.player.soul === soulBefore;
-        out.phoenixUntilSet = r.state.player.respawnGraceUntil > performance.now() / 1000;
-        // Rückkehr am Genesis-Anker (Start-Plattform-Nähe, x/z)
-        const anchor = (r.state.architectures || []).find((a) => a && a.type === "start_plattform");
-        const pm = r.state.playerMesh;
-        out.preDeathSoulRemembered =
-            !anchor ||
-            (!!pm &&
-                Math.abs(pm.position.x - anchor.position.x) < 2 &&
-                Math.abs(pm.position.z - anchor.position.z) < 2);
-        out.weltTrauerSorrow = r.state.player.emotions.sorrow > 0.25;
-        out.weltTrauerAwe = r.state.player.emotions.awe > 0.15;
-        out.hpRestoredAfterDeath = r.state.player.hp > 0;
-        // Journal-Eintrag
-        const journalEntries = r.state.worldJournal && r.state.worldJournal.entries;
-        out.journalHasLossEntry =
-            Array.isArray(journalEntries) && journalEntries.some((e) => e.type === "loss" && /fiel/.test(e.text || ""));
-
-        // Doppelt-Tod-Schutz (Respawn-Gnade)
-        const hpInPhoenix = r.state.player.hp;
-        const beforeJournalCount = journalEntries.length;
-        r.damagePlayer(99999, "kill-test-2");
-        const afterJournalCount = journalEntries.length;
-        out.deathDoubleProtected = afterJournalCount === beforeJournalCount;
-        // (HP sollte nicht sinken, weil respawnGraceUntil > now den Schaden blockt)
-        out.hpUntouchedDuringPhoenix = Math.abs(r.state.player.hp - hpInPhoenix) < 1;
-
-        // tickPlayerVitals regeneriert Stamina (der HP-Timer fiel mit dem Phönix)
-        r.state.player.stamina = 10;
-        r.state.player.deathLastTick = -Infinity;
-        r.tickPlayerVitals(performance.now() / 1000);
-        out.tickRegenerates = r.state.player.stamina > 10;
+        // die Ausdauer im Vitals-Takt misst gate:kampf-gefuehl Q13 nach der Rückkehr
 
         // Reset
         r.state.player.respawnGraceUntil = -Infinity;
-        r.state.player.emotions.sorrow = 0;
-        r.state.player.emotions.awe = 0;
         r.state.player.hp = r.state.player.hpMax;
 
         // --- Min-Regel-Hybrid ---
@@ -1778,36 +1665,12 @@ async function checkBandWelle6DSoul(ctx) {
     });
 
     if (wave6d3aResults && !wave6d3aResults.error) {
-        // Tod-Behandlung
-        check(
-            "Welle 6.D Etappe 3a (NULL): respawnGraceUntil trägt",
-            wave6d3aResults.hasPhoenixState
-        );
+        // Schaden
         check(
             "Welle 6.D Etappe 3a: damage-Op in NON_BROADCASTABLE_OPS (privat)",
             wave6d3aResults.damageOpInNonBroadcast
         );
-        check("Welle 6.D Etappe 3a: damagePlayer reduziert HP", wave6d3aResults.hpDropped);
         check("Welle 6.D Etappe 3a: heatResist dämpft Feuer-Schaden", wave6d3aResults.heatResistReducesDamage);
-        check(
-            "Welle 6.D Etappe 3a (NULL): HP=0 → DERSELBE Körper (kein Gestalt-Tausch)",
-            wave6d3aResults.killTriggersPhoenix
-        );
-        check("Welle 6.D Etappe 3a (NULL): respawnGraceUntil > now nach Tod", wave6d3aResults.phoenixUntilSet);
-        check("Welle 6.D Etappe 3a (NULL): Rückkehr am Genesis-Anker (x/z)", wave6d3aResults.preDeathSoulRemembered);
-        check("Welle 6.D Etappe 3a: Welt-Trauer — sorrow +0.3 nach Tod", wave6d3aResults.weltTrauerSorrow);
-        check("Welle 6.D Etappe 3a: Welt-Trauer — awe +0.2 nach Tod", wave6d3aResults.weltTrauerAwe);
-        check("Welle 6.D Etappe 3a (NULL): HP kehrt beim Respawn voll zurück", wave6d3aResults.hpRestoredAfterDeath);
-        check("Welle 6.D Etappe 3a: Journal hat 'loss'-Eintrag mit 'fiel'", wave6d3aResults.journalHasLossEntry);
-        check(
-            "Welle 6.D Etappe 3a (NULL): Doppelt-Tod-Schutz — die Respawn-Gnade blockt",
-            wave6d3aResults.deathDoubleProtected
-        );
-        check(
-            "Welle 6.D Etappe 3a (NULL): HP unangetastet während der Gnade",
-            wave6d3aResults.hpUntouchedDuringPhoenix
-        );
-        check("Welle 6.D Etappe 3a (NULL): tickPlayerVitals regeneriert Stamina", wave6d3aResults.tickRegenerates);
         // Min-Regel-Hybrid
         check(
             "Welle 6.D Etappe 3a: Hybrid-Beispiel aus Doc — 4 Stufen → ~0.595",
@@ -2224,12 +2087,12 @@ async function checkBandWelle6DSoul(ctx) {
 
     if (wave6d17Results && !wave6d17Results.error) {
         check(
-            "V18.62 Ich-H: der parallele Ich-Soul-Editor ist geschnitten (Schöpfung in der Werkstatt)",
+            "Ich-H: der parallele Ich-Soul-Editor ist geschnitten (Schöpfung in der Werkstatt)",
             wave6d17Results.ichSoulEditorGone
         );
-        check("V18.62 Ich-H: soulToBlueprint holt einen Built-in-Körper in die Werkstatt (ok)", wave6d17Results.s2bOk);
+        check("Ich-H: soulToBlueprint holt einen Built-in-Körper in die Werkstatt (ok)", wave6d17Results.s2bOk);
         check(
-            "V18.62 Ich-H: der geholte Körper ist ein role:soul-Bauplan mit allen 4 Teilen (Avatare-in-Werkstatt)",
+            "Ich-H: der geholte Körper ist ein role:soul-Bauplan mit allen 4 Teilen (Avatare-in-Werkstatt)",
             wave6d17Results.s2bIsSoulRole
         );
         check("Welle 6.D Etappe 1.7: Klonen aus aktiver Seele liefert ok", wave6d17Results.cloneReturnsOk);
@@ -2364,7 +2227,7 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D: state.sprintSpeed = Gesetz-sprintMul × state.speed", wave6dResults.stateSprintIsDoubleSpeed);
         check("Welle 6.D: state.player.stats wird gecached", wave6dResults.statePlayerStatsCached);
         check(
-            "Welle 6.D + K27: hp, hpMax, stamina, staminaMax existieren; die Wandlung füllt, die Neuberechnung heilt nicht",
+            "Welle 6.D + K27: hp, hpMax, stamina, staminaMax existieren; die Wandlung füllt",
             wave6dResults.statePlayerHasHpAndStamina
         );
         check("Welle 6.D: das Spec-Sheet rendert ohne Crash (V18.61 Ich-F)", wave6dResults.renderOk);
@@ -2964,9 +2827,9 @@ async function checkBandPhasenBF(ctx) {
     check("C7: die getragene Rüstung sitzt am TORSO, nicht auf dem Kopf (GEMESSEN ±0.45)", res.c7ArmorSitz);
     check("C7: Wagen+Holzross-Saat sind moveable + tragen sitz-Punkte (GEMESSEN)", res.c7Seeds);
     check("C7: Built-in-Körper liegen automatisch als Blueprints (Button gefallen)", res.c7Bodies);
-    check("A4: aWave ist ART-gedämpft (Fluss-riverness + See still — die Mündungs-Synergie)", res.a4MouthWave);
+    check("aWave ist ART-gedämpft (Fluss-riverness + See still — die Mündungs-Synergie)", res.a4MouthWave);
     check(
-        "V18.117: Wasser-Sheet-Queue verhungert nicht (FIFO-Slot zieht ferne Keys trotz Dauer-Nachschub)",
+        "Wasser-Sheet-Queue verhungert nicht (FIFO-Slot zieht ferne Keys trotz Dauer-Nachschub)",
         res.waterIsoNoStarve !== false
     );
     check("E3/V18.119: Mana-HUD — pfad zeigt die Währung (Wert folgt), frieden blendet aus", res.e3ManaHud);
@@ -3008,20 +2871,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
-        const AR = window.AnazhRealm || r.constructor;
         const out = {};
-
-        // (W1) FROZEN-Konstanten existieren mit plausiblen Werten.
-        out.constantsExist =
-            typeof AR.WEAR_PER_STRIKE_BASE === "number" &&
-            AR.WEAR_PER_STRIKE_BASE > 0 &&
-            AR.WEAR_PER_STRIKE_BASE < 0.1 &&
-            typeof AR.WEAR_KAPUTT_SCHWELLE === "number" &&
-            AR.WEAR_KAPUTT_SCHWELLE > 0 &&
-            AR.WEAR_KAPUTT_SCHWELLE < 1 &&
-            typeof AR.REPAIR_COST_FRACTION === "number" &&
-            AR.REPAIR_COST_FRACTION > 0 &&
-            AR.REPAIR_COST_FRACTION <= 1;
 
         // (W2) MIGRATION: ein Bauplan ohne wear-Feld liest 1 (alte Welten
         // verlieren NICHTS — kein Funktions-Verlust beim Reload).
@@ -3071,19 +2921,6 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         const wHolz = r._wearPerStrike(holzBp);
         out.eisenSlower = wEisen > 0 && wHolz > 0 && wEisen < wHolz;
 
-        // (W5) _wearStatFactor: voll → 1.0, leer → FLOOR (≥0.3), 50 % → ~0.65.
-        r._setBlueprintWear(fakeBp, 1);
-        const factorFull = r._wearStatFactor(fakeBp);
-        r._setBlueprintWear(fakeBp, 0);
-        const factorEmpty = r._wearStatFactor(fakeBp);
-        r._setBlueprintWear(fakeBp, 0.5);
-        const factorMid = r._wearStatFactor(fakeBp);
-        out.factorMonotonic =
-            factorFull > 0.99 &&
-            Math.abs(factorEmpty - AR.WEAR_STAT_FLOOR) < 0.001 &&
-            factorMid > factorEmpty + 0.1 &&
-            factorMid < factorFull;
-
         // (W6) FORGE setzt wear=1 (frisches Werkzeug startet voll). Test-Blueprint deterministisch aus der
         // Substanz-Zeile KIND_SUBSTANCE.geraet_spitzhacke, am Ende geräumt.
         const KSw5 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
@@ -3106,51 +2943,8 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
             out.forgeRefilled = !!(forgeRes && forgeRes.ok && r._blueprintWear(heldBp) > 0.99);
         }
 
-        // (W7) STRIKE zehrt wear. Wir bauen einen Test-Architektur-Eintrag +
-        // hauen drauf; wear muss messbar sinken.
-        if (heldBp) {
-            // Sicherstellen: Spieler hält das Gerät.
-            const eqRes = r.equipHeld(heldName);
-            out.equipOk = !!(eqRes && eqRes.ok);
-            r._setBlueprintWear(heldBp, 1); // voll
-            // Test-Architektur (klein, abbaubar) — wir nehmen einen Bauplan
-            // mit Holz-Stamm; die existierenden Baupläne haben einen.
-            const testArchType = r.state.blueprints["baum_eiche"] ? "baum_eiche" : Object.keys(r.state.blueprints)[0];
-            const testEntry = r.spawnArchitecture(testArchType, { x: 800, y: 0, z: 800 }, { precise: true });
-            if (testEntry) {
-                const wearBefore = r._blueprintWear(heldBp);
-                r._strikeArchitecture(testEntry);
-                const wearAfter = r._blueprintWear(heldBp);
-                out.strikeReducesWear = wearAfter < wearBefore && wearBefore - wearAfter < 0.1;
-                // Aufräumen — die Test-Architektur entfernen.
-                try {
-                    r.removeArchitecture(testEntry);
-                } catch {
-                    /* defensive */
-                }
-            } else {
-                out.strikeReducesWear = false;
-            }
-        }
-
-        // (W8) KAPUTT-WAND: ein verbrauchtes Werkzeug verweigert den Hieb.
-        if (heldBp) {
-            r._setBlueprintWear(heldBp, AR.WEAR_KAPUTT_SCHWELLE - 0.01); // unter der Schwelle
-            const testArchType = r.state.blueprints["baum_eiche"] ? "baum_eiche" : Object.keys(r.state.blueprints)[0];
-            const testEntry = r.spawnArchitecture(testArchType, { x: 900, y: 0, z: 900 }, { precise: true });
-            if (testEntry) {
-                const result = r._strikeArchitecture(testEntry);
-                // _strikeArchitecture liefert false bei „verbraucht"; wear hat sich NICHT geändert
-                const wearAfter = r._blueprintWear(heldBp);
-                out.kaputtWand = result === false && wearAfter === AR.WEAR_KAPUTT_SCHWELLE - 0.01;
-                // Aufräumen — das Bauwerk steht noch (wir konnten nicht hauen).
-                try {
-                    r.removeArchitecture(testEntry);
-                } catch {
-                    /* defensive */
-                }
-            }
-        }
+        // W9 repariert das gehaltene Gerät (Zehren, Wand und Faktor misst der Werkzeug-Satz, gate:kampf-gefuehl Q11)
+        if (heldBp) r.equipHeld(heldName);
 
         // (W9) REPAIR-Akt stellt wear voll her (im schöpfer-Modus frei).
         if (heldBp) {
@@ -3198,12 +2992,6 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
             out.w12Partial = w12Partial;
             out.w12Omitted = w12Omitted;
             out.w12RoundTrip = w12RoundTrip;
-            out.w12_serWear = ser.wear;
-            out.w12_serFullHasWear = "wear" in serFull;
-            out.w12_serFullKeys = Object.keys(serFull).join(",");
-            out.wearSerializedWhenPartial = w12Partial;
-            out.wearOmittedWhenFull = w12Omitted;
-            out.wearRoundTrip = w12RoundTrip;
         }
 
         // (W13) R2-DISJUNKTHEIT strukturell: weder repair_held noch wear-Setter
@@ -3227,10 +3015,6 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
     });
 
     check(
-        "W5 (W1): FROZEN-Konstanten existieren mit plausiblen Werten (WEAR_PER_STRIKE_BASE · WEAR_KAPUTT_SCHWELLE · REPAIR_COST_FRACTION)",
-        res.constantsExist
-    );
-    check(
         "W5 (W2): MIGRATION — ein Bauplan ohne wear-Feld liest 1 (alte Welten verlieren NICHTS) + null-safe",
         res.migrationDefault && res.migrationNullSafe
     );
@@ -3243,20 +3027,8 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         res.eisenSlower
     );
     check(
-        "W5 (W5): _wearStatFactor monoton (voll → 1.0 · leer → WEAR_STAT_FLOOR ≥ 0.3 · 50 % → dazwischen) — die Equip-Stat-Modulation lebt",
-        res.factorMonotonic
-    );
-    check(
         "W5 (W6): FORGE setzt wear=1 (frisches/repariertes Werkzeug startet voll) — die Spitzhacken-Substanz (KIND_SUBSTANCE) ist craftbar",
         res.libraryHasSpitzhacke && res.forgeRefilled
-    );
-    check(
-        "W5 (W7): STRIKE zehrt wear (ein Hieb am Bauwerk sinkt wear messbar, klein) — die Mühe-Senke wirkt",
-        res.equipOk && res.strikeReducesWear
-    );
-    check(
-        "W5 (W8): KAPUTT-WAND — ein verbrauchtes Werkzeug (wear < WEAR_KAPUTT_SCHWELLE) verweigert den Hieb (return false, wear unverändert)",
-        res.kaputtWand
     );
     check(
         "W5 (W9): REPAIR-Akt stellt wear voll her (im schöpfer-Modus frei + ok-Resultat trägt before/after/free)",
@@ -3277,24 +3049,13 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
     );
 }
 
-// Γ1-LESART-5 Ψ2-NASE Foundation:
-// das Geruch-Feld der Welt als FÜNFTE Welt-Stimme. _worldWindDirAt + _scentAt
-// als reine Math-Helper; ihr Konsum (Jagd, Kadaver) lebt in gate:kreatur-takt jagdkreis — hier das Gesetz von Wind und Abstand.
+// das Geruch-Feld der Welt als FÜNFTE Welt-Stimme, sein Wind der EINE Wind am Ort (`_windAt`, gate:kopplung F3); ihr Konsum
+// (Jagd, Kadaver) lebt in gate:kreatur-takt jagdkreis — hier das Gesetz von Wind und Abstand.
 async function checkBandV18202GeruchFeld(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-
-        // (N2) Wind-Vektor: normalisiert, deterministisch, variiert über Position
-        const w1 = r._worldWindDirAt(0, 0, 0);
-        const w2 = r._worldWindDirAt(0, 0, 0);
-        out.windDeterministic = w1.x === w2.x && w1.z === w2.z;
-        out.windNormalized = Math.abs(Math.hypot(w1.x, w1.z) - 1) < 1e-6;
-        // Variiert über große Distanzen (1000m) — nicht-konstant
-        const w3 = r._worldWindDirAt(2000, 0, 0);
-        const dot13 = w1.x * w3.x + w1.z * w3.z;
-        out.windVariesOverDistance = Math.abs(dot13) < 0.999;
 
         // (N3) Geruch: einzelne Quelle, Distanz-Decay
         const src = [{ x: 0, z: 0, strength: 1.0 }];
@@ -3311,7 +3072,7 @@ async function checkBandV18202GeruchFeld(ctx) {
         // (N5) Wind-Modulation: downwind > upwind — eine Quelle an fester Position, gesampelt EXAKT downwind und upwind
         const sx = 100,
             sz = 100;
-        const wind = r._worldWindDirAt(sx, sz, 0);
+        const wind = r._windAt(sx, sz, r.state._simZeit);
         // Downwind = in Wind-Richtung von Source aus
         const dRecv = { x: sx + wind.x * 50, z: sz + wind.z * 50 };
         const uRecv = { x: sx - wind.x * 50, z: sz - wind.z * 50 };
@@ -3326,20 +3087,14 @@ async function checkBandV18202GeruchFeld(ctx) {
         return out;
     });
 
-    check("V18.202 (N2a) Wind deterministisch (zwei Aufrufe gleich)", res.windDeterministic === true);
-    check("V18.202 (N2b) Wind normalisiert (Länge ≈ 1)", res.windNormalized === true);
+    check("(N3a) Geruch nah > 0.3 (volle Stärke nahe Quelle)", res.scentNearStrong === true);
+    check("(N3b) Distanz-Decay monoton (20>50>100)", res.scentDistantWeaker === true);
+    check("(N3c) Bei 300 m: Geruch sehr schwach < 0.05 (decay × windMod)", res.scentFarVanishes === true);
     check(
-        "V18.202 (N2c) Wind variiert über 2000 m Distanz (kein konstanter Vektor)",
-        res.windVariesOverDistance === true
-    );
-    check("V18.202 (N3a) Geruch nah > 0.3 (volle Stärke nahe Quelle)", res.scentNearStrong === true);
-    check("V18.202 (N3b) Distanz-Decay monoton (20>50>100)", res.scentDistantWeaker === true);
-    check("V18.202 (N3c) Bei 300 m: Geruch sehr schwach < 0.05 (decay × windMod)", res.scentFarVanishes === true);
-    check(
-        `V18.202 (N5a) Downwind stärker als upwind (down=${res.downwindMagnitude && res.downwindMagnitude.toFixed(3)} > up=${res.upwindMagnitude && res.upwindMagnitude.toFixed(3)})`,
+        `(N5a) Downwind stärker als upwind (down=${res.downwindMagnitude && res.downwindMagnitude.toFixed(3)} > up=${res.upwindMagnitude && res.upwindMagnitude.toFixed(3)})`,
         res.downwindStronger === true
     );
-    check("V18.202 (N5b) Upwind hat Restduft > 0 (minDirectional-Schwelle)", res.upwindStillHasMinScent === true);
+    check("(N5b) Upwind hat Restduft > 0 (minDirectional-Schwelle)", res.upwindStillHasMinScent === true);
 }
 
 module.exports = {

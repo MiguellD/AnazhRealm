@@ -83,7 +83,7 @@ class AnazhRealm_stoff_material {
     // Charakter als Parameter: `ampX` (Gras 1.5), `windScale` (Wipfel-Dämpfen, fehlt → 1).
     // phase = uWindTime·1.7 + dot(worldXZ, uWindDir)·0.35; hf = max(positionLocal.y, 0);
     // gust = sin(uWindTime·omega − dot(worldXZ, uWindDir)·k)·amp + mitte — die wandernde Böe, Zahlen aus WIND_BOE (das Ohr
-    // liest dieselben, `_windBoeAt`).
+    // liest dieselben, `_windAt`).
     // uBend-Sphären biegen Halme radial weg (min(hf,1)). Render-rein; gibt den vec3-Versatz zurück.
     _windSwayOffset(TSL, opts = {}) {
         const wu = this._windUniformsEnsure();
@@ -106,7 +106,7 @@ class AnazhRealm_stoff_material {
         // keine Instanz — die Nah-Streu) liest dieselbe Naht (die Einheit). Die Geometrie-Position (`positionGeometry`,
         // Wurzel bei y = 0) trägt die Halm-Höhe; `opts.hoehe` reicht eine eigene Höhe in Metern.
         const hf = max(opts.hoehe || TSL.positionGeometry.y, float(0.0));
-        // Die Böe liest WIND_BOE — dieselben Zahlen hört das Ohr (`_windBoeAt`).
+        // Die Böe liest WIND_BOE — dieselben Zahlen hört das Ohr (`_windAt`).
         const B = AnazhRealm.WIND_BOE;
         const gust = sin(
             wu.uWindTime
@@ -152,20 +152,57 @@ class AnazhRealm_stoff_material {
         return naht.vorlage(vec3(offX, float(0.0), offZ));
     }
 
-    // CPU-Seite der EINEN Wind-Richtung: θ(t) = θ0(seed) + 0.5·sin(t·0.009 + φ1) + 0.22·sin(t·0.0257
-    // + φ2) (±~41° Mäander um die Seed-Grundrichtung). Seed per FNV-1a über worldSeed+"-wind-dir"
-    // (eigener Stream, Γ5). Reine Funktion (seed, t) → Peers/Replays sehen denselben Wind.
-    // Liefert {x, z} (Einheitsvektor in XZ).
+    // CPU-Seite der EINEN Wind-Richtung: der Kern (phyto-core `windRichtung`, ±~41° Mäander um die Grundrichtung der Saat,
+    // eigener Strom Γ5). Reine Funktion (Saat, t) → Peers/Replays sehen denselben Wind. Liefert {x, z} (Einheitsvektor in XZ,
+    // wohin der Wind weht).
     _windDirAt(tSec) {
-        const seedStr = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + "-wind-dir";
-        let h = 2166136261 >>> 0;
-        for (let i = 0; i < seedStr.length; i++) h = ((h ^ seedStr.charCodeAt(i)) * 16777619) >>> 0;
-        const base = (h / 4294967296) * Math.PI * 2;
-        const p1 = (((h >>> 5) & 1023) / 1023) * Math.PI * 2;
-        const p2 = (((h >>> 15) & 1023) / 1023) * Math.PI * 2;
-        const t = Number.isFinite(tSec) ? tSec : 0;
-        const theta = base + 0.5 * Math.sin(t * 0.009 + p1) + 0.22 * Math.sin(t * 0.0257 + p2);
-        return { x: Math.sin(theta), z: Math.cos(theta) };
+        return globalThis.__phytoCore.windRichtung(
+            (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed",
+            tSec
+        );
+    }
+
+    // DER EINE WIND AM ORT (wetter.K5) — jeder Wind-Leser der Welt liest ihn (Gras und Krone über die Uniforms, Wasser,
+    // Regen, Tuch, Rauch, Wagen, Ohr, Nase): die Richtung `_windDirAt`, die Stärke U des Wetters (der Wind-Kanal des
+    // Wetter-Felds × die Böen-Drift `_weatherWob`, 0 ruhig … 1 Sturm) vom Gelände geformt (gelaende-core `windForm`: Lee bis
+    // −40 %, Tal-Düse bis +20 %, an der Höhe des Gesetzes ohne Detail) und die wandernde Böe am Ort (WIND_BOE, dieselben Zahlen
+    // wie der Shader). `staerke` = U · Form (die Böen-Amplitude am Ort ist staerke · WIND_BOE.amp), `ms` der Wind in m/s
+    // (staerke · Böe · WIND_FELD.sturmMS). t: die Wind-Uhr — das Bild liest die Bild-Uhr (A9), der Sim-Schritt seine Uhr
+    // (`state._simZeit`); der Wind ist eine reine Funktion von Saat, Wetter, Ort und t.
+    _windAt(x, z, t) {
+        const tt = Number.isFinite(t) ? t : 0;
+        const d = this._windDirAt(tt);
+        const B = AnazhRealm.WIND_BOE;
+        const boe = Math.sin(tt * B.omega - (x * d.x + z * d.z) * B.k) * B.amp + B.mitte;
+        const form = this._windForm(x, z, d);
+        const staerke = this._weatherFieldFor(this.state.weather).wind * this._windWob(tt) * form;
+        return { x: d.x, z: d.z, staerke, boe, form, ms: staerke * boe * globalThis.__phytoCore.WIND_FELD.sturmMS };
+    }
+    // DIE BÖEN-DRIFT der Wind-Uhr t (Math.random-frei, ~±18 % um die Wort-Basis): bis wetter.K5 ein Feld, das nur das Bild schrieb
+    // — der Wagen im Wind hing an der Bildrate (gate:fahr-leben L8 Lockstep 0,37 mm).
+    _windWob(t) {
+        return 1 + 0.18 * (Math.sin(t * 0.19) * 0.6 + Math.sin(t * 0.47 + 1.3) * 0.3 + Math.sin(t * 1.13 + 3.7) * 0.1);
+    }
+    // Die Form des Geländes je Zelle von 16 m und 1/64 Drehung, gemerkt je Stand des Gesetzes (Saat, Erbgut, Erdbau — ein
+    // neuer Ort formt den Wind neu); der Merker gehört der Instanz.
+    _windForm(x, z, d) {
+        const L = this._gelaende();
+        const stand = [L.seed, L.erbgut, L.erdbau];
+        let M = Object.hasOwn(this, "_windFormMerk") ? this._windFormMerk : null;
+        if (!M || M.stand.some((s, i) => s !== stand[i]) || M.karte.size > 4096)
+            M = this._windFormMerk = { stand, karte: new Map() };
+        const ci = Math.floor(x / 16);
+        const cj = Math.floor(z / 16);
+        const di = (Math.round((Math.atan2(d.x, d.z) / (2 * Math.PI)) * 64) + 64) % 64;
+        const k = ci + "," + cj + "," + di;
+        let f = M.karte.get(k);
+        if (f === undefined) {
+            const a = (di / 64) * 2 * Math.PI;
+            const H = (hx, hz) => this._terrainMacroSurfaceY(hx, hz, false);
+            f = globalThis.__gelaendeCore.windForm(H, (ci + 0.5) * 16, (cj + 0.5) * 16, Math.sin(a), Math.cos(a));
+            M.karte.set(k, f);
+        }
+        return f;
     }
 
     // Geteilte Kopplungs-Uniforms auf dem EINEN windUniforms-Slot: `uWindDir` (vec2; Leser: Gras/Streu
@@ -1498,13 +1535,26 @@ class AnazhRealm_stoff_material {
         };
     }
 
-    // DIE HIMMELS-SICHT DES REGENS (EIN Knoten je Seite): 1 unter offenem Himmel, 0 unter einer Decke des Dach-Pools — je
-    // Platz die Decke eines Baus (Mitte xz, Gier cos/sin; halbe Kanten, Oberkante y), ein Fragment darunter und im Grundriss
-    // der Decke steht trocken (Boden, Wände und Dinge des Innenraums; die Außenwand liegt außerhalb der Decke).
+    // DIE NÄSSE UNTER DEM HIMMEL (EIN Knoten je Seite): die Himmels-Sicht des Regens (`_offenerHimmel`) am Welt-Ort des Fragments;
+    // ein Fragment unter einer Decke steht trocken (Boden, Wände und Dinge des Innenraums; die Außenwand liegt außerhalb der Decke).
     _naesseHimmel(T) {
         if (this._naesseHimmelK) return this._naesseHimmelK;
         const U = this._ensureAtmoUniforms();
         const p = T.positionWorld;
+        // die trockene Welt zahlt den Pool nie: r184s select schreibt ein if/else, die Bedingung liest den Welt-Ort (EINE
+        // Variable je Programm, wie die Bedingung des Licht-Pools); trocken ist das Gewicht ohnehin 0
+        const nass = U.naesse.greaterThan(0).and(p.y.greaterThan(-1e9));
+        this._naesseHimmelK = T.select(nass, this._offenerHimmel(T, p), T.float(0));
+        return this._naesseHimmelK;
+    }
+
+    // DIE HIMMELS-SICHT DES REGENS am Welt-Ort `p`: 1 unter offenem Himmel, 0 unter einer Decke des Dach-Pools — je Platz die
+    // Decke eines Baus (Mitte xz, Gier cos/sin; halbe Kanten, Oberkante y), ein Ort darunter und im Grundriss der Decke liegt
+    // unter ihr. Leser: die Nässe der Stoffe (`_naesseHimmel`, je Fragment) und die Schliere des Regens (`_ensureRainSystem`,
+    // je Schliere: unter der Decke fällt kein Regen — bis dahin fiel er durch jedes Dach, gate:naesse:echt sah ihn am Haus des
+    // Dorfs auf der Trasse: 27 Regen-Punkte innen).
+    _offenerHimmel(T, p) {
+        const U = this._ensureAtmoUniforms();
         let unter = T.float(0);
         for (let k = 0; k < U.dachLage.length; k++) {
             const L = U.dachLage[k];
@@ -1514,11 +1564,8 @@ class AnazhRealm_stoff_material {
             const lz = d.x.mul(L.w).add(d.y.mul(L.z)).abs();
             unter = unter.max(T.step(lx, M.x).mul(T.step(lz, M.y)).mul(T.step(p.y, M.z)));
         }
-        // die trockene Welt zahlt den Pool nie: r184s select schreibt ein if/else, die Bedingung liest den Welt-Ort (EINE
-        // Variable je Programm, wie die Bedingung des Licht-Pools); trocken ist das Gewicht ohnehin 0
-        const nass = U.naesse.greaterThan(0).and(p.y.greaterThan(-1e9));
-        // DIE HÜLLE DES POOLS (naesse-kosten): die Plätze prüft nur ein Fragment im Kasten um alle Decken und unter ihrer höchsten
-        // Oberkante (`dachHuelle`/`dachOben`, `_dachTakt`) — draußen steht es unter offenem Himmel, ohne Decke ist der Kasten leer.
+        // DIE HÜLLE DES POOLS (naesse-kosten): die Plätze prüft nur ein Ort im Kasten um alle Decken und unter ihrer höchsten
+        // Oberkante (`dachHuelle`/`dachOben`, `_dachTakt`) — draußen steht er unter offenem Himmel, ohne Decke ist der Kasten leer.
         // Gemessen GTX in EINER Welt (Wiese Ego, Regen 10 min, gpu-bank): der Pool kostete jedes nasse Fragment +0,54 ms je Bild,
         // auch ohne ein Dach im Umkreis; das Gesetz selbst +0,05
         const H = U.dachHuelle;
@@ -1528,8 +1575,7 @@ class AnazhRealm_stoff_material {
             .and(p.z.greaterThanEqual(H.y))
             .and(p.z.lessThanEqual(H.w))
             .and(p.y.lessThanEqual(U.dachOben));
-        this._naesseHimmelK = T.select(nass, T.select(drin, T.float(1).sub(unter), T.float(1)), T.float(0));
-        return this._naesseHimmelK;
+        return T.select(drin, T.float(1).sub(unter), T.float(1));
     }
 
     // DER DACH-POOL (EIN Schreiber, aus `_naesseTakt`): die Decken der `NAESSE.dachPlaetze` Bauten, die dem Auge am nächsten
@@ -3038,11 +3084,9 @@ AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, w
 // Haut Fett, der Schatten-Stoff zeichnet keine Farbe. Der Dach-Pool: `dachPlaetze` Decken im `dachUmkreisM`, neu nach `dachSchrittM`;
 // Decken tragen die Häuser (Hülle) und die `dachArten` (Rezept oder Art: ihre Form schließt oben, `_dachKastenSetzen`). Näher als
 // `ruhe` an ihrem Ziel steht die Nässe dort (ein Tausendstel verschiebt eine Albedo um höchstens 2,5e-4) — der Fixpunkt, an dem
-// der Regen schläft (feld.K3, `_tickRain`). `haft`: der Reibkreis des Reifens voll nass relativ zu trocken (nasser Asphalt und
-// nasses Gras greifen mit ≈ 0,7 — der Bremsweg wächst um 1 / 0,7 = 1,43; Leser `_fahrHaft`, feld.K1).
+// der Regen schläft (feld.K3, `_tickRain`). Wie nass ein Reifen greift, trägt die Stoff-Zeile je Stoff (`muRadNass`, `_fahrHaft`).
 AnazhRealm.NAESSE = Object.freeze({
     regenAb: 0.05,
-    haft: 0.7,
     benetzenS: 150,
     trocknenS: 1500,
     ruhe: 1e-3,

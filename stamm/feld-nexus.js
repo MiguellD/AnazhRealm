@@ -1035,7 +1035,7 @@ class AnazhRealm_feld_nexus {
         // rechnet nur ab dem ersten geänderten Token neu. Stand das Wechselnde vorn (Kreaturen-Zahl, Journal, Gemüt), rechnete das
         // lokale Modell jeden Satz alle ~1 900 Token neu (CPU 29 s je Satz); der feste Vertrag vorn steht einmal im Cache.
         return [
-            `Du bist ${companionName}, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.`,
+            AnazhRealm._datum`Du bist ${companionName}, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.`,
             "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:",
             '  - say: EIN kurzer deutscher Satz, warm-narrativ, in erster Person. Sprich von dir als "ich". Keine Emojis.',
             "  - program: EIN DSL-Programm oder null — ein verschachteltes Array, das mit dem Op-Namen beginnt; nie eine Liste von",
@@ -1071,8 +1071,9 @@ class AnazhRealm_feld_nexus {
             "Halte Programme klein (Tiefe ≤ 4).",
             "Antworte AUSSCHLIESSLICH mit dem JSON-Objekt, ohne Markdown-Fences, ohne Vorrede.",
             "",
-            `Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}. Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
-            `Dein Spieler heißt ${playerName} und hält sich gern auf: ${tendency}.`,
+            AnazhRealm._datum`Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}.` +
+                ` Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
+            AnazhRealm._datum`Dein Spieler heißt ${playerName}` + ` und hält sich gern auf: ${tendency}.`,
             moodLine,
             moodBgLine,
             `Die Bänder jetzt: ${Object.entries(AnazhRealm.DSL_WERTE)
@@ -1087,7 +1088,7 @@ class AnazhRealm_feld_nexus {
 
     // === Kreatur-Persona-Prompt-Builder ===
     // Der Spieler spricht mit EINER Kreatur, sie antwortet aus IHRER Sicht. Der Prompt versammelt
-    // Name + Soul, bornAt, Stats, Specs, Equipped, Boosts, Memory und Welt-Kontext (Wetter, Slug).
+    // Name + Soul, Alter, Stats, Specs, Equipped, Boosts, Memory und Welt-Kontext (Wetter, Slug).
     // Ein program der Antwort läuft nur über _handleCreatureProposedProgram (Whitelist).
     _buildCreaturePersonaPrompt(creature) {
         if (!creature || !creature.userData) return null;
@@ -1096,8 +1097,8 @@ class AnazhRealm_feld_nexus {
         const soulName = ud.soul || "wesen";
         const soulDef = AnazhRealm.CREATURE_SOULS && AnazhRealm.CREATURE_SOULS[soulName];
         const soulLabel = (soulDef && soulDef.label) || soulName;
-        // Alter berechnen aus bornAt
-        const ageMs = ud.bornAt ? Date.now() - ud.bornAt : 0;
+        // das Alter in Spiel-Zeit (`alterS` des Lebenszyklus; bornAt ist nur Identität)
+        const ageMs = (ud.alterS || 0) * 1000;
         const ageStr =
             ageMs < 60000
                 ? `${Math.max(1, Math.floor(ageMs / 1000))} Sekunden`
@@ -1117,14 +1118,17 @@ class AnazhRealm_feld_nexus {
         const specsLine =
             topSpecs.length > 0
                 ? topSpecs
-                      .map((s) => `${s.kind === "gather" ? "Sammler" : "Bauer"} von „${s.key}" (L${s.level})`)
+                      .map(
+                          (s) =>
+                              `${s.kind === "gather" ? "Sammler" : "Bauer"} von „${AnazhRealm._datum(s.key)}" (L${s.level})`
+                      )
                       .join(", ")
                 : "noch keine Spezialisierung";
         // Equipped
         const eq = ud.equipped || {};
         const eqParts = [];
-        if (eq.tool) eqParts.push(`Werkzeug „${eq.tool}"`);
-        if (eq.armor) eqParts.push(`Rüstung „${eq.armor}"`);
+        if (eq.tool) eqParts.push(AnazhRealm._datum`Werkzeug „${eq.tool}"`);
+        if (eq.armor) eqParts.push(AnazhRealm._datum`Rüstung „${eq.armor}"`);
         const eqLine = eqParts.length > 0 ? eqParts.join(", ") : "unbewaffnet, ohne Rüstung";
         // Aktive Boosts
         const boosts = Array.isArray(ud.boosts) ? ud.boosts : [];
@@ -1132,7 +1136,9 @@ class AnazhRealm_feld_nexus {
         const boostList = boosts.filter((b) => b && b.expiresAt > nowSec);
         const boostLine =
             boostList.length > 0
-                ? boostList.map((b) => `${b.label || b.source} (${Math.round(b.expiresAt - nowSec)}s)`).join(", ")
+                ? boostList
+                      .map((b) => `${AnazhRealm._datum(b.label || b.source)} (${Math.round(b.expiresAt - nowSec)}s)`)
+                      .join(", ")
                 : "kein aktiver Trank-Effekt";
         // Memory-Auszug (letzte 8 Einträge, älteste→neueste lesbar)
         const memory = Array.isArray(ud.memory) ? ud.memory.slice(-8) : [];
@@ -1141,16 +1147,16 @@ class AnazhRealm_feld_nexus {
                 ? memory
                       .map((m) => {
                           if (m.type === "gathered" && m.content && m.content.material)
-                              return `ich sammelte ${m.content.material}`;
+                              return AnazhRealm._datum`ich sammelte ${m.content.material}`;
                           if (m.type === "built" && m.content && m.content.blueprint)
-                              return `ich baute ${m.content.blueprint}`;
+                              return AnazhRealm._datum`ich baute ${m.content.blueprint}`;
                           if (m.type === "delivered" && m.content) return `ich übergab Material an den Schöpfer`;
                           if (m.type === "took_materials" && m.content && m.content.blueprint)
-                              return `ich nahm Material für ${m.content.blueprint}`;
+                              return AnazhRealm._datum`ich nahm Material für ${m.content.blueprint}`;
                           if (m.type === "no_material" && m.content && m.content.material)
-                              return `ich fand kein ${m.content.material}`;
+                              return AnazhRealm._datum`ich fand kein ${m.content.material}`;
                           if (m.type === "no_blueprint" && m.content && m.content.blueprint)
-                              return `der Bauplan ${m.content.blueprint} war mir fremd`;
+                              return AnazhRealm._datum`der Bauplan ${m.content.blueprint} war mir fremd`;
                           if (m.type === "no_inventory_for_build") return `der Schöpfer hatte kein Material für mich`;
                           if (m.type === "spoken") return `der Schöpfer sprach zu mir`;
                           return null;
@@ -1160,10 +1166,13 @@ class AnazhRealm_feld_nexus {
                 : "keine besonderen Erinnerungen";
         // Welt-Kontext
         const m = this.state.worldMeta || {};
-        const worldLine = `Du lebst in der Welt „${m.slug || "namenlos"}", das Wetter ist gerade ${this.state.weather || "still"}.`;
+        const worldLine =
+            AnazhRealm._datum`Du lebst in der Welt „${m.slug || "namenlos"}"` +
+            `, das Wetter ist gerade ${this.state.weather || "still"}.`;
 
         return [
-            `Du bist ${name}, ein/e ${soulLabel}. Du wurdest vor ${ageStr} in diese Welt geboren.`,
+            AnazhRealm._datum`Du bist ${name}` +
+                `, ein/e ${soulDef && soulDef.label ? soulLabel : AnazhRealm._datum(soulLabel)}. Du wurdest vor ${ageStr} in diese Welt geboren.`,
             `Dein Körper trägt: ${statLine}.`,
             `Du hast gelernt: ${specsLine}.`,
             `Du trägst: ${eqLine}.`,
@@ -1222,7 +1231,7 @@ class AnazhRealm_feld_nexus {
         return [
             `Welt-Status: weather=${this.state.weather}, creatures=${this.state.creatures.length}, fps=${(this.state.fps || 0).toFixed(0)}.`,
             `Spieler-Emotionen (Top 3): ${top.join(", ") || "still"}.`,
-            `Spieler-Seele: ${this.state.player.soul || "human"}.`,
+            AnazhRealm._datum`Spieler-Seele: ${this.state.player.soul || "human"}.`,
         ].join("\n");
     }
 
@@ -1305,7 +1314,8 @@ class AnazhRealm_feld_nexus {
             }
         }
         if (Array.isArray(reply.program) && reply.program.length > 0) {
-            const result = this.dslRun(reply.program, { source: "llm:grok" });
+            // das Wort des Spielers ist die Ursache der Tat der KI (die Stimme des Felds nennt es, `_tatWerten`)
+            const result = this.dslRun(reply.program, { source: "llm:grok", grund: userText });
             // Die KI als Regel-Schreiberin: ein LLM-rule-Programm registriert eine stehende Regel (ephemer
             // per Default, whitelist-gesichert); ihre Fitness läuft über das Lebens-Fenster, NICHT über den
             // 5-s-Gesten-Finalizer (der nur die Registrierung mäße).

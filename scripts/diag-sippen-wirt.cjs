@@ -24,7 +24,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     const t0 = Date.now();
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
@@ -228,7 +228,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     console.error("❌ Linse abgestürzt:", e && e.stack ? e.stack : e);
     try {
         server.close();
-    } catch (_e) {
+    } catch {
         /* bereits zu */
     }
     process.exit(1);

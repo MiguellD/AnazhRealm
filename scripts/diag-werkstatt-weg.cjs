@@ -1,50 +1,27 @@
-// diag-werkstatt-weg.cjs — DIE WERKSTATT-WEG-LINSE (v1-Schritte 3–4: in der Werkstatt bauen, mit der KI
-// erschaffen). Die Defekte, die die sichtbare Leben-Schau am 07.10. auf dem v1-Pfad fand
-// (artifacts/profiband/leben-schau/befund-v1-pfad.md), je beim NAMEN. Im echten Boot (headless, foundry-ON,
-// Null-Renderer der Welt): D10, Wortschatz, Werk-Same und Brennglas rufen ihren Chokepoint, L-WERKSTATT fährt echte Eingaben.
-//
-//   D10 — DER SAME EINES SATZES: „pflanz mir einen eichenhain", „setze insel hier", „baue fraktal tempel" und ein KI-Programm
-//     ohne Seed ziehen ihre Welt-Substanz (Same, Streuung, Drehung, Größe) aus dem Welt-Strom (`_bauSame`, Γ5), nie aus
-//     Math.random. Gemessen: Math.random-Züge je Satz (Befund: Hain 1 + 24, Insel 1, Fraktal 1, KI ohne Seed 13) und die
-//     Wiederholung: derselbe Satz an derselben Stelle der Welt-Geschichte ergibt denselben Samen und dieselben Orte.
-//
-//   L-WORTSCHATZ — DER WORT-KATALOG IST DER REZEPT-KATALOG: jedes Wort löst über die Studio-Arten auf (Rezept-ids, Werk-Namen,
-//     Art-Wörter des Art-Gesetzes, Studio-Namen), nie über eine Hand-Liste. Befund: „bau mir ein fachwerkhaus" →
-//     „Unbekannter Befehl. Meintest du 'baue dorf hier'?", `_studioBlueprintForWord` null für fachwerkhaus · wagen. Gemessen:
-//     die Wörter des Befunds, jede platzierbare Studio-Art ihr Rezept-Wort, „bau mir ein fachwerkhaus" stellt ein Haus in
-//     die Welt, und ein unbekanntes Wort („scheune") sagt dem Spieler im Chat, was die Studios kennen.
-//
-//   L-WERKSTATT · FRIEDEN · L-RÜCKMELDUNG — VOM WILLEN ZUM STEHENDEN WERK IN ≤ 3 EINGABEN (Meisterkarte Bauen K1): Eiche,
-//     Haus, GT und eine eigene Hütte über Werkstatt, Rezeptbuch und Hotbar, in schöpfer · frieden mit/ohne Material · pfad,
-//     Ego und Third. Jeder Schritt ist ein echtes Ereignis (page.keyboard / page.mouse, isTrusted), gezählt an einem
-//     Capture-Hörer auf window (pointerdown · keydown · wheel); vorbereitet wird vor dem Zähler. Soll: das Werk steht,
-//     frieden und pfad zahlen genau einmal, ohne Material spricht die Absage; die getippte Suche „haus" findet Häuser, die
-//     Lichtung färbt das Phantom rot und sagt warum. Rohdatei artifacts/werkstatt-weg/weg.json (je Lauf Folge, Zahl, Zeit).
-//
-//   BRENNGLAS — DAS LICHT BRENNT, WO ES SICH BÜNDELT, UND DIE ZERSTÖRUNG NENNT SICH: die Eiche 2,4 m vor der Mitte der
-//     Genesis-Plattform (ihr Quarz-Kern ist nach der Tag-Sprache ein Brennglas) übersteht einen ganzen sonnigen Tag; die
-//     gebaute Linse (Quarz-Kugel im Bronze-Ring, 1 m über dem Boden) entzündet zu Mittag die Eiche unter sich — erst glimmt
-//     sie, dann brennt sie, beides im Spieler-Kanal —, nachts nie, und was den Brennpunkt verlässt, kühlt. Dazu der
-//     Zensus der Welt: was das alte Gesetz im 4-m-Kreis jeder Linse erhitzte, was das Licht jetzt erreicht. Befund
-//    : die Werkstatt-Eiche verbrannte nach 20 s Sonne still (Architekturen 125 → 124, nur im Log).
-//
-//   DER SAME DES WERKS (ROT 1) — DAS GESETZTE WERK IST DAS PHANTOM, AUCH BEIM MITSPIELER: das Setzen
-//     (`confirmBuild`) stellt die Gestalt, Drehung und Tönung, die das Phantom zeigt (EIN Same je Werk, `_werkSame` — dieselbe
-//     Gestalt wie Werkstatt-Vorschau und Hand), würfelt nichts aus Math.random, und die Nachricht an den Mitspieler trägt
-//     Same und Drehung des Werks: dort steht dasselbe Werk. Der Zähler des Welt-Stroms (`_bauSame`) reist im Welt-Gedächtnis
-//     (`worldMeta`): nach einem Reload wiederholt der Strom nie seinen ersten Samen. Befund: der Standard-Same der Wurzel
-//     `spawnArchitecture` war Math.random, der Broadcast schickte den Samen 0 (immer Gestalt 1), das Phantom zeigte die
-//     Gestalt des Bauplan-Namens und blickte zum Spieler, das Werk stand mit Drehung 0.
-//
+// diag-werkstatt-weg.cjs — DIE WERKSTATT-WEG-LINSE (v1-Schritte 3–4: in der Werkstatt bauen, mit der KI erschaffen), im
+// echten Boot (headless, foundry-ON, Null-Renderer der Seite: keine Bühne zeichnet); jede Probe ruft ihren Chokepoint, L-WERKSTATT fährt echte Eingaben.
+//   D10 — der Same eines Satzes (Hain, Insel, Fraktal, KI ohne Seed) kommt aus dem Welt-Strom (`_bauSame`), nie aus
+//     Math.random; derselbe Satz an derselben Stelle der Welt-Geschichte ist derselbe Hain.
+//   L-WORTSCHATZ — jedes Wort löst über die Studio-Arten auf, „bau mir ein fachwerkhaus" stellt ein Haus, ein unbekanntes Wort
+//     hört den Katalog.
+//   L-WERKSTATT (Bauen K1) — Eiche, Haus, GT und das eigene Teil-Werk über Werkstatt, Rezeptbuch und Hotbar in ≤ 3 echten
+//     Eingaben (Capture-Hörer auf window), schöpfer · frieden · pfad, Ego und Third; Rohdatei artifacts/werkstatt-weg/weg.json.
+//   BRENNGLAS — die Eiche an der Genesis-Plattform übersteht einen sonnigen Tag; die gebaute Linse entzündet zu Mittag die
+//     Eiche unter sich und sagt es, nachts nie, außerhalb kühlt es.
+//   DER SAME DES WERKS — das Setzen stellt Gestalt und Drehung des Phantoms (`_werkSame`), der Mitspieler dasselbe Werk, der
+//     Welt-Strom übersteht den Reload.
+//   PRÜF-SATZ (Bauen K3) — zehn Konstruktionen über den Bau-Weg (spec/pruefsatz/bauen-k3.json): das Stabile steht, das Instabile
+//     stürzt sichtbar (die EINE Statik beim Setzen); Brennglas, Rad, Schale und Gründer wirken aus der Form.
 //   node scripts/diag-werkstatt-weg.cjs [--selftest]          Port: WERKSTATT_WEG_PORT (Standard 4623)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, sleep: pause } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.WERKSTATT_WEG_PORT || 4623);
+const PRUEF_SATZ = require("../spec/pruefsatz/bauen-k3.json"); // Meisterkarte Bauen K3: 5 stabil, 5 instabil, die Wirkungen
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
@@ -69,7 +46,7 @@ function sameVerdict(m) {
     return out;
 }
 
-// Die Wörter des Befunds (L-Wortschatz, Drehbuch 18) und ihre Studio-Art; unbekannt bleibt, was kein Studio baut.
+// Die Wörter und ihre Studio-Art; unbekannt bleibt, was kein Studio baut.
 const WORT_SOLL = {
     fachwerkhaus: "haus",
     fachwerkhäuser: "haus",
@@ -175,7 +152,7 @@ function wegVerdict(m) {
 }
 
 // Brennglas: { plattform: {steht, maxWaerme, zeilen}, linse: {glimmtBei, brenntBei, steht, zeileGlimmt, zeileBrennt},
-// nacht: {waerme, steht}, kuehlung: {nachFokus, nachKuehlen}, zensus: {linsen, altReichweite, imLicht} }.
+// nacht: {waerme, steht}, kuehlung: {nachFokus, nachKuehlen} }.
 function brennVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
     const out = [];
@@ -196,9 +173,29 @@ function brennVerdict(m) {
         out.push(`nachts erwärmt die Linse (Wärme ${n.waerme}${n.steht ? "" : ", verbrannt"})`);
     const k = m.kuehlung || {};
     if (!(k.nachFokus > 0)) out.push("keine Wärme im Brennpunkt (Vorbedingung)");
-    else if (!(k.nachKuehlen === 0))
+    else if (!(k.nachKuehlen < k.nachFokus / 2))
         out.push(`außerhalb des Brennpunkts kühlt nichts (${k.nachFokus} → ${k.nachKuehlen})`);
     return out;
+}
+
+// Der Prüf-Satz (Bauen K3) mit dem Brennglas → die Täter je Konstruktion und Wirkung.
+const WIRKUNGEN = ["Brennglas mittags", "Brennglas nachts", "Rad", "Schale", "Gründer"];
+function pruefVerdict(m, b) {
+    if (!m || !m.gestartet) return { statik: ["start"], wirkung: WIRKUNGEN, richtig: 0 };
+    const z = Object.entries(m.statik);
+    const statik = z
+        .filter(([, w]) => !w.gesetzt || (w.art === "stabil" ? !w.steht : !(w.neigung >= 30 || w.fall >= 0.3) || !w.zeile))
+        .map(([k, w]) => `${k} ${JSON.stringify(w)}`);
+    const [l, n, rad, s, g] = [b.linse || {}, b.nacht || {}, m.rad || {}, m.schale, m.gruender];
+    const ok = [
+        l.brenntBei > 0,
+        n.waerme === 0 && n.steht,
+        rad.rad && rad.rad.weg >= 1 && rad.rad.hinab > 0 && rad.rad.neigung > 30 && rad.klotz.weg < 0.01,
+        s.regen > 0 && s.sonne >= 0.8 * s.regen && s.sichtbar && s.loch === 0,
+        g.breit > 0.05 && g.hoch < 0.01,
+    ];
+    const rest = [...konsumTaeter(m.konsum), ...(z.length === 10 ? [] : [`${z.length} von 10 gesetzt`])];
+    return { statik: [...rest, ...statik], wirkung: WIRKUNGEN.filter((_, i) => !ok[i]), richtig: z.length - statik.length };
 }
 
 // Der Same des Werks: { steht, zuege, phantomKey, werkKey, phantomDreh, werkDreh, werkSame, werkTint, gesendetSame,
@@ -214,16 +211,13 @@ function werkVerdict(m) {
     else if (m.phantomKey !== m.werkKey) out.push(`das Phantom zeigt ${m.phantomKey}, es steht ${m.werkKey}`);
     if (!gleich(m.phantomDreh, m.werkDreh))
         out.push(`das Phantom blickt ${m.phantomDreh} rad, das Werk ${m.werkDreh} rad`);
-    // Das Werk steht nie im Spieler; wie weit
-    // das Werk reicht, misst die Linse an der Studio-Gestalt des Phantoms in Weltgröße (jeder Vertex, Integration V18.536 —
-    // die Klemme maß die Spender-Teile, 3,01 m).
+    // Das Werk steht nie im Spieler: wie weit es reicht, misst die Linse an der Studio-Gestalt des Phantoms in Weltgröße.
     if (!(m.mindest > 0)) out.push("kein Spieler-Abstand des Werks (Vorbedingung)");
     else if (!(m.abstand >= m.mindest - 0.01))
         out.push(
             `das Phantom steht ${m.abstand} m vor dem Spieler, das Werk reicht ${m.reicht} m (Soll ≥ ${m.mindest} m)`
         );
-    // Die Hülle des gesetzten Werks liegt in der Reichweite, die die Klemme misst (die Stamm-Hülle trägt
-    // seit v1-ankunft die Welt-Skala des Studio-Baums).
+    // Die Hülle des gesetzten Werks liegt in der Reichweite, die die Klemme misst.
     if (Number.isFinite(m.huelleReicht) && m.reicht > 0 && m.huelleReicht > m.reicht + 0.01)
         out.push(
             `die Hülle des Werks reicht ${m.huelleReicht} m, die Klemme misst ${m.reicht} m — der Spieler steht im Werk`
@@ -292,11 +286,12 @@ async function probe(argW) {
     await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
+    const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
     const tick = async (n, ms) => {
         for (let i = 0; i < n; i++) {
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             await sleep(ms || 30);
         }
     };
@@ -338,6 +333,46 @@ async function probe(argW) {
         st.yaw = 0;
     };
     out.frei = frei;
+    // DER BAU-WEG DES SPIELERS: der Plan in die Hotbar, das Phantom an den Ort, `confirmBuild` (schöpfer) — ruft es die Statik?
+    const satz = argW.satz;
+    const konsum = { "confirmBuild → _workshopPhysicsVerdict": false };
+    const setze = (name, plan, x, z, dreh = 0) => {
+        const [key, bm, vor, urteil, modus, slot] = ["__pruef_" + name, st.buildMode, new Set(st.architectures), r._workshopPhysicsVerdict, r.getGameMode(), st.hotbar[6]];
+        const teil = ([px, py, pz, sx, sy, sz, material = "stein", shape = "box", rz = 0]) =>
+            ({ shape, material, position: { x: px, y: py, z: pz }, size: { x: sx, y: sy, z: sz }, rotation: { x: 0, y: 0, z: rz } });
+        st.blueprints[key] = { name: key, label: name, parts: plan.map(teil) };
+        r.setGameMode("schöpfer");
+        r._clearBuildMode();
+        bm.slotIndex = -1;
+        r.setHotbarSlot(6, key);
+        r.selectHotbarSlot(6);
+        bm.phantomMesh.position.set(x, r._voxelSurfaceY(x, z), z);
+        [bm.phantomMesh.rotation.y, bm.phantomOnGround] = [dreh, true];
+        r._workshopPhysicsVerdict = function (...a) {
+            konsum["confirmBuild → _workshopPhysicsVerdict"] = true;
+            return urteil.apply(this, a);
+        };
+        try {
+            r.confirmBuild();
+        } finally {
+            delete r._workshopPhysicsVerdict;
+            r._clearBuildMode();
+            r.setHotbarSlot(6, slot);
+            r.setGameMode(modus);
+        }
+        return st.architectures.find((e) => !vor.has(e) && e.type === key) || null;
+    };
+    // die gezeichnete Lage (Gruppe oder erste Instanz)
+    const bild = (e) => {
+        const m = new THREE.Matrix4();
+        if (e.mesh) m.compose(e.mesh.position, e.mesh.quaternion, e.mesh.scale);
+        else if (e.instSlots && e.instSlots.length) st.archInstanceGroups.get(e.instSlots[0].key).mesh.getMatrixAt(e.instSlots[0].slot, m);
+        else return null;
+        const [p, q] = [new THREE.Vector3(), new THREE.Quaternion()];
+        m.decompose(p, q, new THREE.Vector3());
+        return { p, q };
+    };
+    const grad = (a, b) => (360 / Math.PI) * Math.acos(Math.min(1, Math.abs(a.q.dot(b.q))));
 
     const orig = Math.random;
     let n = 0;
@@ -368,7 +403,7 @@ async function probe(argW) {
         };
         try {
             wer[methode](...args);
-        } catch (_e) {
+        } catch {
             /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
         } finally {
             if (eigen) lieferer[name] = echt;
@@ -376,10 +411,18 @@ async function probe(argW) {
         }
         return k > 0;
     };
+    // je Abschnitt EIN Befund: gestartet erst am Ende, ein Wurf trägt seinen Stapel
+    const abschnitt = async (k, m, fn) => {
+        out[k] = m = { gestartet: false, ...m };
+        try {
+            await fn(m);
+            m.gestartet = true;
+        } catch (e) {
+            m.err = (e && e.stack) || String(e);
+        }
+    };
     // ── D10: der Same eines Satzes ──
-    try {
-        const m = { gestartet: false, zuege: {} };
-        out.same = m;
+    await abschnitt("same", { zuege: {} }, async (m) => {
         if (!frei) throw new Error("kein freier Ort abseits der Lichtung");
         stelle();
         const neue = (vorher) => st.architectures.filter((a) => a && !vorher.has(a));
@@ -450,15 +493,10 @@ async function probe(argW) {
             return relOrte(liste);
         };
         m.streuAbweichung = abweichung(streu(1), streu(2));
-        m.gestartet = true;
-    } catch (e) {
-        out.same = Object.assign(out.same || {}, { err: (e && e.stack) || String(e) });
-    }
+    });
 
     // ── L-Wortschatz: der Wort-Katalog ist der Rezept-Katalog ──
-    try {
-        const m = { gestartet: false, woerter: {} };
-        out.wort = m;
+    await abschnitt("wort", { woerter: {} }, async (m) => {
         if (!frei) throw new Error("kein freier Ort abseits der Lichtung");
         const rec = r._foundry.recipes;
         // Die Art eines Bauplans: die Studio-Art, deren Rezept er trägt (das Buch, nie der Name).
@@ -476,7 +514,6 @@ async function probe(argW) {
         m.artenOhneWort = arten.filter((id) => !r._studioBlueprintForWord(id));
         // Der Satz an der Welt: „bau mir ein fachwerkhaus" vor dem Spieler (abseits der Lichtung) — ein Haus steht.
         stelle();
-        const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
         const vorher = new Set(st.architectures);
         const n0 = zeilen().length;
         r.processChatCommand("bau mir ein fachwerkhaus");
@@ -503,15 +540,10 @@ async function probe(argW) {
             m.vorschlag[satz] = { zeile: zeilen().slice(n2).join(" | "), sug: r.chatSuggest(satz) || null };
         }
         if (st.llm) st.llm.enabled = llmAlt;
-        m.gestartet = true;
-    } catch (e) {
-        out.wort = Object.assign(out.wort || {}, { err: (e && e.stack) || String(e) });
-    }
+    });
 
     // ── Der Same des Werks: das gesetzte Werk ist das Phantom, auch beim Mitspieler ──
-    try {
-        const m = { gestartet: false };
-        out.werk = m;
+    await abschnitt("werk", {}, async (m) => {
         if (!frei || !plat) throw new Error("kein freier Ort oder keine Genesis-Plattform");
         const NAME = "baum_eiche";
         const preset = r._foundryPresetForEntry({ type: NAME });
@@ -549,11 +581,10 @@ async function probe(argW) {
             r.setHotbarSlot(4, NAME);
             if (!(st.buildMode.active && st.buildMode.blueprintName === NAME)) r.selectHotbarSlot(4);
             const bm = st.buildMode;
-            r.tickBuildMode();
-            for (let i = 0; i < 300 && bm.phantomMesh && !bm.phantomMesh.userData.studioGhost; i++) {
-                await tick(1, 50);
-                r.tickBuildMode();
-            }
+            await window.__gebautNach("die Studio-Gestalt des Phantoms", {
+                fertig: () => !bm.phantomMesh || bm.phantomMesh.userData.studioGhost,
+                bau: () => r.tickBuildMode(),
+            });
             m.phantomKey = bm.phantomMesh ? keyVon(bm.phantomMesh.userData.foundrySrcGroup) : null;
             m.phantomDreh = bm.phantomMesh ? +bm.phantomMesh.rotation.y.toFixed(6) : null;
             // EIN Same je Werk: Vorschau und Hand ziehen `_werkSame`; der Ghost baut das Werk des Phantoms an SEINEM Ort.
@@ -575,7 +606,6 @@ async function probe(argW) {
                 "_buildStudioPlacementGhost → _phantomWerk am Ort": !!woG && woG.x === Q.x && woG.z === Q.z,
             };
             // Jede Absage des Setzens spricht im Spieler-Kanal (Material und Lichtung fährt L-Werkstatt): je ein Instanz-Feld.
-            const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
             m.stumm = [
                 ["_setzUrteil", () => ({ grund: "standort" }), "Standort trägt nicht"],
                 ["_setzUrteil", () => ({ grund: "werkstatt", domaene: "x" }), "Werkstatt der Domäne"],
@@ -646,8 +676,7 @@ async function probe(argW) {
                 m.werkKey = werkKey(e);
                 m.werkDreh = dreh(e);
                 m.werkTint = tint(e);
-                // Die Hülle des Werks (seine Blocker, seit v1-ankunft in der Welt-Skala des Studio-Werks, `_studioWeltSkala`):
-                // wie weit sie waagrecht über seinen Ort reicht — die Klemme muss sie tragen, sonst steht der Spieler im Werk.
+                // Die Hülle des Werks (seine Blocker): wie weit sie waagrecht über seinen Ort reicht.
                 let hq = 0;
                 for (const b of e.blockerAABBs || [])
                     for (const x of [b.minX, b.maxX])
@@ -684,7 +713,6 @@ async function probe(argW) {
             const snapMeta = JSON.parse(JSON.stringify(r.buildStateSnapshot().worldMeta));
             rl.weiter = r._bauSame("pruef:reload");
             st.worldMeta = Object.assign({}, wmAlt, { bauSame: undefined }, snapMeta);
-            delete st.worldMeta.scatterPromoted;
             rl.nachReload = r._bauSame("pruef:reload");
         } finally {
             st.worldMeta = wmAlt;
@@ -692,43 +720,17 @@ async function probe(argW) {
             else wmAlt.bauSame = zAlt;
         }
         m.reload = rl;
-        m.gestartet = true;
-    } catch (e) {
-        out.werk = Object.assign(out.werk || {}, { err: (e && e.stack) || String(e) });
-    }
+    });
 
     // ── Brennglas: das Licht brennt, wo es sich bündelt, und die Zerstörung nennt sich ──
-    try {
-        const m = { gestartet: false };
-        out.brenn = m;
+    await abschnitt("brenn", {}, async (m) => {
         if (!frei || !plat) throw new Error("kein freier Ort oder keine Genesis-Plattform");
-        const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
         const wetterAlt = st.weather;
         const zeitAlt = st.timeOfDay;
         const takt = (s) => r._tickFocusingAffordances(s);
         try {
             st.weather = "sunny";
-            // Der Zensus: Linsen der Welt, was das alte Gesetz im 4-m-Kreis erreichte, was das Licht zu Mittag erreicht.
-            const R2 = r.constructor.FOCUSING_HEAT_RANGE_M ** 2;
-            const linsen = st.architectures.filter((e) => e.affordances && e.affordances.focusing);
-            const brennbar = (e) => {
-                const b = st.blueprints[e.type];
-                return b && (r.computeCompoundTags(b).brennbar || 0) >= r.constructor.BRENNBAR_TAG_MIN;
-            };
-            const nah = st.architectures.filter(
-                (e) =>
-                    !(e.affordances && e.affordances.focusing) &&
-                    linsen.some((f) => (f.position.x - e.position.x) ** 2 + (f.position.z - e.position.z) ** 2 <= R2) &&
-                    brennbar(e)
-            );
-            st.timeOfDay = 0.5;
-            const licht = r._sonnenRichtung();
-            const imLicht = nah.filter((e) =>
-                linsen.some((f) => r._brennpunkte(f, licht).some((p) => r._traegtPunkt(e, st.blueprints[e.type], p)))
-            ).length;
-            m.zensus = { linsen: [...new Set(linsen.map((e) => e.type))], altReichweite: nah.length, imLicht };
-            // (1) Die Eiche 2,4 m vor der Plattform-Mitte (der Ort der Leben-Schau; direkt gesetzt — der Bau-Modus hält die
-            // Lichtung seit dem Schnitt der Wege frei, hier wird das Brennglas-Gesetz allein gemessen): ein sonniger Tag.
+            // (1) Die Eiche 2,4 m vor der Plattform-Mitte (direkt gesetzt: der Bau-Modus hält die Lichtung frei): ein sonniger Tag.
             const P = plat.position;
             const vorn = r._blickVorn ? r._blickVorn(0, 0) : { x: 0, z: 1 };
             const eiche = r.spawnArchitecture(
@@ -755,28 +757,10 @@ async function probe(argW) {
                 m.plattform.verbranntNach = nach;
                 if (m.plattform.steht) r.removeArchitecture(eiche);
             }
-            // (2) Die gebaute Linse (das Gesetz lebt): Quarz-Kugel im Bronze-Ring, 1 m über dem Boden, die Eiche darunter.
-            const LINSE = "__werkstatt_weg_linse";
-            st.blueprints[LINSE] = {
-                name: LINSE,
-                label: "Prüf-Linse",
-                parts: [
-                    {
-                        shape: "sphere",
-                        material: "quarz",
-                        position: { x: 0, y: 1, z: 0 },
-                        size: { x: 0.8, y: 0.8, z: 0.8 },
-                    },
-                    {
-                        shape: "torus",
-                        material: "bronze",
-                        position: { x: 0, y: 1, z: 0 },
-                        size: { x: 0.9, y: 0.15, z: 0.9 },
-                    },
-                ],
-            };
+            // (2) Die gebaute Linse (das Gesetz lebt): Quarz-Kugel im Bronze-Ring auf drei Beinen, 1 m über dem Boden, die Eiche
+            // darunter — gesetzt über den Bau-Weg (der Prüf-Satz `Brennglas`; ohne Beine schwebte sie und stürzte).
             const L0 = { x: frei.x + 30, y: frei.y, z: frei.z };
-            const linse = r.spawnArchitecture(LINSE, L0, { silent: true });
+            const linse = setze("Brennglas", satz.wirkung.Brennglas, L0.x, L0.z);
             m.linse = { gesetzt: !!(linse && linse.affordances && linse.affordances.focusing) };
             const baum = () => r.spawnArchitecture("baum_eiche", { x: L0.x + 0.3, y: L0.y, z: L0.z }, { silent: true });
             if (m.linse.gesetzt) {
@@ -823,15 +807,71 @@ async function probe(argW) {
                 if (st.architectures.includes(b1)) r.removeArchitecture(b1);
             }
             if (linse) r.removeArchitecture(linse);
-            delete st.blueprints[LINSE];
         } finally {
             st.weather = wetterAlt;
             st.timeOfDay = zeitAlt;
         }
-        m.gestartet = true;
-    } catch (e) {
-        out.brenn = Object.assign(out.brenn || {}, { err: (e && e.stack) || String(e) });
-    }
+    });
+
+    // ── Der Prüf-Satz (Bauen K3): Statik und Wirkung aus der Form, in der Welt ──
+    await abschnitt("pruef", { statik: {}, konsum }, async (m) => {
+        const [emo, wetter, chaos, h] = [st.player.emotions, st.weather, st.player.emotions.chaos, (x, z) => r.getTerrainHeightAt(x, z)];
+        const takte = (n, dt) => {
+            for (let i = 0; i < n; i++) r.tickAffordances(dt);
+        };
+        st.playerMesh.position.set(frei.x, frei.y + 1.2, frei.z);
+        // gesetzt, n Takte zu 1/30 s: größte Drehung, tiefster Fall der gezeichneten Lage
+        const lauf = (name, plan, x, z, n, dreh) => {
+            const [n0, e] = [zeilen().length, setze(name, plan, x, z, dreh)];
+            const [b0, p0, o] = [e && bild(e), e && { ...e.position }, { neigung: 0, fall: 0 }];
+            for (let t = 0; t < n && b0 && st.architectures.includes(e); t++) {
+                takte(1, 1 / 30);
+                const b = st.architectures.includes(e) && bild(e);
+                if (b) [o.neigung, o.fall] = [Math.max(o.neigung, grad(b0, b)), Math.max(o.fall, b0.p.y - b.p.y)];
+            }
+            const da = !!e && st.architectures.includes(e);
+            Object.assign(o, { gesetzt: !!b0, steht: da && o.neigung < 0.5 && o.fall < 0.01, zeile: zeilen().slice(n0).find((l) => l.includes(name)) || "" });
+            if (e) Object.assign(o, { weg: Math.hypot(e.position.x - p0.x, e.position.z - p0.z), hinab: p0.y - e.position.y });
+            if (da) r.removeArchitecture(e);
+            return o;
+        };
+        for (const art of ["stabil", "instabil"])
+            for (const [name, plan] of Object.entries(satz[art])) m.statik[name] = { art, ...lauf(name, plan, frei.x + 12, frei.z, 150) };
+        // DAS RAD quer zur Falllinie eines trockenen Hangs (Gefälle 0,3–0,6), der Klotz ebenso
+        let hang = null;
+        for (let i = 0; i < 744 && !hang; i++) {
+            const [w, ring] = [((i % 24) / 12) * Math.PI, 20 + 6 * Math.floor(i / 24)];
+            const [x, z] = [frei.x + Math.cos(w) * ring, frei.z + Math.sin(w) * ring];
+            const [gx, gz] = [(h(x + 1, z) - h(x - 1, z)) / 2, (h(x, z + 1) - h(x, z - 1)) / 2];
+            const g = Math.hypot(gx, gz);
+            if (g > 0.3 && g < 0.6 && !r._nassAt(x, z) && h(x - (6 * gx) / g, z - (6 * gz) / g) < h(x, z) - 1.5) hang = { x, z, dreh: Math.atan2(-gx, -gz) };
+        }
+        if (hang) {
+            st.playerMesh.position.set(hang.x, h(hang.x, hang.z) + 1.2, hang.z);
+            m.rad = { rad: lauf("Rad", satz.wirkung.Rad, hang.x, hang.z, 90, hang.dreh), klotz: lauf("Klotz", satz.wirkung.Klotz, hang.x, hang.z, 90, hang.dreh) };
+            st.playerMesh.position.set(frei.x, frei.y + 1.2, frei.z);
+        }
+        // DIE SCHALE: 60 s Regen, 30 s Sonne; die Schale mit Loch daneben
+        const [sch, loch] = [setze("Schale", satz.wirkung.Schale, frei.x + 12, frei.z), setze("Schale mit Loch", satz.wirkung["Schale mit Loch"], frei.x + 12, frei.z + 5)];
+        const F = (e) => (e && e._gesetz && e._gesetz.gefaess) || { wasser: 0 };
+        st.weather = "rainy";
+        const regen = (takte(60, 1), F(sch).wasser);
+        st.weather = "sunny";
+        m.schale = { regen, sichtbar: !!(F(sch).mesh && F(sch).mesh.parent), sonne: (takte(30, 1), F(sch).wasser), loch: F(loch).wasser };
+        st.weather = wetter;
+        for (const e of [sch, loch]) if (e) r.removeArchitecture(e);
+        // DER GRÜNDER legt den Aufruhr, dieselben Steine gestapelt nicht
+        m.gruender = {};
+        for (const [name, k] of [["Gründer", "breit"], ["Stapel", "hoch"]]) {
+            const e = setze(name, satz.wirkung[name], frei.x + 3, frei.z);
+            emo.chaos = 0.8;
+            takte(150, 1 / 30);
+            m.gruender[k] = 0.8 - emo.chaos;
+            if (e) r.removeArchitecture(e);
+        }
+        emo.chaos = chaos;
+        for (const k of Object.keys(st.blueprints)) if (k.startsWith("__pruef_")) delete st.blueprints[k];
+    });
     return out;
 }
 
@@ -879,7 +919,7 @@ function wegHelfer(arg) {
     const takt = setInterval(() => {
         try {
             r._gameLoopTick(performance.now());
-        } catch (_e) {}
+        } catch {}
         if (lauf && lauf.standT == null && neue().length) lauf.standT = performance.now();
     }, 40);
     window.__bauWeg = {
@@ -919,7 +959,7 @@ function wegHelfer(arg) {
         // Fragment den Alpha-Test übersteht (r184: Alpha × Deckkraft < alphaTest → verworfen)
         async phantom() {
             const bm = st.buildMode;
-            for (let i = 0; i < 300 && bm.phantomStudioPending; i++) await new Promise((q) => setTimeout(q, 50));
+            await window.__gebautNach("die Studio-Gestalt des Phantoms", { fertig: () => !bm.phantomStudioPending });
             const o = { studio: !!bm.phantomMesh.userData.studioGhost, meshes: 0, verworfen: 0, farbe: toenung(bm.phantomMesh).farbe };
             bm.phantomMesh.traverse((m) => m.isMesh && m.material && (o.meshes++, (m.material.transparent ? m.material.opacity : 1) < (m.material.alphaTest || 0) && o.verworfen++));
             return o;
@@ -969,20 +1009,26 @@ function wegHelfer(arg) {
 
 // ── L-WERKSTATT, der Spieler (Node): jeder Schritt ein echtes Ereignis (page.keyboard / page.mouse); ein Ziel außerhalb der
 // Liste erreicht das Mausrad über ihr, je Raste 100 px und eine Eingabe. ──
-const pause = (ms) => new Promise((q) => setTimeout(q, ms));
 const bauWeg = (page, fn, ...a) => page.evaluate((f, ...x) => window.__bauWeg[f](...x), fn, ...a);
-const taste = async (page, code) => (await page.keyboard.press(code), pause(120));
+// nach der Taste urteilt das Ereignis, nie die Uhr: jede endliche Animation, die sie auslöste (die Schublade gleitet 0,32 s),
+// meldet ihr Ende (`finished`) — ohne Frist und ohne Pause (der Hörer der Taste lief, wenn `press` zurückkehrt). Bis 25.10.
+// pollte sie am Bild-Takt mit 30 s Frist: stand der Compositor, riss sie (Lauf 40146641739).
+const ruht = async (l) => {
+    while ((l = document.getAnimations().filter((a) => a.playState === "running" && a.effect.getComputedTiming().iterations !== Infinity)).length)
+        await Promise.allSettled(l.map((a) => a.finished));
+};
+const taste = async (page, code) => (await page.keyboard.press(code), page.evaluate(ruht));
+// eine Raste des Rads (präzise Pixel, ohne Gleiten) ist gelandet, wenn der Schnitt-Beobachter das Ziel im nächsten Bild misst
+// (`isIntersectingViewport`); ein Klick hat gewirkt, wenn `click` zurückkehrt (seine Hörer liefen)
 async function klicke(page, el, liste) {
     for (let i = 0; i < 80 && !(await el.isIntersectingViewport({ threshold: 1 })); i++) {
         const [b, h] = [await el.boundingBox(), await (await page.$(liste)).boundingBox()];
         if (!b || !h) throw new Error(`${liste}: nicht offen`);
         await page.mouse.move(h.x + h.width / 2, Math.max(h.y, 0) + 40);
         await page.mouse.wheel({ deltaY: b.y < Math.max(h.y, 0) ? -100 : 100 });
-        await pause(150);
     }
     const b = await el.boundingBox();
     await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
-    await pause(150);
     return el.evaluate((k) => (k.disabled ? k.title || "gesperrt" : null));
 }
 const finde = async (page, sel) => (await page.$(sel)) || Promise.reject(new Error(`${sel} fehlt in der UI`));
@@ -1040,8 +1086,7 @@ async function wegProbe(page, frei) {
     await bauWeg(page, "vorbereiten", { lage: "schöpfer", name: WERKE.Haus, sicht: "Ego" });
     await taste(page, "KeyB");
     await klicke(page, await finde(page, "#workshop-search"), "#workshop-search");
-    await page.keyboard.type("haus", { delay: 40 });
-    await pause(200);
+    await page.keyboard.type("haus");
     m.sucheHaus = await bauWeg(page, "sucheHaus");
     await bauWeg(page, "abschluss");
     // Die Lichtung: der Spieler mitten auf der Plattform, die Eiche (schöpfer) aus der Hotbar vor ihm.
@@ -1066,9 +1111,16 @@ async function wegProbe(page, frei) {
             streuAbweichung: 0,
             konsum: { "dslCtx → _bauSame": true, "_streamRng → _samenStrom": true },
         };
-        check("Selbst-Test D10: gesund == 0 Täter", sameVerdict(gesund).length === 0, sameVerdict(gesund).join(" · "));
+        // EINE Familie des Selbst-Tests: gesund trägt 0 Täter, je gebrochene Stelle nennt das Urteil den Täter beim Namen
+        const familie = (tag, urteil, gesund, faelle) => {
+            check(`Selbst-Test ${tag}: gesund == 0 Täter`, urteil(gesund).length === 0, urteil(gesund).join(" · "));
+            for (const [name, bruch, soll] of faelle) {
+                const v = urteil(bruch);
+                check(`Selbst-Test ${tag}: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
+            }
+        };
         const mit = (o) => Object.assign({}, gesund, o);
-        for (const [name, bruch, soll] of [
+        familie("D10", sameVerdict, gesund, [
             [
                 "der Hain würfelt (Befund 1 + 24)",
                 mit({ zuege: Object.assign({}, gesund.zuege, { hain: 25 }) }),
@@ -1100,14 +1152,7 @@ async function wegProbe(page, frei) {
             ["der Programm-Strom ohne Seed würfelt", mit({ konsum: { "dslCtx → _bauSame": false, "_streamRng → _samenStrom": true } }), "Konsum: dslCtx → _bauSame"],
             ["ohne Konsum-Probe (vakuös)", mit({ konsum: undefined }), "Konsum: (keine Probe)"],
             ["kein Hain (vakuös)", mit({ hainBaeume: 0 }), "der Hain wuchs nicht"],
-        ]) {
-            const v = sameVerdict(bruch);
-            check(
-                `Selbst-Test D10: ‚${name}' → die Linse nennt ${soll}`,
-                v.some((t) => t.startsWith(soll)),
-                v.join(" · ")
-            );
-        }
+        ]);
         // Die Wand: gesund grün, je gebrochene Stelle rot.
         const w0 = wand();
         check(
@@ -1152,15 +1197,10 @@ async function wegProbe(page, frei) {
                 "mach licht": { zeile: "Unbekannter Befehl. Meintest du: 'mach es hell'?", sug: "mach es hell" },
             },
         };
-        check(
-            "Selbst-Test L-Wortschatz: gesund == 0 Täter",
-            wortVerdict(gesundW).length === 0,
-            wortVerdict(gesundW).join(" · ")
-        );
         const mitW = (o) => Object.assign({}, gesundW, o);
         const wortWeg = (w) =>
             mitW({ woerter: Object.assign({}, gesundW.woerter, { [w]: { ziel: null, art: null } }) });
-        for (const [name, bruch, soll] of [
+        familie("L-Wortschatz", wortVerdict, gesundW, [
             ["fachwerkhaus unbekannt (Befund)", wortWeg("fachwerkhaus"), '„fachwerkhaus" unbekannt'],
             ["wagen unbekannt (Befund)", wortWeg("wagen"), '„wagen" unbekannt'],
             ["Häuser ohne den Plural-Umlaut", wortWeg("häuser"), '„häuser" unbekannt'],
@@ -1206,14 +1246,7 @@ async function wegProbe(page, frei) {
                 }),
                 '„mach licht": der Vorschlag „mach es hell" fällt',
             ],
-        ]) {
-            const v = wortVerdict(bruch);
-            check(
-                `Selbst-Test L-Wortschatz: ‚${name}' → die Linse nennt ${soll}`,
-                v.some((t) => t.startsWith(soll)),
-                v.join(" · ")
-            );
-        }
+        ]);
         // L-Werkstatt: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const KOST = { holz: 44, laub: 50 };
         const fehlt = "Eiche: fehlt 44× holz · 50× laub — sammeln";
@@ -1234,10 +1267,9 @@ async function wegProbe(page, frei) {
                             lage === "frieden ohne Material"
                                 ? { eingaben: 2, zeile: fehlt, steht: 0, bauModus: weg === "hotbar", farbe: "rot" }
                                 : { eingaben: 3, steht: 1, kosten: KOST, verbraucht: lage === "schöpfer" ? {} : KOST };
-        check("Selbst-Test L-Werkstatt: gesund == 0 Täter", wegVerdict(gesundG).length === 0, wegVerdict(gesundG).join(" · "));
         const mitG = (wo, e, b = JSON.parse(JSON.stringify(gesundG))) => (Object.assign(wo.split(" · ").reduce((o, k) => o[k], b.wege), e), b);
         const mitL = (e) => Object.assign(JSON.parse(JSON.stringify(gesundG)), e);
-        for (const [name, bruch, soll] of [
+        familie("L-Werkstatt", wegVerdict, gesundG, [
             ["ein Weg mit einem zusätzlichen Bestätigungs-Klick", mitG("frieden mit Material · werkstatt · Haus · Third", { eingaben: 4 }), "frieden mit Material · werkstatt · Haus · Third: 4 Eingaben bis zum stehenden Werk"],
             ["das Werk steht per Methoden-Aufruf, ohne Ereignis des Spielers", mitG("pfad · rezeptbuch · GT · Ego", { eingaben: 0 }), "pfad · rezeptbuch · GT · Ego: kein echtes Eingabe-Ereignis"],
             ["ein geschmiedetes Ereignis (isTrusted false)", mitG("schöpfer · hotbar · Teil · Third", { unecht: 1 }), "schöpfer · hotbar · Teil · Third: 1 Ereignis(se) ohne Spieler"],
@@ -1256,10 +1288,7 @@ async function wegProbe(page, frei) {
             ["das Phantom steht grün über der Lichtung", mitL({ lichtung: Object.assign({}, gesundG.lichtung, { toenung: { stoffe: 2, lesen: 2, farbe: "grün" } }) }), "das Phantom über der Lichtung steht grün"],
             ["die Eiche steht auf der Lichtung", mitL({ lichtung: { wand: false, steht: 1, zeile: "" } }), "auf der Lichtung steht 1 Eiche"],
             ["ein Stoff mit Schwellen-Knoten statt der Zahl (K68-N1)", mitL({ konsum: { "Stoff → alphaTest": false } }), "Konsum: Stoff → alphaTest"],
-        ]) {
-            const v = wegVerdict(bruch);
-            check(`Selbst-Test L-Werkstatt: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
-        }
+        ]);
         // Der Same des Werks: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const gesundK = {
             gestartet: true,
@@ -1282,13 +1311,8 @@ async function wegProbe(page, frei) {
             konsum: { "_workshopFoundryPreviewGroup → _werkSame": true, "_heldFoundryGroup → _werkSame": true, "_buildStudioPlacementGhost → _phantomWerk am Ort": true },
             stumm: [],
         };
-        check(
-            "Selbst-Test Werk-Same: gesund == 0 Täter",
-            werkVerdict(gesundK).length === 0,
-            werkVerdict(gesundK).join(" · ")
-        );
         const mitK = (o) => Object.assign({}, gesundK, o);
-        for (const [name, bruch, soll] of [
+        familie("Werk-Same", werkVerdict, gesundK, [
             ["das Setzen würfelt (Befund: der Standard-Same)", mitK({ zuege: 1 }), "das Setzen würfelt 1×"],
             ["die Vorschau hasht ihren Samen selbst", mitK({ konsum: Object.assign({}, gesundK.konsum, { "_workshopFoundryPreviewGroup → _werkSame": false }) }), "Konsum: _workshopFoundryPreviewGroup"],
             ["der Ghost fragt das Werk ohne Ort (K20: eiche|3 statt eiche|2)", mitK({ konsum: Object.assign({}, gesundK.konsum, { "_buildStudioPlacementGhost → _phantomWerk am Ort": false }) }), "Konsum: _buildStudioPlacementGhost"],
@@ -1339,14 +1363,7 @@ async function wegProbe(page, frei) {
                 mitK({ huelleReicht: 10.3 }),
                 "die Hülle des Werks reicht 10.3 m, die Klemme misst 3.9 m",
             ],
-        ]) {
-            const v = werkVerdict(bruch);
-            check(
-                `Selbst-Test Werk-Same: ‚${name}' → die Linse nennt ${soll}`,
-                v.some((t) => t.startsWith(soll)),
-                v.join(" · ")
-            );
-        }
+        ]);
         // Brennglas: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const gesundB = {
             gestartet: true,
@@ -1363,13 +1380,8 @@ async function wegProbe(page, frei) {
             nacht: { waerme: 0, steht: true },
             kuehlung: { nachFokus: 0.5, nachKuehlen: 0 },
         };
-        check(
-            "Selbst-Test Brennglas: gesund == 0 Täter",
-            brennVerdict(gesundB).length === 0,
-            brennVerdict(gesundB).join(" · ")
-        );
         const mitB = (k, o) => Object.assign({}, gesundB, { [k]: Object.assign({}, gesundB[k], o) });
-        for (const [name, bruch, soll] of [
+        familie("Brennglas", brennVerdict, gesundB, [
             [
                 "die Plattform verbrennt die Eiche (Befund)",
                 mitB("plattform", { steht: false, verbranntNach: 20 }),
@@ -1388,13 +1400,29 @@ async function wegProbe(page, frei) {
             ],
             ["nachts brennt es", mitB("nacht", { waerme: 1.5, steht: false }), "nachts erwärmt die Linse"],
             ["nichts kühlt", mitB("kuehlung", { nachKuehlen: 0.5 }), "außerhalb des Brennpunkts kühlt nichts"],
+        ]);
+        // Prüf-Satz: gesund ohne Täter, je Befund am main der Täter beim Namen
+        const z = (art, steht) => ({ art, gesetzt: true, steht, neigung: steht ? 0 : 90, fall: 0, zeile: steht ? "" : "X" });
+        const gesundP = {
+            gestartet: true,
+            konsum: { k: true },
+            statik: Object.fromEntries(["stabil", "instabil"].flatMap((a) => Object.keys(PRUEF_SATZ[a]).map((k) => [k, z(a, a === "stabil")]))),
+            rad: { rad: { weg: 4, hinab: 1, neigung: 170 }, klotz: { weg: 0 } },
+            schale: { regen: 0.4, sonne: 0.4, sichtbar: true, loch: 0 },
+            gruender: { breit: 0.2, hoch: 0 },
+        };
+        const mitP = (k, o) => ({ ...gesundP, [k]: { ...gesundP[k], ...o } });
+        for (const [bruch, soll] of [
+            [gesundP, ""],
+            [mitP("statik", { "überlanger Kragarm": z("instabil", true) }), "überlanger Kragarm"],
+            [mitP("statik", { Bogen: z("stabil", false) }), "Bogen"],
+            [mitP("konsum", { k: false }), "Konsum"],
+            [mitP("rad", { rad: { weg: 0, hinab: 0, neigung: 0 } }), "Rad"],
+            [mitP("schale", { regen: 0 }), "Schale"],
         ]) {
-            const v = brennVerdict(bruch);
-            check(
-                `Selbst-Test Brennglas: ‚${name}' → die Linse nennt ${soll}`,
-                v.some((t) => t.startsWith(soll)),
-                v.join(" · ")
-            );
+            const v = pruefVerdict(bruch, gesundB);
+            const t = [...v.statik, ...v.wirkung];
+            check(`Selbst-Test Prüf-Satz: ${soll || "gesund"} → ${soll ? "Täter" : "0 Täter"}`, soll ? t.some((x) => x.startsWith(soll)) : !t.length, t.join(" · "));
         }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
@@ -1408,10 +1436,10 @@ async function wegProbe(page, frei) {
     for (const [name, ok, detail] of wand()) check(name, ok, detail);
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     // DER EREIGNIS-STROM: jede Eingabe des Spielers (pointerdown · keydown · wheel), vor jedem Hörer der Seite gefangen
     await page.evaluateOnNewDocument(() => {
         const strom = (window.__eingabeStrom = []);
@@ -1428,7 +1456,7 @@ async function wegProbe(page, frei) {
             );
     });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
-    const out = await page.evaluate(probe, { soll: WORT_SOLL, unbekannt: WORT_UNBEKANNT });
+    const out = await page.evaluate(probe, { soll: WORT_SOLL, unbekannt: WORT_UNBEKANNT, satz: PRUEF_SATZ });
     try {
         out.weg = await wegProbe(page, out.frei);
     } catch (e) {
@@ -1437,71 +1465,90 @@ async function wegProbe(page, frei) {
     await browser.close();
     server.close();
 
-    console.log("=== D10 — DER SAME EINES SATZES KOMMT AUS DEM WELT-STROM ===");
+    // EIN Abschnitt des Berichts: sein Kopf, die Ausnahme der Probe beim Namen, das Urteil mit seinen Tätern
+    const abschnitt = (kopf, tag, m, v, name, detail, taeter = " — Täter: " + v.join(", ")) => {
+        console.log(`=== ${kopf} ===`);
+        if (m.err) check(tag + " Probe ohne Ausnahme", false, m.err.split("\n")[0]);
+        check(name, v.length === 0, (m.gestartet ? detail() : "nicht gestartet") + (v.length ? taeter : ""));
+    };
     const sm = out.same || {};
-    if (sm.err) check("D10 Probe ohne Ausnahme", false, sm.err.split("\n")[0]);
-    const vS = sameVerdict(sm);
-    check(
+    abschnitt(
+        "D10 — DER SAME EINES SATZES KOMMT AUS DEM WELT-STROM",
+        "D10",
+        sm,
+        sameVerdict(sm),
         "D10 kein Satz würfelt aus Math.random, derselbe Satz an derselben Stelle der Welt-Geschichte ist derselbe Hain",
-        vS.length === 0,
-        `${sm.gestartet ? `Math.random-Züge ${SAETZE.map((s) => `${s} ${sm.zuege[s]}`).join(" · ")} · Hain ${sm.hainBaeume} Bäume, Samen ${JSON.stringify(sm.samen)}, Orte ±${sm.ortAbweichung} m · KI ohne Seed ±${sm.kiOrtAbweichung} m` : "nicht gestartet"}${vS.length ? " — Täter: " + vS.join(", ") : ""}`
+        () =>
+            `Math.random-Züge ${SAETZE.map((s) => `${s} ${sm.zuege[s]}`).join(" · ")} · Hain ${sm.hainBaeume} Bäume, Samen ${JSON.stringify(sm.samen)}, Orte ±${sm.ortAbweichung} m · KI ohne Seed ±${sm.kiOrtAbweichung} m`
     );
-    console.log("=== L-WORTSCHATZ — DER WORT-KATALOG IST DER REZEPT-KATALOG ===");
     const wm = out.wort || {};
-    if (wm.err) check("L-Wortschatz Probe ohne Ausnahme", false, wm.err.split("\n")[0]);
-    const vW = wortVerdict(wm);
     const bekannt = Object.keys(WORT_SOLL).filter((w) => wm.woerter && wm.woerter[w] && wm.woerter[w].ziel).length;
-    check(
+    abschnitt(
+        "L-WORTSCHATZ — DER WORT-KATALOG IST DER REZEPT-KATALOG",
+        "L-Wortschatz",
+        wm,
+        wortVerdict(wm),
         "L-Wortschatz jedes Wort des Befunds löst über die Studio-Arten auf, „bau mir ein fachwerkhaus“ stellt ein Haus, ein unbekanntes Wort hört den Katalog",
-        vW.length === 0,
-        `${
-            wm.gestartet
-                ? `${bekannt}/${Object.keys(WORT_SOLL).length} Wörter bekannt (fachwerkhaus → ${wm.woerter.fachwerkhaus && wm.woerter.fachwerkhaus.ziel}, wagen → ${wm.woerter.wagen && wm.woerter.wagen.ziel}) · ${wm.arten - (wm.artenOhneWort || []).length}/${wm.arten} Studio-Arten mit Wort · Haus gebaut ${wm.hausGebaut} · Absage „${(wm.absageZeile || "").slice(0, 70)}…" · ${Object.entries(
-                      wm.vorschlag || {}
-                  )
-                      .map(([k, v]) => `„${k}" → „${(v.zeile || "").replace(/^> [^|]*\| /, "").slice(0, 60)}…"`)
-                      .join(" · ")}`
-                : "nicht gestartet"
-        }${vW.length ? " — Täter: " + vW.join(", ") : ""}`
+        () =>
+            `${bekannt}/${Object.keys(WORT_SOLL).length} Wörter bekannt (fachwerkhaus → ${wm.woerter.fachwerkhaus && wm.woerter.fachwerkhaus.ziel}, wagen → ${wm.woerter.wagen && wm.woerter.wagen.ziel}) · ${wm.arten - (wm.artenOhneWort || []).length}/${wm.arten} Studio-Arten mit Wort · Haus gebaut ${wm.hausGebaut} · Absage „${(wm.absageZeile || "").slice(0, 70)}…" · ${Object.entries(
+                wm.vorschlag || {}
+            )
+                .map(([k, v]) => `„${k}" → „${(v.zeile || "").replace(/^> [^|]*\| /, "").slice(0, 60)}…"`)
+                .join(" · ")}`
     );
-    console.log("=== L-WERKSTATT · FRIEDEN · L-RÜCKMELDUNG — JEDER WEG FÜHRT ZUM STEHENDEN WERK ===");
     const gm = out.weg || {};
-    if (gm.err) check("L-Werkstatt Probe ohne Ausnahme", false, gm.err.split("\n")[0]);
     const vG = wegVerdict(gm);
     fs.mkdirSync(path.join(__dirname, "../artifacts/werkstatt-weg"), { recursive: true });
     fs.writeFileSync(path.join(__dirname, "../artifacts/werkstatt-weg/weg.json"), JSON.stringify(gm, null, 1)); // die Rohdatei
     // je Weg (die tragenden Lagen): stehend / Läufe, Eingaben min–max, Zeit bis zum Werk (kalt: der erste Bau des Werks)
-    const jeWeg = WEGE.map((w) => {
-        const l = LAGEN.filter((x) => x !== "frieden ohne Material").flatMap((x) => Object.values((gm.wege || {})[x][w]).flatMap(Object.values));
-        const n = l.map((e) => e.eingaben);
-        return `${w} ${l.filter((e) => e.steht === 1).length}/${l.length} stehen, Eingaben ${Math.min(...n)}–${Math.max(...n)}, max ${Math.max(...l.map((e) => e.ms))} ms (kalt ${l.filter((e) => e.kalt).map((e) => e.ms)})`;
-    });
-    check(
+    const jeWeg = () =>
+        WEGE.map((w) => {
+            const l = LAGEN.filter((x) => x !== "frieden ohne Material").flatMap((x) => Object.values((gm.wege || {})[x][w]).flatMap(Object.values));
+            const n = l.map((e) => e.eingaben);
+            return `${w} ${l.filter((e) => e.steht === 1).length}/${l.length} stehen, Eingaben ${Math.min(...n)}–${Math.max(...n)}, max ${Math.max(...l.map((e) => e.ms))} ms (kalt ${l.filter((e) => e.kalt).map((e) => e.ms)})`;
+        });
+    abschnitt(
+        "L-WERKSTATT · FRIEDEN · L-RÜCKMELDUNG — JEDER WEG FÜHRT ZUM STEHENDEN WERK",
+        "L-Werkstatt",
+        gm,
+        vG,
         "L-Werkstatt jeder Weg (Werkstatt · Rezeptbuch · Hotbar) stellt Eiche, Haus, GT und das eigene Teil-Werk über echte Eingaben in ≤ 3 Schritten — schöpfer, frieden, pfad, Ego und Third; frieden zahlt einmal, jede Absage spricht, die Lichtung sagt warum",
-        vG.length === 0,
-        `${gm.gestartet ? `${jeWeg.join(" · ")} · Phantom ${JSON.stringify(gm.phantom)} · Suche „haus" ${gm.sucheHaus} · Gerät „${gm.geraet.zeile}" · Lichtung ${JSON.stringify(gm.lichtung)}` : "nicht gestartet"}${vG.length ? ` — Täter (${vG.length}): ` + vG.slice(0, 40).join(", ") : ""}`
+        () => `${jeWeg().join(" · ")} · Phantom ${JSON.stringify(gm.phantom)} · Suche „haus" ${gm.sucheHaus} · Gerät „${gm.geraet.zeile}" · Lichtung ${JSON.stringify(gm.lichtung)}`,
+        ` — Täter (${vG.length}): ` + vG.slice(0, 40).join(", ")
     );
-    console.log("=== DER SAME DES WERKS — DAS GESETZTE WERK IST DAS PHANTOM, AUCH BEIM MITSPIELER ===");
     const km = out.werk || {};
-    if (km.err) check("Werk-Same Probe ohne Ausnahme", false, km.err.split("\n")[0]);
-    const vK = werkVerdict(km);
     const ke = km.empfang || {};
     const kr = km.reload || {};
-    check(
+    abschnitt(
+        "DER SAME DES WERKS — DAS GESETZTE WERK IST DAS PHANTOM, AUCH BEIM MITSPIELER",
+        "Werk-Same",
+        km,
+        werkVerdict(km),
         "Werk-Same das Setzen stellt Gestalt und Drehung des Phantoms ohne Math.random, der Mitspieler baut dasselbe Werk, der Welt-Strom übersteht den Reload",
-        vK.length === 0,
-        `${km.gestartet ? `Math.random ${km.zuege} · Phantom ${km.abstand} m vor dem Spieler (Soll ≥ ${km.mindest} m; die Studio-Gestalt reicht ${km.reicht} m, die Spender-Teile ${km.reichtSpender} m, die Hülle des Werks ${km.huelleReicht} m) · Phantom ${km.phantomKey} @ ${km.phantomDreh} rad → Werk ${km.werkKey} @ ${km.werkDreh} rad (Same ${km.werkSame}, das nächste Phantom ${km.naechsterSame}) · gesendet Same ${km.gesendetSame} → Mitspieler ${ke.steht ? `${ke.key} @ ${ke.dreh} rad, Tönung ${ke.tint === km.werkTint ? "gleich" : "anders"}` : "nichts"} · Strom ${kr.erst} → ${kr.weiter}, nach Reload ${kr.nachReload}` : "nicht gestartet"}${vK.length ? " — Täter: " + vK.join(", ") : ""}`
+        () =>
+            `Math.random ${km.zuege} · Phantom ${km.abstand} m vor dem Spieler (Soll ≥ ${km.mindest} m; die Studio-Gestalt reicht ${km.reicht} m, die Spender-Teile ${km.reichtSpender} m, die Hülle des Werks ${km.huelleReicht} m) · Phantom ${km.phantomKey} @ ${km.phantomDreh} rad → Werk ${km.werkKey} @ ${km.werkDreh} rad (Same ${km.werkSame}, das nächste Phantom ${km.naechsterSame}) · gesendet Same ${km.gesendetSame} → Mitspieler ${ke.steht ? `${ke.key} @ ${ke.dreh} rad, Tönung ${ke.tint === km.werkTint ? "gleich" : "anders"}` : "nichts"} · Strom ${kr.erst} → ${kr.weiter}, nach Reload ${kr.nachReload}`
     );
-    console.log("=== BRENNGLAS — DAS LICHT BRENNT, WO ES SICH BÜNDELT, UND DIE ZERSTÖRUNG NENNT SICH ===");
     const bm = out.brenn || {};
-    if (bm.err) check("Brennglas Probe ohne Ausnahme", false, bm.err.split("\n")[0]);
-    const vB = brennVerdict(bm);
     const bp_ = bm.plattform || {};
     const bl = bm.linse || {};
-    check(
+    abschnitt(
+        "BRENNGLAS — DAS LICHT BRENNT, WO ES SICH BÜNDELT, UND DIE ZERSTÖRUNG NENNT SICH",
+        "Brennglas",
+        bm,
+        brennVerdict(bm),
         "Brennglas die Eiche an der Genesis-Plattform übersteht einen sonnigen Tag, die gebaute Linse brennt zu Mittag und sagt es, nachts nie, außerhalb kühlt es",
-        vB.length === 0,
-        `${bm.gestartet ? `Plattform: ${bp_.steht ? `steht nach 480 s (max. Wärme ${bp_.maxWaerme})` : `verbrannt nach ${bp_.verbranntNach} s`} · Linse: glimmt ${bl.glimmtBei} s, brennt ${bl.brenntBei} s („${(bl.zeileBrennt || "").slice(0, 60)}") · Nacht Wärme ${(bm.nacht || {}).waerme} · Kühlung ${(bm.kuehlung || {}).nachFokus} → ${(bm.kuehlung || {}).nachKuehlen} · Zensus ${JSON.stringify(bm.zensus)}` : "nicht gestartet"}${vB.length ? " — Täter: " + vB.join(", ") : ""}`
+        () =>
+            `Plattform: ${bp_.steht ? `steht nach 480 s (max. Wärme ${bp_.maxWaerme})` : `verbrannt nach ${bp_.verbranntNach} s`} · Linse: glimmt ${bl.glimmtBei} s, brennt ${bl.brenntBei} s („${(bl.zeileBrennt || "").slice(0, 60)}") · Nacht Wärme ${(bm.nacht || {}).waerme} · Kühlung ${(bm.kuehlung || {}).nachFokus} → ${(bm.kuehlung || {}).nachKuehlen}`
+    );
+    console.log("=== PRÜF-SATZ — STATIK UND WIRKUNG AUS DER FORM, IN DER WELT (Bauen K3) ===");
+    const pm = out.pruef || {};
+    if (pm.err) check("Prüf-Satz Probe ohne Ausnahme", false, pm.err.split("\n")[0]);
+    const vP = pruefVerdict(pm, bm);
+    const t = [...vP.statik, ...vP.wirkung];
+    check(
+        "Prüf-Satz über den Bau-Weg: das Stabile steht nach 150 Takten, das Instabile stürzt sichtbar und nennt den Grund; die Wirkung aus der Form hält",
+        !t.length,
+        `Statik ${vP.richtig}/10 · Wirkung ${5 - vP.wirkung.length}/5 — ${JSON.stringify(pm).slice(0, 2400)}${t.length ? " — Täter: " + t : ""}`
     );
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);

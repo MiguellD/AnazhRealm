@@ -1,4 +1,4 @@
-// kamera-nah.cjs — DIE NAH-DECKUNG DER KAMERA (Leben-Schau 2, Befund §6 #5): wie viel des Schirms eine Fläche
+// kamera-nah.cjs — DIE NAH-DECKUNG DER KAMERA (§6 #5): wie viel des Schirms eine Fläche
 // deckt, die näher am Auge liegt als der Nah-Radius der Stellung — und wer sie ist, beim NAMEN.
 // Die Linse rechnet in der Seite gegen die ECHTE Szene (headless oder echte GPU): je Stellung ein Strahlen-Gitter durch den
 // Bildwinkel der Spieler-Kamera, je Strahl die Flächen bis zum Nah-Radius (Dreiecke der gezeichneten Meshes, Instanzen mit
@@ -78,7 +78,7 @@ function nahDeckungInSeite(o) {
         for (let p = obj; p; p = p.parent) if (archNachMesh.has(p)) return archNachMesh.get(p);
         return null;
     };
-    // DAS ZIEL IM SATZ (K63-n6): der Bau-Satz zeichnet die Instanzen vieler Gruppen in EINEM Mesh (`_bauSatzBlock`: je
+    // DAS ZIEL IM SATZ: der Bau-Satz zeichnet die Instanzen vieler Gruppen in EINEM Mesh (`_bauSatzBlock`: je
     // lebende Instanz ihre n Ecken in Welt-Lage ab dem Bereichs-Anfang `vStart`), ein Dreieck dort gehört
     // `slotEntry[i]` seiner Gruppe. Je Satz-Mesh die Ecken-Läufe der Einträge in `o.ohne` — sie decken nie und
     // verdecken nie, wie jedes andere Ziel.
@@ -634,4 +634,4 @@ function nahDeckungInSeite(o) {
     };
 }
 
-module.exports = { nahDeckungInSeite, KAMERA_NAH_INSTALL: `window.__nahDeckung = ${nahDeckungInSeite.toString()};` };
+module.exports = { KAMERA_NAH_INSTALL: `window.__nahDeckung = ${nahDeckungInSeite.toString()};` };

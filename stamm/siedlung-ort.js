@@ -907,7 +907,7 @@ class AnazhRealm_siedlung_ort {
     // Quellen aus Settlement-Einträgen mit rauchQuelle; Lab-Partikel (matte Box) wenn THREE+scene da,
     // sonst Quellen-Liste + einmaliger Log/Flugschreiber-Stempel. Invariante: Rauch ⟺ chimney.
     // Haus-Türen: _tickHausTueren dreht nahe Häuser (< 40 m) durch DENSELBEN _tickTorFluegel.
-    _updateDorfRauch(_dt) {
+    _updateDorfRauch(dt) {
         // RAUCH_VIS.host = "box-lambert" — Feel .125; Box+Lambert via RAUCH_GESETZ (sprites = Redesign).
         const st = this.state;
         if (!st) return;
@@ -986,10 +986,15 @@ class AnazhRealm_siedlung_ort {
                 a: G.a0,
             });
         }
+        // DER RAUCH DES FEUERS ZIEHT MIT DEM EINEN WIND (`_windAt` am Teilchen, die Bild-Uhr): Steigen und Streuen bleiben das
+        // Gefühl des Labors je Frame, der Wind trägt jedes Teilchen mit seiner Geschwindigkeit in m/s × dt windab.
+        const s = Number.isFinite(dt) && dt > 0 ? dt : 0;
         for (let k = dr.teilchen.length - 1; k >= 0; k--) {
             const T2 = dr.teilchen[k];
+            const w = this._windAt(T2.x, T2.z, this._bildZeit);
             T2.y += T2.vy;
-            T2.x += T2.dx;
+            T2.x += T2.dx + w.x * w.ms * s;
+            T2.z += w.z * w.ms * s;
             T2.a -= G.fade;
             T2.s *= G.scaleMul;
             if (T2.a <= G.aKill) dr.teilchen.splice(k, 1);
@@ -1241,19 +1246,45 @@ class AnazhRealm_siedlung_ort {
     // Siedlung als DATEN anfragen: der Worker rechnet exportSettlement und liefert reine Slot-Daten (kein
     // Mesh, kein Cache — ein deliberater Akt). Fail-closed: kein Worker/nicht ready → null. Dieselbe
     // pending-Map wie die Assets.
+    // DIE TRASSE LIEST DAS GELÄNDE (siedlung.K3): `dp.ort` {x, z}, der Ort, an dem der Plan liegen wird, holt vor dem Export das
+    // Höhen-Raster seines Rahmens (fachwerk `trasseRahmen`) aus dem Ort-Faden (`ort-raster`, gelaende-core `hoehenRaster`,
+    // Lehre 14) als `dp.hoehe` — die Gassen des Exports folgen dem Grund dort (fachwerk `dorfLayout`). Ohne Ort (der Akt, dessen
+    // Anker erst der Plan nennt; der Wege-Bau eines Alt-Saves) liegt der Plan auf ebenem Grund. Steht der Ort-Faden noch nicht, ist der
+    // Export null wie bei kalter Foundry (der nächste Takt fragt neu; ein Wurf im Faden meldet sein `_bruchMelden`).
     _foundryRequestSettlement(dp, kopf) {
         const f = this._ensureAssetFoundry();
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
+        const d = Object.assign({}, dp || {});
+        const ort = d.ort;
+        delete d.ort;
+        const raster = ort
+            ? this._nebenAuftrag("ort", {
+                  type: "ort-raster",
+                  x: ort.x,
+                  z: ort.z,
+                  rahmen: globalThis.__fachwerkCore.trasseRahmen(d.nH),
+              }).then(
+                  (r) => r.raster,
+                  (e) => (
+                      this.log(`SIEDLUNG: der Export wartet auf das Höhen-Raster — ${(e && e.message) || e}`, "INFO"),
+                      false
+                  )
+              )
+            : Promise.resolve(null);
         // Durch DIE EINE WORKER-SCHLANGE, sofort dran (ein deliberater Akt, reine Daten). Dieselbe EINE Frist (45 s
         // Arbeit): ohne Uhr hielte ein verlorener Export die FIFO-Uhr aller späteren Aufträge an.
-        return this._foundryAuftrag(
-            f,
-            "stl-",
-            { type: "export-settlement", dp: dp || {} },
-            this._foundryRang(0, kopf), // das Start-Dorf ist ein Kopf der Ankunft (`_startDorfAmBuch`, die Bahn ohne Arbeit)
-            45000,
-            "FOUNDRY TIMEOUT: export-settlement nach 45 s Arbeit ohne Reply → null"
-        );
+        return raster.then((hoehe) => {
+            if (hoehe === false) return null;
+            if (hoehe) d.hoehe = hoehe;
+            return this._foundryAuftrag(
+                f,
+                "stl-",
+                { type: "export-settlement", dp: d },
+                this._foundryRang(0, kopf), // das Start-Dorf ist ein Kopf der Ankunft (`_startDorfAmBuch`, die Bahn ohne Arbeit)
+                45000,
+                "FOUNDRY TIMEOUT: export-settlement nach 45 s Arbeit ohne Reply → null"
+            );
+        });
     }
     // DIE EINE SLOT-QUELLE: `_spawnSettlementFromExport` (der Akt) und `_tickAutoSettlement`
     // (über Ticks) heben jeden Slot hier. Blueprint-Name aus KIND_POLICY über den kind des LIVE-Rezepts
@@ -1442,10 +1473,8 @@ class AnazhRealm_siedlung_ort {
         // blieb er: am Start-Dorf schnitt der Grund des Alpenchalets, das am Brunnen des eigenen Plans fällt (Bau-Wand), ein
         // Loch ins Leere (53,7/108,4, gate:haus-welt W9 Waise).
         const zu = () => (this._erdbauGrundFaellt({ position: { x: wx, z: wz } }), false);
-        const rec = f && f.recipes ? f.recipes[slot.kultur] : null;
-        const pol = rec && AnazhRealm.KIND_POLICY[rec.kind];
-        const name = pol && pol.prefix ? pol.prefix + slot.kultur : null;
-        if (!name || !this.state.blueprints[name]) return zu(); // fail-closed
+        const name = this._slotBauplan(slot, f);
+        if (!name) return zu(); // fail-closed
         const ry = slot.phi || 0;
         const tu = slot.tuer;
         const { fundament, fp } = AnazhRealm._slotGrundriss(slot);
@@ -1476,6 +1505,7 @@ class AnazhRealm_siedlung_ort {
                 rotationY: slot.phi || 0,
                 silent: true,
                 autonomous: !!(so && so.autonomous),
+                ausGesetz: true, // der Bau eines Orts kehrt aus dessen Gedächtnis wieder (speicher.K3), der Stand trägt ihn nie
                 fundament,
                 // DORF-ERLEBNIS — die Tür-Zeile des Exports (Blocker-Tür-Lücke +
                 // Flügel-Reichweite; alte Exporte ohne Feld → undefined, byte-alt).
@@ -1519,13 +1549,14 @@ class AnazhRealm_siedlung_ort {
                 rotationY: Number.isFinite(l.th) ? -l.th : 0,
                 silent: true,
                 autonomous: !!(so && so.autonomous),
+                ausGesetz: true,
             }
         );
     }
     // ═══ DORF-ERLEBNIS: der EINE Hebe-Chokepoint für die Nicht-Haus-Schichten des Exports ═══
     // Wege/Feldwege/Platz → Wege-Pool (`_stlWegeBuild`, dieselbe Höhen-Quelle wie die Häuser); Brunnen
     // über `spawnArchitecture` (Bauplan `brunnen_dorf`). Aufrufer: `spawnSettlement` ·
-    // `_autoSettlementSpawnCell` · Reload-Rebuild (so.nurWege — Brunnen sind persistierte Architektur).
+    // `_autoSettlementSpawnCell` · die Wiederkehr nach dem Reload (`_tickAutoSettlement`: der Stand trägt keinen Bau eines Orts).
     // Konsum: fences/felder/trees/staende/brunnen/laternen (die Studio-Gestalt `laterne_dorf`, ihr Licht das Datum ihres
     // Rezepts); unkonsumiert (export-stripped): mauer/fluss. Die Schichten gehen in EINEM Zug (der Akt, der Wege-Neubau).
     _spawnSettlementErlebnis(plan, origin, so) {
@@ -1538,7 +1569,6 @@ class AnazhRealm_siedlung_ort {
         if (!plan || !origin) return;
         this._bewohnerMelden(plan, origin, so && so.key ? so.key : null); // die Bewohner des Plans (`_tickBewohner`)
         this._stlWegeBuild(plan, origin, so && so.key ? so.key : null);
-        if (so && so.nurWege) return;
         yield;
         // DIE LATERNEN (K10 × K11): jede Laterne des Plans steht als Studio-Gestalt (Bauplan `laterne_dorf`, fachwerk
         // AUSSTATTUNG `laterne`) — der Leib und das Licht EINER Quelle: das Verzeichnis „licht" stempelt den Eintrag aus dem
@@ -1551,8 +1581,12 @@ class AnazhRealm_siedlung_ort {
             let j = 0;
             for (const l of plan.laternen) {
                 if (!l || l.wand) continue;
-                const ort = this._dorfLaterneOrt(l, origin);
-                if (ort) this._dorfLaterneSetzen(plan, l, ort, k++, so);
+                const belegt =
+                    Number.isFinite(l.x) &&
+                    this._dorfBelegt(origin.x + l.x, origin.z + l.z, ((plan.seed >>> 0 || 1) + 97 + k * 7919) >>> 0);
+                const ort = belegt ? null : this._dorfLaterneOrt(l, origin);
+                if (belegt) k++;
+                else if (ort) this._dorfLaterneSetzen(plan, l, ort, k++, so);
                 if (++j % AnazhRealm.AUTO_SETTLEMENT.laternenJeTakt === 0) yield;
             }
             if (j % AnazhRealm.AUTO_SETTLEMENT.laternenJeTakt) yield;
@@ -1564,6 +1598,8 @@ class AnazhRealm_siedlung_ort {
             if (!b || !Number.isFinite(b.x) || !Number.isFinite(b.z)) continue;
             const wx = origin.x + b.x;
             const wz = origin.z + b.z;
+            const same = ((plan.seed >>> 0 || 1) + n * 7919) >>> 0; // deterministisch je Siedlung+Platz
+            if (this._dorfBelegt(wx, wz, same) && ++n) continue;
             if (!this._landAt(wx, wz, 0.2)) continue; // die Wasser-Wand (EINE Quelle)
             const wy = this.getTerrainHeightAt(wx, wz);
             if (!Number.isFinite(wy)) continue;
@@ -1571,11 +1607,7 @@ class AnazhRealm_siedlung_ort {
             const entry = this.spawnArchitecture(
                 "brunnen_dorf",
                 { x: wx, y: wy + 0.5, z: wz },
-                {
-                    seed: ((plan.seed >>> 0 || 1) + n * 7919) >>> 0, // deterministisch je Siedlung+Platz
-                    silent: true,
-                    autonomous: !!(so && so.autonomous),
-                }
+                { seed: same, silent: true, autonomous: !!(so && so.autonomous), ausGesetz: true }
             );
             if (entry) n++;
         }
@@ -1589,6 +1621,8 @@ class AnazhRealm_siedlung_ort {
                 if (!st || !Number.isFinite(st.x) || !Number.isFinite(st.z)) continue;
                 const wx = origin.x + st.x;
                 const wz = origin.z + st.z;
+                const same = ((plan.seed >>> 0 || 1) + 53 + m * 7919) >>> 0;
+                if (this._dorfBelegt(wx, wz, same) && ++m) continue;
                 if (!this._landAt(wx, wz, 0.2)) continue;
                 const wy = this.getTerrainHeightAt(wx, wz);
                 if (!Number.isFinite(wy)) continue;
@@ -1599,10 +1633,11 @@ class AnazhRealm_siedlung_ort {
                     "marktstand_dorf",
                     { x: wx, y: wy + 0.5, z: wz },
                     {
-                        seed: ((plan.seed >>> 0 || 1) + 53 + m * 7919) >>> 0,
+                        seed: same,
                         rotationY: pz && Number.isFinite(pz.cx) ? Math.atan2(-(pz.cx - st.x), -(pz.cz - st.z)) : 0,
                         silent: true,
                         autonomous: !!(so && so.autonomous),
+                        ausGesetz: true,
                     }
                 );
                 if (entry) m++;
@@ -1618,10 +1653,11 @@ class AnazhRealm_siedlung_ort {
             if (!b || !Number.isFinite(b.x) || !Number.isFinite(b.z)) continue;
             const wx = origin.x + b.x;
             const wz = origin.z + b.z;
+            const seedT = ((plan.seed >>> 0 || 1) + 31 + t * 7919) >>> 0;
+            if (this._dorfBelegt(wx, wz, seedT) && ++t) continue;
             if (!this._landAt(wx, wz, 0.2)) continue;
             const wy = this.getTerrainHeightAt(wx, wz);
             if (!Number.isFinite(wy)) continue;
-            const seedT = ((plan.seed >>> 0 || 1) + 31 + t * 7919) >>> 0;
             const art = baumArten[seedT % baumArten.length];
             // der Hof-Baum geht durch DENSELBEN Grundriss-Chokepoint wie jeder Wurf der Natur (`_naturSetzen`)
             const entry = this._naturSetzen(
@@ -1633,6 +1669,7 @@ class AnazhRealm_siedlung_ort {
                     rotationY: ((seedT >>> 3) % 628) / 100,
                     silent: true,
                     autonomous: !!(so && so.autonomous),
+                    ausGesetz: true,
                 }
             );
             if (entry) t++;
@@ -1646,14 +1683,8 @@ class AnazhRealm_siedlung_ort {
     async _spawnSettlementFromExport(plan, origin, so) {
         if (!plan || !Array.isArray(plan.slots) || !origin) return { placed: 0, skipped: 0, mitte: null };
         plan = this._ortPlanSetzen(plan, origin); // der Ort auf dem Gelände (K10): jeder Slot trägt seinen Boden
-        const reihe = plan.slots.map((_s, i) => i);
-        const q = {
-            plan,
-            origin: { x: origin.x, z: origin.z },
-            idx: 0,
-            reihe,
-            so: { autonomous: !!(so && so.autonomous) },
-        };
+        // DIE EINE REIHE (`_dorfZug`): der Schirm zuerst, darin das nächste — bis siedlung-k5-nah hob der Akt in der Slot-Folge
+        const q = Object.assign(this._dorfZug(plan, origin, null), { so: { autonomous: !!(so && so.autonomous) } });
         let placed = 0;
         let skipped = 0;
         let mx = 0;
@@ -1882,7 +1913,8 @@ class AnazhRealm_siedlung_ort {
             }
             nH = AnazhRealm.Gesetz("fachwerk:siedlungsGroesse")(SG, seed, 0);
         }
-        return this._foundryRequestSettlement({ seed, nH, epoche: o.epoche, budget: o.budget }).then(async (plan) => {
+        const dp = { seed, nH, epoche: o.epoche, budget: o.budget };
+        return this._foundryRequestSettlement(dp).then(async (plan) => {
             if (!plan) {
                 this.log(
                     "FOUNDRY KALT: Siedlung — export-settlement leer/aus — Spawn BLOCKIERT (kein stilles Nichts).",
@@ -1894,8 +1926,14 @@ class AnazhRealm_siedlung_ort {
             // der Ort aus dem Plan selbst: das Dorf liegt vor dem Spieler, nie um ihn (`_siedlungsAnker`)
             const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);
             // DER ORT AUF DEM GELÄNDE (K10): der Plan v2 am Anker — Höhen, Wege, Laternen und der Erdbau, den die Welt trägt;
-            // die Ort-Wahl rechnet im Ort-Faden (`_ortWahl`, Lehre 14), der Akt wartet auf sie
-            plan = await this._ortWahl(plan, anchor);
+            // die Ort-Wahl rechnet im Ort-Faden (`_ortWahl`, Lehre 14), der Akt wartet auf sie. Seine Gassen folgen dem Grund
+            // am Ort, an dem er steht (`_ortMitTrasse`, siedlung.K3): der Plan ohne Raster nennt nur den Anker.
+            const b = await this._ortMitTrasse(dp, anchor);
+            if (!b || !b.plan) return null;
+            anchor.mitte &&= { x: anchor.mitte.x + b.ort.x - anchor.x, z: anchor.mitte.z + b.ort.z - anchor.z };
+            Object.assign(anchor, { x: b.ort.x, z: b.ort.z });
+            const ort = AnazhRealm._ortSchluessel(b.plan, anchor); // der Schlüssel seines Erdbaus (`_ortPlanSetzen`)
+            plan = this._ortPlanSetzen(b.plan, anchor);
             const res = await this._spawnSettlementFromExport(plan, anchor, { autonomous: !!o.autonomous });
             // DORF-ERLEBNIS — Wege/Platz/Brunnen + das Rebuild-Gedächtnis („d:<seed>"
             // im selben settlementCells-Pfad: die Wege-Streifen überleben den Reload).
@@ -1904,7 +1942,23 @@ class AnazhRealm_siedlung_ort {
             // der Wege-Schlüssel trägt den ORT: zwei Siedlungen mit demselben Samen bauen je ihre Wege (vorher gewann die
             // erste, die Stadt `dorf 7 120` neben `dorf 7 18` stand ohne einen Weg — Leben-Prüfung S-W1)
             const dKey = "d:" + seed + "@" + Math.round(anchor.x) + "," + Math.round(anchor.z);
-            if (!wmD.settlementCells[dKey]) wmD.settlementCells[dKey] = { seed, nH, x: anchor.x, z: anchor.z };
+            // das Gedächtnis trägt den Akt, aus dem der Ort wiederkehrt (speicher.K3): Epoche, Budget, wer ihn rief, sein Erdbau,
+            // der Ort seiner Trasse (wx/wz, siedlung.K3: die Wiederkehr fragt den Export dort, wo seine Gassen lagen)
+            if (!wmD.settlementCells[dKey])
+                wmD.settlementCells[dKey] = JSON.parse(
+                    JSON.stringify({
+                        seed,
+                        nH,
+                        x: anchor.x,
+                        z: anchor.z,
+                        wx: b.ort.x,
+                        wz: b.ort.z,
+                        ort,
+                        epoche: o.epoche,
+                        budget: o.budget,
+                        autonomous: o.autonomous || undefined,
+                    })
+                );
             this._spawnSettlementErlebnis(plan, anchor, { key: dKey, autonomous: !!o.autonomous });
             // Zwei Kanäle (V-D8): das Log trägt Same, Größe und Slots; wer das Dorf verlangt hat (`_spielerVerlangt`,
             // die Quelle des Akts), hört den Satz der Welt und schaut auf SEIN Dorf — Nexus, Welt-Regeln und Mitspieler handeln
@@ -1929,7 +1983,7 @@ class AnazhRealm_siedlung_ort {
     // Art "stadt". Leser: `spawnSettlement` (Chat `dorf`), jeder Chat-Satz mit Same (`baue … hier`, Insel, Fraktal, der
     // Studio-Hain — der Same reist im Programm), der Strom jedes Programms ohne eigenen Seed (`dslCtx`), der Standard-Same
     // der Wurzel `spawnArchitecture` (Bau einer Kreatur, Plattform, Portal), der Würfel der Werkstatt, die Komposition des
-    // Nexus, das Wort des Wetter-Zugs (Art "wetter"). Der Zähler ist Welt-Gedächtnis (`worldMeta.bauSame`, reist im
+    // Nexus. Der Zähler ist Welt-Gedächtnis (`worldMeta.bauSame`, reist im
     // Snapshot und zum Gast): als Sitzungs-Feld begann er nach jedem Reload neu, und derselbe Satz am selben Ort stellte einen
     // deckungsgleichen zweiten Hain.
     _bauSame(art) {
@@ -2376,10 +2430,19 @@ class AnazhRealm_siedlung_ort {
             const anchor = Object.assign({}, b.anker);
             const ort = AnazhRealm._ortSchluessel(b.plan, anchor);
             const v2 = this._ortPlanSetzen(b.plan, anchor, false);
-            // Die Reservierung trägt das Rebuild-Gedächtnis {seed,nH,x,z}: Häuser/Brunnen persistieren als
-            // architectures, die Wege (kein Save-Byte) baut `_tickAutoSettlement` nach Reload am Anker neu.
-            // Alle Leser fragen nur Existenz (truthy). Ein Stand mitten im Gang schließt ihn zuerst (`saveState`).
-            wm.settlementCells[key] = { seed: i2.seed, nH: i2.nH, x: anchor.x, z: anchor.z };
+            // Die Reservierung IST das Gedächtnis des Orts {seed, nH, x, z, wx, wz, ort}: aus ihm kehrt er nach jedem Reload
+            // wieder (`_tickAutoSettlement`) — Häuser, Erdbau (Schlüssel `ort`) und Schichten trägt der Stand nie (speicher.K3);
+            // wx/wz der Ort der Trasse (siedlung.K3): die Wiederkehr fragt den Export dort, wo seine Gassen lagen.
+            // Alle Leser fragen nur Existenz (truthy).
+            wm.settlementCells[key] = {
+                seed: i2.seed,
+                nH: i2.nH,
+                x: anchor.x,
+                z: anchor.z,
+                wx: b.anker.x,
+                wz: b.anker.z,
+                ort,
+            };
             this._autoSettlementQueue = this._dorfZug(
                 v2,
                 anchor,
@@ -2397,14 +2460,14 @@ class AnazhRealm_siedlung_ort {
     // DAS NÄCHSTE HAUS ZUERST (stadt-erwachen-2, Lehre 25): bis hier gingen das Urteil (3 Raten), der Erdbau und ALLE Schichten
     // (Wege, 4 Laternen-Raten, Ausstattung) vor dem ersten Haus — nH 300 hob das nächste im Takt 13, an der GTX gezeichnet nach
     // 4,67–4,82 s (vorher 0,65 s). Ohne Vorlauf (Teleport, Start-Dorf) fällt das Urteil hier, in Raten vor dem Eintrag.
-    *_dorfErwachen(v2, anchor, ort, key, w) {
+    *_dorfErwachen(v2, anchor, ort, key, w, so) {
         while (!this._dorfWasserSchritt(w)) yield;
         this._erdbauSetzen(ort, v2.erdbau, w.nass);
         if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
         yield;
         this._erdbauLage(); // die Normalform der Welt mit dem neuen Ort (ihr erster Leser zahlte sie)
         yield true;
-        yield* this._dorfErlebnis(v2, { x: anchor.x, z: anchor.z }, { key });
+        yield* this._dorfErlebnis(v2, { x: anchor.x, z: anchor.z }, Object.assign({ key }, so));
     }
     // DAS WASSER-URTEIL DES ERDBAUS IM VORLAUF (Lehre 14: im Idle vorgebacken): ändert der Erdbau des Plans v2 (seine Splats
     // `erdbau`) den Grund an gezeichnetem Wasser (`_erdbauAmWasser` VOR dem Eintrag)? Ein Gang in Raten — die Normalform, dann je
@@ -2455,37 +2518,122 @@ class AnazhRealm_siedlung_ort {
         const M = this._dorfVorraete || (this._dorfVorraete = new Map());
         if (M.has(key)) return M.get(key).fertig;
         const v = { da: false, x: i2.x, z: i2.z, mehrM: i2.mehrM || 0 };
-        v.fertig = this._foundryRequestSettlement(
-            {
-                seed: i2.seed,
-                nH: i2.nH,
-                epoche: this._siedlungEpoche(i2.seed), // ZENSUS-REST V18.488 — die Epochen-Legende
-            },
-            key === "start"
-        ).then((plan) => {
-            if (!plan || !Array.isArray(plan.slots)) {
-                if (M.get(key) === v) M.delete(key); // der nächste Takt fragt neu
+        // DER ORT DER WELT IST EINE FUNKTION (Lehre 7): der Wunsch ist der Ort der Zelle, die Ort-Wahl fragt keinen Spieler
+        // (`frei` null) — wer ihn berührt, wartet im Zug (`_dorfZugSchritt`). Bis stadt-erwachen rückte das Dorf vor den
+        // Spieler (`_siedlungsAnker`), sobald er im Vorlauf in seiner Reichweite stand: nH 300 reicht 422 m, der Vorlauf
+        // beginnt bei 420 m — der Anker folgte seinem Schritt (GTX 22.10.: −835,27 ≠ −835,10 zwischen zwei Boots).
+        const dp = { seed: i2.seed, nH: i2.nH, epoche: this._siedlungEpoche(i2.seed) }; // die Epochen-Legende (V18.488)
+        v.fertig = this._ortMitTrasse(dp, i2, null, key === "start").then((b) => {
+            if (!b || !b.plan) {
+                if (M.get(key) === v) M.delete(key); // der nächste Takt fragt neu — eine Trasse ohne Ruhe trägt kein Dorf
+                if (b && this._autoSettlementRejected) this._autoSettlementRejected.add(key);
                 return null;
             }
-            // DER ORT DER WELT IST EINE FUNKTION (Lehre 7): der Wunsch ist der Ort der Zelle, die Ort-Wahl fragt keinen Spieler
-            // (`frei` null) — wer ihn berührt, wartet im Zug (`_dorfZugSchritt`). Bis stadt-erwachen rückte das Dorf vor den
-            // Spieler (`_siedlungsAnker`), sobald er im Vorlauf in seiner Reichweite stand: nH 300 reicht 422 m, der Vorlauf
-            // beginnt bei 420 m — der Anker folgte seinem Schritt (GTX 22.10.: −835,27 ≠ −835,10 zwischen zwei Boots).
-            const anker = { x: i2.x, y: 0, z: i2.z };
-            // DER ORT AUF DEM GELÄNDE (K10): die Ort-Wahl um den Anker im Ort-Faden, ohne den Erdbau zu legen
-            return this._ortWahl(plan, Object.assign({}, anker), false, null).then(() => {
-                const v2 = this._ortPlaene.get(AnazhRealm._ortSchluessel(plan, anker));
-                v.wasser = this._dorfWasserUrteil(v2 ? v2.erdbau : null);
-                v.da = true;
-                return { plan, anker, wasser: v.wasser };
-            });
+            const anker = { x: b.ort.x, y: 0, z: b.ort.z };
+            const v2 = this._ortPlaene.get(AnazhRealm._ortSchluessel(b.plan, anker));
+            v.wasser = this._dorfWasserUrteil(v2 ? v2.erdbau : null);
+            v.v2 = v2;
+            v.da = true;
+            return { plan: b.plan, anker, wasser: v.wasser };
         });
         M.set(key, v);
         return v.fertig;
     }
+    // DIE TRASSE AM ORT DES PLANS (siedlung.K3): der Export liest das Höhen-Raster um `ort` (`_foundryRequestSettlement`), die
+    // Ort-Wahl (`_ortWahl`, ohne Erdbau) rückt den Plan bis 128 m an den nächsten Ort, der jedes Haus trägt — dort folgten seine
+    // Gassen dem Grund des Wunschs (Node, vier Saaten: Gefälle p95 am Ort des Rasters 5,7–9,3 %, 16 m daneben bis 23,7 %).
+    // Rückt die Wahl, rechnet der Export am gewählten Ort neu (sein Mass-Bau kommt aus dem Gedächtnis des Studios), bis die Wahl
+    // am Ort ihres Rasters bleibt (56 Zellen um den Mess-Ort dorf: 37 im ersten Lauf, 15 im zweiten, 4 im dritten oder vierten).
+    // Rückgabe: Promise { plan, ort } — der Plan v2 steht unter `_ortSchluessel(plan, ort)` —, null bei kalter Foundry; bleibt die
+    // Wahl in `ORT_WAHL.trasseRunden` Läufen nicht, ist `plan` null, laut: kein Plan auf fremdem Grund.
+    async _ortMitTrasse(dp, wunsch, frei, kopf) {
+        const mass = (this._ortTrasseMass = { runden: 0, versatzM: [] });
+        let ort = { x: wunsch.x, z: wunsch.z };
+        for (; mass.runden < AnazhRealm.ORT_WAHL.trasseRunden;) {
+            const plan = await this._foundryRequestSettlement(Object.assign({}, dp, { ort }), kopf);
+            if (!plan || !Array.isArray(plan.slots)) return null;
+            mass.runden++;
+            const o = { x: ort.x, z: ort.z };
+            // DER ORT, DER SCHON WELT IST (sein Erdbau liegt, `worldMeta.erdbau`: der zweite Akt am Anker des ersten), trägt kein
+            // zweites Dorf aus dem Gedächtnis: die Wahl rechnet neu, und der Wirt weist jeden Ort ab, an dem ein Haus des
+            // ersten steht (`_ortTraegtWirt`). Bis siedlung-k3-heil hob der Akt den stehenden Plan ein zweites Mal — sein Zug
+            // wartete ohne Ende auf den Slot unter dem Spieler (gate:haus-welt W7: 900 s), jeder abgewiesene Slot nähme dem
+            // stehenden Haus den Grund (`_erdbauGrundFaellt`).
+            const wm = this.state.worldMeta;
+            if (wm && wm.erdbau && wm.erdbau[AnazhRealm._ortSchluessel(plan, ort)] && this._ortPlaene)
+                this._ortPlaene.delete(AnazhRealm._ortSchluessel(plan, ort));
+            await this._ortWahl(plan, o, false, frei);
+            if (o.x === ort.x && o.z === ort.z) return { plan, ort };
+            mass.versatzM.push(+Math.hypot(o.x - ort.x, o.z - ort.z).toFixed(1));
+            this._ortPlaene.delete(AnazhRealm._ortSchluessel(plan, ort)); // ihr Plan v2 wird nie Welt
+            ort = o;
+        }
+        this.log(
+            `ORT: die Trasse des Plans (Same ${dp.seed}) bleibt nach ${mass.runden} Läufen nicht an ihrem Ort ` +
+                `(${mass.versatzM.join(" · ")} m) — kein Plan auf fremdem Grund`,
+            "WARN"
+        );
+        return { plan: null, ort };
+    }
+    // DAS ERSTE HAUS STEHT SOFORT (siedlung.K5, Lehre 14: im Idle vorgebacken): ist der Vorrat einer Zelle bereit, bestellt der Takt
+    // die Studio-Stufen der `AUTO_SETTLEMENT.vorbackHaeuser` Häuser, die dem Ort ihres Erwachens am nächsten liegen (der Ring `nah`
+    // auf dem Weg vom Spieler zum Anker) — in der Mesh-Zone die Stufe, die die Kette dort wählt (`_foundryLodForEntry` am Auge des
+    // Erwachens), dahinter die Fernform des Gesetzbuchs — über DENSELBEN Chokepoint wie das gesetzte Haus (`_foundryFlattenFor`).
+    // Bis hier bestellte erst das gesetzte Haus, nach dem Erdbau, und der Faden trug fremde Aufträge: das erste Haus stand nach
+    // 148–518 ms (nH 12, Hülle) bzw. 474–800 ms (nH 300, Mesh; Radeon, Station dorf), vorgebacken nach 42–59 bzw. 119–294 ms.
+    // Rückgabe: ob jede Stufe steht (sonst fragt der Takt neu).
+    _dorfVorbacken(w, p) {
+        const f = this._foundry;
+        if (!w.v2 || !f || !f.recipes) return false;
+        if (!w.vorback) {
+            const A = AnazhRealm.AUTO_SETTLEMENT;
+            const o = w.v2.ort;
+            const d = Math.hypot(p.x - o.x, p.z - o.z) || 1;
+            const k = (A.nearM + (w.mehrM || 0)) / d;
+            const auge = { x: o.x + (p.x - o.x) * k, z: o.z + (p.z - o.z) * k };
+            const d2 = (e) => (e.position.x - auge.x) ** 2 + (e.position.z - auge.z) ** 2;
+            const haeuser = [];
+            for (const sl of w.v2.slots) {
+                const type = this._slotBauplan(sl, f);
+                const position = { x: o.x + sl.x, y: sl.y + 0.5, z: o.z + sl.z };
+                if (type)
+                    haeuser.push({ type, seed: sl.seed >>> 0, position, studioOv: AnazhRealm._stempelVon(sl.ov) });
+            }
+            haeuser.sort((a, b) => d2(a) - d2(b));
+            const R = this.state.architectureCullingRadius;
+            w.vorback = [];
+            for (const e of haeuser.slice(0, A.vorbackHaeuser)) {
+                const preset = this._foundryPresetForEntry(e);
+                const fern = d2(e) > R * R;
+                if (preset)
+                    w.vorback.push([
+                        e,
+                        preset,
+                        fern ? this._foundryFernStufe(preset) : this._foundryLodForEntry(e, auge),
+                    ]);
+            }
+        }
+        // bis jede Stufe steht: ein Flat setzt sich erst aus seinen Teilen zusammen (der Schatten-Zwilling bestellt sich dabei)
+        let steht = true;
+        for (const [e, preset, lod] of w.vorback) if (this._foundryFlattenFor(e, preset, lod) === null) steht = false;
+        return steht;
+    }
+    // Der Bauplan eines Slots: das Präfix seiner Studio-Art (KIND_POLICY) vor seiner Kultur, wenn die Welt ihn kennt — sonst null.
+    // Leser: die Slot-Quelle (`_spawnSettlementSlot`) und der Vorrat (`_dorfVorbacken`).
+    _slotBauplan(slot, f) {
+        const rec = f && f.recipes ? f.recipes[slot.kultur] : null;
+        const pol = rec && AnazhRealm.KIND_POLICY[rec.kind];
+        const name = pol && pol.prefix ? pol.prefix + slot.kultur : null;
+        return name && this.state.blueprints[name] ? name : null;
+    }
     // DER RANG DES ZUGS (siedlung.K5): die Häuser eines Plans heben in der Reihe ihres Abstands zum Spieler (`reihe`, das
     // nächste zuerst, gleich weit die Slot-Folge) — bis K5 in der Slot-Folge des Layouts, die vom Kern des Dorfs nach außen
     // wächst: wer am Rand ankam, sah das Dorf hinten beginnen. `idx` zählt die gehobenen.
+    // DER SCHIRM ZUERST (siedlung-k5-nah, Gebot 7): die Häuser, die der Schirm beim Erwachen zeigt (`_imErstenBlick` ohne
+    // Rand, der Grundriss als Radius), heben vor jedem außer Schirm — in beiden Hälften das nächste zuerst. Bis hier hob der
+    // Abstand allein: Radeon nH 300 (Station dorf, M36) hob das nächste Haus 19,6 m neben dem Spieler bei 81° außer Blick
+    // nach 60 ms, das erste im Schirm erst im fünften Zug-Schritt (über dem Budget je 8 Bilder einer), gezeichnet nach 553 ms.
+    // Der Akt (`_spawnSettlementFromExport`) und der Zug nach dem Reload (`_dorfZugOffen`) heben in DERSELBEN Reihe.
     // EIN SCHRITT DES ZUGS `q`: die nächsten Slots seiner Reihe — `AUTO_SETTLEMENT.perTick`, über dem Budget (`ueber`) einer,
     // unter dem Ladeschirm bis zur Frist des Lade-Frames (`_kappeOffen`, K60-2: die Häuser der Ankunft gehören ins erste
     // Weltbild, Term „dorf"), je Slot mit seinen Wandlaternen (K66-2). Ihn fahren der Takt (`_tickAutoSettlement`) und der Akt
@@ -2528,9 +2676,11 @@ class AnazhRealm_siedlung_ort {
             const sl = q.plan.slots[q.reihe[q.idx]];
             const { fp } = AnazhRealm._slotGrundriss(sl);
             const p = pm && pm.position;
+            // der Zug, der wiederkehrt (`q.wieder`), hebt das Haus, das schon stand, als der Spieler kam — auch um ihn
             if (
                 fp &&
                 p &&
+                !q.wieder &&
                 Math.hypot(p.x - q.origin.x - sl.x, p.z - q.origin.z - sl.z) < Math.hypot(fp.ex, fp.ez) + M
             ) {
                 q.reihe.push(q.reihe.splice(q.idx, 1)[0]);
@@ -2545,8 +2695,16 @@ class AnazhRealm_siedlung_ort {
     _dorfZug(plan, origin, cellKey, gang) {
         const pm = this.state.playerMesh;
         const p = pm ? pm.position : origin;
-        const d = (s) => (origin.x + s.x - p.x) ** 2 + (origin.z + s.z - p.z) ** 2;
-        const reihe = plan.slots.map((_s, i) => i).sort((a, b) => d(plan.slots[a]) - d(plan.slots[b]) || a - b);
+        const aus = AnazhRealm.ERSTER_BLICK.ausserD2;
+        const rang = plan.slots.map((s) => {
+            const x = origin.x + s.x;
+            const z = origin.z + s.z;
+            const d2 = (x - p.x) ** 2 + (z - p.z) ** 2;
+            if (!pm || !Number.isFinite(d2)) return d2;
+            const { fp } = AnazhRealm._slotGrundriss(s);
+            return this._imErstenBlick(x, z, fp ? Math.hypot(fp.ex, fp.ez) : 0, true) ? d2 : d2 + aus;
+        });
+        const reihe = plan.slots.map((_s, i) => i).sort((a, b) => rang[a] - rang[b] || a - b);
         return { plan, origin: { x: origin.x, z: origin.z }, idx: 0, reihe, cellKey, gang: gang || null };
     }
     // Der Worldgen-Konsument des "settlement"-Kanals — gerufen aus dem Idle-Pass
@@ -2651,32 +2809,50 @@ class AnazhRealm_siedlung_ort {
         if (!this._autoSettlementChannelLive()) return; // der Dispatch-Kanal entscheidet (M8)
         const wm = st.worldMeta || {};
         const cells = wm.settlementCells && typeof wm.settlementCells === "object" ? wm.settlementCells : null;
-        // Wege-Rebuild: Zellen mit Gedächtnis {seed,nH,x,z} bauen ihre Wege je Session lazy aus DEMSELBEN
-        // Export am gemerkten Anker neu (nurWege — Häuser/Brunnen sind persistiert). Alt-Saves mit Wert 1 →
-        // keine Wege. EIN Roundtrip zur Zeit, nur nahe Zellen.
-        if (cells && !this._stlWegePending) {
-            for (const k in cells) {
-                const c = cells[k];
-                if (!c || typeof c !== "object" || !Number.isFinite(c.x) || !Number.isFinite(c.seed)) continue;
-                if (this._stlWegeKeys && this._stlWegeKeys.has(k)) continue;
-                const rdx = c.x - playerPos.x;
-                const rdz = c.z - playerPos.z;
-                const nahW = A.nearM + this._siedlungMehrM(c.nH); // die Stadt baut ihre Schichten ab ihrem Rand (siedlung.K2)
-                if (rdx * rdx + rdz * rdz > nahW * nahW) continue;
-                this._stlWegePending = true; // Instanz-Feld (die _editSaveTimer-Klasse)
-                this._foundryRequestSettlement({
-                    seed: c.seed,
-                    nH: c.nH,
-                    epoche: this._siedlungEpoche(c.seed), // dieselbe EINE Epochen-Funktion (Rebuild-Treue)
-                }).then((plan2) => {
-                    this._stlWegePending = false;
-                    if (!plan2) return;
-                    this._spawnSettlementErlebnis(plan2, { x: c.x, z: c.z }, { key: k, nurWege: true });
-                    const zug = this._autoSettlementQueue ? null : this._dorfZugOffen(plan2, c);
-                    if (zug) this._autoSettlementQueue = this._dorfZug(zug, { x: c.x, z: c.z }, k);
+        // DER ORT KEHRT WIEDER (speicher.K3, Lehre 7): eine Zelle mit Gedächtnis {seed, nH, x, z} steht je Sitzung, sobald
+        // der Spieler naht, aus DEMSELBEN Export an ihrem gemerkten Ort wieder auf (die Wahl fest) — ihr Gang legt den Erdbau,
+        // die Wege und die Schichten, ihr Zug hebt jedes Haus, das nicht steht. Der Stand trägt keinen Bau und keinen Erdbau
+        // eines Orts: bis speicher-k3 trug er jeden (30 min Spiel: 7 Orte des Nexus, 140 kB Erdbau). Alt-Saves mit Wert 1 →
+        // nichts. EIN Roundtrip zur Zeit, nur nahe Zellen; sein Zug tritt nur in einen leeren Takt (sonst kehrt er später wieder).
+        const wk = !this._stlWegePending && this._dorfWiederkehrZelle(playerPos);
+        if (wk) {
+            const [k, c] = wk;
+            this._stlWegePending = true; // Instanz-Feld (die _editSaveTimer-Klasse)
+            const akt = k.startsWith("d:"); // der Akt eines Satzes oder des Nexus (`_dorfAkt`) trägt seine eigene Anfrage
+            const anker = { x: c.x, z: c.z };
+            // derselbe Grund der Trasse (siedlung.K3): der Export liest das Raster dort, wo seine Gassen lagen (ein Ort ohne wx/wz
+            // stammt von vor der Trasse und lag eben)
+            const trasse = Number.isFinite(c.wx) && Number.isFinite(c.wz) ? { x: c.wx, z: c.wz } : undefined;
+            const wieder = (plan2) =>
+                plan2 &&
+                this._ortWahl(plan2, { x: c.x, z: c.z }, false, null, true).then((v2) => {
+                    const E = this.state.worldMeta.erdbau || {};
+                    const ort =
+                        c.ort ||
+                        Object.keys(E).find((e) => e.startsWith(`ort:${c.seed >>> 0}:`)) ||
+                        AnazhRealm._ortSchluessel(plan2, anker);
+                    const so = { autonomous: !!c.autonomous };
+                    if (this._autoSettlementQueue || this._autoSettlementPendingKey) return;
+                    const w = this._dorfWasserUrteil(v2.erdbau);
+                    const gang = this._dorfErwachen(v2, anker, ort, k, w, so);
+                    this._autoSettlementQueue = Object.assign(
+                        this._dorfZug(this._dorfZugOffen(v2, anker), anker, k, gang),
+                        {
+                            so,
+                            wieder: true,
+                        }
+                    );
                 });
-                return; // EIN Dorf-Akt pro Tick
-            }
+            this._foundryRequestSettlement(
+                akt
+                    ? { seed: c.seed, nH: c.nH, epoche: c.epoche, budget: c.budget, ort: trasse }
+                    : { seed: c.seed, nH: c.nH, epoche: this._siedlungEpoche(c.seed), ort: trasse },
+                k === "start"
+            )
+                .then(wieder)
+                .catch(this._ortWahlWartet(k))
+                .then(() => (this._stlWegePending = false));
+            return; // EIN Dorf-Akt pro Tick
         }
         // Start-Dorf zuerst (einmalig je Welt) — bestellt schon sein Wecker am Buch (`_startDorfAmBuch`), der Takt fängt den Rest
         if (this._startDorfBestellen(playerPos)) return; // EIN Dorf-Akt pro Tick
@@ -2701,6 +2877,7 @@ class AnazhRealm_siedlung_ort {
                 this._dorfWasserSchritt(w.wasser);
                 rate = 0;
             }
+            if (w.da && !w.vorgebacken && V.has(k)) w.vorgebacken = this._dorfVorbacken(w, playerPos);
         }
         // die Zellen um den Spieler: der Ring 1 (jeder Ort), dann der Ring 2 — dort nur die Stadt des Rang-Gesetzes (siedlung.K2):
         // sie erwacht um ihr `mehrM` früher, ihr Rand liegt so viel weiter vom Anker als der eines Dorfs
@@ -2726,6 +2903,21 @@ class AnazhRealm_siedlung_ort {
             )
                 return;
         }
+    }
+    // DIE ZELLE, DIE WIEDERKEHRT: der erste Ort des Gedächtnisses (in der Folge seiner Gründung), der nahe dem Spieler steht und
+    // in dieser Sitzung noch nicht wiederkam (`_stlWegeKeys`: seine Wege) — [Schlüssel, Gedächtnis] oder null. Leser: der Takt
+    // (`_tickAutoSettlement`) und das erste Weltbild (der Term „dorf").
+    _dorfWiederkehrZelle(p) {
+        const wm = this.state.worldMeta || {};
+        const cells = wm.settlementCells && typeof wm.settlementCells === "object" ? wm.settlementCells : null;
+        for (const k in cells || {}) {
+            const c = cells[k];
+            if (!c || typeof c !== "object" || !Number.isFinite(c.x) || !Number.isFinite(c.seed)) continue;
+            if (this._stlWegeKeys && this._stlWegeKeys.has(k)) continue;
+            const nahW = AnazhRealm.AUTO_SETTLEMENT.nearM + this._siedlungMehrM(c.nH); // die Stadt ab ihrem Rand (siedlung.K2)
+            if ((c.x - p.x) ** 2 + (c.z - p.z) ** 2 <= nahW * nahW) return [k, c];
+        }
+        return null;
     }
     // EINE ZELLE IM TAKT (`_tickAutoSettlement`): verworfen, im Vorlauf bereitet oder erwacht — true, wenn der Takt dabei seinen
     // EINEN Dorf-Akt getan hat. `nurStadt`: der Ring 2 nimmt nur die Stadt (Stufe ≥ 1); ein Dorf dort wartet auf den Ring 1.
@@ -2756,35 +2948,39 @@ class AnazhRealm_siedlung_ort {
         return true;
     }
 
-    // DER ZUG ÜBERLEBT DEN RELOAD (S4-N4): der Erdbau des Orts reist im Snapshot (`worldMeta.erdbau`) mit dem Grund JEDES Hauses
-    // seines Plans, der Zug (`_autoSettlementQueue`) nicht — ein Reload mitten im Zug ließ die Gründe der Slots, die er noch
-    // stellen sollte, als Löcher ohne Bau liegen (`settlementCells` hält die Zelle besetzt). Der Grund IST das Datum des Plans:
-    // jeder Slot des Exports `plan`, dessen Grund (`art: "grund"` an seiner Mitte, die Höhe y des Plans v2) liegt und an dessen
-    // Mitte sein Haus (sein Same) nicht steht, ist offen — was dort sonst steht, urteilt die Bau-Wand des Slots; der Wege-Rebuild der Zelle reiht ihn wieder in den Zug, mit seinen Wandlaternen. Ein Slot,
-    // der fiel, nahm seinen Grund mit (`_erdbauGrundFaellt`), ein abgebautes Haus ebenso — keiner kehrt zurück. Rückgabe: der
-    // Plan des offenen Zugs (`c` die Zelle: Anker x, z) oder null.
+    // DER ORT KEHRT WIEDER (speicher.K3, Lehre 7): der Stand trägt je Ort nur sein Gedächtnis (`settlementCells`), nie seine
+    // Häuser und seinen Erdbau — der Zug der Wiederkehr hebt jeden Slot des Plans v2 `plan` (am Anker `c`), dessen Haus (sein
+    // Same an seiner Mitte) nicht steht; was dort sonst steht, urteilt die Bau-Wand des Slots, eine Tat sperrt ihn
+    // (`_tatSperrt`: ein abgebautes Haus kehrt nie zurück, sein Grund fällt mit dem Slot). Ein Reload mitten im Zug ist
+    // derselbe Fall. Rückgabe: der Plan des offenen Zugs, seine Wandlaternen an ihren Slots.
     _dorfZugOffen(plan, c) {
+        // liegt sein Grund schon (ein Zug, der in der Sitzung fiel, ein älterer Stand), trägt er die Höhe des Slots
         const gruende = this._erdbauRoh().filter((g) => g && g.art === "grund");
-        const steht = (x, z, same) =>
-            this.state.architectures.some(
-                (e) => e && e.seed === same && Math.abs(e.position.x - x) < 0.05 && Math.abs(e.position.z - z) < 0.05
-            );
         const neu = new Map();
         const slots = [];
         (plan.slots || []).forEach((sl, i) => {
-            const x = c.x + sl.x;
-            const z = c.z + sl.z;
+            const [x, z] = [c.x + sl.x, c.z + sl.z];
+            if (this._dorfSteht(x, z, sl.seed >>> 0)) return;
             const g = gruende.find((q) => Math.abs(q.cx - x) < 0.05 && Math.abs(q.cz - z) < 0.05);
-            if (!g || steht(x, z, sl.seed >>> 0)) return;
             neu.set(i, slots.length);
-            slots.push(Object.assign({}, sl, { y: g.y }));
+            slots.push(g ? Object.assign({}, sl, { y: g.y }) : sl);
         });
-        if (!slots.length) return null;
         // die Wandlaternen hängen an ihrem Slot im offenen Zug (die Reihe des Exports bleibt: ihr Same je Nummer)
         const laternen = (plan.laternen || []).map((l) =>
             l && l.wand ? Object.assign({}, l, { slot: neu.has(l.slot) ? neu.get(l.slot) : -1 }) : l
         );
         return Object.assign({}, plan, { slots, laternen });
+    }
+    // Steht der Bau eines Orts (sein Same `same`) an (x, z)? Der Zug, der wiederkehrt, hebt nur, was nicht steht.
+    _dorfSteht(x, z, same) {
+        return this.state.architectures.some(
+            (e) => e && e.seed === same && Math.abs(e.position.x - x) < 0.05 && Math.abs(e.position.z - z) < 0.05
+        );
+    }
+    // Ist der Platz eines Stücks des Orts belegt — es steht schon, oder eine Tat nahm es? Er zählt dann als gesetzt: der Same
+    // der folgenden Stücke bleibt der seiner ersten Gründung.
+    _dorfBelegt(x, z, same) {
+        return this._dorfSteht(x, z, same) || this._tatSperrt(x, z);
     }
 
     // DER STAND DER GRUNDRISSE FÄLLT AM ORT (K51-5, Lehre 25): ein neuer oder gefallener Grundriss (Bau, Lichtung, Fläche eines
@@ -2827,8 +3023,10 @@ class AnazhRealm_siedlung_ort {
     // jedem späteren Bau (gate:settlement Teil O „das Werk derselben Art"). Bis zur Wiederkehr wich auch das Werk eines Worts
     // aus dem Stoff der Natur (ein stein_block ist basalt): auf der Lichtung beim Satz erlaubt, beim Reload geräumt
     // (gate:persistence Teil W 0/2). Das Werk (`werk`, die Herkunft an der Wurzel `spawnArchitecture`) weicht nie.
+    // Ein Tier weicht nach SEINER Herkunft: der Wurf des Felds (`userData.feldWurf`, `_kreaturWurf`), nie das gerufene Tier.
     _weichtDemBau(e) {
         if (!e || e.werk === true) return false;
+        if (e.userData && e.userData.kind === "creature") return e.userData.feldWurf === true;
         return e.feldWurf === true || this._istNatur(e);
     }
 }
@@ -2846,6 +3044,8 @@ AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     siteProbeR: Object.freeze([0.15, 0.3]),
     startRadiusM: Object.freeze([110, 130, 150, 170]),
     perTick: 2,
+    // so viele Häuser des Vorrats bestellen ihre Studio-Stufen vor dem Erwachen (`_dorfVorbacken`)
+    vorbackHaeuser: 4,
     // über so viel ms eines Zug-Schritts trägt der Takt kein Haus mehr (`_dorfZugSchritt`, stadt-erwachen)
     taktMs: 8,
     // die Laternen je Rate des Erlebnis-Gangs (`_dorfErlebnis`, stadt-erwachen)

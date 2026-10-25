@@ -88,4 +88,4 @@ const LAEUFER_PLAETZE = 20;
 // DER GROSSE SCHRITT (CW): über 5 min Median braucht er eine eigene Karte, nie die Waage (sie nennt ihn beim Namen)
 const GROSS_S = 300;
 
-module.exports = { GPU_REZEPTE, GROSS_S, LAEUFER_PLAETZE, befehle, klasseDerDatei, klasseDesLaufs };
+module.exports = { GPU_REZEPTE, GROSS_S, LAEUFER_PLAETZE, befehle, klasseDesLaufs };

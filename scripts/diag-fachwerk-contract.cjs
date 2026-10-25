@@ -39,7 +39,7 @@
 //   node scripts/diag-fachwerk-contract.cjs
 const fs = require("fs");
 const path = require("path");
-const { probeWand, fingerabdruck, goldenVergleich: compare } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck, goldenVergleich: compare, goldenSelbsttest } = require("./lib/plattform-probe.cjs");
 const fingerprint = (g) => fingerabdruck(g, false, true); // die v3–v5-Form samt Fernform der NUR-WURF-Stufe
 
 const root = path.resolve(__dirname, "..");
@@ -673,24 +673,7 @@ function bogenLinse() {
 
     // 9) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot.
     // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
-    const tampered = JSON.parse(JSON.stringify({ cases: actual }));
-    const k0 = Object.keys(tampered.cases)[0];
-    tampered.cases[k0].sha256 = tampered.cases[k0].sha256.replace(
-        /^./,
-        tampered.cases[k0].sha256[0] === "0" ? "1" : "0"
-    );
-    const t1 = compare(tampered, actual);
-    const actual2 = JSON.parse(JSON.stringify(actual));
-    actual2[k0].objects += 1;
-    const t2 = compare({ cases: actual }, actual2);
-    check(
-        "SELBST-TEST: korruptes Golden (sha256) wird erkannt",
-        t1.some((s) => s.includes("sha256"))
-    );
-    check(
-        "SELBST-TEST: objects-Drift wird erkannt",
-        t2.some((s) => s.includes("objects"))
-    );
+    goldenSelbsttest(actual, check);
 
     // 9b) DAS FARB-GESETZ DER HÄUSER — die Linse der Täter-Klasse „Hex roh als linear" (der Bake `_colFor` legt das
     //     Paletten-Hex nie roh in den Vertex). Gemessen wird, was die Welt liest: je Kultur
@@ -806,7 +789,7 @@ function bogenLinse() {
         `fünf Ausstattungs-Rezepte (kind ausstattung) mit Stufen [0,1,3] (3 = NUR-WURF) und Gestalten (${AUS.join(", ")})`,
         AUS.length === 5 && JSON.stringify(AUS_LODS) === "[0,1,3]" && AUS_CASES.length >= 25
     );
-    // DIE LATERNE (K10 × K11): der Leib und das Licht EINER Quelle — das Rezept trägt das Datum LICHT_GESETZ.laterne, und der
+    // DIE LATERNE: der Leib und das Licht EINER Quelle — das Rezept trägt das Datum LICHT_GESETZ.laterne, und der
     // Glas-Kopf (Seh-Klasse glas, die Rolle des Fensters: er zündet nachts) umschließt die Licht-Höhe `hoeheM` je Stufe 0/1.
     // Die Wandlaterne trägt dasselbe: fx.licht = LICHT_GESETZ.wandlaterne, der Kopf um ihre Licht-Höhe.
     for (const rz of ["laterne", "wandlaterne"]) {

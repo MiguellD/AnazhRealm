@@ -212,6 +212,16 @@
       "vertices": 2299,
       "sha256": "bcc41af26ffa7fc9f3a9a21be7212c5190155fd56fb26d8a3a581c5774b41fff"
     },
+    "sichel-s7-L0": {
+      "objects": 10,
+      "vertices": 8478,
+      "sha256": "ac65967ab0a94e5d21c8fcb7a73f68cf52040b8141b58be8f9ff099a03ac6337"
+    },
+    "sichel-s12345-L0": {
+      "objects": 10,
+      "vertices": 8478,
+      "sha256": "ac65967ab0a94e5d21c8fcb7a73f68cf52040b8141b58be8f9ff099a03ac6337"
+    },
     "langschwert-s7-L0-ov_fuller_klinge": {
       "objects": 18,
       "vertices": 10011,

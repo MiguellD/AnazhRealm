@@ -6,13 +6,10 @@
 //   B2  TÜR: aus 2 m vor der Haustür geht der Körper (W, echte Lab-Physik) bis 1 m hinter die Schwelle
 //   B3  TREPPE: auf jeder Treppe (Geschoss- und Speichertreppe, seitlicher Versatz −0,10 … +0,10 m) endet kein Schritt
 //       mit dem Körper in einem Solid, das kein Tritt ist (die Klemme), und JEDER Lauf (mittig) erreicht seine Höhe —
-//       EG→OG, OG→2.OG und Speicher (die Speichertreppe stieß mit der Zylinder-Kante an den Estrich: 0 von 3 oben; der
-//       Lauf ins 2. OG lag ohne Speicher und Keller auf einer Null-Spur: 0 m breit, 44 von 270 Siedlungs-Häusern); am
-//       Austritt steht der Körper (PH) unter der sichtbaren Decke (der Speicherlauf dreigeschossiger Häuser trat unter der
-//       Schräge aus: Kopfraum 1,2 m)
+//       EG→OG, OG→2.OG und Speicher; am Austritt steht der Körper (PH) unter der sichtbaren Decke
 //   B4  KELLER: der erste Strahl-Treffer aus dem Keller nach oben ist nie die Dorf-Boden-Platte
 //   B5  WELTGRUND: das Labor plant das Dorf auf der Welt-Zelle — es trägt den Plan v2 (fachwerk ortPlan, ein Slot je
-//       Haus, Plan-Hash Labor = Kern über gelaende-core lageGrund + ortCtx), die Häuser stehen nicht eben (Spanne ≥ 1 m), und
+//       Haus, Plan-Hash Labor = Kern über gelaende-core lageGrund + hoehenRaster + ortCtx), die Häuser stehen nicht eben (Spanne ≥ 1 m), und
 //       der Fuß steht auf dem Bild (Strahlen von oben auf den Dorf-Boden: Treffer = dorfBodenY ± 0,05 m). Der Deko-Fluss
 //  fiel mit seiner Klasse; das Wasser ist das der Welt.
 //   B6  EPOCHEN: Antike × {18, 40, 120} baut ohne Ausnahme (die Welt steht, das Dorf hat Häuser) — nur im echten Lauf
@@ -50,7 +47,13 @@ const BASIS = {
     // die Null-Spur: ohne Speicher und Keller hatte die rechte Spur 0 m
     spur: [[KERN, "||P.keller||levels.length>=3) ? 0.90 : 0;", "||P.keller) ? 0.90 : 0;"]],
     // der Speicherlauf folgte stur der Kehre — bei drei Geschossen trat er unter der Schräge aus (Kopfraum 1,2 m)
-    austritt: [[KERN, "    if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;", ""]],
+    austritt: [
+        [
+            KERN,
+            "    if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;\n    if(austritt(dir)<=zBandTop){",
+            "    {",
+        ],
+    ],
     // K10: das Dorf stand flach — der Dorf-Boden 0 und jedes Haus auf y = 0, gleich wo die Welt es trug
     flach: [
         [
@@ -288,27 +291,30 @@ function proben(inj) {
         strahlen: 0,
         aufBild: 0,
         abw: 0,
-        v2Json: null,
-        ort: null,
         planHash: null,
     };
     const O = dorf.ort;
     if (O && O.v2) {
         b5.v2 = O.v2.version;
         b5.slots = O.v2.slots.length;
-        b5.v2Json = JSON.stringify(O.v2);
-        b5.ort = O.ort;
         // der Plan-Hash: der Kern rechnet in DERSELBEN Seite den Plan des Exports 7/18 am Ort über die Lage der Saat
-        // (lageGrund) und den ctx des Orts (ortCtx) — das Labor zeigt genau ihn (Teil O von gate:settlement hält Kern = Welt)
+        // (lageGrund), das Höhen-Raster der Trasse um den Ort (hoehenRaster im Rahmen trasseRahmen, wie der Ort-Faden der
+        // Welt, siedlung.K3) und den ctx des Orts (ortCtx) — das Labor zeigt genau ihn (Teil O von gate:settlement hält Kern = Welt)
         const FCk = window.__fachwerkCore;
         const Gk = window.__gelaendeCore;
+        const Lk = Gk.lageGrund(Gk.LAGE_GRUND.seed, window.SimplexNoise);
         const kern = FCk.ortPlan(
-            FCk.exportSettlement({ seed: 7, nH: 18, epoche: "gewuerfelt", budget: 170000 }),
+            FCk.exportSettlement({
+                seed: 7,
+                nH: 18,
+                epoche: "gewuerfelt",
+                budget: 170000,
+                hoehe: Gk.hoehenRaster(Lk, O.ort.x, O.ort.z, FCk.trasseRahmen(18)),
+            }),
             O.ort,
-            Gk.ortCtx(Gk.lageGrund(Gk.LAGE_GRUND.seed, window.SimplexNoise))
+            Gk.ortCtx(Lk)
         );
-        b5.planHash = JSON.stringify(kern) === b5.v2Json;
-        b5.v2Json = null;
+        b5.planHash = JSON.stringify(kern) === JSON.stringify(O.v2);
     }
     let lo = Infinity;
     let hi = -Infinity;

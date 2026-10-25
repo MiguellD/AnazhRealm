@@ -24,7 +24,7 @@ async function checkBandV1769RoleResonance(ctx) {
         out.signaturen = !!r.constructor.FORM_ROLE_SIGNATURES;
 
         // (1) der Produkt-Vektor trägt die räumliche Schicht (R2): bodyShape/portalShape als Achsen neben den Tags.
-        // AUSLÖSCHUNGS-WELLE — der temple-Blueprint fiel; dieselbe Klasse (gespiegelte Stein-Säulen
+        // der temple-Blueprint fiel; dieselbe Klasse (gespiegelte Stein-Säulen
         // + Sturz) lebt eingefroren als KIND_SUBSTANCE.tor_basis — der Test wandert auf die Substanz-Zeile.
         const KS169 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
         const templeFix = { parts: JSON.parse(JSON.stringify(KS169.tor_basis.parts)) };
@@ -42,7 +42,7 @@ async function checkBandV1769RoleResonance(ctx) {
         out.healMechanism = tvBody === false || archScore > soulScore;
 
         // (3) DER WÄCHTER — die Form-Fallback-Built-ins, Baseline eingefroren (felsbogen jetzt architecture).
-        // AUSLÖSCHUNGS-WELLE — village/temple sind PHYSISCH gefallen; die 8 lebenden Arch-Built-ins tragen die Baseline.
+        // village/temple sind PHYSISCH gefallen; die 8 lebenden Arch-Built-ins tragen die Baseline.
         const wantArch = [
             "waterfall",
             "stein_block",
@@ -118,29 +118,29 @@ async function checkBandV1769RoleResonance(ctx) {
         r.setGameMode(savedMode);
         return out;
     });
-    check("V17.69 R2/R3: FORM_ROLE_SIGNATURES steht", res.signaturen);
+    check("R2/R3: FORM_ROLE_SIGNATURES steht", res.signaturen);
     check(
-        "V17.69 R2: der Produkt-Vektor trägt die räumliche Schicht (bodyShape/portalShape) neben den Tags",
+        "der Produkt-Vektor trägt die räumliche Schicht (bodyShape/portalShape) neben den Tags",
         res.vectorHasSpatial
     );
     check(
-        "V17.69 R3 DER HEAL: Säulen-Klasse (tor_basis-Substanz) + felsbogen sind architecture (waren soul) — body-förmig, aber als dichte Stein-Struktur resoniert architecture STÄRKER als soul",
+        "R3 DER HEAL: Säulen-Klasse (tor_basis-Substanz) + felsbogen sind architecture (waren soul) — body-förmig, aber als dichte Stein-Struktur resoniert architecture STÄRKER als soul",
         res.templeHealed && res.felsbogenHealed && res.healMechanism
     );
     check(
-        "V17.69 R3 DER WÄCHTER: die Form-Fallback-Built-ins emergieren auf der Baseline (8 architecture; M2: die 2 Bäume jetzt auch — bulk nimmt dem Laub die Trank-Resonanz)",
+        "R3 DER WÄCHTER: die Form-Fallback-Built-ins emergieren auf der Baseline (8 architecture; M2: die 2 Bäume jetzt auch — bulk nimmt dem Laub die Trank-Resonanz)",
         res.allArch && res.baeumeArchitecture
     );
     check(
-        "V17.69 R3 KONSUM: die Form-Rollen via Resonanz — fleisch-Körper→soul, Turm→architecture, Nahrung→consumable, magie-Ring→portal, Stein-Ring→architecture",
+        "R3 KONSUM: die Form-Rollen via Resonanz — fleisch-Körper→soul, Turm→architecture, Nahrung→consumable, magie-Ring→portal, Stein-Ring→architecture",
         res.bodySoul && res.towerArch && res.foodConsumable && res.ringPortal && res.stoneRingArch
     );
     check(
-        "V17.69 R3 DER FLIP: dieselbe Körper-Geometrie, andere Substanz kippt die Rolle (fleisch→soul, stein→architecture) — live Vektor, kein Schloss",
+        "R3 DER FLIP: dieselbe Körper-Geometrie, andere Substanz kippt die Rolle (fleisch→soul, stein→architecture) — live Vektor, kein Schloss",
         res.substanceFlip
     );
     check(
-        "V17.69 R3: die opChain-DOMÄNE behält Vorrang (ein forging-Gerät bleibt tool/armor, nicht die Form-Resonanz)",
+        "die opChain-DOMÄNE behält Vorrang (ein forging-Gerät bleibt tool/armor, nicht die Form-Resonanz)",
         res.domainPriority
     );
 }
@@ -159,7 +159,7 @@ async function checkBandV1771ToolOpFromForm(ctx) {
         });
 
         out.signaturen = !!r.constructor.OP_CLASS_SIGNATURES;
-        // R2-Erweiterung: der Produkt-Vektor trägt jetzt auch die Katalysator-Geometrie (pointedFraction)
+        // der Produkt-Vektor trägt auch die Katalysator-Geometrie (pointedFraction)
         out.vectorHasPointed = "pointedFraction" in r._blueprintProductVector(mk("cone", "eisen"));
 
         // (KONSUM) die Op EMERGIERT aus der Form: scharf→subtractive, stumpf-dicht→plastic, magie→phaseChange
@@ -202,23 +202,23 @@ async function checkBandV1771ToolOpFromForm(ctx) {
         return out;
     });
     check(
-        "V17.71 S10: OP_CLASS_SIGNATURES steht; der Produkt-Vektor trägt pointedFraction",
+        "OP_CLASS_SIGNATURES steht; der Produkt-Vektor trägt pointedFraction",
         res.signaturen && res.vectorHasPointed
     );
     check(
-        "V17.71 S10 KONSUM: die Op EMERGIERT aus der Form — scharf→subtractive, stumpf-dicht→plastic, magie→phaseChange (+ leer→subtractive)",
+        "S10 KONSUM: die Op EMERGIERT aus der Form — scharf→subtractive, stumpf-dicht→plastic, magie→phaseChange (+ leer→subtractive)",
         res.bladeSubtractive && res.hammerPlastic && res.wandPhaseChange && res.emptyFallback
     );
     check(
-        "V17.71 S10 DER FLIP: dasselbe Material (eisen), andere Form → andere Op (cone→schneiden, box→schmieden) — Form-getrieben, kein Tippen",
+        "S10 DER FLIP: dasselbe Material (eisen), andere Form → andere Op (cone→schneiden, box→schmieden) — Form-getrieben, kein Tippen",
         res.formFlip
     );
     check(
-        "V17.71 S10 KONSUM: setBlueprintToolMeta OHNE opClass leitet die Op aus der Form ab (emergent) + markiert + registriert",
+        "S10 KONSUM: setBlueprintToolMeta OHNE opClass leitet die Op aus der Form ab (emergent) + markiert + registriert",
         res.autoDerives && res.registersEmergent
     );
     check(
-        "V17.71 S10: eine explizite opClass bleibt der Schöpfer-Override (manuell, additive erzwingbar) + die Validierung ist unbroken",
+        "eine explizite opClass bleibt der Schöpfer-Override (manuell, additive erzwingbar) + die Validierung ist unbroken",
         res.manualOverride && res.rejectsBadClass
     );
 }
@@ -231,24 +231,8 @@ async function checkBandOmegaPhi1CoM(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
-        const mats = r.state.materials || {};
-        let dense = null,
-            light = null,
-            dd = -1,
-            ld = 2;
-        for (const name in mats) {
-            const d = mats[name] && mats[name].tags && mats[name].tags.dichte;
-            if (typeof d !== "number") continue;
-            if (d > dd) {
-                dd = d;
-                dense = name;
-            }
-            if (d < ld) {
-                ld = d;
-                light = name;
-            }
-        }
-        out.haveMats = !!dense && !!light && dense !== light && dd > ld;
+        // (die Masse in kg aus ρ der Stoff-Zeile und ihre Mutation misst gate:kampf-gefuehl (A), physik K1)
+        const dense = "stein";
         const mk = (parts) => ({ parts });
         // (1) symmetrisch: zwei identische Teile bei ±x → CoM.x ≈ 0
         const cSym = r._compoundCenterOfMass(
@@ -266,30 +250,12 @@ async function checkBandOmegaPhi1CoM(ctx) {
             ])
         );
         out.volShiftsCoM = cVol.com.x > 0.5;
-        // (3) dichteres Material bei +x → CoM verschiebt sich dorthin (dichte → Masse)
-        const cDch = r._compoundCenterOfMass(
-            mk([
-                { position: { x: -2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: light },
-                { position: { x: 2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: dense },
-            ])
-        );
-        out.dichteShiftsCoM = out.haveMats ? cDch.com.x > 0 : true;
-        // (4) Masse skaliert mit dichte (gleiche Form, dense > light)
-        const mDense = r._compoundCenterOfMass(
-            mk([{ position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: dense }])
-        ).mass;
-        const mLight = r._compoundCenterOfMass(
-            mk([{ position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: light }])
-        ).mass;
-        out.massScalesDichte = out.haveMats ? mDense > mLight : true;
-        // (5) leerer/ungültiger Bauplan → sicher 0 (keine Division durch 0)
+        // (3) leerer/ungültiger Bauplan → sicher 0 (keine Division durch 0)
         out.emptySafe = r._compoundCenterOfMass({ parts: [] }).mass === 0 && r._compoundCenterOfMass(null).mass === 0;
         return out;
     });
     check("Ω-Φ1: symmetrischer Bauplan → CoM zentriert (x≈0)", res.symCentered === true);
     check("Ω-Φ1: größeres Teil → CoM verschiebt sich dorthin (Volumen→Masse)", res.volShiftsCoM === true);
-    check("Ω-Φ1: dichteres Material → CoM verschiebt sich dorthin (dichte→Masse)", res.dichteShiftsCoM === true);
-    check("Ω-Φ1: Masse skaliert mit dichte (dense > light)", res.massScalesDichte === true);
     check("Ω-Φ1: leerer/ungültiger Bauplan → Masse 0 (sicher, keine Div/0)", res.emptySafe === true);
 }
 
@@ -323,19 +289,7 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
             rotation: rot,
         });
         const o = {};
-        // ── Ω-Φ2 Stützpolygon + Stabilität (SSF) ──
-        const table = P([
-            pt(-2, 0, -2, 0.4, 1, 0.4),
-            pt(2, 0, -2, 0.4, 1, 0.4),
-            pt(-2, 0, 2, 0.4, 1, 0.4),
-            pt(2, 0, 2, 0.4, 1, 0.4),
-            pt(0, 1, 0, 4, 0.3, 4, light),
-        ]);
-        const tippy = P([pt(0, 0, 0, 1, 1, 1), pt(6, 4, 0, 2, 2, 2, dense)]);
-        o.tableStable = r._stability(table).margin > 0.5;
-        const tp = r._stability(tippy);
-        o.tippyTips = tp.margin === 0 && tp.inside === false;
-        o.mastUnstable = r._stability(P([pt(0, 0, 0, 0.3, 6, 0.3)])).margin < 0.15;
+        // Φ2 (kippt), Φ3b (knickt), Φ5 (schwebt): der Prüf-Satz in der Welt (gate:werkstatt-weg)
         // ── Ω-Φ3 Steifigkeit + Versagen ──
         o.boardAniso = r._bendingStiffness(P([pt(0, 0, 0, 6, 0.3, 0.6)])).anisotropy > 3;
         const ring = P([
@@ -347,8 +301,6 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
         const solid = P([pt(0, 0, 0, 4, 1, 4)]);
         const mOf = (bp) => r._compoundCenterOfMass(bp).mass;
         o.hollowEfficient = r._bendingStiffness(ring).Imin / mOf(ring) > r._bendingStiffness(solid).Imin / mOf(solid);
-        o.slenderBuckles = r._failsUnderLoad(P([pt(0, 0, 0, 0.2, 5, 0.2)])).buckles === true;
-        o.stockyHolds = r._failsUnderLoad(P([pt(0, 0, 0, 1, 5, 1)])).buckles === false;
         // ── Ω-Φ4 Hebel + Schwung ──
         const headHeavy = P([pt(0, 0.3, 0, 0.2, 0.6, 0.2, light), pt(0, 3, 0, 0.4, 4, 0.4, dense)]);
         const balanced = P([pt(0, 0.3, 0, 0.5, 0.6, 0.5, dense), pt(0, 3, 0, 0.2, 4, 0.2, light)]);
@@ -356,16 +308,12 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
             sb = r._swingDynamics(balanced);
         o.headHeavier = sh.balance > sb.balance;
         o.balancedFaster = sb.swingSpeed > sh.swingSpeed;
-        // ── Ω-Φ5 Lastpfad + Schneide ──
-        o.stackIntact =
-            r._loadPath(P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(0, 2, 0, 1, 1, 1)])).intact === true;
-        const ft = r._loadPath(P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(0, 5, 0, 1, 1, 1)]));
-        o.floatBreaks = ft.intact === false && ft.floatingFrac > 0;
+        // ── Ω-Φ5 Schneide ──
         o.edgeContinuous =
             r._edgeContinuity(P([pt(0, 0, 0, 1, 0.3, 0.1), pt(1, 0, 0, 1, 0.3, 0.1), pt(2, 0, 0, 1, 0.3, 0.1)])) === 1;
         o.edgeGapped = r._edgeContinuity(P([pt(0, 0, 0, 1, 0.3, 0.1), pt(3, 0, 0, 1, 0.3, 0.1)])) < 1;
         // ── Ω-L1 die Physik-Achsen im Produkt-Vektor (alle [0,1], skalen-konsistent) ──
-        const v = r._blueprintProductVector(table);
+        const v = r._blueprintProductVector(P([pt(0, 0, 0, 1, 1, 1)]));
         const axes = ["stability", "stiffness", "balance", "leverage", "loadSound", "rollable"];
         o.l1AxesPresent = axes.every((a) => typeof v[a] === "number");
         o.l1AxesBounded = axes.every((a) => v[a] >= 0 && v[a] <= 1);
@@ -390,7 +338,7 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
         const topRes = r._blueprintResonance(r._blueprintProductVector(topHeavyVeh), sigV);
         o.truthBand = r._stability(topHeavyVeh).margin < r._stability(veh).margin && topRes < vehRes; // kippliges Fahrzeug schwächer
         // ── Ω-L2 KEINE Live-Rollen-Verschiebung: Built-ins bleiben (domain-fest) ──
-        // AUSLÖSCHUNGS-WELLE — temple/fahrzeug_wagen fielen; die lebenden Built-ins tragen die Probe
+        // temple/fahrzeug_wagen fielen; die lebenden Built-ins tragen die Probe
         // (stein_block=architecture · welt_portal=portal · reittier_holzross=vehicle, nicht-vakuös).
         o.builtinsHold =
             r.computeBlueprintRole(r.state.blueprints.stein_block) === "architecture" &&
@@ -407,14 +355,8 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
         o.w1ConsumesPhysik = !!(why && Array.isArray(why.beitraege) && why.beitraege.some((b) => b.cls === "physik"));
         return o;
     });
-    check(
-        "Ω-Φ2: breite Basis → stabil; Last außerhalb → kippt; Mast → ~0",
-        res.tableStable && res.tippyTips && res.mastUnstable
-    );
     check("Ω-Φ3a: Brett anisotrop steif; hohl effizienter als voll (I/Masse)", res.boardAniso && res.hollowEfficient);
-    check("Ω-Φ3b: schlanke Säule knickt, stämmige trägt (das Versagen, §9#8)", res.slenderBuckles && res.stockyHolds);
     check("Ω-Φ4: kopflastig schwerer balanciert; griffnah schneller", res.headHeavier && res.balancedFaster);
-    check("Ω-Φ5: Stapel intakt, schwebendes Teil bricht Lastpfad", res.stackIntact && res.floatBreaks);
     check("Ω-Φ5: Schneide durchgehend=1, mit Lücke<1", res.edgeContinuous && res.edgeGapped);
     check("Ω-L1: die Physik-Achsen sind im Produkt-Vektor, alle [0,1]", res.l1AxesPresent && res.l1AxesBounded);
     check("Ω-L1: rollable aus Roll-Physik (Räder>0, vertikaler Stamm=0)", res.rollableWheels && res.rollableTrunkZero);
@@ -514,16 +456,16 @@ async function checkBandV1779RoleFitQuality(ctx) {
         return out;
     });
     check(
-        "V17.79: die Rolle-Passung diskriminiert über die FORM — eine scharfe Klinge passt besser als Gerät als ein Klotz (gleiches Material)",
+        "die Rolle-Passung diskriminiert über die FORM — eine scharfe Klinge passt besser als Gerät als ein Klotz (gleiches Material)",
         res.heldDiscriminates,
         `Klinge=${res.fitBlade} Klotz=${res.fitBlob}`
     );
-    check("V17.79: die Passung bleibt in [min, max] (kein Runaway)", res.inRange);
-    check("V17.79: armor — eine dichte Platte passt besser als ein weiches Ding", res.armorDiscriminates);
-    check("V17.79: consumable — der lebendige Trank passt besser als ein toter Klumpen", res.consumableDiscriminates);
-    check("V17.79: unbekannte Rolle → neutral (1.0, kein Effekt)", res.unknownNeutral);
+    check("die Passung bleibt in [min, max] (kein Runaway)", res.inRange);
+    check("armor — eine dichte Platte passt besser als ein weiches Ding", res.armorDiscriminates);
+    check("consumable — der lebendige Trank passt besser als ein toter Klumpen", res.consumableDiscriminates);
+    check("unbekannte Rolle → neutral (1.0, kein Effekt)", res.unknownNeutral);
     check(
-        "V17.79 KONSUM: ein gehaltenes SCHWERT gibt mehr Schaden als ein gleich-materieller KLOTZ — der Form-Fit erreicht die Stats (das Schöpfer-Beispiel)",
+        "KONSUM: ein gehaltenes SCHWERT gibt mehr Schaden als ein gleich-materieller KLOTZ — der Form-Fit erreicht die Stats (das Schöpfer-Beispiel)",
         res.konsumDamage,
         `Schwert=${res.dmgBlade} Klotz=${res.dmgBlob}`
     );
@@ -531,7 +473,7 @@ async function checkBandV1779RoleFitQuality(ctx) {
 
 // der volle Produkt-Vektor: die 4 räumlichen Form-Achsen
 // (elongation/hollowness/axialSymmetry/spread) in den Vektor gehoben. Additiv — keine bestehende Signatur
-// referenziert sie (U2 webt sie ein) → die Form ist jetzt vollständig im Vektor, kein Regress.
+// referenziert sie (U2 webt sie ein) → die Form ist vollständig im Vektor, kein Regress.
 async function checkBandV1780FormAxes(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -600,19 +542,19 @@ async function checkBandV1780FormAxes(ctx) {
         return out;
     });
     check(
-        "V17.80 U1: die 4 Form-Achsen sind im Produkt-Vektor (elongation/hollowness/axialSymmetry/spread)",
+        "die 4 Form-Achsen sind im Produkt-Vektor (elongation/hollowness/axialSymmetry/spread)",
         res.hasAxes
     );
-    check("V17.80 U1: elongation — eine Klinge ist gestreckter als ein Würfel", res.elongation, res.elongVals);
-    check("V17.80 U1: spread — eine Trag-Basis spreizt mehr als eine Säule", res.spread, res.spreadVals);
+    check("elongation — eine Klinge ist gestreckter als ein Würfel", res.elongation, res.elongVals);
+    check("spread — eine Trag-Basis spreizt mehr als eine Säule", res.spread, res.spreadVals);
     check(
-        "V17.80 U1: axialSymmetry — ein symmetrischer Körper > ein asymmetrischer Klumpen",
+        "axialSymmetry — ein symmetrischer Körper > ein asymmetrischer Klumpen",
         res.symmetry,
         res.symVals
     );
-    check("V17.80 U1: hollowness — ein Behälter (Wände um Leere) > ein Vollblock", res.hollow, res.hollowVals);
+    check("hollowness — ein Behälter (Wände um Leere) > ein Vollblock", res.hollow, res.hollowVals);
     check(
-        "V17.80 U1 / V17.83 U4: ein WÜRFEL (keine Geräte-Form) bleibt Bauwerk — U4 ändert nur greifbare Geräte-Formen",
+        "U1 / V17.83 U4: ein WÜRFEL (keine Geräte-Form) bleibt Bauwerk — U4 ändert nur greifbare Geräte-Formen",
         res.noRegress
     );
 }
@@ -681,25 +623,25 @@ async function checkBandV1781RoleRegister(ctx) {
         return out;
     });
     check(
-        "V17.81 U2: das Rollen-Register hat ALLE Rollen (held/weapon/tool/brecher/armor/consumable/soul/portal/vehicle/machine/workshop/architecture)",
+        "das Rollen-Register hat ALLE Rollen (held/weapon/tool/brecher/armor/consumable/soul/portal/vehicle/machine/workshop/architecture)",
         res.allRoles
     );
     check(
-        "V17.81 U2: die Signaturen sind VOLL (≥4 Achsen — über die gesamte Resonanz, nicht eine Achse)",
+        "die Signaturen sind VOLL (≥4 Achsen — über die gesamte Resonanz, nicht eine Achse)",
         res.fullSignatures
     );
     check(
-        "V17.81 U2 TIEFE: das volle Profil entscheidet — die Klinge ist eine bessere Waffe, der Block ein besseres Bauwerk",
+        "U2 TIEFE: das volle Profil entscheidet — die Klinge ist eine bessere Waffe, der Block ein besseres Bauwerk",
         res.depth && res.roleRelative,
         res.depthVals
     );
-    check("V17.81 U2: held — eine Klinge passt besser als ein Klotz (V1779-Kern, jetzt tiefer)", res.heldDiscriminates);
+    check("held — eine Klinge passt besser als ein Klotz (V1779-Kern, jetzt tiefer)", res.heldDiscriminates);
     check(
-        "V17.81 U2 BALANCE: die Passung bleibt in [min,max], ein gut geformtes Werk ist ein Buff (>1.05)",
+        "U2 BALANCE: die Passung bleibt in [min,max], ein gut geformtes Werk ist ein Buff (>1.05)",
         res.inRange && res.goodFitBuff
     );
     check(
-        "V17.81 U2: vehicle — eine Trag-Basis passt besser als ein Mast (die neuen Form-Achsen tragen die neue Rolle)",
+        "vehicle — eine Trag-Basis passt besser als ein Mast (die neuen Form-Achsen tragen die neue Rolle)",
         res.vehicleDiscriminates,
         res.vehVals
     );
@@ -753,24 +695,23 @@ async function checkBandV1782CatalystReadout(ctx) {
         return out;
     });
     check(
-        "V17.82 U3: das Rollen-Spektrum — die Klinge ist eine starke Waffe (>0.85), diskriminiert gegen eine weiche Kugel, sortiert",
+        "das Rollen-Spektrum — die Klinge ist eine starke Waffe (>0.85), diskriminiert gegen eine weiche Kugel, sortiert",
         res.weaponHigh && res.discriminates && res.sorted,
         res.specVals
     );
     check(
-        "V17.82 U3 KATALYSATOR: ein harter dichter Block ist für eine Waffe SCHÄRFE-arm → der Hinweis nennt die Schärfe (die Achse zum Katalysator)",
+        "U3 KATALYSATOR: ein harter dichter Block ist für eine Waffe SCHÄRFE-arm → der Hinweis nennt die Schärfe (die Achse zum Katalysator)",
         res.hintSharpness,
         res.hintVal
     );
     check(
-        "V17.82 U3 KONSUM: der Werkstatt-Readout rendert das Rollen-Spektrum (der Kompass, sichtbar/lernbar)",
+        "U3 KONSUM: der Werkstatt-Readout rendert das Rollen-Spektrum (der Kompass, sichtbar/lernbar)",
         res.readoutRenders,
         res.readoutText
     );
 }
 
-// Schöpfer-Browser-Befunde geheilt: (#1) die Prozess-Op rückgängig machen (removePartOp) +
-// (#3) die ANGEZEIGTE Rolle ist die emergente (eine rollenlose Klinge → „tool", nicht „Bauwerk").
+// die Prozess-Op rückgängig machen (removePartOp); die ANGEZEIGTE Rolle ist die emergente (eine rollenlose Klinge → „tool").
 async function checkBandV1785RoleDisplayAndUndo(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -778,7 +719,7 @@ async function checkBandV1785RoleDisplayAndUndo(ctx) {
         const out = {};
         const DEFLEN = r._defaultPartOpChain().length;
         // (#3a) ein ROLLENLOSER Bauplan zeigt seine EMERGENTE Form-Rolle, nicht den Default.
-        // AUSLÖSCHUNGS-WELLE — der builtIn geraet_spitzhacke fiel; die Werkzeug-Substanz
+        // der builtIn geraet_spitzhacke fiel; die Werkzeug-Substanz
         // (KIND_SUBSTANCE) trägt dieselbe Probe als registriertes Test-Blueprint (rollenlos).
         const KS85 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
         if (r.state.blueprints._t_v1785_spitz) delete r.state.blueprints._t_v1785_spitz;
@@ -860,20 +801,20 @@ async function checkBandV1785RoleDisplayAndUndo(ctx) {
         `clone.role=${res.cloneRoleField}`
     );
     check(
-        "V17.85 #1: removePartOp auf der Grund-Op-Kette lehnt ab (nothing_to_remove) — nie unter die Default-Kette",
+        "#1: removePartOp auf der Grund-Op-Kette lehnt ab (nothing_to_remove) — nie unter die Default-Kette",
         res.remEmptyRejected
     );
     check(
-        "V17.85 #1: eine forging-Op wechselt die Rolle (architecture → forging-Rolle) — der Prozess fixiert die Rolle",
+        "#1: eine forging-Op wechselt die Rolle (architecture → forging-Rolle) — der Prozess fixiert die Rolle",
         res.applyOk && res.roleFlipped,
         `vorher=${res.roleBeforeApply} nachher=${res.roleAfterApply} ops=${res.opCountAfterApply}`
     );
     check(
-        "V17.85 #1 KONSUM: removePartOp macht die Op rückgängig — opCount zurück auf Default UND die Rolle re-emergiert (forging-Rolle → architecture)",
+        "#1 KONSUM: removePartOp macht die Op rückgängig — opCount zurück auf Default UND die Rolle re-emergiert (forging-Rolle → architecture)",
         res.remOk && res.opCountReverted && res.roleReverted,
         `ops=${res.opCountAfterRemove} rolle=${res.roleAfterRemove} (war ${res.roleBeforeApply})`
     );
-    check("V17.85 #1: removePartOp lehnt einen Built-in ab (cannot_modify_builtin)", res.remBuiltinRejected);
+    check("#1: removePartOp lehnt einen Built-in ab (cannot_modify_builtin)", res.remBuiltinRejected);
 }
 
 // das volle UNDO/REDO im Bauplan-Editor (Schöpfer-Wunsch „ein paar Schritte zurück und wieder
@@ -927,22 +868,22 @@ async function checkBandV1787UndoRedo(ctx) {
         return out;
     });
     check(
-        "V17.87 Undo: zwei Parts hinzu → undo macht sie Schritt für Schritt rückgängig (2 → 1 → 0), dann ist der Undo-Stapel leer",
+        "Undo: zwei Parts hinzu → undo macht sie Schritt für Schritt rückgängig (2 → 1 → 0), dann ist der Undo-Stapel leer",
         res.after2 === 2 && res.canUndo && res.afterUndo1 === 1 && res.afterUndo2 === 0 && res.undoExhausted,
         `after2=${res.after2} u1=${res.afterUndo1} u2=${res.afterUndo2}`
     );
     check(
-        "V17.87 Redo: nach dem Zurück führt Wiederholen Schritt für Schritt nach vorn (0 → 2, die Form wiederhergestellt)",
+        "Redo: nach dem Zurück führt Wiederholen Schritt für Schritt nach vorn (0 → 2, die Form wiederhergestellt)",
         res.afterRedo === 2 && res.redoShape === "cone",
         `afterRedo=${res.afterRedo} shape=${res.redoShape}`
     );
     check(
-        "V17.87 Verzweigung: ein NEUER Edit nach einem Undo verwirft den Redo-Zweig (die Geschichte gabelt korrekt)",
+        "Verzweigung: ein NEUER Edit nach einem Undo verwirft den Redo-Zweig (die Geschichte gabelt korrekt)",
         res.newEditShape === "sphere" && res.redoCleared
     );
-    check("V17.87 KONSUM: eine angewandte Op ist umkehrbar — undo nimmt den opChain-Schritt zurück", res.opUndoReverts);
-    check("V17.87: ein Built-in lehnt Undo ab (unveränderlich → keine Geschichte)", res.builtinReject);
-    check("V17.87: die Edit-Geschichte ist NICHT persistiert (reaktive Editor-Sitzungs-Schicht)", res.notPersisted);
+    check("KONSUM: eine angewandte Op ist umkehrbar — undo nimmt den opChain-Schritt zurück", res.opUndoReverts);
+    check("ein Built-in lehnt Undo ab (unveränderlich → keine Geschichte)", res.builtinReject);
+    check("die Edit-Geschichte ist NICHT persistiert (reaktive Editor-Sitzungs-Schicht)", res.notPersisted);
 }
 
 // Die Werkstatt IST der Prozess: Start nur mit hände; eine platzierte + nahe (frieden/pfad) oder
@@ -1011,28 +952,28 @@ async function checkBandV1788WorkshopAsProcess(ctx) {
         return out;
     });
     check(
-        "V17.88: der Spieler startet mit den Basics — nur hände ist Starter, die 5 Domain-Ops sind die Werkstatt-Op-Bibliothek (isStarter:false)",
+        "der Spieler startet mit den Basics — nur hände ist Starter, die 5 Domain-Ops sind die Werkstatt-Op-Bibliothek (isStarter:false)",
         res.handOnlyStarter && res.domainProc
     );
     check(
-        "V17.88 schöpfer: alle besessenen Werkstätten sind verfügbar (frei, ohne Platzieren) — forging + ≥4 Domänen",
+        "schöpfer: alle besessenen Werkstätten sind verfügbar (frei, ohne Platzieren) — forging + ≥4 Domänen",
         res.schoepferHasForging && res.schoepferMultiDomain
     );
     check(
-        "V17.88 die REKURSION: eine bessere Werkstatt fertigt feiner — die Meister-Esse hat einen höheren Cap als die Esse",
+        "die REKURSION: eine bessere Werkstatt fertigt feiner — die Meister-Esse hat einen höheren Cap als die Esse",
         res.recursion,
         res.recursionVals
     );
     check(
-        "V17.88 KONSUM: der Werkstatt-Prozess wirkt + der Cap kommt aus der STATION (schöpfer, besessen → Meister-Esse-Präzision)",
+        "KONSUM: der Werkstatt-Prozess wirkt + der Cap kommt aus der STATION (schöpfer, besessen → Meister-Esse-Präzision)",
         res.schoepferApply
     );
     check(
-        "V17.88 der wahre Weg: in frieden ohne platzierte Werkstatt gibt es NUR die Hand — der Werkstatt-Prozess wird abgelehnt (workshop_not_placed_near)",
+        "der wahre Weg: in frieden ohne platzierte Werkstatt gibt es NUR die Hand — der Werkstatt-Prozess wird abgelehnt (workshop_not_placed_near)",
         res.friedenEmpty && res.friedenRejects
     );
     check(
-        "V17.88 KONSUM: eine in der Welt platzierte+nahe Esse erscheint im Prozess-Menü + lässt sich anwenden (platzieren → Prozess erscheint)",
+        "KONSUM: eine in der Welt platzierte+nahe Esse erscheint im Prozess-Menü + lässt sich anwenden (platzieren → Prozess erscheint)",
         res.friedenAppears && res.friedenAppliesAfterPlacement
     );
 }
@@ -1041,7 +982,7 @@ async function checkBandWave4(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Welle 4 Phase 1 — Materialien als Tag-Profile ###
+    // ### Materialien als Tag-Profile ###
     const wave4p1Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1140,8 +1081,8 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
         check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
         check(
-            "Welle 4 P1: Built-in-Anzahl exakt 15 (6 Bau + 5 Körper + laub + erde + kraut/essenz V18.133)",
-            wave4p1Results.builtInCount === 15
+            "Welle 4 P1: Built-in-Anzahl exakt 21 (6 Bau + 5 Körper + laub + erde + kraut/essenz + stahl/blech/leib + gras/wasser/eis)",
+            wave4p1Results.builtInCount === 21
         );
         check("Welle 4 P1: Alle Tag-Werte 0..1", wave4p1Results.tagsInRange);
         check(
@@ -1172,7 +1113,7 @@ async function checkBandWave4(ctx) {
         );
     }
 
-    // ### Welle 4 Phase 2 — Helix + Form-Tag-Aktivierungs-Matrix ###
+    // ### Helix + Form-Tag-Aktivierungs-Matrix ###
     const wave4p2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1304,14 +1245,14 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P2: compound_has_tag respektiert Schwellwert", wave4p2Results.condResonatesAboveSig);
         check("Welle 4 P2: compound_has_tag unbekanntes Tag → false", wave4p2Results.condUnknownTagFalse);
         check("Welle 4 P2 (V17.91): die Tags-Zeile erscheint im Stats-Panel", wave4p2Results.uiTagsSection);
-        check("V18.44 Spec-Sheet: das Stats-Panel rendert das Material-Profil (Balken)", wave4p2Results.uiTagsHasRows);
+        check("Spec-Sheet: das Stats-Panel rendert das Material-Profil (Balken)", wave4p2Results.uiTagsHasRows);
         check(
             "Welle 4 P2 (V17.91): die FORMEN-Palette bietet helix als ziehbare Karte",
             wave4p2Results.uiShapeIncludesHelix
         );
     }
 
-    // ### Welle 4 Phase 3 — Werkzeuge + opChain + Präzision ###
+    // ### Werkzeuge + opChain + Präzision ###
     const wave4p3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1341,9 +1282,7 @@ async function checkBandWave4(ctx) {
                 { tool: "polierscheibe", op: "polish", cap: 0.97 },
             ],
         };
-        // Min-Regel-Hybrid: 2 Schritte (0.4, 0.97)
-        // → 0.4 + 0.57 × 0.7 = 0.799 (nicht mehr strict min). Der
-        // alte Pfad (strict min) wurde 13.05.2026 hybridisiert.
+        // Min-Regel-Hybrid: 2 Schritte (0.4, 0.97) → 0.4 + 0.57 × 0.7 = 0.799
         out.precisionIsHybrid = Math.abs(r.computePartPrecision(part1) - (0.4 + 0.57 * 0.7)) < 0.01;
         const part2 = { shape: "sphere", material: "quarz" }; // no opChain
         out.precisionDefaultsTo04 = r.computePartPrecision(part2) === 0.4;
@@ -1502,10 +1441,10 @@ async function checkBandWave4(ctx) {
         );
     } else {
         check(
-            "V17.88: hände ist der einzige Starter, die Domain-Ops sind die Werkstatt-Bibliothek",
+            "hände ist der einzige Starter, die Domain-Ops sind die Werkstatt-Bibliothek",
             wave4p3Results.fiveStarterTools
         );
-        check("V17.88: Spieler startet mit den Basics (hände)", wave4p3Results.playerOwnsStarters);
+        check("Spieler startet mit den Basics (hände)", wave4p3Results.playerOwnsStarters);
         check("Welle 4 P3: MATERIAL_OP_COMPATIBILITY frozen", wave4p3Results.matCompatFrozen);
         check("Welle 4 P3: WORLD_EFFECT_THRESHOLDS frozen", wave4p3Results.thresholdsFrozen);
         check("Welle 4 P3: Stein erlaubt nur subtractive Ops", wave4p3Results.steinSubtractiveOnly);
@@ -1527,7 +1466,7 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P3: Roh-Compound triggert keinen Welt-Effekt", wave4p3Results.rawDoesNotTrigger);
         check("Welle 4 P3: Magie-Compound hebt awe an", wave4p3Results.magicLiftsAwe);
         check("Welle 4 P3: Präzision moduliert Part-Farbe sichtbar", wave4p3Results.precisionVisibleTint);
-        check("V18.44 Spec-Sheet: der Readout zeigt die Qualitaet (.spec-q-label)", wave4p3Results.uiQualityRow);
+        check("Spec-Sheet: der Readout zeigt die Qualitaet (.spec-q-label)", wave4p3Results.uiQualityRow);
         check("Welle 4 P3 (V17.91): die Palette hat ziehbare Werkzeug-Karten (≥1, Hand)", wave4p3Results.uiToolCards);
         check(
             "Welle 4 P3 (V17.91): in schöpfer erscheinen die Werkstatt-Prozesse als ziehbare Station-Karten",
@@ -1542,7 +1481,7 @@ async function checkBandWave5(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Welle 5 B — räumliche Emergenz (Spitze richtet + Kontakt überträgt) ###
+    // ### räumliche Emergenz (Spitze richtet + Kontakt überträgt) ###
     const wave5bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1792,7 +1731,7 @@ async function checkBandWave5(ctx) {
         check("Welle 5 B: Magie tip-oben > Magie tip-unten (Diskrimination)", wave5bResults.tipMagicExceedsBottom);
     }
 
-    // ### Welle 5 B Phase 2 — Hohlraum + Symmetrieachse + Resonanz-Array ###
+    // ### Hohlraum + Symmetrieachse + Resonanz-Array ###
     const wave5bp2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -2029,7 +1968,7 @@ async function checkBandWave5(ctx) {
         );
     }
 
-    // ### Welle 5 A — Verbindungstypen mit Lastformel ###
+    // ### Verbindungstypen mit Lastformel ###
     const wave5aResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -2254,7 +2193,7 @@ async function checkBandWave5(ctx) {
         check("Welle 5 A: Schwache Verbindung traegt workshop-conn-weak class", wave5aResults.weakClassApplied);
     }
 
-    // ### Welle 5 C — Maschinen-Rekursivitaet (Bauplan als Werkzeug) ###
+    // ### Maschinen-Rekursivitaet (Bauplan als Werkzeug) ###
     const wave5cResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -2544,7 +2483,7 @@ async function checkBandWave5(ctx) {
         out.toolRemovedFromState = !r.state.tools["bug2-lathe"];
         out.toolRemovedFromPlayer = !(r.state.player.tools || []).includes("bug2-lathe");
         // die Op-Bibliothek (schmiede-hammer-Definition) + der Hand-Starter überleben einen
-        // Bauplan-Lösch unberührt (das Werkzeug ist ab V17.88 nicht mehr im player.tools-Starter-Satz).
+        // Bauplan-Lösch unberührt (das Werkzeug ist nicht mehr im player.tools-Starter-Satz).
         out.starterToolsUnaffected =
             !!r.state.tools["schmiede-hammer"] && (r.state.player.tools || []).includes("hände");
 
@@ -2622,7 +2561,7 @@ async function checkBandWaves9And10a(ctx) {
     const { page, check, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Welle 9a — Werkzeug-Domains + emergente Bauplan-Rolle ###
+    // ### Werkzeug-Domains + emergente Bauplan-Rolle ###
     const wave9aResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -2648,8 +2587,8 @@ async function checkBandWaves9And10a(ctx) {
 
             // Default-Tools sind alle generic (domain=null)
             const tools = r.state.tools || {};
-            // Welle 9b / V17.78 — die generische Präzisions-Leiter ist gefallen (feuerstein/hammer/feile/
-            // polier RAUS, die Werkstatt trägt jetzt die Präzision); nur `hände` bleibt domain-neutral (0.4).
+            // die generische Präzisions-Leiter ist gefallen (feuerstein/hammer/feile/
+            // polier RAUS, die Werkstatt trägt die Präzision); nur `hände` bleibt domain-neutral (0.4).
             // Die Domain-Tools tragen jeweils eine domain ∈ TOOL_DOMAINS.
             const originalGenericNames = ["hände"];
             out.originalToolsGeneric = originalGenericNames.every((n) => tools[n] && tools[n].domain === null);
@@ -2825,7 +2764,7 @@ async function checkBandWaves9And10a(ctx) {
         check(`Welle 9a: evaluate-Fehler — ${wave9aResults.error}`, false);
     }
 
-    // ### Welle 9b — Domain-Werkzeuge + UI-Anzeige der Rolle ###
+    // ### Domain-Werkzeuge + UI-Anzeige der Rolle ###
     const wave9bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -2887,7 +2826,7 @@ async function checkBandWaves9And10a(ctx) {
             r.cloneBlueprint("stein_block", "test_9b");
             r.selectBlueprintForEdit("test_9b");
             r._renderWorkshopDOM();
-            // die Rolle wird jetzt im intuitiven Stats-Panel angezeigt (Rolle-Zeile mit .role-chip),
+            // die Rolle wird im intuitiven Stats-Panel angezeigt (Rolle-Zeile mit .role-chip),
             // nicht im entfernten Editor-Header. Frisch geklont: architecture (emergent default) → der Chip
             // zeigt „Bauwerk" + trägt .role-emergent (der emergent/manuell-Indikator).
             const roleChip9b = document.querySelector("#workshop-stats-panel .role-chip");
@@ -2908,7 +2847,7 @@ async function checkBandWaves9And10a(ctx) {
                 (roleChipAfter.textContent.includes("Werkzeug") || roleChipAfter.textContent.includes("Rüstung")) &&
                 roleChipAfter.classList.contains("role-emergent");
 
-            // der Domain-Punkt lebt jetzt auf den Werkzeug-Karten der WERKZEUGE-Palette (das
+            // der Domain-Punkt lebt auf den Werkzeug-Karten der WERKZEUGE-Palette (das
             // besessene schmiede-hammer erscheint dort als Karte mit Domänen-Punkt).
             out.toolChipHasDomainDot =
                 document.querySelectorAll("#workshop-tool-palette .workshop-tool-domain-dot").length > 0;
@@ -2937,7 +2876,7 @@ async function checkBandWaves9And10a(ctx) {
                 wave9bResults.drehbankMechanism
         );
         check(
-            "V17.88: alle 5 Domain-Werkzeuge bleiben als Werkstatt-Op-Bibliothek (isStarter:false, in state.tools)",
+            "alle 5 Domain-Werkzeuge bleiben als Werkstatt-Op-Bibliothek (isStarter:false, in state.tools)",
             wave9bResults.allDomainToolsInInventory
         );
         check(
@@ -2969,7 +2908,7 @@ async function checkBandWaves9And10a(ctx) {
         check(`Welle 9b: evaluate-Fehler — ${wave9bResults.error}`, false);
     }
 
-    // ### Welle 9c — Welt-Werkstatt-Architekturen + Distance-Gate ###
+    // ### Welt-Werkstatt-Architekturen + Distance-Gate ###
     const wave9cResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -2980,7 +2919,7 @@ async function checkBandWaves9And10a(ctx) {
             out.allHaveRole = stationNames.every(
                 (n) => r.state.blueprints[n] && r.state.blueprints[n].role === "workshop-station"
             );
-            // S7-B — die bediente Domäne EMERGIERT jetzt aus der Substanz
+            // die bediente Domäne EMERGIERT aus der Substanz
             // (_computeWorkshopDomain), kein hardcoded workshopDomain-Feld mehr.
             out.esseForging = r._computeWorkshopDomain(r.state.blueprints.esse) === "forging";
             out.brennkolbenAlchemy = r._computeWorkshopDomain(r.state.blueprints.brennkolben) === "alchemy";
@@ -3075,7 +3014,7 @@ async function checkBandWaves9And10a(ctx) {
         check(`Welle 9c: evaluate-Fehler — ${wave9cResults.error}`, false);
     }
 
-    // ### Welle 9d — Maschinen-Bonus + Seelen-Bauplane ###
+    // ### Maschinen-Bonus + Seelen-Bauplane ###
     const wave9dResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -3183,7 +3122,7 @@ async function checkBandWaves9And10a(ctx) {
         check(`Welle 9d: evaluate-Fehler — ${wave9dResults.error}`, false);
     }
 
-    // ### Welle 10a — Präzision als Stat-Multiplikator ###
+    // ### Präzision als Stat-Multiplikator ###
     const wave10aResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -3549,7 +3488,7 @@ async function checkBandV18164AutoConnect(ctx) {
         delete blu.__acRm;
 
         // (9) §7.2 — SATTEL in der Welt (Substanz-Optik am expliziten Sitz),
-        // GHOST nur in der Werkstatt (opts-bestellt, V18.153-Trennung).
+        // GHOST nur in der Werkstatt (opts-bestellt).
         bp.connections.push({ type: "sitz", partA: 0, partB: -1, anchor: { x: 0, y: 0.175, z: 0 } });
         const world = r._buildFromBlueprint(bp, 0);
         const shop = r._buildFromBlueprint(bp, 0, undefined, { connectionLines: true });
@@ -3565,33 +3504,33 @@ async function checkBandV18164AutoConnect(ctx) {
         return out;
     });
     check(
-        "V18.164 §7.1 Kontakt-Wahrheit: die Hülle ist rotations-bewusst (|R|·s) — das liegende Wagenrad BERÜHRT den Korpus, die rotations-blinde Hülle war die gemessene Wurzel",
+        "§7.1 Kontakt-Wahrheit: die Hülle ist rotations-bewusst (|R|·s) — das liegende Wagenrad BERÜHRT den Korpus, die rotations-blinde Hülle war die gemessene Wurzel",
         res.rotKontakt && res.rotIstDieWurzel
     );
     check(
-        "V18.164 §7.1 Auto-Verbindung: neu-berührt gebiert den Substanz-argmax (holz→Binden) · getrennt löst NUR auto-Geborenes (die bewusste Wahl bleibt)",
+        "§7.1 Auto-Verbindung: neu-berührt gebiert den Substanz-argmax (holz→Binden) · getrennt löst NUR auto-Geborenes (die bewusste Wahl bleibt)",
         res.geburt && res.trennung
     );
     check(
-        "V18.164 §7.1 Lösen geehrt: ruhender Kontakt gebiert nie neu — erst der echte Weg-und-zurück-Übergang; und der Typ FOLGT der Substanz (eisen → Schweißen)",
+        "§7.1 Lösen geehrt: ruhender Kontakt gebiert nie neu — erst der echte Weg-und-zurück-Übergang; und der Typ FOLGT der Substanz (eisen → Schweißen)",
         res.loesenGeehrt && res.uebergangGebiert && res.typFolgt
     );
     check(
-        "V18.164 §7.1 Gelenk-Wand: Tür + Wirbel-Kette nur aus bewusster Hand (Hütten wackeln nie, C2) — das RAD bleibt der auto-Geburt offen (der Wagen rollt)",
+        "§7.1 Gelenk-Wand: Tür + Wirbel-Kette nur aus bewusster Hand (Hütten wackeln nie, C2) — das RAD bleibt der auto-Geburt offen (der Wagen rollt)",
         res.tuerNurBewusst && res.wirbelNurBewusst && res.radBleibtFrei
     );
     check(
-        "V18.164 §7.1 die auto-Marke reist (Validierungs-Sieb) + der Remap-Riss ist geheilt (Part-Löschen bewahrt anchor/auto der übrigen Verbindungen)",
+        "§7.1 die auto-Marke reist (Validierungs-Sieb) + der Remap-Riss ist geheilt (Part-Löschen bewahrt anchor/auto der übrigen Verbindungen)",
         res.validReist && res.remapHeil
     );
     check(
-        "V18.164 §7.2 der Sitz ist SICHTBAR: Sattel-Optik in der Welt (Substanz am expliziten Anker) · Probesitz-Ghost NUR in der Werkstatt (opts-bestellt) · kein Sattel ohne Sitz",
+        "§7.2 der Sitz ist SICHTBAR: Sattel-Optik in der Welt (Substanz am expliziten Anker) · Probesitz-Ghost NUR in der Werkstatt (opts-bestellt) · kein Sattel ohne Sitz",
         res.sattelWelt && res.ghostNurWerkstatt && res.keinSattelOhneSitz
     );
 }
 
 // Skeleton-Mesh: echte Tube-Geometrie (bark mit lobed flare) + Foliage-Cards (normalBend) + der EINE
-// Wind-Term im Stoff (K19) + Slope/Höhen-Toleranzen. Reine Render-Vertiefung — bp.parts bleibt
+// Wind-Term im Stoff + Slope/Höhen-Toleranzen. Reine Render-Vertiefung — bp.parts bleibt
 // unverändert (tag-neutral).
 async function checkBandV18214SkeletonMesh(ctx) {
     const { page, check } = ctx;
@@ -3705,7 +3644,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
                 }
             }
 
-            // ─── (T9) Tag-Neutralität (V17.16-Wand): bp.parts unverändert ──
+            // ─── (T9) Tag-Neutralität: bp.parts unverändert ──
             // der bpClone braucht _isGrown + _grownSpecies für faire
             // SPECIES_TAG_VARIATION-Anwendung (sonst Variation-an vs aus).
             const tagsSkel = r.computeCompoundTags(bp);
@@ -3736,57 +3675,57 @@ async function checkBandV18214SkeletonMesh(ctx) {
     });
 
     check(
-        "V18.214 (T1f) der Wurzelanlauf ist das Gesetz (STAMM_RIPPEN)",
+        "(T1f) der Wurzelanlauf ist das Gesetz (STAMM_RIPPEN)",
         res.defaultFlareExists === true
     );
-    check("V18.214 (T1g) SPECIES_TREE_PARAMS definiert (alle 6 Arten)", res.speciesTreeParamsExists === true);
+    check("(T1g) SPECIES_TREE_PARAMS definiert (alle 6 Arten)", res.speciesTreeParamsExists === true);
     check(
-        "V18.214 (T1h) Plan §3.7: Tanne slopeMax > Birke slopeMax (Birke meidet Steilhang)",
+        "(T1h) Plan §3.7: Tanne slopeMax > Birke slopeMax (Birke meidet Steilhang)",
         res.tannenSlopeHigher === true
     );
-    check("V18.214 (T1i) keine der 6 Arten trägt eine Hand-Anlauf-Zeile (K24-N1)", res.allSpeciesHaveFlare === true);
-    check("V18.214 (T4a) gen=7 grown Bauplan trägt _skeleton-Feld", res.bpHasSkeleton === true);
-    check("V18.214 (T4b) bp.parts bleibt erhalten (V17.16-Wand)", res.bpStillHasParts === true);
+    check("(T1i) keine der 6 Arten trägt eine Hand-Anlauf-Zeile (K24-N1)", res.allSpeciesHaveFlare === true);
+    check("(T4a) gen=7 grown Bauplan trägt _skeleton-Feld", res.bpHasSkeleton === true);
+    check("(T4b) bp.parts bleibt erhalten (V17.16-Wand)", res.bpStillHasParts === true);
     check(
-        `V18.214 (T4c) Skeleton hat ≥2 Branches (Stamm + L1+) — gemessen ${res.skelBranchCount}`,
+        `(T4c) Skeleton hat ≥2 Branches (Stamm + L1+) — gemessen ${res.skelBranchCount}`,
         res.skelBranchCount >= 2
     );
-    check(`V18.214 (T4d) Skeleton hat ≥1 Foliage-Anchor — gemessen ${res.skelAnchorCount}`, res.skelAnchorCount >= 1);
-    check("V18.214 (T4e) Skeleton trägt einen isTrunk-Branch", res.skelHasTrunk === true);
-    check("V18.214 (T4f) Skeleton trägt den Anlauf des Gesetzes (flareAmp>0, STAMM_RIPPEN)", res.skelHasFlare === true);
-    check("V18.214 (T5a) archFlattenBlueprint markiert skeleton: true", res.flatIsSkeleton === true);
+    check(`(T4d) Skeleton hat ≥1 Foliage-Anchor — gemessen ${res.skelAnchorCount}`, res.skelAnchorCount >= 1);
+    check("(T4e) Skeleton trägt einen isTrunk-Branch", res.skelHasTrunk === true);
+    check("(T4f) Skeleton trägt den Anlauf des Gesetzes (flareAmp>0, STAMM_RIPPEN)", res.skelHasFlare === true);
+    check("(T5a) archFlattenBlueprint markiert skeleton: true", res.flatIsSkeleton === true);
     check(
-        "V18.214 (T5b) archFlattenBlueprint markiert merged: true (Diagnose-Kompat)",
+        "(T5b) archFlattenBlueprint markiert merged: true (Diagnose-Kompat)",
         res.flatHasMergedMarker === true
     );
     check(
-        `V18.214 (T5c) ≤4 leaves (gemessen ${res.flatLeafCount}, erwartet 1-2 bark+foliage)`,
+        `(T5c) ≤4 leaves (gemessen ${res.flatLeafCount}, erwartet 1-2 bark+foliage)`,
         res.flatLeavesFew === true
     );
     check(
         `K19 (T6a) die Rinde schwingt im Wind-Term ihres Stoffs, die Geometrie trägt nur Gelesenes (${res.barkVerts} verts, ungelesen: ${(res.barkUngelesen || []).join(" · ") || "—"})`,
         res.barkImWind === true && Array.isArray(res.barkUngelesen) && res.barkUngelesen.length === 0
     );
-    check("V18.214 (T6c) bark-Geom trägt color", res.barkHasColor === true);
-    check("V18.214 (T6d) bark-Geom trägt normal", res.barkHasNormal === true);
-    check("V18.214 (T6e) bark-Geom hat ≥100 Vertices (Ring-of-6 pro Punkt)", res.barkManyVerts === true);
-    check("V18.214 (T7) bark-Leaf localMatrix ist Identity", res.barkIdentity === true);
+    check("(T6c) bark-Geom trägt color", res.barkHasColor === true);
+    check("(T6d) bark-Geom trägt normal", res.barkHasNormal === true);
+    check("(T6e) bark-Geom hat ≥100 Vertices (Ring-of-6 pro Punkt)", res.barkManyVerts === true);
+    check("(T7) bark-Leaf localMatrix ist Identity", res.barkIdentity === true);
     check(
         `K19 (T8a) das Laub schwingt im Wind-Term seines Stoffs, die Geometrie trägt nur Gelesenes (${res.foliageVerts} verts, ungelesen: ${(res.foliageUngelesen || []).join(" · ") || "—"})`,
         res.foliageImWind === true && Array.isArray(res.foliageUngelesen) && res.foliageUngelesen.length === 0
     );
-    check("V18.214 (T8b) foliage-Geom trägt color", res.foliageHasColor === true);
+    check("(T8b) foliage-Geom trägt color", res.foliageHasColor === true);
     check(
         `V18.386/.390 Neues Kleid/Eins W4: foliage-Vertex-Count = anchors·4 (Quad) oder anchors·30 (L0-Klinge): ${res.foliageVerts}/${res.skelAnchorCount}`,
         res.foliageVertsMatchAnchors === true
     );
     check(
-        "V18.214 (T9) Tag-Neutralität: computeCompoundTags(skeleton bp) == (clone) (V17.16-Wand)",
+        "(T9) Tag-Neutralität: computeCompoundTags(skeleton bp) == (clone) (V17.16-Wand)",
         res.tagsNeutral === true
     );
-    check("V18.214 (T10a) Snapshot trägt grown-Eintrag", res.snapshotHasEntry === true);
+    check("(T10a) Snapshot trägt grown-Eintrag", res.snapshotHasEntry === true);
     check(
-        "V18.214 (T10b) Snapshot persistiert _skeleton NICHT (re-baubar aus seed)",
+        "(T10b) Snapshot persistiert _skeleton NICHT (re-baubar aus seed)",
         res.snapshotNoSkeletonField === true
     );
 }

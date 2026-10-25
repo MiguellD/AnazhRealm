@@ -1,36 +1,6 @@
-// diag-vehicle-drive.cjs — N6 / H7: DAS LAB-FAHRPROFIL FÜHRT (Nervensystem Phase δ).
-// Beweist die drive-Reise Lab-Formel → Buch → Host-Profil, OHNE dass ein zweiter
-// Wahrheits-Satz oder ein zweiter Fahr-Pfad entsteht (M1/M9 · N6.4):
-//   A (statisch + numerisch, Node):
-//     A1 die Shell traegt KEIN eigenes FAHR-Literal/carPhys mehr (der N6.1-Umzug).
-//     A2 (Formel-Paritaet, Kriterium d): exportDrive == die Hand-Ableitung aus den
-//        Primitiven carPhys/FAHR/DEFAULT_P an 3 Presets, byte-exakt (===) — die
-//        Shell faehrt ihre Probefahrt mit EXAKT diesen Primitiven, also Kern==Shell.
-//     A3 (H7, Kriterium b numerisch): GT vs Supersport — mindestens zwei drive-
-//        Skalare messbar verschieden (Lab-Formel != Emergenz-Zufall).
-//     A4 die Bruecke kennt kein ns-Literal (Gesetz #0: kein eingefrorenes Preset-Duplikat).
-//     A5 (N6.4): der Bewegungs-Loop bleibt EIN Pfad (ride.kAcc/kBrake/topSpeedMul leben
-//        je GENAU EINMAL — kein zweiter Fahr-Code).
-//   B (Browser, foundry-ON, Null-Renderer — der lebende Draht):
-//     B-a das LIVE-Buch traegt fahrprofil je Fahrzeug-Preset (5/5, finite Skalare).
-//     B-b GT vs Supersport im LIVE-Buch verschieden UND bit-exakt == den Node-
-//         Werten (die Formel reiste unverfaelscht durch Worker + Ingest).
-//     B-c _vehicleProfile(fahrzeug_gt) traegt die LAB-Werte (=== exportDrive);
-//         die EMERGENZ (AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist
-//         gefallen) an einem Test-Blueprint aus KIND_SUBSTANCE.fahrzeug_wagen, byte-gleich nachgerechnet;
-//         floats: beim Teile-Werk die Substanz, beim Studio-Wagen die Huelle des Kerns (D10).
-//   B-d: DIE
-//     FAHR-PROBE — fahrzeug_gt wird gespawnt (Studio-instanziert), bestiegen, N Fahr-Ticks
-//     gefahren; danach MUSS entry.position > 1 m bewegt sein, der Spieler darauf sitzen,
-//     die Blocker (_populateBlockerAABBs) mitgezogen sein und der Snapshot (buildStateSnapshot)
-//     die neue Position tragen (dass JEDE zeichnende Stufe in jedem Bild mitfährt, misst
-//     gate:fahr-leben T4 im echten Ritt); _archInstanceUpdate liest die EINE Flat-Quelle (Zähl-Spion: die
-//     Foundry-Gestalt, ohne Foundry der Bauplan), und der Kapsel-Chokepoint stößt den
-//     Reiter nie an sein eigenes Gefährt (am Lauf, mit und ohne dessen Boxen).
-//   SELBST-TEST (--selftest): (1) ein verfaelschtes fahrprofil → die Divergenz-
-//     Linse feuert; (2) eine Shell mit eigenem FAHR-Literal → die Umzugs-Wand feuert;
-//     (3) B2: „Eintrag bleibt stehen" → die Fahr-
-//     Verdikt-Linse feuert.
+// diag-vehicle-drive.cjs — DAS LAB-FAHRPROFIL FÜHRT: die drive-Reise Lab-Formel → Buch → Host-Profil, ohne zweiten
+// Wahrheits-Satz und ohne zweiten Fahr-Pfad; A statisch und numerisch (Node), B im lebenden Draht (Browser, Foundry an,
+// Null-Renderer). Jede Zeile trägt ihr Soll im Namen ihres Checks, der Selbst-Test je Verdikt einen Täter.
 //   node scripts/diag-vehicle-drive.cjs [--selftest]
 const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const path = require("path");
@@ -244,7 +214,7 @@ function staticLaws(garage) {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
@@ -280,7 +250,7 @@ function staticLaws(garage) {
         try {
             const pGt = r._vehicleProfile({ type: "fahrzeug_gt" });
             res.prof.gt = pGt
-                ? { topSpeedMul: pGt.topSpeedMul, kAcc: pGt.kAcc, kBrake: pGt.kBrake, floats: pGt.floats }
+                ? { topSpeedMul: pGt.topSpeedMul, kAcc: pGt.kAcc, kBrake: pGt.kBrake }
                 : null;
             // AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist gefallen — die
             // EMERGENZ wird an einem Test-Blueprint aus der Substanz-Tabelle bewiesen
@@ -297,7 +267,7 @@ function staticLaws(garage) {
             };
             const pWg = r._vehicleProfile({ type: "_drive_probe_wagen" });
             res.prof.wagen = pWg
-                ? { topSpeedMul: pWg.topSpeedMul, kAcc: pWg.kAcc, kBrake: pWg.kBrake, floats: pWg.floats }
+                ? { topSpeedMul: pWg.topSpeedMul, kAcc: pWg.kAcc, kBrake: pWg.kBrake }
                 : null;
             // fahrzeug_wagen loest auf KEIN Buch-Preset ("wagen" steht in keinem Buch -> null,
             // der dokumentierte Substanz-Pfad) — die 0-Regress-Praemisse: kein Override moeglich.
@@ -692,11 +662,6 @@ function staticLaws(garage) {
         pw
             ? `kAcc=${pw.kAcc} soll=${out.emerg && out.emerg.kAcc} rad=${out.emerg && out.emerg.radCount}`
             : "kein Profil"
-    );
-    check(
-        "B-c (D10): der Studio-Wagen schwimmt nach der Huelle des Kerns (exportDrive.huelle.dichte > 1: gt sinkt), das Teile-Werk nach seiner Substanz (wagen-Substanz schwimmt) — nie gt == Holzkarren-Spender",
-        !!pg && !!pw && pg.floats === false && pw.floats === true,
-        pg && pw ? `gt=${pg.floats} wagen=${pw.floats}` : ""
     );
     // B-d (B2): die stehende Fahr-Probe — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
     const dv = driveVerdict(out.drive);

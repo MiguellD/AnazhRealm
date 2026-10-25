@@ -310,7 +310,7 @@ async function runPartB() {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "null", frist: 240000 });
     const page = await browser.newPage();
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
@@ -319,9 +319,7 @@ async function runPartB() {
         const res = { samples: [], err: null };
         const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
         // ── Boot + Foundry abwarten ──
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return { err: "anazhRealm nicht gebootet" };
+        const r = await window.__weltDa();
         const st = r.state;
         const A = r.constructor;
         res.flagDefault = st.foundryCrossfade === true; // W5.4 — Maske+Band DEFAULT AN
@@ -329,8 +327,6 @@ async function runPartB() {
         res.lodLive = D ? [D.thresh01, D.thresh12, D.fade, D.fade0] : null;
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready);
-        res.foundryReady = !!(f && f.ready);
-        if (!res.foundryReady) return res;
         // ── der Proben-Baum (gewachsener Bauplan, ferner Fix-Spot) ──
         const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "w54-band-sweep");
         const px = 12345,
@@ -353,7 +349,7 @@ async function runPartB() {
         const loopTakt = async () => {
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             await sleep(120);
         };
         const waerme = (name, e, preset, stufen, w) =>
@@ -1493,7 +1489,7 @@ async function main() {
             JSON.stringify(out.lodLive) === JSON.stringify(lodKern),
             `live ${JSON.stringify(out.lodLive)} · Kern ${JSON.stringify(lodKern)}`
         );
-        check("Foundry ready + Preset aufgelöst", out.foundryReady === true && out.preset === "eiche", out.preset);
+        check("Preset aufgelöst", out.preset === "eiche", out.preset);
         check(
             "alle drei Stufen warm vor der Baseline (L0/L1/Impostor)",
             !!(out.warm && out.warm.l0 && out.warm.l1 && out.warm.l2),

@@ -1,4 +1,4 @@
-// diag-kamera-laub.cjs — DIE KAMERA STECKT NIE IN LAUB, STRAUCH ODER FELS (Leben-Schau 2, 09.10., Befund §6 #5,
+// diag-kamera-laub.cjs — DIE KAMERA STECKT NIE IN LAUB, STRAUCH ODER FELS (09.10., Befund §6 #5,
 // V1-Lücke „laufen und sehen"). Die Linse fährt die echte Welt (headless, Foundry an, Null-Renderer) an die Orte der
 // Schau — die Ankunft (A 27), das Ufer mit dem Eichenhain des Satzes (−872/−1127, A 41–47) und den 30°-Hang
 // (−744/−1356, B 28–31, C 05–12) — und stellt dort an jeder nahen Pflanze den Spieler in acht Richtungen auf: zu Fuß in
@@ -17,7 +17,7 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
@@ -30,7 +30,7 @@ const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LA
 const STUDIO = process.env.KAMERA_LAUB_STUDIO ? path.resolve(process.env.KAMERA_LAUB_STUDIO) : null;
 // die Teile des Laufs (Standard alle): laub (die Nah-Deckung, K1) · leib (Mess-Wiese + Prüfbühnen-Hang, K2) · gang (der Gang, K4) · ninja (NP-03, K3) —
 // die CI fährt sie in zwei Schritten (gate:kamera-laub · gate:kamera-leib), je unter 3 min
-// `--bild`: Leib, Gang und Ninja zeichnen, das Laub nie
+// `--bild`: die Welt zeichnet über die Weiche (Rezept `linse`), ohne den Null-Renderer — die Station eines Geräts (leib.K4)
 const BILD = process.argv.includes("--bild");
 const TEILE = (process.argv.includes("--teile") ? process.argv[process.argv.indexOf("--teile") + 1] : process.env.KAMERA_LAUB_TEILE || "laub,leib,gang,ninja").split(",");
 // Die Nah-Radien der Messung (m) — fest in der Linse, damit Vorher und Nachher unter derselben Bedingung stehen.
@@ -277,7 +277,7 @@ function leibInstall(cfg) {
         for (let i = 0; i < n; i++) {
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             await sleep(ms || 30);
         }
     };
@@ -719,7 +719,7 @@ async function leibGang(G) {
 function ninja(arg) {
     const out = { posen: [] };
     try {
-        // die Studio-Kamera liest DEN Block des Kerns (fx.bewegung.kamera), kein Lab-Literal (D3c)
+        // die Studio-Kamera liest DEN Block des Kerns (fx.bewegung.kamera), kein Lab-Literal
         out.kernBlock = typeof _KAM !== "undefined" && _KAM === window.__koerperCore.bewegung.kamera;
         enterPlay();
         resetRun();
@@ -828,7 +828,7 @@ async function probe(arg) {
         for (let i = 0; i < n; i++) {
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             await sleep(ms || 30);
         }
     };
@@ -906,7 +906,7 @@ async function probe(arg) {
         try {
             const tS = performance.now();
             r.setCameraMode("third");
-            // DIE KRONEN-STELLUNG (K20): der Bestandsbaum trägt seine Krone auf dem Schaft (phyto-core schaftHub) — am
+            // DIE KRONEN-STELLUNG: der Bestandsbaum trägt seine Krone auf dem Schaft (phyto-core schaftHub) — am
             // Stamm-Fuß steht kein Laub in der Nah-Kugel, der Schmuggel dort maß 0,0 % und die Linse war blind. Die Stellung
             // steigt je 1 m am Stamm hinauf (der Spieler schwebt, die 3rd-Kamera folgt), bis das Laub ohne Durchsicht die Linse
             // deckt; an DERSELBEN Stellung muss die Durchsicht es wieder öffnen (≤ NAH_DECKUNG_MAX).
@@ -1241,9 +1241,8 @@ async function probe(arg) {
     const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
+    if (!BILD) await nullRenderer(page);
     await page.evaluateOnNewDocument(() => {
-        window.__anazhForceFoundry = true;
-        window.__anazhHeadlessNullRenderer = true;
         window.__anazhAutoSettlement = false; // der Dorf-Zug ruht: die Häuser der Mess-Wiese setzt die Linse (fest)
     });
     const bereit = () => warteAufWelt(page, 90000);

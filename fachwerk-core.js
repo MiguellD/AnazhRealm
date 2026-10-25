@@ -316,6 +316,7 @@
     if(lRun>availRun){ lGo=clamp(availRun/lN, 0.20, lGo); lRun=lN*lGo; } // passt der Speicherlauf nicht in die Tiefe → Auftritt kürzen (steiler), bleibt im Haus
     lW=loftW; }
   const zBandTop = (Dp/2)*(1 - NORM.kopfSpar/Math.max(0.6,ridgeY-eaveY));         // wo das Dach 1.9 m über Estrich liegt
+  const KNIESTOCK = Math.abs(zBandTop)>0.6 && Math.abs(zBandTop)<(Dp/2-0.08)-0.3;                               // steht dort der Kniestock (die Drempelwand des Estrichs, boeden), oder liegt der Stehraum bis an die Wand
   // GESETZ Austritt-Podest: Haupttreppe mündet so weit hinten, dass HINTER ihr ein freier OG-Boden ≥ NORM.podest bleibt → man kommt in den ersten Stock. Loft (RECHTS daneben) kehrt -z zum First zurück.
   let stZ0  = hasLoft ? clamp(DiF-NORM.podest, -Dp/2+NORM.eingang+stRun, DiF-0.4) - stRun
                       : clamp(Math.min(zBandTop-0.45, 1.3) - stRun, -Dp/2+NORM.eingang, -0.6);
@@ -335,12 +336,13 @@
     flights.push({base:levels[0].y, tr:'L', x0:TRACK.L[0], x1:TRACK.L[1], zFoot:stZ0, dir:1, N:stN, rise:stRise, go:stGo, isLoft:false, atLevel:'attic', topEdge:'back', footEdge:'front'}); }
   let LOFT=null;
   if(hasLoft){ const i=levels.length-1, tr=(i%2===0)?'L':'R'; let dir=(i%2===0)?1:-1;          // Speicherlauf top→Dachboden (Raumspar)
-    const austritt=(d)=>Math.abs(((d>0)?stZ0:wz1)+d*(lRun+0.3));                            // KOPFRAUM-GESETZ (Welle L): der Speicherlauf mündet im STEHRAUM (|z| ≤ zBandTop: Dach ≥ kopfSpar über dem Estrich) — trüge die Kehre ihn unter die Schräge, läuft er vom anderen Schacht-Ende zum First (vorher bei drei Geschossen Kopfraum 1,2 m am Austritt: der Kopf stak im Dach)
+    const austritt=(d)=>Math.abs(((d>0)?stZ0:wz1)+d*(lRun+(KNIESTOCK?NORM.podest:0.3)));                    // KOPFRAUM-GESETZ (Welle L): der Speicherlauf mündet im STEHRAUM (|z| ≤ zBandTop: Dach ≥ kopfSpar über dem Estrich) — vor dem Kniestock MIT seinem Austritt-Podest (NORM.podest, wie die Haupttreppe), ohne ihn 0,3 m Kopfraum — trüge die Kehre ihn unter die Schräge, läuft er vom anderen Schacht-Ende zum First (vorher bei drei Geschossen Kopfraum 1,2 m am Austritt: der Kopf stak im Dach; bis siedlung-k5-nah reichten 0,3 m: der Körper stand am Kniestock)
     if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;
+    if(austritt(dir)<=zBandTop){                                                             // KEIN SPEICHERLAUF OHNE STEHRAUM AM AUSTRITT: trägt keine Richtung ihn samt Podest in den Stehraum, bleibt der Estrich geschlossen wie unter dem flachen Dach (bis siedlung-k5-nah endete er 0,46 m vor dem Kniestock: kein Körper kam vom Lauf)
     const zFoot=(dir>0)?stZ0:wz1, zTop=zFoot+dir*lRun, z0=Math.min(zFoot,zTop), z1=Math.max(zFoot,zTop);
     LOFT={x0:TRACK[tr][0],x1:TRACK[tr][1],z0,z1,xc:(TRACK[tr][0]+TRACK[tr][1])/2,base:levels[i].y,top:eaveY,N:lN,rise:lRise,go:lGo,dir,zFoot};
     flights.push({base:levels[i].y, tr, x0:TRACK[tr][0], x1:TRACK[tr][1], zFoot, dir, N:lN, rise:lRise, go:lGo, isLoft:true, atLevel:'attic', topEdge:(dir>0)?'back':'front', footEdge:(dir>0)?'front':'back'});
-    addCircR(LOFT.x0-0.1, LOFT.z0-0.1, LOFT.x1+0.1, LOFT.z1+0.3, i, 'speichertreppe'); }
+    addCircR(LOFT.x0-0.1, LOFT.z0-0.1, LOFT.x1+0.1, LOFT.z1+0.3, i, 'speichertreppe'); } }
   const levelOpen=levels.map(()=>({front:false,back:false}));                              // offene Geländerkante je Geschoss (wo ein Lauf an-/austritt)
   flights.forEach(f=>{ if(typeof f.atLevel==='number') levelOpen[f.atLevel][f.topEdge]=true;
     const lvF=levels.findIndex(L=>Math.abs(L.y-f.base)<0.01); if(lvF>=0) levelOpen[lvF][f.footEdge]=true; });
@@ -785,16 +787,16 @@
     for(let k=1;k<levels.length;k++) floorWithStair(levels[k].y, levelOpen[k]);          // jedes OG mit Podest-Kehre
     // ── Dachboden (Estrich) auf eaveY: VOLL begehbar; niedriger Traufkopfraum = real ──
     if(levels.length===1){ if(hasAttic) floorWithStair(eaveY,{front:false,back:true}); else rect(eaveY-0.05,-Wi,Wi,-Di,Di,'boden'); }   // Estrich nur bei nutzbarem Dachraum; flaches Dach → geschlossene Decke
-    else if(!LOFT){ rect(eaveY-0.05,-Wi,Wi,-Di,Di,'boden'); }                                          // flaches Dach, ≥2 Geschosse: geschlossene Estrich-Decke, kein Speicherloch/Kniestock
+    else if(!LOFT){ rect(eaveY-0.05,-Wi,Wi,-Di,Di,'boden'); }                                          // ≥2 Geschosse ohne Speicherlauf (flaches Dach oder kein Stehraum am Austritt): geschlossene Estrich-Decke, kein Speicherloch/Kniestock
     else { levelTop=eaveY; const L=LOFT;                                     // Estrich voll minus Loch der Speichertreppe (LOFT)
       rect(eaveY-0.05,-Wi,L.x0,-Di,Di,'boden'); rect(eaveY-0.05,L.x1,Wi,-Di,Di,'boden');
       rect(eaveY-0.05,L.x0,L.x1,-Di,L.z0,'boden'); rect(eaveY-0.05,L.x0,L.x1,L.z1,Di,'boden');
-      const hclx=(L.x0+L.x1)/2,hclz=(L.z0+L.z1)/2; railSeg(L.x0,L.z1,L.x1,L.z1,hclx,hclz); railSeg(L.x0,L.z0,L.x0,L.z1,undefined,hclz); railSeg(L.x1,L.z0,L.x1,L.z1,undefined,hclz);
+      const hclx=(L.x0+L.x1)/2,hclz=(L.z0+L.z1)/2,zR=(L.dir>0)?L.z0:L.z1; railSeg(L.x0,zR,L.x1,zR,hclx,hclz); railSeg(L.x0,L.z0,L.x0,L.z1,undefined,hclz); railSeg(L.x1,L.z0,L.x1,L.z1,undefined,hclz);   // BRÜSTUNG NUR WO KEIN LAUF AUSTRITT (wie floorWithStair): der Speicherlauf mündet in seiner Laufrichtung (dir > 0 an z1) — bis siedlung-k5-nah stand die Brüstung immer an z1 und schloss jeden Lauf nach +z
       // ── KNIESTOCK (Drempelwand) bei ±zBandTop: Barriere zum niedrigen Traufkopfraum → Spieler bleibt im Stehraum ≥1.9 m (schliesst den Trauf-Anstoss); Lücke an der Speichertreppenspur ──
-      [-zBandTop,zBandTop].forEach(zc=>{ if(!(Math.abs(zc)>0.6&&Math.abs(zc)<Di-0.3))return; const kH=1.15,y0=eaveY,yc=y0+kH/2, crosses=(zc>L.z0-0.3&&zc<L.z1+0.3);
+      [-zBandTop,zBandTop].forEach(zc=>{ if(!KNIESTOCK)return; const kH=1.15,y0=eaveY,yc=y0+kH/2, crosses=(zc>L.z0-0.3&&zc<L.z1+0.3);
         (crosses?[[-Wi,L.x0-0.1],[L.x1+0.1,Wi]]:[[-Wi,Wi]]).forEach(([x0,x1])=>{ if(x1-x0<0.3)return; const xc=(x0+x1)/2,len=x1-x0;
           beam(g,xc,y0+0.05,zc,len,0.08,0.12,'holz'); beam(g,xc,y0+kH,zc,len,0.10,0.12,'holz'); beam(g,xc,yc,zc,len,kH-0.22,0.06,'lehm');
-          for(let x=x0+0.12;x<=x1-0.1;x+=1.0)beam(g,x,yc,zc,0.10,kH,0.10,'holz'); addSolid(xc,yc,zc,len,kH,0.14,'kniestock'); }); }); }   // 3-seitig; Seiten-Brüstung OHNE Innenversatz → Austritt (-z) bleibt frei für Körper
+          for(let x=x0+0.12;x<=x1-0.1;x+=1.0)beam(g,x,yc,zc,0.10,kH,0.10,'holz'); addSolid(xc,yc,zc,len,kH,0.14,'kniestock'); }); }); }   // 3-seitig; Seiten-Brüstung OHNE Innenversatz → der Austritt in Laufrichtung bleibt frei für Körper
     return g; }
 
   function bohle(g,cx,cy,cz,w,h,horiz,role){ const nb=Math.max(3,Math.round(w/0.22));
@@ -1475,7 +1477,7 @@
     for(let t=0;t<nT;t++){ const ins=t*W*_ir, w=Math.max(1.4,W-2*ins), dd=Math.max(1.4,Dp-2*ins), cx=asym*ins, cz=-(Dp-dd)/2;
       if(t===0&&LOFT){ const hx0=LOFT.x0-0.05,hx1=LOFT.x1+0.05,hz0=LOFT.z0-0.05,hz1=LOFT.z1+0.05;   // TREPPENAUGE-GESETZ: von innen erschlossen — der Speicherlauf mündet in Tier 0, SIA-Ring ums Auge
         [[pcx-pw/2,hx0,pcz-pd/2,pcz+pd/2],[hx1,pcx+pw/2,pcz-pd/2,pcz+pd/2],[hx0,hx1,pcz-pd/2,hz0],[hx0,hx1,hz1,pcz+pd/2]].forEach(([a,b2,c2,d2])=>{ if(b2-a>0.06&&d2-c2>0.06) beam(g,(a+b2)/2,y+0.07,(c2+d2)/2,b2-a,0.14,d2-c2,'boden'); });
-        bruestungRect(g,hx0,hx1,hz0,hz1,y+0.14,grl); }
+        const zA=(LOFT.dir>0)?hz0:hz1; bruestungSeg(g,'z',hx0,hx1,zA,zA,y+0.14,grl); bruestungSeg(g,'x',hx0,hx0,hz0,hz1,y+0.14,grl); bruestungSeg(g,'x',hx1,hx1,hz0,hz1,y+0.14,grl); }   // 3-seitig: der Austritt bleibt frei
       else beam(g,pcx,y+0.07,pcz,pw,0.14,pd,'boden');                                                // GESCHOSSPLATTE über den VORHERIGEN Footprint
       const wy=y+tH*0.5, wh=1.0, nx=Math.max(1,Math.round(w/2.8)), nz=Math.max(1,Math.round(dd/2.8));
       const fx=[],bx=[],sz2=[];
@@ -3405,13 +3407,52 @@
     // ════════════ STRASSENGRAPH-GESETZ ════════════ Straßen wachsen als Graph: Kurvensegmente von Knoten zu Knoten;
     // SNAP: endet ein Trieb nahe Bestand, VERBINDET er sich (Knoten/Kantensplit) → ZYKLEN → BLÖCKE. Das ist der Unterschied Stadt/Straßendorf.
     // prettier-ignore
-    function strassengraph(rnd, plan, sW, lw, Rw){
+    // DIE TRASSE LIEST DAS GELÄNDE (siedlung.K3): H(x, z) ist die Höhe des Grunds PLAN-LOKAL (der Ort der Trasse im Ursprung,
+    // `hoeheAusRaster`); ohne H liegt der Plan auf ebenem Grund — dasselbe Gesetz, byte-gleich mit dem Export vor K3. Ein Schritt
+    // der Länge DS, der steiler als `ORT_GESETZ.trasse` steigt, dreht um die kleinste Abweichung (0,1 rad bis ±1,5 rad), die ihn
+    // trägt: die Gasse folgt der Höhenlinie wie ein Saumpfad; trägt keine, nimmt sie die flachste. Bis K3 lief jede Gasse blind
+    // über den Hang (Gefälle p95 22–36 % an zwei von vier Saaten), der Erdbau glättete danach.
+    function trasseLenk(H, x, z, th, DS){
+      if(!H) return th;
+      const lim=ORT_GESETZ.trasse, h0=H(x,z), g=t=>Math.abs(H(x+Math.cos(t)*DS, z+Math.sin(t)*DS)-h0)/DS;
+      let bg=g(th); if(bg<=lim) return th;
+      let best=th;
+      for(let k=1;k<=15;k++){ const d=k*0.1, a=g(th+d), b=g(th-d);
+        if(a<=lim||b<=lim) return a<=b? th+d : th-d;
+        if(a<bg){bg=a;best=th+d;} if(b<bg){bg=b;best=th-d;} }
+      return best; }
+    // eine GERADE Verbindung (Quergasse, Schluss-Gasse, der Fang an Knoten und Kante) baut H nur, wo kein Schritt steiler als
+    // `ORT_GESETZ.trasse` steigt — sie kann nicht lenken
+    function trasseSteil(H, pts){ if(!H) return false;
+      for(let k=0;k+1<pts.length;k++){ const a=pts[k], b=pts[k+1], d=Math.hypot(b.x-a.x,b.z-a.z);
+        if(d>1e-6&&Math.abs(H(b.x,b.z)-H(a.x,a.z))/d>ORT_GESETZ.trasse) return true; }
+      return false; }
+    // DAS HÖHEN-RASTER DER TRASSE: der Rahmen um den Ort eines Plans mit nH Häusern (plan-lokal, n × n Punkte im Abstand d: das
+    // Anderthalbfache seiner Reichweite `siedlungsReich` und 60 m, höchstens ~160 Punkte je Seite) — der Wirt füllt ihn aus dem
+    // EINEN Gelände-Kern (gelaende-core `hoehenRaster`, im Ort-Faden), das Studio aus seiner Lage; `hoeheAusRaster` liest ihn
+    // bilinear. Ein Lese-Punkt außerhalb zählt (`mass.aussen`, im Export `trasse.aussen`; die Linse verlangt 0).
+    function trasseRahmen(nH){ const R=1.5*siedlungsReich(SIEDLUNG, Math.max(1, isFinite(nH)?nH:SIEDLUNG.nHMin))+60, d=Math.max(4, Math.ceil(R/80)), m=Math.ceil(R/d);
+      return {x0:-m*d, z0:-m*d, d, n:2*m+1}; }
+    function hoeheAusRaster(r){
+      if(!r||!isFinite(r.x0)||!isFinite(r.z0)||!(r.d>0)||!(r.n>=2)||!r.h||r.h.length!==r.n*r.n)
+        throw new Error("fachwerk: das Höhen-Raster der Trasse ist keins (x0, z0, d, n, h[n·n])");
+      const n=r.n, d=r.d, h=r.h, mass={aussen:0};
+      const H=(x,z)=>{ let fx=(x-r.x0)/d, fz=(z-r.z0)/d;
+        if(!(fx>=0&&fz>=0&&fx<=n-1&&fz<=n-1)){ mass.aussen++; fx=Math.max(0,Math.min(n-1,fx||0)); fz=Math.max(0,Math.min(n-1,fz||0)); }
+        const i=Math.min(n-2,fx|0), j=Math.min(n-2,fz|0), u=fx-i, v=fz-j, k=i+j*n;
+        return (h[k]*(1-u)+h[k+1]*u)*(1-v)+(h[k+n]*(1-u)+h[k+n+1]*u)*v; };
+      H.mass=mass; return H; }
+    function strassengraph(rnd, plan, sW, lw, Rw, H){
   const staedt=plan.staedtisch, jahr=plan.jahr, DS=3;
   const kruemm= staedt?0.006:(jahr<1500?0.016:jahr<1800?0.010:0.003);
   const grid=(plan.region==='antik')||(staedt&&jahr>=1800);
   const nodes=[{x:0,z:0}], edges=[];
   const deg=k=>{ let d=0; for(const e of edges){ if(e.a===k||e.b===k)d++; } return d; };
   function walk(x0,z0,th0,len,gen){ const pts=[]; let x=x0,z=z0,dev=0;
+    if(H){ for(let u=0;u<=len;u+=DS){ const th=trasseLenk(H,x,z,th0+dev,DS); dev=th-th0; pts.push({x,z,th});   /*DIE TRASSE (K3): der Punkt traegt die Richtung seines Schritts*/
+        if(Rw&&Math.hypot(x,z)>Rw-8){ break; }
+        x+=Math.cos(th)*DS; z+=Math.sin(th)*DS; dev+=(rnd()-0.5)*2*kruemm*DS - dev*0.028*DS; }
+      return pts; }
     for(let u=0;u<=len;u+=DS){ const th=th0+dev; pts.push({x,z,th});
       if(Rw&&Math.hypot(x,z)>Rw-8){ break; }
       dev+=(rnd()-0.5)*2*kruemm*DS - dev*0.028*DS; x+=Math.cos(th0+dev)*DS; z+=Math.sin(th0+dev)*DS; }
@@ -3429,11 +3470,11 @@
     if(pts.length<4) { if(t.gen===0)gates.push({th:Math.atan2(nd.x?nd.x:Math.cos(t.th),0)*0+Math.atan2(Math.sin(t.th),Math.cos(t.th))}); continue; }
     const ex=pts[pts.length-1]; let endNode=-1, dead=false;
     let bi=-1,bd=1e9; nodes.forEach((q,i2)=>{ if(i2===t.node)return; const d=Math.hypot(ex.x-q.x,ex.z-q.z); if(d<bd){bd=d;bi=i2;} });
-    if(bd<(staedt?16:13)){ endNode=bi; dead=true;                                                        // SNAP an Knoten → Zyklus
+    if(bd<(staedt?16:13)&&!trasseSteil(H,[pts[pts.length-2],nodes[bi]])){ endNode=bi; dead=true;                                                        // SNAP an Knoten → Zyklus
       const P=nodes[bi], pv=pts[pts.length-2]; pts[pts.length-1]={x:P.x,z:P.z,th:Math.atan2(P.z-pv.z,P.x-pv.x)}; }
     else { let be=-1,bk=0,ed=1e9;
       edges.forEach((e,ei)=>{ e.pts.forEach((q,k)=>{ const d=Math.hypot(ex.x-q.x,ex.z-q.z); if(d<ed){ed=d;be=ei;bk=k;} }); });
-      if(ed<(staedt?12:9)&&edges.length){ const q=edges[be].pts[bk]; nodes.push({x:q.x,z:q.z}); endNode=nodes.length-1; dead=true;  // SNAP an Kante
+      if(ed<(staedt?12:9)&&edges.length&&!trasseSteil(H,[pts[pts.length-2],edges[be].pts[bk]])){ const q=edges[be].pts[bk]; nodes.push({x:q.x,z:q.z}); endNode=nodes.length-1; dead=true;  // SNAP an Kante
         const pv=pts[pts.length-2]; pts[pts.length-1]={x:q.x,z:q.z,th:Math.atan2(q.z-pv.z,q.x-pv.x)}; }
       else { nodes.push({x:ex.x,z:ex.z}); endNode=nodes.length-1; } }
     edges.push({a:t.node,b:endNode,pts,w:(t.gen===0)?sW:(t.gen===1)?sW*0.78:lw,gen:t.gen});
@@ -3460,13 +3501,13 @@
         let frei=true;
         for(let k2=2;k2<pts.length-2&&frei;k2++){ for(const e of edges){ for(const q of e.pts){
           if(Math.hypot(pts[k2].x-q.x,pts[k2].z-q.z)<RUNDE.fr){frei=false;break;} } if(!frei)break; } }
-        if(!frei)continue;
+        if(!frei||trasseSteil(H,pts))continue;
         edges.push({a:i2,b:j2,pts,w:sW*0.78,gen:1}); added++; } } } }
   return {nodes, edges, gates};
 }
     // ════════════ dorfLayout v5 — GRAPH-WACHSTUM + MAUER ════════════
     // prettier-ignore
-    function dorfLayout(plan, ext, seed){
+    function dorfLayout(plan, ext, seed, H){
   const N=plan.norm, gap=N.gap, sW=N.strasseW, lw=N.laneW, gw=N.gehweg, n=ext.length;
   let s=((Math.round((seed||1)*389+71)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
   const staedt=plan.staedtisch;
@@ -3474,7 +3515,7 @@
   const DS=3;
   const walled= staedt&&plan.jahr<1750;                                                     // STADTMAUER-GESETZ: die Mauer erzwingt die Dichte
   const Rw= walled? Math.min(195, 26+Math.sqrt(n)*8.4) : 0;
-  const G=strassengraph(rnd, plan, sW, lw, Rw);
+  const G=strassengraph(rnd, plan, sW, lw, Rw, H||null);
   const roads=G.edges;
   const at=(rd,u)=>{ const k=Math.max(0,Math.min(rd.pts.length-2,(u/DS)|0)), f=(u-k*DS)/DS, A=rd.pts[k], B=rd.pts[Math.min(rd.pts.length-1,k+1)];
     const x=A.x+(B.x-A.x)*f, z=A.z+(B.z-A.z)*f, th=A.th; return {x,z,th,nx:-Math.sin(th),nz:Math.cos(th)}; };
@@ -3501,6 +3542,7 @@
           if(!frei9) continue;
           const gp=[]; const gl=Q.d; for(let u9=0;u9<=gl;u9+=DS) gp.push({x:P.x+Math.cos(qth)*Math.min(u9,gl), z:P.z+Math.sin(qth)*Math.min(u9,gl), th:qth});
           gp.push({x:Q.x,z:Q.z,th:qth});
+          if(trasseSteil(H,gp)) continue;                                                       /*DIE TRASSE (K3): die gerade Quergasse steigt nicht ueber das Gesetz*/
           roads.push({a:-1,b:-1,pts:gp,w:Math.max(2.6, lw*0.72),gen:2,len:gl,quer:true}); edepth.push(Math.min(edepth[i],edepth[j])+1);   /*quer-Flag: BINNENGASSE, nicht Vorstadt*/   /*len fehlte — (rd.len||0)=0 liess den Setzer die Gasse ueberspringen: WURZEL der Unbesaeumtheit (#1)*/
           paar.add(i+'_'+j); qN++;
           const P2=at(roads[i], li*(fu+0.28)); if(fu<0.5&&qN<qMax2){ const Q2=punktAuf(roads[j], P2.x, P2.z);   /*PAARUNG: zweite Parallelgasse je Block — erst zwei Schnitte machen QUARTIERE*/
@@ -3510,7 +3552,7 @@
                   for(let m9=0;m9<roads.length;m9++){ if(m9===i||m9===j)continue; if(punktAuf(roads[m9],wx,wz).d<5.5){fr2=false;break;} } }
                 if(fr2){ const gp2=[]; for(let u9=0;u9<=Q2.d;u9+=DS) gp2.push({x:P2.x+Math.cos(th2)*Math.min(u9,Q2.d), z:P2.z+Math.sin(th2)*Math.min(u9,Q2.d), th:th2});
                   gp2.push({x:Q2.x,z:Q2.z,th:th2});
-                  roads.push({a:-1,b:-1,pts:gp2,w:Math.max(2.6, lw*0.72),gen:2,len:Q2.d,quer:true}); edepth.push(Math.min(edepth[i],edepth[j])+1); qN++; } } } }
+                  if(!trasseSteil(H,gp2)){ roads.push({a:-1,b:-1,pts:gp2,w:Math.max(2.6, lw*0.72),gen:2,len:Q2.d,quer:true}); edepth.push(Math.min(edepth[i],edepth[j])+1); qN++; } } } } }
           break; } } }
     plan._quergassen=qN; }
   if(staedt&&plan.jahr>1700){ let zqx=0,zqz=0,zqn=0;                                          /*STRASSEN-GEDAECHTNIS (#2): Kern-Gassen SCHMAL, Saum breit — die Breite erinnert die Zeit; gen0-Arterien bleiben*/
@@ -3530,13 +3572,16 @@
     for(const g2 of gts){ if(seen.some(a2=>Math.abs(Math.atan2(Math.sin(a2-g2.th),Math.cos(a2-g2.th)))<0.5))continue; seen.push(g2.th);
       const gx=Math.cos(g2.th)*Rw, gz=Math.sin(g2.th)*Rw; gatePts.push({x:gx,z:gz,th:g2.th});
       const flen=(plan.groesse==='metropole')?230:(plan.groesse==='grossstadt')?110:70;
-      const fp=[]; for(let u=0;u<=flen;u+=DS){ fp.push({x:gx+Math.cos(g2.th)*(u+1), z:gz+Math.sin(g2.th)*(u+1), th:g2.th}); }
+      const fp=[]; if(H){ let x=gx+Math.cos(g2.th), z=gz+Math.sin(g2.th), th=g2.th;          /*DIE TRASSE (K3): die Ausfallstrasse lenkt wie jede Gasse*/
+        for(let u=0;u<=flen;u+=DS){ th=trasseLenk(H,x,z,th,DS); fp.push({x,z,th}); x+=Math.cos(th)*DS; z+=Math.sin(th)*DS; } }
+      else for(let u=0;u<=flen;u+=DS){ fp.push({x:gx+Math.cos(g2.th)*(u+1), z:gz+Math.sin(g2.th)*(u+1), th:g2.th}); }
       roads.push({a:-1,b:-1,pts:fp,w:sW*0.6,gen:2}); edepth.push(7);
       if(plan.groesse==='metropole'||plan.groesse==='grossstadt'){                            // FAUBOURG-GESETZ: die Vorstadt ist selbst ein Netz
         const nq=(plan.groesse==='metropole')?5:2;
         for(let qk=0;qk<nq;qk++){ const uq=26+qk*(flen-40)/Math.max(1,nq-1)+rnd()*10, sg=(rnd()<0.5?1:-1);
           const qx=gx+Math.cos(g2.th)*uq, qz=gz+Math.sin(g2.th)*uq, qth=g2.th+sg*Math.PI/2+(rnd()-0.5)*0.25;
-          const qp=[]; for(let u=0;u<=40+rnd()*22;u+=DS){ qp.push({x:qx+Math.cos(qth)*u, z:qz+Math.sin(qth)*u, th:qth}); }
+          const qp=[]; if(H){ let x=qx, z=qz, th=qth; for(let u=0;u<=40+rnd()*22;u+=DS){ th=trasseLenk(H,x,z,th,DS); qp.push({x,z,th}); x+=Math.cos(th)*DS; z+=Math.sin(th)*DS; } }
+          else for(let u=0;u<=40+rnd()*22;u+=DS){ qp.push({x:qx+Math.cos(qth)*u, z:qz+Math.sin(qth)*u, th:qth}); }
           roads.push({a:-1,b:-1,pts:qp,w:lw,gen:2}); edepth.push(8); } } } }
   const pl=new Array(n), obbs=[], brunnen=[], fences=[], felder=[], staende=[];
   let platz=null;
@@ -3599,7 +3644,7 @@
         const sh=(k2===0)?Math.max(-1,Math.min(1,(rnd()-0.5)*2))*Math.max(0,P0.obb.ex-exS-0.15):0;
         const ux=c, uz=-s2;
         const ccx=P0.obb.cx+ox*(P0.obb.ez+1.4+k2*0.8+ezS)+ux*sh, ccz=P0.obb.cz+oz*(P0.obb.ez+1.4+k2*0.8+ezS)+uz*sh;
-        const o={cx:ccx,cz:ccz,phi,ex:exS,ez:ezS};
+        const o={cx:ccx,cz:ccz,phi,ex:(e.x1-e.x0)/2,ez:(e.z1-e.z0)/2};                              /*die obb im Rahmen der Scheune (phi): exS/ezS stehen im Rahmen des Hauses P0 — gedreht trug sie quer zur Scheune deren Masse vertauscht (siedlung-k3-heil: 23 von 27 Scheunen, das Fundament der Welt 0,1-0,5 m zu schmal)*/
         let ok=true;
         if(Rw){ const rc=Math.hypot(ccx,ccz), rq=Math.hypot(exS,ezS), rp=Math.hypot(P0.obb.cx,P0.obb.cz);
           if(rp<Rw&&rc>Rw-2.2-rq) ok=false; if(rp>Rw&&rc<Rw+1.2+rq) ok=false; if(Math.abs(rc-Rw)<2.0+rq) ok=false; }
@@ -3866,6 +3911,7 @@
             fp: fpVon(mass.H),
             masse: masseVon(mass), // DIE MASSEN DES BAUS (S3): der Fernkörper liest sie (koerperListe)
             grund: grundVon(mass), // DAS GRUND-DATUM (S4): der Slot trägt es
+            wandX: wandXVon(mass.H.solids), // DIE AUSSENKANTE DER WÄNDE längs x (Solids des Mass-Baus): die Brandwand-obb liest sie
             fenster: fensterVon(mass), // DIE ÖFFNUNGEN (K38): das Fern-Fenster des fernen Turms liest sie
             spawnL: { x: mass.H.spawn.x, z: mass.H.spawn.z },
             hofGap: 2.5,
@@ -5989,6 +6035,42 @@
     //    ziehen aus ihren Seed-LCGs, massBau ist reiner Bau — derselbe dp ⇒
     //    byte-derselbe Export (gate:settlement friert das ein). Unplatzierte
     //    Häuser (die ±9999-Parkplätze des Layouts) reisen NICHT (fail-closed).
+    // die Außenkante der Wände längs x (die Solids des Mass-Baus, `massBau` → B.wandX)
+    function wandXVon(solids) {
+        var x0 = Infinity,
+            x1 = -Infinity;
+        for (var k = 0; solids && k < solids.length; k++) {
+            x0 = Math.min(x0, solids[k].min[0]);
+            x1 = Math.max(x1, solids[k].max[0]);
+        }
+        return x0 < x1 ? [x0, x1] : null;
+    }
+    // DIE BRANDWAND TRÄGT KEINE TRAUFE IN DEN NACHBARN: reihenSnap dockt dichte Reihen (gap ≤ 0,6) längs x an die Wand-Linie
+    // `dims.W` — an einer gedockten Seite (`brandwand` x0/x1) endet die obb, das Fundament der Welt (`_slotGrundriss`:
+    // Bau-Wand, Grund, Natur-Wand), an der Außenkante der Wand (`wandX`), sonst an der Hülle `ext` samt Traufe. Bis
+    // siedlung-k3-heil trug sie die Traufe 0,24–0,49 m in die Wand des Nachbarn, und die Bau-Wand der Welt warf ein Haus des
+    // Paars (das Start-Dorf auf der Trasse: 16 von 17 Häusern nach dem Reload).
+    function obbAnDerBrandwand(o, bw, e, wx) {
+        var x0 = bw && bw.x0 && wx ? Math.max(e.x0, wx[0]) : e.x0,
+            x1 = bw && bw.x1 && wx ? Math.min(e.x1, wx[1]) : e.x1,
+            d = (x0 + x1 - e.x0 - e.x1) / 2;
+        return { cx: o.cx + d * Math.cos(o.phi), cz: o.cz - d * Math.sin(o.phi), phi: o.phi, ex: (x1 - x0) / 2, ez: o.ez };
+    }
+    // DER MASS-BAU IM GEDÄCHTNIS (siedlung.K3): der Wirt rechnet den Export am Ort der Ort-Wahl neu (ein anderes `dp.hoehe`),
+    // der Mass-Bau eines Hauses hängt nur an seinem P-Vektor — derselbe Vektor nimmt denselben Bau, frisch sind je Export nur
+    // `p` (brandwand schreibt in sie) und der Rahmen `q`. Höchstens MASS_GEDAECHTNIS Häuser, dann fällt das Gedächtnis ganz.
+    var MASS_GEDAECHTNIS = 1024;
+    var massGedaechtnis = new Map();
+    function massBauExport(hp) {
+        var k = JSON.stringify(hp);
+        var B = massGedaechtnis.get(k);
+        if (!B) {
+            if (massGedaechtnis.size >= MASS_GEDAECHTNIS) massGedaechtnis.clear();
+            B = massBau(Object.assign({}, hp));
+            massGedaechtnis.set(k, B);
+        }
+        return Object.assign({}, B, { p: hp, q: { phi: 0, x: 0, y: 0, z: 0, obb: { cx: 0, cz: 0 } }, meshes: [] });
+    }
     function exportSettlement(dp) {
         dp = dp && typeof dp === "object" ? dp : {};
         var plan = DORF({
@@ -6001,12 +6083,14 @@
         var Bs = [];
         var i;
         for (i = 0; i < plan.houses.length; i++) {
-            var Bm = massBau(Object.assign({}, plan.houses[i]));
-            Bm.p = plan.houses[i]; // brandwand schreibt in die EINE hp-Quelle — ov (unten) liest sie
+            var Bm = massBauExport(plan.houses[i]); // brandwand schreibt in die EINE hp-Quelle — ov (unten) liest sie
             Bs.push(Bm);
             ext.push(Bm.ext);
         }
-        var lay = dorfLayout(plan, ext, plan.seed);
+        // DIE TRASSE LIEST DAS GELÄNDE (siedlung.K3): `dp.hoehe` ist das Höhen-Raster um den Ort (`trasseRahmen`, plan-lokal); ohne
+        // es liegt der Plan auf ebenem Grund (der Akt ohne Ort, das Labor ohne Welt)
+        var Htr = dp.hoehe ? hoeheAusRaster(dp.hoehe) : null;
+        var lay = dorfLayout(plan, ext, plan.seed, Htr);
         // U6c — KONSUM BEIDSEITIG: der Export wendet DIESELBE Snap-/Brandwand-
         // Wahrheit an wie buildDorf (Lab): reihenSnap rückt lay.pl zusammen
         // (Slot-x/z/obb), brandwand markiert hp.brandwand (reist als ov.brandwand).
@@ -6031,7 +6115,10 @@
                 x: q.x,
                 z: q.z,
                 phi: q.phi,
-                obb: { cx: q.obb.cx, cz: q.obb.cz, phi: q.obb.phi, ex: q.obb.ex, ez: q.obb.ez },
+                obb:
+                    plan.norm.gap <= 0.6 && hp.brandwand
+                        ? obbAnDerBrandwand(q.obb, hp.brandwand, ext[i], Bs[i].wandX)
+                        : { cx: q.obb.cx, cz: q.obb.cz, phi: q.obb.phi, ex: q.obb.ex, ez: q.obb.ez },
                 ext: ext[i],
                 kultur: typeof hp.kultur === "string" ? hp.kultur : null,
                 seed: hp.seed >>> 0,
@@ -6064,7 +6151,7 @@
                 grund: Bs[i].grund,
             });
         }
-        return {
+        var aus = {
             seed: plan.seed,
             name: plan.name,
             region: plan.region,
@@ -6117,6 +6204,8 @@
                     return l.wand ? { x: l.x, z: l.z, th: l.th, gas: l.gas, wand: true, slot: slotVon[l.haus] } : l;
                 }),
         };
+        if (Htr) aus.trasse = { aussen: Htr.mass.aussen }; // der Rahmen trug jeden Lese-Punkt der Trasse (die Linse verlangt 0)
+        return aus;
     }
 
     // ── DER ORT AUF DEM GELÄNDE (K10, Plan v2) — ortPlan(plan, origin, ctx): der Export (2D, plan-lokal) auf der Gelände-
@@ -6137,6 +6226,7 @@
     var ORT_GESETZ = {
         glaettM: 6, // halbe Fensterbreite der Weg-Glättung (m)
         gefaelle: 0.12, // die Fuß-Gasse (Nordstern §6: Fuß ≤ 12 %)
+        trasse: 0.09, // so steil darf der Lauf einer Gasse steigen (`trasseLenk`; die Marge zum Fuß trägt die Feinform zwischen den Raster-Punkten)
         saumM: 0.6, // so weit steht eine Platte über den Grundriss, eine Trasse über den Weg hinaus
         vorplatzM: 1.6, // Tiefe des Vorplatzes vor der Haustür (mindestens: er reicht bis zur Gasse des Hauses)
         gasseM: 5, // so weit vor der Tür (über die halbe Wegbreite hinaus) findet das Haus seine Gasse
@@ -6820,6 +6910,8 @@
         SIEDLUNG: SIEDLUNG,
         // siedlung.K2 — das Rang-Gesetz (die Zelle, die Größe, die Reichweite), die Größe je Klasse und die Mauer der Stadt
         siedlungsZelle: siedlungsZelle,
+        trasseRahmen: trasseRahmen, // siedlung.K3 — der Rahmen des Höhen-Rasters um einen Ort (der Wirt füllt ihn aus gelaende-core hoehenRaster)
+        hoeheAusRaster: hoeheAusRaster, // siedlung.K3 — der EINE Leser des Rasters (Export, Labor, Linse)
         siedlungsGroesse: siedlungsGroesse,
         siedlungsReich: siedlungsReich,
         siedlungsEpoche: siedlungsEpoche,

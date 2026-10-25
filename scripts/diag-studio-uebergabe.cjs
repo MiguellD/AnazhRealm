@@ -63,7 +63,7 @@ function weltBau(w, kind, preset, weltSame) {
         );
         try {
             r._buildHumanGroup();
-        } catch (_e) {
+        } catch {
             /* der Not-Körper hinter dem Ofen braucht eine Szene — der Fang steht davor */
         }
         return (
@@ -290,7 +290,7 @@ async function weltPruefen() {
     await new Promise((ok) => server.listen(PORT, "127.0.0.1", ok));
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     const out = await page.evaluate(async () => {
         const res = {};

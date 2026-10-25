@@ -474,7 +474,9 @@ class AnazhRealm_koerper_fahrt {
     // (_compoundSizeFactor) macht träge. Am Entry gecacht (die Bauplan-Form ist frozen).
     _vehicleProfile(entry) {
         if (!entry) return null;
-        if (entry._vehicleProfile) return entry._vehicleProfile;
+        // am Eintrag gemerkt, solange die Stoff-Zeile steht (`AnazhRealm._stoffStand`: eine geänderte Dichte wiegt neu)
+        const stand = AnazhRealm._stoffStand || 0;
+        if (entry._vehicleProfile && entry._vehicleProfile.stoffStand === stand) return entry._vehicleProfile;
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         const roles =
             bp && Array.isArray(bp.parts) && bp.parts.length >= 2
@@ -489,39 +491,27 @@ class AnazhRealm_koerper_fahrt {
             }
         }
         const mass = bp ? Math.max(0.6, Math.min(2.5, this._compoundSizeFactor(bp))) : 1;
-        // Schwimmfähigkeit aus der volumen-gewichteten MITTEL-Dichte (nie der MAX-Tag — ein Eisen-Nagel
-        // versenkte sonst das Holz-Boot): unter der Wasser-Dichte der Tag-Skala (WASSER_DICHTE_TAG) trägt es (holz 0.4
-        // schwimmt, stein/eisen sinken). Ein Studio-Fahrzeug liest seine HÜLLE (unten) — nie die Substanz des Spenders.
-        const W_TAG = AnazhRealm.WASSER_DICHTE_TAG;
-        let floats = false;
-        let dichteMittel = 0.45; // ZENSUS-REST V18.488 — die Wasserlinien-Quelle (s. prof.dichte)
+        // DER STOFF IM WASSER (physik K1): die mittlere Dichte des Werks in kg/m³ — die Masse seiner Teile durch das Volumen
+        // ihrer Gestalt (`_teilMasse` / `_teilVolumen`, die EINE Stoff-Zeile; nie der dichteste Stoff — ein Eisen-Nagel
+        // versenkt das Holz-Boot nicht). Ein Studio-Fahrzeug liegt nach dem Stoff seiner HÜLLE (blech: der Mix des
+        // Fahrzeug-Kerns, wenn die Kabine voll läuft) — nie nach der Substanz des Spenders, dessen Bauplan es klont (D10: der
+        // Supersportler schwamm wie ein Holz-Boot). Es schwimmt, solange das Wasser es trägt (`_eintauchAnteil` < 1).
+        // Vorher die Tag-Achse dichte gegen eine Wasser-Dichte der Tag-Skala (0,55): der Holzkarren mit vier eisernen
+        // Speichen-Rädern (0,5155) schwamm, nach seinen kg (1 560 kg/m³) sinkt er.
+        let rhoMittel = NaN;
         if (bp && Array.isArray(bp.parts)) {
-            let volSum = 0;
-            let dSum = 0;
+            let vSum = 0;
+            let mSum = 0;
             for (const p of bp.parts) {
-                if (!p || !p.size) continue;
-                const v =
-                    Math.max(0.01, Number(p.size.x) || 0.1) *
-                    Math.max(0.01, Number(p.size.y) || 0.1) *
-                    Math.max(0.01, Number(p.size.z) || 0.1);
-                const md = this.state.materials && this.state.materials[p.material];
-                const d = md && md.tags && Number.isFinite(md.tags.dichte) ? md.tags.dichte : 0.6;
-                volSum += v;
-                dSum += v * d;
+                if (!p) continue;
+                vSum += this._teilVolumen(p);
+                mSum += this._teilMasse(p);
             }
-            floats = volSum > 0 && dSum / volSum < W_TAG;
-            if (volSum > 0) dichteMittel = dSum / volSum;
+            if (vSum > 0) rhoMittel = mSum / vSum;
         }
-        // DIE HÜLLE DES KERNS (D10): jeder Studio-Wagen ist ein Bauplan-Klon des Holzkarren-Spenders (fahrzeug_wagen,
-        // Mittel-Dichte 0,5155 < 0,55 — der Supersportler schwamm wie ein Holz-Boot); seine Dichte im Wasser ist die der
-        // Hülle aus dem Fahrzeug-Kern (exportDrive.huelle.dichte, relativ zu Wasser), fail-closed.
         const fzgH = this._fahrzeugGesetzFor(entry);
-        const huelleH = fzgH && fzgH.drive ? fzgH.drive.huelle : null;
-        if (huelleH) {
-            if (!Number.isFinite(huelleH.dichte)) AnazhRealm._kernPflichtBruch("vehicle:exportDrive.huelle.dichte");
-            dichteMittel = huelleH.dichte * W_TAG;
-            floats = huelleH.dichte < 1;
-        }
+        if (fzgH && fzgH.drive && fzgH.drive.huelle) rhoMittel = this._stoffRho("blech");
+        const floats = Number.isFinite(rhoMittel) && this._eintauchAnteil(rhoMittel) < 1;
         // Emergenz-Koeffizienten aus dem Gesetzbuch (vehicle-core FAHR.hostEmergent); der Leser
         // _fahrGesetz ist FAIL-CLOSED über alle Felder — ein alter Kern bricht laut, kein Literal-Zwilling.
         const HE = AnazhRealm._fahrGesetz().he;
@@ -530,10 +520,9 @@ class AnazhRealm_koerper_fahrt {
             beinCount,
             mass,
             floats,
-            // ZENSUS-REST V18.488 — die volumen-gewichtete Substanz-Dichte
-            // reist ins Profil (die Wasserlinien-Quelle: Archimedes statt
-            // Erst-Wurf-0.25; dieselbe Messung wie das floats-Gate).
-            dichte: dichteMittel,
+            // die mittlere Dichte (kg/m³) reist ins Profil: die Wasserlinie (`_fahrzeugGestalt`, Archimedes) liest sie
+            dichte: rhoMittel,
+            stoffStand: stand,
             topSpeedMul:
                 1 + Math.min(HE.radCap, radCount * HE.radMul) + (radCount === 0 && beinCount >= 2 ? HE.beinBonus : 0),
             kAcc: Math.max(HE.kAccMin, Math.min(HE.kAccMax, HE.kAcc / mass)),
@@ -698,10 +687,10 @@ class AnazhRealm_koerper_fahrt {
     // Leser: der Fahr-Schritt (`_fahrBoden`) und der Ritt im Sim-Schritt (`_rittSchritt`) über `_koerperWasser(x, z, grund,
     // gestalt)` — der Frame-Tick (`_tickMountedMovement`) ist nur Sicht.
     _fahrzeugGestalt(entry, prof) {
-        if (entry._wasserGestalt) return entry._wasserGestalt;
         const p = prof || this._vehicleProfile(entry);
+        if (entry._wasserGestalt && entry._wasserGestalt.prof === p) return entry._wasserGestalt;
         const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
-        const rel = p && Number.isFinite(p.dichte) ? p.dichte / AnazhRealm.WASSER_DICHTE_TAG : Infinity;
+        const rel = p && Number.isFinite(p.dichte) ? this._eintauchAnteil(p.dichte) : Infinity;
         let linie = Infinity;
         if (p && p.floats && rel < 1) {
             const fzg = this._fahrzeugGesetzFor(entry);
@@ -713,14 +702,15 @@ class AnazhRealm_koerper_fahrt {
                 const m = rel * (v1 + a2 * (h.yRoof - h.yBelt));
                 linie = (h.yFloor + (m <= v1 ? m / a1 : h.yBelt - h.yFloor + (m - v1) / a2)) * sc;
             } else {
-                const bp = this.state.blueprints && this.state.blueprints[entry.type];
-                const bb = bp ? this._compoundBBox(bp) : null;
-                const rumpfH = bb ? Math.max(0.3, (bb.max.y - bb.min.y) * sc) : 1;
+                // die Höhe des Rumpfs aus den Hüllen seiner Teile (`_teileHuelle`), nie aus ihren Mitten: ein Floß aus EINER
+                // Bohle hatte die Höhe 0 und lag mit der Mindest-Höhe 0,3 m im Wasser (physik K1)
+                const hu = this._teileHuelle(this.state.blueprints && this.state.blueprints[entry.type]);
+                const rumpfH = hu ? Math.max(0.3, (hu.y1 - hu.y0) * sc) : 1;
                 const anteil = Math.max(0.1, Math.min(0.95, rel));
                 linie = Math.max(0.08, Math.min(rumpfH - 0.05, anteil * rumpfH));
             }
         }
-        entry._wasserGestalt = { linie, lage: null };
+        entry._wasserGestalt = { linie, lage: null, prof: p };
         return entry._wasserGestalt;
     }
 
@@ -923,7 +913,7 @@ class AnazhRealm_koerper_fahrt {
             nahe.length = 0;
             this._blockerNahe(x, z, rW, -Infinity, nahe);
             if (nahe.some((e) => e !== entry)) continue;
-            const boden = this._fieldSurfaceBelow(x, fz.y + k.dach, z, k.dach + 4);
+            const boden = this._koerperGrund(x, fz.y + k.dach, z, k.dach + 4);
             if (boden !== null && boden > fz.y + AnazhRealm.PLAYER_STEP_UP) continue; // eine Wand
             if (boden === null && !this._nassAt(x, z, 0, fz.y)) continue; // ein Abgrund ohne Wasser
             // die Füße nie unter der Rad-Ebene (ein Boden tiefer ist Wasser-Grund unter einem schwimmenden Werk: er schwimmt)
@@ -1010,6 +1000,8 @@ class AnazhRealm_koerper_fahrt {
                 cgH: prof.cgH,
                 radR: prof.radR,
                 spring: prof.spring,
+                // die EINE Masse des Werks (physik K1, `_fahrMasse`): die Trägheit des Wasser-Terms im Kern
+                masseKg: this._fahrMasse(entry, prof.zweispur.mass),
             },
             this._rittAufstand(entry)
         );
@@ -1026,8 +1018,9 @@ class AnazhRealm_koerper_fahrt {
     // Familie wasser schnitt sie) mit einer eigenen Tauchtiefe — ein zweiter Wasser-Leser neben dem Körper. Je Werk EINE
     // Funktion (kein Abschluss je Schritt); ein Werk, das das Wasser nie trägt, fragt es nicht.
     _fahrBoden(entry) {
-        if (entry._fahrBodenFn) return entry._fahrBodenFn;
         const gestalt = this._fahrzeugGestalt(entry, this._vehicleProfile(entry));
+        if (entry._fahrBodenFn && entry._fahrBodenGestalt === gestalt) return entry._fahrBodenFn;
+        entry._fahrBodenGestalt = gestalt;
         const traegt = gestalt.linie !== Infinity;
         const boden = this._werkBoden(entry); // der Boden UNTER dem Werk, nie die Oberkante der Säule
         entry._fahrBodenFn = (x, z) => {
@@ -1254,13 +1247,47 @@ class AnazhRealm_koerper_fahrt {
         return spiegel > fz.y ? spiegel - fz.y : 0;
     }
 
-    // DIE HAFTUNG AM WAGEN (feld.K1, die Wetter-Kette Sturm → Regen-Feld → Nässe → Grip): der Boden-Faktor des Reibkreises im
-    // Fahr-Schritt (vehicle-core fahrKraefte `e.haft`) liest die EINE Nässe der Welt (`state.naesse`, EIN Schreiber
-    // `_naesseTakt`), nie das Wetter-Wort — wird die Nässe festgehalten, greift der Reifen wie trocken (gate:fahr-leben W). Voll
-    // nass trägt der Reibkreis `NAESSE.haft` des trockenen, trocken genau 1 (das Lab und der trockene Ritt byte-gleich).
-    _fahrHaft() {
-        const n = this.state.naesse;
-        return n > 0 ? 1 - (1 - AnazhRealm.NAESSE.haft) * Math.min(1, n) : 1;
+    // DER AUFTRIEB (Archimedes, physik K1): der Anteil seines Volumens, mit dem ein Körper der Dichte rho (kg/m³) im Wasser
+    // liegt — rho / ρ des Wassers (die Zeile wasser der Stoff-Tafel, `_stoff`, stoffe.K1: sie IST der Eintrag des Fahr-Kerns
+    // FAHR.wasser.rho); ≤ 1 trägt ihn das Wasser, darüber sinkt er. Die EINE Schwelle des Schwimmens und der Bezug jeder
+    // Wasserlinie: das Gefährt (`_vehicleProfile`, `_fahrzeugGestalt`) und der Leib (`_leibGetragen`). Vorher die Dichte des
+    // Wassers auf der Tag-Skala (WASSER_DICHTE_TAG 0,55: holz 0,4 schwamm).
+    _eintauchAnteil(rho) {
+        return rho / this._stoff("wasser").rho;
+    }
+
+    // DIE HAFTUNG AM WAGEN (fahrzeug.K1; feld.K1, die Wetter-Kette Sturm → Regen-Feld → Nässe → Grip): μ des Reifens auf dem
+    // Boden unter dem Fahr-Zustand, der Boden-Faktor des Reibkreises im Fahr-Schritt (vehicle-core fahrKraefte `e.haft`, Bezug
+    // der Asphalt des Labors, μ 1). Die Zahlen trägt die EINE Stoff-Zeile (`_stoff`: `muRad` trocken, `muRadNass` voll nass), die
+    // Gewichte tragen die Schichten, die den Boden malen: der Grund (`_terrainMaterialAt`, was der Spieler beim Graben bekommt),
+    // darüber die Wiese als gras — dieselbe Zeile, auf der Huf und Schritt stehen (`_kontaktStoffAt`) — mit dem Grün der gebauten
+    // Boden-Karte (`_bodenSichtAt` … `gruen`, die Wache, unter der der Halm wächst und das Grün gemalt wird), darüber der Weg
+    // als erde mit dem Pfad-Feld (`_pfadFeldAt`, unter dem die Erde gemalt und der Halm gedünnt wird). Trocken bis nass nach der EINEN Nässe der Welt (`state.naesse`, EIN Schreiber `_naesseTakt`), nie
+    // nach dem Wetter-Wort — wird sie festgehalten, greift der Reifen wie trocken (gate:fahr-leben W). Bis 24.10. reichte die Welt
+    // trocken μ 1 auf jeden Boden, nass 0,7 (`NAESSE.haft`).
+    _fahrHaft(fz) {
+        const n = Math.min(1, Math.max(0, this.state.naesse || 0));
+        const mu = (stoff) => {
+            const z = this._stoff(stoff, "das Rad auf „" + stoff + "“ greift nicht");
+            if (z && z.muRad > 0) return z.muRad + (z.muRadNass - z.muRad) * n;
+            this._bruchMelden("STOFF-ZEILE ohne Haftung: das Rad auf „" + stoff + "“ greift wie auf Asphalt");
+            return 1;
+        };
+        const aus = {};
+        const gruen = this._bodenSichtAt(fz.x, fz.z, aus) === null ? 0 : aus.gruen;
+        const pfad = this._pfadFeldAt(fz.x, fz.z, fz.y);
+        let m = mu(this._terrainMaterialAt(fz.x, fz.z, fz.y));
+        if (gruen > 0) m += (mu("gras") - m) * gruen;
+        if (pfad > 0) m += (mu("erde") - m) * pfad;
+        return m;
+    }
+
+    // DER WIND AM WAGEN (wetter.K5): der EINE Wind am Ort des Fahr-Zustands (`_windAt` auf der Uhr des Sim-Schritts, nie der
+    // Bild-Uhr: Lockstep und Replay) in m/s als Welt-Vektor — der Kern (vehicle-core fahrKraefte `e.wind`) legt ihn quer auf die
+    // Flanke; ohne Wind fährt der Wagen wie im Lab.
+    _fahrWind(fz) {
+        const w = this._windAt(fz.x, fz.z, this.state._simZeit);
+        return { x: w.x * w.ms, z: w.z * w.ms };
     }
 
     // DER NACHLAUF EINES ABGESTIEGENEN GESETZ-WAGENS (Welle L, Gegenprüfung 07.10.: `dismountArchitecture` stellte den Wagen
@@ -1287,7 +1314,7 @@ class AnazhRealm_koerper_fahrt {
                 const z0 = fz.z;
                 vc.fahrKraefte(
                     fz,
-                    { hand: true, tiefe: this._fahrTiefe(fz), haft: this._fahrHaft() },
+                    { hand: true, tiefe: this._fahrTiefe(fz), haft: this._fahrHaft(fz), wind: this._fahrWind(fz) },
                     entry._fahrSatz,
                     dt
                 );
@@ -1479,10 +1506,11 @@ class AnazhRealm_koerper_fahrt {
     // DAS BRENNGLAS-GESETZ (throttled in _tickAffordances; Welle L Folge): eine focusing-Architektur bündelt die SONNE durch
     // ihre Linse (jeder Teil, der die Tag-Sprache „transparent" trägt) in EINEN Brennpunkt je Linse — die Linsen-Mitte, um
     // 1,5 Linsen-Radien gegen das Licht versetzt (`_brennpunkte`; die Brennweite einer Glas-Kugel, n ≈ 1,5). Erwärmt wird
-    // nur, wessen Körper den Brennpunkt trägt (`_traegtPunkt`: Grundriss und Höhe seiner Teile); außerhalb kühlt es mit
-    // derselben Rate, nachts und ohne Sonne kühlt alles. Auf halbem Weg glimmt es — der Spieler hört es, ehe es brennt —,
-    // an der Schwelle entzündet es sich, und die Zerstörung nennt sich dem Spieler (`_spielerSagt` + Journal, mit den Namen
-    // von Werk und Linse). Befund (Leben-Schau 07.10.): die Genesis-Plattform (Quarz-Kern auf Stein) ist nach der Tag-Sprache
+    // nur, wessen Körper den Brennpunkt trägt (`_traegtPunkt`: Grundriss und Höhe seiner Teile), nach dem Wärme-Gesetz seines
+    // Stoffs (`_brennWaerme`, stoffe.K1); außerhalb kühlt es, nachts und ohne Sonne kühlt alles. Auf halbem Weg zur
+    // Zünd-Temperatur glimmt es — der Spieler hört es, ehe es brennt —,
+    // an der Schwelle entzündet es sich, das Feld unter ihm fängt Feuer (`_brandEntfachen`), und die Zerstörung nennt sich dem
+    // Spieler (`_spielerSagt` + Journal, mit den Namen von Werk und Linse). Befund (Leben-Schau 07.10.): die Genesis-Plattform (Quarz-Kern auf Stein) ist nach der Tag-Sprache
     // ein Brennglas — sie erhitzte JEDES Brennbare im 4-m-Kreis, ohne Licht-Geometrie, ohne Abkühlung, auch nachts; die
     // Werkstatt-Eiche 2,4 m vor dem Spieler verbrannte nach 20 s Sonne, und das stand nur im Log (Architekturen 125 → 124).
     // Ein Brennpunkt im Leib der Linse oder darunter (der Kern der Plattform, das Wasser des Ziehbrunnens) erreicht niemanden.
@@ -1495,9 +1523,6 @@ class AnazhRealm_koerper_fahrt {
         const licht = sonne && sonne.y > 0 ? sonne : null;
         const punkte = [];
         if (licht) for (const fa of focusing) for (const p of this._brennpunkte(fa, licht)) punkte.push({ fa, p });
-        const heatRange2 = AnazhRealm.FOCUSING_HEAT_RANGE_M * AnazhRealm.FOCUSING_HEAT_RANGE_M;
-        const ignite = AnazhRealm.FOCUSING_IGNITE_THRESHOLD;
-        const ratePerSec = AnazhRealm.FOCUSING_HEAT_RATE_PER_SEC;
         const name = (e) => {
             const b = e && this.state.blueprints ? this.state.blueprints[e.type] : null;
             return String((b && b.label) || (e && e.type) || "?").split(/\s[·—(]/)[0];
@@ -1527,47 +1552,21 @@ class AnazhRealm_koerper_fahrt {
             ziele.length = w;
         }
         for (const target of ziele) {
-            const warm = target.heatBuildup > 0;
-            if (!warm && !punkte.length) continue; // kein Licht, nichts zu kühlen: der billigste Weg (Lehre 25)
+            const vorher = target.heatBuildup || 0;
+            if (!(vorher > 0) && !punkte.length) continue; // kein Licht, nichts zu kühlen: der billigste Weg (Lehre 25)
             if (target.affordances && target.affordances.focusing) continue; // selbst nicht
             if (this._gerittenesWerk(target)) continue;
-            let quelle = null;
-            if (punkte.length) {
-                // Mindestens eine focusing-Architektur in Range? ZUERST (billig) — die Compound-Tags rechnet nur ein
-                // Bau in Reichweite (Befund 02.10.: die Tags aller ~120 Bauten je Takt kosteten Ø 20 ms, max 62 ms).
-                let inRange = false;
-                for (const fa of focusing) {
-                    const dx = fa.position.x - target.position.x;
-                    const dz = fa.position.z - target.position.z;
-                    if (dx * dx + dz * dz <= heatRange2) {
-                        inRange = true;
-                        break;
-                    }
-                }
-                const targetBp = inRange && this.state.blueprints ? this.state.blueprints[target.type] : null;
-                const tags = targetBp ? this.computeCompoundTags(targetBp) || {} : {};
-                if ((tags.brennbar || 0) >= AnazhRealm.BRENNBAR_TAG_MIN)
-                    for (const { fa, p } of punkte)
-                        if (this._traegtPunkt(target, targetBp, p)) {
-                            quelle = fa;
-                            break;
-                        }
-            }
-            if (!quelle) {
-                if (warm) {
-                    target.heatBuildup = Math.max(0, target.heatBuildup - ratePerSec * dt);
-                    if (!(target.heatBuildup > 0)) N.warm.delete(target);
-                }
-                continue;
-            }
-            const vorher = target.heatBuildup || 0;
-            target.heatBuildup = vorher + ratePerSec * dt;
-            if (target.heatBuildup > 0) N.warm.add(target);
-            if (vorher < ignite / 2 && target.heatBuildup >= ignite / 2 && target.heatBuildup < ignite)
+            const w = this._brennWaerme(target, punkte, focusing, dt);
+            if (!w) continue;
+            target.heatBuildup = w.dT;
+            if (w.dT > 0) N.warm.add(target);
+            else N.warm.delete(target);
+            if (!w.quelle) continue;
+            if (vorher < w.zuend / 2 && w.dT >= w.zuend / 2 && w.dT < w.zuend)
                 this._spielerSagt(
-                    `„${name(target)}" glimmt im Brennpunkt von „${name(quelle)}" — rück es aus dem Licht, sonst fängt es Feuer.`
+                    `„${name(target)}" glimmt im Brennpunkt von „${name(w.quelle)}" — rück es aus dem Licht, sonst fängt es Feuer.`
                 );
-            if (target.heatBuildup >= ignite) ignitions.push({ t: target, quelle });
+            if (w.dT >= w.zuend) ignitions.push({ t: target, quelle: w.quelle });
         }
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         for (const { t, quelle } of ignitions) {
@@ -1576,18 +1575,66 @@ class AnazhRealm_koerper_fahrt {
                 `Die Sonne entzündete durch „${name(quelle)}" „${name(t)}"${d != null ? ` (${Math.round(d)} m von dir)` : ""}.`
             );
             if (this.journalAppend) {
-                this.journalAppend("loss", `Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`, {
-                    type: t.type,
-                    linse: quelle.type,
-                });
+                this.journalAppend(
+                    "loss",
+                    AnazhRealm._datum`Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`,
+                    {
+                        type: t.type,
+                        linse: quelle.type,
+                    }
+                );
             }
+            this._brandEntfachen(t.position.x, t.position.z); // das Feuer fängt das Feld unter dem Werk (feld.K3#2)
             this.removeArchitecture(t);
         }
     }
 
+    // DIE WÄRME IM BRENNPUNKT (stoffe.K1; rein, der Takt schreibt): ein Werk, dessen Körper einen Brennpunkt trägt, erwärmt
+    // den Brennfleck seines Teils am Punkt — FOCUSING_FLECK_M3 dieses Stoffs, die Wärme ρ·V·c aus seiner Zeile der Stoff-Tafel
+    // (`_stoff`) — mit der Leistung der Linse P = FOCUSING_SONNE_W_M2 · π r² · Sonnenhöhe; der Fleck gibt FOCUSING_VERLUST_W_K
+    // an Luft und Körper ab. Seine Übertemperatur ΔT (`heatBuildup`, K) strebt exakt (die geschlossene Lösung je Schritt) gegen
+    // P / H mit τ = ρ·V·c / H; außerhalb jedes Brennpunkts kühlt er mit dem Stoff seines Werks (`_werkStoff`) gegen 0, unter
+    // FOCUSING_RUHE_K ist er kalt. Feuer fängt er an der Zünd-Temperatur seines Stoffs (`zuend`: T_zünd über der Luft,
+    // `_temperaturAt`); ohne T_zünd erwärmt er sich nur. Vorher erwärmte sich jedes Werk mit der Tag-Achse brennbar ≥ 0,5 um
+    // 0,05 je Sekunde und brannte nach 20 s, gleich aus welchem Stoff (gate:gegenstand-stoff --tafel: c und T_zünd ohne Folge).
+    // → { quelle, dT, zuend } oder null (kalt, und kein Brennpunkt trifft es).
+    _brennWaerme(target, punkte, focusing, dt) {
+        const bp = this.state.blueprints && this.state.blueprints[target.type];
+        const R2 = AnazhRealm.FOCUSING_HEAT_RANGE_M ** 2;
+        const P0 = target.position;
+        let [quelle, P, stoff] = [null, 0, null];
+        if (bp && focusing.some((fa) => (fa.position.x - P0.x) ** 2 + (fa.position.z - P0.z) ** 2 <= R2))
+            for (const { fa, p } of punkte) {
+                if (!this._traegtPunkt(target, bp, p)) continue;
+                [quelle, P] = [fa, AnazhRealm.FOCUSING_SONNE_W_M2 * Math.PI * p.r * p.r * p.sonne];
+                const g = target.scale > 0 ? target.scale : 1;
+                const [c, s] = [Math.cos(target.rotationY || 0), Math.sin(target.rotationY || 0)];
+                let nah = Infinity;
+                for (const t of bp.parts) {
+                    const q = t.position || {};
+                    const [lx, lz] = [(q.x || 0) * g, (q.z || 0) * g];
+                    const d =
+                        (P0.x + lx * c + lz * s - p.x) ** 2 +
+                        (P0.y + (q.y || 0) * g - p.y) ** 2 +
+                        (P0.z - lx * s + lz * c - p.z) ** 2;
+                    if (d < nah && typeof t.material === "string") [nah, stoff] = [d, t.material];
+                }
+                break;
+            }
+        const vorher = target.heatBuildup || 0;
+        const z = quelle || vorher > 0 ? this._stoff(stoff || this._werkStoff(target)) : null;
+        if (!z) return null;
+        const H = AnazhRealm.FOCUSING_VERLUST_W_K;
+        let dT = P / H + (vorher - P / H) * Math.exp((-dt * H) / (z.rho * AnazhRealm.FOCUSING_FLECK_M3 * z.c));
+        if (!quelle && dT < AnazhRealm.FOCUSING_RUHE_K) dT = 0;
+        const zuend = z.tZuend > 0 ? z.tZuend - 273.15 - this._temperaturAt(P0.y) : Infinity;
+        return { quelle, dT, zuend };
+    }
+
     // Die Brennpunkte einer Linse in der Welt: je Teil, der die Tag-Sprache „transparent" trägt (die Schwelle der
-    // focusing-Affordanz), seine Mitte (Eintrag + gedrehter, skalierter Teil-Ort) minus Licht × 1,5 Radien (Radius = die
-    // halbe waagrechte Ausdehnung des Teils). `licht` = Richtung ZUR Sonne.
+    // focusing-Affordanz), seine Mitte (Eintrag + gedrehter, skalierter Teil-Ort) minus Licht × 1,5 Radien (Radius r = die
+    // halbe waagrechte Ausdehnung des Teils), mit r und der Sonnenhöhe (die Leistung, `_brennWaerme`). `licht` = Richtung ZUR
+    // Sonne.
     _brennpunkte(fa, licht) {
         const bp = this.state.blueprints && this.state.blueprints[fa.type];
         if (!bp || !Array.isArray(bp.parts) || !fa.position) return [];
@@ -1602,13 +1649,16 @@ class AnazhRealm_koerper_fahrt {
             const pp = part.position || { x: 0, y: 0, z: 0 };
             const sz = part.size || { x: 1, y: 1, z: 1 };
             const sx = Math.abs(sz.x || 1);
-            const f = 1.5 * (Math.max(sx, Math.abs(sz.z || sx)) / 2) * g;
+            const r = (Math.max(sx, Math.abs(sz.z || sx)) / 2) * g;
+            const f = 1.5 * r;
             const lx = (pp.x || 0) * g;
             const lz = (pp.z || 0) * g;
             out.push({
                 x: fa.position.x + lx * c + lz * s - licht.x * f,
                 y: fa.position.y + (pp.y || 0) * g - licht.y * f,
                 z: fa.position.z - lx * s + lz * c - licht.z * f,
+                r,
+                sonne: licht.y,
             });
         }
         return out;
@@ -1804,6 +1854,7 @@ class AnazhRealm_koerper_fahrt {
         this._tickBalancingAffordances(dt);
         this._tickLiftingAffordances();
         this._tickPortalAffordance();
+        this._tickWerkGesetz(dt);
     }
 
     // Bauplan mit role="soul" als Seele anwenden: parts → bodyParts in state.customSouls (eindeutiger
@@ -1998,6 +2049,7 @@ class AnazhRealm_koerper_fahrt {
         }
         this.state.scene.add(newGroup);
         this.state.playerMesh = newGroup;
+        const wandlung = this.state.player.soul !== canonical;
         this.state.player.soul = canonical;
         // Ego-Sicht SOFORT am Guss-Chokepoint: sonst erscheint der frische Leib einen Frame roh (Kopf von
         // innen) — ohne Kamera-Tick (headless) dauerhaft.
@@ -2021,9 +2073,10 @@ class AnazhRealm_koerper_fahrt {
             if (status) status.textContent = def.label;
         }
         // Stats neu berechnen: bei Seelen-Wechsel tauschen die Tag-Profile (HP-Max, Speed, Sprung, Ausdauer,
-        // Resistenzen), die Wandlung füllt die Lebenswerte. DSL-Tuning (player_speed/player_jump_power) überschreibt
+        // Resistenzen), die Wandlung füllt die Lebenswerte — nur sie: derselbe Leib neu gebaut (der Boot-Avatar, der Guss nach
+        // dem Laden) behält sie, sonst heilte jeder Reload (halten.K5). DSL-Tuning (player_speed/player_jump_power) überschreibt
         // bis zum nächsten Wechsel.
-        this.recomputePlayerStats({ voll: true });
+        this.recomputePlayerStats({ voll: wandlung });
         // S9 (kampf-plan §10-F4) — das gehaltene Gerät an den NEUEN Körper re-attachen (der alte
         // Körper + sein heldMesh-Kind wurden oben disposed); liest equipped.held — deckt damit auch
         // den Restore (init() ruft applyPlayerSoul nach Mesh-Bau erneut, wenn equipped.held gesetzt ist).
@@ -2168,13 +2221,27 @@ class AnazhRealm_koerper_fahrt {
         this.state.player.mana = Math.max(0, have - n);
         return true;
     }
+
+    // DIE MASSE EINES WAGENS (kg): das Volumen seiner Gestalt × ρ seines Stoffs. Ein Studio-Wagen (die Hülle seines Kerns)
+    // ist Blech: der Raum seines Fahr-Satzes (`raumM3`, carPhys des Kerns, G.m) × der Anteil Blech darin
+    // (`_fahrGesetz().fuellGrad`) × ρ(blech) — ein GT mit 9,6 m³ wiegt 1,4 t. Ein Teile-Werk wiegt seine Teile (`_teilMasse`,
+    // × Skala³). Leser: jeder Stoß (`_stossKoerper`, `_fahrStossSchritt`) und die Trägheit des Wasser-Terms (`_fahrSatz` →
+    // fahrGesetz masseKg). Vorher wog jedes Werk mit Fahr-Satz wie ein Wagen (G.m × FAHR.masseDichte), auch der Holzkarren.
+    _fahrMasse(entry, raumM3) {
+        if (!entry || !(raumM3 > 0)) return 0;
+        const fzg = this._fahrzeugGesetzFor(entry);
+        if (fzg && fzg.drive && fzg.drive.huelle)
+            return raumM3 * AnazhRealm._fahrGesetz().fuellGrad * this._stoffRho("blech");
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
+        let m = 0;
+        for (const p of (bp && bp.parts) || []) if (p) m += this._teilMasse(p);
+        return m * sc * sc * sc;
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_koerper_fahrt]);
 
 // ===== ATLAS · Koerper/fahrt — Außen-Konstanten =====
-// Die Dichte des Wassers auf der Tag-Skala der Materialien (holz 0,4 schwimmt, stein/eisen sinken): die Schwelle des
-// Schwimmens und der Bezug der Wasserlinie (`_vehicleProfile`, `_fahrzeugGestalt`).
-AnazhRealm.WASSER_DICHTE_TAG = 0.55;
 // Der EINE Fahr-Gesetz-Leser, fail-closed: hostEmergent (Emergenz-Koeffizienten, Klemm-Grenzen,
 // Gier-Folge) + Nick-/Wank-Konstanten (FAHR.pitchGain/rollGain, A_PITCH_MAX/A_LAT_MAX) in EINER
 // Gültigkeits-Wand — ganz oder gar nicht, nie ein Misch-Gesetz. Memo nur im Erfolgs-Fall.
@@ -2207,6 +2274,9 @@ AnazhRealm._fahrGesetz = function () {
         Number.isFinite(vc.A_PITCH_MAX) &&
         Number.isFinite(vc.A_LAT_MAX) &&
         F.masseDichte > 0 &&
+        F.huelleDichte > 0 &&
+        F.wasser &&
+        F.wasser.rho > 0 &&
         F.sitzLehneRad >= 0 &&
         F.kopfFreiraumM >= 0 &&
         F.sitzLehneMaxRad >= F.sitzLehneRad
@@ -2217,8 +2287,13 @@ AnazhRealm._fahrGesetz = function () {
             rollGain: F.rollGain,
             aPitchMax: vc.A_PITCH_MAX,
             aLatMax: vc.A_LAT_MAX,
-            // die Masse des Wagens: das Volumen des Kerns (carPhys, im Fahr-Satz G.m) mal dieser Dichte (0710-4)
-            masseDichte: F.masseDichte,
+            // DER WAGEN ALS KÖRPER (physik K1): sein Stoff ist das Blech der Hülle (der Mix des Kerns, wenn die Kabine voll läuft:
+            // huelleDichte × ρ Wasser — die Zeile blech der Stoff-Zeile), seine Gestalt der Raum des Fahr-Satzes (G.m) zum
+            // Anteil fuellGrad = masseDichte / ρ(blech): die mittlere Dichte der geschlossenen Hülle (0710-4) geteilt durch die
+            // ihres Stoffs. Masse = G.m × fuellGrad × ρ(blech) (`_fahrMasse`), im Wasser liegt er nach ρ(blech) (`_vehicleProfile`).
+            huelleDichte: F.huelleDichte,
+            wasserRho: F.wasser.rho,
+            fuellGrad: F.masseDichte / (F.huelleDichte * F.wasser.rho),
             // der Reiter im Wagen (0710-4 Klasse 4): die Lehne des Sitzes, der Kopf-Freiraum unter der Dachlinie, die
             // steilste Lehne
             sitzLehneRad: F.sitzLehneRad,
@@ -2227,7 +2302,9 @@ AnazhRealm._fahrGesetz = function () {
         };
         return AnazhRealm._fahrGesetzMemo;
     }
-    return AnazhRealm._kernPflichtBruch("vehicle:FAHR.hostEmergent / FAHR.masseDichte / FAHR.sitzLehneRad");
+    return AnazhRealm._kernPflichtBruch(
+        "vehicle:FAHR.hostEmergent / FAHR.masseDichte / FAHR.huelleDichte / FAHR.wasser.rho / FAHR.sitzLehneRad"
+    );
 };
 // DER EINE FAHR-SCHRITT-LESER (Welle L, Nachbesserung 07.10.), fail-closed: die Funktionen des Fahr-Schritts
 // (vehicle-core fahrGesetz · fahrZustand · fahrEbene · fahrStand · fahrKraefte · fahrAufstand) und die Wände des
@@ -2341,7 +2418,12 @@ AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
 AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
 AnazhRealm.KAM_FOV_GRAD = 75; // die Ruhe des Sichtfelds (vertikal), auf die `_kamFov` Tempo und Bogen-Auszug legt
 AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen
-AnazhRealm.FOCUSING_HEAT_RANGE_M = 4; // Brennbare Architekturen in diesem Radius werden erhitzt
-AnazhRealm.FOCUSING_HEAT_RATE_PER_SEC = 0.05; // Erwärmung pro Sekunde bei sunny
-AnazhRealm.FOCUSING_IGNITE_THRESHOLD = 1.0; // Schwelle bei der ignite ausgelöst wird
-AnazhRealm.BRENNBAR_TAG_MIN = 0.5; // Architektur gilt als brennbar ab diesem Tag-Wert
+AnazhRealm.FOCUSING_HEAT_RANGE_M = 4; // Architekturen in diesem Radius einer Linse können ihren Brennpunkt tragen
+// DAS WÄRME-GESETZ DES BRENNGLASES (stoffe.K1, `_brennWaerme`): die Sonne trägt FOCUSING_SONNE_W_M2 auf die Linse (π r² mal
+// Sonnenhöhe), der Brennfleck ist FOCUSING_FLECK_M3 des Stoffs und gibt FOCUSING_VERLUST_W_K an Luft und Körper ab, unter
+// FOCUSING_RUHE_K ist er kalt. Die Quarz-Kugel von 0,4 m Radius trägt mittags ~480 W, der Fleck strebt gegen ~570 K über der
+// Luft: Holz (573 K, τ 29 s) fängt nach ~20 s, Gras nach ~8 s, Stein und Eisen erwärmen sich nur.
+AnazhRealm.FOCUSING_SONNE_W_M2 = 1000;
+AnazhRealm.FOCUSING_FLECK_M3 = 2e-5;
+AnazhRealm.FOCUSING_VERLUST_W_K = 0.85;
+AnazhRealm.FOCUSING_RUHE_K = 1;

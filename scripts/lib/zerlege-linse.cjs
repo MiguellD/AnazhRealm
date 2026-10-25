@@ -490,7 +490,7 @@ function frameAnatomie(uhr, n) {
                         if (!tief[key])
                             try {
                                 fn.apply(this, a);
-                            } catch (_e) {}
+                            } catch {}
                         tief[key] = (tief[key] || 0) + 1;
                         try {
                             return roh.apply(this, a);
@@ -1237,7 +1237,7 @@ function zerlegeMessen(k) {
                 r._schattenAlleNeu();
                 await window.__bankRunde(1);
                 await lese();
-            } catch (_e) {}
+            } catch {}
             uhr.ab();
             const csm = st.csmNode;
             const lichter =
@@ -1752,7 +1752,6 @@ module.exports = {
     zweiGipfel,
     zweiGipfelSelbsttest,
     BELEGUNG_SPUR,
-    BROWSER_BODEN_MS,
     belegungAuswerten,
     belegungSelbsttest,
     ZERLEGE_INSTALL:

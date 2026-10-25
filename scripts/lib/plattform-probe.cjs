@@ -370,12 +370,24 @@ function goldenVergleich(golden, actual) {
     return bad;
 }
 
+// DER SELBST-TEST des Golden-Vergleichs (die Linse ist nicht vakuös) gegen das Ist selbst (S1 Wände: er misst auch auf einem
+// roten Stand, was er misst): ein gekipptes sha256 und eine objects-Drift am ersten Fall werden rot.
+function goldenSelbsttest(actual, check) {
+    const k0 = Object.keys(actual)[0];
+    const [t1, t2] = [0, 1].map(() => JSON.parse(JSON.stringify(actual)));
+    t1[k0].sha256 = (t1[k0].sha256[0] === "0" ? "1" : "0") + t1[k0].sha256.slice(1);
+    t2[k0].objects += 1;
+    const rot = (golden, ist, was) => goldenVergleich(golden, ist).some((s) => s.includes(was));
+    check("SELBST-TEST: korruptes Golden (sha256) wird erkannt", rot({ cases: t1 }, actual, "sha256"));
+    check("SELBST-TEST: objects-Drift wird erkannt", rot({ cases: actual }, t2, "objects"));
+}
+
 module.exports = {
     plattformProbe,
-    probeAblauf,
     installiereDrift,
     FUNKTIONEN,
     probeWand,
     fingerabdruck,
     goldenVergleich,
+    goldenSelbsttest,
 };

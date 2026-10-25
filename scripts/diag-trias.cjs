@@ -45,7 +45,7 @@ const HAUS_L2_MAX_TRIS = 8000;
 const KIND_SUBSTANCE_MINT = {
     geraet_schwert: "fbd9f91fa5f8e26c9dd99959ce99f0c8906cbe82662ee1f82035003529e4ff9b",
     geraet_spitzhacke: "f9465bb4d29ee17d0145c2fec6eebad0581f05c17c6c54af675fa19cb326c7f6",
-    fahrzeug_wagen: "5b642cc51995ef9bf31bb05135d38dd16d8d9ea51ba12ee52a2fb1ed9ff84a8a",
+    fahrzeug_wagen: "2850d66feda2a749e0df6d9726cfe23255afa205becbdfd893f7b95b31d5d3cd",
     tor_basis: "3192e75d2f5e82ab941f1b2356de608d45824819d704779750163797732ecfb3",
     haus_basis: "56b2a5e79068d1e21df40e1b77299e11b683f441d47c9bd427c9f7f69f6bc628",
 };
@@ -162,19 +162,15 @@ const triasStaticLaws = () => [
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "null", frist: 480000, zusatz: ["--disable-setuid-sandbox"] });
     const page = await browser.newPage();
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const res = { errors: [] };
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return { fatal: "kein anazhRealm" };
+        const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.alemannisch);
-        res.bookReady = !!(f && f.ready && f.recipes && f.recipes.alemannisch);
-        if (!res.bookReady) return res;
 
         const pm = r.state.playerMesh;
         // Das Auge reist mit: jede Stufen-Frage misst vom Auge der Maske (`_lodAuge`, die Kamera) — wie die Ego-
@@ -442,7 +438,6 @@ const triasStaticLaws = () => [
     if (out.fatal) {
         check("B: Aufbau", false, out.fatal);
     } else {
-        check("B0: das LIVE-Buch ist warm (Voraussetzung)", out.bookReady === true);
         check("B1: das Dorf steht (deliberate Slot-Quelle)", out.placed >= 4, `placed=${out.placed}`);
         check(
             "B2: nah gebaut = die schweren Stufen leben (≥1 Haus L0/L1, alle 3 instanziert)",

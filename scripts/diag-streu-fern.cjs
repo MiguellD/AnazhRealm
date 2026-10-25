@@ -27,7 +27,7 @@
 //   G BAHNWECHSEL  der Spieler tritt an einen fernen Gesetz-Fels: der EINE Bahnwechsel des LOD-Ticks tauscht jede
 //              Fernform-Zelle diesseits der Grenze auf ihr Studio-Mesh (mit Instanzen); zurück an der Mess-Wiese zieht
 //              sie jenseits des Totbands wieder ins Gesetz.
-//   H VOR DEM BUCH  (0710-2) kommt das Buch nach dem Ring (im Browser steht der Ring nach ~1 s, das Buch nach 5–8 s), liest
+//   H VOR DEM BUCH  kommt das Buch nach dem Ring (im Browser steht der Ring nach ~1 s, das Buch nach 5–8 s), liest
 //              kein Deko-Takt das Budget, bevor es dockt: eine zweite Seite hält die Buch-Nachricht zurück, der echte
 //              Spiel-Takt (`_gameLoopTick` → Deko-Job) läuft, bis die Nah-Wiese 8× kalt getaktet hat — die Loop-Grenze
 //              fängt 0 Fehler; nach dem Buch legt die Nah-Wiese ihre 4 Studio-Vorlagen, wieder ohne Fehler. Jeder
@@ -57,12 +57,9 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     const out = await page.evaluate(async () => {
-        const res = { boot: false };
+        const res = {};
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return res;
-        res.boot = true;
+        const r = await window.__weltDa();
         const AR = r.constructor;
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod);
@@ -114,7 +111,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         const istKarte = (p) => {
             try {
                 return r._foundryFernForm(p) === "karte";
-            } catch (_e) {
+            } catch {
                 return false;
             }
         };
@@ -198,7 +195,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                     let soll;
                     try {
                         soll = r._foundryFernForm(preset);
-                    } catch (e) {
+                    } catch {
                         soll = "BRUCH";
                     }
                     if (soll === "karte") continue;
@@ -484,7 +481,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             }
             try {
                 neuBau(flipKey);
-            } catch (_e) {}
+            } catch {}
         }
         res.st2 = st2;
 
@@ -515,8 +512,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         "=== STREU-FERN — die Fernform der Klein-Streu kommt aus dem Budget (B2c `fernform`), jenseits der EINEN Nah-Grenze ==="
     );
     check(
-        "Boot + Studio-Buch (lod.budget) auf dem Host",
-        out.boot && out.buch,
+        "Studio-Buch (lod.budget) auf dem Host",
+        out.buch,
         `zellen=${out.zellen} · Nah-Grenze ${out.grenze} m`
     );
     const F = out.fern || {};
@@ -618,7 +615,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     const hPage = await browser.newPage();
     await hPage.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
-        window.__anazhForceFoundry = true;
         // Der Halt sitzt, sobald die Instanz steht — lange vor dem Buch (der Worker rechnet es Sekunden). Kam es doch
         // davor, meldet die Linse `zuSpaet` statt still grün.
         const H = (window.__buchHalt = { nachrichten: [], frei: false, zuSpaet: false, los: null });

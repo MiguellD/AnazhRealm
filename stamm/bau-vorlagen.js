@@ -356,11 +356,11 @@ class AnazhRealm_bau_vorlagen {
                 position: { x: 0, y: 0.3, z: 0 },
                 size: { x: 1.4, y: 0.6, z: 1.4 },
             },
-            // Quarz-Kolben (durchsichtig)
+            // Quarz-Kolben (durchsichtig) — sitzt auf dem Untersatz (bei y 1,2 schwebte er 0,1 m darüber: der Lastpfad brach)
             {
                 shape: "sphere",
                 material: "quarz",
-                position: { x: 0, y: 1.2, z: 0 },
+                position: { x: 0, y: 1.1, z: 0 },
                 size: { x: 1.0, y: 1.0, z: 1.0 },
                 opacity: 0.55,
             },
@@ -1429,14 +1429,150 @@ class AnazhRealm_bau_vorlagen {
     // 6 Built-ins von weich-organisch (leder, holz) über mineralisch (stein, eisen, bronze) bis kristallin
     // (quarz); mehr via DSL-Op `define_material`. Tag-Werte 0..1 = Potenzial; die Aktivierung je Form
     // macht FORM_TAG_ACTIVATION.
+    //
+    // DIE STOFF-ZEILE TRÄGT kg (physik K1): je Stoff die Dichte ρ in kg/m³ (SI) — die EINE Zahl, aus der jedes Ding wiegt und
+    // im Wasser liegt (`_stoffRho`: Teile, Eigenwerke, Leiber, Wagen, Gefährte). Wo ein Gesetzbuch den Stoff wiegt, IST die
+    // Zeile sein Eintrag: Holz und die Metalle der Schmiede (RHO.holz · MAT.stahl/eisen/bronze, ein Zugriff — wer die Zeile
+    // ändert, ändert die Klinge, Labor = Welt), das Fleisch der Tiere aus ihrem Gewebe (tetrapoda MASSSTAB.dichteKgM3), der
+    // Leib des Menschen samt der Luft seiner Lunge aus dem Körper-Kern (koerper LEIB.dichteKgM3), das Blech des Wagens aus der Hülle des Fahr-Kerns (FAHR.huelleDichte × FAHR.wasser.rho: der
+    // Stoff-Mix, wenn die Kabine voll läuft). Die übrigen sind Tafel-Werte: Granit und Quarz 2 650, Leder 860, kompakter
+    // Knochen 1 900, Keratin-Schuppen 1 300, Federkleid 50, Holzkohlen-Glut 400, Laub 300, Boden 1 500, Kraut 400, die Essenz
+    // eine Flüssigkeit wie Wasser 1 000. Jede Änderung einer Zeile zählt den Stoff-Stand (`AnazhRealm._stoffStand`), an dem
+    // die Gedächtnisse der Masse hängen. Die Tag-Achse `dichte` [0,1] bleibt Potenzial der Tag-Sprache (Rolle, Kampf-Stats)
+    // und wiegt nichts.
+    //
+    // DIE STOFF-TAFEL IN SI (stoffe.K1): dieselbe Zeile trägt jede Zahl, die eine Wirkung des Stoffs liest — gelesen über den
+    // EINEN Leser `_stoff` (ein eigener Stoff liest die Zeile seines nächsten Verwandten):
+    //   rho      kg/m³ — Masse und Auftrieb (oben); das Wasser IST der Eintrag des Fahr-Kerns (FAHR.wasser.rho), an ihm liegt
+    //            jeder Körper im Wasser (`_eintauchAnteil`)
+    //   mu       Haftreibung eines Leibs (Sohle, Huf, Pfote) auf dem Stoff — der gestoßene Leib bremst auf den Beinen mit μ·g
+    //            auf dem Stoff unter ihm (`_kreaturStossSchritt` über `_kontaktStoffAt`); null: eine Flüssigkeit trägt keinen
+    //            Gleitenden
+    //   c        J/(kg·K) — der Brennpunkt erwärmt den Stoff mit P / (ρ·V·c) (`_brennWaerme`), das Wasser sieht die Luft durch
+    //            die Trägheit seiner Säule ρ·c·h / α (gelaende-core `wasserKoerper` über `_wasserStoff`): an ihr setzt das Eis ein
+    //   tZuend   K — an ihr fängt der Stoff im Brennpunkt Feuer; null brennt nie
+    //   tSchmelz K — der Gefrierpunkt des Süßwassers ist die Phasen-Grenze des Eises: an ihm setzt das Eis des Kerns ein
+    //            (`eisDicke`, die Linien `_eisLinien`, die Fläche `_eisAt`); null zersetzt sich vor dem Schmelzen
+    //   L, k     J/kg und W/(m·K), nur die Zeile eis — Schmelzwärme und Wärmeleitung: mit ρ wächst das Eis nach STEFAN
+    //            (h²/2k + h/H = ∫Frost dt / ρL, gelaende-core `eisDicke`)
+    //   klang    die Schritt-Spalte des Klang-Kerns (klang:SCHRITT_TIMBRE, ein Zugriff — wer die Zeile ändert, ändert den Schritt)
+    // Tafel-Werte (Engineering ToolBox, CRC Handbook): Granit c 790, T_schmelz 1 500 K; Holz c 1 700, Zündung 573 K; Eisen c 449,
+    // 1 811 K; Bronze 380, 1 223 K; Stahl 490, 1 723 K; Quarz 740, 1 986 K; trockenes Laub, Gras und Kraut c 1 800, Zündung
+    // 523–533 K; trockener Boden c 800; Wasser c 4 186, 273,15 K; Eis ρ 917, c 2 050, L 334 000, k 2,2, μ 0,05; Huf und Sohle auf trockenem Fels
+    // und Gras μ 0,6 (Pferdehuf auf Beton 0,55–0,63), auf losem Laub 0,4.
     _defaultMaterials() {
-        const make = (name, label, color, tags) => ({
-            name,
-            label,
-            builtIn: true,
-            color,
-            tags: { ...AnazhRealm.MATERIAL_TAG_DEFAULTS, ...tags },
-        });
+        const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+        if (!sc || !sc.RHO || !sc.MAT || !sc.MAT.stahl) AnazhRealm._kernPflichtBruch("schmiede:RHO/MAT");
+        const T = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+        const fleisch = T && T.MASSSTAB ? T.MASSSTAB.dichteKgM3 : NaN;
+        if (!(fleisch > 0)) AnazhRealm._kernPflichtBruch("tetrapoda:MASSSTAB.dichteKgM3");
+        const K = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
+        const leib = K && K.LEIB ? K.LEIB.dichteKgM3 : NaN;
+        if (!(leib > 0)) AnazhRealm._kernPflichtBruch("koerper:LEIB.dichteKgM3");
+        const FG = AnazhRealm._fahrGesetz();
+        const im = (o, k) => ({ get: () => o[k], set: (v) => (o[k] = v) });
+        const RHO = {
+            stein: 2650,
+            holz: im(sc.RHO, "holz"),
+            eisen: im(sc.MAT.eisen, "rho"),
+            bronze: im(sc.MAT.bronze, "rho"),
+            stahl: im(sc.MAT.stahl, "rho"),
+            quarz: 2650,
+            leder: 860,
+            knochen: 1900,
+            fleisch,
+            leib,
+            federn: 50,
+            schuppen: 1300,
+            glut: 400,
+            laub: 300,
+            erde: 1500,
+            kraut: 400,
+            essenz: 1000,
+            blech: FG.huelleDichte * FG.wasserRho,
+            gras: 350,
+            wasser: im(globalThis.__vehicleCore.FAHR.wasser, "rho"),
+            eis: 917,
+        };
+        // DIE HAFTUNG DES RADS (fahrzeug.K1): je Stoff, auf dem ein Rad stehen kann, μ des Reifens trocken und voll nass (`muRad`,
+        // `muRadNass`; Bezug der Asphalt des Labors, μ 1) — Tafel-Werte der Reibung Reifen auf Fahrbahn: verdichtete Erde
+        // 0,7/0,45, Gras 0,4/0,2, rauer Fels 0,8/0,55, Bohle 0,65/0,4, Metall 0,6/0,35, Laubstreu 0,45/0,2. Leser: der Reibkreis am
+        // Wagen (`_fahrHaft`). Die Stoffe der Leiber tragen keine — unter dem Rad liegt nie Fleisch —, und kraut, die Mahd im
+        // Beutel, auch nicht: die Wiese unter Rad, Huf und Schritt ist EINE Zeile, gras. μ des Leibs (`mu`) und μ des Rads sind
+        // zwei Paare (Huf auf Fels 0,6, Reifen auf Fels 0,8), je eine Spalte derselben Zeile.
+        // prettier-ignore
+        const SI = {
+            //         μ      c     T_zünd  T_schmelz  μ Rad  nass
+            stein:    [0.6,  790,  null,   1500,      0.8,   0.55],
+            holz:     [0.6,  1700, 573,    null,      0.65,  0.4],
+            eisen:    [0.5,  449,  null,   1811,      0.6,   0.35],
+            bronze:   [0.5,  380,  null,   1223,      0.6,   0.35],
+            stahl:    [0.5,  490,  null,   1723,      0.6,   0.35],
+            quarz:    [0.6,  740,  null,   1986,      0.6,   0.35],
+            leder:    [0.6,  1500, 573,    null,      null,  null],
+            knochen:  [0.5,  1300, null,   null,      null,  null],
+            fleisch:  [0.5,  3500, null,   null,      null,  null],
+            leib:     [0.5,  3500, null,   null,      null,  null],
+            federn:   [0.4,  1500, 573,    null,      null,  null],
+            schuppen: [0.4,  1500, null,   null,      null,  null],
+            glut:     [0.6,  1000, 623,    null,      0.6,   0.45],
+            laub:     [0.4,  1800, 523,    null,      0.45,  0.2],
+            erde:     [0.6,  800,  null,   null,      0.7,   0.45],
+            kraut:    [0.4,  1800, 533,    null,      null,  null],
+            essenz:   [null, 4186, null,   null,      null,  null],
+            blech:    [0.5,  460,  null,   1723,      0.6,   0.35],
+            gras:     [0.6,  1800, 533,    null,      0.4,   0.2],
+            wasser:   [null, 4186, null,   273.15,    null,  null],
+            eis:      [0.05, 2050, null,   null,      null,  null],
+        };
+        const PHASE = { eis: { L: 334000, k: 2.2 } }; // die Spalten L und k (oben): nur das Eis wächst im Kern
+        const TB = AnazhRealm._schrittTimbre().material;
+        // Stahl, Blech und Leib sind Stoffe der Körper (die Klinge der Schmiede, die Hülle des Wagens, der Mensch), Gras, Wasser
+        // und Eis Stoffe der Welt, keine Bau-Stoffe: die Welt hat keine Quelle, aus der man sie sammelt, die Werkstatt bietet sie
+        // nicht an (`bauStoff`).
+        const keinBauStoff = ["stahl", "blech", "leib", "gras", "wasser", "eis"];
+        const make = (name, label, color, tags) => {
+            const si = SI[name];
+            if (!si || !TB[name])
+                AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": SI-Zeile und klang:SCHRITT_TIMBRE");
+            const z = {
+                name,
+                label,
+                builtIn: true,
+                color,
+                tags: { ...AnazhRealm.MATERIAL_TAG_DEFAULTS, ...tags },
+                mu: si[0],
+                c: si[1],
+                tZuend: si[2],
+                tSchmelz: si[3],
+                muRad: si[4],
+                muRadNass: si[5],
+                ...PHASE[name],
+            };
+            Object.defineProperty(z, "klang", {
+                enumerable: true,
+                get: () => TB[name],
+                set: (v) => {
+                    TB[name] = v;
+                },
+            });
+            if (keinBauStoff.includes(name)) z.bauStoff = false;
+            const q = typeof RHO[name] === "object" ? RHO[name] : { wert: RHO[name] };
+            if (!q.get) {
+                if (!(q.wert > 0)) throw new Error("STOFF-ZEILE ohne Dichte: " + name);
+                q.get = () => q.wert;
+                q.set = (v) => (q.wert = v);
+            }
+            Object.defineProperty(z, "rho", {
+                enumerable: true,
+                get: q.get,
+                set: (v) => {
+                    q.set(v);
+                    AnazhRealm._stoffStand = (AnazhRealm._stoffStand || 0) + 1;
+                },
+            });
+            return z;
+        };
         const list = [
             make("stein", "Stein", 0x7a7a7a, {
                 härte: 0.65,
@@ -1472,6 +1608,15 @@ class AnazhRealm_bau_vorlagen {
                 magieleitung: 0.25,
                 resoniert: 0.75,
             }),
+            // stahl: die Klingen der Schmiede (MAT.stahl) — härter und spröder als Eisen.
+            make("stahl", "Stahl", 0x6d7179, {
+                härte: 0.85,
+                dichte: 0.9,
+                zähigkeit: 0.55,
+                wärmeleitung: 0.6,
+                stromleitung: 0.8,
+                resoniert: 0.7,
+            }),
             make("quarz", "Quarz", 0xcce6f5, {
                 härte: 0.7,
                 dichte: 0.65,
@@ -1498,6 +1643,15 @@ class AnazhRealm_bau_vorlagen {
                 lebendig: 1.0,
             }),
             make("fleisch", "Fleisch", 0xb55050, {
+                härte: 0.15,
+                dichte: 0.4,
+                zähigkeit: 0.75,
+                wärmeleitung: 0.45,
+                brennbar: 0.35,
+                lebendig: 1.0,
+            }),
+            // leib: der Leib des Menschen (Gewebe samt der Luft der Lunge) — wie das Fleisch, knapp leichter als Wasser.
+            make("leib", "Leib", 0xc98f73, {
                 härte: 0.15,
                 dichte: 0.4,
                 zähigkeit: 0.75,
@@ -1579,9 +1733,51 @@ class AnazhRealm_bau_vorlagen {
                 resoniert: 0.8,
                 lebendig: 0.6,
             }),
+            // blech: die Hülle des Wagens (Stahl, Aluminium, Kunststoff, Gummi, Glas, Fluide — der Mix des Fahr-Kerns).
+            make("blech", "Blech", 0x8c9196, {
+                härte: 0.5,
+                dichte: 0.75,
+                zähigkeit: 0.7,
+                wärmeleitung: 0.6,
+                stromleitung: 0.8,
+                resoniert: 0.65,
+            }),
+            // DIE STOFFE DER WELT (stoffe.K1): das Gras der Wiese (der Boden, wo die Boden-Karte Wiese zeichnet), das Wasser
+            // der EINEN Wasser-Wahrheit und seine feste Phase, das Eis.
+            make("gras", "Gras", 0x4f8f2f, {
+                härte: 0.05,
+                dichte: 0.08,
+                zähigkeit: 0.3,
+                wärmeleitung: 0.1,
+                brennbar: 0.75,
+                resoniert: 0.3,
+                lebendig: 1.0,
+            }),
+            make("wasser", "Wasser", 0x2a5d7a, {
+                dichte: 0.25,
+                wärmeleitung: 0.6,
+                magieleitung: 0.3,
+                transparent: 0.9,
+                lebendig: 0.2,
+            }),
+            make("eis", "Eis", 0xcfe6f0, {
+                härte: 0.4,
+                dichte: 0.55,
+                zähigkeit: 0.2,
+                wärmeleitung: 0.5,
+                transparent: 0.7,
+                resoniert: 0.5,
+            }),
         ];
         const out = {};
         for (const m of list) out[m.name] = m;
+        Object.defineProperty(out.eis, "tSchmelz", {
+            enumerable: true,
+            get: () => out.wasser.tSchmelz,
+            set: (v) => {
+                out.wasser.tSchmelz = v;
+            },
+        });
         return out;
     }
 

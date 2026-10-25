@@ -38,7 +38,7 @@ function staticLaws(q, manifestSrc) {
     let manifest = null;
     try {
         manifest = JSON.parse(manifestSrc);
-    } catch (_e) {}
+    } catch {}
     const fachwerk = Array.isArray(manifest) ? manifest.find((c) => c && c.id === "fachwerk") : null;
     out.push([
         "S1: das Manifest traegt den fachwerk-Kern (scripts fachwerk-core.js, ns __fachwerkCore)",
@@ -94,7 +94,7 @@ function staticLaws(q, manifestSrc) {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {

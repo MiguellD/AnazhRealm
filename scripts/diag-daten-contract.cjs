@@ -14,7 +14,7 @@
 //   4. DETERMINISTISCH + EINGEFROREN: zwei frische Lade-Kontexte liefern byte-
 //      identische PRESETS/PARAMS; das kanonische JSON ist sha256-golden
 //      (spec/asset-contract/v7/golden/daten.json — gemintet NUR wenn es fehlt).
-//   --selftest: korruptes Golden + Schema-Verletzung werden erkannt.
+//   --selftest: Schema-Verletzungen (klang, motion) und ein Kern, der beim Laden eine Transzendente ruft, werden erkannt.
 //   node scripts/diag-daten-contract.cjs [--selftest]
 const crypto = require("crypto");
 const fs = require("fs");
@@ -119,7 +119,7 @@ function validateDaten(N, spec) {
         // structured-clone-Sicherheit (die Taille: reine Daten).
         try {
             JSON.parse(JSON.stringify(r));
-        } catch (_e) {
+        } catch {
             v.push(`§8: "${id}" nicht JSON-klonbar`);
         }
     }
@@ -141,8 +141,6 @@ function validateDaten(N, spec) {
             "Selbst-Test 1: bpm-0 + dna-7 werden erkannt",
             bv.some((s) => s.includes("bpm")) && bv.some((s) => s.includes("dna.swing"))
         );
-        // V2: ein korruptes Golden kippt (Fingerabdruck-Vergleich ist nicht vakuös).
-        check("Selbst-Test 2: korruptes Golden wird erkannt", sha(canonical(N)) !== "deadbeef");
         // V3: motion-Schema feuert (ein String im Profil).
         const T = loadCore(CORES[2].file, CORES[2].ns);
         const brokenT = JSON.parse(JSON.stringify({ PRESETS: T.PRESETS, PARAMS_BY_KIND: T.PARAMS_BY_KIND }));

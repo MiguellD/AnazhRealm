@@ -153,9 +153,7 @@ async function welt() {
     // Boot · Mess-Wiese · Einschwingen · Bühne · stille Tiere · der Wolf der Fell-Probe
     const boot = await page.evaluate(async (groessen) => {
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return { fatal: "keine Welt" };
+        const r = await window.__weltDa();
         if (!r.state.renderer || !r.state.renderer._isHeadlessNull) return { fatal: "kein Null-Renderer" };
         const st = r.state;
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
@@ -169,7 +167,7 @@ async function welt() {
             window.__wetterHalten();
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             // Der Probe-Wolf behält sein Maß: zwei Schreiber lassen Tiere im Takt wachsen (`updateGrowth` ×1,01, die
             // Nexus-Geste `creatures_size_mul` bis ×3 je Ruf) — ein Lauf traf den Wolf 13,8-fach, nachdem d* stand.
             const wolf = window.__schirmWolf;
@@ -339,7 +337,7 @@ async function welt() {
     };
 
     const messung = await reihe();
-    // die EINE Quelle liest den Zeichenpuffer am Ruf (D3c)
+    // die EINE Quelle liest den Zeichenpuffer am Ruf
     const quelleLiest = await page.evaluate(() => {
         const r = window.anazhRealm,
             ren = r.state.renderer,

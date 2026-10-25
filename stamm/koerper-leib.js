@@ -561,11 +561,14 @@ class AnazhRealm_koerper_leib {
     // unter Fels (nur dort tastet das Feld); ohne Karte (fern, ungebaut) trägt der Träger. Leser: Fuß-IK des Menschen
     // (`_gaitBodenY`) und des Tiers (`_kreaturFussBoden`), Tier-Lage (`_creatureSlopeProben`, die Mitte im Frame-Takt), der
     // Stoß-Schritt, die Tod-Lage. Die Karte am Punkt liest `_bodenSichtAt` (am Chunk-Rand die des Nachbarn).
+    // Über einem gefrorenen Spiegel (`_eisAt`, stoffe.K3) sieht das Auge das Eis, nie den Grund unter ihm.
     _standSicht(x, z, traegerY, struktur) {
         if (struktur === true) return traegerY;
-        const k = this._bodenSichtAt(x, z);
-        if (!Number.isFinite(traegerY)) return Number.isFinite(k) ? k : NaN;
         const band = AnazhRealm.STAND_SICHT_BAND;
+        const karte = this._bodenSichtAt(x, z);
+        const eis = this._eisAt(x, z, traegerY + band, 2 * band, karte);
+        const k = eis !== null && !(karte >= eis) ? eis : karte;
+        if (!Number.isFinite(traegerY)) return Number.isFinite(k) ? k : NaN;
         if (!Number.isFinite(k)) return traegerY;
         if (Math.abs(k - traegerY) <= band) return k;
         const g = this._koerperBodenUnter(x, traegerY, z);
@@ -742,12 +745,13 @@ class AnazhRealm_koerper_leib {
     }
     // DIE SOHLE AM HANG (Gelände H5): die Neigung des gezeichneten Bodens unter dem Fuß (der Stand-Leser je ± 0,12 m längs und
     // quer zur Blick-Achse), bis ± 0,45 rad (das Sprunggelenk) — die Sohle kippt mit. Bis H5 blieb sie waagrecht: am 25°-Hang
-    // quer stand ihr bergseitiger Rand im Boden (gate:koerper-stand K8 fuss, Median −1,4 cm).
-    _gaitSohlenKipp(x, z, yaw, g) {
+    // quer stand ihr bergseitiger Rand im Boden (gate:koerper-stand K8 fuss, Median −1,4 cm). EIN Gesetz für Mensch UND Tier:
+    // mit `leib` liest es den Boden der Pfote (`_kreaturFussBoden`), die Pfoten-IK des Tiers stellt ihre Sohle darauf (K8 huf).
+    _gaitSohlenKipp(x, z, yaw, g, leib) {
         const d = 0.12;
         const [s, c] = [Math.sin(yaw), Math.cos(yaw)];
         const y = (a, b) => {
-            const v = this._gaitBodenY(x + a, z + b);
+            const v = leib ? this._kreaturFussBoden(leib, x + a, z + b) : this._gaitBodenY(x + a, z + b);
             return Number.isFinite(v) ? v : g;
         };
         const w = (dy) => Math.max(-0.45, Math.min(0.45, Math.atan(dy / (2 * d))));
@@ -1633,6 +1637,14 @@ class AnazhRealm_koerper_leib {
             }
         }
         await Promise.all(auftraege);
+        // DER GLIED-VORRAT (dorf-takt-z13): jede Gattung, die der Lebensraum gebären kann, zerlegt ihre Gestalt im Leerlauf, bevor
+        // ein Tier entsteht (`_kreaturenBereit` wartet auf diesen Vorrat) — der Takt liest danach nur das Memo (`_gattungGlieder`)
+        const L = AnazhRealm._lebensraumGesetz().L;
+        await Promise.all(
+            Object.keys(map)
+                .filter((s) => map[s] in L.gattung)
+                .map((s) => this._gliederBestellen(s))
+        );
         this._ofenVorratSteht = true;
     }
     // DAS BEIN-MASS der Gestalt (Welle 5, die Zwei-Knochen-IK des Gang-Gesetzes): je Bein an der Vorlage in der Ruhe-Pose
@@ -1782,17 +1794,17 @@ class AnazhRealm_koerper_leib {
         // Takt aus dem Gefühls-Profil (Freude 3,2 rad/s bei 0,06 rad Schritt, jede Geschwindigkeit): Schlupf 1,0. Ein
         // SPRUNG der Lage ist kein Lauf (`_lageTempo`): die Pfoten setzen am neuen Ort — vorher las der Gang einen Ruf über
         // 20 m als Lauf mit 8,5 m/s, und die Anker am alten Ort zogen die Beine 20 m zurück (gate:koerper-stand K5).
+        // Tempo und Gangart wählt `_gangWahl`, dieselbe Wahl wie im Satz.
         const lage = group.position;
+        let vLage;
         if (dtWeg > 0 && Number.isFinite(g.lageX)) {
-            const vLage = AnazhRealm._lageTempo(lage.x - g.lageX, lage.z - g.lageZ, dtWeg);
+            vLage = AnazhRealm._lageTempo(lage.x - g.lageX, lage.z - g.lageZ, dtWeg);
             if (vLage === null) g.fuss = null;
-            g.v = (g.v || 0) + ((vLage || 0) - (g.v || 0)) * (1 - Math.exp(-8 * dt));
         }
         g.lageX = lage.x;
         g.lageZ = lage.z;
         const skala = group.scale.x || 1;
-        const gs = core.gangSchritt(moving ? g.v || 0 : 0, tb.beinL * skala, this._gangZeile(false), g.art);
-        g.art = gs.art;
+        const gs = AnazhRealm._gangWahl(g, vLage, dt, moving, tb.beinL * skala, this._gangZeile(false));
         // die Länge des Schwungs im Takt (rad): der Stand füllt den Tastgrad des Gesetzes (im Galopp kürzer, gs.tast)
         const sw = 2 * Math.PI * (1 - gs.tast);
         const folge = zust === "schwimmen" ? core.GANG_FOLGE.paddeln : gs.folge;
@@ -1957,7 +1969,7 @@ class AnazhRealm_koerper_leib {
             ]);
         const glied = (B) => (Math.hypot(B.a[0], B.a[1]) + Math.hypot(B.b[0], B.b[1])) * skala;
         // wo die Pfote JETZT steht: ihre Sohle (das Ende des Pfoten-Glieds c — der Punkt, den die IK auf den Boden stellt;
-        // das Gelenk darüber liegt am geneigten Leib um |c|·sin(Neigung) versetzt)
+        // das Gelenk darüber liegt am Hang um |c|·sin(Neigung) längs der Normale des Bodens versetzt)
         const pfoteHier = (K, L, fx, fz, BM) => {
             if (K[3] && g.legInit) {
                 K[3].updateWorldMatrix(true, false);
@@ -2086,6 +2098,18 @@ class AnazhRealm_koerper_leib {
             Z[1] = this._kreaturFussBoden(group, fx, fz);
             Z[2] = fz;
             Z[3] = hub;
+            // DIE SOHLE AM HANG (Gelände H5, das Gesetz des Menschen-Fußes): Z[4..6] = die Normale des Bodens unter dem Ziel aus
+            // `_gaitSohlenKipp` — die Pfote legt ihre Sohle darauf, ihr Gelenk steht um c längs dieser Normale über ihr. Bis
+            // K8 huf hielt die Pfote die Lage des Rumpfs, quer um das Abspreizen zurückgedreht: am 25°-Hang lag ihre Sohle quer
+            // waagrecht (Δ −23° gegen den Boden), auf der Wiese rollte sie mit dem Bein bis ±30° (gate:koerper-stand K8 huf
+            // hang p95 3,2 cm, der Leser am Ziel lag 0,3 cm am Mesh).
+            const kp = this._gaitSohlenKipp(fx, fz, gier, Z[1], group);
+            const tl = Math.tan(kp.laengs),
+                tq = Math.tan(kp.quer);
+            const nl = Math.sqrt(1 + tl * tl + tq * tq);
+            Z[4] = -(tl * vorX + tq * vorZ) / nl;
+            Z[5] = 1 / nl;
+            Z[6] = (tq * vorX - tl * vorZ) / nl;
         }
         // SCHRITT 2 — DIE SENKE (die Reichweite der Beine): die Beine stehen in der Ruhe fast gestreckt. Das Ende des
         // Schritts (Ruhe-Lage ± halber Fußweg) und am Hang der Boden unter der talseitigen Hüfte (der Leib neigt und rollt,
@@ -2102,12 +2126,13 @@ class AnazhRealm_koerper_leib {
                     Z = ziele[i];
                 vHw.set(B.p0[0] / fLab, B.p0[1] / fLab, B.p0[2] / fLab);
                 vHw.applyMatrix4(T.wolf.matrixWorld);
-                const dx = Z[0] - vHw.x,
-                    dz = Z[2] - vHw.z;
+                const cN = -B.c[0] * skala; // das Pfoten-Gelenk über der Sohle längs der Normale (Z[4..6])
+                const dx = Z[0] + cN * Z[4] - vHw.x,
+                    dz = Z[2] + cN * Z[6] - vHw.z;
                 const quer = dx * vorZ - dz * vorX;
                 const weit = Math.max(Math.abs(dx * vorX + dz * vorZ), Math.abs(B.zr) * skala + st / 2);
                 const lg = glied(B) * 0.98;
-                const ueber = vHw.y - (Z[1] - B.c[0] * skala); // die Hüfte über dem Pfoten-Gelenk auf dem Boden
+                const ueber = vHw.y - (Z[1] + cN * Z[5]); // die Hüfte über dem Pfoten-Gelenk auf dem Boden
                 const noetig = ueber - Math.sqrt(Math.max(0, lg * lg - quer * quer - weit * weit));
                 if (noetig > senke) senke = Math.min(noetig, (B.h * skala) / 3);
             }
@@ -2131,8 +2156,13 @@ class AnazhRealm_koerper_leib {
             ? (this._gangR || (this._gangR = new THREE.Matrix4())).copy(T.wolf.matrixWorld).invert()
             : null;
         // SCHRITT 3 — DIE PFOTE AUF DEM ZIEL: in den Rumpf-Raum gerechnet (er neigt, rollt, federt) stellt die Hüfte das Bein
-        // erst seitlich in die Ebene des Ziels (Abspreizen um die Längs-Achse: der Leib rollt, das Bein bleibt im Lot), dann
-        // die ebene Zwei-Knochen-IK. Dieselbe IK trägt den Stand mit seiner Gewichts-Unruhe.
+        // erst seitlich in die Ebene des Pfoten-Gelenks (Abspreizen um die Längs-Achse: der Leib rollt, das Bein bleibt im
+        // Lot), dann die ebene Zwei-Knochen-IK; die Pfote legt ihre Sohle auf die Normale des Bodens (Z[4..6], unten). Dieselbe
+        // IK trägt den Stand mit seiner Gewichts-Unruhe.
+        const vN = this._sohleN || (this._sohleN = new THREE.Vector3());
+        const qA = this._sohleQA || (this._sohleQA = new THREE.Quaternion());
+        const qN = this._sohleQN || (this._sohleQN = new THREE.Quaternion());
+        const eA = this._sohleE || (this._sohleE = new THREE.Euler());
         for (let i = 0; i < 4; i++) {
             const K = ketten[i];
             const BM = tb.bein[i];
@@ -2141,13 +2171,17 @@ class AnazhRealm_koerper_leib {
             const p0x = BM.p0[0] * skala,
                 p0y = BM.p0[1] * skala,
                 p0z = BM.p0[2] * skala;
-            vZiel.set(Z[0], Z[1] + hub * GG.hub * BM.h * skala, Z[2]);
-            if (Rinv) vZiel.applyMatrix4(Rinv).multiplyScalar(fLab * skala);
-            // das Abspreizen: die Hüfte dreht die Bein-Ebene um die Längs-Achse durch das Ziel
+            vN.set(Z[4], Z[5], Z[6]);
+            vZiel.set(Z[0], Z[1] + hub * GG.hub * BM.h * skala, Z[2]).addScaledVector(vN, -BM.c[0] * skala);
+            if (Rinv) {
+                vZiel.applyMatrix4(Rinv).multiplyScalar(fLab * skala);
+                vN.transformDirection(Rinv);
+            }
+            // das Abspreizen: die Hüfte dreht die Bein-Ebene um die Längs-Achse durch das Pfoten-Gelenk
             const lx = vZiel.x - p0x,
                 ly = vZiel.y - p0y;
             const ab = Math.atan2(lx, -ly);
-            const ty = -Math.hypot(lx, ly) - BM.c[0] * skala,
+            const ty = -Math.hypot(lx, ly),
                 tz = vZiel.z - p0z;
             let z0, z1, z2, z3;
             {
@@ -2228,7 +2262,14 @@ class AnazhRealm_koerper_leib {
             }
             if (K[1]) K[1].rotation.x = cur[1];
             if (K[2]) K[2].rotation.x = cur[2];
-            if (K[3]) K[3].rotation.x = cur[3];
+            // die Sohle auf dem Boden: die Glieder darüber tragen die Pfote im Rumpf-Raum als Rz(ab)·Rx(Σ), ihre Ruhe-Lage
+            // (die Sohle waagrecht zur Bein-Ebene, Rz(ab)) dreht der kürzeste Weg auf die Normale; die Falte des Schwungs bleibt
+            if (K[3] && Rinv) {
+                qA.setFromEuler(eA.set(cur[0] + cur[1] + cur[2], 0, cur[4], "ZXY"));
+                qN.setFromUnitVectors(vZiel.set(-Math.sin(cur[4]), Math.cos(cur[4]), 0), vN).multiply(qA);
+                qN.premultiply(qA.invert());
+                K[3].quaternion.setFromAxisAngle(vN.set(1, 0, 0), cur[3]).premultiply(qN);
+            } else if (K[3]) K[3].rotation.x = cur[3];
         }
         g.legInit = true;
         if (T.headGroup) {
@@ -2723,7 +2764,7 @@ class AnazhRealm_koerper_leib {
         return h >>> 0;
     }
     // VERHALTENS-TICK (je nahe Kreatur): Stimmung aus dem echten Zustand (jagd/flucht/schwimmen →
-    // Emotions-Achsen → Tag/Nacht-Bedürfnis), im deterministischen Takt (alle=[min,max] s, Hash aus Index
+    // Emotions-Achsen → die Tätigkeit des Tags), im deterministischen Takt (alle=[min,max] s, Hash aus Index
     // + Zeit-Bucket) eine AKTION aus dem Buch an ud._verhaltenAktion; _animateTierBaum trägt sie, tempo
     // und hop wirken im Bewegungs-Pfad. Flucht/Schwimmen tragen keine Aktion.
     _tickKreaturVerhalten(creature, i, nowS) {
@@ -2738,6 +2779,7 @@ class AnazhRealm_koerper_leib {
         }
         const V = this._tetrapodaVerhalten();
         if (!V) return;
+        const Z = ud._gezeigt ? AnazhRealm._lebensraumGesetz().E.zeigt[ud._gezeigt] : null;
         let mood;
         if (z === "jagd") {
             mood = "jagd";
@@ -2751,10 +2793,10 @@ class AnazhRealm_koerper_leib {
             if (em && (Number(em.chaos) || 0) >= SW.chaos) mood = "alert";
             else if (em && (Number(em.joy) || 0) >= SW.joy) mood = "joy";
             else {
-                // die Sonnenhöhe der EINEN Tag-Achse (`_sonnenRichtung`, sin der Höhe): tiefe Nacht = Ruhe; am Tag weiden
-                // Pflanzenfresser (diet ≤ weideDiet, _kreaturDiet).
-                const nacht = this._sonnenRichtung().y < SW.nachtSin;
-                mood = nacht ? "nacht" : this._kreaturDiet(creature) <= SW.weideDiet ? "tag" : "idle";
+                // DIE TÄTIGKEIT ZEIGT SICH (Tiere K4, tetrapoda ETHOGRAMM_GESETZ.zeigt): wer wandernd ruht, ruht (nacht), wer
+                // äst, grast (tag), sonst zieht das Tier (idle) — der Tag aus seinen Pegeln (`_kreaturTaetigkeit`). Vorher
+                // ruhte jedes Tier, solange die Sonne unter nachtSin stand, und am Tag weidete jeder Pflanzenfresser.
+                mood = Z ? Z.stimmung : "idle";
             }
         }
         const A = ud._verhaltenAktion;
@@ -2762,12 +2804,14 @@ class AnazhRealm_koerper_leib {
         const row = V.stimmung[mood] || V.stimmung.idle;
         if (!row || !Array.isArray(row.aktionen) || !row.aktionen.length) return;
         const alle = Array.isArray(row.alle) && row.alle.length === 2 ? row.alle : [6, 12];
+        // eine Tätigkeit mit Aktion (ruhen, äsen) trägt sie ohne Pause: das ruhende Tier liegt, das äsende grast
+        const fort = !!(Z && Z.aktion && Z.stimmung === mood);
         if (ud._verhaltenMood !== mood || !Number.isFinite(ud._verhaltenNext)) {
-            // Stimmungs-Wechsel: neuen Takt würfeln (deterministisch), noch keine Aktion.
+            // Stimmungs-Wechsel: neuen Takt würfeln (deterministisch), noch keine Aktion — die einer Tätigkeit beginnt sofort.
             ud._verhaltenMood = mood;
             const h0 = this._verhaltenHash(i + 1, (nowS * 10) | 0);
-            ud._verhaltenNext = nowS + alle[0] + ((h0 % 1000) / 1000) * (alle[1] - alle[0]);
-            return;
+            ud._verhaltenNext = nowS + (fort ? 0 : alle[0] + ((h0 % 1000) / 1000) * (alle[1] - alle[0]));
+            if (!fort) return;
         }
         if (nowS < ud._verhaltenNext) return;
         const h = this._verhaltenHash((i + 1) * 2654435761, nowS | 0);
@@ -2780,7 +2824,7 @@ class AnazhRealm_koerper_leib {
         // hop: die Aktion springt — über das EINE Sprung-Gesetz (creatureJump: Höhe aus der Freude, Abflug √(2·g·h)); der
         // Würfel je Frame ist gefallen, ein Sprung startet nur hier.
         if (def.hop === true) this.creatureJump(creature);
-        ud._verhaltenNext = nowS + dauer + alle[0] + ((h % 977) / 977) * (alle[1] - alle[0]);
+        ud._verhaltenNext = nowS + dauer + (fort ? 0 : alle[0] + ((h % 977) / 977) * (alle[1] - alle[0]));
     }
     // DER EINE BRÜCKEN-RESOLVER (MOTION_EMOTION_PROFILES, Vorrang-Zeilen; keine Achse über der Schwelle
     // → MOTION_PROFILE_MAP-Default). Beide Leser (_koerperMotionProfile + _motionStudioProfile) fließen
@@ -2928,6 +2972,7 @@ class AnazhRealm_koerper_leib {
             }
             c.position.set(a.x + nx, a.y + ny, a.z + nz);
         };
+        let wind = null; // der Wind am Ort des Tuchs, einmal je Aufruf
         for (let i = 0; i < roles.length && i < kids.length; i++) {
             const r = roles[i];
             if (!r) continue;
@@ -2997,8 +3042,10 @@ class AnazhRealm_koerper_leib {
                         : 0;
                 c.rotation.x = b.rx + Math.sin(t * 1.6) * 0.05 + (moving ? 0.04 : 0) + dHead;
             } else if (r.role === "segel") {
-                // C2 — das Tuch/Segel FLATTERT (Wind): kleine schnelle Wellen.
-                c.rotation.z = b.rz + Math.sin(t * 4.2 + r.phase + i) * 0.07;
+                // C2 — das Tuch/Segel FLATTERT im EINEN Wind am Ort (`_windAt`, die Bild-Uhr): der Ausschlag wächst mit Stärke
+                // und Böe (Sturm 0,14–0,23 rad, Regen ~0,05, klar ~0,01); ohne Wind hängt es still.
+                if (!wind) wind = this._windAt(group.position.x, group.position.z, this._bildZeit);
+                c.rotation.z = b.rz + Math.sin(t * 4.2 + r.phase + i) * 0.2 * wind.staerke * wind.boe;
             }
         }
     }
@@ -3055,6 +3102,18 @@ AnazhRealm._lageTempo = function (dx, dz, dt) {
     const v = Math.hypot(dx, dz) / dt;
     return v <= globalThis.__tetrapodaCore.GANG_GESETZ.vMax ? v : null;
 };
+// DIE WAHL DES GANGS — EINE für jedes Tier, ob Leib (`_animateTierBaum`) oder Satz (`_tierSatzSchritt`): das Tempo des Wegs
+// geglättet (8/s, ein Takt zählt höchstens 0,1 s; ohne neue Lage `vLage` undefined bleibt es) und die Gangart des Gesetzes
+// über die Hysterese der Gangart des Vor-Takts, auch des Stands (wer stand, läuft im Schritt an). `g` trägt beides (v, art);
+// zurück kommt der Schritt des Gesetzes. Vorher wählte der Satz aus dem rohen Tempo und vergaß den Stand: ein Tier, das im
+// Satz anlief, trabte bei Fr 0,55, wo sein Leib schreitet (gate:tier-gang: Satz − Labor 0,24–0,25 Zyklus, Tastgrad 0,53).
+AnazhRealm._gangWahl = function (g, vLage, dt, laeuft, L, Z) {
+    if (vLage !== undefined)
+        g.v = (g.v || 0) + ((vLage || 0) - (g.v || 0)) * (1 - Math.exp(-8 * Math.max(0, Math.min(0.1, dt))));
+    const gs = globalThis.__tetrapodaCore.gangSchritt(laeuft ? g.v || 0 : 0, L, Z, g.art);
+    g.art = gs.art;
+    return gs;
+};
 // Die Reichweite R der Bein-Kette (K07, EINE Schwelle — tetrapoda gangReich, dieselbe im Körper-Studio): an ihr führt
 // tetrapoda gangBecken das Becken, an ihr hält die Fuß-IK den stehenden Fuß (`_gaitLegIK`, `_gaitLockBedarf`).
 AnazhRealm._gaitReich = function (kette) {
@@ -3066,9 +3125,10 @@ AnazhRealm._gaitReich = function (kette) {
 AnazhRealm._landungGesetz = function () {
     return AnazhRealm._bewegungsBlock("landung", ["dipProV", "dipMax", "minTempo", "erholK", "kameraK"]);
 };
-// DIE MASSE KOMMT AUS DEM KERN (0710-4): der Wirt hält keine Dichte. Tier · Mensch · Wagen tragen ihre Dichte in ihrem
-// Gesetzbuch (tetrapoda MASSSTAB.dichteKgM3 · koerper LEIB.dichteKgM3 · vehicle FAHR.masseDichte), das Volumen ist ihre
-// Gestalt (`_leibVolumen` der geschlossenen Haut, carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
+// DIE MASSE KOMMT AUS DER GESTALT UND DER STOFF-ZEILE (0710-4, physik K1): der Wirt hält keine Dichte. Das Tier ist Fleisch,
+// der Mensch Leib, der Wagen Blech — ρ aus der EINEN Stoff-Zeile, deren Zeilen die Gesetzbücher tragen (tetrapoda MASSSTAB ·
+// koerper LEIB · vehicle FAHR.huelleDichte), das Volumen ist ihre Gestalt (`_leibVolumen`: die Haut des Tiers, der Leib des
+// Menschen aus dem Ofen; carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
 // (dichteLeib 1000 über eine Kapsel aus der Hüft-Höhe — der Hirsch wog 436 kg, der Bär 255 —, dichteWagen 150).
 AnazhRealm.LEIB_KLASSEN = Object.freeze(["fell", "haut"]); // die Material-Klassen der geschlossenen Haut eines Leibs
 // Das Volumen einer GESCHLOSSENEN Fläche (m³ im Rahmen ihrer Geometrie) über den Divergenz-Satz, Σ a · (b × c) / 6 je
@@ -3112,10 +3172,11 @@ AnazhRealm._geschlossenesVolumen = function (geo) {
         }
     return { v: Math.abs(v), geschlossen };
 };
-// DAS VOLUMEN EINER GESTALT (m³ im Rahmen `rahmen`): die geschlossene Haut (LEIB_KLASSEN) unter `teil` — die Nah-Gestalt,
+// DAS VOLUMEN EINER GESTALT (m³ im Rahmen `rahmen`): der Leib, den der Ofen maß (`__leibV`, der Mensch), sonst die
+// geschlossene Haut (LEIB_KLASSEN) unter `teil` — die Nah-Gestalt,
 // nie die Fern-Gestalt daneben. Offene Teile und der Schalen-Stapel des Fells (`fellSchale`: N Kopien der Haut) tragen
 // keine Masse. Je Geometrie gemerkt (jede Kreatur teilt die Geometrien ihrer Vorlage). Gemessen bei Größe 1: Fuchs 0,015 ·
-// Wolf 0,064 · Hirsch 0,094 · Bär 0,335 · Mensch 0,117 m³ (Spieler).
+// Wolf 0,064 · Hirsch 0,094 · Bär 0,335 · Mensch 0,090 m³ (Spieler).
 AnazhRealm._leibVolumen = function (teil, rahmen) {
     if (!teil || typeof THREE === "undefined") return 0;
     const memo = AnazhRealm._leibVolumenMemo || (AnazhRealm._leibVolumenMemo = new WeakMap());
@@ -3123,15 +3184,17 @@ AnazhRealm._leibVolumen = function (teil, rahmen) {
     r.updateMatrixWorld(true);
     const inv = new THREE.Matrix4().copy(r.matrixWorld).invert();
     const m = new THREE.Matrix4();
-    // DAS GEMESSENE VOLUMEN DES OFENS (1310-15): der Mensch-Guss schneidet die Haut unter dem Stoff (danach ist sie offen) und
-    // misst sie vorher — die Zahl hängt am Gelenk der Hülle (`__leibV`, Geometrie-Einheiten³) und zählt NEBEN jeder
-    // geschlossenen Haut: Kopf und Hände sind eigene Häute (A4: die Zahl galt allein — der Spieler wog 111,5 statt 115,5 kg).
+    // DAS GEMESSENE VOLUMEN DES OFENS (1310-15, physik K1): der Mensch-Guss misst seinen Leib selbst — die Vereinigung aller
+    // Teile unter der Haut, Kopf und Hände eingeschlossen — und hängt die Zahl ans Gelenk der Hülle (`__leibV`, Einheiten³):
+    // sie ist der GANZE Leib, keine Haut zählt daneben. Bis physik K1 maß der Ofen die Haut-Hülle und der Wirt Kopf und Hände
+    // dazu (A4) — der Spieler wog 117,3 kg.
     let v = 0;
     teil.traverse((o) => {
         if (!(o.userData && o.userData.__leibV > 0)) return;
         m.multiplyMatrices(inv, o.matrixWorld);
         v += o.userData.__leibV * Math.abs(m.determinant());
     });
+    if (v > 0) return v;
     teil.traverse((o) => {
         if (!o.isMesh || !o.geometry) return;
         const kl = o.material && o.material.userData ? o.material.userData.foundryKind : null;

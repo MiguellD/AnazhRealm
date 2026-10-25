@@ -223,51 +223,51 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
         for (const e of archs.slice(vorherAll).reverse()) {
             try {
                 r.removeArchitecture(e);
-            } catch (_e) {}
+            } catch {}
         }
         out.aufgeraeumt = archs.length === vorherAll;
         return out;
     });
     const R = res || {};
-    check("V18.493 Co-Schöpfer: Band lief ohne Fehler", !R.err, R.err);
+    check("Co-Schöpfer: Band lief ohne Fehler", !R.err, R.err);
     check(
-        "V18.493 Co-Schöpfer: der Wort-Auflöser liest die lebenden Tabellen (eiche/Eichen → baum_eiche, fels → Bauplan, Unsinn → null)",
+        "Co-Schöpfer: der Wort-Auflöser liest die lebenden Tabellen (eiche/Eichen → baum_eiche, fels → Bauplan, Unsinn → null)",
         R.eiche === "baum_eiche" && R.eichen === "baum_eiche" && !!R.fels && R.unbekannt === null,
         `eiche=${R.eiche} eichen=${R.eichen} fels=${R.fels} unbekannt=${R.unbekannt}`
     );
     check(
-        `V18.493 Co-Schöpfer: JEDE Baum-Art des Rezeptbuchs ist ein sagbares Wort (${R.treeIds} Arten)`,
+        `Co-Schöpfer: JEDE Baum-Art des Rezeptbuchs ist ein sagbares Wort (${R.treeIds} Arten)`,
         R.alleBaeumeLoesen === true && R.treeIds > 0
     );
     check(
-        "V18.493 Co-Schöpfer: spawn_studio pflanzt 5 Eichen — geerdet (Oberfläche+0.5), trocken, am EINEN Chokepoint",
+        "Co-Schöpfer: spawn_studio pflanzt 5 Eichen — geerdet (Oberfläche+0.5), trocken, am EINEN Chokepoint",
         R.spot === true && R.neuZahl === 5 && R.alleEiche && R.alleTrocken && R.alleGeerdet && R.ok1,
         `neu=${R.neuZahl} eiche=${R.alleEiche} trocken=${R.alleTrocken} geerdet=${R.alleGeerdet}`
     );
-    check("V18.493 Co-Schöpfer: ein unbekanntes Wort pflanzt NICHTS und sagt es im Log", R.unbekanntKeinSpawn === true);
+    check("Co-Schöpfer: ein unbekanntes Wort pflanzt NICHTS und sagt es im Log", R.unbekanntKeinSpawn === true);
     check(
-        "V18.493 Co-Schöpfer: der Satz OHNE KI („pflanz mir einen eichenhain am wasser“) wird spawn_studio eichen · near_water · 6",
+        "Co-Schöpfer: der Satz OHNE KI („pflanz mir einen eichenhain am wasser“) wird spawn_studio eichen · near_water · 6",
         R.satz === JSON.stringify(["spawn_studio", "eichen", "near_water", 6]),
         String(R.satz)
     );
     check(
-        "V18.493 Co-Schöpfer: die spezifischere alte Geste bleibt („pflanze baum hier“ → spawn_tree)",
+        "Co-Schöpfer: die spezifischere alte Geste bleibt („pflanze baum hier“ → spawn_tree)",
         R.altGesteBleibt === true
     );
     check(
-        "V18.493 Co-Schöpfer: near_water liefert einen Ufer-Ort am Wasser (eigenes 4-m-Raster) — ohne Wasser im Umkreis KEINEN, benannt (nie still den Spieler-Ort)",
+        "Co-Schöpfer: near_water liefert einen Ufer-Ort am Wasser (eigenes 4-m-Raster) — ohne Wasser im Umkreis KEINEN, benannt (nie still den Spieler-Ort)",
         R.nearWater === true && R.nearWaterTrocken === true,
         JSON.stringify(R.nearWaterBefund)
     );
     check(
-        "V18.493 Co-Schöpfer: das KI-Prompt lehrt die lebenden Wörter (spawn_studio wie jedes Verb: gate:weltakt-wache K); Regeln dürfen es nicht",
+        "Co-Schöpfer: das KI-Prompt lehrt die lebenden Wörter (spawn_studio wie jedes Verb: gate:weltakt-wache K); Regeln dürfen es nicht",
         R.promptWoerter === true && R.ruleVerbot === true
     );
     check(
-        "V18.493 Co-Schöpfer: die Claude-Anfrage spricht die aktuelle Generation (5er: effort low + fallbacks; Haiku schlicht)",
+        "Co-Schöpfer: die Claude-Anfrage spricht die aktuelle Generation (5er: effort low + fallbacks; Haiku schlicht)",
         R.anthropicForm === true
     );
-    check("V18.493 Co-Schöpfer: die Test-Pflanzung ist wieder aufgeräumt", R.aufgeraeumt === true);
+    check("Co-Schöpfer: die Test-Pflanzung ist wieder aufgeräumt", R.aufgeraeumt === true);
 }
 
 // V4(B) Foundry-Geometrie-Speicher flach über 4 LRU-Churn-Zyklen (Deckel 32) — eingefaltet aus gate:foundry-memory (D3b, die Welt des Läufers statt eines eigenen Boots): V4(B)-GATE — DER FOUNDRY-GEOMETRIE-SPEICHER IST FLACH (Null-Renderer, foundry-ON, JS-Bilanz-Zähler):
@@ -282,7 +282,7 @@ async function checkBandFoundrySpeicherFlach(ctx) {
                 takt: async () => {
                     try {
                         window.anazhRealm._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                     await sleep(6);
                 },
                 max: 2000,
@@ -297,7 +297,7 @@ async function checkBandFoundrySpeicherFlach(ctx) {
                 r._gameLoopTick && r._gameLoopTick(performance.now());
                 const pp = r.state.playerMesh && r.state.playerMesh.position;
                 if (pp) r._tickScatterStreaming(pp);
-            } catch (_e) {}
+            } catch {}
             await sleep(6);
         }
         // REF-GUARD-Instrument: bei JEDEM _disposeFoundryGroupGeom die _liveRefs prüfen.
@@ -331,7 +331,7 @@ async function checkBandFoundrySpeicherFlach(ctx) {
                     r._foundryFlattenFor({ seed: s, position: { x: 0, y: 0, z: 0 } }, sp, 0);
                 }
             }
-            for (let it = 0; it < 400; it++) { r.state._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch (_e) {} if (f.pending.size === 0 && !(f.warte && f.warte.length) && it > 30) break; await sleep(6); }
+            for (let it = 0; it < 400; it++) { r.state._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch {} if (f.pending.size === 0 && !(f.warte && f.warte.length) && it > 30) break; await sleep(6); }
             cycles.push(snap());
         }
         r.constructor.FOUNDRY_CACHE_CAP = CAP0;
@@ -352,7 +352,7 @@ async function checkBandFoundrySpeicherFlach(ctx) {
     check("V4(B) Foundry-Geometrie-Speicher flach über 4 LRU-Churn-Zyklen (Deckel 32): dispose feuert, kein Use-after-free, live sub-linear", fails.length === 0, fails.join(" · "));
 }
 
-// V1 das Kristall-Kleid — eingefaltet aus gate:v1-resolve (D3b): `_foundryPresetForEntry` löst die Formations-VARIANTEN
+// V1 das Kristall-Kleid — eingefaltet aus gate:v1-resolve: `_foundryPresetForEntry` löst die Formations-VARIANTEN
 // (kristall_var${N}/fels_var${N}) auf ein Studio-Rezept auf; die Ausstattung (glutbrunnen · marktstand_dorf ·
 // brunnen_dorf · laterne_dorf) löst über ihre studioGestalt-Zeile auf das Gesetzbuch der Architektur; das Glut-Genom
 // ist gefallen, sein Umzug trägt alte Welten auf glutbrunnen; ein Tor-Wort ohne tor_-Klon fällt nie auf das
@@ -398,7 +398,7 @@ async function checkBandKristallKleid(ctx) {
     check("V2 Werkstatt: der Rezept-Regler erkennt die Repräsentanten (fels_var0 rock, kristall_var0 crystal)", o._kind === "rock/crystal", o._kind);
 }
 
-// V3 kein zweiter Baum-Bäcker — eingefaltet aus gate:no-second-treebuilder (D3b): die P4-Invariante — bei lebender Foundry rendert
+// V3 kein zweiter Baum-Bäcker — eingefaltet aus gate:no-second-treebuilder: die P4-Invariante — bei lebender Foundry rendert
 // KEIN Baum die Grammatik-Geometrie (der „83 batched-174k-Bäume"-Nachbau ist weg); der Scatter trägt Bäume UND Fels/Kiesel als
 // Studio-Asset (fscatter:*, die Karten in der EINEN Atlas-Gruppe), die Grammatik erscheint nur für wirklich ungemappte Arten.
 async function checkBandKeinZweiterBaumbaecker(ctx) {
@@ -412,7 +412,7 @@ async function checkBandKeinZweiterBaumbaecker(ctx) {
                 takt: async () => {
                     try {
                         window.anazhRealm._gameLoopTick(performance.now());
-                    } catch (_e) {}
+                    } catch {}
                     await sleep(6);
                 },
                 max: 2000,
@@ -429,7 +429,7 @@ async function checkBandKeinZweiterBaumbaecker(ctx) {
                 r._gameLoopTick && r._gameLoopTick(performance.now());
                 const pp = r.state.playerMesh && r.state.playerMesh.position;
                 if (pp) r._tickScatterStreaming(pp);
-            } catch (_e) {}
+            } catch {}
             await sleep(10);
         }
         // Instanz-Gruppen enumerieren: Schlüssel = Bauplan-Name#leaf[@region].
@@ -495,7 +495,7 @@ async function checkBandLeistungsVertrag(ctx) {
             for (let i = 0; i < 200; i++) {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
                 if (i % 15 === 0) await sleep(15);
             }
             // DIE WARTENDEN REGIONEN: eine Streu-Region mit einem Baum-Platz, dessen Karte fehlt, bleibt
@@ -516,7 +516,7 @@ async function checkBandLeistungsVertrag(ctx) {
                             for (let i = 0; i < 30; i++) {
                                 try {
                                     r._gameLoopTick(performance.now());
-                                } catch (_e) {}
+                                } catch {}
                             }
                             await sleep(30);
                         },
@@ -616,7 +616,7 @@ async function checkBandLeistungsVertrag(ctx) {
                             for (let i = 0; i < 100; i++) {
                                 try {
                                     r._gameLoopTick(performance.now());
-                                } catch (_e) {}
+                                } catch {}
                                 feed(150);
                                 if (i % 20 === 0) await sleep(15);
                             }
@@ -646,7 +646,7 @@ async function checkBandLeistungsVertrag(ctx) {
             for (let i = 0; i < 400; i++) {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
                 feed(150);
                 if (st.archInstanceGroups && st.archInstanceGroups.size > groupsMax)
                     groupsMax = st.archInstanceGroups.size;

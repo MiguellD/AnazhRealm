@@ -4,19 +4,22 @@
 // Täter mit ihren Zahlen stehen im Selbsttest, die Chronik in git):
 //   F (Q7-Gestalt)  der Fluss-Spiegel steigt stromab nie und liegt quer waagrecht; ein Wasserfall steht EINMAL je Ort.
 //   K (Q6-Körper)   wer in den See geht, geht nie am Grund; in Ruhe treibt er an der Brustkorb-Linie; Kraulen hält das
-//                   Gesetz; das Eintauchen klingt; die Kamera taucht nur unter dem Spiegel (K5); ein Tier liegt an seiner
-//                   Wasserlinie, auch ohne Gestalt-Baum (K6); ein Mitspieler lehnt sich ins Wasser (K7).
+//                   Gesetz; das Eintauchen klingt; die Kamera taucht nur unter dem Spiegel; ein Tier liegt an seiner
+//                   Wasserlinie, auch ohne Gestalt-Baum; ein Mitspieler lehnt sich ins Wasser.
 //   B (Q7-Bild)     das Wasser-Material zerfällt mit der Wasser-Uhr nicht (kein weißes Zebra), der ruhige Fluss schäumt
 //                   nicht, der Sturm-Regen zeichnet Schlieren; das Rauschen rechnet ohne sin (B6); unter Wasser kennt das
-//                   Licht Tag und Nacht, der Tauchgang färbt den Himmel nicht (K9).
+//                   Licht Tag und Nacht, der Tauchgang färbt den Himmel nicht.
 //   U (Q7-Gestalt)  die Ufer-Farbe quer zum Fluss springt nie, Worker und Main färben gleich; der Schilf-Bezug springt nie (U3).
 //   K10 · K11 · W2  die Decke über trockenen Höhlen (Spieler, Kamera, Tier, Wagen lesen dort kein Wasser); der Wagen watet,
 //                   das Boot treibt ohne Nicken mit dem Grund, auch im Rand-Streifen des Sees.
 //   F5 · F8 · F10   jede Quelle ein Rinnsal aus der Hülle des Gesetzes; Körper und Bild je Punkt gleich nass (Quelle, Bach,
 //                   See-Fenster) — Breite gegen Breite, nie je Querschnitt. F9: keine Pflanze im gezeichneten Wasser.
-//   F7 · FP · K12   die Bank nie steiler als der Fels; der Kanal Main = Worker (NaN = Probe kaputt); Klang und Küsten-Sheet
-//                   lesen die EINE Wahrheit, und an 50 Zufalls-Punkten folgt ihrer Mutation jeder Leser (K12 M: Leib, Tier,
-//                   Wagen, Scheu, Trink-Ziel, Klang, Natur). K8: keine Ufer-Flut nach dem Wecken des Automaten.
+//   F7 · K12        die Bank nie steiler als der Fels; Klang und Küsten-Sheet lesen die EINE Wahrheit, und an 50 Zufalls-Punkten
+//                   folgt ihrer Mutation jeder Leser (K12 M: Leib, Tier, Wagen, Scheu, Trink-Ziel, Klang, Natur), am See der
+//                   Mess-Wiese und überall (K4). K8: keine Ufer-Flut nach dem Wecken des Automaten.
+//   K4 LÄUFE        jeder Lauf endet in See oder Meer, jede Senke ist nass, Sohle und Spiegel steigen nie; K4 STRÖMUNG: an 4
+//                   Fluss-Orten treiben Schwimmer, Boot und Tier > 0,5 m in 90 Takten, ohne Strömung nicht.
+//   E (stoffe.K3)   im Winter trägt das Eis den Gang und die Tiere am Spiegel (±5 cm); das Feld +10 °C bricht ihn ein.
 //   G (F3)          der Graben am Fluss (1 m und 3 m jenseits der Krone, der Weg des Grabe-Hiebs): EINE Wasser-Fläche, nie über
 //                   dem Spiegel, in Ruhe auf ihm; der Automat ruht binnen Takten; die Wiese daneben fällt nie.
 // Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_atlasWaterLevelAt`), den
@@ -103,21 +106,6 @@ function urteil(b) {
             if (f.wasserfaelle !== f.wasserfallOrte)
                 v.push(`F4 DOPPEL: ${f.wasserfaelle} Wasserfall-Einträge an ${f.wasserfallOrte} Orten`);
         }
-    }
-    // FP = die Kanal-PARITÄT (Main ↔ Worker, Lehre 7) — nie „F5": F5 ist die Quelle (W-F5). Eine NaN-Zelle ist eine kaputte
-    // Probe, nie ein Befund.
-    if (b.kanal) {
-        const k = b.kanal;
-        if (k.fehler) v.push(`FP SPIEGEL: ${k.fehler}`);
-        else if (!(k.zellen > 1000)) v.push(`FP LEER: nur ${k.zellen} Kanal-Zellen verglichen`);
-        else if (k.nanMain > 0 || k.nanWorker > 0 || !Number.isFinite(k.maxDelta))
-            v.push(
-                `FP PROBE KAPUTT: ${k.nanMain} Main- und ${k.nanWorker} Worker-Zellen nicht endlich (kein Befund über den Kanal)`
-            );
-        else if (k.abweichend > 0)
-            v.push(
-                `FP ZWEI KANÄLE: ${k.abweichend} von ${k.zellen} Dichte-Zellen weichen Main ↔ Worker ab (max ${k.maxDelta})`
-            );
     }
     if (b.quelle) {
         const q = b.quelle;
@@ -273,7 +261,7 @@ function urteil(b) {
                 v.push(
                     `K10 TIER: in ${ti.schwimmt} von ${ti.proben} trockenen Höhlen schwimmt das Tier auf dem Höhlen-Boden`
                 );
-            // der Wagen (Schau-2 wasser-wahrheit): die Tiefe des Fahr-Schritts am Höhlen-Boden
+            // der Wagen (wasser-wahrheit): die Tiefe des Fahr-Schritts am Höhlen-Boden
             const wa = hh.wagen;
             if (!wa) v.push("K10 WAGEN LEER: keine Tiefe am Wagen (`_fahrTiefe`) im Stand");
             else if (wa.nass > 0)
@@ -335,30 +323,51 @@ function urteil(b) {
                 );
         }
     }
-    // K12 M — die Mutation der EINEN Wahrheit (Gelände K4): jeder Leser liest vorher trocken und folgt im Takt danach
-    if (b.mutation) {
-        const m = b.mutation;
-        if (m.fehler) v.push(`K12 M: ${m.fehler}`);
-        else {
-            if (!(m.punkte >= 50)) v.push(`K12 M LEER: nur ${m.punkte} Punkte trockenen Lands (${m.versuche} Versuche)`);
-            for (const [k, l] of Object.entries(m.leser)) {
-                const was = `${k.toUpperCase()}: ${l.wer}`;
-                if (!(l.n >= m.punkte)) v.push(`K12 M LEER: ${was} urteilte nur an ${l.n} von ${m.punkte} Punkten`);
-                else if (k === "kontrolle") {
-                    if (l.nach > 0) v.push(`K12 M BLIND: ${was} folgt an ${l.nach} Punkten — die Mutation trifft nicht den Kern`);
-                } else if (l.vor > 0 || l.nach < l.n)
-                    v.push(
-                        `K12 M ${was} liest eine eigene Fläche: vorher nass an ${l.vor}, nach der Mutation trocken an ` +
-                            `${l.n - l.nach} von ${l.n} Punkten (z. B. ${JSON.stringify(l.bsp)})`
-                    );
+    // K12 M — die Mutation der EINEN Wahrheit (Gelände K4): jeder Leser liest vorher trocken und folgt im Takt danach (am See
+    // der Mess-Wiese, K4 ÜBERALL an Zufalls-Orten der Karte)
+    const mutation = (m, wo) => {
+        if (m.fehler) return v.push(`${wo}: ${m.fehler}`);
+        if (!(m.punkte >= 50)) v.push(`${wo} LEER: nur ${m.punkte} Punkte trockenen Lands (${m.versuche} Versuche)`);
+        for (const [k, l] of Object.entries(m.leser)) {
+            const was = `${k.toUpperCase()}: ${l.wer}`;
+            if (!(l.n >= m.punkte)) v.push(`${wo} LEER: ${was} urteilte nur an ${l.n} von ${m.punkte} Punkten`);
+            else if (k === "kontrolle") {
+                if (l.nach > 0) v.push(`${wo} BLIND: ${was} folgt an ${l.nach} Punkten — die Mutation trifft nicht den Kern`);
+            } else if (l.vor > 0 || l.nach < l.n)
+                v.push(
+                    `${wo} ${was} liest eine eigene Fläche: vorher nass an ${l.vor}, nach der Mutation trocken an ` +
+                        `${l.n - l.nach} von ${l.n} Punkten (z. B. ${JSON.stringify(l.bsp)})`
+                );
+        }
+        const [fv, fn] = [m.flora.vor || {}, m.flora.nach || {}];
+        if (!(fv.wiese >= 20 && fv.streu >= 10))
+            v.push(`${wo} LEER: in den Scheiben vorher nur ${fv.wiese} Büschel der Nah-Wiese und ${fv.streu} Pflanzen der Nah-Streu`);
+        for (const art of ["wiese", "streu"])
+            if (fn[art] > 0) v.push(`${wo} ${art.toUpperCase()}: nach der Mutation stehen ${fn[art]} von ${fv[art]} Pflanzen im Wasser`);
+    };
+    if (b.mutation) mutation(b.mutation, "K12 M");
+    const wo = (t) => `${t.ort.map(Math.round)}`;
+    if (b.ueberall) {
+        if (!(b.ueberall.length >= 5)) v.push(`K4 ÜBERALL LEER: nur ${b.ueberall.length} Zufalls-Orte trockenen Lands`);
+        for (const m of b.ueberall) mutation(m, `K4 ÜBERALL ${wo(m)}`);
+    }
+    if (b.laeufe) {
+        const l = b.laeufe;
+        const ende = (l.ende.see || 0) + (l.ende.meer || 0);
+        if (!(l.laeufe >= 100 && l.schritte > 10000)) v.push(`K4 LÄUFE LEER: ${l.laeufe} Läufe, ${l.schritte} Schritte`);
+        if (ende !== l.laeufe) v.push(`K4 LÄUFE: ${l.laeufe - ende} von ${l.laeufe} enden in keinem See und Meer (${JSON.stringify(l.trocken)})`);
+        if (l.nass !== l.senken) v.push(`K4 SENKE TROCKEN: ${l.senken - l.nass} von ${l.senken} Senken ohne Wasser (${JSON.stringify(l.trocken)})`);
+        if (l.steigt > 0) v.push(`K4 BERGAUF: an ${l.steigt} von ${l.schritte} Lauf-Schritten steigt der Spiegel oder die Sohle stromab`);
+    }
+    if (b.treibt) {
+        if (!(b.treibt.length >= 4)) v.push(`K4 STRÖMUNG LEER: nur ${b.treibt.length} Fluss-Orte`);
+        for (const t of b.treibt) {
+            if (t.fehler) v.push(`K4 STRÖMUNG ${wo(t)}: ${t.fehler}`);
+            for (const k of t.fehler ? [] : ["schwimmer", "boot", "tier"]) {
+                const d = t[k] || {};
+                if (!(d.mit > 0.5)) v.push(`K4 STRÖMUNG ${wo(t)}: ${k} treibt ${d.mit} m in 90 Takten (soll > 0,5 m)`);
+                if (!(Math.abs(d.ohne) < 0.05)) v.push(`K4 STRÖMUNG ${wo(t)}: ${k} treibt ohne Strömung ${d.ohne} m (zweite Quelle)`);
             }
-            const fv = m.flora.vor || {},
-                fn = m.flora.nach || {};
-            if (!(fv.wiese >= 20 && fv.streu >= 10))
-                v.push(`K12 M LEER: in den Scheiben vorher nur ${fv.wiese} Büschel der Nah-Wiese und ${fv.streu} Pflanzen der Nah-Streu`);
-            for (const art of ["wiese", "streu"])
-                if (fn[art] > 0)
-                    v.push(`K12 M ${art.toUpperCase()}: nach der Mutation stehen ${fn[art]} von ${fv[art]} Pflanzen im Wasser der Scheiben`);
         }
     }
     if (b.ufer) {
@@ -419,6 +428,15 @@ function urteil(b) {
                     `K6 BAUMLOS: ein Wesen ohne Gestalt-Baum treibt mit der Sohle ${bl.sohleUnterSpiegel} m unter dem Spiegel, ` +
                         `die Schwimm-Tiefe des Gesetzes ist ${bl.soll} m`
                 );
+            const { winter: w = {}, mutation: mu = {}, tier: et = [], uebergang: ue = {}, meer: me = {} } = k.eis || {};
+            if (!(w.seeFrames >= 120 && et.length === 3)) v.push(`E LEER: ${w.seeFrames} Schritte über dem See, ${et.length} Tiere`);
+            else if (!(w.temperatur < 0) || w.schwimmFrames || w.luft || !(w.maxM <= 0.05))
+                v.push(`E1 EINBRUCH: bei ${w.temperatur} °C ${w.schwimmFrames} Schritte schwimmend, ${w.luft} in der Luft, Füße bis ${w.maxM} m vom Spiegel`);
+            for (const t of et) if (t.schwimmt || !(Math.abs(t.sohleUnterSpiegel) <= 0.05)) v.push(`E3 TIER: ${t.seele} ${t.sohleUnterSpiegel} m im Eis`);
+            if (!(mu.temperatur >= 0 && mu.schwimmFrames > 0)) v.push(`E2 BLIND: +10 °C (${mu.temperatur} °C), ${mu.schwimmFrames} Schritte schwimmend`);
+            if (!(ue.erster >= 0) || !(ue.traegt - ue.erster >= 2) || ue.wechsel !== 2 || Math.max(...ue.tagesgang))
+                v.push(`E4 KANTE: ${JSON.stringify(ue)}`);
+            if (!(me.kalt > 0) || me.traegt || !(me.tiefst > me.gefrier)) v.push(`E5 MEER: ${JSON.stringify(me)}`);
             if (!k.peer) v.push("K7 MITSPIELER: die Peer-Probe lief nicht");
             else if (!(Math.abs(k.peer.lehne) > 0.05))
                 v.push(`K7 MITSPIELER: der Peer-Körper an der Brustkorb-Linie schwimmt nicht (Lehne ${k.peer.lehne})`);
@@ -533,7 +551,6 @@ function selbsttest() {
             wasserfaelle: 9,
             wasserfallOrte: 9,
         },
-        kanal: { punkte: 6, zellen: 18000, abweichend: 0, maxDelta: 0, nanMain: 0, nanWorker: 0 },
         quelle: {
             quellen: 64,
             gespeist: 19,
@@ -620,6 +637,11 @@ function selbsttest() {
             ),
             flora: { vor: { wiese: 603, streu: 137 }, nach: { wiese: 0, streu: 0 } },
         },
+        laeufe: { laeufe: 293, ende: { see: 291, meer: 2 }, senken: 9, nass: 9, trocken: [], schritte: 59638, steigt: 0 },
+        treibt: [1, 2, 3, 4].map((i) => ({
+            ort: [i * 900, -i * 700],
+            ...Object.fromEntries(["schwimmer", "boot", "tier"].map((k) => [k, { mit: 1.2, ohne: 0 }])),
+        })),
         uferFarbe: {
             proben: 24,
             schritte: 48000,
@@ -650,6 +672,13 @@ function selbsttest() {
             ),
             baumlos: { sohleUnterSpiegel: 0.5, soll: 0.5 },
             peer: { lehne: 0.4, meshKind: "soul" },
+            eis: {
+                winter: { temperatur: -4.7, seeFrames: 1152, schwimmFrames: 0, luft: 0, maxM: 0 },
+                tier: ["wolf", "fuchs", "baer"].map((seele) => ({ seele, sohleUnterSpiegel: 0 })),
+                mutation: { temperatur: 5.3, schwimmFrames: 900 },
+                uebergang: { erster: 19, traegt: 26, wechsel: 2, tagesgang: [0, 0] },
+                meer: { tiefst: 1.3, gefrier: -1.89, traegt: 0, kalt: 46 },
+            },
         },
         licht: {
             nachtOben: 0.03,
@@ -669,15 +698,13 @@ function selbsttest() {
             sturmVerhaeltnis: 1.8,
         },
     };
+    gut.ueberall = [1, 2, 3, 4, 5].map((i) => ({ ort: [i * 900, i * 700], ...gut.mutation }));
     const kopie = () => JSON.parse(JSON.stringify(gut));
     const taeter = [
         ["F1 BERGAUF", (b) => Object.assign(b.fluss, { steigend: 551, anteilSteigend: 0.142, anstiegM: 133.2 })],
         ["F2 BUCKEL", (b) => Object.assign(b.fluss, { buckelP90M: 1.2, querP90M: 9.65 })],
         ["F4 DOPPEL", (b) => (b.fluss.wasserfaelle = 19)],
         ["F LEER", (b) => (b.fluss.schritte = 0)],
-        ["FP ZWEI KANÄLE", (b) => Object.assign(b.kanal, { abweichend: 412, maxDelta: 3.1 })],
-        ["FP PROBE KAPUTT", (b) => Object.assign(b.kanal, { abweichend: 0, maxDelta: null, nanMain: 19074 })],
-        ["FP LEER", (b) => (b.kanal.zellen = 0)],
         ["F5 SPRUNG", (b) => Object.assign(b.quelle, { spruenge: 43, breiteMax: 12.75, tiefeMax: 1.73 })],
         ["F5 TROCKEN", (b) => (b.quelle.trocken = 1)],
         // K16: 4 von 5 Quellen im Kanal eines breiteren Flusses hoben dessen Spiegel (−312/1688 um 1,0 m, 664/9032 um 1,36 m)
@@ -731,6 +758,16 @@ function selbsttest() {
         ["K6 LAGE", (b) => Object.assign(b.koerper.tier[0], { sohleUnterSpiegel: 0.3, wasserlinie: 0.87 })],
         ["K6 LEER", (b) => (b.koerper.tier = [])],
         ["K7 MITSPIELER", (b) => (b.koerper.peer.lehne = 0)],
+        // stoffe.K3 an der Basis 6f8a2c66: kein Eis
+        ["E1 EINBRUCH", (b) => Object.assign(b.koerper.eis.winter, { schwimmFrames: 60, maxM: 1.227 })],
+        ["E2 BLIND", (b) => (b.koerper.eis.mutation.schwimmFrames = 0)],
+        ["E3 TIER", (b) => Object.assign(b.koerper.eis.tier[0], { sohleUnterSpiegel: 0.599, schwimmt: true })],
+        ["E LEER", (b) => (b.koerper.eis = null)],
+        // die Kante an main 206b395a (die Null-Linie als Stufe, jedes Wasser mit τ = 2 d): der See trug vom ersten Eis an (Tag
+        // 11), der Tagesgang kippte das Tragen, das Meer fror in 15 von 52 Wochen (sein Wasser bis −4,25 °C)
+        ["E4 KANTE", (b) => Object.assign(b.koerper.eis.uebergang, { erster: 11, traegt: 11, wechsel: 1, tagesgang: [0, 1] })],
+        ["E5 MEER", (b) => Object.assign(b.koerper.eis.meer, { tiefst: -4.25, traegt: 15 })],
+        ["E5 MEER", (b) => (b.koerper.eis.meer.kalt = 0)],
         ["K9 NACHT", (b) => Object.assign(b.licht, { nachtUnten: 0.17 })],
         ["K9 LITERAL", (b) => Object.assign(b.licht, { nachtUnten: 0.17, mittagUnten: 0.17, nachtOben: 0.5 })],
         ["K9 HIMMEL", (b) => (b.licht.himmelGetaucht = [81, 132, 170])],
@@ -749,6 +786,13 @@ function selbsttest() {
         ["K12 M WIESE", (b) => (b.mutation.flora.nach.wiese = 12)],
         ["K12 M LEER", (b) => (b.mutation.punkte = 31)],
         ["K12 M LEER: TIER", (b) => (b.mutation.leser.tier.n = 0)],
+        ["K4 ÜBERALL 1800,1400 KLANG", (b) => (b.ueberall[1].leser.klang.nach = 0)],
+        ["K4 ÜBERALL LEER", (b) => b.ueberall.pop()],
+        ["K4 LÄUFE: 58", (b) => Object.assign(b.laeufe, { ende: { see: 233, meer: 2, verloren: 58 } })],
+        ["K4 SENKE TROCKEN", (b) => (b.laeufe.nass = 8)],
+        ["K4 BERGAUF", (b) => (b.laeufe.steigt = 551)],
+        ["K4 STRÖMUNG 2700,-2100: tier treibt 0.31", (b) => (b.treibt[2].tier.mit = 0.31)],
+        ["K4 STRÖMUNG 900,-700: schwimmer treibt ohne", (b) => (b.treibt[0].schwimmer.ohne = 0.4)],
         ["U3 SCHILF-SPRUNG", (b) => Object.assign(b.uferFarbe.schilf, { spruenge: 12, maxSprung: 0.61 })],
         ["U3 LEER", (b) => (b.uferFarbe.schilf.schritte = 0)],
         ["K8 LEER", (b) => (b.ufer.trocken = 0)],
@@ -997,13 +1041,12 @@ async function lauf() {
                   )
                 : [];
             if (soll("fluss")) befund.fluss = await page.evaluate(() => window.__wasserFluss());
-            if (soll("kanal")) befund.kanal = await page.evaluate(() => window.__wasserKanalParitaet({}));
             if (soll("koerper"))
                 befund.koerper = await page.evaluate(
-                    (o) => window.__wasserKoerper({ see: o.see.mitte, start: o.see.ufer, ziel: o.see.mitte }),
+                    (o) => window.__wasserKoerper({ see: o.see.mitte, start: o.see.ufer, ziel: o.see.mitte, meer: o.meer }),
                     ORTE
                 );
-            // am See der Mess-Wiese: die Höhlen darunter und daneben (D11), das Gefährt (D10, W-W2)
+            // am See der Mess-Wiese: die Höhlen darunter und daneben, das Gefährt (D10, W-W2)
             if (soll("hoehle")) befund.hoehle = await page.evaluate(() => window.__wasserHoehle({}));
             if (soll("wagen"))
                 befund.wagen = await page.evaluate(
@@ -1021,6 +1064,10 @@ async function lauf() {
                 befund.leser = await page.evaluate((o) => window.__wasserLeser({ orte: [o.see.ufer, o.kueste] }), ORTE);
             if (soll("mutation"))
                 befund.mutation = await page.evaluate((o) => window.__wasserMutation({ ort: o.see.ufer }), ORTE);
+            // K4 Staffel 2 über die Karte: die Läufe, die Mutation an Zufalls-Orten, die Strömung an Fluss-Orten
+            if (soll("laeufe")) befund.laeufe = await page.evaluate(() => window.__wasserLaeufe());
+            for (const [art, fluss, n] of [["ueberall", false, 5], ["treibt", true, 4]])
+                if (soll(art)) befund[art] = await page.evaluate((fluss, n) => window.__wasserKarte({ fluss, n }), fluss, n);
             // zuletzt (sie bauen die Chunks an jeder Quelle und am Bach selbst): das gezeichnete Wasser gegen den Körper
             if (soll("quelle")) {
                 const teil0 = await page.evaluate(

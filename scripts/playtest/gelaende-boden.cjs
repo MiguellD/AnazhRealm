@@ -91,21 +91,21 @@ async function checkBandV1749Adventure(ctx) {
         pm.z = savedPos.z;
         return out;
     });
-    check("V17.49 Abenteuer: EXPLORE-Config (Neuheit > Wiederkehr, max > min)", res.config);
-    check("V17.49 Abenteuer: KONSUM — eine NEUE Region staunt mehr als eine Wiederkehr (Neuheit)", res.noveltyGrades);
+    check("Abenteuer: EXPLORE-Config (Neuheit > Wiederkehr, max > min)", res.config);
+    check("Abenteuer: KONSUM — eine NEUE Region staunt mehr als eine Wiederkehr (Neuheit)", res.noveltyGrades);
     check(
-        "V17.49 Abenteuer: KONSUM — kühnes Erkunden (neu+fern+karg) ≫ vertrautes Pendeln (das Wagnis graduiert)",
+        "Abenteuer: KONSUM — kühnes Erkunden (neu+fern+karg) ≫ vertrautes Pendeln (das Wagnis graduiert)",
         res.adventureGrades
     );
     check(
-        "V17.49 Abenteuer: KONSUM — in eine karge Aura wagen staunt mehr (Kühnheit liest das Feld)",
+        "Abenteuer: KONSUM — in eine karge Aura wagen staunt mehr (Kühnheit liest das Feld)",
         res.boldnessGrades
     );
     check(
-        "V17.49 Abenteuer: KONSUM — die explore-Tat skaliert mit der Magnitude (awe graduiert, nicht binär)",
+        "Abenteuer: KONSUM — die explore-Tat skaliert mit der Magnitude (awe graduiert, nicht binär)",
         res.exploreScales
     );
-    check("V17.49 Abenteuer: visitedRegions bounded (Prune beim Überlauf)", res.bounded);
+    check("Abenteuer: visitedRegions bounded (Prune beim Überlauf)", res.bounded);
 }
 
 // Der Voxel-Boden (P1 + P2b) und die Abwesenheit des Heightfields.
@@ -580,7 +580,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             [0, 1, 2, 3, 9, 10, 12].every(
                 (rr) => r._voxelChunkLodFor(rr, 0, 21.6, 21.6) === kette(Math.max(0, rr * 43.2 - 21.6))
             );
-        // Die Hysterese (K51-2, in Metern): ein Chunk hält seine feinere Stufe, bis der Kasten-Abstand bis + vorlauf +
+        // Die Hysterese: ein Chunk hält seine feinere Stufe, bis der Kasten-Abstand bis + vorlauf +
         // halt erreicht, VERFEINERT aber sofort. Chunk 1,0 (Kante bei 43,2 m): Abstand 41 m → rein L1, mit L0 gehalten;
         // 44 m → L1 (eine Stufe); 38 m mit L1 → L0.
         out.lodHysteresis =
@@ -644,13 +644,13 @@ async function checkBandVoxelTerrainCore(ctx) {
             "N3 (Naht §12): LOD-Hysterese — Verfeinern sofort, Vergröbern erst jenseits bis + vorlauf + halt (K51-2, Meter) → kein Flip-Flop am Grat",
             voxelP2bResults.lodHysteresis === true
         );
-        check("V17.114 U1: DETAIL_CASCADE ist frozen (kein Drift)", voxelP2bResults.cascadeFrozen === true);
+        check("U1: DETAIL_CASCADE ist frozen (kein Drift)", voxelP2bResults.cascadeFrozen === true);
         check(
-            "V17.115 U3: das Band trägt aiDiv (nah jeden Frame=1, fern seltener: Band2=3, Band3=6)",
+            "U3: das Band trägt aiDiv (nah jeden Frame=1, fern seltener: Band2=3, Band3=6)",
             voxelP2bResults.bandAiDiv === true
         );
         check(
-            "V17.115 U3: Kreaturen cachen die KI-Richtung nach einem Tick (creature.userData.aiDir)",
+            "U3: Kreaturen cachen die KI-Richtung nach einem Tick (creature.userData.aiDir)",
             voxelP2bResults.creatureAiCached === true
         );
         check(
@@ -841,7 +841,7 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         out.lod1CellsLess = cfg1.dim * cfg1.dim * cfg1.dimY < cfg0.dim * cfg0.dim * cfg0.dimY;
         out.cellsRatio = (cfg0.dim * cfg0.dim * cfg0.dimY) / (cfg1.dim * cfg1.dim * cfg1.dimY);
         // 2) Helper `_voxelChunkLodFor` Distance-Decision
-        // der Spieler in der Mitte des Chunks 0,0 (K51-2: die Stufe folgt dem Kasten-Abstand)
+        // der Spieler in der Mitte des Chunks 0,0 (die Stufe folgt dem Kasten-Abstand)
         out.lodNear = r._voxelChunkLodFor(0, 0, 21.6, 21.6); // r=0 → LOD 0
         out.lodAdjacent = r._voxelChunkLodFor(1, 0, 21.6, 21.6); // r=1 (21,6 m) → LOD 0
         out.lodMidRing = r._voxelChunkLodFor(2, 0, 21.6, 21.6); // r=2 (64,8 m) → LOD 1
@@ -1079,11 +1079,9 @@ async function checkBandWelle993WaterLodSeam(ctx) {
     );
 }
 
-// SCHATTEN-CSM: das vendorte r184-Addon CSMShadowNode, 2 Kaskaden INNERHALB der Schatten-Reichweite
-// Kaskade 0 endet an der DETAIL_CASCADE-Band-0-Kante, Kaskade 1 an maxFar = Reichweite ×
-// SCHATTEN_FERN_FAKTOR. Jede Kaskade zeichnet jeden Werfer ihrer Box — die Wand: über die ganze geregelte
-// Reichweite (MIN..MAX) und die User-Decke (400 m) trägt JEDE Kaskade ≥ 10 % der Tiefe (kein Streifen, der
-// einen vollen Werfer-Durchgang kostet; V18.130–509 klemmte die dritte auf einen 5-%-Streifen). Die CSM-Init
+// SCHATTEN-CSM: das vendorte r184-Addon CSMShadowNode, 3 Kaskaden INNERHALB der Schatten-Reichweite: bis kontaktM
+// (schatten.K1), bis zur Band-0-Kante, bis maxFar = Reichweite × SCHATTEN_FERN_FAKTOR. Über die ganze geregelte Reichweite (MIN..MAX) und die
+// User-Decke (400 m) trägt jede Kaskade hinter der Kontakt-Kaskade ≥ 10 % der Tiefe. Die CSM-Init
 // ist LAZY (erster echter Material-Build) → hier Konstruktion + Vertrag; Look + Maps misst die Sonde diag-csm (git-Archiv).
 async function checkBandV18130CsmShadow(ctx) {
     const { page, check } = ctx;
@@ -1110,9 +1108,10 @@ async function checkBandV18130CsmShadow(ctx) {
                 const breaks = [];
                 csm.customSplitsCallback(csm.cascades, 0.5, far, breaks);
                 if (breaks.length !== csm.cascades || breaks[breaks.length - 1] !== 1) kante = false;
-                if (Math.abs(breaks[0] - Math.min(0.85, e0 / far)) > 1e-9) kante = false;
-                let prev = 0;
-                for (const b of breaks) {
+                if (Math.abs(breaks[0] - A.SCHATTEN_KASKADE.kontaktM / far) > 1e-9) kante = false;
+                if (Math.abs(breaks[1] - Math.min(0.85, e0 / far)) > 1e-9) kante = false;
+                let prev = breaks[0];
+                for (const b of breaks.slice(1)) {
                     minAnteil = Math.min(minAnteil, b - prev);
                     prev = b;
                 }
@@ -1133,21 +1132,21 @@ async function checkBandV18130CsmShadow(ctx) {
         return out;
     });
     if (!res) {
-        check("V18.130 CSM: Sonde lief", false, "evaluate warf");
+        check("CSM: Sonde lief", false, "evaluate warf");
         return;
     }
-    check("V18.130 CSM: das r184-Addon ist vendort + angebunden (THREE.CSMShadowNode)", res.vendorSymbol);
+    check("CSM: das r184-Addon ist vendort + angebunden (THREE.CSMShadowNode)", res.vendorSymbol);
     check(
-        "V18.510 CSM: 2 Kaskaden aktiv als shadowNode des Sonnen-Lichts (fade an)",
-        res.active && res.cascades === 2 && res.fade && res.isShadowNode
+        "schatten.K1 CSM: 3 Kaskaden aktiv als shadowNode des Sonnen-Lichts (fade an)",
+        res.active && res.cascades === 3 && res.fade && res.isShadowNode
     );
     check(
-        "V18.510 CSM: Kaskade 0 endet an der Band-0-Kante, die letzte an maxFar = Reichweite × Faktor",
+        "schatten.K1 CSM: Kaskade 0 endet an kontaktM, Kaskade 1 an der Band-0-Kante, die letzte an maxFar",
         res.active && res.mode === "custom" && res.breaksAreLaw && res.maxFarIstReichweite,
         `breaks=${res.breaks} maxFar=${res.maxFar}`
     );
     check(
-        "V18.510 CSM: jede Kaskade trägt ≥ 10 % der Tiefe über die ganze Reichweite (kein Streifen-Durchgang)",
+        "CSM: jede Kaskade hinter der Kontakt-Kaskade trägt ≥ 10 % der Tiefe (kein Streifen-Durchgang)",
         res.active && res.minAnteil >= 0.1,
         `min=${res.minAnteil} breaks=${res.breaks}`
     );
@@ -1180,7 +1179,7 @@ async function checkBandV18132FerneSeen(ctx) {
         await window.__weltDa(() => !r._ensureHydroTilesAround(-2048, 0, 10)); // Kachel WEST (-1,0) aus dem Faden
         const tile = r.state.hydroTiles ? r.state.hydroTiles.get("-1,0") : null;
         out.tileBuilt = !!(tile && tile.ready);
-        out.tileSubstanz = tile ? (tile.rivers ? tile.rivers.length : 0) + (tile.lakes ? tile.lakes.length : 0) : 0;
+        out.tileSubstanz = tile ? tile.fluesse + tile.seen : 0;
         out.homeIdentical = fp() === before;
         // hydroBand deckt JEDEN Spiegel (das Band ist global) — die Seen UND die Flüsse (Punkt-Spiegel S) der Heimat
         // und jeder Kachel. K16: das Band kannte nur die Seen (23,7 m), die Flüsse der Landform steigen bis 55 m — der
@@ -1196,29 +1195,9 @@ async function checkBandV18132FerneSeen(ctx) {
         out.maxSpiegel = maxSpiegel;
         out.bandTop = r.state.hydroBand ? r.state.hydroBand.top : null;
         out.bandCovers = !Number.isFinite(maxSpiegel) || (r.state.hydroBand && r.state.hydroBand.top >= maxSpiegel);
-        // Der Worker-Snapshot traegt die Kachel.
-        const snap = r._voxelWorkerSnapshotState();
-        out.snapCarries = !!(snap.hydroTiles && snap.hydroTiles["-1,0"]);
-        // KONSUM: jeder Hydro-Leser löst seine Region über _hydroFor auf — Spion am Ruf; wer _hydroRiverAt ruft,
-        // läuft mit dessen Schatten, damit nur sein EIGENER Ruf zählt.
-        const K = (m, a, schatten) => {
-            if (schatten) r._hydroRiverAt = () => null;
-            try {
-                return window.__consumes(r, m, r, "_hydroFor", a);
-            } finally {
-                if (schatten) delete r._hydroRiverAt;
-            }
-        };
+        // die Leser der Kachel im Haupt-Faden misst gate:worker-dichte `--kern` (am See in seiner Kachel)
         const cfg = r._voxelChunkConfig(0);
-        out.readersResolved = [
-            ["_hydrosphereCarveAt", [-2048, 0]],
-            ["_hydrosphereLakeAt", [-2048, 0]],
-            ["_waterLevelAt", [-2048, 0], true],
-            ["_atlasWaterLevelAt", [-2048, 0, -Infinity], true],
-            ["_hydroRiverAt", [-2048, 0]],
-            ["_voxelChunkHasAnyWater", [Math.floor(-2048 / cfg.span), 0]],
-        ].every(([m, a, schatten]) => K(m, a, schatten));
-        // DER WORKER SPIEGELT DIE KACHEL (Lehre 7): am Fluss der WEST-Kachel ist das Dichte-Gitter von Main und Worker bit-gleich.
+        // DER WORKER SPIEGELT DIE KACHEL (Lehre 7), auch ein nach ihr geborener (`_getVoxelWorker` bestellt sie ihm): bit-gleich.
         const fl = ((tile && tile.rivers) || []).find((f) => f.points && f.points.length > 4);
         const p = fl ? fl.points[fl.points.length >> 1] : { x: -2048, z: 0 };
         const cx = Math.floor(p.x / cfg.span);
@@ -1227,35 +1206,38 @@ async function checkBandV18132FerneSeen(ctx) {
         g.push(cfg.dim + 3, cfg.dimY, cfg.dim + 3, cfg.step);
         const main = r._voxelEditedDensityGrid(`ferne-seen|${cx},${cz}`, ...g);
         r.state.voxelBaseDensityCache.delete(`ferne-seen|${cx},${cz}`);
+        const alt = r.state.voxelWorker;
+        r.state.voxelWorker = null;
+        const neu = r._getVoxelWorker();
         const wk = await r._voxelWorkerComputeDensity(...g).catch((e) => String(e));
+        neu.terminate();
+        r.state.voxelWorker = alt;
         const bits = (a) => new Uint32Array(a.buffer, a.byteOffset, a.length);
         out.workerMirror =
             !wk || typeof wk === "string" ? String(wk) : main.length === wk.length && bits(main).every((v, i) => v === bits(wk)[i]);
         return out;
     });
     if (!res) {
-        check("V18.132 Ferne Seen: Sonde lief", false, "evaluate warf");
+        check("Ferne Seen: Sonde lief", false, "evaluate warf");
         return;
     }
     if (!res.unmeasurable) {
-        check("V18.132 Ferne Seen: alle 6 Hydro-Leser rufen die Region-Aufloesung _hydroFor (KONSUM am Ruf)", res.readersResolved);
         check(
-            "V18.132 Ferne Seen: der Worker spiegelt die Kachel — das Dichte-Gitter am Kachel-Fluss ist in Main und Worker bit-gleich",
+            "Ferne Seen: der Worker spiegelt die Kachel — das Dichte-Gitter am Kachel-Fluss ist in Main und Worker bit-gleich",
             res.workerMirror === true,
             String(res.workerMirror)
         );
         check(
-            "V18.132 Ferne Seen: die WEST-Kachel baut mit Substanz (Fluesse+Seen > 0)",
+            "Ferne Seen: die WEST-Kachel baut mit Substanz (Fluesse+Seen > 0)",
             res.tileBuilt && res.tileSubstanz > 0,
             `substanz=${res.tileSubstanz}`
         );
-        check("V18.132 Ferne Seen: die HEIMAT-Region bleibt bit-identisch (Welt-Identitaet)", res.homeIdentical);
+        check("Ferne Seen: die HEIMAT-Region bleibt bit-identisch (Welt-Identitaet)", res.homeIdentical);
         check(
-            "V18.132 Ferne Seen: hydroBand deckt jeden Spiegel — Seen und Flüsse der Heimat und jeder Kachel (global, V9.77)",
+            "Ferne Seen: hydroBand deckt jeden Spiegel — Seen und Flüsse der Heimat und jeder Kachel (global, V9.77)",
             res.bandCovers,
             `Band-Oberkante ${res.bandTop} · höchster Spiegel ${res.maxSpiegel} (Täter: _computeHydroBand)`
         );
-        check("V18.132 Ferne Seen: der Worker-Snapshot traegt die Kachel (Determinismus-Wand)", res.snapCarries);
     }
 }
 
@@ -1371,22 +1353,22 @@ async function checkBandV18150Ride(ctx) {
         }
         return out;
     });
-    check("V18.150 Fahr-Tiefe: das Profil emergiert (4× Rad → Tempo ×>1.3 · rollt aus · träge)", res.profile);
+    check("Fahr-Tiefe: das Profil emergiert (4× Rad → Tempo ×>1.3 · rollt aus · träge)", res.profile);
     check(
-        "V18.150 Fahr-Tiefe: der Sattel ruht die Kollision (die Kapsel im gerittenen Wagen bleibt stehen) + liest das Profil",
+        "Fahr-Tiefe: der Sattel ruht die Kollision (die Kapsel im gerittenen Wagen bleibt stehen) + liest das Profil",
         res.collisionRests && res.profileConsumed,
         res.kapselSchub
     );
     check(
-        "V18.150 Fahr-Tiefe: Reiter + Gefährt sind EINS (unerntbar · kein Sammler-Ziel)",
+        "Fahr-Tiefe: Reiter + Gefährt sind EINS (unerntbar · kein Sammler-Ziel)",
         res.unharvestable && res.noGatherTarget
     );
     check(
-        "V18.150 Fahr-Tiefe: das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg)",
+        "Fahr-Tiefe: das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg)",
         res.orients && res.wheelsRoll,
         res.orients && res.wheelsRoll ? "" : res.fahrZahlen
     );
-    check("V18.150 Fahr-Tiefe: Absteigen gibt frei", res.dismounts);
+    check("Fahr-Tiefe: Absteigen gibt frei", res.dismounts);
 }
 
 async function checkBandGammaGenese(ctx) {
@@ -1702,20 +1684,20 @@ async function checkBandV18199GammaMLichen(ctx) {
         return out;
     });
 
-    check("V18.199 (L1b) LICHEN-Konstanten sinnvoll (lo<hi, strength∈(0,1), tint=3er)", res.constsSensible === true);
+    check("(L1b) LICHEN-Konstanten sinnvoll (lo<hi, strength∈(0,1), tint=3er)", res.constsSensible === true);
     check(
-        `V18.199 (L3a) feucht+steinig → lichen sichtbar (gemessen avg ${res.lichenAvgWetStone && res.lichenAvgWetStone.toFixed(4)})`,
+        `(L3a) feucht+steinig → lichen sichtbar (gemessen avg ${res.lichenAvgWetStone && res.lichenAvgWetStone.toFixed(4)})`,
         res.lichenWetStonePositive === true
     );
     check(
-        `V18.199 (L3b) trocken+steinig → lichen unsichtbar (gemessen avg ${res.lichenAvgDryStone && res.lichenAvgDryStone.toFixed(4)})`,
+        `(L3b) trocken+steinig → lichen unsichtbar (gemessen avg ${res.lichenAvgDryStone && res.lichenAvgDryStone.toFixed(4)})`,
         res.lichenDryStoneZero === true
     );
     check(
-        `V18.199 (L3c) feucht+erde → lichen unsichtbar (gemessen avg ${res.lichenAvgWetErde && res.lichenAvgWetErde.toFixed(4)})`,
+        `(L3c) feucht+erde → lichen unsichtbar (gemessen avg ${res.lichenAvgWetErde && res.lichenAvgWetErde.toFixed(4)})`,
         res.lichenWetErdeZero === true
     );
-    check("V18.199 (L4) lichen ≤ LICHEN.strength (Math-Sicherheit, kein Overshoot)", res.lichenBoundedAtFull === true);
+    check("(L4) lichen ≤ LICHEN.strength (Math-Sicherheit, kein Overshoot)", res.lichenBoundedAtFull === true);
 }
 
 // Pfade: Fluss-Bänke sind getrampelte Erde, lawful aus dem Drainage-Netz: _pathFieldAt → der Boden
@@ -1786,10 +1768,9 @@ async function checkBandWahrerAnblickPfade(ctx) {
     );
 }
 
-// G1 Seam-Normal — eingefaltet aus gate:seam-normal (D3b, die Welt des Läufers statt eines eigenen Boots): zwei same-LOD-
+// G1 Seam-Normal: zwei same-LOD-
 // Face-Nachbarn teilen ihre Boundary-Verts float-exakt (pad+crop); in der Rand-Schale rechnet der Gradient via sample()
-// (reine Funktion der Welt-Position), beide Nachbarn rechnen die IDENTISCHE Normale — vor V18.372 bis 69° an ~18 % der
-// Rand-Verts, die Lichtungs-Naht „direkt unter dem Wasser".
+// (reine Funktion der Welt-Position), beide Nachbarn rechnen die IDENTISCHE Normale.
 async function checkBandSeamNormal(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, () => {
@@ -1838,7 +1819,7 @@ async function checkBandSeamNormal(ctx) {
     check("G1 Seam-Normal: same-LOD-Rand-Normalen konform ≤ 1° (keine Lichtungs-Naht)", fails.length === 0, fails.join(" · ") || `x ${out.xFace.max}° · z ${out.zFace.max}° an ${out.xFace.matched}+${out.zFace.matched} Verts`);
 }
 
-// Der Tod-Zensus — eingefaltet aus gate:tod-zensus (D3b): ein Leichnam behielt 90 s die Darstellung
+// Der Tod-Zensus — eingefaltet aus gate:tod-zensus: ein Leichnam behielt 90 s die Darstellung
 // des lebenden Tiers (Fern-Guss ohne Schatten auf 2 m, Aura und Traglast); jetzt liegt der Gefallene in der Stufe seines Abstands,
 // wirft nah Schatten, ohne Aura, Traglast, Wesen-Takt und Stimme. Selbsttest im selben Boot: je Täter der alte Defekt eingespielt —
 // jede Probe liest ROT aus ihrem Grund.
@@ -1873,9 +1854,7 @@ async function checkBandTodZensus(ctx) {
         try {
             // der Ort: Spieler P, Tier A 2 m vor ihm, Tier B 40 m — dieselbe Linie, damit ein Blick beide fasst; nach dem Wechsel
             // steht der Spieler 42 m weiter und blickt zurück (A auf 40 m, B auf 2 m). Jeder Punkt trocken und eben: die gezeichnete
-            // Boden-Karte (`_bodenSichtAt`) liegt dort, höchstens 0,3 m neben dem Gesetz. Vor K07 las der Stand-Leser im Rand-Streifen
-            // der Chunk-Zeile z = 0 (der Start) und ohne Karte den Träger — |Sicht − Gesetz| = 0 war dort geschenkt; ehrlich gelesen
-            // liegt die beste 42-m-Linie um den Start bei 0,23 m.
+            // Boden-Karte (`_bodenSichtAt`) liegt dort, höchstens 0,3 m neben dem Gesetz.
             const trocken = (x, z) => {
                 if (!r._landAt(x, z)) return false;
                 const gy = r.getTerrainHeightAt(x, z);
@@ -2079,7 +2058,7 @@ async function checkBandTodZensus(ctx) {
                 );
             if (taeter === "lage")
                 decke(
-                    "_todHebeTafel",
+                    "_todHaut",
                     (alt) =>
                         function (c, ...rest) {
                             if (c.visible === false) return null;
@@ -2186,6 +2165,7 @@ async function checkBandTodZensus(ctx) {
             const kill = r.damageCreature(tB, 1e9, { source: "player" });
             tC.visible = false;
             r._creatureNaturalDeath(tC);
+            r._todLageTick({ timeRemaining: () => Infinity });
             o.last = { soll: lastSoll, zurueck: holzZurueck, journal: lastJournal };
             o.raeumt = raeumt;
             // kein Zweit-Räumer: keine andere Methode nimmt ein Zeichen über dem Leib aus der Szene und gibt sein Material frei
@@ -2198,7 +2178,7 @@ async function checkBandTodZensus(ctx) {
                     let f;
                     try {
                         f = r[nm];
-                    } catch (_e) {
+                    } catch {
                         return false;
                     }
                     if (typeof f !== "function") return false;
@@ -2378,7 +2358,7 @@ async function checkBandTodZensus(ctx) {
             for (const f of restore.reverse())
                 try {
                     f();
-                } catch (_e) {
+                } catch {
                     /* Aufräumen bleibt best effort, die Zahl steht schon */
                 }
             for (const c of s.creatures.slice()) r.removeCreature(c);
@@ -2454,7 +2434,7 @@ async function checkBandTodZensus(ctx) {
     check(`Tod-Zensus SELBSTTEST: ${TAETER.length} Täter beim Namen (der alte Defekt je Probe ROT aus ihrem Grund)`, blind.length === 0, blind.join(" · "));
 }
 
-// Die Bewegungs-Garantie unter Last (P1) — eingefaltet aus gate:move-under-load (D3b): `_gameLoopTick(t)` mit 330-ms-Sprüngen (die 3-FPS-Realität), W gehalten: (a) die Bewegung
+// Die Bewegungs-Garantie unter Last (P1) — eingefaltet aus gate:move-under-load: `_gameLoopTick(t)` mit 330-ms-Sprüngen (die 3-FPS-Realität), W gehalten: (a) die Bewegung
 // verhungert nie an der Last (der Fixed-Step ist unbedingt) · (b) ohne gebauten Spieler-Chunk (gestallter Worker, Fern-Teleport)
 // trägt die feld-native Kollision · (c) nie im Soliden, nie Void · (d) die Pause: nach 10 s ohne Takt springt kein Wolf weiter
 // als Sprint × TAKT_DECKEL_S; Selbsttests: die gepinnte Position und der fehlende Takt-Deckel werden rot, dieser an JEDEM Wolf (W10).
@@ -2469,7 +2449,7 @@ async function checkBandBewegungUnterLast(ctx) {
         const tick = (t) => {
             try {
                 r._gameLoopTick(t);
-            } catch (_e) {}
+            } catch {}
         };
     
         // einen settled LAND-Spot finden (deterministisch, über Wasser) — nahe (Szenario a)
@@ -2571,7 +2551,7 @@ async function checkBandBewegungUnterLast(ctx) {
         // WIEDERHERSTELLEN (die Gate-Hook-Lehre: sichern + restaurieren, nie löschen)
         s.voxelWorker = savedWorker;
     
-        // ── (d) DIE PAUSE (K21, Lehre 13): der Loop ruht 10 s (versteckter Tab, Debugger, Lade-Stau), die Uhr läuft.
+        // ── (d) DIE PAUSE: der Loop ruht 10 s (versteckter Tab, Debugger, Lade-Stau), die Uhr läuft.
         // Vier Wölfe laufen auf den stehenden Spieler zu; im ersten Takt nach der Pause trägt kein Tier weiter als
         // sein Sprint (Steuer-Gesetz: sprintTempo der Hüft-Höhe) × den Takt-Deckel. deckelAus (Selbst-Test) hebt
         // den Deckel auf — der ungedeckelte Takt (Tempo × Pause) MUSS die Linse rot machen.
@@ -2595,11 +2575,13 @@ async function checkBandBewegungUnterLast(ctx) {
                 c.userData.task = { name: "follow_player", args: { distance: 3 }, since: performance.now() / 1000 };
                 W.push(c);
             }
-            // DIE KI-ABSICHT RUHT (W10): `_verhaltenNext` ∞ würfelt die Aktions-Uhr neu (`_tickKreaturVerhalten`),
-            // statt dass der 10-s-Takt der Kreatur-Uhr jede fällige Aktion startet (idle: scan · shake · yawn, tempo 0)
-            // — der stehende Wolf machte den Selbsttest blind
+            // KI-ABSICHT UND LEBENS-UHR RUHEN (W10): `_verhaltenNext` ∞ würfelt die Aktions-Uhr neu, statt dass der 10-s-Takt
+            // jede fällige Aktion startet (tempo 0); `lastTick` ∞ hält den Lebenszyklus, der den ältesten Wolf ohne Beute nähme
             const RUHIG = { _verhaltenAktion: null, _verhaltenNext: Infinity, _hopV: 0, _hopH: 0 };
             const ruhig = () => W.forEach((c) => Object.assign(c.userData, RUHIG));
+            const leben = s.faunaLifecycle || {};
+            const lebenAlt = leben.lastTick;
+            leben.lastTick = Infinity;
             let t = performance.now();
             for (let k = 0; k < 40; k++) {
                 ruhig();
@@ -2616,8 +2598,10 @@ async function checkBandBewegungUnterLast(ctx) {
             const weg = W.map((c, i) => Math.hypot(c.position.x - vor[i][0], c.position.z - vor[i][1]));
             // DIE VORBEDINGUNG DES TÄTERS, laut: jeder Wolf lief vor der Pause auf seinem Lage-Pfad und blieb im Pausen-Takt auf
             // ihm (keine Aktion, Tempo > 0) — sonst urteilt die Linse nichts, und sein Name steht im Urteil
+            leben.lastTick = lebenAlt;
             const halt = W.map((c, i) => {
                 const u = c.userData;
+                if (!s.creatures.includes(c)) return `Wolf ${i}: fiel im Pausen-Takt`;
                 if (u._verhaltenAktion) return `Wolf ${i}: Aktion ${u._verhaltenAktion.name}`;
                 return vVor[i] > 0 && u._steuer && u._steuer.v > 0 ? null : `Wolf ${i}: steht (vVor ${vVor[i]})`;
             }).filter(Boolean).concat(absage);

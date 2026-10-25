@@ -2201,7 +2201,8 @@
         //    das Material traegt): Masse-Anteile Stahl 0,65 · Aluminium 0,10 · Kunststoff 0,10 · Gummi 0,05 ·
         //    Glas 0,03 · Fluide 0,07 ueber ihre Dichten (7,85 · 2,7 · 1,1 · 1,2 · 2,5 · 1,0) geben 1/Σ(w/ρ) ≈ 3,0.
         //    Ueber 1 traegt das Wasser die Huelle nie: ein Strassenwagen watet und sinkt, er schwimmt nicht. Das
-        //    Lab kennt kein Wasser; der Wirt liest sie ueber exportDrive.huelle.dichte. ──
+        //    Lab kennt kein Wasser; der Wirt liest sie als Stoff seines Blechs (physik K1: die Zeile blech der Stoff-Zeile,
+        //    huelleDichte × wasser.rho). ──
         huelleDichte: 3.0,
         // ── PHYSIK-NAHT (N6.5b, rein additive DATEN-Zeile — Praezedenz: §8.5-Stufen-Zeile) —
         // DIE HOST-EMERGENZ-KOEFFIZIENTEN: die Fallback-Fahr-Formel des Wirts (ein Werk OHNE
@@ -2366,6 +2367,29 @@
         wasser: {
             rho: 1000, // kg/m³
             cw: 1.0,
+        },
+        // ── wetter.K5 (rein additive DATEN-Zeile — Praezedenz: wasser) — DER WAGEN IM WIND: das Lab kennt keinen Wind, der
+        //    Welt-Ritt reicht den EINEN Wind der Welt am Wagen (fahrKraefte e.wind: m/s in Welt-x/z, der Vektor, wohin er
+        //    weht). Die KRAFT ist die Seitenkraft der Flanke ½·rho·cSeite·A·v² auf die Quer-Komponente der Anstroemung (Wind
+        //    quer minus Fahrt quer), A = Laenge × Dach der Huelle (die Flanke steht ganz in der Luft); die TRAEGHEIT die EINE
+        //    Masse des Wagens. rho: Luft bei 15 °C; cSeite: die Flanke eines Kastens quer angestroemt (0,8–1,1). ──
+        luft: {
+            rho: 1.2, // kg/m³
+            cSeite: 0.9,
+        },
+        // ── K1 (23.10., rein additive DATEN-Zeile — Praezedenz: wasser) — DER REIFEN MIT SPITZE: die Seitenkraft je Achse
+        //    ist die Magic Formula (Pacejka) F/N = D·sin(C·atan(B·α)), D = μ des Reibkreises (maxGrip · grip), B·C·D die
+        //    Schraeglauf-Steifigkeit (die Karkasse, sie haengt nicht am μ: die Spitze wandert mit ihm, α* = spitzeGrad · D).
+        //    Vorher eine gesaettigte Gerade CA·α bis μ: keine Spitze, kein Abfall, im Drift hielt der Reifen die volle Kraft.
+        //    spitzeGrad legt die Spitze der Vorderachse auf dem Bezugs-Boden (μ 1), die Hinterachse traegt dasselbe Gesetz im
+        //    Verhaeltnis CA_R/CA_F (steifer: GT 7,6°); C 1,6 laesst die Kraft bis 30° Schlupf um 21 % fallen, gleitend auf
+        //    sin(C·π/2) = 59 %. taktHz: der Fahr-Schritt rechnet Kraefte, Gier und Geschwindigkeit in Unter-Schritten zu
+        //    hoechstens 1/taktHz s (am Sim-Takt 60 Hz vier) — die steife Kurve (16/rad statt 5) kippt bei 60 Hz die Gier im
+        //    Slalom 23-mal statt 13-mal (Referenz 7 680 Hz) und faehrt 0,70 m neben der Bahn, bei 240 Hz 13-mal und 0,20 m. ──
+        reifen: {
+            spitzeGrad: 8.5,
+            C: 1.6,
+            taktHz: 240,
         },
     };
     // STEER_VIS — intentional dual steer visual (Feel-Entscheid .124). Do NOT merge.
@@ -2663,6 +2687,13 @@
             ansaug: a.ansaug > 0 ? a.ansaug : Infinity,
         };
     }
+    // Die Huelle im Wind eines Fahr-Satzes (wetter.K5): die Flanke Laenge × Dach durch die EINE Masse — a = kFlanke · v²
+    // quer; ohne Dach (Teile-Werk ohne Huelle) kein Wind-Mass (null), der Wagen faehrt wie im Lab.
+    function fahrLuft(a, masse) {
+        const laenge = a.laenge > 0 ? a.laenge : a.vorn - a.hinten;
+        if (!(laenge > 0) || !(a.dach > 0) || !(masse > 0)) return null;
+        return { kFlanke: (0.5 * FAHR.luft.rho * FAHR.luft.cSeite * laenge * a.dach) / masse };
+    }
     function fahrGesetz(d, auf) {
         const zs = d && d.zweispur;
         const lk = d && d.lenkung;
@@ -2717,8 +2748,23 @@
                 bauch: Number.isFinite(a.bauch) ? a.bauch : 0,
                 hub: a.hub > 0 ? a.hub : 0, // der Federweg je Rad (fahrAufstand); ein starres Werk federt kein Rad einzeln
             },
-            wasser: fahrWasser(a, zs.mass * FAHR.masseDichte), // SCHAU-2 (rein additiv): die Huelle im Wasser, EINE Masse
+            // SCHAU-2 (rein additiv): die Huelle im Wasser, EINE Masse — physik K1 (rein additiv): reicht der Wirt die Masse
+            // des Werks (d.masseKg: Gestalt × Stoff-Zeile), traegt der Wasser-Term sie; ohne sie das Volumen × masseDichte.
+            wasser: fahrWasser(a, d.masseKg > 0 ? d.masseKg : zs.mass * FAHR.masseDichte),
+            luft: fahrLuft(a, d.masseKg > 0 ? d.masseKg : zs.mass * FAHR.masseDichte), // wetter.K5 (rein additiv): die Flanke im Wind, dieselbe Masse
+            reifen: fahrReifen(zs), // K1 (rein additiv): die Kurve mit Spitze je Achse
         };
+    }
+    // DAS REIFEN-GESETZ eines Fahr-Satzes (K1, FAHR.reifen): B·D je Achse aus der Spitze der Vorderachse auf dem Bezugs-Boden und
+    // dem Achs-Verhaeltnis des Rezepts (der Leser teilt durch D: B = bd / D, die Steifigkeit B·C·D steht, die Spitze wandert).
+    function fahrReifen(zs) {
+        const R = FAHR.reifen;
+        const bdF = Math.tan(Math.PI / (2 * R.C)) / ((R.spitzeGrad * Math.PI) / 180);
+        return { C: R.C, bdF: bdF, bdR: (bdF * zs.CA_R) / zs.CA_F, taktHz: R.taktHz };
+    }
+    // Die Seitenkraft je Achslast (K1): D·sin(C·atan(B·α)), D = mu, B = bd / mu.
+    function reifenKraft(R, bd, mu, a) {
+        return mu > 0 ? mu * Math.sin(R.C * Math.atan((bd / mu) * a)) : 0;
     }
     function fahrZustand(x, z, yaw) {
         return {
@@ -2879,7 +2925,21 @@
         }
         return z;
     }
+    // DER TAKT DES FAHR-SCHRITTS (K1, FAHR.reifen.taktHz): Kraefte, Gier und Geschwindigkeit in n gleichen Unter-Schritten zu
+    // hoechstens 1/taktHz s (Welt 60 Hz: vier zu 1/240 s, die Probefahrt je Bild-Zeit); die Lage EINMAL je Aufruf aus der
+    // Geschwindigkeit an seinem Ende — so faehrt der Kontakt-Loeser der Welt sie (playerVel × dt): Labor = Welt.
     function fahrKraefte(z, e, G, dt) {
+        const n = dt > 0 ? Math.max(1, Math.ceil(dt * G.reifen.taktHz - 1e-9)) : 1;
+        for (let i = 0; i < n; i++) fahrTakt(z, e, G, dt / n);
+        // ── Lage aus der Koerper-Geschwindigkeit (vorwaerts = (cos, −sin), links = (−sin, −cos)) ──
+        const cy = Math.cos(z.yaw),
+            sy = Math.sin(z.yaw);
+        z.x += (z.vlong * cy - z.vlat * sy) * dt;
+        z.z += (-z.vlong * sy - z.vlat * cy) * dt;
+        z.wheelAng += (z.vlong / G.radR) * dt; // Abrollen ω = v/r (radR > 0: Pflicht des Fahr-Satzes)
+        return z;
+    }
+    function fahrTakt(z, e, G, dt) {
         const S = FAHR.schritt;
         const m = G.m,
             L = G.L,
@@ -2905,13 +2965,23 @@
         const kS = steerIn !== 0 ? G.steerK : G.steerZentrK;
         z.steer += (steerIn * G.maxSteer * sf - z.steer) * (1 - Math.pow(1 - kS, dt * 60));
         const cosN = Math.cos(z.steig || 0) * Math.cos(z.wank || 0); // der Normalkraft-Anteil am Hang
+        // DER WIND (wetter.K5, rein additiv — ohne e.wind byte-gleich): die Anstroemung quer im Koerperframe (links =
+        // (−sin, −cos) der Gier) minus die Fahrt quer, ihr Quadrat mit Vorzeichen auf die Flanke (G.luft). Am Boden zieht sie
+        // wie der Quer-Hangabtrieb (unter Schritttempo haelt sie die Haftung bis zum Reibkreis), im Flug frei.
+        let aW = 0;
+        if (G.luft && e && e.wind) {
+            const wq = -e.wind.x * Math.sin(z.yaw) - e.wind.z * Math.cos(z.yaw) - z.vlat;
+            aW = G.luft.kFlanke * wq * Math.abs(wq);
+            if (!Number.isFinite(aW)) aW = 0;
+        }
         if (z.luft) {
             // IM FLUG greift kein Reifen: nur der Luftwiderstand; die Gier dreht mit ihrer Rate weiter.
             const aD = -G.dragK * z.vlong * Math.abs(z.vlong);
             z.vlong += (aD + z.vlat * z.yawRate) * dt;
             z.vlat += -z.vlong * z.yawRate * dt;
+            if (aW) z.vlat += aW * dt;
             z.aLong = aD;
-            z.aLat = 0;
+            z.aLat = aW;
             z.slipF = 0;
             z.slipR = 0;
         } else {
@@ -2928,28 +2998,33 @@
                 dW = (((z.aLong || 0) * G.cgH) / L) * m;
             const Wf = Math.max(0, Wt * (c / L) - dW),
                 Wr = Math.max(0, Wt * (b / L) + dW);
-            // ── Reifen-SEITENKRAEFTE: Schlupf × Steifigkeit, gesaettigt am Reibkreis × Achslast ──
-            // FELD K1 (rein additiv — ohne e.haft byte-gleich, das Lab kennt keine Naesse): e.haft (0..1) = der Boden-Faktor
-            // des Reibkreises, den der Wirt aus dem ZUSTAND des Bodens liest (die Naesse der Welt) — nass greift der Reifen
-            // seitlich und laengs schwaecher, der Bremsweg waechst um 1 / haft.
+            // ── Reifen-SEITENKRAEFTE (K1): die Kurve mit Spitze D·sin(C·atan(B·α)) × Achslast, D = μ des Reibkreises ──
+            // FELD K1 (rein additiv — ohne e.haft byte-gleich, das Lab faehrt auf Asphalt): e.haft (0..1) = der Boden-Faktor
+            // des Reibkreises, den der Wirt aus dem ZUSTAND des Bodens liest (fahrzeug.K1: μ seines Stoffs zwischen trocken und
+            // nass nach der Naesse der Welt) — auf Gras und nass greift der Reifen seitlich und laengs schwaecher.
             const haft = e && e.haft > 0 && e.haft < 1 ? e.haft : 1;
             const cap = G.maxGrip * G.grip * haft;
-            let FlatF = -Math.max(-cap, Math.min(cap, G.CA_F * slipF)) * Wf;
-            let FlatR = -Math.max(-cap, Math.min(cap, G.CA_R * slipR)) * Wr;
+            let FlatF = -reifenKraft(G.reifen, G.reifen.bdF, cap, slipF) * Wf;
+            let FlatR = -reifenKraft(G.reifen, G.reifen.bdR, cap, slipR) * Wr;
             if (hand) FlatR *= G.handLatMul; // HANDBREMSE: die Heck-Seitenfuehrung bricht weg → Drift
-            // ── LAENGS am REIBKREIS: Antrieb, Bremse und Handbremse sind Reifenkraft — gedeckelt bei μ·N. Vorher trieb
-            //    der Motor ungedeckelt: der Supersport stieg 90°, der GT 66,6°; jetzt steht jeder bei tan α = μ. ──
+            // ── LAENGS am REIBKREIS: Antrieb, Bremse, Handbremse und Fahrwiderstand sind Reifenkraft — gedeckelt bei μ·N.
+            //    Vorher trieb der Motor ungedeckelt: der Supersport stieg 90°, der GT 66,6°; jetzt steht jeder bei tan α = μ.
+            //    fahrzeug.K1 (24.10.): der quadratische Fahrwiderstand dragK·v² ist der Deckel des Tempos (das Gleichgewicht
+            //    dragK·vmax² = aEngine, bei 50 km/h 0,7 g — das Hundertfache der Luft) und zog bis hierher am Reibkreis
+            //    vorbei: er bremste auf jedem Boden gleich und verduennte das μ (GT 50 → 0 km/h bei μ 0,4 gegen μ 1 nur 1,8× so
+            //    weit, nass 0,7 nur 1,28×), und auf weichem Grund kappte der Reibkreis den Antrieb unter ihm (auf μ 0,4 kaeme der
+            //    GT nicht ueber 35 km/h). Jetzt zieht er ueber die Raeder: die Spitze bleibt auf jedem Boden dieselbe, der
+            //    Bremsweg ist v² / 2 (μ·g + Rollwiderstand). Gas, Ausrollen und Lenken auf μ 1 byte-gleich. ──
             let aDrive = 0;
             if (thr > 0) aDrive += G.aEngine * thr;
             if (brk > 0) aDrive -= vL > S.bremsV ? G.brakeDecel : motor ? G.aEngine * S.rueckAntrieb : 0;
-            let Fr = aDrive * m;
+            let Fr = aDrive * m - G.dragK * m * vL * Math.abs(vL);
             if (hand) Fr -= G.handDecel * m * sgn;
             // der Wasserschlag sperrt die Antriebsraeder: Haftung wie die Handbremse, nie ueber den Stand hinaus (sie haelt,
             // sie schiebt nicht zurueck)
             else if (!motor && dt > 0) Fr -= Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;
             const capL = cap * m * g * cosN;
-            Fr = Math.max(-capL, Math.min(capL, Fr));
-            let Fx = Fr - G.dragK * m * vL * Math.abs(vL); // Luftwiderstand (quadratisch)
+            let Fx = Math.max(-capL, Math.min(capL, Fr));
             if (Math.abs(vL) > 0.02) Fx -= FAHR.rollDecel * m * sgn; // Rollwiderstand
             // SCHAU 2 (10.10., fahr-bahn) — UNTER SCHRITTTEMPO ROLLT DAS GELENKTE RAD KINEMATISCH: die Gier ist dort
             // kinematisch geblendet (lowBlendV, unten), der Schlupf im Nenner gedaempft (slipEps) — er meldet am Stand den
@@ -2973,7 +3048,8 @@
             z.yawRate = z.yawRate * (1 - low) + ((z.vlong * Math.tan(z.steer)) / L) * low;
             // ── QUER-HANGABTRIEB g·sin(wank) zieht zur tiefen Seite; unter Schritttempo haelt ihn die Haftung bis zum
             //    Reibkreis (darueber rutscht der Wagen, die kinematische Blende ruht). Vorher: 0,00 m Abdrift bei 35°. ──
-            const aG = -g * Math.sin(z.wank || 0);
+            let aG = -g * Math.sin(z.wank || 0);
+            if (aW) aG += aW;
             const aS = cap * g * cosN;
             const rutscht = Math.abs(aG) > aS;
             z.vlat *= 1 - low * (rutscht ? 0 : G.lowLatK);
@@ -2984,7 +3060,7 @@
             if (thr === 0 && brk === 0 && spd < S.haltV && hangL <= aS && !rutscht) {
                 z.vlong = 0;
                 z.vlat = 0;
-                z.yawRate *= S.haltGier;
+                z.yawRate *= Math.pow(S.haltGier, dt * 60); // je 1/60 s (im Unter-Schritt dt-ehrlich, K1)
             } else {
                 z.vlong -= g * Math.sin(z.steig || 0) * dt;
             }
@@ -3014,14 +3090,7 @@
         }
         if (!Number.isFinite(z.steer)) z.steer = 0;
         if (!Number.isFinite(z.yaw)) z.yaw = 0;
-        // ── Lage aus der Koerper-Geschwindigkeit (vorwaerts = (cos, −sin), links = (−sin, −cos)) ──
-        const cy = Math.cos(z.yaw),
-            sy = Math.sin(z.yaw);
-        z.x += (z.vlong * cy - z.vlat * sy) * dt;
-        z.z += (-z.vlong * sy - z.vlat * cy) * dt;
-        z.speed = Math.hypot(z.vlong, z.vlat);
-        z.wheelAng += (z.vlong / G.radR) * dt; // Abrollen ω = v/r (radR > 0: Pflicht des Fahr-Satzes)
-        return z;
+        z.speed = Math.hypot(z.vlong, z.vlat); // die Lenksaeule des naechsten Unter-Schritts liest das Tempo
     }
     function fahrSchritt(z, e, G, boden, dt) {
         fahrKraefte(z, e, G, dt);
@@ -3086,9 +3155,20 @@
     function winkelPi(a) {
         return Math.atan2(Math.sin(a), Math.cos(a));
     }
+    // DIE FAHRBAHN IN DER RICHTUNG DES RIGS (K1-Folge, 23.10.): die Neigung der Ebene der Raeder (steig laengs, wank quer, um
+    // die Gier) vom Wagen zum Rig bei Azimut az gesehen — hinter dem Wagen (az = gier) −steig. Am gleichmaessigen Hang steht
+    // ihr Gefaelle in der Welt still, waehrend steig und wank mit der Gier wandern.
+    function chaseFahrbahn(az, gier, steig, wank) {
+        const ts = Math.tan(steig),
+            tw = Math.tan(wank);
+        const gx = ts * Math.cos(gier) - tw * Math.sin(gier),
+            gz = -ts * Math.sin(gier) - tw * Math.cos(gier);
+        return Math.atan(gz * Math.sin(az) - gx * Math.cos(az));
+    }
     function chaseKamera(c, gier, steig, dt, K, z, vmax) {
         K = K || FAHR.kamera;
-        const elZ = K.el - (Number.isFinite(steig) ? steig : 0);
+        const st = Number.isFinite(steig) ? steig : 0;
+        const wk = z && Number.isFinite(z.wank) ? z.wank : 0;
         const s = z && vmax > 0 ? Math.min(1, Math.abs(z.speed) / vmax) : 0;
         const drift = z ? Math.atan2(z.vlat, Math.max(Math.abs(z.vlong), K.driftMinV)) : 0;
         const frisch = !Number.isFinite(c.az) || !(dt > 0);
@@ -3104,9 +3184,10 @@
             const ziel = gier + K.driftFolge * c.dF;
             if (frisch) {
                 c.az = ziel;
-                c.el = c.elF = elZ;
+                c.el = c.elF = K.el + chaseFahrbahn(c.az, gier, st, wk);
                 c.rueck = null;
             } else {
+                const p0 = chaseFahrbahn(c.az, gier, st, wk);
                 const kA = 1 - Math.pow(K.azEase, dt);
                 if (c.frei) {
                     c.frei = false;
@@ -3120,9 +3201,15 @@
                     c.az = r.az + r.d0 * (1 - u * u * (3 - 2 * u));
                     if (u >= 1) c.rueck = null;
                 } else c.az += winkelPi(ziel - c.az) * kA;
+                // DAS RIG DREHT AUF DER FAHRBAHN (K1-Folge): die Elevation steht K.el ueber der Fahrbahn in SEINER Richtung;
+                // dreht der Azimut, tragen el und elF die Neigung dorthin starr mit, die Federn glaetten nur, was der Boden
+                // aendert. Vorher zielten sie auf K.el − steig, und in der Hang-Kurve hinkten sie dem wandernden Ziel nach:
+                // die Kamera sank am Steilhang (T4) auf p05 8,9° ueber der Ebene des Wagens (main 12,3°, Soll ≥ 10°), jetzt 17,5°.
+                const p1 = chaseFahrbahn(c.az, gier, st, wk);
+                const elZ = K.el + p1;
                 const k = 1 - Math.pow(K.elEase, dt);
-                if (!Number.isFinite(c.el)) c.el = elZ;
-                if (!Number.isFinite(c.elF)) c.elF = c.el;
+                c.el = Number.isFinite(c.el) ? c.el + p1 - p0 : elZ;
+                c.elF = Number.isFinite(c.elF) ? c.elF + p1 - p0 : c.el;
                 c.elF += (elZ - c.elF) * k;
                 c.el += (c.elF - c.el) * k;
             }

@@ -45,7 +45,7 @@ function KALT_PROBE() {
         new PerformanceObserver((l) => {
             for (const e of l.getEntries()) A.lang.push([Math.round(e.startTime), Math.round(e.duration)]);
         }).observe({ type: "longtask", buffered: true });
-    } catch (_e) {
+    } catch {
         A.ohneLang = true;
     }
     let gewickelt = false;
@@ -189,7 +189,7 @@ async function kaltLauf() {
             try {
                 const i = st.renderer.backend.device.adapterInfo;
                 adapter = [i.vendor, i.architecture, i.device, i.description].filter(Boolean).join(" ") || null;
-            } catch (_e) {}
+            } catch {}
             return Object.assign({}, window.__kalt, {
                 weltbildDa: st._weltbildDa ? Math.round(st._weltbildDa) : null,
                 holz: st._holzProfil || null,
@@ -207,7 +207,7 @@ async function kaltLauf() {
     if (!profilBenannt)
         try {
             fs.rmSync(profil, { recursive: true, force: true });
-        } catch (_e) {}
+        } catch {}
     if (out && !out.__err) out.zweit = zweit;
     if (!out || out.__err) {
         console.log(`⛔ Kalt-Zeile fehlgeschlagen: ${out ? out.__err : "?"}`);
@@ -328,7 +328,7 @@ async function kaltLauf() {
             while (ticks < MAXT) {
                 try {
                     r._gameLoopTick();
-                } catch (_e) {}
+                } catch {}
                 ticks++;
                 const T = terms();
                 const luftSteht = !!(st.scene && st.scene.fogNode) && sichtM() >= 5000;

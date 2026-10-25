@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-raum-tags.cjs — DAS GEDÄCHTNIS DER RAUM-TAGS SIEHT JEDEN SCHREIBER (0710-11). Die Rechnung prüft je Teil-Paar Kontakt und Hohlraum (O(Teile²)) und hing an keiner Änderung.
+// diag-raum-tags.cjs — DAS GEDÄCHTNIS DER RAUM-TAGS SIEHT JEDEN SCHREIBER. Die Rechnung prüft je Teil-Paar Kontakt und Hohlraum (O(Teile²)) und hing an keiner Änderung.
 // Der Schnitt: `computeSpatialTags` merkt sich je Bauplan die Tags und einen SCHLÜSSEL — den Schnappschuss jedes Eingangs der
 // Rechnung (`_raumTagSchluessel`), bei jedem Ruf gebaut und Wert für Wert verglichen; die Rechnung (`_raumTagsRechnen`) läuft
 // nur bei geändertem Schlüssel. Ein Schreiber muss sich nicht melden: der Schlüssel liest den Inhalt.
@@ -285,7 +285,7 @@ async function probe() {
             try {
                 kopie = JSON.parse(JSON.stringify(bp));
                 stoffe = JSON.parse(JSON.stringify(echteStoffe));
-            } catch (_e) {
+            } catch {
                 continue;
             }
             const lr = new Set(),

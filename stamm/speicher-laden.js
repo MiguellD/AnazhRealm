@@ -28,6 +28,7 @@ class AnazhRealm_speicher_laden {
             this._loadStateRestoreEmotionsAndDsl(state);
             this._loadStateRestoreWorldRules(state);
             this._loadStateRestoreMiscState(state);
+            this._loadStateRestoreLeben(state);
             // Portal-Hallen zurückbauen: jede läuft durch _admitForeignPortalHall — auch Selbst-Imports sind
             // „fremd" (die R4-Wand kann einen Eintrag nach Rückruf fallen lassen). Stellt die Map-Form her.
             if (Array.isArray(state.portalHalls)) {
@@ -205,17 +206,10 @@ class AnazhRealm_speicher_laden {
             // die Welt der Seite bleibt sie selbst.
             this.log("Save-Migration: kein worldMeta gefunden — die Welt der Seite bleibt", "INFO");
         }
-        // V18.221 — die SCATTER-PROMOTED-Set aus dem worldMeta-Array wiederherstellen.
-        // worldMeta.scatterPromoted wandert via Array, hier re-bilden wir das Set.
-        // Backward-kompat: alte Welten ohne Feld → leeres Set.
-        if (this.state.worldMeta && Array.isArray(this.state.worldMeta.scatterPromoted)) {
-            this.state.scatterPromoted = new Set(this.state.worldMeta.scatterPromoted);
-            // worldMeta.scatterPromoted entfernen (es lebt jetzt in state.scatterPromoted
-            // als Set; die nächste buildStateSnapshot serialisiert neu).
-            delete this.state.worldMeta.scatterPromoted;
-        } else {
-            this.state.scatterPromoted = new Set();
-        }
+        // Die Promotion der Streu rechnet der Weg neu (speicher.K3); ein älterer Stand trägt seine Liste
+        // (`worldMeta.scatterPromoted`) mit den Bäumen, die sie promotete — sie bleibt im worldMeta und reist weiter.
+        const promoviert = this.state.worldMeta && this.state.worldMeta.scatterPromoted;
+        this.state.scatterPromoted = new Set(Array.isArray(promoviert) ? promoviert : []);
         // Scatter-Counters + Lookup-Buffer beim Welt-Wechsel resetten; sie bauen sich beim Stream neu.
         // Nicht persistiert (Session-Tatsache, kein Welt-Erbgut).
         this.state.scatterCounters = { tree: 0, under: 0, stone: 0 };
@@ -389,6 +383,20 @@ class AnazhRealm_speicher_laden {
         }
     }
 
+    // DIE LEBENSWERTE (halten.K5, `buildStateSnapshot` playerLeben): nach Seele und Gerät, die das Maximum setzen, die Wunde
+    // des Tods, dann Leben, Ausdauer und Mana als Anteil des neu gerechneten Maximums. Ein Stand ohne sie lädt voll.
+    _loadStateRestoreLeben(state) {
+        const L = state.playerLeben;
+        const pl = this.state.player;
+        if (!L || typeof L !== "object" || !pl) return;
+        const anteil = (v, leer) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : leer);
+        pl.deathWoundIntensity = anteil(L.wunde, 0);
+        this.recomputePlayerStats();
+        pl.hp = anteil(L.hp, 1) * pl.hpMax;
+        pl.stamina = anteil(L.ausdauer, 1) * pl.staminaMax;
+        pl.mana = anteil(L.mana, 1) * pl.manaMax;
+    }
+
     // Crafting-Inventar — REIHENFOLGE: Materialien ZUERST (Part-Material-Referenzen in
     // validateBlueprintParts), dann Baupläne (Architekturen brauchen sie als Builder), dann Tools
     // (sourceBlueprint braucht den Bauplan). Der Bauplan-Feld-Satz lebt in `_deserializeBlueprint`.
@@ -547,9 +555,21 @@ class AnazhRealm_speicher_laden {
         }
     }
 
-    // Die Höhe eines gespeicherten Orts über dem Boden des Gesetzes (cm-genau; undefined ohne Boden).
+    // Die Höhe eines gespeicherten Orts über dem Boden des Gesetzes (cm-genau; undefined ohne Boden). Ein Haus auf seinem
+    // EIGENEN Grund (S4, die Mitte auf dem Eintrag) misst den Boden unter dem Erdbau (`hoehe` ohne seinen Term), auf dem der
+    // Boden-Umzug es wieder setzt, nie den Keller, den sein Grund gräbt — bis 24.10. schrieb ein Save nach dem Grund die Tiefe
+    // des Kellers (2,26 m, ein Save davor 0; der Korpus, speicher.K5), und der Umzug stellte das Haus um sie über den Boden.
     _ueberGrund(p) {
-        const g = p ? this._voxelSurfaceY(p.x, p.z) : NaN;
+        const G = globalThis.__gelaendeCore;
+        const E = p ? this._erdbauLage() : null;
+        const Z = G.ERDBAU.zelleM;
+        const je = E ? E.grundZellen.get((Math.floor(p.x / Z) + 32768) * 65536 + (Math.floor(p.z / Z) + 32768)) : null;
+        const eigen = (je || []).some(
+            (i) => Math.abs(E.gruende[i].cx - p.x) < 0.05 && Math.abs(E.gruende[i].cz - p.z) < 0.05
+        );
+        const roh =
+            eigen && (this._gelaendeRoh || (this._gelaendeRoh = Object.create(this._gelaende(), { erdbau: {} })));
+        const g = !p ? NaN : roh ? G.hoehe(roh, p.x, p.z, true) : this._voxelSurfaceY(p.x, p.z);
         return Number.isFinite(g) && Number.isFinite(p.y) ? Math.round((p.y - g) * 100) / 100 : undefined;
     }
 
@@ -597,8 +617,12 @@ class AnazhRealm_speicher_laden {
                 freeBorn: a.freeBorn === true,
                 // die Marke des Wurfs des Felds reist durch den Reload mit (`_weichtDemBau`)
                 feldWurf: a.feldWurf === true,
-                // die Herkunft des Werks reist durch den Reload mit (`_weichtDemBau`)
-                werk: a.werk === true,
+                // die Herkunft des Werks reist durch den Reload mit (`_weichtDemBau`); ein Stand ohne die Zeile `herkunft` (vor
+                // 22.10.) trug keine Marke — der Satz des Spielers setzte Zahlen-ids, und die Lichtung räumte sein Werk nach Stoff
+                // (der Korpus, speicher.K5: der Stein-Block von V18.546.53 fiel). Dort ist Werk, was weder das Feld warf noch
+                // nach Art Natur ist.
+                werk:
+                    a.werk === true || (state.herkunft !== 1 && a.feldWurf !== true && !this._naturArt({ type: typ })),
                 // PRÄGUNG-WELT — der Guss-Stempel reist durch den Reload mit
                 // (spawnArchitecture ist der EINE Sanitize-Chokepoint).
                 studioOv: a.studioOv,
@@ -628,11 +652,12 @@ class AnazhRealm_speicher_laden {
             if (this._grundrissVon(e)) geraeumt += this._grundrissRaeumen(e);
         if (geraeumt)
             this.log(`Grundriss: ${geraeumt} Natur-Stücke aus Häusern und Lichtung geräumt (älterer Stand).`, "INFO");
+        this._worldgenBuildVoxelChunkCache(); // das Gesetz wirft neu, was der Stand nicht trägt (speicher.K3)
         this.log(`Architekturen geladen: ${state.architectures.length}`);
     }
 
     // Ring 6.5 Hotbar (9 Slots, ungültige Bauplan-Refs → null), Welle 6.C1
-    // Inventar (27 Slots, count clampt [1, 999]), Welle 4 P3 Werkzeug-Besitz
+    // Inventar (27 Slots, count ≥ 1, ganz), Welle 4 P3 Werkzeug-Besitz
     // (Starter bleiben, eigene zugefügt via Set-Union).
     _loadStateRestoreHotbarAndInventory(state) {
         if (Array.isArray(state.hotbar)) {
@@ -659,9 +684,12 @@ class AnazhRealm_speicher_laden {
             const inv = new Array(27).fill(null);
             for (let i = 0; i < Math.min(27, state.playerInventory.length); i++) {
                 const s = state.playerInventory[i];
+                // die Zahl, die der Stapel trug (bis 24.10. kappte das Laden bei 999: ein Stapel aus dem Graben verlor den Rest)
+                const cnt = Math.max(1, Math.floor(Number(s && s.count)) || 1);
                 if (s && typeof s.blueprintName === "string" && this.state.blueprints[s.blueprintName]) {
-                    const cnt = Math.max(1, Math.min(999, Number(s.count) || 1));
                     inv[i] = { blueprintName: s.blueprintName, count: cnt };
+                } else if (s && s.kind === "material" && this.state.materials[s.material]) {
+                    inv[i] = { kind: "material", material: s.material, count: cnt };
                 }
             }
             if (this.state.player) this.state.player.inventory = inv;
@@ -841,11 +869,19 @@ class AnazhRealm_speicher_laden {
     _weltBetreten(snapshot, meta = null, { neuLaden = true, aktiv = true, zeugnisA = null, p2pAuto = null } = {}) {
         if (!snapshot || typeof snapshot !== "object") return { ok: false, reason: "kein Snapshot" };
         if (!this._weltWechselSperre && this.state.worldMeta && this.state.worldMeta.worldId) {
-            if (zeugnisA) this.journalAppendOnce(zeugnisA.key, zeugnisA.type || "portal", zeugnisA.text);
+            if (zeugnisA)
+                this.journalAppendOnce(zeugnisA.key, zeugnisA.type || "portal", AnazhRealm._datum(zeugnisA.text));
             this.saveState();
         }
         const wm = snapshot.worldMeta && typeof snapshot.worldMeta === "object" ? snapshot.worldMeta : {};
         const welt = { ...snapshot, worldMeta: { ...wm, ...(meta || {}) } };
+        // jede Erinnerung der fremden Welt ist Datum (`_erinnerungFuerKi`): ihr Stempel `d` fällt, wer ihn auch schrieb
+        const wj = welt.worldJournal;
+        if (wj && Array.isArray(wj.entries))
+            welt.worldJournal = {
+                ...wj,
+                entries: wj.entries.map((e) => (e && typeof e === "object" ? { ...e, d: 0 } : e)),
+            };
         if (typeof welt.worldMeta.worldId !== "string" || !welt.worldMeta.worldId)
             welt.worldMeta.worldId = AnazhRealm._neueWeltId();
         const ab = this._weltAblegen(welt, { aktiv: aktiv || neuLaden });
@@ -1107,7 +1143,7 @@ class AnazhRealm_speicher_laden {
             chatOutput.scrollTop = chatOutput.scrollHeight;
         }
         if (result.ok) {
-            this.journalAppend("witness", `Eine andere Welt „${result.slug}" liegt nun neben mir.`);
+            this.journalAppend("witness", AnazhRealm._datum`Eine andere Welt „${result.slug}" liegt nun neben mir.`);
             this.updateWorldInfo();
         }
         this._closeWeltTorDialog();
@@ -1299,6 +1335,7 @@ class AnazhRealm_speicher_laden {
         if (!snap.worldJournal.seen || typeof snap.worldJournal.seen !== "object") {
             snap.worldJournal.seen = {};
         }
+        text = String(text).replace(/[⁦-⁩]/g, ""); // der Spieler liest rein, `d: 0` macht ihn Datum
         const eintrag = { id: snap.worldJournal.entries.length + 1, at: Date.now(), tick: 0, type: "witness", text };
         if (ctx) eintrag.ctx = ctx;
         snap.worldJournal.entries.push(eintrag);
@@ -1364,11 +1401,15 @@ class AnazhRealm_speicher_laden {
             schemaVersion: "9.0-tor-v1",
         };
         // Der Import hält seinen Empfang als Witness-Eintrag mit Provenienz fest.
-        AnazhRealm._zeugnisEintragen(cloned, `Ich wurde als „${slug}" neben einer fremden Welt empfangen.`, {
-            fromWorldId: originalId,
-            asWorldId: newWorldId,
-            asSlug: slug,
-        });
+        AnazhRealm._zeugnisEintragen(
+            cloned,
+            AnazhRealm._datum`Ich wurde als „${slug}" neben einer fremden Welt empfangen.`,
+            {
+                fromWorldId: originalId,
+                asWorldId: newWorldId,
+                asSlug: slug,
+            }
+        );
         // durch DIE TÜR: die Welt der Seite sichert sich, die fremde liegt mit Probe unter ihrer neuen Id; mit `reload` der
         // Welt-Wechsel (Zeiger, Sperre, Reload), sonst bleibt die aktive Welt.
         const ab = this._weltBetreten(cloned, null, { neuLaden: reload, aktiv: reload });
@@ -1605,7 +1646,7 @@ class AnazhRealm_speicher_laden {
         const total = addedBPs.length + addedMats.length + addedTools.length;
         this.journalAppend(
             "witness",
-            `Ich habe Rezepte aus „${sourceSlug}" empfangen: ${addedBPs.length} Baupläne, ${addedMats.length} Materialien, ${addedTools.length} Werkzeuge.`,
+            AnazhRealm._datum`Ich habe Rezepte aus „${sourceSlug}" empfangen: ${addedBPs.length} Baupläne, ${addedMats.length} Materialien, ${addedTools.length} Werkzeuge.`,
             {
                 fromWorldId: sourceWorldId,
                 fromSlug: sourceSlug,

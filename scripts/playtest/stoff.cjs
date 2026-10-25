@@ -14,7 +14,7 @@ async function checkBandV18136Audit(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // (1) der Slider treibt unter CSM die Kaskaden-Reichweite (kein toter Knopf). V18.352 — der
+        // (1) der Slider treibt unter CSM die Kaskaden-Reichweite (kein toter Knopf). Der
         // `csm.maxFar`-Antrieb wanderte in `_applyEffectiveShadowRange` (DIE EINE Anwende-Quelle, die
         // setShadowRange UND der Perf-Regler rufen) — am Ruf: der Pfad des Reglers treibt maxFar, der Setter ruft die Quelle.
         const savedCsm = r.state.csmNode;
@@ -33,15 +33,15 @@ async function checkBandV18136Audit(ctx) {
         return out;
     });
     if (!res) {
-        check("V18.136 Audit: Sonde lief", false, "evaluate warf");
+        check("Audit: Sonde lief", false, "evaluate warf");
         return;
     }
     check(
-        "V18.136 Audit: der Schatten-Weite-Slider treibt unter CSM maxFar (kein toter Knopf)",
+        "Audit: der Schatten-Weite-Slider treibt unter CSM maxFar (kein toter Knopf)",
         res.rangeSrc && res.rangeDrives
     );
     check(
-        "V18.136 Audit: der Kachel-Eingang baut keine Kachel-Erosion mehr (K16: die Täler kommen aus dem Flussnetz)",
+        "Audit: der Kachel-Eingang baut keine Kachel-Erosion mehr (K16: die Täler kommen aus dem Flussnetz)",
         res.tileLean
     );
 }
@@ -201,7 +201,7 @@ async function checkBandV18223PbrKohaerenz(ctx) {
             if (typeof mStein.dispose === "function") mStein.dispose();
         }
 
-        // GLUT-Material (brennbar 0.95) → emissiv-glühend. V18.234 — das PBR-Emissiv
+        // GLUT-Material (brennbar 0.95) → emissiv-glühend. Das PBR-Emissiv
         // folgt der glimmen-Achse (waermeleitung·brennbar, wie Toon) → realistische Glut.
         const mGlut = r._buildPbrNodeMaterial({ color: 0xff5020, tags: { brennbar: 0.95, waermeleitung: 0.9 } });
         if (mGlut) {
@@ -234,28 +234,28 @@ async function checkBandV18223PbrKohaerenz(ctx) {
         res.modeFlagDefault === true
     );
 
-    check("V18.223 (P1) Default-PBR-Material wird gebaut", res.defaultMatBuilt === true);
-    check("V18.223 (P2) Default-PBR-Material ist MeshStandardNodeMaterial", res.defaultIsMeshStandard === true);
-    check("V18.223 (P3) userData.isPbrMaterial=true (Diagnose-Marker)", res.defaultUserDataPbr === true);
+    check("(P1) Default-PBR-Material wird gebaut", res.defaultMatBuilt === true);
+    check("(P2) Default-PBR-Material ist MeshStandardNodeMaterial", res.defaultIsMeshStandard === true);
+    check("(P3) userData.isPbrMaterial=true (Diagnose-Marker)", res.defaultUserDataPbr === true);
     check(
-        `V18.223 (P4) Default ist dielektrisch (metalness=0, gemessen ${res.defaultMetalness})`,
+        `(P4) Default ist dielektrisch (metalness=0, gemessen ${res.defaultMetalness})`,
         res.defaultIsDielectric === true
     );
     check(
-        `V18.223 (P5) Default roughness im Mittel (0.5..0.9, gemessen ${res.defaultRoughness})`,
+        `(P5) Default roughness im Mittel (0.5..0.9, gemessen ${res.defaultRoughness})`,
         res.defaultRoughnessMid === true
     );
 
-    check("V18.223 (S1) EISEN (dichte+magie) → metalness ≥ 0.7 (PHYSIK)", res.eisenMetalnessHigh === true);
-    check("V18.223 (S2) EISEN → roughness ≤ 0.4 (glatt, glänzend)", res.eisenRoughnessLow === true);
-    check("V18.223 (S3) LAUB (lebendig) → roughness ≥ 0.85 (rauh)", res.laubRoughnessHigh === true);
-    check("V18.223 (S4) LAUB → metalness=0 (kein Metall)", res.laubMetalnessZero === true);
-    check("V18.223 (S5) STEIN (dichte ohne Metall) → dielektrisch", res.steinDielectric === true);
-    check("V18.223 (S6) STEIN → roughness ≥ 0.8 (matt)", res.steinRoughnessHigh === true);
-    check("V18.223 (S7) GLUT (brennbar) → emissiveIntensity > 0", res.glutEmissive === true);
-    check("V18.223 (S8) GLUT → roughness ≤ 0.5 (glatt-warm)", res.glutRoughnessLow === true);
+    check("(S1) EISEN (dichte+magie) → metalness ≥ 0.7 (PHYSIK)", res.eisenMetalnessHigh === true);
+    check("(S2) EISEN → roughness ≤ 0.4 (glatt, glänzend)", res.eisenRoughnessLow === true);
+    check("(S3) LAUB (lebendig) → roughness ≥ 0.85 (rauh)", res.laubRoughnessHigh === true);
+    check("(S4) LAUB → metalness=0 (kein Metall)", res.laubMetalnessZero === true);
+    check("(S5) STEIN (dichte ohne Metall) → dielektrisch", res.steinDielectric === true);
+    check("(S6) STEIN → roughness ≥ 0.8 (matt)", res.steinRoughnessHigh === true);
+    check("(S7) GLUT (brennbar) → emissiveIntensity > 0", res.glutEmissive === true);
+    check("(S8) GLUT → roughness ≤ 0.5 (glatt-warm)", res.glutRoughnessLow === true);
 
-    check("V18.223 (D1) Dispatch: mode=pbr → _buildToonNodeMaterial liefert PBR", res.dispatchYieldsPbr === true);
+    check("(D1) Dispatch: mode=pbr → _buildToonNodeMaterial liefert PBR", res.dispatchYieldsPbr === true);
     check(
         "V18.223/234 (D2) Default-Mode: _buildToonNodeMaterial-Dispatch liefert PBR (Default pbr)",
         res.defaultIsPbr === true

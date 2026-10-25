@@ -17,7 +17,7 @@
 //   Schale vorn, Laden und Stempel allein aus dem Manifest, keine Labor-Datei) ist ein LAUF: gate:pack-contract `bootLauf`
 //   (B3a; vorher S3 · S7a · S7e · W4 · W5)
 // WELT-SONDE (Null-Renderer, echter Studio-Worker, Platte an): W1 Gestalten je Art = Budget, 0 Karten-Art-L2,
-//   0 LRU-Räumungen im Boot · W2 ein Saison-Wechsel baut 0 · W3 der Zweit-Boot baut ≤ 5 MB neu · W6 (K60) DIE WERK-FÄDEN:
+//   0 LRU-Räumungen im Boot · W2 ein Saison-Wechsel baut 0 · W3 der Zweit-Boot baut ≤ 5 MB neu · W6 DIE WERK-FÄDEN:
 //   auf 16 Kernen wird jeder Werk-Faden bereit und baut, jeder Auftrag reist in seiner Bahn (`w<k>_`, `_foundryBahn`) ·
 //   W7 FOUNDRY_LESEN ist genau, was `_foundryBuildMesh` liest, und im Boot reist nichts außerhalb der Wand · W8 der
 //   Fahrzeug-Vorrat wärmt nur die Platte
@@ -415,7 +415,7 @@ async function verhalten(schaleSrc) {
 // W2 SAISON: ein Wechsel auf Herbst baut nichts (0 Aufträge, 0 entfernte Instanzen), die Uniform uSeasonMul dreht.
 const WELT_HAKEN = () => {
     window.__anazhHeadlessNullRenderer = true;
-    // W6 (K60): eine Maschine mit 16 Kernen — die Werk-Fäden folgen den Kernen (`_foundryHelfer`), der CI-Läufer hat 4
+    // W6: eine Maschine mit 16 Kernen — die Werk-Fäden folgen den Kernen (`_foundryHelfer`), der CI-Läufer hat 4
     Object.defineProperty(Navigator.prototype, "hardwareConcurrency", { configurable: true, get: () => 16 });
     // Die Platte AN unter dem Null-Renderer (nur in dieser Sonde): der Boot-Blob der Transport-Schale trägt
     // cfg.platte=false (gate-deterministisch); hier wird er true — der Host schickt seine Schlüssel ohnehin immer, die
@@ -490,7 +490,7 @@ const WELT_MESSEN = async () => {
         if (r && typeof r._gameLoopTick === "function") {
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             if (r.state.voxelChunks && r.state.voxelChunks.size >= 25) break;
         }
         await sleep(6);
@@ -505,7 +505,7 @@ const WELT_MESSEN = async () => {
                 r._gameLoopTick(performance.now());
                 const pp = r.state.playerMesh && r.state.playerMesh.position;
                 if (pp) r._tickScatterStreaming(pp);
-            } catch (_e) {}
+            } catch {}
             await sleep(8);
         }
     };
@@ -552,7 +552,7 @@ const WELT_MESSEN = async () => {
             .slice(0, 12)
             .map((x) => `${x.p}|${x.s}|${x.l}`),
     };
-    // W6 — DIE WERK-FÄDEN (K60): je Bahn (das Werk k = 0, jeder Helfer k) ihre Aufträge, Antworten und jede Nummer, die eine
+    // W6 — DIE WERK-FÄDEN: je Bahn (das Werk k = 0, jeder Helfer k) ihre Aufträge, Antworten und jede Nummer, die eine
     // fremde Bahn nennt (die Pumpe schrieb `w<k>_` falsch) oder die `_foundryBahn` falsch liest
     const nrVon = (w) => (w && Number.isInteger(w.__flNr) ? w.__flNr : -1);
     const bahnen = [{ k: 0, nr: nrVon(f.worker), bereit: true }].concat(
@@ -653,7 +653,7 @@ function urteilWelt(d) {
         }
         const T = d.T && Number.isInteger(d.T[sp]) ? d.T[sp] : V; // samt Solitär V+1 (`_foundryGestalten`)
         for (const s of d.samen[sp] || []) if (!(s >= 1 && s <= V)) raus.push(`${sp}|${s}`);
-        // Die Karte bestellt ihr Leser (K30): eine Art ohne Leser im Bild hat keine Karte, keine Art mehr als ihre Gestalten
+        // Die Karte bestellt ihr Leser: eine Art ohne Leser im Bild hat keine Karte, keine Art mehr als ihre Gestalten
         // (Budget samt Solitär, K20).
         if ((d.karten[sp] || 0) > T) kartenFalsch.push(`${sp} ${d.karten[sp] || 0}>${T}`);
     }

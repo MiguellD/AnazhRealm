@@ -697,6 +697,16 @@ class AnazhRealm_bild_kosten {
     _makeHeadlessRenderer(canvas) {
         const noop = () => {};
         const resolved = () => Promise.resolve();
+        // der Zeichenpuffer folgt setSize × Pixel-Verhältnis wie am echten Renderer (r184 CanvasTarget): die Bühnen
+        // (`_buehneRenderer`) gleichen ihren Canvas an der CSS-Größe ab (`_workshopSyncCanvasSize`)
+        const mass = { w: canvas ? canvas.width : 0, h: canvas ? canvas.height : 0, pr: 1 };
+        const setSize = (w, h, stil = true) => {
+            Object.assign(mass, { w, h });
+            if (!canvas) return;
+            canvas.width = Math.floor(w * mass.pr);
+            canvas.height = Math.floor(h * mass.pr);
+            if (stil === true) Object.assign(canvas.style, { width: w + "px", height: h + "px" });
+        };
         return {
             domElement: canvas,
             shadowMap: { enabled: false, type: 0, autoUpdate: false, needsUpdate: false },
@@ -721,10 +731,10 @@ class AnazhRealm_bild_kosten {
             compute: noop,
             computeAsync: resolved,
             setAnimationLoop: noop,
-            setSize: noop,
-            setPixelRatio: noop,
+            setSize,
+            setPixelRatio: (pr = 1) => pr !== mass.pr && ((mass.pr = pr), setSize(mass.w, mass.h, false)),
             setClearColor: noop,
-            getPixelRatio: () => 1,
+            getPixelRatio: () => mass.pr,
             getContext: () => null,
             // Der Zeichenpuffer ist der Canvas (der resize-Handler setzt ihn): der EINE Schirm-Maßstab (`_schirm`)
             // liest headless denselben Schirm wie am echten Renderer.
@@ -2070,6 +2080,8 @@ class AnazhRealm_bild_kosten {
         c.near = 0;
         c.far = zt - zb;
         c.updateProjectionMatrix();
+        if (sh.anazhBoxM) sh.anazhBoxM.set(W, H);
+        sh.anazhTiefeM = zt - zb;
         this._schattenBias(lw, Math.max(tx, ty), zt - zb);
         const f = alt || { basisInv: new THREE.Matrix4() };
         f.basisInv.copy(S.basisInv);
@@ -2188,8 +2200,58 @@ class AnazhRealm_bild_kosten {
     // „Destroyed texture used in a submit").
     _kaskadenGeburt(csm, builder) {
         THREE.CSMShadowNode.prototype._init.call(csm, builder);
+        csm.lights.forEach((lw, i) => {
+            const sh = lw.shadow;
+            sh.anazhBoxM = new THREE.Vector2(1, 1);
+            sh.anazhTiefeM = 1;
+            sh.filterNode = this._schattenFilter(i);
+        });
         this._kaskadenKarten(csm);
         this._kaskadenZiele(csm);
+    }
+
+    // DAS SCHATTEN-GESETZ DER SONNEN-SCHEIBE (schatten.K1, die Kontakt-Härtung) — der EINE Filter jeder Kaskade
+    // (`shadow.filterNode`: r184 `ShadowNode.setupShadow` nimmt ihn vor dem Filter des Karten-Typs, gate:vendor-anker). Der
+    // Halbschatten ist so breit, wie die Sonne (`sonneTan`, 0,53°) ihn über den Abstand Werfer → Empfänger zieht, nie schmaler
+    // als `filterTexel` Texel der Karte: die Werfer sucht er im Umkreis `sucheM` der Kaskade (5 Vogel-Punkte, Karten-Tiefen ohne
+    // Vergleich), ihr Mittel längs des Lichts in Metern (`anazhTiefeM`, orthographisch linear); dann der Vergleich wie r184-PCF
+    // (5 Vogel-Punkte, gedreht je Bildpunkt) im Radius max(Halbschatten/2, Boden). Ohne Suche (k0 ab 15 m, k1: `sucheM` 0; WebGL2:
+    // GLSL lädt keine Tiefe aus sampler2DShadow, gate:webgl-probe W5) bleibt der Boden-Radius, der r184-PCF. Box + Tiefe: `_kaskadeFit`.
+    _schattenFilter(i) {
+        const T = THREE.TSL;
+        const K = AnazhRealm.SCHATTEN_KASKADE;
+        const je = (l) => l[Math.min(i, l.length - 1)];
+        const sucheM = je(K.sucheM);
+        return T.Fn(({ depthTexture, shadowCoord, shadow }, builder) => {
+            const ref = (n, t) => T.reference(n, t, shadow).setGroup(T.renderGroup);
+            const [box, karte] = [ref("anazhBoxM", "vec2"), ref("mapSize", "vec2")];
+            const phi = T.interleavedGradientNoise(T.screenCoordinate.xy).mul(6.28318530718);
+            const z = shadowCoord.z;
+            const vogel = (k, r) => shadowCoord.xy.add(T.vogelDiskSample(k, 5, phi).mul(r));
+            let r = T.vec2(je(K.filterTexel)).div(karte);
+            if (sucheM > 0 && builder.renderer.backend.isWebGPUBackend === true) {
+                const summe = T.float(0).toVar();
+                const zahl = T.float(0).toVar();
+                for (let k = 0; k < 5; k++) {
+                    const d = T.textureLoad(
+                        depthTexture,
+                        vogel(k, T.vec2(sucheM).div(box)).clamp(0, 1).mul(karte).min(karte.sub(1))
+                    );
+                    const wirft = builder.renderer.reversedDepthBuffer === true ? d.greaterThan(z) : d.lessThan(z);
+                    summe.addAssign(T.select(wirft, d, 0));
+                    zahl.addAssign(T.select(wirft, 1, 0));
+                }
+                const abstand = z
+                    .sub(summe.div(zahl.max(1)))
+                    .abs()
+                    .mul(ref("anazhTiefeM", "float"));
+                const halb = T.select(zahl.greaterThan(0), abstand.mul(K.sonneTan * 0.5).min(sucheM), 0);
+                r = T.max(T.vec2(halb).div(box), r);
+            }
+            let s = T.texture(depthTexture, vogel(0, r)).compare(z);
+            for (let k = 1; k < 5; k++) s = s.add(T.texture(depthTexture, vogel(k, r)).compare(z));
+            return s.mul(0.2);
+        });
     }
 
     // DIE KARTEN-GRÖSSE aus der Texel-Dichte (einmal, am Standard-Bereich PERF_SHADOW_RANGE_MAX,
@@ -3440,8 +3502,8 @@ AnazhRealm.SCHATTEN_FERN_FAKTOR = 1.8;
 // DIE ERST-ZEICHNUNG (`_configureRenderer`): je Render-Aufruf der Welt-Szene baut der erste Erst-Bau immer, jeder weitere nur,
 // solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass.
 AnazhRealm.ERST_BAU_MS = 4;
-// DER SCHATTEN-TAKT je Kaskade (_loopShadowUpdate): die nahe Kaskade rendert im Regler-Intervall, höchstens
-// jeden `nahMax`-ten Frame (laufende Tiere werfen nah); die ferne im `fernFaktor`-fachen Takt.
+// DER SCHATTEN-TAKT je Kaskade (_loopShadowUpdate): die nahe Kaskade (seit schatten.K1 die Kontakt-Kaskade, 15 m) rendert im
+// Regler-Intervall, höchstens jeden `nahMax`-ten Frame (laufende Tiere werfen nah); jede weitere im `fernFaktor`-fachen Takt.
 AnazhRealm.SCHATTEN_TAKT = Object.freeze({ nahMax: 2, fernFaktor: 3 });
 // Die Ruhe der Kamera für den Schatten-Takt (_loopShadowUpdate): jedes Element der Welt-Matrix höchstens so weit vom
 // vorigen Frame (Meter bzw. Drehung) — darüber gilt die Kamera als bewegt, die nahe Kaskade folgt jedem Frame.
@@ -3458,8 +3520,16 @@ AnazhRealm.SCHATTEN_RUHE_EPS = 1e-4;
 // End-Normale des Empfänger-Stoffs (r184 `normalWorld`), am geflachten Boden also die Senkrechte (TERRAIN_NORMAL_FLATTEN);
 // darum trägt der Boden die Zuwendung seiner wahren Normale selbst (`receivedShadowNode`, 1110-5): abgewandt im Schatten,
 // über N·L 0 … `zuwendungSaum` weich (der Saum am Terminator, sonst die Hang-Akne).
+// DIE KONTAKT-KASKADE (schatten.K1): die ersten `kontaktM` Meter tragen eine eigene Kaskade bei `texelM[0]` (≤ 5 cm, 1024²);
+// DER FILTER jeder Kaskade ist das EINE Gesetz der Sonnen-Scheibe (`_schattenFilter`): Halbschatten = Abstand Werfer →
+// Empfänger längs des Lichts × `sonneTan` (0,53°), die Werfer gesucht im Umkreis `sucheM` je Kaskade, nie schmaler als
+// `filterTexel` Texel (k0 und k1: 1 Texel ohne Suche, der r184-PCF bis K1 — ihr Texel trägt den Halbschatten der Sonne nie).
 AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
-    texelM: Object.freeze([0.17, 0.47]),
+    kontaktM: 15,
+    texelM: Object.freeze([0.045, 0.17, 0.47]),
+    filterTexel: Object.freeze([0.5, 1, 1]),
+    sonneTan: 0.00925,
+    sucheM: Object.freeze([0.25, 0, 0]),
     bezugAspekt: 16 / 9,
     karteMax: 2048,
     rasterTeiler: 8,
@@ -3487,7 +3557,7 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
 // Wahl, mal dem längsten Licht-Weg der Box (`fit.weg`), die Hälfte dieses Rands erreicht (`_wahlHaelt`).
 AnazhRealm.PASS_WAHL = Object.freeze({
     sichtRand: 0.003,
-    saumM: Object.freeze([8, 24]),
+    saumM: Object.freeze([2, 8, 24]),
     pflanzeRandM: 2,
     haltM: 0.02,
     drehRand: (2 * Math.PI) / 180,

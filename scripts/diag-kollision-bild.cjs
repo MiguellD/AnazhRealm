@@ -652,6 +652,9 @@ async function tempo(K) {
         st.keys.shift = !!sprint;
     };
     const aus = { zeilen: [] };
+    // DER LEBENSZYKLUS RUHT (Ökologie K1/K2): sein Riss und sein Hungertod nahmen der Probe den stehenden Bären, die Mitte ging
+    // durch den Leichnam (heim-z29b: fuchs @60 → baer, 0,34 m) — ein Hindernis, das dennoch fällt, nennt der Lauf
+    r.tickFaunaLifecycle = () => {};
     // DIE GEOMETRIE, eigen (nie der Löser, den sie richtet): der Rahmen wie `_boxAbstand2`, innen negativ
     const rahmen = (b) =>
         b.obb || {
@@ -834,7 +837,7 @@ async function tempo(K) {
             if (!e || !ziel(e)) throw new Error(`${typ} steht nicht`);
             H[n] = werkH(e, ziel(e), rot > 0);
         }
-        for (const [n, z] of Object.entries(BAHN))
+        for (const z of Object.values(BAHN))
             for (const o of st.architectures.slice())
                 if (
                     o &&
@@ -863,6 +866,7 @@ async function tempo(K) {
         const lauf = async (n, rufe) => {
             const steht = n === "leib" ? baer(LX, BAHN.leib) : null;
             await rufe(ziel(n, steht));
+            if (steht && !st.creatures.includes(steht)) throw new Error("der stehende Bär fiel");
             if (steht) r.removeCreature(steht);
         };
         const galopp = (name, art, gr, n, kad) =>
@@ -962,6 +966,7 @@ async function tempo(K) {
         aus.fehler = (f && f.message) || String(f);
     } finally {
         A._steuerGesetz = roh;
+        delete r.tickFaunaLifecycle;
         tasten(false);
         for (const e of werke) r.removeArchitecture(e);
         delete st.blueprints._t_kontakt_mauer;

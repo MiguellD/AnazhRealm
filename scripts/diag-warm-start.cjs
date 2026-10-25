@@ -27,7 +27,7 @@ const server = statikServer();
 
 // Startet `fn(arg)` DETACHED im Page-Kontext und pollt das Ergebnis — kein
 // langlebiges CDP-Promise (die „Promise was collected"-Falle bei Minuten-Jobs).
-async function runJob(page, fn, arg, timeoutMs) {
+async function runJob(page, fn, arg) {
     await page.evaluate(
         (src, a) => {
             window.__jobDone = false;
@@ -57,9 +57,7 @@ async function runJob(page, fn, arg, timeoutMs) {
 // (Als Quelltext-Präambel in jeden Job kopiert — Jobs reisen als Strings.)
 async function jobKalt() {
     /* eslint-disable no-undef */
-    await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
-    const r = window.anazhRealm;
-    if (!r || !r.state) return { err: "Welt bootete nicht" };
+    const r = await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     const st = r.state;
     await window.__weltDa(() => !(!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced));
     if (!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced)
@@ -123,7 +121,7 @@ async function jobKalt() {
                     db.close();
                     resolve({ count: -1, hasKey: null });
                 };
-            } catch (_e) {
+            } catch {
                 db.close();
                 resolve({ count: -1, hasKey: null });
             }
@@ -145,9 +143,7 @@ async function jobKalt() {
 
 async function jobWarm(kaltIn) {
     /* eslint-disable no-undef */
-    await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
-    const r = window.anazhRealm;
-    if (!r || !r.state) return { err: "Welt bootete nicht (warm)" };
+    const r = await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     const st = r.state;
     await window.__weltDa(() => !(!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced));
     if (!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced)
@@ -228,7 +224,7 @@ async function jobWarm(kaltIn) {
                     db.close();
                     resolve(-1);
                 };
-            } catch (_e) {
+            } catch {
                 db.close();
                 resolve(-1);
             }
@@ -239,9 +235,7 @@ async function jobWarm(kaltIn) {
 
 async function jobSelbsttest(kaltIn) {
     /* eslint-disable no-undef */
-    await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
-    const r = window.anazhRealm;
-    if (!r || !r.state) return { err: "Welt bootete nicht (Selbsttest)" };
+    const r = await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     // die Platte lebt im Faden (Karte hydro-faden): sein erster Auftrag mit Schlüssel (der unberührte Probe-Chunk B) öffnet sie,
     // rechnet den EHRLICHEN Stempel, sieht "kaputt" → clear
     await window.__weltDa(() => r.state.voxelWorkerWorldgenSynced);
@@ -269,7 +263,7 @@ async function jobSelbsttest(kaltIn) {
                     db.close();
                     resolve({ err: "count scheiterte" });
                 };
-            } catch (_e) {
+            } catch {
                 db.close();
                 resolve({ err: "Transaktion scheiterte" });
             }
@@ -288,7 +282,7 @@ async function jobSelbsttest(kaltIn) {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     // ===== BAND 1: KALT =====
-    const kalt = await runJob(page, jobKalt, undefined, 240000);
+    const kalt = await runJob(page, jobKalt);
     if (kalt.err) {
         console.error("ROT — Kalt-Lauf: " + kalt.err);
         process.exit(1);
@@ -296,7 +290,7 @@ async function jobSelbsttest(kaltIn) {
 
     // ===== BAND 2+3: WARM (Reload) — Hits + Byte-Gleichheit + Edit-Bypass =====
     await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
-    const warm = await runJob(page, jobWarm, kalt, 240000);
+    const warm = await runJob(page, jobWarm, kalt);
     if (warm.err) {
         console.error("ROT — Warm-Lauf: " + warm.err);
         process.exit(1);
@@ -304,7 +298,7 @@ async function jobSelbsttest(kaltIn) {
 
     // ===== BAND 4: verfälschter Stempel → clear greift =====
     await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
-    const selbsttest = await runJob(page, jobSelbsttest, kalt, 180000);
+    const selbsttest = await runJob(page, jobSelbsttest, kalt);
 
     await browser.close();
     server.close();

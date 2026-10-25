@@ -49,21 +49,19 @@ const BLAETTER = [
 // Fege-Takt.
 const EIGENE_UHR = ["_tickFoliageGrowth"];
 
-// DIE LANGSAMEN SIMULATIONEN (feld.K3): Takte mit eigener Uhr außerhalb der Stand-Wache — Name → [Takte, Zellen]. In Ruhe
+// DIE LANGSAMEN SIMULATIONEN (feld.K3): Takte mit eigener Uhr außerhalb der Stand-Wache — Name → [Takte, Zellen (Pfade im state)]. In Ruhe
 // arbeitet keine. Eine Einheit = ein Ruf einer Stamm-Methode unter dem Takt oder ein Element seiner Zellen, das er durchgeht;
 // unter einem Schreib-Akt (AKTE) zählt die Arbeit der Tat (`akt`), nie der Ruhe.
 const SIMS = {
     wasser: [["_tickWorldWaterCA"], ["waterCAActive"]],
     regen: [["_tickRain", "tickWeatherTransition"], []],
     saison: [["_tickSeason"], []],
-    nachwuchs: [["_tickScatterRegrow"], ["scatterHarvested"]],
+    nachwuchs: [["_tickScatterRegrow"], ["worldMeta.taten"]],
     wuchs: [["_tickFoliageGrowth"], ["pendingFoliageChunks"]],
-    feld: [
-        ["_pruneLifeField", "_pruneEmotionField", "_pruneWohlBaseline"],
-        ["lifeField", "emotionField", "wohlBaseline"],
-    ],
+    feld: [["_feldTod"], ["lifeField", "emotionField", "wohlBaseline", "lifeField.tod", "emotionField.tod", "wohlBaseline.tod"]],
+    brand: [["_tickBrand"], ["brandFeld"]],
 };
-const AKTE = ["_depositLife", "_depositEmotion", "_observeFieldWohl"];
+const AKTE = ["_depositLife", "_depositEmotion", "_observeFieldWohl", "_brandEntfachen"];
 
 // Die Sim-Linse (Seite): hüllt jede Methode des Prototyps und die Zellen jeder Sim (an der Instanz, je Frame neu gelegt).
 //   const S = window.__simLinseAn(); je Frame S.frame() → { wasser: n, …, akt: n, je: { wasser: { methode: n } } }; S.aus()
@@ -123,7 +121,7 @@ function simLinseAn(sims, akte) {
         };
     };
     const legen = () => {
-        for (const n of namen) for (const z of sims[n][1]) huelle(r.state[z], "·" + z);
+        for (const n of namen) for (const z of sims[n][1]) huelle(z.split(".").reduce((o, k) => o && o[k], r.state), "·" + z);
     };
     legen();
     return {
@@ -153,13 +151,14 @@ function simPhase(frames, spielS) {
             for (const [m, k] of Object.entries(f.je[n])) je[m] = (je[m] | 0) + k;
         }
         const t = { summe, mitArbeit, je: Object.entries(je).sort((a, b) => b[1] - a[1]).slice(0, 4) };
-        if (n === "akt") aus.akt = summe;
+        if (n === "akt") [aus.akt, aus.aktJe, aus.aktSchreib, aus.aktAlle] = [summe, t.je, je._feldTod | 0, je];
         else aus.sims[n] = t;
     }
     return aus;
 }
 
 const simJe = (t) => t.je.map(([m, k]) => `${m} ${k}`).join(", ");
+// in Ruhe arbeitet keine Sim, ein Akt (ein Wesen träufelt Leben) höchstens zwei Einheiten je geschriebener Zelle (feld.K3#2)
 function simRuheZeilen(R, wo) {
     return Object.keys(SIMS)
         .filter((n) => !R.sims[n] || R.sims[n].summe > 0)
@@ -168,6 +167,12 @@ function simRuheZeilen(R, wo) {
                 ? `RUHE-SIM: ${n} (${SIMS[n][0].join(" · ")}) arbeitet in Ruhe ${wo} — ${R.sims[n].summe} Einheiten in ` +
                   `${R.sims[n].mitArbeit} von ${R.frames} Frames (${R.spielS} s; ${simJe(R.sims[n])})`
                 : `LEER: die Sim ${n} fehlt in der Ruhe ${wo}`
+        )
+        .concat(
+            R.akt > 2 * (R.aktSchreib | 0)
+                ? [`RUHE-TAT: die Akte (${AKTE.join(" · ")}) arbeiten in Ruhe ${wo} über ihre Zellen hinaus — ${R.akt} Einheiten für ` +
+                   `${R.aktSchreib | 0} geschriebene (${simJe({ je: R.aktJe || [] })})`]
+                : []
         );
 }
 
@@ -417,9 +422,10 @@ function standLauf(k) {
 //             Regler-Schritt weckt den Cull, ein Wahrnehmungs-Schritt (LOD_DISTANCES) Stufen-Wahl und Streu;
 //   STROM   — ein Sprung an einen fremden Ort baut den Spieler-Chunk (Streaming heilig), auch nach der Ruhe;
 //   PAGE    — kein Page-Error.
-// DAS URTEIL DER SIMS (feld.K3): in 60 s Ruhe nach einer Tat (Ernte, Leben) arbeitet keine Sim; ihr Ereignis weckt jede
-// (sonst STUMPF), danach schläft sie; der Wasser-Automat geht nach einem Wecken am Fixpunkt genau EINEN Takt; die Taten halten
-// das Feld unter der doppelten Zahl seiner Lebenden.
+// DAS URTEIL DER SIMS (feld.K3): in 60 s Ruhe nach einer Tat (Ernte, Leben) arbeitet keine Sim und kein Akt; ihr Ereignis weckt
+// jede (sonst STUMPF), danach schläft sie; der Wasser-Automat geht nach einem Wecken am Fixpunkt genau EINEN Takt; das Feld und
+// der Brand arbeiten nur in berührten Zellen.
+const BRAND_JE = 64; // je brennende Zelle und Schritt: ihr Gang, vier Würfel, die fangenden Nachbarn, die Asche
 function simUrteil(b, v) {
     const R = b.simRuhe;
     if (!R || !R.frames) v.push("LEER: keine Sim-Ruhe gemessen");
@@ -444,12 +450,32 @@ function simUrteil(b, v) {
         }
     }
     if (W.nachwuchs && !W.nachwuchs.nachgewachsen) v.push("NACHWUCHS: die Ernte wuchs zu ihrer Zeit nicht nach");
+    // (feld.K3#2) das Feld: vier Wellen Taten, die vorige tot — danach keine Tote in der Karte, die Räumung ging nie über eine
+    // ganze Karte (`·lifeField` …) und kostete höchstens zwei Einheiten je geschriebener Zelle
     const F = W.feld;
-    if (!F || !(F.tot >= 64)) v.push("LEER: die Feld-Probe legte keine toten Zellen");
+    if (!F || !F.wellen || F.wellen.length < 4 || !(F.geschrieben > 0)) v.push("LEER: die Feld-Probe schrieb keine vier Wellen");
     else {
-        if (!(F.welle.sims.feld.summe + F.welle.akt > 0)) v.push("STUMPF: die Taten im Feld zeigen der Sim-Linse keine Räumung");
-        if (F.max > 2 * F.lebend + 9)
-            v.push(`FELD: die Taten hoben das Feld auf ${F.max} Zellen (lebend höchstens ${F.lebend}) — ohne fegenden Takt wächst es ohne Grenze`);
+        const arbeit = F.welle.sims.feld.summe + F.welle.akt;
+        if (!(arbeit > 0)) v.push("STUMPF: die Taten im Feld zeigen der Sim-Linse keine Räumung");
+        if (F.wellen.some((w) => w.tote > 0))
+            v.push(`FELD-TOTE: nach den Wellen trägt die Karte ${F.wellen.map((w) => w.tote + " von " + w.groesse).join(" · ")} tote Zellen — sie räumt nach einer Schwelle, nicht am Tod`);
+        const karte = Object.entries(F.welle.aktAlle || {}).filter(([m]) => /^·[A-Za-z]+$/.test(m));
+        if (karte.length || arbeit > 2 * F.geschrieben)
+            v.push(`FELD-BESUCH: die Wellen kosteten ${arbeit} Einheiten für ${F.geschrieben} geschriebene Zellen` +
+                (karte.length ? `, die Räumung ging über die ganze Karte (${karte.map((x) => x.join(" ")).join(", ")})` : "") + " — sie besucht Unberührte");
+    }
+    // (feld.K3#2) der Brand arbeitet nur in brennenden Zellen (≤ BRAND_JE je Zelle und Schritt), erlischt, hinterlässt Asche,
+    // leuchtet, glüht und schläft danach
+    const Z = W.brand;
+    if (!Z || !Z.start) v.push("LEER: an der Mess-Wiese fing kein Brand");
+    else {
+        const i = Z.zellen.findIndex((n, k) => Z.einheiten[k] > BRAND_JE * n);
+        if (!Z.einheiten.some((e) => e > 0)) v.push("STUMPF: der Brand brennt, die Sim-Linse sieht keinen Takt");
+        if (i >= 0) v.push(`BRAND-ZELLEN: Schritt ${i + 1} kostete ${Z.einheiten[i]} Einheiten bei ${Z.zellen[i]} brennenden Zellen (Soll ≤ ${BRAND_JE} je Zelle)`);
+        if (Z.brennt) v.push(`BRAND-ERLISCHT: nach ${Z.zellen.length} Schritten brennen noch ${Z.brennt} Zellen`);
+        if (!(Z.asche >= 1) || !(Z.lebNach < Z.lebVor - 0.1)) v.push(`BRAND-ASCHE: ${Z.asche} Aschen, lebendig am Herd ${Z.lebVor} → ${Z.lebNach}`);
+        if (!(Z.glut > 0) || !Z.licht) v.push(`BRAND-LESER: glut am Herd +${Z.glut}, Leuchtquelle ${Z.licht ? "da" : "fehlt"}`);
+        if (Z.nachher.sims.brand.summe > 0) v.push(`BRAND-RUHE: nach dem Erlöschen arbeitet der Brand — ${Z.nachher.sims.brand.summe} Einheiten`);
     }
     const A = W.wasser;
     if (!A || !(A.chunks > 0)) v.push("LEER: am Fluss weckt die Werk-Setzung keinen Chunk des Automaten");

@@ -62,11 +62,8 @@ async function welt() {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     const out = await page.evaluate(async (selbst) => {
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-        const o = { boot: false };
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return o;
-        o.boot = true;
+        const o = {};
+        const r = await window.__weltDa();
         const st = r.state;
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
         await window.__weltDa(() => !!(!(f && !f.ready)));
@@ -102,7 +99,7 @@ async function welt() {
                 try {
                     r._gameLoopTick(performance.now());
                     r._tickScatterStreaming(spieler());
-                } catch (_e) {}
+                } catch {}
                 await sleep(6);
             }
         };
@@ -426,7 +423,6 @@ async function welt() {
 
     const { out, seitenFehler } = await welt();
     console.log("\n=== G/F/S — die Wander-Sequenz (Null-Renderer, Foundry an) ===");
-    if (!out.boot) fails.push("die Welt bootete nicht");
     if (!out.foundry) fails.push("die Foundry wurde nicht bereit (die Linse sähe keine Studio-Gruppe)");
     let maxGruppen = 0;
     for (const u of out.umzuege || []) {

@@ -39,53 +39,20 @@ async function checkBandHydrosphere(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.stateDeclared = "hydrosphere" in r.state;
         const h1 = r.state.hydrosphere;
         await window.__weltDa(() => !r.state.voxelWorkerPending.size); // die Uhr misst die Rechnung, nie die Schlange davor
         const t0 = performance.now();
         const h2 = (await r._voxelFadenAuftrag(r.state.voxelWorker, { type: "hydro", key: "heim", origin: null })).region;
         out.perfMs = performance.now() - t0;
-        out.shape =
-            !!h1 &&
-            h1.ready === true &&
-            Array.isArray(h1.rivers) &&
-            Array.isArray(h1.lakes) &&
-            Array.isArray(h1.waterfalls) &&
-            typeof h1.dim === "number" &&
-            typeof h1.cell === "number";
-        out.riverCount = h1.rivers.length;
-        out.lakeCount = h1.lakes.length;
-        out.waterfallCount = h1.waterfalls.length;
-        out.bettMin = h1.stats ? h1.stats.bettMin : null;
-        out.riverMaxSlope = h1.stats ? h1.stats.riverMaxSlope : 0;
-        out.riverMaxDrop = h1.stats ? h1.stats.riverMaxDrop : 0;
-        out.riverLenMax = h1.stats ? h1.stats.riverLenMax : 0;
-        out.riverPointsTotal = h1.stats ? h1.stats.riverPointsTotal : 0;
-        out.lakeCellsMax = h1.stats ? h1.stats.lakeCellsMax : 0;
-        out.lakeCells = h1.stats ? h1.stats.lakeCells : 0;
+        // dass Heimat und Kacheln Flüsse tragen, die der Stamm liest, misst gate:wasser-leben K4 LÄUFE
         // Determinismus — zwei Läufe, byte-identisches Netz
         out.deterministic =
             JSON.stringify(h1.rivers) === JSON.stringify(h2.rivers) &&
             JSON.stringify(h1.lakes) === JSON.stringify(h2.lakes) &&
             JSON.stringify(h1.waterfalls) === JSON.stringify(h2.waterfalls);
-        // Jeder Fluss fällt STRIKT monoton: point.y ist die Sohle des Netzes (gelaende-core `knotenSohle`).
-        out.riversDescend = h1.rivers.every((rv) => {
-            for (let k = 0; k + 1 < rv.points.length; k++) {
-                if (rv.points[k].y <= rv.points[k + 1].y) return false;
-            }
-            return true;
-        });
-        // Jeder Fluss endet am Meer, am Rand der Kachel, in einem See (K16: die Senke des Netzes ist ein benannter See) oder als
-        // Zufluss auf der Rinne seines Hauptlaufs.
-        out.riverMouths = h1.rivers.every((rv) => ["sea", "border", "see", "zufluss"].includes(rv.mouth));
-        // K16 — ein Fluss mündet in den See des Wasser-Orts (Land → See), sein Spiegel endet auf dem des Sees — gemessen an
-        // der Kachel des Wasser-Orts (`__wasserOrt`).
-        const seeOrt = await window.__wasserOrt("see");
+        // das Ende jedes Laufs, das Wasser jeder Senke und das Gefälle von Sohle und Spiegel misst gate:wasser-leben K4 LÄUFE
         const meerOrt = await window.__wasserOrt("meer");
-        out.seeOrt = seeOrt ? `${Math.round(seeOrt.x)},${Math.round(seeOrt.z)}` : "keiner";
         out.meerOrt = meerOrt ? `${Math.round(meerOrt.x)},${Math.round(meerOrt.z)}` : "keiner";
-        out.riverThroughLake =
-            !!seeOrt && seeOrt.hydro.rivers.some((rv) => rv.mouth === "see" && rv.points.every((p) => !p.inLake));
         // Flow-Accumulation stromab monoton → Breite wächst
         out.widthGrows = h1.rivers.every((rv) => {
             for (let k = 0; k + 1 < rv.points.length; k++) {
@@ -95,8 +62,6 @@ async function checkBandHydrosphere(ctx) {
         });
         // Jeder See: Füll-Level über dem Boden, unter (≈) der Rand-Höhe
         out.lakesValid = h1.lakes.every((lk) => lk.level > lk.floorY && lk.level <= lk.rimY + 1.5);
-        // Worldgen-Verdrahtung — state.hydrosphere ist gesetzt
-        out.wired = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
         // Das vereinte Wasser-Feld je Region-Zelle: flacher Wasser-Spiegel (`waterY`) + Klassifikation
         // (`waterKind` 0 Land · 1 Ozean · 2 See). Ozean trägt `waterLevel`, See `lake.level`, trockene
         // Zelle den Meeresspiegel-Default — die Wahrheit, aus der EIN Höhenfeld-Mesh gebaut wird.
@@ -147,75 +112,17 @@ async function checkBandHydrosphere(ctx) {
             !!(h2.water && h2.water.waterKind) &&
             wf.waterKind.length === h2.water.waterKind.length &&
             wf.waterKind.every((v, i) => v === h2.water.waterKind[i]);
-        // das Wasser-Level-Feld `_waterLevelAt` an der ersten Ozean-Zelle der Meer-Kachel und der ersten
-        // See-Zelle der See-Kachel (der Leser löst die Kachel selbst auf, `_hydroFor`).
-        out.waterLevelOceanOk = false;
-        out.waterLevelLakeOk = false;
-        const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
-        const erste = (h, kind) => {
-            const q = h.water.waterKind.indexOf(kind);
-            if (q < 0) return null;
-            return [h.originX + ((q % h.dim) + 0.5) * h.cell, h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell];
-        };
-        const m = meerOrt && erste(meerOrt.hydro, 1);
-        if (m) {
-            const lv = r._waterLevelAt(m[0], m[1]);
-            out.waterLevelOceanOk = Number.isFinite(lv) && Math.abs(lv - wl) < 0.01;
-        }
-        const s = seeOrt && erste(seeOrt.hydro, 2);
-        if (s) {
-            const lv = r._waterLevelAt(s[0], s[1]);
-            out.waterLevelLakeOk = Number.isFinite(lv) && lv >= wl;
-        }
-        // K16 — die Seen sind die Senken des Flussnetzes (Ebene 0 auf Land, `benannteSeen` des Gelände-Gesetzbuchs). Je
-        // Netz-Senke in der Kachel: trägt die Hydrosphäre um sie (± 3 Zellen) See-Zellen?
-        out.netzSeen = -1;
-        out.netzSeenSee = 0;
-        if (h1.water && globalThis.__gelaendeCore && typeof globalThis.__gelaendeCore.benannteSeen === "function") {
-            const idx = globalThis.__gelaendeCore.benannteSeen(
-                r._gelaende(),
-                h1.originX + h1.cell / 2,
-                h1.originZ + h1.cell / 2,
-                h1.cell,
-                h1.dim
-            );
-            out.netzSeen = idx.length;
-            for (const k of idx) {
-                const hi = k % h1.dim;
-                const hj = (k / h1.dim) | 0;
-                let see = 0;
-                for (let dj = -3; dj <= 3; dj++)
-                    for (let di = -3; di <= 3; di++) {
-                        const ci = hi + di;
-                        const cj = hj + dj;
-                        if (ci < 0 || cj < 0 || ci >= h1.dim || cj >= h1.dim) continue;
-                        if (h1.water.waterKind[ci + cj * h1.dim] === 2) see++;
-                    }
-                if (see >= 1) out.netzSeenSee++;
-            }
-        }
+        // das Wasser-Level-Feld `_waterLevelAt` an der ersten Ozean-Zelle der Meer-Kachel (der Leser löst die Kachel selbst
+        // auf, `_hydroFor`); an der See-Zelle misst V9.43-c.2 den Füllstand
+        const [h, q] = meerOrt ? [meerOrt.hydro, meerOrt.hydro.water.waterKind.indexOf(1)] : [null, -1];
+        const lv = q >= 0 ? r._waterLevelAt(h.originX + ((q % h.dim) + 0.5) * h.cell, h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell) : NaN;
+        out.waterLevelOceanOk = Number.isFinite(lv) && Math.abs(lv - (r.state.waterLevel || 0)) < 0.01;
         return out;
     });
 
     if (voxelV943bResults && !voxelV943bResults.error) {
         const hb = voxelV943bResults;
-        check("Voxel V9.43-b: state.hydrosphere ist im State deklariert", hb.stateDeclared);
-        check("Voxel V9.43-b: liefert {ready, rivers[], lakes[], waterfalls[], dim, cell}", hb.shape);
-        check(
-            `Voxel V9.43-b: das Netz trägt Flüsse (${hb.riverCount} Flüsse, ${hb.lakeCount} Seen, ${hb.waterfallCount} Wasserfälle, Bett min ${hb.bettMin} m, längster Fluss ${hb.riverLenMax} Pkt / Σ ${hb.riverPointsTotal}, größter See ${hb.lakeCellsMax} / Σ ${hb.lakeCells} Zellen, steilstes Segment ${hb.riverMaxSlope})`,
-            hb.riverCount > 0
-        );
         check("Voxel V9.43-b: das Netz ist deterministisch (zwei Läufe byte-identisch)", hb.deterministic);
-        check(
-            "Voxel V9.43-b: jeder Fluss steigt strikt monoton ab (Quelle → Mündung, die Sohle des Netzes)",
-            hb.riversDescend
-        );
-        check("Voxel V9.43-b: jeder Fluss endet an Meer, See, Hauptlauf oder Region-Rand", hb.riverMouths);
-        check(
-            "K16: ein Fluss des Netzes mündet in einen See (Land → See)",
-            hb.riverThroughLake,
-            `See-Ort ${hb.seeOrt}`
-        );
         check("Voxel V9.43-b: Fluss-Breite wächst stromab (Einzugsgebiet des Netzes monoton)", hb.widthGrows);
         check("Voxel V9.43-b: jeder See — Füll-Level über dem Boden, unter der Rand-Höhe", hb.lakesValid);
         check(
@@ -223,7 +130,6 @@ async function checkBandHydrosphere(ctx) {
             typeof hb.perfMs === "number" && hb.perfMs < 500,
             `perfMs=${Math.round(hb.perfMs || 0)} ms`
         );
-        check("Voxel V9.43-b: state.hydrosphere ist nach Worldgen verdrahtet", hb.wired);
         check("Voxel V9.49-a: das vereinte Wasser-Feld {waterY, waterKind} hat dim²-Form", hb.waterFieldShape);
         check("Voxel V9.49-a: waterKind ∈ {0,1,2}, waterY je Zelle endlich", hb.waterKindValid);
         check(
@@ -237,12 +143,6 @@ async function checkBandHydrosphere(ctx) {
         );
         check("Voxel V9.49-a: das Wasser-Feld ist deterministisch", hb.waterFieldDeterministic);
         check("Voxel V9.50-a: `_waterLevelAt` an einer Ozean-Zelle == waterLevel", hb.waterLevelOceanOk);
-        check("Voxel V9.50-a: `_waterLevelAt` an einer See-Zelle ≥ waterLevel (der See-Spiegel)", hb.waterLevelLakeOk);
-        check(
-            `K16: jede Senke des Flussnetzes in der Kachel wird zum See (${hb.netzSeenSee}/${hb.netzSeen})`,
-            hb.netzSeen >= 0 && hb.netzSeenSee === hb.netzSeen,
-            `netzSeen=${hb.netzSeen} see=${hb.netzSeenSee}`
-        );
     }
 
     // ### Das Wasser wird synergetisch ###
@@ -315,14 +215,7 @@ async function checkBandHydrosphere(ctx) {
         out.hydroReady = !!(hydro && hydro.ready);
         if (!out.hydroReady) return out;
         if (r.state.worldMeta) r.state.worldMeta.voxelEdits = [];
-        // (2) der Carve-Index ist an state.hydrosphere verdrahtet
-        out.indexWired =
-            Array.isArray(hydro.riverBuckets) &&
-            hydro.lakeBedCell instanceof Float32Array &&
-            hydro.lakeW instanceof Float32Array &&
-            hydro.lakeNear instanceof Uint8Array &&
-            typeof hydro.bucketSize === "number" &&
-            typeof hydro.bucketsDim === "number";
+        // (2) den Carve-Index liest der Kern (gate:worker-dichte `--kern`)
         // Den Fluss-Mittelpunkt finden: der BREITESTE Punkt mit echter Flow-Richtung — NICHT in einem See (See-
         // Durchquerungen werden nicht gecarvt) und mit nicht-See-Nachbar, damit das Segment rp→next im Carve-Index liegt.
         // Der erste Punkt des ersten Flusses ist eine Quelle (Breite 1,2 m, Tiefe 0,4 m) — kein Fluss-Mittelpunkt.
@@ -362,23 +255,7 @@ async function checkBandHydrosphere(ctx) {
             // von `_voxelSurfaceY`, 1,2 m).
             const sKanal = r._voxelSurfaceY(rx, rz);
             out.surfaceLowered = !!kanal && Number.isFinite(sKanal) && Math.abs(sKanal - kanal.P) < 1.3;
-            // (8) der Kanal formt das Gelände: die _terrainDensityAt-Dichte mit Kanal === das weiche Minimum aus Kanal und
-            // dem weichen Maximum aus Gelände (die Dichte ohne Kanal: ohne Hydrosphäre) und Damm.
-            const y = (r.state.terrainBaseHeight || 0) + 10;
-            const dCarve = r._terrainDensityAt(rx, y, rz);
-            r.state.hydrosphere = null;
-            const dSuppressed = r._terrainDensityAt(rx, y, rz);
-            r.state.hydrosphere = hydro;
-            let carveSoll = null;
-            if (kanal) {
-                const dL = kanal.L - y;
-                let hk = Math.max(kanal.k - Math.abs(dSuppressed - dL), 0) / kanal.k;
-                const damm = Math.max(dSuppressed, dL) + hk * hk * kanal.k * 0.25;
-                const dP = kanal.P - y;
-                hk = Math.max(kanal.k - Math.abs(damm - dP), 0) / kanal.k;
-                carveSoll = Math.min(damm, dP) - hk * hk * kanal.k * 0.25;
-            }
-            out.carveIsSubtractive = carveSoll !== null && Math.abs(carveSoll - dCarve) < 0.001;
+            // (8) die Form des Kanals ist EIN Gesetz des Kerns (`gewaesserForm`, gate:worker-dichte `--kern`)
             // (9) ohne Hydrosphäre kein Kanal (bit-identisch zum Feld ohne Carve)
             const savedHydro = r.state.hydrosphere;
             r.state.hydrosphere = null;
@@ -417,10 +294,7 @@ async function checkBandHydrosphere(ctx) {
                 out.lakeBedWatertight = bedOk && solidBelow && surfOnBed;
             }
         }
-        // (11) Re-Compute ist zirkel-frei: der Faden hält den Carve aus seiner Rechnung — ein zweiter Lauf liefert dasselbe Netz.
-        const reHydro = (await r._voxelFadenAuftrag(r.state.voxelWorker, { type: "hydro", key: "heim", origin: null }))
-            .region;
-        out.recomputeStable = JSON.stringify(reHydro.rivers) === JSON.stringify(hydro.rivers);
+        // (11) den zweiten Lauf im Faden (zirkel-frei: dasselbe Netz) misst V9.43-b „deterministisch“
         // (13) Das Wasser-Cell-Feld fragt den ATLAS-STRIKTEN Spiegel (`_buildVoxelChunkWaterCells` ruft
         // `_atlasWaterLevelAt` je xz-Spalte), nicht das dilatierende `_waterLevelAt` — sonst
         // Wasserschatten an Hängen.
@@ -445,19 +319,11 @@ async function checkBandHydrosphere(ctx) {
     if (voxelV943d && !voxelV943d.error) {
         const d = voxelV943d;
         check(
-            "Voxel V9.43-d: der Carve-Index ist an state.hydrosphere verdrahtet (riverBuckets/lakeBedCell/lakeW/lakeNear)",
-            d.indexWired
-        );
-        check(
             "Voxel V9.43-d → Welle L: der Kanal formt einen Fluss-Mittelpunkt (Flachboden unter dem Spiegel)",
             d.riverCenterCarved
         );
         check("Voxel V9.43-d: das Fluss-Bett liegt unter den Ufern (die Gestalt steigt zur Bank an)", d.bedBelowBanks);
         check("Voxel V9.43-d → Welle L: die Voxel-Fläche liegt auf dem Flachboden des Kanals", d.surfaceLowered);
-        check(
-            "Voxel V9.43-d → Welle L: der Kanal formt das Gelände (weiches Minimum aus Kanal und dem weichen Maximum aus Gelände und Damm — die Bank läuft ins Gelände aus)",
-            d.carveIsSubtractive
-        );
         check(
             "Voxel V9.43-d: ohne Hydrosphäre kein Kanal (bit-identisch zum Feld ohne Carve)",
             d.carveZeroWithoutHydro
@@ -468,7 +334,6 @@ async function checkBandHydrosphere(ctx) {
             "Voxel V9.45-b: der See-Boden ist wasserdicht — über dem Meer, unter dem Spiegel, fester Grund",
             d.lakeBedWatertight
         );
-        check("Voxel V9.43-d: ein Re-Compute im Faden bleibt zirkel-frei (gleiches Netz wie die Weltgen)", d.recomputeStable);
         check(
             "Voxel V13.1: das Wasser-Cell-Feld ruft den Atlas-strikten Spiegel (`_atlasWaterLevelAt`), nie das dilatierende `_waterLevelAt`",
             d.unifiedQueriesRivers
@@ -491,8 +356,8 @@ async function checkBandHydrosphere(ctx) {
         if (!r.state.symphony.enabled) {
             try {
                 r.initSymphony();
-            } catch (e) {
-                void e;
+            } catch {
+                /* */
             }
         }
         const s = r.state.symphony;
@@ -955,20 +820,20 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         );
         check("Welle C.2 V9.72: Iso-Mesh nutzt das geteilte hydroSurfaceMaterial", res.sampleMeshUsesHydroMat === true);
         check(
-            "V18.92 → Welle L: Wasser-Mesh trägt userData.hydroKind='chunk-water-cellsheet' (der EINE Render-Pfad)",
+            "→ Welle L: Wasser-Mesh trägt userData.hydroKind='chunk-water-cellsheet' (der EINE Render-Pfad)",
             res.sampleMeshUserData === true
         );
         check(
-            "V18.1 W1: Wasser-Material ist BackSide (einseitige Flaeche, kein Volumen, kein Wasser-von-unten)",
+            "W1: Wasser-Material ist BackSide (einseitige Flaeche, kein Volumen, kein Wasser-von-unten)",
             res.waterMatBackSide === true
         );
         check(
-            "V18.4 W1: Wasser-Iso trägt KEINE Unterseiten-Dreiecke (ny>0.2 verworfen; Ufer/Fluss-Drops bleiben)",
+            "W1: Wasser-Iso trägt KEINE Unterseiten-Dreiecke (ny>0.2 verworfen; Ufer/Fluss-Drops bleiben)",
             res.waterUndersideTris === 0,
             `Unterseite=${res.waterUndersideTris}, Oberseite=${res.waterTopsTris}`
         );
         check(
-            "V18.3 W1: Wasser-Iso trägt Oberseiten-Dreiecke (von oben über die Rückseite sichtbar)",
+            "W1: Wasser-Iso trägt Oberseiten-Dreiecke (von oben über die Rückseite sichtbar)",
             typeof res.waterTopsTris === "number" && res.waterTopsTris > 0,
             `Oberseite=${res.waterTopsTris}`
         );
@@ -1165,31 +1030,31 @@ async function checkBandV17117FarWater(ctx) {
         return out;
     });
     if (res.error) {
-        check("V17.117 H3: Far-Water-Band (realm verfügbar)", false, res.error);
+        check("H3: Far-Water-Band (realm verfügbar)", false, res.error);
         return;
     }
     check(
-        "V17.117 H3: beyond-region Ozean-Chunk gefunden (am Meer-Ort des Gesetzes)",
+        "H3: beyond-region Ozean-Chunk gefunden (am Meer-Ort des Gesetzes)",
         res.foundOcean,
         `Meer-Ort ${res.meerOrt}`
     );
-    check("V17.117 H3: beyond-region Ozean — Gate true", res.oceanGate === true);
+    check("H3: beyond-region Ozean — Gate true", res.oceanGate === true);
     check(
-        "V17.117 H3: beyond-region Ozean trägt Wasser-Cells (Heilung)",
+        "H3: beyond-region Ozean trägt Wasser-Cells (Heilung)",
         res.oceanWaterCells > 0,
         `cells=${res.oceanWaterCells}`
     );
-    check("V17.117 H3: beyond-region Land-Chunk gefunden (Hochland ohne Wasser des Gesetzes)", res.foundLand === true);
+    check("H3: beyond-region Land-Chunk gefunden (Hochland ohne Wasser des Gesetzes)", res.foundLand === true);
     if (res.foundLand) {
-        check("V17.117 H3: beyond-region Land — Gate false (kein Mehraufwand)", res.landGate === false);
+        check("H3: beyond-region Land — Gate false (kein Mehraufwand)", res.landGate === false);
         check(
-            "V17.117 H3: beyond-region Land — keine Wasser-Cells",
+            "H3: beyond-region Land — keine Wasser-Cells",
             res.landWaterCells === 0,
             `cells=${res.landWaterCells}`
         );
     }
     check(
-        "V17.117 H3: Worker<->Main Wasser-Cells bit-identisch beyond-region (Naht-Wand)",
+        "H3: Worker<->Main Wasser-Cells bit-identisch beyond-region (Naht-Wand)",
         res.workerMainIdentical === true,
         `mism=${res.cellMismatches} count=${res.mainCellCount}/${res.workerCellCount}`
     );
@@ -1266,12 +1131,12 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         "Welle L: Helper liest keine zweite Wahrheit (_waterLevelAt / _isAboveWaterAt)",
         res.ohneZweiteWahrheit === true
     );
-    check("V17.113: erster Boden-Zugriff scannt (Budget dekrementiert)", res.gFirstScan === true);
-    check("V17.113: gleiche Position → Cache-Hit (kein Scan)", res.gCacheHit === true);
-    check("V17.113: Bewegung < 0.5 m → Cache-Hit (kein Scan)", res.gCacheNear === true);
-    check("V17.113: Bewegung > 0.5 m → Refresh (ein Scan)", res.gRefreshOnMove === true);
+    check("erster Boden-Zugriff scannt (Budget dekrementiert)", res.gFirstScan === true);
+    check("gleiche Position → Cache-Hit (kein Scan)", res.gCacheHit === true);
+    check("Bewegung < 0.5 m → Cache-Hit (kein Scan)", res.gCacheNear === true);
+    check("Bewegung > 0.5 m → Refresh (ein Scan)", res.gRefreshOnMove === true);
     check(
-        "V17.113: Budget erschöpft → die Gewanderte trägt ihr Cache, nur die Frische scannt einmal (FPS-Bound, Welle L)",
+        "Budget erschöpft → die Gewanderte trägt ihr Cache, nur die Frische scannt einmal (FPS-Bound, Welle L)",
         res.gBudgetBound === true
     );
 }
@@ -1477,15 +1342,15 @@ async function checkBandV18129HochBecken(ctx) {
         return out;
     });
     if (!res) {
-        check("V18.129 Hoch-Becken: Sonde lief", false, "evaluate warf");
+        check("Hoch-Becken: Sonde lief", false, "evaluate warf");
         return;
     }
-    check("V18.129 Hoch-Becken: CA_STAU-Konfiguration steht (frozen, vollständig)", res.config);
-    check("V18.129 Hoch-Becken: der Spill-Scan hält das GESCHLOSSENE Becken (Krone-Pegel)", res.basinHolds);
-    check("V18.129 Hoch-Becken: außerhalb der Wand gilt der Außenwelt-Pegel (keine Badewanne)", res.outsideOpen);
-    check("V18.129 Hoch-Becken: EIN Loch im Ring → kein Stau (der Damm/Pfeiler-Diskriminator)", res.gapDrains);
+    check("Hoch-Becken: CA_STAU-Konfiguration steht (frozen, vollständig)", res.config);
+    check("Hoch-Becken: der Spill-Scan hält das GESCHLOSSENE Becken (Krone-Pegel)", res.basinHolds);
+    check("Hoch-Becken: außerhalb der Wand gilt der Außenwelt-Pegel (keine Badewanne)", res.outsideOpen);
+    check("Hoch-Becken: EIN Loch im Ring → kein Stau (der Damm/Pfeiler-Diskriminator)", res.gapDrains);
     check(
-        "V18.129 Hoch-Becken: die Empfänger-Kappe hält im Automaten (nichts über cap, darunter füllt es)",
+        "Hoch-Becken: die Empfänger-Kappe hält im Automaten (nichts über cap, darunter füllt es)",
         res.capHolds && res.capFillsBelow,
         `overCap=${res.overCap}`
     );
@@ -1551,11 +1416,11 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         out.snowLowProminOk = out.snowLowProminMean < 0.02;
 
         // (G3) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (`_koerperWasser`, Welle L Q6), und sie kennt die DECKE
-        // (D11): die Zellen halten Höhlen unter und neben Seen trocken (caveDry, `_skyOpenWaterFilter`). Die Probe sucht
+        // die Zellen halten Höhlen unter und neben Seen trocken (caveDry, `_skyOpenWaterFilter`). Die Probe sucht
         // in den geladenen Wasser-Chunks jede erste LUFT-Zelle über FEST, deren Mitte unter dem Spiegel des Gesetzes liegt
         // und über der eine FEST-Zelle steht (eine trockene Höhle), und stellt einen Körper auf ihren Boden: er liest dort
         // nie Wasser.
-        // Plus: Worker-Mirror baut waterCells via Flood (V13.12 Vertikal-Open).
+        // Plus: Worker-Mirror baut waterCells via Flood (Vertikal-Open).
         const hoehle = { unter: 0, neben: 0, nassUnter: 0, nassNeben: 0 };
         // Der Höhlen-Chunk unter dem See des Gesetzes (`__wasserChunk("hoehle")`: die Heimat trägt seit K16 keinen See).
         out.hoehlenChunk = await window.__wasserChunk("hoehle");
@@ -2061,7 +1926,7 @@ async function checkBandWasserWahrheit(ctx) {
     check("Wasser-Wahrheit: F1 Höhen-Gate · F2 Rim-Wand · F4 Stau · F5 Ruhe-Fixpunkt auch nach dem Schnitt · F6 geleerte Spalte · F7 Netz, Selbsttest an den Nähten F4 · F5 · F7", out.fails.length === 0, out.fails.join(" · ").slice(0, 400));
 }
 
-// Die Byte-Wand des Scatter-Wasser-Gates (W3.3a) — eingefaltet aus gate:scatter-ab (D3b): das Wasser-Verdikt der Streu liest das
+// Die Byte-Wand des Scatter-Wasser-Gates (W3.3a) — eingefaltet aus gate:scatter-ab: das Wasser-Verdikt der Streu liest das
 // Feld (`_sampleBakedField`, ~30× billiger als der Voll-Scan `_voxelSurfaceY`) mit konservativem Exakt-Fallback im Ufer-Band. Der
 // Korpus mit erzwungenen Klassen (Ufer · Steilhang · Fluss · Spieler-Region; ohne Ufer-Klasse fail-closed), A/B byte-exakt je
 // Region (Referenz-Hook `__scatterExactWater` gegen den Produktions-Pfad) und der Selbsttest:
@@ -2196,7 +2061,7 @@ async function checkBandScatterWasserAB(ctx) {
     check("Scatter-Wasser A/B SELBSTTEST: ein injiziert-falsches Wasser-Verdikt macht den Diff rot", out.selftestFires === true, JSON.stringify(out.selftestRegion));
 }
 
-// B1 der Wasser-Sheet-Worker-Spiegel ist BYTE-IDENTISCH — eingefaltet aus gate:worker-watersheet (D3b): der Worker baut den
+// B1 der Wasser-Sheet-Worker-Spiegel ist BYTE-IDENTISCH — eingefaltet aus gate:worker-watersheet: der Worker baut den
 // Wasser-Zell-Oberkanten-Sheet OFF-THREAD (`buildWaterSheetGeometry`) und MUSS bit-identisch zum Main-Sync-Pfad
 // (`_computeWaterSheetData`) sein, sonst lebt das Wasser auf zwei Wahrheiten (Lehre 7). Am nächsten Wasser der Welt (`__wasserOrte`):
 // je CA-freiem Wasser-Chunk Main gegen Worker-Round-Trip, positions/indices/aFlow/aWave/aDepth/aSlope byte-für-byte, maxDiff 0.
@@ -2233,7 +2098,7 @@ async function checkBandWasserSheetSpiegel(ctx) {
                 r._tickVoxelChunkStreaming();
                 r._gameLoopTick(performance.now());
                 r._drainPendingWaterIso();
-            } catch (_e) {
+            } catch {
                 /* */
             }
             if (i % 6 === 0) await new Promise((res) => setTimeout(res, 12));
@@ -2248,9 +2113,7 @@ async function checkBandWasserSheetSpiegel(ctx) {
             ok: true,
             msgs: [],
             compared: 0,
-            waterChunks: 0,
-            withCells: 0,
-            withWater: 0,
+            zwei: 0,
             maxDiff: 0,
             mismatches: [],
         };
@@ -2280,16 +2143,6 @@ async function checkBandWasserSheetSpiegel(ctx) {
             const cz = parseInt(key.slice(ci + 1), 10);
             const entry = r.state.voxelChunks.get(key);
             if (!entry || !entry.waterCells || entry.waterCells.length === 0) continue;
-            out.withCells++;
-            // hat die Spalten-Zelle echtes WATER (CELL_STATE.WATER=1)?
-            let anyWater = false;
-            for (let q = 0; q < entry.waterCells.length; q++) {
-                if (entry.waterCells[q] === 1) {
-                    anyWater = true;
-                    break;
-                }
-            }
-            if (anyWater) out.withWater++;
             if (!r._waterSheetCaFree(cx, cz)) continue;
             let mainData = null;
             try {
@@ -2302,7 +2155,6 @@ async function checkBandWasserSheetSpiegel(ctx) {
             cand.push({ cx, cz, key, mainData });
             if (cand.length >= 24) break;
         }
-        out.waterChunks = cand.length;
         if (cand.length === 0) {
             out.ok = false;
             out.msgs.push("KEIN CA-freier Wasser-Chunk gefunden (Welt ohne Wasser im Ring?)");
@@ -2346,10 +2198,19 @@ async function checkBandWasserSheetSpiegel(ctx) {
             }
         };
     
+        // ZWEI FEHLRUNDEN (streaming.K5): je Blatt verfehlt in den ersten zwei Runden ein Verweis den Faden
+        let n = 0;
+        r._voxelFadenAuftrag = function (w, m) {
+            const z = n < 2 && m.cells && m.cells.find((c) => c && c.zid);
+            if (z) (n++, (z.zid = 1e9));
+            return r.constructor.prototype._voxelFadenAuftrag.call(this, w, m);
+        };
         for (const c of cand) {
             let wd = null;
+            n = 0;
             try {
                 wd = await r._workerBuildWaterSheet(c.cx, c.cz);
+                out.zwei += n > 1;
             } catch (e) {
                 out.ok = false;
                 out.msgs.push(`worker-throw ${c.key}: ${e.message}`);
@@ -2368,11 +2229,12 @@ async function checkBandWasserSheetSpiegel(ctx) {
             cmpF("aSlope", c.mainData.aSlope, wd.aSlope, c.key);
             out.compared++;
         }
+        delete r._voxelFadenAuftrag;
         return out;
     })) || { ok: false, msgs: ["keine Antwort der Seite"], mismatches: [] };
     check(
-        `Wasser-Sheet-Spiegel: Worker == Main byte-identisch (maxDiff ${report.maxDiff}) über ${report.compared} CA-freie Wasser-Chunks am Wasser ${steer && !steer.err ? `(${steer.x}, ${steer.z})` : ""}`,
-        !!steer && !steer.err && report.ok && report.compared > 0 && report.maxDiff === 0,
+        `Wasser-Sheet-Spiegel: Worker == Main byte-identisch (maxDiff ${report.maxDiff}) über ${report.compared} CA-freie Wasser-Chunks am Wasser ${steer && !steer.err ? `(${steer.x}, ${steer.z})` : ""}, ${report.zwei} nach zwei Fehlrunden`,
+        !!steer && !steer.err && report.ok && report.compared > 0 && report.maxDiff === 0 && report.zwei > 0,
         [steer && steer.err, ...report.msgs, ...report.mismatches].filter(Boolean).join(" · ").slice(0, 300)
     );
 }

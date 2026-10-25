@@ -13,8 +13,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 - **Stamm** `stamm/` (~117k Zeilen in 50 Dateien ≤ 4 000 Z., EINE Klasse, EIN Prototyp), je Datei ein Modul der Karte
   `spec/stamm/modul-karte.json` (19 Module, Datei = `<modul>[-<teil>].js`): der Kern `stamm/dirigent-kern.js` (Konstruktor + Naht,
   VERSION), jede Zone trägt sich mit ihrem Naht-Ruf auf `AnazhRealm`, ihre Außen-Konstanten dahinter; die Liste = die Stamm-Tags in
-  index.html; `npm run atlas` die Karte live (+ `--find`: Glieder, Außen-Ziele, zugewiesene Methoden, Kerne), `diag-atlas --check` die
-  Ratsche (R7: jedes Glied in der Datei seines Moduls). Boden · Speicher · Spieler · Anschluss + die Verben
+  index.html; `npm run atlas` die Karte live (+ `--find`: Glieder, Außen-Ziele, zugewiesene Methoden, Kerne, die Arten je
+  Gesetzbuch), `diag-atlas --check` die Ratsche (R7: jedes Glied in der Datei seines Moduls). Boden · Speicher · Spieler · Anschluss + die Verben
   (appear·place·body·drive·wield·portal·rule) + KIND_POLICY. Heute: die Karte ordnet nach Modul, nicht durchweg nach Domäne —
   Kreatur-Glieder (`_kreaturGangBis`, `_creatureGroundY`) und der Fahrzeug-Boden `_werkBoden` liegen in `stamm/wasser-hydro.js`.
 - **Kerne** (9 Kerne in 10 Dateien, cores.manifest.json): Daten+Mathe, Vertrag v1.2 `PARAMS_BY_KIND` + must-ignore + fail-closed
@@ -30,10 +30,11 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 
 - TERRAIN = Funktion: Höhe (2D), Landform und Flussnetz = EIN Gelände-Kern `gelaende-core.js` (Stamm · Worker · Studio · Playtest),
   Chunks = Iso-CACHE mit EIGENER Stufen-Kette (`BODEN_STUFEN`; der Wechsel morpht deckungsgleich nach CDLOD, K51), Wildnis = EIN Term ·
-  WELT-MARCH EIN Pass · Edits = EINE Karte je Chunk (`_voxelEditKarte`). Heute ohne Kern: die 3D-Dichte (Höhle, Kanal, Edit) lebt im
-  Stamm und als Abschrift in `voxel-worker.js` (~40 Funktionen, W1).
+  WELT-MARCH EIN Pass · Edits = EINE Karte je Chunk (`_voxelEditKarte`, im Kern `editKarte`) · die 3D-Dichte (Höhle, Kanal,
+  See-Becken, Edit) und der Wasser-Spiegel sind Kern-Gesetz (`dichte`, `wasserSpiegel`), Stamm und voxel-worker rufen sie
+  (`gate:worker-dichte --kern` mutiert sie).
 - WASSER: die Hydrosphäre (gelaende-core `hydrosphaere`, gerechnet im voxel-worker, per Transfer im Main) → Zellen → Automat, die Ruhe ist sein Fixpunkt (`_ensureWaterCALevel`), sein Blick EIN
-  Baustein (`_wasserBlick`). Heute keine EINE Wahrheit: 8 Schreiber, kein Kern, die Seen doppelt (Gelände-Kern und Stamm).
+  Baustein (`_wasserBlick`). Heute keine EINE Wahrheit: 8 Schreiber, die Seen doppelt (Gelände-Kern und Stamm); der Spiegel ist Kern.
 - ORT: der Genesis-Platz (`GENESIS_PLATZ`), jedes Bauwerk und jeder Dorfweg sind Grundriss gegen Natur, das Dorf EIN Plan des
   Fachwerk-Studios auf dem Gelände-Kern (`_ortPlaene`), jeder Wurf des Felds weicht ihm (`FELD_WURF`, `_weichtDemBau`). Heute hält die
   Instanz-Wand (`_naturWand`) Bauten frei, die Schicht (Halm, Nah-Wiese) noch nicht.
@@ -51,8 +52,10 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   `_gpuKehraus` · `_foundryAuftrag` · `_foundrySchale` · BRUCH = EIN Melder (`_stoffBruch` → `_bruchMelden`) · ANKUNFT = EIN Schreiber des
   ersten Weltbilds (`_weltbildSteht`).
 - LEBEN EIN Leib-Löser, Gang EIN Gesetz (`gangSchritt`; heute geht das Labor `worlds/tetrapoda` noch eigenen PD-Sinus) · Kamera
-  `_loopCamera` (heute 4 Zweige ohne Rig; die EINE Kugel ist Gesetz, nicht Stand) · Tod `_kreaturFaellt` · Lebenswerte = Zustand
-  (`recomputePlayerStats`) · Blocker-Netz · Klang-Gesetz · Uhr + Wetter = Spieler-Wort · SPEICHER atomar (tmp + Rename + .bak).
+  `_loopCamera` (heute 4 Zweige ohne Rig; die EINE Kugel ist Gesetz, nicht Stand) · Sturz = das Aufprall-Tempo des Leib-Lösers
+  (`LEIB.sturz` in `_loopPhysicsSync`, nie ein Höhen-Zähler) · Tod `_kreaturFaellt`, seine Lage in Ereignis-Zeit (die Haut im Tod
+  gelesen, `TOD_LAGE.vorlaufSec`, `_todLageFrist`) · Lebenswerte = Zustand (`recomputePlayerStats`), sie und die Bindung reisen im
+  Stand · Blocker-Netz · Klang-Gesetz · Uhr + Wetter = Spieler-Wort · SPEICHER atomar (tmp + Rename + .bak).
 - PRÜFEN 6 Golden-Sätze + Ofen · Messorte (`spec/profiband/haushalt.json`): Wiese −280,4/−1045,6 (K55, bd38fb16; der alte Ort −900/−850
   ist seit K16 ein Nadelwald-Hang), Genesis-Ring (`_genesisMitte`), Dorf, Prüfbühne `spec/pruefbuehne` · 12 Ratschen Ort × Gerät × Sicht ·
   Linsen-Start `lib/software-gpu.cjs` (`linsenWebGpuArgs`: lokal die echte GPU, CI swiftshader) · das Beweisbild urteilt selbst
@@ -75,7 +78,7 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 7. **Gesetz statt Spiegel:** die Höhe ruft EIN Gesetzbuch (`gelaende-core.js`, Lage = Worker-`state` bzw. `_gelaende()`); ein
    Worker-Spiegel ist bit-identisch (Sheet/Density in BEIDE, der Band `checkBandWasserSheetSpiegel` maxDiff 0, `gate:worker-dichte` auch
    über dem Band); Substanz aus Γ5-Seed-Streams, nie `Math.random`; ein Zwillings-Abdruck ist ein MUSTER über jede Datei und jedes
-   Skript, nie ein Variablen-Name. Heute gilt das Gesetzbuch für die 2D-Höhe; die 3D-Dichte ist Spiegel (W1).
+   Skript, nie ein Variablen-Name. Das Gesetzbuch trägt die 2D-Höhe, die 3D-Dichte und den Wasser-Spiegel (gelaende-k1k4).
 8. **Spawn-Affinität ist TAG-NEUTRAL** (winner-take-all; Tiere bewusst tag-identisch, Differenzierung über Größe/Gattung, nie über Tags).
 9. **Exit-Codes IMMER explizit** (`echo EXIT=$?`) — `gate | tail` maskiert sie; Backslash-Ersetzungen (Regex, WGSL) nur per Edit-Werkzeug.
 10. **Jede versionierte Datei trägt den `?v=`-Cache-Buster** (Worker/Bootstrap/importScripts); `npm run bump -- x.y.z` setzt alle Träger.

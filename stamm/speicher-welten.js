@@ -115,7 +115,7 @@ class AnazhRealm_speicher_welten {
             });
         }
         if (fresh) {
-            this.journalAppend("genesis", `Ich erwache als ${m.slug}.`, { worldId: m.worldId });
+            this.journalAppend("genesis", AnazhRealm._datum`Ich erwache als ${m.slug}.`, { worldId: m.worldId });
             // Ring 8: frische Welt im Index registrieren. Reload-Migration
             // (legacy single-key) ruft ensureWorldMeta nach Pre-Load auf;
             // dort ist worldId schon gesetzt und dieser Pfad bleibt aus.
@@ -763,22 +763,18 @@ class AnazhRealm_speicher_welten {
         // PRÄGUNG-WELT — der Guss-Stempel kehrt zurück (Gegenstück zu _serializeBlueprint):
         // NUR ein non-leeres plain object, tief kopiert + größen-bewacht (dieselbe
         // 8-KiB-Taille-Wand wie _carryUnknown — kein Save-/Peer-Riesenstempel).
-        if (data.studioOv && typeof data.studioOv === "object" && !Array.isArray(data.studioOv)) {
-            try {
-                const json = JSON.stringify(data.studioOv);
-                if (json && json.length > 2 && json.length <= AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) {
-                    restored.studioOv = JSON.parse(json);
-                }
-            } catch (_e) {
-                /* nicht-serialisierbar → fällt still (fail-closed) */
-            }
-        }
+        const stempel = AnazhRealm._stempelVon(data.studioOv);
+        if (stempel) restored.studioOv = stempel;
         this._carryUnknown(data, restored, AnazhRealm.BLUEPRINT_KNOWN_KEYS);
         return restored;
     }
 
     buildStateSnapshot() {
         const knowledgeBase = this.state.knowledgeBase.slice(-200);
+        // DIE WELT IST EINE FUNKTION, KEIN SACK (speicher.K3, Gebot 7): was Saat und Gesetz setzen (`_ausGesetz`: der Wurf des
+        // Felds, die Promotion der Streu), rechnet jeder Boot neu — der Stand trägt Werke, Taten und Leben, nie den Weg. Bis
+        // speicher-k3 trug er jeden Wurf: 5 km Wanderung in 30 min hoben 443 auf 16 781 Bauten, den Stand von 0,2 auf 5,2 MB.
+        const bauten = (this.state.architectures || []).filter((a) => !a._ausGesetz);
         return {
             playerPosition: this.state.playerMesh
                 ? {
@@ -789,12 +785,15 @@ class AnazhRealm_speicher_welten {
                 : { x: 0, y: 5, z: 0 },
             // DIE BODEN-GENERATION (K16): unter welchem Gelände-Gesetz die Höhen dieses Saves stehen (`_bodenUmzug`).
             bodenGeneration: globalThis.__gelaendeCore.BODEN_GENERATION,
+            // DIE HERKUNFT: jedes Werk dieses Stands trägt `werk` (seit 22.10.); ohne die Zeile entscheidet das Laden.
+            herkunft: 1,
             spielerUeberGrund: this.state.playerMesh ? this._ueberGrund(this.state.playerMesh.position) : undefined,
             knowledgeBase: knowledgeBase,
             version: this.state.currentVersion,
             selfAwareness: this.state.selfAwareness,
             // Volle Komponenten-Persistenz je Kreatur (Name+Soul+Memory+bornAt+position); Specs live aus memory.
-            // Tasks + carrying bewusst NICHT persistiert (Gesten leben im Moment, Identität lebt fort).
+            // Tasks + carrying bewusst NICHT persistiert (Gesten leben im Moment, Identität lebt fort) — die Bindung an den
+            // Spieler (bond + Folgen) ist Identität und reist mit (`_serializeCreature` bindung, halten.K5).
             // Ein Gefallener liegt nie in state.creatures (er zog beim Tod nach state.leichname) — er reist nie in den
             // Snapshot und erwacht nie beim Reload.
             creatures: this.state.creatures.map((c) => this._serializeCreature(c)).filter((s) => s),
@@ -804,15 +803,15 @@ class AnazhRealm_speicher_welten {
             terrainSteepness: this.state.terrainSteepness,
             terrainBaseHeight: this.state.terrainBaseHeight,
             weather: this.state.weather,
-            // Das Scatter-Promoted-Set persistiert via worldMeta: berührte/gespawnte Cells bleiben über den Reload
-            // promoted. Als Array serialisiert (JSON kennt keine Sets); Cap 16k Einträge (~512 KB Worst-Case)
-            // deckelt die Snapshot-Größe — ältere fallen.
+            // Die Promotion der Streu ist eine Funktion des Wegs (der Boot promotet neu, wo der Spieler naht) und reist nicht; ein
+            // älterer Stand behält seine Liste (`worldMeta.scatterPromoted`, seine promoteten Bäume reisen mit ihm). Der Erdbau
+            // eines Orts mit Gedächtnis (`settlementCells`) reist nie: der Ort kehrt aus ihm wieder (`_tickAutoSettlement`).
             worldMeta: (() => {
                 const wm = { ...this.state.worldMeta };
-                if (this.state.scatterPromoted instanceof Set) {
-                    const arr = Array.from(this.state.scatterPromoted);
-                    if (arr.length > 16000) arr.splice(0, arr.length - 16000);
-                    wm.scatterPromoted = arr;
+                const orte = new Set(Object.values(wm.settlementCells || {}).map((c) => c && c.seed >>> 0));
+                if (wm.erdbau && typeof wm.erdbau === "object") {
+                    wm.erdbau = { ...wm.erdbau };
+                    for (const k in wm.erdbau) if (/^ort:/.test(k) && orte.has(+k.split(":")[1])) delete wm.erdbau[k];
                 }
                 return wm;
             })(),
@@ -849,6 +848,18 @@ class AnazhRealm_speicher_welten {
             // bleiben absichtlich draußen — sie sind reine Laufzeit-Drosselung,
             // ein Reload soll wieder triggerfähig sein.
             playerEmotions: { ...this.state.player.emotions },
+            // DIE LEBENSWERTE SIND ZUSTAND (halten.K5, `recomputePlayerStats`): Leben, Ausdauer und Mana als Anteil ihres
+            // Maximums (das Maximum rechnet der Leib beim Laden neu, wie `hpAnteil` des Tiers), dazu die Wunde des Tods —
+            // vorher heilte jeder Reload (hp 69,6 → 134 von 134, die Wunde 1 → 0). `_loadStateRestoreLeben` liest sie.
+            playerLeben: ((pl) => {
+                const anteil = (v, max) => (Number.isFinite(v) && max > 0 ? +Math.min(1, v / max).toFixed(4) : 1);
+                return {
+                    hp: anteil(pl.hp, pl.hpMax),
+                    ausdauer: anteil(pl.stamina, pl.staminaMax),
+                    mana: anteil(pl.mana, pl.manaMax),
+                    wunde: +(pl.deathWoundIntensity || 0).toFixed(4),
+                };
+            })(this.state.player),
             // Tag-Nacht: timeOfDay läuft nach dem Reload weiter. Die Tag-Länge ist die Wahl des Spielers und lebt bei ihm
             // (localStorage, `setDayLength`): der Kopf trägt sie, weil die Taille v1 den Schlüssel verlangt
             // (spec/golden/v1/snapshot-head.json, MUST weiter produziert), das Laden setzt sie nie (Leben-Schau 2: jeder
@@ -942,14 +953,15 @@ class AnazhRealm_speicher_welten {
             // die `parts` sind pure Funktion von (species, seed) und wachsen beim Restore via `_growTreeBlueprint`
             // nach (~75 Parts/Baum würden die 256-KB-Wand von pinCurrentWorld sprengen).
             grownBlueprints: (() => {
-                // NUR von einer Architektur REFERENZIERTE gewachsene Baupläne persistieren. Foliage-Varianten wachsen
+                // NUR von einem Bau DES STANDS referenzierte gewachsene Baupläne persistieren. Foliage-Varianten wachsen
                 // im nächsten Streaming-Pass deterministisch nach; im Snapshot blähten sie ihn und umgingen beim
                 // Restore die 256er-Ring-Deckelung (Inflation über Sessions). Architektur-gehaltene MÜSSEN bleiben,
                 // sonst verliert ein platzierter Baum seinen Bauplan.
                 const out = {};
                 const bps = this.state.blueprints || {};
+                const typen = new Set(bauten.map((a) => a.type));
                 for (const k in bps) {
-                    if (bps[k] && bps[k]._isGrown && this._isGrownBlueprintReferenced(k)) {
+                    if (bps[k] && bps[k]._isGrown && typen.has(k)) {
                         out[k] = {
                             label: bps[k].label,
                             _grownSpecies: bps[k]._grownSpecies,
@@ -973,7 +985,7 @@ class AnazhRealm_speicher_welten {
             // Ring 6: Bau-Werke. Nur {type, position, seed, scale} — der
             // Mesh wird beim Laden aus dem Seed rekonstruiert (kein Mesh-
             // Snapshot). V2 inkludiert scale für fraktale Sub-Strukturen.
-            architectures: (this.state.architectures || []).map((a) => ({
+            architectures: bauten.map((a) => ({
                 // Eine string-id ist eine GETEILTE Architektur-Identität (spieler-gebaut + broadcastet): sie muss Save
                 // + Snapshot-Transfer überleben, sonst divergieren die Peer-ids und der Abbau-Sync bricht.
                 // Numerische ids (Worldgen) sind lokal.
@@ -1073,12 +1085,19 @@ class AnazhRealm_speicher_welten {
             // oder null. Default wird beim Init überschrieben.
             hotbar: Array.isArray(this.state.hotbar) ? this.state.hotbar.slice(0, 9) : [],
             // Welle 6.C1 — Inventar persistiert. 27 Slots, jeweils {blueprintName,
-            // count} oder null. Bei Reload defensive Validierung (unbekannte
-            // Bauplan-Namen werden zu null, count auf 1..999 geclampt).
+            // count}, ein Material-Slot {kind, material, count}, oder null. Bei Reload defensive Validierung (unbekannte
+            // Namen werden zu null, count ≥ 1, ganz). Bis 24.10. schrieb der Material-Slot nur {count}: jedes Laden
+            // verlor, was Graben, Ernte und Beute gaben (der Korpus, speicher.K5).
             playerInventory: Array.isArray(this.state.player && this.state.player.inventory)
                 ? this.state.player.inventory
                       .slice(0, 27)
-                      .map((s) => (s ? { blueprintName: s.blueprintName, count: s.count || 1 } : null))
+                      .map((s) =>
+                          s
+                              ? s.kind === "material"
+                                  ? { kind: "material", material: s.material, count: s.count || 1 }
+                                  : { blueprintName: s.blueprintName, count: s.count || 1 }
+                              : null
+                      )
                 : [],
         };
     }
@@ -1462,9 +1481,13 @@ class AnazhRealm_speicher_welten {
         const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
         if (myKey) this._appendProvenance(manifest, myKey);
         this.triggerStateDownload(manifest, `anazh-welt-${entry.id}.json`);
-        this.journalAppend("share", `Ich teilte die ${entry.label} — ihr signiertes Manifest ging hinaus.`, {
-            world: entry.id,
-        });
+        this.journalAppend(
+            "share",
+            AnazhRealm._datum`Ich teilte die ${entry.label} — ihr signiertes Manifest ging hinaus.`,
+            {
+                world: entry.id,
+            }
+        );
         return { ok: true, id: entry.id, manifest };
     }
 
@@ -1502,10 +1525,14 @@ class AnazhRealm_speicher_welten {
         if (!this.state.customWorlds) this.state.customWorlds = {};
         this.state.customWorlds[clean.id] = clean;
         this._saveCustomWorlds();
-        this.journalAppend("growth", `Eine fremde Welt fand den Weg in deine Bibliothek: „${clean.label}".`, {
-            world: clean.id,
-            signature: signatureStatus,
-        });
+        this.journalAppend(
+            "growth",
+            AnazhRealm._datum`Eine fremde Welt fand den Weg in deine Bibliothek: „${clean.label}".`,
+            {
+                world: clean.id,
+                signature: signatureStatus,
+            }
+        );
         return { ok: true, id: clean.id, signatureStatus, reachable };
     }
 
@@ -1595,9 +1622,13 @@ class AnazhRealm_speicher_welten {
         if (!this.state.customWorlds) this.state.customWorlds = {};
         this.state.customWorlds[clean.id] = clean;
         this._saveCustomWorlds();
-        this.journalAppend("growth", `Der KI-Übersetzer trug eine Welt in deine Bibliothek: „${clean.label}".`, {
-            world: clean.id,
-        });
+        this.journalAppend(
+            "growth",
+            AnazhRealm._datum`Der KI-Übersetzer trug eine Welt in deine Bibliothek: „${clean.label}".`,
+            {
+                world: clean.id,
+            }
+        );
         return { ok: true, id: clean.id, label: clean.label };
     }
 
@@ -1745,9 +1776,13 @@ class AnazhRealm_speicher_welten {
         w.world = AnazhRealm.PORTAL_TRANSLATED_WORLD;
         w.reachable = true;
         this._saveCustomWorlds();
-        this.journalAppend("growth", `Der KI-Übersetzer gab „${w.label}" einen Körper — die Welt ist nun betretbar.`, {
-            world: w.id,
-        });
+        this.journalAppend(
+            "growth",
+            AnazhRealm._datum`Der KI-Übersetzer gab „${w.label}" einen Körper — die Welt ist nun betretbar.`,
+            {
+                world: w.id,
+            }
+        );
         return { ok: true, id: w.id, label: w.label };
     }
 
@@ -1888,9 +1923,13 @@ class AnazhRealm_speicher_welten {
         if (!this.state.customWorlds) this.state.customWorlds = {};
         this.state.customWorlds[entry.id] = entry;
         this._saveCustomWorlds();
-        this.journalAppend("growth", `Eine fremde Welt dockte an deine Bibliothek an: „${entry.label}".`, {
-            world: entry.id,
-        });
+        this.journalAppend(
+            "growth",
+            AnazhRealm._datum`Eine fremde Welt dockte an deine Bibliothek an: „${entry.label}".`,
+            {
+                world: entry.id,
+            }
+        );
         // Die Bibliothek wuchs: Welt-Katalog neu annoncieren (self-guarded — _p2pBroadcastSoul ruht ohne Mesh)
         // und den eigenen Katalog-Drawer auffrischen, damit Mitspieler die neue Welt als „✓ vorhanden" sehen.
         this._p2pBroadcastSoul();
@@ -2166,7 +2205,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
         ]),
         desc: "Das Tor-Labor: sieben Portal-Ordnungen aus der Stich-Schub-Dicke-Lehre, fraktal vertieft, mit öffnenden Türen.",
     }),
-    // Das KLINGEN-Labor: 21 Gattungen (Waffen + Werkzeuge), 4 Traditionen, Anschlag-Probe + Prüfstand.
+    // Das KLINGEN-Labor: 22 Gattungen (Waffen + Werkzeuge), 4 Traditionen, Anschlag-Probe + Prüfstand.
     // schmiede-core.js (__schmiedeCore) ist die EINE generative Quelle für Shell UND Foundry. DSL = echte
     // UI-Pfade: Gattungen + Traditionen (Umlaute ASCII-gefaltet: saebel/grossschwert/faellaxt) +
     // anschlagen + stahl.
@@ -2203,7 +2242,7 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
             "anschlagen",
             "stahl",
         ]),
-        desc: "Das Klingen-Labor: Rückgrat, Schnittprofil und Lehren urteilen die Waffe — 21 Gattungen, 4 Traditionen, Anschlag-Probe und Prüfstand.",
+        desc: "Das Klingen-Labor: Rückgrat, Schnittprofil und Lehren urteilen die Waffe — 22 Gattungen, 4 Traditionen, Anschlag-Probe und Prüfstand.",
     }),
     // Das HAUS-Labor: Fachwerkhaus, parametrisch + begehbar — 32 Kultur-Archetypen, Dorf-Modus
     // (Straßengraph, Mauer, Jahresringe). fachwerk-core.js (__fachwerkCore) ist die EINE generative
