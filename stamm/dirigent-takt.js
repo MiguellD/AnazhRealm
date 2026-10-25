@@ -1024,6 +1024,7 @@ class AnazhRealm_dirigent_takt {
         const _ct = performance.now();
         this.updateCreatures(delta);
         this._tickBewohner(delta); // die Bewohner der Siedlungen (Meisterkarte mensch.K1)
+        this._vogelTakt(); // die Vögel des Hör-Kreises (Klang K1: jeder Ruf hat einen Leib)
         this._perfSenseLap("creatures", _ct);
         this.state.weatherEffectTime += delta;
         // DIE WETTER-UHR der Welt (wetter.K1): die Spiel-Zeit, in der die Fronten ziehen — Welt-Gedächtnis (`worldMeta.wetterUhr`,

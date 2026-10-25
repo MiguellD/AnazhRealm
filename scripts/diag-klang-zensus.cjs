@@ -14,7 +14,9 @@
 //  (W) WERKSTATT: der Haupt-Thread rechnet keinen Sample (klang:umweltSynthese je Thread).
 //  (A) ARMLÄNGE: 1 m vor der Glut, 3–24 m neben dem Wasserfall, eigenes SOLL.
 //  (P) SPITZEN: jede Mischung offline durch Master und Spitzen-Wand — keine Spitze erreicht 0 dBFS.
-//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S11 unten), Stubs restauriert.
+//  (R) RUF ← LEIB: jeder gehörte Vogel ist ein gezeichneter Leib; ohne Leib verstummt der Chor (Mutation an der Wiese), ein
+//      Tier-Ruf ohne Leib der Welt bleibt stumm.
+//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S12 unten), Stubs restauriert.
 //  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
 //   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>]] [--json <datei>]
 //   (KLANG_WURZEL=<baum> misst einen anderen Arbeitsbaum unter derselben Linse)
@@ -345,15 +347,14 @@ function werkzeug() {
             orte.fallSuche = wfN ? { x: wfN.f.x, z: wfN.f.z, d: Math.round(wfN.d) } : "kein Wasserfall der Region";
         return orte;
     };
-    // Der Abgriff ist, was der Spieler hört: hinter der Spitzen-Wand.
-    W.abgriff = () => st.symphony.spitze.ausgang;
-    // DER AUSGANGS-ABGRIFF: Oktavband-Pegel (dBFS, Mono-Summe) und Spitze über `sek` Sekunden, der Loop läuft.
+    // DER AUSGANGS-ABGRIFF: Oktavband-Pegel (dBFS, Mono-Summe) und Spitze über `sek` Sekunden, der Loop läuft. Der Abgriff
+    // ist, was der Spieler hört: hinter der Spitzen-Wand.
     W.ausgang = async (sek) => {
         const s = st.symphony;
         const an = s.ctx.createAnalyser();
         an.fftSize = 8192;
         an.smoothingTimeConstant = 0;
-        const tap = W.abgriff();
+        const tap = s.spitze.ausgang;
         tap.connect(an);
         let spitze = 0;
         const N = an.frequencyBinCount;
@@ -459,16 +460,8 @@ function werkzeug() {
             r._applyCompoundWorldEffects("__klangOrb");
             delete st.blueprints.__klangOrb;
         });
-        await fang(
-            "tier",
-            () => {
-                // ein Wesen 3 m neben dem Ohr (leerer Körper → die Bezugslänge des Gesetzes)
-                const c = new window.THREE.Object3D();
-                c.position.set(st.playerMesh.position.x + 3, st.playerMesh.position.y, st.playerMesh.position.z);
-                r._tierRuf(c, "freude");
-            },
-            4000
-        );
+        // ein Ruf ohne Leib der Welt (ein Wesen am Ohr, das kein Wesen der Welt ist) bleibt stumm — auch die Werkstatt antwortet nicht
+        await fang("tier", () => r._tierRuf({ position: st.playerMesh.position }), 4000, true);
         // Ein Ding im Inventar (resonierend) unter der Maus.
         await fang("inventar", () => {
             st.inventoryHoverLast = 0;
@@ -526,7 +519,7 @@ function werkzeug() {
     // ±∞ reist über die Brücke als null (und null > −64 ist wahr — Lehre 17): −∞ (Pegel) wird −999, +∞ (Abstand)
     // wird 1e9 — beide bleiben auf ihrer Seite jeder Schwelle.
     W.endlich = (o) => JSON.parse(JSON.stringify(o, (k, v) => (v === Infinity ? 1e9 : v === -Infinity ? -999 : v)));
-    W.zensus = () => (r._klangZensus() ? W.endlich(r._klangZensus()) : null);
+    W.zensus = () => W.endlich(r._klangZensus());
     W.mischung = (lage) => W.endlich(window.__klangCore.umweltMischung(lage));
     return W;
 }
@@ -627,6 +620,16 @@ async function messeOrt(page, name, ort, stubs) {
                 alt._koerperWasser = P._koerperWasser;
                 P._koerperWasser = () => -Infinity;
             }
+            if (stubs && stubs.ohneLeib) {
+                // der Leib weg: das Revier-Gesetz trägt kein Revier, die Vogel-Karte neu — der Phantom-Vogel (Selbst-Test)
+                // singt in der Lage am Ohr ohne einen Leib
+                [alt.vogel, alt.lage] = [r.constructor._vogelGesetzMemo, P._umweltLage];
+                [r.constructor._vogelGesetzMemo, r._vogelKarte] = [{ ...alt.vogel, revier: () => false }, null];
+                if (stubs.phantom)
+                    P._umweltLage = function () {
+                        return Object.assign(alt.lage.call(this), { voegel: [{ d: 20 }] });
+                    };
+            }
             const um0 = st.symphony.umwelt;
             if (stubs && stubs.ohneWerkstatt && um0) {
                 // Selbst-Test: ein Graph, der im Haupt-Thread rechnet (ohne Lieferung der Werkstatt).
@@ -652,6 +655,8 @@ async function messeOrt(page, name, ort, stubs) {
                 const baeume = W.bestand(bp.x, bp.z, 15);
                 return { name, ort, um, aus, laufend, zensus, baeume, hauptSynthese: syn1 - syn0 };
             } finally {
+                if (alt.lage)
+                    [r.constructor._vogelGesetzMemo, r._vogelKarte, P._umweltLage] = [alt.vogel, null, alt.lage];
                 if (alt._koerperWasser) P._koerperWasser = alt._koerperWasser;
                 if (alt.graph) {
                     um0.graph.stopAlle();
@@ -940,6 +945,14 @@ async function labPruefen(browser) {
     }
 }
 
+// (R) RUF ← LEIB (klang.K1): jeder gehörte Vogel ist ein gezeichneter Leib, der Chor singt nur aus gezeichneten Leibern, und
+// ohne Leib (`…OhneLeib`) schweigt er. Ein Spiel, das keine Leiber meldet, hat keine.
+const leibUrteil = (name, z) => {
+    const [L, singt] = [z.leiber || { gehoert: 0, gezeichnet: 0 }, z.stimmen.some((v) => v.name === "vogel" && v.an)];
+    return L.gehoert !== L.gezeichnet || (singt && (!L.gezeichnet || /OhneLeib$/.test(name)))
+        ? [`R ${name}: ${L.gehoert} gehört, ${L.gezeichnet} gezeichnet${singt ? ", singt" : ""} — ein Ruf ohne Körper`]
+        : [];
+};
 function urteile(daten, offline, lab, ereig, phasen, spitzen) {
     const rot = [];
     const zeilen = [];
@@ -1005,6 +1018,7 @@ function urteile(daten, offline, lab, ereig, phasen, spitzen) {
         for (const v of stimmen)
             if (v.an && !(v.db >= -68))
                 rot.push(`H ${name}: Stimme ${v.name} läuft bei ${v.db} dB (unter der Hörschwelle)`);
+        if (z) rot.push(...leibUrteil(name, z));
         // (S) SOLL
         const m = d.mixMitte;
         if (m) mixAlle[name] = m;
@@ -1079,7 +1093,7 @@ function drucke(zeilen, offline, kostenErg, lab) {
             const L = d.zensus.lage;
             const nah = (v) => Number.isFinite(v) && v < 1e8;
             console.log(
-                `   Lage: wind ${L.windFeld.toFixed(3)} · böe ${L.boe.toFixed(2)} · deckung ${L.deckung.toFixed(2)} · regen ${L.regen} · sonne ${L.sonne.toFixed(2)} · leben ${L.lebendig.toFixed(2)} · ufer ${nah(L.ufer.d) ? L.ufer.d + " m/" + L.ufer.anteil.toFixed(2) : "—"} · fluss ${nah(L.fluss.d) ? L.fluss.d + " m" : "—"} · fall ${nah(L.fall.d) ? Math.round(L.fall.d) + " m" : "—"} · glut ${nah(L.glut.d) ? L.glut.d.toFixed(1) + " m" : "—"}`
+                `   Lage: wind ${L.windFeld.toFixed(3)} · böe ${L.boe.toFixed(2)} · deckung ${L.deckung.toFixed(2)} · regen ${L.regen} · sonne ${L.sonne.toFixed(2)} · vögel ${(L.voegel || []).length} · ufer ${nah(L.ufer.d) ? L.ufer.d + " m/" + L.ufer.anteil.toFixed(2) : "—"} · fluss ${nah(L.fluss.d) ? L.fluss.d + " m" : "—"} · fall ${nah(L.fall.d) ? Math.round(L.fall.d) + " m" : "—"} · glut ${nah(L.glut.d) ? L.glut.d.toFixed(1) + " m" : "—"}`
             );
         }
         for (const v of stimmen)
@@ -1350,6 +1364,9 @@ async function zensus(page, browser, ergebnis) {
     for (const name of ["wiese", "wald", "dorf", "glutArm", "seeufer", "fallArm"]) {
         if (!orte[name]) continue;
         daten[name] = await messeOrt(page, name, orte[name]);
+        // (R) Leib weg → Ruf weg: dieselbe Wiese, deren Revier-Gesetz keinen Vogel trägt
+        if (name === "wiese")
+            daten.wieseOhneLeib = await messeOrt(page, "wieseOhneLeib", orte.wiese, { ohneLeib: true });
         const z = daten[name].zensus;
         if (z && z.lage) {
             const lageMitte = Object.assign({}, z.lage, { boe: 0.7 });
@@ -1425,27 +1442,25 @@ async function zensus(page, browser, ergebnis) {
         // S1 + S2: der Drohn-Zwilling und die stumme Schleife.
         await page.evaluate(() => {
             const s = window.anazhRealm.state.symphony;
-            window.zwillingDrohne = function () {
-                const o = s.ctx.createOscillator();
-                o.frequency.value = 110;
+            // die Quelle q über einen Gain v am Master, gestartet
+            const an = (q, v) => {
                 const g = s.ctx.createGain();
-                g.gain.value = 0.01;
-                o.connect(g);
-                g.connect(s.masterGain);
-                o.start();
-                return o;
-            };
-            window.stummeSchleife = function () {
-                const b = s.ctx.createBuffer(1, 4800, 48000);
-                const q = s.ctx.createBufferSource();
-                q.buffer = b;
-                q.loop = true;
-                const g = s.ctx.createGain();
-                g.gain.value = 0;
+                g.gain.value = v;
                 q.connect(g);
                 g.connect(s.masterGain);
                 q.start();
                 return q;
+            };
+            window.zwillingDrohne = function () {
+                const o = s.ctx.createOscillator();
+                o.frequency.value = 110;
+                return an(o, 0.01);
+            };
+            window.stummeSchleife = function () {
+                const q = s.ctx.createBufferSource();
+                q.buffer = s.ctx.createBuffer(1, 4800, 48000);
+                q.loop = true;
+                return an(q, 0);
             };
             window.__selbst = [window.zwillingDrohne(), window.stummeSchleife()];
         });
@@ -1568,10 +1583,14 @@ async function zensus(page, browser, ergebnis) {
             )
         )
             fehl.push("S11: der Wasser-Hauch auf trockenem Land bleibt unbemerkt");
+        // S12: der Phantom-Vogel — gehört ohne Leib: beide Arme der Linse nennen ihn
+        const d12 = await messeOrt(page, "wieseOhneLeib", orte.wiese, { ohneLeib: true, phantom: true });
+        if (!/1 gehört, 0 gezeichnet, singt/.test(leibUrteil(d12.name, d12.zensus)))
+            fehl.push("S12: der Phantom-Vogel bleibt unbemerkt");
         for (const t of fehl) console.log("   ❌ " + t);
         if (!fehl.length)
             console.log(
-                "   ✅ S1 Zwilling beim Namen · S2 stumme Schleife beim Namen · S3 Seeufer ohne Wasser rot · S4 Voll-Umlauf rot · S5 Ereignis-Zwilling + Master-Umweg beim Namen · S6 Graph ohne Werkstatt rot · S7 Ruf im Haupt-Thread rot · S8 Glut auf Armlänge ohne Spitzen-Wand rot · S9 Ping-Zwilling im Stamm beim Namen · S10 Wald ohne Bestand rot · S11 Wasser-Hauch auf trockenem Land beim Namen"
+                "   ✅ S1 Zwilling beim Namen · S2 stumme Schleife beim Namen · S3 Seeufer ohne Wasser rot · S4 Voll-Umlauf rot · S5 Ereignis-Zwilling + Master-Umweg beim Namen · S6 Graph ohne Werkstatt rot · S7 Ruf im Haupt-Thread rot · S8 Glut auf Armlänge ohne Spitzen-Wand rot · S9 Ping-Zwilling im Stamm beim Namen · S10 Wald ohne Bestand rot · S11 Wasser-Hauch auf trockenem Land beim Namen · S12 Phantom-Vogel rot"
             );
         selbstOk = fehl.length === 0;
         ergebnis.selbsttest = fehl;
@@ -1582,7 +1601,7 @@ async function zensus(page, browser, ergebnis) {
         for (const t of rot) console.log("   " + t);
     } else
         console.log(
-            "✅ GRÜN — jede klingende Quelle trägt ein Gesetz, kostet nur hörbar, jeder Ort hält sein SOLL, Lab = Welt."
+            "✅ GRÜN — jede klingende Quelle trägt ein Gesetz, kostet nur hörbar, jeder Ort hält sein SOLL, jeder Ruf hat einen Leib, Lab = Welt."
         );
     return rot.length === 0 && selbstOk ? 0 : 1;
 }
