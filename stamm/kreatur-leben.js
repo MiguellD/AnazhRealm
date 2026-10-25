@@ -1592,19 +1592,16 @@ class AnazhRealm_kreatur_leben {
         return LG.bodenKlasse(h.dist - Math.max(1, h.halfW), aus.hang || 0, this._forestStandDensity(x, z), LG.L);
     }
 
-    // Findet die älteste Kreatur (kleinster bornAt), mit gattung nur ihrer Gattung. Für die Tod-Wahl am Hunger und am Alter —
-    // wer am längsten da ist, geht zuerst. Defensiv gegen Kreaturen ohne bornAt (z.B. aus Legacy-Save).
-    _findOldestCreature(gattung) {
-        if (!this.state.creatures || this.state.creatures.length === 0) return null;
+    // Findet die älteste Kreatur — das größte Alter in Spiel-Zeit (`alterS`, gezählt im Lebenszyklus), bei Gleichstand die
+    // früher Geborene (die Liste trägt die Geburts-Folge) —, mit gattung nur ihrer Gattung, mit nur (Set) nur unter ihm. Für die
+    // Tod-Wahl am Hunger, am Riss und am Alter: wer am längsten da ist, geht zuerst. Vorher wählte die Wanduhr der Geburt
+    // (bornAt): Geschwister eines Wurfs teilten oder trennten ihre Millisekunde je nach Lauf, dieselbe Saat starb anders.
+    _findOldestCreature(gattung, nur = null) {
         let oldest = null;
-        let oldestBorn = Infinity;
         for (const c of this.state.creatures) {
-            if (gattung && AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul] !== gattung) continue;
-            const b = (c && c.userData && c.userData.bornAt) || 0;
-            if (b < oldestBorn) {
-                oldestBorn = b;
-                oldest = c;
-            }
+            if ((gattung && AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul] !== gattung) || (nur && !nur.has(c)))
+                continue;
+            if (!oldest || (c.userData.alterS || 0) > (oldest.userData.alterS || 0)) oldest = c;
         }
         return oldest;
     }
@@ -1934,10 +1931,13 @@ class AnazhRealm_kreatur_leben {
     // DER BESTAND IM REVIER (Ökologie K2, tetrapoda BESTAND_GESETZ): je Gattung der Bestand n (die lebenden Tiere), die
     // Kapazität K des Reviers um den Spieler (die Zellen des Rasters rasterM bis revierM: je Zelle der Lebensraum der Gattung in
     // ihrer Boden-Klasse × Fläche × die Nahrung nach ihrer Ernährung — die Äsung des Orts `_kreaturNahrung`, die Beute = die
-    // Pflanzenfresser im Revier) und die Bilanz {geburt, tod} je Takt. Die Boden-Klasse einer Zelle ist eine Funktion der Welt
-    // (Gelände, Fluss, Wald): sie wird je Zelle EINMAL gefragt (die Kosten hängen an der Bewegung, nie am Takt).
-    // Liefert { gattung: { n, K, frass, geburt, tod } }.
-    _kreaturBestand() {
+    // Pflanzenfresser im Revier), den Riss (Ökologie K1: die Kost der wilden Jäger gegen die Dichte ihrer Beute — Beute ist,
+    // was `_kreaturIstBeute` einem Jäger zuspricht, dieselbe Frage wie die Jagd im Takt) und die Bilanz {geburt, tod} je
+    // Takt. Die Boden-Klasse einer Zelle ist eine Funktion der Welt (Gelände, Fluss, Wald): sie wird je Zelle EINMAL gefragt
+    // (die Kosten hängen an der Bewegung, nie am Takt). `zellen` (wenn gegeben) sammelt je Zelle den Ort und je Gattung
+    // Lebensraum × Äsung — den Jungwuchs, den ihr Fraß liest (`_kreaturFrass`).
+    // Liefert { gattung: { n, K, frass, riss, beute, geburt, tod } } (beute: die Tiere, die einem Jäger Beute sind).
+    _kreaturBestand(zellen) {
         const BG = AnazhRealm._bestandGesetz();
         const B = BG.B;
         const LG = AnazhRealm._lebensraumGesetz();
@@ -1947,17 +1947,28 @@ class AnazhRealm_kreatur_leben {
         const pz = pm ? pm.position.z : 0;
         const n = {};
         const diet = {};
+        const jaeger = {};
+        const gejagt = {};
         for (const g in LG.L.gattung) {
-            n[g] = 0;
+            n[g] = jaeger[g] = gejagt[g] = 0;
             const d = this._ofenKreaturDials(g);
             if (!d || !d.dials || !Number.isFinite(d.dials.diet))
                 return AnazhRealm._kernPflichtBruch("tetrapoda:GATTUNGEN." + g + ".diet");
             diet[g] = d.dials.diet;
         }
+        const gattung = (c) => AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul];
+        for (const c of this.state.creatures) if (gattung(c) in n) n[gattung(c)]++;
+        // der Riss: wer einem wilden Jäger Beute ist, je Gattung gezählt, und die Kost der Jäger je Gattung, die sie jagen
+        const beuteVon = new Set();
         for (const c of this.state.creatures) {
-            const g = AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul];
-            if (g in n) n[g]++;
+            const d = diet[gattung(c)];
+            if (!(d > 0) || this._creatureTemperament(c) !== "wild") continue;
+            const jagt = new Set();
+            for (const o of this.state.creatures)
+                if (gattung(o) in n && this._kreaturIstBeute(c, o)) (beuteVon.add(o), jagt.add(gattung(o)));
+            for (const g of jagt) jaeger[g] += d;
         }
+        for (const o of beuteVon) gejagt[gattung(o)]++;
         let beuteN = 0;
         for (const g in n) if (diet[g] <= pflanz) beuteN += n[g];
         const beute = Math.min(1, beuteN / B.beuteVoll);
@@ -1980,23 +1991,48 @@ class AnazhRealm_kreatur_leben {
                 let klasse = kl.map.get(key);
                 if (klasse === undefined) kl.map.set(key, (klasse = this._bodenKlasseAt(x, z)));
                 const aesung = this._kreaturNahrung(x, z);
+                const je = {};
                 for (const g in n) {
                     const l = LG.lebensraum(g, klasse, LG.L);
                     if (l > 0) K[g] += l * ha * BG.nahrung(diet[g], aesung, beute);
+                    je[g] = l * aesung;
                 }
+                if (zellen) zellen.push({ x, z, je });
             }
         const aus = {};
         for (const g in n) {
             const k = B.kopfJeHa * K[g];
-            aus[g] = Object.assign({ n: n[g], K: +k.toFixed(2), frass: BG.frass(diet[g], B) }, BG.bilanz(n[g], k, B));
+            const riss = BG.riss(jaeger[g], gejagt[g] / B.beuteVoll, B);
+            aus[g] = Object.assign(
+                {
+                    n: n[g],
+                    K: +k.toFixed(2),
+                    frass: BG.frass(diet[g], B),
+                    riss,
+                    beute: beuteVon,
+                },
+                BG.bilanz(n[g], k, B)
+            );
         }
         return aus;
+    }
+
+    // DER FRASS (Ökologie K1, tetrapoda bestandFrass): je Takt nimmt jede äsende Gattung n × frass vom Jungwuchs der Zellen, die
+    // ihr Bestand liest (`zellen` aus `_kreaturBestand`), je Zelle nach ihrem Anteil Lebensraum × Äsung — die Herde äst, wo der
+    // Jungwuchs steht, und die Kapazität liest, was sie ließ (negativ ins Feld). Vorher fraß jedes Tier an seinem Ort, den das
+    // Raster nie las (Zeitraffer am main 45c6aa19: ohne die Wölfe Jungwuchs −0,1 %).
+    _kreaturFrass(bestand, zellen) {
+        for (const g in bestand) {
+            const F = bestand[g].n * bestand[g].frass;
+            const summe = F > 0 ? zellen.reduce((s, c) => s + c.je[g], 0) : 0;
+            if (summe > 0) for (const c of zellen) if (c.je[g] > 0) this._depositLife(c.x, c.z, (-F * c.je[g]) / summe);
+        }
     }
 
     // DER LEBENSZYKLUS (Ökologie K2, tetrapoda BESTAND_GESETZ): je taktS s der Spiel-Zeit (`spielZeit`: das Portal friert sie
     // ein) die Bilanz des Reviers (`_kreaturBestand`) — je Gattung über ihrer Kapazität stirbt mit ihrer Chance das Älteste am
     // Hunger (die Trauer des Spielers hebt, sein Frieden dämpft), darunter wirft der Ort eine Gruppe (`_creatureNaturalBirth`);
-    // zuvor äst jedes Tier am Ort (der Fraß, Ökologie K1).
+    // zuvor äst die Herde den Jungwuchs ihres Reviers (`_kreaturFrass`), und die Jäger reißen ihre Beute (Ökologie K1).
     // Jenseits der Lebensspanne kehrt das älteste Wesen zur Erde zurück. Bis Ökologie K2 setzte ein Deckel den Bestand (Ziel
     // 4–14 und Deckel 4–28 Tiere aus dem Feld am Spieler, FAUNA_TARGET/MAX_POPULATION), getaktet in der Wanduhr (Abklingen 25
     // bzw. 35 s); kein Fraß, keine Beute änderte eine Geburt, gestorben wurde nur über dem Deckel und am Alter.
@@ -2005,30 +2041,31 @@ class AnazhRealm_kreatur_leben {
         const L = st.faunaLifecycle;
         if (st.spielZeit - (L.lastTick || 0) < AnazhRealm._bestandGesetz().B.taktS) return;
         L.lastTick = st.spielZeit;
-        const bestand = this._kreaturBestand();
-        // DER FRASS (Ökologie K1): jedes Tier nimmt je Takt nach seiner Äsung vom Leben seines Orts (negativ ins Feld)
-        for (const c of st.creatures) {
-            const b = bestand[AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul]];
-            if (b && b.frass > 0) this._depositLife(c.position.x, c.position.z, -b.frass);
-        }
+        // das Alter in Spiel-Zeit: je Takt taktS (dieselbe Uhr wie die Bilanz; vorher zählte die Wanduhr, Date.now − bornAt:
+        // im Portal und in der Pause alterte jedes Tier, im Zeitraffer keines)
+        for (const c of st.creatures)
+            c.userData.alterS = (c.userData.alterS || 0) + AnazhRealm._bestandGesetz().B.taktS;
+        const zellen = [];
+        const bestand = this._kreaturBestand(zellen);
+        this._kreaturFrass(bestand, zellen);
         const rng = this._faunaRng();
         for (const g in bestand) {
-            const p = bestand[g].tod;
-            if (!(p > 0) || !(rng() < this._emotionModulate(p, { sorrow: { mul: 1.5 }, peace: { mul: 0.7 } })))
-                continue;
-            const opfer = this._findOldestCreature(g);
-            if (opfer) this._creatureNaturalDeath(opfer, "hunger");
+            const { tod: p, riss, beute } = bestand[g];
+            if (p > 0 && rng() < this._emotionModulate(p, { sorrow: { mul: 1.5 }, peace: { mul: 0.7 } })) {
+                const alt = this._findOldestCreature(g);
+                if (alt) this._creatureNaturalDeath(alt, "hunger");
+            }
+            // DER RISS (Ökologie K1): die Jäger nehmen das Älteste ihrer Beute unter den Lebenden (nach dem Hungertod gewählt) —
+            // der Tod eines Bisses (`_creatureCombatDeath`, Quelle jagd: der Ort erinnert ihn, der Leib liegt für den Fraß der Jäger)
+            const opfer = riss > 0 && rng() < riss && this._findOldestCreature(g, beute);
+            if (opfer) this._creatureCombatDeath(opfer, "jagd");
         }
         // die Geburt folgt der EINEN Regel der Kreaturen (`_kreaturenBereit`, K60): unter dem Ladeschirm goss sie, sobald
         // Boot-Phase 3 wartete, die Gattung synchron (Radeon kalt 0,7 s vor dem ersten Bild)
         if (this._kreaturenBereit()) this._creatureNaturalBirth(bestand);
         // Alter zählt: jenseits der Lebensspanne kehrt das älteste Wesen zur Erde zurück, auch im Soll der Bilanz
-        if (st.creatures.length > 2) {
-            const oldest = this._findOldestCreature();
-            const bornAt = oldest && oldest.userData && oldest.userData.bornAt;
-            if (bornAt && Date.now() - bornAt > AnazhRealm.FAUNA_MAX_AGE_MS)
-                this._creatureNaturalDeath(oldest, "alter");
-        }
+        const alt = st.creatures.length > 2 && this._findOldestCreature();
+        if (alt && alt.userData.alterS * 1000 > AnazhRealm.FAUNA_MAX_AGE_MS) this._creatureNaturalDeath(alt, "alter");
     }
 
     // ═══ DER TIER-SATZ (profiband.K1 „Sturm mit 50 Tieren“: jedes Tier im Nah-Kreis war ein Leib — L0 8, L1 5 Draws je Tier
@@ -2729,16 +2766,20 @@ AnazhRealm._bestandGesetz = function () {
     const B = k && k.BESTAND_GESETZ;
     if (
         B &&
-        [B.taktS, B.revierM, B.rasterM, B.kopfJeHa, B.beuteVoll, B.geburt, B.tod, B.fress].every(Number.isFinite) &&
+        [B.taktS, B.revierM, B.rasterM, B.kopfJeHa, B.beuteVoll, B.geburt, B.tod, B.fress, B.riss, B.rissHalb].every(
+            Number.isFinite
+        ) &&
         typeof k.bestandNahrung === "function" &&
         typeof k.bestandBilanz === "function" &&
-        typeof k.bestandFrass === "function"
+        typeof k.bestandFrass === "function" &&
+        typeof k.bestandRiss === "function"
     ) {
         AnazhRealm._bestandGesetzMemo = Object.freeze({
             B,
             nahrung: k.bestandNahrung,
             bilanz: k.bestandBilanz,
             frass: k.bestandFrass,
+            riss: k.bestandRiss,
         });
         return AnazhRealm._bestandGesetzMemo;
     }
