@@ -14,7 +14,8 @@
 //  (W) WERKSTATT: der Haupt-Thread rechnet keinen Sample (klang:umweltSynthese je Thread).
 //  (A) ARMLÄNGE: 1 m vor der Glut, 3–24 m neben dem Wasserfall, eigenes SOLL.
 //  (P) SPITZEN: jede Mischung offline durch Master und Spitzen-Wand — keine Spitze erreicht 0 dBFS.
-//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S11 unten), Stubs restauriert.
+//  (S) SCHRITT JE STOFF (klang.K4): jede Zeile der Stoff-Tafel durch die Stimme des Wirts — je zwei Schwerpunkte ≥ 300 Hz.
+//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S12 unten), Stubs restauriert.
 //  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
 //   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>]] [--json <datei>]
 //   (KLANG_WURZEL=<baum> misst einen anderen Arbeitsbaum unter derselben Linse)
@@ -141,7 +142,7 @@ function werkzeug() {
             cam.lookAt(p.x, p.y + 1.2, p.z - 10);
             cam.updateMatrixWorld(true);
         }
-        return { takte, chunks: st.voxelChunks.size, wald, waldTakte: takte };
+        return { takte, chunks: st.voxelChunks.size, wald };
     };
     // DER WALD STEHT: nichts im Wald baut (`_weltOffen`, A9: Plan-Schlange, Pflanz-Gänge, Pflanz-Schlange), keine Streu-Region wartet.
     W.waldSteht = () => r._weltOffen().wald === 0 && r._streuWartet(st.playerMesh.position) === 0;
@@ -553,12 +554,9 @@ const WIRT_LESER = {
 // createConstantSource), liegt in einer Methode, die ein benannter Wirt-Leser ist — sonst ist sie ein STAMM-LITERAL,
 // beim Namen und mit Zeile, auch wenn keine Tour sie je auslöst. Kommentare zählen nicht; der Helfer leert die Leiber der
 // Wirt-Leser an ihrer Definition (ein toter Wirt-Leser wirft) und nennt den Täter mit Datei und Zeile.
-// Der Stamm der Überlagerung, wenn sie einen trägt (eine Form; beide wirft scripts/lib/stamm.cjs), sonst der des Baums.
+// Der Stamm der Überlagerung, wenn sie einen trägt (`stamm/`), sonst der des Baums.
 const QUELL_BAU = /\.create(Oscillator|BufferSource|ConstantSource)\(/;
-const STAMM_WURZEL =
-    UEBER && (fs.existsSync(path.join(UEBER, stammLib.ALT)) || fs.existsSync(path.join(UEBER, stammLib.DIR)))
-        ? UEBER
-        : root;
+const STAMM_WURZEL = UEBER && fs.existsSync(path.join(UEBER, stammLib.DIR)) ? UEBER : root;
 // die EINE Absenz über den Helfer: außerhalb der Wirt-Leser baut keine Stelle eine Quelle; `q` die Wandlung des Vor-Stands
 function stammQuellen(q) {
     const ok = stammLib.fehlt({ ausser: Object.keys(WIRT_LESER) }, QUELL_BAU, { wurzel: STAMM_WURZEL, wandel: q });
@@ -745,6 +743,39 @@ async function offlineSpitze(page, lage, mitWand) {
         mitWand
     );
 }
+
+// (S) DER SCHRITT JE STOFF (klang.K4): jede eingebaute Zeile der Stoff-Tafel durch die Stimme des Wirts
+// (`_schrittKlangParams` → `_playSchrittOneShot`, je Schritt ein Offline-Kontext als Ausgang), 48 Schritte je Stoff, der
+// Schwerpunkt des Klang-Kerns (`schwerpunkt`) — je zwei Stoffe liegen ≥ SCHRITT_ABSTAND_HZ auseinander. `wie` [Stoff, Zeile]:
+// der Stoff klingt mit der Zeile eines anderen (der Zwilling des Selbsttests).
+const SCHRITT_ABSTAND_HZ = 300;
+const schritte = (page, wie) =>
+    page.evaluate(async (wie) => {
+        const r = window.anazhRealm;
+        const s = r.state.symphony;
+        const alt = { ...s };
+        const hz = {};
+        for (const [n, z] of Object.entries(r.state.materials)) {
+            if (!z.builtIn) continue;
+            const folge = new Float32Array(691200); // 48 Schritte zu 0,3 s bei 48 kHz
+            for (let i = 0; i < 48; i++) {
+                const ctx = new OfflineAudioContext(1, 14400, 48000);
+                Object.assign(s, { enabled: true, ctx, masterGain: ctx.destination });
+                r._playSchrittOneShot(r._schrittKlangParams(wie && wie[0] === n ? wie[1] : n, false, 0));
+                folge.set((await ctx.startRendering()).getChannelData(0), i * 14400);
+            }
+            hz[n] = Math.round(window.__klangCore.schwerpunkt(folge, 48000)) || 0;
+        }
+        Object.assign(s, alt);
+        return hz;
+    }, wie);
+// ein stummer Stoff (0 Hz) und je Nachbar der Leiter, der näher liegt als SCHRITT_ABSTAND_HZ, ein Befund beim Namen beider
+const schrittRot = (hz) =>
+    Object.entries(hz)
+        .sort((a, b) => a[1] - b[1])
+        .flatMap(([n, v], i, z) =>
+            !v || (i && v - z[i - 1][1] < SCHRITT_ABSTAND_HZ) ? [`S schritt: ${z[i - 1] || ""} ↔ ${n},${v} Hz`] : []
+        );
 
 // DIE KOSTEN je Klang-Takt: Welt-Abfragen zählen (nur innerhalb symphonyTick), vor und nach der Injektion.
 async function kosten(page, stubs) {
@@ -938,7 +969,7 @@ function urteile(daten, offline, lab, ereig, phasen, spitzen) {
         // (O) der Ort steht: die Stimmen des Walds hört nur, wer ihn gepflanzt findet (`W.waldSteht`)
         if (d.um && d.um.wald === false)
             rot.push(
-                `O ${name}: der Wald steht nach ${d.um.waldTakte} Takten nicht (Schlange, Pflanz-Gang oder Streu wartet)`
+                `O ${name}: der Wald steht nach ${d.um.takte} Takten nicht (Schlange, Pflanz-Gang oder Streu wartet)`
             );
         // (W) die Welt rechnet in der Werkstatt
         werkstatt(name, d.hauptSynthese);
@@ -1022,19 +1053,8 @@ function drucke(zeilen, offline, kostenErg, lab) {
         console.log(
             `\n── ${name.toUpperCase()} (${Math.round(d.ort.x)}/${Math.round(d.ort.z)}) — Ausgang ${d.aus.dbfs} dBFS · Bäume ≤ 15 m: ${d.baeume}`
         );
-        console.log(
-            "   Oktavbänder: " +
-                Object.entries(d.aus.baender)
-                    .map(([b, v]) => `${b}:${v}`)
-                    .join(" ")
-        );
-        if (d.zensus && d.zensus.lage) {
-            const L = d.zensus.lage;
-            const nah = (v) => Number.isFinite(v) && v < 1e8;
-            console.log(
-                `   Lage: wind ${L.windFeld.toFixed(3)} · böe ${L.boe.toFixed(2)} · deckung ${L.deckung.toFixed(2)} · regen ${L.regen} · sonne ${L.sonne.toFixed(2)} · leben ${L.lebendig.toFixed(2)} · ufer ${nah(L.ufer.d) ? L.ufer.d + " m/" + L.ufer.anteil.toFixed(2) : "—"} · fluss ${nah(L.fluss.d) ? L.fluss.d + " m" : "—"} · fall ${nah(L.fall.d) ? Math.round(L.fall.d) + " m" : "—"} · glut ${nah(L.glut.d) ? L.glut.d.toFixed(1) + " m" : "—"}`
-            );
-        }
+        console.log("   Oktavbänder:", JSON.stringify(d.aus.baender));
+        if (d.zensus) console.log("   Lage:", JSON.stringify(d.zensus.lage));
         for (const v of stimmen)
             if (v.an || v.db > -80)
                 console.log(
@@ -1325,27 +1345,24 @@ async function zensus(page, browser, ergebnis) {
     for (const o of labOrte) spitzen["lab:" + o] = await offlineSpitze(page, o, true);
     const { rot, zeilen } = urteile(daten, offline, lab, ereig, phasen, spitzen);
     for (const w of kostenErg.wachsen) rot.push(`K: ${w} wächst mit der Welt`);
+    // (S) der Schritt je Stoff (klang.K4)
+    rot.push(...schrittRot((ergebnis.schritt = await schritte(page))));
+    console.log("\n── SCHRITT JE STOFF (Hz):", JSON.stringify(ergebnis.schritt));
     // (G) die Stamm-Klasse, statisch: jede Quell-Stelle des Stamms in einem Wirt-Leser.
     const stamm = stammQuellen();
     for (const t of stamm.rot) rot.push(t);
     ergebnis.stamm = stamm;
     console.log(
-        `\n── STAMM-KLASSE (statisch): ${stamm.rot.length ? "eine Quell-Stelle ohne Gesetz" : "jede Quell-Stelle des Stamms in einem Wirt-Leser"} (Wirt-Leser: ${Object.keys(WIRT_LESER).join(" · ")})`
+        `\n── STAMM-KLASSE (statisch): ${stamm.rot.length ? "eine Quell-Stelle ohne Gesetz" : "jede Quell-Stelle des Stamms in einem Wirt-Leser"}`
     );
     drucke(zeilen, offline, kostenErg, lab);
-    // Die Summe der Welt über die Tour (Anreise + Orte + Kosten-Takte + Ereignisse; ein werfendes Ereignis ist E).
+    // Die Summe der Welt über die Tour (Anreise + Orte + Kosten-Takte + Ereignisse; ein werfendes Ereignis ist E) — je Ort
+    // und Ereignis nennt die Wand W jeden Anteil > 0 beim Namen.
     const summe = [phasen.anreise, phasen.kosten]
         .concat(Object.values(daten).map((d) => d.hauptSynthese))
         .concat(ereig.map((e) => e.hauptSynthese || 0))
         .reduce((a, v) => a + v, 0);
-    console.log(
-        `\n── SYNTHESE IM HAUPT-THREAD über die Tour: ${summe} Samples ` +
-            `(Anreise ${phasen.anreise} · Orte ${Object.entries(daten)
-                .map(([n, d]) => n + " " + d.hauptSynthese)
-                .join(
-                    " · "
-                )} · Kosten-Takte ${phasen.kosten} · Ereignisse ${ereig.map((e) => e.art + " " + e.hauptSynthese).join(" · ")})`
-    );
+    console.log("\n── SYNTHESE IM HAUPT-THREAD über die Tour (Samples):", summe, JSON.stringify(phasen));
     ergebnis.hauptSynthese = { summe, phasen };
     console.log(
         "\n── SPITZEN am Ausgang (offline, 9 s, mittlere Böe, Spitze/RMS dBFS): " +
@@ -1511,11 +1528,11 @@ async function zensus(page, browser, ergebnis) {
             )
         )
             fehl.push("S11: der Wasser-Hauch auf trockenem Land bleibt unbemerkt");
+        // S12: das Laub klingt mit der Zeile des Grases — die Leiter nennt beide.
+        if (!schrittRot(await schritte(page, ["laub", "gras"])).some((t) => /laub/.test(t)))
+            fehl.push("S12: Laub mit der Stimme des Grases bleibt unbenannt");
         for (const t of fehl) console.log("   ❌ " + t);
-        if (!fehl.length)
-            console.log(
-                "   ✅ S1 Zwilling beim Namen · S2 stumme Schleife beim Namen · S3 Seeufer ohne Wasser rot · S4 Voll-Umlauf rot · S5 Ereignis-Zwilling + Master-Umweg beim Namen · S6 Graph ohne Werkstatt rot · S7 Ruf im Haupt-Thread rot · S8 Glut auf Armlänge ohne Spitzen-Wand rot · S9 Ping-Zwilling im Stamm beim Namen · S10 Wald ohne Bestand rot · S11 Wasser-Hauch auf trockenem Land beim Namen"
-            );
+        if (!fehl.length) console.log("   ✅ S1–S12: jeder gepflanzte Täter beim Namen");
         selbstOk = fehl.length === 0;
         ergebnis.selbsttest = fehl;
     }
