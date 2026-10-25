@@ -1049,6 +1049,62 @@ module.exports = [
         quelle: "2 = jedes Ding (gebaut, geschmiedet, lose); die Mutation von ρ in der EINEN Stoff-Zeile zieht Masse und Eintauchtiefe in der Welt",
     },
 
+    // ── stoffe.K1 ── gate:gegenstand-stoff --tafel (Null-Renderer, am Ufer des Sees der Welt): die EINE Stoff-Tafel in SI
+    // (`state.materials`, ihr EINER Leser `_stoff`) und je Stoff (holz, stein, eisen, gras, erde, laub, wasser) EINE Mutation je
+    // Wirkung mit Folge in der Welt — ρ ×½: Masse und Eintauchtiefe eines Quaders im See (Wasser: ein Holz-Quader liegt
+    // tiefer); μ ×½: der Bremsweg des gestoßenen Wolfs auf dem Stoff (Platte, Wiese, Waldboden) ×2; Klang-Spalte ×2: der
+    // Spektral-Schwerpunkt des Schritts (die Stimme im OfflineAudioContext, klang-core `schwerpunkt`); T_zünd −100 K: die
+    // Zündzeit im Brennpunkt einer Linse; T_schmelz −100 K: der See gefriert im Winter nicht; c ×½: die Erwärmung im
+    // Brennpunkt nach 2 s (Wasser: sein Tagesgang). Die Sabotage im selben Lauf (der Leser liefert die alte Zeile) macht jede
+    // Wirkung ROT (`vorbei` leer). Albedo → Luma braucht das Ausgabe-Bild (GPU) und zählt headless nie. An main 206b395a ROT:
+    // holz, stein, eisen, erde, laub 1/7 (nur ρ), gras und wasser 0/7; am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff.
+    {
+        kriterium: "stoffe.K1",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-gegenstand-stoff.cjs", "--tafel"],
+        env: { GEGENSTAND_STOFF_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const T = jsonZeile(lauf.stdout, /^TAFEL \{/);
+            if (!T || !T.je || !Array.isArray(T.vorbei)) return { gruen: false, zahl: "keine TAFEL-Zeile (Exit " + lauf.exit + ")" };
+            const je = Object.entries(T.je);
+            const gruen =
+                lauf.exit === 0 &&
+                /✅ TAFEL GRÜN/.test(lauf.stdout) &&
+                je.length === 7 &&
+                je.every(([, w]) => w.length >= 3) &&
+                T.vorbei.length === 0;
+            return {
+                gruen,
+                zahl:
+                    je.map(([s, w]) => s + " " + w.length + "/7").join(" · ") +
+                    (T.vorbei.length ? " · an der Tafel vorbei: " + T.vorbei.join(", ") : " · Sabotage ROT an jeder Wirkung"),
+            };
+        },
+        pfad: [
+            "stamm/bau-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/kreatur-*.js",
+            "stamm/koerper-*.js",
+            "stamm/klang.js",
+            "stamm/wasser-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/siedlung-satz.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "klang-core.js",
+            "gelaende-core.js",
+            "vehicle-core.js",
+            "schmiede-core.js",
+            "scripts/diag-gegenstand-stoff.cjs",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = ≥ 3 von 7 Wirkungen je Stoff bestehen ihre Mutation",
+    },
+
     // ── stoffe.K3 ── das Eis, die feste Phase der EINEN Wasser-Wahrheit (gate:wasser-leben E im Block koerper, Null-Renderer:
     // Mechanik am Spieler-Weg, R3): im Winter (Saison 0,875, das Temperatur-Feld des Gelände-Kerns am Spiegel unter 0 °C)
     // geht der Spieler mit W über den See der Mess-Wiese und steht auf dem Eis, Wolf, Fuchs und Bär stehen auf ihm; das Feld
@@ -1115,5 +1171,6 @@ module.exports.fehlt = [
     { kriterium: "physik.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: der Wagen bei vmax × 1,2 gegen die 0,35-m-Mauer und die Bild-Probe (Spalt Leib–Wand ≤ 5 cm) auf beiden Geräten — gate:kollision-bild läuft auf dem Null-Renderer" },
     { kriterium: "feld.K2", staffel: 2, befehl: null, grund: "nicht gebaut: das Netz-Log steht (gate:mp-sync (e), keine Zustands-Nachricht), aber die Uhren der Teil-Simulationen sind je Seite — der Auto-Zug des Wetters zählt die Sitzung (`weatherEffectTime`) und den Wunsch des eigenen Nexus, Overlays und Brand die Spielzeit der Seite (`spielZeit`), die Tageszeit ist Spieler-Wort (set_time_of_day nicht broadcastbar); ohne geteilte Welt-Uhr ist Wetter am Ort keine Funktion von Saat und Akten, und ein Reload mitten im Sturm setzt nur das Wort fort (der Übergang reist nicht)" },
     { kriterium: "feld.K1", staffel: 2, befehl: null, grund: "Werkzeug fehlt: `diag-fahr-leben --kette` kennt drei Glieder (Regen-Feld, Nässe, Grip) und misst Tiefe ≥ 4 nie; das vierte Glied (Unterstand und Tränke der Tiere aus Nässe und Pegel statt `_weatherIsWet`, oder der Pegel aus dem Regen) ist nicht gebaut" },
+    { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
     { kriterium: "stoffe.K3", staffel: 2, befehl: null, grund: "nicht gebaut: der Schnee schmilzt nicht (die Schneegrenze ist Höhe allein, kein Pegel liest Schmelze), Lava erstarrt nicht (die glut-Achse ist eine eingefrorene Feld-Achse), der Stahl der Esse liest das Temperatur-Feld nicht; nur das Eis steht (Staffel 1)" },
 ];
