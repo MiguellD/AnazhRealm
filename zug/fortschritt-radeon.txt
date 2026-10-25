@@ -1,1 +1,2 @@
 2026-10-25 15:54:45 blick-probe START 1 Stationen
+2026-10-25 15:57:04 blick-probe wetter.K2#1 GRÜN 2.3 · 1/1
