@@ -2,7 +2,7 @@
 gelandet z34  main d43cb61c V18.546.92 (20:48): L2a-Fix + Pflicht-Offen C, Nachwache z34-abab in der OMEN-Schlange  —  L2a-Wackler (10 Zweige) · Pflicht-Offen C
 fertig  feuer-z32  K06 = Linse wartete auf swiftshader auf die GT-Karte (main fiel identisch) · G18 = langsame Läufer 2,6–2,8× → Waage p90, Linse allein  Champions  837k Token
 läuft   z32   heim-z32@034952a7 (K06 geheilt, Prüfer tragfähig) + ci-g18-frist@0f26b1bc  fahre.sh (FAHRT_OHNE_PUNKTE), GTX misst Kandidat (z32k-gtx)  tiere.K1#2 · ferne.K1/K2 · leib.K4#1 · siedlung.K5 · klang.K1 · bauen.K5 · gelaende.K5#2
-läuft   tag1-welle  Workflow: b-ankunft (B) · a-laubkante (A) · e-stadtgipfel (E) je mit Prüfer · klang-schritte · mensch-k3-wege · leib-k2-fuss  Champions  WICHTIG 3 · PUNKTE 3
+gestoppt tag1-welle  23:45 Kontext × Schritte (6 Macher 343–494 Schritte bei 360–560k): WIP gepusht b-ankunft 68086bef (40 %), e-stadt c19aecd3, klang 0a129a86, mensch ff5dd421 (75 %), leib 0066056e (90 %); a-laub ohne Commit  Koordinator  frisch und klein fortsetzen (≤ 150 Schritte)
 befund  nw3031-abab  8f1802b1 LANGSAMER gegen 4a5f5e2c nur in der Zelle stadt (4+4)  OMEN  Heilung erstes Haus reist in z32 — die Nachwache nach z32 richtet
 danach  Mess-Takt 4  am Kopf nach z32  headless + Radeon (Ruhe) + GTX  Buchung (buche.sh --warte), Artifact Y6nuChFfb1dJTf7Btch4J5
 offen   mensch-k3-wege a6b3dfc7  Decke +600 · Laterne #15942 · Wiederkehr 2/1296  tag1-welle  mensch.K3
@@ -21,3 +21,6 @@ vision  Studio-Eingang (Schöpfer 25.10.): vier Einzel-Labore (three r128, je HT
 offen   Auge 25.10. 21:00 Wiese  Baum-Stamm links bricht knapp über dem Boden (unteres Stück versetzt und heller), Kronen-Saum mit weißem Dither-Rand; 20 s nach Ankunft keine Halme nah, der Boden eine flache Textur  Radeon, main 8f1802b1  vegetation.K1 · lod.K1 (A laub-kante)
 offen   Auge 25.10. 21:00 Dorf  dunkle Glas-Rechtecke schwebend über der Gasse (Blick vom Dach nach einem Konsolen-Sprung, nicht am Spieler-Weg bestätigt)  zu prüfen am Spieler-Weg  siedlung/glas
 befund  radeon-stoerung  20:47:34–20:50:34 Radeon von außen gestört, Schloss hielt b-ankunft — deren Lauf in diesem Fenster zählt nicht  Koordinator  b-ankunft A/B prüfen
+gestoppt speicher-faden  23:55 lokale Sitzung bei 750k Kontext, WIP gesichert 3be5ac6b (8 Commits, ungeprüft)  frisch fortsetzen  speicher.K2 · K3#2 · streaming.K5#2
+gestoppt fahrzeug-k2-route  23:55 lokale Sitzung bei 570k Kontext, 0 Commits  neu schneiden (Spike ≤ 60 Schritte)  fahrzeug.K2
+nacht   Mess-Takt 4  nach z32: GTX am Kandidaten (z32k-gtx läuft), headless + Radeon am Kopf in Ruhe, buche.sh, Artifact  Koordinator  Punkte buchen
