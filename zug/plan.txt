@@ -1,0 +1,9 @@
+# zug/plan.txt — was ansteht (Koordinator schreibt, messplatz-blick zeigt): je Zeile Zustand · Was · Wer/Wo · Ziel
+läuft   z31b  heim-z31@2ade0724 + gelaende-ring-wachstum@e06613bf  fahre.sh (Kette bgy4osivq)  klang.K1 · bauen.K5 · gelaende.K5#2
+wartet  z32   heim-z32@03a266df (Herde, L2a, Ferne, Kamera-Bau, Siedlung-K5)  fahre.sh nach z31b (Kette b5ahgpxc1)  tiere.K1#2 · L2a-Wackler · ferne.K1/K2 · leib.K4#1 · siedlung.K5
+wartet  nw3031-abab  4a5f5e2c gegen 8f1802b1  OMEN  Nachwache nicht-langsamer
+danach  Mess-Takt 4  am Kopf nach z32  headless + Radeon + GTX  Buchung (buche.sh --warte)
+offen   mensch-k3-wege a6b3dfc7  Decke +600 · Laterne #15942 · Wiederkehr 2/1296  nächste Woche  mensch.K3
+offen   leib-k2-fuss 77419f6b  Kampf-Gefühl Beine · K8 stufe/rad hang p95 4,7/4,5 cm  nächste Woche  leib.K2
+offen   Klang K4/K5  „2 Stoffe mit ≥ 5 Schritten“ (an 8f1802b1 gefallen)  nächste Woche  klang.K4 · klang.K5
+offen   Linsen-Anker  stammLib.ersetze(t, "<methode>") als Klasse auf eindeutigen Text  nächste Woche  (Wackler-Schutz)

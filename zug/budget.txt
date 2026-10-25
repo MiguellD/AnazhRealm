@@ -1,0 +1,15 @@
+# zug/budget.txt — Kurs der Woche: je Zeile Ortszeit (MEZ/MESZ wie notiert) · woche=% Wochen-Limit · karte=gebuchte Punkte (wenn bekannt)
+# Schreiber: der Koordinator bei jedem Wecken (get_usage), Leser: messplatz-blick (Kurs, Punkte je %, Brenn-Rate, Ankunft bei 98 %)
+2026-10-24T01:00 woche=0 karte=43
+2026-10-24T09:40 woche=37
+2026-10-24T14:25 woche=53 karte=61
+2026-10-24T19:49 woche=62 karte=80
+2026-10-24T23:51 karte=76
+2026-10-25T00:40 woche=68
+2026-10-25T07:00 woche=81
+2026-10-25T08:50 karte=92
+2026-10-25T10:35 woche=90
+2026-10-25T11:50 woche=91
+2026-10-25T15:24 woche=96
+2026-10-25T17:00 woche=97
+2026-10-25T17:29 woche=97 karte=95
