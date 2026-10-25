@@ -85,6 +85,16 @@ const SPEICHER_PFAD = [
     "scripts/lib/welt-boot.cjs",
     "scripts/lib/software-gpu.cjs",
 ];
+// speicher.K3: was der Weg berührt — die Würfe des Felds und der Streu, die Orte und ihr Gedächtnis, das Leben im Stand
+const K3_PFAD = [
+    "stamm/gelaende-boden.js",
+    "stamm/vegetation-*.js",
+    "stamm/feld-*.js",
+    "stamm/kreatur-*.js",
+    "gelaende-core.js",
+    "fachwerk-core.js",
+    "scripts/diag-persistence.cjs",
+];
 
 module.exports = [
     // ─────────────────────────────── Streaming K4 · K5 (hydro-faden) ───────────────────────────────
@@ -391,7 +401,7 @@ module.exports = [
         quelle: "2 = dazu Klang-Takt ≤ 0,2 ms Haupt-Faden p95 in Bewegung und 0 Aussetzer in 10 min Spielgang, beide Geräte",
     },
 
-    // ─────────────────────────────── Speicher K1 · K2 · K4 · K5 ───────────────────────────────
+    // ─────────────────────────────── Speicher K1 · K2 · K3 · K4 · K5 ───────────────────────────────
     {
         kriterium: "speicher.K1",
         staffel: 1,
@@ -478,6 +488,60 @@ module.exports = [
         },
         pfad: SPEICHER_PFAD,
         quelle: "1 = ≤ 0,3 ms je Bild (p95) in einer frischen Welt, auf dem Pfad des Spielers",
+    },
+    {
+        kriterium: "speicher.K3",
+        staffel: 1,
+        geraet: "headless",
+        // gate:persistence (D) `--weg`: die frische Welt (der Takt der Orte lebt wie im Spiel) speichert, der Spieler geht 5,1 km in
+        // 30 Spielminuten ohne Edit, sie speichert wieder — je Schlüssel des Stands das Δ roh und auf der Platte (der Stand in
+        // IndexedDB, sein .bak, das Abbild im localStorage). Geurteilt ohne das Leben (Welt = Seed + Edits + Leben: das Tagebuch,
+        // das Gedächtnis des Nexus, die Kreaturen), das je Schlüssel in der Zahl steht; der Selbsttest im selben Gang schmuggelt
+        // einen Weg-Zähler in den Stand und MUSS rot an seinem Namen fallen.
+        befehl: ["node", "scripts/diag-persistence.cjs", "--weg"],
+        env: { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_WEG: "5-30" },
+        gpu: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const z = String(lauf.stdout || "").split(/\r?\n/);
+            const teil = (re) => { const l = z.find((x) => re.test(x)); return l ? { ok: /✅/.test(l), l: l.trim() } : null; };
+            const t = [teil(/^\s*(✅|❌) \(D\) [\d.]+ km in 30 min ohne Edit/), teil(/^\s*(✅|❌) \(D\) SELBSTTEST/)];
+            if (t.some((x) => !x)) return { gruen: false, zahl: "Teil (D) fehlt in der Ausgabe (Exit " + lauf.exit + ")" };
+            const km = +/\(D\) ([\d.]+) km/.exec(t[0].l)[1];
+            return {
+                gruen: t.every((x) => x.ok) && km >= 5 && lauf.exit === 0,
+                zahl: t.map((x) => (x.ok ? "✅ " : "❌ ") + x.l.replace(/^(✅|❌)\s*/, "").slice(0, 300)).join(" | "),
+            };
+        },
+        pfad: SPEICHER_PFAD.concat(K3_PFAD),
+        quelle: "1 = nach 30 min und 5 km Wanderung ohne Edit Δ ≤ 10 kB gegen die frische Welt",
+    },
+    {
+        kriterium: "speicher.K3",
+        staffel: 2,
+        geraet: "headless",
+        // derselbe Gang, danach 1000 Gruben im 2-m-Raster um den Spieler: Δ roh und auf der Platte (drei Abbilder) dieser Edits
+        befehl: ["node", "scripts/diag-persistence.cjs", "--weg"],
+        env: { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_WEG: "5-30", PERSISTENCE_EDITS: "1000" },
+        gpu: false,
+        minuten: 18,
+        urteil: (j, lauf) => {
+            const z = String(lauf.stdout || "").split(/\r?\n/);
+            const teil = (re) => { const l = z.find((x) => re.test(x)); return l ? { ok: /✅/.test(l), l: l.trim() } : null; };
+            const t = [
+                teil(/^\s*(✅|❌) \(D\) [\d.]+ km in 30 min ohne Edit/),
+                teil(/^\s*(✅|❌) \(D\) 1000 Edits/),
+                teil(/^\s*(✅|❌) \(D\) SELBSTTEST/),
+            ];
+            if (t.some((x) => !x)) return { gruen: false, zahl: "Teil (D) fehlt in der Ausgabe (Exit " + lauf.exit + ")" };
+            const km = +/\(D\) ([\d.]+) km/.exec(t[0].l)[1];
+            return {
+                gruen: t.every((x) => x.ok) && km >= 5 && lauf.exit === 0,
+                zahl: t.map((x) => (x.ok ? "✅ " : "❌ ") + x.l.replace(/^(✅|❌)\s*/, "").slice(0, 300)).join(" | "),
+            };
+        },
+        pfad: SPEICHER_PFAD.concat(K3_PFAD),
+        quelle: "2 = dazu ≤ 100 kB je 1000 Edits, roh und auf der Platte",
     },
     {
         kriterium: "speicher.K4",
@@ -586,18 +650,6 @@ module.exports.fehlt = [
         staffel: 2,
         befehl: null,
         grund: "kein Werkzeug fährt 2 h Spiel mit 10 000 Edits und ordnet Frames > 16,7 ms dem Speichern zu; echt-k1 misst nur die frische Welt",
-    },
-    {
-        kriterium: "speicher.K3",
-        staffel: 1,
-        befehl: null,
-        grund: "die Station speichern fehlt: keine Linse wandert 30 min und 5 km ohne Edit und misst die Größe des Stands roh gegen die frische Welt (speicher-journal bringt das Journal, nicht die Messung)",
-    },
-    {
-        kriterium: "speicher.K3",
-        staffel: 2,
-        befehl: null,
-        grund: "wie Staffel 1, dazu fehlt die Größe je 1000 Edits roh und auf der Platte",
     },
     {
         kriterium: "speicher.K4",
