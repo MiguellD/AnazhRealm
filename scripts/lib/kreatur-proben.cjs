@@ -2256,8 +2256,9 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // DIE TOD-LAGE IM LEERLAUF (dorf-takt-z13, Lehre 14): der Tod eines Wolfs liest keine Karte, der Leib steht, bis der
-    // Leerlauf seine Tafel rechnet (`_todLageTick`), ein Fenster ohne Zeit genau einen Winkel.
+    // DIE TOD-LAGE IM LEERLAUF (dorf-takt-z13, Lehre 14): der Tod eines Wolfs liest keine Karte, der Leib steht im Vorlauf
+    // (`TOD_LAGE.vorlaufSec`), der Leerlauf rechnet die Tafel (`_todLageTick`), ein Fenster ohne Zeit genau einen Winkel; ohne
+    // Leerlauf rechnet die Frist sie am Ende des Vorlaufs (`_todLageFrist`, halten.K5 — die Lage bei 60 und 15 Hz misst Q13).
     await buehne("todlage", async (restore) => {
         if (taeter === "todlage-takt")
             decke(

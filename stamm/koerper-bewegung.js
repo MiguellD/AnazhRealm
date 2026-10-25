@@ -926,6 +926,7 @@ class AnazhRealm_koerper_bewegung {
                     const catchOrStep = gap <= 0 && gap >= -AnazhRealm.PLAYER_STEP_UP;
                     const gentleDownhill = gap > 0 && gap <= AnazhRealm.PLAYER_GROUND_SNAP && wasGrounded && !schwimmt;
                     if (catchOrStep || gentleDownhill) {
+                        if (s.isInAir) s._sturzTempo = Math.max(0, -vy); // der Aufprall des Leibs (_loopPhysicsSync)
                         if (s.isInAir && vy < -AnazhRealm.LAND_DIP_MIN_SPEED) {
                             s._landImpactPending = Math.max(s._landImpactPending || 0, -vy);
                         }

@@ -280,9 +280,9 @@ class AnazhRealm_koerper_seele {
         // Todes-Pfad bleiben unangefasst.
         const mode = this.getGameMode ? this.getGameMode() : "frieden";
         if (mode !== "pfad") return false;
-        // Respawn-Gnade: kein doppelter Tod (Spieler ist
-        // unverwundbar während der Heilungs-Phase, das ist Teil der Mythos).
-        const now = performance.now() / 1000;
+        // Respawn-Gnade: kein doppelter Tod (Spieler ist unverwundbar während der Heilungs-Phase, das ist Teil der Mythos) —
+        // auf der Spiel-Uhr (`spielZeit`, halten.K5): auf der Wanduhr endete sie unter Last früher als die Takte der Jäger.
+        const now = this.state.spielZeit;
         if ((this.state.player.respawnGraceUntil || -Infinity) > now) return false;
         // Resistenz: feuer/hitze-Quellen werden durch heatResist gedämpft.
         const stats = this.state.player.stats || {};
@@ -324,9 +324,9 @@ class AnazhRealm_koerper_seele {
 
     // Tod feld-nativ: HP=0 → _depositLife merkt den Ort, der Körper bleibt DERSELBE (Identität), Rückkehr
     // am Genesis-Anker; deathWoundIntensity trägt die Wunde als Stat-Penalty, respawnGraceUntil verhindert
-    // Ping-Pong-Tod. Deterministisch.
+    // Ping-Pong-Tod auf der Spiel-Uhr (`spielZeit`). Deterministisch.
     _playerDeathRespawn(source) {
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit;
         if ((this.state.player.respawnGraceUntil || -Infinity) > now) return;
         this.state.player.respawnGraceUntil = now + AnazhRealm.RESPAWN_GRACE_SEC;
         // Welt-Trauer: zwei Achsen schwingen mit — Tod ist Verlust + Rückkehr.

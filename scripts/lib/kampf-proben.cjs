@@ -149,7 +149,9 @@ async function WELLE_L(ort) {
         const fussY = () => pm.position.y - 0.5;
         const setze = (seele) => {
             s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 8);
-            const c = r.spawnCreatureAt(pm.position.x + 300, pm.position.y, pm.position.z + 300, "happy", seele);
+            const c = r.spawnCreatureAt(pm.position.x + 300, pm.position.y, pm.position.z + 300, "happy", seele, {
+                bodySize: 1,
+            });
             if (c) tiere.push(c);
             return c;
         };
@@ -997,7 +999,6 @@ async function WELLE_L(ort) {
         ausruesten(null);
         boden(4);
         const cv = document.getElementById("world-canvas");
-        const tmbOrig = r.tryMouseBreak;
         let griffe = 0;
         r.tryMouseBreak = () => (griffe++, true);
         try {
@@ -1020,7 +1021,6 @@ async function WELLE_L(ort) {
             w.z.ohneWerkstattGriffe = cv ? griffe : null;
             w.c.werkstattTaub = offen && w.z.werkstattGriffe === 0 && w.z.ohneWerkstattGriffe === 1;
         } finally {
-            r.tryMouseBreak = tmbOrig;
             delete r.tryMouseBreak;
             s.verbTafel.gehalten.break = false;
         }
@@ -1049,16 +1049,12 @@ async function WELLE_L(ort) {
                 const d = camDir();
                 const h = Math.hypot(d.x, d.z) || 1;
                 // die Naht (Selbst-Test) gilt nur der DSL-Position, nie der Kamera
-                const sv = naht ? r._blickVorn : null;
                 if (naht) r._blickVorn = naht;
                 let pos;
                 try {
                     pos = r.dslPositions.at_player_forward([10], { state: s, rng: () => 0.5 });
                 } finally {
-                    if (naht) {
-                        r._blickVorn = sv;
-                        delete r._blickVorn;
-                    }
+                    if (naht) delete r._blickVorn;
                 }
                 const vx = pos.x - pm.position.x,
                     vz = pos.z - pm.position.z;
@@ -1179,7 +1175,6 @@ async function WELLE_L(ort) {
                     ke = energie("klinge_grossschwert", 0.6, Math.PI / 2, 1.0);
                 } finally {
                     hE.scale.setScalar(L0e);
-                    r._kampfTrefferWeg = wegRoh;
                     delete r._kampfTrefferWeg;
                 }
                 const j = juice[juice.length - 1];
@@ -1235,7 +1230,6 @@ async function WELLE_L(ort) {
                 };
             } finally {
                 delete r._pickArchitectureAtCrosshair;
-                r._spielerSagt = sagRoh;
                 delete r._spielerSagt;
                 parke(fR);
             }
@@ -1548,7 +1542,6 @@ async function WELLE_L(ort) {
                     ms: Date.now() - t0,
                 };
             } finally {
-                r._spielerSagt = sagRoh;
                 delete r._spielerSagt;
                 r.setCameraMode("first");
                 parke(wolf);
@@ -1893,18 +1886,16 @@ async function WELLE_L(ort) {
                 const boostAb = !(p.boosts || []).some(
                     (b) => b.source === "emotion:sorrow" || b.source === "consume:_t27"
                 );
-                // Tod über den Schadens-Weg, dann drei Vitals-Takte (je 1 s)
-                p.respawnGraceUntil = -Infinity;
-                r.damagePlayer(1000, "sturz");
-                const rueckkehr = { hp: r3(p.hp), hpMax: r3(p.hpMax), wunde: r3(p.deathWoundIntensity) };
-                p.respawnGraceUntil = -Infinity; // die Gnade (8 s) ist um — die Bisse der Vitals-Takte treffen wieder
+                // die Wunde des Tods (die Rückkehr selbst misst Q13 am Biss des Wolfs), dann drei Vitals-Takte (je 1 s)
+                p.deathWoundIntensity = 1;
+                r.recomputePlayerStats({ voll: true });
                 let tv = 1e6;
                 for (let i = 0; i < 3; i++) {
                     const mag = (p.stats && p.stats.tags && p.stats.tags.magieleitung) || 0;
                     const regen = {
                         hp: 0,
-                        st: s.playerUnderwater ? 0 : A.STAMINA_REGEN_PER_SEC || 5,
-                        mana: (A.MANA_REGEN_PER_SEC || 3) * (1 + mag),
+                        st: s.playerUnderwater ? 0 : A.STAMINA_REGEN_PER_SEC,
+                        mana: A.MANA_REGEN_PER_SEC * (1 + mag),
                     };
                     schritt(
                         "tickPlayerVitals " + (i + 1),
@@ -1916,7 +1907,7 @@ async function WELLE_L(ort) {
                         regen
                     );
                 }
-                return { erst, schritte, rueckkehr, boostAn, boostAb };
+                return { erst, schritte, boostAn, boostAb };
             };
             try {
                 w.z.leben = lauf();
@@ -2022,7 +2013,6 @@ async function WELLE_L(ort) {
             // Mesh (jedes _foundryBuildMesh gab null), die Vorlage frisch — der Pfeil darf nicht still unsichtbar fliegen
             if (fn("_pfeilVorlage")) {
                 const memo = r._pfeilVorlageMemo;
-                const fbg = r._foundryBuildGroup;
                 const still = [];
                 for (const [name, leer] of [
                     ["null", () => null],
@@ -2038,7 +2028,6 @@ async function WELLE_L(ort) {
                         /* laut gebrochen — so trägt es */
                     } finally {
                         if (pfT.mesh) r._pfeilDespawn(pfT);
-                        r._foundryBuildGroup = fbg;
                         delete r._foundryBuildGroup;
                         r._pfeilVorlageMemo = memo;
                     }
@@ -2056,19 +2045,16 @@ async function WELLE_L(ort) {
             const gier = 0.7;
             hT.rotation.set(0, gier, 0);
             hT.updateMatrixWorld(true);
-            const fgRoh = r._fieldGradient;
             r._fieldGradient = function () {
                 // das Gefälle zeigt hangab = längs der Leibes-Achse (die Außen-Normale neigt sich nach vorn)
                 return { x: Math.sin(gier) * 0.3, y: 1, z: Math.cos(gier) * 0.3 };
             };
-            let tod = null;
+            let tod;
             try {
                 r.damageCreature(hT, 1e9, { source: "world" });
             } finally {
-                r._fieldGradient = fgRoh;
                 delete r._fieldGradient;
             }
-            r._todLageTick({ timeRemaining: () => Infinity });
             const K = A._arenaGesetz().gefuehl;
             for (let k = 0; k < Math.ceil((K.kippDauerSec + 0.2) / 0.05); k++) r.updateCreatures(0.05);
             hT.updateMatrixWorld(true);
@@ -3046,11 +3032,6 @@ async function WELLE_L(ort) {
     } catch (e) {
         w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));
     } finally {
-        r.damageCreature = orig.damageCreature;
-        r._kampfHitJuice = orig.juice;
-        r._beginPlayerSwing = orig.swing;
-        r.dslRun = orig.dsl;
-        r.damagePlayer = orig.damagePlayer;
         delete r._kampfRohSchaden;
         delete r.damageCreature;
         delete r._kampfHitJuice;
@@ -3082,4 +3063,121 @@ async function WELLE_L(ort) {
     return w;
 }
 
-module.exports = { WELLE_L };
+// ── Q13 halten.K5 — STURZ, TOD UND WIEDERKEHR ALS ZUSTAND (Seiten-Funktion nach WELLE_L, allein mit `--k5`). Auf freiem Feld
+// (kein Bau in 14 m, kein Wesen: die Probe räumt sie — kein Wild greift in den Tod, und die Obergrenze `maxCreatures` reist
+// nicht im Stand: ein 21. Wesen fiele beim Laden) fährt die Probe den Takt des Spiels selbst — der feste Schritt des Leibs (`_loopFixedStep`), der
+// Kreatur-Takt, die Spiel-Uhr —, der ewige Loop ruht; danach lädt der Lauf die Seite neu. (sturz) Fälle aus der Ruhe über
+// den Leib-Löser, 2 · 4 · 8 · 12 m und ein Wurf aus 4 m mit 8 m/s abwärts: je Fall das Aufprall-Tempo des Lösers
+// (`_landImpactPending`, der Fang der Landung) und der Schaden mit seiner Quelle. (lage) zwei Wölfe fallen am selben Ort: der
+// erste mit der Tafel des Leerlaufs bei 60 Hz, der zweite ohne Leerlauf (die Last) bei 15 Hz — Kipp-Winkel und Höhe bei
+// 0,6 s Kreatur-Uhr. (tod) vor dem Tod Holz, Stein und ein Fuchs, den die Geste bindet (85 m abseits, außer Witterung); der
+// Wolf jagt den Spieler am Rand seines Lebens über den Biss-Weg, die Rückkehr (Leben, Wunde, Gnade, Lebens-Spur, Seele,
+// Trauer, Journal, Wunde senkt hpMax, der Vitals-Takt heilt sie und füllt die Ausdauer) und ihr Abstand zum Genesis-Anker
+// (`_genesisPlattform`, die EINE Quelle — fehlt sie, wirft die Probe); die Landung am Ort der Rückkehr, verwundet, dann
+// `saveState`. `abdruck` ist K5_ABDRUCK.
+async function K5_VOR(abdruck) {
+    const r = window.anazhRealm,
+        s = r.state,
+        p = s.player,
+        pm = s.playerMesh;
+    const K = { sturz: [], lage: [] };
+    s.renderer.setAnimationLoop(null);
+    await r._gliederBestellen("wolf");
+    r.setGameMode("pfad");
+    r.clearCreatures();
+    const P = pm.position.clone();
+    const bau = (e) => Math.hypot(e.position.x - P.x, e.position.z - P.z) < 14;
+    while (s.architectures.some(bau) || !r._landAt(P.x, P.z, 0.2)) P.x += 24;
+    P.y = r.getTerrainHeightAt(P.x, P.z) + r.constructor.PLAYER_FOOT_OFFSET;
+    let t = 1e4,
+        quelle;
+    const takt = (dt) => (r._loopFixedStep(dt, (t += dt)), r.updateCreatures(dt), (s.spielZeit += dt));
+    const dp = r.damagePlayer;
+    r.damagePlayer = (a, q) => dp.call(r, a, (quelle = q));
+    const neu = (seele, dx, dz, gier) => {
+        const c = r.spawnCreatureAt(P.x + dx, P.y, P.z + dz, "calm", seele, { bodySize: 1, precise: true });
+        c.position.y = r.getTerrainHeightAt(c.position.x, c.position.z);
+        c.rotation.y = gier;
+        return c;
+    };
+    // die Ruhe vor jedem Lauf: Gnade aus, Gefühle still (sie schöben Boosts in die Werte), voll, dann der Anteil
+    const ruhe = (anteil, ort = P, vy = 0) => {
+        p.respawnGraceUntil = -Infinity;
+        for (const k in p.emotions) p.emotions[k] = 0;
+        r.recomputePlayerStats({ voll: true });
+        p.hp *= anteil;
+        pm.position.copy(ort);
+        s.playerVel.setValue(0, vy, 0);
+        [s._fieldVy, s.isInAir, s._landImpactPending, quelle] = [vy, true, 0, null];
+        return p.hp;
+    };
+    for (const [h, vy] of [
+        [2, 0],
+        [4, 0],
+        [8, 0],
+        [12, 0],
+        [4, -8],
+    ]) {
+        const hp0 = ruhe(1, P.clone().setY(P.y + h), vy);
+        for (let k = 0; k < 600 && (k < 2 || s.isInAir); k++) takt(1 / 60);
+        K.sturz.push({ v: s._landImpactPending, d: hp0 - p.hp, quelle });
+    }
+    for (const hz of [60, 15]) {
+        const w = neu("wolf", 20, 20, 0.7);
+        r.damageCreature(w, 1e9, {});
+        if (hz > 15) r._todLageTick({ timeRemaining: () => Infinity });
+        for (let k = 0; k < hz * 0.6; k++) r.updateCreatures(1 / hz);
+        const q = w.quaternion;
+        K.lage.push([Math.acos(1 - 2 * (q.x ** 2 + q.z ** 2)) * 57.296, w.position.y - w.userData.dying.baseY]);
+        r.removeCreature(w);
+    }
+    r.addMaterialToInventory("holz", 7);
+    r.addMaterialToInventory("stein", 3);
+    const fuchs = neu("fuchs", -60, -60, 0);
+    fuchs.userData.name = "K5-Fuchs";
+    r.assignCreatureTask(fuchs, "follow_player");
+    K.vorTod = abdruck();
+    const hpMax0 = ruhe(1e-4) / 1e-4;
+    const [wolf, seele] = [neu("wolf", 0.4, 6, Math.PI), p.soul];
+    for (let k = 0; k < 1200 && !(p.respawnGraceUntil > s.spielZeit); k++) takt(1 / 60);
+    const [e, a] = [p.emotions, r._genesisPlattform().position];
+    K.tod = {
+        q: quelle,
+        anker: Math.hypot(pm.position.x - a.x, pm.position.z - a.z),
+        rueckkehr: [
+            p.hp === p.hpMax,
+            p.deathWoundIntensity === 1,
+            !dp.call(r, 1e5, "jagd"),
+            s.lifeField.size > 0,
+            p.soul === seele,
+            e.sorrow > 0.25 && e.awe > 0.15,
+            s.worldJournal.entries.some((x) => x.type === "loss"),
+            p.hpMax < hpMax0,
+            ((p.stamina = 1),
+            r.tickPlayerVitals((p.deathLastTick = 0) + 1),
+            p.deathWoundIntensity < 1 && p.stamina > 1),
+        ],
+    };
+    r.removeCreature(wolf);
+    ruhe(0.6, pm.position.clone());
+    for (let k = 0; k < 90; k++) r._loopFixedStep(1 / 60, (t += 1 / 60));
+    K.nachTod = abdruck();
+    r.saveState();
+    return K;
+}
+// DER ABDRUCK DES ZUSTANDS (Q13): der Ort (dm), das Inventar, die Lebenswerte (Leben als Anteil in Hundertsteln, die Wunde in
+// Zehnteln aufgerundet — sie heilt 1/600 je s), die Bindung des Fuchses (bond in Hundertsteln, sein Auftrag)
+function K5_ABDRUCK() {
+    const s = window.anazhRealm.state,
+        p = s.player,
+        f = s.creatures.find((c) => c.userData.name === "K5-Fuchs");
+    const g = (v, n) => Math.round(v * n) / n;
+    return {
+        ort: s.playerMesh.position.toArray().map((v) => g(v, 10)),
+        inventar: p.inventory.filter(Boolean).map((x) => (x.material || x.blueprintName) + x.count),
+        leben: [g(p.hp / p.hpMax, 100), Math.ceil(10 * p.deathWoundIntensity) / 10],
+        bindung: f && [g(f.userData.bond, 100), f.userData.task.name],
+    };
+}
+
+module.exports = { WELLE_L, K5_VOR, K5_ABDRUCK };

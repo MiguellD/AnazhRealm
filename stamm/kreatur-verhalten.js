@@ -1676,7 +1676,9 @@ class AnazhRealm_kreatur_verhalten {
             if (res && res.ok && !res.killed) this._bissStoss(creature, ziel);
             return;
         }
-        if (this.damagePlayer(B.dmg, B.quelle)) this._bissStoss(creature, null);
+        const gnade = this.state.player.respawnGraceUntil; // der tödliche Biss stößt nie den Wiedergekehrten (K5)
+        if (this.damagePlayer(B.dmg, B.quelle) && this.state.player.respawnGraceUntil === gnade)
+            this._bissStoss(creature, null);
         const name = ud.name || "Ein wildes Wesen";
         if (B.quelle === "gegenwehr") {
             this.log(`${name} wehrt sich!`, "INFO");
@@ -2908,54 +2910,6 @@ class AnazhRealm_kreatur_verhalten {
         if (u._kzGlieder) for (const gl of u._kzGlieder) this._weltFeldFrei(gl.handle);
         u._kzGlieder = null;
         u._kzVersuch = false;
-    }
-
-    // ═══ KAMPF-GEFÜHL — DER LEICHNAM (Welle LF kampf, Posten 7) ═══
-    // Ein Gefallener (state.leichname, _kreaturFaellt) ohne KI, Gang und Stimme: steht seine Tod-Lage (`_todLageTick`), kippt
-    // er (~83° smoothstep über kippDauerSec, Uhr `fall`) auf ihre Flanke, liegt bis zur Frist (`t` ab dem Tod), sinkt, DANN
-    // removeCreature; je Takt seine Sicht (_leibSicht). Rein optisch — kein Sim-Pfad liest die Lage, der Strom trägt sie (q).
-    _tickLeichname(delta, playerPos) {
-        const L = this.state.leichname;
-        for (let i = L.length - 1; i >= 0; i--) {
-            const creature = L[i];
-            const dying = creature.userData.dying;
-            dying.t += delta;
-            if (dying.hebe !== undefined) dying.fall += delta;
-            const u = Math.min(1, dying.fall / Math.max(1e-6, dying.dauer));
-            const ang = AnazhRealm.TOD_KIPP_RAD * u * u * (3 - 2 * u); // ~83° — gekippt, nicht vergraben
-            const axis = this._kampfTipAxis || (this._kampfTipAxis = new THREE.Vector3());
-            axis.set(dying.dirZ, 0, -dying.dirX).normalize(); // ⊥ Kipp-Richtung: up kippt AUF sie zu
-            const q = this._kampfTipQ || (this._kampfTipQ = new THREE.Quaternion());
-            q.setFromAxisAngle(axis, ang);
-            creature.quaternion.copy(q);
-            if (dying.baseQuat) creature.quaternion.multiply(dying.baseQuat);
-            const hebe = dying.hebe;
-            if (hebe && Number.isFinite(dying.baseY)) {
-                const f = (ang / AnazhRealm.TOD_KIPP_RAD) * (hebe.length - 1);
-                const k0 = Math.max(0, Math.min(hebe.length - 2, Math.floor(f)));
-                creature.position.y = dying.baseY + hebe[k0] + (hebe[k0 + 1] - hebe[k0]) * (f - k0);
-            }
-            // der leere Kadaver (sein Fleisch ist gefressen, _kreaturAasZug) sinkt jetzt: die Frist endet mit dem Versinken
-            const KF = creature.userData.kadaver;
-            if (KF && !(KF.fleisch > 0) && dying.t >= dying.dauer)
-                dying.nachklang = Math.min(dying.nachklang, dying.t - dying.dauer + dying.sinken);
-            // er sinkt in der letzten Spanne seiner Frist in die Erde (die Höhe seines Leibs), dann fällt er
-            const ende = dying.dauer + dying.nachklang;
-            if (dying.sinken > 0 && dying.t > ende - dying.sinken) {
-                if (!Number.isFinite(dying.liegeY)) dying.liegeY = creature.position.y;
-                const u2 = Math.min(1, (dying.t - (ende - dying.sinken)) / dying.sinken);
-                creature.position.y =
-                    dying.liegeY -
-                    u2 * u2 * this._kreaturLeib(creature, 0, this._sinkLeib || (this._sinkLeib = {})).hoehe;
-            }
-            if (dying.t >= ende) {
-                this.removeCreature(creature); // rückwärts: der Splice überspringt keinen
-                continue;
-            }
-            const dx = creature.position.x - playerPos.x,
-                dz = creature.position.z - playerPos.z;
-            this._leibSicht(creature, dx * dx + dz * dz, this.isInFrustum(creature));
-        }
     }
 
     // DIE SICHT EINES LEIBS (je Takt — die Wesen im Kreatur-Takt, die Gefallenen in _tickLeichname): die EINE Stelle, an der

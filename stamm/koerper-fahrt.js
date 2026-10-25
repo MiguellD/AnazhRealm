@@ -2049,6 +2049,7 @@ class AnazhRealm_koerper_fahrt {
         }
         this.state.scene.add(newGroup);
         this.state.playerMesh = newGroup;
+        const wandlung = this.state.player.soul !== canonical;
         this.state.player.soul = canonical;
         // Ego-Sicht SOFORT am Guss-Chokepoint: sonst erscheint der frische Leib einen Frame roh (Kopf von
         // innen) — ohne Kamera-Tick (headless) dauerhaft.
@@ -2072,9 +2073,10 @@ class AnazhRealm_koerper_fahrt {
             if (status) status.textContent = def.label;
         }
         // Stats neu berechnen: bei Seelen-Wechsel tauschen die Tag-Profile (HP-Max, Speed, Sprung, Ausdauer,
-        // Resistenzen), die Wandlung füllt die Lebenswerte. DSL-Tuning (player_speed/player_jump_power) überschreibt
+        // Resistenzen), die Wandlung füllt die Lebenswerte — nur sie: derselbe Leib neu gebaut (der Boot-Avatar, der Guss nach
+        // dem Laden) behält sie, sonst heilte jeder Reload (halten.K5). DSL-Tuning (player_speed/player_jump_power) überschreibt
         // bis zum nächsten Wechsel.
-        this.recomputePlayerStats({ voll: true });
+        this.recomputePlayerStats({ voll: wandlung });
         // S9 (kampf-plan §10-F4) — das gehaltene Gerät an den NEUEN Körper re-attachen (der alte
         // Körper + sein heldMesh-Kind wurden oben disposed); liest equipped.held — deckt damit auch
         // den Restore (init() ruft applyPlayerSoul nach Mesh-Bau erneut, wenn equipped.held gesetzt ist).

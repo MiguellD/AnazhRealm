@@ -792,7 +792,8 @@ class AnazhRealm_speicher_welten {
             version: this.state.currentVersion,
             selfAwareness: this.state.selfAwareness,
             // Volle Komponenten-Persistenz je Kreatur (Name+Soul+Memory+bornAt+position); Specs live aus memory.
-            // Tasks + carrying bewusst NICHT persistiert (Gesten leben im Moment, Identität lebt fort).
+            // Tasks + carrying bewusst NICHT persistiert (Gesten leben im Moment, Identität lebt fort) — die Bindung an den
+            // Spieler (bond + Folgen) ist Identität und reist mit (`_serializeCreature` bindung, halten.K5).
             // Ein Gefallener liegt nie in state.creatures (er zog beim Tod nach state.leichname) — er reist nie in den
             // Snapshot und erwacht nie beim Reload.
             creatures: this.state.creatures.map((c) => this._serializeCreature(c)).filter((s) => s),
@@ -847,6 +848,18 @@ class AnazhRealm_speicher_welten {
             // bleiben absichtlich draußen — sie sind reine Laufzeit-Drosselung,
             // ein Reload soll wieder triggerfähig sein.
             playerEmotions: { ...this.state.player.emotions },
+            // DIE LEBENSWERTE SIND ZUSTAND (halten.K5, `recomputePlayerStats`): Leben, Ausdauer und Mana als Anteil ihres
+            // Maximums (das Maximum rechnet der Leib beim Laden neu, wie `hpAnteil` des Tiers), dazu die Wunde des Tods —
+            // vorher heilte jeder Reload (hp 69,6 → 134 von 134, die Wunde 1 → 0). `_loadStateRestoreLeben` liest sie.
+            playerLeben: ((pl) => {
+                const anteil = (v, max) => (Number.isFinite(v) && max > 0 ? +Math.min(1, v / max).toFixed(4) : 1);
+                return {
+                    hp: anteil(pl.hp, pl.hpMax),
+                    ausdauer: anteil(pl.stamina, pl.staminaMax),
+                    mana: anteil(pl.mana, pl.manaMax),
+                    wunde: +(pl.deathWoundIntensity || 0).toFixed(4),
+                };
+            })(this.state.player),
             // Tag-Nacht: timeOfDay läuft nach dem Reload weiter. Die Tag-Länge ist die Wahl des Spielers und lebt bei ihm
             // (localStorage, `setDayLength`): der Kopf trägt sie, weil die Taille v1 den Schlüssel verlangt
             // (spec/golden/v1/snapshot-head.json, MUST weiter produziert), das Laden setzt sie nie (Leben-Schau 2: jeder
