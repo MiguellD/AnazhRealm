@@ -181,68 +181,45 @@ async function checkBandW4LofiPad(ctx) {
             // wird die HOST-Markov-Kette (kaltes Studio); bar-Zähler zurücksetzen.
             r._klangStudioPreset = () => null;
             sym.lofi.bar = 0;
-            {
-                const brightDeg = AnazhRealm.LOFI_BRIGHT_DEGREES;
-                const origField = r._lofiWorldField;
-                const countBright = () => {
-                    sym.lofi.rngState = 4242;
-                    let c = 0;
-                    for (let i = 0; i < 500; i++) if (brightDeg.indexOf(r._lofiNextDegree(0)) >= 0) c++;
-                    return c;
-                };
-                const neutralF = { lebendig: 0.5, dichte: 0.5, glut: 0.5, magieleitung: 0.5 };
-                const brightF = { lebendig: 1, dichte: 0.5, glut: 0, magieleitung: 1 };
-                // (a) volle Emotion-Helligkeit, neutrales Welt-Feld
-                emo.joy = 1;
-                emo.hope = 1;
-                emo.sorrow = 0;
-                r._lofiWorldField = () => neutralF;
-                const brightEmotionFull = countBright();
-                // (b) neutrale Emotion, volle Welt-Feld-Helligkeit
-                emo.joy = 0;
-                emo.hope = 0;
-                emo.sorrow = 0;
-                r._lofiWorldField = () => brightF;
-                const brightWorldFull = countBright();
-                // (c) neutrale Emotion, neutrales Welt-Feld
-                r._lofiWorldField = () => neutralF;
-                const brightFieldNeutral = countBright();
-                r._lofiWorldField = origField;
-                out.emotionDominatesWorldBias = brightEmotionFull > brightWorldFull;
-                out.worldFieldBiasesHarmony = brightWorldFull > brightFieldNeutral;
-            }
+            // helle Stufen (III/VI) unter n Zügen ab dem RNG-Zustand `saat`, bei Freude/Hoffnung `froh` und Trauer `trauer`
+            const hell = (saat, n, froh, trauer) => {
+                Object.assign(emo, { joy: froh, hope: froh, sorrow: trauer });
+                sym.lofi.rngState = saat;
+                let c = 0;
+                for (let i = 0; i < n; i++) if (AnazhRealm.LOFI_BRIGHT_DEGREES.indexOf(r._lofiNextDegree(0)) >= 0) c++;
+                return c;
+            };
+            const origField = r._lofiWorldField;
+            const neutralF = { lebendig: 0.5, dichte: 0.5, glut: 0.5, magieleitung: 0.5 };
+            // (a) volle Emotion-Helligkeit, neutrales Welt-Feld
+            r._lofiWorldField = () => neutralF;
+            const brightEmotionFull = hell(4242, 500, 1, 0);
+            // (b) neutrale Emotion, volle Welt-Feld-Helligkeit
+            r._lofiWorldField = () => ({ lebendig: 1, dichte: 0.5, glut: 0, magieleitung: 1 });
+            const brightWorldFull = hell(4242, 500, 0, 0);
+            // (c) neutrale Emotion, neutrales Welt-Feld
+            r._lofiWorldField = () => neutralF;
+            const brightFieldNeutral = hell(4242, 500, 0, 0);
+            r._lofiWorldField = origField;
+            out.emotionDominatesWorldBias = brightEmotionFull > brightWorldFull;
+            out.worldFieldBiasesHarmony = brightWorldFull > brightFieldNeutral;
             // W4 V3 — _lofiNextDegree liefert eine in der Markov-
             // Kette erreichbare Stufe (0..6).
             const allowed = AnazhRealm.LOFI_HARMONY[0].map((t) => t[0]);
             const nd = r._lofiNextDegree(0);
             out.nextDegreeValid = allowed.indexOf(nd) >= 0;
             // W4 V3 — Determinismus: selber rngState → selbe Folge.
-            sym.lofi.rngState = 12345;
-            const seqA = [];
-            for (let i = 0; i < 6; i++) seqA.push(r._lofiNextDegree(seqA.length ? seqA[i - 1] : 0));
-            sym.lofi.rngState = 12345;
-            const seqB = [];
-            for (let i = 0; i < 6; i++) seqB.push(r._lofiNextDegree(seqB.length ? seqB[i - 1] : 0));
-            out.harmonyDeterministic = JSON.stringify(seqA) === JSON.stringify(seqB);
+            const folge = () => {
+                sym.lofi.rngState = 12345;
+                const q = [0];
+                for (let i = 0; i < 6; i++) q.push(r._lofiNextDegree(q[i]));
+                return q.join();
+            };
+            out.harmonyDeterministic = folge() === folge();
             // W4 V3 — Emotion biast die Harmonie: bei joy/hope
             // erscheinen helle Stufen (III/VI) häufiger als bei
             // sorrow (selber RNG-Strom → fairer Vergleich).
-            const bright = AnazhRealm.LOFI_BRIGHT_DEGREES;
-            const countBright = () => {
-                sym.lofi.rngState = 777;
-                let c = 0;
-                for (let i = 0; i < 300; i++) if (bright.indexOf(r._lofiNextDegree(0)) >= 0) c++;
-                return c;
-            };
-            emo.joy = 1;
-            emo.hope = 1;
-            emo.sorrow = 0;
-            const brightJoy = countBright();
-            emo.joy = 0;
-            emo.hope = 0;
-            emo.sorrow = 1;
-            const brightSorrow = countBright();
-            out.emotionBiasesHarmony = brightJoy > brightSorrow;
+            out.emotionBiasesHarmony = hell(777, 300, 1, 0) > hell(777, 300, 0, 1);
             r._klangStudioPreset = prevKSP;
             sym.lofi.bar = 0;
             // _lofiTick spielt den ersten Akkord (lastChordAt=

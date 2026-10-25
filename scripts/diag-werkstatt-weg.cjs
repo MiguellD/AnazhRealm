@@ -411,10 +411,18 @@ async function probe(argW) {
         }
         return k > 0;
     };
+    // je Abschnitt EIN Befund: gestartet erst am Ende, ein Wurf trägt seinen Stapel
+    const abschnitt = async (k, m, fn) => {
+        out[k] = m = { gestartet: false, ...m };
+        try {
+            await fn(m);
+            m.gestartet = true;
+        } catch (e) {
+            m.err = (e && e.stack) || String(e);
+        }
+    };
     // ── D10: der Same eines Satzes ──
-    try {
-        const m = { gestartet: false, zuege: {} };
-        out.same = m;
+    await abschnitt("same", { zuege: {} }, async (m) => {
         if (!frei) throw new Error("kein freier Ort abseits der Lichtung");
         stelle();
         const neue = (vorher) => st.architectures.filter((a) => a && !vorher.has(a));
@@ -485,15 +493,10 @@ async function probe(argW) {
             return relOrte(liste);
         };
         m.streuAbweichung = abweichung(streu(1), streu(2));
-        m.gestartet = true;
-    } catch (e) {
-        out.same = Object.assign(out.same || {}, { err: (e && e.stack) || String(e) });
-    }
+    });
 
     // ── L-Wortschatz: der Wort-Katalog ist der Rezept-Katalog ──
-    try {
-        const m = { gestartet: false, woerter: {} };
-        out.wort = m;
+    await abschnitt("wort", { woerter: {} }, async (m) => {
         if (!frei) throw new Error("kein freier Ort abseits der Lichtung");
         const rec = r._foundry.recipes;
         // Die Art eines Bauplans: die Studio-Art, deren Rezept er trägt (das Buch, nie der Name).
@@ -537,15 +540,10 @@ async function probe(argW) {
             m.vorschlag[satz] = { zeile: zeilen().slice(n2).join(" | "), sug: r.chatSuggest(satz) || null };
         }
         if (st.llm) st.llm.enabled = llmAlt;
-        m.gestartet = true;
-    } catch (e) {
-        out.wort = Object.assign(out.wort || {}, { err: (e && e.stack) || String(e) });
-    }
+    });
 
     // ── Der Same des Werks: das gesetzte Werk ist das Phantom, auch beim Mitspieler ──
-    try {
-        const m = { gestartet: false };
-        out.werk = m;
+    await abschnitt("werk", {}, async (m) => {
         if (!frei || !plat) throw new Error("kein freier Ort oder keine Genesis-Plattform");
         const NAME = "baum_eiche";
         const preset = r._foundryPresetForEntry({ type: NAME });
@@ -724,15 +722,10 @@ async function probe(argW) {
             else wmAlt.bauSame = zAlt;
         }
         m.reload = rl;
-        m.gestartet = true;
-    } catch (e) {
-        out.werk = Object.assign(out.werk || {}, { err: (e && e.stack) || String(e) });
-    }
+    });
 
     // ── Brennglas: das Licht brennt, wo es sich bündelt, und die Zerstörung nennt sich ──
-    try {
-        const m = { gestartet: false };
-        out.brenn = m;
+    await abschnitt("brenn", {}, async (m) => {
         if (!frei || !plat) throw new Error("kein freier Ort oder keine Genesis-Plattform");
         const wetterAlt = st.weather;
         const zeitAlt = st.timeOfDay;
@@ -820,14 +813,10 @@ async function probe(argW) {
             st.weather = wetterAlt;
             st.timeOfDay = zeitAlt;
         }
-        m.gestartet = true;
-    } catch (e) {
-        out.brenn = Object.assign(out.brenn || {}, { err: (e && e.stack) || String(e) });
-    }
+    });
 
     // ── Der Prüf-Satz (Bauen K3): Statik und Wirkung aus der Form, in der Welt ──
-    try {
-        const m = (out.pruef = { gestartet: false, statik: {}, konsum });
+    await abschnitt("pruef", { statik: {}, konsum }, async (m) => {
         const [emo, wetter, chaos, h] = [st.player.emotions, st.weather, st.player.emotions.chaos, (x, z) => r.getTerrainHeightAt(x, z)];
         const takte = (n, dt) => {
             for (let i = 0; i < n; i++) r.tickAffordances(dt);
@@ -884,10 +873,7 @@ async function probe(argW) {
         }
         emo.chaos = chaos;
         for (const k of Object.keys(st.blueprints)) if (k.startsWith("__pruef_")) delete st.blueprints[k];
-        m.gestartet = true;
-    } catch (e) {
-        out.pruef = Object.assign(out.pruef || {}, { err: (e && e.stack) || String(e) });
-    }
+    });
     return out;
 }
 

@@ -1425,23 +1425,44 @@ async function zensus(page, browser, ergebnis) {
         if (!k4.wachsen.some((t) => /^bauten/.test(t)))
             fehl.push("S4: der Voll-Umlauf über alle Bauten bleibt unbemerkt");
         // S5: ein Ereignis-Zwilling (Glocke aus dem Stamm, direkt an den Ausgang).
-        const e5 = await page.evaluate(async () => {
-            const r = window.anazhRealm;
-            const P = Object.getPrototypeOf(r);
-            const alt = P._playWaterReactionPing;
-            P._playWaterReactionPing = function zwillingGlocke() {
-                const ctx = this.state.symphony.ctx;
-                const o = ctx.createOscillator();
-                o.connect(ctx.destination);
-                o.start();
-                o.stop(ctx.currentTime + 0.05);
-            };
-            try {
-                return await window.__klangW.ereignisse();
-            } finally {
-                P._playWaterReactionPing = alt;
-            }
-        });
+        // die Ereignis-Tour mit einem Zwilling statt des Glieds `glied` (sein Funktions-Name ist der Täter-Name)
+        const mitZwilling = (glied, zwilling) =>
+            page.evaluate(
+                async (glied, zwilling) => {
+                    const P = Object.getPrototypeOf(window.anazhRealm);
+                    const alt = P[glied];
+                    P[glied] = {
+                        zwillingGlocke() {
+                            const ctx = this.state.symphony.ctx;
+                            const o = ctx.createOscillator();
+                            o.connect(ctx.destination);
+                            o.start();
+                            o.stop(ctx.currentTime + 0.05);
+                        },
+                        zwillingRuf(_c, stimmung) {
+                            const s = this.state.symphony;
+                            return s.umwelt.kern.tierRuf(s.ctx, s.umwelt.bus, {
+                                laengeM: 1,
+                                stimmung,
+                                d: 3,
+                                pan: 0,
+                                saat: 5,
+                            });
+                        },
+                        zwillingHauch() {
+                            this._substanzKlang("wasser", null);
+                        },
+                    }[zwilling];
+                    try {
+                        return await window.__klangW.ereignisse();
+                    } finally {
+                        P[glied] = alt;
+                    }
+                },
+                glied,
+                zwilling
+            );
+        const e5 = await mitZwilling("_playWaterReactionPing", "zwillingGlocke");
         const u5 = urteile({}, null, null, e5).rot;
         if (!u5.some((t) => /^E wasser: .*zwillingGlocke.*kein Gesetz/.test(t)))
             fehl.push("S5: der Ereignis-Zwilling bleibt unbenannt");
@@ -1455,26 +1476,7 @@ async function zensus(page, browser, ergebnis) {
                 fehl.push("S6: der Graph ohne Werkstatt bleibt unbemerkt");
         }
         // S7: ein Ruf, der im Haupt-Thread rechnet (der Zwilling ruft das Gesetzbuch direkt im Spiel-Takt).
-        const e7 = await page.evaluate(async () => {
-            const r = window.anazhRealm;
-            const P = Object.getPrototypeOf(r);
-            const alt = P._tierRuf;
-            P._tierRuf = function zwillingRuf(_c, stimmung) {
-                const s = this.state.symphony;
-                return s.umwelt.kern.tierRuf(s.ctx, s.umwelt.bus, {
-                    laengeM: 1,
-                    stimmung,
-                    d: 3,
-                    pan: 0,
-                    saat: 5,
-                });
-            };
-            try {
-                return await window.__klangW.ereignisse();
-            } finally {
-                P._tierRuf = alt;
-            }
-        });
+        const e7 = await mitZwilling("_tierRuf", "zwillingRuf");
         const u7 = urteile({}, null, null, e7).rot;
         if (!u7.some((t) => /^W tier: \d+ Samples im Haupt-Thread/.test(t)))
             fehl.push("S7: der Ruf im Haupt-Thread bleibt unbemerkt");
@@ -1502,19 +1504,7 @@ async function zensus(page, browser, ergebnis) {
                 fehl.push("S10: ein Wald ohne Bäume bleibt unbemerkt");
         } else fehl.push("S10: kein Wald-/Wiesen-Ort gemessen");
         // S11: ein Wasser-Hauch, der den Fußabdruck nicht liest (er klänge auch auf trockenem Land) — die Tour nennt es.
-        const e11 = await page.evaluate(async () => {
-            const r = window.anazhRealm;
-            const P = Object.getPrototypeOf(r);
-            const alt = P._playWaterReactionPing;
-            P._playWaterReactionPing = function zwillingHauch() {
-                this._substanzKlang("wasser", null);
-            };
-            try {
-                return await window.__klangW.ereignisse();
-            } finally {
-                P._playWaterReactionPing = alt;
-            }
-        });
+        const e11 = await mitZwilling("_playWaterReactionPing", "zwillingHauch");
         if (
             !urteile({}, null, null, e11).rot.some((t) =>
                 /^E wasserTrocken: \d+ Quelle\(n\), wo die Welt still ist/.test(t)

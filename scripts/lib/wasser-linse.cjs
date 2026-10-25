@@ -1806,8 +1806,7 @@ function wasserSichtNetz() {
 // (0,5 m) in der Breite, 5 cm in der Tiefe (in der Mitte des Laufs). Ein SPRUNG ist ein Querschnitt über der Hülle (am
 // Ursprung: die Quelle bricht aus dem Nichts). Eine Quelle ohne Körper-Wasser auf ihren ersten 16 m ist TROCKEN (nie grün).
 // Unsichtbar/Phantom je PUNKT (`quer`: Breite des Bilds gegen Breite des Körpers), summiert über alle Quell-Läufe.
-async function wasserQuelle(opts) {
-    const o = opts || {};
+async function wasserQuelle(o = {}) {
     const r = window.anazhRealm;
     const st = r.state;
     if (!st.hydrosphere || !st.hydrosphere.ready) return { fehler: "keine Hydrosphäre" };
@@ -2182,8 +2181,7 @@ function quellTeileVereinen(teile) {
 // die Länge der Bach-Probe (m auf der Bahn ab der Quelle; F8 urteilt ab 80 Querschnitten zu 2 m) — die Seite erhält sie mit
 // `WASSER_INSTALL`
 const BACH_PROBE_M = 200;
-async function wasserBach(opts) {
-    const o = opts || {};
+async function wasserBach(o = {}) {
     const r = window.anazhRealm;
     const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
     const bachOrt = Number.isFinite(o.x) && Number.isFinite(o.z) ? null : (await window.__wasserOrte({})).bach;
@@ -2255,8 +2253,7 @@ async function wasserBach(opts) {
 // ── Q7-Bild: das Fenster am See der Mess-Wiese ──
 // ±40 m um −890/−650 je 0,5 m (wie die Gegenprüfung): Körper gegen Bild je Punkt (`__wasserSichtNetz().fenster`) und die
 // Pflanzen im Fenster (`__wasserFlora`).
-async function wasserSee(opts) {
-    const o = opts || {};
+async function wasserSee(o = {}) {
     const f = o.fenster || (await window.__wasserOrte({})).see.fenster;
     await window.__weltDa((r) => !r._ensureHydroTilesAround((f[0] + f[2]) / 2, (f[1] + f[3]) / 2, 256));
     const sicht = window.__wasserSichtNetz();
@@ -2271,8 +2268,7 @@ async function wasserSee(opts) {
 // setzt: die Nah-Streu (`_nahStreuKachel`, jede Art ohne Ufer-Band) und die Nah-Wiese (`_nahWieseKachelBueschel`, das Gras).
 // Im Wasser steht eine Pflanze, über deren Fuß (der gerenderte Boden, auf dem sie steht) die Welt mehr als 5 cm Wasser
 // zeichnet — über dem gezeichneten Boden an ihrem Ort, sichtbar (ein Sheet unter dem Gelände trägt keine Pflanze). Arten mit Ufer-Band (Schilf) stehen dort nach ihrem Gesetz — gezählt, nicht geurteilt.
-function wasserFlora(opts) {
-    const o = opts || {};
+function wasserFlora(o = {}) {
     const r = window.anazhRealm;
     const sicht = o.sicht || window.__wasserSichtNetz();
     const arten = r._nahStreuArten();
@@ -2369,8 +2365,7 @@ function wasserFlora(opts) {
 // ist ein Profil ab `schuttKandidat` (≈ 23°) — Schutt trägt nur der Schutthang des Schicht-Gesetzes (je Vertex `aSchutt`, K17). Dazu das BILD (Lehre 22: sichtbar ist das 1,8-m-Mesh): die Vertices der Chunk-Meshes über dem Spiegel
 // des nächsten Fluss-Punkts, bis 6 m darüber und bis halbe Breite + 8 m von seiner Mitte — ihr Fels- und Geröll-Gewicht aus
 // der Geometrie-Normale.
-async function wasserBank(opts) {
-    const o = opts || {};
+async function wasserBank(o = {}) {
     const r = window.anazhRealm;
     const st = r.state;
     const h = st.hydrosphere;
@@ -2735,8 +2730,7 @@ async function wasserMutation(o = {}) {
 // des Körpers läuft längs x), der Fluss (der nächste Lauf-Punkt 2–14 m breit), der Bach (die Quelle des nächsten Laufs
 // mit ≥ 11 Punkten — die Bach-Probe misst seine ersten Segmente) und die Küste (die nächste Ozean-Zelle des Atlas neben
 // Land, dort die Land-Seite).
-async function wasserOrte(opts) {
-    const o = opts || {};
+async function wasserOrte(o = {}) {
     const r = window.anazhRealm;
     const st = r.state;
     const G = window.__gelaendeCore;
@@ -2916,32 +2910,10 @@ module.exports = {
     WASSER_INSTALL:
         WELT_ORTE_INSTALL +
         `var BACH_PROBE_M = ${BACH_PROBE_M};` +
-        `window.__wasserOrte = ${wasserOrte.toString()};` +
-        `window.__wasserLeser = ${wasserLeser.toString()};` +
-        `window.__wasserMutation = ${wasserMutation.toString()};` +
-        `window.__wasserHoehle = ${wasserHoehle.toString()};` +
-        `window.__wasserWagen = ${wasserWagen.toString()};` +
-        `window.__wasserSichtNetz = ${wasserSichtNetz.toString()};` +
-        `window.__wasserFlora = ${wasserFlora.toString()};` +
-        `window.__wasserSee = ${wasserSee.toString()};` +
-        `window.__wasserQuelle = ${wasserQuelle.toString()};` +
-        `window.__wasserQuellTeil = ${wasserQuellTeil.toString()};` +
-        `window.__wasserBach = ${wasserBach.toString()};` +
-        `window.__wasserBank = ${wasserBank.toString()};` +
-        `window.__wasserFluss = ${wasserFluss.toString()};` +
-        `window.__wasserKroneVon = ${__wasserKroneVon.toString()};` +
-        `window.__wasserKanalParitaet = ${wasserKanalParitaet.toString()};` +
-        `window.__wasserUfer = ${wasserUfer.toString()};` +
-        `window.__wasserStrom = ${wasserStrom.toString()};` +
-        `window.__wasserFlussNah = ${__wasserFlussNah.toString()};` +
-        `window.__wasserGraben = ${wasserGraben.toString()};` +
-        `window.__wasserUferFarbe = ${wasserUferFarbe.toString()};` +
-        `window.__wasserKoerper = ${wasserKoerper.toString()};` +
-        `window.__wasserBild = ${wasserBild.toString()};` +
-        `window.__wasserSeeAm = ${__wasserSeeAm.toString()};` +
-        `window.__wasserSim = ${__wasserSim.toString()};` +
-        `window.__wasserLicht = ${wasserLicht.toString()};` +
-        `window.__wasserRegen = ${wasserRegen.toString()};`,
+        // jede Probe als `window.__<Name>` (der Name der Funktion ohne führende Striche)
+        Object.entries({ wasserOrte, wasserLeser, wasserMutation, wasserHoehle, wasserWagen, wasserSichtNetz, wasserFlora, wasserSee, wasserQuelle, wasserQuellTeil, wasserBach, wasserBank, wasserFluss, __wasserKroneVon, wasserKanalParitaet, wasserUfer, wasserStrom, __wasserFlussNah, wasserGraben, wasserUferFarbe, wasserKoerper, wasserBild, __wasserSeeAm, __wasserSim, wasserLicht, wasserRegen })
+            .map(([n, f]) => `window.__${n.replace(/^_+/, "")} = ${f};`)
+            .join(""),
     quellTeileVereinen,
     QUELL_KACHELN,
 };
