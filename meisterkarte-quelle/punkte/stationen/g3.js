@@ -406,6 +406,89 @@ const stationen = [
         quelle: "1 = Restkontrast am Rand der letzten Fern-Schale ≤ 2 % bei klarem Wetter an einem Gerät, 4 Azimute",
     },
     {
+        kriterium: "ferne.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // derselbe Lauf wie ferne.K1#1 (gate:luft-tiefe:echt, Luft-Linse aus ferne-blau-heim): K1-2 der LUFT-Zeile trägt je Uhr 0,5 und
+        // 0,27 je Kanal (Δβ blau−rot), den Farbton bei 8 km (≤ 10° von der In-Streuung), die Sonnenseite (Y der In-Streuung zur Sonne /
+        // gegen sie ≥ 1,2), das ferne Weiß bei Sonne 5° (weiße Lambert-Tafel 5 km, R/B ≥ 1,3) und den Ton des Himmels (Hillaire). Ein
+        // OFFEN der Referenz hält nur den Exit des Gates, die Staffel K1-2 bleibt ROT, solange ein K1-2-Befund steht.
+        befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
+        env: { MSYS2_ARG_CONV_EXCL: "*" },
+        gpu: true,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const z = /^LUFT (GRUEN|ROT) · ([^\r\n]+)/m.exec(lauf.stdout);
+            if (!z) return { gruen: false, zahl: "keine LUFT-Zeile (Exit " + lauf.exit + "): " + String(lauf.stderr || "").trim().slice(-200) };
+            const s = /K1-2 (GRUEN|ROT)/.exec(z[2]);
+            const zl = (j && j.zeilen) || [];
+            const Y = (c) => (c ? 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] : null);
+            // die Sonnenseite je Uhr wie das Urteil der Linse: Y der In-Streuung zur Sonne (Azimut 0) gegen sie (180)
+            const seite = [0.5, 0.27].map((u) => {
+                const h = [0, 180].map((az) => Y((zl.find((x) => x.uhr === u && x.az === az) || {}).himmel));
+                return h[0] != null && h[1] > 0 ? +(h[0] / h[1]).toFixed(3) : null;
+            });
+            const dh = zl.flatMap((x) => (x.baender || []).filter((b) => b.d === 8000 && b.n >= 10).map((b) => b.dh)).filter((x) => x != null);
+            const rb = j && j.weiss ? j.weiss.RB : null;
+            const n = (lauf.stdout.match(/^\s+(ROT|OFFEN) K1-2 /gm) || []).length;
+            const gruen = hw && !!s && s[1] === "GRUEN" && seite.every((x) => x != null) && dh.length > 0 && rb != null;
+            return {
+                gruen,
+                zahl:
+                    "K1-2 " + (s ? s[1] : "fehlt") + " (" + n + " Befunde) · Farbton 8 km " + (dh.length ? Math.min(...dh) + "–" + Math.max(...dh) + "°" : "ungemessen") +
+                    " (≤ 10°) · Sonnenseite Uhr 0,5/0,27 " + seite.join("/") + " (≥ 1,2) · fernes Weiß R/B " + rb + " (≥ 1,3) · " + (ad || "Adapter ungenannt"),
+            };
+        },
+        pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "stamm/vegetation-*.js", "phyto-core.js", "spec/farbe/luft-referenz.json"],
+        quelle: "2 = je Kanal (der Farbton rückt zum Himmel, Δh ≤ 10° bei 8 km), Sonnenseite/Gegenseite ≥ 1,2, bei Sonne 5° fernes Weiß R/B ≥ 1,3, Uhr 0,5 und 0,27, beide Geräte",
+    },
+    {
+        kriterium: "ferne.K2",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // ferne-blau-heim in EINER Werkbank-Welt: die Luft-Linse vom Hügel (Genesis + 120 m) und vom Gipfel (das Höchste des Gesetzes
+        // binnen 3 km, Auge 40 m) — K2-2 je Rand-Spalte der Struktur-Tensor von ln Y, keine waagrechte Linie ab 1° (luft-referenz
+        // `band.linie`), 4 Azimute je Ort, Uhr 0,5 —, danach am Messort Genesis die Band-Linse: die Klasse boden (Boden-Satz · Wasser-Satz ·
+        // Fern-Ring · Fern-Wasser) über Haupt + k0 + k1 im Haushalt (12 Befehle / 120k Dreiecke, spec/profiband/haushalt.json).
+        befehl: befehlDer({
+            name: "ferne.K2#2",
+            schritte: [
+                { name: "luft", args: ["licht", "--luft", "--datei", "@DIR@/luft.json"], datei: "@DIR@/luft.json" },
+                { name: "genesis", args: ["umstellen", "--ort", "genesis", "--sicht", "ego"], muss: true },
+                { name: "band", args: ["band", "--ort", "genesis", "--datei", "@DIR@/band.json"], datei: "@DIR@/band.json" },
+            ],
+        }),
+        env: envDer,
+        gpu: true,
+        minuten: 12,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            if (j.fehler) return { gruen: false, zahl: "Folge: " + j.fehler };
+            const l = j.schritte.luft || {};
+            const s = /LUFT (GRUEN|ROT) · [^\r\n]*K2-2 (GRUEN|ROT)/.exec(String(l.rest || ""));
+            const m = j.dateien.luft;
+            const linie = (zs) => [0, 90, 180, 270].map((az) => ((zs || []).find((x) => x.uhr === 0.5 && x.az === az) || {}).kante).map((k) => (k ? k.linie : null));
+            const huegel = linie(m && m.zeilen);
+            const gipfel = linie(m && m.gipfel && m.gipfel.zeilen);
+            const b = j.dateien.band;
+            const k = b && (b.klassen || []).find((x) => x.id === "boden");
+            const haushalt = !!k && !!k.soll && k.ist.befehle <= k.soll.befehle && k.ist.dreiecke <= k.soll.dreiecke && b.amMessort === true;
+            const gruen = hw && !!s && s[2] === "GRUEN" && huegel.concat(gipfel).every((x) => x != null) && haushalt;
+            return {
+                gruen,
+                zahl:
+                    "K2-2 " + (s ? s[2] : "fehlt (Exit " + l.exit + ")") + " · Kanten-Linie Hügel " + huegel.join("/") + "°, Gipfel " + gipfel.join("/") + "° (< 1°) · Boden " +
+                    (k ? k.ist.befehle + "/" + k.soll.befehle + " Befehle, " + (k.ist.dreiecke / 1000).toFixed(1) + "k/" + k.soll.dreiecke / 1000 + "k Dreiecke" + (b.amMessort ? "" : " (nicht am Messort)") : "ungemessen") +
+                    " · " + (j.adapter || "Adapter ungenannt"),
+            };
+        },
+        pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "stamm/vegetation-*.js", "phyto-core.js", "spec/farbe/luft-referenz.json", "scripts/lib/band-urteil.cjs", "scripts/lib/draw-zaehler.cjs"],
+        quelle: "2 = keine waagrechte Kanten-Linie (Struktur-Tensor am Horizont), Hügel und Gipfel, im Boden-Haushalt, beide Geräte",
+    },
+    {
         kriterium: "material.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
@@ -648,28 +731,6 @@ stationen.fehlt = [
             "kugel.js kennt nur Uhr 0,5 und klar: setTimeOfDay(0.5) und __buehne({}) sind fest eingebaut. Die Spalten Uhr 0,27/0,73 × Regen, " +
             "Sonne 10° ≥ 2,5, bedeckt ≤ 1,5 und der Himmels-Azimut ≥ 1,2 (ein senkrechtes Kugel-Paar) haben kein Werkzeug.",
         quelle: "2 = alle Spalten Uhr 0,5/0,27/0,73 × klar/Regen, beide Geräte",
-    },
-    {
-        kriterium: "ferne.K1",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "Die Luft-Linse an origin/main (licht-linsen luftTiefe) misst weder Sonnenseite/Gegenseite noch fernes Weiß R/B bei Sonne 5°. " +
-            "Der Zweig himmel-ton trägt beides (Ausgabe „Sonnenseite … fernes Weiß R/B …“, ungemergt). K1-2 je Kanal und Farbton misst sie schon: " +
-            "Teil-Befehl wie ferne.K1#1, Wert = K1-2 in der LUFT-Zeile.",
-        quelle:
-            "2 = je Kanal (der Farbton rückt zum Himmel, Δh ≤ 10° bei 8 km), Sonnenseite/Gegenseite ≥ 1,2, bei Sonne 5° fernes Weiß R/B ≥ 1,3, Uhr 0,5 und 0,27, beide Geräte",
-    },
-    {
-        kriterium: "ferne.K2",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "Für die waagrechte Kanten-Linie gibt es keine Struktur-Tensor-Linse am Horizont, und luftTiefe kennt keine Gipfel-Station " +
-            "(nur Hügel Genesis + 120 m). „im Boden-Haushalt“ müsste dazu ein Lauf der Ratsche am selben Kopf zeigen.",
-        quelle: "2 = keine waagrechte Kanten-Linie (Struktur-Tensor am Horizont), Hügel und Gipfel, im Boden-Haushalt, beide Geräte",
     },
     {
         kriterium: "material.K2",
