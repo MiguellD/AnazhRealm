@@ -307,7 +307,12 @@ class AnazhRealm_gelaende_kollision {
         return this._foundryAuftrag(f, "grd-", msg, this._foundryRang(0, true), 45000, wort)
             .then((sl) =>
                 sl && sl.grund && sl.grund.boxen.length && steht()
-                    ? this._ortWahlImFaden({ seed: gestalt, name: entry.type, slots: [sl] }, { x: pos.x, z: pos.z }, null, true)
+                    ? this._ortWahlImFaden(
+                          { seed: gestalt, name: entry.type, slots: [sl] },
+                          { x: pos.x, z: pos.z },
+                          null,
+                          true
+                      )
                     : null
             )
             .then((v2) => !!v2 && steht() && this._erdbauSetzen(key, v2.erdbau))
