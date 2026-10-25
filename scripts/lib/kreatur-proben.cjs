@@ -144,9 +144,8 @@ async function kreaturProben(r, T, opts) {
     // Wasser schwimmt er ans Ufer — das misst die Hindernis- bzw. Wasser-Probe, nicht die Richtung der Jagd)
     const frei = (dx, dz, R) =>
         spirale(dx, dz, 40, 8, (x, z) => {
-            if (!r._landAt(x, z) || !imUmkreisLand(x, z, R)) return null;
-            const h = r.getTerrainHeightAt(x, z);
-            return Number.isFinite(h) && !huelleNah(x, z, h, R) ? { x, y: h + 0.5, z } : null;
+            const o = r._landAt(x, z) && imUmkreisLand(x, z, R) && neben(x, z);
+            return o && !huelleNah(x, z, o.y - 0.5, R) ? o : null;
         });
     // DAS FELD OHNE HÖHLE: unter dem Weg des Spielers und der Folger (x −10…+35, z −8…+35) liegt 15 m tief keine Höhle —
     // die Wand hält ein Tier in jeder Höhle, in die es läuft; die Gang-Probe misst den freien Lauf
