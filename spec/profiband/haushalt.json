@@ -266,14 +266,14 @@
         },
         {
             "id": "stadt",
-            "titel": "Die Stadt (Profiband K1): am Anlauf sagt der Spieler „dorf 7 120“, die Großstadt steht am Anker, der Dorf-Zug läuft; der Spieler geht die Hauptgasse (`--wandern bahn`). 111 von 127 Slots stehen, das Gelände nimmt den Rest.",
+            "titel": "Die Stadt (Profiband K1): am Anlauf sagt der Spieler „dorf 7 120“, die Großstadt (91 Häuser im Plan) steht am Anker, der Dorf-Zug läuft; der Spieler geht die Hauptgasse nach Osten (`--wandern bahn`).",
             "spieler": [
-                552.2,
-                416
-            ],
-            "blick": [
                 609.1,
                 419
+            ],
+            "blick": [
+                662.9,
+                421.8
             ],
             "anlauf": [
                 400,
@@ -289,10 +289,6 @@
                 ]
             },
             "bahn": [
-                [
-                    552.2,
-                    416
-                ],
                 [
                     609.1,
                     419
