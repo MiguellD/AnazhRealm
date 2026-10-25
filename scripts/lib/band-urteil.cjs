@@ -54,16 +54,18 @@ function ortOf(haushalt, id) {
 // Jede Ratsche ist EINE Datei `ratsche-<ort>-<gerät>-<sicht>.json`; die Geräte und Sichten nennt der Haushalt (`geraete`,
 // `sichten`), die Messung nennt, woran sie stand (`geraet`, `sicht`), und nur deren Ratsche richtet sie.
 const ratscheDatei = (ortId, geraet, sicht) => `ratsche-${ortId}-${geraet}-${sicht}.json`;
-// Ein Ort mit Anlauf (`anlauf`: die Stadt, die der Spieler gründet, das Dach und der Gipfel über der erwachten Stadt) misst den Lauf
-// (Profiband K1), nicht das Band: keine Ratsche.
-const istBandOrt = (o) => !!o && o.bank === undefined && o.anlauf === undefined;
+// Ein Toggle-Ort (`bank`, die Prüfbühne) richtet die GPU-Zeit eines Schalters, nie das Band. Jeder andere Ort misst das Band (E an
+// JEDEM Messort) und wählt seine Ratsche; Pflicht (H2b) ist sie an den Orten ohne Anlauf — ein Ort mit Anlauf (`anlauf`: die Stadt,
+// die der Spieler gründet, Dach und Gipfel über der erwachten Stadt) urteilt `ungemessen`, bis die Serie seine Ratsche prägt.
+const istToggleOrt = (o) => !o || o.bank !== undefined;
+const istBandOrt = (o) => !istToggleOrt(o) && o.anlauf === undefined;
 
 function ladeSpec(ortId, wahl) {
     const haushalt = JSON.parse(fs.readFileSync(path.join(SPEC, "haushalt.json"), "utf8"));
     const ort = ortOf(haushalt, ortId);
     const spec = { haushalt, ort, ratsche: null, ratscheDatei: null };
     // Die Ratsche wählt nur, wer Gerät UND Sicht nennt; ein Toggle-Ort (`bank`) trägt keine (`ratscheVon` bricht laut).
-    if (wahl && istBandOrt(ort)) {
+    if (wahl && !istToggleOrt(ort)) {
         if (!(haushalt.geraete || {})[wahl.geraet] || !(haushalt.sichten || {})[wahl.sicht])
             throw new Error(
                 `Ratschen-Wahl ${wahl.geraet} × ${wahl.sicht}: der Haushalt kennt die Geräte ` +
@@ -80,7 +82,7 @@ function ladeSpec(ortId, wahl) {
 // Die Ratsche eines Orts für ein Band-Urteil — ein Toggle-Ort hat keine, das Band richten die Band-Orte. `null` heißt
 // ungemessen (die Datei fehlt) und urteilt rot.
 function ratscheVon(spec) {
-    if (!istBandOrt(spec.ort))
+    if (istToggleOrt(spec.ort))
         throw new Error(
             `Messort ${spec.ort.id} ist ein Toggle-Ort ohne Ratsche (bank) — das Band richten ` +
                 spec.haushalt.messorte
