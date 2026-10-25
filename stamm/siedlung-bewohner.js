@@ -917,7 +917,7 @@ class AnazhRealm_siedlung_bewohner {
         }
         const D = b.tagVon || (ende ? b.ziel : null);
         const X = g && { x: g.position.x, z: g.position.z };
-        const nah = D && X && !this._bewohnerWand(X, D);
+        const nah = D && X && (Math.hypot(X.x - D.x, X.z - D.z) < 0.5 || !this._bewohnerWand(X, D));
         if (!nah) b.tagVon = null;
         b.stand = nah && !b.tagVon ? b.ziel : null;
         b.tagAb = w;
@@ -1308,8 +1308,7 @@ class AnazhRealm_siedlung_bewohner {
                     if (o !== b && !o.drinnen && o.leib)
                         if ((o.leib.position.x - p.x) ** 2 + (o.leib.position.z - p.z) ** 2 < reich) nb.push(o);
         if (!nb.length) return null;
-        // steht ein Leib auf dem nächsten Punkt seines Wegs, geht er zum übernächsten, wenn das Bein dorthin frei ist — auf das
-        // Bein seines Tags vom übersprungenen Punkt zurück (`_bewohnerLinie`), nie die Abkürzung (2,7 m neben der Ankunft)
+        // steht ein Leib auf dem nächsten Punkt seines Wegs, geht er zum übernächsten, wenn das Bein dorthin frei ist
         const n1 = b.weg[b.wi + 1];
         if (
             n1 &&
@@ -1317,7 +1316,7 @@ class AnazhRealm_siedlung_bewohner {
             !this._bewohnerWand(p, n1)
         ) {
             b.wi++;
-            b.linie = q;
+            b.linie = p;
             return this._bewohnerAusweichen(S, b, dt);
         }
         // UM DEN STEHENDEN: steht einer auf dem Bein zum nächsten Punkt (vor ihm, näher als zwei Kapseln), geht der Weg über
