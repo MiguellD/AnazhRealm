@@ -60,3 +60,4 @@
 2026-10-25 12:47:52 z29c-abab d-ego VERLÄNGERN 31.9 · 2/3 (2+2)
 2026-10-25 12:57:58 z29c-abab STORNO in stadt
 2026-10-25 12:58:11 takt3-gtx START 38 Stationen
+2026-10-25 13:03:18 takt3-gtx gelaende.K2#1 GRÜN 5.0 · 1/38
