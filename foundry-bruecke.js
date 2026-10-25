@@ -472,18 +472,18 @@ const foundryKanal = (() => {
             __post({ type: "settlement", world: "terrain", reqId: msg && msg.reqId, plan }, "*");
         }
     }
-    // DER GRUND-PLAN (S4): der Grund eines gesetzten Hauses als reine DATEN — GENERISCH wie __replySettlement liefert ihn
-    // der ERSTE Manifest-Kern mit einer grundPlan-Formel (fachwerk: der Körper-Satz und der Keller aus dem Plan des Hauses).
+    // DER GRUND-PLAN (S4 · bauen.K2): der Slot eines gesetzten Hauses als reine DATEN — GENERISCH wie __replySettlement liefert
+    // ihn der ERSTE Manifest-Kern mit einer hausSlot-Formel (fachwerk: obb, Tür-Zeile und Grund-Datum aus dem Mass-Bau).
     // Er rechnet im Faden: im Haupt-Faden malte sein erster Ruf die Karten des Studios (Radeon kalt 1,18 s).
     function __replyGrundPlan(msg) {
-        let grund = null;
+        let slot = null;
         for (const zk of __zweitKerne()) {
-            if (typeof zk.kern.grundPlan === "function") {
-                grund = zk.kern.grundPlan(msg.presetId, msg.seed, msg.ov || null);
+            if (typeof zk.kern.hausSlot === "function") {
+                slot = zk.kern.hausSlot(msg.presetId, msg.seed, msg.ov || null, msg.phi);
                 break;
             }
         }
-        __post({ type: "grund", world: "terrain", reqId: msg.reqId, grund }, "*");
+        __post({ type: "grund", world: "terrain", reqId: msg.reqId, slot }, "*");
     }
     // SPIEGEL-ZENSUS 17.07. — DAS SIEDLUNGS-EXISTENZ-GESETZ reist im Buch-
     // Umschlag: GENERISCH wie __replySettlement (M8, kein Kern-Literal) liefert
@@ -1170,7 +1170,7 @@ const foundryKanal = (() => {
         // Kern-spezifisches Literal (M8: Tabelle vor if). Fail-soft: kein Kern/Fehler
         // -> plan null, der Host behandelt das geschlossen.
         "export-settlement": __replySettlement,
-        // DER GRUND-PLAN-KANAL (S4): der Grund eines gesetzten Hauses aus seinem Plan, vor seinem Bau (`_hausGrundSetzen`)
+        // DER GRUND-PLAN-KANAL (S4 · bauen.K2): der Slot eines gesetzten Hauses (fachwerk `hausSlot`), vor seinem Bau (`_hausGrundSetzen`)
         "grund-plan": __replyGrundPlan,
     };
     return (msg) => {

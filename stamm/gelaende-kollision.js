@@ -277,12 +277,13 @@ class AnazhRealm_gelaende_kollision {
             this._grundrissRaeumen(entry);
     }
 
-    // DER GRUND DES GESETZTEN HAUSES (S4) IST PLAN-DATUM: ein Haus ohne Ort (gesetzt vom Spieler, der KI, der Vorschau am Tor,
-    // einer Probe) fragt beim Setzen (`spawnArchitecture`) den Plan seines Gesetzbuchs (Kanal "grund-plan", fachwerk
-    // `grundPlan`: der Körper-Satz und der Keller mit der Gestalt und dem Stempel, aus denen der Worker es baut) und legt daraus
-    // seinen Erdbau — derselbe Erdbau `grund` wie ein Haus im Ort (`ortPlan`), × die Welt-Skala der Hülle, auf der Höhe seines
-    // Fußes (Position − 0,5, wie `_erdbauAltOrte`); ein Haus auf dem Erdbau eines Orts trägt ihn schon. Der Plan rechnet im
-    // Faden als Kopf (die Bahn ohne Arbeit), nie im Haupt-Faden: dort malte sein erster Ruf die Karten des Studios (1,18 s).
+    // DAS GESETZTE HAUS IST DER SLOT EINES PLANS (S4 · bauen.K2): ein Haus ohne Ort (gesetzt vom Spieler, der KI, der Vorschau
+    // am Tor, einer Probe) fragt beim Setzen (`spawnArchitecture`) seinen Slot (Kanal "grund-plan", fachwerk `hausSlot`: obb,
+    // Tür-Zeile und Grund-Datum mit der Gestalt und dem Stempel, aus denen der Worker es baut, in seiner Gier), und der Ort-Faden
+    // rechnet daraus den Plan v2 eines Orts aus diesem Haus an genau seinem Ort (`_ortWahlImFaden` fest, fachwerk `ortPlan`) —
+    // Platte, Grund und Vorplatz durch DENSELBEN Baustein wie ein Dorf-Slot derselben Gestalt; ein Haus auf dem Erdbau eines
+    // Orts trägt ihn schon. Bis bauen.K2 baute der Wirt den Splat `grund` selbst (Fuß − 0,5): keine Platte, kein Vorplatz vor
+    // der Tür. Der Slot rechnet im Faden, nie im Haupt-Faden: dort malte sein erster Ruf die Karten des Studios (1,18 s).
     // Bis S4-N2 las er die Hülle des GEBAUTEN Hauses: das Vorschau-Haus am Tor (gesetzt bei 2,1 s, Radeon kalt) legte ihn bei
     // 8,2 s und warf 6 schon gebaute Chunks am Spawn neu — der erste entsteht bei 4,5 s. Ein Haus, das vor dem Buch gesetzt
     // wurde (der Reload mit kaltem Buch), fragt, sobald das Buch steht (`_foundryIngestBook`); ein gelegter Grund reist im Save.
@@ -296,38 +297,21 @@ class AnazhRealm_gelaende_kollision {
         const gestalt = this._foundryGestaltFor(entry, art.preset);
         const f = this._foundry;
         if ((wm && wm.erdbau && wm.erdbau[key]) || gestalt == null || !f || !f.ready || !f.worker) return false;
-        const msg = { type: "grund-plan", presetId: art.preset, seed: gestalt };
+        const phi = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+        const msg = { type: "grund-plan", presetId: art.preset, seed: gestalt, phi };
         const ov = this._artifactStudioOv(entry);
         if (ov) msg.ov = ov;
         offen.add(entry);
         const wort = "FOUNDRY TIMEOUT: grund-plan(" + art.preset + ") nach 45 s Arbeit ohne Reply → null";
-        return this._foundryAuftrag(f, "grd-", msg, this._foundryRang(0, true), 45000, wort).then((gd) => {
-            offen.delete(entry);
-            if (!gd || !gd.boxen.length || !this.state.architectures.includes(entry)) return false;
-            const ws = this._foundryWorldScaleMatrix(art.preset);
-            const k = (ws && ws.elements && ws.elements[0]) || 1;
-            const saum = globalThis.__fachwerkCore.ORT_GESETZ.saumM;
-            const boxen = gd.boxen.map((b) => [b[0] * k, b[1] * k, b[2] * k, b[3] * k, b[4]]);
-            let ex = 0;
-            let ez = 0;
-            for (const b of boxen) {
-                ex = Math.max(ex, Math.abs(b[0]), Math.abs(b[1]));
-                ez = Math.max(ez, Math.abs(b[2]), Math.abs(b[3]));
-            }
-            const splat = {
-                art: "grund",
-                cx: pos.x,
-                cz: pos.z,
-                phi: Number.isFinite(entry.rotationY) ? entry.rotationY : 0,
-                ex: ex + saum,
-                ez: ez + saum,
-                saum,
-                y: pos.y - 0.5,
-                boxen,
-                keller: gd.keller ? gd.keller.map((v) => v * k) : null,
-            };
-            return this._erdbauSetzen(key, [splat]);
-        });
+        const steht = () => this.state.architectures.includes(entry);
+        return this._foundryAuftrag(f, "grd-", msg, this._foundryRang(0, true), 45000, wort)
+            .then((sl) =>
+                sl && sl.grund && sl.grund.boxen.length && steht()
+                    ? this._ortWahlImFaden({ seed: gestalt, name: entry.type, slots: [sl] }, { x: pos.x, z: pos.z }, null, true)
+                    : null
+            )
+            .then((v2) => !!v2 && steht() && this._erdbauSetzen(key, v2.erdbau))
+            .finally(() => offen.delete(entry));
     }
 
     // Die Blocker-Boxen eines Hauses: je Hüllen-Box eine GEDREHTE Box (obb: Mitte, Gier, Halb-Maße — das Labor-overlap-

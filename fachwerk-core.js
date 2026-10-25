@@ -2419,7 +2419,7 @@
     // zeichnet dort seinen Boden (Diele, Anbau-Estrich, Hof- und Flügel-Boden), 0: der Grund ist sein Boden (der Turm — seine
     // Geschossböden beginnen im ersten Stock —, das Rund — ein Kreis, keine Box —, das Pfahlhaus über dem Grund). Dazu der
     // Keller-Raum [x0, x1, z0, z1, y0, y1] (vom Kellerboden bis zur Decke auf Grade) oder null; `arten` nennt je Box ihre Masse. Nur die Basis des Stapels
-    // steht auf dem Grund. Leser: exportSettlement (der Slot), der Plan des gesetzten Hauses (`grundPlan`), ortPlan (der
+    // steht auf dem Grund. Leser: exportSettlement (der Slot), der Slot des gesetzten Hauses (`hausSlot`), ortPlan (der
     // Erdbau `grund`, gelaende-core) und gate:haus-welt W9. Vorher reiste EINE Box (obb) und die Tür-Zeile — der Anbau und der Turm lagen
     // außerhalb jedes Grundrisses (Büschel im Anbau), der Keller war voll Erde.
     var GRUND_BODEN = { haupt: 1, anbau: 1, fluegel: 1, hofarm: 1, turm: 0, rund: 0 };
@@ -3953,7 +3953,6 @@
             dims: plan.H.dims,
             fp: fpVon(plan.H),
             masse: masseVon(plan),
-            grund: grundVon(plan), // das Grund-Datum (S4) — byte-gleich dem Mass-Bau wie die Massen
             hofGap: 2.5,
             meshes: [],
         };
@@ -3962,18 +3961,38 @@
         });
         return B;
     }
-    // DER GRUND AUS DEM PLAN (S4): das Grund-Datum eines Hauses (`grundVon`: der Körper-Satz und der Keller) aus seinem Plan
-    // (`planBau`, ~2 ms statt ~26 ms des Mass-Baus), in der Merge-Ordnung von `buildInstance` (Rezept, ov, Same). Der Wirt legt
-    // damit den Grund des gesetzten Hauses beim Setzen (`_hausGrundSetzen`), vor dem Bau der Chunks um ihn — bis S4-N2 kam er
-    // mit der Hülle des gebauten Hauses (das Vorschau-Haus am Tor: gesetzt bei 2,1 s, die Hülle bei 8,2 s, dann 6 Chunks am
-    // Spawn neu, Radeon kalt). null: kein Haus-Rezept.
-    function grundPlan(rezeptId, seed, ov) {
+    // DER SLOT DES GESETZTEN HAUSES (S4 · bauen.K2): ein Haus ohne Ort ist der EINE Slot eines Plans aus diesem Haus — die
+    // Felder, die exportSettlement je Slot aus dem Mass-Bau trägt (die Box `ext`, die Tür-Zeile, der Kamin, das Grund-Datum),
+    // in der Merge-Ordnung von `buildInstance` (Rezept, ov, Same), im Rahmen des Hauses mit der Gier `phi`: die obb ist `ext`
+    // um ihre Mitte gedreht wie im Layout (`dorfLayout`). Der Wirt rechnet daraus beim Setzen (`_hausGrundSetzen`) den Plan v2
+    // (`ortPlan` im Ort-Faden): Platte, Grund und Vorplatz byte-gleich einem Dorf-Slot derselben Gestalt. Bis bauen.K2 kam nur
+    // der Grund (`planBau`), der Wirt baute den Splat selbst — ohne Platte, ohne Vorplatz. null: kein Haus-Rezept.
+    function hausSlot(rezeptId, seed, ov, phi) {
         var pre = PRESETS[rezeptId];
         if (!pre || pre.kind === "ausstattung") return null;
         var p = hausParams(pre, ov || null);
         var sd = Number(seed);
         if (isFinite(sd) && !(ov && typeof ov === "object" && ov.seed != null)) p.seed = sd;
-        return planBau(p).grund;
+        var B = massBauExport(p);
+        var e = B.ext;
+        var f = isFinite(phi) ? Number(phi) : 0;
+        var c = Math.cos(f);
+        var s = Math.sin(f);
+        var lcx = (e.x0 + e.x1) / 2;
+        var lcz = (e.z0 + e.z1) / 2;
+        return {
+            x: 0,
+            z: 0,
+            phi: f,
+            obb: { cx: lcx * c + lcz * s, cz: -lcx * s + lcz * c, phi: f, ex: (e.x1 - e.x0) / 2, ez: (e.z1 - e.z0) / 2 },
+            ext: e,
+            kultur: rezeptId,
+            seed: p.seed >>> 0,
+            ov: JSON.parse(JSON.stringify(p)),
+            tuer: tuerZeile(B.dims),
+            chimney: kaminSpitze(B.chimney),
+            grund: B.grund,
+        };
     }
 
     // DIE TÜR-ZEILE (DORF-ERLEBNIS, die EINE Formel): Haustür (Rechteck, Front −z) und Hintertür samt Kern-Footprint W/D,
@@ -6923,7 +6942,7 @@
         hausParams: hausParams,
         massBau: massBau,
         grundVon: grundVon, // das Grund-Datum (S4) — die Linse liest es wie die Welt
-        grundPlan: grundPlan, // der Grund des gesetzten Hauses aus seinem Plan (S4) — der Wirt legt ihn beim Setzen
+        hausSlot: hausSlot, // der Slot des gesetzten Hauses (S4 · bauen.K2) — der Wirt rechnet daraus beim Setzen den Plan v2
         chimneyTipFromParams: chimneyTipFromParams,
         buildStufe: buildStufe,
         geomsZuGruppe: geomsZuGruppe,

@@ -106,6 +106,8 @@ const BASIS = {
     grundbueschel: [["            reich: 0.72,", "            reich: 0.17,"]],
     // W9: der Abbau lässt den Grund liegen
     abbau: [["        this._erdbauGrundFaellt(entry);", "        "]],
+    // W9 SLOT: das gesetzte Haus legt nur seinen Grund, keine Platte und keinen Vorplatz des Plans
+    slot: [["steht() && this._erdbauSetzen(key, v2.erdbau))", "steht() && this._erdbauSetzen(key, v2.erdbau.slice(1, 2)))"]],
     // W9: der Grund wartet auf die Hülle
     grundplan: [["        this._hausGrundSetzen(entry);\n        // DIE EINE RÄUMUNG", "        // DIE EINE RÄUMUNG"]],
     // W9: der geschlossene Slot lässt seinen Grund liegen
@@ -1813,9 +1815,107 @@ async function proben(phasen) {
     return o;
 }
 
+// W9 SLOT (bauen.K2): ein Haus über die echte Werkstatt (Taste B, Klicks in Suche, Liste und FERTIGEN, Taste F) am Hang ≥ 15 %
+// gesetzt — sein Erdbau (Platte, Grund, Vorplatz) byte-gleich dem Plan v2 (fachwerk `ortPlan`) eines Dorf-Slots derselben Gestalt
+// am selben Ort, wie exportSettlement ihn baut (obb: `ext` des Mass-Baus um die Mitte in der Gier, die Tür-Zeile der Hülle, das
+// Grund-Datum), über dem Boden ohne den eigenen Erdbau.
+async function slotProbe(page) {
+    const ort = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const s = r.state;
+        const h = globalThis.__gelaendeCore.hangOrt(r._gelaende(), (x, z) => r._landAt(x, z, 1), 200, 1600, 0.17, 0.3);
+        if (!h) return null;
+        // die Spuren der Phasen davor weichen (Bau-Modus, Schublade, Inventar, Suche, Fokus), wie vor jedem Weg der Werkstatt-Linse
+        if (s.buildMode.active) r._clearBuildMode();
+        if (s.uiActiveDrawer) r.closeAllDrawers();
+        if (s.inventoryOpen) r.toggleInventoryOverlay(false);
+        r._workshopClosePicker();
+        if (document.activeElement) document.activeElement.blur();
+        r.setGameMode("schöpfer");
+        r.setCameraMode("first");
+        const y = (dx, dz) => r._terrainMacroSurfaceY(h.x + dx, h.z + dz);
+        s.playerMesh.position.set(h.x, y(0, 0) + 1.2, h.z);
+        s.yaw = Math.atan2(y(0, 2) - y(0, -2), y(-2, 0) - y(2, 0)); // längs der Höhenlinie: das Haus steht im Hang
+        s.pitch = -0.45;
+        const span = r._voxelChunkConfig(0).span;
+        const vorher = new Set(s.architectures);
+        const takt = setInterval(() => {
+            try {
+                r._gameLoopTick(performance.now());
+            } catch {}
+        }, 40);
+        window.__slot = {
+            bereit: () => !!(s.voxelChunks.get(`${Math.floor(h.x / span)},${Math.floor(h.z / span)}`) || {}).surfMap,
+            neu: () => s.architectures.find((a) => !vorher.has(a) && a.type === "haus_alemannisch"),
+            ende: () => clearInterval(takt),
+        };
+        return h;
+    });
+    if (!ort) return { fehler: "kein Hang ≥ 17 % in 1 600 m" };
+    try {
+        await page.waitForFunction(() => window.__slot.bereit(), { timeout: 180000, polling: 200 });
+        await page.keyboard.press("KeyB");
+        await page.click("#workshop-search");
+        await page.keyboard.type("alemann");
+        await page.click('#workshop-list .workshop-list-row[data-blueprint="haus_alemannisch"]');
+        await page.click("#workshop-action-zone .workshop-fertigen");
+        // FERTIGEN setzt das Werk, wohin der Spieler blickt (`fertigeBlueprint`); lehnt der Ort ab, zielt das Phantom: Taste F
+        if (await page.evaluate(() => !window.__slot.neu() && window.anazhRealm.state.buildMode.active)) await page.keyboard.press("KeyF");
+        await page.waitForFunction(
+            () => {
+                const e = window.__slot.neu();
+                const eb = window.anazhRealm.state.worldMeta.erdbau || {};
+                return e && e.tuer && eb[`haus:${Math.round(e.position.x * 100)},${Math.round(e.position.z * 100)}`];
+            },
+            { timeout: 240000, polling: 250 }
+        );
+    } catch (e) {
+        const zeile = await page.evaluate(() => [...document.querySelectorAll("#chat-output > div")].slice(-2).map((d) => d.textContent).join(" | "));
+        return { fehler: `${String(e.message || e).slice(0, 60)} — ${zeile.slice(0, 200)}` };
+    } finally {
+        await page.evaluate(() => window.__slot.ende());
+    }
+    return page.evaluate(() => {
+        const r = window.anazhRealm;
+        const [FC, G] = [window.__fachwerkCore, globalThis.__gelaendeCore];
+        const e = window.__slot.neu();
+        const [x, z] = [e.position.x, e.position.z];
+        const key = `haus:${Math.round(x * 100)},${Math.round(z * 100)}`;
+        const eb = r.state.worldMeta.erdbau;
+        const art = r._grundrissGesetz(e.type);
+        const ov = r._artifactStudioOv(e);
+        const p = FC.hausParams(FC.PRESETS[art.preset], ov || null);
+        if (!(ov && ov.seed != null)) p.seed = Number(r._foundryGestaltFor(e, art.preset));
+        const B = FC.massBau(p);
+        const phi = e.rotationY || 0;
+        const [c, sn, lx, lz] = [Math.cos(phi), Math.sin(phi), (B.ext.x0 + B.ext.x1) / 2, (B.ext.z0 + B.ext.z1) / 2];
+        const obb = { cx: lx * c + lz * sn, cz: -lx * sn + lz * c, phi, ex: (B.ext.x1 - B.ext.x0) / 2, ez: (B.ext.z1 - B.ext.z0) / 2 };
+        const sl = { x: 0, z: 0, phi, obb, kultur: art.preset, ov: p, tuer: e.tuer, grund: B.grund };
+        const andere = Object.keys(eb).filter((k) => k !== key).flatMap((k) => eb[k]);
+        const L = Object.create(r._gelaende(), { erdbau: { value: G.erdbauNormal(andere) } });
+        const soll = FC.ortPlan({ slots: [sl] }, { x, z }, G.ortCtx(L)).erdbau;
+        const hy = (dx, dz) => G.hoehe(L, x + dx, z + dz, true);
+        const platte = eb[key].find((q) => q.art === "platte");
+        return {
+            x: Math.round(x),
+            z: Math.round(z),
+            gefaelle: +(Math.hypot(hy(4, 0) - hy(-4, 0), hy(0, 4) - hy(0, -4)) / 8).toFixed(3),
+            ist: eb[key].map((q) => q.art + (q.vorplatz != null ? ":vorplatz" : "")).join("+"),
+            soll: soll.map((q) => q.art + (q.vorplatz != null ? ":vorplatz" : "")).join("+"),
+            gleich: JSON.stringify(eb[key]) === JSON.stringify(soll),
+            fussCm: platte ? Math.round((e.position.y - 0.5 - platte.y) * 100) : null,
+            skala: e._hausHuelleSkala,
+        };
+    });
+}
+
 function urteil(o) {
     const f = [];
     if (o.fehler) return [o.fehler];
+    const sl = o.slot;
+    if (sl && sl.fehler) f.push(`W9 Slot: blind — ${sl.fehler}`);
+    else if (sl && !(sl.gefaelle >= 0.15)) f.push(`W9 Slot: blind — Gefälle ${sl.gefaelle} am Haus (Soll ≥ 0,15)`);
+    else if (sl && !sl.gleich) f.push(`W9 Slot: Erdbau ${sl.ist} ≠ Dorf-Slot ${sl.soll} (ortPlan, Byte-Vergleich)`);
     const P = new Set(o.phasen || ["haus", "sohle", "lichtung", "bau", "w4", "w4b", "w6", "grund"]);
     if (P.has("haus")) {
         const hs = o.haeuser.filter((h) => !h.fehler);
@@ -2112,6 +2212,7 @@ function zeile(o) {
         ` · W4b (fern ${o.fernOrt ? o.fernOrt.x + "/" + o.fernOrt.z : "?"}) Streu vorher ${o.w4b && o.w4b.streuVorher ? o.w4b.streuVorher.zellen : "?"} Zellen im Dorf-Kreis, unter den Häusern ${o.w4b && o.w4b.unterHaus ? o.w4b.unterHaus.geraeumt + " geräumt + " + o.w4b.unterHaus.lebend + " lebend" : "?"}, fern ${o.w4b && o.w4b.fern ? o.w4b.fern.imHaus + "/" + o.w4b.fern.zellen : "?"} Streu, nah ${o.w4b && o.w4b.nah ? o.w4b.nah.imHaus + "/" + o.w4b.nah.natur : "?"} Natur + ${o.w4b && o.w4b.nahStreu ? o.w4b.nahStreu.imHaus : "?"} Streu, Neubau ${o.w4b && o.w4b.neubau ? o.w4b.neubau.imHaus + "/" + o.w4b.neubau.zellen : "?"}, Nah-Streu ${o.w4b && o.w4b.kachel ? o.w4b.kachel.imHaus + "/" + o.w4b.kachel.pflanzen : "?"}, Promotion ${o.w4b && o.w4b.promo ? o.w4b.promo.promoviert + " (warm " + o.w4b.promoWarm.promoviert + "), offen " + o.w4b.promo.rest : "?"} (${o.w4b ? o.w4b.haeuser : "?"} Häuser)` +
         ` · W5 Optik ${hs.map((h) => h.optikProzent).join("/")} %` +
         (o.w9 ? ` · W9 ${JSON.stringify(w9Zeile(o.w9))}` : "") +
+        (o.slot ? ` · W9 Slot ${JSON.stringify(o.slot)}` : "") +
         ` · W8 Lichtung ${o.w8 ? o.w8.fehler || `Sohle ${o.sohle ? o.sohle.fehler || o.sohle.luft + " m über Grund, Werk " + o.sohle.werkTief + " m im Stein" : "?"} · ${o.w8.tore} Tore, Platz r ${o.w8.plattform[2]} m · Natur ${o.w8.naturUeber} · Streu ${o.w8.zellenUeber}/${o.w8.zellen} (Regionen ${o.w8.zellenNeu}) · Kachel ${o.w8.aufScheibe}/${o.w8.pflanzen} · KI Plattform ${o.w8.kiPlattform} (benannt ${o.w8.kiWeichtPlattform}) · KI Haus ${o.w8.kiHaus} (benannt ${o.w8.kiWeichtHaus}) · Satz „${o.w8.chatSatz}" · Gegenprobe ${o.w8.gegenprobe} · Damm ${o.bau ? o.bau.fehler || `${o.bau.rest}/${o.bau.vorher} Bäume geblieben, KI ${o.bau.ki} (benannt ${o.bau.kiWeicht})` : "?"} · ${o.w8.baeume} Bäume im 60-m-Kreis` : "?"}` +
         ` · W7 Bau im Bau ${o.w7 ? o.w7.imBau + "/" + o.w7.haeuser + ", zweites Dorf " + o.w7.zweitesImBau + "/" + o.w7.zweitesDorf : "?"}` +
         ` · W6 Tür frontal ${(o.w6 || []).map((w) => w.kultur + (w.fehler ? ":" + w.fehler : " Kern " + w.kernDrinM + " m (" + w.kernBoxen + " Boxen) / " + (w.fern || []).map((fz) => "L" + fz.stufe + " " + fz.drinM + " m").join(" / "))).join(" · ")}`
@@ -2147,7 +2248,8 @@ function zeile(o) {
                 })
             );
             if (BILD) await page.evaluate(require("./lib/ausgabe-aufnahme.cjs").AUSGABE_INSTALL);
-            const o = await page.evaluate(proben, phasen || null);
+            const o = phasen && phasen.join() === "slot" ? { haeuser: [], phasen } : await page.evaluate(proben, phasen || null);
+            if (!o.fehler && (!phasen || phasen.includes("slot"))) o.slot = await slotProbe(page).catch((e) => ({ fehler: String(e.message || e) }));
             await kontext.close();
             platz.z = null;
             for (const zeile of z.patch || []) {
@@ -2209,6 +2311,7 @@ function zeile(o) {
                 grundbueschel: ["grund", "W9 Büschel"],
                 abbau: ["grund", "W9 Abbau"],
                 grundplan: ["grund", "W9 Plan"],
+                slot: ["slot", "W9 Slot"],
                 waise: ["grund", "W9 Waise"],
                 ausstattung: ["grund", "W9 Zug|W9 Ausstattung"],
                 zugreload: ["grund", "W9 Waise", "W9 Zug"],

@@ -138,7 +138,7 @@ class AnazhRealm_studio_bruecke {
             const ps = f.pending.get(m.reqId);
             if (ps) {
                 f.pending.delete(m.reqId);
-                ps((m.type === "grund" ? m.grund : m.plan) || null);
+                ps((m.type === "grund" ? m.slot : m.plan) || null);
             }
         }
         // die Antwort ist das Ereignis der Fristen: die Uhr des nächsten ihres Fadens läuft an (`_foundryUhren`)
