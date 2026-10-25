@@ -227,7 +227,7 @@ function kernProbe(VC) {
 }
 // ── K8 DER REIFEN: die Seitenkraft je 0,1° Schlupf bis 30°, vorn vlat = c·ω, hinten −b·ω (die andere Achse schlupffrei);
 // der Takt (`taktHz`) bei 12 m/s, Vollgas und vollem Einschlag; in der Welt (W-Kette, `reifenWeltVerdict`) der Bremsweg
-// 50 → 0 km/h Gras gegen Weg (`boden`), nass gegen trocken auf beiden (KETTE.nass), μ(kraut) halb in der Stoff-Zeile (`zeile`) ──
+// 50 → 0 km/h Gras gegen Weg (`boden`), nass gegen trocken auf beiden (KETTE.nass), μ(gras) halb in der Stoff-Zeile (`zeile`) ──
 const REIFEN = { spitze: [6, 10], abfall: 0.15, hz: 240, kostenUs: 50, boden: 1.5, nass: 1.3, zeile: 1.3, labor: 1 };
 // DER TAKT des Fahr-Schritts an EINEM Aufruf (z, e, G, dt): die gröbste Teilung in n gleiche Aufrufe, die Tempo, Gier und
 // Lenkung nicht mehr ändert, als Rate n / dt — K8 am Kern, in der Seite (`__taktHz`) an jedem Schritt der Welt (S1).
@@ -631,7 +631,7 @@ function ketteVerdict(m) {
     return { tiefe, befunde };
 }
 // K8 IN DER WELT (fahrzeug.K1 Staffel 2) an den Bremsungen der W-Kette (je Lage der Weg `s` bis bremsV): Gras/Weg (`boden`), nass
-// gegen trocken auf beiden Böden (`nass`), μ(kraut) halb in der Stoff-Zeile (`zeile`), der Takt an jedem Schritt der Welt (`hz`),
+// gegen trocken auf beiden Böden (`nass`), μ(gras) halb in der Stoff-Zeile (`zeile`), der Takt an jedem Schritt der Welt (`hz`),
 // Labor = Welt (S1: `labor` = STATION.laborM / größte Abweichung). Rückgabe: die Täter beim Namen (die Bremswege trägt W).
 function reifenWeltVerdict(k) {
     const [q, L] = [(a, b) => k[a].s / k[b].s, k.labor || {}];
@@ -646,7 +646,7 @@ function ketteBericht(k, err) {
         `Tiefe ${v.tiefe} ${JSON.stringify(k)} ${err || ""}${v.befunde.join(" · ")}`
     );
     const r8 = k ? reifenWeltVerdict(k) : ["keine Kette"];
-    check("K8 Reifen in der Welt (fahrzeug.K1): Bremsweg Gras/Weg, nass, μ(kraut) halb, Takt, Labor = Welt", !err && !r8.length, String(r8));
+    check("K8 Reifen in der Welt (fahrzeug.K1): Bremsweg Gras/Weg, nass, μ(gras) halb, Takt, Labor = Welt", !err && !r8.length, String(r8));
     return v;
 }
 

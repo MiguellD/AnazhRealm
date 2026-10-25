@@ -365,7 +365,7 @@ async function probeLeben(expected) {
     };
     // W (feld.K1) DIE WETTER-KETTE: das Wort Sturm, 20 min per Sprung des Nässe-Schreibers; je Lage Regen-Feld, Nässe (= Uniform
     // des Stoffs), Grip (der Bremsweg `s` der Vollbremsung ab 50 km/h bis bremsV in Sim-Schritten). Gehalten
-    // wird der VORGÄNGER; `stern` liest das Wort. K8 (fahrzeug.K1) auf demselben Gras: μ(kraut) halb in der Stoff-Zeile, dann
+    // wird der VORGÄNGER; `stern` liest das Wort. K8 (fahrzeug.K1) auf demselben Gras: μ(gras) halb in der Stoff-Zeile, dann
     // derselbe Streifen als Weg über den Hebel der Dörfer (`_stlWegeBuild`) trocken und im Sturm, darauf S1 (Labor = Welt, Takt).
     const kette = async (K) => {
         const [P0, bV, out] = [Object.getPrototypeOf(r), VC.FAHR.schritt.bremsV, {}];
@@ -411,8 +411,8 @@ async function probeLeben(expected) {
             r._fahrHaft = () => (r._weatherIsWet() ? 0.2 : 1);
             return () => los() && delete r._fahrHaft;
         });
-        const kraut = st.materials.kraut;
-        await lage("zeile", "sunny", () => ((kraut.muRad /= 2), () => (kraut.muRad *= 2)));
+        const gras = st.materials.gras;
+        await lage("zeile", "sunny", () => ((gras.muRad /= 2), () => (gras.muRad *= 2)));
         strasse(start.x, start.z, Math.PI / 2, 72);
         await lage("weg", "sunny");
         await lage("wegNass", "stormy");

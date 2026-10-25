@@ -1496,8 +1496,9 @@ class AnazhRealm_bau_vorlagen {
         // DIE HAFTUNG DES RADS (fahrzeug.K1): je Stoff, auf dem ein Rad stehen kann, μ des Reifens trocken und voll nass (`muRad`,
         // `muRadNass`; Bezug der Asphalt des Labors, μ 1) — Tafel-Werte der Reibung Reifen auf Fahrbahn: verdichtete Erde
         // 0,7/0,45, Gras 0,4/0,2, rauer Fels 0,8/0,55, Bohle 0,65/0,4, Metall 0,6/0,35, Laubstreu 0,45/0,2. Leser: der Reibkreis am
-        // Wagen (`_fahrHaft`). Die Stoffe der Leiber tragen keine — unter dem Rad liegt nie Fleisch. μ des Leibs (`mu`) und μ des
-        // Rads sind zwei Paare (Huf auf Fels 0,6, Reifen auf Fels 0,8), je eine Spalte derselben Zeile.
+        // Wagen (`_fahrHaft`). Die Stoffe der Leiber tragen keine — unter dem Rad liegt nie Fleisch —, und kraut, die Mahd im
+        // Beutel, auch nicht: die Wiese unter Rad, Huf und Schritt ist EINE Zeile, gras. μ des Leibs (`mu`) und μ des Rads sind
+        // zwei Paare (Huf auf Fels 0,6, Reifen auf Fels 0,8), je eine Spalte derselben Zeile.
         // prettier-ignore
         const SI = {
             //         μ      c     T_zünd  T_schmelz  μ Rad  nass
@@ -1516,10 +1517,10 @@ class AnazhRealm_bau_vorlagen {
             glut:     [0.6,  1000, 623,    null,      0.6,   0.45],
             laub:     [0.4,  1800, 523,    null,      0.45,  0.2],
             erde:     [0.6,  800,  null,   null,      0.7,   0.45],
-            kraut:    [0.4,  1800, 533,    null,      0.4,   0.2],
+            kraut:    [0.4,  1800, 533,    null,      null,  null],
             essenz:   [null, 4186, null,   null,      null,  null],
             blech:    [0.5,  460,  null,   1723,      0.6,   0.35],
-            gras:     [0.6,  1800, 533,    null,      null,  null],
+            gras:     [0.6,  1800, 533,    null,      0.4,   0.2],
             wasser:   [null, 4186, null,   273.15,    null,  null],
             eis:      [0.05, 2050, null,   null,      null,  null],
         };

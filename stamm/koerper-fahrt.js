@@ -1260,9 +1260,9 @@ class AnazhRealm_koerper_fahrt {
     // Boden unter dem Fahr-Zustand, der Boden-Faktor des Reibkreises im Fahr-Schritt (vehicle-core fahrKraefte `e.haft`, Bezug
     // der Asphalt des Labors, μ 1). Die Zahlen trägt die EINE Stoff-Zeile (`_stoff`: `muRad` trocken, `muRadNass` voll nass), die
     // Gewichte tragen die Schichten, die den Boden malen: der Grund (`_terrainMaterialAt`, was der Spieler beim Graben bekommt),
-    // darüber die Wiese als kraut mit dem Grün der gebauten Boden-Karte (`_bodenSichtAt` … `gruen`, die Wache, unter der der Halm
-    // wächst und das Grün gemalt wird), darüber der Weg als erde mit dem Pfad-Feld (`_pfadFeldAt`, unter dem die Erde gemalt und
-    // der Halm gedünnt wird). Trocken bis nass nach der EINEN Nässe der Welt (`state.naesse`, EIN Schreiber `_naesseTakt`), nie
+    // darüber die Wiese als gras — dieselbe Zeile, auf der Huf und Schritt stehen (`_kontaktStoffAt`) — mit dem Grün der gebauten
+    // Boden-Karte (`_bodenSichtAt` … `gruen`, die Wache, unter der der Halm wächst und das Grün gemalt wird), darüber der Weg
+    // als erde mit dem Pfad-Feld (`_pfadFeldAt`, unter dem die Erde gemalt und der Halm gedünnt wird). Trocken bis nass nach der EINEN Nässe der Welt (`state.naesse`, EIN Schreiber `_naesseTakt`), nie
     // nach dem Wetter-Wort — wird sie festgehalten, greift der Reifen wie trocken (gate:fahr-leben W). Bis 24.10. reichte die Welt
     // trocken μ 1 auf jeden Boden, nass 0,7 (`NAESSE.haft`).
     _fahrHaft(fz) {
@@ -1277,7 +1277,7 @@ class AnazhRealm_koerper_fahrt {
         const gruen = this._bodenSichtAt(fz.x, fz.z, aus) === null ? 0 : aus.gruen;
         const pfad = this._pfadFeldAt(fz.x, fz.z, fz.y);
         let m = mu(this._terrainMaterialAt(fz.x, fz.z, fz.y));
-        if (gruen > 0) m += (mu("kraut") - m) * gruen;
+        if (gruen > 0) m += (mu("gras") - m) * gruen;
         if (pfad > 0) m += (mu("erde") - m) * pfad;
         return m;
     }
