@@ -215,6 +215,9 @@ class AnazhRealm_kreatur_leben {
                 z: creature.position ? creature.position.z : 0,
             },
             bornAt: Number.isFinite(ud.bornAt) ? ud.bornAt : Date.now(),
+            // DAS ALTER reist mit (Spiel-Zeit, `alterS` des Lebenszyklus — die EINE Uhr des Alters; bornAt ist nur Identität):
+            // ohne es kehrte jedes Tier 0 s alt wieder, der Alterstod kam erst nach FAUNA_MAX_AGE_MS ohne Reload
+            alterS: ud.alterS > 0 ? ud.alterS : undefined,
             // S7 — die Körpergröße reist mit (Restore re-spawnt mit NEUER netId → bodySize
             // MUSS persistiert werden, sonst änderte das Wesen beim Reload seine Größe).
             bodySize: Number.isFinite(ud.bodySize) ? ud.bodySize : 1,
@@ -293,6 +296,9 @@ class AnazhRealm_kreatur_leben {
         if (Number.isFinite(snap.bornAt)) {
             c.userData.bornAt = snap.bornAt;
         }
+        // ein Stand vor heim-z29b trug kein alterS (das Alter war die Wanduhr seit bornAt, sie zählte Pause und Portal): er
+        // beginnt in der Spiel-Zeit bei 0
+        if (snap.alterS > 0) c.userData.alterS = snap.alterS;
         // S6 — der Verband kehrt gebunden wieder: seine alte Kennung zeigt auf die netId seines ersten Wiedergekehrten (die
         // Wiederkehr vergibt neue netIds; eine alte Kennung träfe sonst ein fremdes, neu geborenes Leittier), das Revier zurück
         if (snap.verband != null) {
@@ -1612,8 +1618,7 @@ class AnazhRealm_kreatur_leben {
         if (!creature) return false;
         const name = (creature.userData && creature.userData.name) || "(unbenannt)";
         const soul = (creature.userData && creature.userData.soul) || "wesen";
-        const bornAt = (creature.userData && creature.userData.bornAt) || 0;
-        const ageSec = bornAt > 0 ? (Date.now() - bornAt) / 1000 : null;
+        const ageSec = (creature.userData && creature.userData.alterS) || 0; // das Alter in Spiel-Zeit (`alterS`)
         // Tags BEVOR das Wesen fällt
         const tags = this.computeCreatureCompoundTags(creature);
         // Trauer ∝ Bindung × Vitalität: eine gebundene Gefährtin zu verlieren schmerzt mehr. Der
