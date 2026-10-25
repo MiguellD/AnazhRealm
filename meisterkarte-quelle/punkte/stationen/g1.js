@@ -10,6 +10,7 @@ const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
 // gelaende.K5: K8 der Linse diag-koerper-stand in BEIDEN Sichten. Die Linse setzt die Sicht nicht selbst; die Mess-Kopie
 // (wie koordination bericht/2210-radeon-beweise k8-sicht.diff) setzt sie vor der Wiese und schreibt die gesetzte Sicht
 // mit (`__sicht`), je Sicht ein Lauf, das Ergebnis beider in {AUS}. Läuft im Spiel-Baum (cwd), die Kopie wird gelöscht.
+// Was hinter {AUS} steht, reicht sie an die Linse durch (Staffel 2: `--bild`, die Welt zeichnet auf der Karte).
 function k8Sichten() {
     const fs = require("fs");
     const cp = require("child_process");
@@ -25,7 +26,7 @@ function k8Sichten() {
         const kopie = "scripts/.k8-" + sicht + ".cjs";
         fs.writeFileSync(kopie, quelle.replace(anker, 'r.setCameraMode("' + sicht + '"); o.__sicht = s.cameraMode; ' + anker));
         const jd = aus + "." + sicht + ".json";
-        const p = cp.spawnSync(process.execPath, [kopie, "--k8"], {
+        const p = cp.spawnSync(process.execPath, [kopie, "--k8", ...process.argv.slice(2)], {
             env: Object.assign({}, process.env, { KOERPER_STAND_JSON: jd }),
             encoding: "utf8",
             maxBuffer: 1 << 26,
@@ -477,8 +478,9 @@ module.exports = [
         kriterium: "gelaende.K5",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        // dieselbe K8 auf jedem Gerät (die Ratsche spec/profiband/ratsche-boden-rolle.json urteilt die Linse; hier das Soll ohne Ratsche)
-        befehl: ["node", "-e", "(" + k8Sichten.toString() + ")()", "{AUS}"],
+        // dieselbe K8 auf jedem Gerät (die Ratsche spec/profiband/ratsche-boden-rolle.json urteilt die Linse; hier das Soll ohne Ratsche);
+        // `--bild`: die Welt zeichnet auf der Karte (Rezept `linse`, kein Null-Renderer) — „beide Geräte“ verlangt das Gerät
+        befehl: ["node", "-e", "(" + k8Sichten.toString() + ")()", "{AUS}", "--bild"],
         env: { KOERPER_STAND_PORT: "{PORT}" },
         gpu: true,
         minuten: 10,
@@ -493,7 +495,7 @@ module.exports = [
             }
             return { gruen: raus.length === 0, zahl: (raus.length ? "über dem Soll: " + raus.join(", ") : "alle Rollen im Soll") + " — " + k8Zahl(l.p) };
         },
-        pfad: [...K8_PFAD, "spec/profiband/ratsche-boden-rolle.json"],
+        pfad: [...K8_PFAD, "spec/profiband/ratsche-boden-rolle.json", "scripts/lib/software-gpu.cjs"],
         quelle:
             "2 = alle Rollen an Mess-Wiese und 25°-Hang, in Fahrt, beide Geräte, jede Rolle ruft benannt EINE Funktion (Ratsche)",
     },

@@ -556,9 +556,9 @@ const stationen = [
         env: { KAMERA_LAUB_PORT: "{PORT}", LINSE_GPU: "hardware" },
         gpu: true,
         minuten: 6,
-        // DAS URTEIL (24.10., Prüfung der Buchung): das Kriterium misst Pixel „an einem Gerät“ — die Linse zeichnet unter `--bild`
-        // nie (scripts/diag-kamera-laub.cjs setzt `__anazhHeadlessNullRenderer` auch dann; welt-boot: „das Rezept ist null“), ihre
-        // Nah-Pixel kommen aus dem CPU-Raster von kamera-nah: das ist ROT (Wand GPU in punkte.cjs und hier), bis die Linse zeichnet.
+        // DAS URTEIL (24.10., Prüfung der Buchung): das Kriterium misst Pixel „an einem Gerät“ — unter `--bild` zeichnet die Welt
+        // auf der Karte (seit gpu-wand: Rezept linse ohne Null-Renderer), kamera-nah rechnet die Nah-Pixel gegen die Szene, die sie
+        // zeichnet; zeichnet sie nie (welt-boot: „das Rezept ist null“), ist das ROT (Wand GPU in punkte.cjs und hier).
         // „nie … in der Wand“: die Messung prüft Fels UND Wand vor der Kamera — Bau-Pixel im Nahbereich (der offene Tür-Flügel
         // trägt keinen Leib) zählen, die gate:kamera-leib nur nennt. Die Kugel im Stamm (Fels oder Wand nennt das Kriterium nicht)
         // und der Ruck-Höchstwert (das Kriterium misst p95) stehen in der Zahl.

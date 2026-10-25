@@ -22,6 +22,244 @@ const KREATUR = [
     "scripts/lib/welt-boot.cjs",
 ];
 
+// ───────── DIE HERDE AM HANG (tiere.K1 Staffel 2): drei Funktionen, ihr Text geht in den Befehl (und in den Abdruck) ─────────
+// In der Seite der Werkbank (`werkbank eval`, r = Welt, T = THREE): o.phase "start" stellt die Bühne (Mittag, Sonne, Sommer), den
+// Frieden und das Ego, nimmt jedes Tier der Welt und setzt den Wurf scheuer Hirsche (`_kreaturWurf`, wie die Probe herde) an
+// den nächsten trockenen Hang 15–30° um den Spieler (das Gesetz über ±4 m; die Fall-Linie 50 m bergab bis 60 m bergauf trocken,
+// kein Werk in 70 m); der Spieler geht 60 m über ihr bergab mit 1,4 m/s im Kreatur-Takt der Probe herde (Stoß-Schritt,
+// Leib-Kontakte, `updateCreatures`), bis ein Glied flieht, bleibt stehen und blickt ihr nach, bis ihr Mittel 40 m vom Auge
+// steht. "weiter" schreitet o.takte Takte. Zurück die Pose des Ego-Schusses (das Auge `EGO_AUGE_M` über dem Boden, der Blick
+// auf das Mittel der Herde) und die Lage der Herde.
+function herdeSzene(r, T, o) {
+    const s = r.state;
+    const A = r.constructor;
+    const pm = s.playerMesh.position;
+    const H = (x, z) => r.getTerrainHeightAt(x, z);
+    const Z = o.phase === "start" ? (window.__herdeHang = { takte: 0 }) : window.__herdeHang;
+    const takt = () => {
+        pm.set(Z.sx, H(Z.sx, Z.sz) + 0.5, Z.sz);
+        r._kreaturStossSchritt(1 / 60);
+        r._leibKontakte();
+        A.prototype.updateCreatures.call(r, 1 / 60);
+        Z.takte++;
+    };
+    const lebend = () => Z.glieder.filter((c) => s.creatures.includes(c));
+    const flieht = (c) => c.userData._motionZustand === "flucht";
+    const pose = () => {
+        const g = lebend();
+        const m = g.reduce((a, c) => a.add(c.position.clone().multiplyScalar(1 / g.length)), new T.Vector3());
+        const ey = H(pm.x, pm.z) + A.EGO_AUGE_M;
+        return {
+            kamera: [pm.x, ey, pm.z, m.x, m.y + 0.6, m.z].map((v) => +v.toFixed(2)),
+            abstand: +Math.hypot(m.x - pm.x, m.y + 0.6 - ey, m.z - pm.z).toFixed(1),
+            glieder: g.length,
+            fliehen: g.filter(flieht).length,
+            takte: Z.takte,
+        };
+    };
+    if (o.phase !== "start") {
+        for (let k = 0; k < o.takte; k++) takt();
+        return pose();
+    }
+    s.renderer.setAnimationLoop(null);
+    window.__buehne();
+    r.setGameMode("frieden");
+    r.setCameraMode("first");
+    for (const c of s.creatures.slice()) r.removeCreature(c);
+    const trocken = (x, z) => r._landAt(x, z) && !r._nassAt(x, z);
+    let hang = null;
+    for (let ring = 0; ring < 50 && !hang; ring++)
+        for (let q = 0, n = Math.max(1, ring * 6); q < n && !hang; q++) {
+            const a = (q / n) * 2 * Math.PI;
+            const x = pm.x + Math.cos(a) * ring * 12;
+            const z = pm.z + Math.sin(a) * ring * 12;
+            if (!trocken(x, z)) continue;
+            const gx = (H(x + 4, z) - H(x - 4, z)) / 8;
+            const gz = (H(x, z + 4) - H(x, z - 4)) / 8;
+            const t = Math.hypot(gx, gz);
+            const grad = (Math.atan(t) * 180) / Math.PI;
+            if (!(grad >= 15 && grad <= 30)) continue;
+            const [ux, uz] = [gx / t, gz / t];
+            let frei = true;
+            for (let d = -50; d <= 60 && frei; d += 5) frei = trocken(x + ux * d, z + uz * d);
+            if (frei && !(s.architectures || []).some((e) => e && e.position && Math.hypot(e.position.x - x, e.position.z - z) < 70))
+                hang = { x, z, ux, uz, neigung: +grad.toFixed(1) };
+        }
+    if (!hang) return { fehler: "kein trockener Hang 15–30° in 600 m um den Spieler" };
+    // der Wurf wie in der Probe herde: der Spieler 140 m fort, sein Blick von ihm weg (der Wurf wirft nur fern und außer Blick)
+    pm.set(hang.x + 140, H(hang.x + 140, hang.z) + 0.5, hang.z);
+    s.camera.position.set(pm.x, pm.y + 1.6, pm.z);
+    s.camera.lookAt(pm.x + 1, pm.y + 1.6, pm.z);
+    s.camera.updateMatrixWorld(true);
+    r._loopFrustumCulling();
+    Object.assign(s, { maxCreatures: 64, creatureAnimationTime: 100 });
+    r._faunaStroeme = null;
+    Z.glieder = r._kreaturWurf({ x: hang.x, z: hang.z }, "wesen", "happy", r._faunaRng("verband"), 7);
+    // kein Tier der Welt wächst in das Bild nach
+    s.maxCreatures = s.creatures.length;
+    // DER SCHUSS HÄLT DIE HERDE (wie `__tiereHalten`): die Aufnahme wartet im Takt der Seite, bis die Welt steht — dort steht
+    // jedes Tier an seiner Lage; der eigene Takt oben ruft den Kreatur-Takt am Prototyp vorbei
+    r.updateCreatures = function (dt) {
+        const fest = this.state.creatures.map((c) => [c, c.position.x, c.position.z]);
+        const aus = A.prototype.updateCreatures.call(this, dt);
+        for (const [c, x, z] of fest) [c.position.x, c.position.z] = [x, z];
+        return aus;
+    };
+    // der Spieler 60 m ÜBER ihr, er geht bergab: die Herde flieht talwärts, der Blick fällt auf sie (von unten verdeckte der Hang sie)
+    let d = 60;
+    for (; Z.takte < 3600 && !Z.glieder.some(flieht); d -= 1.4 / 60) {
+        [Z.sx, Z.sz] = [hang.x + hang.ux * d, hang.z + hang.uz * d];
+        takt();
+    }
+    if (!Z.glieder.some(flieht)) return Object.assign(pose(), { fehler: "die Herde flieht nicht (der Spieler ging bis " + d.toFixed(0) + " m)" });
+    for (let k = 0; k < 1800 && pose().abstand < 40; k++) takt();
+    return Object.assign(pose(), { hang: { x: +hang.x.toFixed(1), z: +hang.z.toFixed(1), neigung: hang.neigung }, wurf: Z.glieder.length, fluchtBei: +d.toFixed(1) });
+}
+// DER PULK IM BILD (in der Seite, nach `bild --klasse ^tier`): die Teilung des Schusses (`__letzteTeilung`, werkbank) gegen die
+// Glieder der Herde. Je Glied die Tier-Pixel im Kreis seines Leibs am Schirm (Mitte über der Lage um die halbe Höhe seiner Box,
+// Radius `_kreaturRaum`) — sichtbar ab 20 Pixeln; die Flecken: alle Tier-Pixel in 4-px-Blöcken, verbunden über einen Leib (den
+// Median-Durchmesser der Glieder), gezählt ab 20 Pixeln. EIN Pulk = jedes lebende Glied sichtbar und EIN Fleck.
+function herdePulk(r, T, o) {
+    const L = window.__letzteTeilung;
+    const Z = window.__herdeHang;
+    if (!L || !Z) return { fehler: "keine Teilung oder keine Herde in der Seite" };
+    const { teil, W, H } = L;
+    const cam = r.state.camera.clone();
+    const [px, py, pz, lx, ly, lz] = o.kamera;
+    cam.position.set(px, py, pz);
+    cam.lookAt(lx, ly, lz);
+    cam.aspect = W / H;
+    cam.updateProjectionMatrix();
+    cam.updateMatrixWorld(true);
+    const g = Z.glieder.filter((c) => r.state.creatures.includes(c));
+    const kreise = g.map((c) => {
+        const b = new T.Box3().setFromObject(c);
+        const h = b.isEmpty() ? 1 : Math.min(3, b.max.y - b.min.y);
+        const v = new T.Vector3(c.position.x, c.position.y + h / 2, c.position.z).project(cam);
+        const d = cam.position.distanceTo(c.position);
+        const rp = (Math.max(0.5, r._kreaturRaum(c)) / d / Math.tan((cam.fov * Math.PI) / 360)) * (H / 2);
+        return { x: ((v.x + 1) / 2) * W, y: ((1 - v.y) / 2) * H, r: Math.max(2, rp), vorn: v.z < 1 };
+    });
+    const im = kreise.map((k) => {
+        let n = 0;
+        if (k.vorn)
+            for (let y = Math.max(0, Math.floor(k.y - k.r)); y < Math.min(H, Math.ceil(k.y + k.r)); y++)
+                for (let x = Math.max(0, Math.floor(k.x - k.r)); x < Math.min(W, Math.ceil(k.x + k.r)); x++)
+                    if (teil[y * W + x] && (x - k.x) ** 2 + (y - k.y) ** 2 <= k.r * k.r) n++;
+        return n;
+    });
+    const B = 4;
+    const [bw, bh] = [Math.ceil(W / B), Math.ceil(H / B)];
+    const voll = new Uint16Array(bw * bh);
+    let pixel = 0;
+    for (let p = 0; p < W * H; p++)
+        if (teil[p]) {
+            pixel++;
+            voll[Math.floor(Math.floor(p / W) / B) * bw + Math.floor((p % W) / B)]++;
+        }
+    const rs = kreise.map((k) => k.r).sort((a, b) => a - b);
+    const weit = Math.max(1, Math.ceil((2 * (rs[rs.length >> 1] || 2)) / B));
+    const marke = new Int32Array(bw * bh).fill(-1);
+    const flecken = [];
+    for (let i = 0; i < bw * bh; i++) {
+        if (!voll[i] || marke[i] >= 0) continue;
+        const st = [i];
+        let n = 0;
+        marke[i] = flecken.length;
+        while (st.length) {
+            const j = st.pop();
+            n += voll[j];
+            for (let dy = -weit; dy <= weit; dy++)
+                for (let dx = -weit; dx <= weit; dx++) {
+                    const x = (j % bw) + dx;
+                    const y = Math.floor(j / bw) + dy;
+                    const k = y * bw + x;
+                    if (x >= 0 && y >= 0 && x < bw && y < bh && voll[k] && marke[k] < 0) {
+                        marke[k] = flecken.length;
+                        st.push(k);
+                    }
+                }
+        }
+        flecken.push(n);
+    }
+    const gross = flecken.filter((n) => n >= 20);
+    return {
+        glieder: g.length,
+        sichtbar: im.filter((n) => n >= 20).length,
+        je: im,
+        flecken: gross.length,
+        kruemel: flecken.length - gross.length,
+        pixel,
+        leibPx: +(2 * (rs[rs.length >> 1] || 0)).toFixed(1),
+    };
+}
+// Der Lauf (im Spiel-Baum, cwd): EINE Werkbank headless an der Weiche (die Karte; `[linse-gpu]` nennt sie), Port {PORT}+20000
+// (die Seite eins darunter); darin (a)–(d) der Probe herde (`diag-kreatur-takt --werkbank`), dann die Serie: der Schirm
+// 1280×720, `herdeSzene` bis 40 m, je Schuss `bild --klasse ^tier --ziel Herde --wahl 14` (die Blick-Wahl EINES Rings: Abstand
+// und Augenhöhe des Ego bleiben, nur der Azimut dreht, bis die Sicht frei ist — an der Kiefer vor der Herde riss die Pose des
+// Spielers die Abnahme) mit `herdePulk` an der Pose des Schusses, drei Schüsse je 0,5 s Spielzeit. Bilder und Abnahmen neben {AUS}, das Ergebnis in {AUS}. Die beiden
+// Seiten-Funktionen reisen als eigene Argumente (`knapp`): an der Kommandozeile von Windows endet jedes nach 8191 Zeichen.
+async function herdeHang() {
+    const fs = require("fs");
+    const path = require("path");
+    const cp = require("child_process");
+    const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const [aus, port, szene, pulk] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    const B = aus.replace(/\.json$/, "");
+    const erg = { serie: [] };
+    const ruf = async (src, o) => {
+        const a = await werkbankRuf(W, "/eval", { code: "return (" + src + ")(r, T, " + JSON.stringify(o || {}) + ");" });
+        if (!a || a.ergebnis === undefined) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
+        return a.ergebnis;
+    };
+    const tor = werkbankTor(W);
+    try {
+        await tor.bereit;
+        for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+        const p = cp.spawnSync(process.execPath, ["scripts/diag-kreatur-takt.cjs", "--werkbank", String(W), "--proben", "herde"], {
+            encoding: "utf8",
+            maxBuffer: 1 << 26,
+        });
+        process.stdout.write(p.stdout || "");
+        process.stderr.write(p.stderr || "");
+        await werkbankRuf(W, "/fenster", { w: 1280, h: 720 });
+        erg.szene = await ruf(szene, { phase: "start" });
+        for (let i = 0; i < 3 && !erg.szene.fehler; i++) {
+            const q = i ? await ruf(szene, { phase: "weiter", takte: 30 }) : erg.szene;
+            const [px, py, pz, lx, ly, lz] = q.kamera;
+            const datei = B + "-herde-" + (i + 1) + ".png";
+            const b = await werkbankRuf(W, "/bild", { px, py, pz, lx, ly, lz, klasse: "^tier", ziel: "Herde", wahl: 14, datei });
+            const kl = b && b.klasse ? Object.fromEntries(Object.entries(b.klasse.klassen || {}).map(([k, v]) => [k, v.pixel])) : null;
+            const kam = b && Array.isArray(b.kamera) ? [...b.kamera, lx, ly, lz] : q.kamera;
+            erg.serie.push({
+                schuss: i + 1,
+                abstand: +Math.hypot(kam[0] - lx, kam[1] - ly, kam[2] - lz).toFixed(1),
+                spieler: q.abstand,
+                glieder: q.glieder,
+                fliehen: q.fliehen,
+                takte: q.takte,
+                kamera: kam,
+                abnahme: (b && b.abnahme) || null,
+                fehler: (b && b.fehler) || null,
+                klassen: kl,
+                pulk: kl ? await ruf(pulk, { kamera: kam }) : null,
+                datei,
+            });
+        }
+    } catch (e) {
+        erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+    } finally {
+        tor.stop();
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+    const kurz = erg.serie.map((x) => [x.abstand, x.fliehen + "/" + x.glieder, x.pulk, x.fehler]);
+    console.log("HERDE AM HANG " + JSON.stringify({ szene: erg.szene, fehler: erg.fehler || null, serie: kurz }));
+}
+
+// der Text einer Funktion ohne Einzug und Kommentar-Zeilen (ein Argument des Befehls, s. herdeHang)
+const knapp = (fn) => String(fn).replace(/\n\s*\/\/[^\n]*/g, "").replace(/\n\s+/g, "\n");
+
 const stationen = [
     {
         kriterium: "mensch.K3",
@@ -147,19 +385,29 @@ const stationen = [
         quelle: "1 = (a) Kohäsion an einem Gerät",
     },
     // ───────── tiere.K1 Staffel 2 — der Verband ganz (Zweig tiere-k1-s2, tetrapoda fluchtRadius: fernstes Glied + FURCHT_GESETZ.fluchtWegJeRadius Radien) ─────────
-    // (a)–(d) der Probe herde am echten Kreatur-Takt (Null-Renderer, R3: Verband ist Mechanik; Port {PORT}+10000): (a) Kohäsion
-    // wandernd ≥ 0,9, fliehend ≥ 0,8; (b) Φ = |Σv̂|/N der laufenden Glieder (ab 1 m/s) ≥ 0,8 über ≥ 60 Flucht-Takte; (c) der
-    // letzte Flüchter läuft ≤ 1,0 s nach dem ersten, ≥ 1 Glied aus zweiter Hand; (d) 600 s neben einem fremden Verband derselben
-    // Art, beide fliehen ≥ 3 s, die Glieder des Gesetzes bleiben dieselben Leiber; Schlupfloch: Glieder ≥ 3, Fluchtanteil ≥ 0,1,
-    // Fluchtweg je Glied ≥ 30 m. Die Bild-Serie „Herde am Hang" (Ego auf 40 m, die Herde flieht als EIN Pulk im Bild beider
-    // Geräte) hat kein Werkzeug: das Urteil bleibt ROT beim Namen, bis ein Schritt ihre Abnahme nach {AUS} schreibt.
+    // (a)–(d) der Probe herde am echten Kreatur-Takt, AUF DER KARTE (die Werkbank headless an der Weiche, `diag-kreatur-takt
+    // --werkbank`; Port {PORT}+20000): (a) Kohäsion wandernd ≥ 0,9, fliehend ≥ 0,8; (b) Φ = |Σv̂|/N der laufenden Glieder (ab 1 m/s)
+    // ≥ 0,8 über ≥ 60 Flucht-Takte; (c) der letzte Flüchter läuft ≤ 1,0 s nach dem ersten, ≥ 1 Glied aus zweiter Hand; (d) 600 s
+    // neben einem fremden Verband derselben Art, beide fliehen ≥ 3 s, die Glieder des Gesetzes bleiben dieselben Leiber;
+    // Schlupfloch: Glieder ≥ 3, Fluchtanteil ≥ 0,1, Fluchtweg je Glied ≥ 30 m. Dazu die Bild-Serie „Herde am Hang" in derselben
+    // Werkbank (`herdeHang` oben): drei Ego-Schüsse aus dem Ausgabe-Pfad, der erste 40–50 m vom Auge zum Mittel der Herde, je
+    // Schuss flieht die Herde (jedes Glied in Flucht), die Abnahme des Bilds hält, und sie steht als EIN Pulk im Bild (jedes
+    // lebende Glied ≥ 20 Tier-Pixel in seinem Kreis, die Tier-Pixel EIN Fleck über einen Leib).
     {
         kriterium: "tiere.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: ["bash", "-c", "KREATUR_TAKT_PORT=$(( {PORT} + 10000 )) node scripts/diag-kreatur-takt.cjs --proben herde"],
+        befehl: [
+            "node",
+            "-e",
+            "(" + knapp(herdeHang) + ")()",
+            "{AUS}",
+            "{PORT}",
+            knapp(herdeSzene),
+            knapp(herdePulk),
+        ],
         gpu: true,
-        minuten: 3,
+        minuten: 8,
         urteil: (j, lauf) => {
             const z = probeZeile(lauf.stdout, "herde");
             if (!z || z.fehler || !z.alarm || !z.id)
@@ -170,25 +418,47 @@ const stationen = [
             const ad =
                 echt && W.mittel >= 0.9 && F.fluchtMittel >= 0.8 && R.takte >= 60 && R.mittel >= 0.8 && K.letzterS !== null &&
                 K.letzterS <= 1 && z.fluchtWegM >= 30 && !I.bruch;
+            const S = (j && j.serie) || [];
+            const sz = (j && j.szene) || {};
+            const schuss = (x) =>
+                !x.fehler && !!x.pulk && !x.pulk.fehler && x.glieder >= 3 && x.fliehen === x.glieder && x.pulk.glieder === x.glieder &&
+                x.pulk.sichtbar === x.pulk.glieder && x.pulk.flecken === 1;
+            const bild = S.length === 3 && S[0].abstand >= 40 && S[0].abstand <= 50 && S.every(schuss);
+            const serie = !j
+                ? "ohne Ergebnis in {AUS}"
+                : j.fehler || sz.fehler
+                  ? "ROT: " + (j.fehler || sz.fehler)
+                  : (bild ? "GRÜN" : "ROT") + " am Hang " + (sz.hang ? sz.hang.neigung + "° " + sz.hang.x + "/" + sz.hang.z : "?") + ", Flucht bei " + sz.fluchtBei +
+                    " m: " + S.map((x) => x.abstand + " m " + x.fliehen + "/" + x.glieder + " fliehen" + (x.pulk ? ", " + x.pulk.sichtbar + " sichtbar, " + x.pulk.flecken +
+                    " Fleck(en) (" + x.pulk.pixel + " px)" : "") + (x.fehler ? " " + x.fehler : "")).join(" · ");
             return {
-                gruen: false,
+                gruen: ad && bild,
                 zahl:
-                    "(a)–(d) headless " + (ad ? "GRÜN" : "ROT") + ": Kohäsion " + W.mittel + " / " + F.fluchtMittel + ", Φ " + R.mittel +
+                    "(a)–(d) auf der Karte " + (ad ? "GRÜN" : "ROT") + ": Kohäsion " + W.mittel + " / " + F.fluchtMittel + ", Φ " + R.mittel +
                     " über " + R.takte + " Takte, letzter Flüchter " + K.letzterS + " s (" + K.zweiteHand + " aus zweiter Hand), Fluchtweg " +
                     z.fluchtWegM + " m, ID 600 s " + (I.bruch ? "bricht nach " + I.bruch[0] + " s" : "hält") + " (Flucht " + I.fluchtS.join(" / ") +
-                    " s) · Bild-Serie „Herde am Hang“ ungemessen: kein Werkzeug",
+                    " s) · Bild-Serie „Herde am Hang“ " + serie,
             };
         },
         pfad: [
             "stamm/kreatur-*.js",
             "stamm/koerper-*.js",
             "stamm/gelaende-kollision.js",
+            "stamm/bild-*.js",
+            "stamm/stoff-*.js",
+            "stamm/vegetation-*.js",
+            "stamm/gelaende-boden.js",
             "stamm/daten.js",
             "tetrapoda-core.js",
             "gelaende-core.js",
+            "phyto-core.js",
             "scripts/diag-kreatur-takt.cjs",
             "scripts/lib/kreatur-proben.cjs",
             "scripts/lib/welt-boot.cjs",
+            "scripts/werkbank.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+            "scripts/lib/software-gpu.cjs",
         ],
         quelle: "2 = (a)–(d) auf beiden Geräten mit der Bild-Serie „Herde am Hang“",
     },
