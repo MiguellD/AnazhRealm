@@ -97,6 +97,21 @@ const K3_PFAD = [
     "scripts/diag-persistence.cjs",
 ];
 
+// Profiband K4 Staffel 2 — die Übergänge im Mess-Fenster über die echten Tasten (Seiten-Code für `werkbank eval`, ohne ').
+// GEHEN: V alle 4 s für 90 s, je Druck die Sicht danach; FAHRT: 30 s nach dem Aufsitzen im GT E (aus), 2 s später E (ein).
+const K4_TASTE =
+    'const t = (c, k) => { for (const a of ["keydown", "keyup"]) window.dispatchEvent(new KeyboardEvent(a, { bubbles: true, code: c, key: k })); }; ';
+const K4_GEH =
+    "const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { v: 0, modi: [] }); " + K4_TASTE +
+    'window.__k4iv = setInterval(() => { t("KeyV", "v"); z.v++; setTimeout(() => z.modi.push(st.cameraMode), 200); }, 4000); ' +
+    "setTimeout(() => clearInterval(window.__k4iv), 90000); return 1;";
+const K4_FAHR =
+    'const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: "-", aus: "-", ein: "-" }); ' + K4_TASTE +
+    "const bis = performance.now() + 120000; " +
+    'const iv = setInterval(() => { if (st.player.mountedArch !== "werkbank-fahrt" && performance.now() < bis) return; clearInterval(iv); ' +
+    'setTimeout(() => { z.wagen = st.player.mountedArch; t("KeyE", "e"); setTimeout(() => { z.aus = st.player.mountedArch; t("KeyE", "e"); ' +
+    "setTimeout(() => { z.ein = st.player.mountedArch; }, 500); }, 2000); }, 30000); }, 100); return 1;";
+
 module.exports = [
     // ─────────────────────────────── Streaming K4 · K5 (hydro-faden) ───────────────────────────────
     {
@@ -241,6 +256,93 @@ module.exports = [
             "scripts/lib/software-gpu.cjs",
         ],
         quelle: "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms",
+    },
+    {
+        kriterium: "profiband.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // Der Boot von #1 (4 frische Sitzungen, Wiese Ego, Regler des Spielers nach R8: `haenger` reicht keinen Regler durch,
+        // nur `voll` setzte ihn), je Sitzung ZWEI Läufe mit `--schwelle 33` — jeder Frame > 33 ms steht beim Namen, haengerN/frames
+        // ist der Anteil, frameMs.max die 100-ms-Grenze. GEHEN: die Bahn, dazu V (echte Taste, cameraToggle) alle 4 s.
+        // FAHRT: `--wandern fahrt` (GT, V alle 4 s aus der Werkbank); 30 s nach dem Aufsitzen, also im Mess-Fenster
+        // (Einschwingen 10 s, Messen 60 s), E (Aussteigen) und 2 s später E (Einsteigen) über den Spieler-Pfad toggleMountAtPlayer.
+        // Ob die Übergänge geschahen, liest `window.__k4` nach dem Lauf (Funktions-Probe 25.10. mit Software-GPU an d43cb61c:
+        // V 10× Ego ↔ Third, E aus = null, E ein = werkbank-fahrt). Staffel 2: jede der 4 Sitzungen, beide Läufe, je Gerät.
+        befehl: [
+            "bash",
+            "-c",
+            VOR +
+                "SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; " +
+                'raeum() { for p in $(netstat -ano | grep -E ":($SP|$WP) .*LISTEN" | awk \'{print $5}\' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }; ' +
+                "W() { node scripts/werkbank.cjs \"$@\"; }; " +
+                "UE() { W eval 'return JSON.stringify(window.__k4 || null)' | node -e 'let s=\"\";process.stdin.on(\"data\",(d)=>(s+=d)).on(\"end\",()=>{try{console.log(JSON.parse(s).ergebnis)}catch(e){console.log(\"null\")}})'; }; " +
+                "SUM() { node -e 'try{const j=require(process.argv[1]);console.log(JSON.stringify({frames:j.frames,haengerN:j.haengerN,schwelle:j.schwelle,frameMs:j.frameMs,profil:j.profil,lauf:j.lauf}))}catch(e){console.log(\"{}\")}' \"$1\"; }; " +
+                "for N in 1 2 3 4; do raeum; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; " +
+                '(PORT=$SP node save-server.js > "$D/b$N-save.log" 2>&1 < /dev/null &); ' +
+                "for t in $(seq 1 30); do curl -s -o /dev/null http://localhost:$SP/ && break; sleep 1; done; " +
+                '(node scripts/werkbank.cjs start --echt --port $WP --seite http://localhost:$SP --ort wiese > "$D/b$N-werkbank.log" 2>&1 < /dev/null &); ' +
+                'for t in $(seq 1 120); do grep -qE "bereit|FEHLER" "$D/b$N-werkbank.log" 2>/dev/null && break; sleep 5; done; ' +
+                'W eval "window.__anazhAutoSettlement = false; return 1" > /dev/null 2>&1; W fenster 1920 1080 > /dev/null 2>&1; ' +
+                'W umstellen --ort wiese --sicht ego > "$D/b$N-umstellen.txt" 2>&1; ' +
+                'W lauf 30 --ein 20 --ruhe 300 --regler frei > "$D/b$N-lauf.txt" 2>&1; ' +
+                "W eval '" + K4_GEH + "' > /dev/null 2>&1; " +
+                'W haenger 60 --regler frei --tiere frei --wandern bahn --schwelle 33 --json "$D/b$N-geh.json" > "$D/b$N-geh.out" 2>&1; E=$?; ' +
+                'echo "BOOT $N GEH EXIT=$E $(SUM "$D/b$N-geh.json") UE $(UE)"; ' +
+                "W eval '" + K4_FAHR + "' > /dev/null 2>&1; " +
+                'W haenger 60 --regler frei --tiere frei --wandern fahrt --schwelle 33 --json "$D/b$N-fahrt.json" > "$D/b$N-fahrt.out" 2>&1; E=$?; ' +
+                'echo "BOOT $N FAHRT EXIT=$E $(SUM "$D/b$N-fahrt.json") UE $(UE)"; ' +
+                "W stop > /dev/null 2>&1; sleep 3; raeum; done; " +
+                "rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json",
+        ],
+        gpu: true,
+        minuten: 35,
+        urteil: (j, lauf) => {
+            const laeufe = [];
+            for (const l of String(lauf.stdout || "").split(/\r?\n/)) {
+                const m = /^BOOT (\d) (GEH|FAHRT) EXIT=(\d+) (\{.*\}) UE (.*)$/.exec(l);
+                if (!m) continue;
+                let b = {}, ue = null;
+                try { b = JSON.parse(m[4]); } catch (_e) { b = {}; }
+                try { ue = JSON.parse(m[5]); } catch (_e) { ue = null; }
+                laeufe.push({ n: +m[1], art: m[2], ...b, ue });
+            }
+            if (laeufe.length !== 8) return { gruen: false, zahl: laeufe.length + " von 8 Läufen (4 Sitzungen × Gehen/Fahrt) gemessen" };
+            const anteil = (x) => (x.frames > 0 ? x.haengerN / x.frames : 1);
+            const fehl = (x) => {
+                const f = [];
+                if (!(x.profil === true && x.frames >= 1000 && x.schwelle === 33)) f.push("Lauf blind (" + x.frames + " Frames)");
+                if (!(x.lauf && x.lauf.regler === "frei")) f.push("Regler nicht frei");
+                if (!(x.frameMs && x.frameMs.max <= 100)) f.push("max " + (x.frameMs ? x.frameMs.max : "?") + " ms");
+                if (!(anteil(x) <= 0.01)) f.push((100 * anteil(x)).toFixed(2) + " % > 33 ms");
+                const u = x.ue || {};
+                if (x.art === "GEH" && !(x.lauf && x.lauf.wandern === "bahn" && u.v >= 10 && (u.modi || []).includes("first") && (u.modi || []).includes("third")))
+                    f.push("kein Sicht-Wechsel im Gehen");
+                if (x.art === "FAHRT" && !(x.lauf && x.lauf.wandern === "fahrt" && u.wagen === "werkbank-fahrt" && u.aus == null && u.ein === "werkbank-fahrt"))
+                    f.push("Aus-/Einsteigen nicht geschehen (" + JSON.stringify(u) + ")");
+                return f;
+            };
+            const rot = laeufe.map((x) => [x, fehl(x)]).filter(([, f]) => f.length);
+            const zelle = (x) => "s" + x.n + (x.art === "GEH" ? " geh " : " fahrt ") + (x.frameMs ? x.frameMs.max : "?") + "/" + (100 * anteil(x)).toFixed(2) + " %";
+            return {
+                gruen: rot.length === 0,
+                zahl:
+                    (8 - rot.length) + " von 8 Läufen ohne Frame > 100 ms und ≤ 1 % > 33 ms mit Sicht-Wechsel und Einsteigen (max ms/Anteil: " +
+                    laeufe.map(zelle).join(" · ") + ")" +
+                    (rot.length ? "; ROT " + rot.map(([x, f]) => "s" + x.n + " " + x.art.toLowerCase() + ": " + f.join(", ")).join(" | ").slice(0, 300) : ""),
+            };
+        },
+        pfad: [
+            "stamm/*.js",
+            "*-core.js",
+            "voxel-worker.js",
+            "foundry-bruecke.js",
+            "index.html",
+            "spec/profiband/haushalt.json",
+            "scripts/werkbank.cjs",
+            "scripts/lib/haenger-linse.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
     },
 
     // ─────────────────────────────── Klang K1 · K2 · K4 · K5 ───────────────────────────────
@@ -695,12 +797,6 @@ module.exports.fehlt = [
         staffel: 2,
         befehl: null,
         grund: "m15-schritt misst nur die Schritte je Stoff; kein Abgriff am Motor über die Drehzahl (klang-core FAHRT), an der Landung nach Aufprall und am Doppler einer Vorbeifahrt",
-    },
-    {
-        kriterium: "profiband.K4",
-        staffel: 2,
-        befehl: null,
-        grund: "`werkbank haenger` kennt nur `--wandern bahn` (Gehen); keine Linse fährt Gehen und Fahrt mit Sicht-Wechsel und Einsteigen und zählt den Anteil der Frames > 33 ms (die Fahrt-Bahn fahrt.js der Züge misst Perzentile, keine Hänger beim Namen)",
     },
     {
         kriterium: "speicher.K2",

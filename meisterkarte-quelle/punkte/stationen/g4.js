@@ -381,11 +381,87 @@ const alle = [
         kriterium: "ki.K1",
         staffel: 2,
         geraet: "headless",
-        befehl: null,
-        grund:
-            "das Soll braucht den Lauf mit echtem Modell (`diag-v1-pfad --korpus --echt`, KI_ENDPUNKT) auf einem Host mit Anbieter " +
-            "(der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18, steht aus) UND ein sehendes Bild-Prädikat: das Bild-Prädikat je Satz fiel " +
-            "als blind (10–17 % Ruhe-Rauschen ohne Tat), ein Bild-Diff gegen dieselbe Ruhe gibt es nicht",
+        // derselbe Korpus über denselben Chat-Pfad, aber gegen das ECHTE Modell (`--echt`, KI_ENDPUNKT = ollama auf dem Laptop,
+        // 127.0.0.1:11434): läuft der Anbieter nicht, startet ihn die Station und beendet ihn danach; die Zeile ANBIETER beweist,
+        // dass der Host das Modell trägt (kein Stub, kein Mitschnitt). Geurteilt wird das Soll der Staffel aus den Satz-Zeilen:
+        // gültig ≥ 95 % und Absicht ≥ 85 % über alle Sätze, 0 Brüche, jeder Negativ-Satz ohne Tat und mit Antwort (✓). Die übrigen
+        // Täter des Werkzeugs (Prädikat nie geprüft, CSP-Türen, Satz-Zahl) sind ROT; das p95 Satz → Welt (Soll des Werkzeugs 6 s)
+        // steht nicht in der Staffel und wird nur genannt. Das Prädikat liest state (Null-Renderer, R3: Mechanik) — das Bild-Prädikat
+        // der Messung trägt die Station nicht (es fiel als blind, 10–17 % Ruhe-Rauschen ohne Tat).
+        befehl: [
+            "bash",
+            "-c",
+            "set -u; O=127.0.0.1:11434; S=''; " +
+                "if ! curl -s -m 3 -o /dev/null http://$O/api/tags; then X=\"${LOCALAPPDATA:-}/Programs/Ollama/ollama.exe\"; " +
+                "[ -x \"$X\" ] || X=ollama; (\"$X\" serve > /dev/null 2>&1 < /dev/null &); S=1; " +
+                "for t in $(seq 1 30); do curl -s -m 2 -o /dev/null http://$O/api/tags && break; sleep 1; done; fi; " +
+                "echo \"ANBIETER $O $(curl -s -m 5 http://$O/api/tags | node -e \"let s='';process.stdin.on('data',(d)=>(s+=d)).on('end',()=>{" +
+                "try{const m=JSON.parse(s).models.map((x)=>x.name);console.log(JSON.stringify({traegt:m.includes(process.env.KI_MODELL),modelle:m}))}" +
+                "catch(e){console.log('{}')}})\")\"; " +
+                "node scripts/diag-v1-pfad.cjs --korpus --echt; e=$?; " +
+                "node -e \"const k=require('./spec/abnahme/ki-korpus.json'); " +
+                "console.log('NEGATIV ' + JSON.stringify(Object.keys(k.saetze).filter((s) => k.saetze[s].still))); " +
+                "console.log('KORPUS ' + Object.keys(k.saetze).length)\"; " +
+                "[ -n \"$S\" ] && taskkill //F //IM ollama.exe > /dev/null 2>&1; exit $e",
+        ],
+        env: { ...SOFT, V1_PFAD_PORT: "{PORT}", KI_ENDPUNKT: "http://127.0.0.1:11434/", KI_MODELL: "qwen3:4b-instruct" },
+        gpu: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            let neg = null, anb = null;
+            try {
+                neg = JSON.parse((/^NEGATIV (.*)$/m.exec(out) || [])[1]);
+                anb = JSON.parse((/^ANBIETER \S+ (.*)$/m.exec(out) || [])[1]);
+            } catch (_e) {
+                return { gruen: false, zahl: "Korpus oder Anbieter-Zeile unlesbar (Exit " + lauf.exit + ")" };
+            }
+            const n = +((/^KORPUS (\d+)$/m.exec(out) || [])[1] || 0);
+            if (!anb || anb.traegt !== true)
+                return { gruen: false, zahl: "kein echter Anbieter: 127.0.0.1:11434 trägt qwen3:4b-instruct nicht (" + JSON.stringify(anb) + ")" };
+            const s = [];
+            for (const l of zeilen(out)) {
+                const m = /^\s*(✓|✗)( ungültig)?( BRUCH)? „(.+?)“/.exec(l);
+                if (m) s.push({ ok: m[1] === "✓", gueltig: !m[2], bruch: !!m[3], satz: m[4], negativ: neg.includes(m[4]) });
+            }
+            const wort = /^\s*(✅|❌) WORT der Korpus über den echten Chat-Pfad \((echter Anbieter|Mitschnitt)\).*?(?: — Täter: (.*))?$/m.exec(out);
+            if (!wort || wort[2] !== "echter Anbieter")
+                return { gruen: false, zahl: "keine WORT-Zeile des echten Anbieters (" + s.length + " Satz-Zeilen, Exit " + lauf.exit + ")" };
+            const taeter = (wort[3] || "").split(" · ").filter((t) => t && !/^p95 Satz → Welt/.test(t) && !/^(gueltig|absicht) /.test(t));
+            const p95 = (/· p95 (\S+) ms/.exec(out) || [])[1] || "?";
+            const q = (f) => s.filter(f).length / Math.max(1, s.length);
+            const gueltig = q((x) => x.gueltig), absicht = q((x) => x.ok);
+            const brueche = s.filter((x) => x.bruch).length;
+            const negS = s.filter((x) => x.negativ), negOk = negS.filter((x) => x.ok).length;
+            const pz = (x) => (100 * x).toFixed(1) + " %";
+            return {
+                gruen:
+                    n > 0 && s.length === n && negS.length === neg.length && gueltig >= 0.95 && absicht >= 0.85 && brueche === 0 &&
+                    negOk === neg.length && !taeter.length,
+                zahl:
+                    s.length + "/" + n + " Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434: gültig " + pz(gueltig) + " (Soll 95), Absicht " +
+                    pz(absicht) + " (Soll 85), Brüche " + brueche + ", Negativ " + negOk + "/" + neg.length + " ohne Tat benannt, p95 " + p95 +
+                    " ms (genannt)" + (taeter.length ? ", Täter " + taeter.join(" · ").slice(0, 160) : ""),
+            };
+        },
+        pfad: [
+            "spec/abnahme/ki-korpus.json",
+            "stamm/feld-*.js",
+            "stamm/werkstatt-vorschau.js",
+            "stamm/studio-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/dirigent-*.js",
+            "stamm/kreatur-*.js",
+            "stamm/koerper-*.js",
+            "stamm/daten.js",
+            "*-core.js",
+            "foundry-bruecke.js",
+            "index.html",
+            "scripts/diag-v1-pfad.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/stamm.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
         quelle: "2 = das Soll mit Modell (gültig ≥ 95 %, Absicht ≥ 85 %, 0 Brüche, Negativ-Sätze scheitern benannt)",
     },
     {
