@@ -984,9 +984,10 @@ class AnazhRealm_dirigent_ankunft {
         return this._blickDerAnkunft(x, z, E.dingM) ? 0 : E.ausserD2;
     }
     // Gilt ein Ding (Mitte x/z, Radius r) für die Ankunft JETZT? Bis das erste Weltbild steht nur im Blick, danach rundum —
-    // die EINE Frage hinter dem Rang der Schlange und der Pflanzung (Lehre 14/25): die Saat eines Chunks (`_foliageChunkInRadius`)
-    // und eine neue Streu-Region (`_tickScatterStreaming`) außer Blick warten auf den Nachlauf. Bis hierher säte und streute
-    // der Lade-Takt den ganzen Ring vor dem Bild (Radeon kalt: Pflanzen 2,5 s Haupt-Faden vor dem Weltbild).
+    // die EINE Frage hinter dem Rang der Schlange und der Pflanzung (Lehre 14/25): die Saat eines Chunks (`_foliageChunkInRadius`),
+    // eine neue Streu-Region (`_tickScatterStreaming`) und der Baum der Pflanz-Schlange (`_tickPendingVegSpawns`, über
+    // `_rangImErstenBlick`) außer Blick warten auf den Nachlauf. Bis hierher säte, streute und setzte der Lade-Takt den ganzen
+    // Ring vor dem Bild (Radeon kalt, die Kalt-Zeile: die Klasse Pflanzen 5,5 s Haupt-Faden vor dem Weltbild).
     _blickDerAnkunft(x, z, r) {
         return !!this.state._weltbildDa || this._imErstenBlick(x, z, r);
     }

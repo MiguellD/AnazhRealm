@@ -2078,6 +2078,8 @@ class AnazhRealm_vegetation_baum {
                 rang.push(this._foundryAuftragD2(queue[j] && queue[j].position));
             let k = queue.length - 1;
             for (let j = k - 1; j >= 0; j--) if (rang[j] < rang[k]) k = j;
+            // vor dem ersten Weltbild setzt sie nur Bäume im Blick (`_rangImErstenBlick`), die übrigen setzt der Nachlauf
+            if (!this._rangImErstenBlick(rang[k])) break;
             const task = queue[k];
             queue[k] = queue[queue.length - 1];
             rang[k] = rang[rang.length - 1];
