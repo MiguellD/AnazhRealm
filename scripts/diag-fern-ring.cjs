@@ -493,17 +493,6 @@ const server = statikServer();
             ren8.setSize(96, 64, false);
             const rt8 = new THREE.RenderTarget(96, 64);
             ren8.setRenderTarget(rt8);
-            // Diagnose-Stufe A: Konstant-Farbe (beweist das Fullscreen-Dreieck)
-            const echterOut = fp8.mat.outputNode;
-            fp8.mat.outputNode = THREE.TSL.vec4(1, 0, 0, 1);
-            fp8.mat.needsUpdate = true;
-            await ren8.renderAsync(szene8, cam8);
-            const bufA = await ren8.readRenderTargetPixelsAsync(rt8, 0, 0, 96, 64);
-            let trefferA = 0;
-            for (let px = 0; px < 96 * 64; px++) if (bufA[px * 4] > 0) trefferA++;
-            res.fpTrefferKonstant = trefferA;
-            fp8.mat.outputNode = echterOut;
-            fp8.mat.needsUpdate = true;
             const bild = async () => {
                 await ren8.renderAsync(szene8, cam8);
                 return ren8.readRenderTargetPixelsAsync(rt8, 0, 0, 96, 64);

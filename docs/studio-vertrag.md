@@ -381,6 +381,9 @@ eines Gesetzbuchs als Primitive, asset-lokal (Vorlagen-Raum, Meter), JEDE Zahl a
   Raster, die Spitze des Stapels aus `kaminSpitze` — derselben Formel wie der Slot des Exports; `null` = kein Kamin); der EINE
   Leser `_hausHuelleSetzen` gibt sie dem Eintrag ohne Spitze aus einem Export (Vorschau, KI) — der Wirt baut kein Haus, um sie
   zu finden (`gate:stand-takt` ORT).
+- **Die Tür des Hauses (bauen.K5):** ebenso trägt die Hülle additiv `tuer` (die Tür-Zeile aus `tuerZeile` — derselben Formel wie
+  der Slot des Exports: Haustür, Hintertür, Kern W/D; `null` = keine Haustür); `_hausHuelleSetzen` gibt sie dem gesetzten Haus,
+  der Tür-Takt öffnet seine Tür wie die des Dorfs (`gate:werkstatt-weg` L-VERBEN).
 - Wände: `gate:haus-fern` (Form, Kosten, innen am Kern), `gate:tor-fern` (das Tor: Fernbild ≤ 24 sicht-Teile ohne
   wurf-Teil durch den EINEN Leser, Wurf-Deckung, innen — über die Regler-Hülle), `gate:studio-vertrag` (B2/B2c/fernform), `gate:asset-contract`
   (die NUR-WURF-Stufe gebaut über die Brücke: `__fern` in der Form, Dreiecke ≤ Zeile).

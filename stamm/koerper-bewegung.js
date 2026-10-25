@@ -1821,7 +1821,10 @@ class AnazhRealm_koerper_bewegung {
                 // Kamera-Kollision: der Wurf der Kugel vom Blickziel zur Wunsch-Position (`_fieldRaycast` mit `radius`: Boxen
                 // und gedrehte Boxen um r aufgeblasen, das Gelände Mittelstrahl + Ring der Kugel an ihrer Stelle) — der Arm
                 // hält absolut r vor dem ersten Treffer (vorher 0,85 × Treffer: an einem 1-m-Arm 0,15 m vor dem Fels, in Ecken
-                // streifte die Linse die Wand). EINE PFLANZE HÄLT SIE NIE (Leben-Schau 07.10. L-Kamera, Gegenprüfung Runde 1): der Wurf geht
+                // streifte die Linse die Wand). Die Boxen sind jede gezeichnete Gestalt eines Baus, auch der Tür- und Tor-Flügel als
+                // Instanz in der Lage, die er zeichnet (`_fluegelLeib`, leib.K4: vorher ging die Kugel durch das offene Blatt, Bau-Pixel
+                // im Nahbereich in 5 Proben); steht die Kugel am Start schon an einer Haut und streift der Wurf tiefer an die Box,
+                // hält sie am Start (`_hautTiefer`). EINE PFLANZE HÄLT SIE NIE (Leben-Schau 07.10. L-Kamera, Gegenprüfung Runde 1): der Wurf geht
                 // `durchPflanzen`, und was von einer Pflanze zwischen Auge und Spieler liegt, wird durchsichtig
                 // (`_kameraDurchsichtNode`). Die Kronen-Hülle (5167fd85) hielt die Verfolger-Kamera in 641 von 2400 Fahr-Proben
                 // unter 3 m (am Wagendach, 137 Sprünge > 2 m) und die Kamera zu Fuß in 43 % der Proben in Baumnähe auf dem

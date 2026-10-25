@@ -416,92 +416,6 @@ class AnazhRealm_dirigent_regler {
         } else {
             st._godrayScale = lerp(0, AnazhRealm.PERF_GODRAY_MAX, effArch);
         }
-        // Lade-Rhythmus-Ring: der Ziel-Ring (chunkRingRadius) wird beim Boot durch `_activeRingRadius`
-        // gedeckelt und wächst nur, wenn der aktuelle Ring VOLL steht, kein Bau-Rückstau, Kopfraum (effArch,
-        // derselbe PID) und ein kurzer Atem verging — die Welt wächst so schnell, wie die Last sie trägt.
-        // Headless → sofort TARGET. Nebel + Laub folgen.
-        const ringTarget = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
-        if (st.renderer && st.renderer._isHeadlessNull) {
-            st._activeRingRadius = ringTarget;
-        } else {
-            if (st._activeRingRadius == null) st._activeRingRadius = Math.min(ringTarget, AnazhRealm.RING_RAMP_START);
-            // Existenz-Boden: bis RING_EXIST_FLOOR wächst der Ring OHNE Kopfraum-Gate — auf Holz, dessen Frame
-            // ab Bild 1 über dem Totband liegt, entstünde die Welt sonst nie. Geordnet bleibt es (settled, kein
-            // Rückstau, Wiese, Atem); darunter schrumpft nichts, der PID atmet nur darüber.
-            const ringFloor = Math.min(ringTarget, AnazhRealm.RING_EXIST_FLOOR);
-            // DER RING-BODEN DES ERSTEN WELTBILDS (B4, ein Leser des Lade-Takts, K60): die Rampe ist eine Drossel des Spiels — ein
-            // Schritt je Atem, wenn der Ring steht. Unter dem Ladeschirm sieht keiner den Ring wachsen; der Existenz-Boden ist der
-            // Boden-Term des ersten Weltbilds (`_weltbildLuecken`), und die Rampe gab ihm je Schritt mehrere Lade-Frames (Radeon kalt
-            // am Kopf 130ba565: Ring 1 von 3 ab 2,9 s, ganz erst bei 9,9–10,3 s). Der Sprung kostet nichts, die Arbeit trägt der Strom
-            // bis zur Frist des Lade-Frames (`_kappeOffen`) — an der Frist hängt er nicht: der Regler läuft am Frame-Ende, wenn die
-            // Frist verbraucht ist (B4-n1: so sprang er nie, Boden 9,2 s); darüber atmet die Rampe wie im Spiel. gate:takt T9.
-            if (this._ladeTakt() && st._activeRingRadius < ringFloor) st._activeRingRadius = ringFloor;
-            // Der Ring atmet in beide Richtungen: bei ANHALTENDER Überlast schrumpft er (nur monoton wachsen
-            // overshootet und klemmt fest). Geprunt wird NUR die äußerste Schale (`_pruneDistantVoxelChunks`
-            // mit +1-Hysterese), NIE der Boden unter dem Spieler. EIN Aktuator, kein Parallel-Regler.
-            const built = this._builtRingRadius();
-            const ringSettled = built !== null && built >= st._activeRingRadius;
-            const noBacklog = !st.voxelMeshPending || st.voxelMeshPending.size === 0;
-            // Der Ring wächst erst, wenn die Wiese des aktuellen Rings steht (Terrain eilt dem Gras nicht
-            // voraus). `pendingGrass` hält nur nahe gebaute Chunks mit nachziehendem Gras — drainiert jeden
-            // Frame, kein Deadlock.
-            const grassCaughtUp = !st.pendingGrass || st.pendingGrass.size === 0;
-            const now = performance.now();
-            const breathed = !st._ringRampLast || now - st._ringRampLast > AnazhRealm.RING_RAMP_SETTLE_MS;
-            // Wachsen verlangt KLAREN Kopfraum (frameMs < growMs ≈ 77 fps, die Totband-Schwelle des PID),
-            // nicht bloß „unter der Decke" — sonst wächst er bis an den Anschlag und overshootet.
-            const throttleMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
-            const growMs = Math.max(1, throttleMs - AnazhRealm.PERF_HEADROOM_MS);
-            const hasHeadroom = sense.frameMs < growMs;
-            // Wachsen braucht ANHALTENDEN Kopfraum (Wachs-Hysterese, größer als die Schrumpf-Hysterese →
-            // Bias zur stabilen kleineren Welt); ein leichter Boot-Frame allein ratscht sonst hoch. Der Timer
-            // startet bei frameMs < growMs und resetet nur bei ECHTER Überlast (> throttleMs); ein Frame im
-            // Totband HÄLT ihn (sonst stallte periodischer Chunk-Bau das Wachsen für immer).
-            if (hasHeadroom) {
-                if (!st._ringHeadroomSince) st._ringHeadroomSince = now;
-            } else if (sense.frameMs > throttleMs) {
-                st._ringHeadroomSince = 0;
-            }
-            // Boot-Fenster der Ring-Ramp: die volle Wachs-Hysterese je Schritt wäre ein hardware-unabhängiger
-            // Zeit-Boden (≥7 s bis zum Ziel-Ring). Solange der Ziel-Ring nie stand und RING_BOOT_WINDOW_MS
-            // offen ist, gilt der kurze Sustain (RING_RAMP_SETTLE_MS); gewachsen wird trotzdem nie unter Last.
-            // Das Fenster schließt beim Erst-Erreichen, beim ersten Schrumpf oder am Zeit-Deckel.
-            if (!st._ringBootWindowUntil) st._ringBootWindowUntil = now + AnazhRealm.RING_BOOT_WINDOW_MS;
-            const _bootWindow = st._ringBootWindowUntil > 1 && now < st._ringBootWindowUntil;
-            const _growSustainMs = _bootWindow ? AnazhRealm.RING_RAMP_SETTLE_MS : AnazhRealm.RING_GROW_SUSTAIN_MS;
-            const sustainedHeadroom = st._ringHeadroomSince && now - st._ringHeadroomSince > _growSustainMs;
-            // Schrumpf-Hysterese: der Frame muss ANHALTEND über Budget sein (nicht ein einzelner
-            // Bau-/Carve-Spike < 200 ms) → ein Sustain-Timer. So schrumpft die Welt nur bei
-            // echter Dauerlast, nicht bei einem transienten Hitch (kein Pendeln gegen das Wachsen).
-            if (st._frameOverBudget) {
-                if (!st._ringOverBudgetSince) st._ringOverBudgetSince = now;
-            } else {
-                st._ringOverBudgetSince = 0;
-            }
-            const sustainedOver =
-                st._ringOverBudgetSince && now - st._ringOverBudgetSince > AnazhRealm.RING_SHRINK_SUSTAIN_MS;
-            if (st._activeRingRadius > ringTarget) {
-                st._activeRingRadius = ringTarget; // Target gesenkt (User-Slider)? sofort folgen
-            } else if (
-                st._activeRingRadius < ringTarget &&
-                ringSettled &&
-                noBacklog &&
-                grassCaughtUp &&
-                (st._activeRingRadius < ringFloor || sustainedHeadroom) &&
-                breathed
-            ) {
-                st._ringRampLast = now;
-                st._ringHeadroomSince = 0; // der nächste Wachs-Schritt verlangt einen frischen Sustain
-                st._activeRingRadius++;
-                if (st._activeRingRadius >= ringTarget) st._ringBootWindowUntil = 1; // Erst-Erreichen schließt das Fenster
-            } else if (st._activeRingRadius > ringFloor && sustainedOver && breathed) {
-                // anhaltend über Budget → die äußerste Schale zurückgeben (Fern-Prune, sicher)
-                st._ringRampLast = now;
-                st._ringOverBudgetSince = 0; // der nächste Schrumpf wartet einen frischen Sustain
-                st._activeRingRadius--;
-                st._ringBootWindowUntil = 1; // der erste Schrumpf schließt das Boot-Fenster (W4.4)
-            }
-        }
         // Streaming ist RÜCKSTAU-getrieben, nicht fps-getrieben: bei Bau-Rückstau MAX Budget — sonst
         // drosselte der PID genau den Bau, der das hohe frameMs erzeugt (er pendelt, das Laden stockt).
         // Die Qualität (Cull/Schatten/Wasser) regelt der PID weiter; der per-Frame-Zeit-Deckel schützt vor
@@ -1995,27 +1909,6 @@ AnazhRealm.ARCH_QUALITY_BUDGET_MIN = 1;
 AnazhRealm.PERF_FOLIAGE_RADIUS_MIN = 70; // Spawn: nur die nächste Vegetation
 AnazhRealm.PERF_FOLIAGE_RADIUS_MAX = 240; // die volle Vegetations-Reichweite
 AnazhRealm.PERF_FOLIAGE_GROW_STEP = 2.5; // m pro Aktuator-Tick — sanftes Nach-außen-Wachsen
-AnazhRealm.RING_RAMP_START = 0; // V18.397 — Start-Ring beim Boot = EIN EINZIGER Chunk (Schöpfer „1 Chunk statt 9!").
-// JEDES-HOLZ-WELLE — DER EXISTENZ-BODEN: bis zu diesem Ring wächst die Ramp ohne
-// Kopfraum-Gate und der Schrumpf-Pfad endet hier (2 = 5×5 Chunks um den Spieler,
-// auf kienspan zugleich der Deckel → dort ist die Welt FIX). Existenz vor Framerate.
-AnazhRealm.RING_EXIST_FLOOR = 2;
-// Start-Ring 0 = EIN Chunk (der Spieler-Chunk): der Fern-Ring (Loch-Deckel) trägt den Rest, der Void-Boden
-// `_softFloorWhileChunkLoading` trägt den Rand, dann wächst der Ramp bei gesundem Frame Ring für
-// Ring — ein großer Start-Ring (25 Chunks) fror den Boot ein.
-AnazhRealm.RING_RAMP_SETTLE_MS = 350; // der „Atem" zwischen zwei Ring-Wachstums-Schritten
-// V18.306 — der Frame muss SO LANGE anhaltend über Budget sein, bevor der Ring eine Schale
-// zurückgibt: lang genug, dass ein transienter Bau-/Carve-Spike (< 200 ms) NICHT schrumpft,
-// kurz genug, dass echte Dauerlast (Freeze) den Ring zügig auf die haltbare Größe senkt.
-AnazhRealm.RING_SHRINK_SUSTAIN_MS = 1200;
-// Wachs-Hysterese: der Ring wächst erst nach ANHALTENDEM Kopfraum — länger als die
-// Schrumpf-Hysterese (zaghaft wachsen, beherzt schrumpfen), damit ein transienter leichter Frame
-// ihn nicht hochratscht.
-AnazhRealm.RING_GROW_SUSTAIN_MS = 1500;
-// W4.4 — der Zeit-Deckel des Ring-Boot-Fensters: solange der Ziel-Ring noch nie stand und
-// dieser Deckel offen ist, wächst der Ring mit dem KURZEN Sustain (RING_RAMP_SETTLE_MS) —
-// schwache HW fällt danach gebunden in die volle V18.318-Hysterese zurück.
-AnazhRealm.RING_BOOT_WINDOW_MS = 10000;
 AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP = 0.012; // pro Aktuator-Tick — sanftes Nach-Verdichten
 // Die zwei Radius-Wände gegen den Grenzzyklus: Wachsen erst nach so vielen SIM-Sekunden ohne
 // Über-Budget-Frame (kein Jagen kurzlebigen Kopfraums); Schrumpfen erst ab diesem Ziel-Abstand in

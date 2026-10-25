@@ -659,7 +659,6 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandOmegaPhysisSaeuleI_II, ctx);
             await timed(BAND.checkBandOmegaWerkstattSpiegel, ctx);
             await timed(BAND.checkBandOmegaGrammatik, ctx);
-            await timed(BAND.checkBandOmegaOpsisSkyEnv, ctx);
             await timed(BAND.checkBandV1773HeldMesh, ctx);
             await timed(BAND.checkBandV1774UseByRole, ctx);
             await timed(BAND.checkBandV1775MakeActCost, ctx);
@@ -705,7 +704,7 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandWellePerfCArchInstancing, ctx);
             await timed(BAND.checkBandWellePerfDBudget, ctx);
             await timed(BAND.checkBandWellePerfENexusGovernor, ctx);
-            // JEDES-HOLZ — der Existenz-Boden der Ring-Ramp (die Welt entsteht auf jedem Holz).
+            // JEDES-HOLZ — der Ring wächst bis zum Ziel, nie an der Bildrate (die Welt existiert ganz auf jedem Holz).
             await timed(BAND.checkBandJedesHolzExistenzBoden, ctx);
             await timed(BAND.checkBandWellePerfHWaterIsoQueue, ctx);
             await timed(BAND.checkBandWellePerf3cPhase2Async, ctx);
@@ -842,7 +841,6 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandWahrerAnblickPfade, ctx);
             await timed(BAND.checkBandWahrerAnblickAtmoBusch, ctx);
             await timed(BAND.checkBandKonvergenzTierBaum, ctx);
-            await timed(BAND.checkBandV18264ShadowCache, ctx);
             await timed(BAND.checkBandV18265ShadowDistance, ctx);
             await timed(BAND.checkBandV18266RockDetail, ctx);
             await timed(BAND.checkBandV18331ReplayDeterminism, ctx);

@@ -1452,6 +1452,8 @@ class AnazhRealm_dienst {
         if (ort !== null && typeof ort === "object") {
             const p = ort.pos;
             const a = t.anker;
+            // die lebende Lage des Ankers und der Takt, der zuletzt an ihm fegte — `_weltSteht` fragt, ob sie seither sprang
+            [t.pos, t.rand, t.takt] = [p, ort.rand, this._weltStand ? this._weltStand.takte : 0];
             if (p && (!a || (p.x - a.x) ** 2 + (p.y - a.y) ** 2 + (p.z - a.z) ** 2 > ort.rand * ort.rand)) {
                 t.anker = { x: p.x, y: p.y, z: p.z };
                 neu = true;

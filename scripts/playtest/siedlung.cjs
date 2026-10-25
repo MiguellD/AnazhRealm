@@ -745,12 +745,8 @@ async function checkBandRing6Workshop(ctx) {
         const setBad = r.setHotbarSlot(5, "definitiv_nicht_da");
         out.setHotbarRejectsUnknown = setBad === false && r.state.hotbar[5] === "test_hotbar_bp";
 
-        // selectHotbarSlot(idx) auf belegten Slot aktiviert Build-Modus
+        // der belegte Slot führt in den Bau-Modus und F setzt das Werk: diag-werkstatt-weg L-WERKSTATT (Ziffer-Taste, echte Eingabe)
         r.selectHotbarSlot(5);
-        out.selectActivatesMode =
-            r.state.buildMode.active === true &&
-            r.state.buildMode.blueprintName === "test_hotbar_bp" &&
-            r.state.buildMode.slotIndex === 5;
         // Highlight im DOM
         const slot5El = bar.querySelector('.hotbar-slot[data-slot="5"]');
         out.highlightActiveSlot = slot5El && slot5El.classList.contains("active");
@@ -758,16 +754,6 @@ async function checkBandRing6Workshop(ctx) {
         // selectHotbarSlot(idx) auf leeren Slot deaktiviert Build-Mode
         r.selectHotbarSlot(8); // leer
         out.emptySlotDeactivates = r.state.buildMode.active === false;
-
-        // confirmBuild im aktiven Modus spawnt den Bauplan
-        r.selectHotbarSlot(5);
-        for (const a of r.state.architectures.slice()) {
-            if (a.mesh) r._cullArchitectureMesh(a);
-        }
-        r.state.architectures = [];
-        const cb = r.confirmBuild();
-        out.confirmBuildSpawnsCorrectBp =
-            cb === true && r.state.architectures.length === 1 && r.state.architectures[0].type === "test_hotbar_bp";
 
         // setHotbarSlot(idx, null) leert den Slot
         r.setHotbarSlot(5, null);
@@ -824,16 +810,8 @@ async function checkBandRing6Workshop(ctx) {
         check("Ring 6.5: setHotbarSlot setzt Eintrag", ring65Results.setHotbarOk);
         check("Ring 6.5: Hotbar-DOM aktualisiert sich nach setHotbarSlot", ring65Results.hotbarDomReflectsSet);
         check("Ring 6.5: setHotbarSlot lehnt unbekannte Baupläne ab", ring65Results.setHotbarRejectsUnknown);
-        check(
-            "Ring 6.5: selectHotbarSlot aktiviert Bau-Modus mit korrektem Bauplan",
-            ring65Results.selectActivatesMode
-        );
         check("Ring 6.5: aktiver Slot bekommt .active-Class", ring65Results.highlightActiveSlot);
         check("Ring 6.5: leerer Slot deaktiviert Bau-Modus", ring65Results.emptySlotDeactivates);
-        check(
-            "Ring 6.5: confirmBuild im Hotbar-Modus spawnt richtigen Bauplan",
-            ring65Results.confirmBuildSpawnsCorrectBp
-        );
         check("Ring 6.5: setHotbarSlot(idx, null) leert den Slot", ring65Results.clearedSlotIsNull);
         check("Ring 6.5: Leerer Slot zeigt — als Label", ring65Results.clearedDomShowsEmpty);
         check("Ring 6.5: #hotbar-config-Container im Spieler-Drawer", ring65Results.hotbarConfigInDom);
