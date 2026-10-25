@@ -867,7 +867,8 @@ class AnazhRealm_feld_nexus {
                 // /v1/chat/completions, entfällt options.num_predict (manche Server lehnen unbekannte Felder ab).
                 // Token-Limit 800: Reasoning-Models schreiben erst <think>, bei 400 riss das JSON ab.
                 // JSON UND FESTE TEMPERATUR (KI H1, 20.10., qwen3:4b-instruct am Korpus): `format: "json"` lässt das lokale Modell
-                // nur JSON schreiben (jeder Rufer liest JSON), Temperatur 0 — derselbe Satz, dieselbe Tat.
+                // nur JSON schreiben (jeder Rufer liest JSON), Temperatur 0 — derselbe Satz, dieselbe Tat. DAS FENSTER (KI K2, 26.10.):
+                // der Vertrag mit jeder Regler-Zeile trägt ~4 300 Token, ollama gibt ohne `num_ctx` 4 096 — jede Anfrage fiel mit HTTP 400.
                 buildBody: (model, system, userContent, cfg) => {
                     const body = {
                         model,
@@ -880,7 +881,7 @@ class AnazhRealm_feld_nexus {
                     const ep = (cfg && cfg.endpoint) || "";
                     const isOpenAiCompat = /\/v1\//.test(ep);
                     if (!isOpenAiCompat) {
-                        body.options = { num_predict: 800, temperature: 0 };
+                        body.options = { num_predict: 800, temperature: 0, num_ctx: 8192 };
                         body.format = "json";
                     } else {
                         body.max_tokens = 800;
