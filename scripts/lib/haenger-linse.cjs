@@ -973,10 +973,11 @@ function latenzAn(k) {
         return Object.assign(L.probe, { ref: undefined, verb: st.player._mausVerb });
     };
     // das Tier des Hiebs: heil, gehalten, halbe Klingen-Reichweite + 0,5 m vor dem Leib, das Fadenkreuz auf seiner Leibes-Mitte.
-    // Es ist der Hirsch („wesen“), die Art, die die Mess-Wiese trägt (K 6,04 im Revier, `_kreaturBestand`): der Lebenszyklus
-    // nimmt am Hunger das Älteste jeder Gattung über ihrer Kapazität. Bis leib-k1-hieb würfelte der Fauna-Strom die Seele — dort
-    // tragen Fuchs und Wolf K 0, der Bär 0,14 —, die Puppe fiel mitten in der Reihe, und jeder Klick danach griff durch ihren
-    // Leichnam (Radeon 206b395a und 4a5f5e2c: ego/hieb ab Probe 5–24 Halt 0, „abbau“ statt „hieb“, zwei ohne Bewegung).
+    // Es ist der Hirsch („wesen“), die Art, die die Mess-Wiese trägt (K 5,8–6,0 im Revier, `_kreaturBestand`): der Lebenszyklus
+    // nimmt am Hunger das Älteste jeder Gattung über ihrer Kapazität, die Puppe ist die Jüngste. Bis leib-k1-hieb würfelte der
+    // Fauna-Strom die Seele — dort trägt der Bär K 0,14–0,39, Fuchs und Wolf ohne Beute K 0 —, die Puppe fiel mitten in der
+    // Reihe, und jeder Klick danach griff durch ihren Leichnam (Radeon 206b395a und 4a5f5e2c: ego/hieb ab Probe 5–24 Halt 0,
+    // „abbau“ statt „hieb“, zwei ohne Bewegung).
     L.tierStellen = async () => {
         const f = r._blickVorn(st.yaw, 0), d = 0.5 * r._kampfBladeReach() + 0.5, x = L.start.x + f.x * d, z = L.start.z + f.z * d;
         if (!L.tier) r.equipHeld("klinge_langschwert"); // die Faust reicht in 3rd nicht bis zur Haut unter dem Fadenkreuz
