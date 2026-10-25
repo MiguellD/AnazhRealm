@@ -1060,7 +1060,9 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         console.log(
             `       Waffen-Schadens-Pfade ${z.schadensPfade} · ohne _kampfRohSchaden: ${z.schadensZwillinge} · Täter S7 nennt ${z.s7 || "–"} · trefferZone fehlt → ${z.kernOhneZone} (mit Kern ${z.kernMitZone} Glieder)`
         );
-        console.log(`       Sweep Math.sin/cos ${z.sweepFormel} · typeof-Selbst ${z.typeofSelbst}`);
+        console.log(
+            `       T11/S8 ${JSON.stringify([z.kalt, z.s8])} · Sweep Math.sin/cos ${z.sweepFormel} · typeof-Selbst ${z.typeofSelbst}`
+        );
         const gr = z.grob || {};
         const jeL = gr.jeL
             ? Object.entries(gr.jeL)
@@ -1752,6 +1754,10 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             c.kernPflichtZone,
             "Q8 K-D3: fehlt tetrapoda trefferZone, bricht der Treffer-Test laut und benannt (nie still null je Tier)"
         );
+        check(
+            c.kaltTrifft,
+            "Q8 T11 Lehre 14: der erste Hieb auf eine kalte Gattung trifft, zerlegt nichts, bricht nicht (die Geburt bestellt)"
+        );
         check(c.sweepBlickVorn, "Q10: der Klingen-Sweep liest _blickVorn (keine Inline-Kopie der Vorwärts-Formel)");
         check(
             c.keinTypeofSelbst,
@@ -1801,6 +1807,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             c.s7 === true,
             "SELBST-TEST (S7): ein Wurf-Täter setzt Kraft × Wirkung × Zone selbst zusammen → die Klassen-Linse nennt ihn"
         );
+        check(c.s8 === true, "SELBST-TEST (S8): ohne Bestellung verfehlt der Hieb, und der Bruch nennt die Gattung");
         check(
             c.s9 === true,
             "SELBST-TEST (S9): der Leib ohne Glieder (Reichweite = halb + radius) → Kopf und Rute liegen außerhalb, die Deckungs-Probe nennt sie"

@@ -1079,7 +1079,7 @@ function validateManifest(m) {
         let m = null;
         try {
             m = loadCore(entry);
-        } catch (_e) {}
+        } catch {}
         check(
             `PFLICHT ${entry.file}: trägt seinen Gefühls-Block (fx.bewegung/ARENA/FAHR.lenkung/VERHALTEN)`,
             !!m && pflicht[entry.file](m)

@@ -416,6 +416,19 @@ class AnazhRealm_netz_portal {
             if (tools.length >= 16) break;
         }
         payload.tools = tools;
+        // WAS DER SPIELER TRÄGT, REIST MIT (tore.K3): Leib (Seele · Teile einer eigenen Seele · Prägung des Mensch-Rezepts),
+        // Inventar (Slots · Hotbar) und Gehaltenes (Haupt-, Neben-Hand, Rüstung) — die Bytes des Zustands, nie eine Auswahl; die
+        // Hülle drüben hält sie (`AnazhHuelle.reisender`), gate:portal-konformanz K8 vergleicht vor · drüben · nach der Heimkehr.
+        const ov = (this.state.workshop && this.state.workshop.studioOv) || {};
+        payload.gepaeck = {
+            leib: {
+                seele: soul.name,
+                teile: (custom && custom.bodyParts) || null,
+                praegung: ov[AnazhRealm.KOERPER_HOST_RECIPE] || null,
+            },
+            inventar: { slots: player.inventory || [], hotbar: this.state.hotbar || [] },
+            wield: player.equipped || { held: null, offhand: null, armor: null },
+        };
         return payload;
     }
 

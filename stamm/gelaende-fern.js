@@ -930,11 +930,12 @@ class AnazhRealm_gelaende_fern {
     }
 
     // Der Blick des Wassers für den Ring-Stoff: eine ruhige Fläche (Normale nach oben) über tiefem Wasser (T = 0), im Licht
-    // der Welt (`_weltLicht`) und im Glanz des Wasser-Stoffs (`hydroSurfaceUniforms`). Ohne Wasser-Stoff bricht er laut.
+    // der Welt (`_weltLicht`) und im Glanz des Wasser-Stoffs (`hydroSurfaceUniforms`), sein Eis an der Säule des
+    // Fern-Wassers (`FAR_WATER.depth`, `_eisDeckung`). Ohne Wasser-Stoff bricht er laut.
     _fernWasserBlickNode(_T) {
         this._ensureHydroSurfaceMaterial();
         const U = this.state.hydroSurfaceUniforms;
-        if (!U || !U.sunCol || !U.sunDir || !U.light || !U.eisNull)
+        if (!U || !U.sunCol || !U.sunDir || !U.light || !U.eisNull || !U.eisVoll)
             throw new Error("Fern-Ring: der Blick des Wassers braucht den Wasser-Stoff (hydroSurfaceUniforms)");
         const WG =
             AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
@@ -948,7 +949,7 @@ class AnazhRealm_gelaende_fern {
             sunCol: U.sunCol,
             sunDir: U.sunDir,
             light: U.light,
-            eisNull: U.eisNull,
+            eis: this._eisDeckung(_T, U, _T.positionWorld.y, _T.float(AnazhRealm.FAR_WATER.depth)),
         }).eigen;
     }
     // Der Wasser-Körper R∞ des Gesetzes für die CPU-Leser der Ferne (`_wasserKoerper`, EINE Formel mit dem Wasser-Stoff).

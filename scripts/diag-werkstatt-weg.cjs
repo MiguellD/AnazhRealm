@@ -1,5 +1,5 @@
 // diag-werkstatt-weg.cjs — DIE WERKSTATT-WEG-LINSE (v1-Schritte 3–4: in der Werkstatt bauen, mit der KI erschaffen), im
-// echten Boot (headless, foundry-ON, Null-Renderer der Welt); jede Probe ruft ihren Chokepoint, L-WERKSTATT fährt echte Eingaben.
+// echten Boot (headless, foundry-ON, Null-Renderer der Seite: keine Bühne zeichnet); jede Probe ruft ihren Chokepoint, L-WERKSTATT fährt echte Eingaben.
 //   D10 — der Same eines Satzes (Hain, Insel, Fraktal, KI ohne Seed) kommt aus dem Welt-Strom (`_bauSame`), nie aus
 //     Math.random; derselbe Satz an derselben Stelle der Welt-Geschichte ist derselbe Hain.
 //   L-WORTSCHATZ — jedes Wort löst über die Studio-Arten auf, „bau mir ein fachwerkhaus" stellt ein Haus, ein unbekanntes Wort
@@ -583,11 +583,10 @@ async function probe(argW) {
             r.setHotbarSlot(4, NAME);
             if (!(st.buildMode.active && st.buildMode.blueprintName === NAME)) r.selectHotbarSlot(4);
             const bm = st.buildMode;
-            r.tickBuildMode();
-            for (let i = 0; i < 300 && bm.phantomMesh && !bm.phantomMesh.userData.studioGhost; i++) {
-                await tick(1, 50);
-                r.tickBuildMode();
-            }
+            await window.__gebautNach("die Studio-Gestalt des Phantoms", {
+                fertig: () => !bm.phantomMesh || bm.phantomMesh.userData.studioGhost,
+                bau: () => r.tickBuildMode(),
+            });
             m.phantomKey = bm.phantomMesh ? keyVon(bm.phantomMesh.userData.foundrySrcGroup) : null;
             m.phantomDreh = bm.phantomMesh ? +bm.phantomMesh.rotation.y.toFixed(6) : null;
             // EIN Same je Werk: Vorschau und Hand ziehen `_werkSame`; der Ghost baut das Werk des Phantoms an SEINEM Ort.
@@ -975,7 +974,7 @@ function wegHelfer(arg) {
         // Fragment den Alpha-Test übersteht (r184: Alpha × Deckkraft < alphaTest → verworfen)
         async phantom() {
             const bm = st.buildMode;
-            for (let i = 0; i < 300 && bm.phantomStudioPending; i++) await new Promise((q) => setTimeout(q, 50));
+            await window.__gebautNach("die Studio-Gestalt des Phantoms", { fertig: () => !bm.phantomStudioPending });
             const o = { studio: !!bm.phantomMesh.userData.studioGhost, meshes: 0, verworfen: 0, farbe: toenung(bm.phantomMesh).farbe };
             bm.phantomMesh.traverse((m) => m.isMesh && m.material && (o.meshes++, (m.material.transparent ? m.material.opacity : 1) < (m.material.alphaTest || 0) && o.verworfen++));
             return o;
@@ -1025,22 +1024,26 @@ function wegHelfer(arg) {
 
 // ── L-WERKSTATT, der Spieler (Node): jeder Schritt ein echtes Ereignis (page.keyboard / page.mouse); ein Ziel außerhalb der
 // Liste erreicht das Mausrad über ihr, je Raste 100 px und eine Eingabe. ──
-const pause = (ms) => new Promise((q) => setTimeout(q, ms));
 const bauWeg = (page, fn, ...a) => page.evaluate((f, ...x) => window.__bauWeg[f](...x), fn, ...a);
-// nach der Taste urteilt das Ereignis, nicht die Uhr: jede endliche Animation (die Schublade gleitet 0,32 s) ist zu Ende
-const ruht = () => document.getAnimations().every((a) => a.playState !== "running" || a.effect.getComputedTiming().iterations === Infinity);
-const taste = async (page, code) => (await page.keyboard.press(code), await pause(120), page.waitForFunction(ruht));
+// nach der Taste urteilt das Ereignis, nie die Uhr: jede endliche Animation, die sie auslöste (die Schublade gleitet 0,32 s),
+// meldet ihr Ende (`finished`) — ohne Frist und ohne Pause (der Hörer der Taste lief, wenn `press` zurückkehrt). Bis 25.10.
+// pollte sie am Bild-Takt mit 30 s Frist: stand der Compositor, riss sie (Lauf 40146641739).
+const ruht = async (l) => {
+    while ((l = document.getAnimations().filter((a) => a.playState === "running" && a.effect.getComputedTiming().iterations !== Infinity)).length)
+        await Promise.allSettled(l.map((a) => a.finished));
+};
+const taste = async (page, code) => (await page.keyboard.press(code), page.evaluate(ruht));
+// eine Raste des Rads (präzise Pixel, ohne Gleiten) ist gelandet, wenn der Schnitt-Beobachter das Ziel im nächsten Bild misst
+// (`isIntersectingViewport`); ein Klick hat gewirkt, wenn `click` zurückkehrt (seine Hörer liefen)
 async function klicke(page, el, liste) {
     for (let i = 0; i < 80 && !(await el.isIntersectingViewport({ threshold: 1 })); i++) {
         const [b, h] = [await el.boundingBox(), await (await page.$(liste)).boundingBox()];
         if (!b || !h) throw new Error(`${liste}: nicht offen`);
         await page.mouse.move(h.x + h.width / 2, Math.max(h.y, 0) + 40);
         await page.mouse.wheel({ deltaY: b.y < Math.max(h.y, 0) ? -100 : 100 });
-        await pause(150);
     }
     const b = await el.boundingBox();
     await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
-    await pause(150);
     return el.evaluate((k) => (k.disabled ? k.title || "gesperrt" : null));
 }
 const finde = async (page, sel) => (await page.$(sel)) || Promise.reject(new Error(`${sel} fehlt in der UI`));
@@ -1098,8 +1101,7 @@ async function wegProbe(page, frei) {
     await bauWeg(page, "vorbereiten", { lage: "schöpfer", name: WERKE.Haus, sicht: "Ego" });
     await taste(page, "KeyB");
     await klicke(page, await finde(page, "#workshop-search"), "#workshop-search");
-    await page.keyboard.type("haus", { delay: 40 });
-    await pause(200);
+    await page.keyboard.type("haus");
     m.sucheHaus = await bauWeg(page, "sucheHaus");
     await bauWeg(page, "abschluss");
     // Die Lichtung: der Spieler mitten auf der Plattform, die Eiche (schöpfer) aus der Hotbar vor ihm.
@@ -1489,7 +1491,7 @@ async function wegProbe(page, frei) {
     for (const [name, ok, detail] of wand()) check(name, ok, detail);
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     await nullRenderer(page, { foundry: true });

@@ -2488,15 +2488,15 @@ class AnazhRealm_studio_bruecke {
                 for (const gl of glieder) this._weltFeldFrei(gl.handle);
                 return null; // Erschöpfung: ganz oder gar nicht — kein halber Wolf
             }
-            glieder.push({ teil: a, handle });
+            glieder.push({ teil: a, name: nm.name, handle });
         }
         return glieder.length ? glieder : null;
     }
 
     // DIE GLIEDER EINER GATTUNG (das EINE Namen-Memo `_trefferGliedNamen`, Fern-Satz und Treffer lesen es): je Glied der
     // Name seines Ankers ("" = die Wurzel) und der Schlüssel seiner Kapsel; jedes Tier löst nur die Namen an SEINEN Teilen
-    // auf. Der Takt LIEST nur (Lehre 14): ist die Gattung kalt, bestellt er ihren Vorrat im Leerlauf (`_gliederBestellen`),
-    // zählt den kalten Ruf (`_gliederKalt`) und bekommt null — der Leib trägt bis dahin seinen Satz. Bis dorf-takt-z13
+    // auf. Der Takt LIEST nur (Lehre 14): die Geburt hat den Vorrat bestellt (`spawnCreatureAt`); ist die Gattung noch kalt,
+    // bestellt der Ruf ihn, zählt sich (`_gliederKalt`) und bekommt null — der Leib trägt bis dahin seinen Satz. Bis dorf-takt-z13
     // zerlegte der erste Leser die Gestalt im Takt: ein Fuchs, den das Bestands-Gesetz fern gebar, kostete die GTX im Dorf
     // `_gattungGlieder` 0,07–0,10 ms je Takt ab p95 (der Zug 13 hob den CPU-Takt 4,72 → 4,97 ms).
     _gattungGlieder(cr) {
@@ -2527,9 +2527,10 @@ class AnazhRealm_studio_bruecke {
     }
 
     // DER GLIED-VORRAT (Lehre 14 und 25): eine kalte Gattung wird im LEERLAUF des Haupt-Fadens gebaut (`_imLeerlauf`), EINE je
-    // Fenster, nie im Takt. `leib` ist ein Tier der Gattung oder der Name einer Seele — dann baut der Vorrat einen Probe-Leib
-    // aus dem EINEN Bau (`_buildCreatureGroup`) und gibt ihn zurück. Der Ofen-Vorrat bestellt so jede Gattung des
-    // Lebensraums, bevor ein Tier entsteht (`_ofenPrefetchKreaturen`); jeder kalte Ruf eines Lesers bestellt den Rest.
+    // Fenster, die dem Spieler nächste zuerst, nie im Takt. `leib` ist ein Tier der Gattung oder der Name einer Seele — dann
+    // baut der Vorrat einen Probe-Leib aus dem EINEN Bau (`_buildCreatureGroup`) und gibt ihn zurück. Der Ofen-Vorrat bestellt
+    // so jede Gattung des Lebensraums, bevor ein Tier entsteht (`_ofenPrefetchKreaturen`); jede Geburt bestellt ihre Gattung
+    // (`spawnCreatureAt` — lange bevor das Tier in Hieb-Reichweite kommt), jeder kalte Ruf eines Lesers den Rest.
     // Liefert das Versprechen der Glied-Namen.
     _gliederBestellen(leib) {
         const g = typeof leib === "string" ? AnazhRealm.TETRAPODA_SOUL_MAP[leib] : this._kreaturGattung(leib);
@@ -2546,9 +2547,12 @@ class AnazhRealm_studio_bruecke {
     }
     _gliederVorratTick() {
         const Q = this._gliederAuftraege;
-        const e = Q.entries().next().value;
-        if (!e) return;
-        const [g, a] = e;
+        let [g, a, naechst] = [null, null, Infinity];
+        for (const [k, x] of Q) {
+            const d2 = typeof x.leib === "string" ? Infinity : this._spielerD2(x.leib.position.x, x.leib.position.z);
+            if (!a || d2 < naechst) [g, a, naechst] = [k, x, d2];
+        }
+        if (!a) return;
         Q.delete(g);
         const seele = typeof a.leib === "string";
         let probe = null;
@@ -2567,9 +2571,10 @@ class AnazhRealm_studio_bruecke {
     // DAS TREFFER-VOLUMEN eines Tiers (Welle L 06.10., Befund K-D3): seine Glieder-Kapseln — dieselbe Passung wie
     // das Fern-Bild (_gliedKapselMemo), jede mit der Zone ihres Glieds (tetrapoda trefferZone). Die senkrechte Säule
     // 0,1 L…1,4 L war gattungs- und höhenblind (Hirsch L 0,64 flach 1 Treffer aus 10, hangab 2 aus 8). Die Glied-Liste
-    // je Gattung entsteht EINMAL im Glied-Vorrat (`_gliederBestellen`, im Leerlauf); jedes Tier löst nur die Namen an
-    // SEINEN Teilen auf, eine kalte Gattung hat bis dahin kein Volumen. Die laufende Pose trägt jeder Test über die
-    // Welt-Matrix des Ankers.
+    // je Gattung entsteht EINMAL im Glied-Vorrat (`_gliederBestellen`, im Leerlauf, bestellt mit der Geburt); jedes Tier löst
+    // nur die Namen an SEINEN Teilen auf. Ein Ruf gegen eine noch kalte Gattung bricht LAUT (`_bruchMelden`), nie still: bis
+    // treffer-kalt übersprang jeder Leser das Tier, es war bis zur Frist des Leerlaufs unverwundbar und biss nicht. Die
+    // laufende Pose trägt jeder Test über die Welt-Matrix des Ankers.
     _kreaturTrefferGlieder(cr) {
         const u = cr && cr.userData;
         if (!u) return null;
@@ -2584,7 +2589,12 @@ class AnazhRealm_studio_bruecke {
         const tb = u._tierBaum;
         if (!tb) return (u._trefferGlieder = null); // kein Studio-Leib (nur _buildCreatureGroup baut einen): keine Gestalt
         const namen = this._gattungGlieder(cr);
-        if (!namen) return null; // kalt: bestellt, nie je Tier gespeichert
+        if (!namen) {
+            this._bruchMelden(
+                `TREFFER: die Gattung „${this._kreaturGattung(cr)}“ ist kalt — der Leib ist nicht treffbar`
+            );
+            return null; // bestellt, nie je Tier gespeichert
+        }
         const liste = [];
         for (const nm of namen) {
             const anker = this._gliedAnker(cr, nm.name);

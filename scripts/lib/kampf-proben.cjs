@@ -899,7 +899,7 @@ async function WELLE_L(ort) {
             for (let k = 0; k < 90; k++) {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
                 if (k % 6) continue;
                 const o = gestaltDeckung();
                 summe.proben += o.proben;
@@ -1875,7 +1875,7 @@ async function WELLE_L(ort) {
                 schritt("_ichHandleOverlay", () => r._ichHandleOverlay(true));
                 try {
                     r._ichHandleOverlay(false);
-                } catch (_e) {}
+                } catch {}
                 // Boost: die Trauer der Bisse steht über der Schwelle (die Refrakt-Pause frei), der Takt löst den Boost aus
                 p.emotions.sorrow = 0.9;
                 p.boostLastTriggered = { ...(p.boostLastTriggered || {}), "emotion:sorrow": -Infinity };
@@ -1940,7 +1940,7 @@ async function WELLE_L(ort) {
                 try {
                     ausruesten(null);
                     r.equipArmor(savedL.armor || null);
-                } catch (_e) {}
+                } catch {}
                 zurueck();
                 if (r.getGameMode() !== modeL) r.setGameMode(modeL);
             }
@@ -2034,7 +2034,7 @@ async function WELLE_L(ort) {
                     try {
                         r._pfeilMeshAttach(pfT);
                         still.push(name);
-                    } catch (_e) {
+                    } catch {
                         /* laut gebrochen — so trägt es */
                     } finally {
                         if (pfT.mesh) r._pfeilDespawn(pfT);
@@ -2705,7 +2705,6 @@ async function WELLE_L(ort) {
         // einer Wand 18 m voraus (_fieldRaycast), der Pfeil steckt in Wand, Boden und Hirsch und kehrt aus dem Speicher wieder,
         // die Mutation BOGENMAT ändert E und das Tempo folgt
         await teil("T28", async () => {
-            const sc = globalThis.__schmiedeCore;
             const K4 = (w.z.bogenK4 = { bahn: [], fehler: [], g: s.gravity });
             ausruesten("klinge_langbogen");
             const rec = r._heldBogenRecipe();
@@ -2858,7 +2857,6 @@ async function WELLE_L(ort) {
                 }
             if (!erde) w.fehler.push("Q11: keine Erde im Umkreis 320 m");
             const nix = () => null;
-            const sc = globalThis.__schmiedeCore;
             const bp = (id) => s.blueprints["klinge_" + id];
             const ids = Object.keys(sc.REZEPT_ZU_GATTUNG).filter(bp);
             const klick = async (id, ziel, ov, wear = 1) => {
@@ -3010,6 +3008,41 @@ async function WELLE_L(ort) {
                 for (const k in Object.assign({}, stumm, tafel)) delete r[k];
             }
         });
+        // (T11) DER ERSTE HIEB TRIFFT (treffer-kalt, Lehre 14): ein Tier einer Gattung, deren Glieder niemand kennt, wird 9 m vor
+        // dem Spieler geboren, die Welt läuft 60 Bilder (je Bild ein Leerlauf-Fenster), dann der erste Hieb aus 1,6 m — er
+        // trifft, zerlegt keine Haut und bricht nicht. (S8) Der Täter: die Geburt bestellt den Vorrat nicht — der Hieb verfehlt,
+        // der Bruch nennt die Gattung. Am Ende der Prüfung (ohne eigenen Teil): jede Geburt verschiebt die netId und so die Leiber
+        // der späteren.
+        ausruesten("klinge_langschwert");
+        r._setBlueprintWear(s.blueprints.klinge_langschwert, 1); // die Proben davor haben sie verschlissen
+        const kalterHieb = async (seele, g, taeter) => {
+            const z = {};
+            r._trefferGliedNamen.delete(g);
+            if (taeter) r._gliederBestellen = () => Promise.resolve(null);
+            const c = setze(seele);
+            try {
+                stelle(c, 9, 4);
+                for (let k = 0; k < 60; k++) {
+                    r._gameLoopTick(performance.now());
+                    await new Promise((weiter) => setTimeout(weiter, 16));
+                }
+                stelle(c, 1.6);
+                zielen(punkt(c) || c.position);
+                z.zerlegt = ruft(
+                    () => (z.bruch = ruft(() => (z.traf = !!traf(schwung(), c)), "_bruchMelden")),
+                    "_kreaturGliederGruppen"
+                );
+                z.nennt = z.bruch && [...r._bruchBuch.keys()].some((t) => t.includes(`„${g}“`));
+            } finally {
+                delete r._gliederBestellen; // der nächste kalte Ruf bestellt sie wieder
+                parke(c);
+            }
+            return z;
+        };
+        w.z.kalt = await kalterHieb("baer", "bear");
+        w.c.kaltTrifft = w.z.kalt.traf && !w.z.kalt.zerlegt && !w.z.kalt.bruch;
+        w.z.s8 = await kalterHieb("wolf", "wolf", true);
+        w.c.s8 = !w.z.s8.traf && w.z.s8.nennt;
     } catch (e) {
         w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));
     } finally {
@@ -3031,7 +3064,7 @@ async function WELLE_L(ort) {
         if (s.pfeileStecken) s.pfeileStecken.length = 0;
         try {
             r.equipHeld(saved.held || null);
-        } catch (_e) {}
+        } catch {}
         if (s.buildMode && s.buildMode.active) r._clearBuildMode();
         if (Array.isArray(saved.hotbar)) s.hotbar = saved.hotbar;
         if (r.getGameMode() !== saved.mode) r.setGameMode(saved.mode);

@@ -419,7 +419,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             await window.__weltStehtNach(() => {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
             });
             for (let i = 0; i < 60; i++) if (!r._tickPendingWaterIso(8)) break;
             // Die Nah-Streu: der Kachel-Ring um die Kamera, bis Studio-Teile ankommen und nichts mehr offen ist.
@@ -432,7 +432,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             for (let i = 0; i < 30; i++) {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
                 if (i % 10 === 0) await pause();
             }
             r._tickChunkSatz();

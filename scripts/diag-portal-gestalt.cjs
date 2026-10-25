@@ -15,10 +15,9 @@
 //     (entry.instFoundry · instSlots auf der Budget-Zeile gate[0].draws, Flügel-Slots ≤ 8 (W8) · alle Slots im f:-Namensraum ·
 //     KEIN sichtbares Part-Doppel-Bild: keine lebende welt_terrain-Gruppe ohne f:).
 //   D: FUNKTION intakt — portalMeta byte-unveraendert · affordances.isPortal · blockerAABBs
-//     vorhanden (Substanz-Wahrheit lebt) · der E-Trigger (PORTAL_REACH_M) ist von einem
-//     freien Steh-Punkt VOR dem Tor erreichbar. Die Durchgangs-Zone wird GEMESSEN + geloggt
-//     (die Alt-Substanz traegt dort die Quarz-Membran als Blocker — das ist die BYTE-ALTE
-//     Wahrheit, kein W-A3-Regress; das Portal betritt man per E-Naeherung, nie physisch).
+//     vorhanden (Substanz-Wahrheit lebt). Das Betreten selbst misst gate:portal-konformanz K8 am Verhalten: der Spieler
+//     geht durch jedes Tor des Genesis-Rings (W durch die Apertur, am Teile-Tor E) — der Steh-Punkt-Ersatz und die nur
+//     geloggte Durchgangs-Zone fielen 25.10. mit ihm.
 //   E: Groessen-Sanity — je Portal die Alt-BBox (Part-Bau) vs die porta-Asset-BBox in
 //     Welt-Skala (`_foundryWorldScaleMatrix`); Hoehen-Verhaeltnis in [0.5, 3], geloggt.
 //   F: Gate-Hook-Welt (__anazhGateNoFoundry, gesichert + wiederhergestellt): der Resolver
@@ -174,37 +173,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             +(b.botY - entry.position.y).toFixed(6),
             +(b.topY - entry.position.y).toFixed(6),
         ]);
-        // E-Trigger: ein freier Steh-Punkt VOR dem Tor (jenseits der Blocker-Kante) liegt
-        // in PORTAL_REACH_M — das IST der Naeherungs-Trigger (enterPortal per E-Taste).
-        const REACH = r.constructor.PORTAL_REACH_M;
-        let maxZ = -1e9;
-        for (const b of entry.blockerAABBs || []) maxZ = Math.max(maxZ, b.maxZ);
-        const standX = entry.position.x;
-        const standZ = maxZ + 0.75;
-        const standY = entry.position.y;
-        const inAnyAABB = (entry.blockerAABBs || []).some(
-            (b) => standX >= b.minX && standX <= b.maxX && standZ >= b.minZ && standZ <= b.maxZ
-        );
-        const dist = Math.sqrt(
-            (standX - entry.position.x) ** 2 + (standY - entry.position.y) ** 2 + (standZ - entry.position.z) ** 2
-        );
-        res.d.reach = REACH;
-        res.d.standDist = +dist.toFixed(2);
-        res.d.standFree = !inAnyAABB;
-        res.d.triggerReachable = !inAnyAABB && dist <= REACH;
-        // Die Durchgangs-Zone GEMESSEN (ehrlich geloggt, nicht gated): deckt ein Blocker die
-        // zentrale Steh-Saeule (x +-0.5, z +-0.3, Fuss..2 m)? Die Alt-Substanz traegt dort die
-        // Quarz-Membran (dichte 0.65 >= 0.3) — byte-alt, das Betreten ist der E-Trigger.
-        const footY = entry.position.y - 0.5;
-        res.d.doorwayBlocked = (entry.blockerAABBs || []).some(
-            (b) =>
-                b.minX < entry.position.x + 0.5 &&
-                b.maxX > entry.position.x - 0.5 &&
-                b.minZ < entry.position.z + 0.3 &&
-                b.maxZ > entry.position.z - 0.3 &&
-                b.botY < footY + 2.0 &&
-                b.topY > footY + 0.2
-        );
         window.__wa3Entry = entry;
         return res;
     });
@@ -242,14 +210,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     );
     check("D: der Entry traegt affordances.isPortal", outCD.d.affPortal === true);
     check(`D: blockerAABBs vorhanden (${outCD.d.blockerCount} — die Substanz-Wahrheit lebt)`, outCD.d.blockerCount > 0);
-    check(
-        `D: der E-Trigger ist von einem freien Steh-Punkt vor dem Tor erreichbar (Distanz ${outCD.d.standDist} m <= ${outCD.d.reach} m)`,
-        outCD.d.triggerReachable === true,
-        `standFree=${outCD.d.standFree}`
-    );
-    console.log(
-        `  ℹ️ Durchgangs-Zone gemessen: ${outCD.d.doorwayBlocked ? "von der ALT-Substanz belegt (Quarz-Membran-Blocker — byte-alt, kein W-A3-Regress; Betreten = E-Naeherung)" : "frei"}`
-    );
 
     // ===== EVAL 3: (E) Groessen-Sanity — Alt-BBox (Parts) vs porta-Asset in Welt-Skala =====
     const outE = await page.evaluate(async (GESTALT) => {

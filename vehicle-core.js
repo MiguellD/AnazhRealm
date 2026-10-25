@@ -2999,27 +2999,32 @@
             const Wf = Math.max(0, Wt * (c / L) - dW),
                 Wr = Math.max(0, Wt * (b / L) + dW);
             // ── Reifen-SEITENKRAEFTE (K1): die Kurve mit Spitze D·sin(C·atan(B·α)) × Achslast, D = μ des Reibkreises ──
-            // FELD K1 (rein additiv — ohne e.haft byte-gleich, das Lab kennt keine Naesse): e.haft (0..1) = der Boden-Faktor
-            // des Reibkreises, den der Wirt aus dem ZUSTAND des Bodens liest (die Naesse der Welt) — nass greift der Reifen
-            // seitlich und laengs schwaecher, der Bremsweg waechst um 1 / haft.
+            // FELD K1 (rein additiv — ohne e.haft byte-gleich, das Lab faehrt auf Asphalt): e.haft (0..1) = der Boden-Faktor
+            // des Reibkreises, den der Wirt aus dem ZUSTAND des Bodens liest (fahrzeug.K1: μ seines Stoffs zwischen trocken und
+            // nass nach der Naesse der Welt) — auf Gras und nass greift der Reifen seitlich und laengs schwaecher.
             const haft = e && e.haft > 0 && e.haft < 1 ? e.haft : 1;
             const cap = G.maxGrip * G.grip * haft;
             let FlatF = -reifenKraft(G.reifen, G.reifen.bdF, cap, slipF) * Wf;
             let FlatR = -reifenKraft(G.reifen, G.reifen.bdR, cap, slipR) * Wr;
             if (hand) FlatR *= G.handLatMul; // HANDBREMSE: die Heck-Seitenfuehrung bricht weg → Drift
-            // ── LAENGS am REIBKREIS: Antrieb, Bremse und Handbremse sind Reifenkraft — gedeckelt bei μ·N. Vorher trieb
-            //    der Motor ungedeckelt: der Supersport stieg 90°, der GT 66,6°; jetzt steht jeder bei tan α = μ. ──
+            // ── LAENGS am REIBKREIS: Antrieb, Bremse, Handbremse und Fahrwiderstand sind Reifenkraft — gedeckelt bei μ·N.
+            //    Vorher trieb der Motor ungedeckelt: der Supersport stieg 90°, der GT 66,6°; jetzt steht jeder bei tan α = μ.
+            //    fahrzeug.K1 (24.10.): der quadratische Fahrwiderstand dragK·v² ist der Deckel des Tempos (das Gleichgewicht
+            //    dragK·vmax² = aEngine, bei 50 km/h 0,7 g — das Hundertfache der Luft) und zog bis hierher am Reibkreis
+            //    vorbei: er bremste auf jedem Boden gleich und verduennte das μ (GT 50 → 0 km/h bei μ 0,4 gegen μ 1 nur 1,8× so
+            //    weit, nass 0,7 nur 1,28×), und auf weichem Grund kappte der Reibkreis den Antrieb unter ihm (auf μ 0,4 kaeme der
+            //    GT nicht ueber 35 km/h). Jetzt zieht er ueber die Raeder: die Spitze bleibt auf jedem Boden dieselbe, der
+            //    Bremsweg ist v² / 2 (μ·g + Rollwiderstand). Gas, Ausrollen und Lenken auf μ 1 byte-gleich. ──
             let aDrive = 0;
             if (thr > 0) aDrive += G.aEngine * thr;
             if (brk > 0) aDrive -= vL > S.bremsV ? G.brakeDecel : motor ? G.aEngine * S.rueckAntrieb : 0;
-            let Fr = aDrive * m;
+            let Fr = aDrive * m - G.dragK * m * vL * Math.abs(vL);
             if (hand) Fr -= G.handDecel * m * sgn;
             // der Wasserschlag sperrt die Antriebsraeder: Haftung wie die Handbremse, nie ueber den Stand hinaus (sie haelt,
             // sie schiebt nicht zurueck)
             else if (!motor && dt > 0) Fr -= Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;
             const capL = cap * m * g * cosN;
-            Fr = Math.max(-capL, Math.min(capL, Fr));
-            let Fx = Fr - G.dragK * m * vL * Math.abs(vL); // Luftwiderstand (quadratisch)
+            let Fx = Math.max(-capL, Math.min(capL, Fr));
             if (Math.abs(vL) > 0.02) Fx -= FAHR.rollDecel * m * sgn; // Rollwiderstand
             // SCHAU 2 (10.10., fahr-bahn) — UNTER SCHRITTTEMPO ROLLT DAS GELENKTE RAD KINEMATISCH: die Gier ist dort
             // kinematisch geblendet (lowBlendV, unten), der Schlupf im Nenner gedaempft (slipEps) — er meldet am Stand den

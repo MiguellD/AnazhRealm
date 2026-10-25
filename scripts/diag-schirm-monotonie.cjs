@@ -167,7 +167,7 @@ async function welt() {
             window.__wetterHalten();
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             // Der Probe-Wolf behält sein Maß: zwei Schreiber lassen Tiere im Takt wachsen (`updateGrowth` ×1,01, die
             // Nexus-Geste `creatures_size_mul` bis ×3 je Ruf) — ein Lauf traf den Wolf 13,8-fach, nachdem d* stand.
             const wolf = window.__schirmWolf;

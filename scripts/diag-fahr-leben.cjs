@@ -67,17 +67,18 @@ function wechselVerdict(m) {
     return out;
 }
 
+// DAS FAHR-GESETZ EINES REZEPTS (der Satz, den Probefahrt und Welt fahren): exportDrive über die Vorgabe und den Patch des Rezepts.
+const gesetzVon = (VC, pid) => VC.fahrGesetz(VC.exportDrive(Object.assign({}, VC.DEFAULT_P, VC.presetPatch(pid))));
 // ── K2–K5 — DER FAHR-SCHRITT AM KERN SELBST (Node; dieselbe Funktion, die Probefahrt und Welt rufen). ──
 function kernProbe(VC) {
     if (!VC || typeof VC.fahrSchritt !== "function" || typeof VC.fahrGesetz !== "function")
         return [["K2 der Kern trägt den Fahr-Schritt", false, "vehicle-core ohne fahrSchritt/fahrGesetz"]];
     const DT = 1 / 60;
     const lauf = (pid, boden, n, eingabe, x0) => {
-        const P = Object.assign({}, VC.DEFAULT_P, VC.presetPatch(pid));
-        const G = VC.fahrGesetz(VC.exportDrive(P));
+        const G = gesetzVon(VC, pid);
         const z = VC.fahrZustand(x0 || 0, 0, 0);
         VC.fahrStand(z, G, boden, 0);
-        const m = { luft: 0, sprung: 0, G, z, P };
+        const m = { luft: 0, sprung: 0, G, z };
         let y0 = z.y;
         for (let i = 0; i < n; i++) {
             VC.fahrSchritt(z, eingabe(i, z), G, boden, DT);
@@ -107,8 +108,7 @@ function kernProbe(VC) {
             if (m.z.x > 0.5) lo = a;
             else hi = a;
         }
-        const P = Object.assign({}, VC.DEFAULT_P, VC.presetPatch(pid));
-        const mu = VC.FAHR.maxGrip * P.grip;
+        const mu = VC.FAHR.maxGrip * gesetzVon(VC, pid).grip;
         const soll = (Math.atan(mu) * 180) / Math.PI;
         grenzen.push(`${pid} ${lo.toFixed(1)}°/${soll.toFixed(1)}°`);
         if (!(lo <= soll + 0.5)) k2 = false;
@@ -164,8 +164,7 @@ function kernProbe(VC) {
     // unter ihm auf einmal 0,35 m höher (der Schub des Wirts quer auf höheren Grund). Die Wand hält EINEN Schritt (der Wirt
     // schiebt heraus), dann steigt der Wagen auf sein Gesetz, je Schritt höchstens eine Stufe.
     {
-        const P7 = Object.assign({}, VC.DEFAULT_P, VC.presetPatch("gt"));
-        const G7 = VC.fahrGesetz(VC.exportDrive(P7));
+        const G7 = gesetzVon(VC, "gt");
         const z7 = VC.fahrZustand(0, 0, 0);
         VC.fahrStand(z7, G7, () => 0, 0);
         const hoch = () => 0.35;
@@ -227,13 +226,25 @@ function kernProbe(VC) {
     return out;
 }
 // ── K8 DER REIFEN: die Seitenkraft je 0,1° Schlupf bis 30°, vorn vlat = c·ω, hinten −b·ω (die andere Achse schlupffrei);
-// der Takt ist die gröbste Teilung, deren Unter-Schritte nichts mehr ändern ──
-const REIFEN = { spitze: [6, 10], abfall: 0.15, hz: 240, kostenUs: 50 };
+// der Takt (`taktHz`) bei 12 m/s, Vollgas und vollem Einschlag; in der Welt (W-Kette, `reifenWeltVerdict`) der Bremsweg
+// 50 → 0 km/h Gras gegen Weg (`boden`), nass gegen trocken auf beiden (KETTE.nass), μ(kraut) halb in der Stoff-Zeile (`zeile`) ──
+const REIFEN = { spitze: [6, 10], abfall: 0.15, hz: 240, kostenUs: 50, boden: 1.5, nass: 1.3, zeile: 1.3, labor: 1 };
+// DER TAKT des Fahr-Schritts an EINEM Aufruf (z, e, G, dt): die gröbste Teilung in n gleiche Aufrufe, die Tempo, Gier und
+// Lenkung nicht mehr ändert, als Rate n / dt — K8 am Kern, in der Seite (`__taktHz`) an jedem Schritt der Welt (S1).
+function taktHz(VC, z0, e, G, dt) {
+    const lauf = (n, z = Object.assign({}, z0)) => {
+        for (let k = 0; k < n; k++) VC.fahrKraefte(z, e, G, dt / n);
+        return [z.vlong, z.vlat, z.yawRate, z.yaw, z.steer].join();
+    };
+    let n = 1;
+    while (n < 16 && lauf(2 * n) === lauf(1)) n *= 2;
+    return n / dt;
+}
 function reifenMessung(VC) {
-    const m = { achsen: [], hz: 60 };
+    const m = { achsen: [] };
     let G;
     for (const pid of Object.keys(VC.PRESETS)) {
-        G = VC.fahrGesetz(VC.exportDrive(Object.assign({}, VC.DEFAULT_P, VC.presetPatch(pid))));
+        G = gesetzVon(VC, pid);
         for (const [wo, hebel] of [
             ["vorn", G.c],
             ["hinten", -G.b],
@@ -248,11 +259,7 @@ function reifenMessung(VC) {
             m.achsen.push({ wo: pid + " " + wo, spitze: (i + 1) / 10, abfall: 1 - f[299] / f[i] });
         }
     }
-    const takt = (n, z = Object.assign(VC.fahrZustand(0, 0, 0), { vlong: 12 })) => {
-        for (let k = 0; k < n; k++) VC.fahrKraefte(z, { throttle: 1, steer: 1 }, G, 1 / (60 * n));
-        return [z.vlong, z.vlat, z.yawRate, z.yaw, z.steer].join();
-    };
-    for (let n = 2; n <= 16 && takt(n) === takt(1); n *= 2) m.hz = 60 * n;
+    m.hz = taktHz(VC, Object.assign(VC.fahrZustand(0, 0, 0), { vlong: 12 }), { throttle: 1, steer: 1 }, G, 1 / 60);
     const [z, t0] = [VC.fahrZustand(0, 0, 0), process.hrtime.bigint()];
     for (let i = 0; i < 20000; i++) VC.fahrKraefte(z, { throttle: 1, steer: i & 64 ? 1 : -1 }, G, 1 / 60);
     m.kostenUs = +(Number(process.hrtime.bigint() - t0) / 2e7).toFixed(2);
@@ -606,22 +613,30 @@ const { probeLeben, probeKoerper, tempoVerdict, tempoSpion, kernTempo } = requir
 
 // W (feld.K1) DIE WETTER-KETTE: ein Glied zählt, wenn es mit dem Sturm ZIEHT und STEHT, solange sein Vorgänger gehalten wird
 // (`kette` in lib/fahr-proben.cjs); die Tiefe zählt von vorn (Staffel 1 = Tiefe 2–3, 2 = ≥ 4), der Grip zieht ab Bremsweg × `nass`.
-const KETTE = { anlauf: 90, bremsMax: 400, sprungS: 1200, eps: 0.02, nass: 1.3, tiefe: 3 };
+const KETTE = { v0: 50 / 3.6, bremsMax: 400, sprungS: 1200, eps: 0.02, tiefe: 3 };
 function ketteVerdict(m) {
-    const f = ["trocken", "sturm", "festRegen", "festNaesse"].filter((l) => !(m && m[l] && m[l].verz > 0));
+    const f = ["trocken", "sturm", "festRegen", "festNaesse"].filter((l) => !(m && m[l] && m[l].s > 0));
     if (f.length) return { tiefe: 0, befunde: [`ohne Bremsung: ${f}`] };
     const { trocken: t, sturm: s, festRegen: fr, festNaesse: fn } = m;
     const gl = (a, b) => Math.abs(a - b) <= KETTE.eps * Math.max(1, Math.abs(b));
     const glieder = [
         ["Regen-Feld", s.regen > t.regen + KETTE.eps, true],
         ["Nässe", s.naesse > t.naesse + KETTE.eps && gl(s.stoff, s.naesse), !(fr.regen > t.regen) && gl(fr.naesse, t.naesse)],
-        ["Grip", t.verz / s.verz >= KETTE.nass, fn.regen > KETTE.eps && gl(fn.naesse, t.naesse) && gl(fn.verz, t.verz)],
+        ["Grip", s.s / t.s >= REIFEN.nass, fn.regen > KETTE.eps && gl(fn.naesse, t.naesse) && gl(fn.s, t.s)],
     ];
     let tiefe = 0;
     while (tiefe < 3 && glieder[tiefe][1] && glieder[tiefe][2]) tiefe++;
     const befunde = glieder.slice(tiefe, tiefe + 1).map(([n, zieht]) => `${n} ${zieht ? "steht nicht" : "zieht nicht"}`);
-    if (m.stern && gl(m.stern.verz, t.verz)) befunde.push("blind: der Wort-Leser steht");
+    if (m.stern && gl(m.stern.s, t.s)) befunde.push("blind: der Wort-Leser steht");
     return { tiefe, befunde };
+}
+// K8 IN DER WELT (fahrzeug.K1 Staffel 2) an den Bremsungen der W-Kette (je Lage der Weg `s` bis bremsV): Gras/Weg (`boden`), nass
+// gegen trocken auf beiden Böden (`nass`), μ(kraut) halb in der Stoff-Zeile (`zeile`), der Takt an jedem Schritt der Welt (`hz`),
+// Labor = Welt (S1: `labor` = STATION.laborM / größte Abweichung). Rückgabe: die Täter beim Namen (die Bremswege trägt W).
+function reifenWeltVerdict(k) {
+    const [q, L] = [(a, b) => k[a].s / k[b].s, k.labor || {}];
+    const m = { boden: q("trocken", "weg"), nass: Math.min(q("sturm", "trocken"), q("wegNass", "weg")), zeile: q("zeile", "trocken"), hz: L.hz, labor: STATION.laborM / L.maxM };
+    return Object.keys(m).filter((n) => !(m[n] >= REIFEN[n])).map((n) => n + " " + m[n]);
 }
 function ketteBericht(k, err) {
     const v = ketteVerdict(k);
@@ -630,6 +645,8 @@ function ketteBericht(k, err) {
         !err && v.tiefe >= KETTE.tiefe && !v.befunde.length,
         `Tiefe ${v.tiefe} ${JSON.stringify(k)} ${err || ""}${v.befunde.join(" · ")}`
     );
+    const r8 = k ? reifenWeltVerdict(k) : ["keine Kette"];
+    check("K8 Reifen in der Welt (fahrzeug.K1): Bremsweg Gras/Weg, nass, μ(kraut) halb, Takt, Labor = Welt", !err && !r8.length, String(r8));
     return v;
 }
 
@@ -735,8 +752,7 @@ function bahnKernRueck(VC) {
     const DT = 1 / 60;
     const rows = [];
     for (const rezept of Object.keys(VC.PRESETS)) {
-        const P = Object.assign({}, VC.DEFAULT_P, VC.presetPatch(rezept));
-        const G = VC.fahrGesetz(VC.exportDrive(P));
+        const G = gesetzVon(VC, rezept);
         if (!G) {
             rows.push({ rezept, art: "kein Fahr-Satz", grad: 0, weg: 0 });
             continue;
@@ -765,7 +781,7 @@ function bahnKernStimme(KC, VC) {
     const F = KC.FAHRT;
     const out = [];
     for (const rezept of Object.keys(VC.PRESETS)) {
-        const G = VC.fahrGesetz(VC.exportDrive(Object.assign({}, VC.DEFAULT_P, VC.presetPatch(rezept))));
+        const G = gesetzVon(VC, rezept);
         if (!G) continue;
         const vmax = G.vmax;
         const rueckVmax = vmax * VC.FAHR.schritt.rueckVmax;
@@ -1542,15 +1558,15 @@ function quellenAbgriff() {
             stufe: 0,
         };
         check("Selbst-Test 0: gesunder Ritt == 0 Täter", taktVerdict(gesund).length === 0);
-        // W: gesund Tiefe 3, jeder Täter beim Namen seines Glieds
-        const lg = (regen, naesse, verz) => ({ regen, naesse, stoff: naesse, verz });
-        const kg = { trocken: lg(0, 0, 9), sturm: lg(1, 1, 6), festRegen: lg(0, 0, 9), festNaesse: lg(1, 0, 9), stern: lg(1, 0, 6) };
+        // W: gesund Tiefe 3, jeder Täter beim Namen seines Glieds (je Lage der Bremsweg s); dieselben Lagen trägt der K8-Selbsttest
+        const lg = (regen, naesse, s) => ({ regen, naesse, stoff: naesse, s });
+        const kg = { trocken: lg(0, 0, 20), sturm: lg(1, 1, 35), festRegen: lg(0, 0, 20), festNaesse: lg(1, 0, 20), stern: lg(1, 0, 35) };
         for (const [bruch, tiefe, soll] of [
             [{}, 3, /^$/],
-            [{ sturm: lg(1, 1, 9) }, 2, /Grip zieht nicht/],
-            [{ festNaesse: lg(1, 0, 6) }, 2, /Grip steht nicht/],
-            [{ festRegen: lg(0, 1, 6) }, 1, /Nässe steht nicht/],
-            [{ stern: lg(1, 0, 9) }, 3, /blind/],
+            [{ sturm: lg(1, 1, 20) }, 2, /Grip zieht nicht/],
+            [{ festNaesse: lg(1, 0, 35) }, 2, /Grip steht nicht/],
+            [{ festRegen: lg(0, 1, 35) }, 1, /Nässe steht nicht/],
+            [{ stern: lg(1, 0, 20) }, 3, /blind/],
         ]) {
             const v = ketteVerdict(Object.assign({}, kg, bruch));
             check(`Selbst-Test W ${soll} → Tiefe ${tiefe}`, v.tiefe === tiefe && soll.test(v.befunde.join()), v.befunde.join());
@@ -2229,11 +2245,15 @@ function quellenAbgriff() {
                 const p8 = [[], [{ spitze: 8, abfall: 1 }]].map((achsen) =>
                     reifenVerdict({ achsen, hz: 240, kostenUs: 180 })
                 );
+                // in der Welt (die Lagen des W-Selbsttests): grün bleibt grün, ein konstantes μ (Gras = Weg, die Zeile wirkt nicht) ROT
+                const w8 = { ...kg, zeile: kg.sturm, weg: lg(0, 0, 12), wegNass: lg(1, 1, 18), labor: { maxM: 0, hz: 240 } };
+                const W8 = [{}, { weg: kg.trocken, wegNass: kg.sturm, zeile: kg.trocken }].map((o) => reifenWeltVerdict({ ...w8, ...o }));
                 check(
-                    "Selbst-Test K8: Spitze 12°, C 1,1, Takt 60 Hz, 180 µs, keine Achse → beim Namen",
+                    "Selbst-Test K8: Spitze 12°, C 1,1, Takt 60 Hz, 180 µs, keine Achse; in der Welt ein konstantes μ → beim Namen",
                     /^spitze gt vorn 12° · abfall gt vorn 0 %.* · takt 60 Hz$/.test(k8) &&
-                        p8.join() === "reifen ohne Achse,kosten 180 µs",
-                    `${k8.slice(0, 40)} … ${k8.slice(-10)} · ${p8.join(" · ")}`
+                        p8.join() === "reifen ohne Achse,kosten 180 µs" &&
+                        W8.join() === ",boden 1,zeile 1",
+                    `${k8.slice(0, 40)} … ${k8.slice(-10)} · ${p8.join(" · ")} · ${W8}`
                 );
             }
         }
@@ -2267,7 +2287,7 @@ function quellenAbgriff() {
     const messort = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort.spieler;
     // die Orte des Wassers aus der Welt (L10: der See, `__wasserOrte`)
     await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
-    await page.evaluate(`window.__tempoSpion = ${tempoSpion}`);
+    await page.evaluate(`window.__tempoSpion = ${tempoSpion}; window.__taktHz = ${taktHz};`);
     if (process.argv.includes("--koerper")) {
         const o = await page.evaluate(probeKoerper, { messort });
         await browser.close();
@@ -2369,14 +2389,14 @@ function quellenAbgriff() {
         "S2 Klippe: kein Höhen-Sprung > 0,5 m je Sim-Schritt, der Wagen fliegt",
         !hat("kern") && !hat("klippe"),
         S.klippe
-            ? `Bahn geräumt ${S.klippe.geraeumt} (+${S.klippe.wache} durch die Bahn-Wache) · Fall ${S.klippe.fall.toFixed(1)} m bei (${S.klippeOrt.x}, ${S.klippeOrt.z}) · größter Sprung ${S.klippe.sprung.toFixed(2)} m · Luft ${S.klippe.luft}/${S.klippe.schritte} · danach ${S.klippe.ueberGrund.toFixed(2)} m über dem Grund`
+            ? `Bahn-Wache ${S.klippe.wache} · Fall ${S.klippe.fall.toFixed(1)} m bei (${S.klippeOrt.x}, ${S.klippeOrt.z}) · größter Sprung ${S.klippe.sprung.toFixed(2)} m · Luft ${S.klippe.luft}/${S.klippe.schritte} · danach ${S.klippe.ueberGrund.toFixed(2)} m über dem Grund`
             : vS.join(" · ")
     );
     check(
         "S4 Absteigen im Flug: der Wagen fällt ballistisch auf seinen Boden und steht dort (nie in der Luft, kein Sprung)",
         !hat("kern") && !hat("absteigen"),
         S.absteigen
-            ? `Bahn geräumt ${S.absteigen.geraeumt} (+${S.absteigen.wache} durch die Bahn-Wache) · abgestiegen ${S.absteigen.hoehe.toFixed(2)} m über dem Boden (im Flug ${S.absteigen.imFlug}) · nach 240 Frames ${S.absteigen.ueberBoden.toFixed(3)} m über der Ebene seiner Räder · größter Sprung ${S.absteigen.sprung.toFixed(2)} m · ${S.absteigen.diag || ""}`
+            ? `Bahn-Wache ${S.absteigen.wache} · abgestiegen ${S.absteigen.hoehe.toFixed(2)} m über dem Boden (im Flug ${S.absteigen.imFlug}) · nach 240 Frames ${S.absteigen.ueberBoden.toFixed(3)} m über der Ebene seiner Räder · größter Sprung ${S.absteigen.sprung.toFixed(2)} m · ${S.absteigen.diag || ""}`
             : vS.join(" · ")
     );
     check(

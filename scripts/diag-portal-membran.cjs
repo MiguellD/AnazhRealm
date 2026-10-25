@@ -126,7 +126,7 @@ async function blickProbe(opts) {
         r._loopRender();
         try {
             await rend.backend.device.queue.onSubmittedWorkDone();
-        } catch (_e) {}
+        } catch {}
         const gesehen = zug;
         zug = null;
         const name = (o) => {

@@ -1850,7 +1850,7 @@ async function checkBandV18135Bookmarks(ctx) {
         let persisted = false;
         try {
             persisted = JSON.parse(localStorage.getItem("anazh.feedBookmarks") || "{}")[id] === true;
-        } catch (_e) {}
+        } catch {}
         out.persisted = persisted;
         const off = r._toggleFeedBookmark(id);
         out.toggleOff = off === false && r._feedBookmarked(id) === false;
@@ -1884,7 +1884,7 @@ async function checkBandV18142Follow(ctx) {
         let persisted = false;
         try {
             persisted = JSON.parse(localStorage.getItem("anazh.feedFollows") || "{}")[pub] === true;
-        } catch (_e) {
+        } catch {
             /* leer */
         }
         out.persisted = persisted;
@@ -2068,7 +2068,7 @@ async function checkBandM5HudPolitur(ctx) {
             consoleEl.style.width = "";
             try {
                 localStorage.removeItem("anazh.resize.console");
-            } catch (_e) {
+            } catch {
                 /* egal */
             }
         }

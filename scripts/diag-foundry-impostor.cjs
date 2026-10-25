@@ -118,7 +118,7 @@ async function driveImpostor(page) {
             for (const weiter = window.__deckel("die Impostor-Rekorde", 1500); weiter(); ) {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
                 rec = r._foundryEnsureImpostorRecord("eiche", 1) || rec;
                 rec2 = r._foundryEnsureImpostorRecord("fichte", 1) || rec2;
                 flat1 = r._foundryBuildImpostorFlat({ seed: 7 }, "eiche") || flat1;
