@@ -18,14 +18,14 @@
         "soll": 0,
         "sollQuelle": "Synthese §4 W1 „tote Regler beim Namen“, W4 „Regler-wirkt-Probe grün“ (Regler-Generator mit fest/festText, N2)",
         "tot": {
-            "klang:klang:bpm": "kein Guss: die Werkstatt fragt den Host-Ofen, klang hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — die Musik der Welt liest das Rezept, nie ws.studioOv; die Bau-Hash-Linse heilt diese Zeile nie, sie fällt erst mit einer Linse am Musik-Leser (Synthese W4 f)",
+            "klang:klang:bpm": "die Vorschau ist stumm (MESHFREI, Vertrag §8.4) — die Welt liest den Regler im Klang (_klangStudioPreset), gate:praegung-welt (K) urteilt dort",
             "klang:klang:color": "kein Guss (wie bpm)",
             "klang:klang:darkness": "kein Guss (wie bpm)",
             "klang:klang:flow": "kein Guss (wie bpm)",
             "klang:klang:space": "kein Guss (wie bpm)",
             "klang:klang:swing": "kein Guss (wie bpm)",
             "klang:klang:tension": "kein Guss (wie bpm)",
-            "porta:gate:energy": "Membran-/Innenwelt-Regler: bewegt den Bau an keinem der 7 Tore (der Leser ist der Labor-Shader)",
+            "porta:gate:energy": "die Vorschau zeigt den Körper — die Welt liest den Regler in der Membran (_torGesetzFor), gate:praegung-welt (K) urteilt dort",
             "porta:gate:fractal": "wie energy",
             "porta:gate:reflect": "wie energy",
             "porta:gate:swirl": "wie energy",
@@ -33,7 +33,7 @@
             "porta:gate:tunnel": "wie energy",
             "porta:gate:twist": "wie energy",
             "porta:gate:wave": "wie energy",
-            "vehicle:vehicle:grip": "Fahr-Regler: der Bau trägt ihn nicht, das Fahr-Gesetz der Welt (_fahrzeugGesetzFor) liest Rezept s+fx, nie ov — die Bau-Hash-Linse heilt diese Zeile nie, sie fällt erst mit einer Linse am Fahr-Gesetz (Synthese W6 b)"
+            "vehicle:vehicle:grip": "die Vorschau zeigt den Körper — die Welt liest den Regler im Fahr-Gesetz (_fahrzeugGesetzFor), gate:praegung-welt (K) urteilt dort"
         }
     },
     "reglerBudget": {

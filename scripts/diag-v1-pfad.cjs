@@ -10,12 +10,11 @@
 //     scheitert benannt an `dslEvalPos`, keine Op ändert die Welt) · V-k6 (P2P trägt den Ort aufgelöst) · V-D8 (das Label im
 //     Chat) · R2 (die Wasser-Suche: 0 Abweichungen gegen den Spalten-Scan, Soll trocken ≤ 8 Scans je 4-m-Ring).
 //   WORT — der Korpus (spec/abnahme/ki-korpus.json) über den echten Chat-Pfad `maybeAnswerWithLlm` → `llmCall` → `dslRun`;
-//     --echt fragt den Anbieter, --aufnahme schreibt den Mitschnitt (Ratsche, sinkt nie), die CI spielt ihn ab; --teil regler
+//     --echt fragt den Anbieter, --aufnahme schreibt den Mitschnitt (Ratsche, sinkt nie), die CI spielt ihn ab; --regler
 //     fährt den Korpus-Teil Regler-Wörter (KI K2, das Soll am Stempel der Werke, eigene Ratsche ratsche-ki-korpus-regler.json).
 //   FEIND — der feindliche Korpus (spec/abnahme/ki-feind-korpus.json) kommt durch die Eingänge der Fremde zu einem
 //     gehorsamen Modell: 0 erreicht · 0 ausgeführt · die Signatur schlägt an · der Spieler liest den Namen.
-//   node scripts/diag-v1-pfad.cjs [--selftest | --korpus [--teil regler] [--echt [--bild] [--aufnahme]] | --feind]
-//   Port: V1_PFAD_PORT (4421)
+//   node scripts/diag-v1-pfad.cjs [--selftest | --korpus [--regler] [--echt [--bild] [--aufnahme]] | --feind]   Port: V1_PFAD_PORT (4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, warteAufWelt, ROOT: root } = require("./lib/welt-boot.cjs");
@@ -996,16 +995,13 @@ function korpusPraedikat(soll, vor, nach, wortTyp) {
         return a <= b ? nach.uhr >= a && nach.uhr <= b : nach.uhr >= a || nach.uhr <= b;
     }
     const traf = (t) => soll.werk === "*" || soll.werk.some((w) => wortTyp[w] === t);
-    const zahl = (x) => Object.entries(x.werke).reduce((s, [t, n]) => s + (traf(t) ? n : 0), 0);
-    // DIE REGLER-WÖRTER (KI K2): neue Werke des Satzes, deren Stempel jede genannte Zeile in ihrem Bereich trägt — der Stempel
-    // eines Baus, der Guss eines Wesens, die Prägung eines Rezepts (`stempel`: [Werk-Ziel, Werte])
-    const trug = (x) =>
-        x.stempel.filter(
-            ([t, ov]) =>
-                traf(t) && Object.entries(soll.regler).every(([id, [a, b]]) => ov && ov[id] >= a && ov[id] <= b)
-        ).length;
-    if (soll.regler) return trug(nach) - trug(vor) >= (soll.min || 1);
-    if (soll.werk) return zahl(nach) - zahl(vor) >= soll.min;
+    // DIE REGLER-WÖRTER (KI K2): ein neues Werk des Satzes, dessen Stempel jede genannte Zeile in ihrem Bereich trägt — der
+    // Stempel eines Baus, der Guss eines Wesens, die Prägung eines Rezepts (`stempel`: [Werk-Ziel, Werte])
+    const zahl = (x) =>
+        soll.regler
+            ? x.stempel.filter(([t, ov]) => traf(t) && Object.entries(soll.regler).every(([id, [a, b]]) => ov && ov[id] >= a && ov[id] <= b)).length
+            : Object.entries(x.werke).reduce((s, [t, n]) => s + (traf(t) ? n : 0), 0);
+    if (soll.werk) return zahl(nach) - zahl(vor) >= (soll.min || 1);
     for (const k of ["wesen", "traurig", "regel"]) if (soll[k]) return nach[k] - vor[k] >= soll[k];
     for (const k of ["tempo", "sprung", "schwere"]) if (soll[k]) return nach[k] > vor[k];
     return null;
@@ -1933,7 +1929,7 @@ async function korpusAufbau(a) {
                 ...lebt.map((c) => [c.userData.gattung, c.userData.gussDials]),
                 ...Object.entries(ws),
             ],
-            wesen: K.wesen.filter((c) => st.creatures.includes(c)).length,
+            wesen: lebt.length,
             traurig: st.creatures.filter((c) => ((c.userData && c.userData.emotions) || {}).sorrow >= 0.5).length,
             wetter: st.weather,
             uhr: st.timeOfDay,
@@ -1969,10 +1965,9 @@ async function korpusAufbau(a) {
     });
     K.zurueck = (v) => {
         const alt = JSON.parse(v.praegung);
-        for (const p of Object.keys(ws).filter((p) => JSON.stringify(ws[p]) !== JSON.stringify(alt[p]))) {
-            r._praegungSetzen(r._foundry.recipes[p] && r._foundry.recipes[p].kind, p, alt[p] || {});
-            if (!alt[p]) delete ws[p];
-        }
+        for (const p in ws)
+            if (JSON.stringify(ws[p]) !== JSON.stringify(alt[p]))
+                r._praegungSetzen(r._foundry.recipes[p].kind, p, alt[p] || {}), alt[p] || delete ws[p];
         for (const x of st.architectures.filter((x) => !v.werke.has(x)).reverse()) r.removeArchitecture(x);
         for (const c of st.creatures.filter((c) => !v.wesen.has(c))) r.removeCreature(c);
         for (const [c, e] of v.gemuet) if (c.userData && c.userData.emotions) c.userData.emotions = e;
@@ -2038,27 +2033,33 @@ const mitschnitt = (ratsche) => (req) =>
         });
     });
 
+// DIE WELT DER KI-LÄUFE (WORT und FEIND): der Statik-Server mit der Antwort des Modells (`seiten`, null: der echte Anbieter),
+// eine Welt auf dem Null-Renderer, gewartet bis sie steht
+async function kiWelt(seiten) {
+    const srv = statikServer({ seiten });
+    await new Promise((ok) => srv.listen(PORT, "127.0.0.1", ok));
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
+    const page = await browser.newPage();
+    await nullRenderer(page);
+    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
+    await warteAufWelt(page);
+    return { srv, browser, page };
+}
+
 async function korpusHaupt() {
-    const echt = process.argv.includes("--echt");
-    // EIN TEIL des Korpus (`--teil regler`, KI K2: die Regler-Wörter) läuft mit eigener Ratsche und dem Soll seiner Staffel
-    const teil = process.argv.includes("--teil") ? process.argv[process.argv.indexOf("--teil") + 1] : null;
-    const ratschePfad = teil ? RATSCHE_PFAD.replace(/\.json$/, `-${teil}.json`) : RATSCHE_PFAD;
+    const [echt, regler] = ["--echt", "--regler"].map((s) => process.argv.includes(s));
+    // DER TEIL REGLER-WÖRTER (`--regler`, KI K2) läuft mit eigener Ratsche und dem Soll seiner Staffel (Absicht 80 %); seine
+    // Sätze tragen [Werk-Wort oder "*", {Regler: [von, bis]}]
+    const ratschePfad = regler ? RATSCHE_PFAD.replace(".json", "-regler.json") : RATSCHE_PFAD;
     const lies = (p) => (fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null);
     const [roh, ratsche] = [lies(KORPUS_PFAD), lies(ratschePfad) || {}];
-    const quelle = roh && (teil ? roh[teil] : roh);
-    const korpus = quelle && { saetze: Object.entries(quelle.saetze) };
-    const soll = teil === "regler" ? { ...KORPUS_SOLL, absicht: 0.8 } : KORPUS_SOLL;
-    const m = { korpus, ratsche, echt, saetze: [], soll };
+    const satz = ([s, [w, r]]) => [s, { werk: w === "*" ? w : [w], regler: r }];
+    const korpus = roh && { saetze: regler ? Object.entries(roh.regler.saetze).map(satz) : Object.entries(roh.saetze) };
+    const m = { korpus, ratsche, echt, saetze: [], soll: { ...KORPUS_SOLL, absicht: regler ? 0.8 : KORPUS_SOLL.absicht } };
     const modell = process.env.KI_MODELL || ratsche.modell || "qwen3:4b-instruct";
     const q = (k) => +(m.saetze.filter((e) => e.urteil[k]).length / Math.max(1, m.saetze.length)).toFixed(3);
     if (korpus) {
-        const srv = statikServer({ seiten: echt ? null : { "/api/chat": mitschnitt(ratsche) } });
-        await new Promise((ok) => srv.listen(PORT, "127.0.0.1", ok));
-        const browser = await starteBrowser({ art: "null", frist: 900000 });
-        const page = await browser.newPage();
-        await nullRenderer(page);
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
-        await warteAufWelt(page);
+        const { srv, browser, page } = await kiWelt(echt ? null : { "/api/chat": mitschnitt(ratsche) });
         await page.evaluate(AUSGABE_INSTALL);
         const worte = [...new Set(korpus.saetze.flatMap(([, s]) => (Array.isArray(s.werk) ? s.werk : [])))];
         const endpunkt = echt ? process.env.KI_ENDPUNKT || "http://127.0.0.1:11434/" : `http://127.0.0.1:${PORT}/`;
@@ -2248,13 +2249,7 @@ async function feindHaupt(quelle) {
     const log = [];
     let m = { korpus };
     if (korpus) {
-        const srv = statikServer({ seiten: { "/api/chat": gehorsam(korpus, log) } });
-        await new Promise((ok) => srv.listen(PORT, "127.0.0.1", ok));
-        const browser = await starteBrowser({ art: "null", frist: 600000 });
-        const page = await browser.newPage();
-        await nullRenderer(page);
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
-        await warteAufWelt(page);
+        const { srv, browser, page } = await kiWelt({ "/api/chat": gehorsam(korpus, log) });
         const golden = JSON.parse(fs.readFileSync(path.join(root, "spec/golden/v1/blueprint-signed.json"), "utf8"));
         const arg = { inj: korpus.injektionen, tat: korpus.tat, golden, endpunkt: `http://127.0.0.1:${PORT}/` };
         m = { ...(await page.evaluate(feindLauf, arg)), korpus, erreicht: log };
@@ -3042,19 +3037,11 @@ async function feindHaupt(quelle) {
                 false,
             ],
             ["ein Soll ohne Leser", kP({ farbe: 1 }, {}), null],
-            ...[
-                ["ein schmales Haus mit Stempel W 7", [["haus_tudor", { W: 7 }]], true],
-                ["ein breites Haus (W 12) für „schmal“", [["haus_tudor", { W: 12 }]], false],
-                ["die alte Prägung zählt nicht", [["lofi", { W: 7 }]], false],
-            ].map(([n, nach, s]) => [
-                `Regler-Wörter: ${n}`,
-                korpusPraedikat(
-                    { werk: "*", regler: { W: [6, 8] } },
-                    { werke: {}, stempel: [["lofi", { W: 7 }]] },
-                    { werke: {}, stempel: [["lofi", { W: 7 }], ...nach.filter(([t]) => t !== "lofi")] },
-                    {}
-                ),
-                s,
+            // die Regler-Wörter: W 7 trifft [6, 8]; W 12 und ein Werk ohne Stempel nie; die alte Prägung (lofi) zählt nie
+            ...[7, 12, null].map((w) => [
+                `Regler-Wörter: ein neues Haus mit W ${w}, die alte Prägung W 7`,
+                korpusPraedikat({ werk: "*", regler: { W: [6, 8] } }, { stempel: [["lofi", { W: 7 }]] }, { stempel: [["lofi", { W: 7 }], ["haus", w && { W: w }]] }, {}),
+                w === 7,
             ]),
         ])
             check(`Selbst-Test WORT Prädikat: ${name} → ${soll}`, ist === soll, String(ist));

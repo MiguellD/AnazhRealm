@@ -425,7 +425,11 @@ Die Regler-Definitionen als DATEN (die HDA-Lehre) — **als MAP je kind**:
   Stempel `_studioStampFor` klemmt jede Zahl am Vertrag ihrer Art (`_reglerKlemme`: [min, max], ganze Schritte gerundet,
   jede Klemme beim Namen im Log), ein Regler ohne Zeile oder ein Wert ohne Zahl schließt die Tat (fail-closed). Dieselbe
   Klemme trägt die Studio-Übergabe (dort fällt Fremdes, must-ignore); der Prompt der KI nennt die Zeilen aus derselben
-  Quelle (`_studioWordsForPrompt`). Wand: `gate:praegung-welt` (K).
+  Quelle (`_studioWordsForPrompt`). Jede Art des Vertrags ist sagbar: eine Art mit Bauplan baut oder wächst (Blume und Gras
+  als Natur-Bauplan aus der Kraut-Substanz, KIND_POLICY), eine Art mit Werk-Verb (KIND_POLICY `werk`) erscheint als Wesen
+  (die Gattung, der Stempel ist ihr Guss) oder prägt ihren lebenden Leser (der Leib des Spielers, der Klang der Welt — der
+  EINE Prägungs-Schreiber `_praegungSetzen`, auch für die Übergabe); die Gesetze eines Eintrags (Membran und Hülle des Tors,
+  das Fahr-Gesetz) lesen seinen Stempel. Wand: `gate:praegung-welt` (K) — jede Zeile ≠ ohne ov und = das Studio-Werk.
 
 ### B5 — LEHREN (SOLL)
 

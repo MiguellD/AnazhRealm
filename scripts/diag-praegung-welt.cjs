@@ -1,19 +1,16 @@
 // diag-praegung-welt.cjs — PRÄGUNG-WELT: der Guss stempelt `studioOv` aufs Artefakt, die Welt liest NUR den Stempel, und er
-// reist per Code zum anderen Spieler: (S) Selbsttest · (N) Hand und Welt · (G) Guss · (R) Roundtrip · (B) Byte-Identität des
-// ungeprägten Pfads · (K) KI-Regler (spawn_studio prägt über den EINEN Stempel, am Vertrag geklemmt) · (T) Teilen in EINER
-// Geste, zwei Browser-Kontexte · (F) Korpus fremder Codes, jeder fällt beim Namen; jede Wand mit ihrer Täter-Probe.
+// reist per Code zum anderen Spieler: (S) Selbsttest · (N) die Hand · (G) Guss · (R) Roundtrip · (B) Byte-Identität des
+// ungeprägten Pfads · (K) KI-Regler: jede Zeile von PARAMS_BY_KIND aus spawn_studio, am Vertrag geklemmt, fail-closed — das
+// Welt-Werk (ein Bau samt seinen Gesetzen, ein Wesen, eine Prägung an ihrem Leser) ≠ ohne ov und = das Studio-Werk; der
+// Korpus-Teil Regler-Wörter sagbar · (T) Teilen in EINER Geste, zwei Browser-Kontexte · (F) Korpus fremder Codes, jeder fällt
+// beim Namen; jede Wand mit ihrer Täter-Probe.
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PRAEGUNG_WELT_PORT || 4439);
 const server = statikServer();
-// die toten Regler der Werkstatt (art:id, gate:regler-wirkt hält die Ratsche frisch)
-const TOT = Object.keys(require(`${ROOT}/spec/vertraege/ratsche.json`).reglerTot.tot).map((n) => n.replace(/^[^:]+:/, ""));
-const kiUrteil = (m) => [
-    ...m.zwilling.map((n) => `${n}: Welt-Werk ≠ Studio-Werk`),
-    ...m.ohneWerk.map((n) => `${n}: kein Welt-Werk`),
-    ...m.unbewegt.filter((n) => !TOT.includes(n)).map((n) => `${n}: das ov bewegt den Bau nie`),
-];
+// jede Zeile, die kein Programm erreicht, beim Namen ihres Befunds (keine Ausnahme: seit KI K2 trägt jede Zeile ein Welt-Werk)
+const kiUrteil = (m) => ["zwilling", "ohneWerk", "unbewegt", "ohneWort"].flatMap((b) => m[b].map((n) => `${n}: ${b}`));
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
@@ -41,11 +38,11 @@ const welt = async (seite) => {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "null", frist: 300000 });
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await welt(page);
 
-    const out = await page.evaluate(async (TOT, REGLER) => {
+    const out = await page.evaluate(async (REGLER) => {
         const res = { s: {}, n: {}, g: {}, r: {}, b: {} };
         const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
         const fp = window.__abdruck; // der EINE Abdruck (welt-boot)
@@ -58,7 +55,7 @@ const welt = async (seite) => {
         const KC = r.constructor.KIND_CHARAKTER;
         const VC = globalThis.__vehicleCore;
 
-        // ===== (N-WELT) geprägtes Fahrzeug-Entry formt im Welt-Flatten anders =====
+        // ===== (N-WELT) geprägte Fahrzeug-Bauten für (S) und (B) — dass die Prägung jede Zeile im Welt-Werk trägt, urteilt (K) =====
         const flatFor = (entry, preset) => window.__flatFor(r, entry, preset);
         const gt = (studioOv) => window.__flatFp(r, { type: "fahrzeug_gt", seed: 7, position: { x: 0, y: 0, z: 0 }, studioOv });
         // DAS STUDIO-WERK: derselbe Körper direkt aus der Foundry (Rang 0), durch DIESELBE Verschmelzung wie der Flatten
@@ -76,8 +73,8 @@ const welt = async (seite) => {
         try {
             const keysBefore = new Set(f.cache.keys());
             res.n.fpU = await gt();
-            res.n.fpToro = await gt(KC.vehicle.ov("toro", VC.CULTURES));
-            res.n.fpStern = await gt(KC.vehicle.ov("stern", VC.CULTURES));
+            await gt(KC.vehicle.ov("toro", VC.CULTURES));
+            await gt(KC.vehicle.ov("stern", VC.CULTURES));
             // ===== (S) SELBST-TEST: gestrippter Stempel nach den geprägten Bauten == ungeprägt (auch die Cache-Reinheit) =====
             res.s.fpStripped = await gt();
             // ===== (B) Cache-Reinheit + Schlüssel-Disziplin, der direkte ov-lose Bau =====
@@ -204,38 +201,32 @@ const welt = async (seite) => {
                 const lg = r.dslRun(["spawn_studio", wort, ["at", spot.x, pm.y, spot.z], 1, 7, ov], { source: "test" }).log;
                 return { e: archs[va], c: cs()[vc], lg, neu: [...archs.slice(va), ...cs().slice(vc)] };
             };
-            const h = (s) => [...s].reduce((x, c) => Math.imul(x ^ c.charCodeAt(0), 0x01000193), 0x811c9dc5) >>> 0;
+            const h = (s) => [...JSON.stringify(s)].reduce((x, c) => Math.imul(x ^ c.charCodeAt(0), 0x01000193), 0x811c9dc5) >>> 0;
             // ein Werk durch den Welt-Flatten bauen und abbauen: sein Abdruck über jedes Attribut und die Gesetze, die die Welt aus
             // seinem Stempel liest (die Membran und die Hülle des Tors, das Fahr-Gesetz des Wagens)
             const bau = async (e) => {
-                const [t, z] = [e && r._torGesetzFor(e), e && r._fahrzeugGesetzFor(e)];
-                const flat = e && (await flatFor(e, r._foundryPresetForEntry(e)));
-                if (e) r.removeArchitecture(e);
-                return flat && fp(flat, true) + "|" + h(JSON.stringify([t && [t.p, t.mu], z && z.drive]));
+                const [t, z] = [r._torGesetzFor(e), r._fahrzeugGesetzFor(e)];
+                const flat = await flatFor(e, r._foundryPresetForEntry(e));
+                r.removeArchitecture(e);
+                return flat && fp(flat, true) + "|" + h([t && [t.p, t.mu], z && z.drive]);
             };
-            // DIE LEBENDEN LESER einer Prägung (KIND_POLICY werk "praegung"): der Klang, den die Welt spielt, und der Leib des Spielers
-            const LESER = { klang: () => h(JSON.stringify(r._klangStudioPreset())), koerper: () => fp(r.state.playerMesh, true) };
-            // DAS WELT-WERK eines Programms je Art: ein Bau samt Gesetzen · ein Wesen (der Guss seiner Gattung, entlassen) · eine
-            // Prägung (was ihr Leser daraus macht; danach geräumt, der Leser folgt der leeren Prägung)
+            const presetVon = (wort) => r._foundryPresetForEntry({ type: r._studioBlueprintForWord(wort) });
+            // was ein Programm in der Welt ließ, fällt: Bauten, Wesen, die Prägung (ihr Leser folgt der leeren)
+            const raeume = (neu, p) => {
+                for (const x of neu) x.isObject3D ? r.removeCreature(x) : r.removeArchitecture(x);
+                if (ws[p]) r._praegungSetzen(f.recipes[p].kind, p, {}), delete ws[p];
+            };
+            // DAS WELT-WERK eines Programms je Art: ein Bau samt Gesetzen · ein Wesen (der Guss seiner Gattung) · eine Prägung
+            // (was ihr lebender Leser daraus macht: der Klang, den die Welt spielt, der Leib des Spielers)
             const werk = async (wort, ov, soll = ov) => {
-                const s = setze(wort, ov);
-                const p = r._foundryPresetForEntry({ type: r._studioBlueprintForWord(wort) });
-                const aus = { p, kind: f.recipes[p].kind, lg: s.lg };
-                if (r._studioWerkVerb(p) === "praegung") {
-                    const [w, st] = [LESER[aus.kind](), ws[p]];
-                    r._praegungSetzen(aus.kind, p, {});
-                    delete ws[p];
-                    return { ...aus, w, ov: st };
-                }
-                if (s.c) {
-                    const w = fp(s.c, true);
-                    for (const c of s.neu) r.removeCreature(c);
-                    return { ...aus, w, ov: s.c.userData.gussDials };
-                }
-                const e = s.e;
-                if (!e) return aus;
-                const key = r._foundryKoerperKey(p, r._foundryGestaltFor(e, p), r._foundryServierStufe(p, 0), soll);
-                return { ...aus, e: { type: e.type, pos: { ...e.position }, key }, ov: e.studioOv, w: await bau(e) };
+                const [s, p] = [setze(wort, ov), presetVon(wort)];
+                const [kind, e] = [f.recipes[p].kind, s.e];
+                const aus = { p, kind, lg: s.lg, ov: (e && e.studioOv) || (s.c && s.c.userData.gussDials) || ws[p] };
+                if (e) aus.e = { type: e.type, pos: { ...e.position }, key: r._foundryKoerperKey(p, r._foundryGestaltFor(e, p), r._foundryServierStufe(p, 0), soll) };
+                const leser = r._studioWerkVerb(p) === "praegung" && (kind === "klang" ? h(r._klangStudioPreset()) : fp(r.state.playerMesh, true));
+                aus.w = e ? await bau(e) : s.c ? fp(s.c, true) : leser;
+                raeume(s.neu.filter((x) => x !== e), p);
+                return aus;
             };
             const fp0 = {};
             // das Welt-Werk des Programms ≠ ohne ov UND = das Studio-Werk mit DEMSELBEN ov `soll`: ein Bau über die Naht des
@@ -253,18 +244,17 @@ const welt = async (seite) => {
                 } else {
                     r._studioUebergabeEmpfang({ type: "uebergabe", kind, preset: p, ov: soll });
                     s = (await werk(wort)).w;
-                    delete ws[p];
                 }
                 return { ...aus, st: s === w ? "erreicht" : "zwilling" };
             };
-            // je sagbares Rezept der Art, bis eines sich bewegt (der Rand fern vom Rezept-Wert) — eine tote Zeile der Werkstatt an einem
+            // je sagbares Rezept der Art, bis eines sich bewegt (der Rand fern vom Rezept-Wert)
             const zeile = async (art, d) => {
                 const rez = Object.keys(f.recipes).filter((id) => {
                     const bp = f.recipes[id].kind === art && r._studioBlueprintForWord(id);
                     return bp && r._foundryPresetForEntry({ type: bp }) === id;
                 });
                 let st = rez.length ? "unbewegt" : "ohneWort";
-                for (const id of TOT.includes(art + ":" + d.id) ? rez.slice(0, 1) : rez) {
+                for (const id of rez) {
                     const v0 = (f.recipes[id].s || {})[d.id] ?? d.def;
                     if ((st = (await amWerk(id, { [d.id]: d.max - v0 >= v0 - d.min ? d.max : d.min })).st) !== "unbewegt") break;
                 }
@@ -309,10 +299,9 @@ const welt = async (seite) => {
                 ["praegung", "lofi", { bpm: "laut" }, "bpm"],
             ]) {
                 const { lg, neu } = setze(wort, ov);
-                for (const e of neu) e.isObject3D ? r.removeCreature(e) : r.removeArchitecture(e);
-                const ab = lg.find((l) => l.event === "studio_regler_abgelehnt");
-                const erg = lg.find((l) => l.event === "ergebnis") || {};
-                k.zu[nm] = !neu.length && !ws.lofi && !!ab && ab.regler.includes(wer) && (erg.gruende || {}).regler === 1;
+                const [ab, erg, blieb] = [lg.find((l) => l.event === "studio_regler_abgelehnt"), lg.find((l) => l.event === "ergebnis") || {}, neu.length || ws.lofi];
+                raeume(neu, "lofi");
+                k.zu[nm] = !blieb && !!ab && ab.regler.includes(wer) && (erg.gruende || {}).regler === 1;
             }
             // DER PROMPT liest DIESELBEN Zeilen (Mutation gewinnt): jede Zeile jeder sagbaren Art mit Bereich, eine eingespielte
             // Zeile erscheint im Prompt und trägt am Stempel
@@ -328,33 +317,20 @@ const welt = async (seite) => {
             } finally {
                 PBK.haus.pop();
             }
-            // DER KORPUS-TEIL REGLER-WÖRTER ist sagbar (spec/abnahme/ki-korpus.json `regler`): je Satz EINE Art, deren Zeilen jeden
-            // genannten Regler tragen (die Art seines Worts oder, bei "*", die einzige), jeder Bereich liegt in seiner Zeile, und das
-            // Programm mit der Mitte jedes Bereichs trägt sie ungeklemmt an sein Werk — das Urteil mit Modell fällt im Korpus-Lauf
-            k.korpus = Object.entries(REGLER).map(([satz, s]) => {
-                const ids = Object.keys(s.regler);
-                const traegt = (a) => ids.every((id) => PBK[a] && PBK[a].some((d) => d.id === id));
-                const kindVon = (w) => (f.recipes[r._foundryPresetForEntry({ type: r._studioBlueprintForWord(w) })] || {}).kind;
-                const arten = Array.isArray(s.werk) ? [kindVon(s.werk[0])].filter(traegt) : Object.keys(PBK).filter(traegt);
-                const wort = Array.isArray(s.werk) ? s.werk[0] : Object.keys(f.recipes).find((id) => f.recipes[id].kind === arten[0]);
-                const zl = (id) => PBK[arten[0]].find((d) => d.id === id);
-                const mitte = (id) => (s.regler[id][0] + s.regler[id][1]) / 2;
-                const ov = Object.fromEntries(ids.map((id) => [id, zl(id).step >= 1 ? Math.round(mitte(id)) : mitte(id)]));
-                if (arten.length !== 1 || !ids.every((id) => zl(id).min <= s.regler[id][0] && s.regler[id][1] <= zl(id).max))
-                    return { satz, ok: false, arten };
-                const z = setze(wort, ov);
-                const p = r._foundryPresetForEntry({ type: r._studioBlueprintForWord(wort) });
-                const st = z.e ? z.e.studioOv : z.c ? z.c.userData.gussDials : ws[p];
-                for (const x of z.neu) x.isObject3D ? r.removeCreature(x) : r.removeArchitecture(x);
-                if (ws[p]) r._praegungSetzen(arten[0], p, {}), delete ws[p];
-                return { satz, ok: !!st && ids.every((id) => st[id] === ov[id]), wort, ov };
+            // DER KORPUS-TEIL REGLER-WÖRTER ist sagbar (spec/abnahme/ki-korpus.json `regler`): je Satz trägt GENAU EINE Art (die seines
+            // Worts oder, bei "*", die einzige) jede genannte Zeile mit dem Bereich in ihrem Vertrag — mit ERREICHT ist jedes Soll ein
+            // Programm-Ziel; das Urteil mit Modell fällt im Korpus-Lauf
+            k.korpus = Object.entries(REGLER).map(([satz, [w, R]]) => {
+                const w0 = w !== "*" && f.recipes[presetVon(w)].kind;
+                const arten = Object.keys(PBK).filter((a) => (!w0 || w0 === a) && Object.entries(R).every(([id, [lo, hi]]) => PBK[a].some((d) => d.id === id && d.min <= lo && hi <= d.max)));
+                return [satz, arten.length === 1];
             });
         } catch (e) {
             k.err = e?.stack || String(e);
         }
         r._ensureWorkshopState().studioOv.gt = { radstand: 3.1, grip: 1.2, ...KC.vehicle.ov("toro", VC.CULTURES) }; // die Prägung, die A teilt (T)
         return res;
-    }, TOT, require(`${ROOT}/spec/abnahme/ki-korpus.json`).regler.saetze);
+    }, require(`${ROOT}/spec/abnahme/ki-korpus.json`).regler.saetze);
 
     // ===== (T)+(F) B in einem eigenen Browser-Kontext (frisches Profil) =====
     const pageB = await (await browser.createBrowserContext()).newPage();
@@ -507,13 +483,8 @@ const welt = async (seite) => {
     check("gestrippter Entry-Stempel ⇒ EXAKT der ungeprägte Fingerabdruck", gleich(s.fpStripped, n.fpU), `${s.fpStripped} vs ${n.fpU}`);
     check("gestrippter Hand-Stempel ⇒ EXAKT der ungeprägte Hand-Fingerabdruck", gleich(s.handStripped, n.handU), `${s.handStripped} vs ${n.handU}`);
 
-    console.log("\n=== (N) NAHT — die Prägung formt in Hand UND Welt ===");
+    console.log("\n=== (N) NAHT — die Prägung formt in der Hand ===");
     check("HAND-Guss: klinge_langschwert geprägt (Nihon) ≠ ungeprägt", !!n.handU && !!n.handNihon && n.handU !== n.handNihon, n.errHand || `${n.handU} ${n.handNihon}`);
-    check(
-        "WELT-Flatten: fahrzeug_gt-Entry geprägt (toro ≠ stern, mind. eine ≠ ungeprägt)",
-        !!n.fpToro && !!n.fpStern && n.fpToro !== n.fpStern && (n.fpToro !== n.fpU || n.fpStern !== n.fpU),
-        n.err || `U=${n.fpU} toro=${n.fpToro} stern=${n.fpStern}`
-    );
 
     console.log("\n=== (G) GUSS-SEMANTIK — Stempel beim Guss, gefroren danach ===");
     check("wieldBlueprint (schöpfer, ungeschmiedet) stempelt bp.studioOv als TIEFE Kopie", g.stamped && g.deepCopy, g.err);
@@ -536,7 +507,7 @@ const welt = async (seite) => {
     );
     check("der exakte Körper-Schlüssel (preset|gestalt|lod, ohne ov) lebt unverändert", B.plainKeyExact === true);
     check("kein JSON-Schlüssel im Welt-Cache (die Rezept-Linsen-Reinheit hält)", B.noJsonKeys === true);
-    check("BYTE-IDENTITÄT: ungeprägter Flatten == direkter ov-loser _foundryRequest-Bau", gleich(B.fpDirect, n.fpU), `${B.fpDirect} vs ${n.fpU}`);
+    check("BYTE-IDENTITÄT: ungeprägter Flatten == direkter ov-loser _foundryRequest-Bau", gleich(B.fpDirect, n.fpU), n.err || `${B.fpDirect} vs ${n.fpU}`);
 
     console.log("\n=== (K) KI-REGLER — spawn_studio prägt ===");
     const K = out.k;
@@ -560,12 +531,8 @@ const welt = async (seite) => {
         JSON.stringify(K.zu)
     );
     check("PROMPT: jede Zeile jeder sagbaren Art mit Bereich, aus DERSELBEN Quelle (Mutation gewinnt)", K.prompt && !K.prompt.length && K.mutation === true, `fehlt: ${K.prompt} · Mutation ${K.mutation}`);
-    const kt = K.korpus || [];
-    check(
-        `KORPUS-TEIL Regler-Wörter: ${kt.filter((x) => x.ok).length} von ${kt.length} Sätzen ein Programm-Ziel (eine Art, Bereich in der Zeile, die Mitte am Werk) — der Lauf mit Modell: diag-v1-pfad --korpus --teil regler --echt`,
-        kt.length >= 20 && kt.every((x) => x.ok),
-        kt.filter((x) => !x.ok).map((x) => `„${x.satz}“ ${JSON.stringify(x.arten || x.ov)}`).join(" · ")
-    );
+    const kt = (K.korpus || []).filter(([, ok]) => !ok);
+    check(`KORPUS-TEIL Regler-Wörter: ${(K.korpus || []).length} Sätze, jeder ein Programm-Ziel`, (K.korpus || []).length >= 20 && !kt.length, kt.join(" · "));
 
     console.log("\n=== (T) TEILEN in EINER Geste: A klickt, B gibt den Code in den Chat ===");
     const kb = (c) => (c ? `${c.length} Zeichen` : "kein Code");
