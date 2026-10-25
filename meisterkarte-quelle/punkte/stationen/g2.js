@@ -750,7 +750,7 @@ const stationen = [
     },
 
     // ───────── oekologie.K2 / K1 / K5 — Zweig oeko-bestand-k2 (tetrapoda BESTAND_GESETZ, UMWEG_GESETZ) ─────────
-    // Proben der Kreatur-Linse (Null-Renderer, R3: sie messen ein Gesetz). bestand und kaskade: der echte Lebenszyklus
+    // Proben der Kreatur-Linse (Null-Renderer, R3: sie messen ein Gesetz). kaskade: der echte Lebenszyklus
     // (tickFaunaLifecycle) im Zeitraffer an EINEM Ort, die Bühne leer, der Spieler ruhig; folgen: „folge mir“ über die
     // Chat-DSL, der Spieler geht 10 min mit W im echten Sim-Schritt um Wand und gedrehtes Haus, über einen Sockel. An main
     // fehlen die Proben (ROT „keine Zeile“).
@@ -758,22 +758,28 @@ const stationen = [
         kriterium: "oekologie.K2",
         staffel: 1,
         geraet: "headless",
-        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "bestand"],
+        // seit heim-z29b ein Szenario der Kaskade (die Probe bestand an EINER Saat fiel, Linse ersetzt Linse): das Leben des
+        // Felds ab der ersten Stunde halbiert gegen den Grundlauf, je Saat der Bestand der 6. Stunde — Effekt und Intervall
+        // [kleinste, größte Differenz] über 8 Saaten; der Grundbestand der 2. Stunde je Saat (nie vakuös), die Hungertode
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "kaskade"],
         env: { KREATUR_TAKT_PORT: "{PORT}" },
         gpu: false,
-        minuten: 3,
+        minuten: 6,
         urteil: (j, lauf) => {
-            const z = probeZeile(lauf.stdout, "bestand");
-            if (!z) return { gruen: false, zahl: "keine Zeile der Probe bestand (Exit " + lauf.exit + ")" };
-            if (z.fehler || !z.voll || !z.halb) return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne voll/halb") };
-            const { voll: V, halb: H } = z;
+            const z = probeZeile(lauf.stdout, "kaskade");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe kaskade (Exit " + lauf.exit + ")" };
+            const [N, T] = [z.richtungen && z.richtungen.nahrung, z.hungertod];
+            if (z.fehler || !N || !T || !Array.isArray(z.saaten))
+                return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne Richtung nahrung, Hungertod oder Saaten") };
+            const grund = Math.min(...z.saaten.map((je) => Object.values(je).reduce((s, [a]) => s + a, 0)));
             const gruen =
-                V.bestand >= 4 && H.bestand <= 0.7 * V.bestand && V.hunger <= 0.7 * V.bestand && V.tode[1] >= 1 && z.kappe === 0;
+                z.saaten.length >= 8 && grund >= 4 && N.effekt <= -0.3 && N.ki[1] < 0 && T.n >= 1 && T.aeltester === T.n &&
+                z.kappe === 0;
             return {
                 gruen,
                 zahl:
-                    "Bestand voll " + V.bestand + " · halbe Nahrung " + H.bestand + " · nach dem Halbieren " + V.hunger +
-                    " mit " + V.tode[1] + " Hungertoden · Takte an der Kappe " + z.kappe,
+                    z.saaten.length + " Saaten · Grundbestand min " + grund.toFixed(2) + " · halbe Nahrung " + N.effekt + " [" +
+                    N.ki.join(", ") + "] · " + T.n + " Hungertode, " + T.aeltester + " die Ältesten · Takte an der Kappe " + z.kappe,
             };
         },
         pfad: [...KREATUR],
