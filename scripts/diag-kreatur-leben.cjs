@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // gate:kreatur-leben — DIE LEBENS-LINSE: als Skript die Seele im Kern; als Stück der Seiten-Funktion der Kreatur-Proben
-// (`BUEHNEN` an ihrer Marke) Furcht, Lebensraum, Tages-Budget, Bestand, Kaskade und Folgen am ECHTEN Takt (gate:kreatur-takt).
+// (`BUEHNEN` an ihrer Marke) Furcht, Lebensraum, Tages-Budget, die Kaskade samt dem Bestand und Folgen am ECHTEN Takt (gate:kreatur-takt).
 "use strict";
 
 // ── furcht (Ökologie K3, tetrapoda FURCHT_GESETZ): (A) je Ort und Rolle ein Tier allein — geschlagen, gefüttert, gebunden,
@@ -21,9 +21,7 @@ async function lebenBuehnen(
     ruhig,
     ruhigSpieler,
     takt,
-    quantil,
-    kamera,
-    imBlick
+    quantil
 ) {
     const dt = 1 / 60;
     const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
@@ -176,7 +174,6 @@ async function lebenBuehnen(
             [s._creatureNetSeq, s.spielZeit, s.faunaLifecycle] = [1e4 * saat, 0, { lastTick: 0 }];
             s.lifeField = undefined;
             const n = [];
-            const tode = [0, 0];
             let kappe = 0;
             for (let k = 0; k < takte; k++) {
                 halb = k >= ab;
@@ -184,35 +181,25 @@ async function lebenBuehnen(
                 ruhigSpieler();
                 r.tickFaunaLifecycle();
                 if (eingriff) eingriff(gattung, k);
-                tode[+halb] += s.leichname.length;
                 for (const c of s.leichname.slice()) r.removeCreature(c);
                 // der Leerlauf zwischen den Takten (`_imLeerlauf` kommt im Zeitraffer nie): die Tod-Lage der Entfernten fällt
                 r._todLageTick();
-                if (s.creatures.length >= s.maxCreatures) kappe++;
+                // an der Kappe misst der Lauf nichts mehr (der Bestand ohne Tod wüchse je Takt quadratisch teurer)
+                if (s.creatures.length >= s.maxCreatures && ++kappe) break;
                 n.push(s.creatures.map(gattung));
             }
             for (const c of s.creatures.slice()) r.removeCreature(c);
             const mittel = (a, b, g) =>
                 +(n.slice(a, b).reduce((p, je) => p + je.filter((x) => !g || x === g).length, 0) / (b - a)).toFixed(2);
-            return { tode, kappe, mittel, tod };
+            return { kappe, mittel, tod };
         };
     };
-    // ── bestand (Ökologie K2): voll ab Takt 180 halbiert, halb von Anfang an, dieselbe Saat ──
-    await buehne("bestand", async (restore) => {
-        const lauf = zeitraffer(restore);
-        const V = lauf(9, 360, 180);
-        const H = lauf(9, 180, 0);
-        return {
-            voll: { bestand: V.mittel(60, 180), hunger: V.mittel(300, 360), tode: V.tode },
-            halb: { bestand: H.mittel(60, 180) },
-            kappe: V.kappe + H.kappe,
-            hungertod: H.tod,
-        };
-    });
     // ── kaskade (Ökologie K1): je Saat acht Stunden, je Gattung die zweite gegen die achte (die erste besiedelt); gegen diesen
-    // Grundlauf je Saat 6 h die Szenarien — die Wölfe entfernt, die Hirsche bejagt (je halbe Spielminute einer) und die
-    // Mutante „Fraß-Leser aus“ (der Fraß liest keinen Jungwuchs) ohne Wölfe. In der 6. Stunde je Gattung der Bestand und der
-    // Jungwuchs: die Äsung des Reviers, wie die Kapazität des Rotwilds sie liest (K ∝ Σ Lebensraum × Äsung) ──
+    // Grundlauf je Saat 6 h die Szenarien — die Wölfe entfernt, die Hirsche bejagt (je halbe Spielminute einer), das Leben
+    // des Felds ab der ersten Stunde halbiert (Ökologie K2: Geburt und Hungertod folgen der Nahrung; bis heim-z29b die Probe
+    // bestand an EINER Saat) und die Mutante „Fraß-Leser aus“ (der Fraß liest keinen Jungwuchs) ohne Wölfe. In der 6. Stunde
+    // je Gattung der Bestand und der Jungwuchs: die Äsung des Reviers, wie die Kapazität des Rotwilds sie liest
+    // (K ∝ Σ Lebensraum × Äsung) ──
     await buehne("kaskade", async (restore) => {
         const lauf = zeitraffer(restore);
         let frassAus = false;
@@ -223,13 +210,14 @@ async function lebenBuehnen(
             grund: null,
             ohneWolf: weg("wolf"),
             bejagt: (g, k) => k % 3 || weg("deer", 1)(g),
+            halb: null,
             mutante: weg("wolf"),
         })) {
             if ((frassAus = name === "mutante") && taeter) break;
             L[name] = [];
             for (let i = 1; i <= (taeter ? 4 : 8); i++) {
                 let jung = 0;
-                const l = lauf(i, name === "grund" ? 2880 : 2160, Infinity, (g, k) => {
+                const l = lauf(i, name === "grund" ? 2880 : 2160, name === "halb" ? 360 : Infinity, (g, k) => {
                     if (eingriff) eingriff(g, k);
                     if (k >= 1800 && k < 2160) jung += r._kreaturBestand().deer.K / 360;
                 });
@@ -250,6 +238,7 @@ async function lebenBuehnen(
             hirsche: richtung("ohneWolf", "deer", 0.3),
             jungwuchs: richtung("ohneWolf", "jung", -0.2),
             woelfe: richtung("bejagt", "wolf", 0),
+            nahrung: richtung("halb", null, -0.3),
         };
         if (L.mutante) richtungen.mutante = richtung("mutante", "jung", -0.2);
         const G = Object.keys(A._lebensraumGesetz().L.gattung);
@@ -257,6 +246,7 @@ async function lebenBuehnen(
             saaten: L.grund.map((l) => Object.fromEntries(G.map((g) => [g, [l.mittel(360, 720, g), l.mittel(2520, 2880, g)]]))),
             kappe: Object.values(L).flat().reduce((p, l) => p + l.kappe, 0),
             richtungen,
+            hungertod: L.grund[0].tod, // je Hungertod aller Läufe
         };
     });
     // ── folgen (Ökologie K5, der Parcours): „folge mir“, dann geht der Spieler 10 min mit W (`_stepFixedSim`) über Hang und
@@ -644,29 +634,16 @@ async function lebenBuehnen(
 }
 // das Soll der Lebens-Proben (`soll(bedingung, grund)` aus dem Urteil der Kreatur-Proben)
 function lebenUrteil(name, z, soll) {
-    if (name === "bestand" || name === "kaskade")
+    if (name === "kaskade") {
         soll(
             z.kappe === 0,
             `der Bestand bricht an die Kosten-Kappe aus: ${z.kappe} Takte an ihr (Soll 0 — die Nahrung begrenzt, nie der Deckel)`
-        );
-    if (name === "bestand") {
-        const { voll: V, halb: H } = z;
-        soll(V.bestand >= 4, `das Revier trägt keinen Bestand: ${V.bestand} Tiere (vakuös)`);
-        soll(
-            H.bestand <= 0.7 * V.bestand,
-            `die Geburt folgt der Nahrung nicht: ${H.bestand} Tiere halb gegen ${V.bestand} voll`
-        );
-        soll(
-            V.hunger <= 0.7 * V.bestand && V.tode[1] >= 1,
-            `der Tod folgt der Nahrung nicht: halbiert ${V.hunger} Tiere, ${V.tode[1]} Tode`
         );
         const T = z.hungertod;
         soll(
             T.n >= 1 && T.aeltester === T.n && T.trauer === T.n && T.journal === T.n,
             `der Hungertod nimmt nicht das Älteste, trauert nicht oder schreibt kein Journal: ${T.n} Tode, ${T.aeltester} die Ältesten, ${T.trauer} betrauert, ${T.journal} im Journal`
         );
-    }
-    if (name === "kaskade") {
         const paare = z.saaten.flatMap((je, i) =>
             Object.entries(je).map(([g, [a, e]]) => ({ wo: `Saat ${i + 1} ${g} ${a} → ${e}`, a, e }))
         );
@@ -796,8 +773,8 @@ function lebenUrteil(name, z, soll) {
 }
 const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
-    BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil, kamera, imBlick);`,
-    PROBEN: ["furcht", "lebensraum", "tagesbudget", "bestand", "kaskade", "folgen"],
+    BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil);`,
+    PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen"],
     TAETER: {
         tagesbudget: [
             ["durst", /kein Tier trinkt aus Durst/],
@@ -805,11 +782,11 @@ module.exports = {
             ["tagesbudget-sonne", /verfehlt das Ethogramm/],
             ["nacht", /bewegt während ruhen/],
         ],
-        bestand: [
-            ["bestand-nahrung", /die Geburt folgt der Nahrung nicht[\s\S]*der Tod folgt der Nahrung nicht/],
-            ["bestand-deckel", /Kosten-Kappe[\s\S]*die Geburt folgt der Nahrung nicht[\s\S]*der Tod folgt der Nahrung nicht/],
+        kaskade: [
+            ["kaskade-riss", /die Kaskade hirsche/],
+            ["bestand-nahrung", /die Kaskade nahrung/],
+            ["bestand-deckel", /Kosten-Kappe/],
         ],
-        kaskade: [["kaskade-riss", /die Kaskade hirsche/]],
         folgen: [
             ["folgen", /das gebundene Tier folgt nicht/],
             ["folgen-wand", /die Hindernisse halten nicht/],

@@ -242,6 +242,22 @@ async function kreaturProben(r, T, opts) {
             else delete r[name];
         });
     };
+    // DER ALTE JAGD-WEG als Täter (jagdkreis, rudel): im Schritt-Tempo geradewegs auf das Ziel, kein Platz im Rudel, keine Hetze
+    const schrittJagd = (restore) =>
+        decke(
+            restore,
+            "_kreaturJagdZug",
+            () =>
+                function (c, tx, tz, key, direction, speed) {
+                    c.userData._jagdZiel = key;
+                    this._kreaturZustandStempel(c, "jagd");
+                    const dx = tx - c.position.x,
+                        dz = tz - c.position.z;
+                    const J = A._verhaltenGesetz().jagd;
+                    // der alte Pirsch-Stopp (1,6 m um die Mitten — jagd.pirschStoppM fiel mit dem Biss im Ansprung)
+                    this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - 1.6, speed * J.speedBoost);
+                }
+        );
     // DER TAKT WIE IM SPIEL (die Folge von `_gameLoopTick`): erst der feste Sim-Schritt der Leiber (`_kreaturStossSchritt`,
     // `_leibKontakte`), dann der Frame-Takt der Tiere (`updateCreatures`).
     const takt = (dt) => {
@@ -1570,22 +1586,7 @@ async function kreaturProben(r, T, opts) {
                         return d0;
                     }
             );
-        const schrittJagd = () =>
-            decke(
-                restore,
-                "_kreaturJagdZug",
-                () =>
-                    function (c, tx, tz, key, direction, speed) {
-                        c.userData._jagdZiel = key;
-                        this._kreaturZustandStempel(c, "jagd");
-                        const dx = tx - c.position.x,
-                            dz = tz - c.position.z;
-                        const J = A._verhaltenGesetz().jagd;
-                        // der alte Pirsch-Stopp (1,6 m um die Mitten — jagd.pirschStoppM fiel mit dem Biss im Ansprung)
-                        this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - 1.6, speed * J.speedBoost);
-                    }
-            );
-        if (taeter === "jagd-schritt") schrittJagd();
+        if (taeter === "jagd-schritt") schrittJagd(restore);
         // der Fall ohne Kadaver (der Leib liegt und sinkt, kein Fleisch) und die Nase ohne Aas-Witterung als Täter
         if (taeter === "jagd-aas")
             decke(
@@ -1755,21 +1756,7 @@ async function kreaturProben(r, T, opts) {
     // 2 × jagd.hetzM stehen, die größte Winkel-Lücke um den Spieler, dazu die Lücke beim ersten Biss ──
     await buehne("rudel", async (restore) => {
         r.setGameMode("pfad");
-        if (taeter === "rudel")
-            decke(
-                restore,
-                "_kreaturJagdZug",
-                () =>
-                    function (c, tx, tz, key, direction, speed) {
-                        c.userData._jagdZiel = key;
-                        this._kreaturZustandStempel(c, "jagd");
-                        const dx = tx - c.position.x,
-                            dz = tz - c.position.z;
-                        const J = A._verhaltenGesetz().jagd;
-                        // der alte Pirsch-Stopp (1,6 m um die Mitten — jagd.pirschStoppM fiel mit dem Biss im Ansprung)
-                        this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - 1.6, speed * J.speedBoost);
-                    }
-            );
+        if (taeter === "rudel") schrittJagd(restore);
         const o = frei(60, -60, 25) || land(60, -60);
         pm.set(o.x, o.y, o.z);
         const altHp = s.player.hp,

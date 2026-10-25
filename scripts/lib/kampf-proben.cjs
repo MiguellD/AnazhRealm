@@ -2041,7 +2041,7 @@ async function WELLE_L(ort) {
         await teil("T22", async () => {
             const hT = setze("wesen");
             stelle(hT, 20, 6);
-            hT.userData.bornAt = 1; // der Älteste der Welt — wählt der Lebenszyklus nach dem Tod noch ihn?
+            hT.userData.alterS = 1e9; // der Älteste der Welt (Spiel-Zeit, Ökologie K1) — wählt der Lebenszyklus nach dem Tod noch ihn?
             const gier = 0.7;
             hT.rotation.set(0, gier, 0);
             hT.updateMatrixWorld(true);

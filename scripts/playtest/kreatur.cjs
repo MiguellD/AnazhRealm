@@ -6,7 +6,7 @@
 const { safeEvaluate } = require("../playtest.cjs");
 
 // Die Logik-Konsumenten lesen die lebendige auraAt-API (nicht das eingefrorene worldFieldAt; den Bestand misst
-// gate:kreatur-takt bestand).
+// gate:kreatur-takt kaskade).
 async function checkBandV1725FieldReaders(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {

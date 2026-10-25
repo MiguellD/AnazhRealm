@@ -166,7 +166,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         r.tickWeatherTransition(0);
         out.transitionClearedOnComplete = r.state.weatherTransition === null;
 
-        // --- c) den Fauna-Lifecycle (Geburt, Hungertod des Ältesten, Trauer, Journal) misst gate:kreatur-takt bestand
+        // --- c) den Fauna-Lifecycle (Geburt, Hungertod des Ältesten, Trauer, Journal) misst gate:kreatur-takt kaskade
 
         return out;
     });
