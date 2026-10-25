@@ -405,6 +405,57 @@ const stationen = [
         quelle: "1 = der Spieler geht durch die Tür bis Keller und Dachboden ohne Vertikal-Sprung > 0,3 m in einem Frame (Anti-Clip-Hub = ROT), an einem Haus",
     },
 
+    // siedlung.K1 Staffel 2: JEDES Haus des Dorfs (gate:haus-welt W10, alle 24 Bauten des Drehbuch-Dorfs, nie 8), jeder Wohnbau (Wohnhaus,
+    // Gasthaus) geht ganz Tür → Keller → Dachboden ohne Hub > 0,3 m — und drinnen ist es lesbar: die Innen-Luma je Haus ≥ 15 % der Luma
+    // des Außen-Schattens (Schatten K4) im Ausgabe-Bild, an beiden Geräten (echter Renderer unter dem GPU-Schloss). Die Luma liest
+    // `h.luma` {innen, schatten} je Haus der Phase haus (`--bild` fährt heute nur die Phase grund); trägt die Linse sie nicht, ist die
+    // Station rot mit dem Namen der fehlenden Probe.
+    {
+        kriterium: "siedlung.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: ["node", "scripts/diag-haus-welt.cjs", "--phasen=haus"],
+        env: { HAUS_WELT_PORT: "{PORT}", HAUS_WELT_JSON: "{AUS}" },
+        gpu: true,
+        minuten: 12,
+        urteil: (j) => {
+            if (!j || !Array.isArray(j.haeuser)) return { gruen: false, zahl: "kein HAUS_WELT_JSON mit haeuser" };
+            const g = j.haeuser.filter((h) => !h.fehler && h.gang);
+            const ganz = (h) => h.gang.keller && h.gang.dach && !h.gang.fehlt.length && h.gang.hub <= 0.3;
+            const wohn = g.filter((h) => h.wohn);
+            const halb = wohn.filter((h) => !ganz(h));
+            const hub = g.filter((h) => !(h.gang.hub <= 0.3));
+            const mitLuma = g.filter((h) => h.luma && h.luma.schatten > 0);
+            const dunkel = mitLuma.filter((h) => !(h.luma.innen >= 0.15 * h.luma.schatten));
+            const gruen =
+                wohn.length >= 6 && !halb.length && !hub.length && mitLuma.length === g.length && !dunkel.length;
+            return {
+                gruen,
+                zahl:
+                    wohn.filter(ganz).length + " von " + wohn.length + " Wohnbauten ganz Tür → Keller → Dachboden (" +
+                    g.filter(ganz).length + "/" + g.length + " Häuser), Anti-Clip-Hub " + hub.length +
+                    (halb.length ? ", halb: " + halb.map((h) => h.typ + "@" + h.gierGrad + "°").join(" ") : "") +
+                    " · Innen-Luma " + (mitLuma.length < g.length
+                        ? "fehlt an " + (g.length - mitLuma.length) + " Häusern (die Linse trägt h.luma nicht)"
+                        : (g.length - dunkel.length) + "/" + g.length + " ≥ 15 % des Außen-Schattens"),
+            };
+        },
+        pfad: [
+            "stamm/siedlung-*.js",
+            "stamm/koerper-*.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/bild-*.js",
+            "stamm/dirigent-takt.js",
+            "stamm/daten.js",
+            "fachwerk-core.js",
+            "foundry-core.js",
+            "scripts/diag-haus-welt.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+        ],
+        quelle: "2 = jedes Haus des Start-Dorfs, Innenraum lesbar (Luma ≥ 15 % des Außen-Schattens, Schatten K4), beide Geräte",
+    },
+
     // ───────── siedlung.K5 — das erste Haus steht sofort (M36, die Stufe am Abstand) ─────────
     // Station dorf wie M36: Werkbank --echt --ort dorf, Regler frei, die Zelle −4,−6 per Zell-Info nH 12 bzw. 300, der Spieler geht mit
     // 4 m/s ab 450 m durch den Vorlauf-Ring, bis sie erwacht; je nH ein frischer Boot. Gezählt: Erwachen → erstes Haus der Zelle im
@@ -1063,10 +1114,6 @@ module.exports.fehlt = [
             "Studio → Welt → Studio misst keine Linse — der Hinweg steht (gate:studio-uebergabe (K): Bau-Hash Studio = Welt, im vm), den " +
             "Rückweg trägt keine Ziel-Seite: keines der 8 Studios mit `werk()` nimmt das Werk der Welt in seine Bühne, und der Bau-Hash " +
             "der Welt verlangt die Foundry (K8 fährt ohne). Ist an tore-k3-abdruck: Reittier 0/10, Werk-Rundreise 0/8",
-    },
-    {
-        kriterium: "siedlung.K1", staffel: 2, befehl: null,
-        grund: "W10 geht 8 Häuser des Drehbuch-Dorfs, nicht jedes Haus des Start-Dorfs; keine Probe misst die Innen-Luma gegen den Außen-Schatten (≥ 15 %) im Ausgabe-Bild",
     },
     {
         kriterium: "siedlung.K2", staffel: 2, befehl: null,
