@@ -172,10 +172,8 @@
   P.keller = (P.keller===0)?0:1;                                                 // Keller default an (abschaltbar via {keller:0}); echtes Untergeschoss unter Grade
   const kellerH=2.40, kellerY=-kellerH;                                          // Kellerboden unter Grade; Decke = Fundamentunterseite (y=0) → lichte Höhe = kellerH
   const levels=[]; { let y=baseY; for(let k=0;k<P.storeys;k++){const h=k===0?P.egH:P.ogH; levels.push({y, h, top:y+h}); y+=h;} }
-  const eaveY=levels[levels.length-1].top;
-  const ridgeY=eaveY+(P.D/2)*Math.tan(pitch);
+  const tanPitch=Math.tan(pitch), atticY=levels[levels.length-1].top, dachH=(atticY+(P.D/2)*tanPitch)-atticY;   // DER ESTRICH (die Diele des Dachbodens) und die Dachhöhe First über Traufe — die Traufe liegt um den DREMPEL darüber (unten, aus dem Speicherlauf)
   const ROOFMODE = (P.grundriss==='rund')?'rund' : P.kuppel?'dome' : P.terrasse?'stepped' : (P.zinnen||P.arkade)?'flat' : (P.dachTyp&&P.dachTyp!=='sattel')?'alt' : 'sattel';   // EINE Dach-Quelle: welches Dach traegt der Bau — jeder Dach-Ersetzer fliesst hierdurch
-  const mS = (ridgeY-eaveY)/(P.D/2);                                             // ░ EINE Dachneigung (Steigung) ░ Quelle für Hauptdach · beide Flügel · Notch · Fenster-Occlusion — ersetzt das alte 0.62-Duplikat
   const STACK_W = 0.84;                                                          // ░ EINE Kaminbreite ░ Stack-AABB UND fensterfreier Korridor leiten sich hieraus ab
   const W=P.W, Dp=P.D, doorW=P.doorW, doorH=P.doorH, doorX=0, ps=P.post/2;
   // ════ METAGESETZ · DACHUNTERKANTE: gibt die Höhe der HAUPTdach-Ziegelhaut an jedem (x,z). JEDE Vertikale (Treppengeländer, Ständer, …) duckt sich darunter — eine Quelle, kein Subsystem rät selbst. Außerhalb der Traufwände (|x|>W/2) → ∞ (Wing/Garage tragen eigene Dächer). ════
@@ -212,8 +210,7 @@
       if(_fl2)_band(); } }
   // ════ NORM · Wohnbau (SIA 500 / DIN 18065) — öffentliche Mindestwerte, GESETZT, nicht verhandelbar ════
   const NORM={flur:1.00, treppe:0.90, auftritt:0.26, steigung:0.19, steigungSpar:0.21, schritt:0.62, podest:0.90, kopf:2.00, kopfSpar:1.90, eingang:1.30};
-  const hasAttic = (ridgeY - eaveY) > NORM.kopfSpar;          // GESETZ: nutzbarer Dachraum nur wenn First ≥1.9 m über Traufe — FRÜH gezogen, denn der Schacht hängt davon ab
-  const DORMER = (hasAttic && !modern && P.hip<0.45 && Dp>5.5) ? (()=>{ const gx=clamp(((P.seed%5)-2)*0.5, -W/2+1.5, W/2-1.5), gW=clamp(W*0.16,1.15,1.6), zBack=-Dp*0.22, zFront=zBack-1.0; const yBack=roofSkinY(gx,zBack), baseY2=roofSkinY(gx,zFront)+0.02, frontTop=yBack-0.08; return (frontTop-baseY2>0.85)?{gx,gW,zBack,zFront,yBack,baseY2,frontTop}:null; })() : null;   // EINE Gauben-Quelle: Struktur (dachwerk) UND Dachhaut-Aussparung (dachdeckung) lesen sie
+  const hasAttic = dachH > NORM.kopfSpar || (ROOFMODE==='sattel' && levels.length>=2);   // GESETZ: nutzbarer Dachraum, wenn der First ≥1.9 m über der Traufe liegt — DACHBODEN-GESETZ (siedlung.K1): jedes Satteldach über ≥2 Geschossen trägt ihn, der DREMPEL hebt die Traufe, bis der Speicherlauf im Stehraum mündet
   const stW = NORM.treppe;                                    // Haupttreppe-Breite = Norm
   const mainW = ((levels.length>=2)||(levels.length===1&&hasAttic)) ? stW : 0;   // LINKE Spur: Haupt-/Estrichtreppe — nur wenn nach oben gegangen wird
   const loftW = ((levels.length>=2&&hasAttic)||P.keller||levels.length>=3) ? 0.90 : 0;   // FIX Issue5: RECHTE Spur trägt Speicher- ODER Kellertreppe — Keller koppelt nicht mehr parasitär an den Speicher · SPUR-GESETZ (Welle L): ab drei Geschossen läuft der zweite Lauf (OG→2.OG) auf der RECHTEN Spur — sie hat Breite, auch ohne Speicher und Keller (vorher 0 m: die Treppe ins 2. OG war ein Null-Lauf, 44 von 270 Siedlungs-Häusern)
@@ -310,18 +307,26 @@
   const DiF = Dp/2-0.08;                                                // innere Haustiefe
   const hasLoft = levels.length>=2 && hasAttic;
   let lW=0,lN=0,lRise=0,lGo=0,lRun=0;
-  if(hasLoft){ const lH=eaveY-levels[levels.length-1].y;
+  if(hasLoft){ const lH=atticY-levels[levels.length-1].y;
     lN  = Math.max(3, Math.ceil(lH / NORM.steigungSpar));               // Speichertreppe: Raumspar-Steigung ≤0.21 (DIN-Trick) — KEINE 0.42-Leiter
     lRise=lH/lN; lGo=clamp(NORM.schritt-2*lRise, 0.24, 0.30); lRun=lN*lGo;
     if(lRun>availRun){ lGo=clamp(availRun/lN, 0.20, lGo); lRun=lN*lGo; } // passt der Speicherlauf nicht in die Tiefe → Auftritt kürzen (steiler), bleibt im Haus
     lW=loftW; }
-  const zBandTop = (Dp/2)*(1 - NORM.kopfSpar/Math.max(0.6,ridgeY-eaveY));         // wo das Dach 1.9 m über Estrich liegt
-  const KNIESTOCK = Math.abs(zBandTop)>0.6 && Math.abs(zBandTop)<(Dp/2-0.08)-0.3;                               // steht dort der Kniestock (die Drempelwand des Estrichs, boeden), oder liegt der Stehraum bis an die Wand
+  const zBand=(dr)=>(Dp/2)*(1 - (NORM.kopfSpar-dr)/Math.max(0.6,dachH));   // wo das Dach 1.9 m über dem Estrich liegt — mit dem Drempel dr
   // GESETZ Austritt-Podest: Haupttreppe mündet so weit hinten, dass HINTER ihr ein freier OG-Boden ≥ NORM.podest bleibt → man kommt in den ersten Stock. Loft (RECHTS daneben) kehrt -z zum First zurück.
   let stZ0  = hasLoft ? clamp(DiF-NORM.podest, -Dp/2+NORM.eingang+stRun, DiF-0.4) - stRun
-                      : clamp(Math.min(zBandTop-0.45, 1.3) - stRun, -Dp/2+NORM.eingang, -0.6);
+                      : clamp(Math.min(zBand(0)-0.45, 1.3) - stRun, -Dp/2+NORM.eingang, -0.6);
   stZ0 = clamp(stZ0, -DiF+0.35, DiF-0.35-stRun);                        // GESETZ: Antritt UND Austritt bleiben im Innenraum → kein Lauf endet in der Wand
   const wz1 = stZ0+stRun;
+  const austrittMit=(d,pod)=>Math.abs(((d>0)?stZ0:wz1)+d*(lRun+pod)), knie=(zb)=>Math.abs(zb)>0.6 && Math.abs(zb)<(Dp/2-0.08)-0.3;
+  // ════ DREMPEL-GESETZ (siedlung.K1): mündet der Speicherlauf unter einem Satteldach in keiner Richtung im Stehraum (der First zu flach, 1,41–1,99 m über dem Estrich im Drehbuch-Dorf), hebt der Drempel die Traufe um das Fehlende (auf 5 cm) — die Außenwand läuft bis zur Traufe (perimWall), der Lauf mündet samt Podest im Stehraum; mündet er schon, bleibt der Drempel 0 und das Haus byte-gleich ════
+  const DREMPEL = (()=>{ if(!hasLoft || ROOFMODE!=='sattel') return 0; const d0=((levels.length-1)%2===0)?1:-1;   // der kleinste 5-cm-Schritt, an dem der Lauf mündet (die Probe des Speicherlaufs unten, samt Podest-Wahl am Kniestock); bis 2 m, sonst bleibt der Estrich zu
+    const muendet=(dr)=>{ const zb=zBand(dr), pod=knie(zb)?NORM.podest:0.3; return Math.min(austrittMit(d0,pod),austrittMit(-d0,pod))<=zb; };
+    let dr=0; while(!muendet(dr) && dr<2) dr=Math.round(dr*20+1)/20; return muendet(dr)?dr:0; })();
+  const eaveY=atticY+DREMPEL, ridgeY=eaveY+(P.D/2)*tanPitch, mS=(ridgeY-eaveY)/(P.D/2);   // ░ EINE Dachneigung (Steigung) ░ Quelle für Hauptdach · beide Flügel · Notch · Fenster-Occlusion
+  const zBandTop = zBand(DREMPEL);
+  const KNIESTOCK = knie(zBandTop);                               // steht dort der Kniestock (die Drempelwand des Estrichs, boeden), oder liegt der Stehraum bis an die Wand
+  const DORMER = (hasAttic && !modern && P.hip<0.45 && Dp>5.5) ? (()=>{ const gx=clamp(((P.seed%5)-2)*0.5, -W/2+1.5, W/2-1.5), gW=clamp(W*0.16,1.15,1.6), zBack=-Dp*0.22, zFront=zBack-1.0; const yBack=roofSkinY(gx,zBack), baseY2=roofSkinY(gx,zFront)+0.02, frontTop=yBack-0.08; return (frontTop-baseY2>0.85)?{gx,gW,zBack,zFront,yBack,baseY2,frontTop}:null; })() : null;   // EINE Gauben-Quelle: Struktur (dachwerk) UND Dachhaut-Aussparung (dachdeckung) lesen sie
   const STAIR = { x0:wx0-0.05, x1:wx1+0.05, z0:stZ0-0.22, z1:wz1+0.30 };   // Schacht-Grundriss (Boden-/Deckenloch)
   const KELLERRAUM = P.keller ? {x0:-(W/2-0.08), x1:(W/2-0.08), z0:-(Dp/2-0.08), z1:(Dp/2-0.08), floorY:kellerY+0.12, holeX0:lxL-0.04, holeX1:lxR+0.04, holeZ0:stZ0-0.06, holeZ1:wz1+0.10} : null;   // EIN Kellerraum-Modell: Boden + Treppenloch — Inventar liest dieselbe Quelle wie das Haus
   const stairTopY = levels[0].top;
@@ -336,11 +341,11 @@
     flights.push({base:levels[0].y, tr:'L', x0:TRACK.L[0], x1:TRACK.L[1], zFoot:stZ0, dir:1, N:stN, rise:stRise, go:stGo, isLoft:false, atLevel:'attic', topEdge:'back', footEdge:'front'}); }
   let LOFT=null;
   if(hasLoft){ const i=levels.length-1, tr=(i%2===0)?'L':'R'; let dir=(i%2===0)?1:-1;          // Speicherlauf top→Dachboden (Raumspar)
-    const austritt=(d)=>Math.abs(((d>0)?stZ0:wz1)+d*(lRun+(KNIESTOCK?NORM.podest:0.3)));                    // KOPFRAUM-GESETZ (Welle L): der Speicherlauf mündet im STEHRAUM (|z| ≤ zBandTop: Dach ≥ kopfSpar über dem Estrich) — vor dem Kniestock MIT seinem Austritt-Podest (NORM.podest, wie die Haupttreppe), ohne ihn 0,3 m Kopfraum — trüge die Kehre ihn unter die Schräge, läuft er vom anderen Schacht-Ende zum First (vorher bei drei Geschossen Kopfraum 1,2 m am Austritt: der Kopf stak im Dach; bis siedlung-k5-nah reichten 0,3 m: der Körper stand am Kniestock)
+    const austritt=(d)=>austrittMit(d,KNIESTOCK?NORM.podest:0.3);                    // KOPFRAUM-GESETZ (Welle L): der Speicherlauf mündet im STEHRAUM (|z| ≤ zBandTop: Dach ≥ kopfSpar über dem Estrich) — vor dem Kniestock MIT seinem Austritt-Podest (NORM.podest, wie die Haupttreppe), ohne ihn 0,3 m Kopfraum — trüge die Kehre ihn unter die Schräge, läuft er vom anderen Schacht-Ende zum First (vorher bei drei Geschossen Kopfraum 1,2 m am Austritt: der Kopf stak im Dach; bis siedlung-k5-nah reichten 0,3 m: der Körper stand am Kniestock)
     if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;
     if(austritt(dir)<=zBandTop){                                                             // KEIN SPEICHERLAUF OHNE STEHRAUM AM AUSTRITT: trägt keine Richtung ihn samt Podest in den Stehraum, bleibt der Estrich geschlossen wie unter dem flachen Dach (bis siedlung-k5-nah endete er 0,46 m vor dem Kniestock: kein Körper kam vom Lauf)
     const zFoot=(dir>0)?stZ0:wz1, zTop=zFoot+dir*lRun, z0=Math.min(zFoot,zTop), z1=Math.max(zFoot,zTop);
-    LOFT={x0:TRACK[tr][0],x1:TRACK[tr][1],z0,z1,xc:(TRACK[tr][0]+TRACK[tr][1])/2,base:levels[i].y,top:eaveY,N:lN,rise:lRise,go:lGo,dir,zFoot};
+    LOFT={x0:TRACK[tr][0],x1:TRACK[tr][1],z0,z1,xc:(TRACK[tr][0]+TRACK[tr][1])/2,base:levels[i].y,top:atticY,N:lN,rise:lRise,go:lGo,dir,zFoot};
     flights.push({base:levels[i].y, tr, x0:TRACK[tr][0], x1:TRACK[tr][1], zFoot, dir, N:lN, rise:lRise, go:lGo, isLoft:true, atLevel:'attic', topEdge:(dir>0)?'back':'front', footEdge:(dir>0)?'front':'back'});
     addCircR(LOFT.x0-0.1, LOFT.z0-0.1, LOFT.x1+0.1, LOFT.z1+0.3, i, 'speichertreppe'); } }
   const levelOpen=levels.map(()=>({front:false,back:false}));                              // offene Geländerkante je Geschoss (wo ein Lauf an-/austritt)
@@ -394,16 +399,17 @@
     const voids=[];                                                                              // GESETZ: ÜBER JEDER Treppen-Durchdringung wird die Deckenbalkenlage ausgespart — sonst läuft ein horizontaler Träger durch die Treppe. Im Hochhaus an JEDER Zwischendecke, nicht nur über dem EG.
     if(!(levels.length===1 && !hasAttic)){
       for(let k=0;k<levels.length-1;k++) voids.push({y:levels[k].top, x0:STAIR.x0, x1:STAIR.x1, z0:STAIR.z0, z1:STAIR.z1});   // jede Zwischendecke (EG .. vorletztes OG) über dem Schacht
-      if(levels.length===1 && hasAttic) voids.push({y:eaveY, x0:STAIR.x0, x1:STAIR.x1, z0:STAIR.z0, z1:STAIR.z1});             // Estrichloch bei 1 Geschoss + nutzbarem Dachraum
+      if(levels.length===1 && hasAttic) voids.push({y:atticY, x0:STAIR.x0, x1:STAIR.x1, z0:STAIR.z0, z1:STAIR.z1});             // Estrichloch bei 1 Geschoss + nutzbarem Dachraum
     }
-    if(LOFT) voids.push({y:eaveY, x0:LOFT.x0-0.05, x1:LOFT.x1+0.05, z0:LOFT.z0-0.05, z1:LOFT.z1+0.05});
+    if(LOFT) voids.push({y:atticY, x0:LOFT.x0-0.05, x1:LOFT.x1+0.05, z0:LOFT.z0-0.05, z1:LOFT.z1+0.05});
     const layJoists=(y)=>{ const vs=voids.filter(v=>Math.abs(v.y-y)<0.05);
       bx.forEach(x=>{ const v=vs.find(v=>x>v.x0 && x<v.x1);
         if(v) clipSpanZ(g,x,y-P.balkenH/2,P.balkenB,P.balkenH,-Dp/2+0.02,Dp/2-0.02,'holz',[[v.z0,v.z1]]);   // über dem Loch ausgespart
         else  beam(g,x,y-P.balkenH/2,0,P.balkenB,P.balkenH,Dp-0.04,'holz'); }); };
     levels.forEach((L,k)=>{ postsRing(g,L.y,L.h); plateRing(g,L.top-P.raehm/2);
       if(k<levels.length-1) plateRing(g,L.top+P.raehm/2);
-      if(!P.flaechig) layJoists(L.top); });                                  // levels[last].top == eaveY → Dachbalkenlage inklusive, keine Doppellage · FLÄCHEN-STUFE: die Balkenlage schläft im Innern, der Ständer-/Rähm-Ring bleibt die Fassade
+      if(!P.flaechig) layJoists(L.top); });
+    if(DREMPEL>0){ postsRing(g,atticY,DREMPEL); plateRing(g,eaveY-P.raehm/2); }   // DER DREMPEL trägt Ständer und Rähm bis zur Traufe (das Dach liegt auf ihm, nicht auf dem Estrich)                                  // levels[last].top == eaveY → Dachbalkenlage inklusive, keine Doppellage · FLÄCHEN-STUFE: die Balkenlage schläft im Innern, der Ständer-/Rähm-Ring bleibt die Fassade
     return g; }
 
   const winEG = modern?{off:1.18,ch:1.55}:{off:0.95,ch:0.95}, winOG = modern?{off:1.02,ch:1.45}:{off:0.80,ch:0.92};   // modern: grosse Fensterbänder
@@ -694,7 +700,7 @@
       if(!NOTCH.some(N=>N.sg>0&&Math.abs(x-N.xc)<N.hf-0.12)) strut(g,x,footY,footZ, x,ridgeY,0,P.spar,'holz');
       if(!NOTCH.some(N=>N.sg<0&&Math.abs(x-N.xc)<N.hf-0.12)) strut(g,x,footY,-footZ, x,ridgeY,0,P.spar,'holz'); }
     // ── Kehlbalken (Kollar) ÜBER Kopfhöhe → Queraussteifung; Estrichboden bleibt FREI begehbar ──
-    const colY=Math.max((footY+ridgeY)/2, eaveY+1.98);                          // über dem Spieler (PH=1.7) — kein Bauteil steht im Stehraum
+    const colY=Math.max((footY+ridgeY)/2, atticY+1.98);                          // über dem Spieler (PH=1.7) — kein Bauteil steht im Stehraum
     const colHalfZ=footZ*(ridgeY-colY)/Math.max(0.1,ridgeY-footY);
     const colX=[];                                                             // GESETZ: ein Firstständer darf NUR über einem Kehlbalken stehen → beide Lagen teilen sich EIN x-Raster (sonst schwebt der Stiel)
     if(colHalfZ>0.3 && colY<ridgeY-0.35) for(let i=0;i<=nS;i+=2){ const x=-W/2+i*W/nS; if(x<-rH-0.05||x>rH+0.05)continue;
@@ -785,15 +791,15 @@
       if(!op.back)  railSeg(wx0,wz1,wx1,wz1,0,hcz);
       railSeg(wx0,stZ0,wx0,wz1,0,hcz); railSeg(wx1,stZ0,wx1,wz1,0,hcz); };               // Seiten immer gesichert (Schacht→Lane)
     for(let k=1;k<levels.length;k++) floorWithStair(levels[k].y, levelOpen[k]);          // jedes OG mit Podest-Kehre
-    // ── Dachboden (Estrich) auf eaveY: VOLL begehbar; niedriger Traufkopfraum = real ──
-    if(levels.length===1){ if(hasAttic) floorWithStair(eaveY,{front:false,back:true}); else rect(eaveY-0.05,-Wi,Wi,-Di,Di,'boden'); }   // Estrich nur bei nutzbarem Dachraum; flaches Dach → geschlossene Decke
-    else if(!LOFT){ rect(eaveY-0.05,-Wi,Wi,-Di,Di,'boden'); }                                          // ≥2 Geschosse ohne Speicherlauf (flaches Dach oder kein Stehraum am Austritt): geschlossene Estrich-Decke, kein Speicherloch/Kniestock
-    else { levelTop=eaveY; const L=LOFT;                                     // Estrich voll minus Loch der Speichertreppe (LOFT)
-      rect(eaveY-0.05,-Wi,L.x0,-Di,Di,'boden'); rect(eaveY-0.05,L.x1,Wi,-Di,Di,'boden');
-      rect(eaveY-0.05,L.x0,L.x1,-Di,L.z0,'boden'); rect(eaveY-0.05,L.x0,L.x1,L.z1,Di,'boden');
+    // ── Dachboden (Estrich) auf atticY: VOLL begehbar; niedriger Traufkopfraum = real ──
+    if(levels.length===1){ if(hasAttic) floorWithStair(atticY,{front:false,back:true}); else rect(atticY-0.05,-Wi,Wi,-Di,Di,'boden'); }   // Estrich nur bei nutzbarem Dachraum; flaches Dach → geschlossene Decke
+    else if(!LOFT){ rect(atticY-0.05,-Wi,Wi,-Di,Di,'boden'); }                                          // ≥2 Geschosse ohne Speicherlauf (flaches Dach oder kein Stehraum am Austritt): geschlossene Estrich-Decke, kein Speicherloch/Kniestock
+    else { levelTop=atticY; const L=LOFT;                                     // Estrich voll minus Loch der Speichertreppe (LOFT)
+      rect(atticY-0.05,-Wi,L.x0,-Di,Di,'boden'); rect(atticY-0.05,L.x1,Wi,-Di,Di,'boden');
+      rect(atticY-0.05,L.x0,L.x1,-Di,L.z0,'boden'); rect(atticY-0.05,L.x0,L.x1,L.z1,Di,'boden');
       const hclx=(L.x0+L.x1)/2,hclz=(L.z0+L.z1)/2,zR=(L.dir>0)?L.z0:L.z1; railSeg(L.x0,zR,L.x1,zR,hclx,hclz); railSeg(L.x0,L.z0,L.x0,L.z1,undefined,hclz); railSeg(L.x1,L.z0,L.x1,L.z1,undefined,hclz);   // BRÜSTUNG NUR WO KEIN LAUF AUSTRITT (wie floorWithStair): der Speicherlauf mündet in seiner Laufrichtung (dir > 0 an z1) — bis siedlung-k5-nah stand die Brüstung immer an z1 und schloss jeden Lauf nach +z
       // ── KNIESTOCK (Drempelwand) bei ±zBandTop: Barriere zum niedrigen Traufkopfraum → Spieler bleibt im Stehraum ≥1.9 m (schliesst den Trauf-Anstoss); Lücke an der Speichertreppenspur ──
-      [-zBandTop,zBandTop].forEach(zc=>{ if(!KNIESTOCK)return; const kH=1.15,y0=eaveY,yc=y0+kH/2, crosses=(zc>L.z0-0.3&&zc<L.z1+0.3);
+      [-zBandTop,zBandTop].forEach(zc=>{ if(!KNIESTOCK)return; const kH=1.15,y0=atticY,yc=y0+kH/2, crosses=(zc>L.z0-0.3&&zc<L.z1+0.3);
         (crosses?[[-Wi,L.x0-0.1],[L.x1+0.1,Wi]]:[[-Wi,Wi]]).forEach(([x0,x1])=>{ if(x1-x0<0.3)return; const xc=(x0+x1)/2,len=x1-x0;
           beam(g,xc,y0+0.05,zc,len,0.08,0.12,'holz'); beam(g,xc,y0+kH,zc,len,0.10,0.12,'holz'); beam(g,xc,yc,zc,len,kH-0.22,0.06,'lehm');
           for(let x=x0+0.12;x<=x1-0.1;x+=1.0)beam(g,x,yc,zc,0.10,kH,0.10,'holz'); addSolid(xc,yc,zc,len,kH,0.14,'kniestock'); }); }); }   // 3-seitig; Seiten-Brüstung OHNE Innenversatz → der Austritt in Laufrichtung bleibt frei für Körper
@@ -3300,7 +3306,7 @@
         if(t9<0.16&&jahr>1920&&rnd()<0.6) p.storeys=Math.max(p.storeys, 7+((rnd()*5)|0)); }
       else if(t9>0.74&&p.baujahr>1915&&rnd()<0.55) p.storeys=Math.max(p.storeys, 6+((rnd()*5)|0)); }
     if(staedtisch&&w>0.9&&p.storeys<4)p.storeys++; p.turmbau=0;
-    p.keller=(rnd()<0.35)?1:0; p.annexN=(rnd()<0.25)?1:0;
+    rnd(); p.keller=1; p.annexN=(rnd()<0.25)?1:0;                                            /*KELLER-GESETZ (siedlung.K1): JEDER Wohnbau traegt den Keller (Tuer → Keller → Dachboden) — der Wurf bleibt gezogen, der Rest des Plans byte-gleich; Turm, Kirche, Burg, Scheune streichen ihn unten*/
     p.arm=(n>=16&&w<0.72)?1:0;
     p.balcony=(w>0.95&&p.storeys>=2&&rnd()<0.5)?1:0;
     if(i>0){ const g2=rnd(); p.grundriss=(g2<(staedtisch?0.85:0.68))?'I':((g2<0.9)?'L':p.grundriss); }

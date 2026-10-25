@@ -19,7 +19,8 @@
 //       Kachel-Pflanze; der Hain der KI wächst weder dort noch im Grundriss eines Dorf-Hauses (Gegenprobe 150 m weiter: er
 //       wächst), jede Absage nennt die Lichtung. DER GENESIS-PLATZ: die Sohle liegt ≤ 0,3 m über dem Boden, die Lichtung ist
 //       der Platz des Rings (Tore + 4 m), ein Damm räumt den Hain aus seinen Boxen.
-//   W10 SPIELGANG: Tür, Keller, jeder Lauf bis zum Dachboden, auch am Spur-Rand — kein Hub > 0,3 m je Schritt, kein Tier im Haus
+//   W10 SPIELGANG: Tür, Keller, jeder Lauf bis zum Dachboden, auch am Spur-Rand — kein Hub > 0,3 m je Schritt, kein Tier im Haus;
+//       je Haus des Dorfs, und jeder Wohnbau (Wohnhaus, Gasthaus) geht ganz: Tür → Keller → Dachboden (HAUS-GANG, siedlung.K1)
 //   W9  DAS GRUND-DATUM (S4): je Box des Körper-Satzes (fachwerk `grundVon`) kein Büschel der Nah-Wiese, dessen Halme
 //       hineinreichen, keine Erde über der Diele; `--bild`: Halm- und Boden-Pixel je Box 0.
 //       ABBAU · PLAN · WAISE · ZUG · AUSSTATTUNG: der Grund fällt mit dem Bau, liegt vor seiner Hülle, trägt stets einen Bau;
@@ -171,6 +172,11 @@ const BASIS = {
         ["            maxCreatures: 20,", "            maxCreatures: 6,"],
     ],
     wand: [["-Math.SQRT1_2 &&", "-2 &&"]],
+    // W10 SPIELGANG (Haus-Gang): das Gesetzbuch vor siedlung.K1 — der Keller ein Wurf (35 %), kein Dachboden unter dem flachen Satteldach
+    hausgang: [
+        ["/fachwerk-core.js", " || (ROOFMODE==='sattel' && levels.length>=2)", ""],
+        ["/fachwerk-core.js", "rnd(); p.keller=1;", "p.keller=(rnd()<0.35)?1:0;"],
+    ],
     stab: [
         [
             "(ob ? 2 * Math.min(ob.hx, ob.hz) : Math.min(a.maxX - a.minX, a.maxZ - a.minZ)) < AnazhRealm.PLAYER_STAB;",
@@ -395,8 +401,12 @@ async function proben(phasen) {
         return null;
     };
     const FUSS = A.PLAYER_FOOT_OFFSET;
-    for (const e of P.has("haus") ? H.slice(0, 8) : []) {
-        const h = { typ: e.type, gierGrad: Math.round((((e.rotationY || 0) * 180) / Math.PI) % 360) };
+    for (const e of P.has("haus") ? H : []) {
+        const h = {
+            typ: e.type,
+            gierGrad: Math.round((((e.rotationY || 0) * 180) / Math.PI) % 360),
+            wohn: /^(wohnhaus|gasthaus)$/.test((e.studioOv || {}).rolle),
+        };
         o.haeuser.push(h);
         // die Stufe 0 holen: der Spieler steht am Haus, bis die Foundry die Hülle der Stufe 0 liefert
         stell(e.position.x, e.position.y + 3, e.position.z);
@@ -448,10 +458,10 @@ async function proben(phasen) {
             const w = welt(e, lx, lz);
             let kl = 0;
             for (let k = 0, ruhe = 0; ruhe < 10; k++) {
-                s.keys.w = !ruhe && k < 500 && Math.hypot(w.x - pm.position.x, w.z - pm.position.z) > 0.2;
+                let [dx, dz] = [w.x - pm.position.x, w.z - pm.position.z];
+                s.keys.w = !ruhe && k < 500 && Math.hypot(dx, dz) > 0.2;
                 if (!s.keys.w) ruhe++;
                 // wie ein Mensch: führt der Weg in eine Wand (≤ 45° neben ihrer Normalen), geht er an ihr entlang, nie hinein
-                let [dx, dz] = [w.x - pm.position.x, w.z - pm.position.z];
                 const dn = dx * s._wandKontaktNx + dz * s._wandKontaktNz;
                 if (
                     s._simZeit - s._wandKontaktAt < A._parkourGesetz().kontaktFrischeSec &&
@@ -515,15 +525,14 @@ async function proben(phasen) {
         // W4c DER GRUNDRISS DECKT DAS HAUS: die Solids des Gesetzbuchs liegen in der Fundament-Box des Eintrags (Mitte
         // {ox,oz} + halbe Maße {ex,ez}, haus-lokal) — Podest, Natur-Wand und Räumen lesen sie
         {
-            const f = e.fundament;
             let ueber = 0;
             for (const so of Hh.solids || []) {
                 ueber = Math.max(
                     ueber,
-                    (f.ox || 0) - f.ex - so.min[0],
-                    so.max[0] - ((f.ox || 0) + f.ex),
-                    (f.oz || 0) - f.ez - so.min[2],
-                    so.max[2] - ((f.oz || 0) + f.ez)
+                    (fu.ox || 0) - fu.ex - so.min[0],
+                    so.max[0] - ((fu.ox || 0) + fu.ex),
+                    (fu.oz || 0) - fu.ez - so.min[2],
+                    so.max[2] - ((fu.oz || 0) + fu.ez)
                 );
             }
             h.grundrissUeberM = Math.round(ueber * 100) / 100;
@@ -531,7 +540,6 @@ async function proben(phasen) {
         // W5 KOLLISION == OPTIK auf der Diele-Ebene: die Welt-Kapsel gegen die Gesetzbuch-Wand-Regel je Rasterpunkt
         {
             const STEP = A.PLAYER_STEP_UP;
-            const rW = A.PLAYER_WALL_RADIUS || 0.35;
             const fussY = 0.66; // haus-lokal knapp über der EG-Diele
             let gleich = 0;
             let n = 0;
@@ -544,7 +552,7 @@ async function proben(phasen) {
                         if (!(so.max[1] > fussY + STEP && so.min[1] < fussY + 2 * FUSS)) continue;
                         const qx = Math.max(so.min[0], Math.min(gx, so.max[0]));
                         const qz = Math.max(so.min[2], Math.min(gz, so.max[2]));
-                        if ((qx - gx) ** 2 + (qz - gz) ** 2 < rW * rW) {
+                        if ((qx - gx) ** 2 + (qz - gz) ** 2 < rK * rK) {
                             gesetzWand = true;
                             break;
                         }
@@ -554,7 +562,7 @@ async function proben(phasen) {
                     // Reihe ist nicht sein Gesetzbuch)
                     const pos = { x: w.x, z: w.z };
                     for (const bx of e.blockerAABBs || [])
-                        r._resolveCapsuleVsAABB(bx, pos, base + fussY, base + fussY + 2 * FUSS, rW, -Infinity);
+                        r._resolveCapsuleVsAABB(bx, pos, base + fussY, base + fussY + 2 * FUSS, rK, -Infinity);
                     const weltWand = Math.hypot(pos.x - w.x, pos.z - w.z) > 1e-3;
                     n++;
                     if (weltWand === gesetzWand) gleich++;
@@ -1819,15 +1827,12 @@ function urteil(o) {
     const P = new Set(o.phasen || ["haus", "sohle", "lichtung", "bau", "w4", "w4b", "w6", "grund"]);
     if (P.has("haus")) {
         const hs = o.haeuser.filter((h) => !h.fehler);
-        if (!(hs.length >= 6)) f.push(`Aufbau: ${hs.length} Häuser geprüft (Soll ≥ 6)`);
-        const gedreht = hs.filter(
-            (h) => Math.abs(((h.gierGrad % 90) + 90) % 90) > 5 && Math.abs(((h.gierGrad % 90) + 90) % 90) < 85
-        );
+        const gedreht = hs.filter((h) => Math.abs((((h.gierGrad % 90) + 90) % 90) - 45) < 40);
         if (!(gedreht.length >= 2)) f.push(`Aufbau: ${gedreht.length} gedrehte Häuser (Soll ≥ 2)`);
         const nichtL0 = hs.filter((h) => h.stufe !== 0 || h.huelle !== 0);
         if (nichtL0.length)
             f.push(`Aufbau: ${nichtL0.length} Häuser ohne Stufe 0 / Hülle 0 (${nichtL0.map((h) => h.typ).join(" ")})`);
-        const ohneSchwelle = hs.filter((h) => h.vorplatzUeberM === null || h.vorplatzUeberM === undefined);
+        const ohneSchwelle = hs.filter((h) => h.vorplatzUeberM == null);
         if (ohneSchwelle.length)
             f.push(`W1 Tür: ${ohneSchwelle.length} Häuser ohne Diele hinter der Schwelle im Gesetzbuch (Vorbedingung)`);
         const begraben = hs.filter((h) => h.vorplatzUeberM > 0.2);
@@ -1840,22 +1845,18 @@ function urteil(o) {
             f.push(
                 `W2 Diele: ${diele.length} Häuser mit dem Fuß neben der Diele (${diele.map((h) => h.typ + ":" + h.dieleCm + " cm").join(" ")})`
             );
-        const gang = hs.filter((h) => h.gang);
-        if (gang.length < 3 || !gang.some((h) => h.gang.keller) || !gang.some((h) => h.gang.dach))
-            f.push(`W10 Aufbau: ${gang.length} Gänge (Soll ≥ 3, mit Keller, mit Dachboden)`);
         const tier = hs.filter((h) => h.tiere && h.tiere.length);
         if (hs.some((h) => !h.saat)) f.push("W10 Saat blind");
         if (tier.length) f.push(`W10 Tier im Haus: ${tier.map((h) => h.typ + " " + h.tiere).join(" · ")}`);
-        const hub = gang.filter((h) => !(h.gang.hub <= 0.3));
+        const hub = hs.filter((h) => !(h.gang.hub <= 0.3));
         if (hub.length) f.push(`W10 Anti-Clip-Hub: ${hub.map((h) => h.typ + " " + h.gang.wo).join(" · ")}`);
-        const wand = gang.filter((h) => !(h.gang.wand > 0.5));
+        const wand = hs.filter((h) => !(h.gang.wand > 0.5));
         if (wand.length)
             f.push(`W10 Wand: ${wand.map((h) => h.typ + " " + h.gang.wand).join(" · ")} m geklettert (Soll > 0,5)`);
-        const zu = gang.filter((h) => h.gang.fehlt.length);
-        if (zu.length)
-            f.push(
-                `W10 Spielgang: ${zu.map((h) => h.typ + "@" + h.gierGrad + "° " + h.gang.fehlt.join(", ")).join(" · ")}`
-            );
+        // DER HAUS-GANG (siedlung.K1 Staffel 2): kein Ziel verfehlt, und jeder Wohnbau des Dorfs (≥ 6) geht ganz Tür → Keller → Dachboden
+        const zu = hs.filter((h) => h.gang.fehlt.length || (h.wohn && !(h.gang.keller && h.gang.dach)));
+        if (zu.length || hs.filter((h) => h.wohn).length < 6)
+            f.push(`W10 Spielgang: ${zu.map((h) => `${h.typ}@${h.gierGrad}° ${JSON.stringify(h.gang)}`).join(" · ")}`);
         const optik = hs.filter((h) => !(h.optikProzent >= 97));
         if (optik.length)
             f.push(
@@ -2205,6 +2206,7 @@ function zeile(o) {
                 kletter: ["haus", "W10 Spielgang"],
                 tierbau: ["haus", "W10 Tier im Haus"],
                 wand: ["haus", "W10 Wand"],
+                hausgang: ["haus", "W10 Spielgang"],
                 grundkeller: ["grund", "W9 Dichte"],
                 grundbueschel: ["grund", "W9 Büschel"],
                 abbau: ["grund", "W9 Abbau"],
