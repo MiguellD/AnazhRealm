@@ -387,7 +387,7 @@ function lauf(k) {
             const s0 = wache();
             if (k.spur) await window.__spurAn();
             // die Erst-Zeichnung (der EINE Ort in _configureRenderer): ihre Zähler über den Lauf
-            const ERST = ["bauN", "bauMs", "verschoben", "pipeAsync", "neubauN"], E = r._erstZeichnung;
+            const ERST = ["verschoben", "pipeAsync", "neubauN"], E = r._erstZeichnung;
             const erst0 = E && ERST.map((x) => E[x] || 0), probe = [];
             const tMess0 = performance.now();
             if (H) {

@@ -228,6 +228,8 @@ class AnazhRealm_siedlung_bauten {
                 this._lodSlotOcclusionRefresh(entry);
                 regung++;
             }
+            // DER STUFEN-VORLAUF (`_stufenVorlaufWahl`): unter dem Ladeschirm trägt der Baum seiner Art die L1
+            if (this._imStufenVorlauf(entry)) newLOD = 1;
             if (newLOD === entry._lodLevel) {
                 // Die Distanz-Wahl ist selbst die Karte: die Brücke ist keine mehr, die Karte blendet wie jede Fernstufe.
                 if (entry._bruecke) {
@@ -400,6 +402,7 @@ class AnazhRealm_siedlung_bauten {
                 desired = this._foundryLodBandPartner(entry, dist);
                 if (desired === undefined) return false; // die Höhen-Stufe lädt: das Band bleibt, wie es ist
                 if (desired === entry._lodLevel) desired = null; // defensiv: Partner nie == Primär
+                if (this._imStufenVorlauf(entry)) desired = null; // der Vorlauf hält seine L1 voll, ohne Partner
             }
         }
         const cur = Number.isFinite(entry && entry._lodBandLevel) ? entry._lodBandLevel : null;

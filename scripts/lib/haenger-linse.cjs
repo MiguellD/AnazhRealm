@@ -48,7 +48,9 @@ function haengerAn() {
         if (c) {
             try {
                 e.pass = window.__passName ? window.__passName(c.scene, c.camera) : "?";
-                e.klasse = window.anazhRealm._taeterKlasse(c.object);
+                // die Arena (G1) zeichnet für ihre Glieder: sie heißt nach dem ersten („haupt arena f:tanne:L1")
+                const g = c.object.isGeometrieArena && c.object.glieder[0];
+                e.klasse = (g ? "arena " : "") + window.anazhRealm._taeterKlasse(g || c.object);
             } catch {
                 e.pass = e.pass || "?";
             }
@@ -578,7 +580,7 @@ function haengerTabelle(a) {
     );
     if (a.erst)
         z.push(
-            `Erst-Zeichnung: ${a.erst.bauN} Knoten-Bauten im Pass (Σ ${a.erst.bauMs} ms) · ${a.erst.verschoben} auf den nächsten ` +
+            `Erst-Zeichnung: ${a.erst.verschoben} auf den nächsten ` +
                 `Aufruf verschoben · ${a.erst.pipeAsync} Pipelines asynchron · ${a.erst.offen} offen · ${a.erst.neubauN || 0} Neubauten ` +
                 `gezeichneter Objekte (im Frame)`
         );
