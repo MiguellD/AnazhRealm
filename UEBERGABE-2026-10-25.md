@@ -1,5 +1,7 @@
 # Übergabe 25.10.2026 (Stand 12:20 MEZ, Woche 91 %; Neustart des Limits 29.10. 18:00)
 
+> **Abgelöst als Einstieg durch `START-2026-10-29.md`** — diese Datei ist die Chronik des 25.10. (Nachträge in Zeitfolge).
+
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md. Danach diese Datei, dann `memory/woche-2410.md` (Nachträge 25.10.).
 
 ## Stand
