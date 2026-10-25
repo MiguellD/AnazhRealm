@@ -1,6 +1,6 @@
 // Stationen der Gruppe V (src/g5.js) — Welten und Wege. Format und Regeln: punkte/punkte.cjs (Kopf).
 // Erfasst: jedes Kriterium mit Punkten > 0 (fahrzeug.K3/K4, siedlung.K1, leib.K1/K4, halten.K1/K2), die Messschuld M36
-// (siedlung.K5) und was ein Zweig im Stau kippen soll (stadt-erwachen-2 siedlung.K5, halten-gesetz halten.K1/K3,
+// (siedlung.K5) und was ein Zweig im Stau kippen soll (stadt-erwachen-2 siedlung.K5, halten-gesetz halten.K1/K3, halten-k5 halten.K5,
 // teilen-sicher ultiversum.K5, gamepad-verben leib.K5; tore.K5 steht seit 24.10. ganz in fehlt: kein anderes Gerät). Was sich nicht als Station fassen lässt, steht in
 // `module.exports.fehlt` (befehl null, grund) — außerhalb der Liste, damit `run` der anderen Gruppen nicht an ihr bricht.
 "use strict";
@@ -821,6 +821,44 @@ const stationen = [
                 ? "1 = Flugbahn folgt Abschuss-Tempo und Schwerkraft (±5 % gegen die Parabel)"
                 : "2 = der Pfeil steckt im getroffenen Ding und bleibt über den Reload, Zug-Kraft aus dem Bogen-Gesetz",
     })),
+    // ───────── halten.K5 — Sturz, Tod und Wiederkehr als Zustand (halten-k5) ─────────
+    // gate:kampf-gefuehl --k5 (echter Renderer, ?holz=kienspan): Q13 fährt den Takt des Spiels selbst — fünf Stürze über den
+    // Leib-Löser (2 · 4 · 8 · 12 m und ein Wurf aus 4 m mit 8 m/s abwärts: der Schaden aus dem Aufprall-Tempo; ein fester Schaden
+    // je Sturz fällt an der Reihe, ein Höhen-Zähler am Wurf — S17), zwei Wölfe fallen bei 60 Hz mit Leerlauf und bei 15 Hz ohne
+    // (die Tod-Lage bei 0,6 s gleich), ein Wolf tötet den Spieler über den Biss-Weg, die Rückkehr am Genesis-Anker, verwundet
+    // speichern, Reload; der Abdruck (Ort, Inventar, Lebenswerte, Bindung eines Fuchses) vor dem Speichern gleicht dem nach dem
+    // Laden je Teil (S18: ohne Inventar ROT am Teil). An main 45c6aa19 ROT (swiftshader): Sturz 0 · 0 · 0 · 0 · 0 hp, Tod-Lage
+    // 53,8° gegen 0° (ohne Leerlauf steht der Leib), Abdruck f0bd7b3a8baf → bb9065e89f5f (Leben und Bindung fallen im Reload);
+    // am Zweig halten-k5 grün: 0 · 10,7 · 57,0 · 101,7 · 47,7 hp, 29,2° · 4,5 cm beide, 84864b15008e → 84864b15008e.
+    {
+        kriterium: "halten.K5",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        befehl: ["node", "scripts/diag-kampf-gefuehl.cjs", "--k5"],
+        env: { KAMPF_GEFUEHL_PORT: "{PORT}", LINSE_GPU: "hardware" },
+        gpu: true,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const l = lauf.stdout.split(/\r?\n/);
+            const q = l.find((x) => /^\s*(✅|❌) Q13 halten\.K5 Staffel 1/.test(x));
+            const z = l.find((x) => /^\s*\(Q13\) /.test(x));
+            if (!q || !z) return { gruen: false, zahl: "keine Zeile Q13 halten.K5 Staffel 1 (Exit " + lauf.exit + ")" };
+            const stumm = ["S17", "S18"].filter((k) => !l.some((x) => /^\s*✅/.test(x) && x.includes("SELBST-TEST (" + k + ")")));
+            const [, h1, h2, roh] = z.match(/\(Q13\) (\w+) → (\w+) (\{.*\})\s*$/) || [];
+            let K = null;
+            try { K = JSON.parse(roh); } catch (_e) { K = null; }
+            const f = (v, n = 1) => (Number.isFinite(v) ? v.toFixed(n) : "?");
+            const zahl = K
+                ? "Sturz 2 · 4 · 8 · 12 m · Wurf: " + K.sturz.map((x) => f(x.d)).join(" · ") + " hp (Aufprall " + K.sturz.map((x) => f(x.v)).join(" · ") +
+                  " m/s) · Tod-Lage 60 / 15 Hz " + K.lage.map(([w, y]) => f(w) + "° " + f(100 * y) + " cm").join(" / ") + " · Tod " + K.tod.q +
+                  ", Anker " + f(K.tod.anker) + " m · Abdruck " + h1 + " → " + h2
+                : "Q13-Zeile ohne Abdruck";
+            const rot = /❌/.test(q) ? " · ROT: " + q.split("Zustand ").slice(1).join("").trim() : "";
+            return { gruen: lauf.exit === 0 && /✅/.test(q) && !stumm.length, zahl: zahl + rot + (stumm.length ? " · Selbst-Test stumm: " + stumm.join(", ") : "") };
+        },
+        pfad: [...KAMPF, "koerper-core.js", "stamm/dirigent-takt.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js"],
+        quelle: "1 = Fall-Schaden aus dem Aufprall-Tempo, Tod und Wiederkehr am Ort mit Zustand (Inventar, Bindung) über Speichern, an einem Gerät",
+    },
     // ───────── fahrzeug.K1 — das Fahr-Gesetz: der Reifen mit Spitze (Staffel 1 Weg (a), fahrzeug-k1-reifen 2d01a8a7) ─────────
     // gate:fahr-leben K8 Reifen (--kern, Node): je Rezept und Achse die Seitenkraft des Kerns (`fahrKraefte`, dieselbe Funktion wie
     // Probefahrt und Welt) über den Schlupf 0,1–30°; das Urteil liest `REIFEN {achsen:[{wo, spitze, abfall}], hz, kostenUs}` —
