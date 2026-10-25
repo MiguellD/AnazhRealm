@@ -782,8 +782,15 @@ class AnazhRealm_speicher_welten {
     // DIE WELT IST EINE FUNKTION, KEIN SACK (speicher.K3, Gebot 7): was Saat und Gesetz setzen (`_ausGesetz`: der Wurf des
     // Felds, die Promotion der Streu), rechnet jeder Boot neu — der Stand trägt Werke, Taten und Leben, nie den Weg. Bis
     // speicher-k3 trug er jeden Wurf: 5 km Wanderung in 30 min hoben 443 auf 16 781 Bauten, den Stand von 0,2 auf 5,2 MB.
+    // Gemerkt an der Liste selbst, ihrer Länge und ihrem letzten Eintrag: der Bestand ändert sich nur durch `push` (die Geburt
+    // `spawnArchitecture`), `splice` (der Abbau) und eine neue Liste (das Laden) — gleiche drei, gleicher Bestand, und
+    // `_ausGesetz` steht vor der Geburt fest (der Filter über ~1 300 Einträge kostete kalt 0,5 ms je Sicherung).
     _standBauten() {
-        return (this.state.architectures || []).filter((a) => !a._ausGesetz);
+        const a = this.state.architectures || AnazhRealm.STAND_LEER;
+        const m = this._standBautenMemo;
+        if (m && m.liste === a && m.n === a.length && m.letzter === a[a.length - 1]) return m.bauten;
+        this._standBautenMemo = { liste: a, n: a.length, letzter: a[a.length - 1], bauten: a.filter((e) => !e._ausGesetz) };
+        return this._standBautenMemo.bauten;
     }
 
     // DIE STAND-TAFEL — die EINE Quelle des Feld-Satzes, in der Ordnung des Stands: je Feld [Schlüssel, Wert, Art].
