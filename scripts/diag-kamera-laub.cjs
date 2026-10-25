@@ -125,10 +125,11 @@ const quantil = (a, q) => {
 };
 // Kamera-Sprünge > 2 m im Rundgang: nie häufiger als am Vor-Stand
 const SPRUENGE_MAX = 4;
-// K4 DER GANG: geurteilt die Kugel (R) in Fels und Bau und die Nah-Pixel von Fels, Gelände und Rinde; Bau-Pixel stehen in der
-// Ausgabe (der offene Tür-Flügel trägt keinen Leib), ebenso die Kugel im Stamm (ab stammDickM): er hält den Arm nie, er wird
-// durchsichtig (`_kameraDurchsichtNode`). Der Spieler kommt heranM an den Anker, der Ruck p95 ≤ ruckM.
-const GANG = Object.freeze({ R: 0.25, nahJe: 6, gw: 32, gh: 18, stammDickM: 0.15, startM: 8, orbitMs: 6000, heranM: 6, ruckM: 0.02, nahRadien: { Fels: 0.25, Bau: 0.25, Rinde: 0.25, Gelände: 0.25 }, nahUrteil: ["Fels", "Gelände", "Rinde"] });
+// K4 DER GANG: geurteilt die Kugel (R) in Fels und Bau und die Nah-Pixel von Fels, Gelände, Rinde und Bau (der Bau gegen die
+// gezeichnete Gestalt: seit leib.K4 trägt der offene Tür-Flügel seinen Leib, `_fluegelLeib`); die Kugel im Stamm (ab stammDickM)
+// steht in der Ausgabe: er hält den Arm nie, er wird durchsichtig (`_kameraDurchsichtNode`). Der Spieler kommt heranM an den
+// Anker, der Ruck p95 ≤ ruckM.
+const GANG = Object.freeze({ R: 0.25, nahJe: 6, gw: 32, gh: 18, stammDickM: 0.15, startM: 8, orbitMs: 6000, heranM: 6, ruckM: 0.02, nahRadien: { Fels: 0.25, Bau: 0.25, Rinde: 0.25, Gelände: 0.25 } });
 const NINJA_WP = [
     [0, 7, 0.8],
     [0, 12.5, 1.8],
@@ -206,13 +207,13 @@ function urteilGang(G) {
             if (!(g.heran.d0 - g.heran.d1 >= GANG.heranM)) out.push(`Gang ${art}: der Spieler kommt nicht heran (${g.heran.d0} → ${g.heran.d1} m)`);
             const kugel = g.taeter.map((t) => Object.assign({}, t, { taeter: t.taeter.filter((n) => !n.startsWith("im Stamm")) })).filter((t) => t.taeter.length);
             if (kugel.length) out.push(`Gang ${art} (${g.typ}): die Kugel der Linse in ${kugel.length} von ${g.bilder} Bildern — ` + kugel.slice(0, 3).map((t) => `Bild ${t.bild} ${t.phase}: ${t.taeter} (Linse ${t.c}, Ziel ${t.ziel})`).join(" · "));
-            const nah = g.nah.map((t) => [t, GANG.nahUrteil.filter((k) => t.jeKlasse[k] > 0)]).filter(([, k]) => k.length);
+            const nah = g.nah.map((t) => [t, Object.keys(GANG.nahRadien).filter((k) => t.jeKlasse[k] > 0)]).filter(([, k]) => k.length);
             if (nah.length) out.push(`Gang ${art} (${g.typ}): Nah-Pixel in ${nah.length} Proben — ` + nah.slice(0, 3).map(([t, k]) => `Bild ${t.bild} ${t.phase}: ${k.map((x) => x + " " + pct(t.jeKlasse[x]))}`).join(" · "));
         }
     }
     const ruck = G.gaenge.flatMap((g) => g.ruck);
     if (!(ruck.length >= 100 && quantil(ruck, 0.95) <= GANG.ruckM)) out.push(`Gang: Ruck p95 ${ruck.length ? quantil(ruck, 0.95).toFixed(3) : "—"} m (Soll ≤ ${GANG.ruckM})`);
-    if (!(G.schmuggel > 0)) out.push("Schmuggel: ein Arm ohne Kollision bleibt ungenannt");
+    if (!(G.schmuggel > 0)) out.push("Schmuggel: ein Arm ohne Flügel-Leib bleibt ungenannt");
     return out;
 }
 function urteilNinja(N) {
@@ -698,15 +699,12 @@ async function leibGang(G) {
             return g;
         };
         for (const art of ["stamm", "fels", "haus"]) if (anker[art]) out.gaenge.push(await gang(art, anker[art]));
-        // DER ARM OHNE KOLLISION: der Wurf der Kugel trifft nie
-        const wurf = r._fieldRaycast;
-        r._fieldRaycast = function (sx, sy, sz, ex, ey, ez, o) {
-            return o && o.radius > 0 ? { hit: false, x: ex, y: ey, z: ez, nx: 0, ny: 1, nz: 0, t: 1 } : wurf.apply(this, arguments);
-        };
+        // DER ARM OHNE FLÜGEL-KOLLISION: der Wurf kennt den Tür-Flügel nicht — die Kugel geht durch das offene Blatt (Bau-Pixel)
+        r._fluegelBoxenVon = () => [];
         try {
-            out.schmuggel = (await gang("schmuggel", anker.haus)).taeter.length;
+            out.schmuggel = (await gang("schmuggel", anker.haus)).nah.filter((t) => t.jeKlasse.Bau > 0).length;
         } finally {
-            delete r._fieldRaycast;
+            delete r._fluegelBoxenVon;
         }
     } catch (e) {
         out.err = (e && e.stack) || String(e);
@@ -1169,17 +1167,17 @@ async function probe(arg) {
             const v = urteilNinja(bruch);
             check(`Selbst-Test K3: ‚${name}' → die Linse nennt „${soll}"`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
-        // DER GANG (K4): gesund (die Kugel im Stamm urteilt nicht) und je ein Bruch beim Namen — der Arm ohne Kollision ist ROT
+        // DER GANG (K4): gesund (die Kugel im Stamm urteilt nicht) und je ein Bruch beim Namen — der Arm ohne Flügel-Leib ist ROT
         const gg = (art, k) => Object.assign({ art, typ: art, bilder: 900, heran: { d0: 8.5, d1: 0.9 }, taeter: [], nah: [], ruck: Array(300).fill(0.002) }, k);
         const gangVon = (k) => Object.assign({ gaenge: [gg("stamm", { taeter: [{ phase: "orbit", taeter: ["im Stamm baum_kiefer"] }] }), gg("fels"), gg("haus")], schmuggel: 170 }, k);
         for (const [name, bruch, soll] of [
             ["gesund", {}, null],
             ["ein Arm ohne Kollision", { gaenge: [gg("stamm"), gg("fels"), gg("haus", { taeter: [{ bild: 660, phase: "orbit", taeter: ["in haus_alemannisch"] }] })] }, "Gang haus (haus): die Kugel der Linse in 1 von 900 Bildern — Bild 660 orbit: in haus_alemannisch"],
-            ["Fels-Pixel", { gaenge: [gg("stamm"), gg("fels", { nah: [{ bild: 12, phase: "orbit", jeKlasse: { Fels: 0.07 } }] }), gg("haus")] }, "Gang fels (fels): Nah-Pixel in 1 Proben — Bild 12 orbit: Fels 7.0 %"],
+            ["Fels- und Bau-Pixel", { gaenge: [gg("stamm"), gg("fels", { nah: [{ bild: 12, phase: "orbit", jeKlasse: { Fels: 0.07, Bau: 0.03 } }] }), gg("haus")] }, "Gang fels (fels): Nah-Pixel in 1 Proben — Bild 12 orbit: Fels 7.0 %,Bau 3.0 %"],
             ["Ruck", { gaenge: ["stamm", "fels", "haus"].map((a) => gg(a, { ruck: Array(300).fill(0.05) })) }, "Gang: Ruck p95 0.050 m"],
             ["nicht heran", { gaenge: [gg("stamm", { heran: { d0: 8.5, d1: 7.9 } }), gg("fels"), gg("haus")] }, "Gang stamm: der Spieler kommt nicht heran"],
             ["kein Haus", { gaenge: [gg("stamm"), gg("fels")] }, "Gang haus: kein Anker"],
-            ["blind für den Arm ohne Kollision", { schmuggel: 0 }, "Schmuggel: ein Arm ohne Kollision bleibt ungenannt"],
+            ["blind für den Arm ohne Flügel-Leib", { schmuggel: 0 }, "Schmuggel: ein Arm ohne Flügel-Leib bleibt ungenannt"],
         ]) {
             const v = urteilGang(gangVon(bruch));
             check(`Selbst-Test K4: ‚${name}' → ${soll || "0 Täter"}`, soll ? v.some((t) => t.startsWith(soll)) : !v.length, v.join(" · "));
@@ -1360,9 +1358,9 @@ async function probe(arg) {
             const n = (a) => JSON.stringify(a.reduce((h, k) => ((h[k] = (h[k] || 0) + 1), h), {}));
             console.log(`  ${g.art.padEnd(5)} ${g.typ}: ${g.bilder} Bilder · heran ${g.heran.d0} → ${g.heran.d1} m · Kugel ${n(g.taeter.flatMap((t) => t.taeter.map((x) => t.phase + ": " + x)))} · Nah-Pixel ${n(g.nah.flatMap((t) => Object.keys(t.jeKlasse).map((x) => t.phase + ": " + x)))} · Ruck p95 ${quantil(g.ruck, 0.95).toFixed(4)} höchstens ${Math.max(...g.ruck).toFixed(3)} m`);
         }
-        console.log(`  der Arm ohne Kollision: ${gang && gang.schmuggel} Bilder mit Täter`);
+        console.log(`  der Arm ohne Flügel-Leib: ${gang && gang.schmuggel} Proben mit Bau`);
         const v = urteilGang(gang);
-        check("K4 der Gang in Third: die Kugel der Linse nie in Fels oder Bau, 0 Nah-Pixel von Fels, Gelände und Rinde, Ruck p95 ≤ 0,02 m, die Linse nennt den Arm ohne Kollision", v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
+        check("K4 der Gang in Third: die Kugel der Linse nie in Fels oder Bau, 0 Nah-Pixel von Fels, Gelände, Rinde und Bau, Ruck p95 ≤ 0,02 m, die Linse nennt den Arm ohne Flügel-Leib", v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
     }
     if (TEILE.includes("ninja")) {
         const posen = (nin && nin.posen) || [];

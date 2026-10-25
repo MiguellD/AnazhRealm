@@ -848,15 +848,9 @@ class AnazhRealm_siedlung_ort {
         if (!Array.isArray(slots) || !slots.length) return;
         if (rec._fluegelSrc !== slots) {
             rec._fluegelSrc = slots;
-            rec._fluegel = [];
-            const groups = this.state.archInstanceGroups;
-            if (groups) {
-                for (const s of slots) {
-                    const g = groups.get(s.key);
-                    const t = s.tuer || (g && g.tuer);
-                    if (g && t) rec._fluegel.push({ g, ref: s, tuer: t });
-                }
-            }
+            // die Flügel der Stufe sammelt ihr Leib, wo die Slots entstehen (`_fluegelLeib`)
+            if (entry._fluegelSlots !== slots) this._fluegelLeib(entry);
+            rec._fluegel = entry._fluegel;
             // DORF-ERLEBNIS — Haus-Recs starten in der GEBACKENEN Offen-Pose
             // (rec._fluegelStart = Gesetz-Winkel): die Tür schliesst beim ersten
             // Fern-Tick WEICH statt zu springen. Tore (gebacken zu) stehen beim ersten Tick SOFORT im Ziel (K43-2): ihre
@@ -901,6 +895,7 @@ class AnazhRealm_siedlung_ort {
             f.g.mesh.instanceMatrix.needsUpdate = true;
             f.g.mesh.boundingSphere = null;
         }
+        this._fluegelLeib(entry, true); // der Leib folgt dem Schwenk (der Kamera-Wurf `_fieldRaycast` liest ihn)
     }
 
     // ═══ KAMIN-RAUCH ═══

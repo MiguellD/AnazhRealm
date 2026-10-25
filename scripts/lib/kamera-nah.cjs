@@ -16,8 +16,9 @@
 //
 // DER ORTS-SPEICHER: die Szene ruht zwischen den Stellungen eines Orts (kein Takt) — die Welt-Dreiecke der Region (o.ort:
 // { id, x, z, r }) werden EINMAL gerechnet und in 2-m-Zellen gelegt; je Stellung fragt die Linse nur die Zellen der Nah-Kugel.
-// Der Stoff (und seine Maske) wird je Stellung frisch gelesen. Was sich bewegt (`o.dyn`: die id des Wagens), rechnet sie je
-// Stellung neu; `o.neu` verwirft den Speicher.
+// Der Stoff (und seine Maske) wird je Stellung frisch gelesen. Was sich bewegt (`o.dyn`: die id des Wagens) und was sich dreht
+// (der Tür- und Tor-Flügel, leib.K4: im Speicher stand er in der Pose des ersten Schusses), rechnet sie je Stellung neu;
+// `o.neu` verwirft den Speicher.
 "use strict";
 
 // Die Seiten-Funktion (als Quelle injiziert): o = { radien: { Klasse: m }, gw, gh, ort, dyn, neu } — Täter ist eine Fläche
@@ -240,9 +241,11 @@ function nahDeckungInSeite(o) {
             fn(obj, i);
         }
     };
+    // was sich dreht, steht nie im Speicher: der Tür- und Tor-Flügel (seine Gruppe trägt `tuer`, `_tickTorFluegel`)
+    const dreht = (obj) => !!(st.archInstanceGroups.get(obj.userData.archInstanceKey) || {}).tuer;
     const dynamisch = (obj, inst) => {
         const e = eintragVon(obj, inst);
-        return !!(e && o.dyn != null && e.id === o.dyn);
+        return dreht(obj) || !!(e && o.dyn != null && e.id === o.dyn);
     };
     // ── DER ORTS-SPEICHER ──
     const ZELLE = 2;
@@ -347,13 +350,12 @@ function nahDeckungInSeite(o) {
         else uvt.push(0, 0, 0, 0, 0, 0);
         meta.push(me);
     };
-    if (o.dyn != null)
-        st.scene.traverseVisible((obj) => {
-            if (!zaehlt(obj)) return;
-            jeInstanz(obj, kugel, (ob, i) => {
-                if (dynamisch(ob, i)) legeDreiecke(ob, i, inKugel, sammleNah);
-            });
+    st.scene.traverseVisible((obj) => {
+        if (!zaehlt(obj) || (o.dyn == null && !dreht(obj))) return;
+        jeInstanz(obj, kugel, (ob, i) => {
+            if (dynamisch(ob, i)) legeDreiecke(ob, i, inKugel, sammleNah);
         });
+    });
     // die Maske je Stoff, frisch gelesen (ein Schmuggel nimmt sie)
     const maskeVon = new Map();
     const maskeArt = (me) => {
@@ -624,10 +626,7 @@ function nahDeckungInSeite(o) {
         deckung: rund(deckung),
         jeKlasse: kl,
         taeter: nm,
-        dreiecke: nT,
         taeterDreiecke: meta.filter((me) => TAETER[me.k.klasse]).length,
-        speicher: C.metas.length,
-        atlas: !!atlasA,
         auge: [+E.x.toFixed(2), +E.y.toFixed(2), +E.z.toFixed(2)],
         fremd: meta.some((me) => maskeArt(me) === "fremd"),
         ziel: zielOut,

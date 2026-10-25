@@ -2519,10 +2519,14 @@ class AnazhRealm_gelaende_chunks {
                     // V18.464: + _blockerReach (Rand-Parts großer Bauwerke, s. _stepCharacterStructures)
                     const rcCull = 80 + (e._blockerReach || 0);
                     if (Math.abs(e.position.x - sx) > rcCull || Math.abs(e.position.z - sz) > rcCull) continue;
+                    // DER STRAHL KENNT JEDE GEZEICHNETE GESTALT (leib.K4): nach den Boxen des Eintrags seine Flügel, wie das Bild
+                    // sie zeigt (`_fluegelBoxenVon`: der Tür- und Tor-Flügel als Instanz) — in der Ordnung danach
                     const boxes = e.blockerAABBs;
+                    const fl = this._fluegelBoxenVon(e);
+                    const nB = boxes.length;
                     const seq = e._blockerSeq;
-                    for (let bi = 0; bi < boxes.length; bi++) {
-                        const bx = boxes[bi];
+                    for (let bi = 0, n = nB + fl.length; bi < n; bi++) {
+                        const bx = bi < nB ? boxes[bi] : fl[bi - nB];
                         if (durchPflanzen && bx.pflanze === true) continue;
                         if (
                             bx.maxX < qx0 ||
