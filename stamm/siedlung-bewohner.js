@@ -378,6 +378,7 @@ class AnazhRealm_siedlung_bewohner {
         const h0 = this._koerperBodenUnter(x, NaN, z);
         const h = Number.isFinite(h0) ? this._bewohnerTritt(x, z, h0, h0) : 0;
         g.position.set(x, h + AnazhRealm.PLAYER_FOOT_OFFSET * b.groesse, z);
+        b.grundH = undefined; // der Grund des Schritts liest neu
     }
 
     // DER SATZ EINER GESTALT (der EINE Gang-Satz, `_gangSatz` — Lehre 23: die Kosten der Menge hängen nie an der Kopfzahl): die
@@ -1184,14 +1185,21 @@ class AnazhRealm_siedlung_bewohner {
                 rest = 0;
             }
         }
-        // DER GRUND JE SCHRITT (Lehre 22: Körper stehen auf dem Gesetz): der Boden unter dem Körper an (x, z), ab seiner Sohle
-        // (`_koerperBodenUnter`, nie das Dach der Höhle; der Feld-Scan endet bis `BEWOHNER.sohleM` unter der Kante), und die
-        // Stufe darauf (`_bewohnerTritt`). Bis mensch.K3 Staffel 2 las der Schritt ihn je halben Meter neu und trug dazwischen
-        // den letzten: am Hang der Stadt stand der Gehende 1 % der Takte über 57 mm, bis 298 mm im Boden.
+        // DER GRUND DES SCHRITTS (Lehre 22: Körper stehen auf dem Gesetz): der Boden unter dem Körper (`_koerperBodenUnter`, ab
+        // seiner Sohle — nie das Dach der Höhle; der Feld-Scan endet bis `BEWOHNER.sohleM` unter der Kante), je halben Meter
+        // neu und je Schritt, wo eine Box des Blocker-Netzes in seine Reichweite kommt — dort urteilt die Wand an seiner Sohle;
+        // die Stufe darauf trägt `_bewohnerTritt`. Bis mensch.K3 Staffel 2 trug auch dort der Grund des letzten halben Meters:
+        // am Hang neben dem Sockel der Laterne #15942 stand der Gehende tiefer, als seine Wand ihn fragte.
         const fuss = AnazhRealm.PLAYER_FOOT_OFFSET * b.groesse;
         const sohle = g.position.y - fuss;
-        const h = this._koerperBodenUnter(x, sohle, z);
-        g.position.set(x, this._bewohnerTritt(x, z, sohle, Number.isFinite(h) ? h : sohle) + fuss, z);
+        const kand = this._bewohnerWandKand || (this._bewohnerWandKand = []);
+        kand.length = 0;
+        this._blockerNahe(x, z, AnazhRealm.PLAYER_WALL_RADIUS + 0.25, 0, kand);
+        if (kand.length || !(b.grundH !== undefined && (x - b.grundX) ** 2 + (z - b.grundZ) ** 2 < 0.25)) {
+            const h = this._koerperBodenUnter(x, sohle, z);
+            [b.grundX, b.grundZ, b.grundH] = [x, z, Number.isFinite(h) ? h : sohle];
+        }
+        g.position.set(x, this._bewohnerTritt(x, z, sohle, b.grundH) + fuss, z);
         if (rx || rz) {
             const TC = globalThis.__tetrapodaCore;
             const om = TC.STEUER_GESETZ.wende * Math.sqrt(TC.GANG_GESETZ.g / b.beinL) * dt;

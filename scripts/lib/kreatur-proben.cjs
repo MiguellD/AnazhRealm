@@ -102,10 +102,7 @@ async function kreaturProben(r, T, opts) {
         for (let k = 0; k < 40; k++) {
             const x = P0.x + dx + (k % 8) * 3,
                 z = P0.z + dz + Math.floor(k / 8) * 3;
-            if (r._landAt(x, z)) {
-                const h = r.getTerrainHeightAt(x, z);
-                return { x, y: (Number.isFinite(h) ? h : 0) + 0.5, z };
-            }
+            if (r._landAt(x, z)) return neben(x, z);
         }
         return { x: P0.x + dx, y: P0.y, z: P0.z + dz };
     };
@@ -165,9 +162,7 @@ async function kreaturProben(r, T, opts) {
     const feldOhneHoehle = (dx, dz) =>
         spirale(dx, dz, 30, 10, (x, z) => {
             // die EINE Nässe am Körper (kein stiller Wächter: fehlt sie, bricht der Lauf)
-            if (r._nassAt(x, z) || !ohneHoehle(x - 10, z - 8, x + 35, z + 35)) return null;
-            const h = r.getTerrainHeightAt(x, z);
-            return { x, y: (Number.isFinite(h) ? h : 0) + 0.5, z };
+            return r._nassAt(x, z) || !ohneHoehle(x - 10, z - 8, x + 35, z + 35) ? null : neben(x, z);
         });
     // DER ORT NEBEN DEM SPIELER auf dem Land: die Höhe des Spielers ist am Hang nicht die des Tiers
     const neben = (x, z) => {
@@ -343,7 +338,7 @@ async function kreaturProben(r, T, opts) {
                 }
             }
             const schlupf = wegLeib > 0 ? Math.round((wegFuss / wegLeib) * 1000) / 1000 : null;
-            return { schlupf, wegLeib: Math.round(wegLeib * 10) / 10, spuren: spuren.size };
+            return { schlupf, wegLeib: Math.round(wegLeib * 10) / 10 };
         };
         // eine Lücke (ein neues Gang-Fenster): kein Paar über sie hinweg
         return { messen, schlupf, luecke: () => n++ };
@@ -1333,8 +1328,7 @@ async function kreaturProben(r, T, opts) {
                     }
             );
         r.setGameMode("frieden");
-        if (s.player.emotions)
-            Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0.9, chaos: 0 });
+        ruhigSpieler({ peace: 0.9 });
         const art = {};
         const o = land(30, 30);
         const probe = (seele, bs) => {
@@ -1408,8 +1402,7 @@ async function kreaturProben(r, T, opts) {
     // und Spieler-Kapsel, am Ende der Abstand der Mitten gegen die Körper-Kugeln ──
     await buehne("abstand", async (restore) => {
         r.setGameMode("frieden");
-        if (s.player.emotions)
-            Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0.9, chaos: 0 });
+        ruhigSpieler({ peace: 0.9 });
         if (taeter === "abstand") {
             // der alte Defekt: der Zug der Herde je Glied ab 1 m als Summe (der Körper zählt nicht), keine Kontakt-Lösung
             const K = A._steuerGesetz();
