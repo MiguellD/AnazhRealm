@@ -1,7 +1,7 @@
 // Stationen der Gruppe V (src/g5.js) — Welten und Wege. Format und Regeln: punkte/punkte.cjs (Kopf).
 // Erfasst: jedes Kriterium mit Punkten > 0 (fahrzeug.K3/K4, siedlung.K1, leib.K1/K4, halten.K1/K2), die Messschuld M36
 // (siedlung.K5) und was ein Zweig im Stau kippen soll (stadt-erwachen-2 siedlung.K5, halten-gesetz halten.K1/K3, halten-k5 halten.K5,
-// teilen-sicher ultiversum.K5, gamepad-verben leib.K5; tore.K5 steht seit 24.10. ganz in fehlt: kein anderes Gerät). Was sich nicht als Station fassen lässt, steht in
+// teilen-sicher ultiversum.K5, gamepad-verben leib.K5, leib-k2-fuss leib.K2; tore.K5 steht seit 24.10. ganz in fehlt: kein anderes Gerät). Was sich nicht als Station fassen lässt, steht in
 // `module.exports.fehlt` (befehl null, grund) — außerhalb der Liste, damit `run` der anderen Gruppen nicht an ihr bricht.
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
@@ -541,6 +541,64 @@ const stationen = [
         },
         pfad: LATENZ,
         quelle: "2 = jedes Verb (gehen, springen, schwingen, einsteigen), beide Geräte",
+    },
+
+    // ───────── leib.K2 — der Fuß steht (leib-k2-fuss) ─────────
+    {
+        kriterium: "leib.K2",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // gate:koerper-stand K8 mit --bild (die Welt zeichnet auf der Karte, Rezept linse; derselbe Befehl läuft headless auf
+        // swiftshader, dann ohne LINSE_GPU): die Sohlen-Fläche von Knöchel und Zehe im Fuß-Lock gegen das gezeichnete Mesh
+        // (`__gezeichnet` und die Dreiecke der Stufen) — die Rollen fuss (längs der Höhenlinie), falllinie (hinauf und hinab)
+        // und stufe (zehn Stufen, Steigung 0,17 m, hinauf und hinab) an Mess-Wiese und 25°-Hang, je ≥ 200 Kontakte; die
+        // Steckenbleiber über alle sechs Gänge (je halbe Sekunde mit gehaltener Taste < 15 cm voran, oder das Ende nie erreicht).
+        // Das Urteil liest nur den Fuß aus dem JSON — die übrigen Rollen der Linse richten gelaende.K5.
+        befehl: ["node", "scripts/diag-koerper-stand.cjs", "--k8", "--bild"],
+        env: { KOERPER_STAND_PORT: "{PORT}", KOERPER_STAND_JSON: "{AUS}", LINSE_GPU: "hardware" },
+        gpu: true,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            const k = j && j.k8;
+            if (!k || !k.hang || !k.wiese) return { gruen: false, zahl: "kein K8 der Linse (Exit " + lauf.exit + ")" };
+            const teile = [
+                ["hang", k.hang.fuss],
+                ["falllinie", k.hang.falllinie],
+                ["treppe hang", k.hang.stufe],
+                ["treppe wiese", k.wiese.stufe],
+            ];
+            const rot = [];
+            for (const [n, t] of teile)
+                if (!t || !(t.n >= 200) || !(t.p95 <= 3)) rot.push(n + " p95 " + (t ? t.p95 : "?") + " cm an " + (t ? t.n : 0) + " Kontakten");
+            const gaenge = ["wiese", "hang"].flatMap((o) => ["fuss", "falllinie", "stufe"].map((r) => k[o][r] || {}));
+            const stecken = gaenge.reduce((a, t) => a + (t.stecken || 0), 0);
+            if (gaenge.some((t) => !Number.isFinite(t.stecken))) rot.push("ein Gang ohne Steckenbleiber-Zahl");
+            if (stecken) rot.push(stecken + " Steckenbleiber");
+            if (/^\[welt-boot\] FEHLER klasse:.*zeichnet nie/m.test(lauf.stdout)) rot.push("die Linse zeichnet nie (welt-boot: Rezept null)");
+            const zahl =
+                teile.map(([n, t]) => n + " " + (t ? t.p95 + " (n " + t.n + ")" : "?")).join(" · ") +
+                " cm p95 · Steckenbleiber " + stecken + (rot.length ? " — ROT: " + rot.join(" · ") : "");
+            return { gruen: !rot.length, zahl };
+        },
+        pfad: [
+            "stamm/koerper-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "koerper-core.js",
+            "tetrapoda-core.js",
+            "foundry-core.js",
+            "foundry-bruecke.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "spec/profiband/haushalt.json",
+            "scripts/diag-koerper-stand.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "1 = Fuß p95 ≤ 3 cm am 25°-Hang und auf Stufen, 0 Steckenbleiber auf dem Spielgang, an einem Gerät",
     },
 
     // ───────── leib.K4 — die Kamera zu Fuß ─────────
