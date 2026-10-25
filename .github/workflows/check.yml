@@ -547,7 +547,7 @@ jobs:
               run: npm run gate:takt-atem
 
             - name: Volle-Bühne-Prädikat (W2 — Kriterium 2 wird messbar)
-              if: matrix.gruppe == 17
+              if: matrix.gruppe == 18
               # „Volle Bühne" als Prädikat aus kanonischen Quellen (Ring am Ziel · Gras/Wasser leer ·
               # die Streu steht: `_streuWartet` 0, keine Region in Reichweite fehlt, wartet oder trägt
               # eine offene Scheibe · Bibliothek warm · Impostoren idle · Nebel offen) + Zeitleiste
@@ -740,7 +740,7 @@ jobs:
               run: npm run gate:stand-takt
 
             - name: Terrain-Portal bootet im Display-Modus (P2 — die Shell liest foundry-core-Globals)
-              if: matrix.gruppe == 16
+              if: matrix.gruppe == 18
               # P2 Kern-Split: der Studio-Generator lebt jetzt in foundry-core.js (verschoben aus
               # phytogenesis.js), die Shell liest seine Top-Level-Globals. Beweist, dass das Portal im vollen
               # Display-Modus (Renderer+Welt+UI, nicht ?asset-foundry) ohne page-error bootet — ein
@@ -755,7 +755,7 @@ jobs:
               run: npm run gate:foundry-deadlock
 
             - name: Fernwald (der gesetzte Wald ist jenseits der Mesh-Zone seine Karte, kein Satz, kein Pop)
-              if: matrix.gruppe == 12
+              if: matrix.gruppe == 4
               # Studio-Vertrag B2c fernform "karte": bis 05.10. trug jeder gesetzte Baum jenseits des Cull-Radius
               # einen Kegel-und-Lappen-Satz im Welt-March (glatte, gestreifte, einfarbig hellgruene Ellipsoide,
               # 895 an der Mess-Wiese). Beweist headless: jedes Karten-Ding der Karten-Zone traegt seine Karte
@@ -1193,7 +1193,7 @@ jobs:
               run: node scripts/diag-regler-wirkt.cjs --teil=3
 
             - name: Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)
-              if: matrix.gruppe == 8
+              if: matrix.gruppe == 9
               # DER CROSSFADE-BEWEIS, dreiteilig: (Selbst-Test) verfälschte phyto-core-Kopien machen
               # die Linse rot (nicht vakuös); (a) Node-pur: __phytoCore.lodCrossfadeMask == die per
               # Regex geparste foundry-core-GLSL (FIX v37 — Rinde XOR-Partition, Laub überlappende
@@ -1310,14 +1310,14 @@ jobs:
               run: npm run gate:v1-pfad
 
             - name: Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)
-              if: matrix.gruppe == 18
+              if: matrix.gruppe == 12
               # Die Defekte der sichtbaren Leben-Schau 07.10. auf dem Weg Satz/Werkstatt -> stehendes Werk, je beim Namen,
               # im echten Boot (headless, foundry-ON); L-WERKSTATT faehrt echte Eingaben (Tasten, Klicks, Rad) und zaehlt sie
               # am Ereignis-Strom (<= 3 bis zum stehenden Werk); der Selbsttest bricht Verdikte und Wand je einzeln.
               run: npm run gate:werkstatt-weg
 
             - name: Die Kamera-Laub-Linse (K06 - Laub, Strauch und Fels vor der Linse, die Nah-Kugel der Durchsicht)
-              if: matrix.gruppe == 12
+              if: matrix.gruppe == 8
               # An vier Orten der Leben-Schau 2 je Pflanze acht Stellungen zu Fuß, im Ritt und im Ich-Auge: die Nah-Deckung
               # des Schirms je Täter-Klasse (scripts/lib/kamera-nah.cjs); der eingeschmuggelte Laub-Stoff und Fels müssen beim
               # Namen fallen, der Selbsttest nennt jeden Bruch und die statische Wand feuert am Vor-Stand.
@@ -1334,7 +1334,7 @@ jobs:
               run: npm run gate:kamera-leib
 
             - name: Die Ankunfts-Linse (Welle L Folge - Ladeschirm, Fadenkreuz, Hilfe, Chat-Taste, Start-Gurt, Kamera im Baum, Dorf vor dir)
-              if: matrix.gruppe == 14
+              if: matrix.gruppe == 5
               # Die Defekte der sichtbaren Leben-Schau 07.10. auf den v1-Schritten 1-2, je beim Namen: jede Probe ruft den
               # Chokepoint selbst im echten Boot (headless, foundry-ON); der Selbsttest nennt jeden Befund-Zustand und
               # die statische Wand feuert am Vor-Stand.
@@ -1385,7 +1385,7 @@ jobs:
               run: npm run gpu-lens
 
             - name: Nah-Linse (echter Renderer — kein Analog-Satz diesseits der Nah-Grenze 64 m)
-              if: matrix.gruppe == 15
+              if: matrix.gruppe == 18
               # Nah und mittel ist das Studio-Mesh die Gestalt, das Analog-Feld trägt erst jenseits ANALOG_NAH_M. Fährt
               # den ECHTEN Renderer (swiftshader) an der Mess-Wiese und liest `_analogZensus` (jeder zeichnende Satz
               # < 64 m beim Namen: Klasse · Träger · Abstand · seit wann · warum kein Mesh; ein hängender Schwund zählt):

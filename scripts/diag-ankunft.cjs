@@ -420,7 +420,7 @@ async function probe(arg) {
     await tick(30, 30);
     // ── L2a: das erste Weltbild ──
     try {
-        const m = { gestartet: false, faelle: {}, ohneFall: {} };
+        const m = { gestartet: false, faelle: {}, ohneFall: {}, ...window.__ladeHtml };
         out.lade = m;
         m.terme = r.constructor.WELTBILD_TERME ? Array.from(r.constructor.WELTBILD_TERME) : null;
         const ls = document.getElementById("ladeschirm");
@@ -1892,21 +1892,23 @@ async function probe(arg) {
     for (const [name, ok, detail] of wand()) check(name, ok, detail);
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     await nullRenderer(page, { foundry: true });
+    // Der statische Ladeschirm (vor dem Spiel): sichtbar, über allem — gelesen im Ereignis DOMContentLoaded, nie danach (ein
+    // schneller Boot ließ ihn weichen, ehe das Protokoll fragte); L2a trägt den Befund
+    await page.evaluateOnNewDocument(() =>
+        document.addEventListener("DOMContentLoaded", () => {
+            const l = document.getElementById("ladeschirm");
+            window.__ladeHtml = l ? { imHtml: true, htmlVersteckt: !!l.hidden, zIndex: +getComputedStyle(l).zIndex || 0 } : { imHtml: false };
+        })
+    );
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
-    // Der statische Ladeschirm (vor dem Spiel): sichtbar, über allem
-    const ladeHtml = await page.evaluate(() => {
-        const l = document.getElementById("ladeschirm");
-        return l ? { imHtml: true, htmlVersteckt: !!l.hidden, zIndex: +getComputedStyle(l).zIndex || 0 } : { imHtml: false };
-    });
     // Der KI-Endpunkt der D6-Probe: ein Port, auf dem nichts lauscht.
     const out = await page.evaluate(probe, { kiPort: PORT + 3 });
     await browser.close();
     server.close();
-    Object.assign(out.lade || (out.lade = {}), ladeHtml);
 
     const zeige = (kurz, name, m, urteil, zeile) => {
         const mm = m || {};

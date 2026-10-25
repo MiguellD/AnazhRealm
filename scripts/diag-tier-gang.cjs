@@ -17,7 +17,7 @@
 //   über die Schwelle, die Linse feuert; die Zeile ohne die Schwere der Welt → die Schwere-Wand feuert.
 //   node scripts/diag-tier-gang.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.TIER_GANG_PORT) || 4449;
 const SELBST = process.argv.includes("--selftest");
@@ -516,7 +516,6 @@ const GANG = (k) => {
     await new Promise((res) => server.listen(PORT, res));
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
-    page.setDefaultTimeout(280000);
     page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
     await nullRenderer(page);
     let rot = 0;
@@ -543,12 +542,9 @@ const GANG = (k) => {
         if (!NUR_STUDIO) {
             await page.evaluateOnNewDocument(`window.__schlupf = ${SCHLUPF};`);
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
-            await warteAufWelt(page, 120000);
-            await page.waitForFunction(
-                () => window.__tetrapodaCore && typeof window.__tetrapodaCore.gangSchritt === "function",
-                {
-                    timeout: 60000,
-                }
+            // die Welt und ihr Gang-Gesetz sind da: das EINE Warten ohne Frist (ein hängender Boot steht in der Stall-Akte)
+            await page.evaluate(() =>
+                window.__weltDa(() => window.__tetrapodaCore && typeof window.__tetrapodaCore.gangSchritt === "function")
             );
             const zeilen = [];
             for (const seele of Object.values(LABOR_WELT)) {
@@ -629,22 +625,21 @@ const GANG = (k) => {
         const sb = await starteBrowser({ art: "linse", frist: 300000 });
         try {
             const sp = await sb.newPage();
-            sp.setDefaultTimeout(280000);
             sp.on("pageerror", (e) => console.log("[STUDIO-PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
             await sp.evaluateOnNewDocument(`window.__schlupf = ${SCHLUPF};`);
             await sp.goto(`http://127.0.0.1:${PORT}/worlds/koerperstudio/index.html`, {
                 waitUntil: "domcontentloaded",
                 timeout: 240000,
             });
+            // das Labor steht, wenn sein Spiel-Modus geladen ist — ohne Frist (ein swiftshader-Bild des Labors hält den Compositor
+            // und mit ihm den Poll); ein hängendes Labor steht in der Stall-Akte
             // eslint-disable-next-line no-undef
             await sp.waitForFunction(
                 () =>
                     typeof enterPlay === "function" &&
                     typeof playPhysics === "function" &&
                     typeof parkBoxes !== "undefined",
-                {
-                    timeout: 90000,
-                }
+                { timeout: 0 }
             );
             for (const [name, tasten] of [
                 ["geduckt", { KeyW: true, ControlLeft: true }],
@@ -662,15 +657,12 @@ const GANG = (k) => {
             }
             // dieselbe Gangart im Labor der Tiere (Labor = Welt)
             const tp = await sb.newPage();
-            tp.setDefaultTimeout(280000);
             tp.on("pageerror", (e) => console.log("[TETRAPODA-PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
             await tp.goto(`http://127.0.0.1:${PORT}/worlds/tetrapoda/index.html`, {
                 waitUntil: "domcontentloaded",
                 timeout: 240000,
             });
-            await tp.waitForFunction(() => typeof wolf !== "undefined" && !!wolf && typeof emo !== "undefined", {
-                timeout: 180000,
-            });
+            await tp.waitForFunction(() => typeof wolf !== "undefined" && !!wolf && typeof emo !== "undefined", { timeout: 0 });
             for (const [gattung, seele] of Object.entries(LABOR_WELT)) {
                 const res = await tp.evaluate(GANG, { art: gattung, vh: VH, stub: SELBST, stimmung: STIMMUNG_FOLGE });
                 for (const z of res.zeilen) gangUrteil("Labor " + gattung, z, weltGang[seele + z.vh]);

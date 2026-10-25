@@ -697,6 +697,16 @@ class AnazhRealm_bild_kosten {
     _makeHeadlessRenderer(canvas) {
         const noop = () => {};
         const resolved = () => Promise.resolve();
+        // der Zeichenpuffer folgt setSize × Pixel-Verhältnis wie am echten Renderer (r184 CanvasTarget): die Bühnen
+        // (`_buehneRenderer`) gleichen ihren Canvas an der CSS-Größe ab (`_workshopSyncCanvasSize`)
+        const mass = { w: canvas ? canvas.width : 0, h: canvas ? canvas.height : 0, pr: 1 };
+        const setSize = (w, h, stil = true) => {
+            Object.assign(mass, { w, h });
+            if (!canvas) return;
+            canvas.width = Math.floor(w * mass.pr);
+            canvas.height = Math.floor(h * mass.pr);
+            if (stil === true) Object.assign(canvas.style, { width: w + "px", height: h + "px" });
+        };
         return {
             domElement: canvas,
             shadowMap: { enabled: false, type: 0, autoUpdate: false, needsUpdate: false },
@@ -721,10 +731,10 @@ class AnazhRealm_bild_kosten {
             compute: noop,
             computeAsync: resolved,
             setAnimationLoop: noop,
-            setSize: noop,
-            setPixelRatio: noop,
+            setSize,
+            setPixelRatio: (pr = 1) => pr !== mass.pr && ((mass.pr = pr), setSize(mass.w, mass.h, false)),
             setClearColor: noop,
-            getPixelRatio: () => 1,
+            getPixelRatio: () => mass.pr,
             getContext: () => null,
             // Der Zeichenpuffer ist der Canvas (der resize-Handler setzt ihn): der EINE Schirm-Maßstab (`_schirm`)
             // liest headless denselben Schirm wie am echten Renderer.
