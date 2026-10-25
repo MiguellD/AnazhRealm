@@ -298,6 +298,10 @@ async function bindungAnsteckung() {
     const [aus, port] = process.argv.slice(1);
     const erg = { sek: 120, laeufe: [], fehler: [] };
     const lauf = async (o) => {
+        // erst das Erwachen des Boots samt der Heimat aus dem Faden (die Warte von `__weltDa`): ein Lauf, der vorher setzt, setzt in
+        // eine halbe Welt (25.10. unter Last: die Heimat kam nach dem Setzen, der Fuchs stand 30,8 m entfernt)
+        while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
+        await window.anazhRealm.erwacht;
         const r = window.anazhRealm;
         const s = r.state;
         const p = s.player;
@@ -350,6 +354,7 @@ async function bindungAnsteckung() {
             lebt: s.creatures.includes(f),
             abstand: { p50: +ab[ab.length >> 1].toFixed(2), max: +ab[ab.length - 1].toFixed(2) },
             ort: [+P.x.toFixed(1), +P.z.toFixed(1)],
+            verschoben: +Math.hypot(pm.x - P.x, pm.z - P.z).toFixed(2),
             kurve,
         };
     };
@@ -379,6 +384,10 @@ async function bindungAnsteckung() {
                     await new Promise((ok) => setTimeout(ok, 1500));
                     await seite.reload({ waitUntil: "networkidle0", timeout: 180000 });
                     await warteAufWelt(seite, 300000);
+                    await seite.evaluate(async () => {
+                        while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
+                        await window.anazhRealm.erwacht;
+                    });
                     const h = await seite.waitForFunction(abdruck, { timeout: 90000, polling: 500 }).catch(() => null);
                     erg.reload = { vor, nach: h ? await h.jsonValue() : null };
                     console.log("  Reload " + JSON.stringify(erg.reload));
@@ -1352,7 +1361,7 @@ const stationen = [
         geraet: "headless",
         // `bindungAnsteckung` (oben): A B A B je 120 s Spiel-Takt, gebunden gegen bond = 0, dann Speichern → Reload. Messbar heißt:
         // jedes A über jedem B und Δ der Mittel ≥ 3 × das Rauschen der Wiederholung (mindestens 0,01 der Valenz); jedes Tier lebt,
-        // folgt und steht im Median ≤ 10 m vom Spieler (sonst misst der Lauf keine Ansteckung)
+        // folgt und steht im Median ≤ 10 m vom Spieler, der Spieler bleibt ≤ 1 m an seinem Ort (sonst misst der Lauf keine Ansteckung)
         befehl: ["node", "-e", "(" + bindungAnsteckung.toString() + ")()", "{AUS}", "{PORT}"],
         gpu: false,
         minuten: 8,
@@ -1367,7 +1376,7 @@ const stationen = [
             const vb = B.map((x) => x.valenz);
             const delta = (va[0] + va[1]) / 2 - (vb[0] + vb[1]) / 2;
             const rausch = Math.max(Math.abs(va[0] - va[1]), Math.abs(vb[0] - vb[1]));
-            const nah = j.laeufe.every((x) => x.lebt && x.auftrag === "follow_player" && x.abstand.p50 <= 10);
+            const nah = j.laeufe.every((x) => x.lebt && x.auftrag === "follow_player" && x.abstand.p50 <= 10 && x.verschoben <= 1);
             const bondA = A.every((x) => x.bond[0] > 0 && x.bond[1] > x.bond[0]);
             const bondB = B.every((x) => x.bond[0] === 0 && x.bond[1] === 0);
             const rl = j.reload || {};
@@ -1380,7 +1389,8 @@ const stationen = [
                 zahl:
                     "Stimmung nach 120 s gebunden " + va.join("/") + " gegen bond = 0 " + vb.join("/") + " (Δ " + delta.toFixed(4) +
                     ", Rauschen " + rausch.toFixed(4) + ") · bond A " + A.map((x) => x.bond.join(" → ")).join(", ") + " · Abstand p50 " +
-                    j.laeufe.map((x) => x.abstand.p50).join("/") + " m · Reload " + JSON.stringify(rl.vor || null) + " → " +
+                    j.laeufe.map((x) => x.abstand.p50).join("/") + " m, Spieler verschoben " + j.laeufe.map((x) => x.verschoben).join("/") +
+                    " m · Reload " + JSON.stringify(rl.vor || null) + " → " +
                     JSON.stringify(rl.nach || null) + (F.length ? " · " + F.join("; ").slice(0, 200) : ""),
             };
         },
@@ -1503,7 +1513,10 @@ const fehlt = [
         befehl: null,
         grund:
             "Werkzeug fehlt: kein Bild zählt Halme unter dem Wasser-Spiegel (diag-haus-welt --bild kennt nur Haus-Boxen), " +
-            "Third vor dem Haus ungemessen; die Häuser-Hälfte ist die Station vegetation.K4#1 auf beiden Geräten",
+            "Third vor dem Haus ungemessen; die Häuser-Hälfte ist die Station vegetation.K4#1 auf beiden Geräten. Gelesen 25.10. an " +
+            "d43cb61c: W9 zählt Halm-Pixel je Box, indem es die Büschel IN der Box ausblendet (Bild gegen Bild ohne sie), die Kamera " +
+            "steht 1,3 m über der Diele im Haus; für das Wasser fehlt das Gegenstück (die Büschel unter dem Spiegel, ein Schuss ohne " +
+            "Wasser-Klasse), für Third ein Blick von außen auf die Box",
         quelle: "2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte",
     },
 ];
