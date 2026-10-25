@@ -449,7 +449,7 @@ async function proben(phasen) {
                 g.fehlt.push(
                     `${name} ${rest.toFixed(2)} m neben, Fuß ${fuss.toFixed(2)}/${soll.toFixed(2)}, ${kl} Schritte geklettert`
                 );
-            g.z = lz;
+            [g.x, g.z] = [lx, lz];
         };
         // W1 TÜR: vom Podest-Rand vor der Tür 1,8 m nach innen, an der Zarge entlang (der Körper streift sie)
         const vor = welt(e, tu.x + tu.w / 2 - 0.3, tu.z - 0.25);
@@ -536,9 +536,10 @@ async function proben(phasen) {
             h.optikProzent = n ? Math.round((gleich / n) * 1000) / 10 : null;
         }
         if (auf.length) {
-            // jenseits des Schachts: um ihn herum, auf der Seite des Ziels
+            // jenseits des Schachts: um ihn herum — hinter dem Fuß des Laufs auf der Seite des Körpers, davor auf der des
+            // Ziels (quer durch den Lauf stieg der Körper auf seine Tritte: Haus 732469 neben der Tür, 0,46 m)
             const hin = (name, lx, lz, soll) => {
-                const sr = seite(lx > (dm.stairX0 + dm.stairX1) / 2);
+                const sr = seite((g.z > dm.stairZ0 ? g.x : lx) > (dm.stairX0 + dm.stairX1) / 2);
                 if (g.z < dm.stairZ0 !== lz < dm.stairZ0) {
                     ziel(name + "-um", sr, g.z, NaN);
                     ziel(name + "-um", sr, lz, NaN);

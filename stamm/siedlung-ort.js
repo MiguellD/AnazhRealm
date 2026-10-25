@@ -2529,6 +2529,14 @@ class AnazhRealm_siedlung_ort {
             if (!plan || !Array.isArray(plan.slots)) return null;
             mass.runden++;
             const o = { x: ort.x, z: ort.z };
+            // DER ORT, DER SCHON WELT IST (sein Erdbau liegt, `worldMeta.erdbau`: der zweite Akt am Anker des ersten), trägt kein
+            // zweites Dorf aus dem Gedächtnis: die Wahl rechnet neu, und der Wirt weist jeden Ort ab, an dem ein Haus des
+            // ersten steht (`_ortTraegtWirt`). Bis siedlung-k3-heil hob der Akt den stehenden Plan ein zweites Mal — sein Zug
+            // wartete ohne Ende auf den Slot unter dem Spieler (gate:haus-welt W7: 900 s), jeder abgewiesene Slot nähme dem
+            // stehenden Haus den Grund (`_erdbauGrundFaellt`).
+            const wm = this.state.worldMeta;
+            if (wm && wm.erdbau && wm.erdbau[AnazhRealm._ortSchluessel(plan, ort)] && this._ortPlaene)
+                this._ortPlaene.delete(AnazhRealm._ortSchluessel(plan, ort));
             await this._ortWahl(plan, o, false, frei);
             if (o.x === ort.x && o.z === ort.z) return { plan, ort };
             mass.versatzM.push(+Math.hypot(o.x - ort.x, o.z - ort.z).toFixed(1));

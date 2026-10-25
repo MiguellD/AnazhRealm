@@ -3644,7 +3644,7 @@
         const sh=(k2===0)?Math.max(-1,Math.min(1,(rnd()-0.5)*2))*Math.max(0,P0.obb.ex-exS-0.15):0;
         const ux=c, uz=-s2;
         const ccx=P0.obb.cx+ox*(P0.obb.ez+1.4+k2*0.8+ezS)+ux*sh, ccz=P0.obb.cz+oz*(P0.obb.ez+1.4+k2*0.8+ezS)+uz*sh;
-        const o={cx:ccx,cz:ccz,phi,ex:exS,ez:ezS};
+        const o={cx:ccx,cz:ccz,phi,ex:(e.x1-e.x0)/2,ez:(e.z1-e.z0)/2};                              /*die obb im Rahmen der Scheune (phi): exS/ezS stehen im Rahmen des Hauses P0 — gedreht trug sie quer zur Scheune deren Masse vertauscht (siedlung-k3-heil: 23 von 27 Scheunen, das Fundament der Welt 0,1-0,5 m zu schmal)*/
         let ok=true;
         if(Rw){ const rc=Math.hypot(ccx,ccz), rq=Math.hypot(exS,ezS), rp=Math.hypot(P0.obb.cx,P0.obb.cz);
           if(rp<Rw&&rc>Rw-2.2-rq) ok=false; if(rp>Rw&&rc<Rw+1.2+rq) ok=false; if(Math.abs(rc-Rw)<2.0+rq) ok=false; }
