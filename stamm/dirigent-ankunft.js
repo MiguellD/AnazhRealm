@@ -827,12 +827,21 @@ class AnazhRealm_dirigent_ankunft {
     // die GTX (0,29–0,57) vor der Messung. Einmal gebaut, bleibt das Programm der Sitzung (`_renderObjekteLoesen`: der
     // Knoten-Bau gehört seinem Schlüssel, die Pipeline dem Cache). Die Wahl läuft je Lade-Bild mit den Lücken
     // (`_weltbildLuecken`), der Baum hält das Bild als wachsender („bauten"), bis seine Arenen zeichneten (`_vorlaufOffen`);
-    // der Null-Renderer baut keine Programme — dort wählt sie nie.
+    // die Kaskaden, deren Box er nicht trifft, baut der Vorbau der Erst-Zeichnung (`_renderObjectDirect`). Er trägt seine L1
+    // bis zum Bild — ihr Wechsel zur Karte fällt unter die Blende des Ladeschirms. Der Null-Renderer baut keine Programme:
+    // dort wählt sie nie.
     _stufenVorlaufWahl(p, R, imBlick) {
         const st = this.state;
         if (st._weltbildDa || !st.renderer || st.renderer._isHeadlessNull) return;
         const V =
-            this._vorlauf || (this._vorlauf = { arten: new Map(), eintraege: new WeakSet(), artVon: new Map(), t: 0 });
+            this._vorlauf ||
+            (this._vorlauf = {
+                arten: new Map(),
+                eintraege: new WeakSet(),
+                artVon: new Map(),
+                bild: new WeakMap(),
+                t: 0,
+            });
         const jetzt = performance.now();
         if (jetzt - V.t < AnazhRealm.LADE_BILD_MS) return;
         V.t = jetzt;
@@ -858,13 +867,15 @@ class AnazhRealm_dirigent_ankunft {
     _imStufenVorlauf(e) {
         return !!this._vorlauf && !this.state._weltbildDa && this._vorlauf.eintraege.has(e);
     }
-    // Zeichnete der Vorlauf-Baum? Jede seiner L1-Gruppen, die das Hauptbild sieht, trat in ihre Arena, und die Arena zeichnete
-    // (`gezeichnet` der Erst-Zeichnung) — ein Wurf-Teil (Ebene 0 aus) lebt nur in den Kaskaden; ohne Arena (WebGL2) zeichnet
-    // der Zeichner im Bild.
+    // Zeichnete der Vorlauf-Baum? Jede seiner L1-Gruppen, die das Hauptbild sieht, trat in ihre Arena, die Arena zeichnete
+    // (`gezeichnet` der Erst-Zeichnung), und danach lief ein weiteres Bild (die GPU-Leine zählt sie): in ihm fand jede Kaskade
+    // die Form der Arena stehen und baute vor — ein Wurf-Teil (Ebene 0 aus) lebt nur in den Kaskaden. Ohne Arena (WebGL2)
+    // zeichnet der Zeichner im Bild.
     _vorlaufOffen(e) {
         if (!this._imStufenVorlauf(e)) return false;
         if (e._lodLevel !== 1 || !e.instSlots || !e.instSlots.length) return true;
-        if (AnazhRealm.__arenaOhne) return false;
+        const L = this._gpuLeine;
+        if (AnazhRealm.__arenaOhne || !L) return false;
         const G = this.state.archInstanceGroups;
         const E = this._erstZeichnung;
         for (const ref of e.instSlots) {
@@ -872,7 +883,9 @@ class AnazhRealm_dirigent_ankunft {
             if (!g || (g.mesh.layers.mask & 1) === 0) continue;
             if (!g.mesh.__arena || !E || !E.gezeichnet.has(g.mesh.__arena)) return true;
         }
-        return false;
+        const B = this._vorlauf.bild;
+        if (!B.has(e)) B.set(e, L.gerendert);
+        return L.gerendert <= B.get(e);
     }
 
     // DER BLICK DES ERSTEN BILDS (B3d): das erste Weltbild ist, was der Spieler sieht — der waagrechte Kegel der Haupt-Kamera
