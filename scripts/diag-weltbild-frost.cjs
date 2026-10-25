@@ -147,6 +147,20 @@ function pruefRaum(echt) {
     const T = window.THREE;
     const rend = r.state.renderer;
     const F = (window.__frostWand = { echt });
+    // DAS EINE WARTEN AUF EINE BÜHNE (Werkstatt-Vorschau, Ich-, Hof-, Feed-Bühne), bis ihr Renderer `bis(Zeichnungen)` trägt:
+    // der Deckel zählt einen Gang nur, wenn ihr Renderer bereit ist und ihr Gerät die eingereichte Arbeit abgegeben hat
+    // (swiftshader kompiliert im GPU-Prozess, Compositor und Bühnen-Takt stehen derweil) — die Bühne urteilt in GPU-Ereignissen,
+    // nie im Takt der Wanduhr (bis 25.10. zählte er je 50/200 ms, 20/180 s bis ROT); fehlt die Bühne, zählt er und nennt sie
+    F.gezeichnet = (s) => (s && s.renderer ? s.renderer.info.render.calls : 0);
+    F.buehne = async (name, holen, bis) => {
+        let fragt = false;
+        const offen = (s = holen()) =>
+            !s || !s.rendererReady
+                ? !!s
+                : fragt || ((fragt = true), s.renderer.backend.device.queue.onSubmittedWorkDone().then(() => (fragt = false)), false);
+        for (const weiter = window.__deckel(name, 400, offen); !bis(F.gezeichnet(holen())) && weiter(); )
+            await new Promise((res) => setTimeout(res, 50));
+    };
     r.setCameraMode("third");
     // der Leib von JETZT: der Seelenwechsel (S1, `applyPlayerSoul`) ersetzt den Spieler-Leib, T2 weitet nie den alten
     Object.defineProperty(F, "leib", { get: () => r.state.playerMesh });
@@ -500,15 +514,11 @@ function pruefRaum(echt) {
                     : wer === "hof"
                       ? r.state.hofStage
                       : r.state.workshop && r.state.workshop.preview;
-            for (const weiter = window.__deckel("die Bühne", 900); weiter(); ) {
-                const s = holen();
-                if (s && s.renderer && s.renderer.info.render.calls >= 2) break;
-                await new Promise((res) => setTimeout(res, 200));
-            }
+            await window.__frostWand.buehne("die Bühne", holen, (n) => n >= 2);
             const s = holen();
             let meshes = 0;
             if (s && s.scene) s.scene.traverse((o) => o.isMesh && meshes++);
-            return { bühne: wer, gezeichnet: s && s.renderer ? s.renderer.info.render.calls : 0, meshes };
+            return { bühne: wer, gezeichnet: window.__frostWand.gezeichnet(s), meshes };
         }, wer);
 
     if (ECHT) await schritt("ankunft", null, true);
@@ -632,15 +642,7 @@ function pruefRaum(echt) {
                 }
         };
         E.bau = (d) => Object.assign({ module: 0, pipelines: 0 }, d && d.__frostBau);
-        E.warte = async (holen) => {
-            const s0 = holen();
-            const c0 = s0 && s0.renderer ? s0.renderer.info.render.calls : 0;
-            for (const weiter = window.__deckel("ein Bild der Bühne", 400); weiter(); ) {
-                const s = holen();
-                if (s && s.renderer && s.renderer.info.render.calls > c0) return;
-                await new Promise((res) => setTimeout(res, 50));
-            }
-        };
+        E.warte = (holen, c0 = F.gezeichnet(holen())) => F.buehne("ein Bild der Bühne", holen, (n) => n > c0);
     }, ECHT);
     const entsorgtKeineWelt = (tag, b) =>
         check(

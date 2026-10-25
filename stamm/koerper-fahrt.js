@@ -1247,13 +1247,30 @@ class AnazhRealm_koerper_fahrt {
         return spiegel > fz.y ? spiegel - fz.y : 0;
     }
 
-    // DIE HAFTUNG AM WAGEN (feld.K1, die Wetter-Kette Sturm → Regen-Feld → Nässe → Grip): der Boden-Faktor des Reibkreises im
-    // Fahr-Schritt (vehicle-core fahrKraefte `e.haft`) liest die EINE Nässe der Welt (`state.naesse`, EIN Schreiber
-    // `_naesseTakt`), nie das Wetter-Wort — wird die Nässe festgehalten, greift der Reifen wie trocken (gate:fahr-leben W). Voll
-    // nass trägt der Reibkreis `NAESSE.haft` des trockenen, trocken genau 1 (das Lab und der trockene Ritt byte-gleich).
-    _fahrHaft() {
-        const n = this.state.naesse;
-        return n > 0 ? 1 - (1 - AnazhRealm.NAESSE.haft) * Math.min(1, n) : 1;
+    // DIE HAFTUNG AM WAGEN (fahrzeug.K1; feld.K1, die Wetter-Kette Sturm → Regen-Feld → Nässe → Grip): μ des Reifens auf dem
+    // Boden unter dem Fahr-Zustand, der Boden-Faktor des Reibkreises im Fahr-Schritt (vehicle-core fahrKraefte `e.haft`, Bezug
+    // der Asphalt des Labors, μ 1). Die Zahlen trägt die EINE Stoff-Zeile (`_stoffZeile`: `mu` trocken, `muNass` voll nass), die
+    // Gewichte tragen die Schichten, die den Boden malen: der Grund (`_terrainMaterialAt`, was der Spieler beim Graben bekommt),
+    // darüber die Wiese als kraut mit dem Grün der gebauten Boden-Karte (`_bodenSichtAt` … `gruen`, die Wache, unter der der Halm
+    // wächst und das Grün gemalt wird), darüber der Weg als erde mit dem Pfad-Feld (`_pfadFeldAt`, unter dem die Erde gemalt und
+    // der Halm gedünnt wird). Trocken bis nass nach der EINEN Nässe der Welt (`state.naesse`, EIN Schreiber `_naesseTakt`), nie
+    // nach dem Wetter-Wort — wird sie festgehalten, greift der Reifen wie trocken (gate:fahr-leben W). Bis 24.10. reichte die Welt
+    // trocken μ 1 auf jeden Boden, nass 0,7 (`NAESSE.haft`).
+    _fahrHaft(fz) {
+        const n = Math.min(1, Math.max(0, this.state.naesse || 0));
+        const mu = (stoff) => {
+            const z = this._stoffZeile(stoff, "das Rad auf „" + stoff + "“ greift nicht");
+            if (z && z.mu > 0) return z.mu + (z.muNass - z.mu) * n;
+            this._bruchMelden("STOFF-ZEILE ohne Haftung: das Rad auf „" + stoff + "“ greift wie auf Asphalt");
+            return 1;
+        };
+        const aus = {};
+        const gruen = this._bodenSichtAt(fz.x, fz.z, aus) === null ? 0 : aus.gruen;
+        const pfad = this._pfadFeldAt(fz.x, fz.z, fz.y);
+        let m = mu(this._terrainMaterialAt(fz.x, fz.z, fz.y));
+        if (gruen > 0) m += (mu("kraut") - m) * gruen;
+        if (pfad > 0) m += (mu("erde") - m) * pfad;
+        return m;
     }
 
     // DER WIND AM WAGEN (wetter.K5): der EINE Wind am Ort des Fahr-Zustands (`_windAt` auf der Uhr des Sim-Schritts, nie der
@@ -1288,7 +1305,7 @@ class AnazhRealm_koerper_fahrt {
                 const z0 = fz.z;
                 vc.fahrKraefte(
                     fz,
-                    { hand: true, tiefe: this._fahrTiefe(fz), haft: this._fahrHaft(), wind: this._fahrWind(fz) },
+                    { hand: true, tiefe: this._fahrTiefe(fz), haft: this._fahrHaft(fz), wind: this._fahrWind(fz) },
                     entry._fahrSatz,
                     dt
                 );

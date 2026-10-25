@@ -447,9 +447,10 @@
                       filter: "lowpass", refDb: -30, habitatBasis: 0.35, windStill: 0.8, hz: 9000, kalibHz: 9000,
                       chor: [[-0.15, 0], [0, 0.7], [0.12, 1], [0.4, 0.6], [1, 0.55]],
                       antwort: { dbJeDelta: 40, dbMin: -24, dbMax: 9, dVoll: 8, dAus: 24 } },
-            // Grillen: nachts × Waerme × offenes Gras; Zirp-Takt nach DOLBEAR (N/min = 7·(T − 10) + 40).
+            // Grillen: nachts × Waerme × offenes Gras; Zirp-Takt nach DOLBEAR (N/min = 7·(T − 10) + 40) — T ist die Luft am Ohr
+            // (`lage.temperatur`, °C: in der Welt das EINE Temperatur-Feld des Gelaende-Kerns, stoffe.K3).
             grille: { textur: ["grille"], sr: 22050, sek: 4.3, saat: 97, quellen: 2, spreizung: 0.5, filter: "highpass",
-                      refDb: -34, tMin: 2, tMax: 24, tStumm: 12, tVoll: 16, nRef: 110, nachtAb: 0.05, nachtVoll: -0.15, hz: 2500, kalibHz: 2500 }
+                      refDb: -34, tStumm: 12, tVoll: 16, nRef: 110, nachtAb: 0.05, nachtVoll: -0.15, hz: 2500, kalibHz: 2500 }
         },
         // Der Tier-Ruf: f0 = fRef·(L/lRef)^−exponent, Formanten ∝ 1/L; Kontur je Stimmung.
         tier: {
@@ -466,18 +467,18 @@
         // DIE ORTE DES LABS (Lab = Welt): typische Lagen der vier Mess-Orte — das Lab
         // spielt sie ueber denselben Graphen, die Linse misst die echten Lagen der Welt.
         orte: {
-            wiese:   { windFeld: 0.06, boe: 0.7, deckung: 0.12, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.5 },
-            seeufer: { windFeld: 0.06, boe: 0.7, deckung: 0.2, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.55,
+            wiese:   { windFeld: 0.06, boe: 0.7, deckung: 0.12, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.5 },
+            seeufer: { windFeld: 0.06, boe: 0.7, deckung: 0.2, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.55,
                        ufer: { d: 3, anteil: 0.4, pan: 0.3 } },
-            wald:    { windFeld: 0.06, boe: 0.7, deckung: 0.85, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.7 },
-            dorf:    { windFeld: 0.06, boe: 0.7, deckung: 0.15, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.45,
+            wald:    { windFeld: 0.06, boe: 0.7, deckung: 0.85, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.7 },
+            dorf:    { windFeld: 0.06, boe: 0.7, deckung: 0.15, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.45,
                        glut: { d: 4, flaeche: 0.4536, pan: -0.4 } },
-            glutArm: { windFeld: 0.06, boe: 0.7, deckung: 0.15, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.45,
+            glutArm: { windFeld: 0.06, boe: 0.7, deckung: 0.15, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.45,
                        glut: { d: 1, flaeche: 0.4536, pan: -0.2 } },
-            fallArm: { windFeld: 0.06, boe: 0.7, deckung: 0.3, regen: 0, sonne: 1, saisonPhase: 0.375, lebendig: 0.6,
+            fallArm: { windFeld: 0.06, boe: 0.7, deckung: 0.3, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.6,
                        fall: { d: 3, hoehe: 12, pan: 0.3 } },
-            sturm:   { windFeld: 1, boe: 1, deckung: 0.5, regen: 1, sonne: 0.4, saisonPhase: 0.6, lebendig: 0.5 },
-            nacht:   { windFeld: 0.06, boe: 0.7, deckung: 0.12, regen: 0, sonne: -0.6, saisonPhase: 0.375, lebendig: 0.5 }
+            sturm:   { windFeld: 1, boe: 1, deckung: 0.5, regen: 1, sonne: 0.4, temperatur: 14.720779115442543, lebendig: 0.5 },
+            nacht:   { windFeld: 0.06, boe: 0.7, deckung: 0.12, regen: 0, sonne: -0.6, temperatur: 24, lebendig: 0.5 }
         }
     };
 
@@ -807,7 +808,7 @@
     }
 
     // ── DIE MISCHUNG: Lage am Ohr → je Stimme {db, gain, hz, q, pan, rate} ──
-    // lage = { windFeld, boe, deckung, regen, sonne, saisonPhase, lebendig,
+    // lage = { windFeld, boe, deckung, regen, sonne, temperatur (°C, ohne sie keine Waerme), lebendig,
     //          ufer:{d, anteil, pan}, fluss:{d, tempo, pan}, fall:{d, hoehe, pan}, glut:{d, flaeche (m², Brenn-Flaeche), pan},
     //          antwort:{d, delta} (die Antwort der Wertung, optional) }
     function umweltMischung(lage) {
@@ -818,7 +819,7 @@
         var glatt = function (a, b, v) { var t = c01((v - a) / (b - a)); return t * t * (3 - 2 * t); };
         var windFeld = Math.max(0, zahl(L.windFeld, 0)), boe = Math.max(0, zahl(L.boe, 0.7));
         var deck = c01(zahl(L.deckung, 0)), regen = c01(zahl(L.regen, 0)), sonne = Math.max(-1, Math.min(1, zahl(L.sonne, 1)));
-        var leb = c01(zahl(L.lebendig, 0.5)), phase = zahl(L.saisonPhase, 0.375);
+        var leb = c01(zahl(L.lebendig, 0.5)), T = zahl(L.temperatur, -Infinity);
         var v = W.wind.vMin + (W.wind.vMax - W.wind.vMin) * windFeld, vEff = Math.max(0.05, v * boe);
         var out = {};
         var setze = function (name, pegel, hz, q, pan, rate) {
@@ -867,8 +868,7 @@
         var antwortDb = dlt !== 0 && dAn < An.dAus ? Math.max(An.dbMin, Math.min(An.dbMax, An.dbJeDelta * dlt * (1 - glatt(An.dVoll, An.dAus, dAn)))) : 0;
         setze("vogel", aktiv > 0 ? Sv.refDb + db(aktiv) + antwortDb : -Infinity, Sv.hz, 0.707);
         // Grillen: nachts × Waerme × offenes Gras; DOLBEAR-Takt
-        var Sc = W.grille, waerme = 0.5 + 0.5 * Math.cos(2 * Math.PI * (phase - 0.375));
-        var T = Sc.tMin + (Sc.tMax - Sc.tMin) * waerme;
+        var Sc = W.grille;
         var nacht = glatt(Sc.nachtAb, Sc.nachtVoll, sonne);
         var aktivG = nacht * glatt(Sc.tStumm, Sc.tVoll, T) * (1 - regen) * (0.3 + 0.7 * (1 - deck));
         var zirp = Math.max(20, 7 * (T - 10) + 40);

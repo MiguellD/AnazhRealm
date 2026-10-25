@@ -115,7 +115,7 @@ function zielZensus(k) {
                             if (oben)
                                 try {
                                     nach.call(this, a, aus);
-                                } catch (_e) {}
+                                } catch {}
                             return aus;
                         } finally {
                             tief[key]--;

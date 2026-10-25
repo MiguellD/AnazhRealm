@@ -2539,12 +2539,11 @@ class AnazhRealm_bild_himmel {
                     0,
                     Math.min(1, this._windAt(cam.position.x, cam.position.z, this._bildZeit).staerke)
                 );
-            // DAS EIS (stoffe.K3): die Höhe, über der das Wasser gefriert — das Feld ist linear in der Höhe (`_temperaturAt`)
+            // DAS EIS (stoffe.K3): die Linien des Gesetzes je Knoten der Säule (`_eisLinien`) — dieselben, die den Körper tragen
             if (uniforms.eisNull) {
-                const TW = globalThis.__gelaendeCore.TEMPERATUR;
-                const t0 = this._temperaturAt(0, TW.wasserTraegTage) - TW.gefrierpunkt;
-                const t100 = this._temperaturAt(100, TW.wasserTraegTage) - TW.gefrierpunkt;
-                uniforms.eisNull.value = (100 * t0) / (t0 - t100);
+                const E = this._eisLinien();
+                uniforms.eisNull.value.fromArray(E.null);
+                uniforms.eisVoll.value.fromArray(E.voll);
             }
         };
         applyToTSL(this.state.hydroSurfaceUniforms);
@@ -2811,12 +2810,66 @@ class AnazhRealm_bild_himmel {
         return (AnazhRealm.WEATHER_INTENSITY[word] || 0) >= 1;
     }
 
-    // DIE TEMPERATUR AN DER HÖHE y (stoffe.K3) — die EINE Naht zum Feld des Gelände-Kerns (`temperatur`) mit der Saison
-    // (`seasonPhase`) und der Uhr (`timeOfDay`) der Welt; `traegTage` reicht die Wärme-Trägheit eines Stoffs durch (das Wasser:
-    // TEMPERATUR.wasserTraegTage). Leser: das Eis (`_eisAt`) und sein Bild (`_dayNightApplyWaterMaterials`).
+    // DIE TEMPERATUR AN DER HÖHE y (stoffe.K3) — die EINE Naht zum Feld des Gelände-Kerns: `_temperaturFeld` das Feld in
+    // Wellen (`temperaturFeld`; `traegTage` die Wärme-Trägheit eines Körpers), `_temperaturAt` sein Wert zur Saison
+    // (`seasonPhase`) und Uhr (`timeOfDay`) der Welt. Leser: das Eis (`_eisLinien`) und die Grillen (`_umweltLage`).
+    _temperaturFeld(y, traegTage) {
+        return globalThis.__gelaendeCore.temperaturFeld(this._gelaende(), y, traegTage);
+    }
     _temperaturAt(y, traegTage) {
         const st = this.state;
-        return globalThis.__gelaendeCore.temperatur(this._gelaende(), y, st.seasonPhase, st.timeOfDay, traegTage);
+        return globalThis.__gelaendeCore.temperaturAus(
+            this._temperaturFeld(y, traegTage),
+            st.seasonPhase,
+            st.timeOfDay
+        );
+    }
+
+    // DIE LINIEN DES EISES (stoffe.K3): das Gesetz des Kerns (`eisDicke` auf dem Feld dieser Naht) je Knoten der Säule
+    // (`EIS.saeule` logarithmisch: 0,1 · 0,67 · 4,5 · 30 m) als zwei Höhen — `null`, über der das Eis beginnt, und `voll`,
+    // über der es trägt (`EIS.traegt`). Das Eis wächst mit der Höhe (kälter) und schwindet mit der Säule (träger): je Säule
+    // ist jede Linie EINE Höhe (Halbierung auf 1 cm zwischen 10 m unter und 1 km über dem Meer, an den Enden geklemmt).
+    // `traegtAb` ist die tiefste tragende Höhe der Welt (die flachste Säule; Infinity: nirgends) — der billige Beweis jedes
+    // Lesers. Gerechnet je Welt-STUNDE der Saison (das Eis wächst in ~6 Tagen vom ersten zum tragenden; eine Stunde trägt
+    // unter 1 mm), je Feld (die Naht) und Meer — nie je Bild; Bild und Körper lesen dieselbe Stunde. Der Leser zahlt drei
+    // Vergleiche, solange die Saison steht.
+    _eisLinien() {
+        const st = this.state;
+        const c = this._eisLinienStand;
+        if (c && c.phase === st.seasonPhase && c.feld === this._temperaturFeld && c.wasser === st.waterLevel) return c;
+        const K = globalThis.__gelaendeCore;
+        const L = this._gelaende();
+        const stunden = K.TEMPERATUR.jahrTage * 24;
+        const saison = Math.floor(st.seasonPhase * stunden) / stunden;
+        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - K.GRUND.meerUnterBasis;
+        if (c && c.saison === saison && c.feld === this._temperaturFeld && c.wl === wl)
+            return Object.assign(c, { phase: st.seasonPhase, wasser: st.waterLevel });
+        const S = K.EIS.saeule;
+        const [unten, oben] = [wl - 10, wl + 1000];
+        const linie = (tiefe, soll) => {
+            const dicke = (y) => K.eisDicke(L, y, saison, tiefe, (tr) => this._temperaturFeld(y, tr));
+            let [lo, hi] = [unten, oben];
+            if (dicke(lo) >= soll) return lo;
+            if (!(dicke(hi) >= soll)) return hi;
+            while (hi - lo > 0.01) {
+                const m = (lo + hi) / 2;
+                if (dicke(m) >= soll) hi = m;
+                else lo = m;
+            }
+            return hi;
+        };
+        const knoten = [0, 1, 2, 3].map((i) => S[0] * (S[1] / S[0]) ** (i / 3));
+        const voll = knoten.map((d) => linie(d, K.EIS.traegt));
+        return (this._eisLinienStand = {
+            phase: st.seasonPhase,
+            wasser: st.waterLevel,
+            saison,
+            feld: this._temperaturFeld,
+            wl,
+            null: knoten.map((d) => linie(d, 1e-3)),
+            voll,
+            traegtAb: voll[0] < oben ? voll[0] : Infinity,
+        });
     }
 
     // DIE NÄSSE (wetter.K2) — EIN Zustand der Welt aus dem Wetter-Feld (`state.naesse`, 0 trocken … 1 nass): Regen benetzt

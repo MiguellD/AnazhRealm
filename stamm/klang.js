@@ -324,7 +324,9 @@ class AnazhRealm_klang {
             deckung: this._kronenStreuAt(px, pz),
             regen: wf.rain,
             sonne: this._sonnenRichtung().y, // die Sonnenhöhe (sin) der EINEN Tag-Achse, mit der Neigung der Bahn
-            saisonPhase: typeof this.state.seasonPhase === "number" ? this.state.seasonPhase : 0.375,
+            // die Luft am Ohr (stoffe.K3): das EINE Temperatur-Feld an der Höhe des Spielers zu Saison und Uhr der Welt — die
+            // Grillen schweigen über dem gefrorenen Bergsee
+            temperatur: this._temperaturAt(pm.position.y, 0),
             lebendig: Math.max(0, Math.min(1, aura.lebendig)),
             ufer,
             fluss,

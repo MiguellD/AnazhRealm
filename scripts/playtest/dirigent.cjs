@@ -171,7 +171,7 @@ async function checkBandV18278LoopErrorBoundary(ctx) {
                 throw new Error("V18278-test-throw");
             };
             r._gameLoopTick(performance.now()); // darf NICHT werfen
-        } catch (_e) {
+        } catch {
             threw = true;
         } finally {
             delete r.updateFps; // Prototyp-Methode wiederherstellen
@@ -1288,7 +1288,7 @@ async function checkBandPerfPanel(ctx) {
                 t += 16.7;
                 try {
                     r._gameLoopTick(t);
-                } catch (_e) {}
+                } catch {}
             }
             await new Promise((res2) => setTimeout(res2, 110));
         }

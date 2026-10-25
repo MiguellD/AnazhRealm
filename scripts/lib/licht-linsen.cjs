@@ -1947,6 +1947,11 @@ function lichtWeg(opts) {
         const karte = flaeche(new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 }), -Math.PI / 2);
         const see = flaeche(r._ensureHydroSurfaceMaterial(), Math.PI / 2), n = see.geometry.attributes.position.count;
         [["aFlow", 2, 0], ["aWave", 1, 0], ["aDepth", 1, 20], ["aSlope", 1, 0]].forEach(([a, k, v]) => see.geometry.setAttribute(a, new T.Float32BufferAttribute(new Float32Array(n * k).fill(v), k)));
+        // DER KÖRPER IM FLÜSSIGEN WASSER (stoffe.K3, wie die Bühne von diag-post-kette): `wasser` und `spiegel` stehen mit Auge,
+        // Karte und Fläche 10 m unter der tiefsten Linie, über der Eis beginnt (`_eisLinien`), höchstens am Auge des Orts — 43 m
+        // über dem Dorf (127,8 m) lag die Fläche seit stoffe.K3-2 im Eis des Sommers (die Linie 102,3 m an ihrer Säule), und Eis
+        // ÷ R∞ des Wassers ist kein Lichtweg (Luma 126,9). Das Licht der Welt hängt nicht an der Höhe (`_weltLicht`).
+        if (art === "wasser" || art === "spiegel") o.y =Math.min(o.y, Math.min(...r._eisLinien().null) - 8);
         karte.position.copy(o).y -= 2;
         see.position.copy(karte.position);
         sc.add(karte, see);
