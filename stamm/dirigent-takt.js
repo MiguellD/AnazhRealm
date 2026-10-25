@@ -433,6 +433,18 @@ class AnazhRealm_dirigent_takt {
             return false;
         const o = this._weltOffen();
         for (const k in o) if (o[k]) return false; // jedes Feld, ohne Müll je Takt
+        // DER SPRUNG DES ANKERS: stand die Kamera einer Sonde (das Auge der Stufen, `_lodAuge` setzt es neu) oder der Spieler seit
+        // dem letzten Takt woanders, ginge jeder Fege-Takt, der dort an seinem Anker fegte, im nächsten eine Runde — bis dahin
+        // steht die Welt nicht (tiere.K1: der Schuss 43 m quer zum Spieler zeichnete den Mammut 14 m vor dem Auge als Karte)
+        this._lodAuge();
+        for (const t of this._standWache ? this._standWache.takte.values() : [])
+            if (
+                t.pos &&
+                t.anker &&
+                t.takt >= W.takte - 1 &&
+                (t.pos.x - t.anker.x) ** 2 + (t.pos.y - t.anker.y) ** 2 + (t.pos.z - t.anker.z) ** 2 > t.rand * t.rand
+            )
+                return false;
         return !this._standGeht();
     }
 

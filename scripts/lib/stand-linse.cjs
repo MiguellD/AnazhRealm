@@ -813,11 +813,7 @@ function standUrteil(b) {
         v.push(`DORF: die Welt stand nach ${D.steht} Takten mit dem Dorf im Flug (${D.placed} Häuser gesetzt)`);
     // (F) FIXPUNKT: „die Welt steht" (A9) heißt, ohne Eingabe wirkt nichts mehr — nach einem Regler-Schritt mit Wirkung geht nach
     // dem Wort kein Fege-Takt mehr (er stand sonst mitten in seiner Runde)
-    if (b.fixWach !== false)
-        v.push(
-            `FIXPUNKT: nach einem Weckruf ohne Wirkung hieß die Welt nach 1 Takt stehend (${b.fixWach}) — Stufen-Wahl und Streu ` +
-                "gingen mitten in ihren Runden"
-        );
+    if (b.fixWach !== false) v.push(`FIXPUNKT: die Welt hieß stehend nach dem ${b.fixWach} — Stufen-Wahl und Streu gingen noch`);
     const fix = b.fix || [];
     if (!fix.length) v.push("LEER: keine Fixpunkt-Phase");
     else if (!fix.some((F) => F.wirkte > 0 || F.fehler)) v.push("LEER: der Regler-Schritt wirkte nicht — die Fixpunkt-Phase ist stumpf");

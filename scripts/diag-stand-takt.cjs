@@ -495,9 +495,9 @@ function selbsttest() {
         ["am Fluss kein Chunk", (b) => (b.simWecken.wasser.chunks = 0), /LEER: am Fluss weckt die Werk-Setzung keinen Chunk/],
         ["das Wasser bewegt sich", (b) => (b.simWecken.wasser.bewegt = [0, 3.2]), /LEER: am Fluss .* bewegte der Automat 3.2/],
         [
-            "ein Weckruf ohne Wirkung lässt die Welt stehen",
-            (b) => (b.fixWach = true),
-            /FIXPUNKT: nach einem Weckruf ohne Wirkung hieß die Welt nach 1 Takt stehend/,
+            "ein Sprung des Auges (40 m, ohne Takt) lässt die Welt stehen (die Basis)",
+            (b) => (b.fixWach = "Sprung des Auges"),
+            /FIXPUNKT: die Welt hieß stehend nach dem Sprung des Auges/,
         ],
     ];
     for (const [name, tat, muss] of faelle) {
@@ -730,9 +730,15 @@ const TAT = process.argv.includes("--tat");
                 // (F) FIXPUNKT: die Welt steht erst, wenn jeder geweckte Fege-Takt seine Runde zu Ende ging. Ein Weckruf ohne Wirkung
                 // (1 mm): nach einem Takt stehen Stufen-Wahl und Streu mitten in der Runde. L1→L2 × 0,8 und zurück: nach dem Stand
                 // gehen 150 Takte ohne Eingabe keinen Fege-Takt mehr.
+                // Ein Sprung des Auges (die Kamera einer Sonde, 40 m) ohne Takt: die Stufen-Wahl ginge im nächsten eine Runde.
+                const K = st.camera.position;
+                const stand = r._weltSteht();
+                K.x += 40;
+                aus.fixWach = stand && r._weltSteht() && "Sprung des Auges";
+                K.x -= 40;
                 st.architectureCullingRadius += 1e-3;
                 takt();
-                aus.fixWach = r._weltSteht();
+                aus.fixWach = aus.fixWach || (r._weltSteht() && "Weckruf");
                 st.architectureCullingRadius -= 1e-3;
                 const LD = r.constructor.LOD_DISTANCES;
                 const d12 = LD.thresh12;
@@ -1850,7 +1856,7 @@ const TAT = process.argv.includes("--tat");
                         : `wach ${simZeile(w.wach)} — nachher ${simZeile(w.nachher)}`)
         );
     console.log(`  Wach (ein kalter Bau): ${befund.wach} · Dorf ${JSON.stringify(befund.dorf)}`);
-    if ("fixWach" in befund) console.log(`  Fixpunkt Weckruf (1 mm): nach 1 Takt ${befund.fixWach ? "STEHT die Welt" : "steht sie nicht"}`);
+    if ("fixWach" in befund) console.log(`  Fixpunkt Sprung (40 m) und Weckruf (1 mm): ${befund.fixWach || "steht nicht"}`);
     for (const [i, F] of (befund.fix || []).entries())
         console.log(
             `  Fixpunkt ${i ? "L1→L2 zurück" : "L1→L2 × 0,8"}: ${F.fehler || `${F.wirkte} Wirkungen, die Welt steht nach ${F.takte} ` +

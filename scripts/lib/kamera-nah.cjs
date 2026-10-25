@@ -244,6 +244,12 @@ function nahDeckungInSeite(o) {
         const e = eintragVon(obj, inst);
         return !!(e && o.dyn != null && e.id === o.dyn);
     };
+    // der Sammler der Dreiecke (Ecken, Karten-UV, meta) in seine Listen
+    const sammler = (tris, uvs, metas) => (a, b, c, u, me) => {
+        tris.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
+        uvs.push(...(u || [0, 0, 0, 0, 0, 0]));
+        metas.push(me);
+    };
     // ── DER ORTS-SPEICHER ──
     const ZELLE = 2;
     const zk = (ix, iz) => ix * 65536 + iz;
@@ -262,12 +268,7 @@ function nahDeckungInSeite(o) {
             Math.min(a.x, b.x, c.x) <= cx + R &&
             Math.max(a.z, b.z, c.z) >= cz - R &&
             Math.min(a.z, b.z, c.z) <= cz + R;
-        const sammle = (a, b, c, u, me) => {
-            tris.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
-            if (u) uvs.push(u[0], u[1], u[2], u[3], u[4], u[5]);
-            else uvs.push(0, 0, 0, 0, 0, 0);
-            metas.push(me);
-        };
+        const sammle = sammler(tris, uvs, metas);
         st.scene.traverseVisible((obj) => {
             if (!zaehlt(obj)) return;
             jeInstanz(obj, region, (ob, i) => {
@@ -333,17 +334,11 @@ function nahDeckungInSeite(o) {
             }
     }
     const kugel = new T.Sphere(E, D);
-    const sammleNah = (a, b, c, u, me) => {
-        tri.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
-        if (u) uvt.push(u[0], u[1], u[2], u[3], u[4], u[5]);
-        else uvt.push(0, 0, 0, 0, 0, 0);
-        meta.push(me);
-    };
     if (o.dyn != null)
         st.scene.traverseVisible((obj) => {
             if (!zaehlt(obj)) return;
             jeInstanz(obj, kugel, (ob, i) => {
-                if (dynamisch(ob, i)) legeDreiecke(ob, i, inKugel, sammleNah);
+                if (dynamisch(ob, i)) legeDreiecke(ob, i, inKugel, sammler(tri, uvt, meta));
             });
         });
     // die Maske je Stoff, frisch gelesen (ein Schmuggel nimmt sie)
