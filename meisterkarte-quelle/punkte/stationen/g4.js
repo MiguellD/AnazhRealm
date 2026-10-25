@@ -645,6 +645,68 @@ const alle = [
             "in Ego und Third",
         quelle: "2 = auch auf Dach, Fels und Brücke (oberste Fläche, `_bodenSichtAt`), der Fern-Ring zeigt den Edit ≤ 1 s (byte-Diff), Ego und Third, beide Geräte",
     },
+    // ── bauen.K5 ── L-VERBEN (diag-werkstatt-weg, bauen-k5-verben): je Werk über die Werkstatt gesetzt (das Tor über die Hotbar: die
+    // Werkstatt fertigt kein Portal), über die Taste benutzt — Haus: W von 8 m vor der Tür bis hinter die Schwelle, der gezeichnete
+    // Türflügel dreht > 29° (die Tür-Zeile reist in der Hülle) · Wagen (GT): E, W bis 5 m, E · Tor: E öffnet das Portal · Brücke (das
+    // Teil-Werk des Prüf-Satzes, kein Gesetzbuch trägt eine Welt-Brücke): W von Deck-Ende zu Deck-Ende auf dem Deck. Leiter und Bank
+    // trägt kein Gesetzbuch: offen, benannt. Am main 4a5f5e2c 3/6 (die Tür des gesetzten Hauses dreht 0°), am Zweig 4/6. Gerät
+    // headless wie bauen.K1/K3 (derselbe Befehl): die Linse urteilt Verhalten im Null-Renderer, eine Karten-Station verlangte ein
+    // Bild auf der Karte (GPU-Wand).
+    {
+        kriterium: "bauen.K5",
+        staffel: 1,
+        geraet: "headless",
+        befehl: WEG_BEFEHL,
+        env: WEG_ENV,
+        gpu: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const v = j && j.verben;
+            if (!v) return { gruen: false, zahl: "keine Verben in weg.json (Exit " + lauf.exit + ")" };
+            const werke = ["Haus", "Wagen", "Tor", "Brücke", "Leiter", "Bank"];
+            const ja = werke.filter((w) => v[w] && v[w].steht === 1 && v[w].verb === true && !v[w].fehler);
+            const nein = werke
+                .filter((w) => !ja.includes(w))
+                .map((w) => w + " (" + (v[w] ? v[w].fehler || v[w].warum || "steht nicht" : "kein Gesetzbuch trägt das Werk") + ")");
+            return {
+                gruen: ja.length === werke.length,
+                zahl: ja.length + "/" + werke.length + " Werke tragen ihr Verb über die Taste" + (nein.length ? " — offen: " + nein.join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "stamm/werkstatt-*.js",
+            "stamm/koerper-*.js",
+            "stamm/netz-portal.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/siedlung-*.js",
+            "stamm/vegetation-baum.js",
+            "stamm/bau-*.js",
+            "stamm/studio-*.js",
+            "stamm/kampf.js",
+            "stamm/dirigent-*.js",
+            "index.html",
+            "fachwerk-core.js",
+            "vehicle-core.js",
+            "porta-core.js",
+            "foundry-core.js",
+            "foundry-bruecke.js",
+            "spec/pruefsatz/bauen-k3.json",
+            "scripts/diag-werkstatt-weg.cjs",
+            "scripts/lib/stamm.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = von 6 gesetzten Werken (Haus, Wagen, Tor, Brücke, Leiter, Bank) ist jedes Verb aus KIND_POLICY (betreten, drive, portal, sitzen, klettern) über die echte Eingabe nutzbar, an einem Gerät",
+    },
+    {
+        kriterium: "bauen.K5",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: null,
+        grund:
+            "L-VERBEN setzt nur über Werkstatt und Hotbar in Ego; das KI-gesetzte (spawn_studio) und das geteilte Werk (Werk-Code), Third " +
+            "und die Geräte misst kein Werkzeug",
+        quelle: "2 = auch für KI-gesetzte und geteilte Werke, Ego und Third, beide Geräte",
+    },
     // ── studios.K5 ── das Probe-Gesetzbuch (Fixture-Kern in spec/) über die Werkstatt in der Welt (gate:nervensystem E)
     {
         kriterium: "studios.K5",
