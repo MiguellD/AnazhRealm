@@ -259,6 +259,13 @@
                 color: var(--parch-1, #f3e6c4);
                 transition: opacity 0.7s ease;
                 pointer-events: auto;
+                /* ZEILEN IM SCHIRM (Augen-Runde 25.10., 800 × 600): `align-items: center` zentriert nur die KÄSTEN — der Text im
+                   Kasten stand links (`text-align: start`) und der Kasten der Stand-Zeile füllte die ganze Breite: die Zeile
+                   „der Horizont wird gemalt · das Licht des Orts …" lief von Rand zu Rand. Rand und Mitte stehen hier, an der
+                   EINEN Wurzel, für Titel, Satz und Stand. */
+                box-sizing: border-box;
+                padding-inline: max(20px, 6vw);
+                text-align: center;
             }
             #ladeschirm.weg {
                 opacity: 0;
@@ -271,8 +278,10 @@
             }
             #ladeschirm .ladeschirm-titel {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 44px;
+                font-size: clamp(28px, 9.5vw, 44px);
                 letter-spacing: 0.14em;
+                max-width: 100%;
+                overflow-wrap: anywhere;
                 color: #f3e6c4;
                 text-shadow: 0 2px 18px rgba(190, 120, 255, 0.45);
             }
@@ -287,7 +296,13 @@
                 font-size: 12px;
                 letter-spacing: 0.06em;
                 color: rgba(243, 230, 196, 0.55);
-                min-height: 1.4em;
+                /* ein Umbruch je Zeile im Schirm: höchstens 72 Zeichen breit, mittig, gleichmäßig gebrochen; drei Zeilen Platz,
+                   damit der Titel nicht springt, wenn die Lücken-Folge länger wird */
+                line-height: 1.4;
+                min-height: 4.2em;
+                max-width: min(100%, 72ch);
+                overflow-wrap: anywhere;
+                text-wrap: balance;
             }
             #ladeschirm .ladeschirm-glut {
                 width: 180px;
