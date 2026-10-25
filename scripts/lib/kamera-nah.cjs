@@ -255,7 +255,8 @@ function nahDeckungInSeite(o) {
         const R = o.ort ? o.ort.r : 60;
         const cx = o.ort ? o.ort.x : E.x;
         const cz = o.ort ? o.ort.z : E.z;
-        const region = new T.Sphere(new T.Vector3(cx, E.y, cz), 1e6); // die Hülle schneidet nur in x/z (unten)
+        // die Hülle in x/z gegen das Feld
+        const region = (s) => Math.abs(s.center.x - cx) <= R + s.radius && Math.abs(s.center.z - cz) <= R + s.radius;
         const imFeld = (a, b, c) =>
             Math.max(a.x, b.x, c.x) >= cx - R &&
             Math.min(a.x, b.x, c.x) <= cx + R &&
@@ -270,16 +271,7 @@ function nahDeckungInSeite(o) {
         st.scene.traverseVisible((obj) => {
             if (!zaehlt(obj)) return;
             jeInstanz(obj, region, (ob, i) => {
-                if (dynamisch(ob, i)) return;
-                // die Hülle in x/z gegen das Feld
-                const g = ob.geometry;
-                const gross = !Number.isFinite(g.boundingSphere.radius) || g.boundingSphere.radius > 1e5;
-                if (!gross) {
-                    bs.copy(g.boundingSphere).applyMatrix4(m4);
-                    if (Math.abs(bs.center.x - cx) > R + bs.radius || Math.abs(bs.center.z - cz) > R + bs.radius)
-                        return;
-                }
-                legeDreiecke(ob, i, imFeld, sammle);
+                if (!dynamisch(ob, i)) legeDreiecke(ob, i, imFeld, sammle);
             });
         });
         const n = metas.length;
@@ -517,18 +509,24 @@ function nahDeckungInSeite(o) {
                 if (m >= 1) break;
             }
         }
-    // ── DAS ZIEL (K32, die Abnahme des Beweisbilds; o.ziel = { x, y, z, name, saum }): liegt es im Bild (Projektion der
+    // ── DAS ZIEL (K32, die Abnahme des Beweisbilds; o.ziel = { x, y, z, name, saum, punkte }): liegt es im Bild (Projektion der
     // Spieler-Kamera, vor der Nah-Ebene, |ndc| ≤ 0,95), und verdeckt es nichts? Der Strahl Auge → Ziel fragt jede gezeichnete
     // Fläche bis `saum` (0,5 m) vor dem Ziel — Laub · Rinde · Fels · Bau · Gelände · Wagen, nie die Nah-Streu (Gras und Blumen
     // sind die Boden-Schicht) und nie das Ziel selbst (`o.ohne`); Blatt-Karten mit dem Alpha ihres Atlas, Flächen mit der
-    // Durchsicht der Kamera mit dem Gewicht der EINEN Formel (verdeckt ab 0,5). Der erste Verdecker steht beim Namen. ──
+    // Durchsicht der Kamera mit dem Gewicht der EINEN Formel (verdeckt ab 0,5). Der erste Verdecker steht beim Namen.
+    // Ein Ziel aus mehreren Leibern (die Herde, tiere.K1) oder mit Fuß nennt seine `punkte` ([x, y, z]): jeder liegt im Bild
+    // und frei, sonst ist das Ziel verdeckt — die Mitte einer Herde zwischen Stämmen sagt nichts über ihre Glieder. ──
     let zielOut = null;
     if (o.ziel) {
         const Z = o.ziel;
-        const zv = new T.Vector3(Z.x, Z.y, Z.z);
-        const vorn = zv.clone().applyMatrix4(cam.matrixWorldInverse).z < -near;
-        zv.project(cam);
-        const imBild = vorn && Math.abs(zv.x) <= 0.95 && Math.abs(zv.y) <= 0.95;
+        const punkte = [[Z.x, Z.y, Z.z]].concat(Z.punkte || []);
+        const zv = new T.Vector3(Z.x, Z.y, Z.z).project(cam);
+        const imBild = punkte.every(([x, y, z]) => {
+            const v = new T.Vector3(x, y, z);
+            const vorn = v.clone().applyMatrix4(cam.matrixWorldInverse).z < -near;
+            v.project(cam);
+            return vorn && Math.abs(v.x) <= 0.95 && Math.abs(v.y) <= 0.95;
+        });
         // DIE LINIE Auge → Punkt bis `saum` davor: der erste Verdecker und sein Abstand
         const linie = (px, py, pz, saum) => {
             const zx = px - ex,
@@ -595,20 +593,17 @@ function nahDeckungInSeite(o) {
             });
             return { vor, vorD, L };
         };
-        // der Punkt des Ziels und, wenn genannt (`fussY`), sein Fuß: ein Ziel hinter einer Kuppe zeigt nur die Krone
         const saum = Z.saum != null ? Z.saum : 0.5;
-        const kopf = linie(Z.x, Z.y, Z.z, saum);
-        const fuss = Number.isFinite(Z.fussY) ? linie(Z.x, Z.fussY, Z.z, saum) : null;
-        const zu = kopf.vor != null ? kopf : fuss && fuss.vor != null ? fuss : null;
+        const linien = punkte.map(([x, y, z]) => linie(x, y, z, saum));
+        const i = linien.findIndex((l) => l.vor != null);
         zielOut = {
             name: Z.name || "Ziel",
             imBild,
             ndc: [+zv.x.toFixed(3), +zv.y.toFixed(3)],
-            frei: zu == null,
-            vor: zu ? (zu === fuss ? "am Fuß " : "") + zu.vor : null,
-            vorAbstand: zu ? +zu.vorD.toFixed(2) : null,
-            abstand: +kopf.L.toFixed(2),
-            fussFrei: fuss ? fuss.vor == null : null,
+            frei: i < 0,
+            vor: i < 0 ? null : (i ? `an Punkt ${i} ` : "") + linien[i].vor,
+            vorAbstand: i < 0 ? null : +linien[i].vorD.toFixed(2),
+            abstand: +linien[0].L.toFixed(2),
         };
     }
     const N = gw * gh;

@@ -603,12 +603,12 @@ function abnahmeMessen(opt) {
     // ein Ziel in Armlänge (material.K2, `bild --arm`) ist selbst die nahe Fläche: verdeckt ist, was näher als die halbe Armlänge liegt
     const RADIUS = z ? Math.min(2, 0.5 * Math.hypot(z.x - E.x, z.y - E.y, z.z - E.z)) : 2;
     // DER FUSS DES ZIELS (hinter einer Kuppe zeigt ein Baum nur die Krone, der Strahl zum Ziel-Punkt ist frei): steht das Ziel 0,6–40 m über seinem Boden, muss auch sein Fuß (Boden + 0,3 m) frei
-    // sein; `ziel.fussY` nennt ihn selbst, `ziel.fuss === false` fragt ihn nicht (ein Ziel in einer Felswand).
-    const fussY = (q) => {
-        if (q.fuss === false) return undefined;
-        if (Number.isFinite(q.fussY)) return q.fussY;
+    // sein; `ziel.fussY` nennt ihn selbst, `ziel.fuss === false` fragt ihn nicht (ein Ziel in einer Felswand). Dazu jeder
+    // genannte Punkt des Ziels (`ziel.punkte`, [x, y, z]: die Glieder einer Herde) — die Prüfung fragt jeden.
+    const punkte = (q) => {
         const g = r._voxelSurfaceY(q.x, q.z);
-        return Number.isFinite(g) && q.y - g > 0.6 && q.y - g <= 40 ? g + 0.3 : undefined;
+        const y = Number.isFinite(q.fussY) ? q.fussY : Number.isFinite(g) && q.y - g > 0.6 && q.y - g <= 40 ? g + 0.3 : NaN;
+        return (q.fuss === false || !Number.isFinite(y) ? [] : [[q.x, y, q.z]]).concat(q.punkte || []);
     };
     // Der Satz „messung" (Takt- und Luma-Frames) misst keine Sicht: die Strahlen kosteten jeden Mess-Frame Zeit, die er nicht prüft.
     const nd =
@@ -622,7 +622,7 @@ function abnahmeMessen(opt) {
                   ort: { id: "abnahme", x: E.x, z: E.z, r: RADIUS + 2 },
                   neu: true,
                   ohne,
-                  ziel: z ? { x: z.x, y: z.y, z: z.z, name: z.name, saum: z.saum, fussY: fussY(z) } : null,
+                  ziel: z ? { ...z, punkte: punkte(z) } : null,
               });
     // DER VORDERGRUND: mit benanntem Ziel zählt jede Täter-Fläche (Laub · Rinde · Fels · Bau · Böschung) näher als der halbe Ziel-Abstand
     // (2–8 m) — das Bild zeigt sein Ziel, nicht, was davor steht.
