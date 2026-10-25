@@ -2390,9 +2390,10 @@ class AnazhRealm_kreatur_leben {
     }
 
     // DIE VÖGEL (Klang K1, tetrapoda VOGEL_GESETZ): jeder Vogel-Ruf hat einen Leib — gesehen = gehört. Je Takt die Reviere im
-    // Hör-Kreis des Ohrs (klang:UMWELT.stimmen.vogel.hoerweiteM), je Revier seine Bahn auf der Uhr der Welt (`spielZeit`): wer
-    // singt, fliegt und wird gezeichnet, wer schweigt, sitzt im Gras. `state.voegel` trägt die singenden Leiber ({x, y, z}) —
-    // die EINE Quelle, die das Ohr liest (`_umweltLage`). Die Karte merkt je Zelle ihre Würfe und ihr Revier (`_vogelZelle`);
+    // Hör-Kreis des Ohrs (klang:UMWELT.stimmen.vogel.hoerweiteM), je Revier seine Bahn auf der Uhr der Welt
+    // (`worldMeta.wetterUhr`: sie reist im Snapshot und zum Gast — jeder Peer und jeder Reload sieht dieselben Vögel): wer singt,
+    // fliegt und wird gezeichnet, wer schweigt, sitzt im Gras. `state.voegel` trägt die singenden Leiber ({x, y, z}) — die
+    // EINE Quelle, die das Ohr liest (`_umweltLage`). Die Karte merkt je Zelle ihre Würfe und ihr Revier (`_vogelZelle`);
     // je Takt frischt eine Zelle Leben und Deckung nach (Pflanzen, Fällen, Pflege), ferne fallen — die Kosten hängen am
     // Hör-Kreis, nie an der Welt. Gezeichnet wird in EINEM Pool mit dem Stoff der Bau-Pools (`_kistenPool`: EIN Programm, EIN
     // Befehl), je Vogel seine Teile und zwei Flügel im Schlag.
@@ -2427,6 +2428,7 @@ class AnazhRealm_kreatur_leben {
         }
         const wf = this._weatherFieldFor(st.weather);
         const anteil = VG.lied(this._sonnenRichtung().y, wf.rain, this._windAt(px, pz, this._bildZeit).staerke, V);
+        const uhr = Number(st.worldMeta && st.worldMeta.wetterUhr) || 0;
         const b = this._vogelBahnAus || (this._vogelBahnAus = {});
         const voegel = st.voegel || (st.voegel = []);
         const ix0 = Math.floor(px / Z);
@@ -2437,7 +2439,7 @@ class AnazhRealm_kreatur_leben {
                 const k = ix * 1048576 + iz;
                 let c = vk.zellen.get(k);
                 if (!c) vk.zellen.set(k, (c = this._vogelZelle(vk, { ix, iz })));
-                if (!c.revier || !VG.bahn(c.wurf, anteil, st.spielZeit, c.deckung, V, b)) continue;
+                if (!c.revier || !VG.bahn(c.wurf, anteil, uhr, c.deckung, V, b)) continue;
                 const x = c.x + b.dx;
                 const y = c.y + b.h;
                 const z = c.z + b.dz;
