@@ -2031,7 +2031,7 @@ async function korpusHaupt() {
         await new Promise((ok) => srv.listen(PORT, "127.0.0.1", ok));
         const browser = await starteBrowser({ art: "null", frist: 900000 });
         const page = await browser.newPage();
-        await nullRenderer(page, { foundry: true });
+        await nullRenderer(page);
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
         await warteAufWelt(page);
         await page.evaluate(AUSGABE_INSTALL);
@@ -2227,7 +2227,7 @@ async function feindHaupt(quelle) {
         await new Promise((ok) => srv.listen(PORT, "127.0.0.1", ok));
         const browser = await starteBrowser({ art: "null", frist: 600000 });
         const page = await browser.newPage();
-        await nullRenderer(page, { foundry: true });
+        await nullRenderer(page);
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
         await warteAufWelt(page);
         const golden = JSON.parse(fs.readFileSync(path.join(root, "spec/golden/v1/blueprint-signed.json"), "utf8"));
@@ -3146,7 +3146,7 @@ async function feindHaupt(quelle) {
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht.
     const out = await page.evaluate(probe, {

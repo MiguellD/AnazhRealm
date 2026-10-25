@@ -12,7 +12,7 @@ const server = statikServer();
     await new Promise((r) => server.listen(PORT, r));
     const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
-    await nullRenderer(page, { foundry: true }); // die Foundry im Gate-Kontext an (die echte Pipeline)
+    await nullRenderer(page); // die Foundry baut auch ohne Bild (die echte Pipeline)
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
         await window.__weltDa((r) => r.state && r.state.blueprints);

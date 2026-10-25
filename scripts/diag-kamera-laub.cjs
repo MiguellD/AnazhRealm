@@ -17,7 +17,7 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
@@ -30,7 +30,7 @@ const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LA
 const STUDIO = process.env.KAMERA_LAUB_STUDIO ? path.resolve(process.env.KAMERA_LAUB_STUDIO) : null;
 // die Teile des Laufs (Standard alle): laub (die Nah-Deckung, K1) · leib (Mess-Wiese + Prüfbühnen-Hang, K2) · gang (der Gang, K4) · ninja (NP-03, K3) —
 // die CI fährt sie in zwei Schritten (gate:kamera-laub · gate:kamera-leib), je unter 3 min
-// `--bild`: Leib, Gang und Ninja zeichnen, das Laub nie
+// `--bild`: die Welt zeichnet über die Weiche (Rezept `linse`), ohne den Null-Renderer — die Station eines Geräts (leib.K4)
 const BILD = process.argv.includes("--bild");
 const TEILE = (process.argv.includes("--teile") ? process.argv[process.argv.indexOf("--teile") + 1] : process.env.KAMERA_LAUB_TEILE || "laub,leib,gang,ninja").split(",");
 // Die Nah-Radien der Messung (m) — fest in der Linse, damit Vorher und Nachher unter derselben Bedingung stehen.
@@ -1241,9 +1241,8 @@ async function probe(arg) {
     const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
+    if (!BILD) await nullRenderer(page);
     await page.evaluateOnNewDocument(() => {
-        window.__anazhForceFoundry = true;
-        window.__anazhHeadlessNullRenderer = true;
         window.__anazhAutoSettlement = false; // der Dorf-Zug ruht: die Häuser der Mess-Wiese setzt die Linse (fest)
     });
     const bereit = () => warteAufWelt(page, 90000);

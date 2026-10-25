@@ -1895,7 +1895,7 @@ async function probe(arg) {
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     // Der statische Ladeschirm (vor dem Spiel): sichtbar, über allem — gelesen im Ereignis DOMContentLoaded, nie danach (ein
     // schneller Boot ließ ihn weichen, ehe das Protokoll fragte); L2a trägt den Befund
     await page.evaluateOnNewDocument(() =>

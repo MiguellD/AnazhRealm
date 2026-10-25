@@ -135,7 +135,7 @@ function seitenHelfer() {
     const pageErrors = [];
     const seite = async (k) => {
         const page = await k.newPage();
-        await nullRenderer(page, { foundry: true });
+        await nullRenderer(page);
         await page.evaluateOnNewDocument(seitenHelfer);
         page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
         await page.setViewport({ width: 1280, height: 720 });

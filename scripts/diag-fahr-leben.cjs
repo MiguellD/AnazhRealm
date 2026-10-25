@@ -2281,7 +2281,7 @@ function quellenAbgriff() {
         zusatz: ["--autoplay-policy=no-user-gesture-required"],
     });
     const page = await browser.newPage();
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // der Messort der Mess-Wiese (spec/profiband/haushalt.json `messorte`, S1 W1f) — derselbe Leser wie gate:vehicle-drive B-e
     const messort = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort.spieler;
@@ -2309,7 +2309,7 @@ function quellenAbgriff() {
     // F — die Fahr-Bahn im eigenen Boot nach dem Leben (der Quellen-Abgriff der Stimme vor jedem Seiten-Skript)
     const bahnLauf = async () => {
         const page2 = await browser.newPage();
-        await nullRenderer(page2, { foundry: true });
+        await nullRenderer(page2);
         await page2.evaluateOnNewDocument(quellenAbgriff);
         await page2.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
         return page2.evaluate(probeBahn, BAHN);

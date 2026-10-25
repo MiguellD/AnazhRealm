@@ -10,12 +10,13 @@
 const { ladeSpec } = require("./band-urteil.cjs");
 
 // der EINE Leser des Haushalts (band-urteil `ladeSpec`, derselbe wie werkbank und gate:vehicle-drive), hier als Ort {x, z}
+// samt seinem Zustand (`dorfZug`: läuft das Auto-Dorf am Ort)
 function messort(id) {
     const o = ladeSpec(id).ort;
     if (!o || !Array.isArray(o.spieler))
         throw new Error(`messort: kein Messort "${id}" in spec/profiband/haushalt.json`);
     const b = Array.isArray(o.blick) ? o.blick : o.spieler;
-    return { id, x: o.spieler[0], z: o.spieler[1], blick: { x: b[0], z: b[1] }, wiese: o.wiese || null };
+    return { id, x: o.spieler[0], z: o.spieler[1], blick: { x: b[0], z: b[1] }, wiese: o.wiese || null, dorfZug: o.dorfZug };
 }
 
 // DIE WIESE: ein Messort der Art Wiese trägt ihr Gesetz im Haushalt (`messorte[].wiese`) — gemessen wird an EINER

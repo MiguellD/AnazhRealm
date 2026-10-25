@@ -2472,7 +2472,7 @@ async function lauf() {
     try {
         const page = await browser.newPage();
         page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
-        await nullRenderer(page, { foundry: true });
+        await nullRenderer(page);
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
         // die Orte aus der Welt: Fluss, Ufer, See, Seeufer, Rampe nächst der Mess-Wiese
         const ORTE = await page.evaluate(weltOrte, {
@@ -2528,7 +2528,7 @@ async function lauf() {
                 p2.on("pageerror", (e) =>
                     seitenFehler.push("D: " + (e.stack || e.message || String(e)).split("\n")[0])
                 );
-                await nullRenderer(p2, { foundry: true });
+                await nullRenderer(p2);
                 await p2.goto(`http://127.0.0.1:${PORT}/index.html`, {
                     waitUntil: "domcontentloaded",
                     timeout: 120000,

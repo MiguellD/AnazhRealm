@@ -758,14 +758,13 @@ async function starteBrowser(opts = {}) {
     return browser;
 }
 
-// Der Null-Renderer (die Seite zeichnet nichts: `__anazhHeadlessNullRenderer`, der Schalter des Stamms; `foundry`: die
-// Foundry baut auch ohne Bild, `__anazhForceFoundry`) — EINMAL hier, jede Linse ohne Bild ruft ihn vor dem Laden;
+// Der Null-Renderer (die Seite zeichnet nichts: `__anazhHeadlessNullRenderer`, der Schalter des Stamms; die Foundry baut auch
+// ohne Bild, `_foundryEnabled`) — EINMAL hier, jede Linse ohne Bild ruft ihn vor dem Laden;
 // `warteAufWelt` wartet, bis die Welt ihren Takt trägt — die EINE Warte jeder Linse.
-async function nullRenderer(page, { foundry = false } = {}) {
-    await page.evaluateOnNewDocument((mitFoundry) => {
-        if (mitFoundry) window.__anazhForceFoundry = true;
+async function nullRenderer(page) {
+    await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
-    }, foundry);
+    });
 }
 async function warteAufWelt(page, frist = 120000) {
     await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
