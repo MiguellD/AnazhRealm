@@ -58,7 +58,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   Stand · Blocker-Netz · Klang-Gesetz · Uhr + Wetter = Spieler-Wort · SPEICHER atomar (tmp + Rename + .bak).
 - PRÜFEN 6 Golden-Sätze + Ofen · Messorte (`spec/profiband/haushalt.json`): Wiese −280,4/−1045,6 (K55, bd38fb16; der alte Ort −900/−850
   ist seit K16 ein Nadelwald-Hang), Genesis-Ring (`_genesisMitte`), Dorf, Prüfbühne `spec/pruefbuehne`, der Stadt-Gipfel (stadt-voll ·
-  hochhaus-dach · gipfel-blick: Lauf-Orte mit `anlauf`, das Dach am Träger der Kapsel) · 12 Ratschen Ort × Gerät × Sicht ·
+  hochhaus-dach · gipfel-blick: Orte mit `anlauf`, das Dach am Träger der Kapsel; das Band misst sie, `ungemessen` bis zur Ratsche) ·
+  12 Ratschen Ort × Gerät × Sicht ·
   Linsen-Start `lib/software-gpu.cjs` (`linsenWebGpuArgs`: lokal die echte GPU, CI swiftshader) · das Beweisbild urteilt selbst
   (`lib/abnahme-urteil.cjs`).
 
