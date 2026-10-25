@@ -273,9 +273,9 @@ const SELBST = process.argv.includes("--selftest");
                         await null; // DER BODEN-STROM (Kappe 3 Stück): bis zur Frist darüber, im selben Frame danach nur die Kappe
                         const strom = (ms = 1e9, n = 3) => { const n0 = aus9.stromBau; Object.assign(st, { voxelChunks: new Map(), _voxelStreamBudgetMs: ms, _voxelStreamMaxPerFrame: n }); r._tickVoxelChunkStreaming({ x: 0, y: 0, z: 0 }); return aus9.stromBau - n0; }; // prettier-ignore
                         [aus9.strom, aus9.stromGleich] = [strom(), strom()];
-                        // RING-BODEN und FERN-RING (Lade-Takt, K60) am Frame-Ende nach der Frist: die Rampe springt, der Ring fliegt (Selbsttest: die Drossel des Spiels)
-                        const zst = Object.assign(Object.create(st), { renderer: {}, atmosphere: {}, chunkRingRadius: 4, _activeRingRadius: null, voxelMeshPending: new Set([1]) }); // prettier-ignore
-                        r._nexusPerfActuate.call(Object.assign(Object.create(r), { state: zst, _applyEffectiveShadowRange: () => {}, _applyRenderScale: () => {}, _ladeTakt: () => !selbst }), { loadScale: 1, phase: {}, frameMs: 1e3 }); // prettier-ignore
+                        // RING-BODEN und FERN-RING (Lade-Takt, K60) nach der Frist: der Ring springt auf den Boden (`_ringWaechst`), der Fern-Ring fliegt (Selbsttest: die Drossel des Spiels)
+                        const zst = Object.assign(Object.create(st), { renderer: {}, chunkRingRadius: 4, _activeRingRadius: null, voxelMeshPending: new Set([1]) }); // prettier-ignore
+                        r._ringWaechst.call(Object.assign(Object.create(r), { state: zst, _ladeTakt: () => !selbst }));
                         r._ladeTakt = () => !selbst;
                         st.fernRing = { flug: 0, auftrag: 0, cursor: 0, totalVerts: r.constructor.FERN_RING.scheibe * 40, einhaengen: [], gen: 0, anchorX: 0, anchorZ: 0 }; // prettier-ignore
                         Object.assign(aus9, { ring: zst._activeRingRadius, ringSoll: r.constructor.RING_EXIST_FLOOR, fern: (r._fernRingRefresh(), st.fernRing.flug), fernKappe: r.constructor.FERN_RING.scheibenImFlug }); // prettier-ignore
@@ -370,7 +370,7 @@ const SELBST = process.argv.includes("--selftest");
     const T8 = t8.erster === "abgelaufen" && t8.zweiter === "offen" && t8.geist === true && helferNr.length === 2 && t8.helferErster === "abgelaufen" && t8.helferZweiter === "offen" && t8.helferGeist === true; // prettier-ignore
     const t9 = aus.t9;
     // je Leser der Klasse (`_kappeOffen`) alle zwölf statt seiner Kappe, die Frist ein Vielfaches; die Frist gilt je Aufgabe
-    const frist = { _tickPendingVegSpawns: t9.pflanz === 12, "_kappeOffen (Frist)": t9.ort >= 20, _tickAutoSettlement: t9.dorf === 12, tickArchitectureCulling: t9.bau === 12, _tickFoliageGrowth: t9.laub === 12, _tickVoxelChunkStreaming: t9.strom > 3 && t9.strom < 625 && t9.stromGleich === 3, "_tickVoxelChunkStreaming (ms)": t9.stromMs > 4 && t9.stromMs < 625 && t9.stromMsGleich > 0 && t9.stromMsGleich <= 4, _nexusPerfActuate: t9.ring === t9.ringSoll, _fernRingRefresh: t9.fern > t9.fernKappe, _ladeFrist: t9.gleicherFrame === 4 && t9.ortAufgabe >= 20 }; // prettier-ignore
+    const frist = { _tickPendingVegSpawns: t9.pflanz === 12, "_kappeOffen (Frist)": t9.ort >= 20, _tickAutoSettlement: t9.dorf === 12, tickArchitectureCulling: t9.bau === 12, _tickFoliageGrowth: t9.laub === 12, _tickVoxelChunkStreaming: t9.strom > 3 && t9.strom < 625 && t9.stromGleich === 3, "_tickVoxelChunkStreaming (ms)": t9.stromMs > 4 && t9.stromMs < 625 && t9.stromMsGleich > 0 && t9.stromMsGleich <= 4, _ringWaechst: t9.ring === t9.ringSoll, _fernRingRefresh: t9.fern > t9.fernKappe, _ladeFrist: t9.gleicherFrame === 4 && t9.ortAufgabe >= 20 }; // prettier-ignore
     const gang = t9.gang.every(Boolean);
     const T9 = !Object.values(frist).includes(false) && gang;
     const t10 = aus.t10;

@@ -922,106 +922,59 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
     }
 }
 
-// EXISTENZ-BODEN der Ring-Ramp: liegt der Frame ab Bild 1 über dem Totband (Software-Rasterizer),
-// hielte ein Kopfraum-Gate den Ring ewig auf 0. Bis RING_EXIST_FLOOR wächst er OHNE fps-Bedingung
-// (settled + kein Rückstau + Atem), dort endet der Schrumpf-Pfad; der PID atmet NUR darüber.
+// DER RING IST EXISTENZ (`_ringWaechst`, Lehre 13): auf schwachem Holz (frameMs 50 ab Bild 1, jeder Frame über dem Budget,
+// der Regler ruht wie unter `__weltStehtNach`) wächst der Ring Schale um Schale bis zum Ziel, sobald die jetzige steht — nie
+// darüber, nie zurück unter Last; eine ungebaute Schale hält ihn, der gesenkte Regler des Spielers gilt sofort.
 async function checkBandJedesHolzExistenzBoden(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const st = r.state;
-        const A = r.constructor;
-        const out = {};
-        out.hasFloor = Number.isFinite(A.RING_EXIST_FLOOR) && A.RING_EXIST_FLOOR >= 1;
-        // Fixture: schwaches Holz — frameMs 50 (≈20 fps) ab dem ersten Bild, NIE Kopfraum.
-        const snap = {
-            renderer: st.renderer,
-            active: st._activeRingRadius,
-            target: st.chunkRingRadius,
-            pend: st.voxelMeshPending,
-            grass: st.pendingGrass,
-            rampLast: st._ringRampLast,
-            head: st._ringHeadroomSince,
-            over: st._ringOverBudgetSince,
-            boot: st._ringBootWindowUntil,
-            overB: st._frameOverBudget,
-            streamMs: st._voxelStreamBudgetMs,
-            streamN: st._voxelStreamMaxPerFrame,
-            built: r._builtRingRadius,
-            shadowApplied: r._shadowRangeApplied,
+        const F = [
+            "renderer",
+            "_activeRingRadius",
+            "chunkRingRadius",
+            "voxelMeshPending",
+            "pendingGrass",
+            "perfRegulator",
+            "perfSense",
+            "_frameOverBudget",
+        ];
+        const snap = F.map((k) => st[k]);
+        let gebaut = 12;
+        const pfad = [];
+        const takt = (n) => {
+            for (let i = 0; i < n; i++) r._ringWaechst();
+            pfad.push(st._activeRingRadius);
         };
         try {
-            st.renderer = { _isHeadlessNull: false }; // die ECHTE Ramp (nicht der Headless-Instant-Pfad)
-            r._builtRingRadius = () => 12; // Bau-Stub: das Band beweist die RAMP-Entscheidung, nicht den Bau
-            st.chunkRingRadius = 4; // Ziel ÜBER dem Boden — der Boden darf nie übers Ziel
-            st.voxelMeshPending = new Set();
-            st.pendingGrass = new Set();
-            st._frameOverBudget = false;
-            st._activeRingRadius = 0;
-            st._ringHeadroomSince = 0;
-            st._ringOverBudgetSince = 0;
-            st._ringBootWindowUntil = 0;
-            const weakSense = () => ({
-                loadScale: 0.3,
-                frameMs: 50,
-                renderCalls: 100,
-                phase: { streaming: 1, render: 1, archCulling: 1, waterIso: 1, creatures: 0, physics: 0 },
-            });
-            const grown = [];
-            for (let i = 0; i < 4; i++) {
-                st._ringRampLast = performance.now() - (A.RING_RAMP_SETTLE_MS + 50); // der Atem ist verstrichen
-                r._nexusPerfActuate(weakSense());
-                grown.push(st._activeRingRadius);
-            }
-            out.grownPath = grown.join(",");
-            // OHNE Kopfraum wächst der Ring GENAU bis zum Boden — die Welt ENTSTEHT, aber der
-            // PID behält die Hoheit darüber (kein Wachsen über den Boden bei Dauerlast):
-            out.growsToFloor = grown[grown.length - 1] === A.RING_EXIST_FLOOR;
-            out.neverAboveFloor = grown.every((g) => g <= A.RING_EXIST_FLOOR);
-            // Der Schrumpf-Pfad endet am Boden: anhaltende Überlast von oben (Boden+1) → Boden, nie tiefer.
-            st._activeRingRadius = A.RING_EXIST_FLOOR + 1;
-            st._frameOverBudget = true;
-            for (let i = 0; i < 3; i++) {
-                st._ringOverBudgetSince = performance.now() - (A.RING_SHRINK_SUSTAIN_MS + 100);
-                st._ringRampLast = performance.now() - (A.RING_RAMP_SETTLE_MS + 50);
-                r._nexusPerfActuate(weakSense());
-            }
-            out.shrinkStopsAtFloor = st._activeRingRadius === A.RING_EXIST_FLOOR;
+            Object.assign(st, { renderer: { _isHeadlessNull: false }, chunkRingRadius: 4, _activeRingRadius: 0 });
+            Object.assign(st, { voxelMeshPending: new Set(), pendingGrass: new Set(), perfRegulator: false });
+            Object.assign(st, { perfSense: { frameMs: 50, phase: {} }, _frameOverBudget: true });
+            Object.assign(r, { _builtRingRadius: () => gebaut, _ladeTakt: () => false });
+            for (let i = 0; i < 6; i++) takt(1);
+            [st._activeRingRadius, gebaut] = [2, 1];
+            takt(3);
+            gebaut = 2;
+            takt(1);
+            st.chunkRingRadius = 2;
+            takt(1);
         } catch (e) {
-            out.error = e.message;
+            pfad.push(e.message);
         } finally {
-            st.renderer = snap.renderer;
-            r._builtRingRadius = snap.built;
-            st._activeRingRadius = snap.active;
-            st.chunkRingRadius = snap.target;
-            st.voxelMeshPending = snap.pend;
-            st.pendingGrass = snap.grass;
-            st._ringRampLast = snap.rampLast;
-            st._ringHeadroomSince = snap.head;
-            st._ringOverBudgetSince = snap.over;
-            st._ringBootWindowUntil = snap.boot;
-            st._frameOverBudget = snap.overB;
-            st._voxelStreamBudgetMs = snap.streamMs;
-            st._voxelStreamMaxPerFrame = snap.streamN;
-            if (Number.isFinite(snap.shadowApplied)) r._applyEffectiveShadowRange(snap.shadowApplied);
+            F.forEach((k, i) => (st[k] = snap[i]));
+            delete r._builtRingRadius;
+            delete r._ladeTakt;
         }
-        return out;
+        return pfad.join(",");
     });
-    if (res.error) {
-        check("JEDES-HOLZ: Existenz-Boden-Band (realm)", false, res.error);
-        return;
-    }
     check(
-        "JEDES-HOLZ: RING_EXIST_FLOOR existiert (≥1)",
-        res.hasFloor
+        `JEDES-HOLZ: ohne Kopfraum und Regler wächst der Ring bis zum Ziel und nie zurück (${res}) — die Welt existiert ganz`,
+        res.startsWith("1,2,3,4,4,4,")
     );
     check(
-        `JEDES-HOLZ: ohne Kopfraum (frameMs 50 ab Bild 1) wächst der Ring GENAU bis zum Existenz-Boden (${res.grownPath}) — die Welt ENTSTEHT auf jedem Holz, der PID regiert darüber`,
-        res.growsToFloor && res.neverAboveFloor
-    );
-    check(
-        "JEDES-HOLZ: der Schrumpf-Pfad endet am Existenz-Boden — anhaltende Überlast gibt die Fern-Schale zurück, NIE die Existenz-Welt",
-        res.shrinkStopsAtFloor
+        `JEDES-HOLZ: eine ungebaute Schale hält den Ring, der gesenkte Regler gilt sofort (${res})`,
+        res.endsWith(",2,3,2")
     );
 }
 
