@@ -196,8 +196,7 @@ function taeter(inj) {
     // Punkt auf der Oberkante unter der Kapsel (keine Stufe unter dem Fuß, `_bauAuflageAt` · `_gaitSohleAufBau`)
     if (inj === "fuss") {
         r._bauAuflageAt = () => -Infinity;
-        r._gaitSohleAufBau = () => null;
-        r._standSicht = (x, z, t, s) => (s === true ? t : P._standSicht.call(r, x, z, t, s));
+        r._standSicht = (x, z, t, s) => (s ? t : P._standSicht.call(r, x, z, t));
         r._animateHumanoidRig = function (rig, ...a) {
             P._animateHumanoidRig.call(this, rig, ...a);
             if (rig && rig.legL.zehe) rig.legL.zehe.rotation.x = rig.legR.zehe.rotation.x = 0;
