@@ -99,3 +99,4 @@
 2026-10-25 17:22:45 takt3-gtx speicher.K1#2 GRÜN 15.0 · 37/38
 2026-10-25 17:27:52 takt3-gtx speicher.K2#1 ROT 5.0 · 38/38
 2026-10-25 17:28:20 nw3031-abab START 4 Zellen
+2026-10-25 17:49:57 nw3031-abab VORFAHRT w-ego-B1 gewartet 18.2
