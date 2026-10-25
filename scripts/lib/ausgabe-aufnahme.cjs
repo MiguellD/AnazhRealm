@@ -581,7 +581,7 @@ function erstRuhe(frame, opt, wer) {
 // DIE ABNAHME DES BLICKS (K32, scripts/lib/abnahme-urteil.cjs): was die Aufnahme über ihr Bild weiß, ohne Pixel — Stand aus dem
 // laufenden Spiel, Bühne, Gerät, Pose, die Nah-Deckung des Schirms (Laub · Rinde · Fels näher als 2 m am Auge, Gelände und Bau
 // näher als 1 m, Gelände näher als 2 m und höchstens 1 m unter dem Auge — die Kamera an der Böschung oder in der Wand; die Linse der
-// Spieler-Kamera scripts/lib/kamera-nah.cjs) und das benannte Ziel (`opt.ziel` = { x, y, z, name, ohne, r }: im Bild, ohne
+// Spieler-Kamera scripts/lib/kamera-nah.cjs) und das benannte Ziel (`opt.ziel` = { x, y, z, name, ohne, r, punkte }: jeder Punkt im Bild, ohne
 // Verdecker davor). Das Ziel selbst zählt nie: seine ids (`ohne`) und jedes Werk, dessen Fuß näher als `r` (1,5 m) am Ziel
 // steht.
 function abnahmeMessen(opt) {
