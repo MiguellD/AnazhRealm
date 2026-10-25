@@ -281,6 +281,123 @@ async function herdeHang() {
 // der Text einer Funktion ohne Einzug und Kommentar-Zeilen (ein Argument des Befehls, s. herdeHang)
 const knapp = (fn) => String(fn).replace(/\n\s*\/\/[^\n]*/g, "").replace(/\n\s+/g, "\n");
 
+// ───────── oekologie.K5 Staffel 2 — DIE ANSTECKUNG GEGEN bond = 0 UND DIE BINDUNG ÜBER DEN RELOAD ─────────
+// Null-Renderer, Produktions-Boot, ein Statik-Server auf {PORT} (R3: die Stimmung ist Zustand der Welt, kein Bild). Vier Läufe
+// im Wechsel A B A B, jeder in einem frischen Browser-Kontext (kein Lauf erbt Stimmung, Feld-Abdruck oder Speicher des vorigen):
+// am Spieler-Ort der Welt (Land, kein Bau in 14 m) ein Fuchs 3 m neben dem Spieler, „happy“ (CONTAGION_TARGET.happy), Gefühle
+// und Stimmung des Spielers 0, dann die Geste „folge mir“ (`assignCreatureTask` follow_player: das Gefühl der Geste und der
+// Bindungs-Sprung); 120 s Spiel-Takt wie der Loop (updatePlayerEmotions · _loopFixedStep · _loopWeatherAndGrowth, 60 Hz), der
+// Spieler steht. A ist die Welt (die Bindung wächst, solange das Tier nah folgt), B der Gegenlauf bond = 0 (EMOTION_CONTAGION
+// ohne Sprung und Wachstum, bond vor jedem Takt 0) — sonst gleich. Gemessen die STIMMUNG des Spielers (`_moodValence`, die EMA
+// der Emotion über EMOTION_MOOD_TAU) nach 120 s. Nach dem zweiten A im selben Kontext `saveState`, der IDB-Put landet, Reload:
+// derselbe Fuchs (beim Namen) trägt bond (Hundertstel) und follow_player. Zeile `BINDUNG {…}`, das Ergebnis in {AUS}.
+async function bindungAnsteckung() {
+    const fs = require("fs");
+    const path = require("path");
+    const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const [aus, port] = process.argv.slice(1);
+    const erg = { sek: 120, laeufe: [], fehler: [] };
+    const lauf = async (o) => {
+        const r = window.anazhRealm;
+        const s = r.state;
+        const p = s.player;
+        const pm = s.playerMesh.position;
+        s.renderer.setAnimationLoop(null);
+        if (typeof r._gliederBestellen === "function") await r._gliederBestellen("fuchs");
+        r.setGameMode("pfad");
+        r.clearCreatures();
+        const P = pm.clone();
+        const bau = (e) => Math.hypot(e.position.x - P.x, e.position.z - P.z) < 14;
+        for (let i = 0; i < 40 && (s.architectures.some(bau) || !r._landAt(P.x, P.z, 0.2)); i++) P.x += 24;
+        P.y = r.getTerrainHeightAt(P.x, P.z) + r.constructor.PLAYER_FOOT_OFFSET;
+        pm.copy(P);
+        s.playerVel.setValue(0, 0, 0);
+        if (o.bondNull) {
+            AnazhRealm.EMOTION_CONTAGION = Object.freeze({ ...AnazhRealm.EMOTION_CONTAGION, bondGrowPerSec: 0, bondFollowBump: 0 });
+            if (AnazhRealm.EMOTION_CONTAGION.bondGrowPerSec !== 0) throw new Error("die Mutation bond = 0 greift nicht");
+        }
+        let t = 1e4;
+        for (const k in p.emotions) p.emotions[k] = 0;
+        p.mood = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+        p.emotionLastTick = t;
+        const f = r.spawnCreatureAt(P.x + 3, P.y, P.z, "happy", "fuchs", { bodySize: 1, precise: true });
+        if (!f) throw new Error("kein Fuchs");
+        f.position.y = r.getTerrainHeightAt(f.position.x, f.position.z);
+        f.userData.name = "K5-Bindung";
+        r.assignCreatureTask(f, "follow_player");
+        const bond0 = f.userData.bond || 0;
+        const ab = [];
+        const kurve = [];
+        for (let k = 1; k <= o.sek * 60; k++) {
+            t += 1 / 60;
+            s.spielZeit += 1 / 60;
+            if (o.bondNull) for (const c of s.creatures) c.userData.bond = 0;
+            r.updatePlayerEmotions(t);
+            r._loopFixedStep(1 / 60, t);
+            r._loopWeatherAndGrowth(1 / 60);
+            if (k % 60 === 0) ab.push(Math.hypot(f.position.x - pm.x, f.position.z - pm.z));
+            if (k % 1200 === 0)
+                kurve.push([r._moodValence(), p.emotions.joy || 0, p.emotions.peace || 0, f.userData.bond || 0].map((v) => +v.toFixed(4)));
+        }
+        ab.sort((x, y) => x - y);
+        const g = (o2) => Object.fromEntries(Object.entries(o2).map(([k, v]) => [k, +(+v).toFixed(4)]));
+        return {
+            valenz: +r._moodValence().toFixed(4),
+            stimmung: g(p.mood),
+            gefuehl: g(p.emotions),
+            bond: [+bond0.toFixed(3), +(f.userData.bond || 0).toFixed(3)],
+            auftrag: f.userData.task && f.userData.task.name,
+            lebt: s.creatures.includes(f),
+            abstand: { p50: +ab[ab.length >> 1].toFixed(2), max: +ab[ab.length - 1].toFixed(2) },
+            ort: [+P.x.toFixed(1), +P.z.toFixed(1)],
+            kurve,
+        };
+    };
+    const abdruck = () => {
+        const f = window.anazhRealm.state.creatures.find((c) => c.userData.name === "K5-Bindung");
+        return f ? [Math.round(f.userData.bond * 100) / 100, f.userData.task && f.userData.task.name] : null;
+    };
+    const server = statikServer();
+    await new Promise((ok) => server.listen(Number(port), "127.0.0.1", ok));
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
+    try {
+        for (const art of ["A", "B", "A", "B"]) {
+            const kontext = await browser.createBrowserContext();
+            try {
+                const seite = await kontext.newPage();
+                seite.setDefaultTimeout(600000);
+                seite.on("pageerror", (e) => erg.fehler.push(art + ": " + String(e.message || e).split("\n")[0].slice(0, 200)));
+                await nullRenderer(seite);
+                await seite.goto("http://127.0.0.1:" + port + "/index.html", { waitUntil: "networkidle0", timeout: 180000 });
+                await warteAufWelt(seite, 300000);
+                const e = await seite.evaluate(lauf, { sek: erg.sek, bondNull: art === "B" });
+                erg.laeufe.push({ art, ...e });
+                console.log("  Lauf " + art + " Stimmung " + e.valenz + " · bond " + e.bond.join(" → ") + " · Abstand p50 " + e.abstand.p50 + " m");
+                if (art === "A" && erg.laeufe.length === 3) {
+                    const vor = await seite.evaluate(abdruck);
+                    await seite.evaluate(() => window.anazhRealm.saveState());
+                    await new Promise((ok) => setTimeout(ok, 1500));
+                    await seite.reload({ waitUntil: "networkidle0", timeout: 180000 });
+                    await warteAufWelt(seite, 300000);
+                    const h = await seite.waitForFunction(abdruck, { timeout: 90000, polling: 500 }).catch(() => null);
+                    erg.reload = { vor, nach: h ? await h.jsonValue() : null };
+                    console.log("  Reload " + JSON.stringify(erg.reload));
+                }
+            } finally {
+                await kontext.close();
+            }
+        }
+    } catch (e) {
+        erg.fehler.push(String((e && e.message) || e).split("\n")[0].slice(0, 400));
+    } finally {
+        await browser.close();
+        server.close();
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+    console.log("BINDUNG " + JSON.stringify({ laeufe: erg.laeufe.map((x) => [x.art, x.valenz, x.bond[1]]), reload: erg.reload || null, fehler: erg.fehler }));
+    process.exit(erg.fehler.length ? 1 : 0);
+}
+
 const stationen = [
     {
         kriterium: "mensch.K3",
@@ -1229,6 +1346,58 @@ const stationen = [
         ],
         quelle: "1 = ein gebundenes Tier folgt ≥ 10 min über Hindernisse",
     },
+    {
+        kriterium: "oekologie.K5",
+        staffel: 2,
+        geraet: "headless",
+        // `bindungAnsteckung` (oben): A B A B je 120 s Spiel-Takt, gebunden gegen bond = 0, dann Speichern → Reload. Messbar heißt:
+        // jedes A über jedem B und Δ der Mittel ≥ 3 × das Rauschen der Wiederholung (mindestens 0,01 der Valenz); jedes Tier lebt,
+        // folgt und steht im Median ≤ 10 m vom Spieler (sonst misst der Lauf keine Ansteckung)
+        befehl: ["node", "-e", "(" + bindungAnsteckung.toString() + ")()", "{AUS}", "{PORT}"],
+        gpu: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            if (!j || !Array.isArray(j.laeufe)) return { gruen: false, zahl: "kein Ergebnis in {AUS} (Exit " + lauf.exit + ")" };
+            const F = j.fehler || [];
+            const A = j.laeufe.filter((x) => x.art === "A");
+            const B = j.laeufe.filter((x) => x.art === "B");
+            if (A.length !== 2 || B.length !== 2)
+                return { gruen: false, zahl: "Läufe A " + A.length + " · B " + B.length + " von je 2 (" + F.join("; ").slice(0, 240) + ")" };
+            const va = A.map((x) => x.valenz);
+            const vb = B.map((x) => x.valenz);
+            const delta = (va[0] + va[1]) / 2 - (vb[0] + vb[1]) / 2;
+            const rausch = Math.max(Math.abs(va[0] - va[1]), Math.abs(vb[0] - vb[1]));
+            const nah = j.laeufe.every((x) => x.lebt && x.auftrag === "follow_player" && x.abstand.p50 <= 10);
+            const bondA = A.every((x) => x.bond[0] > 0 && x.bond[1] > x.bond[0]);
+            const bondB = B.every((x) => x.bond[0] === 0 && x.bond[1] === 0);
+            const rl = j.reload || {};
+            const reload =
+                Array.isArray(rl.vor) && Array.isArray(rl.nach) && rl.vor[0] > 0 && rl.vor[1] === "follow_player" &&
+                JSON.stringify(rl.vor) === JSON.stringify(rl.nach);
+            const messbar = Math.min(...va) > Math.max(...vb) && delta >= Math.max(0.01, 3 * rausch);
+            return {
+                gruen: lauf.exit === 0 && !F.length && nah && bondA && bondB && messbar && reload,
+                zahl:
+                    "Stimmung nach 120 s gebunden " + va.join("/") + " gegen bond = 0 " + vb.join("/") + " (Δ " + delta.toFixed(4) +
+                    ", Rauschen " + rausch.toFixed(4) + ") · bond A " + A.map((x) => x.bond.join(" → ")).join(", ") + " · Abstand p50 " +
+                    j.laeufe.map((x) => x.abstand.p50).join("/") + " m · Reload " + JSON.stringify(rl.vor || null) + " → " +
+                    JSON.stringify(rl.nach || null) + (F.length ? " · " + F.join("; ").slice(0, 200) : ""),
+            };
+        },
+        pfad: [
+            ...KREATUR,
+            "stamm/feld-sprache.js",
+            "stamm/koerper-bewegung.js",
+            "stamm/gelaende-boden.js",
+            "stamm/siedlung-ort.js",
+            "stamm/speicher-*.js",
+            "stamm/dienst.js",
+            "stamm/dirigent-*.js",
+            "index.html",
+        ],
+        quelle:
+            "2 = die Ansteckung verschiebt die Stimmung des Spielers messbar gegen einen Gegenlauf mit bond = 0, und die Bindung übersteht den Reload",
+    },
 
     // ───────── mensch.K2 Staffel 2 — die Ankunft der Bewohner (mensch-bewohner-k5 1e4e725a) ─────────
     {
@@ -1316,17 +1485,6 @@ const fehlt = [
             "(_creatureScentHuntDir) liest nur Tiere — ein Rudel aus der Geburt (≥ 130 m, Leine am Geburtsort) wird nicht zum Spieler gezogen; " +
             "ungemessen, „im Bild\" verlangt eine Radeon-Station",
         quelle: "1 = im Wolfsrevier wird der Spieler in 10 Spielminuten ≥ 1× gepirscht und umstellt (im Bild)",
-    },
-    {
-        kriterium: "oekologie.K5",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "Werkzeug fehlt: kein Gegenlauf bond = 0 (Ansteckung `_tickEmotionContagion` gegen die Stimmung des Spielers) " +
-            "und kein Reload der Bindung in einer Linse; GTX ungemessen",
-        quelle:
-            "2 = die Ansteckung verschiebt die Stimmung des Spielers messbar gegen einen Gegenlauf mit bond = 0, und die Bindung übersteht den Reload",
     },
     {
         kriterium: "mensch.K1",

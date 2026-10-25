@@ -92,6 +92,23 @@ const TAT_PFAD = ["stamm/feld-*.js", "stamm/vegetation-*.js", "stamm/werkstatt-b
     "stamm/dienst.js", "stamm/speicher-*.js", "stamm/dirigent-*.js", "stamm/daten.js", "foundry-core.js",
     "scripts/diag-stand-takt.cjs", "scripts/lib/stand-linse.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"];
 
+// feld.K1 (gate:fahr-leben W, `--kette`): Sturm → Regen-Feld → Nässe → Grip — der Bremsweg ab 50 km/h liest μ aus der Stoff-Zeile
+const KETTE_PFAD = [
+    "stamm/koerper-fahrt.js",
+    "stamm/koerper-bewegung.js",
+    "stamm/stoff-material.js",
+    "stamm/bild-himmel.js",
+    "stamm/daten.js",
+    "stamm/bau-buch.js",
+    "stamm/bau-vorlagen.js",
+    "stamm/vegetation-wiese.js",
+    "stamm/siedlung-satz.js",
+    "stamm/gelaende-boden.js",
+    "vehicle-core.js",
+    "scripts/diag-fahr-leben.cjs",
+    "scripts/lib/fahr-proben.cjs",
+];
+
 module.exports = [
     // ── gelaende.K1 ──
     {
@@ -952,22 +969,29 @@ module.exports = [
                     " m (Regen gehalten " + v("festRegen") + ", Nässe gehalten " + v("festNaesse") + ") · Exit " + lauf.exit,
             };
         },
-        pfad: [
-            "stamm/koerper-fahrt.js",
-            "stamm/koerper-bewegung.js",
-            "stamm/stoff-material.js",
-            "stamm/bild-himmel.js",
-            "stamm/daten.js",
-            "stamm/bau-buch.js",
-            "stamm/bau-vorlagen.js",
-            "stamm/vegetation-wiese.js",
-            "stamm/siedlung-satz.js",
-            "stamm/gelaende-boden.js",
-            "vehicle-core.js",
-            "scripts/diag-fahr-leben.cjs",
-            "scripts/lib/fahr-proben.cjs",
-        ],
+        pfad: KETTE_PFAD,
         quelle: "1 = Tiefe 2–3 mit Festhalte-Probe",
+    },
+    // Staffel 2: dieselbe Kette, dieselbe Festhalte-Probe (`ketteVerdict` zählt nur Glieder, die mit dem Sturz ziehen UND stehen,
+    // solange ihr Vorgänger gehalten wird) — die Tiefe ≥ 4. An main d43cb61c ROT: Tiefe 3 (Regen-Feld, Nässe, Grip); ein viertes
+    // Glied (Pegel aus dem Regen, Unterstand und Tränke der Tiere aus Nässe und Pegel) misst die Linse, sobald es steht, im selben
+    // Commit wie das Glied — die Station liest nur `tiefe`
+    {
+        kriterium: "feld.K1",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-fahr-leben.cjs", "--kette"],
+        env: { FAHR_LEBEN_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const k = jsonZeile(lauf.stdout, /^KETTE \{/);
+            if (!k) return { gruen: false, zahl: "keine KETTE-Zeile (Exit " + lauf.exit + ")" };
+            const glieder = Object.keys((k.roh && k.roh.sturm) || {}).filter((g) => g !== "s");
+            return { gruen: k.tiefe >= 4, zahl: "Tiefe " + k.tiefe + " mit Festhalte-Probe (Glieder " + glieder.join(" → ") + "), Soll ≥ 4 · Exit " + lauf.exit };
+        },
+        pfad: KETTE_PFAD,
+        quelle: "2 = Tiefe ≥ 4",
     },
 
     // ── feld.K4 ── gate:stand-takt --tat (Null-Renderer, Mess-Wiese): 10 Bäume fällen, 30 Pflanzen pflücken mit tryMouseBreak;
@@ -1168,11 +1192,10 @@ module.exports = [
 // ── NICHT FASSBAR (befehl: null): kein Werkzeug im Spiel-Baum misst das Soll dieser Staffel als EIN Befehl am SHA ──
 module.exports.fehlt = [
     { kriterium: "gelaende.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: Damm (b) und Ferne (d, byte-Diff am Ring) misst keine Linse; Ego und GTX ungemessen" },
-    { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug fehlt: 12 Posen (Ego/Third × Mittag/Nacht/Regen × beide Geräte) und die Fließ-Anisotropie (ohne Soll im Code)" },
-    { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Pfützen in den Mulden, keine Trocken-Kurve, kein Third" },
-    { kriterium: "physik.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: der Wagen bei vmax × 1,2 gegen die 0,35-m-Mauer und die Bild-Probe (Spalt Leib–Wand ≤ 5 cm) auf beiden Geräten — gate:kollision-bild läuft auf dem Null-Renderer" },
+    { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug und Gesetz fehlen für die Fließ-Anisotropie: keine Linse misst die Normalen-Anisotropie längs/quer zum Lauf im Ausgabe-Bild, und die Strömung der Welt ist `WASSER_GESETZ.wellen.adv × centerness` (`_waterFlowAt`, stamm/wasser-hydro.js) — kein Gefälle, kein Einzugsgebiet, aus dem sie wüchse (25.10. gelesen an d43cb61c). Die 12 Posen allein (Ego/Third × Mittag/Nacht/Regen über `bild --uhr --wetter` wie Staffel 1) wären eine halbe Station" },
+    { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug und Welt fehlen: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Trocken-Kurve, kein Third; die Welt trägt keine Pfütze (stamm/ kennt kein Pfützen-Gesetz, 25.10. an d43cb61c), die Mulden-Korrelation r ≥ 0,5 hätte nichts zu messen" },
+    { kriterium: "physik.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: die Zeile gt von gate:kollision-bild fährt den GT bei vmax (`_vehicleProfile(e).vmax`, nicht × 1,2) gegen die Mauer 0,35 × 2,5 × 6 m, und ihr Spalt ist der Abstand Körper–Blocker-Box am Null-Renderer — keine Linse misst den Spalt Leib–Wand im Ausgabe-Bild (Bild = Blocker gilt dort nur auf SEITE_M 0,3 m), auf keinem Gerät (25.10. gelesen an d43cb61c)" },
     { kriterium: "feld.K2", staffel: 2, befehl: null, grund: "nicht gebaut: das Netz-Log steht (gate:mp-sync (e), keine Zustands-Nachricht), aber die Uhren der Teil-Simulationen sind je Seite — der Auto-Zug des Wetters zählt die Sitzung (`weatherEffectTime`) und den Wunsch des eigenen Nexus, Overlays und Brand die Spielzeit der Seite (`spielZeit`), die Tageszeit ist Spieler-Wort (set_time_of_day nicht broadcastbar); ohne geteilte Welt-Uhr ist Wetter am Ort keine Funktion von Saat und Akten, und ein Reload mitten im Sturm setzt nur das Wort fort (der Übergang reist nicht)" },
-    { kriterium: "feld.K1", staffel: 2, befehl: null, grund: "Werkzeug fehlt: `diag-fahr-leben --kette` kennt drei Glieder (Regen-Feld, Nässe, Grip) und misst Tiefe ≥ 4 nie; das vierte Glied (Unterstand und Tränke der Tiere aus Nässe und Pegel statt `_weatherIsWet`, oder der Pegel aus dem Regen) ist nicht gebaut" },
     { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
     { kriterium: "stoffe.K3", staffel: 2, befehl: null, grund: "nicht gebaut: der Schnee schmilzt nicht (die Schneegrenze ist Höhe allein, kein Pegel liest Schmelze), Lava erstarrt nicht (die glut-Achse ist eine eingefrorene Feld-Achse), der Stahl der Esse liest das Temperatur-Feld nicht; nur das Eis steht (Staffel 1)" },
 ];
