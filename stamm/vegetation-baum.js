@@ -1587,8 +1587,8 @@ class AnazhRealm_vegetation_baum {
         // Ein Wurf des Feldes (Wald, Unterholz, Totholz, Fels-Streu): wo die Wildnis nicht trägt, fällt er.
         if (!this._wildnisTraegt(position.x, position.z)) return;
         // DIE MARKE DES WURFS: was das Feld wirft, trägt sie (`feldWurf`, am Eintrag und im Save) — `_weichtDemBau` liest die
-        // Herkunft, nie die Art (die Feuerstelle des Menschen ist Bau)
-        opts = Object.assign({}, opts, { feldWurf: true });
+        // Herkunft, nie die Art (die Feuerstelle des Menschen ist Bau); der Wurf ist Gesetz (`ausGesetz`): der Boot wirft ihn neu
+        opts = Object.assign({}, opts, { feldWurf: true, ausGesetz: true });
         if (this._vegSpawnImmediate) {
             this._naturSetzen(name, position, opts);
             return;
@@ -1976,7 +1976,9 @@ class AnazhRealm_vegetation_baum {
             if (!this._imGrundriss(e.position.x, e.position.z, 0.8, k, e)) continue;
             weg.push(e);
         }
-        for (const e of weg) this.removeArchitecture(e);
+        // die Natur weicht still (speicher.K3): kein Verlust im Tagebuch, kein Abschied — bis hier füllten die Räumungen der Orte
+        // am Weg das Tagebuch (5 km: 170 von 200 Einträgen „Struktur wurde abgebaut", die Genesis fiel aus dem Deckel)
+        for (const e of weg) this.removeArchitecture(e, { still: true });
         // DAS TIER IM BAU: ein Wurf des Felds, geboren vor dem Bau, steht nie in ihm (`_weichtDemBau`) — vorher umschloss das
         // Haus die Herde, der Erdbau des Kellers nahm ihr den Boden (gate:haus-welt W10: 3 Hirsche im Keller des
         // haus_provenzalisch, einer auf der Diele, der Gang schob sie vor sich her und riss). Auf dem Weg geht ein Tier weiter.

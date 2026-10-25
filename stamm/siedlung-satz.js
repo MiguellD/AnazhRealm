@@ -3258,6 +3258,8 @@ class AnazhRealm_siedlung_satz {
             return nein("unbekannt");
         }
         if (!this.state.scene) return nein("buehne");
+        // DIE TAT BLEIBT, WO DAS GESETZ NEU SETZT (speicher.K3): ein Wurf des Gesetzes fällt, wo eine Tat ihn nahm (`_tatSperrt`)
+        if (opts.ausGesetz === true && position && this._tatSperrt(position.x, position.z)) return nein("tat");
         // Der Same eines Werks ohne eigenen (Bau einer Kreatur, Plattform, Portal) kommt aus dem Welt-Strom seiner Art (Γ5,
         // Lehre 7) — nie Math.random: der Mitspieler und der Reload sähen ein anderes Werk.
         const seed = Number.isFinite(opts.seed) ? opts.seed : this._bauSame("bau:" + type);
@@ -3384,6 +3386,9 @@ class AnazhRealm_siedlung_satz {
         // V18.297 — autonom vom Nexus gespawnt → vom Cap (`_capNexusStructures`) bounded.
         // Die Welt wächst, hortet aber nicht: ist das Limit erreicht, verblasst das Fernste.
         if (opts.autonomous === true) entry.autonomous = true;
+        // DIE WELT IST EINE FUNKTION (speicher.K3, Gebot 7): was Saat und Gesetz setzen (`opts.ausGesetz`: Wurf des Felds, Streu,
+        // Ort), rechnet jeder Boot neu — der Stand trägt es nie, nur die Tat an ihm (`harvestArchitecture`); die Marke reist nie.
+        if (opts.ausGesetz === true) entry._ausGesetz = true;
         // Affordances EINMAL beim Spawn berechnen (nicht pro Frame); Welt-Reaktionen lesen entry.affordances.
         // Bauplan-Edits wirken nur auf NEUE Spawns (Snapshot wie precisionCap).
         const bp = this.state.blueprints && this.state.blueprints[type];

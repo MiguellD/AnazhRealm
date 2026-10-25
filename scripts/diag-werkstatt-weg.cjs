@@ -15,7 +15,7 @@
 //   node scripts/diag-werkstatt-weg.cjs [--selftest]          Port: WERKSTATT_WEG_PORT (Standard 4623)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, sleep: pause } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -715,7 +715,6 @@ async function probe(argW) {
             const snapMeta = JSON.parse(JSON.stringify(r.buildStateSnapshot().worldMeta));
             rl.weiter = r._bauSame("pruef:reload");
             st.worldMeta = Object.assign({}, wmAlt, { bauSame: undefined }, snapMeta);
-            delete st.worldMeta.scatterPromoted;
             rl.nachReload = r._bauSame("pruef:reload");
         } finally {
             st.worldMeta = wmAlt;
