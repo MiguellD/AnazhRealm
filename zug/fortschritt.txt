@@ -107,3 +107,4 @@
 2026-10-25 18:59:09 nw3031-abab VORFAHRT w-ego-B3 gewartet 17.7
 2026-10-25 19:11:58 nw3031-abab w-ego(4+4) nicht-langsamer 33.9 · verlängert (4+4)
 2026-10-25 19:25:25 nw3031-abab stadt(4+4) LANGSAMER 13.4 · verlängert (4+4)
+2026-10-25 20:42:20 b-kalt-8f18 START 1 Stationen
