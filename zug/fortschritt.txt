@@ -62,3 +62,4 @@
 2026-10-25 12:58:11 takt3-gtx START 38 Stationen
 2026-10-25 13:03:18 takt3-gtx gelaende.K2#1 GRÜN 5.0 · 1/38
 2026-10-25 13:08:25 takt3-gtx gelaende.K3#1 GRÜN 5.0 · 2/38
+2026-10-25 13:13:32 takt3-gtx gelaende.K5#2 ROT 5.0 · 3/38
