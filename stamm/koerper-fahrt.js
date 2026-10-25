@@ -306,6 +306,7 @@ class AnazhRealm_koerper_fahrt {
             const eintrag = { ky: kp.y, kz: kp.z, proben: [] };
             unten2.set(leg.knee, eintrag);
             if (leg.ankle) unten2.set(leg.ankle, eintrag);
+            if (leg.zehe) unten2.set(leg.zehe, eintrag);
         }
         const unterKopf = (o) => {
             for (let n = o; n && n !== group; n = n.parent) if (n === rig.head) return true;

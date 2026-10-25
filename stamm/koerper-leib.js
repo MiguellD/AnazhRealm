@@ -134,6 +134,26 @@ class AnazhRealm_koerper_leib {
             });
             t0.sohleY = Number.isFinite(box.min.y) ? box.min.y : 0;
             t0.knoechelY = new THREE.Vector3().setFromMatrixPosition(t0.teile.ankle1.matrixWorld).y;
+            // die Auflage der Sohle längs vor und hinter dem Knöchel: die Haut, die Knöchel und Zehe tragen, bis 1,5 cm über der
+            // Sohle (Ruhe-Pose) — nie die gerundete Spitze oder Ferse
+            const kz = new THREE.Vector3().setFromMatrixPosition(t0.teile.ankle1.matrixWorld).z;
+            const v = new THREE.Vector3();
+            let [vorn, hinten] = [0, 0];
+            t0.root.traverse((n) => {
+                if (!n.isSkinnedMesh) return;
+                const fuss = [t0.teile.ankle1, t0.teile.zehe1].map((b) => n.skeleton.bones.indexOf(b));
+                const A = n.geometry.attributes;
+                for (let i = 0; i < A.position.count; i++) {
+                    let w = 0;
+                    for (let k = 0; k < 4; k++)
+                        if (fuss.includes(A.skinIndex.getComponent(i, k))) w += A.skinWeight.getComponent(i, k);
+                    if (!(w > 0.5)) continue;
+                    v.fromBufferAttribute(A.position, i).applyMatrix4(n.matrixWorld);
+                    if (v.y > t0.sohleY + 0.015) continue;
+                    [vorn, hinten] = [Math.max(vorn, v.z - kz), Math.max(hinten, kz - v.z)];
+                }
+            });
+            t0.fussLaengs = [vorn, hinten];
         }
         wrap.position.y = oy - f * t0.sohleY;
         wrap.add(klon);
@@ -162,8 +182,8 @@ class AnazhRealm_koerper_leib {
             head: P2("head"),
             armL: { shoulder: P2("arm1"), elbow: P2("elbow1"), wrist: P2("hand1") },
             armR: { shoulder: P2("arm-1"), elbow: P2("elbow-1"), wrist: P2("hand-1") },
-            legL: { hip: P2("hip1"), knee: P2("knee1"), ankle: P2("ankle1") },
-            legR: { hip: P2("hip-1"), knee: P2("knee-1"), ankle: P2("ankle-1") },
+            legL: { hip: P2("hip1"), knee: P2("knee1"), ankle: P2("ankle1"), zehe: P2("zehe1") },
+            legR: { hip: P2("hip-1"), knee: P2("knee-1"), ankle: P2("ankle-1"), zehe: P2("zehe-1") },
             // kh in BAUM-Einheiten: der Animator schreibt ·kh-Welt-Beträge auf Knoten
             // UNTER wrap(·f) — kh/f hält die Amplituden welt-gleich.
             kh: kh / f,
@@ -175,6 +195,8 @@ class AnazhRealm_koerper_leib {
             // Die Sohle unter dem Knöchel in der Ruhe-Pose (m): dieselbe tiefste Fläche der Vorlage, die oben auf oy steht —
             // die Fuß-IK hebt den Knöchel um sie über den Boden (`_gaitIKPrep`).
             sohle: f * (t0.knoechelY - t0.sohleY),
+            // die Auflage der Sohle vor und hinter dem Knöchel (m): auf einer Treppe trägt sie die höchste Stufe unter ihr
+            fussLaengs: [f * t0.fussLaengs[0], f * t0.fussLaengs[1]],
             _skinMat: null, // GEFALLEN mit dem Inline-Bau — die Farb-Wahrheit ist userData.hautTon (Pipe: Vertex-Farben)
         };
         // V18.491.85 — Augen-Welle: iris/lid aus Ofen-Gelenken (fail-closed ohne Refs).
@@ -566,17 +588,28 @@ class AnazhRealm_koerper_leib {
     // (`_gaitBodenY`) und des Tiers (`_kreaturFussBoden`), Tier-Lage (`_creatureSlopeProben`, die Mitte im Frame-Takt), der
     // Stoß-Schritt, die Tod-Lage. Die Karte am Punkt liest `_bodenSichtAt` (am Chunk-Rand die des Nachbarn).
     // Über einem gefrorenen Spiegel (`_eisAt`, stoffe.K3) sieht das Auge das Eis, nie den Grund unter ihm.
-    _standSicht(x, z, traegerY, struktur) {
-        if (struktur === true) return traegerY;
+    // DIE STUFE UNTER DEM FUSS (leib.K2, `fuss`: die Fuß-IK des Menschen und des Tiers): den Punkt trägt die Auflage eines Baus
+    // AM PUNKT (`_bauAuflageAt`, im Band vom Träger abwärts bis eine Stufe hinauf) oder der Boden darunter — auf der Treppe
+    // steht jeder Fuß auf seiner Stufe, auch der erste von der Wiese und der letzte, wenn die Kapsel schon am Hang steht. Bis
+    // leib-k2 trug ein Bau JEDEN Punkt mit der Oberkante unter der Kapsel (der hintere Fuß stand eine Stufe über seiner), und
+    // trug ihn keiner, ging der Fuß durch die Stufe. Liegt unter einem Punkt eines Baus weder Bau noch Boden im Band, bleibt
+    // der Träger. Rad, Leib-Lage und Bewohner fragen ohne `fuss` (ihr eigener Bau trägt sie nie).
+    _standSicht(x, z, traegerY, struktur, fuss) {
         const band = AnazhRealm.STAND_SICHT_BAND;
         const karte = this._bodenSichtAt(x, z);
         const eis = this._eisAt(x, z, traegerY + band, 2 * band, karte);
         const k = eis !== null && !(karte >= eis) ? eis : karte;
         if (!Number.isFinite(traegerY)) return Number.isFinite(k) ? k : NaN;
-        if (!Number.isFinite(k)) return traegerY;
-        if (Math.abs(k - traegerY) <= band) return k;
-        const g = this._koerperBodenUnter(x, traegerY, z);
-        return Number.isFinite(g) && Math.abs(g - traegerY) <= band ? g : traegerY;
+        const bau =
+            fuss === true ? this._bauAuflageAt(x, z, traegerY - band, traegerY + AnazhRealm.PLAYER_STEP_UP) : -Infinity;
+        let g = struktur === true ? -Infinity : traegerY;
+        if (Number.isFinite(k) && Math.abs(k - traegerY) <= band) g = k;
+        else if (Number.isFinite(k) && struktur !== true) {
+            const u = this._koerperBodenUnter(x, traegerY, z);
+            if (Number.isFinite(u) && Math.abs(u - traegerY) <= band) g = u;
+        }
+        const y = Math.max(bau, g);
+        return y > -Infinity ? y : traegerY;
     }
     // Der Boden unterm Fuß — der EINE Proben-Chokepoint des Biped-IK: der Stand-Leser der Sicht um den TRÄGER desselben
     // Kapsel-Schritts (`_stepCharacter` stempelt `_kapselTraegerY`/`_kapselStruktur`). Vorher las die Probe das Gelände
@@ -585,7 +618,7 @@ class AnazhRealm_koerper_leib {
     // NaN — keine IK.
     _gaitBodenY(x, z) {
         const s = this.state;
-        return this._standSicht(x, z, s._kapselTraegerY, s._kapselStruktur);
+        return this._standSicht(x, z, s._kapselTraegerY, s._kapselStruktur, true);
     }
     // Die Bodenprobe je Frame: der Stand-Leser ist eine Karten-Lesung (bilinear), kein Feld-Scan — der Fuß, der auf ein
     // Podest tritt, liest es im selben Frame (der frühere 0,3-m-Cache hielt den alten Boden).
@@ -625,14 +658,15 @@ class AnazhRealm_koerper_leib {
                 yaw: 0,
                 probeL: { x: NaN, z: NaN, g: NaN },
                 probeR: { x: NaN, z: NaN, g: NaN },
-                lockL: { on: false, x: 0, z: 0 },
-                lockR: { on: false, x: 0, z: 0 },
+                lockL: { on: false, x: 0, z: 0, stufe: null },
+                lockR: { on: false, x: 0, z: 0, stufe: null },
                 footL: { x: mesh.position.x, z: mesh.position.z },
                 footR: { x: mesh.position.x, z: mesh.position.z },
             };
         }
         ik.soleY = soleY;
         ik.soleH = r.sohle;
+        ik.fussLaengs = r.fussLaengs;
         ik.yaw = Number.isFinite(yaw) ? yaw : 0;
         const fL = ik.lockL.on ? ik.lockL : ik.footL,
             fR = ik.lockR.on ? ik.lockR : ik.footR;
@@ -720,7 +754,8 @@ class AnazhRealm_koerper_leib {
                 lock.x = foot.x;
                 lock.z = foot.z;
                 // der Boden, auf den er tritt (der Fühler des Takts lag an der Lage des Vor-Takts: am 25°-Hang 0,77 m
-                // daneben, der Fuß stand im Aufsetz-Takt 27 cm über dem Boden)
+                // daneben, der Fuß stand im Aufsetz-Takt 27 cm über dem Boden), auf einem Bau seine Stufe
+                lock.stufe = ik.fussLaengs ? this._gaitSohleAufBau(lock, ik) : null;
                 this._gaitProbe(probe, lock.x, lock.z);
             }
             tx = lock.x;
@@ -730,13 +765,28 @@ class AnazhRealm_koerper_leib {
         }
         const hv = this._gaitTmpV2 || (this._gaitTmpV2 = new THREE.Vector3());
         leg.hip.getWorldPosition(hv);
+        // AUF DER TREPPE (leib.K2): der gehende Fuß steht flach auf seiner Stufe (`_gaitSohleAufBau`, beim Aufsetzen gelesen)
+        const stufe = geht && lock.stufe != null ? lock.stufe : null;
+        const g = stufe === null ? probe.g : stufe;
+        // die Sohle liegt dem Boden an (der rollende Fuß kippt um seine Rolle darüber hinaus)
+        const kipp =
+            stufe === null
+                ? this._gaitSohlenKipp(tx, tz, ik.yaw, probe.g)
+                : this._gaitKippEben || (this._gaitKippEben = Object.freeze({ laengs: 0, quer: 0 }));
         // der Vorlauf längs in das lotrechte Maß der Kette (das Becken ist längs ungleich skaliert, _gaitBeinMass)
-        // der rollende Fuß im Gang (rolle aus der Pose): der Knöchel über dem gehaltenen Ballen, die Sohle gekippt
+        // der rollende Fuß im Gang (rolle aus der Pose): der Knöchel über dem gehaltenen Ballen, die Sohle gekippt — sein
+        // Versatz (Ballen vor, Hub auf) gilt im Rahmen der geneigten Sohle; der Knöchel steht um die Sohle längs ihrer
+        // Normale über dem Boden, lotrecht soleH·√(1 + tan²α + tan²β). Bis leib-k2 stand er lotrecht soleH über ihm: am
+        // 25°-Hang die Sohle 0,9 cm im Boden, der rollende Fuß mit dem waagrechten Versatz bis 4 cm (gate:koerper-stand K8 falllinie)
         const rollt = geht && rolle && rolle.roll > 0;
+        const [kc, ks] = [Math.cos(kipp.laengs), Math.sin(kipp.laengs)];
+        const rx = rollt ? rolle.rollDx * ik.wpl : 0,
+            ry = rollt ? rolle.heb * ik.wpl : 0;
+        const [tl, tq] = [Math.tan(kipp.laengs), Math.tan(kipp.quer)];
         const vor =
             ((tx - hv.x) * Math.sin(ik.yaw) + (tz - hv.z) * Math.cos(ik.yaw)) * (ik.wpl / (ik.wz || ik.wpl)) +
-            (rollt ? rolle.rollDx * ik.wpl : 0);
-        const unten = hv.y - (probe.g + ik.soleH) - (rollt ? rolle.heb * ik.wpl : 0);
+            (rx * kc - ry * ks);
+        const unten = hv.y - (g + ik.soleH * Math.sqrt(1 + tl * tl + tq * tq)) - (rx * ks + ry * kc);
         if (!(unten > 0.05)) {
             lock.on = false;
             return; // Boden über der Hüfte (Klippe/ungebaut) — NaN-Wand
@@ -748,10 +798,62 @@ class AnazhRealm_koerper_leib {
         const res = this._twoBoneIK(ik.l1, ik.l2, vor, unten);
         leg.hip.rotation.x = res.hip;
         leg.knee.rotation.x = res.knee;
-        // die Sohle liegt dem Boden an (der rollende Fuß kippt um seine Rolle darüber hinaus)
-        const kipp = this._gaitSohlenKipp(tx, tz, ik.yaw, probe.g);
         leg.ankle.rotation.x = (rollt ? rolle.roll : 0) - (res.hip + res.knee) - kipp.laengs;
         leg.ankle.rotation.z = kipp.quer;
+        if (leg.zehe) leg.zehe.rotation.x = rollt ? -rolle.roll : 0; // die Zehen bleiben am Boden (die Pose oben)
+    }
+    // DIE SOHLE AUF DER TREPPE (leib.K2), beim Aufsetzen EINMAL gelesen (`_gaitLegIK`, der stehende Fuß wechselt seine
+    // Stufe nie): trägt ein Bau einen Punkt der Sohlen-Auflage (Ferse bis Spitze, `fussLaengs`, neun Proben über den
+    // Fuß-Leser), steht die Sohle flach auf der höchsten Probe — der Vorfuß auf der Stufe, die Ferse frei über der Setzstufe.
+    // Berührt die höhere Stufe nur ein Ende der Sohle, setzt der Fuß um das kürzere Stück ganz auf EINEN Auftritt (`lock`
+    // rückt), wenn er dort eben steht — sonst rollte er über die Kante, und der Ballen hinge 17 cm über seiner Stufe. Vorher stand die Sohle auf dem Punkt unter dem Knöchel: die Spitze 17 cm in der nächsten Stufe
+    // (gate:koerper-stand K8 falllinie). null, wenn kein Bau die Sohle trägt — dann liest sie den Boden (`_gaitSohlenKipp`).
+    _gaitSohleAufBau(lock, ik) {
+        const [vorn, hinten] = ik.fussLaengs;
+        const [sx, sz] = [Math.sin(ik.yaw), Math.cos(ik.yaw)];
+        const N = 9;
+        const schritt = (vorn + hinten) / (N - 1);
+        const H = this._gaitSohleH || (this._gaitSohleH = new Float64Array(N));
+        const profil = (x, z) => {
+            let bau = false;
+            for (let i = 0; i < N; i++) {
+                const [px, pz] = [x + sx * (i * schritt - hinten), z + sz * (i * schritt - hinten)];
+                const h = this._gaitBodenY(px, pz);
+                H[i] = Number.isFinite(h) ? h : -Infinity;
+                if (!bau && H[i] > -Infinity) bau = this._bauAuflageAt(px, pz, h - 0.005, h + 0.005) > -Infinity;
+            }
+            return bau;
+        };
+        if (!profil(lock.x, lock.z)) return null;
+        const hoch = Math.max(...H);
+        let a = 0;
+        let b = N - 1;
+        while (H[a] < hoch - 0.01) a++;
+        while (H[b] < hoch - 0.01) b--;
+        // trägt die höhere Stufe genau ein Ende der Sohle, setzt der Fuß um das kürzere Stück ganz auf EINEN Auftritt: von
+        // ihr weg oder ganz hinauf — die Kante zwischen der letzten hohen und der ersten tiefen Probe auf 2 mm, der Fuß 1 cm
+        // über sie hinaus (gerundet auf den Proben-Abstand schoss er über die nächste Kante: der Auftritt lässt 7 cm)
+        if ((a === 0) === (b === N - 1)) return hoch;
+        let [p, q] =
+            a === 0
+                ? [b * schritt - hinten, (b + 1) * schritt - hinten]
+                : [a * schritt - hinten, (a - 1) * schritt - hinten];
+        for (let k = 0; k < 6; k++) {
+            const m = (p + q) / 2;
+            if (this._gaitBodenY(lock.x + sx * m, lock.z + sz * m) >= hoch - 0.01) p = m;
+            else q = m;
+        }
+        const e = (p + q) / 2;
+        for (const d of [e + hinten + 0.01, e - vorn - 0.01].sort((x, y) => Math.abs(x) - Math.abs(y))) {
+            const [x, z] = [lock.x + sx * d, lock.z + sz * d];
+            const bau = profil(x, z);
+            const neu = Math.max(...H);
+            if (!bau || neu - Math.min(...H) < 0.01) {
+                [lock.x, lock.z] = [x, z];
+                return bau ? neu : null; // eben auf dem Auftritt, oder ganz auf dem Boden davor
+            }
+        }
+        return hoch;
     }
     // DIE SOHLE AM HANG (Gelände H5): die Neigung des gezeichneten Bodens unter dem Fuß (der Stand-Leser je ± 0,12 m längs und
     // quer zur Blick-Achse), bis ± 0,45 rad (das Sprunggelenk) — die Sohle kippt mit. Bis H5 blieb sie waagrecht: am 25°-Hang
@@ -766,6 +868,11 @@ class AnazhRealm_koerper_leib {
         };
         const w = (dy) => Math.max(-0.45, Math.min(0.45, Math.atan(dy / (2 * d))));
         const k = this._gaitKippTmp || (this._gaitKippTmp = { laengs: 0, quer: 0 });
+        // steht die Sohle auf einer Bau-Oberkante, ist ihr Boden eben (die Proben griffen über die Stufen-Kante)
+        if (this._bauAuflageAt(x, z, g - 0.005, g + 0.005) > -Infinity) {
+            k.laengs = k.quer = 0;
+            return k;
+        }
         k.laengs = w(y(d * s, d * c) - y(-d * s, -d * c));
         k.quer = w(y(d * c, -d * s) - y(-d * c, d * s));
         return k;
@@ -916,6 +1023,9 @@ class AnazhRealm_koerper_leib {
             add(r.legR.hip, "x", ikR.hip * w);
             add(r.legR.knee, "x", ikR.knee * w);
             add(r.legR.ankle, "x", (FR.roll - ikR.hip - ikR.knee) * w);
+            // die Zehen biegen am Ballen zurück, um den der Fuß rollt (koerper MENSCH_GESTALT.fuss.ballen): sie bleiben am Boden
+            add(r.legL.zehe, "x", -FL.roll * w);
+            add(r.legR.zehe, "x", -FR.roll * w);
             // das Bein-Signal für Arme und Becken: −1, wenn das linke Bein vorn steht (Arm L schwingt gegen Bein L)
             sw = Math.max(-1, Math.min(1, (FR.dz - FL.dz) / Sl));
         }
@@ -2303,7 +2413,7 @@ class AnazhRealm_koerper_leib {
         const ud = group.userData || {};
         const ebene = group.position.y;
         if (!Number.isFinite(ud._traegerY) || ud._motionZustand === "schwimmen" || ud._hopH > 0) return ebene;
-        return this._standSicht(x, z, ud._traegerY, ud._traegerStruktur === true);
+        return this._standSicht(x, z, ud._traegerY, ud._traegerStruktur === true, true);
     }
 
     _tetrapodaSoulParts(soulKey, ovOpt) {

@@ -295,26 +295,6 @@ async function checkBandRing5Soul(ctx) {
         const statusEl = document.getElementById("status-soul");
         out.statusBarShowsLabel = statusEl && /Wolf/.test(statusEl.textContent || "");
 
-        // V2-Animation: die Beine des Menschen gehen nach dem EINEN Gang-Gesetz. Der Schritt kommt aus dem EINEN
-        // Gang-Tick (`_gaitTick`, derselbe Chokepoint wie Peer und Bewohner): 1 s Gehen mit 1,15 m/s, die Beine müssen
-        // ihre rotation.x ändern. Ohne Schritt (kein gait) schwingt seit K07 kein Bein mehr — der Sinus um einen 3,4-m-
-        // Schritt fiel; der direkte Aufruf ohne gait maß diesen Zwilling.
-        r.applyPlayerSoul("human");
-        const humanGroup = currentMesh();
-        const leftLegRotInitial = humanGroup.userData.parts.leftLeg.rotation.x;
-        const def = r.playerSoulDefs.human;
-        const gangHalter = { walkPhase: 0 };
-        let leftLegAusschlag = 0;
-        for (let i = 0; i < 60; i++) {
-            const gait = r._gaitTick(humanGroup, gangHalter, 1.15, 1 / 60, null);
-            def.animate(humanGroup, i / 60, gangHalter.walkPhase, true, false, undefined, gait);
-            leftLegAusschlag = Math.max(
-                leftLegAusschlag,
-                Math.abs(humanGroup.userData.parts.leftLeg.rotation.x - leftLegRotInitial)
-            );
-        }
-        out.humanWalkAnimationMoves = leftLegAusschlag > 0.1;
-
         // Die FLÜGEL-Rolle flattert im Idle durch den EINEN Kern (_animateCompoundMotion) über den echten
         // Spieler-Pfad (geflügelte Custom-Seele als Literal-Fixture). Emotionen NEUTRALISIEREN — Warmup-
         // Emotionen konfundieren sonst die Amplituden-Schwelle.
@@ -421,7 +401,6 @@ async function checkBandRing5Soul(ctx) {
         check("Ring 5: saveState persistiert playerSoul", ring5Results.savedPlayerSoul);
         check("Ring 5: loadState wendet Seele auf Mesh an", ring5Results.loadAppliesSoul);
         check("Ring 5 (NULL): Status-Bar zeigt das Körper-Label ('Wolf')", ring5Results.statusBarShowsLabel);
-        check("Ring 5 V2: Mensch-Walk-Animation rotiert Beine bei isMoving=true", ring5Results.humanWalkAnimationMoves);
         check(
             "Ring 5 V2 (NULL): Flügel-Rolle flattert im Idle (Custom-Fixture, der EINE Kern)",
             ring5Results.phoenixWingsFlapInIdle
@@ -1631,35 +1610,20 @@ async function checkBandTierFern(ctx) {
 }
 
 // Der Körper geht den Weg, nicht die Uhr — eingefaltet aus gate:koerper-bewegung (D3b, Orakel Bogen 2): die Gang-Gesetze am ECHTEN
-// Chokepoint (animatePlayerSoul / _animateHumanoidRig / updateCreatures): (A) Phasen-Rate und Schritt-DISTANZ folgen dem Gang-Gesetz
-// (K07, ±10 %, der Sprint skatet nie) · (B) die Zwei-Knochen-IK pur (< 1 cm, gestreckt, nie NaN) · (C) der Posen-Blend stetig
-// (Δw ≤ 0,2 je Tick) · (D) der Tier-Root-Pitch folgt dem 30°-Hang, geerdet · (E) das Fuß-IK über den echten Pfad (Becken senkt
-// sich, Abgrund ohne NaN, Luft-Sperre); Selbsttests S1 (hartes Blend) und S2 (_slopePitch ≡ 0).
+// Chokepoint (animatePlayerSoul / _animateHumanoidRig / updateCreatures): (A) das Gang-Gesetz pur (ω = 2π·v/Λ) · (B) die
+// Zwei-Knochen-IK pur (< 1 cm, gestreckt, nie NaN) · (C) der Posen-Blend stetig (Δw ≤ 0,2 je Tick) · (D) der Tier-Root-Pitch
+// folgt dem 30°-Hang, geerdet; Selbsttests S1 (hartes Blend) und S2 (_slopePitch ≡ 0). Kadenz und Schritt des Spielers am
+// echten Gang misst gate:tier-gang (LEIB: Kadenz, Töne gegen Λ, Schlupf), das Fuß-IK am echten Boden gate:koerper-stand (K8:
+// Höhenlinie, Falllinie, Treppe; K1: die Luft-Sperre) — bis leib-k2 hier (A) mit gestubbtem Tempo und (E) mit gestubbtem
+// Bau-Träger, der jeden Punkt trug.
 async function checkBandKoerperBewegung(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
         const r = window.anazhRealm,
-            s = r.state,
-            A = r.constructor;
+            s = r.state;
         const o = { checks: {} };
-        for (const fn of [
-            "_gaitGesetz",
-            "_gaitBeinMass",
-            "_gaitBlendStep",
-            "_twoBoneIK",
-            "_slopePitch",
-            "_gaitTick",
-            "_gaitIKPrep",
-            "_gaitApplyFussIK",
-            "_creatureSlopeProben",
-            "_creatureSlopeProbe",
-            "animatePlayerSoul",
-            "updateCreatures",
-        ]) {
-            if (typeof r[fn] !== "function") return { error: fn + " fehlt" };
-        }
         // KONSUM am Ruf: der nahe, trockene Peer läuft über den EINEN Gang-Tick wie der Spieler (Spieler, Tier-Hang und
-        // Fuß-IK beweisen S1, (D) und (E) an ihrer Wirkung).
+        // Fuß-IK beweisen S1, (D) und gate:koerper-stand K8 an ihrer Wirkung).
         {
             const g = r._buildHumanGroup();
             const pp = s.playerMesh.position;
@@ -1741,39 +1705,6 @@ async function checkBandKoerperBewegung(ctx) {
         p.mountedArch = null;
         let vStub = 0;
         s.playerVel = { x: () => vStub, z: () => vStub * 0, y: () => 0 };
-        const fahre = (v, sek, t0) => {
-            vStub = v;
-            p.animationLastTick = -Infinity;
-            r.animatePlayerSoul(t0);
-            const ph0 = p.walkPhase;
-            const n = Math.round(sek * 60);
-            for (let k = 1; k <= n; k++) r.animatePlayerSoul(t0 + k / 60);
-            return p.walkPhase - ph0;
-        };
-    
-        // ── (A) WEG-PHASE am ECHTEN Konsumenten ──
-        const d1 = fahre(3, 1.0, 100);
-        const d2 = fahre(6, 1.0, 200);
-        o.phaseRate1 = d1;
-        o.phaseRate2 = d2;
-        o.rateRatio = d1 > 0 ? d2 / d1 : 0;
-        // K07: die Phasen-Rate folgt ω = 2π·v/Λ(v) des Gang-Gesetzes (nicht mehr ∝ v bei festem Schritt)
-        {
-            const rgR = s.playerMesh.userData.rig;
-            o.rateSoll = r._gaitGesetz(rgR, 6).omega / r._gaitGesetz(rgR, 3).omega;
-        }
-        o.checks.aRateVerdoppelt = o.rateRatio > 1 && Math.abs(o.rateRatio / o.rateSoll - 1) <= 0.1;
-        const sd1 = d1 > 0 ? 3 / (d1 / Math.PI) : 0; // Weg je Schritt bei v=3
-        const sd2 = d2 > 0 ? 6 / (d2 / Math.PI) : 0; // Weg je Schritt bei v=6
-        o.schritt1 = sd1;
-        o.schritt2 = sd2;
-        // K07: der Schritt folgt dem Gang-Gesetz (Λ/2 wächst mit dem Tempo) — gemessen am Konsumenten ± 10 %
-        const rgA = s.playerMesh.userData.rig;
-        const soll1 = r._gaitGesetz(rgA, 3).schritt / 2,
-            soll2 = r._gaitGesetz(rgA, 6).schritt / 2;
-        o.checks.aSchrittKonstant =
-            sd1 > 0 && Math.abs(sd1 / soll1 - 1) <= 0.1 && Math.abs(sd2 / soll2 - 1) <= 0.1 && sd2 > sd1;
-    
         // ── (C) POSEN-BLEND stetig am Konsumenten (Schwellen-Sprung) ──
         const blendLauf = () => {
             let maxJump = 0;
@@ -1812,68 +1743,6 @@ async function checkBandKoerperBewegung(ctx) {
         r._gaitBlendStep = savedBlend; // restaurieren (Gate-Hook-Lehre)
         o.s1MaxJump = blStub.maxJump;
         o.checks.s1LensFires = blStub.maxJump > 0.2;
-    
-        // ── (E) FUSS-IK-KONSUM: Becken senkt sich auf gesenktem Boden, Abgrund ohne NaN ──
-        {
-            const rig = pmesh.userData.rig;
-            const soleY = pmesh.position.y - A.PLAYER_FOOT_OFFSET;
-            const savedTraeger = s._kapselTraegerY;
-            const savedStruktur = s._kapselStruktur;
-            // der Träger, wie ihn der Kapsel-Schritt stempelt (ein Bauwerk: eben per Definition)
-            const traeger = (y) => {
-                s._kapselTraegerY = y;
-                s._kapselStruktur = true;
-            };
-            const probenFrisch = () => {
-                const ik = pmesh.userData._gaitIK;
-                if (ik) {
-                    ik.probeL.g = NaN;
-                    ik.probeR.g = NaN;
-                }
-            };
-            const tickeIdle = (t0) => {
-                vStub = 0;
-                p._gaitW = 0;
-                p.animationLastTick = -Infinity;
-                r.animatePlayerSoul(t0);
-                for (let k = 1; k <= 8; k++) r.animatePlayerSoul(t0 + k / 60);
-            };
-            const savedAir = s.isInAir;
-            s.isInAir = false; // der stehende Körper (die Luft-Sperre prüft E2)
-            traeger(soleY); // der Träger auf der Sohlen-Ebene
-            probenFrisch();
-            tickeIdle(500);
-            const h0 = rig.hips.position.y;
-            traeger(soleY - 0.25); // der Träger 25 cm gesenkt
-            probenFrisch();
-            tickeIdle(510);
-            const h1 = rig.hips.position.y;
-            traeger(soleY - 50); // Abgrund
-            probenFrisch();
-            tickeIdle(520);
-            let alleFinite = true;
-            for (const leg of [rig.legL, rig.legR])
-                for (const kk of ["hip", "knee", "ankle"])
-                    if (leg[kk] && !Number.isFinite(leg[kk].rotation.x)) alleFinite = false;
-            if (!Number.isFinite(rig.hips.position.y)) alleFinite = false;
-            // (E2) LUFT-SPERRE (Leben-Prüfung N-D1): in der Luft erdet die Fuß-IK nie — derselbe gesenkte Boden senkt
-            // das Becken NICHT
-            traeger(soleY - 0.25);
-            s.isInAir = true;
-            probenFrisch();
-            tickeIdle(530);
-            const hLuft = rig.hips.position.y;
-            s.isInAir = savedAir;
-            s._kapselTraegerY = savedTraeger; // restaurieren
-            s._kapselStruktur = savedStruktur;
-            probenFrisch();
-            o.beckenLuft = hLuft;
-            o.checks.eLuftSperre = Number.isFinite(hLuft) && Number.isFinite(h0) && Math.abs(hLuft - h0) < 0.02;
-            o.beckenFlach = h0;
-            o.beckenGesenkt = h1;
-            o.checks.eBeckenSenkt = Number.isFinite(h0) && Number.isFinite(h1) && h1 < h0 - 0.1;
-            o.checks.eAbgrundOhneNaN = alleFinite;
-        }
     
         // Spieler-Bühne restaurieren
         s.playerVel = savedVel;
@@ -1947,16 +1816,14 @@ async function checkBandKoerperBewegung(ctx) {
     const f = (v, n = 2) => (typeof v === "number" ? v.toFixed(n) : String(v));
     const k = rot("konsumPeer");
     check("Körper-Bewegung KONSUM: der Peer ruft den EINEN Gang-Tick wie der Spieler", !k, k && "ROT: " + k);
-    const a = rot("ratePur", "aRateVerdoppelt", "aSchrittKonstant");
-    check(`Körper-Bewegung (A): doppeltes Tempo ⇒ die Phasen-Rate des Gang-Gesetzes (${f(out.rateRatio)}× ≈ ${f(out.rateSoll)}×), die Schritt-Distanz des Gesetzes (${f(out.schritt1)} / ${f(out.schritt2)} m)`, !a, a && "ROT: " + a);
+    const a = rot("ratePur");
+    check("Körper-Bewegung (A): das Gang-Gesetz pur (ω = 2π·v/Λ, Stand und NaN ⇒ 0)", !a, a && "ROT: " + a);
     const b = rot("ikErreichbar", "ikGestreckt", "ikNaNWand");
     check(`Körper-Bewegung (B) IK: in Reichweite < 1 cm (max ${f(out.ikMaxErr * 100, 3)} cm), außer Reichweite gestreckt, nie NaN`, !b, b && "ROT: " + b);
     const cc = rot("cBlendStetig", "cBlendKonvergiert", "cBlendNaNWand", "s1LensFires");
     check(`Körper-Bewegung (C) Blend stetig (max Δw ${f(out.blend && out.blend.maxJump, 3)}), konvergiert, NaN-Wand; SELBSTTEST S1 hartes Blend sichtbar (Δw ${f(out.s1MaxJump)})`, !cc, cc && "ROT: " + cc);
     const d = rot("dPitch30", "dGeerdet", "s2LensFires", "pitchPur", "pitchNaNWand");
     check(`Körper-Bewegung (D) der Tier-Root folgt dem 30°-Hang (${f(out.tierPitchDeg, 1)}°), geerdet; SELBSTTEST S2 _slopePitch ≡ 0 (${f(out.s2PitchDeg, 1)}°), die Hang-Formel pur`, !d, d && "ROT: " + d);
-    const e = rot("eBeckenSenkt", "eAbgrundOhneNaN", "eLuftSperre");
-    check(`Körper-Bewegung (E) Fuß-IK über den echten Pfad: das Becken senkt sich aufs tiefere Bein, Abgrund ohne NaN, in der Luft keine Senkung (${f(out.beckenFlach, 3)} → ${f(out.beckenLuft, 3)})`, !e, e && "ROT: " + e);
 }
 
 // leib.K5 — DAS GAMEPAD LENKT JEDES VERB (Meisterkarte Leib H): ein synthetisches Gamepad fährt jedes Verb durch den echten Takt,

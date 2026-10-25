@@ -7287,11 +7287,13 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             "knee-1",
             "ankle1",
             "ankle-1",
+            "zehe1",
+            "zehe-1",
         ];
         nodeNameFuerHuelle.set(B.character, "mensch");
         for (const n of namenH) if (B.parts[n]) nodeNameFuerHuelle.set(B.parts[n], n);
     }
-    const skinJoints = ["mensch", "torso", "head", "arm1", "arm-1", "elbow1", "elbow-1", "hand1", "hand-1", "hip1", "hip-1", "knee1", "knee-1", "ankle1", "ankle-1"];
+    const skinJoints = ["mensch", "torso", "head", "arm1", "arm-1", "elbow1", "elbow-1", "hand1", "hand-1", "hip1", "hip-1", "knee1", "knee-1", "ankle1", "ankle-1", "zehe1", "zehe-1"];
     if (typeof kern.surfaceNets === "function" && typeof kern.kleidZonen === "function") {
         B.character.updateMatrixWorld(true);
         const invChar = new THREE.Matrix4().copy(B.character.matrixWorld).invert();
@@ -7418,7 +7420,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 // stachen sie durch die Hose oder standen als graue Shorts über ihr)
                 if (kl !== "skin" && kl !== "shorts" && kl !== "joint") return;
                 const j = animAhnH(node);
-                if (j === "head" || j === "hand1" || j === "hand-1" || j === "ankle1" || j === "ankle-1") return;
+                if (j === "head" || j === "hand1" || j === "hand-1" || j === "ankle1" || j === "ankle-1" || j === "zehe1" || j === "zehe-1") return;
                 const n0 = zen.length;
                 punkteVon(node, pts, zen, j);
                 if (zen.length > n0) hautTeile.push({ c: zen[n0].c, t: teilVon.has(node) ? teilVon.get(node) : null });
@@ -7805,6 +7807,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         "lidBR",
         "eyeL",
         "eyeR",
+        // leib.K2: das Zehen-Gelenk am Ballen (koerper MENSCH_GESTALT.fuss.ballen) — am Ende, die Ordnung davor bleibt
+        "zehe1",
+        "zehe-1",
     ];
     const nodeName = new Map();
     nodeName.set(B.character, "mensch");

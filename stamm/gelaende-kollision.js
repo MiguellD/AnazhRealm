@@ -773,11 +773,22 @@ class AnazhRealm_gelaende_kollision {
     // darunter der Stoff des Felds (`_terrainMaterialAt`). Leser: der Schritt-Klang (`_schrittMaterialAt`) und die Reibung des
     // gestoßenen Leibs (`_kreaturStossSchritt`).
     _kontaktStoffAt(x, z, y) {
-        const lo = y - AnazhRealm.PLAYER_GROUND_SNAP;
-        const hi = y + AnazhRealm.PLAYER_STEP_UP;
-        const nah = this._blockerNahe(x, z, 0, -Infinity, []);
+        const auf = this._bauAuflageTmp || (this._bauAuflageTmp = {});
+        if (this._bauAuflageAt(x, z, y - AnazhRealm.PLAYER_GROUND_SNAP, y + AnazhRealm.PLAYER_STEP_UP, auf) > -Infinity)
+            return auf.box.stoff || this._werkStoff(auf.werk);
+        if (this._eisAt(x, z, y + 0.02, 0.05) !== null) return "eis";
+        if (this._kronenStreuAt(x, z) >= 0.5) return "laub";
+        const grund = {};
+        if (this._bodenSichtAt(x, z, grund) !== null && grund.gruen >= 0.5) return "gras";
+        return this._terrainMaterialAt(x, z, y);
+    }
+
+    // DIE AUFLAGE EINES BAUS AM PUNKT: die höchste Oberkante im Band [lo, hi], deren Grundfläche (x, z) trägt — nie eine Fuge
+    // (`gedeckt`); −Infinity ohne. `aus` (optional) trägt die Box und ihr Werk. EINE Regel für den Stoff unter dem Körper
+    // (`_kontaktStoffAt`) und den Boden unter einem Fuß (`_standSicht`: auf der Treppe steht jeder Fuß auf SEINER Stufe).
+    _bauAuflageAt(x, z, lo, hi, aus) {
+        const nah = this._blockerNahe(x, z, 0, -Infinity, this._bauAuflageNah || (this._bauAuflageNah = []));
         let top = -Infinity;
-        let stoff = null;
         for (const e of nah)
             for (const b of e.blockerAABBs || []) {
                 if (
@@ -788,14 +799,13 @@ class AnazhRealm_gelaende_kollision {
                 )
                     continue;
                 top = b.topY;
-                stoff = b.stoff || this._werkStoff(e);
+                if (aus) {
+                    aus.box = b;
+                    aus.werk = e;
+                }
             }
-        if (top > -Infinity) return stoff;
-        if (this._eisAt(x, z, y + 0.02, 0.05) !== null) return "eis";
-        if (this._kronenStreuAt(x, z) >= 0.5) return "laub";
-        const grund = {};
-        if (this._bodenSichtAt(x, z, grund) !== null && grund.gruen >= 0.5) return "gras";
-        return this._terrainMaterialAt(x, z, y);
+        nah.length = 0;
+        return top;
     }
 
     // Der Stoff eines Werks: der Stoff seines größten festen Teils (Volumen der Gestalt, `_teilVolumen`; ohne festes Teil sein

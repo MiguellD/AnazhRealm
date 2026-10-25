@@ -24,7 +24,8 @@
 //       Wiese ±10 %, Streu ±10 % oder drei Unschärfen (Konsum-Leser: `_nahWieseKachelBueschel`, `_nahStreuKachel`)
 //   K8  EINE BODEN-HÖHE JE ROLLE (Gelände H5, Lehre 22, Welt mit Foundry): an der Mess-Wiese und am 25°-Hang (der nächste
 //       trockene Hang 24–26° um sie) steht jeder Kontakt auf den gezeichneten Dreiecken (`__gezeichnet`), je Rolle 200, p95 ≤ 3 cm:
-//       der Fuß (der tiefste Vertex, den der Knöchel trägt, im Fuß-Lock des Gangs), der Huf (je Größen-Band das Reh im Stand je
+//       der Fuß des Spielers (leib.K2: die Sohlen-Fläche von Knöchel und Zehe im Fuß-Lock, längs der Höhenlinie `fuss`, die
+//       Falllinie `falllinie` und eine Treppe `stufe` hinauf und hinab, 0 Steckenbleiber), der Huf (je Größen-Band das Reh im Stand je
 //       Bein, das schlechteste; seine Sohle liegt dem Boden an, `_gaitSohlenKipp`), das Rad
 //       (der tiefste Vertex je Reifen des GT in Fahrt), der Fuß der Streu (jede Instanz im Stand, nach Gang und Fahrt); die
 //       Feinform (Mesh gegen `_voxelSurfaceY`) ≤ 5 cm. Über dem Soll hält die Ratsche spec/profiband/ratsche-boden-rolle.json
@@ -191,6 +192,15 @@ function taeter(inj) {
     }
     // sohle (K8): die Sohle der Pfote kippt nicht mit dem Boden unter ihr (vor K8 huf hielt sie die Lage des Rumpfs)
     if (inj === "sohle") r._gaitSohlenKipp = (...a) => (a[4] ? { laengs: 0, quer: 0 } : P._gaitSohlenKipp.apply(r, a));
+    // fuss (K8): der Fuß vor leib-k2 — die Zehe biegt nie (der starre Fuß rollt über den Ballen), kein Bau trägt ihn am Punkt
+    // (die Stufe unter dem Fuß, `_bauAuflageAt`)
+    if (inj === "fuss") {
+        r._bauAuflageAt = () => -Infinity;
+        r._animateHumanoidRig = function (rig, ...a) {
+            P._animateHumanoidRig.call(this, rig, ...a);
+            if (rig && rig.legL.zehe) rig.legL.zehe.rotation.x = rig.legR.zehe.rotation.x = 0;
+        };
+    }
 }
 
 const server = statikServer({ root: ROOT });
@@ -833,20 +843,24 @@ async function rollen(n) {
     const mass = (a) => ({ n: a.length, p95: cm(a.map(Math.abs), 0.95), median: cm(a, 0.5) });
     const v = new T.Vector3();
     const M = new T.Matrix4();
-    // je Knochen die Vertices des gezeichneten Leibs (Ebene 0, vor der Ego-Maske), die er überwiegend trägt; die Sohle = der
-    // tiefste von ihnen nach den Knochen, gegen das Mesh unter ihm
-    const sohle = (leib, knochen) => {
+    // je Glied die Vertices des gezeichneten Leibs (Ebene 0, vor der Ego-Maske), die seine Knochen überwiegend tragen (ein
+    // Glied ist ein Knochen oder eine Liste: der Fuß des Menschen Knöchel und Zehe); die Sohle = der tiefste von ihnen nach
+    // den Knochen, gegen das Mesh unter ihm — mit `boden` (der Gang des Fußes) der kleinste Abstand der Sohlen-Fläche (die Vertices bis
+    // 1,5 cm über dem tiefsten) zur Fläche unter ihr (negativ: im Bau oder Boden; über einer Stufen-Kante trägt die Stufe)
+    const sohle = (leib, glieder, boden) => {
+        const knochen = glieder.map((g) => [].concat(g).filter(Boolean));
         const je = knochen.map(() => []);
         leib.traverse((o) => {
             const ebene = o.userData._maskeVorEgo !== undefined ? o.userData._maskeVorEgo : o.layers.mask;
             if (!o.isSkinnedMesh || !(ebene & 1)) return;
             const si = o.geometry.attributes.skinIndex;
             const sw = o.geometry.attributes.skinWeight;
-            const bi = knochen.map((b) => o.skeleton.bones.indexOf(b));
+            const bi = knochen.map((K) => K.map((b) => o.skeleton.bones.indexOf(b)));
             for (let i = 0; i < si.count; i++)
-                for (let k = 0; k < 4; k++) {
-                    const j = bi.indexOf(si.getComponent(i, k));
-                    if (j >= 0 && sw.getComponent(i, k) > 0.5) je[j].push([o, i]);
+                for (let j = 0; j < bi.length; j++) {
+                    let w = 0;
+                    for (let k = 0; k < 4; k++) if (bi[j].includes(si.getComponent(i, k))) w += sw.getComponent(i, k);
+                    if (w > 0.5) je[j].push([o, i]);
                 }
         });
         return (j) => {
@@ -855,8 +869,13 @@ async function rollen(n) {
                 o.getVertexPosition(i, v).applyMatrix4(o.matrixWorld);
                 if (!t || v.y < t.y) t = v.clone();
             }
-            const g = t && gez(t.x, t.z);
-            return g === null || !t ? null : t.y - g;
+            let d = Infinity;
+            for (const [o, i] of t ? je[j] : []) {
+                o.getVertexPosition(i, v).applyMatrix4(o.matrixWorld);
+                const b = v.y <= t.y + (boden ? 0.015 : 0) ? (boden || gez)(v.x, v.z) : null;
+                if (b !== null && v.y - b < d) d = v.y - b;
+            }
+            return d < Infinity ? d : null;
         };
     };
     const gehen = (je) => {
@@ -871,7 +890,6 @@ async function rollen(n) {
     const W = window.__messWiese;
     // der 25°-Hang: der nächste trockene Hang 24–26° um die Wiese (das Gesetz über ± 4 m, die EINE Orts-Suche `__weltOrt`)
     const hang = window.__weltOrt("hang", { mitte: W, min: 24, max: 26, basis: 4 });
-    const h = (x, z) => r._terrainMacroSurfaceY(x, z, true);
     for (const [ort, X, Z] of [
         ["wiese", W[0], W[1]],
         ["hang", hang && Math.round(hang.x), hang && Math.round(hang.z)],
@@ -883,7 +901,12 @@ async function rollen(n) {
             if (s.playerVel) s.playerVel.setValue(0, 0, 0);
         };
         await window.__weltStehtNach(() => (setz(), takt()));
-        const R = (o[ort] = { x: X, z: Z, neig: ort === "hang" ? hang.neigung : 0 });
+        const R = (o[ort] = {
+            x: X,
+            z: Z,
+            neig: ort === "hang" ? hang.neigung : 0,
+            gier: ort === "hang" ? hang.gier : 0,
+        });
         // die Feinform: das Mesh gegen das Gesetz an n Zufalls-Punkten 3–30 m um den Ort
         const fein = [];
         let saat = 7;
@@ -914,23 +937,7 @@ async function rollen(n) {
                 }
         };
         streuJetzt();
-        // der Fuß des Spielers: er geht längs der Höhenlinie (die Füße im Stand: der Fuß-Lock der IK); vorwärts ist (sin, cos)
-        const quer = Math.atan2(h(X, Z - 1) - h(X, Z + 1), h(X + 1, Z) - h(X - 1, Z));
-        const rig = pm.userData.rig;
-        const fuss = sohle(pm, [rig.legL.ankle, rig.legR.ankle]);
-        s.yaw = quer;
-        s.keys.w = true;
-        R.fuss = mass(
-            gehen((a) => {
-                const ik = pm.userData._gaitIK;
-                // die Pose, die gezeichnet wird (der Render rechnet die Knochen nach der Fuß-IK; ohne ihn — Null-Renderer,
-                // ein Takt unter der GPU-Leine — lag die Haut halb in der Pose des Vor-Takts: Ferse 9 cm im Hang)
-                pm.updateMatrixWorld(true);
-                if (ik) [ik.lockL, ik.lockR].forEach((l, j) => l.on && (v.y = fuss(j)) !== null && a.push(v.y));
-            })
-        );
-        s.keys.w = false;
-        streuJetzt();
+        const quer = R.gier - Math.PI / 2; // der GT fährt längs der Höhenlinie
         // der Huf: je Größen-Band ein Reh an seiner Obergrenze 4 m neben dem Spieler, frei im Gang (die Beine im Stand:
         // Hub 0 ihres Ziels); netId und Kreatur-Uhr fest — Größe und Weg hängen nie an der Fauna vor ihm
         const P = pm.position;
@@ -1006,9 +1013,96 @@ async function rollen(n) {
             r.dismountArchitecture();
             r.removeArchitecture(e);
         }
+        // der Fuß des Spielers: längs der Höhenlinie hin und zurück (die Füße im Stand: der Fuß-Lock der IK; `gang`), die
+        // Falllinie und die Treppe — nach Huf und Rad, die am Ort selbst messen
+        for (const k of ["fuss", "falllinie", "stufe"]) R[k] = await gang(R, n, k);
+        streuJetzt();
         R.streu = mass(streu);
     }
     return o;
+
+    // ── DER GANG DES FUSSES (K8 fuss · falllinie · stufe, leib.K2): je Ort 4,35 m längs der Höhenlinie (`fuss`), die Falllinie
+    // (`falllinie`) und zehn Stufen (`stufe`: Steigung 0,17 m, Auftritt nach der Neigung des Orts, 10 cm über ihm aufgesetzt,
+    // ein Bauplan), je hin und zurück. Je Fuß im Lock die Sohlen-Fläche gegen die gezeichnete Fläche (`sohle` mit Boden:
+    // die Dreiecke der Stufen und `__gezeichnet`); die Steckenbleiber zählt derselbe Gang.
+    async function gang(H, umfang, art) {
+        const auf = H.gier - (art === "fuss" ? Math.PI / 2 : 0); // bergauf (`__weltOrt`), der Fuß längs der Höhenlinie
+        const [ux, uz, N, hub, mitTreppe] = [Math.sin(auf), Math.cos(auf), 10, 0.17, art === "stufe"];
+        const tritt = mitTreppe ? hub / Math.max(0.6, Math.tan((H.neig * Math.PI) / 180)) : 0.375;
+        const [bx, bz, name] = [H.x - 2 * ux, H.z - 2 * uz, "pruef_treppe"];
+        s.blueprints[name] = {
+            name,
+            parts: Array.from({ length: N }, (_, i) => ({
+                shape: "box",
+                position: { x: 0, y: ((i + 1) * hub - 1.2) / 2, z: (i + 0.5) * tritt },
+                size: { x: 1.4, y: (i + 1) * hub + 1.2, z: tritt },
+                material: "stein",
+            })),
+        };
+        const e =
+            mitTreppe &&
+            r.spawnArchitecture(
+                name,
+                { x: bx, y: r._voxelSurfaceY(bx, bz) + 0.6, z: bz },
+                { silent: true, precise: true, rotationY: auf }
+            );
+        if (mitTreppe && !e) return { fehler: "die Treppe steht nicht" };
+        if (e) await window.__gebautNach(e, { takt: () => new Promise((q) => setTimeout(q, 100)), max: 200 });
+        const meshe = [];
+        if (e) e.mesh.traverse((m) => m.isMesh && meshe.push(m));
+        const strahl = new T.Raycaster();
+        const merk = new Map();
+        const flaeche = (x, z) => {
+            const k = Math.round(x * 400) + "," + Math.round(z * 400);
+            if (!merk.has(k)) {
+                strahl.set(new T.Vector3(x, 900, z), new T.Vector3(0, -1, 0));
+                const t = strahl.intersectObjects(meshe, false)[0]; // die Stufen tragen nur waagrechte Flächen nach oben
+                const g = gez(x, z);
+                merk.set(k, t && !(g >= t.point.y) ? t.point.y : g);
+            }
+            return merk.get(k);
+        };
+        const rig = pm.userData.rig;
+        const fuss = sohle(
+            pm,
+            [
+                [rig.legL.ankle, rig.legL.zehe],
+                [rig.legR.ankle, rig.legR.zehe],
+            ],
+            flaeche
+        );
+        const weg = () => (pm.position.x - bx) * ux + (pm.position.z - bz) * uz;
+        pm.position.set(
+            bx - ux,
+            Math.max(r._voxelSurfaceY(bx - ux, bz - uz), flaeche(bx - ux, bz - uz)) + 0.6,
+            bz - uz
+        );
+        s._fixedSimPos = null;
+        s.playerVel.setValue(0, 0, 0);
+        const a = [];
+        let stecken = 0;
+        for (const [richtung, ziel] of [
+            [auf, (w) => w > (N - 0.5) * tritt],
+            [auf + Math.PI, (w) => w < -1],
+        ]) {
+            for (let k = 0; k < 30; k++) takt(); // er steht (die Füße lösen), dann dreht er auf der obersten Stufe
+            [s.yaw, s.keys.w] = [richtung, true];
+            let [k, w0] = [0, weg()];
+            for (; k < 600 && !ziel(weg()); k++) {
+                takt();
+                // je halbe Sekunde mit gehaltener Taste weniger als 15 cm voran: er steckt
+                if (k % 30 === 29) [stecken, w0] = [stecken + (Math.abs(weg() - w0) < 0.15), weg()];
+                const ik = pm.userData._gaitIK;
+                pm.updateMatrixWorld(true);
+                if (ik) [ik.lockL, ik.lockR].forEach((l, j) => l.on && (v.y = fuss(j)) !== null && a.push(v.y));
+            }
+            stecken += k === 600; // und erreicht sein Ende nie
+            s.keys.w = false;
+        }
+        if (e) r.removeArchitecture(e);
+        delete s.blueprints[name];
+        return { ...mass(a), stecken };
+    }
 }
 
 function urteil(o) {
@@ -1084,6 +1178,8 @@ const K8_ROLLEN = Object.freeze({
     fein: [5, "die Feinform des Meshs gegen das Gesetz (das Surface-Nets-Mesh des Workers)"],
     streu: [3, "der Fuß der Streu (_streuFuss: der gezeichnete Boden, dem Auge nach)"],
     fuss: [3, "der Fuß des Spielers (die Sohle des Leibs gegen _gaitBodenY)"],
+    falllinie: [3, "der Fuß die Falllinie hinauf und hinab (_gaitLegIK)"],
+    stufe: [3, "der Fuß auf der Treppe (_gaitSohleAufBau)"],
     huf: [3, "der Huf (_kreaturFussBoden, seine Sohle _gaitSohlenKipp)"],
     rad: [3, "das Rad (_archRadMatrix: der Reifen auf _standSicht)"],
 });
@@ -1104,6 +1200,7 @@ function urteilK8(o, umfang) {
                 f.push(
                     `K8 ${rolle} ${ort}: p95 ${m.p95} cm (Median ${m.median}, Soll ≤ ${soll}, Ratsche ${(rs[ort] || {})[rolle]}) — Täter: ${wer}`
                 );
+            if (m && m.stecken) f.push(`K8 Steckenbleiber ${ort} ${rolle}: ${m.stecken}`); // 0 auf dem Spielgang (leib.K2)
         }
     return f;
 }
@@ -1194,6 +1291,7 @@ function zeile(o) {
                 wiese: ["K7 Wiese im Rand-Streifen", "K7 Streu im Rand-Streifen"],
                 rolle: ["K8 streu wiese", "K8 streu hang", "K8 huf hang", "K8 rad hang"],
                 sohle: ["K8 huf hang"],
+                fuss: ["K8 fuss wiese", "K8 stufe hang"],
             };
             for (const inj of Object.keys(soll)) {
                 const k8 = soll[inj][0].startsWith("K8");
