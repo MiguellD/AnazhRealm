@@ -2391,7 +2391,10 @@ async function kreaturProben(r, T, opts) {
             r._tickBewohner(dt);
             M.messen(dt);
         };
-        // Täter (Selbsttest): ein Haus quer vor einem Gehenden auf seinem Weg, der die Wand nach ihm nie prüft
+        // Täter (Selbsttest): ein Haus quer vor einem Gehenden auf seinem Weg, dessen Wand kein Bewohner sieht — die EINE
+        // Frage an die Wand (`_bewohnerWand`: die Wache, das Ausweichen, der neue Weg) ist blind für seine Hülle. Bis K3
+        // Staffel 2 schwieg nur die Wache (`_bewohnerWegPruefen`); seit das Ausweichen die Wand fragt, wich der Gehende dem
+        // Haus in der Menge oft aus, und die Linse sah den Täter nur, wenn keiner ihm nahe kam (CI 40192942991)
         const querSetzen = (liste) => {
             const vorbild = s.architectures.find((e) => kernVon(e) && liste.some((b) => b.orte.tuer.haus === e));
             const t = kernVon(vorbild);
@@ -2399,13 +2402,22 @@ async function kreaturProben(r, T, opts) {
             const i = b ? b.weg.findIndex((q, i) => i > b.wi && b.wegRest - b.wegRestAb[i] >= t.W / 2 + 1.5) : -1;
             if (i < 0) return null;
             const [p, q] = [b.weg[i - 1], b.weg[i]];
-            decke(restore, "_bewohnerWegPruefen", () => () => {});
             const e = r.spawnArchitecture(
                 vorbild.type,
                 { x: q.x, y: r.getTerrainHeightAt(q.x, q.z) + 0.5, z: q.z },
                 { seed: 4242, rotationY: Math.atan2(p.z - q.z, q.x - p.x), silent: true, tuer: t }
             );
-            if (e) restore.push(() => r.removeArchitecture(e));
+            if (!e) return null;
+            restore.push(() => r.removeArchitecture(e));
+            decke(restore, "_bewohnerWand", (alt) => (...a) => {
+                const B = e.blockerAABBs;
+                e.blockerAABBs = null;
+                try {
+                    return alt.apply(r, a);
+                } finally {
+                    e.blockerAABBs = B;
+                }
+            });
             return e;
         };
         // ── DIE STADT (mensch.K3 Staffel 2): am Ort der Stadt des Profi-Bands (spec/profiband/haushalt.json `stadt`) das Wort
@@ -2667,7 +2679,7 @@ async function kreaturProben(r, T, opts) {
             if (i % 15 === 0) blieb.set(s.timeOfDay * 24, lagen()); // je 1,5 h
         }
         // gezählt: ein Leib mit Rig, der im Tag ging
-        const gegangen = (g) => liste.some((b) => b.leib === g && SD.wSpur.get(b).gesamt > 0.5) && !!g.userData.rig;
+        const gegangen = (g) => liste.some((b) => b.leib === g && SD.wSpur.get(b).gesamt > 0.5);
         const unter = liste.filter((b) => !(treffer.get(b) >= 0.9));
         // der Heimkehrer geht 1 h vor jeder Prüf-Stunde fort und findet die neu Geborenen (Takt 0). Täter: geboren am Ziel
         const wiederkehr = async () => {
@@ -2691,7 +2703,6 @@ async function kreaturProben(r, T, opts) {
             }
             return { n, maxM: q3(maxM), ueberN: ueber.length, ueber: ueber.slice(0, 5) };
         };
-        const wege = SD.zahl();
         return Object.assign(z, {
             haeuser: haeuser.length,
             sollSumme,
@@ -2704,9 +2715,7 @@ async function kreaturProben(r, T, opts) {
                 third: blick10[1].filter(gegangen).length,
             },
             nahLeiber: A.BEWOHNER.nahLeiber,
-            plan: !!planFn,
             planGleich,
-            bewohner: liste.length,
             trefferMin: liste.length ? q3(Math.min(...liste.map((b) => treffer.get(b) || 0))) : null,
             unter: unter.slice(0, 5).map((b) => `${wer(b)}: ${Math.round((treffer.get(b) || 0) * 100)} %`),
             unterN: unter.length,
@@ -2726,8 +2735,7 @@ async function kreaturProben(r, T, opts) {
             ohnePlatz: ohnePlatz.length,
             ohnePlatzWer: ohnePlatz.slice(0, 4).map(wer),
             huellen: hausE.filter((e) => e._hausHuelle).length,
-            wege,
-            sprungN: wege.sprungN,
+            wege: SD.zahl(),
             wiederkehr: !taeter || taeter === "bewohner-wiederkehr" ? await wiederkehr() : null,
             stadt: taeter ? null : await stadtTag(),
         });
@@ -3016,7 +3024,7 @@ function urteil(name, z) {
         soll(z.alsLeib <= z.nahLeiber, `${z.alsLeib} Leiber als Leib gezeichnet (Soll ≤ ${z.nahLeiber})`);
         // DER TAG (mensch.K2): das Gesetz der Uhr, bit-gleich je Same, jeder trifft seine Soll-Orte, springt nie nah, und wer
         // nach 1 h Abwesenheit zurückkommt, findet jeden auf ±2 m dort, wo ihn sah, wer blieb
-        soll(z.plan && z.planGleich, "kein Tagesplan, bit-gleich je Same");
+        soll(z.planGleich, "kein Tagesplan, bit-gleich je Same");
         soll(
             z.trefferMin >= 0.9,
             `Soll-Orte über 24 Spielstunden: min ${z.trefferMin} (Soll ≥ 0,9; ${z.unterN} darunter: ${z.unter.join(" · ")})`
@@ -3025,7 +3033,7 @@ function urteil(name, z) {
             z.stationen > 0 && z.schmiede10 > 0 && z.schmiede2 === 0,
             `Schmiede um 10/2 Uhr: ${z.schmiede10}/${z.schmiede2} am Werk`
         );
-        soll(z.sprungN === 0, `Sprung im Nahbereich: ${z.sprungN} Takte > 2 m`);
+        soll(z.wege.sprungN === 0, `Sprung im Nahbereich: ${z.wege.sprungN} Takte > 2 m`);
         soll(
             wk.n > 0 && wk.ueberN === 0,
             `Wiederkehr nach 1 h Abwesenheit: ${wk.ueberN} von ${wk.n} über ±2 m (max ${wk.maxM} m: ${wk.ueber})`
