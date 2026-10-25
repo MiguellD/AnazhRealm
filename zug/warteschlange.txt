@@ -71,3 +71,4 @@ takt2-abab 1 abab A=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 B=4a5f5e2c9ab02618f
 takt2-abab 0 storno
 nw2628-abab 1 abab A=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 B=4a5f5e2c9ab02618feccdf8b9f1a03942bcc9301 zellen=w-ego,g-third,d-ego,stadt
 z29c-abab 1 abab A=4a5f5e2c9ab02618feccdf8b9f1a03942bcc9301 B=36c4275ac486944a70640be1abc7480f9d83661f zellen=w-ego,d-ego,stadt
+z30-abab 1 abab A=36c4275ac486944a70640be1abc7480f9d83661f B=8f1802b18fe68b09fb660793b198ec7c51c58a9d zellen=w-ego,d-ego,stadt
