@@ -35,7 +35,7 @@ const DAUER_S = {
     huepfer: 1,
     wachsen: 1,
     gier: 5,
-    jagd: 1,
+    jagd: 77,
     herde: 37,
     peer: 1,
     zufall: 1,

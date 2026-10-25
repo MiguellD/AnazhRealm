@@ -446,7 +446,7 @@ class AnazhRealm_bild_kosten {
             // steht — sonst meldet sich der Bürger an. Auch der synchrone Weg trifft im Cache eine noch offene Pipeline (r184
             // `getForRender`: Cache-Treffer → `e.pipeline=d`, ob fertig oder nicht), wenn eine Erst-Zeichnung ihren Schlüssel
             // eben asynchron anlegte: ein Neubau wartet dann wie sie.
-            const zeichne = (rend, ro, aufnahme, asynchron) => {
+            const zeichne = (rend, ro, aufnahme, asynchron, nurBauen) => {
                 const N = rend._nodes,
                     P = rend._pipelines;
                 E.bau = null; // das Versprechen gehört dem Bau DIESES Aufrufs (`_erstAbsageWache`)
@@ -472,6 +472,7 @@ class AnazhRealm_bild_kosten {
                         E.pipeAsync++;
                     }
                 } else P.updateForRender(ro);
+                if (nurBauen) return false;
                 if (!P.isReady(ro)) {
                     welt._erstWartet(rend.backend, P.get(ro).pipeline, aufnahme !== null ? aufnahme.bundleGroup : null);
                     return false;
@@ -498,7 +499,21 @@ class AnazhRealm_bild_kosten {
                 // WER NICHT ZEICHNET, ARBEITET NICHT (Gebot 7): ein Objekt ohne Instanz baut, frischt und zieht nichts, eines,
                 // dessen Pipeline noch im Bau steht, läuft durch keinen Knoten (`zeichne`) — kein Zug der Szenen-Tiefe, kein
                 // Schatten, keine Kopie ohne Draw (der leere Welt-March zog das Tiefen-Abbild je Frame: ziel-zensus OHNE LESER)
-                if (ro.getDrawParameters() === null) return;
+                // — außer im VORBAU des Stufen-Vorlaufs (`_stufenVorlaufWahl`): unter dem Ladeschirm baut eine Arena, deren Form
+                // steht, ihr Programm auch in dem Pass, in den gerade keine ihrer Instanzen fällt, ohne Draw. Jede Kaskade rendert
+                // in ihr eigenes Ziel (der Schlüssel trägt den Render-Kontext): der Vorlauf-Baum in 30 m fällt in keine nahe — kam
+                // er im Gang näher, kompilierte sie dort kalt.
+                const vorbau = ro.getDrawParameters() === null;
+                if (
+                    vorbau &&
+                    !(
+                        object.isGeometrieArena === true &&
+                        object.geometry.index !== null &&
+                        scene === welt.state.scene &&
+                        welt._ladeTakt()
+                    )
+                )
+                    return;
                 const aufnahme = this._currentRenderBundle;
                 if (aufnahme !== null) ro.bundle = aufnahme.bundleGroup;
                 // DIE BÜHNE DER KARTE (`_karteWeltBacken`) zeichnet wie die Welt: sie wiederholt ihren Bake, bis jeder Bürger
@@ -526,6 +541,8 @@ class AnazhRealm_bild_kosten {
                 const ctx = this._currentRenderContext.id;
                 const k = passId == null ? ctx : ctx + "|" + passId;
                 let pass = buehne ? undefined : E.gezeichnet.get(object);
+                const vor = vorbau ? E.vorgebaut.get(object) : undefined;
+                if (vorbau && ((pass !== undefined && pass.has(k)) || (vor !== undefined && vor.has(k)))) return;
                 if (pass !== undefined && pass.has(k)) {
                     // der Neubau eines Objekts, das in diesem Pass schon zeichnete: wie der Vendor, im Frame
                     if (ungebaut) E.neubauN++;
@@ -548,14 +565,17 @@ class AnazhRealm_bild_kosten {
                     }
                     bau = performance.now();
                 }
-                const gezeichnet = zeichne(this, ro, aufnahme, true);
+                const gezeichnet = zeichne(this, ro, aufnahme, true, vorbau);
                 if (bau >= 0) {
                     const ms = performance.now() - bau;
                     E.aufrufMs += ms;
                     E.bauN++;
                     E.bauMs += ms;
                 }
-                if (gezeichnet && !buehne) {
+                if (vorbau) {
+                    if (vor === undefined) E.vorgebaut.set(object, new Set([k]));
+                    else vor.add(k);
+                } else if (gezeichnet && !buehne) {
                     if (pass === undefined) E.gezeichnet.set(object, (pass = new Set()));
                     pass.add(k);
                 }
@@ -588,6 +608,7 @@ class AnazhRealm_bild_kosten {
                 abgesagt: new WeakSet(),
                 aufnehmen: new Set(),
                 gezeichnet: new WeakMap(), // Objekt → die Pässe (Render-Kontext|Pass-Kennung), in denen es schon zeichnete
+                vorgebaut: new WeakMap(), // Arena → die Pässe, in denen der Vorbau ihr Programm ohne Draw baute
             };
         return this._erstZeichnung;
     }
