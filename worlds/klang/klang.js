@@ -4473,18 +4473,20 @@ applyHashSession();                                              // #s=…&p=…
     { k:'deckung', lab:'Kronen', min:0, max:1, step:0.01, fmt: v => Math.round(v * 100) + ' %' },
     { k:'regen', lab:'Regen', min:0, max:1, step:0.01, fmt: v => Math.round(v * 100) + ' %' },
     { k:'sonne', lab:'Sonne', min:-1, max:1, step:0.01, fmt: v => v.toFixed(2) },
-    { k:'lebendig', lab:'Leben', min:0, max:1, step:0.01, fmt: v => v.toFixed(2) },
     { k:'temperatur', lab:'Luft', min:-20, max:35, step:0.5, fmt: v => v.toFixed(1) + ' °C' },
+    // der Vogel: EIN singender Leib in diesem Abstand (die Orte tragen ihre Vögel; jeder Ruf hat einen Leib)
+    { k:'voegel.0.d', lab:'Vogel', min:1, max:100, step:0.5, aus:100, fmt: v => v >= 100 ? '—' : v.toFixed(1) + ' m' },
     // Abstands-Regler: am Anschlag (aus) schweigt die Quelle; basis = ihre übrigen Lage-Felder.
     { k:'ufer.d', lab:'Ufer', min:1, max:50, step:0.5, aus:50, basis:{ anteil:0.3, pan:0 }, fmt: v => v >= 50 ? '—' : v.toFixed(1) + ' m' },
     { k:'fall.d', lab:'Fall', min:1, max:90, step:0.5, aus:90, basis:{ hoehe:12, pan:0 }, fmt: v => v >= 90 ? '—' : v.toFixed(1) + ' m' },
     { k:'glut.d', lab:'Glut', min:1, max:30, step:0.5, aus:30, basis:{ flaeche:(Math.PI / 4) * U.stimmen.glut.bettRefM * U.stimmen.glut.bettRefM, pan:0 }, fmt: v => v >= 30 ? '—' : v.toFixed(1) + ' m' },
   ];
-  const lies = (k) => { const t = k.split('.'); return t.length > 1 ? (lage[t[0]] ? lage[t[0]][t[1]] : undefined) : lage[k]; };
+  const lies = (k) => { const t = k.split('.'); return t.length > 1 ? (lage[t[0]] ? (t[2] ? (lage[t[0]][t[1]] || {})[t[2]] : lage[t[0]][t[1]]) : undefined) : lage[k]; };
   const schreibe = (k, v) => {
     const t = k.split('.');
     if (t.length === 1) { lage[k] = v; return; }
     const r = REGLER.find(x => x.k === k);
+    if (t[2]) { lage[t[0]] = v < r.aus ? [{ d: v, pan: 0 }] : []; return; }
     lage[t[0]] = v < r.aus ? Object.assign({}, r.basis, lage[t[0]] || {}, { d: v }) : undefined;
   };
   function sichern() {

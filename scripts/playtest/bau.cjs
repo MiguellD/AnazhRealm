@@ -1262,17 +1262,17 @@ async function checkBandWave10b(ctx) {
         check(`Welle 10b.1: evaluate-Fehler — ${wave10bResults.error}`, false);
     }
 
-    // ### Welt-Reaktionen (mount + zoom + focusing-Ignite) ###
+    // ### Welt-Reaktionen (die Mount-Absagen + zoom) ###
     const wave10b3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
 
-            // Mount-Test
-            if (r.state.blueprints["test_10b3_car"]) r.deleteBlueprint("test_10b3_car");
-            r.cloneBlueprint("stein_block", "test_10b3_car");
-            r.state.blueprints.test_10b3_car.parts = [
+            // der fahrbare Bauplan für die Reichweite (100 m fern)
+            if (r.state.blueprints["test_10b3_far"]) r.deleteBlueprint("test_10b3_far");
+            r.cloneBlueprint("stein_block", "test_10b3_far");
+            r.state.blueprints.test_10b3_far.parts = [
                 {
                     shape: "cylinder",
                     material: "eisen",
@@ -1292,23 +1292,13 @@ async function checkBandWave10b(ctx) {
                     size: { x: 1.2, y: 0.8, z: 0.6 },
                 },
             ];
+            // Aufsitzen, Fahren und Absteigen über die echte Taste am gesetzten Wagen trägt diag-werkstatt-weg (L-VERBEN)
             const ppos = r.state.playerMesh.position;
-            const entry = r.spawnArchitecture("test_10b3_car", { x: ppos.x, y: ppos.y, z: ppos.z }, { silent: true });
-            const mountRes = r.toggleMountAtPlayer();
-            out.mountSucceeds = mountRes && mountRes.ok === true;
-            out.playerMountedTo = r.state.player.mountedArch === entry.id;
-            const dismountRes = r.toggleMountAtPlayer();
-            out.dismountSucceeds = dismountRes && dismountRes.ok === true;
-            out.playerDismounted = r.state.player.mountedArch === null || r.state.player.mountedArch === undefined;
             const dummy = { affordances: { moveable: false } };
             const failRes = r.mountArchitecture(dummy);
             out.nonMoveableRejected = failRes && failRes.ok === false && failRes.reason === "not_moveable";
 
             // Mount-Range
-            r.state.player.mountedArch = null;
-            r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b3_car");
-            if (r.state.blueprints["test_10b3_far"]) r.deleteBlueprint("test_10b3_far");
-            r.cloneBlueprint("test_10b3_car", "test_10b3_far");
             r.spawnArchitecture("test_10b3_far", { x: ppos.x + 100, y: ppos.y, z: ppos.z + 100 }, { silent: true });
             const farMountRes = r.toggleMountAtPlayer();
             out.farMountRejected = farMountRes && farMountRes.ok === false && farMountRes.reason === "none_in_range";
@@ -1325,59 +1315,8 @@ async function checkBandWave10b(ctx) {
             out.zoomFailsWithoutTarget =
                 noTargetRes === false && !r.state._zoomActive && r.state.camera.fov === initialFov;
 
-            // Focusing-Test
-            if (r.state.blueprints["test_10b3_lens"]) r.deleteBlueprint("test_10b3_lens");
-            r.cloneBlueprint("stein_block", "test_10b3_lens");
-            r.state.blueprints.test_10b3_lens.parts = [
-                {
-                    shape: "sphere",
-                    material: "quarz",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 0.8, y: 0.8, z: 0.8 },
-                },
-                {
-                    shape: "torus",
-                    material: "bronze",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 0.9, y: 0.15, z: 0.9 },
-                },
-            ];
-            const focBp = r.state.blueprints.test_10b3_lens;
-            out.lensIsFocusing = r.computeBlueprintAffordances(focBp).focusing === true;
-            r.spawnArchitecture("test_10b3_lens", { x: 0, y: 0, z: 0 }, { silent: true });
-            const targetEntry = r.spawnArchitecture("baum_eiche", { x: 1, y: 0, z: 0 }, { silent: true });
-            const beforeWeather = r.state.weather;
-            r.state.weather = "sunny";
-            // Das Brennglas-Gesetz bündelt die SONNE: Mittag, damit der Brennpunkt unter der Linse in der
-            // Eiche liegt (nachts brennt nichts).
-            const beforeTod = r.state.timeOfDay;
-            r.state.timeOfDay = 0.5;
-            const beforeArchCount = r.state.architectures.length;
-            r._tickFocusingAffordances(25);
-            const afterArchCount = r.state.architectures.length;
-            out.focusingIgnitesTarget = afterArchCount < beforeArchCount;
-            out.targetGone = !r.state.architectures.find((e) => e.id === targetEntry.id);
-
-            r.state.weather = "rainy";
-            if (r.state.blueprints["test_10b3_target2"]) r.deleteBlueprint("test_10b3_target2");
-            r.cloneBlueprint("baum_eiche", "test_10b3_target2");
-            const target2 = r.spawnArchitecture("test_10b3_target2", { x: 1, y: 0, z: 0 }, { silent: true });
-            r._tickFocusingAffordances(25);
-            out.rainyNoIgnite = !!r.state.architectures.find((e) => e.id === target2.id);
-
-            r.state.weather = beforeWeather;
-            r.state.timeOfDay = beforeTod;
-            r.state.architectures = r.state.architectures.filter(
-                (e) =>
-                    e.type !== "test_10b3_car" &&
-                    e.type !== "test_10b3_far" &&
-                    e.type !== "test_10b3_lens" &&
-                    e.type !== "test_10b3_target2" &&
-                    e.type !== "baum_eiche"
-            );
-            for (const n of ["test_10b3_car", "test_10b3_far", "test_10b3_lens", "test_10b3_target2"]) {
-                if (r.state.blueprints[n]) r.deleteBlueprint(n);
-            }
+            // das Brennglas (Mittag, Nacht, Regen, Kühlung) trägt diag-werkstatt-weg BRENNGLAS: gebaut über den Bau-Weg
+            r.deleteBlueprint("test_10b3_far");
             r._renderWorkshopDOM();
         } catch (err) {
             out.error = err && err.message;
@@ -1386,14 +1325,6 @@ async function checkBandWave10b(ctx) {
     });
 
     if (wave10b3Results && !wave10b3Results.error) {
-        check(
-            "Welle 10b.3: toggleMountAtPlayer → mount erfolgreich + mountedArch = entry.id",
-            wave10b3Results.mountSucceeds && wave10b3Results.playerMountedTo
-        );
-        check(
-            "Welle 10b.3: toggleMountAtPlayer nochmal → dismount + mountedArch null",
-            wave10b3Results.dismountSucceeds && wave10b3Results.playerDismounted
-        );
         check(
             "Welle 10b.3: mountArchitecture auf nicht-moveable lehnt ab (not_moveable)",
             wave10b3Results.nonMoveableRejected
@@ -1407,12 +1338,6 @@ async function checkBandWave10b(ctx) {
             "Welle 10b.3 Zoom: setZoomActive(true) ohne magnifying-Target → false-Return + FOV unverändert",
             wave10b3Results.zoomFailsWithoutTarget
         );
-        check("Welle 10b.3 Focusing: Lens-Bauplan (Quarz + Bronze) → focusing=true", wave10b3Results.lensIsFocusing);
-        check(
-            "Welle 10b.3 Focusing: sunny + brennbarer Baum in Range → Tick entzündet (Architektur entfernt)",
-            wave10b3Results.focusingIgnitesTarget && wave10b3Results.targetGone
-        );
-        check("Welle 10b.3 Focusing: rainy-Wetter → KEIN Ignite (Diskrimination)", wave10b3Results.rainyNoIgnite);
     } else if (wave10b3Results && wave10b3Results.error) {
         check(`Welle 10b.3: evaluate-Fehler — ${wave10b3Results.error}`, false);
     }

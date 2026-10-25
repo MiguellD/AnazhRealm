@@ -2206,40 +2206,38 @@ class AnazhRealm_siedlung_satz {
         if (!st.scene) return null;
         let P = st.stlZaun;
         if (P) return P;
-        const geo = this._stlWegeGeo || (this._stlWegeGeo = new THREE.BoxGeometry(1, 1, 1));
-        // Farbe je Instanz (setColorAt); Standard (rau, nicht-metallisch) liest den EINEN Himmel — r184-Lambert liest
-        // scene.environment nie diffus, die Wege-Kisten standen im Schatten schwarz.
+        const mesh = this._kistenPool("siedlung-zaun", 256);
+        st.scene.add(mesh);
+        P = st.stlZaun = { mesh, cap: 256, top: 0 };
+        return P;
+    }
+    // DIE KISTE DER POOLS (Zaun · Mauer · Vogel): EIN Stoff — EIN Programm, je Pool EIN Draw (das Fundament-Muster: welt-weit,
+    // nie gecullt); die Form der Einheit ist der Würfel, oder `geo` (dieselben Attribute: Lage, Normale, UV). Farbe je Instanz
+    // (setColorAt); Standard (rau, nicht-metallisch) liest den EINEN Himmel — r184-Lambert liest scene.environment nie diffus,
+    // die Wege-Kisten standen im Schatten schwarz.
+    _kistenPool(name, cap, geo = this._stlWegeGeo || (this._stlWegeGeo = new THREE.BoxGeometry(1, 1, 1))) {
         let mat = this._stlWegeMat;
         if (!mat) {
             mat = new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 });
             mat.userData.naesseFarbe = THREE.TSL.varyingProperty("vec3", "vInstanceColor"); // die Farbe ist die der Instanz
             this._stlWegeMat = this._leuchtStoff(mat, null); // der Licht-Pool (K11) und die Nässe
         }
-        const mesh = AnazhRealm._poolKennung(AnazhRealm._instanzMesh(geo, mat, 256), "siedlung-zaun");
+        const mesh = AnazhRealm._poolKennung(AnazhRealm._instanzMesh(geo, mat, cap), name);
         // instanceColor-Buffer anlegen SOLANGE count == cap (r128: setColorAt
         // alloziert count*3 — nach count=0 wäre der Buffer leer, GEMESSEN).
         mesh.setColorAt(0, this._stlWegeTmpC || (this._stlWegeTmpC = new THREE.Color(1, 1, 1)));
         AnazhRealm._instanzZahl(mesh, 0);
-        mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC (das Fundament-Muster)
+        mesh.frustumCulled = false;
         mesh.receiveShadow = true;
-        st.scene.add(mesh);
-        P = st.stlZaun = { mesh, cap: 256, top: 0 };
-        return P;
+        return mesh;
     }
     // DER MAUER-POOL (siedlung.K2): die Wände, Kronen und Türme der Stadtmauern — dieselbe Kiste, derselbe Stoff wie der Zaun
     // (EIN Programm), EIN Draw; anders als der hüfthohe Zaun wirft die Mauer (`castShadow`, die Wurf-Ebene).
     _stlMauerEnsurePool() {
         const st = this.state;
         if (st.stlMauer) return st.stlMauer;
-        if (!this._stlZaunEnsurePool()) return null; // Kiste und Stoff der Bau-Pools
-        const mesh = AnazhRealm._poolKennung(
-            AnazhRealm._instanzMesh(this._stlWegeGeo, this._stlWegeMat, 256),
-            "siedlung-mauer"
-        );
-        mesh.setColorAt(0, this._stlWegeTmpC || (this._stlWegeTmpC = new THREE.Color(1, 1, 1)));
-        AnazhRealm._instanzZahl(mesh, 0);
-        mesh.frustumCulled = false;
-        mesh.receiveShadow = true;
+        if (!this._stlZaunEnsurePool()) return null; // der Zaun-Pool steht vor der Mauer
+        const mesh = this._kistenPool("siedlung-mauer", 256);
         mesh.castShadow = true;
         st.scene.add(mesh);
         st.stlMauer = { mesh, cap: 256, top: 0 };
@@ -2254,18 +2252,11 @@ class AnazhRealm_siedlung_satz {
         if (!P) return;
         if (P.top >= P.cap) {
             // Verdopplungs-Wachstum (Matrizen + Farben in einen frischen Pool).
-            const bigger = AnazhRealm._poolKennung(
-                AnazhRealm._instanzMesh(this._stlWegeGeo, this._stlWegeMat, P.cap * 2),
-                P.mesh.name
-            );
+            const bigger = this._kistenPool(P.mesh.name, P.cap * 2);
             bigger.castShadow = P.mesh.castShadow;
             bigger.instanceMatrix.array.set(P.mesh.instanceMatrix.array);
-            // Buffer anlegen SOLANGE count == neuer cap (r128-setColorAt-Semantik).
-            bigger.setColorAt(0, this._stlWegeTmpC || (this._stlWegeTmpC = new THREE.Color()));
             if (P.mesh.instanceColor) bigger.instanceColor.array.set(P.mesh.instanceColor.array);
             AnazhRealm._instanzZahl(bigger, P.mesh.count);
-            bigger.frustumCulled = false;
-            bigger.receiveShadow = true;
             this.state.scene.add(bigger);
             this.state.scene.remove(P.mesh);
             this._instanzAbschied(P.mesh);
@@ -2711,8 +2702,7 @@ class AnazhRealm_siedlung_satz {
             );
             slots.push(ref);
         }
-        // W5.4 — Band-Add: NUR die Band-Felder schreiben (transient wie instSlots, nicht im
-        // Snapshot, kein state.X). Der Primär-Zustand des Eintrags bleibt byte-unberührt.
+        // W5.4 — Band-Add: NUR die Band-Felder (transient wie instSlots, nicht im Snapshot); der Primär-Zustand bleibt.
         if (opts && opts.band) {
             entry.instSlotsBand = slots;
             entry._lodBandLevel = Number.isFinite(opts.bandLod) ? opts.bandLod : null;
@@ -2720,6 +2710,7 @@ class AnazhRealm_siedlung_satz {
         }
         entry.instanced = true;
         entry.instSlots = slots;
+        this._fluegelLeib(entry); // der Tür- und Tor-Flügel trägt seinen Leib aus der Matrix, die er zeichnet (leib.K4)
         // DIE HÜLLE DER STUFE (Welle L, Kollision == Optik): ein Haus kollidiert, wie es gezeichnet ist — die Stufe 0 mit den
         // Solids des Gesetzbuchs (Böden, Tritte, Wände mit Öffnungen), JEDE Stufe dieselben (die fernen tragen die Solids der
         // Stufe 0, `hausSolids`); ein Stufen-Wechsel mit derselben Zeile schreibt die Blocker nicht neu.
