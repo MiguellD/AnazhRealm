@@ -2391,35 +2391,6 @@ async function kreaturProben(r, T, opts) {
             r._tickBewohner(dt);
             M.messen(dt);
         };
-        // Täter (Selbsttest): ein Haus quer vor einem Gehenden auf seinem Weg, dessen Wand kein Bewohner sieht — die EINE
-        // Frage an die Wand (`_bewohnerWand`: die Wache, das Ausweichen, der neue Weg) ist blind für seine Hülle. Bis K3
-        // Staffel 2 schwieg nur die Wache (`_bewohnerWegPruefen`); seit das Ausweichen die Wand fragt, wich der Gehende dem
-        // Haus in der Menge oft aus, und die Linse sah den Täter nur, wenn keiner ihm nahe kam (CI 40192942991)
-        const querSetzen = (liste) => {
-            const vorbild = s.architectures.find((e) => kernVon(e) && liste.some((b) => b.orte.tuer.haus === e));
-            const t = kernVon(vorbild);
-            const b = liste.find((b) => b.weg && !b.drinnen && b.wegRest > t.W + 6);
-            const i = b ? b.weg.findIndex((q, i) => i > b.wi && b.wegRest - b.wegRestAb[i] >= t.W / 2 + 1.5) : -1;
-            if (i < 0) return null;
-            const [p, q] = [b.weg[i - 1], b.weg[i]];
-            const e = r.spawnArchitecture(
-                vorbild.type,
-                { x: q.x, y: r.getTerrainHeightAt(q.x, q.z) + 0.5, z: q.z },
-                { seed: 4242, rotationY: Math.atan2(p.z - q.z, q.x - p.x), silent: true, tuer: t }
-            );
-            if (!e) return null;
-            restore.push(() => r.removeArchitecture(e));
-            decke(restore, "_bewohnerWand", (alt) => (...a) => {
-                const B = e.blockerAABBs;
-                e.blockerAABBs = null;
-                try {
-                    return alt.apply(r, a);
-                } finally {
-                    e.blockerAABBs = B;
-                }
-            });
-            return e;
-        };
         // ── DIE STADT (mensch.K3 Staffel 2): am Ort der Stadt des Profi-Bands (spec/profiband/haushalt.json `stadt`) das Wort
         // des Spielers „dorf <Same> 30" (`spawnSettlement`: nH ≥ 27 wie mensch.K1), der Spieler am Rand ihres Platzes, bis
         // jeder Bewohner seinen Leib trägt; die Uhr springt auf 5 Uhr (jeder steht, wo ihn sein Tag sieht), dann 24
@@ -2440,14 +2411,14 @@ async function kreaturProben(r, T, opts) {
             const da = () => S.liste && S.liste.every((b) => b.leib && !b.ankunft) && r._weltOffen().leiber === 0;
             await bisDa("bewohner: die Stadt", () => !da());
             r._uhrSetzen(5 / 24, "regler");
+            r._tickBewohner(0); // erst der Takt sieht den Sprung der Uhr (`_bewohnerAnkunft`), vorher stand jeder noch
             await bisDa("bewohner: die Ankunft der Stadt", () => !da());
-            // Täter (Selbsttest): wer ausweicht, weicht nie
+            // Täter (Selbsttest): wer ausweicht, weicht nie — und die EINE Frage an die Wand (`_bewohnerWand`: der Weg, die
+            // Wache, das Ausweichen, die Linie zurück auf das Bein) ist blind
             if (taeter === "bewohner-stadt-rempeln") decke(restore, "_bewohnerAusweichen", () => () => null);
+            if (taeter === "bewohner-stadt-blind") decke(restore, "_bewohnerWand", () => () => null);
             const M = wegeMesser(S.liste);
-            for (let i = 0, quer = taeter !== "bewohner-stadt-quer"; i < (taeter ? 30 : 240) * takte; i++) {
-                takt(DT, M);
-                quer = quer || querSetzen(S.liste);
-            }
+            for (let i = 0; i < (taeter ? 30 : 240) * takte; i++) takt(DT, M);
             return { haeuser: haeuserIn(S.plan.slots, S.ox, S.oz).length, wege: M.zahl() };
         };
         // der Takt des Spiels, bis die Siedlung steht (`offen` nicht mehr)
@@ -3445,7 +3416,7 @@ const TAETER = {
         ["bewohner-nord", /der Blick der Stehenden/],
         ["bewohner-daheim", /ohne Platz/],
         ["bewohner-wiederkehr", /Wiederkehr nach 1 h Abwesenheit: [1-9]/],
-        ["bewohner-stadt-quer", /Stadt: Durchdringung: [1-9]\d* Takte[^)]*#4242/],
+        ["bewohner-stadt-blind", /Stadt: Durchdringung: [1-9]/],
         ["bewohner-stadt-rempeln", /Berührung: [1-9]/],
     ],
 };
