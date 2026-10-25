@@ -745,9 +745,10 @@ async function offlineSpitze(page, lage, mitWand) {
 }
 
 // (S) DER SCHRITT JE STOFF (klang.K4): jede eingebaute Zeile der Stoff-Tafel durch die Stimme des Wirts
-// (`_schrittKlangParams` → `_playSchrittOneShot`, je Schritt ein Offline-Kontext als Ausgang), 48 Schritte je Stoff, der
-// Schwerpunkt des Klang-Kerns (`schwerpunkt`) — je zwei Stoffe liegen ≥ SCHRITT_ABSTAND_HZ auseinander. `wie` [Stoff, Zeile]:
-// der Stoff klingt mit der Zeile eines anderen (der Zwilling des Selbsttests).
+// (`_schrittKlangParams` → `_playSchrittOneShot`, ein Offline-Kontext je Stoff als Ausgang), 96 Schritte im Takt 0,3 s, je
+// Schritt ein frisches Rauschen (wie der erste Schritt eines Kontexts), der Schwerpunkt des Klang-Kerns (`schwerpunkt`) — je
+// zwei Stoffe liegen ≥ SCHRITT_ABSTAND_HZ auseinander. `wie` [Stoff, Zeile]: der Stoff klingt mit der Zeile eines anderen
+// (der Zwilling des Selbsttests).
 const SCHRITT_ABSTAND_HZ = 300;
 const schritte = (page, wie) =>
     page.evaluate(async (wie) => {
@@ -757,14 +758,16 @@ const schritte = (page, wie) =>
         const hz = {};
         for (const [n, z] of Object.entries(r.state.materials)) {
             if (!z.builtIn) continue;
-            const folge = new Float32Array(691200); // 48 Schritte zu 0,3 s bei 48 kHz
-            for (let i = 0; i < 48; i++) {
-                const ctx = new OfflineAudioContext(1, 14400, 48000);
-                Object.assign(s, { enabled: true, ctx, masterGain: ctx.destination });
-                r._playSchrittOneShot(r._schrittKlangParams(wie && wie[0] === n ? wie[1] : n, false, 0));
-                folge.set((await ctx.startRendering()).getChannelData(0), i * 14400);
-            }
-            hz[n] = Math.round(window.__klangCore.schwerpunkt(folge, 48000)) || 0;
+            const ctx = new OfflineAudioContext(1, 1382400, 48000); // 96 × 0,3 s bei 48 kHz
+            Object.assign(s, { enabled: true, ctx, masterGain: ctx.destination });
+            const tritt = () => (
+                (s._schrittNoiseCtx = null),
+                r._playSchrittOneShot(r._schrittKlangParams(wie && wie[0] === n ? wie[1] : n, false, 0))
+            );
+            tritt();
+            for (let i = 1; i < 96; i++) ctx.suspend(i * 0.3).then(() => (tritt(), ctx.resume()));
+            hz[n] =
+                Math.round(window.__klangCore.schwerpunkt((await ctx.startRendering()).getChannelData(0), 48000)) || 0;
         }
         Object.assign(s, alt);
         return hz;
@@ -1364,14 +1367,7 @@ async function zensus(page, browser, ergebnis) {
         .reduce((a, v) => a + v, 0);
     console.log("\n── SYNTHESE IM HAUPT-THREAD über die Tour (Samples):", summe, JSON.stringify(phasen));
     ergebnis.hauptSynthese = { summe, phasen };
-    console.log(
-        "\n── SPITZEN am Ausgang (offline, 9 s, mittlere Böe, Spitze/RMS dBFS): " +
-            Object.entries(spitzen)
-                .map(([wo, sp]) =>
-                    sp ? `${wo} ${sp.spitzeDbfs}/${sp.rmsDbfs}${sp.wand ? "" : " ohne Wand"}` : `${wo} —`
-                )
-                .join(" · ")
-    );
+    console.log("\n── SPITZEN am Ausgang (offline, 9 s, mittlere Böe, dBFS):", JSON.stringify(spitzen));
     ergebnis.spitzen = spitzen;
     console.log("\n── EREIGNISSE (je einmal über den echten Weg ausgelöst)");
     for (const e of ereig)
