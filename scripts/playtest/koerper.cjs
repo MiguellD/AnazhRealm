@@ -967,7 +967,7 @@ async function checkBandV18196ManaSymmetry(ctx) {
             for (let i = 0; i < 60; i++) {
                 try {
                     r._gameLoopTick && r._gameLoopTick(performance.now());
-                } catch (_) {}
+                } catch {}
             }
             const after = r.state.player.mana;
             const maxAfter = r.state.player.manaMax; // aktueller Wert nach allen Ticks

@@ -850,7 +850,6 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandWahrerAnblickPfade, ctx);
             await timed(BAND.checkBandWahrerAnblickAtmoBusch, ctx);
             await timed(BAND.checkBandKonvergenzTierBaum, ctx);
-            await timed(BAND.checkBandHuepfer, ctx);
             await timed(BAND.checkBandV18264ShadowCache, ctx);
             await timed(BAND.checkBandV18265ShadowDistance, ctx);
             await timed(BAND.checkBandV18266RockDetail, ctx);

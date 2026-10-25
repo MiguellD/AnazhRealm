@@ -2962,7 +2962,7 @@ function eigenBoots(dateien) {
                 if ((o === "puppeteer" && p === "launch") || (o === "http" && p === "createServer")) ja = true;
                 if (/spawn/.test(c.name || p) && /(?:save|signaling)-server\.js/.test(src.slice(n.start, n.end))) ja = true;
             });
-        } catch (_e) {
+        } catch {
             return /\bpuppeteer\s*\.\s*launch\s*\(|\bhttp\s*\.\s*createServer\s*\(/.test(stripComments(src));
         }
         return ja;

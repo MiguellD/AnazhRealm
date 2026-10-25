@@ -1001,7 +1001,7 @@ async function checkBandWelle6APolish(ctx) {
         // (c) Beim ersten Welt-Start (Flags geleert) spricht der Begleiter diegetisch.
         try {
             localStorage.removeItem("anazh.ui.skipIntro");
-        } catch (_e) {
+        } catch {
             /* localStorage gesperrt — worldJournal trägt das Flag */
         }
         if (r.state.worldJournal && r.state.worldJournal.seen) r.state.worldJournal.seen.intro = false;
