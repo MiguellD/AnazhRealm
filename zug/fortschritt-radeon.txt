@@ -6,3 +6,4 @@
 2026-10-25 16:25:43 36c4275a-radeon ENDE 0 grün / 1 rot · 5.3 min
 2026-10-25 17:09:27 ca1f45c7-radeon START 1 Stationen
 2026-10-25 17:14:37 ca1f45c7-radeon siedlung.K5#1 GRÜN 5.2 · 1/1
+2026-10-25 17:14:40 ca1f45c7-radeon ENDE 1 grün / 0 rot · 5.2 min
