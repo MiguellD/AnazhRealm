@@ -491,7 +491,11 @@ class AnazhRealm_werkstatt_sozial {
         try {
             if (this.saveState() === false) throw new Error("der Stand ist gesperrt");
             const welt = this.state.worldMeta.worldId;
-            const result = await this._speicherAuftrag({ op: "server", welt, url: "http://localhost:4312/api/save-state" });
+            const result = await this._speicherAuftrag({
+                op: "server",
+                welt,
+                url: "http://localhost:4312/api/save-state",
+            });
             if (!result.ok) throw new Error(result.grund);
             this.log(`Zustand direkt im Spielordner gespeichert: ${result.pfad || "anazhRealmState.json"}`);
             return "server";

@@ -437,7 +437,8 @@ async function wegSeite(km, min, edits) {
             if (i % 5 === 0) await ruh(0);
         }
     };
-    const sortiert = (o) => JSON.stringify(o, (k, v) => (v && v.constructor === Object ? Object.fromEntries(Object.entries(v).sort()) : v));
+    const sortiert = (o) =>
+        JSON.stringify(o, (k, v) => (v && v.constructor === Object ? Object.fromEntries(Object.entries(v).sort()) : v));
     const [ms, abw] = [[], []];
     const P = Object.getPrototypeOf(r);
     const ruf = P.saveState;
@@ -507,7 +508,13 @@ async function wegLauf(km, min, edits) {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
     const { S, abw } = await page.evaluate(wegSeite, km, min, edits);
     await browser.close();
-    const q = (a, p) => (a.length ? a.slice().sort((x, y) => x - y)[Math.min(a.length - 1, Math.floor(p * a.length))].toFixed(2) : "—");
+    const q = (a, p) =>
+        a.length
+            ? a
+                  .slice()
+                  .sort((x, y) => x - y)
+                  [Math.min(a.length - 1, Math.floor(p * a.length))].toFixed(2)
+            : "—";
     const msZeile = (a) => `p50 ${q(a, 0.5)} / p95 ${q(a, 0.95)} / max ${q(a, 1)} ms in ${a.length} Rufen`;
     return {
         km: km * Math.hypot(1, 0.15),

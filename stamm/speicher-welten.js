@@ -789,7 +789,12 @@ class AnazhRealm_speicher_welten {
         const a = this.state.architectures || AnazhRealm.STAND_LEER;
         const m = this._standBautenMemo;
         if (m && m.liste === a && m.n === a.length && m.letzter === a[a.length - 1]) return m.bauten;
-        this._standBautenMemo = { liste: a, n: a.length, letzter: a[a.length - 1], bauten: a.filter((e) => !e._ausGesetz) };
+        this._standBautenMemo = {
+            liste: a,
+            n: a.length,
+            letzter: a[a.length - 1],
+            bauten: a.filter((e) => !e._ausGesetz),
+        };
         return this._standBautenMemo.bauten;
     }
 
@@ -832,7 +837,11 @@ class AnazhRealm_speicher_welten {
                 "playerPosition",
                 () =>
                     st().playerMesh
-                        ? { x: st().playerMesh.position.x, y: st().playerMesh.position.y, z: st().playerMesh.position.z }
+                        ? {
+                              x: st().playerMesh.position.x,
+                              y: st().playerMesh.position.y,
+                              z: st().playerMesh.position.z,
+                          }
                         : { x: 0, y: 5, z: 0 },
                 flach(() => st().playerMesh && st().playerMesh.position),
             ],
@@ -853,10 +862,20 @@ class AnazhRealm_speicher_welten {
             // Spieler (bond + Folgen) ist Identität und reist mit (`_serializeCreature` bindung, halten.K5).
             // Ein Gefallener liegt nie in state.creatures (er zog beim Tod nach state.leichname) — er reist nie in den
             // Snapshot und erwacht nie beim Reload.
-            ["creatures", () => st().creatures.map((c) => this._serializeCreature(c)).filter((s) => s)],
+            [
+                "creatures",
+                () =>
+                    st()
+                        .creatures.map((c) => this._serializeCreature(c))
+                        .filter((s) => s),
+            ],
             ["creatureEmotions", () => st().creatureEmotions, flach(() => st().creatureEmotions)],
             // halten.K4 — die Pfeile, die in Gelände und Bau stecken (`_pfeilStecken`); die im Tier reisen mit dem Tier
-            ["pfeileStecken", () => this._pfeileSteckenAbdruck(), angehaengt(() => st().pfeileStecken || AnazhRealm.STAND_LEER)],
+            [
+                "pfeileStecken",
+                () => this._pfeileSteckenAbdruck(),
+                angehaengt(() => st().pfeileStecken || AnazhRealm.STAND_LEER),
+            ],
             ["terrainSteepness", () => st().terrainSteepness],
             ["terrainBaseHeight", () => st().terrainBaseHeight],
             ["weather", () => st().weather],
@@ -870,7 +889,8 @@ class AnazhRealm_speicher_welten {
                     const orte = new Set(Object.values(wm.settlementCells || {}).map((c) => c && c.seed >>> 0));
                     if (wm.erdbau && typeof wm.erdbau === "object") {
                         wm.erdbau = { ...wm.erdbau };
-                        for (const k in wm.erdbau) if (/^ort:/.test(k) && orte.has(+k.split(":")[1])) delete wm.erdbau[k];
+                        for (const k in wm.erdbau)
+                            if (/^ort:/.test(k) && orte.has(+k.split(":")[1])) delete wm.erdbau[k];
                     }
                     if (stand) delete wm.voxelEdits;
                     return wm;
@@ -882,7 +902,14 @@ class AnazhRealm_speicher_welten {
             [
                 "dslHistory",
                 () => st().dsl.history.slice(-st().dsl.historyCap),
-                { marke: () => [st().dsl.history, st().dsl.history.length, st().dsl.history.at(-1), st().dsl.historyCap] },
+                {
+                    marke: () => [
+                        st().dsl.history,
+                        st().dsl.history.length,
+                        st().dsl.history.at(-1),
+                        st().dsl.historyCap,
+                    ],
+                },
             ],
             // Stehende Welt-Regeln persistieren NUR mit den definierenden Feldern (cond/effect/everySec/source/
             // ttlSec); die Laufzeit-Akkus (fires/born/_sig/costMsSum) setzt der Restore frisch.
@@ -951,7 +978,17 @@ class AnazhRealm_speicher_welten {
                         wunde: +(pl.deathWoundIntensity || 0).toFixed(4),
                     };
                 },
-                { marke: () => [pl().hp, pl().hpMax, pl().stamina, pl().staminaMax, pl().mana, pl().manaMax, pl().deathWoundIntensity] },
+                {
+                    marke: () => [
+                        pl().hp,
+                        pl().hpMax,
+                        pl().stamina,
+                        pl().staminaMax,
+                        pl().mana,
+                        pl().manaMax,
+                        pl().deathWoundIntensity,
+                    ],
+                },
             ],
             // Tag-Nacht: timeOfDay läuft nach dem Reload weiter. Die Tag-Länge ist die Wahl des Spielers und lebt bei ihm
             // (localStorage, `setDayLength`): der Kopf trägt sie, weil die Taille v1 den Schlüssel verlangt
@@ -1024,7 +1061,11 @@ class AnazhRealm_speicher_welten {
                     for (const a of K.bauten) {
                         const bp = bps[a.type];
                         if (bp && bp._isGrown && !out[a.type])
-                            out[a.type] = { label: bp.label, _grownSpecies: bp._grownSpecies, _grownSeed: bp._grownSeed };
+                            out[a.type] = {
+                                label: bp.label,
+                                _grownSpecies: bp._grownSpecies,
+                                _grownSeed: bp._grownSeed,
+                            };
                     }
                     return out;
                 },
@@ -1054,8 +1095,28 @@ class AnazhRealm_speicher_welten {
                         const p = a.position;
                         if (K.bodenNeu || m.boden === undefined)
                             m.boden = this._voxelStand(Math.floor(p.x / K.span), Math.floor(p.z / K.span));
-                        return [a.id, a.type, p.x, p.y, p.z, a.seed, a.scale, a.rotationY, a.tintH, a.tintS, a.tintV,
-                            a.freeBorn, a.feldWurf, a.werk, a.studioOv, a.fundament, a.tuer, a.chimney, a.portalMeta, m.boden];
+                        return [
+                            a.id,
+                            a.type,
+                            p.x,
+                            p.y,
+                            p.z,
+                            a.seed,
+                            a.scale,
+                            a.rotationY,
+                            a.tintH,
+                            a.tintS,
+                            a.tintV,
+                            a.freeBorn,
+                            a.feldWurf,
+                            a.werk,
+                            a.studioOv,
+                            a.fundament,
+                            a.tuer,
+                            a.chimney,
+                            a.portalMeta,
+                            m.boden,
+                        ];
                     },
                     glied: (a) => ({
                         // Eine string-id ist eine GETEILTE Architektur-Identität (spieler-gebaut + broadcastet): sie muss Save
@@ -1154,7 +1215,10 @@ class AnazhRealm_speicher_welten {
                     })),
                 {
                     marke: () => {
-                        const m = [st().computeContributions, st().computeContributions ? st().computeContributions.size : 0];
+                        const m = [
+                            st().computeContributions,
+                            st().computeContributions ? st().computeContributions.size : 0,
+                        ];
                         for (const c of (st().computeContributions || AnazhRealm.STAND_LEER).values())
                             m.push(c, c.outputHash, c.providedBy, c.providedAt, c.sig, c.status);
                         return m;
@@ -1231,7 +1295,8 @@ class AnazhRealm_speicher_welten {
                         const inv = st().player && st().player.inventory;
                         const m = [inv];
                         if (Array.isArray(inv))
-                            for (const s of inv) m.push(s, s && s.kind, s && s.material, s && s.blueprintName, s && s.count);
+                            for (const s of inv)
+                                m.push(s, s && s.kind, s && s.material, s && s.blueprintName, s && s.count);
                         return m;
                     },
                 },
@@ -1377,7 +1442,10 @@ class AnazhRealm_speicher_welten {
                 S.warten.delete(a.n);
                 if (a.ohnePlatte && !this._speicherOhnePlatte) {
                     this._speicherOhnePlatte = true;
-                    this.log(`IndexedDB nicht verfügbar (${a.ohnePlatte}) — der Stand lebt nur bis zum Verlassen der Welt.`, "WARN");
+                    this.log(
+                        `IndexedDB nicht verfügbar (${a.ohnePlatte}) — der Stand lebt nur bis zum Verlassen der Welt.`,
+                        "WARN"
+                    );
                 }
                 if (!a.ok) {
                     if (a.op === "stand") S.welt = null;
@@ -1442,7 +1510,10 @@ class AnazhRealm_speicher_welten {
             localStorage.setItem(this.worldStorageKey(S.welt), new TextDecoder().decode(a.daten));
             this.worldsIndexUpsert({ worldId: S.welt, lastPlayed: S.at });
         } catch (e) {
-            this.log(`Der Platz der verlassenen Welt ließ sich nicht schreiben (${e.message}) — sie lebt in IndexedDB.`, "WARN");
+            this.log(
+                `Der Platz der verlassenen Welt ließ sich nicht schreiben (${e.message}) — sie lebt in IndexedDB.`,
+                "WARN"
+            );
         }
     }
 
