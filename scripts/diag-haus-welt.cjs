@@ -1824,88 +1824,55 @@ async function slotProbe(page) {
         const r = window.anazhRealm;
         const s = r.state;
         const h = globalThis.__gelaendeCore.hangOrt(r._gelaende(), (x, z) => r._landAt(x, z, 1), 200, 1600, 0.17, 0.3);
-        if (!h) return null;
-        // die Spuren der Phasen davor weichen (Bau-Modus, Schublade, Inventar, Suche, Fokus), wie vor jedem Weg der Werkstatt-Linse
+        // die Spuren der Phasen davor weichen (Bau-Modus, Schublade, Fokus), wie vor jedem Weg der Werkstatt-Linse
         if (s.buildMode.active) r._clearBuildMode();
         if (s.uiActiveDrawer) r.closeAllDrawers();
         if (s.inventoryOpen) r.toggleInventoryOverlay(false);
-        r._workshopClosePicker();
         if (document.activeElement) document.activeElement.blur();
-        r.setGameMode("schöpfer");
-        r.setCameraMode("first");
         const y = (dx, dz) => r._terrainMacroSurfaceY(h.x + dx, h.z + dz);
+        r.setGameMode("schöpfer");
         s.playerMesh.position.set(h.x, y(0, 0) + 1.2, h.z);
         s.yaw = Math.atan2(y(0, 2) - y(0, -2), y(-2, 0) - y(2, 0)); // längs der Höhenlinie: das Haus steht im Hang
         s.pitch = -0.45;
-        const span = r._voxelChunkConfig(0).span;
         const vorher = new Set(s.architectures);
-        const takt = setInterval(() => {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
-        }, 40);
-        window.__slot = {
-            bereit: () => !!(s.voxelChunks.get(`${Math.floor(h.x / span)},${Math.floor(h.z / span)}`) || {}).surfMap,
-            neu: () => s.architectures.find((a) => !vorher.has(a) && a.type === "haus_alemannisch"),
-            ende: () => clearInterval(takt),
-        };
+        const neu = () => s.architectures.find((a) => !vorher.has(a) && a.type === "haus_alemannisch");
+        const key = (e) => `haus:${Math.round(e.position.x * 100)},${Math.round(e.position.z * 100)}`;
+        const takt = setInterval(() => r._gameLoopTick(performance.now()), 40);
+        window.__slot = { neu, key, takt, steht: () => !!(neu() && neu().tuer && s.worldMeta.erdbau[key(neu())]) };
         return h;
     });
-    if (!ort) return { fehler: "kein Hang ≥ 17 % in 1 600 m" };
     try {
-        await page.waitForFunction(() => window.__slot.bereit(), { timeout: 180000, polling: 200 });
+        await page.waitForFunction((x, z) => window.anazhRealm._bodenSichtChunks(x - 8, z - 8, x + 8, z + 8), { timeout: 180000 }, ort.x, ort.z);
+        // FERTIGEN setzt das Werk, wohin der Spieler blickt (`fertigeBlueprint`)
         await page.keyboard.press("KeyB");
         await page.click("#workshop-search");
         await page.keyboard.type("alemann");
         await page.click('#workshop-list .workshop-list-row[data-blueprint="haus_alemannisch"]');
         await page.click("#workshop-action-zone .workshop-fertigen");
-        // FERTIGEN setzt das Werk, wohin der Spieler blickt (`fertigeBlueprint`); lehnt der Ort ab, zielt das Phantom: Taste F
-        if (await page.evaluate(() => !window.__slot.neu() && window.anazhRealm.state.buildMode.active)) await page.keyboard.press("KeyF");
-        await page.waitForFunction(
-            () => {
-                const e = window.__slot.neu();
-                const eb = window.anazhRealm.state.worldMeta.erdbau || {};
-                return e && e.tuer && eb[`haus:${Math.round(e.position.x * 100)},${Math.round(e.position.z * 100)}`];
-            },
-            { timeout: 240000, polling: 250 }
-        );
-    } catch (e) {
-        const zeile = await page.evaluate(() => [...document.querySelectorAll("#chat-output > div")].slice(-2).map((d) => d.textContent).join(" | "));
-        return { fehler: `${String(e.message || e).slice(0, 60)} — ${zeile.slice(0, 200)}` };
+        await page.waitForFunction(() => window.__slot.steht(), { timeout: 240000 });
     } finally {
-        await page.evaluate(() => window.__slot.ende());
+        await page.evaluate(() => clearInterval(window.__slot.takt));
     }
     return page.evaluate(() => {
-        const r = window.anazhRealm;
-        const [FC, G] = [window.__fachwerkCore, globalThis.__gelaendeCore];
+        const [r, FC, G] = [window.anazhRealm, window.__fachwerkCore, globalThis.__gelaendeCore];
         const e = window.__slot.neu();
-        const [x, z] = [e.position.x, e.position.z];
-        const key = `haus:${Math.round(x * 100)},${Math.round(z * 100)}`;
+        const [x, z, phi] = [e.position.x, e.position.z, e.rotationY || 0];
         const eb = r.state.worldMeta.erdbau;
-        const art = r._grundrissGesetz(e.type);
-        const ov = r._artifactStudioOv(e);
-        const p = FC.hausParams(FC.PRESETS[art.preset], ov || null);
+        const key = window.__slot.key(e);
+        const [art, ov] = [r._grundrissGesetz(e.type), r._artifactStudioOv(e)];
+        const p = FC.hausParams(FC.PRESETS[art.preset], ov);
         if (!(ov && ov.seed != null)) p.seed = Number(r._foundryGestaltFor(e, art.preset));
-        const B = FC.massBau(p);
-        const phi = e.rotationY || 0;
-        const [c, sn, lx, lz] = [Math.cos(phi), Math.sin(phi), (B.ext.x0 + B.ext.x1) / 2, (B.ext.z0 + B.ext.z1) / 2];
-        const obb = { cx: lx * c + lz * sn, cz: -lx * sn + lz * c, phi, ex: (B.ext.x1 - B.ext.x0) / 2, ez: (B.ext.z1 - B.ext.z0) / 2 };
-        const sl = { x: 0, z: 0, phi, obb, kultur: art.preset, ov: p, tuer: e.tuer, grund: B.grund };
-        const andere = Object.keys(eb).filter((k) => k !== key).flatMap((k) => eb[k]);
+        const { ext: q, grund } = FC.massBau(p);
+        const [c, sn, lx, lz] = [Math.cos(phi), Math.sin(phi), (q.x0 + q.x1) / 2, (q.z0 + q.z1) / 2];
+        const obb = { cx: lx * c + lz * sn, cz: -lx * sn + lz * c, phi, ex: (q.x1 - q.x0) / 2, ez: (q.z1 - q.z0) / 2 };
+        const andere = Object.keys(eb).flatMap((k) => (k === key ? [] : eb[k]));
         const L = Object.create(r._gelaende(), { erdbau: { value: G.erdbauNormal(andere) } });
+        const sl = { x: 0, z: 0, phi, obb, kultur: art.preset, ov: p, tuer: e.tuer, grund };
         const soll = FC.ortPlan({ slots: [sl] }, { x, z }, G.ortCtx(L)).erdbau;
         const hy = (dx, dz) => G.hoehe(L, x + dx, z + dz, true);
-        const platte = eb[key].find((q) => q.art === "platte");
-        return {
-            x: Math.round(x),
-            z: Math.round(z),
-            gefaelle: +(Math.hypot(hy(4, 0) - hy(-4, 0), hy(0, 4) - hy(0, -4)) / 8).toFixed(3),
-            ist: eb[key].map((q) => q.art + (q.vorplatz != null ? ":vorplatz" : "")).join("+"),
-            soll: soll.map((q) => q.art + (q.vorplatz != null ? ":vorplatz" : "")).join("+"),
-            gleich: JSON.stringify(eb[key]) === JSON.stringify(soll),
-            fussCm: platte ? Math.round((e.position.y - 0.5 - platte.y) * 100) : null,
-            skala: e._hausHuelleSkala,
-        };
+        const arten = (l) => l.map((a) => a.art + (a.vorplatz == null ? "" : ":vorplatz")).join("+");
+        const gefaelle = Math.round((Math.hypot(hy(4, 0) - hy(-4, 0), hy(0, 4) - hy(0, -4)) / 8) * 1000) / 1000;
+        return { gefaelle, ist: arten(eb[key]), soll: arten(soll), gleich: JSON.stringify(eb[key]) === JSON.stringify(soll) };
     });
 }
 
