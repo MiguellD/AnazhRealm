@@ -2587,6 +2587,17 @@ async function kreaturProben(r, T, opts) {
         const Sx = () => r._bewohnerSiedlungen.get(S.key).liste || [];
         const lagen = () => new Map(Sx().map((b) => [`${wer(b)}:${b.same}`, b.leib && b.leib.position.clone()]));
         const blieb = new Map();
+        // der Weg jedes Leibs je Takt, auch im Gang-Fenster (dort ging bis heim-z29b bis 26 m Weg je Bewohner ungezählt)
+        const gehen = () => {
+            for (const g of L) {
+                const v = lage.get(g);
+                const d = ab(g.position, v);
+                weg.set(g, weg.get(g) + d);
+                if (d > 2 && Math.min(ab(v, pm), ab(g.position, pm)) < nahR) z.sprungN++;
+                v.x = g.position.x;
+                v.z = g.position.z;
+            }
+        };
         for (let i = 1; i <= 240; i++) {
             const stunde = (s.timeOfDay * 24 + 0.1) % 24;
             const SZ = saetze();
@@ -2595,14 +2606,7 @@ async function kreaturProben(r, T, opts) {
                 // Täter (Selbsttest): der Teleport an den Soll-Ort
                 if (taeter === "bewohner-sprung")
                     for (const b of liste) if (b.ziel) b.leib.position.set(b.ziel.x, b.leib.position.y, b.ziel.z);
-                for (const g of L) {
-                    const v = lage.get(g);
-                    const d = ab(g.position, v);
-                    weg.set(g, weg.get(g) + d);
-                    if (d > 2 && Math.min(ab(v, pm), ab(g.position, pm)) < nahR) z.sprungN++;
-                    v.x = g.position.x;
-                    v.z = g.position.z;
-                }
+                gehen();
             }
             // DAS GANG-FENSTER: die Wege zum Werk, zum Platz, nach Hause, 10 s zu 1/60 s
             if ([7.5, 12, 17.2].some((h) => Math.abs(stunde - h) < 0.05)) {
@@ -2616,8 +2620,8 @@ async function kreaturProben(r, T, opts) {
                             if (a) for (let q = 0; q < a.count; q++) a.setX(q, 0);
                         }
                     gangMessen(SZ);
+                    gehen();
                 }
-                for (const g of L) lage.set(g, { x: g.position.x, z: g.position.z }); // das Fenster ist kein Sprung
             }
             z.alsLeib = Math.max(z.alsLeib, L.filter((g) => g.visible).length);
             // die Soll-Orte: am Ort (≤ 1,5 m, gezeichnet) · drinnen (an der Tür) · unterwegs (sein Weg zu DIESEM Soll begann
