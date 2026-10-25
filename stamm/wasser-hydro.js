@@ -404,7 +404,8 @@ class AnazhRealm_wasser_hydro {
 
     // DAS EIS (stoffe.K3): die feste Phase der EINEN Wasser-Wahrheit — der Spiegel am Körper (`_koerperWasser` über jedem
     // Grund) trägt als Fläche, wo das Bild tragendes Eis zeigt: über der Linie `voll` des Gesetzes (`_eisLinien`) an der
-    // Säule unter ihm (`_eisLinieBei`, dieselbe Deckung wie der Stoff, `_eisDeckung`). Rückgabe: der Grund unter `y0` binnen
+    // Säule unter ihm (`_eisLinieBei`, dieselbe Deckung wie der Stoff, `_eisDeckung`; der Gefrierpunkt und die Trägheit aus den
+    // Zeilen wasser und eis der Stoff-Tafel, stoffe.K1, `_wasserStoff`). Rückgabe: der Grund unter `y0` binnen
     // `maxDist` (wie `_fieldSurfaceBelow`; ohne `y0` von oben), sonst null. Kein zweites Wasser: dieselbe Fläche, die das Auge
     // sieht und durch die der Körper taucht, solange sie offen ist.
     // DIE BILLIGEN FILTER ZUERST (Lehre 25): unter der tiefsten tragenden Linie der Welt (`traegtAb`, die flachste Säule)

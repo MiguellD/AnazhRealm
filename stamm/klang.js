@@ -524,22 +524,24 @@ class AnazhRealm_klang {
         if (sym && sym.enabled && sym.ctx && sym.masterGain) this._playSchrittOneShot(param);
     }
 
-    // Material am Fuß — NASS SCHLÄGT FEST: unter dem Wasserspiegel (watender Ufer-Schritt) platscht er. Das EINE Urteil
-    // „ist hier Wasser" (`_nassAt`, der Fuß ist sein Grund), `_terrainMaterialAt` die EINE Boden-Wahrheit; der Fuß auf dem
-    // gefrorenen Spiegel (`_eisAt`, stoffe.K3) klingt Eis.
+    // Der Stoff am Fuß — NASS SCHLÄGT FEST: unter dem Wasserspiegel (watender Ufer-Schritt) platscht er. Das EINE Urteil
+    // „ist hier Wasser" (`_nassAt`, der Fuß ist sein Grund), sonst der Stoff, der den Fuß trägt (`_kontaktStoffAt`: die
+    // Auflage eines Baus, das Eis des gefrorenen Spiegels, die Wiese, der Boden).
     _schrittMaterialAt(x, z, y) {
-        if (this._eisAt(x, z, y + 0.02, 0.05) !== null) return "eis";
-        return this._nassAt(x, z, 0.02, y) ? "wasser" : this._terrainMaterialAt(x, z, y);
+        const stoff = this._kontaktStoffAt(x, z, y);
+        return stoff !== "eis" && this._nassAt(x, z, 0.02, y) ? "wasser" : stoff;
     }
 
-    // Material → Timbre, PUR aus der Tabelle (unbekannt → Tabellen-Fallback). Die LANDUNG ist derselbe
+    // Stoff → Timbre aus der Klang-Spalte seiner Zeile der Stoff-Tafel (`_stoff`, stoffe.K1; ein eigener Stoff klingt wie sein
+    // nächster Verwandter). Die LANDUNG ist derselbe
     // Burst, STÄRKER ∝ Aufprall-Tempo (√(2gh), wie der Kamera-Dip), länger + tiefer, gainDeckel-begrenzt.
     _schrittKlangParams(material, landung, impact) {
         const T = AnazhRealm.SCHRITT_KLANG;
-        const name = Object.prototype.hasOwnProperty.call(T.material, material) ? material : T.fallback;
-        const m = T.material[name];
+        const zeile = this._stoff(material);
+        if (!zeile) return null; // der Melder hat gesprochen (`_stoff`), der Fuß schweigt
+        const m = zeile.klang;
         const p = {
-            material: name,
+            material: zeile.name,
             filter: m.filter,
             freq: m.freq,
             q: m.q,
@@ -1594,7 +1596,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_klang]);
 AnazhRealm._schrittTimbre = function () {
     if (AnazhRealm._schrittTimbreMemo) return AnazhRealm._schrittTimbreMemo;
     const t = AnazhRealm.Gesetz("klang:SCHRITT_TIMBRE", null);
-    if (t && t.material && t.material.stein && typeof t.fallback === "string") {
+    if (t && t.material && t.material.stein) {
         AnazhRealm._schrittTimbreMemo = t;
         return t;
     }
@@ -1703,7 +1705,7 @@ AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu 
 // Asset-freie Farnell-Synthese: Quelle ist immer ein Rausch-Burst, das MATERIAL ist der Filter (erde
 // dumpf · stein hell · glut warm · quarz/eisen klirrend · wasser platschig); gain bewusst dezent unter
 // dem Kampf-One-Shot. Die Bewegungs-Schwelle wohnt in bewegung.schritt.klangTempoMin, das
-// Material→Timbre-Gesetz im klang-Gesetzbuch (SCHRITT_TIMBRE via _schrittTimbre) — Getter sind Leser;
+// Material→Timbre-Gesetz im klang-Gesetzbuch (SCHRITT_TIMBRE), gelesen als Klang-Spalte der Stoff-Tafel (`_stoff`);
 // Tick-Deckel und Landungs-Wichtung sind Wirts-Mischpult.
 AnazhRealm.SCHRITT_KLANG = Object.freeze({
     get tempoMin() {
@@ -1716,10 +1718,4 @@ AnazhRealm.SCHRITT_KLANG = Object.freeze({
     landGainSpanne: 1.4, // maximaler Zusatz — ein harter Sturz bleibt gedeckelt
     landDauerFaktor: 2.0, // die Landung klingt länger nach
     landFreqFaktor: 0.7, // und tiefer — Masse im Aufprall
-    get fallback() {
-        return AnazhRealm._schrittTimbre().fallback;
-    },
-    get material() {
-        return AnazhRealm._schrittTimbre().material;
-    },
 });

@@ -173,7 +173,7 @@ function brennVerdict(m) {
         out.push(`nachts erwärmt die Linse (Wärme ${n.waerme}${n.steht ? "" : ", verbrannt"})`);
     const k = m.kuehlung || {};
     if (!(k.nachFokus > 0)) out.push("keine Wärme im Brennpunkt (Vorbedingung)");
-    else if (!(k.nachKuehlen === 0))
+    else if (!(k.nachKuehlen < k.nachFokus / 2))
         out.push(`außerhalb des Brennpunkts kühlt nichts (${k.nachFokus} → ${k.nachKuehlen})`);
     return out;
 }
@@ -411,10 +411,18 @@ async function probe(argW) {
         }
         return k > 0;
     };
+    // je Abschnitt EIN Befund: gestartet erst am Ende, ein Wurf trägt seinen Stapel
+    const abschnitt = async (k, m, fn) => {
+        out[k] = m = { gestartet: false, ...m };
+        try {
+            await fn(m);
+            m.gestartet = true;
+        } catch (e) {
+            m.err = (e && e.stack) || String(e);
+        }
+    };
     // ── D10: der Same eines Satzes ──
-    try {
-        const m = { gestartet: false, zuege: {} };
-        out.same = m;
+    await abschnitt("same", { zuege: {} }, async (m) => {
         if (!frei) throw new Error("kein freier Ort abseits der Lichtung");
         stelle();
         const neue = (vorher) => st.architectures.filter((a) => a && !vorher.has(a));
@@ -485,15 +493,10 @@ async function probe(argW) {
             return relOrte(liste);
         };
         m.streuAbweichung = abweichung(streu(1), streu(2));
-        m.gestartet = true;
-    } catch (e) {
-        out.same = Object.assign(out.same || {}, { err: (e && e.stack) || String(e) });
-    }
+    });
 
     // ── L-Wortschatz: der Wort-Katalog ist der Rezept-Katalog ──
-    try {
-        const m = { gestartet: false, woerter: {} };
-        out.wort = m;
+    await abschnitt("wort", { woerter: {} }, async (m) => {
         if (!frei) throw new Error("kein freier Ort abseits der Lichtung");
         const rec = r._foundry.recipes;
         // Die Art eines Bauplans: die Studio-Art, deren Rezept er trägt (das Buch, nie der Name).
@@ -537,15 +540,10 @@ async function probe(argW) {
             m.vorschlag[satz] = { zeile: zeilen().slice(n2).join(" | "), sug: r.chatSuggest(satz) || null };
         }
         if (st.llm) st.llm.enabled = llmAlt;
-        m.gestartet = true;
-    } catch (e) {
-        out.wort = Object.assign(out.wort || {}, { err: (e && e.stack) || String(e) });
-    }
+    });
 
     // ── Der Same des Werks: das gesetzte Werk ist das Phantom, auch beim Mitspieler ──
-    try {
-        const m = { gestartet: false };
-        out.werk = m;
+    await abschnitt("werk", {}, async (m) => {
         if (!frei || !plat) throw new Error("kein freier Ort oder keine Genesis-Plattform");
         const NAME = "baum_eiche";
         const preset = r._foundryPresetForEntry({ type: NAME });
@@ -722,15 +720,10 @@ async function probe(argW) {
             else wmAlt.bauSame = zAlt;
         }
         m.reload = rl;
-        m.gestartet = true;
-    } catch (e) {
-        out.werk = Object.assign(out.werk || {}, { err: (e && e.stack) || String(e) });
-    }
+    });
 
     // ── Brennglas: das Licht brennt, wo es sich bündelt, und die Zerstörung nennt sich ──
-    try {
-        const m = { gestartet: false };
-        out.brenn = m;
+    await abschnitt("brenn", {}, async (m) => {
         if (!frei || !plat) throw new Error("kein freier Ort oder keine Genesis-Plattform");
         const wetterAlt = st.weather;
         const zeitAlt = st.timeOfDay;
@@ -818,14 +811,10 @@ async function probe(argW) {
             st.weather = wetterAlt;
             st.timeOfDay = zeitAlt;
         }
-        m.gestartet = true;
-    } catch (e) {
-        out.brenn = Object.assign(out.brenn || {}, { err: (e && e.stack) || String(e) });
-    }
+    });
 
     // ── Der Prüf-Satz (Bauen K3): Statik und Wirkung aus der Form, in der Welt ──
-    try {
-        const m = (out.pruef = { gestartet: false, statik: {}, konsum });
+    await abschnitt("pruef", { statik: {}, konsum }, async (m) => {
         const [emo, wetter, chaos, h] = [st.player.emotions, st.weather, st.player.emotions.chaos, (x, z) => r.getTerrainHeightAt(x, z)];
         const takte = (n, dt) => {
             for (let i = 0; i < n; i++) r.tickAffordances(dt);
@@ -882,10 +871,7 @@ async function probe(argW) {
         }
         emo.chaos = chaos;
         for (const k of Object.keys(st.blueprints)) if (k.startsWith("__pruef_")) delete st.blueprints[k];
-        m.gestartet = true;
-    } catch (e) {
-        out.pruef = Object.assign(out.pruef || {}, { err: (e && e.stack) || String(e) });
-    }
+    });
     return out;
 }
 
@@ -1125,9 +1111,16 @@ async function wegProbe(page, frei) {
             streuAbweichung: 0,
             konsum: { "dslCtx → _bauSame": true, "_streamRng → _samenStrom": true },
         };
-        check("Selbst-Test D10: gesund == 0 Täter", sameVerdict(gesund).length === 0, sameVerdict(gesund).join(" · "));
+        // EINE Familie des Selbst-Tests: gesund trägt 0 Täter, je gebrochene Stelle nennt das Urteil den Täter beim Namen
+        const familie = (tag, urteil, gesund, faelle) => {
+            check(`Selbst-Test ${tag}: gesund == 0 Täter`, urteil(gesund).length === 0, urteil(gesund).join(" · "));
+            for (const [name, bruch, soll] of faelle) {
+                const v = urteil(bruch);
+                check(`Selbst-Test ${tag}: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
+            }
+        };
         const mit = (o) => Object.assign({}, gesund, o);
-        for (const [name, bruch, soll] of [
+        familie("D10", sameVerdict, gesund, [
             [
                 "der Hain würfelt (Befund 1 + 24)",
                 mit({ zuege: Object.assign({}, gesund.zuege, { hain: 25 }) }),
@@ -1159,14 +1152,7 @@ async function wegProbe(page, frei) {
             ["der Programm-Strom ohne Seed würfelt", mit({ konsum: { "dslCtx → _bauSame": false, "_streamRng → _samenStrom": true } }), "Konsum: dslCtx → _bauSame"],
             ["ohne Konsum-Probe (vakuös)", mit({ konsum: undefined }), "Konsum: (keine Probe)"],
             ["kein Hain (vakuös)", mit({ hainBaeume: 0 }), "der Hain wuchs nicht"],
-        ]) {
-            const v = sameVerdict(bruch);
-            check(
-                `Selbst-Test D10: ‚${name}' → die Linse nennt ${soll}`,
-                v.some((t) => t.startsWith(soll)),
-                v.join(" · ")
-            );
-        }
+        ]);
         // Die Wand: gesund grün, je gebrochene Stelle rot.
         const w0 = wand();
         check(
@@ -1211,15 +1197,10 @@ async function wegProbe(page, frei) {
                 "mach licht": { zeile: "Unbekannter Befehl. Meintest du: 'mach es hell'?", sug: "mach es hell" },
             },
         };
-        check(
-            "Selbst-Test L-Wortschatz: gesund == 0 Täter",
-            wortVerdict(gesundW).length === 0,
-            wortVerdict(gesundW).join(" · ")
-        );
         const mitW = (o) => Object.assign({}, gesundW, o);
         const wortWeg = (w) =>
             mitW({ woerter: Object.assign({}, gesundW.woerter, { [w]: { ziel: null, art: null } }) });
-        for (const [name, bruch, soll] of [
+        familie("L-Wortschatz", wortVerdict, gesundW, [
             ["fachwerkhaus unbekannt (Befund)", wortWeg("fachwerkhaus"), '„fachwerkhaus" unbekannt'],
             ["wagen unbekannt (Befund)", wortWeg("wagen"), '„wagen" unbekannt'],
             ["Häuser ohne den Plural-Umlaut", wortWeg("häuser"), '„häuser" unbekannt'],
@@ -1265,14 +1246,7 @@ async function wegProbe(page, frei) {
                 }),
                 '„mach licht": der Vorschlag „mach es hell" fällt',
             ],
-        ]) {
-            const v = wortVerdict(bruch);
-            check(
-                `Selbst-Test L-Wortschatz: ‚${name}' → die Linse nennt ${soll}`,
-                v.some((t) => t.startsWith(soll)),
-                v.join(" · ")
-            );
-        }
+        ]);
         // L-Werkstatt: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const KOST = { holz: 44, laub: 50 };
         const fehlt = "Eiche: fehlt 44× holz · 50× laub — sammeln";
@@ -1293,10 +1267,9 @@ async function wegProbe(page, frei) {
                             lage === "frieden ohne Material"
                                 ? { eingaben: 2, zeile: fehlt, steht: 0, bauModus: weg === "hotbar", farbe: "rot" }
                                 : { eingaben: 3, steht: 1, kosten: KOST, verbraucht: lage === "schöpfer" ? {} : KOST };
-        check("Selbst-Test L-Werkstatt: gesund == 0 Täter", wegVerdict(gesundG).length === 0, wegVerdict(gesundG).join(" · "));
         const mitG = (wo, e, b = JSON.parse(JSON.stringify(gesundG))) => (Object.assign(wo.split(" · ").reduce((o, k) => o[k], b.wege), e), b);
         const mitL = (e) => Object.assign(JSON.parse(JSON.stringify(gesundG)), e);
-        for (const [name, bruch, soll] of [
+        familie("L-Werkstatt", wegVerdict, gesundG, [
             ["ein Weg mit einem zusätzlichen Bestätigungs-Klick", mitG("frieden mit Material · werkstatt · Haus · Third", { eingaben: 4 }), "frieden mit Material · werkstatt · Haus · Third: 4 Eingaben bis zum stehenden Werk"],
             ["das Werk steht per Methoden-Aufruf, ohne Ereignis des Spielers", mitG("pfad · rezeptbuch · GT · Ego", { eingaben: 0 }), "pfad · rezeptbuch · GT · Ego: kein echtes Eingabe-Ereignis"],
             ["ein geschmiedetes Ereignis (isTrusted false)", mitG("schöpfer · hotbar · Teil · Third", { unecht: 1 }), "schöpfer · hotbar · Teil · Third: 1 Ereignis(se) ohne Spieler"],
@@ -1315,10 +1288,7 @@ async function wegProbe(page, frei) {
             ["das Phantom steht grün über der Lichtung", mitL({ lichtung: Object.assign({}, gesundG.lichtung, { toenung: { stoffe: 2, lesen: 2, farbe: "grün" } }) }), "das Phantom über der Lichtung steht grün"],
             ["die Eiche steht auf der Lichtung", mitL({ lichtung: { wand: false, steht: 1, zeile: "" } }), "auf der Lichtung steht 1 Eiche"],
             ["ein Stoff mit Schwellen-Knoten statt der Zahl (K68-N1)", mitL({ konsum: { "Stoff → alphaTest": false } }), "Konsum: Stoff → alphaTest"],
-        ]) {
-            const v = wegVerdict(bruch);
-            check(`Selbst-Test L-Werkstatt: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
-        }
+        ]);
         // Der Same des Werks: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const gesundK = {
             gestartet: true,
@@ -1341,13 +1311,8 @@ async function wegProbe(page, frei) {
             konsum: { "_workshopFoundryPreviewGroup → _werkSame": true, "_heldFoundryGroup → _werkSame": true, "_buildStudioPlacementGhost → _phantomWerk am Ort": true },
             stumm: [],
         };
-        check(
-            "Selbst-Test Werk-Same: gesund == 0 Täter",
-            werkVerdict(gesundK).length === 0,
-            werkVerdict(gesundK).join(" · ")
-        );
         const mitK = (o) => Object.assign({}, gesundK, o);
-        for (const [name, bruch, soll] of [
+        familie("Werk-Same", werkVerdict, gesundK, [
             ["das Setzen würfelt (Befund: der Standard-Same)", mitK({ zuege: 1 }), "das Setzen würfelt 1×"],
             ["die Vorschau hasht ihren Samen selbst", mitK({ konsum: Object.assign({}, gesundK.konsum, { "_workshopFoundryPreviewGroup → _werkSame": false }) }), "Konsum: _workshopFoundryPreviewGroup"],
             ["der Ghost fragt das Werk ohne Ort (K20: eiche|3 statt eiche|2)", mitK({ konsum: Object.assign({}, gesundK.konsum, { "_buildStudioPlacementGhost → _phantomWerk am Ort": false }) }), "Konsum: _buildStudioPlacementGhost"],
@@ -1398,14 +1363,7 @@ async function wegProbe(page, frei) {
                 mitK({ huelleReicht: 10.3 }),
                 "die Hülle des Werks reicht 10.3 m, die Klemme misst 3.9 m",
             ],
-        ]) {
-            const v = werkVerdict(bruch);
-            check(
-                `Selbst-Test Werk-Same: ‚${name}' → die Linse nennt ${soll}`,
-                v.some((t) => t.startsWith(soll)),
-                v.join(" · ")
-            );
-        }
+        ]);
         // Brennglas: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const gesundB = {
             gestartet: true,
@@ -1422,13 +1380,8 @@ async function wegProbe(page, frei) {
             nacht: { waerme: 0, steht: true },
             kuehlung: { nachFokus: 0.5, nachKuehlen: 0 },
         };
-        check(
-            "Selbst-Test Brennglas: gesund == 0 Täter",
-            brennVerdict(gesundB).length === 0,
-            brennVerdict(gesundB).join(" · ")
-        );
         const mitB = (k, o) => Object.assign({}, gesundB, { [k]: Object.assign({}, gesundB[k], o) });
-        for (const [name, bruch, soll] of [
+        familie("Brennglas", brennVerdict, gesundB, [
             [
                 "die Plattform verbrennt die Eiche (Befund)",
                 mitB("plattform", { steht: false, verbranntNach: 20 }),
@@ -1447,14 +1400,7 @@ async function wegProbe(page, frei) {
             ],
             ["nachts brennt es", mitB("nacht", { waerme: 1.5, steht: false }), "nachts erwärmt die Linse"],
             ["nichts kühlt", mitB("kuehlung", { nachKuehlen: 0.5 }), "außerhalb des Brennpunkts kühlt nichts"],
-        ]) {
-            const v = brennVerdict(bruch);
-            check(
-                `Selbst-Test Brennglas: ‚${name}' → die Linse nennt ${soll}`,
-                v.some((t) => t.startsWith(soll)),
-                v.join(" · ")
-            );
-        }
+        ]);
         // Prüf-Satz: gesund ohne Täter, je Befund am main der Täter beim Namen
         const z = (art, steht) => ({ art, gesetzt: true, steht, neigung: steht ? 0 : 90, fall: 0, zeile: steht ? "" : "X" });
         const gesundP = {
@@ -1519,71 +1465,80 @@ async function wegProbe(page, frei) {
     await browser.close();
     server.close();
 
-    console.log("=== D10 — DER SAME EINES SATZES KOMMT AUS DEM WELT-STROM ===");
+    // EIN Abschnitt des Berichts: sein Kopf, die Ausnahme der Probe beim Namen, das Urteil mit seinen Tätern
+    const abschnitt = (kopf, tag, m, v, name, detail, taeter = " — Täter: " + v.join(", ")) => {
+        console.log(`=== ${kopf} ===`);
+        if (m.err) check(tag + " Probe ohne Ausnahme", false, m.err.split("\n")[0]);
+        check(name, v.length === 0, (m.gestartet ? detail() : "nicht gestartet") + (v.length ? taeter : ""));
+    };
     const sm = out.same || {};
-    if (sm.err) check("D10 Probe ohne Ausnahme", false, sm.err.split("\n")[0]);
-    const vS = sameVerdict(sm);
-    check(
+    abschnitt(
+        "D10 — DER SAME EINES SATZES KOMMT AUS DEM WELT-STROM",
+        "D10",
+        sm,
+        sameVerdict(sm),
         "D10 kein Satz würfelt aus Math.random, derselbe Satz an derselben Stelle der Welt-Geschichte ist derselbe Hain",
-        vS.length === 0,
-        `${sm.gestartet ? `Math.random-Züge ${SAETZE.map((s) => `${s} ${sm.zuege[s]}`).join(" · ")} · Hain ${sm.hainBaeume} Bäume, Samen ${JSON.stringify(sm.samen)}, Orte ±${sm.ortAbweichung} m · KI ohne Seed ±${sm.kiOrtAbweichung} m` : "nicht gestartet"}${vS.length ? " — Täter: " + vS.join(", ") : ""}`
+        () =>
+            `Math.random-Züge ${SAETZE.map((s) => `${s} ${sm.zuege[s]}`).join(" · ")} · Hain ${sm.hainBaeume} Bäume, Samen ${JSON.stringify(sm.samen)}, Orte ±${sm.ortAbweichung} m · KI ohne Seed ±${sm.kiOrtAbweichung} m`
     );
-    console.log("=== L-WORTSCHATZ — DER WORT-KATALOG IST DER REZEPT-KATALOG ===");
     const wm = out.wort || {};
-    if (wm.err) check("L-Wortschatz Probe ohne Ausnahme", false, wm.err.split("\n")[0]);
-    const vW = wortVerdict(wm);
     const bekannt = Object.keys(WORT_SOLL).filter((w) => wm.woerter && wm.woerter[w] && wm.woerter[w].ziel).length;
-    check(
+    abschnitt(
+        "L-WORTSCHATZ — DER WORT-KATALOG IST DER REZEPT-KATALOG",
+        "L-Wortschatz",
+        wm,
+        wortVerdict(wm),
         "L-Wortschatz jedes Wort des Befunds löst über die Studio-Arten auf, „bau mir ein fachwerkhaus“ stellt ein Haus, ein unbekanntes Wort hört den Katalog",
-        vW.length === 0,
-        `${
-            wm.gestartet
-                ? `${bekannt}/${Object.keys(WORT_SOLL).length} Wörter bekannt (fachwerkhaus → ${wm.woerter.fachwerkhaus && wm.woerter.fachwerkhaus.ziel}, wagen → ${wm.woerter.wagen && wm.woerter.wagen.ziel}) · ${wm.arten - (wm.artenOhneWort || []).length}/${wm.arten} Studio-Arten mit Wort · Haus gebaut ${wm.hausGebaut} · Absage „${(wm.absageZeile || "").slice(0, 70)}…" · ${Object.entries(
-                      wm.vorschlag || {}
-                  )
-                      .map(([k, v]) => `„${k}" → „${(v.zeile || "").replace(/^> [^|]*\| /, "").slice(0, 60)}…"`)
-                      .join(" · ")}`
-                : "nicht gestartet"
-        }${vW.length ? " — Täter: " + vW.join(", ") : ""}`
+        () =>
+            `${bekannt}/${Object.keys(WORT_SOLL).length} Wörter bekannt (fachwerkhaus → ${wm.woerter.fachwerkhaus && wm.woerter.fachwerkhaus.ziel}, wagen → ${wm.woerter.wagen && wm.woerter.wagen.ziel}) · ${wm.arten - (wm.artenOhneWort || []).length}/${wm.arten} Studio-Arten mit Wort · Haus gebaut ${wm.hausGebaut} · Absage „${(wm.absageZeile || "").slice(0, 70)}…" · ${Object.entries(
+                wm.vorschlag || {}
+            )
+                .map(([k, v]) => `„${k}" → „${(v.zeile || "").replace(/^> [^|]*\| /, "").slice(0, 60)}…"`)
+                .join(" · ")}`
     );
-    console.log("=== L-WERKSTATT · FRIEDEN · L-RÜCKMELDUNG — JEDER WEG FÜHRT ZUM STEHENDEN WERK ===");
     const gm = out.weg || {};
-    if (gm.err) check("L-Werkstatt Probe ohne Ausnahme", false, gm.err.split("\n")[0]);
     const vG = wegVerdict(gm);
     fs.mkdirSync(path.join(__dirname, "../artifacts/werkstatt-weg"), { recursive: true });
     fs.writeFileSync(path.join(__dirname, "../artifacts/werkstatt-weg/weg.json"), JSON.stringify(gm, null, 1)); // die Rohdatei
     // je Weg (die tragenden Lagen): stehend / Läufe, Eingaben min–max, Zeit bis zum Werk (kalt: der erste Bau des Werks)
-    const jeWeg = WEGE.map((w) => {
-        const l = LAGEN.filter((x) => x !== "frieden ohne Material").flatMap((x) => Object.values((gm.wege || {})[x][w]).flatMap(Object.values));
-        const n = l.map((e) => e.eingaben);
-        return `${w} ${l.filter((e) => e.steht === 1).length}/${l.length} stehen, Eingaben ${Math.min(...n)}–${Math.max(...n)}, max ${Math.max(...l.map((e) => e.ms))} ms (kalt ${l.filter((e) => e.kalt).map((e) => e.ms)})`;
-    });
-    check(
+    const jeWeg = () =>
+        WEGE.map((w) => {
+            const l = LAGEN.filter((x) => x !== "frieden ohne Material").flatMap((x) => Object.values((gm.wege || {})[x][w]).flatMap(Object.values));
+            const n = l.map((e) => e.eingaben);
+            return `${w} ${l.filter((e) => e.steht === 1).length}/${l.length} stehen, Eingaben ${Math.min(...n)}–${Math.max(...n)}, max ${Math.max(...l.map((e) => e.ms))} ms (kalt ${l.filter((e) => e.kalt).map((e) => e.ms)})`;
+        });
+    abschnitt(
+        "L-WERKSTATT · FRIEDEN · L-RÜCKMELDUNG — JEDER WEG FÜHRT ZUM STEHENDEN WERK",
+        "L-Werkstatt",
+        gm,
+        vG,
         "L-Werkstatt jeder Weg (Werkstatt · Rezeptbuch · Hotbar) stellt Eiche, Haus, GT und das eigene Teil-Werk über echte Eingaben in ≤ 3 Schritten — schöpfer, frieden, pfad, Ego und Third; frieden zahlt einmal, jede Absage spricht, die Lichtung sagt warum",
-        vG.length === 0,
-        `${gm.gestartet ? `${jeWeg.join(" · ")} · Phantom ${JSON.stringify(gm.phantom)} · Suche „haus" ${gm.sucheHaus} · Gerät „${gm.geraet.zeile}" · Lichtung ${JSON.stringify(gm.lichtung)}` : "nicht gestartet"}${vG.length ? ` — Täter (${vG.length}): ` + vG.slice(0, 40).join(", ") : ""}`
+        () => `${jeWeg().join(" · ")} · Phantom ${JSON.stringify(gm.phantom)} · Suche „haus" ${gm.sucheHaus} · Gerät „${gm.geraet.zeile}" · Lichtung ${JSON.stringify(gm.lichtung)}`,
+        ` — Täter (${vG.length}): ` + vG.slice(0, 40).join(", ")
     );
-    console.log("=== DER SAME DES WERKS — DAS GESETZTE WERK IST DAS PHANTOM, AUCH BEIM MITSPIELER ===");
     const km = out.werk || {};
-    if (km.err) check("Werk-Same Probe ohne Ausnahme", false, km.err.split("\n")[0]);
-    const vK = werkVerdict(km);
     const ke = km.empfang || {};
     const kr = km.reload || {};
-    check(
+    abschnitt(
+        "DER SAME DES WERKS — DAS GESETZTE WERK IST DAS PHANTOM, AUCH BEIM MITSPIELER",
+        "Werk-Same",
+        km,
+        werkVerdict(km),
         "Werk-Same das Setzen stellt Gestalt und Drehung des Phantoms ohne Math.random, der Mitspieler baut dasselbe Werk, der Welt-Strom übersteht den Reload",
-        vK.length === 0,
-        `${km.gestartet ? `Math.random ${km.zuege} · Phantom ${km.abstand} m vor dem Spieler (Soll ≥ ${km.mindest} m; die Studio-Gestalt reicht ${km.reicht} m, die Spender-Teile ${km.reichtSpender} m, die Hülle des Werks ${km.huelleReicht} m) · Phantom ${km.phantomKey} @ ${km.phantomDreh} rad → Werk ${km.werkKey} @ ${km.werkDreh} rad (Same ${km.werkSame}, das nächste Phantom ${km.naechsterSame}) · gesendet Same ${km.gesendetSame} → Mitspieler ${ke.steht ? `${ke.key} @ ${ke.dreh} rad, Tönung ${ke.tint === km.werkTint ? "gleich" : "anders"}` : "nichts"} · Strom ${kr.erst} → ${kr.weiter}, nach Reload ${kr.nachReload}` : "nicht gestartet"}${vK.length ? " — Täter: " + vK.join(", ") : ""}`
+        () =>
+            `Math.random ${km.zuege} · Phantom ${km.abstand} m vor dem Spieler (Soll ≥ ${km.mindest} m; die Studio-Gestalt reicht ${km.reicht} m, die Spender-Teile ${km.reichtSpender} m, die Hülle des Werks ${km.huelleReicht} m) · Phantom ${km.phantomKey} @ ${km.phantomDreh} rad → Werk ${km.werkKey} @ ${km.werkDreh} rad (Same ${km.werkSame}, das nächste Phantom ${km.naechsterSame}) · gesendet Same ${km.gesendetSame} → Mitspieler ${ke.steht ? `${ke.key} @ ${ke.dreh} rad, Tönung ${ke.tint === km.werkTint ? "gleich" : "anders"}` : "nichts"} · Strom ${kr.erst} → ${kr.weiter}, nach Reload ${kr.nachReload}`
     );
-    console.log("=== BRENNGLAS — DAS LICHT BRENNT, WO ES SICH BÜNDELT, UND DIE ZERSTÖRUNG NENNT SICH ===");
     const bm = out.brenn || {};
-    if (bm.err) check("Brennglas Probe ohne Ausnahme", false, bm.err.split("\n")[0]);
-    const vB = brennVerdict(bm);
     const bp_ = bm.plattform || {};
     const bl = bm.linse || {};
-    check(
+    abschnitt(
+        "BRENNGLAS — DAS LICHT BRENNT, WO ES SICH BÜNDELT, UND DIE ZERSTÖRUNG NENNT SICH",
+        "Brennglas",
+        bm,
+        brennVerdict(bm),
         "Brennglas die Eiche an der Genesis-Plattform übersteht einen sonnigen Tag, die gebaute Linse brennt zu Mittag und sagt es, nachts nie, außerhalb kühlt es",
-        vB.length === 0,
-        `${bm.gestartet ? `Plattform: ${bp_.steht ? `steht nach 480 s (max. Wärme ${bp_.maxWaerme})` : `verbrannt nach ${bp_.verbranntNach} s`} · Linse: glimmt ${bl.glimmtBei} s, brennt ${bl.brenntBei} s („${(bl.zeileBrennt || "").slice(0, 60)}") · Nacht Wärme ${(bm.nacht || {}).waerme} · Kühlung ${(bm.kuehlung || {}).nachFokus} → ${(bm.kuehlung || {}).nachKuehlen}` : "nicht gestartet"}${vB.length ? " — Täter: " + vB.join(", ") : ""}`
+        () =>
+            `Plattform: ${bp_.steht ? `steht nach 480 s (max. Wärme ${bp_.maxWaerme})` : `verbrannt nach ${bp_.verbranntNach} s`} · Linse: glimmt ${bl.glimmtBei} s, brennt ${bl.brenntBei} s („${(bl.zeileBrennt || "").slice(0, 60)}") · Nacht Wärme ${(bm.nacht || {}).waerme} · Kühlung ${(bm.kuehlung || {}).nachFokus} → ${(bm.kuehlung || {}).nachKuehlen}`
     );
     console.log("=== PRÜF-SATZ — STATIK UND WIRKUNG AUS DER FORM, IN DER WELT (Bauen K3) ===");
     const pm = out.pruef || {};

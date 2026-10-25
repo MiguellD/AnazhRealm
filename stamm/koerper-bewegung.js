@@ -2415,7 +2415,6 @@ AnazhRealm._bewegungsBlock = function (block, felder) {
 // Ziel 2,16 m (eine Kappe, kein Gesetz).
 AnazhRealm.STOSS = Object.freeze({
     stossZahl: Object.freeze({ starr: 0.2, wagen: 0.3, leib: 0.1 }), // Fels/Bauwerk/Baum · Wagen an Wagen · Leib
-    reibungLeib: 0.6, // μ des gleitenden Leibs am Boden: er verzögert mit μ·g
     ruheMs: 0.05, // m/s: darunter ruht der Stoß
     ereignisMs: 1, // m/s Aufprall-Geschwindigkeit, ab der ein Stoß Kamera und Klang erreicht
     ruckRefMs: 8, // m/s Sprung der eigenen Fahrt, bei dem der Kamera-Ruck (der Landungs-Dip) voll ist

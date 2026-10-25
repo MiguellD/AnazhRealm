@@ -1113,7 +1113,7 @@
     // DIE TRÄGHEIT (`traegTage`): ein Stoff mit Wärme-Gedächtnis (das Wasser) sieht die Luft durch einen Tiefpass erster
     // Ordnung mit der Zeitkonstante τ in Tagen — jede Schwingung gedämpft um 1/√(1 + (ωτ)²) und verspätet um atan(ωτ),
     // geschlossen gerechnet (die Welt bleibt eine Funktion). Die Trägheit gehört dem Körper, der die Luft sieht (das Eis:
-    // `eisDicke` aus der Säule des Wassers).
+    // `eisDicke` aus der Säule des Wassers; ρ und c rechnet der Wirt aus seiner Stoff-Tafel, stoffe.K1).
     // DAS FELD IN WELLEN (`temperaturFeld`): an der Höhe y das Mittel, die Kühlung der Höhe und je Welle (Jahr, Tag) die
     // Amplitude, der Gipfel und die Verspätung nach dem Tiefpass — `temperaturAus` wertet es zu Saison und Uhr aus
     // (`temperatur` = beides, bit-gleich zur Formel vor stoffe.K3-2), das Eis integriert seine Jahres-Welle geschlossen.
@@ -1164,38 +1164,44 @@
     // Säule durch. Gerechnet geschlossen auf der Jahres-Welle des Tagesmittels: das Eis integriert den Tag (sein Gang trägt
     // höchstens A_Tag/ω_Tag ≈ 0,8 K·d), kein Flackern am Tagesgang; ein See wächst in ~6 Tagen vom ersten Eis zum tragenden.
     // `feld(traegTage)` ist das Temperatur-Feld an der Höhe (die Naht des Wirts; ohne sie das Feld des Kerns).
-    // `traegt`: die Dicke, die den Menschen trägt (GOLD: P = A·h², A = 3,5 kg/cm² — 80 kg auf 4,8 cm).
+    // DER STOFF (stoffe.K1): `stoff` trägt die Zeilen `wasser` und `eis` der Stoff-Tafel des Wirts in SI — ρ·c der Säule (ρ kg/m³,
+    // c J/(kg·K)), der Gefrierpunkt des Süßwassers (T_schmelz in K) und ρ des Eises; der Kern hält keine Zahl eines Stoffs, nur
+    // die des Vorgangs: die Schmelzwärme L (`schmelzWaerme`, J/kg), Leitung und Übergang des Eises, Kopplung, Salz und Säule.
+    // Ohne Stoff bricht er laut. `traegt`: die Dicke, die den Menschen trägt (GOLD: P = A·h², A = 3,5 kg/cm² — 80 kg auf 4,8 cm).
     const EIS = Object.freeze({
         salzMeer: 35,
         gefrierJeSalz: -0.054,
         brack: [0.8, 2.8],
-        waermeJeM3: 4.18e6,
         kopplung: 25,
         saeule: [0.1, 30],
         meerSchicht: 50,
         leitung: 2.2,
         uebergang: 20,
-        schmelzJeM3: 917 * 334000,
+        schmelzWaerme: 334000,
         traegt: 0.05,
     });
     // Der Wasserkörper mit dem Spiegel y über der Säule `tiefe`: sein Meer-Anteil, sein Gefrierpunkt (°C) und seine Trägheit
-    // (Tage) — Leser: `eisDicke` und die Linse, die das Wasser des Körpers misst.
-    function wasserKoerper(L, y, tiefe) {
+    // (Tage) aus dem Stoff des Wirts — Leser: `eisDicke` und die Linse, die das Wasser des Körpers misst.
+    function wasserKoerper(L, y, tiefe, stoff) {
         if (!Number.isFinite(y) || !Number.isFinite(tiefe)) throw new Error("gelaende-core wasserKoerper: Höhe oder Tiefe fehlt");
+        const W = stoff && stoff.wasser;
+        if (!(W && W.rho * W.c > 0 && W.tSchmelz > 0 && stoff.eis && stoff.eis.rho > 0))
+            throw new Error("gelaende-core wasserKoerper: der Stoff fehlt (die Zeilen wasser und eis der Stoff-Tafel)");
         const E = EIS;
         const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
         const meer = 1 - glatt(E.brack[0], E.brack[1], y - wl);
         const saeule = Math.min(E.saeule[1], Math.max(E.saeule[0], tiefe));
         return {
             meer,
-            gefrier: E.gefrierJeSalz * E.salzMeer * meer,
-            traegTage: ((saeule + (E.meerSchicht - saeule) * meer) * E.waermeJeM3) / E.kopplung / 86400,
+            gefrier: W.tSchmelz - 273.15 + E.gefrierJeSalz * E.salzMeer * meer,
+            traegTage: ((saeule + (E.meerSchicht - saeule) * meer) * (W.rho * W.c)) / E.kopplung / 86400,
         };
     }
-    function eisDicke(L, y, saison, tiefe, feld) {
+    function eisDicke(L, y, saison, tiefe, feld, stoff) {
         if (!Number.isFinite(saison)) throw new Error("gelaende-core eisDicke: die Saison fehlt");
         const E = EIS;
-        const K = wasserKoerper(L, y, tiefe);
+        const K = wasserKoerper(L, y, tiefe, stoff);
+        const schmelzJeM3 = stoff.eis.rho * E.schmelzWaerme;
         const F = feld || ((tr) => temperaturFeld(L, y, tr));
         const luft = F(0);
         const wasser = F(K.traegTage);
@@ -1209,7 +1215,7 @@
         const tage = TEMPERATUR.jahrTage / (2 * Math.PI);
         const frost = (a, b) =>
             (tage * 86400 * (zuB(luft) * (b - a) - A * (Math.sin(b - luft.jahr.spaet) - Math.sin(a - luft.jahr.spaet)))) /
-            E.schmelzJeM3;
+            schmelzJeM3;
         const kH = E.leitung / E.uebergang;
         const g = (h) => (h * h) / (2 * E.leitung) + h / E.uebergang;
         const stefan = (q) => Math.sqrt(kH * kH + 2 * E.leitung * Math.max(0, q)) - kH;

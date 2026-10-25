@@ -972,7 +972,8 @@ den benannten Seen `benannteSeen`, die Breite des Flusses `FLUSS_BREITE`/`flussB
 Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die Schneegrenze `SCHNEE`/`schnee`, die
 Temperatur `TEMPERATUR`/`temperatur` (stoffe.K3: Höhe × Saison × Uhr; das Feld in Wellen `temperaturFeld`, mit der Trägheit
 eines Körpers, ausgewertet von `temperaturAus` — die Grillen lesen sie), das Eis `EIS`/`eisDicke` (stoffe.K3-2: die Dicke nach
-Stefan aus dem Wasserkörper `wasserKoerper` — Salz, Säule, Trägheit — und der Jahres-Welle des Felds), die
+Stefan aus dem Wasserkörper `wasserKoerper` — Salz, Säule, Trägheit — und der Jahres-Welle des Felds; die Zahlen der Stoffe,
+ρ·c und T_schmelz des Wassers und ρ des Eises, reicht der Wirt aus seiner Stoff-Tafel als `stoff`, stoffe.K1 — ohne ihn bricht der Kern laut), die
 Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DIE HYDROSPHÄRE (Karte hydro-faden): das
 Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, der gepackte Kanal `kanal` mit
 `KANAL_FELDER` Zahlen je Segment, Wasser-Feld; `H` das Gesetz des Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet

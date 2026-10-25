@@ -2831,23 +2831,28 @@ class AnazhRealm_bild_himmel {
     // ist jede Linie EINE Höhe (Halbierung auf 1 cm zwischen 10 m unter und 1 km über dem Meer, an den Enden geklemmt).
     // `traegtAb` ist die tiefste tragende Höhe der Welt (die flachste Säule; Infinity: nirgends) — der billige Beweis jedes
     // Lesers. Gerechnet je Welt-STUNDE der Saison (das Eis wächst in ~6 Tagen vom ersten zum tragenden; eine Stunde trägt
-    // unter 1 mm), je Feld (die Naht) und Meer — nie je Bild; Bild und Körper lesen dieselbe Stunde. Der Leser zahlt drei
-    // Vergleiche, solange die Saison steht.
+    // unter 1 mm), je Feld (die Naht), Meer und Stoff (`_wasserStoff`: ρ, c, T_schmelz des Wassers, ρ des Eises) — nie je Bild;
+    // Bild und Körper lesen dieselbe Stunde. Der Leser zahlt sieben Vergleiche, solange Saison und Stoff stehen.
     _eisLinien() {
         const st = this.state;
         const c = this._eisLinienStand;
-        if (c && c.phase === st.seasonPhase && c.feld === this._temperaturFeld && c.wasser === st.waterLevel) return c;
+        const W = this._stoff("wasser");
+        const E = this._stoff("eis");
+        const gleich = c && c.rho === W.rho && c.c === W.c && c.tSchmelz === W.tSchmelz && c.eisRho === E.rho;
+        if (gleich && c.phase === st.seasonPhase && c.feld === this._temperaturFeld && c.wasser === st.waterLevel)
+            return c;
         const K = globalThis.__gelaendeCore;
         const L = this._gelaende();
         const stunden = K.TEMPERATUR.jahrTage * 24;
         const saison = Math.floor(st.seasonPhase * stunden) / stunden;
         const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - K.GRUND.meerUnterBasis;
-        if (c && c.saison === saison && c.feld === this._temperaturFeld && c.wl === wl)
+        if (gleich && c.saison === saison && c.feld === this._temperaturFeld && c.wl === wl)
             return Object.assign(c, { phase: st.seasonPhase, wasser: st.waterLevel });
         const S = K.EIS.saeule;
+        const stoff = this._wasserStoff();
         const [unten, oben] = [wl - 10, wl + 1000];
         const linie = (tiefe, soll) => {
-            const dicke = (y) => K.eisDicke(L, y, saison, tiefe, (tr) => this._temperaturFeld(y, tr));
+            const dicke = (y) => K.eisDicke(L, y, saison, tiefe, (tr) => this._temperaturFeld(y, tr), stoff);
             let [lo, hi] = [unten, oben];
             if (dicke(lo) >= soll) return lo;
             if (!(dicke(hi) >= soll)) return hi;
@@ -2866,10 +2871,30 @@ class AnazhRealm_bild_himmel {
             saison,
             feld: this._temperaturFeld,
             wl,
+            rho: W.rho,
+            c: W.c,
+            tSchmelz: W.tSchmelz,
+            eisRho: E.rho,
             null: knoten.map((d) => linie(d, 1e-3)),
             voll,
             traegtAb: voll[0] < oben ? voll[0] : Infinity,
         });
+    }
+
+    // DER STOFF DES WASSERS (stoffe.K1 × K3): die Zeilen wasser und eis der Stoff-Tafel (`_stoff`) — ρ·c der Säule, T_schmelz
+    // und ρ des Eises sind die Zahlen, mit denen der Kern den Wasserkörper und sein Eis rechnet (`wasserKoerper`, `eisDicke`);
+    // dieselbe Eis-Zeile, die der Schritt-Klang und der gleitende Leib lesen. Leser: die Linien des Eises (`_eisLinien`), das
+    // Wasser an der Höhe (`_wasserTemperaturAt`) und die Linse des Meers.
+    _wasserStoff() {
+        return { wasser: this._stoff("wasser"), eis: this._stoff("eis") };
+    }
+
+    // DAS WASSER AN DER HÖHE y über der Säule `tiefe` (stoffe.K1): die Luft durch die Trägheit seines Körpers (τ = ρ·c·h / α,
+    // `wasserKoerper` aus dem Stoff `_wasserStoff`; ein Teich von 1 m 1,9 Tage) zur Saison und Uhr der Welt. Je kleiner c,
+    // desto weiter folgt es dem Tag. Leser: die Linsen des Wassers und der Stoff-Tafel.
+    _wasserTemperaturAt(y, tiefe) {
+        const K = globalThis.__gelaendeCore.wasserKoerper(this._gelaende(), y, tiefe, this._wasserStoff());
+        return this._temperaturAt(y, K.traegTage);
     }
 
     // DIE NÄSSE (wetter.K2) — EIN Zustand der Welt aus dem Wetter-Feld (`state.naesse`, 0 trocken … 1 nass): Regen benetzt
