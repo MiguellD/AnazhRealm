@@ -1,17 +1,19 @@
 # zug/plan.txt — was ansteht (Koordinator schreibt, messplatz-blick zeigt): je Zeile Zustand · Was · Wer/Wo · Ziel
-läuft   z31b  heim-z31@2ade0724 + gelaende-ring-wachstum@e06613bf  fahre.sh (Kette bgy4osivq)  klang.K1 · bauen.K5 · gelaende.K5#2
-wartet  z32   heim-z32@03a266df (Herde, L2a, Ferne, Kamera-Bau, Siedlung-K5)  fahre.sh nach z31b (Kette b5ahgpxc1)  tiere.K1#2 · L2a-Wackler · ferne.K1/K2 · leib.K4#1 · siedlung.K5
-wartet  nw3031-abab  4a5f5e2c gegen 8f1802b1  OMEN  Nachwache nicht-langsamer
-danach  Mess-Takt 4  am Kopf nach z32  headless + Radeon + GTX  Buchung (buche.sh --warte)
-offen   mensch-k3-wege a6b3dfc7  Decke +600 · Laterne #15942 · Wiederkehr 2/1296  nächste Woche  mensch.K3
-offen   leib-k2-fuss 77419f6b  Kampf-Gefühl Beine · K8 stufe/rad hang p95 4,7/4,5 cm  nächste Woche  leib.K2
-offen   Klang K4/K5  „2 Stoffe mit ≥ 5 Schritten“ (an 8f1802b1 gefallen)  nächste Woche  klang.K4 · klang.K5
+läuft   z34   ankunft-l2a-rundblick@f804fbe6 + pflicht-verkehr@b8d5b4c8 (Kandidat d43cb61c)  fahre.sh (FAHRT_OHNE_PUNKTE)  L2a-Wackler (10 Zweige) · Pflicht-Offen C
+läuft   feuer-z32  Workflow: k06-heil auf heim-z32 (Macher + Prüfer) · ci-g18-frist (G18 bricht auf Zweigen nach 20 min ab, main 11,6 min)  Champions  entsperrt z32
+wartet  z32   heim-z32 + K06-Heilung (Herde, Ferne, Kamera-Bau, Siedlung-K5, Klang-K1, Bauen-K5, Gelände-Ring)  fahre.sh nach z34 und feuer-z32  tiere.K1#2 · ferne.K1/K2 · leib.K4#1 · siedlung.K5 · klang.K1 · bauen.K5 · gelaende.K5#2
+läuft   tag1-welle  Workflow: b-ankunft (B) · a-laubkante (A) · e-stadtgipfel (E) je mit Prüfer · klang-schritte · mensch-k3-wege · leib-k2-fuss  Champions  WICHTIG 3 · PUNKTE 3
+befund  nw3031-abab  8f1802b1 LANGSAMER gegen 4a5f5e2c nur in der Zelle stadt (4+4)  OMEN  Heilung erstes Haus reist in z32 — die Nachwache nach z32 richtet
+danach  Mess-Takt 4  am Kopf nach z32  headless + Radeon (Ruhe) + GTX  Buchung (buche.sh --warte), Artifact Y6nuChFfb1dJTf7Btch4J5
+offen   mensch-k3-wege a6b3dfc7  Decke +600 · Laterne #15942 · Wiederkehr 2/1296  tag1-welle  mensch.K3
+offen   leib-k2-fuss 77419f6b  Kampf-Gefühl Beine · K8 stufe/rad hang p95 4,7/4,5 cm  tag1-welle  leib.K2
+offen   Klang K4/K5  „2 Stoffe mit ≥ 5 Schritten“ (an 8f1802b1 gefallen)  tag1-welle  klang.K4 · klang.K5
 offen   Linsen-Anker  stammLib.ersetze(t, "<methode>") als Klasse auf eindeutigen Text  nächste Woche  (Wackler-Schutz)
 offen   Auge 25.10. Wiese  dichtes Gras endet nach ~10 m in einer flachen grünen Fläche (sichtbare Kante, Ego und Third)  nächste Woche  boden/gras-Ring
 offen   Auge 25.10. Nacht  die hellen Rippen-Kuppeln am Genesis-Platz bleiben nachts fast taghell, kein warmes Fensterlicht im Dorf  nächste Woche  licht/nacht
 offen   Auge 25.10. Ankunft  Ladeschirm-Zeile läuft bei 800 px links aus dem Bild  nächste Woche  ankunft/ladeschirm
 offen   Auge 25.10. Portale  Bögen der Portale sichtbar facettiert (wenige Segmente) neben runden Bäumen  nächste Woche  portale/gestalt
-plan    W1 Tag 1  CI-Gruppe 18 auf Zweigen heilen (Abbruch nach 20 min) → K06 bisektieren → Zug 32 landen → Mess-Takt 4  Koordinator  Punkte ohne neue Arbeit
+plan    W1 Tag 1  z34 → K06 + G18 heilen → Zug 32 landen → Mess-Takt 4 (in Ruhe) → Buchung  Koordinator  Punkte ohne neue Arbeit
 plan    W1 Tag 1–2  STADT-GIPFEL als Messbühne (Wunsch Schöpfer 25.10.): Stadt nH 300 voll belebt (Markt, Bewohner, Chaos), dazu eine Stadt der Epoche moderne (fachwerk-core EPOCHEN.moderne: modern · volle_moderne · hochhaus Glasturm 7 Geschosse, roh) mit dem Hochhaus-Dach als Blickpunkt + Blick vom höchsten Gipfel über Stadt und Horizont, je Ego/Third, GTX + Radeon  Messplatz  profiband.K* · siedlung.K* · ferne.K*
 plan    W1 Tag 2–3  die 3 größten Kosten-Klassen der Stadt-Gipfel-Zahl schneiden (Zahl vorher ↔ nachher)  Champions  E Profi-Band
 plan    W1 danach  VERKEHR = PFLICHT-OFFEN C (gesetzt vom Schöpfer 25.10., Zweig pflicht-verkehr b8d5b4c8, Zug z33): Wagen mit Bewohnern am Steuer auf den Trassen, nach dem Stadt-Gipfel  Champion  fahrzeug.K* · mensch.K*
