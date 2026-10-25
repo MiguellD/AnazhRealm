@@ -5,3 +5,10 @@
 2026-10-25T22:27 k06-heil champion ~390000 118 grün leib.K4 · G18 K06 deterministisch rot auf swiftshader → Linse wartet auf keine Gestalt (heim-z32 efb070bf) · FEUER
 2026-10-25T23:05 k06-pruefer champion ~230000 38 grün K1-Aufweichung geheilt 034952a7 (448/448 Nah-Gestalt), leib.K4#1 wackelt Radeon 1/2 · FEUER
 2026-10-25T21:34 ci-g18 champion ~220000 64 grün G18 Zweig 20,3 min abgebrochen → 6,2 min (Kamera-Leib allein in G13), Waage wiegt p90 · FEUER
+2026-10-25T23:26 b-ankunft champion ~325000out/113Mlesen 176 WIP ankunft.K1 neue Station; Radeon unter Last 47,6 → 18,0 s (nicht urteilsfähig), GTX-A/B in der Schlange · WICHTIG
+2026-10-25T22:58 leib-k2-fuss champion ~363000out/72Mlesen 148 grün leib.K2#1 Radeon Hang 17,8 → 0,7 cm (vor Merge), CI richtet Linux · PUNKTE
+2026-10-25T23:11 mensch-k3-wege champion ~604000out/137Mlesen 161 WIP mensch.K3#2 headless ROT → GRÜN (Durchdringung 6 → 0), Gruppe 4 Wiederkehr 1/1296 rot · PUNKTE
+2026-10-25T23:45 a-laubkante champion ~408000out/132Mlesen 195 GESTOPPT 435 Schritte, Kontext 520k, NICHTS committet (Forschung regler voll / uLodPerf) · WICHTIG
+2026-10-25T23:45 e-stadtgipfel champion ~442000out/163Mlesen 195 GESTOPPT 494 Schritte, Kontext 563k, WIP c19aecd3 gepusht · WICHTIG
+2026-10-25T23:45 klang-schritte champion ~404000out/104Mlesen 195 GESTOPPT 372 Schritte, WIP 0a129a86 gepusht (Zensus je Stoff) · PUNKTE
+2026-10-25T23:45 b-ankunft-pruefer champion ~96000out/14Mlesen 20 GESTOPPT mit der Welle (2 Dateien Entwurf in pruef-b-ankunft-heil) · WICHTIG
