@@ -77,3 +77,4 @@
 2026-10-25 14:19:54 takt3-gtx material.K3#1 GRÜN 5.0 · 15/38
 2026-10-25 14:25:00 takt3-gtx material.K1#1 GRÜN 5.0 · 16/38
 2026-10-25 14:30:07 takt3-gtx material.K1#2 GRÜN 5.0 · 17/38
+2026-10-25 14:35:14 takt3-gtx schatten.K1#1 GRÜN 5.0 · 18/38
