@@ -1883,9 +1883,9 @@ class AnazhRealm_feld_leben {
         return this._brandFangen(Math.floor(x / cs), Math.floor(z / cs));
     }
 
-    // Die Zelle fängt: ihr Bett (`_brandBett` aus ihrem Brennstoff) und ihre Vor-Wärme `vor` — je Nachbar mit Brennstoff
-    // (unter `minStoff`, auf Asche und im Wasser hält die Front, ebenso, wo Wasser auf ihrem Weg liegt: an der Mitte zwischen
-    // den Zellen — sonst sprang sie über 7 schmale Wasser-Wege in 600 s) der Weg d, die Richtung und der Hang hinauf.
+    // Die Zelle fängt: ihr Bett (`_brandBett` aus ihrem Brennstoff) und ihre Vor-Wärme `vor` — je Nachbar, der nicht brennt,
+    // der Weg d, die Richtung und der Hang hinauf (der Gradient der Zelle, drei Höhen). Ob er Brennstoff trägt, fragt erst die
+    // Front, die ihn erreicht (`_brandSchritt`, Lehre 25: bis dahin 235 Einheiten je Fang an der Mess-Wiese).
     _brandFangen(cx, cz) {
         const st = this.state;
         const B = AnazhRealm.BRAND;
@@ -1898,24 +1898,16 @@ class AnazhRealm_feld_leben {
         const cs = AnazhRealm.LIFE_FIELD.cell;
         const H = (i, j) => this._terrainMacroSurfaceY((i + 0.5) * cs, (j + 0.5) * cs, false);
         const h0 = H(cx, cz);
+        const [gx, gz] = [(H(cx + 1, cz) - h0) / cs, (H(cx, cz + 1) - h0) / cs];
         const bett = this._brandBett(stoff, h0);
         const vor = [];
         for (const [dx, dz] of B.nachbarn) {
             const [nx, nz] = [cx + dx, cz + dz];
-            const weg = this._nassAt((cx + 0.5 + dx / 2) * cs, (cz + 0.5 + dz / 2) * cs); // ein Fluss zwischen den Mitten
-            if (weg || bf.has(nx + "," + nz) || !(this._brandStoff(nx, nz) >= B.minStoff)) continue;
+            if (bf.has(nx + "," + nz)) continue;
             const d = Math.hypot(dx, dz) * cs;
-            const hang = Math.max(0, (H(nx, nz) - h0) / d);
-            vor.push({
-                nx,
-                nz,
-                key: nx + "," + nz,
-                ex: (dx * cs) / d,
-                ez: (dz * cs) / d,
-                d,
-                phiS: bett.ks * hang * hang,
-                p: 0,
-            });
+            const [ex, ez] = [(dx * cs) / d, (dz * cs) / d];
+            const hang = Math.max(0, gx * ex + gz * ez);
+            vor.push({ nx, nz, key: nx + "," + nz, ex, ez, d, phiS: bett.ks * hang * hang, p: 0 });
         }
         const zelle = { cx, cz, y: null, glut: 0, bett, vor }; // y: die Höhe des Herds, gefragt erst vom Licht (`_leuchtQuellen`)
         bf.set(key, zelle);
@@ -1972,7 +1964,9 @@ class AnazhRealm_feld_leben {
     }
 
     // Ein Schritt zur Spielzeit t: jede Zelle wärmt ihre Nachbarn vor — der Weg wächst um R·schrittS / d, R mit dem Wind am
-    // Ort (`_windAt`) projiziert auf die Richtung (gegen den Wind und quer φ_w = 0) —, bei 1 fängt der Nachbar. Die Zelle fällt
+    // Ort (`_windAt`) projiziert auf die Richtung (gegen den Wind und quer φ_w = 0) —, bei 1 fängt der Nachbar, wenn kein
+    // Wasser auf dem Weg liegt (`_nassAt` an der Mitte zwischen den Zellen: sonst sprang die Front über 7 schmale Wasser-Wege
+    // in 600 s) und er Brennstoff trägt (`_brandFangen`: unter `minStoff`, auf Asche und im Wasser hält sie). Die Zelle fällt
     // als Asche, wenn ihre Front kein unverbranntes Land mehr vor sich hat oder das Bett erstickt (η_M = 0).
     _brandSchritt(t) {
         const B = AnazhRealm.BRAND;
@@ -1992,8 +1986,10 @@ class AnazhRealm_feld_leben {
                 const n = z.vor[i];
                 const u = (Math.max(0, w.ms * b.waf * (w.x * n.ex + w.z * n.ez)) * 60) / 0.3048;
                 n.p += (r0 * (1 + b.cw * u ** b.b + n.phiS) * B.schrittS) / n.d;
-                if (n.p >= 1) neu.push(n.nx, n.nz);
-                else if (!bf.has(n.key)) continue;
+                if (n.p >= 1) {
+                    if (!this._nassAt(((z.cx + n.nx) / 2 + 0.5) * cs, ((z.cz + n.nz) / 2 + 0.5) * cs))
+                        neu.push(n.nx, n.nz);
+                } else if (!bf.has(n.key)) continue;
                 z.vor.splice(i, 1);
             }
             if (!w) {
