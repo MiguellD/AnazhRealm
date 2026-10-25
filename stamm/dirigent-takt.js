@@ -403,7 +403,16 @@ class AnazhRealm_dirigent_takt {
         const st = this.state;
         const o =
             this._weltOffenWert ||
-            (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0, karten: 0, felder: 0, leiber: 0, dorf: 0, ankunft: 0 }); // je Takt, ohne Müll
+            (this._weltOffenWert = {
+                foundry: 0,
+                chunks: 0,
+                wald: 0,
+                karten: 0,
+                felder: 0,
+                leiber: 0,
+                dorf: 0,
+                ankunft: 0,
+            }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
               (f.warte ? f.warte.length : 0) +
