@@ -91,7 +91,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
     `stamm-rehome` um; `cut-method` (AST-sicher) · sofort `diag-atlas --check` + `npm run stamm:lint` · seriell committen, nie Batch;
     Arbeiter zweigen vom Kopf von integ-probe ab, nie von einem ungemergten R3-Zweig (gestapelte Zweige erben jede Röte).
 13. **Der Loop:** Streaming prio 0, Bewegung nie am Render-Signal; EIN PID, Totband 59–77 fps; NaN-Wand vor jedem EWMA; Existenz vor
-    Framerate (der Ring wächst bis `RING_EXIST_FLOOR` ohne fps-Gate, der PID atmet nur darüber).
+    Framerate (der Ring wächst im Strom bis zu seinem Ziel, nie an Bildrate oder Regler, `_ringWaechst`; der PID regelt nur
+    die Qualität, nie die Existenz).
 14. **Schwere deterministische Arbeit:** gecacht + im Idle vorgebacken + frame-adaptiv, nie synchron auf dem Interaktions-Pfad (der
     Chunk-Stoff entsteht im Worker, nie im Haupt-Thread; die Hydrosphäre und die Platte des Bodens ebenso — `--faden` in
     gate:worker-dichte zählt K4/K5). Heute ist der Faden bis zum ersten Weltbild 97 % belegt (W6).

@@ -2843,13 +2843,15 @@ class AnazhRealm_gelaende_chunks {
     _tickVoxelChunkStreaming(playerPos) {
         if (!this.state.voxelTerrainActive || !playerPos) return;
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
-        const { span, ringRadius } = this._voxelChunkConfig();
+        const { span } = this._voxelChunkConfig();
         const pcx = Math.floor(playerPos.x / span);
         // V9.92 (Phase 4 — Lazy-BVH): aktuelle Spieler-Chunk-Position
         // zwischenspeichern, damit `_ensureVoxelChunkAt` Lazy-BVH-Decision
         // treffen kann (r ≤ 1 = sofort BVH, r ≥ 2 = lazy).
         this._setLastPlayerVoxelChunk(pcx, Math.floor(playerPos.z / span));
         const pcz = Math.floor(playerPos.z / span);
+        this._ringWaechst(); // der Ring um die Zelle dieses Takts
+        const { ringRadius } = this._voxelChunkConfig();
         // DAS AUGE DER STUFEN (K51-2): derselbe Punkt wählt die Stufe jedes Chunks und treibt den Geomorph des Boden-Stoffs
         this._stufeAugeTakt(playerPos);
         // Velocity-Prefetch: die 1–2 Chunks in Laufrichtung ZUERST in die Worker-Queue (der Ring läuft in
