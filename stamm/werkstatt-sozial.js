@@ -1254,19 +1254,11 @@ class AnazhRealm_werkstatt_sozial {
         if (!canvas) return null;
         const w = 244;
         const h = 184;
-        canvas.width = w;
-        canvas.height = h;
-        let renderer;
-        try {
-            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, ...this._rendererGeraet() });
-        } catch (err) {
-            this.log(`Feed-Vorschau: WebGPU-Renderer fehlgeschlagen (${err && err.message})`, "ERROR");
-            return null;
-        }
-        renderer.stencil = false; // wie die Hof-Bühne (V10.0-j.b)
-        renderer.setSize(w, h, false);
-        renderer.setPixelRatio(window.devicePixelRatio || 1);
-        renderer.setClearColor(0x14110a, 1);
+        const renderer = this._buehneRenderer(canvas, w, h, 0x14110a, "Feed-Vorschau", () => {
+            stage.rendererReady = true;
+            if (stage.active) this._feedPreviewStartRAF();
+        });
+        if (!renderer) return null;
         const scene = new THREE.Scene();
         scene.add(new THREE.AmbientLight(0xffffff, 0.65));
         const key = new THREE.DirectionalLight(0xffe8c2, 0.95);
@@ -1291,17 +1283,6 @@ class AnazhRealm_werkstatt_sozial {
             rendererReady: false,
         };
         this.state.feedPreview = stage;
-        try {
-            renderer
-                .init()
-                .then(() => {
-                    stage.rendererReady = true;
-                    if (stage.active) this._feedPreviewStartRAF();
-                })
-                .catch((err) => this.log(`Feed-Vorschau init: ${err && err.message}`, "ERROR"));
-        } catch (err) {
-            this.log(`Feed-Vorschau init-Start: ${err && err.message}`, "ERROR");
-        }
         return stage;
     }
     _feedPreviewShow(item) {

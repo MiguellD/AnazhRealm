@@ -39,7 +39,7 @@ function gpuFehlerAbgriff() {
                     t: Math.round(performance.now()),
                 })
             );
-        } catch (_e) {}
+        } catch {}
         return dev;
     };
     const P = GPUDevice.prototype;
@@ -48,7 +48,7 @@ function gpuFehlerAbgriff() {
         const p = crp.call(this, d);
         try {
             p.__vbN = d && d.vertex && Array.isArray(d.vertex.buffers) ? d.vertex.buffers.length : 0;
-        } catch (_e) {}
+        } catch {}
         return p;
     };
     const crpa = P.createRenderPipelineAsync;
@@ -57,7 +57,7 @@ function gpuFehlerAbgriff() {
             const p = await crpa.call(this, d);
             try {
                 p.__vbN = d && d.vertex && Array.isArray(d.vertex.buffers) ? d.vertex.buffers.length : 0;
-            } catch (_e) {}
+            } catch {}
             return p;
         };
     const E = GPUCommandEncoder.prototype;

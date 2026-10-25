@@ -110,7 +110,7 @@ function tafelPruefen(t) {
             new RegExp(W.klasse);
             if (!W.klasse || !W.klasse.startsWith("^") || !W.klasse.endsWith("$"))
                 f.push(`${z.id}: welt.klasse ohne Anker ^…$`);
-        } catch (_e) {
+        } catch {
             f.push(`${z.id}: welt.klasse ist kein Regex`);
         }
         const ex = W.exemplar || {};

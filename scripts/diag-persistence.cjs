@@ -151,7 +151,7 @@ async function serverLauf(quelle, tod) {
         try {
             const j = JSON.parse(fs.readFileSync(f, "utf8"));
             return j && (j.marker === "alt" || j.marker === "neu") ? j.marker : "fremd";
-        } catch (_e) {
+        } catch {
             return fs.existsSync(f) ? `zerrissen (${fs.statSync(f).size} B)` : "fehlt";
         }
     };
@@ -227,7 +227,7 @@ function ttHaken() {
         let r = null;
         try {
             r = json && rec(JSON.parse(json));
-        } catch (_e) {
+        } catch {
             r = { kaputt: 1 };
         }
         const e = { t: Date.now(), art, rec: r, n: nJetzt };
@@ -281,7 +281,7 @@ function ttToeten(b) {
     try {
         if (process.platform === "win32") spawnSync("taskkill", ["/F", "/T", "/PID", String(b.process().pid)]);
         else process.kill(-b.process().pid, "SIGKILL");
-    } catch (_e) {}
+    } catch {}
 }
 async function tabTodProbe({ von, bis, selbst = false }) {
     const profil = fs.mkdtempSync(path.join(os.tmpdir(), "k1-tabtod-"));

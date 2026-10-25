@@ -600,13 +600,13 @@ function buehne(nFrames, nachtLicht) {
         const gpuHoer = (e) => gpuFehler.push(String((e.error && e.error.message) || e.message || e).slice(0, 240));
         dev.addEventListener("uncapturederror", gpuHoer);
         // Die Kamera hoch über dem Boden (nichts von der Welt zwischen ihr und der Bühne), Blick waagrecht nach −z — und das
-        // Wasser der Bühne flüssig (stoffe.K3): 10 m unter der Höhe, über der es gefriert (`eisNull`, der Uniform des Stoffs;
-        // über Genesis 67 m über dem Boden, 160 m darüber stand Eis).
+        // Wasser der Bühne flüssig (stoffe.K3): 10 m unter der tiefsten Höhe, über der Eis beginnt (`_eisLinien`, die Linie
+        // der flachsten Säule, die auch der Stoff liest; im Sommer der Bühne über Genesis 11,4 m über dem Boden).
         const cam = st.camera;
         const x0 = cam.position.x,
             z0 = cam.position.z;
         const boden = r._voxelSurfaceY(x0, z0),
-            eisNull = st.hydroSurfaceUniforms.eisNull.value;
+            eisNull = r._eisLinien().null[0];
         const y0 = Math.min(boden + 160, eisNull - 7);
         const setzeKamera = () => {
             cam.position.set(x0, y0, z0);

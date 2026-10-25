@@ -19,7 +19,8 @@
  *                              Eltern-Rahmen spricht, `["chain", …]` rekursiv, das Einzelwort der Heimat (["w", …args])
  *                              ganz — nie op[0] je Element (aus "gt" wurde "g"). Esc bringt heim, außer die Welt behält ihn.
  *                              DER EINE ÜBERGABE-KANAL: `werk(kind, preset, seed, ov)` schickt das Werk des Studios in die
- *                              Welt, der Knopf „In der Welt ansehen" (opt.werk) schickt es und kehrt heim.
+ *                              Welt, der Knopf „In der Welt ansehen" (opt.werk) schickt es und kehrt heim. Der Avatar des
+ *                              enter (Leib · Inventar · Gehaltenes, `gepaeck`) bleibt drüben gehalten: `reisender()`.
  *   panorama(T, renderer, scene, ort, opt)  DAS ZIEL-BILD (D8): die Welt des Studios als Equirekt 512 × 256, linear, aus
  *                              ihrem eigenen Renderer, EINE CPU-Faltung für jede Engine — das Labor liest es selbst
  *                              (textur), die Brücke exportiert es (daten; unter r184 WebGPU ein Versprechen);
@@ -846,6 +847,8 @@
         return { w: PANO_W, h: PANO_H, daten: halbPuffer(f) };
     }
 
+    var reisender = null; // der Avatar, den die Heimat beim Betreten schickte (`bruecke`, enter)
+
     // ── DIE PORTAL-BRÜCKE + DER DSL-ADAPTER (skeleton-Norm, EINE Kopie) ──
     // opt: welt · label · dsl (Wörter) | manifest (true = ./manifest.json lesen und melden) · wort(w, args) → die Tat ·
     //      enter(avatar, msg) · esc(ev) → false behält Esc in der Welt · sonst(msg) jede andere Nachricht der Heimat (das
@@ -889,6 +892,8 @@
             },
         };
         if (!eltern) return B;
+        // im Tor liegt die Zeile der Heimat (Esc — Heimkehr …) unten über der Welt: die Meldungs-Zeile steht darüber
+        if (doc && doc.body) doc.body.classList.add("h-im-tor");
         if (opt.werk && doc && doc.body) {
             var knopf = el("button", "h-werk" + (opt.werkOrt ? "" : " h-werk-frei"), "In der Welt ansehen");
             knopf.type = "button";
@@ -906,7 +911,18 @@
             var m = ev.data;
             if (!m || typeof m !== "object") return;
             if (m.type === "enter") {
-                if (opt.enter) opt.enter(m.avatar && typeof m.avatar === "object" ? m.avatar : {}, m);
+                // WAS DER REISENDE TRÄGT (tore.K3): die Hülle hält den Avatar der Heimat — Leib, Inventar und Gehaltenes
+                // (`gepaeck`) stehen drüben byte-gleich, jede Welt liest ihn über `reisender()`, die Zeile sagt es dem Spieler
+                reisender = m.avatar && typeof m.avatar === "object" ? m.avatar : {};
+                var g = reisender.gepaeck;
+                var n = 0;
+                if (g && g.wield && g.inventar) {
+                    (g.inventar.slots || []).forEach(function (s) {
+                        n += s ? s.count || 1 : 0;
+                    });
+                    toast("Du trägst: " + (g.wield.held || "die leere Hand") + " · " + n + " Dinge im Inventar", 3200);
+                }
+                if (opt.enter) opt.enter(reisender, m);
             } else if (m.type === "dsl") wirke(m.program);
             else if (m.type === "panorama-bitte") {
                 var antwort = { type: "panorama", world: opt.welt, reqId: m.reqId };
@@ -989,6 +1005,9 @@
         kosten: kosten,
         zaehle: zaehle,
         bruecke: bruecke,
+        reisender: function () {
+            return reisender;
+        },
         panorama: panorama,
         panoramaBild: panoramaBild,
         toast: toast,

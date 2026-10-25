@@ -428,12 +428,15 @@ function urteil(b) {
                     `K6 BAUMLOS: ein Wesen ohne Gestalt-Baum treibt mit der Sohle ${bl.sohleUnterSpiegel} m unter dem Spiegel, ` +
                         `die Schwimm-Tiefe des Gesetzes ist ${bl.soll} m`
                 );
-            const { winter: w = {}, mutation: mu = {}, tier: et = [] } = k.eis || {};
+            const { winter: w = {}, mutation: mu = {}, tier: et = [], uebergang: ue = {}, meer: me = {} } = k.eis || {};
             if (!(w.seeFrames >= 120 && et.length === 3)) v.push(`E LEER: ${w.seeFrames} Schritte über dem See, ${et.length} Tiere`);
             else if (!(w.temperatur < 0) || w.schwimmFrames || w.luft || !(w.maxM <= 0.05))
                 v.push(`E1 EINBRUCH: bei ${w.temperatur} °C ${w.schwimmFrames} Schritte schwimmend, ${w.luft} in der Luft, Füße bis ${w.maxM} m vom Spiegel`);
             for (const t of et) if (t.schwimmt || !(Math.abs(t.sohleUnterSpiegel) <= 0.05)) v.push(`E3 TIER: ${t.seele} ${t.sohleUnterSpiegel} m im Eis`);
             if (!(mu.temperatur >= 0 && mu.schwimmFrames > 0)) v.push(`E2 BLIND: +10 °C (${mu.temperatur} °C), ${mu.schwimmFrames} Schritte schwimmend`);
+            if (!(ue.erster >= 0) || !(ue.traegt - ue.erster >= 2) || ue.wechsel !== 2 || Math.max(...ue.tagesgang))
+                v.push(`E4 KANTE: ${JSON.stringify(ue)}`);
+            if (!(me.kalt > 0) || me.traegt || !(me.tiefst > me.gefrier)) v.push(`E5 MEER: ${JSON.stringify(me)}`);
             if (!k.peer) v.push("K7 MITSPIELER: die Peer-Probe lief nicht");
             else if (!(Math.abs(k.peer.lehne) > 0.05))
                 v.push(`K7 MITSPIELER: der Peer-Körper an der Brustkorb-Linie schwimmt nicht (Lehne ${k.peer.lehne})`);
@@ -673,6 +676,8 @@ function selbsttest() {
                 winter: { temperatur: -4.7, seeFrames: 1152, schwimmFrames: 0, luft: 0, maxM: 0 },
                 tier: ["wolf", "fuchs", "baer"].map((seele) => ({ seele, sohleUnterSpiegel: 0 })),
                 mutation: { temperatur: 5.3, schwimmFrames: 900 },
+                uebergang: { erster: 19, traegt: 26, wechsel: 2, tagesgang: [0, 0] },
+                meer: { tiefst: 1.3, gefrier: -1.89, traegt: 0, kalt: 46 },
             },
         },
         licht: {
@@ -758,6 +763,11 @@ function selbsttest() {
         ["E2 BLIND", (b) => (b.koerper.eis.mutation.schwimmFrames = 0)],
         ["E3 TIER", (b) => Object.assign(b.koerper.eis.tier[0], { sohleUnterSpiegel: 0.599, schwimmt: true })],
         ["E LEER", (b) => (b.koerper.eis = null)],
+        // die Kante an main 206b395a (die Null-Linie als Stufe, jedes Wasser mit τ = 2 d): der See trug vom ersten Eis an (Tag
+        // 11), der Tagesgang kippte das Tragen, das Meer fror in 15 von 52 Wochen (sein Wasser bis −4,25 °C)
+        ["E4 KANTE", (b) => Object.assign(b.koerper.eis.uebergang, { erster: 11, traegt: 11, wechsel: 1, tagesgang: [0, 1] })],
+        ["E5 MEER", (b) => Object.assign(b.koerper.eis.meer, { tiefst: -4.25, traegt: 15 })],
+        ["E5 MEER", (b) => (b.koerper.eis.meer.kalt = 0)],
         ["K9 NACHT", (b) => Object.assign(b.licht, { nachtUnten: 0.17 })],
         ["K9 LITERAL", (b) => Object.assign(b.licht, { nachtUnten: 0.17, mittagUnten: 0.17, nachtOben: 0.5 })],
         ["K9 HIMMEL", (b) => (b.licht.himmelGetaucht = [81, 132, 170])],
@@ -1033,7 +1043,7 @@ async function lauf() {
             if (soll("fluss")) befund.fluss = await page.evaluate(() => window.__wasserFluss());
             if (soll("koerper"))
                 befund.koerper = await page.evaluate(
-                    (o) => window.__wasserKoerper({ see: o.see.mitte, start: o.see.ufer, ziel: o.see.mitte }),
+                    (o) => window.__wasserKoerper({ see: o.see.mitte, start: o.see.ufer, ziel: o.see.mitte, meer: o.meer }),
                     ORTE
                 );
             // am See der Mess-Wiese: die Höhlen darunter und daneben, das Gefährt (D10, W-W2)

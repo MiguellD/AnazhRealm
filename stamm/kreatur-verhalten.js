@@ -178,11 +178,10 @@ class AnazhRealm_kreatur_verhalten {
         direction.z = zug.z;
     }
 
-    // DER ALARM DES VERBANDS (S6): wer selbst nichts fürchtet (w unter fleeThreshold), flieht mit dem nächsten Glied seines
-    // Verbands, das vor seiner EIGENEN Bedrohung flieht — von deren Ort, im Radius r + dem Abstand zum Glied (wer flieht,
-    // steht in r, also dieses Glied in r + Abstand). Nur das eigene Wittern alarmiert (`_alarmEigen`): ein Alarm aus zweiter
-    // Hand trägt nicht weiter, sonst hielte die Herde ihre Flucht im Kreis am Leben, wenn die Bedrohung längst fort ist.
-    // Vorher floh nur, wer selbst witterte — die Nachbarn grasten weiter, die Herde riss (Linse herde 18.10.).
+    // DER ALARM DES VERBANDS (S6): wer selbst nichts fürchtet (w unter fleeThreshold), flieht mit dem nächsten fliehenden Glied
+    // seines Verbands DIESELBE Flucht (`_fluchtOrt`: Ort und Radius, die nur das eigene Wittern anlegt — tetrapoda fluchtRadius,
+    // Tiere K1). Vorher floh nur, wer selbst witterte (Linse herde 18.10.); danach trug jedes Glied aus zweiter Hand einen
+    // weiteren Radius, und der Verband hielt es gegen seine Flucht fest (Linse herde 24.10.: 300 s Flucht auf der Stelle).
     _kreaturVerbandAlarm(creature, NAT, von, w) {
         const ud = creature.userData;
         ud._alarmEigen = w >= NAT.fleeThreshold;
@@ -193,17 +192,17 @@ class AnazhRealm_kreatur_verhalten {
         let B = null;
         for (const g of glieder) {
             const gu = g.userData;
-            if (g === creature || !gu._alarmEigen || gu._motionZustand !== "flucht" || !gu._bedrohtVon) continue;
+            if (g === creature || gu._motionZustand !== "flucht" || !gu._fluchtOrt) continue;
             const d = Math.hypot(g.position.x - creature.position.x, g.position.z - creature.position.z);
             if (d < best) {
                 best = d;
-                B = gu._bedrohtVon;
+                B = gu._fluchtOrt;
             }
         }
         if (!B) return w;
         von.x = B.x;
         von.z = B.z;
-        von.r = B.r + best;
+        von.r = B.r;
         return Math.max(w, NAT.fleeThreshold);
     }
 
@@ -3347,14 +3346,22 @@ class AnazhRealm_kreatur_verhalten {
                             sv.vz
                         );
                         this._tickCreatureHuntStrike(creature);
-                    } else if (wariness >= NAT.fleeThreshold) {
-                        // SCHEU/verschreckt — fort von der BEDROHUNG (Spieler, jagender Jäger; _creatureWariness merkt ihren
-                        // Ort und ihren Flucht-Radius), schneller als das Schlendern; sonst Charakter-Wandern.
-                        const B = creature.userData._bedrohtVon;
-                        const fx = creature.position.x - B.x;
-                        const fz = creature.position.z - B.z;
+                    } else if (wariness >= NAT.fleeThreshold || creature.userData._motionZustand === "flucht") {
+                        // SCHEU/verschreckt — fort von der BEDROHUNG (_creatureWariness merkt Ort und Radius), im Sprint; sonst
+                        // Charakter-Wandern. DER FLUCHTWEG (Tiere K1, tetrapoda fluchtRadius): die Flucht im Radius merkt den
+                        // Ort und läuft bis zu ihrem Radius (vorher endete sie am Radius: die Herde hielt 14,0 m vor dem Spieler).
+                        const ud = creature.userData;
+                        const B = ud._bedrohtVon;
+                        const F = ud._fluchtOrt || (ud._fluchtOrt = { x: 0, z: 0, r: 0 });
+                        const nah = Math.hypot(creature.position.x - B.x, creature.position.z - B.z) < B.r;
+                        if (wariness >= NAT.fleeThreshold && nah) {
+                            const glieder = this._kreaturVerbandGlieder(creature);
+                            Object.assign(F, B).r = AnazhRealm._furchtGesetz().fluchtRadius(B, glieder, ud._alarmEigen);
+                        } else if (ud._motionZustand !== "flucht") F.r = 0;
+                        const fx = creature.position.x - F.x;
+                        const fz = creature.position.z - F.z;
                         const fd = Math.hypot(fx, fz);
-                        if (fd < B.r) {
+                        if (fd < F.r) {
                             this._kreaturZustandStempel(creature, "flucht");
                             // DIE FLUCHT IST DER SPRINT DER GESTALT (Welle LF, STEUER sprintTempo): ein Fluchttier galoppiert
                             // davon (vorher ein Trab, 1,6 × Schlendern — jede Hetze holte es ein, jeder Mensch auch)
@@ -3856,13 +3863,15 @@ AnazhRealm._furchtGesetz = function () {
         Number.isFinite(F.ortRadiusZellen) &&
         typeof k.bedrohung === "function" &&
         typeof k.furchtErinnert === "function" &&
-        typeof k.furchtOrt === "function"
+        typeof k.furchtOrt === "function" &&
+        typeof k.fluchtRadius === "function"
     ) {
         AnazhRealm._furchtGesetzMemo = Object.freeze({
             F,
             bedrohung: k.bedrohung,
             furchtErinnert: k.furchtErinnert,
             furchtOrt: k.furchtOrt,
+            fluchtRadius: k.fluchtRadius,
         });
         return AnazhRealm._furchtGesetzMemo;
     }

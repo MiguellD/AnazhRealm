@@ -104,7 +104,7 @@ function buendelReiheWand(A) {
     const R = { setSize() {}, setPixelRatio() {}, setClearColor() {}, shadowMap: {}, setOpaqueSort: (fo) => (R.folge = fo) };
     try {
         A.prototype._configureRenderer.call(weltVon(A, {}), R);
-    } catch (_e) {
+    } catch {
         /* was nach der Folge kommt, braucht die Welt */
     }
     if (R.folge !== A._zeichenFolge) errs.push("_configureRenderer setzt die Zeichen-Reihe der losen Opaken nicht (setOpaqueSort) — die Objekt-id entscheidet");
@@ -757,7 +757,7 @@ function selbsttest() {
     let unbekannt = false;
     try {
         BAND.ortOf(haushalt, "mond");
-    } catch (_e) {
+    } catch {
         unbekannt = true;
     }
     t(
