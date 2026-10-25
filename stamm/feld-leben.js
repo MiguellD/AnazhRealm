@@ -1859,18 +1859,22 @@ class AnazhRealm_feld_leben {
         this._depositLife(creature.position.x, creature.position.z, AnazhRealm.LIFE_FIELD.trickle);
     }
 
-    // === DER BRAND (feld.K3#2): das Feuer auf dem Feld — eine Sim mit Takt, der nur in brennenden Zellen arbeitet ===
-    // `state.brandFeld`: "cx,cz" (die 16-m-Zelle des Lebens) → { cx, cz, y, stoff, glut }. Er fängt, wo die Welt Feuer fängt
-    // (das Brennglas, `_tickFocusingAffordances`), greift nach dem Gesetz `BRAND` auf die Nachbarn über und hinterlässt die Tat
-    // `brand` (die Asche: ihre Narbe senkt lebendig, auf ihr brennt nichts, bis sie heilt). Nicht persistiert (reaktiv wie das
-    // Leben-Overlay), die Asche reist als Tat. Leser: `auraAt` (glut) und die Leuchtquellen (`_leuchtQuellen`).
+    // === DER BRAND (feld.K3#2 · stoffe.K2): das Feuer auf dem Feld — eine Sim mit Takt, der nur in brennenden Zellen arbeitet ===
+    // `state.brandFeld`: "cx,cz" (die 16-m-Zelle des Lebens) → { cx, cz, y, glut, bett, vor }. Er fängt, wo die Welt Feuer
+    // fängt (das Brennglas, `_tickFocusingAffordances`; das Werk an der Schwelle), läuft nach dem EINEN Gesetz der Ausbreitung
+    // (`_brandBett`, `_brandFeuchte`) als Front in die Nachbarn und hinterlässt die Tat `brand` (die Asche: ihre Narbe senkt
+    // lebendig, auf ihr brennt nichts, bis sie heilt). Nicht persistiert (reaktiv wie das Leben-Overlay), die Asche reist als
+    // Tat. Leser: `auraAt` (glut) und die Leuchtquellen (`_leuchtQuellen`, y fragt erst das Licht).
 
-    // Der Brennstoff einer Zelle: ihr lebendig (die Vegetation samt Narbe), 0 auf Asche.
+    // Der Brennstoff einer Zelle: ihr lebendig (die Vegetation samt Narbe), 0 auf Asche und im Wasser (das EINE Urteil
+    // `_nassAt` an ihrer Mitte: das lebendig ist Rauschen und kennt weder See noch Fluss — bis stoffe.K2 lief die Front über
+    // den See nördlich der Mess-Wiese, 21 nasse von 429 gefangenen Zellen in 600 s).
     _brandStoff(cx, cz) {
         const je = this._tatIndex().je.get(cx + "," + cz);
         if (je && je.some((a) => a.tat === "brand")) return 0;
         const cs = AnazhRealm.LIFE_FIELD.cell;
-        return this.auraAt((cx + 0.5) * cs, (cz + 0.5) * cs).lebendig;
+        const [x, z] = [(cx + 0.5) * cs, (cz + 0.5) * cs];
+        return this._nassAt(x, z) ? 0 : this.auraAt(x, z).lebendig;
     }
 
     // Die Zelle unter (x, z) fängt Feuer → die Zelle oder null (sie brennt schon, trägt keinen Brennstoff, die Welt ist nass).
@@ -1879,18 +1883,83 @@ class AnazhRealm_feld_leben {
         return this._brandFangen(Math.floor(x / cs), Math.floor(z / cs));
     }
 
+    // Die Zelle fängt: ihr Bett (`_brandBett` aus ihrem Brennstoff) und ihre Vor-Wärme `vor` — je Nachbar mit Brennstoff
+    // (unter `minStoff`, auf Asche und im Wasser hält die Front, ebenso, wo Wasser auf ihrem Weg liegt: an der Mitte zwischen
+    // den Zellen — sonst sprang sie über 7 schmale Wasser-Wege in 600 s) der Weg d, die Richtung und der Hang hinauf.
     _brandFangen(cx, cz) {
         const st = this.state;
         const B = AnazhRealm.BRAND;
         const bf = st.brandFeld || (st.brandFeld = new Map());
         const key = cx + "," + cz;
-        if (bf.has(key) || (st.naesse || 0) >= B.loescht) return null;
+        if (bf.has(key) || !(this._brandFeuchte().eta > 0)) return null;
         const stoff = this._brandStoff(cx, cz);
         if (!(stoff >= B.minStoff)) return null;
         if (!bf.size) this._brandUhr = st.spielZeit;
-        const zelle = { cx, cz, y: null, stoff, glut: 0 }; // y: die Höhe des Herds, gefragt erst vom Licht (`_leuchtQuellen`)
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const H = (i, j) => this._terrainMacroSurfaceY((i + 0.5) * cs, (j + 0.5) * cs, false);
+        const h0 = H(cx, cz);
+        const bett = this._brandBett(stoff, h0);
+        const vor = [];
+        for (const [dx, dz] of B.nachbarn) {
+            const [nx, nz] = [cx + dx, cz + dz];
+            const weg = this._nassAt((cx + 0.5 + dx / 2) * cs, (cz + 0.5 + dz / 2) * cs); // ein Fluss zwischen den Mitten
+            if (weg || bf.has(nx + "," + nz) || !(this._brandStoff(nx, nz) >= B.minStoff)) continue;
+            const d = Math.hypot(dx, dz) * cs;
+            const hang = Math.max(0, (H(nx, nz) - h0) / d);
+            vor.push({
+                nx,
+                nz,
+                key: nx + "," + nz,
+                ex: (dx * cs) / d,
+                ez: (dz * cs) / d,
+                d,
+                phiS: bett.ks * hang * hang,
+                p: 0,
+            });
+        }
+        const zelle = { cx, cz, y: null, glut: 0, bett, vor }; // y: die Höhe des Herds, gefragt erst vom Licht (`_leuchtQuellen`)
         bf.set(key, zelle);
         return zelle;
+    }
+
+    // DAS GESETZ DER AUSBREITUNG (stoffe.K2) — Rothermel 1972 (INT-115, die Korrelationen in Fuß geeicht, hier in SI gerechnet):
+    // die Front läuft mit R = I_R·ξ·(1 + φ_w + φ_s) / (ρ_b·ε·Q_ig). Das Bett `BRAND.bett` (das volle Bett der Wiese) trägt
+    // das lebendig der Zelle als Anteil seiner Last; ρ_p, c und T_zünd sind die Zeile `gras` der Stoff-Tafel (`_stoff`), die
+    // Luft die Temperatur der Welt an der Höhe des Herds (`_temperaturAt`). → { k, tLuft, cw, b, ks, waf }: R0 = k·η_M / Q_ig,
+    // φ_w = cw · U^b (U Mittflammen-Wind in ft/min), φ_s = ks · tan²θ, waf: der Wind am Ort (10 m) → Mittflamme.
+    _brandBett(stoff, y) {
+        const B = AnazhRealm.BRAND.bett;
+        const gras = this._stoff("gras");
+        const s = B.sigma * 0.3048;
+        const w0 = B.last * stoff;
+        const rhoB = w0 / B.tiefe;
+        const beta = rhoB / gras.rho;
+        const q = beta / (3.348 * s ** -0.8189);
+        const A = 133 * s ** -0.7913;
+        const gamma = (s ** 1.5 / (495 + 0.0594 * s ** 1.5) / 60) * q ** A * Math.exp(A * (1 - q));
+        const xi = Math.exp((0.792 + 0.681 * Math.sqrt(s)) * (beta + 0.1)) / (192 + 0.2595 * s);
+        const E = 0.715 * Math.exp(-3.59e-4 * s);
+        const dFt = B.tiefe / 0.3048;
+        return {
+            k:
+                (gamma * w0 * (1 - B.mineral) * B.waerme * Math.min(1, 0.174 * B.silikat ** -0.19) * xi) /
+                (rhoB * Math.exp(-138 / s)),
+            tLuft: this._temperaturAt(y) + 273.15,
+            cw: 7.47 * Math.exp(-0.133 * s ** 0.55) * q ** -E,
+            b: 0.02526 * s ** 0.54,
+            ks: 5.275 * beta ** -0.3,
+            waf: 1.83 / Math.log((20 + 0.36 * dFt) / (0.13 * dFt)) / B.windHoehe,
+        };
+    }
+
+    // DIE FEUCHTE DES BETTS: der tote Feinstoff zwischen trocken und satt nach der Nässe der Welt (`state.naesse`, der Regen
+    // benetzt ihn) → { m, eta }: η_M (Rothermel) fällt bis zur Lösch-Feuchte `bett.mx` auf 0 — dort fängt nichts, und was
+    // brennt, erstickt (dieselbe Regel, kein Lösch-Fall).
+    _brandFeuchte() {
+        const B = AnazhRealm.BRAND.bett;
+        const m = B.trocken + (this.state.naesse || 0) * (B.satt - B.trocken);
+        const r = m / B.mx;
+        return { m, eta: r >= 1 ? 0 : 1 - 2.59 * r + 5.11 * r * r - 3.52 * r * r * r };
     }
 
     // DER TAKT DES BRANDS: ohne Feuer kein Schritt und keine Arbeit (Ruhe ist Null); sonst je `schrittS` Spielzeit EIN Schritt
@@ -1902,30 +1971,37 @@ class AnazhRealm_feld_leben {
         while (bf.size && this.state.spielZeit - this._brandUhr >= S) this._brandSchritt((this._brandUhr += S));
     }
 
-    // Ein Schritt zur Spielzeit t: jede Zelle zehrt und glüht auf, greift über (die Würfel je Zelle und Schritt aus dem Hash
-    // `_pcgFloat` — gleich für jede Bildrate) und fällt ausgebrannt oder erstickt als Asche.
+    // Ein Schritt zur Spielzeit t: jede Zelle wärmt ihre Nachbarn vor — der Weg wächst um R·schrittS / d, R mit dem Wind am
+    // Ort (`_windAt`) projiziert auf die Richtung (gegen den Wind und quer φ_w = 0) —, bei 1 fängt der Nachbar. Die Zelle fällt
+    // als Asche, wenn ihre Front kein unverbranntes Land mehr vor sich hat oder das Bett erstickt (η_M = 0).
     _brandSchritt(t) {
-        const st = this.state;
         const B = AnazhRealm.BRAND;
-        const bf = st.brandFeld;
+        const bf = this.state.brandFeld;
         const cs = AnazhRealm.LIFE_FIELD.cell;
-        const nass = (st.naesse || 0) >= B.loescht;
-        const n = Math.round(t / B.schrittS);
+        const f = this._brandFeuchte();
+        const qW = this._stoff("wasser").c;
+        const gras = this._stoff("gras");
         const neu = [];
         for (const [key, z] of bf) {
-            z.stoff -= B.schrittS / B.brennS;
-            if (nass || z.stoff <= 0) {
+            const b = z.bett;
+            const r0 =
+                (b.k * f.eta) /
+                (gras.c * (gras.tZuend - b.tLuft) + f.m * (qW * (373.15 - b.tLuft) + B.bett.verdampfen));
+            const w = r0 > 0 && z.vor.length ? this._windAt((z.cx + 0.5) * cs, (z.cz + 0.5) * cs, t) : null;
+            for (let i = z.vor.length - 1; w && i >= 0; i--) {
+                const n = z.vor[i];
+                const u = (Math.max(0, w.ms * b.waf * (w.x * n.ex + w.z * n.ez)) * 60) / 0.3048;
+                n.p += (r0 * (1 + b.cw * u ** b.b + n.phiS) * B.schrittS) / n.d;
+                if (n.p >= 1) neu.push(n.nx, n.nz);
+                else if (!bf.has(n.key)) continue;
+                z.vor.splice(i, 1);
+            }
+            if (!w) {
                 bf.delete(key);
                 this._tatSchreiben("brand", (z.cx + 0.5) * cs, (z.cz + 0.5) * cs);
                 continue;
             }
             z.glut = Math.min(1, z.glut + B.schrittS / B.aufS);
-            for (const [dx, dz] of B.nachbarn) {
-                const [nx, nz] = [z.cx + dx, z.cz + dz];
-                if (bf.has(nx + "," + nz) || this._pcgFloat(nx, nz, n) >= B.greift * z.glut) continue;
-                const s = this._brandStoff(nx, nz);
-                if (this._pcgFloat(nz, nx, n) < s) neu.push(nx, nz);
-            }
         }
         for (let i = 0; i < neu.length; i += 2) this._brandFangen(neu[i], neu[i + 1]);
     }
@@ -2469,25 +2545,32 @@ AnazhRealm.TAT_LEER = Object.freeze(new Set()); // die Kachel ohne Ernte (`_geer
 AnazhRealm.FELD_TOD_EIMER_S = 8;
 AnazhRealm.FELD_LEER = Object.freeze({});
 
-// BRAND — das Feuer auf dem Feld (feld.K3#2, `_tickBrand`): eine brennende 16-m-Zelle des Felds zehrt ihren Brennstoff — das
-// lebendig ihres Orts (`auraAt`, die Vegetation samt Narbe; unter `minStoff` und auf Asche brennt nichts) — in `brennS`
-// Sekunden je Einheit, glüht in `aufS` auf und greift je Schritt (`schrittS` Spielzeit) mit `greift` × Brennstoff × Glut auf
-// jede der vier Nachbar-Zellen über. Die Übergangs-Wahrscheinlichkeit je Nachbar bleibt unter greift · brennS = 0,48 und damit
-// unter der Perkolations-Schwelle des Quadrat-Gitters (½): jedes Feuer erlischt von selbst. Nässe über `loescht` erstickt
-// es. Glut leuchtet als Feuer (LICHT_GESETZ.feuer, Masse `licht` × Glut) und hebt glut in `auraAt`.
+// BRAND — das Feuer auf dem Feld (feld.K3#2 · stoffe.K2, `_tickBrand`): je Schritt (`schrittS` Spielzeit) wärmt jede
+// brennende 16-m-Zelle ihre acht Nachbarn nach dem Gesetz der Ausbreitung vor (`_brandBett`), glüht in `aufS` auf; unter
+// `minStoff` lebendig und auf Asche brennt nichts. Glut leuchtet als Feuer (LICHT_GESETZ.feuer, Masse `licht` × Glut) und hebt
+// glut in `auraAt`. Das Bett der Wiese bei lebendig 1 ist Anderson 1982 FM3 (hohes Gras, GTR-122): sigma 1 500 ft⁻¹ (4 921 m⁻¹)
+// Oberfläche/Volumen, last 3,01 t/acre (0,675 kg/m²), tiefe 2,5 ft (0,762 m), Lösch-Feuchte mx 0,25; waerme 8 000 BTU/lb
+// (18,6 MJ/kg), mineral 0,0555, silikat 0,01 (Rothermel 1972); der tote Feinstoff trocken 0,06 (Fosberg, klarer Sommertag),
+// satt 1 (totes Gras nach Regen, Nelson 2000); verdampfen L_v des Wassers bei 100 °C (J/kg); windHoehe U10 / U(20 ft) 1,15
+// (der Wind am Ort ist der 10-m-Wind, Beaufort: WIND_FELD.sturmMS), die Mittflamme nach Albini & Baughman 1979.
 AnazhRealm.BRAND = Object.freeze({
     schrittS: 1,
-    brennS: 24,
     aufS: 4,
-    greift: 0.02,
     minStoff: 0.15,
-    loescht: 0.35,
     licht: 4,
+    bett: Object.freeze({
+        ...{ sigma: 4921, last: 0.675, tiefe: 0.762, mx: 0.25, waerme: 18.61e6, mineral: 0.0555, silikat: 0.01 },
+        ...{ trocken: 0.06, satt: 1, verdampfen: 2.257e6, windHoehe: 1.15 },
+    }),
     nachbarn: Object.freeze([
         [1, 0],
         [-1, 0],
         [0, 1],
         [0, -1],
+        [1, 1],
+        [1, -1],
+        [-1, 1],
+        [-1, -1],
     ]),
 });
 

@@ -161,7 +161,9 @@ function selbsttest() {
             feld: { geschrieben: 2160, wellen: [0, 1, 2, 3].map(() => ({ groesse: 540, tote: 0 })), welle: Object.assign(simPh(0, 1), { akt: 2200 }) },
             brand: {
                 start: true,
-                ...{ zellen: [1, 1, 2, 3, 2, 1], einheiten: [9, 9, 30, 41, 20, 12], brennt: 0, asche: 4 },
+                ...{ zellen: [1, 1, 2, 3, 2, 1], neu: [0, 1, 1, 0, 0, 0], einheiten: [9, 90, 100, 41, 20, 12], brennt: 0, asche: 4 },
+                tempo: { mit: 0.7, gegen: 0, ms: 5, loeschS: 26 },
+                wasser: { nass: 0, ueber: 0, ufer: 12 },
                 ...{ lebVor: 0.62, lebNach: 0.32, glut: 1, licht: true, nachher: simPh(0, 60) },
             },
             // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
@@ -484,6 +486,11 @@ function selbsttest() {
         ["der Brand ohne Takt", (b) => b.simWecken.brand.einheiten.fill(0), /STUMPF: der Brand brennt, die Sim-Linse sieht keinen Takt/],
         ["der Brand fegt die Welt", (b) => (b.simWecken.brand.einheiten[3] = 4000), /BRAND-ZELLEN: Schritt 4 kostete 4000 Einheiten bei 3 brennenden/],
         ["der Brand erlischt nie", (b) => (b.simWecken.brand.brennt = 7), /BRAND-ERLISCHT: nach 6 Schritten brennen noch 7/],
+        ["die Front kriecht mit dem Wind", (b) => (b.simWecken.brand.tempo.mit = 0.1), /BRAND-FRONT: mit dem Wind 0.1 m\/s, gegen ihn 0 m\/s/],
+        ["die Front läuft gegen den Wind", (b) => (b.simWecken.brand.tempo.gegen = 0.4), /BRAND-FRONT: mit dem Wind 0.7 m\/s, gegen ihn 0.4 m\/s/],
+        ["die Front läuft über das Wasser", (b) => Object.assign(b.simWecken.brand.wasser, { nass: 3, ueber: 2 }), /BRAND-WASSER: 3 nasse Zellen brannten, 2 fingen nur über einen nassen Weg/],
+        ["die Front erreicht kein Wasser", (b) => (b.simWecken.brand.wasser.ufer = 0), /LEER: die Front des Brands erreichte kein Ufer/],
+        ["der Regen löscht nicht", (b) => (b.simWecken.brand.tempo.loeschS = 90), /BRAND-REGEN: der Regen löscht in 90 s/],
         ["der Brand hinterlässt keine Asche", (b) => (b.simWecken.brand.lebNach = 0.62), /BRAND-ASCHE: 4 Aschen, lebendig am Herd 0.62 → 0.62/],
         ["der Brand leuchtet nicht", (b) => (b.simWecken.brand.licht = false), /BRAND-LESER: glut am Herd \+1, Leuchtquelle fehlt/],
         ["der Brand schläft nicht", (b) => (b.simWecken.brand.nachher = simPh(2, 60, "brand")), /BRAND-RUHE: .* 120 Einheiten/],
@@ -1668,26 +1675,76 @@ const TAT = process.argv.includes("--tat");
                             F.wellen.push({ groesse: alle.length, tote: alle.filter((e) => !lebt(e)).length });
                         }
                         F.welle = window.__simPhase([S.frame()], 0);
-                        // der Brand (feld.K3#2): an der Mess-Wiese gezündet (der Weg des Brennglases), je Bild genau EIN Schritt, bis er
-                        // erlischt; je Schritt seine Einheiten und die brennenden Zellen, am Herd glut, Licht und danach die Asche
+                        // der Brand (feld.K3#2 · stoffe.K2): an der Mess-Wiese gezündet (der Weg des Brennglases), je Bild genau EIN
+                        // Schritt in Spielzeit. LAUF Schritte die Front an der Pose des Rothermel-Bands — bewölkt (Wind 0,3), das Bett
+                        // hält trocken (die Welt kennt kein trockenes Wort mit Wind 0,3: der Niesel netzte es) —, je Zelle ihr
+                        // Fang-Schritt, das Tempo längs des mittleren Winds am Herd mit ihm und gegen ihn in den Schritten 30–FRONT;
+                        // bis LAUF erreicht sie den See nördlich der Wiese (Halt am Wasser: keine nasse Zelle, kein Fang nur über einen
+                        // nassen Weg); dann Regen (rainy) bis zum Erlöschen. Je Schritt seine Einheiten, die brennenden und die neu
+                        // gefangenen Zellen, am Herd glut, Licht und danach die Asche
                         const B = r.constructor.BRAND;
+                        const cs = r.constructor.LIFE_FIELD.cell;
+                        const [FRONT, LAUF] = [180, 600];
                         const asche = () => (st.worldMeta.taten || []).filter((a) => a.tat === "brand").length;
                         const am = () => r.auraAt(MESS.x, MESS.z);
-                        const Z = (W.brand = { zellen: [], einheiten: [], asche: -asche(), glut: 0, licht: false, lebVor: +am().lebendig.toFixed(3) });
+                        const Z = (W.brand = { zellen: [], neu: [], einheiten: [], asche: -asche(), glut: 0, licht: false, lebVor: +am().lebendig.toFixed(3) });
                         const glut0 = am().glut;
+                        wort("cloudy");
+                        r._naesseTakt();
+                        st.naesse = 0;
                         Z.start = typeof r._brandEntfachen === "function" && !!r._brandEntfachen(MESS.x, MESS.z); // ohne Brand im Stamm: LEER
                         S.frame();
-                        for (let i = 0; i < 600 && st.brandFeld && st.brandFeld.size; i++) {
+                        const herd = [Math.floor(MESS.x / cs), Math.floor(MESS.z / cs)];
+                        const fang = new Map([[herd + "", 0]]);
+                        const wind = { x: 0, z: 0, ms: 0, n: 0 };
+                        const t0 = st.spielZeit;
+                        for (let i = 0; i < 1200 && st.brandFeld && st.brandFeld.size; i++) {
+                            if (i === LAUF) wort("rainy");
                             Z.zellen.push(st.brandFeld.size);
-                            st.spielZeit = r._brandUhr + B.schrittS;
+                            st.spielZeit = t0 + (i + 1) * B.schrittS + 1e-6;
+                            if (i < LAUF) (r._naesseTakt(), (st.naesse = 0)); // die Pose: die Uhr der Nässe steht am Schritt, das Bett trocken
                             takt();
                             Z.einheiten.push(S.frame().brand);
+                            let n = 0;
+                            for (const k of st.brandFeld.keys()) if (!fang.has(k)) (fang.set(k, i + 1), n++);
+                            Z.neu.push(n);
+                            const w = i < FRONT && r._windAt(MESS.x, MESS.z, st.spielZeit);
+                            if (w) Object.assign(wind, { x: wind.x + w.x, z: wind.z + w.z, ms: wind.ms + w.ms, n: wind.n + 1 });
                             Z.glut = Math.max(Z.glut, +(am().glut - glut0).toFixed(3));
                             Z.licht = Z.licht || r._leuchtQuellen(MESS.x, pm.y, MESS.z, 32).some((q) => q.quelle === "brand");
                             if (i % 20 === 0) await pause(2);
                         }
+                        const L = Math.hypot(wind.x, wind.z) || 1;
+                        const vor = (s) => {
+                            const m = [0, 0];
+                            for (const [k, ti] of fang) {
+                                const [a, b] = k.split(",").map(Number);
+                                const d = (s * ((a - herd[0]) * wind.x + (b - herd[1]) * wind.z) * cs) / L;
+                                if (ti <= 30) m[0] = Math.max(m[0], d);
+                                if (ti <= FRONT) m[1] = Math.max(m[1], d);
+                            }
+                            return +((m[1] - m[0]) / (FRONT - 30)).toFixed(3);
+                        };
+                        Z.tempo = { mit: vor(1), gegen: vor(-1), ms: +(wind.ms / (wind.n || 1)).toFixed(2), loeschS: Z.zellen.length - LAUF };
+                        const nass = (a, b) => r._nassAt(a * cs, b * cs);
+                        Z.wasser = { nass: 0, ueber: 0, ufer: 0 };
+                        for (const [k, tk] of fang) {
+                            const [a, b] = k.split(",").map(Number);
+                            const q = [0, 0];
+                            let ufer = false;
+                            for (const [dx, dz] of B.nachbarn) {
+                                ufer = ufer || nass(a + 0.5 + dx, b + 0.5 + dz);
+                                const tq = fang.get(a + dx + "," + (b + dz));
+                                if (tk && tq != null && tq < tk) q[nass(a + 0.5 + dx / 2, b + 0.5 + dz / 2) ? 0 : 1]++;
+                            }
+                            Z.wasser.nass += nass(a + 0.5, b + 0.5) ? 1 : 0;
+                            Z.wasser.ufer += ufer ? 1 : 0;
+                            Z.wasser.ueber += q[0] && !q[1] ? 1 : 0;
+                        }
                         Object.assign(Z, { brennt: st.brandFeld ? st.brandFeld.size : 0, lebNach: +am().lebendig.toFixed(3) });
                         Z.asche += asche();
+                        wort("sunny");
+                        r._naesseTakt(1e6);
                         Z.nachher = await simPhase(60);
                     } finally {
                         S.aus();
@@ -1854,7 +1911,9 @@ const TAT = process.argv.includes("--tat");
                     : n === "feld"
                       ? `${w.geschrieben} Zellen geschrieben, tote/Zellen nach den Wellen ${w.wellen.map((x) => x.tote + "/" + x.groesse).join(" · ")} — ${simZeile(w.welle)}`
                       : n === "brand"
-                        ? `gezündet ${w.start}, ${w.zellen.length} Schritte, brennend bis ${Math.max(0, ...w.zellen)} Zellen, Einheiten je Zelle und ` +
+                        ? `gezündet ${w.start}, ${w.zellen.length} Schritte, Front mit dem Wind ${(w.tempo || {}).mit} m/s, gegen ihn ` +
+                          `${(w.tempo || {}).gegen} m/s (Wind am Herd ${(w.tempo || {}).ms} m/s), der Regen löscht in ${(w.tempo || {}).loeschS} s, ` +
+                          `am Wasser ${JSON.stringify(w.wasser)}, brennend bis ${Math.max(0, ...w.zellen)} Zellen, Einheiten je Zelle und ` +
                           `Schritt bis ${Math.max(0, ...w.einheiten.map((e, i) => +(e / w.zellen[i]).toFixed(1)))}, noch brennend ${w.brennt}, Asche ` +
                           `${w.asche}, lebendig am Herd ${w.lebVor} → ${w.lebNach}, glut +${w.glut}, Licht ${w.licht} — nachher ${simZeile(w.nachher)}`
                         : `wach ${simZeile(w.wach)} — nachher ${simZeile(w.nachher)}`)

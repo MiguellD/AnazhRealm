@@ -425,7 +425,8 @@ function standLauf(k) {
 // DAS URTEIL DER SIMS (feld.K3): in 60 s Ruhe nach einer Tat (Ernte, Leben) arbeitet keine Sim und kein Akt; ihr Ereignis weckt
 // jede (sonst STUMPF), danach schläft sie; der Wasser-Automat geht nach einem Wecken am Fixpunkt genau EINEN Takt; das Feld und
 // der Brand arbeiten nur in berührten Zellen.
-const BRAND_JE = 64; // je brennende Zelle und Schritt: ihr Gang, vier Würfel, die fangenden Nachbarn, die Asche
+const BRAND_JE = 64; // je brennende Zelle und Schritt: ihr Gang, der Wind am Ort, die Asche
+const BRAND_FANG = 128; // je gefangene Zelle einmal: ihr Brennstoff, ihr Bett, Brennstoff, Weg und Hang der acht Nachbarn
 function simUrteil(b, v) {
     const R = b.simRuhe;
     if (!R || !R.frames) v.push("LEER: keine Sim-Ruhe gemessen");
@@ -464,14 +465,22 @@ function simUrteil(b, v) {
             v.push(`FELD-BESUCH: die Wellen kosteten ${arbeit} Einheiten für ${F.geschrieben} geschriebene Zellen` +
                 (karte.length ? `, die Räumung ging über die ganze Karte (${karte.map((x) => x.join(" ")).join(", ")})` : "") + " — sie besucht Unberührte");
     }
-    // (feld.K3#2) der Brand arbeitet nur in brennenden Zellen (≤ BRAND_JE je Zelle und Schritt), erlischt, hinterlässt Asche,
-    // leuchtet, glüht und schläft danach
+    // (feld.K3#2 · stoffe.K2) der Brand arbeitet nur in brennenden Zellen (≤ BRAND_JE je Zelle und Schritt, BRAND_FANG je
+    // Fang), läuft im Rothermel-Band (mit dem Wind 0,5–2 m/s, gegen ihn ≤ 0,2), hält am Wasser, der Regen löscht ihn in ≤ 60 s,
+    // er hinterlässt Asche, leuchtet, glüht und schläft danach
     const Z = W.brand;
     if (!Z || !Z.start) v.push("LEER: an der Mess-Wiese fing kein Brand");
     else {
-        const i = Z.zellen.findIndex((n, k) => Z.einheiten[k] > BRAND_JE * n);
+        const i = Z.zellen.findIndex((n, k) => Z.einheiten[k] > BRAND_JE * n + BRAND_FANG * Z.neu[k]);
+        const T = Z.tempo;
+        const N = Z.wasser || {};
         if (!Z.einheiten.some((e) => e > 0)) v.push("STUMPF: der Brand brennt, die Sim-Linse sieht keinen Takt");
-        if (i >= 0) v.push(`BRAND-ZELLEN: Schritt ${i + 1} kostete ${Z.einheiten[i]} Einheiten bei ${Z.zellen[i]} brennenden Zellen (Soll ≤ ${BRAND_JE} je Zelle)`);
+        if (i >= 0) v.push(`BRAND-ZELLEN: Schritt ${i + 1} kostete ${Z.einheiten[i]} Einheiten bei ${Z.zellen[i]} brennenden Zellen und ${Z.neu[i]} Fängen (Soll ≤ ${BRAND_JE} je Zelle, ${BRAND_FANG} je Fang)`);
+        if (!(T.mit >= 0.5 && T.mit <= 2) || !(T.gegen <= 0.2))
+            v.push(`BRAND-FRONT: mit dem Wind ${T.mit} m/s, gegen ihn ${T.gegen} m/s (Soll 0,5–2 · ≤ 0,2; Wind am Herd ${T.ms} m/s)`);
+        if (!(T.loeschS <= 60)) v.push(`BRAND-REGEN: der Regen löscht in ${T.loeschS} s (Soll ≤ 60)`);
+        if (!(N.ufer > 0)) v.push("LEER: die Front des Brands erreichte kein Ufer — der Halt am Wasser ungeprüft");
+        if (N.nass || N.ueber) v.push(`BRAND-WASSER: ${N.nass} nasse Zellen brannten, ${N.ueber} fingen nur über einen nassen Weg`);
         if (Z.brennt) v.push(`BRAND-ERLISCHT: nach ${Z.zellen.length} Schritten brennen noch ${Z.brennt} Zellen`);
         if (!(Z.asche >= 1) || !(Z.lebNach < Z.lebVor - 0.1)) v.push(`BRAND-ASCHE: ${Z.asche} Aschen, lebendig am Herd ${Z.lebVor} → ${Z.lebNach}`);
         if (!(Z.glut > 0) || !Z.licht) v.push(`BRAND-LESER: glut am Herd +${Z.glut}, Leuchtquelle ${Z.licht ? "da" : "fehlt"}`);
