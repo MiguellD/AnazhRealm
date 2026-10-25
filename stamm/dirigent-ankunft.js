@@ -1007,6 +1007,9 @@ class AnazhRealm_dirigent_ankunft {
                 }
             if (haeuser) luecke("dorf", `${haeuser} Häuser des Dorfs wachsen`, false, haeuser);
             else if (this._autoSettlementPendingKey) luecke("dorf", "das Dorf wird geplant", true);
+            // der Ort aus dem Gedächtnis (speicher.K3): sein Export ist unterwegs, oder er ist fällig
+            else if (this._stlWegePending || (this._autoSettlementChannelLive() && this._dorfWiederkehrZelle(p)))
+                luecke("dorf", "das Dorf kehrt wieder", !!this._stlWegePending);
             else if (!q && this._autoSettlementChannelLive() && this._startDorfFaellig(p))
                 luecke("dorf", "das Dorf wird gegründet");
         }

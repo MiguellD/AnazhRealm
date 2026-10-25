@@ -716,7 +716,6 @@ async function probe(argW) {
             const snapMeta = JSON.parse(JSON.stringify(r.buildStateSnapshot().worldMeta));
             rl.weiter = r._bauSame("pruef:reload");
             st.worldMeta = Object.assign({}, wmAlt, { bauSame: undefined }, snapMeta);
-            delete st.worldMeta.scatterPromoted;
             rl.nachReload = r._bauSame("pruef:reload");
         } finally {
             st.worldMeta = wmAlt;

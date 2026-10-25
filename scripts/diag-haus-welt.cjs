@@ -122,20 +122,13 @@ const BASIS = {
             "        if (entry) this.state.architectures.splice(this.state.architectures.indexOf(entry), 1);",
         ],
     ],
-    // W9: der Schnappschuss lässt den Gang offen — nach dem Reload fehlen Brunnen und Stände
-    gangschluss: [
-        [
-            "        for (const q = this._autoSettlementQueue; q && q.gang;) if (q.gang.next().done) q.gang = null;",
-            "        void 0;",
-        ],
-    ],
     // W9: der Plan stellt den Brunnen ungeprüft vor ein Haus
     ausstattung: [["/fachwerk-core.js", "        lay.brunnen = neu;\n        return aus;", "        return aus;"]],
-    // W9: der Wege-Rebuild nach dem Reload reiht die offenen Slots nicht ein
+    // W9: die Wiederkehr nach dem Reload reiht die offenen Slots nicht ein
     zugreload: [
         [
-            "                    const zug = this._autoSettlementQueue ? null : this._dorfZugOffen(plan2, c);",
-            "                    const zug = null;",
+            "this._dorfZug(this._dorfZugOffen(v2, anker), anker, k, gang)",
+            "this._dorfZug({ ...v2, slots: [] }, anker, k, gang)",
         ],
     ],
     // EIN BAU OHNE HAUS-ZEILE TRÄGT KEINEN GRUNDRISS: Tor, Esse, Brunnen, Damm — die Natur wirft in ihn, nichts räumt
@@ -1806,8 +1799,7 @@ async function proben(phasen) {
         await warteBis(() => !(q && r._autoSettlementQueue === q && q.idx < 3), 1, 1200);
         const reload = !!q && r._autoSettlementQueue === q && q.idx < q.plan.slots.length ? q.idx : 0;
         if (reload) {
-            // der Reload des Spiels: der Schnappschuss schließt den Gang (`_dorfGangSchliessen`), nie die Uhr eines Speicherns
-            r._dorfGangSchliessen();
+            // der Reload des Spiels mitten im Erwachen: der Zug fällt, der Ort kehrt aus seinem Gedächtnis wieder (speicher.K3)
             r._autoSettlementQueue = null;
             r._stlWegeKeys.delete(q.cellKey);
         }
@@ -2260,7 +2252,6 @@ function zeile(o) {
                 grundplan: ["grund", "W9 Plan"],
                 waise: ["grund", "W9 Waise"],
                 ausstattung: ["grund", "W9 Zug|W9 Ausstattung"],
-                gangschluss: ["grund", "W9 Ausstattung"],
                 zugreload: ["grund", "W9 Waise", "W9 Zug"],
                 verblassen: ["grund", "W9 Waise"],
             };

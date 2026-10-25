@@ -771,6 +771,10 @@ class AnazhRealm_speicher_welten {
 
     buildStateSnapshot() {
         const knowledgeBase = this.state.knowledgeBase.slice(-200);
+        // DIE WELT IST EINE FUNKTION, KEIN SACK (speicher.K3, Gebot 7): was Saat und Gesetz setzen (`_ausGesetz`: der Wurf des
+        // Felds, die Promotion der Streu), rechnet jeder Boot neu — der Stand trägt Werke, Taten und Leben, nie den Weg. Bis
+        // speicher-k3 trug er jeden Wurf: 5 km Wanderung in 30 min hoben 443 auf 16 781 Bauten, den Stand von 0,2 auf 5,2 MB.
+        const bauten = (this.state.architectures || []).filter((a) => !a._ausGesetz);
         return {
             playerPosition: this.state.playerMesh
                 ? {
@@ -798,15 +802,15 @@ class AnazhRealm_speicher_welten {
             terrainSteepness: this.state.terrainSteepness,
             terrainBaseHeight: this.state.terrainBaseHeight,
             weather: this.state.weather,
-            // Das Scatter-Promoted-Set persistiert via worldMeta: berührte/gespawnte Cells bleiben über den Reload
-            // promoted. Als Array serialisiert (JSON kennt keine Sets); Cap 16k Einträge (~512 KB Worst-Case)
-            // deckelt die Snapshot-Größe — ältere fallen.
+            // Die Promotion der Streu ist eine Funktion des Wegs (der Boot promotet neu, wo der Spieler naht) und reist nicht; ein
+            // älterer Stand behält seine Liste (`worldMeta.scatterPromoted`, seine promoteten Bäume reisen mit ihm). Der Erdbau
+            // eines Orts mit Gedächtnis (`settlementCells`) reist nie: der Ort kehrt aus ihm wieder (`_tickAutoSettlement`).
             worldMeta: (() => {
                 const wm = { ...this.state.worldMeta };
-                if (this.state.scatterPromoted instanceof Set) {
-                    const arr = Array.from(this.state.scatterPromoted);
-                    if (arr.length > 16000) arr.splice(0, arr.length - 16000);
-                    wm.scatterPromoted = arr;
+                const orte = new Set(Object.values(wm.settlementCells || {}).map((c) => c && c.seed >>> 0));
+                if (wm.erdbau && typeof wm.erdbau === "object") {
+                    wm.erdbau = { ...wm.erdbau };
+                    for (const k in wm.erdbau) if (/^ort:/.test(k) && orte.has(+k.split(":")[1])) delete wm.erdbau[k];
                 }
                 return wm;
             })(),
@@ -936,14 +940,15 @@ class AnazhRealm_speicher_welten {
             // die `parts` sind pure Funktion von (species, seed) und wachsen beim Restore via `_growTreeBlueprint`
             // nach (~75 Parts/Baum würden die 256-KB-Wand von pinCurrentWorld sprengen).
             grownBlueprints: (() => {
-                // NUR von einer Architektur REFERENZIERTE gewachsene Baupläne persistieren. Foliage-Varianten wachsen
+                // NUR von einem Bau DES STANDS referenzierte gewachsene Baupläne persistieren. Foliage-Varianten wachsen
                 // im nächsten Streaming-Pass deterministisch nach; im Snapshot blähten sie ihn und umgingen beim
                 // Restore die 256er-Ring-Deckelung (Inflation über Sessions). Architektur-gehaltene MÜSSEN bleiben,
                 // sonst verliert ein platzierter Baum seinen Bauplan.
                 const out = {};
                 const bps = this.state.blueprints || {};
+                const typen = new Set(bauten.map((a) => a.type));
                 for (const k in bps) {
-                    if (bps[k] && bps[k]._isGrown && this._isGrownBlueprintReferenced(k)) {
+                    if (bps[k] && bps[k]._isGrown && typen.has(k)) {
                         out[k] = {
                             label: bps[k].label,
                             _grownSpecies: bps[k]._grownSpecies,
@@ -967,7 +972,7 @@ class AnazhRealm_speicher_welten {
             // Ring 6: Bau-Werke. Nur {type, position, seed, scale} — der
             // Mesh wird beim Laden aus dem Seed rekonstruiert (kein Mesh-
             // Snapshot). V2 inkludiert scale für fraktale Sub-Strukturen.
-            architectures: (this.state.architectures || []).map((a) => ({
+            architectures: bauten.map((a) => ({
                 // Eine string-id ist eine GETEILTE Architektur-Identität (spieler-gebaut + broadcastet): sie muss Save
                 // + Snapshot-Transfer überleben, sonst divergieren die Peer-ids und der Abbau-Sync bricht.
                 // Numerische ids (Worldgen) sind lokal.

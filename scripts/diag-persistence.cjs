@@ -32,6 +32,9 @@ const PORT = Number(process.env.PERSISTENCE_PORT || 4326);
 const SERVER_PORT = Number(process.env.PERSISTENCE_SERVER_PORT || 4327);
 const SELBSTTEST = process.argv.includes("--selftest");
 const NUR_STUFE = process.argv.includes("--stufe");
+const NUR_WEG = process.argv.includes("--weg");
+const [WEG_KM, WEG_MIN] = (process.env.PERSISTENCE_WEG || "1-6").split("-").map(Number);
+const EDITS = Number(process.env.PERSISTENCE_EDITS || 0);
 
 // (S) Der Tod an einem Schreib-Punkt: ein Vorlade-Haken (`node -r`) im Sandbox-Prozess zählt jeden Datei-Schreiber des
 // Servers (writeFile · copyFile · rename, Rückruf-, Sync- und Promise-Form). Je Schreiber zwei Punkte: MITTEN (ein
@@ -397,6 +400,94 @@ const ttZeile = (t) =>
 const ttOk = (t) => t.n > 0 && !t.alt && !t.korrupt && !t.halb && !t.verfehlt && t.linie > 256;
 const [TT_VON, TT_BIS] = (process.env.PERSISTENCE_TABTOD || "0-7").split("-").map(Number);
 const server = statikServer();
+
+// (D) DIE DATEI WÄCHST MIT DEN ÄNDERUNGEN, NIE MIT DEM WEG (speicher.K3): eine frische Welt (der Takt der Orte lebt wie im
+// Spiel) speichert, der Spieler geht ohne Edit `km` in `min` Spielminuten (Teleport-Schritte auf dem Boden des Gesetzes, 100 ms
+// je Takt), sie speichert wieder. Je Schlüssel des Stands (oben und `worldMeta.*`) das Δ roh (UTF-8 des JSON) und auf der
+// Platte (der Stand in IndexedDB, sein .bak und das Abbild im localStorage). Das Urteil gilt dem Weg: das Leben der Welt
+// (`LEBEN`: ihr Tagebuch, das Gedächtnis des Nexus, die Kreaturen) wächst mit der Zeit, gedeckelt von seinem Gesetz — es steht
+// in der Zahl. Mit PERSISTENCE_EDITS=n schlägt der Spieler danach n Gruben (2-m-Raster um ihn): Δ roh und Platte dieser Edits
+// (Staffel 2, ≤ 100 kB je 1000). PERSISTENCE_WEG=km-min (Standard 1-6), `--weg` nur (D), PERSISTENCE_AUS die Zahlen als JSON.
+// SELBSTTEST: ein Weg-Zähler im Stand (`wegSpur`) ist ROT an seinem Namen.
+const LEBEN = ["worldJournal", "dslHistory", "dslAbilities", "knowledgeBase", "dslPatternMemory", "creatures"];
+async function wegSeite(km, min, edits) {
+    const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
+    const [st, spur, S] = [r.state, [], []];
+    let t = performance.now();
+    const takt = async (n, f = () => {}) => {
+        for (let i = 1; i <= n; i++) {
+            f(i);
+            r._gameLoopTick((t += 100));
+            if (i % 5 === 0) await new Promise((ok) => setTimeout(ok));
+        }
+    };
+    const stand = async () => {
+        r.saveState();
+        r.saveState(); // der .bak trägt denselben Stand
+        const id = st.worldMeta.worldId;
+        const platz = localStorage.getItem(r.worldStorageKey(id));
+        for (let i = 0; i < 300 && ((await r._idbGetWorld(id)) || {}).json !== platz; i++)
+            await new Promise((ok) => setTimeout(ok, 20));
+        S.push([platz, ((await r._idbGetWorld(id + ".bak")) || {}).json]);
+    };
+    await takt(200);
+    await stand();
+    const [p, n] = [st.playerMesh.position.clone(), Math.round(min * 600)];
+    await takt(n, (i) => {
+        const [x, z] = [p.x + (i * km * 1000) / n, p.z + (0.15 * i * km * 1000) / n];
+        st.playerMesh.position.set(x, r._terrainMacroSurfaceY(x, z) + r.constructor.PLAYER_FOOT_OFFSET + 0.05, z);
+        spur.push({ x, z, t });
+    });
+    await stand();
+    p.copy(st.playerMesh.position);
+    for (let i = 0; i < edits; i++) {
+        const [x, z] = [p.x + (i % 40) * 2 - 40, p.z + Math.floor(i / 40) * 2 - 25];
+        r.carveVoxel(x, r._terrainMacroSurfaceY(x, z) - 1, z, 1.5);
+        if (i % 10 === 9) await takt(5);
+    }
+    await stand();
+    // der Selbsttest im selben Gang: ein Weg-Zähler im Stand (`wegSpur`, je Takt die Lage)
+    r.buildStateSnapshot = ((bau) => () => ({ ...bau(), wegSpur: spur }))(r.buildStateSnapshot.bind(r));
+    await stand();
+    return S;
+}
+// Δ je Schlüssel zweier Stände [JSON, .bak] roh (UTF-8) und auf der Platte (Stand, .bak, Abbild); `weg` ohne das Leben
+function wegDelta(a, b) {
+    const je = ([j]) => {
+        const s = JSON.parse(j);
+        for (const k in s.worldMeta) s["worldMeta." + k] = s.worldMeta[k];
+        delete s.worldMeta;
+        for (const k in s) s[k] = Buffer.byteLength(JSON.stringify(s[k] ?? null));
+        return s;
+    };
+    const [A, B, L] = [je(a), je(b), (x) => Buffer.byteLength(x || "")];
+    const d = { roh: L(b[0]) - L(a[0]), platte: 2 * (L(b[0]) - L(a[0])) + L(b[1]) - L(a[1]), leben: 0 };
+    d.je = Object.keys({ ...A, ...B }).map((k) => [k, (B[k] || 0) - (A[k] || 0)]);
+    d.je.sort((x, y) => y[1] - x[1]);
+    for (const [k, v] of d.je) if (LEBEN.includes(k)) d.leben += v;
+    [d.weg, d.wegPlatte, d.taeter] = [d.roh - d.leben, d.platte - 3 * d.leben, d.je.find(([k]) => !LEBEN.includes(k))];
+    d.zeile = `Δ Weg roh ${kB(d.weg)}, Platte ${kB(d.wegPlatte)} · gesamt roh ${kB(d.roh)}, Platte ${kB(d.platte)} · Leben ${kB(d.leben)} · am stärksten ${d.taeter.join(" ")} B`;
+    return d;
+}
+const kB = (b) => (b >= 0 ? "+" : "") + (b / 1000).toFixed(1).replace(".", ",") + " kB";
+async function wegLauf(km, min, edits) {
+    const profil = fs.mkdtempSync(path.join(os.tmpdir(), "k3-weg-"));
+    const browser = await starteBrowser({ art: "null", profil, frist: 3600000 });
+    const page = (await browser.pages())[0];
+    await nullRenderer(page);
+    await page.evaluateOnNewDocument(() => (window.__anazhAutoSettlement = true));
+    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
+    const S = await page.evaluate(wegSeite, km, min, edits);
+    await browser.close();
+    fs.rmSync(profil, { recursive: true, force: true });
+    return {
+        km: km * Math.hypot(1, 0.15),
+        min,
+        ...wegDelta(S[0], S[1]),
+        edits: wegDelta(S[1], S[2]),
+        spur: wegDelta(S[2], S[3]),
+    };
+}
 const [KORPUS, STUFE] = [path.join(root, "spec", "speicher-korpus"), require("../package.json").version];
 
 // Was ein Save trägt (die Bauten des Stands nach Id), wie seine Version ihn schrieb — ein Slot ohne Art fiel schon dort.
@@ -541,6 +632,24 @@ function korpusUrteil(z, selbst) {
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
     if (NUR_STUFE) process.exit((await korpusLauf(false))[0].ganz ? 0 : 1);
+    const weg = await wegLauf(WEG_KM, WEG_MIN, EDITS);
+    if (process.env.PERSISTENCE_AUS) fs.writeFileSync(process.env.PERSISTENCE_AUS, JSON.stringify(weg));
+    const wegChecks = [
+        {
+            name: `(D) ${weg.km.toFixed(1)} km in ${weg.min} min ohne Edit, Soll ≤ 10 kB: ${weg.zeile}`,
+            pass: weg.weg <= 1e4 && weg.wegPlatte <= 1e4,
+        },
+        {
+            name: `(D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ${weg.spur.zeile}`,
+            pass: weg.spur.weg > 1e4 && weg.spur.taeter[0] === "wegSpur",
+        },
+    ];
+    if (EDITS)
+        wegChecks.push({
+            name: `(D) ${EDITS} Edits, Soll ≤ ${EDITS / 10} kB: ${weg.edits.zeile}`,
+            pass: Math.max(weg.edits.weg, weg.edits.wegPlatte) <= EDITS * 100,
+        });
+    if (NUR_WEG) urteile(wegChecks);
     const tLauf = await tabTodProbe({ von: TT_VON, bis: TT_BIS });
     const tSelbst = SELBSTTEST ? await tabTodProbe({ von: 0, bis: 0, selbst: true }) : null;
     const korpus = korpusUrteil(await korpusLauf(false), SELBSTTEST ? await korpusLauf(true) : null);
@@ -613,7 +722,10 @@ function korpusUrteil(z, selbst) {
                 pass: tSelbst.korrupt > 0,
             }
         );
-    console.log("\n=== Persistenz-Härtung (Tab-Tod, Lade-Pfad, save-server) ===");
+    urteile([...checks, ...wegChecks]);
+})();
+function urteile(checks) {
+    console.log("\n=== Persistenz-Härtung (Tab-Tod, Lade-Pfad, save-server, Weg) ===");
     let fails = 0;
     for (const c of checks) {
         console.log(`  ${c.pass ? "✅" : "❌"} ${c.name}`);
@@ -626,4 +738,4 @@ function korpusUrteil(z, selbst) {
     }
     console.log("✅ Die Welt überlebt Tod und korrupten Write — kein stiller Datenverlust.");
     process.exit(0);
-})();
+}

@@ -1680,9 +1680,6 @@ async function checkBandV18219bisVollendung(ctx) {
         out.counterIncrements = r.state.scatterCounters.tree === (initial | 0) + 1;
         out.counterNotAtCap = r._scatterCounterAtCap("tree") === false;
 
-        const snap = r.buildStateSnapshot();
-        out.snapshotCarriesPromoted = !!(snap && snap.worldMeta && Array.isArray(snap.worldMeta.scatterPromoted));
-
         // ─── V18.222 CANOPY CHUNK-STREAMING ──────────────────────────
         out.canopyTickInLoop = window.__consumes(r, "_gameLoopTick", r, "_tickCanopyStreaming", [performance.now()]);
         out.canopyFlagDefault = r.state.atmosphere && r.state.atmosphere.canopyStreaming === false;
@@ -1727,8 +1724,6 @@ async function checkBandV18219bisVollendung(ctx) {
     check("(S9) Lookup variantIndex=7", res.lookupVariantIndex === true);
     check("(S10) Counter inkrementiert", res.counterIncrements === true);
     check("(S11) Counter nicht am Cap nach 1 Inc", res.counterNotAtCap === true);
-
-    check("(P2) Snapshot trägt worldMeta.scatterPromoted (Array)", res.snapshotCarriesPromoted === true);
 
     // Canopy chunk-streaming
     check("(C5) _gameLoopTick ruft _tickCanopyStreaming (Verdrahtung)", res.canopyTickInLoop === true);

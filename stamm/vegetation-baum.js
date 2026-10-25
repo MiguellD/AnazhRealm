@@ -1587,8 +1587,8 @@ class AnazhRealm_vegetation_baum {
         // Ein Wurf des Feldes (Wald, Unterholz, Totholz, Fels-Streu): wo die Wildnis nicht trägt, fällt er.
         if (!this._wildnisTraegt(position.x, position.z)) return;
         // DIE MARKE DES WURFS: was das Feld wirft, trägt sie (`feldWurf`, am Eintrag und im Save) — `_weichtDemBau` liest die
-        // Herkunft, nie die Art (die Feuerstelle des Menschen ist Bau)
-        opts = Object.assign({}, opts, { feldWurf: true });
+        // Herkunft, nie die Art (die Feuerstelle des Menschen ist Bau); der Wurf ist Gesetz (`ausGesetz`): der Boot wirft ihn neu
+        opts = Object.assign({}, opts, { feldWurf: true, ausGesetz: true });
         if (this._vegSpawnImmediate) {
             this._naturSetzen(name, position, opts);
             return;
