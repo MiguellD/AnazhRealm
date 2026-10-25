@@ -9,7 +9,7 @@
 //       EG→OG, OG→2.OG und Speicher; am Austritt steht der Körper (PH) unter der sichtbaren Decke
 //   B4  KELLER: der erste Strahl-Treffer aus dem Keller nach oben ist nie die Dorf-Boden-Platte
 //   B5  WELTGRUND: das Labor plant das Dorf auf der Welt-Zelle — es trägt den Plan v2 (fachwerk ortPlan, ein Slot je
-//       Haus, Plan-Hash Labor = Kern über gelaende-core lageGrund + ortCtx), die Häuser stehen nicht eben (Spanne ≥ 1 m), und
+//       Haus, Plan-Hash Labor = Kern über gelaende-core lageGrund + hoehenRaster + ortCtx), die Häuser stehen nicht eben (Spanne ≥ 1 m), und
 //       der Fuß steht auf dem Bild (Strahlen von oben auf den Dorf-Boden: Treffer = dorfBodenY ± 0,05 m). Der Deko-Fluss
 //  fiel mit seiner Klasse; das Wasser ist das der Welt.
 //   B6  EPOCHEN: Antike × {18, 40, 120} baut ohne Ausnahme (die Welt steht, das Dorf hat Häuser) — nur im echten Lauf
@@ -302,13 +302,21 @@ function proben(inj) {
         b5.v2Json = JSON.stringify(O.v2);
         b5.ort = O.ort;
         // der Plan-Hash: der Kern rechnet in DERSELBEN Seite den Plan des Exports 7/18 am Ort über die Lage der Saat
-        // (lageGrund) und den ctx des Orts (ortCtx) — das Labor zeigt genau ihn (Teil O von gate:settlement hält Kern = Welt)
+        // (lageGrund), das Höhen-Raster der Trasse um den Ort (hoehenRaster im Rahmen trasseRahmen, wie der Ort-Faden der
+        // Welt, siedlung.K3) und den ctx des Orts (ortCtx) — das Labor zeigt genau ihn (Teil O von gate:settlement hält Kern = Welt)
         const FCk = window.__fachwerkCore;
         const Gk = window.__gelaendeCore;
+        const Lk = Gk.lageGrund(Gk.LAGE_GRUND.seed, window.SimplexNoise);
         const kern = FCk.ortPlan(
-            FCk.exportSettlement({ seed: 7, nH: 18, epoche: "gewuerfelt", budget: 170000 }),
+            FCk.exportSettlement({
+                seed: 7,
+                nH: 18,
+                epoche: "gewuerfelt",
+                budget: 170000,
+                hoehe: Gk.hoehenRaster(Lk, O.ort.x, O.ort.z, FCk.trasseRahmen(18)),
+            }),
             O.ort,
-            Gk.ortCtx(Gk.lageGrund(Gk.LAGE_GRUND.seed, window.SimplexNoise))
+            Gk.ortCtx(Lk)
         );
         b5.planHash = JSON.stringify(kern) === b5.v2Json;
         b5.v2Json = null;
