@@ -34,7 +34,7 @@ const server = statikServer();
 
 // ── DIE KALT-ZEILE (`--kalt`): die Probe je 200 ms in der Seite, ab dem ersten Skript ──
 function KALT_PROBE() {
-    const A = (window.__kalt = { proben: [], lang: [], ev: [] });
+    const A = (window.__kalt = { proben: [], lang: [] });
     // der erste Asset-Auftrag an einen Studio-Faden (B3a: bis dahin ruht die Werkstatt)
     const post = Worker.prototype.postMessage;
     Worker.prototype.postMessage = function (m, t) {
@@ -49,7 +49,7 @@ function KALT_PROBE() {
         A.ohneLang = true;
     }
     let gewickelt = false;
-    // die Haupt-Thread-Zeit je Sekunde der schweren Ankunfts-Arbeiter (synchron gemessen; verschachtelt zählt doppelt)
+    // die Haupt-Thread-Zeit je Sekunde der schweren Ankunfts-Arbeiter (synchron gemessen; verschachtelt zählt doppelt, nur in der Klasse Pflanzen der Äußere)
     A.kosten = {};
     const KOSTEN = {
         _buildVoxelChunkDataFromWorkerMesh: "Boden",
@@ -69,10 +69,10 @@ function KALT_PROBE() {
     const PFLANZEN = new Set(["Streu", "Saat", "Wald-Plan", "Gestalt"]);
     A.vorBild = {};
     let pTief = 0;
-    // dazu die Bestellungen des Vorrats beim Namen (Wagen, Siedlungs-Probe); WANN er wartet und bestellt, sagt sein Merker
-    // (`f._vorrat`) — der Aufruf von `_foundryPrefetchLibrary` beim Worker-Start ist nie sein Bestell-Beginn
+    // WANN der Vorrat wartet und bestellt, sagt sein Merker (`f._vorrat`, je Sekunde unten); dass er erst nach dem ersten Bild
+    // bestellt, urteilt gate:ankunft L2a — die Kalt-Zeile zählt nur noch die Arbeit vor dem Bild
     const wickle = (P) => {
-        for (const name of [...Object.keys(KOSTEN), "_foundryVorrat", "_foundryRequestSettlement"]) {
+        for (const name of Object.keys(KOSTEN)) {
             const alt = P[name];
             if (typeof alt !== "function") continue;
             const k = KOSTEN[name];
@@ -81,16 +81,12 @@ function KALT_PROBE() {
                 const pf = PFLANZEN.has(k);
                 const aussen = !pf || pTief === 0;
                 if (pf) pTief++;
-                const id = name === "_foundryVorrat" ? `${a[0]}|${a[1]}` : "";
-                if (!k) A.ev.push([Math.round(t0), name + " ab", id]);
                 try {
-                    const x = alt.apply(this, a);
-                    if (!k && x && typeof x.then === "function") x.then(() => A.ev.push([Math.round(performance.now()), name + " an", id]));
-                    return x;
+                    return alt.apply(this, a);
                 } finally {
                     const t1 = performance.now();
                     if (pf) pTief--;
-                    const z = k && aussen ? A.kosten[k] || (A.kosten[k] = {}) : null;
+                    const z = aussen ? A.kosten[k] || (A.kosten[k] = {}) : null;
                     if (z) z[Math.floor(t0 / 1000)] = (z[Math.floor(t0 / 1000)] || 0) + (t1 - t0);
                     if (pf && aussen && !window.anazhRealm.state._weltbildDa) A.vorBild[k] = (A.vorBild[k] || 0) + (t1 - t0);
                     if (name === "_foundryIngestBook" && !A.buchDa) A.buchDa = Math.round(t1);
@@ -272,16 +268,6 @@ async function kaltLauf() {
     }
     if (out.buchDa) console.log(`  ${(out.buchDa / 1000).toFixed(1)} s  das Buch der Studios ist da`);
     if (out.auftrag) console.log(`  ${(out.auftrag / 1000).toFixed(1)} s  der erste Asset-Auftrag ist gesendet`);
-    // die Phasen des Vorrats, wie sein Merker sie nennt (je Wechsel die erste Probe)
-    let phase = null;
-    for (const p of proben) {
-        if (!("vorrat" in p) || p.vorrat === phase) continue;
-        if (p.vorrat || phase) console.log(`  ${(p.t / 1000).toFixed(1)} s  der Vorrat ${p.vorrat || "ist durch"}`);
-        phase = p.vorrat;
-    }
-    for (const [t, was, id] of out.ev || []) if (!/_foundryVorrat/.test(was)) console.log(`  ${(t / 1000).toFixed(1)} s  ${was} ${id}`);
-    const wagen = (out.ev || []).filter((e) => e[1] === "_foundryVorrat an").map((e) => e[0]);
-    if (wagen.length) console.log(`  ${(Math.max(...wagen) / 1000).toFixed(1)} s  der Vorrat der Wagen steht (${wagen.length})`);
     if (out.bild) console.log(`  das Bild der Ankunft: ${out.bild.datei || out.bild.fehlt} (${out.bild.dc} Befehle · ${out.bild.dreiecke} Dreiecke)`);
     const kl = Object.entries(out.vorBild || {});
     if (kl.length)
