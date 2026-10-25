@@ -27,9 +27,11 @@ const KREATUR = [
 // Frieden und das Ego, nimmt jedes Tier der Welt und setzt den Wurf scheuer Hirsche (`_kreaturWurf`, wie die Probe herde) an
 // den nächsten trockenen Hang 15–30° um den Spieler (das Gesetz über ±4 m; die Fall-Linie 50 m bergab bis 60 m bergauf trocken,
 // kein Werk in 70 m); der Spieler geht 60 m über ihr bergab mit 1,4 m/s im Kreatur-Takt der Probe herde (Stoß-Schritt,
-// Leib-Kontakte, `updateCreatures`), bis ein Glied flieht, bleibt stehen und blickt ihr nach, bis ihr Mittel 40 m vom Auge
-// steht. "weiter" schreitet o.takte Takte. Zurück die Pose des Ego-Schusses (das Auge `EGO_AUGE_M` über dem Boden, der Blick
-// auf das Mittel der Herde) und die Lage der Herde.
+// Leib-Kontakte, `updateCreatures`), bis ein Glied flieht, und bleibt stehen; die Alarm-Kette läuft, bis jedes Glied flieht,
+// dann eine halbe Sekunde. Der Standort des Blicks steht 43 m quer zur Fall-Linie auf ihrer tieferen Seite (der Hang zeigt die
+// Herde im Profil; von oben sah das Ego aus 40 m nur ihr Heck, 4–15 px breit zwischen den Stämmen). "weiter" schreitet o.takte
+// Takte. Zurück die Pose des Ego-Schusses (das Auge `EGO_AUGE_M` über dem Boden, der Blick auf das Mittel der Herde), die
+// Mitte jedes Leibs (`punkte`, das Ziel der Blick-Wahl) und die Lage der Herde.
 function herdeSzene(r, T, o) {
     const s = r.state;
     const A = r.constructor;
@@ -45,13 +47,21 @@ function herdeSzene(r, T, o) {
     };
     const lebend = () => Z.glieder.filter((c) => s.creatures.includes(c));
     const flieht = (c) => c.userData._motionZustand === "flucht";
+    const mitte = (g) => g.reduce((a, c) => a.add(c.position.clone().multiplyScalar(1 / g.length)), new T.Vector3());
+    // die Mitte eines Leibs (die Lage um die halbe Höhe seiner Box, wie `herdePulk`): die Punkte des Ziels der Blick-Wahl
+    const leibMitte = (c) => {
+        const b = new T.Box3().setFromObject(c);
+        return [c.position.x, c.position.y + (b.isEmpty() ? 0.5 : Math.min(3, b.max.y - b.min.y) / 2), c.position.z].map((v) => +v.toFixed(2));
+    };
     const pose = () => {
         const g = lebend();
-        const m = g.reduce((a, c) => a.add(c.position.clone().multiplyScalar(1 / g.length)), new T.Vector3());
-        const ey = H(pm.x, pm.z) + A.EGO_AUGE_M;
+        const m = mitte(g);
+        const a = Z.auge || pm;
+        const ey = H(a.x, a.z) + A.EGO_AUGE_M;
         return {
-            kamera: [pm.x, ey, pm.z, m.x, m.y + 0.6, m.z].map((v) => +v.toFixed(2)),
-            abstand: +Math.hypot(m.x - pm.x, m.y + 0.6 - ey, m.z - pm.z).toFixed(1),
+            kamera: [a.x, ey, a.z, m.x, m.y + 0.6, m.z].map((v) => +v.toFixed(2)),
+            abstand: +Math.hypot(m.x - a.x, m.y + 0.6 - ey, m.z - a.z).toFixed(1),
+            punkte: g.map(leibMitte),
             glieder: g.length,
             fliehen: g.filter(flieht).length,
             takte: Z.takte,
@@ -112,7 +122,14 @@ function herdeSzene(r, T, o) {
         takt();
     }
     if (!Z.glieder.some(flieht)) return Object.assign(pose(), { fehler: "die Herde flieht nicht (der Spieler ging bis " + d.toFixed(0) + " m)" });
-    for (let k = 0; k < 1800 && pose().abstand < 40; k++) takt();
+    // die Alarm-Kette läuft (≤ 1 s), dann eine halbe Sekunde Flucht: jedes Glied flieht im ersten Schuss
+    for (let k = 0; k < 120 && lebend().some((c) => !flieht(c)); k++) takt();
+    for (let k = 0; k < 30; k++) takt();
+    // DER STANDORT des Blicks: 43 m quer zur Fall-Linie (der Flucht) auf der tieferen Seite, das Auge Ego — der Hang zeigt die
+    // Herde im Profil; die Blick-Wahl dreht von dort, bis jedes Glied frei steht
+    const m = mitte(lebend());
+    const seiten = [1, -1].map((s) => ({ x: m.x - s * hang.uz * 43, z: m.z + s * hang.ux * 43 }));
+    Z.auge = seiten.sort((a, b) => H(a.x, a.z) - H(b.x, b.z))[0];
     return Object.assign(pose(), { hang: { x: +hang.x.toFixed(1), z: +hang.z.toFixed(1), neigung: hang.neigung }, wurf: Z.glieder.length, fluchtBei: +d.toFixed(1) });
 }
 // DER PULK IM BILD (in der Seite, nach `bild --klasse ^tier`): die Teilung des Schusses (`__letzteTeilung`, werkbank) gegen die
@@ -195,9 +212,10 @@ function herdePulk(r, T, o) {
 }
 // Der Lauf (im Spiel-Baum, cwd): EINE Werkbank headless an der Weiche (die Karte; `[linse-gpu]` nennt sie), Port {PORT}+20000
 // (die Seite eins darunter); darin (a)–(d) der Probe herde (`diag-kreatur-takt --werkbank`), dann die Serie: der Schirm
-// 1280×720, `herdeSzene` bis 40 m, je Schuss `bild --klasse ^tier --ziel Herde --wahl 14` (die Blick-Wahl EINES Rings: Abstand
-// und Augenhöhe des Ego bleiben, nur der Azimut dreht, bis die Sicht frei ist — an der Kiefer vor der Herde riss die Pose des
-// Spielers die Abnahme) mit `herdePulk` an der Pose des Schusses, drei Schüsse je 0,5 s Spielzeit. Bilder und Abnahmen neben {AUS}, das Ergebnis in {AUS}. Die beiden
+// 1280×720, `herdeSzene`, je Schuss `bild --klasse ^tier --ziel Herde --punkte … --wahl 14` (die Blick-Wahl EINES Rings: Abstand
+// und Augenhöhe des Ego bleiben, nur der Azimut dreht, bis JEDES Glied frei steht — die Mitte einer Herde zwischen Stämmen sagt
+// nichts über ihre Glieder) mit `herdePulk` an der Pose des Schusses, drei Schüsse je 0,5 s Spielzeit; der Beobachter bleibt an
+// der Pose, die die Wahl ihm gab. Bilder und Abnahmen neben {AUS}, das Ergebnis in {AUS}. Die beiden
 // Seiten-Funktionen reisen als eigene Argumente (`knapp`): an der Kommandozeile von Windows endet jedes nach 8191 Zeichen.
 async function herdeHang() {
     const fs = require("fs");
@@ -225,13 +243,16 @@ async function herdeHang() {
         process.stderr.write(p.stderr || "");
         await werkbankRuf(W, "/fenster", { w: 1280, h: 720 });
         erg.szene = await ruf(szene, { phase: "start" });
+        let auge = null;
         for (let i = 0; i < 3 && !erg.szene.fehler; i++) {
             const q = i ? await ruf(szene, { phase: "weiter", takte: 30 }) : erg.szene;
-            const [px, py, pz, lx, ly, lz] = q.kamera;
+            const [, , , lx, ly, lz] = q.kamera;
+            const [px, py, pz] = auge || q.kamera;
             const datei = B + "-herde-" + (i + 1) + ".png";
-            const b = await werkbankRuf(W, "/bild", { px, py, pz, lx, ly, lz, klasse: "^tier", ziel: "Herde", wahl: 14, datei });
+            const b = await werkbankRuf(W, "/bild", { px, py, pz, lx, ly, lz, klasse: "^tier", ziel: "Herde", punkte: q.punkte, wahl: 14, datei });
             const kl = b && b.klasse ? Object.fromEntries(Object.entries(b.klasse.klassen || {}).map(([k, v]) => [k, v.pixel])) : null;
             const kam = b && Array.isArray(b.kamera) ? [...b.kamera, lx, ly, lz] : q.kamera;
+            auge = kam;
             erg.serie.push({
                 schuss: i + 1,
                 abstand: +Math.hypot(kam[0] - lx, kam[1] - ly, kam[2] - lz).toFixed(1),
@@ -510,7 +531,10 @@ const stationen = [
             "scripts/werkbank.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs",
             "scripts/lib/abnahme-urteil.cjs",
+            "scripts/lib/kamera-nah.cjs",
             "scripts/lib/software-gpu.cjs",
+            "stamm/dirigent-*.js",
+            "stamm/dienst.js",
         ],
         quelle: "2 = (a)–(d) auf beiden Geräten mit der Bild-Serie „Herde am Hang“",
     },
