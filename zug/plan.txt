@@ -1,7 +1,7 @@
 # zug/plan.txt — was ansteht (Koordinator schreibt, messplatz-blick zeigt): je Zeile Zustand · Was · Wer/Wo · Ziel
 gelandet z34  main d43cb61c V18.546.92 (20:48): L2a-Fix + Pflicht-Offen C, Nachwache z34-abab in der OMEN-Schlange  —  L2a-Wackler (10 Zweige) · Pflicht-Offen C
 fertig  feuer-z32  K06 = Linse wartete auf swiftshader auf die GT-Karte (main fiel identisch) · G18 = langsame Läufer 2,6–2,8× → Waage p90, Linse allein  Champions  837k Token
-läuft   z32   heim-z32@034952a7 (K06 geheilt, Prüfer tragfähig) + ci-g18-frist@0f26b1bc  fahre.sh (FAHRT_OHNE_PUNKTE), GTX misst Kandidat (z32k-gtx)  tiere.K1#2 · ferne.K1/K2 · leib.K4#1 · siedlung.K5 · klang.K1 · bauen.K5 · gelaende.K5#2
+gelandet z32  main 83df2052 V18.546.93 (00:03): heim-z32 (K06, Herde, Ferne, Kamera-Bau, Siedlung K5, Klang K1, Bauen K5, Gelände-Ring) + ci-g18 — 1. Versuch grün, Nachwache z32-abab in der Schlange  —  tiere.K1#2 · ferne.K1/K2 · leib.K4#1 · siedlung.K5 · klang.K1 · bauen.K5 · gelaende.K5#2
 gestoppt tag1-welle  23:45 Kontext × Schritte (6 Macher 343–494 Schritte bei 360–560k): WIP gepusht b-ankunft 68086bef (40 %), e-stadt c19aecd3, klang 0a129a86, mensch ff5dd421 (75 %), leib 0066056e (90 %); a-laub ohne Commit  Koordinator  frisch und klein fortsetzen (≤ 150 Schritte)
 befund  nw3031-abab  8f1802b1 LANGSAMER gegen 4a5f5e2c nur in der Zelle stadt (4+4)  OMEN  Heilung erstes Haus reist in z32 — die Nachwache nach z32 richtet
 danach  Mess-Takt 4  am Kopf nach z32  headless + Radeon (Ruhe) + GTX  Buchung (buche.sh --warte), Artifact Y6nuChFfb1dJTf7Btch4J5
@@ -24,3 +24,7 @@ befund  radeon-stoerung  20:47:34–20:50:34 Radeon von außen gestört, Schloss
 gestoppt speicher-faden  23:55 lokale Sitzung bei 750k Kontext, WIP gesichert 3be5ac6b (8 Commits, ungeprüft)  frisch fortsetzen  speicher.K2 · K3#2 · streaming.K5#2
 gestoppt fahrzeug-k2-route  23:55 lokale Sitzung bei 570k Kontext, 0 Commits  neu schneiden (Spike ≤ 60 Schritte)  fahrzeug.K2
 nacht   Mess-Takt 4  nach z32: GTX am Kandidaten (z32k-gtx läuft), headless + Radeon am Kopf in Ruhe, buche.sh, Artifact  Koordinator  Punkte buchen
+läuft   nacht-klein  wf_52056345-7bc: fahr-s3 (Wackler-Wurzel G8) · klang-fertig · e-stadt-fertig  Champions ≤ 120 Aufrufe  FEUER · PUNKTE · WICHTIG
+läuft   nacht-breit  wf_bf754b95-b9f: ki-k2-fertig · mensch-k3-fertig · speicher-fertig · b-ankunft-pflanzen · a-laub-spike · leib-k4-haus · ladeschirm-zeile  Champions ≤ 120 Aufrufe  WICHTIG 4 · PUNKTE 3
+danach  Ruhe-Fenster  nach beiden Wellen: headless + Radeon am Kopf 83df2052 (Mess-Takt 4), GTX aus z32k-gtx; buche.sh  Koordinator  Buchung
+befund  cloud  das neue Konto hat keine Cloud-Umgebung (no_environment) — Cloud-Karten liefen lokal  Schöpfer: Umgebung auf claude.ai/code anlegen  Laptop frei für Messungen
