@@ -5,3 +5,4 @@
 2026-10-25 02:30:30 takt1b-abab stadt nicht-langsamer 15.3 · 4/4 (2+2)
 2026-10-25 03:23:58 takt1b-abab w-ego(4+4) nicht-langsamer 113.4 · verlängert (4+4)
 2026-10-25 04:23:51 takt1b-abab d-ego(4+4) nicht-langsamer 59.8 · verlängert (4+4)
+2026-10-25 04:24:14 takt2-gtx START 36 Stationen
