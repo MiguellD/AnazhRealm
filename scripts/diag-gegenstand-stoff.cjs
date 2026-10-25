@@ -180,28 +180,28 @@ function selbstTest() {
         return g;
     };
     if (urteil("t", roh(0x2a2c2f)).length !== 0) fehl.push("gesunder Reifen meldet");
+    // je Täter-Gestalt: das Urteil nennt seinen Täter, sonst bleibt er still
+    const still = (g, taeter, name) => urteil("t", g).some((s) => s.includes(taeter)) || fehl.push(name + " still");
     // der Reifen roh (r128 las 0x131519 als 0,08 linear)
-    if (!urteil("t", mk("gummi", 0x131519)).some((s) => s.includes("band gummi")))
-        fehl.push("roher Reifen bleibt still");
-    if (!urteil("t", mk("ton", 0x8d9499)).some((s) => s.includes("labor-stoff"))) fehl.push("Ton-Karosserie bleibt still");
+    still(mk("gummi", 0x131519), "band gummi", "roher Reifen bleibt");
+    still(mk("ton", 0x8d9499), "labor-stoff", "Ton-Karosserie bleibt");
     const lack = (name, metalness, cc) => {
         const g = mk("lack", 0x111319, { metalness });
         g.children[0].material.userData.__lack = name;
         g.children[0].material.clearcoat = cc;
         return g;
     };
-    if (!urteil("t", lack("Tiefschwarz", 0, 0)).some((s) => s.includes("klarlack")))
-        fehl.push("Lack ohne Klarlack bleibt still");
+    still(lack("Tiefschwarz", 0, 0), "klarlack", "Lack ohne Klarlack bleibt");
     // der Uni-Lack als gefärbter Spiegel (bis W5: jeder Lack metalness 0,85)
-    if (!urteil("t", lack("Signalrot", 0.85, 1)).some((s) => s.includes("lack-art")))
-        fehl.push("Uni-Lack als Metall bleibt still");
-    if (!urteil("t", mk("glas", 0x0a0f18)).some((s) => s.includes("durchsicht"))) fehl.push("blinde Scheibe bleibt still");
+    still(lack("Signalrot", 0.85, 1), "lack-art", "Uni-Lack als Metall bleibt");
+    still(mk("glas", 0x0a0f18), "durchsicht", "blinde Scheibe bleibt");
     const vc = mk("holz", 0x6b4a2a, { vertexColors: true });
     const geo = vc.children[0].geometry;
     geo.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(geo.attributes.position.count * 3).fill(0.2), 3));
-    if (!urteil("t", vc).some((s) => s.includes("toenung"))) fehl.push("getönte Vertex-Farben bleiben still");
-    if (!urteil("t", (() => { const g = mk("gummi", 0x2a2c2f); delete g.children[0].material.userData.__stoff; return g; })()).some((s) => s.includes("ohne-stoff")))
-        fehl.push("Stoff ohne Namen bleibt still");
+    still(vc, "toenung", "getönte Vertex-Farben bleiben");
+    const namenlos = mk("gummi", 0x2a2c2f);
+    delete namenlos.children[0].material.userData.__stoff;
+    still(namenlos, "ohne-stoff", "Stoff ohne Namen bleibt");
     if (!transport(PC.budgetRegler("unknown", {})).length) fehl.push("Transport ohne Klarlack bleibt still");
     return fehl;
 }
