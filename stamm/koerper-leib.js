@@ -133,6 +133,7 @@ class AnazhRealm_koerper_leib {
                 box.union(b.copy(n.geometry.boundingBox).applyMatrix4(n.matrixWorld));
             });
             t0.sohleY = Number.isFinite(box.min.y) ? box.min.y : 0;
+            t0.knoechelY = new THREE.Vector3().setFromMatrixPosition(t0.teile.ankle1.matrixWorld).y;
         }
         wrap.position.y = oy - f * t0.sohleY;
         wrap.add(klon);
@@ -171,6 +172,9 @@ class AnazhRealm_koerper_leib {
             // Die Hand-Mitte je Handgelenk (Ofen-Beipack, Hand-Raum): dort sitzt der Griff der Faust (_refreshHeldMesh).
             // Eigenes Feld, nie in armL/armR — deren Glieder setzt die Pose je Schlüssel auf neutral.
             handMitte: t0.handMitte || null,
+            // Die Sohle unter dem Knöchel in der Ruhe-Pose (m): dieselbe tiefste Fläche der Vorlage, die oben auf oy steht —
+            // die Fuß-IK hebt den Knöchel um sie über den Boden (`_gaitIKPrep`).
+            sohle: f * (t0.knoechelY - t0.sohleY),
             _skinMat: null, // GEFALLEN mit dem Inline-Bau — die Farb-Wahrheit ist userData.hautTon (Pipe: Vertex-Farben)
         };
         // V18.491.85 — Augen-Welle: iris/lid aus Ofen-Gelenken (fail-closed ohne Refs).
@@ -592,10 +596,12 @@ class AnazhRealm_koerper_leib {
         p.g = Number.isFinite(g) ? g : NaN;
     }
     // Fuß-IK-Kontext, einmal vermessen: Segment-Längen aus Gelenk-Offsets × Welt-Skala, Knöchel→Sohle
-    // aus der Neutral-Pose. Fehlende Gelenke / ungebauter Chunk → null (kein IK diesen Frame).
+    // aus der Ruhe-Pose der Vorlage (`rig.sohle`; bis leib-k2 aus der Pose des ersten Takts: 8,5 cm hinter der Karte, 9,7 cm
+    // ohne Renderer — der Fuß schwebte 1,2 cm oder stand im Boden). Der Fühler liest am Lock-Punkt, wo der Fuß steht.
+    // Fehlende Gelenke / ungebauter Chunk → null (kein IK diesen Frame).
     _gaitIKPrep(mesh, soleY, yaw) {
         const r = mesh && mesh.userData && mesh.userData.rig;
-        if (!r || !Number.isFinite(soleY)) return null;
+        if (!r || !Number.isFinite(soleY) || !(r.sohle > 0)) return null;
         const L = r.legL;
         const R = r.legR;
         if (!L || !R || !L.hip || !L.knee || !L.ankle || !R.hip || !R.knee || !R.ankle || !r.hips) return null;
@@ -608,14 +614,12 @@ class AnazhRealm_koerper_leib {
             const l1 = L.knee.position.length() * wpl;
             const l2 = L.ankle.position.length() * wpl;
             if (!(l1 > 0.02) || !(l2 > 0.02)) return null;
-            L.ankle.getWorldPosition(tv);
-            const soleH = Math.max(0, tv.y - soleY);
             ik = mesh.userData._gaitIK = {
                 l1,
                 l2,
                 wpl,
                 wz,
-                soleH,
+                soleH: r.sohle,
                 hang: 0,
                 soleY: 0,
                 yaw: 0,
@@ -628,9 +632,12 @@ class AnazhRealm_koerper_leib {
             };
         }
         ik.soleY = soleY;
+        ik.soleH = r.sohle;
         ik.yaw = Number.isFinite(yaw) ? yaw : 0;
-        this._gaitProbe(ik.probeL, ik.footL.x, ik.footL.z);
-        this._gaitProbe(ik.probeR, ik.footR.x, ik.footR.z);
+        const fL = ik.lockL.on ? ik.lockL : ik.footL,
+            fR = ik.lockR.on ? ik.lockR : ik.footR;
+        this._gaitProbe(ik.probeL, fL.x, fL.z);
+        this._gaitProbe(ik.probeR, fR.x, fR.z);
         if (!Number.isFinite(ik.probeL.g) || !Number.isFinite(ik.probeR.g)) return null;
         // leichte RUMPF-Neigung am Hang: die Fuß-Proben entlang der Blick-
         // Achse tragen die Steigung (exp-geglättet; Füße beisammen → 0).
@@ -712,6 +719,9 @@ class AnazhRealm_koerper_leib {
                 lock.on = true; // Stance-Beginn: den Fuß-Weltpunkt EINMAL einfrieren
                 lock.x = foot.x;
                 lock.z = foot.z;
+                // der Boden, auf den er tritt (der Fühler des Takts lag an der Lage des Vor-Takts: am 25°-Hang 0,77 m
+                // daneben, der Fuß stand im Aufsetz-Takt 27 cm über dem Boden)
+                this._gaitProbe(probe, lock.x, lock.z);
             }
             tx = lock.x;
             tz = lock.z;

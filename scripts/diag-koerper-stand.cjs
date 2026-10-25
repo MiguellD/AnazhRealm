@@ -923,6 +923,9 @@ async function rollen(n) {
         R.fuss = mass(
             gehen((a) => {
                 const ik = pm.userData._gaitIK;
+                // die Pose, die gezeichnet wird (der Render rechnet die Knochen nach der Fuß-IK; ohne ihn — Null-Renderer,
+                // ein Takt unter der GPU-Leine — lag die Haut halb in der Pose des Vor-Takts: Ferse 9 cm im Hang)
+                pm.updateMatrixWorld(true);
                 if (ik) [ik.lockL, ik.lockR].forEach((l, j) => l.on && (v.y = fuss(j)) !== null && a.push(v.y));
             })
         );
