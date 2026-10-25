@@ -1203,6 +1203,8 @@ async function starte() {
                     const schwelle = 18;
                     const rauschen = window.__bildRauschen(G, G2, W, H, schwelle);
                     const { teil, misch } = window.__klassenTeilung(G, Os, W, H, schwelle);
+                    // die Teilung des Schusses für ein folgendes `eval` (der Pulk der Herde, tiere.K1): je Pixel 1 + Index in `namen`
+                    window.__letzteTeilung = { teil, namen, W, H };
                     const klassen = {};
                     // das Außen der Silhouette (`klassenMasse` kante): kein gemessener Teil — Himmel, Boden, Holz
                     const aussen = new Uint8Array(W * H);

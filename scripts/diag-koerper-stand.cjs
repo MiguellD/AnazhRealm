@@ -35,11 +35,14 @@
 const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
-const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
+const { WELT_ORTE_INSTALL, messort } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
 const SELBST = process.argv.includes("--selftest");
 const NUR_K8 = process.argv.includes("--k8"); // nur K8 (die Welt mit Foundry)
+// `--bild`: die Welt zeichnet über die Weiche (Rezept `linse`), ohne den Null-Renderer — die Station eines Geräts (gelaende.K5)
+const BILD = process.argv.includes("--bild");
+const DORF_ZUG = messort("wiese").dorfZug;
 const K8_UMFANG = 200; // Kontakte je Ort × Rolle
 
 // DIE KARTE DES EIGNERS (das gezeichnete Mesh des Chunks, bilinear, null an einer leeren Ecke): seit K21 liest das Spiel nur
@@ -1140,7 +1143,7 @@ function zeile(o) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "null", frist: 900000 });
+    const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
     let rot = 0;
     try {
         // `k8`: die Welt mit Foundry (Streu, Reh und GT tragen Studio-Gestalten), sie misst nur K8
@@ -1152,7 +1155,11 @@ function zeile(o) {
             page.setDefaultTimeout(880000);
             const errs = [];
             page.on("pageerror", (e) => errs.push((e.message || String(e)).split("\n")[0]));
-            await nullRenderer(page, { foundry: k8 === true });
+            if (!BILD) await nullRenderer(page, { foundry: k8 === true });
+            // die Mess-Wiese in IHREM Zustand (spec/profiband/haushalt.json `dorfZug`): ruht dort der Zug, wächst kein Auto-Dorf an
+            // Wiese und Hang — headless ruht er ohnehin (`_dorfTaktLebt`), auf der Karte lief er, und der 25°-Hang stand unter den
+            // Terrassen des Dorfs (Radeon: Feinform p95 21,1 statt 4,3 cm)
+            if (DORF_ZUG === false) await page.evaluateOnNewDocument(() => (window.__anazhAutoSettlement = false));
             await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
             await page.evaluateOnNewDocument(`window.__eignerKarte = ${eignerKarte.toString()};`);
             await page.evaluateOnNewDocument(`window.__gezeichnet = ${gezeichnet.toString()};`);
