@@ -1016,7 +1016,7 @@ async function rollen(n) {
         }
         // der Fuß des Spielers: längs der Höhenlinie hin und zurück (die Füße im Stand: der Fuß-Lock der IK; `gang`), die
         // Falllinie und die Treppe — nach Huf und Rad, die am Ort selbst messen
-        for (const k of ["fuss", "falllinie", "stufe"]) R[k] = await gang(R, n, k);
+        for (const k of ["fuss", "falllinie", "stufe"]) R[k] = await gang(R, k);
         streuJetzt();
         R.streu = mass(streu);
     }
@@ -1027,7 +1027,7 @@ async function rollen(n) {
     // ein Bauplan), je hin und zurück. Je Fuß im Lock die Sohlen-Fläche gegen die gezeichnete Fläche (`sohle` mit Boden:
     // die Dreiecke der Stufen und `__gezeichnet`); die Steckenbleiber zählt derselbe Gang. Der Leib ist der des Spielers JETZT
     // (ein Nachguss der Seele tauscht ihn: der alte trug 0 Kontakte).
-    async function gang(H, umfang, art) {
+    async function gang(H, art) {
         const pm = s.playerMesh;
         const auf = H.gier - (art === "fuss" ? Math.PI / 2 : 0); // bergauf (`__weltOrt`), der Fuß längs der Höhenlinie
         const [ux, uz, N, hub, mitTreppe] = [Math.sin(auf), Math.cos(auf), 10, 0.17, art === "stufe"];
@@ -1078,11 +1078,7 @@ async function rollen(n) {
             flaeche
         );
         const weg = () => (pm.position.x - bx) * ux + (pm.position.z - bz) * uz;
-        pm.position.set(
-            bx - ux,
-            Math.max(r._voxelSurfaceY(bx - ux, bz - uz), flaeche(bx - ux, bz - uz)) + 0.6,
-            bz - uz
-        );
+        pm.position.set(bx - ux, r._voxelSurfaceY(bx - ux, bz - uz) + 0.6, bz - uz); // 1 m vor der ersten Stufe
         s._fixedSimPos = null;
         s.playerVel.setValue(0, 0, 0);
         const a = [];
