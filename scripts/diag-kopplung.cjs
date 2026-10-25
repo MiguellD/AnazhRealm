@@ -1,15 +1,14 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-kopplung.cjs — DIE KOPPLUNGS-LINSE (npm run gate:kopplung): die Welt fasst den Körper an.
-//   F1 STRÖMUNG: der Fluss-Flow (`_waterFlowAt`) advektiert SCHWIMMENDE Körper am EINEN Bewegungs-Chokepoint
-//      (`_stepCharacter` 4b: v_Welt = v_eigen + Strömung) — Schwimmer > 0,5 m in 90 Ticks, Land 0 m, das Boot mit.
+// diag-kopplung.cjs — DIE KOPPLUNGS-LINSE (npm run gate:kopplung): die Welt fasst den Körper an (F1, die Strömung, misst
+// gate:wasser-leben K4 STRÖMUNG).
 //   F2 GLEITEN (PM_ClipVelocity): eine 45°-Wand behält ~Tempo/2 entlang der Absicht; am STEILHANG rutscht der Körper.
 //   F3 WIND: EIN uWindDir (seeded, langsam) treibt die Phase als dot(worldXZ, windDir) — quer gleich, längs verschieden, die
 //      Richtung dreht mit; das FELD (wetter.K5): der EINE Wind am Ort `_windAt`, vom Gelände geformt (Lee −40 %, Tal-Düse
 //      +20 %), und jeder Leser (Wasser, Regen, Tuch, Rauch, Wagen) ruft ihn und folgt seiner Mutation.
 //   F4 GRAS: die uBend-Sphären biegen Halme RADIAL weg, die CPU-Seite (`_tickGrasBend`) füllt Spieler, Ritt, nahe Kreaturen.
 // Jede Fixture läuft durch die ECHTEN Methoden (Shim = Object.create(realm) mit synthetischem Dichtefeld/Wasser) und trägt
-// ihren SELBST-TEST: der Fix am Gesetz abgeschaltet (Strömung null, SLIDE_CLIP_PLANES 0, Hang-Grenze −1) MUSS rot sehen.
+// ihren SELBST-TEST: der Fix am Gesetz abgeschaltet (SLIDE_CLIP_PLANES 0, Hang-Grenze −1) MUSS rot sehen.
 // Exit 1 bei jedem Fail.
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
@@ -58,7 +57,7 @@ const server = statikServer();
                     this._z = c;
                 },
             });
-            const mkShim = (densityAt, spiegelAt, riverAt) => {
+            const mkShim = (densityAt) => {
                 const shim = Object.create(r);
                 shim.state = {
                     playerMesh: { position: new THREE.Vector3(0, 0.5, 0) },
@@ -86,9 +85,9 @@ const server = statikServer();
                 shim._mountedEntry = null;
                 shim._fieldDensityAt = (x, y, z) => densityAt(x, y, z);
                 shim._terrainColumnContext = () => null;
-                // die EINE Wasser-Wahrheit am Körper (der Spiegel oder −Infinity), synthetisch
-                shim._koerperWasser = (x, z, g) => spiegelAt(x, z, g);
-                shim._hydroRiverAt = (x, z) => riverAt(x, z);
+                // die EINE Wasser-Wahrheit am Körper: trocken, kein Fluss
+                shim._koerperWasser = () => -Infinity;
+                shim._hydroRiverAt = () => null;
                 return shim;
             };
             const runTicks = (shim, n, keys, yaw) => {
@@ -103,87 +102,13 @@ const server = statikServer();
                 }
             };
 
-            // ══ FIXTURE 1 (F1) — STRÖMUNG WIRKT ══
-            // Tiefes Wasser (Spiegel +3, Grund −20), Fluss fließt +x mit centerness 1.
-            const deepFloor = (x, y) => -20 - y;
-            const riverX = () => ({ flowX: 1, flowZ: 0, depth: 2, surfaceY: 3, centerness: 1 });
-            {
-                // (a) ruhender Schwimmer driftet stromab.
-                const sw = mkShim(
-                    (x, y) => deepFloor(x, y),
-                    () => 3,
-                    riverX
-                );
-                runTicks(sw, 90, {}, 0);
-                const p = sw.state.playerMesh.position;
-                o.zahlen.schwimmerDrift = { x: p.x, z: p.z };
-                if (!(p.x > 0.5))
-                    fail(`F1a: ruhender Schwimmer driftete nur ${p.x.toFixed(3)} m in 90 Ticks (soll > 0,5 m)`);
-                if (!(Math.abs(p.z) < 0.05)) fail(`F1a: Schwimmer driftete quer zur Strömung (z=${p.z.toFixed(3)} m)`);
-                // (b) Land-Läufer: trockener Boden, DERSELBE Fluss unter den Füßen — er wird NIE geschoben.
-                const land = mkShim(
-                    (x, y) => 0 - y,
-                    () => -Infinity,
-                    riverX
-                );
-                runTicks(land, 90, {}, 0);
-                const lp = land.state.playerMesh.position;
-                o.zahlen.landDrift = { x: lp.x, z: lp.z };
-                if (!(Math.abs(lp.x) < 0.01 && Math.abs(lp.z) < 0.01))
-                    fail(
-                        `F1b: Land-Läufer wurde geschoben (x=${lp.x.toFixed(4)}, z=${lp.z.toFixed(4)} — soll exakt stehen)`
-                    );
-                // (c) das geritten-SCHWIMMENDE Boot (das `_afloat`-Gate aus `_rittSchritt` trägt die Advektion).
-                const boat = mkShim(
-                    (x, y) => deepFloor(x, y),
-                    () => -Infinity,
-                    riverX
-                );
-                boat.state.player.mountedArch = 7;
-                boat._mountedEntry = {
-                    id: 7,
-                    position: { x: 0, y: 2.75, z: 0 },
-                    _afloat: true,
-                    _vehicleProfile: {
-                        topSpeedMul: 1,
-                        kAcc: 5,
-                        kBrake: 2,
-                        radCount: 0,
-                        beinCount: 0,
-                        mass: 1,
-                        floats: true,
-                        roles: null,
-                    },
-                };
-                runTicks(boat, 90, {}, 0);
-                const bp = boat.state.playerMesh.position;
-                o.zahlen.bootDrift = { x: bp.x, z: bp.z };
-                if (!(bp.x > 0.5))
-                    fail(`F1c: schwimmendes Boot driftete nur ${bp.x.toFixed(3)} m in 90 Ticks (soll > 0,5 m)`);
-                // Selbst-Test F1: die EINE Quelle schweigt (`_waterFlowAt` → null) → der Schwimmer MUSS stehen.
-                const sw2 = mkShim(
-                    (x, y) => deepFloor(x, y),
-                    () => 3,
-                    riverX
-                );
-                sw2._waterFlowAt = () => null;
-                runTicks(sw2, 90, {}, 0);
-                o.zahlen.schwimmerDriftTot = sw2.state.playerMesh.position.x;
-                if (!(Math.abs(sw2.state.playerMesh.position.x) < 0.05))
-                    fail(
-                        `F1-Selbsttest: ohne Strömung driftete der Schwimmer trotzdem (${sw2.state.playerMesh.position.x.toFixed(3)} m)`
-                    );
-            }
-
             // ══ FIXTURE 2 (F2) — GLEITEN STATT VOLLSTOPP ══
             // (a) 45°-Anlauf (1,0,1)/√2 auf die Wand x=8 (Normale −x): PM_ClipVelocity behält die Tangente, Fortschritt entlang
             //     der ABSICHT ≈ Tempo/2 statt 0; Kugel-Auflösung aus (es spricht allein der Klip); die Wand SCHWEBT ab y=0.25,
             //     damit ihr Fuß die Boden-Normale nicht steil färbt.
             const wallDens = (x, y) => Math.max(0 - y, Math.min((x - 8) * 2, (y - 0.25) * 4));
-            const dryCtx = () => -Infinity;
-            const noRiver = () => null;
             const mkWallShim = () => {
-                const s = mkShim(wallDens, dryCtx, noRiver);
+                const s = mkShim(wallDens);
                 s._fieldResolveSphere = () => false; // Isolation: nur der Klip verteidigt
                 return s;
             };
@@ -197,7 +122,7 @@ const server = statikServer();
                 return { proj: intentProj(p0, p1), x: p1.x, z: p1.z };
             };
             {
-                const free = mkShim((x, y) => 0 - y, dryCtx, noRiver); // ohne Wand: Referenz-Tempo
+                const free = mkShim((x, y) => 0 - y); // ohne Wand: Referenz-Tempo
                 const fRes = runWallWindow(free);
                 const wall = mkWallShim();
                 const wRes = runWallWindow(wall);
@@ -228,7 +153,7 @@ const server = statikServer();
             // (b) STEILHANG: Gradient 2,5 (~68°, ny≈0.37 < hang.maxSlopeY 0.5) in +x — ohne Input rutscht der Körper bergab,
             //     statt zu haften; Kugel-Auflösung aus (es spricht allein der Gravitations-Term).
             const mkSlopeShim = () => {
-                const s = mkShim((x, y) => -2.5 * x - y, dryCtx, noRiver);
+                const s = mkShim((x, y) => -2.5 * x - y);
                 s._fieldResolveSphere = () => false;
                 return s;
             };
@@ -446,22 +371,22 @@ const server = statikServer();
                     }
                     return n;
                 };
-                // die Strömung trägt schwimmende Tiere (`updateCreatures` liest `_waterFlowAt`), Land-Läufer nie
-                const P = r.state.playerMesh.position;
-                const c = r.spawnCreatureAt(P.x + 6, 30, P.z, "happy", "wesen", { precise: true });
-                r._hydroRiverAt = riverX;
-                r._kreaturSchwimmt = () => 3;
-                const imWasser = ruft(r, "updateCreatures", r, "_waterFlowAt", [0.02]);
-                r._kreaturSchwimmt = () => null;
-                const anLand = ruft(r, "updateCreatures", r, "_waterFlowAt", [0.02]);
-                delete r._kreaturSchwimmt;
-                delete r._hydroRiverAt;
-                if (c) r.removeCreature(c);
-                o.zahlen.tierStrom = { imWasser, anLand };
-                if (!(imWasser > 0 && anLand === 0))
-                    fail(
-                        `KONSUM: \`updateCreatures\` liest \`_waterFlowAt\` nicht nur im Wasser (${imWasser}/${anLand})`
-                    );
+                // EIN Wind, seine Leser: Gras und Baum-Stoff holen uWindDir aus derselben Quelle `_ensureWindCoupling`
+                if (window.THREE && THREE.TSL) {
+                    const baum = Object.create(r);
+                    baum._baumWindKnoten = {};
+                    const mat = new THREE.MeshStandardNodeMaterial();
+                    const gras = ruft(r, "_windSwayOffset", r, "_ensureWindCoupling", [THREE.TSL, {}]);
+                    const rinde = ruft(baum, "_baumWindStoff", r, "_ensureWindCoupling", [
+                        mat,
+                        "bark",
+                        { ht: 12, delta: 0.3, an: 1 },
+                    ]);
+                    if (!(gras > 0 && rinde > 0))
+                        fail(
+                            `KONSUM: uWindDir hat nicht EINE Quelle (Gras ${gras}, Rinde ${rinde} Rufe von \`_ensureWindCoupling\`)`
+                        );
+                }
             }
             return o;
         });
@@ -472,12 +397,8 @@ const server = statikServer();
     await browser.close();
     server.close();
 
-    console.log("\n===== KOPPLUNGS-LINSE (Strömung · Gleiten · Wind · Gras) =====\n");
+    console.log("\n===== KOPPLUNGS-LINSE (Gleiten · Wind · Gras) =====\n");
     const z = out.zahlen || {};
-    if (z.schwimmerDrift)
-        console.log(
-            `  F1 Strömung: Schwimmer ${z.schwimmerDrift.x.toFixed(2)} m · Land ${z.landDrift.x.toFixed(4)} m · Boot ${z.bootDrift.x.toFixed(2)} m · ohne Strom → ${Number(z.schwimmerDriftTot).toFixed(4)} m · Tier liest den Strom ${JSON.stringify(z.tierStrom)}`
-        );
     if (z.klip)
         console.log(
             `  F2 Gleiten: 45°-Wand ${(z.klip.ratio * 100).toFixed(0)} % Absichts-Tempo (frei ${z.klip.frei.toFixed(2)} m → Wand ${z.klip.wand.toFixed(2)} m) · Voll-Stopp-Kontrolle ${(z.klipTot ? z.klipTot.ratio * 100 : NaN).toFixed(0)} % · Steilhang-Rutsch ${z.steilhang ? z.steilhang.x.toFixed(2) : "?"} m`
@@ -503,7 +424,7 @@ const server = statikServer();
     const ok = out.fails.length === 0;
     console.log(
         ok
-            ? "  ✅ ALLE KOPPLUNGS-INVARIANTEN OK — Strömung advektiert Schwimmer (nie Land), Wände gleiten (PM_ClipVelocity), Steilhang rutscht, Wind hat EINE Richtung, Gras weicht aus\n"
+            ? "  ✅ ALLE KOPPLUNGS-INVARIANTEN OK — Wände gleiten (PM_ClipVelocity), Steilhang rutscht, Wind hat EINE Richtung, Gras weicht aus\n"
             : `\n  ❌ ${out.fails.length} KOPPLUNGS-INVARIANTE(N) VERLETZT\n`
     );
     process.exit(ok ? 0 : 1);

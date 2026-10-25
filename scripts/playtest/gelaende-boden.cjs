@@ -1195,25 +1195,8 @@ async function checkBandV18132FerneSeen(ctx) {
         out.maxSpiegel = maxSpiegel;
         out.bandTop = r.state.hydroBand ? r.state.hydroBand.top : null;
         out.bandCovers = !Number.isFinite(maxSpiegel) || (r.state.hydroBand && r.state.hydroBand.top >= maxSpiegel);
-        // KONSUM: jeder Hydro-Leser löst seine Region über _hydroFor auf — Spion am Ruf; wer _hydroRiverAt ruft,
-        // läuft mit dessen Schatten, damit nur sein EIGENER Ruf zählt.
-        const K = (m, a, schatten) => {
-            if (schatten) r._hydroRiverAt = () => null;
-            try {
-                return window.__consumes(r, m, r, "_hydroFor", a);
-            } finally {
-                if (schatten) delete r._hydroRiverAt;
-            }
-        };
+        // die Leser der Kachel im Haupt-Faden misst gate:worker-dichte `--kern` (am See in seiner Kachel)
         const cfg = r._voxelChunkConfig(0);
-        out.readersResolved = [
-            ["_hydrosphereCarveAt", [-2048, 0]],
-            ["_hydrosphereLakeAt", [-2048, 0]],
-            ["_waterLevelAt", [-2048, 0], true],
-            ["_atlasWaterLevelAt", [-2048, 0, -Infinity], true],
-            ["_hydroRiverAt", [-2048, 0]],
-            ["_voxelChunkHasAnyWater", [Math.floor(-2048 / cfg.span), 0]],
-        ].every(([m, a, schatten]) => K(m, a, schatten));
         // DER WORKER SPIEGELT DIE KACHEL (Lehre 7), auch ein nach ihr geborener (`_getVoxelWorker` bestellt sie ihm): bit-gleich.
         const fl = ((tile && tile.rivers) || []).find((f) => f.points && f.points.length > 4);
         const p = fl ? fl.points[fl.points.length >> 1] : { x: -2048, z: 0 };
@@ -1239,7 +1222,6 @@ async function checkBandV18132FerneSeen(ctx) {
         return;
     }
     if (!res.unmeasurable) {
-        check("Ferne Seen: alle 6 Hydro-Leser rufen die Region-Aufloesung _hydroFor (KONSUM am Ruf)", res.readersResolved);
         check(
             "Ferne Seen: der Worker spiegelt die Kachel — das Dichte-Gitter am Kachel-Fluss ist in Main und Worker bit-gleich",
             res.workerMirror === true,
@@ -2196,7 +2178,7 @@ async function checkBandTodZensus(ctx) {
                     let f;
                     try {
                         f = r[nm];
-                    } catch (_e) {
+                    } catch {
                         return false;
                     }
                     if (typeof f !== "function") return false;
@@ -2376,7 +2358,7 @@ async function checkBandTodZensus(ctx) {
             for (const f of restore.reverse())
                 try {
                     f();
-                } catch (_e) {
+                } catch {
                     /* Aufräumen bleibt best effort, die Zahl steht schon */
                 }
             for (const c of s.creatures.slice()) r.removeCreature(c);
@@ -2467,7 +2449,7 @@ async function checkBandBewegungUnterLast(ctx) {
         const tick = (t) => {
             try {
                 r._gameLoopTick(t);
-            } catch (_e) {}
+            } catch {}
         };
     
         // einen settled LAND-Spot finden (deterministisch, über Wasser) — nahe (Szenario a)

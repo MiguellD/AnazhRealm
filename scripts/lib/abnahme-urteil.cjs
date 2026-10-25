@@ -2514,8 +2514,6 @@ function sollIstAbweisung(alt, neu, q) {
 
 module.exports = {
     SCHWELLEN,
-    klassenTeilung,
-    bildRauschen,
     klassenMasse,
     sollTafelUrteil,
     standLeser,
@@ -2526,7 +2524,6 @@ module.exports = {
     sollTafelSelbsttest,
     sollIstAbweisung,
     abnahmeUrteil,
-    bildMasse,
     pngLesen,
     fixtureMessung,
     abnahmeSelbsttest,

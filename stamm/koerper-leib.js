@@ -745,12 +745,13 @@ class AnazhRealm_koerper_leib {
     }
     // DIE SOHLE AM HANG (Gelände H5): die Neigung des gezeichneten Bodens unter dem Fuß (der Stand-Leser je ± 0,12 m längs und
     // quer zur Blick-Achse), bis ± 0,45 rad (das Sprunggelenk) — die Sohle kippt mit. Bis H5 blieb sie waagrecht: am 25°-Hang
-    // quer stand ihr bergseitiger Rand im Boden (gate:koerper-stand K8 fuss, Median −1,4 cm).
-    _gaitSohlenKipp(x, z, yaw, g) {
+    // quer stand ihr bergseitiger Rand im Boden (gate:koerper-stand K8 fuss, Median −1,4 cm). EIN Gesetz für Mensch UND Tier:
+    // mit `leib` liest es den Boden der Pfote (`_kreaturFussBoden`), die Pfoten-IK des Tiers stellt ihre Sohle darauf (K8 huf).
+    _gaitSohlenKipp(x, z, yaw, g, leib) {
         const d = 0.12;
         const [s, c] = [Math.sin(yaw), Math.cos(yaw)];
         const y = (a, b) => {
-            const v = this._gaitBodenY(x + a, z + b);
+            const v = leib ? this._kreaturFussBoden(leib, x + a, z + b) : this._gaitBodenY(x + a, z + b);
             return Number.isFinite(v) ? v : g;
         };
         const w = (dy) => Math.max(-0.45, Math.min(0.45, Math.atan(dy / (2 * d))));
@@ -1968,7 +1969,7 @@ class AnazhRealm_koerper_leib {
             ]);
         const glied = (B) => (Math.hypot(B.a[0], B.a[1]) + Math.hypot(B.b[0], B.b[1])) * skala;
         // wo die Pfote JETZT steht: ihre Sohle (das Ende des Pfoten-Glieds c — der Punkt, den die IK auf den Boden stellt;
-        // das Gelenk darüber liegt am geneigten Leib um |c|·sin(Neigung) versetzt)
+        // das Gelenk darüber liegt am Hang um |c|·sin(Neigung) längs der Normale des Bodens versetzt)
         const pfoteHier = (K, L, fx, fz, BM) => {
             if (K[3] && g.legInit) {
                 K[3].updateWorldMatrix(true, false);
@@ -2097,6 +2098,18 @@ class AnazhRealm_koerper_leib {
             Z[1] = this._kreaturFussBoden(group, fx, fz);
             Z[2] = fz;
             Z[3] = hub;
+            // DIE SOHLE AM HANG (Gelände H5, das Gesetz des Menschen-Fußes): Z[4..6] = die Normale des Bodens unter dem Ziel aus
+            // `_gaitSohlenKipp` — die Pfote legt ihre Sohle darauf, ihr Gelenk steht um c längs dieser Normale über ihr. Bis
+            // K8 huf hielt die Pfote die Lage des Rumpfs, quer um das Abspreizen zurückgedreht: am 25°-Hang lag ihre Sohle quer
+            // waagrecht (Δ −23° gegen den Boden), auf der Wiese rollte sie mit dem Bein bis ±30° (gate:koerper-stand K8 huf
+            // hang p95 3,2 cm, der Leser am Ziel lag 0,3 cm am Mesh).
+            const kp = this._gaitSohlenKipp(fx, fz, gier, Z[1], group);
+            const tl = Math.tan(kp.laengs),
+                tq = Math.tan(kp.quer);
+            const nl = Math.sqrt(1 + tl * tl + tq * tq);
+            Z[4] = -(tl * vorX + tq * vorZ) / nl;
+            Z[5] = 1 / nl;
+            Z[6] = (tq * vorX - tl * vorZ) / nl;
         }
         // SCHRITT 2 — DIE SENKE (die Reichweite der Beine): die Beine stehen in der Ruhe fast gestreckt. Das Ende des
         // Schritts (Ruhe-Lage ± halber Fußweg) und am Hang der Boden unter der talseitigen Hüfte (der Leib neigt und rollt,
@@ -2113,12 +2126,13 @@ class AnazhRealm_koerper_leib {
                     Z = ziele[i];
                 vHw.set(B.p0[0] / fLab, B.p0[1] / fLab, B.p0[2] / fLab);
                 vHw.applyMatrix4(T.wolf.matrixWorld);
-                const dx = Z[0] - vHw.x,
-                    dz = Z[2] - vHw.z;
+                const cN = -B.c[0] * skala; // das Pfoten-Gelenk über der Sohle längs der Normale (Z[4..6])
+                const dx = Z[0] + cN * Z[4] - vHw.x,
+                    dz = Z[2] + cN * Z[6] - vHw.z;
                 const quer = dx * vorZ - dz * vorX;
                 const weit = Math.max(Math.abs(dx * vorX + dz * vorZ), Math.abs(B.zr) * skala + st / 2);
                 const lg = glied(B) * 0.98;
-                const ueber = vHw.y - (Z[1] - B.c[0] * skala); // die Hüfte über dem Pfoten-Gelenk auf dem Boden
+                const ueber = vHw.y - (Z[1] + cN * Z[5]); // die Hüfte über dem Pfoten-Gelenk auf dem Boden
                 const noetig = ueber - Math.sqrt(Math.max(0, lg * lg - quer * quer - weit * weit));
                 if (noetig > senke) senke = Math.min(noetig, (B.h * skala) / 3);
             }
@@ -2142,8 +2156,13 @@ class AnazhRealm_koerper_leib {
             ? (this._gangR || (this._gangR = new THREE.Matrix4())).copy(T.wolf.matrixWorld).invert()
             : null;
         // SCHRITT 3 — DIE PFOTE AUF DEM ZIEL: in den Rumpf-Raum gerechnet (er neigt, rollt, federt) stellt die Hüfte das Bein
-        // erst seitlich in die Ebene des Ziels (Abspreizen um die Längs-Achse: der Leib rollt, das Bein bleibt im Lot), dann
-        // die ebene Zwei-Knochen-IK. Dieselbe IK trägt den Stand mit seiner Gewichts-Unruhe.
+        // erst seitlich in die Ebene des Pfoten-Gelenks (Abspreizen um die Längs-Achse: der Leib rollt, das Bein bleibt im
+        // Lot), dann die ebene Zwei-Knochen-IK; die Pfote legt ihre Sohle auf die Normale des Bodens (Z[4..6], unten). Dieselbe
+        // IK trägt den Stand mit seiner Gewichts-Unruhe.
+        const vN = this._sohleN || (this._sohleN = new THREE.Vector3());
+        const qA = this._sohleQA || (this._sohleQA = new THREE.Quaternion());
+        const qN = this._sohleQN || (this._sohleQN = new THREE.Quaternion());
+        const eA = this._sohleE || (this._sohleE = new THREE.Euler());
         for (let i = 0; i < 4; i++) {
             const K = ketten[i];
             const BM = tb.bein[i];
@@ -2152,13 +2171,17 @@ class AnazhRealm_koerper_leib {
             const p0x = BM.p0[0] * skala,
                 p0y = BM.p0[1] * skala,
                 p0z = BM.p0[2] * skala;
-            vZiel.set(Z[0], Z[1] + hub * GG.hub * BM.h * skala, Z[2]);
-            if (Rinv) vZiel.applyMatrix4(Rinv).multiplyScalar(fLab * skala);
-            // das Abspreizen: die Hüfte dreht die Bein-Ebene um die Längs-Achse durch das Ziel
+            vN.set(Z[4], Z[5], Z[6]);
+            vZiel.set(Z[0], Z[1] + hub * GG.hub * BM.h * skala, Z[2]).addScaledVector(vN, -BM.c[0] * skala);
+            if (Rinv) {
+                vZiel.applyMatrix4(Rinv).multiplyScalar(fLab * skala);
+                vN.transformDirection(Rinv);
+            }
+            // das Abspreizen: die Hüfte dreht die Bein-Ebene um die Längs-Achse durch das Pfoten-Gelenk
             const lx = vZiel.x - p0x,
                 ly = vZiel.y - p0y;
             const ab = Math.atan2(lx, -ly);
-            const ty = -Math.hypot(lx, ly) - BM.c[0] * skala,
+            const ty = -Math.hypot(lx, ly),
                 tz = vZiel.z - p0z;
             let z0, z1, z2, z3;
             {
@@ -2239,7 +2262,14 @@ class AnazhRealm_koerper_leib {
             }
             if (K[1]) K[1].rotation.x = cur[1];
             if (K[2]) K[2].rotation.x = cur[2];
-            if (K[3]) K[3].rotation.x = cur[3];
+            // die Sohle auf dem Boden: die Glieder darüber tragen die Pfote im Rumpf-Raum als Rz(ab)·Rx(Σ), ihre Ruhe-Lage
+            // (die Sohle waagrecht zur Bein-Ebene, Rz(ab)) dreht der kürzeste Weg auf die Normale; die Falte des Schwungs bleibt
+            if (K[3] && Rinv) {
+                qA.setFromEuler(eA.set(cur[0] + cur[1] + cur[2], 0, cur[4], "ZXY"));
+                qN.setFromUnitVectors(vZiel.set(-Math.sin(cur[4]), Math.cos(cur[4]), 0), vN).multiply(qA);
+                qN.premultiply(qA.invert());
+                K[3].quaternion.setFromAxisAngle(vN.set(1, 0, 0), cur[3]).premultiply(qN);
+            } else if (K[3]) K[3].rotation.x = cur[3];
         }
         g.legInit = true;
         if (T.headGroup) {
