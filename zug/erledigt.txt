@@ -16,3 +16,4 @@ z17-abab LANGSAMER abab 6f8a2c66 gegen 3046bc79: w-ego 4+4 nicht-langsamer · d-
 z1920-abab nicht-langsamer abab 1d9164e9 gegen 6f8a2c66: w-ego 4+4 nicht-langsamer · d-ego 2+2 nicht-langsamer
 takt1b-gtx gemessen punkte 206b395a gtx: 29 grün / 5 rot
 takt1b-abab nicht-langsamer abab 206b395a gegen 79c0fae2: w-ego 4+4 nicht-langsamer · g-third 2+2 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
+takt2-gtx gemessen punkte 4a5f5e2c gtx: 28 grün / 8 rot
