@@ -1,0 +1,15 @@
+lauf 1 exit 1
+   38 s  blockiert  207 ms (Erst-Bau 10) · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | — das Weltbild steht
+   39 s  blockiert    0 ms · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | — das Weltbild steht
+  t(Weltbild) = t(Kontrolle) 22.57 s ab Navigation
+  ❌ die Ankunft kalt ≤ 5 s ohne halbes Weltbild (Pflicht-OFFEN B) — 22.57 s
+lauf 2 exit 1
+   30 s  blockiert  186 ms (Erst-Bau 11) · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | — das Weltbild steht
+   31 s  blockiert    0 ms · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | — das Weltbild steht
+  t(Weltbild) = t(Kontrolle) 15.55 s ab Navigation
+  ❌ die Ankunft kalt ≤ 5 s ohne halbes Weltbild (Pflicht-OFFEN B) — 15.55 s
+lauf 3 exit 1
+   38 s  blockiert  215 ms (Erst-Bau 9) · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | — das Weltbild steht
+  t(Weltbild) = t(Kontrolle) 31.52 s ab Navigation
+  ❌ das halbe Weltbild: [AnazhRealm V18.546.91] [WARN] Das erste Weltbild steht ohne: 1 Bäume und Bauten wachsen — die Arbeit ruhte 15000 ms.
+  ❌ die Ankunft kalt ≤ 5 s ohne halbes Weltbild (Pflicht-OFFEN B) — 31.52 s

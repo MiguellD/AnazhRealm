@@ -21,3 +21,4 @@ nw2628-abab nicht-langsamer abab 4a5f5e2c gegen 206b395a: w-ego 4+4 nicht-langsa
 b-kalt-833b Exit0 station ankunft-kalt.sh an 833bbc24
 takt3-gtx gemessen punkte 8f1802b1 gtx: 27 grün / 11 rot
 nw3031-abab LANGSAMER abab 8f1802b1 gegen 4a5f5e2c: w-ego 4+4 nicht-langsamer · g-third 2+2 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 4+4 LANGSAMER
+b-kalt-8f18 Exit0 station ankunft-kalt.sh an 8f1802b1

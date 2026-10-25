@@ -1,0 +1,52 @@
+[linse-gpu] nvidia/pascal
+
+=== DIE KALT-ZEILE (leeres Profil) — echte GPU · nvidia pascal · Holz voll · V18.546.91 ===
+    0 s  blockiert  672 ms | die Seite lädt
+    1 s  blockiert  325 ms (Buch 75) · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | der Boden wächst (1 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · das Buch der Studios öffnet sich
+    2 s  blockiert  960 ms (Bauten 53 · Streu 323) · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | der Boden wächst (1 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · das Buch der Studios öffnet sich
+    3 s  blockiert  880 ms (Streu 31 · Gruppen-Bau 26 · Boden 51 · Erst-Bau 419) · 4 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 6 wartend · 12 im Werk · 0 im Bäcker | der Boden wächst (17 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · 9 Bäume und Bauten wachsen · das Dorf wird geplant · 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    4 s  blockiert  976 ms (Bauten 8 · Streu 10 · Gruppen-Bau 54 · Boden 24 · Erst-Bau 356) · 4 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 6 wartend · 12 im Werk · 0 im Bäcker | der Boden wächst (15 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · 10 Bäume und Bauten wachsen · das Dorf wird geplant · 2 Wald-Böden werden bepflanzt · 3 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    5 s  blockiert  891 ms (Bauten 42 · Streu 98 · Gruppen-Bau 14 · Erst-Bau 479) · 12 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 7 wartend · 9 im Werk · 0 im Bäcker | der Boden wächst (6 Stücke im Bild) · der Horizont wächst (39 %) · 8 Bäume und Bauten wachsen · das Dorf wird geplant · 5 Bäume werden gepflanzt, 11 Wald-Böden werden bepflanzt · 3 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    6 s  blockiert  963 ms (Bauten 15 · Streu 7 · Gruppen-Bau 5 · Boden 15 · Erst-Bau 239) · 10 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 5 wartend · 5 im Werk · 0 im Bäcker | der Boden wächst (6 Stücke im Bild) · der Horizont wächst (47 %) · 4 Bäume und Bauten wachsen · das Dorf wird geplant · 47 Bäume werden gepflanzt, 6 Wald-Böden werden bepflanzt · 3 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    7 s  blockiert  964 ms (Bauten 14 · Streu 131 · Gruppen-Bau 14 · Boden 27 · Erst-Bau 149) · 6 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 3 im Werk · 0 im Bäcker | der Boden wächst (6 Stücke im Bild) · der Horizont wächst (58 %) · 2 Bäume und Bauten wachsen · 15 Häuser des Dorfs wachsen · 111 Bäume werden gepflanzt · 3 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    8 s  blockiert  979 ms (Streu 194 · Boden 6 · Dorf 13 · Erst-Bau 495) · 4 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 2 im Werk · 0 im Bäcker | der Horizont wächst (90 %) · 14 Bäume und Bauten wachsen · 14 Häuser des Dorfs wachsen · 110 Bäume werden gepflanzt, 5 Wald-Böden werden bepflanzt · 3 Wald-Stücke warten auf ihre Gestalt
+    9 s  blockiert  952 ms (Bauten 22 · Streu 101 · Boden 11 · Dorf 8 · Erst-Bau 177) · 4 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 13 im Werk · 0 im Bäcker | der Horizont wird gemalt · 40 Bäume und Bauten wachsen · 14 Häuser des Dorfs wachsen · 107 Bäume werden gepflanzt, 5 Wald-Böden werden bepflanzt · 2 Wald-Stücke warten auf ihre Gestalt · 3 ferne Bäume werden gemalt
+   10 s  blockiert  756 ms (Bauten 32 · Streu 206 · Gruppen-Bau 12 · Boden 6 · Dorf 18 · Erst-Bau 283) · 3 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 9 im Werk · 0 im Bäcker | der Horizont wird gemalt · 26 Bäume und Bauten wachsen · 10 Häuser des Dorfs wachsen · 148 Bäume werden gepflanzt · 3 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt
+   11 s  blockiert  922 ms (Bauten 23 · Streu 219 · Gruppen-Bau 14 · Dorf 48 · Erst-Bau 166) · 3 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 28 im Werk · 0 im Bäcker | der Horizont wird gemalt · 32 Bäume und Bauten wachsen · 141 Bäume werden gepflanzt · 3 Wald-Stücke warten auf ihre Gestalt · 10 ferne Bäume werden gemalt
+   12 s  blockiert  983 ms (Bauten 42 · Streu 161 · Gruppen-Bau 6 · Erst-Bau 393) · 3 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 2 wartend · 21 im Werk · 0 im Bäcker | der Horizont wird gemalt · 37 Bäume und Bauten wachsen · 79 Bäume werden gepflanzt · 2 Wald-Stücke warten auf ihre Gestalt · 7 ferne Bäume werden gemalt
+   13 s  blockiert  784 ms (Bauten 41 · Streu 159 · Gruppen-Bau 6 · Boden 9 · Erst-Bau 65) · 4 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 8 wartend · 32 im Werk · 0 im Bäcker | 12 Bäume und Bauten wachsen · 2 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+   14 s  blockiert  187 ms (Bauten 41 · Gruppen-Bau 7) · 1 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 8 wartend · 24 im Werk · 0 im Bäcker | 3 Bäume und Bauten wachsen · 1 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+   15 s  blockiert  559 ms (Streu 162) · Vorrat bestellt · Foundry 66 wartend · 36 im Werk · 0 im Bäcker | — das Weltbild steht
+   16 s  blockiert  689 ms (Erst-Bau 30) · 1 Pipelines offen · Vorrat bestellt · Foundry 64 wartend · 36 im Werk · 0 im Bäcker | — das Weltbild steht
+   17 s  blockiert  669 ms · Vorrat bestellt · Foundry 61 wartend · 36 im Werk · 0 im Bäcker | — das Weltbild steht
+   18 s  blockiert  133 ms · Vorrat bestellt · Foundry 58 wartend · 36 im Werk · 0 im Bäcker | — das Weltbild steht
+   19 s  blockiert  877 ms (Erst-Bau 264) · 3 Pipelines offen · Vorrat bestellt · Foundry 51 wartend · 36 im Werk · 0 im Bäcker | — das Weltbild steht
+   20 s  blockiert  472 ms (Gruppen-Bau 7 · Erst-Bau 496) · 3 Pipelines offen · Vorrat bestellt · Foundry 0 wartend · 32 im Werk · 0 im Bäcker | — das Weltbild steht
+   21 s  blockiert  886 ms (Erst-Bau 583) · 5 Pipelines offen · Vorrat bestellt · Foundry 0 wartend · 30 im Werk · 0 im Bäcker | — das Weltbild steht
+   22 s  blockiert  726 ms (Bauten 5 · Erst-Bau 313) · 1 Pipelines offen · Vorrat bestellt · Foundry 0 wartend · 16 im Werk · 0 im Bäcker | — das Weltbild steht
+   23 s  blockiert   49 ms (Erst-Bau 98) · Foundry 0 wartend · 4 im Werk · 0 im Bäcker | — das Weltbild steht
+   24 s  blockiert    0 ms · Foundry 0 wartend · 2 im Werk · 0 im Bäcker | — das Weltbild steht
+   25 s  blockiert    0 ms · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | — das Weltbild steht
+   26 s  blockiert    0 ms · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | — das Weltbild steht
+   27 s  blockiert    0 ms · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | — das Weltbild steht
+   28 s  blockiert    0 ms · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | — das Weltbild steht
+   29 s  blockiert  351 ms (Erst-Bau 402) · 5 Pipelines offen · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | — das Weltbild steht
+   30 s  blockiert  186 ms (Erst-Bau 11) · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | — das Weltbild steht
+   31 s  blockiert    0 ms · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | — das Weltbild steht
+  2.0 s  das Buch der Studios ist da
+  1.9 s  der erste Asset-Auftrag ist gesendet
+  3.6 s  der Vorrat wartet auf das erste Bild
+  15.7 s  der Vorrat bestellt
+  23.4 s  der Vorrat ist durch
+  2.0 s  _foundryRequestSettlement ab 
+  4.5 s  _foundryRequestSettlement an 
+  23.3 s  _foundryRequestSettlement ab 
+  23.4 s  _foundryRequestSettlement an 
+  23.3 s  der Vorrat der Wagen steht (10)
+  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\b-kalt-8f18\kalt-2.png (49 Befehle · 394183 Dreiecke)
+
+  t(Weltbild) = t(Kontrolle) 15.55 s ab Navigation
+  ❌ die Ankunft kalt ≤ 5 s ohne halbes Weltbild (Pflicht-OFFEN B) — 15.55 s
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37:  1665 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
