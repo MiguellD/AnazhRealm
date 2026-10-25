@@ -83,3 +83,4 @@
 2026-10-25 14:50:35 takt3-gtx fahrzeug.K4#1 GRÜN 5.0 · 21/38
 2026-10-25 14:55:42 takt3-gtx fahrzeug.K4#2 GRÜN 5.0 · 22/38
 2026-10-25 15:00:49 takt3-gtx siedlung.K2#1 GRÜN 5.0 · 23/38
+2026-10-25 15:10:56 takt3-gtx siedlung.K5#1 ROT 10.0 · 24/38
