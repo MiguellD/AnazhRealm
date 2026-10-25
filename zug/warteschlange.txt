@@ -69,3 +69,4 @@ z28b-abab 0 storno
 takt2-gtx 1 punkte sha=4a5f5e2c9ab02618feccdf8b9f1a03942bcc9301 geraet=gtx
 takt2-abab 1 abab A=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 B=4a5f5e2c9ab02618feccdf8b9f1a03942bcc9301 zellen=w-ego,g-third,d-ego,stadt
 takt2-abab 0 storno
+nw2628-abab 1 abab A=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 B=4a5f5e2c9ab02618feccdf8b9f1a03942bcc9301 zellen=w-ego,g-third,d-ego,stadt
