@@ -77,3 +77,4 @@ z30-abab 0 storno
 z31-abab 0 storno
 takt3-gtx 1 punkte sha=8f1802b18fe68b09fb660793b198ec7c51c58a9d geraet=gtx
 nw3031-abab 1 abab A=4a5f5e2c9ab02618feccdf8b9f1a03942bcc9301 B=8f1802b18fe68b09fb660793b198ec7c51c58a9d zellen=w-ego,g-third,d-ego,stadt
+b-kalt-8f18 3 station sha=8f1802b18fe68b09fb660793b198ec7c51c58a9d lauf=ankunft-kalt.sh
