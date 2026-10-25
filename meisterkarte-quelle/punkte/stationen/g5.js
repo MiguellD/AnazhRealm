@@ -548,36 +548,35 @@ const stationen = [
         kriterium: "leib.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        // gate:koerper-stand K8 + K9 mit --bild (die Welt zeichnet auf der Karte, Rezept linse; derselbe Befehl läuft headless
-        // auf swiftshader): die Sohle des Spielers im Fuß-Lock gegen das gezeichnete Mesh (`__gezeichnet`) — K8 am 25°-Hang
-        // längs der Höhenlinie (der tiefste Vertex von Knöchel und Zehe), K9 die Falllinie hinauf und hinab und eine Treppe am
-        // Hang (zehn Stufen, Steigung 0,17 m) hinauf und hinab (die Sohlen-Fläche gegen Stufen und Boden), je ≥ 200 Kontakte;
-        // die Steckenbleiber über den ganzen Spielgang (Wiese, Hang, Falllinie, Treppe: je halbe Sekunde mit gehaltener Taste
-        // < 15 cm voran). Das Urteil liest nur den Fuß aus dem JSON — die übrigen Rollen der Linse richten gelaende.K5.
+        // gate:koerper-stand K8 mit --bild (die Welt zeichnet auf der Karte, Rezept linse; derselbe Befehl läuft headless auf
+        // swiftshader, dann ohne LINSE_GPU): die Sohlen-Fläche von Knöchel und Zehe im Fuß-Lock gegen das gezeichnete Mesh
+        // (`__gezeichnet` und die Dreiecke der Stufen) — die Rollen fuss (längs der Höhenlinie), falllinie (hinauf und hinab)
+        // und stufe (zehn Stufen, Steigung 0,17 m, hinauf und hinab) an Mess-Wiese und 25°-Hang, je ≥ 200 Kontakte; die
+        // Steckenbleiber über alle sechs Gänge (je halbe Sekunde mit gehaltener Taste < 15 cm voran, oder das Ende nie erreicht).
+        // Das Urteil liest nur den Fuß aus dem JSON — die übrigen Rollen der Linse richten gelaende.K5.
         befehl: ["node", "scripts/diag-koerper-stand.cjs", "--k8", "--bild"],
         env: { KOERPER_STAND_PORT: "{PORT}", KOERPER_STAND_JSON: "{AUS}", LINSE_GPU: "hardware" },
         gpu: true,
         minuten: 10,
         urteil: (j, lauf) => {
             const k = j && j.k8;
-            const h = k && k.hang;
-            if (!h || !k.wiese) return { gruen: false, zahl: "kein K8 der Linse (Exit " + lauf.exit + ")" };
+            if (!k || !k.hang || !k.wiese) return { gruen: false, zahl: "kein K8 der Linse (Exit " + lauf.exit + ")" };
             const teile = [
-                ["hang", h.fuss],
-                ["falllinie", h.falllinie],
-                ["treppe", h.stufe],
+                ["hang", k.hang.fuss],
+                ["falllinie", k.hang.falllinie],
+                ["treppe hang", k.hang.stufe],
+                ["treppe wiese", k.wiese.stufe],
             ];
             const rot = [];
-            for (const [n, t] of teile) {
-                if (!t || t.fehler) rot.push(n + ": " + (t ? t.fehler : "fehlt"));
-                else if (!(t.n >= 200) || !(t.p95 <= 3)) rot.push(n + " p95 " + t.p95 + " cm an " + t.n + " Kontakten");
-                else if (n !== "hang" && (!t.oben || !t.unten)) rot.push(n + (t.oben ? "" : " nie oben") + (t.unten ? "" : " nie unten"));
-            }
-            const stecken = [k.wiese, h, h.falllinie, h.stufe].reduce((a, t) => a + ((t && t.stecken) || 0), 0);
+            for (const [n, t] of teile)
+                if (!t || !(t.n >= 200) || !(t.p95 <= 3)) rot.push(n + " p95 " + (t ? t.p95 : "?") + " cm an " + (t ? t.n : 0) + " Kontakten");
+            const gaenge = ["wiese", "hang"].flatMap((o) => ["fuss", "falllinie", "stufe"].map((r) => k[o][r] || {}));
+            const stecken = gaenge.reduce((a, t) => a + (t.stecken || 0), 0);
+            if (gaenge.some((t) => !Number.isFinite(t.stecken))) rot.push("ein Gang ohne Steckenbleiber-Zahl");
             if (stecken) rot.push(stecken + " Steckenbleiber");
             if (/^\[welt-boot\] FEHLER klasse:.*zeichnet nie/m.test(lauf.stdout)) rot.push("die Linse zeichnet nie (welt-boot: Rezept null)");
             const zahl =
-                teile.map(([n, t]) => n + " " + (t && !t.fehler ? t.p95 + " (n " + t.n + ")" : "?")).join(" · ") +
+                teile.map(([n, t]) => n + " " + (t ? t.p95 + " (n " + t.n + ")" : "?")).join(" · ") +
                 " cm p95 · Steckenbleiber " + stecken + (rot.length ? " — ROT: " + rot.join(" · ") : "");
             return { gruen: !rot.length, zahl };
         },
