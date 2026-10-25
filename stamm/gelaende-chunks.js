@@ -2539,7 +2539,7 @@ class AnazhRealm_gelaende_chunks {
                             continue;
                         if (rad > 0) {
                             const k = this._segmentKugelBox(sx, sy, sz, dx, dy, dz, bx, rad);
-                            if (k) (spannen || (spannen = [])).push(k);
+                            if (k) (spannen || (spannen = [])).push(Object.assign(k, { box: bx }));
                             continue;
                         }
                         const hitInfo = this._segmentAABB(sx, sy, sz, dx, dy, dz, bx);
@@ -2559,7 +2559,10 @@ class AnazhRealm_gelaende_chunks {
             // DIE STELLE DER KUGEL (K4): die Mitte hält vor jeder Box, die der dünne Strahl kreuzt, und vor der ersten Haut (der
             // um r aufgeblasenen Box), die die Strecke betritt. Eine Haut AM START (die Mitte steht schon an ihr, binnen 1 mm:
             // die Schulter an der Wand, der Abstieg neben dem GT) hält sie nur, wenn die Stelle noch in ihr läge — verlässt die
-            // Strecke sie (über die Kante, von der Wand fort), ist der Weg frei; sonst hält die Mitte an ihrem Eintritt.
+            // Strecke sie (über die Kante, von der Wand fort), ist der Weg frei; sonst hält die Mitte an ihrem Eintritt. Führt die
+            // Strecke in der Haut TIEFER an die Box (`_hautTiefer`: die Schulter am offenen Tür-Flügel, der Orbit streift ihn),
+            // stößt die Kugel sofort an: sie hält am Start — bis leib.K4 glitt der Arm dort durch die Haut (Dorf-Sonde, 3 von 18
+            // Häusern: die Linse 0,151 m vor dem Blatt).
             if (spannen) {
                 let st = 1;
                 for (const k of spannen) {
@@ -2570,7 +2573,11 @@ class AnazhRealm_gelaende_chunks {
                     }
                 }
                 for (const k of spannen)
-                    if (k.t * len <= 1e-3 && k.t < st && st < k.aus) {
+                    if (
+                        k.t * len <= 1e-3 &&
+                        k.t < st &&
+                        (st < k.aus || this._hautTiefer(sx, sy, sz, dx, dy, dz, k.box, Math.min(st, k.aus)))
+                    ) {
                         st = k.t;
                         sFace = k;
                     }
@@ -2755,6 +2762,37 @@ class AnazhRealm_gelaende_chunks {
         const g = this._segmentAABB(sx, sy, sz, dx, dy, dz, b);
         h.roh = g ? g.t : Infinity;
         return h;
+    }
+
+    // FÜHRT DIE STRECKE TIEFER AN DIE BOX? Der Abstand der Mitte zur Box (gedreht wie `_segmentAABB`) ist längs der Strecke
+    // konvex: sein Minimum auf [0, bis] (Goldener Schnitt) liegt mehr als 1 cm unter dem am Start — dann stößt die Kugel, die am
+    // Start schon an der Haut steht, sofort an (die Kante, an der sie entlang streicht, zählt nicht).
+    _hautTiefer(sx, sy, sz, dx, dy, dz, b, bis) {
+        const ob = b.obb;
+        const ab = (t) => {
+            const x = sx + dx * t;
+            const y = sy + dy * t;
+            const z = sz + dz * t;
+            const qx = ob ? x - ob.cx : x - (b.minX + b.maxX) / 2;
+            const qz = ob ? z - ob.cz : z - (b.minZ + b.maxZ) / 2;
+            const lx = ob ? qx * ob.c - qz * ob.s : qx;
+            const lz = ob ? qx * ob.s + qz * ob.c : qz;
+            return Math.hypot(
+                Math.max(0, Math.abs(lx) - (ob ? ob.hx : (b.maxX - b.minX) / 2)),
+                Math.max(0, b.botY - y, y - b.topY),
+                Math.max(0, Math.abs(lz) - (ob ? ob.hz : (b.maxZ - b.minZ) / 2))
+            );
+        };
+        const g = (Math.sqrt(5) - 1) / 2;
+        let lo = 0;
+        let hi = bis;
+        for (let i = 0; i < 24; i++) {
+            const m1 = hi - g * (hi - lo);
+            const m2 = lo + g * (hi - lo);
+            if (ab(m1) < ab(m2)) hi = m2;
+            else lo = m1;
+        }
+        return ab((lo + hi) / 2) < ab(0) - 0.01;
     }
 
     // Segment-AABB-Schnitt (Slab-Methode) für den Struktur-Raycast. start + dir·t, t ∈ [0,1].
