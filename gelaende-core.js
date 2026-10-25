@@ -4786,6 +4786,503 @@
         return { waterY, waterKind };
     }
 
+    // ═══ DIE 3D-DICHTE, DIE EDIT-KARTE UND DER WASSER-SPIEGEL (Karte gelaende-k1k4, Lehre 7: Gesetz statt Spiegel) ═══
+    // Bis hierher rechnete der Stamm (`stamm/gelaende-boden.js`, `stamm/wasser-hydro.js`) die Dichte des Bodens (Spalte, Höhle,
+    // Fluss-Kanal, See-Becken), die Edit-Karte und den Spiegel des Wassers, und der voxel-worker trug je Funktion eine Abschrift
+    // („Mirror … bit-identisch“) — gate:worker-dichte verglich Abschrift mit Abschrift. Jetzt ist jede ein Gesetz dieses Kerns über
+    // der Lage L (Stamm `_gelaende()`, Worker `state`): `hydrosphere` (die Heimat-Region), `hydroTiles` (Map Kachel-Schlüssel →
+    // Region), `hydroGesetz` (Bank, Damm, Freibord des Stamms `HYDROSPHERE`), `hydroComputing` (der Faden rechnet gerade eine
+    // Region: kein Kanal), `waterLevel`, `baseHeight`, `erbgut`, `noise`. Stamm und Worker rufen nur noch; die Probe ist die
+    // Mutation des Kerns (gate:worker-dichte `--kern`): sie zieht Stamm-Leser UND Worker-Feld, oder einer liest eine Abschrift.
+
+    // DIE REGION an (x, z): die Heimat, wenn (x, z) in ihr liegt; sonst die ferne Kachel (`kachelSchluessel`); sonst die Heimat
+    // (deren Leser jenseits ihres Rands den Ozean-Default gehen). Vor dem Worldgen null.
+    function hydroRegion(L, x, z) {
+        const h = L.hydrosphere;
+        if (h && h.ready) {
+            const sizeM = h.dim * h.cell;
+            if (x >= h.originX && z >= h.originZ && x < h.originX + sizeM && z < h.originZ + sizeM) return h;
+            const tiles = L.hydroTiles;
+            if (tiles && tiles.size) {
+                const t = tiles.get(kachelSchluessel(L, x, z));
+                if (t && t.ready) return t;
+            }
+        }
+        return h;
+    }
+    // der Bucket von (x, z) im Kanal der Region h (`kanal`: KANAL_FELDER Zahlen je Segment in `seg`, die Segmente des Buckets
+    // k in `idx[ab[k] .. ab[k + 1]]`) → k, oder −1 ohne Kanal, jenseits der Region und für einen leeren Bucket
+    function flussBucket(h, x, z) {
+        if (!h || !h.ready || !h.kanal) return -1;
+        const bi = Math.floor((x - h.originX) / h.bucketSize);
+        const bj = Math.floor((z - h.originZ) / h.bucketSize);
+        const bd = h.bucketsDim;
+        if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return -1;
+        const kb = bj * bd + bi;
+        return h.kanal.ab[kb] === h.kanal.ab[kb + 1] ? -1 : kb;
+    }
+
+    // DER FLUSS-KANAL an (x, z) → { P, L, k } oder null: P die Höhe des KANALS (Flachboden auf Spiegel − (1 − Freibord) · Tiefe
+    // bis zur halben Breite, die Bank steigt mit bankNeigung bis zur Krone, dahinter die Böschung, die mit dem Abstand steiler
+    // wird), L die Höhe des DAMMS (seine Krone auf Spiegel + max(Freibord · Tiefe, dammFreibord), eben bis dammBreite hinter der
+    // Krone des Kanals, dahinter fällt er, wie die Böschung steigt), k die Rundung. Mehrere Segmente (Biegung, Mündung): der
+    // tiefste Kanal und der höchste Damm. Das leere Bucket kostet ~5 Ops (millionenfach beim Meshing).
+    function flussKanal(L, x, z) {
+        const h = hydroRegion(L, x, z);
+        const kb = flussBucket(h, x, z);
+        if (kb < 0) return null;
+        const { seg, idx, ab } = h.kanal;
+        const H = L.hydroGesetz;
+        const sN = H.bankNeigung;
+        const sK = H.bankKruemmung;
+        const fuss = H.bankRundung;
+        const kB = H.dammBreite;
+        let P = Infinity;
+        let Ld = -Infinity;
+        for (let q = ab[kb]; q < ab[kb + 1]; q++) {
+            const o = idx[q] * KANAL_FELDER;
+            const ax = seg[o];
+            const az = seg[o + 1];
+            const ex = seg[o + 2] - ax;
+            const ez = seg[o + 3] - az;
+            const len2 = ex * ex + ez * ez || 1;
+            let t = ((x - ax) * ex + (z - az) * ez) / len2;
+            if (t < 0) t = 0;
+            else if (t > 1) t = 1;
+            const dist = Math.hypot(x - (ax + ex * t), z - (az + ez * t));
+            const halfW = seg[o + 4] + (seg[o + 5] - seg[o + 4]) * t;
+            const D = seg[o + 6] + (seg[o + 7] - seg[o + 6]) * t;
+            const dK = halfW + D / sN;
+            if (dist >= dK + kB + H.bankWeite) continue;
+            const spiegel = seg[o + 8] + (seg[o + 9] - seg[o + 8]) * t;
+            const B = spiegel - (1 - H.spiegelFreibord) * D;
+            const u0 = dist - halfW;
+            let p = u0 <= -fuss ? B : u0 < fuss ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss) : B + sN * u0;
+            const u = dist - dK;
+            if (u > 0) p += sK * u * u;
+            let l = spiegel + Math.max(H.spiegelFreibord * D, H.dammFreibord);
+            const uL = u - kB;
+            if (uL > 0) l -= sN * uL + sK * uL * uL;
+            if (p < P) P = p;
+            if (l > Ld) Ld = l;
+        }
+        return P < Infinity ? { P, L: Ld, k: fuss } : null;
+    }
+
+    // DAS SEE-BECKEN an (x, z) → { bedY, w } oder null: bedY die flache, dichte Bett-Höhe, w ∈ [0, 1] die Zugehörigkeit (rampt
+    // über den 1-Zellen-Ring zum Ufer); bilinear, der `lakeNear`-Early-Out hält die wasserlose Welt billig.
+    function seeBecken(L, x, z) {
+        const h = hydroRegion(L, x, z);
+        if (!h || !h.ready) return null;
+        const lw = h.lakeW;
+        const lb = h.lakeBedCell;
+        const ln = h.lakeNear;
+        if (!lw || !lb || !ln) return null;
+        const dim = h.dim;
+        const cell = h.cell;
+        const ci = Math.floor((x - h.originX) / cell);
+        const cj = Math.floor((z - h.originZ) / cell);
+        if (ci < 0 || cj < 0 || ci >= dim || cj >= dim || !ln[ci + cj * dim]) return null;
+        const cf = (x - h.originX) / cell - 0.5;
+        const gf = (z - h.originZ) / cell - 0.5;
+        const i0 = Math.floor(cf);
+        const j0 = Math.floor(gf);
+        const tx = cf - i0;
+        const tz = gf - j0;
+        const cl = (v) => (v < 0 ? 0 : v >= dim ? dim - 1 : v);
+        const i0c = cl(i0);
+        const i1c = cl(i0 + 1);
+        const r0 = cl(j0) * dim;
+        const r1 = cl(j0 + 1) * dim;
+        const w =
+            (lw[i0c + r0] * (1 - tx) + lw[i1c + r0] * tx) * (1 - tz) + (lw[i0c + r1] * (1 - tx) + lw[i1c + r1] * tx) * tz;
+        if (w <= 0) return null;
+        const bedY =
+            (lb[i0c + r0] * (1 - tx) + lb[i1c + r0] * tx) * (1 - tz) + (lb[i0c + r1] * (1 - tx) + lb[i1c + r1] * tx) * tz;
+        return { bedY, w };
+    }
+
+    // DIE FORM DES GEWÄSSERS (EINE Formel für die Dichte des Chunks und die Fläche der Ferne): der Kanal kn als weiches Maximum
+    // aus Gelände und Damm, davon das weiche Minimum mit dem Kanal (Rundung k: m ∓ h² · k / 4, h = max(k − |a − b|, 0) / k); das
+    // See-Becken lk danach. d ist die Dichte an der Höhe y (die Fläche − y); mit y = 0 und d = der Höhe einer Spalte ist das
+    // Ergebnis ihre Fläche.
+    function gewaesserForm(d, y, kn, lk) {
+        if (kn) {
+            const dL = kn.L - y;
+            let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
+            const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
+            const dP = kn.P - y;
+            hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
+            d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
+        }
+        if (lk) {
+            const flatD = lk.bedY - y;
+            d = d * (1 - lk.w) + flatD * lk.w;
+        }
+        return d;
+    }
+
+    // DIE SPALTE (x, z) der Dichte: die rein 2D-Arbeit (die Höhe ~61 % der Kosten, das Wildnis-Gewicht, die Decke der Höhle,
+    // Kanal und See-Becken) EINMAL je Spalte; `dichteBasis` liest sie über das ganze y-Band. Die Decke der Höhle bleibt unter dem
+    // Boden (16 m, unter Wasser 24 m — kein Abfluss), DIE MÜNDUNG ist Gesetz (`hoehlenMund`): wo die Flanke Fels trägt, hebt ihr
+    // Gewicht die Decke über den Boden. Füllt `out` und gibt es zurück.
+    const SPALTE_HANG = { hang: 0 };
+    function dichteSpalte(L, x, z, out) {
+        const base = L.baseHeight || 0;
+        const surf = hoehe(L, x, z, true, SPALTE_HANG);
+        const wild = L.erbgut.wildnis;
+        let ceilOffset = -24;
+        if (wild > 0) {
+            const wl = typeof L.waterLevel === "number" ? L.waterLevel : base + 4;
+            ceilOffset = surf < wl + 1 ? -24 : -16 + HOEHLEN_MUND.hub * hoehlenMund(SPALTE_HANG.hang);
+        }
+        const h = L.hydrosphere;
+        const aktiv = !!(h && h.ready && !L.hydroComputing);
+        out.n = L.noise;
+        out.base = base;
+        out.surf = surf;
+        out.wild = wild;
+        out.ceilOffset = ceilOffset;
+        out.hydroActive = aktiv;
+        out.hydroCarve = aktiv ? flussKanal(L, x, z) : null;
+        out.lake = aktiv ? seeBecken(L, x, z) : null;
+        return out;
+    }
+    // DIE DICHTE OHNE EDITS an (x, y, z) über der Spalte ctx (> 0 Fels, < 0 Luft): die Fläche − y, Rauheit und Höhle als
+    // Wildnis (Wurm, Kaverne, Halle unter der Hülle aus Boden und Decke; ohne ihr Gewicht kein noise3D), danach das Gewässer.
+    function dichteBasis(x, y, z, ctx) {
+        const surf = ctx.surf;
+        let d = surf - y;
+        if (ctx.wild > 0) {
+            const n = ctx.n;
+            const caveFloor = Math.max(0, Math.min(1, (y - (ctx.base - 28)) / 8));
+            const caveCeil = Math.max(0, Math.min(1, (surf + ctx.ceilOffset - y) / 8));
+            const caveEnv = caveFloor * caveCeil * ctx.wild;
+            if (caveEnv > 0) {
+                const ridge = 1 - Math.abs(n.noise3D(x * 0.03, y * 0.034, z * 0.03));
+                const cave = Math.max(0, (ridge - 0.7) / 0.3);
+                d -= cave * caveEnv * 36;
+                const cavern = n.noise3D(x * 0.013, y * 0.018, z * 0.013);
+                const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
+                d -= cavernCarve * caveEnv * 46;
+                const hall = n.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
+                const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
+                d -= hallCarve * caveEnv * 72;
+            }
+        }
+        if (ctx.hydroActive) d = gewaesserForm(d, y, ctx.hydroCarve, ctx.lake);
+        return d;
+    }
+    // DER PUNKT: die Dichte an (x, y, z) mit den Edits `edits` (die Liste der Edit-Karte am Punkt, `editsAm`, oder die ganze
+    // Liste — ein Edit außerhalb seiner Reichweite trägt nichts bei).
+    function dichte(L, x, y, z, edits) {
+        return mitEdits(dichteBasis(x, y, z, dichteSpalte(L, x, z, {})), x, y, z, edits);
+    }
+    // DAS GITTER ohne Edits (Float32, Index i + j·Nx + k·Nx·Ny ab ox|oy|oz): je Spalte nur die Ebenen im Band (`bandOben`,
+    // `bandUnten`), darüber Luft −1, darunter Fels +1.
+    function dichteGitter(L, ox, oy, oz, Nx, Ny, Nz, step) {
+        const density = new Float32Array(Nx * Ny * Nz);
+        const base = L.baseHeight || 0;
+        const ctx = {};
+        for (let k = 0; k < Nz; k++) {
+            const wz = oz + k * step;
+            for (let i = 0; i < Nx; i++) {
+                const wx = ox + i * step;
+                dichteSpalte(L, wx, wz, ctx);
+                const bandTopJ = bandOben(ctx.surf, oy, step);
+                const bandBotJ = bandUnten(ctx.surf, base, oy, step);
+                const colBase = i + k * Nx * Ny;
+                for (let j = 0; j < Ny; j++) {
+                    const idx = colBase + j * Nx;
+                    if (j > bandTopJ) density[idx] = -1;
+                    else if (j < bandBotJ) density[idx] = 1;
+                    else density[idx] = dichteBasis(wx, oy + j * step, wz, ctx);
+                }
+            }
+        }
+        return density;
+    }
+    // DAS GITTER MIT DEN EDITS über dem Gitter `basis` (bleibt): ihr Band deckt ihre Reichweite (`bandUmEdits`, die wahre Basis
+    // statt ±1 — die Kappe der Form braucht sie), je Ecke die Form (`editsImGitter`). Ohne Edits die Basis selbst.
+    function gitterMitEdits(L, basis, ox, oy, oz, Nx, Ny, Nz, step, edits) {
+        if (!edits || !edits.length) return basis;
+        const g = new Float32Array(basis);
+        const spalte = (x, z) => dichteSpalte(L, x, z, {});
+        bandUmEdits(g, ox, oy, oz, Nx, Ny, Nz, step, edits, L.baseHeight || 0, spalte, dichteBasis);
+        return editsImGitter(g, ox, oy, oz, Nx, Ny, Nz, step, edits);
+    }
+
+    // DIE EDIT-KARTE (K23): je Chunk (Kante `span`) die Edits, deren Reichweite ihn samt einem Chunk Rand berührt (Spalten
+    // floor((x − R)/span) − 1 … floor((x + R)/span) + 1, R = `editReich`), in Setz-Reihenfolge; der KERN ohne Rand dient der
+    // Punkt-Probe. Ein Leser fragt nur seinen Chunk, die Summe bleibt Bit für Bit die der ganzen Liste. Identität und Länge der
+    // Liste halten die Karte `k` frisch (ein Push wird nachgetragen, ein Tausch oder Kürzen baut neu); `gen` (optional) zieht je
+    // Edit eine Generation, die jeder berührte Chunk trägt (der Stale-Filter des Stamms).
+    const KEINE_EDITS = Object.freeze([]);
+    const editKarteSchluessel = (cx, cz) => (cx + 32768) * 65536 + (cz + 32768);
+    function editKarte(k, edits, span, gen) {
+        if (!k || k.edits !== edits || k.n > (edits ? edits.length : 0))
+            k = { edits, n: 0, span, je: new Map(), kern: new Map(), gen: new Map() };
+        while (edits && k.n < edits.length) {
+            const ed = edits[k.n++];
+            if (!ed || !Number.isFinite(ed.x) || !Number.isFinite(ed.z)) continue;
+            const r = editReich(ed);
+            const g = gen ? gen() : 0;
+            const kax = Math.floor((ed.x - r) / k.span);
+            const kbx = Math.floor((ed.x + r) / k.span);
+            const kaz = Math.floor((ed.z - r) / k.span);
+            const kbz = Math.floor((ed.z + r) / k.span);
+            for (let cx = kax - 1; cx <= kbx + 1; cx++) {
+                for (let cz = kaz - 1; cz <= kbz + 1; cz++) {
+                    const key = editKarteSchluessel(cx, cz);
+                    const liste = k.je.get(key);
+                    if (liste) liste.push(ed);
+                    else k.je.set(key, [ed]);
+                    if (gen) k.gen.set(key, g);
+                    if (cx >= kax && cx <= kbx && cz >= kaz && cz <= kbz) {
+                        const kern = k.kern.get(key);
+                        if (kern) kern.push(ed);
+                        else k.kern.set(key, [ed]);
+                    }
+                }
+            }
+        }
+        return k;
+    }
+    // die Edits, die den Chunk (cx, cz) samt einem Chunk Rand berühren können (leer ohne)
+    function editsNah(k, cx, cz) {
+        return k.je.get(editKarteSchluessel(cx, cz)) || KEINE_EDITS;
+    }
+    // die Edits, deren Kasten den Chunk des Punkts (x, z) berührt (undefined ohne)
+    function editsAm(k, x, z) {
+        return k.kern.get(editKarteSchluessel(Math.floor(x / k.span), Math.floor(z / k.span)));
+    }
+    // die Edits, die den waagrechten Kasten [x0, x1] × [z0, z1] berühren können: liegt er (mit 1 m Rand) im 3×3 um den Chunk
+    // seiner Mitte, dessen Eintrag (jedes Chunk-Gitter samt Pad), sonst die ganze Liste
+    function editsImKasten(k, x0, x1, z0, z1) {
+        if (!k.edits || !k.edits.length) return KEINE_EDITS;
+        const span = k.span;
+        const cx = Math.floor((x0 + x1) / 2 / span);
+        const cz = Math.floor((z0 + z1) / 2 / span);
+        if (x0 - 1 > (cx - 1) * span && x1 + 1 < (cx + 2) * span && z0 - 1 > (cz - 1) * span && z1 + 1 < (cz + 2) * span)
+            return editsNah(k, cx, cz);
+        return k.edits;
+    }
+
+    // DER FLUSS an (x, z) → { flowX, flowZ, depth, surfaceY, centerness, ufer } oder null jenseits jeder Krone: der Spiegel der
+    // Segmente (linear zwischen ihren Enden — stromab nie steigend, quer waagrecht), gemittelt zur Krone stetig auslaufend; Lauf,
+    // Tiefe und Breite des nächsten Segments; centerness [0, 1] (1 Mittellinie, 0 Kanal-Kante — die Strömung trägt nur im Kanal);
+    // ufer die Kronen-Blende [0, 1] (1 bis zur Kanal-Kante, smoothstep auf 0 an der Krone, das Maximum der Segmente).
+    function flussAm(L, x, z) {
+        const h = hydroRegion(L, x, z);
+        const kb = flussBucket(h, x, z);
+        if (kb < 0) return null;
+        const { seg, idx, ab } = h.kanal;
+        const sN = L.hydroGesetz.bankNeigung;
+        let bestD = Infinity;
+        let dirX = 0;
+        let dirZ = 0;
+        let depth = 0;
+        let bestHalfW = 1;
+        let gSumme = 0;
+        let sSumme = 0;
+        let ufer = 0;
+        for (let q = ab[kb]; q < ab[kb + 1]; q++) {
+            const o = idx[q] * KANAL_FELDER;
+            const ax = seg[o];
+            const az = seg[o + 1];
+            const ex = seg[o + 2] - ax;
+            const ez = seg[o + 3] - az;
+            const len2 = ex * ex + ez * ez || 1;
+            let t = ((x - ax) * ex + (z - az) * ez) / len2;
+            if (t < 0) t = 0;
+            else if (t > 1) t = 1;
+            const dist = Math.hypot(x - (ax + ex * t), z - (az + ez * t));
+            const halfW = seg[o + 4] + (seg[o + 5] - seg[o + 4]) * t;
+            const D = seg[o + 6] + (seg[o + 7] - seg[o + 6]) * t;
+            const krone = halfW + D / sN;
+            if (dist > krone) continue;
+            const g = (1 - dist / krone) * (1 - dist / krone) + 1e-6;
+            gSumme += g;
+            sSumme += g * (seg[o + 8] + (seg[o + 9] - seg[o + 8]) * t);
+            const u = dist <= halfW ? 0 : (dist - halfW) / (krone - halfW);
+            const uS = 1 - u * u * (3 - 2 * u);
+            if (uS > ufer) ufer = uS;
+            if (dist < bestD) {
+                bestD = dist;
+                const len = Math.sqrt(len2);
+                dirX = ex / len;
+                dirZ = ez / len;
+                depth = D;
+                bestHalfW = halfW;
+            }
+        }
+        if (bestD === Infinity) return null;
+        return {
+            flowX: dirX,
+            flowZ: dirZ,
+            depth,
+            surfaceY: sSumme / gSumme,
+            centerness: Math.max(0, 1 - bestD / Math.max(bestHalfW, 1)),
+            ufer,
+        };
+    }
+    // DER SPIEGEL QUER: der Spiegel des nächsten Segments an (x, z), auch jenseits der Krone (der Fluss-Spiegel liegt quer
+    // waagrecht); −Infinity ohne Segment im Bucket. Leser: das Wasser-Sheet am Rand eines Schnitts.
+    function spiegelQuer(L, x, z) {
+        const h = hydroRegion(L, x, z);
+        const kb = flussBucket(h, x, z);
+        if (kb < 0) return -Infinity;
+        const { seg, idx, ab } = h.kanal;
+        let bestD = Infinity;
+        let spiegel = -Infinity;
+        for (let q = ab[kb]; q < ab[kb + 1]; q++) {
+            const o = idx[q] * KANAL_FELDER;
+            const ax = seg[o];
+            const az = seg[o + 1];
+            const ex = seg[o + 2] - ax;
+            const ez = seg[o + 3] - az;
+            const len2 = ex * ex + ez * ez || 1;
+            let t = ((x - ax) * ex + (z - az) * ez) / len2;
+            if (t < 0) t = 0;
+            else if (t > 1) t = 1;
+            const dist = Math.hypot(x - (ax + ex * t), z - (az + ez * t));
+            if (dist < bestD) {
+                bestD = dist;
+                spiegel = seg[o + 8] + (seg[o + 9] - seg[o + 8]) * t;
+            }
+        }
+        return spiegel;
+    }
+    // DER NÄCHSTE RAND eines Flusses an (x, z) über die 3×3-Buckets (die Feuchte reicht ~26 m, weiter als die Bank) → { dist,
+    // halfW, spiegel }: der nächste RAND (Abstand minus die Halbbreite), nie die nächste Mittellinie — zwischen zwei Segmenten
+    // ungleicher Breite sprang sonst die Halbbreite und mit ihr die Feuchte (K16, U1).
+    function flussRand(L, x, z) {
+        const h = hydroRegion(L, x, z);
+        if (!h || !h.ready || !h.kanal) return { dist: Infinity, halfW: 0 };
+        const { seg, idx, ab } = h.kanal;
+        const bs = h.bucketSize;
+        const bd = h.bucketsDim;
+        const bi0 = Math.floor((x - h.originX) / bs);
+        const bj0 = Math.floor((z - h.originZ) / bs);
+        let best = Infinity;
+        let bestHw = 0;
+        let bestRand = Infinity;
+        let bestSp = NaN;
+        for (let dj = -1; dj <= 1; dj++) {
+            for (let di = -1; di <= 1; di++) {
+                const bi = bi0 + di;
+                const bj = bj0 + dj;
+                if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) continue;
+                const kb = bj * bd + bi;
+                for (let q = ab[kb]; q < ab[kb + 1]; q++) {
+                    const o = idx[q] * KANAL_FELDER;
+                    const ax = seg[o];
+                    const az = seg[o + 1];
+                    const ex = seg[o + 2] - ax;
+                    const ez = seg[o + 3] - az;
+                    const len2 = ex * ex + ez * ez || 1;
+                    let t = ((x - ax) * ex + (z - az) * ez) / len2;
+                    if (t < 0) t = 0;
+                    else if (t > 1) t = 1;
+                    const dist = Math.hypot(x - (ax + ex * t), z - (az + ez * t));
+                    const hw = seg[o + 4] + (seg[o + 5] - seg[o + 4]) * t;
+                    const rand = dist - Math.max(1, hw);
+                    if (rand < bestRand) {
+                        bestRand = rand;
+                        best = dist;
+                        bestHw = hw;
+                        bestSp = seg[o + 8] + (seg[o + 9] - seg[o + 8]) * t;
+                    }
+                }
+            }
+        }
+        return { dist: best, halfW: bestHw, spiegel: bestSp };
+    }
+    // DER SPIEGEL AM SCHNITT (F3): der Fluss-Spiegel quer (`spiegelQuer`) über einer Spalte, die ein Schnitt der Edit-Karte k
+    // berührt (sein Radius + eine halbe Zell-Diagonale der Kante `step`), sonst −Infinity. Leser: das Wasser-Sheet am Graben.
+    function schnittSpiegel(L, k, x, z, step) {
+        const ed = editsNah(k, Math.floor(x / k.span), Math.floor(z / k.span));
+        for (let e = 0; e < ed.length; e++) {
+            const s = ed[e];
+            if (s && s.mode === "carve" && Math.hypot(x - s.x, z - s.z) <= s.r + 0.71 * step) return spiegelQuer(L, x, z);
+        }
+        return -Infinity;
+    }
+    // der Spiegel des stehenden Wasser-Körpers (Meer, See) der Zelle i einer Region
+    function koerperY(h, i) {
+        return h.water.waterY[i];
+    }
+    // DER BEZUG DER UFER-BÄNDER an (x, z): MAX aus Meer (`waterLevel`, Default überall), See (3×3 der Zellen — die Dilatation
+    // gegen den quantisierten Becken-Rand) und Fluss-Spiegel. `aus` (optional) trägt die beiden Bezüge getrennt: `see`
+    // (Meer/See), `fluss` (der Fluss-Spiegel oder null) und `ufer` (seine Kronen-Blende). KEINE Wasser-Probe: „ist hier Wasser“
+    // fragt jeder Leser `atlasSpiegel` (über den Körper des Stamms).
+    function wasserSpiegel(L, x, z, aus) {
+        let level = typeof L.waterLevel === "number" ? L.waterLevel : 0;
+        const h = hydroRegion(L, x, z);
+        if (h && h.ready && h.water && h.water.waterKind) {
+            const dim = h.dim;
+            const ci = Math.floor((x - h.originX) / h.cell);
+            const cj = Math.floor((z - h.originZ) / h.cell);
+            const wK = h.water.waterKind;
+            for (let dj = -1; dj <= 1; dj++) {
+                for (let di = -1; di <= 1; di++) {
+                    const ni = ci + di;
+                    const nj = cj + dj;
+                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                    const idx = ni + nj * dim;
+                    if (wK[idx] === 2 && koerperY(h, idx) > level) level = koerperY(h, idx);
+                }
+            }
+        }
+        const river = flussAm(L, x, z);
+        if (aus) {
+            aus.see = level;
+            aus.fluss = river ? river.surfaceY : null;
+            aus.ufer = river ? river.ufer : 0;
+        }
+        if (river && river.surfaceY > level) level = river.surfaceY;
+        return level;
+    }
+    // DER SPIEGEL DES WASSERS an (x, z) über dem Boden `terrainTopY` (−Infinity = hier nie Wasser): der Körper der Zelle (Meer,
+    // See) voll in jeder Tiefe; Land neben einem Körper (3×3) dessen Spiegel, wenn der Boden darunter liegt — nur bei ENDLICHEM
+    // Boden („unbekannt“ heißt keine Rand-Erweiterung, nie „immer nass“); jenseits der Region ist das Meer der Default-Körper
+    // (der Ozean ist global, V17.117). Der Fluss zählt mit seiner ganzen Breite, bei unbekanntem Boden nur sein Kanal-Kern.
+    // `aus` (optional) bekommt den Spiegel der Körper ohne den Fluss: `aus.koerper`.
+    function atlasSpiegel(L, x, z, terrainTopY, aus) {
+        let level = -Infinity;
+        let inRegion = false;
+        const h = hydroRegion(L, x, z);
+        if (h && h.ready && h.water && h.water.waterKind) {
+            const dim = h.dim;
+            const ci = Math.floor((x - h.originX) / h.cell);
+            const cj = Math.floor((z - h.originZ) / h.cell);
+            if (ci >= 0 && cj >= 0 && ci < dim && cj < dim) {
+                inRegion = true;
+                const wK = h.water.waterKind;
+                const here = wK[ci + cj * dim];
+                if (here === 1 || here === 2) level = koerperY(h, ci + cj * dim);
+                else {
+                    let rim = -Infinity;
+                    for (let dj = -1; dj <= 1; dj++) {
+                        for (let di = -1; di <= 1; di++) {
+                            const ni = ci + di;
+                            const nj = cj + dj;
+                            if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                            const nk = wK[ni + nj * dim];
+                            if ((nk === 1 || nk === 2) && koerperY(h, ni + nj * dim) > rim) rim = koerperY(h, ni + nj * dim);
+                        }
+                    }
+                    if (Number.isFinite(terrainTopY) && rim > -Infinity && terrainTopY < rim) level = rim;
+                }
+            }
+        }
+        if (h && h.ready && !inRegion) level = typeof L.waterLevel === "number" ? L.waterLevel : 0;
+        if (aus) aus.koerper = level;
+        const river = flussAm(L, x, z);
+        if (river && river.surfaceY > level && (terrainTopY !== -Infinity || river.centerness > 0)) level = river.surfaceY;
+        return level;
+    }
+
     root.__gelaendeCore = Object.freeze({
         MESSUNG: MESSUNG,
         abdruckFeld: abdruckFeld,
@@ -4887,5 +5384,24 @@
         KANAL_FELDER: KANAL_FELDER,
         flussTiefe: flussTiefe,
         hydroBand: hydroBand,
+        hydroRegion: hydroRegion,
+        flussKanal: flussKanal,
+        seeBecken: seeBecken,
+        gewaesserForm: gewaesserForm,
+        dichteSpalte: dichteSpalte,
+        dichteBasis: dichteBasis,
+        dichte: dichte,
+        dichteGitter: dichteGitter,
+        gitterMitEdits: gitterMitEdits,
+        editKarte: editKarte,
+        editsNah: editsNah,
+        editsAm: editsAm,
+        editsImKasten: editsImKasten,
+        flussAm: flussAm,
+        spiegelQuer: spiegelQuer,
+        schnittSpiegel: schnittSpiegel,
+        flussRand: flussRand,
+        wasserSpiegel: wasserSpiegel,
+        atlasSpiegel: atlasSpiegel,
     });
 })(typeof self !== "undefined" ? self : globalThis);

@@ -57,7 +57,7 @@ const server = statikServer();
                 if (r.state) r.state._activeRingRadius = 4; // gegen den Ramp halten
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
                 // bis Ring 4 (81 Chunks) streamen, damit LOD1 (Band 1, ring 3-8) erscheint
                 // → die CROSS-LOD-Naht (B/D) wird messbar (bei 26 Chunks = nur Ring 2 = alle LOD0).
                 if (r.state && r.state.playerMesh && r.state.voxelChunks && r.state.voxelChunks.size >= 80) break;
@@ -71,7 +71,7 @@ const server = statikServer();
             if (r && typeof r._gameLoopTick === "function") {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
             }
             await new Promise((res) => setTimeout(res, 2));
         }
@@ -671,7 +671,7 @@ const server = statikServer();
             frames++;
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             for (const key of region) {
                 if (healFrame[key] || inEdit.includes(key)) continue;
                 const u = uuidOf(key);

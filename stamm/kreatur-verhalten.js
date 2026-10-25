@@ -2674,8 +2674,8 @@ class AnazhRealm_kreatur_verhalten {
         ];
         for (let i = 0; i < 4; i++) {
             const K = ketten[i];
-            for (let k = 0; k < 4; k++) if (K[k]) K[k].rotation.x = SP[i][k];
-            if (K[0]) K[0].rotation.z = 0; // das Abspreizen der Pfoten-IK (Welle LF) fällt mit
+            // das Abspreizen der Pfoten-IK (Welle LF) und die Sohle am Hang (K8 huf) fallen mit
+            for (let k = 0; k < 4; k++) if (K[k]) K[k].rotation.set(SP[i][k], 0, 0);
         }
         const ts = tb.tailSegs || [];
         for (let i = 0; i < ts.length; i++) ts[i].rotation.y = 0;

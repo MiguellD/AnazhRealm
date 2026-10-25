@@ -81,4 +81,4 @@ function torHuelleTreue(tafel, gemessen) {
     return bad;
 }
 
-module.exports = { torHuelleMessen, torHuelleTafel, torHuelleTreue, aufCm };
+module.exports = { torHuelleMessen, torHuelleTafel, torHuelleTreue };

@@ -1664,62 +1664,6 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         await new Promise((resolve) => setTimeout(resolve, 50));
         out.workerStateGen = r.state.voxelWorkerStateGen;
         out.workerSynced = r.state.voxelWorkerWorldgenSynced;
-        // 4) Determinismus: denselben Chunk zweimal bauen — (a) sync ohne preDensity, (b) mit Worker-
-        // Density als preDensity an _buildVoxelChunkData. Erwartung: gleiche Vertex-Zahl + Geometrie.
-        const cfg = r._voxelChunkConfig(0);
-        const base = r.state.terrainBaseHeight || 0;
-        const span = cfg.span;
-        const step = cfg.step;
-        const cx = 0;
-        const cz = 0;
-        const ox = cx * span;
-        const oz = cz * span;
-        const oy = base - cfg.floorDrop;
-        // Sync-Build (kontrollierter Pfad: _buildVoxelChunkData ohne preDensity)
-        const syncResult = r._buildVoxelChunkData(cx, cz, 0, null);
-        // Worker-Density holen, dann Build mit preDensity
-        let workerDensity;
-        try {
-            workerDensity = await r._voxelWorkerComputeDensity(
-                ox - step,
-                oy,
-                oz - step,
-                cfg.dim + 3,
-                cfg.dimY,
-                cfg.dim + 3,
-                step
-            );
-        } catch (e) {
-            return { ...out, error: "worker density failed: " + e.message };
-        }
-        const workerResult = r._buildVoxelChunkData(cx, cz, 0, workerDensity);
-        out.syncBuildOk = !!(syncResult && syncResult.mesh);
-        out.workerBuildOk = !!(workerResult && workerResult.mesh);
-        if (syncResult && workerResult && syncResult.mesh && workerResult.mesh) {
-            const syncPos = syncResult.mesh.geometry.getAttribute("position");
-            const workerPos = workerResult.mesh.geometry.getAttribute("position");
-            out.syncVertCount = syncPos.count;
-            out.workerVertCount = workerPos.count;
-            out.vertCountMatch = syncPos.count === workerPos.count;
-            // Position-Array epsilon-nah statt exakt 0: SimplexNoise nutzt transzendente Funktionen mit
-            // implementation-defined Präzision → Worker↔Main driften um Float32-Rundung (~1e-6, unsichtbar).
-            // < 1e-4 fängt echte Determinismus-Bugs; maxDelta bleibt im Detail sichtbar.
-            const EPS = 1e-4;
-            let posMismatches = 0;
-            let maxPosDelta = 0;
-            const len = Math.min(syncPos.array.length, workerPos.array.length);
-            for (let i = 0; i < len; i++) {
-                const ad = Math.abs(syncPos.array[i] - workerPos.array[i]);
-                if (ad > maxPosDelta) maxPosDelta = ad;
-                if (ad > EPS) posMismatches++;
-            }
-            out.posMismatches = posMismatches;
-            out.maxPosDelta = maxPosDelta;
-            out.meshIdentical = posMismatches === 0;
-            // Clean up — wir wollen die Test-Builds NICHT in der Szene haben.
-            syncResult.mesh.geometry.dispose();
-            workerResult.mesh.geometry.dispose();
-        }
         // 5) voxelEdit notify (K23, die Generation je Chunk): ein Edit über den Spielpfad ändert den Stand SEINES Chunks,
         // nicht den eines fernen, und aus dem Density-Cache fällt nur seine Nachbarschaft.
         const span5 = r._voxelChunkConfig().span;
@@ -1751,20 +1695,6 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         res.workerSynced,
         `stateGen=${res.workerStateGen}`
     );
-    check("Welle Perf-3.c V9.90: Sync-Build des Test-Chunks erfolgreich", res.syncBuildOk);
-    check("Welle Perf-3.c V9.90: Worker-Density-Build des Test-Chunks erfolgreich", res.workerBuildOk);
-    if (res.syncBuildOk && res.workerBuildOk) {
-        check(
-            "Welle Perf-3.c V9.90: Vertex-Count identisch zwischen Sync- und Worker-Build",
-            res.vertCountMatch,
-            `sync=${res.syncVertCount}, worker=${res.workerVertCount}`
-        );
-        check(
-            "Welle Perf-3.c V9.90: BufferGeometry bit-identisch (der epochale Beweis)",
-            res.meshIdentical,
-            `posMismatches=${res.posMismatches}, maxPosDelta=${res.maxPosDelta}`
-        );
-    }
     check(
         "K23: ein voxelEdit ändert den Stand seines Chunks, nicht den eines fernen (Generation je Chunk)",
         res.editBumpedStateGen

@@ -197,7 +197,6 @@ function fernwaldLinse(opts) {
 }
 
 module.exports = {
-    BLICKE,
     FERNWALD_INSTALL:
         `window.__fernwaldLinse = (o) => (${fernwaldLinse.toString()})` +
         `(Object.assign({ alle: ${JSON.stringify(BLICKE)} }, o || {}));`,
