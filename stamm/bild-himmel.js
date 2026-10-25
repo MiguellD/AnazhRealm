@@ -2831,14 +2831,21 @@ class AnazhRealm_bild_himmel {
     // ist jede Linie EINE Höhe (Halbierung auf 1 cm zwischen 10 m unter und 1 km über dem Meer, an den Enden geklemmt).
     // `traegtAb` ist die tiefste tragende Höhe der Welt (die flachste Säule; Infinity: nirgends) — der billige Beweis jedes
     // Lesers. Gerechnet je Welt-STUNDE der Saison (das Eis wächst in ~6 Tagen vom ersten zum tragenden; eine Stunde trägt
-    // unter 1 mm), je Feld (die Naht), Meer und Stoff (`_wasserStoff`: ρ, c, T_schmelz des Wassers, ρ des Eises) — nie je Bild;
+    // unter 1 mm), je Feld (die Naht), Meer und Stoff (`_wasserStoff`: ρ, c, T_schmelz des Wassers, ρ, L, k des Eises) — nie je Bild;
     // Bild und Körper lesen dieselbe Stunde. Der Leser zahlt sieben Vergleiche, solange Saison und Stoff stehen.
     _eisLinien() {
         const st = this.state;
         const c = this._eisLinienStand;
         const W = this._stoff("wasser");
         const E = this._stoff("eis");
-        const gleich = c && c.rho === W.rho && c.c === W.c && c.tSchmelz === W.tSchmelz && c.eisRho === E.rho;
+        const gleich =
+            c &&
+            c.rho === W.rho &&
+            c.c === W.c &&
+            c.tSchmelz === W.tSchmelz &&
+            c.eisRho === E.rho &&
+            c.eisL === E.L &&
+            c.eisK === E.k;
         if (gleich && c.phase === st.seasonPhase && c.feld === this._temperaturFeld && c.wasser === st.waterLevel)
             return c;
         const K = globalThis.__gelaendeCore;
@@ -2875,6 +2882,8 @@ class AnazhRealm_bild_himmel {
             c: W.c,
             tSchmelz: W.tSchmelz,
             eisRho: E.rho,
+            eisL: E.L,
+            eisK: E.k,
             null: knoten.map((d) => linie(d, 1e-3)),
             voll,
             traegtAb: voll[0] < oben ? voll[0] : Infinity,

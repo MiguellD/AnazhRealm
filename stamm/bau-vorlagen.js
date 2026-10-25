@@ -1449,15 +1449,16 @@ class AnazhRealm_bau_vorlagen {
     //            auf dem Stoff unter ihm (`_kreaturStossSchritt` über `_kontaktStoffAt`); null: eine Flüssigkeit trägt keinen
     //            Gleitenden
     //   c        J/(kg·K) — der Brennpunkt erwärmt den Stoff mit P / (ρ·V·c) (`_brennWaerme`), das Wasser sieht die Luft durch
-    //            die Trägheit seiner Säule ρ·c·h / α (gelaende-core `wasserKoerper` über `_wasserStoff`, `_wasserTemperaturAt`)
+    //            die Trägheit seiner Säule ρ·c·h / α (gelaende-core `wasserKoerper` über `_wasserStoff`): an ihr setzt das Eis ein
     //   tZuend   K — an ihr fängt der Stoff im Brennpunkt Feuer; null brennt nie
     //   tSchmelz K — der Gefrierpunkt des Süßwassers ist die Phasen-Grenze des Eises: an ihm setzt das Eis des Kerns ein
-    //            (`eisDicke`, die Linien `_eisLinien`, die Fläche `_eisAt`; ρ der Zeile eis trägt seine Schmelzwärme je m³);
-    //            null zersetzt sich vor dem Schmelzen
+    //            (`eisDicke`, die Linien `_eisLinien`, die Fläche `_eisAt`); null zersetzt sich vor dem Schmelzen
+    //   L, k     J/kg und W/(m·K), nur die Zeile eis — Schmelzwärme und Wärmeleitung: mit ρ wächst das Eis nach STEFAN
+    //            (h²/2k + h/H = ∫Frost dt / ρL, gelaende-core `eisDicke`)
     //   klang    die Schritt-Spalte des Klang-Kerns (klang:SCHRITT_TIMBRE, ein Zugriff — wer die Zeile ändert, ändert den Schritt)
     // Tafel-Werte (Engineering ToolBox, CRC Handbook): Granit c 790, T_schmelz 1 500 K; Holz c 1 700, Zündung 573 K; Eisen c 449,
     // 1 811 K; Bronze 380, 1 223 K; Stahl 490, 1 723 K; Quarz 740, 1 986 K; trockenes Laub, Gras und Kraut c 1 800, Zündung
-    // 523–533 K; trockener Boden c 800; Wasser c 4 186, 273,15 K; Eis ρ 917, c 2 050, μ 0,05; Huf und Sohle auf trockenem Fels
+    // 523–533 K; trockener Boden c 800; Wasser c 4 186, 273,15 K; Eis ρ 917, c 2 050, L 334 000, k 2,2, μ 0,05; Huf und Sohle auf trockenem Fels
     // und Gras μ 0,6 (Pferdehuf auf Beton 0,55–0,63), auf losem Laub 0,4.
     _defaultMaterials() {
         const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
@@ -1524,6 +1525,7 @@ class AnazhRealm_bau_vorlagen {
             wasser:   [null, 4186, null,   273.15,    null,  null],
             eis:      [0.05, 2050, null,   null,      null,  null],
         };
+        const PHASE = { eis: { L: 334000, k: 2.2 } }; // die Spalten L und k (oben): nur das Eis wächst im Kern
         const TB = AnazhRealm._schrittTimbre().material;
         // Stahl, Blech und Leib sind Stoffe der Körper (die Klinge der Schmiede, die Hülle des Wagens, der Mensch), Gras, Wasser
         // und Eis Stoffe der Welt, keine Bau-Stoffe: die Welt hat keine Quelle, aus der man sie sammelt, die Werkstatt bietet sie
@@ -1545,6 +1547,7 @@ class AnazhRealm_bau_vorlagen {
                 tSchmelz: si[3],
                 muRad: si[4],
                 muRadNass: si[5],
+                ...PHASE[name],
             };
             Object.defineProperty(z, "klang", {
                 enumerable: true,
