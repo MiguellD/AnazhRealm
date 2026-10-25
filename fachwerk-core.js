@@ -3911,6 +3911,7 @@
             fp: fpVon(mass.H),
             masse: masseVon(mass), // DIE MASSEN DES BAUS (S3): der Fernkörper liest sie (koerperListe)
             grund: grundVon(mass), // DAS GRUND-DATUM (S4): der Slot trägt es
+            wandX: wandXVon(mass.H.solids), // DIE AUSSENKANTE DER WÄNDE längs x (Solids des Mass-Baus): die Brandwand-obb liest sie
             fenster: fensterVon(mass), // DIE ÖFFNUNGEN (K38): das Fern-Fenster des fernen Turms liest sie
             spawnL: { x: mass.H.spawn.x, z: mass.H.spawn.z },
             hofGap: 2.5,
@@ -6037,6 +6038,26 @@
     // DER MASS-BAU IM GEDÄCHTNIS (siedlung.K3): der Wirt rechnet den Export am Ort der Ort-Wahl neu (ein anderes `dp.hoehe`),
     // der Mass-Bau eines Hauses hängt nur an seinem P-Vektor — derselbe Vektor nimmt denselben Bau, frisch sind je Export nur
     // `p` (brandwand schreibt in sie) und der Rahmen `q`. Höchstens MASS_GEDAECHTNIS Häuser, dann fällt das Gedächtnis ganz.
+    function wandXVon(solids) {
+        var x0 = Infinity,
+            x1 = -Infinity;
+        for (var k = 0; solids && k < solids.length; k++) {
+            x0 = Math.min(x0, solids[k].min[0]);
+            x1 = Math.max(x1, solids[k].max[0]);
+        }
+        return x0 < x1 ? [x0, x1] : null;
+    }
+    // DIE BRANDWAND TRÄGT KEINE TRAUFE IN DEN NACHBARN: reihenSnap dockt dichte Reihen (gap ≤ 0,6) längs x an die Wand-Linie
+    // `dims.W` — an einer gedockten Seite (`brandwand` x0/x1) endet die obb, das Fundament der Welt (`_slotGrundriss`:
+    // Bau-Wand, Grund, Natur-Wand), an der Außenkante der Wand (`wandX`), sonst an der Hülle `ext` samt Traufe. Bis
+    // siedlung-k3-heil trug sie die Traufe 0,24–0,49 m in die Wand des Nachbarn, und die Bau-Wand der Welt warf ein Haus des
+    // Paars (das Start-Dorf auf der Trasse: 16 von 17 Häusern nach dem Reload).
+    function obbAnDerBrandwand(o, bw, e, wx) {
+        var x0 = bw && bw.x0 && wx ? Math.max(e.x0, wx[0]) : e.x0,
+            x1 = bw && bw.x1 && wx ? Math.min(e.x1, wx[1]) : e.x1,
+            d = (x0 + x1 - e.x0 - e.x1) / 2;
+        return { cx: o.cx + d * Math.cos(o.phi), cz: o.cz - d * Math.sin(o.phi), phi: o.phi, ex: (x1 - x0) / 2, ez: o.ez };
+    }
     var MASS_GEDAECHTNIS = 1024;
     var massGedaechtnis = new Map();
     function massBauExport(hp) {
@@ -6093,7 +6114,10 @@
                 x: q.x,
                 z: q.z,
                 phi: q.phi,
-                obb: { cx: q.obb.cx, cz: q.obb.cz, phi: q.obb.phi, ex: q.obb.ex, ez: q.obb.ez },
+                obb:
+                    plan.norm.gap <= 0.6 && hp.brandwand
+                        ? obbAnDerBrandwand(q.obb, hp.brandwand, ext[i], Bs[i].wandX)
+                        : { cx: q.obb.cx, cz: q.obb.cz, phi: q.obb.phi, ex: q.obb.ex, ez: q.obb.ez },
                 ext: ext[i],
                 kultur: typeof hp.kultur === "string" ? hp.kultur : null,
                 seed: hp.seed >>> 0,

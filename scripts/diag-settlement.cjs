@@ -1475,7 +1475,7 @@ const FIXTURES = [
             };
             try {
                 wer[methode](...args);
-            } catch (_e) {
+            } catch {
                 /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
             } finally {
                 if (eigen) lieferer[name] = echt;

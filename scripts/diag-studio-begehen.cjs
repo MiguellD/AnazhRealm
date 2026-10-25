@@ -291,16 +291,12 @@ function proben(inj) {
         strahlen: 0,
         aufBild: 0,
         abw: 0,
-        v2Json: null,
-        ort: null,
         planHash: null,
     };
     const O = dorf.ort;
     if (O && O.v2) {
         b5.v2 = O.v2.version;
         b5.slots = O.v2.slots.length;
-        b5.v2Json = JSON.stringify(O.v2);
-        b5.ort = O.ort;
         // der Plan-Hash: der Kern rechnet in DERSELBEN Seite den Plan des Exports 7/18 am Ort über die Lage der Saat
         // (lageGrund), das Höhen-Raster der Trasse um den Ort (hoehenRaster im Rahmen trasseRahmen, wie der Ort-Faden der
         // Welt, siedlung.K3) und den ctx des Orts (ortCtx) — das Labor zeigt genau ihn (Teil O von gate:settlement hält Kern = Welt)
@@ -318,8 +314,7 @@ function proben(inj) {
             O.ort,
             Gk.ortCtx(Lk)
         );
-        b5.planHash = JSON.stringify(kern) === b5.v2Json;
-        b5.v2Json = null;
+        b5.planHash = JSON.stringify(kern) === JSON.stringify(O.v2);
     }
     let lo = Infinity;
     let hi = -Infinity;

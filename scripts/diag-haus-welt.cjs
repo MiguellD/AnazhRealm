@@ -1677,12 +1677,7 @@ async function proben(phasen) {
                     s.keys.w = false;
                     for (let k = 0; k < 10; k++) r._stepFixedSim((t += DT), DT);
                 }
-                const l = lokal(e, pm.position.x, pm.position.z);
-                w.endeLokal = [
-                    Math.round(l.x * 100) / 100,
-                    Math.round((pm.position.y - A.PLAYER_FOOT_OFFSET - (e.position.y - 0.5)) * 100) / 100,
-                ];
-                return Math.round((l.z - tu.z) * 100) / 100;
+                return Math.round((lokal(e, pm.position.x, pm.position.z).z - tu.z) * 100) / 100;
             };
             // (a) die Kern-Hülle: der Slot geht den Weg jedes Siedlungs-Hauses (`_spawnSettlementSlot`: Ecken, Podest, Grundriss
             // räumt) — Spawn und Anlauf im selben Takt
