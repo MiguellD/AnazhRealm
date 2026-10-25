@@ -339,12 +339,15 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
     return aus;
 }
 async function tafel() {
-    const { statikServer, starteBrowser, oeffneWelt, buehne } = require("./lib/welt-boot.cjs");
+    const { statikServer, starteBrowser, nullRenderer, warteAufWelt, buehne } = require("./lib/welt-boot.cjs");
     const port = Number(process.env.GEGENSTAND_STOFF_PORT || 4677);
     const server = statikServer().listen(port, "127.0.0.1");
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     try {
-        const page = await oeffneWelt(browser, { port, nullRenderer: true, warteBis: "domcontentloaded", frist: 180000 });
+        const page = await browser.newPage();
+        await nullRenderer(page);
+        await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 180000 });
+        await warteAufWelt(page, 180000);
         await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
         await buehne(page);
         const echt = await page.evaluate(tafelProbe, STOFFE, WIRKUNGEN, false);

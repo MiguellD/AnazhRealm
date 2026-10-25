@@ -1445,8 +1445,9 @@ class AnazhRealm_bau_vorlagen {
     // EINEN Leser `_stoff` (ein eigener Stoff liest die Zeile seines nächsten Verwandten):
     //   rho      kg/m³ — Masse und Auftrieb (oben); das Wasser IST der Eintrag des Fahr-Kerns (FAHR.wasser.rho), an ihm liegt
     //            jeder Körper im Wasser (`_eintauchAnteil`)
-    //   mu       Gleitreibung eines Leibs (Sohle, Pfote, Fell) auf dem Stoff — der gestoßene Leib verzögert mit μ·g auf dem
-    //            Stoff unter ihm (`_kreaturStossSchritt` über `_kontaktStoffAt`); null: eine Flüssigkeit trägt keinen Gleitenden
+    //   mu       Haftreibung eines Leibs (Sohle, Huf, Pfote) auf dem Stoff — der gestoßene Leib bremst auf den Beinen mit μ·g
+    //            auf dem Stoff unter ihm (`_kreaturStossSchritt` über `_kontaktStoffAt`); null: eine Flüssigkeit trägt keinen
+    //            Gleitenden
     //   c        J/(kg·K) — der Brennpunkt erwärmt den Stoff mit P / (ρ·V·c) (`_brennWaerme`), das Wasser sieht die Luft durch
     //            seine Trägheit ρ·c·d / h (`_wasserTemperaturAt`)
     //   tZuend   K — an ihr fängt der Stoff im Brennpunkt Feuer; null brennt nie
@@ -1455,7 +1456,8 @@ class AnazhRealm_bau_vorlagen {
     //   klang    die Schritt-Spalte des Klang-Kerns (klang:SCHRITT_TIMBRE, ein Zugriff — wer die Zeile ändert, ändert den Schritt)
     // Tafel-Werte (Engineering ToolBox, CRC Handbook): Granit c 790, T_schmelz 1 500 K; Holz c 1 700, Zündung 573 K; Eisen c 449,
     // 1 811 K; Bronze 380, 1 223 K; Stahl 490, 1 723 K; Quarz 740, 1 986 K; trockenes Laub, Gras und Kraut c 1 800, Zündung
-    // 523–533 K; trockener Boden c 800; Wasser c 4 186, 273,15 K; Eis ρ 917, c 2 050, μ 0,05.
+    // 523–533 K; trockener Boden c 800; Wasser c 4 186, 273,15 K; Eis ρ 917, c 2 050, μ 0,05; Huf und Sohle auf trockenem Fels
+    // und Gras μ 0,6 (Pferdehuf auf Beton 0,55–0,63), auf losem Laub 0,4.
     _defaultMaterials() {
         const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
         if (!sc || !sc.RHO || !sc.MAT || !sc.MAT.stahl) AnazhRealm._kernPflichtBruch("schmiede:RHO/MAT");
@@ -1493,7 +1495,7 @@ class AnazhRealm_bau_vorlagen {
         // prettier-ignore
         const SI = {
             //         μ      c     T_zünd  T_schmelz
-            stein:    [0.7,  790,  null,   1500],
+            stein:    [0.6,  790,  null,   1500],
             holz:     [0.6,  1700, 573,    null],
             eisen:    [0.5,  449,  null,   1811],
             bronze:   [0.5,  380,  null,   1223],
@@ -1511,7 +1513,7 @@ class AnazhRealm_bau_vorlagen {
             kraut:    [0.4,  1800, 533,    null],
             essenz:   [null, 4186, null,   null],
             blech:    [0.5,  460,  null,   1723],
-            gras:     [0.4,  1800, 533,    null],
+            gras:     [0.6,  1800, 533,    null],
             wasser:   [null, 4186, null,   273.15],
             eis:      [0.05, 2050, null,   null],
         };
