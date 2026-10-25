@@ -2062,7 +2062,6 @@ class AnazhRealm_kreatur_leben {
                 if (u._satz) this._tierSatzAus(cr);
             }
         }
-        const aus = st.creaturesHidden === true;
         for (const [key, Z] of M) {
             if (!Z) continue;
             if (!Z.fertig) this._tierSatzBacken(Z, K.backJeTakt);
@@ -2309,7 +2308,7 @@ class AnazhRealm_kreatur_leben {
         const band = Math.max(0, K.baender.indexOf(G && G.art));
         u._satz = Z;
         u._satzBand = band;
-        u._satzArt = G && G.art !== "stand" ? G.art : null;
+        u._satzWahl = { v: G ? G.v || 0 : 0, art: G ? G.art : undefined };
         u._satzPh = G ? (G.ph[0] - Z.ph0[band]) / (2 * Math.PI) : 0;
         u._satzW = G && G.schritt > 0 ? Math.min(1, G.schritt) : 0;
         u._satzX = cr.position.x;
@@ -2341,21 +2340,20 @@ class AnazhRealm_kreatur_leben {
         const v = dt > 0 ? AnazhRealm._lageTempo(dx, dz, dt) : 0;
         this._tierSatzSchritt(u, v === null ? 0 : Math.hypot(dx, dz), v || 0, dt, cr);
     }
-    // DER SCHRITT IM SATZ: die Gangart des Gang-Gesetzes zum Tempo (das Band; wer steht, behält es), das Gewicht des Gangs
-    // (`_gaitBlendStep`) und die Phase in Zyklen um Weg / Schritt des Bands × Größe
+    // DER SCHRITT IM SATZ: die Gangart aus der Wahl des Leibs (`_gangWahl`, Tempo und Hysterese wie im Leib — das Band; wer
+    // steht, behält es), das Gewicht des Gangs (`_gaitBlendStep`) und die Phase in Zyklen um Weg / Schritt des Bands × Größe
     _tierSatzSchritt(u, weg, v, dt, cr) {
         const K = AnazhRealm.KREATUR_SATZ;
         const Z = u._satz;
-        const gs = window.__tetrapodaCore.gangSchritt(
+        const gs = AnazhRealm._gangWahl(
+            u._satzWahl,
             v,
+            dt,
+            true,
             u._tierBaum.beinL * (cr.scale.x || 1),
-            this._gangZeile(false),
-            u._satzArt
+            this._gangZeile(false)
         );
-        if (gs.art !== "stand") {
-            u._satzArt = gs.art;
-            u._satzBand = Math.max(0, K.baender.indexOf(gs.art));
-        }
+        if (gs.art !== "stand") u._satzBand = Math.max(0, K.baender.indexOf(gs.art));
         u._satzW = this._gaitBlendStep(u._satzW, v, dt);
         u._satzPh += weg / (Z.schritt[u._satzBand] * (cr.scale.x || 1));
     }
@@ -2573,12 +2571,13 @@ AnazhRealm.ANALOG_NAH_M = 64;
 // ein nahendes Tier lief zwischen 55 und 64 m als Kapsel-Satz.
 AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: AnazhRealm.ANALOG_NAH_M, aus: AnazhRealm.ANALOG_NAH_M + 10 });
 // DER TIER-SATZ (profiband.K1, `_tickTierSatz`): `nahLeiber` Tiere leben im Nah-Kreis als Leib, jedes andere steht im Satz seiner
-// Gestalt — `phasen` Posen je Band, die Bänder sind die Gangarten der GANG_FOLGE, gebacken an der Froude-Zahl `froude` (die Mitte
+// Gestalt — `phasen` Posen je Band (der Knoten legt zwischen zwei Zeilen linear: mit 16 glitt der Stand-Fuß an den Kanten des
+// Stands, gate:tier-gang Satz Wolf im Schritt 0,054, mit 32 0,033), die Bänder sind die Gangarten der GANG_FOLGE, gebacken an der Froude-Zahl `froude` (die Mitte
 // jeder Gangart: Schritt unter froudeTrab 0,5, Trab bis froudeGalopp 2,5, Galopp darüber); `einschwingen` Gang-Schritte vor dem
 // Zyklus, `backJeTakt` Schritte je Takt (Lehre 14), `cap` Instanzen je Senke, `leerTakte` bis ein leerer Satz geht.
 AnazhRealm.KREATUR_SATZ = Object.freeze({
     nahLeiber: 4,
-    phasen: 16,
+    phasen: 32,
     baender: Object.freeze(["schritt", "trab", "galopp"]),
     froude: Object.freeze([0.25, 1.5, 4]),
     einschwingen: 150,
