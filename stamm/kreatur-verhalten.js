@@ -1675,7 +1675,10 @@ class AnazhRealm_kreatur_verhalten {
             if (res && res.ok && !res.killed) this._bissStoss(creature, ziel);
             return;
         }
-        if (this.damagePlayer(B.dmg, B.quelle)) this._bissStoss(creature, null);
+        // der tödliche Biss stößt nie den schon am Anker wiedergekehrten Leib (die Gnade des Tods, halten.K5)
+        const gnade = this.state.player.respawnGraceUntil;
+        if (this.damagePlayer(B.dmg, B.quelle) && this.state.player.respawnGraceUntil === gnade)
+            this._bissStoss(creature, null);
         const name = ud.name || "Ein wildes Wesen";
         if (B.quelle === "gegenwehr") {
             this.log(`${name} wehrt sich!`, "INFO");
@@ -2910,16 +2913,19 @@ class AnazhRealm_kreatur_verhalten {
     }
 
     // ═══ KAMPF-GEFÜHL — DER LEICHNAM (Welle LF kampf, Posten 7) ═══
-    // Ein Gefallener (state.leichname, _kreaturFaellt) ohne KI, Gang und Stimme: steht seine Tod-Lage (`_todLageTick`), kippt
-    // er (~83° smoothstep über kippDauerSec, Uhr `fall`) auf ihre Flanke, liegt bis zur Frist (`t` ab dem Tod), sinkt, DANN
-    // removeCreature; je Takt seine Sicht (_leibSicht). Rein optisch — kein Sim-Pfad liest die Lage, der Strom trägt sie (q).
+    // Ein Gefallener (state.leichname, _kreaturFaellt) ohne KI, Gang und Stimme: TOD_LAGE.vorlaufSec nach dem Tod (Kreatur-Uhr,
+    // die Tafel steht dann — der Leerlauf rechnete sie oder `_todLageFrist` ihren Rest) kippt er (~83° smoothstep über
+    // kippDauerSec, Uhr `fall`) auf ihre Flanke, liegt bis zur Frist (`t` ab dem Tod), sinkt, DANN removeCreature; je Takt
+    // seine Sicht (_leibSicht). Rein optisch — kein Sim-Pfad liest die Lage, der Strom trägt sie (q). Ereignis-Zeit (halten.K5).
     _tickLeichname(delta, playerPos) {
         const L = this.state.leichname;
+        const vor = AnazhRealm.TOD_LAGE.vorlaufSec;
         for (let i = L.length - 1; i >= 0; i--) {
             const creature = L[i];
             const dying = creature.userData.dying;
             dying.t += delta;
-            if (dying.hebe !== undefined) dying.fall += delta;
+            if (dying.hebe === undefined && dying.t >= vor) this._todLageFrist(creature);
+            dying.fall = dying.hebe === undefined ? 0 : Math.max(0, dying.t - vor);
             const u = Math.min(1, dying.fall / Math.max(1e-6, dying.dauer));
             const ang = AnazhRealm.TOD_KIPP_RAD * u * u * (3 - 2 * u); // ~83° — gekippt, nicht vergraben
             const axis = this._kampfTipAxis || (this._kampfTipAxis = new THREE.Vector3());

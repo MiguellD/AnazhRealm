@@ -28,6 +28,7 @@ class AnazhRealm_speicher_laden {
             this._loadStateRestoreEmotionsAndDsl(state);
             this._loadStateRestoreWorldRules(state);
             this._loadStateRestoreMiscState(state);
+            this._loadStateRestoreLeben(state);
             // Portal-Hallen zurückbauen: jede läuft durch _admitForeignPortalHall — auch Selbst-Imports sind
             // „fremd" (die R4-Wand kann einen Eintrag nach Rückruf fallen lassen). Stellt die Map-Form her.
             if (Array.isArray(state.portalHalls)) {
@@ -387,6 +388,20 @@ class AnazhRealm_speicher_laden {
                 if (typeof this._refreshHeldMesh === "function") this._refreshHeldMesh();
             }
         }
+    }
+
+    // DIE LEBENSWERTE (halten.K5, `buildStateSnapshot` playerLeben): nach Seele und Gerät, die das Maximum setzen, die Wunde
+    // des Tods, dann Leben, Ausdauer und Mana als Anteil des neu gerechneten Maximums. Ein Stand ohne sie lädt voll.
+    _loadStateRestoreLeben(state) {
+        const L = state.playerLeben;
+        const pl = this.state.player;
+        if (!L || typeof L !== "object" || !pl) return;
+        const anteil = (v, leer) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : leer);
+        pl.deathWoundIntensity = anteil(L.wunde, 0);
+        this.recomputePlayerStats();
+        pl.hp = anteil(L.hp, 1) * pl.hpMax;
+        pl.stamina = anteil(L.ausdauer, 1) * pl.staminaMax;
+        pl.mana = anteil(L.mana, 1) * pl.manaMax;
     }
 
     // Crafting-Inventar — REIHENFOLGE: Materialien ZUERST (Part-Material-Referenzen in

@@ -2,14 +2,15 @@
 // diag-kampf-gefuehl.cjs — DIE GERECHNETE SCHWUNGPHYSIK ERREICHT DEN KAMPF (npm run gate:kampf-gefuehl), headless am ECHTEN
 // Chokepoint (_beginPlayerSwing · _tickKampfSchwung · _kampfSweepTick · damageCreature · updateCreatures): (A) Dauer ∝ √I
 // eines Eigenwerks, das aus der Stoff-Zeile wiegt (ρ(holz) ×2), ungeklemmt, ± 5 % · (B) der Sweep trifft neben dem
-// Fadenkreuz genau einmal, hinter dem Rücken nie · (C) der Hit-Stop friert die Anzeige, nie die fixe Sim · (D) der Tod kippt
-// den Leib vor dem Despawn · (E) der Schwung ist ein additiver Oberkörper-Layer, danach byte-alt · (S1/S2) die Stubs von
-// _hitStopFactor und _segSegDistSq feuern.
+// Fadenkreuz genau einmal, hinter dem Rücken nie · (C) der Hit-Stop friert die Anzeige, nie die fixe Sim · (D) der EINE Fall
+// liest das Gefälle (die Tod-Lage in Ereignis-Zeit misst Q13) · (E) der Schwung ist ein additiver Oberkörper-Layer, danach
+// byte-alt · (S1/S2) die Stubs von _hitStopFactor und _segSegDistSq feuern.
 //
 // Die Leben-Prüfung „Kampf" (WELLE_L, scripts/lib/kampf-proben.cjs) spielt wie ein Mensch — das Fadenkreuz durch die echte
 // Kamera, der Klick über den EINEN Dispatcher, gezählt nur mitlaufend: Q8 Treffer · Q9 Maus · Q10 Blick · Q11 das Gesetz
-// des Haltens · Q12 der ballistische Bogen · G3/T12 das Grob-Tor · T13–T27 die Posten der Leben-Schau; die Selbst-Tests
-// S3–S16 feuern je an ihrer Naht, jede Naht restauriert. Aufruf: node scripts/diag-kampf-gefuehl.cjs
+// des Haltens · Q12 der ballistische Bogen · G3/T12 das Grob-Tor · T13–T27 die Posten der Leben-Schau; danach Q13 Sturz, Tod
+// und Wiederkehr über einen Reload (allein: `--k5`, mit dem echten Renderer); die Selbst-Tests S3–S18 feuern je an ihrer
+// Naht, jede Naht restauriert. Aufruf: node scripts/diag-kampf-gefuehl.cjs [--k5]
 const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 // Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
@@ -231,9 +232,6 @@ function lebenswerteVerdict(L) {
                 );
         }
     }
-    const R = L.rueckkehr;
-    if (!R || !(R.wunde > 0) || !(Math.abs(R.hp - R.hpMax) <= LEBEN_SOLL.eps))
-        v.push(`lebenswerte-rueckkehr: nach dem Tod steht hp ${R && R.hp} von ${R && R.hpMax} (Wunde ${R && R.wunde})`);
     if (!L.boostAn || !L.boostAb) v.push(`lebenswerte-boost: an ${!!L.boostAn} · ab ${!!L.boostAb} (keine Probe)`);
     return v;
 }
@@ -544,13 +542,84 @@ function bogenK4Taeter(K) {
     });
     return { ...K, bahn, wand: { ...K.wand, steckt: 0 }, boden: 0, tier: {}, speicher: {} };
 }
+// (Q13) halten.K5 Staffel 1, je Soll beim Namen: der Schaden aus 4 · 8 · 12 m steigt und liegt mit dem Wurf auf EINER Geraden
+// über v² (± 3 % des größten), 2 m bleibt unter ihrem Nullpunkt schadlos, jeder Schaden geht als „sturz" durch das Tor — ein
+// fester Schaden je Sturz fällt an der Reihe, ein Höhen-Zähler am Wurf; die Tod-Lage ist bei 60 Hz mit Leerlauf und 15 Hz
+// ohne ihn bei 0,6 s gleich (≤ 0,5° · 0,5 cm) und kippt; der Wolf tötet über den Biss, die Rückkehr am Anker trägt Leben,
+// Wunde, Gnade, Lebens-Spur, Seele, Trauer und Journal; Inventar und Bindung überstehen den Tod, der Abdruck nach dem Reload
+// gleicht dem vor dem Speichern je Teil. Der Abdruck ist kanonisches JSON (K5_ABDRUCK, feste Reihe), sein Hash die Zahl.
+const hash = (o) => require("crypto").createHash("sha256").update(JSON.stringify(o)).digest("hex").slice(0, 12);
+const f1 = (v) => (v === null || v === undefined ? "–" : Number(v).toFixed(2));
+function k5Verdict(K) {
+    const [n2, h4, h8, h12, wurf] = K.sturz;
+    const k = (h12.d - h4.d) / (h12.v ** 2 - h4.v ** 2);
+    const auf = (x) => Math.abs(x.d - h4.d - k * (x.v ** 2 - h4.v ** 2)) <= 0.03 * h12.d;
+    const [[w1, y1], [w2, y2]] = K.lage;
+    const { tod, vorTod: V, nachTod: N } = K;
+    const gleich = (A, B, t) => JSON.stringify(A[t]) === JSON.stringify(B[t]);
+    const soll = {
+        "sturz-reihe": h4.d > 0 && k > 0 && auf(h8),
+        "sturz-wurf": auf(wurf),
+        "sturz-schwelle": n2.d === 0 && h4.d <= k * (h4.v ** 2 - n2.v ** 2),
+        "sturz-tor": K.sturz.every((x) => !x.d || x.quelle === "sturz"),
+        "tod-lage": Math.abs(w1 - w2) <= 0.5 && Math.abs(y1 - y2) <= 0.005 && w1 > 20,
+        tod: tod.q === "jagd" && tod.rueckkehr.every(Boolean) && tod.anker < 2,
+        "tod-zustand": !!N.bindung && gleich(V, N, "inventar") && gleich(V, N, "bindung"),
+    };
+    for (const t of ["ort", "inventar", "leben", "bindung"]) soll["wiederkehr-" + t] = gleich(N, K.nachReload, t);
+    return Object.keys(soll).filter((x) => !soll[x]);
+}
+// der Lauf: die Probe (sie speichert am Ende), der IDB-Put landet, der Reload, der Abdruck der geladenen Welt
+async function k5Lauf(page) {
+    const k5 = await page.evaluate(`(${K5_VOR})(${K5_ABDRUCK})`);
+    await new Promise((ok) => setTimeout(ok, 1500));
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
+    await warteAufWelt(page, 180000);
+    k5.nachReload = await page.evaluate(K5_ABDRUCK);
+    return k5;
+}
+// die Zahl: der Hash des gespeicherten und des geladenen Abdrucks, dann die ganze Probe (Zahlen auf Tausendstel)
+function k5Bericht(K, check) {
+    const v = K ? k5Verdict(K) : ["kein Lauf"];
+    if (K)
+        console.log(
+            `  (Q13) ${hash(K.nachTod)} → ${hash(K.nachReload)} ` +
+                JSON.stringify(K, (k, x) => (typeof x === "number" ? +x.toFixed(3) : x))
+        );
+    check(!v.length, "Q13 halten.K5 Staffel 1: Sturz, Tod durch den Wolf, Wiederkehr mit Zustand " + v);
+    if (!K) return;
+    const mit = (sturz, nachReload = K.nachReload) => k5Verdict({ ...K, sturz, nachReload });
+    check(
+        mit(K.sturz.map((x) => ({ ...x, d: 20 }))).includes("sturz-reihe") &&
+            mit(K.sturz.map((x, i) => (i > 3 ? { ...x, d: K.sturz[1].d } : x))).includes("sturz-wurf"),
+        "SELBST-TEST (S17): ein fester Sturz-Schaden ROT an der Reihe, ein Höhen-Zähler am Wurf"
+    );
+    check(
+        mit(K.sturz, { ...K.nachReload, inventar: [] }).includes("wiederkehr-inventar"),
+        "SELBST-TEST (S18): eine Wiederkehr ohne Inventar ROT am Teil"
+    );
+}
 const server = statikServer();
+let ok = true;
+const check = (cond, msg) => {
+    console.log(`  ${cond ? "✅" : "❌"} ${msg}`);
+    if (!cond) ok = false;
+};
+// `--k5` endet nach der Probe: Browser und Server zu, das Urteil, der Exit
+async function k5Ende(browser, k5) {
+    await browser.close();
+    server.close();
+    k5Bericht(k5, check);
+    process.exit(ok ? 0 : 1);
+}
 
-const { WELLE_L } = require("./lib/kampf-proben.cjs");
+const { WELLE_L, K5_VOR, K5_ABDRUCK } = require("./lib/kampf-proben.cjs");
+// (Q13) `--k5` fährt nur Sturz, Tod und Wiederkehr — mit dem echten Renderer (die Station halten.K5 am Gerät)
+const NUR_K5 = process.argv.includes("--k5");
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await starteBrowser({ art: "null", frist: 300000 });
+    const browser = await starteBrowser({ art: NUR_K5 ? "linse" : "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
     let pageErr = null;
@@ -559,11 +628,15 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         if (!pageErr) pageErr = m;
         console.log("[PAGE-ERROR]", m);
     });
-    await nullRenderer(page); // GPU-frei, Produktions-Boot
-    let out = null;
+    if (!NUR_K5) await nullRenderer(page); // GPU-frei, Produktions-Boot
+    let out;
     let welle = null;
+    let k5 = null;
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
+        await page.goto(`http://127.0.0.1:${PORT}/index.html${NUR_K5 ? "?holz=kienspan" : ""}`, {
+            waitUntil: "networkidle0",
+            timeout: 120000,
+        });
         await warteAufWelt(page, 120000);
         // Warmup: die Welt settled pumpen.
         await page.evaluate(async () => {
@@ -576,6 +649,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         });
 
         // SYNCHRON messen (keine awaits — der rAF-Loop kann nicht dazwischenfunken).
+        if (NUR_K5) return k5Ende(browser, await k5Lauf(page));
         out = await page.evaluate(() => {
             const r = window.anazhRealm,
                 s = r.state,
@@ -891,42 +965,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
                 poseEnd.huelleZ === pose0.huelleZ;
             p._swing = null;
 
-            // ── (D) TOD-KIPPEN: Rotation wächst, inert, Despawn erst nach Frist ──
-            const cTod = spawnBei(60, 60); // weit weg — kein Sweep-/Spieler-Einfluss
-            if (!cTod) return { error: "Tod-Kreatur-Spawn fehlgeschlagen" };
-            // up·y der gedrehten Hochachse — reine Quaternion-Mathe (R(q)·(0,1,0)).y
-            // = 1 − 2(qx² + qz²), kein THREE nötig.
-            const upY = (c) => 1 - 2 * (c.quaternion.x * c.quaternion.x + c.quaternion.z * c.quaternion.z);
-            const kill = r.damageCreature(cTod, 99999, { source: "world" });
-            r._todLageTick({ timeRemaining: () => Infinity });
-            // der Gefallene liegt: nicht mehr unter den Wesen, in der Liste der Gefallenen, in der Szene
-            const liegt = (c) => (s.leichname || []).indexOf(c) !== -1 && s.creatures.indexOf(c) === -1 && !!c.parent;
-            o.checks.dKillKipptErst = !!kill.killed && !!cTod.userData.dying && liegt(cTod);
-            const tick = (n, dt) => {
-                for (let k = 0; k < n; k++) r.updateCreatures(dt);
-            };
-            const uy0 = upY(cTod);
-            tick(2, 0.1); // t=0.2
-            const uyA = upY(cTod);
-            tick(3, 0.1); // t=0.5
-            const uyB = upY(cTod);
-            o.kipp = { uy0, uyA, uyB };
-            o.checks.dRotationWaechst = uy0 > 0.95 && uyA < uy0 - 0.005 && uyB < uyA - 0.05;
-            o.checks.dNochDa = liegt(cTod);
-            const nachtreten = r.damageCreature(cTod, 10, { source: "world" });
-            o.checks.dSterbendInert = nachtreten.ok === false && nachtreten.reason === "dying";
-            tick(5, 0.1); // t=1.0 — der Kipp ist vollendet, der Nachklang läuft
-            const uyC = upY(cTod);
-            o.kipp.uyC = uyC;
-            o.checks.dGekippt = uyC < 0.35 && liegt(cTod);
-            // der Leichnam liegt (Posten 7): nach dem Kippen bleibt er, bis die Frist des Gesetzbuchs (kippDauer +
-            // leichnamSec, Kreatur-Uhr) verstrichen ist — dann kehrt er zur Erde zurück
-            const GT = r.constructor._arenaGesetz().gefuehl;
-            tick(4, 0.1); // t=1.4
-            const liegtNoch = liegt(cTod);
-            tick(Math.ceil((GT.kippDauerSec + GT.leichnamSec - 1.4) / 0.1) + 3, 0.1);
-            o.checks.dDespawnNachFrist = liegtNoch && (s.leichname || []).indexOf(cTod) === -1 && !cTod.parent;
-
             // ── Bühne restaurieren (der Rücken-Zeuge fällt zuletzt den EINEN Fall: er liest das Gefälle am Spion) ──
             o.checks.todKipptStattDespawn = ruft(() => r._kreaturFaellt(cRuecken), "_fieldGradient") && absenzTod;
             for (const c of [cNeben, cRuecken]) if (c.parent) r.removeCreature(c); // ein Wesen oder ein Gefallener
@@ -951,6 +989,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             WELLE_L,
             require("../spec/profiband/haushalt.json").messorte.find((o) => o.id === "wiese")
         );
+        k5 = await k5Lauf(page).catch((e) => console.log("  (Q13) ABBRUCH " + e.message));
     } catch (e) {
         out = { error: (e && e.message) || String(e) };
     }
@@ -958,13 +997,8 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
     server.close();
 
     console.log(
-        "\n===== KAMPF-GEFÜHL — Dauer ∝ √I · Klingen-Sweep · Hit-Stop ≠ Sim · Tod-Kippen (gate:kampf-gefuehl) =====\n"
+        "\n===== KAMPF-GEFÜHL — Dauer ∝ √I · Klingen-Sweep · Hit-Stop ≠ Sim · Sturz und Wiederkehr (gate:kampf-gefuehl) =====\n"
     );
-    let ok = true;
-    const check = (cond, msg) => {
-        console.log(`  ${cond ? "✅" : "❌"} ${msg}`);
-        if (!cond) ok = false;
-    };
     if (!out || out.error) {
         console.log("FEHLER:", out ? out.error : "?");
         ok = false;
@@ -977,7 +1011,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             `  (B) Reichweite ${out.reach.toFixed(2)} m · Treffer je Schwung ${out.sweep.hits} · (C) Sim-Schritte im Hit-Stop ${out.simSteps} (Δt ${out.simDelta.toFixed(3)} s) · Hand C2 / C4 / S1 ${out.handM.map((m) => (m * 1000).toFixed(1)).join(" / ")} mm`
         );
         console.log(
-            `  (D) up·y: ${out.kipp.uy0.toFixed(2)} → ${out.kipp.uyA.toFixed(2)} → ${out.kipp.uyB.toFixed(2)} → ${out.kipp.uyC.toFixed(2)} · (E) Arm ${out.pose.armRad.toFixed(2)} rad · Rumpf ${out.pose.rumpfRad.toFixed(2)} rad · Füße im Strike ${out.pose.fussGleitenM} m verschoben\n`
+            `  (E) Arm ${out.pose.armRad.toFixed(2)} rad · Rumpf ${out.pose.rumpfRad.toFixed(2)} rad · Füße im Strike ${out.pose.fussGleitenM} m verschoben\n`
         );
         check(c.ruftSelbst, "SELBST-TEST: der Zähl-Spion bleibt stumm, wenn der Leser den Versorger nicht ruft");
         check(c.klickLoestNurAus, "KONSUM: der Crosshair-Klick löst NUR aus (kein attackSpeed, kein Direkt-Schaden)");
@@ -1018,14 +1052,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             c.s1LinseFeuert,
             "SELBST-TEST (S1): _hitStopFactor ≡ 1 gestubbt → die Uhr läuft (die Freeze-Messung misst den Faktor)"
         );
-        check(c.dKillKipptErst, "(D) TOD: der Kill setzt dying — KEIN Sofort-Despawn");
-        check(c.dRotationWaechst, "(D) der Körper KIPPT: die Rotation wächst über die Ticks (entlang _fieldGradient)");
-        check(c.dSterbendInert, "(D) ein sterbendes Wesen ist inert (damageCreature-Wand: reason=dying)");
-        check(c.dGekippt && c.dNochDa, "(D) gekippt (~83°) und noch DA während des Nachklangs");
-        check(
-            c.dDespawnNachFrist,
-            "(D) der Leichnam liegt nach dem Kippen und fällt erst NACH der Frist (Kipp + Leichnam)"
-        );
         check(
             c.todKipptStattDespawn,
             "(D) der EINE Fall (_kreaturFaellt) kippt nach dem Gefälle (_fieldGradient am Spion), keiner despawnt selbst"
@@ -1042,7 +1068,6 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
     } else {
         const z = welle.z,
             c = welle.c;
-        const f1 = (v) => (v === null || v === undefined ? "–" : Number(v).toFixed(2));
         if (welle.fehler.length) console.log("  Fehler: " + welle.fehler.join(" · "));
         console.log(
             `  (Q8) Zone Kopf÷Bein ${f1(z.zoneKopfBein)} (Ziel-Rest ${f1(z.zielKopf)}°/${f1(z.zielBein)}°, Zonen ${JSON.stringify(z.zonen)}) · hangab Hirsch ${z.hangabHirsch}/10, Fuchs ${z.hangabFuchs}/10 · klein flach ${z.kleinFlach}/10`
@@ -1169,6 +1194,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
             s14.s1.some((x) => x.startsWith("bahn")) && s14.s2.includes("steckt-wand"),
             "SELBST-TEST (S14): die alte Bahn und der alte Abschied — die Linse nennt beide"
         );
+        k5Bericht(k5, check);
         // EINHEITSBREI an der Tafel: zwei Spender tragen 17 Gestalten — Dauer, Reichweite und die Wirkung bei EINEM Klingen-
         // Tempo (20 m/s) unterscheiden sich, wo nur der Kern sie trägt; ohne Kern (Selbsttest) fällt die Tafel auf die Spender
         const je = (f) =>
@@ -1474,8 +1500,7 @@ const { WELLE_L } = require("./lib/kampf-proben.cjs");
         const fmtL = (x) =>
             `${x.rufer} hp ${x.hp[0]}→${x.hp[1]} · Ausdauer ${x.st[0]}→${x.st[1]} · Mana ${x.mana[0]}→${x.mana[1]}`;
         console.log(
-            `  (T27) Lebenswerte im Modus pfad: Biss −${zL && zL.erst && zL.erst.hp} hp · Hieb −${zL && zL.erst && zL.erst.st} Ausdauer · ` +
-                `Rückkehr ${JSON.stringify(zL && zL.rueckkehr)}`
+            `  (T27) Lebenswerte im Modus pfad: Biss −${zL && zL.erst && zL.erst.hp} hp · Hieb −${zL && zL.erst && zL.erst.st} Ausdauer`
         );
         for (const x of (zL && zL.schritte) || []) console.log(`        ${fmtL(x)}`);
         const lv = lebenswerteVerdict(zL);

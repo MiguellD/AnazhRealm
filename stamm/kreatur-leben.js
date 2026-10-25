@@ -156,8 +156,8 @@ class AnazhRealm_kreatur_leben {
         // KEINE Persistenz — Boosts sind „Geste lebt im Moment".
         group.userData.boosts = [];
         // W4 (V17.48) — die BINDUNG (∈ [0,1]): wächst, während die Kreatur folgt + nah ist
-        // + bei der „folge mir"-Geste; gewichtet die Contagion + den Schmerz des Verlusts.
-        // Reaktiv, NICHT persistiert (wie der Task — die Beziehung wird gelebt, nicht gespeichert).
+        // + bei der „folge mir"-Geste; gewichtet die Contagion + den Schmerz des Verlusts. Sie ist Zustand und reist mit
+        // dem Folgen in den Speicher (`_serializeCreature` bindung, halten.K5).
         group.userData.bond = 0;
         // Kreatur-HP: init = hpMax aus DERSELBEN Stat-Pipeline wie der Spieler; der Snapshot trägt die Wunde
         // (_serializeCreature → _restoreCreatureFromSnapshot, Q12); damageCreature lazy-init't ebenfalls.
@@ -198,7 +198,7 @@ class AnazhRealm_kreatur_leben {
 
     // === Komponenten-Persistenz für Kreaturen ===
     // Komponenten-Snapshot statt Mesh: {name, soul, memory, position, bornAt, …} je Kreatur (~1 KB).
-    // NICHT persistiert: Specs (live aus memory abgeleitet), Tasks + carrying (reaktiv).
+    // NICHT persistiert: Specs (live aus memory abgeleitet), Tasks + carrying (reaktiv) — außer der Bindung.
     _serializeCreature(creature) {
         if (!creature || !creature.userData) return null;
         const ud = creature.userData;
@@ -232,6 +232,15 @@ class AnazhRealm_kreatur_leben {
                 : undefined,
             // halten.K4 — die Pfeile, die im Tier stecken, reisen mit (Glied + Lage im Glied, `_pfeileDesTiers`)
             pfeile: this._pfeileDesTiers(creature),
+            // halten.K5 — DIE BINDUNG an den Spieler ist Zustand: die Tiefe (bond) und das Folgen (die Argumente des Auftrags
+            // follow_player); vorher kehrte jedes gebundene Tier nach dem Reload ungebunden wieder (bond 0,12 → 0, folgt → wander)
+            bindung:
+                ud.bond > 0 || (ud.task && ud.task.name === "follow_player")
+                    ? {
+                          bond: +(ud.bond || 0).toFixed(4),
+                          folgt: ud.task && ud.task.name === "follow_player" ? { ...ud.task.args } : null,
+                      }
+                    : undefined,
             // Eingefrorene Guss-Dials reisen mit — nur wenn unter einer Studio-Übergabe gegossen (Default-
             // Kreaturen tragen das Feld nicht); der Restore pinnt sie als dialsOv.
             gussDials:
@@ -307,6 +316,13 @@ class AnazhRealm_kreatur_leben {
             c.userData._steuer = { gier: snap.gier, v: 0 };
         }
         if (Array.isArray(snap.pfeile)) this._pfeileInsTierLaden(c, snap.pfeile); // halten.K4: die Pfeile stecken wieder
+        // halten.K5: die Bindung kehrt wieder — still (keine Geste, kein Sprung der Bindung, kein Ruf)
+        const B = snap.bindung;
+        if (B && typeof B === "object") {
+            if (Number.isFinite(B.bond)) c.userData.bond = Math.max(0, Math.min(1, B.bond));
+            if (B.folgt && typeof B.folgt === "object")
+                this.assignCreatureTask(c, "follow_player", B.folgt, { silent: true });
+        }
         // Equipped-Slots defensiv restoren: tool muss in state.tools existieren, armor role:"armor" tragen —
         // sonst null (die Welt kann sich zwischen Save und Load geändert haben).
         if (snap.equipped && typeof snap.equipped === "object") {
@@ -895,7 +911,8 @@ class AnazhRealm_kreatur_leben {
         ud._gelenk.haltungFest = true;
         // wohin Platz ist (die Flanke hangab, steht dort eine Wand, die andere Flanke: `_todKippWahl`), rechnet der Leerlauf
         // (`_todLageBestellen`): bis die Tafel steht, ist `hebe` undefined und der Leib steht in der Haltung seines Todes —
-        // `fall` (die Uhr des Kippens) zählt erst ab dann, `t` (die Uhr des Leichnams: Kadaver, Frist) ab dem Tod
+        // `fall` (die Uhr des Kippens) zählt ab TOD_LAGE.vorlaufSec nach dem Tod (`_todLageFrist`), `t` (die Uhr des
+        // Leichnams: Kadaver, Frist) ab dem Tod
         creature.userData.dying = {
             t: 0,
             fall: 0,
@@ -1074,9 +1091,9 @@ class AnazhRealm_kreatur_leben {
     // er 0,84 m hinein). Dann fällt er dorthin, wo Platz ist: zuerst auf die andere Flanke, erst wo keine Flanke Platz hat
     // längs der Achse (der Leib liegt auf einer Flanke — längs der Achse stand der Hirsch auf dem Hinterteil, Bild ks09);
     // hat keine Richtung Platz, die mit dem kleinsten Hub. Hebt die erste Flanke höchstens eine Stufe, bleibt alles, wie es war.
-    // Ein Gang wie die Tafel: die Haut und das Raster einmal, je Richtung ihre Tafel; am Ende { hx, hz, hebe }.
-    *_todKippWahl(creature, hx, hz) {
-        const haut = this._todHaut(creature);
+    // Ein Gang wie die Tafel: die Haut (im Tod gelesen, `_todLageBestellen`) und das Raster einmal, je Richtung ihre Tafel; am
+    // Ende { hx, hz, hebe }.
+    *_todKippWahl(creature, hx, hz, haut) {
         if (!haut) return { hx, hz, hebe: null };
         const zellen = new Map();
         const hub = (h) => (h ? Math.max(...h) : Infinity);
@@ -1102,7 +1119,9 @@ class AnazhRealm_kreatur_leben {
     // 41,3 ms (Tod-Lage 31,3 ms).
     _todLageBestellen(creature, fall) {
         const Q = this._todLagen || (this._todLagen = []);
-        const gang = this._todKippWahl(creature, fall.dirX, fall.dirZ);
+        // die Haut in der Haltung des Todes liest der Tod selbst (halten.K5, Ereignis-Zeit): rechnete erst der Leerlauf oder
+        // die Frist sie, trug die Tafel die Haltung jenes Augenblicks — unter Last 0,2 s später, 6 mm anders gelegt
+        const gang = this._todKippWahl(creature, fall.dirX, fall.dirZ, this._todHaut(creature));
         fall.lage = new Promise((fertig) => Q.push({ creature, fall, gang, fertig }));
         if (Q.length === 1) this._imLeerlauf((frist) => this._todLageTick(frist), AnazhRealm.TOD_LAGE.fristMs);
     }
@@ -1126,21 +1145,32 @@ class AnazhRealm_kreatur_leben {
                     const di = Q[i].creature.position.distanceToSquared(p);
                     if (di < dj) [j, dj] = [i, di];
                 }
-                const a = Q[j];
-                const s = this.state.leichname.indexOf(a.creature) !== -1 ? a.gang.next() : { done: true, value: null };
-                if (s.done) {
-                    Q.splice(j, 1);
-                    if (s.value) {
-                        a.fall.dirX = s.value.hx;
-                        a.fall.dirZ = s.value.hz;
-                    }
-                    a.fall.hebe = s.value ? s.value.hebe : null;
-                    a.fertig(a.fall.hebe);
-                }
+                if (this._todLageSchritt(Q[j])) Q.splice(j, 1);
             } while (Q.length && offen());
         } finally {
             if (Q.length) this._imLeerlauf((f) => this._todLageTick(f), T.fristMs);
         }
+    }
+    // EIN Winkel der Tafel eines Gefallenen; steht sie (oder liegt er nicht mehr), trägt sein Fall ihre Lage — dann true.
+    _todLageSchritt(a) {
+        const s = this.state.leichname.indexOf(a.creature) !== -1 ? a.gang.next() : { done: true, value: null };
+        if (!s.done) return false;
+        if (s.value) {
+            a.fall.dirX = s.value.hx;
+            a.fall.dirZ = s.value.hz;
+        }
+        a.fall.hebe = s.value ? s.value.hebe : null;
+        a.fertig(a.fall.hebe);
+        return true;
+    }
+    // DIE FRIST DER TOD-LAGE (halten.K5, Ereignis-Zeit): steht die Tafel TOD_LAGE.vorlaufSec nach dem Tod (Kreatur-Uhr) nicht,
+    // rechnet der Takt ihren Rest jetzt (`_tickLeichname`) — der Fall beginnt bei jeder Bildrate und Last im selben Augenblick.
+    _todLageFrist(creature) {
+        const Q = this._todLagen || [];
+        const j = Q.findIndex((a) => a.creature === creature);
+        if (j < 0) return;
+        while (!this._todLageSchritt(Q[j]));
+        Q.splice(j, 1);
     }
 
     // === Helper: kontext-abhängiges Args-Mapping für creature_task(paramArg) ===
@@ -2597,8 +2627,10 @@ AnazhRealm.TOD_BODEN_ZELLE = 0.5;
 // DIE TOD-LAGE IM LEERLAUF (`_todLageTick`): die Frist, nach der ein Fenster auch ohne Leerlauf kommt (ms), und die Scheibe
 // (ms) — die Reserve, die ein Leerlauf-Fenster dem nächsten Bild lässt, und die Länge eines Fensters ohne Leerlauf. Gemessen
 // (Radeon, Dorf Ego, unter Fremdlast): ein Tod kostete den Takt 28–84 ms, jetzt 0,3–0,6 ms; die Lage läuft in Fenstern von
-// höchstens 9,7 ms, die Tafel steht 0,13–0,58 s nach dem Tod.
-AnazhRealm.TOD_LAGE = Object.freeze({ fristMs: 50, scheibeMs: 2 });
+// höchstens 9,7 ms, die Tafel steht 0,13–0,58 s nach dem Tod. `vorlaufSec` (halten.K5): so lange nach dem Tod (Kreatur-Uhr)
+// steht der Leib in der Haltung seines Todes, dann fällt er — steht die Tafel da nicht, rechnet der Takt ihren Rest
+// (`_todLageFrist`); vorher fiel er, wann der Leerlauf sie brachte (headless unbelastet 0,05 s, unter Last 15 Hz 0,67 s).
+AnazhRealm.TOD_LAGE = Object.freeze({ fristMs: 50, scheibeMs: 2, vorlaufSec: 0.2 });
 // DER LEBENSRAUM (tetrapoda LEBENSRAUM_GESETZ + bodenKlasse · lebensraum · lebensraumWahl, DURST_GESETZ + durst,
 // ETHOGRAMM_GESETZ + lichtPhase · ruhePegel · aesung · taetigkeit, Tiere K4): Art × Ort × Uhr — die Boden-Klasse eines Orts, die
 // Eignung je Gattung und ihr Tag. Fail-closed.

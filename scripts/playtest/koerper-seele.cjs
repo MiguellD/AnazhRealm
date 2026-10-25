@@ -1113,10 +1113,6 @@ async function checkBandWelle6DSoul(ctx) {
         const wolfStats = embodyStats("koerper_wolf");
         const baerStats = embodyStats("koerper_baer");
 
-        out.humanStats = humanStats;
-        out.fuchsStats = fuchsStats;
-        out.baerStats = baerStats;
-
         out.fuchsFasterThanBaer = fuchsStats.speed > baerStats.speed;
         out.fuchsJumpsHigherThanBaer = fuchsStats.jumpPower > baerStats.jumpPower;
         out.baerHasMoreHpThanFuchs = baerStats.hpMax > fuchsStats.hpMax;
@@ -1138,37 +1134,22 @@ async function checkBandWelle6DSoul(ctx) {
         r.recomputePlayerStats();
         out.stateSpeedMatches = Math.abs(r.state.speed - humanStats.speed) < 0.001;
         out.stateJumpPowerMatches = Math.abs(r.state.jumpPower - humanStats.jumpPower) < 0.001;
-        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der
-        // Sprint-Faktor wohnt im koerper-Gesetz (fx.bewegung.sprintMul,
-        // Fallback 2 = byte-alt bei kaltem Kern), nicht mehr fix ×2.
-        const bewGesetz6d =
-            (globalThis.__koerperCore &&
-                globalThis.__koerperCore.PRESETS &&
-                globalThis.__koerperCore.PRESETS.mensch &&
-                globalThis.__koerperCore.PRESETS.mensch.fx &&
-                globalThis.__koerperCore.PRESETS.mensch.fx.bewegung) ||
-            null;
-        const sprintMul6d =
-            bewGesetz6d && Number.isFinite(bewGesetz6d.sprintMul) && bewGesetz6d.sprintMul > 0
-                ? bewGesetz6d.sprintMul
-                : 2;
+        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der Sprint-Faktor wohnt im koerper-Gesetz
+        // (fx.bewegung.sprintMul); ein kalter Kern wirft laut — kein Literal fährt als Zwilling (das Spiel liest ihn
+        // fail-closed, `_sprintMulGesetz`).
+        const sprintMul6d = globalThis.__koerperCore.PRESETS.mensch.fx.bewegung.sprintMul;
         out.stateSprintIsDoubleSpeed = Math.abs(r.state.sprintSpeed - humanStats.speed * sprintMul6d) < 1e-9;
         out.statePlayerStatsCached = r.state.player.stats && r.state.player.stats.hpMax === humanStats.hpMax;
-        // K27 — die Lebenswerte sind ZUSTAND: die Wandlung (applyPlayerSoul) füllt sie, eine Neuberechnung klemmt nur
-        // (verwundet bleibt verwundet; gate:kampf-gefuehl T27 geht jeden Rufer im Modus pfad).
+        // K27 — die Lebenswerte sind ZUSTAND: die Wandlung (applyPlayerSoul) füllt sie; dass eine Neuberechnung nur klemmt
+        // (verwundet bleibt verwundet), urteilt gate:kampf-gefuehl T27 an jedem Rufer im Modus pfad (S11 die heilende Hülle).
         const pl6d = r.state.player;
-        const vollNachWandlung =
+        out.statePlayerHasHpAndStamina =
             typeof pl6d.hp === "number" &&
             typeof pl6d.hpMax === "number" &&
             typeof pl6d.stamina === "number" &&
             typeof pl6d.staminaMax === "number" &&
             pl6d.hp === pl6d.hpMax &&
             pl6d.stamina === pl6d.staminaMax;
-        pl6d.hp = 0.5 * pl6d.hpMax;
-        pl6d.stamina = 0.25 * pl6d.staminaMax;
-        r.recomputePlayerStats();
-        out.statePlayerHasHpAndStamina =
-            vollNachWandlung && pl6d.hp === 0.5 * pl6d.hpMax && pl6d.stamina === 0.25 * pl6d.staminaMax;
         // Restore
         r.applyPlayerSoul(savedSoul);
         r.recomputePlayerStats();
@@ -1194,8 +1175,8 @@ async function checkBandWelle6DSoul(ctx) {
     });
 
     // ### Reflexions-Fixes ###
-    // (1) WASD-Mapping · (2) „damage X“ als Chat-Pattern · (3) Aura-Absenz · (4) Tod-Wunde persistent
-    // + linear regenerierend · (5) Werkzeug-Anwendung kostet Stamina · (6) Konsumables aus Compound-Tags.
+    // (1) WASD-Mapping · (2) „damage X“ als Chat-Pattern · (3) Aura-Absenz · (4) Tod und Wunde: gate:kampf-gefuehl Q13
+    // · (5) Werkzeug-Anwendung kostet Stamina · (6) Konsumables aus Compound-Tags.
     const reflexResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -1217,7 +1198,7 @@ async function checkBandWelle6DSoul(ctx) {
             try {
                 r.p2pHandleMessage(JSON.stringify({ type: "aura", peerId: "fremd-alt-peer", hue: 12, intensity: 1 }));
                 return true;
-            } catch (_e) {
+            } catch {
                 return false;
             }
         })();
@@ -1245,21 +1226,10 @@ async function checkBandWelle6DSoul(ctx) {
         r.dslRun(["player_speed", r._koerperGesetzBand("speed").max], { source: "test" });
         out.speedAfterDsl = r.state.speed;
         out.sprintAfterDsl = r.state.sprintSpeed;
-        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der
-        // Sprint-Faktor kommt aus dem koerper-Gesetz (fx.bewegung.sprintMul,
-        // Fallback 2 = byte-alt bei kaltem Kern), nicht mehr fix ×2.
-        const bewGesetzReflex =
-            (globalThis.__koerperCore &&
-                globalThis.__koerperCore.PRESETS &&
-                globalThis.__koerperCore.PRESETS.mensch &&
-                globalThis.__koerperCore.PRESETS.mensch.fx &&
-                globalThis.__koerperCore.PRESETS.mensch.fx.bewegung) ||
-            null;
-        const sprintMulReflex =
-            bewGesetzReflex && Number.isFinite(bewGesetzReflex.sprintMul) && bewGesetzReflex.sprintMul > 0
-                ? bewGesetzReflex.sprintMul
-                : 2;
-        out.sprintFollowsSpeed = Math.abs(r.state.sprintSpeed - r.state.speed * sprintMulReflex) < 1e-9;
+        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der Sprint-Faktor kommt aus dem koerper-Gesetz
+        // (fx.bewegung.sprintMul); ein kalter Kern wirft laut, kein Literal fährt als Zwilling.
+        const bewGesetzReflex = globalThis.__koerperCore.PRESETS.mensch.fx.bewegung;
+        out.sprintFollowsSpeed = Math.abs(r.state.sprintSpeed - r.state.speed * bewGesetzReflex.sprintMul) < 1e-9;
         out.sprintActuallyFaster = r.state.sprintSpeed > r.state.speed;
         // Restore baseline mit explizitem Soul-Reset (frühere Tests
         // haben womöglich Boosts/Wunde/Custom-Soul-Reste hinterlassen)
@@ -1270,43 +1240,14 @@ async function checkBandWelle6DSoul(ctx) {
         r.recomputePlayerStats();
         const humanResult = r.computePlayerStats();
         out.humanSpeed = humanResult.stats.speed;
-        out.humanTags = JSON.stringify(humanResult.tags);
-        out.humanWound = r.state.player.deathWoundIntensity;
-        out.humanBoostCount = r.state.player.boosts.length;
         // Mensch ist „balanced“ (niedrige magieleitung, dichte clamped auf 1) ⇒ speed ≥ LEBENDE
-        // Gesetz-Base (fx.bewegung.speed.base; Fallback 7 bei kaltem Kern) — gesetz-relativ, kein
-        // Arcade-Literal.
-        const speedBaseReflex =
-            bewGesetzReflex && bewGesetzReflex.speed && Number.isFinite(bewGesetzReflex.speed.base)
-                ? bewGesetzReflex.speed.base
-                : 7;
+        // Gesetz-Base (fx.bewegung.speed.base) — gesetz-relativ, kein Arcade-Literal.
+        const speedBaseReflex = bewGesetzReflex.speed.base;
         out.humanSpeedBase = speedBaseReflex;
         out.humanSpeedRaised = humanResult.stats.speed >= speedBaseReflex - 1e-9;
 
-        // (4) Tod-Wunde persistent + regeneriert
-        r.state.player.deathWoundIntensity = 0;
-        r.state.player.respawnGraceUntil = -Infinity;
-        r.state.player.hp = 1;
-        r._playerDeathRespawn("test");
-        // Der feld-native Tod: die Rückkehr setzt die Lebenswerte voll — gemessen am Respawn selbst, bevor der
-        // Vitals-Takt die Wunde heilt (er hebt hpMax, nie hp).
-        out.respawnHpFull = r.state.player.hp === r.state.player.hpMax && r.state.player.hp > 1;
-        out.woundSetAt1 = Math.abs(r.state.player.deathWoundIntensity - 1.0) < 0.001;
-        // ALTLASTEN-NULL: die Wunde drückt die Tags — der ROHE Stat-Rechner
-        // (computePlayerStats) zeigt sie; hp wurde vom Respawn voll gesetzt.
-        const woundedHpMax = r.computePlayerStats().stats.hpMax;
-        r.state.player.deathWoundIntensity = 0;
-        const baselineHpMax = r.computePlayerStats().stats.hpMax;
-        r.state.player.deathWoundIntensity = 1.0;
-        out.woundReducesHp = woundedHpMax < baselineHpMax;
-        // Regen-Tick (jetzt tickPlayerVitals): Wunde reduziert sich
-        r.state.player.deathLastTick = -Infinity;
-        r.tickPlayerVitals(performance.now() / 1000);
-        out.woundRegens = r.state.player.deathWoundIntensity < 1.0;
-        // Gnade steht + der Todesort trägt eine Lebens-Spur (das dritte Verb, KONSUM).
-        out.respawnGraceSet = r.state.player.respawnGraceUntil > performance.now() / 1000;
-        out.deathDepositsLife = !!(r.state.lifeField && r.state.lifeField.size > 0);
-        r.state.player.respawnGraceUntil = -Infinity;
+        // (4) Tod und Wunde misst gate:kampf-gefuehl Q13 am Biss des Wolfs (Rückkehr, Gnade, Lebens-Spur, die Wunde senkt hpMax,
+        // der Vitals-Takt heilt sie)
 
         // (5) Werkzeug-Kosten: applyOpToPart braucht Stamina
         r.state.player.deathWoundIntensity = 0;
@@ -1420,18 +1361,6 @@ async function checkBandWelle6DSoul(ctx) {
             "Welle 6.D Polish: Mensch-Speed mind. Gesetz-base (fx.bewegung.speed.base)",
             reflexResults.humanSpeedRaised,
             `speed=${(reflexResults.humanSpeed || 0).toFixed(2)} base=${(reflexResults.humanSpeedBase || 0).toFixed(2)}`
-        );
-        // (4) Wunde
-        check("Reflex 4: _playerDeathRespawn setzt deathWoundIntensity = 1.0", reflexResults.woundSetAt1);
-        check("Reflex 4: Diskrimination — Wunde reduziert hpMax (dichte+härte-Penalty)", reflexResults.woundReducesHp);
-        check("Reflex 4: tickPlayerVitals regeneriert Wunde linear", reflexResults.woundRegens);
-        check(
-            "Reflex 4 (ALTLASTEN-NULL): Respawn stellt HP voll + Gnade steht",
-            reflexResults.respawnHpFull && reflexResults.respawnGraceSet
-        );
-        check(
-            "Reflex 4 (ALTLASTEN-NULL): der Todesort trägt eine Lebens-Spur (das dritte Verb)",
-            reflexResults.deathDepositsLife
         );
         // (5) Werkzeug-Kosten
         check(
@@ -1639,11 +1568,8 @@ async function checkBandWelle6DSoul(ctx) {
         // Modus (Default frieden blockiert sonst Schaden + Stamina).
         r.setGameMode("pfad");
 
-        // --- Tod-Behandlung (ALTLASTEN-NULL: feld-nativ) ---
-        // U1 — Katalog-Existenz statt Namens-Wiederholung: der ANKER-
-        // KATALOG (window.__anker) trägt die Symbolnamen; zieht das Symbol um,
-        // wandert EINE Katalog-Zeile, nie N Proben.
-        out.hasPhoenixState = "respawnGraceUntil" in r.state.player;
+        // --- Schaden (der Tod — Rückkehr am Anker, Gnade, Trauer, Journal, Doppelt-Tod-Schutz — misst gate:kampf-gefuehl Q13
+        // am Biss des Wolfs) ---
         out.damageOpInNonBroadcast = C.NON_BROADCASTABLE_OPS.has("damage");
 
         // Setup
@@ -1651,55 +1577,16 @@ async function checkBandWelle6DSoul(ctx) {
         if (savedSoul !== "human") r.applyPlayerSoul("human");
         r.state.player.respawnGraceUntil = -Infinity;
 
-        const hpBefore = r.state.player.hp;
-        r.damagePlayer(20, "test");
-        out.hpDropped = r.state.player.hp === hpBefore - 20;
         // Heat-Quelle: heatResist (Mensch hat ~0.22) dämpft
         const hpAfterHeat = r.state.player.hp;
         r.damagePlayer(20, "fire-test");
         const hpDelta = hpAfterHeat - r.state.player.hp;
         out.heatResistReducesDamage = hpDelta < 20 - 1;
 
-        // Tod-Trigger: derselbe Körper kehrt am Anker zurück (kein Gestalt-Tausch)
-        const soulBefore = r.state.player.soul;
-        r.damagePlayer(99999, "kill-test");
-        out.killTriggersPhoenix = r.state.player.soul === soulBefore;
-        out.phoenixUntilSet = r.state.player.respawnGraceUntil > performance.now() / 1000;
-        // Rückkehr am Genesis-Anker (Start-Plattform-Nähe, x/z)
-        const anchor = (r.state.architectures || []).find((a) => a && a.type === "start_plattform");
-        const pm = r.state.playerMesh;
-        out.preDeathSoulRemembered =
-            !anchor ||
-            (!!pm &&
-                Math.abs(pm.position.x - anchor.position.x) < 2 &&
-                Math.abs(pm.position.z - anchor.position.z) < 2);
-        out.weltTrauerSorrow = r.state.player.emotions.sorrow > 0.25;
-        out.weltTrauerAwe = r.state.player.emotions.awe > 0.15;
-        out.hpRestoredAfterDeath = r.state.player.hp > 0;
-        // Journal-Eintrag
-        const journalEntries = r.state.worldJournal && r.state.worldJournal.entries;
-        out.journalHasLossEntry =
-            Array.isArray(journalEntries) && journalEntries.some((e) => e.type === "loss" && /fiel/.test(e.text || ""));
-
-        // Doppelt-Tod-Schutz (Respawn-Gnade)
-        const hpInPhoenix = r.state.player.hp;
-        const beforeJournalCount = journalEntries.length;
-        r.damagePlayer(99999, "kill-test-2");
-        const afterJournalCount = journalEntries.length;
-        out.deathDoubleProtected = afterJournalCount === beforeJournalCount;
-        // (HP sollte nicht sinken, weil respawnGraceUntil > now den Schaden blockt)
-        out.hpUntouchedDuringPhoenix = Math.abs(r.state.player.hp - hpInPhoenix) < 1;
-
-        // tickPlayerVitals regeneriert Stamina (der HP-Timer fiel mit dem Phönix)
-        r.state.player.stamina = 10;
-        r.state.player.deathLastTick = -Infinity;
-        r.tickPlayerVitals(performance.now() / 1000);
-        out.tickRegenerates = r.state.player.stamina > 10;
+        // die Ausdauer im Vitals-Takt misst gate:kampf-gefuehl Q13 nach der Rückkehr
 
         // Reset
         r.state.player.respawnGraceUntil = -Infinity;
-        r.state.player.emotions.sorrow = 0;
-        r.state.player.emotions.awe = 0;
         r.state.player.hp = r.state.player.hpMax;
 
         // --- Min-Regel-Hybrid ---
@@ -1779,36 +1666,12 @@ async function checkBandWelle6DSoul(ctx) {
     });
 
     if (wave6d3aResults && !wave6d3aResults.error) {
-        // Tod-Behandlung
-        check(
-            "Welle 6.D Etappe 3a (NULL): respawnGraceUntil trägt",
-            wave6d3aResults.hasPhoenixState
-        );
+        // Schaden
         check(
             "Welle 6.D Etappe 3a: damage-Op in NON_BROADCASTABLE_OPS (privat)",
             wave6d3aResults.damageOpInNonBroadcast
         );
-        check("Welle 6.D Etappe 3a: damagePlayer reduziert HP", wave6d3aResults.hpDropped);
         check("Welle 6.D Etappe 3a: heatResist dämpft Feuer-Schaden", wave6d3aResults.heatResistReducesDamage);
-        check(
-            "Welle 6.D Etappe 3a (NULL): HP=0 → DERSELBE Körper (kein Gestalt-Tausch)",
-            wave6d3aResults.killTriggersPhoenix
-        );
-        check("Welle 6.D Etappe 3a (NULL): respawnGraceUntil > now nach Tod", wave6d3aResults.phoenixUntilSet);
-        check("Welle 6.D Etappe 3a (NULL): Rückkehr am Genesis-Anker (x/z)", wave6d3aResults.preDeathSoulRemembered);
-        check("Welle 6.D Etappe 3a: Welt-Trauer — sorrow +0.3 nach Tod", wave6d3aResults.weltTrauerSorrow);
-        check("Welle 6.D Etappe 3a: Welt-Trauer — awe +0.2 nach Tod", wave6d3aResults.weltTrauerAwe);
-        check("Welle 6.D Etappe 3a (NULL): HP kehrt beim Respawn voll zurück", wave6d3aResults.hpRestoredAfterDeath);
-        check("Welle 6.D Etappe 3a: Journal hat 'loss'-Eintrag mit 'fiel'", wave6d3aResults.journalHasLossEntry);
-        check(
-            "Welle 6.D Etappe 3a (NULL): Doppelt-Tod-Schutz — die Respawn-Gnade blockt",
-            wave6d3aResults.deathDoubleProtected
-        );
-        check(
-            "Welle 6.D Etappe 3a (NULL): HP unangetastet während der Gnade",
-            wave6d3aResults.hpUntouchedDuringPhoenix
-        );
-        check("Welle 6.D Etappe 3a (NULL): tickPlayerVitals regeneriert Stamina", wave6d3aResults.tickRegenerates);
         // Min-Regel-Hybrid
         check(
             "Welle 6.D Etappe 3a: Hybrid-Beispiel aus Doc — 4 Stufen → ~0.595",
@@ -2365,7 +2228,7 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D: state.sprintSpeed = Gesetz-sprintMul × state.speed", wave6dResults.stateSprintIsDoubleSpeed);
         check("Welle 6.D: state.player.stats wird gecached", wave6dResults.statePlayerStatsCached);
         check(
-            "Welle 6.D + K27: hp, hpMax, stamina, staminaMax existieren; die Wandlung füllt, die Neuberechnung heilt nicht",
+            "Welle 6.D + K27: hp, hpMax, stamina, staminaMax existieren; die Wandlung füllt",
             wave6dResults.statePlayerHasHpAndStamina
         );
         check("Welle 6.D: das Selbst-Spec-Sheet (#ich-stage-spec) im DOM", wave6dResults.statsContainerInDom);

@@ -233,6 +233,7 @@ class AnazhRealm {
             _camSmoothT: 0, // Zeitstempel des letzten Kamera-Glättungs-Schritts
             _landDip: 0, // aktueller Landungs-Absorption-Versatz des Auges (m, ≤ 0)
             _landImpactPending: 0, // beim Landen erfasstes Aufprall-Tempo (m/s), von der Kamera konsumiert
+            _sturzTempo: 0, // das Aufprall-Tempo des letzten Sim-Schritts (m/s), der Sturz liest es (_loopPhysicsSync)
             abilities: {},
             selfAwareness: { components: [], weaknesses: [] },
             logBuffer: [],
