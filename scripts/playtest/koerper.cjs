@@ -132,6 +132,8 @@ async function checkBandRing5Soul(ctx) {
         };
 
         // UI vorhanden?
+        out.drawerSelectInDom = !!document.getElementById("player-soul-select");
+        out.statusBarSoulInDom = !!document.getElementById("status-soul");
         const select = document.getElementById("player-soul-select");
         // ALTLASTEN-NULL + KÖRPER GANZ (T6): die Seele-Select listet den Menschen
         // PLUS die vier Studio-Tiere (Studio-Gruppe; verkörpert → bp_-Wert). koerper_human
@@ -377,6 +379,8 @@ async function checkBandRing5Soul(ctx) {
             ring5Results && ring5Results.error ? ring5Results.error : "page.evaluate fehlgeschlagen"
         );
     } else {
+        check("Ring 5: Dropdown im Spieler-Drawer", ring5Results.drawerSelectInDom);
+        check("Ring 5: Status-Bar zeigt Seele-Item", ring5Results.statusBarSoulInDom);
         check(
             "Ring 5 (NULL): Dropdown = Mensch + verkörperbare Bauplan-Körper (Tiere)",
             ring5Results.dropdownHasBuiltinSouls,

@@ -505,7 +505,8 @@ function albedoSicht(opts) {
                         kre.test(kl.get(m)) &&
                         matsOf(m).some((mt) => window.__stoffPasst(w.stoff || null, stoffOf(mt)));
                     // DIE POSE DES LABORS (Karte WL, Radeon, EINE Welt): das Tier steht im Schuss in der Kern-STAND_POSE
-                    // mit Gier 0 (`_tierBaumNeutralStance`; das Labor steht idle, stride 0), nie mitten im Schritt
+                    // mit Gier 0 (`_tierBaumNeutralStance`; das Labor steht idle, stride 0) — mitten im Schritt eingefroren las das
+                    // Fell je Phase 0,1746 bis 0,1862, im Stand 0,1849 bis 0,1853
                     if (ex.kreatur) {
                         ex.kreatur.rotation.y = 0;
                         r._tierBaumNeutralStance(ex.kreatur);
@@ -553,7 +554,8 @@ function albedoSicht(opts) {
                     cam.aspect = W / H;
                     cam.updateProjectionMatrix();
                     // DIE TAFEL-BLICKE (`TAFEL_BLICKE`, dieselben im Labor): vier Dreiviertel-Seiten und oben, die übrige Welt aus;
-                    // die Albedo ist das Mittel über alle Blicke (Rücken gegen Bauch).
+                    // die Albedo ist das Mittel über alle Blicke — ein einziger Blick las den Wolf je nach seiner Wendung 0,17
+                    // oder 0,24 (Rücken gegen Bauch).
                     const stellungen = [];
                     if (w.blick === "oben") {
                         const y = r._voxelSurfaceY(um.x, um.z);
@@ -682,7 +684,7 @@ function albedoSicht(opts) {
 function linseRuhe(rend, rt, sc, cam, wer) {
     if (typeof window.__erstRuhe !== "function") throw new Error(`${wer}: die Erst-Ruhe fehlt (AUSGABE_INSTALL)`);
     // die Kaskaden zeichnen für DIESES Auge und diese Sonne neu (Lehre 17): ihre Karte vom letzten Frame des Spiels lag sonst
-    // über der Linse (A7)
+    // über der Linse (A7, Radeon: die Sonne auf derselben Birke 0 bis 0,06 je Lauf, Karte gegen Gestalt 0,93–1,32 je Lauf)
     const zeichne = () => {
         window.anazhRealm._schattenAlleNeu();
         if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
@@ -980,8 +982,8 @@ function tagKurveUrteil(welt) {
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, kurven };
 }
 
-// DER SELBSTTEST DES TAG-URTEILS an GEMESSENEN Kurven (spec/farbe/tag-kurve.json): der Kopf grün, die Pumpe der Basis und jeder
-// in den Kopf gespielte Täter beim Namen.
+// DER SELBSTTEST DES TAG-URTEILS an GEMESSENEN Kurven (spec/farbe/tag-kurve.json): der Kopf grün, die Pumpe der Basis f5b66780
+// (Belichtung 2,78 → 4,57 mit der Sonne, das Bild 1,34 EV über dem Mittag) und jeder in den Kopf gespielte Täter beim Namen.
 function tagKurveSelbsttest() {
     const T = require("../../spec/farbe/tag-kurve.json");
     const grob = (x) => TAG_UHREN.includes(x.uhr);
@@ -1179,7 +1181,7 @@ function nahFernSicht(opts) {
             A.intensity = e;
             if (maskeAlt != null) lu.uLodMaskOn.value = 0;
             // Das Licht der Linse ist ein neuer Lichter-Satz, ihr Ziel ein neuer Pass: jeder Stoff wartet auf seine Pipeline
-            // (`_erstWartet`, asynchron). Der Schuss
+            // (`_erstWartet`, asynchron; ein erster Schuss zeigte den Boden-Satz bei voller Deckung mit Y 0,694 statt 0,053). Der Schuss
             // steht erst, wenn zwei Läufe dieselben Bildpunkte UND dieselbe Helligkeit zeigen (höchstens 20 s); die Spur reist mit,
             // steht er nach der Frist nicht still, urteilt die Linse laut (`still`).
             let px = null,
@@ -2148,10 +2150,11 @@ function kantenLinie(Y, W, H, kante, schwelle, schritt) {
     return { linie, stufe: +stufe.toFixed(4) };
 }
 
-// DIE LUFT IM BILD (Ferne K1 + K2): vom Hügel je Uhr vier Azimute ab der Sonne, je drei Schüsse aus dem Ausgabe-Pfad —
-// Luft (L), β 0 (L0), β 1 (S) —, linear; je Pixel T = (L − S)/(L0 − S) je Kanal gegen die externe Referenz längs des Strahls
-// zum Gelände-Gesetz (Bänder nur, wo die Szenen-Tiefe ihn bestätigt); der Rand je Spalte das fernste Pixel, die Kante
-// `kantenLinie`. Blende 1/4 nach, wo kein Band misst; der Bloom ruht (seine Schwelle bricht die Linearität).
+// DIE LUFT IM BILD (ferne-luft, Meisterkarte Ferne K1 + K2): vom Hügel je Uhr vier Azimute ab der Sonne, je drei
+// Schüsse aus dem Ausgabe-Pfad — Luft (L), β 0 (L0), β 1 (S) —, linear; je Pixel T = (L − S)/(L0 − S) je Kanal gegen die externe
+// Referenz längs des Strahls zum Gelände-Gesetz (Bänder nur, wo die Szenen-Tiefe ihn bestätigt); der Rand je Spalte das fernste
+// Pixel, die Kante `kantenLinie`. Misst eine Sicht kein Band (zur tiefen Sonne liegt die In-Streuung in der Kompression), schießt
+// sie mit Blende 1/4 nach; der Bloom ruht, seine Schwelle bricht die Linearität (zur Sonne 7° hob er T bei 8 km um 70 %).
 function luftTiefe(o) {
     return (async () => {
         const r = window.anazhRealm;

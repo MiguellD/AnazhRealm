@@ -730,6 +730,7 @@ async function checkBandW17Multiplayer(ctx) {
         const out = {};
 
         out.pendingInviteInit = r.state.p2p.pendingInvite === null;
+        out.bannerInDom = !!document.getElementById("portal-invite-banner");
 
         // _resolvePortalWorldId — Pfad-Match gegen die Bibliothek.
         out.resolveByPath = r._resolvePortalWorldId({ world: "worlds/skeleton/index.html" }) === "skeleton";
@@ -865,6 +866,7 @@ async function checkBandW17Multiplayer(ctx) {
         );
     } else {
         check("W17 C: state.p2p.pendingInvite initial null", w17cResults.pendingInviteInit);
+        check("W17 C: #portal-invite-banner im DOM", w17cResults.bannerInDom);
         check("W17 C: _resolvePortalWorldId löst eine Welt per Pfad auf", w17cResults.resolveByPath);
         check("W17 C: _resolvePortalWorldId liefert null für eine unbekannte Welt", w17cResults.resolveUnknown);
         check("W17 C: aimBlueprintAtWorld trägt multiplayer aus dem Eintrag", w17cResults.aimCarriesMp);
@@ -972,6 +974,7 @@ async function checkBandW17Multiplayer(ctx) {
         out.libraryRendersMark = !!mpCard && !!mpCard.querySelector(".library-mp-mark");
         out.libraryNoMarkForSingle = !!singleCard && !singleCard.querySelector(".library-mp-mark");
 
+        out.vendorCheckboxInDom = !!document.getElementById("vendor-multiplayer");
 
         // Aufräumen.
         delete r.state.customWorlds["_mp_vend"];
@@ -1004,6 +1007,7 @@ async function checkBandW17Multiplayer(ctx) {
         check("W17 MP: _p2pSanitizeCatalog bewahrt multiplayer + Default false", w17mpResults.catalogSanitizeKeepsMp);
         check("W17 MP: renderLibraryUI rendert die Multiplayer-Marke", w17mpResults.libraryRendersMark);
         check("W17 MP: eine Single-Welt bekommt KEINE Multiplayer-Marke", w17mpResults.libraryNoMarkForSingle);
+        check("W17 MP: #vendor-multiplayer-Checkbox im DOM", w17mpResults.vendorCheckboxInDom);
     }
 
     // ### die serverMode-Vendor-Ketten-Naht ###
@@ -1075,6 +1079,7 @@ async function checkBandW17Multiplayer(ctx) {
         const jsMark = jsCard && jsCard.querySelector(".library-mp-mark");
         out.libraryRendersJsComputeMark = !!jsMark && /JS-Compute/.test(jsMark.textContent || "");
 
+        out.vendorJsComputeCheckboxInDom = !!document.getElementById("vendor-js-compute");
 
         // Aufräumen.
         delete r.state.customWorlds["_sv_vend"];
@@ -1107,6 +1112,7 @@ async function checkBandW17Multiplayer(ctx) {
             w17svResults.catalogSanitizeKeepsServerMode
         );
         check("W17 P-Vendor: renderLibraryUI rendert die JS-Compute-Marke", w17svResults.libraryRendersJsComputeMark);
+        check("W17 P-Vendor: #vendor-js-compute-Checkbox im DOM", w17svResults.vendorJsComputeCheckboxInDom);
     }
 }
 
@@ -1645,6 +1651,7 @@ async function checkBandW12WorldPortal(ctx) {
 
         // UI: die Markier-Reihe trägt eine Portal-Welt-Auswahl.
         r.renderPlayerEquipUI();
+        out.uiPortalSelect = !!document.querySelector(".equip-portal-select");
 
         // aimBlueprintAtWorld per id.
         const aimId = r.aimBlueprintAtWorld("test_portal_ring", "fluid");
@@ -1680,6 +1687,7 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P2: WORLD_REGISTRY existiert (skeleton/fluid/terrain)", w12registryResults.registryExists);
         check("W12 P2: Registry-Einträge tragen Pfad + DSL-Manifest", w12registryResults.registryShape);
         check("W12 P2: Built-in-Portale beziehen portalMeta aus der Registry", w12registryResults.builtinsFromRegistry);
+        check("W12 P2: Equip-UI trägt eine Portal-Welt-Auswahl", w12registryResults.uiPortalSelect);
         check("W12 P2: aimBlueprintAtWorld richtet per Welt-id", w12registryResults.aimById);
         check("W12 P2: aimBlueprintAtWorld richtet per Welt-Label", w12registryResults.aimByLabel);
         check("W12 P2: aimBlueprintAtWorld verwirft unbekannte Welt", w12registryResults.aimUnknownRejected);

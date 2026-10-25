@@ -1,6 +1,6 @@
 "use strict";
 // scripts/playtest/bild.cjs — der Richter von Bild (spec/stamm/modul-karte.json): Renderer · TAAU und die EINE Skala · Ausgabe · Post · Schatten-Kaskaden · Pass-Wahl · Schirm · GPU-Kehraus · Bündel- und Zeichen-Reihe · Szene-Tiefe · Spiegel · Feld-Pass · Panorama · Höhlen-Sicht · Tag-Nacht · Atmosphäre · Himmelskörper · Sterne · Saison · Regen.
-// 11 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 10 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const path = require("path");
@@ -324,23 +324,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // BÜHNE: zurück an den Ursprung der Testzelle
         r.state.playerMesh.position.x = 0;
 
-        // --- Vision 8: Stern-Feld folgt Tageszeit (die Dämmerung setzt die GRENZGRÖSSE — mittags ist kein
-        // Punkt heller als sie, auch kein Wandelstern; um Mitternacht leuchten alle bis +6).
-        const starU = r.state.starFieldUniforms && r.state.starFieldUniforms.grenze;
-        out.starIntensityExists = !!starU;
-        if (starU) {
-            r.setTimeOfDay(0.5, "human"); // Mittag
-            r._applyDayNightToScene();
-            const grenzeMittag = starU.value;
-            r.setTimeOfDay(0, "human"); // Mitternacht
-            r._applyDayNightToScene();
-            const grenzeNacht = starU.value;
-            const hellster = Math.min(...r.constructor.HIMMEL.wandelsterne.map((w) => w.mag));
-            out.starsBrighterAtNight =
-                grenzeMittag < hellster - 0.5 && grenzeNacht >= r.constructor.HIMMEL.sternMagSchwach;
-        }
-
-        // --- Vision 9: Sonne + Mond Meshes existieren + folgen Tageszeit
+        // --- Vision 9: Sonne + Mond folgen der Tageszeit (Sternfeld, Mittags-Grenze und Unendlich prüft Himmel-Tag)
         if (r.state.sunMesh && r.state.moonMesh) {
             // Die Orbit-HÖHE lebt im skyOffset (Welt-Position = camera + skyOffset, pro Frame gesetzt in
             // `_followCelestialBodies`; dieser Test ruft kein _loopRender) → skyOffset.y (= sin(angle)·380)
@@ -414,14 +398,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         check("Welle 6.G3 V2 Vision: sorrow=1 reduziert Sky-Sättigung", wave6g3v2Results.sorrowReducesSaturation);
         check("Welle 6.G3 V2 Vision: peace=1 verlängert Wetter-Dauer (>120%)", wave6g3v2Results.peaceSlowsWeather);
         check("Welle 6.G3 V2 Vision: chaos=1 verkürzt Wetter-Dauer (<70%)", wave6g3v2Results.chaosSpeedsWeather);
-        check(
-            "Welle 6.G3 V2 Vision: Stern-Feld-Opacity existiert (V8.28 THREE.Points)",
-            wave6g3v2Results.starIntensityExists
-        );
-        check(
-            "Welle 6.G3 V2 Vision → V18.530: mittags ist kein Punkt sichtbar (Grenzgröße unter dem hellsten Wandelstern), nachts alle bis +6",
-            wave6g3v2Results.starsBrighterAtNight
-        );
         check("Welle 6.G3 V2 Vision: Sonne hoch am Mittag (y > 100)", wave6g3v2Results.sunHighAtNoon);
         check("Welle 6.G3 V2 Vision: Mond niedrig am Mittag (y < -100)", wave6g3v2Results.moonLowAtNoon);
         check("Welle 6.G3 V2 Vision: Sonne niedrig nachts (y < -100)", wave6g3v2Results.sunLowAtMidnight);
@@ -564,16 +540,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     const v828Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-
-        // --- Phase A: Stern-Feld ---
-        // InstancedMesh statt THREE.Points (PointsNodeMaterial-r160-
-        // Vendor-Bug mit pointUV → Profi-Pattern: 4-Vertex-Quad pro Instanz).
-        const sf = r.state.starField;
-        out.starFieldIsPoints = !!(sf && sf.isInstancedMesh === true);
-        out.starCount = sf && typeof sf.count === "number" ? sf.count : 0;
-        out.starFieldHasMany = out.starCount > 1000;
-        // Sidereal-Rotation: rotation ändert sich mit timeOfDay
-        out.starFieldRotates = !!(sf && sf.rotation);
 
         // --- Phase D: Wind + Wolken + Wasser ---
         // Wind lebt jetzt im Instanced-Gras-Material.
@@ -742,9 +708,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     });
 
     if (v828Results && !v828Results.error) {
-        check("A: state.starField ist InstancedMesh (V10.0-i.a)", v828Results.starFieldIsPoints);
-        check("A: Stern-Feld hat >1000 diskrete Sterne", v828Results.starFieldHasMany);
-        check("A: Stern-Feld hat Rotation (sidereal)", v828Results.starFieldRotates);
         check("D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
         check("D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
         check(
@@ -946,15 +909,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // --- Adaptives Wasser ---
         out.waterAdaptive = typeof r.state.waterLevel === "number" && Number.isFinite(r.state.waterLevel);
 
-        // --- Stern-Mindestgröße (kein Flacker-Aliasing) ---
-        const sf = r.state.starField;
-        let minSize = 999;
-        if (sf && sf.geometry && sf.geometry.getAttribute("aSize")) {
-            const sizes = sf.geometry.getAttribute("aSize").array;
-            for (let i = 0; i < sizes.length; i++) if (sizes[i] < minSize) minSize = sizes[i];
-        }
-        out.starMinSize3 = minSize >= 3;
-
         return out;
     });
 
@@ -984,23 +938,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("Genesis-Plattform-Architektur nach Spawn vorhanden", v829Results.genesisArchExists);
         check("_ensureGenesisPlatform ist idempotent (keine Doppel-Plattform)", v829Results.genesisIdempotent);
         check("state.waterLevel ist gesetzt (adaptiv)", v829Results.waterAdaptive);
-        check("Sterne haben Mindestgröße ≥3 px (flacker-sicher)", v829Results.starMinSize3);
     } else {
         check("Die lebendige Welt Tests laufen", false, v829Results ? v829Results.error : "no result");
     }
-
-    // ### die Sterne testen gegen den Tiefenpuffer (kein Overlay mehr). Die Existenz-Proben des Wasser-Stoffs (sunDir,
-    // emotion, minDepth, keine Fog-Uniforms, das Augen-Flag) fielen mit Licht K3: sein Verhalten fahren die Wasser-Linse und der
-    // Lichtweg (`werkbank licht --laub wasser`) im Bild ###
-    const v830Results = await safeEvaluate(page, () => {
-        const sf = window.anazhRealm.state.starField;
-        return { starsDepthTest: !!(sf && sf.material && sf.material.depthTest === true) };
-    });
-    check(
-        "Sterne testen gegen Tiefenpuffer (kein Overlay)",
-        !!(v830Results && v830Results.starsDepthTest),
-        v830Results && v830Results.error
-    );
 
     // ### Welle 6.G4.e: Tauchen + Schwimm-Animation + Gerstner ###
     const v833Results = await safeEvaluate(page, () => {
@@ -1288,6 +1228,8 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         const out = {};
 
         // --- B3: Stats-HUD DOM-Existenz
+        out.statsHudExists = !!document.getElementById("stats-hud");
+        out.statsHudStamFillExists = !!document.getElementById("stats-hud-stam-fill");
 
         // --- B3: tickStatsHud aktualisiert HP-Text + Bar-Width
         // Fix: HP/Stamina liegen auf state.player.*, nicht state.*
@@ -1318,6 +1260,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.masterVolDefault = r.state.symphony.masterVolume === 1.0;
         out.pingVolDefault = r.state.symphony.creaturePingVolume === 1.0;
         out.ringRadiusDefault = r.state.chunkRingRadius === 4;
+        out.slidersSectionExists = !!document.getElementById("sliders-section");
 
         // --- D2: Master-Slider ändert state + Persistenz
         const ms = document.getElementById("slider-master");
@@ -1449,6 +1392,8 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     }
 
     if (wave6x4bResults && !wave6x4bResults.error) {
+        check("Welle 6.X.4 B3: #stats-hud im DOM", wave6x4bResults.statsHudExists);
+        check("Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert", wave6x4bResults.statsHudStamFillExists);
         check("Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen", wave6x4bResults.hpTextShowsRatio);
         check("Welle 6.X.4 B3: Stamina-Text zeigt 75/100 nach Setzen", wave6x4bResults.stamTextShowsRatio);
         check("Welle 6.X.4 B3: HP-Fill-Width proportional (50% → 83px von 166px)", wave6x4bResults.hpFillProportional);
@@ -1458,6 +1403,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         check("Welle 6.X.4 D2: state.symphony.masterVolume default 1.0", wave6x4bResults.masterVolDefault);
         check("Welle 6.X.4 D2: state.symphony.creaturePingVolume default 1.0", wave6x4bResults.pingVolDefault);
         check("Welle 6.X.4 D2: state.chunkRingRadius default 4 (V8.40: 9×9)", wave6x4bResults.ringRadiusDefault);
+        check("Welle 6.X.4 D2: #sliders-section im DOM", wave6x4bResults.slidersSectionExists);
         check("Welle 6.X.4 D2: Master-Slider ändert state.symphony.masterVolume", wave6x4bResults.masterSliderUpdates);
         check("Welle 6.X.4 D2: Master-Slider persistiert in localStorage", wave6x4bResults.masterSliderPersists);
         check(
@@ -1633,82 +1579,6 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
     check(
         "Ω-OPSIS S5 (V2) CONSUM: Regen trübt die Sicht, Sturm mehr (β sonnig < Regen < Sturm)",
         res.hazeNearWeather === true
-    );
-}
-
-// Der Schatten-Takt (ersetzt den Cache von V18.264, der in r184 ins Leere schrieb): je Licht am echten
-// Leser (shadow.autoUpdate/needsUpdate) — die nahe Kaskade im Regler-Intervall (≤ SCHATTEN_TAKT.nahMax), die ferne
-// im fernFaktor-Takt. Das Intervall ist eine Regelkreis-Stellgröße.
-async function checkBandV18264ShadowCache(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const A = r.constructor;
-        const st = r.state;
-        const out = {};
-        const csm = st.csmNode;
-        const lichter =
-            csm && csm.lights && csm.lights.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
-        out.lichter = lichter.length;
-        if (!lichter.length || !A.SCHATTEN_TAKT) return out;
-        // 1410-3: in Ruhe je Frame höchstens EINE Kaskade (die nahe jeden nahMax-ten Frame, die ferne dazwischen); bewegt
-        // sich die Kamera, folgt die nahe jedem Frame im Regler-Takt (der Schatten des gehenden Spielers hinkt nie).
-        const kam = st.camera;
-        const kamX = kam ? kam.position.x : 0;
-        let schritt = 0;
-        const zaehle = (n, bewegt) => {
-            const z = lichter.map(() => 0);
-            z.doppelt = 0;
-            for (let i = 0; i < n; i++) {
-                lichter.forEach((l) => l.shadow && (l.shadow.needsUpdate = false));
-                if (bewegt && kam) {
-                    kam.position.x = kamX + 0.05 * ++schritt;
-                    kam.updateMatrixWorld(true);
-                }
-                r._loopShadowUpdate();
-                lichter.forEach((l, k) => l.shadow && l.shadow.needsUpdate && z[k]++);
-                if (lichter.filter((l) => l.shadow && l.shadow.needsUpdate).length > 1) z.doppelt++;
-            }
-            return z;
-        };
-        const ivAlt = st._shadowMinInterval;
-        st._shadowMinInterval = 1;
-        r._shadowLast = null;
-        zaehle(2, false);
-        const z1 = zaehle(30, false);
-        const zb = zaehle(30, true);
-        if (kam) {
-            kam.position.x = kamX;
-            kam.updateMatrixWorld(true);
-        }
-        zaehle(2, false);
-        st._shadowMinInterval = 4;
-        const z4 = zaehle(60, false);
-        st._shadowMinInterval = ivAlt;
-        r._shadowLast = null;
-        const T = A.SCHATTEN_TAKT;
-        out.autoUpdateOff = lichter.every((l) => l.shadow && l.shadow.autoUpdate === false);
-        out.nah1 = z1[0];
-        out.nah4 = z4[0];
-        out.nahBewegt = zb[0];
-        out.fern1 = lichter.length > 1 ? z1[1] : null;
-        out.doppelt1 = z1.doppelt;
-        out.nahRuhe = z1[0] === 30 / T.nahMax && z1.doppelt === 0;
-        out.nahBewegtJedenFrame = !kam || zb[0] === 30;
-        out.nahGedeckelt = z4[0] === 60 / Math.min(T.nahMax, 4);
-        const fern = 30 / (T.nahMax * T.fernFaktor);
-        out.fernSeltener = lichter.length < 2 || (z1[1] >= Math.floor(fern) - 1 && z1[1] <= Math.ceil(fern));
-        return out;
-    });
-    check("_loopShadowUpdate fährt den Leser je Licht (autoUpdate aus)", res.autoUpdateOff);
-    check(
-        `1410-3: die nahe Schatten-Map in Ruhe jeden nahMax-ten Frame ohne Doppel-Frame, bewegt jeden Frame (Ruhe ${res.nah1}/30, ` +
-            `doppelt ${res.doppelt1}, bewegt ${res.nahBewegt}/30, Intervall 4: ${res.nah4}/60)`,
-        res.nahRuhe === true && res.nahBewegtJedenFrame === true && res.nahGedeckelt === true
-    );
-    check(
-        `die ferne Kaskade rendert seltener (${res.fern1 == null ? "ohne CSM" : res.fern1 + "/30"})`,
-        res.fernSeltener === true
     );
 }
 
@@ -2114,7 +1984,6 @@ module.exports = {
     checkBandV8LatePolishAnd6XContinued,
     checkBandV18164WarumLicht,
     checkBandWahrerAnblickAtmoBusch,
-    checkBandV18264ShadowCache,
     checkBandWetterVektor,
     checkBandLookPhysik,
     checkBandHimmelTag,

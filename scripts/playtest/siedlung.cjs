@@ -853,6 +853,7 @@ async function checkBandRing6Workshop(ctx) {
         // UI vorhanden
         out.workshopTabInDom = !!document.querySelector('#topbar [data-tab="werkstatt"]');
         out.workshopDrawerInDom = !!document.querySelector('.drawer[data-drawer="werkstatt"]');
+        out.workshopListInDom = !!document.getElementById("workshop-list");
         out.workshopStatsPanelInDom = !!document.getElementById("workshop-stats-panel"); // V17.91 — der intuitive Readout (statt des entfernten #workshop-editor)
 
         // Ein Eintrag je SICHTBAREM Bauplan — derselbe Filter wie `_workshopRenderBlueprintList`: ohne
@@ -974,6 +975,7 @@ async function checkBandRing6Workshop(ctx) {
     } else {
         check("Ring 6.6: Werkstatt-Tab in Topbar", ring66Results.workshopTabInDom);
         check("Ring 6.6: Werkstatt-Drawer im DOM", ring66Results.workshopDrawerInDom);
+        check("Ring 6.6: #workshop-list im DOM", ring66Results.workshopListInDom);
         check(
             "Ring 6.6 (V17.91): #workshop-stats-panel im DOM (intuitiver Readout, der Editor ist entfernt)",
             ring66Results.workshopStatsPanelInDom
@@ -1098,12 +1100,14 @@ async function checkBandRing6Workshop(ctx) {
         out.counterNear = counts.near === 3;
         out.counterTotal = counts.total === 8;
         // Status-Bar-Element existiert + zeigt korrektes Format
+        out.statusBarItemInDom = !!document.getElementById("status-architectures");
         r.updateStatusPanel(1e7);
         const statusEl = document.getElementById("status-architectures");
         out.statusBarShowsCount = statusEl && /^\d+ nah \/ \d+$/.test(statusEl.textContent);
 
         // === D) Bau-Cursor ===
         r._clearBuildMode();
+        out.hudInDom = !!document.getElementById("build-mode-hud");
         out.hudInitiallyHidden = document.getElementById("build-mode-hud").hidden === true;
         // Ring 6.5: Hotbar-API ersetzt setBuildMode. Slot 0 = stein_block (gesetzt: der Start-Gurt liest den Katalog).
         r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
@@ -1171,8 +1175,10 @@ async function checkBandRing6Workshop(ctx) {
         // Counter
         check("Ring 6 V2: countArchitecturesNearPlayer nah = 3", ring6v2Results.counterNear);
         check("Ring 6 V2: countArchitecturesNearPlayer total = 8", ring6v2Results.counterTotal);
+        check("Ring 6 V2: #status-architectures im DOM", ring6v2Results.statusBarItemInDom);
         check("Ring 6 V2: Status-Bar zeigt 'N nah / M' Format", ring6v2Results.statusBarShowsCount);
         // Bau-Cursor
+        check("Ring 6 V2: #build-mode-hud im DOM", ring6v2Results.hudInDom);
         check("Ring 6 V2: HUD initial versteckt", ring6v2Results.hudInitiallyHidden);
         check("Ring 6.5: HUD sichtbar im aktiven Bau-Modus", ring6v2Results.hudShownWhenActive);
         check("Ring 6.5: Phantom-Material ist transparent", ring6v2Results.phantomIsTransparent);
