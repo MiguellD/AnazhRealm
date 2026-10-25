@@ -3075,11 +3075,9 @@ AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, w
 // Haut Fett, der Schatten-Stoff zeichnet keine Farbe. Der Dach-Pool: `dachPlaetze` Decken im `dachUmkreisM`, neu nach `dachSchrittM`;
 // Decken tragen die Häuser (Hülle) und die `dachArten` (Rezept oder Art: ihre Form schließt oben, `_dachKastenSetzen`). Näher als
 // `ruhe` an ihrem Ziel steht die Nässe dort (ein Tausendstel verschiebt eine Albedo um höchstens 2,5e-4) — der Fixpunkt, an dem
-// der Regen schläft (feld.K3, `_tickRain`). `haft`: der Reibkreis des Reifens voll nass relativ zu trocken (nasser Asphalt und
-// nasses Gras greifen mit ≈ 0,7 — der Bremsweg wächst um 1 / 0,7 = 1,43; Leser `_fahrHaft`, feld.K1).
+// der Regen schläft (feld.K3, `_tickRain`). Wie nass ein Reifen greift, trägt die Stoff-Zeile je Stoff (`muNass`, `_fahrHaft`).
 AnazhRealm.NAESSE = Object.freeze({
     regenAb: 0.05,
-    haft: 0.7,
     benetzenS: 150,
     trocknenS: 1500,
     ruhe: 1e-3,

@@ -1533,22 +1533,28 @@ class AnazhRealm_bau_buch {
         return Math.max(0, Math.min(1, Math.max(sMaxX - sMinX, sMaxZ - sMinZ) / compW));
     }
 
-    // DIE DICHTE EINES STOFFS (kg/m³, physik K1): die EINE Stoff-Zeile (`state.materials`, `_defaultMaterials`). Ein eigener
-    // Stoff (DSL `define_material`, eine geladene Welt) wiegt wie sein nächster Verwandter unter den eingebauten — der
-    // kleinste Abstand über die Tag-Achsen (MATERIAL_TAG_KEYS), an seiner Zeile gemerkt (`rhoVon`) und je Ruf aus dessen
-    // Zeile gelesen. Ein Teil ohne Stoff-Zeile wiegt nichts und meldet sich laut (der EINE Melder). Vorher wog jedes Teil
-    // Volumen × die Tag-Achse dichte [0,1] (Holz 0,4 · Stein 0,85 · Eisen 0,9 je Einheit, unbekannt 0,5): Stein wog 2,1 Holz
-    // statt 3,7, Eisen 2,25 statt 10,9.
+    // DIE DICHTE EINES STOFFS (kg/m³, physik K1): die EINE Stoff-Zeile (`state.materials`, `_defaultMaterials`). Ein Teil ohne
+    // Stoff-Zeile wiegt nichts und meldet sich laut (der EINE Melder). Vorher wog jedes Teil Volumen × die Tag-Achse dichte
+    // [0,1] (Holz 0,4 · Stein 0,85 · Eisen 0,9 je Einheit, unbekannt 0,5): Stein wog 2,1 Holz statt 3,7, Eisen 2,25 statt 10,9.
     _stoffRho(name) {
+        const z = this._stoffZeile(name, "das Teil aus „" + name + "“ wiegt nichts");
+        return z ? z.rho : 0;
+    }
+
+    // DIE ZEILE EINES STOFFS, deren Zahlen gelten (ρ, μ): die eingebaute Zeile selbst; ein eigener Stoff (DSL `define_material`,
+    // eine geladene Welt) wie sein nächster Verwandter unter den eingebauten — der kleinste Abstand über die Tag-Achsen
+    // (MATERIAL_TAG_KEYS), an seiner Zeile gemerkt (`rhoVon`) und je Ruf aus dessen Zeile gelesen. Ohne Zeile oder Verwandten
+    // null, laut beim Namen der Folge (der EINE Melder).
+    _stoffZeile(name, folge) {
         const mats = this.state.materials || {};
         const z = mats[name];
         if (!z) {
-            this._bruchMelden("STOFF-ZEILE fehlt: das Teil aus „" + name + "“ wiegt nichts");
-            return 0;
+            this._bruchMelden("STOFF-ZEILE fehlt: " + folge);
+            return null;
         }
-        if (z.builtIn) return z.rho;
+        if (z.builtIn) return z;
         const von = z.rhoVon && mats[z.rhoVon];
-        if (von && von.builtIn) return von.rho;
+        if (von && von.builtIn) return von;
         const keys = AnazhRealm.MATERIAL_TAG_KEYS;
         const t = z.tags || {};
         let best = null,
@@ -1561,11 +1567,11 @@ class AnazhRealm_bau_buch {
             if (d < bestD) ((bestD = d), (best = b));
         }
         if (!best) {
-            this._bruchMelden("STOFF-ZEILE ohne Verwandten: „" + name + "“ wiegt nichts");
-            return 0;
+            this._bruchMelden("STOFF-ZEILE ohne Verwandten: " + folge);
+            return null;
         }
         z.rhoVon = best.name;
-        return best.rho;
+        return best;
     }
 
     // DAS VOLUMEN EINES TEILS (m³ in Bauplan-Einheiten): das Volumen seiner GESTALT — das Mesh, das `_makePartGeometry` für
