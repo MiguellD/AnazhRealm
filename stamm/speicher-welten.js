@@ -1288,7 +1288,8 @@ class AnazhRealm_speicher_welten {
     // JSON sich änderte; die Edits als Anhang (x, y, z, r, Modus) seit dem letzten Stand. `voll`: alles (der Faden hält kein
     // Modell dieser Welt). `takt` (die Sicherung des Takts): die Glieder hat der Besen im Leerlauf geprüft (`_standFegen`) —
     // gefragt werden nur neue, die Baupläne in der Hand und, wo das Inventar sich regte, jeder Bauplan (ein Akt, der Material
-    // zahlt und einen Bauplan ändert, steht ganz im Stand oder gar nicht). → die Nachricht und ihre Transfers.
+    // zahlt und einen Bauplan ändert, steht ganz im Stand oder gar nicht). → die Nachricht (die Teile als EINE Zeichenkette,
+    // speicher-faden.js nennt die Zahl) und die Transfers der Edits.
     _standAenderung(voll, takt) {
         const S = this._speicher;
         const gleich = (a, b) => {
@@ -1422,10 +1423,10 @@ class AnazhRealm_speicher_welten {
             else if (art) S.zeilen.get(k).json !== undefined && ordnung.push(k);
             else if (!mitKopf) mitKopf = ordnung.push("") > 0;
         }
-        const daten = new TextEncoder().encode(stuecke.concat(listenStuecke).join("\u0001")).buffer;
+        const daten = stuecke.concat(listenStuecke).join("\u0001");
         const nachricht = { teile, listen, daten };
         if (voll || !gleich(S.ordnung, ordnung)) nachricht.ordnung = S.ordnung = ordnung;
-        const transfer = [daten];
+        const transfer = [];
         if (edits) {
             nachricht.edits = edits;
             transfer.push(edits.xyzr.buffer, edits.modus.buffer);

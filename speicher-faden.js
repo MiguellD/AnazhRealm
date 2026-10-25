@@ -2,9 +2,11 @@
 // speicher-faden.js — DER SPEICHER-FADEN (Lehre 24: der Haupt-Thread trägt keine Bytes, die Platte gehört in den Worker).
 //
 // Der Haupt-Faden reicht je Sicherung nur die ÄNDERUNG des Stands (`_standAenderung`): die Teile der Stand-Tafel, deren JSON
-// sich änderte (UTF-8, durch "\u0001" getrennt — ein JSON-Text trägt das Steuerzeichen nie roh), die Glieder der Listen
-// (Bauten, Baupläne) je Seriennummer, ihre Ordnung, wenn sie sich änderte, und die neuen Edits als Zahlen. Alles per
-// Transfer, nie als Klon. Dieser Faden hält je Welt das Modell des Stands, setzt das JSON zusammen (die Bytes, die
+// sich änderte, als EINE Zeichenkette (durch "\u0001" getrennt — ein JSON-Text trägt das Steuerzeichen nie roh; ihr Klon ist
+// im Sender ein memcpy: postMessage 0,07–0,10 ms gegen 0,19–0,25 ms für Kodieren und Transfer eines Puffers, ABAB 3× headless),
+// die Glieder der Listen (Bauten, Baupläne, Wesen) je Seriennummer, ihre Ordnung, wenn sie sich änderte, und die neuen Edits
+// als Zahlen per Transfer; zurück kommen Quittungen und das Abbild per Transfer. Der Teil „" ist der Kopf: die Felder ohne
+// eigenen Teil als Text ohne Klammern. Dieser Faden hält je Welt das Modell des Stands, setzt das JSON zusammen (die Bytes, die
 // `JSON.stringify` der Tafel ergäbe) und schreibt ATOMAR in IndexedDB („anazhRealm" · „worlds"): EINE Transaktion liest den
 // vorigen Stand, legt ihn als `<id>.bak` ab und schreibt den neuen unter `<id>` — tmp + Rename + .bak des save-servers;
 // ein Tod mitten darin lässt beide, wie sie waren. Das Format auf der Platte ist das des Lesers (`_idbPreload`): {at, json}.
@@ -13,7 +15,6 @@
 // (1 = fill), im Stand base64 unter `voxelEdits` {n, xyzr, modus} — 43 Zeichen je Edit statt 64 im Objekt-JSON. Der Leser
 // (`_standNormal`) legt sie zurück nach `worldMeta.voxelEdits`.
 //
-// Der Teil „" ist der Kopf: die Felder ohne eigenen Teil als Text ohne Klammern.
 // Ops (je Nachricht EINE Antwort mit ihrem `n`, in der Reihenfolge der Nachrichten): stand · ablegen · loeschen · abbild ·
 // server · still. Ein Fehler antwortet {ok:false, grund}; das Modell der Welt fällt, der Haupt-Faden sendet sie ganz neu.
 // =============================================================================
@@ -148,7 +149,7 @@ const OPS = {
             welten.set(m.welt, W);
         } else if (!W) return { ok: false, grund: "kein Modell der Welt im Faden (der Haupt-Faden sendet sie ganz)" };
         try {
-            const stuecke = new TextDecoder().decode(m.daten).split(TRENNER);
+            const stuecke = m.daten.split(TRENNER);
             let i = 0;
             if (m.ordnung) W.ordnung = m.ordnung;
             for (const k of m.teile) W.teile.set(k, stuecke[i++]);
@@ -181,8 +182,7 @@ const OPS = {
     // fällt — der Haupt-Faden sendet sie bei der nächsten Sicherung ganz.
     async ablegen(m) {
         welten.delete(m.welt);
-        const json = new TextDecoder().decode(m.daten);
-        return { ok: true, at: m.at, bytes: json.length, platte: await schreibeAtomar(m.welt, m.at, json) };
+        return { ok: true, at: m.at, bytes: m.json.length, platte: await schreibeAtomar(m.welt, m.at, m.json) };
     },
     async loeschen(m) {
         welten.delete(m.welt);
