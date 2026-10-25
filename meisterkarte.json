@@ -1,5 +1,5 @@
 {
-  "stand": "2026-10-24",
+  "stand": "2026-10-25",
   "kopf": "4a5f5e2c",
   "version": "V18.546.89",
   "skala": "2.0",
@@ -4976,16 +4976,32 @@
       "was": "main-Vorlauf 056330d8..54ce5dfd (Züge 15d, 16b, 17, 19, 20, 21, 23): gelandet kreatur-takt-teile, haus-keller-k1, physik-k1-kg, mensch-bewohner-k5, halten-k3-sichel, siedlung-k5-nah, bauen-k3-pruefsatz, dorf-takt-z13 (ein Tod kostet den Takt 0,3–0,6 statt 28–84 ms), tore-k5-geste, bauen-k4-editform, studios-k5-wege, tiere-k2k4, streaming-k5-transfer, speicher-k5-korpus, wetter-front-wind, decke-code (die Decke zählt Code ohne Kommentare), stadt-takt-z15d (_tickBewohner 198 → 122 ms/s). Nachwachen: z15d/z16b/z17 in der Stadt LANGSAMER (z15d Täter mensch-bewohner-k5, geheilt in Zug 23; z16b Häuser im Bau-Satz offen; z17 an der 2σ-Grenze). Gebucht am Kopf aus headless und Radeon an 1d9164e9/54ce5dfd; die GTX-Stationen stehen noch an 18a84649."
     },
     {
+      "skala": "2.0",
+      "max": 330,
       "stand": "2026-10-24",
+      "kopf": "206b395a",
+      "summe": 76,
+      "was": "Ehrlichkeit vor Zahl (Prüfung 24.10. abends, vier unabhängige Prüfer): leib.K4 (die Linse zeichnete nie), speicher.K2 (je Save p95 12 ms statt ≤ 0,3; die je-Bild-Metrik war blind), tore.K5 (B war ein zweiter Browser-Kontext, kein anderes Gerät) und pipeline.K4 (nur ein Instrument-Patch vom 18.10., R10) fallen auf 0; leib.K1 urteilt über den schlechtesten von drei Boots (Radeon 48,1 ms ≤ 50, hält). Die Punkte-Maschine trägt zwei neue Wände: jeder Pfad-Glob trifft am Kopf eine Datei, jede GPU-Station weist ihre Karte nach. Gelandet seit 54ce5dfd: Zug 24 (halten.K3 Staffel 2, stoffe.K3 das Eis trägt), Zug 25 (feld.K2/K3, Werkstatt-Weg wartet auf das Ereignis). Mess-Takt 1 an 206b395a: headless und Radeon mit Nachweis gemessen, die GTX-Stationen stehen noch an 18a84649 (takt1b-gtx läuft auf der OMEN)."
+    },
+    {
+      "skala": "2.0",
+      "max": 330,
+      "stand": "2026-10-25",
+      "kopf": "206b395a",
+      "summe": 86,
+      "was": "Mess-Takt 1 an 206b395a (GTX mit Herzschlag-Fix, 29 grün / 5 rot; gebucht per buche.sh): gelaende.K2, tiere.K2, mensch.K2, material.K1, fahrzeug.K4, siedlung.K5, leib.K1, profiband.K4, klang.K5, speicher.K1 je +1."
+    },
+    {
+      "stand": "2026-10-25",
       "kopf": "4a5f5e2c",
       "summe": 92,
       "max": 330,
       "skala": "2.0",
-      "was": "Ehrlichkeit vor Zahl (Prüfung 24.10. abends, vier unabhängige Prüfer): leib.K4 (die Linse zeichnete nie), speicher.K2 (je Save p95 12 ms statt ≤ 0,3; die je-Bild-Metrik war blind), tore.K5 (B war ein zweiter Browser-Kontext, kein anderes Gerät) und pipeline.K4 (nur ein Instrument-Patch vom 18.10., R10) fallen auf 0; leib.K1 urteilt über den schlechtesten von drei Boots (Radeon 48,1 ms ≤ 50, hält). Die Punkte-Maschine trägt zwei neue Wände: jeder Pfad-Glob trifft am Kopf eine Datei, jede GPU-Station weist ihre Karte nach. Gelandet seit 54ce5dfd: Zug 24 (halten.K3 Staffel 2, stoffe.K3 das Eis trägt), Zug 25 (feld.K2/K3, Werkstatt-Weg wartet auf das Ereignis). Mess-Takt 1 an 206b395a: headless und Radeon mit Nachweis gemessen, die GTX-Stationen stehen noch an 18a84649 (takt1b-gtx läuft auf der OMEN)."
+      "was": "Mess-Takt 2 an 4a5f5e2c (Züge 26 und 28b: Gelände K1/K4 im Kern, Huf, Herde, Treffer-kalt, Temperatur aus EINER Quelle mit Stefan-Eis, Werkstatt-Bühnen über _buehneRenderer, Fahr-Gesetz in der Welt, Tore-Abdruck; headless 63/2, Radeon in Ruhe nachgemessen, GTX 28/8): gelaende.K1 und K4 → 2, feld.K2, tore.K3, fahrzeug.K1 und K4 → 2, speicher.K4 je +1; leib.K1 2 → 1 (zwei Hiebe ohne Treffer-Ereignis an der Radeon, Karte leib-k1-hieb)."
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 24.10.2026, Kopf main 4a5f5e2c (V18.546.89)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 25.10.2026, Kopf main 4a5f5e2c (V18.546.89)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
