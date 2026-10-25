@@ -896,6 +896,48 @@ const stationen = [
         ],
         quelle: "2 = (a) + (b) + nass ≥ 1,3× aus der EINEN Nässe + Sim-Takt im Fahr-Schritt ≥ 240 Hz, Labor = Welt S1 ≤ 0,01 m",
     },
+    // ───────── tore.K3 — was der Spieler trägt, reist mit (tore-k3-abdruck) ─────────
+    // gate:portal-konformanz K8: der Spieler geht in der echten Heimat durch jedes Studio-Tor des Genesis-Rings (W durch die
+    // Apertur, am Teile-Tor E — nie ein Ruf der Übergabe) und mit Esc zurück; je Ring-Welt × Teil (Leib = Seele · Teile ·
+    // Prägung des Mensch-Rezepts, Inventar = Slots · Hotbar, wield = Haupt-, Neben-Hand, Rüstung) der Abdruck (kanonisches
+    // JSON + FNV-1a) vor dem Tor, drüben aus der Hülle (`AnazhHuelle.reisender`) und nach der Heimkehr. Das Urteil vergleicht
+    // die Abdrücke der Zeile `K8 [[welt, weg, vor, drüben, nach, esc], …]` selbst, nie ein ok-Flag der Übergabe; Esc muss
+    // heimbringen. An main 206b395a ROT: 0/30 (drüben hält keine Hülle etwas, daheim vor = nach).
+    {
+        kriterium: "tore.K3", staffel: 1, geraet: ["radeon", "gtx"],
+        befehl: ["node", "scripts/diag-portal-konformanz.cjs"], env: { PORTAL_KONFORMANZ_PORT: "{PORT}" }, gpu: true, minuten: 5,
+        urteil: (j, lauf) => {
+            const z = String(lauf.stdout || "").split(/\r?\n/).find((l) => l.startsWith("K8 ["));
+            let R = null;
+            try {
+                R = z ? JSON.parse(z.slice(3)) : null;
+            } catch (_e) {
+                R = null;
+            }
+            if (!Array.isArray(R) || !R.length) return { gruen: false, zahl: "keine K8-Tafel (Exit " + lauf.exit + ")" };
+            const T = ["leib", "inventar", "wield"];
+            const rot = [];
+            let heil = 0;
+            for (const [welt, weg, vor, dr, nach, esc] of R)
+                for (const t of T)
+                    if (esc === true && vor && dr && nach && vor[t] === dr[t] && vor[t] === nach[t]) heil++;
+                    else rot.push(welt + " " + t + (esc === true ? "" : " (Esc bringt nicht heim)"));
+            return {
+                gruen: R.length >= 10 && heil === R.length * T.length,
+                zahl: heil + "/" + R.length * T.length + " Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (" +
+                    R.map((r) => r[0] + " " + r[1]).join(", ") + ")" + (rot.length ? " · rot: " + rot.join(", ") : ""),
+            };
+        },
+        pfad: [
+            "stamm/netz-portal.js",
+            "stamm/siedlung-ort.js",
+            "stamm/koerper-bewegung.js",
+            "worlds/huelle/huelle.js",
+            "scripts/diag-portal-konformanz.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = Leib, Inventar und Gehaltenes stehen nach Tor hin und zurück byte-gleich, an einem Gerät",
+    },
 ];
 
 module.exports = stationen;
@@ -913,6 +955,14 @@ module.exports.fehlt = [
     {
         kriterium: "tore.K5", staffel: 2, befehl: null,
         grund: "der Welt-Fluss hat keine Linse: der Einladungs-Code lädt die Seite neu (joinWorldFromCode → _weltWechselNeuLaden), Kontrolle ≤ 5 s verlangt das Welt-Tor ohne Neuladen; dazu beide Flüsse an zwei Geräten (#1 steht ebenfalls hier: B ist kein anderes Gerät)",
+    },
+    {
+        kriterium: "tore.K3", staffel: 2, befehl: null,
+        grund: "Werkzeug fehlt: der Abdruck von gate:portal-konformanz K8 trägt Leib, Inventar und Gehaltenes (#1); das Reittier/Fahrzeug " +
+            "(`state.player.mountedArch`) reist nicht im Gepäck der Übergabe (`_portalEnterPayload`), und die Rundreise eines Werks " +
+            "Studio → Welt → Studio misst keine Linse — der Hinweg steht (gate:studio-uebergabe (K): Bau-Hash Studio = Welt, im vm), den " +
+            "Rückweg trägt keine Ziel-Seite: keines der 8 Studios mit `werk()` nimmt das Werk der Welt in seine Bühne, und der Bau-Hash " +
+            "der Welt verlangt die Foundry (K8 fährt ohne). Ist an tore-k3-abdruck: Reittier 0/10, Werk-Rundreise 0/8",
     },
     {
         kriterium: "siedlung.K1", staffel: 2, befehl: null,
