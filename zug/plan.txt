@@ -14,4 +14,4 @@ offen   Auge 25.10. Portale  Bögen der Portale sichtbar facettiert (wenige Segm
 plan    W1 Tag 1  CI-Gruppe 18 auf Zweigen heilen (Abbruch nach 20 min) → K06 bisektieren → Zug 32 landen → Mess-Takt 4  Koordinator  Punkte ohne neue Arbeit
 plan    W1 Tag 1–2  STADT-GIPFEL als Messbühne (Wunsch Schöpfer 25.10.): Stadt nH 300 voll belebt (Markt, Bewohner, Chaos) + Blick vom höchsten Gipfel über Stadt und Horizont, je Ego/Third, GTX + Radeon  Messplatz  profiband.K* · siedlung.K* · ferne.K*
 plan    W1 Tag 2–3  die 3 größten Kosten-Klassen der Stadt-Gipfel-Zahl schneiden (Zahl vorher ↔ nachher)  Champions  E Profi-Band
-plan    W1 danach  VERKEHR: Wagen mit Bewohnern am Steuer auf den Trassen (Fahr-Gesetz + Bewohner-Netz) als Last-Vervielfacher, nur mit Scope-Wort des Schöpfers (PFLICHT-OFFEN)  Champion  fahrzeug.K* · mensch.K*
+plan    W1 danach  VERKEHR = PFLICHT-OFFEN C (gesetzt vom Schöpfer 25.10., Zweig pflicht-verkehr b8d5b4c8, Zug z33): Wagen mit Bewohnern am Steuer auf den Trassen, nach dem Stadt-Gipfel  Champion  fahrzeug.K* · mensch.K*
