@@ -472,21 +472,9 @@ class AnazhRealm_gelaende_boden {
     // gleich. Der Kachel-Schlüssel wohnt im Gelände-Gesetzbuch (gelaende-core.js
     // `kachelSchluessel`), Stamm und voxel-worker lesen ihn dort; Kacheln sind DERIVED (nie im
     // Snapshot), Welt-Regen leert sie.
-    // Die EINE Region-Aufloesung fuer alle Hydro-Leser: Heimat-Region, wenn
-    // (x,z) in ihr liegt; sonst die Kachel; sonst die Heimat (deren OOB-Logik
-    // in den Lesern = exakt der alte Pfad — H3-Ozean etc., bit-identisch).
+    // Die EINE Region-Aufloesung fuer alle Hydro-Leser: das Gesetz des Kerns (gelaende-core `hydroRegion`).
     _hydroFor(x, z) {
-        const h = this.state.hydrosphere;
-        if (h && h.ready) {
-            const sizeM = h.dim * h.cell;
-            if (x >= h.originX && z >= h.originZ && x < h.originX + sizeM && z < h.originZ + sizeM) return h;
-            const tiles = this.state.hydroTiles;
-            if (tiles && tiles.size) {
-                const t = tiles.get(globalThis.__gelaendeCore.kachelSchluessel(this._gelaende(), x, z));
-                if (t && t.ready) return t;
-            }
-        }
-        return h;
+        return globalThis.__gelaendeCore.hydroRegion(this._gelaende(), x, z);
     }
 
     // Stellt sicher, dass jede Kachel, die [x±r, z±r] schneidet, da ist oder im Faden entsteht (Heimat "0,0" immer): eine
@@ -600,6 +588,16 @@ class AnazhRealm_gelaende_boden {
             },
             get erdbau() {
                 return realm._erdbauLage();
+            },
+            // die Hydrosphäre (Heimat, Kacheln, ihr Gesetz) — die Dichte und der Spiegel des Kerns lesen sie
+            get hydrosphere() {
+                return realm.state.hydrosphere;
+            },
+            get hydroTiles() {
+                return realm.state.hydroTiles;
+            },
+            get hydroGesetz() {
+                return AnazhRealm.HYDROSPHERE;
             },
         };
         return this._gelaendeLage;
@@ -1037,118 +1035,26 @@ class AnazhRealm_gelaende_boden {
         return this._erbgutCache;
     }
 
-    // Der Hydrosphäre-Compute-Pfad (`_hydroInit`) liest direkt
-    // `_terrainMacroSurfaceY` (worldgen-frozen); der Spieler-Wille lebt im Cell-Feld, nie in der Drainage.
-
-    // Spalten-Kontext: die rein 2D-Arbeit (Makro-Oberfläche `_terrainMacroSurfaceY` ~61 % der Density-
-    // Kosten, eroR, Höhlen-Mündung, Hydro-Carve/See) EINMAL pro (x,z) statt pro Voxel; der per-Voxel
-    // `_terrainBaseDensityAtCol` liest sie byte-identisch. Die Basis-Dichte OHNE voxelEdits ist
-    // worldgen-frozen → pro Chunk+LOD cachebar (`state.voxelBaseDensityCache`), Edits legen nur ihre
-    // Form drauf (gelaende-core `editsImGitter`). MUSS bit-identisch im Worker (`terrainColumnContext`).
+    // DER SPALTEN-KONTEXT (x, z) der Dichte: das Gesetz des Kerns (gelaende-core `dichteSpalte`: die Höhe, das Wildnis-Gewicht,
+    // die Decke der Höhle, Kanal und See-Becken — EINMAL je Spalte, `dichteBasis` liest sie über das y-Band), dazu DER KELLER
+    // DER SPALTE (S4): die Lage des Erdbaus, wenn (x, z) über einem Keller liegt (`erdbauKeller`), sonst null — das Feld
+    // (`_fieldDensityAt`) liest ihn je Probe als einen Blick, das Gitter nie. Die Basis-Dichte OHNE Edits ist worldgen-frozen →
+    // je Chunk+LOD cachebar (`state.voxelBaseDensityCache`), Edits legen nur ihre Form drauf.
     _terrainColumnContext(x, z) {
         return this._terrainColumnContextIn(x, z, {});
     }
-    // Füll-Variante: identische Werte, der Aufrufer stellt den Behälter. Halter-Pfade (Chunk-Bau,
-    // _fieldSurfaceBelow, Gradient-y-Paar) münzen frisch über den Wrapper; nur der ctx-lose Heiß-Pfad
-    // (_terrainBaseDensityAt) füllt seinen privaten Scratch.
+    // Füll-Variante: der Aufrufer stellt den Behälter (der ctx-lose Heiß-Pfad `_terrainBaseDensityAt` seinen Scratch).
     _terrainColumnContextIn(x, z, out) {
-        const L = this._gelaende();
-        const n = L.noise;
-        const base = this.state.terrainBaseHeight || 0;
-        const mess = this._spaltenHang || (this._spaltenHang = { hang: 0 });
-        const surf = this._terrainMacroSurfaceY(x, z, true, mess);
-        // DAS WILDNIS-GEWICHT der Spalte: die 3D-Rauheit und die Höhlen-Hülle sind Wildnis — sie wiegen mit ihm (Wildnis-
-        // Welt ≡ 1: jeder Wert byte-gleich; ohne Wildnis-Term 0: kein noise3D, keine Höhle, der Boden ist die Term-Höhe).
-        const wild = (this._erbgutCache || this._erbgut()).wildnis;
-        let ceilOffset = -24;
-        if (wild > 0) {
-            // Die Höhlen-Decke bleibt unter dem Boden (16 m, unter Wasser 24 m — T7b-ii, kein Abfluss): die Höhle bricht
-            // nie als Grube durch die Wiese (die Canyon-Maske fiel, K16). DIE MÜNDUNG ist Gesetz (gelaende-core
-            // `hoehlenMund`): wo die Flanke Fels trägt, hebt ihr Gewicht die Decke über den Boden — der Mund steht im Fels.
-            const waterLevelD = typeof this.state.waterLevel === "number" ? this.state.waterLevel : base + 4;
-            const G = globalThis.__gelaendeCore;
-            ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + G.HOEHLEN_MUND.hub * G.hoehlenMund(mess.hang);
-        }
-        // V9.43-d/-45-b — der Hydrosphären-Carve (Fluss-Rinnen + See-Becken-Blend), 2D je Spalte.
-        const hydro = this.state.hydrosphere;
-        const hydroActive = !!(hydro && hydro.ready);
-        let hydroCarve = null; // der Fluss-Kanal { P, L, k } (`_hydrosphereCarveAt`) oder null
-        let lake = null;
-        if (hydroActive) {
-            hydroCarve = this._hydrosphereCarveAt(x, z);
-            lake = this._hydrosphereLakeAt(x, z);
-        }
-        out.n = n;
-        out.base = base;
-        out.surf = surf;
-        out.wild = wild;
-        out.ceilOffset = ceilOffset;
-        out.hydroActive = hydroActive;
-        out.hydroCarve = hydroCarve;
-        out.lake = lake;
-        // DER KELLER DER SPALTE (S4): die Lage des Erdbaus, wenn (x, z) über einem Keller liegt (`erdbauKeller`), sonst null —
-        // EINMAL je Spalte gefragt; das Feld (`_fieldDensityAt`) liest ihn je Probe als einen Blick. Das Gitter liest ihn nie.
+        globalThis.__gelaendeCore.dichteSpalte(this._gelaende(), x, z, out);
         out.keller = this._kellerLage(x, z);
         return out;
     }
 
-    // Die per-VOXEL-Hälfte (y-abhängig): die zwei Oberflächen-3D-Roughness-Bänder, die Höhlen-
-    // Hüllkurve + drei Carve-Felder (Wurm/Kavernen/Hallen), der See-Blend. Liest den Spalten-Kontext
-    // (`ctx`) statt die 2D-Arbeit neu zu rechnen. Reihenfolge der `d`-Akkumulation = exakt das Original.
-    _terrainBaseDensityAtCol(x, y, z, ctx) {
-        const n = ctx.n;
-        const base = ctx.base;
-        const surf = ctx.surf;
-        let d = surf - y;
-        // Rauheit und Höhlen sind Wildnis: ohne ihr Gewicht (ctx.wild 0) wird kein noise3D gerechnet.
-        if (ctx.wild > 0) {
-            const caveFloor = Math.max(0, Math.min(1, (y - (base - 28)) / 8));
-            const caveCeil = Math.max(0, Math.min(1, (surf + ctx.ceilOffset - y) / 8));
-            const caveEnv = caveFloor * caveCeil * ctx.wild;
-            if (caveEnv > 0) {
-                const ridge = 1 - Math.abs(n.noise3D(x * 0.03, y * 0.034, z * 0.03));
-                const cave = Math.max(0, (ridge - 0.7) / 0.3);
-                d -= cave * caveEnv * 36;
-                const cavern = n.noise3D(x * 0.013, y * 0.018, z * 0.013);
-                const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
-                d -= cavernCarve * caveEnv * 46;
-                const hall = n.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
-                const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
-                d -= hallCarve * caveEnv * 72;
-            }
-        }
-        if (ctx.hydroActive) d = AnazhRealm._gewaesserForm(d, y, ctx.hydroCarve, ctx.lake);
-        return d;
-    }
-
-    // DIE FORM DES GEWÄSSERS (EINE Formel für die Dichte des Chunks und die Fläche der Ferne, `_fernNass`): der Fluss-Kanal
-    // `kn` (`_hydrosphereCarveAt`) als weiches Maximum aus Gelände und Damm, davon das weiche Minimum mit dem Kanal
-    // (polynomial, Rundung k: m ∓ h² · k / 4, h = max(k − |a − b|, 0) / k); das See-Becken `lk` danach. `d` ist die Dichte
-    // an der Höhe `y` (die Fläche − y); mit y = 0 und d = der Höhe einer Spalte ist das Ergebnis ihre Fläche.
-    static _gewaesserForm(d, y, kn, lk) {
-        if (kn) {
-            const dL = kn.L - y;
-            let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
-            const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
-            const dP = kn.P - y;
-            hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
-            d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
-        }
-        if (lk) {
-            const flatD = lk.bedY - y;
-            d = d * (1 - lk.w) + flatD * lk.w;
-        }
-        return d;
-    }
-
-    // Die EINE-Punkt-API (Edits/Raycast/Carve-Leser): Kontext + per-Voxel = byte-identisch zur alten
-    // monolithischen Form. Der GRID-Pfad (`_voxelSampleDensityGrid`) hoistet den Kontext pro Spalte.
+    // Die EINE-Punkt-API ohne Edits (Gradient-, Raycast-, Kreatur-Proben): die Spalte im privaten SCRATCH (der Konsum in
+    // `dichteBasis` ist rein synchron, kein Aufrufer hält diesen ctx), die Dichte des Kerns (`dichteBasis`).
     _terrainBaseDensityAt(x, y, z) {
-        // Der EINE ctx-lose Chokepoint füllt einen privaten SCRATCH (Gradient-, Raycast-, Kreatur-Proben
-        // münzten sonst je einen frischen Kontext). Sicher, weil der Konsum in _terrainBaseDensityAtCol
-        // rein synchron ist (Hydro-Füller rufen nie zurück) und kein Aufrufer dieses ctx hält.
         const s = this._fieldCtxScratch || (this._fieldCtxScratch = {});
-        return this._terrainBaseDensityAtCol(x, y, z, this._terrainColumnContextIn(x, z, s));
+        return globalThis.__gelaendeCore.dichteBasis(x, y, z, this._terrainColumnContextIn(x, z, s));
     }
 
     // Volle Terrain-Dichte = Basis mit den Edits für Punkt-Samples (Wasser-Iso-OOB, `_voxelSurfaceY`, direkte Aufrufer); der
@@ -1168,82 +1074,26 @@ class AnazhRealm_gelaende_boden {
         return E && E.hohl && globalThis.__gelaendeCore.erdbauKeller(E, x, z) ? E : null;
     }
 
-    // DIE EDIT-KARTE (K23): die Edits der Welt je Chunk. `worldMeta.voxelEdits` bleibt die EINE Liste (persistiert, in
-    // Setz-Reihenfolge, ohne Deckel — kein Edit fällt still); die Karte legt jeden Edit in jeden Chunk, den seine Reichweite
-    // samt einem Chunk Rand berührt (Spalten floor((x − R)/span) − 1 … floor((x + R)/span) + 1, R = gelaende-core `editReich`), in
-    // derselben Reihenfolge; der KERN ohne Rand dient der Punkt-Probe. Ein Leser fragt nur seinen Chunk statt alle Edits
-    // zu summieren, und die Summe bleibt Bit für Bit die der ganzen Liste (ein Edit außerhalb trägt nichts bei). Je Chunk
-    // eine Generation aus EINEM steigenden Zähler (nie wiederholt) — der Stale-Filter der Worker-Antworten
-    // (`_voxelStand`). Identität und Länge der Liste halten die Karte frisch: ein Push wird nachgetragen, ein Tausch oder
-    // Kürzen baut sie neu. Der Worker spiegelt sie byte-gleich (`editKarte`, voxel-worker.js).
+    // DIE EDIT-KARTE (K23): die Edits der Welt je Chunk — das Gesetz des Kerns (gelaende-core `editKarte`) über der EINEN Liste
+    // `worldMeta.voxelEdits` (persistiert, in Setz-Reihenfolge, ohne Deckel — kein Edit fällt still). Je Chunk eine Generation
+    // aus EINEM steigenden Zähler (`_editGenZaehler`, nie wiederholt; der Erdbau zieht denselben) — der Stale-Filter der
+    // Worker-Antworten (`_voxelStand`).
     _voxelEditKarte() {
         const meta = this.state.worldMeta;
         const edits = meta && Array.isArray(meta.voxelEdits) ? meta.voxelEdits : null;
-        let k = this._editKarte;
-        if (!k || k.edits !== edits || k.n > (edits ? edits.length : 0)) {
-            k = this._editKarte = {
-                edits,
-                n: 0,
-                span: this._voxelChunkConfig().span,
-                je: new Map(),
-                kern: new Map(),
-                gen: new Map(),
-            };
-        }
-        if (edits && k.n < edits.length) {
-            const span = k.span;
-            while (k.n < edits.length) {
-                const ed = edits[k.n++];
-                if (!ed || !Number.isFinite(ed.x) || !Number.isFinite(ed.z)) continue;
-                const r = globalThis.__gelaendeCore.editReich(ed);
-                this._editGenZaehler = (this._editGenZaehler || 0) + 1;
-                const g = this._editGenZaehler;
-                // Der Kasten seiner Reichweite in Chunks (ka … kb); die Karte nimmt einen Chunk Rand dazu.
-                const kax = Math.floor((ed.x - r) / span);
-                const kbx = Math.floor((ed.x + r) / span);
-                const kaz = Math.floor((ed.z - r) / span);
-                const kbz = Math.floor((ed.z + r) / span);
-                for (let cx = kax - 1; cx <= kbx + 1; cx++) {
-                    for (let cz = kaz - 1; cz <= kbz + 1; cz++) {
-                        const key = (cx + 32768) * 65536 + (cz + 32768);
-                        const liste = k.je.get(key);
-                        if (liste) liste.push(ed);
-                        else k.je.set(key, [ed]);
-                        k.gen.set(key, g);
-                        // DER KERN (ohne Rand): die Punkt-Probe fragt nur die Edits, deren Kasten ihren Chunk berührt.
-                        if (cx >= kax && cx <= kbx && cz >= kaz && cz <= kbz) {
-                            const kern = k.kern.get(key);
-                            if (kern) kern.push(ed);
-                            else k.kern.set(key, [ed]);
-                        }
-                    }
-                }
-            }
-        }
-        return k;
+        const gen = this._editGen || (this._editGen = () => (this._editGenZaehler = (this._editGenZaehler || 0) + 1));
+        const span = this._voxelChunkConfig().span;
+        return (this._editKarte = globalThis.__gelaendeCore.editKarte(this._editKarte, edits, span, gen));
     }
 
     // Die Edits, die den Chunk (cx, cz) samt einem Chunk Rand berühren können — in Setz-Reihenfolge, leer ohne.
     _voxelEditsNah(cx, cz) {
-        return this._voxelEditKarte().je.get((cx + 32768) * 65536 + (cz + 32768)) || AnazhRealm.KEINE_EDITS;
+        return globalThis.__gelaendeCore.editsNah(this._voxelEditKarte(), cx, cz);
     }
 
-    // Die Edits, die den waagrechten Kasten [x0, x1] × [z0, z1] berühren können: liegt er (mit 1 m Rand) im 3×3 um den
-    // Chunk seiner Mitte, ist es dessen Karten-Eintrag (jedes Chunk-Gitter samt Pad), sonst die ganze Liste.
+    // Die Edits, die den waagrechten Kasten [x0, x1] × [z0, z1] berühren können (gelaende-core `editsImKasten`).
     _voxelEditsImKasten(x0, x1, z0, z1) {
-        const k = this._voxelEditKarte();
-        if (!k.edits || !k.edits.length) return AnazhRealm.KEINE_EDITS;
-        const span = k.span;
-        const cx = Math.floor((x0 + x1) / 2 / span);
-        const cz = Math.floor((z0 + z1) / 2 / span);
-        if (
-            x0 - 1 > (cx - 1) * span &&
-            x1 + 1 < (cx + 2) * span &&
-            z0 - 1 > (cz - 1) * span &&
-            z1 + 1 < (cz + 2) * span
-        )
-            return k.je.get((cx + 32768) * 65536 + (cz + 32768)) || AnazhRealm.KEINE_EDITS;
-        return k.edits;
+        return globalThis.__gelaendeCore.editsImKasten(this._voxelEditKarte(), x0, x1, z0, z1);
     }
 
     // Der Stand eines Chunks für den Stale-Filter der Worker- und Platten-Antworten: der Welt-Sync
@@ -1272,180 +1122,38 @@ class AnazhRealm_gelaende_boden {
     _mitEdits(basis, x, y, z) {
         const meta = this.state.worldMeta;
         if (!meta || !meta.voxelEdits || !meta.voxelEdits.length) return basis;
-        const k = this._voxelEditKarte();
-        const edits = k.kern.get((Math.floor(x / k.span) + 32768) * 65536 + (Math.floor(z / k.span) + 32768));
-        return globalThis.__gelaendeCore.mitEdits(basis, x, y, z, edits);
+        const G = globalThis.__gelaendeCore;
+        return G.mitEdits(basis, x, y, z, G.editsAm(this._voxelEditKarte(), x, z));
     }
 
-    // Base-gecachter Density-Grid-Pfad: (dimX+1)·(dimY+1)·(dimZ+1)-Grid identisch zu
-    // `_voxelSampleDensityGrid`, aber das teure Basis-Grid wird pro Chunk+LOD gecacht; der Edit-Rebuild
-    // legt nur die Form der Edits auf eine Kopie (~2 ms statt ~126 ms). Ohne Edits: read-only-Reuse.
+    // Base-gecachter Density-Grid-Pfad: das Gitter des Kerns (gelaende-core `dichteGitter`, Band und Basis-Dichte), je Chunk+LOD
+    // gecacht; der Edit-Rebuild legt nur die Form der Edits auf eine Kopie (`gitterMitEdits`, ~2 ms statt ~126 ms) — die Edits
+    // des Gitter-Kastens (`_voxelEditsImKasten`; der Worker fragt denselben Kasten). Ohne Edits: read-only-Reuse.
     _voxelEditedDensityGrid(cacheKey, gox, goy, goz, dimX, dimY, dimZ, step) {
-        const Nx = dimX + 1;
-        const Ny = dimY + 1;
-        const Nz = dimZ + 1;
-        const expectedLen = Nx * Ny * Nz;
+        const G = globalThis.__gelaendeCore;
+        const L = this._gelaende();
+        const [Nx, Ny, Nz] = [dimX + 1, dimY + 1, dimZ + 1];
         if (!this.state.voxelBaseDensityCache) this.state.voxelBaseDensityCache = new Map();
         let baseGrid = this.state.voxelBaseDensityCache.get(cacheKey);
-        if (!baseGrid || baseGrid.length !== expectedLen) {
-            const baseSample = (x, y, z) => this._terrainBaseDensityAt(x, y, z);
-            // V18.321 — der Spalten-Hoist: colVoxel = die per-Voxel-Hälfte (liest den 2D-Kontext).
-            const colVoxel = (x, y, z, ctx) => this._terrainBaseDensityAtCol(x, y, z, ctx);
-            baseGrid = this._voxelSampleDensityGrid(
-                gox,
-                goy,
-                goz,
-                dimX,
-                dimY,
-                dimZ,
-                step,
-                baseSample,
-                colVoxel,
-                true,
-                AnazhRealm.KEINE_EDITS
-            );
+        if (!baseGrid || baseGrid.length !== Nx * Ny * Nz) {
+            baseGrid = G.dichteGitter(L, gox, goy, goz, Nx, Ny, Nz, step);
             this.state.voxelBaseDensityCache.set(cacheKey, baseGrid);
         }
-        // Die Edits des Gitter-Kastens (die Karte, `_voxelEditsImKasten`; der Worker fragt denselben Kasten).
         const edits = this._voxelEditsImKasten(gox, gox + dimX * step, goz, goz + dimZ * step);
-        if (!edits.length) return baseGrid; // Basis IST das Grid (read-only)
-        // Die Edits auf eine Kopie legen, deren Band ihre Reichweite deckt (dort die wahre Basis statt ±1 — die Kappe der Form
-        // braucht sie), je Ecke das Gesetz des Kerns (`bandUmEdits`, `editsImGitter`); der Basis-Cache bleibt edit-frei.
-        const G = globalThis.__gelaendeCore;
-        const basis = new Float32Array(baseGrid);
-        const col = (x, y, z, ctx) => this._terrainBaseDensityAtCol(x, y, z, ctx);
-        const spalte = (x, z) => this._terrainColumnContext(x, z);
-        G.bandUmEdits(basis, gox, goy, goz, Nx, Ny, Nz, step, edits, this.state.terrainBaseHeight || 0, spalte, col);
-        return G.editsImGitter(basis, gox, goy, goz, Nx, Ny, Nz, step, edits);
+        return G.gitterMitEdits(L, baseGrid, gox, goy, goz, Nx, Ny, Nz, step, edits);
     }
 
-    // DER FLUSS-KANAL an xz: die Gestalt, die das Gelände im Fluss-Korridor annimmt — `{ P, L, k }` oder null. P ist die
-    // Höhe des KANALS (Flachboden auf Spiegel − (1 − Freibord) · Tiefe bis zur halben Breite, die Bank steigt mit
-    // bankNeigung bis zur Krone auf Spiegel + Freibord · Tiefe, dahinter die Böschung, die mit dem Abstand steiler wird), L die
-    // Höhe des DAMMS (seine Krone auf Spiegel + max(Freibord · Tiefe, dammFreibord), eben bis dammBreite hinter der Krone des
-    // Kanals, dahinter fällt er wie die Böschung steigt — die Krone trägt das 1,8-m-Gitter), k die Rundung. Die Dichte
-    // nimmt das weiche Maximum aus Gelände und Damm (tieferes Gelände wird zur Krone gefüllt) und davon das weiche Minimum
-    // mit dem Kanal (höheres Gelände wird zur Böschung geschnitten): wo das Gelände zwischen beiden liegt, bleibt es, wie es
-    // ist — die Bank läuft mit ihrer eigenen Neigung ins Gelände aus, nie als Wand. Mehrere Segmente (Biegung, Mündung):
-    // der tiefste Kanal und der höchste Damm (die Vereinigung). So schneidet der Kanal Buckel und überbrückt Senken, und die
-    // Krone hält das Wasser. Bis 8f09227d mischte ein Gewicht das Gelände zur Gestalt: die Krone nach 0,6 der Bank-Rampe,
-    // dahinter eine Gleit-Zone von 0,4 der Rampe — eine Wand von bis zu ≈ 73° mit Fels-Rauten (Gegenprüfung 07.10.).
-    // Leere-Bucket-Early-Out → wasserlose Welt ~5 Ops (millionenfach beim Meshing). See-Becken: `_hydrosphereLakeAt`.
+    // DER FLUSS-KANAL an xz → `{ P, L, k }` oder null (gelaende-core `flussKanal`): die Dichte nimmt das weiche Maximum aus
+    // Gelände und Damm und davon das weiche Minimum mit dem Kanal — so schneidet der Kanal Buckel und überbrückt Senken, und
+    // die Krone hält das Wasser. See-Becken: `_hydrosphereLakeAt`.
     _hydrosphereCarveAt(x, z) {
-        const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-        if (!h || !h.ready) return null;
-        const kanal = h.kanal;
-        if (!kanal) return null;
-        const bs = h.bucketSize;
-        const bd = h.bucketsDim;
-        const bi = Math.floor((x - h.originX) / bs);
-        const bj = Math.floor((z - h.originZ) / bs);
-        if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
-        const kb = bj * bd + bi;
-        if (kanal.ab[kb] === kanal.ab[kb + 1]) return null;
-        const KANAL_FELDER = globalThis.__gelaendeCore.KANAL_FELDER;
-        const HC = AnazhRealm.HYDROSPHERE;
-        const sN = HC.bankNeigung;
-        const sK = HC.bankKruemmung;
-        const fuss = HC.bankRundung;
-        const kB = HC.dammBreite;
-        let P = Infinity;
-        let L = -Infinity;
-        for (let q = kanal.ab[kb]; q < kanal.ab[kb + 1]; q++) {
-            const o = kanal.idx[q] * KANAL_FELDER;
-            const ax = kanal.seg[o];
-            const az = kanal.seg[o + 1];
-            const bx = kanal.seg[o + 2];
-            const bz = kanal.seg[o + 3];
-            const hwA = kanal.seg[o + 4];
-            const hwB = kanal.seg[o + 5];
-            const dA = kanal.seg[o + 6];
-            const dB = kanal.seg[o + 7];
-            const sA = kanal.seg[o + 8];
-            const sB = kanal.seg[o + 9];
-            const ex = bx - ax;
-            const ez = bz - az;
-            const len2 = ex * ex + ez * ez || 1;
-            let t = ((x - ax) * ex + (z - az) * ez) / len2;
-            if (t < 0) t = 0;
-            else if (t > 1) t = 1;
-            const px = ax + ex * t;
-            const pz = az + ez * t;
-            const dist = Math.hypot(x - px, z - pz);
-            const halfW = hwA + (hwB - hwA) * t;
-            const D = dA + (dB - dA) * t;
-            const dK = halfW + D / sN;
-            if (dist >= dK + kB + HC.bankWeite) continue;
-            const spiegel = sA + (sB - sA) * t;
-            const B = spiegel - (1 - HC.spiegelFreibord) * D;
-            const u0 = dist - halfW;
-            let p = u0 <= -fuss ? B : u0 < fuss ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss) : B + sN * u0;
-            const u = dist - dK;
-            if (u > 0) p += sK * u * u;
-            // der Damm: seine Krone eben bis dammBreite hinter der Krone des Kanals, dahinter die Böschung
-            let l = spiegel + Math.max(HC.spiegelFreibord * D, HC.dammFreibord);
-            const uL = u - kB;
-            if (uL > 0) l -= sN * uL + sK * uL * uL;
-            if (p < P) P = p;
-            if (l > L) L = l;
-        }
-        return P < Infinity ? { P, L, k: fuss } : null;
+        return globalThis.__gelaendeCore.flussKanal(this._gelaende(), x, z);
     }
 
-    // Fluss-Distanz an (x,z): derselbe Walk über den Kanal wie _hydrosphereCarveAt (EINE Quelle), liefert
-    // Distanz + Segment-Halbbreite. Anders als der Carve liest er die 3×3-Bucket-Nachbarschaft
-    // (Feuchte-Reichweite ~26 m > Bankbreite).
+    // Der nächste Fluss-Rand an (x,z) → { dist, halfW, spiegel } (gelaende-core `flussRand`, die 3×3-Buckets: die
+    // Feuchte reicht weiter als die Bank).
     _hydroDistAt(x, z) {
-        const h = this._hydroFor(x, z);
-        if (!h || !h.ready || !h.kanal) return { dist: Infinity, halfW: 0 };
-        const kanal = h.kanal;
-        const KANAL_FELDER = globalThis.__gelaendeCore.KANAL_FELDER;
-        const bs = h.bucketSize;
-        const bd = h.bucketsDim;
-        const bi0 = Math.floor((x - h.originX) / bs);
-        const bj0 = Math.floor((z - h.originZ) / bs);
-        let best = Infinity;
-        let bestHw = 0;
-        let bestRand = Infinity;
-        let bestSp = NaN;
-        for (let dj = -1; dj <= 1; dj++) {
-            for (let di = -1; di <= 1; di++) {
-                const bi = bi0 + di;
-                const bj = bj0 + dj;
-                if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) continue;
-                const kb = bj * bd + bi;
-                for (let q = kanal.ab[kb]; q < kanal.ab[kb + 1]; q++) {
-                    const o = kanal.idx[q] * KANAL_FELDER;
-                    const ax = kanal.seg[o];
-                    const az = kanal.seg[o + 1];
-                    const bx = kanal.seg[o + 2];
-                    const bz = kanal.seg[o + 3];
-                    const hwA = kanal.seg[o + 4];
-                    const hwB = kanal.seg[o + 5];
-                    const sA = kanal.seg[o + 8];
-                    const sB = kanal.seg[o + 9];
-                    const ex = bx - ax;
-                    const ez = bz - az;
-                    const len2 = ex * ex + ez * ez || 1;
-                    let t = ((x - ax) * ex + (z - az) * ez) / len2;
-                    if (t < 0) t = 0;
-                    else if (t > 1) t = 1;
-                    const dist = Math.hypot(x - (ax + ex * t), z - (az + ez * t));
-                    const hw = hwA + (hwB - hwA) * t;
-                    // der nächste RAND (Abstand minus die Halbbreite, wie die Leser sie nehmen), nie die nächste Mittellinie
-                    // (K16, U1): zwischen zwei Segmenten ungleicher Breite sprang sonst die Halbbreite und mit ihr die Feuchte
-                    // (0,83 → 0,44 in 2 cm, 213/−890) — so ist jedes Band das Maximum der Segmente, stetig
-                    const rand = dist - Math.max(1, hw);
-                    if (rand < bestRand) {
-                        bestRand = rand;
-                        best = dist;
-                        bestHw = hw;
-                        bestSp = sA + (sB - sA) * t;
-                    }
-                }
-            }
-        }
-        return { dist: best, halfW: bestHw, spiegel: bestSp };
+        return globalThis.__gelaendeCore.flussRand(this._gelaende(), x, z);
     }
 
     // Γ1 (genese-plan) — die GENESE-Version der Welt: fehlend = 1 (Legacy —
@@ -1511,41 +1219,10 @@ class AnazhRealm_gelaende_boden {
         return band * band * w;
     }
 
-    // See-Becken an xz → `{bedY, w}` oder null: `bedY` = flache, wasserdichte Bett-Höhe, `w` ∈ [0,1] die
-    // Becken-Zugehörigkeit (rampt über den 1-Zellen-Ring zum Ufer). `_terrainDensityAt` blendet mit `w`
-    // zur Bett-Ebene → lückenloser Boden, keine Roughness im Becken, Bett über dem Meeresspiegel.
-    // Bilinear; der `lakeNear`-Early-Out hält die wasserlose Welt billig.
+    // See-Becken an xz → `{bedY, w}` oder null (gelaende-core `seeBecken`): `bedY` die flache, dichte Bett-Höhe, `w` die
+    // Becken-Zugehörigkeit — die Dichte blendet mit `w` zur Bett-Ebene (lückenloser Boden, keine Rauheit im Becken).
     _hydrosphereLakeAt(x, z) {
-        const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-        if (!h || !h.ready) return null;
-        const lw = h.lakeW;
-        const lb = h.lakeBedCell;
-        const ln = h.lakeNear;
-        if (!lw || !lb || !ln) return null;
-        const dim = h.dim;
-        const cell = h.cell;
-        const ci = Math.floor((x - h.originX) / cell);
-        const cj = Math.floor((z - h.originZ) / cell);
-        if (ci < 0 || cj < 0 || ci >= dim || cj >= dim || !ln[ci + cj * dim]) return null;
-        const cf = (x - h.originX) / cell - 0.5;
-        const gf = (z - h.originZ) / cell - 0.5;
-        const i0 = Math.floor(cf);
-        const j0 = Math.floor(gf);
-        const tx = cf - i0;
-        const tz = gf - j0;
-        const cl = (v) => (v < 0 ? 0 : v >= dim ? dim - 1 : v);
-        const i0c = cl(i0);
-        const i1c = cl(i0 + 1);
-        const r0 = cl(j0) * dim;
-        const r1 = cl(j0 + 1) * dim;
-        const w =
-            (lw[i0c + r0] * (1 - tx) + lw[i1c + r0] * tx) * (1 - tz) +
-            (lw[i0c + r1] * (1 - tx) + lw[i1c + r1] * tx) * tz;
-        if (w <= 0) return null;
-        const bedY =
-            (lb[i0c + r0] * (1 - tx) + lb[i1c + r0] * tx) * (1 - tz) +
-            (lb[i0c + r1] * (1 - tx) + lb[i1c + r1] * tx) * tz;
-        return { bedY, w };
+        return globalThis.__gelaendeCore.seeBecken(this._gelaende(), x, z);
     }
 
     // Surface Nets: (1) je Zelle mit Oberflächen-Schnitt EIN Vertex (Mittel der Kanten-Kreuzungen);
@@ -1571,8 +1248,7 @@ class AnazhRealm_gelaende_boden {
         // Schleife (~90k `_terrainDensityAt`-Calls) nur einmal pro Chunk-Build.
         // ein eigener Sampler (`densityFn`, die Schwebe-Insel) ist nicht der Boden: er trägt dessen Band nicht
         const density =
-            preDensity ||
-            this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample, undefined, !densityFn);
+            preDensity || this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample, !densityFn);
         const { positions, vertCells, cellVert, sharp } = this._voxelExtractSurfaceVertices(
             density,
             ox,
@@ -1799,28 +1475,23 @@ class AnazhRealm_gelaende_boden {
     // eigenem Sampler) sampelt jede Ecke. Bis 10.10. schnitt das Boden-Band jedes Feld — die Insel (lokal um 0|0|0) bekam
     // das Band des Bodens am Welt-Ursprung: lag er tiefer als ~−3 m, verlor sie ihre Kuppe, unter ~−20 m (Tiefsee) jede
     // Ecke, und `new THREE.Mesh(null)` riss den Boot ab (1 von 40 frisch geborenen Welten erwachte nie).
-    // `reich`: die Edits, deren Reichweite das Band deckt (gelaende-core `bandUmEdits`) — Default die des Kastens; der
-    // Basis-Cache (`_voxelEditedDensityGrid`) bleibt edit-frei, seine Kopie trägt sie.
-    _voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample, colVoxel, boden = true, reich = undefined) {
+    // Der Chunk des Bodens sampelt das Gitter des Kerns (`_voxelEditedDensityGrid`); hier sampelt `sample` jede Ecke im Band
+    // (Sync-Bau ohne Vorab-Gitter: der Punkt `_terrainDensityAt` mit den Edits, deren Reichweite das Band deckt).
+    _voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample, boden = true) {
         const Nx = dimX + 1;
         const Ny = dimY + 1;
         const Nz = dimZ + 1;
         const density = new Float32Array(Nx * Ny * Nz);
         // BAND-SKIP: pro Spalte (i,k) nur die j-Ebenen um die Oberfläche sample()-n — über dem Band garantiert Luft, unter
-        // ihm garantiert Fels → −1/+1 statt sample(), bit-identische Geometrie, ~60–70 % weniger Calls. Das Band ist EIN
-        // Gesetz des Kerns (`bandOben`/`bandUnten`); wo ein Edit seine Fläche hinlegt, deckt es seine Reichweite
-        // (`bandUmEdits`). Der Worker (`computeDensityGrid`) liest dasselbe Gesetz.
+        // ihm garantiert Fels → −1/+1 statt sample(), ~60–70 % weniger Calls. Das Band ist EIN Gesetz des Kerns
+        // (`bandOben`/`bandUnten`); wo ein Edit seine Fläche hinlegt, deckt es seine Reichweite (`bandUmEdits`).
         const G = globalThis.__gelaendeCore;
         const base = this.state.terrainBaseHeight || 0;
-        // Spalten-Hoist: mit `colVoxel` wird `_terrainColumnContext` EINMAL pro Spalte gerechnet und deckt
-        // Band-Grenzen (`ctx.surf`) UND per-Voxel-Auswertung (`colVoxel(...,ctx)` == sample, byte-identisch).
-        // Ohne `colVoxel` (Edit-/Sonder-Sampler) der direkte Pfad. MUSS bit-identisch im Worker.
         for (let k = 0; k < Nz; k++) {
             const wz = oz + k * step;
             for (let i = 0; i < Nx; i++) {
                 const wx = ox + i * step;
-                const ctx = colVoxel ? this._terrainColumnContext(wx, wz) : null;
-                const surf = !boden ? 0 : ctx ? ctx.surf : this._terrainMacroSurfaceY(wx, wz);
+                const surf = boden ? this._terrainMacroSurfaceY(wx, wz) : 0;
                 const bandTopJ = boden ? G.bandOben(surf, oy, step) : Ny;
                 const bandBotJ = boden ? G.bandUnten(surf, base, oy, step) : -1;
                 const colBase = i + k * Nx * Ny;
@@ -1828,25 +1499,15 @@ class AnazhRealm_gelaende_boden {
                     const idx = colBase + j * Nx;
                     if (j > bandTopJ) density[idx] = -1;
                     else if (j < bandBotJ) density[idx] = 1;
-                    else density[idx] = ctx ? colVoxel(wx, oy + j * step, wz, ctx) : sample(wx, oy + j * step, wz);
+                    else density[idx] = sample(wx, oy + j * step, wz);
                 }
             }
         }
-        if (boden)
-            G.bandUmEdits(
-                density,
-                ox,
-                oy,
-                oz,
-                Nx,
-                Ny,
-                Nz,
-                step,
-                reich === undefined ? this._voxelEditsImKasten(ox, ox + dimX * step, oz, oz + dimZ * step) : reich,
-                base,
-                (x, z) => this._terrainColumnContext(x, z),
-                colVoxel || ((x, y, z) => sample(x, y, z))
-            );
+        if (boden) {
+            const edits = this._voxelEditsImKasten(ox, ox + dimX * step, oz, oz + dimZ * step);
+            const spalte = (x, z) => this._terrainColumnContext(x, z);
+            G.bandUmEdits(density, ox, oy, oz, Nx, Ny, Nz, step, edits, base, spalte, (x, y, z) => sample(x, y, z));
+        }
         return density;
     }
 
@@ -3170,7 +2831,7 @@ AnazhRealm.KEINE_EDITS = Object.freeze([]);
 // DIE ORT-WAHL eines Plans (K10, `_ortWahl`): Ringe um den Wunsch-Anker (`ringe` × `schrittM` = 128 m, die halbe
 // Siedlungs-Zelle fachwerk `SIEDLUNG.cellM`; auf jedem Ring Orte im Abstand ≤ `schrittM`), der nächste Ort, an dem der Plan
 // jedes Haus trägt (Ort-Faden `ortTraegt`, am Wirt `_ortTraegtWirt`), gewinnt. `grobM`: das Raster des ersten Urteils (die
-// Wand urteilt im halben Meter). `bodenTolM`: so weit darf die Gestalt des Gewässers (`_gewaesserForm`) den Boden des Plans
+// Wand urteilt im halben Meter). `bodenTolM`: so weit darf die Gestalt des Gewässers (gelaende-core `gewaesserForm`) den Boden des Plans
 // unter einem Haus verschieben.
 AnazhRealm.ORT_WAHL = Object.freeze({ schrittM: 16, ringe: 8, grobM: 2, bodenTolM: 0.05 });
 

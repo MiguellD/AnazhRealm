@@ -39,53 +39,20 @@ async function checkBandHydrosphere(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.stateDeclared = "hydrosphere" in r.state;
         const h1 = r.state.hydrosphere;
         await window.__weltDa(() => !r.state.voxelWorkerPending.size); // die Uhr misst die Rechnung, nie die Schlange davor
         const t0 = performance.now();
         const h2 = (await r._voxelFadenAuftrag(r.state.voxelWorker, { type: "hydro", key: "heim", origin: null })).region;
         out.perfMs = performance.now() - t0;
-        out.shape =
-            !!h1 &&
-            h1.ready === true &&
-            Array.isArray(h1.rivers) &&
-            Array.isArray(h1.lakes) &&
-            Array.isArray(h1.waterfalls) &&
-            typeof h1.dim === "number" &&
-            typeof h1.cell === "number";
-        out.riverCount = h1.rivers.length;
-        out.lakeCount = h1.lakes.length;
-        out.waterfallCount = h1.waterfalls.length;
-        out.bettMin = h1.stats ? h1.stats.bettMin : null;
-        out.riverMaxSlope = h1.stats ? h1.stats.riverMaxSlope : 0;
-        out.riverMaxDrop = h1.stats ? h1.stats.riverMaxDrop : 0;
-        out.riverLenMax = h1.stats ? h1.stats.riverLenMax : 0;
-        out.riverPointsTotal = h1.stats ? h1.stats.riverPointsTotal : 0;
-        out.lakeCellsMax = h1.stats ? h1.stats.lakeCellsMax : 0;
-        out.lakeCells = h1.stats ? h1.stats.lakeCells : 0;
+        // dass Heimat und Kacheln Flüsse tragen, die der Stamm liest, misst gate:wasser-leben K4 LÄUFE
         // Determinismus — zwei Läufe, byte-identisches Netz
         out.deterministic =
             JSON.stringify(h1.rivers) === JSON.stringify(h2.rivers) &&
             JSON.stringify(h1.lakes) === JSON.stringify(h2.lakes) &&
             JSON.stringify(h1.waterfalls) === JSON.stringify(h2.waterfalls);
-        // Jeder Fluss fällt STRIKT monoton: point.y ist die Sohle des Netzes (gelaende-core `knotenSohle`).
-        out.riversDescend = h1.rivers.every((rv) => {
-            for (let k = 0; k + 1 < rv.points.length; k++) {
-                if (rv.points[k].y <= rv.points[k + 1].y) return false;
-            }
-            return true;
-        });
-        // Jeder Fluss endet am Meer, am Rand der Kachel, in einem See (K16: die Senke des Netzes ist ein benannter See) oder als
-        // Zufluss auf der Rinne seines Hauptlaufs.
-        out.riverMouths = h1.rivers.every((rv) => ["sea", "border", "see", "zufluss"].includes(rv.mouth));
-        // K16 — ein Fluss mündet in den See des Wasser-Orts (Land → See), sein Spiegel endet auf dem des Sees — gemessen an
-        // der Kachel des Wasser-Orts (`__wasserOrt`).
-        const seeOrt = await window.__wasserOrt("see");
+        // das Ende jedes Laufs, das Wasser jeder Senke und das Gefälle von Sohle und Spiegel misst gate:wasser-leben K4 LÄUFE
         const meerOrt = await window.__wasserOrt("meer");
-        out.seeOrt = seeOrt ? `${Math.round(seeOrt.x)},${Math.round(seeOrt.z)}` : "keiner";
         out.meerOrt = meerOrt ? `${Math.round(meerOrt.x)},${Math.round(meerOrt.z)}` : "keiner";
-        out.riverThroughLake =
-            !!seeOrt && seeOrt.hydro.rivers.some((rv) => rv.mouth === "see" && rv.points.every((p) => !p.inLake));
         // Flow-Accumulation stromab monoton → Breite wächst
         out.widthGrows = h1.rivers.every((rv) => {
             for (let k = 0; k + 1 < rv.points.length; k++) {
@@ -95,8 +62,6 @@ async function checkBandHydrosphere(ctx) {
         });
         // Jeder See: Füll-Level über dem Boden, unter (≈) der Rand-Höhe
         out.lakesValid = h1.lakes.every((lk) => lk.level > lk.floorY && lk.level <= lk.rimY + 1.5);
-        // Worldgen-Verdrahtung — state.hydrosphere ist gesetzt
-        out.wired = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
         // Das vereinte Wasser-Feld je Region-Zelle: flacher Wasser-Spiegel (`waterY`) + Klassifikation
         // (`waterKind` 0 Land · 1 Ozean · 2 See). Ozean trägt `waterLevel`, See `lake.level`, trockene
         // Zelle den Meeresspiegel-Default — die Wahrheit, aus der EIN Höhenfeld-Mesh gebaut wird.
@@ -147,75 +112,17 @@ async function checkBandHydrosphere(ctx) {
             !!(h2.water && h2.water.waterKind) &&
             wf.waterKind.length === h2.water.waterKind.length &&
             wf.waterKind.every((v, i) => v === h2.water.waterKind[i]);
-        // das Wasser-Level-Feld `_waterLevelAt` an der ersten Ozean-Zelle der Meer-Kachel und der ersten
-        // See-Zelle der See-Kachel (der Leser löst die Kachel selbst auf, `_hydroFor`).
-        out.waterLevelOceanOk = false;
-        out.waterLevelLakeOk = false;
-        const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
-        const erste = (h, kind) => {
-            const q = h.water.waterKind.indexOf(kind);
-            if (q < 0) return null;
-            return [h.originX + ((q % h.dim) + 0.5) * h.cell, h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell];
-        };
-        const m = meerOrt && erste(meerOrt.hydro, 1);
-        if (m) {
-            const lv = r._waterLevelAt(m[0], m[1]);
-            out.waterLevelOceanOk = Number.isFinite(lv) && Math.abs(lv - wl) < 0.01;
-        }
-        const s = seeOrt && erste(seeOrt.hydro, 2);
-        if (s) {
-            const lv = r._waterLevelAt(s[0], s[1]);
-            out.waterLevelLakeOk = Number.isFinite(lv) && lv >= wl;
-        }
-        // K16 — die Seen sind die Senken des Flussnetzes (Ebene 0 auf Land, `benannteSeen` des Gelände-Gesetzbuchs). Je
-        // Netz-Senke in der Kachel: trägt die Hydrosphäre um sie (± 3 Zellen) See-Zellen?
-        out.netzSeen = -1;
-        out.netzSeenSee = 0;
-        if (h1.water && globalThis.__gelaendeCore && typeof globalThis.__gelaendeCore.benannteSeen === "function") {
-            const idx = globalThis.__gelaendeCore.benannteSeen(
-                r._gelaende(),
-                h1.originX + h1.cell / 2,
-                h1.originZ + h1.cell / 2,
-                h1.cell,
-                h1.dim
-            );
-            out.netzSeen = idx.length;
-            for (const k of idx) {
-                const hi = k % h1.dim;
-                const hj = (k / h1.dim) | 0;
-                let see = 0;
-                for (let dj = -3; dj <= 3; dj++)
-                    for (let di = -3; di <= 3; di++) {
-                        const ci = hi + di;
-                        const cj = hj + dj;
-                        if (ci < 0 || cj < 0 || ci >= h1.dim || cj >= h1.dim) continue;
-                        if (h1.water.waterKind[ci + cj * h1.dim] === 2) see++;
-                    }
-                if (see >= 1) out.netzSeenSee++;
-            }
-        }
+        // das Wasser-Level-Feld `_waterLevelAt` an der ersten Ozean-Zelle der Meer-Kachel (der Leser löst die Kachel selbst
+        // auf, `_hydroFor`); an der See-Zelle misst V9.43-c.2 den Füllstand
+        const [h, q] = meerOrt ? [meerOrt.hydro, meerOrt.hydro.water.waterKind.indexOf(1)] : [null, -1];
+        const lv = q >= 0 ? r._waterLevelAt(h.originX + ((q % h.dim) + 0.5) * h.cell, h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell) : NaN;
+        out.waterLevelOceanOk = Number.isFinite(lv) && Math.abs(lv - (r.state.waterLevel || 0)) < 0.01;
         return out;
     });
 
     if (voxelV943bResults && !voxelV943bResults.error) {
         const hb = voxelV943bResults;
-        check("Voxel V9.43-b: state.hydrosphere ist im State deklariert", hb.stateDeclared);
-        check("Voxel V9.43-b: liefert {ready, rivers[], lakes[], waterfalls[], dim, cell}", hb.shape);
-        check(
-            `Voxel V9.43-b: das Netz trägt Flüsse (${hb.riverCount} Flüsse, ${hb.lakeCount} Seen, ${hb.waterfallCount} Wasserfälle, Bett min ${hb.bettMin} m, längster Fluss ${hb.riverLenMax} Pkt / Σ ${hb.riverPointsTotal}, größter See ${hb.lakeCellsMax} / Σ ${hb.lakeCells} Zellen, steilstes Segment ${hb.riverMaxSlope})`,
-            hb.riverCount > 0
-        );
         check("Voxel V9.43-b: das Netz ist deterministisch (zwei Läufe byte-identisch)", hb.deterministic);
-        check(
-            "Voxel V9.43-b: jeder Fluss steigt strikt monoton ab (Quelle → Mündung, die Sohle des Netzes)",
-            hb.riversDescend
-        );
-        check("Voxel V9.43-b: jeder Fluss endet an Meer, See, Hauptlauf oder Region-Rand", hb.riverMouths);
-        check(
-            "K16: ein Fluss des Netzes mündet in einen See (Land → See)",
-            hb.riverThroughLake,
-            `See-Ort ${hb.seeOrt}`
-        );
         check("Voxel V9.43-b: Fluss-Breite wächst stromab (Einzugsgebiet des Netzes monoton)", hb.widthGrows);
         check("Voxel V9.43-b: jeder See — Füll-Level über dem Boden, unter der Rand-Höhe", hb.lakesValid);
         check(
@@ -223,7 +130,6 @@ async function checkBandHydrosphere(ctx) {
             typeof hb.perfMs === "number" && hb.perfMs < 500,
             `perfMs=${Math.round(hb.perfMs || 0)} ms`
         );
-        check("Voxel V9.43-b: state.hydrosphere ist nach Worldgen verdrahtet", hb.wired);
         check("Voxel V9.49-a: das vereinte Wasser-Feld {waterY, waterKind} hat dim²-Form", hb.waterFieldShape);
         check("Voxel V9.49-a: waterKind ∈ {0,1,2}, waterY je Zelle endlich", hb.waterKindValid);
         check(
@@ -237,12 +143,6 @@ async function checkBandHydrosphere(ctx) {
         );
         check("Voxel V9.49-a: das Wasser-Feld ist deterministisch", hb.waterFieldDeterministic);
         check("Voxel V9.50-a: `_waterLevelAt` an einer Ozean-Zelle == waterLevel", hb.waterLevelOceanOk);
-        check("Voxel V9.50-a: `_waterLevelAt` an einer See-Zelle ≥ waterLevel (der See-Spiegel)", hb.waterLevelLakeOk);
-        check(
-            `K16: jede Senke des Flussnetzes in der Kachel wird zum See (${hb.netzSeenSee}/${hb.netzSeen})`,
-            hb.netzSeen >= 0 && hb.netzSeenSee === hb.netzSeen,
-            `netzSeen=${hb.netzSeen} see=${hb.netzSeenSee}`
-        );
     }
 
     // ### Das Wasser wird synergetisch ###
@@ -315,14 +215,7 @@ async function checkBandHydrosphere(ctx) {
         out.hydroReady = !!(hydro && hydro.ready);
         if (!out.hydroReady) return out;
         if (r.state.worldMeta) r.state.worldMeta.voxelEdits = [];
-        // (2) der Carve-Index ist an state.hydrosphere verdrahtet
-        out.indexWired =
-            hydro.kanal.seg instanceof Float64Array &&
-            hydro.lakeBedCell instanceof Float32Array &&
-            hydro.lakeW instanceof Float32Array &&
-            hydro.lakeNear instanceof Uint8Array &&
-            typeof hydro.bucketSize === "number" &&
-            typeof hydro.bucketsDim === "number";
+        // (2) den Carve-Index liest der Kern (gate:worker-dichte `--kern`)
         // Den Fluss-Mittelpunkt finden: der BREITESTE Punkt mit echter Flow-Richtung — NICHT in einem See (See-
         // Durchquerungen werden nicht gecarvt) und mit nicht-See-Nachbar, damit das Segment rp→next im Carve-Index liegt.
         // Der erste Punkt des ersten Flusses ist eine Quelle (Breite 1,2 m, Tiefe 0,4 m) — kein Fluss-Mittelpunkt.
@@ -362,23 +255,7 @@ async function checkBandHydrosphere(ctx) {
             // von `_voxelSurfaceY`, 1,2 m).
             const sKanal = r._voxelSurfaceY(rx, rz);
             out.surfaceLowered = !!kanal && Number.isFinite(sKanal) && Math.abs(sKanal - kanal.P) < 1.3;
-            // (8) der Kanal formt das Gelände: die _terrainDensityAt-Dichte mit Kanal === das weiche Minimum aus Kanal und
-            // dem weichen Maximum aus Gelände (die Dichte ohne Kanal: ohne Hydrosphäre) und Damm.
-            const y = (r.state.terrainBaseHeight || 0) + 10;
-            const dCarve = r._terrainDensityAt(rx, y, rz);
-            r.state.hydrosphere = null;
-            const dSuppressed = r._terrainDensityAt(rx, y, rz);
-            r.state.hydrosphere = hydro;
-            let carveSoll = null;
-            if (kanal) {
-                const dL = kanal.L - y;
-                let hk = Math.max(kanal.k - Math.abs(dSuppressed - dL), 0) / kanal.k;
-                const damm = Math.max(dSuppressed, dL) + hk * hk * kanal.k * 0.25;
-                const dP = kanal.P - y;
-                hk = Math.max(kanal.k - Math.abs(damm - dP), 0) / kanal.k;
-                carveSoll = Math.min(damm, dP) - hk * hk * kanal.k * 0.25;
-            }
-            out.carveIsSubtractive = carveSoll !== null && Math.abs(carveSoll - dCarve) < 0.001;
+            // (8) die Form des Kanals ist EIN Gesetz des Kerns (`gewaesserForm`, gate:worker-dichte `--kern`)
             // (9) ohne Hydrosphäre kein Kanal (bit-identisch zum Feld ohne Carve)
             const savedHydro = r.state.hydrosphere;
             r.state.hydrosphere = null;
@@ -417,10 +294,7 @@ async function checkBandHydrosphere(ctx) {
                 out.lakeBedWatertight = bedOk && solidBelow && surfOnBed;
             }
         }
-        // (11) Re-Compute ist zirkel-frei: der Faden hält den Carve aus seiner Rechnung — ein zweiter Lauf liefert dasselbe Netz.
-        const reHydro = (await r._voxelFadenAuftrag(r.state.voxelWorker, { type: "hydro", key: "heim", origin: null }))
-            .region;
-        out.recomputeStable = JSON.stringify(reHydro.rivers) === JSON.stringify(hydro.rivers);
+        // (11) den zweiten Lauf im Faden (zirkel-frei: dasselbe Netz) misst V9.43-b „deterministisch“
         // (13) Das Wasser-Cell-Feld fragt den ATLAS-STRIKTEN Spiegel (`_buildVoxelChunkWaterCells` ruft
         // `_atlasWaterLevelAt` je xz-Spalte), nicht das dilatierende `_waterLevelAt` — sonst
         // Wasserschatten an Hängen.
@@ -445,19 +319,11 @@ async function checkBandHydrosphere(ctx) {
     if (voxelV943d && !voxelV943d.error) {
         const d = voxelV943d;
         check(
-            "Voxel V9.43-d: der Carve-Index ist an state.hydrosphere verdrahtet (kanal/lakeBedCell/lakeW/lakeNear)",
-            d.indexWired
-        );
-        check(
             "Voxel V9.43-d → Welle L: der Kanal formt einen Fluss-Mittelpunkt (Flachboden unter dem Spiegel)",
             d.riverCenterCarved
         );
         check("Voxel V9.43-d: das Fluss-Bett liegt unter den Ufern (die Gestalt steigt zur Bank an)", d.bedBelowBanks);
         check("Voxel V9.43-d → Welle L: die Voxel-Fläche liegt auf dem Flachboden des Kanals", d.surfaceLowered);
-        check(
-            "Voxel V9.43-d → Welle L: der Kanal formt das Gelände (weiches Minimum aus Kanal und dem weichen Maximum aus Gelände und Damm — die Bank läuft ins Gelände aus)",
-            d.carveIsSubtractive
-        );
         check(
             "Voxel V9.43-d: ohne Hydrosphäre kein Kanal (bit-identisch zum Feld ohne Carve)",
             d.carveZeroWithoutHydro
@@ -468,7 +334,6 @@ async function checkBandHydrosphere(ctx) {
             "Voxel V9.45-b: der See-Boden ist wasserdicht — über dem Meer, unter dem Spiegel, fester Grund",
             d.lakeBedWatertight
         );
-        check("Voxel V9.43-d: ein Re-Compute im Faden bleibt zirkel-frei (gleiches Netz wie die Weltgen)", d.recomputeStable);
         check(
             "Voxel V13.1: das Wasser-Cell-Feld ruft den Atlas-strikten Spiegel (`_atlasWaterLevelAt`), nie das dilatierende `_waterLevelAt`",
             d.unifiedQueriesRivers
@@ -491,8 +356,8 @@ async function checkBandHydrosphere(ctx) {
         if (!r.state.symphony.enabled) {
             try {
                 r.initSymphony();
-            } catch (e) {
-                void e;
+            } catch {
+                /* */
             }
         }
         const s = r.state.symphony;
@@ -2233,7 +2098,7 @@ async function checkBandWasserSheetSpiegel(ctx) {
                 r._tickVoxelChunkStreaming();
                 r._gameLoopTick(performance.now());
                 r._drainPendingWaterIso();
-            } catch (_e) {
+            } catch {
                 /* */
             }
             if (i % 6 === 0) await new Promise((res) => setTimeout(res, 12));
