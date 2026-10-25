@@ -675,6 +675,39 @@ const stationen = [
         quelle: "1 = jede Art bleibt in [⅓×, 3×] des Starts, ohne Aussterben und ohne Ausbruch, über ≥ 8 Seeds",
     },
     {
+        kriterium: "oekologie.K1",
+        staffel: 2,
+        geraet: "headless",
+        // derselbe Lauf wie Staffel 1 (Zwilling): je Saat 6 Spielstunden je Szenario gegen den Grundlauf — die Wölfe entfernt,
+        // die Hirsche bejagt, die Mutante „Fraß-Leser aus“ ohne Wölfe; je Richtung der Effekt (Mittel der Differenzen je Saat
+        // durch das Mittel des Grundlaufs) und das Intervall [kleinste, größte Differenz] der Saaten (Ordnungs-Statistik: über
+        // 8 Saaten deckt es den Median mit 99,2 %). Gelesen werden die Zahlen, nie das Urteil der Probe.
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "kaskade"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "kaskade");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe kaskade (Exit " + lauf.exit + ")" };
+            const R = z.richtungen;
+            if (z.fehler || !R || !R.mutante || !Array.isArray(z.saaten))
+                return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne Richtungen, Mutante oder Saaten") };
+            const traegt = (q, soll) => (soll > 0 ? q.effekt >= soll && q.ki[0] > 0 : q.effekt <= soll && q.ki[1] < 0);
+            const mutanteRot = !traegt(R.mutante, -0.2);
+            const zu = (k) => k + " " + R[k].effekt + " [" + R[k].ki.join(", ") + "]";
+            return {
+                gruen:
+                    z.saaten.length >= 8 && traegt(R.hirsche, 0.3) && traegt(R.jungwuchs, -0.2) && traegt(R.woelfe, 0) &&
+                    mutanteRot,
+                zahl:
+                    z.saaten.length + " Saaten · " + ["hirsche", "jungwuchs", "woelfe", "mutante"].map(zu).join(" · ") +
+                    " · Mutante " + (mutanteRot ? "ROT" : "trägt"),
+            };
+        },
+        pfad: [...KREATUR],
+        quelle: "2 = die drei Richtungen (Wölfe weg → Hirsche +≥ 30 % und Jungwuchs −≥ 20 %; Hirsche bejagt → Wölfe nehmen ab) mit Konfidenz-Intervall, das 0 nicht schneidet; die Mutante „Fraß-Leser aus“ ist ROT",
+    },
+    {
         kriterium: "oekologie.K5",
         staffel: 1,
         geraet: "headless",
