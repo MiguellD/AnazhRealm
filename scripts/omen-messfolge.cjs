@@ -80,10 +80,14 @@ const FOLGEN = {
     // DAS MESS-DORF: der Dorf-Zug läuft (der Ort schaltet ihn beim Umstellen wieder an), das Band zählt Befehle, Dreiecke und
     // VRAM des gebauten Dorfs.
     dorf: ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "band"],
+    // DER STADT-GIPFEL (E an JEDEM Messort): der Ort schwingt am Anlauf ein und weckt die Stadt (der Dorf-Zug läuft), dann richten
+    // Lauf, GPU-Bank und Band Frame, CPU-Takt, Befehle, Dreiecke und VRAM der vollen Stadt, vom Gipfel und vom Hochhaus-Dach.
+    "stadt-voll": ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "lauf-voll", "gpu-bank", "band"],
     // DER TOGGLE-ORT (1110-6): die Prüfbühne richtet keine Band-Klasse, sondern die GPU-Zeit eines Schalters unter 0,3 ms —
     // die lange Bank je Pose (haushalt.json `bank`, `posen`), bei festen Stellgrößen des Reglers (`stell`).
     buehne: ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "gpu-bank"],
 };
+FOLGEN["gipfel-blick"] = FOLGEN["hochhaus-dach"] = FOLGEN["stadt-voll"];
 
 // DIE WIEDERHOLBARKEIT EINES MESSORTS (1110-6, rein): dieselbe Seite in N frischen Sitzungen — je Pose (Toggle-Ort) bzw. je
 // Blick (Band-Ort) das Bank-Mittel jeder Sitzung. Liegt die Spanne (max − min) über dem Soll, ist der Ort für Toggle-Urteile
