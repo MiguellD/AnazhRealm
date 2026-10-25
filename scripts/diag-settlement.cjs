@@ -1927,10 +1927,10 @@ const FIXTURES = [
                     z: d * Math.cos(y + w),
                     obb: { ex: e, ez: e },
                 });
-                // DIE MITTE ZUERST (siedlung-k5-erstes-haus): 11 m bei 70° (1,22 rad) mit 10-m-Grundriss streift der Bildwinkel
+                // DIE MITTE ZUERST (siedlung-k5-erstes-haus, Winkel in rad): 11 m bei 70° mit 10-m-Grundriss streift der Bildwinkel
                 // nur — die Mitte 40 m voraus hebt vor ihm, er vor dem 15 m neben dem Spieler (die Scheibe allein hob ihn zuerst)
                 res.c.k5.schirm = r._dorfZug(
-                    { slots: [slot(15, Math.PI / 2), slot(40, 0), slot(11, 1.22, 5)] },
+                    { slots: [slot(15, 1.57), slot(40, 0), slot(11, 1.22, 5)] },
                     pm.position
                 ).reihe;
                 // C-K5c DER ORT IST EINE FUNKTION (Lehre 7): zwei Vorläufe derselben Saat, der Spieler 3,7 m versetzt im Vorlauf-Ring
