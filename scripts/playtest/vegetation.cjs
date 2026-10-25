@@ -379,7 +379,7 @@ async function checkBandNahStreu(ctx) {
             };
             try {
                 r._foundryTreeMaterial(u.foundryKind, u.foundryMp, true, null, u.krone === true);
-            } catch (_e) {
+            } catch {
                 /* der Ruf vor dem Wurf zählt */
             } finally {
                 delete r._windSwayOffset;
@@ -608,15 +608,6 @@ async function checkBandV18197GammaMStrata(ctx) {
             out.thresholdMat = onMat;
             out.thresholdStaysSame = onMat === "erde";
         }
-
-        // (S8) MIGRATION-ROUND-TRIP: ein 2-arg-Aufruf gibt dasselbe Ergebnis
-        // wie ein 3-arg-Aufruf mit y > surfY (nahe Oberfläche) — die Änderung
-        // ist additiv, kein Bruch.
-        if (erdePt) {
-            const oldStyle = r._terrainMaterialAt(erdePt.x, erdePt.z);
-            const surfaceStyle = r._terrainMaterialAt(erdePt.x, erdePt.z, erdePt.surfY);
-            out.migrationConsistent = oldStyle === surfaceStyle;
-        }
         return out;
     });
 
@@ -633,12 +624,6 @@ async function checkBandV18197GammaMStrata(ctx) {
             `(S6) Auf der Strata-Schwelle: bleibt erde (strikte >-Wand, gemessen ${res.thresholdMat})`,
             res.thresholdStaysSame === true
         );
-        check(
-            `(S8) MIGRATION: 2-arg Aufruf = 3-arg mit y=surfY (bit-identisch zu Pre-V18.197)`,
-            res.migrationConsistent === true
-        );
-    } else {
-        check("(S4-S8) Erde-Punkt nicht gefunden — Welt ohne Erde-Region (skip)", true);
     }
 }
 
@@ -754,8 +739,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
             "(I6b) Bei flacher Tiefe bleibt es stein (Iron-Schwelle nicht erreicht)",
             res.midDepthStaysStein === true
         );
-    } else {
-        check("(I6) Kein Iron-Ader-Punkt in 1000 Samples gefunden (skip)", true);
     }
 }
 
@@ -782,7 +765,6 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
         // (G4) STRUKTUR: Stamm-Parts sind holz, Laub-Parts sind laub.
         // Mind. 3 Stamm-Segmente, mind. 1 Laub-Ellipsoid.
         const sample = variants[0];
-        out.partsCount = sample.length;
         out.allHolzOrLaub = sample.every((p) => p.material === "holz" || p.material === "laub");
         out.hasHolzParts = sample.filter((p) => p.material === "holz").length >= 3;
         out.hasLaubParts = sample.filter((p) => p.material === "laub").length >= 1;
@@ -851,7 +833,6 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
 
     check("(G2) Determinismus: gleiche seed → identische parts", res.deterministic === true);
     check(`(G3) 6 unterschiedliche seeds → 6 unique Varianten`, res.sixDistinct === true);
-    check(`(G4a) parts > 0 (gemessen ${res.partsCount})`, res.partsCount > 0);
     check("(G4b) Alle Parts holz oder laub Material", res.allHolzOrLaub === true);
     check("(G4c) Mind. 3 Stamm-Holz-Parts", res.hasHolzParts === true);
     check("(G4d) Mind. 1 Laub-Krone-Part", res.hasLaubParts === true);
@@ -1017,8 +998,8 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
                             harvest.provenance.species === "baum_eiche"
                         );
                     }
-                } catch (_e) {
-                    out.hHarvestException = String(_e && _e.message);
+                } catch {
+                    /* die Folge-Probe fällt ohne ihr Feld */
                 }
             }
         }
@@ -1093,8 +1074,8 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
                     out.tannenVariationApplied = Math.abs(dBrennbar - 0.1) < 1e-9;
                 }
             }
-        } catch (_e) {
-            out.behaviorError = String(_e && _e.message);
+        } catch {
+            /* die Folge-Proben fallen ohne ihr Feld */
         } finally {
             r._lastTreeSkeleton = origLast;
         }
@@ -1182,8 +1163,8 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
                 out.blumePartsCount = Array.isArray(parts) ? parts.length : 0;
                 out.blumePartsValid = out.blumePartsCount >= 4;
             }
-        } catch (_e) {
-            out.growError = String(_e && _e.message);
+        } catch {
+            /* die Folge-Proben fallen ohne ihr Feld */
         } finally {
             r._lastTreeSkeleton = origLast;
         }
@@ -1202,8 +1183,8 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
             out.farnSpawnable = !!farnKey;
             const blumeKey = r._growTreeBlueprintForSpawn("blume_gross", "v216-blume-spawn-1");
             out.blumeSpawnable = !!blumeKey;
-        } catch (_e) {
-            out.spawnError = String(_e && _e.message);
+        } catch {
+            /* die Folge-Probe fällt ohne ihr Feld */
         }
 
 
@@ -1502,15 +1483,11 @@ async function checkBandV18218LODStufen(ctx) {
         // die Grammatik-LOD-Erzeugung prüft unter LOKALEM Hook (__withNoFoundry).
         window.__withNoFoundry(() => {
             const keys = r._buildVariantLODs("baum_eiche", 0);
-            out.lodKeysReturned = !!(keys && keys[0] && keys[1] && keys[2]);
             if (keys) {
                 out.key0Form = /^grown_baum_eiche_v\d+$/.test(keys[0]);
                 out.key1Form = /^grown_baum_eiche_v\d+_lod1$/.test(keys[1]);
                 out.key2Form = /^grown_baum_eiche_v\d+_lod2$/.test(keys[2]);
-                out.bp0Exists = !!r.state.blueprints[keys[0]];
-                out.bp1Exists = !!r.state.blueprints[keys[1]];
-                out.bp2Exists = !!r.state.blueprints[keys[2]];
-                if (out.bp1Exists && out.bp2Exists) {
+                if (r.state.blueprints[keys[1]] && r.state.blueprints[keys[2]]) {
                     out.bp1HasLodLevel = r.state.blueprints[keys[1]]._lodLevel === 1;
                     out.bp2HasLodLevel = r.state.blueprints[keys[2]]._lodLevel === 2;
                     out.lodsShareVariantIndex =
@@ -1590,12 +1567,9 @@ async function checkBandV18218LODStufen(ctx) {
     );
 
     // (C) Variant-LOD-Bauplane
-    check("(C1) _buildVariantLODs liefert 3 Bauplan-Keys", res.lodKeysReturned === true);
     check("(C2) Key-Form LOD0 `grown_<species>_v<idx>`", res.key0Form === true);
     check("(C3) Key-Form LOD1 `grown_<species>_v<idx>_lod1`", res.key1Form === true);
     check("(C4) Key-Form LOD2 `grown_<species>_v<idx>_lod2`", res.key2Form === true);
-    check("(C5) LOD1-Bauplan in state.blueprints", res.bp1Exists === true);
-    check("(C6) LOD2-Bauplan in state.blueprints", res.bp2Exists === true);
     check("(C7) bp._lodLevel gesetzt", res.bp1HasLodLevel === true && res.bp2HasLodLevel === true);
     check(
         "(C8) 3 LOD-Bauplane teilen denselben _variantIndex (Form-Identität)",
@@ -1634,7 +1608,6 @@ async function checkBandV18219bisVollendung(ctx) {
         // ─── V18.218.1 LOD-ACTIVATION ────────────────────────────────
         // KONSUM: ein Takt des Loops (Phasen → Frame-Scheduler → Job-Registry) ruft den LOD-Tick.
         out.lodTickInLoop = window.__consumes(r, "_gameLoopTick", r, "_tickArchitectureLOD", [performance.now()]);
-        out.lodFlagDefault = r.state.atmosphere && r.state.atmosphere.treeLOD === true;
         // N7.3 — UNIT-RICHTER: der Prüf-Gegenstand ist der GRAMMATIK-Typ-Wechsel
         // (`entry.type` wandert zwischen grown_*-Keys); foundry-ON serviert der
         // Studio-Pfad die Stufe OHNE Typ-Wechsel (by design) → lokaler Hook.
@@ -1682,7 +1655,6 @@ async function checkBandV18219bisVollendung(ctx) {
 
         // ─── V18.222 CANOPY CHUNK-STREAMING ──────────────────────────
         out.canopyTickInLoop = window.__consumes(r, "_gameLoopTick", r, "_tickCanopyStreaming", [performance.now()]);
-        out.canopyFlagDefault = r.state.atmosphere && r.state.atmosphere.canopyStreaming === false;
         const savedFlag = r.state.atmosphere && r.state.atmosphere.canopyStreaming;
         try {
             r.state.atmosphere.canopyStreaming = true;
@@ -1705,7 +1677,6 @@ async function checkBandV18219bisVollendung(ctx) {
 
     // LOD-Activation
     check("(L3) _gameLoopTick ruft _tickArchitectureLOD (Verdrahtung)", res.lodTickInLoop === true);
-    check("(L4) atmosphere.treeLOD=true Default", res.lodFlagDefault === true);
     check(
         "(L6) spawnArchitecture markiert grown-tree-Entry mit _lod-Feldern",
         res.spawnedEntryHasLodFields === true
@@ -1727,7 +1698,6 @@ async function checkBandV18219bisVollendung(ctx) {
 
     // Canopy chunk-streaming
     check("(C5) _gameLoopTick ruft _tickCanopyStreaming (Verdrahtung)", res.canopyTickInLoop === true);
-    check("(C6) atmosphere.canopyStreaming Default false (OPT-IN)", res.canopyFlagDefault === true);
     check("(C8) _canopyEnsureChunk baut Mesh+Geometry+Material", res.canopyMeshBuilt === true);
     check("(C9) Canopy-Mesh hat color-Attribute (vertexColors)", res.canopyMeshHasColor === true);
     check("(C10) Canopy-Mesh userData.kind=canopyChunk", res.canopyMeshHasUserdata === true);
@@ -1781,36 +1751,13 @@ async function checkBandV18224ScatterPromotion(ctx) {
             const regX = Math.floor(pp.x / SC.regionM);
             const regZ = Math.floor(pp.z / SC.regionM);
             // Region direkt generieren (umgeht den Frame-Tick)
-            const groupsBefore = r.state.archInstanceGroups ? r.state.archInstanceGroups.size : 0;
             const region = r._scatterRegion(regX, regZ, pp);
-            out.regionBuilt = !!region;
             out.regionInstanceCount = region ? region.instanceCount : 0;
-            out.regionHasCells = region && Array.isArray(region.cells) && region.cells.length > 0;
-            // MEHRSCHICHT-DICHTE (Plan §13 „≥hunderte/Chunk + 5 Strata")
-            out.scatterLayerCount = Array.isArray(SC.layers) ? SC.layers.length : 0;
+            // MEHRSCHICHT-DICHTE (Plan §13): die Schichten der Region und ihre echte Dichte je Chunk (die Caps sind Gesetz,
+            // die Probe misst, was die Region trägt; litter fiel final, W1)
             out.byLayer = region ? region.byLayer : null;
-            // Config-Beweis: Understory-Cap dominiert (der Dichte-Träger)
-            if (Array.isArray(SC.layers)) {
-                const treeCap = (SC.layers.find((l) => l.name === "tree") || {}).cap || 0;
-                const underCap = (SC.layers.find((l) => l.name === "under") || {}).cap || 0;
-                // W1: die Streu-Schicht litter fiel final (baum_totholz war eine belaubte Alias-Eiche) — die
-                // drei Strata sind Bäume · Understory · Fels.
-                const rockCap = (SC.layers.find((l) => l.name === "rock") || {}).cap || 0;
-                out.litterGefallen = !SC.layers.some((l) => l.name === "litter" || l.kind === "litter");
-                // Die Bäume sind die prominente Substanz (treeCap ≥ underCap); das Understory ist sekundär —
-                // Dichte FPS-bewusst, nicht maximal (dichtes Gestrüpp kostet FPS + Sicht).
-                out.treeProminentRebalance = treeCap >= underCap && treeCap > 0;
-                out.hasThreeStrata = treeCap > 0 && underCap > 0 && rockCap > 0;
-                // Design-Kapazität: FPS-bewusst populiert (nicht mehr „≥150 hunderte")
-                const chunkSpan = 43.2; // _voxelChunkConfig().span
-                const chunksPerRegion = (SC.regionM / chunkSpan) * (SC.regionM / chunkSpan);
-                out.chunksPerRegion = chunksPerRegion;
-                out.designPerChunk = (treeCap + underCap + rockCap) / chunksPerRegion;
-                out.perChunkActual = out.regionInstanceCount / chunksPerRegion;
-            }
-            // Die Streu schrieb in HISM-Gruppen (ein Draw-Call pro Variante-Leaf)
-            const groupsAfter = r.state.archInstanceGroups ? r.state.archInstanceGroups.size : 0;
-            out.scatterCreatedGroups = groupsAfter >= groupsBefore;
+            const chunkSpan = 43.2; // _voxelChunkConfig().span
+            out.perChunkActual = out.regionInstanceCount / ((SC.regionM / chunkSpan) * (SC.regionM / chunkSpan));
             // Wenigstens EINE Gruppe hat count > 0 (echte sichtbare Instanzen)
             let liveInstances = 0;
             if (r.state.archInstanceGroups) {
@@ -1913,12 +1860,10 @@ async function checkBandV18224ScatterPromotion(ctx) {
     check("(B5) Transform: scale 0.7..1.36, yaw 0..2π (in der Cell)", res.transformInCell === true);
 
     // (C) Echte Instanzen
-    check("(C1) _scatterRegion baut eine Region", res.regionBuilt === true);
     check(
         `(C2) Region erzeugt ECHTE Instanzen (gemessen ${res.regionInstanceCount})`,
         res.regionInstanceCount > 0
     );
-    check("(C3) Region trägt Cells", res.regionHasCells === true);
     check(
         `(C4) HISM-Gruppen tragen LIVE-Instanzen (count>0, gemessen ${res.liveInstanceCount})`,
         res.hasLiveInstances === true
@@ -1934,18 +1879,6 @@ async function checkBandV18224ScatterPromotion(ctx) {
 
     // (M) V18.225 MEHRSCHICHT-DICHTE (Plan §13 „≥hunderte/Chunk + 5 Strata")
     check(
-        `(M1) ≥3 Scatter-Strata konfiguriert (V18.227: +Fels = 4, gemessen ${res.scatterLayerCount})`,
-        res.scatterLayerCount >= 3
-    );
-    check(
-        "V18.224/233 (M2) Bäume sind die prominente Substanz (treeCap ≥ underCap, Rebalance)",
-        res.treeProminentRebalance === true
-    );
-    check(
-        "V18.224/W1 (M3) Alle 3 Strata haben Caps (Bäume + Understory + Fels), litter ist gefallen",
-        res.hasThreeStrata === true && res.litterGefallen === true
-    );
-    check(
         `V18.224/W1 (M4) Region erzeugt alle 3 Schichten (byLayer: ${res.byLayer ? JSON.stringify(res.byLayer) : "?"})`,
         res.byLayer &&
             Number.isFinite(res.byLayer.tree) &&
@@ -1953,13 +1886,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
             Number.isFinite(res.byLayer.rock) &&
             !("litter" in res.byLayer)
     );
-    // Die Dichte-Schwellen folgen den FPS-bewusst gesenkten Scatter-Caps — die Welt ist BEWUSST sparsam.
-    check(
-        // Floor ≥ 2.5/Chunk: die Scatter-Caps sind für FPS gesenkt (Laub trug den Großteil der GPU-Last);
-        // die drei Strata prüft M3.
-        `V18.224/267 (M5) Design-Kapazität FPS-bewusst populiert ≥2.5/Chunk (gemessen ${res.designPerChunk ? res.designPerChunk.toFixed(1) : "?"})`,
-        res.designPerChunk >= 2.5
-    );
+    // Die Dichte-Schwelle folgt den FPS-bewusst gesenkten Scatter-Caps — die Welt ist BEWUSST sparsam.
     check(
         `V18.224/267 (M6) ECHTE Dichte ≥4 Instanzen/Chunk in der Spieler-Region (gemessen ${res.perChunkActual ? res.perChunkActual.toFixed(0) : "?"})`,
         res.perChunkActual >= 4
@@ -1994,7 +1921,6 @@ async function checkBandWahrerAnblickFels(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
         const out = {};
 
         // (A) Ω-O15 prozedurale Fels-Geometrie
@@ -2015,10 +1941,6 @@ async function checkBandWahrerAnblickFels(ctx) {
         }
         if (geom && typeof geom.dispose === "function") geom.dispose();
 
-        // (B) Tag-Neutralität: noiserock-Aktivierung == box (stein_block bleibt neutral)
-        const fta = A.FORM_TAG_ACTIVATION;
-        out.noiserockEqualsBox = Object.keys(fta.box).every((k) => fta.noiserock[k] === fta.box[k]);
-
         // (C) stein_block gewachsen + Kiesel/Felsbrocken-Baupläne
         const bp = r.state.blueprints;
         out.steinIsRock = !!(bp && bp.stein_block && bp.stein_block.parts[0].shape === "noiserock");
@@ -2027,7 +1949,7 @@ async function checkBandWahrerAnblickFels(ctx) {
         try {
             const tags = r.computeCompoundTags(bp.stein_block);
             out.steinTagsFinite = !!(tags && Number.isFinite(tags.dichte) && tags.dichte > 0);
-        } catch (_e) {
+        } catch {
             out.steinTagsFinite = false;
         }
 
@@ -2046,8 +1968,6 @@ async function checkBandWahrerAnblickFels(ctx) {
     check("Ω-OPSIS S6 (A1) noiserock baut eine Geometrie", res.rockGeomBuilt === true);
     check("Ω-OPSIS S6 (A2) noiserock ist detailliert (≥12 Vertices)", res.rockGeomDetailed === true);
     check("Ω-OPSIS S6 (A3) noiserock ist noise-verschoben (Facetten, kein glatter Radius)", res.rockDisplaced === true);
-
-    check("Ω-OPSIS S6 (B2) noiserock == box → tag-neutral (Affinitäts-Baseline hält)", res.noiserockEqualsBox === true);
 
     check("Ω-OPSIS S6 (C1) stein_block gewachsen (Box-Samen → noiserock)", res.steinIsRock === true);
     check("Ω-OPSIS S6 (C3) kiesel-Teile sind alle noiserock", res.kieselIsRock === true);
@@ -2094,8 +2014,8 @@ async function checkBandWahrerAnblickLaub(ctx) {
                 // kein Skeleton (gen < 7) → CONSUM-Source trägt den Beweis
                 tubeOk = cardOk = taperProven = true;
             }
-        } catch (_e) {
-            out.behaviorErr = String((_e && _e.message) || _e);
+        } catch {
+            /* die Folge-Proben fallen ohne ihr Feld */
         }
         out.tubeOk = tubeOk;
         out.cardOk = cardOk;

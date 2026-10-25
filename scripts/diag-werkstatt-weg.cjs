@@ -15,7 +15,7 @@
 //   node scripts/diag-werkstatt-weg.cjs [--selftest]          Port: WERKSTATT_WEG_PORT (Standard 4623)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, sleep: pause } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -1024,7 +1024,6 @@ function wegHelfer(arg) {
 
 // ── L-WERKSTATT, der Spieler (Node): jeder Schritt ein echtes Ereignis (page.keyboard / page.mouse); ein Ziel außerhalb der
 // Liste erreicht das Mausrad über ihr, je Raste 100 px und eine Eingabe. ──
-const pause = (ms) => new Promise((q) => setTimeout(q, ms));
 const bauWeg = (page, fn, ...a) => page.evaluate((f, ...x) => window.__bauWeg[f](...x), fn, ...a);
 // nach der Taste urteilt das Ereignis, nicht die Uhr: jede endliche Animation (die Schublade gleitet 0,32 s) ist zu Ende
 const ruht = () => document.getAnimations().every((a) => a.playState !== "running" || a.effect.getComputedTiming().iterations === Infinity);

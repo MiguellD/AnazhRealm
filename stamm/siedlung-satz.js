@@ -3386,9 +3386,8 @@ class AnazhRealm_siedlung_satz {
         // V18.297 — autonom vom Nexus gespawnt → vom Cap (`_capNexusStructures`) bounded.
         // Die Welt wächst, hortet aber nicht: ist das Limit erreicht, verblasst das Fernste.
         if (opts.autonomous === true) entry.autonomous = true;
-        // DIE WELT IST EINE FUNKTION (speicher.K3, Gebot 7): was der Strom aus Saat und Gesetz setzt (`opts.ausGesetz`: der Wurf
-        // des Felds, die Promotion der Streu), rechnet jeder Boot neu — der Stand trägt es nie (`buildStateSnapshot`), nur die
-        // Tat an ihm (`harvestArchitecture`). Eine Marke der Sitzung: sie reist nie.
+        // DIE WELT IST EINE FUNKTION (speicher.K3, Gebot 7): was Saat und Gesetz setzen (`opts.ausGesetz`: Wurf des Felds, Streu,
+        // Ort), rechnet jeder Boot neu — der Stand trägt es nie, nur die Tat an ihm (`harvestArchitecture`); die Marke reist nie.
         if (opts.ausGesetz === true) entry._ausGesetz = true;
         // Affordances EINMAL beim Spawn berechnen (nicht pro Frame); Welt-Reaktionen lesen entry.affordances.
         // Bauplan-Edits wirken nur auf NEUE Spawns (Snapshot wie precisionCap).

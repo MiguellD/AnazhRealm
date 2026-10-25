@@ -71,7 +71,7 @@ function hakenP(name, mitten) {
         return r;
     };
 }
-const wMitte = (a) => { try { o.wfs.call(fs, a[0], halb(a[1])); } catch (_e) { /* */ } };
+const wMitte = (a) => { try { o.wfs.call(fs, a[0], halb(a[1])); } catch { /* */ } };
 for (const nm of ["writeFile", "writeFileSync"]) haken(nm, wMitte);
 for (const nm of ["copyFile", "copyFileSync", "rename", "renameSync"]) haken(nm, () => {});
 hakenP("writeFile", wMitte);
@@ -154,7 +154,7 @@ async function serverLauf(quelle, tod) {
         try {
             const j = JSON.parse(fs.readFileSync(f, "utf8"));
             return j && (j.marker === "alt" || j.marker === "neu") ? j.marker : "fremd";
-        } catch (_e) {
+        } catch {
             return fs.existsSync(f) ? `zerrissen (${fs.statSync(f).size} B)` : "fehlt";
         }
     };
@@ -230,7 +230,7 @@ function ttHaken() {
         let r = null;
         try {
             r = json && rec(JSON.parse(json));
-        } catch (_e) {
+        } catch {
             r = { kaputt: 1 };
         }
         const e = { t: Date.now(), art, rec: r, n: nJetzt };
@@ -284,7 +284,7 @@ function ttToeten(b) {
     try {
         if (process.platform === "win32") spawnSync("taskkill", ["/F", "/T", "/PID", String(b.process().pid)]);
         else process.kill(-b.process().pid, "SIGKILL");
-    } catch (_e) {}
+    } catch {}
 }
 async function tabTodProbe({ von, bis, selbst = false }) {
     const profil = fs.mkdtempSync(path.join(os.tmpdir(), "k1-tabtod-"));
@@ -404,21 +404,21 @@ const server = statikServer();
 // (D) DIE DATEI WÄCHST MIT DEN ÄNDERUNGEN, NIE MIT DEM WEG (speicher.K3): eine frische Welt (der Takt der Orte lebt wie im
 // Spiel) speichert, der Spieler geht ohne Edit `km` in `min` Spielminuten (Teleport-Schritte auf dem Boden des Gesetzes, 100 ms
 // je Takt), sie speichert wieder. Je Schlüssel des Stands (oben und `worldMeta.*`) das Δ roh (UTF-8 des JSON) und auf der
-// Platte (der Stand in IndexedDB, sein .bak und das Abbild im localStorage). Das Urteil gilt dem Weg: das Leben der Welt
-// (`LEBEN`: ihr Tagebuch, das Gedächtnis des Nexus, die Kreaturen) wächst mit der Zeit, gedeckelt von seinem Gesetz — es steht
-// in der Zahl. Mit PERSISTENCE_EDITS=n schlägt der Spieler danach n Gruben (2-m-Raster um ihn): Δ roh und Platte dieser Edits
-// (Staffel 2, ≤ 100 kB je 1000). PERSISTENCE_WEG=km-min (Standard 1-6), `--weg` nur (D), PERSISTENCE_AUS die Zahlen als JSON.
-// SELBSTTEST: ein Weg-Zähler im Stand (`wegSpur`) ist ROT an seinem Namen.
+// Platte (der Stand in IndexedDB, sein .bak und das Abbild im localStorage). Das Urteil gilt dem Stand ohne das Leben
+// (`LEBEN`: das Tagebuch, das Gedächtnis des Nexus, die Kreaturen — die Änderungen von KI und Welt, gedeckelt von ihrem
+// Gesetz); es steht je Schlüssel in der Zahl. Mit PERSISTENCE_EDITS=n schlägt der Spieler danach n Gruben (2-m-Raster um ihn):
+// Δ roh und Platte dieser Edits (Staffel 2, ≤ 100 kB je 1000). PERSISTENCE_WEG=km-min (Standard 1-6), `--weg` nur (D).
+// SELBSTTEST im selben Gang: ein Weg-Zähler im Stand (`wegSpur`, je Takt die Lage) ist ROT an seinem Namen.
 const LEBEN = ["worldJournal", "dslHistory", "dslAbilities", "knowledgeBase", "dslPatternMemory", "creatures"];
 async function wegSeite(km, min, edits) {
     const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
-    const [st, spur, S] = [r.state, [], []];
+    const [st, spur, S, ruh] = [r.state, [], [], (ms) => new Promise((ok) => setTimeout(ok, ms))];
     let t = performance.now();
-    const takt = async (n, f = () => {}) => {
+    const takt = async (n, f) => {
         for (let i = 1; i <= n; i++) {
-            f(i);
+            if (f) f(i);
             r._gameLoopTick((t += 100));
-            if (i % 5 === 0) await new Promise((ok) => setTimeout(ok));
+            if (i % 5 === 0) await ruh(0);
         }
     };
     const stand = async () => {
@@ -426,15 +426,15 @@ async function wegSeite(km, min, edits) {
         r.saveState(); // der .bak trägt denselben Stand
         const id = st.worldMeta.worldId;
         const platz = localStorage.getItem(r.worldStorageKey(id));
-        for (let i = 0; i < 300 && ((await r._idbGetWorld(id)) || {}).json !== platz; i++)
-            await new Promise((ok) => setTimeout(ok, 20));
-        S.push([platz, ((await r._idbGetWorld(id + ".bak")) || {}).json]);
+        for (let i = 0; i < 300 && ((await r._idbGetWorld(id)) || {}).json !== platz; i++) await ruh(20);
+        S.push([platz, (await r._idbGetWorld(id + ".bak")).json]);
     };
     await takt(200);
     await stand();
-    const [p, n] = [st.playerMesh.position.clone(), Math.round(min * 600)];
+    const [p, n] = [st.playerMesh.position.clone(), min * 600];
     await takt(n, (i) => {
-        const [x, z] = [p.x + (i * km * 1000) / n, p.z + (0.15 * i * km * 1000) / n];
+        const x = p.x + (i * km * 1000) / n;
+        const z = p.z + 0.15 * (x - p.x);
         st.playerMesh.position.set(x, r._terrainMacroSurfaceY(x, z) + r.constructor.PLAYER_FOOT_OFFSET + 0.05, z);
         spur.push({ x, z, t });
     });
@@ -446,44 +446,45 @@ async function wegSeite(km, min, edits) {
         if (i % 10 === 9) await takt(5);
     }
     await stand();
-    // der Selbsttest im selben Gang: ein Weg-Zähler im Stand (`wegSpur`, je Takt die Lage)
-    r.buildStateSnapshot = ((bau) => () => ({ ...bau(), wegSpur: spur }))(r.buildStateSnapshot.bind(r));
+    const bau = r.buildStateSnapshot.bind(r);
+    r.buildStateSnapshot = () => ({ ...bau(), wegSpur: spur });
     await stand();
     return S;
 }
-// Δ je Schlüssel zweier Stände [JSON, .bak] roh (UTF-8) und auf der Platte (Stand, .bak, Abbild); `weg` ohne das Leben
-function wegDelta(a, b) {
-    const je = ([j]) => {
+// Δ je Schlüssel zweier Stände [JSON, .bak]; `ohne` und `ohnePlatte` ohne das Leben, `taeter` der stärkste Schlüssel außer ihm
+function wegDelta([a, aBak], [b, bBak]) {
+    const je = (j) => {
         const s = JSON.parse(j);
         for (const k in s.worldMeta) s["worldMeta." + k] = s.worldMeta[k];
         delete s.worldMeta;
         for (const k in s) s[k] = Buffer.byteLength(JSON.stringify(s[k] ?? null));
         return s;
     };
-    const [A, B, L] = [je(a), je(b), (x) => Buffer.byteLength(x || "")];
-    const d = { roh: L(b[0]) - L(a[0]), platte: 2 * (L(b[0]) - L(a[0])) + L(b[1]) - L(a[1]), leben: 0 };
-    d.je = Object.keys({ ...A, ...B }).map((k) => [k, (B[k] || 0) - (A[k] || 0)]);
-    d.je.sort((x, y) => y[1] - x[1]);
-    for (const [k, v] of d.je) if (LEBEN.includes(k)) d.leben += v;
-    [d.weg, d.wegPlatte, d.taeter] = [d.roh - d.leben, d.platte - 3 * d.leben, d.je.find(([k]) => !LEBEN.includes(k))];
-    d.zeile = `Δ Weg roh ${kB(d.weg)}, Platte ${kB(d.wegPlatte)} · gesamt roh ${kB(d.roh)}, Platte ${kB(d.platte)} · Leben ${kB(d.leben)} · am stärksten ${d.taeter.join(" ")} B`;
+    const [A, B, L] = [je(a), je(b), Buffer.byteLength];
+    const d = { roh: L(b) - L(a), platte: 2 * (L(b) - L(a)) + L(bBak) - L(aBak) };
+    const je2 = Object.keys({ ...A, ...B }).map((k) => [k, (B[k] || 0) - (A[k] || 0)]);
+    je2.sort((x, y) => y[1] - x[1]);
+    const leben = je2.filter(([k]) => LEBEN.includes(k));
+    const summe = leben.reduce((s2, [, v]) => s2 + v, 0);
+    [d.ohne, d.ohnePlatte] = [d.roh - summe, d.platte - 3 * summe];
+    d.taeter = je2.find(([k]) => !LEBEN.includes(k));
+    d.zeile =
+        `ohne Leben Δ roh ${kB(d.ohne)}, Platte ${kB(d.ohnePlatte)}, am stärksten ${d.taeter[0]} ${kB(d.taeter[1])} · ` +
+        `gesamt roh ${kB(d.roh)}, Platte ${kB(d.platte)} · Leben ${leben.map(([k, v]) => k + " " + kB(v)).join(", ")}`;
     return d;
 }
-const kB = (b) => (b >= 0 ? "+" : "") + (b / 1000).toFixed(1).replace(".", ",") + " kB";
+const kB = (b) => (b / 1000).toFixed(1) + " kB";
 async function wegLauf(km, min, edits) {
-    const profil = fs.mkdtempSync(path.join(os.tmpdir(), "k3-weg-"));
-    const browser = await starteBrowser({ art: "null", profil, frist: 3600000 });
-    const page = (await browser.pages())[0];
+    const browser = await starteBrowser({ art: "null", frist: 3600000 });
+    const page = await browser.newPage();
     await nullRenderer(page);
     await page.evaluateOnNewDocument(() => (window.__anazhAutoSettlement = true));
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
+    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
     const S = await page.evaluate(wegSeite, km, min, edits);
     await browser.close();
-    fs.rmSync(profil, { recursive: true, force: true });
     return {
         km: km * Math.hypot(1, 0.15),
-        min,
-        ...wegDelta(S[0], S[1]),
+        weg: wegDelta(S[0], S[1]),
         edits: wegDelta(S[1], S[2]),
         spur: wegDelta(S[2], S[3]),
     };
@@ -632,22 +633,21 @@ function korpusUrteil(z, selbst) {
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
     if (NUR_STUFE) process.exit((await korpusLauf(false))[0].ganz ? 0 : 1);
-    const weg = await wegLauf(WEG_KM, WEG_MIN, EDITS);
-    if (process.env.PERSISTENCE_AUS) fs.writeFileSync(process.env.PERSISTENCE_AUS, JSON.stringify(weg));
+    const w = await wegLauf(WEG_KM, WEG_MIN, EDITS);
     const wegChecks = [
         {
-            name: `(D) ${weg.km.toFixed(1)} km in ${weg.min} min ohne Edit, Soll ≤ 10 kB: ${weg.zeile}`,
-            pass: weg.weg <= 1e4 && weg.wegPlatte <= 1e4,
+            name: `(D) ${w.km.toFixed(1)} km in ${WEG_MIN} min ohne Edit, Soll ≤ 10 kB: ${w.weg.zeile}`,
+            pass: w.weg.ohne <= 1e4 && w.weg.ohnePlatte <= 1e4,
         },
         {
-            name: `(D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ${weg.spur.zeile}`,
-            pass: weg.spur.weg > 1e4 && weg.spur.taeter[0] === "wegSpur",
+            name: `(D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ${w.spur.zeile}`,
+            pass: w.spur.ohne > 1e4 && w.spur.taeter[0] === "wegSpur",
         },
     ];
     if (EDITS)
         wegChecks.push({
-            name: `(D) ${EDITS} Edits, Soll ≤ ${EDITS / 10} kB: ${weg.edits.zeile}`,
-            pass: Math.max(weg.edits.weg, weg.edits.wegPlatte) <= EDITS * 100,
+            name: `(D) ${EDITS} Edits, Soll ≤ ${EDITS / 10} kB: ${w.edits.zeile}`,
+            pass: Math.max(w.edits.ohne, w.edits.ohnePlatte) <= EDITS * 100,
         });
     if (NUR_WEG) urteile(wegChecks);
     const tLauf = await tabTodProbe({ von: TT_VON, bis: TT_BIS });

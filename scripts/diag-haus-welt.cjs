@@ -244,6 +244,39 @@ async function proben(phasen) {
         } catch {}
         return ja;
     };
+    // DIE RUHE AM ORT (x, z): sein Chunk steht, die Wald-Schlange ist leer, die Nah-Streu hat jede gewollte Kachel gebaut
+    // (`nahStreu.offen` 0) — 20 Proben in Folge nach `vor` Takten; gezählt wird der Konsum, nie eine Takt-Zahl. Ohne Ort
+    // (x null) nur Schlange und Streu.
+    const ruheAn = async (x, z, vor = 60) => {
+        const span = r._voxelChunkConfig(0).span;
+        let [ruhig, k] = [0, 0];
+        const steht = () => {
+            const e =
+                x == null || (s.voxelChunks && s.voxelChunks.get(`${Math.floor(x / span)},${Math.floor(z / span)}`));
+            const ns = s.nahStreu;
+            return (
+                k++ > vor &&
+                e &&
+                (x == null || e.surfMap) &&
+                !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
+                ns &&
+                ns.kacheln.size > 0 &&
+                ns.offen === 0
+            );
+        };
+        await warteBis(() => (ruhig = steht() ? ruhig + 1 : 0) >= 20, 4, 1500);
+        return ruhig >= 20;
+    };
+    // eine lebende Streu-Zelle (ihre Instanz-Slots oder ihr Feld-Wurf)
+    const lebt = (c) => (c.slots && c.slots.length) || c.feld;
+    // die Streu-Regionen im ±40-m-Kreuz um (x, z)
+    const regionenUm = (x, z) => {
+        const q = new Set();
+        for (const dx of [-40, 0, 40])
+            for (const dz of [-40, 0, 40])
+                q.add(`${Math.floor((x + dx) / A.SCATTER.regionM)},${Math.floor((z + dz) / A.SCATTER.regionM)}`);
+        return q;
+    };
     // ── das Drehbuch-Dorf 7/18, der Akt des Chats „dorf 7 18" — AN EINEM HANG: der nächste 16-m-Ring (160–480 m um den
     // Start) mit einem trockenen Ort (kein Wasser im 40-m-Kreis), dessen Gefälle über ±8 m 0,3–0,6 ist, darin der steilste ──
     let dorfOrt = null;
@@ -941,7 +974,7 @@ async function proben(phasen) {
         let zellen = 0;
         for (const region of (s.scatterRegions && s.scatterRegions.values()) || []) {
             for (const c of region.cells || []) {
-                if (!((c.slots && c.slots.length) || c.feld)) continue;
+                if (!lebt(c)) continue;
                 zellen++;
                 if (!imGrundrissVon(liste, c.x, c.z)) continue;
                 n++;
@@ -1027,49 +1060,12 @@ async function proben(phasen) {
             const krone = (art, groesse) => r._naturKrone(art, { scale: groesse });
             const abstand = (x, z) => Math.hypot(x - L.x, z - L.z);
             stell(L.x, plat.position.y + 2.2, L.z);
-            const span = r._voxelChunkConfig(0).span;
-            let ruhig = 0;
-            let k8 = 0;
-            await warteBis(
-                () => {
-                    const e = s.voxelChunks && s.voxelChunks.get(`${Math.floor(L.x / span)},${Math.floor(L.z / span)}`);
-                    const ns = s.nahStreu;
-                    const steht =
-                        k8++ > 60 &&
-                        e &&
-                        e.surfMap &&
-                        !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
-                        ns &&
-                        ns.kacheln.size > 0 &&
-                        ns.offen === 0;
-                    return (ruhig = steht ? ruhig + 1 : 0) >= 20;
-                },
-                4,
-                1500
-            );
-            w8.ruhe = ruhig >= 20;
+            w8.ruhe = await ruheAn(L.x, L.z);
             // DER RING: der Ort-Takt baut ihn am Genesis-Ort (headless ruht der Takt, die Probe ruft die Stamm-Methode);
             // die Lichtung der Probe ist ab hier der Platz — der gemessene Kreis der Tore + 4 m
             r._genesisPortalRing(pm.position);
             // die Tore räumen, die Nah-Streu wächst durch die Wand nach: ruhen lassen wie zuvor
-            let [ruhe2, k2] = [0, 0];
-            await warteBis(
-                () => {
-                    const ns = s.nahStreu;
-                    return (
-                        (ruhe2 =
-                            k2++ > 20 &&
-                            !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
-                            ns &&
-                            ns.kacheln.size > 0 &&
-                            ns.offen === 0
-                                ? ruhe2 + 1
-                                : 0) >= 20
-                    );
-                },
-                4,
-                1500
-            );
+            await ruheAn(null, null, 20);
             const tore = s.architectures.filter(
                 (a) => a && /^welt_/.test(a.type) && Math.hypot(a.position.x - L.x, a.position.z - L.z) < 30
             );
@@ -1103,11 +1099,7 @@ async function proben(phasen) {
                 if (fx) {
                     stell(fx[0], r.getTerrainHeightAt(fx[0], fx[1]) + 3, fx[1]);
                     await pumpe(20);
-                    const RM = A.SCATTER.regionM;
-                    const keys = new Set();
-                    for (const dx of [-40, 0, 40])
-                        for (const dz of [-40, 0, 40])
-                            keys.add(`${Math.floor((L.x + dx) / RM)},${Math.floor((L.z + dz) / RM)}`);
+                    const keys = regionenUm(L.x, L.z);
                     for (const k of keys) r._disposeScatterRegion(k);
                     keysW8 = keys;
                     const steht = () => [...keys].every((q) => !r._streuRegionWartet(q));
@@ -1121,7 +1113,7 @@ async function proben(phasen) {
                 w8.je = {};
                 for (const [rk, region] of (s.scatterRegions && s.scatterRegions.entries()) || [])
                     for (const c of region.cells || []) {
-                        if (!((c.slots && c.slots.length) || c.feld)) continue;
+                        if (!lebt(c)) continue;
                         const d = abstand(c.x, c.z);
                         if (d < 40) w8.zellen++;
                         if (keysW8 && keysW8.has(rk)) w8.zellenNeu++;
@@ -1326,8 +1318,7 @@ async function proben(phasen) {
             for (const e of s.architectures)
                 if (e.position && r._istNatur(e)) pruef(e.type, e.position.x, e.position.z, "Eintrag");
             for (const region of (s.scatterRegions && s.scatterRegions.values()) || [])
-                for (const c of region.cells || [])
-                    if ((c.slots && c.slots.length) || c.feld) pruef(c.species || c.layer, c.x, c.z, "Streu");
+                for (const c of region.cells || []) if (lebt(c)) pruef(c.species || c.layer, c.x, c.z, "Streu");
             for (const kk of (s.nahStreu && s.nahStreu.kacheln.values()) || [])
                 for (const it of kk.items || []) pruef("Kachel-Pflanze", it.x, it.z, "Nah-Streu");
             o.w4weg = w;
@@ -1366,13 +1357,6 @@ async function proben(phasen) {
         await pumpe(60);
         // die Streu steht vor dem Dorf (wie im Spiel): jede Region unter dem Dorf-Ort gebaut, ohne Foundry-Aufschub
         // (`_streuRegionWartet`)
-        const RMd = A.SCATTER.regionM;
-        const regionenUm = (x, z) => {
-            const q = new Set();
-            for (const dx of [-40, 0, 40])
-                for (const dz of [-40, 0, 40]) q.add(`${Math.floor((x + dx) / RMd)},${Math.floor((z + dz) / RMd)}`);
-            return q;
-        };
         const steht = (q) => [...q].every((k) => !r._streuRegionWartet(k));
         // der Ort des fernen Dorfs: der dichteste 40-m-Kreis der Zellen 200–360 m vom Start, auf Land, jede Region unter ihm
         // in Reichweite (`_streuWartet`) — die Probe braucht Zellen unter den Häusern
@@ -1380,7 +1364,7 @@ async function proben(phasen) {
         await warteBis(() => !(r._streuWartet(p0) > 0), 4, 1500);
         const voll = [];
         for (const region of (s.scatterRegions && s.scatterRegions.values()) || [])
-            for (const c of region.cells || []) if ((c.slots && c.slots.length) || c.feld) voll.push(c);
+            for (const c of region.cells || []) if (lebt(c)) voll.push(c);
         let best = null;
         for (const c of voll) {
             const d = Math.hypot(c.x - start.x, c.z - start.z);
@@ -1401,8 +1385,7 @@ async function proben(phasen) {
         await warteBis(streuSteht, 4, 1500);
         let vorZellen = 0;
         for (const region of (s.scatterRegions && s.scatterRegions.values()) || [])
-            for (const c of region.cells || [])
-                if (((c.slots && c.slots.length) || c.feld) && Math.hypot(c.x - fx, c.z - fz) < 40) vorZellen++;
+            for (const c of region.cells || []) if (lebt(c) && Math.hypot(c.x - fx, c.z - fz) < 40) vorZellen++;
         const vorDorf = new Set(s.architectures);
         let fernSteht = false;
         r.spawnSettlement({ seed: 23, nH: 14, position: { x: fx, y: r.getTerrainHeightAt(fx, fz), z: fz } }).then(
@@ -1418,7 +1401,7 @@ async function proben(phasen) {
         for (const region of s.scatterRegions.values())
             for (const c of region.cells || [])
                 if (imGrundrissVon(FH, c.x, c.z)) {
-                    if ((c.slots && c.slots.length) || c.feld) o.w4b.unterHaus.lebend++;
+                    if (lebt(c)) o.w4b.unterHaus.lebend++;
                     else if (c.promotedId == null) o.w4b.unterHaus.geraeumt++;
                 }
         // die Region unter dem Dorf baut neu (Rückkehr, Nach-Dünnen, Foundry-Refill): sie setzt durch die Wand
@@ -1449,28 +1432,8 @@ async function proben(phasen) {
             mz += hs.position.z / Math.max(1, FH.length);
         }
         stell(mx, (r.getTerrainHeightAt(mx, mz) || start.y) + 3, mz);
-        const span = r._voxelChunkConfig(0).span;
-        // (1) mit warmer Foundry: der Chunk unter dem Spieler steht, die Wald-Schlange ist leer und die Nah-Streu hat jede
-        // gewollte Kachel gebaut (`nahStreu.offen` 0) — 20 Proben in Folge; gezählt wird der Konsum, nie eine feste Takt-Zahl
-        let [ruhig, k4] = [0, 0];
-        await warteBis(
-            () => {
-                const e = s.voxelChunks && s.voxelChunks.get(`${Math.floor(mx / span)},${Math.floor(mz / span)}`);
-                const ns = s.nahStreu;
-                const steht =
-                    k4++ > 60 &&
-                    e &&
-                    e.surfMap &&
-                    !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
-                    ns &&
-                    ns.kacheln.size > 0 &&
-                    ns.offen === 0;
-                return (ruhig = steht ? ruhig + 1 : 0) >= 20;
-            },
-            4,
-            1500
-        );
-        o.w4b.ruhe = ruhig >= 20;
+        // (1) mit warmer Foundry: die Ruhe unter dem Spieler (`ruheAn`)
+        o.w4b.ruhe = await ruheAn(mx, mz);
         o.w4b.nahStreu = streuImHaus(FH);
         // die Nah-Streu um die Kamera (Farn, Blume, Kiesel der Kachel): keine Pflanze im Grundriss
         {
