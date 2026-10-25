@@ -222,19 +222,24 @@ class AnazhRealm_siedlung_bewohner {
             tueren.push({ si, sl, haus, tx, tz, ux: (tx - mx) / ul, uz: (tz - mz) / ul });
         }
         // DER BESUCH (koerper-core `tagesPlan`, mensch.K3 Staffel 2): ein Stand vor der Tür eines anderen Hauses, aus dem Samen
-        // unter denen, die `besuchM` fern von seiner Tür und der Mitte des Platzes liegen, sonst vor der fernsten — gewählt,
-        // wenn jeder seinen Stand vor der eigenen Tür, am Platz und am Werk hat (der Besuch nimmt keinem den Platz)
+        // unter denen, die `besuchM` fern von seiner Tür und der Mitte des Platzes liegen und höchstens `besuchWeitM` fern von
+        // ihnen und seinem Werk (der Plan hält ihn `besuchH` dort: der Gang hin trägt nur einen Teil davon, er kommt an und
+        // steht), sonst vor der nächsten der fernen, sonst vor der fernsten — gewählt, wenn jeder seinen Stand vor der eigenen
+        // Tür, am Platz und am Werk hat (der Besuch nimmt keinem den Platz). Bis mensch.K3 Staffel 2 galt keine Obergrenze: der
+        // Markthändler #85460 der Stadt ging 127 m in der Stunde seines Besuchs und kam nie an.
         const mitte = pz ? { x: S.ox + pz.cx, z: S.oz + pz.cz } : null;
-        const besuchStand = (g, T) => {
-            const fern = (h) =>
-                Math.min(
-                    Math.hypot(h.tx - T.tx, h.tz - T.tz),
-                    mitte ? Math.hypot(h.tx - mitte.x, h.tz - mitte.z) : Infinity
-                );
+        const besuchStand = (g, T, W) => {
+            const ab = (h, o) => (o ? Math.hypot(h.tx - o.x, h.tz - o.z) : NaN);
+            const fern = (h) => Math.min(Math.hypot(h.tx - T.tx, h.tz - T.tz), mitte ? ab(h, mitte) : Infinity);
+            const reich = (h) => Math.max(Math.hypot(h.tx - T.tx, h.tz - T.tz), ab(h, mitte) || 0, ab(h, W) || 0);
             const andere = tueren.filter((h) => h !== T).sort((a, b) => fern(b) - fern(a));
-            const weit = andere.filter((h) => fern(h) >= BW.besuchM);
+            const weit = andere.filter((h) => fern(h) >= BW.besuchM && reich(h) <= BW.besuchWeitM);
+            const fernNah = andere
+                .filter((h) => fern(h) >= BW.besuchM && !weit.includes(h))
+                .sort((a, b) => reich(a) - reich(b));
             const k = weit.length ? g.int("besuch", 0, weit.length - 1) : 0;
-            for (const h of weit.slice(k).concat(weit.slice(0, k), andere.slice(weit.length))) {
+            const rest = andere.filter((h) => fern(h) < BW.besuchM);
+            for (const h of weit.slice(k).concat(weit.slice(0, k), fernNah, rest)) {
                 const o = ringStand(g, "b", h.tx, h.tz, h.ux, h.uz);
                 if (o) return o;
             }
@@ -283,7 +288,7 @@ class AnazhRealm_siedlung_bewohner {
                     uhr: 0,
                     takt: 0,
                 });
-                besuche.push([g, T]);
+                besuche.push([g, T, werk]);
             }
         }
         for (const [i, b] of liste.entries()) {
@@ -1161,7 +1166,8 @@ class AnazhRealm_siedlung_bewohner {
             // der Punkt gilt als erreicht, wenn das Bein von hier zum nächsten frei ist (sonst, und am Ende seines Wegs, geht er
             // ihn genau)
             const [n, d] = [pts[b.wi + 1], Math.hypot(pts[b.wi].x - x, pts[b.wi].z - z)];
-            if (d <= Math.max(0.3, l * dt) && (n ? !this._bewohnerWand({ x, z }, n) : d < 1e-6)) b.linie = pts[b.wi++];
+            if (d <= Math.max(0.3, l * dt) && (n ? !this._bewohnerWand({ x, z }, n) : d < 1e-6))
+                this._bewohnerErreicht(b);
         }
         while (rest > 0 && b.wi < pts.length) {
             const q = pts[b.wi];
@@ -1177,8 +1183,7 @@ class AnazhRealm_siedlung_bewohner {
                 x = q.x;
                 z = q.z;
                 rest -= d;
-                b.linie = q;
-                b.wi++;
+                this._bewohnerErreicht(b);
             } else {
                 x += rx * Math.min(rest, d);
                 z += rz * Math.min(rest, d);
@@ -1226,6 +1231,14 @@ class AnazhRealm_siedlung_bewohner {
         return true;
     }
 
+    // DER ERREICHTE PUNKT (mensch.K3 Staffel 2: das Ausweichen ist ein Versatz zur Lage des Tags, der zurückkehrt, nie eine
+    // neue Linie): der nächste Punkt des Wegs zählt; ein Punkt des Tags beginnt das Bein (`linie`), der Umweg-Punkt neben
+    // einem Stehenden (`_um`, `_bewohnerUm`) nie — nach ihm geht er auf das Bein seines Tags zurück.
+    _bewohnerErreicht(b) {
+        const q = b.weg[b.wi++];
+        if (!q._um) b.linie = q;
+    }
+
     // DIE LINIE (mensch.K2 Staffel 2: sein Tag ist f(Same, t)): wer neben seinem Bein geht (er wich aus), geht nicht schräg zum
     // nächsten Punkt, sondern auf das Bein zurück — auf den Punkt `linieM` voraus auf ihm (vom Anfang des Beins `linie`, ab
     // `_bewohnerWeg`); so steht er, wo ihn die Ankunft sähe. Schneidet der Weg zurück eine Wand (`_bewohnerWand`: das Bein
@@ -1234,11 +1247,12 @@ class AnazhRealm_siedlung_bewohner {
     // Bein: den nächsten).
     _bewohnerLinie(b, x, z) {
         const [a, q] = [b.linie, b.weg[b.wi]];
+        if (q._um) return q;
         const [lx, lz] = a ? [q.x - a.x, q.z - a.z] : [0, 0];
         const L = Math.hypot(lx, lz);
         if (!(L > 1e-3) || Math.abs((x - a.x) * lz - (z - a.z) * lx) / L < 0.05) return q;
         const s0 = ((x - a.x) * lx + (z - a.z) * lz) / (L * L);
-        for (const s of [s0 + AnazhRealm.BEWOHNER.linieM / L, Math.max(0, s0), 0]) {
+        for (const s of [Math.max(0, s0 + AnazhRealm.BEWOHNER.linieM / L), Math.max(0, s0), 0]) {
             const m = s >= 1 ? q : { x: a.x + lx * s, z: a.z + lz * s };
             if (!this._bewohnerWand({ x, z }, m)) return m;
         }
@@ -1287,7 +1301,7 @@ class AnazhRealm_siedlung_bewohner {
         if (!q || !S.raster) return null;
         const hl = Math.hypot(q.x - p.x, q.z - p.z);
         if (!(hl > 1e-6) && b.wi + 1 < b.weg.length) {
-            b.linie = b.weg[b.wi++]; // er steht auf dem Punkt: der nächste zählt
+            this._bewohnerErreicht(b); // er steht auf dem Punkt: der nächste zählt
             return this._bewohnerAusweichen(S, b, dt);
         }
         if (!(hl > 1e-6)) return null;
@@ -1308,15 +1322,18 @@ class AnazhRealm_siedlung_bewohner {
                     if (o !== b && !o.drinnen && o.leib)
                         if ((o.leib.position.x - p.x) ** 2 + (o.leib.position.z - p.z) ** 2 < reich) nb.push(o);
         if (!nb.length) return null;
-        // steht ein Leib auf dem nächsten Punkt seines Wegs, geht er zum übernächsten, wenn das Bein dorthin frei ist
+        // DER BESETZTE PUNKT: steht ein Leib auf dem nächsten Punkt seines Wegs und ist er neben ihm (näher als zwei Kapseln),
+        // gilt der Punkt als erreicht, wenn das Bein von hier zum übernächsten frei ist — das Bein des Tags beginnt an ihm, und
+        // er geht auf es zurück (`_bewohnerLinie`). Bis mensch.K3 Staffel 2 sprang er schon 7 m vor dem Punkt auf eine neue
+        // Linie von hier: die Sehne schnitt die Ecke, und wer nach 1 h kam, fand den Feldarbeiter #809070 2,06 m fort.
         const n1 = b.weg[b.wi + 1];
         if (
             n1 &&
+            hl < 2 * K &&
             nb.some((o) => Math.hypot(o.leib.position.x - q.x, o.leib.position.z - q.z) < K) &&
             !this._bewohnerWand(p, n1)
         ) {
-            b.wi++;
-            b.linie = p;
+            this._bewohnerErreicht(b);
             return this._bewohnerAusweichen(S, b, dt);
         }
         // UM DEN STEHENDEN: steht einer auf dem Bein zum nächsten Punkt (vor ihm, näher als zwei Kapseln), geht der Weg über
@@ -1431,7 +1448,6 @@ class AnazhRealm_siedlung_bewohner {
             if (nb.some((n) => Math.hypot(n.leib.position.x - d.x, n.leib.position.z - d.z) < K)) continue;
             if (this._bewohnerWand(p, d) || this._bewohnerWand(d, q)) continue;
             b.weg.splice(b.wi, 0, d);
-            b.linie = p;
             const rest = new Float64Array(b.weg.length);
             for (let i = b.weg.length - 2; i >= 0; i--)
                 rest[i] = rest[i + 1] + Math.hypot(b.weg[i + 1].x - b.weg[i].x, b.weg[i + 1].z - b.weg[i].z);
@@ -1958,7 +1974,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // Richtungen tastet er ab, die ausweichWahl besten fragt er nach der Wand (`_bewohnerAusweichen`) · tuerFreiM = so nah an
 // der Tür steht keiner, wenn er aus ihr tritt · aufholen = so viel schneller (je Tempo) eilt, wer hinter seinem Tag ist, aufholS =
 // in so vielen Sekunden holt er auf (`_bewohnerGehen`) · besuchM = so fern von seiner Tür und der Mitte des Platzes liegt die Tür
-// seines Besuchs · gasseFreiM = so fern von der Mitte jeder Gasse steht jeder Stand · anschlussN = so viele Knoten fragt
+// seines Besuchs, besuchWeitM = so fern von ihnen und seinem Werk höchstens (`_bewohnerGestalten`) · gasseFreiM = so fern
+// von der Mitte jeder Gasse steht jeder Stand · anschlussN = so viele Knoten fragt
 // der Anschluss eines Orts (`_bewohnerAnschluss`) · auswegM = so weit sucht ein Ort ohne freien Anschluss seinen Ausweg
 // (`_bewohnerAusweg`) · standRandM = so viel Raum hält jeder Stand zu jeder Wand über die Kapsel hinaus: ein Gehender
 // passt zwischen beide (`_bewohnerStandPruefen`) · umRandM = so weit über zwei Kapseln geht er am Stehenden vorbei
@@ -1997,6 +2014,7 @@ AnazhRealm.BEWOHNER = Object.freeze({
     ausweichWahl: 6,
     tuerFreiM: 0.9,
     besuchM: 40,
+    besuchWeitM: 60,
     aufholen: 1,
     aufholS: 2,
     gasseFreiM: 1.6,
