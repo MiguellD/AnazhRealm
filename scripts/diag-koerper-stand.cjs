@@ -192,10 +192,12 @@ function taeter(inj) {
     }
     // sohle (K8): die Sohle der Pfote kippt nicht mit dem Boden unter ihr (vor K8 huf hielt sie die Lage des Rumpfs)
     if (inj === "sohle") r._gaitSohlenKipp = (...a) => (a[4] ? { laengs: 0, quer: 0 } : P._gaitSohlenKipp.apply(r, a));
-    // fuss (K8): der Fuß vor leib-k2 — die Zehe biegt nie (der starre Fuß rollt über den Ballen), kein Bau trägt ihn am Punkt
-    // (die Stufe unter dem Fuß, `_bauAuflageAt`)
+    // fuss (K8): der Fuß vor leib-k2 — die Zehe biegt nie (der starre Fuß rollt über den Ballen), auf einem Bau steht jeder
+    // Punkt auf der Oberkante unter der Kapsel (keine Stufe unter dem Fuß, `_bauAuflageAt` · `_gaitSohleAufBau`)
     if (inj === "fuss") {
         r._bauAuflageAt = () => -Infinity;
+        r._gaitSohleAufBau = () => null;
+        r._standSicht = (x, z, t, s) => (s === true ? t : P._standSicht.call(r, x, z, t, s));
         r._animateHumanoidRig = function (rig, ...a) {
             P._animateHumanoidRig.call(this, rig, ...a);
             if (rig && rig.legL.zehe) rig.legL.zehe.rotation.x = rig.legR.zehe.rotation.x = 0;
@@ -1028,7 +1030,7 @@ async function rollen(n) {
     async function gang(H, umfang, art) {
         const auf = H.gier - (art === "fuss" ? Math.PI / 2 : 0); // bergauf (`__weltOrt`), der Fuß längs der Höhenlinie
         const [ux, uz, N, hub, mitTreppe] = [Math.sin(auf), Math.cos(auf), 10, 0.17, art === "stufe"];
-        const tritt = mitTreppe ? hub / Math.max(0.6, Math.tan((H.neig * Math.PI) / 180)) : 0.375;
+        const tritt = Math.min(0.375, mitTreppe ? hub / Math.tan((H.neig * Math.PI) / 180) : Infinity);
         const [bx, bz, name] = [H.x - 2 * ux, H.z - 2 * uz, "pruef_treppe"];
         s.blueprints[name] = {
             name,
