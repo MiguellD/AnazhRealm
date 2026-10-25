@@ -1,0 +1,4 @@
+# zug/agenten.txt — Token-Buch: je Agent/Karte eine Zeile beim Ende (Koordinator schreibt aus der Task-Meldung)
+# Zeit · Name · Art (champion/cloud/workflow) · Token · Minuten · Ergebnis (grün/WIP/rot/gelandet) · Ziel-Kriterium · Zahl
+2026-10-25T17:02 siedlung-k5-erstes-haus champion 225190 56 grün siedlung.K5 nH300 974→125,5 ms
+2026-10-25T16:55 mensch-k3-gruen champion 241282 28 WIP mensch.K3 Selbsttest geheilt, Decke +600 offen
