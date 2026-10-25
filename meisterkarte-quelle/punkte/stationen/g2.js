@@ -27,9 +27,11 @@ const KREATUR = [
 // Frieden und das Ego, nimmt jedes Tier der Welt und setzt den Wurf scheuer Hirsche (`_kreaturWurf`, wie die Probe herde) an
 // den nächsten trockenen Hang 15–30° um den Spieler (das Gesetz über ±4 m; die Fall-Linie 50 m bergab bis 60 m bergauf trocken,
 // kein Werk in 70 m); der Spieler geht 60 m über ihr bergab mit 1,4 m/s im Kreatur-Takt der Probe herde (Stoß-Schritt,
-// Leib-Kontakte, `updateCreatures`), bis ein Glied flieht, bleibt stehen und blickt ihr nach, bis ihr Mittel 40 m vom Auge
-// steht. "weiter" schreitet o.takte Takte. Zurück die Pose des Ego-Schusses (das Auge `EGO_AUGE_M` über dem Boden, der Blick
-// auf das Mittel der Herde) und die Lage der Herde.
+// Leib-Kontakte, `updateCreatures`), bis ein Glied flieht, und bleibt stehen; die Alarm-Kette läuft, bis jedes Glied flieht,
+// dann eine halbe Sekunde. Der Standort des Blicks steht 43 m quer zur Fall-Linie auf ihrer tieferen Seite (der Hang zeigt die
+// Herde im Profil; von oben sah das Ego aus 40 m nur ihr Heck, 4–15 px breit zwischen den Stämmen). "weiter" schreitet o.takte
+// Takte. Zurück die Pose des Ego-Schusses (das Auge `EGO_AUGE_M` über dem Boden, der Blick auf das Mittel der Herde), die
+// Mitte jedes Leibs (`punkte`, das Ziel der Blick-Wahl) und die Lage der Herde.
 function herdeSzene(r, T, o) {
     const s = r.state;
     const A = r.constructor;
@@ -210,9 +212,10 @@ function herdePulk(r, T, o) {
 }
 // Der Lauf (im Spiel-Baum, cwd): EINE Werkbank headless an der Weiche (die Karte; `[linse-gpu]` nennt sie), Port {PORT}+20000
 // (die Seite eins darunter); darin (a)–(d) der Probe herde (`diag-kreatur-takt --werkbank`), dann die Serie: der Schirm
-// 1280×720, `herdeSzene` bis 40 m, je Schuss `bild --klasse ^tier --ziel Herde --wahl 14` (die Blick-Wahl EINES Rings: Abstand
-// und Augenhöhe des Ego bleiben, nur der Azimut dreht, bis die Sicht frei ist — an der Kiefer vor der Herde riss die Pose des
-// Spielers die Abnahme) mit `herdePulk` an der Pose des Schusses, drei Schüsse je 0,5 s Spielzeit. Bilder und Abnahmen neben {AUS}, das Ergebnis in {AUS}. Die beiden
+// 1280×720, `herdeSzene`, je Schuss `bild --klasse ^tier --ziel Herde --punkte … --wahl 14` (die Blick-Wahl EINES Rings: Abstand
+// und Augenhöhe des Ego bleiben, nur der Azimut dreht, bis JEDES Glied frei steht — die Mitte einer Herde zwischen Stämmen sagt
+// nichts über ihre Glieder) mit `herdePulk` an der Pose des Schusses, drei Schüsse je 0,5 s Spielzeit; der Beobachter bleibt an
+// der Pose, die die Wahl ihm gab. Bilder und Abnahmen neben {AUS}, das Ergebnis in {AUS}. Die beiden
 // Seiten-Funktionen reisen als eigene Argumente (`knapp`): an der Kommandozeile von Windows endet jedes nach 8191 Zeichen.
 async function herdeHang() {
     const fs = require("fs");
@@ -476,7 +479,10 @@ const stationen = [
             "scripts/werkbank.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs",
             "scripts/lib/abnahme-urteil.cjs",
+            "scripts/lib/kamera-nah.cjs",
             "scripts/lib/software-gpu.cjs",
+            "stamm/dirigent-*.js",
+            "stamm/dienst.js",
         ],
         quelle: "2 = (a)–(d) auf beiden Geräten mit der Bild-Serie „Herde am Hang“",
     },
