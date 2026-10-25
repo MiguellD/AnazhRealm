@@ -171,7 +171,7 @@ async function bootRealm(port) {
     await new Promise((r) => server.listen(port, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "null", frist: 240000 });
     const page = await browser.newPage();
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
@@ -198,9 +198,8 @@ async function waitFoundryReady(page) {
         if (!f) return out;
         const t0 = performance.now();
         await window.__weltDa(() => !(!f.ready));
-        out.ready = !!f.ready;
-        out.readyMs = f.ready ? Math.round(performance.now() - t0) : -1;
-        if (!f.ready) return out;
+        out.ready = true;
+        out.readyMs = Math.round(performance.now() - t0);
         await window.__weltDa(() => f.recipeCount > 0);
         out.recipeCount = f.recipeCount || 0;
         return out;

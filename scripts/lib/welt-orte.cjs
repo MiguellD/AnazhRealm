@@ -10,12 +10,13 @@
 const { ladeSpec } = require("./band-urteil.cjs");
 
 // der EINE Leser des Haushalts (band-urteil `ladeSpec`, derselbe wie werkbank und gate:vehicle-drive), hier als Ort {x, z}
+// samt seinem Zustand (`dorfZug`: läuft das Auto-Dorf am Ort)
 function messort(id) {
     const o = ladeSpec(id).ort;
     if (!o || !Array.isArray(o.spieler))
         throw new Error(`messort: kein Messort "${id}" in spec/profiband/haushalt.json`);
     const b = Array.isArray(o.blick) ? o.blick : o.spieler;
-    return { id, x: o.spieler[0], z: o.spieler[1], blick: { x: b[0], z: b[1] }, wiese: o.wiese || null };
+    return { id, x: o.spieler[0], z: o.spieler[1], blick: { x: b[0], z: b[1] }, wiese: o.wiese || null, dorfZug: o.dorfZug };
 }
 
 // DIE WIESE: ein Messort der Art Wiese trägt ihr Gesetz im Haushalt (`messorte[].wiese`) — gemessen wird an EINER
@@ -432,6 +433,9 @@ function weltOrte(art, opts) {
             if (o.wand && !wand) return null;
             return { grund: g, dach: top, wand };
         },
+        // stoff — 4 m trockener, freier Boden aus dem Stoff `o.stoff` längs −z: der Stoff unter dem Fuß (`_kontaktStoffAt`, stoffe.K1)
+        stoff: (x, z) =>
+            bahnFrei(x, z, 0, -1, -1, 5, 1) && [0, 1, 2, 3, 4].every((q) => !r._nassAt(x, z - q, 0.1, H(x, z - q)) && r._kontaktStoffAt(x, z - q, H(x, z - q)) === o.stoff) ? {} : null,
         // wiese — das Gesetz der Mess-Wiese (`o.wiese`, Vorgabe die Schwellen des Messorts `__wieseGesetz`): erst Boden (Hang,
         // Nässe), dann Wald, Blick und Horizont; zurück kommt die Messung samt dem besten Blick-Punkt
         // Die Suche steht vor dem Bau: das Gras liest sie am Gesetz der Boden-Farbe (`_bodenFarbeAt`, aus dem der Chunk jeden

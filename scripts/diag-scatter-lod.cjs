@@ -56,11 +56,8 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
-        const res = { boot: false };
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return res;
-        res.boot = true;
+        const res = {};
+        const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready);
         // Scatter-Regionen um den Spieler bauen lassen (der Streaming-Tick baut 1/Frame), bis die Streu STEHT (die EINE
@@ -489,7 +486,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     });
 
     console.log("=== V18.464 SCATTER-LOD — der Fernwald folgt der LIVE-Distanz ===");
-    check("Boot + Scatter-Zellen gebaut", out.boot && out.cells > 40, `zellen=${out.cells}`);
+    check("Scatter-Zellen gebaut", out.cells > 40, `zellen=${out.cells}`);
     check("P: die Promotion erreicht die Zelle jenseits der Region-Grenze (0,85·pr), die ferne (1,7·pr) nie", out.p === true);
     check("Probe-Zelle gefunden", out.probeGefunden === true);
     if (out.l) {

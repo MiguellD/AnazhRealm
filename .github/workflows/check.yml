@@ -211,7 +211,7 @@ jobs:
               # cv:7 (spec/asset-contract/v7): sha256 ueber PRESETS+PARAMS je Kern (klang/
               # koerper/tetrapoda), Node-direkt (THREE-frei) — Schema (klang: bpm/Skala==
               # scaleFor(darkness)/dna-Baender · motion: endliche Profile) · Determinismus
-              # (zwei frische vm-Kontexte byte-gleich) · Selbst-Test (korruptes Golden rot) · Plattform-Probe
+              # (zwei frische vm-Kontexte byte-gleich) · Selbst-Test (Schema-Bruch rot) · Plattform-Probe
               # (S1 Waende: die Daten rufen beim Laden keine Transzendente, Ratschen-Zeile v7).
               run: npm run gate:daten-contract
 
@@ -922,7 +922,9 @@ jobs:
               # offene Werkstatt = tauber Canvas, ein Bauwerk geht in den Bau-Modus · Q10: Ego-Neigung −90° = Blick
               # −90°, „vor dir" liegt vor dem Blick, der Pfeil fliegt aufs Fadenkreuz, der Sweep liest _blickVorn.
               # Kein dritter Leib: Klinge und Pfeil fragen das EINE Grob-Tor, es liest den kreatur-Leib und deckt die
-              # Gestalt. Dazu die alten Gesetze (Dauer ∝ √I, Sweep, Hit-Stop ≠ Sim, Tod-Kippen). Selbst-Tests S1–S7, S9–S16.
+              # Gestalt. Dazu die alten Gesetze (Dauer ∝ √I, Sweep, Hit-Stop ≠ Sim) und Q13 halten.K5: der Sturz aus dem
+              # Aufprall-Tempo, der Tod durch den Wolf, die Wiederkehr über einen Reload, die Tod-Lage bei 60 und 15 Hz.
+              # Selbst-Tests S1–S7, S9–S18.
               # K13 T26: die Klick-Pfad-Matrix (8 Waffen × 3 Abstände × Rumpf/Horizont × 3rd/1st über tryMouseBreak) macht
               # 96 von 96 Schaden, der Wolf im Rücken bleibt heil, jenseits der Klinge ein Luftschlag mit Hinweis.
               run: npm run gate:kampf-gefuehl
@@ -933,6 +935,10 @@ jobs:
               # und je Klinge/Werkzeug urteilt die Linse jeden Stoff gegen sein Band (Gummi, Kunststoff, Lack, Glas, Metall,
               # Holz, Leder, Schnur) - Taeter beim Namen: ohne-stoff, labor-stoff, band, klarlack, lack-art, durchsicht,
               # toenung, lack-gestalt, transport. Node-direkt (r128), inklusive Selbst-Test.
+              # --tafel (Null-Renderer, am Ufer des Sees): je Stoff (holz, stein, eisen, gras, erde, laub, wasser) EINE
+              # Mutation je Wirkung der EINEN Tafel in SI (rho, mu, Klang-Spalte, T_zuend, T_schmelz, c) mit beobachtbarer
+              # Folge in der Welt; die Sabotage im selben Lauf (der Leser `_stoff` liefert die Zeilen von vor der Mutation)
+              # macht jede Wirkung ROT - eine, die gruen bleibt, liest an der Tafel vorbei. Staffel 1: je Stoff >= 3 von 7.
               run: npm run gate:gegenstand-stoff
 
             - name: Die Albedo-Tafel Labor gegen Welt (S1 W1e - je Klasse Labor-Albedo, Welt-Albedo und ihr Verhaeltnis als Ratsche)

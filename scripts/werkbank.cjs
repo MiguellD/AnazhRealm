@@ -387,7 +387,7 @@ function lauf(k) {
             const s0 = wache();
             if (k.spur) await window.__spurAn();
             // die Erst-Zeichnung (der EINE Ort in _configureRenderer): ihre Zähler über den Lauf
-            const ERST = ["bauN", "bauMs", "verschoben", "pipeAsync", "neubauN"], E = r._erstZeichnung;
+            const ERST = ["verschoben", "pipeAsync", "neubauN"], E = r._erstZeichnung;
             const erst0 = E && ERST.map((x) => E[x] || 0), probe = [];
             const tMess0 = performance.now();
             if (H) {
@@ -1203,6 +1203,8 @@ async function starte() {
                     const schwelle = 18;
                     const rauschen = window.__bildRauschen(G, G2, W, H, schwelle);
                     const { teil, misch } = window.__klassenTeilung(G, Os, W, H, schwelle);
+                    // die Teilung des Schusses für ein folgendes `eval` (der Pulk der Herde, tiere.K1): je Pixel 1 + Index in `namen`
+                    window.__letzteTeilung = { teil, namen, W, H };
                     const klassen = {};
                     // das Außen der Silhouette (`klassenMasse` kante): kein gemessener Teil — Himmel, Boden, Holz
                     const aussen = new Uint8Array(W * H);

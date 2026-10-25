@@ -48,7 +48,9 @@ function haengerAn() {
         if (c) {
             try {
                 e.pass = window.__passName ? window.__passName(c.scene, c.camera) : "?";
-                e.klasse = window.anazhRealm._taeterKlasse(c.object);
+                // die Arena (G1) zeichnet für ihre Glieder: sie heißt nach dem ersten („haupt arena f:tanne:L1")
+                const g = c.object.isGeometrieArena && c.object.glieder[0];
+                e.klasse = (g ? "arena " : "") + window.anazhRealm._taeterKlasse(g || c.object);
             } catch {
                 e.pass = e.pass || "?";
             }
@@ -578,7 +580,7 @@ function haengerTabelle(a) {
     );
     if (a.erst)
         z.push(
-            `Erst-Zeichnung: ${a.erst.bauN} Knoten-Bauten im Pass (Σ ${a.erst.bauMs} ms) · ${a.erst.verschoben} auf den nächsten ` +
+            `Erst-Zeichnung: ${a.erst.verschoben} auf den nächsten ` +
                 `Aufruf verschoben · ${a.erst.pipeAsync} Pipelines asynchron · ${a.erst.offen} offen · ${a.erst.neubauN || 0} Neubauten ` +
                 `gezeichneter Objekte (im Frame)`
         );
@@ -896,7 +898,7 @@ function latenzAn(k) {
     const lage = () =>
         L.verb === "hieb" ? [hand().toArray()] : [st.camera.matrixWorld.elements.slice(12, 15), pm.position.toArray()];
     const weg = (a, b) => (b && a.length === b.length ? Math.max(...a.map((v, i) => Math.hypot(...v.map((x, j) => x - b[i][j])))) : Infinity);
-    const L = (window.__latenz = { takt: 0, still: 0, vor: null, probe: null, bilder: [], offen: [], sicht: st.cameraMode });
+    const L = (window.__latenz = { takt: 0, still: 0, bilder: [], offen: [], sicht: st.cameraMode });
     L.start = st.playerMesh.position.clone();
     const gct = GPUCanvasContext.prototype.getCurrentTexture, synth = new WeakSet();
     GPUCanvasContext.prototype.getCurrentTexture = function () {
@@ -972,11 +974,16 @@ function latenzAn(k) {
         for (const bis = L.bilder.length + 120; st.player._swing && L.bilder.length < bis; ) await wache();
         return Object.assign(L.probe, { ref: undefined, verb: st.player._mausVerb });
     };
-    // das Tier des Hiebs: heil, gehalten, halbe Klingen-Reichweite + 0,5 m vor dem Leib, das Fadenkreuz auf seiner Leibes-Mitte
+    // das Tier des Hiebs: heil, gehalten, halbe Klingen-Reichweite + 0,5 m vor dem Leib, das Fadenkreuz auf seiner Leibes-Mitte.
+    // Es ist der Hirsch („wesen“), die Art, die die Mess-Wiese trägt (K 5,8–6,0 im Revier, `_kreaturBestand`): der Lebenszyklus
+    // nimmt am Hunger das Älteste jeder Gattung über ihrer Kapazität, die Puppe ist die Jüngste. Bis leib-k1-hieb würfelte der
+    // Fauna-Strom die Seele — dort trägt der Bär K 0,14–0,39, Fuchs und Wolf ohne Beute K 0 —, die Puppe fiel mitten in der
+    // Reihe, und jeder Klick danach griff durch ihren Leichnam (Radeon 206b395a und 4a5f5e2c: ego/hieb ab Probe 5–24 Halt 0,
+    // „abbau“ statt „hieb“, zwei ohne Bewegung).
     L.tierStellen = async () => {
         const f = r._blickVorn(st.yaw, 0), d = 0.5 * r._kampfBladeReach() + 0.5, x = L.start.x + f.x * d, z = L.start.z + f.z * d;
         if (!L.tier) r.equipHeld("klinge_langschwert"); // die Faust reicht in 3rd nicht bis zur Haut unter dem Fadenkreuz
-        const c = (L.tier = L.tier || r.spawnCreatureAt(x, L.start.y, z, "happy"));
+        const c = (L.tier = L.tier || r.spawnCreatureAt(x, L.start.y, z, "happy", "wesen"));
         for (let i = 0; i < 240 && !r._leibMitte(c); i++) await wache();
         c.position.set(x, r._voxelSurfaceY(x, z) + c.position.y - r._voxelSurfaceY(c.position.x, c.position.z), z);
         c.userData.hp = 1e9; // die Puppe fällt nie: jeder Hieb trifft ein lebendes Tier

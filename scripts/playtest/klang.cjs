@@ -181,68 +181,45 @@ async function checkBandW4LofiPad(ctx) {
             // wird die HOST-Markov-Kette (kaltes Studio); bar-Zähler zurücksetzen.
             r._klangStudioPreset = () => null;
             sym.lofi.bar = 0;
-            {
-                const brightDeg = AnazhRealm.LOFI_BRIGHT_DEGREES;
-                const origField = r._lofiWorldField;
-                const countBright = () => {
-                    sym.lofi.rngState = 4242;
-                    let c = 0;
-                    for (let i = 0; i < 500; i++) if (brightDeg.indexOf(r._lofiNextDegree(0)) >= 0) c++;
-                    return c;
-                };
-                const neutralF = { lebendig: 0.5, dichte: 0.5, glut: 0.5, magieleitung: 0.5 };
-                const brightF = { lebendig: 1, dichte: 0.5, glut: 0, magieleitung: 1 };
-                // (a) volle Emotion-Helligkeit, neutrales Welt-Feld
-                emo.joy = 1;
-                emo.hope = 1;
-                emo.sorrow = 0;
-                r._lofiWorldField = () => neutralF;
-                const brightEmotionFull = countBright();
-                // (b) neutrale Emotion, volle Welt-Feld-Helligkeit
-                emo.joy = 0;
-                emo.hope = 0;
-                emo.sorrow = 0;
-                r._lofiWorldField = () => brightF;
-                const brightWorldFull = countBright();
-                // (c) neutrale Emotion, neutrales Welt-Feld
-                r._lofiWorldField = () => neutralF;
-                const brightFieldNeutral = countBright();
-                r._lofiWorldField = origField;
-                out.emotionDominatesWorldBias = brightEmotionFull > brightWorldFull;
-                out.worldFieldBiasesHarmony = brightWorldFull > brightFieldNeutral;
-            }
+            // helle Stufen (III/VI) unter n Zügen ab dem RNG-Zustand `saat`, bei Freude/Hoffnung `froh` und Trauer `trauer`
+            const hell = (saat, n, froh, trauer) => {
+                Object.assign(emo, { joy: froh, hope: froh, sorrow: trauer });
+                sym.lofi.rngState = saat;
+                let c = 0;
+                for (let i = 0; i < n; i++) if (AnazhRealm.LOFI_BRIGHT_DEGREES.indexOf(r._lofiNextDegree(0)) >= 0) c++;
+                return c;
+            };
+            const origField = r._lofiWorldField;
+            const neutralF = { lebendig: 0.5, dichte: 0.5, glut: 0.5, magieleitung: 0.5 };
+            // (a) volle Emotion-Helligkeit, neutrales Welt-Feld
+            r._lofiWorldField = () => neutralF;
+            const brightEmotionFull = hell(4242, 500, 1, 0);
+            // (b) neutrale Emotion, volle Welt-Feld-Helligkeit
+            r._lofiWorldField = () => ({ lebendig: 1, dichte: 0.5, glut: 0, magieleitung: 1 });
+            const brightWorldFull = hell(4242, 500, 0, 0);
+            // (c) neutrale Emotion, neutrales Welt-Feld
+            r._lofiWorldField = () => neutralF;
+            const brightFieldNeutral = hell(4242, 500, 0, 0);
+            r._lofiWorldField = origField;
+            out.emotionDominatesWorldBias = brightEmotionFull > brightWorldFull;
+            out.worldFieldBiasesHarmony = brightWorldFull > brightFieldNeutral;
             // W4 V3 — _lofiNextDegree liefert eine in der Markov-
             // Kette erreichbare Stufe (0..6).
             const allowed = AnazhRealm.LOFI_HARMONY[0].map((t) => t[0]);
             const nd = r._lofiNextDegree(0);
             out.nextDegreeValid = allowed.indexOf(nd) >= 0;
             // W4 V3 — Determinismus: selber rngState → selbe Folge.
-            sym.lofi.rngState = 12345;
-            const seqA = [];
-            for (let i = 0; i < 6; i++) seqA.push(r._lofiNextDegree(seqA.length ? seqA[i - 1] : 0));
-            sym.lofi.rngState = 12345;
-            const seqB = [];
-            for (let i = 0; i < 6; i++) seqB.push(r._lofiNextDegree(seqB.length ? seqB[i - 1] : 0));
-            out.harmonyDeterministic = JSON.stringify(seqA) === JSON.stringify(seqB);
+            const folge = () => {
+                sym.lofi.rngState = 12345;
+                const q = [0];
+                for (let i = 0; i < 6; i++) q.push(r._lofiNextDegree(q[i]));
+                return q.join();
+            };
+            out.harmonyDeterministic = folge() === folge();
             // W4 V3 — Emotion biast die Harmonie: bei joy/hope
             // erscheinen helle Stufen (III/VI) häufiger als bei
             // sorrow (selber RNG-Strom → fairer Vergleich).
-            const bright = AnazhRealm.LOFI_BRIGHT_DEGREES;
-            const countBright = () => {
-                sym.lofi.rngState = 777;
-                let c = 0;
-                for (let i = 0; i < 300; i++) if (bright.indexOf(r._lofiNextDegree(0)) >= 0) c++;
-                return c;
-            };
-            emo.joy = 1;
-            emo.hope = 1;
-            emo.sorrow = 0;
-            const brightJoy = countBright();
-            emo.joy = 0;
-            emo.hope = 0;
-            emo.sorrow = 1;
-            const brightSorrow = countBright();
-            out.emotionBiasesHarmony = brightJoy > brightSorrow;
+            out.emotionBiasesHarmony = hell(777, 300, 1, 0) > hell(777, 300, 0, 1);
             r._klangStudioPreset = prevKSP;
             sym.lofi.bar = 0;
             // _lofiTick spielt den ersten Akkord (lastChordAt=
@@ -345,9 +322,9 @@ async function checkBandW4LofiPad(ctx) {
 
 // Der Fuß spielt den Boden, nicht die Uhr — eingefaltet aus gate:schritt-klang (D3b, Orakel Tier-1 #7): die drei Schritt-Klang-
 // Gesetze am ECHTEN Chokepoint (animatePlayerSoul → `_schrittKlangTick`), Audio stumm, die EREIGNIS-Logik pur: (A) je Halbzyklus
-// der weg-getriebenen Gang-Phase EIN Schritt · (B) Stand, Schleichen, Luft und Schwimmen nie · (C) das Material wählt das Timbre
-// aus der EINEN Tabelle (Wasser am Fuß „wasser", Fallback, gainDeckel) · (D) die Landung GENAU EINMAL, stärker und tiefer, unter
-// LAND_DIP_MIN_SPEED keine · (E) die Stimme-aus-Wand; Selbsttests S1 (ω ≡ 0 ⇒ 0 Schritte) und S2 (die Nass-Wand vor dem Boden).
+// der weg-getriebenen Gang-Phase EIN Schritt · (B) Stand, Schleichen, Luft und Schwimmen nie · (C) der gainDeckel (das Timbre je
+// Stoff, Wasser am Fuß eingeschlossen, misst gate:gegenstand-stoff --tafel am Klang) · (D) die Landung GENAU EINMAL, stärker und
+// tiefer, unter LAND_DIP_MIN_SPEED keine · (E) die Stimme-aus-Wand; Selbsttest S1 (ω ≡ 0 ⇒ 0 Schritte).
 async function checkBandSchrittKlang(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, () => {
@@ -359,7 +336,7 @@ async function checkBandSchrittKlang(ctx) {
         const T = A.SCHRITT_KLANG;
     
         // ── die Absenz-Wachen (der Konsum der EINEN Quelle beweist sich unten am Verhalten: (A) zählt Schritte nur über den
-        // Tick aus animatePlayerSoul, S1 steht mit ω ≡ 0, (C) und S2 tragen Boden und Wasser am Fuß) ──
+        // Tick aus animatePlayerSoul, S1 steht mit ω ≡ 0; Boden und Wasser am Fuß trägt die Stoff-Linse) ──
         o.checks.keineEigeneUhr = window.__fehlt(r._schrittKlangTick, /performance\.now|Date\.now/);
         o.checks.klangEineMaschine = window.__fehlt(r._playSchrittOneShot, /new\s+AudioContext/);
         o.checks.simUnberuehrt = window.__fehlt([r._stepFixedSim, r._loopFixedStep, r._stepCharacter], /_schrittKlang/);
@@ -443,35 +420,7 @@ async function checkBandSchrittKlang(ctx) {
         s.playerUnderwater = false;
         o.checks.bSchwimmNull = z().schritte === 0;
     
-        // ── (C) MATERIAL WÄHLT TIMBRE — zwei Böden durch die ECHTE Pipe ──
-        const savedTerr = r._terrainMaterialAt;
-        const savedWl = r._koerperWasser;
-        r._koerperWasser = () => -Infinity; // trocken (der Boden entscheidet)
-        r._terrainMaterialAt = () => "erde";
-        frisch();
-        fahre(6, 1.5, 700);
-        const pErde = z().letzter;
-        r._terrainMaterialAt = () => "stein";
-        frisch();
-        fahre(6, 1.5, 800);
-        const pStein = z().letzter;
-        o.timbre = { erde: pErde, stein: pStein };
-        o.checks.cZweiBoeden =
-            !!pErde &&
-            !!pStein &&
-            pErde.material === "erde" &&
-            pStein.material === "stein" &&
-            (pErde.freq !== pStein.freq || pErde.filter !== pStein.filter);
-        // (S2) SELBST-TEST: Nass schlägt fest — Wasser über dem Fuß gewinnt
-        r._koerperWasser = () => pmesh.position.y + 5;
-        frisch();
-        fahre(6, 1.0, 900);
-        const pNass = z().letzter;
-        r._terrainMaterialAt = savedTerr; // restaurieren (Gate-Hook-Lehre)
-        r._koerperWasser = savedWl;
-        o.checks.s2NassSchlaegtFest = !!pNass && pNass.material === "wasser";
-        // Tabelle pur: Fallback + Deckel
-        o.checks.cFallback = r._schrittKlangParams("nebelkuchen", false, 0).material === T.fallback;
+        // ── (C) der Deckel der Landung (das Timbre je Stoff misst die Stoff-Linse am Klang: gate:gegenstand-stoff --tafel) ──
         o.checks.cDeckel = r._schrittKlangParams("stein", true, 1000).gain <= T.gainDeckel + 1e-12;
     
         // ── (D) LANDUNG: genau 1×, stärker + tiefer; unter der Schwelle nie ──
@@ -565,8 +514,8 @@ async function checkBandSchrittKlang(ctx) {
     check("Schritt-Klang: der EINE Tick trägt keine eigene Uhr, die EINE Stimme keinen zweiten AudioContext und hält still, solange die Symphonie ruht; die fixe Sim kennt ihn nicht", !konsum.length, zeig(konsum));
     const takt = alle("aTakt6", "aTakt3", "bStandNull", "bSchleichNull", "bLuftNull", "bSchwimmNull");
     check(`Schritt-Klang (A)(B): N Halbzyklen ⇒ N Schritte ±1 (v=6 ${out.takt.n6}/${out.takt.soll6} · v=3 ${out.takt.n3}/${out.takt.soll3}), Stand/Schleichen/Luft/Schwimmen 0`, !takt.length, zeig(takt));
-    const timbre = alle("cZweiBoeden", "s2NassSchlaegtFest", "cFallback", "cDeckel");
-    check("Schritt-Klang (C): zwei Böden ⇒ zwei Timbres aus der EINEN Tabelle, Wasser am Fuß ⇒ „wasser“ (S2), Fallback, gainDeckel", !timbre.length, zeig(timbre));
+    const timbre = alle("cDeckel");
+    check("Schritt-Klang (C): die Landung bleibt unter dem gainDeckel", !timbre.length, zeig(timbre));
     const land = alle("dGenauEinmal", "dStaerkerTiefer", "dSchwelleHaelt");
     check(`Schritt-Klang (D): die Landung feuert GENAU EINMAL (${out.land.landungen}×), STÄRKER + TIEFER als der Schritt, der Hopser bleibt stumm`, !land.length, zeig(land));
     const stimme = alle("eStummZaehlt", "eAnRuft", "s1LinseFeuert");

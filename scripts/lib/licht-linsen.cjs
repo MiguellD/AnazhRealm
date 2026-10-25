@@ -2439,8 +2439,10 @@ function naesseSicht(o) {
             cam.lookAt(welt(t.x, t.y - 0.8, t.z - 2.5));
             cam.updateMatrixWorld(true);
         }
-        const W = 320;
-        const H = 180;
+        // das Raster der Zeichenfläche (die Werkbank, `page.setViewport` 640 × 360), ungefiltert: im halben Raster mittelte der
+        // Box-Filter vier Pixel, und eine Schliere hob kaum einen Punkt über die Schwelle (Dorf-Haus, Radeon: draußen 8 von 57 600)
+        const W = 640;
+        const H = 360;
         const schuss = async (wetter, naesse) => {
             window.__buehne({ wetter, naesse });
             return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
@@ -2451,7 +2453,9 @@ function naesseSicht(o) {
         const nass = await schuss("rainy", 600);
         const sprite = r._rainSystem && r._rainSystem.mesh;
         if (sprite) sprite.layers.disable(0);
-        const ohne = await schuss("rainy", 600);
+        // ohne Sprite in DERSELBEN Nässe: `naesse` sind Sekunden Regen ab dem Stand (`_naesseTakt`) — mit 600 trug der Vergleich
+        // 20 statt 10 min (0,992 gegen 0,909), und die helle nasse Schwelle des Dorf-Hauses zählte 15 Punkte als Regen innen
+        const ohne = await schuss("rainy", 0);
         if (sprite) sprite.layers.enable(0);
         const Y = (u8, i) => 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
         const strahl = new T.Vector3();
@@ -2484,8 +2488,8 @@ function naesseSicht(o) {
         };
         const je = { innen: [], aussen: [] };
         const regen = { innen: 0, aussen: 0 };
-        for (let y = 2; y < H; y += 4)
-            for (let x = 2; x < W; x += 4) {
+        for (let y = 1; y < H; y += 2)
+            for (let x = 1; x < W; x += 2) {
                 const i = (y * W + x) * 4;
                 const c = klasse(x, y);
                 if (c && Y(frisch, i) > 8) je[c].push(Y(nass, i) / Y(frisch, i));

@@ -818,6 +818,76 @@ class AnazhRealm_dirigent_ankunft {
         return g >= 0 && g < N ? Math.pow(AnazhRealm.ANKUNFT_FERNE, 1 - g / N) : 1;
     }
 
+    // DER STUFEN-VORLAUF (profiband K4 „keine Hänger", Hänger-Linse 25.10.) — das Gegenstück der Ferne: unter dem Ladeschirm
+    // trägt je Karten-Art der nächste Baum im ersten Blick seine L1 (die Höhen-Stufe, die seine Karte schon dockte), voll
+    // gehalten und ohne Band-Partner, damit das Programm jeder Stufen-Arena in jedem Pass entsteht, bevor der Spieler die
+    // Kontrolle hat. Befund headless (Mess-Wiese, `haenger 60 --wandern bahn`, 4 von 4 Sitzungen): der EINE einmalige Auftrag
+    // im Gang war der kalte Programm-Schlüssel der Tannen-Arena (1–2 Knoten-Bauten Σ 52–158 ms, 2–4 Shader-Module, 1–2
+    // Pipelines); die Radeon (loadScale 0,01–0,06) trifft die L1-Grenze erst im Gang — je Sitzung EIN GPU-Hänger 200–243 ms —,
+    // die GTX (0,29–0,57) vor der Messung. Einmal gebaut, bleibt das Programm der Sitzung (`_renderObjekteLoesen`: der
+    // Knoten-Bau gehört seinem Schlüssel, die Pipeline dem Cache). Die Wahl läuft je Lade-Bild mit den Lücken
+    // (`_weltbildLuecken`), der Baum hält das Bild als wachsender („bauten"), bis seine Arenen zeichneten (`_vorlaufOffen`);
+    // die Kaskaden, deren Box er nicht trifft, baut der Vorbau der Erst-Zeichnung (`_renderObjectDirect`). Er trägt seine L1
+    // bis zum Bild — ihr Wechsel zur Karte fällt unter die Blende des Ladeschirms. Der Null-Renderer baut keine Programme:
+    // dort wählt sie nie.
+    _stufenVorlaufWahl(p, R, imBlick) {
+        const st = this.state;
+        if (st._weltbildDa || !st.renderer || st.renderer._isHeadlessNull) return;
+        const V =
+            this._vorlauf ||
+            (this._vorlauf = {
+                arten: new Map(),
+                eintraege: new WeakSet(),
+                artVon: new Map(),
+                bild: new WeakMap(),
+                t: 0,
+            });
+        const jetzt = performance.now();
+        if (jetzt - V.t < AnazhRealm.LADE_BILD_MS) return;
+        V.t = jetzt;
+        const best = new Map();
+        for (const e of st.architectures || []) {
+            if (!e || !e.position || !e._lodSpecies || !Number.isFinite(e._lodVariantIndex)) continue;
+            const d2 = (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2;
+            if (d2 > R * R || !imBlick(e.position.x, e.position.z)) continue;
+            if (!V.artVon.has(e._lodSpecies)) {
+                const preset = this._foundryPresetForEntry(e);
+                V.artVon.set(e._lodSpecies, preset && this._foundryPresetIsTree(preset) ? preset : null);
+            }
+            const preset = V.artVon.get(e._lodSpecies);
+            if (!preset || V.arten.has(preset) || (best.has(preset) && best.get(preset).d2 <= d2)) continue;
+            if (this._foundryStufeBereit(e, preset, 1)) best.set(preset, { e, d2 });
+        }
+        for (const [preset, { e }] of best) {
+            V.arten.set(preset, e);
+            V.eintraege.add(e);
+        }
+        if (best.size) this._bauRegt(); // die Stufen-Wahl geht
+    }
+    _imStufenVorlauf(e) {
+        return !!this._vorlauf && !this.state._weltbildDa && this._vorlauf.eintraege.has(e);
+    }
+    // Zeichnete der Vorlauf-Baum? Jede seiner L1-Gruppen, die das Hauptbild sieht, trat in ihre Arena, die Arena zeichnete
+    // (`gezeichnet` der Erst-Zeichnung), und danach lief ein weiteres Bild (die GPU-Leine zählt sie): in ihm fand jede Kaskade
+    // die Form der Arena stehen und baute vor — ein Wurf-Teil (Ebene 0 aus) lebt nur in den Kaskaden. Ohne Arena (WebGL2)
+    // zeichnet der Zeichner im Bild.
+    _vorlaufOffen(e) {
+        if (!this._imStufenVorlauf(e)) return false;
+        if (e._lodLevel !== 1 || !e.instSlots || !e.instSlots.length) return true;
+        const L = this._gpuLeine;
+        if (AnazhRealm.__arenaOhne || !L) return false;
+        const G = this.state.archInstanceGroups;
+        const E = this._erstZeichnung;
+        for (const ref of e.instSlots) {
+            const g = G && G.get(ref.key);
+            if (!g || (g.mesh.layers.mask & 1) === 0) continue;
+            if (!g.mesh.__arena || !E || !E.gezeichnet.has(g.mesh.__arena)) return true;
+        }
+        const B = this._vorlauf.bild;
+        if (!B.has(e)) B.set(e, L.gerendert);
+        return L.gerendert <= B.get(e);
+    }
+
     // DER BLICK DES ERSTEN BILDS (B3d): das erste Weltbild ist, was der Spieler sieht — der waagrechte Kegel der Haupt-Kamera
     // vom Auge der Stufen (`_lodAuge`; in Third die Kamera auf ihrer Kugel) in der EINEN Vorwärts-Richtung (`state.yaw`,
     // `_blickVorn`), so breit wie ihr Bildwinkel (fov × aspect) plus ERSTER_BLICK.randGrad je Seite, dazu die Kugel um das
@@ -907,7 +977,9 @@ class AnazhRealm_dirigent_ankunft {
     // keine wartet auf ihr Asset), keine Karte offen, deren Leser im Blick steht, kein Dorf der Ankunft im Werden (fällig, im
     // Export oder mit Häusern im Blick in der Schlange). Was dahinter liegt, folgt nah zuerst (der Rundblick, gate:ankunft L2a).
     // Jede Lücke hat ihren Leser im ersten Frame; der Vorrat (`_foundryPrefetchLibrary`) hat keinen und hält das Bild nie
-    // (K30: das Tor wartete auf `f._prefetching` — Wagen, Siedlungs-Probe, alle Gestalten des Buchs; kalt 25–30 s).
+    // (K30: das Tor wartete auf `f._prefetching` — Wagen, Siedlungs-Probe, alle Gestalten des Buchs; kalt 25–30 s). Der
+    // Stufen-Vorlauf (`_stufenVorlaufWahl`) hält es als wachsender Baum: sein Leser ist der erste Schritt in den Wald, je
+    // Karten-Art EIN Baum, gedockt mit seiner Karte.
     _weltbildFehlt(rundum) {
         return this._weltbildLuecken(rundum).map((l) => l.satz);
     }
@@ -982,12 +1054,17 @@ class AnazhRealm_dirigent_ankunft {
         }
         const p = pm.position;
         const R = Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : 150;
+        this._stufenVorlaufWahl(p, R, imBlick);
         let ungebaut = 0;
         for (const e of st.architectures || []) {
             if (!e || !e.position) continue;
             const dx = e.position.x - p.x;
             const dz = e.position.z - p.z;
-            if (dx * dx + dz * dz <= R * R && !this._archIsRendered(e) && imBlick(e.position.x, e.position.z))
+            if (
+                dx * dx + dz * dz <= R * R &&
+                (!this._archIsRendered(e) || this._vorlaufOffen(e)) &&
+                imBlick(e.position.x, e.position.z)
+            )
                 ungebaut++;
         }
         if (ungebaut) luecke("bauten", `${ungebaut} Bäume und Bauten wachsen`, false, ungebaut);
@@ -1007,6 +1084,9 @@ class AnazhRealm_dirigent_ankunft {
                 }
             if (haeuser) luecke("dorf", `${haeuser} Häuser des Dorfs wachsen`, false, haeuser);
             else if (this._autoSettlementPendingKey) luecke("dorf", "das Dorf wird geplant", true);
+            // der Ort aus dem Gedächtnis (speicher.K3): sein Export ist unterwegs, oder er ist fällig
+            else if (this._stlWegePending || (this._autoSettlementChannelLive() && this._dorfWiederkehrZelle(p)))
+                luecke("dorf", "das Dorf kehrt wieder", !!this._stlWegePending);
             else if (!q && this._autoSettlementChannelLive() && this._startDorfFaellig(p))
                 luecke("dorf", "das Dorf wird gegründet");
         }

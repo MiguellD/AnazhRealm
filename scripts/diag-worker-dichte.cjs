@@ -2071,7 +2071,7 @@ async function faden(page, fehler, url) {
         pageErr = (err.stack || err.message).split("\n")[0];
         console.log("[PAGE-ERROR]", pageErr);
     });
-    await nullRenderer(page, { foundry: argv.includes("--faden") });
+    await nullRenderer(page);
     // der EINE Abdruck der Seite (SHA-256 eines Felds, hex) für Probe und Studio
     await page.evaluateOnNewDocument(() => {
         window.__sha = async (a) =>

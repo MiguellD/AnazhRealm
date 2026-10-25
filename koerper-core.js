@@ -1349,7 +1349,15 @@
     // ── Welle LF 09.10. (rein additiv) — DER ARM ALS ANTEIL DER MASSE: ein Arm samt Hand wiegt 5,0 % des Körpers (Dempster
     //    1955: Oberarm 2,8 · Unterarm 1,6 · Hand 0,6 %). Eine Maus-Arm-Aktion bewegt ihn samt Gerät — ihre Ausdauer wächst
     //    mit (m_Arm + m_Gerät) / m_Arm (Wirt: _mausAusdauer; die leere Hand trägt aktionAusdauer). ──
-    var LEIB = Object.freeze({ dichteKgM3: 985, armAnteil: 0.05 });
+    // ── halten.K5 (rein additiv) — DER STURZ IST ENERGIE: den Aufprall des Leibs (m/s, gemessen im Fang der Landung des
+    //    Leib-Lösers) tragen die Beine bis schadlosMs (7,7 m/s: ein Fall aus 3 m, √(2g·3)); darüber kostet jedes J/kg der
+    //    Aufprall-Energie ½(v² − schadlosMs²) lebenJeJkg Lebenskraft (Wirt: _loopPhysicsSync). Der bloße Leib (Lebenskraft
+    //    134) verliert aus 4 m 11, aus 8 m 56, aus 12 m 101 und stirbt aus 15 m (17,2 m/s). ──
+    var LEIB = Object.freeze({
+        dichteKgM3: 985,
+        armAnteil: 0.05,
+        sturz: Object.freeze({ schadlosMs: 7.7, lebenJeJkg: 1.15 }),
+    });
 
     // ── K2 (rein additiv) — DIE WEBUNG je Stoff-Art (Kleid-Zeile `webe`): [Frequenz, Tiefe] der Mikro-Struktur, die die
     //    Stoff-Farbe moduliert (Strick grob, Denim/Baumwolle fein, Leder/Gummi glatt) — EINE Tafel für Labor und Welt. ──

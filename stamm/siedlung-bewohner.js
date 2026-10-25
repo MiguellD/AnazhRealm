@@ -1030,7 +1030,41 @@ class AnazhRealm_siedlung_bewohner {
         b.rueckUm = null;
     }
 
-    // DIE STRECKE zwischen zwei Orten: frei in gerader Linie (`_bewohnerWand`, bis `direktM`; je Ort gemerkt), sonst über
+    // DIE GERADE (mensch.K3): frei in gerader Linie (`_bewohnerWand`) → [ziel]; schneidet EIN Bau sie, geht er um ihn — über
+    // den Seitenpunkt neben seinen Boxen (die Kapsel und die Spur, `spurM`, Abstand), links oder rechts der Linie, den
+    // kürzeren, dessen beide Beine frei sind: die Laterne an der Gasse, der Baum am Platz kosten einen Schritt zur Seite, nie
+    // den Weg über das Netz (Steintal auf der Trasse: 22 m gerade, über das Netz ≥ 45 m — der Gang heim riss an der Wende zur
+    // Arbeit). null: es trägt das Netz.
+    _bewohnerGerade(von, ziel) {
+        const wand = this._bewohnerWand(von, ziel);
+        if (!wand) return [ziel];
+        const l = Math.hypot(ziel.x - von.x, ziel.z - von.z);
+        const [dx, dz] = [(ziel.x - von.x) / l, (ziel.z - von.z) / l];
+        const m = AnazhRealm.PLAYER_WALL_RADIUS + AnazhRealm.BEWOHNER.spurM;
+        let [lo, hi, t, n] = [Infinity, -Infinity, 0, 0];
+        for (const b of wand.blockerAABBs)
+            for (const [x, z] of [
+                [b.minX, b.minZ],
+                [b.maxX, b.minZ],
+                [b.minX, b.maxZ],
+                [b.maxX, b.maxZ],
+            ]) {
+                const s = (z - von.z) * dx - (x - von.x) * dz;
+                [lo, hi, t, n] = [Math.min(lo, s), Math.max(hi, s), t + (x - von.x) * dx + (z - von.z) * dz, n + 1];
+            }
+        t = Math.max(0, Math.min(l, t / n));
+        let best = null;
+        for (const s of [hi + m, lo - m]) {
+            const p = { x: von.x + dx * t - dz * s, z: von.z + dz * t + dx * s };
+            const lp = Math.hypot(p.x - von.x, p.z - von.z) + Math.hypot(ziel.x - p.x, ziel.z - p.z);
+            if (!(best && best.l <= lp) && !this._bewohnerWand(von, p) && !this._bewohnerWand(p, ziel))
+                best = { l: lp, p };
+        }
+        return best ? [best.p, ziel] : null;
+    }
+
+    // DIE STRECKE zwischen zwei Orten: frei in gerader Linie oder um die EINE Wand, die sie schneidet (`_bewohnerGerade`, bis
+    // `direktM`; je Ort gemerkt), sonst über
     // das Wege-Netz des Dorf-Plans (`_bewohnerNetz`: Straßen und Feldwege, ihre Kreuzungen): an den nächsten frei
     // erreichbaren Knoten, den kürzesten Weg über freie Kanten (je Start-Knoten EIN Baum, gemerkt), vom Knoten des Ziels frei
     // zum Ziel. Jedes Gemerkte gilt für den Stand der Wache (`_blockerWacheMelden`): wechselt eine Hülle, fällt es. Die Spur
@@ -1046,11 +1080,12 @@ class AnazhRealm_siedlung_bewohner {
         let direkt = von._direkt ? von._direkt.get(ziel) : undefined;
         if (direkt === undefined) {
             direkt =
-                Math.hypot(ziel.x - von.x, ziel.z - von.z) < AnazhRealm.BEWOHNER.direktM &&
-                !this._bewohnerWand(von, ziel);
+                Math.hypot(ziel.x - von.x, ziel.z - von.z) < AnazhRealm.BEWOHNER.direktM
+                    ? this._bewohnerGerade(von, ziel)
+                    : null;
             (von._direkt || (von._direkt = new Map())).set(ziel, direkt);
         }
-        if (direkt) return [ziel];
+        if (direkt) return direkt.slice();
         const N = this._bewohnerNetz(S);
         if (ziel._wegeStand !== stand) {
             ziel._wegeStand = stand;

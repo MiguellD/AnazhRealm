@@ -1266,7 +1266,8 @@ class AnazhRealm_dienst {
             this._ladeSperre.verlangt = true;
             return false;
         }
-        this._dorfGangSchliessen();
+        // ein Dorf mitten im Erwachen ist nie halb im Stand: er trägt keinen Bau eines Orts, der Ort kehrt aus seinem Gedächtnis
+        // wieder (speicher.K3) — bis speicher-k3 setzte der Ruf den Gang des Erwachens hier synchron zu Ende
         const stateToSave = this.buildStateSnapshot();
         // Pro Welt eigener Key + lastPlayed im Index. Ohne worldId (nach ensureWorldMeta unmöglich) auf den
         // Legacy-Key zurück, damit nichts still verloren geht.

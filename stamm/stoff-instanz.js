@@ -3395,6 +3395,7 @@ class AnazhRealm_stoff_instanz {
     _foundryLodForEntry(entry, auge) {
         const p = auge || this._lodAuge(); // vom Auge der Maske (K36), wie der LOD-Tick
         if (!p || !entry || !entry.position) return 1;
+        if (this._imStufenVorlauf(entry)) return 1; // der Stufen-Vorlauf der Ankunft, wie der LOD-Tick
         const d = Math.hypot(entry.position.x - p.x, entry.position.z - p.z);
         // DIE EINE STUFEN-WAHL: der Kalt-Schätzer fragt dieselbe Wahl wie der LOD-Tick — Wahrnehmungs-Distanz aus der
         // Sichthöhe (`_lodTreeVisHeight`, 0 = roh für Nicht-Bäume), ohne Hysterese-Zustand. Vorher las er nur die rohe

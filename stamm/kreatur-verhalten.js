@@ -385,6 +385,13 @@ class AnazhRealm_kreatur_verhalten {
         for (let i = 0; i < creatures.length; i++) {
             const other = creatures[i];
             if (!this._kreaturIstBeute(creature, other)) continue;
+            // DER RISS NENNT DIE BEUTE (oekologie.K2, `_kreaturRiss`): das Opfer, das der Bestand im Nah-Kreis diesem Jäger
+            // oder seinem Verband zusprach, ist das Ziel, wo es auch steht
+            const von = other.userData._rissVon;
+            if (von && (von === creature || (ud.verband != null && von.userData.verband === ud.verband))) {
+                best = other;
+                break;
+            }
             const dx = other.position.x - cx;
             const dz = other.position.z - cz;
             if (dx * dx + dz * dz > scentRange * scentRange) continue;
@@ -913,11 +920,11 @@ class AnazhRealm_kreatur_verhalten {
     }
 
     // DAS WASSER TRÄGT DEN LEIB (Archimedes, physik K1): ein Leib schwimmt, solange er nicht dichter ist als Wasser
-    // (`AnazhRealm._eintauchAnteil` ≤ 1) — dann hält er seine Schwimm-Linie (der Mensch am Brustkorb, das Tier am
+    // (`_eintauchAnteil` ≤ 1) — dann hält er seine Schwimm-Linie (der Mensch am Brustkorb, das Tier am
     // Schultergelenk); dichter sinkt er und geht auf dem Grund. Leser: der Schritt des Spielers (`_stepCharacter`) und die
     // Wasser-Regel der Tiere (`_kreaturSchwimmt`).
     _leibGetragen(mensch) {
-        return AnazhRealm._eintauchAnteil(this._leibRho(mensch)) <= 1;
+        return this._eintauchAnteil(this._leibRho(mensch)) <= 1;
     }
 
     // DIE MASSE EINES LEIBS (kg, das EINE Impuls-Gesetz AnazhRealm.STOSS): das Volumen seiner Gestalt (die geschlossene
@@ -1244,20 +1251,22 @@ class AnazhRealm_kreatur_verhalten {
     // DER GESTOSSENE LEIB IM SIM-SCHRITT (0710-5, Lehre 13: was einen Körper bewegt, läuft im festen Schritt): je Tier mit
     // getragenem Stoß der Weg dieses Schritts (`_kreaturWeg`, Teil-Schritte gegen die Hülle; dieselbe Regel wie der Deckel des
     // Wagens: nie mehr als eine Stufe in eine Box je Schritt). Hält ein
-    // Hindernis den Leib, stirbt sein Stoß in das Hindernis (unelastisch); danach zehrt die Reibung μ·g·dt. Vorher bewegte
+    // Hindernis den Leib, stirbt sein Stoß in das Hindernis (unelastisch); danach zehrt die Reibung μ·g·dt, μ aus der Zeile
+    // des Stoffs unter ihm (`_kontaktStoffAt`, stoffe.K1: auf Eis gleitet er weit, auf Fels kurz). Vorher bewegte
     // updateCreatures ihn je Frame um _stossV·delta ohne Weg-Prüfung (30 fps und gemischte Frames: 9 von 10 Bären durch eine
     // 0,35-m-Mauer; nach 200 Sim-Schritten stand der Bär 1,39 m, der Wagen 0,06 m anders, je nach Bildrate).
     _kreaturStossSchritt(dt) {
         const wesen = this.state.creatures;
         if (!wesen || !wesen.length || !(dt > 0)) return;
         const ST = AnazhRealm.STOSS;
-        const ab = ST.reibungLeib * Math.abs(this.state.gravity) * dt;
         const leib = this._kreaturStossLeib || (this._kreaturStossLeib = {});
         for (let i = 0; i < wesen.length; i++) {
             const c = wesen[i];
             const ud = c && c.userData;
             const sv = ud && ud._stossV;
             if (!sv) continue;
+            const boden = this._stoff(this._kontaktStoffAt(c.position.x, c.position.z, c.position.y));
+            const ab = boden && boden.mu > 0 ? boden.mu * Math.abs(this.state.gravity) * dt : Infinity;
             const sp = Math.hypot(sv.x, sv.z);
             if (!(sp > Math.max(ab, ST.ruheMs))) {
                 ud._stossV = null;
@@ -1674,7 +1683,9 @@ class AnazhRealm_kreatur_verhalten {
             if (res && res.ok && !res.killed) this._bissStoss(creature, ziel);
             return;
         }
-        if (this.damagePlayer(B.dmg, B.quelle)) this._bissStoss(creature, null);
+        const gnade = this.state.player.respawnGraceUntil; // der tödliche Biss stößt nie den Wiedergekehrten (K5)
+        if (this.damagePlayer(B.dmg, B.quelle) && this.state.player.respawnGraceUntil === gnade)
+            this._bissStoss(creature, null);
         const name = ud.name || "Ein wildes Wesen";
         if (B.quelle === "gegenwehr") {
             this.log(`${name} wehrt sich!`, "INFO");
@@ -2906,54 +2917,6 @@ class AnazhRealm_kreatur_verhalten {
         if (u._kzGlieder) for (const gl of u._kzGlieder) this._weltFeldFrei(gl.handle);
         u._kzGlieder = null;
         u._kzVersuch = false;
-    }
-
-    // ═══ KAMPF-GEFÜHL — DER LEICHNAM (Welle LF kampf, Posten 7) ═══
-    // Ein Gefallener (state.leichname, _kreaturFaellt) ohne KI, Gang und Stimme: steht seine Tod-Lage (`_todLageTick`), kippt
-    // er (~83° smoothstep über kippDauerSec, Uhr `fall`) auf ihre Flanke, liegt bis zur Frist (`t` ab dem Tod), sinkt, DANN
-    // removeCreature; je Takt seine Sicht (_leibSicht). Rein optisch — kein Sim-Pfad liest die Lage, der Strom trägt sie (q).
-    _tickLeichname(delta, playerPos) {
-        const L = this.state.leichname;
-        for (let i = L.length - 1; i >= 0; i--) {
-            const creature = L[i];
-            const dying = creature.userData.dying;
-            dying.t += delta;
-            if (dying.hebe !== undefined) dying.fall += delta;
-            const u = Math.min(1, dying.fall / Math.max(1e-6, dying.dauer));
-            const ang = AnazhRealm.TOD_KIPP_RAD * u * u * (3 - 2 * u); // ~83° — gekippt, nicht vergraben
-            const axis = this._kampfTipAxis || (this._kampfTipAxis = new THREE.Vector3());
-            axis.set(dying.dirZ, 0, -dying.dirX).normalize(); // ⊥ Kipp-Richtung: up kippt AUF sie zu
-            const q = this._kampfTipQ || (this._kampfTipQ = new THREE.Quaternion());
-            q.setFromAxisAngle(axis, ang);
-            creature.quaternion.copy(q);
-            if (dying.baseQuat) creature.quaternion.multiply(dying.baseQuat);
-            const hebe = dying.hebe;
-            if (hebe && Number.isFinite(dying.baseY)) {
-                const f = (ang / AnazhRealm.TOD_KIPP_RAD) * (hebe.length - 1);
-                const k0 = Math.max(0, Math.min(hebe.length - 2, Math.floor(f)));
-                creature.position.y = dying.baseY + hebe[k0] + (hebe[k0 + 1] - hebe[k0]) * (f - k0);
-            }
-            // der leere Kadaver (sein Fleisch ist gefressen, _kreaturAasZug) sinkt jetzt: die Frist endet mit dem Versinken
-            const KF = creature.userData.kadaver;
-            if (KF && !(KF.fleisch > 0) && dying.t >= dying.dauer)
-                dying.nachklang = Math.min(dying.nachklang, dying.t - dying.dauer + dying.sinken);
-            // er sinkt in der letzten Spanne seiner Frist in die Erde (die Höhe seines Leibs), dann fällt er
-            const ende = dying.dauer + dying.nachklang;
-            if (dying.sinken > 0 && dying.t > ende - dying.sinken) {
-                if (!Number.isFinite(dying.liegeY)) dying.liegeY = creature.position.y;
-                const u2 = Math.min(1, (dying.t - (ende - dying.sinken)) / dying.sinken);
-                creature.position.y =
-                    dying.liegeY -
-                    u2 * u2 * this._kreaturLeib(creature, 0, this._sinkLeib || (this._sinkLeib = {})).hoehe;
-            }
-            if (dying.t >= ende) {
-                this.removeCreature(creature); // rückwärts: der Splice überspringt keinen
-                continue;
-            }
-            const dx = creature.position.x - playerPos.x,
-                dz = creature.position.z - playerPos.z;
-            this._leibSicht(creature, dx * dx + dz * dz, this.isInFrustum(creature));
-        }
     }
 
     // DIE SICHT EINES LEIBS (je Takt — die Wesen im Kreatur-Takt, die Gefallenen in _tickLeichname): die EINE Stelle, an der

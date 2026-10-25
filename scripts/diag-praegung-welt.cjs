@@ -33,7 +33,7 @@ function proben() {
     };
 }
 const welt = async (seite) => {
-    await nullRenderer(seite, { foundry: true });
+    await nullRenderer(seite);
     await seite.evaluateOnNewDocument(CODE_OF_SEITE);
     await seite.evaluateOnNewDocument(proben);
     await seite.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });

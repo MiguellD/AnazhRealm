@@ -972,7 +972,8 @@ den benannten Seen `benannteSeen`, die Breite des Flusses `FLUSS_BREITE`/`flussB
 Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die Schneegrenze `SCHNEE`/`schnee`, die
 Temperatur `TEMPERATUR`/`temperatur` (stoffe.K3: Höhe × Saison × Uhr; das Feld in Wellen `temperaturFeld`, mit der Trägheit
 eines Körpers, ausgewertet von `temperaturAus` — die Grillen lesen sie), das Eis `EIS`/`eisDicke` (stoffe.K3-2: die Dicke nach
-Stefan aus dem Wasserkörper `wasserKoerper` — Salz, Säule, Trägheit — und der Jahres-Welle des Felds), die
+Stefan aus dem Wasserkörper `wasserKoerper` — Salz, Säule, Trägheit — und der Jahres-Welle des Felds; die Zahlen der Stoffe,
+ρ·c und T_schmelz des Wassers, ρ, Schmelzwärme L und Wärmeleitung k des Eises, reicht der Wirt aus seiner Stoff-Tafel als `stoff`, stoffe.K1 — ohne ihn bricht der Kern laut), die
 Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DIE HYDROSPHÄRE (Karte hydro-faden): das
 Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, der gepackte Kanal `kanal` mit
 `KANAL_FELDER` Zahlen je Segment, Wasser-Feld; `H` das Gesetz des Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet
@@ -996,7 +997,8 @@ Schutt), DER GRUND DER HÄUSER (S4: die Art `grund` — der Körper-Satz und der
 Plan im Foundry-Faden, Kanal `grund-plan` → `grundPlan`) mit
 seinem Grundriss-Leser `erdbauGrund`, dem hohlen Keller `erdbauHohl` (das Feld des Wirts, je Spalte gefragt über `erdbauKeller`) und dem Schnitt des gezeichneten
 Bodens `erdbauSchnitt` (Voxel-Faden und Sync-Bau), der Lese-Kontext eines Orts `ortCtx` (Höhe samt Erdbau, Fläche, Welt-Wasser — EIN ctx für Wirt,
-Fachwerk-Studio und Linse), die Lage einer Welt ohne Wirt `LAGE_GRUND`/`lageGrund` und die Hang-Suche eines Orts `hangOrt`. DER WIND AM GELÄNDE
+Fachwerk-Studio und Linse), die Lage einer Welt ohne Wirt `LAGE_GRUND`/`lageGrund`, die Hang-Suche eines Orts `hangOrt` und das
+Höhen-Raster der Trasse `hoehenRaster` (siedlung.K3: der Grund im Rahmen fachwerk `trasseRahmen` um den Ort, dem die Gassen folgen). DER WIND AM GELÄNDE
 (wetter.K5): der Faktor `windForm` mit seinem Gesetz `WIND_FORM` — Lee hinter dem Kamm, Tal-Düse zwischen zwei Flanken an der Höhe
 des Wirts; ihn liest der EINE Wind der Welt (`_windAt`).
 DIE FORM DES EDITS (F2a „hoch bauen", editform-kern): jeder Spieler-Edit ist die Säule `editForm` seines Maßes `EDIT_FORM` —

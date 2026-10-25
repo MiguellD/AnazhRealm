@@ -879,10 +879,14 @@ class AnazhRealm_bild_himmel {
         const pixelM = tiefe.mul(2).div(uProj.mul(T.viewportSize.y));
         const breiteM = pixelM.mul(RG.minPixel).max(RG.breite);
         const rand = T.length(T.vec2(x, z)).div(R[0] * 0.5);
+        // DER REGEN FÄLLT NICHT UNTER DEM DACH: die Schliere am Welt-Ort ihrer Mitte (der Kasten folgt dem Auge) liest die EINE
+        // Himmels-Sicht des Dach-Pools (`_offenerHimmel`), dieselbe, die den Boden darunter trocken hält
+        const himmel = this._offenerHimmel(T, T.modelWorldMatrix.mul(T.vec4(x, y, z, 1)).xyz);
         const blende = T.varying(
             T.min(T.float(RG.breite).div(breiteM), 1)
                 .mul(T.smoothstep(0.4, 2.0, tiefe))
                 .mul(T.float(1).sub(T.smoothstep(0.7, 1.0, rand)))
+                .mul(himmel)
         );
         const mat = new THREE.PointsNodeMaterial({ color: RG.farbe, transparent: true, depthWrite: false, opacity: 0 });
         mat.positionNode = T.vec3(x, y, z);
@@ -2831,23 +2835,35 @@ class AnazhRealm_bild_himmel {
     // ist jede Linie EINE Höhe (Halbierung auf 1 cm zwischen 10 m unter und 1 km über dem Meer, an den Enden geklemmt).
     // `traegtAb` ist die tiefste tragende Höhe der Welt (die flachste Säule; Infinity: nirgends) — der billige Beweis jedes
     // Lesers. Gerechnet je Welt-STUNDE der Saison (das Eis wächst in ~6 Tagen vom ersten zum tragenden; eine Stunde trägt
-    // unter 1 mm), je Feld (die Naht) und Meer — nie je Bild; Bild und Körper lesen dieselbe Stunde. Der Leser zahlt drei
-    // Vergleiche, solange die Saison steht.
+    // unter 1 mm), je Feld (die Naht), Meer und Stoff (`_wasserStoff`: ρ, c, T_schmelz des Wassers, ρ, L, k des Eises) — nie je Bild;
+    // Bild und Körper lesen dieselbe Stunde. Der Leser zahlt sieben Vergleiche, solange Saison und Stoff stehen.
     _eisLinien() {
         const st = this.state;
         const c = this._eisLinienStand;
-        if (c && c.phase === st.seasonPhase && c.feld === this._temperaturFeld && c.wasser === st.waterLevel) return c;
+        const W = this._stoff("wasser");
+        const E = this._stoff("eis");
+        const gleich =
+            c &&
+            c.rho === W.rho &&
+            c.c === W.c &&
+            c.tSchmelz === W.tSchmelz &&
+            c.eisRho === E.rho &&
+            c.eisL === E.L &&
+            c.eisK === E.k;
+        if (gleich && c.phase === st.seasonPhase && c.feld === this._temperaturFeld && c.wasser === st.waterLevel)
+            return c;
         const K = globalThis.__gelaendeCore;
         const L = this._gelaende();
         const stunden = K.TEMPERATUR.jahrTage * 24;
         const saison = Math.floor(st.seasonPhase * stunden) / stunden;
         const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - K.GRUND.meerUnterBasis;
-        if (c && c.saison === saison && c.feld === this._temperaturFeld && c.wl === wl)
+        if (gleich && c.saison === saison && c.feld === this._temperaturFeld && c.wl === wl)
             return Object.assign(c, { phase: st.seasonPhase, wasser: st.waterLevel });
         const S = K.EIS.saeule;
+        const stoff = this._wasserStoff();
         const [unten, oben] = [wl - 10, wl + 1000];
         const linie = (tiefe, soll) => {
-            const dicke = (y) => K.eisDicke(L, y, saison, tiefe, (tr) => this._temperaturFeld(y, tr));
+            const dicke = (y) => K.eisDicke(L, y, saison, tiefe, (tr) => this._temperaturFeld(y, tr), stoff);
             let [lo, hi] = [unten, oben];
             if (dicke(lo) >= soll) return lo;
             if (!(dicke(hi) >= soll)) return hi;
@@ -2866,10 +2882,24 @@ class AnazhRealm_bild_himmel {
             saison,
             feld: this._temperaturFeld,
             wl,
+            rho: W.rho,
+            c: W.c,
+            tSchmelz: W.tSchmelz,
+            eisRho: E.rho,
+            eisL: E.L,
+            eisK: E.k,
             null: knoten.map((d) => linie(d, 1e-3)),
             voll,
             traegtAb: voll[0] < oben ? voll[0] : Infinity,
         });
+    }
+
+    // DER STOFF DES WASSERS (stoffe.K1 × K3): die Zeilen wasser und eis der Stoff-Tafel (`_stoff`) — ρ·c der Säule, T_schmelz
+    // und ρ, L, k des Eises sind die Zahlen, mit denen der Kern den Wasserkörper und sein Eis rechnet (`wasserKoerper`,
+    // `eisDicke`); dieselbe Eis-Zeile, die der Schritt-Klang und der gleitende Leib lesen. Leser: die Linien des Eises
+    // (`_eisLinien`) und die Linse des Meers.
+    _wasserStoff() {
+        return { wasser: this._stoff("wasser"), eis: this._stoff("eis") };
     }
 
     // DIE NÄSSE (wetter.K2) — EIN Zustand der Welt aus dem Wetter-Feld (`state.naesse`, 0 trocken … 1 nass): Regen benetzt

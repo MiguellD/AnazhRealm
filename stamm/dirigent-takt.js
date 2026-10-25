@@ -745,8 +745,18 @@ class AnazhRealm_dirigent_takt {
     // Kein Ammo: der Spieler läuft feld-nativ (`_stepCharacter`), Kreaturen erden aus
     // `_creatureGroundY`, Fahrzeuge aus `_werkBoden` (beide `_koerperBodenUnter`). Dieser Schritt fährt nur den
     // Feld-Controller (Wasser-Auftrieb/Killplane des Spielers leben in `_stepCharacter`).
+    // DER STURZ (halten.K5): das Aufprall-Tempo dieses Schritts (`_sturzTempo`, der Leib-Löser misst es im Fang der Landung)
+    // kostet Lebenskraft nach dem Gesetz des Leibs (koerper LEIB.sturz: ½(v² − schadlosMs²) × lebenJeJkg, die Energie je kg
+    // über der Schwelle der Beine) — hier, im Schritt des EIGENEN Leibs: der Mitspieler-Geist fährt `_stepCharacter` mit dem
+    // lokalen Leben (`_lockstepStepGhost`), sein Aufprall wird vor dem Schritt verworfen. Nie aus einer Fall-Höhe; vorher
+    // kostete kein Sturz etwas (2–30 m, 6,2–24,2 m/s, 0 Schaden).
     _loopPhysicsSync(delta, currentTime) {
+        const s = this.state;
+        s._sturzTempo = 0;
         this._stepCharacter(delta, currentTime);
+        const G = s._sturzTempo > 0 && AnazhRealm.Gesetz("koerper:LEIB.sturz");
+        if (G && s._sturzTempo > G.schadlosMs)
+            this.damagePlayer(0.5 * (s._sturzTempo ** 2 - G.schadlosMs ** 2) * G.lebenJeJkg, "sturz");
     }
 
     // ===== FIXED-TIMESTEP SIM/RENDER-SPLIT (Fiedler „Fix Your Timestep!") =====

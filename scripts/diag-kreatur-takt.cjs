@@ -35,7 +35,7 @@ const DAUER_S = {
     huepfer: 1,
     wachsen: 1,
     gier: 5,
-    jagd: 1,
+    jagd: 77,
     herde: 37,
     peer: 1,
     zufall: 1,
@@ -53,8 +53,7 @@ const DAUER_S = {
     furcht: 31,
     lebensraum: 21,
     tagesbudget: 15,
-    bestand: 4,
-    kaskade: 83,
+    kaskade: 87,
     folgen: 42,
 };
 const TEIL = teilAus(argv);

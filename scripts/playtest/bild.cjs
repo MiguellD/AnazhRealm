@@ -166,7 +166,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         r.tickWeatherTransition(0);
         out.transitionClearedOnComplete = r.state.weatherTransition === null;
 
-        // --- c) den Fauna-Lifecycle (Geburt, Hungertod des Ältesten, Trauer, Journal) misst gate:kreatur-takt bestand
+        // --- c) den Fauna-Lifecycle (Geburt, Hungertod des Ältesten, Trauer, Journal) misst gate:kreatur-takt kaskade
 
         return out;
     });
@@ -1761,9 +1761,7 @@ async function checkBandV18264ShadowCache(ctx) {
 async function checkBandWetterVektor(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return { err: "keine Instanz" };
+        const r = await window.__weltDa();
         // Keine laufende Transition — die Wort-Vorgabe führt.
         r.state.weatherTransition = null;
         const sunny = r._weatherFieldFor("sunny");

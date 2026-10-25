@@ -162,19 +162,15 @@ const triasStaticLaws = () => [
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "null", frist: 480000, zusatz: ["--disable-setuid-sandbox"] });
     const page = await browser.newPage();
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const res = { errors: [] };
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return { fatal: "kein anazhRealm" };
+        const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.alemannisch);
-        res.bookReady = !!(f && f.ready && f.recipes && f.recipes.alemannisch);
-        if (!res.bookReady) return res;
 
         const pm = r.state.playerMesh;
         // Das Auge reist mit: jede Stufen-Frage misst vom Auge der Maske (`_lodAuge`, die Kamera) — wie die Ego-
@@ -442,7 +438,6 @@ const triasStaticLaws = () => [
     if (out.fatal) {
         check("B: Aufbau", false, out.fatal);
     } else {
-        check("B0: das LIVE-Buch ist warm (Voraussetzung)", out.bookReady === true);
         check("B1: das Dorf steht (deliberate Slot-Quelle)", out.placed >= 4, `placed=${out.placed}`);
         check(
             "B2: nah gebaut = die schweren Stufen leben (≥1 Haus L0/L1, alle 3 instanziert)",

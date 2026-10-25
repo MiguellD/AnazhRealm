@@ -1975,22 +1975,35 @@
     // Flaeche (ha) × Nahrung — Nahrung × Lebensraum. DIE BILANZ (bestandBilanz) ist logistisch (Verhulst 1838) je taktS der
     // Spiel-Zeit: unter der Kapazitaet K wirft die Gattung mit geburt × (1 − n/K), darueber stirbt mit tod × (n/K − 1)
     // (geklemmt auf tod) einer am Hunger; ohne Nahrung (K = 0) stirbt jeder Bestand. DER FRASS (bestandFrass, Oekologie K1): je
-    // Takt nimmt jedes Tier nach seinem Anteil Aesung (1 − diet) fress vom Leben seines Orts — negativ ins Feld; das Overlay
-    // zerfaellt zum Substrat zurueck, das ist das Nachwachsen (der Verbiss senkt die Aesung, die Aesung den Bestand: die
-    // Rueckkopplung ist negativ, wie das Feld sie erlaubt).
+    // Takt nimmt jedes Tier nach seinem Anteil Aesung (1 − diet) fress vom Jungwuchs des Reviers, in den Zellen, die die
+    // Kapazitaet liest — negativ ins Feld; das Overlay zerfaellt zum Substrat zurueck, das ist das Nachwachsen (der Verbiss
+    // senkt die Aesung, die Aesung den Bestand: die Rueckkopplung ist negativ, wie das Feld sie erlaubt). DER RISS
+    // (bestandRiss, Oekologie K1): die Jaeger, deren Beute eine Gattung ist, nehmen je Takt mit riss × jaeger × D² / (rissHalb² + D²)
+    // eines ihrer Tiere — jaeger = die Kost (diet) der Jaeger-Koepfe, D = die Dichte ihrer Beute (n / beuteVoll): die Antwort
+    // saettigt und laesst seltene Beute liegen (Holling 1959, Typ III; der Jaeger wechselt zur haeufigen, Murdoch 1969). Die
+    // Kaskade folgt aus den Lesern: ohne Woelfe waechst das Rotwild bis an seine Aesung und verbeisst den Jungwuchs (Ripple &
+    // Beschta 2012).
     var BESTAND_GESETZ = Object.freeze({
         taktS: 10,
         revierM: 200,
         rasterM: 50,
-        kopfJeHa: 2,
-        beuteVoll: 10,
-        geburt: 0.25,
+        kopfJeHa: 8,
+        beuteVoll: 30,
+        geburt: 0.1,
         tod: 0.2,
-        fress: 0.02,
+        fress: 0.05,
+        riss: 0.6,
+        rissHalb: 0.1,
     });
     function bestandFrass(diet, B) {
         var d = diet > 0 ? (diet < 1 ? diet : 1) : 0;
         return B.fress * (1 - d);
+    }
+    // jaeger = die Kost der Jaeger, deren Beute die Gattung ist (Σ diet), dichte = n / beuteVoll. Liefert die Chance je Takt.
+    function bestandRiss(jaeger, dichte, B) {
+        var d2 = dichte > 0 ? dichte * dichte : 0;
+        var p = jaeger > 0 ? (B.riss * jaeger * d2) / (B.rissHalb * B.rissHalb + d2) : 0;
+        return p < 1 ? p : 1;
     }
     function bestandNahrung(diet, aesung, beute) {
         var d = diet > 0 ? (diet < 1 ? diet : 1) : 0;
@@ -3447,6 +3460,7 @@
         bestandNahrung: bestandNahrung,
         bestandBilanz: bestandBilanz,
         bestandFrass: bestandFrass,
+        bestandRiss: bestandRiss,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         FELL_SCHALE: FELL_SCHALE,

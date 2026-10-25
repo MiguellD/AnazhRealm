@@ -42,13 +42,10 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
     // ===== EVAL 1: Boot + Buch warm + (A) Daten-Zeilen + (B) Resolver =====
     const outAB = await page.evaluate(async () => {
-        const res = { a: {}, b: {}, warm: false };
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return res;
+        const res = { a: {}, b: {} };
+        const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.geisttor && f.recipes.kathedrale);
-        res.warm = !!(f && f.ready && f.recipes && f.recipes.geisttor);
         // DIE DYNAMISCHE WAHRHEIT aus dem lebenden Zustand: jeder handgeschriebene Portal-Bauplan mit studioGestalt (die
         // Auto-Klone des Register-Chokepoints tragen sie auch — ihre Wahrheit prüft gate:rezept-katalog).
         res.liveSet = Object.keys(r.state.blueprints || {})
@@ -84,7 +81,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     const GESTALT = outAB.gestalt || {};
     console.log(`  ℹ️ Gestalt-Traeger (${Object.keys(GESTALT).length}): ${Object.entries(GESTALT).map(([k, v]) => `${k}->${v}`).join(" · ")}`);
 
-    check("A: das LIVE-Buch ist warm (porta-Rezepte angekommen)", outAB.warm === true);
     const g = outAB.b.aufgeloest || [];
     check(
         "S0: >= 6 Gestalt-Portale, jede Gestalt UNVERWECHSELBAR (keine zwei Portale teilen ein Preset), welt_schmiede -> maurentor",

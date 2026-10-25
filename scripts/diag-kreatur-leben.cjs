@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // gate:kreatur-leben — DIE LEBENS-LINSE: als Skript die Seele im Kern; als Stück der Seiten-Funktion der Kreatur-Proben
-// (`BUEHNEN` an ihrer Marke) Furcht, Lebensraum, Tages-Budget, Bestand, Kaskade und Folgen am ECHTEN Takt (gate:kreatur-takt).
+// (`BUEHNEN` an ihrer Marke) Furcht, Lebensraum, Tages-Budget, die Kaskade samt dem Bestand und Folgen am ECHTEN Takt (gate:kreatur-takt).
 "use strict";
 
 // ── furcht (Ökologie K3, tetrapoda FURCHT_GESETZ): (A) je Ort und Rolle ein Tier allein — geschlagen, gefüttert, gebunden,
@@ -21,10 +21,10 @@ async function lebenBuehnen(
     ruhig,
     ruhigSpieler,
     takt,
-    quantil,
-    kamera,
-    imBlick
+    quantil
 ) {
+    const dt = 1 / 60;
+    const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
     await buehne("furcht", async (restore) => {
         if (taeter === "furcht-gedaechtnis") decke(restore, "_kreaturFurchtErinnert", () => () => 0);
         if (taeter === "furcht-ort") decke(restore, "_kreaturFurchtOrt", () => (c, NAT, von, w) => w);
@@ -35,8 +35,6 @@ async function lebenBuehnen(
             A._furchtGesetzMemo = Object.freeze(Object.assign({}, F, { bedrohung: () => 0 }));
             restore.push(() => (A._furchtGesetzMemo = F));
         }
-        const dt = 1 / 60;
-        const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
         const lauf = (n, e) => {
             for (let k = 0; k < n; k++) {
                 ruhigSpieler(e);
@@ -141,14 +139,12 @@ async function lebenBuehnen(
     // ── DER ZEITRAFFER (Ökologie K1/K2): `tickFaunaLifecycle` je 10 s Spiel-Zeit an EINEM Ort, ab Takt `ab` lebendig × ½ ──
     const zeitraffer = (restore) => {
         if (taeter === "bestand-nahrung") decke(restore, "_kreaturNahrung", () => () => 0.5);
-        if (taeter === "bestand-deckel")
-            decke(restore, "_kreaturBestand", (alt) => () => {
-                const b = alt.call(r);
-                for (const g in b) Object.assign(b[g], { geburt: 0.25, tod: 0 });
+        if (taeter === "bestand-deckel" || taeter === "kaskade-riss")
+            decke(restore, "_kreaturBestand", (alt) => (...a) => {
+                const b = alt.apply(r, a);
+                for (const g in b) Object.assign(b[g], taeter === "kaskade-riss" ? { riss: 0 } : { geburt: 1, tod: 0 });
                 return b;
             });
-        const alt = [s.spielZeit, s.faunaLifecycle];
-        restore.push(() => ([s.spielZeit, s.faunaLifecycle] = alt));
         let halb = false;
         decke(restore, "worldFieldAt", (wfa) => (x, z) => {
             const f = wfa.call(r, x, z);
@@ -157,7 +153,7 @@ async function lebenBuehnen(
         const tod = { n: 0, aeltester: 0, trauer: 0, journal: 0 };
         const gattung = (c) => A.TETRAPODA_SOUL_MAP[c.userData.soul];
         decke(restore, "_creatureNaturalDeath", (dies) => (c, grund) => {
-            const aelteste = s.creatures.every((o) => gattung(o) !== gattung(c) || !(o.userData.bornAt < c.userData.bornAt));
+            const aelteste = s.creatures.every((o) => gattung(o) !== gattung(c) || !(o.userData.alterS > c.userData.alterS));
             const o = dies.call(r, c, grund);
             const j = s.worldJournal.entries;
             if (grund === "hunger")
@@ -169,54 +165,87 @@ async function lebenBuehnen(
                 });
             return o;
         });
-        return (saat, takte, ab) => {
+        return (saat, takte, ab, eingriff) => {
+            // die Saat setzt den Strom UND die netIds (die Größe eines Tiers folgt seiner netId, `_creatureBodySize`); die
+            // Spiel-Zeit beginnt bei 0 (ihre Differenzen sind sonst je Boot andere Fließkomma-Zahlen)
             r._faunaStroeme = { seed: s.worldMeta.seed, rng: { fauna: r._streamRng("bestand-" + saat) } };
-            s.faunaLifecycle = { lastTick: s.spielZeit };
+            [s._creatureNetSeq, s.spielZeit, s.faunaLifecycle] = [1e4 * saat, 0, { lastTick: 0 }];
             s.lifeField = undefined;
             const n = [];
-            const tode = [0, 0];
             let kappe = 0;
             for (let k = 0; k < takte; k++) {
                 halb = k >= ab;
                 s.spielZeit += 10;
                 ruhigSpieler();
                 r.tickFaunaLifecycle();
-                tode[+halb] += s.leichname.length;
+                if (eingriff) eingriff(gattung, k);
                 for (const c of s.leichname.slice()) r.removeCreature(c);
-                if (s.creatures.length >= s.maxCreatures) kappe++;
+                // der Leerlauf zwischen den Takten (`_imLeerlauf` kommt im Zeitraffer nie): die Tod-Lage der Entfernten fällt
+                r._todLageTick();
+                // an der Kappe misst der Lauf nichts mehr (der Bestand ohne Tod wüchse je Takt quadratisch teurer)
+                if (s.creatures.length >= s.maxCreatures && ++kappe) break;
                 n.push(s.creatures.map(gattung));
             }
             for (const c of s.creatures.slice()) r.removeCreature(c);
             const mittel = (a, b, g) =>
                 +(n.slice(a, b).reduce((p, je) => p + je.filter((x) => !g || x === g).length, 0) / (b - a)).toFixed(2);
-            return { tode, kappe, mittel, tod };
+            return { kappe, mittel, tod };
         };
     };
-    // ── bestand (Ökologie K2): voll ab Takt 180 halbiert, halb von Anfang an, dieselbe Saat ──
-    await buehne("bestand", async (restore) => {
-        const lauf = zeitraffer(restore);
-        const V = lauf(9, 360, 180);
-        const H = lauf(9, 180, 0);
-        return {
-            voll: { bestand: V.mittel(60, 180), hunger: V.mittel(300, 360), tode: V.tode },
-            halb: { bestand: H.mittel(60, 180) },
-            kappe: V.kappe + H.kappe,
-            hungertod: H.tod,
-        };
-    });
-    // ── kaskade (Ökologie K1): je Saat acht Stunden, je Gattung die zweite gegen die achte (die erste besiedelt) ──
+    // ── kaskade (Ökologie K1): je Saat acht Stunden, je Gattung die zweite gegen die achte (die erste besiedelt); gegen diesen
+    // Grundlauf je Saat 6 h die Szenarien — die Wölfe entfernt, die Hirsche bejagt (je halbe Spielminute einer), das Leben
+    // des Felds ab der ersten Stunde halbiert (Ökologie K2: Geburt und Hungertod folgen der Nahrung; bis heim-z29b die Probe
+    // bestand an EINER Saat) und die Mutante „Fraß-Leser aus“ (der Fraß liest keinen Jungwuchs) ohne Wölfe. In der 6. Stunde
+    // je Gattung der Bestand und der Jungwuchs: die Äsung des Reviers, wie die Kapazität des Rotwilds sie liest
+    // (K ∝ Σ Lebensraum × Äsung) ──
     await buehne("kaskade", async (restore) => {
         const lauf = zeitraffer(restore);
-        const saaten = [];
-        let kappe = 0;
-        for (let i = 1; i <= (taeter ? 2 : 8); i++) {
-            const L = lauf(i, 2880, Infinity);
-            kappe += L.kappe;
-            const je = {};
-            for (const g in A._lebensraumGesetz().L.gattung) je[g] = [L.mittel(360, 720, g), L.mittel(2520, 2880, g)];
-            saaten.push(je);
+        let frassAus = false;
+        decke(restore, "_kreaturFrass", (alt) => (...a) => frassAus || alt.apply(r, a));
+        const weg = (art, n) => (g) => s.creatures.filter((c) => g(c) === art).slice(0, n).forEach((c) => r.removeCreature(c));
+        const L = {};
+        for (const [name, eingriff] of Object.entries({
+            grund: null,
+            ohneWolf: weg("wolf"),
+            bejagt: (g, k) => k % 3 || weg("deer", 1)(g),
+            halb: null,
+            mutante: weg("wolf"),
+        })) {
+            if ((frassAus = name === "mutante") && taeter) break;
+            L[name] = [];
+            for (let i = 1; i <= (taeter ? 4 : 8); i++) {
+                let jung = 0;
+                const l = lauf(i, name === "grund" ? 2880 : 2160, name === "halb" ? 360 : Infinity, (g, k) => {
+                    if (eingriff) eingriff(g, k);
+                    if (k >= 1800 && k < 2160) jung += r._kreaturBestand().deer.K / 360;
+                });
+                L[name].push(Object.assign(l, { jung }));
+            }
         }
-        return { saaten, kappe };
+        // je Richtung der Effekt (das Mittel der Differenzen je Saat durch das Mittel des Grundlaufs) und sein Intervall
+        // [kleinste, größte Differenz]: über 8 Saaten deckt es den Median mit 1 − 2 · 0,5⁸ = 99,2 % (die Ordnungs-Statistik)
+        const m = (v) => v.reduce((p, q) => p + q, 0) / v.length;
+        const richtung = (b, g, soll) => {
+            const wert = (l) => (g === "jung" ? l.jung : l.mittel(1800, 2160, g));
+            const g0 = m(L.grund.map(wert));
+            const d = L[b].map((l, i) => +((wert(l) - wert(L.grund[i])) / g0).toFixed(3));
+            const [effekt, lo, hi] = [+m(d).toFixed(3), Math.min(...d), Math.max(...d)];
+            return { effekt, ki: [lo, hi], soll, haelt: soll > 0 ? lo > 0 && effekt >= soll : hi < 0 && effekt <= soll };
+        };
+        const richtungen = {
+            hirsche: richtung("ohneWolf", "deer", 0.3),
+            jungwuchs: richtung("ohneWolf", "jung", -0.2),
+            woelfe: richtung("bejagt", "wolf", 0),
+            nahrung: richtung("halb", null, -0.3),
+        };
+        if (L.mutante) richtungen.mutante = richtung("mutante", "jung", -0.2);
+        const G = Object.keys(A._lebensraumGesetz().L.gattung);
+        return {
+            saaten: L.grund.map((l) => Object.fromEntries(G.map((g) => [g, [l.mittel(360, 720, g), l.mittel(2520, 2880, g)]]))),
+            kappe: Object.values(L).flat().reduce((p, l) => p + l.kappe, 0),
+            richtungen,
+            hungertod: L.grund[0].tod, // je Hungertod aller Läufe
+        };
     });
     // ── folgen (Ökologie K5, der Parcours): „folge mir“, dann geht der Spieler 10 min mit W (`_stepFixedSim`) über Hang und
     // Wasser, um Wand und gedrehtes Haus, über den Sockel; Gegenlauf ohne die Geste ──
@@ -244,7 +273,7 @@ async function lebenBuehnen(
                     r._kreaturLeib = echt;
                 }
             });
-        const n = { schub: 0, leib: 0, strahlen: 0, takt: 0, kontakt: 0, spielerWand: 0 };
+        const n = { leib: 0, strahlen: 0, takt: 0, kontakt: 0, spielerWand: 0 };
         const H = [];
         um("_kreaturLeib", (alt) => (...a) => (n.kontakt && n.leib++, alt.apply(r, a)));
         um("_kreaturHuellenKontakt", (alt) => (c, ...a) => {
@@ -254,10 +283,8 @@ async function lebenBuehnen(
                 return alt.call(r, c, ...a);
             } finally {
                 n.kontakt--;
-                if (c.position.x !== x || c.position.z !== z) {
-                    n.schub++;
+                if (c.position.x !== x || c.position.z !== z)
                     for (const h of H) if (Math.hypot(h.cx - x, h.cz - z) < 7) h.kontakt++;
-                }
             }
         });
         um("_fieldRaycast", (alt) => (...a) => (n.takt && n.strahlen++, alt.apply(r, a)));
@@ -275,9 +302,7 @@ async function lebenBuehnen(
             }
         });
         r.setGameMode("pfad");
-        const dt = 1 / 60;
         const v = s.speed;
-        const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
         const hang = (x, z) => {
             const h = (dx, dz) => r.getTerrainHeightAt(x + dx, z + dz);
             return (Math.atan(Math.hypot(h(1, 0) - h(-1, 0), h(0, 1) - h(0, -1)) / 2) * 180) / Math.PI;
@@ -417,7 +442,6 @@ async function lebenBuehnen(
             hindernisse: H.map(({ art, kontakt, drin, quer, vornMinM, ueber, imSockel, tiefMaxM, stufeM }) =>
                 art === "sockel" ? { art, ueber: ueber || 0, imSockel: imSockel || 0, tiefMaxM: tiefMaxM || 0, stufeM } : { art, kontakt, drin, quer, vornMinM }
             ),
-            schub: n.schub,
             leibRufe: n.leib,
             strahlenJeTakt: +(n.strahlen / 36000).toFixed(3),
             spielerWand: n.spielerWand,
@@ -608,29 +632,16 @@ async function lebenBuehnen(
 }
 // das Soll der Lebens-Proben (`soll(bedingung, grund)` aus dem Urteil der Kreatur-Proben)
 function lebenUrteil(name, z, soll) {
-    if (name === "bestand" || name === "kaskade")
+    if (name === "kaskade") {
         soll(
             z.kappe === 0,
             `der Bestand bricht an die Kosten-Kappe aus: ${z.kappe} Takte an ihr (Soll 0 — die Nahrung begrenzt, nie der Deckel)`
-        );
-    if (name === "bestand") {
-        const { voll: V, halb: H } = z;
-        soll(V.bestand >= 4, `das Revier trägt keinen Bestand: ${V.bestand} Tiere (vakuös)`);
-        soll(
-            H.bestand <= 0.7 * V.bestand,
-            `die Geburt folgt der Nahrung nicht: ${H.bestand} Tiere halb gegen ${V.bestand} voll`
-        );
-        soll(
-            V.hunger <= 0.7 * V.bestand && V.tode[1] >= 1,
-            `der Tod folgt der Nahrung nicht: halbiert ${V.hunger} Tiere, ${V.tode[1]} Tode`
         );
         const T = z.hungertod;
         soll(
             T.n >= 1 && T.aeltester === T.n && T.trauer === T.n && T.journal === T.n,
             `der Hungertod nimmt nicht das Älteste, trauert nicht oder schreibt kein Journal: ${T.n} Tode, ${T.aeltester} die Ältesten, ${T.trauer} betrauert, ${T.journal} im Journal`
         );
-    }
-    if (name === "kaskade") {
         const paare = z.saaten.flatMap((je, i) =>
             Object.entries(je).map(([g, [a, e]]) => ({ wo: `Saat ${i + 1} ${g} ${a} → ${e}`, a, e }))
         );
@@ -640,6 +651,11 @@ function lebenUrteil(name, z, soll) {
             z.saaten.length >= 8 && da >= 16 && !bruch.length,
             `der Bestand bricht aus oder stirbt aus: ${bruch.map((p) => p.wo).join(" · ") || da + " Bestände in " + z.saaten.length + " Saaten"} (Soll je Gattung in [⅓×, 3×], 8 Saaten)`
         );
+        for (const [k, q] of Object.entries(z.richtungen))
+            soll(
+                q.haelt === (k !== "mutante"),
+                `die Kaskade ${k}: ${q.effekt} [${q.ki}] gegen den Grundlauf (Soll ${q.soll}${k === "mutante" ? ", ohne Fraß-Leser ROT" : ""})`
+            );
     }
     if (name === "folgen") {
         soll(z.bindung[0] > 0 && z.bindung[1] > z.bindung[0], `die Geste bindet nicht: bond ${z.bindung}`);
@@ -755,8 +771,8 @@ function lebenUrteil(name, z, soll) {
 }
 const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
-    BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil, kamera, imBlick);`,
-    PROBEN: ["furcht", "lebensraum", "tagesbudget", "bestand", "kaskade", "folgen"],
+    BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil);`,
+    PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen"],
     TAETER: {
         tagesbudget: [
             ["durst", /kein Tier trinkt aus Durst/],
@@ -764,11 +780,11 @@ module.exports = {
             ["tagesbudget-sonne", /verfehlt das Ethogramm/],
             ["nacht", /bewegt während ruhen/],
         ],
-        bestand: [
-            ["bestand-nahrung", /die Geburt folgt der Nahrung nicht[\s\S]*der Tod folgt der Nahrung nicht/],
-            ["bestand-deckel", /Kosten-Kappe[\s\S]*die Geburt folgt der Nahrung nicht[\s\S]*der Tod folgt der Nahrung nicht/],
+        kaskade: [
+            ["kaskade-riss", /die Kaskade hirsche/],
+            ["bestand-nahrung", /die Kaskade nahrung/],
+            ["bestand-deckel", /Kosten-Kappe/],
         ],
-        kaskade: [["bestand-deckel", /an die Kosten-Kappe/]],
         folgen: [
             ["folgen", /das gebundene Tier folgt nicht/],
             ["folgen-wand", /die Hindernisse halten nicht/],
@@ -818,20 +834,8 @@ if (V) {
         "je Stimmung alle=[min,max] (min ≤ max)",
         Object.entries(V.stimmung).every(([k, z]) => k === "schwellen" || (z.alle && z.alle[0] <= z.alle[1]))
     );
-    const bekannt = new Set([
-        "freq",
-        "bodyX",
-        "bodyZ",
-        "headX",
-        "headY",
-        "ear",
-        "tailAmp",
-        "tailRate",
-        "tension",
-        "bob",
-        "sway",
-        "kpMul",
-    ]);
+    // die Felder der Haltung sind die des Kerns (MOTION, je Stimmung dieselben) — keine Abschrift
+    const bekannt = new Set(Object.keys(core.MOTION.idle));
     const fremd = [];
     for (const name in V.aktionen) {
         const p = V.aktionen[name].profil;

@@ -1535,13 +1535,26 @@ class AnazhRealm_stoff_material {
         };
     }
 
-    // DIE HIMMELS-SICHT DES REGENS (EIN Knoten je Seite): 1 unter offenem Himmel, 0 unter einer Decke des Dach-Pools — je
-    // Platz die Decke eines Baus (Mitte xz, Gier cos/sin; halbe Kanten, Oberkante y), ein Fragment darunter und im Grundriss
-    // der Decke steht trocken (Boden, Wände und Dinge des Innenraums; die Außenwand liegt außerhalb der Decke).
+    // DIE NÄSSE UNTER DEM HIMMEL (EIN Knoten je Seite): die Himmels-Sicht des Regens (`_offenerHimmel`) am Welt-Ort des Fragments;
+    // ein Fragment unter einer Decke steht trocken (Boden, Wände und Dinge des Innenraums; die Außenwand liegt außerhalb der Decke).
     _naesseHimmel(T) {
         if (this._naesseHimmelK) return this._naesseHimmelK;
         const U = this._ensureAtmoUniforms();
         const p = T.positionWorld;
+        // die trockene Welt zahlt den Pool nie: r184s select schreibt ein if/else, die Bedingung liest den Welt-Ort (EINE
+        // Variable je Programm, wie die Bedingung des Licht-Pools); trocken ist das Gewicht ohnehin 0
+        const nass = U.naesse.greaterThan(0).and(p.y.greaterThan(-1e9));
+        this._naesseHimmelK = T.select(nass, this._offenerHimmel(T, p), T.float(0));
+        return this._naesseHimmelK;
+    }
+
+    // DIE HIMMELS-SICHT DES REGENS am Welt-Ort `p`: 1 unter offenem Himmel, 0 unter einer Decke des Dach-Pools — je Platz die
+    // Decke eines Baus (Mitte xz, Gier cos/sin; halbe Kanten, Oberkante y), ein Ort darunter und im Grundriss der Decke liegt
+    // unter ihr. Leser: die Nässe der Stoffe (`_naesseHimmel`, je Fragment) und die Schliere des Regens (`_ensureRainSystem`,
+    // je Schliere: unter der Decke fällt kein Regen — bis dahin fiel er durch jedes Dach, gate:naesse:echt sah ihn am Haus des
+    // Dorfs auf der Trasse: 27 Regen-Punkte innen).
+    _offenerHimmel(T, p) {
+        const U = this._ensureAtmoUniforms();
         let unter = T.float(0);
         for (let k = 0; k < U.dachLage.length; k++) {
             const L = U.dachLage[k];
@@ -1551,11 +1564,8 @@ class AnazhRealm_stoff_material {
             const lz = d.x.mul(L.w).add(d.y.mul(L.z)).abs();
             unter = unter.max(T.step(lx, M.x).mul(T.step(lz, M.y)).mul(T.step(p.y, M.z)));
         }
-        // die trockene Welt zahlt den Pool nie: r184s select schreibt ein if/else, die Bedingung liest den Welt-Ort (EINE
-        // Variable je Programm, wie die Bedingung des Licht-Pools); trocken ist das Gewicht ohnehin 0
-        const nass = U.naesse.greaterThan(0).and(p.y.greaterThan(-1e9));
-        // DIE HÜLLE DES POOLS (naesse-kosten): die Plätze prüft nur ein Fragment im Kasten um alle Decken und unter ihrer höchsten
-        // Oberkante (`dachHuelle`/`dachOben`, `_dachTakt`) — draußen steht es unter offenem Himmel, ohne Decke ist der Kasten leer.
+        // DIE HÜLLE DES POOLS (naesse-kosten): die Plätze prüft nur ein Ort im Kasten um alle Decken und unter ihrer höchsten
+        // Oberkante (`dachHuelle`/`dachOben`, `_dachTakt`) — draußen steht er unter offenem Himmel, ohne Decke ist der Kasten leer.
         // Gemessen GTX in EINER Welt (Wiese Ego, Regen 10 min, gpu-bank): der Pool kostete jedes nasse Fragment +0,54 ms je Bild,
         // auch ohne ein Dach im Umkreis; das Gesetz selbst +0,05
         const H = U.dachHuelle;
@@ -1565,8 +1575,7 @@ class AnazhRealm_stoff_material {
             .and(p.z.greaterThanEqual(H.y))
             .and(p.z.lessThanEqual(H.w))
             .and(p.y.lessThanEqual(U.dachOben));
-        this._naesseHimmelK = T.select(nass, T.select(drin, T.float(1).sub(unter), T.float(1)), T.float(0));
-        return this._naesseHimmelK;
+        return T.select(drin, T.float(1).sub(unter), T.float(1));
     }
 
     // DER DACH-POOL (EIN Schreiber, aus `_naesseTakt`): die Decken der `NAESSE.dachPlaetze` Bauten, die dem Auge am nächsten
@@ -3075,7 +3084,7 @@ AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, w
 // Haut Fett, der Schatten-Stoff zeichnet keine Farbe. Der Dach-Pool: `dachPlaetze` Decken im `dachUmkreisM`, neu nach `dachSchrittM`;
 // Decken tragen die Häuser (Hülle) und die `dachArten` (Rezept oder Art: ihre Form schließt oben, `_dachKastenSetzen`). Näher als
 // `ruhe` an ihrem Ziel steht die Nässe dort (ein Tausendstel verschiebt eine Albedo um höchstens 2,5e-4) — der Fixpunkt, an dem
-// der Regen schläft (feld.K3, `_tickRain`). Wie nass ein Reifen greift, trägt die Stoff-Zeile je Stoff (`muNass`, `_fahrHaft`).
+// der Regen schläft (feld.K3, `_tickRain`). Wie nass ein Reifen greift, trägt die Stoff-Zeile je Stoff (`muRadNass`, `_fahrHaft`).
 AnazhRealm.NAESSE = Object.freeze({
     regenAb: 0.05,
     benetzenS: 150,

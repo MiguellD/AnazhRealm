@@ -2012,6 +2012,12 @@ class AnazhRealm_feld_leben {
         return !!je && je.some((a) => a.tat === tat && Math.hypot(a.x - x, a.z - z) <= r);
     }
 
+    // Sperrt eine Tat den Wurf des Gesetzes an (x,z)? Der Boot wirft die Welt neu (speicher.K3) — wo ein Baum fiel, bis die Narbe
+    // heilt, wo ein Wurf abgebaut wurde, für immer: die Promotion, die Streu und jeder Wurf durch `_naturSetzen` fragen hier.
+    _tatSperrt(x, z) {
+        return this._tatAm("faellen", x, z) || this._tatAm("abbauen", x, z);
+    }
+
     // === die SCHREIB-Seite der emotion-Achse (das räumliche Gedächtnis) ===
     // Eine emotionale Tat (`_feelAction`) prägt ihre Emotion an der Spieler-Zelle ein; `auraAt` blendet
     // den Abdruck über die globale Stimmung, der Welt-Tint liest das. Lazy-Decay, kein Frame-Sweep.
@@ -2451,6 +2457,7 @@ AnazhRealm.LIFE_FIELD = Object.freeze({
 AnazhRealm.TAT_NARBE = Object.freeze({
     faellen: Object.freeze({ tiefe: 0.12, stunden: 48 }),
     ernten: Object.freeze({ tiefe: 0.01, stunden: 3 }),
+    abbauen: Object.freeze({ tiefe: 0, stunden: Infinity }), // ein Wurf des Gesetzes, abgebaut: er kehrt nie zurück (speicher.K3)
     brand: Object.freeze({ tiefe: 0.3, stunden: 72 }), // die Asche (`_brandSchritt`): solange sie liegt, brennt die Zelle nicht
     max: 0.6,
     lebMin: 0.1,

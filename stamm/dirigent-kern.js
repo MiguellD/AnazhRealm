@@ -233,6 +233,7 @@ class AnazhRealm {
             _camSmoothT: 0, // Zeitstempel des letzten Kamera-Glättungs-Schritts
             _landDip: 0, // aktueller Landungs-Absorption-Versatz des Auges (m, ≤ 0)
             _landImpactPending: 0, // beim Landen erfasstes Aufprall-Tempo (m/s), von der Kamera konsumiert
+            _sturzTempo: 0, // das Aufprall-Tempo des letzten Sim-Schritts (m/s), der Sturz liest es (_loopPhysicsSync)
             abilities: {},
             selfAwareness: { components: [], weaknesses: [] },
             logBuffer: [],
@@ -1819,7 +1820,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.89";
+AnazhRealm.VERSION = "18.546.91";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

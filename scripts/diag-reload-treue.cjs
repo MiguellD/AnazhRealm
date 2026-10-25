@@ -25,14 +25,12 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {
         const res = { r: {}, s: {}, d: {}, w: {} };
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        if (!r) return { fatal: "anazhRealm kam nie" };
+        const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.wolf && !f._vorrat);
         if (!(f && f.ready && f.recipes && f.recipes.wolf)) return { fatal: "wolf-Rezept kam nie" };
