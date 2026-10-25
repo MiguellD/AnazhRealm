@@ -45,13 +45,21 @@ function herdeSzene(r, T, o) {
     };
     const lebend = () => Z.glieder.filter((c) => s.creatures.includes(c));
     const flieht = (c) => c.userData._motionZustand === "flucht";
+    const mitte = (g) => g.reduce((a, c) => a.add(c.position.clone().multiplyScalar(1 / g.length)), new T.Vector3());
+    // die Mitte eines Leibs (die Lage um die halbe Höhe seiner Box, wie `herdePulk`): die Punkte des Ziels der Blick-Wahl
+    const leibMitte = (c) => {
+        const b = new T.Box3().setFromObject(c);
+        return [c.position.x, c.position.y + (b.isEmpty() ? 0.5 : Math.min(3, b.max.y - b.min.y) / 2), c.position.z].map((v) => +v.toFixed(2));
+    };
     const pose = () => {
         const g = lebend();
-        const m = g.reduce((a, c) => a.add(c.position.clone().multiplyScalar(1 / g.length)), new T.Vector3());
-        const ey = H(pm.x, pm.z) + A.EGO_AUGE_M;
+        const m = mitte(g);
+        const a = Z.auge || pm;
+        const ey = H(a.x, a.z) + A.EGO_AUGE_M;
         return {
-            kamera: [pm.x, ey, pm.z, m.x, m.y + 0.6, m.z].map((v) => +v.toFixed(2)),
-            abstand: +Math.hypot(m.x - pm.x, m.y + 0.6 - ey, m.z - pm.z).toFixed(1),
+            kamera: [a.x, ey, a.z, m.x, m.y + 0.6, m.z].map((v) => +v.toFixed(2)),
+            abstand: +Math.hypot(m.x - a.x, m.y + 0.6 - ey, m.z - a.z).toFixed(1),
+            punkte: g.map(leibMitte),
             glieder: g.length,
             fliehen: g.filter(flieht).length,
             takte: Z.takte,
@@ -112,7 +120,14 @@ function herdeSzene(r, T, o) {
         takt();
     }
     if (!Z.glieder.some(flieht)) return Object.assign(pose(), { fehler: "die Herde flieht nicht (der Spieler ging bis " + d.toFixed(0) + " m)" });
-    for (let k = 0; k < 1800 && pose().abstand < 40; k++) takt();
+    // die Alarm-Kette läuft (≤ 1 s), dann eine halbe Sekunde Flucht: jedes Glied flieht im ersten Schuss
+    for (let k = 0; k < 120 && lebend().some((c) => !flieht(c)); k++) takt();
+    for (let k = 0; k < 30; k++) takt();
+    // DER STANDORT des Blicks: 43 m quer zur Fall-Linie (der Flucht) auf der tieferen Seite, das Auge Ego — der Hang zeigt die
+    // Herde im Profil; die Blick-Wahl dreht von dort, bis jedes Glied frei steht
+    const m = mitte(lebend());
+    const seiten = [1, -1].map((s) => ({ x: m.x - s * hang.uz * 43, z: m.z + s * hang.ux * 43 }));
+    Z.auge = seiten.sort((a, b) => H(a.x, a.z) - H(b.x, b.z))[0];
     return Object.assign(pose(), { hang: { x: +hang.x.toFixed(1), z: +hang.z.toFixed(1), neigung: hang.neigung }, wurf: Z.glieder.length, fluchtBei: +d.toFixed(1) });
 }
 // DER PULK IM BILD (in der Seite, nach `bild --klasse ^tier`): die Teilung des Schusses (`__letzteTeilung`, werkbank) gegen die
@@ -225,13 +240,16 @@ async function herdeHang() {
         process.stderr.write(p.stderr || "");
         await werkbankRuf(W, "/fenster", { w: 1280, h: 720 });
         erg.szene = await ruf(szene, { phase: "start" });
+        let auge = null;
         for (let i = 0; i < 3 && !erg.szene.fehler; i++) {
             const q = i ? await ruf(szene, { phase: "weiter", takte: 30 }) : erg.szene;
-            const [px, py, pz, lx, ly, lz] = q.kamera;
+            const [, , , lx, ly, lz] = q.kamera;
+            const [px, py, pz] = auge || q.kamera;
             const datei = B + "-herde-" + (i + 1) + ".png";
-            const b = await werkbankRuf(W, "/bild", { px, py, pz, lx, ly, lz, klasse: "^tier", ziel: "Herde", wahl: 14, datei });
+            const b = await werkbankRuf(W, "/bild", { px, py, pz, lx, ly, lz, klasse: "^tier", ziel: "Herde", punkte: q.punkte, wahl: 14, datei });
             const kl = b && b.klasse ? Object.fromEntries(Object.entries(b.klasse.klassen || {}).map(([k, v]) => [k, v.pixel])) : null;
             const kam = b && Array.isArray(b.kamera) ? [...b.kamera, lx, ly, lz] : q.kamera;
+            auge = kam;
             erg.serie.push({
                 schuss: i + 1,
                 abstand: +Math.hypot(kam[0] - lx, kam[1] - ly, kam[2] - lz).toFixed(1),
