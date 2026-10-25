@@ -85,7 +85,6 @@
     "Brennglas-Takt (0710-10 — der Takt kostet, was ihn betrifft, byte-gleiche Brand-Urteile)": {"s": 15, "n": 7, "gruppe": "voll 12"},
     "Raum-Tags (0710-11 — das Gedaechtnis der Raum-Tags sieht jeden Schreiber)": {"s": 13, "n": 7, "gruppe": "voll 1"},
     "Stand-Takt (Welle K — im Stand kostet die Welt nichts, Gehen kostet die Änderung)": {"s": 52, "n": 7, "gruppe": "voll 1"},
-    "Terrain-Portal bootet im Display-Modus (P2 — die Shell liest foundry-core-Globals)": {"s": 14, "n": 7, "gruppe": "voll 18"},
     "Foundry-Deadlock geheilt (P4 — die Nähe konvergiert unter Last)": {"s": 11, "n": 7, "gruppe": "voll 5"},
     "Fernwald (der gesetzte Wald ist jenseits der Mesh-Zone seine Karte, kein Satz, kein Pop)": {"s": 36, "n": 7, "gruppe": "voll 1"},
     "Weg-Boden (der Siedlungs-Weg ist Boden, kein schwebendes Quad)": {"s": 6, "n": 7, "gruppe": "voll 8"},
