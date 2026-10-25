@@ -371,7 +371,9 @@ class AnazhRealm_dirigent_takt {
                                 ? `Felder offen ${o.felder}`
                                 : o.dorf
                                   ? `Dorf offen ${o.dorf}`
-                                  : null;
+                                  : o.ankunft
+                                    ? `Ankunft gleitet ${o.ankunft}`
+                                    : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -401,7 +403,7 @@ class AnazhRealm_dirigent_takt {
         const st = this.state;
         const o =
             this._weltOffenWert ||
-            (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0, karten: 0, felder: 0, leiber: 0, dorf: 0 }); // je Takt, ohne Müll
+            (this._weltOffenWert = { foundry: 0, chunks: 0, wald: 0, karten: 0, felder: 0, leiber: 0, dorf: 0, ankunft: 0 }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
               (f.warte ? f.warte.length : 0) +
@@ -418,6 +420,11 @@ class AnazhRealm_dirigent_takt {
         o.karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
         o.felder = this._weltBakeSchuld();
         o.dorf = this._dorfOffen();
+        // DIE ANKUNFT GLEITET (`_ankunftsFerne`, B2): bis ihr letztes Bild gezeichnet ist, misst jede Stufen-Wahl weiter, als das
+        // Auge steht — die Bilder, die ihr fehlen (tiere.K1: im Schuss der Werkbank stand sie bei 62 von 90, der Mammut 13,9 m
+        // vor dem Auge trug die Karte)
+        const gleit = st._ankunftGleit;
+        o.ankunft = gleit >= 0 && gleit < AnazhRealm.ANKUNFT_GLEIT_BILDER ? AnazhRealm.ANKUNFT_GLEIT_BILDER - gleit : 0;
         o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
         o.leiber = 0;
         if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull)
