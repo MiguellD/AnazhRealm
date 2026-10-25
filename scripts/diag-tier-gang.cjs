@@ -175,7 +175,7 @@ const LAUF = (k) => {
                 r._animateCompoundMotion(cr, roles, t, phase, true, cr.userData.emotions);
                 cr.updateMatrixWorld(true);
                 pfoten.forEach((p, j) => spur[j].push([p.localToWorld(lokal[j].clone())]));
-                uhr.push(tb._gang.ph[0] / (2 * Math.PI));
+                uhr.push((t * tb._gang.omega) / (2 * Math.PI)); // die Zeit im Takt des Gangs (die Phase eines Beins springt an seiner Kette)
             }
             auswertungen++;
             leib.push({ x: cr.position.x, z: cr.position.z });
@@ -487,8 +487,8 @@ const STUDIO = (k) => {
 // DIE GANGART UND IHR TASTGRAD AUS DEM TEMPO (Meisterkarte Tiere H3, K3): Welt (LAUF als Leib, SATZ im Satz) und Labor
 // (worlds/tetrapoda, EIN Tier über dieselben v̂) bei v̂ 0,3 · 0,74 (Fr 0,55 im Band der Hysterese) · 1,2 · 3,5 → Schritt
 // lateral, Trab, Galopp, Labor = Leib = Satz auf ≤ 0,05 Zyklus je Bein; der TASTGRAD (Anteil des Zyklus im Stand: Welt die
-// Pfote am Boden, Labor der Fuß aus gangFuss) im Band (Alexander 1984, Hildebrand 1965); unter Last (30 fps, die Raten-Leiter)
-// dieselbe Gangart. --selftest: Stimmungs-Muster und Tastgrad 0,5 → ROT.
+// Pfote am Boden, Labor der Fuß aus gangFuss) im Band (Alexander 1984, Hildebrand 1965). --selftest: Stimmungs-Muster und
+// Tastgrad 0,5 → ROT.
 const VH = [0.3, 0.74, 1.2, 3.5];
 const GANG_SOLL = { 0.3: "schritt-lateral", 0.74: "schritt-lateral", 1.2: "trab", 3.5: "galopp" };
 const TAST_SOLL = { 0.3: [0.6, 0.7], 0.74: [0.6, 0.7], 1.2: [0.4, 0.6], 3.5: [0.25, 0.35] };
@@ -574,13 +574,13 @@ const GANG = (k) => {
     const [weltGang, satzGang, gefeuert] = [{}, {}, new Set()];
     // im Selbsttest trägt jede Zeile ihr Etikett: ihr ❌ ist das Soll (der gestubbte Täter), nie ein Befund
     const log = (...a) => console.log(...(SELBST ? ["[Selbsttest]", ...a] : a));
-    // die Gangart je v̂ (Fußfolge, Tastgrad im Band; `tast` null urteilt die Folge allein) und der Abstand der Phasen gegen
+    // die Gangart je v̂ (Fußfolge, Tastgrad im Band) und der Abstand der Phasen gegen
     // jede Vergleichs-Zeile ({Name: Zeile}: „Name − Ort“ in Zyklen, Soll ≤ 0,05)
     const gangUrteil = (wo, z, vergleich = {}) => {
         const g = gangart(z.ph);
         const [lo, hi] = TAST_SOLL[z.vh];
         const art = g.art === GANG_SOLL[z.vh],
-            tast = z.tast === null || (z.tast >= lo && z.tast <= hi);
+            tast = z.tast >= lo && z.tast <= hi;
         const ab = Object.entries(vergleich).map(([n, v]) => [
             n,
             Math.max(...zyklus(v.ph).map((x, i) => kreis(x, g.rel[i]))),
@@ -588,7 +588,7 @@ const GANG = (k) => {
         const nah = ab.every(([, d]) => d <= 0.05);
         const ok = art && tast && nah;
         log(
-            `  ${ok ? "✅" : "❌"} Gangart ${wo} v̂ ${z.vh} · ${g.art} [${g.rel.join(" ")}]${art ? "" : " — Soll " + GANG_SOLL[z.vh]}${z.tast === null ? "" : ` · Tastgrad ${z.tast}${tast ? "" : ` (Soll ${lo}–${hi})`}`}${ab.map(([n, d]) => ` · ${n} − Labor ${d.toFixed(2)} Zyklus`).join("")}${ok ? "" : " — Täter: " + (wo[0] === "S" ? "_tierSatzSchritt" : "tetrapoda gangSchritt")}`
+            `  ${ok ? "✅" : "❌"} Gangart ${wo} v̂ ${z.vh} · ${g.art} [${g.rel.join(" ")}]${art ? "" : " — Soll " + GANG_SOLL[z.vh]} · Tastgrad ${z.tast}${tast ? "" : ` (Soll ${lo}–${hi})`}${ab.map(([n, d]) => ` · ${n} − Labor ${d.toFixed(2)} Zyklus`).join("")}${ok ? "" : " — Täter: " + (wo[0] === "S" ? "_tierSatzSchritt" : "tetrapoda gangSchritt")}`
         );
         if (!ok) rot++;
         if (!art || !nah) gangRot = true;
@@ -625,13 +625,15 @@ const GANG = (k) => {
                 `  ${ok ? "✅" : "❌"} ${z.band ? "satz " : ""}${z.seele.padEnd(5)} v̂ ${z.vh} ${z.v.toFixed(1)} m/s${z.name ? " (" + z.name + ")" : ""}${z.band ? " · Band " + z.band : ""} · Hüfte ${z.hueftM} m · Stand ${z.standAnteil} · Schlupf ${z.schlupf}`
             );
             if (!ok) rot++;
-            // unter der Raten-Leiter wertet der Leib nur jeden 2./4. Takt aus: die Folge urteilt, der Tastgrad nicht
-            // (zwischen zwei Auswertungen steht die Pose — gezählt würde das Raster, nicht der Gang)
-            const gut = gangUrteil(
-                (z.band ? "Satz " : z.last ? "Last " : "Welt ") + z.seele + (z.name ? ` (${z.name})` : ""),
-                { vh: z.vh, ph: z.ph, tast: z.last ? null : z.standAnteil }
-            );
-            if (!z.last && !k.g) (z.band ? satzGang : weltGang)[z.seele + z.vh] = z;
+            // unter der Raten-Leiter wertet der Leib nur jeden 2./4. Takt aus (4–6 Posen je Zyklus): Aufsetzen und Stand sind auf
+            // die Auswertungen gerastert — dort urteilt der Schlupf, Folge und Tastgrad urteilen die vollen Takte
+            if (z.last) continue;
+            const gut = gangUrteil((z.band ? "Satz " : "Welt ") + z.seele + (z.name ? ` (${z.name})` : ""), {
+                vh: z.vh,
+                ph: z.ph,
+                tast: z.standAnteil,
+            });
+            if (!k.g) (z.band ? satzGang : weltGang)[z.seele + z.vh] = z;
             if (!gut) gefeuert.add(k.taeter);
         }
         const leib = await page.evaluate(LEIB, { stub: SELBST });
