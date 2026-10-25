@@ -362,8 +362,11 @@ async function wasserKoerper(o = {}) {
         // (8) DAS LICHT AM WASSER (K9) fährt mit dem echten Renderer: `wasserLicht` (der Himmel lebt auf der GPU, D3)
         // (9) DAS EIS (stoffe.K3): im Winter (Saison 0,875) trägt der gefrorene See denselben Gang und dieselben Tiere am
         // Spiegel; die Mutation (das Feld +10 °C an seiner EINEN Naht `_temperaturFeld`) bricht den Spieler ein. Gemeldet
-        // die Temperatur des Wassers (die Trägheit seines Körpers aus der Stoff-Tafel, `_wasserTemperaturAt`).
-        const gang = () => Object.assign(gehen(), { temperatur: R(r._wasserTemperaturAt(spiegel, tiefeMitte)) });
+        // die Temperatur des Wassers: die Luft an der Naht (`_temperaturAt`) durch die Trägheit seines Körpers (`wasserKoerper`
+        // aus der Stoff-Tafel), wie das Eis sie liest (`_eisLinien`).
+        const koerper = (y, tiefe) => window.__gelaendeCore.wasserKoerper(r._gelaende(), y, tiefe, r._wasserStoff());
+        const tauSee = koerper(spiegel, tiefeMitte).traegTage;
+        const gang = () => Object.assign(gehen(), { temperatur: R(r._temperaturAt(spiegel, tauSee)) });
         const feld = (dT) =>
             (r._temperaturFeld = (y, tr) => {
                 const F = A.prototype._temperaturFeld.call(r, y, tr);
@@ -396,8 +399,8 @@ async function wasserKoerper(o = {}) {
         // (`_eisAt`); das Feld −15 °C friert es (die Probe sieht Eis).
         const woche = (f) => Array.from({ length: 52 }, (_, i) => ((st.seasonPhase = i / 52), f()));
         const eis = () => woche(() => r._eisAt(...o.meer, st.waterLevel + 0.5, 1)).filter((e) => e !== null).length;
-        const w = woche(() => r._wasserTemperaturAt(st.waterLevel, 1));
-        const K = window.__gelaendeCore.wasserKoerper(r._gelaende(), st.waterLevel, 1, r._wasserStoff());
+        const K = koerper(st.waterLevel, 1);
+        const w = woche(() => r._temperaturAt(st.waterLevel, K.traegTage));
         aus.eis.meer = { tiefst: R(Math.min(...w)), gefrier: R(K.gefrier), traegt: eis() };
         feld(-15);
         aus.eis.meer.kalt = eis();

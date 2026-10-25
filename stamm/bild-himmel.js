@@ -2891,19 +2891,11 @@ class AnazhRealm_bild_himmel {
     }
 
     // DER STOFF DES WASSERS (stoffe.K1 × K3): die Zeilen wasser und eis der Stoff-Tafel (`_stoff`) — ρ·c der Säule, T_schmelz
-    // und ρ des Eises sind die Zahlen, mit denen der Kern den Wasserkörper und sein Eis rechnet (`wasserKoerper`, `eisDicke`);
-    // dieselbe Eis-Zeile, die der Schritt-Klang und der gleitende Leib lesen. Leser: die Linien des Eises (`_eisLinien`), das
-    // Wasser an der Höhe (`_wasserTemperaturAt`) und die Linse des Meers.
+    // und ρ, L, k des Eises sind die Zahlen, mit denen der Kern den Wasserkörper und sein Eis rechnet (`wasserKoerper`,
+    // `eisDicke`); dieselbe Eis-Zeile, die der Schritt-Klang und der gleitende Leib lesen. Leser: die Linien des Eises
+    // (`_eisLinien`) und die Linse des Meers.
     _wasserStoff() {
         return { wasser: this._stoff("wasser"), eis: this._stoff("eis") };
-    }
-
-    // DAS WASSER AN DER HÖHE y über der Säule `tiefe` (stoffe.K1): die Luft durch die Trägheit seines Körpers (τ = ρ·c·h / α,
-    // `wasserKoerper` aus dem Stoff `_wasserStoff`; ein Teich von 1 m 1,9 Tage) zur Saison und Uhr der Welt. Je kleiner c,
-    // desto weiter folgt es dem Tag. Leser: die Linsen des Wassers und der Stoff-Tafel.
-    _wasserTemperaturAt(y, tiefe) {
-        const K = globalThis.__gelaendeCore.wasserKoerper(this._gelaende(), y, tiefe, this._wasserStoff());
-        return this._temperaturAt(y, K.traegTage);
     }
 
     // DIE NÄSSE (wetter.K2) — EIN Zustand der Welt aus dem Wetter-Feld (`state.naesse`, 0 trocken … 1 nass): Regen benetzt

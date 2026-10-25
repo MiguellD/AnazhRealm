@@ -30,7 +30,8 @@
 //            OfflineAudioContext) auf dem Stoff steigt (das Wasser: watend am Ufer)
 //   tZuend   T_zünd − 100 K: der Stoff im Brennpunkt einer Linse (`_tickFocusingAffordances`) fängt früher Feuer
 //   tSchmelz T_schmelz − 100 K: der See gefriert im Winter nicht (`_eisAt`)
-//   c        c × ½: der Stoff im Brennpunkt ist nach 2 s wärmer (das Wasser: sein Tagesgang, `_wasserTemperaturAt`, wächst)
+//   c        c × ½: der Stoff im Brennpunkt ist nach 2 s wärmer; das Wasser folgt der Luft schneller, der See trägt im Herbst
+//            über einen Tag früher (der Tag, ab dem `_eisAt` über den Linien `_eisLinien` trägt, auf die Stunde)
 // DIE SABOTAGE (Selbsttest im selben Lauf): der EINE Leser der Tafel (`_stoff`) liefert die Zeilen von vor der Mutation — ein
 // Leser, der ruft und verwirft —, und jede Wirkung jedes Stoffs ist ROT; eine, die grün bleibt, liest an der Tafel vorbei.
 // Staffel 1 = je Stoff ≥ 3 von 7 Wirkungen, Staffel 2 = 7/7; die Zeile `TAFEL {…}` trägt die Messung.
@@ -257,7 +258,11 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
             st[k] = alt;
         }
     };
-    const wasserT = (h) => um("timeOfDay", h, () => r._wasserTemperaturAt(spiegel, tiefe)); // das Wasser zur Uhr h
+    // der Tag, ab dem der See trägt (Sommer 0,375 … Winter 0,875, halbiert auf die Stunde)
+    const traegt = (lo = 0.375, hi = 0.875) => {
+        for (let m; hi - lo > 1 / 8760; ) um("seasonPhase", (m = (lo + hi) / 2), () => r._eisAt(SX, SZ, NaN)) === null ? (lo = m) : (hi = m);
+        return hi * 365;
+    };
     // je Wirkung [Mutation, Messung, Urteil (vorher, nachher)]
     const W = {
         rho: [
@@ -304,8 +309,8 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
         ],
         c: [
             (z) => (z.c *= 0.5),
-            async (X) => (X === "wasser" ? wasserT(0.625) - wasserT(0.125) : (await brenn(X, 2))[0]),
-            (X, v, n) => v > 0 && n / v > 1.5,
+            async (X) => (X === "wasser" ? traegt() : (await brenn(X, 2))[0]),
+            (X, v, n) => (X === "wasser" ? v - n > 1 : v > 0 && n / v > 1.5),
         ],
     };
     const aus = {};
