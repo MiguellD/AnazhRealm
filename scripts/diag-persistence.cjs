@@ -226,7 +226,8 @@ function ttHaken() {
         b: (s.architectures || []).filter((a) => a.type === "stein_block").length,
     }));
     const n = (window.__ttN = [0, 0]); // Löcher, Blöcke des Treibers
-    const standN = new Map(); // je Stempel eines Stands die Zahlen des Treibers, als die Seite ihn reichte
+    // je Takt des Treibers [Zeit, Löcher, Blöcke]: ein Stand trägt die zu seinem Stempel (in derselben ms: davor oder danach)
+    const reihe = (window.__ttReihe = [[0, 0, 0]]);
     const melde = (art, json, nJetzt) => {
         let r = null;
         try {
@@ -238,45 +239,35 @@ function ttHaken() {
         console.log("__TT__ " + JSON.stringify(e));
         if (window.__ttTod && window.__ttTod(e)) for (console.log("__TOD__"); ;); // die Seite steht, bis der Prozess stirbt
     };
-    new BroadcastChannel("tt").onmessage = (e) => melde(e.data.art, e.data.json, standN.get(e.data.at));
-    const iv = setInterval(() => {
-        const P = window.anazhRealm && Object.getPrototypeOf(window.anazhRealm);
-        if (!P) return;
-        clearInterval(iv);
-        const org = P._standSichern;
-        if (typeof org !== "function") throw new Error("(T): der Stamm reicht keinen Stand mehr über _standSichern");
-        P._standSichern = function (welt, at) {
-            standN.set(at, n.slice());
-            return org.apply(this, arguments);
+    new BroadcastChannel("tt").onmessage = ({ data: d }) =>
+        melde(d.art, d.json, [reihe.findLast((x) => x[0] < d.at) || reihe[0], reihe.findLast((x) => x[0] <= d.at)]);
+    // der Speicher-Faden („speicher") mit dem Vorspann `faden`: jeder Put eines Stands (idb) und das Ende seiner Transaktion
+    // (fest) gehen an die Seite; eine scharfe Art (`tt`-Kanal der Seite) hält ihn IN diesem Schreiber, „selbst" schreibt die halbe Last
+    function faden() {
+        const kanal = new BroadcastChannel("tt");
+        let scharf = null;
+        kanal.onmessage = (e) => (scharf = e.data);
+        const put = IDBObjectStore.prototype.put;
+        IDBObjectStore.prototype.put = function (v, k) {
+            if (String(k).endsWith(".bak") || !v || typeof v.json !== "string") return put.apply(this, arguments);
+            if (scharf === "selbst") v = { at: v.at, json: v.json.slice(0, v.json.length >> 1) };
+            const req = put.call(this, v, k);
+            this.transaction.addEventListener("complete", () => {
+                kanal.postMessage({ art: "fest", json: v.json, at: v.at });
+                if (scharf === "fest" || scharf === "selbst") for (;;);
+            });
+            kanal.postMessage({ art: "idb", json: v.json, at: v.at });
+            if (scharf === "idb") for (;;);
+            return req;
         };
-    }, 5);
-    // der Speicher-Faden mit dem Vorspann `ttFaden` (am Namen „speicher" erkannt, sonst der rohe Faden)
+    }
     const Roh = window.Worker;
     window.Worker = function (url, o) {
         if (!o || o.name !== "speicher") return new Roh(url, o);
-        const quelle = `(${window.__ttFaden})(); importScripts(${JSON.stringify(new URL(url, location.href).href)});`;
-        return new Roh(URL.createObjectURL(new Blob([quelle], { type: "text/javascript" })), o);
-    };
-    window.Worker.prototype = Roh.prototype;
-}
-// Der Vorspann im Speicher-Faden: jeder Put eines Stands (idb) und das Ende seiner Transaktion (fest) gehen an die Seite; eine
-// scharfe Art (`tt`-Kanal von der Seite) hält den Faden IN diesem Schreiber, „selbst" schreibt dazu nur die halbe Last.
-function ttFaden() {
-    const kanal = new BroadcastChannel("tt");
-    let scharf = null;
-    kanal.onmessage = (e) => (scharf = e.data);
-    const put = IDBObjectStore.prototype.put;
-    IDBObjectStore.prototype.put = function (v, k) {
-        if (String(k).endsWith(".bak") || !v || typeof v.json !== "string") return put.apply(this, arguments);
-        if (scharf === "selbst") v = { at: v.at, json: v.json.slice(0, v.json.length >> 1) };
-        const req = put.call(this, v, k);
-        this.transaction.addEventListener("complete", () => {
-            kanal.postMessage({ art: "fest", json: v.json, at: v.at });
-            if (scharf === "fest" || scharf === "selbst") for (;;);
-        });
-        kanal.postMessage({ art: "idb", json: v.json, at: v.at });
-        if (scharf === "idb") for (;;);
-        return req;
+        return new Roh(
+            URL.createObjectURL(new Blob([`(${faden})(); importScripts("${new URL(url, location.href)}");`])),
+            o
+        );
     };
 }
 // Der Treiber: W gehalten, je 16 ms ein Takt, je zweiter ein Loch auf dem Raster (die Linie wächst über den FIFO-Deckel 256
@@ -292,6 +283,7 @@ function ttTreiber(e0) {
         if (++t % 2 === 0) (n[0]++, r.carveVoxel(lx, r._terrainMacroSurfaceY(lx, lz) - 2, lz, 3));
         const ort = { x: x - 40, y: r._terrainMacroSurfaceY(x - 40, z), z };
         if (t % 50 === 0 && r.spawnArchitecture("stein_block", ort, { silent: true })) n[1]++;
+        window.__ttReihe.push([Date.now(), ...n]);
         r._gameLoopTick(performance.now());
     }, 16);
 }
@@ -324,7 +316,6 @@ async function tabTodProbe({ von, bis, selbst = false }) {
                 zeile.befund.push(t.slice(0, 200));
         });
         await nullRenderer(page);
-        await page.evaluateOnNewDocument(`window.__ttFaden = ${ttFaden};`);
         await page.evaluateOnNewDocument(ttHaken);
         const tGoto = Date.now();
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, {
@@ -358,7 +349,10 @@ async function tabTodProbe({ von, bis, selbst = false }) {
         // HALB: jeder Stand trägt GENAU den Boot plus den Treiber, als die Seite ihn reichte
         const halbe = () => {
             const h = alle.find(
-                (e) => e.art === "idb" && e.n && e.t >= tGoto && (e.rec.e !== g.e + e.n[0] || e.rec.b !== g.b + e.n[1])
+                (e) =>
+                    e.art === "idb" &&
+                    e.t >= tGoto &&
+                    e.n.every(([, l, b]) => e.rec.e !== g.e + l || e.rec.b !== g.b + b)
             );
             if (h) zeile.befund.push(`halbes Schreiben: ${h.rec.e}/${h.rec.b} Edits/Bauten, geladen ${g.e}/${g.b}`);
         };
@@ -422,9 +416,8 @@ const server = statikServer();
 // Gesetz); es steht je Schlüssel in der Zahl. Mit PERSISTENCE_EDITS=n schlägt der Spieler danach n Gruben (2-m-Raster um ihn):
 // Δ roh und Platte dieser Edits (Staffel 2, ≤ 100 kB je 1000). PERSISTENCE_WEG=km-min (Standard 1-6), `--weg` nur (D).
 // DER KONSUM: jeder Stand des Fadens ist die volle Serialisierung (`buildStateSnapshot`) — die Marken der Stand-Tafel verlieren
-// nichts; die Zahl nennt je Stand die abweichenden Schlüssel. Dazu die Haupt-Faden-ms je Speicher-Ruf (speicher.K2) in der
-// frischen Welt und nach den Edits. SELBSTTEST im selben Gang: ein Weg-Zähler im Stand (`wegSpur`, je Takt die Lage, eine Zeile
-// der Tafel) ist ROT an seinem Namen.
+// nichts; die Zahl nennt je Stand die abweichenden Schlüssel. SELBSTTEST im selben Gang: ein Weg-Zähler im Stand (`wegSpur`, je
+// Takt die Lage, eine Zeile der Tafel) ist ROT an seinem Namen.
 const LEBEN = ["worldJournal", "dslHistory", "dslAbilities", "knowledgeBase", "dslPatternMemory", "creatures"];
 async function wegSeite(km, min, edits) {
     const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
@@ -439,22 +432,14 @@ async function wegSeite(km, min, edits) {
     };
     const sortiert = (o) =>
         JSON.stringify(o, (k, v) => (v && v.constructor === Object ? Object.fromEntries(Object.entries(v).sort()) : v));
-    const [ms, abw] = [[], []];
-    const P = Object.getPrototypeOf(r);
-    const ruf = P.saveState;
-    P.saveState = function () {
-        const a = performance.now();
-        const v = ruf.apply(this, arguments);
-        ms.push(performance.now() - a);
-        return v;
-    };
+    const abw = [];
     const stand = async () => {
         r.saveState();
         r.saveState(); // der .bak trägt denselben Stand
         const json = await window.__stand();
         const [voll, s] = [r.buildStateSnapshot(), r._standNormal(JSON.parse(json))];
         abw.push(Object.keys({ ...voll, ...s }).filter((k) => sortiert(voll[k]) !== sortiert(s[k])));
-        S.push([json, (await r._idbGetWorld(st.worldMeta.worldId + ".bak")).json, ms.splice(0)]);
+        S.push([json, (await r._idbGetWorld(st.worldMeta.worldId + ".bak")).json]);
     };
     await takt(200);
     await stand();
@@ -508,21 +493,12 @@ async function wegLauf(km, min, edits) {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
     const { S, abw } = await page.evaluate(wegSeite, km, min, edits);
     await browser.close();
-    const q = (a, p) =>
-        a.length
-            ? a
-                  .slice()
-                  .sort((x, y) => x - y)
-                  [Math.min(a.length - 1, Math.floor(p * a.length))].toFixed(2)
-            : "—";
-    const msZeile = (a) => `p50 ${q(a, 0.5)} / p95 ${q(a, 0.95)} / max ${q(a, 1)} ms in ${a.length} Rufen`;
     return {
         km: km * Math.hypot(1, 0.15),
         weg: wegDelta(S[0], S[1]),
         edits: wegDelta(S[1], S[2]),
         spur: wegDelta(S[2], S[3]),
         abw,
-        ms: `frisch ${msZeile(S[1][2])} · nach ${edits} Edits ${msZeile(S[2][2])}`,
     };
 }
 const [KORPUS, STUFE] = [path.join(root, "spec", "speicher-korpus"), require("../package.json").version];
@@ -688,7 +664,7 @@ function korpusUrteil(z, selbst) {
             pass: w.spur.ohne > 1e4 && w.spur.taeter[0] === "wegSpur",
         },
         {
-            name: `(D) jeder Stand des Speicher-Fadens ist die volle Serialisierung: ${w.abw.map((x) => x.join(" ") || "gleich").join(" · ")} · Speicher-Ruf ${w.ms}`,
+            name: `(D) jeder Stand des Speicher-Fadens ist die volle Serialisierung: ${w.abw.map((x) => x.join(" ") || "gleich").join(" · ")}`,
             pass: w.abw.every((x) => !x.length),
         },
     ];

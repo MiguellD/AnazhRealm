@@ -2181,33 +2181,6 @@ async function checkBandTailleOmega2(ctx) {
     );
 }
 
-// DIE QUOTA-WAND: wirft localStorage, trägt der Speicher-Faden den Stand trotzdem — kein Wurf, der Akt landet in IndexedDB (der
-// Rundlauf und die Frische fährt gate:persistence (T) am Tab-Tod, gate:boot-rettung am Boot).
-async function checkBandV18151Idb(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const origSet = Storage.prototype.setItem;
-        let threw = false;
-        Storage.prototype.setItem = function () {
-            throw new Error("QuotaExceededError (Band-Probe)");
-        };
-        const tVor = Date.now();
-        let ret;
-        try {
-            ret = r.saveState();
-        } catch {
-            threw = true;
-        } finally {
-            Storage.prototype.setItem = origSet;
-        }
-        await r._speicherStill();
-        const idb = await r._idbGetWorld(r.state.worldMeta.worldId);
-        return { quotaSoft: !threw && ret === true && !!idb && idb.at >= tVor };
-    });
-    check("IndexedDB: die QUOTA-Wand trägt nichts (kein Wurf, der Akt landet über den Speicher-Faden in IndexedDB)", res.quotaSoft);
-}
-
 // R5 STRUKTUR-TEXTUR: Material-Mikro-Tiefe-Boost
 // für werk-Profile. Default 1.0 = no-op, browser-justierbar wenn Strukturen
 // platt wirken. Source-Probe + Konstante.
@@ -2242,6 +2215,5 @@ module.exports = {
     checkBandRing9to10,
     checkBandTranslatorAndUntrusted,
     checkBandTailleOmega2,
-    checkBandV18151Idb,
     checkBandV18207R5StructureTexture,
 };

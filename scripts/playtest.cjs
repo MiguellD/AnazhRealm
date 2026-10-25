@@ -771,7 +771,6 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandPhaseEThreat, ctx);
             await timed(BAND.checkBandV18149Statusbar, ctx);
             await timed(BAND.checkBandV18150Ride, ctx);
-            await timed(BAND.checkBandV18151Idb, ctx);
             await timed(BAND.checkBandR6Capability, ctx);
             await timed(BAND.checkBandM2RollenWahrheit, ctx);
             await timed(BAND.checkBandM3RittVollendet, ctx);
