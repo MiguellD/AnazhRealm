@@ -211,6 +211,21 @@ async function kreaturProben(r, T, opts) {
         }
         return null;
     };
+    // DIE PFOTEN EINES TIERS: der Aufsetz-Punkt jeder Pfote im Pfoten-Raum, in der Stand-Pose (die Linse von gate:tier-gang)
+    // — null ohne Nah-Gestalt oder ohne eines der Glieder `noch`
+    const pfotenRaum = (cr, noch) => {
+        const Tt = cr.userData._tierBaum && cr.userData._tierBaum.teile;
+        const ps = Tt ? [Tt.flP, Tt.frP, Tt.hlP, Tt.hrP] : [null];
+        if (ps.some((p) => !p) || noch.some((k) => !Tt[k])) return null;
+        r._tierBaumNeutralStance(cr);
+        cr.updateMatrixWorld(true);
+        const lokal = ps.map((p) => {
+            const w = new T.Vector3().setFromMatrixPosition(p.matrixWorld);
+            w.y = cr.position.y;
+            return p.worldToLocal(w);
+        });
+        return { ps, lokal, glieder: noch.map((k) => Tt[k]) };
+    };
     // Täter-Einspielung (Selbsttest): eine Methode der Instanz überdecken, im Aufräumen zurück.
     const decke = (restore, name, fn) => {
         const hatte = Object.prototype.hasOwnProperty.call(r, name);
@@ -641,21 +656,8 @@ async function kreaturProben(r, T, opts) {
             );
         // Pfoten: der Aufsetz-Punkt jeder Pfote im Pfoten-Raum (die Linse von gate:tier-gang, frei gegiert).
         const pfoten = tiere.map((cr) => {
-            const tb = cr.userData._tierBaum;
-            if (!tb || !tb.teile) return null;
-            const Tt = tb.teile;
-            const ps = [Tt.flP, Tt.frP, Tt.hlP, Tt.hrP];
-            if (ps.some((p) => !p) || !Tt.legHL) return null;
-            r._tierBaumNeutralStance(cr);
-            cr.updateMatrixWorld(true);
-            const boden = cr.position.y;
-            const lokal = ps.map((p) => {
-                const w = new T.Vector3().setFromMatrixPosition(p.matrixWorld);
-                w.y = boden;
-                return p.worldToLocal(w.clone());
-            });
-            const hueft = new T.Vector3().setFromMatrixPosition(Tt.legHL.matrixWorld).y - boden;
-            return { ps, lokal, hueft, spur: ps.map(() => []), leib: [], ph: [] };
+            const P = pfotenRaum(cr, ["legHL"]);
+            return P && { ps: P.ps, lokal: P.lokal, spur: P.ps.map(() => []), leib: [], ph: [] };
         });
         const dt = 1 / 60;
         const v = 1.4; // m/s — der Spieler geht
@@ -1867,27 +1869,13 @@ async function kreaturProben(r, T, opts) {
         const tiere = [stelle("wolf", -1.6), stelle("wesen", 1.6)];
         // die Pfoten: der Aufsetz-Punkt jeder Pfote im Pfoten-Raum (in der Stand-Pose)
         const kalib = tiere.map((cr) => {
-            const tb = cr.userData._tierBaum;
-            if (!tb || !tb.teile) return null;
-            const Tt = tb.teile;
-            const ps = [Tt.flP, Tt.frP, Tt.hlP, Tt.hrP];
-            const hf = [Tt.legFL, Tt.legFR, Tt.legHL, Tt.legHR];
-            if (ps.some((p) => !p) || hf.some((p) => !p)) return null;
-            const altPos = cr.position.clone(),
-                altRot = cr.rotation.clone();
+            const [altPos, altRot] = [cr.position.clone(), cr.rotation.clone()];
             cr.rotation.set(0, 0, 0);
-            r._tierBaumNeutralStance(cr);
-            cr.updateMatrixWorld(true);
-            const boden = cr.position.y;
-            const lokal = ps.map((p) => {
-                const w = new T.Vector3().setFromMatrixPosition(p.matrixWorld);
-                w.y = boden;
-                return p.worldToLocal(w.clone());
-            });
+            const P = pfotenRaum(cr, ["legFL", "legFR", "legHL", "legHR"]);
             cr.position.copy(altPos);
             cr.rotation.copy(altRot);
             cr.updateMatrixWorld(true);
-            return { ps, hf, lokal };
+            return P && { ps: P.ps, hf: P.glieder, lokal: P.lokal };
         });
         if (kalib.some((k) => !k)) return { fehler: "keine Nah-Gestalt (Pfoten)" };
         const sohlen = (i) => {
