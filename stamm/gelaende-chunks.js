@@ -775,45 +775,14 @@ class AnazhRealm_gelaende_chunks {
                 frei,
             };
         };
-        if (this.state._frameOverBudget) {
-            const jetzt = typeof performance !== "undefined" ? performance.now() : Date.now();
-            if (this._wuchsNaechster !== undefined && jetzt < this._wuchsNaechster) return;
-            let naechster = null;
-            let naechsterD = Infinity;
-            for (const key of pending) {
-                const ci = key.indexOf(",");
-                const cx = parseInt(key.slice(0, ci), 10),
-                    cz = parseInt(key.slice(ci + 1), 10);
-                if (!this._foliageChunkInRadius(cx, cz)) {
-                    draussen(cx, cz); // noch zu fern → warten
-                    continue;
-                }
-                const d = pm
-                    ? Math.hypot(cx * span + span / 2 - pm.position.x, cz * span + span / 2 - pm.position.z)
-                    : 0;
-                if (d < naechsterD) {
-                    naechsterD = d;
-                    naechster = { key, cx, cz };
-                }
-            }
-            if (!naechster) {
-                schlafe();
-                return;
-            }
-            this._wuchsNaechster = jetzt + AnazhRealm.WUCHS_DROSSEL_MS; // Instanz-Feld (nie im Spielstand)
-            pending.delete(naechster.key);
-            if (this.state.voxelChunks && this.state.voxelChunks.has(naechster.key))
-                this._populateVoxelChunkVegetation(naechster.cx, naechster.cz);
-            return;
-        }
-        // zwei Chunks je Takt — eine Kappe (`_kappeOffen`): unter dem Ladeschirm wächst das Laub bis zur Frist des Lade-Frames
-        let n = 0;
-        let ganz = true;
+        const ueber = this.state._frameOverBudget;
+        const jetzt = typeof performance !== "undefined" ? performance.now() : Date.now();
+        if (ueber && this._wuchsNaechster !== undefined && jetzt < this._wuchsNaechster) return;
+        // DER EINE RANG DER ANKUNFT in beiden Hälften (`_foundryAuftragD2`, Lehre 25: vor dem ersten Weltbild der Blick zuerst,
+        // danach nah zuerst rundum): die wartenden Chunks im Radius nach dem Rang ihrer Mitte — bis gate:ankunft L2a säte der
+        // Takt unter dem Budget in der Reihenfolge des Wartens, ein naher Chunk hinter dem Spieler hinter fernen
+        const nah = [];
         for (const key of pending) {
-            if (!this._kappeOffen(n, 2)) {
-                ganz = false;
-                break;
-            }
             const ci = key.indexOf(",");
             const cx = parseInt(key.slice(0, ci), 10),
                 cz = parseInt(key.slice(ci + 1), 10);
@@ -821,13 +790,26 @@ class AnazhRealm_gelaende_chunks {
                 draussen(cx, cz); // noch zu fern → warten
                 continue;
             }
-            pending.delete(key);
-            if (this.state.voxelChunks && this.state.voxelChunks.has(key)) {
-                this._populateVoxelChunkVegetation(cx, cz);
+            nah.push({ key, cx, cz, d: this._foundryAuftragD2({ x: cx * span + span / 2, z: cz * span + span / 2 }) });
+        }
+        nah.sort((a, b) => a.d - b.d);
+        // über dem Budget EIN Chunk je WUCHS_DROSSEL_MS (Instanz-Feld, nie im Spielstand); sonst zwei je Takt — eine Kappe
+        // (`_kappeOffen`): unter dem Ladeschirm wächst das Laub bis zur Frist des Lade-Frames
+        if (ueber && nah.length) {
+            nah.length = 1;
+            this._wuchsNaechster = jetzt + AnazhRealm.WUCHS_DROSSEL_MS;
+        }
+        let n = 0;
+        for (const c of nah) {
+            if (!this._kappeOffen(n, 2)) return;
+            pending.delete(c.key);
+            if (this.state.voxelChunks && this.state.voxelChunks.has(c.key)) {
+                this._populateVoxelChunkVegetation(c.cx, c.cz);
                 n++;
             }
         }
-        if (ganz && n === 0) schlafe();
+        // geschlafen wird, wenn kein Chunk im Radius mehr wartet (über dem Budget kann hinter dem einen noch einer warten)
+        if (!nah.length || (n === 0 && !ueber)) schlafe();
     }
 
     // Worker-Update bei voxelEdit: nur der Delta-Edit (Atlas unverändert). Die Karte trägt ihn nach — die

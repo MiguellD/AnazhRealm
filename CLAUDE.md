@@ -70,7 +70,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.546.91 — main = integ-probe ff88b82d, 18.10.; offen ist NUR, was `docs/PFLICHT-OFFEN.md` trägt; die Chronik ist `git log`)
+## Stand (V18.546.92 — main = integ-probe ff88b82d, 18.10.; offen ist NUR, was `docs/PFLICHT-OFFEN.md` trägt; die Chronik ist `git log`)
 
 **ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen · in der Werkstatt bauen · mit der KI erschaffen
 (Satz → DSL-Op `spawn_studio` → EIN Stempel `_studioStampFor`; offen: der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · benutzen/teilen — bei
@@ -80,6 +80,7 @@ p95 ≤ 33 ms auf JEDEM Standardgerät (Richter: das Profi-Band). Feature-Stopp 
 - **A** AAAA je Klasse: die Soll-Tafel trägt 12 Klassen, an ihren Mittag-Posen 11 GRÜN, ROT laub-kante 0,2635 > 0,22 (Karte `fimp:atlas:L2`,
   17.10., 5deb7cb1); am Spawn misst sie 3 von 12, Uhr × Sicht nie.
 - **B** Ankunft ≤ 5 s kalt: GTX Weltbild kalt 16,6 s (16,1–17,0), Zweit-Boot 12,0 s, der Haupt-Faden bis zum Bild 97 % belegt; Radeon ~11 s.
+- **C** Verkehr (gesetzt 25.10.): Wagen mit Bewohnern am Steuer auf den Trassen der Stadt, nach der Messbühne Stadt-Gipfel; noch keine Station.
 - **E** Profi-Band (Radeon 890M + GTX 1060, Wiese + Genesis, Ego + Third): GTX stehend Frame p95 16,8 ms · VRAM 99,6–111,2 MB · CPU-Takt
   p95 4,7–6,3 ms, reißt an Genesis Third (6,3 > 5,8); das Radeon-ABAB am Kopf steht aus.
 
