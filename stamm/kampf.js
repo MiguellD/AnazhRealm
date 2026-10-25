@@ -1417,10 +1417,13 @@ class AnazhRealm_kampf {
         const sw = p && p._swing;
         const rig = mesh && mesh.userData && mesh.userData.rig;
         const a = rig && rig.armR;
-        // (0) ohne Schwung steht die Hülle des Leibs auf ihrem Platz (den Ausfall trägt sie nur im Schwung, Schritt 2)
+        // (0) die Hülle des Leibs merkt ihren Platz — dort stellt `_animateHuman` sie vor Pose und Fuß-IK hin (den Ausfall
+        // trägt sie nur im Schwung, Schritt 2)
         const huelle = this._kampfHuelle(mesh);
-        if (huelle && !huelle.userData._ausfallBasis) huelle.userData._ausfallBasis = huelle.position.clone();
-        if (huelle) huelle.position.copy(huelle.userData._ausfallBasis);
+        if (huelle) {
+            if (!huelle.userData._ausfallBasis) huelle.userData._ausfallBasis = huelle.position.clone();
+            mesh.userData._ausfallHuelle = huelle;
+        }
         if (!sw || !sw.rahmen || !a || !a.shoulder || !a.elbow || !a.wrist || !rig.spine || !rig.spine.parent) return;
         const achse = this._kampfKlingenAchse(sw, this._poseAchse || (this._poseAchse = {}));
         const L = this._kampfSchwungLage(sw, sw.t, achse, this._poseLage || (this._poseLage = {}));

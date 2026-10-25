@@ -105,6 +105,11 @@ class AnazhRealm_koerper_fahrt {
         // Der Rig-Avatar wird über die Bones bewegt (Walk/Idle/Kontrapost/Schwimm); ohne Rig kommt der
         // Aufrufer nie hierher. gait ({w, amp, ik}) reist vom EINEN Gang-Tick zum Rig durch.
         if (!group.userData || !group.userData.rig) return;
+        // Die Hülle steht auf ihrem Platz, bevor Pose und Fuß-IK die Glieder lesen — den Ausfall des Schwungs trägt sie nur im
+        // Layer danach (`_applyKampfSchwungPose`). Bis leib-k2 stellte erst der Layer sie zurück: die Fuß-IK des nächsten
+        // Takts las die Füße um den Ausfall versetzt (gate:kampf-gefuehl (E): die Proben 2,1 m neben dem Bau, 32 cm tiefer).
+        const huelle = group.userData._ausfallHuelle;
+        if (huelle) huelle.position.copy(huelle.userData._ausfallBasis);
         // Schwimmen: der GANZE Körper legt sich horizontal (group-Lehne), die Glieder macht das Rig; an Land
         // rotation.x = 0. Lehne aus dem koerperstudio-Gesetzbuch (fx.bewegung.schwimmen.lean).
         if (underwater) {

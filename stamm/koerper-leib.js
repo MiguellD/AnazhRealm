@@ -741,11 +741,10 @@ class AnazhRealm_koerper_leib {
         foot.x = av.x;
         foot.z = av.z;
         const geht = w >= 0.35;
-        const stance = geht ? imStand : true; // Idle: beide Füße geplantet
-        if (!stance) {
-            lock.on = false;
-            return; // Schwung-Bein: die Pose bleibt (nur die Stance ankert)
-        }
+        // der Lock hält nur den gehenden Fuß im Stand: im Schwung und im Idle (beide Füße geplantet) löst er — sonst las die
+        // Probe des Idle am Lock-Punkt des letzten Schritts (`_gaitIKPrep`), und der nächste Gang zog den Fuß dorthin zurück
+        if (!geht || !imStand) lock.on = false;
+        if (geht && !imStand) return; // Schwung-Bein: die Pose bleibt (nur die Stance ankert)
         let tx = foot.x;
         let tz = foot.z;
         if (geht) {
