@@ -30,10 +30,11 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 
 - TERRAIN = Funktion: Höhe (2D), Landform und Flussnetz = EIN Gelände-Kern `gelaende-core.js` (Stamm · Worker · Studio · Playtest),
   Chunks = Iso-CACHE mit EIGENER Stufen-Kette (`BODEN_STUFEN`; der Wechsel morpht deckungsgleich nach CDLOD, K51), Wildnis = EIN Term ·
-  WELT-MARCH EIN Pass · Edits = EINE Karte je Chunk (`_voxelEditKarte`). Heute ohne Kern: die 3D-Dichte (Höhle, Kanal, Edit) lebt im
-  Stamm und als Abschrift in `voxel-worker.js` (~40 Funktionen, W1).
+  WELT-MARCH EIN Pass · Edits = EINE Karte je Chunk (`_voxelEditKarte`, im Kern `editKarte`) · die 3D-Dichte (Höhle, Kanal,
+  See-Becken, Edit) und der Wasser-Spiegel sind Kern-Gesetz (`dichte`, `wasserSpiegel`), Stamm und voxel-worker rufen sie
+  (`gate:worker-dichte --kern` mutiert sie).
 - WASSER: die Hydrosphäre (gelaende-core `hydrosphaere`, gerechnet im voxel-worker, per Transfer im Main) → Zellen → Automat, die Ruhe ist sein Fixpunkt (`_ensureWaterCALevel`), sein Blick EIN
-  Baustein (`_wasserBlick`). Heute keine EINE Wahrheit: 8 Schreiber, kein Kern, die Seen doppelt (Gelände-Kern und Stamm).
+  Baustein (`_wasserBlick`). Heute keine EINE Wahrheit: 8 Schreiber, die Seen doppelt (Gelände-Kern und Stamm); der Spiegel ist Kern.
 - ORT: der Genesis-Platz (`GENESIS_PLATZ`), jedes Bauwerk und jeder Dorfweg sind Grundriss gegen Natur, das Dorf EIN Plan des
   Fachwerk-Studios auf dem Gelände-Kern (`_ortPlaene`), jeder Wurf des Felds weicht ihm (`FELD_WURF`, `_weichtDemBau`). Heute hält die
   Instanz-Wand (`_naturWand`) Bauten frei, die Schicht (Halm, Nah-Wiese) noch nicht.
@@ -75,7 +76,7 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 7. **Gesetz statt Spiegel:** die Höhe ruft EIN Gesetzbuch (`gelaende-core.js`, Lage = Worker-`state` bzw. `_gelaende()`); ein
    Worker-Spiegel ist bit-identisch (Sheet/Density in BEIDE, der Band `checkBandWasserSheetSpiegel` maxDiff 0, `gate:worker-dichte` auch
    über dem Band); Substanz aus Γ5-Seed-Streams, nie `Math.random`; ein Zwillings-Abdruck ist ein MUSTER über jede Datei und jedes
-   Skript, nie ein Variablen-Name. Heute gilt das Gesetzbuch für die 2D-Höhe; die 3D-Dichte ist Spiegel (W1).
+   Skript, nie ein Variablen-Name. Das Gesetzbuch trägt die 2D-Höhe, die 3D-Dichte und den Wasser-Spiegel (gelaende-k1k4).
 8. **Spawn-Affinität ist TAG-NEUTRAL** (winner-take-all; Tiere bewusst tag-identisch, Differenzierung über Größe/Gattung, nie über Tags).
 9. **Exit-Codes IMMER explizit** (`echo EXIT=$?`) — `gate | tail` maskiert sie; Backslash-Ersetzungen (Regex, WGSL) nur per Edit-Werkzeug.
 10. **Jede versionierte Datei trägt den `?v=`-Cache-Buster** (Worker/Bootstrap/importScripts); `npm run bump -- x.y.z` setzt alle Träger.

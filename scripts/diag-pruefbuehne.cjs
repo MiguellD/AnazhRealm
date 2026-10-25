@@ -85,7 +85,7 @@ async function boote(page) {
             if (r && typeof r._gameLoopTick === "function") {
                 try {
                     r._gameLoopTick(performance.now());
-                } catch (_e) {
+                } catch {
                     /* der Boot reift */
                 }
                 const s = r.state;
@@ -237,7 +237,7 @@ async function s0Probe(page, station, schein) {
                 for (let i = 0; i < n; i++) {
                     try {
                         r._gameLoopTick(performance.now());
-                    } catch (_e) {
+                    } catch {
                         /* ein Takt-Fehler zählt der Page-Error */
                     }
                     await new Promise((res) => setTimeout(res, 16));
@@ -251,7 +251,7 @@ async function s0Probe(page, station, schein) {
                     const T3 = THREE;
                     try {
                         return this._leuchtStoff(new T3.MeshStandardNodeMaterial({ color: 0xffffff }), null);
-                    } catch (_e) {
+                    } catch {
                         return new T3.MeshStandardMaterial({ color: 0xffffff });
                     }
                 };
@@ -280,7 +280,7 @@ async function s0Probe(page, station, schein) {
             };
             try {
                 r._lichtPoolTerm(THREE.TSL, r._ensureAtmoUniforms(), null);
-            } catch (_e) {
+            } catch {
                 /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
             }
             delete r._punktLichtBrdf;
@@ -497,7 +497,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                 for (let i = 0; i * 16 < ms; i++) {
                     try {
                         r._gameLoopTick(performance.now());
-                    } catch (_e) {
+                    } catch {
                         /* ein Takt-Fehler zählt der Page-Error */
                     }
                     await new Promise((res) => setTimeout(res, 16));
@@ -825,7 +825,7 @@ const S0_GESTALT_INSTALL = () => {
         let pr = null;
         try {
             pr = r._foundryPresetForEntry(feuer);
-        } catch (_e) {
+        } catch {
             pr = null;
         }
         const q = f.warte || [];
@@ -1036,7 +1036,7 @@ async function lichtLauf() {
                 localStorage.clear();
                 sessionStorage.setItem("__s0Leer", "1");
             }
-        } catch (_e) {
+        } catch {
             /* */
         }
     });
@@ -1112,7 +1112,7 @@ async function lichtLauf() {
                                 const t = performance.now();
                                 try {
                                     r._gameLoopTick(t);
-                                } catch (_e) {
+                                } catch {
                                     /* ein Takt-Fehler zählt der Page-Error */
                                 }
                                 laengsterTakt = Math.max(laengsterTakt, performance.now() - t);
@@ -1705,7 +1705,7 @@ function zeige(rep) {
     await page.evaluate(() => {
         try {
             localStorage.clear();
-        } catch (_e) {
+        } catch {
             /* */
         }
     });

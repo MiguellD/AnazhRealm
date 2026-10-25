@@ -2449,7 +2449,7 @@ AnazhRealm.PLAYER_GROUND_SNAP = 0.25;
 AnazhRealm.PLAYER_WALL_RADIUS = 0.35;
 // Der Stab: eine Blocker-Box, deren Grundfläche schmaler ist als ein Fuß, trägt keinen Leib (`_blockerFugen`).
 AnazhRealm.PLAYER_STAB = 0.15;
-// ═══ KOPPLUNG — Strömung · Gleiten · Wind · Gras (gate:kopplung) ═══
+// ═══ KOPPLUNG — Strömung (gate:wasser-leben K4 STRÖMUNG) · Gleiten · Wind · Gras (gate:kopplung) ═══
 // Die Strömung ist das Gesetz (`_waterFlowAt` liest WASSER_GESETZ.wellen.adv), die Kopplung additiv (`_stepCharacter` 4b).
 // SLIDE_CLIP_PLANES: max. Kontaktebenen im PM_ClipVelocity-Wand-Klip (Quake
 // PM_SlideMove: Wand = 1, Ecke = 2, Kerbe = 3 — mehr Ebenen sind degeneriert,

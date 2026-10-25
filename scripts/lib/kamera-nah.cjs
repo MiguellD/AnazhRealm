@@ -634,4 +634,4 @@ function nahDeckungInSeite(o) {
     };
 }
 
-module.exports = { nahDeckungInSeite, KAMERA_NAH_INSTALL: `window.__nahDeckung = ${nahDeckungInSeite.toString()};` };
+module.exports = { KAMERA_NAH_INSTALL: `window.__nahDeckung = ${nahDeckungInSeite.toString()};` };

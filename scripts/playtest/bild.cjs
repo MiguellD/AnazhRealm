@@ -685,7 +685,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                     }
                 }
                 return false; // alles up → der Bake wäre zurück (Regression)
-            } catch (e) {
+            } catch {
                 return false;
             }
         })();
@@ -706,7 +706,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             try {
                 _structMat.color.setHex(0xc0392b);
                 _dynColorOk = _structMat.color.getHexString() === "c0392b";
-            } catch (_e) {
+            } catch {
                 _dynColorOk = false;
             }
         }
@@ -1637,7 +1637,6 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
         const out = {};
 
         // (IV) Büsche wachsen aus dem Gesetz (kein Kugel-Haufen) — der Studio-Strauch, K24
@@ -1652,7 +1651,7 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
             const keys = window.__withNoFoundry(() => r._buildVariantLODs("busch_hazel", 0));
             const bp = keys && r.state.blueprints[keys[0]];
             buschParts = bp && Array.isArray(bp.parts) ? bp.parts.length : 0;
-        } catch (_e) {
+        } catch {
             /* gen < 7 → Grammatik-Struktur trägt den Beweis */
         }
         out.buschParts = buschParts;
