@@ -244,7 +244,7 @@ const stationen = [
             const je = (wo) => gang.filter((m) => m[2] === wo);
             const gat = (wo) => new Set(je(wo).map((m) => m[3])).size;
             const kreuz = z.filter((l) => /^\s*✅ Gangart Welt \S+ \((Freude|Furcht|Trauer|Jagd)\)/.test(l)).length;
-            const lab = z.filter((l) => /Gangart Labor/.test(l) && /Welt − Labor/.test(l) && /Satz − Labor/.test(l));
+            const lab = z.filter((l) => /^\s*(✅|❌) Gangart Labor/.test(l) && /Welt − Labor/.test(l) && /Satz − Labor/.test(l));
             const ab = (wer) => Math.max(0, ...lab.map((l) => Number((new RegExp(wer + " − Labor (\\S+)").exec(l) || [])[1])));
             const kern =
                 /TIER-GANG EXIT=0/.test(out) && gang.every((m) => m[1] === "✅") && ["Welt", "Satz", "Labor"].every((w) => je(w).length >= 16 && gat(w) >= 4) &&
