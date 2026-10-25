@@ -196,38 +196,35 @@ const stationen = [
         kriterium: "tiere.K3",
         staffel: 1,
         geraet: "headless",
-        // der Stand-Fuß gleitet nicht — Kontakt-Mechanik (R3), wie der Beleg die 1 frisch hält: gate:tier-gang (jede Gattung bei
-        // v̂ 0,3 · 0,74 · 1,2 · 3,5, auch unter Last) UND die Probe tiersatz der Kreatur-Linse (die Satz-Tiere jenseits
-        // `nahLeiber`, `_tierSatzGang`). Gerichtet wird nur der Schlupf der Tiere (Staffel 1), nicht Mensch, Becken, Labor.
-        befehl: [
-            "bash",
-            "-c",
-            "node scripts/diag-tier-gang.cjs; echo \"TIER-GANG EXIT=$?\"; " +
-                "KREATUR_TAKT_PORT=$(( {PORT} + 20000 )) node scripts/diag-kreatur-takt.cjs --proben tiersatz; " +
-                "echo \"TIERSATZ EXIT=$?\"",
-        ],
+        // der Stand-Fuß gleitet nicht — Kontakt-Mechanik (R3), wie der Beleg die 1 frisch hält: gate:tier-gang, jede Gattung bei
+        // v̂ 0,3 · 0,74 · 1,2 · 3,5 als Leib (auch unter Last) UND im Satz (jenseits `nahLeiber`: `_tierSatzGang`, gemessen am
+        // Knochen-Puffer, wie der Knoten zeichnet — seit tiere-gang-tastgrad dort statt in der Probe tiersatz der Kreatur-Linse).
+        // Gerichtet wird nur der Schlupf der Tiere (Staffel 1), nicht Mensch, Becken, Labor.
+        befehl: ["node", "scripts/diag-tier-gang.cjs"],
         env: { TIER_GANG_PORT: "{PORT}" },
         gpu: false,
         minuten: 4,
         urteil: (j, lauf) => {
-            const re = /^\s*(✅|❌) (\S+)\s+v̂ (\S+) (\S+) m\/s(?: \((.*)\))? · Hüfte \S+ m · Stand \S+ · Schlupf (\S+)\s*$/;
-            const tiere = String(lauf.stdout || "")
-                .split(/\r?\n/)
-                .map((l) => re.exec(l))
-                .filter(Boolean)
-                .map((m) => ({ seele: m[2], vh: m[3], last: m[5] || null, schlupf: m[6] === "null" ? null : Number(m[6]) }));
-            const gattungen = new Set(tiere.map((t) => t.seele));
-            const gleiten = tiere.filter((t) => !(t.schlupf !== null && t.schlupf <= 0.05));
-            const s = probeZeile(lauf.stdout, "tiersatz");
-            const satzOk = !!s && !s.fehler && s.satzTiere >= 10 && s.wegLeib >= 20 && s.schlupf !== null && s.schlupf <= 0.05;
-            const max = tiere.reduce((m, t) => (t.schlupf === null ? m : Math.max(m, t.schlupf)), 0);
-            const gruen = tiere.length >= 16 && gattungen.size >= 4 && gleiten.length === 0 && satzOk;
+            const zeilen = (re) =>
+                String(lauf.stdout || "")
+                    .split(/\r?\n/)
+                    .map((l) => re.exec(l))
+                    .filter(Boolean)
+                    .map((m) => ({ seele: m[2], vh: m[3], schlupf: m[4] === "null" ? null : Number(m[4]) }));
+            const tiere = zeilen(/^\s*(✅|❌) (\S+)\s+v̂ (\S+) \S+ m\/s(?: \(.*\))? · Hüfte \S+ m · Stand \S+ · Schlupf (\S+)\s*$/);
+            const satz = zeilen(/^\s*(✅|❌) satz (\S+)\s+v̂ (\S+) \S+ m\/s · Band \S+ · Hüfte \S+ m · Stand \S+ · Schlupf (\S+)\s*$/);
+            const [gL, gS] = [tiere, satz].map((a) => new Set(a.map((t) => t.seele)).size);
+            const gleiten = [...tiere, ...satz.map((t) => ({ ...t, seele: "satz " + t.seele }))].filter(
+                (t) => !(t.schlupf !== null && t.schlupf <= 0.05)
+            );
+            const max = (a) => a.reduce((m, t) => (t.schlupf === null ? m : Math.max(m, t.schlupf)), 0);
+            const gruen = tiere.length >= 16 && gL >= 4 && satz.length >= 16 && gS >= 4 && gleiten.length === 0;
             return {
                 gruen,
                 zahl:
-                    "Schlupf des Stand-Fußes max " + max + " in " + tiere.length + " Läufen (" + gattungen.size +
-                    " Gattungen" + (gleiten.length ? ", über 0,05: " + gleiten.map((t) => t.seele + " v̂ " + t.vh).join(" · ") : "") +
-                    "), Satz-Tiere " + (s ? (s.fehler ? "Fehler " + s.fehler : s.schlupf + " über " + s.wegLeib + " m von " + s.satzTiere) : "ohne Zeile"),
+                    "Schlupf des Stand-Fußes max " + max(tiere) + " in " + tiere.length + " Läufen als Leib (" + gL +
+                    " Gattungen), max " + max(satz) + " in " + satz.length + " im Satz (" + gS + " Gattungen)" +
+                    (gleiten.length ? ", über 0,05: " + gleiten.map((t) => t.seele + " v̂ " + t.vh).join(" · ") : ""),
             };
         },
         pfad: [
@@ -240,11 +237,100 @@ const stationen = [
             "koerper-core.js",
             "gelaende-core.js",
             "scripts/diag-tier-gang.cjs",
-            "scripts/diag-kreatur-takt.cjs",
-            "scripts/lib/kreatur-proben.cjs",
             "scripts/lib/welt-boot.cjs",
         ],
         quelle: "1 = der Fuß steht (Schlupf ≤ 0,05)",
+    },
+    // ───────── tiere.K3#2 — der Gang aus Fr in Welt (Leib und Satz) und Labor, am Querhang, im Bild aus 10 m (tiere-gang-tastgrad) ─────────
+    // Kern: gate:tier-gang — je Gattung bei v̂ 0,3 · 0,74 · 1,2 · 3,5 Fußfolge und Tastgrad im Band als Leib, im Satz (jenseits
+    // `nahLeiber`, gemessen am Knochen-Puffer, wie der Knoten zeichnet) und im Labor; Welt − Labor und Satz − Labor ≤ 0,05 Zyklus
+    // über die Phasen (das Aufsetzen je Fuß); die Kreuz-Probe Stimmung × Tempo im lateinischen Quadrat (die Welt-Zeilen tragen
+    // Freude · Furcht · Trauer · Jagd), unter Last (30 fps, Raten-Leiter) der Schlupf — dazu gate:kreatur-takt querhang (Hang
+    // 20–30° der Welt und Rampe 29,9°: Bein-Lot ≤ 10°, Schlupf ≤ 0,05). Bild: die Gang-Bühne (die vier Gattungen im Schritt
+    // v̂ 0,5 nebeneinander auf dem Boden der Welt, der Loop ruht, der Lebenszyklus der Fauna hält — kein Hunger-Tod im Schuss)
+    // aus 10 m im Profil; je Tier drei Füße am Boden (BUEHNE-Zeile,
+    // derselbe Aufsetz-Punkt wie gate:tier-gang), jede Gattung im Bild (`--klasse '^tier:'`). Ports: save-server {PORT},
+    // tier-gang {PORT}+10000, Werkbank {PORT}+20000, Kreatur-Linse {PORT}+30000.
+    {
+        kriterium: "tiere.K3",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: [
+            "bash",
+            "-c",
+            [
+                "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
+                "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+                "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
+                "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
+                "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
+                "trap ende EXIT; trap 'exit 143' INT TERM",
+                "raeum; stand",
+                "TIER_GANG_PORT=$(( {PORT} + 10000 )) node scripts/diag-tier-gang.cjs; echo \"TIER-GANG EXIT=$?\"",
+                "KREATUR_TAKT_PORT=$(( {PORT} + 30000 )) node scripts/diag-kreatur-takt.cjs --proben querhang; echo \"QUERHANG EXIT=$?\"",
+                "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
+                "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
+                "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
+                "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
+                "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
+                "node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1",
+                "erg() { node -e 'const t = require(\"fs\").readFileSync(0, \"utf8\"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf(\"{\"))).ergebnis))'; }",
+                "G=$(node scripts/werkbank.cjs eval 'const s = r.state, pm = s.playerMesh.position, h = (x, z) => r.getTerrainHeightAt(x, z), V = () => new window.THREE.Vector3(); r.setGameMode(\"pfad\"); for (const c of [...s.creatures, ...s.leichname]) r.removeCreature(c); s.renderer.setAnimationLoop(null); s.faunaLifecycle.lastTick = 1e12; const z0 = pm.z + 24; const tiere = [\"wolf\", \"fuchs\", \"baer\", \"wesen\"].map((seele, n) => { const x0 = pm.x - 5 + n * 3.4; s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 4); const c = r.spawnCreatureAt(x0, h(x0, z0) + 0.3, z0, \"happy\", seele, { precise: true, bodySize: 1 }); c.userData.task = { name: \"wait\", args: {}, since: 0 }; c.userData.emotions = null; c.rotation.set(0, Math.PI / 2, 0); c.userData._animFade = 1; const tb = c.userData._tierBaum, T = tb.teile, P = [T.flP, T.frP, T.hlP, T.hrP]; r._tierBaumNeutralStance(c); c.updateMatrixWorld(true); const lokal = P.map((p) => { const w = V().setFromMatrixPosition(p.matrixWorld); w.y = c.position.y; return p.worldToLocal(w); }); const hl = V().setFromMatrixPosition(T.legHL.matrixWorld).y - c.position.y; const v = 0.5 * Math.sqrt(-s.gravity * tb.beinL * (c.scale.x || 1)); c.position.x = x0 - v * 4.3; for (let i = 0, t = 0; i < 258 + n * 7; i++) { c.position.x += v / 60; const y = h(c.position.x, c.position.z); c.position.y = y; c.userData._traegerY = y; c.userData._traegerStruktur = false; r._animateCompoundMotion(c, r._motionRolesForSoul(c.userData.soul), (t += 1 / 60), 0, true, null); } c.updateMatrixWorld(true); const amBoden = P.filter((p, j) => { const w = p.localToWorld(lokal[j].clone()); return w.y - h(w.x, w.z) <= 0.05 * hl; }).length; return { seele, x: +c.position.x.toFixed(1), art: tb._gang.art, amBoden }; }); const xc = tiere.reduce((a, t) => a + t.x, 0) / 4; return { tiere, kamera: [xc, h(xc, z0 - 10) + 2, z0 - 10, xc, h(xc, z0) + 0.5, z0].map((v) => +v.toFixed(2)) };' | erg); echo \"BUEHNE $G\"",
+                "node scripts/werkbank.cjs bild $(node -e 'console.log(JSON.parse(process.argv[1]).kamera.join(\" \"))' \"$G\") --w 1920 --h 1080 --klasse '^tier:' --ziel gang --datei \"$B-gang.png\" > \"$B-bild.txt\" 2>&1",
+                "echo \"BILD $(grep -o '\"abnahme\": \"[^\"]*\"' \"$B-bild.txt\")\"",
+                "cp \"$B-gang.abnahme.json\" \"$A\"",
+            ].join("\n"),
+        ],
+        gpu: true,
+        minuten: 14,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const z = out.split(/\r?\n/);
+            const gang = z.map((l) => /^\s*(✅|❌) Gangart (Welt|Satz|Labor) (\S+)/.exec(l)).filter(Boolean);
+            const je = (wo) => gang.filter((m) => m[2] === wo);
+            const gat = (wo) => new Set(je(wo).map((m) => m[3])).size;
+            const kreuz = z.filter((l) => /^\s*✅ Gangart Welt \S+ \((Freude|Furcht|Trauer|Jagd)\)/.test(l)).length;
+            const lab = z.filter((l) => /^\s*(✅|❌) Gangart Labor/.test(l) && /Welt − Labor/.test(l) && /Satz − Labor/.test(l));
+            const ab = (wer) => Math.max(0, ...lab.map((l) => Number((new RegExp(wer + " − Labor (\\S+)").exec(l) || [])[1])));
+            const kern =
+                /TIER-GANG EXIT=0/.test(out) && gang.every((m) => m[1] === "✅") && ["Welt", "Satz", "Labor"].every((w) => je(w).length >= 16 && gat(w) >= 4) &&
+                kreuz >= 16 && lab.length >= 16 && ab("Welt") <= 0.05 && ab("Satz") <= 0.05;
+            const q = probeZeile(out, "querhang");
+            const quer = !!q && !q.fehler && /^\s*✅ querhang\s/m.test(out) && q.hangGrad >= 20;
+            const bu = jsonZeile(out, /^BUEHNE /);
+            const T = (bu && bu.tiere) || [];
+            const K = (j && j.klasse && j.klasse.klassen) || {};
+            const px = ["wolf", "fuchs", "baer", "wesen"].map((s) => (K["tier:" + s] || {}).pixel || 0);
+            const b = (j && j.bild) || {};
+            const bild = T.length === 4 && T.every((t) => t.amBoden >= 3 && t.art === "schritt") && px.every((p) => p >= 400) && b.w === 1920 && b.h === 1080 && j.ok === true;
+            return {
+                gruen: kern && quer && bild,
+                zahl:
+                    "Gangart " + gang.filter((m) => m[1] === "✅").length + "/" + gang.length + " grün (Welt " + je("Welt").length + ", Satz " + je("Satz").length +
+                    ", Labor " + je("Labor").length + ", Kreuz " + kreuz + "), Welt − Labor ≤ " + ab("Welt") + ", Satz − Labor ≤ " +
+                    ab("Satz") + " Zyklus · Querhang " + (q ? (q.fehler ? "Fehler " + q.fehler : q.hangGrad + "°, Schlupf " + JSON.stringify(q.schlupf)) : "ohne Zeile") +
+                    " · Bühne " + (T.length ? T.map((t) => t.seele + " " + t.art + " " + t.amBoden + " Füße").join(", ") : "ohne Zeile") + " · tier-Pixel " + px.join("/") +
+                    " in " + b.w + "×" + b.h + ", " + ((j && j.zeile) || "ohne Abnahme-Zeile"),
+            };
+        },
+        pfad: [
+            ...KREATUR,
+            "stamm/stoff-*.js",
+            "stamm/bild-*.js",
+            "stamm/gelaende-boden.js",
+            "stamm/gelaende-kollision.js",
+            "koerper-core.js",
+            "gelaende-core.js",
+            "worlds/tetrapoda/*",
+            "save-server.js",
+            "scripts/diag-tier-gang.cjs",
+            "scripts/werkbank.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle:
+            "2 = Fußfolge aus Fr für alle 4 Gattungen, Tastgrad im Band, Querhang 20°, Labor = Welt über die Phasen, Third-Bild aus 10 m",
     },
     {
         kriterium: "mensch.K1",
@@ -856,18 +942,6 @@ const fehlt = [
             "und kein Reload der Bindung in einer Linse; GTX ungemessen",
         quelle:
             "2 = die Ansteckung verschiebt die Stimmung des Spielers messbar gegen einen Gegenlauf mit bond = 0, und die Bindung übersteht den Reload",
-    },
-    {
-        kriterium: "tiere.K3",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "Werkzeug fehlt (M42): `scripts/diag-tier-gang.cjs` kennt `_satz` nicht — die Gang-Bühne mit 4 Tieren misst nur " +
-            "Leiber, der Tastgrad der Satz-Tiere (`_tierSatzGang`, jenseits `nahLeiber` 4) und Labor = Welt über die Phasen " +
-            "sind ungemessen (R10); das Third-Bild aus 10 m auf eine Herde > 4 hat keine Station",
-        quelle:
-            "2 = Fußfolge aus Fr für alle 4 Gattungen, Tastgrad im Band, Querhang 20°, Labor = Welt über die Phasen, Third-Bild aus 10 m",
     },
     {
         kriterium: "mensch.K1",
