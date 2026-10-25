@@ -1,6 +1,6 @@
 // Stationen der Gruppe I (src/g1.js): je Kriterium und Staffel EINE Station — Befehl im Spiel-Baum am SHA, Urteil über
 // seine Ausgabe, Pfad für R6. Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst ist jedes Kriterium der Gruppe mit Punkten (gelaende K1–K5, wetter K1 K2 K5, physik K1 K2, feld K2 K3, stoffe K3;
+// Erfasst ist jedes Kriterium der Gruppe mit Punkten (gelaende K1–K5, wetter K1 K2 K5, physik K1 K2, feld K2 K3, stoffe K2 K3;
 // physik K2 ist zugleich das Ziel des Zweigs kontakt-tempo). Die Messschuld M30–M43 trägt kein Kriterium der Gruppe I.
 // Was kein Werkzeug im Spiel-Baum misst, steht NICHT in der Liste (der Läufer verlangt ein argv), sondern in
 // `module.exports.fehlt` mit befehl: null und dem Grund — das Kriterium bleibt dort Hand-Buchung, bis das Werkzeug steht.
@@ -42,6 +42,56 @@ function k8Sichten() {
     }
     fs.writeFileSync(aus, JSON.stringify(erg));
 }
+// stoffe.K2: die Front des Brands an der Pose des Rothermel-Bands — `werkbank eval` an der Mess-Wiese (Null-Renderer, die
+// Welt des Spiel-Baums): bewölkt (Wind 0,3), das Bett trocken (die Welt kennt kein trockenes Wort mit Wind 0,3: der Niesel
+// netzte es), gezündet über den Weg des Brennglases (`_brandEntfachen`), 180 Spielzeit-Schritte des EINEN Takts
+// (`_tickBrand`), je Zelle ihr Fang-Schritt; das Tempo längs des mittleren Winds am Herd in den Schritten 30–180 mit ihm und
+// gegen ihn. Startet die Werkbank auf {PORT}, schreibt das Ergebnis nach {AUS}, hält sie an.
+function feuerFront() {
+    const fs = require("fs");
+    const cp = require("child_process");
+    const [aus, port] = [process.argv[1], process.argv[2]];
+    const wb = (...a) => cp.spawnSync(process.execPath, ["scripts/werkbank.cjs", ...a, "--port", port], { encoding: "utf8", maxBuffer: 1 << 26 });
+    const probe = `const st = r.state, C = r.constructor, cs = C.LIFE_FIELD.cell, B = C.BRAND;
+const [X, Z] = [-280.4, -1045.6];
+const wort = (w) => { st.weatherEffectTime = 0; r._setWeather(w, "human"); st.weatherEffectTime = -1e9; st.weatherTransition = null; };
+wort("sunny"); r._naesseTakt(1e6); wort("cloudy");
+if (st.brandFeld) st.brandFeld.clear();
+const t0 = st.spielZeit, z0 = r._brandEntfachen(X, Z);
+if (!z0) return { start: false };
+const ign = new Map([[z0.cx + "," + z0.cz, 0]]);
+let wx = 0, wz = 0, ms = 0, n = 0;
+for (let i = 1; i <= 180 && st.brandFeld.size; i++) {
+  st.spielZeit = t0 + i * B.schrittS + 1e-6; r._tickBrand();
+  for (const k of st.brandFeld.keys()) if (!ign.has(k)) ign.set(k, i);
+  const w = r._windAt(X, Z, st.spielZeit); wx += w.x; wz += w.z; ms += w.ms; n++;
+}
+const L = Math.hypot(wx, wz) || 1;
+const v = (s) => { const m = [0, 0]; for (const [k, t] of ign) { const [a, b] = k.split(",").map(Number); const d = (s * ((a - z0.cx) * wx + (b - z0.cz) * wz) * cs) / L; if (t <= 30) m[0] = Math.max(m[0], d); m[1] = Math.max(m[1], d); } return +((m[1] - m[0]) / 150).toFixed(3); };
+return { start: true, mit: v(1), gegen: v(-1), ms: +(ms / n).toFixed(2), zellen: ign.size, schritte: n, brennt: st.brandFeld.size };`;
+    const start = cp.spawn(process.execPath, ["scripts/werkbank.cjs", "start", "--port", port, "--ort", "wiese"], { stdio: ["ignore", "pipe", "inherit"], detached: true });
+    let log = "";
+    const frist = setTimeout(() => ende({ fehler: "die Werkbank stand nach 600 s nicht bereit" }), 600000);
+    const ende = (erg) => {
+        clearTimeout(frist);
+        wb("stop");
+        fs.writeFileSync(aus, JSON.stringify(erg));
+        console.log("FEUER-FRONT " + JSON.stringify(erg));
+        process.exit(0);
+    };
+    start.stdout.on("data", (d) => {
+        log += d;
+        if (!/WERKBANK bereit/.test(log)) return;
+        start.stdout.removeAllListeners("data");
+        const p = wb("eval", probe);
+        let j = null;
+        try {
+            j = JSON.parse(p.stdout.slice(p.stdout.indexOf("{")));
+        } catch (_e) {}
+        ende(j && j.ergebnis ? j.ergebnis : { fehler: "eval ohne Ergebnis (Exit " + p.status + "): " + String(p.stdout).slice(0, 300) });
+    });
+}
+
 const K8_PFAD = [
     "stamm/koerper-*.js",
     "stamm/kreatur-*.js",
@@ -1187,6 +1237,41 @@ module.exports = [
         ],
         quelle: "1 = eine Phase mit Körper-Folge (das Eis trägt den Spieler, y am Spiegel ±5 cm)",
     },
+
+    // ── stoffe.K2 ── die Front des Brands im Rothermel-Band (`feuerFront`, oben): an main 83df2052 ROT — die Front stirbt
+    // nach 21–34 Schritten (1–3 Zellen), mit dem Wind 0 m/s (das Würfel-Gesetz wusste keinen Wind); am Zweig stoffe-k2-feuer
+    // (Rothermel 1972, Bett FM3, Stoff-Zeile gras, `_windAt`) GRÜN: mit dem Wind 0,634 m/s, gegen ihn 0 m/s bei 4,91 m/s am Herd.
+    {
+        kriterium: "stoffe.K2",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + feuerFront.toString() + ")()", "{AUS}", "{PORT}"],
+        gpu: false,
+        minuten: 6,
+        urteil: (j) => {
+            if (!j || j.fehler || !j.start) return { gruen: false, zahl: (j && j.fehler) || "an der Mess-Wiese fing kein Brand" };
+            return {
+                gruen: j.mit >= 0.5 && j.mit <= 2 && j.gegen <= 0.2,
+                zahl: "Front mit dem Wind " + j.mit + " m/s, gegen ihn " + j.gegen + " m/s bei " + j.ms + " m/s am Herd (" + j.zellen +
+                    " Zellen in " + j.schritte + " Schritten; Soll 0,5–2 · ≤ 0,2)",
+            };
+        },
+        pfad: [
+            "stamm/feld-*.js",
+            "stamm/stoff-*.js",
+            "stamm/bau-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/gelaende-*.js",
+            "stamm/wasser-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "phyto-core.js",
+            "gelaende-core.js",
+            "scripts/werkbank.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = die Front läuft im Rothermel-Band (mit dem Wind 0,5–2 m/s, gegen ≤ 0,2 m/s) an einer Pose",
+    },
 ];
 
 // ── NICHT FASSBAR (befehl: null): kein Werkzeug im Spiel-Baum misst das Soll dieser Staffel als EIN Befehl am SHA ──
@@ -1197,5 +1282,6 @@ module.exports.fehlt = [
     { kriterium: "physik.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: die Zeile gt von gate:kollision-bild fährt den GT bei vmax (`_vehicleProfile(e).vmax`, nicht × 1,2) gegen die Mauer 0,35 × 2,5 × 6 m, und ihr Spalt ist der Abstand Körper–Blocker-Box am Null-Renderer — keine Linse misst den Spalt Leib–Wand im Ausgabe-Bild (Bild = Blocker gilt dort nur auf SEITE_M 0,3 m), auf keinem Gerät (25.10. gelesen an d43cb61c)" },
     { kriterium: "feld.K2", staffel: 2, befehl: null, grund: "nicht gebaut: das Netz-Log steht (gate:mp-sync (e), keine Zustands-Nachricht), aber die Uhren der Teil-Simulationen sind je Seite — der Auto-Zug des Wetters zählt die Sitzung (`weatherEffectTime`) und den Wunsch des eigenen Nexus, Overlays und Brand die Spielzeit der Seite (`spielZeit`), die Tageszeit ist Spieler-Wort (set_time_of_day nicht broadcastbar); ohne geteilte Welt-Uhr ist Wetter am Ort keine Funktion von Saat und Akten, und ein Reload mitten im Sturm setzt nur das Wort fort (der Übergang reist nicht)" },
     { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
+    { kriterium: "stoffe.K2", staffel: 2, befehl: null, grund: "nicht gebaut: am Zweig stoffe-k2-feuer stehen der Halt am Wasser (600 s an der Mess-Wiese: 0 nasse Zellen, 0 Fänge über einen nassen Weg, vorher 21 und 7; werkbank eval) und Regen löscht in 57 s (gate:stand-takt, Brand-Teil); offen: Halt an Fels und nassem Gras (lebendig ist Rauschen, kein Fels-, kein Boden-Feuchte-Leser), Asche-Albedo ≤ 0,08 (Ausgabe-Bild der echten GPU), Rauch und Knistern aus dem Brand-Zustand, 2 000 brennende Zellen ≤ 0,5 ms an der GTX-CPU, beide Geräte" },
     { kriterium: "stoffe.K3", staffel: 2, befehl: null, grund: "nicht gebaut: der Schnee schmilzt nicht (die Schneegrenze ist Höhe allein, kein Pegel liest Schmelze), Lava erstarrt nicht (die glut-Achse ist eine eingefrorene Feld-Achse), der Stahl der Esse liest das Temperatur-Feld nicht; nur das Eis steht (Staffel 1)" },
 ];
