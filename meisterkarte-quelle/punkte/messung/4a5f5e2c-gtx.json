@@ -1,0 +1,377 @@
+{
+ "sha": "4a5f5e2c9ab02618feccdf8b9f1a03942bcc9301",
+ "geraet": "gtx",
+ "zeit": "2026-10-25T07:38:18.932Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "gelaende.K2#1": {
+   "gruen": true,
+   "zahl": "9 von 10 Gräben über das Verb, in 2405 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 180.7–656.8 ms (1 m 4, 3 m 5)",
+   "exit": 0,
+   "minuten": 5.02,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T03:24:20.252Z",
+   "abdruck": "1ee7bd28bb9c",
+   "port": 7702
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.7904 (wasserSatz 36498 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 123.9 σ 51.6 schwarz 0.0 % weiß 0.1 % · Stand 18.546.89 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
+   "exit": 0,
+   "minuten": 5.02,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T03:29:27.270Z",
+   "abdruck": "68e70463a0db",
+   "port": 7703
+  },
+  "gelaende.K5#2": {
+   "gruen": false,
+   "zahl": "Wand GPU: keine Linse nennt eine Karte ([linse-gpu] <Hersteller>/…) · alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 1.7 · rad 2.3 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 5.01,
+   "grund": "Wand GPU: keine Linse nennt eine Karte ([linse-gpu] <Hersteller>/…)",
+   "gpu": null,
+   "zeit": "2026-10-25T03:34:34.152Z",
+   "abdruck": "1c2538e83974",
+   "port": 7707
+  },
+  "wetter.K2#1": {
+   "gruen": true,
+   "zahl": "Dorf porös draußen 0.763 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 80 (n 336/865), Wiese draußen 0.772",
+   "exit": 0,
+   "minuten": 5.01,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T03:39:40.605Z",
+   "abdruck": "e03a045fab93",
+   "port": 7710
+  },
+  "tiere.K1#2": {
+   "gruen": false,
+   "zahl": "Wand GPU: keine Linse nennt eine Karte ([linse-gpu] <Hersteller>/…) · (a)–(d) headless GRÜN: Kohäsion 1 / 1, Φ 0.986 über 919 Takte, letzter Flüchter 0.48 s (4 aus zweiter Hand), Fluchtweg 34 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ungemessen: kein Werkzeug",
+   "exit": 0,
+   "minuten": 5.01,
+   "grund": "Wand GPU: keine Linse nennt eine Karte ([linse-gpu] <Hersteller>/…)",
+   "gpu": null,
+   "zeit": "2026-10-25T03:44:47.061Z",
+   "abdruck": "d8c10e9c7a94",
+   "port": 7726
+  },
+  "mensch.K1#1": {
+   "gruen": true,
+   "zahl": "Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 31 Menschen im Bild, 7 gehend, 110.2 fps",
+   "exit": 0,
+   "minuten": 5.02,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T03:49:53.413Z",
+   "abdruck": "5b2b0b3745f2",
+   "port": 7728
+  },
+  "vegetation.K4#1": {
+   "gruen": true,
+   "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59207 px; ungemessen (ohne freies Auge) haus_skandinavisch 14-0 haupt · haus_provenzalisch 19-0 haupt · haus_italienisch 22-0 haupt · haus_italienisch 33-0 haupt",
+   "exit": 1,
+   "minuten": 5.01,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T03:55:00.051Z",
+   "abdruck": "e53d97783caf",
+   "port": 7729
+  },
+  "tiere.K2#2": {
+   "gruen": true,
+   "zahl": "Fressen 91.02 s nach dem Riss bei 27.6 s, am Aas fuchs 20.3 s, baer 17.3 s · Wolfsrevier wald, Riss 13.2 s, 3 fressen: tier:wolf 9014 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.27 m · Luma 76.8 σ 33.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.89 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 5.02,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T04:00:06.769Z",
+   "abdruck": "6f4d55252639",
+   "port": 7735
+  },
+  "mensch.K2#2": {
+   "gruen": true,
+   "zahl": "Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.106 m), Sprünge 0, Plan bit-gleich true",
+   "exit": 0,
+   "minuten": 5.02,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T04:05:13.453Z",
+   "abdruck": "ca42240b7c1b",
+   "port": 7740
+  },
+  "licht.K2#1": {
+   "gruen": true,
+   "zahl": "Verhältnis 5.071 (5–12,5), Schatten-Anteil 0.1972 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 5.01,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T04:10:20.059Z",
+   "abdruck": "a3fab07da97f",
+   "port": 7741
+  },
+  "ferne.K1#1": {
+   "gruen": true,
+   "zahl": "Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 5.01,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T04:15:26.420Z",
+   "abdruck": "bbee11502f53",
+   "port": 7742
+  },
+  "ferne.K2#1": {
+   "gruen": true,
+   "zahl": "Restkontrast am Rand 1.0–1.3 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 5.01,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T04:20:32.872Z",
+   "abdruck": "a2c61a28b0e5",
+   "port": 7743
+  },
+  "material.K2#1": {
+   "gruen": false,
+   "zahl": "boden 0.5 m glatt 0.0181 nyquist 0.1366 (Arm 0.408), 1 m glatt 0.0126 nyquist 0.1317 (Arm 0.909), 2 m glatt 0.0039 nyquist 0.1289 (Arm 1.911) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 10.02,
+   "grund": "ROT: boden 0.5 m glatt 0.0181 nyquist 0.1366 (Arm 0.408), 1 m glatt 0.0126 nyquist 0.1317 (Arm 0.909), 2 m glatt 0.0039 nyquist 0.1289 (Arm 1.911) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T04:25:39.649Z",
+   "abdruck": "db1cd34d4849",
+   "port": 7744
+  },
+  "material.K3#1": {
+   "gruen": true,
+   "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.986 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 5.01,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T04:35:46.456Z",
+   "abdruck": "c1c161cacf47",
+   "port": 7745
+  },
+  "material.K1#1": {
+   "gruen": true,
+   "zahl": "Welt/Labor 0,9–1,1: 12/12 · im realen Band beidseits: 12/12 · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 5.01,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T04:40:52.801Z",
+   "abdruck": "7d958f1a0783",
+   "port": 7746
+  },
+  "material.K1#2": {
+   "gruen": true,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 5.01,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T04:45:59.334Z",
+   "abdruck": "03c706724ee9",
+   "port": 7747
+  },
+  "schatten.K1#1": {
+   "gruen": true,
+   "zahl": "Uhr 0.5 ego 2.4 cm (12 Kanten) · Uhr 0.5 third 2.4 cm (12 Kanten), [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 5.01,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T04:51:05.634Z",
+   "abdruck": "5e5cfa6d8c00",
+   "port": 7748
+  },
+  "fahrzeug.K3#1": {
+   "gruen": true,
+   "zahl": "Garage FOV +9.07° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.39° Arm +18.2 % bei 15.08 m/s (Ende ok)",
+   "exit": 0,
+   "minuten": 5.01,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T04:56:11.970Z",
+   "abdruck": "47c7c8bcd372",
+   "port": 7762
+  },
+  "fahrzeug.K3#2": {
+   "gruen": false,
+   "zahl": "Drift Kamera ≤ 2.4° neben dem Fahrtvektor (Schlupf bis 1.1°) · Rückkehr 1.09 s nach 69° Orbit · Ruck p95 0.03 m (165) · FOV-Schreiber [_kamFov]",
+   "exit": 0,
+   "minuten": 5.01,
+   "grund": "ROT: Drift Kamera ≤ 2.4° neben dem Fahrtvektor (Schlupf bis 1.1°) · Rückkehr 1.09 s nach 69° Orbit · Ruck p95 0.03 m (165) · FOV-Schreiber [_kamFov]",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T05:01:18.501Z",
+   "abdruck": "3a58d98e9e1c",
+   "port": 7763
+  },
+  "fahrzeug.K4#1": {
+   "gruen": true,
+   "zahl": "nach Ego → Third im Bild 3/3, Azimut 5.3/2.9/1.5°, Stufe ≤ 1.81 m · T4 Absteigen 0.32 m je Bild, Azimut nach 10 Bildern 1.3° · Hang 17.4°",
+   "exit": 0,
+   "minuten": 5.02,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T05:06:31.466Z",
+   "abdruck": "ab61dce55516",
+   "port": 7764
+  },
+  "fahrzeug.K4#2": {
+   "gruen": true,
+   "zahl": "nach Ego → Third im Bild 3/3, Azimut 5.3/2.8/1.5°, Stufe ≤ 1.81 m · T4 Absteigen 0.32 m je Bild, Azimut nach 10 Bildern 1° · Hang 17.4°",
+   "exit": 0,
+   "minuten": 5.01,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T05:11:38.051Z",
+   "abdruck": "b8dfe1a249ab",
+   "port": 7765
+  },
+  "siedlung.K2#1": {
+   "gruen": true,
+   "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 92 · Schuss vom acker 106 m vor der Mitte, 3.6 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 105.58 m · Luma 99.9 σ 44 schwarz 0.0 % weiß 0.0 % · S",
+   "exit": 0,
+   "minuten": 5.01,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T05:16:44.377Z",
+   "abdruck": "22156cd39fff",
+   "port": 7766
+  },
+  "siedlung.K5#1": {
+   "gruen": true,
+   "zahl": "nH 12 erstes Haus nach 43 ms (haus_alemannisch, huelle in 234.2 m, Bau-Hash 99282f35) · nH 300 erstes Haus nach 167.8 ms (haus_fraenkisch, mesh in 21.4 m, Bau-Hash ed9b6932)",
+   "exit": 0,
+   "minuten": 10.02,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T05:21:50.848Z",
+   "abdruck": "1bf868639fe6",
+   "port": 7768
+  },
+  "siedlung.K5#2": {
+   "gruen": true,
+   "zahl": "nH 12 erstes Haus nach 68.7 ms (haus_alemannisch, huelle in 234.1 m, Bau-Hash 99282f35) · nH 300 erstes Haus nach 199.2 ms (haus_fraenkisch, mesh in 21.3 m, Bau-Hash ed9b6932)",
+   "exit": 0,
+   "minuten": 10.02,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T05:31:57.435Z",
+   "abdruck": "607c1995be2b",
+   "port": 7769
+  },
+  "leib.K1#1": {
+   "gruen": true,
+   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 48.7 · third/gehen 45.9 · ego/wechsel 23.8 · third/wechsel 24.7 · Bild 15/14.9/15.4 ms",
+   "exit": 0,
+   "minuten": 10.02,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T05:42:04.255Z",
+   "abdruck": "9687c62fd915",
+   "port": 7771
+  },
+  "leib.K1#2": {
+   "gruen": false,
+   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 44.3 · third/gehen 42.5 · ego/springen 33.2 · third/springen 29.1 · ego/einsteigen 35.7 · third/einsteigen 22.6 · ego/hieb 35.7 · third/hieb 31.1 (fehlt 1) · Bild 9.7/10.6/11.2 ms",
+   "exit": 0,
+   "minuten": 15.02,
+   "grund": "ROT: schlechtester von 3 Läufen p95 ms ego/gehen 44.3 · third/gehen 42.5 · ego/springen 33.2 · third/springen 29.1 · ego/einsteigen 35.7 · third/einsteigen 22.6 · ego/hieb 35.7 · third/hieb 31.1 (fehlt 1) · Bild 9.7/10.6/11.2 ms",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T05:52:10.998Z",
+   "abdruck": "160f0c239df2",
+   "port": 7772
+  },
+  "leib.K4#1": {
+   "gruen": false,
+   "zahl": "Wand GPU: die Linse zeichnet nie (welt-boot: das Rezept ist „null“, 1×) · stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":19} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.42 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {\"orbit: Bau\":2,\"orbit fern: Bau\":2} · Ruck p95 0.0065 höchstens 2.968 m — ROT: Wand-Pixel (Bau) im Nahbereich in 4 Proben · die Linse zeichnet nie (welt-boot: Rezept null)",
+   "exit": 1,
+   "minuten": 5.01,
+   "grund": "Wand GPU: die Linse zeichnet nie (welt-boot: das Rezept ist „null“, 1×)",
+   "gpu": "nvidia/pascal",
+   "gpuNie": 1,
+   "zeit": "2026-10-25T06:07:17.960Z",
+   "abdruck": "824b1719c81f",
+   "port": 7773
+  },
+  "halten.K2#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 3 Läufen p95 ms third/hieb 66 · ego/hieb 26.1 · Bild 15.1/15.1/15.3 ms · Hit-Stop im schlechtesten Lauf 12 Bilder · im Spiel Halt gesetzt 59-mal (153–173 ms, gleitet bis 0 mm je Takt) / 60-mal (153–167 ms, gleitet bis 0 mm je Takt) / 60-mal (153–169 ms, gleitet bis 0 mm je Takt)",
+   "exit": 0,
+   "minuten": 10.02,
+   "grund": "ROT: schlechtester von 3 Läufen p95 ms third/hieb 66 · ego/hieb 26.1 · Bild 15.1/15.1/15.3 ms · Hit-Stop im schlechtesten Lauf 12 Bilder · im Spiel Halt gesetzt 59-mal (153–173 ms, gleitet bis 0 mm je Takt) / 60-mal (153–167 ms, gleitet bis 0 mm je Takt) / 60-mal (153–169 ms, gleitet bis 0 mm je Takt)",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T06:12:24.281Z",
+   "abdruck": "631137359d80",
+   "port": 7777
+  },
+  "tore.K3#1": {
+   "gruen": true,
+   "zahl": "30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E)",
+   "exit": 0,
+   "minuten": 5.01,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T06:22:31.016Z",
+   "abdruck": "34ff650a2da6",
+   "port": 7786
+  },
+  "profiband.K4#1": {
+   "gruen": true,
+   "zahl": "4 von 4 Sitzungen ohne Frame > 100 ms (max 50 · 58.4 · 58.3 · 83.3 ms; Hänger 0/0/0/0)",
+   "exit": 0,
+   "minuten": 15.03,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T06:27:37.388Z",
+   "abdruck": "3b1e54b5711e",
+   "port": 7790
+  },
+  "klang.K2#1": {
+   "gruen": true,
+   "zahl": "r 0.85 bei Lag 0 (n 119), Spitze 0.88 bei -0.5 s, CV Bild 0.22 / Ohr 0.52, 120 fps, Klang an",
+   "exit": 0,
+   "minuten": 5.02,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T06:42:45.275Z",
+   "abdruck": "2d4a675eda1b",
+   "port": 7791
+  },
+  "klang.K4#1": {
+   "gruen": true,
+   "zahl": "erde 358 Hz (n 21) · stein 2565 Hz (n 18) · glut 1702 Hz (n 18) — kleinster Abstand 863 Hz",
+   "exit": 0,
+   "minuten": 5.02,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T06:47:51.690Z",
+   "abdruck": "762071c99dce",
+   "port": 7792
+  },
+  "klang.K5#2": {
+   "gruen": true,
+   "zahl": "Klang-Takt p95 gehen 0.09 · fahrt 0.12 · nacht 0.1 ms · Aussetzer 0 in 601 s Wiedergabe (0 s still) (Exit 0)",
+   "exit": 0,
+   "minuten": 15.02,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T06:52:58.321Z",
+   "abdruck": "fd9f3386b62b",
+   "port": 7794
+  },
+  "speicher.K1#1": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 5.49 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
+   "exit": 0,
+   "minuten": 15.02,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T07:08:05.067Z",
+   "abdruck": "80965330139c",
+   "port": 7795
+  },
+  "speicher.K1#2": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 5.969 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+   "exit": 0,
+   "minuten": 15.02,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T07:23:12.134Z",
+   "abdruck": "347160cebd7c",
+   "port": 7796
+  },
+  "speicher.K2#1": {
+   "gruen": false,
+   "zahl": "je Speicher-Bild (Ruf) p50 10.6 / p95 23.2 / max 69.5 ms (Soll p95 ≤ 0,3; 88 Rufe in 7666 Bildern; aufgefüllt je Bild p95 0, blind)",
+   "exit": 0,
+   "minuten": 5.01,
+   "grund": "ROT: je Speicher-Bild (Ruf) p50 10.6 / p95 23.2 / max 69.5 ms (Soll p95 ≤ 0,3; 88 Rufe in 7666 Bildern; aufgefüllt je Bild p95 0, blind)",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-25T07:38:18.932Z",
+   "abdruck": "2897b2bde797",
+   "port": 7797
+  }
+ }
+}

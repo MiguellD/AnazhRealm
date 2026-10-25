@@ -1,0 +1,31 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\4a5f5e2c-gtx\mensch.K2_2.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7740 )); W=$(( 7740 + 20000 )); export WERKBANK_PORT=$W
+raeum() { for p in $(netstat -ano | grep -E ":($S|$W|$((W - 1))) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }
+stand() { mkdir -p "$B-stand"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json "$B-stand/" 2> /dev/null; }
+ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }
+trap ende EXIT; trap 'exit 143' INT TERM
+raeum; stand
+(PORT=$S node save-server.js > "$B-save.log" 2>&1 &)
+for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done
+(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > "$B-werkbank.log" 2>&1 &)
+for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' "$B-werkbank.log" 2> /dev/null && break; sleep 5; done
+grep -E 'WERKBANK bereit' "$B-werkbank.log" || { echo 'WERKBANK startet nicht'; tail -5 "$B-werkbank.log"; exit 1; }
+node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner
+WERKBANK bereit: Steuer 127.0.0.1:27740 · Seite :27739
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27740) =====
+
+  ✅ bewohner  {"sprungN":0,"alsLeib":4,"schmiede10":2,"schmiede2":0,"dorf":"Steintal","haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":41,"third":37},"nahLeiber":4,"plan":true,"planGleich":true,"bewohner":81,"trefferMin":0.983,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.021,"wegLeib":973.8,"spuren":82},"blick":{"n":162,"quote":0.969,"sektorMax":0.178},"ohnePlatz":0,"ohnePlatzWer":[],"takt":{"n":1800,"p95":0.3,"mittel":0.216},"huellen":18,"wege":{"wandN":0,"wand":[],"durch":259,"tuer":259,"falsch":[],"aufWeg":0.945,"wegeMin":4,"wegeMax":8,"ausserN":0,"ausser":[],"streckeMin":46,"kurzN":0,"kurz":[]},"stall":null,"sek":67,"wiederkehr":{"n":1296,"maxM":1.106,"ueberN":0,"ueber":[]}}
+
+  (70 s)
+
+✅ GRÜN — bewohner
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 28: 12347 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

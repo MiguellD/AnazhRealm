@@ -1,0 +1,14 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx C:/Program Files/Git/bin/bash.exe -c KREATUR_TAKT_PORT=$(( 7726 + 10000 )) node scripts/diag-kreatur-takt.cjs --proben herde
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ herde     {"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":0.6,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null},"flucht":{"n":5,"wurfAnteil":0.6,"mittel":1,"fluchtAnteil":0.257,"fluchtMittel":1,"fluchtMin":1}},"ausrichtung":{"mittel":0.986,"takte":919},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.48},"fluchtWegM":34,"id":{"bruch":null,"fluchtS":[5,5]}}
+
+  (28 s) — Sekunden je Probe: herde: 13
+
+✅ GRÜN — herde
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 28: 11045 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )

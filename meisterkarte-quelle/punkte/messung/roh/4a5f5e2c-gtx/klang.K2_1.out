@@ -1,0 +1,11 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx'); K=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte'); A=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\4a5f5e2c-gtx\klang.K2_1.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; (PORT=7791 node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:7791/ && break; sleep 1; done; export SPIEL_URL=http://localhost:7791; node "$D/m15-wind.cjs" 60
+[linse-gpu] nvidia/pascal
+{"stand":{"ctx":"running","enabled":true,"um":true,"paare":97,"steht":true},"wahl":{"hz":218.1521453857422,"kand":1,"zensus":[["wind",-45.2],["glut",-37.4],["vogel",-45.4]]},"fpsVor":120,"bilder":1419,"fenster":119,"r0":{"lagS":0,"r":0.8514190376752478,"n":119,"cvX":0.22397907861143504,"cvY":0.5211476350352608},"best":{"lagS":-0.5,"r":0.8816707033432752,"n":118,"cvX":0.2248116870566211,"cvY":0.515767435251394}}
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 28: 23989 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
