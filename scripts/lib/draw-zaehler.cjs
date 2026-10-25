@@ -747,7 +747,6 @@ async function gangLauf(page, pufferStand, b) {
 
 module.exports = {
     gangLauf,
-    heapHalter,
     gangUrteil,
     gangSelbsttest,
     satzInhalt,

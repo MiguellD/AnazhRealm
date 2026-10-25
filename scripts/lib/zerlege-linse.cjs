@@ -1752,7 +1752,6 @@ module.exports = {
     zweiGipfel,
     zweiGipfelSelbsttest,
     BELEGUNG_SPUR,
-    BROWSER_BODEN_MS,
     belegungAuswerten,
     belegungSelbsttest,
     ZERLEGE_INSTALL:
