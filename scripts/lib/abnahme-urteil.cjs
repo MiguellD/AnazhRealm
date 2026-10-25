@@ -694,7 +694,8 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     }
     // DIE KANTE DER SILHOUETTE (K68-n2): je Rand-Pixel der Klasse,
     // das ans Außen grenzt (`aussen`: kein gemessener Teil — Himmel, Boden, Holz; ohne `aussen` jedes Pixel außerhalb der
-    // Klasse), die Kohärenz des Struktur-Tensors der geglätteten Maske (Gauß σ 2 px, Fenster 17 × 17 px):
+    // Klasse) und, trägt der Aufruf die Tiefe (`spiegel`), dessen Außen HINTER ihr liegt (lod.K1: zwei Pixel außen ferner als
+    // eines innen — sonst ist es der Rand eines Verdeckers), die Kohärenz des Struktur-Tensors der geglätteten Maske (Gauß σ 2 px, Fenster 17 × 17 px):
     // ((Jxx − Jyy)² + 4 Jxy²) / (Jxx + Jyy)² — die gerade Kante einer Karte → 1, ein Umriss aus Blättern, Zweigen und Lücken
     // → klein. `kante` ist das Mittel über den Rand, `kr` die Zahl seiner Pixel.
     let kr = 0,
@@ -761,11 +762,28 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                     Sxy[q] = gx * gy + Sxy[q - 1] + Sxy[q - w1] - Sxy[q - w1 - 1];
                 }
             const box = (S, a0, b0, a1, b1) => S[(b1 + 1) * w1 + a1 + 1] - S[b0 * w1 + a1 + 1] - S[(b1 + 1) * w1 + a0] + S[b0 * w1 + a0];
-            const aus = (x, y) =>
-                x >= 0 && y >= 0 && x < W && y < H && m[y * W + x] !== 1 && (!aussen || aussen[y * W + x] === 1);
+            const tz = (x, y) =>
+                spiegel.tiefe[
+                    (((Math.min(H - 1, Math.max(0, y)) + 0.5) * spiegel.th) / H | 0) * spiegel.tw +
+                        (((Math.min(W - 1, Math.max(0, x)) + 0.5) * spiegel.tw) / W | 0)
+                ];
+            const aus = (x, y, dx, dy) => {
+                const u = x + dx,
+                    v = y + dy;
+                return (
+                    u >= 0 &&
+                    v >= 0 &&
+                    u < W &&
+                    v < H &&
+                    m[v * W + u] !== 1 &&
+                    (!aussen || aussen[v * W + u] === 1) &&
+                    (!spiegel || tz(u + dx, v + dy) > tz(x - dx, y - dy))
+                );
+            };
             for (let y = Math.max(1, by0); y <= Math.min(H - 2, by1); y++)
                 for (let x = Math.max(1, bx0); x <= Math.min(W - 2, bx1); x++) {
-                    if (m[y * W + x] !== 1 || !(aus(x - 1, y) || aus(x + 1, y) || aus(x, y - 1) || aus(x, y + 1))) continue;
+                    if (m[y * W + x] !== 1 || !(aus(x, y, -1, 0) || aus(x, y, 1, 0) || aus(x, y, 0, -1) || aus(x, y, 0, 1)))
+                        continue;
                     const lx = x - x0,
                         ly = y - y0;
                     const a0 = Math.max(0, lx - r),
@@ -2193,6 +2211,11 @@ function sollTafelSelbsttest(tafel, q) {
             v.push(`Maß kante: die Karte liest ${kq.kante}, gedreht ${kd.kante} (Soll > 0,75, gleich)`);
         const ka = klassenMasse(F0, q0, n, n, halb);
         if (!(ka.kr > 0 && ka.kr < 0.6 * kq.kr)) v.push(`Maß kante: der Rand zählt ${ka.kr} von ${kq.kr} Pixeln, nur das Außen zählt`);
+        // ein Verdecker rechts, näher als die Klasse: sein Rand fällt, die drei eigenen Seiten lesen weiter gerade
+        const E = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+        const tiefe = Float32Array.from({ length: n * n }, (_, p) => (p % n >= 104 ? 0.3 : q0[p] ? 0.5 : 0.9));
+        const kv = klassenMasse(F0, q0, n, n, null, null, { tiefe, tw: n, th: n, vp: E, ivp: E, auge: [0, 0, 0] });
+        if (!(kv.kr < 0.85 * kq.kr && kv.kante > 0.75)) v.push(`Maß kante: der Rand eines Verdeckers zählt (${kv.kr} von ${kq.kr})`);
         const linie = (beta) => {
             let s = 0;
             for (let saat = 1; saat <= 4; saat++) {
