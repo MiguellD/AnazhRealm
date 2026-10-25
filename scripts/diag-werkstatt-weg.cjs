@@ -1067,7 +1067,7 @@ function wegHelfer(arg) {
             const welt = ([x, z]) => [p.x + x * c + z * s, p.z - x * s + z * c];
             const lokal = () => [(pm.x - p.x) * c - (pm.z - p.z) * s, (pm.x - p.x) * s + (pm.z - p.z) * c];
             let [von, nach, y, drin] = [[0, -2.5], [0, 0], null, () => (lauf.fuhr ||= pl.mountedArch === e.id && Math.hypot(p.x - lauf.p0.x, p.z - lauf.p0.z) >= 5) || pl.mountedArch !== e.id];
-            if (/^haus_/.test(e.type)) {
+            if ((lauf.haus = /^haus_/.test(e.type))) {
                 // die Tür-Zeile des Werks (die Hülle bringt sie): 8 m vor der Tür, wo sie zu ist, bis 1,5 m hinter die Schwelle
                 const t = (await window.__gebautNach("die Hülle des Hauses", { fertig: () => !!e._hausHuelle }), e.tuer);
                 if (!t) return "das Werk trägt keine Tür-Zeile, der Tür-Takt übergeht es";
@@ -1096,8 +1096,8 @@ function wegHelfer(arg) {
         verb(verb) {
             const [e, pl, grad] = [lauf.werk, st.player, Math.round((lauf.tuer[1] - lauf.tuer[0]) * THREE.MathUtils.RAD2DEG)];
             const [ja, warum] = {
-                betreten: () => [lauf.drin() && (!lauf.fluegel || grad > 29), lauf.fluegel ? `die Tür dreht ${grad}°` : "nicht über das Deck"],
-                drive: () => [lauf.fuhr && pl.mountedArch !== e.id, "kein E · W 5 m · E"],
+                betreten: () => (lauf.haus ? [lauf.drin() && grad > 29, `die Tür dreht ${grad}°`] : [lauf.drin(), "vom Deck"]),
+                drive: () => [lauf.fuhr && pl.mountedArch !== e.id, "kein Fahren"],
                 portal: () => [!!r._portalOverlay, "kein Portal"],
             }[verb]();
             if (r._portalOverlay) r.exitPortal();
@@ -1574,7 +1574,7 @@ async function wegProbe(page, frei) {
             const t = [...v.statik, ...v.wirkung];
             check(`Selbst-Test Prüf-Satz: ${soll || "gesund"} → ${soll ? "Täter" : "0 Täter"}`, soll ? t.some((x) => x.startsWith(soll)) : !t.length, t.join(" · "));
         }
-        // L-Verben: gesund ohne Täter; ein Werk ohne Policy (das Tor ohne Portal) ist rot an seinem Verb, eines in der Hand am Setzen
+        // L-Verben: gesund ohne Täter; ein Werk ohne Policy (das Tor ohne Portal) ist rot an seinem Verb, eines, das nicht steht, am Setzen
         const mitV = (o) => ({ verben: { ...Object.fromEntries(Object.keys(VERBEN).map((w) => [w, { steht: 1, verb: true }])), ...o } });
         for (const [bruch, soll] of [[mitV({}), ""], [mitV({ Tor: { steht: 1 } }), "Tor × portal"], [mitV({ Haus: { steht: 0 } }), "Haus: steht nicht"], [{}, "start"]]) {
             const v = verbVerdict(bruch);
