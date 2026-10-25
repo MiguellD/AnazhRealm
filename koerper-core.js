@@ -1372,9 +1372,11 @@
     //    Beruf nach `berufe` (markt: der Stand auf dem Platz · feld: der Acker · hof: der eigene Hof). Mittags und abends geht
     //    der Anteil platzMittag / platzAbend auf den Platz, wer mittags nicht dort ist, isst daheim (drinnen; die Rolle mit
     //    mittagAmWerk am Werk). DER MORGENGANG (mensch.K3): die ersten morgenPlatzH Stunden nach dem Aufstehen geht jeder
-    //    über den Platz (Brunnen, Markt) — jeder Tag trägt so 4–10 Wege, keiner bleibt an seiner Tür. Das Tempo des Gangs
-    //    ist das Gesetz des Leibs (tetrapoda tempoEinheit × gang). Leser: der Wirt (`_tickBewohner`, `_bewohnerListe`) und
-    //    gate:kreatur-takt bewohner. ──
+    //    über den Platz (Brunnen, Markt) — jeder Tag trägt so 4–10 Wege, keiner bleibt an seiner Tür. DER BESUCH (mensch.K3
+    //    Staffel 2, ≥ 100 m Weg je Tag): reicht der Wirt einen Ort des Besuchs (die Tür eines anderen Hauses fern von Heim und
+    //    Platz), steht der Mensch dort besuchH Stunden — nach dem Werk, wo der Abend sie trägt (eine halbe Stunde vor der Ruhe),
+    //    sonst nach dem Morgengang, wo die Zeit bis zum Werk sie trägt. Das Tempo des Gangs ist das Gesetz des Leibs
+    //    (tetrapoda tempoEinheit × gang). Leser: der Wirt (`_tickBewohner`, `_bewohnerListe`) und gate:kreatur-takt bewohner. ──
     var TAGES_GESETZ = Object.freeze({
         wach: 6.5,
         werk: Object.freeze([8, 17]),
@@ -1384,6 +1386,7 @@
         platzMittag: 0.45,
         platzAbend: 0.4,
         morgenPlatzH: 1,
+        besuchH: 0.75,
         gang: 1.3,
         rollen: Object.freeze({
             schmiede: Object.freeze({ werk: Object.freeze([7, 18]) }),
@@ -1415,10 +1418,11 @@
         }
         return "hof";
     }
-    // DER PLAN DER STUNDE: heim / werk / platz sind die Orte des Menschen (der Wirt reicht sie; ohne Werk ist der Hof das
-    // Werk, ohne Platz das Heim der Platz). Liefert { ort, wo, akt, drinnen } — ort ist einer der gereichten Orte, akt eines
-    // von schlaf · morgen · arbeit · mittag · abend; drinnen = der Mensch ist in seinem Haus (an der Tür ungezeichnet).
-    function tagesPlan(same, rolle, heim, werk, stunde, platz) {
+    // DER PLAN DER STUNDE: heim / werk / platz / besuch sind die Orte des Menschen (der Wirt reicht sie; ohne Werk ist der Hof
+    // das Werk, ohne Platz das Heim der Platz, ohne Besuch kein Besuch). Liefert { ort, wo, akt, drinnen } — ort ist einer der
+    // gereichten Orte, akt eines von schlaf · morgen · besuch · arbeit · mittag · abend; drinnen = der Mensch ist in seinem Haus
+    // (an der Tür ungezeichnet).
+    function tagesPlan(same, rolle, heim, werk, stunde, platz, besuch) {
         var G = TAGES_GESETZ;
         var R = G.rollen[rolle] || {};
         var h = ((Number(stunde) % 24) + 24) % 24;
@@ -1434,14 +1438,19 @@
         var w = werk || heim;
         var p = platz || heim;
         var aus = function (wo, akt, drinnen) {
-            return { ort: wo === "werk" ? w : wo === "platz" ? p : heim, wo: wo, akt: akt, drinnen: !!drinnen };
+            var ort = wo === "werk" ? w : wo === "platz" ? p : wo === "besuch" ? besuch : heim;
+            return { ort: ort, wo: wo, akt: akt, drinnen: !!drinnen };
         };
+        var bA = besuch && w1 + G.besuchH <= ruhe - 0.5;
+        var bM = besuch && !bA && wach + G.morgenPlatzH + G.besuchH <= w0;
         if (h < wach || h >= ruhe) return aus("heim", "schlaf", true);
         if (h < wach + G.morgenPlatzH) return aus("platz", "morgen", false);
+        if (bM && h < wach + G.morgenPlatzH + G.besuchH) return aus("besuch", "besuch", false);
         if (h < w0) return aus("heim", "morgen", false);
         if (h >= m0 && h < m1 && !R.mittagAmWerk)
             return _tagZahl(same, "mittagPlatz") < G.platzMittag ? aus("platz", "mittag", false) : aus("heim", "mittag", true);
         if (h < w1) return aus("werk", "arbeit", false);
+        if (bA && h < w1 + G.besuchH) return aus("besuch", "besuch", false);
         return _tagZahl(same, "abendPlatz") < G.platzAbend ? aus("platz", "abend", false) : aus("heim", "abend", false);
     }
 
