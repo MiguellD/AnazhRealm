@@ -147,7 +147,14 @@ function abdruck(x, alle) {
     else geo(x);
     return (h >>> 0).toString(16) + "/" + n;
 }
-const WARTEN_SEITE = `window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck};`;
+// DER STAND DER LEBENDEN WELT, wie der Speicher-Faden ihn schrieb (`await window.__stand()`): alles Gesendete fest, dann sein JSON
+// aus IndexedDB — der Leser jedes Save-Rundlaufs (der Platz im localStorage trägt nur abgelegte und verlassene Welten).
+async function stand() {
+    const r = window.anazhRealm;
+    await r._speicherStill();
+    return (await r._idbGetWorld(r.state.worldMeta.worldId)).json;
+}
+const WARTEN_SEITE = `window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");

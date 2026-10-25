@@ -317,13 +317,13 @@ async function bereit(page, weltId) {
     }, weltId || null);
 }
 
-// DIE ABSENZ (statisch, im Stamm des Baums, über den EINEN Helfer stammLib.fehlt): eine ganze Welt schreibt nur saveState
-// (die lebende) und `_weltAblegen` (die EINE Ablage) in den Speicher, `location.reload` steht nur im Welt-Wechsel
+// DIE ABSENZ (statisch, im Stamm des Baums, über den EINEN Helfer stammLib.fehlt): eine ganze Welt schreibt nur `_weltAblegen`
+// (die EINE Ablage) und `_speicherVerlassen` (die verlassene) auf ihren Platz, `location.reload` steht nur im Welt-Wechsel
 // `_weltWechselNeuLaden`. Jeder andere Ort fällt mit Datei und Zeile (fehlt.wo); die Engstellen sind Glieder am AST.
 function absenz() {
     const out = [];
     const pruefe = (re, ausser, was) => stammLib.fehlt({ ausser }, re) || out.push(`${was}: ${stammLib.fehlt.wo}`);
-    pruefe(/localStorage\.setItem\(this\.worldStorageKey\(/, ["saveState", "_weltAblegen"], "Welt-Schreiber neben der EINEN Ablage");
+    pruefe(/localStorage\.setItem\(this\.worldStorageKey\(/, ["_weltAblegen", "_speicherVerlassen"], "Welt-Schreiber neben der EINEN Ablage");
     pruefe(/location\.reload\(\)/, ["_weltWechselNeuLaden"], "Reload neben dem Welt-Wechsel");
     return out;
 }

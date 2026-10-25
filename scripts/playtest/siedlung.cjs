@@ -169,7 +169,7 @@ async function checkBandRing6Workshop(ctx) {
     // ### Ring 6 — architectureTemplates V1 ###
     // Bau-Primitive als DSL-Ops mit Save-Roundtrip + FIFO-Cap + Atomic-Pool-Eintrag (niedrige
     // Gewichtung); Wasserfälle haben einen Animations-Hook im Tick.
-    const ring6Results = await safeEvaluate(page, () => {
+    const ring6Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
@@ -297,7 +297,7 @@ async function checkBandRing6Workshop(ctx) {
 
         // (i) Save-Roundtrip
         r.saveState();
-        const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
+        const raw = await window.__stand();
         let parsed = null;
         try {
             parsed = JSON.parse(raw);
@@ -564,7 +564,7 @@ async function checkBandRing6Workshop(ctx) {
 
     // ### Ring 6.4 — Bauplan-Datenschicht ###
     // _buildFromBlueprint rendert Baupläne, 8 Primitive werden erkannt; User-Baupläne sind hinzufügbar + persistierbar.
-    const ring64Results = await safeEvaluate(page, () => {
+    const ring64Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
 
@@ -630,7 +630,7 @@ async function checkBandRing6Workshop(ctx) {
 
         // Save-Roundtrip: User-Bauplan überlebt
         r.saveState();
-        const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
+        const raw = await window.__stand();
         let parsed = null;
         try {
             parsed = JSON.parse(raw);
@@ -695,7 +695,7 @@ async function checkBandRing6Workshop(ctx) {
     }
 
     // ### Ring 6.5 — Hotbar mit 9 Slots ###
-    const ring65Results = await safeEvaluate(page, () => {
+    const ring65Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
         // DOM-Hotbar
@@ -783,7 +783,7 @@ async function checkBandRing6Workshop(ctx) {
         // Save-Roundtrip
         r.setHotbarSlot(7, "damm");
         r.saveState();
-        const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
+        const raw = await window.__stand();
         let parsed = null;
         try {
             parsed = JSON.parse(raw);
@@ -846,7 +846,7 @@ async function checkBandRing6Workshop(ctx) {
     }
 
     // ### Ring 6.6 — Werkstatt-Tab + Part-Editor ###
-    const ring66Results = await safeEvaluate(page, () => {
+    const ring66Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
 
@@ -955,7 +955,7 @@ async function checkBandRing6Workshop(ctx) {
             size: { x: 3, y: 3, z: 3 },
         });
         r.saveState();
-        const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
+        const raw = await window.__stand();
         const parsed = JSON.parse(raw);
         const savedBp = parsed.blueprints.find((bp) => bp.name === "ed_test");
         out.saveContainsCustom = !!savedBp && savedBp.parts.length === 1 && savedBp.parts[0].shape === "sphere";

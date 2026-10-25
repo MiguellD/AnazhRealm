@@ -236,10 +236,10 @@ class AnazhRealm_speicher_welten {
     }
 
     // DIE RETTUNGS-KETTE DES SPEICHERS (EINE, feste Reihenfolge), Leser: die Vorlade des Boots und loadState. Für die Welt
-    // `id`: (1) IndexedDB, wenn ihr Stempel nicht älter ist als der des Abbilds (saveState und die Tür stempeln beide gleich,
-    // der Index trägt lastPlayed); (2) sonst das Abbild im localStorage (eine Tür legte die Welt ab, oder IndexedDB fehlt);
-    // (3) sonst der .bak der Transaktion (ein Stand zurück). Der localStorage schreibt verzögert (Chromium ≥ 5 s) — nach einem
-    // harten Tod ist er oft leer oder älter, IndexedDB nie halb. `idb` = {state, at, bak} des Boot-Vorlaufs oder null.
+    // `id`: (1) IndexedDB, wenn ihr Stempel nicht älter ist als der des Platzes (die Tür und das Verlassen stempeln Platz und
+    // IndexedDB gleich, der Index trägt lastPlayed; jeder Stand der lebenden Welt ist jünger); (2) sonst der Platz im
+    // localStorage (eine Tür legte die Welt ab, oder IndexedDB fehlt); (3) sonst der .bak der Transaktion (ein Stand zurück).
+    // Der localStorage schreibt verzögert (Chromium ≥ 5 s) — nach einem harten Tod ist er oft leer oder älter, IndexedDB nie halb. `idb` = {state, at, bak} des Boot-Vorlaufs oder null.
     // Liefert {state, quelle, befund} — state null nur, wenn alle leer oder unlesbar sind, der Befund nennt jedes Glied; jeder Stand
     // in der Form des Objekts (`_standNormal` beim Lesen: ein Bruch der kompakten Edits ist ein korruptes Glied).
     _weltRettungsKette(id, idb) {
@@ -811,6 +811,22 @@ class AnazhRealm_speicher_welten {
         };
         // die Marke einer Reihe, die nur wächst oder vorn verliert: sie selbst, ihre Länge, ihr jüngstes Glied
         const angehaengt = (f) => ({ marke: () => [f(), f().length, f().at(-1)] });
+        // die Marke einer flachen Quelle (Objekt oder Reihe aus Zahlen und Wörtern): sie, jeder Schlüssel, jeder Wert — trägt sie
+        // ein Objekt, gibt es keine Marke (das Feld wird serialisiert)
+        const flach = (f) => ({
+            marke: () => {
+                const o = f();
+                if (o === null || typeof o !== "object") return [o];
+                const m = [o];
+                for (const k in o) {
+                    const v = o[k];
+                    if (v !== null && typeof v === "object") return null;
+                    m.push(k, v);
+                }
+                return m;
+            },
+        });
+        const pl = () => st().player;
         return (this._standZeilen = [
             [
                 "playerPosition",
@@ -818,6 +834,7 @@ class AnazhRealm_speicher_welten {
                     st().playerMesh
                         ? { x: st().playerMesh.position.x, y: st().playerMesh.position.y, z: st().playerMesh.position.z }
                         : { x: 0, y: 5, z: 0 },
+                flach(() => st().playerMesh && st().playerMesh.position),
             ],
             // DIE BODEN-GENERATION (K16): unter welchem Gelände-Gesetz die Höhen dieses Saves stehen (`_bodenUmzug`).
             ["bodenGeneration", () => globalThis.__gelaendeCore.BODEN_GENERATION],
@@ -837,9 +854,9 @@ class AnazhRealm_speicher_welten {
             // Ein Gefallener liegt nie in state.creatures (er zog beim Tod nach state.leichname) — er reist nie in den
             // Snapshot und erwacht nie beim Reload.
             ["creatures", () => st().creatures.map((c) => this._serializeCreature(c)).filter((s) => s)],
-            ["creatureEmotions", () => st().creatureEmotions],
+            ["creatureEmotions", () => st().creatureEmotions, flach(() => st().creatureEmotions)],
             // halten.K4 — die Pfeile, die in Gelände und Bau stecken (`_pfeilStecken`); die im Tier reisen mit dem Tier
-            ["pfeileStecken", () => this._pfeileSteckenAbdruck()],
+            ["pfeileStecken", () => this._pfeileSteckenAbdruck(), angehaengt(() => st().pfeileStecken || AnazhRealm.STAND_LEER)],
             ["terrainSteepness", () => st().terrainSteepness],
             ["terrainBaseHeight", () => st().terrainBaseHeight],
             ["weather", () => st().weather],
@@ -872,7 +889,7 @@ class AnazhRealm_speicher_welten {
             [
                 "worldRules",
                 () =>
-                    (st().worldRules || []).slice(0, AnazhRealm.WORLD_RULES.cap).map((r) => ({
+                    (st().worldRules || AnazhRealm.STAND_LEER).slice(0, AnazhRealm.WORLD_RULES.cap).map((r) => ({
                         cond: r.cond,
                         effect: r.effect,
                         everySec: r.everySec,
@@ -883,14 +900,21 @@ class AnazhRealm_speicher_welten {
                         ...(r.pinned ? { pinned: true } : {}),
                         ...(r.disabled ? { disabled: true } : {}),
                     })),
+                // die Regel selbst und die Wahl des Schöpfers (die definierenden Felder schreibt nur ihre Geburt)
+                {
+                    marke: () => {
+                        const w = st().worldRules || AnazhRealm.STAND_LEER;
+                        return [w, w.length].concat(...w.map((r) => [r, r.pinned, r.disabled]));
+                    },
+                },
             ],
             // Gewährte Fähigkeiten überleben den Reload (additives Snapshot-Feld; alte Builds bewahren es als
             // Unbekanntes). Die Quarantäne-Queue reist bewusst NICHT (ein Vorschlag ist Session-Tatsache).
             ["grantedCapabilities", () => st().grantedCapabilities || {}],
             // Schicht 1 — Pattern-Memory + Pfad-Buckets persistieren. Beides
             // ist Welt-Gedächtnis und überlebt Reloads bewusst.
-            ["dslPatternMemory", () => st().dsl.patternMemory || {}],
-            ["playerPathBuckets", () => st().player.pathBuckets || null],
+            ["dslPatternMemory", () => st().dsl.patternMemory || {}, flach(() => st().dsl.patternMemory)],
+            ["playerPathBuckets", () => pl().pathBuckets || null, flach(() => pl().pathBuckets)],
             // Welle 1 D — Welt-Journal persistiert. Ohne das Journal hätte
             // jede Session ihre eigene Geschichte; mit ihm wächst die Welt
             // über Reloads hinweg.
@@ -911,7 +935,7 @@ class AnazhRealm_speicher_welten {
             // Ring 3: Player-Emotionen werden mitgespeichert. Cooldown-Timer
             // bleiben absichtlich draußen — sie sind reine Laufzeit-Drosselung,
             // ein Reload soll wieder triggerfähig sein.
-            ["playerEmotions", () => ({ ...st().player.emotions })],
+            ["playerEmotions", () => ({ ...pl().emotions }), flach(() => pl().emotions)],
             // DIE LEBENSWERTE SIND ZUSTAND (halten.K5, `recomputePlayerStats`): Leben, Ausdauer und Mana als Anteil ihres
             // Maximums (das Maximum rechnet der Leib beim Laden neu, wie `hpAnteil` des Tiers), dazu die Wunde des Tods —
             // vorher heilte jeder Reload (hp 69,6 → 134 von 134, die Wunde 1 → 0). `_loadStateRestoreLeben` liest sie.
@@ -927,6 +951,7 @@ class AnazhRealm_speicher_welten {
                         wunde: +(pl.deathWoundIntensity || 0).toFixed(4),
                     };
                 },
+                { marke: () => [pl().hp, pl().hpMax, pl().stamina, pl().staminaMax, pl().mana, pl().manaMax, pl().deathWoundIntensity] },
             ],
             // Tag-Nacht: timeOfDay läuft nach dem Reload weiter. Die Tag-Länge ist die Wahl des Spielers und lebt bei ihm
             // (localStorage, `setDayLength`): der Kopf trägt sie, weil die Taille v1 den Schlüssel verlangt
@@ -976,6 +1001,7 @@ class AnazhRealm_speicher_welten {
                     microStrength: atm("microStrength", 0.1),
                     r5StructureBoost: atm("r5StructureBoost", AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost),
                 }),
+                flach(() => st().atmosphere),
             ],
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -1008,10 +1034,14 @@ class AnazhRealm_speicher_welten {
             // Welle 6.D Etappe 3a — Konsumable-Rezepte persistieren.
             ["consumables", () => st().consumables || {}],
             // Welle 6.D Etappe 3b / V17.57 W2-B — Equipped-Slots persistieren ({held, armor}).
-            ["playerEquipped", () => (st().player && st().player.equipped) || { held: null, armor: null }],
+            [
+                "playerEquipped",
+                () => (st().player && st().player.equipped) || { held: null, armor: null },
+                flach(() => st().player && st().player.equipped),
+            ],
             // Welle 4 Phase 3: Werkzeug-Besitz. Starter-Werkzeuge werden bei jedem Init wieder verfügbar, aber Persistenz
             // erlaubt eigen-geschmiedeten (Welle 6) zu überleben.
-            ["playerTools", () => (Array.isArray(st().player.tools) ? [...st().player.tools] : [])],
+            ["playerTools", () => (Array.isArray(pl().tools) ? [...pl().tools] : []), flach(() => pl().tools)],
             // Ring 6: Bau-Werke. Nur {type, position, seed, scale} — der Mesh wird beim Laden aus dem Seed rekonstruiert
             // (kein Mesh-Snapshot). Die Marke eines Baus: seine Felder und der Stand des Bodens unter ihm (`_voxelStand`:
             // Edit und Erdbau seiner Nachbarschaft — `ueberGrund` misst den Boden).
@@ -1089,7 +1119,7 @@ class AnazhRealm_speicher_welten {
             [
                 "portalHalls",
                 () =>
-                    Array.from(st().portalHalls || new Map()).map(([name, h]) => ({
+                    Array.from(st().portalHalls || AnazhRealm.STAND_LEER).map(([name, h]) => ({
                         name,
                         label: h.label,
                         entries: h.entries.map((e) => ({ address: { ...e.address }, label: e.label })),
@@ -1099,6 +1129,14 @@ class AnazhRealm_speicher_welten {
                         signedHash: h.signedHash || null,
                         provenance: Array.isArray(h.provenance) ? h.provenance.slice() : [],
                     })),
+                {
+                    marke: () => {
+                        const m = [st().portalHalls, st().portalHalls ? st().portalHalls.size : 0];
+                        for (const h of (st().portalHalls || AnazhRealm.STAND_LEER).values())
+                            m.push(h, h.label, h.entries, h.entries.length, h.sig, h.signedAt, h.provenance);
+                        return m;
+                    },
+                },
             ],
             // Φ6 (V18.191) — die COMPUTE-SPENDE-Schicht reist mit (Hashes,
             // klein — 256 contributions × ~50 B = ~13 KiB Cap). Das Web der
@@ -1106,7 +1144,7 @@ class AnazhRealm_speicher_welten {
             [
                 "computeContributions",
                 () =>
-                    Array.from(st().computeContributions || new Map()).map(([inputHash, c]) => ({
+                    Array.from(st().computeContributions || AnazhRealm.STAND_LEER).map(([inputHash, c]) => ({
                         inputHash,
                         outputHash: c.outputHash,
                         providedBy: c.providedBy || null,
@@ -1114,6 +1152,14 @@ class AnazhRealm_speicher_welten {
                         sig: c.sig || null,
                         status: c.status || "unverified",
                     })),
+                {
+                    marke: () => {
+                        const m = [st().computeContributions, st().computeContributions ? st().computeContributions.size : 0];
+                        for (const c of (st().computeContributions || AnazhRealm.STAND_LEER).values())
+                            m.push(c, c.outputHash, c.providedBy, c.providedAt, c.sig, c.status);
+                        return m;
+                    },
+                },
             ],
             [
                 "playtestContributions",
@@ -1161,7 +1207,7 @@ class AnazhRealm_speicher_welten {
                         .map((m) => this._serializeMaterial(m)),
             ],
             // Ring 6.5 — Hotbar-Belegung. Array von 9 Slots mit Bauplan-Name oder null. Default wird beim Init überschrieben.
-            ["hotbar", () => (Array.isArray(st().hotbar) ? st().hotbar.slice(0, 9) : [])],
+            ["hotbar", () => (Array.isArray(st().hotbar) ? st().hotbar.slice(0, 9) : []), flach(() => st().hotbar)],
             // Welle 6.C1 — Inventar persistiert. 27 Slots, jeweils {blueprintName,
             // count}, ein Material-Slot {kind, material, count}, oder null. Bei Reload defensive Validierung (unbekannte
             // Namen werden zu null, count ≥ 1, ganz). Bis 24.10. schrieb der Material-Slot nur {count}: jedes Laden
@@ -1180,6 +1226,15 @@ class AnazhRealm_speicher_welten {
                                       : null
                               )
                         : [],
+                {
+                    marke: () => {
+                        const inv = st().player && st().player.inventory;
+                        const m = [inv];
+                        if (Array.isArray(inv))
+                            for (const s of inv) m.push(s, s && s.kind, s && s.material, s && s.blueprintName, s && s.count);
+                        return m;
+                    },
+                },
             ],
         ]);
     }
@@ -1280,14 +1335,20 @@ class AnazhRealm_speicher_welten {
                 if (!voll && marke && z && gleich(z.marke, marke)) json = z.json;
                 else {
                     const v = wert(true, K);
-                    json = v === undefined ? undefined : JSON.stringify(v);
+                    // ein Wert aus Zahl oder Wort ist seine eigene Marke
+                    json =
+                        v === undefined
+                            ? undefined
+                            : z && z.v === v && v !== null && typeof v !== "object"
+                              ? z.json
+                              : JSON.stringify(v);
                     if (voll || !z || z.json !== json) {
                         if (json !== undefined) {
                             teile.push(k);
                             stuecke.push(json);
                         }
                     }
-                    S.zeilen.set(k, { marke, json });
+                    S.zeilen.set(k, { marke, json, v });
                 }
                 if (json !== undefined) ordnung.push(k);
             }

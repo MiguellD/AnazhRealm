@@ -2181,22 +2181,14 @@ async function checkBandTailleOmega2(ctx) {
     );
 }
 
-// DIE QUOTA-WAND: wirft localStorage, fällt das Abbild weich — kein Wurf, ein ehrliches WARN, der Stand landet
-// in IndexedDB (der Rundlauf, der Spiegel und die Frische fährt gate:persistence (T) am Tab-Tod, gate:boot-rettung am Boot).
+// DIE QUOTA-WAND: wirft localStorage, trägt der Speicher-Faden den Stand trotzdem — kein Wurf, der Akt landet in IndexedDB (der
+// Rundlauf und die Frische fährt gate:persistence (T) am Tab-Tod, gate:boot-rettung am Boot).
 async function checkBandV18151Idb(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
-        const worldId = r.state.worldMeta && r.state.worldMeta.worldId;
         const origSet = Storage.prototype.setItem;
         let threw = false;
-        const warn = [];
-        const eigenLog = Object.prototype.hasOwnProperty.call(r, "log");
-        const altLog = r.log;
-        r.log = function (m, lv) {
-            if (lv === "WARN") warn.push(String(m));
-            return altLog.apply(this, arguments);
-        };
         Storage.prototype.setItem = function () {
             throw new Error("QuotaExceededError (Band-Probe)");
         };
@@ -2208,28 +2200,12 @@ async function checkBandV18151Idb(ctx) {
             threw = true;
         } finally {
             Storage.prototype.setItem = origSet;
-            if (eigenLog) r.log = altLog;
-            else delete r.log;
         }
-        let idb = null;
-        for (let i = 0; i < 20 && !(idb && idb.at >= tVor); i++) {
-            await new Promise((res2) => setTimeout(res2, 100));
-            idb = await r._idbGetWorld(worldId);
-        }
-        r.saveState(); // das Abbild wiederherstellen
-        return {
-            quotaSoft:
-                !threw &&
-                ret === true &&
-                warn.some((m) => /lebt in IndexedDB weiter/.test(m)) &&
-                !!idb &&
-                idb.at >= tVor,
-        };
+        await r._speicherStill();
+        const idb = await r._idbGetWorld(r.state.worldMeta.worldId);
+        return { quotaSoft: !threw && ret === true && !!idb && idb.at >= tVor };
     });
-    check(
-        "IndexedDB: die QUOTA-Wand fällt weich (kein Wurf, ehrliches WARN, der Akt landet in IndexedDB)",
-        res.quotaSoft
-    );
+    check("IndexedDB: die QUOTA-Wand trägt nichts (kein Wurf, der Akt landet über den Speicher-Faden in IndexedDB)", res.quotaSoft);
 }
 
 // R5 STRUKTUR-TEXTUR: Material-Mikro-Tiefe-Boost
