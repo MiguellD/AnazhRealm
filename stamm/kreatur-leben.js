@@ -2306,7 +2306,7 @@ class AnazhRealm_kreatur_leben {
         u._satz = Z;
         u._satzBand = band;
         u._satzWahl = { v: G ? G.v || 0 : 0, art: G ? G.art : undefined };
-        u._satzPh =G ? (G.ph[0] - Z.ph0[band]) / (2 * Math.PI) : 0;
+        u._satzPh = G ? (G.ph[0] - Z.ph0[band]) / (2 * Math.PI) : 0;
         u._satzW = G && G.schritt > 0 ? Math.min(1, G.schritt) : 0;
         u._satzX = cr.position.x;
         u._satzZ = cr.position.z;
