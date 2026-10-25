@@ -1922,8 +1922,18 @@ const FIXTURES = [
                 delete r._foundryFlattenFor;
                 res.c.k5.drossel = A.drosselTakte;
                 const y = r.state.yaw;
-                const slot = (d, w) => ({ x: d * Math.sin(y + w), z: d * Math.cos(y + w), obb: { ex: 3, ez: 3 } });
-                res.c.k5.schirm = r._dorfZug({ slots: [slot(15, Math.PI / 2), slot(40, 0)] }, pm.position).reihe;
+                const slot = (d, w, e = 3) => ({
+                    x: d * Math.sin(y + w),
+                    z: d * Math.cos(y + w),
+                    obb: { ex: e, ez: e },
+                });
+                // DIE MITTE ZUERST (siedlung-k5-erstes-haus): 11 m bei 70° mit 10-m-Grundriss streift der Bildwinkel nur — die
+                // Mitte 40 m voraus hebt vor ihm, er vor dem 15 m neben dem Spieler (die Scheibe allein hob ihn zuerst)
+                const zug = r._dorfZug(
+                    { slots: [slot(15, Math.PI / 2), slot(40, 0), slot(11, (70 * Math.PI) / 180, 5)] },
+                    pm.position
+                );
+                res.c.k5.schirm = zug.reihe;
                 // C-K5c DER ORT IST EINE FUNKTION (Lehre 7): zwei Vorläufe derselben Saat, der Spieler 3,7 m versetzt im Vorlauf-Ring
                 // — der Plan v2 bit-gleich, sonst die erste abweichende Größe; `stoer` (Selbsttest) rückt den Wunsch mit ihm
                 const i3 = { ...cand, seed: (cand.seed ^ 0x51ed) >>> 0, nH: 300 };
@@ -2978,8 +2988,8 @@ const FIXTURES = [
         z5
     );
     check(
-        "C-K5: DER RANG — der Schirm zuerst: 40 m vor dem Spieler vor 15 m neben ihm",
-        k5.schirm && k5.schirm[0] === 1,
+        "C-K5: DER RANG — die Mitte im Schirm zuerst: 40 m vor dem Spieler, dann 11 m bei 70° (der Grundriss streift), dann 15 m neben ihm",
+        !!k5.schirm && k5.schirm.join() === "1,2,0",
         z5
     );
     const [ort, ortS, wach, voll] = [k5.ort || {}, k5.ortStoer || {}, k5.wach || {}, k5.wachVoll || {}];
