@@ -97,6 +97,26 @@ const REGLER_PFAD = [
     "scripts/lib/stamm.cjs",
     "scripts/lib/welt-boot.cjs",
 ];
+// gate:praegung-welt (K): spawn_studio und sein Stempel, die Werke je Art (Bau, Wesen, Prägung) und ihre Leser in der Welt
+// (die Gesetze des Tors und des Wagens, der Guss der Gattung, der Leib des Spielers, der Klang), der Korpus-Teil Regler-Wörter
+const KI_K2_PFAD = [
+    "stamm/feld-*.js",
+    "stamm/werkstatt-vorschau.js",
+    "stamm/studio-*.js",
+    "stamm/netz-portal.js",
+    "stamm/koerper-*.js",
+    "stamm/kreatur-*.js",
+    "stamm/klang.js",
+    "stamm/gelaende-kollision.js",
+    "stamm/siedlung-ort.js",
+    "*-core.js",
+    "foundry-bruecke.js",
+    "cores.manifest.json",
+    "spec/vertraege/ratsche.json",
+    "spec/abnahme/ki-korpus.json",
+    "scripts/diag-praegung-welt.cjs",
+    "scripts/lib/welt-boot.cjs",
+];
 function reglerLesen(lauf) {
     const out = String(lauf.stdout || "");
     const teile = [];
@@ -468,12 +488,12 @@ const alle = [
         kriterium: "ki.K2",
         staffel: 1,
         geraet: "headless",
-        // gate:praegung-welt (K) KI-REGLER (ki-regler 804954ab): je Zeile von PARAMS_BY_KIND spawn_studio mit ov im fünften
-        // Argument durch den EINEN Stempel; ERREICHT verlangt Welt-Werk ≠ ohne ov und = Studio-Werk (der Bau-Hash folgt) und ≥ 50 %.
+        // gate:praegung-welt (K) KI-REGLER (ki-regler 804954ab, ki-k2-regler): je Zeile von PARAMS_BY_KIND spawn_studio mit ov im
+        // fünften Argument durch den EINEN Stempel; ERREICHT verlangt Welt-Werk ≠ ohne ov und = Studio-Werk (der Bau-Hash folgt).
         befehl: ["node", "scripts/diag-praegung-welt.cjs"],
         env: { ...SOFT, PRAEGUNG_WELT_PORT: "{PORT}" },
         gpu: false,
-        minuten: 3,
+        minuten: 8,
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
             const e = /^\s*(✅|❌) ERREICHT: (\d+) von (\d+) Zeilen von PARAMS_BY_KIND \(([\d.]+) %\) erreicht(?: — (.*))?$/m.exec(out);
@@ -489,29 +509,53 @@ const alle = [
                     (klemme ? "" : ", Klemme ROT") + (zu ? "" : ", fail-closed ROT") + (selbst ? "" : ", Selbsttest ROT"),
             };
         },
-        pfad: [
-            "stamm/feld-*.js",
-            "stamm/werkstatt-vorschau.js",
-            "stamm/studio-*.js",
-            "stamm/netz-portal.js",
-            "stamm/koerper-leib.js",
-            "*-core.js",
-            "foundry-bruecke.js",
-            "cores.manifest.json",
-            "spec/vertraege/ratsche.json",
-            "scripts/diag-praegung-welt.cjs",
-            "scripts/lib/welt-boot.cjs",
-        ],
+        pfad: KI_K2_PFAD,
         quelle: "1 = ≥ 50 % der Zeilen von PARAMS_BY_KIND sind aus einem KI-Programm erreichbar",
     },
     {
         kriterium: "ki.K2",
         staffel: 2,
         geraet: "headless",
-        befehl: null,
-        grund:
-            "der Korpus trägt keinen Teil Regler-Wörter („knorrig“, „schmal und hoch“), und der Lauf mit Modell fehlt (Drehbuch 18); " +
-            "die Erreichbarkeit ≥ 95 % misst gate:praegung-welt (K), den Korpus-Teil nichts",
+        // gate:praegung-welt (K) mit ≥ 95 % (ki-k2-regler: je Zeile Bau samt Gesetzen, Wesen oder Prägung an ihrem Leser; der
+        // Korpus-Teil sagbar) und der Korpus-Teil Regler-Wörter (spec/abnahme/ki-korpus.json `regler`) im Mitschnitt des echten
+        // Laufs: diag-v1-pfad --korpus --regler spielt die Programme des Modells (spec/profiband/ratsche-ki-korpus-regler.json,
+        // geschrieben von `--echt --aufnahme` gegen ollama qwen3:4b auf dem Laptop) durch den echten Chat-Pfad in die Welt, das
+        // Prädikat liest den Stempel jedes neuen Werks. Ohne Mitschnitt eines echten Laufs ist die Staffel ROT beim Namen.
+        befehl: [
+            "bash",
+            "-c",
+            "node scripts/diag-praegung-welt.cjs; node scripts/diag-v1-pfad.cjs --korpus --regler; e=$?; node -e \"let r = {}; " +
+                "try { r = require('./spec/profiband/ratsche-ki-korpus-regler.json'); } catch (_e) {} " +
+                "console.log('MITSCHNITT ' + JSON.stringify({ modell: r.modell, anbieter: r.anbieter, datum: r.datum }))\"; exit $e",
+        ],
+        env: { ...SOFT, PRAEGUNG_WELT_PORT: "{PORT}", V1_PFAD_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const e = /^\s*(✅|❌) ERREICHT: (\d+) von (\d+) Zeilen von PARAMS_BY_KIND \(([\d.]+) %\) erreicht/m.exec(out);
+            if (!e) return { gruen: false, zahl: "keine ERREICHT-Zeile (Exit " + lauf.exit + ")" };
+            let mit = null;
+            try {
+                mit = JSON.parse((/^MITSCHNITT (.*)$/m.exec(out) || [])[1]);
+            } catch (_e) {
+                mit = null;
+            }
+            const s = zeilen(out).map((l) => /^\s*(✓|✗)( ungültig)?( BRUCH)? „(.+?)“/.exec(l)).filter(Boolean);
+            const erf = s.filter((x) => x[1] === "✓").length;
+            const rot = ["KLEMME:", "FAIL-CLOSED:", "SELBST-TEST: ein ov, das nicht ankommt", "KORPUS-TEIL Regler-Wörter:", "WORT der Korpus"]
+                .filter((w) => !out.includes("✅ " + w));
+            const echt = !!(mit && mit.anbieter && mit.modell);
+            const n = +e[2], m = +e[3];
+            return {
+                gruen: e[1] === "✅" && m > 0 && n / m >= 0.95 && !rot.length && echt && s.length >= 20 && erf / s.length >= 0.8,
+                zahl:
+                    n + " von " + m + " Zeilen (" + e[4] + " %), Korpus-Teil " + erf + " von " + s.length + " Sätzen mit Welt-Prädikat" +
+                    (echt ? " (Mitschnitt " + mit.modell + " @ " + mit.anbieter + " " + mit.datum + ")" : ", kein Mitschnitt eines echten Laufs") +
+                    (rot.length ? ", ROT: " + rot.join(" · ") : ""),
+            };
+        },
+        pfad: [...KI_K2_PFAD, "spec/profiband/ratsche-ki-korpus*.json", "scripts/diag-v1-pfad.cjs", "scripts/lib/ausgabe-aufnahme.cjs"],
         quelle: "2 = ≥ 95 % und der Korpus-Teil Regler-Wörter („knorrig“, „schmal und hoch“) ≥ 80 % mit Modell",
     },
 
