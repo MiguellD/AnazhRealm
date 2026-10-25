@@ -51,3 +51,8 @@ ankunft-l2a-rundblick · ferne-blau-heim · gelaende-ring-wachstum · leib-k2-fu
 4. Nach den Landungen: station-klang-k1 e26e1836, station-bauen-k5 5529343c, Stationen von gelaende-ring/l2a/ferne nach koordination.
 - **Offene Cloud-Zweige:** tiere-k1-herde-bild 2fa829ff (Format geheilt; Konflikt `scripts/diag-werkstatt-weg.cjs` gegen bauen-k5 in heim-z31 → beide Absichten ganz) · mensch-k3-wege 5a50e719 (Gruppe 4 und Puls 1/2 rot, nicht nur L2a) · leib-k2-fuss 77419f6b und leib-k4-kamera-bau 74f445e9 (CI lief 16:10).
 - **Werkzeug neu:** `bash artifacts/profiband/werkzeug/messplatz-blick.sh` (OMEN · Radeon · CI · Karte im Terminal; zug.sh punkte schreibt `zug/fortschritt-radeon.txt`).
+
+## Nachtrag 17:00 MEZ (Woche 97 %)
+- **Zug 32 = heim-z32@03a266df** (startet per Kette b5ahgpxc1 nach z31b, Ziel aus `$TEMP/claude/z32-zweig.txt`): heim-z31 + gelaende-ring + tiere-k1-herde-bild (Import-Konflikt diag-werkstatt-weg gelöst: halteBis) + ankunft-l2a-rundblick + ferne-blau-heim + leib-k4-kamera-bau (kamera-nah: Drehendes zählt ohne dyn, EIN Sammler) + **siedlung-k5-erstes-haus ca1f45c7** (Rang `_dorfZug`: Mitte im Schirm vor gestreiftem Grundriss; Radeon nH 300 974 → 125,5 ms; Täter war siedlung-k3-heil in z29c). Paartest: Decke, Atlas, Lint, Format, Werkstatt-, Kamera-, Settlement-Linse grün.
+- **Nicht in Zug 32:** mensch-k3-wege a6b3dfc7 (WIP: Bewohner-Selbsttest geheilt; offen Decke +600 Atome in `scripts/lib/kreatur-proben.cjs`, Laterne #15942 6 Takte, Wiederkehr 2/1296 > 2 m) · leib-k2-fuss 77419f6b (Kampf-Gefühl: Beine nicht byte-gleich; K8 stufe/rad hang p95 4,7/4,5 cm > 3).
+- Mess-Dateien `messung/36c4275a-radeon.json`, `messung/ca1f45c7-radeon.json` (Bisektion Siedlung) liegen im koordination-Worktree.
