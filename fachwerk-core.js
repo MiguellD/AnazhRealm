@@ -6035,9 +6035,7 @@
     //    ziehen aus ihren Seed-LCGs, massBau ist reiner Bau — derselbe dp ⇒
     //    byte-derselbe Export (gate:settlement friert das ein). Unplatzierte
     //    Häuser (die ±9999-Parkplätze des Layouts) reisen NICHT (fail-closed).
-    // DER MASS-BAU IM GEDÄCHTNIS (siedlung.K3): der Wirt rechnet den Export am Ort der Ort-Wahl neu (ein anderes `dp.hoehe`),
-    // der Mass-Bau eines Hauses hängt nur an seinem P-Vektor — derselbe Vektor nimmt denselben Bau, frisch sind je Export nur
-    // `p` (brandwand schreibt in sie) und der Rahmen `q`. Höchstens MASS_GEDAECHTNIS Häuser, dann fällt das Gedächtnis ganz.
+    // die Außenkante der Wände längs x (die Solids des Mass-Baus, `massBau` → B.wandX)
     function wandXVon(solids) {
         var x0 = Infinity,
             x1 = -Infinity;
@@ -6058,6 +6056,9 @@
             d = (x0 + x1 - e.x0 - e.x1) / 2;
         return { cx: o.cx + d * Math.cos(o.phi), cz: o.cz - d * Math.sin(o.phi), phi: o.phi, ex: (x1 - x0) / 2, ez: o.ez };
     }
+    // DER MASS-BAU IM GEDÄCHTNIS (siedlung.K3): der Wirt rechnet den Export am Ort der Ort-Wahl neu (ein anderes `dp.hoehe`),
+    // der Mass-Bau eines Hauses hängt nur an seinem P-Vektor — derselbe Vektor nimmt denselben Bau, frisch sind je Export nur
+    // `p` (brandwand schreibt in sie) und der Rahmen `q`. Höchstens MASS_GEDAECHTNIS Häuser, dann fällt das Gedächtnis ganz.
     var MASS_GEDAECHTNIS = 1024;
     var massGedaechtnis = new Map();
     function massBauExport(hp) {
