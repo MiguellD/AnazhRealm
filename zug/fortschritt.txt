@@ -105,3 +105,4 @@
 2026-10-25 18:24:42 nw3031-abab d-ego nicht-langsamer 10.7 · 3/4 (2+2)
 2026-10-25 18:37:59 nw3031-abab stadt VERLÄNGERN 13.2 · 4/4 (2+2)
 2026-10-25 18:59:09 nw3031-abab VORFAHRT w-ego-B3 gewartet 17.7
+2026-10-25 19:11:58 nw3031-abab w-ego(4+4) nicht-langsamer 33.9 · verlängert (4+4)
