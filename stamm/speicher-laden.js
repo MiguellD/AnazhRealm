@@ -914,7 +914,7 @@ class AnazhRealm_speicher_laden {
             const json = JSON.stringify(welt);
             const at = Date.now(); // EIN Stempel für den Platz und den atomaren Stand in IndexedDB (der Speicher-Faden schreibt)
             const daten = new TextEncoder().encode(json).buffer;
-            this._speicherAuftrag({ op: "ablegen", welt: worldId, at, daten }, [daten]);
+            this._speicherAuftrag({ op: "ablegen", welt: worldId, at, daten }, [daten], false);
             if (this._speicher && this._speicher.welt === worldId) this._speicher.welt = null; // der Faden hält ihr Modell nicht mehr
             localStorage.setItem(this.worldStorageKey(worldId), json);
             if (localStorage.getItem(this.worldStorageKey(worldId)) !== json)

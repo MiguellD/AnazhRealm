@@ -13,6 +13,7 @@
 // (1 = fill), im Stand base64 unter `voxelEdits` {n, xyzr, modus} — 43 Zeichen je Edit statt 64 im Objekt-JSON. Der Leser
 // (`_standNormal`) legt sie zurück nach `worldMeta.voxelEdits`.
 //
+// Der Teil „" ist der Kopf: die Felder ohne eigenen Teil als Text ohne Klammern.
 // Ops (je Nachricht EINE Antwort mit ihrem `n`, in der Reihenfolge der Nachrichten): stand · ablegen · loeschen · abbild ·
 // server · still. Ein Fehler antwortet {ok:false, grund}; das Modell der Welt fällt, der Haupt-Faden sendet sie ganz neu.
 // =============================================================================
@@ -118,6 +119,11 @@ function editsJson(E) {
 function komponiere(W) {
     const out = [];
     for (const k of W.ordnung) {
+        // der Kopf: die Felder ohne eigenen Teil, als Text ohne Klammern (leer, wenn sie alle undefined sind)
+        if (k === "") {
+            if (W.teile.get("")) out.push(W.teile.get(""));
+            continue;
+        }
         const L = W.listen.get(k);
         const v =
             k === "voxelEdits"

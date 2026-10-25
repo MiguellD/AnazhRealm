@@ -1408,7 +1408,7 @@ class AnazhRealm_dirigent_takt {
         }
         if (!lokal && !server) return;
         this._imLeerlauf(() => {
-            if (lokal) this.saveState();
+            if (lokal) this.saveState(true);
             if (server)
                 this.saveToProjectFolder({ fallbackToDownload: false }).finally(() => {
                     st.isServerSaveInFlight = false;

@@ -1249,8 +1249,9 @@ class AnazhRealm_dienst {
     }
 
     // → true, wenn der Stand an den Speicher-Faden ging (er schreibt ihn atomar in IndexedDB, Lehre 24); false, wenn eine Sperre
-    // verweigert — laut, nie still (der Rufer „speichere zustand" sagt es dem Spieler).
-    saveState() {
+    // verweigert — laut, nie still (der Rufer „speichere zustand" sagt es dem Spieler). `takt`: die Sicherung des Takts (Autosave,
+    // Edit-Timer) — die Glieder der Listen hat der Besen im Leerlauf geprüft (`_standAenderung`); jeder andere Ruf fragt alles.
+    saveState(takt = false) {
         // DIE SPERRE DES WELT-WECHSELS (`_weltWechselNeuLaden`): die Seite stirbt gleich, ihr Speicher gehört der Ziel-Welt.
         if (this._weltWechselSperre) {
             this.log(
@@ -1278,8 +1279,8 @@ class AnazhRealm_dienst {
         // letzten Stand änderte (`_standAenderung`, per Transfer); er setzt das JSON zusammen und schreibt es in EINER
         // Transaktion samt .bak. Bis speicher-faden baute jeder Ruf den ganzen Stand, serialisierte und schrieb ihn zweimal
         // im Haupt-Faden (IndexedDB und das Abbild im localStorage): je Ruf p50 4,0 ms in der frischen Welt (headless).
-        this._standSichern(worldId, Date.now());
-        if (this.activeWorldGet() !== worldId) this.activeWorldSet(worldId);
+        this._standSichern(worldId, Date.now(), takt);
+        if (this._aktivZeiger !== worldId) this.activeWorldSet(worldId);
         const lastVersion = this.state.versionHistory[this.state.versionHistory.length - 1];
         if (lastVersion !== this.state.currentVersion) {
             this.state.versionHistory.push(this.state.currentVersion);
@@ -1301,7 +1302,7 @@ class AnazhRealm_dienst {
         if (this._editSaveTimer) clearTimeout(this._editSaveTimer);
         this._editSaveTimer = setTimeout(() => {
             this._editSaveTimer = null;
-            this.saveState();
+            this.saveState(true);
         }, 1200);
     }
 

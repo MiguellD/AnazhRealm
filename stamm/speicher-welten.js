@@ -156,6 +156,7 @@ class AnazhRealm_speicher_welten {
         try {
             if (worldId) localStorage.setItem("anazhRealmActiveWorld", worldId);
             else localStorage.removeItem("anazhRealmActiveWorld");
+            this._aktivZeiger = worldId || null; // gemerkt: saveState fragt den localStorage nicht je Stand
             return true;
         } catch {
             return false;
@@ -518,7 +519,7 @@ class AnazhRealm_speicher_welten {
             // ignorieren — Index trotzdem bereinigen, damit der UI-Picker stimmt.
         }
         // V18.151 (Faden #6) — auch die IndexedDB-Heimat der Welt räumen (der Speicher-Faden, ihr EINER Schreiber).
-        this._speicherAuftrag({ op: "loeschen", welt: worldId });
+        this._speicherAuftrag({ op: "loeschen", welt: worldId }, [], false);
         this.worldsIndexRemove(worldId);
         this.log(`Welt gelöscht: ${worldId.slice(0, 8)}…`, "INFO");
         return true;
@@ -816,21 +817,6 @@ class AnazhRealm_speicher_welten {
         };
         // die Marke einer Reihe, die nur wächst oder vorn verliert: sie selbst, ihre Länge, ihr jüngstes Glied
         const angehaengt = (f) => ({ marke: () => [f(), f().length, f().at(-1)] });
-        // die Marke einer flachen Quelle (Objekt oder Reihe aus Zahlen und Wörtern): sie, jeder Schlüssel, jeder Wert — trägt sie
-        // ein Objekt, gibt es keine Marke (das Feld wird serialisiert)
-        const flach = (f) => ({
-            marke: () => {
-                const o = f();
-                if (o === null || typeof o !== "object") return [o];
-                const m = [o];
-                for (const k in o) {
-                    const v = o[k];
-                    if (v !== null && typeof v === "object") return null;
-                    m.push(k, v);
-                }
-                return m;
-            },
-        });
         const pl = () => st().player;
         return (this._standZeilen = [
             [
@@ -843,7 +829,6 @@ class AnazhRealm_speicher_welten {
                               z: st().playerMesh.position.z,
                           }
                         : { x: 0, y: 5, z: 0 },
-                flach(() => st().playerMesh && st().playerMesh.position),
             ],
             // DIE BODEN-GENERATION (K16): unter welchem Gelände-Gesetz die Höhen dieses Saves stehen (`_bodenUmzug`).
             ["bodenGeneration", () => globalThis.__gelaendeCore.BODEN_GENERATION],
@@ -862,14 +847,18 @@ class AnazhRealm_speicher_welten {
             // Spieler (bond + Folgen) ist Identität und reist mit (`_serializeCreature` bindung, halten.K5).
             // Ein Gefallener liegt nie in state.creatures (er zog beim Tod nach state.leichname) — er reist nie in den
             // Snapshot und erwacht nie beim Reload.
+            // Je Wesen ein Glied; das Alter wächst mit jedem Bild, darum ohne Marke (der Besen serialisiert jedes je Runde).
             [
                 "creatures",
-                () =>
-                    st()
-                        .creatures.map((c) => this._serializeCreature(c))
-                        .filter((s) => s),
+                null,
+                {
+                    menge: () => [st().creatures, st().creatures.length, st().creatures.at(-1)],
+                    liste: () => st().creatures.filter((c) => c && c.userData),
+                    marke: () => null,
+                    glied: (c) => this._serializeCreature(c),
+                },
             ],
-            ["creatureEmotions", () => st().creatureEmotions, flach(() => st().creatureEmotions)],
+            ["creatureEmotions", () => st().creatureEmotions],
             // halten.K4 — die Pfeile, die in Gelände und Bau stecken (`_pfeilStecken`); die im Tier reisen mit dem Tier
             [
                 "pfeileStecken",
@@ -940,8 +929,8 @@ class AnazhRealm_speicher_welten {
             ["grantedCapabilities", () => st().grantedCapabilities || {}],
             // Schicht 1 — Pattern-Memory + Pfad-Buckets persistieren. Beides
             // ist Welt-Gedächtnis und überlebt Reloads bewusst.
-            ["dslPatternMemory", () => st().dsl.patternMemory || {}, flach(() => st().dsl.patternMemory)],
-            ["playerPathBuckets", () => pl().pathBuckets || null, flach(() => pl().pathBuckets)],
+            ["dslPatternMemory", () => st().dsl.patternMemory || {}],
+            ["playerPathBuckets", () => pl().pathBuckets || null],
             // Welle 1 D — Welt-Journal persistiert. Ohne das Journal hätte
             // jede Session ihre eigene Geschichte; mit ihm wächst die Welt
             // über Reloads hinweg.
@@ -962,7 +951,7 @@ class AnazhRealm_speicher_welten {
             // Ring 3: Player-Emotionen werden mitgespeichert. Cooldown-Timer
             // bleiben absichtlich draußen — sie sind reine Laufzeit-Drosselung,
             // ein Reload soll wieder triggerfähig sein.
-            ["playerEmotions", () => ({ ...pl().emotions }), flach(() => pl().emotions)],
+            ["playerEmotions", () => ({ ...pl().emotions })],
             // DIE LEBENSWERTE SIND ZUSTAND (halten.K5, `recomputePlayerStats`): Leben, Ausdauer und Mana als Anteil ihres
             // Maximums (das Maximum rechnet der Leib beim Laden neu, wie `hpAnteil` des Tiers), dazu die Wunde des Tods —
             // vorher heilte jeder Reload (hp 69,6 → 134 von 134, die Wunde 1 → 0). `_loadStateRestoreLeben` liest sie.
@@ -977,17 +966,6 @@ class AnazhRealm_speicher_welten {
                         mana: anteil(pl.mana, pl.manaMax),
                         wunde: +(pl.deathWoundIntensity || 0).toFixed(4),
                     };
-                },
-                {
-                    marke: () => [
-                        pl().hp,
-                        pl().hpMax,
-                        pl().stamina,
-                        pl().staminaMax,
-                        pl().mana,
-                        pl().manaMax,
-                        pl().deathWoundIntensity,
-                    ],
                 },
             ],
             // Tag-Nacht: timeOfDay läuft nach dem Reload weiter. Die Tag-Länge ist die Wahl des Spielers und lebt bei ihm
@@ -1038,7 +1016,6 @@ class AnazhRealm_speicher_welten {
                     microStrength: atm("microStrength", 0.1),
                     r5StructureBoost: atm("r5StructureBoost", AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost),
                 }),
-                flach(() => st().atmosphere),
             ],
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -1070,19 +1047,15 @@ class AnazhRealm_speicher_welten {
                     return out;
                 },
                 // die Bauten des Stands und die Menge der eigenen Baupläne (ein gewachsener kommt nur hinzu)
-                { marke: (K) => [K.listenGen.architectures, K.listenZahl.blueprints] },
+                { marke: (K) => [K.listenGen.architectures, K.listenZahl.blueprints], ausListen: true },
             ],
             // Welle 6.D Etappe 3a — Konsumable-Rezepte persistieren.
             ["consumables", () => st().consumables || {}],
             // Welle 6.D Etappe 3b / V17.57 W2-B — Equipped-Slots persistieren ({held, armor}).
-            [
-                "playerEquipped",
-                () => (st().player && st().player.equipped) || { held: null, armor: null },
-                flach(() => st().player && st().player.equipped),
-            ],
+            ["playerEquipped", () => (st().player && st().player.equipped) || { held: null, armor: null }],
             // Welle 4 Phase 3: Werkzeug-Besitz. Starter-Werkzeuge werden bei jedem Init wieder verfügbar, aber Persistenz
             // erlaubt eigen-geschmiedeten (Welle 6) zu überleben.
-            ["playerTools", () => (Array.isArray(pl().tools) ? [...pl().tools] : []), flach(() => pl().tools)],
+            ["playerTools", () => (Array.isArray(pl().tools) ? [...pl().tools] : [])],
             // Ring 6: Bau-Werke. Nur {type, position, seed, scale} — der Mesh wird beim Laden aus dem Seed rekonstruiert
             // (kein Mesh-Snapshot). Die Marke eines Baus: seine Felder und der Stand des Bodens unter ihm (`_voxelStand`:
             // Edit und Erdbau seiner Nachbarschaft — `ueberGrund` misst den Boden).
@@ -1090,6 +1063,7 @@ class AnazhRealm_speicher_welten {
                 "architectures",
                 null,
                 {
+                    menge: (K) => [K.bauten],
                     liste: (K) => K.bauten,
                     marke: (a, m, K) => {
                         const p = a.position;
@@ -1239,6 +1213,19 @@ class AnazhRealm_speicher_welten {
                 null,
                 {
                     liste: () => Object.values(st().blueprints || {}).filter((bp) => bp && !bp.builtIn),
+                    // in der Hand: getragen, in der Hotbar, im Inventar (ein Hieb zehrt am Bauplan)
+                    hand: () => {
+                        const p = st().player || {};
+                        const bps = st().blueprints || {};
+                        const namen = [p.equipped && p.equipped.held, p.equipped && p.equipped.armor].concat(
+                            st().hotbar || [],
+                            (p.inventory || []).map((s) => s && s.blueprintName)
+                        );
+                        return namen
+                            .filter((n) => typeof n === "string" && bps[n] && !bps[n].builtIn)
+                            .map((n) => bps[n]);
+                    },
+                    alle: (K) => K.geaendert.has("playerInventory"),
                     marke: (bp) => {
                         const m = Object.values(bp);
                         const pm = bp.portalMeta;
@@ -1271,7 +1258,7 @@ class AnazhRealm_speicher_welten {
                         .map((m) => this._serializeMaterial(m)),
             ],
             // Ring 6.5 — Hotbar-Belegung. Array von 9 Slots mit Bauplan-Name oder null. Default wird beim Init überschrieben.
-            ["hotbar", () => (Array.isArray(st().hotbar) ? st().hotbar.slice(0, 9) : []), flach(() => st().hotbar)],
+            ["hotbar", () => (Array.isArray(st().hotbar) ? st().hotbar.slice(0, 9) : [])],
             // Welle 6.C1 — Inventar persistiert. 27 Slots, jeweils {blueprintName,
             // count}, ein Material-Slot {kind, material, count}, oder null. Bei Reload defensive Validierung (unbekannte
             // Namen werden zu null, count ≥ 1, ganz). Bis 24.10. schrieb der Material-Slot nur {count}: jedes Laden
@@ -1290,31 +1277,20 @@ class AnazhRealm_speicher_welten {
                                       : null
                               )
                         : [],
-                {
-                    marke: () => {
-                        const inv = st().player && st().player.inventory;
-                        const m = [inv];
-                        if (Array.isArray(inv))
-                            for (const s of inv)
-                                m.push(s, s && s.kind, s && s.material, s && s.blueprintName, s && s.count);
-                        return m;
-                    },
-                },
+                // ein eigenes Feld: seine Änderung fragt jeden Bauplan (`alle` der Baupläne)
+                {},
             ],
         ]);
     }
 
     // DIE ÄNDERUNG DES STANDS für den Speicher-Faden (Lehre 24): je Feld der Tafel sein JSON, gesendet nur, wenn es sich
-    // änderte; je Glied einer Liste die Marke (gleich → das gemerkte JSON, keine Serialisierung), die Ordnung der Glieder
-    // nur, wenn sie sich änderte; die Edits als Anhang (x, y, z, r, Modus) seit dem letzten Stand. `voll`: alles (der Faden
-    // hält kein Modell dieser Welt). → die Nachricht {ordnung, teile, listen, edits, daten} und ihre Transfers.
-    _standAenderung(voll) {
+    // änderte (eine Marke erspart den Bau); je Liste die Menge (ihre Ordnung nur, wenn sie sich änderte) und die Glieder, deren
+    // JSON sich änderte; die Edits als Anhang (x, y, z, r, Modus) seit dem letzten Stand. `voll`: alles (der Faden hält kein
+    // Modell dieser Welt). `takt` (die Sicherung des Takts): die Glieder hat der Besen im Leerlauf geprüft (`_standFegen`) —
+    // gefragt werden nur neue, die Baupläne in der Hand und, wo das Inventar sich regte, jeder Bauplan (ein Akt, der Material
+    // zahlt und einen Bauplan ändert, steht ganz im Stand oder gar nicht). → die Nachricht und ihre Transfers.
+    _standAenderung(voll, takt) {
         const S = this._speicher;
-        const stuecke = [];
-        const listenStuecke = [];
-        const ordnung = [];
-        const teile = [];
-        const listen = {};
         const gleich = (a, b) => {
             if (!a || a.length !== b.length) return false;
             for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
@@ -1328,95 +1304,123 @@ class AnazhRealm_speicher_welten {
         boden.push(this.state.voxelWorkerStateGen);
         if (voll || !gleich(S.boden, boden)) S.bodenGen = (S.bodenGen || 0) + 1;
         S.boden = boden;
-        const K = {
-            bauten: this._standBauten(),
-            bodenNeu: S.bodenGen !== S.bodenGemessen,
-            bodenGen: S.bodenGen,
-            span: this._voxelChunkConfig(0).span,
-            listenGen: {},
-            listenZahl: {},
-        };
+        const K = this._standKontext();
+        K.bodenNeu = S.bodenGen !== S.bodenGemessen;
         S.bodenGemessen = S.bodenGen;
-        // die Listen zuerst: ihre Änderung ist die Marke der Felder, die aus ihnen folgen
-        for (const [k, , art] of tafel) {
-            if (!art || !art.liste) continue;
-            const L = S.listen.get(k) || S.listen.set(k, { ordnung: [], memo: new WeakMap(), gen: 0 }).get(k);
-            const glieder = art.liste(K);
-            const ord = new Array(glieder.length);
-            const neu = [];
-            for (let i = 0; i < glieder.length; i++) {
-                const g = glieder[i];
-                let m = L.memo.get(g);
-                if (!m) L.memo.set(g, (m = { s: ++S.seriell, marke: null, json: null }));
-                const marke = art.marke(g, m, K);
-                if (voll || !gleich(m.marke, marke)) {
-                    m.marke = marke;
-                    const json = JSON.stringify(art.glied(g));
-                    if (voll || json !== m.json) {
-                        m.json = json;
-                        neu.push(m.s);
-                        listenStuecke.push(json);
-                    }
-                }
-                ord[i] = m.s;
-            }
-            const l = { teile: neu };
-            if (voll || !gleich(L.ordnung, ord)) l.ordnung = L.ordnung = ord;
-            if (neu.length || l.ordnung) L.gen++;
-            listen[k] = l;
-            K.listenGen[k] = L.gen;
-            K.listenZahl[k] = glieder.length;
+        const [stuecke, teile, listenStuecke, listen] = [[], [], [], {}];
+        const feld = (z) => {
+            const k = z[0];
+            const art = z[2];
+            const alt = S.zeilen.get(k);
+            const marke = art && art.marke ? art.marke(K) : null;
+            if (!voll && marke && alt && gleich(alt.marke, marke)) return;
+            const v = z[1](true, K);
+            const json = v === undefined ? undefined : JSON.stringify(v);
+            S.zeilen.set(k, { marke, json });
+            if (!voll && alt && alt.json === json) return;
+            K.geaendert.add(k);
+            if (json === undefined) return;
+            teile.push(k);
+            stuecke.push(json);
+        };
+        // (1) DER KOPF: jedes Feld ohne Art in EINEM Objekt, EIN JSON, EIN Vergleich (einzeln kostete ein Feld im Interpreter
+        // ~40 Operationen — der Stand läuft alle 5 s und wird nie optimiert); der Faden setzt es als Felder ohne Klammern ein
+        const kopf = {};
+        for (let i = 0; i < tafel.length; i++)
+            if (tafel[i][1] && !tafel[i][2]) kopf[tafel[i][0]] = tafel[i][1](true, K);
+        const kopfJson = JSON.stringify(kopf).slice(1, -1);
+        if (voll || S.kopf !== kopfJson) {
+            S.kopf = kopfJson;
+            teile.push("");
+            stuecke.push(kopfJson);
         }
-        let edits = null;
-        for (const [k, wert, art] of tafel) {
-            if (art && art.liste) {
-                ordnung.push(k);
-            } else if (k === "voxelEdits") {
-                const eds = wm.voxelEdits || null;
-                const zahl = eds ? eds.length : 0;
-                const E = S.edits;
-                const neu = voll || eds !== E.ref || zahl < E.n;
-                const ab = neu ? 0 : E.n;
-                if (neu || ab < zahl) {
-                    const xyzr = new Float64Array((zahl - ab) * 4);
-                    const modus = new Uint8Array(zahl - ab);
-                    for (let i = ab, j = 0; i < zahl; i++, j++) {
-                        const e = eds[i];
-                        xyzr[j * 4] = e.x;
-                        xyzr[j * 4 + 1] = e.y;
-                        xyzr[j * 4 + 2] = e.z;
-                        xyzr[j * 4 + 3] = e.r;
-                        modus[j] = e.mode === "fill" ? 1 : 0;
+        // die Felder mit eigener Art (Marke oder eigenes Urteil), die aus keiner Liste folgen
+        for (let i = 0; i < tafel.length; i++) if (tafel[i][1] && tafel[i][2] && !tafel[i][2].ausListen) feld(tafel[i]);
+        // (2) die Listen
+        for (let i = 0; i < tafel.length; i++) {
+            const k = tafel[i][0];
+            const art = tafel[i][2];
+            if (!art || !art.liste) continue;
+            const L = this._standListe(k);
+            const ganz = voll || !takt || (art.alle && art.alle(K));
+            const neu = [];
+            const pruefe = (g, m) => {
+                const marke = art.marke(g, m, K);
+                if (!voll && marke && gleich(m.marke, marke)) return;
+                m.marke = marke;
+                const json = JSON.stringify(art.glied(g));
+                if (!voll && json === m.json) return;
+                m.json = json;
+                neu.push(m.s);
+                listenStuecke.push(json);
+            };
+            const menge = art.menge ? art.menge(K) : L.menge;
+            if (ganz || !L.glieder || !gleich(L.menge, menge)) {
+                const glieder = art.liste(K);
+                const ord = new Array(glieder.length);
+                for (let j = 0; j < glieder.length; j++) {
+                    const m = this._standGlied(L, glieder[j]);
+                    if (ganz || m.json === null) pruefe(glieder[j], m);
+                    else if (L.gefegt.has(m)) {
+                        neu.push(m.s);
+                        listenStuecke.push(m.json);
                     }
-                    edits = { ab, xyzr, modus };
+                    ord[j] = m.s;
                 }
-                E.ref = eds;
-                E.n = zahl;
-                ordnung.push(k);
+                L.glieder = glieder;
+                L.menge = art.menge ? menge : [glieder];
+                listen[k] = { teile: neu };
+                if (voll || !gleich(L.ordnung, ord)) listen[k].ordnung = L.ordnung = ord;
             } else {
-                const z = S.zeilen.get(k);
-                const marke = art && art.marke ? art.marke(K) : null;
-                let json;
-                if (!voll && marke && z && gleich(z.marke, marke)) json = z.json;
-                else {
-                    const v = wert(true, K);
-                    // ein Wert aus Zahl oder Wort ist seine eigene Marke
-                    json =
-                        v === undefined
-                            ? undefined
-                            : z && z.v === v && v !== null && typeof v !== "object"
-                              ? z.json
-                              : JSON.stringify(v);
-                    if (voll || !z || z.json !== json) {
-                        if (json !== undefined) {
-                            teile.push(k);
-                            stuecke.push(json);
-                        }
-                    }
-                    S.zeilen.set(k, { marke, json, v });
+                for (const m of L.gefegt) {
+                    neu.push(m.s);
+                    listenStuecke.push(m.json);
                 }
-                if (json !== undefined) ordnung.push(k);
+                listen[k] = { teile: neu };
             }
+            L.gefegt.clear();
+            if (art.hand && !ganz)
+                for (const g of art.hand(K)) {
+                    const m = L.memo.get(g);
+                    if (m) pruefe(g, m);
+                }
+            if (neu.length || listen[k].ordnung) L.gen++;
+            K.listenGen[k] = L.gen;
+            K.listenZahl[k] = L.glieder.length;
+        }
+        // (3) die Felder, die aus den Listen folgen
+        for (let i = 0; i < tafel.length; i++) if (tafel[i][2] && tafel[i][2].ausListen) feld(tafel[i]);
+        // (4) die Edits: angehängt seit dem letzten Stand, ganz, wenn ihre Liste neu ist
+        let edits = null;
+        const eds = wm.voxelEdits || null;
+        const zahl = eds ? eds.length : 0;
+        const E = S.edits;
+        const ganzE = voll || eds !== E.ref || zahl < E.n;
+        if (ganzE || E.n < zahl) {
+            const ab = ganzE ? 0 : E.n;
+            const xyzr = new Float64Array((zahl - ab) * 4);
+            const modus = new Uint8Array(zahl - ab);
+            for (let i = ab, j = 0; i < zahl; i++, j++) {
+                const e = eds[i];
+                xyzr[j * 4] = e.x;
+                xyzr[j * 4 + 1] = e.y;
+                xyzr[j * 4 + 2] = e.z;
+                xyzr[j * 4 + 3] = e.r;
+                modus[j] = e.mode === "fill" ? 1 : 0;
+            }
+            edits = { ab, xyzr, modus };
+        }
+        E.ref = eds;
+        E.n = zahl;
+        // die Ordnung der Tafel: der Kopf an der Stelle seines ersten Felds, jede Liste, die Edits, jedes eigene Feld mit Wert
+        const ordnung = [];
+        let mitKopf = false;
+        for (let i = 0; i < tafel.length; i++) {
+            const k = tafel[i][0];
+            const art = tafel[i][2];
+            if (k === "voxelEdits" || (art && art.liste)) ordnung.push(k);
+            else if (art) S.zeilen.get(k).json !== undefined && ordnung.push(k);
+            else if (!mitKopf) mitKopf = ordnung.push("") > 0;
         }
         const daten = new TextEncoder().encode(stuecke.concat(listenStuecke).join("\u0001")).buffer;
         const nachricht = { teile, listen, daten };
@@ -1429,10 +1433,91 @@ class AnazhRealm_speicher_welten {
         return { nachricht, transfer };
     }
 
+    // Der Kontext eines Stands und eines Besen-Schritts: die Bauten des Stands, die Spanne der Chunks, die Generationen der
+    // Listen, die Felder, die sich in diesem Stand änderten.
+    _standKontext() {
+        return {
+            bauten: this._standBauten(),
+            bodenNeu: true,
+            bodenGen: this._speicher.bodenGen,
+            span: this._voxelChunkConfig(0).span,
+            listenGen: {},
+            listenZahl: {},
+            geaendert: new Set(),
+        };
+    }
+
+    // Das Gedächtnis einer Liste im Stand (ihre Glieder, Menge, Ordnung, je Glied Seriennummer, Marke und JSON; die gefegten).
+    _standListe(k) {
+        const S = this._speicher;
+        if (!S.listen.has(k))
+            S.listen.set(k, {
+                glieder: null,
+                menge: null,
+                ordnung: [],
+                memo: new WeakMap(),
+                gefegt: new Set(),
+                gen: 0,
+            });
+        return S.listen.get(k);
+    }
+
+    _standGlied(L, g) {
+        let m = L.memo.get(g);
+        if (!m) L.memo.set(g, (m = { s: ++this._speicher.seriell, marke: null, json: null }));
+        return m;
+    }
+
+    // DER BESEN DES STANDS (Lehre 14: im Leerlauf vorgebacken): in den Leerlauf-Fenstern des Haupt-Fadens prüft er die Glieder
+    // der Listen reihum (die Bauten, die Baupläne, die Wesen) und serialisiert die geänderten — der Takt-Stand reicht nur sie
+    // weiter. Eine Runde beginnt mit der frischen Menge der Baupläne (ein neuer oder gefallener ohne Inventar-Akt kommt so
+    // spätestens eine Runde später); jedes Glied ist einmal je Sicherungs-Abstand dran, ein neues sofort.
+    _standFegen(frist) {
+        const S = this._speicher;
+        if (!S || !S.welt) return;
+        const F = S.fege || (S.fege = { reihe: [], i: 0, guthaben: 0, zeit: performance.now() });
+        const K = this._standKontext();
+        // das Guthaben: so viele Glieder, dass jedes einmal je Sicherungs-Abstand dran ist (ein neues prüft der Stand selbst)
+        const jetzt = performance.now();
+        F.guthaben = Math.min(
+            F.reihe.length + 1,
+            F.guthaben + ((jetzt - F.zeit) * F.reihe.length) / (1000 * this.state.saveInterval)
+        );
+        F.zeit = jetzt;
+        while ((F.guthaben >= 1 || F.i >= F.reihe.length) && (frist.timeRemaining() > 1 || frist.didTimeout)) {
+            if (F.i >= F.reihe.length) {
+                F.reihe = [];
+                F.i = 0;
+                for (const [k, , art] of this._standTafel()) {
+                    if (!art || !art.liste) continue;
+                    const L = this._standListe(k);
+                    if (!L.glieder) continue;
+                    if (!art.menge) {
+                        const frisch = art.liste(K);
+                        if (frisch.length !== L.glieder.length || frisch.some((g, j) => g !== L.glieder[j]))
+                            L.menge = null;
+                    }
+                    for (const g of L.glieder) F.reihe.push([L, art, g]);
+                }
+                if (frist.didTimeout || !F.reihe.length) return;
+            }
+            const [L, art, g] = F.reihe[F.i++];
+            F.guthaben--;
+            const m = L.memo.get(g);
+            if (!m || m.json === null) continue;
+            const marke = art.marke(g, m, K);
+            if (marke && marke.length === (m.marke || []).length && marke.every((v, j) => v === m.marke[j])) continue;
+            m.marke = marke;
+            const json = JSON.stringify(art.glied(g));
+            if (json !== m.json) ((m.json = json), L.gefegt.add(m));
+            if (frist.didTimeout) return;
+        }
+    }
+
     // DER SPEICHER-FADEN (speicher-faden.js, Lehre 24): lazy geboren, EIN Faden je Seite; jede Antwort löst die Zusage ihrer
     // Nachricht. Ein verworfener Stand bricht laut (`_bruchMelden`) und lässt das Modell fallen: die nächste Sicherung sendet
     // die Welt ganz. Ohne Platte (null-origin der inneren Welt) sagt es die Seite einmal laut.
-    _speicherAuftrag(nachricht, transfer = []) {
+    _speicherAuftrag(nachricht, transfer = [], zusage = true) {
         const S = this._speicherZustand();
         if (!S.faden) {
             S.faden = new Worker(`speicher-faden.js?v=${AnazhRealm.VERSION}`, { name: "speicher" });
@@ -1455,6 +1540,9 @@ class AnazhRealm_speicher_welten {
             };
         }
         nachricht.n = ++S.n;
+        // ohne Zusage (der Stand, die Ablage, das Löschen): niemand wartet, die Antwort meldet nur den Bruch; die Schranke
+        // (`_speicherStill`) steht hinter jeder früheren Nachricht
+        if (!zusage) return S.faden.postMessage(nachricht, transfer);
         return new Promise((ok) => {
             S.warten.set(nachricht.n, ok);
             S.faden.postMessage(nachricht, transfer);
@@ -1462,16 +1550,32 @@ class AnazhRealm_speicher_welten {
     }
 
     // Die Sicherung der lebenden Welt an den Faden: die Änderung seit dem letzten Stand (ganz, wenn der Faden kein Modell
-    // dieser Welt hält). → die Zusage der Antwort.
-    _standSichern(welt, at) {
+    // dieser Welt hält).
+    _standSichern(welt, at, takt) {
         const S = this._speicherZustand();
         const voll = S.welt !== welt;
-        if (voll) Object.assign(S, { zeilen: new Map(), listen: new Map(), edits: { ref: null, n: 0 }, ordnung: null });
-        const { nachricht, transfer } = this._standAenderung(voll);
+        if (voll)
+            Object.assign(S, {
+                zeilen: new Map(),
+                listen: new Map(),
+                edits: { ref: null, n: 0 },
+                ordnung: null,
+                fege: null,
+            });
+        if (!S.besen) {
+            // der Besen läuft ab dem ersten Stand in jedem Leerlauf-Fenster (ohne die API im nächsten Task: ohne Frist)
+            const lauf = (frist) => {
+                this._standFegen(frist || { timeRemaining: () => 0, didTimeout: true });
+                this._imLeerlauf(lauf, 1000);
+            };
+            S.besen = true;
+            this._imLeerlauf(lauf, 1000);
+        }
+        const { nachricht, transfer } = this._standAenderung(voll, takt);
         Object.assign(nachricht, { op: "stand", welt, at, voll });
         S.welt = welt;
         S.at = at;
-        return this._speicherAuftrag(nachricht, transfer);
+        this._speicherAuftrag(nachricht, transfer, false);
     }
 
     // Was die Seite vom Faden weiß: das Modell der Welt (`welt`, das JSON je Feld, die Glieder je Liste, die gesendeten Edits).
