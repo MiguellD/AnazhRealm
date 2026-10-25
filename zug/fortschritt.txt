@@ -26,3 +26,4 @@
 2026-10-25 06:01:13 takt2-gtx fahrzeug.K3#1 GRÜN 5.0 · 18/36
 2026-10-25 06:06:19 takt2-gtx fahrzeug.K3#2 ROT 5.0 · 19/36
 2026-10-25 06:11:32 takt2-gtx fahrzeug.K4#1 GRÜN 5.0 · 20/36
+2026-10-25 06:16:39 takt2-gtx fahrzeug.K4#2 GRÜN 5.0 · 21/36
