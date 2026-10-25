@@ -385,6 +385,13 @@ class AnazhRealm_kreatur_verhalten {
         for (let i = 0; i < creatures.length; i++) {
             const other = creatures[i];
             if (!this._kreaturIstBeute(creature, other)) continue;
+            // DER RISS NENNT DIE BEUTE (oekologie.K2, `_kreaturRiss`): das Opfer, das der Bestand im Nah-Kreis diesem Jäger
+            // oder seinem Verband zusprach, ist das Ziel, wo es auch steht
+            const von = other.userData._rissVon;
+            if (von && (von === creature || (ud.verband != null && von.userData.verband === ud.verband))) {
+                best = other;
+                break;
+            }
             const dx = other.position.x - cx;
             const dz = other.position.z - cz;
             if (dx * dx + dz * dz > scentRange * scentRange) continue;

@@ -1941,7 +1941,8 @@ class AnazhRealm_kreatur_leben {
     // Takt. Die Boden-Klasse einer Zelle ist eine Funktion der Welt (Gelände, Fluss, Wald): sie wird je Zelle EINMAL gefragt
     // (die Kosten hängen an der Bewegung, nie am Takt). `zellen` (wenn gegeben) sammelt je Zelle den Ort und je Gattung
     // Lebensraum × Äsung — den Jungwuchs, den ihr Fraß liest (`_kreaturFrass`).
-    // Liefert { gattung: { n, K, frass, riss, beute, geburt, tod } } (beute: die Tiere, die einem Jäger Beute sind).
+    // Liefert { gattung: { n, K, frass, riss, beute, geburt, tod } } (beute: je Tier, das einem Jäger Beute ist, sein nächster
+    // Jäger — der Körper, den der Riss im Nah-Kreis ruft, `_kreaturRiss`).
     _kreaturBestand(zellen) {
         const BG = AnazhRealm._bestandGesetz();
         const B = BG.B;
@@ -1963,17 +1964,23 @@ class AnazhRealm_kreatur_leben {
         }
         const gattung = (c) => AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul];
         for (const c of this.state.creatures) if (gattung(c) in n) n[gattung(c)]++;
-        // der Riss: wer einem wilden Jäger Beute ist, je Gattung gezählt, und die Kost der Jäger je Gattung, die sie jagen
-        const beuteVon = new Set();
+        // der Riss: wer einem wilden Jäger Beute ist, je Gattung gezählt, mit seinem nächsten Jäger, und die Kost der Jäger je
+        // Gattung, die sie jagen
+        const beuteVon = new Map();
         for (const c of this.state.creatures) {
             const d = diet[gattung(c)];
             if (!(d > 0) || this._creatureTemperament(c) !== "wild") continue;
             const jagt = new Set();
-            for (const o of this.state.creatures)
-                if (gattung(o) in n && this._kreaturIstBeute(c, o)) (beuteVon.add(o), jagt.add(gattung(o)));
+            for (const o of this.state.creatures) {
+                if (!(gattung(o) in n) || !this._kreaturIstBeute(c, o)) continue;
+                jagt.add(gattung(o));
+                const j = beuteVon.get(o);
+                if (!j || c.position.distanceToSquared(o.position) < j.position.distanceToSquared(o.position))
+                    beuteVon.set(o, c);
+            }
             for (const g of jagt) jaeger[g] += d;
         }
-        for (const o of beuteVon) gejagt[gattung(o)]++;
+        for (const o of beuteVon.keys()) gejagt[gattung(o)]++;
         let beuteN = 0;
         for (const g in n) if (diet[g] <= pflanz) beuteN += n[g];
         const beute = Math.min(1, beuteN / B.beuteVoll);
@@ -2034,6 +2041,16 @@ class AnazhRealm_kreatur_leben {
         }
     }
 
+    // DER RISS EINES OPFERS (Ökologie K1; oekologie.K2: fern als Zahl, nah als Körper): fern nimmt es die Zahl — der Tod eines
+    // Bisses (`_creatureCombatDeath`, Quelle jagd: der Ort erinnert ihn, der Leib liegt für den Fraß der Jäger); im Nah-Kreis
+    // (`_kreaturNah`, dort zeichnet das Bild den Leib) nennt er es seinem Jäger (`_rissVon`), und dessen Jagd reißt es — Hetze
+    // und Biss, das Leben aus dem Leib-Gesetz (tiere.K2, `_creatureScentHuntDir`). Vorher fiel es auch im Blick des Spielers
+    // ohne Jäger am Leib (der Prüfer von Zug 29: 14 Risse in 180 s, ein Bär „durch Jagd").
+    _kreaturRiss(opfer, jaeger) {
+        if (this._kreaturNah(opfer)) opfer.userData._rissVon = jaeger;
+        else this._creatureCombatDeath(opfer, "jagd");
+    }
+
     // DER LEBENSZYKLUS (Ökologie K2, tetrapoda BESTAND_GESETZ): je taktS s der Spiel-Zeit (`spielZeit`: das Portal friert sie
     // ein) die Bilanz des Reviers (`_kreaturBestand`) — je Gattung über ihrer Kapazität stirbt mit ihrer Chance das Älteste am
     // Hunger (die Trauer des Spielers hebt, sein Frieden dämpft), darunter wirft der Ort eine Gruppe (`_creatureNaturalBirth`);
@@ -2053,6 +2070,16 @@ class AnazhRealm_kreatur_leben {
         const zellen = [];
         const bestand = this._kreaturBestand(zellen);
         this._kreaturFrass(bestand, zellen);
+        // DIE OFFENEN RISSE (oekologie.K2): ein Opfer, das ein Riss im Nah-Kreis seinem Jäger nannte, behält seinen Riss — nah
+        // reißt es die Jagd, fern die Zahl (`_kreaturRiss`, mit seinem nächsten Jäger); ohne Jäger fällt er. Ein zweiter Riss
+        // nennt es nie: der Übergang nah ↔ fern ändert nur, wer gezeichnet wird, nie den Bestand
+        for (const c of st.creatures.slice()) {
+            const b = c.userData._rissVon && bestand[AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul]];
+            if (!b) continue;
+            if (b.beute.has(c)) this._kreaturRiss(c, b.beute.get(c));
+            else delete c.userData._rissVon;
+            b.beute.delete(c);
+        }
         const rng = this._faunaRng();
         for (const g in bestand) {
             const { tod: p, riss, beute } = bestand[g];
@@ -2061,9 +2088,9 @@ class AnazhRealm_kreatur_leben {
                 if (alt) this._creatureNaturalDeath(alt, "hunger");
             }
             // DER RISS (Ökologie K1): die Jäger nehmen das Älteste ihrer Beute unter den Lebenden (nach dem Hungertod gewählt) —
-            // der Tod eines Bisses (`_creatureCombatDeath`, Quelle jagd: der Ort erinnert ihn, der Leib liegt für den Fraß der Jäger)
+            // fern als Zahl, nah als Körper (`_kreaturRiss`)
             const opfer = riss > 0 && rng() < riss && this._findOldestCreature(g, beute);
-            if (opfer) this._creatureCombatDeath(opfer, "jagd");
+            if (opfer) this._kreaturRiss(opfer, beute.get(opfer));
         }
         // die Geburt folgt der EINEN Regel der Kreaturen (`_kreaturenBereit`, K60): unter dem Ladeschirm goss sie, sobald
         // Boot-Phase 3 wartete, die Gattung synchron (Radeon kalt 0,7 s vor dem ersten Bild)
@@ -2073,9 +2100,21 @@ class AnazhRealm_kreatur_leben {
         if (alt && alt.userData.alterS * 1000 > AnazhRealm.FAUNA_MAX_AGE_MS) this._creatureNaturalDeath(alt, "alter");
     }
 
+    // DER NAH-KREIS (KREATUR_NAH_MESH): steht der Leib dort, wo das Bild ihn als Körper zeichnet? Mit Bild sagt es der Ziegel
+    // (`_kzNah`, mit seiner Hysterese), ohne Bild und für die Sicht-Kopie (kein Ziegel) der Abstand zum Spieler, mit der
+    // Hysterese des Satzes — die EINE Frage des Tier-Satzes (`_tickTierSatz`) und des Risses (`_kreaturRiss`).
+    _kreaturNah(cr) {
+        const u = cr.userData;
+        if (!(this.state.renderer && this.state.renderer._isHeadlessNull) && !u._kopie) return u._kzNah === true;
+        const N = AnazhRealm.KREATUR_NAH_MESH;
+        const r = u._satz ? N.aus : N.ein;
+        const p = this.state.playerMesh.position;
+        return (cr.position.x - p.x) ** 2 + (cr.position.z - p.z) ** 2 < r * r;
+    }
+
     // ═══ DER TIER-SATZ (profiband.K1 „Sturm mit 50 Tieren“: jedes Tier im Nah-Kreis war ein Leib — L0 8, L1 5 Draws je Tier
     // in Bild und Kaskade; an der GTX bei 50 Tieren +42 / +25 Befehle, Render 6,0 → 11,4–13,0 ms) ═══
-    // Im Nah-Kreis (der Ziegel: `_kzNah`; ohne Bild KREATUR_NAH_MESH) leben die `KREATUR_SATZ.nahLeiber` Nächsten als Leib (ihre Stufe
+    // Im Nah-Kreis (`_kreaturNah`) leben die `KREATUR_SATZ.nahLeiber` Nächsten als Leib (ihre Stufe
     // wählt der Stufen-Schalter `_gelenkStufe`; die Wahl hält mit dessen Hysterese) — jedes andere
     // Tier steht und geht im Satz seiner Gestalt (`_gangSatz`, derselbe Baustein wie der Bewohner): die gelenkige Grobstufe
     // (L1, das Studio-Mesh) als Senken Fell · Glimmen (das Auge, das leuchtet) · Rest und der Wurf (`wurf.seh` der Kern-Zeile).
@@ -2085,8 +2124,6 @@ class AnazhRealm_kreatur_leben {
     _tickTierSatz(playerPos) {
         const st = this.state;
         const K = AnazhRealm.KREATUR_SATZ;
-        const N = AnazhRealm.KREATUR_NAH_MESH;
-        const echt = !(st.renderer && st.renderer._isHeadlessNull);
         const M = this._tierSaetze || (this._tierSaetze = new Map());
         const takt = (this._tierSatzTakt = (this._tierSatzTakt || 0) + 1);
         for (const Z of M.values()) if (Z) Z.dabei = 0;
@@ -2104,9 +2141,7 @@ class AnazhRealm_kreatur_leben {
             const u = cr && cr.userData;
             if (!u || !u._gelenk) continue;
             const d2 = (cr.position.x - playerPos.x) ** 2 + (cr.position.z - playerPos.z) ** 2;
-            // ohne Bild und für die Kopie (kein Ziegel) ist der Nah-Kreis sein Gesetz: KREATUR_NAH_MESH mit seiner Hysterese
-            const r = u._satz ? N.aus : N.ein;
-            if ((echt && !u._kopie ? u._kzNah !== true : d2 >= r * r) || u._ruht === true) {
+            if (!this._kreaturNah(cr) || u._ruht === true) {
                 if (u._satz) this._tierSatzAus(cr);
                 continue;
             }

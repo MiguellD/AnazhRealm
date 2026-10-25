@@ -145,8 +145,6 @@ async function lebenBuehnen(
                 for (const g in b) Object.assign(b[g], taeter === "kaskade-riss" ? { riss: 0 } : { geburt: 1, tod: 0 });
                 return b;
             });
-        const alt = [s.spielZeit, s.faunaLifecycle];
-        restore.push(() => ([s.spielZeit, s.faunaLifecycle] = alt));
         let halb = false;
         decke(restore, "worldFieldAt", (wfa) => (x, z) => {
             const f = wfa.call(r, x, z);
