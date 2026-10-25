@@ -1025,8 +1025,10 @@ async function rollen(n) {
     // ── DER GANG DES FUSSES (K8 fuss · falllinie · stufe, leib.K2): je Ort 4,35 m längs der Höhenlinie (`fuss`), die Falllinie
     // (`falllinie`) und zehn Stufen (`stufe`: Steigung 0,17 m, Auftritt nach der Neigung des Orts, 10 cm über ihm aufgesetzt,
     // ein Bauplan), je hin und zurück. Je Fuß im Lock die Sohlen-Fläche gegen die gezeichnete Fläche (`sohle` mit Boden:
-    // die Dreiecke der Stufen und `__gezeichnet`); die Steckenbleiber zählt derselbe Gang.
+    // die Dreiecke der Stufen und `__gezeichnet`); die Steckenbleiber zählt derselbe Gang. Der Leib ist der des Spielers JETZT
+    // (ein Nachguss der Seele tauscht ihn: der alte trug 0 Kontakte).
     async function gang(H, umfang, art) {
+        const pm = s.playerMesh;
         const auf = H.gier - (art === "fuss" ? Math.PI / 2 : 0); // bergauf (`__weltOrt`), der Fuß längs der Höhenlinie
         const [ux, uz, N, hub, mitTreppe] = [Math.sin(auf), Math.cos(auf), 10, 0.17, art === "stufe"];
         const tritt = Math.min(0.375, mitTreppe ? hub / Math.tan((H.neig * Math.PI) / 180) : Infinity);
@@ -1051,6 +1053,9 @@ async function rollen(n) {
         if (e) await window.__gebautNach(e, { takt: () => new Promise((q) => setTimeout(q, 100)), max: 200 });
         const meshe = [];
         if (e) e.mesh.traverse((m) => m.isMesh && meshe.push(m));
+        // der Strahl trifft die Stufen, wo sie stehen: die Takte der Linse laufen ohne Bild dazwischen, die Welt-Matrix des
+        // frischen Baus stand noch am Ursprung (Radeon: der erste Auftritt las den Boden, 26,8 cm)
+        if (e) e.mesh.updateMatrixWorld(true);
         const strahl = new T.Raycaster();
         const merk = new Map();
         const flaeche = (x, z) => {

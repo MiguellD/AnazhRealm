@@ -807,8 +807,10 @@ class AnazhRealm_koerper_leib {
     // Berührt die höhere Stufe nur ein Ende der Sohle, setzt der Fuß um das kürzere Stück ganz auf EINEN Auftritt (`lock`
     // rückt), wenn er dort eben steht — sonst rollte er über die Kante, und der Ballen hinge 17 cm über seiner Stufe. Vorher stand die Sohle auf dem Punkt unter dem Knöchel: die Spitze 17 cm in der nächsten Stufe
     // (gate:koerper-stand K8 falllinie). null, wenn kein Bau die Sohle trägt — dann liest sie den Boden (`_gaitSohlenKipp`).
+    // Die Auflage trägt 1 cm Luft an beiden Enden: die Sohle hält Abstand von jeder Setzstufe (ohne ihn stand die Ferse im
+    // Abstieg 1 mm an der nächsten, K8 stufe auf der Radeon −16,4 cm).
     _gaitSohleAufBau(lock, ik) {
-        const [vorn, hinten] = ik.fussLaengs;
+        const [vorn, hinten] = ik.fussLaengs.map((l) => l + 0.01);
         const [sx, sz] = [Math.sin(ik.yaw), Math.cos(ik.yaw)];
         const N = 9;
         const schritt = (vorn + hinten) / (N - 1);
