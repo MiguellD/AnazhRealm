@@ -38,3 +38,8 @@ OMEN: Messplatz-Dienst mit CI-Vorfahrt je Boot, Storno je Boot/Zelle, Zeit in UT
 
 ## Cloud ab 12:20 (6)
 ankunft-l2a-rundblick · ferne-blau-heim · gelaende-ring-wachstum · leib-k2-fuss · tiere-k1-herde-bild · leib-k4-kamera-bau (+ mensch-k3-wege ohne Zweig). Heimholen wie oben: Einlass bei grüner eigener CI, Paartest Decke, heim-zNN + fahre.sh.
+
+## Nachtrag 15:40 MEZ (Woche 96 %)
+- **Mess-Takt 3 an 8f1802b1:** headless 66/2, Radeon 27/11 (neu grün leib.K1#2, halten.K5#1, tiere.K3#2; neu rot klang.K4#1 „2 Stoffe ≥ 5 Schritte“, mensch.K1#1 Quote 0,272, **siedlung.K5#1/#2 „nH 300 erstes Haus nach 974 ms“ — auch auf der GTX rot, also echt seit z29c/z30**). GTX lief bei 25/38; `buche.sh --warte takt3-gtx` bucht von selbst (Kette btoqe8rpf), danach Artifact neu veröffentlichen.
+- **z31 ROT** war eine veraltete Mutation: klang-k1 zog den Stoff der Bau-Pools nach `_kistenPool`, gate:streu-wahrheit suchte ihn im Zaun-Pool. Fix 2ade0724 auf heim-z31 (Selbsttest + Lauf grün). **z31b = heim-z31@2ade0724 + gelaende-ring-wachstum@e06613bf** (Paar: Decke, Atlas, Lint grün) fährt per Kette nach der Buchung (`$TEMP/claude/fahre-z31b.log`). Nach der Landung: Stationen station-klang-k1 e26e1836, station-bauen-k5 5529343c nach koordination.
+- **Cloud (seit 12:20, Aufwand hoch):** gelaende-ring-wachstum CI grün (in z31b) · ankunft-l2a-rundblick f804fbe6 CI war abgebrochen, Neulauf 40192638020 · mensch-k3-wege 5a50e719 CI rot · tiere-k1-herde-bild 72c9f62e CI rot · leib-k4-kamera-bau nur WIP · leib-k2-fuss WIP (aktiv 15:25) · ferne-blau-heim 865cda38 CI rot.
