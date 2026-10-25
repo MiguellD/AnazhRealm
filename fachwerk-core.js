@@ -3976,6 +3976,15 @@
         return planBau(p).grund;
     }
 
+    // DIE TÜR-ZEILE (DORF-ERLEBNIS, die EINE Formel): Haustür (Rechteck, Front −z) und Hintertür samt Kern-Footprint W/D,
+    // haus-lokal — null ohne Haustür (ROUND). Leser: exportSettlement (je Slot) und die Hülle jeder Stufe (`buildInstance`:
+    // `__huelle.tuer`, bauen.K5 — das gesetzte Haus öffnet seine Tür wie das Haus im Dorf).
+    function tuerZeile(dm) {
+        if (!dm || !dm.tuer) return null;
+        var tz = { x: dm.tuer.x, z: dm.tuer.z, w: dm.tuer.w, h: dm.tuer.h, y: dm.tuer.y, W: dm.W, D: dm.D };
+        if (dm.tuer.hinten) tz.hinten = { x: dm.tuer.hinten.x, z: dm.tuer.hinten.z, w: dm.tuer.hinten.w };
+        return tz;
+    }
     // DIE KAMIN-SPITZE (KAMIN-RAUCH .105, die EINE Formel): die Mitte über dem Stapel-AABB, 0,2 m darüber, haus-lokal —
     // null ohne Kamin (ROUND/modern/kuppel). Leser: exportSettlement (je Slot), chimneyTipFromParams und die Hülle des
     // Baus (`buildInstance`: `__huelle.kamin`, B3c — die Spitze reist mit dem Haus aus dem Worker).
@@ -4100,6 +4109,7 @@
             // auf (gedrehte Häuser 18–35 % begehbar, die Treppe Luft, der Fuß 0,50 m unter der Diele).
             geoms.__solids = solidZeile(st);
             geoms.__kamin = { spitze: kaminSpitze(st.H && st.H.chimney) }; // die Spitze des Stapels (≡ massBau, die Hülle trägt sie)
+            geoms.__tuer = tuerZeile(st.H && st.H.dims); // die Tür-Zeile des Baus (≡ exportSettlement, die Hülle trägt sie)
             bakeLOD(st.g, p.col, geoms, 0, true); // LÜCKENLOS: alles=true (Kopf, Stufen-Wahrheit 0)
             st.g.traverse(function (o) {
                 if (o.geometry) o.geometry.dispose();
@@ -4117,6 +4127,7 @@
             B.fragStufe = undefined;
             geoms.__solids = hausSolids(p); // DIE HÜLLE DES GESETZBUCHS auch fern (nach dem Mesh: der Stufen-Bau bleibt byte-gleich)
             geoms.__kamin = { spitze: kaminSpitze(B.chimney) };
+            geoms.__tuer = tuerZeile(B.dims);
         }
         return geoms;
     }
@@ -4214,9 +4225,11 @@
         g.userData = { kind: "haus", rezeptId: rezeptId, seed: seed, lod: stufe, __huelle: huelle ? huelleAusBoxen(huelle.stufe, huelle.boxen) : null };
         // DER KAMIN REIST MIT DER HÜLLE (B3c, additiv, must-ignore): die Spitze des gebauten Hauses, haus-lokal auf dem Raster
         // (`kamin` [x, y, z], null = kein Kamin) — der Wirt baut kein Haus im Haupt-Faden, um sie zu finden (`_hausHuelleSetzen`).
+        // Ebenso die Tür-Zeile (`tuer`, bauen.K5, null = keine Haustür): was der Slot des Dorfs aus dem Export bringt.
         if (g.userData.__huelle && gm.__kamin) {
             var ks = gm.__kamin.spitze;
             g.userData.__huelle.kamin = ks ? _hr3([ks.x, ks.y, ks.z]) : null;
+            g.userData.__huelle.tuer = gm.__tuer;
         }
         // DIE STUFE 3 (nurWurf): sie wirft mit dem EINEN Schatten-Stoff des Wirts — jede Ecke deckt (`aDeckt` 1, das Wurf-
         // Gesetz E1) —, ihre Liste reist als Beipack `__fern` (fernform "huelle": jenseits der Mesh-Zone der Welt-March)
@@ -6128,21 +6141,7 @@
                 // DORF-ERLEBNIS (17.07., additiv): die TÜR-ZEILE + der Kern-Footprint
                 // W/D je Slot (dims-Wahrheit aus massBau) — der Host baut daraus die
                 // Blocker-Wände MIT Tür-Lücke (Betreten; Haus-lokal, vor slot.phi).
-                tuer: (function (dm) {
-                    if (!dm || !dm.tuer) return null;
-                    var tz = {
-                        x: dm.tuer.x,
-                        z: dm.tuer.z,
-                        w: dm.tuer.w,
-                        h: dm.tuer.h,
-                        y: dm.tuer.y,
-                        W: dm.W,
-                        D: dm.D,
-                    };
-                    if (dm.tuer.hinten)
-                        tz.hinten = { x: dm.tuer.hinten.x, z: dm.tuer.hinten.z, w: dm.tuer.hinten.w };
-                    return tz;
-                })(Bs[i].dims),
+                tuer: tuerZeile(Bs[i].dims),
                 // KAMIN-RAUCH (.105): Spitze haus-lokal (Lab dorfRauch-Formel) —
                 // null wenn massBau kein chimney (ROUND/modern/kuppel).
                 chimney: kaminSpitze(Bs[i].chimney),

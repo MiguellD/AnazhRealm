@@ -1922,8 +1922,17 @@ const FIXTURES = [
                 delete r._foundryFlattenFor;
                 res.c.k5.drossel = A.drosselTakte;
                 const y = r.state.yaw;
-                const slot = (d, w) => ({ x: d * Math.sin(y + w), z: d * Math.cos(y + w), obb: { ex: 3, ez: 3 } });
-                res.c.k5.schirm = r._dorfZug({ slots: [slot(15, Math.PI / 2), slot(40, 0)] }, pm.position).reihe;
+                const slot = (d, w, e = 3) => ({
+                    x: d * Math.sin(y + w),
+                    z: d * Math.cos(y + w),
+                    obb: { ex: e, ez: e },
+                });
+                // DIE MITTE ZUERST (siedlung-k5-erstes-haus, Winkel in rad): 11 m bei 70° mit 10-m-Grundriss streift der Bildwinkel
+                // nur — die Mitte 40 m voraus hebt vor ihm, er vor dem 15 m neben dem Spieler (die Scheibe allein hob ihn zuerst)
+                res.c.k5.schirm = r._dorfZug(
+                    { slots: [slot(15, 1.57), slot(40, 0), slot(11, 1.22, 5)] },
+                    pm.position
+                ).reihe;
                 // C-K5c DER ORT IST EINE FUNKTION (Lehre 7): zwei Vorläufe derselben Saat, der Spieler 3,7 m versetzt im Vorlauf-Ring
                 // — der Plan v2 bit-gleich, sonst die erste abweichende Größe; `stoer` (Selbsttest) rückt den Wunsch mit ihm
                 const i3 = { ...cand, seed: (cand.seed ^ 0x51ed) >>> 0, nH: 300 };
@@ -1974,12 +1983,16 @@ const FIXTURES = [
                                 s[art] = (s[art] || 0) + 1;
                             return f.apply(this, a);
                         });
-                    zaehl("_erdbauSetzen", "erdbau");
-                    zaehl("_erdbauAmWasser", "erdbau");
-                    zaehl("_stlWegeBuild", "wege");
-                    zaehl("_dorfLaterneSetzen", "laternen");
-                    zaehl("spawnArchitecture", "ausstattung");
-                    zaehl("_naturSetzen", "ausstattung");
+                    // EINE Tafel der Haken: sie zählen, und der Lauf löst sie (samt der Slot-Quelle)
+                    const HAKEN = {
+                        _erdbauSetzen: "erdbau",
+                        _erdbauAmWasser: "erdbau",
+                        _stlWegeBuild: "wege",
+                        _dorfLaterneSetzen: "laternen",
+                        spawnArchitecture: "ausstattung",
+                        _naturSetzen: "ausstattung",
+                    };
+                    for (const n in HAKEN) zaehl(n, HAKEN[n]);
                     const slot = r._spawnSettlementSlot;
                     r._spawnSettlementSlot = function (...a) {
                         im++;
@@ -2012,16 +2025,7 @@ const FIXTURES = [
                             if (t && q && !q.gang && !s.haeuser) pm.position.x += 2000;
                         }
                     } finally {
-                        for (const n of [
-                            "_erdbauSetzen",
-                            "_erdbauAmWasser",
-                            "_stlWegeBuild",
-                            "_dorfLaterneSetzen",
-                            "spawnArchitecture",
-                            "_naturSetzen",
-                            "_spawnSettlementSlot",
-                        ])
-                            delete r[n];
+                        for (const n of [...Object.keys(HAKEN), "_spawnSettlementSlot"]) delete r[n];
                     }
                     const zeile = (t, i) =>
                         `Takt ${i} ${t.ms} ms: ${Object.entries(t.s)
@@ -2978,8 +2982,8 @@ const FIXTURES = [
         z5
     );
     check(
-        "C-K5: DER RANG — der Schirm zuerst: 40 m vor dem Spieler vor 15 m neben ihm",
-        k5.schirm && k5.schirm[0] === 1,
+        "C-K5: DER RANG — Mitte vor Streifen vor außer Schirm: 40 m voraus, 11 m bei 70°, 15 m daneben",
+        String(k5.schirm) === "1,2,0",
         z5
     );
     const [ort, ortS, wach, voll] = [k5.ort || {}, k5.ortStoer || {}, k5.wach || {}, k5.wachVoll || {}];

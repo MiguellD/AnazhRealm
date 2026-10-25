@@ -848,15 +848,9 @@ class AnazhRealm_siedlung_ort {
         if (!Array.isArray(slots) || !slots.length) return;
         if (rec._fluegelSrc !== slots) {
             rec._fluegelSrc = slots;
-            rec._fluegel = [];
-            const groups = this.state.archInstanceGroups;
-            if (groups) {
-                for (const s of slots) {
-                    const g = groups.get(s.key);
-                    const t = s.tuer || (g && g.tuer);
-                    if (g && t) rec._fluegel.push({ g, ref: s, tuer: t });
-                }
-            }
+            // die Flügel der Stufe sammelt ihr Leib, wo die Slots entstehen (`_fluegelLeib`)
+            if (entry._fluegelSlots !== slots) this._fluegelLeib(entry);
+            rec._fluegel = entry._fluegel;
             // DORF-ERLEBNIS — Haus-Recs starten in der GEBACKENEN Offen-Pose
             // (rec._fluegelStart = Gesetz-Winkel): die Tür schliesst beim ersten
             // Fern-Tick WEICH statt zu springen. Tore (gebacken zu) stehen beim ersten Tick SOFORT im Ziel (K43-2): ihre
@@ -901,6 +895,7 @@ class AnazhRealm_siedlung_ort {
             f.g.mesh.instanceMatrix.needsUpdate = true;
             f.g.mesh.boundingSphere = null;
         }
+        this._fluegelLeib(entry, true); // der Leib folgt dem Schwenk (der Kamera-Wurf `_fieldRaycast` liest ihn)
     }
 
     // ═══ KAMIN-RAUCH ═══
@@ -2633,6 +2628,11 @@ class AnazhRealm_siedlung_ort {
     // Rand, der Grundriss als Radius), heben vor jedem außer Schirm — in beiden Hälften das nächste zuerst. Bis hier hob der
     // Abstand allein: Radeon nH 300 (Station dorf, M36) hob das nächste Haus 19,6 m neben dem Spieler bei 81° außer Blick
     // nach 60 ms, das erste im Schirm erst im fünften Zug-Schritt (über dem Budget je 8 Bilder einer), gezeichnet nach 553 ms.
+    // DIE MITTE IM SCHIRM ZUERST (siedlung-k5-erstes-haus): drei Hälften, in jeder das nächste zuerst — das Haus, dessen Mitte
+    // der Schirm zeigt (`_imErstenBlick` am Punkt), dann das, dessen Grundriss den Bildwinkel nur streift, dann jedes außer
+    // Schirm. Bis hier galt die Scheibe des Grundrisses allein: am Plan der Trasse (siedlung-k3-heil) hob der Zug an der Radeon
+    // (M36 nH 300, über dem Budget ein Haus im ersten Schritt) zuerst eins 11,3 m neben dem Spieler bei 70° (Mitte außer
+    // Blick), das erste im Kegel im 20. Takt — gezeichnet nach 954 ms (vorher 134 ms).
     // Der Akt (`_spawnSettlementFromExport`) und der Zug nach dem Reload (`_dorfZugOffen`) heben in DERSELBEN Reihe.
     // EIN SCHRITT DES ZUGS `q`: die nächsten Slots seiner Reihe — `AUTO_SETTLEMENT.perTick`, über dem Budget (`ueber`) einer,
     // unter dem Ladeschirm bis zur Frist des Lade-Frames (`_kappeOffen`, K60-2: die Häuser der Ankunft gehören ins erste
@@ -2701,8 +2701,9 @@ class AnazhRealm_siedlung_ort {
             const z = origin.z + s.z;
             const d2 = (x - p.x) ** 2 + (z - p.z) ** 2;
             if (!pm || !Number.isFinite(d2)) return d2;
+            if (this._imErstenBlick(x, z, 0, true)) return d2;
             const { fp } = AnazhRealm._slotGrundriss(s);
-            return this._imErstenBlick(x, z, fp ? Math.hypot(fp.ex, fp.ez) : 0, true) ? d2 : d2 + aus;
+            return this._imErstenBlick(x, z, fp ? Math.hypot(fp.ex, fp.ez) : 0, true) ? d2 + aus : d2 + 2 * aus;
         });
         const reihe = plan.slots.map((_s, i) => i).sort((a, b) => rang[a] - rang[b] || a - b);
         return { plan, origin: { x: origin.x, z: origin.z }, idx: 0, reihe, cellKey, gang: gang || null };
