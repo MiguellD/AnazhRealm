@@ -478,6 +478,21 @@ async function kreaturProben(r, T, opts) {
                         }
                     }
             );
+        // Der alte Integrator: die Höhe stieg nur mit dem Impuls, im Fall fror `_hopH` am Scheitel ein (an der Mess-Wiese
+        // stand ein Bär 7,6 m über dem Boden; bis heim-z27 das Playtest-Band „DER HÜPFER LANDET“, diese Probe trägt es).
+        if (taeter === "huepfer-scheitel")
+            decke(
+                restore,
+                "updateCreatures",
+                (alt) =>
+                    function (dt) {
+                        const vor = this.state.creatures.map((c) => c.userData._hopH || 0);
+                        alt.call(this, dt);
+                        this.state.creatures.forEach((c, i) => {
+                            if (vor[i] > 0 && !(c.userData._hopV > 0)) c.userData._hopH = vor[i];
+                        });
+                    }
+            );
         // Der Zwilling: die Aktion zündet den Hüpfer mit ihrem eigenen Abflug in m/s,
         // am Sprung-Gesetz vorbei.
         if (taeter === "huepfer-zwilling")
@@ -533,7 +548,7 @@ async function kreaturProben(r, T, opts) {
             c.userData._hopH = 0;
             c.userData._hopV = 0;
             c.userData._verhaltenAktion = null;
-            c.userData.emotions.joy = 0;
+            if (c.userData.emotions) c.userData.emotions.joy = 0; // ein ruhiges Wesen trägt keine (null, nach langem Flug)
             takt(1 / hz);
             s.creatureEmotions[s.creatures.indexOf(c)] = etikett;
             const soll = hoehe(c);
@@ -561,8 +576,7 @@ async function kreaturProben(r, T, opts) {
             gesetzFehler: fehler.length ? +Math.max(...fehler).toFixed(3) : null,
             hopHochM: F.hopHochM,
             hopBasisM: F.hopBasisM,
-            flug30: { t: +f30.t.toFixed(3), top: +f30.top.toFixed(3) },
-            flug144: { t: +f144.t.toFixed(3), top: +f144.top.toFixed(3) },
+            flug30: { top: +f30.top.toFixed(3) },
             flugVerhaeltnis: f30.t > 0 ? +(f144.t / f30.t).toFixed(3) : null,
             frohFehler: +Math.abs(f30.top / f30.soll - 1).toFixed(3),
             basisTop: +fSad.top.toFixed(3),
@@ -663,11 +677,8 @@ async function kreaturProben(r, T, opts) {
         const zeilen = tiere.map(() => ({
             abw: [],
             rueck: 0,
-            seit: 0,
             lauf: 0,
-            vs: [],
             beschl: [],
-            kontakt: 0,
             phase: 0, // +1 Gas, −1 Bremse (im freien Lauf, |a| > 1,5 m/s²)
             wechsel: 0, // Gas ↔ Bremse
             freiT: 0,
@@ -686,9 +697,7 @@ async function kreaturProben(r, T, opts) {
                     const sp = Math.hypot(dx, dz) / dt;
                     const z = zeilen[i];
                     const anprall = geschoben.has(c.position);
-                    if (anprall && k > 60) z.kontakt++;
                     if (k > 60) {
-                        z.vs.push(sp);
                         // der Tempo-Sprung im FREIEN Lauf (der Anprall-Takt und der danach zählen nicht)
                         if (!anprall && !vorher[i].anprall) {
                             const a = (sp - vorher[i].v) / dt;
@@ -707,7 +716,6 @@ async function kreaturProben(r, T, opts) {
                         z.abw.push(a);
                         z.lauf++;
                         if (a > 90) z.rueck++;
-                        else if (a > 45) z.seit++;
                     }
                     vorher[i] = { x: c.position.x, z: c.position.z, v: sp, anprall };
                     const pf = pfoten[i];
@@ -732,8 +740,7 @@ async function kreaturProben(r, T, opts) {
         };
         const schlupf = pfoten.map((pf) => {
             if (!pf) return null;
-            let wegF = 0,
-                wegL = 0,
+            let wegL = 0,
                 wegQ = 0,
                 wegH = 0;
             for (let j = 0; j < 4; j++) {
@@ -745,31 +752,22 @@ async function kreaturProben(r, T, opts) {
                     const dx = b.x - a.x,
                         dz = b.z - a.z;
                     const g = pf.leib[n].gier;
-                    wegF += Math.hypot(dx, dz);
                     wegQ += Math.abs(dx * Math.cos(g) - dz * Math.sin(g));
                     wegH += Math.abs(dx * Math.sin(g) + dz * Math.cos(g));
                     wegL += Math.hypot(pf.leib[n].x - pf.leib[n - 1].x, pf.leib[n].z - pf.leib[n - 1].z);
                 }
             }
-            return wegL > 0
-                ? { s: +(wegF / wegL).toFixed(3), q: +(wegQ / wegL).toFixed(3), l: +(wegH / wegL).toFixed(3) }
-                : null;
+            return wegL > 0 ? { q: +(wegQ / wegL).toFixed(3), l: +(wegH / wegL).toFixed(3) } : null;
         });
         const o = {};
         arten.forEach((a, i) => {
             const z = zeilen[i];
             o[a] = {
                 laufFrames: z.lauf,
-                kontaktFrames: z.kontakt,
-                abwP50: z.abw.length ? +quantil(z.abw, 0.5).toFixed(1) : null,
                 abwP90: z.abw.length ? +quantil(z.abw, 0.9).toFixed(1) : null,
                 rueckwaerts: z.lauf ? +(z.rueck / z.lauf).toFixed(3) : 0,
-                seitwaerts: z.lauf ? +(z.seit / z.lauf).toFixed(3) : 0,
-                tempoP50: +quantil(z.vs, 0.5).toFixed(2),
-                tempoP90: +quantil(z.vs, 0.9).toFixed(2),
                 beschlMax: +Math.max(...z.beschl).toFixed(1),
                 gasBremseJeMin: z.freiT > 0 ? +((z.wechsel / z.freiT) * 60).toFixed(1) : null,
-                schlupf: schlupf[i] ? schlupf[i].s : null,
                 schlupfQuer: schlupf[i] ? schlupf[i].q : null,
                 schlupfLaengs: schlupf[i] ? schlupf[i].l : null,
             };
@@ -1303,12 +1301,10 @@ async function kreaturProben(r, T, opts) {
         if (s.player.emotions)
             Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0.9, chaos: 0 });
         const art = {};
-        const kg = {}; // die EINE Masse des Leibs (`_leibMasse`), aus der das Temperament liest
         const o = land(30, 30);
         const probe = (seele, bs) => {
             const c = tier({ x: o.x, y: o.y, z: o.z }, seele, bs);
             const t = r._creatureTemperament(c);
-            kg[seele + "@" + bs] = +r._leibMasse(c).toFixed(1);
             r.removeCreature(c);
             return t;
         };
@@ -1366,7 +1362,6 @@ async function kreaturProben(r, T, opts) {
         };
         return {
             art,
-            kg,
             masseQuelle,
             beute,
             kampfHirsch: furcht("wesen"),
@@ -1733,7 +1728,6 @@ async function kreaturProben(r, T, opts) {
                 }
         );
         const abst0 = Math.hypot(wolf2.position.x - pm.x, wolf2.position.z - pm.z);
-        let abstMin = abst0;
         for (let k = 0; k < 600; k++) {
             pm.x += sprint * dt;
             // die Füße des Läufers bleiben auf dem Boden (die Probe trägt ihn ohne Physik; der Biss braucht den Kopf am
@@ -1742,7 +1736,6 @@ async function kreaturProben(r, T, opts) {
             if (Number.isFinite(hS)) pm.y = hS + 0.5;
             ruhigSpieler();
             takt(dt);
-            abstMin = Math.min(abstMin, Math.hypot(wolf2.position.x - pm.x, wolf2.position.z - pm.z));
         }
 
         const abst1 = Math.hypot(wolf2.position.x - pm.x, wolf2.position.z - pm.z);
@@ -1752,10 +1745,8 @@ async function kreaturProben(r, T, opts) {
                 sprintMs: +sprint.toFixed(2),
                 abstand0: +abst0.toFixed(1),
                 abstandEnde: +abst1.toFixed(1),
-                abstandMin: +abstMin.toFixed(1),
                 bisse: spielerBisse,
                 wolfSprintMs: +A._steuerGesetz().sprintTempo(r._kreaturHueftL(wolf2)).toFixed(2),
-                bahn: [Math.round(o2.x), Math.round(o2.z)],
             },
         };
     });
@@ -1969,12 +1960,9 @@ async function kreaturProben(r, T, opts) {
                     bz = p.w.z - p.hip.z;
                 return grad(Math.acos(Math.max(-1, Math.min(1, -by / Math.max(1e-6, Math.hypot(bx, by, bz))))));
             });
-            const spalt = S.map((p) => p.w.y - boden(p.w.x, p.w.z, cr.position.y));
             return {
                 rollGrad: +grad(cr.rotation.z || 0).toFixed(1),
                 lotMaxGrad: +Math.max(...lot).toFixed(1),
-                sohleMinCm: +(Math.min(...spalt) * 100).toFixed(1),
-                sohleMaxCm: +(Math.max(...spalt) * 100).toFixed(1),
             };
         });
         // der Lauf längs der Höhenlinie: der Spieler geht 1,4 m/s quer, Wolf und Hirsch folgen
@@ -3425,6 +3413,7 @@ const TAETER = {
     huepfer: [
         ["huepfer", /ohne Aktion|Luft-Anteil/],
         ["huepfer-zwilling", /neben dem Sprung-Gesetz/],
+        ["huepfer-scheitel", /Luft-Anteil[\s\S]*Flugzeit 144 Hz/],
     ],
     wachsen: [["wachsen", /Skala/]],
     gier: [

@@ -297,11 +297,6 @@ async function checkBandV1754PlayerAttack(ctx) {
             r.updateCreatures(0.016);
         }
 
-        // ALTLASTEN-NULL: das Material-Wesen (quarz-sprite) ist gefallen — alle
-        // lebenden Kreaturen sind Tiere (lebendig > 0); das Schuld-GATE selbst
-        // prueft (4) über die lebendig-Schwelle weiter.
-        out.noGuiltForMaterial = true;
-
         // (6) der Rückstoß-Pfad (fromPos + stoss {p, m}, das EINE Impuls-Gesetz) läuft, schädigt UND stößt das Ziel vom
         // Angreifer weg — der Schlag ein Keulen-Hieb des Schmiede-Urteils (p 26,85 · m 1,71, gate:kampf-gefuehl T13). Die
         // Gegenprobe: das tote Feld knockback (es liest niemand) stößt nicht — der Check übergab bis 0710-5 nur dieses Feld
@@ -345,10 +340,6 @@ async function checkBandV1754PlayerAttack(ctx) {
     check(
         "Kampf D: KONSUM — die SCHULD ist lebendig-gegated (Spieler-Kill eines lebendig-Wesens → sorrow)",
         res.guiltGatedByLiving
-    );
-    check(
-        "Kampf D (NULL): das Schuld-Gate lebt über die lebendig-Schwelle (Material-Wesen gefallen)",
-        res.noGuiltForMaterial
     );
     check(
         "Kampf D: der Rückstoß-Pfad (fromPos + stoss) läuft, schädigt und stößt das Ziel vom Angreifer weg",
@@ -1856,81 +1847,8 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
     );
 }
 
-// DER HÜPFER LANDET (3): der feld-native Hüpfer (`creatureJump`, die Verhaltens-Aktion
-// `hop`) integrierte die Höhe nur, solange der Impuls stieg — im Fall fror `_hopH` am Scheitel ein (der Körper sprang
-// auf den Boden zurück) und der nächste Sprung begann dort: an der Mess-Wiese stand ein Bär 7,6 m über dem Boden.
-// Wand: zwei Sprünge hintereinander am echten Kreatur-Takt (updateCreatures) — jeder endet mit dem Versatz 0 auf
-// der Höhe vor dem Sprung (der alte Takt hielt den Scheitel: 600 Takte ohne Landung). Der Fuchs lebt auf einer eigenen
-// Bühne (Tier-Liste und Gefühls-Liste der Probe): die Geburt hing an der Welt-Bevölkerung — stand sie an maxCreatures,
-// gab spawnCreatureAt null und das Band las „Scheitel ?" (Integration Welle L: 1 von 2 vollen Läufen rot).
-async function checkBandHuepfer(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const st = r.state;
-        const pm = st.playerMesh.position;
-        const saved = st.creatures;
-        const savedE = st.creatureEmotions;
-        st.creatures = [];
-        st.creatureEmotions = [];
-        const c = r.spawnCreatureAt(pm.x + 30, pm.y, pm.z + 30, "happy", "fuchs", { precise: true });
-        if (!c) {
-            st.creatures = saved;
-            st.creatureEmotions = savedE;
-            return { fehler: "Spawn" };
-        }
-        const takt = () => {
-            const x = c.position.x,
-                z = c.position.z;
-            r.updateCreatures(1 / 60);
-            c.position.x = x;
-            c.position.z = z;
-        };
-        const sprung = () => {
-            takt();
-            const y0 = c.position.y;
-            c.userData._hopV = 0;
-            c.userData._hopH = 0;
-            r.creatureJump(c); // das Sprung-Gesetz: Höhe aus der Freude (hopHochM / hopBasisM)
-            let scheitel = 0;
-            let takte = 0;
-            for (; takte < 600; takte++) {
-                takt();
-                scheitel = Math.max(scheitel, c.userData._hopH || 0);
-                if (!(c.userData._hopV > 0) && !(c.userData._hopH > 0)) break;
-            }
-            takt();
-            return { scheitel, rest: c.userData._hopH || 0, takte, zurueck: c.position.y - y0 };
-        };
-        let a, b;
-        try {
-            a = sprung();
-            b = sprung();
-        } finally {
-            r.removeCreature(c);
-            st.creatures = saved;
-            st.creatureEmotions = savedE;
-        }
-        return { a, b };
-    });
-    const a = res && res.a,
-        b = res && res.b;
-    const z = (x) => (x && Number.isFinite(x.scheitel) ? x.scheitel.toFixed(2) : "?");
-    check(
-        `DER HÜPFER landet: zwei Sprünge (Scheitel ${z(a)} / ${z(b)} m) enden mit Versatz 0 auf der Höhe vor dem Sprung${res && res.fehler ? " — " + res.fehler : ""}`,
-        !!a &&
-            !!b &&
-            a.scheitel > 0.05 &&
-            b.scheitel > 0.05 &&
-            a.rest === 0 &&
-            b.rest === 0 &&
-            Math.abs(a.zurueck) < 0.05 &&
-            Math.abs(b.zurueck) < 0.05
-    );
-}
-
 module.exports = {
     checkBandV1725FieldReaders, checkBandV1751CombatStats, checkBandV1753CreatureCombat, checkBandV1754PlayerAttack,
     checkBandWelle6HBuildAndPersist, checkBandWelle6HCreatureStats, checkBandWDRittSpawn,
-    checkBandV18208CreatureSizeSymmetry, checkBandHuepfer,
+    checkBandV18208CreatureSizeSymmetry,
 };
