@@ -210,6 +210,7 @@ const server = statikServer();
             // die Bau-Pools (`AnazhRealm._poolKennung`, gestempelt bei jeder Erzeugung, auch beim Verdoppeln)
             "siedlung-zaun": { b: "substanz", why: "siedlung-zaun (Zaun-Streifen der Siedlungen, ein Pool)" },
             "siedlung-mauer": { b: "substanz", why: "siedlung-mauer (die Stadtmauern, ein Pool)" },
+            vogel: { b: "substanz", why: "vogel (ein Pool)" },
         };
         const chainOf = (node) => {
             const c = [];

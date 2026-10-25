@@ -2542,6 +2542,156 @@ class AnazhRealm_kreatur_leben {
             this._leibSicht(creature, dx * dx + dz * dz, this.isInFrustum(creature));
         }
     }
+    // DIE VÖGEL (Klang K1, tetrapoda VOGEL_GESETZ): jeder Vogel-Ruf hat einen Leib — gesehen = gehört. Je Takt die Reviere im
+    // Hör-Kreis des Ohrs (klang:UMWELT.stimmen.vogel.hoerweiteM), je Revier seine Bahn auf der Uhr der Welt
+    // (`worldMeta.wetterUhr`: sie reist im Snapshot und zum Gast — jeder Peer und jeder Reload sieht dieselben Vögel): wer singt,
+    // fliegt und wird gezeichnet, wer schweigt, sitzt im Gras. `state.voegel` trägt die singenden Leiber ({x, y, z}) — die
+    // EINE Quelle, die das Ohr liest (`_umweltLage`). Die Karte merkt je Zelle ihre Würfe und ihr Revier (`_vogelZelle`);
+    // je Takt frischt eine Zelle Leben und Deckung nach (Pflanzen, Fällen, Pflege), ferne fallen — die Kosten hängen am
+    // Hör-Kreis, nie an der Welt. Gezeichnet wird in EINEM Pool mit dem Stoff der Bau-Pools (`_kistenPool`: EIN Programm, EIN
+    // Befehl), je Vogel seine Teile und zwei Flügel im Schlag.
+    _vogelTakt() {
+        const st = this.state;
+        const pm = st.playerMesh;
+        if (!pm || !st.scene) return;
+        const VG = AnazhRealm._vogelGesetz();
+        const V = VG.V;
+        const hw = AnazhRealm._umweltGesetz().UMWELT.stimmen.vogel.hoerweiteM;
+        const welt = (st.worldMeta && st.worldMeta.seed) || "anazh-realm-seed";
+        let vk = this._vogelKarte;
+        if (!vk || vk.welt !== welt)
+            vk = this._vogelKarte = {
+                welt,
+                saat: parseInt(this._fastHash(welt + "-vogel"), 16) >>> 0,
+                zellen: new Map(),
+                lauf: null,
+            };
+        const { x: px, y: py, z: pz } = pm.position;
+        const Z = V.zelleM;
+        const r = Math.ceil(hw / Z);
+        if (vk.zellen.size > 4 * (2 * r + 1) * (2 * r + 1)) {
+            for (const [k, c] of vk.zellen)
+                if (Math.abs(c.ix * Z - px) > 2 * hw || Math.abs(c.iz * Z - pz) > 2 * hw) vk.zellen.delete(k);
+            vk.lauf = null;
+        }
+        if (vk.zellen.size) {
+            let e = vk.lauf ? vk.lauf.next() : null;
+            if (!e || e.done) e = (vk.lauf = vk.zellen.values()).next();
+            this._vogelZelle(vk, e.value);
+        }
+        const wf = this._weatherFieldFor(st.weather);
+        const anteil = VG.lied(this._sonnenRichtung().y, wf.rain, this._windAt(px, pz, this._bildZeit).staerke, V);
+        const uhr = Number(st.worldMeta && st.worldMeta.wetterUhr) || 0;
+        const b = this._vogelBahnAus || (this._vogelBahnAus = {});
+        const voegel = st.voegel || (st.voegel = []);
+        const ix0 = Math.floor(px / Z);
+        const iz0 = Math.floor(pz / Z);
+        let n = 0;
+        for (let ix = ix0 - r; ix <= ix0 + r; ix++)
+            for (let iz = iz0 - r; iz <= iz0 + r; iz++) {
+                const k = ix * 1048576 + iz;
+                let c = vk.zellen.get(k);
+                if (!c) vk.zellen.set(k, (c = this._vogelZelle(vk, { ix, iz })));
+                if (!c.revier || !VG.bahn(c.wurf, anteil, uhr, c.deckung, V, b)) continue;
+                const x = c.x + b.dx;
+                const y = c.y + b.h;
+                const z = c.z + b.dz;
+                if (!(Math.hypot(x - px, y - py, z - pz) < hw)) continue;
+                const v = voegel[n] || (voegel[n] = {});
+                v.x = x;
+                v.y = y;
+                v.z = z;
+                v.gier = b.gier;
+                v.schlag = b.schlag;
+                n++;
+            }
+        voegel.length = n;
+        this._vogelZeichnen(voegel, V.leib, (V.leib.teile.length + 2) * (2 * r + 1) * (2 * r + 1));
+    }
+    // DIE ZELLE der Vogel-Karte: ihre Würfe (einmal: das Revier, die Mitte, die Bahn) und ihr Revier aus Leben und Deckung an
+    // der Mitte (je Aufruf neu; die Deckung hebt auch den Singflug über das Dach); die Mitte steht auf der EINEN 2D-Höhe, im
+    // Wasser wohnt keiner.
+    _vogelZelle(vk, c) {
+        const VG = AnazhRealm._vogelGesetz();
+        if (!c.wurf) {
+            const w = (k) => VG.wurf(vk.saat, c.ix, c.iz, k);
+            c.x = (c.ix + w(1)) * VG.V.zelleM;
+            c.z = (c.iz + w(2)) * VG.V.zelleM;
+            c.y = this._terrainMacroSurfaceY(c.x, c.z);
+            c.u = w(0);
+            c.wurf = [w(3), w(4), w(5), w(6)];
+        }
+        c.deckung = this._kronenStreuAt(c.x, c.z);
+        c.revier = !this._nassAt(c.x, c.z) && VG.revier(c.u, this.auraAt(c.x, c.z).lebendig, c.deckung, VG.V);
+        return c;
+    }
+    // DER LEIB IM BILD: je singenden Vogel seine Teile und zwei Flügel (am Schultergelenk, um die Längsachse im Schlag) —
+    // die Matrizen direkt in den Puffer des Pools (Spalten-Ordnung, Gier um y), die Farben je Platz einmal beim Bau (die
+    // Teile-Folge ist je Vogel gleich). `cap` = so viele Plätze, wie der Hör-Kreis Zellen trägt.
+    _vogelZeichnen(voegel, L, cap) {
+        const st = this.state;
+        const je = L.teile.length + 2;
+        let P = st.vogelPool;
+        if (!P) {
+            // je Teil ein Doppel-Keil der Ausdehnung 1 (8 Dreiecke; das Gesetz trägt die Maße)
+            const mesh = this._kistenPool("vogel", cap, new THREE.OctahedronGeometry(0.5));
+            const farbe = new THREE.Color();
+            for (let i = 0; i < cap; i++)
+                mesh.setColorAt(i, farbe.setHex(i % je < L.teile.length ? L.teile[i % je].farbe : L.fluegel.farbe));
+            mesh.instanceColor.needsUpdate = true;
+            st.scene.add(mesh);
+            P = st.vogelPool = { mesh, cap };
+        }
+        const A = P.mesh.instanceMatrix.array;
+        let o = 0;
+        // ein Teil: die Spalten e0 = (ax, ay, 0), e1 = (bx, by, 0), e2 = (0, 0, gz) und die Lage l im Leib-Raum, gedreht um die
+        // Gier (c, s: x' = c·x + s·z, z' = −s·x + c·z) und an den Leib v gesetzt
+        const teil = (v, c, s, ax, ay, bx, by, gz, lx, ly, lz) => {
+            const k = 16 * o++;
+            A.fill(0, k, k + 16);
+            A[k] = c * ax;
+            A[k + 1] = ay;
+            A[k + 2] = -s * ax;
+            A[k + 4] = c * bx;
+            A[k + 5] = by;
+            A[k + 6] = -s * bx;
+            A[k + 8] = s * gz;
+            A[k + 10] = c * gz;
+            A[k + 12] = v.x + c * lx + s * lz;
+            A[k + 13] = v.y + ly;
+            A[k + 14] = v.z - s * lx + c * lz;
+            A[k + 15] = 1;
+        };
+        const F = L.fluegel;
+        const [gx, gy, gz] = F.groesse;
+        for (let i = 0; i < voegel.length && o + je <= P.cap; i++) {
+            const v = voegel[i];
+            const c = Math.cos(v.gier);
+            const s = Math.sin(v.gier);
+            for (const T of L.teile)
+                teil(v, c, s, T.groesse[0], 0, 0, T.groesse[1], T.groesse[2], T.lage[0], T.lage[1], T.lage[2]);
+            for (const seite of [1, -1]) {
+                const cf = Math.cos(seite * v.schlag);
+                const sf = Math.sin(seite * v.schlag);
+                const h = (seite * gx) / 2;
+                teil(
+                    v,
+                    c,
+                    s,
+                    gx * cf,
+                    gx * sf,
+                    -gy * sf,
+                    gy * cf,
+                    gz,
+                    seite * F.schulter[0] + h * cf,
+                    F.schulter[1] + h * sf,
+                    F.schulter[2]
+                );
+            }
+        }
+        AnazhRealm._instanzZahl(P.mesh, o);
+        if (o > 0) P.mesh.instanceMatrix.needsUpdate = true;
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_kreatur_leben]);
 
@@ -2824,4 +2974,29 @@ AnazhRealm._bestandGesetz = function () {
         return AnazhRealm._bestandGesetzMemo;
     }
     return AnazhRealm._kernPflichtBruch("tetrapoda:BESTAND_GESETZ");
+};
+// DER VOGEL (tetrapoda VOGEL_GESETZ + vogelWurf · vogelRevier · vogelLied · vogelBahn, Klang K1): Revier, Lied, Singflug und
+// Leib — gelesen vom Vogel-Takt und vom Klang-Zensus (die Teile je Vogel). Fail-closed.
+AnazhRealm._vogelGesetz = function () {
+    if (AnazhRealm._vogelGesetzMemo) return AnazhRealm._vogelGesetzMemo;
+    const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    const V = k && k.VOGEL_GESETZ;
+    if (
+        V &&
+        [V.zelleM, V.proHa, V.habitatBasis].every(Number.isFinite) &&
+        V.lied &&
+        V.flug &&
+        V.leib &&
+        ["vogelWurf", "vogelRevier", "vogelLied", "vogelBahn"].every((f) => typeof k[f] === "function")
+    ) {
+        AnazhRealm._vogelGesetzMemo = Object.freeze({
+            V,
+            wurf: k.vogelWurf,
+            revier: k.vogelRevier,
+            lied: k.vogelLied,
+            bahn: k.vogelBahn,
+        });
+        return AnazhRealm._vogelGesetzMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("tetrapoda:VOGEL_GESETZ");
 };
