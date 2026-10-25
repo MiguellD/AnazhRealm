@@ -1,0 +1,20 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-persistence.cjs --weg
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1702,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1703,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1707,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1701,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1709,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] chinesisch L2: [{"feld":"tris","ist":7288,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] japanisch L2: [{"feld":"tris","ist":7404,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] japanisch L2: [{"feld":"tris","ist":9650,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] japanisch L2: [{"feld":"tris","ist":7502,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] chinesisch L2: [{"feld":"tris","ist":7580,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1704,"soll":1700}]
+
+=== Persistenz-Härtung (Tab-Tod, Lade-Pfad, save-server, Weg) ===
+  ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 2.9 kB, Platte 8.6 kB, am stärksten worldMeta.settlementCells 3.8 kB · gesamt roh 59.6 kB, Platte 178.7 kB · Leben worldJournal 28.9 kB, dslHistory 19.1 kB, dslAbilities 7.6 kB, knowledgeBase 3.1 kB, dslPatternMemory 0.0 kB, creatures -2.1 kB
+  ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1156.9 kB, Platte 3470.6 kB, am stärksten wegSpur 1156.9 kB · gesamt roh 1156.9 kB, Platte 3470.6 kB · Leben knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, dslPatternMemory 0.0 kB, worldJournal 0.0 kB
+  ❌ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 64.2 kB, Platte 192.6 kB, am stärksten worldMeta.voxelEdits 64.1 kB · gesamt roh 69.3 kB, Platte 207.8 kB · Leben worldJournal 1.8 kB, creatures 1.7 kB, dslHistory 1.2 kB, dslAbilities 0.3 kB, knowledgeBase 0.2 kB, dslPatternMemory 0.0 kB
+
+2/3 Persistenz-Invarianten OK.
+⛔ Die Persistenz-Härtung greift nicht — die Welt ist bei Korruption noch verlierbar.

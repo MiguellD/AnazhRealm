@@ -1,0 +1,29 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben bewohner
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7724/index.html · der Puls steht seit 20.2 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 26.9 s
+[stall-akte] Puls 14×, zuletzt vor 20.2 s — complete · renderer bereit · weltbild da · frames 509 · welt 509 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 32984 100 % · GPU 30896 0 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 01:00 gpu 4/r 378 · 01:02 gpu 1/r 680 · 01:04 gpu 1/r 282 · 01:06 gpu 2/r 192 · 01:08 gpu 2/r 976 · 01:10 gpu 1/r 605 · 01:12 gpu 1/r 163 · 01:14 gpu 1/r 105 · 01:17 gpu 1/r 103 · 01:19 gpu 1/r 109 · 01:21 gpu 1/r 101 · 01:23 gpu 1/r 104 · 01:25 gpu 1/r 107 · 01:27 gpu 1/r 106 · 01:29 gpu 0/r 103 · 01:31 gpu 0/r 102 · 01:33 gpu 0/r 100
+[stall-akte] Stapel wegeMessen :2496 < takt :2507 < (anonym) :2568
+[stall-akte] Konsole log: [AnazhRealm V18.546.91] [WARN] FPS-Einbruch: 18 (zuvor ~43)
+[stall-akte] Konsole log: [AnazhRealm V18.546.91] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.91] [WARN] Der Rundblick steht nach 120 Takten ohne: 2 Bäume und Bauten wachsen · 340 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.91] [INFO] Siedlung „Steintal" gewachsen (Zelle start, 18 Slots).
+[stall-akte] Konsole log: [AnazhRealm V18.546.91] [INFO] KAMIN-RAUCH: 18 Quelle(n) live (chimney→rauchQuelle)
+[stall-akte] Konsole log: [AnazhRealm V18.546.91] [WARN] FPS-Einbruch: 17 (zuvor ~52)
+[stall-akte] Konsole log: [AnazhRealm V18.546.91] [WARN] FPS-Einbruch: 28 (zuvor ~48)
+[stall-akte] Konsole log: [AnazhRealm V18.546.91] [INFO] WERK IM WASSER: glutbrunnen bei -153/244 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.91] [INFO] WERK IM WASSER: glutbrunnen bei -127/235 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.91] [ERROR] BEWOHNER: das Wege-Netz von „Steintal" zerfällt in 3 Teile (kein freier Schritt bis 25 m)
+[stall-akte] Konsole log: [AnazhRealm V18.546.91] [WARN] FPS-Einbruch: 24 (zuvor ~46)
+[stall-akte] Konsole log: [AnazhRealm V18.546.91] [WARN] FPS-Einbruch: 28 (zuvor ~44)
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in wegeMessen :2496
+[stall-akte] Seite #2: der Puls kehrt zurück nach 23.4 s — complete · renderer bereit · weltbild da · frames 537 · welt 537 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ bewohner  {"sprungN":0,"alsLeib":4,"schmiede10":2,"schmiede2":0,"dorf":"Steintal","haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":31,"third":33},"nahLeiber":4,"plan":true,"planGleich":true,"bewohner":81,"trefferMin":0.987,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.022,"wegLeib":1137,"spuren":88},"blick":{"n":164,"quote":0.97,"sektorMax":0.188},"ohnePlatz":0,"ohnePlatzWer":[],"takt":{"n":1800,"p95":0.4,"mittel":0.165},"huellen":18,"wege":{"wandN":0,"wand":[],"durch":260,"tuer":260,"falsch":[],"aufWeg":0.925,"wegeMin":4,"wegeMax":8,"ausserN":0,"ausser":[],"streckeMin":42,"kurzN":0,"kurz":[]},"stall":null,"sek":28.1,"wiederkehr":{"n":1296,"maxM":1.01,"ueberN":0,"ueber":[]}}
+
+  (73 s) — Sekunden je Probe: bewohner: 63
+
+✅ GRÜN — bewohner

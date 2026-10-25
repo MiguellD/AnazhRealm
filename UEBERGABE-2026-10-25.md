@@ -1,9 +1,9 @@
-# Übergabe 25.10.2026 (Woche 90 % um 10:30 MEZ; Neustart des Limits 29.10. 18:00)
+# Übergabe 25.10.2026 (Stand 12:20 MEZ, Woche 91 %; Neustart des Limits 29.10. 18:00)
 
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md. Danach diese Datei, dann `memory/woche-2410.md` (Nachträge 25.10.).
 
 ## Stand
-- **main 4a5f5e2c** (V18.546.89). Meisterkarte **92/330** gebucht am Kopf 4a5f5e2c (Artifact VHRbqeZ6yA9CzqtHYWxmVp, Version 7).
+- **main 8f1802b1** (V18.546.91; Züge 29c und 30 gelandet; z31 heim-z31 91972988 fährt per Kette, danach Mess-Takt 3 am Kopf). Meisterkarte **92/330** gebucht am Kopf 4a5f5e2c (Artifact VHRbqeZ6yA9CzqtHYWxmVp, Version 7).
 - Mess-Takt 2 an 4a5f5e2c: headless 63/2, Radeon (in Ruhe nachgemessen) 28 grün, GTX 28/8.
 - `buche.sh` baut die Ansicht jetzt immer und bricht ab, wenn `meisterkarte.html` die gebuchte Summe nicht trägt (bis 25.10. stand die Seite auf 76).
 
@@ -35,3 +35,11 @@ Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md. Danach diese Datei, dann `memor
 ## Werkzeug
 fahre.sh · zug.sh/zug.cjs (urteil gibt EINEN Neulauf) · buche.sh (Wand: Seite trägt Summe) · ci-lesen.sh · `$TEMP/claude/karte3.cjs` (Modul-Karte 3-Wege) · `node scripts/ci-zeiten.cjs` verteilt die CI-Waage (auch `--help` führt es aus!) · decke-pruef-Worktree für Paartests.
 OMEN: Messplatz-Dienst mit CI-Vorfahrt je Boot, Storno je Boot/Zelle, Zeit in UTC (Befund Zeitumstellung 25.10.). Aufträge nur als Zeile in `zug/warteschlange.txt`.
+
+## Cloud ab 12:20 (6)
+ankunft-l2a-rundblick · ferne-blau-heim · gelaende-ring-wachstum · leib-k2-fuss · tiere-k1-herde-bild · leib-k4-kamera-bau (+ mensch-k3-wege ohne Zweig). Heimholen wie oben: Einlass bei grüner eigener CI, Paartest Decke, heim-zNN + fahre.sh.
+
+## Nachtrag 15:40 MEZ (Woche 96 %)
+- **Mess-Takt 3 an 8f1802b1:** headless 66/2, Radeon 27/11 (neu grün leib.K1#2, halten.K5#1, tiere.K3#2; neu rot klang.K4#1 „2 Stoffe ≥ 5 Schritte“, mensch.K1#1 Quote 0,272, **siedlung.K5#1/#2 „nH 300 erstes Haus nach 974 ms“ — auch auf der GTX rot, also echt seit z29c/z30**). GTX lief bei 25/38; `buche.sh --warte takt3-gtx` bucht von selbst (Kette btoqe8rpf), danach Artifact neu veröffentlichen.
+- **z31 ROT** war eine veraltete Mutation: klang-k1 zog den Stoff der Bau-Pools nach `_kistenPool`, gate:streu-wahrheit suchte ihn im Zaun-Pool. Fix 2ade0724 auf heim-z31 (Selbsttest + Lauf grün). **z31b = heim-z31@2ade0724 + gelaende-ring-wachstum@e06613bf** (Paar: Decke, Atlas, Lint grün) fährt per Kette nach der Buchung (`$TEMP/claude/fahre-z31b.log`). Nach der Landung: Stationen station-klang-k1 e26e1836, station-bauen-k5 5529343c nach koordination.
+- **Cloud (seit 12:20, Aufwand hoch):** gelaende-ring-wachstum CI grün (in z31b) · ankunft-l2a-rundblick f804fbe6 CI war abgebrochen, Neulauf 40192638020 · mensch-k3-wege 5a50e719 CI rot · tiere-k1-herde-bild 72c9f62e CI rot · leib-k4-kamera-bau nur WIP · leib-k2-fuss WIP (aktiv 15:25) · ferne-blau-heim 865cda38 CI rot.

@@ -1,0 +1,56 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-persistence.cjs
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1702,"soll":1700}]
+  [T] 0 Tod idb · geladen {"w":"0bdbd4fb-cd9e-43b8-94fe-2dc422b21f2f","x":0,"z":0,"e":0,"b":0,"l":0} · Alter undefined s · 
+  [T] 1 Tod zufall · geladen {"w":"0bdbd4fb-cd9e-43b8-94fe-2dc422b21f2f","x":0,"z":2640,"e":28,"b":1,"l":28} · Alter 3.86 s · 
+  [T] 2 Tod fest · geladen {"w":"0bdbd4fb-cd9e-43b8-94fe-2dc422b21f2f","x":0,"z":10272,"e":167,"b":6,"l":167} · Alter 1.884 s · 
+  [T] 3 Tod zufall · geladen {"w":"0bdbd4fb-cd9e-43b8-94fe-2dc422b21f2f","x":0,"z":23074,"e":430,"b":16,"l":430} · Alter 0 s · 
+  [T] 4 Tod platz · geladen {"w":"0bdbd4fb-cd9e-43b8-94fe-2dc422b21f2f","x":0,"z":23074,"e":430,"b":16,"l":430} · Alter 2.301 s · 
+  [T] 5 Tod zufall · geladen {"w":"0bdbd4fb-cd9e-43b8-94fe-2dc422b21f2f","x":0,"z":27188,"e":478,"b":17,"l":478} · Alter 2.682 s · 
+  [T] 6 Tod zeiger · geladen {"w":"0bdbd4fb-cd9e-43b8-94fe-2dc422b21f2f","x":0,"z":30052,"e":513,"b":18,"l":513} · Alter 0.892 s · 
+  [T] 7 Tod zufall · geladen {"w":"0bdbd4fb-cd9e-43b8-94fe-2dc422b21f2f","x":0,"z":32863,"e":547,"b":19,"l":547} · Alter 4.023 s · 
+  [V] 18.530.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.532.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.534.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.536.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.538.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.540.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.541.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.4: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.41: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.53: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.60: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.66: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.72: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.77: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.78: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.79: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.80: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.81: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.82: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.84: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.85: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.86: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.87: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.88: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.89: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.90: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.91: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.91 Kopf: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+
+=== Persistenz-Härtung (Tab-Tod, Lade-Pfad, save-server, Weg) ===
+  ✅ (V) Korpus: 27 Stände 18.530.0 … 18.546.91 und 1 Kopf laden am Kopf — Bauten 140/140 · Gruben 84/84 · Inventar 69/69 · ganz 28/28
+  ✅ (V) Versions-Stufe 18.546.91: ihr Stand steht im Korpus (bump-version.cjs)
+  ✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7
+  ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 21/21
+  ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 28/28
+  ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 28/28
+  ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 28/28
+  ✅ (S) save-server: ein voller Save hält den Stand davor im .bak (voll: Ziel neu, .bak alt · Tod an Punkt 1 → alt, 2 → alt, 3 → alt, 4 → alt, 5 → alt, 6 → alt, 7 → alt, 8 → neu)
+  ✅ (S) save-server: ein Kill mitten im Schreiben lässt den alten oder neuen Stand GANZ (8/8)
+  ✅ (T) Tab-Tod ohne save-server, Zyklen 0-7: 8 Tode: Alter max 4.023 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt · Linie 578 Löcher
+  ✅ (C) save-server: jede statische Datei trägt ETag + no-cache, die Nachfrage bekommt 304, neuer Inhalt neuen ETag (erst 200 ETag ja „no-cache" · nachgefragt 304 (0 B) · Inhalt geändert 200 neuer ETag)
+  ✅ (D) 1.0 km in 6 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh -0.7 kB, Platte -2.0 kB, am stärksten worldMeta.settlementCells 0.7 kB · gesamt roh 13.7 kB, Platte 41.2 kB · Leben worldJournal 8.3 kB, dslHistory 3.9 kB, dslAbilities 1.8 kB, knowledgeBase 0.6 kB, dslPatternMemory 0.0 kB, creatures -0.3 kB
+  ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 231.8 kB, Platte 695.4 kB, am stärksten wegSpur 231.8 kB · gesamt roh 231.8 kB, Platte 695.4 kB · Leben knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, dslPatternMemory 0.0 kB, worldJournal 0.0 kB
+
+13/13 Persistenz-Invarianten OK.
+✅ Die Welt überlebt Tod und korrupten Write — kein stiller Datenverlust.
