@@ -91,6 +91,7 @@ function ladeschirmVerdict(m) {
     if (rg && rg.nachBild && rg.vorBild === "blick" && rg.nachBild !== "hinten,blick,vorrat") out.push(`nach dem ersten Bild sendet die Pumpe „${rg.nachBild}" statt nah zuerst rundum mit dem Vorrat („hinten,blick,vorrat") — der Blick-Schlüssel überlebt das Bild (_rangImErstenBlick)`);
     const rb = m.rundblick;
     if (!rb || !(rb.N > 0)) out.push("der Rundblick nach der Kontrolle: keine Probe (`RUNDBLICK_BILDER` fehlt im Stamm)");
+    else if (!rb.spaet) out.push("der Rundblick ohne späten Baum (Vorbedingung)");
     else if (rb.loecher > 0) out.push(`der Rundblick nach der Kontrolle zählt ${rb.loecher} Löcher in ${rb.N} Takten — zuerst ${rb.erstes}`);
     // DIE TERM-DECKUNG: jeder Term von `WELTBILD_TERME` hat einen Fall, der den Ladeschirm hält; ein Fall nennt nur
     // Terme der Liste
@@ -396,6 +397,9 @@ async function probe(arg) {
             await sleep(ms || 30);
         }
     };
+    // eine Taste an `ziel` (keydown · keyup · keypress) und der Fokus beim Namen
+    const taste = (ziel, typ, key, code = key, mehr) => ziel.dispatchEvent(new KeyboardEvent(typ, { key, code, bubbles: true, ...mehr }));
+    const fokus = (a = document.activeElement) => (a ? a.id || a.tagName : null);
     // der Spion am Ruf: lieferer[name] zählt (und delegiert), solange wer.methode(...args) läuft — true = gerufen
     const ruft = (wer, methode, lieferer, name, args) => {
         const eigen = Object.prototype.hasOwnProperty.call(lieferer, name);
@@ -431,13 +435,20 @@ async function probe(arg) {
         m.schleifeFragt = ruft(r, "_loopRender", r, "_ankunftsBild", [performance.now()]);
         st._weltbildDa = daVor;
         if (ls) {
-            // Die Welt wächst, bis sie steht (`_weltbildFehlt` leer, höchstens 90 s) — vor dem Rundblick und wieder vor den Fällen: die
-            // Mesh-Zone wächst im Rundblick, ein Baum im Werden hielte jeden Fall (lokal 1 von 4 Läufen: „2 Bäume und Bauten wachsen")
-            const steht = async () => { for (const weiter = window.__deckel("das Weltbild", 1500); r._weltbildFehlt().length && weiter(); ) await tick(5, 60); return r._weltbildFehlt(); }; // prettier-ignore
+            // Die Welt wächst, bis sie steht (`_weltbildFehlt` leer, höchstens 90 s) — vor dem Rundblick im Blick, vor den Fällen
+            // RUNDUM: die Mesh-Zone des Null-Renderers atmet je Takt mit dem Regler, und die Fälle hinter dem Spieler drehen die
+            // Kamera — ein Baum im Werden dort hielte jeden Fall (CI f25740f8: bodenHinten und baumHinten „1 Bäume und Bauten wachsen")
+            const steht = async (rundum) => { for (const weiter = window.__deckel("das Weltbild", 1500); r._weltbildFehlt(rundum).length && weiter(); ) await tick(5, 60); return r._weltbildFehlt(rundum); }; // prettier-ignore
             m.fehltNachBoot = await steht();
             // DER RUNDBLICK (B3d): nach der Kontrolle (der EINE Schreiber, der Nachlauf beginnt) dreht die Kamera in RUNDBLICK_BILDER
-            // Takten ganz herum; je Takt zählt das Tor die Löcher in seinem Blick, in der kleinsten Mesh-Zone seit der Kontrolle
+            // Takten ganz herum; je Takt zählt das Tor die Löcher in seinem Blick, in der kleinsten Mesh-Zone seit der Kontrolle.
+            // DER SPÄT GESÄTE BAUM (CI Gruppe 1 seit 4a5f5e2c, 6 von 13 Läufen: „1 Bäume werden gepflanzt" bei 195°, rundum erst ab
+            // Takt 71–80): hinter den fernen Bäumen der Pflanz-Schlange wartet einer 40 m hinter dem Spieler — die Schlange setzt nah
+            // zuerst (Lehre 25, `_tickPendingVegSpawns`); als FIFO zählte der Rundblick ihn 57-mal
             const rb = (m.rundblick = { N: r.constructor.RUNDBLICK_BILDER, loecher: 0, erstes: null, rundumAb: null });
+            const [fern, pp] = [(st.pendingVegSpawns || [])[0], st.playerMesh.position];
+            const [x, z] = [pp.x - 40 * Math.sin(st.yaw), pp.z - 40 * Math.cos(st.yaw)];
+            if ((rb.spaet = !!fern)) st.pendingVegSpawns.push({ ...fern, position: { x, y: r._voxelSurfaceY(x, z) + 0.5, z } });
             r._weltbildSteht();
             for (let i = 1, yaw0 = st.yaw, Rmin = st.architectureCullingRadius; i <= rb.N && r._imErstenBlick; i++) {
                 st.yaw = yaw0 + (2 * Math.PI * i) / rb.N;
@@ -447,7 +458,7 @@ async function probe(arg) {
                 if (n && !rb.erstes) rb.erstes = `Takt ${i} (${Math.round((360 * i) / rb.N)}°): ${L.map((l) => l.satz).join(" · ")}`;
                 [rb.loecher, rb.rundumAb] = [rb.loecher + n, rb.rundumAb != null || st._nachlauf != null ? rb.rundumAb : st._rundumDa ? i : -i];
             }
-            await steht();
+            await steht(true);
             // der Blick und sein Gegenteil (B3d): die Gier blickt auf einen Punkt bzw. kehrt ihm den Rücken, die Kamera folgt
             const [yawM, p0, merkDa0] = [st.yaw, st.playerMesh.position, st._weltbildDa];
             const vorn = (s) => ({ x: p0.x + s * Math.sin(yawM), y: p0.y, z: p0.z + s * Math.cos(yawM) });
@@ -616,24 +627,15 @@ async function probe(arg) {
             }
             st._weltbildDa = merkDa;
             // (6) eine Lücke ruht (dieselbe Lücke länger als WELTBILD_STILL_MS): der Ladeschirm weicht LAUT
-            if (baum)
-                fall("lueckeRuht", baumWeg(false), baumHer, () => {
-                    const sig = r._weltbildFehlt().join(" · ");
-                    st._weltbildLuecke = sig;
-                    st._weltbildLueckeSeit = performance.now() - (r.constructor.WELTBILD_STILL_MS || 0) - 1;
-                });
+            const ruht = () => {
+                st._weltbildLuecke = r._weltbildFehlt().join(" · ");
+                st._weltbildLueckeSeit = performance.now() - (r.constructor.WELTBILD_STILL_MS || 0) - 1;
+            };
+            if (baum) fall("lueckeRuht", baumWeg(false), baumHer, ruht);
             // (6b) eine Lücke ARBEITET: ihr Satz blieb länger als WELTBILD_STILL_MS gleich, aber für sie
             // ist etwas unterwegs (das Buch im bootenden Studio-Faden) — der Ladeschirm bleibt, nie das halbe Bild unter Last
             if (fo && fo.worker)
-                fall(
-                    "lueckeArbeitet",
-                    () => (fo.ready = false),
-                    () => (fo.ready = merkBuch),
-                    () => {
-                        st._weltbildLuecke = r._weltbildFehlt().join(" · ");
-                        st._weltbildLueckeSeit = performance.now() - (r.constructor.WELTBILD_STILL_MS || 0) - 1;
-                    }
-                );
+                fall("lueckeArbeitet", () => (fo.ready = false), () => (fo.ready = merkBuch), ruht);
             else m.ohneFall.lueckeArbeitet = "kein Studio-Faden nach dem Boot";
             // (7) eine Lücke flackert
             // seit über einer Minute: der Ladeschirm weicht LAUT
@@ -648,10 +650,10 @@ async function probe(arg) {
                 ls.classList.remove("weg");
                 if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
                 st.keys.w = false;
-                document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "w", code: "KeyW", bubbles: true }));
+                taste(document.body, "keydown", "w", "KeyW");
                 const wLief = st.keys.w === true;
-                document.body.dispatchEvent(new KeyboardEvent("keyup", { key: "w", code: "KeyW", bubbles: true }));
-                document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", bubbles: true }));
+                taste(document.body, "keyup", "w", "KeyW");
+                taste(document.body, "keydown", "Enter");
                 const ae = document.activeElement;
                 if (ae && ae.id === "chat-input") ae.blur();
                 // jeder Eingang: Strg+K öffnete die Omnibox hinter
@@ -659,10 +661,10 @@ async function probe(arg) {
                 const omni = document.getElementById("omnibox-overlay");
                 const omniVor = omni ? omni.hidden : null;
                 if (omni) omni.hidden = true;
-                document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "k", code: "KeyK", ctrlKey: true, bubbles: true }));
+                taste(document.body, "keydown", "k", "KeyK", { ctrlKey: true });
                 const omniAuf = omni ? !omni.hidden : null;
                 if (omni) omni.hidden = omniVor;
-                m.tastenHinter = { w: wLief, enter: ae ? ae.id || ae.tagName : null, omnibox: omniAuf };
+                m.tastenHinter = { w: wLief, enter: fokus(ae), omnibox: omniAuf };
             }
             // (9) DER LADESCHIRM WEICHT GANZ: nach `_ladeschirmWeg` (Klasse `weg`, nach 750 ms `hidden`) fällt er aus dem Layout —
             // `display: none`, keine laufende Animation
@@ -927,33 +929,33 @@ async function probe(arg) {
         out.gespraech = m;
         const ci = document.getElementById("chat-input");
         if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-        document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", bubbles: true }));
-        m.enterFokus = document.activeElement ? document.activeElement.id || document.activeElement.tagName : null;
+        taste(document.body, "keydown", "Enter");
+        m.enterFokus = fokus();
         if (m.enterFokus !== "chat-input") ci.focus();
-        ci.dispatchEvent(new KeyboardEvent("keydown", { key: "w", code: "KeyW", bubbles: true }));
+        taste(ci, "keydown", "w", "KeyW");
         m.wImFeld = st.keys.w === true;
         const n0 = zeilen().length;
         ci.value = "setze uhrzeit mittag";
-        ci.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", bubbles: true }));
-        ci.dispatchEvent(new KeyboardEvent("keypress", { key: "Enter", code: "Enter", bubbles: true }));
+        taste(ci, "keydown", "Enter");
+        taste(ci, "keypress", "Enter");
         m.gesendet = zeilen().slice(n0).some((z) => z === "> setze uhrzeit mittag");
-        m.nachSenden = document.activeElement ? document.activeElement.id || document.activeElement.tagName : null;
+        m.nachSenden = fokus();
         const ziel = document.activeElement || document.body;
-        ziel.dispatchEvent(new KeyboardEvent("keydown", { key: "w", code: "KeyW", bubbles: true }));
+        taste(ziel, "keydown", "w", "KeyW");
         m.wNachSenden = st.keys.w === true;
-        ziel.dispatchEvent(new KeyboardEvent("keyup", { key: "w", code: "KeyW", bubbles: true }));
+        taste(ziel, "keyup", "w", "KeyW");
         ci.value = "";
         ci.focus();
-        ci.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
-        m.nachEsc = document.activeElement ? document.activeElement.id || document.activeElement.tagName : null;
+        taste(ci, "keydown", "Escape");
+        m.nachEsc = fokus();
         if (document.activeElement === ci) ci.blur();
         // Enter auf einem fokussierten Knopf gehört dem Knopf
         const knopf = document.getElementById("camera-mode-toggle") || document.querySelector("button");
         if (knopf) {
             knopf.focus();
-            knopf.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", bubbles: true }));
+            taste(knopf, "keydown", "Enter");
             const a = document.activeElement;
-            m.enterAufKnopf = a === knopf ? "knopf" : a ? a.id || a.tagName : null;
+            m.enterAufKnopf = a === knopf ? "knopf" : fokus(a);
             if (a && a.blur) a.blur();
         }
         m.gestartet = true;
@@ -1682,7 +1684,7 @@ async function probe(arg) {
                     faelle: l2aFaelle,
                     terme: l2aTerme,
                     rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w1", "export-settlement": "w2", tor0: "w0", tor1: "w0", tor2: "w0", tor3: "w0" } },
-                    rundblick: { N: 240, loecher: 0, erstes: null },
+                    rundblick: { N: 240, loecher: 0, erstes: null, spaet: true },
                     ankunft: { n: 40, fein: [], zwilling: [], nahKarte: 2, nahDanach: 0 },
                     koepfe: { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } },
                     wald: { ferne: 169, steht: false, zusage: true, kam: true, rest: 128 },
@@ -1692,10 +1694,11 @@ async function probe(arg) {
                 [
                     ["ein Loch hinter dem Spieler hält das erste Bild", { faelle: Object.assign({}, l2aFaelle, { baumHinten: { weg: false, stand: "1 Bäume und Bauten wachsen" } }) }, "mit einem Baum hinter dem Spieler ohne Gestalt hält der Ladeschirm"],
                     ["ein Loch im Blick weicht (B3d)", { faelle: Object.assign({}, l2aFaelle, { karteOffen: { weg: true, stand: "", warn: 0, terme: [] } }) }, "mit der offenen Karte eines Baums im Blick weicht der Ladeschirm"],
-                    ["ein Loch im Rundblick nach N Takten (B3d)", { rundblick: { N: 240, loecher: 3, erstes: "Takt 120 (180°): 3 Bäume und Bauten wachsen" } }, "der Rundblick nach der Kontrolle zählt 3 Löcher in 240 Takten"],
+                    ["ein Loch im Rundblick nach N Takten (B3d)", { rundblick: { N: 240, loecher: 3, erstes: "Takt 120 (180°): 3 Bäume und Bauten wachsen", spaet: true } }, "der Rundblick nach der Kontrolle zählt 3 Löcher in 240 Takten"],
                     ["der Rang ohne Blick", { rang: { vorBild: "hinten,blick,vorrat", nachBild: "hinten,blick,vorrat" } }, "vor dem ersten Bild sendet die Pumpe „hinten,blick,vorrat\""],
                     ["der Blick-Schlüssel überlebt das Bild", { rang: { vorBild: "blick", nachBild: "hinten,blick" } }, "nach dem ersten Bild sendet die Pumpe „hinten,blick\""],
                     ["ohne Rundblick", { rundblick: { N: undefined, loecher: 0 } }, "der Rundblick nach der Kontrolle: keine Probe"],
+                    ["ohne späten Baum", { rundblick: { N: 240 } }, "der Rundblick ohne späten Baum"],
                     ["der Vorrat stellt sich in der Ankunft vor die Leser (K30)", { vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: ["Wagen gt|1|lod0", "Siedlungs-Probe"], nachBild: 0, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } }, "vor dem ersten Weltbild bestellt der Vorrat 2 Aufträge ohne Leser des ersten Frames (Wagen gt|1|lod0, Siedlungs-Probe)"],
                     ["der Vorrat stirbt (er wartet ewig)", { vorrat: { ohneLeser: [], karten: 0, fehltNeu: [], vorBild: [], nachBild: 0, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } }, "der Vorrat bestellt nie"],
                     ["der Vorrat endet nicht", { vorrat: { ohneLeser: [], karten: 0, fehltNeu: [], vorBild: [], nachBild: 0, ende: false, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } }, "der Vorrat endet nicht"],
