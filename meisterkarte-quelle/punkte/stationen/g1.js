@@ -148,6 +148,63 @@ module.exports = [
         ],
         quelle: "1 = die 2D-Form (hoehe, flussLaeufe) ist EINE Quelle, Studio-Plan = Welt byte-gleich",
     },
+    {
+        kriterium: "gelaende.K1",
+        staffel: 2,
+        geraet: "headless",
+        // die Kern-Probe (gate:worker-dichte `--kern`, Null-Renderer): 10⁵ Punkte (Höhle, Kanal, See-Becken, um 300 Edits über
+        // den Spielpfad), dichte, Bezug, Spiegel und Fluss aus Stamm-Leser, jedem Voxel-Faden und einer frischen Instanz des
+        // Kerns Wort für Wort; die feste Mutations-Liste (der Server liefert den Kern verändert aus) zieht beide Leser; der
+        // Selbsttest nennt einen Leser, der den unveränderten Kern liest, beim Namen (nicht vakuös)
+        befehl: ["node", "scripts/diag-worker-dichte.cjs", "--kern", "--selftest", "--json", "{AUS}"],
+        env: { WORKER_DICHTE_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const k = j && j.kern;
+            if (!k) return { gruen: false, zahl: "kein JSON der Kern-Probe (Exit " + lauf.exit + ")" };
+            const liste = ["Edit-Stärke", "Edit-Radius", "Dichte-Versatz", "See-Spiegel"];
+            const zieht = liste.filter((n) =>
+                (k.mutationen || []).some((z) => z.name === n && z.zugStamm > 0 && z.zugFaden > 0 && z.abweichend === 0)
+            );
+            const rein = k.rein || {};
+            const ort = (k.wirkt || []).slice(0, 4);
+            const gruen =
+                lauf.exit === 0 &&
+                /KERN-PROBE GRÜN/.test(lauf.stdout) &&
+                k.punkte >= 1e5 &&
+                k.edits >= 20 &&
+                k.haelt === k.edits &&
+                k.faeden >= 1 &&
+                rein.abweichend === 0 &&
+                rein.maxDiff === 0 &&
+                ort.length === 4 &&
+                ort.every((w) => w >= k.punkte / 25) &&
+                zieht.length === liste.length &&
+                !!(k.selbsttest && k.selbsttest.sieht);
+            return {
+                gruen,
+                zahl:
+                    k.punkte + " Punkte, " + k.edits + " Edits, ≠ Kern " + rein.abweichend + " (maxDiff " + rein.maxDiff +
+                    "), " + zieht.length + "/4 Mutationen ziehen Stamm-Leser und Worker-Feld, Selbsttest " +
+                    (k.selbsttest && k.selbsttest.sieht ? "sieht" : "blind"),
+            };
+        },
+        pfad: [
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "stamm/gelaende-*.js",
+            "stamm/wasser-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "index.html",
+            "scripts/diag-worker-dichte.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/lib/wasser-linse.cjs",
+        ],
+        quelle: "2 = auch dichte, editForm und Wasser-Spiegel im Kern, jede Mutation der festen Liste zieht Stamm-Leser UND Worker-Feld",
+    },
 
     // ── gelaende.K2 ── M31: das Graben-Bild über die echte Eingabe (CDP-Klick, Verb graben) im Spiel-Loop, Third, am Fluss
     // nächst Genesis, 5 Saaten × Graben 1 m und 3 m jenseits der Krone; je präsentiertem Bild die gezeichneten Wasser-Flächen
@@ -318,6 +375,82 @@ module.exports = [
             "scripts/lib/welt-boot.cjs",
         ],
         quelle: "1 = alle Leser folgen der 50-Punkte-Kern-Mutation an einem Ort",
+    },
+    {
+        kriterium: "gelaende.K4",
+        staffel: 2,
+        geraet: "headless",
+        // überall (Null-Renderer, R3): die Kern-Mutation am See der Mess-Wiese und an 5 Zufalls-Orten der Karte (je 50 Punkte,
+        // jeder Leser folgt, keine Pflanze im Wasser); jeder Lauf des Gesetzes endet in See oder Meer, jede Senke ist nass,
+        // Sohle und Spiegel steigen stromab nie; an 4 Fluss-Orten treiben Schwimmer, Boot und Tier > 0,5 m in 90 Takten, ohne
+        // Strömung nicht (gate:wasser-leben K4 ÜBERALL · LÄUFE · STRÖMUNG)
+        befehl: ["node", "scripts/diag-wasser-leben.cjs", "--nur", "mutation,ueberall,laeufe,treibt"],
+        env: { WASSER_LEBEN_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const b = jsonBlock(lauf.stdout);
+            if (!b || !b.mutation || !b.ueberall || !b.laeufe || !b.treibt)
+                return { gruen: false, zahl: "keine Probe ÜBERALL, LÄUFE oder STRÖMUNG in der Ausgabe (Exit " + lauf.exit + ")" };
+            const folgt = (m) => {
+                const leser = Object.entries(m.leser || {});
+                const fn = (m.flora && m.flora.nach) || {};
+                return (
+                    !m.fehler &&
+                    m.punkte >= 50 &&
+                    leser.length >= 11 &&
+                    leser.every(([k, l]) => l.n >= m.punkte && (k === "kontrolle" ? l.nach === 0 : l.vor === 0 && l.nach === l.n)) &&
+                    !(fn.wiese > 0) &&
+                    !(fn.streu > 0)
+                );
+            };
+            const orte = [b.mutation, ...b.ueberall];
+            const l = b.laeufe;
+            const ende = ((l.ende || {}).see || 0) + ((l.ende || {}).meer || 0);
+            const koerper = ["schwimmer", "boot", "tier"];
+            const treibt = b.treibt.filter(
+                (t) => !t.fehler && koerper.every((k) => t[k] && t[k].mit > 0.5 && Math.abs(t[k].ohne) < 0.05)
+            );
+            const gruen =
+                lauf.exit === 0 &&
+                /WASSER-LEBEN GRÜN/.test(lauf.stdout) &&
+                b.ueberall.length >= 5 &&
+                orte.every(folgt) &&
+                l.laeufe >= 100 &&
+                ende === l.laeufe &&
+                l.senken > 0 &&
+                l.nass === l.senken &&
+                l.steigt === 0 &&
+                b.treibt.length >= 4 &&
+                treibt.length === b.treibt.length;
+            return {
+                gruen,
+                zahl:
+                    orte.filter(folgt).length + " von " + orte.length + " Orten folgt jeder Leser · Läufe " + ende + " von " +
+                    l.laeufe + " in See oder Meer, Senken nass " + l.nass + " von " + l.senken + ", steigt " + l.steigt +
+                    " · Strömung " + treibt.length + " von " + b.treibt.length + " Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m)",
+            };
+        },
+        pfad: [
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "stamm/gelaende-*.js",
+            "stamm/wasser-*.js",
+            "stamm/klang.js",
+            "stamm/koerper-*.js",
+            "stamm/kreatur-*.js",
+            "stamm/vegetation-wiese.js",
+            "stamm/vegetation-streu.js",
+            "stamm/netz-p2p.js",
+            "stamm/bild-himmel.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "scripts/diag-wasser-leben.cjs",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+        ],
+        quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer und die Strömung treibt",
     },
 
     // ── gelaende.K5 ── der Kontakt gegen die gezeichneten Dreiecke ist Mechanik (Null-Renderer mit Foundry, R3)
@@ -1026,10 +1159,8 @@ module.exports = [
 
 // ── NICHT FASSBAR (befehl: null): kein Werkzeug im Spiel-Baum misst das Soll dieser Staffel als EIN Befehl am SHA ──
 module.exports.fehlt = [
-    { kriterium: "gelaende.K1", staffel: 2, befehl: null, grund: "nicht gebaut: dichte, editForm und Spiegel sind Abschrift (48er-Edit-Kegel ×4, 166 Spiegel-Marken im Worker); gate:worker-dichte vergleicht Abschrift mit Abschrift, die Mutations-Liste (Edit-Stärke, Edit-Radius, Dichte-Versatz, See-Spiegel) misst keine Linse" },
     { kriterium: "gelaende.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: Damm (b) und Ferne (d, byte-Diff am Ring) misst keine Linse; Ego und GTX ungemessen" },
     { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug fehlt: 12 Posen (Ego/Third × Mittag/Nacht/Regen × beide Geräte) und die Fließ-Anisotropie (ohne Soll im Code)" },
-    { kriterium: "gelaende.K4", staffel: 2, befehl: null, grund: "Werkzeug fehlt: die Mutation läuft nur am See der Mess-Wiese (nicht überall); „jeder Lauf endet in See oder Meer“ und „die Strömung treibt“ (gate:kopplung F1) sind getrennte Linsen ohne gemeinsames Urteil" },
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Pfützen in den Mulden, keine Trocken-Kurve, kein Third" },
     { kriterium: "physik.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: der Wagen bei vmax × 1,2 gegen die 0,35-m-Mauer und die Bild-Probe (Spalt Leib–Wand ≤ 5 cm) auf beiden Geräten — gate:kollision-bild läuft auf dem Null-Renderer" },
     { kriterium: "feld.K2", staffel: 2, befehl: null, grund: "nicht gebaut: das Netz-Log steht (gate:mp-sync (e), keine Zustands-Nachricht), aber die Uhren der Teil-Simulationen sind je Seite — der Auto-Zug des Wetters zählt die Sitzung (`weatherEffectTime`) und den Wunsch des eigenen Nexus, Overlays und Brand die Spielzeit der Seite (`spielZeit`), die Tageszeit ist Spieler-Wort (set_time_of_day nicht broadcastbar); ohne geteilte Welt-Uhr ist Wetter am Ort keine Funktion von Saat und Akten, und ein Reload mitten im Sturm setzt nur das Wort fort (der Übergang reist nicht)" },
