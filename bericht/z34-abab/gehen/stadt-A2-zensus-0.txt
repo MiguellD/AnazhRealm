@@ -1,0 +1,20 @@
+{
+ "ergebnis": {
+  "gesamt": 0,
+  "arten": {},
+  "zustand": {},
+  "jaeger": 0,
+  "wuerfeAb2": 0,
+  "tiereInWuerfen": 0,
+  "gruppen": [],
+  "verbandFeld": false,
+  "verbaendeAb2": 0,
+  "verbaende": [],
+  "verbaendeMap": null,
+  "spieler": [
+   400,
+   400
+  ]
+ },
+ "ms": 5
+}
