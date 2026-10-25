@@ -896,7 +896,7 @@ function latenzAn(k) {
     const lage = () =>
         L.verb === "hieb" ? [hand().toArray()] : [st.camera.matrixWorld.elements.slice(12, 15), pm.position.toArray()];
     const weg = (a, b) => (b && a.length === b.length ? Math.max(...a.map((v, i) => Math.hypot(...v.map((x, j) => x - b[i][j])))) : Infinity);
-    const L = (window.__latenz = { takt: 0, still: 0, vor: null, probe: null, bilder: [], offen: [], sicht: st.cameraMode });
+    const L = (window.__latenz = { takt: 0, still: 0, bilder: [], offen: [], sicht: st.cameraMode });
     L.start = st.playerMesh.position.clone();
     const gct = GPUCanvasContext.prototype.getCurrentTexture, synth = new WeakSet();
     GPUCanvasContext.prototype.getCurrentTexture = function () {
@@ -972,11 +972,15 @@ function latenzAn(k) {
         for (const bis = L.bilder.length + 120; st.player._swing && L.bilder.length < bis; ) await wache();
         return Object.assign(L.probe, { ref: undefined, verb: st.player._mausVerb });
     };
-    // das Tier des Hiebs: heil, gehalten, halbe Klingen-Reichweite + 0,5 m vor dem Leib, das Fadenkreuz auf seiner Leibes-Mitte
+    // das Tier des Hiebs: heil, gehalten, halbe Klingen-Reichweite + 0,5 m vor dem Leib, das Fadenkreuz auf seiner Leibes-Mitte.
+    // Es ist der Hirsch („wesen“), die Art, die die Mess-Wiese trägt (K 6,04 im Revier, `_kreaturBestand`): der Lebenszyklus
+    // nimmt am Hunger das Älteste jeder Gattung über ihrer Kapazität. Bis leib-k1-hieb würfelte der Fauna-Strom die Seele — dort
+    // tragen Fuchs und Wolf K 0, der Bär 0,14 —, die Puppe fiel mitten in der Reihe, und jeder Klick danach griff durch ihren
+    // Leichnam (Radeon 206b395a und 4a5f5e2c: ego/hieb ab Probe 5–24 Halt 0, „abbau“ statt „hieb“, zwei ohne Bewegung).
     L.tierStellen = async () => {
         const f = r._blickVorn(st.yaw, 0), d = 0.5 * r._kampfBladeReach() + 0.5, x = L.start.x + f.x * d, z = L.start.z + f.z * d;
         if (!L.tier) r.equipHeld("klinge_langschwert"); // die Faust reicht in 3rd nicht bis zur Haut unter dem Fadenkreuz
-        const c = (L.tier = L.tier || r.spawnCreatureAt(x, L.start.y, z, "happy"));
+        const c = (L.tier = L.tier || r.spawnCreatureAt(x, L.start.y, z, "happy", "wesen"));
         for (let i = 0; i < 240 && !r._leibMitte(c); i++) await wache();
         c.position.set(x, r._voxelSurfaceY(x, z) + c.position.y - r._voxelSurfaceY(c.position.x, c.position.z), z);
         c.userData.hp = 1e9; // die Puppe fällt nie: jeder Hieb trifft ein lebendes Tier
