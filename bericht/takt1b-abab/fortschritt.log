@@ -1,0 +1,63 @@
+01:19:35 SERIE START A=79c0fae29[0] B=206b395ac[0] Instrument=79c0fae29 ZELLEN=w-ego
+01:19:43 w-ego-A1 start FP=8479804aadc31ac5 66 52 gpu[64, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+01:22:27 w-ego-A1 ende gpu[78, 822 MHz, 2999 MHz, P3, 0x0000000000000001] steht: fps 75.5 F95 16.8 C95 4.1 k0 0.23 | 1: fps 59.4 F95 25.1 C95 19 k0 0.3 | 
+01:22:53 VORFAHRT: Runner.Worker läuft - warte
+01:43:22 w-ego-B1 start FP=a29fcc282b3e2e1c 66 52 gpu[62, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+01:46:17 w-ego-B1 ende gpu[76, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 75.1 F95 16.8 C95 4.3 k0 0.23 | 1: fps 58.8 F95 25.1 C95 19 k0 0.3 | 
+01:46:47 w-ego-A2 start FP=8479804aadc31ac5 66 52 gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+01:49:39 w-ego-A2 ende gpu[77, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 73.7 F95 16.8 C95 4.2 k0 0.23 | 1: fps 58.2 F95 25.1 C95 19 k0 0.29 | 
+01:50:09 w-ego-B2 start FP=a29fcc282b3e2e1c 66 52 gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+01:53:01 w-ego-B2 ende gpu[77, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 73.6 F95 16.8 C95 4.4 k0 0.23 | 1: fps 59 F95 25.1 C95 18.8 k0 0.3 | 
+01:53:27 SERIE ENDE A-status[0] B-status[0]
+01:53:31 SERIE START A=79c0fae29[0] B=206b395ac[0] Instrument=79c0fae29 ZELLEN=g-third
+01:53:38 g-third-A1 start FP=8479804aadc31ac5 66 52 gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+01:55:48 g-third-A1 ende gpu[79, 1822 MHz, 4006 MHz, P0, 0x0000000000000000] steht: fps 79.7 F95 16.7 C95 5.7 k0 0.17 | 
+01:56:19 g-third-B1 start FP=a29fcc282b3e2e1c 66 52 gpu[76, 1822 MHz, 4006 MHz, P0, 0x0000000000000000]
+01:58:30 g-third-B1 ende gpu[78, 1797 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 79.6 F95 16.7 C95 5.9 k0 0.19 | 
+01:59:00 g-third-A2 start FP=8479804aadc31ac5 66 52 gpu[76, 1797 MHz, 4006 MHz, P0, 0x0000000000000001]
+02:01:11 g-third-A2 ende gpu[78, 1746 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 79.5 F95 16.8 C95 6.1 k0 0.17 | 
+02:01:42 g-third-B2 start FP=a29fcc282b3e2e1c 66 52 gpu[75, 1746 MHz, 4006 MHz, P0, 0x0000000000000001]
+02:03:53 g-third-B2 ende gpu[78, 1733 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 79.6 F95 16.7 C95 6 k0 0.18 | 
+02:04:18 SERIE ENDE A-status[0] B-status[0]
+02:04:24 SERIE START A=79c0fae29[0] B=206b395ac[0] Instrument=79c0fae29 ZELLEN=d-ego
+02:04:30 d-ego-A1 start FP=8479804aadc31ac5 66 52 gpu[75, 1733 MHz, 4006 MHz, P0, 0x0000000000000001]
+02:06:39 d-ego-A1 ende gpu[78, 1683 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 74.7 F95 16.8 C95 6 k0 0.18 |  bef {"frames":2242,"mittel":59,"p95":68,"max":108,"jePass":{"k0":{"anteil":0.5,"p50":21,"max":22},"haupt":{"anteil":1,"p50":39,"max":39},"TRAA":{"anteil":1,"p50":1,"max":1},"post":{"anteil":1,"p50":1,"max":1},"k1":{"anteil":0.17,"p50":27,"max":27},"k2":{"anteil":0.17,"p50":17,"max":17},"atmo-himmel" uhr[{"ergebnis":{"uhr":0.3333,"leiber":0},"ms":7}] ende[{"ergebnis":{"uhr":0.3333},"ms":2}]
+02:07:10 d-ego-B1 start FP=a29fcc282b3e2e1c 66 52 gpu[76, 1683 MHz, 4006 MHz, P0, 0x0000000000000001]
+02:09:21 d-ego-B1 ende gpu[78, 1695 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 74.9 F95 16.8 C95 5.6 k0 0.18 |  bef {"frames":2246,"mittel":59,"p95":68,"max":109,"jePass":{"k2":{"anteil":0.17,"p50":17,"max":17},"haupt":{"anteil":1,"p50":39,"max":39},"TRAA":{"anteil":1,"p50":1,"max":1},"post":{"anteil":1,"p50":1,"max":1},"k0":{"anteil":0.5,"p50":21,"max":22},"atmo-himmel":{"anteil":0.07,"p50":1,"max":1},"spieg uhr[{"ergebnis":{"uhr":0.3333,"leiber":0},"ms":6}] ende[{"ergebnis":{"uhr":0.3333},"ms":2}]
+02:09:51 d-ego-A2 start FP=8479804aadc31ac5 66 52 gpu[76, 1695 MHz, 4006 MHz, P0, 0x0000000000000001]
+02:12:01 d-ego-A2 ende gpu[78, 1695 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 74.7 F95 16.8 C95 5.8 k0 0.18 |  bef {"frames":2240,"mittel":59,"p95":68,"max":109,"jePass":{"k0":{"anteil":0.5,"p50":21,"max":22},"haupt":{"anteil":1,"p50":39,"max":39},"TRAA":{"anteil":1,"p50":1,"max":1},"post":{"anteil":1,"p50":1,"max":1},"k1":{"anteil":0.17,"p50":27,"max":27},"atmo-himmel":{"anteil":0.06,"p50":1,"max":1},"k2":{ uhr[{"ergebnis":{"uhr":0.3333,"leiber":0},"ms":6}] ende[{"ergebnis":{"uhr":0.3333},"ms":1}]
+02:12:32 d-ego-B2 start FP=a29fcc282b3e2e1c 66 52 gpu[76, 1695 MHz, 4006 MHz, P0, 0x0000000000000001]
+02:14:41 d-ego-B2 ende gpu[78, 1708 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 74.9 F95 16.8 C95 5.6 k0 0.18 |  bef {"frames":2247,"mittel":59,"p95":68,"max":109,"jePass":{"k0":{"anteil":0.5,"p50":21,"max":22},"haupt":{"anteil":1,"p50":39,"max":39},"TRAA":{"anteil":1,"p50":1,"max":1},"post":{"anteil":1,"p50":1,"max":1},"k1":{"anteil":0.17,"p50":27,"max":27},"atmo-himmel":{"anteil":0.05,"p50":1,"max":1},"k2":{ uhr[{"ergebnis":{"uhr":0.3333,"leiber":0},"ms":7}] ende[{"ergebnis":{"uhr":0.3333},"ms":2}]
+02:15:06 SERIE ENDE A-status[0] B-status[0]
+02:15:12 SERIE START A=79c0fae29[0] B=206b395ac[0] Instrument=79c0fae29 ZELLEN=stadt
+02:15:18 stadt-A1 start FP=8479804aadc31ac5 66 52 gpu[76, 1708 MHz, 4006 MHz, P0, 0x0000000000000001]
+02:18:29 stadt-A1 ende gpu[78, 822 MHz, 2999 MHz, P3, 0x0000000000000001] steht: fps 72.3 F95 16.9 C95 9.2 k0 0.13 | 1: fps 34.2 F95 58.4 C95 49.8 k0 0.22 | 
+02:19:01 stadt-B1 start FP=a29fcc282b3e2e1c 66 52 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+02:22:08 stadt-B1 ende gpu[79, 923 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 73.2 F95 16.9 C95 8.2 k0 0.13 | 1: fps 37.9 F95 50.1 C95 46.7 k0 0.22 | 
+02:22:39 stadt-A2 start FP=8479804aadc31ac5 66 52 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+02:25:46 stadt-A2 ende gpu[79, 923 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 72.4 F95 16.8 C95 8.8 k0 0.13 | 1: fps 37.7 F95 50 C95 44.3 k0 0.22 | 
+02:26:17 stadt-B2 start FP=a29fcc282b3e2e1c 66 52 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+02:30:05 stadt-B2 ende gpu[78, 822 MHz, 2999 MHz, P3, 0x0000000000000001] steht: fps 75 F95 16.8 C95 7.2 k0 0.13 | 1: fps 37.4 F95 50 C95 42.9 k0 0.22 | 
+02:30:30 SERIE ENDE A-status[0] B-status[0]
+02:30:35 SERIE START A=79c0fae29[0] B=206b395ac[0] Instrument=79c0fae29 ZELLEN=w-ego
+02:30:41 w-ego-A3 start FP=8479804aadc31ac5 66 52 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+02:33:32 w-ego-A3 ende gpu[77, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 75.2 F95 16.8 C95 4.2 k0 0.23 | 1: fps 58.7 F95 25.1 C95 19.1 k0 0.29 | 
+02:34:03 w-ego-B3 start FP=a29fcc282b3e2e1c 66 52 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+02:36:54 w-ego-B3 ende gpu[77, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 73.9 F95 16.8 C95 4.6 k0 0.23 | 1: fps 59.1 F95 25.1 C95 19.1 k0 0.3 | 
+02:37:20 VORFAHRT: Runner.Worker läuft - warte
+02:57:02 w-ego-A4 start FP=8479804aadc31ac5 66 52 gpu[60, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+02:59:57 w-ego-A4 ende gpu[74, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 74.7 F95 16.8 C95 4.4 k0 0.23 | 1: fps 59.7 F95 25.1 C95 18.5 k0 0.3 | 
+03:00:22 VORFAHRT: Runner.Worker läuft - warte
+03:20:41 w-ego-B4 start FP=a29fcc282b3e2e1c 66 52 gpu[61, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+03:23:31 w-ego-B4 ende gpu[75, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 75.2 F95 16.8 C95 4.2 k0 0.23 | 1: fps 59.8 F95 25.1 C95 18.6 k0 0.29 | 
+03:23:57 SERIE ENDE A-status[0] B-status[0]
+03:24:03 SERIE START A=79c0fae29[0] B=206b395ac[0] Instrument=79c0fae29 ZELLEN=d-ego
+03:24:09 d-ego-A3 start FP=8479804aadc31ac5 66 52 gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+03:26:19 d-ego-A3 ende gpu[78, 1683 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 75.2 F95 16.8 C95 5.6 k0 0.18 |  bef {"frames":2256,"mittel":59,"p95":68,"max":108,"jePass":{"haupt":{"anteil":1,"p50":39,"max":39},"TRAA":{"anteil":1,"p50":1,"max":1},"post":{"anteil":1,"p50":1,"max":1},"k0":{"anteil":0.5,"p50":21,"max":22},"k1":{"anteil":0.17,"p50":27,"max":27},"k2":{"anteil":0.17,"p50":17,"max":17},"atmo-himmel" uhr[{"ergebnis":{"uhr":0.3333,"leiber":0},"ms":6}] ende[{"ergebnis":{"uhr":0.3333},"ms":2}]
+04:15:55 d-ego-B3 start FP=a29fcc282b3e2e1c 66 52 gpu[60, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+04:18:03 d-ego-B3 ende gpu[74, 1708 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 75.7 F95 16.8 C95 5.4 k0 0.18 |  bef {"frames":2270,"mittel":59,"p95":68,"max":107,"jePass":{"k1":{"anteil":0.17,"p50":27,"max":27},"haupt":{"anteil":1,"p50":39,"max":39},"TRAA":{"anteil":1,"p50":1,"max":1},"post":{"anteil":1,"p50":1,"max":1},"k0":{"anteil":0.5,"p50":21,"max":22},"k2":{"anteil":0.17,"p50":17,"max":17},"atmo-himmel" uhr[{"ergebnis":{"uhr":0.3333,"leiber":0},"ms":4}] ende[{"ergebnis":{"uhr":0.3333},"ms":2}]
+04:18:35 d-ego-A4 start FP=8479804aadc31ac5 66 52 gpu[71, 1708 MHz, 4006 MHz, P0, 0x0000000000000001]
+04:20:45 d-ego-A4 ende gpu[76, 1695 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 75.2 F95 16.8 C95 5.6 k0 0.18 |  bef {"frames":2256,"mittel":59,"p95":68,"max":109,"jePass":{"k0":{"anteil":0.5,"p50":21,"max":22},"haupt":{"anteil":1,"p50":39,"max":39},"TRAA":{"anteil":1,"p50":1,"max":1},"post":{"anteil":1,"p50":1,"max":1},"k1":{"anteil":0.17,"p50":27,"max":27},"k2":{"anteil":0.17,"p50":17,"max":17},"spiegel:stra uhr[{"ergebnis":{"uhr":0.3333,"leiber":0},"ms":5}] ende[{"ergebnis":{"uhr":0.3333},"ms":2}]
+04:21:15 d-ego-B4 start FP=a29fcc282b3e2e1c 66 52 gpu[73, 1695 MHz, 4006 MHz, P0, 0x0000000000000001]
+04:23:25 d-ego-B4 ende gpu[78, 1695 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 75.6 F95 16.8 C95 5.3 k0 0.18 |  bef {"frames":2270,"mittel":59,"p95":68,"max":108,"jePass":{"haupt":{"anteil":1,"p50":39,"max":39},"TRAA":{"anteil":1,"p50":1,"max":1},"post":{"anteil":1,"p50":1,"max":1},"k0":{"anteil":0.5,"p50":21,"max":22},"k1":{"anteil":0.17,"p50":27,"max":27},"spiegel:strahl":{"anteil":0.06,"p50":1,"max":1},"k2 uhr[{"ergebnis":{"uhr":0.3333,"leiber":0},"ms":5}] ende[{"ergebnis":{"uhr":0.3333},"ms":2}]
+04:23:50 SERIE ENDE A-status[0] B-status[0]

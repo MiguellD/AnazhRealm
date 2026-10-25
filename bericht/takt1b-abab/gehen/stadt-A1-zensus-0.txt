@@ -1,0 +1,50 @@
+{
+ "ergebnis": {
+  "gesamt": 7,
+  "arten": {
+   "deer": 7
+  },
+  "zustand": {
+   "-": 7
+  },
+  "jaeger": 0,
+  "wuerfeAb2": 1,
+  "tiereInWuerfen": 7,
+  "gruppen": [
+   {
+    "wurf": "deer@402.0,512.1",
+    "n": 7,
+    "mitte": [
+     400.7,
+     512.3
+    ],
+    "spanneM": 4.4,
+    "spielerM": 179.5
+   }
+  ],
+  "verbandFeld": true,
+  "verbaendeAb2": 1,
+  "verbaende": [
+   {
+    "vb": "c1",
+    "n": 7,
+    "art": {
+     "deer": 7
+    },
+    "leitLebt": true,
+    "mitte": [
+     400.7,
+     512.3
+    ],
+    "spanneM": 4.4,
+    "spielerM": 179.5
+   }
+  ],
+  "verbaendeMap": 1,
+  "spieler": [
+   552.2,
+   416
+  ]
+ },
+ "ms": 3
+}
