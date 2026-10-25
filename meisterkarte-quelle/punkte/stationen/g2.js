@@ -298,6 +298,58 @@ const stationen = [
         quelle: "1 = 0 Durchdringung und Eintritt zu 100 % über die Tür im Start-Dorf",
     },
     {
+        kriterium: "mensch.K3",
+        staffel: 2,
+        geraet: "headless",
+        // die Wege einer Stadt am echten Kreatur-Takt (Null-Renderer, R3): am Messort `stadt` des Profi-Bands
+        // (spec/profiband/haushalt.json) gründet die Probe bewohner das Wort des Spielers mit 30 Häusern (nH ≥ 27), 24
+        // Spielstunden mit der Uhr des Spiels; je Takt jeder Leib als Kapsel — Steckenbleiber (ein Ziel, < 1 m in 5
+        // Spielminuten), Gangzeit auf Wegen, Weg je Bewohner, Berührung zweier Kapseln, Durchdringung und Tür wie Staffel 1
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "bewohner"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "bewohner");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe bewohner (Exit " + lauf.exit + ")" };
+            const st = z.stadt || {};
+            const w = st.wege;
+            if (z.fehler || st.fehler || !w) return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || st.fehler || "keine Stadt") };
+            const gruen =
+                st.haeuser >= 27 &&
+                w.steckenN === 0 &&
+                w.aufWeg >= 0.85 &&
+                w.kurzN === 0 &&
+                w.streckeMin >= 100 &&
+                w.beruehrN === 0 &&
+                w.wandN === 0 &&
+                w.durch > 0 &&
+                w.tuer === w.durch;
+            return {
+                gruen,
+                zahl:
+                    "Stadt " + st.haeuser + " Häuser: Steckenbleiber " + w.steckenN + ", Gangzeit auf Wegen " + w.aufWeg +
+                    ", Strecke min " + w.streckeMin + " m, Berührung " + w.beruehrN + ", Durchdringung " + w.wandN +
+                    ", Tür " + w.tuer + "/" + w.durch,
+            };
+        },
+        pfad: [
+            "stamm/siedlung-*.js",
+            "stamm/kreatur-*.js",
+            "stamm/koerper-*.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/daten.js",
+            "koerper-core.js",
+            "fachwerk-core.js",
+            "scripts/diag-kreatur-takt.cjs",
+            "scripts/lib/kreatur-proben.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "spec/profiband/haushalt.json",
+        ],
+        quelle:
+            "2 = 24 h ohne Steckenbleiber in einer Stadt, Gangzeit auf Wegen ≥ 0,85, ≥ 100 m Weg je Bewohner und Tag, Ausweichen ohne Berührung",
+    },
+    {
         kriterium: "mensch.K2",
         staffel: 1,
         geraet: "headless",
@@ -1261,17 +1313,6 @@ const fehlt = [
             "Werkzeug und Welt fehlen: keine Stadt ≥ 200 Bewohner mit ≥ 40 nah animiert in einer Linse (die Probe bewohner " +
             "kennt nur das Start-Dorf), das ABAB an der GTX ist ein Lauf des Richter-Zugs, keine Station",
         quelle: "2 = Stadt ≥ 200 mit ≥ 40 nah animiert, ABAB an der GTX nicht schlechter",
-    },
-    {
-        kriterium: "mensch.K3",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "Werkzeug und Welt fehlen: keine Stadt (nH ≥ 27) in der Probe bewohner, kein 24-h-Lauf auf Steckenbleiber, " +
-            "kein Ausweichen ohne Berührung; ≥ 100 m je Bewohner ist am Start-Dorf min 46 m",
-        quelle:
-            "2 = 24 h ohne Steckenbleiber in einer Stadt, Gangzeit auf Wegen ≥ 0,85, ≥ 100 m Weg je Bewohner und Tag, Ausweichen ohne Berührung",
     },
     {
         kriterium: "vegetation.K4",
