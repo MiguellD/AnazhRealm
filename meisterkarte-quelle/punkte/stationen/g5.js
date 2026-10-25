@@ -559,9 +559,10 @@ const stationen = [
         // DAS URTEIL (24.10., Prüfung der Buchung): das Kriterium misst Pixel „an einem Gerät“ — unter `--bild` zeichnet die Welt
         // auf der Karte (seit gpu-wand: Rezept linse ohne Null-Renderer), kamera-nah rechnet die Nah-Pixel gegen die Szene, die sie
         // zeichnet; zeichnet sie nie (welt-boot: „das Rezept ist null“), ist das ROT (Wand GPU in punkte.cjs und hier).
-        // „nie … in der Wand“: die Messung prüft Fels UND Wand vor der Kamera — Bau-Pixel im Nahbereich (der offene Tür-Flügel
-        // trägt keinen Leib) zählen, die gate:kamera-leib nur nennt. Die Kugel im Stamm (Fels oder Wand nennt das Kriterium nicht)
-        // und der Ruck-Höchstwert (das Kriterium misst p95) stehen in der Zahl.
+        // „nie … in der Wand“: die Messung prüft Fels UND Wand vor der Kamera — Bau-Pixel im Nahbereich zählen (vor kamera-bau
+        // trug der offene Tür-Flügel keinen Leib; seitdem urteilt gate:kamera-leib sie selbst, der gedrehte Flügel frisch je
+        // Probe). Die Kugel im Stamm (Fels oder Wand nennt das Kriterium nicht) und der Ruck-Höchstwert (das Kriterium misst p95)
+        // stehen in der Zahl.
         urteil: (j, lauf) => {
             const z = lauf.stdout.split(/\r?\n/).find((l) => /^\s*(✅|❌) K4 der Gang in Third/.test(l));
             if (!z) return { gruen: false, zahl: "keine Zeile K4 der Gang (Exit " + lauf.exit + ")" };
@@ -583,6 +584,9 @@ const stationen = [
             "stamm/gelaende-*.js",
             "stamm/vegetation-*.js",
             "stamm/siedlung-bauten.js",
+            // der Leib des Tür- und Tor-Flügels (kamera-bau: `_fluegelLeib` beim Setzen der Slots und nach jedem Schwenk)
+            "stamm/siedlung-satz.js",
+            "stamm/siedlung-ort.js",
             "stamm/dirigent-takt.js",
             "stamm/daten.js",
             "scripts/diag-kamera-laub.cjs",
