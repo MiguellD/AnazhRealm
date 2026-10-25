@@ -1,0 +1,586 @@
+{
+ "gesamt": "nicht-langsamer",
+ "ergebnisse": [
+  {
+   "zelle": "w-ego",
+   "n": {
+    "A": 4,
+    "B": 4
+   },
+   "urteil": "nicht-langsamer",
+   "verlaengern": false,
+   "zeilen": [
+    {
+     "gang": "steht",
+     "titel": "fps",
+     "A": 74.125,
+     "B": 74.5,
+     "d": 0.375,
+     "zweiSigma": 1.0543560435956472,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "Frame p95 ms",
+     "A": 16.8,
+     "B": 16.8,
+     "d": 0,
+     "zweiSigma": 0,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "CPU-Takt p95 ms",
+     "A": 4.5,
+     "B": 4.425,
+     "d": -0.07500000000000018,
+     "zweiSigma": 0.3719318934070233,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "GPU je Bild ms (gpu-bank)",
+     "A": 13.477500000000001,
+     "B": 12.98,
+     "d": -0.4975000000000005,
+     "zweiSigma": 1.2203483109342181,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "Belegung p95 ms",
+     "A": 6.3225,
+     "B": 6.2225,
+     "d": -0.09999999999999964,
+     "zweiSigma": 0.2932007276025531,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "geht",
+     "titel": "fps",
+     "A": 57.925000000000004,
+     "B": 59.125,
+     "d": 1.1999999999999957,
+     "zweiSigma": 2.5185974933151476,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "geht",
+     "titel": "Frame p95 ms",
+     "A": 25.1,
+     "B": 25.1,
+     "d": 0,
+     "zweiSigma": 0,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "geht",
+     "titel": "CPU-Takt p95 ms",
+     "A": 20.424999999999997,
+     "B": 18.9,
+     "d": -1.5249999999999986,
+     "zweiSigma": 3.550352095215347,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "geht",
+     "titel": "Belegung p95 ms",
+     "A": 23.415,
+     "B": 22.5175,
+     "d": -0.8975000000000009,
+     "zweiSigma": 2.2919242279505374,
+     "u": "nicht langsamer"
+    }
+   ],
+   "zaehl": {
+    "steht Befehle": {
+     "A": [
+      38,
+      38,
+      38,
+      38
+     ],
+     "B": [
+      38,
+      38,
+      38,
+      38
+     ]
+    },
+    "steht Dreiecke p95": {
+     "A": [
+      264030,
+      263842,
+      264028,
+      264028
+     ],
+     "B": [
+      264030,
+      264032,
+      264028,
+      263828
+     ]
+    },
+    "steht VRAM MB": {
+     "A": [
+      107.7,
+      107.7,
+      107.8,
+      107.8
+     ],
+     "B": [
+      107.8,
+      107.8,
+      107.8,
+      107.7
+     ]
+    },
+    "geht Befehle": {
+     "A": [
+      55,
+      55,
+      55,
+      55
+     ],
+     "B": [
+      55,
+      55,
+      55,
+      55
+     ]
+    },
+    "geht Dreiecke p95": {
+     "A": [
+      377512,
+      377378,
+      384926,
+      379629
+     ],
+     "B": [
+      377789,
+      381690,
+      383303,
+      377304
+     ]
+    },
+    "geht VRAM MB": {
+     "A": [
+      111.5,
+      111.4,
+      111.5,
+      111.6
+     ],
+     "B": [
+      111.5,
+      111.5,
+      111.6,
+      111.7
+     ]
+    }
+   }
+  },
+  {
+   "zelle": "g-third",
+   "n": {
+    "A": 4,
+    "B": 4
+   },
+   "urteil": "nicht-langsamer",
+   "verlaengern": false,
+   "zeilen": [
+    {
+     "gang": "steht",
+     "titel": "fps",
+     "A": 79.625,
+     "B": 79.65,
+     "d": 0.025000000000005684,
+     "zweiSigma": 0.22730302828309926,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "Frame p95 ms",
+     "A": 16.7,
+     "B": 16.7,
+     "d": 0,
+     "zweiSigma": 0,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "CPU-Takt p95 ms",
+     "A": 6.075,
+     "B": 6.125,
+     "d": 0.04999999999999982,
+     "zweiSigma": 0.5259911279353164,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "GPU je Bild ms (gpu-bank)",
+     "A": 11.712499999999999,
+     "B": 11.91,
+     "d": 0.19750000000000156,
+     "zweiSigma": 0.24065881796989425,
+     "u": "nicht langsamer (1σ–2σ)"
+    },
+    {
+     "gang": "steht",
+     "titel": "Belegung p95 ms",
+     "A": 7.784999999999999,
+     "B": 7.8875,
+     "d": 0.10250000000000092,
+     "zweiSigma": 0.4742537998442043,
+     "u": "nicht langsamer"
+    }
+   ],
+   "zaehl": {
+    "steht Befehle": {
+     "A": [
+      79,
+      79,
+      79,
+      79
+     ],
+     "B": [
+      79,
+      79,
+      79,
+      79
+     ]
+    },
+    "steht Dreiecke p95": {
+     "A": [
+      338873,
+      338875,
+      338863,
+      338875
+     ],
+     "B": [
+      338875,
+      339311,
+      338863,
+      338873
+     ]
+    },
+    "steht VRAM MB": {
+     "A": [
+      113.7,
+      113.7,
+      113.5,
+      113.6
+     ],
+     "B": [
+      113.3,
+      113.7,
+      113.3,
+      113.7
+     ]
+    }
+   }
+  },
+  {
+   "zelle": "d-ego",
+   "n": {
+    "A": 4,
+    "B": 4
+   },
+   "urteil": "nicht-langsamer",
+   "verlaengern": false,
+   "zeilen": [
+    {
+     "gang": "steht",
+     "titel": "fps",
+     "A": 75.07499999999999,
+     "B": 74.5,
+     "d": -0.5749999999999886,
+     "zweiSigma": 0.6150880695748673,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "Frame p95 ms",
+     "A": 16.8,
+     "B": 16.8,
+     "d": 0,
+     "zweiSigma": 0,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "CPU-Takt p95 ms",
+     "A": 5.725,
+     "B": 5.7749999999999995,
+     "d": 0.04999999999999982,
+     "zweiSigma": 0.47258156262526074,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "GPU je Bild ms (gpu-bank)",
+     "A": 12.5125,
+     "B": 12.627500000000001,
+     "d": 0.11500000000000199,
+     "zweiSigma": 0.2874601421646723,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "Belegung p95 ms",
+     "A": 7.45,
+     "B": 7.5825,
+     "d": 0.1324999999999994,
+     "zweiSigma": 0.24883059833281515,
+     "u": "nicht langsamer"
+    }
+   ],
+   "zaehl": {
+    "steht Befehle": {
+     "A": [
+      59,
+      59,
+      59,
+      59
+     ],
+     "B": [
+      59,
+      59,
+      59,
+      59
+     ]
+    },
+    "steht Dreiecke p95": {
+     "A": [
+      439423,
+      441571,
+      436949,
+      441571
+     ],
+     "B": [
+      439457,
+      446335,
+      436961,
+      439417
+     ]
+    },
+    "steht VRAM MB": {
+     "A": [
+      110.4,
+      111.7,
+      112.7,
+      110.2
+     ],
+     "B": [
+      113.4,
+      113.1,
+      113.9,
+      110.5
+     ]
+    }
+   }
+  },
+  {
+   "zelle": "stadt",
+   "n": {
+    "A": 4,
+    "B": 4
+   },
+   "urteil": "nicht-langsamer",
+   "verlaengern": false,
+   "zeilen": [
+    {
+     "gang": "steht",
+     "titel": "fps",
+     "A": 73.475,
+     "B": 73.47500000000001,
+     "d": 1.4210854715202004e-14,
+     "zweiSigma": 2.8815505085514874,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "Frame p95 ms",
+     "A": 16.8,
+     "B": 16.8,
+     "d": 0,
+     "zweiSigma": 0,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "CPU-Takt p95 ms",
+     "A": 8.125,
+     "B": 8.15,
+     "d": 0.025000000000000355,
+     "zweiSigma": 0.9652288157046837,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "Belegung p95 ms",
+     "A": 11.979999999999999,
+     "B": 12.05,
+     "d": 0.07000000000000206,
+     "zweiSigma": 1.6868115879769532,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "geht",
+     "titel": "fps",
+     "A": 32.7,
+     "B": 34,
+     "d": 1.2999999999999972,
+     "zweiSigma": 8.504116650187722,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "geht",
+     "titel": "Frame p95 ms",
+     "A": 64.625,
+     "B": 60.349999999999994,
+     "d": -4.275000000000006,
+     "zweiSigma": 35.604845175902675,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "geht",
+     "titel": "CPU-Takt p95 ms",
+     "A": 54.1,
+     "B": 49.8,
+     "d": -4.300000000000004,
+     "zweiSigma": 21.226084581633668,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "geht",
+     "titel": "Belegung p95 ms",
+     "A": 64.95750000000001,
+     "B": 59.1625,
+     "d": -5.795000000000009,
+     "zweiSigma": 27.11805732963432,
+     "u": "nicht langsamer"
+    }
+   ],
+   "zaehl": {
+    "steht Befehle": {
+     "A": [
+      48,
+      58,
+      61,
+      55
+     ],
+     "B": [
+      59,
+      61,
+      58,
+      45
+     ]
+    },
+    "steht Dreiecke p95": {
+     "A": [
+      1210647,
+      1323133,
+      1337536,
+      1316651
+     ],
+     "B": [
+      1335837,
+      1336816,
+      1320943,
+      1186919
+     ]
+    },
+    "steht VRAM MB": {
+     "A": [
+      152.7,
+      152.6,
+      154.4,
+      162.2
+     ],
+     "B": [
+      160.5,
+      150.7,
+      150.9,
+      153.1
+     ]
+    },
+    "geht Befehle": {
+     "A": [
+      78,
+      78,
+      78,
+      77
+     ],
+     "B": [
+      77,
+      77,
+      77,
+      78
+     ]
+    },
+    "geht Dreiecke p95": {
+     "A": [
+      1968892,
+      1978243,
+      1972997,
+      1972496
+     ],
+     "B": [
+      1983123,
+      1971698,
+      1975743,
+      1994567
+     ]
+    },
+    "geht VRAM MB": {
+     "A": [
+      203.4,
+      203.7,
+      208.3,
+      190.9
+     ],
+     "B": [
+      189.6,
+      196.9,
+      200.7,
+      202.2
+     ]
+    }
+   }
+  }
+ ],
+ "instrument": {
+  "d-ego-A1": "206b395ac",
+  "d-ego-A2": "206b395ac",
+  "d-ego-A3": "206b395ac",
+  "d-ego-A4": "206b395ac",
+  "d-ego-B1": "206b395ac",
+  "d-ego-B2": "206b395ac",
+  "d-ego-B3": "206b395ac",
+  "d-ego-B4": "206b395ac",
+  "g-third-A1": "206b395ac",
+  "g-third-A2": "206b395ac",
+  "g-third-A3": "206b395ac",
+  "g-third-A4": "206b395ac",
+  "g-third-B1": "206b395ac",
+  "g-third-B2": "206b395ac",
+  "g-third-B3": "206b395ac",
+  "g-third-B4": "206b395ac",
+  "stadt-A1": "206b395ac",
+  "stadt-A2": "206b395ac",
+  "stadt-A3": "206b395ac",
+  "stadt-A4": "206b395ac",
+  "stadt-B1": "206b395ac",
+  "stadt-B2": "206b395ac",
+  "stadt-B3": "206b395ac",
+  "stadt-B4": "206b395ac",
+  "w-ego-A1": "206b395ac",
+  "w-ego-A2": "206b395ac",
+  "w-ego-A3": "206b395ac",
+  "w-ego-A4": "206b395ac",
+  "w-ego-B1": "206b395ac",
+  "w-ego-B2": "206b395ac",
+  "w-ego-B3": "206b395ac",
+  "w-ego-B4": "206b395ac"
+ }
+}
