@@ -879,10 +879,14 @@ class AnazhRealm_bild_himmel {
         const pixelM = tiefe.mul(2).div(uProj.mul(T.viewportSize.y));
         const breiteM = pixelM.mul(RG.minPixel).max(RG.breite);
         const rand = T.length(T.vec2(x, z)).div(R[0] * 0.5);
+        // DER REGEN FÄLLT NICHT UNTER DEM DACH: die Schliere am Welt-Ort ihrer Mitte (der Kasten folgt dem Auge) liest die EINE
+        // Himmels-Sicht des Dach-Pools (`_offenerHimmel`), dieselbe, die den Boden darunter trocken hält
+        const himmel = this._offenerHimmel(T, T.modelWorldMatrix.mul(T.vec4(x, y, z, 1)).xyz);
         const blende = T.varying(
             T.min(T.float(RG.breite).div(breiteM), 1)
                 .mul(T.smoothstep(0.4, 2.0, tiefe))
                 .mul(T.float(1).sub(T.smoothstep(0.7, 1.0, rand)))
+                .mul(himmel)
         );
         const mat = new THREE.PointsNodeMaterial({ color: RG.farbe, transparent: true, depthWrite: false, opacity: 0 });
         mat.positionNode = T.vec3(x, y, z);
