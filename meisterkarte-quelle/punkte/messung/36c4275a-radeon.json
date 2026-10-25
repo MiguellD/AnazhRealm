@@ -1,0 +1,19 @@
+{
+ "sha": "36c4275ac486944a70640be1abc7480f9d83661f",
+ "geraet": "radeon",
+ "zeit": "2026-10-25T15:20:26.549Z",
+ "host": "MiguellD",
+ "je": {
+  "siedlung.K5#1": {
+   "gruen": false,
+   "zahl": "nH 12 erstes Haus nach 58 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 543.5 ms (haus_fraenkisch, mesh in 22.2 m, Bau-Hash 88b58bbf)",
+   "exit": 0,
+   "minuten": 5.22,
+   "grund": "ROT: nH 12 erstes Haus nach 58 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 543.5 ms (haus_fraenkisch, mesh in 22.2 m, Bau-Hash 88b58bbf)",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-25T15:20:26.549Z",
+   "abdruck": "1bf868639fe6",
+   "port": 7771
+  }
+ }
+}
