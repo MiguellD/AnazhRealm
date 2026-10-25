@@ -1091,75 +1091,20 @@ async function checkBandWelle6HCreatures(ctx) {
         out.atomicAtomicityOnFail = !atomicResult.ok && beforeAtomic === afterAtomic;
         out.atomicReportsMissing = atomicResult.missing && atomicResult.missing.laub > 0;
 
-        // confirmBuild pfad mit Material
-        r.setGameMode("pfad");
-        r.state.player.inventory = new Array(27).fill(null);
-        r.addMaterialToInventory("stein", 200);
-        r._clearBuildMode();
-        r.setHotbarSlot(0, "stein_block");
-        r.selectHotbarSlot(0);
-        window.__setzOrt("stein_block");
-        // confirmBuild prüft im pfad-Modus phantomOnGround; headless läuft tickBuildMode (Raycast-
-        // Stabilität) nicht → stabilen Phantom-Stand simulieren.
-        if (r.state.buildMode) r.state.buildMode.phantomOnGround = true;
-        const archBeforePfad = r.state.architectures.length;
-        const stoneBeforePfad = r.state.player.inventory[0].count;
-        const builtPfad = r.confirmBuild();
-        const stoneAfterPfad = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
-        out.pfadBuildsWithMaterial = builtPfad === true;
-        out.pfadConsumesMaterial = stoneBeforePfad > stoneAfterPfad;
-        out.pfadGrowsWorld = r.state.architectures.length > archBeforePfad;
-
-        // confirmBuild pfad ohne Material → ablehnung
+        // DAS MACH-TOR JE MODUS über den Bau-Weg (schöpfer frei, frieden und pfad zahlen genau einmal, frieden ohne Material
+        // lehnt ab und spricht) misst diag-werkstatt-weg L-WERKSTATT mit echten Eingaben; hier bleibt pfad ohne Material.
+        // confirmBuild pfad ohne Material → ablehnung (das Phantom steht auf dem Grund: headless zielt kein tickBuildMode, die
+        // Absage gilt dem Material, nie dem Standort)
         r.state.player.inventory = new Array(27).fill(null);
         r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         window.__setzOrt("stein_block");
+        r.state.buildMode.phantomOnGround = true;
         const archBeforeNoMat = r.state.architectures.length;
         const builtNoMat = r.confirmBuild();
         out.pfadRejectsWithoutMaterial = builtNoMat === false;
         out.pfadNoArchOnReject = r.state.architectures.length === archBeforeNoMat;
-
-        // confirmBuild schöpfer ohne Material → baut frei
-        r.setGameMode("schöpfer");
-        r.state.player.inventory = new Array(27).fill(null);
-        r._clearBuildMode();
-        r.setHotbarSlot(0, "stein_block");
-        r.selectHotbarSlot(0);
-        window.__setzOrt("stein_block");
-        const archBeforeSchoepfer = r.state.architectures.length;
-        const builtSchoepfer = r.confirmBuild();
-        out.schoepferBuildsFree = builtSchoepfer === true;
-        out.schoepferEmptyAfter = r.state.player.inventory.every((s) => !s);
-        out.schoepferGrows = r.state.architectures.length > archBeforeSchoepfer;
-
-        // S2 — confirmBuild frieden OHNE Material → ABGELEHNT (die kristallisierte
-        // Modus-Achse: Materie kostet in pfad UND frieden, frei nur in schöpfer; frieden ist friedlich,
-        // aber NICHT gratis — die V17.59-Diskrepanz geheilt).
-        r.setGameMode("frieden");
-        r.state.player.inventory = new Array(27).fill(null);
-        r._clearBuildMode();
-        r.setHotbarSlot(0, "stein_block");
-        r.selectHotbarSlot(0);
-        window.__setzOrt("stein_block");
-        const archBeforeFriedenNoMat = r.state.architectures.length;
-        const builtFriedenNoMat = r.confirmBuild();
-        out.friedenRejectsWithoutMaterial = builtFriedenNoMat === false;
-        out.friedenNoArchOnReject = r.state.architectures.length === archBeforeFriedenNoMat;
-        // frieden MIT Material → baut + KONSUMIERT (wie pfad; nur die Mühe/Bedrohung fehlt in frieden)
-        r.state.player.inventory = new Array(27).fill(null);
-        r.addMaterialToInventory("stein", 200);
-        r._clearBuildMode();
-        r.setHotbarSlot(0, "stein_block");
-        r.selectHotbarSlot(0);
-        window.__setzOrt("stein_block");
-        const archBeforeFriedenMat = r.state.architectures.length;
-        const stoneBeforeFrieden = r.state.player.inventory[0].count;
-        const builtFriedenMat = r.confirmBuild();
-        const stoneAfterFrieden = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
-        out.friedenBuildsWithMaterial = builtFriedenMat === true && r.state.architectures.length > archBeforeFriedenMat;
-        out.friedenConsumesMaterial = stoneBeforeFrieden > stoneAfterFrieden;
 
         // HUD-Reflexion
         r.setGameMode("pfad");
@@ -1211,26 +1156,8 @@ async function checkBandWelle6HCreatures(ctx) {
         check("tryConsumeBuildCost zieht genau die Kosten ab", wave6hP2cResults.consumesExactly);
         check("Atomarität — bei Mangel wird NICHTS abgezogen", wave6hP2cResults.atomicAtomicityOnFail);
         check("missing-Map zeigt fehlendes Sub-Material", wave6hP2cResults.atomicReportsMissing);
-        check(
-            "pfad + Material → confirmBuild liefert true + spawnt",
-            wave6hP2cResults.pfadBuildsWithMaterial && wave6hP2cResults.pfadGrowsWorld
-        );
-        check("pfad-Modus konsumiert Material aus Inventar", wave6hP2cResults.pfadConsumesMaterial);
         check("pfad ohne Material → confirmBuild lehnt ab", wave6hP2cResults.pfadRejectsWithoutMaterial);
         check("pfad-Ablehnung → keine Architektur entsteht", wave6hP2cResults.pfadNoArchOnReject);
-        check(
-            "schöpfer-Modus baut ohne Material (Vision §1.5)",
-            wave6hP2cResults.schoepferBuildsFree && wave6hP2cResults.schoepferGrows
-        );
-        check("schöpfer-Modus: Inventar bleibt leer (unbegrenzt)", wave6hP2cResults.schoepferEmptyAfter);
-        check(
-            "S2: frieden ohne Material → confirmBuild lehnt ab (frieden zahlt Materie, nicht gratis)",
-            wave6hP2cResults.friedenRejectsWithoutMaterial && wave6hP2cResults.friedenNoArchOnReject
-        );
-        check(
-            "S2: KONSUM — frieden MIT Material baut + verbraucht das Material (wie pfad; nur Mühe/Bedrohung fehlt)",
-            wave6hP2cResults.friedenBuildsWithMaterial && wave6hP2cResults.friedenConsumesMaterial
-        );
         check("pfad-HUD zeigt Material-Kosten + verfügbare Menge", wave6hP2cResults.hudShowsCostInPfad);
         check("schöpfer-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInSchoepfer);
         check(
