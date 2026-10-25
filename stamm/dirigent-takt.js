@@ -1248,7 +1248,7 @@ class AnazhRealm_dirigent_takt {
                     if (this._dekoWartet()) return; // erst der Boden, dann der Wald — nie verhungert
                     // Scatter mit `_perfSenseLap`-Tap (phase.scatter in perfSense + Flugschreiber — neue welt-formende
                     // Last wird attribuiert). Das ms-Budget fließt durch: der Region-Bau läuft in ≤SCATTER_SLICE_MS-
-                    // Scheiben statt atomar (~54 ms), damit die Deko den Ring-Kopfraum-Timer nicht resetet.
+                    // Scheiben statt atomar (~54 ms).
                     // Headless: budget=Infinity → One-Shot; im Takt mit Terrain-Bau trägt die Deko nur ihren Boden.
                     // Der Lade-Takt (`_ladeTakt`) gibt der Deko das ganze Budget des Lade-Frames, das Gras baut darin.
                     // Im Lade-Takt ist die Deko ein Leser mit Kappe (K60-2): bis zur EINEN Frist des Lade-Frames, mindestens ihr Boden.

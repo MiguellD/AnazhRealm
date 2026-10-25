@@ -705,7 +705,7 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandWellePerfCArchInstancing, ctx);
             await timed(BAND.checkBandWellePerfDBudget, ctx);
             await timed(BAND.checkBandWellePerfENexusGovernor, ctx);
-            // JEDES-HOLZ — der Existenz-Boden der Ring-Ramp (die Welt entsteht auf jedem Holz).
+            // JEDES-HOLZ — der Ring wächst bis zum Ziel, nie an der Bildrate (die Welt existiert ganz auf jedem Holz).
             await timed(BAND.checkBandJedesHolzExistenzBoden, ctx);
             await timed(BAND.checkBandWellePerfHWaterIsoQueue, ctx);
             await timed(BAND.checkBandWellePerf3cPhase2Async, ctx);

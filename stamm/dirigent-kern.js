@@ -661,14 +661,9 @@ class AnazhRealm {
             // Render-Distanz: Ziel-Ring-Radius in Chunks ((2r+1)² Chunks, Leser klemmen 1..12). Mehr = mehr
             // sichtbare Welt + mehr Generier-Last. Persistiert in localStorage.
             chunkRingRadius: 4,
-            // Lade-Rhythmus-Ring: der AKTIVE Ring (≤ chunkRingRadius) — startet klein, wächst zum Ziel bei
-            // Frame-Kopfraum, schrumpft bei anhaltendem Über-Budget (_nexusPerfActuate); headless sofort Ziel.
-            // null = lazy-init dort.
+            // Der AKTIVE Ring (≤ chunkRingRadius): startet klein und wächst Schale um Schale zum Ziel, nie an der
+            // Bildrate (`_ringWaechst`, der Strom); headless sofort Ziel. null = lazy-init dort.
             _activeRingRadius: null,
-            _ringRampLast: 0, // letzter Ring-Wachstums-/Schrumpf-Zeitstempel (der „Atem" zwischen Ringen)
-            _ringOverBudgetSince: 0, // V18.306 — seit wann der Frame anhaltend über Budget ist (Schrumpf-Hysterese)
-            _ringHeadroomSince: 0, // V18.318 — seit wann der Frame anhaltend Kopfraum hat (Wachs-Hysterese, symmetrisch)
-            _ringBootWindowUntil: 0, // W4.4 — Ring-Boot-Fenster: 0=frisch · Timestamp=offen bis · 1=geschlossen
             // Bühnen-Latch: einmal true, bleibt true (Session-Lebenszeit, NICHT persistiert — buildStateSnapshot
             // kopiert einen festen Feld-Satz). Gesetzt von _buehneSteht() (dem EINEN Prädikat), gelesen von allen
             // spielfremden Tick-Quellen (Nexus, Grok-Chatter, Wetter, Saison, Fern-Deko …); der Karten-Bäcker liest sie nie.
@@ -1820,7 +1815,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.90";
+AnazhRealm.VERSION = "18.546.91";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([
