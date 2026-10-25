@@ -1287,7 +1287,9 @@ class AnazhRealm_studio_bruecke {
     // Der Träger eines Rezepts: eine Art MIT Präfix nur über ihr Präfix — ein Tor-Wort fällt nie auf das welt_-Portal
     // derselben Gestalt (ein echtes Tor mit Trigger, kein Bauwerk); sonst der Bauplan, der seine Gestalt trägt (die
     // Ausstattung: feuerstelle → glutbrunnen), sonst der erste Bauplan seiner Studio-Art (`_foundryPresetForEntry`: der
-    // Fels). Gemerkt je Buch und Bauplan-Zahl. { stufen: [Map Wort → Bauplan] ×4, artVon: Bauplan → Art, woerter }.
+    // Fels). Eine Art mit Werk-Verb (KIND_POLICY `werk`: die Gattung, der Körper, der Klang) hat keinen Bauplan — ihr Rezept
+    // ist sein eigenes Werk-Ziel (KI K2: vorher war „Wolf", „Lofi", „Mensch" kein Wort der Welt). Gemerkt je Buch und
+    // Bauplan-Zahl. { stufen: [Map Wort → Werk-Ziel] ×4, artVon: Werk-Ziel → Art, woerter }.
     _studioWortKatalog() {
         const bps = this.state.blueprints || {};
         const f = this._foundry;
@@ -1305,6 +1307,7 @@ class AnazhRealm_studio_bruecke {
                 .filter((x) => x.length >= 3)
                 .map(falte);
         const istTor = (n) => !bps[n] || bps[n].role === "portal";
+        const label = (t) => (bps[t] ? bps[t].label : recipes[t] && recipes[t].lab);
         const nachArt = {};
         for (const n of namen) {
             if (istTor(n) || bps[n]._foundryAutoSpecies) continue;
@@ -1318,6 +1321,7 @@ class AnazhRealm_studio_bruecke {
             const pol = rec && KP[rec.kind];
             let t = null;
             if (pol && pol.prefix) t = bps[pol.prefix + id] ? pol.prefix + id : null;
+            else if (pol && pol.werk) t = id;
             else if (rec)
                 t =
                     namen.find((n) => !istTor(n) && bps[n].studioGestalt === id && !bps[n]._foundryAutoSpecies) ||
@@ -1340,7 +1344,7 @@ class AnazhRealm_studio_bruecke {
         for (const id of ids)
             if (traeger[id]) {
                 setze(0, falte(id), traeger[id]);
-                const lab = String(bps[traeger[id]].label || id).split(/\s[·—(]/)[0];
+                const lab = String(label(traeger[id]) || id).split(/\s[·—(]/)[0];
                 werkWoerter.push([falte(id), lab]);
             }
         for (const k of Object.keys(KP)) {
@@ -1355,7 +1359,7 @@ class AnazhRealm_studio_bruecke {
         // (2)
         for (const id of ids) {
             const t = traeger[id];
-            if (t) for (const w of [...kopf(recipes[id].lab), ...kopf(bps[t].label)]) setze(1, w, t);
+            if (t) for (const w of [...kopf(recipes[id].lab), ...kopf(label(t))]) setze(1, w, t);
         }
         // (3) und (4): ein Wort, das zwei Arten benennt, fällt (Spender „tor_basis"/„haus_basis" → „basis").
         const eindeutig = (s, paare) => {
@@ -1410,6 +1414,11 @@ class AnazhRealm_studio_bruecke {
             vehicle: "Fahrzeuge",
             ausstattung: "Ausstattung",
             weapon: "Klingen",
+            flower: "Blumen",
+            grass: "Gras",
+            kreatur: "Tiere",
+            koerper: "Gestalt des Spielers",
+            klang: "Musik der Welt",
         };
         // eine Art, deren Wirts-Zeile ihr Gesetzbuch bringt (B7, `_kindPolicyVereinen`), heißt, wie das Buch sie nennt —
         // ohne sie fiel jedes Wort einer neuen Art still aus dem Prompt (studios.K5: die KI kannte das neunte Buch nie)
@@ -1436,6 +1445,15 @@ class AnazhRealm_studio_bruecke {
                     `${GRUPPE[a]}: ${gruppen[a].slice(0, kappe).join(", ")}${gruppen[a].length > kappe ? " …" : ""}${regler(a)}`
             )
             .join(" · ");
+    }
+
+    // Das Werk-Verb eines Werk-Ziels (`_studioBlueprintForWord`): "wesen" · "praegung" (KIND_POLICY `werk` der Art eines
+    // Rezepts ohne Bauplan) oder null — ein Bauplan wird gebaut oder wächst.
+    _studioWerkVerb(name) {
+        if (this.state.blueprints && this.state.blueprints[name]) return null;
+        const rec = this._foundry && this._foundry.recipes ? this._foundry.recipes[name] : null;
+        const pol = rec && AnazhRealm.KIND_POLICY[rec.kind];
+        return (pol && pol.werk) || null;
     }
 
     // Der Pflanz-Abstand je Bauplan: Bäume/Stein eng (ein Hain), Häuser/Tore/Fahrzeuge
@@ -3331,6 +3349,42 @@ AnazhRealm.KIND_POLICY = Object.freeze({
         builtIn: false,
         placeExtra: null,
     }),
+    // Die Pflanzen mit Reglern (KI K2, phyto-core PARAMS_BY_KIND flower · grass): ein Natur-Bauplan je Rezept aus der Kraut-
+    // Substanz (ein Halm aus `kraut`, weicher Stoff unter BLOCKER_DENSITY_MIN: kein Blocker, man geht hindurch; das Bild
+    // zeichnet das Studio), gesetzt durch die Natur-Wand wie der Hain; die Streu und die Nah-Wiese bleiben ohne Eintrag.
+    // Vorher war „Blume" kein Wort der Welt und neun Regler-Zeilen für kein Programm erreichbar.
+    ...Object.fromEntries(
+        [
+            ["flower", "blume_"],
+            ["grass", "gras_"],
+        ].map(([art, prefix]) => [
+            art,
+            Object.freeze({
+                prefix,
+                substanz: {
+                    label: "Kraut",
+                    parts: [
+                        {
+                            shape: "cylinder",
+                            material: "kraut",
+                            position: { x: 0, y: 0.3, z: 0 },
+                            size: { x: 0.05, y: 0.6, z: 0.05 },
+                        },
+                    ],
+                },
+                grown: false,
+                builtIn: false,
+                placeExtra: null,
+            }),
+        ])
+    ),
+    // DIE ARTEN OHNE BAUPLAN (KI K2): ihr Werk steht nicht als Bau — `werk` ist ihr Wirts-Verb, kein prefix (kein Auto-Bauplan).
+    // "wesen": die Gattung erscheint als Kreatur, der Stempel ist ihr Guss (`spawnCreatureAt` dialsOv); "praegung": der Körper
+    // des Spielers und der Klang der Welt lesen die Prägung des Rezepts (`_praegungSetzen`, der EINE Übergabe-Empfang). Leser:
+    // der Wort-Katalog (das Rezept ist sein eigenes Werk-Ziel), spawn_studio und der Ofen der Werkstatt-Vorschau.
+    kreatur: Object.freeze({ werk: "wesen" }),
+    koerper: Object.freeze({ werk: "praegung" }),
+    klang: Object.freeze({ werk: "praegung" }),
 });
 AnazhRealm.KNUTH_INVERS = 244002641;
 // Die Faltung eines Worts für den Wort-Katalog (`_studioWortKatalog`): klein, Umlaute ausgeschrieben, ß → ss, Leer- und

@@ -41,5 +41,34 @@
     "reiß alle häuser ab": { "still": 1 },
     "bring mir einen kaffee": { "still": 1 },
     "zerstöre die plattform unter mir": { "still": 1 }
+  },
+  "regler": {
+    "zweck": "Korpus-Teil Regler-Wörter (KI K2): je Satz die Werke (wie oben, \"*\" = jedes) und je Regler-Zeile von PARAMS_BY_KIND der Bereich, den der Stempel des neuen Werks trägt (Bau: studioOv des Eintrags · Wesen: der Guss · Prägung: die Prägung des Rezepts) — diag-v1-pfad --korpus --teil regler [--echt [--aufnahme]], Soll Absicht ≥ 80 % mit Modell.",
+    "saetze": {
+      "ein schmales hohes haus": { "werk": "*", "regler": { "W": [6, 8], "storeys": [4, 12] } },
+      "bau mir ein breites haus mit nur einem geschoss": { "werk": "*", "regler": { "W": [11, 14], "storeys": [1, 1] } },
+      "ein haus mit einem sehr steilen dach": { "werk": "*", "regler": { "pitchDeg": [45, 60] } },
+      "ein haus mit flachem dach": { "werk": "*", "regler": { "pitchDeg": [8, 20] } },
+      "ein haus mit turm und zinnen wie eine kleine burg": { "werk": "*", "regler": { "turm": [0.5, 1], "zinnen": [0.5, 1] } },
+      "ein haus mit balkon": { "werk": "*", "regler": { "balcony": [0.5, 1] } },
+      "ein tiefergelegter sportwagen": { "werk": "*", "regler": { "fahrhoehe": [0.06, 0.12] } },
+      "ein auto mit langem radstand": { "werk": "*", "regler": { "radstand": [3, 3.4] } },
+      "ein tor mit starkem sog": { "werk": "*", "regler": { "swirl": [0.6, 1] } },
+      "ein verfallenes tor, halb ruine": { "werk": "*", "regler": { "ruin": [0.5, 1] } },
+      "ein glühendes tor voller energie": { "werk": "*", "regler": { "glow": [0.6, 1], "energy": [0.7, 1] } },
+      "ein langes schwert": { "werk": "*", "regler": { "klinge": [1.05, 1.25] } },
+      "eine große, stark verwitterte feuerstelle": { "werk": ["feuerstelle"], "regler": { "groesse": [1.1, 1.25], "verwitterung": [0.7, 1] } },
+      "pflanz eine hohe blume": { "werk": ["blume"], "regler": { "height": [1.8, 2.4] } },
+      "eine blume mit vielen blüten": { "werk": ["blume"], "regler": { "bloomCount": [6, 12] } },
+      "lass ein büschel hohes gras wachsen": { "werk": ["gras"], "regler": { "bladeLen": [1.2, 1.8] } },
+      "dichtes gras vor mir": { "werk": ["gras"], "regler": { "density": [0.85, 1] } },
+      "ein riesiger wolf": { "werk": ["wolf"], "regler": { "size": [3.2, 4] } },
+      "ein hirsch mit langen beinen": { "werk": ["hirsch"], "regler": { "leg": [0.29, 0.35] } },
+      "mach mich größer": { "werk": ["mensch"], "regler": { "height": [1.05, 1.15] } },
+      "ich will muskulöser aussehen": { "werk": ["mensch"], "regler": { "tone": [0.7, 1] } },
+      "spiel ruhige, langsame musik": { "werk": "*", "regler": { "bpm": [40, 80] } },
+      "eine düstere musik bitte": { "werk": "*", "regler": { "darkness": [0.7, 1] } },
+      "schneller techno": { "werk": ["techno"], "regler": { "bpm": [125, 200] } }
+    }
   }
 }

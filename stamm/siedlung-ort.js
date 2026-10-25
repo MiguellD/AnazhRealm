@@ -78,14 +78,14 @@ class AnazhRealm_siedlung_ort {
     // Beschnitt faltet in die Alpha statt discard. Aktivierung = Spieler-Nähe (aktivDepth/finalK);
     // Durchqueren der Membran-Ebene = BETRETEN (derselbe enterPortal-Chokepoint wie die E-Taste).
 
-    // Die geteilte Membran-Geometrie je Gestalt (Plane spanW×height, Gesetz-seg).
+    // Die geteilte Membran-Geometrie je Gestalt und Stempel (Plane spanW×height, Gesetz-seg; der Schlüssel des Tor-Gesetzes).
     // DIE HÜLLE UM DIE WELLE (0910-4, Spike der Prüf-Welt 10.10.): die Membran trug `frustumCulled = false` („Wellen-
     // Verformung sprengt die statische Hülle") und zeichnete am Genesis-Ring 8 Befehle und 129 600 Dreiecke auch mit dem
     // Ring im Rücken. Die Welle (`positionNode = (x, y, d0)`) verschiebt jede Ecke NUR in z, und |d0| ≤ der Amplitude des
     // Gesetzes (`_membranAmplitude`): die Hülle trägt sie, das Culling bleibt an. Die Notfall-Fläche liegt in z = 0, also darin.
     _membranGeometryFor(tor) {
         if (!this._membranGeoMemo) this._membranGeoMemo = new Map();
-        let geo = this._membranGeoMemo.get(tor.gestalt);
+        let geo = this._membranGeoMemo.get(tor.key);
         if (!geo) {
             const mu = tor.mu;
             const seg = tor.gesetz.seg;
@@ -96,7 +96,7 @@ class AnazhRealm_siedlung_ort {
             geo.boundingBox.min.z = -a;
             geo.boundingBox.max.z = a;
             geo.boundingSphere = geo.boundingBox.getBoundingSphere(new THREE.Sphere());
-            this._membranGeoMemo.set(tor.gestalt, geo);
+            this._membranGeoMemo.set(tor.key, geo);
         }
         return geo;
     }

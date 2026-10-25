@@ -1061,6 +1061,7 @@ class AnazhRealm_feld_nexus {
             "  Position: jeder der Orte oben. Anzahl 1–24. <same> eine Zahl oder null.",
             "  <regler> (optional) ein Objekt {Regler: Zahl} NUR mit Reglern aus den Klammern der Gruppe des Worts — so prägt ein Satz das Werk",
             "  (knorrig, schmal und hoch, alt); der Kern klemmt jede Zahl auf ihren Bereich, ein fremder Regler lässt die Tat ausfallen.",
+            '  Musik der Welt und Gestalt des Spielers stehen an keinem Ort: ihr Wort prägt die Welt (Ort und Anzahl zählen nicht), z.B. ["spawn_studio","lofi",["at_player"],1,null,{"bpm":70}] (ruhige Musik) oder ["spawn_studio","mensch",["at_player"],1,null,{"height":1.1}] (mach mich größer).',
             "",
             "Du kannst auch ein STEHENDES GESETZ vorschlagen — eine Regel, die sich SELBST wiederholt, wann immer eine Bedingung gilt (statt einer einmaligen Geste):",
             '  ["rule", <Bedingung>, <Effekt>, {"everySec":3}]',
