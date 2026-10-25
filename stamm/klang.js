@@ -249,8 +249,9 @@ class AnazhRealm_klang {
     // DIE LAGE AM OHR — die Eingabe des Klang-Gesetzes (umweltMischung). Alles gelesen, nichts erfunden: der
     // EINE Wind am Ohr (`_windAt`), die Kronen-Deckung der STEHENDEN Bäume (die
     // Kronen-Karte `_kronenStreuAt` — dieselben Bytes, aus denen Boden und Nah-Wiese den Wald lesen; das Kronenlicht-
-    // Feld der Platzierung sagt nur, wo Bäume wachsen DÜRFEN), Sonne (Tageszeit), Jahres-Phase, Leben (auraAt), der
-    // Hör-Ring (Ufer/Fluss), der nächste Wasserfall der Region, die nächste Glut (Brenn-Fläche) — und die ANTWORT der Wertung
+    // Feld der Platzierung sagt nur, wo Bäume wachsen DÜRFEN), Sonne (Tageszeit), Jahres-Phase, die singenden Vögel (ihre
+    // Leiber, `state.voegel`), der Hör-Ring (Ufer/Fluss), der nächste Wasserfall der Region, die nächste Glut (Brenn-Fläche)
+    // — und die ANTWORT der Wertung
     // (`_tatAntwortAm`: das abklingende δ der Tat, die hier am stärksten wirkt; affekt K1).
     _umweltLage() {
         const um = this.state.symphony.umwelt;
@@ -260,7 +261,6 @@ class AnazhRealm_klang {
         const pz = pm.position.z;
         const wf = this._weatherFieldFor(this.state.weather);
         const wind = this._windAt(px, pz, this._bildZeit);
-        const aura = this.auraAt(px, pz);
         const re = this._umweltRechts();
         const pan = (ux, uz) => Math.max(-1, Math.min(1, ux * re.x + uz * re.z));
         // Der Ring: stilles Wasser (Ufer) und fließendes (Fluss) — Abstand, Anteil, Richtung.
@@ -306,6 +306,15 @@ class AnazhRealm_klang {
         }
         // Die nächste Glut — das Verzeichnis „glut" (`_blockerMit`: jeder Eintrag mit Brenn-Fläche, gestempelt beim Eintritt;
         // jenseits der Hörweite schweigt das Gesetz). Bis K11 lief ein Umlauf über alle Bauten (48 je Frame, nur mit Klang).
+        // Die singenden Vögel — die Leiber, die `_vogelTakt` zeichnet (`state.voegel`): Abstand zum Ohr und Richtung je Leib.
+        const voegel = [];
+        for (const v of this.state.voegel || []) {
+            const dh = Math.hypot(v.x - px, v.z - pz);
+            voegel.push({
+                d: Math.hypot(dh, v.y - pm.position.y),
+                pan: dh > 1e-3 ? pan((v.x - px) / dh, (v.z - pz) / dh) : 0,
+            });
+        }
         const glut = { d: Infinity, flaeche: 0, pan: 0 };
         for (const e of this._blockerMit("glut")) {
             if (!e.position) continue;
@@ -327,7 +336,7 @@ class AnazhRealm_klang {
             // die Luft am Ohr (stoffe.K3): das EINE Temperatur-Feld an der Höhe des Spielers zu Saison und Uhr der Welt — die
             // Grillen schweigen über dem gefrorenen Bergsee
             temperatur: this._temperaturAt(pm.position.y, 0),
-            lebendig: Math.max(0, Math.min(1, aura.lebendig)),
+            voegel,
             ufer,
             fluss,
             fall,
@@ -341,10 +350,12 @@ class AnazhRealm_klang {
     // nur ein hörbarer Ruf (über der Hörschwelle, hinter der Symphonie-Wand) geht an die Klang-Werkstatt, die ihn
     // rechnet — gespielt wird ihre Antwort (`_klangWerkstattBooten`).
     _tierRuf(creature, stimmung) {
+        // RUF ← LEIB (klang.K1): es ruft nur ein Leib der Welt (`state.creatures`) — ein Ruf ohne Körper ist keiner
+        if (!creature || !(this.state.creatures || []).includes(creature)) return null;
         const s = this.state.symphony;
         s.tierRufe = (s.tierRufe || 0) + 1;
         const um = s.umwelt;
-        if (!s.enabled || !s.ctx || !um || !um.werkstatt || !creature || !creature.position) return null;
+        if (!s.enabled || !s.ctx || !um || !um.werkstatt || !creature.position) return null;
         const pm = this.state.playerMesh;
         const dx = pm ? creature.position.x - pm.position.x : 0;
         const dz = pm ? creature.position.z - pm.position.z : 0;
@@ -398,13 +409,17 @@ class AnazhRealm_klang {
         }
     }
 
-    // DER KLANG-ZENSUS (Linse gate:klang-zensus): je Umwelt-Stimme Gesetz · Pegel · läuft; dazu die Lage am Ohr.
+    // DER KLANG-ZENSUS (Linse gate:klang-zensus): je Umwelt-Stimme Gesetz · Pegel · läuft; dazu die Lage am Ohr und RUF ← LEIB
+    // (klang.K1): die Vögel, die das Ohr jetzt hört, und die gezeichneten (der Pool trägt je Vogel seine Teile).
     _klangZensus() {
         const um = this.state.symphony && this.state.symphony.umwelt;
         if (!um) return null;
+        const P = this.state.vogelPool;
+        const je = AnazhRealm._vogelGesetz().V.leib.teile.length + 2;
         return {
             lage: um.lage,
             stimmen: um.graph.zensus(),
+            leiber: { gehoert: this._umweltLage().voegel.length, gezeichnet: P ? P.mesh.count / je : 0 },
             tierRufe: this.state.symphony.tierRufe || 0,
             werkstatt: {
                 laeuft: !!um.werkstatt,

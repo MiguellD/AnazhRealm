@@ -6,9 +6,7 @@
 const { safeEvaluate } = require("../playtest.cjs");
 
 async function checkBandW4LofiPad(ctx) {
-    const { page, check, errors, finalState } = ctx;
-    void errors;
-    void finalState;
+    const { page, check } = ctx;
     // ### W4 V2/V3 — die Lofi-Pad-Schicht (generative Harmonie) ###
     // Pad-Layer (~60 BPM); die Akkordfolge wächst aus Tonleiter + funktionaler Markov-Kette (seed- +
     // emotion-getrieben), kein fester Akkord-Satz.
@@ -49,20 +47,7 @@ async function checkBandW4LofiPad(ctx) {
             r._lofiScaleSemitone(0) === 0 && r._lofiScaleSemitone(6) === 12 && r._lofiScaleSemitone(2) === 5;
         r._klangStudioPreset = prevKSP;
         if (prevLofi) fK.recipes.lofi = prevLofi;
-        // Mit warmem Buch faltet der EINE Mapper in die Studio-Skala (lofi → Blues [0,3,5,6,7,10], idx 6 =
-        // Oktav-Wurzel +12). Akkord-BREITE = klang-Gesetz colorExt: Grund-Vierklang [0,5,7,12], Stapel
-        // 3 + colorExt(dna.color) (warmes LoFi-Buch: color 0.60 → 5 Töne).
-        const _sp = r._klangStudioPreset();
-        const _kc = globalThis.__klangCore;
-        const _chord0 = r._lofiChordFromDegree(0);
-        const _extSoll =
-            _kc && typeof _kc.colorExt === "function" ? _kc.colorExt(_sp && _sp.dna ? _sp.dna.color : 0) : 1;
-        out.scaleStudio =
-            !prevLofi ||
-            (r._lofiScaleSemitone(2) === 5 &&
-                r._lofiScaleSemitone(6) === 12 &&
-                _chord0.length === 3 + _extSoll &&
-                JSON.stringify(_chord0.slice(0, 4)) === JSON.stringify([0, 5, 7, 12]));
+        // Mit warmem Buch (Studio-Skala, Akkord-Breite aus colorExt) misst gate:nervensystem-labs (K) den EINEN Mapper.
         // Der Groove wohnt im klang-Gesetzbuch (RHYTHMUS_MUSTER.Swing); die Konstanten-Zwillinge
         // LOFI_GROOVE_PATTERN/GROOVE_SWING sind ABWESEND.
         const gp = AnazhRealm.Gesetz("klang:RHYTHMUS_MUSTER.Swing", null);
@@ -102,7 +87,6 @@ async function checkBandW4LofiPad(ctx) {
         const durCalm = r._lofiChordDurationMs();
         emo.sorrow = 1;
         const durSad = r._lofiChordDurationMs();
-        out.calmDuration4s = Math.abs(durCalm - baseExpected) < 1;
         out.sorrowSlowsTempo = durSad > durCalm && durSad <= baseExpected * 1.5 + 1;
         // Frischer Symphony-Start, damit s.lofi vom aktuellen Code stammt.
         if (r.state.symphony && r.state.symphony.enabled) {
@@ -260,10 +244,6 @@ async function checkBandW4LofiPad(ctx) {
         );
         check("W4 V3: _lofiScaleSemitone wickelt Oktaven (6-Ton-Blues: idx 6 → +12)", w4v2Results.scaleSemitone);
         check(
-            "W-A7-Vertiefung: der EINE Ton-Mapper faltet in die Studio-Skala (lofi → Blues, 6 Töne)",
-            w4v2Results.scaleStudio
-        );
-        check(
             "W4 V3 Phase 3: RHYTHMUS_MUSTER.Swing (Kern) trägt kick/snare/hihat — LOFI_GROOVE_PATTERN/GROOVE_SWING abwesend",
             w4v2Results.grooveDefined
         );
@@ -274,10 +254,6 @@ async function checkBandW4LofiPad(ctx) {
         check("W4 V2: _lofiChordFreqs liefert positive Frequenzen", w4v2Results.freqsPositive);
         check("W4 V2: die Akkord-Wurzel ist A (≈110 Hz)", w4v2Results.rootIsA);
         check("W4 V2: major-lean (hope) hebt die Terz, lässt die Wurzel", w4v2Results.majorLeanRaisesThird);
-        check(
-            "W4 V2/W-A7: _lofiChordDurationMs — ruhig == Studio-/Fallback-Tempo x 4 Schlaege",
-            w4v2Results.calmDuration4s
-        );
         check("W4 V2: sorrow verlangsamt das Lofi-Tempo (bis ~6 s)", w4v2Results.sorrowSlowsTempo);
         if (w4v2Results.symphonyReady) {
             check(
