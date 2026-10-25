@@ -2,7 +2,8 @@
 //
 // Erfasst ist jedes g6-Kriterium mit Punkten (klang K2 K4 K5, speicher K4 K5), aus der Messschuld (speicher K1 K2 = M30 M35
 // M37 M38, profiband K4 = M34 M39, klang K2 K5 = M33 M15) und aus dem Stau (hydro-faden: streaming K4 K5; speicher-journal:
-// speicher K2 K3). Je Kriterium und Staffel steht hier der Befehl, mit dem der Beleg gemessen wurde.
+// speicher K2 K3), dazu aus einer Karte (klang-k1-zensus: klang K1). Je Kriterium und Staffel steht hier der Befehl, mit dem
+// der Beleg gemessen wurde.
 //
 // HARNESS-STATIONEN: einige Belege maß eine Mess-Bahn mit Scratch-Werkzeug aus dem Zweig koordination
 // (`bericht/2210-messschuld-6cfce/skripte/`: spiel.cjs, m14-spielgang, m15-wind, m15-schritt; `bericht/2310-messschuld-gtx-452972/
@@ -242,7 +243,63 @@ module.exports = [
         quelle: "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms",
     },
 
-    // ─────────────────────────────── Klang K2 · K4 · K5 ───────────────────────────────
+    // ─────────────────────────────── Klang K1 · K2 · K4 · K5 ───────────────────────────────
+    {
+        kriterium: "klang.K1",
+        staffel: 1,
+        geraet: "headless",
+        // der Zensus (S)(L)(R), Zweig klang-k1-zensus: Mittag im Stand, je Ort die Mischung des Gesetzes bei mittlerer Böe
+        // (daten.<ort>.mixMitte, offline am Abgriff nachgemessen) gegen das SOLL; Ruf ← Leib: an jedem Ort sind die gehörten
+        // Vögel die gezeichneten (zensus.leiber), die Mutation `wieseOhneLeib` (das Revier-Gesetz ohne Revier) lässt den Chor
+        // schweigen, ein Tier-Ruf ohne Leib der Welt bleibt stumm (Ereignis „tier“). Derselbe Lauf wie klang.K5#1 (Zwilling).
+        befehl: ["node", "scripts/diag-klang-zensus.cjs", "--json", "{AUS}"],
+        env: { KLANG_ZENSUS_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const d = (j && j.daten) || {};
+            const orte = ["wiese", "seeufer", "wald", "dorf"];
+            if (!orte.every((o) => d[o] && d[o].mixMitte) || !d.wieseOhneLeib)
+                return { gruen: false, zahl: "kein Zensus der vier Orte und der Mutation (Exit " + lauf.exit + ")" };
+            const db = (o, s) => d[o].mixMitte[s].db;
+            // ein Spiel, das keine Leiber meldet, hat keine
+            const leib = (z) => z.leiber || { gehoert: 0, gezeichnet: 0 };
+            const L = leib(d.wiese.zensus);
+            const ohne = d.wieseOhneLeib.zensus;
+            const chorOhne = ohne.stimmen.some((v) => v.name === "vogel" && v.an);
+            // die Befunde dieses Kriteriums: SOLL, Lab = Welt, Ruf ← Leib, Ort fehlt, der Tier-Ruf ohne Leib
+            const rot = (j.rot || []).filter((t) => /^(S|L|R|O)[ :]|^E tier:/.test(t));
+            const gruen = rot.length === 0 && L.gehoert > 0 && L.gehoert === L.gezeichnet && leib(ohne).gezeichnet === 0 && !chorOhne;
+            const f = (v) => (v > -999 ? v.toFixed(1) : "−∞");
+            return {
+                gruen,
+                zahl:
+                    "Wiese wind " + f(db("wiese", "wind")) + " · vogel " + f(db("wiese", "vogel")) + " dB aus " + L.gehoert + " Leibern (" +
+                    L.gezeichnet + " gezeichnet), ohne Leib " + (chorOhne ? "SINGT" : "still") + " · Ufer " + f(db("seeufer", "ufer")) +
+                    " (wind " + f(db("seeufer", "wind")) + ") · Wald laub " + f(db("wald", "laub")) + " · Dorf glut " + f(db("dorf", "glut")) +
+                    (rot.length ? " · " + rot.length + " Befund(e): " + rot.slice(0, 2).join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "klang-core.js",
+            "tetrapoda-core.js",
+            "stamm/klang.js",
+            "stamm/kreatur-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/stoff-instanz.js",
+            "stamm/feld-leben.js",
+            "stamm/dirigent-takt.js",
+            "stamm/wasser-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/daten.js",
+            "worlds/klang/klang.js",
+            "spec/profiband/haushalt.json",
+            "scripts/diag-klang-zensus.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+        ],
+        quelle: "1 = Mittag im Stand: jedes Soll je Ort hält, und jeder Pegel einer Quelle mit Körper (Vogel, Tier) hat einen Körper in der Welt",
+    },
     {
         kriterium: "klang.K2",
         staffel: 1,
