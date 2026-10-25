@@ -65,3 +65,6 @@ takt1b-abab 1 abab A=79c0fae296ec982fe5ad2673a85157eb9f7ea313 B=206b395ac2b71fd9
 z26-abab 1 abab A=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 B=45c6aa19a3e9630ad694f74971f7331ec93e8065 zellen=w-ego,d-ego,stadt
 z26-abab 0 storno
 z28b-abab 1 abab A=45c6aa19a3e9630ad694f74971f7331ec93e8065 B=4a5f5e2c9ab02618feccdf8b9f1a03942bcc9301 zellen=w-ego,d-ego,stadt
+z28b-abab 0 storno
+takt2-gtx 1 punkte sha=4a5f5e2c9ab02618feccdf8b9f1a03942bcc9301 geraet=gtx
+takt2-abab 1 abab A=206b395ac2b71fd9afe4b2b8b68d38dbc07659f9 B=4a5f5e2c9ab02618feccdf8b9f1a03942bcc9301 zellen=w-ego,g-third,d-ego,stadt
