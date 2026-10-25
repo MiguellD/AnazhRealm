@@ -91,3 +91,4 @@
 2026-10-25 16:01:48 takt3-gtx halten.K2#1 ROT 10.0 · 29/38
 2026-10-25 16:06:55 takt3-gtx halten.K5#1 GRÜN 5.0 · 30/38
 2026-10-25 16:12:01 takt3-gtx tore.K3#1 GRÜN 5.0 · 31/38
+2026-10-25 16:27:09 takt3-gtx profiband.K4#1 GRÜN 15.0 · 32/38
