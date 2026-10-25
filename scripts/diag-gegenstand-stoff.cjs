@@ -319,6 +319,7 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
             aus[X] = aus[X] || {};
             try {
                 if (!f) throw new Error("offen: die Luma braucht das Ausgabe-Bild (echte GPU)");
+                if (alt === null) throw new Error("offen: die Zeile " + X + " trägt kein " + w + " (keine Wirkung zu mutieren)");
                 const vor = await f[1](X);
                 if (sabotage) {
                     const snap = Object.fromEntries(Object.keys(M).map((n) => [n, { ...M[n] }]));
@@ -350,10 +351,11 @@ async function tafel() {
         const sab = await page.evaluate(tafelProbe, STOFFE, WIRKUNGEN, true);
         const je = {};
         for (const X of STOFFE) console.log(X, (je[X] = WIRKUNGEN.filter((w) => echt[X][w].ok)).length + "/7", JSON.stringify(echt[X]));
-        const vorbei = STOFFE.flatMap((X) => WIRKUNGEN.filter((w) => sab[X][w].ok).map((w) => X + "." + w));
+        // an der Tafel vorbei: grün trotz Sabotage; stumm: die Sabotage maß nicht (ein Absturz ist kein Rot)
+        const vorbei = STOFFE.flatMap((X) => WIRKUNGEN.filter((w) => sab[X][w].ok || (je[X].includes(w) && sab[X][w].fehler)).map((w) => X + "." + w));
         console.log("TAFEL " + JSON.stringify({ je, vorbei }));
         const gruen = !vorbei.length && STOFFE.every((X) => je[X].length >= 3);
-        console.log(gruen ? "✅ TAFEL GRÜN — Staffel " + (STOFFE.every((X) => je[X].length === 7) ? 2 : 1) : "❌ TAFEL ROT — an der Tafel vorbei: " + vorbei);
+        console.log(gruen ? "✅ TAFEL GRÜN — Staffel " + (STOFFE.every((X) => je[X].length === 7) ? 2 : 1) : "❌ TAFEL ROT — an der Tafel vorbei oder stumm: " + vorbei);
         return gruen ? 0 : 1;
     } finally {
         await browser.close();

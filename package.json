@@ -110,7 +110,7 @@
         "gate:kampf-gefuehl": "node scripts/diag-kampf-gefuehl.cjs",
         "gate:klang-zensus": "node scripts/diag-klang-zensus.cjs --selftest",
         "gate:schmiede-contract": "node scripts/diag-schmiede-contract.cjs",
-        "gate:gegenstand-stoff": "node scripts/diag-gegenstand-stoff.cjs --selftest && node scripts/diag-gegenstand-stoff.cjs",
+        "gate:gegenstand-stoff": "node scripts/diag-gegenstand-stoff.cjs --selftest && node scripts/diag-gegenstand-stoff.cjs && node scripts/diag-gegenstand-stoff.cjs --tafel",
         "gate:fachwerk-contract": "node scripts/diag-fachwerk-contract.cjs",
         "gate:ofen-contract": "node scripts/diag-ofen-contract.cjs --selftest && node scripts/diag-ofen-contract.cjs",
         "gate:constitution": "node scripts/diag-pipeline-constitution.cjs",

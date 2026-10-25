@@ -1596,7 +1596,10 @@ class AnazhRealm_koerper_fahrt {
                 for (const t of bp.parts) {
                     const q = t.position || {};
                     const [lx, lz] = [(q.x || 0) * g, (q.z || 0) * g];
-                    const d = (P0.x + lx * c + lz * s - p.x) ** 2 + (P0.y + (q.y || 0) * g - p.y) ** 2 + (P0.z - lx * s + lz * c - p.z) ** 2;
+                    const d =
+                        (P0.x + lx * c + lz * s - p.x) ** 2 +
+                        (P0.y + (q.y || 0) * g - p.y) ** 2 +
+                        (P0.z - lx * s + lz * c - p.z) ** 2;
                     if (d < nah && typeof t.material === "string") [nah, stoff] = [d, t.material];
                 }
                 break;

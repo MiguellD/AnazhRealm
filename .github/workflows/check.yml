@@ -940,6 +940,10 @@ jobs:
               # und je Klinge/Werkzeug urteilt die Linse jeden Stoff gegen sein Band (Gummi, Kunststoff, Lack, Glas, Metall,
               # Holz, Leder, Schnur) - Taeter beim Namen: ohne-stoff, labor-stoff, band, klarlack, lack-art, durchsicht,
               # toenung, lack-gestalt, transport. Node-direkt (r128), inklusive Selbst-Test.
+              # --tafel (Null-Renderer, am Ufer des Sees): je Stoff (holz, stein, eisen, gras, erde, laub, wasser) EINE
+              # Mutation je Wirkung der EINEN Tafel in SI (rho, mu, Klang-Spalte, T_zuend, T_schmelz, c) mit beobachtbarer
+              # Folge in der Welt; die Sabotage im selben Lauf (der Leser `_stoff` liefert die Zeilen von vor der Mutation)
+              # macht jede Wirkung ROT - eine, die gruen bleibt, liest an der Tafel vorbei. Staffel 1: je Stoff >= 3 von 7.
               run: npm run gate:gegenstand-stoff
 
             - name: Die Albedo-Tafel Labor gegen Welt (S1 W1e - je Klasse Labor-Albedo, Welt-Albedo und ihr Verhaeltnis als Ratsche)
