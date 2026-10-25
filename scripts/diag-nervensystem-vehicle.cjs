@@ -55,7 +55,7 @@ function staticLaws(q) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
         // V2: ein ZWEITER Ingest-Pfad (zusatzKindStages-Leser ausserhalb des Chokepoints) -> A3 rot.
         const a3 = staticLaws((t) =>
-            stammLib.ersetze(t, "_foundryRequestSettlement",
+            stammLib.ersetze(t, null,
                 /(_foundryRequestSettlement\([^)]*\) \{)/,
                 "$1\n        const _leak = this.state && this.state.zusatzKindStages;\n        void _leak;"
             )

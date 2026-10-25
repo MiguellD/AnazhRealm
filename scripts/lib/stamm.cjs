@@ -668,9 +668,22 @@ function treffer(t, glied, x) {
     const s = stelleIm(t, glied, x, false);
     return s && Object.assign(s.m, { index: s.m.index + s.a });
 }
+// DIE WAND DER MUTATION (Kartenkopf W2 Regel 3, z31): eine Mutation trifft ihren Anker genau einmal — sonst wirft sie,
+// und weil ein Wurf sich fangen lässt (ein Selbsttest, der „wirft" als „feuert" zählt, wäre still grün; ein spätes
+// `process.exit(0)` überschriebe den Exit-Code), merkt die Engstelle jeden Leer-Griff mit der rufenden Linse
+// (Datei:Zeile) und bricht den Prozess beim Ende ROT, beim Namen. Der Anker ist ein Code-Stück des ganzen Stamms
+// (`glied` = null), nie ein Methoden-Name: ein Umzug des Codes lässt den Text stehen, den Namen nicht.
+const leerGriffe = [];
+process.once("exit", () => leerGriffe.length && ((process.exitCode = 1), console.error(leerGriffe.join("\n"))));
 function ersetze(t, glied, x, neu) {
     if (Array.isArray(glied)) return glied.reduce((r, [g, x2, n2]) => ersetze(r, g, x2, n2), t); // die Kette: [[glied, x, neu], …]
-    const { a, b, rx, m } = stelleIm(t, glied, x, true);
+    let s;
+    try {
+        s = stelleIm(t, glied, x, true);
+    } catch (e) {
+        throw (leerGriffe.push(`❌ stammLib.ersetze ROT — ${e.stack}`), e); // der Stapel nennt die rufende Linse mit Datei:Zeile
+    }
+    const { a, b, rx, m } = s;
     const r = t.slice(0, a) + b.replace(rx ? new RegExp(rx.source, rx.flags.replace("g", "")) : x, neu) + t.slice(a + b.length);
     if (tafeln.has(t)) {
         const i = a + m.index;
@@ -1105,7 +1118,14 @@ if (require.main === module && process.argv.includes("--selftest")) {
         const R2 = ersetze(R, [["_p", 'x: "}"', 'x: "{"'], ["_a", /return (this)/, "return $1"]]);
         pruef("ersetze: im Glied, als Kette", R2 === R.replace('x: "}"', 'x: "{"') && treffer(R2, "_p", "x:").index === R2.indexOf("x:"));
         pruef("treffer: zwei Treffer werfen, keiner ist null", wirft(() => treffer(R, "_a", "this._p(e)"), /2×/) && treffer(R, "_p", "fehlt") === null);
-        pruef("ersetze: vakuös und mehrdeutig werfen", wirft(() => ersetze(R, "_p", "fehlt", ""), /vakuös/) && wirft(() => ersetze(R, null, "_p(e", ""), /Reihenfolge/));
+        // die Wand der Mutation: jeder Leer-Griff (auch der umgezogene Glied-Name in der Kette) ist gemerkt, die rufende
+        // Linse beim Namen (hier diese Datei), auch wenn der Wurf gefangen wurde — der Prozess endete ROT
+        const v = leerGriffe.length;
+        pruef(
+            "ersetze: vakuös, mehrdeutig, umgezogen werfen und enden ROT",
+            wirft(() => ersetze(R, "_p", "fehlt", ""), /vakuös/) && wirft(() => ersetze(R, null, "_p(e", ""), /Reihenfolge/) && wirft(() => ersetze(R, [["_q", "x", ""]]), /0×/) &&
+                leerGriffe.splice(v).length === 3
+        );
         // R3) der EINE Absenz-Helfer: im Glied, außerhalb der Engstelle, gewandelt; ein Toter wirft, nie still wahr
         const F = (g, re, q) => fehlt(g, re, q === undefined ? R : q);
         pruef(

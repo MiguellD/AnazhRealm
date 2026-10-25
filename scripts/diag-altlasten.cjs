@@ -3326,12 +3326,7 @@ function main() {
             ],
             [
                 "G",
-                stamm.includes(regelAnker)
-                    ? stammLib.ersetze(stamm, "_disposeSoulGroup",
-                          regelAnker,
-                          regelAnker + "\n            if (node.material) this._queueDispose(node.material);"
-                      )
-                    : null,
+                stammLib.ersetze(stamm, null, regelAnker, regelAnker + "\n            if (node.material) this._queueDispose(node.material);"),
                 /`_disposeSoulGroup` entsorgt Stoff/,
             ],
             // I ein Memo-Eintrag, direkt entsorgt (die Membran-Geometrie gehört allen Toren ihrer Gestalt)
@@ -3388,7 +3383,7 @@ function main() {
         // Die Normal-Wand muss feuern: eine Welt-Normale, mit der transponierten Kamera-Matrix gedreht.
         // Dazu die Quelle: der Boden-Graph liest wieder r184s `normalWorld`, transitiv über `_nWG` (die
         // Geometrie-Normale des Graphen, beim Boden die des Stufen-Morphs, K51-2).
-        const quelleAlt = stammLib.ersetze(stamm, "_buildPbrNodeMaterial",
+        const quelleAlt = stammLib.ersetze(stamm, null,
             "const _nWG = opts.geomorph ? this._bodenStufenKnoten().normalWelt : _Tn.normalWorldGeometry;",
             "const _nWG = _Tn.normalWorld;"
         );
@@ -3398,7 +3393,6 @@ function main() {
                 .length === 1 &&
             scanNormalWand(stamm + "\nmat.normalNode = _T.cameraViewMatrix.transformDirection(_T.normalize(n));\n")
                 .length === 0 &&
-            quelleAlt !== stamm &&
             scanNormalWand(quelleAlt).filter((e) => /liest r184s `normalWorld`/.test(e)).length === 1;
         if (!normalFeuert) {
             console.log("❌ SELBST-TEST: die Normal-Wand feuert nicht (oder steht heute rot)");

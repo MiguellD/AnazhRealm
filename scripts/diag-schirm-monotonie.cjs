@@ -459,27 +459,27 @@ function konsumBefunde(reihe) {
             sa.some((x) => /^VERKEHRT schirmProbe · haupt/.test(x)) ? [] : ["M blieb blind: " + (sa[0] || "kein Befund")]
         );
         for (const x of sa.filter((y) => /schirmProbe/.test(y)).slice(0, 2)) console.log(`      (Selbsttest) ${x}`);
-        const eingeschmuggelt = stammLib.ersetze(src, "_fellBildschirmGesetz",
+        const eingeschmuggelt = stammLib.ersetze(src, null,
             "const pxJeM = this._schirm().pxJeM;",
             "const pxJeM = this.state.renderer.domElement.height / 1.53;"
         );
         const sb = quellBefunde(eingeschmuggelt);
         check(
             "S(b) eine Zeile liest die Canvas-Höhe an `_schirm` vorbei: Q rot, die Methode genannt",
-            eingeschmuggelt !== src && sb.some((x) => /^_fellBildschirmGesetz \(Zeile \d+\)/.test(x))
+            sb.some((x) => /^_fellBildschirmGesetz \(Zeile \d+\)/.test(x))
                 ? []
                 : ["Q blieb blind: " + (sb[0] || "kein Befund")]
         );
         for (const x of sb.slice(0, 2)) console.log(`      (Selbsttest) ${x}`);
         // S(d) DER ALIAS-TÄTER: dieselbe Lesung über eine lokale Variable, der der Canvas des Renderers zugewiesen wird.
-        const aliasTaeter = stammLib.ersetze(src, "_fellBildschirmGesetz",
+        const aliasTaeter = stammLib.ersetze(src, null,
             "const pxJeM = this._schirm().pxJeM;",
             "const leinwand = this.state.renderer && this.state.renderer.domElement;\n        const pxJeM = leinwand.height / 1.53;"
         );
         const sd = quellBefunde(aliasTaeter);
         check(
             "S(d) ein Alias des Renderer-Canvas (`leinwand = renderer.domElement`, `leinwand.height`): Q rot, die Methode genannt",
-            aliasTaeter !== src && sd.some((x) => /^_fellBildschirmGesetz \(Zeile \d+\)/.test(x))
+            sd.some((x) => /^_fellBildschirmGesetz \(Zeile \d+\)/.test(x))
                 ? []
                 : ["Q blieb blind für den Alias: " + (sd[0] || "kein Befund")]
         );

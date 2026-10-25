@@ -776,14 +776,9 @@ const VERHALTEN = [
     };
     if (process.argv.includes("--selftest")) {
         console.log("=== FLUSS-WAND — SELBST-TEST: die Wand feuert auf injizierte Brüche ===");
-        // Ein Bruch, dessen Anker im Quelltext fehlt, läuft ins Leere: er bricht den Selbsttest beim Namen.
-        const bruch = (quelle, alt, neu, glied = null) => {
-            if (!(alt instanceof RegExp ? alt.test(quelle) : quelle.includes(alt))) {
-                check(`Selbst-Test-Anker steht im Quelltext: ${String(alt).slice(0, 70)}`, false);
-                return quelle;
-            }
-            return stammLib.ersetze(quelle, glied, alt, neu);
-        };
+        // Ein Bruch am Text-Anker des ganzen Quelltexts: steht er nicht genau einmal, bricht die Engstelle den Selbsttest
+        // ROT beim Namen (die Wand der Mutation, scripts/lib/stamm.cjs).
+        const bruch = (quelle, alt, neu) => stammLib.ersetze(quelle, null, alt, neu);
         const t2 = statisch((t) =>
             bruch(t, /(\n {4}_foundryRequest\([^)]*\) \{)/, '$1\n        indexedDB.open("anazhFoundryAssets", 1);')
         ).find((g) => g[0].startsWith("S2b"));

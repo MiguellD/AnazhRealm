@@ -106,7 +106,7 @@ const triasStaticLaws = () => [
         );
         check(
             "Selbst-Test 6: ein Klon, der donorOnly anfasst, macht T-S4 rot beim Namen",
-            !stammLib.fehlt("cloneBlueprint", /donorOnly/, (t) => stammLib.ersetze(t, "cloneBlueprint", "const source = ", "const donorOnly = 0, source = ")),
+            !stammLib.fehlt("cloneBlueprint", /donorOnly/, (t) => stammLib.ersetze(t, null, "const source = this.state.blueprints[sourceName];", "const donorOnly = 0;\n        $&")),
             stammLib.fehlt.wo
         );
         if (errs.length) {

@@ -1052,14 +1052,14 @@ function selbsttest() {
     {
         const st = stammLib.text(root);
         const fall = [
-            ["@wahl vorn", "_zeichenRang", 'u.regionKey === "@global" ? 0 : u.regionKey === "@wahl" ? 2 : 1', 'u.regionKey === "@wahl" ? 0 : u.regionKey === "@global" ? 2 : 1', /Reihe der Bündel nach der Ankunft/],
+            ["@wahl vorn", null, 'u.regionKey === "@global" ? 0 : u.regionKey === "@wahl" ? 2 : 1', 'u.regionKey === "@wahl" ? 0 : u.regionKey === "@global" ? 2 : 1', /Reihe der Bündel nach der Ankunft/],
             ["ohne Reihe", null, /(\n {4}_buendelReihe)\(/, "$1Alt(", /hängt an der Ankunft/],
-            ["ohne Folge", "_configureRenderer", "else renderer.setOpaqueSort(AnazhRealm._zeichenFolge);", "", /setOpaqueSort/],
-            ["Boden vorn", "_zeichenRang", 'return s === "boden" ? 4 :', 'return s === "boden" ? 2 :', /losen Opaken nach der Ankunft/],
-            ["verkehrt", "_buendelKinderReihe", "rang(a) - rang(b) ||", "rang(b) - rang(a) ||", /Reihe im Bündel nach der Ankunft/],
+            ["ohne Folge", null, "else renderer.setOpaqueSort(AnazhRealm._zeichenFolge);", "", /setOpaqueSort/],
+            ["Boden vorn", null, 'return s === "boden" ? 4 :', 'return s === "boden" ? 2 :', /losen Opaken nach der Ankunft/],
+            ["verkehrt", null, "rang(a) - rang(b) ||", "rang(b) - rang(a) ||", /Reihe im Bündel nach der Ankunft/],
             ["ohne Reihe im Bündel", null, /(\n {4}static _buendelKinderReihe)\(/, "$1Alt(", /in der Ankunft/],
-            ["ohne Abstand", "_buendelKinderReihe", "(auge ? nah.get(a) - nah.get(b) : 0) ||", "0 ||", /Reihe nach Abstand/],
-            ["je Frame", "_buendelAnkerPruefen", "if (a && (pos.x - a.x) * (pos.x - a.x) + (pos.z - a.z) * (pos.z - a.z) <= R * R) return false;", "", /Anker der Reihe/],
+            ["ohne Abstand", null, "(auge ? nah.get(a) - nah.get(b) : 0) ||", "0 ||", /Reihe nach Abstand/],
+            ["je Frame", null, "if (a && (pos.x - a.x) * (pos.x - a.x) + (pos.z - a.z) * (pos.z - a.z) <= R * R) return false;", "", /Anker der Reihe/],
         ];
         const still = fall.filter(([, glied, alt, neu, re]) => !buendelReiheWand(klasseVon(stammLib.ersetze(st, glied, alt, neu))).errs.some((x) => re.test(x)));
         t(

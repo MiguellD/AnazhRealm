@@ -160,7 +160,7 @@ function selbsttest() {
         {
             name: "zweite Abtastung am Ausgleich vorbei",
             // eine Mutation, die den Stamm nicht trifft, wirft (stammLib.ersetze: vakuös)
-            wandel: (t) => stammLib.ersetze(t, "_ensurePostProcessing", "const roh = bild(screenUV);", "const roh = bild(screenUV);\nconst roh2 = sceneColor.sample(screenUV);"),
+            wandel: (t) => stammLib.ersetze(t, null, "const roh = bild(screenUV);", "const roh = bild(screenUV);\nconst roh2 = sceneColor.sample(screenUV);"),
             muss: /mehrfach abgetastet/,
         },
     ];

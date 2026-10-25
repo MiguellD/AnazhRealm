@@ -2505,32 +2505,32 @@ async function feindHaupt(quelle) {
         );
         const vorStand = stammLib.ersetze(quelle, [
             [
-                "_workshopRender",
+                null,
                 'this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");',
                 "p.renderer.render(p.scene, p.camera);",
             ],
             // der Orts-Vertrag beim Vorher: dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
-            ["dslEvalPos", "            throw fehler;\n", "            return null;\n"],
+            [null, "            throw fehler;\n", "            return null;\n"],
             // der Rest der Klasse beim Vorher: der Feld-Akt nimmt für jeden Nicht-Array-Knoten den Spieler
             [
-                "_dslRulePos",
+                null,
                 'return this.dslEvalPos(posNode == null ? ["at_player"] : posNode, ctx);',
                 'return Array.isArray(posNode) && posNode.length > 0 ? this.dslEvalPos(posNode, ctx) : this.dslEvalPos(["at_player"], ctx);',
             ],
             [
-                "dslEffects",
+                null,
                 "const pos = this.dslEvalPos(positionNode, ctx); // kein Ort",
                 "const pos = this.dslEvalPos(positionNode, ctx);\n                if (!pos) return; // kein Ort",
             ],
             // die Zwillings-Suche beim Vorher: der Rückkehr-Anker sucht die Plattform selbst
             [
-                "_playerDeathRespawn",
+                null,
                 "const anchor = this._genesisPlattform();",
                 'const anchor = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");',
             ],
             // der Warte-Poll der Hand beim Vorher: sie fragte alle 150 ms, ob das Buch steht
             [
-                "_heldFoundryGroup",
+                null,
                 'this._foundryWecker(f.buchDa, "hand", () => {',
                 "const poll = () => {\n if (f.ready && f.recipes) this._refreshHeldMesh();\n else setTimeout(poll, 150);\n };\n setTimeout(poll, 150);\n (() => {",
             ],
@@ -2539,14 +2539,14 @@ async function feindHaupt(quelle) {
         const weniger = wand(
             stammLib.ersetze(
                 quelle,
-                "_hofStartRAF",
+                null,
                 'this._buehneRender(s.renderer, s.scene, s.camera, "Hof-Bühne");',
                 ""
             )
         );
         check(
             "Selbst-Test W: ein Renderer weniger über die Bühne bleibt grün (W2 zählt am Namen, keine feste Zahl)",
-            quelle.includes('"Hof-Bühne");') && weniger.every((w) => w[1]),
+            weniger.every((w) => w[1]),
             weniger
                 .filter((w) => !w[1])
                 .map((w) => `${w[0].slice(0, 2)} ${w[2] || ""}`)
@@ -2765,14 +2765,14 @@ async function feindHaupt(quelle) {
         const inDerKette = w7Von(
             stammLib.ersetze(
                 quelle,
-                "_foundryUhren",
+                null,
                 uhrRuf,
                 `${uhrRuf}\n            else setTimeout(() => this._foundryUhren(f), 50);`
             )
         );
         check(
             "Selbst-Test W: ein Poll in der Frist-Kette (die Uhr stellt sich neu) → W7 nennt _foundryUhren → _foundryUhren",
-            quelle.includes(uhrRuf) && !inDerKette[1] && inDerKette[2].includes("_foundryUhren → _foundryUhren"),
+            !inDerKette[1] && inDerKette[2].includes("_foundryUhren → _foundryUhren"),
             inDerKette[2]
         );
         // EIN GLIED, DAS FEHLT, macht seine Prüfung rot (bis Runde 4 las W4 dann 0 Wachen und blieb still grün)
