@@ -473,15 +473,14 @@ class AnazhRealm_werkstatt_sozial {
 
     async saveToProjectFolder(options = {}) {
         // Drei Pfade:
-        //   - lokaler save-server → POST /api/save-state
+        //   - lokaler save-server → POST /api/save-state (der Speicher-Faden setzt den Stand zusammen und sendet ihn)
         //   - anderswo + fallbackToDownload=true → Browser-Download
         //   - anderswo + fallbackToDownload=false (Auto-Save) → still aussteigen
         const { fallbackToDownload = true } = options;
-        const stateToSave = this.buildStateSnapshot();
 
         if (!this.isSaveServerHost()) {
             if (fallbackToDownload) {
-                this.triggerStateDownload(stateToSave);
+                this.triggerStateDownload(this.buildStateSnapshot());
                 this.log("Zustand als Datei heruntergeladen (kein lokaler save-server erreichbar)");
                 return "download";
             }
@@ -490,26 +489,18 @@ class AnazhRealm_werkstatt_sozial {
         }
 
         try {
-            const response = await fetch("http://localhost:4312/api/save-state", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    fileName: "anazhRealmState.json",
-                    state: stateToSave,
-                }),
-            });
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            const result = await response.json();
-            this.log(`Zustand direkt im Spielordner gespeichert: ${result.path || "anazhRealmState.json"}`);
+            if (this.saveState() === false) throw new Error("der Stand ist gesperrt");
+            const welt = this.state.worldMeta.worldId;
+            const result = await this._speicherAuftrag({ op: "server", welt, url: "http://localhost:4312/api/save-state" });
+            if (!result.ok) throw new Error(result.grund);
+            this.log(`Zustand direkt im Spielordner gespeichert: ${result.pfad || "anazhRealmState.json"}`);
             return "server";
         } catch (error) {
             if (!fallbackToDownload) {
                 this.log(`Direktes Speichern im Spielordner fehlgeschlagen (${error.message})`, "ERROR");
                 return false;
             }
-            this.triggerStateDownload(stateToSave);
+            this.triggerStateDownload(this.buildStateSnapshot());
             this.log(
                 `Direktes Speichern im Spielordner fehlgeschlagen (${error.message}). Download-Fallback gestartet`,
                 "ERROR"

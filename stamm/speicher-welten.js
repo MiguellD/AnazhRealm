@@ -240,7 +240,8 @@ class AnazhRealm_speicher_welten {
     // der Index trägt lastPlayed); (2) sonst das Abbild im localStorage (eine Tür legte die Welt ab, oder IndexedDB fehlt);
     // (3) sonst der .bak der Transaktion (ein Stand zurück). Der localStorage schreibt verzögert (Chromium ≥ 5 s) — nach einem
     // harten Tod ist er oft leer oder älter, IndexedDB nie halb. `idb` = {state, at, bak} des Boot-Vorlaufs oder null.
-    // Liefert {state, quelle, befund} — state null nur, wenn alle leer oder unlesbar sind, der Befund nennt jedes Glied.
+    // Liefert {state, quelle, befund} — state null nur, wenn alle leer oder unlesbar sind, der Befund nennt jedes Glied; jeder Stand
+    // in der Form des Objekts (`_standNormal` beim Lesen: ein Bruch der kompakten Edits ist ein korruptes Glied).
     _weltRettungsKette(id, idb) {
         const befund = [];
         const lies = (roh, name) => {
@@ -250,7 +251,7 @@ class AnazhRealm_speicher_welten {
             }
             try {
                 const s = JSON.parse(roh);
-                if (s && typeof s === "object") return s;
+                if (s && typeof s === "object") return this._standNormal(s);
                 befund.push(`${name} unlesbar`);
             } catch (e) {
                 befund.push(`${name} korrupt (${e.message})`);
@@ -496,7 +497,7 @@ class AnazhRealm_speicher_welten {
                 this.log(`Save vor Welt-Wechsel fehlgeschlagen: ${err.message}`, "WARN");
             }
         }
-        // lastPlayed ist der Stempel des Abbilds (die Rettungs-Kette wählt an ihm) — der erste Takt der Ziel-Welt setzt ihn.
+        // lastPlayed ist der Stempel des Platzes (die Rettungs-Kette wählt an ihm) — das Verlassen einer Welt setzt ihn.
         this.activeWorldSet(worldId);
         this.log(`Welt-Wechsel: aktiv ist nun ${worldId.slice(0, 8)}…`, "INFO");
         if (reload) this._weltWechselNeuLaden(worldId);
@@ -516,8 +517,8 @@ class AnazhRealm_speicher_welten {
         } catch {
             // ignorieren — Index trotzdem bereinigen, damit der UI-Picker stimmt.
         }
-        // V18.151 (Faden #6) — auch die IndexedDB-Heimat der Welt räumen.
-        this._idbDeleteWorld(worldId);
+        // V18.151 (Faden #6) — auch die IndexedDB-Heimat der Welt räumen (der Speicher-Faden, ihr EINER Schreiber).
+        this._speicherAuftrag({ op: "loeschen", welt: worldId });
         this.worldsIndexRemove(worldId);
         this.log(`Welt gelöscht: ${worldId.slice(0, 8)}…`, "INFO");
         return true;
@@ -769,344 +770,639 @@ class AnazhRealm_speicher_welten {
         return restored;
     }
 
+    // Der Stand als Objekt (Export, Fusion, Netz, Download): die Stand-Tafel ganz, `worldMeta.voxelEdits` als Liste.
     buildStateSnapshot() {
-        const knowledgeBase = this.state.knowledgeBase.slice(-200);
-        // DIE WELT IST EINE FUNKTION, KEIN SACK (speicher.K3, Gebot 7): was Saat und Gesetz setzen (`_ausGesetz`: der Wurf des
-        // Felds, die Promotion der Streu), rechnet jeder Boot neu — der Stand trägt Werke, Taten und Leben, nie den Weg. Bis
-        // speicher-k3 trug er jeden Wurf: 5 km Wanderung in 30 min hoben 443 auf 16 781 Bauten, den Stand von 0,2 auf 5,2 MB.
-        const bauten = (this.state.architectures || []).filter((a) => !a._ausGesetz);
-        return {
-            playerPosition: this.state.playerMesh
-                ? {
-                      x: this.state.playerMesh.position.x,
-                      y: this.state.playerMesh.position.y,
-                      z: this.state.playerMesh.position.z,
-                  }
-                : { x: 0, y: 5, z: 0 },
+        const s = {};
+        const K = { bauten: this._standBauten() };
+        for (const [k, wert, art] of this._standTafel())
+            if (k !== "voxelEdits") s[k] = art && art.liste ? art.liste(K).map(art.glied) : wert(false, K);
+        return s;
+    }
+
+    // DIE WELT IST EINE FUNKTION, KEIN SACK (speicher.K3, Gebot 7): was Saat und Gesetz setzen (`_ausGesetz`: der Wurf des
+    // Felds, die Promotion der Streu), rechnet jeder Boot neu — der Stand trägt Werke, Taten und Leben, nie den Weg. Bis
+    // speicher-k3 trug er jeden Wurf: 5 km Wanderung in 30 min hoben 443 auf 16 781 Bauten, den Stand von 0,2 auf 5,2 MB.
+    _standBauten() {
+        return (this.state.architectures || []).filter((a) => !a._ausGesetz);
+    }
+
+    // DIE STAND-TAFEL — die EINE Quelle des Feld-Satzes, in der Ordnung des Stands: je Feld [Schlüssel, Wert, Art].
+    // `wert(stand, K)`: der Wert des Felds (`stand` = für den Speicher-Faden: die Edits reisen dort als eigener Teil
+    // `voxelEdits`, kompakt; `K` der Kontext des Stands, `K.bauten` die Bauten des Stands). Die ART: `marke(K)` sind die Werte,
+    // die das Feld bestimmen — gleiche Marke, gleiches JSON, keine Serialisierung (ohne Marke serialisiert jeder Stand das Feld
+    // und sendet es, wenn sein JSON sich änderte); eine LISTE (Bauten, Baupläne) reist je Glied: `liste(K)` die Glieder,
+    // `glied` serialisiert eines, `marke(g, m, K)` sind seine Werte (`m` sein Gedächtnis). gate:persistence (D) prüft den
+    // komponierten Stand gegen die volle Serialisierung.
+    _standTafel() {
+        if (this._standZeilen) return this._standZeilen;
+        const st = () => this.state;
+        const zahl = (v, d) => (Number.isFinite(v) ? v : d);
+        const atm = (k, d) => (st().atmosphere && Number.isFinite(st().atmosphere[k]) ? st().atmosphere[k] : d);
+        const bpRolle = (bp) => {
+            const h = st().blueprintEditHistory && st().blueprintEditHistory[bp.name];
+            return h && h.undo.length ? h.undo[h.undo.length - 1] : null;
+        };
+        // die Marke einer Reihe, die nur wächst oder vorn verliert: sie selbst, ihre Länge, ihr jüngstes Glied
+        const angehaengt = (f) => ({ marke: () => [f(), f().length, f().at(-1)] });
+        return (this._standZeilen = [
+            [
+                "playerPosition",
+                () =>
+                    st().playerMesh
+                        ? { x: st().playerMesh.position.x, y: st().playerMesh.position.y, z: st().playerMesh.position.z }
+                        : { x: 0, y: 5, z: 0 },
+            ],
             // DIE BODEN-GENERATION (K16): unter welchem Gelände-Gesetz die Höhen dieses Saves stehen (`_bodenUmzug`).
-            bodenGeneration: globalThis.__gelaendeCore.BODEN_GENERATION,
+            ["bodenGeneration", () => globalThis.__gelaendeCore.BODEN_GENERATION],
             // DIE HERKUNFT: jedes Werk dieses Stands trägt `werk` (seit 22.10.); ohne die Zeile entscheidet das Laden.
-            herkunft: 1,
-            spielerUeberGrund: this.state.playerMesh ? this._ueberGrund(this.state.playerMesh.position) : undefined,
-            knowledgeBase: knowledgeBase,
-            version: this.state.currentVersion,
-            selfAwareness: this.state.selfAwareness,
+            ["herkunft", () => 1],
+            [
+                "spielerUeberGrund",
+                () => (st().playerMesh ? this._ueberGrund(st().playerMesh.position) : undefined),
+                { marke: (K) => (st().playerMesh ? [...st().playerMesh.position.toArray(), K.bodenGen] : [null]) },
+            ],
+            ["knowledgeBase", () => st().knowledgeBase.slice(-200), angehaengt(() => st().knowledgeBase)],
+            ["version", () => st().currentVersion],
+            ["selfAwareness", () => st().selfAwareness],
             // Volle Komponenten-Persistenz je Kreatur (Name+Soul+Memory+bornAt+position); Specs live aus memory.
             // Tasks + carrying bewusst NICHT persistiert (Gesten leben im Moment, Identität lebt fort) — die Bindung an den
             // Spieler (bond + Folgen) ist Identität und reist mit (`_serializeCreature` bindung, halten.K5).
             // Ein Gefallener liegt nie in state.creatures (er zog beim Tod nach state.leichname) — er reist nie in den
             // Snapshot und erwacht nie beim Reload.
-            creatures: this.state.creatures.map((c) => this._serializeCreature(c)).filter((s) => s),
-            creatureEmotions: this.state.creatureEmotions,
+            ["creatures", () => st().creatures.map((c) => this._serializeCreature(c)).filter((s) => s)],
+            ["creatureEmotions", () => st().creatureEmotions],
             // halten.K4 — die Pfeile, die in Gelände und Bau stecken (`_pfeilStecken`); die im Tier reisen mit dem Tier
-            pfeileStecken: this._pfeileSteckenAbdruck(),
-            terrainSteepness: this.state.terrainSteepness,
-            terrainBaseHeight: this.state.terrainBaseHeight,
-            weather: this.state.weather,
+            ["pfeileStecken", () => this._pfeileSteckenAbdruck()],
+            ["terrainSteepness", () => st().terrainSteepness],
+            ["terrainBaseHeight", () => st().terrainBaseHeight],
+            ["weather", () => st().weather],
             // Die Promotion der Streu ist eine Funktion des Wegs (der Boot promotet neu, wo der Spieler naht) und reist nicht; ein
             // älterer Stand behält seine Liste (`worldMeta.scatterPromoted`, seine promoteten Bäume reisen mit ihm). Der Erdbau
             // eines Orts mit Gedächtnis (`settlementCells`) reist nie: der Ort kehrt aus ihm wieder (`_tickAutoSettlement`).
-            worldMeta: (() => {
-                const wm = { ...this.state.worldMeta };
-                const orte = new Set(Object.values(wm.settlementCells || {}).map((c) => c && c.seed >>> 0));
-                if (wm.erdbau && typeof wm.erdbau === "object") {
-                    wm.erdbau = { ...wm.erdbau };
-                    for (const k in wm.erdbau) if (/^ort:/.test(k) && orte.has(+k.split(":")[1])) delete wm.erdbau[k];
-                }
-                return wm;
-            })(),
-            dslAbilities: this.state.dsl.abilities.slice(-200),
-            dslHistory: this.state.dsl.history.slice(-this.state.dsl.historyCap),
+            [
+                "worldMeta",
+                (stand) => {
+                    const wm = { ...st().worldMeta };
+                    const orte = new Set(Object.values(wm.settlementCells || {}).map((c) => c && c.seed >>> 0));
+                    if (wm.erdbau && typeof wm.erdbau === "object") {
+                        wm.erdbau = { ...wm.erdbau };
+                        for (const k in wm.erdbau) if (/^ort:/.test(k) && orte.has(+k.split(":")[1])) delete wm.erdbau[k];
+                    }
+                    if (stand) delete wm.voxelEdits;
+                    return wm;
+                },
+            ],
+            // die Edits im Stand des Speicher-Fadens: kompakt, angehängt (speicher-faden.js) — nur dort ein eigener Teil
+            ["voxelEdits", null],
+            ["dslAbilities", () => st().dsl.abilities.slice(-200), angehaengt(() => st().dsl.abilities)],
+            [
+                "dslHistory",
+                () => st().dsl.history.slice(-st().dsl.historyCap),
+                { marke: () => [st().dsl.history, st().dsl.history.length, st().dsl.history.at(-1), st().dsl.historyCap] },
+            ],
             // Stehende Welt-Regeln persistieren NUR mit den definierenden Feldern (cond/effect/everySec/source/
             // ttlSec); die Laufzeit-Akkus (fires/born/_sig/costMsSum) setzt der Restore frisch.
-            worldRules: (this.state.worldRules || []).slice(0, AnazhRealm.WORLD_RULES.cap).map((r) => ({
-                cond: r.cond,
-                effect: r.effect,
-                everySec: r.everySec,
-                source: r.source,
-                ttlSec: r.ttlSec,
-                // V17.39 — die Schöpfer-Wahl reist mit: angepinnt (adoptiert/Favorit)
-                // + pausiert. Nur wenn gesetzt (saubere Snapshots).
-                ...(r.pinned ? { pinned: true } : {}),
-                ...(r.disabled ? { disabled: true } : {}),
-            })),
+            [
+                "worldRules",
+                () =>
+                    (st().worldRules || []).slice(0, AnazhRealm.WORLD_RULES.cap).map((r) => ({
+                        cond: r.cond,
+                        effect: r.effect,
+                        everySec: r.everySec,
+                        source: r.source,
+                        ttlSec: r.ttlSec,
+                        // V17.39 — die Schöpfer-Wahl reist mit: angepinnt (adoptiert/Favorit)
+                        // + pausiert. Nur wenn gesetzt (saubere Snapshots).
+                        ...(r.pinned ? { pinned: true } : {}),
+                        ...(r.disabled ? { disabled: true } : {}),
+                    })),
+            ],
             // Gewährte Fähigkeiten überleben den Reload (additives Snapshot-Feld; alte Builds bewahren es als
             // Unbekanntes). Die Quarantäne-Queue reist bewusst NICHT (ein Vorschlag ist Session-Tatsache).
-            grantedCapabilities: this.state.grantedCapabilities || {},
+            ["grantedCapabilities", () => st().grantedCapabilities || {}],
             // Schicht 1 — Pattern-Memory + Pfad-Buckets persistieren. Beides
             // ist Welt-Gedächtnis und überlebt Reloads bewusst.
-            dslPatternMemory: this.state.dsl.patternMemory || {},
-            playerPathBuckets: this.state.player.pathBuckets || null,
+            ["dslPatternMemory", () => st().dsl.patternMemory || {}],
+            ["playerPathBuckets", () => st().player.pathBuckets || null],
             // Welle 1 D — Welt-Journal persistiert. Ohne das Journal hätte
             // jede Session ihre eigene Geschichte; mit ihm wächst die Welt
             // über Reloads hinweg.
-            worldJournal: {
-                entries: (this.state.worldJournal.entries || []).slice(-this.state.worldJournal.entryCap),
-                seen: { ...(this.state.worldJournal.seen || {}) },
-            },
+            [
+                "worldJournal",
+                () => ({
+                    entries: (st().worldJournal.entries || []).slice(-st().worldJournal.entryCap),
+                    seen: { ...(st().worldJournal.seen || {}) },
+                }),
+                {
+                    marke: () => {
+                        const j = st().worldJournal;
+                        const e = j.entries || [];
+                        return [e, e.length, e.at(-1), j.entryCap, j.seen, Object.keys(j.seen || {}).join("|")];
+                    },
+                },
+            ],
             // Ring 3: Player-Emotionen werden mitgespeichert. Cooldown-Timer
             // bleiben absichtlich draußen — sie sind reine Laufzeit-Drosselung,
             // ein Reload soll wieder triggerfähig sein.
-            playerEmotions: { ...this.state.player.emotions },
+            ["playerEmotions", () => ({ ...st().player.emotions })],
             // DIE LEBENSWERTE SIND ZUSTAND (halten.K5, `recomputePlayerStats`): Leben, Ausdauer und Mana als Anteil ihres
             // Maximums (das Maximum rechnet der Leib beim Laden neu, wie `hpAnteil` des Tiers), dazu die Wunde des Tods —
             // vorher heilte jeder Reload (hp 69,6 → 134 von 134, die Wunde 1 → 0). `_loadStateRestoreLeben` liest sie.
-            playerLeben: ((pl) => {
-                const anteil = (v, max) => (Number.isFinite(v) && max > 0 ? +Math.min(1, v / max).toFixed(4) : 1);
-                return {
-                    hp: anteil(pl.hp, pl.hpMax),
-                    ausdauer: anteil(pl.stamina, pl.staminaMax),
-                    mana: anteil(pl.mana, pl.manaMax),
-                    wunde: +(pl.deathWoundIntensity || 0).toFixed(4),
-                };
-            })(this.state.player),
+            [
+                "playerLeben",
+                () => {
+                    const pl = st().player;
+                    const anteil = (v, max) => (Number.isFinite(v) && max > 0 ? +Math.min(1, v / max).toFixed(4) : 1);
+                    return {
+                        hp: anteil(pl.hp, pl.hpMax),
+                        ausdauer: anteil(pl.stamina, pl.staminaMax),
+                        mana: anteil(pl.mana, pl.manaMax),
+                        wunde: +(pl.deathWoundIntensity || 0).toFixed(4),
+                    };
+                },
+            ],
             // Tag-Nacht: timeOfDay läuft nach dem Reload weiter. Die Tag-Länge ist die Wahl des Spielers und lebt bei ihm
             // (localStorage, `setDayLength`): der Kopf trägt sie, weil die Taille v1 den Schlüssel verlangt
             // (spec/golden/v1/snapshot-head.json, MUST weiter produziert), das Laden setzt sie nie (Leben-Schau 2: jeder
             // alte Stand trug den 8-min-Tag und hielte ihn fest).
             // weatherTransition NICHT persistiert (Laufzeit-Artefakt; Reload startet mit stabilem Wetter).
-            timeOfDay: typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5,
-            dayLengthMinutes: this.state.dayLengthMinutes,
+            ["timeOfDay", () => (typeof st().timeOfDay === "number" ? st().timeOfDay : 0.5)],
+            ["dayLengthMinutes", () => st().dayLengthMinutes],
             // Das Wort des Spielers über das Wetter reist mit (es steht, bis er es freigibt); der Wunsch der Welt nicht.
-            wetterWort: this.state.wetterWort || null,
+            ["wetterWort", () => st().wetterWort || null],
             // ERFINDER-WELLE — die Welt-Klang-Wahl reist (V8.59-Klasse: sonst still zurückgesetzt).
-            klangPreset: typeof this.state.klangPreset === "string" ? this.state.klangPreset : null,
+            ["klangPreset", () => (typeof st().klangPreset === "string" ? st().klangPreset : null)],
             // DER PRÄGUNGS-SPEICHER (ws.studioOv: die Werke der Studios über den EINEN Übergabe-Kanal und die Werkstatt-Regler)
             // überlebt den Reload — sonst still zurück auf die gefrorenen Kern-Presets. Der Restore läuft durch DENSELBEN Prüfer
-            // (`_studioWerkPruefen`, Taille-gedeckelt je Werk).
-            studioOv: JSON.parse(JSON.stringify((this.state.workshop && this.state.workshop.studioOv) || {})),
+            // (`_studioWerkPruefen`, Taille-gedeckelt je Werk). Der Speicher-Faden serialisiert ihn ungeklont (dasselbe JSON).
+            [
+                "studioOv",
+                (stand) => {
+                    const ov = (st().workshop && st().workshop.studioOv) || {};
+                    return stand ? ov : JSON.parse(JSON.stringify(ov));
+                },
+            ],
             // Die vier Perf-Regler reisen im Snapshot (sonst setzt jeder Reload sie still zurück):
             // perfTargetMs · lodRef (Quelle von Subsystem A) · szeneSkala · chunkRingRadius.
-            perfTargetMs: Number.isFinite(this.state.perfTargetMs) ? this.state.perfTargetMs : 17,
-            lodRef: Number.isFinite(this.state.lodRef) ? this.state.lodRef : 14,
-            szeneSkala: Number.isFinite(this.state.szeneSkala) ? this.state.szeneSkala : null,
-            chunkRingRadius: Number.isFinite(this.state.chunkRingRadius) ? this.state.chunkRingRadius : 4,
+            ["perfTargetMs", () => zahl(st().perfTargetMs, 17)],
+            ["lodRef", () => zahl(st().lodRef, 14)],
+            ["szeneSkala", () => zahl(st().szeneSkala, null)],
+            ["chunkRingRadius", () => zahl(st().chunkRingRadius, 4)],
             // V18.389 (P5) — die Sichtbarkeit des sauberen Perf-Panels (default an).
-            perfPanel: this.state.perfPanel !== false,
+            ["perfPanel", () => st().perfPanel !== false],
             // V8.28 6.G4.b — Atmosphäre-Slider (Cel-Stufen seit V18.236 und der Fog-Regler seit V18.530 gestrichen).
-            // V13.9 — waterCull (uMinDepth) mit dabei.
-            atmosphere: {
-                waterCull:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
-                        ? this.state.atmosphere.waterCull
-                        : 0.0025,
-                // V18.14/.15 — Makro-Kontext-Regler persistieren.
-                waterDepthFoam:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthFoam)
-                        ? this.state.atmosphere.waterDepthFoam
-                        : 1.2,
-                waterLakeRipple:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterLakeRipple)
-                        ? this.state.atmosphere.waterLakeRipple
-                        : 0.06,
-                // (waterfallSteep V18.111 gefallen — A4)
-                // J4-Regler: Kavitäts-AO-Stärke (0..1) + Kanten-Schärfe (Post-FX local-contrast, 0..1).
-                cavityAO:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.cavityAO)
-                        ? this.state.atmosphere.cavityAO
-                        : 1.0,
-                kantenSchaerfe:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.kantenSchaerfe)
-                        ? this.state.atmosphere.kantenSchaerfe
-                        : 0,
-                triplanar:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.triplanar)
-                        ? this.state.atmosphere.triplanar
-                        : 1.0,
-                colorVar:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.colorVar)
-                        ? this.state.atmosphere.colorVar
-                        : 1.0,
-                // V17.111 R1 — Schatten-Hebel (Reichweite/Bias).
-                shadowRange:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.shadowRange)
-                        ? this.state.atmosphere.shadowRange
-                        : 300,
-                shadowBias:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.shadowBias)
-                        ? this.state.atmosphere.shadowBias
-                        : 1.0,
-                // §7.5/V18.164 (GEMESSENER Riss, V8.59-Klasse): die M7-Regler
-                // (V18.160) lebten nur in der Session — Snapshot + Restore
-                // trugen sie nicht → jeder Reload setzte sie still zurück.
-                microStrength:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.microStrength)
-                        ? this.state.atmosphere.microStrength
-                        : 0.1,
-                // V18.210 (§1-A2) — der R5-STRUKTUR-BOOST überlebt den Reload
-                // (sonst springt der Slider zurück auf 1.3 → V8.59-Klasse,
-                // dieselbe Heilung wie microStrength V18.164).
-                r5StructureBoost:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.r5StructureBoost)
-                        ? this.state.atmosphere.r5StructureBoost
-                        : AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost,
-            },
+            // V13.9 — waterCull (uMinDepth); V18.14/.15 — die Makro-Kontext-Regler; J4 — Kavitäts-AO und Kanten-Schärfe;
+            // V17.111 R1 — die Schatten-Hebel; §7.5/V18.164 — die M7-Regler (lebten nur in der Session, V8.59-Klasse);
+            // V18.210 (§1-A2) — der R5-STRUKTUR-BOOST (sonst springt der Slider zurück auf 1.3).
+            [
+                "atmosphere",
+                () => ({
+                    waterCull: atm("waterCull", 0.0025),
+                    waterDepthFoam: atm("waterDepthFoam", 1.2),
+                    waterLakeRipple: atm("waterLakeRipple", 0.06),
+                    cavityAO: atm("cavityAO", 1.0),
+                    kantenSchaerfe: atm("kantenSchaerfe", 0),
+                    triplanar: atm("triplanar", 1.0),
+                    colorVar: atm("colorVar", 1.0),
+                    shadowRange: atm("shadowRange", 300),
+                    shadowBias: atm("shadowBias", 1.0),
+                    microStrength: atm("microStrength", 0.1),
+                    r5StructureBoost: atm("r5StructureBoost", AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost),
+                }),
+            ],
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
-            playerSoul: this.state.player.soul || "human",
-            // Welle 6.D Etappe 1.6 — Custom-Seelen persistieren (eigene
-            // Charaktere des Schöpfers). Built-ins sind in playerSoulDefs
-            // verdrahtet und werden NICHT persistiert.
-            customSouls: this.state.customSouls || {},
+            ["playerSoul", () => st().player.soul || "human"],
+            // Welle 6.D Etappe 1.6 — Custom-Seelen persistieren (eigene Charaktere des Schöpfers). Built-ins sind in
+            // playerSoulDefs verdrahtet und werden NICHT persistiert.
+            ["customSouls", () => st().customSouls || {}],
             // Gewachsene Baupläne (`_grown_*`, _isGrown:true) reisen mit, weil state.architectures sie als `type`
             // referenziert — fehlen sie, schlägt spawnArchitecture beim Restore fehl. Nur die METADATA reist:
             // die `parts` sind pure Funktion von (species, seed) und wachsen beim Restore via `_growTreeBlueprint`
-            // nach (~75 Parts/Baum würden die 256-KB-Wand von pinCurrentWorld sprengen).
-            grownBlueprints: (() => {
-                // NUR von einem Bau DES STANDS referenzierte gewachsene Baupläne persistieren. Foliage-Varianten wachsen
-                // im nächsten Streaming-Pass deterministisch nach; im Snapshot blähten sie ihn und umgingen beim
-                // Restore die 256er-Ring-Deckelung (Inflation über Sessions). Architektur-gehaltene MÜSSEN bleiben,
-                // sonst verliert ein platzierter Baum seinen Bauplan.
-                const out = {};
-                const bps = this.state.blueprints || {};
-                const typen = new Set(bauten.map((a) => a.type));
-                for (const k in bps) {
-                    if (bps[k] && bps[k]._isGrown && typen.has(k)) {
-                        out[k] = {
-                            label: bps[k].label,
-                            _grownSpecies: bps[k]._grownSpecies,
-                            _grownSeed: bps[k]._grownSeed,
-                        };
+            // nach (~75 Parts/Baum würden die 256-KB-Wand von pinCurrentWorld sprengen). NUR von einem Bau DES STANDS
+            // referenzierte: Foliage-Varianten wachsen im nächsten Streaming-Pass deterministisch nach; im Snapshot
+            // blähten sie ihn und umgingen beim Restore die 256er-Ring-Deckelung (Inflation über Sessions). Gefragt wird je
+            // Bau-Art des Stands, in der Ordnung ihres ersten Baus (nie jeder Bauplan der Welt: 0,14 ms je Sicherung).
+            [
+                "grownBlueprints",
+                (stand, K) => {
+                    const out = {};
+                    const bps = st().blueprints || {};
+                    for (const a of K.bauten) {
+                        const bp = bps[a.type];
+                        if (bp && bp._isGrown && !out[a.type])
+                            out[a.type] = { label: bp.label, _grownSpecies: bp._grownSpecies, _grownSeed: bp._grownSeed };
                     }
-                }
-                return out;
-            })(),
+                    return out;
+                },
+                // die Bauten des Stands und die Menge der eigenen Baupläne (ein gewachsener kommt nur hinzu)
+                { marke: (K) => [K.listenGen.architectures, K.listenZahl.blueprints] },
+            ],
             // Welle 6.D Etappe 3a — Konsumable-Rezepte persistieren.
-            consumables: this.state.consumables || {},
+            ["consumables", () => st().consumables || {}],
             // Welle 6.D Etappe 3b / V17.57 W2-B — Equipped-Slots persistieren ({held, armor}).
-            playerEquipped: (this.state.player && this.state.player.equipped) || {
-                held: null,
-                armor: null,
-            },
-            // Welle 4 Phase 3: Werkzeug-Besitz. Starter-Werkzeuge werden bei
-            // jedem Init wieder verfügbar, aber Persistenz erlaubt zukünftig
-            // eigen-geschmiedete (Welle 6) zu überleben.
-            playerTools: Array.isArray(this.state.player.tools) ? [...this.state.player.tools] : [],
-            // Ring 6: Bau-Werke. Nur {type, position, seed, scale} — der
-            // Mesh wird beim Laden aus dem Seed rekonstruiert (kein Mesh-
-            // Snapshot). V2 inkludiert scale für fraktale Sub-Strukturen.
-            architectures: bauten.map((a) => ({
-                // Eine string-id ist eine GETEILTE Architektur-Identität (spieler-gebaut + broadcastet): sie muss Save
-                // + Snapshot-Transfer überleben, sonst divergieren die Peer-ids und der Abbau-Sync bricht.
-                // Numerische ids (Worldgen) sind lokal.
-                id: a.id,
-                type: a.type,
-                position: { x: a.position.x, y: a.position.y, z: a.position.z },
-                // die Höhe über dem Boden des Gesetzes: der Boden-Umzug stellt sie auf einem neuen Boden wieder her
-                ueberGrund: this._ueberGrund(a.position),
-                seed: a.seed,
-                scale: Number.isFinite(a.scale) ? a.scale : 1,
-                // W-H (V18.179, V8.59-Klasse) — die Pro-Instanz-Yaw überlebt den
-                // Reload (sonst rasten geladene Bäume auf Identity zurück → der
-                // Klon-Look kehrt wieder). Nur wenn gesetzt (Bauwerke = 0).
-                ...(Number.isFinite(a.rotationY) && a.rotationY !== 0 ? { rotationY: a.rotationY } : {}),
-                // tintH/S/V sind seed-deterministisch, reisen aber explizit mit: ein durchs Tor gewanderter Bauplan
-                // behält seine Färbung auch in einer Welt mit anderer Seed-Berechnung.
-                ...(Number.isFinite(a.tintH) ? { tintH: a.tintH } : {}),
-                ...(Number.isFinite(a.tintS) ? { tintS: a.tintS } : {}),
-                ...(Number.isFinite(a.tintV) ? { tintV: a.tintV } : {}),
-                // Ω5 — die Gratis-Geburt überlebt den Reload (sonst wüsche der
-                // Save die Marke ab und der pfad erntete doch — GEMESSEN Z2b).
-                ...(a.freeBorn === true ? { freeBorn: true } : {}),
-                // die Marke des Wurfs überlebt den Reload (sonst sperrte ein geladener Wurf des Felds der Ort-Wahl den Grund)
-                ...(a.feldWurf === true ? { feldWurf: true } : {}),
-                // die Herkunft des Werks überlebt den Reload (sonst räumte das Laden ein Werk des Spielers als Natur)
-                ...(a.werk === true ? { werk: true } : {}),
-                // PRÄGUNG-WELT — der Guss-Stempel überlebt den Reload (sonst verlöre
-                // ein geprägtes Werk beim Restore seinen Charakter, V8.59-Klasse).
-                ...(a.studioOv && typeof a.studioOv === "object" ? { studioOv: a.studioOv } : {}),
-                // DORF-IN-TERRAIN — der Fundament-Footprint überlebt den Reload (das
-                // Podest + die Blocker-Wahrheit leiten die Tiefe live aus dem Feld ab).
-                ...(a.fundament && Number.isFinite(a.fundament.ex)
-                    ? {
-                          fundament: Object.assign(
-                              { ex: a.fundament.ex, ez: a.fundament.ez },
-                              a.fundament.ox || a.fundament.oz ? { ox: a.fundament.ox, oz: a.fundament.oz } : {}
-                          ),
-                      }
-                    : {}),
-                // DORF-ERLEBNIS — die Tür-Zeile überlebt den Reload (die Blocker-
-                // Tür-Lücke + der Flügel-Tick leiten alles live daraus ab).
-                ...(a.tuer && Number.isFinite(a.tuer.w) ? { tuer: a.tuer } : {}),
-                // KAMIN-RAUCH (.105) — Spitze überlebt den Reload (Rauch ⟺ chimney).
-                // das Nein (null: kein Kamin) reist mit — sonst baut das Laden das Haus nach, um es zu finden (K69)
-                ...(a.chimney && Number.isFinite(a.chimney.x)
-                    ? { chimney: a.chimney }
-                    : a.chimney === null
-                      ? { chimney: null }
-                      : {}),
-                // Entry-level portalMeta (Halle-Slots): jedes Tor einer Halle trägt eine eigene worldAddress; ohne
-                // Persistenz zögen nach dem Reload alle Slots die Bauplan-Default-portalMeta (die Halle wäre tot).
-                ...(a.portalMeta && typeof a.portalMeta === "object" ? { portalMeta: a.portalMeta } : {}),
-            })),
+            ["playerEquipped", () => (st().player && st().player.equipped) || { held: null, armor: null }],
+            // Welle 4 Phase 3: Werkzeug-Besitz. Starter-Werkzeuge werden bei jedem Init wieder verfügbar, aber Persistenz
+            // erlaubt eigen-geschmiedeten (Welle 6) zu überleben.
+            ["playerTools", () => (Array.isArray(st().player.tools) ? [...st().player.tools] : [])],
+            // Ring 6: Bau-Werke. Nur {type, position, seed, scale} — der Mesh wird beim Laden aus dem Seed rekonstruiert
+            // (kein Mesh-Snapshot). Die Marke eines Baus: seine Felder und der Stand des Bodens unter ihm (`_voxelStand`:
+            // Edit und Erdbau seiner Nachbarschaft — `ueberGrund` misst den Boden).
+            [
+                "architectures",
+                null,
+                {
+                    liste: (K) => K.bauten,
+                    marke: (a, m, K) => {
+                        const p = a.position;
+                        if (K.bodenNeu || m.boden === undefined)
+                            m.boden = this._voxelStand(Math.floor(p.x / K.span), Math.floor(p.z / K.span));
+                        return [a.id, a.type, p.x, p.y, p.z, a.seed, a.scale, a.rotationY, a.tintH, a.tintS, a.tintV,
+                            a.freeBorn, a.feldWurf, a.werk, a.studioOv, a.fundament, a.tuer, a.chimney, a.portalMeta, m.boden];
+                    },
+                    glied: (a) => ({
+                        // Eine string-id ist eine GETEILTE Architektur-Identität (spieler-gebaut + broadcastet): sie muss Save
+                        // + Snapshot-Transfer überleben, sonst divergieren die Peer-ids und der Abbau-Sync bricht.
+                        // Numerische ids (Worldgen) sind lokal.
+                        id: a.id,
+                        type: a.type,
+                        position: { x: a.position.x, y: a.position.y, z: a.position.z },
+                        // die Höhe über dem Boden des Gesetzes: der Boden-Umzug stellt sie auf einem neuen Boden wieder her
+                        ueberGrund: this._ueberGrund(a.position),
+                        seed: a.seed,
+                        scale: Number.isFinite(a.scale) ? a.scale : 1,
+                        // W-H (V18.179, V8.59-Klasse) — die Pro-Instanz-Yaw überlebt den
+                        // Reload (sonst rasten geladene Bäume auf Identity zurück → der
+                        // Klon-Look kehrt wieder). Nur wenn gesetzt (Bauwerke = 0).
+                        ...(Number.isFinite(a.rotationY) && a.rotationY !== 0 ? { rotationY: a.rotationY } : {}),
+                        // tintH/S/V sind seed-deterministisch, reisen aber explizit mit: ein durchs Tor gewanderter Bauplan
+                        // behält seine Färbung auch in einer Welt mit anderer Seed-Berechnung.
+                        ...(Number.isFinite(a.tintH) ? { tintH: a.tintH } : {}),
+                        ...(Number.isFinite(a.tintS) ? { tintS: a.tintS } : {}),
+                        ...(Number.isFinite(a.tintV) ? { tintV: a.tintV } : {}),
+                        // Ω5 — die Gratis-Geburt überlebt den Reload (sonst wüsche der
+                        // Save die Marke ab und der pfad erntete doch — GEMESSEN Z2b).
+                        ...(a.freeBorn === true ? { freeBorn: true } : {}),
+                        // die Marke des Wurfs überlebt den Reload (sonst sperrte ein geladener Wurf des Felds der Ort-Wahl den Grund)
+                        ...(a.feldWurf === true ? { feldWurf: true } : {}),
+                        // die Herkunft des Werks überlebt den Reload (sonst räumte das Laden ein Werk des Spielers als Natur)
+                        ...(a.werk === true ? { werk: true } : {}),
+                        // PRÄGUNG-WELT — der Guss-Stempel überlebt den Reload (sonst verlöre
+                        // ein geprägtes Werk beim Restore seinen Charakter, V8.59-Klasse).
+                        ...(a.studioOv && typeof a.studioOv === "object" ? { studioOv: a.studioOv } : {}),
+                        // DORF-IN-TERRAIN — der Fundament-Footprint überlebt den Reload (das
+                        // Podest + die Blocker-Wahrheit leiten die Tiefe live aus dem Feld ab).
+                        ...(a.fundament && Number.isFinite(a.fundament.ex)
+                            ? {
+                                  fundament: Object.assign(
+                                      { ex: a.fundament.ex, ez: a.fundament.ez },
+                                      a.fundament.ox || a.fundament.oz ? { ox: a.fundament.ox, oz: a.fundament.oz } : {}
+                                  ),
+                              }
+                            : {}),
+                        // DORF-ERLEBNIS — die Tür-Zeile überlebt den Reload (die Blocker-
+                        // Tür-Lücke + der Flügel-Tick leiten alles live daraus ab).
+                        ...(a.tuer && Number.isFinite(a.tuer.w) ? { tuer: a.tuer } : {}),
+                        // KAMIN-RAUCH (.105) — Spitze überlebt den Reload (Rauch ⟺ chimney).
+                        // das Nein (null: kein Kamin) reist mit — sonst baut das Laden das Haus nach, um es zu finden (K69)
+                        ...(a.chimney && Number.isFinite(a.chimney.x)
+                            ? { chimney: a.chimney }
+                            : a.chimney === null
+                              ? { chimney: null }
+                              : {}),
+                        // Entry-level portalMeta (Halle-Slots): jedes Tor einer Halle trägt eine eigene worldAddress; ohne
+                        // Persistenz zögen nach dem Reload alle Slots die Bauplan-Default-portalMeta (die Halle wäre tot).
+                        ...(a.portalMeta && typeof a.portalMeta === "object" ? { portalMeta: a.portalMeta } : {}),
+                    }),
+                },
+            ],
             // Φ7 (V18.190) — die KURATIONS-MANIFESTE der Welt: signierte
             // Hallen (Welt-Verzeichnisse) reisen im Snapshot mit. JSON-flach
             // (Map → Array), Restore baut die Map zurück.
-            portalHalls: Array.from(this.state.portalHalls || new Map()).map(([name, h]) => ({
-                name,
-                label: h.label,
-                entries: h.entries.map((e) => ({ address: { ...e.address }, label: e.label })),
-                authorPubKey: h.authorPubKey || null,
-                sig: h.sig || null,
-                signedAt: h.signedAt || 0,
-                signedHash: h.signedHash || null,
-                provenance: Array.isArray(h.provenance) ? h.provenance.slice() : [],
-            })),
+            [
+                "portalHalls",
+                () =>
+                    Array.from(st().portalHalls || new Map()).map(([name, h]) => ({
+                        name,
+                        label: h.label,
+                        entries: h.entries.map((e) => ({ address: { ...e.address }, label: e.label })),
+                        authorPubKey: h.authorPubKey || null,
+                        sig: h.sig || null,
+                        signedAt: h.signedAt || 0,
+                        signedHash: h.signedHash || null,
+                        provenance: Array.isArray(h.provenance) ? h.provenance.slice() : [],
+                    })),
+            ],
             // Φ6 (V18.191) — die COMPUTE-SPENDE-Schicht reist mit (Hashes,
             // klein — 256 contributions × ~50 B = ~13 KiB Cap). Das Web der
             // Verifizierung wächst mit der Welt.
-            computeContributions: Array.from(this.state.computeContributions || new Map()).map(([inputHash, c]) => ({
-                inputHash,
-                outputHash: c.outputHash,
-                providedBy: c.providedBy || null,
-                providedAt: c.providedAt || 0,
-                sig: c.sig || null,
-                status: c.status || "unverified",
-            })),
-            playtestContributions: (this.state.playtestContributions || []).slice(),
-            // Nur eigene Baupläne persistieren (die Built-ins erzeugt _defaultBlueprints() beim Init).
-            // Der Feld-Satz lebt in _serializeBlueprint — EINE Quelle für alle drei Snapshot-Pfade.
-            blueprints: Object.values(this.state.blueprints || {})
-                .filter((bp) => bp && !bp.builtIn)
-                .map((bp) => this._serializeBlueprint(bp)),
-            // Welle 5 C — eigene Werkzeuge (aus registrierten Bauplänen)
-            // persistieren. Starter-Werkzeuge entstehen aus _defaultTools()
-            // bei jedem Init, deshalb nur eigene speichern. Ω2: EIN Serialize.
-            tools: Object.values(this.state.tools || {})
-                .filter((t) => t && !t.builtIn)
-                .map((t) => this._serializeTool(t)),
-            // Welle 4 Phase 1 — eigene Materialien persistieren. Built-ins
-            // kommen aus _defaultMaterials() im Konstruktor zurück; auch hier
-            // schreiben wir nur, was der Spieler dazugefügt hat. Ω2: EIN Serialize.
-            materials: Object.values(this.state.materials || {})
-                .filter((m) => m && !m.builtIn)
-                .map((m) => this._serializeMaterial(m)),
-            // Ring 6.5 — Hotbar-Belegung. Array von 9 Slots mit Bauplan-Name
-            // oder null. Default wird beim Init überschrieben.
-            hotbar: Array.isArray(this.state.hotbar) ? this.state.hotbar.slice(0, 9) : [],
+            [
+                "computeContributions",
+                () =>
+                    Array.from(st().computeContributions || new Map()).map(([inputHash, c]) => ({
+                        inputHash,
+                        outputHash: c.outputHash,
+                        providedBy: c.providedBy || null,
+                        providedAt: c.providedAt || 0,
+                        sig: c.sig || null,
+                        status: c.status || "unverified",
+                    })),
+            ],
+            [
+                "playtestContributions",
+                () => (st().playtestContributions || []).slice(),
+                angehaengt(() => st().playtestContributions || AnazhRealm.STAND_LEER),
+            ],
+            // Nur eigene Baupläne persistieren (die Built-ins erzeugt _defaultBlueprints() beim Init). Der Feld-Satz lebt in
+            // _serializeBlueprint — EINE Quelle für alle drei Snapshot-Pfade. Die Marke eines Bauplans: jedes eigene Feld
+            // (auch das Unbekannte, das `_carryUnknown` trägt), die Länge seiner Teile und Verbindungen, die Felder des
+            // Tor-Ziels und der jüngste Schritt seines Edit-Verlaufs (`_recordBlueprintEdit` geht jedem Teile-Edit voraus).
+            [
+                "blueprints",
+                null,
+                {
+                    liste: () => Object.values(st().blueprints || {}).filter((bp) => bp && !bp.builtIn),
+                    marke: (bp) => {
+                        const m = Object.values(bp);
+                        const pm = bp.portalMeta;
+                        m.push(Object.keys(bp).length, bpRolle(bp));
+                        if (Array.isArray(bp.parts)) m.push(bp.parts.length);
+                        if (Array.isArray(bp.connections)) m.push(bp.connections.length);
+                        if (pm && typeof pm === "object") m.push(...Object.values(pm));
+                        if (bp.toolMeta && typeof bp.toolMeta === "object") m.push(...Object.values(bp.toolMeta));
+                        return m;
+                    },
+                    glied: (bp) => this._serializeBlueprint(bp),
+                },
+            ],
+            // Welle 5 C — eigene Werkzeuge (aus registrierten Bauplänen) persistieren. Starter-Werkzeuge entstehen aus
+            // _defaultTools() bei jedem Init, deshalb nur eigene speichern. Ω2: EIN Serialize.
+            [
+                "tools",
+                () =>
+                    Object.values(st().tools || {})
+                        .filter((t) => t && !t.builtIn)
+                        .map((t) => this._serializeTool(t)),
+            ],
+            // Welle 4 Phase 1 — eigene Materialien persistieren. Built-ins kommen aus _defaultMaterials() im Konstruktor
+            // zurück; auch hier schreiben wir nur, was der Spieler dazugefügt hat. Ω2: EIN Serialize.
+            [
+                "materials",
+                () =>
+                    Object.values(st().materials || {})
+                        .filter((m) => m && !m.builtIn)
+                        .map((m) => this._serializeMaterial(m)),
+            ],
+            // Ring 6.5 — Hotbar-Belegung. Array von 9 Slots mit Bauplan-Name oder null. Default wird beim Init überschrieben.
+            ["hotbar", () => (Array.isArray(st().hotbar) ? st().hotbar.slice(0, 9) : [])],
             // Welle 6.C1 — Inventar persistiert. 27 Slots, jeweils {blueprintName,
             // count}, ein Material-Slot {kind, material, count}, oder null. Bei Reload defensive Validierung (unbekannte
             // Namen werden zu null, count ≥ 1, ganz). Bis 24.10. schrieb der Material-Slot nur {count}: jedes Laden
             // verlor, was Graben, Ernte und Beute gaben (der Korpus, speicher.K5).
-            playerInventory: Array.isArray(this.state.player && this.state.player.inventory)
-                ? this.state.player.inventory
-                      .slice(0, 27)
-                      .map((s) =>
-                          s
-                              ? s.kind === "material"
-                                  ? { kind: "material", material: s.material, count: s.count || 1 }
-                                  : { blueprintName: s.blueprintName, count: s.count || 1 }
-                              : null
-                      )
-                : [],
+            [
+                "playerInventory",
+                () =>
+                    Array.isArray(st().player && st().player.inventory)
+                        ? st()
+                              .player.inventory.slice(0, 27)
+                              .map((s) =>
+                                  s
+                                      ? s.kind === "material"
+                                          ? { kind: "material", material: s.material, count: s.count || 1 }
+                                          : { blueprintName: s.blueprintName, count: s.count || 1 }
+                                      : null
+                              )
+                        : [],
+            ],
+        ]);
+    }
+
+    // DIE ÄNDERUNG DES STANDS für den Speicher-Faden (Lehre 24): je Feld der Tafel sein JSON, gesendet nur, wenn es sich
+    // änderte; je Glied einer Liste die Marke (gleich → das gemerkte JSON, keine Serialisierung), die Ordnung der Glieder
+    // nur, wenn sie sich änderte; die Edits als Anhang (x, y, z, r, Modus) seit dem letzten Stand. `voll`: alles (der Faden
+    // hält kein Modell dieser Welt). → die Nachricht {ordnung, teile, listen, edits, daten} und ihre Transfers.
+    _standAenderung(voll) {
+        const S = this._speicher;
+        const stuecke = [];
+        const listenStuecke = [];
+        const ordnung = [];
+        const teile = [];
+        const listen = {};
+        const gleich = (a, b) => {
+            if (!a || a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+            return true;
         };
+        const tafel = this._standTafel();
+        // DER KONTEXT DES STANDS: die Bauten einmal gefiltert; der Boden (Edits, Erdbau, Welt-Sync — was `_ueberGrund` liest):
+        // nur ein neuer Boden fragt den Boden unter jedem Bau
+        const wm = this.state.worldMeta || {};
+        const boden = [wm.voxelEdits, wm.voxelEdits ? wm.voxelEdits.length : 0, wm.erdbau, this._erdbauStand];
+        boden.push(this.state.voxelWorkerStateGen);
+        if (voll || !gleich(S.boden, boden)) S.bodenGen = (S.bodenGen || 0) + 1;
+        S.boden = boden;
+        const K = {
+            bauten: this._standBauten(),
+            bodenNeu: S.bodenGen !== S.bodenGemessen,
+            bodenGen: S.bodenGen,
+            span: this._voxelChunkConfig(0).span,
+            listenGen: {},
+            listenZahl: {},
+        };
+        S.bodenGemessen = S.bodenGen;
+        // die Listen zuerst: ihre Änderung ist die Marke der Felder, die aus ihnen folgen
+        for (const [k, , art] of tafel) {
+            if (!art || !art.liste) continue;
+            const L = S.listen.get(k) || S.listen.set(k, { ordnung: [], memo: new WeakMap(), gen: 0 }).get(k);
+            const glieder = art.liste(K);
+            const ord = new Array(glieder.length);
+            const neu = [];
+            for (let i = 0; i < glieder.length; i++) {
+                const g = glieder[i];
+                let m = L.memo.get(g);
+                if (!m) L.memo.set(g, (m = { s: ++S.seriell, marke: null, json: null }));
+                const marke = art.marke(g, m, K);
+                if (voll || !gleich(m.marke, marke)) {
+                    m.marke = marke;
+                    const json = JSON.stringify(art.glied(g));
+                    if (voll || json !== m.json) {
+                        m.json = json;
+                        neu.push(m.s);
+                        listenStuecke.push(json);
+                    }
+                }
+                ord[i] = m.s;
+            }
+            const l = { teile: neu };
+            if (voll || !gleich(L.ordnung, ord)) l.ordnung = L.ordnung = ord;
+            if (neu.length || l.ordnung) L.gen++;
+            listen[k] = l;
+            K.listenGen[k] = L.gen;
+            K.listenZahl[k] = glieder.length;
+        }
+        let edits = null;
+        for (const [k, wert, art] of tafel) {
+            if (art && art.liste) {
+                ordnung.push(k);
+            } else if (k === "voxelEdits") {
+                const eds = wm.voxelEdits || null;
+                const zahl = eds ? eds.length : 0;
+                const E = S.edits;
+                const neu = voll || eds !== E.ref || zahl < E.n;
+                const ab = neu ? 0 : E.n;
+                if (neu || ab < zahl) {
+                    const xyzr = new Float64Array((zahl - ab) * 4);
+                    const modus = new Uint8Array(zahl - ab);
+                    for (let i = ab, j = 0; i < zahl; i++, j++) {
+                        const e = eds[i];
+                        xyzr[j * 4] = e.x;
+                        xyzr[j * 4 + 1] = e.y;
+                        xyzr[j * 4 + 2] = e.z;
+                        xyzr[j * 4 + 3] = e.r;
+                        modus[j] = e.mode === "fill" ? 1 : 0;
+                    }
+                    edits = { ab, xyzr, modus };
+                }
+                E.ref = eds;
+                E.n = zahl;
+                ordnung.push(k);
+            } else {
+                const z = S.zeilen.get(k);
+                const marke = art && art.marke ? art.marke(K) : null;
+                let json;
+                if (!voll && marke && z && gleich(z.marke, marke)) json = z.json;
+                else {
+                    const v = wert(true, K);
+                    json = v === undefined ? undefined : JSON.stringify(v);
+                    if (voll || !z || z.json !== json) {
+                        if (json !== undefined) {
+                            teile.push(k);
+                            stuecke.push(json);
+                        }
+                    }
+                    S.zeilen.set(k, { marke, json });
+                }
+                if (json !== undefined) ordnung.push(k);
+            }
+        }
+        const daten = new TextEncoder().encode(stuecke.concat(listenStuecke).join("\u0001")).buffer;
+        const nachricht = { teile, listen, daten };
+        if (voll || !gleich(S.ordnung, ordnung)) nachricht.ordnung = S.ordnung = ordnung;
+        const transfer = [daten];
+        if (edits) {
+            nachricht.edits = edits;
+            transfer.push(edits.xyzr.buffer, edits.modus.buffer);
+        }
+        return { nachricht, transfer };
+    }
+
+    // DER SPEICHER-FADEN (speicher-faden.js, Lehre 24): lazy geboren, EIN Faden je Seite; jede Antwort löst die Zusage ihrer
+    // Nachricht. Ein verworfener Stand bricht laut (`_bruchMelden`) und lässt das Modell fallen: die nächste Sicherung sendet
+    // die Welt ganz. Ohne Platte (null-origin der inneren Welt) sagt es die Seite einmal laut.
+    _speicherAuftrag(nachricht, transfer = []) {
+        const S = this._speicherZustand();
+        if (!S.faden) {
+            S.faden = new Worker(`speicher-faden.js?v=${AnazhRealm.VERSION}`, { name: "speicher" });
+            S.faden.onmessage = (e) => {
+                const a = e.data;
+                const w = S.warten.get(a.n);
+                S.warten.delete(a.n);
+                if (a.ohnePlatte && !this._speicherOhnePlatte) {
+                    this._speicherOhnePlatte = true;
+                    this.log(`IndexedDB nicht verfügbar (${a.ohnePlatte}) — der Stand lebt nur bis zum Verlassen der Welt.`, "WARN");
+                }
+                if (!a.ok) {
+                    if (a.op === "stand") S.welt = null;
+                    this._bruchMelden(`SPEICHER: der Faden verwarf ${a.op} — ${a.grund}`);
+                }
+                if (w) w(a);
+            };
+        }
+        nachricht.n = ++S.n;
+        return new Promise((ok) => {
+            S.warten.set(nachricht.n, ok);
+            S.faden.postMessage(nachricht, transfer);
+        });
+    }
+
+    // Die Sicherung der lebenden Welt an den Faden: die Änderung seit dem letzten Stand (ganz, wenn der Faden kein Modell
+    // dieser Welt hält). → die Zusage der Antwort.
+    _standSichern(welt, at) {
+        const S = this._speicherZustand();
+        const voll = S.welt !== welt;
+        if (voll) Object.assign(S, { zeilen: new Map(), listen: new Map(), edits: { ref: null, n: 0 }, ordnung: null });
+        const { nachricht, transfer } = this._standAenderung(voll);
+        Object.assign(nachricht, { op: "stand", welt, at, voll });
+        S.welt = welt;
+        S.at = at;
+        return this._speicherAuftrag(nachricht, transfer);
+    }
+
+    // Was die Seite vom Faden weiß: das Modell der Welt (`welt`, das JSON je Feld, die Glieder je Liste, die gesendeten Edits).
+    _speicherZustand() {
+        return (
+            this._speicher ||
+            (this._speicher = {
+                faden: null,
+                n: 0,
+                warten: new Map(),
+                welt: null,
+                at: 0,
+                seriell: 0,
+                zeilen: new Map(),
+                listen: new Map(),
+                edits: { ref: null, n: 0 },
+                ordnung: null,
+            })
+        );
+    }
+
+    // Die Schranke des Fadens: löst, wenn alles davor Gesendete fest ist (der Welt-Wechsel wartet auf sie).
+    _speicherStill() {
+        return this._speicher ? this._speicherAuftrag({ op: "still" }) : Promise.resolve({ ok: true });
+    }
+
+    // DAS VERLASSEN DER WELT (`_weltWechselNeuLaden`): ihr Stand wird ihr Platz im localStorage (die Leser ohne Faden — die
+    // Fusion, der Welt-Wechsel, die Rettungs-Kette ohne Platte — finden jede verlassene Welt dort) mit dem Stempel ihres
+    // letzten Stands (`lastPlayed`; IndexedDB trägt denselben, die Rettungs-Kette wählt sie).
+    async _speicherVerlassen() {
+        const S = this._speicher;
+        if (!S || !S.welt) return;
+        const a = await this._speicherAuftrag({ op: "abbild", welt: S.welt });
+        if (!a.daten) return;
+        try {
+            localStorage.setItem(this.worldStorageKey(S.welt), new TextDecoder().decode(a.daten));
+            this.worldsIndexUpsert({ worldId: S.welt, lastPlayed: S.at });
+        } catch (e) {
+            this.log(`Der Platz der verlassenen Welt ließ sich nicht schreiben (${e.message}) — sie lebt in IndexedDB.`, "WARN");
+        }
+    }
+
+    // Der Stand von der Platte in die Form des Objekts (die Rettungs-Kette, Leser des Platzes): die kompakten Edits des
+    // Speicher-Fadens {n, xyzr, modus} zurück nach `worldMeta.voxelEdits` (x, y, z, r Float64 little-endian, Modus-Bit 1 =
+    // fill). Ein Stand ohne den Teil (vor dem Speicher-Faden) bleibt, wie er ist.
+    _standNormal(s) {
+        const k = s && s.voxelEdits;
+        if (!k || typeof k !== "object") return s;
+        const bytes = (t) => Uint8Array.from(atob(t), (c) => c.charCodeAt(0));
+        const d = new DataView(bytes(k.xyzr).buffer);
+        const modus = bytes(k.modus);
+        if (d.byteLength !== k.n * 32) throw new Error(`voxelEdits: ${d.byteLength} Bytes für ${k.n} Edits`);
+        const edits = new Array(k.n);
+        for (let i = 0; i < k.n; i++) {
+            const f = (j) => d.getFloat64(i * 32 + j * 8, true);
+            edits[i] = { x: f(0), y: f(1), z: f(2), r: f(3), mode: modus[i >> 3] & (1 << (i & 7)) ? "fill" : "carve" };
+        }
+        delete s.voxelEdits;
+        if (k.n) s.worldMeta = { ...(s.worldMeta || {}), voxelEdits: edits };
+        return s;
     }
 
     // ===== IndexedDB-Persistenz =====
-    // Große Welt-Snapshots leben in IndexedDB (localStorage-Wand ~5 MB je Origin, atomar je Transaktion); der winzige Index
-    // (anazhRealmWorlds/Active) bleibt synchron in localStorage, dazu das Abbild des Stands mit demselben Stempel.
-    // Beim LESEN gewinnt IndexedDB, wenn ihr Stempel nicht älter ist (`_weltRettungsKette`). Ohne IndexedDB trägt
-    // localStorage allein; wirft localStorage QUOTA, trägt IndexedDB allein.
+    // Große Welt-Snapshots leben in IndexedDB (localStorage-Wand ~5 MB je Origin, atomar je Transaktion). Es SCHREIBT allein
+    // der Speicher-Faden (`_speicherAuftrag`: stand · ablegen · loeschen); die Seite liest hier beim Boot. Der winzige Index
+    // (anazhRealmWorlds/Active) bleibt synchron in localStorage, dazu der Platz jeder abgelegten und verlassenen Welt.
+    // Beim LESEN gewinnt IndexedDB, wenn ihr Stempel nicht älter ist (`_weltRettungsKette`).
 
     // Lazy-Open der EINEN DB (Promise gecacht; null = nicht verfügbar).
     _idb() {
@@ -1132,30 +1428,6 @@ class AnazhRealm_speicher_welten {
         return this._idbPromise;
     }
 
-    // Einen Welt-Snapshot (JSON-String) ablegen, ATOMAR wie der save-server (tmp + Tausch + .bak): EINE Transaktion liest den
-    // vorigen Stand, legt ihn als `<id>.bak` ab und schreibt den neuen unter `<id>` — ein Tod mitten darin lässt beide, wie
-    // sie waren (nie ein halber Platz, nie ein leerer .bak). {at} stempelt die Frische (= lastPlayed des Abbilds).
-    async _idbPutWorld(worldId, json, at = Date.now()) {
-        const db = await this._idb();
-        if (!db || !worldId) return false;
-        return new Promise((resolve) => {
-            try {
-                const tx = db.transaction("worlds", "readwrite");
-                const store = tx.objectStore("worlds");
-                store.get(worldId).onsuccess = (e) => {
-                    const vor = e.target.result;
-                    if (vor && typeof vor.json === "string") store.put(vor, worldId + ".bak");
-                    store.put({ at, json }, worldId);
-                };
-                tx.oncomplete = () => resolve(true);
-                tx.onerror = () => resolve(false);
-                tx.onabort = () => resolve(false);
-            } catch {
-                resolve(false);
-            }
-        });
-    }
-
     async _idbGetWorld(worldId) {
         const db = await this._idb();
         if (!db || !worldId) return null;
@@ -1174,22 +1446,6 @@ class AnazhRealm_speicher_welten {
         });
     }
 
-    async _idbDeleteWorld(worldId) {
-        const db = await this._idb();
-        if (!db || !worldId) return false;
-        return new Promise((resolve) => {
-            try {
-                const tx = db.transaction("worlds", "readwrite");
-                tx.objectStore("worlds").delete(worldId);
-                tx.objectStore("worlds").delete(worldId + ".bak");
-                tx.oncomplete = () => resolve(true);
-                tx.onerror = () => resolve(false);
-            } catch {
-                resolve(false);
-            }
-        });
-    }
-
     // Boot-Vorlauf (init awaitet ihn VOR der Vorlade und vor loadState): den IDB-Stand der aktiven Welt lesen und halten —
     // ob er gewinnt (frischer als der Platz) oder rettet (Platz und .bak leer oder korrupt), entscheidet die EINE
     // Rettungs-Kette `_weltRettungsKette`. Bis 10.10. lief er erst nach ensureWorldMeta: eine Welt, die nur in IndexedDB
@@ -1203,7 +1459,7 @@ class AnazhRealm_speicher_welten {
         const lies = (r) => {
             if (!r) return { state: null, at: 0, kaputt: "leer" };
             try {
-                return { state: JSON.parse(r.json), at: r.at };
+                return { state: this._standNormal(JSON.parse(r.json)), at: r.at };
             } catch (e) {
                 return { state: null, at: r.at, kaputt: e.message };
             }
@@ -2038,6 +2294,8 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
 // Quota-DoS) + die known-Sätze der Serialize/Restore-Zwillinge; was hier NICHT steht, reist als
 // opakes Unbekanntes (_carryUnknown).
 AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX = 8192;
+// Die leere Reihe der Stand-Tafel (eine Marke vergleicht Identität: nie je Ruf ein neues [])
+AnazhRealm.STAND_LEER = Object.freeze([]);
 AnazhRealm.BLUEPRINT_KNOWN_KEYS = Object.freeze([
     "name",
     "label",
