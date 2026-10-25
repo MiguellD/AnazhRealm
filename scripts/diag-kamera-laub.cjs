@@ -373,12 +373,15 @@ function leibInstall(cfg) {
         st._kamArm = undefined;
         L.ruhig();
     };
-    L.gtHolen = async (x, z) => {
-        if (L.gt && st.architectures.includes(L.gt)) return L.gt;
-        const gt = r.spawnArchitecture("fahrzeug_gt", { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, { silent: true, precise: true });
-        if (gt) await window.__gebautNach(gt);
-        L.gt = gt;
-        return gt;
+    // DER WAGEN WARTET AUF KEINE GESTALT: Aufsitzen und Verfolger-Kamera lesen das Gesetz des Bauplans (Sitz, Hülle,
+    // `chaseKamera`), nie sein Mesh, und jede Messung nimmt den gerittenen Wagen aus. Bis hier wartete `__gebautNach` auf seine
+    // erste Gestalt — 30 m fern und in der Gleite der Ankunft (Ferne ×128, sie zählt gezeichnete Bilder) die Karte, GPU-Arbeit,
+    // die auf swiftshader neben den Bau-Raten verhungerte (CI main 8f1802b1, z31b: „DIE WELT HÄNGT: fahrzeug_gt#738 nach 3987
+    // Takten“, karten 1, bau 4)
+    L.gtHolen = (x, z) => {
+        if (!(L.gt && st.architectures.includes(L.gt)))
+            L.gt = r.spawnArchitecture("fahrzeug_gt", { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, { silent: true, precise: true });
+        return L.gt;
     };
     L.ritt = (gt, x, z, gier) => {
         const y = r.getTerrainHeightAt(x, z);
@@ -567,7 +570,7 @@ async function leibWiese(arg) {
             out.rundgang = h.typ;
         }
         // DER VERFOLGER-RITT: dieselben Posen, der GT 3,2 m vor der Box, sein Heck zu ihr
-        const gt = await L.gtHolen(arg.x + 30, arg.z);
+        const gt = L.gtHolen(arg.x + 30, arg.z);
         const mr = gt ? r.mountArchitecture(gt) : null;
         if (mr && mr.ok) {
             r.setCameraMode("third");
@@ -605,7 +608,7 @@ async function leibHang(arg) {
             L.fuss(p.x, p.z, p.gier, p.pitch);
             out.fuss.posen.push(Object.assign({ id: p.id, anker: p.anker, pitch: p.pitch, x: +p.x.toFixed(2), z: +p.z.toFixed(2) }, L.messen(null)));
         }
-        const gt = await L.gtHolen(S.x + 12, S.fusZ - 10);
+        const gt = L.gtHolen(S.x + 12, S.fusZ - 10);
         const mr = gt ? r.mountArchitecture(gt) : null;
         if (mr && mr.ok) {
             r.setCameraMode("third");
@@ -1086,10 +1089,7 @@ async function probe(arg) {
             z.modi.first = messe("first", fuss, 0.9, [0, Math.PI], [0, 0.3]);
             r.setCameraMode("third");
             // DER RITT: ein GT, aufgesessen, 3 m vor dem Stamm (die Verfolger-Kamera des Kerns hinter ihm)
-            if (!gt) {
-                gt = r.spawnArchitecture("fahrzeug_gt", { x: P.x + 30, y: hh(P.x + 30, P.z) + 0.5, z: P.z }, { silent: true, precise: true });
-                if (gt) await window.__gebautNach(gt);
-            }
+            if (!gt) gt = window.__kamLeib.gtHolen(P.x + 30, P.z);
             const mr = gt ? r.mountArchitecture(gt) : null;
             if (mr && mr.ok) {
                 const rittStelle = (x, y, zz, gier) => {
@@ -1251,6 +1251,7 @@ async function probe(arg) {
         const tL = Date.now();
         await page.evaluate(KAMERA_NAH_INSTALL);
         await page.evaluate(WASSER_INSTALL); // __wasserOrte + __weltOrt: die Orte aus der Welt
+        await page.evaluate(leibInstall, { R: LEIB_R }); // der Wagen des Ritts (`gtHolen`)
         m = await page.evaluate(probe, { orte: process.env.KAMERA_LAUB_NUR ? ORTE.filter((o) => process.env.KAMERA_LAUB_NUR.split(",").includes(o.id)) : ORTE, radius: RADIUS, saum: SAUM, nahMax: NAH_DECKUNG_MAX, hubMax: SCHMUGGEL_HUB_M, jeOrt: 5, jeStreu: 2, gw: 48, gh: 27 });
         zeiten.laub = Date.now() - tL;
     }
