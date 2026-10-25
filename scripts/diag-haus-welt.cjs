@@ -1823,7 +1823,7 @@ async function slotProbe(page) {
     const ort = await page.evaluate(() => {
         const r = window.anazhRealm;
         const s = r.state;
-        const h = globalThis.__gelaendeCore.hangOrt(r._gelaende(), (x, z) => r._landAt(x, z, 1), 200, 1600, 0.17, 0.3);
+        const h = globalThis.__gelaendeCore.hangOrt(r._gelaende(), (x, z) => r._landAt(x, z, 1), 600, 2400, 0.17, 0.3);
         // die Spuren der Phasen davor weichen (Bau-Modus, Schublade, Fokus), wie vor jedem Weg der Werkstatt-Linse
         if (s.buildMode.active) r._clearBuildMode();
         if (s.uiActiveDrawer) r.closeAllDrawers();
@@ -1850,6 +1850,9 @@ async function slotProbe(page) {
         await page.click('#workshop-list .workshop-list-row[data-blueprint="haus_alemannisch"]');
         await page.click("#workshop-action-zone .workshop-fertigen");
         await page.waitForFunction(() => window.__slot.steht(), { timeout: 240000 });
+    } catch (e) {
+        const sagt = await page.evaluate(() => (document.querySelector("#chat-output > div:last-child") || {}).textContent);
+        return { fehler: `${e.message} an ${Math.round(ort.x)}/${Math.round(ort.z)} — der Chat: ${String(sagt).slice(0, 160)}` };
     } finally {
         await page.evaluate(() => clearInterval(window.__slot.takt));
     }
@@ -2278,7 +2281,7 @@ function zeile(o) {
                 grundbueschel: ["grund", "W9 Büschel"],
                 abbau: ["grund", "W9 Abbau"],
                 grundplan: ["grund", "W9 Plan"],
-                slot: ["slot", "W9 Slot"],
+                slot: ["slot", "W9 Slot: Erdbau"],
                 waise: ["grund", "W9 Waise"],
                 ausstattung: ["grund", "W9 Zug|W9 Ausstattung"],
                 zugreload: ["grund", "W9 Waise", "W9 Zug"],
