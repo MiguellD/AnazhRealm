@@ -845,6 +845,57 @@ const stationen = [
         pfad: ["vehicle-core.js", "scripts/diag-fahr-leben.cjs"],
         quelle: "1 = (a) Seitenkraft mit Spitze bei 6–10° Schlupf und ≥ 15 % Abfall",
     },
+    // ───────── fahrzeug.K1 — Staffel 2: das Fahr-Gesetz IN DER WELT (fahrzeug-k1-reifen, 25.10.) ─────────
+    // gate:fahr-leben --kette (Node, Null-Renderer, ≤ 1 min): (a) aus der Zeile REIFEN (der Kern, wie #1); die Bremsungen der
+    // W-Kette ab 50 km/h bis bremsV auf der Mess-Wiese (Gras: μ(kraut) der Stoff-Zeile über dem Grün der Boden-Karte) und auf
+    // demselben Streifen als Weg (`_stlWegeBuild`, μ(erde)) je trocken und im Sturm (die EINE Nässe), dazu Gras mit halbem
+    // μ(kraut) in der Stoff-Zeile (die Zeile wirkt, kein Grip-Faktor im Wirt); S1 (Labor = Welt) mit dem Takt des Kerns an
+    // jedem Schritt der Welt — alles aus der Zeile `KETTE {roh}`. An main 206b395a ROT: die Welt reichte trocken μ 1 auf jeden
+    // Boden (Gras/Weg 1,0), nass 0,7 (Bremsweg 1,28×), keine Zeile `weg`.
+    {
+        kriterium: "fahrzeug.K1", staffel: 2, geraet: "headless",
+        befehl: ["node", "scripts/diag-fahr-leben.cjs", "--kette"], env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: false, minuten: 1,
+        urteil: (j, lauf) => {
+            const A = (jsonZeile(lauf.stdout, /^REIFEN {/) || {}).achsen || [];
+            const r = (jsonZeile(lauf.stdout, /^KETTE {/) || {}).roh || {};
+            const q = (a, b) => (r[a] && r[b] ? r[a].s / r[b].s : NaN);
+            const L = r.labor || {};
+            const z = (x) => (Number.isFinite(x) ? x.toFixed(2) : "?");
+            const teile = {
+                a: A.length >= 10 && A.every((x) => x.spitze >= 6 && x.spitze <= 10 && x.abfall >= 0.15),
+                b: q("trocken", "weg") >= 1.5,
+                nass: Math.min(q("sturm", "trocken"), q("wegNass", "weg")) >= 1.3,
+                zeile: q("zeile", "trocken") >= 1.3,
+                takt: L.hz >= 240,
+                s1: L.schritte > 0 && L.maxM <= 0.01,
+            };
+            const aus = Object.keys(teile).filter((k) => !teile[k]);
+            return {
+                gruen: !aus.length,
+                zahl: "(a) Spitze " + (A.length ? Math.min(...A.map((x) => x.spitze)) + "–" + Math.max(...A.map((x) => x.spitze)) + "°, Abfall ab " +
+                    Math.round(Math.min(...A.map((x) => x.abfall)) * 100) + " %" : "?") +
+                    " · (b) Bremsweg 50 → 0 km/h Gras " + z(r.trocken && r.trocken.s) + " / Weg " + z(r.weg && r.weg.s) + " m = " + z(q("trocken", "weg")) + "×" +
+                    " · nass Gras " + z(q("sturm", "trocken")) + "×, Weg " + z(q("wegNass", "weg")) + "× · μ(kraut) halb " + z(q("zeile", "trocken")) + "×" +
+                    " · Takt " + L.hz + " Hz · S1 " + L.maxM + " m (" + L.schritte + " Schritte)" + (aus.length ? " · außer Soll: " + aus.join(", ") : "") +
+                    " · Exit " + lauf.exit,
+            };
+        },
+        pfad: [
+            "vehicle-core.js",
+            "stamm/koerper-*.js",
+            "stamm/bau-buch.js",
+            "stamm/bau-vorlagen.js",
+            "stamm/vegetation-wiese.js",
+            "stamm/siedlung-satz.js",
+            "stamm/gelaende-boden.js",
+            "stamm/stoff-material.js",
+            "stamm/bild-himmel.js",
+            "stamm/dirigent-takt.js",
+            "scripts/diag-fahr-leben.cjs",
+            "scripts/lib/fahr-proben.cjs",
+        ],
+        quelle: "2 = (a) + (b) + nass ≥ 1,3× aus der EINEN Nässe + Sim-Takt im Fahr-Schritt ≥ 240 Hz, Labor = Welt S1 ≤ 0,01 m",
+    },
 ];
 
 module.exports = stationen;

@@ -928,7 +928,8 @@ module.exports = [
 
     // ── feld.K1 ── gate:fahr-leben W (Zweig wetter-kette-k1): Sturm → Regen-Feld → Nässe → Grip, je Glied die Festhalte-Probe
     // (`ketteVerdict`: ein Glied zählt, wenn es mit dem Sturm zieht UND steht, solange sein Vorgänger gehalten wird); das
-    // Urteil liest die Zeile `KETTE {"tiefe":N,…}` — an main fehlt `--kette` (ROT „keine KETTE-Zeile")
+    // Urteil liest die Zeile `KETTE {"tiefe":N,…}` — an main fehlt `--kette` (ROT „keine KETTE-Zeile"). Seit fahrzeug-k1-reifen
+    // (25.10.) misst das Grip-Glied den Bremsweg `s` ab 50 km/h (die Verzögerung fiel mit ihm), μ liest der Reifen aus der Stoff-Zeile.
     {
         kriterium: "feld.K1",
         staffel: 1,
@@ -941,12 +942,12 @@ module.exports = [
             const k = jsonZeile(lauf.stdout, /^KETTE \{/);
             if (!k) return { gruen: false, zahl: "keine KETTE-Zeile (Exit " + lauf.exit + ")" };
             const r = k.roh || {};
-            const v = (l) => (r[l] && r[l].verz != null ? r[l].verz : "?");
+            const v = (l) => (r[l] && r[l].s != null ? r[l].s.toFixed(1) : "?");
             return {
                 gruen: k.tiefe >= 2,
                 zahl:
-                    "Tiefe " + k.tiefe + " mit Festhalte-Probe · Verzögerung trocken " + v("trocken") + " → Sturm " + v("sturm") +
-                    " m/s² (Regen gehalten " + v("festRegen") + ", Nässe gehalten " + v("festNaesse") + ") · Exit " + lauf.exit,
+                    "Tiefe " + k.tiefe + " mit Festhalte-Probe · Bremsweg trocken " + v("trocken") + " → Sturm " + v("sturm") +
+                    " m (Regen gehalten " + v("festRegen") + ", Nässe gehalten " + v("festNaesse") + ") · Exit " + lauf.exit,
             };
         },
         pfad: [
@@ -955,6 +956,11 @@ module.exports = [
             "stamm/stoff-material.js",
             "stamm/bild-himmel.js",
             "stamm/daten.js",
+            "stamm/bau-buch.js",
+            "stamm/bau-vorlagen.js",
+            "stamm/vegetation-wiese.js",
+            "stamm/siedlung-satz.js",
+            "stamm/gelaende-boden.js",
             "vehicle-core.js",
             "scripts/diag-fahr-leben.cjs",
             "scripts/lib/fahr-proben.cjs",
