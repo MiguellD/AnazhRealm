@@ -1471,6 +1471,23 @@ class AnazhRealm_bau_vorlagen {
             essenz: 1000,
             blech: FG.huelleDichte * FG.wasserRho,
         };
+        // DIE HAFTUNG (fahrzeug.K1): je Stoff, auf dem ein Rad stehen kann, μ des Reifens trocken und voll nass (`mu`, `muNass`;
+        // Bezug der Asphalt des Labors, μ 1) — Tafel-Werte der Reibung Reifen auf Fahrbahn: verdichtete Erde 0,7/0,45, Gras
+        // 0,4/0,2, rauer Fels 0,8/0,55, Bohle 0,65/0,4, Metall 0,6/0,35, Laubstreu 0,45/0,2. Leser: der Reibkreis am Wagen
+        // (`_fahrHaft`). Die Stoffe der Leiber tragen keine — unter dem Rad liegt nie Fleisch.
+        const HAFT = {
+            stein: [0.8, 0.55],
+            holz: [0.65, 0.4],
+            eisen: [0.6, 0.35],
+            bronze: [0.6, 0.35],
+            stahl: [0.6, 0.35],
+            quarz: [0.6, 0.35],
+            glut: [0.6, 0.45],
+            laub: [0.45, 0.2],
+            erde: [0.7, 0.45],
+            kraut: [0.4, 0.2],
+            blech: [0.6, 0.35],
+        };
         // Stahl, Blech und Leib sind Stoffe der Körper (die Klinge der Schmiede, die Hülle des Wagens, der Mensch), keine
         // Bau-Stoffe: die Welt hat keine Quelle, aus der man sie sammelt, die Werkstatt bietet sie nicht an (`bauStoff`).
         const nurKoerper = ["stahl", "blech", "leib"];
@@ -1482,6 +1499,7 @@ class AnazhRealm_bau_vorlagen {
                 color,
                 tags: { ...AnazhRealm.MATERIAL_TAG_DEFAULTS, ...tags },
             };
+            if (HAFT[name]) [z.mu, z.muNass] = HAFT[name];
             if (nurKoerper.includes(name)) z.bauStoff = false;
             const q = typeof RHO[name] === "object" ? RHO[name] : { wert: RHO[name] };
             if (!q.get) {
