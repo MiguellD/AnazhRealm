@@ -129,17 +129,13 @@ function lackGestalten() {
     for (let s = 1; s <= soll.length; s++) {
         const g = VC.buildInstance("gt", s, 0);
         let best = null;
-        let n = 0;
         g.traverse((o) => {
             // der Karosserie-Lack (lackStoff stempelt __lack; der Bremssattel ist Lack, aber nicht die Karosserie)
-            if (!o.isMesh || !o.material || !o.material.userData || !o.material.userData.__lack) return;
-            const c = [o.material.color.r, o.material.color.g, o.material.color.b];
-            const k = c.join(",");
-            n++;
-            if (!best) best = { k, c };
+            if (!best && o.isMesh && o.material && o.material.userData && o.material.userData.__lack)
+                best = [o.material.color.r, o.material.color.g, o.material.color.b];
         });
-        ist.push(best ? best.c : null);
-        if (!n) out.push(`lack-gestalt: Same ${s} trägt keinen Karosserie-Lack`);
+        ist.push(best);
+        if (!best) out.push(`lack-gestalt: Same ${s} trägt keinen Karosserie-Lack`);
     }
     const treffer = soll.filter((c) => ist.some((x) => x && x.every((v, i) => Math.abs(v - c[i]) < 1e-6))).length;
     if (treffer !== soll.length) out.push(`lack-gestalt: ${treffer}/${soll.length} Lacke des LACK_GESETZ in den Gestalten`);
