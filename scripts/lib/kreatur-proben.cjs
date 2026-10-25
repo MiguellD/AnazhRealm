@@ -2346,13 +2346,14 @@ async function kreaturProben(r, T, opts) {
                 return Math.abs(p.x + (q.x - p.x) * k - xT) <= wT / 2 + 0.05;
             });
         };
-        const wegeMesser = (S, liste) => {
+        const wegeMesser = (liste) => {
             const WG = { wand: new Map(), durch: 0, tuer: 0, falsch: [], geh: 0, aufWeg: 0, sprungN: 0 };
             const [stecken, beruehr, kandW, wSpur] = [[], [], [], new Map()];
             let minute = 0;
             const wann = (b) => `${b.rolle} #${b.heim} um ${(s.timeOfDay * 24).toFixed(2)} Uhr`;
             const messen = (dt) => {
                 minute += (dt / tagS) * 1440;
+                const draus = liste.filter((b) => !b.drinnen).map((b) => b.leib.position);
                 for (const b of liste) {
                     const { x, z } = b.leib.position;
                     const innen0 = b.drinnen ? b.orte.tuer.haus : null;
@@ -2395,8 +2396,9 @@ async function kreaturProben(r, T, opts) {
                     const da = b.drinnen ? !b.hinaus : !b.ziel || (!b.drinnenSoll && ab(b.leib.position, b.ziel) < 1.5);
                     if (da || Math.hypot(x - sp.ax, z - sp.az) >= 1) Object.assign(sp, { ax: x, az: z, seit: minute });
                     else if (minute - sp.seit >= 5 && !sp.steckt) stecken.push(wann(b));
-                    // die Berührung: der nächste Leib draußen (das Raster der Siedlung, `_bewohnerNaechster`) näher als zwei Kapseln
-                    const nah = !b.drinnen && r._bewohnerNaechster(S, b, x, z) < 2 * RW;
+                    // die Berührung: ein anderer Leib draußen näher als zwei Kapseln
+                    const nah =
+                        !b.drinnen && draus.some((q) => q !== b.leib.position && Math.hypot(q.x - x, q.z - z) < 2 * RW);
                     if (nah && !sp.nah) beruehr.push(wann(b));
                     Object.assign(sp, { x, z, innen, nah, steckt: !da && minute - sp.seit >= 5 });
                 }
@@ -2479,7 +2481,7 @@ async function kreaturProben(r, T, opts) {
             await bisDa("bewohner: die Ankunft der Stadt", () => !da());
             // Täter (Selbsttest): wer ausweicht, weicht nie
             if (taeter === "bewohner-stadt-rempeln") decke(restore, "_bewohnerAusweichen", () => () => null);
-            const M = wegeMesser(S, S.liste);
+            const M = wegeMesser(S.liste);
             for (let i = 0, quer = taeter !== "bewohner-stadt-quer"; i < (taeter ? 30 : 240) * takte; i++) {
                 takt(DT, M);
                 quer = quer || querSetzen(S.liste);
@@ -2535,11 +2537,16 @@ async function kreaturProben(r, T, opts) {
         const leiber = () =>
             s.scene.children.filter((o) => o && o.userData && o.userData.rig && o.userData.heim != null);
         const sollSumme = haeuser.reduce((a, h) => a + (h.soll || 0), 0);
-        // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios
-        await bisDa(
-            "bewohner: die Leiber",
-            () => leiber().length < sollSumme || r._weltOffen().leiber > 0 || hausE.some((e) => !e._hausHuelle)
-        );
+        // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios — fehlt
+        // einer (der Täter bewohner-haus nahm ihn im selben Fenster aus der Szene), urteilt die Quote, nicht der Deckel
+        try {
+            await bisDa(
+                "bewohner: die Leiber",
+                () => leiber().length < sollSumme || r._weltOffen().leiber > 0 || hausE.some((e) => !e._hausHuelle)
+            );
+        } catch {
+            /* die Quote nennt, wer fehlt */
+        }
         // Täter (Selbsttest): die Leiber des ersten bewohnten Hauses fallen aus der Szene
         if (taeter === "bewohner-haus") {
             const h = haeuser.find((x) => x.soll > 0);
@@ -2580,7 +2587,7 @@ async function kreaturProben(r, T, opts) {
         const liste = (S.liste || []).filter((b) => L.includes(b.leib));
         const tag0 = s.timeOfDay;
         restore.push(() => r._uhrSetzen(tag0, "regler"));
-        const SD = wegeMesser(S, liste);
+        const SD = wegeMesser(liste);
         const treffer = new Map();
         const vorher = new Map();
         const z = { alsLeib: alsLeibStart, schmiede10: null, schmiede2: null };
