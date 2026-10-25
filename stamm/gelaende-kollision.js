@@ -258,6 +258,10 @@ class AnazhRealm_gelaende_kollision {
             } else entry.chimney = null;
             this._blockerNetzSetzen(entry);
         }
+        // DIE TÜR DES GEBAUTEN HAUSES (bauen.K5): ebenso die Tür-Zeile (`tuer`, haus-lokal, null = keine Haustür) — mit ihr
+        // öffnet der Tür-Takt (`_tickHausTueren`) die Tür des Solo-Hauses dem Spieler wie die des Dorfs, und nach dem Reload
+        // trägt die Kern-Hülle die Tür-Lücke, bis die Studio-Hülle liefert; sie reist durch den Save.
+        if (entry.tuer === undefined && huelle.tuer !== undefined) entry.tuer = huelle.tuer;
         const alt = entry._hausHuelle;
         if (alt === huelle) return;
         const fest = AnazhRealm._huelleVon(huelle, "fest", "fachwerk:__huelle");

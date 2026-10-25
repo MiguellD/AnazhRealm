@@ -1858,11 +1858,10 @@ class AnazhRealm_vegetation_baum {
         const f = e.fundament;
         if (f && Number.isFinite(f.ex) && Number.isFinite(f.ez))
             return { ex: f.ex, ez: f.ez, ox: Number.isFinite(f.ox) ? f.ox : 0, oz: Number.isFinite(f.oz) ? f.oz : 0 };
-        const t = e.tuer;
-        if (t && Number.isFinite(t.W) && Number.isFinite(t.D)) return { ex: t.W / 2, ez: t.D / 2, ox: 0, oz: 0 };
-        // DIE HÜLLE TRÄGT DEN GRUNDRISS (K16, gate:kamera-leib K2): ein Haus ohne Fundament- und Tür-Zeile (gesetzt vom
-        // Spieler, der KI, einer Probe) hatte keinen — die Natur wuchs hinein (eine Kiefer im haus_alemannisch der
-        // Mess-Wiese). Die festen Boxen der Studio-Hülle (`_hausHuelleSetzen`) sind sein Grundriss, gemerkt je Hülle.
+        // DIE HÜLLE TRÄGT DEN GRUNDRISS (K16, gate:kamera-leib K2): ein Haus ohne Fundament-Zeile (gesetzt vom Spieler, der KI,
+        // einer Probe) hatte keinen — die Natur wuchs hinein (eine Kiefer im haus_alemannisch der Mess-Wiese). Die festen Boxen
+        // der Studio-Hülle (`_hausHuelleSetzen`) sind sein Grundriss, gemerkt je Hülle — vor dem Kern der Tür-Zeile, die die
+        // Hülle dem Solo-Haus mitbringt (bauen.K5: der Hof des Hof-Hauses liegt außerhalb seines Kerns).
         const hu = e._hausHuelle;
         if (hu) {
             const m = e._grundrissHuelle;
@@ -1892,6 +1891,8 @@ class AnazhRealm_vegetation_baum {
             e._grundrissHuelle = { hu, fp };
             if (fp) return fp;
         }
+        const t = e.tuer;
+        if (t && Number.isFinite(t.W) && Number.isFinite(t.D)) return { ex: t.W / 2, ez: t.D / 2, ox: 0, oz: 0 };
         const bp = this.state.blueprints ? this.state.blueprints[e.type] : null;
         if (bp && bp.lichtung) {
             const p0 = Array.isArray(bp.parts) && bp.parts[0] && bp.parts[0].size;
