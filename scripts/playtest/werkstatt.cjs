@@ -1183,17 +1183,11 @@ async function checkBandEarlyRingsAndUi(ctx) {
             mixNass.regen.db >= UM.hoerschwelleDb &&
             mixTrocken.regen.db === -Infinity;
 
-        // (c) Der Takt mischt im Gesetz-Takt und schreibt die Lage (headless messbar) — ein Misch-Takt sind vier Bilder
-        // (Lage · Mischung · Graph · Tier-Rufe, `_umweltKlangTick`)
-        s.umwelt.letzteMischung = -Infinity;
-        s.umwelt.folge = 0;
-        s.umwelt.mix = null;
-        for (let i = 0; i < 4; i++) r.symphonyTick();
-        out.taktMischt = !!s.umwelt.lage && !!s.umwelt.mix && Array.isArray(r._klangZensus().stimmen);
+        // (c) Dass der Takt die Lage am Ohr mischt, misst gate:klang-zensus an jedem Ort (S: Lage/Mischung am Ohr).
 
-        // (d) Der Tier-Ruf zählt jeden Ruf (die Stimme folgt dem Körper)
+        // (d) Der Tier-Ruf zählt jeden Ruf eines Leibs der Welt (ein Ruf ohne Leib ist keiner: gate:klang-zensus, klang.K1)
         const rufeVor = s.tierRufe;
-        const wesen = (r.state.creatures || [])[0] || { position: { x: 0, y: 0, z: 0 }, userData: {} };
+        const wesen = (r.state.creatures || [])[0];
         r._tierRuf(wesen, "freude");
         r._tierRuf(wesen, "trauer");
         out.rufZaehlt = s.tierRufe === rufeVor + 2;
@@ -1224,7 +1218,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
             "Welle 5 Klang: Regen = rain-Kanal des Wetter-Felds (rainy hörbar, sunny stumm)",
             ring4Results.regenAusFeld
         );
-        check("Welle 5 Klang: symphonyTick mischt die Lage am Ohr", ring4Results.taktMischt);
         check("Welle 5 Klang: _tierRuf zählt jeden Ruf", ring4Results.rufZaehlt);
         check("Ring 4: masterGain im plausiblen Bereich (0..1)", ring4Results.masterGainSane);
         check("Ring 4: disposeSymphony räumt Audio-Graph komplett auf", ring4Results.disposeClears);

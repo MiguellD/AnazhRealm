@@ -398,8 +398,8 @@
     //       Panorama · Takt je Stimme (umweltMischung, reine Mathematik):
     //       Wind ∝ v^1,25 (dieselbe Boee, die das Gras biegt) · Laub ∝ Deckung ·
     //       Ufer/Fluss als LINIEN-Quelle (−3 dB je Abstands-Verdopplung) ·
-    //       Fall/Glut als PUNKT-Quelle (−6 dB) · Voegel aus Morgenchor × Leben ×
-    //       Lebensraum · Grillen nachts, warm.
+    //       Fall/Glut als PUNKT-Quelle (−6 dB) · Voegel als Summe ihrer
+    //       singenden Leiber (Punkt-Quellen) · Grillen nachts, warm.
     //   (3) SCHALTUNG — der EINE Graph-Bauer (umweltGraph(ctx, ausgang)): Lab,
     //       Welt und Linse bauen DENSELBEN Graphen (Lab = Welt). Eine Quelle
     //       laeuft nur, solange ihre Stimme hoerbar ist (Hoerschwelle mit
@@ -454,13 +454,16 @@
             // misst die Grundflaeche seiner Glut-Teile, nie ihr Volumen.
             glut:   { textur: ["glut"], sr: 32000, sek: 7.9, saat: 71, quellen: 1, filter: "lowpass", gerichtet: true,
                       refDb: -18, dRef: 1.5, dMin: 0.6, bettRefM: 0.76, hoerweiteM: 26, hzFern: 4500, hzNah: 12000, hzHalbM: 8, kalibHz: 12000 },
-            // Voegel: Morgenchor(Sonne) × √lebendig × Lebensraum(Deckung) × (1 − Regen)² × Windruhe.
+            // Voegel: JEDER RUF HAT EINEN LEIB (klang.K1, 25.10.) — der Chor ist die Summe der singenden Leiber am Ohr
+            // (lage.voegel: je Leib {d, pan}, d der Abstand in Metern), jeder eine PUNKT-Quelle (refDb in dRef Metern, −6 dB je
+            // Abstands-Verdopplung, still jenseits der Hoerweite). Ob, wo und wann ein Vogel singt, sagt sein Gesetz (tetrapoda
+            // VOGEL_GESETZ: Revier aus Leben × Lebensraum, Morgenchor, Regen- und Wind-Ruhe, Singflug), nie der Klang — bis
+            // 25.10. sang hier ein Chor aus dem Feld (Morgenchor × √lebendig × Lebensraum), ohne einen Vogel in der Welt.
             // DIE ANTWORT DES ORTS (affekt K1): das gewertete δ einer Tat (lage.antwort = {d, delta}, der Wirt wertet sie am Ort
             // und laesst sie abklingen) hebt oder senkt den Chor um dbJeDelta·δ dB (geklemmt dbMin..dbMax) — voll bis dVoll
             // Meter von der Tat, still ab dAus: die Voegel DIESES Orts antworten, die der Nachbar-Zelle (16 m Raster) nicht.
             vogel:  { textur: ["vogelA", "vogelB"], sr: 24000, sek: [23.3, 17.9], saat: [83, 89], quellen: 2, spreizung: 0.55,
-                      filter: "lowpass", refDb: -30, habitatBasis: 0.35, windStill: 0.8, hz: 9000, kalibHz: 9000,
-                      chor: [[-0.15, 0], [0, 0.7], [0.12, 1], [0.4, 0.6], [1, 0.55]],
+                      filter: "lowpass", refDb: -39, dRef: 10, dMin: 1, hoerweiteM: 100, hz: 9000, kalibHz: 9000,
                       antwort: { dbJeDelta: 40, dbMin: -24, dbMax: 9, dVoll: 8, dAus: 24 } },
             // Grillen: nachts × Waerme × offenes Gras; Zirp-Takt nach DOLBEAR (N/min = 7·(T − 10) + 40) — T ist die Luft am Ohr
             // (`lage.temperatur`, °C: in der Welt das EINE Temperatur-Feld des Gelaende-Kerns, stoffe.K3).
@@ -481,19 +484,27 @@
         },
         // DIE ORTE DES LABS (Lab = Welt): typische Lagen der vier Mess-Orte — das Lab
         // spielt sie ueber denselben Graphen, die Linse misst die echten Lagen der Welt.
+        // voegel: die singenden Leiber eines typischen Mittags (Abstand, Richtung; im Wald kreisen sie über dem Dach) — im
+        // Sturm und nachts singt keiner.
         orte: {
-            wiese:   { windFeld: 0.06, boe: 0.7, deckung: 0.12, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.5 },
-            seeufer: { windFeld: 0.06, boe: 0.7, deckung: 0.2, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.55,
+            wiese:   { windFeld: 0.06, boe: 0.7, deckung: 0.12, regen: 0, sonne: 1, temperatur: 24,
+                       voegel: [{ d: 18, pan: 0.4 }, { d: 31, pan: -0.5 }, { d: 47, pan: 0.1 }, { d: 64, pan: -0.2 }] },
+            seeufer: { windFeld: 0.06, boe: 0.7, deckung: 0.2, regen: 0, sonne: 1, temperatur: 24,
+                       voegel: [{ d: 26, pan: -0.6 }, { d: 44, pan: -0.1 }, { d: 70, pan: 0.5 }],
                        ufer: { d: 3, anteil: 0.4, pan: 0.3 } },
-            wald:    { windFeld: 0.06, boe: 0.7, deckung: 0.85, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.7 },
-            dorf:    { windFeld: 0.06, boe: 0.7, deckung: 0.15, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.45,
+            wald:    { windFeld: 0.06, boe: 0.7, deckung: 0.85, regen: 0, sonne: 1, temperatur: 24,
+                       voegel: [{ d: 29, pan: -0.3 }, { d: 33, pan: 0.6 }, { d: 38, pan: 0 }, { d: 44, pan: -0.7 }, { d: 52, pan: 0.3 }, { d: 63, pan: 0.8 }] },
+            dorf:    { windFeld: 0.06, boe: 0.7, deckung: 0.15, regen: 0, sonne: 1, temperatur: 24,
+                       voegel: [{ d: 15, pan: 0.5 }, { d: 28, pan: -0.3 }, { d: 39, pan: 0.2 }],
                        glut: { d: 4, flaeche: 0.4536, pan: -0.4 } },
-            glutArm: { windFeld: 0.06, boe: 0.7, deckung: 0.15, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.45,
+            glutArm: { windFeld: 0.06, boe: 0.7, deckung: 0.15, regen: 0, sonne: 1, temperatur: 24,
+                       voegel: [{ d: 16, pan: 0.5 }, { d: 29, pan: -0.3 }, { d: 40, pan: 0.2 }],
                        glut: { d: 1, flaeche: 0.4536, pan: -0.2 } },
-            fallArm: { windFeld: 0.06, boe: 0.7, deckung: 0.3, regen: 0, sonne: 1, temperatur: 24, lebendig: 0.6,
+            fallArm: { windFeld: 0.06, boe: 0.7, deckung: 0.3, regen: 0, sonne: 1, temperatur: 24,
+                       voegel: [{ d: 22, pan: -0.4 }, { d: 37, pan: 0.6 }],
                        fall: { d: 3, hoehe: 12, pan: 0.3 } },
-            sturm:   { windFeld: 1, boe: 1, deckung: 0.5, regen: 1, sonne: 0.4, temperatur: 14.720779115442543, lebendig: 0.5 },
-            nacht:   { windFeld: 0.06, boe: 0.7, deckung: 0.12, regen: 0, sonne: -0.6, temperatur: 24, lebendig: 0.5 }
+            sturm:   { windFeld: 1, boe: 1, deckung: 0.5, regen: 1, sonne: 0.4, temperatur: 14.720779115442543, voegel: [] },
+            nacht:   { windFeld: 0.06, boe: 0.7, deckung: 0.12, regen: 0, sonne: -0.6, temperatur: 24, voegel: [] }
         }
     };
 
@@ -823,8 +834,8 @@
     }
 
     // ── DIE MISCHUNG: Lage am Ohr → je Stimme {db, gain, hz, q, pan, rate} ──
-    // lage = { windFeld, boe, deckung, regen, sonne, temperatur (°C, ohne sie keine Waerme), lebendig,
-    //          ufer:{d, anteil, pan}, fluss:{d, tempo, pan}, fall:{d, hoehe, pan}, glut:{d, flaeche (m², Brenn-Flaeche), pan},
+    // lage = { windFeld, boe, deckung, regen, sonne, temperatur (°C, ohne sie keine Waerme), voegel:[{d, pan}] (die singenden
+    //          Leiber), ufer:{d, anteil, pan}, fluss:{d, tempo, pan}, fall:{d, hoehe, pan}, glut:{d, flaeche (m², Brenn-Flaeche), pan},
     //          antwort:{d, delta} (die Antwort der Wertung, optional) }
     function umweltMischung(lage) {
         var U = UMWELT, W = U.stimmen, L = lage || {};
@@ -834,7 +845,7 @@
         var glatt = function (a, b, v) { var t = c01((v - a) / (b - a)); return t * t * (3 - 2 * t); };
         var windFeld = Math.max(0, zahl(L.windFeld, 0)), boe = Math.max(0, zahl(L.boe, 0.7));
         var deck = c01(zahl(L.deckung, 0)), regen = c01(zahl(L.regen, 0)), sonne = Math.max(-1, Math.min(1, zahl(L.sonne, 1)));
-        var leb = c01(zahl(L.lebendig, 0.5)), T = zahl(L.temperatur, -Infinity);
+        var T = zahl(L.temperatur, -Infinity);
         var v = W.wind.vMin + (W.wind.vMax - W.wind.vMin) * windFeld, vEff = Math.max(0.05, v * boe);
         var out = {};
         var setze = function (name, pegel, hz, q, pan, rate) {
@@ -872,16 +883,19 @@
         var Sg = W.glut, gl = L.glut || {}, dg = zahl(gl.d, Infinity);
         var staerke = c01(Math.sqrt(Math.max(0, zahl(gl.flaeche, 0)) / ((Math.PI / 4) * Sg.bettRefM * Sg.bettRefM)));
         setze("glut", staerke > 0 ? Sg.refDb + abstand(Sg, dg, false) + db(staerke) : -Infinity, hell(Sg, dg), 0.707, zahl(gl.pan, 0));
-        // Voegel: Morgenchor × √Leben × Lebensraum × Regen-Ruhe × Wind-Ruhe
-        var Sv = W.vogel, chor = 0, C = Sv.chor;
-        if (sonne <= C[0][0]) chor = C[0][1];
-        else if (sonne >= C[C.length - 1][0]) chor = C[C.length - 1][1];
-        else for (var i = 1; i < C.length; i++) if (sonne <= C[i][0]) { chor = C[i - 1][1] + ((C[i][1] - C[i - 1][1]) * (sonne - C[i - 1][0])) / (C[i][0] - C[i - 1][0]); break; }
-        var aktiv = chor * Math.sqrt(leb) * (Sv.habitatBasis + (1 - Sv.habitatBasis) * deck) * (1 - regen) * (1 - regen) * (1 - Sv.windStill * Math.min(1, windFeld));
+        // Voegel: die Summe der singenden Leiber (Punkt-Quellen, Leistung), ihr Panorama leistungs-gewichtet
+        var Sv = W.vogel, vs = Array.isArray(L.voegel) ? L.voegel : [], pv = 0, panV = 0;
+        for (var i = 0; i < vs.length; i++) {
+            var lv = abstand(Sv, zahl(vs[i] && vs[i].d, Infinity), false);
+            if (lv === -Infinity) continue;
+            var ev = Math.pow(10, lv / 10);
+            pv += ev;
+            panV += ev * zahl(vs[i].pan, 0);
+        }
         // die Antwort des Orts: δ der Tat × Naehe (ohne lage.antwort 0 dB — die Lab-Orte bleiben byte-gleich)
         var An = Sv.antwort, an = L.antwort || {}, dAn = zahl(an.d, Infinity), dlt = zahl(an.delta, 0);
         var antwortDb = dlt !== 0 && dAn < An.dAus ? Math.max(An.dbMin, Math.min(An.dbMax, An.dbJeDelta * dlt * (1 - glatt(An.dVoll, An.dAus, dAn)))) : 0;
-        setze("vogel", aktiv > 0 ? Sv.refDb + db(aktiv) + antwortDb : -Infinity, Sv.hz, 0.707);
+        setze("vogel", pv > 0 ? Sv.refDb + 10 * Math.log10(pv) + antwortDb : -Infinity, Sv.hz, 0.707, pv > 0 ? panV / pv : 0);
         // Grillen: nachts × Waerme × offenes Gras; DOLBEAR-Takt
         var Sc = W.grille;
         var nacht = glatt(Sc.nachtAb, Sc.nachtVoll, sonne);

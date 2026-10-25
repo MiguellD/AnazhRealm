@@ -201,7 +201,7 @@ async function probe() {
                 if (!e || !e.blockerAABBs || !e.position) continue;
                 const rcCull = 80 + (e._blockerReach || 0);
                 if (Math.abs(e.position.x - sx) > rcCull || Math.abs(e.position.z - sz) > rcCull) continue;
-                const boxes = e.blockerAABBs;
+                const boxes = e.blockerAABBs.concat(r._fluegelBoxenVon(e)); // die Flügel wie im Strahl danach
                 for (let bi = 0; bi < boxes.length; bi++) {
                     if (durchPflanzen && boxes[bi].pflanze === true) continue;
                     const hitInfo = r._segmentAABB(sx, sy, sz, dx, dy, dz, boxes[bi]);
@@ -251,7 +251,7 @@ async function probe() {
             if (!e || !e.blockerAABBs || !e.position) continue;
             const rc = 80 + (e._blockerReach || 0);
             if (Math.abs(e.position.x - sx) > rc || Math.abs(e.position.z - sz) > rc) continue;
-            for (const b of e.blockerAABBs)
+            for (const b of e.blockerAABBs.concat(r._fluegelBoxenVon(e)))
                 if (!(
                     b.maxX < q[0] ||
                     b.minX > q[1] ||
@@ -317,7 +317,6 @@ async function probe() {
             slabs: 0,
             beruehrt: 0,
             ueberzaehlig: 0,
-            durchPflanzen: 0,
         };
         const LAENGEN = [0.5, 2.5, 4.5, 10, 30, 95];
         for (let i = 0; i < n; i++) {
@@ -357,7 +356,6 @@ async function probe() {
                 ez = sz + dz * L;
             // ein Drittel der Strahlen geht durch die Pflanzen (der Strahl der 3rd-Kamera, `o.durchPflanzen`)
             const o = rng() < 0.33 ? { durchPflanzen: true } : undefined;
-            if (o) R.durchPflanzen++;
             const soll = orakel(sx, sy, sz, ex, ey, ez, o);
             const b0 = beruehrt(sx, sy, sz, ex, ey, ez);
             slabs = 0;

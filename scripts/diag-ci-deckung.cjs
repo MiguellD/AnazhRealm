@@ -95,7 +95,8 @@ function vollArt(doc, job) {
 const imVollenLauf = (doc, job) =>
     vollArt(doc, job) || (job === VOLL_JOB && !!doc && !!doc.jobs && !!doc.jobs[job] && istVollWenn(doc.jobs[job].if));
 // Die Deckel der Waage: der Puls 2 min je Push, die volle Stufe das Mittel ihrer Klasse plus RAND_S (die Streuung einer
-// Gruppe um ihren Plan, CW2).
+// Gruppe um ihren Plan, CW2). Die volle Stufe wiegt je Schritt den p90 (ci-zeiten.cjs: der langsame Läufer — die echten Renderer
+// laufen auf SwiftShader bis 2,8× langsamer, die Kamera-Leib-Linse am selben Kopf 319 s und 841 s), ihr Deckel hält 1,2 × die Gruppe (T).
 const [PULS_S, RAND_S] = [120, 30];
 const DECKEL_MIN = 45;
 const VORBEREITUNG = [
@@ -706,9 +707,10 @@ function selbsttestKlasse() {
     return f;
 }
 
-// (T) DIE WAAGE je Job und Gruppe: der PLAN (Vorbereitung + Mediane, dieselben Zahlen, mit denen ci-zeiten.cjs verteilt) gegen
-// den Deckel seiner Klasse (Puls PULS_S, Voll das Mittel der Klasse + RAND_S); ROT nur, was die Verteilung senken kann. Die
-// Wanduhr (der längste Weg, Plan oder gemessene Job-Dauer) steht als Zahl und sperrt nie.
+// (T) DIE WAAGE je Job und Gruppe: der PLAN (Vorbereitung + Gewichte, dieselben Zahlen, mit denen ci-zeiten.cjs verteilt) gegen
+// den Deckel seiner Klasse (Puls PULS_S, Voll das Mittel der Klasse + RAND_S); ROT nur, was die Verteilung senken kann, und
+// (T) FRIST, wo timeout-minutes den Plan nicht 1,2-fach hält. Die Wanduhr (der längste Weg im Plan) steht als Zahl und sperrt nie;
+// die grün gezählte Job-Dauer je Gruppe fiel (sie nannte G18 8,5 min, während die Gruppe am 20-min-Deckel brach).
 const minuten = (s) => (s / 60).toFixed(1).replace(".", ",");
 // die Waage wiegt in Zehntel-Minuten, der Einheit ihrer Anzeige (ein Job-Median streut über die Läufe ±10 s)
 const ueber = (s, deckel) => Math.round(s / 6) > Math.round(deckel / 6);
@@ -722,7 +724,6 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
     const [v, alt] = [[], []];
     const zeilen = [];
     const Z = (zeiten && zeiten.schritte) || {};
-    const G = (zeiten && zeiten.gruppen) || {};
     const vorb = zeiten && Number(zeiten.vorbereitung_s);
     if (!(vorb >= 0)) return { v: [`(T) ZEITEN: ${ZEITEN} trägt keine vorbereitung_s`], zeilen };
     const alter = (() => {
@@ -761,22 +762,21 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
                 if (z.s > GROSS_S) gross.add(`„${name(s)}" ${minuten(z.s)}`);
                 if (!groesster || z.s > groesster[1]) groesster = [name(s), z.s];
             }
-            // gemessen: die Gruppe trug am Kopf der Quelle genau diese Schritte (sie zählt zur Wanduhr, nie zum Urteil)
-            const key = g === null ? job : `${job} ${g}`;
-            const satz = Object.values(Z).filter((z) => z.gruppe === key).length === mein.length;
-            const gem = G[key] && satz && mein.every((s) => (Z[name(s)] || {}).gruppe === key) ? +G[key].s : 0;
             const kl = (M.include || []).find((e) => e && e.gruppe === g);
             const klasse = job + (kl && kl.klasse ? ` ${kl.klasse}` : "");
-            gruppen.push({ job, art, klasse, plan: summe, gem, n: mein.length, groesster, wer: g === null ? job : `${job} ${g}/${gs.length}${klasse.slice(job.length)}` });
+            const wer = g === null ? job : `${job} ${g}/${gs.length}${klasse.slice(job.length)}`;
+            gruppen.push({ job, art, klasse, plan: summe, n: mein.length, groesster, wer });
+            if (art === "voll" && 1.2 * summe > 60 * J["timeout-minutes"])
+                v.push(`(T) FRIST: „${wer}" trägt im langsamen Lauf ${minuten(summe)} min, timeout-minutes ${J["timeout-minutes"]} hält nicht 1,2 × davon`);
             const k = deckel.get(klasse) || deckel.set(klasse, { s: 0, n: 0, art }).get(klasse);
             [k.s, k.n, k.d] = [k.s + summe, k.n + 1, art === "push" ? PULS_S : (k.s + summe) / (k.n + 1) + RAND_S];
         }
     }
-    for (const { job, art, klasse, plan, gem, n, groesster, wer } of gruppen) {
+    for (const { job, art, klasse, plan, n, groesster, wer } of gruppen) {
         const { d, s: summe, n: zahl } = deckel.get(klasse);
         const wie = art === "push" ? "je Push" : `= Mittel der Klasse ${minuten(summe / zahl)} + Rand ${minuten(RAND_S)}`;
-        zeilen.push(`${wer} ${minuten(plan)}${gem ? ` · gemessen ${minuten(gem)}` : ""} (${n})`);
-        if (!schwerste.has(job) || Math.max(plan, gem) > schwerste.get(job)[1]) schwerste.set(job, [wer, Math.max(plan, gem)]);
+        zeilen.push(`${wer} ${minuten(plan)} (${n})`);
+        if (!schwerste.has(job) || plan > schwerste.get(job)[1]) schwerste.set(job, [wer, plan]);
         if (groesster && ueber(vorb + groesster[1], d)) {
             gross.add(`„${groesster[0]}" ${minuten(groesster[1])}`);
             if (n > 1)
@@ -1198,10 +1198,6 @@ function selbsttestWaage() {
         d.jobs.kopf = kopfJob();
         z.schritte.Kopf = { s };
     };
-    const gemessen = (z, s) => {
-        z.schritte.A.gruppe = z.schritte.C.gruppe = "voll 1";
-        z.gruppen = { "voll 1": { s } };
-    };
     const gruppen = (d, n) => (d.jobs.voll.strategy.matrix.gruppe = Array.from({ length: n }, (_, i) => i + 1));
     const mitEcht = (d, z, s) => {
         d.jobs.echt = {
@@ -1216,16 +1212,15 @@ function selbsttestWaage() {
     const faelle = [
         ["die Waage im Lot (grün)", () => {}, null],
         // (T) WAAGE (CW2): die Voll-Gruppe gegen das Mittel ihrer Klasse plus Rand — ROT nur, was die Verteilung senkt
+        // (T) FRIST: G18 trug die Kamera-Leib-Linse (p90 898 s) neben 287 s, der Deckel 20 min brach 7 Läufe ab
+        ["ein Deckel, der den langsamen Läufer nicht hält", (d, z) => Object.assign(d.jobs.voll, { "timeout-minutes": 20 }) && Object.assign(z.schritte, { A: { s: 898 }, C: { s: 287 } }), /\(T\) FRIST: „voll 1\/2" trägt im langsamen Lauf 20,1 min, timeout-minutes 20 hält nicht 1,2 × davon/],
         ["eine Voll-Gruppe über dem Mittel ihrer Klasse", B100, /\(T\) WAAGE: „voll 1\/2" trägt 6,2 min \(Deckel 4,6 min = Mittel der Klasse 4,1 \+ Rand 0,5\) — der größte Schritt „A" 3,3 min — die Verteilung senkt sie/],
         ["dieselbe Last, je Klasse eine Gruppe (die Verteilung senkt nichts: grün)", (d, z) => B100(d, z) && (d.jobs.voll.strategy.matrix.include = [{ gruppe: 1, klasse: "cpu" }, { gruppe: 2, klasse: "gpu" }]), null],
         ["der Puls über 2 min", (d, z) => d.jobs.puls.steps.push(schritt("Format", 1)) && Object.assign(z.schritte, { Lint: { s: 90 }, Format: { s: 20 } }), /\(T\) WAAGE: „puls 1\/1" trägt 2,2 min \(Deckel 2,0 min je Push\) — der größte Schritt „Lint" 1,5 min$/],
         ["ein Schritt ohne Zeit", (d, z) => delete z.schritte.B, /\(T\) UNGEMESSEN: „B" \(voll\)/],
         ["die Zeiten ohne Vorbereitung", (d, z) => delete z.vorbereitung_s, /\(T\) ZEITEN/],
         ["ein Schritt aus voll in den Puls gezogen (allein über dem Deckel, mit Mitfahrer)", (d) => d.jobs.puls.steps.push(Object.assign(d.jobs.voll.steps.splice(5, 1)[0], { if: "matrix.gruppe == 1" })), /\(T\) ALLEIN: „B" trägt allein 5,3 min, über dem Deckel von „puls 1\/1" \(2,0 min\) — 1 Schritte fahren mit/],
-        ["allein über dem Deckel und allein in der Gruppe (grün, beim Namen)", (d, z) => Object.assign(z.schritte, { A: { s: 600 }, C: { s: 50 } }) && (d.jobs.voll.steps[6].if = "matrix.gruppe == 2"), (w) => !w.v.length && w.gross.includes('„A" 10,0')],
-        // die Job-Dauer der Gruppe (am Kopf der Quelle derselbe Satz) trägt die Wanduhr, nie das Urteil
-        ["gemessen über dem Plan (benannt, nie ROT)", (d, z) => gemessen(z, 470), (w) => !w.v.length && minuten(w.wanduhr[0]) === "7,8"],
-        ["ein gemessener Satz, der nicht mehr gilt (die Lage zog um)", (d, z) => gemessen(z, 470) || (z.schritte.C.gruppe = "voll 2"), (w) => minuten(w.wanduhr[0]) === "6,2"],
+        ["allein über dem Deckel und allein in der Gruppe (grün, beim Namen)", (d, z) => Object.assign(d.jobs.voll, { "timeout-minutes": 20 }) && Object.assign(z.schritte, { A: { s: 600 }, C: { s: 50 } }) && (d.jobs.voll.steps[6].if = "matrix.gruppe == 2"), (w) => !w.v.length && w.gross.includes('„A" 10,0')],
         // (T) ALT (CW): die Quelle ist älter als ihre Läufe, oder ihr Kopf steht in keiner Geschichte
         ["die Quelle älter als ihre Läufe", () => {}, /\(T\) ALT: seit dem Kopf der Zeit-Quelle \(ffffffff\) trugen 8 Merges/, 8],
         ["dieselbe auf einem Arbeits-Zweig (benannt, nie ROT)", () => {}, (w) => !w.v.length && /^\(T\) ALT: seit dem Kopf/.test(w.alt[0]), 8, false],
@@ -1575,7 +1570,7 @@ function hauptlauf() {
     if (w.alt && w.alt.length)
         console.log(`  ⚠ ${w.alt.join(" · ")} (Arbeits-Zweig: benannt, sperrt auf integ-probe und main)`);
     console.log(
-        `  Waage (Plan = Median samt Vorbereitung, min, Schritte; Deckel ${(w.deckel || []).join(" · ")}): ${w.zeilen.join(" · ")}`
+        `  Waage (Plan = Gewicht samt Vorbereitung — Puls Median, voll p90 —, min, Schritte; Deckel ${(w.deckel || []).join(" · ")}): ${w.zeilen.join(" · ")}`
     );
     if (w.gross && w.gross.length)
         console.log(
