@@ -1,0 +1,51 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-persistence.cjs
+  [T] 0 Tod idb · geladen {"w":"caa34d1e-c054-4471-946a-e45e088fc7ff","x":0,"z":0,"e":0,"b":0,"l":0} · Alter undefined s · 
+  [T] 1 Tod zufall · geladen {"w":"caa34d1e-c054-4471-946a-e45e088fc7ff","x":0,"z":2604,"e":35,"b":1,"l":35} · Alter 4.551 s · 
+  [T] 2 Tod fest · geladen {"w":"caa34d1e-c054-4471-946a-e45e088fc7ff","x":0,"z":4574,"e":64,"b":2,"l":64} · Alter 4.642 s · 
+  [T] 3 Tod zufall · geladen {"w":"caa34d1e-c054-4471-946a-e45e088fc7ff","x":0,"z":17388,"e":374,"b":14,"l":374} · Alter 0.001 s · 
+  [T] 4 Tod platz · geladen {"w":"caa34d1e-c054-4471-946a-e45e088fc7ff","x":0,"z":19403,"e":405,"b":15,"l":405} · Alter 2.169 s · 
+  [T] 5 Tod zufall · geladen {"w":"caa34d1e-c054-4471-946a-e45e088fc7ff","x":0,"z":22042,"e":444,"b":16,"l":444} · Alter 4.529 s · 
+  [T] 6 Tod zeiger · geladen {"w":"caa34d1e-c054-4471-946a-e45e088fc7ff","x":0,"z":24691,"e":486,"b":17,"l":486} · Alter 1.905 s · 
+  [T] 7 Tod zufall · geladen {"w":"caa34d1e-c054-4471-946a-e45e088fc7ff","x":0,"z":27433,"e":529,"b":18,"l":529} · Alter 4.649 s · 
+  [V] 18.530.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.532.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.534.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.536.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.538.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.540.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.541.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.4: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.41: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.53: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.60: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.66: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.72: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.77: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.78: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.79: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.80: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.81: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.82: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.84: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.85: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.86: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.87: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.88: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.89: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.89 Kopf: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+
+=== Persistenz-Härtung (Tab-Tod, Lade-Pfad, save-server) ===
+  ✅ (V) Korpus: 25 Stände 18.530.0 … 18.546.89 und 1 Kopf laden am Kopf — Bauten 130/130 · Gruben 78/78 · Inventar 63/63 · ganz 26/26
+  ✅ (V) Versions-Stufe 18.546.89: ihr Stand steht im Korpus (bump-version.cjs)
+  ✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7
+  ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 19/19
+  ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 26/26
+  ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 26/26
+  ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 26/26
+  ✅ (S) save-server: ein voller Save hält den Stand davor im .bak (voll: Ziel neu, .bak alt · Tod an Punkt 1 → alt, 2 → alt, 3 → alt, 4 → alt, 5 → alt, 6 → alt, 7 → alt, 8 → neu)
+  ✅ (S) save-server: ein Kill mitten im Schreiben lässt den alten oder neuen Stand GANZ (8/8)
+  ✅ (T) Tab-Tod ohne save-server, Zyklen 0-7: 8 Tode: Alter max 4.649 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt · Linie 529 Löcher
+  ✅ (C) save-server: jede statische Datei trägt ETag + no-cache, die Nachfrage bekommt 304, neuer Inhalt neuen ETag (erst 200 ETag ja „no-cache" · nachgefragt 304 (0 B) · Inhalt geändert 200 neuer ETag)
+
+11/11 Persistenz-Invarianten OK.
+✅ Die Welt überlebt Tod und korrupten Write — kein stiller Datenverlust.

@@ -1,0 +1,170 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c set -u
+WP=7768; SP=$((7768 + 20000)); LP=$((7768 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=
+weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n "$SPID" ] && kill "$SPID" 2> /dev/null; SPID=; for p in $(netstat -ano 2> /dev/null | grep -aE ":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }
+trap weg EXIT
+boot() { weg; PORT=$SP node save-server.js > "$L/save.log" 2>&1 & SPID=$!; for t in $(seq 1 30); do curl -s -o /dev/null "http://localhost:$SP/" && break; sleep 1; done; $W start --echt --port $WP --seite "http://localhost:$SP" "$@" > "$L/wb.log" 2>&1 & for t in $(seq 1 120); do grep -qE "WERKBANK bereit|FEHLER|Error" "$L/wb.log" && break; sleep 5; done; grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+boot --ort dorf
+timeout 60 $W fenster 1920 1080 > /dev/null 2>&1
+timeout 120 $W umstellen --ort dorf --sicht ego > /dev/null 2>&1
+timeout 300 $W lauf 10 --ein 20 --ruhe 120 --regler frei --tiere frei > /dev/null 2>&1
+teil NH12 $W eval "window.__m36 = { zelle: [-4, -6], nH: 12, start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2410-siedlung-k5/m36-stufe.js")"
+boot --ort dorf
+timeout 60 $W fenster 1920 1080 > /dev/null 2>&1
+timeout 120 $W umstellen --ort dorf --sicht ego > /dev/null 2>&1
+timeout 300 $W lauf 10 --ein 20 --ruhe 120 --regler frei --tiere frei > /dev/null 2>&1
+teil NH300 $W eval "window.__m36 = { zelle: [-4, -6], nH: 300, start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2410-siedlung-k5/m36-stufe.js")"
+gpu-lauf: Schloss punkte-radeon nach 2 s
+@@PUNKTE@@ NH12
+{
+ "ergebnis": {
+  "gesetzt": {
+   "ms": 9.4,
+   "bilder": 0
+  },
+  "imRadius": {
+   "ms": 32560.7,
+   "bilder": 3540,
+   "radius": 107.68947789042373
+  },
+  "latenzMs": 67.5,
+  "erstesMesh": {
+   "ms": 32628.2,
+   "bilder": 3547,
+   "stufe": "mesh",
+   "typ": "haus_fraenkisch",
+   "same": 905543,
+   "ort": [
+    -828.52,
+    -1350.34
+   ],
+   "abstand": 107.4,
+   "auge": [
+    -839.9,
+    43.6,
+    -1243.6
+   ]
+  },
+  "radius": 107.68947789042373,
+  "zelle": [
+   -4,
+   -6
+  ],
+  "nH": 12,
+  "same": 29749318,
+  "anker": [
+   -839.5,
+   -1373.1
+  ],
+  "erwacht": {
+   "bild": 4937,
+   "d": 260
+  },
+  "erstes": {
+   "ms": 49.1,
+   "bilder": 2,
+   "stufe": "huelle",
+   "typ": "haus_alemannisch",
+   "same": 540317,
+   "ort": [
+    -795.45,
+    -1343.13
+   ],
+   "abstand": 234.2,
+   "auge": [
+    -840.3,
+    43.7,
+    -1113.3
+   ]
+  },
+  "hash": "99282f35",
+  "bilder": 8484,
+  "reserviert": {
+   "seed": 29749318,
+   "nH": 12,
+   "x": -839.5294117647059,
+   "z": -1373.113725490196
+  }
+ },
+ "ms": 80143
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ NH300
+{
+ "ergebnis": {
+  "gesetzt": {
+   "ms": 13.7,
+   "bilder": 0
+  },
+  "imRadius": {
+   "ms": 134.3,
+   "bilder": 2,
+   "radius": 116.92865660375344
+  },
+  "latenzMs": 0.1,
+  "erstesMesh": {
+   "ms": 134.4,
+   "bilder": 2,
+   "stufe": "mesh",
+   "typ": "haus_fraenkisch",
+   "same": 867856,
+   "ort": [
+    -826.92,
+    -1130.07
+   ],
+   "abstand": 21.4,
+   "auge": [
+    -840.4,
+    44.4,
+    -1113.4
+   ]
+  },
+  "radius": 116.92865660375344,
+  "zelle": [
+   -4,
+   -6
+  ],
+  "nH": 300,
+  "same": 29749318,
+  "anker": [
+   -839.5,
+   -1373.1
+  ],
+  "erwacht": {
+   "bild": 5019,
+   "d": 260
+  },
+  "erstes": {
+   "ms": 134.4,
+   "bilder": 2,
+   "stufe": "mesh",
+   "typ": "haus_fraenkisch",
+   "same": 867856,
+   "ort": [
+    -826.92,
+    -1130.07
+   ],
+   "abstand": 21.4,
+   "auge": [
+    -840.4,
+    44.4,
+    -1113.4
+   ]
+  },
+  "hash": "ed9b6932",
+  "bilder": 5021,
+  "reserviert": {
+   "seed": 29749318,
+   "nH": 300,
+   "x": -839.5294117647059,
+   "z": -1373.113725490196
+  }
+ },
+ "ms": 47650
+}
+@@PUNKTE@@ EXIT 0
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

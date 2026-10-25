@@ -1,0 +1,9 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben bestand
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ bestand   {"voll":{"bestand":7.36,"hunger":4.27,"tode":[20,30]},"halb":{"bestand":3.2},"kappe":0,"hungertod":{"n":72,"aeltester":72,"trauer":72,"journal":72}}
+
+  (10 s) — Sekunden je Probe: bestand: 0
+
+✅ GRÜN — bestand

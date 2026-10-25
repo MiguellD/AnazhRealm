@@ -1,0 +1,35 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-fall-waechter.cjs
+=== DER FALL-WÄCHTER (Leben-Schau 2) — Null-Renderer, echter Spiel-Takt, Spaltgrund + Höhle ===
+  O1 Wagen unter dem Überhang          Wagen fahrzeug_gt#1657 bei 5.5/-23.4: am Ende y 48.74 · Grund 48.74 · Oberkante 91.31 · tiefste Lage unter dem Grund 0.00 m · y min 48.74
+  O2 Schau-Fahrt über die Spaltkante   Wagen fahrzeug_gt#1659 bei 8.5/-22.2: am Ende y 91.29 · Grund 91.29 · Oberkante 91.30 · tiefste Lage unter dem Grund 0.00 m · y min 91.03
+  O3 Wagen in der Höhle                Wagen fahrzeug_gt#1660 bei 5.5/-23.4: am Ende y 49.04 · Grund 48.74 · Oberkante 91.31 · tiefste Lage unter dem Grund -0.30 m · y min 49.04
+  O3 Wolf in der Höhle                 Tier wolf#5489 (gestoßen an die Wand 2.3 m) bei 0.3/72.1: am Ende y 45.86 · Grund 45.86 · Oberkante 86.25 · tiefste Lage unter dem Grund 0.00 m · y min 45.86
+  O3 Wolf läuft in die Wand            Tier wolf#5570 (läuft an die Wand 2.3 m) bei 0.2/72.4: am Ende y 45.82 · Grund 45.82 · Oberkante 86.23 · tiefste Lage unter dem Grund 0.00 m · y min 45.82 · Stirn -0.200 m über dem Heck (Anlauf -0.200 m, je 0.258 m, Deckel 0.353 m)
+  O3 Wolf stirbt in der Höhle          Tier wolf#5651 (stirbt, Gier 0°) bei 2.0/72.1: am Ende y 46.77 · Grund 46.42 · Oberkante 86.22 · tiefste Lage unter dem Grund 0.00 m · y min 46.45 · Tod: Haut über dem Fels im Stand -0.020 m, liegend -0.020 m, im Kippen -0.020 … 0.020 m
+  O3 Wolf stirbt in der Höhle          Tier wolf#5732 (stirbt, Gier 45°) bei 2.6/71.2: am Ende y 47.14 · Grund 46.74 · Oberkante 86.27 · tiefste Lage unter dem Grund 0.00 m · y min 46.77 · Tod: Haut über dem Fels im Stand -0.020 m, liegend -0.020 m, im Kippen -0.020 … -0.020 m
+  O3 Wolf stirbt in der Höhle          Tier wolf#5813 (stirbt, Gier 90°) bei 2.4/71.4: am Ende y 46.91 · Grund 46.66 · Oberkante 86.26 · tiefste Lage unter dem Grund 0.00 m · y min 46.66 · Tod: Haut über dem Fels im Stand -0.020 m, liegend -0.020 m, im Kippen -0.020 … 0.020 m
+  O3 Wolf stirbt in der Höhle          Tier wolf#5894 (stirbt, Gier 135°) bei 2.4/71.4: am Ende y 46.91 · Grund 46.61 · Oberkante 86.26 · tiefste Lage unter dem Grund 0.00 m · y min 46.65 · Tod: Haut über dem Fels im Stand -0.020 m, liegend 0.020 m, im Kippen -0.020 … 0.020 m
+  O3 Wolf stirbt in der Höhle          Tier wolf#5975 (stirbt, Gier 180°) bei 2.0/71.4: am Ende y 46.75 · Grund 46.50 · Oberkante 86.26 · tiefste Lage unter dem Grund 0.00 m · y min 46.53 · Tod: Haut über dem Fels im Stand -0.020 m, liegend 0.020 m, im Kippen -0.020 … 0.020 m
+  O3 Wolf stirbt in der Höhle          Tier wolf#6056 (stirbt, Gier 225°) bei 2.6/71.2: am Ende y 47.04 · Grund 46.74 · Oberkante 86.27 · tiefste Lage unter dem Grund 0.00 m · y min 46.77 · Tod: Haut über dem Fels im Stand -0.020 m, liegend 0.020 m, im Kippen -0.020 … 0.020 m
+  O3 Wolf stirbt in der Höhle          Tier wolf#6137 (stirbt, Gier 270°) bei 2.4/71.4: am Ende y 46.90 · Grund 46.65 · Oberkante 86.26 · tiefste Lage unter dem Grund 0.00 m · y min 46.66 · Tod: Haut über dem Fels im Stand -0.020 m, liegend 0.020 m, im Kippen -0.020 … 0.020 m
+  O3 Wolf stirbt in der Höhle          Tier wolf#6218 (stirbt, Gier 315°) bei 2.4/71.4: am Ende y 46.87 · Grund 46.62 · Oberkante 86.26 · tiefste Lage unter dem Grund 0.00 m · y min 46.65 · Tod: Haut über dem Fels im Stand -0.020 m, liegend 0.020 m, im Kippen -0.020 … 0.020 m
+  O3 Spieler in der Höhle              Spieler bei 2.6/69.0: am Ende y 47.68 · Grund 47.68 · Oberkante 86.41 · tiefste Lage unter dem Grund 0.00 m · y min 46.65
+  Lebender Stand am Wandfuß: 0 von 8 Wölfen tiefer als 0.15 m im Fels, Haut -0.02 … -0.02 m über dem Fels
+  Zensus: 12 Überhang-Spalten, 24 Proben, 0 Täter
+    · 5.5/-23.4 (Grund 48.8, Oberkante 91.3)
+    · -2.1/-25.9 (Grund 42.7, Oberkante 91.3)
+    · 26.8/-41.6 (Grund 62.7, Oberkante 92.0)
+    · 31.9/-41.5 (Grund 62.7, Oberkante 91.9)
+    · 9.1/-59.2 (Grund 64.4, Oberkante 92.6)
+    · 33.2/-46.3 (Grund 61.8, Oberkante 92.0)
+    · 4.0/73.3 (Grund 47.0, Oberkante 86.1)
+    · 10.2/69.5 (Grund 49.4, Oberkante 86.3)
+    · 30.9/81.9 (Grund 56.1, Oberkante 85.4)
+    · 15.7/105.5 (Grund 50.2, Oberkante 83.8)
+    · 11.4/108.9 (Grund 51.6, Oberkante 83.6)
+    · 21.2/107.4 (Grund 46.3, Oberkante 83.4)
+  Schmuggel (T): {"rot":true,"mass":"99.00 m unter dem Grund, am Ende y -28.24"}
+  B-ZAHL {"art":"eben","x":39.27719607833576,"z":45.357489659635775,"y":87.78058416750049,"abstand":60,"mitte":[0,0],"spanne":0.66,"bloecke":20,"y0":88.2734375,"hoehe":70,"nach":{"edits":20,"loecher":0,"sohle":0.04085500213139426,"hoehe":70},"hub":[3.4921875,3.515625],"sohle":0.022591845948113587,"befunde":[]}
+  Quelle: die Körper-Schritte lesen den Boden unter dem Körper
+
+✅ FALL-WÄCHTER GRÜN — jeder Körper steht auf dem Boden unter ihm: keiner fällt durch, keiner springt aufs Dach.

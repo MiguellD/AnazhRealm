@@ -1,0 +1,14 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-worker-dichte.cjs --kern --selftest --json C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\4a5f5e2c-headless\gelaende.K1_2.json
+
+========= DIE KERN-PROBE — Stamm-Leser = Worker-Feld = Kern, die Mutation zieht beide =========
+  Orte: Höhle -216,-974 · Kanal -258,-1133 · See 1816,-6168 · 300 Edits (der Stamm hält 300) · 100000 Punkte · 2 Voxel-Fäden
+  Der Ort wirkt (Höhle, Kanal, See, Edit, Zufall): 19319 · 20000 · 12723 · 15840 · 20000 von je 20000 · unverändert ≠ Kern Stamm 0 · Faden 0
+  ✓ Edit-Stärke     zieht Stamm-Leser 17444 · Worker-Feld 17444 Werte · ≠ Kern 0
+  ✓ Edit-Radius     zieht Stamm-Leser 35472 · Worker-Feld 35472 Werte · ≠ Kern 0
+  ✓ Dichte-Versatz  zieht Stamm-Leser 84081 · Worker-Feld 84081 Werte · ≠ Kern 0
+  ✓ See-Spiegel     zieht Stamm-Leser 25570 · Worker-Feld 25570 Werte · ≠ Kern 0
+  SELBSTTEST (WORKER-FELD liest den unveränderten Kern): ≠ Kern Stamm 0 · Faden 158466 → beim Namen ROT
+  SELBSTTEST (STAMM-LESER liest den unveränderten Kern): ≠ Kern Stamm 79556 · Faden 0 → beim Namen ROT
+
+✅ KERN-PROBE GRÜN: 100000 Punkte, 4/4 Mutationen ziehen beide Leser · 54 s
+

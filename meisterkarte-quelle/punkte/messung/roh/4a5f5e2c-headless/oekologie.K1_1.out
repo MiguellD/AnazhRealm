@@ -1,0 +1,9 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben kaskade
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ kaskade   {"saaten":[{"deer":[4.08,4],"fox":[1.01,1.03],"wolf":[2.42,2.37],"bear":[0.16,0.14]},{"deer":[4,3.99],"fox":[1,1.05],"wolf":[2.1,2.52],"bear":[0.08,0.13]},{"deer":[4,4.18],"fox":[1.06,1.04],"wolf":[1.91,2.6],"bear":[0.12,0.19]},{"deer":[4.22,4],"fox":[1.12,1.06],"wolf":[2.08,2.37],"bear":[0.17,0.3]},{"deer":[4.03,3.98],"fox":[1.05,0.96],"wolf":[2.21,2.55],"bear":[0.21,0.17]},{"deer":[4.42,4],"fox":[1.16,1.02],"wolf":[2.16,1.66],"bear":[0.14,0.11]},{"deer":[4.15,4],"fox":[1.11,1.04],"wolf":[2.16,2.29],"bear":[0.2,0.21]},{"deer":[4,4],"fox":[1.07,1.06],"wolf":[2.43,2.23],"bear":[0.23,0.16]}],"kappe":0}
+
+  (19 s) — Sekunden je Probe: kaskade: 10
+
+✅ GRÜN — kaskade
