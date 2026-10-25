@@ -1241,7 +1241,7 @@ async function probe(arg) {
     const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
-    if (!BILD) await nullRenderer(page, { foundry: true });
+    if (!BILD) await nullRenderer(page);
     await page.evaluateOnNewDocument(() => {
         window.__anazhAutoSettlement = false; // der Dorf-Zug ruht: die Häuser der Mess-Wiese setzt die Linse (fest)
     });

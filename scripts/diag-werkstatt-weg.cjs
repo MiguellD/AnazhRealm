@@ -1494,7 +1494,7 @@ async function wegProbe(page, frei) {
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     // DER EREIGNIS-STROM: jede Eingabe des Spielers (pointerdown · keydown · wheel), vor jedem Hörer der Seite gefangen
     await page.evaluateOnNewDocument(() => {
         const strom = (window.__eingabeStrom = []);

@@ -618,7 +618,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     const hPage = await browser.newPage();
     await hPage.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
-        window.__anazhForceFoundry = true;
         // Der Halt sitzt, sobald die Instanz steht — lange vor dem Buch (der Worker rechnet es Sekunden). Kam es doch
         // davor, meldet die Linse `zuSpaet` statt still grün.
         const H = (window.__buchHalt = { nachrichten: [], frei: false, zuSpaet: false, los: null });

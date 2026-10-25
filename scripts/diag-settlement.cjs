@@ -1337,7 +1337,7 @@ const FIXTURES = [
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "null", frist: 240000 });
     const page = await browser.newPage();
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const out = await page.evaluate(async () => {

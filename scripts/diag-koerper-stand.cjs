@@ -1146,7 +1146,7 @@ function zeile(o) {
     const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
     let rot = 0;
     try {
-        // `k8`: die Welt mit Foundry (Streu, Reh und GT tragen Studio-Gestalten), sie misst nur K8
+        // `k8`: sie misst nur K8 (Streu, Reh und GT tragen Studio-Gestalten der Foundry)
         const lauf = async (inj, k8) => {
             // je Lauf ein eigener Browser-Kontext: kein Speicherstand (Save, IndexedDB) des Vorlaufs reist in die nächste
             // Welt (ein gespeichertes Dorf stünde sonst unter dem neu gegründeten)
@@ -1155,7 +1155,7 @@ function zeile(o) {
             page.setDefaultTimeout(880000);
             const errs = [];
             page.on("pageerror", (e) => errs.push((e.message || String(e)).split("\n")[0]));
-            if (!BILD) await nullRenderer(page, { foundry: k8 === true });
+            if (!BILD) await nullRenderer(page);
             // die Mess-Wiese in IHREM Zustand (spec/profiband/haushalt.json `dorfZug`): ruht dort der Zug, wächst kein Auto-Dorf an
             // Wiese und Hang — headless ruht er ohnehin (`_dorfTaktLebt`), auf der Karte lief er, und der 25°-Hang stand unter den
             // Terrassen des Dorfs (Radeon: Feinform p95 21,1 statt 4,3 cm)

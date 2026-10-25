@@ -22,7 +22,7 @@ const server = statikServer();
     const errs = [];
     const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
-    await nullRenderer(page, { foundry: true });
+    await nullRenderer(page);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
         await window.__weltDa((r) => r.state);

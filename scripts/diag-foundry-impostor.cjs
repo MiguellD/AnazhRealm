@@ -21,7 +21,6 @@ const server = statikServer();
 async function bootPage(browser, nullRenderer) {
     const page = await browser.newPage();
     await page.evaluateOnNewDocument((nr) => {
-        window.__anazhForceFoundry = true;
         if (nr) window.__anazhHeadlessNullRenderer = true;
     }, nullRenderer);
     const pageErrors = [];
