@@ -135,8 +135,6 @@ module.exports = {
       ],
       hebel: [
         { name: "Den Verband ganz messen und halten: Φ im Band, Alarm-Kette ≤ 1 s, ID 600 s, Herde am Hang im Bild", k: ["tiere.K1+1"], t: [1, 1], wurzel: "`scripts/lib/kreatur-proben.cjs` Bühne herde (Φ, Δt Alarm, ID) + `stamm/kreatur-verhalten.js:_kreaturVerbandAlarm` (Kette über Sichtweite).", pflicht: "—", v1: false },
-        { name: "Die Jagd ins Band: Riss-Quote je Jagd über 20 Saaten (1 Wolf, 4 Wölfe, Kitz — MacNulty), Fressen ≥ 60 s, Wolfsrevier im Bild", k: ["tiere.K2+2"], t: [1, 1.5], wurzel: "Riss, Kadaver und Geruch stehen seit tiere-kreislauf (5bef501f); `scripts/lib/kreatur-proben.cjs` jagdkreis (A) zählt heute Orte einer Saat in 600 s — die Quote je Jagd über Saaten und Rudel-Größe, dann `stamm/kreatur-verhalten.js:_kreaturJagdZug` (Ausdauer der Hetze, Abbruch) ins Band.", pflicht: "—", v1: false },
-        { name: "Lebensraum und Tages-Budget im Gesetzbuch", k: ["tiere.K4+2"], t: [1.5, 1.5], wurzel: "`tetrapoda-core.js` VERHALTEN.lebensraum (Gattung × Landform aus gelaende-core) + Bedürfnis-Pegel Hunger, Durst, Ruhe; `stamm/kreatur-leben.js:_pickFaunaSoulAtPlayer` wählt nach Ort; die Tags bleiben neutral (Lehre 8).", pflicht: "—", v1: false },
         { name: "Begegnung im Bild: ferne Verbände als EIN Agent, Ratsche tier, Dichte über die Kappe am Schirm", k: ["tiere.K5+1"], t: [2, 2.5], wurzel: "Separation über das FLOCK_CELL-Gitter statt O(n²) (`stamm/kreatur-verhalten.js`); ein ferner Verband rechnet nur über sein Leittier (aiDiv-Band); Prüfbühne mit fester Herde; die Bestands-Zahl kommt aus Ökologie H1, nicht aus einem höheren Deckel.", pflicht: "— (Last: E, der CPU-Takt reißt heute schon)", v1: false }
       ],
       feststeck: {
@@ -204,9 +202,7 @@ module.exports = {
         }
       ],
       hebel: [
-        { name: "EIN Bestands-Gesetz: Geburt und Tod aus Nahrung × Lebensraum", k: ["oekologie.K2+2"], t: [2, 2], wurzel: "`tetrapoda-core.js` VERHALTEN bekommt fress und Bestands-Bilanz; `stamm/kreatur-leben.js` Geburt und Tod aus der Nahrung statt aus FAUNA_MAX; die Kappe am Schirm wählt nur, wer Körper ist.", pflicht: "— (Last: E, Kosten-Kappe am Schirm)", v1: false },
-        { name: "Fraß schreibt negativ ins Feld, Kaskade über ≥ 8 Seeds (nach H1)", k: ["oekologie.K1+2"], t: [1.5, 1.5], wurzel: "Fraß über `_depositLife` negativ (erlaubt: §4.2 verbietet nur die positive Rückkopplung); Zeitraffer-Linse mit Mutante.", pflicht: "—", v1: false },
-        { name: "EIN Furcht-Gesetz: Erinnerung ⊕ Feld-Furcht", k: ["oekologie.K3+2"], t: [1, 1], wurzel: "tetrapoda-core VERHALTEN: furcht(wesen, ort) = Erinnerung des Wesens ⊕ Feld-Furcht am Ort; Leser im Flucht- und Neugier-Zweig von updateCreatures (`stamm/kreatur-verhalten.js`); `_creatureRemember` (`stamm/kreatur-leben.js:1088`) mit Typen geschlagen/gefüttert; ein Riss deponiert über `_depositEmotion`.", pflicht: "—", v1: false },
+        { name: "EIN Bestands-Gesetz: Geburt und Tod aus Nahrung × Lebensraum", k: ["oekologie.K2+1"], t: [2, 2], wurzel: "`tetrapoda-core.js` VERHALTEN bekommt fress und Bestands-Bilanz; `stamm/kreatur-leben.js` Geburt und Tod aus der Nahrung statt aus FAUNA_MAX; die Kappe am Schirm wählt nur, wer Körper ist.", pflicht: "— (Last: E, Kosten-Kappe am Schirm)", v1: false },
         { name: "Der Spieler als Beute, der Affekt antwortet", k: ["oekologie.K4+1"], t: [1, 1], wurzel: "Pirsch auf den Spieler über `_scentAt` (steht) → Emotion-Achsen über `_playerSituationWohl` (`stamm/feld-sprache.js`).", pflicht: "—", v1: false },
         { name: "Die Ansteckung gegen bond = 0, die Bindung über den Reload", k: ["oekologie.K5+1"], t: [1, 1], wurzel: "Das Folgen steht (M19, 21.10.: 10 min, p95 3,6 m); der Rest: `_tickEmotionContagion` (`stamm/feld-sprache.js:1031`) verschiebt die Stimmung des Spielers gegen den Gegenlauf bond = 0, bond reist im Speicher, beide Geräte.", pflicht: "—", v1: false }
       ],
@@ -276,8 +272,7 @@ module.exports = {
       ],
       hebel: [
         { name: "Die Stadt lebt: ≥ 200 Bewohner, ≥ 40 nah animiert, und der Gang kostet an der GTX nichts", k: ["mensch.K1+1"], t: [0.5, 1], wurzel: "Gemergt bis 3528f2d0: der Bewohner-Satz auf dem generischen Baustein mit Knochen-Matrizen und Skinning auf der GPU (tier-satz 9017bdb4/877ad25b), der Satz schreibt nur geänderte Slots und die Liste kommt in Raten zu 4 Häusern (stadt-takt 60d2c6ba/468ece98), EIN Glieder-Memo `_gattungGlieder` (9367ab90). Der Rest: der Bewohner-Zensus der Linse `bewohner` (`scripts/lib/kreatur-proben.cjs`) an einer Stadt mit nH ≥ 27 (≥ 200, ≥ 40 nah animiert) und `_tickBewohner` 1,52–1,82 > 1 ms (drei Schleifen über alle Bewohner je Takt, befund stadt-takt) gegen das Dorf-ABAB der GTX. Die 1 kommt zuerst per Messschuld M40 zurück, der Hebel trägt die 2.", pflicht: "— (Last: E, Kosten der Menge im ABAB)", v1: false },
-        { name: "Wer nach 1 h zurückkommt, findet jeden Bewohner auf ±2 m, an beiden Geräten (die 4–10 Wege stehen seit bewohner-wege)", k: ["mensch.K2+1"], t: [1, 1], wurzel: "Die Wege 4–7 je Tag stehen (bewohner-wege 3d1f6b14); der Rest: fern setzt der Plan nur die Lage (`_tickBewohner`, `stamm/siedlung-bewohner.js`), die Linse `bewohner` richtet die Wiederkehr nach 1 h Abwesenheit gegen `tagesPlan` (ungemessen), dazu Radeon und GTX; im Fenster der Radeon ist „alle Bewohner“ ROT (trefferMin 0,825, Feld-Bewohner #724672 und #45665 unter 0,9, M32 an 6cfce28a).", pflicht: "—", v1: false },
-        { name: "Begegnung ohne Modell: Kopf-Zuwendung, Ausweichen, Gedächtnis-Abstand", k: ["mensch.K5+1"], t: [1, 1], wurzel: "Leib-Löser (`stamm/koerper-leib.js`) für die Kopf-Zuwendung; Furcht-Gesetz aus Ökologie H3 lenkt den Abstand.", pflicht: "—", v1: false },
+        { name: "Begegnung ohne Modell: Kopf-Zuwendung, Ausweichen, Gedächtnis-Abstand", k: ["mensch.K5+1"], t: [1, 1], wurzel: "Leib-Löser (`stamm/koerper-leib.js`) für die Kopf-Zuwendung; Furcht-Gesetz aus Ökologie K3 lenkt den Abstand.", pflicht: "—", v1: false },
         { name: "Vielfalt und Kosten von 50 Bewohnern", k: ["mensch.K4+1"], t: [1, 1], wurzel: "Genom mit Seed (`_rollHumanoidGenome`), LOD-Kette wie beim Tier; Messung mensch-kopf an der Spiel-Kamera (Messschuld M7) zuerst.", pflicht: "— (Last: E)", v1: false }
       ],
       feststeck: {
@@ -414,7 +409,7 @@ module.exports = {
       hebel: [
         { name: "Haar und Fell im EINEN Wind", k: ["haar.K3+1"], t: [1, 1], wurzel: "Fell- und Haar-Stoff lesen `_windSwayOffset` (`stamm/stoff-material.js:87`) wie die Krone.", pflicht: "—", v1: false },
         { name: "Strähnen-Gesetz für das Haar mit Karten-Stufe", k: ["haar.K2+1", "haar.K5+1"], t: [3, 3], wurzel: "`koerper-core.js` Haar-Kapitel: Strähnen aus dem Genom nah, Karten-Schale fern (Lehre 19: die Reduktion im Asset).", pflicht: "—", v1: false },
-        { name: "Kleidung als Tuch des Lösers (nach Physik H2)", k: ["haar.K4+1"], t: [2, 2], wurzel: "Schnitt aus EPOCHEN des Hauses, Tuch im XPBD-Löser von koerper-core.", pflicht: "—", v1: false },
+        { name: "Kleidung als Tuch des Lösers (nach Physik H1)", k: ["haar.K4+1"], t: [2, 2], wurzel: "Schnitt aus EPOCHEN des Hauses, Tuch im XPBD-Löser von koerper-core.", pflicht: "—", v1: false },
         { name: "Fell-Schale je Stufe mit EINEM Ton", k: ["haar.K1+1"], t: [1.5, 1.5], wurzel: "`tetrapoda-core.js:817` Fell → Schalen-Stufe aus derselben Zeile; Klasse fell in der Soll-Tafel mit externer REF (Messschuld M23).", pflicht: "—", v1: false }
       ],
       feststeck: {
@@ -473,15 +468,15 @@ module.exports = {
           punkte: 0,
           staffel: "1 = 100 Vögel im Bild ≤ 0,3 ms CPU an der GTX-CPU · 2 = dazu im Haushalt ≤ 10 Befehle, beide Geräte",
           messung: "werkbank zerlegen/takt an einer Prüfbühne mit festem Schwarm.",
-          beleg: "Ungemessen: es gibt keinen Schwarm in der Welt; die Herde rechnet heute je Kopf (Tiere H4 legt die Separation auf das FLOCK_CELL-Gitter und ferne Verbände auf das Leittier).",
+          beleg: "Ungemessen: es gibt keinen Schwarm in der Welt; die Herde rechnet heute je Kopf (Tiere H2 legt die Separation auf das FLOCK_CELL-Gitter und ferne Verbände auf das Leittier).",
           schlupfloch: "Schwärme nur außerhalb des Blicks: die Prüfbühne zählt den Schwarm im Bild."
         }
       ],
       hebel: [
-        { name: "Das Vogel-Gesetzbuch dockt ohne Wirt-Zeile an (nach Studios H4)", k: ["luftwasser.K1+2", "luftwasser.K2+1", "klang.K1+1"], t: [4, 5], wurzel: "Neues Gesetzbuch nach Vertrag v1.2 (PARAMS_BY_KIND, KIND_POLICY); Schwarm über `verbandZug`; der Klang-Vogel liest den Leib.", pflicht: "—", v1: false },
+        { name: "Das Vogel-Gesetzbuch dockt ohne Wirt-Zeile an (Studios K5 steht)", k: ["luftwasser.K1+2", "luftwasser.K2+1", "klang.K1+1"], t: [4, 5], wurzel: "Neues Gesetzbuch nach Vertrag v1.2 (PARAMS_BY_KIND, KIND_POLICY); Schwarm über `verbandZug`; der Klang-Vogel liest den Leib.", pflicht: "—", v1: false },
         { name: "Fische in der Strömung", k: ["luftwasser.K3+2"], t: [2, 2], wurzel: "Strömung aus `_waterLevelAt`/F1-Chokepoint als Leser der Fisch-Ausrichtung.", pflicht: "—", v1: false },
         { name: "Bestäuber als Leser von auraAt", k: ["luftwasser.K4+1"], t: [2, 2], wurzel: "`stamm/feld-leben.js:auraAt` lebendig/Blüte am Ort.", pflicht: "—", v1: false },
-        { name: "Schwarm als EIN Agent", k: ["luftwasser.K5+2"], t: [1, 1.5], wurzel: "Leittier rechnet, Glieder folgen in Formation (aiDiv-Band wie Tiere H4).", pflicht: "—", v1: false }
+        { name: "Schwarm als EIN Agent", k: ["luftwasser.K5+2"], t: [1, 1.5], wurzel: "Leittier rechnet, Glieder folgen in Formation (aiDiv-Band wie Tiere H2).", pflicht: "—", v1: false }
       ],
       feststeck: {
         versucht: "Nie begonnen; benannt nach den acht Studios (Gedächtnis studio-vollendung: als Nächstes Motorrad, Vögel, Aufzug). Die Wiese klingt heute nach Vögeln, die es nicht gibt.",
