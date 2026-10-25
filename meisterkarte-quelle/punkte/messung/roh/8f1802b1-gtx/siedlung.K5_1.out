@@ -1,0 +1,181 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx C:/Program Files/Git/bin/bash.exe -c set -u
+WP=7771; SP=$((7771 + 20000)); LP=$((7771 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=
+weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n "$SPID" ] && kill "$SPID" 2> /dev/null; SPID=; for p in $(netstat -ano 2> /dev/null | grep -aE ":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }
+trap weg EXIT
+boot() { weg; PORT=$SP node save-server.js > "$L/save.log" 2>&1 & SPID=$!; for t in $(seq 1 30); do curl -s -o /dev/null "http://localhost:$SP/" && break; sleep 1; done; $W start --echt --port $WP --seite "http://localhost:$SP" "$@" > "$L/wb.log" 2>&1 & for t in $(seq 1 120); do grep -qE "WERKBANK bereit|FEHLER|Error" "$L/wb.log" && break; sleep 5; done; grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+boot --ort dorf
+timeout 60 $W fenster 1920 1080 > /dev/null 2>&1
+timeout 120 $W umstellen --ort dorf --sicht ego > /dev/null 2>&1
+timeout 300 $W lauf 10 --ein 20 --ruhe 120 --regler frei --tiere frei > /dev/null 2>&1
+teil NH12 $W eval "window.__m36 = { zelle: [-4, -6], nH: 12, start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2410-siedlung-k5/m36-stufe.js")"
+boot --ort dorf
+timeout 60 $W fenster 1920 1080 > /dev/null 2>&1
+timeout 120 $W umstellen --ort dorf --sicht ego > /dev/null 2>&1
+timeout 300 $W lauf 10 --ein 20 --ruhe 120 --regler frei --tiere frei > /dev/null 2>&1
+teil NH300 $W eval "window.__m36 = { zelle: [-4, -6], nH: 300, start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2410-siedlung-k5/m36-stufe.js")"
+@@PUNKTE@@ NH12
+{
+ "ergebnis": {
+  "gesetzt": {
+   "ms": 3.8,
+   "bilder": 0
+  },
+  "imRadius": {
+   "ms": 33564.9,
+   "bilder": 3231,
+   "radius": 103.67984067546931
+  },
+  "latenzMs": 170.5,
+  "erstesMesh": {
+   "ms": 33735.4,
+   "bilder": 3241,
+   "stufe": "mesh",
+   "typ": "haus_fraenkisch",
+   "same": 905543,
+   "ort": [
+    -828.51,
+    -1350.39
+   ],
+   "abstand": 103,
+   "auge": [
+    -839.9,
+    43.3,
+    -1248
+   ]
+  },
+  "radius": 103.67984067546931,
+  "zelle": [
+   -4,
+   -6
+  ],
+  "nH": 12,
+  "same": 29749318,
+  "anker": [
+   -839.5,
+   -1373.1
+  ],
+  "erwacht": {
+   "bild": 4482,
+   "d": 260
+  },
+  "erstes": {
+   "ms": 60.4,
+   "bilder": 2,
+   "stufe": "huelle",
+   "typ": "haus_alemannisch",
+   "same": 540317,
+   "ort": [
+    -795.38,
+    -1343.36
+   ],
+   "abstand": 234.4,
+   "auge": [
+    -840.3,
+    43.7,
+    -1113.3
+   ]
+  },
+  "hash": "175269cc",
+  "bilder": 7723,
+  "reserviert": {
+   "seed": 29749318,
+   "nH": 12,
+   "x": -839.5294117647059,
+   "z": -1373.113725490196,
+   "wx": -839.5294117647059,
+   "wz": -1373.113725490196,
+   "ort": "ort:29749318:-840,-1373"
+  }
+ },
+ "ms": 81254
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ NH300
+{
+ "ergebnis": {
+  "gesetzt": {
+   "ms": 7.6,
+   "bilder": 0
+  },
+  "imRadius": {
+   "ms": 985.7,
+   "bilder": 11,
+   "radius": 105.87203841001453
+  },
+  "latenzMs": 0.1,
+  "erstesMesh": {
+   "ms": 985.8,
+   "bilder": 11,
+   "stufe": "mesh",
+   "typ": "haus_fraenkisch",
+   "same": 982839,
+   "ort": [
+    -824.49,
+    -1130.87
+   ],
+   "abstand": 21.2,
+   "auge": [
+    -840.3,
+    45,
+    -1116.7
+   ]
+  },
+  "radius": 105.87203841001453,
+  "zelle": [
+   -4,
+   -6
+  ],
+  "nH": 300,
+  "same": 29749318,
+  "anker": [
+   -839.5,
+   -1373.1
+  ],
+  "erwacht": {
+   "bild": 4210,
+   "d": 260
+  },
+  "erstes": {
+   "ms": 985.8,
+   "bilder": 11,
+   "stufe": "mesh",
+   "typ": "haus_fraenkisch",
+   "same": 982839,
+   "ort": [
+    -824.49,
+    -1130.87
+   ],
+   "abstand": 21.2,
+   "auge": [
+    -840.3,
+    45,
+    -1116.7
+   ]
+  },
+  "hash": "88b58bbf",
+  "bilder": 4221,
+  "reserviert": {
+   "seed": 29749318,
+   "nH": 300,
+   "x": -839.5294117647059,
+   "z": -1373.113725490196,
+   "wx": -839.5294117647059,
+   "wz": -1373.113725490196,
+   "ort": "ort:29749318:-840,-1373"
+  }
+ },
+ "ms": 48505
+}
+@@PUNKTE@@ EXIT 0
+
+--- stderr ---
+environment: line 3: 46762 Terminated              PORT=$SP node save-server.js > "$L/save.log" 2>&1
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 46741 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
