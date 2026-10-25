@@ -1,0 +1,10 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-radeon'); K=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination'); A=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\8f1802b1-radeon\klang.K4_1.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; (PORT=7796 node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:7796/ && break; sleep 1; done; export SPIEL_URL=http://localhost:7796; node "$D/m15-schritt.cjs" && node "$D/m15-schritt.cjs" --auswerten
+gpu-lauf: Schloss punkte-radeon nach 2 s
+[linse-gpu] amd/rdna-3
+{"klang":{"weg":"cdp-klick","an":true,"ctx":"running"},"orte":{"erde":[-280.4,-1045.6],"stein":[-262.4,-1076.8],"glut":[-274.1,-998]},"stoffe":{"erde":{"wegM":11.6,"bursts":19,"medianHz":5767,"p10":5545,"p90":5935},"stein":{"wegM":11.6,"bursts":18,"medianHz":5710,"p10":5402,"p90":5940},"glut":{"wegM":11.6,"bursts":18,"medianHz":1989,"p10":1727,"p90":5345}}}
+gras n 37 median 5742 p10 5544 p90 5935
+laub n 2 median 5529 p10 5345 p90 5529
+glut n 16 median 1887 p10 1727 p90 2183
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

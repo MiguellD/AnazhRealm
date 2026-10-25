@@ -1,0 +1,317 @@
+{
+ "labor": {
+  "rinde": {
+   "Y": 0.0894,
+   "rgb": "0.1066/0.087/0.0619",
+   "pixel": 17733,
+   "zuege": 2,
+   "stoffe": [
+    "{\"kind\":\"bark\",\"r\":0.93,\"mt\":0,\"cc\":0,\"seh\":null}"
+   ]
+  },
+  "laub": {
+   "Y": 0.1784,
+   "rgb": "0.1268/0.2073/0.0447",
+   "pixel": 121968,
+   "zuege": 1,
+   "stoffe": [
+    "{\"kind\":\"foliageTex\",\"r\":0.62,\"mt\":0,\"cc\":0,\"seh\":null}"
+   ]
+  },
+  "fels": {
+   "Y": 0.2444,
+   "rgb": "0.2705/0.243/0.1811",
+   "pixel": 307925,
+   "zuege": 1,
+   "stoffe": [
+    "{\"kind\":\"unknown\",\"r\":0.872,\"mt\":0.02,\"cc\":0,\"seh\":null}"
+   ]
+  },
+  "boden": {
+   "Y": 0.0832,
+   "rgb": "0.1198/0.0771/0.0355",
+   "pixel": 256000,
+   "zuege": 1,
+   "stoffe": [
+    "{\"kind\":\"unknown\",\"r\":0.94,\"mt\":0,\"cc\":0,\"seh\":null}"
+   ]
+  },
+  "lack": {
+   "Y": 0.0166,
+   "rgb": "0.0144/0.0166/0.0226",
+   "pixel": 245421,
+   "zuege": 138,
+   "stoffe": [
+    "{\"kind\":\"unknown\",\"r\":0.4,\"mt\":0,\"cc\":1,\"seh\":\"metall\"}"
+   ]
+  },
+  "tor": {
+   "Y": 0.6496,
+   "rgb": "0.8196/0.6364/0.2799",
+   "pixel": 7583,
+   "zuege": 41,
+   "stoffe": [
+    "{\"kind\":\"unknown\",\"r\":0.28,\"mt\":1,\"cc\":0,\"seh\":\"metall\"}"
+   ]
+  },
+  "klinge": {
+   "Y": 0.3322,
+   "rgb": "0.3642/0.3258/0.3022",
+   "pixel": 17450,
+   "zuege": 6,
+   "stoffe": [
+    "{\"kind\":\"unknown\",\"r\":0.17,\"mt\":1,\"cc\":0.35,\"seh\":\"metall\"}",
+    "{\"kind\":\"unknown\",\"r\":0.32,\"mt\":1,\"cc\":0,\"seh\":\"metall\"}"
+   ]
+  },
+  "haus": {
+   "Y": 0.1491,
+   "rgb": "0.2826/0.1169/0.0754",
+   "pixel": 407007,
+   "zuege": 8413,
+   "stoffe": [
+    "{\"kind\":\"unknown\",\"r\":0.96,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.88,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.9,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.98,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.92,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.97,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.85,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.82,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":1,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.8,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.86,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}"
+   ]
+  },
+  "haus-l1": {
+   "Y": 0.1476,
+   "rgb": "0.2801/0.1156/0.075",
+   "pixel": 407007,
+   "zuege": 8444,
+   "stoffe": [
+    "{\"kind\":\"unknown\",\"r\":0.96,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.88,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.9,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.98,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.92,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.25,\"mt\":0.1,\"cc\":0,\"seh\":\"glas\"}",
+    "{\"kind\":\"unknown\",\"r\":0.15,\"mt\":0,\"cc\":0,\"seh\":\"glas\"}",
+    "{\"kind\":\"unknown\",\"r\":0.97,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.85,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.82,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":1,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.8,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.7,\"mt\":0,\"cc\":0,\"seh\":\"glut\"}",
+    "{\"kind\":\"unknown\",\"r\":0.5,\"mt\":0.55,\"cc\":0,\"seh\":\"metall\"}",
+    "{\"kind\":\"unknown\",\"r\":0.86,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}"
+   ]
+  },
+  "haus-l2": {
+   "Y": 0.1476,
+   "rgb": "0.2801/0.1156/0.075",
+   "pixel": 407007,
+   "zuege": 8444,
+   "stoffe": [
+    "{\"kind\":\"unknown\",\"r\":0.96,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.88,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.9,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.98,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.92,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.25,\"mt\":0.1,\"cc\":0,\"seh\":\"glas\"}",
+    "{\"kind\":\"unknown\",\"r\":0.15,\"mt\":0,\"cc\":0,\"seh\":\"glas\"}",
+    "{\"kind\":\"unknown\",\"r\":0.97,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.85,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.82,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":1,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.8,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"unknown\",\"r\":0.7,\"mt\":0,\"cc\":0,\"seh\":\"glut\"}",
+    "{\"kind\":\"unknown\",\"r\":0.5,\"mt\":0.55,\"cc\":0,\"seh\":\"metall\"}",
+    "{\"kind\":\"unknown\",\"r\":0.86,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}"
+   ]
+  },
+  "haut": {
+   "Y": 0.0606,
+   "rgb": "0.1215/0.0461/0.0249",
+   "pixel": 74180,
+   "zuege": 10,
+   "stoffe": [
+    "{\"kind\":\"skin\",\"r\":0.62,\"mt\":0,\"cc\":0.12,\"seh\":\"haut\"}",
+    "{\"kind\":\"haut\",\"r\":0.58,\"mt\":0,\"cc\":0.12,\"seh\":\"haut\"}"
+   ]
+  },
+  "fell": {
+   "Y": 0.1689,
+   "rgb": "0.2059/0.1636/0.1123",
+   "pixel": 152942,
+   "zuege": 15,
+   "stoffe": [
+    "{\"kind\":\"fell\",\"r\":0.93,\"mt\":0,\"cc\":0,\"seh\":\"haar\"}",
+    "{\"kind\":\"straehneD\",\"r\":0.92,\"mt\":0,\"cc\":0,\"seh\":\"haar\"}",
+    "{\"kind\":\"dunkel\",\"r\":0.9,\"mt\":0,\"cc\":0,\"seh\":\"stoff\"}",
+    "{\"kind\":\"fellSchale\",\"r\":0.92,\"mt\":0,\"cc\":0,\"seh\":\"haar\"}"
+   ]
+  }
+ },
+ "karten": {
+  "terrain": {
+   "studio": "terrain",
+   "belichtung": 1,
+   "kL": 0.676,
+   "kLrgb": "0.6646/0.6814/0.6563",
+   "ausgabe": [
+    170,
+    175,
+    168
+   ]
+  },
+  "garage": {
+   "studio": "garage",
+   "belichtung": 1.04,
+   "kL": 0.5658,
+   "kLrgb": "0.5215/0.5752/0.6035",
+   "ausgabe": [
+    188,
+    197,
+    201
+   ]
+  },
+  "portale": {
+   "studio": "portale",
+   "belichtung": 1.1,
+   "kL": 0.8007,
+   "kLrgb": "0.769/0.811/0.7918",
+   "ausgabe": [
+    195,
+    206,
+    201
+   ]
+  },
+  "schmiede": {
+   "studio": "schmiede",
+   "belichtung": 1.06,
+   "kL": 0.6427,
+   "kLrgb": "0.6825/0.6364/0.5885",
+   "ausgabe": [
+    171,
+    159,
+    147
+   ]
+  },
+  "fachwerk": {
+   "studio": "fachwerk",
+   "belichtung": 1.12,
+   "kL": 0.4801,
+   "kLrgb": "0.4992/0.4767/0.4583",
+   "ausgabe": [
+    197,
+    194,
+    192
+   ]
+  },
+  "koerperstudio": {
+   "studio": "koerperstudio",
+   "belichtung": 1,
+   "kL": 0.699,
+   "kLrgb": "0.6655/0.709/0.6987",
+   "ausgabe": [
+    171,
+    182,
+    179
+   ]
+  },
+  "tetrapoda": {
+   "studio": "tetrapoda",
+   "belichtung": 1.25,
+   "kL": 0.8802,
+   "kLrgb": "0.9834/0.8633/0.7437",
+   "ausgabe": [
+    251,
+    251,
+    251
+   ]
+  }
+ },
+ "eichung": {
+  "labor": {
+   "terrain": 0.1799,
+   "garage": 0.1799,
+   "portale": 0.1799,
+   "schmiede": 0.1799,
+   "fachwerk": 0.1799,
+   "koerperstudio": 0.1799,
+   "tetrapoda": 0.1799
+  }
+ },
+ "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+ "fehler": [],
+ "datum": "2026-10-25T12:47:06.379Z",
+ "echt": true,
+ "stand": {
+  "version": "18.546.91",
+  "sha": "8f1802b18fe68b09fb660793b198ec7c51c58a9d",
+  "quellen": {
+   "phyto-core.js": "c:d4ac1f962cdfca7a",
+   "foundry-core.js": "c:6775c096fe7680eb",
+   "vehicle-core.js": "c:12849fe4237e3f3d",
+   "porta-core.js": "c:11bc6e763f4f7298",
+   "schmiede-core.js": "c:5cc59575f1e87489",
+   "fachwerk-core.js": "c:6a13402497440cff",
+   "klang-core.js": "c:42b13b50cb2a807d",
+   "koerper-core.js": "c:dd8185bbf3cf3c42",
+   "tetrapoda-core.js": "c:efb9053b74f95ba2",
+   "gelaende-core.js": "c:ee0f15e44534b8b8",
+   "stamm/dirigent-kern.js": "c:7271248fe32475e1",
+   "stamm/dienst.js": "c:86382f4c9c7d3f66",
+   "stamm/daten.js": "c:c1d05f96439aa3b7",
+   "stamm/gelaende-boden.js": "c:eac6d85b23e47364",
+   "stamm/gelaende-chunks.js": "c:60f7570a1ba44f10",
+   "stamm/gelaende-fern.js": "c:f478db3c2b76d4bb",
+   "stamm/gelaende-kollision.js": "c:5949467b80170877",
+   "stamm/wasser-hydro.js": "c:63248f3ebbbf847f",
+   "stamm/wasser-zellen.js": "c:a8599584ec8b919d",
+   "stamm/stoff-material.js": "c:b26be3847db0644c",
+   "stamm/stoff-instanz.js": "c:c7bc5811bbe608da",
+   "stamm/studio-bruecke.js": "c:077543a19a2ff039",
+   "stamm/studio-gestalt.js": "c:82257a543ba40618",
+   "stamm/bau-vorlagen.js": "c:6bc4e4d01b7a2699",
+   "stamm/bau-buch.js": "c:72332df9a0426209",
+   "stamm/bau-teile.js": "c:cfddeed2acdb9960",
+   "stamm/siedlung-ort.js": "c:4a3dbea2baffe54a",
+   "stamm/siedlung-bauten.js": "c:2a2b656c28fbbcd9",
+   "stamm/siedlung-satz.js": "c:01ea3f78703c17b4",
+   "stamm/siedlung-bewohner.js": "c:fdbe8913717a5b34",
+   "stamm/vegetation-wiese.js": "c:14997bacb3a025d4",
+   "stamm/vegetation-baum.js": "c:5bdf73c947d8def5",
+   "stamm/vegetation-streu.js": "c:72d155ba7ef7a832",
+   "stamm/bild-kosten.js": "c:bf15642d8a353b7a",
+   "stamm/bild-diaet.js": "c:6c397620cf33128e",
+   "stamm/bild-sicht.js": "c:6aaace2bf1255b5d",
+   "stamm/bild-himmel.js": "c:51a7085c7cc84ec8",
+   "stamm/klang.js": "c:209240f3ff1639d8",
+   "stamm/koerper-leib.js": "c:32c164fd7c2df515",
+   "stamm/koerper-seele.js": "c:72147c4dba436bd3",
+   "stamm/koerper-bewegung.js": "c:fd8d6eecf6baf451",
+   "stamm/koerper-fahrt.js": "c:f6183afe87a4ebbe",
+   "stamm/kreatur-leben.js": "c:de3f8b9101e76716",
+   "stamm/kreatur-verhalten.js": "c:7111f884e48dba1e",
+   "stamm/kampf.js": "c:c6ad3a854d52d75d",
+   "stamm/netz-p2p.js": "c:87da70c234ae3aa3",
+   "stamm/netz-identitaet.js": "c:60188e94e580cc57",
+   "stamm/netz-portal.js": "c:e0e7efbb64e4e388",
+   "stamm/feld-leben.js": "c:f7aaef7159eb1795",
+   "stamm/feld-dsl.js": "c:12579ad70a803712",
+   "stamm/feld-nexus.js": "c:cab9e198067accae",
+   "stamm/feld-sprache.js": "c:f7910f72e700d2ae",
+   "stamm/speicher-welten.js": "c:f4655d5a16949d7b",
+   "stamm/speicher-laden.js": "c:f21dffc54e545d34",
+   "stamm/werkstatt-hud.js": "c:cc53187379624bf7",
+   "stamm/werkstatt-vorschau.js": "c:a598265df4583296",
+   "stamm/werkstatt-bauen.js": "c:028dbd112cc79250",
+   "stamm/werkstatt-hof.js": "c:9f322c99f6c9e528",
+   "stamm/werkstatt-sozial.js": "c:95205aa47c461eeb",
+   "stamm/dirigent-regler.js": "c:a71e15afe98ee30b",
+   "stamm/dirigent-takt.js": "c:05d50f7a8cf51ede",
+   "stamm/dirigent-ankunft.js": "c:3075577aa3182741"
+  }
+ }
+}
