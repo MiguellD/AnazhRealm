@@ -977,7 +977,9 @@ class AnazhRealm_dirigent_ankunft {
     // keine wartet auf ihr Asset), keine Karte offen, deren Leser im Blick steht, kein Dorf der Ankunft im Werden (fällig, im
     // Export oder mit Häusern im Blick in der Schlange). Was dahinter liegt, folgt nah zuerst (der Rundblick, gate:ankunft L2a).
     // Jede Lücke hat ihren Leser im ersten Frame; der Vorrat (`_foundryPrefetchLibrary`) hat keinen und hält das Bild nie
-    // (K30: das Tor wartete auf `f._prefetching` — Wagen, Siedlungs-Probe, alle Gestalten des Buchs; kalt 25–30 s).
+    // (K30: das Tor wartete auf `f._prefetching` — Wagen, Siedlungs-Probe, alle Gestalten des Buchs; kalt 25–30 s). Der
+    // Stufen-Vorlauf (`_stufenVorlaufWahl`) hält es als wachsender Baum: sein Leser ist der erste Schritt in den Wald, je
+    // Karten-Art EIN Baum, gedockt mit seiner Karte.
     _weltbildFehlt(rundum) {
         return this._weltbildLuecken(rundum).map((l) => l.satz);
     }
