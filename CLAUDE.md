@@ -80,6 +80,7 @@ p95 ≤ 33 ms auf JEDEM Standardgerät (Richter: das Profi-Band). Feature-Stopp 
 - **A** AAAA je Klasse: die Soll-Tafel trägt 12 Klassen, an ihren Mittag-Posen 11 GRÜN, ROT laub-kante 0,2635 > 0,22 (Karte `fimp:atlas:L2`,
   17.10., 5deb7cb1); am Spawn misst sie 3 von 12, Uhr × Sicht nie.
 - **B** Ankunft ≤ 5 s kalt: GTX Weltbild kalt 16,6 s (16,1–17,0), Zweit-Boot 12,0 s, der Haupt-Faden bis zum Bild 97 % belegt; Radeon ~11 s.
+- **C** Verkehr (gesetzt 25.10.): Wagen mit Bewohnern am Steuer auf den Trassen der Stadt, nach der Messbühne Stadt-Gipfel; noch keine Station.
 - **E** Profi-Band (Radeon 890M + GTX 1060, Wiese + Genesis, Ego + Third): GTX stehend Frame p95 16,8 ms · VRAM 99,6–111,2 MB · CPU-Takt
   p95 4,7–6,3 ms, reißt an Genesis Third (6,3 > 5,8); das Radeon-ABAB am Kopf steht aus.
 
