@@ -2,3 +2,6 @@
 # Zeit · Name · Art (champion/cloud/workflow) · Token · Minuten · Ergebnis (grün/WIP/rot/gelandet) · Ziel-Kriterium · Zahl · Spur (WICHTIG/PUNKTE/FEUER)
 2026-10-25T17:02 siedlung-k5-erstes-haus champion 225190 56 grün siedlung.K5 nH300 974→125,5 ms · PUNKTE
 2026-10-25T16:55 mensch-k3-gruen champion 241282 28 WIP mensch.K3 Selbsttest geheilt, Decke +600 offen · PUNKTE
+2026-10-25T22:27 k06-heil champion ~390000 118 grün leib.K4 · G18 K06 deterministisch rot auf swiftshader → Linse wartet auf keine Gestalt (heim-z32 efb070bf) · FEUER
+2026-10-25T23:05 k06-pruefer champion ~230000 38 grün K1-Aufweichung geheilt 034952a7 (448/448 Nah-Gestalt), leib.K4#1 wackelt Radeon 1/2 · FEUER
+2026-10-25T21:34 ci-g18 champion ~220000 64 grün G18 Zweig 20,3 min abgebrochen → 6,2 min (Kamera-Leib allein in G13), Waage wiegt p90 · FEUER

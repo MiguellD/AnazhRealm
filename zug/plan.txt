@@ -1,7 +1,7 @@
 # zug/plan.txt — was ansteht (Koordinator schreibt, messplatz-blick zeigt): je Zeile Zustand · Was · Wer/Wo · Ziel
 gelandet z34  main d43cb61c V18.546.92 (20:48): L2a-Fix + Pflicht-Offen C, Nachwache z34-abab in der OMEN-Schlange  —  L2a-Wackler (10 Zweige) · Pflicht-Offen C
-läuft   feuer-z32  Workflow: k06-heil auf heim-z32 (Macher + Prüfer) · ci-g18-frist (G18 bricht auf Zweigen nach 20 min ab, main 11,6 min)  Champions  entsperrt z32
-wartet  z32   heim-z32 + K06-Heilung (Herde, Ferne, Kamera-Bau, Siedlung-K5, Klang-K1, Bauen-K5, Gelände-Ring)  fahre.sh nach z34 und feuer-z32  tiere.K1#2 · ferne.K1/K2 · leib.K4#1 · siedlung.K5 · klang.K1 · bauen.K5 · gelaende.K5#2
+fertig  feuer-z32  K06 = Linse wartete auf swiftshader auf die GT-Karte (main fiel identisch) · G18 = langsame Läufer 2,6–2,8× → Waage p90, Linse allein  Champions  837k Token
+läuft   z32   heim-z32@034952a7 (K06 geheilt, Prüfer tragfähig) + ci-g18-frist@0f26b1bc  fahre.sh (FAHRT_OHNE_PUNKTE), GTX misst Kandidat (z32k-gtx)  tiere.K1#2 · ferne.K1/K2 · leib.K4#1 · siedlung.K5 · klang.K1 · bauen.K5 · gelaende.K5#2
 läuft   tag1-welle  Workflow: b-ankunft (B) · a-laubkante (A) · e-stadtgipfel (E) je mit Prüfer · klang-schritte · mensch-k3-wege · leib-k2-fuss  Champions  WICHTIG 3 · PUNKTE 3
 befund  nw3031-abab  8f1802b1 LANGSAMER gegen 4a5f5e2c nur in der Zelle stadt (4+4)  OMEN  Heilung erstes Haus reist in z32 — die Nachwache nach z32 richtet
 danach  Mess-Takt 4  am Kopf nach z32  headless + Radeon (Ruhe) + GTX  Buchung (buche.sh --warte), Artifact Y6nuChFfb1dJTf7Btch4J5
