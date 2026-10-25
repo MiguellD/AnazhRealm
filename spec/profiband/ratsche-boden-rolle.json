@@ -4,13 +4,17 @@
   "streu": 0.5,
   "fuss": 0.5,
   "huf": 0.2,
-  "rad": 0.2
+  "rad": 0.2,
+  "falllinie": 0.5,
+  "stufe": 0.5
  },
  "hang": {
   "fein": 4.3,
   "streu": 1,
-  "fuss": 1.3,
+  "fuss": 0.9,
   "huf": 1.8,
-  "rad": 2.8
+  "rad": 2.8,
+  "falllinie": 1.8,
+  "stufe": 0.7
  }
 }
