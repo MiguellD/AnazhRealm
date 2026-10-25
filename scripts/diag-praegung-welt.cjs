@@ -305,7 +305,7 @@ const welt = async (seite) => {
             }
             // DER PROMPT liest DIESELBEN Zeilen (Mutation gewinnt): jede Zeile jeder sagbaren Art mit Bereich, eine eingespielte
             // Zeile erscheint im Prompt und trägt am Stempel
-            const zeigt = (d) => `${d.id} ${d.lab} ${d.min}–${d.max}`;
+            const zeigt = (d) => `"${d.id}" ${d.min}–${d.max} ${d.lab}`;
             const sagbar = Object.keys(k.je).filter((art) => !k.ohneWort.some((n) => n.startsWith(art + ":")));
             k.prompt = sagbar.filter((art) => !PBK[art].every((d) => r.llmBuildSystemPrompt().includes(zeigt(d))));
             const probe = { id: "probeRegler", lab: "Probe", min: 0, max: 1, step: 0.1 };

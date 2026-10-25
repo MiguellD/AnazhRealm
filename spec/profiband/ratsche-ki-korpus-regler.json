@@ -1,0 +1,432 @@
+{
+ "modell": "qwen3:4b-instruct",
+ "anbieter": "127.0.0.1:11434",
+ "datum": "2026-10-25",
+ "quote": {
+  "gueltig": 1,
+  "absicht": 0.792,
+  "p95": 45679
+ },
+ "mitschnitt": {
+  "ein schmales hohes haus": [
+   "spawn_studio",
+   "haus",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "W": 6,
+    "D": 5,
+    "storeys": 3,
+    "pitchDeg": 50,
+    "hip": 1,
+    "balcony": 1
+   }
+  ],
+  "bau mir ein breites haus mit nur einem geschoss": [
+   "spawn_studio",
+   "haus",
+   [
+    "at_player_forward",
+    14
+   ],
+   1,
+   null,
+   {
+    "W": 10,
+    "D": 8,
+    "storeys": 1,
+    "pitchDeg": 30,
+    "hip": 1,
+    "balcony": 1
+   }
+  ],
+  "ein haus mit einem sehr steilen dach": [
+   "spawn_studio",
+   "haus",
+   [
+    "at_player_forward",
+    14
+   ],
+   1,
+   null,
+   {
+    "pitchDeg": 60,
+    "storeys": 3,
+    "dachForm": "hip"
+   }
+  ],
+  "ein haus mit flachem dach": [
+   "spawn_studio",
+   "haus",
+   [
+    "at_player_forward",
+    14
+   ],
+   1,
+   null,
+   {
+    "pitchDeg": 10,
+    "roofCurve": 0.2,
+    "dachform": "flach"
+   }
+  ],
+  "ein haus mit turm und zinnen wie eine kleine burg": [
+   "spawn_studio",
+   "haus",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "storeys": 3,
+    "pitchDeg": 50,
+    "tower": 1,
+    "turm": 1,
+    "zinnen": 1,
+    "veranda": 0,
+    "pilotis": 0,
+    "terrasse": 0,
+    "dachForm": "hip",
+    "dachSchwung": 0.3,
+    "kuppel": 0.2,
+    "annexN": 0,
+    "balcony": 0,
+    "portikus": 0,
+    "wMason": 0.5,
+    "wBraid": 0.3,
+    "wMono": 0.4,
+    "wLace": 0.2,
+    "orders": 5,
+    "depth": 0.6,
+    "wave": 0.1,
+    "tunnel": 0.2,
+    "fractal": 0.1,
+    "twist": 0.1,
+    "realm": 0.3,
+    "swirl": 0.1,
+    "reflect": 0.1,
+    "k": 2,
+    "rise": 1,
+    "ogee": 0.1,
+    "horse": 0.1,
+    "aspect": 1.8,
+    "mass": 0.4,
+    "metal": 0.2,
+    "glow": 0.1,
+    "hue": 0.6,
+    "weather": 0.4,
+    "ruin": 0.1,
+    "temp": 0.7,
+    "energy": 0.3
+   }
+  ],
+  "ein haus mit balkon": [
+   "spawn_studio",
+   "haus",
+   [
+    "at_player_forward",
+    14
+   ],
+   1,
+   null,
+   {
+    "balcony": 1,
+    "storeys": 2,
+    "pitchDeg": 45
+   }
+  ],
+  "ein tiefergelegter sportwagen": [
+   "spawn_studio",
+   "fahrzeug",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "fahrhoehe": 0.06,
+    "ueberhangV": 0.8,
+    "spur": 1.6,
+    "radstand": 2.8,
+    "dach": 1.5,
+    "grip": 1.2,
+    "damping": 18
+   }
+  ],
+  "ein auto mit langem radstand": [
+   "spawn_studio",
+   "fahrzeug",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "radstand": 3.4
+   }
+  ],
+  "ein tor mit starkem sog": [
+   "spawn_studio",
+   "tor",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "swirl": 1,
+    "depth": 1,
+    "rise": 1.2,
+    "aspect": 2.4,
+    "mass": 1,
+    "glow": 1,
+    "hue": 0.6
+   }
+  ],
+  "ein verfallenes tor, halb ruine": [
+   "spawn_studio",
+   "tor",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "wMason": 0.3,
+    "wBraid": 0.2,
+    "depth": 0.4,
+    "wave": 0.1,
+    "tunnel": 0,
+    "fractal": 0,
+    "twist": 0,
+    "realm": 0,
+    "swirl": 0,
+    "reflect": 0,
+    "k": 1.8,
+    "rise": 1,
+    "ogee": 0,
+    "horse": 0,
+    "aspect": 1.6,
+    "mass": 0.2,
+    "metal": 0,
+    "glow": 0,
+    "hue": 0.5,
+    "weather": 0.6,
+    "ruin": 0.7,
+    "temp": 0.8,
+    "energy": 0.1
+   }
+  ],
+  "ein glühendes tor voller energie": [
+   "spawn_studio",
+   "tor",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "energy": 1,
+    "glow": 1,
+    "hue": 0.5,
+    "temp": 1,
+    "aspect": 2,
+    "rise": 1.1,
+    "swirl": 1,
+    "reflect": 1,
+    "k": 3
+   }
+  ],
+  "ein langes schwert": [
+   "spawn_studio",
+   "schwert",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "klinge": 1.2,
+    "w0": 0.06,
+    "th0": 0.011,
+    "fuller": 0.8,
+    "griff": 0.46,
+    "beta": 60,
+    "reach": 0.16,
+    "edgeLen": 0.18
+   }
+  ],
+  "eine große, stark verwitterte feuerstelle": [
+   "spawn_studio",
+   "feuerstelle",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "verwitterung": 1,
+    "groesse": 1.2
+   }
+  ],
+  "pflanz eine hohe blume": [
+   "spawn_studio",
+   "blume",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "height": 2.4,
+    "petalRich": 1,
+    "bloomCount": 6
+   }
+  ],
+  "eine blume mit vielen blüten": [
+   "spawn_studio",
+   "blume",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "bloomCount": 12,
+    "petalRich": 1
+   }
+  ],
+  "lass ein büschel hohes gras wachsen": [
+   "spawn_studio",
+   "gras",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "bladeLen": 1.8,
+    "density": 0.9,
+    "droop": 0.8
+   }
+  ],
+  "dichtes gras vor mir": [
+   "spawn_studio",
+   "gras",
+   [
+    "at_player_forward",
+    12
+   ],
+   5,
+   null,
+   {
+    "bladeLen": 1.5,
+    "density": 0.9,
+    "droop": 0.8
+   }
+  ],
+  "ein riesiger wolf": [
+   "spawn_studio",
+   "wolf",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "size": 4,
+    "neck": 0.35,
+    "leg": 0.3,
+    "diet": 0.5,
+    "build": 1
+   }
+  ],
+  "ein hirsch mit langen beinen": [
+   "spawn_studio",
+   "hirsch",
+   [
+    "at_player_forward",
+    10
+   ],
+   1,
+   null,
+   {
+    "leg": 0.35,
+    "size": 2,
+    "diet": 0.5,
+    "build": 0.8
+   }
+  ],
+  "mach mich größer": [
+   "spawn_studio",
+   "mensch",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "height": 1.15
+   }
+  ],
+  "ich will muskulöser aussehen": [
+   "spawn_studio",
+   "mensch",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "tone": 1.2,
+    "mass": 0.8
+   }
+  ],
+  "spiel ruhige, langsame musik": [
+   "spawn_studio",
+   "lofi",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "bpm": 70
+   }
+  ],
+  "eine düstere musik bitte": [
+   "spawn_studio",
+   "blues",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "bpm": 85,
+    "darkness": 0.9,
+    "tension": 0.8,
+    "space": 0.3
+   }
+  ],
+  "schneller techno": [
+   "spawn_studio",
+   "techno",
+   [
+    "at_player"
+   ],
+   1,
+   null,
+   {
+    "bpm": 140,
+    "flow": 0.8,
+    "tension": 0.9,
+    "space": 0.7
+   }
+  ]
+ }
+}

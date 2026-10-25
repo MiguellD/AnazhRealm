@@ -1436,7 +1436,7 @@ class AnazhRealm_studio_bruecke {
         const kappe = nennen ? 5 : 8;
         const regler = (a) =>
             !nennen && Array.isArray(PBK[a]) && PBK[a].length
-                ? ` (Regler: ${PBK[a].map((d) => `${d.id} ${d.lab} ${d.min}–${d.max}`).join(", ")})`
+                ? ` (Regler: ${PBK[a].map((d) => `"${d.id}" ${d.min}–${d.max} ${d.lab}`).join(", ")})`
                 : "";
         return Object.keys(GRUPPE)
             .filter((a) => gruppen[a] && gruppen[a].length)
