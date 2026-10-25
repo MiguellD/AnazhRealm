@@ -981,8 +981,14 @@ class AnazhRealm_dirigent_ankunft {
     // außer Blick ERSTER_BLICK.ausserD2 obenauf — nah zuerst gilt in beiden Hälften; `_weltbildSteht` nimmt ihn wieder ab.
     _blickRang(x, z) {
         const E = AnazhRealm.ERSTER_BLICK;
-        if (this.state._weltbildDa || this._imErstenBlick(x, z, E.dingM)) return 0;
-        return E.ausserD2;
+        return this._blickDerAnkunft(x, z, E.dingM) ? 0 : E.ausserD2;
+    }
+    // Gilt ein Ding (Mitte x/z, Radius r) für die Ankunft JETZT? Bis das erste Weltbild steht nur im Blick, danach rundum —
+    // die EINE Frage hinter dem Rang der Schlange und der Pflanzung (Lehre 14/25): die Saat eines Chunks (`_foliageChunkInRadius`)
+    // und eine neue Streu-Region (`_tickScatterStreaming`) außer Blick warten auf den Nachlauf. Bis hierher säte und streute
+    // der Lade-Takt den ganzen Ring vor dem Bild (Radeon kalt: Pflanzen 2,5 s Haupt-Faden vor dem Weltbild).
+    _blickDerAnkunft(x, z, r) {
+        return !!this.state._weltbildDa || this._imErstenBlick(x, z, r);
     }
     // Der Rang eines Auftrags (`_foundryAuftragD2`) im Blick des ersten Bilds: außer Blick trägt er ERSTER_BLICK.ausserD2. Die
     // Frage gilt nur VOR dem Bild — danach ist der Blick rundum: ein Rang ohne Ort (Vorrat, Karte ohne Leser: ∞) läge sonst

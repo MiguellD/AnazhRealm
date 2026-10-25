@@ -1622,7 +1622,16 @@ class AnazhRealm_vegetation_streu {
         ) {
             for (let dx = -SC.ringRegions; dx <= SC.ringRegions && work < SC.maxRegionsPerFrame; dx++) {
                 const rk = `${pRegX + dx},${pRegZ + dz}`;
-                if (!map.has(rk) && this._streuRegionInReichweite(pRegX + dx, pRegZ + dz, playerPos)) {
+                // vor dem ersten Weltbild nur die Region im Blick (`_blickDerAnkunft`), die übrigen streut der Nachlauf
+                if (
+                    !map.has(rk) &&
+                    this._streuRegionInReichweite(pRegX + dx, pRegZ + dz, playerPos) &&
+                    this._blickDerAnkunft(
+                        (pRegX + dx + 0.5) * SC.regionM,
+                        (pRegZ + dz + 0.5) * SC.regionM,
+                        SC.regionM * Math.SQRT1_2
+                    )
+                ) {
                     this._scatterRegion(pRegX + dx, pRegZ + dz, playerPos, deadlineMs);
                     work++;
                     if (Number.isFinite(deadlineMs) && performance.now() > deadlineMs) {

@@ -59,7 +59,16 @@ function KALT_PROBE() {
         _foundryBuildGroup: "Gruppen-Bau",
         _foundryIngestBook: "Buch",
         _spawnSettlementSlot: "Dorf",
+        // DIE KLASSE PFLANZEN (B): die Saat der Chunks, der Plan des Walds, die Gestalt des Orts — in der Familie zählt der
+        // Äußere (die Gestalt in der Streu ist Streu), ihre Summe bis zum Bild steht in der Klassen-Zeile
+        _populateVoxelChunkVegetation: "Saat",
+        _forestPlantChunk: "Saat",
+        _tickWaldPlan: "Wald-Plan",
+        _ortGestaltSame: "Gestalt",
     };
+    const PFLANZEN = new Set(["Streu", "Saat", "Wald-Plan", "Gestalt"]);
+    A.vorBild = {};
+    let pTief = 0;
     // dazu die Bestellungen des Vorrats beim Namen (Wagen, Siedlungs-Probe); WANN er wartet und bestellt, sagt sein Merker
     // (`f._vorrat`) — der Aufruf von `_foundryPrefetchLibrary` beim Worker-Start ist nie sein Bestell-Beginn
     const wickle = (P) => {
@@ -69,6 +78,9 @@ function KALT_PROBE() {
             const k = KOSTEN[name];
             P[name] = function (...a) {
                 const t0 = performance.now();
+                const pf = PFLANZEN.has(k);
+                const aussen = !pf || pTief === 0;
+                if (pf) pTief++;
                 const id = name === "_foundryVorrat" ? `${a[0]}|${a[1]}` : "";
                 if (!k) A.ev.push([Math.round(t0), name + " ab", id]);
                 try {
@@ -77,8 +89,10 @@ function KALT_PROBE() {
                     return x;
                 } finally {
                     const t1 = performance.now();
-                    const z = k ? A.kosten[k] || (A.kosten[k] = {}) : null;
+                    if (pf) pTief--;
+                    const z = k && aussen ? A.kosten[k] || (A.kosten[k] = {}) : null;
                     if (z) z[Math.floor(t0 / 1000)] = (z[Math.floor(t0 / 1000)] || 0) + (t1 - t0);
+                    if (pf && aussen && !window.anazhRealm.state._weltbildDa) A.vorBild[k] = (A.vorBild[k] || 0) + (t1 - t0);
                     if (name === "_foundryIngestBook" && !A.buchDa) A.buchDa = Math.round(t1);
                 }
             };
@@ -269,6 +283,13 @@ async function kaltLauf() {
     const wagen = (out.ev || []).filter((e) => e[1] === "_foundryVorrat an").map((e) => e[0]);
     if (wagen.length) console.log(`  ${(Math.max(...wagen) / 1000).toFixed(1)} s  der Vorrat der Wagen steht (${wagen.length})`);
     if (out.bild) console.log(`  das Bild der Ankunft: ${out.bild.datei || out.bild.fehlt} (${out.bild.dc} Befehle · ${out.bild.dreiecke} Dreiecke)`);
+    const kl = Object.entries(out.vorBild || {});
+    if (kl.length)
+        console.log(
+            `  die Klasse Pflanzen bis zum Weltbild: ${Math.round(kl.reduce((a, [, ms]) => a + ms, 0))} ms Haupt-Faden (` +
+                kl.map(([k, ms]) => `${k} ${Math.round(ms)}`).join(" · ") +
+                ")"
+        );
     const t = out.weltbildDa;
     const halb = out.ohne && out.ohne.length ? out.ohne[0] : null;
     console.log(`\n  t(Weltbild) = t(Kontrolle) ${t != null ? (t / 1000).toFixed(2) + " s" : "— (nicht erreicht)"} ab Navigation`);

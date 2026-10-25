@@ -722,7 +722,11 @@ class AnazhRealm_gelaende_chunks {
         const { span } = this._voxelChunkConfig();
         const ccx = cx * span + span / 2,
             ccz = cz * span + span / 2;
-        return Math.hypot(ccx - pm.position.x, ccz - pm.position.z) <= fr;
+        // vor dem ersten Weltbild sät nur der Chunk im Blick (`_blickDerAnkunft`), die übrigen sät der Nachlauf
+        return (
+            Math.hypot(ccx - pm.position.x, ccz - pm.position.z) <= fr &&
+            this._blickDerAnkunft(ccx, ccz, span * Math.SQRT1_2)
+        );
     }
 
     // V18.275 — die Vegetation WÄCHST nach: Chunks, die jenseits des `foliageRadius` gebaut
