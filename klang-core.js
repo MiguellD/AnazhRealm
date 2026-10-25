@@ -304,33 +304,41 @@
     //    (klangTempoMin) wohnt getrennt im koerper-Gesetzbuch — Timbre ist
     //    Klang-Wissen, Schwelle ist Koerper-Wissen. stoffe.K1: JEDE Zeile der
     //    Stoff-Tafel des Wirts traegt ihren Eintrag (ihre Klang-Spalte, ein
-    //    Zugriff), ein Stoff ohne Eintrag ist ein Bruch — kein Ersatz-Timbre. ──
+    //    Zugriff), ein Stoff ohne Eintrag ist ein Bruch — kein Ersatz-Timbre.
+    //    DIE LEITER (klang.K4): je zwei Stoffe liegen im Spektral-Schwerpunkt
+    //    ihres Schritts am Ausgang der Stimme >= 300 Hz auseinander (gemessen
+    //    in gate:klang-zensus (S): 96 Schritte je Stoff, `schwerpunkt` unten;
+    //    25.10. Abstand 378-518 Hz). Die Reihe von dumpf nach hell: Erde, Wasser,
+    //    Leib, Holz, Glut, Stein, Eis, Gras, Eisen, Leder, Fleisch, Bronze, Stahl,
+    //    Knochen, Laub, Blech, Schuppen, Kraut, Quarz, Essenz, Federn. Bis dahin
+    //    lagen 17 Nachbarn naeher (Laub 5272 / Gras 5556 Hz: die Wiese und der
+    //    Waldboden klangen gleich, seit der Fuss die Wiese als Gras liest).
+    //    Erde, Wasser und Stein blieben; jede verschobene Zeile traegt die
+    //    Leistung ihres alten Schritts (gain nach dem Quadrat-Mittel). ──
     // prettier-ignore
     var SCHRITT_TIMBRE = {
         material: {
-            erde:   { filter: 'lowpass',  freq: 420,  q: 0.8, dauer: 0.09, gain: 0.045 },
-            stein:  { filter: 'bandpass', freq: 1500, q: 1.6, dauer: 0.06, gain: 0.055 },
-            glut:   { filter: 'bandpass', freq: 800,  q: 1.0, dauer: 0.11, gain: 0.05 },
-            quarz:  { filter: 'bandpass', freq: 2600, q: 3.0, dauer: 0.08, gain: 0.045 },
-            eisen:  { filter: 'bandpass', freq: 2100, q: 2.4, dauer: 0.07, gain: 0.055 },
-            wasser: { filter: 'lowpass',  freq: 900,  q: 0.7, dauer: 0.16, gain: 0.06 },
-            // stoffe.K3 (rein additiv): das Eis — hart, kurz und hell wie Stein, eine Terz höher
-            eis:    { filter: 'bandpass', freq: 1900, q: 2.0, dauer: 0.05, gain: 0.05 },
-            // stoffe.K1 (rein additiv): die übrigen Zeilen — Holz hohl, Gras und Laub raschelnd, Metall klirrend, Leib dumpf
-            holz:     { filter: 'bandpass', freq: 700,  q: 1.2, dauer: 0.08, gain: 0.055 },
-            gras:     { filter: 'bandpass', freq: 3200, q: 0.6, dauer: 0.12, gain: 0.035 },
-            laub:     { filter: 'bandpass', freq: 2600, q: 0.5, dauer: 0.15, gain: 0.045 },
-            kraut:    { filter: 'bandpass', freq: 2800, q: 0.6, dauer: 0.12, gain: 0.035 },
-            bronze:   { filter: 'bandpass', freq: 1800, q: 2.6, dauer: 0.08, gain: 0.05 },
-            stahl:    { filter: 'bandpass', freq: 2400, q: 2.8, dauer: 0.07, gain: 0.055 },
-            blech:    { filter: 'bandpass', freq: 1200, q: 3.0, dauer: 0.09, gain: 0.06 },
-            knochen:  { filter: 'bandpass', freq: 1300, q: 1.8, dauer: 0.05, gain: 0.05 },
-            schuppen: { filter: 'bandpass', freq: 1600, q: 1.4, dauer: 0.06, gain: 0.045 },
-            federn:   { filter: 'bandpass', freq: 4000, q: 0.5, dauer: 0.1,  gain: 0.02 },
-            leder:    { filter: 'lowpass',  freq: 600,  q: 0.8, dauer: 0.07, gain: 0.04 },
-            fleisch:  { filter: 'lowpass',  freq: 300,  q: 0.7, dauer: 0.08, gain: 0.04 },
-            leib:     { filter: 'lowpass',  freq: 320,  q: 0.7, dauer: 0.08, gain: 0.04 },
-            essenz:   { filter: 'lowpass',  freq: 1100, q: 0.9, dauer: 0.14, gain: 0.05 }
+            erde:     { filter: 'lowpass',  freq: 420,  q: 0.8, dauer: 0.09, gain: 0.045 },
+            wasser:   { filter: 'lowpass',  freq: 900,  q: 0.7, dauer: 0.16, gain: 0.06 },
+            leib:     { filter: 'lowpass',  freq: 1440, q: 0.7, dauer: 0.08, gain: 0.02 },
+            holz:     { filter: 'bandpass', freq: 730,  q: 1.2, dauer: 0.08, gain: 0.054 },
+            glut:     { filter: 'bandpass', freq: 900,  q: 1.0, dauer: 0.11, gain: 0.047 },
+            stein:    { filter: 'bandpass', freq: 1500, q: 1.6, dauer: 0.06, gain: 0.055 },
+            eis:      { filter: 'bandpass', freq: 2040, q: 2.0, dauer: 0.05, gain: 0.048 },
+            gras:     { filter: 'bandpass', freq: 1860, q: 1.0, dauer: 0.12, gain: 0.054 },
+            eisen:    { filter: 'bandpass', freq: 3000, q: 2.4, dauer: 0.07, gain: 0.046 },
+            leder:    { filter: 'bandpass', freq: 2980, q: 1.4, dauer: 0.07, gain: 0.023 },
+            fleisch:  { filter: 'bandpass', freq: 3740, q: 2.0, dauer: 0.08, gain: 0.018 },
+            bronze:   { filter: 'bandpass', freq: 4420, q: 2.6, dauer: 0.08, gain: 0.033 },
+            stahl:    { filter: 'bandpass', freq: 4940, q: 2.8, dauer: 0.07, gain: 0.04 },
+            knochen:  { filter: 'bandpass', freq: 5080, q: 1.8, dauer: 0.05, gain: 0.028 },
+            laub:     { filter: 'bandpass', freq: 3830, q: 0.5, dauer: 0.15, gain: 0.04 },
+            blech:    { filter: 'bandpass', freq: 6420, q: 3.0, dauer: 0.09, gain: 0.029 },
+            schuppen: { filter: 'bandpass', freq: 6390, q: 1.4, dauer: 0.06, gain: 0.026 },
+            kraut:    { filter: 'bandpass', freq: 5810, q: 0.6, dauer: 0.12, gain: 0.028 },
+            quarz:    { filter: 'bandpass', freq: 7930, q: 3.0, dauer: 0.08, gain: 0.03 },
+            essenz:   { filter: 'bandpass', freq: 7890, q: 1.2, dauer: 0.14, gain: 0.027 },
+            federn:   { filter: 'bandpass', freq: 7480, q: 0.5, dauer: 0.1,  gain: 0.017 }
         }
     };
 
