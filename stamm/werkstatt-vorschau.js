@@ -66,7 +66,7 @@ class AnazhRealm_werkstatt_vorschau {
             list.appendChild(row);
         }
         // W-A1 (Katalysator §5) — DIE „STUDIO-REZEPTE"-SEKTION: das LIVE-Buch unter den
-        // Blueprints (jedes Rezept ohne Katalog-Blueprint — heute mindestens `gras`).
+        // Blueprints (jedes Rezept ohne Katalog-Blueprint — heute Farn, Strauch, Fels-Sorten, Klang, Körper, Gattung).
         this._workshopAppendStudioRecipeSection(list, ws);
         // V18.36 — den Such-Filter nach dem Neu-Aufbau wieder anwenden (Zeilen neu erzeugt).
         this._applyWorkshopFilter();
@@ -74,7 +74,8 @@ class AnazhRealm_werkstatt_vorschau {
 
     // Rezept-Ids des LIVE-Buchs OHNE Katalog-Blueprint: gedeckt ist ein Rezept, wenn ein Blueprint unter
     // seiner Id existiert ODER via KIND_POLICY-Präfix darauf zeigt (baum_eiche → eiche, fahrzeug_gt → gt).
-    // Der Rest (`gras`/`blume`/Fels-Sorten) ist nur hier regelbar; place.mode entscheidet die Welt.
+    // Der Rest (Farn, Strauch, Fels-Sorten …) ist nur hier regelbar (Blume und Gras sind seit KI K2 Natur-Baupläne);
+    // place.mode entscheidet die Welt.
     _workshopStudioRecipeIds() {
         const f = this._foundry;
         if (!f || !f.recipes) return [];
