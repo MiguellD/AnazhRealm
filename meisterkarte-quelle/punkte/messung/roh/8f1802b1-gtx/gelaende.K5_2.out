@@ -1,0 +1,59 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx C:\Program Files\nodejs\node.exe -e (function k8Sichten() {
+    const fs = require("fs");
+    const cp = require("child_process");
+    const aus = process.argv[1];
+    const quelle = fs.readFileSync("scripts/diag-koerper-stand.cjs", "utf8");
+    const anker = "const W = window.__messWiese;";
+    if (quelle.split(anker).length !== 2) {
+        console.log("K8-SICHT: Anker fehlt in scripts/diag-koerper-stand.cjs");
+        process.exit(3);
+    }
+    const erg = {};
+    for (const sicht of ["first", "third"]) {
+        const kopie = "scripts/.k8-" + sicht + ".cjs";
+        fs.writeFileSync(kopie, quelle.replace(anker, 'r.setCameraMode("' + sicht + '"); o.__sicht = s.cameraMode; ' + anker));
+        const jd = aus + "." + sicht + ".json";
+        const p = cp.spawnSync(process.execPath, [kopie, "--k8", ...process.argv.slice(2)], {
+            env: Object.assign({}, process.env, { KOERPER_STAND_JSON: jd }),
+            encoding: "utf8",
+            maxBuffer: 1 << 26,
+        });
+        fs.rmSync(kopie, { force: true });
+        process.stdout.write("== SICHT " + sicht + " EXIT " + p.status + "\n" + (p.stdout || ""));
+        process.stderr.write(p.stderr || "");
+        let k8 = null;
+        try {
+            k8 = JSON.parse(fs.readFileSync(jd, "utf8")).k8;
+        } catch (_e) {}
+        erg[sicht] = { exit: p.status, k8 };
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg));
+})() C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\8f1802b1-gtx\gelaende.K5_2.json --bild
+== SICHT first EXIT 1
+[linse-gpu] nvidia/pascal
+  K8 wiese -280.4/-1045.6 0° · fein 1.1 (0.1, n 200) · streu 1.4 (0, n 91) · fuss null (null, n 0) · huf 0.3 (normal 0, n 200) · rad 1.1 (0.6, n 200) | K8 hang -526/-853 24.4° · fein null (null, n 0) · streu 1.4 (0, n 64) · fuss null (null, n 0) · huf null (klein null, n 0) · rad null (null, n 0)
+  ❌ K8 Aufbau wiese streu: 91 Kontakte (Soll ≥ 100)
+  ❌ K8 Aufbau wiese fuss: 0 Kontakte (Soll ≥ 200)
+  ❌ K8 Aufbau hang fein: 0 Kontakte (Soll ≥ 200)
+  ❌ K8 Aufbau hang streu: 64 Kontakte (Soll ≥ 100)
+  ❌ K8 Aufbau hang fuss: 0 Kontakte (Soll ≥ 200)
+  ❌ K8 Aufbau hang huf: 0 Kontakte (Soll ≥ 200)
+  ❌ K8 Aufbau hang rad: 0 Kontakte (Soll ≥ 200)
+❌ gate:koerper-stand ROT (7)
+== SICHT third EXIT 1
+[linse-gpu] nvidia/pascal
+  K8 wiese -280.4/-1045.6 0° · fein 1.1 (0.1, n 200) · streu 1.4 (0, n 95) · fuss 5.4 (-0.6, n 200) · huf 0.2 (gigant 0.1, n 200) · rad 0.2 (0, n 200) | K8 hang -526/-853 24.4° · fein 4.3 (0.3, n 200) · streu 1.3 (0.1, n 192) · fuss 18.6 (-2.3, n 200) · huf 1.5 (gigant 0.9, n 201) · rad 2.4 (2.1, n 200)
+  ❌ K8 Aufbau wiese streu: 95 Kontakte (Soll ≥ 100)
+  ❌ K8 fuss hang: p95 18.6 cm (Median -2.3, Soll ≤ 3, Ratsche 4.2) — Täter: der Fuß des Spielers (die Sohle des Leibs gegen _gaitBodenY)
+❌ gate:koerper-stand ROT (2)
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 39786 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
