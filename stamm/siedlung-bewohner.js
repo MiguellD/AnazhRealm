@@ -426,18 +426,18 @@ class AnazhRealm_siedlung_bewohner {
     // den Leib, und seine Glieder gehen den EINEN gebackenen Gang seiner Gestalt — die Lagen der Zeilen (`_bewohnerLagePose`),
     // gemischt, wie der Knoten des Satzes mischt (`_gangSatzKnoten`: der Stand gegen die Phasen k0 und k1 nach dem Gewicht des
     // Gangs; ungebacken der Stand), auf der Wurzel des Leibs. Ein Leib ohne Glieder (die Liste des Felds erschöpft) zeichnet
-    // nirgends und kostet nichts. Bis stadt-takt-z15d ging je Schritt das Rig (`_animateHuman`) und die Welt-Matrix des
-    // ganzen Leibs (`_leibMatrix`) — am Messort stadt mittags (165 Gehende) `_bewohnerGangSchritt` 108,7 → 25,6 ms je
-    // Sekunde (Radeon); die Lage der Glieder weicht vom Rig höchstens 3,7 cm ab (der Atem, das Tempo des Back-Leibs).
+    // nirgends und kostet nichts, eine Gestalt ohne Satz brach laut an ihm (`_bewohnerSatz`). Jedes Glied trägt den Namen
+    // seines Ankers (`_kreaturGliederBacken`): bis treffer-kalt las die Lage dafür die Gattung und hielt still an, war sie kalt.
+    // Bis stadt-takt-z15d ging je Schritt das Rig (`_animateHuman`) und die Welt-Matrix des ganzen Leibs (`_leibMatrix`) — am
+    // Messort stadt mittags (165 Gehende) `_bewohnerGangSchritt` 108,7 → 25,6 ms je Sekunde (Radeon); die Lage der Glieder
+    // weicht vom Rig höchstens 3,7 cm ab (der Atem, das Tempo des Back-Leibs).
     _bewohnerFeldLage(b, S) {
         const g = b.leib;
         const gl = g.userData._kzGlieder;
         const Z = S.gestalten[b.gestalt].satz;
-        if (!gl || !Z || !Z.lagen) return;
+        if (!gl || !Z) return;
         if (Z.lageVon === undefined) {
-            const namen = this._gattungGlieder(g);
-            if (!namen) return;
-            Z.lageVon = namen.map((nm) => Z.lageTeile.indexOf(nm.name));
+            Z.lageVon = gl.map((x) => Z.lageTeile.indexOf(x.name));
             if (Z.lageVon.some((i) => i < 0)) {
                 Z.lageVon = false;
                 this._bruchMelden(`BEWOHNER: ein Glied ohne Lage im Gang der Gestalt („${S.plan.name || "?"}")`);

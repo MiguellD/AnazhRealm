@@ -110,6 +110,9 @@ class AnazhRealm_kreatur_leben {
         // Studio-Rezept-Id wenn gemappt, sonst die Seele selbst (Custom/Geist).
         group.userData.gattung =
             (AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[chosenSoul]) || chosenSoul;
+        // DIE GEBURT BESTELLT DIE GLIEDER (treffer-kalt, Lehre 14): ist die Gattung kalt, legt der Leerlauf ihren Vorrat, nah
+        // zuerst, lange bevor das Tier in Hieb-Reichweite kommt — ab dem ersten Bild in Reichweite ist der Leib treffbar
+        this._gliederBestellen(group);
         // Kreatur-Sicht-Sync — eine pro-Peer eindeutige netId für den
         // creature-pos-Strom (Mitspieler keyen ihre Sicht-Kopie damit).
         this.state._creatureNetSeq = (this.state._creatureNetSeq || 0) + 1;
@@ -1471,7 +1474,7 @@ class AnazhRealm_kreatur_leben {
             if (g !== null) return g;
         }
         const oben = this._voxelSurfaceY(x, z);
-        const eis = this._eisAt(x, z, NaN);
+        const eis = this._eisAt(x, z, NaN, Infinity, oben);
         return eis !== null && !(oben >= eis) ? eis : oben;
     }
 
@@ -1480,7 +1483,7 @@ class AnazhRealm_kreatur_leben {
     // `_koerperSchritt`, der Ausstieg vom Wagen (`_aussteigOrt`).
     _koerperGrund(x, y0, z, maxDist) {
         const g = this._fieldSurfaceBelow(x, y0, z, maxDist);
-        const e = this._eisAt(x, z, y0, maxDist);
+        const e = this._eisAt(x, z, y0, maxDist, g);
         return e !== null && !(g >= e) ? e : g;
     }
 

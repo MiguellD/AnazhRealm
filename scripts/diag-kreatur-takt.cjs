@@ -36,7 +36,7 @@ const DAUER_S = {
     wachsen: 1,
     gier: 5,
     jagd: 1,
-    herde: 7,
+    herde: 37,
     peer: 1,
     zufall: 1,
     nexus: 1,
@@ -92,7 +92,7 @@ async function headless(laeufe) {
             window.__weltStehtNach(() => {
                 try {
                     window.anazhRealm._gameLoopTick(performance.now());
-                } catch (_e) {}
+                } catch {}
             })
         );
     const lauf = (o) =>

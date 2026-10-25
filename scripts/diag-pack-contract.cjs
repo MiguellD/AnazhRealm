@@ -188,7 +188,7 @@ async function main() {
     const realm = await PK.bootRealm(PORT);
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pack-gate-"));
     try {
-        const rd = await PK.waitFoundryReady(realm.page, 90000);
+        const rd = await PK.waitFoundryReady(realm.page);
         check(rd.ready && rd.recipeCount > 0, `Foundry ready (${rd.readyMs} ms) + Rezepte (${rd.recipeCount})`);
         if (!rd.ready) throw new Error("Foundry nicht bereit");
         await PK.installPackSerializer(realm.page);

@@ -490,7 +490,7 @@ const WELT_MESSEN = async () => {
         if (r && typeof r._gameLoopTick === "function") {
             try {
                 r._gameLoopTick(performance.now());
-            } catch (_e) {}
+            } catch {}
             if (r.state.voxelChunks && r.state.voxelChunks.size >= 25) break;
         }
         await sleep(6);
@@ -505,7 +505,7 @@ const WELT_MESSEN = async () => {
                 r._gameLoopTick(performance.now());
                 const pp = r.state.playerMesh && r.state.playerMesh.position;
                 if (pp) r._tickScatterStreaming(pp);
-            } catch (_e) {}
+            } catch {}
             await sleep(8);
         }
     };

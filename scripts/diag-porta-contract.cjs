@@ -23,7 +23,7 @@
 //   node scripts/diag-porta-contract.cjs
 const fs = require("fs");
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenVergleich: compare } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenVergleich: compare, goldenSelbsttest } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v4/golden");
@@ -183,25 +183,7 @@ function caseKey(c) {
 
     // 6) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot (gegen das Ist selbst, damit der
     //    Selbst-Test auch auf einem roten Stand misst, was er misst).
-    const eigen = { cases: actual };
-    const tampered = JSON.parse(JSON.stringify(eigen));
-    const k0 = Object.keys(tampered.cases)[0];
-    tampered.cases[k0].sha256 = tampered.cases[k0].sha256.replace(
-        /^./,
-        tampered.cases[k0].sha256[0] === "0" ? "1" : "0"
-    );
-    const t1 = compare(tampered, actual);
-    const actual2 = JSON.parse(JSON.stringify(actual));
-    actual2[k0].objects += 1;
-    const t2 = compare(eigen, actual2);
-    check(
-        "SELBST-TEST: korruptes Golden (sha256) wird erkannt",
-        t1.some((s) => s.includes("sha256"))
-    );
-    check(
-        "SELBST-TEST: objects-Drift wird erkannt",
-        t2.some((s) => s.includes("objects"))
-    );
+    goldenSelbsttest(actual, check);
 
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Vertrags-Verletzung(en).`);

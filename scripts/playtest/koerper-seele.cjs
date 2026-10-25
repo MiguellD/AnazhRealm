@@ -1217,7 +1217,7 @@ async function checkBandWelle6DSoul(ctx) {
             try {
                 r.p2pHandleMessage(JSON.stringify({ type: "aura", peerId: "fremd-alt-peer", hue: 12, intensity: 1 }));
                 return true;
-            } catch (_e) {
+            } catch {
                 return false;
             }
         })();

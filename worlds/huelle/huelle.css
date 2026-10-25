@@ -228,6 +228,9 @@
         transform 0.2s;
     white-space: pre-line;
 }
+.h-im-tor .h-toast {
+    bottom: 60px;
+}
 .h-toast.an {
     opacity: 1;
     transform: translate(-50%, 0);

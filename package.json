@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.546.88",
+    "version": "18.546.89",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -114,7 +114,6 @@
         "gate:fachwerk-contract": "node scripts/diag-fachwerk-contract.cjs",
         "gate:ofen-contract": "node scripts/diag-ofen-contract.cjs --selftest && node scripts/diag-ofen-contract.cjs",
         "gate:constitution": "node scripts/diag-pipeline-constitution.cjs",
-        "gate:portal-boot": "node scripts/diag-portal-boot.cjs",
         "gate:foundry-deadlock": "node scripts/diag-foundry-deadlock.cjs",
         "gate:fernwald": "node scripts/diag-fernwald.cjs",
         "gate:weg-boden": "node scripts/diag-weg-boden.cjs --selftest",

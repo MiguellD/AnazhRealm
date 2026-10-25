@@ -363,18 +363,55 @@ function wasserKoerper(opts) {
             }
             // (8) DAS LICHT AM WASSER (K9) fährt mit dem echten Renderer: `wasserLicht` (der Himmel lebt auf der GPU, D3)
             // (9) DAS EIS (stoffe.K3): im Winter (Saison 0,875) trägt der gefrorene See denselben Gang und dieselben Tiere am
-            // Spiegel; die Mutation (das Feld +10 °C an seiner EINEN Naht `_temperaturAt`) bricht den Spieler ein.
-            const TW = window.__gelaendeCore.TEMPERATUR;
-            const gang = () => Object.assign(gehen(), { temperatur: R(r._temperaturAt(spiegel, TW.wasserTraegTage)) });
+            // Spiegel; die Mutation (das Feld +10 °C an seiner EINEN Naht `_temperaturFeld`) bricht den Spieler ein. Gemeldet
+            // die Temperatur des Wassers (die Trägheit seines Körpers, `wasserKoerper`).
+            const traeg = window.__gelaendeCore.wasserKoerper(r._gelaende(), spiegel, tiefeMitte).traegTage;
+            const gang = () => Object.assign(gehen(), { temperatur: R(r._temperaturAt(spiegel, traeg)) });
+            const feld = (dT) =>
+                (r._temperaturFeld = (y, tr) => {
+                    const F = A.prototype._temperaturFeld.call(r, y, tr);
+                    return { ...F, mittel: F.mittel + dT };
+                });
             Object.assign(st, { autoSeason: false, seasonPhase: 0.875 });
             aus.eis = {
                 winter: gang(),
                 tier: ["wolf", "fuchs", "baer"].map((seele) => tierLage(seele, 8)).filter(Boolean),
             };
-            r._temperaturAt = (y, tr) => A.prototype._temperaturAt.call(r, y, tr) + 10;
+            // (10) DER ÜBERGANG: je Tag ab Saison 0,7 an der See-Mitte, ob das Bild Eis zeigt (über der Linie `null` an ihrer Säule,
+            // `_eisLinien` wie der Stoff) und ob es trägt (`_eisAt`) — vom ersten Eis zum tragenden vergehen Tage, je Lage EIN
+            // Wechsel; am Tag des ersten und des tragenden Eises ändern 24 Uhr-Lagen nichts (das Eis integriert den Tag).
+            const uhr = st.timeOfDay;
+            const tag = (t, h = uhr) => {
+                Object.assign(st, { seasonPhase: 0.7 + t / 365, timeOfDay: h });
+                return [spiegel >= r._eisLinieBei(r._eisLinien().null, tiefeMitte), r._eisAt(mx, mz, spiegel + 0.5, 1) !== null] + "";
+            };
+            const tage = Array.from({ length: 120 }, (_, t) => tag(t));
+            const [erster, traegt] = [tage.findIndex((l) => l > "t"), tage.indexOf("true,true")];
+            aus.eis.uebergang = {
+                erster,
+                traegt,
+                wechsel: tage.filter((l, t) => t && l !== tage[t - 1]).length,
+                tagesgang: [erster, traegt].map((t) => new Set(Array.from({ length: 24 }, (_, h) => tag(t, h / 24))).size - 1),
+            };
+            st.timeOfDay = uhr;
+            // (11) DAS MEER friert im gemäßigten Winter nicht (Salz und Masse seines Körpers, `wasserKoerper`): vor der Küste
+            // (`__wasserOrte`) je Woche des Jahres sein Wasser gegen seinen Gefrierpunkt und das Eis an seinem Spiegel
+            // (`_eisAt`); das Feld −15 °C friert es (die Probe sieht Eis).
+            const [mx2, mz2] = o.meer;
+            const eis = () =>
+                Array.from({ length: 52 }, (_, i) => ((st.seasonPhase = i / 52), r._eisAt(mx2, mz2, st.waterLevel + 0.5, 1))).filter(
+                    (e) => e !== null
+                ).length;
+            const K = window.__gelaendeCore.wasserKoerper(r._gelaende(), st.waterLevel, 1);
+            const w = Array.from({ length: 52 }, (_, i) => ((st.seasonPhase = i / 52), r._temperaturAt(st.waterLevel, K.traegTage)));
+            aus.eis.meer = { tiefst: R(Math.min(...w)), gefrier: R(K.gefrier), traegt: eis() };
+            feld(-15);
+            aus.eis.meer.kalt = eis();
+            st.seasonPhase = 0.875;
+            feld(10);
             aus.eis.mutation = gang();
         } finally {
-            delete r._temperaturAt;
+            delete r._temperaturFeld;
             [st.seasonPhase, st.autoSeason] = jahr;
             leib.zurueck();
         }
@@ -2935,7 +2972,7 @@ async function wasserOrte(opts) {
                 const x = h.originX + (ci + 0.5) * h.cell;
                 const z = h.originZ + (cj + 0.5) * h.cell;
                 const d = Math.hypot(x - MX, z - MZ);
-                if (d < kd) ((kd = d), (aus.kueste = [R1(x), R1(z)]));
+                if (d < kd) ((kd = d), (aus.kueste = [R1(x), R1(z)]), (aus.meer = [x + meer[0] * h.cell, z + meer[1] * h.cell]));
             }
     }
     // die TASCHE: Atlas-Land mit Boden unter dem Meer liegt nur jenseits des 3×3-Rands (am Rand füllt der Atlas die

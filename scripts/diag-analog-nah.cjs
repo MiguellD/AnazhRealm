@@ -367,6 +367,6 @@ function urteil(z) {
     console.error("DIAG-FEHLER:", e);
     try {
         server.close();
-    } catch (_e) {}
+    } catch {}
     process.exit(1);
 });

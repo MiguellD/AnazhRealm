@@ -669,20 +669,12 @@ class AnazhRealm_werkstatt_hof {
         if (this.state.hofStage) return this.state.hofStage;
         const canvas = document.getElementById("hof-stage-canvas");
         if (!canvas) return null;
-        const size = 360;
-        canvas.width = size;
-        canvas.height = size;
-        let renderer;
-        try {
-            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, ...this._rendererGeraet() });
-        } catch (err) {
-            this.log(`Hof-Bühne: WebGPU-Renderer fehlgeschlagen (${err && err.message})`, "ERROR");
-            return null;
-        }
-        renderer.stencil = false; // wie die Haupt-Welt (V10.0-j.b) — kein Pure-Depth-stencilLoadOp-Crash
-        renderer.setSize(size, size, false);
-        renderer.setPixelRatio(window.devicePixelRatio || 1);
-        renderer.setClearColor(0x171019, 1); // dunkle, violett-getönte Bühne (der Nexus/Seelen-Ton)
+        // dunkle, violett-getönte Bühne (der Nexus/Seelen-Ton)
+        const renderer = this._buehneRenderer(canvas, 360, 360, 0x171019, "Hof-Bühne", () => {
+            stage.rendererReady = true;
+            if (stage.active) this._hofStartRAF();
+        });
+        if (!renderer) return null;
         const scene = new THREE.Scene();
         scene.add(new THREE.AmbientLight(0xffffff, 0.6));
         const key = new THREE.DirectionalLight(0xffe8c2, 0.95);
@@ -707,17 +699,6 @@ class AnazhRealm_werkstatt_hof {
             rendererReady: false,
         };
         this.state.hofStage = stage;
-        try {
-            renderer
-                .init()
-                .then(() => {
-                    stage.rendererReady = true;
-                    if (stage.active) this._hofStartRAF();
-                })
-                .catch((err) => this.log(`Hof-Bühne init: ${err && err.message}`, "ERROR"));
-        } catch (err) {
-            this.log(`Hof-Bühne init-Start: ${err && err.message}`, "ERROR");
-        }
         return stage;
     }
 
@@ -1319,20 +1300,11 @@ class AnazhRealm_werkstatt_hof {
         if (this.state.ichStage) return this.state.ichStage;
         const canvas = document.getElementById("ich-stage-canvas");
         if (!canvas) return null;
-        const size = 360;
-        canvas.width = size;
-        canvas.height = size;
-        let renderer;
-        try {
-            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, ...this._rendererGeraet() });
-        } catch (err) {
-            this.log(`Ich-Bühne: WebGPU-Renderer fehlgeschlagen (${err && err.message})`, "ERROR");
-            return null;
-        }
-        renderer.stencil = false;
-        renderer.setSize(size, size, false);
-        renderer.setPixelRatio(window.devicePixelRatio || 1);
-        renderer.setClearColor(0x171019, 1);
+        const renderer = this._buehneRenderer(canvas, 360, 360, 0x171019, "Ich-Bühne", () => {
+            stage.rendererReady = true;
+            if (stage.active) this._ichStartRAF();
+        });
+        if (!renderer) return null;
         const scene = new THREE.Scene();
         scene.add(new THREE.AmbientLight(0xffffff, 0.6));
         const key = new THREE.DirectionalLight(0xffe8c2, 0.95);
@@ -1357,17 +1329,6 @@ class AnazhRealm_werkstatt_hof {
             rendererReady: false,
         };
         this.state.ichStage = stage;
-        try {
-            renderer
-                .init()
-                .then(() => {
-                    stage.rendererReady = true;
-                    if (stage.active) this._ichStartRAF();
-                })
-                .catch((err) => this.log(`Ich-Bühne init: ${err && err.message}`, "ERROR"));
-        } catch (err) {
-            this.log(`Ich-Bühne init-Start: ${err && err.message}`, "ERROR");
-        }
         return stage;
     }
 
