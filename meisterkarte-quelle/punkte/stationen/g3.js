@@ -293,6 +293,202 @@ const ALBEDO_PFAD = [
     "scripts/diag-albedo-tafel.cjs",
 ];
 
+// ───────── licht.K2 Staffel 2: die Spalten Uhr × Wetter ─────────
+// Die Kugel-Probe von Staffel 1 (kugel.js, ihr Blob fest) stellt ihre Bühne selbst: `window.__buehne({})` (klar) und
+// `r.setTimeOfDay(0.5, "human")`. Je Spalte setzt ein Schritt davor die Spalte in die Welt — die Bühne trägt das Wetter-Wort der
+// Spalte (`__buehne` mit `wetter`, wie `werkbank bild --wetter`), der Uhr-Schreiber setzt die Uhr der Spalte (wie
+// `licht --kontakt`: setTimeOfDay, der Sprung des Himmels, `_applyDayNightToScene`) — und ein Schritt danach nimmt beides
+// zurück. Die Probe selbst bleibt Byte für Byte die von Staffel 1; ihr `stand` (uhr, wetter) beweist die Spalte im Urteil.
+const LICHT_SPALTEN = [
+    [0.5, "sunny"],
+    [0.27, "sunny"],
+    [0.73, "sunny"],
+    [0.5, "rainy"],
+    [0.27, "rainy"],
+    [0.73, "rainy"],
+];
+const SPALTE_TEXTE = {
+    SETZ: `const proto = Object.getPrototypeOf(r);
+window.__buehneRoh = window.__buehneRoh || window.__buehne;
+window.__buehne = (o) => window.__buehneRoh(Object.assign({}, o, { wetter: W }));
+r.setTimeOfDay = function (_u, q) { const ok = proto.setTimeOfDay.call(this, U, q); this._himmelSprung = true; this._applyDayNightToScene(); return ok; };
+return [U, W];`,
+    LOS: "delete r.setTimeOfDay; if (window.__buehneRoh) window.__buehne = window.__buehneRoh; return 1;",
+};
+
+// DER HIMMEL ZUR SONNE (Soll der Karte am klaren Mittag „Himmel zur Sonne ≥ 1,2“, Liu & Jordan: der klare Himmel ist zur Sonne
+// hin heller): eine 18-%-Kugel (das EINE Stoff-Programm der Welt, wie kugel.js) im Freien, die Sonne aus (dl.intensity 0: nur
+// Himmel und Umgebung), Bühne klar, Uhr 0,5. Zwei Schüsse aus dem Ausgabe-Pfad (1920 × 1080): das Auge 4 m waagrecht auf der
+// Sonnen-Seite bzw. auf der abgewandten, 0,5 m über der Kugel-Mitte, Blick auf die Mitte; je Schuss die Pixel mit waagrechter
+// Normale (|N·up| ≤ 0,25), die zum Azimut der Sonne zeigt (N·a ≥ 0,85) bzw. von ihm weg (N·a ≤ −0,85) — das senkrechte
+// Kugel-Paar; linear zurück wie kugel.js (sRGB, PBR Neutral invertiert, ÷ Belichtung). Der Ort: voraus im Blick des Messorts die
+// erste Stelle, an der kein Werfer (SHADOW_TWIN_LAYER) die Strahlen über den Azimuten ±a (je ±45°) bei 20° und 45° Höhe in 60 m
+// kreuzt (ein Wald auf einer Seite machte das Verhältnis zum Ort).
+async function himmelZurSonne(r, T) {
+    const st = r.state;
+    const rend = st.renderer;
+    const cam = st.camera;
+    const sc = st.scene;
+    const dl = st.directionalLight;
+    const warte = (ms) => new Promise((ok) => setTimeout(ok, ms));
+    rend.setAnimationLoop(null);
+    window.__buehne({});
+    r.setTimeOfDay(0.5, "human");
+    r._himmelSprung = true;
+    r._applyDayNightToScene();
+    for (let i = 0; i < 20 && typeof r._leuchtTakt === "function"; i++) (r._leuchtTakt(), await warte(50));
+    const S = dl.position.clone().sub(dl.target.position).normalize();
+    const a = new T.Vector3(S.x, 0, S.z).normalize();
+    const R = 0.5;
+    const P0 = st.playerMesh.position.clone();
+    const fwd = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion).setY(0).normalize();
+    const quer = new T.Vector3(-fwd.z, 0, fwd.x);
+    const rc = new T.Raycaster();
+    rc.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
+    rc.far = 60;
+    const frei = (p) =>
+        [1, -1].every((sg) =>
+            [-45, 0, 45].every((dw) =>
+                [20, 45].every((el) => {
+                    const w = Math.atan2(a.z * sg, a.x * sg) + (dw * Math.PI) / 180;
+                    const e = (el * Math.PI) / 180;
+                    rc.set(p, new T.Vector3(Math.cos(w) * Math.cos(e), Math.sin(e), Math.sin(w) * Math.cos(e)));
+                    return !rc.intersectObject(sc, true).some((h) => !(h.object.name || "").startsWith("probe:") && h.object !== st.playerMesh);
+                })
+            )
+        );
+    let mitte = null;
+    for (const d of [10, 14, 18, 22, 27, 33, 40])
+        for (const s of [0, 5, -5, 10, -10]) {
+            if (mitte) break;
+            const m = P0.clone().addScaledVector(fwd, d).addScaledVector(quer, s);
+            m.y = r._voxelSurfaceY(m.x, m.z) + R;
+            if (frei(m)) mitte = m;
+        }
+    if (!mitte) return { ende: "kein freier Himmel", stand: { uhr: st.timeOfDay, wetter: st.weather } };
+    const geo = new T.SphereGeometry(R, 96, 64);
+    const kugel = new T.Mesh(geo, r._buildToonNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18) }));
+    kugel.position.copy(mitte);
+    kugel.castShadow = kugel.receiveShadow = true;
+    kugel.frustumCulled = false;
+    kugel.name = "probe:kugel:himmel";
+    sc.add(kugel);
+    const [fov0, pos0, quat0, I0] = [cam.fov, cam.position.clone(), cam.quaternion.clone(), dl.intensity];
+    const W = 1920;
+    const H = 1080;
+    const srgb = (b) => {
+        const v = b / 255;
+        return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    };
+    const SC = 0.76;
+    const DD = 1 - SC;
+    const invNeutral = (y) => {
+        const ymin = Math.min(...y);
+        const ymax = Math.max(...y);
+        let k = 1;
+        if (ymax >= SC) {
+            const np = Math.min(ymax, 0.9995);
+            k = ((DD * DD) / (1 - np) - DD + SC) / np;
+        }
+        const um = ymin * k;
+        const xm = Math.sqrt(um / 6.25);
+        const off = um < 0.04 ? xm - 6.25 * xm * xm : 0.04;
+        return y.map((v) => v * k + off);
+    };
+    const seiten = {};
+    st.playerMesh.visible = false;
+    dl.intensity = 0;
+    try {
+        for (const [name, sg] of [
+            ["zur", 1],
+            ["weg", -1],
+        ]) {
+            cam.fov = 50;
+            cam.updateProjectionMatrix();
+            cam.position.copy(mitte).addScaledVector(a, 4 * sg);
+            cam.position.y += 0.5;
+            cam.lookAt(mitte);
+            cam.updateMatrixWorld(true);
+            let x = null;
+            for (let i = 0; i < 3; i++) {
+                r._schattenAlleNeu();
+                x = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" });
+            }
+            const [camM, projI, cp, belicht] = [cam.matrixWorld.clone(), cam.projectionMatrixInverse.clone(), cam.position.clone(), rend.toneMappingExposure];
+            const pc = mitte.clone().project(cam);
+            const rpx = (((R / mitte.distanceTo(cp)) * (H / 2)) / Math.tan((50 * Math.PI) / 360)) * 1.15;
+            const [cx, cy] = [((pc.x + 1) / 2) * W, ((1 - pc.y) / 2) * H];
+            const [sp, ray, v, hit] = [new T.Sphere(mitte, R), new T.Ray(), new T.Vector3(), new T.Vector3()];
+            const Ys = [];
+            let clip = 0;
+            for (let y = Math.max(0, Math.floor(cy - rpx)); y < Math.min(H, Math.ceil(cy + rpx)); y++)
+                for (let px = Math.max(0, Math.floor(cx - rpx)); px < Math.min(W, Math.ceil(cx + rpx)); px++) {
+                    v.set(((px + 0.5) / W) * 2 - 1, 1 - ((y + 0.5) / H) * 2, 0.5).applyMatrix4(projI).applyMatrix4(camM);
+                    ray.set(cp, v.sub(cp).normalize());
+                    if (!ray.intersectSphere(sp, hit)) continue;
+                    const N = hit.clone().sub(mitte).normalize();
+                    if (N.dot(ray.direction) > -0.26 || Math.abs(N.y) > 0.25 || N.dot(a) * sg < 0.85) continue;
+                    const i = (y * W + px) * 4;
+                    const y8 = [x.u8[i], x.u8[i + 1], x.u8[i + 2]];
+                    if (Math.max(...y8) >= 254) clip++;
+                    const lin = invNeutral(y8.map(srgb)).map((c) => c / belicht);
+                    Ys.push(0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]);
+                }
+            Ys.sort((p, q) => p - q);
+            seiten[name] = {
+                Y: Ys.length ? +Ys[Ys.length >> 1].toFixed(5) : null,
+                n: Ys.length,
+                clip,
+                belicht: +belicht.toFixed(4),
+                auge: cp.toArray().map((q) => +q.toFixed(2)),
+            };
+        }
+    } finally {
+        dl.intensity = I0;
+        sc.remove(kugel);
+        kugel.material.dispose();
+        geo.dispose();
+        cam.fov = fov0;
+        cam.updateProjectionMatrix();
+        cam.position.copy(pos0);
+        cam.quaternion.copy(quat0);
+        cam.updateMatrixWorld(true);
+        st.playerMesh.visible = true;
+    }
+    const [z, w] = [seiten.zur, seiten.weg];
+    return {
+        ende: "ok",
+        stand: { uhr: st.timeOfDay, wetter: st.weather },
+        sonneGrad: +((Math.asin(S.y) * 180) / Math.PI).toFixed(1),
+        ort: mitte.toArray().map((q) => +q.toFixed(1)),
+        seiten,
+        himmelZurSonne: z.Y && w.Y ? +(z.Y / w.Y).toFixed(3) : null,
+    };
+}
+// Der Befehl: die Git-bash reicht kein Argument über 8191 Zeichen an node weiter (gemessen 25.10.: 8060 kommt an, 10 860 bricht),
+// Folge + Plan + Himmel-Probe in EINEM Argument wären 15 266. Darum `bash -c`: der erste node schreibt die Himmel-Probe (ein
+// eigenes Argument) nach {AUS}.d/himmel.js, die Folge liest sie als Seiten-Probe mit festem Blob (wie kugel.js) — der Text steht
+// im Befehl und im Abdruck, eine andere Datei fällt am Blob.
+const HIMMEL = "return await (" + himmelZurSonne.toString() + ")(r, T);";
+const HIMMEL_BLOB = require("crypto")
+    .createHash("sha1")
+    .update("blob " + Buffer.byteLength(HIMMEL) + "\0")
+    .update(HIMMEL)
+    .digest("hex");
+const HIMMEL_SCHREIBER =
+    'const fs = require("fs"); const [aus, t] = process.argv.slice(1); fs.mkdirSync(aus + ".d", { recursive: true }); fs.writeFileSync(aus + ".d/himmel.js", t);';
+const befehlMitHimmel = (plan) => [
+    "bash",
+    "-c",
+    'set -u; node -e "$1" "$3" "$5" && exec node -e "$2" "$3" "$4"',
+    "licht",
+    HIMMEL_SCHREIBER,
+    befehlDer(plan)[2],
+    "{AUS}",
+    "{KOORD}",
+    HIMMEL,
+];
+
 const stationen = [
     {
         kriterium: "licht.K2",
@@ -341,6 +537,89 @@ const stationen = [
         },
         pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-boden.js", "stamm/gelaende-chunks.js", "stamm/bau-teile.js"],
         quelle: "1 = klar am Mittag Verhältnis 5–12,5 und Schatten-Anteil 0,08–0,20 an einem Gerät",
+    },
+    {
+        kriterium: "licht.K2",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // Je Spalte Uhr × Wetter die Kugel-Probe von Staffel 1 (oben: `spalteSetzen` davor, `SPALTE_LOS` danach), dann der Himmel zur
+        // Sonne. Das Soll der Karte (Messung, Liu & Jordan 1960): klar am Mittag Verhältnis 5–12,5, Schatten-Anteil 0,08–0,20 und
+        // Himmel zur Sonne ≥ 1,2; die tiefe Sonne (Uhr 0,27 und 0,73, klar) ≥ 2,5; bedeckt (Regen, jede Uhr) ≤ 1,5. Gültig ist eine
+        // Spalte wie Staffel 1 nur mit A = B an der Sonnen-Kugel und A = C an der Schatten-Kugel (±2 %), ≥ 100 px, und wenn ihr
+        // `stand` die Uhr und das Wetter der Spalte trägt.
+        befehl: befehlMitHimmel({
+            name: "licht.K2#2",
+            texte: SPALTE_TEXTE,
+            schritte: [
+                { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+                { name: "umstellen", args: ["umstellen", "--ort", "wiese"], muss: true },
+                ...LICHT_SPALTEN.flatMap(([u, w], i) => [
+                    { name: "setz-" + i, args: ["eval", `const U = ${u}, W = "${w}";@T:SETZ@`], muss: true },
+                    { name: "kugel-" + i, probe: "@KOORD@/bericht/2110-messschuld2/kugel.js", blob: "3d42b5fefd53dafb551534e030bdc5c7c958e842" },
+                    { name: "los-" + i, args: ["eval", "@T:LOS@"], muss: true },
+                ]),
+                { name: "himmel", probe: "@DIR@/himmel.js", blob: HIMMEL_BLOB },
+            ],
+        }),
+        env: envDer,
+        gpu: true,
+        minuten: 12,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            if (j.fehler) return { gruen: false, zahl: "Folge: " + j.fehler };
+            let gruen = hw;
+            const teile = [];
+            const f3 = (x) => (x == null ? "?" : (+x).toFixed(3));
+            for (const [i, [u, w]] of LICHT_SPALTEN.entries()) {
+                const k = j.schritte["kugel-" + i];
+                const e = k && k.json && k.json.ergebnis;
+                const name = "Uhr " + u + " " + (w === "sunny" ? "klar" : "Regen");
+                if (!e || e.ende !== "ok") {
+                    gruen = false;
+                    teile.push(name + ": " + ((e && (e.fehler || e.ende)) || String((k && k.rest) || "keine Antwort").slice(-120)));
+                    continue;
+                }
+                const S = e.schuesse || [];
+                const Y = (s, n) => (S[s] && S[s][n] && S[s][n].oben ? S[s][n].oben.Y : null);
+                const ab = Y(0, "G-sonne") && Y(1, "G-sonne") ? Y(0, "G-sonne") / Y(1, "G-sonne") : null;
+                const ac = Y(0, "G-schatten") && Y(2, "G-schatten") ? Y(0, "G-schatten") / Y(2, "G-schatten") : null;
+                const n = S[0] && S[0]["G-sonne"] && S[0]["G-sonne"].oben ? S[0]["G-sonne"].oben.n : 0;
+                const gueltig = ab != null && Math.abs(ab - 1) <= 0.02 && ac != null && Math.abs(ac - 1) <= 0.02 && n >= 100;
+                const st = e.stand || {};
+                const spalte = Math.abs(st.uhr - u) <= 1e-6 && st.wetter === w;
+                const b = e.bilanz || {};
+                const v = b.verhaeltnisG_oben;
+                const a = b.schattenAnteilG;
+                const soll =
+                    v != null &&
+                    (w === "rainy" ? v <= 1.5 : u === 0.5 ? v >= 5 && v <= 12.5 && a >= 0.08 && a <= 0.2 : v >= 2.5);
+                if (!(gueltig && spalte && soll)) gruen = false;
+                teile.push(
+                    name + " (Sonne " + e.sonnenHoeheGrad + "°) " + v + (u === 0.5 && w === "sunny" ? ", Schatten-Anteil " + a : "") +
+                        (gueltig ? "" : " UNGÜLTIG (A/B " + f3(ab) + ", A/C " + f3(ac) + ", " + n + " px)") +
+                        (spalte ? "" : " BÜHNE " + st.uhr + " " + st.wetter)
+                );
+            }
+            const h = j.schritte.himmel && j.schritte.himmel.json && j.schritte.himmel.json.ergebnis;
+            const hs = (h && h.seiten) || {};
+            const hok =
+                !!h && h.ende === "ok" && h.himmelZurSonne >= 1.2 && hs.zur.n >= 100 && hs.weg.n >= 100 &&
+                Math.abs(hs.zur.belicht / hs.weg.belicht - 1) <= 0.01 && h.stand.uhr === 0.5 && h.stand.wetter === "sunny";
+            if (!hok) gruen = false;
+            teile.push(
+                "Himmel zur Sonne " +
+                    (!h ? "ungemessen" : h.ende !== "ok" ? h.ende : h.himmelZurSonne + " (" + hs.zur.n + "/" + hs.weg.n + " px, Belichtung " + hs.zur.belicht + "/" + hs.weg.belicht + ")")
+            );
+            return {
+                gruen,
+                zahl:
+                    teile.join(" · ") + " · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · " +
+                    (j.adapter || "Adapter ungenannt"),
+            };
+        },
+        pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-boden.js", "stamm/gelaende-chunks.js", "stamm/bau-teile.js"],
+        quelle: "2 = alle Spalten Uhr 0,5/0,27/0,73 × klar/Regen, beide Geräte",
     },
     {
         kriterium: "ferne.K1",
@@ -723,16 +1002,6 @@ const stationen = [
 // Was sich nicht als Station fassen lässt. Steht neben der Liste; der Läufer liest es nicht.
 stationen.fehlt = [
     {
-        kriterium: "licht.K2",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "kugel.js kennt nur Uhr 0,5 und klar: setTimeOfDay(0.5) und __buehne({}) sind fest eingebaut. Die Spalten Uhr 0,27/0,73 × Regen, " +
-            "Sonne 10° ≥ 2,5, bedeckt ≤ 1,5 und der Himmels-Azimut ≥ 1,2 (ein senkrechtes Kugel-Paar) haben kein Werkzeug.",
-        quelle: "2 = alle Spalten Uhr 0,5/0,27/0,73 × klar/Regen, beide Geräte",
-    },
-    {
         kriterium: "material.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
@@ -760,7 +1029,9 @@ stationen.fehlt = [
         grund:
             "Werkzeug fehlt: licht --kontakt misst den Zuwachs je m nicht als Urteil (3 m hinter dem Pfosten 2,5 cm aus 2/6 Kanten), " +
             "bei Uhr 0,3 brechen dunkle Bodenflecken der Prüfbühne die Linie (2/12 Kanten gültig); die Kosten ≤ +0,3 ms an der GTX " +
-            "misst kein ABAB der Station.",
+            "misst kein ABAB der Station. Dazu (25.10., `kontaktSicht` an d43cb61c gelesen): die Ebene `fern` entsteht nur bei einem Schatten " +
+            "> 3,6 m — bei Uhr 0,5 wirft der 3-m-Pfosten keinen, der Zuwachs je m hat am Mittag keine zweite Ebene; und die Kosten sind " +
+            "die einer Kontakt-Härtung gegen ihr Fehlen — die Welt trägt keine (Kaskaden-Texel 0,17 m), es gibt nichts abzuschalten.",
         quelle: "2 = Zuwachs ≈ 0,9 cm je m, Uhr 0,5 und 0,3, Kosten ≤ +0,3 ms an der GTX, beide Geräte",
     },
 ];
