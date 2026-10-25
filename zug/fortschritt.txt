@@ -58,3 +58,4 @@
 2026-10-25 12:15:56 z29c-abab w-ego nicht-langsamer 35.8 · 1/3 (2+2)
 2026-10-25 12:34:12 z29c-abab VORFAHRT d-ego-A1 gewartet 18.2
 2026-10-25 12:47:52 z29c-abab d-ego VERLÄNGERN 31.9 · 2/3 (2+2)
+2026-10-25 12:57:58 z29c-abab STORNO in stadt
