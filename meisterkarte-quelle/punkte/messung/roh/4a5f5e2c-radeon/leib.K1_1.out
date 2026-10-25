@@ -18,26 +18,26 @@ teil LATENZ3 $W latenz --proben 50 --sicht ego,third --verb gehen,wechsel --json
 node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\4a5f5e2c-radeon\leib.K1_1.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\4a5f5e2c-radeon\leib.K1_1.json.lauf1.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\4a5f5e2c-radeon\leib.K1_1.json.lauf2.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\4a5f5e2c-radeon\leib.K1_1.json.lauf3.json"
 gpu-lauf: Schloss punkte-radeon nach 2 s
 @@PUNKTE@@ LATENZ1
-ego/gehen {"n":50,"fehlt":0,"p50":30.9,"p95":44.5,"max":58.7,"eingabe":0.5,"hoerer":0,"kette":12.3,"kurve":16.8,"takte":4}
-ego/wechsel {"n":50,"fehlt":0,"p50":9,"p95":29.6,"max":37.4,"eingabe":0.8,"hoerer":0.4,"kette":7.2,"kurve":0,"takte":1}
-third/gehen {"n":50,"fehlt":0,"p50":32,"p95":42.3,"max":65.6,"eingabe":0.5,"hoerer":0.1,"kette":12.6,"kurve":16.7,"takte":4}
-third/wechsel {"n":50,"fehlt":0,"p50":20.2,"p95":32,"max":47.8,"eingabe":5.7,"hoerer":0.4,"kette":15.6,"kurve":0,"takte":2}
-LATENZ GRÜN (Bild 16.2 ms) 
+ego/gehen {"n":50,"fehlt":0,"p50":31.4,"p95":44.6,"max":45.4,"eingabe":0.5,"hoerer":0.1,"kette":13.4,"kurve":16.9,"takte":4}
+ego/wechsel {"n":50,"fehlt":0,"p50":12.3,"p95":26.1,"max":46.4,"eingabe":2.5,"hoerer":0.3,"kette":8.1,"kurve":0,"takte":1}
+third/gehen {"n":50,"fehlt":0,"p50":29.4,"p95":45.2,"max":52.7,"eingabe":0.5,"hoerer":0,"kette":11.6,"kurve":17.3,"takte":4}
+third/wechsel {"n":50,"fehlt":0,"p50":11.9,"p95":23.3,"max":26.9,"eingabe":0.4,"hoerer":0.3,"kette":9,"kurve":0,"takte":1}
+LATENZ GRÜN (Bild 15.4 ms) 
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ LATENZ2
-ego/gehen {"n":50,"fehlt":0,"p50":29.5,"p95":42.2,"max":51.3,"eingabe":0.4,"hoerer":0,"kette":13,"kurve":16.3,"takte":4}
-ego/wechsel {"n":50,"fehlt":0,"p50":10.3,"p95":34.8,"max":56.7,"eingabe":0.5,"hoerer":0.4,"kette":8.3,"kurve":0,"takte":1}
-third/gehen {"n":50,"fehlt":0,"p50":29.2,"p95":43.5,"max":45.1,"eingabe":0.6,"hoerer":0,"kette":12.3,"kurve":16.3,"takte":4}
-third/wechsel {"n":50,"fehlt":0,"p50":10.4,"p95":26.4,"max":32.8,"eingabe":2.1,"hoerer":0.3,"kette":7.9,"kurve":0,"takte":1}
-LATENZ GRÜN (Bild 16.3 ms) 
+ego/gehen {"n":50,"fehlt":0,"p50":32.3,"p95":43.6,"max":53.5,"eingabe":0.5,"hoerer":0,"kette":13.6,"kurve":16.6,"takte":4}
+ego/wechsel {"n":50,"fehlt":0,"p50":18.6,"p95":31.7,"max":32.4,"eingabe":0.5,"hoerer":0.4,"kette":17.4,"kurve":0,"takte":2}
+third/gehen {"n":50,"fehlt":0,"p50":29.7,"p95":41.5,"max":51.4,"eingabe":0.5,"hoerer":0,"kette":12.3,"kurve":16.9,"takte":4}
+third/wechsel {"n":50,"fehlt":0,"p50":12,"p95":26.1,"max":31.9,"eingabe":0.7,"hoerer":0.3,"kette":9.3,"kurve":0,"takte":1}
+LATENZ GRÜN (Bild 16.6 ms) 
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ LATENZ3
-ego/gehen {"n":50,"fehlt":0,"p50":30.1,"p95":60.9,"max":79.1,"eingabe":0.5,"hoerer":0,"kette":12.4,"kurve":16.9,"takte":4}
-ego/wechsel {"n":50,"fehlt":0,"p50":10,"p95":26.9,"max":28.9,"eingabe":0.6,"hoerer":0.3,"kette":7.7,"kurve":0,"takte":1}
-third/gehen {"n":50,"fehlt":0,"p50":28.8,"p95":42.2,"max":60.9,"eingabe":0.5,"hoerer":0.1,"kette":11.9,"kurve":16.6,"takte":4}
-third/wechsel {"n":50,"fehlt":0,"p50":11,"p95":24.7,"max":26.4,"eingabe":0.5,"hoerer":0.3,"kette":7.2,"kurve":0,"takte":1}
-LATENZ ROT (Bild 16.3 ms) ego/gehen p95 60.9 ms > 50 (fehlt 0) — Täter kurve 16.9 ms, 4 Takte
-@@PUNKTE@@ EXIT 1
+ego/gehen {"n":50,"fehlt":0,"p50":32.5,"p95":43.1,"max":47.7,"eingabe":0.5,"hoerer":0,"kette":13.9,"kurve":16.6,"takte":4}
+ego/wechsel {"n":50,"fehlt":0,"p50":16.7,"p95":25.7,"max":26.4,"eingabe":0.5,"hoerer":0.3,"kette":16.2,"kurve":0,"takte":2}
+third/gehen {"n":50,"fehlt":0,"p50":29.3,"p95":42.2,"max":43.8,"eingabe":0.5,"hoerer":0,"kette":12.1,"kurve":16.5,"takte":4}
+third/wechsel {"n":50,"fehlt":0,"p50":12,"p95":23.3,"max":23.9,"eingabe":0.6,"hoerer":0.3,"kette":9.2,"kurve":0,"takte":1}
+LATENZ GRÜN (Bild 16.6 ms) 
+@@PUNKTE@@ EXIT 0
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

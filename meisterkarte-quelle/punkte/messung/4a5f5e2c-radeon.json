@@ -1,7 +1,7 @@
 {
  "sha": "4a5f5e2c9ab02618feccdf8b9f1a03942bcc9301",
  "geraet": "radeon",
- "zeit": "2026-10-25T05:00:37.484Z",
+ "zeit": "2026-10-25T06:26:18.811Z",
  "host": "MiguellD",
  "je": {
   "gelaende.K2#1": {
@@ -253,24 +253,23 @@
    "zwilling": "siedlung.K5#1"
   },
   "leib.K1#1": {
-   "gruen": false,
-   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 60.9 · third/gehen 43.5 · ego/wechsel 34.8 · third/wechsel 32 · Bild 16.2/16.3/16.3 ms",
+   "gruen": true,
+   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 44.6 · third/gehen 45.2 · ego/wechsel 31.7 · third/wechsel 26.1 · Bild 15.4/16.6/16.6 ms",
    "exit": 0,
-   "minuten": 5.87,
-   "grund": "ROT: schlechtester von 3 Läufen p95 ms ego/gehen 60.9 · third/gehen 43.5 · ego/wechsel 34.8 · third/wechsel 32 · Bild 16.2/16.3/16.3 ms",
+   "minuten": 5.91,
    "gpu": "amd/rdna-3",
-   "zeit": "2026-10-25T03:55:20.202Z",
+   "zeit": "2026-10-25T05:48:09.051Z",
    "abdruck": "9687c62fd915",
    "port": 7771
   },
   "leib.K1#2": {
    "gruen": false,
-   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 51.7 · third/gehen 41.5 · ego/springen 32.9 · third/springen 32.4 · ego/einsteigen 30.6 · third/einsteigen 23.5 · ego/hieb 34.9 · third/hieb 37.8 · Bild 14.2/14.8/15.6 ms",
+   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 46.3 · third/gehen 44.6 · ego/springen 37.1 · third/springen 30.8 · ego/einsteigen 44.7 · third/einsteigen 30.3 · ego/hieb 37.3 (fehlt 2) · third/hieb 37.5 · Bild 14/14.3/14.1 ms",
    "exit": 0,
-   "minuten": 14.52,
-   "grund": "ROT: schlechtester von 3 Läufen p95 ms ego/gehen 51.7 · third/gehen 41.5 · ego/springen 32.9 · third/springen 32.4 · ego/einsteigen 30.6 · third/einsteigen 23.5 · ego/hieb 34.9 · third/hieb 37.8 · Bild 14.2/14.8/15.6 ms",
+   "minuten": 14.43,
+   "grund": "ROT: schlechtester von 3 Läufen p95 ms ego/gehen 46.3 · third/gehen 44.6 · ego/springen 37.1 · third/springen 30.8 · ego/einsteigen 44.7 · third/einsteigen 30.3 · ego/hieb 37.3 (fehlt 2) · third/hieb 37.5 · Bild 14/14.3/14.1 ms",
    "gpu": "amd/rdna-3",
-   "zeit": "2026-10-25T04:01:12.623Z",
+   "zeit": "2026-10-25T05:54:03.564Z",
    "abdruck": "160f0c239df2",
    "port": 7772
   },
@@ -287,13 +286,12 @@
    "port": 7773
   },
   "halten.K2#1": {
-   "gruen": false,
-   "zahl": "schlechtester von 3 Läufen p95 ms third/hieb 52.5 · ego/hieb 27.9 · Bild 16.2/16.2/16 ms · Hit-Stop im schlechtesten Lauf 11 Bilder · im Spiel Halt gesetzt 60-mal (151–179 ms, gleitet bis 0 mm je Takt) / 59-mal (153–168 ms, gleitet bis 0 mm je Takt) / 60-mal (153–174 ms, gleitet bis 0 mm je Takt)",
+   "gruen": true,
+   "zahl": "schlechtester von 3 Läufen p95 ms third/hieb 38.2 · ego/hieb 27.5 · Bild 16.2/16.1/16.3 ms · Hit-Stop im schlechtesten Lauf 11 Bilder · im Spiel Halt gesetzt 60-mal (154–178 ms, gleitet bis 0 mm je Takt) / 59-mal (153–168 ms, gleitet bis 0 mm je Takt) / 60-mal (154–177 ms, gleitet bis 0 mm je Takt)",
    "exit": 0,
-   "minuten": 5.5,
-   "grund": "ROT: schlechtester von 3 Läufen p95 ms third/hieb 52.5 · ego/hieb 27.9 · Bild 16.2/16.2/16 ms · Hit-Stop im schlechtesten Lauf 11 Bilder · im Spiel Halt gesetzt 60-mal (151–179 ms, gleitet bis 0 mm je Takt) / 59-mal (153–168 ms, gleitet bis 0 mm je Takt) / 60-mal (153–174 ms, gleitet bis 0 mm je Takt)",
+   "minuten": 5.44,
    "gpu": "amd/rdna-3",
-   "zeit": "2026-10-25T04:16:38.662Z",
+   "zeit": "2026-10-25T06:08:29.470Z",
    "abdruck": "631137359d80",
    "port": 7777
   },
@@ -309,12 +307,12 @@
   },
   "profiband.K4#1": {
    "gruen": false,
-   "zahl": "0 von 4 Sitzungen ohne Frame > 100 ms (max 209.4 · 226.1 · 209.4 · 242.5 ms; Hänger 1/1/1/1)",
+   "zahl": "0 von 4 Sitzungen ohne Frame > 100 ms (max 234.5 · 217.8 · 209.4 · 217.4 ms; Hänger 1/1/1/1)",
    "exit": 0,
-   "minuten": 12.4,
-   "grund": "ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 209.4 · 226.1 · 209.4 · 242.5 ms; Hänger 1/1/1/1)",
+   "minuten": 12.38,
+   "grund": "ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 234.5 · 217.8 · 209.4 · 217.4 ms; Hänger 1/1/1/1)",
    "gpu": "amd/rdna-3",
-   "zeit": "2026-10-25T04:23:25.110Z",
+   "zeit": "2026-10-25T06:13:56.018Z",
    "abdruck": "3b1e54b5711e",
    "port": 7790
   },
@@ -371,12 +369,12 @@
   },
   "speicher.K2#1": {
    "gruen": false,
-   "zahl": "je Speicher-Bild (Ruf) p50 10 / p95 14.2 / max 46.9 ms (Soll p95 ≤ 0,3; 135 Rufe in 16420 Bildern; aufgefüllt je Bild p95 0, blind)",
+   "zahl": "je Speicher-Bild (Ruf) p50 8.8 / p95 13.3 / max 39.6 ms (Soll p95 ≤ 0,3; 92 Rufe in 8537 Bildern; aufgefüllt je Bild p95 0, blind)",
    "exit": 0,
-   "minuten": 3.83,
-   "grund": "ROT: je Speicher-Bild (Ruf) p50 10 / p95 14.2 / max 46.9 ms (Soll p95 ≤ 0,3; 135 Rufe in 16420 Bildern; aufgefüllt je Bild p95 0, blind)",
+   "minuten": 2.61,
+   "grund": "ROT: je Speicher-Bild (Ruf) p50 8.8 / p95 13.3 / max 39.6 ms (Soll p95 ≤ 0,3; 92 Rufe in 8537 Bildern; aufgefüllt je Bild p95 0, blind)",
    "gpu": "amd/rdna-3",
-   "zeit": "2026-10-25T05:00:37.484Z",
+   "zeit": "2026-10-25T06:26:18.811Z",
    "abdruck": "2897b2bde797",
    "port": 7797
   }
