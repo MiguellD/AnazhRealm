@@ -49,3 +49,4 @@
 2026-10-25 10:09:08 nw2628-abab d-ego VERLÄNGERN 11.0 · 3/4 (2+2)
 2026-10-25 10:25:23 nw2628-abab stadt VERLÄNGERN 16.2 · 4/4 (2+2)
 2026-10-25 10:39:12 nw2628-abab w-ego(4+4) nicht-langsamer 13.7 · verlängert (4+4)
+2026-10-25 10:50:05 nw2628-abab g-third(4+4) nicht-langsamer 10.8 · verlängert (4+4)
