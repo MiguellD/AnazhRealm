@@ -2702,8 +2702,7 @@ class AnazhRealm_siedlung_satz {
             );
             slots.push(ref);
         }
-        // W5.4 — Band-Add: NUR die Band-Felder schreiben (transient wie instSlots, nicht im
-        // Snapshot, kein state.X). Der Primär-Zustand des Eintrags bleibt byte-unberührt.
+        // W5.4 — Band-Add: NUR die Band-Felder (transient wie instSlots, nicht im Snapshot); der Primär-Zustand bleibt.
         if (opts && opts.band) {
             entry.instSlotsBand = slots;
             entry._lodBandLevel = Number.isFinite(opts.bandLod) ? opts.bandLod : null;
@@ -2711,6 +2710,7 @@ class AnazhRealm_siedlung_satz {
         }
         entry.instanced = true;
         entry.instSlots = slots;
+        this._fluegelLeib(entry); // der Tür- und Tor-Flügel trägt seinen Leib aus der Matrix, die er zeichnet (leib.K4)
         // DIE HÜLLE DER STUFE (Welle L, Kollision == Optik): ein Haus kollidiert, wie es gezeichnet ist — die Stufe 0 mit den
         // Solids des Gesetzbuchs (Böden, Tritte, Wände mit Öffnungen), JEDE Stufe dieselben (die fernen tragen die Solids der
         // Stufe 0, `hausSolids`); ein Stufen-Wechsel mit derselben Zeile schreibt die Blocker nicht neu.

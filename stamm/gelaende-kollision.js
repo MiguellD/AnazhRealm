@@ -633,12 +633,117 @@ class AnazhRealm_gelaende_kollision {
             if (b.minZ < z0) z0 = b.minZ;
             if (b.maxZ > z1) z1 = b.maxZ;
         }
+        const fh = entry._fluegelHuelle; // der Kreis, den die Flügel beim Schwenk überstreichen (`_fluegelLeib`)
+        if (fh) [x0, x1, z0, z1] = [Math.min(x0, fh[0]), Math.max(x1, fh[1]), Math.min(z0, fh[2]), Math.max(z1, fh[3])];
         entry._blockerHuelle =
             Number.isFinite(x0) && Number.isFinite(x1) && Number.isFinite(z0) && Number.isFinite(z1)
                 ? [x0, x1, z0, z1]
                 : null;
         entry._blockerZellen = this._blockerZellenEin(N.zellen, entry, x0, x1, z0, z1);
         this._blockerWacheMelden(entry._blockerHuelle);
+    }
+
+    // DER LEIB DES FLÜGELS (leib.K4): ein Tür- oder Tor-Flügel zeichnet als eigene Instanz (das Blatt mit Scharnier `tuer`, auch
+    // als Instanz eines anderen, `_foundryFluegelInstanz`), die sich ums Scharnier dreht (`_tickTorFluegel`), und trug keine
+    // Blocker-Box — die Kamera-Kugel ging durch das offene Blatt (gate:kamera-leib K4 am haus_alemannisch: Bau-Pixel im
+    // Nahbereich in 5 Proben). Seine Kollision ist dieselbe Gestalt, die gezeichnet wird: die Hülle seiner Geometrie im Rahmen
+    // des geschlossenen Blatts (um die gebackene Offen-Pose `tuer.offen` ums Scharnier zurück, dort liegt es achsparallel),
+    // gesetzt mit der GEZEICHNETEN Instanz-Matrix als gedrehte Box (`obb`, die Form der Haus-Hülle). Gerufen, wo die Slots
+    // entstehen (`entry.instSlots`, dort sammelt er die Flügel, `entry._fluegel`, die Hülle je Blatt und den Kreis, den es beim
+    // Schwenk überstreicht — liegt der außerhalb der gestempelten Hülle, stempelt das Netz den Eintrag neu), und `gedreht` nach
+    // jedem Schwenk (`_tickTorFluegel`).
+    _fluegelLeib(entry, gedreht) {
+        const T = THREE;
+        const slots = entry.instSlots;
+        const neu = !gedreht || entry._fluegelSlots !== slots;
+        if (neu) {
+            const groups = this.state.archInstanceGroups;
+            const fl = [];
+            for (const s of slots || []) {
+                const g = groups && groups.get(s.key);
+                const t = s.tuer || (g && g.tuer);
+                if (g && t) fl.push({ g, ref: s, tuer: t });
+            }
+            entry._fluegelSlots = slots;
+            entry._fluegel = fl.length ? fl : AnazhRealm.KEIN_FLUEGEL;
+        }
+        entry._fluegelBoxen = AnazhRealm.KEIN_FLUEGEL;
+        if (!entry._fluegel.length) return;
+        const m = this._fluegelM || (this._fluegelM = new T.Matrix4());
+        const out = [];
+        let fh = [Infinity, -Infinity, Infinity, -Infinity];
+        for (const f of entry._fluegel) {
+            const t = f.tuer;
+            if (f.g.shadowTwin || !(f.ref.slot >= 0)) continue;
+            if (!f.kasten) {
+                const zu = new T.Matrix4()
+                    .makeRotationY(-(Number.isFinite(t.offen) ? t.offen : 0))
+                    .setPosition(t.hx || 0, 0, t.zf || 0)
+                    .multiply(new T.Matrix4().makeTranslation(-(t.hx || 0), 0, -(t.zf || 0)));
+                if (t.basis) zu.multiply(t.basis);
+                const pos = f.g.mesh.geometry.attributes.position;
+                const v = new T.Vector3();
+                f.kasten = new T.Box3();
+                for (let i = 0; i < pos.count; i++)
+                    f.kasten.expandByPoint(v.fromBufferAttribute(pos, i).applyMatrix4(zu));
+                f.zurueck = zu.invert();
+            }
+            f.g.mesh.getMatrixAt(f.ref.slot, m).multiply(f.zurueck);
+            const e = m.elements;
+            const k = f.kasten;
+            const sx = Math.hypot(e[0], e[1], e[2]);
+            const sz = Math.hypot(e[8], e[9], e[10]);
+            const c = e[0] / sx;
+            const s = -e[2] / sx;
+            const hx = ((k.max.x - k.min.x) / 2) * sx;
+            const hz = ((k.max.z - k.min.z) / 2) * sz;
+            const hy = ((k.max.y - k.min.y) / 2) * Math.hypot(e[4], e[5], e[6]);
+            const mx = (k.min.x + k.max.x) / 2;
+            const my = (k.min.y + k.max.y) / 2;
+            const mz = (k.min.z + k.max.z) / 2;
+            const cx = e[0] * mx + e[4] * my + e[8] * mz + e[12];
+            const cy = e[1] * mx + e[5] * my + e[9] * mz + e[13];
+            const cz = e[2] * mx + e[6] * my + e[10] * mz + e[14];
+            if (!(hx > 1e-4 && hz > 1e-4 && hy > 1e-4 && Number.isFinite(cx + cy + cz))) continue;
+            const ex = hx * Math.abs(c) + hz * Math.abs(s);
+            const ez = hx * Math.abs(s) + hz * Math.abs(c);
+            out.push({
+                minX: cx - ex,
+                maxX: cx + ex,
+                minZ: cz - ez,
+                maxZ: cz + ez,
+                topY: cy + hy,
+                botY: cy - hy,
+                obb: { cx, cz, c, s, hx, hz },
+            });
+            if (!neu) continue;
+            // das Scharnier in der Welt und der Radius des Blatts um es (die Ecken des geschlossenen Rahmens)
+            const ax = e[0] * (t.hx || 0) + e[8] * (t.zf || 0) + e[12];
+            const az = e[2] * (t.hx || 0) + e[10] * (t.zf || 0) + e[14];
+            const rho =
+                sx *
+                Math.max(
+                    ...[k.min.x, k.max.x].flatMap((x) =>
+                        [k.min.z, k.max.z].map((z) => Math.hypot(x - (t.hx || 0), z - (t.zf || 0)))
+                    )
+                );
+            fh = [
+                Math.min(fh[0], ax - rho),
+                Math.max(fh[1], ax + rho),
+                Math.min(fh[2], az - rho),
+                Math.max(fh[3], az + rho),
+            ];
+        }
+        if (out.length) entry._fluegelBoxen = out;
+        if (!neu || !out.length) return;
+        const h = entry._blockerHuelle;
+        entry._fluegelHuelle = fh;
+        if (!(h && fh[0] >= h[0] && fh[1] <= h[1] && fh[2] >= h[2] && fh[3] <= h[3])) this._blockerNetzSetzen(entry);
+    }
+
+    // Die Flügel-Boxen eines Eintrags, solange die Slots stehen, die sie zeichneten (ein Stufen-Wechsel oder Cull nimmt sie)
+    _fluegelBoxenVon(e) {
+        return (e._fluegelSlots === e.instSlots && e._fluegelBoxen) || AnazhRealm.KEIN_FLUEGEL;
     }
 
     // DIE WACHE DES NETZES (mensch.K3): wer sich merkt, was er im Netz las (die Wege der Bewohner einer Siedlung), stellt
@@ -1063,4 +1168,6 @@ _stammZonen(AnazhRealm, [AnazhRealm_gelaende_kollision]);
 AnazhRealm.BLOCKER_ZELLE = 8;
 AnazhRealm.BLOCKER_ZELLEN_MAX = 1024;
 AnazhRealm.BLOCKER_RIESE = -0.5;
+// Die Flügel-Boxen eines Eintrags ohne gezeichneten Flügel (`_fluegelBoxenVon`): eine Liste, die nie wächst.
+AnazhRealm.KEIN_FLUEGEL = Object.freeze([]);
 AnazhRealm._nachBestand = (a, b) => a._blockerSeq - b._blockerSeq;
