@@ -1581,7 +1581,7 @@ class AnazhRealm_vegetation_baum {
         return 1;
     }
 
-    // Per-Frame-Spawn-Budget: FIFO-Queue, `_tickPendingVegSpawns` arbeitet sie mit Frame-Limit ab;
+    // Per-Frame-Spawn-Budget: die Pflanz-Schlange, `_tickPendingVegSpawns` arbeitet sie im Rang der Ankunft mit Frame-Limit ab;
     // Welt-Wechsel/Reload räumt sie. `this._vegSpawnImmediate === true` (Test/Worldgen) spawnt synchron.
     _enqueueVegetationSpawn(name, position, opts) {
         // Ein Wurf des Feldes (Wald, Unterholz, Totholz, Fels-Streu): wo die Wildnis nicht trägt, fällt er.
@@ -2060,16 +2060,29 @@ class AnazhRealm_vegetation_baum {
         }
     }
 
-    // Pops bis zu maxPerFrame Tasks und ruft `spawnArchitecture` je Task: 4/Frame ≈ 20-25 ms statt
-    // 200-500-ms-Burst; ein 9-Chunk-Ring verteilt sich über ~10-25 Frames.
-    // Im Lade-Takt setzt sie bis zur Frist des Lade-Frames (`_kappeOffen`, mindestens `maxPerFrame`): die gepflanzten Bäume
-    // um den Spieler gehören ins erste Weltbild (`_weltbildFehlt`), nicht in die Frames danach.
+    // Setzt bis zu maxPerFrame Bäume der Schlange je Takt (`_naturSetzen`): 4/Frame ≈ 20-25 ms statt 200-500-ms-Burst.
+    // DER EINE RANG DER ANKUNFT (`_foundryAuftragD2`, Lehre 25): jeder Griff nimmt den Baum mit dem kleinsten Rang — vor dem
+    // ersten Weltbild der Blick zuerst, danach nah zuerst rundum; je Baum EINMAL je Takt gerechnet. Als FIFO stellte die
+    // Schlange einen spät gesäten Baum der Mesh-Zone hinter alle fernen (zur Kontrolle des ersten Bilds 560–620 Bäume
+    // jenseits der Mesh-Zone, 4 je Takt): CI Gruppe 1 sah der Rundblick ihn hinter dem Spieler bei 195°, rundum ganz erst
+    // in Takt 71–80 (gate:ankunft L2a). Im Lade-Takt setzt sie bis zur Frist des Lade-Frames (`_kappeOffen`, mindestens
+    // `maxPerFrame`): die gepflanzten Bäume im Bild gehören ins erste Weltbild (`_weltbildFehlt`).
     _tickPendingVegSpawns(maxPerFrame = 4) {
         const queue = this.state.pendingVegSpawns;
         if (!queue || queue.length === 0) return 0;
+        const rang = [];
         let spawned = 0;
         for (let i = 0; this._kappeOffen(i, maxPerFrame) && queue.length > 0; i++) {
-            const task = queue.shift();
+            // ein Wurf, der während des Takts dazukam, trägt seinen Rang ab hier
+            for (let j = rang.length; j < queue.length; j++)
+                rang.push(this._foundryAuftragD2(queue[j] && queue[j].position));
+            let k = queue.length - 1;
+            for (let j = k - 1; j >= 0; j--) if (rang[j] < rang[k]) k = j;
+            const task = queue[k];
+            queue[k] = queue[queue.length - 1];
+            rang[k] = rang[rang.length - 1];
+            queue.pop();
+            rang.pop();
             if (!task) continue;
             this._naturSetzen(task.name, task.position, task.opts);
             spawned++;
