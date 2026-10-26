@@ -80,7 +80,7 @@ function weltAlbedo(o) {
         }
         return { c: s.map((v) => v / Math.max(1, ca.count)), vc: true };
     }
-    return { c: [o.material.color.r, o.material.color.g, o.material.color.b], vc: false };
+    return { c: o.material.color.toArray(), vc: false };
 }
 
 // Das Urteil über EINE Welt-Gestalt: Liste der Täter (je Stoff höchstens einer je Art).
@@ -98,7 +98,7 @@ function urteil(name, group) {
         if (!st) return out.push(`${name}: ohne-stoff (${m.type} ${m.color ? m.color.getHexString() : ""})`);
         if (LABOR.has(st)) return out.push(`${name}: labor-stoff ${st} in der Welt-Gestalt`);
         if (st === "licht") {
-            const em = m.emissive ? [m.emissive.r, m.emissive.g, m.emissive.b] : [0, 0, 0];
+            const em = m.emissive ? m.emissive.toArray() : [0, 0, 0];
             if (!(lum(em) * (m.emissiveIntensity || 0) >= 0.05)) out.push(`${name}: band licht glüht nicht`);
             return;
         }
@@ -133,7 +133,7 @@ function lackGestalten() {
         g.traverse((o) => {
             // der Karosserie-Lack (lackStoff stempelt __lack; der Bremssattel ist Lack, aber nicht die Karosserie)
             if (!best && o.isMesh && o.material && o.material.userData && o.material.userData.__lack)
-                best = [o.material.color.r, o.material.color.g, o.material.color.b];
+                best = o.material.color.toArray();
         });
         ist.push(best);
         if (!best) out.push(`lack-gestalt: Same ${s} trägt keinen Karosserie-Lack`);
@@ -291,25 +291,16 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
             async (X) => {
                 const sym = st.symphony;
                 const alt = { ...sym };
-                const ctxe = [];
-                const tritte = (x, z, y) => {
-                    for (let i = 0; i < 8; i++) {
-                        const ctx = new OfflineAudioContext(1, 24000, 48000);
-                        ctxe.push(ctx);
-                        Object.assign(sym, { enabled: true, ctx, masterGain: ctx.destination });
-                        setz(x, z, y);
-                        r._schrittKlangTick({ walkPhase: 0 }, 0, false, pm);
-                        r._schrittKlangEreignis(pm, false, 0);
-                    }
-                };
-                try {
-                    await (X === "wasser" ? tritte(watX, UZ) : boden(X, tritte));
-                } finally {
-                    Object.assign(sym, alt);
-                }
+                const tritt = (x, z, y) => (setz(x, z, y), r._schrittKlangTick({ walkPhase: 0 }, 0, false, pm), r._schrittKlangEreignis(pm, false, 0));
                 let summe = 0;
-                for (const ctx of ctxe) summe += window.__klangCore.schwerpunkt((await ctx.startRendering()).getChannelData(0), 48000);
-                return summe / ctxe.length;
+                for (let i = 0; i < 8; i++) {
+                    const ctx = new OfflineAudioContext(1, 24000, 48000);
+                    Object.assign(sym, { enabled: true, ctx, masterGain: ctx.destination });
+                    await (X === "wasser" ? tritt(watX, UZ) : boden(X, tritt));
+                    Object.assign(sym, alt);
+                    summe += window.__klangCore.schwerpunkt((await ctx.startRendering()).getChannelData(0), 48000) / 8;
+                }
+                return summe;
             },
             (X, v, n) => n / v > 1.4,
         ],
