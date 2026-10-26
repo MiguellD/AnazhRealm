@@ -9,3 +9,4 @@
 2026-10-25 17:14:40 ca1f45c7-radeon ENDE 1 grün / 0 rot · 5.2 min
 2026-10-26 01:40:32 takt4-headless START 74 Stationen
 2026-10-26 01:40:55 takt4-headless gelaende.K4#1 GRÜN 0.4 · 1/74
+2026-10-26 01:41:13 takt4-headless gelaende.K1#1 GRÜN 0.7 · 2/74
