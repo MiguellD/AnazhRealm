@@ -2041,7 +2041,7 @@ async function kiWelt(seiten) {
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    await server.zeige(page);
+    await srv.zeige(page);
     await warteAufWelt(page);
     return { srv, browser, page };
 }
