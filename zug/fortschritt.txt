@@ -155,3 +155,4 @@
 2026-10-26 04:54:37 z32k-gtx leib.K1#2 ROT 97.6 · 29/41
 2026-10-26 04:54:47 z35-abab START 3 Zellen
 2026-10-26 05:09:06 z35-abab w-ego VERLÄNGERN 14.2 · 1/3 (2+2)
+2026-10-26 05:20:11 z35-abab d-ego nicht-langsamer 11.0 · 2/3 (2+2)
