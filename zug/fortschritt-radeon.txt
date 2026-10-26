@@ -348,3 +348,4 @@
 2026-10-26 14:47:32 takt6-radeon vegetation.K4#1 GRÜN 4.3 · 9/45
 2026-10-26 14:48:30 takt6-headless klang.K1#1 GRÜN 1.6 · 69/75
 2026-10-26 14:48:36 takt6-headless klang.K5#1 GRÜN 1.6 · 70/75
+2026-10-26 14:49:59 takt6-radeon tiere.K2#2 GRÜN 2.5 · 10/45
