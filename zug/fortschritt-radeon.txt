@@ -244,3 +244,4 @@
 2026-10-26 08:48:37 takt5-radeon fahrzeug.K3#2 ROT 1.7 · 21/43
 2026-10-26 08:50:06 takt5-radeon fahrzeug.K4#1 GRÜN 1.5 · 22/43
 2026-10-26 08:50:09 takt5-radeon fahrzeug.K4#2 GRÜN 1.5 · 23/43
+2026-10-26 08:51:25 takt5-radeon siedlung.K2#1 ROT 1.3 · 24/43
