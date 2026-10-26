@@ -127,6 +127,7 @@ class AnazhRealm_speicher_welten {
             });
             try {
                 localStorage.setItem("anazhRealmActiveWorld", m.worldId);
+                this._aktivZeiger = m.worldId;
             } catch {
                 // localStorage voll/blockiert: aktiver Welt-Zeiger bleibt aus,
                 // nächster Reload startet wieder fresh. Kein Drama.
@@ -144,9 +145,11 @@ class AnazhRealm_speicher_welten {
         return `anazhRealmState_${worldId}`;
     }
 
+    // gelesen ist gemerkt: der Boot liest den Zeiger, und schon der erste Stand des Takts in dieser Welt darf warten (`_standSichern`;
+    // ungemerkt ging er je Boot synchron und voll an den Faden: speicher.K2 je Ruf p95 7 ms, Radeon)
     activeWorldGet() {
         try {
-            return localStorage.getItem("anazhRealmActiveWorld") || null;
+            return (this._aktivZeiger = localStorage.getItem("anazhRealmActiveWorld") || null);
         } catch {
             return null;
         }
