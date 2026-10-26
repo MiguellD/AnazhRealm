@@ -149,6 +149,8 @@ function selbsttest() {
             amSpieler: { ort: [-293, -1071], gelegt: true, dirty: 9, takte: 42, heil: true, sync: [] },
         },
         nachschub: { takte: 31, schlange: 0, foundry: 0, warten: [] },
+        // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
+        fuehrung: { x: 700, z: -800, abstand: 1044, steht: true, takte: 23, grund: null },
         dorf: { steht: 41, placed: 12 },
         wach: "DIE WELT STEHT NICHT nach 61 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet",
         schuld: { abgewiesen: 40, grund: "Felder offen 8", takte: 214, rest: 0 },
@@ -434,6 +436,13 @@ function selbsttest() {
             /NACHSCHUB: 1 Streu-Regionen warten, obwohl die Schlange des Walds leer ist/,
         ],
         ["keine Nachschub-Probe", (b) => delete b.nachschub, /LEER: keine Nachschub-Probe/],
+        [
+            "die Nah-Wiese wartet jenseits des Rings auf Boden, den niemand baut",
+            (b) =>
+                Object.assign(b.fuehrung, { steht: false, takte: 400, grund: "Fege-Takt nahWiese wartet, nahStreu wartet" }),
+            /FÜHRUNG: die Kamera bei \(700, -800\), 1044 m neben dem Spieler — die Welt steht nach 400 Takten nicht: Fege-Takt nahWiese wartet/,
+        ],
+        ["keine Führungs-Phase", (b) => delete b.fuehrung, /LEER: keine Führungs-Phase/],
         ["das Dorf fliegt (die Basis)", (b) => delete b.dorf.placed, /DORF: die Welt stand nach 41 Takten mit dem Dorf im Flug/],
         ["ein wartender Fege-Takt hält die Welt nicht wach", (b) => (b.wach = "steht nach 31 Takten"), /WACH: ein Fege-Takt mit Offenem hält die Welt nicht wach/],
         ["die Welt steht, während die Bake-Uhr abweist (die Basis)", (b) => Object.assign(b.schuld, { grund: "Welt-Regung", takte: 1, rest: 8 }), /BAKE-SCHULD: steht nach 1 Takten mit 8 offenen Fits \(40 abgewiesen, Welt-Regung\)/],
@@ -1726,6 +1735,30 @@ const TAT = process.argv.includes("--tat");
                         delete r._tickWorldWaterCA;
                     }
                 }
+                // (K) DIE FÜHRUNG FERN (zuletzt — sie verschiebt die Uhr keiner Phase davor): ein Studio führt die Kamera (`kameraFuehren`, der Makro-Flug des Gelände-Studios; eine Sonde
+                // wie werkbank bild) 1 km neben den Spieler — jenseits jedes Rings (12 × 43,2 m). Der Ring bleibt am Spieler; kein
+                // Fege-Takt wartet auf Boden, den dort niemand baut: die Welt steht (fege-takt: bis dahin wartete die Nah-Wiese ewig)
+                {
+                    const p = st.playerMesh.position;
+                    const [fx, fz] = [p.x + 1000, p.z + 300];
+                    const fy = r._voxelSurfaceY(fx, fz) + 1.7;
+                    await window.__weltStehtNach(takt);
+                    const F = (aus.fuehrung = { x: Math.round(fx), z: Math.round(fz), abstand: Math.round(Math.hypot(1000, 300)) });
+                    r.kameraFuehren((cam) => {
+                        cam.position.set(fx, fy, fz);
+                        cam.lookAt(fx + 15, fy + 6, fz + 6);
+                    });
+                    try {
+                        F.takte = await window.__weltStehtNach(takt, 400);
+                        F.steht = true;
+                    } catch (e) {
+                        F.steht = false;
+                        F.takte = (String(e.message).match(/nach (\d+) Takten/) || [])[1] | 0;
+                        F.grund = r._weltStand ? r._weltStand.grund : String(e.message).slice(0, 160);
+                    } finally {
+                        r.kameraFuehren(null);
+                    }
+                }
                 aus.taktFehler = window.__standTaktFehler || [];
                 return aus;
             },
@@ -1760,6 +1793,9 @@ const TAT = process.argv.includes("--tat");
         `  Ring ${befund.ring} Chunks · ${befund.architekturen} Bauten · die Wache schlief nach ${befund.bisRuhe} Takten` +
             (befund.nachschub
                 ? ` · Nachschub: die Schlange des Walds leer nach ${befund.nachschub.takte} Takten, ${befund.nachschub.warten.length} Streu-Regionen warten`
+                : "") +
+            (befund.fuehrung
+                ? ` · Führung ${befund.fuehrung.abstand} m neben dem Spieler: die Welt ${befund.fuehrung.steht ? "steht" : "steht NICHT"} nach ${befund.fuehrung.takte} Takten`
                 : "")
     );
     for (const n of ["ruhe", "bruch", "gehen"]) if (befund[n]) console.log(zeile(n, befund[n]));

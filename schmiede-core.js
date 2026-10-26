@@ -3032,8 +3032,12 @@
         // Griff-Länge (ein Ring je 2,2 cm); trägt der Bau mehr Dreiecke als die Zeile, fällt die Teilung jedes Rings um das
         // Verhältnis und der Bau steht neu (höchstens vier Mal) — ein Bau auf seiner Zeile bleibt byte-gleich.
         var zeile = PORTAL_RENDER_CONFIG.lod.budget.weapon[0].tris;
+        // DER REGLER FÜHRT (KI K2, Vertrag B4): ein schaftR im ov steht über dem Griff-Gesetz der Wucht-Waffe — ohne ov leitet
+        // bauWaffe ihn wie das Lab ab (byte-gleich); vorher überschrieb die Ableitung jeden Wert, der Regler bewegte keines
+        // der 22 Rezepte.
+        var schaftRFest = !!(ov && typeof ov === "object" && Object.prototype.hasOwnProperty.call(ov, "schaftR"));
         for (var versuch = 0; ; versuch++) {
-            var g = bauWaffe(tp, trad);
+            var g = bauWaffe(tp, trad, schaftRFest);
             var n = 0;
             g.traverse(function (o) {
                 if (o.isMesh) n += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
@@ -3050,7 +3054,7 @@
         return g;
     }
     var _wickelDetail = 1; // die Teilung der Wicklungs-Ringe (1 = das Lab-Maß; buildInstance senkt sie nur über der Zeile)
-    function bauWaffe(tp, trad) {
+    function bauWaffe(tp, trad, schaftRFest) {
         var g = new THREE.Group();
         if (tp.modus === "bogen") {
             tp.drawFrac = 0;
@@ -3063,7 +3067,7 @@
                 g.add(buildGrip(tp, S, trad));
                 g.add(buildPommel(tp, S, trad));
             } else {
-                if (tp.modus === "wucht") tp.schaftR = griffD(intentControl(tp)) * 0.5;
+                if (tp.modus === "wucht" && !schaftRFest) tp.schaftR = griffD(intentControl(tp)) * 0.5;
                 g.add(buildHaft(tp, S));
                 g.add(buildHead(tp, S));
             }

@@ -41,5 +41,34 @@
     "reiß alle häuser ab": { "still": 1 },
     "bring mir einen kaffee": { "still": 1 },
     "zerstöre die plattform unter mir": { "still": 1 }
+  },
+  "regler": {
+    "zweck": "Korpus-Teil Regler-Wörter (KI K2): je Satz [Werk-Wort oder *, {Regler-Zeile: [von, bis]}] — der Stempel des neuen Werks trägt jede Zeile im Bereich (diag-v1-pfad --korpus --regler).",
+    "saetze": {
+      "ein schmales hohes haus": ["*", { "W": [6, 8], "storeys": [4, 12] }],
+      "bau mir ein breites haus mit nur einem geschoss": ["*", { "W": [11, 14], "storeys": [1, 1] }],
+      "ein haus mit einem sehr steilen dach": ["*", { "pitchDeg": [45, 60] }],
+      "ein haus mit flachem dach": ["*", { "pitchDeg": [8, 20] }],
+      "ein haus mit turm und zinnen wie eine kleine burg": ["*", { "turm": [0.5, 1], "zinnen": [0.5, 1] }],
+      "ein haus mit balkon": ["*", { "balcony": [0.5, 1] }],
+      "ein tiefergelegter sportwagen": ["*", { "fahrhoehe": [0.06, 0.12] }],
+      "ein auto mit langem radstand": ["*", { "radstand": [3, 3.4] }],
+      "ein tor mit starkem sog": ["*", { "swirl": [0.6, 1] }],
+      "ein verfallenes tor, halb ruine": ["*", { "ruin": [0.5, 1] }],
+      "ein glühendes tor voller energie": ["*", { "glow": [0.6, 1], "energy": [0.7, 1] }],
+      "ein langes schwert": ["*", { "klinge": [1.05, 1.25] }],
+      "eine große, stark verwitterte feuerstelle": ["feuerstelle", { "groesse": [1.1, 1.25], "verwitterung": [0.7, 1] }],
+      "pflanz eine hohe blume": ["blume", { "height": [1.8, 2.4] }],
+      "eine blume mit vielen blüten": ["blume", { "bloomCount": [6, 12] }],
+      "lass ein büschel hohes gras wachsen": ["gras", { "bladeLen": [1.2, 1.8] }],
+      "dichtes gras vor mir": ["gras", { "density": [0.85, 1] }],
+      "ein riesiger wolf": ["wolf", { "size": [3.2, 4] }],
+      "ein hirsch mit langen beinen": ["hirsch", { "leg": [0.29, 0.35] }],
+      "mach mich größer": ["mensch", { "height": [1.05, 1.15] }],
+      "ich will muskulöser aussehen": ["mensch", { "tone": [0.7, 1] }],
+      "spiel ruhige, langsame musik": ["*", { "bpm": [40, 80] }],
+      "eine düstere musik bitte": ["*", { "darkness": [0.7, 1] }],
+      "schneller techno": ["techno", { "bpm": [125, 200] }]
+    }
   }
 }

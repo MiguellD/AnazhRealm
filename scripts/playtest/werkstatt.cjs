@@ -2520,7 +2520,7 @@ async function checkBandRezeptKatalog(ctx) {
         try {
             r._renderWorkshopDOM();
             const list = document.getElementById("workshop-list");
-            res.c.grasRow = !!(list && list.querySelector('.workshop-studio-recipe-row[data-recipe="gras"]'));
+            res.c.farnRow = !!(list && list.querySelector('.workshop-studio-recipe-row[data-recipe="farn"]'));
             res.c.recipeRows = list ? list.querySelectorAll(".workshop-studio-recipe-row").length : -1;
             res.c.wagenRow = !!(list && list.querySelector('[data-blueprint="fahrzeug_wagen"]'));
             res.c.torBasisRow = !!(list && list.querySelector('[data-blueprint="tor_basis"]'));
@@ -2622,8 +2622,8 @@ async function checkBandRezeptKatalog(ctx) {
         b.err || `sum0=${JSON.stringify(b.sum0)} sumOv=${JSON.stringify(b.sumOv)} blume ${JSON.stringify(b.blume0)}/${JSON.stringify(b.blumeOv)}`
     );
     check(
-        "Rezept-Katalog (c) der Katalog zeigt `gras`, die Alt-Donoren fehlen im DOM und in state.blueprints, die Substanz-Tabelle trägt sie (wagen 17 · tor 4)",
-        c.grasRow === true && c.wagenRow === false && c.torBasisRow === false && c.wagenAbsent === true && c.torBasisAbsent === true && c.wagenSubstanzParts === 17 && c.torSubstanzParts === 4,
+        "Rezept-Katalog (c) der Katalog zeigt `farn`, die Alt-Donoren fehlen im DOM und in state.blueprints, die Substanz-Tabelle trägt sie (wagen 17 · tor 4)",
+        c.farnRow === true && c.wagenRow === false && c.torBasisRow === false && c.wagenAbsent === true && c.torBasisAbsent === true && c.wagenSubstanzParts === 17 && c.torSubstanzParts === 4,
         c.err || `rezeptZeilen=${c.recipeRows} wagen=${c.wagenSubstanzParts} tor=${c.torSubstanzParts}`
     );
     check(
