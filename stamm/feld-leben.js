@@ -259,6 +259,7 @@ class AnazhRealm_feld_leben {
             terrain_base_height: (a) => `hebt die Welt-Grundhöhe auf ${a[0]}`,
             voxel_carve: (a) => `schnitzt das Voxel-Terrain bei (${a[0]}, ${a[1]}, ${a[2]}) im Radius ${a[3]}`,
             voxel_fill: (a) => `schüttet das Voxel-Terrain bei (${a[0]}, ${a[1]}, ${a[2]}) im Radius ${a[3]} auf`,
+            lava: (a) => `gießt Lava bei (${a[0]}, ${a[2]})`,
             set_time_of_day: (a) => `stellt die Uhr auf ${a[0]}`,
             skybox_color: () => `färbt den Himmel`,
             deposit_life: (a) => `trägt Leben ins Feld ${pos(a[0])}`,
@@ -1684,6 +1685,8 @@ class AnazhRealm_feld_leben {
         // DER BRAND (feld.K3#2) glüht in der glut seiner Zelle, solange sie brennt
         const bf = this.state.brandFeld;
         const brand = bf && bf.size ? bf.get(this._lifeCellKey(x, z)) : null;
+        // DIE LAVA (stoffe.K3-2) glüht in der glut ihrer Zelle, bis sie erkaltet (`_lavaAt`)
+        const lava = this._lavaAt(x, z);
         let emotion = e;
         if (imp) {
             emotion = {};
@@ -1694,7 +1697,7 @@ class AnazhRealm_feld_leben {
         return {
             lebendig: overlay || narbe > 0 ? Math.max(0, Math.min(1, f.lebendig + overlay - narbe)) : f.lebendig,
             dichte: f.dichte,
-            glut: brand ? Math.min(1, f.glut + brand.glut) : f.glut,
+            glut: brand || lava ? Math.min(1, f.glut + (brand ? brand.glut : 0) + (lava ? lava.glut : 0)) : f.glut,
             magieleitung: f.magieleitung,
             emotion,
             t,
@@ -1940,6 +1943,38 @@ class AnazhRealm_feld_leben {
         for (let i = 0; i < neu.length; i += 2) this._brandFangen(neu[i], neu[i + 1]);
     }
 
+    // === DIE LAVA (stoffe.K3-2): geschmolzener Stein auf der glut-Achse, der zu Stein erstarrt ===
+    // Ein Schreib-Akt der Welt (`_lavaGiessen`: die Tat `lava` an ihrem Ort und ihrer Welt-Stunde, mit der Höhe und ob sie ins
+    // Wasser floss — das EINE Urteil `_nassAt`, nie der Bezug der Ufer-Bänder) deckt die 16-m-Zelle des Felds; ihr Zustand ist
+    // eine FUNKTION der Welt-Zeit seit dem Akt (gelaende-core `lava` auf der Zeile `stein` der Stoff-Tafel, die Luft an der Naht
+    // `_temperaturAt`) — kein Takt, keine Simulation: jeder Peer und jeder Reload sieht dieselbe Decke. Sie glüht in der glut
+    // ihrer Zelle (`auraAt`), leuchtet als Feuer (`_leuchtQuellen`), trägt unter dem Fuß „glut", erstarrt „stein"
+    // (`_kontaktStoffAt`); am Wasser erstarrt sie schneller und unter Dampf. Die Tat bleibt: der Stein bleibt, die Narbe
+    // (TAT_NARBE.lava) hält das Leben der Zelle.
+    _lavaGiessen(x, z) {
+        const y = this._voxelSurfaceY(x, z);
+        const wasser = this._nassAt(x, z) ? 1 : 0;
+        return this._tatSchreiben("lava", x, z, { y: Math.round(y * 100) / 100, wasser });
+    }
+
+    // Die Decke der Zelle unter (x, z) — der Zustand ihrer jüngsten Lava (`temperatur` °C, `glut` 0…1, `erstarrt`, `dampf`,
+    // `alterS`) oder null ohne Lava.
+    _lavaAt(x, z) {
+        const I = this._tatIndex();
+        if (!I.lava.length) return null;
+        const je = I.je.get(this._lifeCellKey(x, z));
+        let a = null;
+        if (je) for (const t of je) if (t.tat === "lava" && !(a && a.h >= t.h)) a = t;
+        return a ? this._lavaZustand(a) : null;
+    }
+    _lavaZustand(a) {
+        const alterS = (this._weltStunde() - a.h) * 3600;
+        const z = globalThis.__gelaendeCore.lava(alterS, a.wasser === 1, this._temperaturAt(a.y, 0), {
+            stein: this._stoff("stein"),
+        });
+        return Object.assign(z, { alterS });
+    }
+
     // === DIE TAT BLEIBT (feld.K4): das Gedächtnis der Taten — die EINE Quelle von Narbe, Ernte und Fällung ===
     // Jede Tat am Lebendigen (ein Baum fällt, eine Pflanze der Nah-Streu wird gepflückt) ist ein SCHREIB-AKT der Welt: sie liegt
     // in `worldMeta.taten` ({ tat, x, z, h, … }, `h` die Welt-Stunde) und reist mit jedem Save und Reload (der Speicher trägt
@@ -1981,7 +2016,15 @@ class AnazhRealm_feld_leben {
         const n = Array.isArray(L) ? L.length : 0;
         let J = this._tatIdx;
         if (!J || J.L !== L || J.gen !== this._tatGen || J.n > n)
-            J = this._tatIdx = { L, n: 0, gen: this._tatGen, je: new Map(), kachel: new Map(), dauer: new Map() };
+            J = this._tatIdx = {
+                L,
+                n: 0,
+                gen: this._tatGen,
+                je: new Map(),
+                kachel: new Map(),
+                dauer: new Map(),
+                lava: [], // die Lava-Taten (das Licht fragt sie, `_leuchtQuellen`)
+            };
         const N = AnazhRealm.TAT_NARBE;
         for (; J.n < n; J.n++) {
             const a = L[J.n];
@@ -1990,6 +2033,7 @@ class AnazhRealm_feld_leben {
             const k = this._lifeCellKey(a.x, a.z);
             if (!J.je.has(k)) J.je.set(k, []);
             J.je.get(k).push(a);
+            if (a.tat === "lava") J.lava.push(a);
             if (a.tat === "ernten" && typeof a.kachel === "string") {
                 if (!J.kachel.has(a.kachel)) J.kachel.set(a.kachel, new Set());
                 J.kachel.get(a.kachel).add(a.id);
@@ -2470,6 +2514,7 @@ AnazhRealm.TAT_NARBE = Object.freeze({
     ernten: Object.freeze({ tiefe: 0.01, stunden: 3 }),
     abbauen: Object.freeze({ tiefe: 0, stunden: Infinity }), // ein Wurf des Gesetzes, abgebaut: er kehrt nie zurück (speicher.K3)
     brand: Object.freeze({ tiefe: 0.3, stunden: 72 }), // die Asche (`_brandSchritt`): solange sie liegt, brennt die Zelle nicht
+    lava: Object.freeze({ tiefe: 0.5, stunden: Infinity }), // die Lava (`_lavaGiessen`): erstarrt bleibt sie Stein
     max: 0.6,
     lebMin: 0.1,
 });

@@ -354,10 +354,11 @@ function selbsttest() {
     taeterFaelle(faelle, urteil, { fehler });
     // (j) die Neuschreib-Wand: Ruhe ist grün; die alte Verdrängung (die Kaskaden schreiben einander je Frame neu) und
     // ein fremder Umzug fallen rot, beim Namen.
-    const neuGruen = { ruhe: [{ "haupt>haupt": 1335096, "k0>k0": 1758984 }, {}, {}], druck: [{ "k1>k1": 4096 }, {}] };
-    if (urteilNeu(neuGruen).length !== 0)
-        fehler.push("die ruhige Messung fällt rot: " + urteilNeu(neuGruen).join(" · "));
     const neuFaelle = [
+        {
+            name: "die ruhige Messung",
+            z: { ruhe: [{ "haupt>haupt": 1335096, "k0>k0": 1758984 }, {}, {}], druck: [{ "k1>k1": 4096 }, {}] },
+        },
         {
             name: "die Kaskaden verdrängen einander je Frame",
             z: { druck: [{ "k0>k0": 1758984 }, { "k1>k1": 1090140 }, { "k0>k0": 1758984 }] },

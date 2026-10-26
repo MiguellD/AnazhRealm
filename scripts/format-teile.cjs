@@ -24,7 +24,7 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const { Worker, isMainThread, parentPort } = require("worker_threads");
-const { hauptLauf } = require("./lib/welt-boot.cjs");
+const { hauptLauf, selbsttestEnde } = require("./lib/welt-boot.cjs");
 
 const TEIL_BYTES = 160 * 1024;
 
@@ -365,14 +365,7 @@ hauptLauf(async () => {
     const args = process.argv.slice(2);
     if (args.includes("--selftest")) {
         console.log("=== FORMAT IN TEILEN — Selbsttest (Teil-Urteil gegen Datei-Urteil) ===");
-        const f = await selbsttest();
-        if (f.length) {
-            console.log("\n❌ SELBSTTEST ROT — der Schneider urteilt anders als Prettier:\n  " + f.join("\n  "));
-            process.exit(1);
-        }
-        console.log(
-            "✅ SELBSTTEST GRÜN — in Teilen urteilt Prettier wie über die ganze Datei, der blinde Schneider irrt."
-        );
+        selbsttestEnde(await selbsttest(), "in Teilen urteilt Prettier wie über die ganze Datei, der blinde Schneider irrt.");
         if (args.length === 1) return;
     }
     // ein Verzeichnis (der Stamm `stamm/`) steht für seine .js-Dateien — cmd expandiert keine Globs

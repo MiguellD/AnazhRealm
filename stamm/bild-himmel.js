@@ -802,6 +802,7 @@ class AnazhRealm_bild_himmel {
         if (su && su.uSeasonMul && su.uSeasonMul.value) this._saisonMul(st.seasonPhase, su.uSeasonMul.value);
         st.season = this._seasonName(st.seasonPhase);
         this._saisonGemalt = { phase: st.seasonPhase, su };
+        this._schneeTakt(); // die Schneegrenze folgt dem Pegel (stoffe.K3-2)
     }
     // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte, die
     // Tönung folgt im nächsten Tick (kein Neubau).
@@ -2826,6 +2827,79 @@ class AnazhRealm_bild_himmel {
             st.seasonPhase,
             st.timeOfDay
         );
+    }
+
+    // DER SCHNEE-PEGEL AN DER HÖHE y (stoffe.K3-2): das Gesetz des Kerns (`schneePegel`) auf dem Feld dieser Naht zur Saison der
+    // Welt — m Wasser des Schnees. Leser: die Linse der Schmelze; die Schneegrenze liest seine Linie (`_schneeVersatz`).
+    _schneePegelAt(y) {
+        return globalThis.__gelaendeCore.schneePegel(this._gelaende(), y, this.state.seasonPhase, (tr) =>
+            this._temperaturFeld(y, tr)
+        );
+    }
+
+    // DER VERSATZ DER SCHNEEGRENZE (stoffe.K3-2): der Weg der Linie des Pegels seit der Sommer-Mitte (Kern `schneeVersatz`,
+    // in Stufen von `SCHMELZE.stufe`), gerechnet je Welt-STUNDE der Saison (eine Stunde bewegt die Linie um Zentimeter), je
+    // Feld (die Naht) und Meer — nie je Bild. `_schneeGilt` ist der Versatz, den die Welt trägt: der Boden-Leser des Mains
+    // (`_bodenFarbeAt`) und der Faden (`schneeVersatz` im Stand) färben mit ihm, bit-gleich; `_schneeTakt` zieht ihn nach.
+    _schneeVersatz() {
+        const st = this.state;
+        const K = globalThis.__gelaendeCore;
+        const L = this._gelaende();
+        const stunden = K.TEMPERATUR.jahrTage * 24;
+        const saison = Math.floor(st.seasonPhase * stunden) / stunden;
+        const c = this._schneeStand;
+        if (c && c.saison === saison && c.feld === this._temperaturFeld && c.wl === L.waterLevel) return c.versatz;
+        const versatz = K.schneeVersatz(L, saison, (y, tr) => this._temperaturFeld(y, tr));
+        this._schneeStand = { saison, feld: this._temperaturFeld, wl: L.waterLevel, versatz };
+        return versatz;
+    }
+    _schneeGilt() {
+        if (this._schneeVersatzGilt === undefined) this._schneeVersatzGilt = this._schneeVersatz();
+        return this._schneeVersatzGilt;
+    }
+
+    // DER TAKT DER SCHNEEGRENZE (stoffe.K3-2, gerufen vom Takt der Saison, wenn die Phase wandert): wandert der Versatz um eine
+    // Stufe, trägt die Welt den neuen — der Faden bekommt ihn als Änderung (`_voxelZustandPost`), neu gebaut werden genau die
+    // gezeichneten Chunks, deren Höhen das Band der Grenze zwischen altem und neuem Versatz treffen (die Form `SCHNEE` samt
+    // ihrer Zungen), ihre Netze im Vorrat fallen; der Fern-Ring rechnet seine Farben neu, das Feld-Panorama malt neu
+    // (`_feldSaisonDrift`). Es kostet, was die Grenze überstreicht (Gebot 7) — die Welt darunter und darüber nie.
+    _schneeTakt() {
+        const alt = this._schneeVersatzGilt;
+        if (alt === undefined) return;
+        const neu = this._schneeVersatz();
+        if (neu === alt) return;
+        this._schneeVersatzGilt = neu;
+        this._voxelZustandPost({ type: "state-update", delta: { schneeVersatz: neu } });
+        const K = globalThis.__gelaendeCore;
+        const wl = this._gelaende().waterLevel;
+        const zunge = K.SCHNEE.zungen.reduce((s, o) => s + o.a, 0);
+        const lo = wl + K.SCHNEE.start + Math.min(alt, neu) - zunge;
+        const hi = wl + K.SCHNEE.voll + Math.max(alt, neu) + zunge;
+        const trifft = (y0, y1) => y1 >= lo && y0 <= hi;
+        const st = this.state;
+        if (st.voxelChunks && st.voxelChunks.size) {
+            if (!st.dirtyVoxelChunks) st.dirtyVoxelChunks = new Set();
+            for (const [key, ch] of st.voxelChunks) {
+                const g = ch && ch.mesh && ch.mesh.geometry;
+                if (!g) continue;
+                if (!g.boundingBox) g.computeBoundingBox();
+                if (trifft(g.boundingBox.min.y, g.boundingBox.max.y)) st.dirtyVoxelChunks.add(key);
+            }
+        }
+        if (st.voxelMeshCache)
+            for (const [key, m] of st.voxelMeshCache) {
+                const p = m && m.positions;
+                if (!p) continue;
+                let [y0, y1] = [Infinity, -Infinity];
+                for (let i = 1; i < p.length; i += 3) [y0, y1] = [Math.min(y0, p[i]), Math.max(y1, p[i])];
+                if (trifft(y0, y1)) st.voxelMeshCache.delete(key);
+            }
+        this._fernMemoGen = (this._fernMemoGen | 0) + 1;
+        const fr = st.fernRing;
+        if (fr) {
+            Object.assign(fr, { cursor: 0, auftrag: 0, flug: 0, gen: (fr.gen || 0) + 1 });
+            fr.einhaengen.length = 0;
+        }
     }
 
     // DIE LINIEN DES EISES (stoffe.K3): das Gesetz des Kerns (`eisDicke` auf dem Feld dieser Naht) je Knoten der Säule

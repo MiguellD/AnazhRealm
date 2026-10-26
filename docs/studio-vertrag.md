@@ -980,7 +980,10 @@ Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die
 Temperatur `TEMPERATUR`/`temperatur` (stoffe.K3: Höhe × Saison × Uhr; das Feld in Wellen `temperaturFeld`, mit der Trägheit
 eines Körpers, ausgewertet von `temperaturAus` — die Grillen lesen sie), das Eis `EIS`/`eisDicke` (stoffe.K3-2: die Dicke nach
 Stefan aus dem Wasserkörper `wasserKoerper` — Salz, Säule, Trägheit — und der Jahres-Welle des Felds; die Zahlen der Stoffe,
-ρ·c und T_schmelz des Wassers, ρ, Schmelzwärme L und Wärmeleitung k des Eises, reicht der Wirt aus seiner Stoff-Tafel als `stoff`, stoffe.K1 — ohne ihn bricht der Kern laut), die
+ρ·c und T_schmelz des Wassers, ρ, Schmelzwärme L und Wärmeleitung k des Eises, reicht der Wirt aus seiner Stoff-Tafel als `stoff`, stoffe.K1 — ohne ihn bricht der Kern laut), der
+Schnee-Pegel `SCHMELZE`/`schneePegel` (stoffe.K3-2: Grad-Tag auf der Jahres-Welle des Felds) mit seiner Linie `schneeLinie` und
+dem Versatz der Schneegrenze `schneeVersatz` (den `schnee` liest), die Lava `LAVA`/`lava` (stoffe.K3-2: Newton-Abkühlung der
+Zeile `stein` des Wirts, an der Luft und unter Dampf am Wasser, die Glut über dem Draper-Punkt), die
 Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DIE HYDROSPHÄRE (Karte hydro-faden): das
 Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, der gepackte Kanal `kanal` mit
 `KANAL_FELDER` Zahlen je Segment, Wasser-Feld; `H` das Gesetz des Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet

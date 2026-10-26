@@ -1356,64 +1356,16 @@ async function checkBandV18129HochBecken(ctx) {
     );
 }
 
-// Γ6 — vier stehende Wände gegen geheilte visuelle Narben: (G1) Schneeband auf PROMINENZ ·
-// (G2) chunk-seam per Pad+Crop (Source-Wand) · (G3) false-swim via `_koerperWasser` (die EINE Wahrheit am Körper) ·
-// (G4) arch-water-solid via blockerAABBs. KEINE mutativen Spawns — Source-Proben + Welt nach Warmup.
+// Γ6 — stehende Wände gegen geheilte visuelle Narben: (G2) chunk-seam per Pad+Crop (Source-Wand) · (G3) false-swim via
+// `_koerperWasser` (die EINE Wahrheit am Körper) · (G4) arch-water-solid via blockerAABBs. KEINE mutativen Spawns — Source-
+// Proben + Welt nach Warmup. (G1, das Schneeband, misst seit stoffe.K3-2 die Schmelze der Wasser-Wand: der Boden-Leser trägt
+// die Grenze des Pegels übers Jahr, im Sommer schneefrei am Ufer — gate:wasser-leben S2.)
 async function checkBandV18194Gamma6Befoerderung(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const s = r.state;
         const out = {};
-
-        // (G1) DIE SCHNEEGRENZE ist Gesetz: die Boden-Farbe ruft gelaende-core `schnee` (die Höhe über dem Meer) —
-        // KONSUM am Aufruf (der Kern ist eingefroren → offene Kopie)
-        const G = window.__gelaendeCore;
-        window.__gelaendeCore = Object.assign({}, G);
-        try {
-            const p = s.playerMesh.position;
-            out.snowKonsum = window.__consumes(r, "_bodenFarbeAt", window.__gelaendeCore, "schnee", [p.x, p.y, p.z, [0, 0, 0]]);
-        } finally {
-            window.__gelaendeCore = G;
-        }
-
-        // Die Probe misst am Gesetz (gelaende-core `schnee`), nie an einer Kopie.
-        const schneeAt = (y, x, z) => window.__gelaendeCore.schnee(r._gelaende(), y, x, z); // der Ort trägt die Zungen der Grenze
-        let snowSum = 0;
-        let nSamples = 0;
-        const base = s.terrainBaseHeight || 0;
-        let hash = 2166136261;
-        const seedStr = (s.worldMeta && s.worldMeta.seed) || "g6";
-        for (let i = 0; i < seedStr.length; i++) hash = ((hash ^ seedStr.charCodeAt(i)) * 16777619) >>> 0;
-        let lcg = hash || 1;
-        const rng = () => {
-            lcg = (lcg * 1664525 + 1013904223) >>> 0;
-            return lcg / 4294967296;
-        };
-        // Nur TIEFLAND messen (prominence ≤ 30 m): das Fehlerbild war Schnee am flachen Boden; an echten
-        // Erhebungen ist Schnee korrekt.
-        let lowProminSnowSum = 0;
-        let lowProminN = 0;
-        for (let i = 0; i < 1500; i++) {
-            const x = (rng() - 0.5) * 800;
-            const z = (rng() - 0.5) * 800;
-            const y = r._terrainMacroSurfaceY(x, z, false);
-            const wY = r._waterLevelAt(x, z);
-            if (y <= wY + 0.5) continue;
-            const sn = schneeAt(y, x, z);
-            snowSum += sn;
-            nSamples++;
-            // Tiefland-Klasse: ≤ 100 m über dem Meer (klar unter der Schneegrenze, K16 — der 85-m-Spawn-Hügel war weiß)
-            if (y - (Number.isFinite(s.waterLevel) ? s.waterLevel : base - 3) <= 100) {
-                lowProminSnowSum += sn;
-                lowProminN++;
-            }
-        }
-        out.snowMeanNear = nSamples ? snowSum / nSamples : 1;
-        out.snowLowProminMean = lowProminN ? lowProminSnowSum / lowProminN : 0;
-        out.snowLowProminN = lowProminN;
-        // Im Tiefland (≤ 100 m über dem Meer) MUSS Schnee ≈ 0 sein (die Schneegrenze beginnt bei SCHNEE.start).
-        out.snowLowProminOk = out.snowLowProminMean < 0.02;
 
         // (G3) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (`_koerperWasser`, Welle L Q6), und sie kennt die DECKE
         // die Zellen halten Höhlen unter und neben Seen trocken (caveDry, `_skyOpenWaterFilter`). Die Probe sucht
@@ -1500,11 +1452,6 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         return out;
     });
 
-    check("Γ6 (G1b) die Boden-Farbe ruft die Schneegrenze des Gelände-Kerns (`schnee`)", res.snowKonsum === true);
-    check(
-        `Γ6 (G1c) Tiefland-Schnee (≤ 100 m über dem Meer) < 0.02 (gemessen ${res.snowLowProminMean.toFixed(4)} an ${res.snowLowProminN} Samples — K16)`,
-        res.snowLowProminOk === true
-    );
     // (G3) FALSE-SWIM
     const hh = res.hoehle || {};
     check(

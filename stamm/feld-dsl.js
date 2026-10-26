@@ -186,6 +186,7 @@ class AnazhRealm_feld_dsl {
                 "terrain_base_height",
                 "voxel_carve",
                 "voxel_fill",
+                "lava",
                 // schwere Struktur-Spawns (zu teuer für eine wiederholt feuernde Regel)
                 "spawn_village",
                 "spawn_temple",
@@ -907,6 +908,13 @@ class AnazhRealm_feld_dsl {
                 const r = c(radius, 0.5, 12);
                 this.fillVoxel(p.x, p.y, p.z, r);
                 ctx.log.push({ event: "voxel_filled", x: p.x, y: p.y, z: p.z, r });
+            },
+            // lava(x, y, z): der Schreib-Akt der Lava (stoffe.K3-2, `_lavaGiessen`) — die 16-m-Zelle am Ort trägt eine Decke
+            // geschmolzenen Steins, die über die glut-Achse zu Stein erstarrt (broadcastable wie jeder Welt-Akt).
+            lava: ([x, y, z], ctx) => {
+                const p = this.dslEvalPos(["at", x, y, z], ctx);
+                const a = this._lavaGiessen(p.x, p.z);
+                ctx.log.push({ event: "lava", x: a.x, z: a.z, wasser: a.wasser });
             },
             skybox_color: ([color]) => {
                 // Die Farbe überschreibt himmelTint NICHT (das schriebe _dayNightApplySkybox jeden Frame zurück):
@@ -2352,6 +2360,7 @@ AnazhRealm.DSL_WELTAKTE = Object.freeze([
     "set_visible",
     "voxel_carve",
     "voxel_fill",
+    "lava",
     "terrain_steepness",
     "terrain_base_height",
     "gravity",
