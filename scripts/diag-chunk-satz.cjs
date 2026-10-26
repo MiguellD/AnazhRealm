@@ -413,7 +413,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             const r = window.anazhRealm,
                 s = r.state;
             const res = {};
-            const pause = () => new Promise((ok) => setTimeout(ok, 0));
             // Einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`), dann Streu, Wasser und Fern-Deko
             // austreiben.
             await window.__weltStehtNach(() => {
@@ -427,13 +426,13 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 r._tickNahStreu();
                 const ns = s.nahStreu;
                 if (ns && ns.senken.size > 0 && ns.offen === 0) break;
-                await new Promise((ok) => setTimeout(ok, 100));
+                await sleep(100);
             }
             for (let i = 0; i < 30; i++) {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch {}
-                if (i % 10 === 0) await pause();
+                if (i % 10 === 0) await sleep(0);
             }
             r._tickChunkSatz();
 
@@ -1303,7 +1302,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             const r = window.anazhRealm;
             const s = r.state;
             const S = r._voxelChunkConfig(0).span;
-            const sleep = (ms) => new Promise((o) => setTimeout(o, ms));
             const karte = (e, key) => {
                 const g = e.mesh.geometry;
                 const P = g.attributes.position.array,

@@ -19,6 +19,10 @@ const path = require("path");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZeile } = require("./software-gpu.cjs");
 const { ohneKommentare, ast, wandere, zeileVon } = require("./stamm.cjs");
 
+// DER EINE SCHLAF (`await sleep(ms)`): in Node der Export, in jeder Seite derselbe Text als `window.sleep` (`WARTEN_SEITE`) —
+// eine Probe schläft in beiden Welten mit demselben Ruf, ein eigenes `new Promise((r) => setTimeout(r, ms))` ist ein Zwilling
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 // DAS EINE __codeOf: jede Seite trägt vor ihrem ersten Skript `window.__codeOf` (Code ohne Kommentare, der EINE Stripper
 // aus stamm.cjs), `window.__dokuOf` (ungestrippt, für Marker im Kommentar) und `window.__fehlt(fn, re)` (true = das Muster
 // fehlt im Code; was keine Funktion ist, wirft). Die Wand: gate:betriebsgesetz STRIPPER-WAND.
@@ -48,7 +52,7 @@ async function weltStehtNach(takt, max) {
             n++
         ) {
             await (takt || window.__seitenTakt)(n);
-            if (n % 5 === 4) await new Promise((ok) => setTimeout(ok, 10));
+            if (n % 5 === 4) await sleep(10);
         }
     } catch (f) {
         throw new Error(
@@ -80,7 +84,7 @@ async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) {
             n++
         ) {
             await (takt || window.__seitenTakt)(n);
-            await new Promise((ok) => setTimeout(ok)); // die Antwort des Workers landet zwischen zwei Takten
+            await sleep(); // die Antwort des Workers landet zwischen zwei Takten
         }
     } catch (f) {
         // `warum()` nennt das Teil-Prädikat, das nicht steht
@@ -120,10 +124,9 @@ async function weltDa(bed) {
     window.__weltDaWartet = bed ? String(bed).replace(/\s+/g, " ").slice(0, 160) : "den Stamm";
     // erst das Erwachen des Boots (`erwacht`: init samt der Heimat aus dem Faden) — eine Linse, die vorher taktet, taktet
     // eine halbe Welt (der Spieler fällt, ehe die Tiere geboren sind)
-    while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
+    while (!(window.anazhRealm && window.anazhRealm.erwacht)) await sleep(50);
     await window.anazhRealm.erwacht;
-    for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r)));)
-        await new Promise((ok) => setTimeout(ok, 50));
+    for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r)));) await sleep(50);
     window.__weltDaWartet = null;
     return window.anazhRealm;
 }
@@ -155,7 +158,7 @@ async function stand() {
     await r._speicherStill();
     return (await r._idbGetWorld(r.state.worldMeta.worldId)).json;
 }
-const WARTEN_SEITE = `window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
+const WARTEN_SEITE = `window.sleep = ${sleep}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -603,7 +606,7 @@ async function cpuDelta(b, ms) {
         const pa = await probe();
         const gpuPid = (pa.find((p) => p.type === "GPU") || {}).id;
         const fa = faedenProbe(gpuPid);
-        await new Promise((r) => setTimeout(r, ms));
+        await sleep(ms);
         const fz = faedenProbe(gpuPid);
         const a = new Map(pa.map((p) => [`${p.type} ${p.id}`, p.cpuTime]));
         const z = new Map((await probe()).map((p) => [`${p.type} ${p.id}`, p.cpuTime]));
@@ -808,7 +811,6 @@ async function halteBis(seite, { taste, druck, los, ziel, args = [], frist = 300
 // DER LESER IM BLICK (Seite): der Spieler am Bach der Mess-Wiese, zurück, sobald das Wasser ZEICHNET, das Tiefen-Abbild gezogen
 // ist und das Weltbild steht (`welt`: nur diese Terme); `kappe`: die Pixel-Kappe des Holzes.
 async function uferStellen(opts) {
-    const warte = (ms) => new Promise((q) => setTimeout(q, ms));
     const r = await window.__weltDa(
         (w) =>
             w.state.rendererReady &&
@@ -864,7 +866,7 @@ async function uferStellen(opts) {
     // das EINE Warten (`__gebautNach`): Takt um Takt der Seite, bis Wasser, Abbild und Weltbild stehen (Deckel: Takte ohne Offenes)
     await window.__gebautNach("das Ufer im Blick", {
         fertig: () => steht() && !r._weltbildLuecken(true).some(welt),
-        takt: async () => (fern() || r._ensureFarWaterSheet(), await warte(100)),
+        takt: async () => (fern() || r._ensureFarWaterSheet(), await sleep(100)),
         max: 600,
         warum: () =>
             `Wasser ${sichtbaresWasser()} · Abbild ${abbild()} · fern ${fern()} gezeichnet ${fern() && E.gezeichnet.has(st.farWater.mesh)} · offen ${r
@@ -940,7 +942,14 @@ async function eigenePorte(...variablen) {
         await Promise.all(halt.map((s) => new Promise((ok) => s.close(() => ok()))));
     }
 }
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// DER EINE ABSTURZ-FÄNGER: `hauptLauf(async () => …)` fährt den Rumpf eines Skripts; wirft er, nennt die Zeile das Skript beim
+// Namen mit dem Stapel, `zuletzt` räumt eigene Kinder-Prozesse, und der Lauf endet mit 2 — nie still grün (Lehre 6)
+const hauptLauf = (rumpf, zuletzt) =>
+    rumpf().catch((e) => {
+        console.error(`${path.basename(process.argv[1] || "-e")} ABSTURZ:`, (e && e.stack) || e);
+        if (zuletzt) zuletzt();
+        process.exit(2);
+    });
 // DER EINE RUF an die Werkbank (POST JSON, ohne Frist; kein JSON: `{ roh }`)
 function werkbankRuf(port, weg, nutzlast) {
     return new Promise((res, rej) => {
@@ -1102,6 +1111,7 @@ module.exports = {
     startProc,
     eigenePorte,
     sleep,
+    hauptLauf,
     waitFor,
     werkbankTor,
     werkbankRuf,
@@ -1143,7 +1153,7 @@ async function selbsttest() {
         });
         r._rebuildArchitectureMesh = (e) => e.ab != null && performance.now() >= e.ab && (e.mesh = {});
         r._weltOffen = () => ({ foundry: 0, chunks: 0, wald: 0, karten: r.offen });
-        const takt = () => new Promise((ok) => setTimeout(ok, 10));
+        const takt = () => sleep(10);
         const langsam = { type: "langsam", id: 1, ab: performance.now() + 3200 };
         const t0 = performance.now();
         const takte = await window.__gebautNach(langsam, { max: 5, takt }).catch((x) => x.message);
@@ -1175,8 +1185,10 @@ async function selbsttest() {
     };
     // DIE WEICHE: ohne GPU-Arbeit ist ein Echt-Rezept ROT beim Namen, EIN Draw-Aufruf (der Haken) trägt es
     const weiche = [];
+    let seitenSchlaf = null;
     const ruhig = await fall("/ruhig.html", async (p) => {
         [bau] = await Promise.all([p.evaluate(bauProbe), sleep(4500)]);
+        seitenSchlaf = await p.evaluate(async () => (await sleep(1), String(sleep)));
         weiche.push(await weicheUrteil(browser, "echt"));
         await p.evaluate(() => WebGL2RenderingContext.prototype.drawArrays.call(null)).catch(() => {});
         weiche.push(await weicheUrteil(browser, "echt"));
@@ -1210,6 +1222,33 @@ async function selbsttest() {
         "statikServer(); await new Promise((r) => s.listen(1, r));",
         "statikServer(); p.goto(`http://127.0.0.1:${P}/index.html`);",
     ].filter(adressZwilling).length;
+    // DIE FÄNGER-WAND: fängt ein Skript seinen Absturz selbst (`})().catch(…)`/`main().catch(…)` bis process.exit), ist das ein
+    // Zwilling von hauptLauf; ci-kopf.cjs fährt allein im sparse-checkout, FREMD tragen ihn bis zum Schnitt ihres Besitzers
+    const faengerZwilling = (c) => /(?:\}\)\(\)|\b\w+\(\))\.catch\(\(?\w*\)? => \{(?:(?!\}\);)[^]){0,300}process\.exit/.test(c);
+    const faenger = code.filter(([, c]) => faengerZwilling(c)).map(([f]) => f).join(", ");
+    const FAENGER_FREMD = "ci-kopf.cjs, diag-koerper-stand.cjs, diag-weltakt-wache.cjs, diag-weltgrenze.cjs, werkbank.cjs";
+    const gefangen = [
+        "(async () => {})().catch((e) => { console.error(e); process.exit(1); });",
+        "main().catch((err) => { console.error(`x ${err}`); process.exitCode = 2; });",
+    ].filter(faengerZwilling).length;
+    // DIE SCHLAF-WAND: schläft ein Skript mit eigenem Versprechen (`new Promise((r) => setTimeout(r, ms))`, in Node wie in der
+    // Seite), ist das ein Zwilling von sleep; am Token-Strom, Strings (gepflanzte Stamm-Proben) zählen nicht; FREMD tragen ihn bis
+    // zum Schnitt ihres Besitzers, ci-kopf.cjs fährt allein im sparse-checkout
+    const schlafZwilling = (c) =>
+        /new Promise \( (?:\( )?(\w+) (?:\) )?=> (?:\{ )?setTimeout \( \1 (?:, (?:[^\s(),{};]+ |\( [^()]*\) )+)?\) (?:; )?(?:\} )?\)/.test(
+            [...require("acorn").tokenizer(c, { ecmaVersion: "latest", allowHashBang: true })]
+                .map((k) => (/^(string|template|regexp)$/.test(k.type.label) ? "S" : c.slice(k.start, k.end)))
+                .join(" ")
+        );
+    const schlaefer = code.filter(([, c]) => schlafZwilling(c)).map(([f]) => f).join(", ");
+    const SCHLAF_FREMD =
+        "ci-kopf.cjs, diag-fahr-leben.cjs, diag-koerper-stand.cjs, diag-persistence.cjs, diag-settlement.cjs, diag-studio-huelle.cjs, lib/kreatur-proben.cjs, werkbank.cjs";
+    const geschlafen = [
+        "await new Promise((r) => setTimeout(r, 50));",
+        "const s = (ms) => new Promise((ok) => { setTimeout(ok, Math.max(ms, 1) * Math.random()); });",
+    ].filter(schlafZwilling).length;
+    const sturzRuf = `require(${JSON.stringify(__filename)}).hauptLauf(async () => { throw new Error("__sturz"); }, () => console.error("__zuletzt"))`;
+    const sturz = require("child_process").spawnSync(process.execPath, ["-e", sturzRuf], { encoding: "utf8" });
     await browser.close();
     server.close();
     // BESETZT: ein Server auf einem belegten Port endet — der Start urteilt am Ereignis (EADDRINUSE), nie an einer Frist;
@@ -1230,6 +1269,22 @@ async function selbsttest() {
         [
             adressen === FREMD && gepflanzt === 2 && !adressZwilling("statikServer(); await s.lausche(1); s.zeige(p, 1);"),
             `eigene Server-Starts/Welt-Adressen neben lausche/zeige: ${adressen} (FREMD ${FREMD}) · gepflanzt ${gepflanzt}/2 gefasst`,
+        ],
+        [
+            faenger === FAENGER_FREMD &&
+                gefangen === 2 &&
+                !faengerZwilling("hauptLauf(async () => {}); page.close().catch(() => {}); process.exit(1);") &&
+                sturz.status === 2 &&
+                /^-e ABSTURZ: Error: __sturz/.test(sturz.stderr) &&
+                /__zuletzt/.test(sturz.stderr),
+            `eigene Absturz-Fänger neben hauptLauf: ${faenger} (FREMD ${FAENGER_FREMD}) · gepflanzt ${gefangen}/2 gefasst · Sturz Exit ${sturz.status}: ${sturz.stderr.split("\n")[0]}`,
+        ],
+        [
+            schlaefer === SCHLAF_FREMD &&
+                geschlafen === 2 &&
+                !schlafZwilling('"new Promise((r) => setTimeout(r, 5))"; new Promise((r) => setTimeout(() => r(1), 5)); new Promise((r) => setTimeout(r, 5, 1));') &&
+                seitenSchlaf === String(sleep),
+            `eigene Schlafe neben sleep: ${schlaefer} (FREMD ${SCHLAF_FREMD}) · gepflanzt ${geschlafen}/2 gefasst · die Seite schläft mit ${seitenSchlaf}`,
         ],
         [ruhig.length === 0,`ruhig (0,8 s Block): keine Akte — ${ruhig.length ? ruhig[0].urteil : "keine"}`],
         [
@@ -1281,8 +1336,5 @@ if (require.main === module) {
         console.log("node scripts/lib/welt-boot.cjs --selbsttest");
         process.exit(2);
     }
-    selbsttest().catch((e) => {
-        console.error("Selbsttest-Fehler:", (e && e.stack) || e);
-        process.exit(2);
-    });
+    hauptLauf(selbsttest);
 }

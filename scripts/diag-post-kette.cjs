@@ -953,7 +953,7 @@ function buehne(nFrames, nachtLicht) {
                 if (r.state.renderer._nodes && r.state.renderer._nodes.nodeFrame)
                     r.state.renderer._nodes.nodeFrame.update();
                 r._loopRender();
-                await new Promise((q) => setTimeout(q, 50));
+                await sleep(50);
             }
         });
         const b = out.buehne;

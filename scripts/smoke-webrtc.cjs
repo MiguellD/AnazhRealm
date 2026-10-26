@@ -11,7 +11,7 @@
 // der ehrliche Beweis, dass die Browser eine direkte Verbindung herstellen.
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { starteBrowser, ROOT, startProc, eigenePorte, waitFor } = require("./lib/welt-boot.cjs");
+const { starteBrowser, ROOT, startProc, eigenePorte, waitFor, hauptLauf } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const fs = require("fs");
 
@@ -101,7 +101,7 @@ const W17JS_WORLD_HTML = `<!doctype html>
 // Wartet, bis evalFn auf der Seite true liefert (oder Timeout). Zusätzliche
 // Argumente werden an page.evaluate durchgereicht.
 
-(async () => {
+hauptLauf(async () => {
     const failures = [];
     [PORT, SIGNAL_PORT] = await eigenePorte("WEBRTC_PORT", "WEBRTC_SIGNAL_PORT");
     PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
@@ -774,7 +774,4 @@ const W17JS_WORLD_HTML = `<!doctype html>
 
     console.log(failures.length === 0 ? "\n✅ WebRTC-Mesh verifiziert" : `\n❌ ${failures.length} Fehler`);
     process.exit(failures.length === 0 ? 0 : 1);
-})().catch((err) => {
-    console.error(err);
-    process.exit(1);
 });

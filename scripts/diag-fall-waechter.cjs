@@ -35,7 +35,7 @@
 //   node scripts/diag-fall-waechter.cjs [--selftest]   (npm run gate:fall-waechter; Port FALL_WAECHTER_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT: root, sleep } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
@@ -629,7 +629,7 @@ async function probe(K) {
             let s = 0;
             for (let i = 0; i < 120; i++) {
                 takt();
-                if (i % 10 === 9) await new Promise((ok) => setTimeout(ok));
+                if (i % 10 === 9) await sleep();
                 if (st._fieldWasGrounded === true || i === 119) s = Math.max(s, sohle());
             }
             turm.bloecke.push([st.playerMesh.position.y - vor, s]);
@@ -1107,7 +1107,7 @@ async function probe(K) {
             turmBloecke: TURM_BLOECKE,
         });
         if (!befund.turm.fehler) {
-            await new Promise((ok) => setTimeout(ok, 1500)); // der IDB-Put des Saves landet
+            await sleep(1500); // der IDB-Put des Saves landet
             await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
             await warteAufWelt(page, 180000);
             befund.turm.nach = await page.evaluate(probe, { nach: befund.turm });

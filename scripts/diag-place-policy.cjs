@@ -15,14 +15,14 @@
 // sonst rot („Selbst-Test vakuös").
 //   node scripts/diag-place-policy.cjs --selftest
 
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const SELFTEST = process.argv.includes("--selftest");
 const PORT = Number(process.env.PLACE_PORT || 4421);
 const server = statikServer();
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
-(async () => {
+hauptLauf(async () => {
     console.log(`=== N5 PLACE-POLICY (H8) — foundry-ON, Null-Renderer${SELFTEST ? " · mit Selbst-Test" : ""} ===`);
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 180000 });
@@ -212,7 +212,4 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         "\n✅ GRÜN — N5 PLACE-POLICY: _placePolicyFor (fx.place führt) + _placeDispatch weichen die Buch-Arten korrekt — forest in die Nische, none ohne Worldgen, Fremdes must-ignore. H8: none vs forest DISJUNKT."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Place-Policy-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

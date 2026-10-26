@@ -24,6 +24,7 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const { Worker, isMainThread, parentPort } = require("worker_threads");
+const { hauptLauf } = require("./lib/welt-boot.cjs");
 
 const TEIL_BYTES = 160 * 1024;
 
@@ -360,7 +361,7 @@ function teileMit(t, blind) {
     return teile(t, 1, blind);
 }
 
-(async () => {
+hauptLauf(async () => {
     const args = process.argv.slice(2);
     if (args.includes("--selftest")) {
         console.log("=== FORMAT IN TEILEN — Selbsttest (Teil-Urteil gegen Datei-Urteil) ===");
@@ -399,7 +400,4 @@ function teileMit(t, blind) {
         process.exit(1);
     }
     console.log(`✅ Alle Dateien formatiert (${s} s).`);
-})().catch((e) => {
-    console.error(e);
-    process.exit(2);
 });

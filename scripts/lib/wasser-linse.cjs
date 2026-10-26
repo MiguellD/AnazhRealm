@@ -622,7 +622,7 @@ async function wasserStrom(ort, hoehe) {
     await window.__weltDa(() => !r._ensureHydroTilesAround(ort[0], ort[1], 2048));
     const worker = st.voxelWorker;
     st.voxelWorker = null;
-    for (let last = -1, still = 0, weiter = window.__deckel("der Ring am Wasser", 9000); weiter(); await new Promise((res) => setTimeout(res, 0))) {
+    for (let last = -1, still = 0, weiter = window.__deckel("der Ring am Wasser", 9000); weiter(); await sleep(0)) {
         try {
             r._gameLoopTick(performance.now());
         } catch {}
@@ -724,7 +724,7 @@ async function wasserGraben(o = {}) {
                 g.bueschel = [Math.min(g.bueschel[0], n), Math.max(g.bueschel[1], n)];
                 const wach = (st.waterCAActive ? st.waterCAActive.size : 0) + r._weltOffen().chunks;
                 if (!wach && !(st.pendingWaterIso && st.pendingWaterIso.size)) g.ruhe = t; // Automat, Neubau, Sheets ruhen
-                if (t % 5 === 4) await new Promise((res) => setTimeout(res, 0));
+                if (t % 5 === 4) await sleep(0);
             }
         } finally {
             for (const name of ["_buildVoxelChunkWaterCellSheet", "_tickWorldWaterCA", "_nahWieseKachelFaellt"]) delete r[name];

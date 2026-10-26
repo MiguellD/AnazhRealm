@@ -7,7 +7,7 @@
 //   --selftest  je Probe jeder alte Defekt als Täter (TAETER): er muss sie ROT machen, beim Namen genannt
 //   --teil=k/n  Teil k: die längste Probe (DAUER_S) zuerst in den leichtesten Teil, jede in GENAU einem
 "use strict";
-const { statikServer, starteBrowser, CODE_OF_SEITE, nullRenderer, werkbankRuf, teilAus, ROOT: root } = require("./lib/welt-boot.cjs"); // prettier-ignore
+const { statikServer, starteBrowser, CODE_OF_SEITE, nullRenderer, werkbankRuf, teilAus, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs"); // prettier-ignore
 const fs = require("fs");
 const path = require("path");
 const { KREATUR_PROBEN_SRC, PROBEN, TAETER, EIN_LAUF, urteil } = require("./lib/kreatur-proben.cjs");
@@ -183,7 +183,7 @@ async function imFenster(laeufe) {
     return { aus };
 }
 
-(async () => {
+hauptLauf(async () => {
     if (!gewaehlt.length) throw new Error("keine Probe gewählt — ohne Messung ROT");
     // je Probe ein Lauf, mit --selftest je Täter ein eigener — die Probe mit EINEM Lauf (`EIN_LAUF`) spielt alle ihre Täter
     // in ihm und gibt je Täter seine Sicht (`sicht`); das Wort, das ihn nennt, bleibt in Node
@@ -244,7 +244,4 @@ async function imFenster(laeufe) {
             : `\n✅ GRÜN — ${gewaehlt.join(" · ")}`
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("KREATUR-LINSE-FEHLER:", e);
-    process.exit(1);
 });

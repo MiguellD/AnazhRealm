@@ -38,7 +38,7 @@
 //
 //   node scripts/diag-portal-membran.cjs [--ohne-blick]
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.PORTAL_MEMBRAN_PORT || 4439);
@@ -49,7 +49,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 // B: die Seite — der Renderer steht, die Membranen sind gebaut; dann ruht der Loop, und je Blick zählt EIN Frame, was der
 // Renderer nach dem Culling zeichnet. `opts.alt`: alle Membranen auf `frustumCulled = false` (der Selbsttest).
 async function blickProbe(opts) {
-    const warte = (ms) => new Promise((q) => setTimeout(q, ms));
     let r = null,
         st = null,
         stand = null;
@@ -81,7 +80,7 @@ async function blickProbe(opts) {
     await window
         .__gebautNach("die Fenster am Ring", {
             fertig: () => (stand = fensterStand()).fenster >= 3 && !stand.wartend.length,
-            takt: async () => (await Promise.all([...r._torZielAtlas.welten.values()].map((z) => z.kommt)), await warte(250)),
+            takt: async () => (await Promise.all([...r._torZielAtlas.welten.values()].map((z) => z.kommt)), await sleep(250)),
             max: 120,
         });
     if (!st || !st.renderer || st.renderer.backend.isWebGPUBackend !== true) return { fehler: "kein WebGPU-Renderer" };
@@ -444,7 +443,7 @@ async function blickStufe(check) {
     await browser.close();
 }
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
@@ -798,8 +797,4 @@ async function blickStufe(check) {
     console.log(
         "\n✅ GRÜN — das Welt-Portal ist VOLL integriert: die Kollision folgt der sichtbaren Studio-Form (Öffnung frei, Rahmen solide), die Passage-Membran baut + atmet aus dem EINEN Gesetz, Hindurchgehen IST Betreten, und mit dem Ring im Rücken zeichnet keine Membran (B)."
     );
-})().catch((e) => {
-    console.error("DIAG-FEHLER:", e);
-    server.close();
-    process.exit(1);
 });

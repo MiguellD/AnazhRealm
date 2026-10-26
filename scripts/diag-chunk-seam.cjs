@@ -61,7 +61,7 @@ const server = statikServer();
                 // → die CROSS-LOD-Naht (B/D) wird messbar (bei 26 Chunks = nur Ring 2 = alle LOD0).
                 if (r.state && r.state.playerMesh && r.state.voxelChunks && r.state.voxelChunks.size >= 80) break;
             }
-            await new Promise((res) => setTimeout(res, 4));
+            await sleep(4);
         }
         // SETTLE: Streaming-Dirties + Wasser-Iso abklingen lassen, damit das C-Experiment
         // mit einem RUHIGEN Dirty-Set startet (sonst zählt es Streaming-Rebuilds mit).
@@ -72,7 +72,7 @@ const server = statikServer();
                     r._gameLoopTick(performance.now());
                 } catch {}
             }
-            await new Promise((res) => setTimeout(res, 2));
+            await sleep(2);
         }
         const r = window.anazhRealm;
         if (r) r._drainDirtyVoxelChunks();
@@ -676,7 +676,7 @@ const server = statikServer();
                 const u = uuidOf(key);
                 if (u && u !== beforeUuid[key]) healFrame[key] = frames;
             }
-            await new Promise((res) => setTimeout(res, 0));
+            await sleep(0);
         }
         const nbInEdit = inEdit.includes(nbKey);
         const pInEdit = inEdit.includes(pKey);
