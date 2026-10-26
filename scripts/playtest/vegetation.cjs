@@ -2034,18 +2034,26 @@ async function checkBandScatterScheibe(ctx) {
         o.cellsByteEqual = snapOne === snapSliced;
         o.balanceEqual = groupBalance() === balanceOne;
         // MAIN = FADEN: dieselbe Regel (phyto-core `streuRegion`) an den Lesern beider Fäden, Zahl für Zahl — an der Region des
-        // Spielers samt Erdbau und Keller (die Fläche beider Fäden ist eine Probe des Felds, voxel-worker `voxelSurfaceY`)
+        // Spielers samt Erdbau und Keller (die Fläche beider Fäden ist eine Probe des Felds, voxel-worker `voxelSurfaceY`) und an
+        // der Region eines Orts (die Mitte der ersten Siedlung der Wege-Karte: Platten, Grund und Trasse des Erdbaus, die Wege)
         {
-            const mk = () => r._streuAuftrag(rx, rz, pos.x, pos.z, 1);
-            const msg = await r._nebenAuftrag("streu", Object.assign({ type: "streu-region" }, mk()));
-            const fa = msg.wuerfe.map((b) => new Float64Array(b));
-            const ma = globalThis.__phytoCore.streuRegion(Object.assign(mk(), { leser: r._streuLeser() }));
-            o.wuerfe = {
-                n: fa.reduce((n, d) => n + d.length, 0),
-                gleich:
+            const sd = st.wegeKarte && st.wegeKarte.siedlungen[0];
+            const orte = [[rx, rz, pos.x, pos.z]];
+            if (sd) {
+                const [ox, oz] = [(sd.x0 + sd.x1) / 2, (sd.z0 + sd.z1) / 2];
+                orte.push([Math.floor(ox / SC.regionM), Math.floor(oz / SC.regionM), ox, oz]);
+            }
+            o.wuerfe = { n: 0, gleich: true, ort: sd ? orte[1].slice(0, 2).join(",") : null };
+            for (const [qx, qz, ax, az] of orte) {
+                const mk = () => r._streuAuftrag(qx, qz, ax, az, 1);
+                const msg = await r._nebenAuftrag("streu", Object.assign({ type: "streu-region" }, mk()));
+                const fa = msg.wuerfe.map((b) => new Float64Array(b));
+                const ma = globalThis.__phytoCore.streuRegion(Object.assign(mk(), { leser: r._streuLeser() }));
+                o.wuerfe.n += fa.reduce((n, d) => n + d.length, 0);
+                o.wuerfe.gleich &&=
                     ma.length === fa.length &&
-                    ma.every((m, li) => m.length === fa[li].length && m.every((v, k) => Object.is(v, fa[li][k]))),
-            };
+                    ma.every((m, li) => m.length === fa[li].length && m.every((v, k) => Object.is(v, fa[li][k])));
+            }
         }
         // ── (4) DISPOSE-STORNO: mitten in der Fortsetzung disposen ──
         clean();
@@ -2220,10 +2228,11 @@ async function checkBandScatterScheibe(ctx) {
         `Phasen [${out.contPhases}] · Bilanz ${out.balanceEqual}`
     );
     check(
-        `Scatter-Scheibe MAIN = FADEN: die Würfe des Streu-Fadens Zahl für Zahl gleich der Regel im Haupt-Faden (${out.wuerfe ? out.wuerfe.n : "?"} Zahlen); Dispose mitten in der Fortsetzung storniert ohne Throw`,
+        `Scatter-Scheibe MAIN = FADEN: die Würfe des Streu-Fadens Zahl für Zahl gleich der Regel im Haupt-Faden (${out.wuerfe ? out.wuerfe.n : "?"} Zahlen, Region des Spielers und des Orts ${out.wuerfe ? out.wuerfe.ort : "?"}); Dispose mitten in der Fortsetzung storniert ohne Throw`,
         !!out.wuerfe &&
             out.wuerfe.gleich === true &&
             out.wuerfe.n > 0 &&
+            !!out.wuerfe.ort &&
             (out.contPhases || []).includes("faden") &&
             out.storno.threw === false &&
             out.storno.contDead === true &&
