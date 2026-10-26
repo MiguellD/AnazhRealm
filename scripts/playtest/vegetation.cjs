@@ -123,7 +123,9 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // DAS NACH-DÜNNEN: eine STATIONÄRE, bei voller Dichte gebaute Region schrumpft,
         // wenn die geregelte Dichte sinkt (`_tickFoliageThin` re-streamt sie) → die schon geladene
         // Welt sinkt auf die Kapazität, nicht nur die frisch gebaute. CONSUM: instanceCount fällt.
-        out.streamingCallsThin = window.__consumes(r, "_tickScatterStreaming", r, "_tickFoliageThin", [st.playerMesh.position]);
+        out.streamingCallsThin = window.__consumes(r, "_tickScatterStreaming", r, "_tickFoliageThin", [
+            st.playerMesh.position,
+        ]);
         // CONSUM (behavioral; Hook SICHERN + WIEDERHERSTELLEN, nie löschen-und-vergessen): foundry-ON
         // ist Default → die eine Quelle liefert 1 trotz gesenktem Regler, Nach-Dünnen = No-op; foundry-aus
         // („der Regler führt“) per lokalem Hook. Beide Pfade sind Frühausstiege ohne Worker → gate-sicher.
@@ -204,15 +206,9 @@ async function checkBandV18275FoliageGrowth(ctx) {
     }
     check("headless (Null-Renderer) → foliageRadius = MAX (gate-treu)", res.headlessFull);
     if (!res.skip) {
-        check(
-            "kleiner Radius → ferner Chunk wartet, Spieler-Chunk füllt",
-            res.farDeferred && res.nearIncluded
-        );
+        check("kleiner Radius → ferner Chunk wartet, Spieler-Chunk füllt", res.farDeferred && res.nearIncluded);
         check("der Radius wächst → der ferne Chunk wird in-radius (Welt wächst)", res.farIncludedAfterGrow);
-        check(
-            "CONSUM: _tickFoliageGrowth füllt wartende in-radius Chunks (sanftes Nachwachsen)",
-            res.growthDrains
-        );
+        check("CONSUM: _tickFoliageGrowth füllt wartende in-radius Chunks (sanftes Nachwachsen)", res.growthDrains);
         check(
             "K22-3 EXISTENZ VOR FRAMERATE: Frame über Budget → EIN Chunk je Frist, der nächste zuerst, nie verhungert",
             res.growthNearestOverBudget && res.growthThrottledOverBudget && res.growthNeverStarves,
@@ -220,10 +216,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
         );
         check("Frame frei → das Wachstum läuft weiter (lädt in den Lücken)", res.growthResumesWhenFree);
     }
-    check(
-        "headless (Null-Renderer) → _foliageDensityScale = 1 (volle Dichte, gate-treu)",
-        res.densityHeadlessFull
-    );
+    check("headless (Null-Renderer) → _foliageDensityScale = 1 (volle Dichte, gate-treu)", res.densityHeadlessFull);
     if (res.densityCutsInstances !== undefined) {
         check(
             `CONSUM: gedrosselte Dichte baut WENIGER ferne Scatter-Instanzen (${res.densFull} → ${res.densLow}) — direkt weniger Geometrie (der Bulk-Hebel)`,
@@ -339,8 +332,7 @@ async function checkBandNahStreu(ctx) {
         // der wiegende trägt einen EIGENEN Knoten (nie den der Bäume). Der Verstoß nennt Senke und Grund.
         const baumK = r._baumWindKnoten || {};
         const still = (m) =>
-            !m.positionNode ||
-            (m.positionNode === baumK.ast && !!m.userData.windArt && m.userData.windArt.z === 0);
+            !m.positionNode || (m.positionNode === baumK.ast && !!m.userData.windArt && m.userData.windArt.z === 0);
         out.wind = { wiegend: [], stehend: [], verstoss: [] };
         for (const [preset, e] of jeArt) {
             (e.weich ? out.wind.wiegend : out.wind.stehend).push(preset);
@@ -386,7 +378,8 @@ async function checkBandNahStreu(ctx) {
                 r._foundryMats = mats;
             }
         }
-        out.windQuelle = !!hoehe && typeof hoehe.getAttributeName === "function" && hoehe.getAttributeName() === "aWiege";
+        out.windQuelle =
+            !!hoehe && typeof hoehe.getAttributeName === "function" && hoehe.getAttributeName() === "aWiege";
         const ns = r.state.nahStreu;
         // (6) DER STREU-SATZ (W7): die Draw-Einheit ist der STOFF — kein Nah-Streu-Objekt zeichnet selbst, je Stoff EIN
         // Satz in der Szene (der stehende Stoff wirft, der wiegende nie — 1310-11), jede Senke ist ein Studio-Teil (leafKey f:…)
@@ -566,7 +559,6 @@ async function checkBandV18197GammaMStrata(ctx) {
         const A = r.constructor;
         const out = {};
 
-
         // (S3) MIGRATION-TOLERANZ: 2-arg Aufruf gibt das alte Verhalten
         // (Achse-Argmax), wie vor V18.197 — bit-identisch zu Pre-V18.197.
         // Finde einen Punkt, wo erde gewinnt (Vegetation-Achse stark) — und dessen Schwelle (S6) in Gleitkomma GENAU
@@ -616,10 +608,7 @@ async function checkBandV18197GammaMStrata(ctx) {
             `(S4) An Oberfläche (y=surfY): bleibt erde (alte Achse, gemessen ${res.surfaceMat})`,
             res.surfaceStaysSame === true
         );
-        check(
-            `(S5) Tief unter Strata-Schwelle: forciert stein (gemessen ${res.deepMat})`,
-            res.deepIsStein === true
-        );
+        check(`(S5) Tief unter Strata-Schwelle: forciert stein (gemessen ${res.deepMat})`, res.deepIsStein === true);
         check(
             `(S6) Auf der Strata-Schwelle: bleibt erde (strikte >-Wand, gemessen ${res.thresholdMat})`,
             res.thresholdStaysSame === true
@@ -714,7 +703,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
             const midMat = r._terrainMaterialAt(highAderPoint.x, highAderPoint.z, midDepth);
             out.midDepthStaysStein = midMat === "stein"; // Iron-Schwelle nicht erreicht (zu flach)
         }
-
 
         return out;
     });
@@ -882,7 +870,6 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         }).length;
         out.richFoliageAtTips = laub.length >= 10 && atTipsCount >= Math.floor(laub.length * 0.8);
 
-
         // (S5) SNAPSHOT-HEILUNG: grownBlueprints im Snapshot trägt KEINE
         // parts-Arrays mehr (Plan-§2.5-konform: f(seed) ist das Erbgut).
         // Spawne einen grown_-Bauplan + prüfe das Snapshot-Feld.
@@ -911,15 +898,9 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         "K24 (S1b) die 6 Kern-Arten (tanne/kiefer/buche/birke/eiche/erle) sind Baum-Zeilen der Tafel",
         res.sixSpecies === true
     );
-    check(
-        `(S3a) Rich-Grammatik produziert ≥50 Parts (gemessen ${res.richPartsCount})`,
-        res.richProducesMany === true
-    );
+    check(`(S3a) Rich-Grammatik produziert ≥50 Parts (gemessen ${res.richPartsCount})`, res.richProducesMany === true);
     check("(S3b) Alle Rich-Parts holz oder laub (V17.16-Wand strukturell)", res.richAllHolzOrLaub === true);
-    check(
-        "(S3c) Foliage AT TIPS: ≥10 laub-Parts, alle vom Stamm weg (Plan-§3.3)",
-        res.richFoliageAtTips === true
-    );
+    check("(S3c) Foliage AT TIPS: ≥10 laub-Parts, alle vom Stamm weg (Plan-§3.3)", res.richFoliageAtTips === true);
     check(
         "(S5a) Snapshot grownBlueprints trägt Metadata (_grownSpecies + _grownSeed)",
         res.snapshotHasMetadata === true
@@ -1053,8 +1034,6 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
             !(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.baum_totholz) &&
             (totholzPreset == null || totholzPreset === "totholz");
 
-
-
         // ─── (W5) Behavioral: Spezies-Distinktion in computeCompoundTags ─
         // Bauplan-Stichprobe: rohen parts vs _isGrown+species → Tag-Delta.
         if (r.state.worldMeta) r.state.worldMeta.genVersion = 8;
@@ -1091,10 +1070,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         "Integration 05.10. (W2) baum_totholz ist aus SPECIES_TREE_PARAMS und dem Eichen-Alias gefallen (Studio-Totholz)",
         res.totholzFort === true
     );
-    check(
-        "(W5a) Tanne _isGrown: brennbar +0.1 angewandt (computeCompoundTags-Δ)",
-        res.tannenVariationApplied === true
-    );
+    check("(W5a) Tanne _isGrown: brennbar +0.1 angewandt (computeCompoundTags-Δ)", res.tannenVariationApplied === true);
     check(
         "W1 (W9) baum_totholz ist aus den _vegetationSampleSpawn-Kandidaten gefallen",
         res.candidatesIncludeTotholz === false
@@ -1118,7 +1094,8 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
         r._growTreeBlueprintRich("baum_karst", "pt-karst-anlauf");
         const skK = r._lastTreeSkeleton;
         r._lastTreeSkeleton = null;
-        out.karstFlareAmp = !("flare" in (A.SPECIES_TREE_PARAMS.baum_karst || {})) && !!skK && Math.abs(skK.flareAmp - 0.9) < 1e-9;
+        out.karstFlareAmp =
+            !("flare" in (A.SPECIES_TREE_PARAMS.baum_karst || {})) && !!skK && Math.abs(skK.flareAmp - 0.9) < 1e-9;
 
         // ─── (B) Drei Unterholz-Arten als Studio-Arten (_phytoArt, K24) ─────────────────────
         const artKind = (sp) => {
@@ -1128,7 +1105,6 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
         out.grammarHasHazel = artKind("busch_hazel") === "shrub";
         out.grammarHasFarn = artKind("farn_busch") === "fern";
         out.grammarHasBlume = artKind("blume_gross") === "flower";
-
 
         // ─── (C) Wachstum produziert valide Bauplane für die 4 Neuen ─
         if (r.state.worldMeta) r.state.worldMeta.genVersion = 9;
@@ -1186,7 +1162,6 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
         } catch {
             /* die Folge-Probe fällt ohne ihr Feld */
         }
-
 
         return out;
     });
@@ -1371,10 +1346,7 @@ async function checkBandV18217VariantenPool(ctx) {
     );
 
     // (C) Determinismus
-    check(
-        "(C1) Pool-Generierung deterministisch (gleicher Seed → gleicher Pool)",
-        res.poolDeterministic === true
-    );
+    check("(C1) Pool-Generierung deterministisch (gleicher Seed → gleicher Pool)", res.poolDeterministic === true);
     check("(C2) Verschiedene worldSeeds erzeugen DISTINKTE Pools", res.poolDistinctSeeds === true);
 
     // (D) Spawn-Pipeline
@@ -1390,10 +1362,7 @@ async function checkBandV18217VariantenPool(ctx) {
     check("(E2) Snapshot-Pool ist bit-identisch zur Live-Welt", res.snapshotPoolMatchesLive === true);
 
     // (F) Migration
-    check(
-        "(F1) Migration: alte Welt ohne variantSeed bekommt lazy einen Pool",
-        res.migrationFillsPool === true
-    );
+    check("(F1) Migration: alte Welt ohne variantSeed bekommt lazy einen Pool", res.migrationFillsPool === true);
 
     // (G) Performance
     check(`(G1) Pool-JSON-Größe < 30 KB (gemessen ${res.poolJsonSize} Bytes)`, res.poolSizeUnder30K === true);
@@ -1571,14 +1540,8 @@ async function checkBandV18218LODStufen(ctx) {
     check("(C3) Key-Form LOD1 `grown_<species>_v<idx>_lod1`", res.key1Form === true);
     check("(C4) Key-Form LOD2 `grown_<species>_v<idx>_lod2`", res.key2Form === true);
     check("(C7) bp._lodLevel gesetzt", res.bp1HasLodLevel === true && res.bp2HasLodLevel === true);
-    check(
-        "(C8) 3 LOD-Bauplane teilen denselben _variantIndex (Form-Identität)",
-        res.lodsShareVariantIndex === true
-    );
-    check(
-        "(C9) 3 LOD-Bauplane teilen denselben _grownSeed (Re-Wachstum bit-genau)",
-        res.lodsShareSeed === true
-    );
+    check("(C8) 3 LOD-Bauplane teilen denselben _variantIndex (Form-Identität)", res.lodsShareVariantIndex === true);
+    check("(C9) 3 LOD-Bauplane teilen denselben _grownSeed (Re-Wachstum bit-genau)", res.lodsShareSeed === true);
 
     // (D) Geometrie-Reduktion
     check(`(D1) LOD0 ≥50 Parts (Hero, gemessen ${res.lod0Parts})`, res.lod0FullParts === true);
@@ -1586,10 +1549,7 @@ async function checkBandV18218LODStufen(ctx) {
     check(`(D3) LOD2 ≤10 Parts (Far, gemessen ${res.lod2Parts})`, res.lod2Tiny === true);
     check(`(D4) Parts-Anzahl strict monoton: LOD0 > LOD1 > LOD2`, res.lodPartsMonotone === true);
     check(`(D5) Default-LOD ohne opts ist LOD0 (Backward-Kompat)`, res.lodDefaultIsLod0 === true);
-    check(
-        `(D6) LOD2 Parts ≤ 15 % von LOD0 (Plan §3.6 „≤ 10 % Triangle-Count Toleranz")`,
-        res.lod2UnderCap === true
-    );
+    check(`(D6) LOD2 Parts ≤ 15 % von LOD0 (Plan §3.6 „≤ 10 % Triangle-Count Toleranz")`, res.lod2UnderCap === true);
 
     // (F) V17.16-Tag-Wand
     check("(F1) LOD0 + LOD1 → identische compoundTags (Tag-Neutralität)", res.tagNeutralLOD01 === true);
@@ -1634,12 +1594,6 @@ async function checkBandV18219bisVollendung(ctx) {
             }
         });
 
-        // ─── V18.219 FELD-BAKE: die Invalidierung (den Bake selbst fährt jede Streu-Region, gate:scatter-ab) ───
-        r._bakeRegionFields(0, 0);
-        r._invalidateBakedRegionsAround(0, 0, 6);
-        const after = r.state.bakedRegionFields.get("0,0");
-        out.invalidationSetDirty = after && after.dirty === true;
-
         // ─── V18.220 SCATTER-BITMASK + CAP + LOOKUP ──────────────────
         r._scatterMarkCellPromoted(100, 200, "tree");
         out.markedThenIsPromoted = r._scatterIsCellPromoted(100, 200, "tree") === true;
@@ -1677,16 +1631,11 @@ async function checkBandV18219bisVollendung(ctx) {
 
     // LOD-Activation
     check("(L3) _gameLoopTick ruft _tickArchitectureLOD (Verdrahtung)", res.lodTickInLoop === true);
-    check(
-        "(L6) spawnArchitecture markiert grown-tree-Entry mit _lod-Feldern",
-        res.spawnedEntryHasLodFields === true
-    );
+    check("(L6) spawnArchitecture markiert grown-tree-Entry mit _lod-Feldern", res.spawnedEntryHasLodFields === true);
     check("(L7) _lodSpecies = baum_eiche (Identitäts-Mark)", res.spawnedEntrySpeciesIsEiche === true);
     check("(L8) _switchArchitectureLOD wechselt zu LOD2", res.lodSwitchedToLOD2 === true);
     check("(L9) entry.type endet auf `_lod2`", res.lodTypeChanged === true);
     check("(L10) Zurück zu LOD0 (Form-Identität bewahrt)", res.lodSwitchedBack === true);
-
-    check("(B11) Invalidation setzt dirty=true", res.invalidationSetDirty === true);
 
     // Scatter-Bitmask + Cap + Lookup
     check("(S6) markiertes Cell ist promoted=true", res.markedThenIsPromoted === true);
@@ -1731,8 +1680,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
         const t2 = r._scatterCellTransform(100, 200);
         out.transformDeterministic =
             t1 && t2 && t1.x === t2.x && t1.z === t2.z && t1.yaw === t2.yaw && t1.scale === t2.scale;
-        out.transformInCell =
-            t1 && t1.scale >= 0.7 && t1.scale <= 1.36 && t1.yaw >= 0 && t1.yaw <= Math.PI * 2 + 1e-6;
+        out.transformInCell = t1 && t1.scale >= 0.7 && t1.scale <= 1.36 && t1.yaw >= 0 && t1.yaw <= Math.PI * 2 + 1e-6;
 
         // ─── (C) Scatter erzeugt ECHTE InstancedMesh-Instanzen ────────
         // Player an eine bekannte Position teleportieren, eine Region generieren.
@@ -1860,10 +1808,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
     check("(B5) Transform: scale 0.7..1.36, yaw 0..2π (in der Cell)", res.transformInCell === true);
 
     // (C) Echte Instanzen
-    check(
-        `(C2) Region erzeugt ECHTE Instanzen (gemessen ${res.regionInstanceCount})`,
-        res.regionInstanceCount > 0
-    );
+    check(`(C2) Region erzeugt ECHTE Instanzen (gemessen ${res.regionInstanceCount})`, res.regionInstanceCount > 0);
     check(
         `(C4) HISM-Gruppen tragen LIVE-Instanzen (count>0, gemessen ${res.liveInstanceCount})`,
         res.hasLiveInstances === true
@@ -1898,15 +1843,9 @@ async function checkBandV18224ScatterPromotion(ctx) {
     // (E) Promotion
     check("(E1) _promoteScatterCell liefert echten Eintrag (Touch→Real)", res.promoteReturnsEntry === true);
     check("(E2) Architektur-Anzahl +1 (echter Bauplan entstand)", res.archCountIncreased === true);
-    check(
-        "(E3) Eintrag trägt Provenienz bornFrom=world-genesis-cell (Plan §2)",
-        res.entryHasProvenance === true
-    );
+    check("(E3) Eintrag trägt Provenienz bornFrom=world-genesis-cell (Plan §2)", res.entryHasProvenance === true);
     check("(E4) Provenienz-Species == Scatter-Species", res.provenanceSpecies === true);
-    check(
-        "(E5) Eintrag nutzt grown_-Bauplan derselben Species (KEIN visueller Sprung)",
-        res.entryUsesGrownBp === true
-    );
+    check("(E5) Eintrag nutzt grown_-Bauplan derselben Species (KEIN visueller Sprung)", res.entryUsesGrownBp === true);
     check("(E6) Eintrag-Variante == Scatter-Variante (Form-Identität)", res.entryVariantMatches === true);
     check("(E7) Deko-Slots freigegeben bei Promotion (kein Doppel-Mesh)", res.cellSlotsFreed === true);
     check("(E8) Cell jetzt promoted (Bitmask — kein zweiter Deko-Spawn)", res.cellNowPromoted === true);
@@ -1961,7 +1900,6 @@ async function checkBandWahrerAnblickFels(ctx) {
         const sp = r._scatterSpeciesForLayer("rock", 0.1, 0.1, 50);
         out.rockSpecies = sp === "kiesel" || sp === "felsbrocken" || sp === "stein_block";
 
-
         return out;
     });
 
@@ -1975,7 +1913,6 @@ async function checkBandWahrerAnblickFels(ctx) {
 
     check("Ω-OPSIS S5 (D1) CONSUM: _buildVariantLODs gibt statische Fels-Keys", res.staticLods === true);
     check("Ω-OPSIS S5 (D2) CONSUM: _scatterSpeciesForLayer(rock) gibt Fels-Spezies", res.rockSpecies === true);
-
 }
 
 // Laub-Vertiefung: Rinden-Maserung (axiale Borke-Bänder + radialer Streifen) + blatt-geformte Card.
@@ -1985,7 +1922,6 @@ async function checkBandWahrerAnblickLaub(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-
 
         // (B) Behavioral — ein gewachsener Baum baut Tube + blatt-geformte Card. Foundry-ON gäbe der
         // Chokepoint null (die Probe wäre vakuös grün) → der lokale Hook hält den Beweis am Leben.
@@ -2033,7 +1969,7 @@ async function checkBandWahrerAnblickLaub(ctx) {
 }
 
 // Die Scheiben-Byte-Wand (W3.3b/3c) — eingefaltet aus gate:scatter-slice: `_scatterRegion` baut mit Deadline in ZEIT-
-// SCHEIBEN (Fortsetzung `region._cont`: Bake-Phase → Zellen-Phase). Dieselbe Region One-Shot vs in N Scheiben: `region.cells`
+// SCHEIBEN (Fortsetzung `region._cont`: die Würfe des Streu-Fadens → Zellen-Phase). Dieselbe Region One-Shot vs in N Scheiben: `region.cells`
 // byte-gleich bei echten Scheiben, die HISM-Slot-Bilanz identisch (ein Doppel-Add wäre im cells-Vergleich unsichtbar), der
 // Kalt-Bake gescheibt + Float32-byte-gleich ohne halben Bake in der Map, das Dispose-Storno, der Wecker der aufgeschobenen
 // Region, und der Stoff des Walds (unter der Streu-Scheibe rechnet der Haupt-Faden keinen Dart, die Region wartet auf den Voxel-Faden).
@@ -2049,8 +1985,6 @@ async function checkBandScatterScheibe(ctx) {
         const rx = Math.floor(pos.x / SC.regionM),
             rz = Math.floor(pos.z / SC.regionM);
         const key = `${rx},${rz}`;
-        const bcfg = r._bakeRegionConfig();
-        const bKey = `${Math.floor((rx * SC.regionM) / bcfg.sizeM)},${Math.floor((rz * SC.regionM) / bcfg.sizeM)}`;
         const snapshot = (reg) =>
             JSON.stringify(
                 (reg && reg.cells ? reg.cells : []).map((c) => [
@@ -2073,58 +2007,56 @@ async function checkBandScatterScheibe(ctx) {
         const clean = () => {
             if (st.scatterRegions && st.scatterRegions.has(key)) r._disposeScatterRegion(key);
         };
-        const cleanBake = () => {
-            if (st.bakedRegionFields) st.bakedRegionFields.delete(bKey);
-        };
-        // ── (1)+(3) ONE-SHOT-Referenz (kalt: auch der Bake läuft im One-Shot) ──
+        // ── SCHEIBEN-Bau: die Würfe rechnet der Streu-Faden (eine Ereignis-Runde nur, solange sie fehlen), die Zellen in Scheiben ──
         clean();
-        cleanBake();
-        const oneShot = r._scatterRegion(rx, rz, pos);
-        o.oneShotCells = oneShot ? oneShot.cells.length : -1;
-        const snapOne = snapshot(oneShot);
-        const bakeOne = st.bakedRegionFields && st.bakedRegionFields.get(bKey);
-        const bakeOneCopy = bakeOne && bakeOne.data ? Array.from(bakeOne.data) : null;
-        const balanceOne = groupBalance();
-        // ── SCHEIBEN-Bau (kalt: Bake-Phase + Zellen-Phase, enge Deadlines) ──
-        clean();
-        cleanBake();
-        let slices = 0,
-            halfBakeSeen = false,
-            contSeenPhases = new Set();
+        let slices = 0;
+        const contSeenPhases = new Set();
         let reg = null;
         for (let i = 0; i < 800; i++) {
             reg = r._scatterRegion(rx, rz, pos, performance.now() + 0.4);
             slices++;
-            if (reg && reg._cont) {
-                contSeenPhases.add(reg._cont.phase);
-                // die _sampleBakedField-Wand: ein HALBER Bake darf NIE in der Map stehen
-                const e = st.bakedRegionFields && st.bakedRegionFields.get(bKey);
-                if (e && e.dirty !== false && reg._cont.phase === "bake") halfBakeSeen = true;
-            } else break;
-            // KEINE Ereignis-Runde zwischen den Scheiben: beide Bauten lesen dieselbe Welt (Kopf-Kommentar (2))
+            if (!reg || !reg._cont) break;
+            const c = reg._cont;
+            contSeenPhases.add(c.darts ? "zellen" : "faden");
+            if (!c.darts) await new Promise((res) => setTimeout(res, 10));
         }
         o.slices = slices;
         o.contPhases = Array.from(contSeenPhases);
-        o.halfBakeInMap = halfBakeSeen;
         o.sliceDone = !!(reg && !reg._cont);
         const snapSliced = snapshot(reg);
-        const bakeSliced = st.bakedRegionFields && st.bakedRegionFields.get(bKey);
-        o.bakeByteEqual =
-            !!bakeOneCopy && !!bakeSliced && bakeSliced.data.length === bakeOneCopy.length
-                ? bakeSliced.data.every((v, i) => v === bakeOneCopy[i])
-                : false;
+        const balanceOne = groupBalance();
+        o.slicedCells = reg ? reg.cells.length : -1;
+        // ── ONE-SHOT-Referenz im selben Takt (dieselbe Welt): der Haupt-Faden rechnet die Würfe selbst ──
+        clean();
+        const oneShot = r._scatterRegion(rx, rz, pos);
+        o.oneShotCells = oneShot ? oneShot.cells.length : -1;
+        const snapOne = snapshot(oneShot);
         o.cellsByteEqual = snapOne === snapSliced;
         o.balanceEqual = groupBalance() === balanceOne;
-        o.slicedCells = reg ? reg.cells.length : -1;
+        // MAIN = FADEN: dieselbe Regel (phyto-core `streuRegion`) an den Lesern beider Fäden, Zahl für Zahl — an der Nachbar-Region
+        // ohne gebauten Boden (die Feuchte des Haupt-Fadens liest am gebauten Wasser `_waterLevelAt`, der Faden am Gesetz)
+        {
+            const mk = () => r._streuAuftrag(rx + 1, rz, pos.x, pos.z, 1);
+            const msg = await r._nebenAuftrag("streu", Object.assign({ type: "streu-region" }, mk()));
+            const fa = msg.wuerfe.map((b) => new Float64Array(b));
+            const ma = globalThis.__phytoCore.streuRegion(Object.assign(mk(), { leser: r._streuLeser() }));
+            o.wuerfe = {
+                n: fa.reduce((n, d) => n + d.length, 0),
+                gleich:
+                    ma.length === fa.length &&
+                    ma.every((m, li) => m.length === fa[li].length && m.every((v, k) => Object.is(v, fa[li][k]))),
+            };
+        }
         // ── (4) DISPOSE-STORNO: mitten in der Fortsetzung disposen ──
         clean();
-        cleanBake();
         let storno = { threw: false, contDead: false, rebuildOk: false };
         try {
             let reg2 = r._scatterRegion(rx, rz, pos, performance.now() + 0.4);
             let guard = 0;
-            while (reg2 && reg2._cont && reg2._cont.phase === "bake" && guard++ < 300)
+            while (reg2 && reg2._cont && !reg2._cont.darts && guard++ < 300) {
+                await new Promise((res) => setTimeout(res, 10)); // die Würfe rechnet der Streu-Faden
                 reg2 = r._scatterRegion(rx, rz, pos, performance.now() + 0.4);
+            }
             // jetzt in der Zellen-Phase (oder fertig) → mitten drin disposen
             if (reg2 && reg2._cont) {
                 r._disposeScatterRegion(key);
@@ -2161,7 +2093,9 @@ async function checkBandScatterScheibe(ctx) {
             const fremde = new Set();
             r._streuWartetAuf = function (z) {
                 if (this._streuSammler && z && !zus.includes(z))
-                    fremde.add([...(this._waldZusagen || new Map()).values()].some((e) => e.zusage === z) ? "wald" : "fremd");
+                    fremde.add(
+                        [...(this._waldZusagen || new Map()).values()].some((e) => e.zusage === z) ? "wald" : "fremd"
+                    );
                 return altWartet.call(this, z);
             };
             wecker.schlange = r._waldPlanSchlange ? r._waldPlanSchlange.size : 0;
@@ -2225,8 +2159,7 @@ async function checkBandScatterScheibe(ctx) {
             let zaehler = 0;
             const altCD = r._forestCellDarts;
             r._forestCellDarts = function (cx, cz, seedInt) {
-                if (this._streuSammler && !(this._forestDartMemo && this._forestDartMemo.has(cx + "," + cz)))
-                    zaehler++;
+                if (this._streuSammler && !(this._forestDartMemo && this._forestDartMemo.has(cx + "," + cz))) zaehler++;
                 return altCD.call(this, cx, cz, seedInt);
             };
             const vw = st.voxelWorker;
@@ -2234,12 +2167,11 @@ async function checkBandScatterScheibe(ctx) {
                 const reg6 = r._scatterRegion(rx, rz, pos);
                 stoff.haupt = zaehler;
                 // der Takt schickt die Schlange an den Faden (`_tickWaldPlan`, Job `waldPlan`) — die Linse ist sein Takt
-                await window
-                    .__gebautNach("die Lieferung an die wartende Region", {
-                        fertig: () => !(reg6._deferredFoundry && !reg6._geweckt),
-                        takt: async () => (r._tickWaldPlan(Infinity), await new Promise((res) => setTimeout(res, 50))),
-                        max: 1200,
-                    });
+                await window.__gebautNach("die Lieferung an die wartende Region", {
+                    fertig: () => !(reg6._deferredFoundry && !reg6._geweckt),
+                    takt: async () => (r._tickWaldPlan(Infinity), await new Promise((res) => setTimeout(res, 50))),
+                    max: 1200,
+                });
                 stoff.gewartet = reg6._deferredFoundry === true && reg6._geweckt === true;
                 // der Neubau nach der Lieferung und die Referenz ohne Faden (der Main rechnet jeden Dart selbst, frisches
                 // Gedächtnis) Rücken an Rücken, ohne Warten dazwischen: kein Asset kommt zwischen die beiden Bauten
@@ -2270,35 +2202,79 @@ async function checkBandScatterScheibe(ctx) {
         o.stoff = stoff;
         return o;
     });
-    if (!out || out.__err || out.err) return check("Scatter-Scheibe: die Probe antwortet", false, out ? out.__err || out.err : "keine Antwort der Seite");
+    if (!out || out.__err || out.err)
+        return check(
+            "Scatter-Scheibe: die Probe antwortet",
+            false,
+            out ? out.__err || out.err : "keine Antwort der Seite"
+        );
     check(
         `Scatter-Scheibe: ECHTE Scheiben (${out.slices} Aufrufe), region.cells BYTE-EXAKT (One-Shot ${out.oneShotCells} == Scheiben ${out.slicedCells}), HISM-Slot-Bilanz identisch`,
-        out.slices >= 3 && out.sliceDone === true && (out.contPhases || []).includes("cells") && out.cellsByteEqual === true && out.oneShotCells === out.slicedCells && out.oneShotCells > 5 && out.balanceEqual === true,
+        out.slices >= 3 &&
+            out.sliceDone === true &&
+            (out.contPhases || []).includes("zellen") &&
+            out.cellsByteEqual === true &&
+            out.oneShotCells === out.slicedCells &&
+            out.oneShotCells > 5 &&
+            out.balanceEqual === true,
         `Phasen [${out.contPhases}] · Bilanz ${out.balanceEqual}`
     );
     check(
-        "Scatter-Scheibe: der Kalt-Bake gescheibt + Float32-byte-gleich, kein halber Bake in der Map; Dispose mitten in der Fortsetzung storniert ohne Throw",
-        out.bakeByteEqual === true && out.halfBakeInMap === false && (out.contPhases || []).includes("bake") && out.storno.threw === false && out.storno.contDead === true && out.storno.rebuildOk === true,
+        `Scatter-Scheibe MAIN = FADEN: die Würfe des Streu-Fadens Zahl für Zahl gleich der Regel im Haupt-Faden (${out.wuerfe ? out.wuerfe.n : "?"} Zahlen); Dispose mitten in der Fortsetzung storniert ohne Throw`,
+        !!out.wuerfe &&
+            out.wuerfe.gleich === true &&
+            out.wuerfe.n > 0 &&
+            (out.contPhases || []).includes("faden") &&
+            out.storno.threw === false &&
+            out.storno.contDead === true &&
+            out.storno.rebuildOk === true,
         JSON.stringify(out.storno)
     );
     const w = out.wecker;
     check(
         "Scatter-Scheibe DER WECKER: die aufgeschobene Region überlebt eine fremde Lieferung und die erste ihrer zwei Zusagen, nach der zweiten baut der Refill sie neu",
         !!w && w.threw === false && w.fremd === true && w.eine === true && w.beide === false,
-        JSON.stringify(w) + (w && w.fremd === false ? " — TÄTER: der Refill in _tickScatterStreaming warf sie bei einer fremden Lieferung weg" : "")
+        JSON.stringify(w) +
+            (w && w.fremd === false
+                ? " — TÄTER: der Refill in _tickScatterStreaming warf sie bei einer fremden Lieferung weg"
+                : "")
     );
     const s = out.stoff;
     check(
         "Scatter-Scheibe DER STOFF DES WALDS: unter der Streu-Scheibe kein Dart im Haupt-Faden, die Region wartet auf den Voxel-Faden und steht danach byte-gleich",
-        !!s && s.threw === false && s.buch === true && s.wahr === true && s.faden === true && s.haupt === 0 && s.gewartet === true && s.nachher === 0 && s.gleich === true && s.zellen > 5,
-        JSON.stringify(s) + (s && s.haupt > 0 ? ` — TÄTER: _forestCellDarts unter _scatterRegionWork (${s.haupt} Darts im Haupt-Faden)` : "")
+        !!s &&
+            s.threw === false &&
+            s.buch === true &&
+            s.wahr === true &&
+            s.faden === true &&
+            s.haupt === 0 &&
+            s.gewartet === true &&
+            s.nachher === 0 &&
+            s.gleich === true &&
+            s.zellen > 5,
+        JSON.stringify(s) +
+            (s && s.haupt > 0
+                ? ` — TÄTER: _forestCellDarts unter _scatterRegionWork (${s.haupt} Darts im Haupt-Faden)`
+                : "")
     );
 }
 
 module.exports = {
-    checkBandV18275FoliageGrowth, checkBandNahStreu, checkBandV18133Forage, checkBandV18197GammaMStrata,
-    checkBandV18200GammaMIronBands, checkBandV18205Gamma7Grammatik, checkBandV18211SkeletonGrammar,
-    checkBandV18212GigantRestsubschritte, checkBandV18215AtemberaubenderWald, checkBandV18216KarstUndUnderstory,
-    checkBandV18217VariantenPool, checkBandV18218LODStufen, checkBandV18219bisVollendung,
-    checkBandV18224ScatterPromotion, checkBandWahrerAnblickFels, checkBandWahrerAnblickLaub, checkBandScatterScheibe,
+    checkBandV18275FoliageGrowth,
+    checkBandNahStreu,
+    checkBandV18133Forage,
+    checkBandV18197GammaMStrata,
+    checkBandV18200GammaMIronBands,
+    checkBandV18205Gamma7Grammatik,
+    checkBandV18211SkeletonGrammar,
+    checkBandV18212GigantRestsubschritte,
+    checkBandV18215AtemberaubenderWald,
+    checkBandV18216KarstUndUnderstory,
+    checkBandV18217VariantenPool,
+    checkBandV18218LODStufen,
+    checkBandV18219bisVollendung,
+    checkBandV18224ScatterPromotion,
+    checkBandWahrerAnblickFels,
+    checkBandWahrerAnblickLaub,
+    checkBandScatterScheibe,
 };

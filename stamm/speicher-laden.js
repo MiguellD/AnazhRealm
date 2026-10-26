@@ -214,10 +214,6 @@ class AnazhRealm_speicher_laden {
         // Nicht persistiert (Session-Tatsache, kein Welt-Erbgut).
         this.state.scatterCounters = { tree: 0, under: 0, stone: 0 };
         this.state.scatterLookup = new Map();
-        // V18.219 — den Region-Bake-Cache beim Welt-Wechsel leeren (Region-
-        // gebackene Felder sind welt-bound; eine neue Welt sampelt neu).
-        if (this.state.bakedRegionFields) this.state.bakedRegionFields.clear();
-        this._bakedRegionRing = [];
         // V18.218.1 — den LOD-Cursor zurücksetzen (rolling pointer; welt-bound).
         this._archLODCursor = 0;
         // Migration: das Legacy-"private" wird zur kanonischen 4-Stufen-Form "privat"; unbekannte Werte

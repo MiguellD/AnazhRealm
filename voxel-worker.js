@@ -237,6 +237,14 @@ self.onmessage = function (e) {
             // (`waldTakt`) — ein später bestellter naher überholt die fernen, die vor ihm reisten
             waldAuftraege.push(msg);
             waldWecken();
+        } else if (msg.type === "streu-region") {
+            // DIE STREU DER REGION IM FADEN (B-Streu): Felder und Würfe jeder Schicht (phyto-core `streuRegion`) per Transfer
+            // zurück (Lehre 24) — der Haupt-Faden urteilt nur, was sein Zustand trägt, und setzt die Instanzen (`_scatterPass`)
+            const w = self.__phytoCore.streuRegion(Object.assign(msg, { leser: STREU_LESER }));
+            self.postMessage(
+                { type: "streu-region-result", requestId: msg.requestId, wuerfe: w.map((a) => a.buffer) },
+                w.map((a) => a.buffer)
+            );
         } else if (msg.type === "ort-wahl") {
             // DIE ORT-WAHL IM FADEN (siedlung.K5, `ortWahl`): die Antwort trägt den Plan v2 des ersten Kandidaten, der jedes Haus
             // im groben Raster trägt (`wand` true: auch im Raster der Wand) — der Wirt prüft an ihm die Bauten und den Spieler
@@ -665,10 +673,6 @@ function waldCtx(msg) {
     let bodenX = NaN;
     let bodenZ = NaN;
     let bodenY = null;
-    const hoehe = (px, pz) => {
-        const vy = voxelSurfaceY(px, pz);
-        return typeof vy === "number" && Number.isFinite(vy) ? vy : state.baseHeight || 0;
-    };
     return {
         F: fernK().forest, // das Wald-Gesetz des Stands (FOREST), nie je Auftrag
         baseH: state.baseHeight || 0,
@@ -681,18 +685,33 @@ function waldCtx(msg) {
             return bodenY;
         },
         waterYAt: (x, z) => atlasWaterLevelAt(x, z, x === bodenX && z === bodenZ ? bodenY : voxelSurfaceY(x, z)),
-        slopeAt: (x, z) => {
-            const yE = hoehe(x + 2, z);
-            const yW = hoehe(x - 2, z);
-            const yN = hoehe(x, z - 2);
-            const yS = hoehe(x, z + 2);
-            if (!Number.isFinite(yE) || !Number.isFinite(yW) || !Number.isFinite(yN) || !Number.isFinite(yS)) return 0;
-            return Math.hypot((yE - yW) / 4, (yS - yN) / 4);
-        },
+        slopeAt: bodenSteilheit,
         feuchteAt: (x, z, sy) => feuchteAt(x, z, sy),
         ortFrei: (x, z, T) => ortFrei(x, z, T),
     };
 }
+// Mirror von `_slopeAt` am Sampler `getTerrainHeightAt` ±2 m (die Oberfläche, ohne sie die Basis): die Steilheit des Walds und
+// der Streu-Felder (`streuRegion`).
+function bodenHoehe(x, z) {
+    const vy = voxelSurfaceY(x, z);
+    return typeof vy === "number" && Number.isFinite(vy) ? vy : state.baseHeight || 0;
+}
+function bodenSteilheit(x, z) {
+    const yE = bodenHoehe(x + 2, z);
+    const yW = bodenHoehe(x - 2, z);
+    const yN = bodenHoehe(x, z - 2);
+    const yS = bodenHoehe(x, z + 2);
+    if (!Number.isFinite(yE) || !Number.isFinite(yW) || !Number.isFinite(yN) || !Number.isFinite(yS)) return 0;
+    return Math.hypot((yE - yW) / 4, (yS - yN) / 4);
+}
+// DIE LESER DER STREU (B-Streu): die Felder der Region (phyto-core `streuRegion`) an DIESEM Zustand — dieselben Leser wie der Bake
+// des Haupt-Fadens (`_streuLeser`); die Byte-Wand Main = Faden fährt gate:scatter-slice (checkBandScatterScheibe).
+const STREU_LESER = {
+    surfaceYAt: voxelSurfaceY,
+    slopeAt: bodenSteilheit,
+    feuchteAt: (x, z, sy) => feuchteAt(x, z, sy),
+    fieldAt: worldFieldAt,
+};
 
 function applyStateSnapshot(snap) {
     if (!snap) return;

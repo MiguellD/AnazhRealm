@@ -871,7 +871,6 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandTierSeparation, ctx);
             await timed(BAND.checkBandKreaturKosten, ctx);
             await timed(BAND.checkBandFeldStellvertreter, ctx);
-            await timed(BAND.checkBandScatterWasserAB, ctx);
             await timed(BAND.checkBandLeistungsVertrag, ctx);
             await timed(BAND.checkBandBewegungUnterLast, ctx);
             await timed(BAND.checkBandWasserSheetSpiegel, ctx);

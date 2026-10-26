@@ -3043,9 +3043,6 @@ class AnazhRealm_gelaende_chunks {
         // vorher aus den alten Zellen (`_preSeedWaterCAForEdit`), damit der Automat den Graben sichtbar fülle — sein Dach
         // stand dabei je Spalte auf einer eigenen Höhe neben dem Spiegel (die zweite Fläche).
         this._invalidateWaterCapsAround(x, z, reich);
-        // Gebackene Region-Felder im Footprint dirty markieren (Region-Raster 256 m → 1–2 Regionen).
-        // Lazy-Rebake im nächsten Tick; bis dahin gelten die stale Daten.
-        this._invalidateBakedRegionsAround(x, z, reich);
         // Fill unter sich darf den Spieler nicht begraben (sonst steckt er Meter unter der neuen
         // Oberfläche im Fels) → Rettung. Nur fill schließt ein; carve öffnet.
         if (mode === "fill") this._rescuePlayerFromEditSolid(x, yClamped, z, radius);

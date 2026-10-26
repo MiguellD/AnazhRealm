@@ -1,163 +1,75 @@
 class AnazhRealm_vegetation_streu {
     // ===== ATLAS · Vegetation/streu — Gebackene Regionen · Streu-Zellen · Streu-Streaming =====
-    // ═══ GPU-FELD-BAKE ═══
-    // Region = 256 × 256 m (16 Voxel-Chunks). Pro Texel: slope (|∇surface|) · moisture (_feuchteAt) ·
-    // lebendig/glut/magie (worldFieldAt) — die Höhe trägt er nicht: der Fuß der Streu liest den gezeichneten Boden
-    // (`_streuFuss`, Gelände H5), kein Leser las den 8-m-Höhen-Kanal mehr. LRU-Cache (32 Regionen), on demand
-    // gebaut, bei Edit invalidiert. CPU-First: der Scatter liest die Float32Array direkt.
-
+    // ═══ DIE FELDER DER STREU ═══
+    // Region = 256 × 256 m (16 Voxel-Chunks), je 8-m-Texel Steilheit · Feuchte · lebendig: die EINE Regel rechnet sie samt den
+    // Würfen der Zellen (phyto-core `streuRegion`) — im Streu-Faden die Region des Streamings (`_streuFadenSchicken`), im
+    // Haupt-Faden der One-Shot (`_streuLeser`). Der Fuß der Streu liest den gezeichneten Boden (`_streuFuss`, Gelände H5).
     _bakeRegionConfig() {
-        // res 32 (8 m/Texel) genügt fürs Scatter-Gating (slope/lebendig sind groß-λ-glatt) und ist 4×
-        // billiger als 64 — der Warmup-Pump erstickt nicht am Bake.
+        return { sizeM: 256, res: 32, texelM: 256 / 32 }; // 8 m je Texel genügen dem Urteil der Zelle (slope/lebendig groß-λ-glatt)
+    }
+
+    // Die Leser der Felder im Haupt-Faden — dieselben wie STREU_LESER im voxel-worker (die Steilheit am Sampler
+    // `getTerrainHeightAt` ±2 m, die EINE Formel `_slopeAt`).
+    _streuLeser() {
+        return (
+            this._streuLeserMerk ||
+            (this._streuLeserMerk = {
+                surfaceYAt: (x, z) => this._voxelSurfaceY(x, z),
+                slopeAt: (x, z) => this._slopeAt(x, z, (px, pz) => this.getTerrainHeightAt(px, pz), 2),
+                feuchteAt: (x, z, sy) => this._feuchteAt(x, z, sy),
+                fieldAt: (x, z) => this.worldFieldAt(x, z),
+            })
+        );
+    }
+
+    // Der Auftrag einer Region an die EINE Regel: Schichten, Same der Welt, Ort des Spielers und Dichte beim Bau.
+    _streuAuftrag(regX, regZ, px, pz, fdScale) {
+        const SC = AnazhRealm.SCATTER;
+        const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        let seedHash = 2166136261 >>> 0;
+        for (let i = 0; i < worldSeed.length; i++) seedHash = ((seedHash ^ worldSeed.charCodeAt(i)) * 16777619) >>> 0;
+        const { regionM, innerM, outerM, slopeMax, densityFloor, densityScale } = SC;
         return {
-            sizeM: 256, // Welt-Meter pro Region-Kante
-            res: 32, // Texel pro Kante (Auflösung)
-            texelM: 256 / 32, // = 8 m pro Texel
-            channels: 5, // slope/moisture/lebendig/glut/magie
-            cacheCap: 32, // LRU
+            regX,
+            regZ,
+            px,
+            pz,
+            fdScale,
+            seedHash,
+            layers: SC.layers,
+            bake: this._bakeRegionConfig(),
+            SC: { regionM, innerM, outerM, slopeMax, densityFloor, densityScale },
         };
     }
 
-    _bakedRegionKey(regX, regZ) {
-        return `${regX | 0},${regZ | 0}`;
-    }
-
-    _ensureBakedRegionMap() {
-        if (!this.state.bakedRegionFields) this.state.bakedRegionFields = new Map();
-        if (!this._bakedRegionRing) this._bakedRegionRing = [];
-        return this.state.bakedRegionFields;
-    }
-
-    // Bake-Akt: eine Region voll sampeln, Ergebnis gecacht (LRU). Optional in j-Zeilen-Scheiben
-    // (cont + deadlineMs, vom `_scatterRegion` mit Deadline): der HALBE Bake lebt NUR in cont.bakeEntry,
-    // NIE in der Map — _sampleBakedField kann keine halben Felder lesen. Ohne cont: One-Shot.
-    _bakeRegionFields(regX, regZ, cont, deadlineMs) {
-        const map = this._ensureBakedRegionMap();
-        const key = this._bakedRegionKey(regX, regZ);
-        const existing = map.get(key);
-        if (existing && !existing.dirty) {
-            // LRU touch
-            if (this._bakedRegionRing) {
-                const idx = this._bakedRegionRing.indexOf(key);
-                if (idx >= 0) {
-                    this._bakedRegionRing.splice(idx, 1);
-                    this._bakedRegionRing.push(key);
-                }
+    // DIE STREU IM FADEN (B-Streu, Lehre 14 + 24): Felder und Würfe der Region rechnet der Streu-Faden (voxel-worker
+    // `streu-region`), die Antwort landet per Transfer in `cont.darts`; der Haupt-Faden urteilt nur, was sein Zustand trägt, und
+    // setzt die Instanzen (`_scatterPass`). Die Feuchte liest die Hydro-Kacheln der Region: fehlt eine, ist sie im Faden bestellt
+    // und die Region wartet; ein Erdbau seit dem Auftrag verwirft die Würfe (sie fielen am alten Grund). Bis B-Streu rechnete der
+    // Haupt-Faden jeden Texel und jede Zelle selbst (Radeon kalt vor dem ersten Weltbild 1,3–1,5 s Streu, davon Felder und Würfe
+    // ~0,7 s). Ohne Voxel-Faden rechnet dieselbe Regel hier.
+    _streuFadenSchicken(region, cont) {
+        if (cont.flug) return;
+        const SC = AnazhRealm.SCATTER;
+        const a = this._streuAuftrag(region.regX, region.regZ, cont.px, cont.pz, cont.fdScale);
+        if (!this._waldFadenLebt()) {
+            cont.darts = globalThis.__phytoCore.streuRegion(Object.assign(a, { leser: this._streuLeser() }));
+            return;
+        }
+        const [mx, mz] = [(region.regX + 0.5) * SC.regionM, (region.regZ + 0.5) * SC.regionM];
+        if (this._ensureHydroTilesAround(mx, mz, SC.regionM / 2 + 16)) return;
+        cont.flug = true;
+        const erd = this._erdbauStand | 0;
+        this._nebenAuftrag("streu", Object.assign({ type: "streu-region" }, a)).then(
+            (msg) => {
+                cont.flug = false;
+                if ((this._erdbauStand | 0) === erd) cont.darts = msg.wuerfe.map((b) => new Float64Array(b));
+            },
+            (e) => {
+                cont.flug = false;
+                this._bruchMelden("STREU: der Faden rechnete die Region nicht — " + (e && e.message ? e.message : e));
             }
-            if (cont) {
-                cont.bakeEntry = null;
-                cont.bakeJ = null;
-            }
-            return existing;
-        }
-        const cfg = this._bakeRegionConfig();
-        const N = cfg.res;
-        const t = cfg.texelM;
-        const originX = regX * cfg.sizeM;
-        const originZ = regZ * cfg.sizeM;
-        // Reuse den bestehenden Float-Buffer wenn dirty (kein Re-Alloc); eine offene
-        // Scheiben-Fortsetzung trägt ihren halben Buffer selbst (cont.bakeEntry).
-        const entry = (cont && cont.bakeEntry) ||
-            existing || {
-                regX: regX | 0,
-                regZ: regZ | 0,
-                originX,
-                originZ,
-                res: N,
-                texelM: t,
-                channels: cfg.channels,
-                data: new Float32Array(N * N * cfg.channels),
-                dirty: true,
-                bakedAt: 0,
-                sampleCount: 0,
-            };
-        // CPU-Sampling: pro Texel die echten Wahrheits-Quellen aufrufen
-        // (das gleiche, was die CPU-Spawn-Pipeline liest → bit-Wahrheits-
-        // Konsistenz im V18.220-Fallback-Pfad).
-        const data = entry.data;
-        const _jStart = cont && Number.isFinite(cont.bakeJ) ? cont.bakeJ : 0;
-        for (let j = _jStart; j < N; j++) {
-            const z = originZ + (j + 0.5) * t;
-            // W3.3b — Scheiben-Schnitt am ZEILEN-Anfang (reine Unterbrechung: jede
-            // Texel-Zeile rechnet identisch, egal in welcher Scheibe; ~1,4 ms/Zeile).
-            if (cont && Number.isFinite(deadlineMs) && j > _jStart && performance.now() > deadlineMs) {
-                cont.bakeEntry = entry;
-                cont.bakeJ = j;
-                return null; // Scheibe voll — der Aufrufer kommt im nächsten Frame wieder
-            }
-            for (let i = 0; i < N; i++) {
-                const x = originX + (i + 0.5) * t;
-                const idx = (j * N + i) * cfg.channels;
-                const sy = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : 0;
-                // Slope: |∇h| über 4-Sample-Cross — V18.351 jetzt durch DIE EINE Formel `_slopeAt`
-                // (getTerrainHeightAt ±2 m als Sampler → byte-gleich zum alten Inline, aber EINE Quelle;
-                // Gras, Scatter-Fallback und dieser Bäcker teilen sie nun statt je eine eigene Regel).
-                data[idx + 0] =
-                    typeof this.getTerrainHeightAt === "function"
-                        ? this._slopeAt(x, z, (px, pz) => this.getTerrainHeightAt(px, pz), 2)
-                        : 0;
-                // Moisture: _feuchteAt (mit surf-Argument)
-                data[idx + 1] = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, sy) : 0;
-                // Field-Stimmen (lebendig/glut/magie)
-                const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(x, z) : null;
-                data[idx + 2] = f ? +f.lebendig || 0 : 0;
-                data[idx + 3] = f ? +f.glut || 0 : 0;
-                data[idx + 4] = f ? +f.magieleitung || 0 : 0;
-            }
-        }
-        entry.dirty = false;
-        entry.bakedAt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
-        entry.sampleCount = N * N;
-        if (cont) {
-            cont.bakeEntry = null;
-            cont.bakeJ = null;
-        }
-        map.set(key, entry);
-        // LRU-Ring + Eviction
-        if (!this._bakedRegionRing) this._bakedRegionRing = [];
-        const ringIdx = this._bakedRegionRing.indexOf(key);
-        if (ringIdx >= 0) this._bakedRegionRing.splice(ringIdx, 1);
-        this._bakedRegionRing.push(key);
-        while (this._bakedRegionRing.length > cfg.cacheCap) {
-            const drop = this._bakedRegionRing.shift();
-            if (drop && map.has(drop)) map.delete(drop);
-        }
-        return entry;
-    }
-
-    // Welt-(x,z) aus dem Region-Bake samplen (bilinear über die 4 nächsten Texel); Cache-Miss baut die
-    // Region lazy. Alle Scatter-Konsumenten lesen hierdurch.
-    _sampleBakedField(x, z) {
-        const cfg = this._bakeRegionConfig();
-        const regX = Math.floor(x / cfg.sizeM);
-        const regZ = Math.floor(z / cfg.sizeM);
-        const entry = this._bakeRegionFields(regX, regZ);
-        if (!entry || !entry.data) return null;
-        const localX = (x - entry.originX) / entry.texelM - 0.5;
-        const localZ = (z - entry.originZ) / entry.texelM - 0.5;
-        const i0 = Math.max(0, Math.min(entry.res - 1, Math.floor(localX)));
-        const j0 = Math.max(0, Math.min(entry.res - 1, Math.floor(localZ)));
-        const i1 = Math.min(entry.res - 1, i0 + 1);
-        const j1 = Math.min(entry.res - 1, j0 + 1);
-        const fx = Math.max(0, Math.min(1, localX - i0));
-        const fz = Math.max(0, Math.min(1, localZ - j0));
-        const idx00 = (j0 * entry.res + i0) * entry.channels;
-        const idx10 = (j0 * entry.res + i1) * entry.channels;
-        const idx01 = (j1 * entry.res + i0) * entry.channels;
-        const idx11 = (j1 * entry.res + i1) * entry.channels;
-        const lerp = (a, b, t) => a + (b - a) * t;
-        const out = { slope: 0, moisture: 0, lebendig: 0, glut: 0, magie: 0 };
-        const keys = ["slope", "moisture", "lebendig", "glut", "magie"];
-        for (let c = 0; c < entry.channels; c++) {
-            const v00 = entry.data[idx00 + c];
-            const v10 = entry.data[idx10 + c];
-            const v01 = entry.data[idx01 + c];
-            const v11 = entry.data[idx11 + c];
-            const v0 = lerp(v00, v10, fx);
-            const v1 = lerp(v01, v11, fx);
-            out[keys[c]] = lerp(v0, v1, fz);
-        }
-        return out;
+        );
     }
 
     // ═══ SCATTER + BITMASK ═══
@@ -265,21 +177,11 @@ class AnazhRealm_vegetation_streu {
     // pcg2d (Jarzynski & Olano 2020): Integer-Hash, bit-identisch CPU↔GPU (nur IEEE-deterministische
     // Ops). Liefert ein uint32-Paar, genutzt wird [0] — Scatter P2P-identisch und WGSL-liftbar.
     _pcg2d(a, b) {
-        let x = (a >>> 0) * 1664525 + 1013904223;
-        let y = (b >>> 0) * 1664525 + 1013904223;
-        x = (x >>> 0) + (((y >>> 0) * 1664525) >>> 0);
-        y = (y >>> 0) + (((x >>> 0) * 1664525) >>> 0);
-        x = (x >>> 0) ^ (x >>> 16);
-        y = (y >>> 0) ^ (y >>> 16);
-        x = (x >>> 0) + (((y >>> 0) * 1664525) >>> 0);
-        y = (y >>> 0) + (((x >>> 0) * 1664525) >>> 0);
-        x = (x >>> 0) ^ (x >>> 16);
-        return x >>> 0;
+        return globalThis.__phytoCore.streuPcg(a, b);
     }
 
-    // Ein deterministischer Float [0,1) aus zwei Integer-Achsen + Salt.
     _pcgFloat(cx, cz, salt) {
-        return this._pcg2d((cx * 73856093) ^ ((salt | 0) * 19349663), cz * 83492791) / 4294967296;
+        return globalThis.__phytoCore.streuPcgFloat(cx, cz, salt);
     }
 
     _ensureScatterRegionMap() {
@@ -335,16 +237,13 @@ class AnazhRealm_vegetation_streu {
     // bit-genau auf der Deko-Position landet. Je Schicht parametrisiert (cellM, scaleBase/scaleVar);
     // Default = Baum-Schicht (SCATTER.cellM).
     _scatterCellTransform(cellX, cellZ, cellM, scaleBase, scaleVar) {
-        const cm = Number.isFinite(cellM) ? cellM : AnazhRealm.SCATTER.cellM;
-        const sb = Number.isFinite(scaleBase) ? scaleBase : 0.7;
-        const sv = Number.isFinite(scaleVar) ? scaleVar : 0.66;
-        const jx = this._pcgFloat(cellX, cellZ, 1);
-        const jz = this._pcgFloat(cellX, cellZ, 2);
-        const x = (cellX + 0.15 + jx * 0.7) * cm;
-        const z = (cellZ + 0.15 + jz * 0.7) * cm;
-        const yawRoll = this._pcgFloat(cellX, cellZ, 3);
-        const szRoll = this._pcgFloat(cellX, cellZ, 4);
-        return { x, z, yaw: yawRoll * Math.PI * 2, scale: sb + szRoll * sv };
+        return globalThis.__phytoCore.streuZelle(
+            cellX,
+            cellZ,
+            Number.isFinite(cellM) ? cellM : AnazhRealm.SCATTER.cellM,
+            Number.isFinite(scaleBase) ? scaleBase : 0.7,
+            Number.isFinite(scaleVar) ? scaleVar : 0.66
+        );
     }
 
     // Deko-Instanz in die GETEILTEN HISM-Gruppen (kein Architektur-Eintrag): derselbe
@@ -488,7 +387,6 @@ class AnazhRealm_vegetation_streu {
     // ordnungs-gekoppelt → cz-major/cx-minor bewahrt ⇒ byte-gleich zum One-Shot (gate:scatter-slice).
     _scatterRegion(regX, regZ, playerPos, deadlineMs) {
         if (typeof THREE === "undefined" || !this.state.scene) return null;
-        const SC = AnazhRealm.SCATTER;
         const map = this._ensureScatterRegionMap();
         const key = `${regX},${regZ}`;
         const _existing = map.get(key);
@@ -518,12 +416,10 @@ class AnazhRealm_vegetation_streu {
             // liest IHN, nie die Live-Werte (sonst driftete der emitted-Satz gegen den
             // One-Shot, wenn Spieler/Regler zwischen zwei Scheiben wandern).
             region._cont = {
-                phase: "bake",
-                bakeEntry: null,
-                bakeJ: null,
+                darts: null, // die Würfe jeder Schicht (`_streuFadenSchicken`)
+                flug: false,
                 layerIdx: 0,
-                cz: 0,
-                cx: 0,
+                i: 0,
                 emitted: 0,
                 hit: false,
                 px: playerPos ? playerPos.x : 0,
@@ -535,7 +431,7 @@ class AnazhRealm_vegetation_streu {
         return this._scatterRegionWork(region, regX, regZ, key, deadlineMs, playerPos);
     }
 
-    // Die Bau-Arbeit (One-Shot UND Scheiben-Fortsetzung, EIN Chokepoint): Bake-Phase (j-Zeilen) →
+    // Die Bau-Arbeit (One-Shot UND Scheiben-Fortsetzung, EIN Chokepoint): die Würfe (Faden oder One-Shot) →
     // Schicht-Pässe. Bei erschöpfter Deadline zurück mit stehendem `region._cont`; der nächste Aufruf
     // (finish-first im Streaming-Tick) setzt exakt fort.
     // DIE REGION SAMMELT IHRE ZUSAGEN (K60-2): solange ihre Scheibe läuft, ist sie der Wartende (`_streuSammler`) — jede
@@ -593,52 +489,31 @@ class AnazhRealm_vegetation_streu {
     }
 
     _scatterRegionScheibe(region, regX, regZ, key, deadlineMs, playerPos) {
-        const SC = AnazhRealm.SCATTER;
         const cont = region._cont || null;
-        if (cont && cont.phase === "bake") {
-            const bcfg = this._bakeRegionConfig();
-            const done = this._bakeRegionFields(
-                Math.floor((regX * SC.regionM) / bcfg.sizeM),
-                Math.floor((regZ * SC.regionM) / bcfg.sizeM),
-                cont,
-                deadlineMs
-            );
-            if (!done) return region; // Bake-Scheibe voll — der nächste Frame setzt fort
-            cont.phase = "cells";
-        }
-        const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-        let seedHash = 2166136261 >>> 0;
-        for (let i = 0; i < worldSeed.length; i++) seedHash = ((seedHash ^ worldSeed.charCodeAt(i)) * 16777619) >>> 0;
-        // V18.225 — die Strata über drei Pässe (Canopy · Understory · Fels).
-        // Jeder Pass sein eigenes Zell-Raster + Cap. Die Pässe teilen
-        // die gebackenen Felder + die Bitmask + die HISM-Gruppen.
-        const layers = SC.layers || [
-            {
-                name: "tree",
-                cellM: SC.cellM,
-                cap: SC.perRegionCap,
-                floor: SC.densityFloor,
-                scaleBase: 0.7,
-                scaleVar: 0.66,
-                slopeMax: SC.slopeMax,
-                kind: "tree",
-                promotable: true,
-            },
-        ];
-        const startLayer = cont ? cont.layerIdx : 0;
-        for (let li = startLayer; li < layers.length; li++) {
+        if (cont && !cont.darts) this._streuFadenSchicken(region, cont);
+        if (cont && !cont.darts) return region; // die Würfe rechnet der Faden — ein späterer Takt setzt fort
+        const [px, pz] = playerPos ? [playerPos.x, playerPos.z] : [0, 0];
+        const darts = cont
+            ? cont.darts
+            : globalThis.__phytoCore.streuRegion(
+                  Object.assign(this._streuAuftrag(regX, regZ, px, pz, this._effectiveFoliageDensity()), {
+                      leser: this._streuLeser(),
+                  })
+              );
+        // die Strata über drei Pässe (Canopy · Understory · Fels), je Pass die Würfe seiner Schicht und sein Cap
+        const layers = AnazhRealm.SCATTER.layers;
+        for (let li = cont ? cont.layerIdx : 0; li < layers.length; li++) {
             const layer = layers[li];
             if (cont) cont.layerIdx = li;
-            const n = this._scatterPass(region, layer, regX, regZ, seedHash, playerPos, cont, deadlineMs);
+            const n = this._scatterPass(region, layer, darts[li], regX, regZ, playerPos, cont, deadlineMs);
             if (cont && cont.hit) {
                 cont.hit = false;
-                return region; // Zellen-Scheibe voll — cont trägt cz/cx/emitted exakt
+                return region; // Scheibe voll — cont trägt Wurf-Zeiger und emitted exakt
             }
             region.byLayer[layer.name] = n;
             region.instanceCount += n;
             if (cont) {
-                cont.cz = 0;
-                cont.cx = 0;
+                cont.i = 0;
                 cont.emitted = 0; // die nächste Schicht beginnt frisch
             }
         }
@@ -649,154 +524,99 @@ class AnazhRealm_vegetation_streu {
     // V18.225 — EIN Scatter-Pass für eine Schicht (Plan §13 5-Strata). Walkt das
     // schicht-eigene Zell-Raster, gated gegen die gebackenen Felder, schreibt
     // Deko-Instanzen in die GETEILTEN HISM-Gruppen. Deterministisch (pcg2d).
-    _scatterPass(region, layer, regX, regZ, seedHash, playerPos, cont, deadlineMs) {
+    _scatterPass(region, layer, darts, regX, regZ, playerPos, cont, deadlineMs) {
         const SC = AnazhRealm.SCATTER;
         // Die Streu-Zelle ist ein Wurf des Feldes: trägt die Wildnis die Region nicht, entsteht keine (und keine Promotion).
         if (!this._wildnisTraegt((regX + 0.5) * SC.regionM, (regZ + 0.5) * SC.regionM)) return 0;
         const cellM = layer.cellM;
-        const cellsPerRegion = Math.round(SC.regionM / cellM);
-        const baseCellX = Math.round((regX * SC.regionM) / cellM);
-        const baseCellZ = Math.round((regZ * SC.regionM) / cellM);
-        // W3.3c — im Scheiben-Modus lesen die Distanz-Gates den SNAPSHOT (cont.px/pz),
-        // nie die Live-Position — sonst driftete der emitted-Satz gegen den One-Shot.
+        // im Scheiben-Modus der SNAPSHOT (cont.px/pz), nie die Live-Position — derselbe Ort, für den die Würfe fielen
         const px = cont ? cont.px : playerPos ? playerPos.x : 0;
         const pz = cont ? cont.pz : playerPos ? playerPos.z : 0;
-        // DAS AUGE DER STUFEN (K36): der Ring streamt um den Spieler (seine Distanz-Gates oben), die Stufe der Geburt und
-        // ihr Band-Partner messen vom Auge der Maske (`_lodAuge`) wie der Takt (`_tickScatterLod`) — sonst trug die Geburt in
-        // der Verfolger-Kamera die Wahl der Spieler-Distanz, bis der Takt die Zelle besuchte.
+        // DAS AUGE DER STUFEN (K36): der Ring streamt um den Spieler (seine Distanz-Gates in den Würfen), die Stufe der Geburt
+        // und ihr Band-Partner messen vom Auge der Maske (`_lodAuge`) wie der Takt (`_tickScatterLod`).
         const auge = this._lodAuge() || { x: px, z: pz };
         const N = AnazhRealm.VARIANTS_PER_SPECIES;
-        const slopeMax = Number.isFinite(layer.slopeMax) ? layer.slopeMax : SC.slopeMax;
-        const floor = Number.isFinite(layer.floor) ? layer.floor : SC.densityFloor;
-        // Salt pro Schicht (eigener Hash-Stream — kein Re-Roll der Baum-Schicht).
         let layerSalt = 0;
         for (let i = 0; i < layer.name.length; i++) layerSalt = (layerSalt * 131 + layer.name.charCodeAt(i)) >>> 0;
-        // Der Dichte-Faktor lichtet Platzierungs-Wahrscheinlichkeit UND Pro-Region-Cap — sonst blieben
-        // cap-saturierte dichte Wälder unter Last unverändert. Quelle: _effectiveFoliageDensity (Studio-Regime
-        // = 1); im Scheiben-Modus der bau-zeitliche Snapshot (kein Regler-Drift zwischen Scheiben).
+        // Der Dichte-Faktor lichtet die Wahrscheinlichkeit (in den Würfen) UND das Pro-Region-Cap — sonst blieben
+        // cap-saturierte dichte Wälder unter Last unverändert; im Scheiben-Modus der bau-zeitliche Snapshot.
         const fdScale = cont && cont.fdScale != null ? cont.fdScale : this._effectiveFoliageDensity();
         const cap = Math.max(1, Math.round(layer.cap * fdScale));
+        const W = globalThis.__phytoCore.STREU_WURF;
         let emitted = cont ? cont.emitted : 0;
-        const _czStart = cont ? cont.cz : 0;
-        const _cxFirst = cont ? cont.cx : 0;
         const _dlOn = cont && Number.isFinite(deadlineMs);
         let _dlCheck = 0;
-        for (let cz = _czStart; cz < cellsPerRegion && emitted < cap; cz++) {
-            for (let cx = cz === _czStart ? _cxFirst : 0; cx < cellsPerRegion && emitted < cap; cx++) {
-                // Scheiben-Schnitt VOR der Zellen-Arbeit (alle ~64 Zellen): Zelle (cz,cx) ist noch unberührt, die
-                // Fortsetzung beginnt exakt hier ⇒ emitted<cap zählt byte-identisch zum One-Shot.
-                if (_dlOn && (++_dlCheck & 63) === 0 && performance.now() > deadlineMs) {
-                    cont.cz = cz;
-                    cont.cx = cx;
-                    cont.emitted = emitted;
-                    cont.hit = true;
-                    return emitted;
-                }
-                const cellX = baseCellX + cx;
-                const cellZ = baseCellZ + cz;
-                const h = this._pcg2d((cellX ^ seedHash ^ layerSalt) >>> 0, (cellZ * 2654435761) >>> 0);
-                const tf = this._scatterCellTransform(cellX, cellZ, cellM, layer.scaleBase, layer.scaleVar);
-                const dx = tf.x - px;
-                const dz = tf.z - pz;
-                const dist = Math.sqrt(dx * dx + dz * dz);
-                if (dist < SC.innerM) continue;
-                if (dist > SC.outerM) continue;
-                // promotete Cell DIESER Schicht → skip (Understory/Streu sind nie
-                // promotable → ihre Bitmask bleibt leer; die Baum-Schicht schützt
-                // ihre realen Bäume)
-                if (this._scatterIsCellPromoted(tf.x, tf.z, layer.name)) continue;
-                // wo eine Tat den Baum der Zelle nahm, wächst keine Streu, bis sie heilt (`_tatSperrt`, speicher.K3)
-                if (layer.promotable && this._tatSperrt(tf.x, tf.z)) continue;
-                // Gate-Ordnung: billiges Feld zuerst, dann Slope, erst DANN das teure exakte Wasser-Verdikt (steile
-                // Zellen sparen den _voxelSurfaceY-Scan). Zwischen den Gates zieht nichts aus dem RNG → identischer
-                // Satz (gate:scatter-ab). Das Wasser-Verdikt bleibt die EXAKTE Spalten-Probe `_nassAt`: das Feld weicht
-                // bis ~48 m ab (Content-Drift). `state.__scatterExactWater` erzwingt die Legacy-Ordnung (A/B-Ufer).
-                const _legacyOrder = this.state.__scatterExactWater === true;
-                if (_legacyOrder && !this._landAt(tf.x, tf.z, 0.4)) continue;
-                const field = this._sampleBakedField ? this._sampleBakedField(tf.x, tf.z) : null;
-                let lebendig, slope, moisture;
-                if (field) {
-                    lebendig = field.lebendig;
-                    slope = field.slope;
-                    moisture = field.moisture;
-                } else {
-                    const f = this.worldFieldAt ? this.worldFieldAt(tf.x, tf.z) : null;
-                    lebendig = f ? f.lebendig : 0;
-                    // V18.351 — die EINE Slope-Quelle statt `slope = 0` (der alte Fallback ließ Fels OHNE
-                    // gebackenes Feld NIE durchbrechen [exposure∝slope] UND nie skippen [slope>slopeMax]).
-                    slope = this._slopeAt ? this._slopeAt(tf.x, tf.z) : 0;
-                    const surfY = this._voxelSurfaceY ? this._voxelSurfaceY(tf.x, tf.z) : 0;
-                    moisture = this._feuchteAt ? this._feuchteAt(tf.x, tf.z, surfY) : 0;
-                }
-                if (slope > slopeMax) continue;
-                if (!_legacyOrder && !this._landAt(tf.x, tf.z, 0.4)) continue;
-                let prob;
-                if (layer.kind === "rock") {
-                    // rockExposure: Fels bricht an STEILEN, TROCKENEN, KAHLEN Hängen durch — slope hebt, (1−moisture)
-                    // hebt leicht, lebendig senkt stark (kein Kiesel in der saftigen Wiese).
-                    const exposure = slope * 1.1 + (1 - moisture) * 0.25 - lebendig * 0.5 - 0.15;
-                    const dScale = Number.isFinite(layer.densityScale) ? layer.densityScale : SC.densityScale;
-                    prob = Math.min(0.85, floor + Math.max(0, exposure) * dScale);
-                } else {
-                    prob = Math.min(0.95, floor + lebendig * SC.densityScale);
-                }
-                // V18.277 — die kapazitäts-gewachsene Dichte lichtet auch die Platzierungs-
-                // WAHRSCHEINLICHKEIT (zusätzlich zum Cap oben) → unter Last weniger Instanzen.
-                if (this._pcgFloat(cellX ^ layerSalt, cellZ, 9) >= prob * fdScale) continue;
-                const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h);
-                const variantIndex = h % N;
-                // V18.387 — Baum-Schichten (nicht Fels/Kiesel) reichen die Sichthöhe
-                // durch → die Erst-LOD-Wahl nutzt die Wahrnehmungs-Distanz.
-                // Ab hier wartet die Zelle am Ort tf: ihr Ort ist der Rang jeder Zusage, auf die sie wartet (`_streuWartetAuf`).
-                [this._streuZelleOrt, this._streuZelleN] = [tf, this._streuZusagen | 0];
-                const visH = this._scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, tf);
-                if (visH === null) {
-                    // die Höhen-Stufe des Foundry-Baums lädt: die Region wartet wie auf ein ladendes Asset
-                    this._streuZelleWartet(region);
-                    continue;
-                }
-                const distAuge = Math.hypot(tf.x - auge.x, tf.z - auge.z); // die Stufen-Distanz: vom Auge (K36)
-                const lod = this._chooseLODForDistance(distAuge, undefined, visH);
-                // Trägt die Foundry die Baum-Art, serviert der Scatter IHR Asset (fern = Studio-Billboard, nah =
-                // Studio-Geometrie) — nie ein paralleles Grammatik-Baum-System (Doppel-Bake + Look-Bruch nah/fern).
-                // Foundry-gegated; headless (Foundry aus) bleibt Grammatik. Die Zelle setzt durch die EINE Natur-Wand
-                // (`_naturSetzen`, mit Art und Größe — ihre Krone): im Grundriss eines Hauses und über der Genesis-Lichtung
-                // wird sie nie Streu.
-                const rec = this._naturSetzen(species, tf, tf, () =>
-                    this._scatterMaterializeCell(
-                        region,
-                        layer,
-                        layerSalt,
-                        cellX,
-                        cellZ,
-                        cellM,
-                        tf,
-                        distAuge,
-                        species,
-                        variantIndex,
-                        visH,
-                        lod,
-                        regX,
-                        regZ,
-                        false
-                    )
-                );
-                if (!rec) continue;
-                region.cells.push(rec);
-                // Lookup nur für die promotable (Baum-)Schicht — die Promotion liest ihn; ihre Krone streut Laub.
-                if (layer.promotable) {
-                    this._scatterRegisterCell(tf.x, tf.z, layer.name, species, variantIndex);
-                    // Der Kronen-Radius: der des Wald-Generators für die Art (× Skala), sonst aus der Sichthöhe.
-                    const kc = AnazhRealm.FOREST.crown[species];
-                    const kr = kc
-                        ? kc * tf.scale
-                        : Number.isFinite(visH)
-                          ? visH * AnazhRealm.LAUB_STREU.kroneJeHoehe
-                          : 0;
-                    this._kronenStreuNeu(`s:${layer.name}:${cellX},${cellZ}`, tf.x, tf.z, kr);
-                }
-                emitted++;
+        for (let i = cont ? cont.i : 0; i < darts.length && emitted < cap; i += W) {
+            // Scheiben-Schnitt VOR der Arbeit des Wurfs (alle 8 Würfe): die Fortsetzung beginnt exakt bei ihm ⇒ emitted<cap
+            // zählt byte-identisch zum One-Shot (gate:scatter-slice)
+            if (_dlOn && (++_dlCheck & 7) === 0 && performance.now() > deadlineMs) {
+                cont.i = i;
+                cont.emitted = emitted;
+                cont.hit = true;
+                return emitted;
             }
+            const [cellX, cellZ, h, lebendig, moisture] = [
+                darts[i],
+                darts[i + 1],
+                darts[i + 6],
+                darts[i + 7],
+                darts[i + 8],
+            ];
+            const tf = { x: darts[i + 2], z: darts[i + 3], yaw: darts[i + 4], scale: darts[i + 5] };
+            // was der Zustand der Welt urteilt, urteilt der Haupt-Faden: die promotete Zelle dieser Schicht (ihre realen
+            // Bäume), die Tat, die den Baum der Zelle nahm (`_tatSperrt`, speicher.K3), das exakte Wasser-Verdikt (`_landAt`)
+            if (this._scatterIsCellPromoted(tf.x, tf.z, layer.name)) continue;
+            if (layer.promotable && this._tatSperrt(tf.x, tf.z)) continue;
+            if (!this._landAt(tf.x, tf.z, 0.4)) continue;
+            const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h);
+            const variantIndex = h % N;
+            // V18.387 — Baum-Schichten (nicht Fels/Kiesel) reichen die Sichthöhe
+            // durch → die Erst-LOD-Wahl nutzt die Wahrnehmungs-Distanz.
+            // Ab hier wartet die Zelle am Ort tf: ihr Ort ist der Rang jeder Zusage, auf die sie wartet (`_streuWartetAuf`).
+            [this._streuZelleOrt, this._streuZelleN] = [tf, this._streuZusagen | 0];
+            const visH = this._scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, tf);
+            if (visH === null) {
+                // die Höhen-Stufe des Foundry-Baums lädt: die Region wartet wie auf ein ladendes Asset
+                this._streuZelleWartet(region);
+                continue;
+            }
+            const distAuge = Math.hypot(tf.x - auge.x, tf.z - auge.z); // die Stufen-Distanz: vom Auge (K36)
+            const lod = this._chooseLODForDistance(distAuge, undefined, visH);
+            // Trägt die Foundry die Baum-Art, serviert der Scatter IHR Asset (fern = Studio-Billboard, nah =
+            // Studio-Geometrie) — nie ein paralleles Grammatik-Baum-System (Doppel-Bake + Look-Bruch nah/fern).
+            // Foundry-gegated; headless (Foundry aus) bleibt Grammatik. Die Zelle setzt durch die EINE Natur-Wand
+            // (`_naturSetzen`, mit Art und Größe — ihre Krone): im Grundriss eines Hauses und über der Genesis-Lichtung
+            // wird sie nie Streu.
+            const rec = this._naturSetzen(species, tf, tf, () =>
+                this._scatterMaterializeCell(
+                    region,
+                    layer,
+                    layerSalt,
+                    cellX,
+                    cellZ,
+                    cellM,
+                    tf,
+                    distAuge,
+                    species,
+                    variantIndex,
+                    visH,
+                    lod,
+                    regX,
+                    regZ,
+                    false
+                )
+            );
+            if (!rec) continue;
+            region.cells.push(rec);
+            // Lookup nur für die promotable (Baum-)Schicht — die Promotion liest ihn; ihre Krone streut Laub.
+            if (layer.promotable) {
+                this._scatterRegisterCell(tf.x, tf.z, layer.name, species, variantIndex);
+                // Der Kronen-Radius: der des Wald-Generators für die Art (× Skala), sonst aus der Sichthöhe.
+                const kc = AnazhRealm.FOREST.crown[species];
+                const kr = kc ? kc * tf.scale : Number.isFinite(visH) ? visH * AnazhRealm.LAUB_STREU.kroneJeHoehe : 0;
+                this._kronenStreuNeu(`s:${layer.name}:${cellX},${cellZ}`, tf.x, tf.z, kr);
+            }
+            emitted++;
         }
         return emitted;
     }
@@ -938,7 +758,7 @@ class AnazhRealm_vegetation_streu {
         );
     }
 
-    // Die EINE Zellen-Materialisierung (gate:scatter-ab ist die Byte-Wand): baut für eine Streu-Zelle die
+    // Die EINE Zellen-Materialisierung (gate:scatter-slice ist die Byte-Wand): baut für eine Streu-Zelle die
     // Instanz-Slots (Foundry-Flat oder Grammatik, inkl. Band-Partner + Tint) auf der gewünschten Stufe
     // → Zellen-Datensatz oder null (deferriert/ungemappt). Leser: Region-Bau + _tickScatterLod.
     // ctxNoDefer: der LOD-Tick markiert die Region NICHT als deferriert (alte Stufe bleibt, Retry).
@@ -1602,7 +1422,9 @@ class AnazhRealm_vegetation_streu {
         for (const reg of map.values()) {
             if (work >= SC.maxRegionsPerFrame) break;
             if (!reg || !reg._cont) continue;
+            const wartet = !reg._cont.darts;
             this._scatterRegion(reg.regX, reg.regZ, playerPos, deadlineMs);
+            if (wartet && reg._cont && !reg._cont.darts) continue; // sie wartet auf die Würfe des Fadens und hält keinen Takt
             work++;
             if (reg._cont) {
                 _sliceFull = true;
@@ -1742,27 +1564,8 @@ class AnazhRealm_vegetation_streu {
         if (!bestReg) return 0;
         const { regX, regZ } = bestReg;
         this._disposeScatterRegion(bestKey);
-        this._scatterRegion(regX, regZ, playerPos); // baut bei der AKTUELLEN (geringeren) Dichte
+        this._scatterRegion(regX, regZ, playerPos, performance.now()); // baut im Faden bei der AKTUELLEN (geringeren) Dichte
         return 1;
-    }
-
-    // Voxel-Edit → Bake-Regionen im Radius dirty markieren (Lazy-Rebake beim nächsten Sample); pro Edit
-    // höchstens 2×2 Regionen.
-    _invalidateBakedRegionsAround(x, z, radius) {
-        if (!this.state.bakedRegionFields || this.state.bakedRegionFields.size === 0) return;
-        const cfg = this._bakeRegionConfig();
-        const r = Math.max(1, radius || 6);
-        const minRX = Math.floor((x - r) / cfg.sizeM);
-        const maxRX = Math.floor((x + r) / cfg.sizeM);
-        const minRZ = Math.floor((z - r) / cfg.sizeM);
-        const maxRZ = Math.floor((z + r) / cfg.sizeM);
-        for (let rx = minRX; rx <= maxRX; rx++) {
-            for (let rz = minRZ; rz <= maxRZ; rz++) {
-                const key = this._bakedRegionKey(rx, rz);
-                const entry = this.state.bakedRegionFields.get(key);
-                if (entry) entry.dirty = true;
-            }
-        }
     }
 
     // Die EINE Wahrnehmungs-Distanz (Screen-Space-Error-LOD, phytogenesis
