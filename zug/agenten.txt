@@ -40,3 +40,4 @@
 2026-10-26T06:30 decke-zahlstelle-3 champion 129k 78A grün 80 eigene Absturz-Fänger → welt-boot hauptLauf (Absturz = Exit 2 beim Namen), scripts −2533, Wand 5ad32e8c · FEUER
 2026-10-26T06:40 gras-fuss champion 202k 86A WIP Nah-Wiese Fern-Band bis 32 m (nahWieseDichte): Gras-Kante 10–16 m weg (Auge 25.10.), laub-kante 0,1934, L2 0,2563 rot, Nah-Wiese 77k → 116k Dreiecke (Budget 80k) 1fb32591 · WICHTIG
 2026-10-26T06:45 echt-k1-platz champion 107k 42A grün platz-Haken am Faden-Put: verfehlt 3 → 0 (speicher-k2-anhang), main grün 0e256a79 · PUNKTE
+2026-10-26T07:10 kern-karte champion 205k 107A WIP S7 EIN Gesetz für alle Stufen (foundry-core.js:1441), 13 Goldens Vertrags-Akt, 115 byte-gleich; L2 0,2577 → 0,2485 (rot); Gras-Fernstufe durch Studio-Vertrag B2 verboten 9195e533 · WICHTIG

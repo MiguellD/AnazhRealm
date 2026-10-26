@@ -46,10 +46,11 @@ läuft   z36  07:00 Lauf 3 OHNE b-streu-faden (Bisektion: main + b-streu-faden z
 lehre   omen-ci  jeder Zug-Lauf und jeder integ/main-Push trägt einen echt-Job mit Vorfahrt auf der OMEN; 3 z35-Läufe verdrängten leib.K1#2 bis zum Deckel 5580 s → Züge nicht leichtfertig neu starten  Koordinator  —
 fertig  weltakt-null  d33df55b: kein singender Vogel → NaN; wartet jetzt in Spielzeit, stumme Tat ROT beim Namen (Decke +332)  Champion  → z37
 fertig  decke-zahlstelle-3  5ad32e8c: 80 eigene Absturz-Fänger → hauptLauf, scripts −2533 (merge main nach z36)  Champion  → z37
-plan    z37  gras-fuss + weltakt-null + decke-zahlstelle-3 (+ echt-k1-platz nach koordination)  fahre.sh  A · FEUER
+plan    z37  kern-karte (enthält gras-fuss + a-laub-pose) + karte-fuss + weltakt-null + decke-zahlstelle-3 (+ b-streu-faden nach b-streu-ort) — landet erst nach der Buchung von Takt 5  fahre.sh  A · FEUER · B
 hinweis e-stadt-gipfel  der Zweig trägt 3 Messages mit „e-stadt-fertig“ — nie direkt in einen Zug, nur über e-bewohner-z36 (umgeschrieben)  Koordinator  —
 befund  nachwache  z32-abab LANGSAMER (stadt steht CPU-Takt p95 15,9 → 31,6) und z35-abab LANGSAMER (stadt geht KI-Takt EWMA 3,9 → 41,8, CPU-Takt p95 83,9 → 98,5) — NICHT zurückgenommen (z36 baut auf z35; e-bewohner auf mensch-k3), Wurzel-Karte stadt-takt  Koordinator  E
 läuft   stadt-takt  Champion: beide Stadt-Rückschritte beim Namen (werkbank takt), Schnitt, OMEN-ABAB stadt  Champion  E · FEUER
-läuft   kern-karte  Champion: foundry-core S7 für alle Stufen (Busch-Böden) + Gras-Fernstufe (Budget Nah-Wiese) unter Byte-Beweis  Champion  A
+fertig  kern-karte  9195e533: S7 für alle Stufen/Arten (Busch-Füße rund), 13 Goldens neu geprägt; L2 0,2485 (rot); Gras-L3 durch B2 verboten → Budget Nah-Wiese offen  Champion  → z37
+läuft   karte-fuss  Champion: Fuß der Karte L2 am Boden (a weich ausblenden / b Tiefe), Ziel L2 ≤ 0,22  Champion  A
 regel   mess-takt  06:30 Bilanz: Woche 28 %, 0 Punkte gebucht in Woche 2 — der Engpass ist die Buchung, nicht der Schnitt: jeder Zug, der Kerne berührt, macht per R6 fast alle Messungen alt (z35: Σ 89 → 5 am neuen Kopf), die GTX braucht ~5–6 h je Kopf und wird von echt-Jobs verdrängt. Ab jetzt: (1) Takt 4 am 83df2052 buchen, sobald z32k-gtx steht (~08:00); (2) nach z36 GELANDET ist dessen Kopf der Takt-5-Kopf: headless + Radeon sofort in Ruhe (keine neuen lokalen Karten, Cloud arbeitet), takt5-gtx auf diesen Kopf umstellen; (3) z37 (kern-karte berührt foundry-core) landet erst, wenn Takt 5 gebucht ist — Messen vor dem nächsten Kern-Zug  Koordinator  Punkte je %
 läuft   b-streu-ort  Champion: die Streu im Faden weicht dem Ort wie der Haupt-Faden (Verdacht _weichtDemBau/Ort-Pläne fehlen im Faden), Wand MAIN = FADEN an der Stadt  Champion  B
