@@ -1,7 +1,7 @@
 // Stationen der Gruppe V (src/g5.js) — Welten und Wege. Format und Regeln: punkte/punkte.cjs (Kopf).
 // Erfasst: jedes Kriterium mit Punkten > 0 (fahrzeug.K3/K4, siedlung.K1, leib.K1/K4, halten.K1/K2), die Messschuld M36
 // (siedlung.K5) und was ein Zweig im Stau kippen soll (stadt-erwachen-2 siedlung.K5, halten-gesetz halten.K1/K3, halten-k5 halten.K5,
-// teilen-sicher ultiversum.K5, gamepad-verben leib.K5, leib-k2-fuss leib.K2; tore.K5 steht seit 24.10. ganz in fehlt: kein anderes Gerät). Was sich nicht als Station fassen lässt, steht in
+// teilen-sicher ultiversum.K5, gamepad-verben leib.K5, leib-k2-fuss leib.K2, sk2-zipf siedlung.K2 Staffel 2; tore.K5 steht seit 24.10. ganz in fehlt: kein anderes Gerät). Was sich nicht als Station fassen lässt, steht in
 // `module.exports.fehlt` (befehl null, grund) — außerhalb der Liste, damit `run` der anderen Gruppen nicht an ihr bricht.
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
@@ -126,6 +126,22 @@ const STADT_KAMERA =
     "hoeher: Math.round((best.y - cy) * 10) / 10, segs: v2.mauer.segs.length, tuerme: v2.mauer.towers.length };";
 const LIES = (feld) =>
     "node -e 'const t = require(\"fs\").readFileSync(process.argv[1], \"utf8\"); const e = JSON.parse(t.slice(t.indexOf(\"{\"))).ergebnis; " + feld + "'";
+
+// der Weg zur Stadt vom Hügel (siedlung.K2 Staffel 1 und 2): Boot, Wahl, Hügel, bis die Mauer steht, die Kamera
+const STADT_HUEGEL = [
+    "boot",
+    "timeout 60 $W fenster 1600 900 > /dev/null 2>&1",
+    "timeout 120 $W eval '" + STADT_WAHL + "' > \"$L/wahl.json\" 2>&1; echo '@@PUNKTE@@ WAHL'; cat \"$L/wahl.json\"; echo",
+    "HILL=$(" + LIES("console.log(e.hill ? e.hill.x.toFixed(1) + \" \" + e.hill.z.toFixed(1) : \"\")") + " \"$L/wahl.json\" 2> /dev/null)",
+    "[ -n \"$HILL\" ] || { echo '@@PUNKTE@@ KEINE STADT MIT ORT BINNEN 2 KM'; exit 4; }",
+    "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
+    "for i in $(seq 1 60); do timeout 60 $W eval '" + STADT_STAND + "' > \"$L/stand.json\" 2>&1; " +
+        LIES("process.exit(e.mauer > 0 && !e.zug && !e.pending ? 0 : 1)") + " \"$L/stand.json\" 2> /dev/null && break; sleep 5; done",
+    "echo '@@PUNKTE@@ STAND'; cat \"$L/stand.json\"; echo",
+    "timeout 60 $W eval '" + STADT_KAMERA + "' > \"$L/kamera.json\" 2>&1; echo '@@PUNKTE@@ KAMERA'; cat \"$L/kamera.json\"; echo",
+    "K=$(" + LIES("console.log(e.pose ? e.pose.join(\" \") : \"\")") + " \"$L/kamera.json\" 2> /dev/null)",
+    "[ -n \"$K\" ] || { echo '@@PUNKTE@@ KEINE KAMERA'; exit 5; }",
+];
 
 // DER HIT-STOP DES SPIELS neben der Linse (halten.K2, 23.10.): latenz zählt den Halt im Bild (stehende Schwung-Uhr UND Hand);
 // die Haken zählen daneben, was das Spiel tut — jeder Treffer, der den Halt setzt (`_kampfHitJuice`, seine Dauer), und wie weit
@@ -305,18 +321,7 @@ const stationen = [
         befehl: sitzung(
             "A=$(cygpath -m '{AUS}')",
             "teil Z node scripts/diag-settlement.cjs --nur-z",
-            "boot",
-            "timeout 60 $W fenster 1600 900 > /dev/null 2>&1",
-            "timeout 120 $W eval '" + STADT_WAHL + "' > \"$L/wahl.json\" 2>&1; echo '@@PUNKTE@@ WAHL'; cat \"$L/wahl.json\"; echo",
-            "HILL=$(" + LIES("console.log(e.hill ? e.hill.x.toFixed(1) + \" \" + e.hill.z.toFixed(1) : \"\")") + " \"$L/wahl.json\" 2> /dev/null)",
-            "[ -n \"$HILL\" ] || { echo '@@PUNKTE@@ KEINE STADT MIT ORT BINNEN 2 KM'; exit 4; }",
-            "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
-            "for i in $(seq 1 60); do timeout 60 $W eval '" + STADT_STAND + "' > \"$L/stand.json\" 2>&1; " +
-                LIES("process.exit(e.mauer > 0 && !e.zug && !e.pending ? 0 : 1)") + " \"$L/stand.json\" 2> /dev/null && break; sleep 5; done",
-            "echo '@@PUNKTE@@ STAND'; cat \"$L/stand.json\"; echo",
-            "timeout 60 $W eval '" + STADT_KAMERA + "' > \"$L/kamera.json\" 2>&1; echo '@@PUNKTE@@ KAMERA'; cat \"$L/kamera.json\"; echo",
-            "K=$(" + LIES("console.log(e.pose ? e.pose.join(\" \") : \"\")") + " \"$L/kamera.json\" 2> /dev/null)",
-            "[ -n \"$K\" ] || { echo '@@PUNKTE@@ KEINE KAMERA'; exit 5; }",
+            ...STADT_HUEGEL,
             "rm -f \"$L/stadt-mittag.abnahme.json\"",
             "teil BILD $W bild $K --datei \"$L/stadt-mittag.png\" --w 1600 --h 900",
             "cp \"$L/stadt-mittag.abnahme.json\" \"$A\" 2> /dev/null; true"
@@ -362,6 +367,75 @@ const stationen = [
             "spec/asset-contract/v6/golden/siedlung.json",
         ],
         quelle: "1 = in ≥ 6 von 8 Saaten mit zufälligem Spawn steht binnen 2 km eine ummauerte Stadt (Auto-Zellen, nie Chat), sichtbar vom Hügel an einem Gerät",
+    },
+
+    // siedlung.K2 Staffel 2 (Zweig sk2-zipf): der Zipf-Fit der Siedlungs-Linse (`diag-settlement --zipf`: ζ nach Gabaix-Ibragimov
+    // über die Orte ab der ersten Rang-Stufe je 32 × 32 km um einen zufälligen Spawn, das Intervall [kleinste, größte] über
+    // 8 Saaten, dazu Mauer und Graph im Export der Stadt jeder Saat) und die Stadt vom Hügel wie in Staffel 1, geschossen
+    // mittags (Uhr 0,5) und in der Dämmerung (Uhr 0,25, die Stunde der Licht-Linsen); {AUS} trägt beide Abnahmen. Ohne den Modus
+    // endet `--nur-z` nach Teil Z, die Zeile fehlt: ROT. An sk2-zipf (Node): ζ 1,329 [1,294; 1,384], Mauer und Graph 7/7 — ROT,
+    // die oberste Rang-Stufe endet bei 4 · 96 Häusern (eine dritte Stufe desselben Gesetzes: ζ 1,091 [1,06; 1,154]).
+    {
+        kriterium: "siedlung.K2",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: sitzung(
+            "A=$(cygpath -m '{AUS}')",
+            "teil ZIPF node scripts/diag-settlement.cjs --nur-z --zipf",
+            ...STADT_HUEGEL,
+            "rm -f \"$L/stadt-mittag.abnahme.json\" \"$L/stadt-daemmerung.abnahme.json\"",
+            "teil MITTAG $W bild $K --uhr 0.5 --datei \"$L/stadt-mittag.png\" --w 1600 --h 900",
+            "teil DAEMMERUNG $W bild $K --uhr 0.25 --datei \"$L/stadt-daemmerung.png\" --w 1600 --h 900",
+            "node -e 'const f = require(\"fs\"), l = (n) => { try { return JSON.parse(f.readFileSync(process.argv[2] + \"/stadt-\" + n + \".abnahme.json\", \"utf8\")); } catch (e) { return null; } }; " +
+                "f.writeFileSync(process.argv[1], JSON.stringify({ mittag: l(\"mittag\"), daemmerung: l(\"daemmerung\") }))' \"$A\" \"$L\""
+        ),
+        gpu: true,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const teil = (n) => out.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
+            // Zipf-Exponent 0,8–1,2 mit Konfidenz-Intervall: das ganze Intervall im Band; der Export jeder Stadt trägt Mauer und Graph
+            const z = jsonZeile(out, /^ZIPF /);
+            const ex = /^Mauer und Graph (\d+)\/(\d+)$/.exec((z && z.export) || "");
+            const zipf = !!z && Array.isArray(z.ki) && z.ki[0] >= 0.8 && z.ki[1] <= 1.2;
+            const mauerGraph = !!ex && +ex[1] > 0 && ex[1] === ex[2];
+            const wb = jsonBlock(teil("WAHL"));
+            const w = (wb && wb.ergebnis) || {};
+            const sb = jsonBlock(teil("STAND"));
+            const s = (sb && sb.ergebnis) || {};
+            const kb = jsonBlock(teil("KAMERA"));
+            const k = (kb && kb.ergebnis) || {};
+            const steht = s.mauer > 0 && !s.zug && !s.pending;
+            // mittags und in der Dämmerung: je Stunde das Beweisbild grün UND zu ihr geschossen (die Bühne trägt die Uhr)
+            const bild = (b, uhr) => !!b && b.ok === true && !!b.buehne && Math.abs(b.buehne.uhr - uhr) < 0.01;
+            const [mi, da] = [j && j.mittag, j && j.daemmerung];
+            const gruen = zipf && mauerGraph && steht && !k.fehler && k.segs > 0 && k.hoeher > 0 && bild(mi, 0.5) && bild(da, 0.25);
+            const zeile = (b) => (b ? (b.zeile || "").slice(0, 60) + " Uhr " + (b.buehne && b.buehne.uhr) : "fehlt");
+            return {
+                gruen,
+                zahl:
+                    "ZIPF " + (z ? "ζ " + z.zeta + " [" + z.ki.join("; ") + "] über " + (z.je || []).length + " Saaten, " + z.export : "keine Zeile") +
+                    " · Boot-Seed " + w.seed + ": Stadt " + (w.wahl ? w.wahl.cx + "," + w.wahl.cz + " nH " + w.wahl.nH : "keine mit Ort") +
+                    " · Mauer " + (k.segs != null ? k.segs + " Segmente, Pool " + s.mauer : k.fehler || "?") + (s.zug ? ", Zug läuft" : "") +
+                    " · mittags " + zeile(mi) + " · Dämmerung " + zeile(da) + " (Exit " + lauf.exit + ")",
+            };
+        },
+        pfad: [
+            "fachwerk-core.js",
+            "stamm/siedlung-ort.js",
+            "stamm/siedlung-satz.js",
+            "stamm/siedlung-bauten.js",
+            "stamm/studio-bruecke.js",
+            "stamm/bild-himmel.js",
+            "worlds/fachwerk/fachwerk.js",
+            "save-server.js",
+            "scripts/diag-settlement.cjs",
+            "scripts/werkbank.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+            "spec/asset-contract/v6/golden/siedlung.json",
+        ],
+        quelle: "2 = Zipf-Exponent 0,8–1,2 über 32 × 32 km mit Konfidenz-Intervall, Export trägt mauer und graph, mittags und in der Dämmerung, beide Geräte",
     },
 
     // ───────── siedlung.K1 — das Haus von innen ─────────
@@ -1067,10 +1141,6 @@ module.exports.fehlt = [
     {
         kriterium: "siedlung.K1", staffel: 2, befehl: null,
         grund: "W10 geht 8 Häuser des Drehbuch-Dorfs, nicht jedes Haus des Start-Dorfs; keine Probe misst die Innen-Luma gegen den Außen-Schatten (≥ 15 %) im Ausgabe-Bild",
-    },
-    {
-        kriterium: "siedlung.K2", staffel: 2, befehl: null,
-        grund: "Werkzeug fehlt: der Zipf-Fit über 32 × 32 km mit Intervall steht in keiner Linse (einmal von Hand gemessen, α 0,916, kein Tor); der Export mit mauer und graph prüft gate:settlement, die Dämmerung und beide Geräte bindet keine Station",
     },
     {
         kriterium: "leib.K4", staffel: 2, befehl: null,
