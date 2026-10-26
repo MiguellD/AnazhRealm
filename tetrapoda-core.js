@@ -141,13 +141,14 @@
         // KREATUR-SEELEN-PARITAETS-WAND im Vertrag-Validator erzwingt die
         // Gleichheit. must-ignore: fremde Leser ueberlesen die Bloecke.
         jagd: {
-            radius: 12, // m — Spieler-Witterungs-Reichweite (darueber wandert das Raubtier)
             speedBoost: 1.45, // Jagd ist schneller als Schlendern, langsamer als Flucht (1.6)
             strikeCooldownSec: 1.6, // s — zwischen zwei Bissen
             damageMul: 0.8, // × dem damage-Stat des Wesens
             fearHpFrac: 0.5, // unter dieser HP-Fraktion wird Schaden zur FURCHT (threatened)
             triumphWindowSec: 20, // s — ein Jaeger, so frisch er biss, gebiert beim Fall TRIUMPH
-            scentRangeM: 50, // m — Beute-Wittern ueber das Geruch-Feld (weiter als Sehen)
+            // DER SPIELER IST BEUTE WIE JEDES TIER (oekologie.K4, VERTRAGS-AKT 26.10.): seine Witterung reicht scentRangeM wie die
+            // jedes Leibs, der Wind traegt sie; radius (12 m, eine Spieler-Reichweite ohne Wind und Hunger) fiel.
+            scentRangeM: 50, // m — Beute-Wittern ueber das Geruch-Feld (weiter als Sehen), Tier und Spieler
             // DER BISS IST DER ANSPRUNG (Welle LF kampf 09.10., VERTRAGS-AKT): gebissen wird im Ansprung (aktionen.pounce),
             // wenn der Kopf der Gestalt den Leib des Ziels beruehrt — die Reichweite ist der Weg des Ansprungs (pounce.tempo ×
             // tempoEinheit × seine Dauer), die Hetze haelt, wo das Maul den Leib erreicht. strikeRange (2,4 m um die Mitten,

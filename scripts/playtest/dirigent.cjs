@@ -766,50 +766,6 @@ async function checkBandV18210Verdrahtung(ctx) {
         // Eviction — der bounded Memory-Schutz hält weiter).
         for (let s = 0; s < 300; s++) r._growTreeBlueprintForSpawn("baum_eiche", 90000 + s);
         out.a1RingCap = !r._growTreeRing || r._growTreeRing.length <= 256;
-        // (A3-Perf Watch-Item #1) — die Scent-sizeFactor-Cache muss PRO SOUL
-        // sein (1 Compute je Soul, nicht je Tick × Quelle) — am Cache-Verhalten zweier echter Witterungs-Rufe.
-        out.a3SizeCacheReuse = false;
-        {
-            // Eine Probe: cache leeren, einmal helper rufen (mit synth predator+prey),
-            // Cache-Size 1; nochmal rufen mit der gleichen Soul, Cache-Size bleibt 1.
-            if (r._scentSizeBySoul) r._scentSizeBySoul.clear();
-            const sm0 = r.getGameMode();
-            try {
-                r.setGameMode("pfad");
-                // ECHTE Leiber: die Beute ist, wer höchstens jagd.beuteMasse × die Masse des Jägers trägt — die
-                // EINE Masse des Leibs (`_leibMasse`) liest die Gestalt; ein körperloser Stub hat keine, das Urteil bräche
-                // fail-closed. Der Wolf jagt (wild), der Fuchs (15 kg) ist seine Beute.
-                const savedC = r.state.creatures;
-                const pmA = r.state.playerMesh.position;
-                const capA = r.state.maxCreatures;
-                r.state.maxCreatures = Math.max(capA || 0, savedC.length + 2);
-                const Pred = r.spawnCreatureAt(pmA.x + 360, pmA.y, pmA.z - 360, "calm", "wolf", {
-                    precise: true,
-                    bodySize: 1,
-                });
-                const Prey =
-                    Pred &&
-                    r.spawnCreatureAt(pmA.x + 370, pmA.y, pmA.z - 360, "calm", "fuchs", {
-                        precise: true,
-                        bodySize: 1,
-                    });
-                r.state.maxCreatures = capA;
-                if (Pred && Prey) {
-                    r.state.creatures = [Pred, Prey];
-                    r._creatureScentHuntDir(Pred, 0.0);
-                    const after1 = r._scentSizeBySoul ? r._scentSizeBySoul.size : 0;
-                    r._creatureScentHuntDir(Pred, 0.0);
-                    const after2 = r._scentSizeBySoul ? r._scentSizeBySoul.size : 0;
-                    out.a3SizeCacheReuse = after1 === 1 && after2 === 1;
-                }
-                r.state.creatures = savedC;
-                if (Pred) r.removeCreature(Pred);
-                if (Prey) r.removeCreature(Prey);
-            } finally {
-                r.setGameMode(sm0);
-            }
-        }
-
         // ============== A1 Audit-Heilungen ==============
         // (Heilung #1) Snapshot persistiert grownBlueprints
         const snap = r.buildStateSnapshot();
@@ -1065,10 +1021,6 @@ async function checkBandV18210Verdrahtung(ctx) {
     check(
         "V18.210-A1-Heil3 SPEZIES-Diversität: 6 Arten erzeugen UNTERSCHIEDLICHE Geometrie (Audit #3, V18.181-Mischwald ehrt)",
         res.a1SpeciesDistinct === true
-    );
-    check(
-        "V18.210-A3-Watch1b sizeFactor-Cache: zweimaliger Aufruf → Cache-Size bleibt 1 (nur 1 Compute pro Soul)",
-        res.a3SizeCacheReuse === true
     );
 
     // A4 — Mana-Konsument

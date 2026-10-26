@@ -844,7 +844,7 @@ async function kreaturProben(r, T, opts) {
         ]) {
             const w0 = frei(ox, oz, 30);
             if (!w0) return { fehler: "kein freies Feld (30 m ohne Hülle) für die Jagd" };
-            pm.set(w0.x + 45, pm.y, w0.z + 20); // der Spieler im Nah-Kreis, jenseits seiner Witterung (jagd.radius)
+            pm.set(w0.x + 50, pm.y, w0.z + 35); // der Spieler im Nah-Kreis, jenseits der Witterung (jagd.scentRangeM)
             s.faunaLifecycle = { lastTick: s.spielZeit };
             const woelfe = [0, 1, 2, 3].map((i) => tier({ x: w0.x - 20, y: w0.y, z: w0.z + 4 * i - 6 }, "wolf"));
             r._kreaturVerbinden(woelfe);
@@ -1578,14 +1578,13 @@ async function kreaturProben(r, T, opts) {
                         const d0 = alt.call(this, c, w);
                         if (!d0) return null;
                         const beute = c.userData._beute;
-                        const S = A.SCENT;
                         const q = [{ x: beute.position.x, z: beute.position.z, strength: 1 }];
                         const cx = c.position.x,
                             cz = c.position.z;
-                        const gx = (this._scentAt(cx + 4, cz, q, {}) - this._scentAt(cx - 4, cz, q, {})) / 2;
-                        const gz = (this._scentAt(cx, cz + 4, q, {}) - this._scentAt(cx, cz - 4, q, {})) / 2;
+                        const gx = (this._scentAt(cx + 4, cz, q) - this._scentAt(cx - 4, cz, q)) / 2;
+                        const gz = (this._scentAt(cx, cz + 4, q) - this._scentAt(cx, cz - 4, q)) / 2;
                         const g = Math.hypot(gx, gz);
-                        if (!(g > 0.02 * (S ? 1 : 1))) return null;
+                        if (!(g > 0.02)) return null;
                         d0.set(gx / g, 0, gz / g);
                         // der Gradient führt — das Ziel ist der Punkt, auf den er zeigt
                         c.userData._beute = {
@@ -1714,20 +1713,25 @@ async function kreaturProben(r, T, opts) {
         return { riss: R };
     });
 
-    // ── rudel: ein Rudel umstellt — drei Wölfe von einer Seite des stehenden Spielers; je Takt, in dem alle näher als
-    // 2 × jagd.hetzM stehen, die größte Winkel-Lücke um den Spieler, dazu die Lücke beim ersten Biss ──
+    // ── rudel: DER SPIELER IST BEUTE im Wolfsrevier (oekologie.K4) — ein Rudel aus dem Wurf (`_kreaturWurf`, die Leine am
+    // Wurf-Ort), der stehende Spieler 45 m vom Wurf-Ort (jenseits der Neugier noticeRadius, in der Witterung scentRangeM);
+    // höchstens 10 Spielminuten am echten Takt. Die Ereignisse in Sekunden der Kreatur-Uhr: die erste Pirsch auf den Spieler
+    // (ein Wolf im Zustand „jagd" mit dem Ziel „spieler"), das erste Umstellen (alle näher als 2 × jagd.hetzM, die größte
+    // Winkel-Lücke ≤ anderthalb Plätze, 540°/n); danach 1500 Takte die Lücke und die Lücke beim ersten Biss ──
     await buehne("rudel", async (restore) => {
         r.setGameMode("pfad");
         if (taeter === "rudel") schrittJagd(restore);
-        const o = frei(60, -60, 25) || land(60, -60);
+        // der alte Defekt: die Witterung liest nur Tiere, der Spieler ist keine Beute
+        if (taeter === "rudel-beute")
+            decke(restore, "_kreaturIstBeute", (alt) => (j, o) => o !== s.playerMesh && alt.call(r, j, o));
+        const heim = frei(60, -60, 45) || land(60, -60);
+        pm.set(heim.x + 140, heim.y, heim.z); // der Wurf wirft fern vom Spieler, außer Blick
+        kamera(1, 0);
+        const woelfe = r._kreaturWurf({ x: heim.x, z: heim.z }, "wolf", "happy", r._faunaRng("rudel"), 7);
+        woelfe.forEach(ruhig);
+        const o = neben(heim.x + 45, heim.z);
         pm.set(o.x, o.y, o.z);
         s.player.hp = 1e9;
-        const woelfe = [-0.25, 0, 0.25].map((a) => {
-            const c = tier(neben(pm.x + Math.sin(a) * 11, pm.z + Math.cos(a) * 11), "wolf", 1);
-            ruhig(c);
-            return c;
-        });
-        r._kreaturVerbinden(woelfe); // das Rudel ist EIN Verband (S6) — wie aus dem Wurf
         // die Lücke beim ersten Biss, der den Spieler trifft (das Maul am Leib)
         let ersterBiss = null;
         decke(
@@ -1749,14 +1753,20 @@ async function kreaturProben(r, T, opts) {
             return grad(g);
         };
         const J = A._verhaltenGesetz().jagd;
-        const luecken = [];
-        for (let k = 0; k < 1500; k++) {
+        const [luecken, t0] = [[], s.creatureAnimationTime];
+        const ev = { woelfe: woelfe.length, pirschS: null, umstelltS: null };
+        for (let k = 0; k < 36000 && luecken.length < 1500; k++) {
             ruhigSpieler();
             takt(1 / 60);
-            if (woelfe.every((c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < 2 * J.hetzM))
-                luecken.push(luecke());
+            const t = +(s.creatureAnimationTime - t0).toFixed(1);
+            const pirscht = (c) => c.userData._jagdZiel === "spieler" && c.userData._motionZustand === "jagd";
+            if (ev.pirschS === null && woelfe.some(pirscht)) ev.pirschS = t;
+            if (!woelfe.every((c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < 2 * J.hetzM)) continue;
+            luecken.push(luecke());
+            if (ev.umstelltS === null && luecken[luecken.length - 1] <= 540 / woelfe.length) ev.umstelltS = t;
         }
         return {
+            ...ev,
             nahTakte: luecken.length,
             lueckeP50: luecken.length ? +quantil(luecken, 0.5).toFixed(0) : null,
             lueckeBeimBiss: ersterBiss === null ? null : +ersterBiss.toFixed(0),
@@ -3301,6 +3311,9 @@ function urteil(name, z) {
         }
     }
     if (name === "rudel") {
+        soll(z.woelfe >= 3, `der Wurf wirft kein Rudel: ${z.woelfe} Wölfe (Soll ≥ 3, vakuös)`);
+        soll(z.pirschS !== null, `das Rudel pirscht den Spieler nicht: ${z.woelfe} Wölfe 45 m vom Wurf-Ort, 600 s`);
+        soll(z.umstelltS !== null, `das Rudel umstellt nicht: kein Takt in 600 s mit Lücke ≤ 540°/${z.woelfe}`);
         soll(z.nahTakte >= 60, `das Rudel kommt nicht heran (${z.nahTakte} Takte nah, vakuös)`);
         soll(
             z.lueckeP50 !== null && z.lueckeP50 <= 180,
@@ -3408,7 +3421,10 @@ const TAETER = {
         ["jagd-ohne-wunde", /reißt zu selten \(rudel\)/],
         ["jagd-mager", /das Rudel frisst nicht/],
     ],
-    rudel: [["rudel", /umstellt nicht/]],
+    rudel: [
+        ["rudel", /umstellt nicht/],
+        ["rudel-beute", /pirscht den Spieler nicht/],
+    ],
     // je Täter nennen BEIDE Orte ihn: der Hang der Welt und die Rampe der Prüfbühne
     querhang: [
         ["querhang", /Bein-Lot am Querhang[\s\S]*Bein-Lot an der Rampe/],
