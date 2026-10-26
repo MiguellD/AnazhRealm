@@ -34,7 +34,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   See-Becken, Edit) und der Wasser-Spiegel sind Kern-Gesetz (`dichte`, `wasserSpiegel`), Stamm und voxel-worker rufen sie
   (`gate:worker-dichte --kern` mutiert sie).
 - WASSER: die Hydrosphäre (gelaende-core `hydrosphaere`, gerechnet im voxel-worker, per Transfer im Main) → Zellen → Automat, die Ruhe ist sein Fixpunkt (`_ensureWaterCALevel`), sein Blick EIN
-  Baustein (`_wasserBlick`). Heute keine EINE Wahrheit: 8 Schreiber, die Seen doppelt (Gelände-Kern und Stamm); der Spiegel ist Kern.
+  Baustein (`_wasserBlick`); ein Stau ist Gesetz des Spiegels (`atlasSpiegel` liest die Felder `_stauFelder`, der Automat ruht
+  auf ihm). Heute keine EINE Wahrheit: 8 Schreiber, die Seen doppelt (Gelände-Kern und Stamm); der Spiegel ist Kern.
 - ORT: der Genesis-Platz (`GENESIS_PLATZ`), jedes Bauwerk und jeder Dorfweg sind Grundriss gegen Natur, das Dorf EIN Plan des
   Fachwerk-Studios auf dem Gelände-Kern (`_ortPlaene`), jeder Wurf des Felds weicht ihm (`FELD_WURF`, `_weichtDemBau`). Heute hält die
   Instanz-Wand (`_naturWand`) Bauten frei, die Schicht (Halm, Nah-Wiese) noch nicht.

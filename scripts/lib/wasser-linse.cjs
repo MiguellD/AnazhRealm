@@ -754,13 +754,14 @@ async function wasserDamm(o = {}) {
     const { p, fluesse } = __wasserFlussNah(r, o.fluss.x, o.fluss.z);
     const P = fluesse.find((f) => f.points.includes(p)).points;
     const ab = S(P[P.indexOf(p) + 1] || p) < S(P[P.indexOf(p) - 1] || p) ? 1 : -1;
-    // der Punkt des Laufs ≥ d m stromab von p (stromauf negativ)
+    // der Ort d m stromab von p längs des Laufs (stromauf negativ; zwischen zwei Punkten des Laufs liegen bis 12 m)
     const lauf = (d) => {
-        let [i, s] = [P.indexOf(p), Math.sign(d) * ab];
-        for (let l = 0; P[i + s] && l < Math.abs(d); i += s) l += Math.hypot(P[i + s].x - P[i].x, P[i + s].z - P[i].z);
-        return P[i];
+        let [i, s, l] = [P.indexOf(p), Math.sign(d) * ab, Math.abs(d)];
+        for (let e; P[i + s] && (e = Math.hypot(P[i + s].x - P[i].x, P[i + s].z - P[i].z)) < l; i += s) l -= e;
+        const [q, e] = [P[i + s] || P[i], Math.hypot((P[i + s] || P[i]).x - P[i].x, (P[i + s] || P[i]).z - P[i].z) || 1];
+        return { x: P[i].x + ((q.x - P[i].x) * l) / e, z: P[i].z + ((q.z - P[i].z) * l) / e };
     };
-    const [a, b] = [lauf(60), lauf(64)];
+    const [a, b] = [lauf(60), lauf(61)];
     const [nx, nz] = [a.z - b.z, b.x - a.x].map((v) => v / Math.hypot(b.x - a.x, b.z - a.z));
     const krone = S(a) + 3;
     const saeulen = [];
