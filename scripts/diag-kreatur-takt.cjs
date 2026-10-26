@@ -71,7 +71,7 @@ const gewaehlt = (() => {
 
 async function headless(laeufe) {
     const server = statikServer();
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(880000);
@@ -111,7 +111,7 @@ async function headless(laeufe) {
             { timeout: 120000 }
         );
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
+        await server.zeige(page, 120000, "index.html", "networkidle0");
         await bereit();
         await einschwingen();
         for (const l of laeufe) aus.push(await zeit(l.proben[0], () => lauf(l)));

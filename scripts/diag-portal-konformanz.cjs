@@ -736,7 +736,7 @@ async function pruefeWelt(page, welt, lies) {
 async function lauf(welten, taeter) {
     const { s, fehlend, weg } = server(taeter);
     const lies = (rel) => ausliefern(rel, taeter, []);
-    await new Promise((r) => s.listen(PORT, "127.0.0.1", r));
+    await s.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 180000 });
     const ergebnisse = [];
     try {
@@ -748,7 +748,7 @@ async function lauf(welten, taeter) {
             window.__anazhHeadlessNullRenderer = true;
             window.__anazhGateNoFoundry = true;
         });
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await s.zeige(page, 60000);
         await page.waitForFunction(
             () => window.anazhRealm && window.anazhRealm.state && typeof window.anazhRealm._gameLoopTick === "function" && window.anazhRealm.state.blueprints,
             { timeout: 120000, polling: 200 }

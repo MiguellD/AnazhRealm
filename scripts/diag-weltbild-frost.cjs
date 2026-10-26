@@ -260,7 +260,7 @@ function pruefRaum(echt) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({
         art: ECHT ? "echt" : "linse",
         headless: !ECHT,
@@ -284,10 +284,7 @@ function pruefRaum(echt) {
         if (/INDEX-WACHE|GPU-VALIDIERUNG/.test(t) && konsole++ < 10) console.log("  [Spiel] " + t.slice(0, 260));
     });
     await page.evaluateOnNewDocument(geraeteHoerer);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html${ECHT ? "" : "?holz=kienspan"}`, {
-        waitUntil: "domcontentloaded",
-        timeout: 120000,
-    });
+    await server.zeige(page, 120000, `index.html${ECHT ? "" : "?holz=kienspan"}`);
     const boot = await page.evaluate(
         async ({ minChunks, echt }) => {
             for (const weiter = window.__deckel("das erste Weltbild", 1200); weiter(); ) {

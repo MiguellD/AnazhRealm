@@ -2274,7 +2274,7 @@ function quellenAbgriff() {
     console.log("REIFEN " + JSON.stringify(kern.reifen));
     if (process.argv.includes("--kern")) process.exit(errs.length ? 1 : 0); // Station K allein
 
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({
         art: "null",
         frist: 300000,
@@ -2282,7 +2282,7 @@ function quellenAbgriff() {
     });
     const page = await browser.newPage();
     await nullRenderer(page);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
     // der Messort der Mess-Wiese (spec/profiband/haushalt.json `messorte`, S1 W1f) — derselbe Leser wie gate:vehicle-drive B-e
     const messort = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort.spieler;
     // die Orte des Wassers aus der Welt (L10: der See, `__wasserOrte`)
@@ -2311,7 +2311,7 @@ function quellenAbgriff() {
         const page2 = await browser.newPage();
         await nullRenderer(page2);
         await page2.evaluateOnNewDocument(quellenAbgriff);
-        await page2.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+        await server.zeige(page2, 30000);
         return page2.evaluate(probeBahn, BAHN);
     };
     const out = await page.evaluate(probeLeben, {
@@ -2403,7 +2403,7 @@ function quellenAbgriff() {
         "S3 Querhang: Fahrt längs der Höhenlinie ohne Lenkung driftet quer talwärts (der Quer-Hangabtrieb wirkt)",
         !hat("kern") && !hat("querhang"),
         S.quer
-            ? `${S.querOrt.grad.toFixed(1)}° bei (${S.querOrt.x.toFixed(0)}, ${S.querOrt.z.toFixed(0)}) · ${S.quer.weg.toFixed(1)} m gefahren · Quer-Abdrift talwärts ${S.quer.drift.toFixed(2)} m · Bahn-Wache ${S.quer.wache}`
+            ? `${S.querOrt.grad.toFixed(1)}° bei (${S.querOrt.x.toFixed(0)}, ${S.querOrt.z.toFixed(0)}) · ${S.quer.weg.toFixed(1)} m gefahren · Quer-Abdrift talwärts ${S.quer.drift.toFixed(3)} m · Bahn-Wache ${S.quer.wache}`
             : vS.join(" · ")
     );
     console.log("=== R — DIE RÄDER IN DER INSTANZ (Q13 · F-D8), echter Sim-Schritt ===");

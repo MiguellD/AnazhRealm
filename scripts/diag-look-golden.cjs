@@ -144,13 +144,13 @@ async function renderLuma() {
     const server = statikServer();
     // Port über LOOK_GOLDEN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4320.
     const PORT = Number(process.env.LOOK_GOLDEN_PORT || 4320);
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "standard", frist: 600000, zusatz: ["--use-angle=swiftshader"] });
     const page = await browser.newPage();
     await page.setViewport({ width: 640, height: 400 });
     let luma = null;
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
+        await server.zeige(page, 120000, "index.html", "networkidle0");
         await page.waitForFunction(
             () => window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state.rendererReady,
             { timeout: 120000 }

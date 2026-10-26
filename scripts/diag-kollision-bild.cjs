@@ -973,14 +973,14 @@ async function tempo(K) {
 
 (async () => {
     console.log("=== KOLLISION = BILD (Leben-Schau 2) — Null-Renderer, Foundry an, Mess-Wiese 150 m + Exemplare ===");
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(880000);
     await nullRenderer(page);
     let befund = null;
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
+        await server.zeige(page, 120000);
         await warteAufWelt(page, 180000);
         befund = await page.evaluate(probe, {
             mess: messort("wiese"),

@@ -23,7 +23,7 @@ async function bootPage(browser, nullRenderer) {
     await page.evaluateOnNewDocument((nr) => {
         if (nr) window.__anazhHeadlessNullRenderer = true;
     }, nullRenderer);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
     await page.evaluate(() => window.__weltDa((r) => r.state));
     return { page };
 }
@@ -787,7 +787,7 @@ async function windProbe(page) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const errs = [];
 
     // ===== TEIL A — MECHANIK (Null-Renderer, HART) =====

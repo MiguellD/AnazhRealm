@@ -508,11 +508,11 @@ function urteil(S, Q) {
 
 (async () => {
     const Q = quellWand(stammLib.text(root));
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000);
     await page.evaluate(async () => {
         await window.__weltDa((r) => r.state && r.state.player);
     });

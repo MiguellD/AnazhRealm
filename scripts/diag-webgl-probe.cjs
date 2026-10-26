@@ -24,7 +24,7 @@ const PORT = Number(process.env.WGLP_PORT || 4671);
 const server = statikServer();
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
@@ -32,7 +32,7 @@ const server = statikServer();
     });
     const consoleLines = [];
     page.on("console", (m) => consoleLines.push(m.text()));
-    await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=voll`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000, "index.html?holz=voll");
     await page.evaluate(async () => {
         await window.__weltDa(() => window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state.rendererReady === true); // prettier-ignore
         // W5: ein Programm, das nicht linkt, steht beim Stoff-Namen im Fehler-Sammler — ab dem ersten Frame, den das Spiel zeichnet

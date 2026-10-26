@@ -74,11 +74,11 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
         process.exit(0);
     }
 
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 120000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
-    await page.goto(`http://127.0.0.1:${PORT}/worlds/garage/index.html`, { waitUntil: "load", timeout: 60000 });
+    await server.zeige(page, 60000, "worlds/garage/index.html", "load");
     await page.waitForFunction(() => typeof window.__vehicleCore === "object" && document.querySelector("canvas"), {
         timeout: 30000,
     });

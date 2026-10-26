@@ -215,8 +215,10 @@ function wieseUrteil(m, S, mitGras) {
 //   hangfuss  — eine ebene Stelle (Neigung ≤ `fussMax` Grad), hinter der binnen `bis` m ein Hang ≥ `hangMin` Grad steigt;
 //               zurück kommt auch die Richtung `gier`, die auf den Hang zeigt
 //   querhang  — die Neigung (±1 m) zwischen `min` und `max` Grad (Vorgabe 25,2–40,1), die Höhenlinie ±`linie` m gerade (je
-//               2 m Neigung ≥ `linieMin` Grad, Fall-Richtung binnen `winkel` Grad), trocken, die Fahrt-Linie frei von Bauten;
-//               zurück der Start `sx`/`sz` (`linie` m vor der Stelle) und `gier` längs der Höhenlinie
+//               2 m Neigung ≥ `linieMin` Grad, Fall-Richtung binnen `winkel` Grad), trocken — eine Funktion des
+//               Gesetzes allein, nie der gestreamten Bauten (die Bahn räumt die Station; mit dem Bau-Blick fand S3 je Lauf je
+//               nach geladenem Baum (-71, -52), (-69, -48) oder (85, 53) und maß 0,27–0,35 m); zurück der Start `sx`/`sz`
+//               (`linie` m vor der Stelle) und `gier` längs der Höhenlinie
 //   kante     — das Kliff: in einer von 8 Richtungen fällt der Boden binnen 3 m um mehr als `kanteMin` m und binnen 6 m um
 //               `fall` [3, 14] m auf trockenen Grund, davor ein Anlauf von `anlauf` m trocken und eben (≤ 0,3 m je 2 m);
 //               zurück die schärfste Richtung: `gier` (die Fahrt über die Kante), `kante`, `fall`, der Start `sx`/`sz`
@@ -350,7 +352,6 @@ function weltOrte(art, opts) {
             }
             const sx = x - cx * L,
                 sz = z - cz * L;
-            if (!bahnFrei(sx, sz, cx, cz, -4, 2 * L + 6, 3)) return null;
             return { neigung: Math.round(n * 10) / 10, sx, sz, gier: Math.atan2(cx, cz) };
         },
         kante: (x, z) => {

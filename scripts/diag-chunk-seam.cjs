@@ -23,7 +23,7 @@ const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.c
 const PORT = Number(process.env.CHUNK_SEAM_PORT) || 4364;
 const server = statikServer();
 (async () => {
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null" });
     const page = await browser.newPage();
     await nullRenderer(page);
@@ -32,7 +32,7 @@ const server = statikServer();
     page.on("console", (m) => {
         if (/\[ERROR\] STOFF:/.test(m.text())) stoffBrueche.push(m.text());
     });
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
 
     // --- Warmup: Render stubben, Loop pumpen bis der Ring voll ist, dann SETTLEN ---
     await page.evaluate(async () => {

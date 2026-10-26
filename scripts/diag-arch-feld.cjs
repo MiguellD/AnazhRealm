@@ -67,7 +67,7 @@ function kartenGesetz(buch, zelleF) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });
@@ -76,7 +76,7 @@ function kartenGesetz(buch, zelleF) {
         if (t.startsWith("[D]")) console.log("  " + t);
     });
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000);
     const res = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         await window.__weltDa((r) => r.state);

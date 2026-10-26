@@ -118,7 +118,7 @@ async function kaltLauf() {
     const SEK = Number(OPT("--sek", 120));
     // ohne `--echt` die EINE Weiche (K40: lokal der Hardware-Adapter, die CI swiftshader, `LINSE_GPU=software` der Rückweg),
     // und der Lauf nennt seinen Adapter, damit keine Kalt-Zeile ein swiftshader-Ergebnis als Radeon ausgibt
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     // DIE ZWEIT-ZEILE (1310-16): `--profil <ordner>` hält das Profil (die Foundry-Platte, der HTTP-Cache) über den Lauf hinaus —
     // der erste Lauf in einem neuen Ordner ist kalt, jeder weitere ein Zweit-Boot; ohne die Option ein leeres Wegwerf-Profil.
     const profilBenannt = OPT("--profil", null);
@@ -138,7 +138,7 @@ async function kaltLauf() {
         const page = await browser.newPage();
         await page.evaluateOnNewDocument(KALT_PROBE);
         const t0 = Date.now();
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
+        await server.zeige(page, 120000);
         while (Date.now() - t0 < SEK * 1000) {
             await new Promise((r) => setTimeout(r, 500));
             const da = await page
@@ -284,13 +284,13 @@ async function kaltLauf() {
 (async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
     const SELFTEST = process.argv.includes("--selftest");
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     let out = null;
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
+        await server.zeige(page, 120000, "index.html", "networkidle0");
         // t(Weltbild) aus der Welt selbst: der Moment, in dem der Ladeschirm weicht (`state._weltbildDa`, ab Navigation).
         await page.waitForFunction(() => window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state._weltbildDa, {
             timeout: 120000,
