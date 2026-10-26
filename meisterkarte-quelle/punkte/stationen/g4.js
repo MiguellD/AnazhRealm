@@ -306,16 +306,46 @@ const alle = [
         pfad: REGLER_PFAD,
         quelle: "2 = 0, und je Art L1/L0 ≤ 0,5, L2/L0 ≤ 0,15 Dreiecke",
     },
+    // die Liefer-Marke des Spiels (`_foundryLiefer` am EINEN Weg jedes Körpers: der Auftrag `_foundryAuftrag`, die Antwort
+    // `_foundryAntwort` — von der Platte, im Werk gebaut (die Schale `_foundrySchale` stempelt `bau` an jeden Studio-Lauf), leer —
+    // und der Guss des Haupt-Fadens `_ofenBudget`): der Erst-Boot füllt ein frisches Profil bis zur Ruhe der Foundry, der Zweit-Boot
+    // zählt jede Lieferung bis zur Ruhe. Bau-Ereignisse in Worker UND Haupt-Faden zählen gegen die Platte, ein Auftrag ohne Antwort
+    // ist verschluckt (ROT); den gepflanzten Bruch fährt gate:boot-stage.
     {
         kriterium: "pipeline.K4",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "diag-boot-stage --kalt --echt --profil zählt keine Lieferung und kein Bau-Ereignis: der Beleg (107–109 von 108–110, GTX " +
-            "18.10.) maß ein Instrument-Patch im koordination-Baum (bericht/1810-b5/befund/lieferung-patch.cjs, Anker an 452972a6 noch " +
-            "eindeutig) über die OMEN-Serie serie2.sh mit festen OMEN-Pfaden, und er zählte Platten-Treffer — die Messung verlangt " +
-            "Bau-Ereignisse in Worker UND Haupt-Faden",
+        befehl: [
+            "bash",
+            "-c",
+            `P="$(cygpath -m '{AUS}' 2>/dev/null || echo '{AUS}').profil"; rm -rf "$P"; node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P" > /dev/null; node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P"; E=$?; rm -rf "$P"; exit $E`,
+        ],
+        env: { BOOT_STAGE_PORT: "{PORT}" },
+        gpu: true,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const m =
+                /^\s*(?:✅|❌) LIEFERUNG zweit: (\d+) von (\d+) von der Platte \([\d.]+ %\) · Werk (\d+) · Haupt-Faden (\d+) · leer (\d+) · verschluckt (-?\d+)$/m.exec(
+                    String(lauf.stdout || "")
+                );
+            if (!m) return { gruen: false, zahl: "keine Liefer-Zeile am Zweit-Boot (Exit " + lauf.exit + ")" };
+            const [p, n, werk, haupt, leer, weg] = m.slice(1).map(Number);
+            return {
+                gruen: n > 0 && weg === 0 && p / n >= 0.95,
+                zahl:
+                    p + " von " + n + " build-asset von der Platte (" + ((100 * p) / n).toFixed(1) + " %), Bau-Ereignisse Werk " + werk +
+                    " · Haupt-Faden " + haupt + ", leer " + leer + ", verschluckt " + weg,
+            };
+        },
+        pfad: [
+            "stamm/studio-bruecke.js",
+            "stamm/studio-gestalt.js",
+            "stamm/koerper-leib.js",
+            "foundry-bruecke.js",
+            "cores.manifest.json",
+            "scripts/diag-boot-stage.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
         quelle: "1 = build-asset kommt beim Zweit-Boot zu ≥ 95 % von der Platte",
     },
     {
