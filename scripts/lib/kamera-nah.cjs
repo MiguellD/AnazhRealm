@@ -97,6 +97,31 @@ function nahDeckungInSeite(o) {
             }
             if (laeufe.length) ohneSatz.set(s.mesh, laeufe);
         }
+    // DER NAME DER FLÄCHE IM SATZ (leib.K4): ein Bau-Dreieck im Satz trägt den Schlüssel seiner Gruppe (im Namen die Stufe des
+    // Studios und das Blatt) und den Eintrag seiner Instanz (`slotEntry`) — der Befund nennt Stufe, Blatt und Bau, nie nur „bauSatz".
+    const satzGruppe = new Map();
+    if (st.chunkSaetze && st.archInstanceGroups)
+        for (const [key, g] of st.archInstanceGroups) {
+            const s = g && g.satz ? st.chunkSaetze.get(g.satz) : null;
+            const b = s && s.mesh ? s.bloecke.get(key) : null;
+            const n = b && g.geom && g.geom.attributes.position ? g.geom.attributes.position.count : 0;
+            if (n && b.vAnzahl > 0)
+                (satzGruppe.get(s.mesh) || satzGruppe.set(s.mesh, []).get(s.mesh)).push([
+                    b.vStart,
+                    b.vStart + b.vAnzahl,
+                    key,
+                    n,
+                    g.slotEntry || [],
+                ]);
+        }
+    const gruppeIm = (l, v) => {
+        for (const [a, b, key, n, se] of l)
+            if (v >= a && v < b) {
+                const e = se[Math.floor((v - a) / n)];
+                return e ? key + " " + e.type + "#" + e.id : key;
+            }
+        return null;
+    };
     const imLauf = (l, v) => {
         for (let k = 0; k < l.length; k += 2) if (v >= l[k] && v < l[k + 1]) return true;
         return false;
@@ -193,6 +218,7 @@ function nahDeckungInSeite(o) {
         const e = eintragVon(obj, inst);
         if (e && OHNE.has(e.id)) return; // das Ziel selbst (o.ohne) deckt nie und verdeckt nie
         const ohneL = ohneSatz.get(obj) || null; // ... auch als Bereich im Satz (`ohneSatz`)
+        const satzL = satzGruppe.get(obj) || null;
         for (const gr of gruppen) {
             const mat = mats[gr.materialIndex] || mats[0];
             if (!mat || mat.visible === false) continue;
@@ -211,12 +237,14 @@ function nahDeckungInSeite(o) {
                 vb.fromBufferAttribute(pos, i1).applyMatrix4(m4);
                 vc.fromBufferAttribute(pos, i2).applyMatrix4(m4);
                 if (!nimm(va, vb, vc)) continue;
+                const sk = satzL && gruppeIm(satzL, i0);
+                const mt = sk ? metaFuer({ klasse: kl.klasse, name: sk }, mat, karte) : me;
                 sammle(
                     va,
                     vb,
                     vc,
                     karte ? [uv.getX(i0), uv.getY(i0), uv.getX(i1), uv.getY(i1), uv.getX(i2), uv.getY(i2)] : null,
-                    me
+                    mt
                 );
             }
         }
@@ -257,7 +285,14 @@ function nahDeckungInSeite(o) {
     const ZELLE = 2;
     const zk = (ix, iz) => ix * 65536 + iz;
     let C = window.__nahSpeicher;
-    if (o.neu || !C || !o.ort || C.id !== o.ort.id) {
+    // DER STAND DES GEZEICHNETEN (leib.K4): der Speicher gilt nur dem Bestand, aus dem er gelegt wurde — jeder Slot einer
+    // Instanz-Gruppe, der kommt oder geht (der Stufen-Wechsel eines Hauses, `slotStand`), legt ihn neu. Vorher hielt der Gang
+    // die Dreiecke seines ersten Bilds: das Haus in 12 m stand dort auf Stufe 1, ging nah auf Stufe 0, und die Linse zählte die
+    // nicht mehr gezeichnete Stufe 1 vor der Hülle der Stufe 0 (Bild 1032, Bau 0,9 % — je nach Lade-Takt rot oder grün).
+    let stand = 0;
+    for (const g of (st.archInstanceGroups && st.archInstanceGroups.values()) || []) stand += (g && g.slotStand) | 0;
+    stand = (st.archInstanceGroups ? st.archInstanceGroups.size : 0) + ":" + stand;
+    if (o.neu || !C || !o.ort || C.id !== o.ort.id || C.stand !== stand) {
         const tris = [];
         const uvs = [];
         const metas = [];
@@ -297,6 +332,7 @@ function nahDeckungInSeite(o) {
         }
         C = window.__nahSpeicher = {
             id: o.ort ? o.ort.id : "?",
+            stand,
             tris: ft,
             uvs: new Float32Array(uvs),
             metas,
