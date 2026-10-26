@@ -150,3 +150,4 @@
 2026-10-26 07:35:56 takt5-headless fahrzeug.K1#2 GRÜN 0.6 · 15/74
 2026-10-26 07:36:01 takt5-headless physik.K1#1 GRÜN 0.3 · 16/74
 2026-10-26 07:36:06 takt5-headless physik.K1#2 GRÜN 0.3 · 17/74
+2026-10-26 07:36:12 takt5-headless feld.K4#1 GRÜN 0.7 · 18/74
