@@ -135,7 +135,7 @@ const SPRUENGE_MAX = 4;
 // bleibt steil), der Blick hangab, rückwärts hangauf heran: die Kamera steht hangauf hinter ihm; beide auch im SPRINT
 // (Umschalt, `T.sprint`). Der Ruck gilt JE Gang („auch beim Sprint"), die Kamera, die nach dem Takt in den Hang sinkt
 // (`senk`), muss die Linse beim Namen nennen.
-const GANG = Object.freeze({ R: 0.25, nahJe: 6, gw: 32, gh: 18, stammDickM: 0.15, startM: 8, orbitMs: 6000, heranM: 6, ruckM: 0.02, nahRadien: { Fels: 0.25, Bau: 0.25, Rinde: 0.25, Gelände: 0.25 }, hang: Object.assign({ bergab: [8, 20], rMax: 600 }, ORTE.find((o) => o.id === "hang").such) });
+const GANG = Object.freeze({ R: 0.25, nahJe: 6, gw: 32, gh: 18, stammDickM: 0.15, startM: 8, orbitMs: 6000, heranM: 6, ruckM: 0.02, nahRadien: { Fels: 0.25, Bau: 0.25, Rinde: 0.25, Gelände: 0.25 }, hang: { ...ORTE.find((o) => o.id === "hang").such, bergab: [8, 20], rMax: 600 } });
 const GANG_ARTEN = { 1: ["stamm", "fels", "haus"], 2: ["innen", "steil", "innen-sprint", "steil-sprint"] };
 const NINJA_WP = [
     [0, 7, 0.8],
@@ -209,7 +209,7 @@ function urteilGang(G, stufe = 1) {
         if (!g) out.push(`Gang ${art}: kein Anker`);
         else {
             if (!(g.heran.d0 - g.heran.d1 >= GANG.heranM)) out.push(`Gang ${art}: der Spieler kommt nicht heran (${g.heran.d0} → ${g.heran.d1} m)`);
-            if (art.startsWith("innen") && !g.drinnen) out.push(`Gang ${art}: der Spieler kommt nicht ins Haus (${g.heran.d1} m vor der Mitte)`);
+            if (art.startsWith("innen") && !g.drinnen) out.push(`Gang ${art}: der Spieler kommt nicht ins Haus`);
             if (!(g.ruck.length >= 100 && quantil(g.ruck, 0.95) <= GANG.ruckM)) out.push(`Gang ${art}: Ruck p95 ${g.ruck.length ? quantil(g.ruck, 0.95).toFixed(3) : "—"} m (Soll ≤ ${GANG.ruckM})`);
             const kugel = g.taeter.map((t) => Object.assign({}, t, { taeter: t.taeter.filter((n) => !n.startsWith("im Stamm")) })).filter((t) => t.taeter.length);
             if (kugel.length) out.push(`Gang ${art} (${g.typ}): die Kugel der Linse in ${kugel.length} von ${g.bilder} Bildern — ` + kugel.slice(0, 3).map((t) => `Bild ${t.bild} ${t.phase}: ${t.taeter} (Linse ${t.c}, Ziel ${t.ziel})`).join(" · "));
@@ -721,7 +721,7 @@ async function leibGang(G) {
         }
         if (anker.innen && G.zwei) out.gaenge.push(await gang("innen", anker.innen), await gang("innen-sprint", anker.innen, true));
         // DER STEILHANG: die Stelle aus dem Orts-Gesetz, das Weltbild dort steht, bevor der Gang beginnt
-        const o = G.zwei && window.__weltOrt("hang", Object.assign({ mitte: window.__messWiese }, G.hang));
+        const o = G.zwei && window.__weltOrt("hang", { mitte: window.__messWiese, ...G.hang });
         out.hang = o;
         if (o) {
             out.fehlt = (await L.hin(o.x, o.z, 60000)).length;
@@ -1159,8 +1159,8 @@ hauptLauf(async () => {
         ]);
         // DER GANG (K4): gesund (die Kugel im Stamm urteilt nicht) und je Staffel ein Bruch beim Namen — der Arm ohne Flügel-Leib
         // und die Kamera, die am Hang in den Boden taucht, sind ROT; `je` ändert einen Gang (null: er fehlt)
-        const gg = (art, k) => Object.assign({ art, typ: art, bilder: 900, heran: { d0: 8.5, d1: 0.9 }, drinnen: art.startsWith("innen") || undefined, taeter: [], nah: [], ruck: Array(300).fill(0.002) }, k);
-        const gangVon = (je) => Object.assign({ gaenge: [...GANG_ARTEN[1], ...GANG_ARTEN[2]].filter((a) => je[a] !== null).map((a) => gg(a, je[a])), schmuggel: 170, senk: 10 }, je.G);
+        const gg = (art, k) => ({ art, typ: art, bilder: 900, heran: { d0: 8.5, d1: 0.9 }, drinnen: art.startsWith("innen") || undefined, taeter: [], nah: [], ruck: Array(300).fill(0.002), ...k });
+        const gangVon = (je) => ({ gaenge: [...GANG_ARTEN[1], ...GANG_ARTEN[2]].filter((a) => je[a] !== null).map((a) => gg(a, je[a])), schmuggel: 170, senk: 10, ...je.G });
         faelle("K4 Staffel 1", (je) => urteilGang(gangVon(je), 1), [
             ["gesund", { stamm: { taeter: [{ phase: "orbit", taeter: ["im Stamm baum_kiefer"] }] } }, null],
             ["ein Arm ohne Kollision", { haus: { taeter: [{ bild: 660, phase: "orbit", taeter: ["in haus_alemannisch"] }] } }, "Gang haus (haus): die Kugel der Linse in 1 von 900 Bildern — Bild 660 orbit: in haus_alemannisch"],
@@ -1173,7 +1173,7 @@ hauptLauf(async () => {
         faelle("K4 Staffel 2", (je) => urteilGang(gangVon(je), 2), [
             ["gesund", {}, null],
             ["die Kamera taucht am Hang in den Boden", { steil: { taeter: [{ bild: 412, phase: "orbit", taeter: ["unter dem sichtbaren Boden"] }] } }, "Gang steil (steil): die Kugel der Linse in 1 von 900 Bildern — Bild 412 orbit: unter dem sichtbaren Boden"],
-            ["nicht im Haus", { "innen-sprint": { drinnen: false, heran: { d0: 12.2, d1: 5.1 } } }, "Gang innen-sprint: der Spieler kommt nicht ins Haus (5.1 m vor der Mitte)"],
+            ["nicht im Haus", { "innen-sprint": { drinnen: false } }, "Gang innen-sprint: der Spieler kommt nicht ins Haus"],
             ["Ruck im Sprint", { "innen-sprint": { ruck: Array(300).fill(0.03) } }, "Gang innen-sprint: Ruck p95 0.030 m"],
             ["blind für die Kamera im Hang", { G: { senk: 0 } }, "Schmuggel: die Kamera im Hang bleibt ungenannt"],
         ]);
@@ -1258,7 +1258,7 @@ hauptLauf(async () => {
             const tG = Date.now();
             await page.evaluate(KAMERA_NAH_INSTALL);
             await page.evaluate(WASSER_INSTALL); // __weltOrt: der Steilhang aus der Welt
-            gang = await page.evaluate(leibGang, Object.assign({ zwei: TEILE.includes("gang2") }, GANG));
+            gang = await page.evaluate(leibGang, { ...GANG, zwei: TEILE.includes("gang2") });
             zeiten.gang = Date.now() - tG;
         }
         // die Prüfbühne, geboren wie im Spiel: Welt-Tor importWorldBeside + aktiv + Reload
