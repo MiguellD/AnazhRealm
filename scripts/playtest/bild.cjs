@@ -128,13 +128,13 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         const okSameTarget = r.requestWeatherTransition("rainy");
         out.transitionSameTargetNoop = okSameTarget === true;
         // tickWeatherTransition setzt progress voran
-        r.state.weatherTransition.startedAt = performance.now() - 100; // 100 ms
+        r.state.weatherTransition.startedAt -= 0.1; // 100 ms der Welt-Uhr
         r.tickWeatherTransition(0);
         out.transitionProgressAdvanced = r.state.weatherTransition && r.state.weatherTransition.progress > 0;
         // Bei progress=1 wird die transition geclearet. Offset > Cap (120 s), damit die Probe deterministisch
         // ist — die Emotion-Modulation streckt die Default-Dauer auf bis zu ~86 s.
         if (r.state.weatherTransition) {
-            r.state.weatherTransition.startedAt = performance.now() - 200000; // 200s > 120s-Cap
+            r.state.weatherTransition.startedAt -= 200; // 200 s > 120-s-Cap
         }
         r.tickWeatherTransition(0);
         out.transitionClearedOnComplete = r.state.weatherTransition === null;

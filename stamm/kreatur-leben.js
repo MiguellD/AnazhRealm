@@ -2544,7 +2544,7 @@ class AnazhRealm_kreatur_leben {
     }
     // DIE VÖGEL (Klang K1, tetrapoda VOGEL_GESETZ): jeder Vogel-Ruf hat einen Leib — gesehen = gehört. Je Takt die Reviere im
     // Hör-Kreis des Ohrs (klang:UMWELT.stimmen.vogel.hoerweiteM), je Revier seine Bahn auf der Uhr der Welt
-    // (`worldMeta.wetterUhr`: sie reist im Snapshot und zum Gast — jeder Peer und jeder Reload sieht dieselben Vögel): wer singt,
+    // (`spielZeit`: sie reist im Stand und im Netz — jeder Peer und jeder Reload sieht dieselben Vögel): wer singt,
     // fliegt und wird gezeichnet, wer schweigt, sitzt im Gras. `state.voegel` trägt die singenden Leiber ({x, y, z}) — die
     // EINE Quelle, die das Ohr liest (`_umweltLage`). Die Karte merkt je Zelle ihre Würfe und ihr Revier (`_vogelZelle`);
     // je Takt frischt eine Zelle Leben und Deckung nach (Pflanzen, Fällen, Pflege), ferne fallen — die Kosten hängen am
@@ -2581,7 +2581,7 @@ class AnazhRealm_kreatur_leben {
         }
         const wf = this._weatherFieldFor(st.weather);
         const anteil = VG.lied(this._sonnenRichtung().y, wf.rain, this._windAt(px, pz, this._bildZeit).staerke, V);
-        const uhr = Number(st.worldMeta && st.worldMeta.wetterUhr) || 0;
+        const uhr = st.spielZeit;
         const b = this._vogelBahnAus || (this._vogelBahnAus = {});
         const voegel = st.voegel || (st.voegel = []);
         const ix0 = Math.floor(px / Z);
