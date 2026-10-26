@@ -211,3 +211,4 @@
 2026-10-26 08:06:30 k2nach-83df2052 START 1 Stationen
 2026-10-26 08:06:59 takt5-radeon START 43 Stationen
 2026-10-26 08:08:14 k2nach-83df2052 mensch.K2#1 GRÜN 1.7 · 1/1
+2026-10-26 08:08:18 k2nach-83df2052 ENDE 1 grün / 0 rot · 1.8 min
