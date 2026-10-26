@@ -1239,17 +1239,13 @@ async function checkBandPhaseEThreat(ctx) {
                 return ok;
             };
             // (1) die Gattung trägt WILD: gate:kreatur-takt temperament (wolf@1 wild).
-            // (2) der Jagd-Trieb: pfad+nah+unverängstigt → JA; Furcht schlägt
-            // Jagd; frieden kennt keine Bedrohung; eine sanfte Seele jagt nie.
-            out.drivePfad = r._creatureHuntDrive(wolf, 0) === true;
+            // (2) die Witterung: Furcht schlägt Jagd, eine sanfte Seele jagt nie (die Pirsch auf den Spieler im pfad, keine
+            // im Frieden: gate:kreatur-takt rudel).
             out.fearBeatsHunt =
-                r._creatureHuntDrive(wolf, r.constructor._verhaltenGesetz().furcht.fleeThreshold) === false;
-            r.setGameMode("frieden");
-            out.friedenNoHunt = r._creatureHuntDrive(wolf, 0) === false;
-            r.setGameMode("pfad");
+                r._creatureScentHuntDir(wolf, r.constructor._verhaltenGesetz().furcht.fleeThreshold) === null;
             const lamm = r.spawnCreatureAt(pm.x + 3.5, pm.y, pm.z + 1, "happy", "wesen");
             spawned.push(lamm);
-            out.gentleNoHunt = r._creatureHuntDrive(lamm, 0) === false;
+            out.gentleNoHunt = r._creatureScentHuntDir(lamm, 0) === null;
             // (3) der BISS: HP sinkt durchs damagePlayer-Tor, der Cooldown deckelt, die Rüstung dämpft
             // (_ruestungDaempft, dasselbe Gesetz wie bei den Wesen). Die Probe isoliert die Abwehr (0 vs 3).
             const savedDef = p.stats.defense;
@@ -1296,14 +1292,7 @@ async function checkBandPhaseEThreat(ctx) {
         }
         return out;
     });
-    check(
-        "Phase E Bedrohung: Jagd-Trieb pfad+nah+unverängstigt; Furcht schlägt Jagd",
-        res.drivePfad && res.fearBeatsHunt
-    );
-    check(
-        "Phase E Bedrohung: frieden kennt keine Bedrohung + sanfte Seelen jagen nie",
-        res.friedenNoHunt && res.gentleNoHunt
-    );
+    check("Phase E Bedrohung: Furcht schlägt Jagd + sanfte Seelen jagen nie", res.fearBeatsHunt && res.gentleNoHunt);
     check(
         "Phase E Bedrohung: der Biss trifft durchs damagePlayer-Tor + Cooldown deckelt",
         res.strikeHits && res.cooldownGates

@@ -167,9 +167,6 @@ class AnazhRealm_speicher_laden {
         // Same-World-Reload ist sicher (gleicher Seed → Noise bit-identisch).
         this._growTreeNoise = null;
         this._growTreeRing = [];
-        // Der soul-keyed Scent-sizeFactor-Cache wird am Welt-Wechsel geleert: eine andere Welt kann
-        // CREATURE_SOULS-Custom-Definitionen austauschen.
-        if (this._scentSizeBySoul) this._scentSizeBySoul.clear();
         // V18.222 — Canopy-Chunks disposen (welt-spezifisch); _tickCanopyStreaming
         // baut den 3×3-Ring der neuen Welt lazy nach.
         if (typeof this._canopyDisposeAllChunks === "function") this._canopyDisposeAllChunks();
@@ -287,6 +284,7 @@ class AnazhRealm_speicher_laden {
         if (typeof state.timeOfDay === "number" && state.timeOfDay >= 0 && state.timeOfDay <= 1) {
             this._uhrSetzen(state.timeOfDay, "laden");
         }
+        this._weltUhrNimm(state.spielZeit); // die Welt-Uhr des Stands (feld.K2#2)
         // `state.dayLengthMinutes` des Stands setzt der Restore NIE: die Tag-Länge ist die Wahl des Spielers (localStorage,
         // `setDayLength`) — der Kopf trägt sie nur für die Taille v1 (Leben-Schau 2, gate:wetter-wache (T)).
         // ERFINDER-WELLE — die Welt-Klang-Wahl (Genre-Id; der Konsument `_klangStudioPreset`

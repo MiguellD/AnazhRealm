@@ -914,7 +914,7 @@ function taeterFaelle(faelle, urteil, { fehler = [], klon } = {}) {
         const v = urteil(z);
         const fehlt = muss == null ? v.slice(0, v.length && 1) : [].concat(muss).filter((re) => !v.some((s) => re.test(s)));
         for (const re of fehlt) fehler.push(`${name}: die Wand nennt den Täter nicht (${re})`);
-        console.log(`  ${fehlt.length ? "❌" : "✅"} Selbsttest „${name}" → rot: ${v.join(" · ") || "(nichts)"}`);
+        console.log(`  ${fehlt.length ? "❌" : "✅"} Selbsttest „${name}" → ${muss == null ? "grün" : "rot"}: ${v.join(" · ") || "(nichts)"}`);
     }
     return fehler;
 }

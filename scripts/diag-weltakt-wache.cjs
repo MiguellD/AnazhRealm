@@ -375,13 +375,13 @@ async function tatProbe(m) {
         return [D(l), D(l) - D({ ...l, antwort: null })];
     };
     const tat = (f) => (f(), st.taten ? +st.taten[st.taten.length - 1].delta.toFixed(4) : null);
-    // DIE MESSUNG WARTET AUF DEN CHOR, nie auf die Wanduhr: die Vögel kreisen nach der Uhr der Welt (`worldMeta.wetterUhr`, im Boot
+    // DIE MESSUNG WARTET AUF DEN CHOR, nie auf die Wanduhr: die Vögel kreisen nach der Uhr der Welt (`spielZeit`, im Boot
     // lief sie mit der Wanduhr); hört ein Ohr keinen singenden Leib, ist die Messung blind (−∞ − −∞) — die Vogel-Uhr schreitet 5 s
     // Spielzeit, je Schritt 4 Takte, bis der Chor singt; der Deckel sind zwei Lied-Perioden des Vogel-Gesetzes
     const deckel = Math.ceil((2 * P.constructor._vogelGesetz().V.flug.periodeS) / 5);
     const taten = [];
     const hoere = (mess) => {
-        for (let w = 0; ; w++, st.worldMeta.wetterUhr += 5) {
+        for (let w = 0; ; w++, st.spielZeit += 5) {
             um.letzteMischung = -Infinity;
             stelle(4);
             const x = mess();

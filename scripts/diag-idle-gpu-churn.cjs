@@ -402,7 +402,7 @@ hauptLauf(async () => {
         log(`Schlüssel-Warmup: ${setup.scheiben} Aufrufe`);
         for (let i = 0; i < 10; i++) {
             // SELBSTTEST: die Uhr der Welt läuft frei und der Wetter-Zug wird fällig — die Bühnen-Wand MUSS rot werden
-            if (SELBSTTEST_BUEHNE && i === 5) await ruf("Selbsttest-Bühne", () => { window.__buehneLos = true; window.anazhRealm.state.weatherEffectTime = 1e6; });
+            if (SELBSTTEST_BUEHNE && i === 5) await ruf("Selbsttest-Bühne", () => { window.__buehneLos = true; const s = window.anazhRealm.state; s.weatherEffectTime = 0; s.spielZeit += 120; });
             if (SELBSTTEST_PROGRAMM && i === 5) await ruf("Selbsttest-Programm", () => { window.anazhRealm.dslRun(["spawn_village", ["near_player"]], { source: "selbsttest" }); });
             await frame(`Warmup-Frame ${i}`);
         }

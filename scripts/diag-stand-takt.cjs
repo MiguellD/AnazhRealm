@@ -1626,6 +1626,16 @@ const TAT = process.argv.includes("--tat");
                             }
                         r._depositLife(pm.x, pm.z);
                         vorher.leben = st.lifeField.size;
+                        // das Wort des Spielers über den EINEN Schreiber ohne Übergang (die Bühne), dann Sonne und trocken
+                        const wort = (w) => {
+                            st.weatherEffectTime = 0;
+                            r._setWeather(w, "human");
+                            st.weatherEffectTime = -1e9;
+                            st.weatherTransition = null;
+                        };
+                        // die Ruhe ist sonnig und trocken: der erste Zug der Welt-Uhr zog das Wetter der Front (feld.K2#2)
+                        wort("sunny");
+                        r._naesseTakt(1e6);
                         await simPhase(60); // jede Sim geht ihren Gang bis an ihren Fixpunkt
                         aus.simRuhe = Object.assign(await simPhase(3600), { vorher });
                         const weck = async (n, ereignis) => {
@@ -1634,13 +1644,6 @@ const TAT = process.argv.includes("--tat");
                         };
                         await weck("saison", () => r.setSeason("herbst"));
                         r.setSeason("sommer");
-                        // das Wort des Spielers über den EINEN Schreiber ohne Übergang (die Bühne), dann Sonne und trocken
-                        const wort = (w) => {
-                            st.weatherEffectTime = 0;
-                            r._setWeather(w, "human");
-                            st.weatherEffectTime = -1e9;
-                            st.weatherTransition = null;
-                        };
                         wort("rainy");
                         W.regen = { wach: await simPhase(5) };
                         wort("sunny");
