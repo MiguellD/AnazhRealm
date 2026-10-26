@@ -17,7 +17,7 @@
 //   node scripts/diag-werkstatt-weg.cjs [--selftest]          Port: WERKSTATT_WEG_PORT (Standard 4623)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, halteBis } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, halteBis, pruefer } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -25,14 +25,17 @@ const stammLib = require("./lib/stamm.cjs");
 const PORT = Number(process.env.WERKSTATT_WEG_PORT || 4623);
 const PRUEF_SATZ = require("../spec/pruefsatz/bauen-k3.json"); // Meisterkarte Bauen K3: 5 stabil, 5 instabil, die Wirkungen
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 const SAETZE = ["hain", "insel", "fraktal", "ki ohne Seed"];
 // der Konsum am Ruf: jeder Eintrag {Leser → Gesetz: gerufen}; fehlt die Probe, ist sie rot
 const konsumTaeter = (k) => Object.entries(k || { "(keine Probe)": false }).filter(([, ok]) => ok !== true).map(([n]) => `Konsum: ${n} ruft sein Gesetz nicht`);
+// eine Probe, die nicht zu Ende lief (das Urteil „start"), und eine Spieler-Zeile im Befund
+const ungelaufen = (m) => !m || m.gestartet !== true;
+const kurz = (zeile) => (zeile || "").slice(0, 50);
 function sameVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (ungelaufen(m)) return ["start"];
     const out = [];
     for (const s of SAETZE) {
         const z = m.zuege && m.zuege[s];
@@ -64,7 +67,7 @@ const WORT_SOLL = {
 };
 const WORT_UNBEKANNT = ["scheune", "quasselstrippe"];
 function wortVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (ungelaufen(m)) return ["start"];
     const out = [];
     for (const [w, art] of Object.entries(WORT_SOLL)) {
         const e = m.woerter && m.woerter[w];
@@ -105,26 +108,26 @@ const TEILE = {
     eigen_bruecke: ["Brücke", PRUEF_SATZ.stabil["Brücke auf zwei Pfeilern"]],
 };
 // L-VERBEN (Bauen K5): je gesetztem Werk sein Verb — gesetzt über die Werkstatt (das Tor, das sie nicht fertigt, über die Hotbar),
-// benutzt über die Taste; je Werk { steht, verb, warum }. Leiter und Bank trägt kein Gesetzbuch (fachwerk baut Treppen und Möbel im
-// Haus, E kennt kein Sitzen): offen, benannt — die Wand hält das Gebaute, die Staffel zählt die Station.
+// benutzt über die Taste; je Werk { steht, verb, warum }. Leiter und Bank trägt das Zimmermanns-Gesetzbuch (fachwerk, Arten leiter
+// und bank, ihre Wirts-Zeile B7): die Leiter steigt der Leib (W) bis aufs Podest, auf der Bank sitzt er (E, `sitzbar`).
 const VERBEN = {
     Haus: [WERKE.Haus, "betreten"],
     Wagen: [WERKE.GT, "drive"],
     Tor: ["tor_drachentor", "portal", "hotbar"],
     Brücke: ["eigen_bruecke", "betreten"],
-    Leiter: [null, "klettern"],
-    Bank: [null, "sitzen"],
+    Leiter: ["leiter_podestleiter", "klettern"],
+    Bank: ["bank_sitzbank", "sitzen"],
 };
 const verbVerdict = (m) =>
     !m || !m.verben
         ? ["start"]
-        : Object.entries(VERBEN).flatMap(([w, [name, verb]]) => {
+        : Object.entries(VERBEN).flatMap(([w, [, verb]]) => {
               const e = m.verben[w] || {};
-              return !name ? [] : e.steht !== 1 ? [`${w}: ${e.fehler || "steht nicht"}`] : e.verb ? [] : [`${w} × ${verb}: ${e.warum}`];
+              return e.steht !== 1 ? [`${w}: ${e.fehler || "steht nicht"}`] : e.verb ? [] : [`${w} × ${verb}: ${e.warum}`];
           });
 const EINGABEN_SOLL = 3; // Meisterkarte Bauen K1: vom Willen zum stehenden Werk ≤ 3 Eingaben
 function wegVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (ungelaufen(m)) return ["start"];
     const out = konsumTaeter(m.konsum);
     for (const lage of LAGEN)
         for (const weg of WEGE)
@@ -142,7 +145,7 @@ function wegVerdict(m) {
                     if (!(e.eingaben > 0)) t("kein echtes Eingabe-Ereignis — der Weg lief ohne Spieler");
                     if (lage === "frieden ohne Material") {
                         if (e.steht > 0) t("steht ohne Material");
-                        if (!/fehlt/i.test(`${e.zeile} ${e.gesperrt}`)) t(`stumme Absage („${(e.zeile || "").slice(0, 50)}")`);
+                        if (!/fehlt/i.test(`${e.zeile} ${e.gesperrt}`)) t(`stumme Absage („${kurz(e.zeile)}")`);
                         if (e.bauModus && weg !== "hotbar") t("der Weg führt in einen Bau-Modus, der nur ablehnen kann");
                         continue;
                     }
@@ -156,7 +159,7 @@ function wegVerdict(m) {
     // Ein Gerät aus der Hotbar (frieden, ohne Material): der Griff schmiedet und sagt, was fehlt.
     const ge = m.geraet || {};
     if (!ge.name) out.push("kein ungeschmiedetes Gerät mit Kosten (Vorbedingung)");
-    else if (!/fehlt/.test(ge.zeile || "")) out.push(`das Gerät aus der Hotbar verweigert stumm („${(ge.zeile || "").slice(0, 50)}")`);
+    else if (!/fehlt/.test(ge.zeile || "")) out.push(`das Gerät aus der Hotbar verweigert stumm („${kurz(ge.zeile)}")`);
     const ph = m.phantom || {};
     if (!(ph.meshes > 0)) out.push("kein Phantom im Bau-Modus (Vorbedingung)");
     else if (ph.verworfen > 0) out.push(`das Phantom ist unsichtbar: ${ph.verworfen}/${ph.meshes} Meshes verwirft der Alpha-Test`);
@@ -173,14 +176,14 @@ function wegVerdict(m) {
     const ohne = (((m.wege || {})["frieden ohne Material"] || {}).hotbar || {}).Eiche || {};
     if ((ohne.Ego || {}).farbe !== "rot") out.push(`das Phantom ohne Material steht ${(ohne.Ego || {}).farbe} (Soll rot)`);
     if (l.steht > 0) out.push(`auf der Lichtung steht ${l.steht} Eiche (die Natur-Wand gilt dem Satz, nicht dem Bau-Modus)`);
-    if (!/Lichtung/.test(l.zeile || "")) out.push(`die Lichtung verweigert stumm („${(l.zeile || "").slice(0, 50)}")`);
+    if (!/Lichtung/.test(l.zeile || "")) out.push(`die Lichtung verweigert stumm („${kurz(l.zeile)}")`);
     return out;
 }
 
 // Brennglas: { plattform: {steht, maxWaerme, zeilen}, linse: {glimmtBei, brenntBei, steht, zeileGlimmt, zeileBrennt},
 // nacht: {waerme, steht}, kuehlung: {nachFokus, nachKuehlen} }.
 function brennVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (ungelaufen(m)) return ["start"];
     const out = [];
     const p = m.plattform || {};
     if (!p.gesetzt) out.push("die Eiche an der Plattform nicht gesetzt (Vorbedingung)");
@@ -192,7 +195,7 @@ function brennVerdict(m) {
         if (l.steht) out.push(`die gebaute Linse entzündet die Eiche unter sich nicht (Wärme ${l.waerme})`);
         if (!/glimmt/.test(l.zeileGlimmt || "")) out.push("das Glimmen schweigt");
         if (!/entzündete/.test(l.zeileBrennt || ""))
-            out.push(`die Zerstörung nennt sich nicht („${(l.zeileBrennt || "").slice(0, 50)}")`);
+            out.push(`die Zerstörung nennt sich nicht („${kurz(l.zeileBrennt)}")`);
         if (m.regen !== true) out.push("bei Regen zündet die Linse");
     }
     const n = m.nacht || {};
@@ -228,7 +231,7 @@ function pruefVerdict(m, b) {
 // Der Same des Werks: { steht, zuege, phantomKey, werkKey, phantomDreh, werkDreh, werkSame, werkTint, gesendetSame,
 // empfang: {steht, key, dreh, tint}, reload: {erst, weiter, nachReload} }.
 function werkVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (ungelaufen(m)) return ["start"];
     const out = konsumTaeter(m.konsum);
     if (!Array.isArray(m.stumm) || m.stumm.length) out.push(`eine Absage des Setzens schweigt: ${m.stumm ? m.stumm.join(", ") : "nicht gelaufen"}`);
     const gleich = (a, b) => Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) < 1e-6;
@@ -600,7 +603,7 @@ async function probe(argW) {
             if (st.uiActiveDrawer) r.closeAllDrawers();
             r.setGameMode("schöpfer");
             // ein schräger Blick weg von der Plattform: die Drehung des Phantoms ist nicht 0
-            st.playerMesh.position.set(frei.x, frei.y + 1.2, frei.z);
+            stelle();
             st.yaw = Math.atan2(frei.x - plat.position.x, frei.z - plat.position.z) + 0.7;
             st.pitch = -0.45;
             await tick(4, 30);
@@ -1052,6 +1055,8 @@ function wegHelfer(arg) {
             const welt = ([x, z]) => [p.x + x * c + z * s, p.z - x * s + z * c];
             const lokal = () => [(pm.x - p.x) * c - (pm.z - p.z) * s, (pm.x - p.x) * s + (pm.z - p.z) * c];
             let [von, nach, y, drin] = [[0, -2.5], [0, 0], null, () => (lauf.fuhr ||= pl.mountedArch === e.id && Math.hypot(p.x - lauf.p0.x, p.z - lauf.p0.z) >= 5) || pl.mountedArch !== e.id];
+            // die oberste Fläche, die einen Fuß trägt (breiter als der Stab, `_blockerFugen`): das Deck der Brücke, das Podest der Leiter
+            const oben = () => Math.max(...e.blockerAABBs.filter((b) => Math.min(b.maxX - b.minX, b.maxZ - b.minZ) > r.constructor.PLAYER_STAB).map((b) => b.topY)) + r.constructor.PLAYER_FOOT_OFFSET;
             if ((lauf.haus = /^haus_/.test(e.type))) {
                 // die Tür-Zeile des Werks (die Hülle bringt sie): 8 m vor der Tür, wo sie zu ist, bis 1,5 m hinter die Schwelle
                 const t = (await window.__gebautNach("die Hülle des Hauses", { fertig: () => !!e._hausHuelle }), e.tuer);
@@ -1059,9 +1064,9 @@ function wegHelfer(arg) {
                 [von, nach, drin] = [[t.x, t.z - 8], [t.x, t.z + 1.5], () => lokal()[1] > t.z + 1.4];
                 lauf.fluegel = (e.instSlots || []).find((q) => q.tuer || st.archInstanceGroups.get(q.key).tuer);
             } else if (verb === "betreten") {
-                y = Math.max(...e.blockerAABBs.map((b) => b.topY)) + r.constructor.PLAYER_FOOT_OFFSET;
+                y = oben();
                 [von, nach, drin] = [[-3.4, 0], [3.4, 0], () => lokal()[0] > 3.2 && pm.y > y - 0.15];
-            }
+            } else if (verb === "klettern") drin = () => (lauf.oben ||= pm.y > oben() - 0.15); // einmal oben, bleibt es
             const [a, b] = [welt(von), welt(nach)];
             pm.set(a[0], y || r.getTerrainHeightAt(a[0], a[1]) + 1.4, a[1]);
             [st.yaw, st.pitch] = [Math.atan2(b[0] - a[0], b[1] - a[1]), 0];
@@ -1084,6 +1089,8 @@ function wegHelfer(arg) {
                 betreten: () => (lauf.haus ? [lauf.drin() && grad > 29, `die Tür dreht ${grad}°`] : [lauf.drin(), "vom Deck"]),
                 drive: () => [lauf.fuhr && pl.mountedArch !== e.id, "kein Fahren"],
                 portal: () => [!!r._portalOverlay, "kein Portal"],
+                klettern: () => [lauf.drin(), "nicht auf dem Podest"],
+                sitzen: () => [pl.mountedArch === e.id, "sitzt nicht"],
             }[verb]();
             if (r._portalOverlay) r.exitPortal();
             if (pl.mountedArch != null) r.dismountArchitecture();
@@ -1133,11 +1140,11 @@ const WEG_FAHRT = {
     },
     hotbar: (page, name, slot) => taste(page, `Digit${slot + 1}`),
 };
-// L-VERBEN, der Spieler: W hält, bis das Ziel des Verbs steht (die Frist ist der Deckel, nie das Urteil); E sitzt auf und ab und
-// betritt das Portal
+// L-VERBEN, der Spieler: W hält, bis das Ziel des Verbs steht (die Frist ist der Deckel, nie das Urteil); E sitzt auf und ab, setzt
+// sich auf die Bank und betritt das Portal
 const geh = (page) => halteBis(page, { taste: "KeyW", ziel: () => window.__bauWeg.ziel(), frist: 120000 });
 const E = (page) => taste(page, "KeyE");
-const VERB_TASTE = { drive: async (page) => (await E(page), await geh(page), E(page)), portal: E };
+const VERB_TASTE = { drive: async (page) => (await E(page), await geh(page), E(page)), portal: E, sitzen: E };
 // Ein Lauf: vorbereiten (vor dem Zähler) → der Weg → im Bau-Modus F (confirmBuild) → das Werk steht oder der Kanal spricht.
 async function wegLauf(page, o) {
     const slot = await bauWeg(page, "vorbereiten", o);
@@ -1187,7 +1194,7 @@ async function wegProbe(page, frei) {
     // L-VERBEN: je Werk gesetzt und über die Taste benutzt
     m.verben = {};
     await bauWeg(page, "teile", TEILE);
-    for (const [werk, [name, verb, weg]] of Object.entries(VERBEN)) if (name) m.verben[werk] = await wegLauf(page, { lage: "schöpfer", weg: weg || "werkstatt", name, sicht: "Ego", verb });
+    for (const [werk, [name, verb, weg]] of Object.entries(VERBEN)) m.verben[werk] = await wegLauf(page, { lage: "schöpfer", weg: weg || "werkstatt", name, sicht: "Ego", verb });
     await bauWeg(page, "ende");
     m.gestartet = true;
     return m;
@@ -1620,8 +1627,7 @@ async function wegProbe(page, frei) {
     );
     console.log("=== L-VERBEN — JEDES GESETZTE WERK TRÄGT SEIN VERB (Bauen K5) ===");
     const vV = verbVerdict(gm);
-    const offen = Object.entries(VERBEN).filter(([, [name]]) => !name);
-    check("L-Verben jedes gesetzte Werk trägt sein Verb über die Taste", !vV.length, `${Object.keys(VERBEN).length - offen.length - vV.length}/${Object.keys(VERBEN).length} Werke, offen ${offen.map(([w, [, verb]]) => w + " × " + verb).join(" · ")}${vV.length ? " — Täter: " + vV.join(" · ") : ""}`);
+    check("L-Verben jedes gesetzte Werk trägt sein Verb über die Taste", !vV.length, `${Object.keys(VERBEN).length - vV.length}/${Object.keys(VERBEN).length} Werke${vV.length ? " — Täter: " + vV.join(" · ") : ""}`);
     const km = out.werk || {};
     const ke = km.empfang || {};
     const kr = km.reload || {};
