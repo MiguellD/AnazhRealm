@@ -251,3 +251,4 @@
 2026-10-26 20:35:24 takt6-gtx material.K2#1 ROT 5.6 · 9/16
 2026-10-26 20:39:57 takt6-gtx mensch.K2#2 GRÜN 4.5 · 10/16
 2026-10-26 20:40:48 takt6-gtx pipeline.K4#1 ROT 0.8 · 11/16
+2026-10-26 20:54:46 takt6-gtx profiband.K4#1 ROT 13.9 · 12/16
