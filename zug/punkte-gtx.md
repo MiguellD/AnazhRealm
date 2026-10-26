@@ -10,12 +10,13 @@ Maschine am SHA und committet EINE Ergebnis-Datei. Gebucht wird am Radeon-Host (
 2. Der Spiel-Klon ist das Repo hinter dem Koord-Baum (`git rev-parse --path-format=absolute --git-common-dir`, dessen
    Ordner). Dort muss `node_modules` liegen (`npm ci` einmal); der Läufer legt `.claude/worktrees/punkte-gtx` an und
    hängt `node_modules` als Junction ein.
-3. Das GPU-Schloss ist Pflicht, auch an der allein genutzten GTX — ohne es ist jede GPU-Station ROT
-   („gpu-lauf.sh fehlt"). Erwartet unter `<Spiel-Klon>/artifacts/profiband/werkzeug/gpu-lauf.sh` oder per
-   `PUNKTE_GPU_LAUF=<pfad>`. Das Skript ist das des Radeon-Hosts (mkdir-Schloss unter `$TEMP/claude/gpu-schloss`,
-   `GPU_LAUF_MAX_S`, Exit 75 bei blockiert, 124 bei Deckel).
-4. Git-bash unter `C:/Program Files/Git/bin/bash.exe` (sonst `PUNKTE_BASH`). Port 4312 bleibt frei; die Stationen
-   nehmen 7700–7759 und je +20000.
+3. Das GPU-Schloss ist Pflicht, auch an der allein genutzten GTX. Seit 26.10. (Karte gpu-bahnen) fährt die Maschine die EINE
+   `meisterkarte-quelle/punkte/werkzeug/gpu-lauf.sh` neben sich (mit `gpu-schloss.sh`: Platz-Schloss, Bild-Stationen in Bahnen,
+   Zeit-Stationen allein, CI-Runner mit Vorfahrt, Nachtruhe außerhalb der Warte-Frist); eine andere nur per `PUNKTE_GPU_LAUF=<pfad>`.
+   Ein blockiertes oder schweigendes Schloss (Exit 75) ist UNGEMESSEN, nie ROT — `run --offen` misst die Station neu.
+4. Git-bash unter `C:/Program Files/Git/bin/bash.exe` (sonst `PUNKTE_BASH`). Port 4312 bleibt frei; die Stationen nehmen je
+   Gerät und Bahn ein Band von 10 Ports (headless ab `--port-basis` 7700, radeon|gtx ab 7750, je Bahn +10) samt den Spiegeln
+   +10000, +20000, +30000.
 
 ## Je Kandidat
 
