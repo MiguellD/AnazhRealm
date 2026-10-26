@@ -728,6 +728,66 @@ const stationen = [
         ],
         quelle: "1 = Third nie im Fels oder in der Wand (0 Fels-Pixel im Nahbereich der Kamera), Ruck ≤ 0,02 m p95 beim Gehen, an einem Gerät",
     },
+    {
+        kriterium: "leib.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // diag-kamera-laub mit dem Teil gang2 (der Gang der Staffel 2, mit --bild auf der Karte): derselbe Gang wie Staffel 1 dazu
+        // IM HAUS (rückwärts durch die Tür des haus_alemannisch, `innen`: der Spieler steht über 1 m hinter der Schwelle) und am
+        // STEILHANG (die Stelle des EINEN Orts-Gesetzes `__weltOrt("hang")`, 25–35° um die Mess-Wiese, der Blick hangab, die
+        // Kamera hangauf), beide auch im SPRINT (`innen-sprint`, `steil-sprint`); die Kugel urteilt auch den sichtbaren Boden, der
+        // Ruck gilt je Gang, und die Kamera, die nach dem Takt in den Hang sinkt, muss die Linse nennen (Zeile „K4 Staffel 2").
+        // „auch": die Zeile der Staffel 1 (Stamm, Fels, Haus beim Gehen) zählt mit; Wand-Pixel (Bau) zählen in jedem Gang, die
+        // Weiche „zeichnet nie" ist ROT (Wand GPU in punkte.cjs und hier). gate:kamera-leib (CI) fährt gang2 nicht, solange er ROT
+        // ist (26.10., swiftshader mit --bild am Code-Zweig lk4-steil: Ruck p95 im Haus-Sprint 0,048 m, sonst grün).
+        befehl: ["node", "scripts/diag-kamera-laub.cjs", "--teile", "leib,gang,gang2", "--bild"],
+        env: { KAMERA_LAUB_PORT: "{PORT}", LINSE_GPU: "hardware" },
+        gpu: true,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const zeilen = lauf.stdout.split(/\r?\n/);
+            const z1 = zeilen.find((l) => /^\s*(✅|❌) K4 der Gang in Third/.test(l));
+            const z2 = zeilen.find((l) => /^\s*(✅|❌) K4 Staffel 2: /.test(l));
+            if (!z1 || !z2) return { gruen: false, zahl: "keine Zeile K4 " + (z1 ? "Staffel 2" : "der Gang in Third") + " (Exit " + lauf.exit + ")" };
+            const gang = zeilen.filter((l) => /^\s+(stamm|fels|haus|innen|innen-sprint|steil|steil-sprint)\s/.test(l));
+            const gaenge = gang.map((l) => l.trim().replace(/\s+/g, " "));
+            const wand = gang.reduce((s, l) => {
+                const m = /Nah-Pixel (\{[^}]*\})/.exec(l);
+                let n = {};
+                try { n = m ? JSON.parse(m[1]) : {}; } catch (_e) { n = { kaputt: 1 }; }
+                return s + Object.entries(n).filter(([k]) => /: Bau$|kaputt/.test(k)).reduce((a, [, v]) => a + v, 0);
+            }, 0);
+            const fehlt = ["innen", "innen-sprint", "steil", "steil-sprint"].filter((a) => !gaenge.some((g) => g.startsWith(a + " ")));
+            const nie = /^\[welt-boot\] FEHLER klasse:.*zeichnet nie/m.test(lauf.stdout);
+            const rot = [/❌/.test(z1) ? "Staffel 1: " + z1.split(" — ").slice(1).join(" — ") : null, /❌/.test(z2) ? z2.split(" — ").slice(1).join(" — ") : null,
+                fehlt.length ? "kein Gang " + fehlt.join(", ") : null, wand ? "Wand-Pixel (Bau) im Nahbereich in " + wand + " Proben" : null,
+                nie ? "die Linse zeichnet nie (welt-boot: Rezept null)" : null].filter(Boolean);
+            return { gruen: !rot.length, zahl: (gaenge.filter((g) => /^(innen|steil)/.test(g)).join(" | ") || "keine Gang-Zeile") + (rot.length ? " — ROT: " + rot.join(" · ") : "") };
+        },
+        pfad: [
+            "stamm/koerper-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/vegetation-*.js",
+            "stamm/siedlung-bauten.js",
+            "stamm/siedlung-satz.js",
+            "stamm/siedlung-ort.js",
+            "stamm/dirigent-takt.js",
+            "stamm/daten.js",
+            // die Kugel der Kamera und ihr Arm (`fx.bewegung.kamera`), das Haus mit Tür und Treppe, der Hang des Gesetzes
+            "koerper-core.js",
+            "fachwerk-core.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "spec/profiband/haushalt.json",
+            "scripts/diag-kamera-laub.cjs",
+            "scripts/lib/kamera-nah.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "2 = auch am Steilhang, im Haus, beim Sprint, beide Geräte",
+    },
 
     // ───────── leib.K5 — das Gamepad (gamepad-verben) ─────────
     ...[1, 2].map((staffel) => ({
@@ -1179,10 +1239,6 @@ module.exports.fehlt = [
     {
         kriterium: "siedlung.K1", staffel: 2, befehl: null,
         grund: "W10 geht 8 Häuser des Drehbuch-Dorfs, nicht jedes Haus des Start-Dorfs; keine Probe misst die Innen-Luma gegen den Außen-Schatten (≥ 15 %) im Ausgabe-Bild",
-    },
-    {
-        kriterium: "leib.K4", staffel: 2, befehl: null,
-        grund: "gate:kamera-leib Teil gang kennt Stamm, Fels und Haus an der Mess-Wiese — kein Gang am Steilhang und keiner im Sprint",
     },
     {
         kriterium: "halten.K1", staffel: 2, befehl: null,
