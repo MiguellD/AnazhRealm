@@ -2408,9 +2408,7 @@ async function kreaturProben(r, T, opts) {
                 : [[]]) {
                 // prettier-ignore
                 const [ab, M] = [[], wegeMesser(S.liste)];
-                r._uhrSetzen(5 / 24, "regler");
-                r._tickBewohner(0); // erst der Takt sieht den Sprung der Uhr (`_bewohnerAnkunft`), vorher stand jeder noch
-                await bisDa("bewohner: die Ankunft der Stadt", () => !da());
+                await uhrAuf(5, "bewohner: die Ankunft der Stadt", da);
                 if (ueber) decke(ab, ueber, () => () => null);
                 for (let i = 0; i < (taeter ? 30 : 240) * takte; i++) takt(DT, M);
                 for (const f of ab) f();
@@ -2418,26 +2416,31 @@ async function kreaturProben(r, T, opts) {
             }
             return taeter ? null : sicht[undefined].stadt;
         };
-        // der Takt des Spiels, bis die Siedlung steht (`offen` nicht mehr)
+        // der Takt des Spiels — bis die Siedlung steht (`offen` nicht mehr)
+        const tick = () => {
+            try {
+                r._gameLoopTick(performance.now());
+            } catch {
+                /* der Takt meldet selbst */
+            }
+        };
         const bisDa = async (name, offen) => {
-            for (const weiter = W.__deckel(name, 120); weiter() && offen(); await schlaf(16))
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {
-                    /* der Takt meldet selbst */
-                }
+            for (const weiter = W.__deckel(name, 120); weiter() && offen(); await schlaf(16)) tick();
+        };
+        // DIE UHR AUF DER STUNDE h, nie an der Uhr des Boots: erst der Takt sieht ihren Sprung (`_bewohnerAnkunft`), bis jeder
+        // steht (`da`); das Warten rückte sie, also beginnt der Tag danach genau auf h — seine Prüfpunkte treffen in jedem Lauf
+        // dieselben Wenden
+        const uhrAuf = async (h, wo, da) => {
+            r._uhrSetzen(h / 24, "regler");
+            r._tickBewohner(0);
+            await bisDa(wo, () => !da());
+            r._uhrSetzen(h / 24, "regler");
         };
         // DER TAG BEGINNT IN DER STEHENDEN WELT (welt-boot `__weltStehtNach`, der Takt des Spiels): er rechnet synchron, ohne
         // Loop — seine Welt ist, was bis zu seinem Anfang um den Ort wuchs; wüchsen Wald oder Streu noch (die Streu im Faden
         // landet Takte später), mäße jeder Lauf einen anderen Tag. Der Deckel zählt Takte ohne Offenes und wirft beim Ort.
         const stehtUm = (wo) =>
-            W.__weltStehtNach(() => {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {
-                    /* der Takt meldet selbst */
-                }
-            }, 600).catch((f) => {
+            W.__weltStehtNach(tick, 600).catch((f) => {
                 throw new Error(`${wo}: ${f.message}`);
             });
         const haeuserIn = (slots, ox, oz) =>
@@ -2528,6 +2531,10 @@ async function kreaturProben(r, T, opts) {
         const liste = (S.liste || []).filter((b) => L.includes(b.leib));
         const tag0 = s.timeOfDay;
         restore.push(() => r._uhrSetzen(tag0, "regler"));
+        // der Tag beginnt um 12,5 Uhr: die Wiederkehr prüft je 1,5 h (14 · 15,5 · 17 … 5 · 6,5 · 8 … 12,5) am Rand des
+        // Feierabends, des Wachens und der Arbeit — dort, wo die Menge im Strom geht
+        const alleDa = () => liste.every((b) => b.leib && !b.ankunft);
+        await uhrAuf(12.5, "bewohner: der Tag", alleDa);
         const SD = wegeMesser(liste);
         const treffer = new Map();
         const vorher = new Map();
@@ -2611,10 +2618,11 @@ async function kreaturProben(r, T, opts) {
         const blieb = new Map();
         for (let i = 1; i <= 240; i++) {
             const stunde = (s.timeOfDay * 24 + 0.1) % 24;
+            const um = (h) => Math.abs(stunde - h) < 0.05;
             const SZ = saetze();
             for (let k = 0; k < takte; k++) takt(DT, SD);
             // DAS GANG-FENSTER: die Wege zum Werk, zum Platz, nach Hause, 10 s zu 1/60 s
-            if ([7.5, 12, 17.2].some((h) => Math.abs(stunde - h) < 0.05)) {
+            if ([7.5, 12, 17.2].some(um)) {
                 gang.luecke(); // das Fenster beginnt jede Spur neu
                 for (let k = 0; k < 600; k++) {
                     takt(1 / 60, SD);
@@ -2646,13 +2654,12 @@ async function kreaturProben(r, T, opts) {
                 treffer.set(b, (treffer.get(b) || 0) + (da || unterwegs ? 1 / 240 : 0));
                 vorher.set(b, { ziel: b.ziel, rest });
             }
-            if (Math.abs(stunde - 10) < 0.05) {
+            if (um(10)) {
                 z.schmiede10 = anStation();
                 blick10 = [blickZaehlen("ego", L), blickZaehlen("third", L)];
             }
-            if (Math.abs(stunde - 10) < 0.05 || Math.abs(stunde - 12.5) < 0.05 || Math.abs(stunde - 19) < 0.05)
-                blickMessen();
-            if (Math.abs(stunde - 2) < 0.05) z.schmiede2 = anStation();
+            if ([10, 12.5, 19].some(um)) blickMessen();
+            if (um(2)) z.schmiede2 = anStation();
             if (i % 15 === 0) blieb.set(s.timeOfDay * 24, lagen()); // je 1,5 h
         }
         // gezählt: ein Leib mit Rig, der im Tag ging
@@ -2692,9 +2699,7 @@ async function kreaturProben(r, T, opts) {
         // Täter (Selbsttest) im eigenen Fenster nach dem Tag: der Teleport an den Soll-Ort, eine Spielstunde nach der Ankunft
         // um 7 Uhr, mit eigenem Messer
         if (hat("bewohner-sprung")) {
-            r._uhrSetzen(7 / 24, "regler");
-            r._tickBewohner(0);
-            await bisDa("bewohner: der Morgen", () => !liste.every((b) => b.leib && !b.ankunft));
+            await uhrAuf(7, "bewohner: der Morgen", alleDa);
             const SP = wegeMesser(liste);
             for (let k = 0; k < 10 * takte; k++) {
                 takt(DT, SP);
