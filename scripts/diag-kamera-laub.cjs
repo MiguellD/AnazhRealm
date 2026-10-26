@@ -12,8 +12,7 @@
 // Linse — die Linse muss beide beim Namen nennen, sonst ist sie vakuös. `--selftest` (ohne Welt): das Urteil über
 // synthetische Messungen nennt jeden Täter, die statische Wand fällt am Vor-Stand.
 //
-//   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,ninja]   Port: KAMERA_LAUB_PORT (Standard 4611)
-//   KAMERA_LAUB_STUDIO=<datei>                             ein anderes Körper-Studio (koerperstudio.js) — das Vorher von NP-03
+//   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,gang2,ninja]   Port: KAMERA_LAUB_PORT (Standard 4611)
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
@@ -26,13 +25,13 @@ const { KAMERA_NAH_INSTALL } = require("./lib/kamera-nah.cjs");
 
 const PORT = Number(process.env.KAMERA_LAUB_PORT || 4611);
 const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LAUB_STAMM) : null;
-// das Körper-Studio eines anderen Stands (das Vorher des NP-03-A/B)
-const STUDIO = process.env.KAMERA_LAUB_STUDIO ? path.resolve(process.env.KAMERA_LAUB_STUDIO) : null;
-// die Teile des Laufs (Standard alle): laub (die Nah-Deckung, K1) · leib (Mess-Wiese + Prüfbühnen-Hang, K2) · gang (der Gang, K4) · ninja (NP-03, K3) —
-// die CI fährt sie in zwei Schritten (gate:kamera-laub · gate:kamera-leib), je unter 3 min
+// die Teile des Laufs (Standard alle): laub (die Nah-Deckung, K1) · leib (Mess-Wiese + Prüfbühnen-Hang, K2) · gang (der Gang, K4) · gang2
+// (der Gang der Staffel 2: im Haus, am Steilhang, im Sprint — mit gang) · ninja (NP-03, K3) — die CI fährt sie in zwei Schritten
+// (gate:kamera-laub · gate:kamera-leib), je unter 3 min; gang2 fährt die Station leib.K4#2, die Wand trägt ihn, sobald die Welt
+// ihn trägt (26.10.: ROT am Ruck des Haus-Sprints, s. GANG)
 // `--bild`: die Welt zeichnet über die Weiche (Rezept `linse`), ohne den Null-Renderer — die Station eines Geräts (leib.K4)
 const BILD = process.argv.includes("--bild");
-const TEILE = (process.argv.includes("--teile") ? process.argv[process.argv.indexOf("--teile") + 1] : process.env.KAMERA_LAUB_TEILE || "laub,leib,gang,ninja").split(",");
+const TEILE = (process.argv.includes("--teile") ? process.argv[process.argv.indexOf("--teile") + 1] : process.env.KAMERA_LAUB_TEILE || "laub,leib,gang,gang2,ninja").split(",");
 // Die Nah-Radien der Messung (m) — fest in der Linse, damit Vorher und Nachher unter derselben Bedingung stehen.
 const RADIUS = Object.freeze({ third: 2.0, ritt: 3.0, first: 0.8 });
 const SAUM = 0.6; // der Saum der Durchsicht (KAMERA_DURCHSICHT.saumM): in 3rd endet die Nah-Kugel samt Saum vor dem Ziel
@@ -128,8 +127,16 @@ const SPRUENGE_MAX = 4;
 // K4 DER GANG: geurteilt die Kugel (R) in Fels und Bau und die Nah-Pixel von Fels, Gelände, Rinde und Bau (der Bau gegen die
 // gezeichnete Gestalt: seit leib.K4 trägt der offene Tür-Flügel seinen Leib, `_fluegelLeib`); die Kugel im Stamm (ab stammDickM)
 // steht in der Ausgabe: er hält den Arm nie, er wird durchsichtig (`_kameraDurchsichtNode`). Der Spieler kommt heranM an den
-// Anker, der Ruck p95 ≤ ruckM.
-const GANG = Object.freeze({ R: 0.25, nahJe: 6, gw: 32, gh: 18, stammDickM: 0.15, startM: 8, orbitMs: 6000, heranM: 6, ruckM: 0.02, nahRadien: { Fels: 0.25, Bau: 0.25, Rinde: 0.25, Gelände: 0.25 } });
+// Anker, der Ruck p95 ≤ ruckM. Die Kugel urteilt auch den SICHTBAREN Boden (`_bodenSichtAt`, Lehre 22: am Hang liegt das Mesh
+// bis 0,6 m neben dem Gesetz — dort taucht sie ein, ohne dass das Feld sie hält), wie der Leib von K2.
+// STAFFEL 2 („auch am Steilhang, im Haus, beim Sprint"): derselbe Gang IM HAUS — rückwärts durch die Tür (die Tür-Zeile des
+// Hauses); „im Haus" heißt, der Spieler steht danach über einen Meter hinter der Schwelle — und am STEILHANG: die Stelle aus
+// dem EINEN Orts-Gesetz (`__weltOrt("hang")` um die Mess-Wiese, die Neigung des Hangs von K1, `bergab`: der Weg talwärts
+// bleibt steil), der Blick hangab, rückwärts hangauf heran: die Kamera steht hangauf hinter ihm; beide auch im SPRINT
+// (Umschalt, `T.sprint`). Der Ruck gilt JE Gang („auch beim Sprint"), die Kamera, die nach dem Takt in den Hang sinkt
+// (`senk`), muss die Linse beim Namen nennen.
+const GANG = Object.freeze({ R: 0.25, nahJe: 6, gw: 32, gh: 18, stammDickM: 0.15, startM: 8, orbitMs: 6000, heranM: 6, ruckM: 0.02, nahRadien: { Fels: 0.25, Bau: 0.25, Rinde: 0.25, Gelände: 0.25 }, hang: { ...ORTE.find((o) => o.id === "hang").such, bergab: [8, 20], rMax: 600 } });
+const GANG_ARTEN = { 1: ["stamm", "fels", "haus"], 2: ["innen", "steil", "innen-sprint", "steil-sprint"] };
 const NINJA_WP = [
     [0, 7, 0.8],
     [0, 12.5, 1.8],
@@ -145,11 +152,7 @@ const NINJA_WP = [
     [12.5, 49.5, 6.2],
 ];
 const NINJA_RAND = 0.3; // Lab-Maß (der Runner R10)
-const WIESE = (() => {
-    const h = JSON.parse(fs.readFileSync(path.join(root, "spec", "profiband", "haushalt.json"), "utf8"));
-    const w = h.messorte.find((o) => o.id === "wiese");
-    return { x: w.spieler[0], z: w.spieler[1] };
-})();
+const WIESE = require("./lib/welt-orte.cjs").messort("wiese"); // der EINE Leser des Haushalts
 const HANG = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "stationen.json"), "utf8")).stationen.find(
     (o) => o.id === "s2-hang30"
 );
@@ -197,23 +200,24 @@ function urteilLeib(L) {
         out.push(`Leib: ${L.spruenge} Kamera-Sprünge > 2 m im Rundgang (Vor-Stand ${SPRUENGE_MAX})`);
     return out;
 }
-function urteilGang(G) {
+// je Staffel die Gänge (GANG_ARTEN), der Ruck je Gang; Staffel 2 dazu „im Haus" und die Kamera im Hang beim Namen
+function urteilGang(G, stufe = 1) {
     if (!G || G.err) return [`Gang: ${G ? String(G.err).split("\n")[0] : "nicht gemessen"}`];
     const out = [];
-    for (const art of ["stamm", "fels", "haus"]) {
+    for (const art of GANG_ARTEN[stufe]) {
         const g = G.gaenge.find((x) => x.art === art);
         if (!g) out.push(`Gang ${art}: kein Anker`);
         else {
             if (!(g.heran.d0 - g.heran.d1 >= GANG.heranM)) out.push(`Gang ${art}: der Spieler kommt nicht heran (${g.heran.d0} → ${g.heran.d1} m)`);
+            if (art.startsWith("innen") && !g.drinnen) out.push(`Gang ${art}: der Spieler kommt nicht ins Haus`);
+            if (!(g.ruck.length >= 100 && quantil(g.ruck, 0.95) <= GANG.ruckM)) out.push(`Gang ${art}: Ruck p95 ${g.ruck.length ? quantil(g.ruck, 0.95).toFixed(3) : "—"} m (Soll ≤ ${GANG.ruckM})`);
             const kugel = g.taeter.map((t) => Object.assign({}, t, { taeter: t.taeter.filter((n) => !n.startsWith("im Stamm")) })).filter((t) => t.taeter.length);
             if (kugel.length) out.push(`Gang ${art} (${g.typ}): die Kugel der Linse in ${kugel.length} von ${g.bilder} Bildern — ` + kugel.slice(0, 3).map((t) => `Bild ${t.bild} ${t.phase}: ${t.taeter} (Linse ${t.c}, Ziel ${t.ziel})`).join(" · "));
             const nah = g.nah.map((t) => [t, Object.keys(GANG.nahRadien).filter((k) => t.jeKlasse[k] > 0)]).filter(([, k]) => k.length);
             if (nah.length) out.push(`Gang ${art} (${g.typ}): Nah-Pixel in ${nah.length} Proben — ` + nah.slice(0, 3).map(([t, k]) => `Bild ${t.bild} ${t.phase}: ${k.map((x) => x + " " + pct(t.jeKlasse[x]))}`).join(" · "));
         }
     }
-    const ruck = G.gaenge.flatMap((g) => g.ruck);
-    if (!(ruck.length >= 100 && quantil(ruck, 0.95) <= GANG.ruckM)) out.push(`Gang: Ruck p95 ${ruck.length ? quantil(ruck, 0.95).toFixed(3) : "—"} m (Soll ≤ ${GANG.ruckM})`);
-    if (!(G.schmuggel > 0)) out.push("Schmuggel: ein Arm ohne Flügel-Leib bleibt ungenannt");
+    if (!((stufe === 1 ? G.schmuggel : G.senk) > 0)) out.push(stufe === 1 ? "Schmuggel: ein Arm ohne Flügel-Leib bleibt ungenannt" : "Schmuggel: die Kamera im Hang bleibt ungenannt");
     return out;
 }
 function urteilNinja(N) {
@@ -290,6 +294,11 @@ function leibInstall(cfg) {
         }
         return r._weltbildFehlt(true);
     };
+    // der Spieler an (x, z), bis das Weltbild dort steht; zurück, was noch fehlt
+    L.hin = (x, z, ms) => {
+        st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
+        return L.steht(ms);
+    };
     // der sichtbare Boden: die Boden-Karte des gezeichneten Mesh, null ohne Karte
     L.sichtbar = (x, z) => {
         const k = r._bodenSichtAt(x, z);
@@ -317,25 +326,18 @@ function leibInstall(cfg) {
     };
     // der Leib steht frei: keine Box (auch keine Pflanze) näher als `rand`
     L.frei = (x, z, y, rand) => !L.boxen(x, z, 20).some(({ b }) => L.inBox({ x, y: y + 0.9, z }, b, rand));
+    // DIE KUGEL DER LINSE an c: im Fels (das Gesetz in sieben Punkten), unter dem sichtbaren Boden (`kb`, die Boden-Karte) —
+    // die Täter beim Namen, für den Leib (K2) und den Gang (K4)
+    L.kugel = (c, kb) => [
+        [[0, 0, 0], [R, 0, 0], [-R, 0, 0], [0, R, 0], [0, -R, 0], [0, 0, R], [0, 0, -R]].some(([a, b, d]) => r._fieldSolid(c.x + a, c.y + b, c.z + d)) && "im Fels (Gelände-Gesetz)",
+        kb !== null && c.y < kb + R && kb - c.y < 2.5 && `unter dem sichtbaren Boden (${Math.round((c.y - kb) * 100)} cm über ihm)`,
+    ].filter(Boolean);
     // DIE MESSUNG der gesetzten Kamera: die Täter beim Namen
     L.messen = (ritt) => {
         const proben = L.zaehle(() => r._loopCamera((T += 0.1)));
         const c = st.camera.position;
         const k = st._kamZiel;
-        const taeter = [];
-        const P = [
-            [0, 0, 0],
-            [R, 0, 0],
-            [-R, 0, 0],
-            [0, R, 0],
-            [0, -R, 0],
-            [0, 0, R],
-            [0, 0, -R],
-        ];
-        if (P.some(([a, b, d]) => r._fieldSolid(c.x + a, c.y + b, c.z + d))) taeter.push("im Fels (Gelände-Gesetz)");
-        const kb = L.sichtbar(c.x, c.z);
-        if (kb !== null && c.y < kb + R && kb - c.y < 2.5)
-            taeter.push(`unter dem sichtbaren Boden (${Math.round((c.y - kb) * 100)} cm über ihm)`);
+        const taeter = L.kugel(c, L.sichtbar(c.x, c.z));
         if (k) {
             for (const { a, b } of L.boxen(c.x, c.z, 30)) {
                 if (b.pflanze === true) continue;
@@ -402,6 +404,18 @@ function leibInstall(cfg) {
         st._kamArm = undefined;
         L.ruhig();
     };
+    // DER VERFOLGER-RITT über die Posen: aufgesessen, je Pose der Wagen an ihrer Stelle (`stelle(p)` → { x, z, gier }), gemessen
+    L.rittPosen = (out, gt, posen, stelle) => {
+        const mr = gt ? r.mountArchitecture(gt) : null;
+        if (!(mr && mr.ok)) return void (out.ritt.grund = gt ? "Aufsitzen scheiterte" : "kein GT");
+        r.setCameraMode("third");
+        for (const p of posen) {
+            const v = stelle(p);
+            L.ritt(gt, v.x, v.z, v.gier);
+            out.ritt.posen.push(Object.assign({ id: p.id, anker: p.anker, seite: p.seite, x: +v.x.toFixed(2), z: +v.z.toFixed(2) }, L.messen(gt)));
+        }
+        r.dismountArchitecture();
+    };
     // die Stelle vor einer Box: die Fläche `seite` (0..3, die Normale im Rahmen der Box), der Abstand vor ihr; { x, z, gier }
     // mit dem Blick von der Box fort (die Kamera hinter dem Spieler steht zu ihr hin)
     L.vor = (b, seite, ab) => {
@@ -446,8 +460,7 @@ async function leibWiese(arg) {
     const out = { fuss: { posen: [] }, ritt: { posen: [] } };
     try {
         await r._foundryAwaitBook(45000);
-        st.playerMesh.position.set(arg.x, r._voxelSurfaceY(arg.x, arg.z) + 1.8, arg.z);
-        out.fehlt = await L.steht(60000);
+        out.fehlt = await L.hin(arg.x, arg.z, 60000);
         out.haeuser = [];
         for (const [typ, dx, dz] of [
             ["haus_alemannisch", 16, 6],
@@ -569,17 +582,7 @@ async function leibWiese(arg) {
             out.rundgang = h.typ;
         }
         // DER VERFOLGER-RITT: dieselben Posen, der GT 3,2 m vor der Box, sein Heck zu ihr
-        const gt = L.gtHolen(arg.x + 30, arg.z);
-        const mr = gt ? r.mountArchitecture(gt) : null;
-        if (mr && mr.ok) {
-            r.setCameraMode("third");
-            for (const p of posen) {
-                const v = L.vor(p.b, p.seite, 3.2);
-                L.ritt(gt, v.x, v.z, v.gier);
-                out.ritt.posen.push(Object.assign({ id: p.id, anker: p.anker, seite: p.seite, x: +v.x.toFixed(2), z: +v.z.toFixed(2) }, L.messen(gt)));
-            }
-            r.dismountArchitecture();
-        } else out.ritt.grund = gt ? "Aufsitzen scheiterte" : "kein GT";
+        L.rittPosen(out, L.gtHolen(arg.x + 30, arg.z), posen, (p) => L.vor(p.b, p.seite, 3.2));
     } catch (e) {
         out.err = (e && e.stack) || String(e);
     }
@@ -596,8 +599,7 @@ async function leibHang(arg) {
     try {
         await r._foundryAwaitBook(45000);
         const S = arg.hang;
-        st.playerMesh.position.set(S.x, r._voxelSurfaceY(S.x, S.z) + 1.8, S.z);
-        out.fehlt = await L.steht(60000);
+        out.fehlt = await L.hin(S.x, S.z, 60000);
         const posen = [];
         for (let i = 0; i < arg.n; i++) {
             const z = S.fusZ + 4 + ((S.kroneZ - S.fusZ - 8) * i) / Math.max(1, arg.n - 1);
@@ -607,16 +609,7 @@ async function leibHang(arg) {
             L.fuss(p.x, p.z, p.gier, p.pitch);
             out.fuss.posen.push(Object.assign({ id: p.id, anker: p.anker, pitch: p.pitch, x: +p.x.toFixed(2), z: +p.z.toFixed(2) }, L.messen(null)));
         }
-        const gt = L.gtHolen(S.x + 12, S.fusZ - 10);
-        const mr = gt ? r.mountArchitecture(gt) : null;
-        if (mr && mr.ok) {
-            r.setCameraMode("third");
-            for (const p of posen) {
-                L.ritt(gt, p.x, p.z, p.gier);
-                out.ritt.posen.push(Object.assign({ id: p.id, anker: p.anker, x: +p.x.toFixed(2), z: +p.z.toFixed(2) }, L.messen(gt)));
-            }
-            r.dismountArchitecture();
-        } else out.ritt.grund = gt ? "Aufsitzen scheiterte" : "kein GT";
+        L.rittPosen(out, L.gtHolen(S.x + 12, S.fusZ - 10), posen, (p) => p);
     } catch (e) {
         out.err = (e && e.stack) || String(e);
     }
@@ -626,8 +619,9 @@ async function leibHang(arg) {
 
 // K4 DER GANG (Meisterkarte leib.K4 Staffel 1, Grok R11 WE-05): in der Welt von K2 geht der Spieler in Third im echten Takt
 // (`_gameLoopTick`, Bilder 8–33 ms) an die Anker (dickster Stamm, Fels, Haus): rückwärts heran, die Maus 360°, vorwärts, der
-// Orbit eine Armlänge fern. Je Bild die Kugel gegen Feld und Boxen, die Nah-Pixel (kamera-nah), der Ruck; zuletzt der Gang am
-// Haus mit einem Wurf, der nie trifft — die Linse muss ihn nennen.
+// Orbit eine Armlänge fern. Je Bild die Kugel gegen Feld, sichtbaren Boden und Boxen, die Nah-Pixel (kamera-nah), der Ruck; der
+// Gang am Haus mit einem Wurf, der nie trifft — die Linse muss ihn nennen. Staffel 2: durch die Tür ins Haus und am Steilhang,
+// je zu Fuß und im Sprint, zuletzt die Kamera, die in den Hang sinkt (`senk`, 10 Bilder).
 async function leibGang(G) {
     const L = window.__kamLeib;
     const r = window.anazhRealm;
@@ -640,16 +634,27 @@ async function leibGang(G) {
         const eintrag = (a) => st.architectures.find((e) => e && e.id === a.id);
         const stamm = (a) => (eintrag(a).blockerAABBs || []).filter((b) => b.pflanze === true && b.dick >= G.stammDickM).sort((u, v) => v.dick - u.dick)[0];
         const baum = L.je.baum.filter(stamm).sort((u, v) => stamm(v).dick - stamm(u).dick)[0];
-        const anker = { stamm: baum && { typ: baum.typ, b: stamm(baum) }, fels: L.je.fels[0], haus: L.je.haus[0] };
+        // DER ANLAUF an eine Schwelle d ({cx, cz}) mit der Richtung n hinaus: der Gang beginnt startM vor ihr, der Rücken zu ihr
+        const anlauf = (typ, d, n, m = d) => ({ typ, d, n, m, v: { x: d.cx + n[0] * G.startM, z: d.cz + n[1] * G.startM, gier: Math.atan2(...n) } });
+        // DIE TÜR: die Tür-Zeile (`tuer`, haus-lokal, die Front −z) durch die EINE Lage der Haus-Hülle (`_hausObb`) — die
+        // Schwelle, hinaus (Länge: die Skala des Hauses), die Mitte auf ihrer Achse
+        const tuer = (a) => {
+            const e = a && eintrag(a);
+            const t = e && e.tuer;
+            const P = (dz) => r._hausObb(e, t.x - 1, 0, t.z - dz - 1, t.x + 1, 1, t.z - dz + 1).obb;
+            return t && anlauf(e.type, P(0), [P(1).cx - P(0).cx, P(1).cz - P(0).cz], P(t.z));
+        };
+        const anker = { stamm: baum && { typ: baum.typ, b: stamm(baum) }, fels: L.je.fels[0], haus: L.je.haus[0], innen: tuer(L.je.haus.find(tuer)) };
         const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
         let tMs = performance.now();
         let nr = 0;
-        const gang = async (art, a) => {
+        const gang = async (art, a, sprint, senk) => {
             const g = { art, typ: a.typ, bilder: 0, taeter: [], nah: [], ruck: [] };
-            const v = L.vor(a.b, art === "stamm" ? 0 : 1, G.startM);
+            const v = a.v || L.vor(a.b, art === "stamm" ? 0 : 1, G.startM);
+            const m = a.m || { cx: (a.b.minX + a.b.maxX) / 2, cz: (a.b.minZ + a.b.maxZ) / 2 };
             L.fuss(v.x, v.z, v.gier, 0.15);
             st.yaw = v.gier; // nach dem Rig-Wechsel
-            const mitte = () => Math.hypot(st.playerMesh.position.x - (a.b.minX + a.b.maxX) / 2, st.playerMesh.position.z - (a.b.minZ + a.b.maxZ) / 2);
+            const mitte = () => Math.hypot(st.playerMesh.position.x - m.cx, st.playerMesh.position.z - m.cz);
             g.heran = { d0: +mitte().toFixed(2) };
             const q = [];
             const bild = async (phase) => {
@@ -659,6 +664,8 @@ async function leibGang(G) {
                 r._gameLoopTick(tMs);
                 const c = st.camera.position;
                 const p = st.playerMesh.position;
+                const kb = L.sichtbar(c.x, c.z);
+                if (senk && kb !== null) c.y = kb - 0.1; // DER SCHMUGGEL AM HANG: nach dem Takt 10 cm unter den sichtbaren Boden
                 const n = ++g.bilder;
                 // der Ruck: wie weit die mittlere Lage neben der Linie ihrer Nachbarn liegt (in der Zeit)
                 if (q.push([c.x - p.x, c.y - p.y, c.z - p.z, tMs]) > 5) {
@@ -666,8 +673,7 @@ async function leibGang(G) {
                     const f = (w[3] - u[3]) / (z[3] - u[3]);
                     g.ruck.push(Math.hypot(...[0, 1, 2].map((i) => w[i] - u[i] - (z[i] - u[i]) * f)));
                 }
-                const t = [];
-                if ([[0, 0, 0], [R, 0, 0], [-R, 0, 0], [0, R, 0], [0, -R, 0], [0, 0, R], [0, 0, -R]].some(([x, y, z]) => r._fieldSolid(c.x + x, c.y + y, c.z + z))) t.push("im Fels (Gelände-Gesetz)");
+                const t = L.kugel(c, kb);
                 for (const { a: e, b } of L.boxen(c.x, c.z, 30)) {
                     // ein Stamm ist ein Zylinder in seiner Box: die Kugel an seiner Achse
                     const rr = b.pflanze === true && b.dick >= G.stammDickM && Math.min(b.dick, b.maxX - b.minX, b.maxZ - b.minZ) / 2;
@@ -682,8 +688,10 @@ async function leibGang(G) {
                 }
                 if (n % 20 === 0) await sleep(0);
             };
-            const tasten = (k) => Object.assign(st.keys, { w: false, a: false, s: false, d: false }, k);
+            const tasten = (k) => Object.assign(st.keys, { w: false, a: false, s: false, d: false, shift: !!sprint }, k);
+            tasten({});
             for (let j = 0; j < 10; j++) await bild("stand");
+            if (senk) return g;
             q.length = 0;
             tasten({ s: true });
             for (let j = 0, still = 0, dMin = mitte(); j < 600 && still < 20; j++) {
@@ -692,6 +700,9 @@ async function leibGang(G) {
                 dMin = Math.min(dMin, mitte());
             }
             g.heran.d1 = +mitte().toFixed(2);
+            // im Haus: der Spieler steht über einen Meter hinter der Schwelle (n zeigt hinaus)
+            const p = st.playerMesh.position;
+            if (art.startsWith("innen")) g.drinnen = (p.x - a.d.cx) * a.n[0] + (p.z - a.d.cz) * a.n[1] < -1;
             tasten({});
             for (const t1 = tMs + G.orbitMs; tMs < t1; ) await bild("orbit");
             tasten({ w: true });
@@ -707,6 +718,17 @@ async function leibGang(G) {
             out.schmuggel = (await gang("schmuggel", anker.haus)).nah.filter((t) => t.jeKlasse.Bau > 0).length;
         } finally {
             delete r._fluegelBoxenVon;
+        }
+        if (anker.innen && G.zwei) out.gaenge.push(await gang("innen", anker.innen), await gang("innen-sprint", anker.innen, true));
+        // DER STEILHANG: die Stelle aus dem Orts-Gesetz, das Weltbild dort steht, bevor der Gang beginnt
+        const o = G.zwei && window.__weltOrt("hang", { mitte: window.__messWiese, ...G.hang });
+        out.hang = o;
+        if (o) {
+            out.fehlt = (await L.hin(o.x, o.z, 60000)).length;
+            tMs = Math.max(tMs, performance.now());
+            const a = anlauf(o.neigung + "°", { cx: o.x, cz: o.z }, [-Math.sin(o.gier), -Math.cos(o.gier)]); // talwärts hinaus
+            out.gaenge.push(await gang("steil", a), await gang("steil-sprint", a, true));
+            out.senk = (await gang("senk", a, false, true)).taeter.length;
         }
     } catch (e) {
         out.err = (e && e.stack) || String(e);
@@ -731,9 +753,7 @@ function ninja(arg) {
             }
         };
         for (let i = 0; i < arg.wp.length; i++)
-            for (const yw of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
-                // `arg.nur`: nur diese Pose (das Bild), keine Tunnel-Probe
-                if (arg.nur != null && i * 4 + [0, Math.PI / 2, Math.PI, -Math.PI / 2].indexOf(yw) !== arg.nur) continue;
+            for (const [w, yw] of [0, Math.PI / 2, Math.PI, -Math.PI / 2].entries()) {
                 const [x, z, y] = arg.wp[i];
                 for (const k in keys) keys[k] = false;
                 character.position.x = x;
@@ -776,14 +796,13 @@ function ninja(arg) {
                     if (ok) taeter.push(`${name} zwischen Ziel und Kamera`);
                 }
                 out.posen.push({
-                    id: `pose-${String(i * 4 + [0, Math.PI / 2, Math.PI, -Math.PI / 2].indexOf(yw)).padStart(2, "0")} P${i} ${Math.round((yw * 180) / Math.PI)}°`,
+                    id: `pose-${String(i * 4 + w).padStart(2, "0")} P${i} ${Math.round((yw * 180) / Math.PI)}°`,
                     cam: [+c.x.toFixed(2), +c.y.toFixed(2), +c.z.toFixed(2)],
                     ziel: Lk.map((q) => +q.toFixed(2)),
                     figur: [+character.position.x.toFixed(2), +play.posY.toFixed(2), +character.position.z.toFixed(2)],
                     taeter,
                 });
             }
-        if (arg.nur != null) return out;
         for (const k in keys) keys[k] = false;
         character.position.x = 3.6;
         character.position.z = 21;
@@ -811,9 +830,7 @@ const STAMM_TEXT = STAMM ? stammLib.text(STAMM) : null;
 const server = statikServer({
     root,
     wandle: (p, data) => {
-        const vorher = STAMM_TEXT ? stammLib.liefere(root, p, STAMM_TEXT) : null;
-        if (vorher) return vorher;
-        return STUDIO && p === "/worlds/koerperstudio/koerperstudio.js" ? fs.readFileSync(STUDIO) : data;
+        return (STAMM_TEXT && stammLib.liefere(root, p, STAMM_TEXT)) || data;
     },
 });
 
@@ -823,34 +840,14 @@ async function probe(arg) {
     const r = window.anazhRealm;
     const st = r.state;
     const nahDeckung = window.__nahDeckung;
-    const tick = async (n, ms) => {
-        for (let i = 0; i < n; i++) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
-            await sleep(ms || 30);
-        }
-    };
+    // der Takt, das Warten auf das Weltbild, die ruhige Kamera und der Ritt: die EINEN Helfer des Leibs (`leibInstall`)
+    const { tick, steht, ruhig, ritt, hin, gtHolen } = window.__kamLeib;
     const out = { orte: {}, zeiten: {} };
     const t0 = performance.now();
     await r._foundryAwaitBook(45000);
     const hh = (x, z) => r.getTerrainHeightAt(x, z);
-    // die Welt wächst, bis ihr Bild steht (`_weltbildFehlt` leer)
-    const steht = async (ms) => {
-        let n = 0;
-        for (const weiter = window.__deckel("das Weltbild", ms / 45); weiter(); ) {
-            await tick(5, 40);
-            n++;
-            if (n >= 4 && !r._weltbildFehlt(true).length) break;
-        }
-        return r._weltbildFehlt(true);
-    };
-    await steht(90000);
+    await steht(90000); // die Welt wächst, bis ihr Bild steht (`_weltbildFehlt` leer)
     out.zeiten.boot = Math.round(performance.now() - t0);
-    let T = 1000;
-    const ruhig = () => {
-        for (let i = 0; i < 10; i++) r._loopCamera((T += 0.1));
-    };
     // DIE ANKER: die Stämme der Mesh-Zone (Rinde-Instanzen jeder Quelle: gesetzte und gestreute Bäume, Büsche) und die
     // belaubten Pflanzen der Nah-Streu (Gestrüpp, Farn — der Strauch vor dem Ich-Auge, C 12)
     const v = new THREE.Vector3();
@@ -983,8 +980,7 @@ async function probe(arg) {
                 const O = ort.art === "ufer" ? see && see.ufer && { x: see.ufer[0], z: see.ufer[1] } : window.__weltOrt(ort.art, ort.such);
                 if (!O) throw new Error(`kein Ort der Art ${ort.art} aus der Welt`);
                 z.ortAusWelt = [O.x, O.z];
-                st.playerMesh.position.set(O.x, r._voxelSurfaceY(O.x, O.z) + 1.8, O.z);
-                z.fehlt = await steht(45000);
+                z.fehlt = await hin(O.x, O.z, 45000);
             }
             z.ms = { boden: Math.round(performance.now() - tO) };
             const P = st.playerMesh.position.clone();
@@ -1087,26 +1083,11 @@ async function probe(arg) {
             z.modi.first = messe("first", fuss, 0.9, [0, Math.PI], [0, 0.3]);
             r.setCameraMode("third");
             // DER RITT: ein GT, aufgesessen, 3 m vor dem Stamm (die Verfolger-Kamera des Kerns hinter ihm)
-            if (!gt) gt = window.__kamLeib.gtHolen(P.x + 30, P.z);
+            if (!gt) gt = gtHolen(P.x + 30, P.z);
             const mr = gt ? r.mountArchitecture(gt) : null;
             if (mr && mr.ok) {
-                const rittStelle = (x, y, zz, gier) => {
-                        gt.position.x = x;
-                        gt.position.y = y + 0.5;
-                        gt.position.z = zz;
-                        gt.rotationY = gier - Math.PI / 2;
-                        gt._rideYaw = gier;
-                        st._kamChase = undefined; // das nächste Bild springt hinter den Wagen in seiner Gier (`chaseKamera`)
-                        st.yaw = gier;
-                        st.playerMesh.position.set(x, y + 1.0, zz);
-                        // der Wagen steht im Bild, wo er steht (Instanz-Matrizen bzw. Mesh)
-                        if (gt.instanced) r._archInstanceUpdate(gt);
-                        if (gt.mesh) {
-                            gt.mesh.position.set(x, y + 0.5, zz);
-                            gt.mesh.rotation.y = gt.rotationY;
-                            gt.mesh.updateMatrixWorld(true);
-                        }
-                    };
+                // der Wagen steht im Bild, wo er steht (`L.ritt`: Lage, Gier, Instanz-Matrizen bzw. Mesh)
+                const rittStelle = (x, y, zz, gier) => ritt(gt, x, zz, gier);
                 // DIE WAGEN-KLASSE SIEHT SEINE NAH-GESTALT (kamera-nah: der gerittene Wagen ist Täter bis 3 m): er steht an der Stelle
                 // des Spielers, bis er in der Stufe gezeichnet ist, die die Welt dort wählt (das EINE Warten, welt-boot `__gebautNach`;
                 // der Laub-Teil fährt headless, nie die Karte der GPU) — kalt baut ihn die Welt, in fremder Stufe wechselt sie ihn (die
@@ -1133,6 +1114,13 @@ async function probe(arg) {
 hauptLauf(async () => {
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST (ohne Welt) ===");
+        // je Fall das Urteil über die Messung: `soll` null heißt 0 Täter, sonst nennt die Linse ihn beim Namen (Anfang der Zeile)
+        const faelle = (k, urt, liste) => {
+            for (const [name, bruch, soll] of liste) {
+                const v = urt(bruch);
+                check(`Selbst-Test ${k}: ‚${name}' → ${soll || "0 Täter"}`, soll ? v.some((t) => t.startsWith(soll)) : !v.length, v.join(" · "));
+            }
+        };
         const ort = (max, taeter) => ({
             modi: Object.fromEntries(MODI.map((k) => [k, { n: 64, max, mittel: max / 4, schlimmste: { taeter } }])),
         });
@@ -1145,8 +1133,8 @@ hauptLauf(async () => {
             proben: Array.from({ length: LEIB_N + 241 }, (_, i) => 30 + (i % 9)),
             spruenge: 0,
         });
-        check("Selbst-Test K2: gesund == 0 Täter", urteilLeib(leibGesund()).length === 0, urteilLeib(leibGesund()).join(" · "));
-        const leibBrueche = [
+        faelle("K2", urteilLeib, [
+            ["gesund", leibGesund(), null],
             ["Kamera unter dem sichtbaren Boden (R-CAM unterBoden)", leibGesund(["unter dem sichtbaren Boden (-12 cm über ihm)"]), "Leib fuss: 1 von 50 Posen — pose-0 (haus_basis): unter dem sichtbaren Boden"],
             ["Verfolger im Haus (FZ-07)", leibGesund(null, ["in haus_basis"]), "Leib ritt: 1 von 50 Posen — pose-0 (haus_basis): in haus_basis"],
             ["Fels zwischen Ziel und Linse", leibGesund(["Gelände zwischen Ziel und Linse"]), "Leib fuss: 1 von 50"],
@@ -1156,47 +1144,45 @@ hauptLauf(async () => {
             ["die Eckstrahlen marschieren ohne Treffer (Prüfung 1: 35 → 156)", Object.assign(leibGesund(), { proben: Array(LEIB_N + 241).fill(156) }), "Leib: Feld-Proben je 3rd-Bild Mittel 156"],
             ["ein Bild sucht ohne Ende (höchstens über 2 × Vor-Stand)", Object.assign(leibGesund(), { proben: Array.from({ length: LEIB_N + 241 }, (_, i) => (i === 7 ? 101 : 30)) }), "Leib: Feld-Proben je 3rd-Bild Mittel 30.2 · Median 30 · höchstens 101"],
             ["mehr Sprünge als vorher", Object.assign(leibGesund(), { spruenge: SPRUENGE_MAX + 1 }), "Leib: " + (SPRUENGE_MAX + 1) + " Kamera-Sprünge"],
-        ];
-        for (const [name, bruch, soll] of leibBrueche) {
-            const v = urteilLeib(bruch);
-            check(`Selbst-Test K2: ‚${name}' → die Linse nennt „${soll}"`, v.some((t) => t.startsWith(soll)), v.join(" · "));
-        }
+        ]);
         const ninjaGesund = (kaputt, tunnel) => ({
             posen: Array.from({ length: NINJA_WP.length * 4 }, (_, i) => ({ id: `pose-${i}`, cam: [0, 0, 0], taeter: i === 14 && kaputt ? kaputt : [] })),
             tunnel: tunnel || { ende: [3.6, 0, 24.15], weg: 3.15, umgangen: false, gueltig: true },
             kernBlock: true,
         });
-        check("Selbst-Test K3: gesund == 0 Täter", urteilNinja(ninjaGesund()).length === 0, urteilNinja(ninjaGesund()).join(" · "));
-        for (const [name, bruch, soll] of [
+        faelle("K3", urteilNinja, [
+            ["gesund", ninjaGesund(), null],
             ["Box 7 zwischen Ziel und Kamera (NP-03 pose-14)", ninjaGesund(["Box 7 zwischen Ziel und Kamera"]), "NP-03: 1 von 48 Posen — pose-14: Box 7"],
             ["der Tunnel wird umgangen (NP-02)", ninjaGesund(null, { ende: [3.6, 0, 30], weg: 9, umgangen: true, gueltig: true }), "NP-02: der Tunnel wird bei x > 3 umgangen"],
             ["die Studio-Kamera mit eigenem Block", Object.assign(ninjaGesund(), { kernBlock: false }), "NP-03: die Studio-Kamera liest nicht den Kern-Block"],
             ["die Figur steht (NP-02 ohne Urteil)", ninjaGesund(null, { ende: [3.6, 0, 21], weg: 0, umgangen: false, gueltig: false }), "NP-02: die Figur bewegt sich keine 3 m"],
-        ]) {
-            const v = urteilNinja(bruch);
-            check(`Selbst-Test K3: ‚${name}' → die Linse nennt „${soll}"`, v.some((t) => t.startsWith(soll)), v.join(" · "));
-        }
-        // DER GANG (K4): gesund (die Kugel im Stamm urteilt nicht) und je ein Bruch beim Namen — der Arm ohne Flügel-Leib ist ROT
-        const gg = (art, k) => Object.assign({ art, typ: art, bilder: 900, heran: { d0: 8.5, d1: 0.9 }, taeter: [], nah: [], ruck: Array(300).fill(0.002) }, k);
-        const gangVon = (k) => Object.assign({ gaenge: [gg("stamm", { taeter: [{ phase: "orbit", taeter: ["im Stamm baum_kiefer"] }] }), gg("fels"), gg("haus")], schmuggel: 170 }, k);
-        for (const [name, bruch, soll] of [
+        ]);
+        // DER GANG (K4): gesund (die Kugel im Stamm urteilt nicht) und je Staffel ein Bruch beim Namen — der Arm ohne Flügel-Leib
+        // und die Kamera, die am Hang in den Boden taucht, sind ROT; `je` ändert einen Gang (null: er fehlt)
+        const gg = (art, k) => ({ art, typ: art, bilder: 900, heran: { d0: 8.5, d1: 0.9 }, drinnen: art.startsWith("innen") || undefined, taeter: [], nah: [], ruck: Array(300).fill(0.002), ...k });
+        const gangVon = (je) => ({ gaenge: [...GANG_ARTEN[1], ...GANG_ARTEN[2]].filter((a) => je[a] !== null).map((a) => gg(a, je[a])), schmuggel: 170, senk: 10, ...je.G });
+        faelle("K4 Staffel 1", (je) => urteilGang(gangVon(je), 1), [
+            ["gesund", { stamm: { taeter: [{ phase: "orbit", taeter: ["im Stamm baum_kiefer"] }] } }, null],
+            ["ein Arm ohne Kollision", { haus: { taeter: [{ bild: 660, phase: "orbit", taeter: ["in haus_alemannisch"] }] } }, "Gang haus (haus): die Kugel der Linse in 1 von 900 Bildern — Bild 660 orbit: in haus_alemannisch"],
+            ["Fels- und Bau-Pixel", { fels: { nah: [{ bild: 12, phase: "orbit", jeKlasse: { Fels: 0.07, Bau: 0.03 } }] } }, "Gang fels (fels): Nah-Pixel in 1 Proben — Bild 12 orbit: Fels 7.0 %,Bau 3.0 %"],
+            ["Ruck", { fels: { ruck: Array(300).fill(0.05) } }, "Gang fels: Ruck p95 0.050 m"],
+            ["nicht heran", { stamm: { heran: { d0: 8.5, d1: 7.9 } } }, "Gang stamm: der Spieler kommt nicht heran"],
+            ["kein Haus", { haus: null }, "Gang haus: kein Anker"],
+            ["blind für den Arm ohne Flügel-Leib", { G: { schmuggel: 0 } }, "Schmuggel: ein Arm ohne Flügel-Leib bleibt ungenannt"],
+        ]);
+        faelle("K4 Staffel 2", (je) => urteilGang(gangVon(je), 2), [
             ["gesund", {}, null],
-            ["ein Arm ohne Kollision", { gaenge: [gg("stamm"), gg("fels"), gg("haus", { taeter: [{ bild: 660, phase: "orbit", taeter: ["in haus_alemannisch"] }] })] }, "Gang haus (haus): die Kugel der Linse in 1 von 900 Bildern — Bild 660 orbit: in haus_alemannisch"],
-            ["Fels- und Bau-Pixel", { gaenge: [gg("stamm"), gg("fels", { nah: [{ bild: 12, phase: "orbit", jeKlasse: { Fels: 0.07, Bau: 0.03 } }] }), gg("haus")] }, "Gang fels (fels): Nah-Pixel in 1 Proben — Bild 12 orbit: Fels 7.0 %,Bau 3.0 %"],
-            ["Ruck", { gaenge: ["stamm", "fels", "haus"].map((a) => gg(a, { ruck: Array(300).fill(0.05) })) }, "Gang: Ruck p95 0.050 m"],
-            ["nicht heran", { gaenge: [gg("stamm", { heran: { d0: 8.5, d1: 7.9 } }), gg("fels"), gg("haus")] }, "Gang stamm: der Spieler kommt nicht heran"],
-            ["kein Haus", { gaenge: [gg("stamm"), gg("fels")] }, "Gang haus: kein Anker"],
-            ["blind für den Arm ohne Flügel-Leib", { schmuggel: 0 }, "Schmuggel: ein Arm ohne Flügel-Leib bleibt ungenannt"],
-        ]) {
-            const v = urteilGang(gangVon(bruch));
-            check(`Selbst-Test K4: ‚${name}' → ${soll || "0 Täter"}`, soll ? v.some((t) => t.startsWith(soll)) : !v.length, v.join(" · "));
-        }
+            ["die Kamera taucht am Hang in den Boden", { steil: { taeter: [{ bild: 412, phase: "orbit", taeter: ["unter dem sichtbaren Boden"] }] } }, "Gang steil (steil): die Kugel der Linse in 1 von 900 Bildern — Bild 412 orbit: unter dem sichtbaren Boden"],
+            ["nicht im Haus", { "innen-sprint": { drinnen: false } }, "Gang innen-sprint: der Spieler kommt nicht ins Haus"],
+            ["Ruck im Sprint", { "innen-sprint": { ruck: Array(300).fill(0.03) } }, "Gang innen-sprint: Ruck p95 0.030 m"],
+            ["blind für die Kamera im Hang", { G: { senk: 0 } }, "Schmuggel: die Kamera im Hang bleibt ungenannt"],
+        ]);
         const gesund = {
             orte: { ankunft: ort(0, {}), ufer: ort(0.004, {}), lichtung: ort(0, {}), hang: ort(0, {}) },
             schmuggel: { laub: { max: 0.4, taeter: { "Laub baum_eiche": 0.4 } }, fels: { max: 0.3, taeter: { "Fels Formation": 0.3 } } },
         };
-        check("Selbst-Test: gesund == 0 Täter", urteil(gesund).length === 0, urteil(gesund).join(" · "));
-        const brueche = [
+        faelle("K1", (b) => urteil(Object.assign({}, gesund, b)), [
+            ["gesund", {}, null],
             ["Eichenkrone vor der Linse (Befund A 44)", { orte: Object.assign({}, gesund.orte, { ufer: ort(0.437, { "Laub baum_eiche": 0.43 }) }) }, "ufer third: Deckung im Freiraum bis 43.7 %"],
             ["Strauch vor dem Ich-Auge (Befund C 12)", { orte: Object.assign({}, gesund.orte, { hang: ort(0.99, { "Laub Streu": 0.99 }) }) }, "hang third: Deckung im Freiraum bis 99.0 %"],
             ["kein GT", { orte: Object.assign({}, gesund.orte, { ankunft: { modi: { third: { n: 4, max: 0 }, first: { n: 4, max: 0 }, ritt: { n: 0, grund: "kein GT" } } } }) }, "ankunft ritt: keine Stellung"],
@@ -1205,11 +1191,7 @@ hauptLauf(async () => {
             ["Linse blind für Fels", { schmuggel: { laub: gesund.schmuggel.laub, fels: { max: 0, taeter: {} } } }, "Schmuggel: ein Fels vor der Linse bleibt ungenannt"],
             ["Krone ohne Durchsicht (die Kronen-Stellung, K20)", { schmuggel: Object.assign({}, gesund.schmuggel, { krone: { max: 0.31, hub: 14, taeter: { "Laub baum_tanne": 0.31 } } }) }, "Krone: die Durchsicht öffnet das Laub in der Krone nicht"],
             ["ein Ort fehlt", { orte: { ankunft: gesund.orte.ankunft, ufer: gesund.orte.ufer } }, "hang: nicht gemessen"],
-        ];
-        for (const [name, bruch, soll] of brueche) {
-            const v = urteil(Object.assign({}, gesund, bruch));
-            check(`Selbst-Test: ‚${name}' → die Linse nennt „${soll}"`, v.some((t) => t.startsWith(soll)), v.join(" · "));
-        }
+        ]);
         // K4 — DAS BEWEISBILD PRÜFT SICH SELBST (K32, scripts/lib/abnahme-urteil.cjs): dieselbe Nah-Deckung steht in der EINEN
         // Aufnahme jedes Beweisbilds. Die ABNAHME-Zeile nennt jeden eingeschmuggelten Fall beim Namen (Kamera im Laub, Ziel hinter
         // Fels oder außerhalb, Schwarz-, Weiß-, Flachbild, fremder Stand, Bühne, Gerät, null und vakuös, das Bild-Paar), die
@@ -1275,7 +1257,8 @@ hauptLauf(async () => {
         if (TEILE.includes("gang")) {
             const tG = Date.now();
             await page.evaluate(KAMERA_NAH_INSTALL);
-            gang = await page.evaluate(leibGang, GANG);
+            await page.evaluate(WASSER_INSTALL); // __weltOrt: der Steilhang aus der Welt
+            gang = await page.evaluate(leibGang, { ...GANG, zwei: TEILE.includes("gang2") });
             zeiten.gang = Date.now() - tG;
         }
         // die Prüfbühne, geboren wie im Spiel: Welt-Tor importWorldBeside + aktiv + Reload
@@ -1339,9 +1322,7 @@ hauptLauf(async () => {
         for (const ort of ["wiese", "hang"]) {
             const o = (leib && leib[ort]) || {};
             if (o.err) console.log(`  ${ort}: Ausnahme ${String(o.err).split("\n")[0]}`);
-            if (o.anker) console.log(`  ${ort}: Anker je Art ${JSON.stringify(o.anker)}`);
-            if (o.typen) console.log(`  ${ort}: Werke in 45 m ${JSON.stringify(o.typen)}`);
-            if (o.haeuser) console.log(`  ${ort}: gesetzte Häuser ${JSON.stringify(o.haeuser)}`);
+            for (const [k, was] of [["anker", "Anker je Art"], ["typen", "Werke in 45 m"], ["haeuser", "gesetzte Häuser"]]) if (o[k]) console.log(`  ${ort}: ${was} ${JSON.stringify(o[k])}`);
             if (o.fehlt && o.fehlt.length) console.log(`  ${ort}: Weltbild fehlt ${o.fehlt.length}`);
             for (const modus of ["fuss", "ritt"]) {
                 const z = o[modus] || {};
@@ -1366,11 +1347,17 @@ hauptLauf(async () => {
         console.log(`=== K4 DER GANG DER KAMERA (Third zu Fuß im echten Takt, Kugel ${GANG.R} m): Mess-Wiese ${WIESE.x}/${WIESE.z} ===`);
         for (const g of (gang && gang.gaenge) || []) {
             const n = (a) => JSON.stringify(a.reduce((h, k) => ((h[k] = (h[k] || 0) + 1), h), {}));
-            console.log(`  ${g.art.padEnd(5)} ${g.typ}: ${g.bilder} Bilder · heran ${g.heran.d0} → ${g.heran.d1} m · Kugel ${n(g.taeter.flatMap((t) => t.taeter.map((x) => t.phase + ": " + x)))} · Nah-Pixel ${n(g.nah.flatMap((t) => Object.keys(t.jeKlasse).map((x) => t.phase + ": " + x)))} · Ruck p95 ${quantil(g.ruck, 0.95).toFixed(4)} höchstens ${Math.max(...g.ruck).toFixed(3)} m`);
+            console.log(`  ${g.art.padEnd(5)} ${g.typ}: ${g.bilder} Bilder · heran ${g.heran.d0} → ${g.heran.d1} m${g.drinnen == null ? "" : ` · im Haus ${g.drinnen}`} · Kugel ${n(g.taeter.flatMap((t) => t.taeter.map((x) => t.phase + ": " + x)))} · Nah-Pixel ${n(g.nah.flatMap((t) => Object.keys(t.jeKlasse).map((x) => t.phase + ": " + x)))} · Ruck p95 ${quantil(g.ruck, 0.95).toFixed(4)} höchstens ${Math.max(...g.ruck).toFixed(3)} m`);
         }
         console.log(`  der Arm ohne Flügel-Leib: ${gang && gang.schmuggel} Proben mit Bau`);
-        const v = urteilGang(gang);
-        check("K4 der Gang in Third: die Kugel der Linse nie in Fels oder Bau, 0 Nah-Pixel von Fels, Gelände, Rinde und Bau, Ruck p95 ≤ 0,02 m, die Linse nennt den Arm ohne Flügel-Leib", v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
+        if (gang && gang.hang) console.log(`  Steilhang ${JSON.stringify(gang.hang)} (Weltbild fehlt ${gang.fehlt}) · die Kamera im Hang: ${gang.senk} von 10 Bildern mit Täter`);
+        for (const [stufe, name] of [
+            [1, "K4 der Gang in Third: die Kugel der Linse nie in Fels oder Bau, 0 Nah-Pixel von Fels, Gelände, Rinde und Bau, Ruck p95 ≤ 0,02 m, die Linse nennt den Arm ohne Flügel-Leib"],
+            [2, "K4 Staffel 2: der Gang auch im Haus, am Steilhang, beim Sprint"],
+        ].slice(0, TEILE.includes("gang2") ? 2 : 1)) {
+            const v = urteilGang(gang, stufe);
+            check(name, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
+        }
     }
     if (TEILE.includes("ninja")) {
         const posen = (nin && nin.posen) || [];

@@ -426,6 +426,30 @@ function nahDeckungInSeite(o) {
         const cy1 = Math.min(gh - 1, Math.ceil(((1 - y0) / 2) * gh - 0.5));
         for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) zellen[cy * gw + cx].push(t);
     }
+    // DER SCHNITT (Möller–Trumbore): der Strahl e + s·r gegen das Dreieck (Ecke a, Kanten k, l) — s, die Lage im Dreieck in UV,
+    // NaN ohne Treffer; ihn rufen die Strahlen und die Linie zum Ziel
+    const UV = { u: 0, v: 0 };
+    const schnitt = (rx, ry, rz, ax, ay, az, kx, ky, kz, lx, ly, lz) => {
+        const px = ry * lz - rz * ly;
+        const py = rz * lx - rx * lz;
+        const pz = rx * ly - ry * lx;
+        const det = kx * px + ky * py + kz * pz;
+        if (det > -1e-12 && det < 1e-12) return NaN;
+        const inv = 1 / det;
+        const tx = E.x - ax;
+        const ty = E.y - ay;
+        const tz = E.z - az;
+        const u = (tx * px + ty * py + tz * pz) * inv;
+        if (u < 0 || u > 1) return NaN;
+        const qx = ty * kz - tz * ky;
+        const qy = tz * kx - tx * kz;
+        const qz = tx * ky - ty * kx;
+        const v = (rx * qx + ry * qy + rz * qz) * inv;
+        if (v < 0 || u + v > 1) return NaN;
+        UV.u = u;
+        UV.v = v;
+        return (lx * qx + ly * qy + lz * qz) * inv;
+    };
     // ── die Strahlen ──
     const dir = new T.Vector3();
     const fwd = cam.getWorldDirection(new T.Vector3());
@@ -451,32 +475,11 @@ function nahDeckungInSeite(o) {
             treffer.length = 0;
             for (const t of l) {
                 const b = t * 9;
-                const e1x = G[b + 3],
-                    e1y = G[b + 4],
-                    e1z = G[b + 5];
-                const e2x = G[b + 6],
-                    e2y = G[b + 7],
-                    e2z = G[b + 8];
-                const px = dy * e2z - dz * e2y;
-                const py = dz * e2x - dx * e2z;
-                const pz = dx * e2y - dy * e2x;
-                const det = e1x * px + e1y * py + e1z * pz;
-                if (det > -1e-12 && det < 1e-12) continue;
-                const inv = 1 / det;
-                const tx = ex - G[b];
-                const ty = ey - G[b + 1];
-                const tz = ez - G[b + 2];
-                const u = (tx * px + ty * py + tz * pz) * inv;
-                if (u < 0 || u > 1) continue;
-                const qx = ty * e1z - tz * e1y;
-                const qy = tz * e1x - tx * e1z;
-                const qz = tx * e1y - ty * e1x;
-                const v = (dx * qx + dy * qy + dz * qz) * inv;
-                if (v < 0 || u + v > 1) continue;
-                const d = (e2x * qx + e2y * qy + e2z * qz) * inv;
-                if (d > D || d * cosA < near) continue;
+                const d = schnitt(dx, dy, dz, G[b], G[b + 1], G[b + 2], G[b + 3], G[b + 4], G[b + 5], G[b + 6], G[b + 7], G[b + 8]);
+                if (!(d <= D) || d * cosA < near) continue;
                 const me = meta[t];
                 if (me.karte) {
+                    const { u, v } = UV;
                     const ub = t * 6;
                     const w0 = 1 - u - v;
                     const su = w0 * uvt[ub] + u * uvt[ub + 2] + v * uvt[ub + 4];
@@ -548,30 +551,9 @@ function nahDeckungInSeite(o) {
             let vorD = Infinity;
             const pruefe = (a, b, c, uvs, me) => {
                 if (me.k.klasse === "Streu") return;
-                const e1x = b.x - a.x,
-                    e1y = b.y - a.y,
-                    e1z = b.z - a.z;
-                const e2x = c.x - a.x,
-                    e2y = c.y - a.y,
-                    e2z = c.z - a.z;
-                const px = uy * e2z - uz * e2y,
-                    py = uz * e2x - ux * e2z,
-                    pz = ux * e2y - uy * e2x;
-                const det = e1x * px + e1y * py + e1z * pz;
-                if (det > -1e-12 && det < 1e-12) return;
-                const inv = 1 / det;
-                const tx = ex - a.x,
-                    ty = ey - a.y,
-                    tz = ez - a.z;
-                const u = (tx * px + ty * py + tz * pz) * inv;
-                if (u < 0 || u > 1) return;
-                const qx = ty * e1z - tz * e1y,
-                    qy = tz * e1x - tx * e1z,
-                    qz = tx * e1y - ty * e1x;
-                const v = (ux * qx + uy * qy + uz * qz) * inv;
-                if (v < 0 || u + v > 1) return;
-                const d = (e2x * qx + e2y * qy + e2z * qz) * inv;
-                if (d <= near || d >= bis || d >= vorD) return;
+                const d = schnitt(ux, uy, uz, a.x, a.y, a.z, b.x - a.x, b.y - a.y, b.z - a.z, c.x - a.x, c.y - a.y, c.z - a.z);
+                if (!(d > near && d < bis && d < vorD)) return;
+                const { u, v } = UV;
                 if (me.karte && uvs) {
                     const w0 = 1 - u - v;
                     if (atlasA(w0 * uvs[0] + u * uvs[2] + v * uvs[4], w0 * uvs[1] + u * uvs[3] + v * uvs[5]) < me.cut)
