@@ -507,6 +507,7 @@ const stationen = [
         }),
         env: envDer,
         gpu: true,
+        zeit: false,
         minuten: 5,
         urteil: (j) => {
             if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
@@ -563,6 +564,7 @@ const stationen = [
         }),
         env: envDer,
         gpu: true,
+        zeit: false,
         minuten: 12,
         urteil: (j) => {
             if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
@@ -630,6 +632,7 @@ const stationen = [
         befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
         env: { MSYS2_ARG_CONV_EXCL: "*" },
         gpu: true,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
@@ -662,6 +665,7 @@ const stationen = [
         befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
         env: { MSYS2_ARG_CONV_EXCL: "*" },
         gpu: true,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
@@ -695,6 +699,7 @@ const stationen = [
         befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
         env: { MSYS2_ARG_CONV_EXCL: "*" },
         gpu: true,
+        zeit: false,
         minuten: 10,
         urteil: (j, lauf) => {
             const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
@@ -741,6 +746,7 @@ const stationen = [
         }),
         env: envDer,
         gpu: true,
+        zeit: false,
         minuten: 12,
         urteil: (j) => {
             if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
@@ -798,6 +804,7 @@ const stationen = [
         }),
         env: envDer,
         gpu: true,
+        zeit: false,
         minuten: 8,
         urteil: (j) => {
             if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
@@ -865,6 +872,7 @@ const stationen = [
         }),
         env: envDer,
         gpu: true,
+        zeit: false,
         minuten: 6,
         urteil: (j) => {
             if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
@@ -915,6 +923,7 @@ const stationen = [
         befehl: ALBEDO_TAFEL_ECHT,
         env: envDer,
         gpu: true,
+        zeit: false,
         minuten: 10,
         urteil: (j) => {
             if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
@@ -944,6 +953,7 @@ const stationen = [
         befehl: ALBEDO_TAFEL_ECHT,
         env: envDer,
         gpu: true,
+        zeit: false,
         minuten: 10,
         urteil: (j) => {
             if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
@@ -980,6 +990,7 @@ const stationen = [
         }),
         env: envDer,
         gpu: true,
+        zeit: false,
         minuten: 8,
         urteil: (j) => {
             if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };

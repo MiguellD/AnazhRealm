@@ -416,6 +416,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "bewohner"],
         env: { KREATUR_TAKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const z = jsonZeile(lauf.stdout, /^\s*(✅|❌) bewohner\s/);
@@ -455,6 +456,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "bewohner"],
         env: { KREATUR_TAKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 10,
         urteil: (j, lauf) => {
             const z = probeZeile(lauf.stdout, "bewohner");
@@ -507,6 +509,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "bewohner"],
         env: { KREATUR_TAKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const z = probeZeile(lauf.stdout, "bewohner");
@@ -552,6 +555,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "herde"],
         env: { KREATUR_TAKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const z = probeZeile(lauf.stdout, "herde");
@@ -605,6 +609,7 @@ const stationen = [
             knapp(herdePulk),
         ],
         gpu: true,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const z = probeZeile(lauf.stdout, "herde");
@@ -674,6 +679,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-tier-gang.cjs"],
         env: { TIER_GANG_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 4,
         urteil: (j, lauf) => {
             const zeilen = (re) =>
@@ -753,6 +759,7 @@ const stationen = [
             ].join("\n"),
         ],
         gpu: true,
+        zeit: false,
         minuten: 14,
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
@@ -835,6 +842,7 @@ const stationen = [
             ].join("\n"),
         ],
         gpu: true,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const z = probeZeile(lauf.stdout, "bewohner");
@@ -898,6 +906,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-haus-welt.cjs", "--phasen=grund", "--bild"],
         env: { HAUS_WELT_PORT: "{PORT}", HAUS_WELT_PARALLEL: "1", HAUS_WELT_JSON: "{AUS}" },
         gpu: true,
+        zeit: false,
         minuten: 6,
         urteil: (j) => {
             const w = j && j.w9;
@@ -961,6 +970,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "furcht"],
         env: { KREATUR_TAKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 4,
         urteil: (j, lauf) => {
             const z = probeZeile(lauf.stdout, "furcht");
@@ -1001,6 +1011,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "jagdkreis"],
         env: { KREATUR_TAKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             const z = probeZeile(lauf.stdout, "jagdkreis");
@@ -1034,6 +1045,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "lebensraum"],
         env: { KREATUR_TAKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 5,
         urteil: (j, lauf) => {
             const z = probeZeile(lauf.stdout, "lebensraum");
@@ -1075,6 +1087,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "lebensraum,tagesbudget"],
         env: { KREATUR_TAKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             const t = probeZeile(lauf.stdout, "tagesbudget");
@@ -1153,6 +1166,7 @@ const stationen = [
             ].join("\n"),
         ],
         gpu: true,
+        zeit: false,
         minuten: 12,
         urteil: (j, lauf) => {
             const z = probeZeile(lauf.stdout, "jagdkreis");
@@ -1200,6 +1214,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-weltakt-wache.cjs"],
         env: { WELTAKT_WACHE_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 5,
         urteil: (j, lauf) => {
             const z = jsonZeile(lauf.stdout, /^\s*(✅|❌) tat-k1 \{/);
@@ -1235,6 +1250,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "kaskade"],
         env: { KREATUR_TAKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             const z = probeZeile(lauf.stdout, "kaskade");
@@ -1263,6 +1279,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "kaskade"],
         env: { KREATUR_TAKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             const z = probeZeile(lauf.stdout, "kaskade");
@@ -1294,6 +1311,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "kaskade"],
         env: { KREATUR_TAKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             const z = probeZeile(lauf.stdout, "kaskade");
@@ -1323,6 +1341,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "folgen"],
         env: { KREATUR_TAKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const z = probeZeile(lauf.stdout, "folgen");
@@ -1363,6 +1382,7 @@ const stationen = [
         // folgt und steht im Median ≤ 10 m vom Spieler, der Spieler bleibt ≤ 1 m an seinem Ort (sonst misst der Lauf keine Ansteckung)
         befehl: ["node", "-e", "(" + bindungAnsteckung.toString() + ")()", "{AUS}", "{PORT}"],
         gpu: false,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             if (!j || !Array.isArray(j.laeufe)) return { gruen: false, zahl: "kein Ergebnis in {AUS} (Exit " + lauf.exit + ")" };
@@ -1423,6 +1443,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "rudel"],
         env: { KREATUR_TAKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const z = probeZeile(lauf.stdout, "rudel");
@@ -1472,6 +1493,7 @@ const stationen = [
         ].join("\n"),
     ],
     gpu: true,
+    zeit: false,
     minuten: 10,
     urteil: (j, lauf) => {
         const z = probeZeile(lauf.stdout, "bewohner");
