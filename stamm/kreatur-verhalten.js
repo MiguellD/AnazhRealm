@@ -339,29 +339,18 @@ class AnazhRealm_kreatur_verhalten {
         return best;
     }
 
-    // Jagt dieses Wesen den Spieler? NUR wildes Temperament, NUR im pfad, NUR unverängstigt (Furcht
-    // schlägt Jagd) und in Witterungs-Reichweite. Wesen mit Task jagen nicht (der Hunt sitzt im
-    // task-losen Bewegungs-Zweig).
-    _creatureHuntDrive(creature, wariness) {
-        if (typeof this.getGameMode !== "function" || this.getGameMode() !== "pfad") return false;
-        if (this._kreaturErschoepft(creature)) return false; // die Jagd endete, der Jäger ruht (Tiere K2)
-        const VG = AnazhRealm._verhaltenGesetz();
-        if (wariness >= VG.furcht.fleeThreshold) return false;
-        if (this._creatureTemperament(creature) !== "wild") return false;
-        const pm = this.state.playerMesh && this.state.playerMesh.position;
-        if (!pm) return false;
-        const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
-        return dist < VG.jagd.radius;
-    }
-
-    // ZWEITER JAGD-SINN: das WILDE Wesen wittert Beute über das Geruch-Feld (`_scentAt` an seiner Nase; Quelle = die
-    // Beute, strength = sizeFactor, der Wind trägt). DIE WITTERUNG FÜHRT ZUR BEUTE (Welle LF 08.10.): von allen Tieren, die
-    // Beute sind (_kreaturIstBeute — nicht wild, höchstens jagd.beuteMasse × die eigene Masse) und in scentRangeM liegen,
-    // wählt es das, dessen Geruch am stärksten herüberweht, merkt es als `userData._beute` und liefert die Richtung zu ihm
-    // (der Jagd-Weg _kreaturJagdZug führt dorthin). Vorher folgte es dem Gradienten des Felds über vier Proben: nah an der
-    // Quelle wog der Wind-Winkel bis zwölfmal mehr als der Abstand, der Gradient zeigte vom Ziel fort (Leben-Schau 07.10.:
-    // ein Wolf 1200 Takte „jagd", 0,3 m bewegt, 0 Bisse in 3600 Takten). Kein Ziel → null (der Aufrufer wandert neutral).
-    // Gates wie _creatureHuntDrive: nur pfad; verängstigt (wariness ≥ fleeThreshold) jagt nicht.
+    // DER JAGD-SINN: das WILDE Wesen wittert Beute über das Geruch-Feld (`_scentAt` an seiner Nase; Quelle = der Leib der
+    // Beute, der Wind trägt). DIE WITTERUNG FÜHRT ZUR BEUTE (Welle LF 08.10.): von allen Leibern, die Beute sind
+    // (_kreaturIstBeute — nicht wild, höchstens jagd.beuteMasse × die eigene Masse) und in scentRangeM liegen, wählt es den,
+    // dessen Geruch am stärksten herüberweht, merkt ihn als `userData._beute` und liefert die Richtung zu ihm (der Jagd-Weg
+    // _kreaturJagdZug führt dorthin). DER SPIELER IST EIN LEIB WIE JEDES TIER (oekologie.K4): seine Masse, seine Witterung,
+    // derselbe Wind, dieselbe Reichweite. Vorher jagte ihn ein zweiter Trieb nur in jagd.radius 12 m ohne Wind und ohne
+    // Hunger — ein Rudel 40 m im Revier nahm ihn nie wahr; und die Stärke jeder Quelle war der Größen-Faktor der Seele (je
+    // Art flach 0,75–1,6, kein Maß des Spielers) — jeder Leib riecht gleich, Abstand und Wind wählen. Vorher folgte es dem
+    // Gradienten des Felds über vier Proben: nah an der Quelle wog der Wind-Winkel bis zwölfmal mehr als der Abstand, der
+    // Gradient zeigte vom Ziel fort (Leben-Schau 07.10.: ein Wolf 1200 Takte „jagd", 0,3 m bewegt, 0 Bisse in 3600 Takten).
+    // Kein Ziel → null (der Aufrufer wandert neutral). Nur pfad; verängstigt (wariness ≥ fleeThreshold), satt oder
+    // erschöpft jagt nicht.
     _creatureScentHuntDir(creature, wariness) {
         const ud = creature.userData || {};
         ud._beute = null;
@@ -377,38 +366,28 @@ class AnazhRealm_kreatur_verhalten {
         const quelle =
             this._creatureScentSourcesScratch || (this._creatureScentSourcesScratch = [{ x: 0, z: 0, strength: 1 }]);
         const creatures = this.state.creatures || [];
-        // sizeFactor PRO SEELE memoizen (hängt nur an den frozen Body-Parts der Soul): lazy
-        // `this._scentSizeBySoul: Map<soulName, sizeFactor>` statt je Tick × Quelle neu rechnen.
-        const sizeBySoul = this._scentSizeBySoul || (this._scentSizeBySoul = new Map());
         let best = null,
             bestS = 0;
-        for (let i = 0; i < creatures.length; i++) {
-            const other = creatures[i];
-            if (!this._kreaturIstBeute(creature, other)) continue;
+        // die Leiber der Welt: jedes Tier, zuletzt der Spieler, sobald er seinen Leib trägt (bis sein Guss steht,
+        // `_deferredAvatarSoul`, ist er der leere Anker — ohne Gestalt keine Masse und keine Witterung)
+        const spieler = this.state._deferredAvatarSoul ? null : this.state.playerMesh;
+        for (let i = 0; i <= creatures.length; i++) {
+            const other = i < creatures.length ? creatures[i] : spieler;
+            if (!other || !other.position) continue;
+            const dx = other.position.x - cx;
+            const dz = other.position.z - cz;
+            const fern = dx * dx + dz * dz > scentRange * scentRange;
             // DER RISS NENNT DIE BEUTE (oekologie.K2, `_kreaturRiss`): das Opfer, das der Bestand im Nah-Kreis diesem Jäger
             // oder seinem Verband zusprach, ist das Ziel, wo es auch steht
-            const von = other.userData._rissVon;
+            const von = other.userData && other.userData._rissVon;
+            if ((fern && !von) || !this._kreaturIstBeute(creature, other)) continue;
             if (von && (von === creature || (ud.verband != null && von.userData.verband === ud.verband))) {
                 best = other;
                 break;
             }
-            const dx = other.position.x - cx;
-            const dz = other.position.z - cz;
-            if (dx * dx + dz * dz > scentRange * scentRange) continue;
-            const soulName = other.userData && other.userData.soul;
-            let sizeFactor;
-            if (soulName && sizeBySoul.has(soulName)) {
-                sizeFactor = sizeBySoul.get(soulName);
-            } else if (soulName && typeof this._compoundSizeFactor === "function") {
-                const soul = AnazhRealm.CREATURE_SOULS[soulName];
-                sizeFactor = this._compoundSizeFactor({ parts: (soul && soul.bodyParts) || [] });
-                sizeBySoul.set(soulName, sizeFactor);
-            } else {
-                sizeFactor = 1.0;
-            }
+            if (fern) continue;
             quelle[0].x = other.position.x;
             quelle[0].z = other.position.z;
-            quelle[0].strength = sizeFactor;
             const witterung = this._scentAt(cx, cz, quelle);
             if (witterung > bestS) {
                 bestS = witterung;
@@ -503,10 +482,11 @@ class AnazhRealm_kreatur_verhalten {
 
     // IST DAS BEUTE für diesen Jäger? Nicht wild (wild jagt nicht wild) und höchstens jagd.beuteMasse ×
     // die Masse des Jägers — die EINE Masse des Leibs (`_leibMasse`, kg: Volumen der Gestalt × Dichte des Kerns), die
-    // auch der Stoß liest (Welle LF: der Wolf, 64 kg, jagt Hirsch und Fuchs, nie den Bären, 335 kg).
+    // auch der Stoß liest (Welle LF: der Wolf, 64 kg, jagt Hirsch und Fuchs, nie den Bären, 335 kg). Der Spieler trägt keine
+    // Gattung und kein Temperament: ihn wiegt allein die Masse seines Leibs (der Wolf jagt den Menschen, der Fuchs nie).
     _kreaturIstBeute(jaeger, o) {
         if (!o || o === jaeger || !o.position || !o.userData) return false;
-        if (this._creatureTemperament(o) === "wild") return false;
+        if (o !== this.state.playerMesh && this._creatureTemperament(o) === "wild") return false;
         return this._leibMasse(o) <= AnazhRealm._verhaltenGesetz().jagd.beuteMasse * this._leibMasse(jaeger);
     }
 
@@ -3284,30 +3264,11 @@ class AnazhRealm_kreatur_verhalten {
                     // Gesetzbuch (VERHALTEN via _verhaltenGesetz, fail-soft).
                     const VG = AnazhRealm._verhaltenGesetz();
                     const NAT = VG.furcht;
-                    // JAGD: ein wildes, unverängstigtes Wesen pirscht ZUR Beute (schneller als Schlendern) und beißt in
-                    // Reichweite. _creatureHuntDrive prüft fleeThreshold selbst → getroffen fällt es in den Flucht-Zweig.
                     let jagt = false;
                     let frisst = false;
-                    if (this._creatureHuntDrive(creature, wariness)) {
-                        jagt = true;
-                        // KREATUR-LEBEN — der ECHTE Jagd-Zustand stempelt die Motion-
-                        // Brücke (das tetrapoda-hunt-Preset war TOTE Daten: kein Pfad
-                        // wählte es je — jetzt pirscht der Jäger sichtbar).
-                        // DIE JAGD (Welle LF): der EINE Weg des Jägers — Pirsch, der Platz im Rudel, die Hetze im Sprint.
-                        const sv = this._spielerLageAlt;
-                        this._kreaturJagdZug(
-                            creature,
-                            playerPos.x,
-                            playerPos.z,
-                            "spieler",
-                            direction,
-                            speed,
-                            hueftL,
-                            sv.vx,
-                            sv.vz
-                        );
-                        this._tickCreatureHuntStrike(creature);
-                    } else if (wariness >= NAT.fleeThreshold || creature.userData._motionZustand === "flucht") {
+                    // JAGD: ein wildes, unverängstigtes Wesen pirscht ZUR gewitterten Beute — Tier oder Spieler, EINE Witterung
+                    // (_creatureScentHuntDir) — und beißt in Reichweite; Furcht, Flucht und Hunger am Kadaver gehen vor
+                    if (wariness >= NAT.fleeThreshold || creature.userData._motionZustand === "flucht") {
                         // SCHEU/verschreckt — fort von der BEDROHUNG (_creatureWariness merkt Ort und Radius), im Sprint; sonst
                         // Charakter-Wandern. DER FLUCHTWEG (Tiere K1, tetrapoda fluchtRadius): die Flucht im Radius merkt den
                         // Ort und läuft bis zu ihrem Radius (vorher endete sie am Radius: die Herde hielt 14,0 m vor dem Spieler).
@@ -3338,6 +3299,30 @@ class AnazhRealm_kreatur_verhalten {
                         // DER KADAVER (Meisterkarte Tiere H3): Hunger schlägt Neugier und Jagd — ein hungriges Tier frisst,
                         // was schon liegt; der Weg zum Kadaver ist sein eigener (kein Verband zieht)
                         frisst = true;
+                    } else if (this._creatureScentHuntDir(creature, wariness)) {
+                        jagt = true;
+                        const beute = creature.userData._beute;
+                        // DIE JAGD (Welle LF): die gewitterte Beute ist das Ziel des EINEN Wegs — Pirsch, der Platz im Rudel,
+                        // die Hetze im Sprint; ihr Lauf ist der des Spielers in diesem Takt oder die Flucht des Tiers, und der
+                        // Biss gilt ihr (das Biss-Gesetz nennt den Spieler null)
+                        const spieler = beute === this.state.playerMesh;
+                        const bs = beute.userData._steuer;
+                        const bv = bs && beute.userData._motionZustand === "flucht" ? bs.v : 0;
+                        const sv = this._spielerLageAlt;
+                        this._kreaturJagdZug(
+                            creature,
+                            beute.position.x,
+                            beute.position.z,
+                            spieler ? "spieler" : beute.userData.netId || beute.uuid,
+                            direction,
+                            speed,
+                            hueftL,
+                            spieler ? sv.vx : Math.sin(beute.rotation.y) * bv,
+                            spieler ? sv.vz : Math.cos(beute.rotation.y) * bv,
+                            spieler ? null : beute
+                        );
+                        if (spieler) this._tickCreatureHuntStrike(creature);
+                        else this._tickCreatureScentStrike(creature);
                     } else if (wariness <= NAT.curiousThreshold) {
                         // NEUGIERIG — näher zum Spieler (sanfte Aura lockt das Wesen heran).
                         this._kreaturZustandStempel(creature, null);
@@ -3349,35 +3334,11 @@ class AnazhRealm_kreatur_verhalten {
                         const rest = Math.hypot(tpx, tpz) - this._kreaturRaum(creature, hueftL) - this._spielerRaum();
                         this._kreaturZiel(direction, tpx, tpz, rest, speed, creature);
                     } else {
-                        // Raubtier ("wild") wittert Beute in 50 m → folgt dem Geruch-Gradienten (`_scentAt`, Beute-Kreaturen
-                        // als Quellen); sonst neutrales Wandern. Der Beute-Strike läuft separat.
-                        const scentDir = this._creatureScentHuntDir(creature, wariness);
-                        const beute = scentDir && creature.userData._beute;
-                        if (beute) {
-                            jagt = true;
-                            // DIE JAGD (Welle LF): die gewitterte Beute ist das Ziel desselben EINEN Wegs wie der Spieler.
-                            const bs = beute.userData._steuer;
-                            const bv = bs && beute.userData._motionZustand === "flucht" ? bs.v : 0;
-                            this._kreaturJagdZug(
-                                creature,
-                                beute.position.x,
-                                beute.position.z,
-                                beute.userData.netId || beute.uuid,
-                                direction,
-                                speed,
-                                hueftL,
-                                Math.sin(beute.rotation.y) * bv,
-                                Math.cos(beute.rotation.y) * bv,
-                                beute
-                            );
-                            this._tickCreatureScentStrike(creature);
-                        } else {
-                            this._kreaturZustandStempel(creature, null);
-                            // NEUTRAL — weder gelockt noch verschreckt noch witternd → gemächliches
-                            // Wandern. V18.472 (C2): das CHARAKTER-Wandern (Stats/Emotionen/Leine)
-                            // statt weißem Rauschen — die EINE Wander-Quelle.
-                            this._creatureCharacterWander(creature, direction, speed);
-                        }
+                        this._kreaturZustandStempel(creature, null);
+                        // NEUTRAL — weder gelockt noch verschreckt noch witternd → gemächliches
+                        // Wandern. V18.472 (C2): das CHARAKTER-Wandern (Stats/Emotionen/Leine)
+                        // statt weißem Rauschen — die EINE Wander-Quelle.
+                        this._creatureCharacterWander(creature, direction, speed);
                     }
                     // DER VERBAND (S6, tetrapoda verbandZug): EIN Zug für jeden wilden Zweig — Wandern, Flucht, Neugier — auf
                     // den Wunsch, den der Zweig schrieb: die Glieder richten sich aus und halten zusammen. Nur die Jagd folgt

@@ -53,7 +53,6 @@
 //   node scripts/diag-hoehlen-sicht.cjs [--selftest]   (npm run gate:hoehlen-sicht; Port HOEHLEN_SICHT_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, selbsttestEnde } = require("./lib/welt-boot.cjs");
 
 const PFLICHT = ["wiese", "hang", "muendung", "hoehle", "hinaus"];
 // Natürliche Mündungen je km² im Mittelgebirge (Karte K16): die Welt trägt die Höhlen sichtbar.
@@ -341,6 +340,7 @@ function urteil(b) {
 }
 
 function selbsttest() {
+    const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
     const gruen = {
         spiegel: [
             {
@@ -612,14 +612,7 @@ function selbsttest() {
             /RECHENWERK: .* 0\.31 an 400/,
         ],
     ];
-    for (const [name, tat, muss] of faelle) {
-        const b = klon();
-        tat(b);
-        const v = urteil(b);
-        const ok = v.some((x) => muss.test(x));
-        if (!ok) fehler.push(`${name}: die Wand nennt den Täter nicht (${muss})`);
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${name}" → rot: ${v.join(" · ") || "(nichts)"}`);
-    }
+    taeterFaelle(faelle, urteil, { fehler, klon });
     selbsttestEnde(fehler);
 }
 
@@ -629,6 +622,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const { installHoehlenStrahl } = require("./lib/hoehlen-strahl.cjs");
 

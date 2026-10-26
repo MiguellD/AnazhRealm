@@ -3522,6 +3522,28 @@ function fernRingTeile(x, z, law, fuss, schutt, gen) {
 // nur den Spiegel). feld: je Texel die Höhe (f32 wie das Feld) und die Fern-Farbe × Saison (y, r, g, b). krone: je Punkt das
 // Kronendach sRGB in 8 Bit und die Deckung (Wasser 0). teile: die Teile an Punkten (die Linsen) — mit `y` an der Höhe, sonst am
 // Gesetz; mit `ht` als Masche; `roh` ohne den Fluss-Anteil (fussM 0); `nurHoehe` nur Höhe, Schutt und Nässe.
+// DIE KRONE IN DER MASCHE (bauen.K4, der Fern-Ring zeigt den Edit): die höchste Fläche des Felds (`voxelSurfaceY`) über der
+// Mitte jedes Füll-Edits in der Masche des Ring-Punkts — der ungerundeten um den Anker (ax, az): Winkel `ang` ± ht / rad (die
+// halbe Winkel-Breite π/W), Radius rad/√q … rad·√q (q der Reihen-Faktor der Schale); die Maschen tilen die Schale, je Mitte
+// trägt sie EINE Ecke (die gezeichnete liegt auf dem Snap-Gitter). Fern zeigt sich ein Turm, ein Damm, eine Schüttung als das
+// Maximum ihrer Masche (die Silhouette); −Infinity ohne Füll-Edit darin. `merk` hält je Mitte die Fläche für einen Auftrag.
+function fernKrone(ax, az, rad, ang, ht, q, merk) {
+    const edits = state.voxelEdits;
+    let top = -Infinity;
+    if (!edits || !edits.length) return top;
+    const [lo, hi, halb] = [rad / Math.sqrt(q), rad * Math.sqrt(q), ht / rad];
+    for (const e of edits) {
+        if (!e || e.mode !== "fill") continue;
+        const re = Math.hypot(e.x - ax, e.z - az);
+        const da = Math.atan2(e.z - az, e.x - ax) - ang;
+        if (!(re > lo && re <= hi) || Math.abs(da - 2 * Math.PI * Math.round(da / (2 * Math.PI))) > halb) continue;
+        const key = e.x + "," + e.z;
+        if (!merk.has(key)) merk.set(key, voxelSurfaceY(e.x, e.z) ?? -Infinity);
+        top = Math.max(top, merk.get(key));
+    }
+    return top;
+}
+
 function fernAuftrag(msg) {
     fernLaub = msg.laub;
     fernWasser = msg.wasser;
@@ -3539,15 +3561,19 @@ function fernAuftrag(msg) {
         const flussC = new Float64Array(n);
         const flussSp = new Float64Array(n);
         const teile = new Float32Array(n * 8).fill(NaN);
+        const krone = new Float64Array(n);
         const fl = { spiegel: NaN };
         const fuss = { ax: msg.ax, az: msg.az, ht: 0, hr: 0 };
         const deck = msg.deckZoneRad;
+        const kronen = new Map();
         for (let k = 0; k < n; k++) {
             const x = p[k * 2];
             const z = p[k * 2 + 1];
             let L = G.hoehe(state, x, z, false, aus);
             const s = fernSchuttVon(aus);
             const zone = msg.zone[k] === 1;
+            // die Krone der Füll-Edits in der Masche hebt das Gesetz; der Ring legt sie auch über Naht und Feld (`_fernRingY`)
+            krone[k] = fernKrone(msg.ax, msg.az, msg.rad[k], msg.ang[k], msg.ht[k], msg.q[k], kronen);
             if (zone) {
                 const V = G.hoehe(state, x, z, true);
                 voll[k] = V;
@@ -3557,7 +3583,7 @@ function fernAuftrag(msg) {
                     L = L + (V - L) * w - 0.3 * w;
                 }
             }
-            law[k] = L;
+            law[k] = L = Math.max(L, krone[k]);
             schutt[k] = s;
             const wet = fernNass(x, z, L, wl, nass);
             nassY[k] = nass.y;
@@ -3569,7 +3595,7 @@ function fernAuftrag(msg) {
             if (wet && !zone) continue;
             teile.set(fernRingTeile(x, z, L, fuss, s, msg.memo | 0), k * 8);
         }
-        const antwort = { law, voll, schutt, nassY, spiegel, flussC, flussSp, teile };
+        const antwort = { law, voll, schutt, nassY, spiegel, flussC, flussSp, teile, krone };
         return { antwort, transfer: Object.values(antwort).map((a) => a.buffer) };
     }
     if (msg.art === "feld") {

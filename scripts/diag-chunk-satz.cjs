@@ -48,7 +48,7 @@
 //   node scripts/diag-chunk-satz.cjs [--selftest]   (npm run gate:chunk-satz)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
 
 // (o) die Schwelle des Stufen-Sprungs: ein Wechsel darf die gezeichnete Fläche höchstens so weit versetzen (m)
 const STUFEN_SPRUNG_M = 0.1;
@@ -351,12 +351,7 @@ function selbsttest() {
             muss: [/BODEN-STUFEN: 1 Naht-Bänder ohne Bereich im Boden-Satz — -19,-18/],
         },
     ];
-    for (const f of faelle) {
-        const v = urteil(f.z);
-        for (const re of f.muss)
-            if (!v.some((s) => re.test(s))) fehler.push(`${f.name}: die Wand nennt den Täter nicht (${re})`);
-        console.log(`  ${v.length ? "✅" : "❌"} Selbsttest „${f.name}" → rot: ${v.join(" · ") || "(nichts)"}`);
-    }
+    taeterFaelle(faelle, urteil, { fehler });
     // (j) die Neuschreib-Wand: Ruhe ist grün; die alte Verdrängung (die Kaskaden schreiben einander je Frame neu) und
     // ein fremder Umzug fallen rot, beim Namen.
     const neuGruen = { ruhe: [{ "haupt>haupt": 1335096, "k0>k0": 1758984 }, {}, {}], druck: [{ "k1>k1": 4096 }, {}] };
@@ -365,21 +360,16 @@ function selbsttest() {
     const neuFaelle = [
         {
             name: "die Kaskaden verdrängen einander je Frame",
-            m: { druck: [{ "k0>k0": 1758984 }, { "k1>k1": 1090140 }, { "k0>k0": 1758984 }] },
+            z: { druck: [{ "k0>k0": 1758984 }, { "k1>k1": 1090140 }, { "k0>k0": 1758984 }] },
             muss: [/NEUSCHREIBEN \(druck, Frame 2\): k1 schrieb seinen Abschnitt — 1090140 B/, /Frame 3\): k0 schrieb/],
         },
         {
             name: "ein Schatten-Pass schreibt den Abschnitt eines anderen",
-            m: { ruhe: [{}, { "k1>k0": 4096 }] },
+            z: { ruhe: [{}, { "k1>k0": 4096 }] },
             muss: [/NEUSCHREIBEN \(ruhe, Frame 2\): k1 schrieb den Abschnitt von k0 — 4096 B/],
         },
     ];
-    for (const f of neuFaelle) {
-        const v = urteilNeu(f.m);
-        for (const re of f.muss)
-            if (!v.some((x) => re.test(x))) fehler.push(`${f.name}: die Neuschreib-Wand nennt den Täter nicht (${re})`);
-        console.log(`  ${v.length ? "✅" : "❌"} Selbsttest „${f.name}" → rot: ${v.join(" · ") || "(nichts)"}`);
-    }
+    taeterFaelle(neuFaelle, urteilNeu, { fehler });
     selbsttestEnde(fehler);
 }
 

@@ -207,7 +207,8 @@ class AnazhRealm_gelaende_fern {
         const schalen = F.schalen.map((s, i) => {
             const inner = i === 0 ? innerRand : F.schalen[i - 1].aussen;
             const reihen = AnazhRealm._fernRingReihen(inner, s.aussen);
-            const sh = Object.freeze({ inner, aussen: s.aussen, snap: s.snap, reihen, off, per: W * reihen });
+            const q = Math.pow(s.aussen / inner, 1 / (reihen - 1)); // der Reihen-Faktor: Reihe r liegt auf inner·q^r
+            const sh = Object.freeze({ inner, aussen: s.aussen, snap: s.snap, reihen, q, off, per: W * reihen });
             off += W * reihen;
             return sh;
         });
@@ -439,11 +440,17 @@ class AnazhRealm_gelaende_fern {
             flussC: new Float64Array(off),
             flussSp: new Float64Array(off),
             teile: new Float32Array(off * 8).fill(NaN),
+            krone: new Float64Array(off).fill(-Infinity), // die Krone der Füll-Edits in der Masche (`fernKrone`, bauen.K4)
             nass: new Uint8Array(off), // je Punkt: trägt der Boden dort Wasser
             // die Bestellung: der nächste Index (`auftrag`), die Scheiben im Flug, die Antworten vor dem Einhängen
             auftrag: 0,
             flug: 0,
             einhaengen: [],
+            // DER EDIT-STAND DES RINGS (bauen.K4): der Faden rechnet jede Bestellung mit den Edits, die vor ihr reisten — die
+            // Edit-Wache bestellt nur die Ecken um die späteren nach (`_fernRingUmEdits`), ihre Antworten hängt `nachEdit` ein
+            feldEdits: st.worldMeta && st.worldMeta.voxelEdits,
+            feldEditsN: (st.worldMeta && st.worldMeta.voxelEdits && st.worldMeta.voxelEdits.length) | 0,
+            nachEdit: [],
             refreshed: 0, // eingehängte Punkte (Linse)
             ready: false,
         };
@@ -490,6 +497,8 @@ class AnazhRealm_gelaende_fern {
             li,
             row,
             rad, // der LOCH-DECKEL liest den Reihen-Radius (Deck-Zonen-Urteil)
+            ang: ort.ang, // der ungerundete Winkel um den Anker und der Reihen-Faktor der Schale (die Masche, `fernKrone`)
+            q: sh.q,
             // die Masche des Punkts (`_fernFarbeMasche`): halbe Breite tangential, halbe Tiefe radial (Reihen-Faktor)
             fuss: {
                 ax: fr.anchorX,
@@ -509,6 +518,7 @@ class AnazhRealm_gelaende_fern {
         const rad = sh.inner * Math.pow(sh.aussen / sh.inner, row / (sh.reihen - 1));
         const ang = (ai / AnazhRealm.FERN_RING.winkel) * Math.PI * 2;
         out.rad = rad;
+        out.ang = ang;
         out.x = Math.round((fr.anchorX + Math.cos(ang) * rad) / sh.snap) * sh.snap;
         out.z = Math.round((fr.anchorZ + Math.sin(ang) * rad) / sh.snap) * sh.snap;
         return out;
@@ -884,6 +894,8 @@ class AnazhRealm_gelaende_fern {
         const rand = fr.teilung.randV;
         let law = p.s === 0 && rand && rand[p.li] ? fr.feldY[g] : NaN; // die Ecke eines Naht-Dreiecks: das Feld
         if (!(law === law) && this._fernRingNaht(fr, p)) law = fr.vollY[g];
+        // DIE KRONE DER MASCHE (bauen.K4): Feld und volles Gesetz messen die Ecke, ein Turm in ihrer Masche steht über beiden
+        if (law === law) law = Math.max(law, fr.krone[g]);
         const aus = nass || this._fernRingNass || (this._fernRingNass = { y: 0, spiegel: 0 });
         let wet;
         if (law === law) wet = this._fernNass(p.x, p.z, law, wl, aus);
@@ -994,18 +1006,6 @@ class AnazhRealm_gelaende_fern {
         }
         this._fernRingHoch(fr, bewegt);
         return n;
-    }
-
-    // DER VOLLE REFRESH: der Fern-Faden rechnet den Ring in Scheiben neu — am neuen Anker (`_tickFernRing`) und wenn die
-    // Edit-Liste nicht nur wuchs (eine neue Liste oder ein genommener Edit: der Faden kennt den Stand, der Ring nicht).
-    _fernRingNeuRechnen(fr) {
-        fr.cursor = 0;
-        fr.auftrag = 0;
-        fr.flug = 0;
-        fr.einhaengen.length = 0;
-        fr.gen = (fr.gen || 0) + 1; // laufende Scheiben des Fern-Fadens sind überholt
-        fr.vollY.fill(NaN); // das volle Gesetz der Bau-Zone gehört zum Anker
-        fr.feldY.fill(NaN); // die Feld-Fläche der Naht ebenso
     }
 
     // DER EDIT IN DER FERNE (gelaende.K2 (d)): jeder gerechnete Punkt des Rings unter der Säule des Edits `e` trägt seine Fläche
@@ -1273,6 +1273,7 @@ class AnazhRealm_gelaende_fern {
         if (!fr) return 0;
         const done = this._fernRingEinhaengen(fr);
         if (fr.cursor >= fr.totalVerts) {
+            this._fernRingUmEdits(fr); // vor der Deck-Wache: sie schreibt den Edit-Stand
             this._fernRingDeckWache(fr);
             return done;
         }
@@ -1288,36 +1289,10 @@ class AnazhRealm_gelaende_fern {
             const n = Math.min(fr.totalVerts, von + F.scheibe) - von;
             fr.auftrag = von + n;
             fr.flug++;
-            const punkte = new Float64Array(n * 2);
-            const ht = new Float64Array(n);
-            const hr = new Float64Array(n);
-            const rad = new Float64Array(n);
-            const zone = new Uint8Array(n);
-            for (let k = 0; k < n; k++) {
-                const p = this._fernRingPunkt(fr, von + k);
-                punkte[k * 2] = p.x;
-                punkte[k * 2 + 1] = p.z;
-                ht[k] = p.fuss.ht;
-                hr[k] = p.fuss.hr;
-                rad[k] = p.rad;
-                // die Bau-Zone: dort trägt der Punkt das volle Gesetz (Loch-Deckel und Naht) und immer seine Teile
-                zone[k] = p.s === 0 && p.rad <= fr.bauZoneRad ? 1 : 0;
-            }
             const gen = fr.gen | 0;
-            this._fernAuftrag(
-                "ring",
-                {
-                    punkte,
-                    ht,
-                    hr,
-                    rad,
-                    zone,
-                    ax: fr.anchorX,
-                    az: fr.anchorZ,
-                    deckZoneRad: fr.deckZoneRad,
-                    memo: this._fernMemoGen | 0,
-                },
-                [punkte.buffer, ht.buffer, hr.buffer, rad.buffer, zone.buffer]
+            this._fernRingBestellen(
+                fr,
+                Int32Array.from({ length: n }, (_, k) => von + k)
             )
                 .then((antwort) => {
                     if (this.state.fernRing !== fr || (fr.gen | 0) !== gen) return; // überholt (Re-Anker/Dispose)
@@ -1332,35 +1307,119 @@ class AnazhRealm_gelaende_fern {
         return done;
     }
 
+    // DIE BESTELLUNG (B2): die Punkte `gs` (globale Indizes) mit Masche, Radius, Winkel, Reihen-Faktor und Zone beim Fern-Faden — die Scheiben
+    // des Refresh in Index-Folge, die Ecken um einen Edit aus der Edit-Wache. Liefert das Versprechen der Antwort.
+    _fernRingBestellen(fr, gs) {
+        const n = gs.length;
+        const punkte = new Float64Array(n * 2);
+        const [ht, hr, rad, ang, q] = [0, 0, 0, 0, 0].map(() => new Float64Array(n));
+        const zone = new Uint8Array(n);
+        for (let k = 0; k < n; k++) {
+            const p = this._fernRingPunkt(fr, gs[k]);
+            punkte[k * 2] = p.x;
+            punkte[k * 2 + 1] = p.z;
+            ht[k] = p.fuss.ht;
+            hr[k] = p.fuss.hr;
+            rad[k] = p.rad;
+            ang[k] = p.ang;
+            q[k] = p.q;
+            // die Bau-Zone: dort trägt der Punkt das volle Gesetz (Loch-Deckel und Naht) und immer seine Teile
+            zone[k] = p.s === 0 && p.rad <= fr.bauZoneRad ? 1 : 0;
+        }
+        return this._fernAuftrag(
+            "ring",
+            {
+                punkte,
+                ht,
+                hr,
+                rad,
+                ang,
+                q,
+                zone,
+                ax: fr.anchorX,
+                az: fr.anchorZ,
+                deckZoneRad: fr.deckZoneRad,
+                memo: this._fernMemoGen | 0,
+            },
+            [punkte.buffer, ht.buffer, hr.buffer, rad.buffer, ang.buffer, q.buffer, zone.buffer]
+        );
+    }
+
+    // DIE EDITS IM HORIZONT (bauen.K4: der Fern-Ring zeigt den Edit): seit dem Edit-Stand des Rings (`feldEdits`, `feldEditsN`)
+    // neue Edits bestellen je Schale die Ecken um Reihe und Winkel ihrer Mitte um den Anker neu, je ±2 (das Snap verschiebt eine
+    // Ecke um weniger als eine Masche), beim Fern-Faden, dessen Gesetz die Krone der Füll-Edits in der Masche trägt (`fernKrone`);
+    // die Antwort hängt `_fernRingEinhaengen` ein. Eine neue Liste (die erste ausgenommen) bestellt den ganzen Ring. Bis bk4-turm
+    // sah der Ring einen Edit nur an der Naht (`feldY`): der 70-m-Turm stand 320 m vor dem Spieler nicht im Horizont (Ring
+    // 89–91 m unter der Krone 160 m).
+    _fernRingUmEdits(fr) {
+        const ed = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        const [von, bis] = [fr.feldEditsN | 0, Array.isArray(ed) ? ed.length : 0];
+        if (fr.feldEdits === ed && von === bis) return;
+        if ((fr.feldEdits && fr.feldEdits !== ed) || bis < von) return this._fernRingNeuBestellen(fr);
+        const W = AnazhRealm.FERN_RING.winkel;
+        const gs = new Set();
+        for (let k = von; k < bis; k++) {
+            const e = ed[k];
+            const rad = e ? Math.hypot(e.x - fr.anchorX, e.z - fr.anchorZ) : NaN;
+            if (!(rad > 0)) continue;
+            const ai = Math.round((Math.atan2(e.z - fr.anchorZ, e.x - fr.anchorX) / (2 * Math.PI)) * W);
+            for (const sh of fr.schalen) {
+                const row = Math.round(Math.log(rad / sh.inner) / Math.log(sh.q));
+                for (let r = Math.max(0, row - 2); r <= Math.min(sh.reihen - 1, row + 2); r++)
+                    for (let a = ai - 2; a <= ai + 2; a++) gs.add(sh.off + r * W + (((a % W) + W) % W));
+            }
+        }
+        if (!gs.size) return;
+        const liste = Int32Array.from(gs);
+        const gen = fr.gen | 0;
+        this._fernRingBestellen(fr, liste)
+            .then((antwort) => {
+                if (this.state.fernRing === fr && (fr.gen | 0) === gen) fr.nachEdit.push({ liste, antwort });
+            })
+            .catch((e) => this._stoffBruch("der Fern-Ring (der Fern-Faden, Edit)", e));
+    }
+
+    // DER NEUE RING AM ANKER: der Fern-Faden rechnet ihn ganz in Scheiben (Re-Anker, eine neue Edit-Liste) — laufende Bestellungen
+    // sind überholt, das volle Gesetz der Bau-Zone und die Feld-Fläche der Naht gehören zum Stand.
+    _fernRingNeuBestellen(fr) {
+        fr.cursor = 0;
+        fr.auftrag = 0;
+        fr.flug = 0;
+        fr.einhaengen.length = 0;
+        fr.nachEdit.length = 0;
+        fr.gen = (fr.gen || 0) + 1;
+        fr.vollY.fill(NaN);
+        fr.feldY.fill(NaN);
+    }
+
     // DAS EINHÄNGEN (B2): die Antworten des Fern-Fadens in Index-Folge — je Punkt das Gesetz in die Gedächtnisse des Rings
     // (Höhe, Schutt, voll, Fläche, Spiegel, Fluss, Teile), dann Lage und Farbe durch die EINE Setz-Naht; EIN Hochladen je Takt.
     // Erst der volle Ring wird sichtbar (kein Null-Blob).
     _fernRingEinhaengen(fr) {
-        if (!fr.einhaengen.length) return 0;
+        if (!fr.einhaengen.length && !fr.nachEdit.length) return 0;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         const bewegt = [[], [], []];
+        const setze = (g, a, k) => {
+            for (const f of ["law", "schutt", "nassY", "spiegel", "flussC", "flussSp", "krone"]) fr[f][g] = a[f][k];
+            fr.teile.set(a.teile.subarray(k * 8, k * 8 + 8), g * 8);
+            const v = a.voll[k];
+            if (v === v) fr.vollY[g] = v;
+            const p = this._fernRingPunkt(fr, g);
+            this._fernRingSetzVertex(fr, p, wl);
+            bewegt[p.s].push(p.li);
+        };
         let done = 0;
         fr.einhaengen.sort((a, b) => a.von - b.von);
         while (fr.einhaengen.length && fr.einhaengen[0].von === fr.cursor) {
             const { von, antwort: a } = fr.einhaengen.shift();
             const n = a.law.length;
-            fr.law.set(a.law, von);
-            fr.schutt.set(a.schutt, von);
-            fr.nassY.set(a.nassY, von);
-            fr.spiegel.set(a.spiegel, von);
-            fr.flussC.set(a.flussC, von);
-            fr.flussSp.set(a.flussSp, von);
-            fr.teile.set(a.teile, von * 8);
-            for (let k = 0; k < n; k++) {
-                const v = a.voll[k];
-                if (v === v) fr.vollY[von + k] = v;
-                const p = this._fernRingPunkt(fr, von + k);
-                this._fernRingSetzVertex(fr, p, wl);
-                bewegt[p.s].push(p.li);
-            }
+            for (let k = 0; k < n; k++) setze(von + k, a, k);
             fr.cursor = von + n;
             done += n;
         }
+        // die Ecken um einen Edit: nur wo der Ring schon hängt (dahinter bringt die Scheibe den Edit mit)
+        for (const { liste, antwort: a } of fr.nachEdit.splice(0))
+            for (let k = 0; k < liste.length; k++) if (liste[k] < fr.cursor) setze(liste[k], a, k);
         this._fernRingHoch(fr, bewegt);
         fr.refreshed += done;
         if (!fr.ready && fr.cursor >= fr.totalVerts) {
@@ -1415,7 +1474,6 @@ class AnazhRealm_gelaende_fern {
             fr.feldEdits = ed;
             fr.feldEditsN = edN;
             fr.feldEditGen = (fr.feldEditGen | 0) + 1;
-            if (!wuchs && vorN !== undefined) return this._fernRingNeuRechnen(fr);
         }
         // DIE STAND-WACHE (Welle K): die Höhe eines Saum-Punkts hängt nur an der Chunk-Menge (`_chunkDecktRing`), dem
         // Wasserspiegel, dem Anker und der Edit-Generation — steht das alles, ging eine volle Runde ohne neuen Punkt,

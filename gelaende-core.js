@@ -1691,7 +1691,10 @@
         return 0;
     }
     // DER BODEN FÄLLT IM GRUND DES HAUSES (S4): das Netz eines Boden-Chunks (Positionen P [x, y, z …], Index I, je Dreieck T —
-    // die Zelle seiner Luft, optional) verliert jede Fläche in einer Box mit boden 1 — exakt an der Wand: ein Dreieck, das die
+    // die Zelle seiner Luft, optional) verliert jede Fläche AUF DER PLATTE einer Box mit boden 1 (ein Dreieck, das binnen
+    // wandM / 2 über ihrer Höhe y beginnt; was ganz darüber liegt, ist Gebautes — der Turm auf dem Dach, bauen.K4 — und bleibt;
+    // bis bk4-turm fiel jede Fläche des Grundrisses in jeder Höhe, der Leib stand auf einem ungezeichneten Turm, `_bodenSichtAt`
+    // null) — exakt an der Wand: ein Dreieck, das die
     // Box schneidet, behält seine Stücke außen (konvexe Polygone, je Halbebene der Box abgetrennt, Fächer), die neuen Ecken
     // liegen auf seinen Kanten (y linear, auf der Fläche des Dreiecks) und hängen an P. Läuft im Bau des Netzes VOR Normalen,
     // Stoff, Himmels-Sicht und Stufen-Ziel (sie lesen die neuen Ecken wie jede andere) — im Voxel-Faden und im Sync-Bau, EIN
@@ -1776,9 +1779,11 @@
             const tx1 = Math.max(P[ia * 3], P[ib * 3], P[ic * 3]);
             const tz0 = Math.min(P[ia * 3 + 2], P[ib * 3 + 2], P[ic * 3 + 2]);
             const tz1 = Math.max(P[ia * 3 + 2], P[ib * 3 + 2], P[ic * 3 + 2]);
+            const ty0 = Math.min(P[ia * 3 + 1], P[ib * 3 + 1], P[ic * 3 + 1]);
             let stuecke = null;
             for (const q of K) {
                 if (tx1 < q.wx0 || tx0 > q.wx1 || tz1 < q.wz0 || tz0 > q.wz1) continue;
+                if (ty0 > q.g.y + ERDBAU.wandM / 2) continue;
                 if (!stuecke) {
                     const v = (i) => ({ x: P[i * 3], y: P[i * 3 + 1], z: P[i * 3 + 2], i });
                     stuecke = [[v(ia), v(ib), v(ic)]];

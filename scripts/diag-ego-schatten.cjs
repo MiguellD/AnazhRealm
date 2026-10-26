@@ -29,7 +29,6 @@
 //   node scripts/diag-ego-schatten.cjs [--selftest]   (npm run gate:ego-schatten; Port EGO_SCHATTEN_PORT, 4398)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, selbsttestEnde, laufUhr } = require("./lib/welt-boot.cjs");
 
 const IOU_SOLL = 0.9; // der Ego-Schatten deckt den der 3rd-Person (dieselbe Pose)
 const WURF_MIN = 400; // Bildpunkte: so viel Schatten wirft der Leib auf der Bühne mindestens (192×108)
@@ -109,6 +108,7 @@ function urteilJeStufe(lauf) {
 }
 
 function selbsttest() {
+    const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
     const gut = (x) => Object.assign({ ego: { wurf: 1500, leibPx: 0, leibAufNull: 0 }, iou: 1, geraet: true, zwilling: true, zurueck: true }, x); // prettier-ignore
     // je Gegenprobe die Messung ihrer Klasse (die Täter-Regel fällt beim Namen)
     const taeter = { "LEIB WIRFT NICHT": { ego: { wurf: 0, leibPx: 0, leibAufNull: 0 } }, AUGE: { ego: { wurf: 1500, leibPx: 40, leibAufNull: 8 } }, "GERÄT": { geraet: 4 }, ZWILLING: { zwilling: 5 } }; // prettier-ignore
@@ -139,11 +139,7 @@ function selbsttest() {
         { name: "Bühne schreitet nicht (Gegenprobe Karte steht blind)", z: mit("grob.gegenprobe.5.m.ego", { wurf: 754 }), muss: /GEGENPROBE: die Regel „Karte steht" fällt nicht/ },
         { name: "Bühne am falschen Leib", z: mit("fein", { stufe: 1 }), muss: /STUFE: die Bühne „fein" misst .* nahStufe 1/ },
     ];
-    for (const f of faelle) {
-        const v = urteilJeStufe(f.z);
-        if (!v.some((s) => f.muss.test(s))) fehler.push(`${f.name}: die Wand nennt den Täter nicht (${f.muss})`);
-        console.log(`  ${v.length ? "✅" : "❌"} Selbsttest „${f.name}" → rot: ${v.join(" · ") || "(nichts)"}`);
-    }
+    taeterFaelle(faelle, urteilJeStufe, { fehler });
     selbsttestEnde(fehler);
 }
 
@@ -153,6 +149,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
+const { statikServer, starteBrowser, laufUhr } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 const path = require("path");

@@ -795,14 +795,6 @@ async function nullSeite(opts) {
     await nullRenderer(page);
     return { browser, page };
 }
-// DAS ENDE EINES SELBSTTESTS: ROT mit jedem Täter, der nicht fiel oder nicht beim Namen fiel (`fehler`, Exit 1), sonst GRÜN.
-function selbsttestEnde(fehler) {
-    if (fehler.length) {
-        console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
-        process.exit(1);
-    }
-    console.log("\n✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.");
-}
 async function warteAufWelt(page, frist = 120000) {
     await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
         timeout: frist,
@@ -917,6 +909,29 @@ function pruefer() {
         if (!ok) errs.push(name);
     };
     return { errs, check };
+}
+
+// DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat, muss]` (die Tat an einem frischen `klon()`) oder
+// `{ name, z, muss }` das Urteil; jedes `muss` (ein Muster oder eine Liste) trifft einen Befund, `null` verlangt keinen — sonst steht
+// der Fall beim Namen in `fehler`. `selbsttestEnde` schließt: ROT mit Exit 1, sonst der Grün-Satz.
+function taeterFaelle(faelle, urteil, { fehler = [], klon } = {}) {
+    for (const f of faelle) {
+        const [name, tat, muss] = Array.isArray(f) ? f : [f.name, null, f.muss];
+        const z = tat ? klon() : f.z;
+        if (tat) tat(z);
+        const v = urteil(z);
+        const fehlt = muss == null ? v.slice(0, v.length && 1) : [].concat(muss).filter((re) => !v.some((s) => re.test(s)));
+        for (const re of fehlt) fehler.push(`${name}: die Wand nennt den Täter nicht (${re})`);
+        console.log(`  ${fehlt.length ? "❌" : "✅"} Selbsttest „${name}" → ${muss == null ? "grün" : "rot"}: ${v.join(" · ") || "(nichts)"}`);
+    }
+    return fehler;
+}
+function selbsttestEnde(fehler, satz = "jeder injizierte Täter fällt rot und wird beim Namen genannt.") {
+    if (fehler.length) {
+        console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
+        process.exit(1);
+    }
+    console.log("\n✅ SELBSTTEST GRÜN — " + satz);
 }
 
 // DER DIENST ALS KIND (save-server, signaling-server): `script` (relativ zur Wurzel, `vor` davor, in `cwd`) mit `env` — bereit,
@@ -1124,11 +1139,12 @@ module.exports = {
     warteAufWelt,
     nullRenderer,
     nullSeite,
-    selbsttestEnde,
     halteBis,
     buehne,
     uferStellen,
     pruefer,
+    taeterFaelle,
+    selbsttestEnde,
     startProc,
     eigenePorte,
     sleep,

@@ -940,7 +940,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         r.updatePlayerEmotions(200);
         out.sorrowAfterTick = r.state.player.emotions.sorrow;
         const sorrowWunsch = r.state.wetterWunsch && r.state.wetterWunsch.wort;
-        r.state.weatherEffectTime = r.constructor.WETTER_ZUG_SEK;
+        r.state.spielZeit += r.constructor.WETTER_ZUG_SEK;
         r._loopWeatherAndGrowth(0);
         out.sorrowTriggersRain = sorrowWunsch === "rainy" && r.state.weather === "rainy";
 
@@ -1053,7 +1053,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         r.updatePlayerEmotions(400);
         const happyCount = r.state.creatureEmotions.filter((e) => e === "happy").length;
         const hopeWunsch = r.state.wetterWunsch && r.state.wetterWunsch.wort;
-        r.state.weatherEffectTime = r.constructor.WETTER_ZUG_SEK;
+        r.state.spielZeit += r.constructor.WETTER_ZUG_SEK;
         r._loopWeatherAndGrowth(0);
         out.hopeTriggersSunnyHappy =
             hopeWunsch === "sunny" && r.state.weather === "sunny" && happyCount === r.state.creatureEmotions.length;

@@ -2540,7 +2540,7 @@ class AnazhRealm_bild_sicht {
             fr.anchorX = Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant;
             fr.anchorZ = Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant;
             fr.uAnker.value.set(fr.anchorX, fr.anchorZ);
-            this._fernRingNeuRechnen(fr);
+            this._fernRingNeuBestellen(fr); // voller Refresh: der Fern-Faden rechnet den Ring am neuen Anker in Scheiben
         }
         // Die Schalen leben auf Layer 0 (EIN Szene-Pass) — selbstheilend, falls ein Altstand sie verschob; ihr Wurf bleibt
         // ihr `castShadow` (die Wurf-Ebene, K72 `_wurfEbene`).

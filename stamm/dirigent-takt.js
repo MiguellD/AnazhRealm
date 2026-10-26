@@ -27,7 +27,7 @@ class AnazhRealm_dirigent_takt {
             // dessen Zurück-Knopf es verlässt (`_eingabeTakt`)
             this._eingabeTakt(delta);
             if (this._portalOverlay) return;
-            this.state.spielZeit += delta; // DIE SPIEL-ZEIT: nur Takte der Heimat-Welt zählen (das Portal friert sie ein)
+            this.state.spielZeit += delta; // DIE WELT-UHR: nur Takte der Heimat-Welt zählen (das Portal friert sie ein)
             // DIE BILD-UHR (A9, Gesetz #0): die EINE Shader-Zeit der Welt in Sekunden, hier EINMAL je Takt geschrieben — Himmel,
             // Wasser, Wind und Böe, Tor, Regen, Flackern, Chaos-Flimmern und die TSL-`time` (`_loopRender`) lesen nur sie
             this._bildZeit = currentTime;
@@ -1073,38 +1073,39 @@ class AnazhRealm_dirigent_takt {
         this._tickBewohner(delta); // die Bewohner der Siedlungen (Meisterkarte mensch.K1)
         this._vogelTakt(); // die Vögel des Hör-Kreises (Klang K1: jeder Ruf hat einen Leib)
         this._perfSenseLap("creatures", _ct);
-        this.state.weatherEffectTime += delta;
-        // DIE WETTER-UHR der Welt (wetter.K1): die Spiel-Zeit, in der die Fronten ziehen — Welt-Gedächtnis (`worldMeta.wetterUhr`,
-        // reist im Snapshot und zum Gast), nie die Wanduhr.
-        const wm = this.state.worldMeta || (this.state.worldMeta = {});
-        wm.wetterUhr = (Number(wm.wetterUhr) || 0) + delta;
-        // Auto-Zug: zieht das Wort, das die Welt sich wünscht (`wetterWunsch` — Nexus, seine Gesetze, die Emotion, die
-        // Wesen schreiben nie selbst), sonst das Wetter der Front am Ort, und geht sanft über die Transition. Takt
-        // `WETTER_ZUG_SEK` (120 s): mit der 45-s-Transition STEHT das Wetter ~75 s. Steht das Wort des Spielers (`wetterWort`),
-        // ruht der Zug. Wartet auf die Bühne (nur der Wechsel-Tick; weatherEffectTime akkumuliert weiter → danach EIN weicher
-        // Zug). Headless sofort.
-        if (
-            !this.state.wetterWort &&
-            this.state.weatherEffectTime >= AnazhRealm.WETTER_ZUG_SEK &&
-            this._buehneSteht()
-        ) {
-            const wunsch = this.state.wetterWunsch;
-            this.state.wetterWunsch = null;
-            // DAS WORT DES ORTS (wetter.K1): Wetter = f(Saat, Ort, Zeit) ⊕ Schreib-Akte, für alle gleich, nie aus der Wanduhr —
-            // ohne Wunsch zieht der Zug das Wetter der Front über dem Spieler (`_wetterAmOrt`: phyto-core wetterAt über Saat, Ort
-            // und Wetter-Uhr); ein Wunsch der Welt ist ein Schreib-Akt und steht einen Takt. Bis wetter.K1 zog jeder Zug den
-            // nächsten Samen der Welt — EIN globales Wort ohne Ort.
-            const pm = this.state.playerMesh;
-            const next =
-                wunsch && wunsch.wort in AnazhRealm.WEATHER_INTENSITY
-                    ? wunsch.wort
-                    : this._wetterAmOrt(pm ? pm.position.x : 0, pm ? pm.position.z : 0);
-            if (next !== this.state.weather) {
-                this._setWeather(next, "auto-zug");
-                this.log(`Das Wetter zieht zu ${next}${wunsch ? ` (Wunsch: ${wunsch.quelle})` : ""}`, "INFO");
-            } else if (wunsch) this.log(`Das Wetter bleibt ${next} (Wunsch: ${wunsch.quelle})`, "INFO");
-            this.state.weatherEffectTime = 0;
-        }
+        // DER WETTER-ZUG AUF DER WELT-UHR (wetter.K1, feld.K2#2): je `WETTER_ZUG_SEK` (120 s) der Welt-Uhr (`spielZeit`) EIN Zug
+        // — er zieht das Wort, das die Welt sich wünscht (`wetterWunsch` — Nexus, seine Gesetze, die Emotion, die Wesen
+        // schreiben nie selbst), sonst das Wort der Front am Ort zur Zeit des Zugs (`_wetterAmOrt`: phyto-core wetterAt über
+        // Saat, Ort und Uhr), und geht ab DIESER Zeit 45 s über aus dem Wort, das die Front einen Zug vorher am Ort trug: Wetter
+        // und Übergang sind eine Funktion von Saat, Ort und Welt-Uhr — zwei Seiten einer Uhr und ein Reload mitten im Sturm
+        // stehen im selben Übergang, und der erste Takt einer Seite (Boot, Reload, Beitritt) zieht den laufenden Zug. Bis
+        // feld.K2#2 zählte jede Seite ihre Sitzung (`weatherEffectTime`) und ihre Wanduhr. Steht das Wort des Spielers
+        // (`wetterWort`), ruht er; der Halt einer Messung verbraucht seinen Zug (danach steht das Wetter bis zum nächsten); er
+        // wartet auf die Bühne.
+        const st = this.state;
+        const Z = AnazhRealm.WETTER_ZUG_SEK;
+        const zug = Math.floor(st.spielZeit / Z);
+        if (st.wetterWort || zug === this._wetterZug || !this._buehneSteht()) return;
+        this._wetterZug = zug;
+        if (this._messHalt()) return;
+        const wunsch = st.wetterWunsch;
+        st.wetterWunsch = null;
+        const pm = st.playerMesh;
+        const [x, z] = pm ? [pm.position.x, pm.position.z] : [0, 0];
+        const next =
+            wunsch && wunsch.wort in AnazhRealm.WEATHER_INTENSITY ? wunsch.wort : this._wetterAmOrt(x, z, zug * Z);
+        const von = this._wetterAmOrt(x, z, (zug - 1) * Z);
+        if (next !== st.weather)
+            this.log(`Das Wetter zieht zu ${next}${wunsch ? ` (Wunsch: ${wunsch.quelle})` : ""}`, "INFO");
+        else if (wunsch) this.log(`Das Wetter bleibt ${next} (Wunsch: ${wunsch.quelle})`, "INFO");
+        if (next !== st.weather || von !== next) this._setWeather(next, "auto-zug", { von, beginn: zug * Z });
+    }
+
+    // DIE EINE REGEL DER WELT-UHR (feld.K2#2): eine Uhr von außen — der Stand beim Laden, der Mitspieler in jedem Ort (`pos.w`) —
+    // gilt, wenn sie später ist; die Uhr geht nie zurück. So tragen alle Seiten eines Raums die Uhr der ältesten, ohne dass
+    // ein Zustand reist: Wetter, Leben, Brand und Nässe folgen ihr als Funktion.
+    _weltUhrNimm(t) {
+        if (Number.isFinite(t) && t > this.state.spielZeit) this.state.spielZeit = t;
     }
 
     // FRAME-BUDGET-POOL: EINE Quelle für „wie viel ms hat dieser Frame für aufschiebbare Arbeit".
