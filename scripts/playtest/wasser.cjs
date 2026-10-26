@@ -1276,9 +1276,9 @@ async function checkBandWelleV11D2WaterBias(ctx) {
     );
 }
 
-// DAS HOCH-BECKEN (Stau-Spiegel): ein Spieler-Werk (Fill/solide Architektur) öffnet die Spiegel-Kappe
-// LOKAL per bounded Spill-Scan (Priority-Flood); gepinnte Quell-Spalten tropfen den Pool voll. Hier
-// nur PURE Beweise; der Welt-Beweis am echten Fluss ist die Sonde diag-stau (git-Archiv).
+// DAS HOCH-BECKEN (Stau-Spiegel): ein Spieler-Werk (Fill/solide Architektur) hält den Pegel seines bounded Spill-Scans
+// (Priority-Flood) als Gesetz des Spiegels (`_stauFelder`). Hier nur PURE Beweise; der Welt-Beweis am echten Fluss ist
+// gate:wasser-leben G6 · G7 und am Bau der Prüfbühne gate:werk-im-wasser D.
 async function checkBandV18129HochBecken(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -1288,7 +1288,7 @@ async function checkBandV18129HochBecken(ctx) {
         out.config =
             !!C &&
             Object.isFrozen(C) &&
-            [C.REACH, C.MAX_CELLS, C.FEED, C.WIN_MAX, C.CLUSTER_GAP, C.MIN_EXTENT].every(Number.isFinite);
+            [C.REACH, C.WIN_MAX, C.CLUSTER_GAP, C.MIN_EXTENT].every(Number.isFinite);
         // PURE Spill-Scan (Priority-Flood): das BECKEN hält, der PFEILER nicht —
         // der strukturelle Damm/Pfeiler-Diskriminator (die Physik filtert).
         const w = 11;
@@ -1313,32 +1313,6 @@ async function checkBandV18129HochBecken(ctx) {
         const gapped = mkGrid(true);
         const fillGap = r._stauSpillLevels(gapped.barrier, w, w, gapped.init);
         out.gapDrains = Math.abs(fillGap[5 + 5 * w] - 1) < 1e-9; // ein Loch → kein Stau
-        // PURE Empfänger-Kappe (V18.93-Semantik bleibt + trägt den Stau): Spalte A
-        // voll bis j=6, Spalte B leer mit Kappe j=3 → B füllt NIE über die Kappe.
-        const SOLID = r.constructor.CELL_STATE.SOLID;
-        const d = 2;
-        const dy = 8;
-        const dimSq = d * d;
-        const cells = new Uint8Array(dimSq * dy);
-        for (let j = 0; j < dy; j++) {
-            cells[2 + j * dimSq] = SOLID; // Spalten (0,1)+(1,1) ganz solide —
-            cells[3 + j * dimSq] = SOLID; // nur das Paar c0↔c1 tauscht
-        }
-        cells[0] = SOLID; // Böden j=0
-        cells[1] = SOLID;
-        const level = new Float64Array(dimSq * dy);
-        for (let j = 1; j <= 6; j++) level[0 + j * dimSq] = 1; // Säule A voll
-        const cap = new Int16Array(dimSq);
-        cap[0] = 7;
-        cap[1] = 3;
-        for (let t = 0; t < 120; t++) r._tickWaterCA(level, cells, d, dy, 0.25, null, null, cap);
-        let overCap = 0;
-        for (let j = 4; j < dy; j++) overCap += level[1 + j * dimSq];
-        let underCap = 0;
-        for (let j = 1; j <= 3; j++) underCap += level[1 + j * dimSq];
-        out.capHolds = overCap < 1e-6;
-        out.capFillsBelow = underCap > 0.5;
-        out.overCap = overCap;
         return out;
     });
     if (!res) {
@@ -1349,11 +1323,6 @@ async function checkBandV18129HochBecken(ctx) {
     check("Hoch-Becken: der Spill-Scan hält das GESCHLOSSENE Becken (Krone-Pegel)", res.basinHolds);
     check("Hoch-Becken: außerhalb der Wand gilt der Außenwelt-Pegel (keine Badewanne)", res.outsideOpen);
     check("Hoch-Becken: EIN Loch im Ring → kein Stau (der Damm/Pfeiler-Diskriminator)", res.gapDrains);
-    check(
-        "Hoch-Becken: die Empfänger-Kappe hält im Automaten (nichts über cap, darunter füllt es)",
-        res.capHolds && res.capFillsBelow,
-        `overCap=${res.overCap}`
-    );
 }
 
 // Γ6 — vier stehende Wände gegen geheilte visuelle Narben: (G1) Schneeband auf PROMINENZ ·
@@ -1792,7 +1761,6 @@ async function checkBandWasserWahrheit(ctx) {
                 if (x < 5 * st5) return Number.isFinite(t) && t < L5 ? L5 : -Infinity; // Rand über flachem Grund
                 return -Infinity;
             };
-            shim._stauFieldsNear = () => null;
             const vorher = new Float64Array(dSq * dy);
             for (let c = 0; c < cells.length; c++) if (cells[c] === WATER) vorher[c] = 1;
             vorher[6 + 7 * dSq] = 0.9; // die Zunge auf dem Land
@@ -1998,7 +1966,6 @@ async function checkBandWasserSheetSpiegel(ctx) {
         // (`_waterSheetCaFree` false) — verglichen wird genau die Worker-Route: dachlos = Flood = identisch.
         r._gameLoopTick = () => {};
         if (r.state.waterCAActive) r.state.waterCAActive.clear();
-        if (r.state.waterStauFields) r.state.waterStauFields.clear();
         // Kandidaten: CA-freie Chunks, deren Main-Sheet NICHT null ist (also Wasser tragen).
         const keys = [...r.state.voxelChunks.keys()];
         const cand = [];

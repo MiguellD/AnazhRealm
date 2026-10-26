@@ -917,11 +917,15 @@ class AnazhRealm_gelaende_fern {
             aus.spiegel = wl;
             return law < wl;
         }
-        const y = globalThis.__gelaendeCore.gewaesserForm(
-            law,
-            0,
-            this._hydrosphereCarveAt(x, z),
-            this._hydrosphereLakeAt(x, z)
+        const G = globalThis.__gelaendeCore;
+        const meta = this.state.worldMeta;
+        const edits =
+            meta && meta.voxelEdits && meta.voxelEdits.length ? G.editsAm(this._voxelEditKarte(), x, z) : null;
+        const y = G.editHoehe(
+            G.gewaesserForm(law, 0, this._hydrosphereCarveAt(x, z), this._hydrosphereLakeAt(x, z)),
+            x,
+            z,
+            edits
         );
         aus.y = y;
         this._atlasWaterLevelAt(x, z, y, aus);
@@ -990,6 +994,49 @@ class AnazhRealm_gelaende_fern {
         }
         this._fernRingHoch(fr, bewegt);
         return n;
+    }
+
+    // DER VOLLE REFRESH: der Fern-Faden rechnet den Ring in Scheiben neu — am neuen Anker (`_tickFernRing`) und wenn die
+    // Edit-Liste nicht nur wuchs (eine neue Liste oder ein genommener Edit: der Faden kennt den Stand, der Ring nicht).
+    _fernRingNeuRechnen(fr) {
+        fr.cursor = 0;
+        fr.auftrag = 0;
+        fr.flug = 0;
+        fr.einhaengen.length = 0;
+        fr.gen = (fr.gen || 0) + 1; // laufende Scheiben des Fern-Fadens sind überholt
+        fr.vollY.fill(NaN); // das volle Gesetz der Bau-Zone gehört zum Anker
+        fr.feldY.fill(NaN); // die Feld-Fläche der Naht ebenso
+    }
+
+    // DER EDIT IN DER FERNE (gelaende.K2 (d)): jeder gerechnete Punkt des Rings unter der Säule des Edits `e` trägt seine Fläche
+    // neu — die Nässe der Ferne (`_fernNass`) liest die Edits über das Gesetz des Kerns (`editHoehe`), wie der Fern-Faden für
+    // jeden Ring, den er danach rechnet —, durch die EINE Setz-Naht im Takt des Edits. Gefragt werden nur die Reihen, deren
+    // Radius die Säule (samt Snap der Schale) schneidet (Lehre 25).
+    _fernRingEdit(fr, e) {
+        const W = AnazhRealm.FERN_RING.winkel;
+        const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
+        const aus = { y: 0, spiegel: 0 };
+        const o = {};
+        const bewegt = fr.schalen.map(() => []);
+        const d = Math.hypot(e.x - fr.anchorX, e.z - fr.anchorZ);
+        fr.schalen.forEach((sh, s) => {
+            const zeile = (rad) =>
+                ((sh.reihen - 1) * Math.log(Math.max(rad, sh.inner) / sh.inner)) / Math.log(sh.aussen / sh.inner);
+            const bis = Math.min(sh.reihen - 1, Math.ceil(zeile(d + e.r + sh.snap)));
+            for (let row = Math.floor(zeile(d - e.r - sh.snap)); row <= bis; row++)
+                for (let ai = 0; ai < W; ai++) {
+                    AnazhRealm._fernRingOrt(fr, sh, row, ai, o);
+                    const g = sh.off + row * W + ai;
+                    if (g >= fr.cursor || (o.x - e.x) ** 2 + (o.z - e.z) ** 2 > e.r * e.r) continue;
+                    this._fernNass(o.x, o.z, fr.law[g], wl, aus);
+                    fr.nassY[g] = aus.y;
+                    fr.spiegel[g] = aus.spiegel;
+                    const p = this._fernRingPunkt(fr, g);
+                    this._fernRingSetzVertex(fr, p, wl);
+                    bewegt[s].push(p.li);
+                }
+        });
+        this._fernRingHoch(fr, bewegt);
     }
 
     // DER EINE HOCHLADE-HELFER der Schalen-Geometrie: je Schale die bewegten Punkte (`bewegt[s]`, lokale Indizes) — Lage, Farben
@@ -1347,22 +1394,28 @@ class AnazhRealm_gelaende_fern {
         // löschte sie alle 1 081 Rand-Flächen.
         const ed = this.state.worldMeta && this.state.worldMeta.voxelEdits;
         const edN = Array.isArray(ed) ? ed.length : 0;
-        if (fr.feldEdits !== ed || fr.feldEditsN !== edN) {
+        const vorN = fr.feldEditsN;
+        if (fr.feldEdits !== ed || vorN !== edN) {
             const rand = fr.teilung && fr.teilung.randV;
-            if (fr.feldEdits === ed && edN > (fr.feldEditsN | 0) && rand) {
-                for (let k = fr.feldEditsN | 0; k < edN; k++) {
+            // der Anschluss: die Liste wuchs (dieselbe, oder die erste nach einer leeren) — sonst rechnet der Faden den Ring neu
+            const von = fr.feldEdits === ed ? vorN | 0 : vorN === 0 ? 0 : -1;
+            const wuchs = von >= 0 && edN > von;
+            if (wuchs) {
+                for (let k = von; k < edN; k++) {
                     const e = ed[k];
                     if (!e || !Number.isFinite(e.x) || !Number.isFinite(e.z)) continue;
                     const r2 = globalThis.__gelaendeCore.editReich(e) ** 2;
-                    for (let i = 0; i < fr.zoneVerts; i++) {
+                    for (let i = 0; rand && i < fr.zoneVerts; i++) {
                         const p = this._fernRingPunkt(fr, i);
                         if (rand[p.li] && (p.x - e.x) ** 2 + (p.z - e.z) ** 2 < r2) fr.feldY[p.g] = NaN;
                     }
+                    this._fernRingEdit(fr, e);
                 }
             } else fr.feldY.fill(NaN);
             fr.feldEdits = ed;
             fr.feldEditsN = edN;
             fr.feldEditGen = (fr.feldEditGen | 0) + 1;
+            if (!wuchs && vorN !== undefined) return this._fernRingNeuRechnen(fr);
         }
         // DIE STAND-WACHE (Welle K): die Höhe eines Saum-Punkts hängt nur an der Chunk-Menge (`_chunkDecktRing`), dem
         // Wasserspiegel, dem Anker und der Edit-Generation — steht das alles, ging eine volle Runde ohne neuen Punkt,

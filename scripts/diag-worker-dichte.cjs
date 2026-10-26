@@ -299,6 +299,8 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                 zoneVerts: 640,
                 teilung: { randV: new Uint8Array(640).fill(1) },
                 feldY: new Float32Array(640),
+                schalen: [],
+                geos: [],
             };
             [fr.feldEdits, fr.feldEditsN, r._fernRingPunkt, r._standRuht] = [alle, 0, (f, i) => naht[i], () => true];
             const reich = (p) => alle.some((e) => (p.x - e.x) ** 2 + (p.z - e.z) ** 2 < G.editReich(e) ** 2);

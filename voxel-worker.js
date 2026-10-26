@@ -745,6 +745,8 @@ function applyStateSnapshot(snap) {
     }
     if (snap.hydroBand !== undefined) state.hydroBand = snap.hydroBand;
     if (snap.voxelEdits !== undefined) state.voxelEdits = snap.voxelEdits;
+    // DER STAU DER WERKE (gelaende.K2 (b)): die Felder des Mains (`_stauFelder`) — der Spiegel des Kerns liest sie (`L.stau`)
+    if (snap.stau !== undefined) state.stau = snap.stau;
     if (snap.hydroGesetz) state.hydroGesetz = snap.hydroGesetz;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): genVersion-Schleuse mit-laden.
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
@@ -3328,7 +3330,8 @@ function fernNass(x, z, law, wl, aus) {
         aus.spiegel = wl;
         return law < wl;
     }
-    const y = G.gewaesserForm(law, 0, hydrosphereCarveAt(x, z), hydrosphereLakeAt(x, z));
+    const edits = state.voxelEdits && state.voxelEdits.length ? G.editsAm(editKarteFrisch(), x, z) : null;
+    const y = G.editHoehe(G.gewaesserForm(law, 0, hydrosphereCarveAt(x, z), hydrosphereLakeAt(x, z)), x, z, edits);
     aus.y = y;
     atlasWaterLevelAt(x, z, y, aus);
     aus.spiegel = aus.koerper;

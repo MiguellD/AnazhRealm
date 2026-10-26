@@ -607,6 +607,11 @@ class AnazhRealm_gelaende_boden {
             get hydroGesetz() {
                 return AnazhRealm.HYDROSPHERE;
             },
+            // der Stau der Werke (`_stauFelder`: beim Edit und je Takt, wenn sich ein Werk änderte) — der Spiegel des Kerns liest
+            // ihn; während seiner eigenen Rechnung das Gesetz ohne Stau
+            get stau() {
+                return realm._stauRechnet ? null : realm.state.waterStau || null;
+            },
         };
         return this._gelaendeLage;
     }

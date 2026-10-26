@@ -22,6 +22,8 @@
 //   E (stoffe.K3)   im Winter trägt das Eis den Gang und die Tiere am Spiegel (±5 cm); das Feld +10 °C bricht ihn ein.
 //   G (F3)          der Graben am Fluss (1 m und 3 m jenseits der Krone, der Weg des Grabe-Hiebs): EINE Wasser-Fläche, nie über
 //                   dem Spiegel, in Ruhe auf ihm; der Automat ruht binnen Takten; die Wiese daneben fällt nie.
+//   G6 · G7 · G8    der Damm aus dem Verb (gelaende.K2 (b), (d)): stromauf steht der Stausee auf der Überlaufhöhe (±0,1 m),
+//                   stromab fließt der Fluss auf seinem Spiegel; der Fern-Ring trägt den Edit im Takt und am neuen Anker (--bild).
 // Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_atlasWaterLevelAt`), den
 // Sim-Schritt `_stepFixedSim`, den Schritt-Klang `_schrittKlangTick`, das ECHTE Wasser-Material.
 //
@@ -531,6 +533,19 @@ function urteil(b) {
                 v.push(`G5 FLACKERN: ${wo}: die Wiese daneben fiel ${g.wieseFaelle}-mal, Büschel je Takt ${g.bueschel.join("–")}`);
         }
     }
+    // G6 · G7 · G8 — DER DAMM (gelaende.K2 (b), (d)): der Stausee steht auf der Überlaufhöhe (±0,1 m) über dem Fluss von
+    // vorher, stromab fließt der Fluss auf seinem Spiegel; am Fern-Ring trägt jeder Punkt unter den Säulen den Edit im Takt des
+    // Edits und am neuen Anker die Krone
+    const d = b.damm;
+    if (d && (d.fehler || !(d.saeulen >= 3))) v.push(`G6: ${d.fehler || d.saeulen + " Säulen"}`);
+    for (const u of d && !d.fehler ? d.stromauf : [])
+        if (!(Math.abs(u.wasser - u.ueberlauf) <= 0.1 && u.ueberlauf > u.fluss + 0.1))
+            v.push(`G6 KEIN STAU: ${u.d} m stromauf ${u.wasser} m, Überlauf ${u.ueberlauf} m, Fluss ${u.fluss} m`);
+    for (const u of d && !d.fehler ? d.stromab : [])
+        if (!(Math.abs(u.wasser - u.fluss) <= 0.1)) v.push(`G7 KEIN ABFLUSS: ${u.d} m stromab ${u.wasser} m, Fluss ${u.fluss} m`);
+    const f = b.ferne && b.ferne.ring;
+    if (b.ferne && !(f && f.punkte >= 3 && f.anders === f.punkte && f.hubM >= 1 && f.faden === b.ferne.saeulen))
+        v.push(`G8 FERNE: ${f ? `Ring ${f.anders}/${f.punkte}, Hub ${f.hubM} m, Faden ${f.faden}/${b.ferne.saeulen}` : b.ferne.fehler}`);
     return v;
 }
 
@@ -654,6 +669,12 @@ function selbsttest() {
         graben: {
             graeben: [1, 3].map((abstand) => ({ abstand, ort: [-256, -1130], vor: 378, nass: 524, bueschel: [9, 9], ruhe: 4, sheets: 110 })),
         },
+        damm: {
+            saeulen: 21,
+            stromauf: [6, 12].map((d) => ({ d, wasser: 25.25, ueberlauf: 25.24, fluss: 24.88 })),
+            stromab: [6, 12].map((d) => ({ d, wasser: 24.63, fluss: 24.63 })),
+        },
+        ferne: { saeulen: 21, ring: { punkte: 5, anders: 5, hubM: 2.84, faden: 21 } },
         koerper: {
             hinein: { tiefGeerdet: 0, augenUnterGeerdet: 0, maxTiefeGeerdetM: 0, schwimmFrames: 400 },
             lage: { fussUnterSpiegelP50: 1.2, sollFussUnterSpiegel: 1.224, augenUnter: 0 },
@@ -818,6 +839,10 @@ function selbsttest() {
         ["G1 ZWEI FLÄCHEN", (b) => (b.graben.graeben[0].doppelt = 2)],
         ["G LEER", (b) => (b.graben.graeben[1].nass = 378)],
         ["G: kein Fluss", (b) => (b.graben = { fehler: "kein Fluss am Ort" })],
+        // der Damm an der Basis b2c6c627: stromauf blieb der Fluss auf 24,88/24,98 m (Überlauf 25,24/25,23 m), der Ring las nur 2D
+        ["G6 KEIN STAU", (b) => Object.assign(b.damm.stromauf[0], { wasser: 24.88 })],
+        ["G7 KEIN ABFLUSS", (b) => (b.damm.stromab[1].wasser = null)],
+        ["G8 FERNE", (b) => Object.assign(b.ferne.ring, { anders: 0, hubM: 0, faden: 0 })],
         ["B6 HASH", (b) => (b.hashSin = hashSin(HASH_ALT))],
         // DIE TEILE: die Quell-Probe in Seiten nebeneinander — ein Teil mit anderen Kacheln bricht beim Namen, ein
         // trockener Ursprung in nur EINEM Teil bleibt rot im Ganzen
@@ -992,6 +1017,9 @@ async function lauf() {
             befund.bild = await page.evaluate((png) => window.__wasserBild({ png }), !!ordner);
             befund.regen = await page.evaluate(() => window.__wasserRegen({}));
             befund.licht = await page.evaluate(() => window.__wasserLicht({}));
+            befund.ferne = await page.evaluate(
+                async () => window.__wasserDamm({ fluss: (await window.__wasserOrte({})).fluss, ferne: true })
+            );
             for (const k of ["png60", "png3600"]) {
                 if (ordner && befund.bild[k]) {
                     fs.mkdirSync(ordner, { recursive: true });
@@ -1072,11 +1100,12 @@ async function lauf() {
                 befund.bach = await page.evaluate((o) => window.__wasserBach({ x: o.bach.x, z: o.bach.z }), ORTE);
             if (soll("see"))
                 befund.see = await page.evaluate((o) => window.__wasserSee({ fenster: o.see.fenster }), ORTE);
-            // ganz zuletzt (er schneidet die Welt): der Graben am Fluss (F3)
+            // ganz zuletzt (sie schneiden und schütten die Welt): der Graben am Fluss (F3), 60 m stromab der Damm (gelaende.K2)
             if (soll("graben")) {
                 await page.evaluate((f) => window.__wasserStrom([f.x, f.z], 0.6), ORTE.fluss);
                 befund.graben = await page.evaluate((f) => window.__wasserGraben({ fluss: f }), ORTE.fluss);
             }
+            if (soll("damm")) befund.damm = await page.evaluate((f) => window.__wasserDamm({ fluss: f }), ORTE.fluss);
         }
         const v = urteil(befund);
         console.log(JSON.stringify(befund, null, 1));

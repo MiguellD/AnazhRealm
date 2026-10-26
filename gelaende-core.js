@@ -1925,6 +1925,20 @@
         }
         return top;
     }
+    // DIE HÖHE MIT EDITS (die Ferne, gelaende.K2 (d)): die oberste Fläche über (x, z) einer Höhe h ohne Edits nach den Säulen
+    // der Liste (Setz-Reihenfolge; die Form `editForm`: Radius r, halbe Höhe r, oben und unten eben) — eine Füllung hebt sie auf
+    // ihre Krone (y + r), ein Graben, dessen Säule die Fläche öffnet, senkt sie auf seinen Grund (y − r) — ohne die Kehle der
+    // Vereinigung (`rundM`: wo zwei Füllungen sich treffen, trägt die Dichte die Krone bis 0,41 m höher). Leser: die Nässe der
+    // Ferne (`fernNass`, Stamm `_fernNass`) — der Fern-Ring trägt jeden Edit, der Kern rechnet ihn einmal für Faden und Stamm.
+    function editHoehe(h, x, z, edits) {
+        for (let i = 0; edits && i < edits.length; i++) {
+            const e = edits[i];
+            if (!e || !(e.r > 0) || (x - e.x) ** 2 + (z - e.z) ** 2 > e.r * e.r) continue;
+            if (e.mode === "fill") h = Math.max(h, e.y + e.r);
+            else if (e.y + e.r >= h && e.y - e.r < h) h = e.y - e.r;
+        }
+        return h;
+    }
     // DER PUNKT: die Dichte über `basis` an (x, y, z) mit den Edits `edits` (Setz-Reihenfolge; ohne Liste die Basis) —
     // max(1, |Basis|/tiefeM) · n: stetig, gleich der Basis, wo kein Edit sie ändert, um jede Säule ihr Abstand (die Wand-Proben
     // des Leibs lesen ihn).
@@ -5313,6 +5327,24 @@
         }
         return -Infinity;
     }
+    // DER STAU (gelaende.K2 (b)): der Spiegel des Stausees hinter einem Werk (Damm aus Füllungen, ein geerdeter Bau) an (x, z) —
+    // die Stau-Felder der Lage (`L.stau`, je Feld ein Spalten-Fenster `gx0`/`gz0`/`w`/`h` der Kante `step` mit dem gehaltenen
+    // Pegel `fillY`, NaN wo er nichts hebt), über dem Boden `boden` (−Infinity: jeder Pegel, Infinity: keiner); −Infinity ohne.
+    // Ein stehender Körper wie See und Meer: der Spiegel des Kerns trägt ihn (`atlasSpiegel`), jeder Leser liest ihn mit. Die
+    // Felder rechnet der Stamm (`_stauFelder`: der Überlauf aus Werk und Feld-Boden) und reicht sie jedem Faden.
+    function stauSpiegel(L, x, z, boden) {
+        const felder = L.stau;
+        let y = -Infinity;
+        for (let n = 0; felder && n < felder.length; n++) {
+            const f = felder[n];
+            const i = Math.floor(x / f.step) - f.gx0;
+            const k = Math.floor(z / f.step) - f.gz0;
+            if (i < 0 || k < 0 || i >= f.w || k >= f.h) continue;
+            const v = f.fillY[i + k * f.w];
+            if (v > y && !(boden >= v)) y = v;
+        }
+        return y;
+    }
     // der Spiegel des stehenden Wasser-Körpers (Meer, See) der Zelle i einer Region
     function koerperY(h, i) {
         return h.water.waterY[i];
@@ -5382,6 +5414,8 @@
             }
         }
         if (h && h.ready && !inRegion) level = typeof L.waterLevel === "number" ? L.waterLevel : 0;
+        const stau = stauSpiegel(L, x, z, terrainTopY);
+        if (stau > level) level = stau;
         if (aus) aus.koerper = level;
         const river = flussAm(L, x, z);
         if (river && river.surfaceY > level && (terrainTopY !== -Infinity || river.centerness > 0)) level = river.surfaceY;
@@ -5458,6 +5492,7 @@
         editForm: editForm,
         editReich: editReich,
         editKrone: editKrone,
+        editHoehe: editHoehe,
         mitEdits: mitEdits,
         editsImGitter: editsImGitter,
         bandOben: bandOben,

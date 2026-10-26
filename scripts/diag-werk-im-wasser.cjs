@@ -37,8 +37,8 @@
 //       Hülle, die Chunks am Rand entstehen neu, 600 Takte. Soll: 0 Invalidierungen, das Wasser bleibt (± 1 %).
 //   D — DER DAMM ÜBERSTEHT DEN RELOAD (eigener Browser-Kontext, frische Welt): der Damm des Studios
 //       quer über den Fluss bei der Furt, 1200 Takte, gespeichert, neu geladen, 1200 Takte, abgerissen. Soll: der Stausee bildet sich neu (± 10 % des Staus), der Abbau weckt ihn (≥ 1 Invalidierung).
-//       D misst das Stau-Feld gegen die Zellen: ≥ 20 Fluss-Spalten gehoben (sonst trägt der Ort keinen Stau), in ≥ 50 % davon
-//       hält der Automat Wasser über der Flut, keine Stau-Quelle ohne Raum über ihrem Boden. Der Damm steht in der Klamm S6 der
+//       D misst das Stau-Feld des Gesetzes (`state.waterStau`, gelaende.K2): ≥ 20 Spalten gehoben (sonst trägt der Ort keinen
+//       Stau); die nassen Punkte lesen den Spiegel des Kerns, der es trägt. Der Damm steht in der Klamm S6 der
 //       Prüfbühne (spec/pruefbuehne, Term `rinne`: 14 % Gefälle, 20 m Sohle), geboren wie im Spiel, und er fasst das Ufer: je
 //       Seite bis 4 m über dem Spiegel + 1 m.
 //   K — DER KERN (Node, vehicle-core fahrKraefte): ohne Tiefe byte-gleich (das Labor kennt kein Wasser, Labor = Welt an
@@ -74,9 +74,7 @@ const SCHWELLE = {
     aussteigTiefMin: 1.35, // m Wasser am Wagen, in dem der Spieler aussteigt (Karte K02: 1,5 m)
     aussteigBoden: 0.3, // m: so weit stehen die Füße nach dem Aussteigen an Land vom Boden (sonst steht er auf dem Wagen)
     stauMin: 100, // nasse Punkte (1-m-Gitter ±40 m), die der Damm aufstauen muss (Kopf K37: 180 im Tal 26/−120)
-    hubMin: 20, // Fluss-Spalten, die das Stau-Feld des Damms über ihre Flut hebt (sonst trägt der Ort keinen Stau)
-    hubFuell: 0.5, // Anteil dieser Spalten, in denen der Automat Wasser über der Flut hält
-    quelleOhneRaum: 0, // Stau-Quellen (src 2), deren Kappe nicht über ihrem Boden liegt
+    hubMin: 20, // Spalten, die das Stau-Feld des Damms über Boden und Gesetz hebt (sonst trägt der Ort keinen Stau)
     stauTreue: 0.1, // Anteil des Staus, um den der Stausee nach dem Reload vom Stausee davor abweichen darf
     randTreue: 0.01, // Anteil, um den das Wasser (nasse Punkte, gezeichnete Spalten) am Seerand sich mit dem Dorf ändern darf
 };
@@ -280,18 +278,9 @@ function urteil(b) {
     if (!D || D.fehler) v.push(`D: ${D ? D.fehler : "die Damm-Probe lief nicht"}`);
     else if (!(D.hub >= S.hubMin))
         v.push(
-            `D LEER: das Stau-Feld des Damms #${D.id} (${m(D.x)}/${m(D.z)}) hebt ${D.hub} Fluss-Spalten über ihre Flut (Soll ≥ ${S.hubMin}) — der Ort trägt keinen Stau`
+            `D LEER: das Stau-Feld des Damms #${D.id} (${m(D.x)}/${m(D.z)}) hebt ${D.hub} Spalten (Soll ≥ ${S.hubMin}) — der Ort trägt keinen Stau`
         );
     else {
-        if (!(D.hubNass >= S.hubFuell * D.hub))
-            v.push(
-                `D: das Stau-Feld des Damms #${D.id} hebt ${D.hub} Fluss-Spalten über ihre Flut, der Automat hält Wasser in ${D.hubNass} (Soll ≥ ${Math.ceil(S.hubFuell * D.hub)})`
-            );
-        const ohneRaum = Math.max(D.quelleOhneRaum || 0, D.quelleOhneRaum2 || 0);
-        if (!(ohneRaum <= S.quelleOhneRaum))
-            v.push(
-                `D: ${D.quelleOhneRaum} Stau-Quellen am Damm #${D.id} (nach dem Reload ${D.quelleOhneRaum2}) tragen ihre Kappe nicht über ihrem Boden — eine Spalte, die kein Wasser halten kann, ist Quelle (_ensureWaterCALevel)`
-            );
         const stau = D.w1 - D.w0;
         if (!(stau >= S.stauMin))
             v.push(
@@ -1783,51 +1772,10 @@ async function dammProbe(A) {
         for (let i = -A.R; i <= A.R; i++) for (let j = -A.R; j <= A.R; j++) if (r._nassAt(X + i, Z + j)) n++;
         return n;
     };
-    // Das Stau-Feld des Damms gegen die Zellen (Fenster des Felds): `hub` = Fluss-Spalten, die das Feld über ihre Flut hebt
-    // (der Ort trägt einen Stau), `hubNass` = davon die, in denen der Automat Wasser über der Flut hält, `quelleOhneRaum` =
-    // Stau-Quellen (src 2), deren Kappe nicht über ihrem Boden liegt (eine Quelle, die kein Wasser halten kann).
-    const feld = (X, Z) => {
-        const cl = r
-            ._stauWorkClusters()
-            .find((c) => c.minX < X + 2 && c.maxX > X - 2 && c.minZ < Z + 2 && c.maxZ > Z - 2);
-        const f = cl ? r._ensureStauField(cl) : null;
-        const out = { hub: 0, hubNass: 0, quelleOhneRaum: 0 };
-        if (!f) return out;
-        const cfg = r._voxelChunkConfig(0);
-        const oy = (st.terrainBaseHeight || 0) - cfg.floorDrop;
-        const { dim, dimY, step } = cfg;
-        const dimSq = dim * dim;
-        const ZS = r.constructor.CELL_STATE;
-        for (let kz = 0; kz < f.h; kz++)
-            for (let ix = 0; ix < f.w; ix++) {
-                const gx = f.gx0 + ix;
-                const gz = f.gz0 + kz;
-                const ccx = Math.floor(gx / dim);
-                const ccz = Math.floor(gz / dim);
-                const key = `${ccx},${ccz}`;
-                const ent = st.voxelChunks.get(key);
-                if (!ent || !ent.waterCells) continue;
-                const c = gx - ccx * dim + (gz - ccz * dim) * dim;
-                let gj = -1;
-                let flutJ = -1;
-                for (let j = dimY - 1; j >= 0 && (gj < 0 || flutJ < 0); j--) {
-                    const z = ent.waterCells[c + j * dimSq];
-                    if (z === ZS.SOLID && gj < 0) gj = j;
-                    else if (z === ZS.WATER && flutJ < 0) flutJ = j;
-                }
-                const src = st.waterSourceCols && st.waterSourceCols.get(key);
-                const cap = st.waterCapJ && st.waterCapJ.get(key);
-                if (src && cap && src[c] === 2 && cap[c] <= gj) out.quelleOhneRaum++;
-                const stauJ = Math.floor((f.fillY[ix + kz * f.w] - oy) / step) - 1;
-                if (flutJ < 0 || stauJ <= flutJ) continue;
-                out.hub++;
-                const lv = st.waterLevelCells && st.waterLevelCells.get(key);
-                let s = 0;
-                if (lv) for (let j = flutJ + 1; j <= stauJ; j++) s += lv[c + j * dimSq];
-                if (s > 0.5) out.hubNass++;
-            }
-        return out;
-    };
+    // `hub`: die Spalten der Stau-Felder des Gesetzes (`_stauFelder`), deren Fenster den Damm trägt, die der Pegel hebt
+    const hub = (X, Z) =>
+        (r._gelaende().stau || []).filter((f) => Math.abs(X / f.step - f.gx0 - f.w / 2) < f.w / 2 && Math.abs(Z / f.step - f.gz0 - f.h / 2) < f.h / 2)
+            .reduce((n, f) => n + f.fillY.filter((y) => y === y).length, 0);
     if (A.phase === "bau") {
         const [X, Z] = A.ort;
         await stroemen(X, Z);
@@ -1877,7 +1825,6 @@ async function dammProbe(A) {
         if (!e) return { fehler: "der Damm wurde nicht gebaut" };
         await takte(A.takte);
         const w1 = nass(ort.x, ort.z);
-        const fb = feld(ort.x, ort.z);
         st.playerMesh.position.set(ort.x, r._voxelSurfaceY(ort.x, ort.z) + 1.8, ort.z);
         r.saveState();
         return {
@@ -1889,9 +1836,7 @@ async function dammProbe(A) {
             w0,
             w1,
             takte: A.takte,
-            hub: fb.hub,
-            hubNass: fb.hubNass,
-            quelleOhneRaum: fb.quelleOhneRaum,
+            hub: hub(ort.x, ort.z),
         };
     }
     // "reload": dieselbe Welt, der Damm aus dem Save
@@ -1900,7 +1845,6 @@ async function dammProbe(A) {
     await stroemen(A.x, A.z);
     await takte(A.takte);
     const w2 = nass(A.x, A.z);
-    const quelleOhneRaum2 = feld(A.x, A.z).quelleOhneRaum;
     const inv = { n: 0 };
     const invAlt = r._invalidateWaterCapsAround;
     r._invalidateWaterCapsAround = function () {
@@ -1912,7 +1856,7 @@ async function dammProbe(A) {
     } finally {
         r._invalidateWaterCapsAround = invAlt;
     }
-    return { w2, abriss: inv.n, quelleOhneRaum2 };
+    return { w2, abriss: inv.n };
 }
 
 function selbsttest() {
@@ -1960,9 +1904,6 @@ function selbsttest() {
             abriss: 1,
             takte: 1200,
             hub: 51,
-            hubNass: 48,
-            quelleOhneRaum: 0,
-            quelleOhneRaum2: 0,
         },
         setzen: {
             faelle: [
@@ -2130,18 +2071,8 @@ function selbsttest() {
         [
             "D Ort ohne Stau (die Furt −937/−1064 am Kopf a0d6a81b: die 1 715 Punkte der Basis waren die Deck-Zeile)",
             // BÜHNE: Befund des Selbsttests (die Furt der alten Welt), kein gesetzter Ort
-            (b) => Object.assign(b.damm, { x: -937, z: -1064, hub: 0, hubNass: 0 }),
-            /D LEER: das Stau-Feld des Damms #425 \(-937\.00\/-1064\.00\) hebt 0 Fluss-Spalten .*der Ort trägt keinen Stau/,
-        ],
-        [
-            "D Automat füllt das Feld nicht",
-            (b) => (b.damm.hubNass = 12),
-            /D: das Stau-Feld des Damms #425 hebt 51 Fluss-Spalten über ihre Flut, der Automat hält Wasser in 12 \(Soll ≥ 26\)/,
-        ],
-        [
-            "D Quelle ohne Raum (der Befund am Kopf a0d6a81b)",
-            (b) => Object.assign(b.damm, { quelleOhneRaum: 21, quelleOhneRaum2: 21 }),
-            /D: 21 Stau-Quellen am Damm #425 \(nach dem Reload 21\) tragen ihre Kappe nicht über ihrem Boden/,
+            (b) => Object.assign(b.damm, { x: -937, z: -1064, hub: 0 }),
+            /D LEER: das Stau-Feld des Damms #425 \(-937\.00\/-1064\.00\) hebt 0 Spalten .*der Ort trägt keinen Stau/,
         ],
         [
             "R Fehl-Wecker am Seerand (der Befund am Kopf f5b331ae)",
