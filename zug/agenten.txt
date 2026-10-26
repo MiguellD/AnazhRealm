@@ -55,3 +55,5 @@
 2026-10-26T13:15 k8-hang champion wf838k/3 103A grün evolveNexus ruht in Mess-Welten (_dorfTaktLebt), K8 4/4 rot → 6/6 grün, Nexus-Linse 2a74a296 · FEUER
 2026-10-26T13:15 satz-pass champion wf838k/3 100A grün legeDreiecke über jede Zelle des Satzes, Linse SONDE; siedlung.K2#1 Radeon 3/3 21a60241 · PUNKTE
 2026-10-26T13:15 bauen-heil champion wf838k/3 78A WIP vehicle-drive B-c + asset-contract s1/s11 geheilt, regler-wirkt leiter:L1 0,571 neu rot f8536c37 · PUNKTE
+2026-10-26T13:50 bauen-quote champion 143k 61A grün Fase-Regler Podestleiter ab 0,002: leiter L1/L0 0,571 → 0,167, 5709/5712 byte-gleich 21f084e4 · PUNKTE
+2026-10-26T14:05 bewohner-rand champion 230k 89A grün Wege = Wenden des Plans (b.tagAb), rot 0/6, Start-Dorf 6–8 gleich je Lauf b3a10c93 · FEUER
