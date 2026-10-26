@@ -207,16 +207,6 @@
    "abdruck": "87deaeca8238",
    "port": 7754
   },
-  "profiband.K4#1": {
-   "gruen": false,
-   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75)",
-   "exit": 75,
-   "minuten": 45.25,
-   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75)",
-   "zeit": "2026-10-24T01:28:21.169Z",
-   "abdruck": "3b1e54b5711e",
-   "port": 7763
-  },
   "klang.K2#1": {
    "gruen": true,
    "zahl": "r 0.86 bei Lag 0 (n 119), Spitze 0.88 bei -0.5 s, CV Bild 0.22 / Ohr 0.54, 119.2 fps, Klang an",
@@ -270,6 +260,19 @@
    "zeit": "2026-10-24T04:15:23.521Z",
    "abdruck": "1f4b3b5822c2",
    "port": 7770
+  }
+ },
+ "ungemessen": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75) — ungemessen",
+   "exit": 75,
+   "minuten": 45.25,
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75) — ungemessen",
+   "zeit": "2026-10-24T01:28:21.169Z",
+   "abdruck": "3b1e54b5711e",
+   "port": 7763,
+   "ungemessen": true
   }
  }
 }

@@ -68,16 +68,6 @@
    "abdruck": "a3fab07da97f",
    "port": 7722
   },
-  "ferne.K1#1": {
-   "gruen": false,
-   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75)",
-   "exit": 75,
-   "minuten": 45.3,
-   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75)",
-   "zeit": "2026-10-23T23:19:42.536Z",
-   "abdruck": "bbee11502f53",
-   "port": 7723
-  },
   "ferne.K2#1": {
    "gruen": true,
    "zahl": "Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3",
@@ -86,26 +76,41 @@
    "zeit": "2026-10-24T00:05:00.377Z",
    "abdruck": "a2c61a28b0e5",
    "port": 7724
+  }
+ },
+ "ungemessen": {
+  "ferne.K1#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75) — ungemessen",
+   "exit": 75,
+   "minuten": 45.3,
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75) — ungemessen",
+   "zeit": "2026-10-23T23:19:42.536Z",
+   "abdruck": "bbee11502f53",
+   "port": 7723,
+   "ungemessen": true
   },
   "material.K2#1": {
    "gruen": false,
-   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75)",
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75) — ungemessen",
    "exit": 75,
    "minuten": 45.37,
-   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75)",
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75) — ungemessen",
    "zeit": "2026-10-24T00:45:55.553Z",
    "abdruck": "db1cd34d4849",
-   "port": 7725
+   "port": 7725,
+   "ungemessen": true
   },
   "material.K3#1": {
    "gruen": false,
-   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75)",
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75) — ungemessen",
    "exit": 75,
    "minuten": 45.18,
-   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75)",
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75) — ungemessen",
    "zeit": "2026-10-24T01:31:17.891Z",
    "abdruck": "c1c161cacf47",
-   "port": 7726
+   "port": 7726,
+   "ungemessen": true
   }
  }
 }

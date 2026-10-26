@@ -9,7 +9,7 @@
 # lesen ihn beide Runner-Hooks (job-start.ps1 der OMEN, job-start.sh der Radeon), und sie nehmen ihn nur, wenn er fehlt: der
 # echt-Job hält immer ALLE Plätze. VORFAHRT: solange ein CI-Job läuft (Runner.Worker) oder wartet (letzte Zeile von hook.log
 # „wartet auf Schloss“) und in der Nachtruhe 03:25–04:15 nimmt hier niemand etwas, auch keinen freien Platz — die Plätze leeren
-# sich, und der Hook bekommt das Schloss.
+# sich, und der Hook bekommt das Schloss. Die Nachtruhe zählt nie zur Warte-Frist von gpu-lauf.sh (ihre 50 min > 45 min Frist).
 # ZWEI ARTEN (26.10., Karte gpu-bahnen: die Prüfung darf nie länger dauern als das Erstellen; ein Radeon-Takt mit 45 Stationen
 # lief 151–174 min, jede Station einzeln unter dem EINEN Schloss):
 #   ganz   `ganz_versuch <name>` / `schloss_nehmen <name>`: ein Zeit-Lauf (Urteil in ms) nimmt das GANZE Schloss, wie bisher.
@@ -60,18 +60,30 @@ gs_tor_auf() {
 }
 gs_tor_zu() { rmdir "$GPU_SCHLOSS.tor" 2>/dev/null; return 0; }
 
-# der Vorrang eines wartenden ganzen Laufs: solange er lebt, tritt kein Bild-Lauf bei
-gs_vorrang() { mkdir -p "$GPU_SCHLOSS.vorrang" 2>/dev/null && printf '%s\n' "$1" >"$GPU_SCHLOSS.vorrang/$GPU_ICH_PID"; }
+# der Vorrang eines wartenden ganzen Laufs: solange er hält, tritt kein Bild-Lauf bei. Der Eintrag trägt Name und pid wie
+# besitzer.txt und fällt nach DERSELBEN Verwaist-Regel (gs_verwaist_grund: älter als der Systemstart, Halter tot, ohne pid nach
+# 60 min) — 26.10., Prüfung gpu-bahnen: ein Eintrag aus einem harten Tod, dessen pid nach dem Neustart ein fremder Prozess trug,
+# sperrte jeden Bild-Lauf, und gpu-lauf.sh nannte „?“
+gs_vorrang() { mkdir -p "$GPU_SCHLOSS.vorrang" 2>/dev/null && gs_schreib "$GPU_SCHLOSS.vorrang/$GPU_ICH_PID" "$1"; }
 gs_vorrang_weg() { rm -f "$GPU_SCHLOSS.vorrang/$GPU_ICH_PID"; return 0; }
-gs_vorrang_wartet() {
-    local f
+# der haltende Vorrang beim Namen (leer: keiner); löst verwaiste Einträge
+gs_vorrang_wer() {
+    local f g wer
     for f in "$GPU_SCHLOSS.vorrang"/*; do
         [ -f "$f" ] && [ "${f##*/}" != "$GPU_ICH_PID" ] || continue
-        pid_lebt "${f##*/}" && return 0
+        wer=$(head -n 1 "$f" 2>/dev/null | tr -d '\r')
+        g=$(gs_verwaist_grund "$f" "$f")
+        [ -z "$g" ] && [ -z "$(gs_pid_von "$f")" ] && ! pid_lebt "${f##*/}" && g="Halter pid=${f##*/} lebt nicht"
+        if [ -z "$g" ]; then
+            echo "Vorrang: '$wer' pid=${f##*/} wartet auf alle Plätze"
+            return 0
+        fi
         rm -f "$f"
+        echo "$(date +%T) verwaister Vorrang '$wer' geloest - $g" >&2
     done
     return 1
 }
+gs_vorrang_wartet() { [ -n "$(gs_vorrang_wer)" ]; }
 
 # älter als der Systemstart (24.10.): die pid kann nach dem Neustart neu vergeben sein und „lebte“ sonst
 schloss_vor_neustart() {

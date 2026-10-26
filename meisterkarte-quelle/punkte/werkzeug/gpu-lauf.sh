@@ -6,8 +6,9 @@
 # der CI-Ruhe; GPU_LAUF_ART=bild nimmt EINEN Platz von GPU_LAUF_PLAETZE (Vorgabe 1: das Ein-Platz-Schloss von vorher) — Bild-Urteile
 # vertragen parallele Läufe. Die Punkte-Maschine setzt beides je Station (`zeit`) und Bahn-Zahl (`run --bahnen N`).
 # Deckel je Befehl GPU_LAUF_MAX_S (Vorgabe 900 s): am Deckel fällt der GANZE Prozessbaum (taskkill -F -T; 23.10.: Git-Bash-`timeout`
-# tötete nur das direkte Kind, Chrome zeichnete weiter), Exit 124. Warten höchstens GPU_LAUF_WARTE_S (Vorgabe 2700 s), dann Exit 75
-# „SCHLOSS BLOCKIERT“. Der Herzschlag (herz_schlag, alle 10 s) frischt besitzer.txt und hält am Platz-Schloss den Vertreter lebend;
+# tötete nur das direkte Kind, Chrome zeichnete weiter), Exit 124. Warten höchstens GPU_LAUF_WARTE_S (Vorgabe 2700 s; die Nachtruhe
+# zählt nicht mit), dann Exit 75 „SCHLOSS BLOCKIERT von <wer>“ — für die Punkte-Maschine KEINE Messung: die Station bleibt
+# ungemessen, nie ROT. Der Herzschlag (herz_schlag, alle 10 s) frischt besitzer.txt und hält am Platz-Schloss den Vertreter lebend;
 # die Wache hält keine Ausgabe offen (sonst wartete jeder Leser der Ausgabe auf ihr `sleep`: jede GTX-Station dauerte k × 5 min).
 # daneben, auch wenn der Pfad als Windows-Pfad kommt (C:\…\gpu-lauf.sh, path.join der Punkte-Maschine)
 case "${BASH_SOURCE[0]}" in */* | *\\*) HIER=${BASH_SOURCE[0]%[/\\]*} ;; *) HIER=. ;; esac
@@ -26,6 +27,8 @@ MAX=${GPU_LAUF_MAX_S:-900}
 WARTE=${GPU_LAUF_WARTE_S:-2700}
 TAKT=${GPU_LAUF_TAKT_S:-5}
 t0=$(date +%s)
+vorher=$t0
+gewartet=0
 letzte=0
 nimm() { if [ "$ART" = zeit ]; then ganz_versuch "$NAME"; else platz_versuch "$NAME" "$PLAETZE"; fi; }
 [ "$ART" = zeit ] && gs_vorrang "$NAME"
@@ -33,10 +36,15 @@ trap 'gs_vorrang_weg' EXIT
 until nimm; do
     schloss_verwaist
     jetzt=$(date +%s)
+    # DIE WARTE-UHR zählt die Nachtruhe nie (26.10., Prüfung gpu-bahnen): sie sperrt jedes Nehmen und ist mit 50 min länger als
+    # die Frist — wer um 03:26 zu warten begann, endete um 04:11 mit Exit 75, mitten in der Nacht, ohne dass ein Lauf die Karte hielt
+    gs_nacht || gewartet=$((gewartet + jetzt - vorher))
+    vorher=$jetzt
     wer=$(gs_vorfahrt)
+    [ -z "$wer" ] && [ "$ART" = bild ] && wer=$(gs_vorrang_wer)
     [ -z "$wer" ] && wer=$(schloss_erster)
-    if [ $((jetzt - t0)) -gt "$WARTE" ]; then
-        echo "SCHLOSS BLOCKIERT von ${wer:-?} nach $((jetzt - t0)) s"
+    if [ "$gewartet" -gt "$WARTE" ]; then
+        echo "SCHLOSS BLOCKIERT von ${wer:-?} nach $gewartet s Warten (ohne Nachtruhe; Wanduhr $((jetzt - t0)) s)"
         exit 75
     fi
     if [ $((jetzt - letzte)) -ge 60 ]; then

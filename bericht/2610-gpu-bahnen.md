@@ -91,9 +91,12 @@
 
 ## Einbau (Koordinator)
 
-- `werkzeug/gpu-lauf.sh` und `werkzeug/gpu-schloss.sh` gehören zusammen in denselben Ordner. `gpu-lauf.sh` bindet die Datei daneben ein, auch über einen Windows-Pfad.
-  - Laptop: nach `artifacts/profiband/werkzeug/`.
+- `punkte.cjs run` und `punkte.cjs selbsttest` fahren DIESELBE Datei: `meisterkarte-quelle/punkte/werkzeug/gpu-lauf.sh` neben der Maschine (Heilung 26.10.). Eine andere nur ausdrücklich per `PUNKTE_GPU_LAUF`, dann prüft der Selbsttest sie, und eine Fassung ohne Plätze fällt dort ROT. Für die Punkte-Maschine braucht es keine Kopie mehr.
+- Für Macher-Läufe und die OMEN-Serien gehören `gpu-lauf.sh` und `gpu-schloss.sh` zusammen in denselben Ordner. `gpu-lauf.sh` bindet die Datei daneben ein, auch über einen Windows-Pfad.
+  - Laptop: nach `artifacts/profiband/werkzeug/`. Die alte Fassung dort nimmt denselben Schloss-Ordner und bleibt verträglich.
   - OMEN: nach `p3/`. Dort binden `messplatz.sh` und `serie.sh` `p3/gpu-schloss.sh` weiter ein.
+- Ein blockiertes Schloss ist keine Messung. Ein Exit 75 oder ein gpu-lauf.sh, das beim Warten 600 s schweigt, landet als `ungemessen` mit Grund in der Mess-Datei, nie als ROT in `je`, und `run --offen` misst die Station neu. Die Warte-Frist zählt die Nachtruhe nicht mit.
+- Der Läufer `zug.cjs` braucht keine Änderung. Start- und Stationszeilen haben wieder sein Format, die Bahn steht vor „· Exit“, und ein ungemessener Lauf heißt `OFFEN`.
 - Der erste Radeon-Takt mit Bahnen ist `punkte.cjs run --sha <kopf> --geraet radeon --offen`. Die Vorgabe ist 3 Bahnen, `--bahnen 1` ist der alte Weg. Seine Wanduhr ist der Richter dieser Tabelle.
 
 ## Ehrlich offen
