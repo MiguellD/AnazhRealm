@@ -1,17 +1,14 @@
 {
  "modell": "qwen3:4b-instruct",
  "anbieter": "127.0.0.1:11434",
- "datum": "2026-10-20",
+ "datum": "2026-10-26",
  "quote": {
-  "gueltig": 0.825,
-  "absicht": 0.75,
-  "p95": 10040
+  "gueltig": 0.95,
+  "absicht": 0.9,
+  "p95": 14999
  },
  "mitschnitt": {
-  "lass es regnen": [
-   "weather",
-   "rainy"
-  ],
+  "lass es regnen": null,
   "ich will ein richtiges gewitter": [
    "weather",
    "stormy"
@@ -51,7 +48,9 @@
     "at_player_forward",
     12
    ],
-   3
+   3,
+   null,
+   {}
   ],
   "ein paar birken vor mir wären schön": [
    "spawn_studio",
@@ -60,7 +59,9 @@
     "at_player_forward",
     12
    ],
-   3
+   3,
+   null,
+   {}
   ],
   "setz eine einzelne tanne neben mich": [
    "spawn_studio",
@@ -69,7 +70,8 @@
     "at_player_forward",
     12
    ],
-   1
+   1,
+   null
   ],
   "ich wünsche mir einen kleinen buchenwald": [
    "spawn_studio",
@@ -78,7 +80,9 @@
     "at_player_forward",
     12
    ],
-   3
+   3,
+   null,
+   {}
   ],
   "eine weide am wegesrand bitte": [
    "spawn_studio",
@@ -87,7 +91,9 @@
     "at_player_forward",
     12
    ],
-   1
+   1,
+   null,
+   {}
   ],
   "leg einen großen findling vor mich": [
    "spawn_studio",
@@ -96,93 +102,135 @@
     "at_player_forward",
     12
    ],
-   1
+   1,
+   null,
+   {}
   ],
   "bau mir ein haus": [
-   "spawn_studio",
-   "haus",
-   [
-    "at_player",
-    10
-   ],
-   1
-  ],
-  "ich will ein fachwerkhaus direkt vor mir": [
    "spawn_studio",
    "haus",
    [
     "at_player_forward",
     14
    ],
-   1
+   1,
+   null,
+   {
+    "storeys": 3,
+    "turm": 1,
+    "veranda": 1,
+    "vorkragung": 1,
+    "zinnen": 1
+   }
+  ],
+  "ich will ein fachwerkhaus direkt vor mir": [
+   "spawn_studio",
+   "fachwerkhaus",
+   [
+    "at_player_forward",
+    14
+   ],
+   1,
+   null,
+   {
+    "storeys": 2,
+    "turm": 0,
+    "veranda": 0,
+    "vorkragung": 0,
+    "zinnen": 0
+   }
   ],
   "eine kleine holzhütte wäre gemütlich": [
    "spawn_studio",
-   "haus",
    "holzhuette",
    [
-    "at_player_forward",
-    10
+    "at_player"
    ],
-   1
+   1,
+   null,
+   {
+    "storeys": 1,
+    "turm": 0,
+    "veranda": 0,
+    "vorkragung": 0,
+    "zinnen": 0
+   }
   ],
   "stell ein drachentor auf": [
    "spawn_studio",
    "tor",
    [
-    "at_player",
-    10
+    "at_player"
    ],
-   1
+   1,
+   null,
+   {
+    "wBraid": 1,
+    "wMono": 0,
+    "wave": 1,
+    "weather": 1.5
+   }
   ],
   "ich brauche einen wagen": [
-   "spawn_creature",
+   "spawn_studio",
    "wagen",
    [
-    "at_player",
-    10
+    "at_player"
    ],
-   1
+   1,
+   null,
+   {
+    "spur": 1.5,
+    "ueberhangV": 0.8
+   }
   ],
   "gib mir ein schnelles auto": [
-   "spawn_creature",
-   "wagen",
+   "spawn_studio",
+   "fahrzeug",
    [
-    "at_player_forward",
-    10
+    "at_player"
    ],
-   1
+   1,
+   null,
+   {
+    "radstand": 2.8,
+    "spur": 1.6,
+    "ueberhangV": 0.85
+   }
   ],
   "mach mir eine feuerstelle zum wärmen": [
    "spawn_studio",
    "feuerstelle",
    [
-    "at_player",
-    5
+    "at_player"
    ],
-   1
+   1,
+   null,
+   {
+    "fuelle": 0.7,
+    "verwitterung": 0.2
+   }
   ],
   "stell einen brunnen auf": [
    "spawn_studio",
    "brunnen",
    [
-    "near_player",
-    10
+    "at_player"
    ],
-   1
+   1,
+   null,
+   {
+    "fuelle": 0.7,
+    "verwitterung": 0.2
+   }
   ],
-  "ein paar laternen für die nacht": [
-   "spawn_studio",
-   "wandlaterne",
+  "ein paar laternen für die nacht": null,
+  "erschaffe fünf glückliche wesen": [
+   "spawn_creature",
    [
     "near_player",
     10
    ],
-   3
-  ],
-  "erschaffe fünf glückliche wesen": [
-   "spawn_creature",
-   "near_player",
    5,
    "happy"
   ],
@@ -197,12 +245,17 @@
   ],
   "bau einen tempel": [
    "spawn_studio",
-   "temple",
+   "tor",
    [
-    "at_player_forward",
-    15
+    "at_player"
    ],
-   1
+   1,
+   null,
+   {
+    "wMono": 1,
+    "wave": 1,
+    "weather": 1.5
+   }
   ],
   "die tiere sollen traurig sein": [
    "creatures_emotion",
@@ -210,18 +263,30 @@
   ],
   "mach mich schneller": [
    "player_speed",
-   1.8
+   2
   ],
   "ich will höher springen": [
-   "set_mode",
-   "jump_boost",
-   "high"
+   "player_jump_power",
+   4.1
   ],
   "verringere die schwerkraft": [
    "gravity",
-   0.1
+   0
   ],
-  "immer wenn es regnet, sollen die tiere fröhlich werden": false,
+  "immer wenn es regnet, sollen die tiere fröhlich werden": [
+   "rule",
+   [
+    "weather_is",
+    "rainy"
+   ],
+   [
+    "creatures_emotion",
+    "happy"
+   ],
+   {
+    "everySec": 3
+   }
+  ],
   "wie spät ist es gerade?": null,
   "erzähl mir, wer du bist": null,
   "danke, das ist wunderschön": null,
