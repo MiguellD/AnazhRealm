@@ -171,3 +171,4 @@
 2026-10-26 07:42:48 z36-abab w-ego VERLÄNGERN 13.7 · 1/3 (2+2)
 2026-10-26 07:53:46 z36-abab d-ego nicht-langsamer 10.9 · 2/3 (2+2)
 2026-10-26 08:04:19 z36-abab stadt nicht-langsamer 10.5 · 3/3 (2+2)
+2026-10-26 08:18:06 z36-abab w-ego(4+4) LANGSAMER 13.7 · verlängert (4+4)
