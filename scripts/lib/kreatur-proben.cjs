@@ -3113,9 +3113,9 @@ function urteil(name, z) {
         }
     }
     if (name === "jagd") {
-        soll(z.jagdFrames >= 60, `nur ${z.jagdFrames} Jagd-Frames (Probe vakuös)`);
-        // der Jäger hetzt im Sprint der Gestalt (der Schritt-Weg holt ein ruhiges Kitz auch ein, er hetzt nie)
-        soll(z.hetzFrames >= 60, `die Jagd hetzt nie: ${z.hetzFrames} Hetz-Frames in ${z.jagdFrames} Jagd-Frames`);
+        // der Jäger hetzt im Sprint der Gestalt (der Schritt-Weg holt ein ruhiges Kitz auch ein, er hetzt nie); ohne Hetze
+        // ist die Probe zudem vakuös
+        soll(z.hetzFrames >= 60, `die Jagd hetzt nie: ${z.hetzFrames} von ${z.jagdFrames} Jagd-Frames`);
         soll(
             z.achsAnteil !== null && z.achsAnteil < 0.1,
             `Jagd auf den Achsen (0,25°, der Lauf neben der Peilung des Ziels) ${(z.achsAnteil * 100).toFixed(1)} %`
@@ -3397,7 +3397,7 @@ const TAETER = {
     jagd: [
         ["jagd", /Achsen/],
         ["jagd-ziel", /Achsen/],
-        ["jagd-schritt", /die Jagd hetzt nie: 0 Hetz-Frames/],
+        ["jagd-schritt", /die Jagd hetzt nie: 0 von/],
         ["riss", /Riss ohne Jäger im Nah-Kreis: [1-9]/],
         ["riss-verloren", /im Übergang verloren: [1-9]/],
     ],
