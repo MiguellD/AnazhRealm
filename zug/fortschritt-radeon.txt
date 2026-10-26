@@ -372,3 +372,4 @@
 2026-10-26 15:19:59 takt6-radeon fahrzeug.K4#1 GRÜN 1.8 · 25/45
 2026-10-26 15:20:03 takt6-radeon fahrzeug.K4#2 GRÜN 1.8 · 26/45
 2026-10-26 15:21:24 takt6-radeon siedlung.K2#1 GRÜN 1.4 · 27/45
+2026-10-26 15:22:54 takt6-radeon siedlung.K2#2 ROT 1.5 · 28/45
