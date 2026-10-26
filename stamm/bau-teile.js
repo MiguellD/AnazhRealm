@@ -213,6 +213,7 @@ class AnazhRealm_bau_teile {
         if (this._isBroadcasting(bp, t)) out.broadcasting = true;
         if (this._isBalancing(bp, t)) out.balancing = true;
         if (this._isLifting(bp, t)) out.lifting = true;
+        if (this._isSittable(bp)) out.sitzbar = true;
         return out;
     }
 
@@ -438,6 +439,39 @@ class AnazhRealm_bau_teile {
         const tags = t || this.computeCompoundTags(bp) || {};
         if ((tags.magieleitung || 0) < T.magieMin) return false;
         return (tags.dichte || 0) <= T.dichteMax;
+    }
+
+    // sitzbar (das Sitz-Gesetz, bauen.K5), keine Form-Whitelist: der Sitz des Bauplans (`_attachPointFor` „sitz" — derselbe,
+    // auf dem der Leib sitzt, `_sitzOrt`) liegt auf Sitzhöhe über dem Fuß des Werks, ist tief genug für ein Gesäß und steht auf
+    // ≥ 2 Stützen vom Boden bis unter ihn; das ganze Werk bleibt möbelhoch (ein Haus mit Sockel, ein Podest sind kein Sitz).
+    // Die Bank des Zimmermanns wie ein Hocker aus Grundformen: wer an ihm E drückt, sitzt (`toggleMountAtPlayer`).
+    _isSittable(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.sitzbar;
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < T.minParts) return false;
+        const sitz = this._attachPointFor(bp, "sitz");
+        if (sitz.part === null) return false;
+        const spanne = (p) => {
+            const y = (p.position && p.position.y) || 0;
+            const h = Math.abs((p.size && p.size.y) || 0.3) / 2;
+            return [y - h, y + h];
+        };
+        let fuss = Infinity;
+        let kopf = -Infinity;
+        for (const p of bp.parts) {
+            const [y0, y1] = spanne(p);
+            fuss = Math.min(fuss, y0);
+            kopf = Math.max(kopf, y1);
+        }
+        const hoehe = sitz.point.y - fuss;
+        const s = bp.parts[sitz.part].size || {};
+        if (hoehe < T.hoeheMin || hoehe > T.hoeheMax || kopf - fuss > T.moebelMax) return false;
+        if (Math.min(Math.abs(s.x || 0), Math.abs(s.z || 0)) < T.tiefeMin) return false;
+        let stuetzen = 0;
+        for (let i = 0; i < bp.parts.length; i++) {
+            const [y0, y1] = spanne(bp.parts[i]);
+            if (i !== sitz.part && y0 <= fuss + T.bodenTol && y1 >= sitz.point.y - T.stuetzSpalt) stuetzen++;
+        }
+        return stuetzen >= T.minStuetzen;
     }
 
     // ----- Welle 11 ext. — intrinsische Substanz-Signale für die Rolle -----
@@ -2903,6 +2937,18 @@ AnazhRealm.AFFORDANCE_THRESHOLDS = Object.freeze({
         minParts: 3,
         magieMin: 1.5, // stark magie-geladen — es trägt die Hebe-Energie
         dichteMax: 1.0, // genuin leicht — Magie hebt kein Gewicht
+    }),
+    // bauen.K5 — sitzbar: die Sitzfläche 0,38–0,52 m über dem Fuß (die Norm des Sitzens, DIN EN 581-2: 0,40–0,48 m), ≥ 0,3 m
+    // tief, auf ≥ 2 Stützen, die vom Boden bis ≤ 0,1 m unter sie reichen; das Werk ≤ 1,2 m hoch (ein Möbel).
+    sitzbar: Object.freeze({
+        minParts: 3,
+        hoeheMin: 0.38,
+        hoeheMax: 0.52,
+        tiefeMin: 0.3,
+        moebelMax: 1.2,
+        minStuetzen: 2,
+        bodenTol: 0.05,
+        stuetzSpalt: 0.1,
     }),
 });
 

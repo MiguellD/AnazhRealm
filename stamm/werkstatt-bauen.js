@@ -3622,6 +3622,7 @@ AnazhRealm.AFFORDANCE_LABELS = Object.freeze({
     broadcasting: "sendend",
     balancing: "gründend",
     lifting: "hebend",
+    sitzbar: "sitzbar",
 });
 
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({

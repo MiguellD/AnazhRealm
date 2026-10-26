@@ -2392,7 +2392,7 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
     swapHands: "Hand tauschen (Off-Hand)",
     chat: "Gespräch öffnen (sprich mit der Welt)",
     // die Aktionen, die die Tastatur fest trägt und das Gamepad frei bindet (PAD_BELEGUNG, leib.K5)
-    einsteigen: "Aufsitzen/Absitzen · Portal betreten",
+    einsteigen: "Aufsitzen/Absitzen · Sitzen · Portal betreten",
     handbremse: "Handbremse (Fahrt)",
     sprint: "Sprinten (unter Wasser: tauchen)",
     rutschen: "Rutschen",

@@ -523,8 +523,10 @@ class AnazhRealm_koerper_fahrt {
             // die mittlere Dichte (kg/m³) reist ins Profil: die Wasserlinie (`_fahrzeugGestalt`, Archimedes) liest sie
             dichte: rhoMittel,
             stoffStand: stand,
-            topSpeedMul:
-                1 + Math.min(HE.radCap, radCount * HE.radMul) + (radCount === 0 && beinCount >= 2 ? HE.beinBonus : 0),
+            // DER SITZ FÄHRT NIE (bauen.K5): ein Werk, das nicht fahrbar ist (die Bank, `sitzbar`), trägt den Sitzenden ohne Tempo
+            topSpeedMul: !(entry.affordances && entry.affordances.moveable)
+                ? 0
+                : 1 + Math.min(HE.radCap, radCount * HE.radMul) + (radCount === 0 && beinCount >= 2 ? HE.beinBonus : 0),
             kAcc: Math.max(HE.kAccMin, Math.min(HE.kAccMax, HE.kAcc / mass)),
             kBrake:
                 radCount > 0
@@ -736,9 +738,11 @@ class AnazhRealm_koerper_fahrt {
         return id !== null && id !== undefined && !!e && e.id === id;
     }
 
+    // DER SITZ (bauen.K5): ein sitzbares Werk (`sitzbar`, das Sitz-Gesetz der Form) trägt den Leib wie ein Gefährt — dieselbe
+    // Sitz-Pose, derselbe Sitz-Punkt (`_attachPointFor` „sitz"), derselbe Abstieg —, nur fährt es nie (`_vehicleProfile`: Tempo 0).
     mountArchitecture(entry) {
-        if (!entry || !entry.affordances || !entry.affordances.moveable) {
-            this.log("Mount: Architektur ist nicht fahrbar", "INFO");
+        if (!entry || !entry.affordances || !(entry.affordances.moveable || entry.affordances.sitzbar)) {
+            this.log("Mount: Architektur ist weder fahrbar noch sitzbar", "INFO");
             return { ok: false, reason: "not_moveable" };
         }
         this.state.player.mountedArch = entry.id;
@@ -809,6 +813,12 @@ class AnazhRealm_koerper_fahrt {
             this.state._mountVorKamera = this.state.cameraMode;
             this.setCameraMode("third");
         }
+        if (!entry.affordances.moveable) {
+            // wer sich setzt, steht still: die Fahrt des Gehens fällt mit dem Sitz
+            if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
+            this.log(`Sitzt auf „${entry.type}"`, "INFO");
+            return { ok: true, entry };
+        }
         const art =
             prof && prof.radCount > 0
                 ? `${prof.radCount}× Rad — rollt`
@@ -873,6 +883,24 @@ class AnazhRealm_koerper_fahrt {
                 this.state._fieldVy = 0;
             }
         }
+        // DER SITZ (bauen.K5): wer aufsteht, steht vor ihm — die Front +z des Werks, eine Kapsel vor der Vorderkante seines
+        // Sitzes, die Füße auf dem Grund des Werks (Basis − Bodenfreiheit); vorher stand der Leib in der Sitzfläche
+        const sp =
+            entry && entry.affordances && !entry.affordances.moveable
+                ? this._attachPointFor(this.state.blueprints[entry.type], "sitz")
+                : null;
+        if (sp && sp.part !== null && this.state.playerMesh) {
+            const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
+            const tiefe = Math.abs(this.state.blueprints[entry.type].parts[sp.part].size.z || 0);
+            const vor = (sp.point.z + tiefe / 2) * sc + AnazhRealm.PLAYER_WALL_RADIUS + 0.05;
+            const th = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+            this.state.playerMesh.position.set(
+                entry.position.x + Math.cos(th) * sp.point.x * sc + Math.sin(th) * vor,
+                entry.position.y - (entry._groundClear || 0),
+                entry.position.z - Math.sin(th) * sp.point.x * sc + Math.cos(th) * vor
+            );
+            this.state._fieldVy = 0;
+        }
         this.state.player.mountedArch = null;
         // FAHR-ABSCHLUSS (19.07.) — die gemerkte Vor-Fahrt-Sicht kehrt zurück.
         if (this.state._mountVorKamera) {
@@ -928,9 +956,15 @@ class AnazhRealm_koerper_fahrt {
         if (this.state.player.mountedArch !== null && this.state.player.mountedArch !== undefined) {
             return this.dismountArchitecture();
         }
-        const entry = this._findNearestAffordanceEntry("moveable", AnazhRealm.MOUNT_RANGE_M);
+        // das nächste Werk, das den Leib trägt: ein Gefährt (fahrbar) oder ein Sitz (sitzbar, bauen.K5) — das nähere gewinnt
+        const fahr = this._findNearestAffordanceEntry("moveable", AnazhRealm.MOUNT_RANGE_M);
+        const sitz = this._findNearestAffordanceEntry("sitzbar", AnazhRealm.MOUNT_RANGE_M);
+        const pm = this.state.playerMesh.position;
+        const d2 = (e) =>
+            e ? (e.position.x - pm.x) ** 2 + (e.position.y - pm.y) ** 2 + (e.position.z - pm.z) ** 2 : Infinity;
+        const entry = d2(sitz) < d2(fahr) ? sitz : fahr;
         if (!entry) {
-            this.log("Mount: kein fahrbares Compound in Reichweite", "INFO");
+            this.log("Mount: kein fahrbares oder sitzbares Werk in Reichweite", "INFO");
             return { ok: false, reason: "none_in_range" };
         }
         return this.mountArchitecture(entry);
