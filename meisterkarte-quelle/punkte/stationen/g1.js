@@ -816,6 +816,67 @@ module.exports = [
         quelle: "1 = die Leiber (Mechanik, als solche benannt)",
     },
 
+    // ── physik.K2 Staffel 2 ── gate:kollision-bild `--bild` auf beiden Karten (die Welt zeichnet, Rezept `linse`): der Wagen der
+    // (V)-Spur ist das schnellste Spiel-Rezept bei vmax × 1,2 (die vmax aus `_vehicleProfile`, gemessen das gefahrene Tempo) gegen
+    // Mauer · Fels · Haus · Baum · Bär bei 144/60/30 fps und dem Takt-Deckel, nach jedem Sim-Schritt und Bild kein Durchtritt,
+    // Eindringen ≤ 1 cm; die Bild-Probe: Wagen und gestoßener Bär an der 0,35-m-Mauer — an jedem Bild, in dem sie anliegen, ihre
+    // gezeichneten Ecken (Zeichner-Matrix, Skin) gegen das gezeichnete Mesh der Mauer: Spalt ≤ 5 cm, und Durchdringen 0 gilt im
+    // Bild wie im Körper (Eindringen ≤ 1 cm). Die OFFEN-Zeile der Linse (Bild ≠ Kollision) ist hier ROT. Am Kopf pk2-vmax
+    // (headless und swiftshader) ROT: 19,63 m/s ohne Durchtritt, im Bild der Wagen bis 7,9 cm, der Bär bis 17,1 cm in der Mauer.
+    {
+        kriterium: "physik.K2",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: ["node", "scripts/diag-kollision-bild.cjs", "--bild"],
+        env: { KOLLISION_BILD_PORT: "{PORT}" },
+        gpu: true,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const z = String(lauf.stdout || "").split(/\r?\n/);
+            const kopf = z.find((x) => /^\s*\(V\) Kontakt beim Tempo: \d+\/\d+ Zeilen/.test(x));
+            const je = {};
+            for (const x of z) {
+                const m = /^\s+(wagen|gestossen)\s+(\S+) m\/s · Durchtritt (\d+)\/(\d+) · Eindringen max (\S+) m · Spalt max \S+ m(?: · im Bild Spalt max (\S+) m, Eindringen max (\S+) m)?(?: · (\S+) vmax (\S+) m\/s × (\S+))?/.exec(x);
+                if (m) je[m[1]] = { v: +m[2], durch: +m[3], n: +m[4], tief: +m[5], bs: m[6] == null ? NaN : +m[6], bt: m[7] == null ? NaN : +m[7], rezept: m[8], vmax: +m[9], f: +m[10] };
+            }
+            // jede Zeile der Linse gegen Wagen oder gestoßenen Bären (ROT wie OFFEN) und jede Stumpfheit der Tempo-Probe
+            const verstoss = z.filter((x) => /^\s*(OFFEN )?\(V\) [A-ZÄÖÜ ≠]+: (wagen|gestossen)\b|LINSE STUMPF: \(V\)|LEER: \(V\)/.test(x));
+            const [w, g] = [je.wagen, je.gestossen];
+            if (!kopf || !w || !g) return { gruen: false, zahl: "(V) Wagen oder gestoßener Bär fehlt in der Ausgabe (Exit " + lauf.exit + ")" };
+            const tempo = w.f >= 1.2 && w.v / w.vmax >= 1.19;
+            const gruen =
+                tempo && w.n >= 20 && g.n >= 4 && w.durch + g.durch === 0 && Math.max(w.tief, g.tief) <= 0.01 &&
+                [w, g].every((k) => k.bs <= 0.05 && k.bt <= 0.01) && !verstoss.length;
+            return {
+                gruen,
+                zahl:
+                    "Wagen " + w.rezept + " " + w.v + " m/s (vmax " + w.vmax + " × " + w.f + "), " + (w.n - w.durch) + "/" + w.n +
+                    " Läufe ohne Durchtritt, Eindringen max " + w.tief + " m · gestoßener Bär " + g.v + " m/s · im Bild an der Mauer: Wagen Spalt max " +
+                    w.bs + " m, Eindringen max " + w.bt + " m; Bär Spalt max " + g.bs + " m, Eindringen max " + g.bt + " m" +
+                    (verstoss.length ? " · " + verstoss.length + " Verstöße (" + verstoss[0].trim().slice(0, 90) + ")" : ""),
+            };
+        },
+        pfad: [
+            "stamm/koerper-*.js",
+            "stamm/kreatur-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/stoff-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/studio-*.js",
+            "stamm/daten.js",
+            "vehicle-core.js",
+            "koerper-core.js",
+            "tetrapoda-core.js",
+            "foundry-core.js",
+            "scripts/diag-kollision-bild.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "2 = auch der Wagen bei der vmax des Spiels × 1,2 und die Bild-Probe (Spalt Leib–Wand ≤ 5 cm) auf beiden Geräten",
+    },
+
     // ── feld.K3 ── gate:stand-takt (RS): 3 600 echte _gameLoopTick = 60 s Spielzeit nach einer Tat, Sim-Einheiten je Sim
     {
         kriterium: "feld.K3",
@@ -1194,7 +1255,6 @@ module.exports.fehlt = [
     { kriterium: "gelaende.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: Damm (b) und Ferne (d, byte-Diff am Ring) misst keine Linse; Ego und GTX ungemessen" },
     { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug und Gesetz fehlen für die Fließ-Anisotropie: keine Linse misst die Normalen-Anisotropie längs/quer zum Lauf im Ausgabe-Bild, und die Strömung der Welt ist `WASSER_GESETZ.wellen.adv × centerness` (`_waterFlowAt`, stamm/wasser-hydro.js) — kein Gefälle, kein Einzugsgebiet, aus dem sie wüchse (25.10. gelesen an d43cb61c). Die 12 Posen allein (Ego/Third × Mittag/Nacht/Regen über `bild --uhr --wetter` wie Staffel 1) wären eine halbe Station" },
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug und Welt fehlen: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Trocken-Kurve, kein Third; die Welt trägt keine Pfütze (stamm/ kennt kein Pfützen-Gesetz, 25.10. an d43cb61c), die Mulden-Korrelation r ≥ 0,5 hätte nichts zu messen" },
-    { kriterium: "physik.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: die Zeile gt von gate:kollision-bild fährt den GT bei vmax (`_vehicleProfile(e).vmax`, nicht × 1,2) gegen die Mauer 0,35 × 2,5 × 6 m, und ihr Spalt ist der Abstand Körper–Blocker-Box am Null-Renderer — keine Linse misst den Spalt Leib–Wand im Ausgabe-Bild (Bild = Blocker gilt dort nur auf SEITE_M 0,3 m), auf keinem Gerät (25.10. gelesen an d43cb61c)" },
     { kriterium: "feld.K2", staffel: 2, befehl: null, grund: "nicht gebaut: das Netz-Log steht (gate:mp-sync (e), keine Zustands-Nachricht), aber die Uhren der Teil-Simulationen sind je Seite — der Auto-Zug des Wetters zählt die Sitzung (`weatherEffectTime`) und den Wunsch des eigenen Nexus, Overlays und Brand die Spielzeit der Seite (`spielZeit`), die Tageszeit ist Spieler-Wort (set_time_of_day nicht broadcastbar); ohne geteilte Welt-Uhr ist Wetter am Ort keine Funktion von Saat und Akten, und ein Reload mitten im Sturm setzt nur das Wort fort (der Übergang reist nicht)" },
     { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
     { kriterium: "stoffe.K3", staffel: 2, befehl: null, grund: "nicht gebaut: der Schnee schmilzt nicht (die Schneegrenze ist Höhe allein, kein Pegel liest Schmelze), Lava erstarrt nicht (die glut-Achse ist eine eingefrorene Feld-Achse), der Stahl der Esse liest das Temperatur-Feld nicht; nur das Eis steht (Staffel 1)" },
