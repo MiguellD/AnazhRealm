@@ -2033,10 +2033,10 @@ async function checkBandScatterScheibe(ctx) {
         const snapOne = snapshot(oneShot);
         o.cellsByteEqual = snapOne === snapSliced;
         o.balanceEqual = groupBalance() === balanceOne;
-        // MAIN = FADEN: dieselbe Regel (phyto-core `streuRegion`) an den Lesern beider Fäden, Zahl für Zahl — an der Nachbar-Region
-        // ohne gebauten Boden (die Feuchte des Haupt-Fadens liest am gebauten Wasser `_waterLevelAt`, der Faden am Gesetz)
+        // MAIN = FADEN: dieselbe Regel (phyto-core `streuRegion`) an den Lesern beider Fäden, Zahl für Zahl — an der Region des
+        // Spielers samt Erdbau und Keller (die Fläche beider Fäden ist eine Probe des Felds, voxel-worker `voxelSurfaceY`)
         {
-            const mk = () => r._streuAuftrag(rx + 1, rz, pos.x, pos.z, 1);
+            const mk = () => r._streuAuftrag(rx, rz, pos.x, pos.z, 1);
             const msg = await r._nebenAuftrag("streu", Object.assign({ type: "streu-region" }, mk()));
             const fa = msg.wuerfe.map((b) => new Float64Array(b));
             const ma = globalThis.__phytoCore.streuRegion(Object.assign(mk(), { leser: r._streuLeser() }));
