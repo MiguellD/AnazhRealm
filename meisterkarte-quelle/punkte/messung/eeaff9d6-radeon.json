@@ -1,7 +1,7 @@
 {
  "sha": "eeaff9d6dad7df61e5ace3466fe84375e9496045",
  "geraet": "radeon",
- "zeit": "2026-10-26T09:20:40.321Z",
+ "zeit": "2026-10-26T11:21:52.966Z",
  "host": "MiguellD",
  "je": {
   "gelaende.K2#1": {
@@ -223,15 +223,14 @@
    "port": 7757
   },
   "fahrzeug.K3#1": {
-   "gruen": false,
-   "zahl": "Garage FOV +9.06° Arm +18.1 % bei 15.20/16.00 m/s · Welt FOV +7.75° Arm +15.1 % bei 13.43 m/s (Ende ok)",
+   "gruen": true,
+   "zahl": "Garage FOV +9.06° Arm +18.1 % bei 15.20/16.00 m/s · Welt FOV +9.22° Arm +17.9 % bei 14.92 m/s (Ende ok)",
    "exit": 0,
-   "minuten": 0.97,
-   "grund": "ROT: Garage FOV +9.06° Arm +18.1 % bei 15.20/16.00 m/s · Welt FOV +7.75° Arm +15.1 % bei 13.43 m/s (Ende ok)",
+   "minuten": 1.07,
    "gpu": "amd/rdna-3",
-   "zeit": "2026-10-26T07:45:55.163Z",
+   "zeit": "2026-10-26T11:20:48.494Z",
    "abdruck": "47c7c8bcd372",
-   "port": 7774
+   "port": 7775
   },
   "fahrzeug.K3#2": {
    "gruen": false,
@@ -298,15 +297,14 @@
    "zwilling": "siedlung.K5#1"
   },
   "leib.K1#1": {
-   "gruen": false,
-   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 52.1 · third/gehen 45.9 · ego/wechsel 46 · third/wechsel 41.1 · Bild 15.3/15.7/15.7 ms",
+   "gruen": true,
+   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 44.9 · third/gehen 42.8 · ego/wechsel 26.6 · third/wechsel 25.5 · Bild 16.4/16.4/16.4 ms",
    "exit": 0,
-   "minuten": 5.76,
-   "grund": "ROT: schlechtester von 3 Läufen p95 ms ego/gehen 52.1 · third/gehen 45.9 · ego/wechsel 46 · third/wechsel 41.1 · Bild 15.3/15.7/15.7 ms",
+   "minuten": 5.69,
    "gpu": "amd/rdna-3",
-   "zeit": "2026-10-26T07:56:30.088Z",
+   "zeit": "2026-10-26T11:21:52.966Z",
    "abdruck": "9687c62fd915",
-   "port": 7783
+   "port": 7785
   },
   "leib.K1#2": {
    "gruen": false,
