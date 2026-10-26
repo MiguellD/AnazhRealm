@@ -1857,38 +1857,19 @@ async function starte() {
                     // DER SPIELER AN DER POSE: Ring, Wald und Stufen-Auge stehen am Spieler — eine Kamera mehr als einen Chunk
                     // neben ihm sah fernen Boden ohne die Bäume der Pose (laub-kante: fimp:atlas:L2 0,6737 bei misch 0). Die Pose
                     // aus dem Leib (`--gesicht`, `--arm`) und der Spieler im Bild (`--spieler`) bleiben, wo er steht.
-                    if (b.gesicht == null && b.arm == null && !b.spieler) {
-                        const fern = await page.evaluate(
-                            (x, z) => {
-                                const r = window.anazhRealm,
-                                    p = r.state.playerMesh.position;
-                                return Math.hypot(p.x - x, p.z - z) > r._voxelChunkConfig(0).span;
-                            },
-                            +b.px,
-                            +b.pz
-                        );
-                        if (fern) await umstellen(+b.px, +b.pz, null);
-                    }
-                    // DIE LEINWAND DER KLASSE (die Soll-Tafel misst im Pixel des Schirms, 1920 × 1080 wie ihre Messungen): das
-                    // Fenster wie ein Spieler (`/fenster`), bis der Puffer es trägt
+                    const fern = (x, z, p = window.anazhRealm.state.playerMesh.position) =>
+                        Math.hypot(p.x - x, p.z - z) > window.anazhRealm._voxelChunkConfig(0).span;
+                    if (b.gesicht == null && b.arm == null && !b.spieler && (await page.evaluate(fern, +b.px, +b.pz)))
+                        await umstellen(+b.px, +b.pz, null);
+                    // DIE LEINWAND DER KLASSE: die Soll-Tafel misst im Pixel des Schirms, 1920 × 1080 wie ihre Messungen — das
+                    // Fenster wie ein Spieler (`/fenster`), bis die Welt es trägt; danach das Fenster der Sitzung
+                    const vp = page.viewport();
                     if (b.klasse) {
-                        const w = +b.w || 1920,
-                            h = +b.h || 1080,
-                            vp = page.viewport();
-                        if (!vp || vp.width !== w || vp.height !== h) {
-                            await page.setViewport({ width: w, height: h, deviceScaleFactor: 1 });
-                            await page.waitForFunction(
-                                (w, h) => {
-                                    const d = window.anazhRealm.state.renderer.getDrawingBufferSize(new window.THREE.Vector2());
-                                    return d.x === w && d.y === h;
-                                },
-                                { timeout: 30000 },
-                                w,
-                                h
-                            );
-                        }
+                        await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
+                        await page.waitForFunction(() => window.anazhRealm.state.renderer.domElement.clientWidth === 1920);
                     }
                     const o = await bild(Object.assign({ w: 640, h: 360 }, b));
+                    if (b.klasse) await page.setViewport(vp);
                     const datei = path.resolve(
                         b.datei || path.join(root, "artifacts", "werkbank", `bild-${Date.now()}.png`)
                     );
@@ -2997,8 +2978,8 @@ async function starte() {
             uhr: opt("--uhr") === undefined ? undefined : Number(opt("--uhr")),
             wetter: opt("--wetter"),
             saison: opt("--saison"),
-            w: opt("--w") && Number(opt("--w")),
-            h: opt("--h") && Number(opt("--h")),
+            w: Number(opt("--w", 640)),
+            h: Number(opt("--h", 360)),
             ziel: opt("--ziel"),
             wahl: opt("--wahl"),
             klasse: opt("--klasse"),
