@@ -1,7 +1,7 @@
-// ci-zeiten.cjs — DIE ZEITEN DER CI: je Schritt von check.yml der Median seiner letzten 7 grünen
-// Messungen auf integ-probe (derselbe run-Text, je Job-Art), je Gruppe der Median ihrer Job-Dauer → spec/ci/ci-zeiten.json (die
-// Waage von gate:ci-deckung); ohne Messung ROT, die Tafel bleibt. Er verteilt die Voll-Gruppen je Klasse und je echt-Schritt die Frist
-// timeout-minutes = max(5, ⌈3 × p90⌉, ⌈1,2 × größter grüner Lauf⌉).
+// ci-zeiten.cjs — DIE ZEITEN DER CI: je Schritt von check.yml sein Gewicht aus den letzten 7 Läufen auf integ-probe (derselbe
+// run-Text, je Job-Art; jeder Versuch, grün und rot) — im Puls der Median, in der vollen Stufe der p90 (der langsame Läufer, den
+// ihr Deckel hält) → spec/ci/ci-zeiten.json (die Waage von gate:ci-deckung); ohne Messung ROT, die Tafel bleibt. Er verteilt die
+// Voll-Gruppen je Klasse und je echt-Schritt die Frist timeout-minutes = max(5, ⌈3 × p90⌉, ⌈1,2 × größter Lauf⌉).
 //   node scripts/ci-zeiten.cjs                          misst und verteilt
 //   node scripts/ci-zeiten.cjs --tafel                  die Kennzahlen des Richters über 7 Tage (druckt, schreibt nichts)
 "use strict";
@@ -38,52 +38,56 @@ function schritteAus(doc) {
     const m = new Map();
     for (const [job, j] of Object.entries((doc && doc.jobs) || {}))
         for (const s of (GRUPPE.test(job) && j.steps) || [])
-            if (s.name && s.run && !VORBEREITUNG.test(s.name)) m.set(s.name, { run: lauf(s), echt: job === "echt" });
+            if (s.name && s.run && !VORBEREITUNG.test(s.name)) m.set(s.name, { run: lauf(s), echt: job === "echt", voll: job === "voll" });
     return m;
 }
 
-// die Messung: je Schritt die ersten JE_SCHRITT grünen Messungen (der letzte Versuch je Lauf), je Gruppe die Job-Dauer der
-// grünen Läufe mit dem Satz des neuesten
+// die Messung: je Schritt die ersten JE_SCHRITT Läufe, die ihr Urteil sprachen (grün oder rot: dieselbe Arbeit), aus jedem Versuch;
+// ein am Job-Deckel abgebrochener Schritt, der selbst die Hälfte des Deckels trug, zählt mit seiner Zeit als untere Grenze (er ist
+// der Täter des Abbruchs). Nur grün und nur der letzte Versuch gezählt, wog die Kamera-Leib-Linse 58 s, während sie auf G18 318–919 s
+// lief und sieben Läufe am Deckel brach (der langsame Läufer brach ab, der schnelle Wiederholungs-Versuch wurde gezählt).
 async function messe(api, jetzt, alt = {}, pause = 2000) {
     const soll = schritteAus(jetzt);
     const nimm = (r) => r.head_branch === "integ-probe" && r.status === "completed";
     const neueste = await alleLaeufe(api, "/actions/workflows/check.yml/runs", { nimm, seit: Date.now() - 14 * 864e5, hoechstens: HOECHSTENS, pause });
     const proben = new Map([...soll.keys()].map((n) => [n, []]));
-    const [vorb, ymlAm, gruppen, ort] = [{ echt: [], sonst: [] }, new Map(), new Map(), new Map()];
+    const [vorb, ymlAm, ort, gesehen] = [{ echt: [], sonst: [] }, new Map(), new Map(), new Set()];
     let [kopf, gelesen, gemessen] = [null, 0, 0];
     for (const r of neueste) {
         if ([...proben.values()].every((p) => p.length >= JE_SCHRITT) && vorb.sonst.length >= 25) break;
         gelesen++;
         if (!ymlAm.has(r.head_sha)) {
             const c = await api(`/contents/${WORKFLOW}?ref=${r.head_sha}`);
-            ymlAm.set(r.head_sha, schritteAus(yaml.load(Buffer.from(c.content, "base64").toString("utf8"))));
+            const doc = yaml.load(Buffer.from(c.content, "base64").toString("utf8"));
+            ymlAm.set(r.head_sha, [schritteAus(doc), doc.jobs]);
         }
-        const damals = ymlAm.get(r.head_sha);
-        for (const job of (await api(`/actions/runs/${r.id}/attempts/${r.run_attempt}/jobs?per_page=100`)).jobs) {
+        const [damals, jobsDamals] = ymlAm.get(r.head_sha);
+        const jobs = [];
+        for (let a = r.run_attempt; a >= 1; a--) jobs.push(...(await api(`/actions/runs/${r.id}/attempts/${a}/jobs?per_page=100`)).jobs);
+        for (const job of jobs) {
             const g = GRUPPE.exec(job.name);
-            if (!g) continue;
-            const [key, gruen, echt] = [g[2] ? `${g[1]} ${g[2]}` : g[1], job.conclusion === "success", g[1] === "echt"];
-            // ein Schritt misst, wo er grün lief; die Vorbereitung und die Gruppe nur am grünen Job
+            // ein Wiederholungs-Versuch trägt die Jobs des vorigen mit (derselbe Start): einmal gezählt
+            if (!g || gesehen.has(job.name + job.started_at)) continue;
+            gesehen.add(job.name + job.started_at);
+            const [key, echt] = [g[2] ? `${g[1]} ${g[2]}` : g[1], g[1] === "echt"];
             let v = sek(job.started_at, job.completed_at);
-            const eigen = [];
+            const deckel = 60 * Number((jobsDamals[g[1]] || {})["timeout-minutes"]);
+            const amDeckel = job.conclusion === "cancelled" && v >= deckel - 60;
             for (const s of job.steps || []) {
                 const t = sek(s.started_at, s.completed_at);
                 if (t == null || s.conclusion === "skipped" || VORBEREITUNG.test(s.name)) continue;
                 v -= t;
                 const d = damals.get(s.name);
                 const n = d && [...soll].find(([, x]) => x.run === d.run && x.echt === echt);
-                eigen.push(n ? n[0] : "? " + s.name);
-                if (!n || s.conclusion !== "success" || proben.get(n[0]).length >= JE_SCHRITT) continue;
+                const zaehlt = /^(success|failure)$/.test(s.conclusion) || (amDeckel && t >= deckel / 2);
+                if (!n || !zaehlt || proben.get(n[0]).length >= JE_SCHRITT) continue;
                 proben.get(n[0]).push(t);
                 [kopf, gemessen] = [kopf || r.head_sha, gemessen + 1];
                 if (!ort.has(n[0])) ort.set(n[0], key);
             }
-            if (!gruen) continue;
+            // die Vorbereitung nur am grünen Job
             const vb = vorb[echt ? "echt" : "sonst"];
-            if (vb.length < 25) vb.push(v);
-            const satz = eigen.sort().join("\n");
-            const G = gruppen.get(key) || gruppen.set(key, { satz, s: [] }).get(key);
-            if (G.satz === satz && G.s.length < JE_SCHRITT) G.s.push(sek(job.started_at, job.completed_at));
+            if (job.conclusion === "success" && vb.length < 25) vb.push(v);
         }
     }
     const [schritte, ohne] = [{}, []];
@@ -91,7 +95,7 @@ async function messe(api, jetzt, alt = {}, pause = 2000) {
         const p = proben.get(n);
         if (p.length)
             schritte[n] = {
-                s: Math.round(median(p)),
+                s: Math.round((x.voll ? p90 : median)(p)),
                 n: p.length,
                 gruppe: ort.get(n),
                 ...(x.echt ? { p90: Math.round(p90(p)), max: Math.round(Math.max(...p)) } : {}),
@@ -104,13 +108,12 @@ async function messe(api, jetzt, alt = {}, pause = 2000) {
             `ROT: die API lieferte ${neueste.length} Läufe, ${gemessen} Messungen, ${Object.keys(schritte).length} Schritte — ${AUS} bleibt, wie sie ist`
         );
     const out = {
-        quelle: "GitHub-API (s): je Schritt der Median der letzten je_schritt grünen Messungen auf integ-probe (echt mit p90 und max), je Gruppe der Job-Dauer — scripts/ci-zeiten.cjs, gelesen von gate:ci-deckung",
+        quelle: "GitHub-API (s): je Schritt aus den letzten je_schritt Läufen mit Urteil auf integ-probe im Puls der Median, voll der p90, echt mit p90 und max — scripts/ci-zeiten.cjs, gelesen von gate:ci-deckung",
         erzeugt: new Date().toISOString().slice(0, 10),
         kopf,
         je_schritt: JE_SCHRITT,
         vorbereitung_s: Math.round(median(vorb.sonst)),
         echt: { vorbereitung_s: Math.round(median(vorb.echt)) },
-        gruppen: Object.fromEntries([...gruppen].map(([k, G]) => [k, { s: Math.round(median(G.s)), n: G.s.length }])),
         schritte,
     };
     return { out, gelesen, ohne };

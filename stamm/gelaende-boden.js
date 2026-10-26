@@ -2427,8 +2427,8 @@ class AnazhRealm_gelaende_boden {
     // mehrere step-Varianten.
     _voxelChunkConfig(lod = 0) {
         // ringRadius folgt dem Sicht-Ring-Regler (Default 4), beim Boot gedeckelt durch `_activeRingRadius`:
-        // der startet klein und wächst nur, wenn der aktuelle Ring VOLL steht und der Frame Luft hat
-        // (`_nexusPerfActuate`) — eine kleine settled Basis statt 81 Chunks auf einmal.
+        // der startet klein und wächst, sobald der aktuelle Ring VOLL steht (`_ringWaechst`) — eine kleine
+        // settled Basis statt 81 Chunks auf einmal.
         const targetRing = Math.max(1, Math.min(12, this.state.chunkRingRadius || 4));
         const activeRing = this.state._activeRingRadius != null ? this.state._activeRingRadius : targetRing;
         // Der Boot-Ring darf 0 sein (EIN Chunk, RING_RAMP_START=0) — ein `Math.max(1,…)`-Floor erzwänge 3×3.
@@ -2647,6 +2647,29 @@ class AnazhRealm_gelaende_boden {
         return k;
     }
 
+    // DER RING IST EXISTENZ (Lehre 13): der aktive Ring wächst bis zu seinem Ziel (`chunkRingRadius`, der Regler des Spielers
+    // unter dem Holz-Deckel), eine Schale, sobald die jetzige steht (gebaut, kein Rückstau, das Gras nach) — nie an Bildrate
+    // oder Regler und nie zurück unter Last (Gebot 7: die Kosten tragen Schirm und Änderung, nie die Größe der Welt). Unter
+    // dem Ladeschirm springt er auf den Boden des ersten Weltbilds (`RING_EXIST_FLOOR`), die Arbeit trägt der Strom; headless
+    // steht er sofort am Ziel. Der Strom ruft ihn je Takt (prio 0). Bis hierher wuchs er im Aktuator des PID: über dem Boden
+    // nur bei anhaltendem Kopfraum (frameMs < 13 ms, an 60 Hz nie) und gar nicht bei ruhendem Regler (`__weltStehtNach`) —
+    // die Mess-Wiese stand auf der Radeon mit Ring 2 von 4 und 89–95 Streu-Kontakten (gelaende.K5#2).
+    _ringWaechst() {
+        const st = this.state;
+        const ziel = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+        let ring = Math.min(ziel, st._activeRingRadius ?? AnazhRealm.RING_RAMP_START);
+        if (st.renderer && st.renderer._isHeadlessNull) ring = ziel;
+        else if (this._ladeTakt()) ring = Math.max(ring, Math.min(ziel, AnazhRealm.RING_EXIST_FLOOR));
+        else if (
+            ring < ziel &&
+            (this._builtRingRadius() ?? -1) >= ring &&
+            !(st.voxelMeshPending && st.voxelMeshPending.size) &&
+            !(st.pendingGrass && st.pendingGrass.size)
+        )
+            ring++;
+        st._activeRingRadius = ring;
+    }
+
     _setLastPlayerVoxelChunk(pcx, pcz) {
         if (!this.state) return;
         // Erkundung: betritt der Spieler einen anderen Chunk, heben sich awe + hope — rate-limitiert (~6 s)
@@ -2838,6 +2861,11 @@ _stammZonen(AnazhRealm, [AnazhRealm_gelaende_boden]);
 // ===== ATLAS · Gelaende/boden — Außen-Konstanten =====
 // Die leere Edit-Liste eines Chunks ohne Edits (`_voxelEditsNah`, `_voxelEditsImKasten`): eingefroren, nie beschrieben.
 AnazhRealm.KEINE_EDITS = Object.freeze([]);
+// DER RING (`_ringWaechst`): er beginnt beim Boot mit EINEM Chunk (V18.397, Schöpfer „1 Chunk statt 9!" — ein großer
+// Start-Ring von 25 Chunks fror den Boot ein; der Fern-Ring und `_softFloorWhileChunkLoading` tragen den Rand) und springt
+// unter dem Ladeschirm auf den Boden des ersten Weltbilds (2 = 5×5 Chunks, `_weltbildLuecken`; auf kienspan zugleich das Ziel).
+AnazhRealm.RING_RAMP_START = 0;
+AnazhRealm.RING_EXIST_FLOOR = 2;
 // DIE ORT-WAHL eines Plans (K10, `_ortWahl`): Ringe um den Wunsch-Anker (`ringe` × `schrittM` = 128 m, die halbe
 // Siedlungs-Zelle fachwerk `SIEDLUNG.cellM`; auf jedem Ring Orte im Abstand ≤ `schrittM`), der nächste Ort, an dem der Plan
 // jedes Haus trägt (Ort-Faden `ortTraegt`, am Wirt `_ortTraegtWirt`), gewinnt. `grobM`: das Raster des ersten Urteils (die

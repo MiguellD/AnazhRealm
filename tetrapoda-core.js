@@ -2017,6 +2017,95 @@
         return { geburt: 0, tod: B.tod * (u < 1 ? u : 1) };
     }
 
+    // DER VOGEL (Klang K1, 25.10., additiv — VOGEL_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): jeder Vogel-Ruf
+    // der Welt hat einen Leib (die Vögel sind Tetrapoda). Die Welt ist eine Funktion, kein Sack: kein Vogel wird geboren oder
+    // gespeichert, jeder ist der Wurf seines Reviers und eine Bahn über der Zeit — für jeden Peer gleich (Saat × Zelle × Uhr).
+    // DAS REVIER (vogelRevier): das Raster zelleM; je Zelle höchstens ein Revier (ein singendes Männchen), mit der Dichte
+    // proHa × √lebendig × (habitatBasis + (1 − habitatBasis) × Deckung) Reviere je ha — der Wald trägt die meisten (die Singvogel-
+    // Gilde der Laubwälder 10–25 Paare/ha, gedeckelt durch das Raster auf 16/ha), das Offenland habitatBasis davon (Feldlerche,
+    // Wiesenpieper, Goldammer am Saum). Mitte, Phase, Höhe, Kreis und Drehsinn sind Würfe der Zelle (vogelWurf: ein ganzzahliger
+    // Hash aus Saat, Zelle und Wurf-Nummer). DAS LIED (vogelLied): der Anteil der Zeit, in dem ein Männchen singt — der
+    // Morgenchor aus der Sonnenhöhe (chor: Stützstellen sin → Anteil, das Maximum kurz nach Sonnenaufgang, mittags gut die Hälfte,
+    // nachts still) × Regen-Ruhe (1 − Regen)² × Wind-Ruhe (1 − windStill × Wind). Gesungen wird im SINGFLUG (Feldlerche,
+    // Baumpieper; Delius 1963): der Vogel steigt vom Boden in steigS auf seine Höhe, kreist mit tempoMs und sinkt zurück; am
+    // Boden schweigt er. Über Bäumen kreist er über dem Dach: die Höhe hebt sich um kroneM × Deckung der Zelle. DIE BAHN (vogelBahn): je Periode periodeS (die Phase je Revier) singt er den Anteil dutyMax × Lied; Höhe
+    // und Kreis sind stetig in der Zeit UND im Anteil (Auf- und Abstieg glätten an beiden Rändern des Fensters) — ein
+    // Wetterwechsel holt ihn herunter, er springt nie. DER LEIB (leib): ein Singvogel von 0,22 m Länge und 0,32 m Spannweite
+    // (Amsel-Maß) als Teile — je Teil ein Doppel-Keil (Oktaeder) mit diesen Ausdehnungen in Metern um seine Lage (x rechts,
+    // y oben, z vorn; Farbe sRGB): der Rumpf spitz nach vorn und hinten, Kopf, Schwanz; der Flügel am Schultergelenk (rechts;
+    // links gespiegelt) mit der Länge nach außen, sein Schlag schlagHz mit dem Ausschlag ±schlagRad. Einen Schnabel trägt der
+    // Leib nicht: 8 mm sind ab 2 m unter einem Bildpunkt (die Kosten gehören ins Asset).
+    var VOGEL_GESETZ = Object.freeze({
+        zelleM: 25,
+        proHa: 50,
+        habitatBasis: 0.35,
+        lied: Object.freeze({
+            chor: Object.freeze([[-0.15, 0], [0, 0.7], [0.12, 1], [0.4, 0.6], [1, 0.55]]),
+            windStill: 0.8,
+        }),
+        flug: Object.freeze({ periodeS: 60, dutyMax: 0.8, steigS: 4, hoeheM: [5, 14], kroneM: 22, radiusM: [3, 9], tempoMs: 5 }),
+        leib: Object.freeze({
+            teile: Object.freeze([
+                Object.freeze({ groesse: [0.06, 0.06, 0.16], lage: [0, 0, 0], farbe: 0x8b6b4a }),
+                Object.freeze({ groesse: [0.042, 0.042, 0.05], lage: [0, 0.026, 0.06], farbe: 0x6e5238 }),
+                Object.freeze({ groesse: [0.05, 0.012, 0.09], lage: [0, 0.008, -0.09], farbe: 0x5c442e }),
+            ]),
+            fluegel: Object.freeze({ groesse: [0.14, 0.012, 0.07], schulter: [0.02, 0.015, 0.01], farbe: 0x56402c }),
+            schlagHz: 12,
+            schlagRad: 0.9,
+        }),
+    });
+    // saat (uint32), die Zelle (ix, iz) und die Wurf-Nummer k → [0, 1).
+    function vogelWurf(saat, ix, iz, k) {
+        var h = (saat ^ Math.imul(ix, 0x27d4eb2d) ^ Math.imul(iz, 0x165667b1) ^ Math.imul(k + 1, 0x9e3779b1)) >>> 0;
+        h = Math.imul(h ^ (h >>> 16), 0x7feb352d);
+        h = Math.imul(h ^ (h >>> 15), 0x846ca68b);
+        return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    }
+    // u = vogelWurf(…, 0) der Zelle, lebendig und deckung an ihrer Mitte (0..1). Liefert: wohnt dort ein Revier?
+    function vogelRevier(u, lebendig, deckung, V) {
+        var l = lebendig > 0 ? (lebendig < 1 ? lebendig : 1) : 0;
+        var d = deckung > 0 ? (deckung < 1 ? deckung : 1) : 0;
+        return u < ((V.proHa * V.zelleM * V.zelleM) / 10000) * Math.sqrt(l) * (V.habitatBasis + (1 - V.habitatBasis) * d);
+    }
+    // sonne = sin der Sonnenhöhe, regen und wind 0..1. Liefert den Anteil des Lieds (0..1).
+    function vogelLied(sonne, regen, wind, V) {
+        var C = V.lied.chor,
+            chor = C[C.length - 1][1];
+        if (sonne <= C[0][0]) chor = C[0][1];
+        else
+            for (var i = 1; i < C.length; i++)
+                if (sonne <= C[i][0]) {
+                    chor = C[i - 1][1] + ((C[i][1] - C[i - 1][1]) * (sonne - C[i - 1][0])) / (C[i][0] - C[i - 1][0]);
+                    break;
+                }
+        var r = regen > 0 ? (regen < 1 ? regen : 1) : 0;
+        var w = wind > 0 ? (wind < 1 ? wind : 1) : 0;
+        return chor * (1 - r) * (1 - r) * (1 - V.lied.windStill * w);
+    }
+    // w = die Würfe des Reviers [Phase, Höhe, Kreis, Drehsinn] (0..1), anteil = vogelLied, t = die Uhr der Welt (s), deckung die
+    // Kronen-Deckung der Zelle (0..1). Schreibt out {dx, dz (von der Mitte), h (über dem Boden), gier (rad, Blick +z), schlag
+    // (rad)}; liefert, ob er singt (und fliegt).
+    function vogelBahn(w, anteil, t, deckung, V, out) {
+        var F = V.flug,
+            P = F.periodeS;
+        var S = P * F.dutyMax * (anteil > 0 ? (anteil < 1 ? anteil : 1) : 0);
+        var tp = (((t - w[0] * P) % P) + P) % P;
+        if (!(tp < S)) return false;
+        var a = Math.min(tp, S - tp) / F.steigS;
+        var s = a >= 1 ? 1 : a * a * (3 - 2 * a);
+        var R = F.radiusM[0] + (F.radiusM[1] - F.radiusM[0]) * w[2];
+        var sinn = w[3] < 0.5 ? -1 : 1;
+        var phi = w[3] * 12.566370614359172 + (sinn * F.tempoMs * tp) / R;
+        out.dx = R * s * Math.cos(phi);
+        out.dz = R * s * Math.sin(phi);
+        var d = deckung > 0 ? (deckung < 1 ? deckung : 1) : 0;
+        out.h = (F.hoeheM[0] + (F.hoeheM[1] - F.hoeheM[0]) * w[1] + F.kroneM * d) * s;
+        out.gier = Math.atan2(-sinn * Math.sin(phi), sinn * Math.cos(phi));
+        out.schlag = V.leib.schlagRad * Math.sin(6.283185307179586 * V.leib.schlagHz * t + w[0] * 97);
+        return true;
+    }
+
     // Mit folge (GANG_FOLGE, die Gangart aus dem Tempo) zieht das Netz jedes Bein in DIESES Muster: jedes Bein an jedes, die
     // Phasen-Differenz um den Versatz der Folge verschoben, die Stärke GANG_FOLGE.kopplung × Takt — im voll verbundenen Netz ist das
     // verschobene Gleichgewicht der einzige stabile Zustand (Kuramoto 1984; im Ring der vier Kanten blieb der Wechsel Trab →
@@ -3461,6 +3550,11 @@
         bestandBilanz: bestandBilanz,
         bestandFrass: bestandFrass,
         bestandRiss: bestandRiss,
+        VOGEL_GESETZ: VOGEL_GESETZ,
+        vogelWurf: vogelWurf,
+        vogelRevier: vogelRevier,
+        vogelLied: vogelLied,
+        vogelBahn: vogelBahn,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         FELL_SCHALE: FELL_SCHALE,
