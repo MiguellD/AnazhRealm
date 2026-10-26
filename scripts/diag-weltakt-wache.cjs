@@ -27,7 +27,7 @@
 //   node scripts/diag-weltakt-wache.cjs [--selftest]   (npm run gate:weltakt-wache; Port WELTAKT_WACHE_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, nullRenderer, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, nullSeite, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL, weltaktUrteil, weltaktSelbsttest } = require("./lib/ausgabe-aufnahme.cjs");
 const MESS = require("./lib/welt-orte.cjs").messort("wiese");
 
@@ -90,12 +90,7 @@ if (process.argv.includes("--selftest")) {
     const [heil, fu, halb] = [form([["say", "ok"], ["fall", "ok"]], { X_OPS: ["say"] }), form([["say", "x_oob"], ["fall", "ok", 1]], { X_OPS: ["modify_terrain"] }), form([["say", "ok"]], {})];
     if (heil || !/say .*x_oob · .*fall .*Bau steht.*X_OPS nennt tote Ops: modify_terrain/.test(fu) || !/ungeprüft: fall/.test(halb))
         v.push(`(K) formUrteil blind: heil „${heil}" · gebrochen „${fu}" · halb „${halb}"`);
-    for (const x of v) console.log("  ❌ " + x);
-    if (v.length) {
-        console.log("\n❌ SELBSTTEST ROT — das Urteil der Welt-Wache ist blind.");
-        process.exit(1);
-    }
-    console.log("✅ SELBSTTEST GRÜN — Akt durch, Spion blind/fehlend, KI-Verb fehlend/umgruppiert/formbrüchig, toter Listen-Name, Tat ohne Wertung/Gewöhnung/Antwort/Zeile/Treue: jedes fällt rot.");
+    selbsttestEnde(v, "Akt durch, Spion blind/fehlend, KI-Verb fehlend/umgruppiert/formbrüchig, toter Listen-Name, Tat ohne Wertung/Gewöhnung/Antwort/Zeile/Treue: jedes fällt rot.");
     process.exit(0);
 }
 

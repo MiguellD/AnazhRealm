@@ -720,6 +720,26 @@ function shaderKostenSeite(o) {
 }
 
 // Die Rausch-Probe: GPU (das Atlas-Rauschen im erzeugten WGSL) gegen CPU (MaterialX-Hash, nie die Atlas-Bytes).
+// DER HASH VON MATERIALX (three r184 mx_noise_float, lookup3 von Bob Jenkins, drei Schlüssel): die EINE Portierung der
+// Linsen — die Rausch-Probe und der Atlas des Playtests (scripts/playtest/dirigent.cjs) rufen sie in der Seite.
+function mxLookup3(x, y, z) {
+    const rot = (v, k) => ((v << k) | (v >>> (32 - k))) >>> 0;
+    let a = (0xdeadbeef + (3 << 2) + 13) >>> 0;
+    let b = a;
+    let c = a;
+    a = (a + x) >>> 0;
+    b = (b + y) >>> 0;
+    c = (c + z) >>> 0;
+    c = ((c ^ b) - rot(b, 14)) >>> 0;
+    a = ((a ^ c) - rot(c, 11)) >>> 0;
+    b = ((b ^ a) - rot(a, 25)) >>> 0;
+    c = ((c ^ b) - rot(b, 16)) >>> 0;
+    a = ((a ^ c) - rot(c, 4)) >>> 0;
+    b = ((b ^ a) - rot(a, 14)) >>> 0;
+    c = ((c ^ b) - rot(b, 24)) >>> 0;
+    return c;
+}
+
 function rauschProbe() {
     return (async () => {
         const r = window.anazhRealm;
@@ -730,24 +750,8 @@ function rauschProbe() {
         const P = R.P;
         const [SA, SB] = R.schraeg;
         const ra = r._rauschAtlas();
-        // CPU: MaterialX (three r184 mx_noise_float) — lookup3, Gradienten-Regel, Fünftgrad-Blende, Skala
-        const rot = (x, k) => ((x << k) | (x >>> (32 - k))) >>> 0;
-        const hash = (x, y, z) => {
-            let a = (0xdeadbeef + (3 << 2) + 13) >>> 0;
-            let b = a;
-            let c = a;
-            a = (a + x) >>> 0;
-            b = (b + y) >>> 0;
-            c = (c + z) >>> 0;
-            c = ((c ^ b) - rot(b, 14)) >>> 0;
-            a = ((a ^ c) - rot(c, 11)) >>> 0;
-            b = ((b ^ a) - rot(a, 25)) >>> 0;
-            c = ((c ^ b) - rot(b, 16)) >>> 0;
-            a = ((a ^ c) - rot(c, 4)) >>> 0;
-            b = ((b ^ a) - rot(a, 14)) >>> 0;
-            c = ((c ^ b) - rot(b, 24)) >>> 0;
-            return c;
-        };
+        // CPU: MaterialX (three r184 mx_noise_float) — lookup3 (`mxLookup3`), Gradienten-Regel, Fünftgrad-Blende, Skala
+        const hash = mxLookup3;
         const grad = (h, x, y, z) => {
             h &= 15;
             const u = h < 8 ? x : y;
@@ -889,6 +893,7 @@ module.exports = {
     probeUrteil,
     selbsttest,
     SHADER_INSTALL:
+        mxLookup3.toString() +
         `window.__shaderKosten = ${shaderKostenSeite.toString()};` +
         `window.__rauschProbe = ${rauschProbe.toString()};` +
         `window.__stoffGraph = (stoff) => (${stoffGraph.toString()})(stoff, ${JSON.stringify(RAUSCH_NAME.source)}, window.THREE.TSL, ` +

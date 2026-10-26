@@ -34,7 +34,7 @@
 //   node scripts/diag-brennglas-takt.cjs [--selftest]   (npm run gate:brennglas-takt; Port BRENNGLAS_TAKT_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.BRENNGLAS_TAKT_PORT || 4605);
@@ -457,13 +457,9 @@ if (process.argv.includes("--selftest")) {
         const b = quellWand(src);
         if (b.length) v.push(`${was} fällt rot (${JSON.stringify(b)})`);
     }
-    for (const x of v) console.log("  ❌ " + x);
-    if (v.length) {
-        console.log("\n❌ SELBSTTEST ROT");
-        process.exit(1);
-    }
-    console.log(
-        `✅ SELBSTTEST GRÜN — kein Takt der Klasse läuft über den Bestand, jeder Schreiber stempelt; ${proben.length} eingeschleuste ` +
+    selbsttestEnde(
+        v,
+        `kein Takt der Klasse läuft über den Bestand, jeder Schreiber stempelt; ${proben.length} eingeschleuste ` +
             `Brüche fallen rot (Alias, forEach, Index, Destrukturierung, Spread, Kopie, Netz-Liste, verschachtelte und userData-Schreiber, ` +
             `fremde Hitze, tote Ausnahme, Spiegel-Familie, Wuchs im Takt), ${gruen.length} harmlose Formen bleiben grün.`
     );

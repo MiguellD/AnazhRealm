@@ -22,7 +22,7 @@
 //   node scripts/diag-raum-tags.cjs [--selftest]   (npm run gate:raum-tags; Port RAUM_TAGS_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.RAUM_TAGS_PORT || 4606);
@@ -204,13 +204,9 @@ if (process.argv.includes("--selftest")) {
         "",
         "vorbei am Gedächtnis"
     );
-    for (const x of v) console.log("  ❌ " + x);
-    if (v.length) {
-        console.log("\n❌ SELBSTTEST ROT");
-        process.exit(1);
-    }
-    console.log(
-        `✅ SELBSTTEST GRÜN — Aufrufbaum ${stamm.baum.length} Methoden, ${stamm.tabellen.length} Tabellen (${stamm.tabellen.join(", ")}); ` +
+    selbsttestEnde(
+        v,
+        `Aufrufbaum ${stamm.baum.length} Methoden, ${stamm.tabellen.length} Tabellen (${stamm.tabellen.join(", ")}); ` +
             "Zustands-Leser, Instanz-Feld, Tabellen-Schreiber und Leser vorbei am Gedächtnis fallen rot."
     );
     process.exit(0);

@@ -906,6 +906,8 @@ class AnazhRealm_gelaende_kollision {
             }
         if (top > -Infinity) return stoff;
         if (this._eisAt(x, z, y + 0.02, 0.05) !== null) return "eis";
+        const lava = this._lavaAt(x, z); // die Decke der Lava (stoffe.K3-2): glühend Glut, erstarrt Stein
+        if (lava) return lava.erstarrt ? "stein" : "glut";
         if (this._kronenStreuAt(x, z) >= 0.5) return "laub";
         const grund = {};
         if (this._bodenSichtAt(x, z, grund) !== null && grund.gruen >= 0.5) return "gras";

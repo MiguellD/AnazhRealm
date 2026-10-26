@@ -20,7 +20,7 @@
 //   node scripts/diag-wetter-wache.cjs [--selftest]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const {
     AUSGABE_INSTALL,
     wetterUrteil,
@@ -77,12 +77,7 @@ if (process.argv.includes("--selftest")) {
         [{ nassTrocken: 0.1 }, { lag: 600 }, { worte: [1, 2, 3] }, { welt: "sunny" }, { labor: "klar" }].some((o) => F(o).length !== 1)
     )
         v.push("front: die Front, trockener Ort, falscher Lag, fehlende Zeile oder blinde Mutation");
-    for (const x of v) console.log("  ❌ " + x);
-    if (v.length) {
-        console.log("\n❌ SELBSTTEST ROT — ein Urteil der Wache ist blind.");
-        process.exit(1);
-    }
-    console.log("✅ SELBSTTEST GRÜN — jeder eingeschmuggelte Täter fällt rot; Bühne, Verweigerung und Wunsch grün.");
+    selbsttestEnde(v, "jeder eingeschmuggelte Täter fällt rot; Bühne, Verweigerung und Wunsch grün.");
     process.exit(0);
 }
 

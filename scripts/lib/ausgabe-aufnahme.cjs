@@ -376,6 +376,9 @@ function buehne(o) {
     // Drift-Schwelle; ohne Drift malt der Sprung nichts (das Einschwingen von `werkbank band` ruft die Bühne je Takt).
     r._himmelSprung = true;
     r._applyDayNightToScene();
+    // … und die Saison im Takt des Jahrs (`_tickSeason`): Tönung und Schneegrenze (stoffe.K3-2) — bis dahin zeigte `--saison
+    // winter` den Boden des Sommers, bis der Loop sie zufällig tickte
+    r._tickSeason(0);
     // DIE TIERE DER BÜHNE (`o.tiere` n, `werkbank lauf --tiere 50`, Profiband K1 „Sturm"): n Tiere frei im Ring 15–60 m um den
     // Spieler, aus EINEM Samen, mit der Seele des Spiels (`spawnCreatureAt`, die Kappe hebt sich um sie); ein zweiter Ruf füllt
     // nur auf, was fehlt. Stehen nicht alle, bricht die Bühne laut.
@@ -404,6 +407,7 @@ function buehneSelbsttest() {
         setSeason: () => true,
         _naesseTakt() {},
         _tickRain() {},
+        _tickSeason() {},
         _applyDayNightToScene() {},
         getTerrainHeightAt: () => 0,
         _landAt: (x) => x > 5,

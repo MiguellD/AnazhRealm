@@ -12,7 +12,7 @@ const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cj
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
 const { messe } = require("./ci-zeiten.cjs");
-const { taeterFaelle } = require("./lib/welt-boot.cjs");
+const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
 
 const root = path.resolve(__dirname, "..");
 const DATEI = ".github/workflows/check.yml";
@@ -1496,12 +1496,7 @@ async function selbsttestZeiten() {
 }
 async function selbsttestLauf() {
     console.log("=== CI-DECKUNG — Selbsttest (ohne Datei) ===");
-    const f = selbsttest().concat(await selbsttestZeiten());
-    if (f.length) {
-        console.log("\n❌ SELBSTTEST ROT — die Wand ist blind:\n  " + f.join("\n  "));
-        process.exit(1);
-    }
-    console.log("✅ SELBSTTEST GRÜN — jeder eingeschmuggelte Täter fällt rot und wird beim Namen genannt.");
+    selbsttestEnde(selbsttest().concat(await selbsttestZeiten()), "jeder eingeschmuggelte Täter fällt rot und wird beim Namen genannt.");
     process.exit(0);
 }
 
