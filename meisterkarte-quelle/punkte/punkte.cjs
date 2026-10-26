@@ -302,7 +302,20 @@ function fahreGruppe(sts, ctx) {
         // der eigene Deckel liegt HINTER dem des Schlosses: gpu-lauf.sh beendet selbst und löst das Schloss (trap)
         const uhr = setTimeout(() => { tot = true; baumTot(kind.pid); }, (deckelS + warteS + (st.gpu ? 120 : 0)) * 1000);
         kind.on("error", (e) => { clearTimeout(uhr); rot("Start: " + e.message); });
-        kind.on("close", (code, sig) => {
+        // das Ende der Station ist das Ende ihres Prozesses, nie das Schließen der Rohre: ein Enkel, der sie erbt (der Herzschlag
+        // `while sleep 300` in gpu-lauf.sh der OMEN), hielte "close" bis zu seinem Erwachen — 26.10.: jede GTX-Station dauerte
+        // k × 5 min (fahrzeug.K3#1 5,02 gegen 1,07 auf der Radeon); nach "exit" bleiben den Rohren 2 s zum Leerlaufen
+        let gemeldet = false;
+        const ende = (code, sig) => {
+            if (gemeldet) return;
+            gemeldet = true;
+            kind.stdout.destroy();
+            kind.stderr.destroy();
+            abschluss(code, sig);
+        };
+        kind.on("exit", (code, sig) => setTimeout(() => ende(code, sig), 2000));
+        kind.on("close", ende);
+        const abschluss = (code, sig) => {
             clearTimeout(uhr);
             portRaeumen(ctx.port);
             // die Zeugen-Zeilen gehen in die Roh-Ausgabe (die Buchung liest sie dort), die Datei fällt
@@ -338,7 +351,7 @@ function fahreGruppe(sts, ctx) {
                 if (wand) return { gruen: false, zahl: "Wand GPU: " + wand + " · " + u.zahl, exit: code, minuten: m, grund: "Wand GPU: " + wand, ...gz };
                 return { gruen: u.gruen, zahl: u.zahl, exit: code, minuten: m, ...(u.gruen ? {} : { grund: "ROT: " + u.zahl }), ...gz };
             }));
-        });
+        };
     });
 }
 
@@ -700,6 +713,10 @@ async function selbsttest() {
     pruef("LÄUFER Absturz ohne Ausgabe", e.gruen === false && e.exit === 3 && /Urteil warf/.test(e.grund), JSON.stringify(e));
     e = await fahreStation({ ...st0, minuten: 0.01, befehl: ["node", "-e", "setTimeout(()=>{}, 60000)"], urteil: () => ({ gruen: true, zahl: "still" }) }, ctx("deckel"));
     pruef("LÄUFER Deckel", e.gruen === false && /Deckel/.test(e.grund), JSON.stringify(e));
+    // ein Enkel erbt das Rohr und schläft 20 s (wie ein Herzschlag `( while sleep 300 … ) &` ohne Umleitung): die Station endet
+    // mit ihrem Prozess (am alten Läufer: close nach 20,5 s, exit nach 0,46 s)
+    e = await fahreStation({ ...st0, befehl: ["bash", "-c", "( sleep 20 ) & echo '{\"n\": 0}' > \"$1\"", "enkel", "{AUS}"], urteil: lies }, ctx("enkel"));
+    pruef("LÄUFER ein Enkel mit dem Rohr hält die Station nicht (Ende am Prozess, nie am Rohr)", e.gruen === true && e.minuten < 0.25, JSON.stringify(e));
     e = await fahreStation({ ...st0, env: { LINSE_GPU: "hardware" }, befehl: ["node", "-e", "console.log(process.env.LINSE_GPU)"], urteil: (j, l) => ({ gruen: true, zahl: l.stdout.trim() || "leer" }) }, ctx("karte"));
     const e2 = await fahreStation({ ...st0, befehl: ["node", "-e", "console.log(process.env.LINSE_GPU)"], urteil: (j, l) => ({ gruen: l.stdout.trim() === "software", zahl: l.stdout.trim() || "leer" }) }, ctx("soft"));
     pruef("LÄUFER headless fährt LINSE_GPU=software, nie die Karte", e.gruen === false && /LINSE_GPU=software/.test(e.grund) && e2.gruen === true, JSON.stringify([e, e2]));
