@@ -1348,6 +1348,7 @@ class AnazhRealm_koerper_leib {
     // PORTAL_RENDER_CONFIG.lod.budget[kind][stufe], `_ofenZeile`); ein Bruch schreit, nie still.
     _ofenBudget(core, kind, lod, eintraege, name) {
         const PC = globalThis.__phytoCore;
+        this._foundryLiefer(this._foundry, "haupt"); // der Guss des Haupt-Fadens (die Liefer-Marke)
         const bz = this._ofenZeile(core, kind, lod);
         const res = PC.budgetErzwingen(eintraege, bz.zeile);
         if (res.bericht.bruch.length)
