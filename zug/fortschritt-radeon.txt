@@ -294,3 +294,4 @@
 2026-10-26 14:28:55 takt6-headless stoffe.K3#1 GRÜN 0.4 · 20/75
 2026-10-26 14:29:00 takt6-headless stoffe.K1#1 GRÜN 0.4 · 21/75
 2026-10-26 14:29:08 takt6-headless tiere.K1#1 GRÜN 0.4 · 22/75
+2026-10-26 14:29:28 takt6-headless tiere.K3#1 GRÜN 0.3 · 23/75
