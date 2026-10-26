@@ -1734,9 +1734,15 @@ class AnazhRealm_speicher_welten {
     async _idbPreload() {
         this._idbPreloadedState = null;
         const activeId = this.activeWorldGet();
-        if (!activeId) return;
-        const [rec, bak] = await Promise.all([this._idbGetWorld(activeId), this._idbGetWorld(activeId + ".bak")]);
-        if (!rec && !bak) return;
+        const idb = activeId && (await this._idbStand(activeId));
+        if (idb) this._idbPreloadedState = { worldId: activeId, ...idb };
+    }
+
+    // Der IndexedDB-Stand einer Welt in der Form der Rettungs-Kette {state, at, kaputt, bak} — null, wenn IndexedDB sie nicht
+    // kennt. Leser: der Boot-Vorlauf und die Weltgrenze (was der nächste Boot lädt).
+    async _idbStand(id) {
+        const [rec, bak] = await Promise.all([this._idbGetWorld(id), this._idbGetWorld(id + ".bak")]);
+        if (!rec && !bak) return null;
         const lies = (r) => {
             if (!r) return { state: null, at: 0, kaputt: "leer" };
             try {
@@ -1745,7 +1751,7 @@ class AnazhRealm_speicher_welten {
                 return { state: null, at: r.at, kaputt: e.message };
             }
         };
-        this._idbPreloadedState = { worldId: activeId, ...lies(rec), bak: lies(bak) };
+        return { ...lies(rec), bak: lies(bak) };
     }
 
     triggerStateDownload(stateToSave, suggestedName) {

@@ -164,13 +164,9 @@ function seitenPruefer() {
         async befundeA(aId, spaet) {
             const r = window.anazhRealm;
             await r._speicherStill();
-            const [rec, bak] = await Promise.all([r._idbGetWorld(aId), r._idbGetWorld(aId + ".bak")]);
-            const lies = (x) =>
-                x ? { state: r._standNormal(JSON.parse(x.json)), at: x.at } : { state: null, kaputt: "leer" };
-            const kette = r._weltRettungsKette(aId, rec || bak ? { ...lies(rec), bak: lies(bak) } : null);
-            if (!kette.state) return [`A: unter ${aId} liegt keine Welt mehr (${kette.befund.join(" · ")})`];
+            const s = r._weltRettungsKette(aId, await r._idbStand(aId)).state;
+            if (!s) return [`A: unter ${aId} liegt keine Welt mehr`];
             const out = [];
-            const s = kette.state;
             const roh = JSON.stringify(s);
             const id = s.worldMeta && s.worldMeta.worldId;
             if (id !== aId) out.push(`A: der Platz von A trägt die Welt ${id === undefined ? "ohne worldId" : id}`);

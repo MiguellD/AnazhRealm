@@ -317,7 +317,8 @@ async function tabTodProbe({ von, bis, selbst = false }) {
         const page = (await browser.pages())[0];
         const zeile = { z, befund: [] };
         let tot = null;
-        const toeten = () => tot || ((tot = Date.now()), ttToeten(browser));
+        // der Tod ist, wenn der Prozess fort ist: bis taskkill zurückkehrt, schreibt der Faden weiter (lokal z4: ein ganzer Stand nach dem Stempel, „halb")
+        const toeten = () => tot || (ttToeten(browser), (tot = Date.now()));
         page.on("console", (m) => {
             const t = m.text();
             if (t.startsWith("__TT__ ")) alle.push(JSON.parse(t.slice(7)));
