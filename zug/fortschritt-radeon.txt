@@ -267,3 +267,4 @@
 2026-10-26 12:21:52 eeaff9d6-radeon-ruhe fahrzeug.K3#1 GRÜN 1.1 · 1/2
 2026-10-26 12:27:34 eeaff9d6-radeon-ruhe leib.K1#1 GRÜN 5.7 · 2/2
 2026-10-26 12:27:37 eeaff9d6-radeon-ruhe ENDE 2 grün / 0 rot · 6.8 min
+2026-10-26 14:22:57 takt6-radeon START 45 Stationen
