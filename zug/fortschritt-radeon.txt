@@ -279,3 +279,4 @@
 2026-10-26 14:26:02 takt6-headless wetter.K5#2 GRÜN 0.1 · 7/75
 2026-10-26 14:26:09 takt6-headless gelaende.K4#2 GRÜN 2.4 · 8/75
 2026-10-26 14:26:16 takt6-headless gelaende.K5#1 GRÜN 1.8 · 9/75
+2026-10-26 14:26:26 takt6-radeon gelaende.K3#1 GRÜN 1.4 · 2/45
