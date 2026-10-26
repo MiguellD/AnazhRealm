@@ -58,3 +58,4 @@
 2026-10-26T13:50 bauen-quote champion 143k 61A grün Fase-Regler Podestleiter ab 0,002: leiter L1/L0 0,571 → 0,167, 5709/5712 byte-gleich 21f084e4 · PUNKTE
 2026-10-26T14:05 bewohner-rand champion 230k 89A grün Wege = Wenden des Plans (b.tagAb), rot 0/6, Start-Dorf 6–8 gleich je Lauf b3a10c93 · FEUER
 2026-10-26T17:55 leib-k1-rueck champion 88k 37A befund KEIN Rückschritt: verschränkt 12/12 auf der Radeon, ego/gehen 44,8 vs 45,5 ms Median, B−A +0,10 ms (0,04 σ); Station kippt an beiden Köpfen 1 von 4 · WICHTIG
+2026-10-26T19:15 profiband-haenger champion 462k 362A grün Täter Chrome CollectDawnInfo 120 s nach Start (217 ms GPU-Prozess), Schalter in Linsen-Rezepten + Linse nennt GPU-Auftrag; K4#1 Radeon 0/4 → 4/4 91500c0a · WICHTIG/PUNKTE
