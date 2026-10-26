@@ -1,0 +1,89 @@
+{
+ "kamera": [
+  59.97,
+  91.02,
+  0.29
+ ],
+ "hell": 89.2,
+ "kontrast": 7.59,
+ "dc": 95,
+ "dreiecke": 655296,
+ "ms": 776,
+ "klasse": {
+  "ausdruck": "^tier:",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 7
+  },
+  "misch": 0,
+  "toene": [
+   "tier:?=255/80/80",
+   "tier:wesen=80/255/80",
+   "tier:wolf=80/120/255"
+  ],
+  "klassen": {
+   "tier:wesen": {
+    "objekte": 13,
+    "spiegelTreue": null,
+    "spiegelEbene": 89.054,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "zt": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 36.56,
+    "pixel": 978,
+    "luma": 99.91,
+    "kante": 0.5082,
+    "kr": 232,
+    "bloecke": 2,
+    "glatt": 0,
+    "nyquist": 0.1635,
+    "beta": 1.6806
+   },
+   "tier:wolf": {
+    "objekte": 52,
+    "spiegelTreue": -0.064,
+    "spiegelEbene": 89.381,
+    "sp": [
+     34,
+     0,
+     0,
+     19977.62,
+     19977.62,
+     -1278.48
+    ],
+    "zweiton": 0,
+    "zt": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 24.23,
+    "pixel": 7461,
+    "luma": 88.33,
+    "kante": 0.482,
+    "kr": 1545,
+    "bloecke": 38,
+    "glatt": 0,
+    "nyquist": 0.1077,
+    "beta": 3.0537
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\koordination\\meisterkarte-quelle\\punkte\\messung\\roh\\eeaff9d6-radeon\\tiere.K2_2-wolfsrevier.maske.png"
+ },
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.21 m · Luma 80.6 σ 36.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.95 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+ "datei": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\koordination\\meisterkarte-quelle\\punkte\\messung\\roh\\eeaff9d6-radeon\\tiere.K2_2-wolfsrevier.png",
+ "gesamtMs": 10951
+}
