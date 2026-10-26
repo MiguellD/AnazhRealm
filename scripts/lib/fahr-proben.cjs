@@ -385,9 +385,13 @@ async function probeLeben(expected) {
         return labor;
     };
     // W (feld.K1) DIE WETTER-KETTE: das Wort Sturm, 20 min per Sprung des Nässe-Schreibers; je Lage Regen-Feld, Nässe (= Uniform
-    // des Stoffs), Grip (der Bremsweg `s` der Vollbremsung ab 50 km/h bis bremsV in Sim-Schritten). Gehalten
-    // wird der VORGÄNGER; `stern` liest das Wort. K8 (fahrzeug.K1) auf demselben Gras: μ(gras) halb in der Stoff-Zeile, dann
-    // derselbe Streifen als Weg über den Hebel der Dörfer (`_stlWegeBuild`) trocken und im Sturm, darauf S1 (Labor = Welt, Takt).
+    // des Stoffs), Grip (der Bremsweg `s` der Vollbremsung ab 50 km/h bis bremsV in Sim-Schritten), Brand und Licht: ein Herd
+    // am Start fängt trocken (`_brandEntfachen`), glüht `aufS` Spielzeit lang auf, dann fällt das Wort und der Brand tut EINEN
+    // Schritt auf seinem Takt (`_tickBrand`) — gemessen die Glut des Herds und die Stärke seines Feuers im Licht der Welt
+    // (`_leuchtQuellen`, zur festen Bild-Uhr 0); Brand und Taten fallen vor der Bremsung. Gehalten wird der VORGÄNGER
+    // (`festBrand`: der Takt des Brands); `stern` liest das Wort. K8 (fahrzeug.K1) auf demselben Gras: μ(gras) halb in der
+    // Stoff-Zeile, dann derselbe Streifen als Weg über den Hebel der Dörfer (`_stlWegeBuild`) trocken und im Sturm, darauf S1
+    // (Labor = Welt, Takt).
     const kette = async (K) => {
         const [P0, bV, out] = [Object.getPrototypeOf(r), VC.FAHR.schritt.bremsV, {}];
         await ankommen(start.x, start.z);
@@ -415,9 +419,18 @@ async function probeLeben(expected) {
         };
         const lage = async (name, wort, halt) => {
             wetter("sunny", 1e6);
+            const [n0, herd] = [(st.worldMeta.taten ||= []).length, r._brandEntfachen(start.x, start.z)];
+            st.spielZeit += A.BRAND.aufS;
+            r._tickBrand();
             const los = halt && halt();
             wetter(wort, K.sprungS);
+            st.spielZeit += A.BRAND.schrittS;
+            r._tickBrand();
+            const q = r._leuchtQuellen(start.x, 0, start.z, 1e3).find((l) => l.id === herd);
             const m = { regen: r._weatherFieldFor(st.weather).rain, naesse: st.naesse, stoff: r._ensureAtmoUniforms().naesse.value };
+            Object.assign(m, { brand: [...st.brandFeld.values()].includes(herd) ? herd.glut : 0, licht: q ? r._leuchtStaerke(q, 0) : 0 });
+            st.brandFeld.clear();
+            st.worldMeta.taten.length = n0;
             out[name] = Object.assign(m, await bremse());
             if (los) los();
         };
@@ -427,6 +440,7 @@ async function probeLeben(expected) {
         await lage("sturm", "stormy");
         await lage("festRegen", "stormy", halte("_weatherFieldFor", () => P0._weatherFieldFor.call(r, "sunny")));
         await lage("festNaesse", "stormy", fest);
+        await lage("festBrand", "stormy", halte("_tickBrand", () => {}));
         await lage("stern", "stormy", () => {
             const los = fest();
             r._fahrHaft = () => (r._weatherIsWet() ? 0.2 : 1);
