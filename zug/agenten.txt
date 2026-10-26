@@ -23,3 +23,5 @@
 2026-10-26T01:32 klang-stoff-schritte champion wfk 98A WIP K5#2 Radeon 0 Aussetzer; K4#1 Täter = Probe m15-schritt (altes Gesetz) → werkzeug-heil 0a129a86 · PUNKTE
 2026-10-26T02:10 fahr-s3 champion wfk 122A grün S3 Querhang 10/10 am selben Ort, Streuung 8 cm → 1 mm (Ort/Boden/Wind/Takt), Decke −18 523c5923 · FEUER
 2026-10-26T02:25 decke-zahlstelle champion 190k 69A grün 57 pageerror-Zwillinge → welt-boot, scripts −5415 Atome, Wand in gate:welt-boot 4f5c1895 · FEUER
+2026-10-26T03:20 mensch-k3-frist champion 196k 75A grün Kreatur-Linse Teil 1 1427 → 404 s (Selbsttest 10 Täter in EINEM Lauf 1071 → 173 s), mensch.K3#2 grün 402c297d · PUNKTE
+2026-10-26T03:25 k8-fein champion 163k 79A WIP lokal 11/11 Läufe 4,3 cm (Drossel, Worker-Verzug, Kerne) — Wackler nur auf Linux-Läufer; Linse nennt den p95-Punkt, Diagnose-Lauf CI 391460c6 · FEUER
