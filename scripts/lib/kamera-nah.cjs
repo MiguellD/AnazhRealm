@@ -262,8 +262,7 @@ function nahDeckungInSeite(o) {
     // die Dreiecke seines ersten Bilds: das Haus in 12 m stand dort auf Stufe 1, ging nah auf Stufe 0, und die Linse zählte die
     // nicht mehr gezeichnete Stufe 1 vor der Hülle der Stufe 0 (Bild 1032, Bau 0,9 % — je nach Lade-Takt rot oder grün).
     let stand = 0;
-    for (const g of (st.archInstanceGroups && st.archInstanceGroups.values()) || []) stand += (g && g.slotStand) | 0;
-    stand = (st.archInstanceGroups ? st.archInstanceGroups.size : 0) + ":" + stand;
+    for (const g of st.archInstanceGroups.values()) stand += g.slotStand | 0;
     if (o.neu || !C || !o.ort || C.id !== o.ort.id || C.stand !== stand) {
         const tris = [];
         const uvs = [];

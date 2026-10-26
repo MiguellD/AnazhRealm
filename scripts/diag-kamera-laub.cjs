@@ -208,7 +208,7 @@ function urteilGang(G) {
             const kugel = g.taeter.map((t) => Object.assign({}, t, { taeter: t.taeter.filter((n) => !n.startsWith("im Stamm")) })).filter((t) => t.taeter.length);
             if (kugel.length) out.push(`Gang ${art} (${g.typ}): die Kugel der Linse in ${kugel.length} von ${g.bilder} Bildern — ` + kugel.slice(0, 3).map((t) => `Bild ${t.bild} ${t.phase}: ${t.taeter} (Linse ${t.c}, Ziel ${t.ziel})`).join(" · "));
             const nah = g.nah.map((t) => [t, Object.keys(GANG.nahRadien).filter((k) => t.jeKlasse[k] > 0)]).filter(([, k]) => k.length);
-            if (nah.length) out.push(`Gang ${art} (${g.typ}): Nah-Pixel in ${nah.length} Proben — ` + nah.slice(0, 3).map(([t, k]) => `Bild ${t.bild} ${t.phase}: ${k.map((x) => x + " " + pct(t.jeKlasse[x]))}` + (t.flaechen ? ` an ${Object.keys(t.flaechen)} (Linse ${t.c}, Ziel ${t.ziel})` : "")).join(" · "));
+            if (nah.length) out.push(`Gang ${art} (${g.typ}): Nah-Pixel in ${nah.length} Proben — ` + nah.slice(0, 3).map(([t, k]) => `Bild ${t.bild} ${t.phase}: ${k.map((x) => x + " " + pct(t.jeKlasse[x]))}` + (t.flaechen ? " an " + Object.keys(t.flaechen) : "")).join(" · "));
         }
     }
     const ruck = G.gaenge.flatMap((g) => g.ruck);
@@ -679,7 +679,7 @@ async function leibGang(G) {
                 if (t.length) g.taeter.push({ bild: n, phase, taeter: [...new Set(t)], c: z3(c), ziel: st._kamZiel && z3(st._kamZiel) });
                 if (n % G.nahJe === 0) {
                     const d = window.__nahDeckung({ radien: G.nahRadien, gw: G.gw, gh: G.gh, ort: { id: `gang-${art}`, x: p.x, z: p.z, r: 14 }, neu: n === G.nahJe });
-                    if (d.deckung > 0) g.nah.push({ bild: n, phase, jeKlasse: d.jeKlasse, flaechen: d.taeter, c: z3(c), ziel: st._kamZiel && z3(st._kamZiel) });
+                    if (d.deckung > 0) g.nah.push({ bild: n, phase, jeKlasse: d.jeKlasse, flaechen: d.taeter });
                 }
                 if (n % 20 === 0) await new Promise((res) => setTimeout(res, 0));
             };
