@@ -1,0 +1,32 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\034952a7-gtx\mensch.K2_2.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7744 )); W=$(( 7744 + 20000 )); export WERKBANK_PORT=$W
+raeum() { for p in $(netstat -ano | grep -E ":($S|$W|$((W - 1))) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }
+stand() { mkdir -p "$B-stand"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json "$B-stand/" 2> /dev/null; }
+ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }
+trap ende EXIT; trap 'exit 143' INT TERM
+raeum; stand
+(PORT=$S node save-server.js > "$B-save.log" 2>&1 &)
+for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done
+(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > "$B-werkbank.log" 2>&1 &)
+for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' "$B-werkbank.log" 2> /dev/null && break; sleep 5; done
+grep -E 'WERKBANK bereit' "$B-werkbank.log" || { echo 'WERKBANK startet nicht'; tail -5 "$B-werkbank.log"; exit 1; }
+node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner
+WERKBANK bereit: Steuer 127.0.0.1:27744 · Seite :27743
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27744) =====
+
+  ❌ bewohner  {"sprungN":0,"alsLeib":4,"schmiede10":0,"schmiede2":0,"dorf":"Steintal","haeuser":18,"sollSumme":81,"leiber":52,"quote":0.642,"leer":["schmiede alpenchalet #239842: 0 von 2","wohnhaus schwarzwald #617311: 0 von 5","wohnhaus schwarzwald #45665: 0 von 7","wohnhaus schwarzwald #614278: 0 von 4","wohnhaus skandinavisch #746991: 0 von 2","wohnhaus alpenchalet #601540: 0 von 4"],"leerN":7,"imBlick":{"ego":20,"third":28},"nahLeiber":4,"plan":true,"planGleich":true,"bewohner":52,"trefferMin":0.987,"unter":[],"unterN":0,"stationen":0,"satzGang":{"schlupf":0.02,"wegLeib":537.2,"spuren":52},"blick":{"n":104,"quote":0.962,"sektorMax":0.2},"ohnePlatz":0,"ohnePlatzWer":[],"takt":{"n":1800,"p95":0.5,"mittel":0.263},"huellen":18,"wege":{"wandN":0,"wand":[],"durch":163,"tuer":163,"falsch":[],"aufWeg":0.916,"wegeMin":4,"wegeMax":8,"ausserN":0,"ausser":[],"streckeMin":44,"kurzN":0,"kurz":[]},"stall":"DER BAU STEHT NICHT: bewohner: die Leiber nach 471 Takten — die Welt hat nichts mehr offen","sek":51.8,"wiederkehr":{"n":1296,"maxM":1.174,"ueberN":0,"ueber":[]}}
+       ↳ Bewohner-Quote 0.642 (52 Leiber, Σ leute 81) · 7 Haus ohne Bewohner: schmiede alpenchalet #239842: 0 von 2 · wohnhaus schwarzwald #617311: 0 von 5 · wohnhaus schwarzwald #45665: 0 von 7 · wohnhaus schwarzwald #614278: 0 von 4 · wohnhaus skandinavisch #746991: 0 von 2 · wohnhaus alpenchalet #601540: 0 von 4 · Schmiede um 10/2 Uhr: 0/0 am Werk
+
+  (55 s)
+
+❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 11990 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
