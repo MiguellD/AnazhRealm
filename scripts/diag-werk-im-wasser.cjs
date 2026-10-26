@@ -49,7 +49,7 @@
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]          Port: WERK_WASSER_PORT (Standard 4643)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -2201,18 +2201,8 @@ function selbsttest() {
         ["C leer", (b) => (b.ergebnis.versuche[0].gesetzt = 6), /C LEER/],
         ["D lief nicht", (b) => delete b.damm, /D: die Damm-Probe lief nicht/],
     ];
-    let ok = urteil(JSON.parse(JSON.stringify(gruen))).length === 0;
-    console.log(`  ${ok ? "✅" : "❌"} grüner Befund → 0 Täter`);
-    for (const [name, gift, re] of faelle) {
-        const b = JSON.parse(JSON.stringify(gruen));
-        gift(b);
-        const v = urteil(b);
-        const t = v.some((x) => re.test(x));
-        console.log(`  ${t ? "✅" : "❌"} ${name} → ${v[0] || "(kein Täter)"}`);
-        if (!t) ok = false;
-    }
+    const fehler = taeterFaelle([["grüner Befund", () => {}], ...faelle], urteil, { klon: () => JSON.parse(JSON.stringify(gruen)) });
     // die Leser-Linse gegen eingeschmuggelte Täter im echten Stamm (der Vor-Stand über den EINEN Helfer)
-    const echt = leserUrteil();
     const gifte = [
         [
             "Bezug als Probe",
@@ -2247,21 +2237,8 @@ function selbsttest() {
             /am Setz-Punkt .* statt am Zell-Stempel/,
         ],
     ];
-    const echtOk = echt.length === 0;
-    console.log(`  ${echtOk ? "✅" : "❌"} der echte Stamm → ${echt.length ? echt.join(" · ") : "0 Täter"}`);
-    if (!echtOk) ok = false;
-    for (const [name, gift, re] of gifte) {
-        let griff = true;
-        const v0 = leserUrteil((s) => {
-            const s2 = gift(s);
-            griff = griff && s2 !== s;
-            return s2;
-        });
-        const v = griff ? v0 : ["(Gift griff nicht)"];
-        const t = v.some((x) => re.test(x));
-        console.log(`  ${t ? "✅" : "❌"} Leser: ${name} → ${v[0] || "(kein Täter)"}`);
-        if (!t) ok = false;
-    }
+    const giftFall = (art) => ([name, z, muss]) => ({ name: `${art}: ${name}`, z, muss });
+    taeterFaelle([{ name: "der echte Stamm" }, ...gifte.map(giftFall("Leser"))], leserUrteil, { fehler });
     // die Kern-Linse gegen eingeschmuggelte Täter im echten Kern (vm, ohne Browser)
     const vm = require("vm");
     const kernSrc = fs.readFileSync(path.join(__dirname, "..", "vehicle-core.js"), "utf8");
@@ -2274,11 +2251,7 @@ function selbsttest() {
         vm.runInContext(s, ctx);
         return ctx.__vehicleCore;
     };
-    const kernEcht = kernUrteil(kernLaden(kernSrc));
-    const kernOk = kernEcht.length === 0;
-    console.log(`  ${kernOk ? "✅" : "❌"} der echte Kern → ${kernEcht.length ? kernEcht.join(" · ") : "0 Täter"}`);
-    if (!kernOk) ok = false;
-    for (const [name, gift, re] of [
+    taeterFaelle([{ name: "der echte Kern", z: (s) => s }, ...[
         [
             "Wasser-Term ohne Widerstand",
             (s) => s.replace("z.vlong = vL0 / (1 + Wg.kStirn * t * Math.abs(vL0) * dt);", "z.vlong = vL0;"),
@@ -2302,15 +2275,9 @@ function selbsttest() {
                 ),
             /K4 über der Ansaugung/,
         ],
-    ]) {
-        const s2 = gift(kernSrc);
-        const v = s2 === kernSrc ? ["(Gift griff nicht)"] : kernUrteil(kernLaden(s2));
-        const t = v.some((x) => re.test(x));
-        console.log(`  ${t ? "✅" : "❌"} Kern: ${name} → ${v[0] || "(kein Täter)"}`);
-        if (!t) ok = false;
-    }
-    console.log(ok ? "\nWERK-IM-WASSER SELBSTTEST GRÜN" : "\nWERK-IM-WASSER SELBSTTEST ROT");
-    process.exit(ok ? 0 : 1);
+    ].map(giftFall("Kern"))], (gift) => kernUrteil(kernLaden(gift(kernSrc))), { fehler });
+    selbsttestEnde(fehler, "Befund, Leser und Kern nennen jeden eingeschmuggelten Täter beim Namen.");
+    process.exit(0);
 }
 
 // `--nur hain,zensus,satz,wagen` und `--furt x,z,ux,uz` (der Vergleich an DERSELBEN Furt) — Werkbank-Fragen, das Gate fährt alle.

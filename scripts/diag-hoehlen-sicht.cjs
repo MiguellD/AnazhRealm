@@ -340,6 +340,7 @@ function urteil(b) {
 }
 
 function selbsttest() {
+    const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
     const gruen = {
         spiegel: [
             {
@@ -611,19 +612,8 @@ function selbsttest() {
             /RECHENWERK: .* 0\.31 an 400/,
         ],
     ];
-    for (const [name, tat, muss] of faelle) {
-        const b = klon();
-        tat(b);
-        const v = urteil(b);
-        const ok = v.some((x) => muss.test(x));
-        if (!ok) fehler.push(`${name}: die Wand nennt den Täter nicht (${muss})`);
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${name}" → rot: ${v.join(" · ") || "(nichts)"}`);
-    }
-    if (fehler.length) {
-        console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
-        process.exit(1);
-    }
-    console.log("\n✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.");
+    taeterFaelle(faelle, urteil, { fehler, klon });
+    selbsttestEnde(fehler);
 }
 
 if (process.argv.includes("--selftest")) {

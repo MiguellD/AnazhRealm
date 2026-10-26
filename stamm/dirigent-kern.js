@@ -70,8 +70,9 @@ class AnazhRealm {
             // State-Linse (audit:strict) jeden Lese-Pfad gegen eine Init-Wahrheit prüft und Tippfehler beim Namen nennt.
             scenePass: null, // der Szene-Pass der Post-Kette (_ensurePostProcessing)
             weltMarch: null, // der EINE Welt-March (_weltMarchEnsure)
-            // DIE SPIEL-ZEIT (s): die Summe der Spiel-Takte (`delta`, K21) — der EINE Schreiber ist der Loop, die Uhr des lebendigen
-            // Felds (Zerfall von Leben und Gefühl); Schreiben und Lesen in einem Takt sehen denselben Moment, eine Pause ist eine Pause.
+            // DIE WELT-UHR (s, feld.K2#2): die Summe der Spiel-Takte (`delta`, K21) — der Loop schreibt sie, der Stand und der
+            // Mitspieler reichen sie weiter (`_weltUhrNimm`: das Spätere gilt); die Uhr jeder Teil-Simulation (Leben und Gefühl,
+            // Brand, Nässe, Wetter-Zug und Front); Schreiben und Lesen in einem Takt sehen denselben Moment, eine Pause ist eine Pause.
             spielZeit: 0,
             feldPass: null, // der Feld-Pass des Fern-Rings
             deckStreu: null, // die Deck-Streu des Fernfelds
@@ -278,7 +279,7 @@ class AnazhRealm {
             terrainSteepness: 1.0,
             terrainBaseHeight: 0.0,
             weather: "sunny",
-            weatherEffectTime: 0,
+            weatherEffectTime: 0, // der Halt einer Messung, wenn < 0 (`_messHalt`); der Zug liest die Welt-Uhr
             // DAS WORT DES SPIELERS über das Wetter (`_setWeather`, Leben-Schau 2): steht es, hält der Wetter-Zug und
             // keine Stimme der Welt dreht das Wetter, bis der Spieler es freigibt („setze wetter frei"); persistiert.
             // Der WUNSCH der Welt (Nexus, seine Gesetze, die Emotion, die Wesen): das Wort, das der nächste Zug zieht.
@@ -1728,6 +1729,15 @@ class AnazhRealm {
                 });
             }
         }
+        // DIE LAVA (stoffe.K3-2): jede glühende Decke leuchtet als Feuer über ihrem Ort, die Masse folgt ihrer Glut (`_lavaZustand`)
+        for (const a of this._tatIndex().lava) {
+            if ((a.x - x) * (a.x - x) + (a.z - z) * (a.z - z) > R * R) continue;
+            const g = this._lavaZustand(a).glut;
+            if (!(g > 0)) continue;
+            const phase = (((a.x * 12.9898 + a.z * 78.233) % 6.2832) + 6.2832) % 6.2832;
+            const L = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+            nimm(a, { quelle: "lava", x: a.x, y: a.y + 1, z: a.z, L, masse: AnazhRealm.BRAND.licht * g, phase });
+        }
         const tor = this._portalLeuchte;
         if (tor) nimm(tor, Object.assign({}, tor));
         return out;
@@ -1815,7 +1825,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.99";
+AnazhRealm.VERSION = "18.546.102";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

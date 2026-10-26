@@ -67,7 +67,7 @@ class AnazhRealm_klang {
     // ═══ DIE KLANG-WELT (Welle 5 Klang) ═══
     // Der Wirt ist das Sinnesorgan, das klang-Gesetzbuch das Gesetz: `_umweltLage` misst am Ohr, was dort IST
     // (Wetter-Feld + dieselbe wandernde Böe, die das Gras biegt · Kronen-Deckung aus dem Pflanz-Gesetz · Wasser im
-    // Hör-Ring · Wasserfälle der Region · Glut-Bauten · Sonne · Leben · Jahreszeit), `umweltMischung` macht daraus
+    // Hör-Ring (Ufer) · der Kanal des Flusses · Wasserfälle der Region · Glut-Bauten · Sonne · Leben · Jahreszeit), `umweltMischung` macht daraus
     // Pegel/Filter/Panorama, `umweltGraph` spielt es — Lab und Linse bauen denselben Graphen. Kosten je Frame:
     // UMWELT.ohr.probenJeFrame Ring-Proben, die Glut aus dem Verzeichnis (`_blockerMit("glut")`), die Mischung im Takt ohr.mischSek;
     // Quellen laufen nur, solange ihre Stimme hörbar ist. Nie die Weltgröße. Gerechnet wird in der KLANG-WERKSTATT
@@ -193,7 +193,7 @@ class AnazhRealm_klang {
     }
 
     // Der Hör-Ring: je Frame `n` Punkte (rund um die Uhr), je Punkt nass (`_nassAt`) und Strömung (die EINE
-    // Strömungs-Quelle `_waterFlowAt`). Die Punkte wandern mit dem Ohr.
+    // Strömungs-Quelle `_waterFlowAt`: ein fließender Punkt ist nie Ufer). Die Punkte wandern mit dem Ohr.
     _umweltRingProbe(um, px, pz, n) {
         const R = um.ring;
         for (let k = 0; k < n; k++) {
@@ -250,7 +250,7 @@ class AnazhRealm_klang {
     // EINE Wind am Ohr (`_windAt`), die Kronen-Deckung der STEHENDEN Bäume (die
     // Kronen-Karte `_kronenStreuAt` — dieselben Bytes, aus denen Boden und Nah-Wiese den Wald lesen; das Kronenlicht-
     // Feld der Platzierung sagt nur, wo Bäume wachsen DÜRFEN), Sonne (Tageszeit), Jahres-Phase, die singenden Vögel (ihre
-    // Leiber, `state.voegel`), der Hör-Ring (Ufer/Fluss), der nächste Wasserfall der Region, die nächste Glut (Brenn-Fläche)
+    // Leiber, `state.voegel`), der Hör-Ring (Ufer), der Kanal des Flusses, der nächste Wasserfall der Region, die nächste Glut (Brenn-Fläche)
     // — und die ANTWORT der Wertung
     // (`_tatAntwortAm`: das abklingende δ der Tat, die hier am stärksten wirkt; affekt K1).
     _umweltLage() {
@@ -263,35 +263,41 @@ class AnazhRealm_klang {
         const wind = this._windAt(px, pz, this._bildZeit);
         const re = this._umweltRechts();
         const pan = (ux, uz) => Math.max(-1, Math.min(1, ux * re.x + uz * re.z));
-        // Der Ring: stilles Wasser (Ufer) und fließendes (Fluss) — Abstand, Anteil, Richtung.
+        // Der Ring: stilles Wasser (Ufer) — Abstand, Anteil, Richtung; ein fließender Punkt zählt nie als Ufer.
         const R = um.ring;
         const ufer = { d: Infinity, anteil: 0, pan: 0 };
-        const fluss = { d: Infinity, tempo: 0, pan: 0 };
         let nStill = 0;
         let wU = 0;
-        let wF = 0;
         let panU = 0;
-        let panF = 0;
         for (let i = 0; i < R.punkte.length; i++) {
-            if (!R.nass[i]) continue;
+            if (!R.nass[i] || R.tempo[i] > 0) continue;
             const pt = R.punkte[i];
             const w = 1 / Math.max(1, pt.r);
-            const p = pan(pt.ux, pt.uz);
-            if (R.tempo[i] > 0) {
-                if (pt.r < fluss.d) fluss.d = pt.r;
-                if (R.tempo[i] > fluss.tempo) fluss.tempo = R.tempo[i];
-                wF += w;
-                panF += p * w;
-            } else {
-                nStill++;
-                if (pt.r < ufer.d) ufer.d = pt.r;
-                wU += w;
-                panU += p * w;
-            }
+            nStill++;
+            if (pt.r < ufer.d) ufer.d = pt.r;
+            wU += w;
+            panU += pan(pt.ux, pt.uz) * w;
         }
         ufer.anteil = nStill / R.punkte.length;
         if (wU > 0) ufer.pan = panU / wU;
-        if (wF > 0) fluss.pan = panF / wF;
+        // DER FLUSS aus dem Gesetz des Kanals (klang.K2): der nächste RAND am Ohr (`_hydroDistAt`, gelaende-core `flussRand` über
+        // die 3×3-Buckets, ≥ 32 m weit), die Richtung aus dem Gefälle seines Abstands, die Strömung an der Mittellinie aus der
+        // EINEN Strömungs-Quelle `_waterFlowAt` — dieselben Kanal-Segmente, deren Fluss das Wasser-Bild treibt. Bis kk2-ufer las
+        // der Fluss den Hör-Ring (4 Radien × 8 Richtungen): ein schmaler Bach fiel zwischen die Punkte, im Gang zum Bach der
+        // Mess-Wiese schwieg er bei 13–14 m und 23–27 m Abstand, während das Bild ihn zeigte (diag-klang-zensus --gesehen r 0,68).
+        const fluss = { d: Infinity, tempo: 0, pan: 0 };
+        const rand = this._hydroDistAt(px, pz);
+        if (rand.dist < Infinity) {
+            const gx = this._hydroDistAt(px + 1, pz).dist - rand.dist;
+            const gz = this._hydroDistAt(px, pz + 1).dist - rand.dist;
+            const g = Math.hypot(gx, gz) || 1;
+            const fl = this._waterFlowAt(px - (gx / g) * rand.dist, pz - (gz / g) * rand.dist);
+            if (fl) {
+                fluss.d = Math.max(0, rand.dist - rand.halfW);
+                fluss.tempo = Math.hypot(fl.x, fl.z);
+                fluss.pan = pan(-gx / g, -gz / g);
+            }
+        }
         // Der nächste Wasserfall der Region (wenige je Kachel).
         const fall = { d: Infinity, hoehe: 0, pan: 0 };
         const h = this._hydroFor(px, pz);

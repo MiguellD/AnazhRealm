@@ -20,7 +20,7 @@
 //   node scripts/diag-wetter-wache.cjs [--selftest]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const {
     AUSGABE_INSTALL,
     wetterUrteil,
@@ -77,12 +77,7 @@ if (process.argv.includes("--selftest")) {
         [{ nassTrocken: 0.1 }, { lag: 600 }, { worte: [1, 2, 3] }, { welt: "sunny" }, { labor: "klar" }].some((o) => F(o).length !== 1)
     )
         v.push("front: die Front, trockener Ort, falscher Lag, fehlende Zeile oder blinde Mutation");
-    for (const x of v) console.log("  ❌ " + x);
-    if (v.length) {
-        console.log("\n❌ SELBSTTEST ROT — ein Urteil der Wache ist blind.");
-        process.exit(1);
-    }
-    console.log("✅ SELBSTTEST GRÜN — jeder eingeschmuggelte Täter fällt rot; Bühne, Verweigerung und Wunsch grün.");
+    selbsttestEnde(v, "jeder eingeschmuggelte Täter fällt rot; Bühne, Verweigerung und Wunsch grün.");
     process.exit(0);
 }
 
@@ -147,11 +142,11 @@ function probe(o) {
     // WETTER_ZUG_SEK (Ereignis-Takte), die Folge ist das Wort nach jedem Takt
     const wm = st.worldMeta || (st.worldMeta = {});
     const pm = st.playerMesh.position;
-    const [saat0, pn, x0, y0, uhr0, Z] = [wm.seed, performance.now, pm.x, pm.z, wm.wetterUhr, r.constructor.WETTER_ZUG_SEK];
+    const [saat0, pn, x0, y0, uhr0, Z] = [wm.seed, performance.now, pm.x, pm.z, st.spielZeit, r.constructor.WETTER_ZUG_SEK];
     const P = globalThis.__phytoCore;
     const zug = (saat, d) => {
         const g = P.windGrund(saat);
-        [wm.seed, pm.x, pm.z, wm.wetterUhr] = [saat, x0 + d * g.x, y0 + d * g.z, 0];
+        [wm.seed, pm.x, pm.z, st.spielZeit] = [saat, x0 + d * g.x, y0 + d * g.z, 0];
         window.__wetterSetzen("sunny");
         r.dslRun(["weather", "frei"], { source: "human" });
     };
@@ -160,7 +155,7 @@ function probe(o) {
         const [folge, s0] = [[], window.__wetterSpion().seq];
         for (let i = 0; i < o.zuege; i++) {
             performance.now = () => pn.call(performance) + uhr * (i + 1);
-            [wm.wetterUhr, st.weatherEffectTime] = [Z * (i + 1), Z];
+            [st.spielZeit, st.weatherEffectTime] = [Z * (i + 1), 0];
             r._loopWeatherAndGrowth(0);
             folge.push(st.weather);
             st.weatherTransition = null;
@@ -180,14 +175,14 @@ function probe(o) {
     const kern = P.wetterAt;
     P.wetterAt = () => ({ zeile: "sturm" });
     zug("saat-a", 0);
-    [wm.wetterUhr, st.weatherEffectTime] = [Z, Z];
+    [st.spielZeit, st.weatherEffectTime] = [Z, 0];
     r._loopWeatherAndGrowth(0);
     P.wetterAt = kern;
     const nass = (w) => r._weatherIsWet(w);
     aus.front = { nassTrocken: A.filter((w, i) => nass(w) && !nass(B[i])).length / A.length, lag: Z * lag, worte: [...worte] };
     Object.assign(aus.front, { soll: 3000 / P.WIND_FELD.front.zugMS, welt: st.weather });
     st.weatherTransition = null;
-    [wm.seed, pm.x, pm.z, wm.wetterUhr] = [saat0, x0, y0, uhr0];
+    [wm.seed, pm.x, pm.z, st.spielZeit] = [saat0, x0, y0, uhr0];
     window.__buehne();
     aus.ende = { wetter: st.weather, uhr: st.weatherEffectTime };
     // (Q) der Zwilling `time_of_day` ist fort

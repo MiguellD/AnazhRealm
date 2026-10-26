@@ -36,11 +36,11 @@ function saisonFest() {
     else setTimeout(saisonFest, 50);
 }
 
-// DIE WETTER-WACHE der Bühne (die EINE Stelle, die das Wetter einer Messung hält): die Uhr des Auto-Zugs
-// (`weatherEffectTime`, Zug bei 120 s) steht eingefroren unter 0 — ein schon eingefrorener Wert bleibt, wie er ist. Die
-// Bühne ruft sie, und jede Schleife, die Takte am Stück fährt (`werkbank lauf`, die Schirm-Wand), ruft sie je Takt. Die
-// eingefrorene Uhr IST der Halt: der EINE Wetter-Schreiber des Spiels (`_setWeather`) verweigert jeden Zug, solange sie
-// unter 0 steht — Emotions-Effekt, Nexus, Gesetz, Mitspieler, Auto-Zug; im Spiel zählt die Uhr von 0 aufwärts.
+// DIE WETTER-WACHE der Bühne (die EINE Stelle, die das Wetter einer Messung hält): der Halt (`weatherEffectTime`) steht
+// eingefroren unter 0 — ein schon eingefrorener Wert bleibt, wie er ist. Die Bühne ruft sie, und jede Schleife, die Takte am
+// Stück fährt (`werkbank lauf`, die Schirm-Wand), ruft sie je Takt. Solange er unter 0 steht, verweigert der EINE
+// Wetter-Schreiber des Spiels (`_setWeather`) jeden Zug — Emotions-Effekt, Nexus, Gesetz, Mitspieler — und der Auto-Zug
+// verbraucht seinen Takt der Welt-Uhr ohne Wort; im Spiel steht der Halt auf 0.
 function wetterHalten() {
     const st = window.anazhRealm.state;
     window.__wetterSpion();
@@ -376,6 +376,9 @@ function buehne(o) {
     // Drift-Schwelle; ohne Drift malt der Sprung nichts (das Einschwingen von `werkbank band` ruft die Bühne je Takt).
     r._himmelSprung = true;
     r._applyDayNightToScene();
+    // … und die Saison im Takt des Jahrs (`_tickSeason`): Tönung und Schneegrenze (stoffe.K3-2) — bis dahin zeigte `--saison
+    // winter` den Boden des Sommers, bis der Loop sie zufällig tickte
+    r._tickSeason(0);
     // DIE TIERE DER BÜHNE (`o.tiere` n, `werkbank lauf --tiere 50`, Profiband K1 „Sturm"): n Tiere frei im Ring 15–60 m um den
     // Spieler, aus EINEM Samen, mit der Seele des Spiels (`spawnCreatureAt`, die Kappe hebt sich um sie); ein zweiter Ruf füllt
     // nur auf, was fehlt. Stehen nicht alle, bricht die Bühne laut.
@@ -404,6 +407,7 @@ function buehneSelbsttest() {
         setSeason: () => true,
         _naesseTakt() {},
         _tickRain() {},
+        _tickSeason() {},
         _applyDayNightToScene() {},
         getTerrainHeightAt: () => 0,
         _landAt: (x) => x > 5,

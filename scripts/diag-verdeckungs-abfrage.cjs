@@ -194,20 +194,8 @@ function selbsttest() {
         ["Selbsttest fehlt", (o) => delete o.selbst, /SELBSTTEST fehlt/],
         ["Abbruch", (o) => (o.abbruch = "Renderer stand nicht"), /ABBRUCH: Renderer stand nicht/],
     ];
-    let rot = 0;
-    for (const [name, mut, soll] of faelle) {
-        const o = sauber();
-        mut(o);
-        const v = urteil(o);
-        const ok = soll === null ? v.length === 0 : v.some((x) => soll.test(x));
-        if (!ok) rot++;
-        console.log(`${ok ? "✅" : "❌"} ${name}${ok ? "" : " — Urteil: " + JSON.stringify(v)}`);
-    }
-    if (rot) {
-        console.log(`\n❌ SELBSTTEST ROT — ${rot} Fall/Fälle vakuös`);
-        process.exit(1);
-    }
-    console.log(`\n✅ SELBSTTEST GRÜN — ${faelle.length} Fälle: jeder Täter und jede vakuöse Phase beim Namen`);
+    const W = require("./lib/welt-boot.cjs");
+    W.selbsttestEnde(W.taeterFaelle(faelle, urteil, { klon: sauber }), `${faelle.length} Fälle: jeder Täter und jede vakuöse Phase beim Namen`);
     process.exit(0);
 }
 

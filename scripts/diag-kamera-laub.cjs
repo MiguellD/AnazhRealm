@@ -594,7 +594,6 @@ async function leibWiese(arg) {
 async function leibHang(arg) {
     const L = window.__kamLeib;
     const r = window.anazhRealm;
-    const st = r.state;
     const out = { fuss: { posen: [] }, ritt: { posen: [] } };
     try {
         await r._foundryAwaitBook(45000);

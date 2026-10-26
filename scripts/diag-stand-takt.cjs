@@ -28,7 +28,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, warteAufWelt } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const STAND = require("./lib/stand-linse.cjs");
 
 // (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass nennt die Linie der Strahl-Sonde (scripts/lib/kamera-nah.cjs)
@@ -517,19 +517,8 @@ function selbsttest() {
         ["die Ankunft gleitet, die Welt steht (die Basis)", (b) => (b.fixWach = "Gleite"), /stehend — Gleite/],
         ["die Sonde ohne Bestand", (b) => (b.sonde.vor = "Rinde baum_tanne"), /SONDE: .* trifft Rinde/],
     ];
-    for (const [name, tat, muss] of faelle) {
-        const b = klon();
-        tat(b);
-        const v = urteil(b);
-        const ok = v.some((x) => muss.test(x));
-        if (!ok) fehler.push(`${name}: die Wand nennt den Täter nicht (${muss})`);
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${name}" → rot: ${v.join(" · ") || "(nichts)"}`);
-    }
-    if (fehler.length) {
-        console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
-        process.exit(1);
-    }
-    console.log("\n✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.");
+    taeterFaelle(faelle, urteil, { fehler, klon });
+    selbsttestEnde(fehler);
 }
 
 // (K4) DIE TAT BLEIBT (feld.K4, `--tat`): an der Mess-Wiese fällt der Spieler mit dem echten Verb (tryMouseBreak) zehn Bäume
@@ -650,9 +639,8 @@ if (process.argv.includes("--selftest")) {
     // die Tat-Linse: grün am Soll, je Täter rot beim Namen
     const T = (h, n = 10) => ({ gefaellt: n, gepflueckt: 30, baeumeVorher: 12, stunde: Object.assign({ baeume: 2, pflanzen: 0, stuempfe: 10, narbe: -0.2 }, h) });
     const roh = [[T({}), ""], [T({ narbe: 0 }), "NARBE"], [T({ stuempfe: 0 }), "STUMPF"], [T({ pflanzen: 9 }), "ERNTE"], [T({ baeume: 12 }), "BAUM"], [T({}, 3), "LEER"], [{}, "LEER"]];
-    const fall = roh.filter(([b, n]) => (tatUrteil(b).join() + "|").split(":")[0] !== (n || "|"));
-    console.log(fall.length ? "❌ SELBSTTEST ROT — die Tat-Linse irrt: " + fall.map(([, n]) => n || "GRÜN").join(" · ") : "✅ SELBSTTEST GRÜN — die Tat-Linse nennt jeden Täter.");
-    process.exit(fall.length ? 1 : 0);
+    selbsttestEnde(roh.filter(([b, n]) => (tatUrteil(b).join() + "|").split(":")[0] !== (n || "|")).map(([, n]) => n || "GRÜN"), "die Tat-Linse nennt jeden Täter.");
+    process.exit(0);
 }
 
 const PORT = Number(process.env.STAND_TAKT_PORT) || 4528;
@@ -1637,6 +1625,16 @@ const TAT = process.argv.includes("--tat");
                             }
                         r._depositLife(pm.x, pm.z);
                         vorher.leben = st.lifeField.size;
+                        // das Wort des Spielers über den EINEN Schreiber ohne Übergang (die Bühne), dann Sonne und trocken
+                        const wort = (w) => {
+                            st.weatherEffectTime = 0;
+                            r._setWeather(w, "human");
+                            st.weatherEffectTime = -1e9;
+                            st.weatherTransition = null;
+                        };
+                        // die Ruhe ist sonnig und trocken: der erste Zug der Welt-Uhr zog das Wetter der Front (feld.K2#2)
+                        wort("sunny");
+                        r._naesseTakt(1e6);
                         await simPhase(60); // jede Sim geht ihren Gang bis an ihren Fixpunkt
                         aus.simRuhe = Object.assign(await simPhase(3600), { vorher });
                         const weck = async (n, ereignis) => {
@@ -1645,13 +1643,6 @@ const TAT = process.argv.includes("--tat");
                         };
                         await weck("saison", () => r.setSeason("herbst"));
                         r.setSeason("sommer");
-                        // das Wort des Spielers über den EINEN Schreiber ohne Übergang (die Bühne), dann Sonne und trocken
-                        const wort = (w) => {
-                            st.weatherEffectTime = 0;
-                            r._setWeather(w, "human");
-                            st.weatherEffectTime = -1e9;
-                            st.weatherTransition = null;
-                        };
                         wort("rainy");
                         W.regen = { wach: await simPhase(5) };
                         wort("sunny");

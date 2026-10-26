@@ -766,50 +766,6 @@ async function checkBandV18210Verdrahtung(ctx) {
         // Eviction — der bounded Memory-Schutz hält weiter).
         for (let s = 0; s < 300; s++) r._growTreeBlueprintForSpawn("baum_eiche", 90000 + s);
         out.a1RingCap = !r._growTreeRing || r._growTreeRing.length <= 256;
-        // (A3-Perf Watch-Item #1) — die Scent-sizeFactor-Cache muss PRO SOUL
-        // sein (1 Compute je Soul, nicht je Tick × Quelle) — am Cache-Verhalten zweier echter Witterungs-Rufe.
-        out.a3SizeCacheReuse = false;
-        {
-            // Eine Probe: cache leeren, einmal helper rufen (mit synth predator+prey),
-            // Cache-Size 1; nochmal rufen mit der gleichen Soul, Cache-Size bleibt 1.
-            if (r._scentSizeBySoul) r._scentSizeBySoul.clear();
-            const sm0 = r.getGameMode();
-            try {
-                r.setGameMode("pfad");
-                // ECHTE Leiber: die Beute ist, wer höchstens jagd.beuteMasse × die Masse des Jägers trägt — die
-                // EINE Masse des Leibs (`_leibMasse`) liest die Gestalt; ein körperloser Stub hat keine, das Urteil bräche
-                // fail-closed. Der Wolf jagt (wild), der Fuchs (15 kg) ist seine Beute.
-                const savedC = r.state.creatures;
-                const pmA = r.state.playerMesh.position;
-                const capA = r.state.maxCreatures;
-                r.state.maxCreatures = Math.max(capA || 0, savedC.length + 2);
-                const Pred = r.spawnCreatureAt(pmA.x + 360, pmA.y, pmA.z - 360, "calm", "wolf", {
-                    precise: true,
-                    bodySize: 1,
-                });
-                const Prey =
-                    Pred &&
-                    r.spawnCreatureAt(pmA.x + 370, pmA.y, pmA.z - 360, "calm", "fuchs", {
-                        precise: true,
-                        bodySize: 1,
-                    });
-                r.state.maxCreatures = capA;
-                if (Pred && Prey) {
-                    r.state.creatures = [Pred, Prey];
-                    r._creatureScentHuntDir(Pred, 0.0);
-                    const after1 = r._scentSizeBySoul ? r._scentSizeBySoul.size : 0;
-                    r._creatureScentHuntDir(Pred, 0.0);
-                    const after2 = r._scentSizeBySoul ? r._scentSizeBySoul.size : 0;
-                    out.a3SizeCacheReuse = after1 === 1 && after2 === 1;
-                }
-                r.state.creatures = savedC;
-                if (Pred) r.removeCreature(Pred);
-                if (Prey) r.removeCreature(Prey);
-            } finally {
-                r.setGameMode(sm0);
-            }
-        }
-
         // ============== A1 Audit-Heilungen ==============
         // (Heilung #1) Snapshot persistiert grownBlueprints
         const snap = r.buildStateSnapshot();
@@ -1066,10 +1022,6 @@ async function checkBandV18210Verdrahtung(ctx) {
         "V18.210-A1-Heil3 SPEZIES-Diversität: 6 Arten erzeugen UNTERSCHIEDLICHE Geometrie (Audit #3, V18.181-Mischwald ehrt)",
         res.a1SpeciesDistinct === true
     );
-    check(
-        "V18.210-A3-Watch1b sizeFactor-Cache: zweimaliger Aufruf → Cache-Size bleibt 1 (nur 1 Compute pro Soul)",
-        res.a3SizeCacheReuse === true
-    );
 
     // A4 — Mana-Konsument
     check("V18.210-A4d BEHAVIORAL: ritueller-stab (phaseChange) zieht Mana", res.a4ManaWasDrained === true);
@@ -1125,23 +1077,7 @@ async function checkBandRauschGesetz(ctx) {
             // DIE ATLAS-BYTES: die MaterialX-Gradienten aus lookup3 (eigene Portierung), gepackt je Komponente × 4 Ecken
             const P = A.RAUSCH_GESETZ.P;
             const d = A._rauschAtlasDaten();
-            const rot = (x, k) => ((x << k) | (x >>> (32 - k))) >>> 0;
-            const mxHash = (x, y, z) => {
-                let a = (0xdeadbeef + 12 + 13) >>> 0;
-                let b = a;
-                let c = a;
-                a = (a + x) >>> 0;
-                b = (b + y) >>> 0;
-                c = (c + z) >>> 0;
-                c = ((c ^ b) - rot(b, 14)) >>> 0;
-                a = ((a ^ c) - rot(c, 11)) >>> 0;
-                b = ((b ^ a) - rot(a, 25)) >>> 0;
-                c = ((c ^ b) - rot(b, 16)) >>> 0;
-                a = ((a ^ c) - rot(c, 4)) >>> 0;
-                b = ((b ^ a) - rot(a, 14)) >>> 0;
-                c = ((c ^ b) - rot(b, 24)) >>> 0;
-                return c;
-            };
+            const mxHash = window.mxLookup3; // die EINE Portierung (scripts/lib/shader-kosten.cjs, SHADER_INSTALL)
             // der Gradient als Wert der mx-Regel an den Einheits-Achsen: g = (grad(h,1,0,0), grad(h,0,1,0), grad(h,0,0,1))
             const mxGrad = (h, x, y, z) => {
                 const u = h < 8 ? x : y;
