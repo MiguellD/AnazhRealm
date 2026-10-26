@@ -1269,10 +1269,8 @@ function selbsttestGegenrichtung() {
         "gate:d": { klasse: KLASSEN.MESS, grund: "gibt Zahlen aus, kennt kein Rot" },
     });
     const C = (d) => d["check.yml"].jobs.playtest.steps[0];
-    const f = [];
-    const g0 = deckung(skripte(), docs(), aus());
-    if (g0.v.length) f.push("(W) der gute Stand ist rot: " + g0.v.join(" · "));
     const faelle = [
+        ["(W) der gute Stand", () => {}],
         [
             "ein neues Gate ohne Schritt und ohne Eintrag",
             (s) => (s["gate:neu"] = "node scripts/neu.cjs"),
@@ -1386,17 +1384,11 @@ function selbsttestGegenrichtung() {
             /\(F\) FEHLT: das Skript „gate:c-beide" ruft „npm run gate:weg"/,
         ],
     ];
-    for (const [n, tat, soll] of faelle) {
-        const s = skripte(),
-            d = docs(),
-            a = aus();
-        tat(s, d, a);
-        const u = deckung(s, d, a).v;
-        const ok = soll ? u.some((x) => soll.test(x)) : u.length === 0;
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${n}" → ${u.join(" · ") || "grün"}`);
-        if (!ok) f.push(`„${n}" fällt nicht rot beim Namen (${u.join(" · ") || "grün"})`);
-    }
-    return f;
+    return taeterFaelle(
+        faelle.map(([n, tat, soll]) => [n, (z) => tat(...z), soll]),
+        (z) => deckung(...z).v,
+        { klon: () => [skripte(), docs(), aus()] }
+    );
 }
 
 // (P) Der volle Playtest gegen ein Fixture: die gute check.yml trägt ihn allein in Gruppe 2 der vollen Batterie, mit
