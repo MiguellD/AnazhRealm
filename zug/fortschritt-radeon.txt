@@ -433,3 +433,4 @@
 2026-10-26 21:36:20 takt7-headless feld.K2#2 ROT 0.8 · 11/81
 2026-10-26 21:36:47 takt7-headless feld.K1#1 GRÜN 0.5 · 12/81
 2026-10-26 21:36:52 takt7-headless feld.K1#2 GRÜN 0.5 · 13/81
+2026-10-26 21:37:00 takt7-headless fahrzeug.K1#2 GRÜN 0.5 · 14/81
