@@ -331,3 +331,4 @@
 2026-10-26 14:43:17 takt6-radeon mensch.K1#1 GRÜN 6.5 · 8/45
 2026-10-26 14:43:54 takt6-headless siedlung.K1#1 GRÜN 1.2 · 53/75
 2026-10-26 14:44:40 takt6-headless bauen.K4#1 GRÜN 3.1 · 54/75
+2026-10-26 14:44:49 takt6-headless ki.K1#2 GRÜN 11.7 · 55/75
