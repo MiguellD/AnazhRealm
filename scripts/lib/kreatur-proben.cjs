@@ -24,14 +24,7 @@ async function kreaturProben(r, T, opts) {
         const b = arr.slice().sort((x, y) => x - y);
         return b[Math.min(b.length - 1, Math.floor(q * (b.length - 1) + 0.5))];
     };
-    // DER SPIELER IST SEIN LEBENDER LEIB: die echte Welt tauscht `playerMesh`, während die Probe taktet (der deferierte
-    // Avatar-Bau `applyPlayerSoul`, sobald seine Vorlagen im Memo liegen; headless baut er synchron) — wer die Lage des alten
-    // Leibs hält, rückt einen Geist (mensch.K1 Radeon: die Stadt 18 m vom Geist, 735 m vom Spieler, ihre Liste nie gelegt);
-    // `pm` liest und schreibt je Zugriff den Leib, der jetzt steht (seine Methoden laufen mit `pm` als this)
-    const pm = new Proxy(
-        {},
-        { get: (_, k) => s.playerMesh.position[k], set: (_, k, v) => ((s.playerMesh.position[k] = v), true) }
-    );
+    const pm = s.playerMesh.position;
     const P0 = pm.clone();
 
     // Die Bühne je Probe: eigene Tier-Liste (die Welt-Tiere ruhen), der Spieler zurück, Modus und Gefühl zurück.
@@ -2469,16 +2462,12 @@ async function kreaturProben(r, T, opts) {
         const leiber = () =>
             s.scene.children.filter((o) => o && o.userData && o.userData.rig && o.userData.heim != null);
         const sollSumme = haeuser.reduce((a, h) => a + (h.soll || 0), 0);
-        // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios — fehlt
-        // einer (der Täter bewohner-haus nahm ihn im selben Fenster aus der Szene), urteilt die Quote, nicht der Deckel
-        try {
-            await bisDa(
-                "bewohner: die Leiber",
-                () => leiber().length < sollSumme || r._weltOffen().leiber > 0 || hausE.some((e) => !e._hausHuelle)
-            );
-        } catch {
-            /* die Quote nennt, wer fehlt */
-        }
+        // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios — bricht der
+        // Deckel, bricht die Probe beim Namen dessen, was fehlt (nie misst die Quote ein halb geborenes Dorf)
+        const [nL, nF, nH] = [() => leiber().length, () => r._weltOffen().leiber, () => hausE.filter((e) => !e._hausHuelle).length];
+        await bisDa("bewohner: die Leiber", () => nL() < sollSumme || nF() > 0 || nH() > 0).catch((f) => {
+            throw new Error(`${f.message} (${nL()} von ${sollSumme} Leibern, ${nF()} ohne Feld, ${nH()} Häuser ohne Hülle)`);
+        });
         // Täter (Selbsttest), gezählt und zurück: die Leiber des ersten bewohnten Hauses fallen aus der Szene
         const h1 = haeuser.find((x) => x.soll > 0);
         const fort = leiber().filter((b) => hat("bewohner-haus") && h1 && b.userData.heim === h1.seed);

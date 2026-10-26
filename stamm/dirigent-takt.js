@@ -371,9 +371,11 @@ class AnazhRealm_dirigent_takt {
                                 ? `Felder offen ${o.felder}`
                                 : o.dorf
                                   ? `Dorf offen ${o.dorf}`
-                                  : o.ankunft
-                                    ? `Ankunft gleitet ${o.ankunft}`
-                                    : null;
+                                  : o.leib
+                                    ? "Leib offen"
+                                    : o.ankunft
+                                      ? `Ankunft gleitet ${o.ankunft}`
+                                      : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -395,7 +397,7 @@ class AnazhRealm_dirigent_takt {
     // Was die Welt noch baut: Foundry-Aufträge (wartend, im Flug, Antworten vor der Freigabe — auch die gehaltenen: Laub-Körper
     // vor dem Blatt-Atlas, das Buch vor dem Wirt, B3a), Chunks (schmutzig, im Bau) und der Wald (die Plan-Schlange, die
     // Pflanz-Gänge, die wartenden Pflanzungen, K69) und die Karten (die Schlange des Karten-Takts, wartend und backend bis
-    // zur Lieferung in den Atlas), die Felder (die Schuld der EINEN Bake-Uhr, `_weltBakeSchuld`), das Dorf (`_dorfOffen`) und die Leiber der Bewohner,
+    // zur Lieferung in den Atlas), die Felder (die Schuld der EINEN Bake-Uhr, `_weltBakeSchuld`), das Dorf (`_dorfOffen`), der Leib des Spielers (`leib`) und die Leiber der Bewohner,
     // deren Feld noch nicht gebacken ist (mit Bild, wer draußen ist — `_kzLeib` vorab, mensch.K2) — jede Linse liest SIE, nie
     // die Marken; wer „nichts offen" fragt, liest JEDES Feld.
     _weltOffen() {
@@ -411,6 +413,7 @@ class AnazhRealm_dirigent_takt {
                 felder: 0,
                 leiber: 0,
                 dorf: 0,
+                leib: 0,
                 ankunft: 0,
             }); // je Takt, ohne Müll
         o.foundry = f
@@ -429,6 +432,10 @@ class AnazhRealm_dirigent_takt {
         o.karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
         o.felder = this._weltBakeSchuld();
         o.dorf = this._dorfOffen();
+        // DER LEIB DES SPIELERS (Lehre 13, Existenz vor Framerate): auf echter GPU gießt der Loop den Avatar erst, wenn seine
+        // Vorlagen im Memo liegen (`_deferredAvatarSoul` → `applyPlayerSoul`) — bis dahin ist der Spieler der leere Anker, und
+        // die Welt steht nicht (mensch.K1 Radeon: die Probe hielt den Anker, die Stadt lag 735 m vom Spieler)
+        o.leib = st._deferredAvatarSoul ? 1 : 0;
         // DIE ANKUNFT GLEITET (`_ankunftsFerne`, B2): bis ihr letztes Bild gezeichnet ist, misst jede Stufen-Wahl weiter, als das
         // Auge steht — die Bilder, die ihr fehlen (tiere.K1: im Schuss der Werkbank stand sie bei 62 von 90, der Mammut 13,9 m
         // vor dem Auge trug die Karte)
