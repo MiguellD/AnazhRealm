@@ -382,3 +382,11 @@
 2026-10-26 15:56:34 takt6-radeon halten.K5#1 GRÜN 0.6 · 36/45
 2026-10-26 15:57:37 takt6-radeon tore.K3#1 GRÜN 1.0 · 37/45
 2026-10-26 15:57:41 takt6-radeon tore.K3#2 ROT 1.0 · 38/45
+2026-10-26 16:09:55 takt6-radeon profiband.K4#1 ROT 12.3 · 39/45
+2026-10-26 16:27:22 takt6-radeon profiband.K4#2 ROT 17.4 · 40/45
+2026-10-26 16:28:52 takt6-radeon klang.K2#1 GRÜN 1.5 · 41/45
+2026-10-26 16:42:03 takt6-radeon klang.K5#2 GRÜN 13.2 · 42/45
+2026-10-26 16:51:30 takt6-radeon speicher.K1#1 GRÜN 9.4 · 43/45
+2026-10-26 16:51:35 takt6-radeon speicher.K1#2 GRÜN 9.4 · 44/45
+2026-10-26 16:53:35 takt6-radeon speicher.K2#1 GRÜN 2.1 · 45/45
+2026-10-26 16:53:39 takt6-radeon ENDE 33 grün / 12 rot · 150.8 min
