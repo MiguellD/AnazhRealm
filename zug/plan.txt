@@ -38,9 +38,10 @@ fertig  morgen  a-laub-pose 4ca4c428 (Klasse 0,1976 ≤ 0,22, Mangel L2-Karte 0,
 danach  werkzeug-heil → koordination  nach dem Radeon-Takt mergen, dann klang.K4#1 + speicher.K1 einzeln nachmessen  Koordinator  Punkte
 befund  omen-still  z32k-gtx steht seit 03:16 bei 28/41 (Station nach leib.K1#1); Nachricht an die OMEN-Sitzung 04:55  Koordinator  Dienst prüfen
 befund  omen-still  GELÖST 04:54 — der Dienst hing nicht: leib.K1#2 lief 03:16–04:54 = VERDRÄNGT 1/3 (CI 03:20–03:35) + CI 03:38–03:57 + Nachtruhe 03:25–04:15 + VERDRÄNGT 2/3 (CI 04:17–04:36), dann griff der punkte.cjs-Deckel 5580 s → ROT Exit 124 (kein Messbefund, nur Zeit); 04:55 Schloss frei, kein Chrome/node hängt, Rechner wach (seit 25.10. 20:14); z35-abab läuft seit 04:54 mit Vorfahrt, z32k-gtx setzt danach bei leib.K2#1 fort (30/41); Lehre: der Deckel zählt Verdrängung + Nachtruhe mit  OMEN  leib.K1#2 bitte neu in die Schlange
-läuft   decke-zahlstelle-2  Champion: nächste Zwillings-Klasse in scripts (Ziel ≤ −1500) — trägt a-laub (+187), speicher (+103), k8 im Zug z36  Champion  FEUER
+fertig  decke-zahlstelle-2  675f98ae: eigene Server-Starts/Adressen in 95 Linsen → lausche/zeige, scripts −4680 (CI läuft)  Champion  → z36
 befund  a-laub-l2  Täter der L2-Kante ist der FUSS: Kronen 0,215 (im Soll), Fuß-Band 0,34 — Gras endet bei 24 m, Karte L2 beginnt bei 18 m; derselbe Bruch wie das Auge 25.10. (Gras endet in flacher Fläche)  Champion  → gras-fuss
 läuft   gras-fuss  Champion: Gras-Wirkung bis an die Füße der Karten, Kosten nach Schirm (A laub-kante + boden-nah + Auge Wiese)  Champion  A
 läuft   echt-k1-platz  Champion auf werkzeug-heil: platz-Haken am Faden-Put statt localStorage  Champion  speicher.K1
 plan    z36  e-bewohner + speicher-k2-anhang + b-streu-faden + a-laub-pose(+l2) + decke-zahlstelle-2 (+ fahr-s3/k8-fein wenn geklärt) — vor dem Start integ-probe auf main zurücksetzen, falls ein Zug abgebrochen wurde  fahre.sh  E · B · A · speicher.K3#2 · streaming.K5#2
 lehre   omen-ci  jeder Zug-Lauf und jeder integ/main-Push trägt einen echt-Job mit Vorfahrt auf der OMEN; 3 z35-Läufe verdrängten leib.K1#2 bis zum Deckel 5580 s → Züge nicht leichtfertig neu starten  Koordinator  —
+läuft   weltakt-null  Champion: diag-weltakt-wache:527 stürzt ab (Tat ohne Antwort, null.toFixed) in G8 — 2. Sichtung (mensch, b-streu)  Champion  FEUER
