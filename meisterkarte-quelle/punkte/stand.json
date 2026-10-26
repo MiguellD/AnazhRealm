@@ -53,7 +53,7 @@
   },
   "bauen.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Turm aus 20/20 Blöcken über die Maus 70.00 m über dem Gelände · Hub 3.49–3.52 m je Block · Sohle ≤ 0.02 m neben dem Mesh · nach dem Reload 20 Edits, 0 Löcher, Sohle 0.04 m an b2c6c627 headless — offen: bauen.K4#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: Turm aus 20/20 Blöcken über die Maus 70.00 m über dem Gelände · Hub 3.49–3.52 m je Block · Sohle ≤ 0.02 m neben dem Mesh · nach dem Reload 20 Edits, 0 Löcher, Sohle 0.04 m an b2c6c627 headless — offen: bauen.K4#2 headless: ungemessen (R10)",
    "stationen": [
     {
      "id": "bauen.K4#1",
@@ -62,6 +62,14 @@
      "zahl": "Turm aus 20/20 Blöcken über die Maus 70.00 m über dem Gelände · Hub 3.49–3.52 m je Block · Sohle ≤ 0.02 m neben dem Mesh · nach dem Reload 20 Edits, 0 Löcher, Sohle 0.04 m",
      "sha": "b2c6c627e6526265fcdc5178b987515ae06f2584",
      "grund": null
+    },
+    {
+     "id": "bauen.K4#2",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
     }
    ]
   },
@@ -103,7 +111,7 @@
   },
   "fahrzeug.K3": {
    "punkte": 1,
-   "beleg": "Maschine: Garage FOV +9.06° Arm +18.1 % bei 15.20/16.00 m/s · Welt FOV +9.5° Arm +18.8 % bei 15.26 m/s (Ende ok) an b2c6c627 radeon — offen: fahrzeug.K3#2 radeon: ROT: Drift Kamera ≤ 0° neben dem Fahrtvektor (Schlupf bis 4.7°) · Rückkehr 1.08 s nach 67° Orbit · Ruck p95 0.031 m (165) · FOV-Schreiber [_kamFov] an b2c6c627 · fahrzeug.K3#2 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-bewegung.js, stamm/koerper-fahrt.js)",
+   "beleg": "Maschine: Garage FOV +9.06° Arm +18.1 % bei 15.20/16.00 m/s · Welt FOV +9.5° Arm +18.8 % bei 15.26 m/s (Ende ok) an b2c6c627 radeon — offen: fahrzeug.K3#2 radeon: ROT: Drift Kamera ≤ 0° neben dem Fahrtvektor (Schlupf bis 4.7°) · Rückkehr 1.08 s nach 67° Orbit · Ruck p95 0.031 m (165) · FOV-Schreiber [_kamFov] an b2c6c627 · fahrzeug.K3#2 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-fahrt.js)",
    "stationen": [
     {
      "id": "fahrzeug.K3#1",
@@ -119,7 +127,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-bewegung.js, stamm/koerper-fahrt.js)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-fahrt.js)"
     },
     {
      "id": "fahrzeug.K3#2",
@@ -135,13 +143,13 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-bewegung.js, stamm/koerper-fahrt.js)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-fahrt.js)"
     }
    ]
   },
   "fahrzeug.K4": {
    "punkte": 1,
-   "beleg": "Maschine: nach Ego → Third im Bild 3/3, Azimut 5.1/2.8/1.4°, Stufe ≤ 1.8 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 1.3° · Hang 17.4° an b2c6c627 radeon · nach Ego → Third im Bild 3/3, Azimut 5.1/2.8/1.4°, Stufe ≤ 1.8 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 1.3° · Hang 17.4° an b2c6c627 radeon — offen: fahrzeug.K4#2 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-bewegung.js, stamm/koerper-fahrt.js +1)",
+   "beleg": "Maschine: nach Ego → Third im Bild 3/3, Azimut 5.1/2.8/1.4°, Stufe ≤ 1.8 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 1.3° · Hang 17.4° an b2c6c627 radeon · nach Ego → Third im Bild 3/3, Azimut 5.1/2.8/1.4°, Stufe ≤ 1.8 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 1.3° · Hang 17.4° an b2c6c627 radeon — offen: fahrzeug.K4#2 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-fahrt.js)",
    "stationen": [
     {
      "id": "fahrzeug.K4#1",
@@ -157,7 +165,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-bewegung.js, stamm/koerper-fahrt.js +1)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-fahrt.js)"
     },
     {
      "id": "fahrzeug.K4#2",
@@ -173,7 +181,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-bewegung.js, stamm/koerper-fahrt.js +1)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-fahrt.js)"
     }
    ]
   },
@@ -201,7 +209,7 @@
   },
   "feld.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: feld.K2#1 headless: ROT: 6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 419 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich an b2c6c627",
+   "beleg": "Maschine: 0 — offen: feld.K2#1 headless: ROT: 6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 419 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich an b2c6c627 · feld.K2#2 headless: ungemessen (R10)",
    "stationen": [
     {
      "id": "feld.K2#1",
@@ -210,6 +218,14 @@
      "zahl": "6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 419 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich",
      "sha": "b2c6c627e6526265fcdc5178b987515ae06f2584",
      "grund": "ROT: 6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 419 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich"
+    },
+    {
+     "id": "feld.K2#2",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
     }
    ]
   },
@@ -259,7 +275,7 @@
   },
   "ferne.K1": {
    "punkte": 1,
-   "beleg": "Maschine: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3 an b2c6c627 radeon — offen: ferne.K1#2 radeon: ROT: K1-2 ROT (10 Befunde) · Farbton 8 km 0.4404–29.33° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.17/5.137 (≥ 1,2) · fernes Weiß R/B 2.594 (≥ 1,3) · [linse-gpu] amd/rdna-3 an b2c6c627 · ferne.K1#2 gtx: Pfad seit der Messung geändert (R6: index.html, phyto-core.js, stamm/dirigent-ankunft.js +7)",
+   "beleg": "Maschine: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3 an b2c6c627 radeon — offen: ferne.K1#2 radeon: ROT: K1-2 ROT (10 Befunde) · Farbton 8 km 0.4404–29.33° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.17/5.137 (≥ 1,2) · fernes Weiß R/B 2.594 (≥ 1,3) · [linse-gpu] amd/rdna-3 an b2c6c627 · ferne.K1#2 gtx: Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +4)",
    "stationen": [
     {
      "id": "ferne.K1#1",
@@ -275,7 +291,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: index.html, phyto-core.js, stamm/dirigent-ankunft.js +9)"
+     "grund": "Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +4)"
     },
     {
      "id": "ferne.K1#2",
@@ -291,13 +307,13 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: index.html, phyto-core.js, stamm/dirigent-ankunft.js +7)"
+     "grund": "Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +4)"
     }
    ]
   },
   "ferne.K2": {
    "punkte": 1,
-   "beleg": "Maschine: Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3 an b2c6c627 radeon · K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0.47°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.8k/120k Dreiecke · [linse-gpu] amd/rdna-3 an b2c6c627 radeon — offen: ferne.K2#2 gtx: Pfad seit der Messung geändert (R6: index.html, phyto-core.js, stamm/dirigent-ankunft.js +7)",
+   "beleg": "Maschine: Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3 an b2c6c627 radeon · K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0.47°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.8k/120k Dreiecke · [linse-gpu] amd/rdna-3 an b2c6c627 radeon — offen: ferne.K2#2 gtx: Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +4)",
    "stationen": [
     {
      "id": "ferne.K2#1",
@@ -313,7 +329,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: index.html, phyto-core.js, stamm/dirigent-ankunft.js +9)"
+     "grund": "Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +4)"
     },
     {
      "id": "ferne.K2#2",
@@ -329,7 +345,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: index.html, phyto-core.js, stamm/dirigent-ankunft.js +7)"
+     "grund": "Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +4)"
     }
    ]
   },
@@ -357,7 +373,7 @@
   },
   "gelaende.K2": {
    "punkte": 1,
-   "beleg": "Maschine: 8 von 10 Gräben über das Verb, in 2973 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 106.6–271.7 ms (1 m 3, 3 m 5) an b2c6c627 radeon — offen: gelaende.K2#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: 8 von 10 Gräben über das Verb, in 2973 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 106.6–271.7 ms (1 m 3, 3 m 5) an b2c6c627 radeon — offen: gelaende.K2#2 radeon: Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-bewegung.js, stamm/koerper-fahrt.js +2) · gelaende.K2#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "gelaende.K2#1",
@@ -373,7 +389,23 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: index.html, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +11)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/gelaende-boden.js +4)"
+    },
+    {
+     "id": "gelaende.K2#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-bewegung.js, stamm/koerper-fahrt.js +2)"
+    },
+    {
+     "id": "gelaende.K2#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
     }
    ]
   },
@@ -395,7 +427,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: index.html, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +10)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/gelaende-boden.js +4)"
     }
    ]
   },
@@ -423,7 +455,7 @@
   },
   "gelaende.K5": {
    "punkte": 1,
-   "beleg": "Maschine: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht) an b2c6c627 headless · alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht) an b2c6c627 radeon — offen: gelaende.K5#2 gtx: Pfad seit der Messung geändert (R6: koerper-core.js, phyto-core.js, stamm/dirigent-ankunft.js +16)",
+   "beleg": "Maschine: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht) an b2c6c627 headless · alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht) an b2c6c627 radeon — offen: gelaende.K5#2 gtx: Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +6)",
    "stationen": [
     {
      "id": "gelaende.K5#1",
@@ -447,7 +479,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: koerper-core.js, phyto-core.js, stamm/dirigent-ankunft.js +16)"
+     "grund": "Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +6)"
     }
    ]
   },
@@ -467,7 +499,7 @@
   },
   "halten.K2": {
    "punkte": 1,
-   "beleg": "Maschine: schlechtester von 3 Läufen p95 ms third/hieb 38.4 · ego/hieb 28.3 · Bild 16.2/16.1/16.2 ms · Hit-Stop im schlechtesten Lauf 11 Bilder · im Spiel Halt gesetzt 59-mal (153–173 ms, gleitet bis 0 mm je Takt) / 60-mal (145–174 ms, gleitet bis 0 mm je Takt) / 60-mal (153–175 ms, gleitet bis 0 mm je Takt) an b2c6c627 radeon — offen: halten.K2#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: schlechtester von 3 Läufen p95 ms third/hieb 38.4 · ego/hieb 28.3 · Bild 16.2/16.1/16.2 ms · Hit-Stop im schlechtesten Lauf 11 Bilder · im Spiel Halt gesetzt 59-mal (153–173 ms, gleitet bis 0 mm je Takt) / 60-mal (145–174 ms, gleitet bis 0 mm je Takt) / 60-mal (153–175 ms, gleitet bis 0 mm je Takt) an b2c6c627 radeon — offen: halten.K2#2 headless: ungemessen (R10)",
    "stationen": [
     {
      "id": "halten.K2#1",
@@ -483,7 +515,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: koerper-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +7)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/koerper-fahrt.js)"
+    },
+    {
+     "id": "halten.K2#2",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
     }
    ]
   },
@@ -549,7 +589,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: koerper-core.js, schmiede-core.js, stamm/dirigent-kern.js +8)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-fahrt.js, stamm/speicher-laden.js +1)"
     }
    ]
   },
@@ -613,7 +653,7 @@
   },
   "klang.K2": {
    "punkte": 1,
-   "beleg": "Maschine: r 0.85 bei Lag 0 (n 119), Spitze 0.87 bei -0.5 s, CV Bild 0.26 / Ohr 0.54, 119.5 fps, Klang an an b2c6c627 radeon — offen: klang.K2#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: r 0.85 bei Lag 0 (n 119), Spitze 0.87 bei -0.5 s, CV Bild 0.26 / Ohr 0.54, 119.5 fps, Klang an an b2c6c627 radeon — offen: klang.K2#2 headless: ungemessen (R10)",
    "stationen": [
     {
      "id": "klang.K2#1",
@@ -629,13 +669,21 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, phyto-core.js, stamm/klang.js +2)"
+     "grund": "Pfad seit der Messung geändert (R6: phyto-core.js, stamm/vegetation-streu.js)"
+    },
+    {
+     "id": "klang.K2#2",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
     }
    ]
   },
   "klang.K4": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: klang.K4#1 radeon: ROT: gras 5620 Hz (n 20) · laub 5324 Hz (n 15) · quarz 3266 Hz (n 19) — kleinster Abstand 296 Hz an eeaff9d6 · klang.K4#1 gtx: Station seit der Messung geändert",
+   "punkte": 1,
+   "beleg": "Maschine: gras 5594 Hz (n 22) · laub 5170 Hz (n 18) · quarz 3307 Hz (n 20) — kleinster Abstand 424 Hz an eeaff9d6 gtx — offen: klang.K4#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "klang.K4#1",
@@ -648,16 +696,16 @@
     {
      "id": "klang.K4#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert"
+     "gruen": true,
+     "zahl": "gras 5594 Hz (n 22) · laub 5170 Hz (n 18) · quarz 3307 Hz (n 20) — kleinster Abstand 424 Hz",
+     "sha": "eeaff9d6dad7df61e5ace3466fe84375e9496045",
+     "grund": null
     }
    ]
   },
   "klang.K5": {
    "punkte": 1,
-   "beleg": "Maschine: Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":167.15} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an b2c6c627 headless · Klang-Takt p95 gehen 0.1 · fahrt 0.11 · nacht 0.1 ms · Aussetzer 0 in 600.7 s Wiedergabe (0 s still) (Exit 0) an b2c6c627 radeon — offen: klang.K5#2 gtx: Pfad seit der Messung geändert (R6: klang-core.js, stamm/dirigent-takt.js, stamm/klang.js +3)",
+   "beleg": "Maschine: Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":167.15} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an b2c6c627 headless · Klang-Takt p95 gehen 0.1 · fahrt 0.11 · nacht 0.1 ms · Aussetzer 0 in 600.7 s Wiedergabe (0 s still) (Exit 0) an b2c6c627 radeon — offen: klang.K5#2 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-fahrt.js)",
    "stationen": [
     {
      "id": "klang.K5#1",
@@ -681,13 +729,13 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: klang-core.js, stamm/dirigent-takt.js, stamm/klang.js +3)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-fahrt.js)"
     }
    ]
   },
   "leib.K1": {
    "punkte": 0,
-   "beleg": "Maschine: schlechtester von 3 Läufen p95 ms ego/gehen 44.3 · third/gehen 44.8 · ego/springen 33.4 · third/springen 30.9 · ego/einsteigen 33.3 · third/einsteigen 24.9 · ego/hieb 27.9 · third/hieb 28.3 · Bild 16/16.1/16.1 ms an b2c6c627 radeon — offen: leib.K1#1 radeon: ROT: schlechtester von 3 Läufen p95 ms ego/gehen 50.2 · third/gehen 41.9 · ego/wechsel 24.4 · third/wechsel 26.5 · Bild 16.3/16.4/16.4 ms an b2c6c627 · leib.K1#1 gtx: Pfad seit der Messung geändert (R6: koerper-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +7) · leib.K1#2 gtx: Pfad seit der Messung geändert (R6: koerper-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +7)",
+   "beleg": "Maschine: schlechtester von 3 Läufen p95 ms ego/gehen 44.3 · third/gehen 44.8 · ego/springen 33.4 · third/springen 30.9 · ego/einsteigen 33.3 · third/einsteigen 24.9 · ego/hieb 27.9 · third/hieb 28.3 · Bild 16/16.1/16.1 ms an b2c6c627 radeon — offen: leib.K1#1 radeon: ROT: schlechtester von 3 Läufen p95 ms ego/gehen 50.2 · third/gehen 41.9 · ego/wechsel 24.4 · third/wechsel 26.5 · Bild 16.3/16.4/16.4 ms an b2c6c627 · leib.K1#1 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/koerper-fahrt.js) · leib.K1#2 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/koerper-fahrt.js)",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -703,7 +751,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: koerper-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +7)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/koerper-fahrt.js)"
     },
     {
      "id": "leib.K1#2",
@@ -719,13 +767,13 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: koerper-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +7)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/koerper-fahrt.js)"
     }
    ]
   },
   "leib.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: leib.K2#1 radeon: ROT: hang 18 (n 200) · falllinie ? · treppe hang ? · treppe wiese ? cm p95 · Steckenbleiber 0 — ROT: hang p95 18 cm an 200 Kontakten · falllinie p95 ? cm an 0 Kontakten · treppe hang p95 ? cm an 0 Kontakten · treppe wiese p95 ? cm an 0 Kontakten · ein Gang ohne Steckenbleiber-Zahl an b2c6c627 · leib.K2#1 gtx: Pfad seit der Messung geändert (R6: koerper-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +7)",
+   "beleg": "Maschine: 0 — offen: leib.K2#1 radeon: ROT: hang 18 (n 200) · falllinie ? · treppe hang ? · treppe wiese ? cm p95 · Steckenbleiber 0 — ROT: hang p95 18 cm an 200 Kontakten · falllinie p95 ? cm an 0 Kontakten · treppe hang p95 ? cm an 0 Kontakten · treppe wiese p95 ? cm an 0 Kontakten · ein Gang ohne Steckenbleiber-Zahl an b2c6c627 · leib.K2#1 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/gelaende-boden.js +4)",
    "stationen": [
     {
      "id": "leib.K2#1",
@@ -741,7 +789,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: koerper-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +7)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/gelaende-boden.js +4)"
     }
    ]
   },
@@ -763,7 +811,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/gelaende-boden.js, stamm/gelaende-chunks.js +6)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/gelaende-boden.js, stamm/gelaende-chunks.js +3)"
     },
     {
      "id": "leib.K4#2",
@@ -807,7 +855,7 @@
   },
   "licht.K2": {
    "punkte": 1,
-   "beleg": "Maschine: Verhältnis 5.005 (5–12,5), Schatten-Anteil 0.1998 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an b2c6c627 radeon — offen: licht.K2#2 radeon: ROT: Uhr 0.5 klar (Sonne 74.2°) 5.005, Schatten-Anteil 0.1998 · Uhr 0.27 klar (Sonne 7.2°) 0.9 UNGÜLTIG (A/B 0.802, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.027 UNGÜLTIG (A/B 0.822, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.638 · Uhr 0.27 Regen (Sonne 7.2°) null UNGÜLTIG (A/B ?, A/C 1.000, 1463 px) · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3 an b2c6c627 · licht.K2#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: Verhältnis 5.005 (5–12,5), Schatten-Anteil 0.1998 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an b2c6c627 radeon — offen: licht.K2#2 radeon: ROT: Uhr 0.5 klar (Sonne 74.2°) 5.005, Schatten-Anteil 0.1998 · Uhr 0.27 klar (Sonne 7.2°) 0.9 UNGÜLTIG (A/B 0.802, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.027 UNGÜLTIG (A/B 0.822, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.638 · Uhr 0.27 Regen (Sonne 7.2°) null UNGÜLTIG (A/B ?, A/C 1.000, 1463 px) · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3 an b2c6c627 · licht.K2#2 gtx: Pfad seit der Messung geändert (R6: stamm/bau-teile.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +2)",
    "stationen": [
     {
      "id": "licht.K2#1",
@@ -823,7 +871,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: index.html, stamm/bau-teile.js, stamm/dirigent-ankunft.js +5)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/bau-teile.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +2)"
     },
     {
      "id": "licht.K2#2",
@@ -839,13 +887,13 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/bau-teile.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +2)"
     }
    ]
   },
   "material.K1": {
    "punkte": 1,
-   "beleg": "Maschine: Welt/Labor 0,9–1,1: 12/12 · im realen Band beidseits: 12/12 · echt beide Seiten · [linse-gpu] amd/rdna-3 an b2c6c627 radeon · Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3 an b2c6c627 radeon — offen: material.K1#2 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, index.html, klang-core.js +36)",
+   "beleg": "Maschine: Welt/Labor 0,9–1,1: 12/12 · im realen Band beidseits: 12/12 · echt beide Seiten · [linse-gpu] amd/rdna-3 an b2c6c627 radeon · Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3 an b2c6c627 radeon — offen: material.K1#2 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, stamm/bau-teile.js +14)",
    "stationen": [
     {
      "id": "material.K1#1",
@@ -861,7 +909,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, index.html, klang-core.js +36)"
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, stamm/bau-teile.js +14)"
     },
     {
      "id": "material.K1#2",
@@ -877,13 +925,13 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, index.html, klang-core.js +36)"
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, stamm/bau-teile.js +14)"
     }
    ]
   },
   "material.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K2#1 radeon: ROT: boden 0.5 m glatt 0.0175 nyquist 0.1267 (Arm 0.408), 1 m glatt 0.0107 nyquist 0.134 (Arm 0.909), 2 m glatt 0.0072 nyquist 0.1302 (Arm 1.91) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3 an b2c6c627 · material.K2#1 gtx: Pfad seit der Messung geändert (R6: index.html, phyto-core.js, stamm/dirigent-ankunft.js +9)",
+   "beleg": "Maschine: 0 — offen: material.K2#1 radeon: ROT: boden 0.5 m glatt 0.0175 nyquist 0.1267 (Arm 0.408), 1 m glatt 0.0107 nyquist 0.134 (Arm 0.909), 2 m glatt 0.0072 nyquist 0.1302 (Arm 1.91) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3 an b2c6c627 · material.K2#1 gtx: Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +4)",
    "stationen": [
     {
      "id": "material.K2#1",
@@ -899,7 +947,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: index.html, phyto-core.js, stamm/dirigent-ankunft.js +9)"
+     "grund": "Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +4)"
     }
    ]
   },
@@ -921,7 +969,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, index.html, phyto-core.js +12)"
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, stamm/bau-teile.js +5)"
     }
    ]
   },
@@ -943,13 +991,13 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, stamm/gelaende-kollision.js +8)"
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/koerper-fahrt.js, stamm/siedlung-bewohner.js)"
     }
    ]
   },
   "mensch.K2": {
    "punkte": 1,
-   "beleg": "Maschine: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an b2c6c627 headless · Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 5–9 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.123 m), Sprünge 0, Plan bit-gleich true an b2c6c627 radeon — offen: mensch.K2#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an b2c6c627 headless · Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 5–9 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.123 m), Sprünge 0, Plan bit-gleich true an b2c6c627 radeon — offen: mensch.K2#2 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/koerper-fahrt.js, stamm/siedlung-bewohner.js)",
    "stationen": [
     {
      "id": "mensch.K2#1",
@@ -973,7 +1021,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert"
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/koerper-fahrt.js, stamm/siedlung-bewohner.js)"
     }
    ]
   },
@@ -1191,7 +1239,7 @@
   },
   "pipeline.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pipeline.K4#1 radeon: ungemessen (R10) · pipeline.K4#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: pipeline.K4#1 radeon: Pfad seit der Messung geändert (R6: stamm/koerper-leib.js, stamm/studio-bruecke.js) · pipeline.K4#1 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "pipeline.K4#1",
@@ -1199,7 +1247,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/koerper-leib.js, stamm/studio-bruecke.js)"
     },
     {
      "id": "pipeline.K4#1",
@@ -1213,7 +1261,7 @@
   },
   "profiband.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 234 · 226 · 209 · 251 ms; Hänger 1/1/1/1) an b2c6c627 · profiband.K4#1 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, index.html, klang-core.js +35) · profiband.K4#2 radeon: ROT: 0 von 8 Läufen ohne Frame > 100 ms und ≤ 1 % > 33 ms mit Sicht-Wechsel und Einsteigen (max ms/Anteil: s1 geh 83.6/7.69 % · s1 fahrt 116.9/73.93 % · s2 geh 234.2/5.61 % · s2 fahrt 92.1/30.18 % · s3 geh 92.1/7.54 % · s3 fahrt 125.6/72.55 % · s4 geh 217.6/5.00 % · s4 fahrt 100.6/25.37 %); ROT s1 geh: 7.69 % > 33 ms | s1 fahrt: max 116.9 ms, 73.93 % > 33 ms | s2 geh: max 234.2 ms, 5.61 % > 33 ms | s2 fahrt: 30.18 % > 33 ms | s3 geh: 7.54 % > 33 ms | s3 fahrt: max 125.6 ms, 72.55 % > 33 ms | s4 geh: max 217.6 ms, 5.00 % > 33 ms | s4 fahrt: max 100.6 ms, 25.37 % > 33 ms an b2c6c627 · profiband.K4#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 234 · 226 · 209 · 251 ms; Hänger 1/1/1/1) an b2c6c627 · profiband.K4#1 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, stamm/bau-teile.js +14) · profiband.K4#2 radeon: ROT: 0 von 8 Läufen ohne Frame > 100 ms und ≤ 1 % > 33 ms mit Sicht-Wechsel und Einsteigen (max ms/Anteil: s1 geh 83.6/7.69 % · s1 fahrt 116.9/73.93 % · s2 geh 234.2/5.61 % · s2 fahrt 92.1/30.18 % · s3 geh 92.1/7.54 % · s3 fahrt 125.6/72.55 % · s4 geh 217.6/5.00 % · s4 fahrt 100.6/25.37 %); ROT s1 geh: 7.69 % > 33 ms | s1 fahrt: max 116.9 ms, 73.93 % > 33 ms | s2 geh: max 234.2 ms, 5.61 % > 33 ms | s2 fahrt: 30.18 % > 33 ms | s3 geh: 7.54 % > 33 ms | s3 fahrt: max 125.6 ms, 72.55 % > 33 ms | s4 geh: max 217.6 ms, 5.00 % > 33 ms | s4 fahrt: max 100.6 ms, 25.37 % > 33 ms an b2c6c627 · profiband.K4#2 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, stamm/bau-teile.js +14)",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -1229,7 +1277,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, index.html, klang-core.js +35)"
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, stamm/bau-teile.js +14)"
     },
     {
      "id": "profiband.K4#2",
@@ -1245,7 +1293,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)"
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, stamm/bau-teile.js +14)"
     }
    ]
   },
@@ -1267,7 +1315,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: index.html, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +5)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/gelaende-boden.js +1)"
     }
    ]
   },
@@ -1303,7 +1351,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/siedlung-ort.js, stamm/siedlung-satz.js +1)"
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js)"
     },
     {
      "id": "siedlung.K2#2",
@@ -1339,7 +1387,7 @@
   },
   "siedlung.K5": {
    "punkte": 1,
-   "beleg": "Maschine: nH 12 erstes Haus nach 57.1 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 113.4 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf) an b2c6c627 radeon · nH 12 erstes Haus nach 57.1 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 113.4 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf) an b2c6c627 radeon — offen: siedlung.K5#2 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/dienst.js, stamm/dirigent-ankunft.js +11)",
+   "beleg": "Maschine: nH 12 erstes Haus nach 57.1 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 113.4 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf) an b2c6c627 radeon · nH 12 erstes Haus nach 57.1 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 113.4 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf) an b2c6c627 radeon — offen: siedlung.K5#2 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +4)",
    "stationen": [
     {
      "id": "siedlung.K5#1",
@@ -1355,7 +1403,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/dienst.js, stamm/dirigent-ankunft.js +11)"
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +4)"
     },
     {
      "id": "siedlung.K5#2",
@@ -1371,13 +1419,13 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/dienst.js, stamm/dirigent-ankunft.js +11)"
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +4)"
     }
    ]
   },
   "speicher.K1": {
    "punkte": 1,
-   "beleg": "Maschine: 20 Tode: Alter max 1.58 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt an b2c6c627 radeon · 20 Tode: Alter max 1.58 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an b2c6c627 radeon — offen: speicher.K1#2 gtx: Pfad seit der Messung geändert (R6: stamm/dienst.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +9)",
+   "beleg": "Maschine: 20 Tode: Alter max 1.58 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt an b2c6c627 radeon · 20 Tode: Alter max 1.58 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an b2c6c627 radeon — offen: speicher.K1#2 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/gelaende-chunks.js +3)",
    "stationen": [
     {
      "id": "speicher.K1#1",
@@ -1393,7 +1441,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: stamm/dienst.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +9)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/gelaende-chunks.js +3)"
     },
     {
      "id": "speicher.K1#2",
@@ -1409,7 +1457,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: stamm/dienst.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +9)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/gelaende-chunks.js +3)"
     }
    ]
   },
@@ -1431,7 +1479,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: stamm/dienst.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +9)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/gelaende-chunks.js +3)"
     }
    ]
   },
@@ -1509,7 +1557,7 @@
   },
   "stoffe.K3": {
    "punkte": 1,
-   "beleg": "Maschine: Winter -4.375 °C am Spiegel: 1151 Schritte auf dem See, die Füße bis 0 m vom Spiegel, 0 schwimmend · 3 von 3 Tieren am Spiegel · Feld +10 °C (5.625 °C): 1003 Schritte schwimmend an b2c6c627 headless — offen: stoffe.K3#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: Winter -4.375 °C am Spiegel: 1151 Schritte auf dem See, die Füße bis 0 m vom Spiegel, 0 schwimmend · 3 von 3 Tieren am Spiegel · Feld +10 °C (5.625 °C): 1003 Schritte schwimmend an b2c6c627 headless — offen: stoffe.K3#2 headless: ungemessen (R10)",
    "stationen": [
     {
      "id": "stoffe.K3#1",
@@ -1518,6 +1566,14 @@
      "zahl": "Winter -4.375 °C am Spiegel: 1151 Schritte auf dem See, die Füße bis 0 m vom Spiegel, 0 schwimmend · 3 von 3 Tieren am Spiegel · Feld +10 °C (5.625 °C): 1003 Schritte schwimmend",
      "sha": "b2c6c627e6526265fcdc5178b987515ae06f2584",
      "grund": null
+    },
+    {
+     "id": "stoffe.K3#2",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)"
     }
    ]
   },
@@ -1595,7 +1651,7 @@
   },
   "tiere.K1": {
    "punkte": 1,
-   "beleg": "Maschine: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.257) an b2c6c627 headless — offen: tiere.K1#2 radeon: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.997 über 1150 Takte, letzter Flüchter 0.4 s (1 aus zweiter Hand), Fluchtweg 32.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 19° 83.1/48, Flucht bei 17.4 m: 43.1 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (778 px) · 44.2 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (434 px) · 46.2 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (506 px) an b2c6c627 · tiere.K1#2 gtx: Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dienst.js, stamm/dirigent-ankunft.js +8)",
+   "beleg": "Maschine: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.257) an b2c6c627 headless — offen: tiere.K1#2 radeon: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.997 über 1150 Takte, letzter Flüchter 0.4 s (1 aus zweiter Hand), Fluchtweg 32.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 19° 83.1/48, Flucht bei 17.4 m: 43.1 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (778 px) · 44.2 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (434 px) · 46.2 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (506 px) an b2c6c627 · tiere.K1#2 gtx: Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +4)",
    "stationen": [
     {
      "id": "tiere.K1#1",
@@ -1619,13 +1675,13 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dienst.js, stamm/dirigent-ankunft.js +8)"
+     "grund": "Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +4)"
     }
    ]
   },
   "tiere.K2": {
    "punkte": 1,
-   "beleg": "Maschine: Riss je Jagd einWolf 0/20 (HP 168) · rudel 18/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 49 s an b2c6c627 headless · Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.1 s, 3 fressen: tier:wolf 7461 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.34 m · Luma 75.2 σ 32.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.97 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an b2c6c627 radeon — offen: tiere.K2#2 gtx: Pfad seit der Messung geändert (R6: phyto-core.js, stamm/feld-leben.js, stamm/gelaende-boden.js +6)",
+   "beleg": "Maschine: Riss je Jagd einWolf 0/20 (HP 168) · rudel 18/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 49 s an b2c6c627 headless · Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.1 s, 3 fressen: tier:wolf 7461 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.34 m · Luma 75.2 σ 32.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.97 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an b2c6c627 radeon — offen: tiere.K2#2 gtx: Pfad seit der Messung geändert (R6: phyto-core.js, stamm/feld-leben.js, stamm/gelaende-boden.js +2)",
    "stationen": [
     {
      "id": "tiere.K2#1",
@@ -1649,13 +1705,13 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: phyto-core.js, stamm/feld-leben.js, stamm/gelaende-boden.js +6)"
+     "grund": "Pfad seit der Messung geändert (R6: phyto-core.js, stamm/feld-leben.js, stamm/gelaende-boden.js +2)"
     }
    ]
   },
   "tiere.K3": {
    "punkte": 1,
-   "beleg": "Maschine: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an b2c6c627 headless · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2768/1209/6049/4056 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 93.6 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.97 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an b2c6c627 radeon — offen: tiere.K3#2 gtx: Pfad seit der Messung geändert (R6: koerper-core.js, stamm/feld-leben.js, stamm/gelaende-boden.js +4)",
+   "beleg": "Maschine: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an b2c6c627 headless · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2768/1209/6049/4056 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 93.6 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.97 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an b2c6c627 radeon — offen: tiere.K3#2 gtx: Pfad seit der Messung geändert (R6: stamm/feld-leben.js, stamm/gelaende-boden.js)",
    "stationen": [
     {
      "id": "tiere.K3#1",
@@ -1679,7 +1735,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: koerper-core.js, stamm/feld-leben.js, stamm/gelaende-boden.js +4)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/feld-leben.js, stamm/gelaende-boden.js)"
     }
    ]
   },
@@ -1723,7 +1779,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: stamm/koerper-bewegung.js, stamm/netz-portal.js, stamm/siedlung-ort.js +1)"
+     "grund": "Pfad seit der Messung geändert (R6: stamm/netz-portal.js, worlds/huelle/huelle.js)"
     },
     {
      "id": "tore.K3#2",
@@ -1797,7 +1853,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, stamm/gelaende-boden.js +8)"
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, stamm/gelaende-boden.js +4)"
     }
    ]
   },
@@ -1841,7 +1897,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, index.html, stamm/bau-teile.js +10)"
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/bau-teile.js, stamm/dirigent-ankunft.js +4)"
     }
    ]
   },
@@ -1869,5 +1925,5 @@
   }
  },
  "kopfVoll": "b2c6c627e6526265fcdc5178b987515ae06f2584",
- "zeit": "2026-10-26T16:02:01.929Z"
+ "zeit": "2026-10-26T20:18:03.287Z"
 }
