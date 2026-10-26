@@ -140,3 +140,4 @@
 2026-10-26 07:33:14 takt5-headless wetter.K1#2 GRÜN 0.5 · 5/74
 2026-10-26 07:33:20 takt5-headless wetter.K5#1 GRÜN 0.1 · 6/74
 2026-10-26 07:33:26 takt5-headless wetter.K5#2 GRÜN 0.1 · 7/74
+2026-10-26 07:33:45 takt5-headless gelaende.K4#2 GRÜN 2.8 · 8/74
