@@ -1291,7 +1291,7 @@ async function probe(cfg) {
 (async () => {
     const Q = quellWand(stammLib.text(root));
     fs.mkdirSync(OUT, { recursive: true });
-    await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
+    await server.lausche(PORT);
     const browser = await starteBrowser({
         art: "echt",
         headless: false,
@@ -1304,7 +1304,7 @@ async function probe(cfg) {
     await page.evaluateOnNewDocument(() => {
         window.__anazhAutoSettlement = false;
     });
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000);
     await page.evaluate(AUSGABE_INSTALL);
     const b = await page.evaluate(buehneBauen);
     let S;

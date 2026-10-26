@@ -25,7 +25,7 @@ const REGEN_THRESHOLD = 4; // Env-Regenerierung — MUSS ~0 sein (die scharfe Wa
 const KASKADE = 40; // Gesamt-Compiles je Fenster, egal ob neu oder wiederholt
 let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Frist-Riss nennt ihn
 (async () => {
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "webgl", frist: 300000, zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 }); // klein → schnelle Rasterung; Compile ist res-unabhängig
@@ -48,7 +48,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     // SELBSTTEST der Programm-Wache: mitten im Warmup läuft ein Programm, das ein Dorf baut — die Wache MUSS es anhalten
     // (die Bühne hält, die Wache nennt es), sonst ist sie vakuös.
     const SELBSTTEST_PROGRAMM = process.argv.includes("--selbsttest-programm");
-    await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000, "index.html?holz=kienspan");
     await page.evaluate(AUSGABE_INSTALL);
 
     // JEDER AUFRUF HAT EINEN NAMEN. `ruf` misst jeden evaluate, nennt jeden über LANG_MS beim Namen (mit seinen

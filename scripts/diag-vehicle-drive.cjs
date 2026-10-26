@@ -211,12 +211,12 @@ function staticLaws(garage) {
     );
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
 
     // B-e fährt an der MESS-WIESE (spec/profiband/haushalt.json, Messort `wiese`) — der Spawn liegt im Gebirge (Stufen
     // bis 24 m).

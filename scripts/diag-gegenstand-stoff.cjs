@@ -345,12 +345,12 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
 async function tafel() {
     const { statikServer, starteBrowser, nullRenderer, warteAufWelt, buehne } = require("./lib/welt-boot.cjs");
     const port = Number(process.env.GEGENSTAND_STOFF_PORT || 4677);
-    const server = statikServer().listen(port, "127.0.0.1");
+    const server = await statikServer().lausche(port);
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     try {
         const page = await browser.newPage();
         await nullRenderer(page);
-        await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 180000 });
+        await server.zeige(page, 180000);
         await warteAufWelt(page, 180000);
         await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
         await buehne(page);

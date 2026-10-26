@@ -863,7 +863,7 @@ async function kosten(page, stubs) {
 async function labPruefen(browser) {
     const page = await browser.newPage();
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/worlds/klang/index.html`, { waitUntil: "load", timeout: 60000 });
+        await server.zeige(page, 60000, "worlds/klang/index.html", "load");
         return await page.evaluate(async () => {
             const K = window.__klangCore;
             const o = { weltModus: !!document.getElementById("weltModeBtn"), graphGebaut: 0, orte: {} };
@@ -1555,7 +1555,7 @@ async function zensus(page, browser, ergebnis) {
             res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
             res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
         });
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({
         art: ECHT ? "echt" : "null",
         headless: !ECHT,
@@ -1570,7 +1570,7 @@ async function zensus(page, browser, ergebnis) {
         if (!ECHT) await nullRenderer(page);
         // der Quellen-Abgriff kostet je Quelle einen Stapel — der Takt misst ohne ihn
         if (!TAKT) await page.evaluateOnNewDocument(quellenAbgriff);
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 180000 });
+        await server.zeige(page, 180000, "index.html", "networkidle0");
         await warteAufWelt(page, 180000);
         exit = await (TAKT ? takt(page, ergebnis) : zensus(page, browser, ergebnis));
     } catch (e) {

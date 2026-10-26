@@ -1246,7 +1246,7 @@ async function probe(arg) {
 
 
     const t0 = Date.now();
-    await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
@@ -1255,7 +1255,7 @@ async function probe(arg) {
         window.__anazhAutoSettlement = false; // der Dorf-Zug ruht: die Häuser der Mess-Wiese setzt die Linse (fest)
     });
     const bereit = () => warteAufWelt(page, 90000);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
     const zeiten = {};
     let m = null;
     if (TEILE.includes("laub")) {
@@ -1303,7 +1303,7 @@ async function probe(arg) {
     let nin = null;
     if (TEILE.includes("ninja")) {
         const tN = Date.now();
-        await page.goto(`http://127.0.0.1:${PORT}/worlds/koerperstudio/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await server.zeige(page, 60000, "worlds/koerperstudio/index.html");
         await page.waitForFunction(
             // eslint-disable-next-line no-undef
             () => typeof enterPlay === "function" && typeof playPhysics === "function" && typeof parkBoxes !== "undefined" && parkBoxes.length > 0,
