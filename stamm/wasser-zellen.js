@@ -1997,12 +1997,12 @@ class AnazhRealm_wasser_zellen {
         // während der Rechnung liest der Spiegel das Gesetz ohne Stau; ohne Hydrosphäre hält kein Werk Wasser (nach dem Reload
         // steht der Damm vor ihr — ein Feld aus dem leeren Spiegel bliebe gemerkt)
         const h = this.state.hydrosphere;
-        if (this._stauRechnet || !(h && h.ready)) return null;
+        if (this._stauRechnet || !(h && h.ready)) return;
         this._stauRechnet = true;
         try {
             const clusters = this._stauWorkClusters();
             const kacheln = this.state.hydroTiles ? this.state.hydroTiles.size : 0;
-            if (this._stauVon === clusters && this._stauKacheln === kacheln) return this.state.waterStau;
+            if (this._stauVon === clusters && this._stauKacheln === kacheln) return;
             this._stauVon = clusters;
             // je Werk gemerkt (`key`): neu gerechnet nur ein neues Werk oder eines, in dessen Fenster ein neuer Edit reicht, und
             // jedes, wenn eine Hydro-Kachel kam (ihr Wasser kann ein Werk tragen)
@@ -2024,7 +2024,7 @@ class AnazhRealm_wasser_zellen {
             }
             for (const [key, alt] of m.je) if (!je.has(key)) anders.push(alt);
             this._stauMerk = { je, edits, n: edits.length };
-            if (!anders.some(Boolean)) return this.state.waterStau;
+            if (!anders.some(Boolean)) return;
             this.state.waterStau = [...je.values()].filter(Boolean);
             // die Zellen der alten und neuen Fenster fallen (Neubau, die Flut liest den neuen Spiegel), der Automat wacht
             for (const f of anders.filter(Boolean)) {
@@ -2033,7 +2033,6 @@ class AnazhRealm_wasser_zellen {
                 this._invalidateWaterCapsAround(x, z, Math.max(f.w, f.h) * 0.5 * f.step);
             }
             this._voxelZustandPost({ type: "state-update", delta: { stau: this.state.waterStau } });
-            return this.state.waterStau;
         } finally {
             this._stauRechnet = false;
         }
