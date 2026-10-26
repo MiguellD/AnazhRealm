@@ -158,6 +158,7 @@ const OPS = {
                 const L = W.listen.get(k) || { ordnung: [], glieder: new Map() };
                 W.listen.set(k, L);
                 for (const s of l.teile) L.glieder.set(s, stuecke[i++]);
+                if (l.anhang) for (const s of l.anhang) L.ordnung.push(s);
                 if (l.ordnung) {
                     L.ordnung = Array.from(l.ordnung);
                     const lebt = new Set(L.ordnung);

@@ -790,11 +790,13 @@ class AnazhRealm_speicher_welten {
         const a = this.state.architectures || AnazhRealm.STAND_LEER;
         const m = this._standBautenMemo;
         if (m && m.liste === a && m.n === a.length && m.letzter === a[a.length - 1]) return m.bauten;
+        // die Geburt hängt an: gleiche Liste, ihr alter letzter Eintrag an seiner Stelle — gefiltert wird nur das neue Ende
+        const an = m && m.liste === a && m.n < a.length && a[m.n - 1] === m.letzter;
         this._standBautenMemo = {
             liste: a,
             n: a.length,
             letzter: a[a.length - 1],
-            bauten: a.filter((e) => !e._ausGesetz),
+            bauten: an ? m.bauten.concat(a.slice(m.n).filter((e) => !e._ausGesetz)) : a.filter((e) => !e._ausGesetz),
         };
         return this._standBautenMemo.bauten;
     }
@@ -1367,20 +1369,43 @@ class AnazhRealm_speicher_welten {
             const neueMenge = ganz || !L.glieder || !gleich(L.menge, menge);
             if (voll || neueMenge) {
                 const glieder = neueMenge ? art.liste(K) : L.glieder;
-                const ord = new Array(glieder.length);
-                for (let j = 0; j < glieder.length; j++) {
-                    const m = this._standGlied(L, glieder[j]);
-                    const geaendert = (ganz || m.json === null) && pruefe(glieder[j], m);
-                    if (voll || geaendert || L.gefegt.has(m)) {
+                // DER ANHANG: im Takt wächst die Liste meist nur am Ende (die Geburt, `push`) — bei gleichem Anfang fragt der Stand
+                // nur das neue Ende, und die Ordnung reist als Anhang. Bis speicher-k2-anhang lief jeder neue Bau über alle Glieder
+                // (je Glied das Gedächtnis und der Ordnungs-Vergleich), und die ganze Ordnung ging geklont an den Faden.
+                const alt = L.glieder;
+                const anhaengen = !voll && !ganz && alt && alt !== glieder && alt.length <= glieder.length;
+                let ab = 0;
+                if (anhaengen) while (ab < alt.length && glieder[ab] === alt[ab]) ab++;
+                if (anhaengen && ab === alt.length) {
+                    for (const m of L.gefegt) {
                         neu.push(m.s);
                         listenStuecke.push(m.json);
                     }
-                    ord[j] = m.s;
+                    // ein Glied des Endes ist dem Faden neu: es reist immer (mit dem JSON seines Gedächtnisses, wenn es eins hat)
+                    const anhang = glieder.slice(ab).map((g) => {
+                        const m = this._standGlied(L, g);
+                        if (m.json === null) pruefe(g, m);
+                        if (!L.gefegt.has(m)) (neu.push(m.s), listenStuecke.push(m.json));
+                        L.ordnung.push(m.s);
+                        return m.s;
+                    });
+                    listen[k] = anhang.length ? { teile: neu, anhang } : { teile: neu };
+                } else {
+                    const ord = new Array(glieder.length);
+                    for (let j = 0; j < glieder.length; j++) {
+                        const m = this._standGlied(L, glieder[j]);
+                        const geaendert = (ganz || m.json === null) && pruefe(glieder[j], m);
+                        if (voll || geaendert || L.gefegt.has(m)) {
+                            neu.push(m.s);
+                            listenStuecke.push(m.json);
+                        }
+                        ord[j] = m.s;
+                    }
+                    listen[k] = { teile: neu };
+                    if (voll || !gleich(L.ordnung, ord)) listen[k].ordnung = L.ordnung = ord;
                 }
                 L.glieder = glieder;
                 L.menge = art.menge ? menge : [glieder];
-                listen[k] = { teile: neu };
-                if (voll || !gleich(L.ordnung, ord)) listen[k].ordnung = L.ordnung = ord;
             } else {
                 for (const m of L.gefegt) {
                     neu.push(m.s);
