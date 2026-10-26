@@ -710,9 +710,9 @@ function linseWerten(roh, spur, b) {
     return Object.assign(a, { befunde: haengerLinsenBefunde(a), tabelle: haengerTabelle(a) });
 }
 
-// DER SELBSTTEST (ohne Welt): ein erfundener Lauf mit vier Hängern bekannter Ursache (Takt-Last, Neben-Last, Collector,
-// GPU-Warten nach synchronen Pipelines) als Spur (Profile, zwei ProfileChunks, Takt-Marken auf einer gegen die Seite versetzten
-// Uhr) — die Auswertung muss jeden beim Namen nennen und keinen ruhigen Frame zählen; fehlt eine Takt-Marke, ist sie ROT.
+// DER SELBSTTEST (ohne Welt): ein erfundener Lauf mit Hängern bekannter Ursache (Takt-Last, Neben-Last, Collector,
+// GPU-Warten nach synchronen Pipelines, ein Auftrag des GPU-Prozesses) als Spur (Profile, zwei ProfileChunks, Takt-Marken
+// auf einer gegen die Seite versetzten Uhr) — die Auswertung muss jeden beim Namen nennen und keinen ruhigen Frame zählen; fehlt eine Takt-Marke, ist sie ROT.
 // Die Takt-Spitze: 200 Takte zu 5 ms (A 2 · B 1 · C 2), dann 200 mit 3 ms Last in jedem 10. — die Last ist allein Täter
 // (3 ms), A (in jedem Takt) keiner; ohne Last GRÜN.
 function selbsttest() {
