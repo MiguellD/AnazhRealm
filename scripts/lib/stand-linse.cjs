@@ -802,18 +802,14 @@ function standUrteil(b) {
                 `aussteht (${N.warten.join(", ")}) — nichts baut sie neu (_scatterRefillPending, _tickWaldPlan)`
         );
     // (K) DIE FÜHRUNG FERN: führt ein Studio die Kamera jenseits des Rings (`kameraFuehren`, eine Sonde), steht die Welt — kein
-    // Fege-Takt wartet auf Boden, den kein Strom baut, und dort steht keine Kachel ohne Boden
+    // Fege-Takt wartet auf Boden, den kein Strom baut
     const KF = b.fuehrung;
     if (!KF) v.push("LEER: keine Führungs-Phase (die Kamera jenseits des Rings)");
-    else {
-        if (!KF.steht)
-            v.push(
-                `FÜHRUNG: die Kamera bei (${KF.x}, ${KF.z}), ${KF.abstand} m neben dem Spieler — die Welt steht nach ${KF.takte} ` +
-                    `Takten nicht: ${KF.grund} (ein Fege-Takt wartet auf Boden jenseits des Rings, den kein Strom baut)`
-            );
-        if (KF.kacheln > 0)
-            v.push(`FÜHRUNG: jenseits des Rings stehen ${KF.kacheln} Kacheln der Nah-Wiese — gebaut auf Boden, den der Ring nicht trägt`);
-    }
+    else if (!KF.steht)
+        v.push(
+            `FÜHRUNG: die Kamera bei (${KF.x}, ${KF.z}), ${KF.abstand} m neben dem Spieler — die Welt steht nach ${KF.takte} ` +
+                `Takten nicht: ${KF.grund} (ein Fege-Takt wartet auf Boden jenseits des Rings, den kein Strom baut)`
+        );
     // (W) WACH: ein Fege-Takt mit Offenem hält die Welt wach, beim Namen
     if (!/Fege-Takt[^]*archCull/.test(b.wach || "")) v.push(`WACH: ein Fege-Takt mit Offenem hält die Welt nicht wach beim Namen (${b.wach || "—"})`);
     // (B) BAKE-SCHULD: die Welt steht erst ohne Schuld der Bake-Uhr, „offen" nennt die Felder
