@@ -60,7 +60,7 @@ class AnazhRealm_siedlung_bewohner {
         if (!KC || typeof KC.berufVon !== "function") return AnazhRealm._kernPflichtBruch("koerper:berufVon");
         const BW = AnazhRealm.BEWOHNER;
         const plan = S.plan;
-        const belegt = [];
+        const belegt = new Map(); // das Raster des Raums (`frei`): je Zelle x, z, x, z …
         // DIE GASSE BLEIBT FREI (mensch.K3 Staffel 2): kein Stand näher als `gasseFreiM` an der Mitte einer Straße oder eines
         // Feldwegs des Plans — wer steht, steht am Rand, die Spuren der Gehenden (`spurM`) gehen an ihm vorbei
         const gassen = [];
@@ -84,18 +84,28 @@ class AnazhRealm_siedlung_bewohner {
         // DER PUNKT VOR JEDER TÜR BLEIBT FREI (mensch.K3 Staffel 2): über ihn geht jeder hinein und hinaus (`vorM`). Die
         // Regeln der Liste lesen nur den Plan und seine Bauten — was der Wald-Takt später bringt (Baum, Busch, Fels), richtet
         // der Stand selbst (`_bewohnerStandPruefen`): die Liste nach der Abwesenheit ist dieselbe Funktion
+        // DER RAUM (Lehre 25: der billige Filter zuerst, nie über alle): jeder vergebene Stand und der Platz vor jeder Tür
+        // liegt im Raster von `raumM` — wer frei fragt, liest die 3 × 3 Zellen um sich statt aller Stände der Stadt
+        const raumZelle = (ix, iz) => ix * 2097152 + iz;
+        const legen = (x, z) => {
+            const k = raumZelle(Math.floor(x / BW.raumM), Math.floor(z / BW.raumM));
+            const l = belegt.get(k);
+            if (l) l.push(x, z);
+            else belegt.set(k, [x, z]);
+        };
         const frei = (x, z, amRand = true) => {
-            for (const p of belegt) if ((p.x - x) ** 2 + (p.z - z) ** 2 < BW.raumM * BW.raumM) return false;
-            for (const T of tueren)
-                if ((T.tx + T.ux * BW.vorM - x) ** 2 + (T.tz + T.uz * BW.vorM - z) ** 2 < BW.raumM * BW.raumM)
-                    return false;
+            const [ix, iz] = [Math.floor(x / BW.raumM), Math.floor(z / BW.raumM)];
+            for (let i = -1; i <= 1; i++)
+                for (let j = -1; j <= 1; j++)
+                    for (let n = 0, l = belegt.get(raumZelle(ix + i, iz + j)) || []; n < l.length; n += 2)
+                        if ((l[n] - x) ** 2 + (l[n + 1] - z) ** 2 < BW.raumM * BW.raumM) return false;
             if (amRand && amWeg(x, z)) return false;
             const g = this._imGrundriss(x, z, BW.saumM);
             const q = { x, z };
             return g !== "haus" && g !== "bau" && this._landAt(x, z, 0.2) && !this._bewohnerWand(q, q, true);
         };
         const nimm = (o) => {
-            if (o) belegt.push(o);
+            if (o) legen(o.x, o.z);
             return o;
         };
         const steht = new Map();
@@ -145,6 +155,15 @@ class AnazhRealm_siedlung_bewohner {
                         if (!(l > 0.5)) continue;
                         const nx = -(e.z - a.z) / l;
                         const nz = (e.x - a.x) / l;
+                        // das Stück fern vom Platz zieht keine Würfe (Lehre 25): sein Kasten im Raum des Platzes, um den Abstand
+                        // der Seite gewachsen, liegt weiter als `platzRandM` vom Rechteck — kein Punkt auf ihm steht am Platz
+                        const ecken = [a, e].map((q) => [S.ox + q.x - mx, S.oz + q.z - mz]);
+                        const [kx, kz] = [0, 1].map((m) =>
+                            ecken.map(([x, z]) => (m ? x * ps + z * pc : x * pc - z * ps))
+                        );
+                        const fernX = Math.max(0, Math.min(...kx) - pz.ex, -pz.ex - Math.max(...kx));
+                        const fernZ = Math.max(0, Math.min(...kz) - pz.ez, -pz.ez - Math.max(...kz));
+                        if (Math.hypot(fernX, fernZ) > BW.platzRandM + (rd.w || 3) / 2 + 0.81) continue;
                         for (let v = 0; v < 12; v++) {
                             const t = g.axis("gt" + i + ":" + v);
                             const sd = g.axis("gs" + i + ":" + v) < 0.5 ? -1 : 1;
@@ -221,6 +240,7 @@ class AnazhRealm_siedlung_bewohner {
             const ul = Math.hypot(tx - mx, tz - mz) || 1;
             tueren.push({ si, sl, haus, tx, tz, ux: (tx - mx) / ul, uz: (tz - mz) / ul });
         }
+        for (const T of tueren) legen(T.tx + T.ux * BW.vorM, T.tz + T.uz * BW.vorM);
         // DER BESUCH (koerper-core `tagesPlan`, mensch.K3 Staffel 2): ein Stand vor der Tür eines anderen Hauses, aus dem Samen
         // unter denen, die `besuchM` fern von seiner Tür und der Mitte des Platzes liegen und höchstens `besuchWeitM` fern von
         // ihnen und seinem Werk (der Plan hält ihn `besuchH` dort: der Gang hin trägt nur einen Teil davon, er kommt an und
@@ -1583,19 +1603,27 @@ class AnazhRealm_siedlung_bewohner {
                     t0 = Math.max(0, Math.min(...ts) - R / L);
                     t1 = Math.min(1, Math.max(...ts) + R / L);
                 }
-                let [g0, g1] = [Infinity, -Infinity];
                 const k0 = Math.floor((t0 * L) / 0.5);
                 const k1 = Math.ceil((t1 * L) / 0.5);
-                for (let k = k0; k <= k1; k++) {
+                const boden = (k) => {
                     const t = Math.max(t0, Math.min(t1, (k * 0.5) / (L || 1)));
                     let g = t <= 0 ? grund(a) : t >= 1 ? grund(e) : memo.get(k);
                     if (g === undefined) memo.set(k, (g = this.getTerrainHeightAt(a.x + dx * t, a.z + dz * t)));
-                    [g0, g1] = [Math.min(g0, g), Math.max(g1, g)];
-                }
+                    return g;
+                };
                 // ohne Boden ist jede Box Wand; die Sohle steht bis `sohleM` unter dem Gesetz (der Feld-Scan des Schritts,
                 // `_bewohnerSchritt`), die Wand fragt um sie tiefer — sonst stand der Sockel der Laterne #15942 (0,593 m über
-                // dem Gesetz) dem Gehenden 0,601 m über der Sohle, Wand im Leib, die seine Frage nie sah
+                // dem Gesetz) dem Gehenden 0,601 m über der Sohle, Wand im Leib, die seine Frage nie sah.
+                // EIN Boden urteilt zuerst (Lehre 25: der billige Filter vor der teuren Rechnung): g0 ≤ gm ≤ g1 — ragt die Box über
+                // gm + unten und reicht unter gm + oben, ist sie Wand bei jedem Boden des Stücks; nur die Unentschiedene tastet es ab
                 const s = AnazhRealm.BEWOHNER.sohleM;
+                const gm = boden((k0 + k1) >> 1);
+                if (box.topY > gm + unten - s && box.botY < gm + oben) return ent;
+                let [g0, g1] = [Infinity, -Infinity];
+                for (let k = k0; k <= k1; k++) {
+                    const g = boden(k);
+                    [g0, g1] = [Math.min(g0, g), Math.max(g1, g)];
+                }
                 if (!Number.isFinite(g0 + g1) || (box.topY > g0 + unten - s && box.botY < g1 + oben)) return ent;
             }
         }
