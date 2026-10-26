@@ -264,3 +264,4 @@
 2026-10-26 10:23:00 takt5-radeon speicher.K2#1 ROT 2.3 · 41/43
 2026-10-26 10:23:05 takt5-radeon ENDE 27 grün / 16 rot · 136.2 min
 2026-10-26 12:20:48 eeaff9d6-radeon-ruhe START 2 Stationen
+2026-10-26 12:21:52 eeaff9d6-radeon-ruhe fahrzeug.K3#1 GRÜN 1.1 · 1/2
