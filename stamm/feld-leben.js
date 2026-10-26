@@ -1945,14 +1945,15 @@ class AnazhRealm_feld_leben {
 
     // === DIE LAVA (stoffe.K3-2): geschmolzener Stein auf der glut-Achse, der zu Stein erstarrt ===
     // Ein Schreib-Akt der Welt (`_lavaGiessen`: die Tat `lava` an ihrem Ort und ihrer Welt-Stunde, mit der Höhe und ob sie ins
-    // Wasser floss) deckt die 16-m-Zelle des Felds; ihr Zustand ist eine FUNKTION der Welt-Zeit seit dem Akt (gelaende-core `lava`
-    // auf der Zeile `stein` der Stoff-Tafel, die Luft an der Naht `_temperaturAt`) — kein Takt, keine Simulation: jeder Peer und
-    // jeder Reload sieht dieselbe Decke. Sie glüht in der glut ihrer Zelle (`auraAt`), leuchtet als Feuer (`_leuchtQuellen`),
-    // trägt unter dem Fuß „glut", erstarrt „stein" (`_kontaktStoffAt`); am Wasser erstarrt sie schneller und unter Dampf. Die Tat
-    // bleibt: der Stein bleibt, die Narbe (TAT_NARBE.lava) hält das Leben der Zelle.
+    // Wasser floss — das EINE Urteil `_nassAt`, nie der Bezug der Ufer-Bänder) deckt die 16-m-Zelle des Felds; ihr Zustand ist
+    // eine FUNKTION der Welt-Zeit seit dem Akt (gelaende-core `lava` auf der Zeile `stein` der Stoff-Tafel, die Luft an der Naht
+    // `_temperaturAt`) — kein Takt, keine Simulation: jeder Peer und jeder Reload sieht dieselbe Decke. Sie glüht in der glut
+    // ihrer Zelle (`auraAt`), leuchtet als Feuer (`_leuchtQuellen`), trägt unter dem Fuß „glut", erstarrt „stein"
+    // (`_kontaktStoffAt`); am Wasser erstarrt sie schneller und unter Dampf. Die Tat bleibt: der Stein bleibt, die Narbe
+    // (TAT_NARBE.lava) hält das Leben der Zelle.
     _lavaGiessen(x, z) {
         const y = this._voxelSurfaceY(x, z);
-        const wasser = this._waterLevelAt(x, z) > y ? 1 : 0;
+        const wasser = this._nassAt(x, z) ? 1 : 0;
         return this._tatSchreiben("lava", x, z, { y: Math.round(y * 100) / 100, wasser });
     }
 
