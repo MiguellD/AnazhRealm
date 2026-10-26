@@ -340,7 +340,7 @@ function urteil(b) {
 }
 
 function selbsttest() {
-    const { taeterFaelle, selbsttestEnde, nullSeite } = require("./lib/welt-boot.cjs");
+    const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
     const gruen = {
         spiegel: [
             {
@@ -622,7 +622,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const { installHoehlenStrahl } = require("./lib/hoehlen-strahl.cjs");
 

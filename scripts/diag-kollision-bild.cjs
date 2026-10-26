@@ -145,7 +145,7 @@ function urteil(b) {
 }
 
 function selbsttest() {
-    const { taeterFaelle, selbsttestEnde, nullSeite } = require("./lib/welt-boot.cjs");
+    const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
     const ex = Object.fromEntries(PFLICHT_EXEMPLARE.map((k) => [k, true]));
     const gruen = {
         zensus: { werke: 900, taeter: [] },
@@ -255,7 +255,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite } = require("./lib/welt-boot.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOLLISION_BILD_PORT) || 4631;
