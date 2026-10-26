@@ -10,6 +10,7 @@
 //        liest alle messung/*.json, urteilt R6 (Pfad unberührt seit der Messung) und R10, schreibt stand.json
 //   node punkte.cjs liste [--kopf <sha>]   die registrierten Stationen, geprüft gegen src/gN.js und jeder pfad-Glob gegen den
 //        Kopf (sonst origin/main des Spiel-Klons)
+//   node punkte.cjs gtx-nutzen --kopf <sha>   die GTX-Stationen, deren Messung am Kopf Punkte ändern kann (nur=… für die OMEN)
 //   node punkte.cjs selbsttest   jeder Fall beim Namen
 //
 // FORMAT (stationen/g1.js .. g6.js, module.exports = [ … ]), je Eintrag:
@@ -614,6 +615,30 @@ function weltDateien(namen, diffText) {
     });
 }
 
+// die GTX-Stationen, deren Messung am Kopf Punkte ändern KANN (26.10.: takt5z maß 43 Stationen in ~6 h, auch Staffel 1 hinter
+// grüner Radeon): Staffel 1 nur, wo kein anderes Gerät grün ist; Staffel 2 nur, wo Staffel 1 steht und jedes andere Gerät grün ist
+function gtxNutzen(s) {
+    const ja = [], nein = [];
+    for (const [k, e] of Object.entries(s.je)) {
+        const ids = [...new Set(e.stationen.filter((x) => x.geraet === "gtx").map((x) => x.id))];
+        const s1 = e.stationen.some((x) => x.id === k + "#1" && x.gruen);
+        for (const id of ids) {
+            const andere = e.stationen.filter((x) => x.id === id && x.geraet !== "gtx");
+            const nutzt = id.endsWith("#1") ? !andere.some((x) => x.gruen) : s1 && andere.length > 0 && andere.every((x) => x.gruen);
+            (nutzt ? ja : nein).push(id);
+        }
+    }
+    return { ja: ja.sort(), nein: nein.sort() };
+}
+
+function gtxNutzenCli(opt) {
+    const s = buchenCli({ ...opt, trocken: true });
+    const n = gtxNutzen(s);
+    console.log("GTX-NUTZEN " + n.ja.length + " von " + (n.ja.length + n.nein.length) + " Stationen am " + s.kopf + " ändern Punkte");
+    console.log("nur=" + n.ja.join(","));
+    return n;
+}
+
 function buchenCli(opt) {
     if (!opt.kopf) throw new Error("--kopf fehlt");
     const { stationen, fehler, fehlt } = ladeGeprueft();
@@ -626,6 +651,7 @@ function buchenCli(opt) {
         hilfeText(), fehlt, { tot: (st) => toteGlobs(st.pfad, dateien), roh: rohAus() });
     s.kopfVoll = kopfVoll;
     s.zeit = new Date().toISOString();
+    if (opt.trocken) return s;
     fs.writeFileSync(path.join(DIR, "stand.json"), JSON.stringify(s, null, 1) + "\n");
     for (const [k, e] of Object.entries(s.je)) console.log("  " + k + " " + e.punkte + " · " + e.beleg);
     console.log("Kopf " + s.kopf + " · Maschine " + Object.keys(s.je).length + " Kriterien · Σ " + Object.values(s.je).reduce((a, e) => a + e.punkte, 0) + " → stand.json");
@@ -802,7 +828,15 @@ async function selbsttest() {
     pruef("GEN registriert → Maschine, sonst Hand", k1.punkte === 2 && k1.maschine && k1.beleg === "Maschine: z" && k2 === k0, JSON.stringify([k1, k2]));
     const pf = standPruefen(stand, "ffff0000", new Set(["gelaende.K4"]));
     pruef("GEN Kopf ungleich ist ROT", pf.some((f) => /Kopf abcd1234/.test(f)), pf.join(" | "));
-    pruef("GEN unbekanntes Kriterium ist ROT", standPruefen({ kopf: "abcd1234", je: { "x.K1": {} } }, "abcd1234", new Set()).length === 1);
+    const X = (id, geraet, gruen) => ({ id, geraet, gruen });
+    const nz = gtxNutzen({ je: {
+        "a.K1": { stationen: [X("a.K1#1", "radeon", true), X("a.K1#1", "gtx", false), X("a.K1#2", "radeon", true), X("a.K1#2", "gtx", false)] },
+        "b.K1": { stationen: [X("b.K1#1", "radeon", false), X("b.K1#1", "gtx", false), X("b.K1#2", "radeon", true), X("b.K1#2", "gtx", false)] },
+        "c.K1": { stationen: [X("c.K1#1", "headless", true), X("c.K1#2", "radeon", false), X("c.K1#2", "gtx", false)] },
+    } });
+    pruef("GTX-NUTZEN Staffel 1 hinter grüner Radeon fällt, Staffel 2 nur über stehender 1 und grüner Radeon",
+        nz.ja.join() === "a.K1#2,b.K1#1" && nz.nein.join() === "a.K1#1,b.K1#2,c.K1#2", JSON.stringify(nz));
+    pruef("GEN unbekanntes Kriterium ist ROT",standPruefen({ kopf: "abcd1234", je: { "x.K1": {} } }, "abcd1234", new Set()).length === 1);
     fs.rmSync(tmp, { recursive: true, force: true });
     const rot = fall.filter((f) => !f.ok);
     console.log((rot.length ? "SELBSTTEST ROT — " + rot.map((f) => f.name).join(", ") : "SELBSTTEST GRÜN") + " (" + (fall.length - rot.length) + "/" + fall.length + ")");
@@ -825,6 +859,7 @@ if (require.main === module) {
     (async () => {
         if (verb === "run") await run(o);
         else if (verb === "buchen") buchenCli(o);
+        else if (verb === "gtx-nutzen") gtxNutzenCli(o);
         else if (verb === "liste") {
             const { stationen, fehler, fehlt } = ladeGeprueft();
             // DIE WAND PFAD am Kopf (--kopf, sonst origin/main des Spiel-Klons): jeder Glob trifft eine Datei
