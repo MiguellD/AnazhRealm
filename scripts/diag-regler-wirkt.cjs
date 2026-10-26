@@ -41,7 +41,7 @@
 // Port über REGLER_WIRKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561; der Stamm des
 // Ofen-Kanals über REGLER_WIRKT_OFEN_PORT, Standard Port + 1.
 "use strict";
-const { statikServer, starteBrowser, ROOT } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
@@ -743,7 +743,7 @@ async function selbsttest() {
     );
     return rein && teile && kanal && bruchOk && ofenKanal && ofenBruch && wurfOk && stufenOk;
     }
-(async () => {
+hauptLauf(async () => {
     // Der Selbsttest läuft EINMAL: vor Teil 1 (alle Teile ein Befehl bis auf --teil) oder allein (--selftest).
     if (process.argv.includes("--selftest") || TEIL === 1) {
         const ok = await selbsttest();
@@ -825,7 +825,4 @@ async function selbsttest() {
         `✅ gate:regler-wirkt Teil ${TEIL}: ${wirkend}/${m.zeilen.length} Regler wirken · 0 brechen · ${toteZ.length} tot = Ratsche ${Object.keys(ratsche.tot).filter(v.eigen).length} von ${Object.keys(ratsche.tot).length} (Soll ${soll}, ${ratsche.sollQuelle}) · über Budget ${Object.keys(budget).length} = Ratsche ${Object.keys(rb.bruch).length - anderer} von ${Object.keys(rb.bruch).length} (Staffel ${rb.staffel}, Soll ${rb.soll}) · über der Quote ${Object.keys(quote).length} · WURF ${m.wurf.zeilen.length} Paare, nie von der teureren Stufe`
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("regler-wirkt-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

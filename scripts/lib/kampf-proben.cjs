@@ -1557,7 +1557,7 @@ async function WELLE_L(ort) {
             // die Studio-Gestalt in der Hand abwarten (die Foundry baut sie; bis dahin trägt der Teile-Bau) — gemessen wird die
             // Klinge, die der Spieler sieht
             for (let i = 0; i < 120 && !(pm.userData.heldMesh && pm.userData.heldMesh.userData.foundryHeld); i++)
-                await new Promise((res) => setTimeout(res, 125));
+                await sleep(125);
             // die Ich-Regel bleibt rückstandsfrei: 3rd → 1st → 3rd stellt jede Sichtbarkeit UND Ebene des Leibs wieder her, und
             // im 1st zeichnet keine Haut (die Kamera sitzt im Leib) außer dem Gerät in der Hand. „Zeichnet" fragt, was r184s
             // _projectObject fragt: jeder Ahne sichtbar UND die eigene Ebene in der Haupt-Kamera — die Ich-Regel ist die
@@ -3010,7 +3010,7 @@ async function WELLE_L(ort) {
                 stelle(c, 9, 4);
                 for (let k = 0; k < 60; k++) {
                     r._gameLoopTick(performance.now());
-                    await new Promise((weiter) => setTimeout(weiter, 16));
+                    await sleep(16);
                 }
                 stelle(c, 1.6);
                 zielen(punkt(c) || c.position);

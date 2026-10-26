@@ -16,7 +16,7 @@
 // Abbau der Trittfläche müssen beim Namen rot werden.
 //   node scripts/diag-weg-boden.cjs [--selftest]
 
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.WEG_PORT || 4596);
 const SELFTEST = process.argv.includes("--selftest");
 const server = statikServer();
@@ -311,7 +311,7 @@ function urteil(S) {
     return rot;
 }
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 120000 });
     const page = await browser.newPage();
@@ -330,7 +330,7 @@ function urteil(S) {
         };
         for (const weiter = window.__deckel("Buch und Ring", 4500); !warm() && weiter(); ) {
             r._tickVoxelChunkStreaming(r.state.playerMesh.position);
-            await new Promise((ok) => setTimeout(ok, 20));
+            await sleep(20);
         }
     });
     const messen = async (stoerung) =>
@@ -400,7 +400,4 @@ function urteil(S) {
     }
     console.log("\nGRÜN — der Weg ist getretene Erde im Boden: weich gerändert, kein Quad, die Wiese weicht ihm.");
     process.exit(0);
-})().catch((e) => {
-    console.error("Weg-Boden-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

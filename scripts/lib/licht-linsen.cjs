@@ -114,7 +114,6 @@ function albedoSicht(opts) {
         const W = opts.w || 320,
             H = opts.h || 200;
         const nur = opts.nur ? new RegExp(opts.nur) : null;
-        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         // Die Klasse ist die Täter-Klasse des Stamms (`_taeterKlasse` — dieselbe wie Draw-Zähler, Puffer-Zensus und
         // Flugschreiber). Keinen Schuss bekommen das Wasser (es spiegelt), der Himmel und der Mensch (Spieler, Peers).
         const klasse = (o) => {
@@ -867,7 +866,7 @@ function tagKurve(o) {
                 // die Leuchtquellen der Stunde blenden ein (`_leuchtTakt`, wie `werkbank bild --uhr`)
                 for (let i = 0; i < 20 && r._leuchtTakt; i++) {
                     r._leuchtTakt();
-                    await new Promise((ok) => setTimeout(ok, 50));
+                    await sleep(50);
                 }
                 await window.__weltStehtWarten();
                 const frisch = k;
@@ -1216,7 +1215,7 @@ function nahFernSicht(opts) {
                 n = m;
                 yAlt = y;
                 // im Software-Holz übersetzt ein Programm über viele Läufe 
-                if (m === 0 || lauf >= 4) await new Promise((w) => setTimeout(w, 100));
+                if (m === 0 || lauf >= 4) await sleep(100);
             }
             return { px, still, laeufe, spur };
         };
@@ -2007,7 +2006,7 @@ function lichtWeg(opts) {
                     // das Feld lädt seine Texturen erst im Bild hoch: die Erst-Ruhe, dann drei Läufe
                     const lauf = () => (st.postProcessing.render(), r._spiegelPassRechne(L));
                     await window.__erstRuhe(lauf, {}, "der Spiegel");
-                    for (let k = 0; k < 3; k++) lauf(), await new Promise((q) => setTimeout(q, 200));
+                    for (let k = 0; k < 3; k++) lauf(), await sleep(200);
                     const [Wr, Hr] = [L.rt.width, L.rt.height], px = await rend.readRenderTargetPixelsAsync(L.rt, 0, 0, Wr, Hr), sch = px.length / Hr;
                     weg = [0, 1, 2].map((c) => { let a = 0; for (let y = (Hr >> 1) - 4; y < (Hr >> 1) + 4; y++) for (let x = (Wr >> 1) - 4; x < (Wr >> 1) + 4; x++) a += T.DataUtils.fromHalfFloat(px[y * sch + x * 4 + c]); return a / 64; });
                 } finally {

@@ -32,14 +32,14 @@
 //   node scripts/diag-fernwald.cjs        (Port: FERNWALD_PORT)
 "use strict";
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.FERNWALD_PORT || 4598);
 const server = statikServer();
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
@@ -52,7 +52,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
     const out = await page.evaluate(async () => {
         const res = {};
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = await window.__weltDa((r) => r.state.blueprints);
         const AR = r.constructor;
         const st = r.state;
@@ -92,7 +91,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                 for (let i = 0; g == null && i < 4000; i++) {
                     r._forestDartStand(r._forestSeedInt());
                     r._tickWaldPlan(Infinity);
-                    await new Promise((res) => setTimeout(res, 0));
+                    await sleep(0);
                     g = r._foundryGestaltFor(e, "eiche");
                 }
                 return g;
@@ -706,7 +705,4 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         `\n✅ GRÜN — der gesetzte Wald ist jenseits der Mesh-Zone seine Karte (${A.ok} Bäume), kein Satz, kein Pop am Radius.`
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("DIAG-FEHLER:", (e && e.stack) || e);
-    process.exit(2);
 });

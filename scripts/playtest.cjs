@@ -4,7 +4,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { starteBrowser, startProc, eigenePorte } = require("./lib/welt-boot.cjs");
+const { starteBrowser, startProc, eigenePorte, hauptLauf } = require("./lib/welt-boot.cjs");
 
 // DURATION_MS ist nur der MINDEST-Warmup der zeit-getriebenen Systeme; robust gegen CI-Last macht
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
@@ -100,7 +100,7 @@ async function gatherInitialFinalState(page) {
 module.exports = { safeEvaluate };
 const BAND = Object.assign({}, ...fs.readdirSync(path.join(__dirname, "playtest")).filter((f) => f.endsWith(".cjs")).map((f) => require(`./playtest/${f}`)));
 
-if (require.main === module) (async () => {
+if (require.main === module) hauptLauf(async () => {
     const T0 = Date.now();
     console.log(`Starte Save-Server ...`);
     const [port] = await eigenePorte("PLAYTEST_PORT");
@@ -506,7 +506,7 @@ if (require.main === module) (async () => {
                 if (warm || elapsed >= HARD_CAP_MS) {
                     break;
                 }
-                await new Promise((resolve) => setTimeout(resolve, 0));
+                await sleep(0);
             }
             // Foundry-Warm-Anker: der Studio-Worker bootet ASYNC (ein anderer Worker als der ausgehängte
             // voxelWorker) → warten auf f.ready → recipeCount > 0 → !_vorrat (im ready-Handler synchron
@@ -525,7 +525,7 @@ if (require.main === module) (async () => {
                             } catch {
                                 // Ein einzelner Tick-Fehler darf den Warm-Anker nicht abbrechen.
                             }
-                            await new Promise((resolve) => setTimeout(resolve, 25));
+                            await sleep(25);
                         },
                         max: 4800,
                     });
@@ -540,7 +540,7 @@ if (require.main === module) (async () => {
                     try {
                         r._gameLoopTick(performance.now());
                     } catch {}
-                    await new Promise((resolve) => setTimeout(resolve, 0));
+                    await sleep(0);
                 }
             }
             // Worker wieder einhängen — die Folge-Bänder nutzen den echten async-Pfad
@@ -967,7 +967,4 @@ if (require.main === module) (async () => {
     } else {
         console.log(`\n✅ Alle Invarianten OK`);
     }
-})().catch((err) => {
-    console.error("Smoketest-Crash:", err);
-    process.exit(1);
 });

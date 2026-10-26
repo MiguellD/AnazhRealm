@@ -33,6 +33,7 @@ const root = path.resolve(__dirname, "..");
 const stammSrc = stammLib.text(root);
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { hauptLauf } = require("./lib/welt-boot.cjs");
 
 // ── Methoden-Extraktion: 4-Space-Klassen-Indent, schließende Zeile `    }` ──
 function extractMethod(name) {
@@ -217,7 +218,7 @@ function makeRealmA(env, initSrcOverride) {
     return R;
 }
 
-(async () => {
+hauptLauf(async () => {
     console.log("=== RECONNECT-LINSE — WS-Rejoin · RTC-Heilung · Snapshot-Puffer ===");
     console.log(
         `  Konstanten (Produktion): Basis ${AR.P2P_RECONNECT_BASE_MS} ms · Deckel ${AR.P2P_RECONNECT_MAX_MS} ms · Jitter < ${AR.P2P_RECONNECT_JITTER_MS} ms · Interp-Delay ${AR.P2P_SNAP_INTERP_DELAY_MS} ms · Puffer ≤ ${AR.P2P_SNAP_BUF_MAX}`
@@ -640,7 +641,4 @@ function makeRealmA(env, initSrcOverride) {
         "\n✅ GRÜN — ein Netz-Blip beendet die Ko-Präsenz nicht mehr still: der WS-Riss rejoint mit 1·2·4·…≤30 s + seeded Jitter (bewusstes close bleibt endgültig), der failed-Übergang heilt via restartIce+Re-Offer genau einmal je Flanke (Backoff dahinter), und der Nicht-Lockstep-pos-Pfad rendert butterweich aus dem 120-ms-Snapshot-Puffer."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("LINSE-FEHLER:", e && e.stack ? e.stack : e);
-    process.exit(1);
 });

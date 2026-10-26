@@ -26,7 +26,7 @@
 //                                                    nur-idb und idb-frischer MÜSSEN rot werden, beim Namen
 // Port: BOOT_RETTUNG_PORT (Default 4402). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -254,7 +254,7 @@ async function fahreForm(browser, form, schein) {
         } else if (!v.leer) {
             // Boot 2: die Seite speichert (wie das Spiel) und lädt neu — die Form bleibt stabil
             await page.evaluate(() => window.anazhRealm.saveState());
-            await new Promise((r) => setTimeout(r, 800));
+            await sleep(800);
             await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
             const b2 = await bereit(page);
             rep.boots.push(b2);
@@ -273,7 +273,7 @@ async function fahreForm(browser, form, schein) {
     return rep;
 }
 
-(async () => {
+hauptLauf(async () => {
     const tStart = Date.now();
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "standard", frist: 600000 });
@@ -319,7 +319,4 @@ async function fahreForm(browser, form, schein) {
     await browser.close();
     server.close();
     process.exit(pass ? 0 : 1);
-})().catch((e) => {
-    console.error("⛔", e && e.stack ? e.stack : e);
-    process.exit(1);
 });

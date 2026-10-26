@@ -28,7 +28,7 @@
 //   (der Bias der ganzen Probe: n/d in Texeln der Kaskade) · SB_AKNE_ZEITEN=0.28,0.32 · SB_DEBUG=1
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -289,7 +289,6 @@ async function probe(cfg) {
     const st = r.state;
     const T = window.THREE;
     const rend = st.renderer;
-    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const { bx, bz } = window.__sb;
     const W = cfg.W,
         H = cfg.H;
@@ -1288,7 +1287,7 @@ async function probe(cfg) {
     return aus;
 }
 
-(async () => {
+hauptLauf(async () => {
     const Q = quellWand(stammLib.text(root));
     fs.mkdirSync(OUT, { recursive: true });
     await server.lausche(PORT);
@@ -1367,7 +1366,4 @@ async function probe(cfg) {
         "\nGRÜN — kleine Werfer werfen ihren Schatten, große Flächen tragen keine Akne; der Bias ist das Gesetz der Kaskade."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Schatten-Bias-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

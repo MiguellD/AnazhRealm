@@ -11,6 +11,7 @@ const { execSync } = require("child_process");
 const yaml = require("js-yaml");
 const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
 const { alleLaeufe, apiMit } = require("./ci-kopf.cjs");
+const { hauptLauf } = require("./lib/welt-boot.cjs");
 
 const root = path.resolve(__dirname, "..");
 const API = "https://api.github.com/repos/MiguellD/AnazhRealm";
@@ -271,7 +272,7 @@ if (require.main === module) {
         execSync("git credential fill", { input: "protocol=https\nhost=github.com\n\n" })
             .toString()
             .match(/^password=(.*)$/m)[1];
-    (async () => {
+    hauptLauf(async () => {
         if (args.includes("--tafel")) return tafel(apiMit(API, token));
         const jetzt = yaml.load(fs.readFileSync(path.join(root, WORKFLOW), "utf8"));
         const alt = fs.existsSync(path.join(root, AUS))
@@ -288,8 +289,5 @@ if (require.main === module) {
         );
         if (ohne.length) console.log(`  ohne Messung (Eintrag mit „geschaetzt" nötig): ${ohne.join(" · ")}`);
         verteile(jetzt, out);
-    })().catch((e) => {
-        console.error(`❌ ci-zeiten: ${e.message}`);
-        process.exit(1);
     });
 }

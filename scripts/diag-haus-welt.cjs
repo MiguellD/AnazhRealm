@@ -28,7 +28,7 @@
 //   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · sohle · lichtung · bau · w4 · w4b · w6), der Hauptlauf alle.
 //   node scripts/diag-haus-welt.cjs [--selftest [--nur=promotion,nahstreu]] [--phasen=lichtung]
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, warteAufWelt, teilAus, ROOT } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, warteAufWelt, teilAus, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -225,13 +225,12 @@ async function proben(phasen) {
     const pm = s.playerMesh;
     const DT = A.FIXED_DT || 1 / 60;
     let t = 5000;
-    const warte = (ms) => new Promise((rs) => setTimeout(rs, ms));
     const pumpe = async (n) => {
         for (let k = 0; k < n; k++) {
             try {
                 r._gameLoopTick(performance.now());
             } catch {}
-            if (k % 8 === 0) await warte(10);
+            if (k % 8 === 0) await sleep(10);
         }
     };
     // DAS WARTEN IM EREIGNIS (welt-boot `__deckel`): Takt um Takt, bis `bis()` gilt — der Deckel zählt nur Takte, in denen die
@@ -240,7 +239,7 @@ async function proben(phasen) {
         let ja = false;
         try {
             for (let k = 0, weiter = window.__deckel("haus-welt", max); !(ja = bis()) && weiter() && k++ < 4 * max;)
-                await pumpe(n).then(() => ms && warte(ms));
+                await pumpe(n).then(() => ms && sleep(ms));
         } catch {}
         return ja;
     };
@@ -2118,7 +2117,7 @@ function zeile(o) {
     );
 }
 
-(async () => {
+hauptLauf(async () => {
     const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
     const t0 = Date.now();
     let rot = 0;
@@ -2272,7 +2271,4 @@ function zeile(o) {
     );
     console.log(rot ? `❌ gate:haus-welt ROT (${rot})` : "✅ gate:haus-welt grün");
     process.exit(rot ? 1 : 0);
-})().catch((e) => {
-    console.error(e);
-    process.exit(2);
 });

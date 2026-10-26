@@ -25,14 +25,14 @@
 //     Spawn baut den klassischen Part-Group-Mesh: entry.mesh non-null, instFoundry false;
 //     blockerAABBs relativ IDENTISCH zum Studio-Spawn = die Substanz ist regime-frei).
 //   node scripts/diag-portal-gestalt.cjs
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PORTAL_GESTALT_PORT || 4437);
 const server = statikServer();
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
-(async () => {
+hauptLauf(async () => {
     console.log("\n=== TEIL A-F: der lebende Draht (Browser, foundry-ON, Null-Renderer) ===");
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
@@ -343,7 +343,4 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         `\n✅ GRÜN — W-A3 STEHT: die ${Object.keys(GESTALT).length} welt_-Portale (dynamisch aus dem lebenden Zustand) tragen ihre porta-Gestalt als DATEN-Zeile, der EINE Entry-Resolver serviert sie generisch (fail-soft, foundry-gegated), das Studio-Asset materialisiert end-to-end ohne Doppel-Bild, die Substanz-Wahrheit (portalMeta · Tags · blockerAABBs · E-Trigger) lebt byte-alt in BEIDEN Regimen.`
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("W-A3-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

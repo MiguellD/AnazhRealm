@@ -20,6 +20,8 @@ const {
     eigenePorte,
     waitFor,
     ROOT,
+    hauptLauf,
+    sleep,
 } = require("./lib/welt-boot.cjs");
 const { fehlt, text: stammText } = require("./lib/stamm.cjs");
 const fs = require("fs");
@@ -89,7 +91,7 @@ function seitenHelfer() {
     window.__stand = (w) => JSON.stringify([w.id, w.position, w.rotationY, w.seed, w.studioOv]);
 }
 
-(async () => {
+hauptLauf(async () => {
     if (process.argv.includes("--selftest")) {
         const lod = [160, 32, 14].map((tris, ist) => ({ ist, tris, bau: "b" + ist }));
         const kosten = lod.map((x) => ({ klasse: "pass", text: x.tris + " / 200" }));
@@ -232,7 +234,7 @@ function seitenHelfer() {
             });
             return { bau: window.__bauWerk(w()), stand: window.__stand(w()) };
         }, e.werk.id);
-        await new Promise((ok) => setTimeout(ok, 1500)); // der IDB-Put des Saves landet, bevor der Reload ihn abschneidet
+        await sleep(1500); // der IDB-Put des Saves landet, bevor der Reload ihn abschneidet
         await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
         e.geladen = await page.evaluate(async (o) => {
             await window.__buch();
@@ -335,7 +337,4 @@ function seitenHelfer() {
         "\n✅ GRÜN — DAS NERVENSYSTEM LEBT: die Welt liest die Daten des Buchs LIVE, und ein neues Gesetzbuch steht in ihr, ohne dass der Wirt es kennt."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Nervensystem-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

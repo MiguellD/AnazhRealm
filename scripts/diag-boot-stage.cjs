@@ -17,7 +17,7 @@
 // Urteil: t(Weltbild) ≤ 5 s ohne halbes Weltbild. Ohne `--echt` swiftshader, mit `--echt` die Hardware-GPU (1920×1080).
 //   node scripts/diag-boot-stage.cjs --kalt [--echt] [--sek 120] [--json datei] [--bild ankunft.png]
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, sleep } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -140,7 +140,7 @@ async function kaltLauf() {
         const t0 = Date.now();
         await server.zeige(page, 120000);
         while (Date.now() - t0 < SEK * 1000) {
-            await new Promise((r) => setTimeout(r, 500));
+            await sleep(500);
             const da = await page
                 .evaluate(() => (window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state._weltbildDa) || 0)
                 .catch(() => 0);
@@ -340,7 +340,7 @@ async function kaltLauf() {
                     o.terms = T;
                     break;
                 }
-                if (ticks % 5 === 0) await new Promise((res) => setTimeout(res, 0));
+                if (ticks % 5 === 0) await sleep(0);
             }
             if (!mark.stage) o.terms = terms();
             o.headless = headless;

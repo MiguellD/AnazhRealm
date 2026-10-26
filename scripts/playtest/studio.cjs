@@ -274,7 +274,6 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
 async function checkBandFoundrySpeicherFlach(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         await window.__weltDa();
         await window
             .__gebautNach("25 Chunks um den Spieler", {
@@ -404,7 +403,6 @@ async function checkBandKristallKleid(ctx) {
 async function checkBandKeinZweiterBaumbaecker(ctx) {
     const { page, check } = ctx;
     const out = (await safeEvaluate(page, async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         await window.__weltDa();
         await window
             .__gebautNach("25 Chunks um den Spieler", {
@@ -481,7 +479,6 @@ async function checkBandLeistungsVertrag(ctx) {
     const { EINSCHWING_INSTALL } = require(path.join(SKRIPTE, "lib", "band-urteil.cjs"));
     await safeEvaluate(page, EINSCHWING_INSTALL); // die EINE Liste dessen, was die Welt noch baut (band-urteil `einschwingOffen`)
     const out = (await safeEvaluate(page, async () => {
-        const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
         const o = { err: null };
         try {
             await window.__weltDa();

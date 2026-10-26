@@ -305,7 +305,6 @@ const server = statikServer();
 async function probe(K) {
     const r = window.anazhRealm;
     const st = r.state;
-    const pause = (ms) => new Promise((ok) => setTimeout(ok, ms || 0));
     let tMs = performance.now();
     const takt = () => {
         tMs += 1000 / 60;
@@ -363,12 +362,12 @@ async function probe(K) {
         // die Exemplare bauen (das Studio liefert die Gestalt, das Haus seine Hülle)
         for (let i = 0; i < 900; i++) {
             takt();
-            if (i % 4 === 0) await pause(10);
+            if (i % 4 === 0) await sleep(10);
             if (i > 120 && gesetzt.every(([, e]) => e.instanced || e.mesh || e._bauSatz)) break;
         }
         for (let i = 0; i < 240; i++) {
             takt();
-            if (i % 4 === 0) await pause(10);
+            if (i % 4 === 0) await sleep(10);
         }
     } finally {
         for (const [kern, roh] of rohBau) kern.buildInstance = roh;
