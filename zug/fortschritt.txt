@@ -199,3 +199,4 @@
 2026-10-26 11:01:42 takt5z-gtx material.K1#2 GRÜN 5.0 · 20/43
 2026-10-26 11:06:49 takt5z-gtx schatten.K1#1 GRÜN 5.0 · 21/43
 2026-10-26 11:11:57 takt5z-gtx fahrzeug.K3#1 GRÜN 5.0 · 22/43
+2026-10-26 11:17:04 takt5z-gtx fahrzeug.K3#2 ROT 5.0 · 23/43
