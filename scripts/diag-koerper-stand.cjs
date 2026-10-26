@@ -1168,8 +1168,6 @@ function zeile(o) {
             const kontext = await browser.createBrowserContext();
             const page = await kontext.newPage();
             page.setDefaultTimeout(880000);
-            const errs = [];
-            page.on("pageerror", (e) => errs.push((e.message || String(e)).split("\n")[0]));
             if (!BILD) await nullRenderer(page);
             // die Mess-Wiese in IHREM Zustand (spec/profiband/haushalt.json `dorfZug`): ruht dort der Zug, wächst kein Auto-Dorf an
             // Wiese und Hang — headless ruht er ohnehin (`_dorfTaktLebt`), auf der Karte lief er, und der 25°-Hang stand unter den
@@ -1193,7 +1191,7 @@ function zeile(o) {
                 ? await page.evaluate(rollen, K8_UMFANG)
                 : await page.evaluate(proben, inj == null || inj === "wiese", K7_UMFANG);
             await kontext.close();
-            return { o, errs };
+            return { o };
         };
         if (SELBST) {
             const soll = {
@@ -1220,7 +1218,7 @@ function zeile(o) {
                 if (!ok) rot++;
             }
         }
-        const { o, errs } = NUR_K8 ? { o: null, errs: [] } : await lauf(null);
+        const { o } = NUR_K8 ? { o: null } : await lauf(null);
         const k8 = await lauf(null, true);
         const f = [...(o ? urteil(o) : []), ...urteilK8(k8.o, K8_UMFANG)];
         if (o) console.log("  " + zeile(o));
@@ -1240,8 +1238,7 @@ function zeile(o) {
                 ) + "\n"
             );
         for (const x of f) console.log("  ❌ " + x);
-        for (const e of [...errs, ...k8.errs].slice(0, 1)) console.log("  ❌ Seiten-Fehler: " + e);
-        rot += f.length + (errs.length || k8.errs.length ? 1 : 0);
+        rot += f.length;
         if (process.env.KOERPER_STAND_JSON)
             fs.writeFileSync(process.env.KOERPER_STAND_JSON, JSON.stringify({ ...o, k8: k8.o }, null, 1));
     } finally {

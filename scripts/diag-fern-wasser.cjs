@@ -22,7 +22,6 @@ async function runOnce(browser, noFoundry) {
         // auch dort DEFAULT AN, die alte Regime-Weiche ist gefallen).
         if (nf) window.__anazhGateNoFoundry = true;
     }, noFoundry);
-    page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
     await warteAufWelt(page, 120000);
     // kurzer Warm-Pump (Chunks + erster Fern-Wasser-Bau via Scheduler)

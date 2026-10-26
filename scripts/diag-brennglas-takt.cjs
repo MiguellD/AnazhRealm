@@ -28,7 +28,7 @@
 //       (Spawn, Tor), die Hitze schreibt nur der Brennglas-Takt; die Familie des Spiegel-Takts (D10,
 //       `_spiegel…`) gehört der Klasse;
 //   (W) DER WUCHS: kein Takt der Klasse leitet ein Skelett im Haupt-Faden ab — die Krone reist als Beipack aus dem Worker;
-//   (P) kein Page-Error.
+//   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Quell-Wand ist am Stamm grün und fällt bei einer eingeschleusten
 // Schleife, einem Schreiber ohne Stempel und einem fremden Hitze-Schreiber rot.
 //   node scripts/diag-brennglas-takt.cjs [--selftest]   (npm run gate:brennglas-takt; Port BRENNGLAS_TAKT_PORT)
@@ -1280,7 +1280,7 @@ const NAEHE_RUFER = {
     portal: "_findNearestAffordanceEntry (der Portal-Takt)",
 };
 
-function urteil(S, stamm, pageErrors) {
+function urteil(S, stamm) {
     const rot = [];
     const T = S.tag;
     if (T.abw)
@@ -1369,7 +1369,6 @@ function urteil(S, stamm, pageErrors) {
     }
     if (!Object.keys(Z.takt || {}).length) rot.push(`(N) DIE NÄHE lief nicht (keine Arbeit gezählt)`);
     for (const b of stamm) rot.push(`(Q) QUELLE: ${b}`);
-    for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
 }
 
@@ -1379,8 +1378,6 @@ function urteil(S, stamm, pageErrors) {
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(async () => {
         await window.__weltDa((r) => r.state && r.state.player);
@@ -1442,7 +1439,7 @@ function urteil(S, stamm, pageErrors) {
         console.log(
             `    ${g.padEnd(11)} Griffe je Ruf an die ferne Menge: Takt ${Nz.takt[g]} · main ${Nz.orakel[g]} (${S.naehe.fern[g]} ihres Namens)`
         );
-    const rot = urteil(S, stamm, pageErrors);
+    const rot = urteil(S, stamm);
     if (rot.length) {
         console.error("\nROT:");
         for (const e of rot) console.error("  • " + e);

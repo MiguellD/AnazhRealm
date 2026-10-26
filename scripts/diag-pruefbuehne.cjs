@@ -1024,11 +1024,6 @@ async function lichtLauf() {
         process.exit(1);
     };
     const page = await browser.newPage();
-    let pageErr = null;
-    page.on("pageerror", (err) => {
-        pageErr = (err.stack || err.message).split("\n")[0];
-        console.log("[PAGE-ERROR]", pageErr);
-    });
     // der Speicher fällt vor dem ersten Skript des ERSTEN Ladens (ein Laden weniger als Laden → Löschen → Neu laden)
     await page.evaluateOnNewDocument(() => {
         try {
@@ -1581,7 +1576,7 @@ async function lichtLauf() {
                 .map(([k, n]) => `${k} ${n}`)
                 .join(" · ")}) — die Wahl je Pass (\`_passTrifft\`) trägt die Kugel nicht, jeder Stoff der Welt im Blick übersetzt sein Programm`
         );
-    let pass = befunde.length === 0 && !pageErr;
+    let pass = befunde.length === 0;
     for (const bf of befunde) console.log(`    ⛔ ${bf}`);
     if (SELBSTTEST) {
         const sc = ergebnis.nacht;
@@ -1668,11 +1663,6 @@ function zeige(rep) {
     await new Promise((r) => server.listen(PORT, r));
     const browser = await starteBrowser({ art: "standard", frist: 900000 });
     const page = await browser.newPage();
-    let pageErr = null;
-    page.on("pageerror", (err) => {
-        pageErr = (err.stack || err.message).split("\n")[0];
-        console.log("[PAGE-ERROR]", pageErr);
-    });
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
         // DER STOFF-ZENSUS: jeder direkt beleuchtete Stoff der Szene (Standard, Physical, Lambert, Phong, Toon — Basic
@@ -1848,7 +1838,6 @@ function zeige(rep) {
         );
     }
     if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ berichte, selbst }, null, 1));
-    if (pageErr) rot = true;
     let pass;
     if (SELBSTTEST) {
         pass = !rot && selbst && selbst.benannt.length > 0 && selbst.s4Treffer && selbst.s0Treffer;

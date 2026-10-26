@@ -2467,11 +2467,9 @@ async function lauf() {
     const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "null", frist: 900000 });
-    const seitenFehler = [];
     let exit = 2;
     try {
         const page = await browser.newPage();
-        page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
         await nullRenderer(page);
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
         // die Orte aus der Welt: Fluss, Ufer, See, Seeufer, Rampe nächst der Mess-Wiese
@@ -2525,9 +2523,6 @@ async function lauf() {
             const kontext = await browser.createBrowserContext();
             try {
                 const p2 = await kontext.newPage();
-                p2.on("pageerror", (e) =>
-                    seitenFehler.push("D: " + (e.stack || e.message || String(e)).split("\n")[0])
-                );
                 await nullRenderer(p2);
                 await p2.goto(`http://127.0.0.1:${PORT}/index.html`, {
                     waitUntil: "domcontentloaded",
@@ -2566,8 +2561,7 @@ async function lauf() {
             }
         }
         const v = urteil(befund);
-        const kurz = Object.assign({}, befund, { seitenFehler: seitenFehler.slice(0, 5) });
-        console.log(JSON.stringify(kurz, null, 1));
+        console.log(JSON.stringify(befund, null, 1));
         if (v.length) {
             console.log(`\nWERK-IM-WASSER ROT (${v.length}):`);
             for (const x of v) console.log("  ❌ " + x);

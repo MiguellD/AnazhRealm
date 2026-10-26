@@ -638,8 +638,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             };
         }, 5);
     });
-    const hErrors = [];
-    hPage.on("pageerror", (e) => hErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await hPage.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     const h = await hPage.evaluate(async (KALT) => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -728,7 +726,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             ),
         `${hs.length} Loop-Fehler — ${hTaeter(hs)}`
     );
-    check("H: keine Page-Errors", hErrors.length === 0, hErrors.slice(0, 2).join(" | "));
 
     await browser.close();
     server.close();

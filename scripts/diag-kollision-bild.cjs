@@ -28,10 +28,10 @@
 //       Sprint, der GT bei vmax und der Bär, den er stößt, gegen Mauer · Fels · Haus · Baum · Bär, der Fall aus FALL_M — bei
 //       144 · 60 · 30 fps und dem Takt-Deckel: je Takt Eindringen ≤ EINDRING_M, kein Durchtritt, Spalt ≤ SPALT_M (sonst vakuös);
 //       (T) der Fuchs mit EINEM Schritt je Takt (`LEIB_TEIL` ohne Teil-Schritt) MUSS durch die Mauer;
-//   (P) kein Page-Error.
+//   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Blocker ohne Bild, Bild ohne
 // Blocker, Baum ohne Stamm, fremde Gestalt, leere Zählung, stumpfer Schmuggel, fehlende Klasse, Bau auf dem Haupt-Thread,
-// Quelle, Durchtritt, Eindringen, vakuöse und fehlende Tempo-Zeile, stumpfer Tempo-Schmuggel, Page-Error — MUSS rot fallen und
+// Quelle, Durchtritt, Eindringen, vakuöse und fehlende Tempo-Zeile, stumpfer Tempo-Schmuggel — MUSS rot fallen und
 // ihn beim Namen nennen.
 //   node scripts/diag-kollision-bild.cjs [--selftest]   (npm run gate:kollision-bild; Port KOLLISION_BILD_PORT)
 // ─────────────────────────────────────────────────────────────────────────
@@ -141,7 +141,6 @@ function urteil(b) {
     if (!q.felsOhneTypListe) v.push("(Q) QUELLE: der Fels-Zweig `_felsBlockerParts` trägt eine Typ-Liste (`_var`)");
     if (!q.partsSkala) v.push("(Q) QUELLE: der Parts-Pfad liest die Welt-Skala nicht (`_studioWeltSkala`)");
     v.push(...tempoUrteil(b.tempo));
-    for (const e of b.pageErrors || []) v.push(`PAGE-ERROR: ${e}`);
     return v;
 }
 
@@ -166,7 +165,6 @@ function selbsttest() {
             }),
             schmuggel: { durch: true, tief: 0.28, spalt: 0 },
         },
-        pageErrors: [],
     };
     const fehler = [];
     const g = urteil(gruen);
@@ -245,7 +243,6 @@ function selbsttest() {
         ],
         ["stumpfer Tempo-Schmuggel", (b) => (b.tempo.schmuggel.durch = false), /LINSE STUMPF: \(V\)/],
         ["Tempo-Probe fehlt", (b) => delete b.tempo, /LEER: \(V\) die Tempo-Probe fehlt/],
-        ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -980,8 +977,6 @@ async function tempo(K) {
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(880000);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await nullRenderer(page);
     let befund = null;
     try {
@@ -1007,7 +1002,6 @@ async function tempo(K) {
         console.log("❌ LAUF-FEHLER: " + (befund ? befund.fehler : "kein Befund"));
         process.exit(1);
     }
-    befund.pageErrors = pageErrors;
     console.log(`  Ring ${befund.ring} Chunks · ${befund.zensus.werke} Studio-Werke gezählt`);
     console.log(
         "  Klasse (Typ→Gestalt)                     n   Blocker ohne Bild seitlich/oben (m)   Bild ohne Blocker (m)"

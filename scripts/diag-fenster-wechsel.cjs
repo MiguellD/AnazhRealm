@@ -119,12 +119,10 @@ async function fensterSchritt(o) {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     // Erwartet: ES erntet ein Größen-Ziel — die Linse richtet die Meldung selbst (je Phase gezählt), jede andere bleibt ROT.
     const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: GROESSEN_ZIELE });
-    const seitenFehler = [];
     try {
         const page = await browser.newPage();
         await page.setViewport({ width: 640, height: 360, deviceScaleFactor: 1 });
         await page.evaluateOnNewDocument(fensterSammler);
-        page.on("pageerror", (e) => seitenFehler.push((e.message || String(e)).split("\n")[0]));
         await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 60000 });
         // jeder Leser der Szenen-Tiefe steht (Wasser, Feld-Pass: Boden und Horizont); Bäume und Streu lesen sie nicht
         const u = await page.evaluate(uferStellen, { messort: ladeSpec("wiese").ort.spieler, kappe: 1.25, welt: ["boden", "horizont"] });
@@ -190,7 +188,6 @@ async function fensterSchritt(o) {
             faellt(es),
             [...es.fremd, ...es.wacheKoepfe].join(" | ") || "0"
         );
-        check("E keine Page-Errors", seitenFehler.length === 0, seitenFehler.slice(0, 2).join(" | "));
     } catch (e) {
         check("E Lauf", false, (e && e.message) || String(e));
     }

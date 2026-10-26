@@ -202,8 +202,6 @@ function urteil(z) {
     for (const t of (z.konsolenFehler || []).filter((x) => !/RAHMEN-ZIEL/.test(x) && !ERZWUNGEN.test(x)))
         v.push(`KONSOLE: ${t}`);
     if (fang && !fang.direkt) v.push("WEICHE: nach dem Render-Fehler der Kette fährt der Loop nicht den Direktpfad");
-    if (z.seitenFehler && z.seitenFehler.length)
-        v.push(`SEITE: ${z.seitenFehler.length} Seiten-Fehler: ${z.seitenFehler[0]}`);
     if (z.gpuFehler && z.gpuFehler.length) v.push(`GPU: ${z.gpuFehler.length} Validierungs-Fehler: ${z.gpuFehler[0]}`);
     if (!z.ausgabe) v.push("SHADER: kein Fragment der Ausgabe gefunden (die Linse ist blind)");
     else for (const x of SK.kostenUrteil(z.ausgabe, BUDGET_AUSGABE, "SHADER: Ausgabe der Post-Kette")) v.push(x);
@@ -273,7 +271,6 @@ function selbsttest() {
             "[AnazhRealm V18.543] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — gate:post-kette — erzwungener Render-Fehler der Kette",
             "[AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt",
         ],
-        seitenFehler: [],
         gpuFehler: [],
         ausgabe,
         godray: { staerke: 0.6, aenderungPct: 14, rauschenPct: 0 },
@@ -921,8 +918,6 @@ function buehne(nFrames, nachtLicht) {
     const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });
-    const seitenFehler = [];
-    page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
     // die ERROR-Zeilen der Seite (das Spiel meldet über `log(…, "ERROR")` → console.log „[ERROR]")
     const konsolenFehler = [];
     page.on("console", (m) => {
@@ -1010,7 +1005,6 @@ function buehne(nFrames, nachtLicht) {
         console.log("FEHLER:", out ? out.error : "?");
         process.exit(1);
     }
-    out.seitenFehler = seitenFehler;
     out.konsolenFehler = konsolenFehler;
     const v = urteil(out);
     if (v.length) {

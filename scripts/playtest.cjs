@@ -404,7 +404,6 @@ if (require.main === module) (async () => {
     const logs = [];
     const errors = [];
     page.on("console", (msg) => logs.push({ type: msg.type(), text: msg.text(), at: Date.now() }));
-    page.on("pageerror", (err) => errors.push({ kind: "pageerror", text: err.message, stack: err.stack }));
     page.on("requestfailed", (req) =>
         errors.push({ kind: "requestfailed", url: req.url(), error: req.failure()?.errorText })
     );
@@ -581,7 +580,7 @@ if (require.main === module) (async () => {
         const top = [...histogram.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
 
         console.log(`\n=== Bericht (${DURATION_MS / 1000}s) ===`);
-        console.log(`FPS-Div: "${fpsText}", Log-Einträge: ${logs.length}, Page-Errors: ${errors.length}`);
+        console.log(`FPS-Div: "${fpsText}", Log-Einträge: ${logs.length}, Fehler: ${errors.length}`);
         if (fpsValues.length) {
             const min = Math.min(...fpsValues);
             const max = Math.max(...fpsValues);
@@ -876,21 +875,6 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandBewegungUnterLast, ctx);
             await timed(BAND.checkBandWasserSheetSpiegel, ctx);
         }
-
-        // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
-        const pageErrors = errors.filter((e) => e.kind === "pageerror");
-        if (pageErrors.length > 0) {
-            console.error("\n=== PAGE ERRORS (Full Stack) ===");
-            for (const pe of pageErrors.slice(0, 3)) {
-                console.error(pe.stack || pe.text);
-                console.error("---");
-            }
-        }
-        check(
-            "Keine Script-Exceptions (page.on pageerror)",
-            pageErrors.length === 0,
-            pageErrors.length ? `${pageErrors.length}× erste: ${pageErrors[0].text.slice(0, 100)}` : ""
-        );
 
         // Kritische Console-Patterns, die früher echte Bugs anzeigten.
         const criticalPatterns = [
