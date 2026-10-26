@@ -17,7 +17,7 @@
 //   node scripts/diag-v1-pfad.cjs [--selftest | --korpus [--regler] [--echt [--bild] [--aufnahme]] | --feind]   Port: V1_PFAD_PORT (4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, warteAufWelt, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, warteAufWelt, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
@@ -2280,7 +2280,7 @@ async function feindHaupt(quelle) {
     process.exit(errs.length ? 1 : 0);
 }
 
-(async () => {
+hauptLauf(async () => {
     if (process.argv.includes("--korpus") && !process.argv.includes("--selftest")) return korpusHaupt();
     const quelle = stammLib.text(root);
     if (process.argv.includes("--feind")) return feindHaupt(quelle);
@@ -3314,7 +3314,4 @@ async function feindHaupt(quelle) {
     }
     console.log("\n✅ GRÜN — der v1-Pfad trägt seine benannten Schnitte.");
     process.exit(0);
-})().catch((e) => {
-    console.error("V1-Pfad-Linse-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

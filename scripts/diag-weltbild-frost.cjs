@@ -37,7 +37,7 @@
 //   … [--s5=frames | --s5=halde]                  Selbsttest S5: nur Welt-Frames statt Zügen (GRÜN) · jedes Einzelstück bleibt (ROT)
 //   Port: WELTBILD_FROST_PORT (Standard 4426). Exit 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, selbsttest } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, selbsttest, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -259,7 +259,7 @@ function pruefRaum(echt) {
     return { weg: "probe-buehne" };
 }
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({
         art: ECHT ? "echt" : "linse",
@@ -1155,7 +1155,4 @@ function pruefRaum(echt) {
         "\n✅ DIE FROST-WAND steht — durch Werkstatt, Ich- und Hof-Bühne trägt jeder Index-Puffer der Welt-GPU sein Format, kein Device meldet, das Bild folgt der Kamera; die Täter (Index über der Vertex-Zahl, ein fremd geweiteter Mensch-Index) nennen die Wachen beim Namen, und das stehende Bild wird erkannt."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Frost-Wand-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

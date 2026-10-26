@@ -13,7 +13,7 @@
 //   Exit 0 = alle Bänder GRÜN (inkl. Selbst-Test: ein Fake-Trace ohne die neuen
 //   Felder MUSS rot melden) · Exit 1 = mindestens ein Band ROT (mit Diagnose).
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 // Port der Linse (4463 — neben diag-blick 4461, nie der save-server 4312).
@@ -670,7 +670,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     };
 }
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     // Echtes WebGPU auf swiftshader — die Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs).
     const browser = await starteBrowser({ art: "linse", frist: 600000, zeit: true }); // Band 1 (LongTasks) ist auf swiftshader geeicht
@@ -1136,12 +1136,4 @@ function erstWandInstall(BUNDLE_FRAMES) {
 
     console.log(rot === 0 ? "\n✅ GRÜN — alle Hitch-Zähler werden KONSUMIERT." : `\n❌ ROT — ${rot} Band/Bänder gefallen.`);
     process.exit(rot === 0 ? 0 : 1);
-})().catch((e) => {
-    console.error("DIAG-FEHLER:", e);
-    try {
-        server.close();
-    } catch {
-        /* Abbau fail-soft */
-    }
-    process.exit(1);
 });

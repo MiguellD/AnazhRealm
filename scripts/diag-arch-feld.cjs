@@ -19,7 +19,7 @@
 // (`werkbank licht --laub feld,feld0,feld90,feld180 --uhr 0.5,0.27,0.05`, gate:licht-weg:echt): je Uhr und Lage im Band 0,9–1,1.
 //   node scripts/diag-arch-feld.cjs
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.ARCH_FELD_PORT || 4467);
@@ -66,7 +66,7 @@ function kartenGesetz(buch, zelleF) {
     }
 }
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
@@ -346,10 +346,4 @@ function kartenGesetz(buch, zelleF) {
             : "❌ ROT"
     );
     process.exit(gruen ? 0 : 1);
-})().catch((e) => {
-    console.error("DIAG-FEHLER:", e);
-    try {
-        server.close();
-    } catch {}
-    process.exit(1);
 });

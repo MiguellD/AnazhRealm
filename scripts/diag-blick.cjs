@@ -6,7 +6,7 @@
 //   Ergebnis: PNG(s) in DIR (Default scratch/blick-*.png) + Exit 0 wenn der Schuss
 //   SUBSTANZ trägt (nicht leer/uniform — sonst Exit 1 mit Diagnose).
 "use strict";
-const { statikServer, starteBrowser, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -20,7 +20,7 @@ const W = 640,
     H = 360;
 const server = statikServer();
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
@@ -138,10 +138,4 @@ const server = statikServer();
     console.log(`Schuss: ${file} · distinkte Farben=${s.farben} · nonzero-Proben=${s.nonzero}`);
     console.log(substanz ? "✅ GRÜN — die Augen sehen (Substanz im Bild)." : "❌ ROT — Bild ohne Substanz (leer/uniform).");
     process.exit(substanz ? 0 : 1);
-})().catch((e) => {
-    console.error("DIAG-FEHLER:", e);
-    try {
-        server.close();
-    } catch {}
-    process.exit(1);
 });

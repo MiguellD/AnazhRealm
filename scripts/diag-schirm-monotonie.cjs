@@ -22,7 +22,7 @@
 // fester Schirm) → K rot.
 //   node scripts/diag-schirm-monotonie.cjs [--selftest]       (npm run gate:schirm-monotonie; Port SCHIRM_PORT)
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
@@ -406,7 +406,7 @@ function konsumBefunde(reihe) {
     return b;
 }
 
-(async () => {
+hauptLauf(async () => {
     let ok = true;
     const check = (name, befunde) => {
         const gut = befunde.length === 0;
@@ -489,7 +489,4 @@ function konsumBefunde(reihe) {
     }
     console.log(ok ? "GRÜN schirm-monotonie" : "ROT schirm-monotonie");
     process.exit(ok ? 0 : 1);
-})().catch((e) => {
-    console.error("SCHIRM-WAND-FEHLER:", (e && e.stack) || e);
-    process.exit(1);
 });

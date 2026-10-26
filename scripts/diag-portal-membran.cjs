@@ -38,7 +38,7 @@
 //
 //   node scripts/diag-portal-membran.cjs [--ohne-blick]
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.PORTAL_MEMBRAN_PORT || 4439);
@@ -444,7 +444,7 @@ async function blickStufe(check) {
     await browser.close();
 }
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
@@ -798,8 +798,4 @@ async function blickStufe(check) {
     console.log(
         "\n✅ GRÜN — das Welt-Portal ist VOLL integriert: die Kollision folgt der sichtbaren Studio-Form (Öffnung frei, Rahmen solide), die Passage-Membran baut + atmet aus dem EINEN Gesetz, Hindurchgehen IST Betreten, und mit dem Ring im Rücken zeichnet keine Membran (B)."
     );
-})().catch((e) => {
-    console.error("DIAG-FEHLER:", e);
-    server.close();
-    process.exit(1);
 });

@@ -5,7 +5,7 @@
 // Korpus-Teil Regler-Wörter sagbar · (T) Teilen in EINER Geste, zwei Browser-Kontexte · (F) Korpus fremder Codes, jeder fällt
 // beim Namen; jede Wand mit ihrer Täter-Probe.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PRAEGUNG_WELT_PORT || 4439);
 const server = statikServer();
@@ -36,7 +36,7 @@ const welt = async (seite) => {
     await server.zeige(seite, 30000);
 };
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
@@ -583,7 +583,4 @@ const welt = async (seite) => {
     }
     console.log("\n✅ GRÜN — die Prägung reist mit dem Artefakt, per Code zum anderen Spieler, jeder fremde Code fällt beim Namen");
     process.exit(0);
-})().catch((e) => {
-    console.error("Prägung-Welt-Diag-Fehler:", e?.stack || e);
-    process.exit(2);
 });

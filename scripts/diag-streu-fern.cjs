@@ -41,14 +41,14 @@
 //   node scripts/diag-streu-fern.cjs        (Port: STREU_FERN_PORT)
 "use strict";
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.STREU_FERN_PORT || 4586);
 const server = statikServer();
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
@@ -736,8 +736,4 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     console.log(
         "\n✅ GRÜN — die Klein-Streu liest ihre Fernform aus dem Studio-Budget jenseits der EINEN Nah-Grenze: dort kein L0-Mesh, diesseits kein Kapsel-Satz, wartende Zellen ohne Instanz-Zug und ohne Fit, die echte Erschöpfung wird rot statt still L0."
     );
-})().catch((e) => {
-    console.error("DIAG-FEHLER:", e);
-    server.close();
-    process.exit(1);
 });

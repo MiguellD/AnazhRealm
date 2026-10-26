@@ -13,7 +13,7 @@
 //     Programms bindet die lebende (Selbsttest: das alte Wachsen). Teil C beginnt erst, wenn die Welt
 //     steht (`weltRuht`, die EINE Ruhe); eine fremde Zelle im Probe-Atlas ist ROT beim Namen.
 //   node scripts/diag-foundry-impostor.cjs
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.FIMP_PORT || 4595);
 const server = statikServer();
@@ -786,7 +786,7 @@ async function windProbe(page) {
     }, WIND_FAELLE);
 }
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const errs = [];
 
@@ -1000,7 +1000,4 @@ async function windProbe(page) {
         "\n✅ GRÜN — die Welt-Fernstufe liest die im Welt-Renderer gebackene Karte über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich); Bäcker-Kanal, RTT-Nachbau, Bake-iframe und Canvas-Atlas je Karte sind geschnitten."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Foundry-Impostor-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

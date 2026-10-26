@@ -26,7 +26,7 @@
 //
 //   node scripts/diag-scatter-lod.cjs
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.SCATTER_LOD_PORT || 4441);
@@ -34,7 +34,7 @@ const server = statikServer();
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
-(async () => {
+hauptLauf(async () => {
     // ── F (Absenz über den EINEN Helfer): kein zweiter Keying-Ort — die Konstante lesen NUR der Key (`_archFernRegionKey`)
     // und die T3-Kugel (`_archRegionBundleFor`), der `s:`-Super-Key hat EINE Ableitung (`_archFernRegionKey`). Dass die
     // Leser lesen, zeigen die Unit-, Kugel- und Diät-Proben im Boot.
@@ -586,8 +586,4 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     console.log(
         "\n✅ GRÜN — die Scatter-Stufen folgen der LIVE-Distanz (Re-Allokation über den EINEN Zellen-Chokepoint, Hysterese churn-frei), die Promotion liest den ganzen Region-Fächer, und die Fern-Gruppen tragen die Super-Region-Diät (EIN Keying-Chokepoint, Bilanz dicht)."
     );
-})().catch((e) => {
-    console.error("DIAG-FEHLER:", e);
-    server.close();
-    process.exit(1);
 });

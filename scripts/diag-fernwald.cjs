@@ -32,14 +32,14 @@
 //   node scripts/diag-fernwald.cjs        (Port: FERNWALD_PORT)
 "use strict";
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.FERNWALD_PORT || 4598);
 const server = statikServer();
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
@@ -706,7 +706,4 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
         `\n✅ GRÜN — der gesetzte Wald ist jenseits der Mesh-Zone seine Karte (${A.ok} Bäume), kein Satz, kein Pop am Radius.`
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("DIAG-FEHLER:", (e && e.stack) || e);
-    process.exit(2);
 });

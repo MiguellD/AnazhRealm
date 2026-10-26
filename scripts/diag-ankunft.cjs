@@ -30,7 +30,7 @@
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
@@ -1644,7 +1644,7 @@ async function probe(arg) {
     return out;
 }
 
-(async () => {
+hauptLauf(async () => {
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
         const l2aTerme = ["welt", "boden", "horizont", "licht", "leib", "buch", "bauten", "pflanzung", "streu", "karten", "dorf"];
@@ -1973,7 +1973,4 @@ async function probe(arg) {
     }
     console.log("\n✅ GRÜN — die Ankunft trägt ihre benannten Schnitte.");
     process.exit(0);
-})().catch((e) => {
-    console.error("Ankunfts-Linse-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

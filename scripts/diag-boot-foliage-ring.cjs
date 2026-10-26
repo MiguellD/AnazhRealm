@@ -3,10 +3,10 @@
 // Schale um Schale, `_ringWaechst`, das Laub-Ziel ist auf seine Kante gekappt) und prüft: der foliageRadius
 // bleibt an der Ring-Kante, statt auf MAX zu rennen.
 //   node scripts/diag-boot-foliage-ring.cjs
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.FOLIRING_PORT || 4615);
 const server = statikServer();
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     // Erwartet: der Null-Renderer gibt sich unten als echter aus (_isHeadlessNull = false) — ein Stoff-Bau fragt ihn dann
     // nach der Node-Bibliothek, die er nicht trägt, und bricht laut. Das ist die Attrappe dieser Linse, kein Fehler der Welt.
@@ -51,4 +51,4 @@ const server = statikServer();
     }
     console.log(`\n✅ GRÜN — foliageRadius (${S.foliageR} m) bleibt an der gebauten Ring-Kante (${S.ringReach} m), rennt NICHT auf MAX (${S.foliMax} m). Die Vegetation wächst mit dem Boden — erst der Nah-Chunk, dann erweitern.`);
     process.exit(0);
-})().catch((e) => { console.error("Boot-Foliage-Ring-Fehler:", (e && e.stack) || e); process.exit(1); });
+});

@@ -24,7 +24,7 @@
 //
 //   node scripts/diag-fluss.cjs [--selftest]          (npm run gate:fluss)
 "use strict";
-const { statikServer, starteBrowser, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -767,7 +767,7 @@ const VERHALTEN = [
     ["V14 die Platte hält keinen Faden: ein Werk-Faden baut zwei Körper, während ein anderer 1,5 s baut", "faden"],
 ];
 
-(async () => {
+hauptLauf(async () => {
     const errs = [];
     const check = (name, ok, detail) => {
         console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
@@ -1028,7 +1028,4 @@ const VERHALTEN = [
         process.exit(1);
     }
     console.log("\n✅ GRÜN — der Foundry-Kanal kostet den Haupt-Thread nur den Gruppen-Bau.");
-})().catch((e) => {
-    console.error("❌ FEHLER:", e && e.stack ? e.stack : e);
-    process.exit(1);
 });

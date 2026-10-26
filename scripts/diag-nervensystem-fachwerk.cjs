@@ -21,7 +21,7 @@
 //     Flatten-Chokepoint bedient die Distanz-Wahlen 1 und 2 mit den ECHTEN
 //     Stufen |1|/|2| (nicht [0]-Kollaps) und faltet die Wahl 5 auf Stufe 2.
 //   node scripts/diag-nervensystem-fachwerk.cjs [--selftest]
-const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -60,7 +60,7 @@ function staticLaws(q, manifestSrc) {
     return out;
 }
 
-(async () => {
+hauptLauf(async () => {
     const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
 
     if (process.argv.includes("--selftest")) {
@@ -342,7 +342,4 @@ function staticLaws(q, manifestSrc) {
         "\n✅ GRÜN — DER ε-BEWEIS STEHT: die Haus-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + begehbarer Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — fachwerk-core reist durch den EINEN Foundry-Worker (32 Rezepte + kindStages [0,1,2,3] + B4-Regler + Asset auf allen vier Stufen), haus_<id> entsteht am EINEN Chokepoint, settlement reist als Daten (N5.7, deliberater Kanal ohne Worldgen-Streu), und der Flatten-Chokepoint bedient die Mehr-Stufen-Wahrheit der ersten Nicht-Baum-Domaene mit echten Stufen."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("ε-Fachwerk-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

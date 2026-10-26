@@ -934,6 +934,14 @@ async function eigenePorte(...variablen) {
     }
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// DER EINE ABSTURZ-FÄNGER: `hauptLauf(async () => …)` fährt den Rumpf eines Skripts; wirft er, nennt die Zeile das Skript beim
+// Namen mit dem Stapel, `zuletzt` räumt eigene Kinder-Prozesse, und der Lauf endet mit 2 — nie still grün (Lehre 6)
+const hauptLauf = (rumpf, zuletzt) =>
+    rumpf().catch((e) => {
+        console.error(`${path.basename(process.argv[1] || "-e")} ABSTURZ:`, (e && e.stack) || e);
+        if (zuletzt) zuletzt();
+        process.exit(2);
+    });
 // DER EINE RUF an die Werkbank (POST JSON, ohne Frist; kein JSON: `{ roh }`)
 function werkbankRuf(port, weg, nutzlast) {
     return new Promise((res, rej) => {
@@ -1095,6 +1103,7 @@ module.exports = {
     startProc,
     eigenePorte,
     sleep,
+    hauptLauf,
     waitFor,
     werkbankTor,
     werkbankRuf,
@@ -1203,6 +1212,17 @@ async function selbsttest() {
         "statikServer(); await new Promise((r) => s.listen(1, r));",
         "statikServer(); p.goto(`http://127.0.0.1:${P}/index.html`);",
     ].filter(adressZwilling).length;
+    // DIE FÄNGER-WAND: fängt ein Skript seinen Absturz selbst (`})().catch(…)`/`main().catch(…)` bis process.exit), ist das ein
+    // Zwilling von hauptLauf; ci-kopf.cjs fährt allein im sparse-checkout, FREMD tragen ihn bis zum Schnitt ihres Besitzers
+    const faengerZwilling = (c) => /(?:\}\)\(\)|\b\w+\(\))\.catch\(\(?\w*\)? => \{(?:(?!\}\);)[^]){0,300}process\.exit/.test(c);
+    const faenger = code.filter(([, c]) => faengerZwilling(c)).map(([f]) => f).join(", ");
+    const FAENGER_FREMD = "ci-kopf.cjs, diag-koerper-stand.cjs, diag-weltakt-wache.cjs, diag-weltgrenze.cjs, werkbank.cjs";
+    const gefangen = [
+        "(async () => {})().catch((e) => { console.error(e); process.exit(1); });",
+        "main().catch((err) => { console.error(`x ${err}`); process.exitCode = 2; });",
+    ].filter(faengerZwilling).length;
+    const sturzRuf = `require(${JSON.stringify(__filename)}).hauptLauf(async () => { throw new Error("__sturz"); }, () => console.error("__zuletzt"))`;
+    const sturz = require("child_process").spawnSync(process.execPath, ["-e", sturzRuf], { encoding: "utf8" });
     await browser.close();
     server.close();
     // BESETZT: ein Server auf einem belegten Port endet — der Start urteilt am Ereignis (EADDRINUSE), nie an einer Frist;
@@ -1223,6 +1243,15 @@ async function selbsttest() {
         [
             adressen === FREMD && gepflanzt === 2 && !adressZwilling("statikServer(); await s.lausche(1); s.zeige(p, 1);"),
             `eigene Server-Starts/Welt-Adressen neben lausche/zeige: ${adressen} (FREMD ${FREMD}) · gepflanzt ${gepflanzt}/2 gefasst`,
+        ],
+        [
+            faenger === FAENGER_FREMD &&
+                gefangen === 2 &&
+                !faengerZwilling("hauptLauf(async () => {}); page.close().catch(() => {}); process.exit(1);") &&
+                sturz.status === 2 &&
+                /^-e ABSTURZ: Error: __sturz/.test(sturz.stderr) &&
+                /__zuletzt/.test(sturz.stderr),
+            `eigene Absturz-Fänger neben hauptLauf: ${faenger} (FREMD ${FAENGER_FREMD}) · gepflanzt ${gefangen}/2 gefasst · Sturz Exit ${sturz.status}: ${sturz.stderr.split("\n")[0]}`,
         ],
         [ruhig.length === 0,`ruhig (0,8 s Block): keine Akte — ${ruhig.length ? ruhig[0].urteil : "keine"}`],
         [
@@ -1274,8 +1303,5 @@ if (require.main === module) {
         console.log("node scripts/lib/welt-boot.cjs --selbsttest");
         process.exit(2);
     }
-    selbsttest().catch((e) => {
-        console.error("Selbsttest-Fehler:", (e && e.stack) || e);
-        process.exit(2);
-    });
+    hauptLauf(selbsttest);
 }

@@ -21,7 +21,7 @@
 // minutenlanges page.evaluate stirbt sonst an „Promise was collected".
 //   node scripts/diag-warm-start.cjs
 
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.WARMSTART_PORT || 4571);
 const server = statikServer();
 
@@ -271,7 +271,7 @@ async function jobSelbsttest(kaltIn) {
     });
 }
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
@@ -348,7 +348,4 @@ async function jobSelbsttest(kaltIn) {
         "\nGRÜN — der zweite Boot liest den Ring aus der Platte: gestiftet · getroffen · byte-gleich · Edits schlagen den Cache · Stempel-Wand greift."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Warm-Start-Linsen-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

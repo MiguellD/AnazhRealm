@@ -29,7 +29,7 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 //   node scripts/diag-foundry-crossfade.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const vm = require("vm");
 const stammLib = require("./lib/stamm.cjs");
 
@@ -1702,7 +1702,4 @@ async function main() {
     process.exit(0);
 }
 
-main().catch((e) => {
-    console.error("Crossfade-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
-});
+hauptLauf(main);

@@ -20,6 +20,7 @@ const {
     eigenePorte,
     waitFor,
     ROOT,
+    hauptLauf,
 } = require("./lib/welt-boot.cjs");
 const { fehlt, text: stammText } = require("./lib/stamm.cjs");
 const fs = require("fs");
@@ -89,7 +90,7 @@ function seitenHelfer() {
     window.__stand = (w) => JSON.stringify([w.id, w.position, w.rotationY, w.seed, w.studioOv]);
 }
 
-(async () => {
+hauptLauf(async () => {
     if (process.argv.includes("--selftest")) {
         const lod = [160, 32, 14].map((tris, ist) => ({ ist, tris, bau: "b" + ist }));
         const kosten = lod.map((x) => ({ klasse: "pass", text: x.tris + " / 200" }));
@@ -335,7 +336,4 @@ function seitenHelfer() {
         "\n✅ GRÜN — DAS NERVENSYSTEM LEBT: die Welt liest die Daten des Buchs LIVE, und ein neues Gesetzbuch steht in ihr, ohne dass der Wirt es kennt."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Nervensystem-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

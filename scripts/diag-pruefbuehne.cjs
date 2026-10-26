@@ -38,7 +38,7 @@
 // Port: PRUEFBUEHNE_PORT (Default 4394). Exit 1 bei einem Wurf auf der Bühne, einem gehaltenen Akt, einer blinden
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -1658,7 +1658,7 @@ function zeige(rep) {
     console.log(`    Zensus ${rep.zensus.R} m: ${JSON.stringify(rep.zensus)}`);
 }
 
-(async () => {
+hauptLauf(async () => {
     if (argv.includes("--licht")) return lichtLauf();
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "standard", frist: 900000 });
@@ -1853,7 +1853,4 @@ function zeige(rep) {
     await browser.close();
     server.close();
     process.exit(pass ? 0 : 1);
-})().catch((e) => {
-    console.error("⛔", e && e.stack ? e.stack : e);
-    process.exit(1);
 });

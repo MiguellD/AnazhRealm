@@ -44,12 +44,12 @@
 // „verlorenen" Key (in f.requested ohne cache/Szene/Räumungs-Buch) und beweist, dass
 // ALLE Fangpfade feuern — sonst wäre das Grün vakuös.
 //   node scripts/diag-asset-inventory.cjs [--selftest]
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 // Port über ASSET_INVENTORY_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4517.
 const PORT = Number(process.env.ASSET_INVENTORY_PORT || 4517);
 const server = statikServer();
-(async () => {
+hauptLauf(async () => {
     const selftest = process.argv.includes("--selftest");
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 240000 });
@@ -629,7 +629,4 @@ const server = statikServer();
         `\n✅ ASSET-INVENTUR GRÜN — ${z.emitters} Emitter erklärt, 0 Fremd-Silhouetten (Studio ${z.buckets.studio} · Substanz ${z.buckets.substanz} · Entscheid ${z.buckets.entscheid}); H3: ${inv.requested} angefragte Keys ⊆ visible|cached (0 verloren, 0 hängend); die Nah-Wiese zeichnet ${out.wieseZensus} belegte Studio-Senken.`
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Inventur-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

@@ -42,7 +42,7 @@
 // Der save-server läuft vorher (`npm start`, :4312 — am OMEN der Mess-Klon); die Werkbank startet und stoppt die Folge selbst
 // (ein Boot je Aufruf; `--serie` hält das Profil für den Zweit-Boot).
 "use strict";
-const { werkbankRuf } = require("./lib/welt-boot.cjs");
+const { werkbankRuf, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -1567,18 +1567,12 @@ function urteilCli() {
 
 if (require.main === module) {
     if (argv.includes("--selbsttest"))
-        selbsttest().catch((e) => {
-            console.error("SELBSTTEST-FEHLER:", (e && e.stack) || e);
-            process.exit(1);
-        });
+        hauptLauf(selbsttest);
     else if (argv.includes("--streuung")) streuungCli();
     else if (argv.includes("--schalter")) schalterCli();
     else if (argv.includes("--urteil")) urteilCli();
     else
-        folgeMitNeulauf().catch((e) => {
-            console.error("MESS-FOLGE-FEHLER:", (e && e.stack) || e);
-            process.exit(2);
-        });
+        hauptLauf(folgeMitNeulauf);
 }
 
 module.exports = {

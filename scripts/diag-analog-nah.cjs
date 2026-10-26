@@ -16,7 +16,7 @@
 //   --selftest: ein erzwungener Kapsel-Satz in 20 m (ohne Träger) — die Linse wird rot und nennt ihn
 //   ANALOG_NAH_PORT=… node scripts/diag-analog-nah.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
 // DER MESSORT (spec/profiband/haushalt.json `messorte`, S1 W1f): die Linse steht an der Mess-Wiese in IHREM Zustand —
 // Spieler und Dorf-Zug (`dorfZug: false` = `window.__anazhAutoSettlement = false`). Mit laufendem Zug baute das Auto-Dorf
 // je nach Bildrate in der Ruhe ein Haus (haus_griechisch 23,6 m, „Studio-Stufe L2 lädt") — zwei Läufe maßen zwei Welten.
@@ -39,7 +39,7 @@ function urteil(z) {
     return { hart, text };
 }
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 1800000, dumpio: false });
     // Was der Browser-Prozess über seinen GPU-Prozess sagt (Absturz, Watchdog, Verlust), reist ins Log.
@@ -357,10 +357,4 @@ function urteil(z) {
             : "❌ ROT"
     );
     process.exit(gruen ? 0 : 1);
-})().catch((e) => {
-    console.error("DIAG-FEHLER:", e);
-    try {
-        server.close();
-    } catch {}
-    process.exit(1);
 });

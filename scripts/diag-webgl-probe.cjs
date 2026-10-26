@@ -19,11 +19,11 @@
 //   node scripts/diag-webgl-probe.cjs
 // ─────────────────────────────────────────────────────────────────────────
 
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.WGLP_PORT || 4671);
 const server = statikServer();
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
@@ -196,7 +196,4 @@ const server = statikServer();
         "\n✅ GRÜN — die Kein-WebGPU-Geschichte ist BEWIESEN: der erzwungene WebGL2-Rückfall bootet eine LEBENDE, sichtbare Welt; die WGSL-Konsumenten + Bundles ruhen hinter der EINEN Backend-Wand, der Rückfall ist LAUT benannt, der Fern-Ring trägt auf CPU."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("WebGL-Probe-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

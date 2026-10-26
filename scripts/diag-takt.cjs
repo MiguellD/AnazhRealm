@@ -27,13 +27,14 @@
 //   node scripts/diag-takt.cjs [--selftest]          (npm run gate:takt)
 "use strict";
 const PK = require("./lib/pack-kanon.cjs");
+const { hauptLauf } = require("./lib/welt-boot.cjs");
 
 // Port über TAKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 
 const PORT = Number(process.env.TAKT_PORT || 4563);
 const SELBST = process.argv.includes("--selftest");
 
-(async () => {
+hauptLauf(async () => {
     const realm = await PK.bootRealm(PORT);
     let aus;
     try {
@@ -422,7 +423,4 @@ const SELBST = process.argv.includes("--selftest");
         process.exit(1);
     }
     console.log("\n✅ GRÜN — der Takt kostet, was ihn betrifft, nicht die Weltgröße.");
-})().catch((e) => {
-    console.error("❌ FEHLER:", e && e.stack ? e.stack : e);
-    process.exit(1);
 });

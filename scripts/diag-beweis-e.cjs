@@ -17,7 +17,7 @@
 // Lücke ist das Tier UNSICHTBAR. swiftshader-Zeiten sind keine GPU-Zeiten; die
 // Draw-Call-/Dreiecks-Zahlen sind hardware-unabhängig.
 "use strict";
-const { statikServer, starteBrowser, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const fs = require("fs");
@@ -205,7 +205,7 @@ const SCHUSS_FN = async (kam) => {
     return { ok: true, farben: set.size, nonzero, png: cv.toDataURL("image/png"), zahlen };
 };
 
-(async () => {
+hauptLauf(async () => {
     fs.mkdirSync(OUT, { recursive: true });
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: PROTO_MS });
@@ -789,10 +789,4 @@ const SCHUSS_FN = async (kam) => {
             : `❌ ROT — ${rot} Schuss/Schüsse leer.`
     );
     process.exit(rot === 0 ? 0 : 1);
-})().catch((e) => {
-    console.error("DIAG-FEHLER:", e);
-    try {
-        server.close();
-    } catch {}
-    process.exit(1);
 });

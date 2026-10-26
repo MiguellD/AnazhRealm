@@ -25,7 +25,7 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -2056,7 +2056,7 @@ async function faden(page, url) {
     return rot ? 1 : 0;
 }
 
-(async () => {
+hauptLauf(async () => {
     if (argv.includes("--realismus")) process.exit(realismus());
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "standard", frist: 900000 });
@@ -2247,7 +2247,4 @@ async function faden(page, url) {
     await browser.close();
     server.close();
     process.exit(pass ? 0 : 1);
-})().catch((e) => {
-    console.error("⛔", e && e.stack ? e.stack : e);
-    process.exit(1);
 });

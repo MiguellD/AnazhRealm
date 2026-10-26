@@ -35,7 +35,7 @@
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
 // Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
-const { statikServer, starteBrowser, halteBis, ROOT } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -852,7 +852,7 @@ async function selbsttest() {
     return ok;
 }
 
-(async () => {
+hauptLauf(async () => {
     if (process.argv.includes("--selftest")) process.exit((await selbsttest()) ? 0 : 1);
     const { ergebnisse } = await lauf(WELTEN, false);
     console.log("Portal-Konformanz: K1 ready (+ Manifest gegen das Soll) · K2 endlich · K3 Quelle · K4 wirkt · K5 Esc · K6 fehlerfrei · K7 mitgebracht · K8 getragen");
@@ -887,7 +887,4 @@ async function selbsttest() {
     }
     console.log(`✅ gate:portal-konformanz: ${ergebnisse.length} Welten K1–K8 grün · Ratschen gehalten`);
     process.exit(0);
-})().catch((e) => {
-    console.error("portal-konformanz-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

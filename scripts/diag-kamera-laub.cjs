@@ -17,7 +17,7 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
@@ -1132,7 +1132,7 @@ async function probe(arg) {
     return out;
 }
 
-(async () => {
+hauptLauf(async () => {
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST (ohne Welt) ===");
         const ort = (max, taeter) => ({
@@ -1389,7 +1389,4 @@ async function probe(arg) {
     }
     console.log("\n✅ GRÜN — die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");
     process.exit(0);
-})().catch((e) => {
-    console.error("Kamera-Laub-Linse-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

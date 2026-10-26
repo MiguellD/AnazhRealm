@@ -25,7 +25,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
 const { kartenEichung } = require("./lib/licht-linsen.cjs");
 // der Code-Abdruck einer Datei des Baums und der Stand einer Messung (abnahme-urteil `standLeser`, derselbe wie Werkzeug und
@@ -678,7 +678,4 @@ async function main() {
     );
 }
 
-main().catch((e) => {
-    console.error("ALBEDO-TAFEL-FEHLER:", (e && e.stack) || e);
-    process.exit(2);
-});
+hauptLauf(main);
