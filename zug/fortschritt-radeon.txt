@@ -116,3 +116,4 @@
 2026-10-26 04:47:14 takt4-radeon leib.K1#2 ROT 25.5 · 30/43
 2026-10-26 04:49:23 takt4-radeon leib.K2#1 ROT 2.1 · 31/43
 2026-10-26 04:58:16 takt4-radeon leib.K4#1 GRÜN 8.9 · 32/43
+2026-10-26 05:05:07 takt4-radeon halten.K2#1 GRÜN 6.8 · 33/43
