@@ -3,11 +3,11 @@
   "kopf": "b2c6c627",
   "version": "V18.546.97",
   "skala": "2.0",
-  "summe": 98,
+  "summe": 108,
   "max": 330,
   "maschine": {
     "kopf": "b2c6c627",
-    "zeit": "2026-10-26T20:18:03.287Z",
+    "zeit": "2026-10-26T20:27:34.886Z",
     "kriterien": [
       "affekt.K1",
       "bauen.K1",
@@ -94,7 +94,7 @@
     {
       "key": "physis",
       "titel": "I · PHYSIK, CHEMIE UND DIE SIMULATION DER TEILSYSTEME",
-      "summe": 23,
+      "summe": 24,
       "max": 50,
       "bereiche": [
         "gelaende",
@@ -108,7 +108,7 @@
     {
       "key": "leben",
       "titel": "II · LEBEN — Pflanze, Tier, Ökologie, Mensch, Affekt, Haar und Fell, Luft und Wasser",
-      "summe": 18,
+      "summe": 21,
       "max": 70,
       "bereiche": [
         "vegetation",
@@ -124,7 +124,7 @@
     {
       "key": "sicht",
       "titel": "III · SICHT UND VISUELLE TIEFE — Licht, Ferne, Material, Schatten, Stufen",
-      "summe": 6,
+      "summe": 8,
       "max": 50,
       "bereiche": [
         "licht",
@@ -151,7 +151,7 @@
     {
       "key": "wege",
       "titel": "V · WELTEN UND WEGE — Tore, Fahrt, Siedlung, Leib, Halten, der gespielte Pfad, das Ultiversum",
-      "summe": 21,
+      "summe": 23,
       "max": 70,
       "bereiche": [
         "tore",
@@ -167,7 +167,7 @@
     {
       "key": "fundament",
       "titel": "VI · FUNDAMENT — Ankunft, Streaming und Fäden, Profi-Band, Klang, Speicher",
-      "summe": 14,
+      "summe": 16,
       "max": 50,
       "bereiche": [
         "ankunft",
@@ -184,7 +184,7 @@
       "key": "gelaende",
       "titel": "Gelände, Boden und Wasser — Hydrosphäre, Graben, Damm",
       "gruppe": "physis",
-      "punkte": 7,
+      "punkte": 8,
       "pfad": "v1 (laufen, bauen) · A (wasser)",
       "dateien": "`gelaende-core.js` · `stamm/gelaende-*.js` · `stamm/wasser-*.js` · `voxel-worker.js`",
       "aaaa": "Jeder Hügel, jede Klamm, jeder Fluss, jeder See und jeder Spatenstich ist EINE Funktion des Kerns (`gelaende-core`: hoehe + dichte + editForm + Wasser-Spiegel); Stamm, Worker und Studio rechnen sie bit-gleich. Der Spieler gräbt am Bach, und binnen ≤ 2 s steht EINE Wasserfläche im Graben. Er schüttet einen 3-m-Damm, und der Stausee steigt bis zur Überlaufhöhe ±0,1 m, während der Bach stromab weiterläuft; Fern-Ring und Hydro-Raster zeigen den Edit binnen 1 s. Das Wasser spiegelt Ufer und Wolke (spiegelTreue ≥ 0,6) aus Ego und Third, mittags, nachts und im Regen, und es fließt sichtbar längs seines Gefälles. Jeder Leser (Pflanze, Tier, Klang, Körper) liest EINEN Spiegel. Huf, Rad und Streu-Fuß stehen auf dem gezeichneten Boden (≤ 3 cm). Alles im Haushalt boden (≤ 12 Befehle, ≤ 120k Dreiecke) auf Radeon 890M und GTX 1060. **Wo wir die Besten schlagen:** From Dust koppelt nur auf kleinen geschlossenen Inseln, Timberborn staut auf 1-m-Blöcken, Horizon backt seine Wellen, Enshrouded gräbt einen Kontinent ohne Hydrologie. Bei uns entsteht das Flussnetz zuerst aus dem Gesetz (Stream-Power, garantierte Entwässerung, unendlich); weil Edit und Wasser dasselbe Gesetz lesen, wird jeder Graben ein Fluss-Ereignis und jeder Damm ein See — deterministisch für jeden Mitspieler.",
@@ -236,10 +236,10 @@
         },
         {
           "name": "EINE Boden-Höhe je Rolle: Huf, Rad, Streu-Fuß, Feinform",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = Kontakt p95 ≤ 3 cm für eine Rolle an einem Ort, beide Sichten · 2 = alle Rollen an Mess-Wiese und 25°-Hang, in Fahrt, beide Geräte, jede Rolle ruft benannt EINE Funktion (Ratsche)",
           "messung": "werkbank eval + bild an der Mess-Wiese (spec/profiband/haushalt.json) und am 25°-Hang: Huf, Rad und Streu-Fuß gegen das gezeichnete Mesh an 200 Zufalls-Kontakten, Schweben/Einsinken p95 ≤ 3 cm; Feinform-Fehler gegen das Gesetz ≤ 5 cm. Der Fuß des Spielers zählt Leib K2, das boden-nah-Bild Vegetation K1.",
-          "beleg": "Maschine: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht) an b2c6c627 headless · alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht) an b2c6c627 radeon — offen: gelaende.K5#2 gtx: Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +6)",
+          "beleg": "Maschine: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht) an b2c6c627 headless · alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht) an b2c6c627 radeon · alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht) an b2c6c627 gtx",
           "schlupfloch": "Ein Offset je Art schiebt den Mittelwert auf 0; gezählt wird p95 am Hang und in Fahrt, und jede Rolle ruft benannt EINE Funktion.",
           "aenderung": "Die 1 der Synthese stand auf dem boden-nah-Bild (laiWirk 1,855, veraltet) — das zählt Vegetation K1 (B10); der Kontakt war ungemessen → 0. Am Kopf 57a9f2ab gemessen (Radeon, Ego und Third) → 1; mit der GTX an 2160be58 (M26, 21.10.) → 2; an der strengeren K8 (k8-huf, je Größen-Band das schlechteste Reh) 22.10. → 1.",
           "maschine": true
@@ -904,7 +904,7 @@
       "key": "tiere",
       "titel": "Tiere — Verband, Jagd, Gang, Lebensraum, Begegnung",
       "gruppe": "leben",
-      "punkte": 5,
+      "punkte": 7,
       "pfad": "Feature-Stopp bis v1.0 — außer der Kosten-Seite (E)",
       "dateien": "`tetrapoda-core.js` · `stamm/kreatur-*.js` · `scripts/lib/kreatur-proben.cjs` · `worlds/tetrapoda`",
       "aaaa": "Die Herde ist ein DATUM des Gesetzbuchs. 20–30 Hirsche ziehen als Verband mit Leittier über den Hang; der erste, der den Wolf wittert, hebt den Kopf, und binnen 1 s flieht der ganze Verband ausgerichtet (Φ ≥ 0,8, Kohäsion ≥ 0,9) und sammelt sich hinter der Kuppe. Das Rudel aus vier Wölfen umstellt und reißt mit der Quote der Natur (20–40 % gegen den erwachsenen Hirsch) und frisst ≥ 60 s; der Fuchs kommt binnen 120 s ans Aas. Die Fußfolge wechselt mit der Froude-Zahl (Schritt → Trab bei Fr ≈ 0,5, Trab → Galopp bei 2–3). Der Bär steht am Fluss, der Hirsch äst ≈ 50 % des Tages. Auf 10 Spielminuten Gang sieht der Spieler ≥ 3 Tiere, in 30 min eine Herde ≥ 20 — bei ≤ 1 ms KI je 150 Tiere an der GTX. **Wo wir die Besten schlagen:** RDR2 (≈ 6 300 Motions, Tags von Hand) und Horizon (Rollen von Hand); bei uns kommt der Gang aus Froude, der Verband aus Couzin, die Jagd aus MacNulty, der Lebensraum aus dem Gelände-Kern — jede neue Gattung aus dem Studio trägt das ohne eine Zeile Animation, und das Labor zeigt dieselbe Herde.",
@@ -926,20 +926,20 @@
         },
         {
           "name": "Der Jagd-Kreislauf: Pirsch, Umstellen, Hetze, Riss, Fressen, Aas",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = Hetze und Riss mit HP aus dem Leib-Gesetz, Quote im Band über ≥ 10 Seeds · 2 = dazu Fressen ≥ 60 s, der Kadaver lockt Fuchs oder Bär ≤ 120 s, Station Wolfsrevier im Bild beider Geräte",
           "messung": "Jagd-Band C mit echter HP aus dem Leib (Masse), 20 Seeds: 4 Wölfe gegen den erwachsenen Hirsch 20–40 %, 1 Wolf < 10 %, gegen ein Kitz > 60 % (MacNulty); der Kadaver wird Geruchs-Quelle (`_scentAt`).",
-          "beleg": "Maschine: Riss je Jagd einWolf 0/20 (HP 168) · rudel 18/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 49 s an b2c6c627 headless · Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.1 s, 3 fressen: tier:wolf 7461 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.34 m · Luma 75.2 σ 32.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.97 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an b2c6c627 radeon — offen: tiere.K2#2 gtx: Pfad seit der Messung geändert (R6: phyto-core.js, stamm/feld-leben.js, stamm/gelaende-boden.js +2)",
+          "beleg": "Maschine: Riss je Jagd einWolf 0/20 (HP 168) · rudel 18/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 49 s an b2c6c627 headless · Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.1 s, 3 fressen: tier:wolf 7461 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.34 m · Luma 75.2 σ 32.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.97 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an b2c6c627 radeon · Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 16 s, 3 fressen: tier:wolf 13167 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.19 m · Luma 86.8 σ 39.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.97 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an b2c6c627 gtx",
           "schlupfloch": "Mit hp = 1e6 zählte ein Biss als Jagd; mit HP 1 wäre die Quote 100 %: die Quote hat ein Band nach oben UND unten, die HP kommt aus dem Leib, und der Kadaver muss gelesen werden (Ankunft des Fuchses).",
           "aenderung": "Die 1 der Synthese stand auf einer Pose ohne Spieler (hp 1e6) → 0 (B27).",
           "maschine": true
         },
         {
           "name": "Gang und Leib: der Fuß steht, die Gangart folgt dem Tempo, Labor = Welt",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = der Fuß steht (Schlupf ≤ 0,05) · 2 = Fußfolge aus Fr für alle 4 Gattungen, Tastgrad im Band, Querhang 20°, Labor = Welt über die Phasen, Third-Bild aus 10 m",
           "messung": "gate:tier-gang (Schlupf des Stand-Fußes ≤ 0,05; Gangart und Tastgrad je Gattung bei v̂ 0,3 · 0,74 · 1,2 · 3,5 in Welt UND Labor, REF Schritt 0,6–0,7, Trab 0,4–0,6, Galopp 0,25–0,35; Welt − Labor ≤ 0,05 Zyklus) + gate:kreatur-takt Teil querhang (Hang 20,8° und Rampe 29,9°: Bein-Lot ≤ 10°, Schlupf ≤ 0,05); Schritt → Trab bei Fr ≈ 0,5, Trab → Galopp bei 2–3; Kreuz-Probe Stimmung × Tempo; das Gang-Bild aus 10 m (`werkbank bild … --ziel gang` mit der Bühne `gang-buehne.js`, je Tier drei Füße am Boden).",
-          "beleg": "Maschine: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an b2c6c627 headless · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2768/1209/6049/4056 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 93.6 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.97 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an b2c6c627 radeon — offen: tiere.K3#2 gtx: Pfad seit der Messung geändert (R6: stamm/feld-leben.js, stamm/gelaende-boden.js)",
+          "beleg": "Maschine: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an b2c6c627 headless · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2768/1209/6049/4056 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 93.6 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.97 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an b2c6c627 radeon · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2880/1111/6026/4048 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 93.7 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.97 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an b2c6c627 gtx",
           "schlupfloch": "Den Galopp an die Stimmung flee zu hängen bestünde beim Flucht-Tempo zufällig: die Kreuz-Probe Stimmung × Tempo zeigt, dass nur Fr entscheidet; Labor = Welt wird über die Phasen gemessen, nie über den Code-Text; der Tastgrad ist ein Band nach oben UND unten je Gangart, nie eine Zeile im Gesetz.",
           "aenderung": "Die 1 stand auf dem Schlupf; geschnitten 1 → 2 (tier-gang-k3, e5003509): der Tastgrad kommt aus dem Gesetz, beide Geräte im Bild.; nach R6 (tier-satz, `_tierSatzGang`) 23.10. 2 → 1.",
           "maschine": true
@@ -1122,7 +1122,7 @@
       "key": "mensch",
       "titel": "Menschen und Bewohner — Besiedlung, Tag, Wege, Leib, Begegnung",
       "gruppe": "leben",
-      "punkte": 4,
+      "punkte": 5,
       "pfad": "Feature-Stopp bis v1.0",
       "dateien": "`koerper-core.js` · `stamm/koerper-leib.js` · `fachwerk-core.js` (leute · rolle · wohl) · `stamm/kreatur-*.js` · `stamm/feld-nexus.js`",
       "aaaa": "Jede Siedlung, die das Fachwerk-Gesetz plant, wird von genau den Menschen bewohnt, die ihr Gesetz zählt (leute · rolle · wohl): ≥ 200 Bewohner in einer Stadt, ≥ 40 nah voll animiert. Jeder ist ein Seed mit eigenem Leib aus dem Genom (Körperhöhe ±8 %, keine zwei gleich), mit Heim, Werk und 4–10 Wegen am Tag über die Gassen und durch die Tür. Sein Tag ist f(seed, t): um 10 Uhr steht der Schmied am Amboss, um 2 Uhr schläft er; fern kostet er 0, und wer ankommt, findet ihn auf ±2 m am richtigen Ort. Auf 3 m wendet er in ≤ 0,5 s den Kopf und weicht ohne Berührung aus; er erinnert die letzte Begegnung und spricht aus seinem Datensatz. **Wo wir die Besten schlagen:** Rockstar pflegt Routinen von Hand, Warhorse baut KI-LOD für 2 400 NPCs; bei uns ist der Tag eine reine Funktion, keine Simulation — die Stadt lebt fern umsonst und durch jedes Jahrhundert, und das Körperstudio zeigt den Schmied, dem man im Dorf begegnet.",
@@ -1145,10 +1145,10 @@
         },
         {
           "name": "Tagesablauf: Rolle × Uhr × Ort",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = ein Bewohner trifft ≥ 0,9 seiner Soll-Orte über 24 Spielstunden · 2 = alle Bewohner einer Siedlung, 4–10 Wege am Tag, Wiederkehr nach 1 h Abwesenheit auf ±2 m",
           "messung": "NEUE Zeitraffer-Linse auf der Uhr des Spieler-Worts; der Plan ist bei gleichem Seed bit-gleich; Bild der Station Schmiede: um 10 Uhr besetzt, um 2 Uhr leer; Selbsttest: ein um 6 h verschobener Plan ist ROT.",
-          "beleg": "Maschine: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an b2c6c627 headless · Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 5–9 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.123 m), Sprünge 0, Plan bit-gleich true an b2c6c627 radeon — offen: mensch.K2#2 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/koerper-fahrt.js, stamm/siedlung-bewohner.js)",
+          "beleg": "Maschine: Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an b2c6c627 headless · Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 5–9 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.123 m), Sprünge 0, Plan bit-gleich true an b2c6c627 radeon · Soll-Orte alle 81/81 ≥ 0,9 (min 0.987), Wege je Tag 5–9 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.105 m), Sprünge 0, Plan bit-gleich true an b2c6c627 gtx",
           "schlupfloch": "Ein Teleport an den Soll-Ort erfüllte den Anteil: K3 verlangt Gangzeit auf Wegen, im Nahbereich sind Sprünge > 2 m je Frame ROT.",
           "aenderung": "Staffel neu (B31); gemessen 22.10. (bewohner-tag, Radeon) 0 → 1.",
           "maschine": true
@@ -1761,7 +1761,7 @@
       "key": "ferne",
       "titel": "Ferne bis zum Horizont — Luft, Kante, Kamm-Saum, Fernschatten, Wetter-Sicht",
       "gruppe": "sicht",
-      "punkte": 2,
+      "punkte": 3,
       "pfad": "v1 (sehen) · A (Ferne) · E (Boden-Haushalt)",
       "dateien": "`stamm/gelaende-fern.js` (FERN_RING, Kronen-Albedo) · `stamm/bild-himmel.js` (Luft) · `foundry-core.js` LUFT · `gelaende-core.js`",
       "aaaa": "Vom Hügel (Auge 120 m) und aus Augenhöhe sieht der Spieler bis zur Sichtweite der Luft (klar 20 km, Sturm 1,5 km), ohne Welt-Kante: am Rand bleibt ≤ 2 % Restkontrast. Der Kontrast fällt nach Koschmieder e^(−βd) ±15 % bei 1/2/5/8 km und je Kanal: die Ferne wird blau, tiefe Sonne rötet fernes Weiß, die Sonnenseite ist ≥ 1,2× heller. Bewaldete Grate tragen bis 8 km einen Saum mit ≥ 10 m Kronen-Relief und zerfranster Kammlinie. Bei Sonne ≤ 5° werfen Grate Schatten in Täler 2 km dahinter. Im Sturm schrumpft die Sicht, und der Regenvorhang steht aus 2 km sichtbar. Alles ≤ 1,5 ms auf der GTX, im Boden-Haushalt (12 Befehle / 120k Dreiecke). **Wo wir die Besten schlagen:** MSFS streamt Petabytes, Far Cry setzt Wald und Flüsse von Hand; wir rechnen Saum, Fernschatten und Luft aus EINEM Gelände-Kern und `treeParams` für jeden Ort einer endlosen Welt, ohne Bake.",
@@ -1784,10 +1784,10 @@
         },
         {
           "name": "Die Welt hat keine Kante",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = Restkontrast am Rand der letzten Fern-Schale ≤ 2 % bei klarem Wetter an einem Gerät, 4 Azimute · 2 = keine waagrechte Kanten-Linie (Struktur-Tensor am Horizont), Hügel und Gipfel, im Boden-Haushalt, beide Geräte",
           "messung": "Station Hügel und Gipfel, klar, 4 Azimute: Restkontrast Gelände/Himmel am Rand der letzten Fern-Schale.",
-          "beleg": "Maschine: Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3 an b2c6c627 radeon · K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0.47°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.8k/120k Dreiecke · [linse-gpu] amd/rdna-3 an b2c6c627 radeon — offen: ferne.K2#2 gtx: Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +4)",
+          "beleg": "Maschine: Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3 an b2c6c627 radeon · K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0.47°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.8k/120k Dreiecke · [linse-gpu] amd/rdna-3 an b2c6c627 radeon · K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.9k/120k Dreiecke · [linse-gpu] nvidia/pascal an b2c6c627 gtx",
           "schlupfloch": "Mehr Nebel versteckt die Kante und verliert die Ferne — K1 verbietet das; bei Dunst gemessen wäre die Kante immer unsichtbar: darum klar.",
           "maschine": true
         },
@@ -1890,7 +1890,7 @@
       "key": "material",
       "titel": "Material-Tiefe — PBR aus dem Gesetz, Mikro-Detail, Stufen, Spiegelung",
       "gruppe": "sicht",
-      "punkte": 2,
+      "punkte": 3,
       "pfad": "v1 (sehen) · A (haus, boden-nah)",
       "dateien": "`stamm/stoff-material.js` (Substanz-Kern) · `stamm/stoff-instanz.js` · `spec/farbe/albedo-tafel.json` · `foundry-core.js` FARB-GESETZ",
       "aaaa": "Jede Fläche zeigt im Ausgabe-Bild ihre Physik: die Albedo liegt im realen Band (Fels 0,10–0,30, Rinde 0,07–0,12, Laub/Gras 0,15–0,26), Labor = Welt gilt ±5 % in der Albedo, und jede Stufe hat dieselbe Albedo (Stufe/L0 0,95–1,05). Bis zur Armlänge (0,5 m) trägt jeder Stoff Korn, Kavität und Rauheit aus seinen Tags; keine Fläche ist glatt (Nyquist-Anteil ≥ 0,15, glatte 8×8-Blöcke ≤ 10 %, Leistungsspektrum 1/f^β). Glas, Lack, Metall und nasser Stein spiegeln aus EINER Quelle. Rauheit und Glanz sind Daten der Stoff-Zeile, im realen Band gemessen. **Wo wir die Besten schlagen:** Megascans fotografiert jeden Stein, Remember Me malt Pfützen-Masken; wir leiten das Material aus Tags und Stoff-Zeile ab, für jedes Asset, das ein Studio je erzeugt.",
@@ -1903,10 +1903,10 @@
       "kriterien": [
         {
           "name": "Albedo im realen Band, Labor = Welt, echt auf beiden Geräten",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = alle Zeilen Welt/Labor 0,9–1,1 und im realen Band, beide Seiten --echt, an einem Gerät · 2 = beide Geräte, Eichung Karte 0,180",
           "messung": "werkbank albedo --tafel + diag-albedo-tafel.cjs --labor --echt, beide Seiten auf echter GPU, ≤ 3 min je Gerät.",
-          "beleg": "Maschine: Welt/Labor 0,9–1,1: 12/12 · im realen Band beidseits: 12/12 · echt beide Seiten · [linse-gpu] amd/rdna-3 an b2c6c627 radeon · Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3 an b2c6c627 radeon — offen: material.K1#2 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, stamm/bau-teile.js +14)",
+          "beleg": "Maschine: Welt/Labor 0,9–1,1: 12/12 · im realen Band beidseits: 12/12 · echt beide Seiten · [linse-gpu] amd/rdna-3 an b2c6c627 radeon · Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3 an b2c6c627 radeon · Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal an b2c6c627 gtx",
           "schlupfloch": "Labor und Welt mit derselben falschen Eichung wären gleich und trotzdem falsch: zusätzlich das reale Band je Klasse; der Ersatz-Renderer verbirgt Präzision und Ton: beide Seiten --echt.",
           "maschine": true
         },
@@ -1915,7 +1915,7 @@
           "punkte": 0,
           "staffel": "1 = Boden und Fels auf 0,5/1/2 m: nyquist ≥ 0,15 und glatte Blöcke ≤ 10 % an einem Gerät · 2 = Boden, Fels, Rinde, Putz, Holz, Haut, kein Kachel-Muster (1/f^β, β 0–2,4), beide Geräte",
           "messung": "werkbank bild mit Armlängen-Schüssen (0,5 / 1 / 2 m), Tafel-Maße detail/nyquist, glatte 8×8-Blöcke (σ Luma < 4), Ego, Kamera des Spiels.",
-          "beleg": "Maschine: 0 — offen: material.K2#1 radeon: ROT: boden 0.5 m glatt 0.0175 nyquist 0.1267 (Arm 0.408), 1 m glatt 0.0107 nyquist 0.134 (Arm 0.909), 2 m glatt 0.0072 nyquist 0.1302 (Arm 1.91) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3 an b2c6c627 · material.K2#1 gtx: Pfad seit der Messung geändert (R6: phyto-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +4)",
+          "beleg": "Maschine: 0 — offen: material.K2#1 radeon: ROT: boden 0.5 m glatt 0.0175 nyquist 0.1267 (Arm 0.408), 1 m glatt 0.0107 nyquist 0.134 (Arm 0.909), 2 m glatt 0.0072 nyquist 0.1302 (Arm 1.91) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3 an b2c6c627 · material.K2#1 gtx: ROT: boden 0.5 m glatt 0.015 nyquist 0.1346 (Arm 0.408), 1 m glatt 0.0111 nyquist 0.1309 (Arm 0.909), 2 m glatt 0.0066 nyquist 0.1302 (Arm 1.911) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal an b2c6c627",
           "schlupfloch": "Rauschen erfüllt Nyquist ohne Material: das 1/f^β-Band und das Verbot von Kachel-Mustern; ein Schuss nur auf den besten Stoff reicht nicht: je Klasse.",
           "maschine": true
         },
@@ -2462,7 +2462,7 @@
           "punkte": 0,
           "staffel": "1 = build-asset kommt beim Zweit-Boot zu ≥ 95 % von der Platte · 2 = jede Lieferung (Blatt-Atlas, Dorf-Export, Karten) 100 %, ein geänderter Kern-SHA baut nur seine Art neu (0 fremde Neubauten), beide Geräte",
           "messung": "diag-boot-stage --echt, Zweit-Boot, ≥ 4 Läufe je Gerät, mit dem Bau-Instrument: Bau-Ereignisse im Worker UND im Haupt-Faden, nie die Treffer-Zahl der Platte. Die Sekunden zählt Ankunft K3.",
-          "beleg": "Maschine: 0 — offen: pipeline.K4#1 radeon: Pfad seit der Messung geändert (R6: stamm/koerper-leib.js, stamm/studio-bruecke.js) · pipeline.K4#1 gtx: ungemessen (R10)",
+          "beleg": "Maschine: 0 — offen: pipeline.K4#1 radeon: Pfad seit der Messung geändert (R6: stamm/koerper-leib.js, stamm/studio-bruecke.js) · pipeline.K4#1 gtx: ROT: keine Liefer-Zeile am Zweit-Boot (Exit 1) an b2c6c627",
           "schlupfloch": "Treffer zählen, obwohl der Haupt-Faden danach neu rechnet: gezählt werden Bau-Ereignisse in Worker UND Haupt-Faden.",
           "aenderung": "24.10. R10: der Hand-Punkt ohne Station am Kopf fällt 1 → 0.",
           "maschine": true
@@ -2940,7 +2940,7 @@
       "key": "fahrzeug",
       "titel": "Fahrzeuge und Fahrgefühl — Reifen, Weg, Kamera, Übergänge, Rückmeldung",
       "gruppe": "wege",
-      "punkte": 4,
+      "punkte": 5,
       "pfad": "v1 (benutzen: fahren)",
       "dateien": "`vehicle-core.js` (fahrSchritt, chaseKamera, LACK_GESETZ) · `stamm/koerper-fahrt.js` · `stamm/koerper-bewegung.js` (FIXED_DT, `_loopCamera`) · `worlds/garage` · `scripts/diag-fahr-leben.cjs`",
       "aaaa": "Ein Wagen aus dem Gesetz (vehicle-core) fährt auf dem Wegenetz durch Wiese, Wald und Dorf, ohne steckenzubleiben. Die Reifen haben eine Kurve mit Spitze bei 6–10° und ≥ 15 % Abfall und greifen auf Weg, Gras, Schotter, Nässe und Schnee anders (Bremsweg Gras/Weg ≥ 1,5×, nass ≥ 1,3×), aus derselben Stoff-Zeile, die den Boden malt; der Kern rechnet mit ≥ 240 Hz. Die Rig-Kamera aus dem Kern atmet das Tempo (FOV +≥ 8°, Arm +≥ 15 %, Azimut auf dem Fahrtvektor), jeder Übergang — Ego↔Third, Auf- und Absteigen in Fahrt, Hang — bleibt ohne Sprung. Klang, Federung, Spur, Staub, Spritzwasser und Rumble lesen denselben Fahr-Zustand. Lücken und Tempo-Decke richtet Streaming, das Band Profiband. **Wo wir die Besten schlagen:** Forza und BeamNG tunen jeden Wagen und jede Strecke einzeln; bei uns folgen Kamera und Grip aus den Maßen und dem Boden-Gesetz — jedes prozedurale Fahrzeug ist ab dem ersten Bild getunt.",
@@ -2982,10 +2982,10 @@
         },
         {
           "name": "Übergänge unter Bewegung: Sicht-Wechsel, Auf- und Absteigen, Hang",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = an einem Gerät im Bild gehalten · 2 = an beiden Geräten im Bild, und bei jeder neuen vmax-Stufe neu gemessen",
           "messung": "gate:fahr-leben T4 (Mechanik) + Station fahrt im Bild: nach Ego → Third in voller Fahrt steht der Azimut binnen 10 Bildern ≤ 10° an der Gier, jede zeichnende Stufe ≤ 2 m an der Physik-Lage, Bild-Deckung in Third 1; Auf- und Absteigen in Fahrt und am Hang ohne Kamera-Sprung > 0,5 m je Bild.",
-          "beleg": "Maschine: nach Ego → Third im Bild 3/3, Azimut 5.1/2.8/1.4°, Stufe ≤ 1.8 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 1.3° · Hang 17.4° an b2c6c627 radeon · nach Ego → Third im Bild 3/3, Azimut 5.1/2.8/1.4°, Stufe ≤ 1.8 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 1.3° · Hang 17.4° an b2c6c627 radeon — offen: fahrzeug.K4#2 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-fahrt.js)",
+          "beleg": "Maschine: nach Ego → Third im Bild 3/3, Azimut 5.1/2.8/1.4°, Stufe ≤ 1.8 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 1.3° · Hang 17.4° an b2c6c627 radeon · nach Ego → Third im Bild 3/3, Azimut 5.1/2.8/1.4°, Stufe ≤ 1.8 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 1.3° · Hang 17.4° an b2c6c627 radeon · nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.72 m · T4 Absteigen 0.32 m je Bild, Azimut nach 10 Bildern 1.2° · Hang 17.4° an b2c6c627 gtx",
           "schlupfloch": "Bei 6–10 m/s gemessen könnte derselbe Rig bei höherer vmax brechen: die 2 fällt automatisch, wenn eine neue vmax-Stufe ohne T4 im Bild gemergt wird.",
           "aenderung": "Synthese gab 2 ohne Staffel; im Bild ist nur ein Gerät belegt → 1 (B57); das Radeon-Bild am Kopf 21.10. → 2 (M8).",
           "maschine": true
@@ -3096,7 +3096,7 @@
           "punkte": 1,
           "staffel": "1 = erstes Haus sichtbar ≤ 0,5 s nach dem Erwachen der Zelle, unabhängig von nH (12 gegen 300), als Studio-L-Kette (Bau-Hash im Bild), an einem Gerät · 2 = beide Geräte",
           "messung": "Station dorf: Zelle wecken bei nH 12 und 300, Zeit bis zum ersten Haus mit seinem Bau-Hash im Ausgabe-Bild. Die Stadt im Profi-Band ist eine Zelle von Profiband K1.",
-          "beleg": "Maschine: nH 12 erstes Haus nach 57.1 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 113.4 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf) an b2c6c627 radeon · nH 12 erstes Haus nach 57.1 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 113.4 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf) an b2c6c627 radeon — offen: siedlung.K5#2 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +4)",
+          "beleg": "Maschine: nH 12 erstes Haus nach 57.1 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 113.4 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf) an b2c6c627 radeon · nH 12 erstes Haus nach 57.1 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 113.4 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf) an b2c6c627 radeon — offen: siedlung.K5#2 gtx: ROT: nH 12 erstes Haus nach 562.3 ms (haus_alemannisch, huelle in 232.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 204.6 ms (haus_fraenkisch, mesh in 23.5 m, Bau-Hash 88b58bbf) an b2c6c627",
           "schlupfloch": "Ein schneller Platzhalter-Würfel als erstes Haus ist fail-soft: der Bau-Hash der Studio-L-Kette im Bild.",
           "aenderung": "Die Last der Stadt zählt Profiband K1 (Messort stadt; V26), die Bewohner zählen Menschen.",
           "maschine": true
@@ -3188,7 +3188,7 @@
       "key": "leib",
       "titel": "Der Spieler-Leib — Eingabe, Fuß, Wasser, Kamera zu Fuß, Gamepad",
       "gruppe": "wege",
-      "punkte": 3,
+      "punkte": 4,
       "pfad": "v1 (laufen und sehen)",
       "dateien": "`stamm/koerper-bewegung.js` · `stamm/koerper-leib.js` · `stamm/koerper-seele.js` · `koerper-core.js`",
       "aaaa": "Der Spieler fühlt seinen Leib vor allem anderen: die Taste bewegt ihn in ≤ 50 ms im Bild, der Fuß steht am 25°-Hang und auf der Stufe, Sprung-Höhe und -Weite folgen aus dem Leib-Gesetz. Am Ufer geht er ins Wasser, schwimmt und taucht ohne Sprung, und unter Wasser sieht er die EINE Wasser-Wahrheit; in der Höhle fällt das Licht ab. Die Kamera zu Fuß steht nie im Fels und ruckt nicht; ein Gamepad lenkt jedes Verb analog. **Wo wir die Besten schlagen:** For Honor und TLOU2 suchen ihre Bewegung in Motion-Capture-Datenbanken, BotW macht jede Fläche kletterbar mit einem Ausdauer-Wert von Hand; bei uns folgen Schritt, Sprung und Schwimmen aus dem Leib-Gesetz, das auch Tier und Bewohner trägt (Labor = Welt im Körperstudio).",
@@ -3201,10 +3201,10 @@
       "kriterien": [
         {
           "name": "Die Taste bewegt den Leib im Bild: Eingabe-Latenz",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = Taste → bewegter Leib im Ausgabe-Bild p95 ≤ 50 ms an einem Gerät (gehen, Sicht-Wechsel) · 2 = jedes Verb (gehen, springen, schwingen, einsteigen), beide Geräte",
           "messung": "Spielgang-Station leib: Eingabe-Ereignis (CDP) bis zum ersten Ausgabe-Bild mit Bewegung im Leib-Band, je 50 Proben, Ego und Third.",
-          "beleg": "Maschine: schlechtester von 3 Läufen p95 ms ego/gehen 44.3 · third/gehen 44.8 · ego/springen 33.4 · third/springen 30.9 · ego/einsteigen 33.3 · third/einsteigen 24.9 · ego/hieb 27.9 · third/hieb 28.3 · Bild 16/16.1/16.1 ms an b2c6c627 radeon — offen: leib.K1#1 radeon: ROT: schlechtester von 3 Läufen p95 ms ego/gehen 50.2 · third/gehen 41.9 · ego/wechsel 24.4 · third/wechsel 26.5 · Bild 16.3/16.4/16.4 ms an b2c6c627 · leib.K1#1 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/koerper-fahrt.js) · leib.K1#2 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/koerper-fahrt.js)",
+          "beleg": "Maschine: schlechtester von 3 Läufen p95 ms ego/gehen 44.8 · third/gehen 39.5 · ego/wechsel 30.6 · third/wechsel 25.4 · Bild 15.3/15.7/15.1 ms an b2c6c627 gtx · schlechtester von 3 Läufen p95 ms ego/gehen 44.3 · third/gehen 44.8 · ego/springen 33.4 · third/springen 30.9 · ego/einsteigen 33.3 · third/einsteigen 24.9 · ego/hieb 27.9 · third/hieb 28.3 · Bild 16/16.1/16.1 ms an b2c6c627 radeon — offen: leib.K1#2 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/koerper-fahrt.js)",
           "schlupfloch": "Taste bis Sim-Schritt wäre die Eigenmeldung: gezählt wird bis zum Pixel (das Maß von LDAT).",
           "aenderung": "Neu (V02); 22.10. jedes Verb an beiden Geräten gemessen 1 → 2.",
           "maschine": true
@@ -3214,7 +3214,7 @@
           "punkte": 0,
           "staffel": "1 = Fuß p95 ≤ 3 cm am 25°-Hang und auf Stufen, 0 Steckenbleiber auf dem Spielgang, an einem Gerät · 2 = dazu Sprung-Höhe und -Weite aus dem Leib-Gesetz (Mutation von Leib-Masse/Kraft zieht sie), Ego und Third, beide Geräte",
           "messung": "werkbank eval + bild: Fuß gegen das gezeichnete Mesh (`_bodenSichtAt`) an 200 Kontakten, Gang über Hang und Treppe.",
-          "beleg": "Maschine: 0 — offen: leib.K2#1 radeon: ROT: hang 18 (n 200) · falllinie ? · treppe hang ? · treppe wiese ? cm p95 · Steckenbleiber 0 — ROT: hang p95 18 cm an 200 Kontakten · falllinie p95 ? cm an 0 Kontakten · treppe hang p95 ? cm an 0 Kontakten · treppe wiese p95 ? cm an 0 Kontakten · ein Gang ohne Steckenbleiber-Zahl an b2c6c627 · leib.K2#1 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/gelaende-boden.js +4)",
+          "beleg": "Maschine: 0 — offen: leib.K2#1 radeon: ROT: hang 18 (n 200) · falllinie ? · treppe hang ? · treppe wiese ? cm p95 · Steckenbleiber 0 — ROT: hang p95 18 cm an 200 Kontakten · falllinie p95 ? cm an 0 Kontakten · treppe hang p95 ? cm an 0 Kontakten · treppe wiese p95 ? cm an 0 Kontakten · ein Gang ohne Steckenbleiber-Zahl an b2c6c627 · leib.K2#1 gtx: ROT: hang 17.9 (n 200) · falllinie ? · treppe hang ? · treppe wiese ? cm p95 · Steckenbleiber 0 — ROT: hang p95 17.9 cm an 200 Kontakten · falllinie p95 ? cm an 0 Kontakten · treppe hang p95 ? cm an 0 Kontakten · treppe wiese p95 ? cm an 0 Kontakten · ein Gang ohne Steckenbleiber-Zahl an b2c6c627",
           "schlupfloch": "Ein Offset am Fuß schiebt den Mittelwert: p95 am Hang; ein fester Sprung-Wert besteht die Höhe: die Mutation verlangt das Gesetz.",
           "aenderung": "Der Spieler-Teil aus Gelände K5 (V02).",
           "maschine": true
@@ -3933,7 +3933,7 @@
           "punkte": 0,
           "staffel": "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
           "messung": "`werkbank haenger 60 --regler frei --wandern bahn` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`). Der Regler ist der des Spielers (R8): ohne Angabe fährt `haenger` voll; `--wandern kreis` kennt der Kopf nicht.",
-          "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 234 · 226 · 209 · 251 ms; Hänger 1/1/1/1) an b2c6c627 · profiband.K4#1 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, stamm/bau-teile.js +14) · profiband.K4#2 radeon: ROT: 0 von 8 Läufen ohne Frame > 100 ms und ≤ 1 % > 33 ms mit Sicht-Wechsel und Einsteigen (max ms/Anteil: s1 geh 83.6/7.69 % · s1 fahrt 116.9/73.93 % · s2 geh 234.2/5.61 % · s2 fahrt 92.1/30.18 % · s3 geh 92.1/7.54 % · s3 fahrt 125.6/72.55 % · s4 geh 217.6/5.00 % · s4 fahrt 100.6/25.37 %); ROT s1 geh: 7.69 % > 33 ms | s1 fahrt: max 116.9 ms, 73.93 % > 33 ms | s2 geh: max 234.2 ms, 5.61 % > 33 ms | s2 fahrt: 30.18 % > 33 ms | s3 geh: 7.54 % > 33 ms | s3 fahrt: max 125.6 ms, 72.55 % > 33 ms | s4 geh: max 217.6 ms, 5.00 % > 33 ms | s4 fahrt: max 100.6 ms, 25.37 % > 33 ms an b2c6c627 · profiband.K4#2 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, stamm/bau-teile.js +14)",
+          "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 234 · 226 · 209 · 251 ms; Hänger 1/1/1/1) an b2c6c627 · profiband.K4#1 gtx: ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 125 · 133.3 · 116.7 · 116.7 ms; Hänger 1/1/1/1) an b2c6c627 · profiband.K4#2 radeon: ROT: 0 von 8 Läufen ohne Frame > 100 ms und ≤ 1 % > 33 ms mit Sicht-Wechsel und Einsteigen (max ms/Anteil: s1 geh 83.6/7.69 % · s1 fahrt 116.9/73.93 % · s2 geh 234.2/5.61 % · s2 fahrt 92.1/30.18 % · s3 geh 92.1/7.54 % · s3 fahrt 125.6/72.55 % · s4 geh 217.6/5.00 % · s4 fahrt 100.6/25.37 %); ROT s1 geh: 7.69 % > 33 ms | s1 fahrt: max 116.9 ms, 73.93 % > 33 ms | s2 geh: max 234.2 ms, 5.61 % > 33 ms | s2 fahrt: 30.18 % > 33 ms | s3 geh: 7.54 % > 33 ms | s3 fahrt: max 125.6 ms, 72.55 % > 33 ms | s4 geh: max 217.6 ms, 5.00 % > 33 ms | s4 fahrt: max 100.6 ms, 25.37 % > 33 ms an b2c6c627 · profiband.K4#2 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, stamm/bau-teile.js +14)",
           "schlupfloch": "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt; den Regler auf voll stellen, um den Spieler-Takt zu meiden: R8 fährt den Regler des Spielers.",
           "aenderung": "Gemessen 0 → 1 (M29, e5003509, GTX, Regler des Spielers): kein Schnitt, die Messung am Kopf; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an b0b2d8ed gemessen (M34) 22.10. 0 → 1.; nach R6 (stadt-takt, fahrt-takt-Folge-Morphs, 16dd81d0) 23.10. 1 → 0.",
           "maschine": true
@@ -4004,7 +4004,7 @@
       "key": "klang",
       "titel": "Klang aus dem Gesetz — Ort, Kopplung, Raum, Körper, Kosten",
       "gruppe": "fundament",
-      "punkte": 4,
+      "punkte": 5,
       "pfad": "Feature-Stopp bis v1.0 — die Messungen sind Messschuld",
       "dateien": "`klang-core.js` · `stamm/klang.js` · `scripts/diag-klang-zensus.cjs` · `worlds/klang`",
       "aaaa": "Was man hört, folgt aus dem, was dort ist und geschieht. Wind, Laub, Ufer, Fluss, Regen, Glut, Vögel und Grillen kommen aus der Lage am Ohr — und jeder Ruf hat einen Körper; die sichtbare Böe ist die hörbare (Kreuzkorrelation ≥ 0,6). Schritte klingen nach Stoff und Aufprall, der Motor nach Drehzahl und Last mit Doppler. Jede Quelle hat Richtung (HRTF), Entfernung, Verdeckung durch Hang und Haus (≥ 6 dB plus Tiefpass) und den Raum ihrer Umgebung (Wald, Dorf, Feld, Höhle im RT60 unterscheidbar) — über Uhr × Wetter × Bewegung, bei ≤ 0,2 ms Haupt-Faden und 0 Aussetzern. Die Musik liest das Feld (Affekt K5). **Wo wir die Besten schlagen:** Gears 4 (Triton) und Steam Audio backen oder tracen Geometrie aus Assets; bei uns ist die Akustik eine Funktion desselben Gelände-Kerns und Grundrisses, den das Auge sieht — auch in jeder nie gebauten Welt, ohne Bake.",
@@ -4049,17 +4049,17 @@
           "punkte": 1,
           "staffel": "1 = am Abgriff gemessen: der Spektral-Schwerpunkt der Schritte je Stoff ≥ 300 Hz verschieden ODER der Motor-Grundton folgt der Drehzahl (r ≥ 0,9) · 2 = beides, die Landung skaliert mit dem Aufprall, Doppler proportional zur Radialgeschwindigkeit",
           "messung": "Station gang + fahrt mit Klang-Abgriff: Schritte über Erde, Stein, Holz, Wasser; GT-Motor über die Drehzahl; Vorbeifahrt.",
-          "beleg": "Maschine: gras 5594 Hz (n 22) · laub 5170 Hz (n 18) · quarz 3307 Hz (n 20) — kleinster Abstand 424 Hz an eeaff9d6 gtx — offen: klang.K4#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: gras 5769 Hz (n 25) · laub 5391 Hz (n 15) · quarz 3254 Hz (n 19) — kleinster Abstand 378 Hz an b2c6c627 gtx — offen: klang.K4#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Ein Rausch-Burst je Schritt ohne Stoff-Bezug: die spektrale Distanz je Stoff.",
           "aenderung": "Die 1 der Synthese war die Existenz der Leser (B70) → 0; am Abgriff gemessen 21.10. 0 → 1 (M15).",
           "maschine": true
         },
         {
           "name": "Kosten am Hörbaren, null Aussetzer",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = die Kosten sind an das Hörbare gebunden (gemessen) · 2 = dazu Klang-Takt ≤ 0,2 ms Haupt-Faden p95 in Bewegung und 0 Aussetzer in 10 min Spielgang, beide Geräte",
           "messung": "Zensus (K): Welt-Abfragen des Klang-Takts bei 4000 fernen Bauten und 200 Fluss-Läufen; Profil in Bewegung; Aussetzer-Zähler am AudioContext.",
-          "beleg": "Maschine: Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":167.15} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an b2c6c627 headless · Klang-Takt p95 gehen 0.1 · fahrt 0.11 · nacht 0.1 ms · Aussetzer 0 in 600.7 s Wiedergabe (0 s still) (Exit 0) an b2c6c627 radeon — offen: klang.K5#2 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-takt.js, stamm/koerper-fahrt.js)",
+          "beleg": "Maschine: Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":167.15} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an b2c6c627 headless · Klang-Takt p95 gehen 0.1 · fahrt 0.11 · nacht 0.1 ms · Aussetzer 0 in 600.7 s Wiedergabe (0 s still) (Exit 0) an b2c6c627 radeon · Klang-Takt p95 gehen 0.11 · fahrt 0.13 · nacht 0.11 ms · Aussetzer 0 in 601 s Wiedergabe (0 s still) (Exit 0) an b2c6c627 gtx",
           "schlupfloch": "Stummschalten spart alles: K1 und K4 gelten in derselben Sitzung.",
           "maschine": true
         }
@@ -4120,7 +4120,7 @@
       "key": "speicher",
       "titel": "Speicher und Persistenz",
       "gruppe": "fundament",
-      "punkte": 7,
+      "punkte": 8,
       "pfad": "v1 (nichts geht verloren) · E (kein Frame)",
       "dateien": "`stamm/dienst.js` (saveState) · `stamm/speicher-*.js` (Snapshot, Laden, Welten, Migration) · `save-server.js` · `scripts/diag-persistence.cjs`",
       "aaaa": "Nichts geht verloren: ein Absturz an jedem beliebigen Punkt kostet höchstens 10 s Spiel, und kein Stand ist je halb. Speichern kostet keinen Frame (≤ 0,1 ms je Bild, die Arbeit läuft im Worker). Die Datei wächst mit den Änderungen, nie mit dem Weg (Welt = Seed + Edits + Leben). Nach dem Neuladen steht dasselbe Bild (≤ 1 % Diff), und ein Stand von vor 10 Versionen lädt ohne Verlust. **Wo wir die Besten schlagen:** Minecraft speichert jeden besuchten Chunk, Bethesda schleppt ChangeForms mit; bei uns ist alles Unberührte das Gesetz selbst — eine Welt ohne Edit ist nach 100 km Wanderung so groß wie am ersten Tag.",
@@ -4133,10 +4133,10 @@
       "kriterien": [
         {
           "name": "Nichts geht verloren — auf dem Pfad des Spielers",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = der Browser-Pfad (ohne save-server) besteht den Tab-Tod an einem Gerät: Stand ≤ 10 s alt, 0 korrupt, 0 halbe Welten · 2 = an beiden Geräten, auch mitten im IDB- oder localStorage-Schreiben",
           "messung": "gate:persistence (S), erweitert um den Tab-Tod: im 10-min-Spielgang wird der Prozess an 20 Punkten getötet (Vorlade-Haken an jedem Schreib-Aufruf plus zufällige Punkte), dann neu geladen — auf einem Host ohne save-server, wie der Spieler über den Link.",
-          "beleg": "Maschine: 20 Tode: Alter max 1.58 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt an b2c6c627 radeon · 20 Tode: Alter max 1.58 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an b2c6c627 radeon — offen: speicher.K1#2 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-takt.js, stamm/gelaende-chunks.js +3)",
+          "beleg": "Maschine: 20 Tode: Alter max 1.58 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt an b2c6c627 radeon · 20 Tode: Alter max 1.58 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an b2c6c627 radeon · 20 Tode: Alter max 5.284 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an b2c6c627 gtx",
           "schlupfloch": "Nur zwischen den Schreibern töten: Haken an jedem Schreib-Aufruf; den Server-Pfad prüfen, den der Spieler nie hat: der Host ohne save-server.",
           "aenderung": "Die 1 der Synthese stand auf dem Server-Pfad, den der Spieler über den Link nicht hat (B71) → 0; am Pfad des Spielers gemessen 22.10. (speicher-h1, Radeon) 0 → 1; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an 6cfce28a (Radeon, M35) und b0b2d8ed (GTX, M30) gemessen 22.10. 0 → 2.; nach R6 (stadt-erwachen be20b0153 in saveState) 23.10. 2 → 0.",
           "maschine": true
@@ -4688,7 +4688,7 @@
     {
       "stand": "2026-10-26",
       "kopf": "b2c6c627",
-      "summe": 98,
+      "summe": 108,
       "max": 330,
       "skala": "2.0",
       "was": "Mess-Takt 3 an 8f1802b1 (Züge 29c und 30: Stoff-Tafel, Speicher-Weg, Tier-Gang, Halten K5, Kaskade, Siedlung-Trasse, Nässe unter Dach, GPU-Wand, Leib-Hieb, Kaskaden-Riss, Hänger; headless 66/2, Radeon 27/11, GTX gemessen): stoffe.K1, speicher.K3, halten.K5, siedlung.K3 je +1, leib.K1, oekologie.K1, tiere.K3 → 2; klang.K4 1 → 0 und klang.K5 2 → 1 (2 Stoffe mit ≥ 5 Schritten), siedlung.K5 2 → 0 (nH 300 erstes Haus 974 ms — der Rang des Dorf-Zugs; die Heilung siedlung-k5-erstes-haus fährt in Zug 32)."
