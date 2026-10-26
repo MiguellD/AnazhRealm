@@ -1,5 +1,5 @@
-// M15 Klang K4 — der Schritt klingt nach dem Stoff am Fuß: der Spieler geht (W gehalten, echte Eingabe) über Erde und
-// Stein (Orte gefunden am Boden-Gesetz `_terrainMaterialAt`, nur zur Wahl des Wegs); der Abgriff ist ein Analyser an
+// M15 Klang K4 — der Schritt klingt nach dem Stoff am Fuß: der Spieler geht (W gehalten, echte Eingabe) über drei Stoffe
+// (Orte gefunden am Gesetz des Schritts `_schrittMaterialAt`, nur zur Wahl des Wegs); der Abgriff ist ein Analyser an
 // jedem Schritt-Gain (gefunden an der Erzeugung in _playSchrittOneShot). Je Schritt der Spektral-Schwerpunkt des Bursts.
 const fs = require("fs");
 const path = require("path");
@@ -30,23 +30,68 @@ function haken() {
     const klang = await klangAn(page, cdp);
     await klick(cdp);
     await warte(800);
-    // Orte je Stoff: Spirale um die Mess-Wiese, ein Punkt, dessen 12-m-Strecke längs +x denselben Stoff trägt, trocken
-    const orte = await page.evaluate((x0, z0) => {
-        const r = window.anazhRealm, st = r.state;
-        const mat = (x, z) => { const y = r._voxelSurfaceY(x, z); const w = r._koerperWasser(x, z, y); return Number.isFinite(w) && y < w + 0.02 ? "wasser" : r._terrainMaterialAt(x, z, y); };
-        const fund = {};
-        for (let rad = 0; rad < 2500 && Object.keys(fund).length < 3; rad += 6) {
-            for (let a = 0; a < 48; a++) {
-                const x = x0 + Math.cos((a / 48) * 6.283) * rad, z = z0 + Math.sin((a / 48) * 6.283) * rad;
-                const m = mat(x, z);
-                if (fund[m] || !["erde", "stein", "quarz", "glut"].includes(m)) continue;
-                let ok = true;
-                for (const rr of [3, 6, 10]) for (let b = 0; b < 16 && ok; b++) if (mat(x + Math.cos(b * 0.3927) * rr, z + Math.sin(b * 0.3927) * rr) !== m) ok = false;
-                if (ok) fund[m] = [Math.round(x * 10) / 10, Math.round(z * 10) / 10];
-            }
+    // DIE ORTE JE STOFF AM GESETZ DES SCHRITTS (26.10.): der Fuß-Stoff ist `_schrittMaterialAt` (derselbe Leser wie der Schritt seit
+    // stoffe-k1; am alten Boden-Gesetz `_terrainMaterialAt` wählte die Probe Erde und Stein, und der Fuß nannte dort Gras), und er gilt
+    // erst, wenn die Boden-Karte am Ort steht (`_bodenSichtAt` ≠ null, ohne sie fehlt das Gras). Ein Ort trägt seine 12-m-Gangstrecke
+    // längs −x (yaw −π/2, koerper-bewegung) zu ≥ 80 % in einem trockenen Stoff. Erst die Wiese um den Spawn, dann fern: derselbe Leser
+    // vor geladener Karte nennt Kandidaten (Wald-Laub, Fels, Glut …), der Spieler fährt jeden an, und die Strecke wird geprüft, bevor er geht.
+    const gesetz = () => {
+        const r = window.anazhRealm;
+        const mat = (x, z, karte) => (karte && r._bodenSichtAt(x, z) === null ? null : r._schrittMaterialAt(x, z, r._voxelSurfaceY(x, z)));
+        const strecke = (x, z, karte, schritt) => {
+            const m = mat(x, z, karte);
+            if (!m || m === "wasser") return null;
+            const n = 3 * (Math.floor(12 / schritt) + 1);
+            let fehl = 0;
+            for (let d = 0; d <= 12; d += schritt) for (const q of [-0.5, 0, 0.5]) if (mat(x - d, z + q, karte) !== m && ++fehl > 0.2 * n) return null;
+            return m;
+        };
+        window.__m15 = {
+            suche(x0, z0, rad, schon) {
+                const fund = {};
+                for (let rr = 0; rr <= rad && schon.length + Object.keys(fund).length < 3; rr += 3)
+                    for (let i = 0, n = Math.max(1, Math.round(rr * 1.2)); i < n; i++) {
+                        const x = x0 + Math.cos((i / n) * 6.283) * rr, z = z0 + Math.sin((i / n) * 6.283) * rr;
+                        const m = strecke(x, z, true, 1);
+                        if (m && !fund[m] && !schon.includes(m) && schon.length + Object.keys(fund).length < 3) fund[m] = [Math.round(x * 10) / 10, Math.round(z * 10) / 10];
+                    }
+                return fund;
+            },
+            kandidaten(x0, z0, schon) {
+                const je = {}, aus = [];
+                for (let rr = 40; rr <= 2500; rr += 25)
+                    for (let i = 0; i < 64; i++) {
+                        const x = x0 + Math.cos((i / 64) * 6.283) * rr, z = z0 + Math.sin((i / 64) * 6.283) * rr;
+                        const m = strecke(x, z, false, 3);
+                        if (!m || schon.includes(m) || (je[m] = je[m] || []).length >= 3 || je[m].some((p) => Math.hypot(p[0] - x, p[1] - z) < 150)) continue;
+                        je[m].push([x, z]);
+                        aus.push({ m, x: Math.round(x * 10) / 10, z: Math.round(z * 10) / 10, rr });
+                    }
+                return aus;
+            },
+        };
+    };
+    const hin = (x, z) => page.evaluate((x, z) => { const r = window.anazhRealm; r.state.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z); }, x, z);
+    const karteDa = (x, z) =>
+        page.waitForFunction((x, z) => window.anazhRealm._bodenSichtAt(x, z) !== null && window.anazhRealm._bodenSichtAt(x - 12, z) !== null, { timeout: 60000 }, x, z).then(() => true, () => false);
+    await page.evaluate(gesetz);
+    await hin(ort.spieler[0], ort.spieler[1]);
+    await karteDa(ort.spieler[0], ort.spieler[1]);
+    const orte = await page.evaluate((x, z) => window.__m15.suche(x, z, 120, []), ort.spieler[0], ort.spieler[1]);
+    const fahrten = [];
+    if (Object.keys(orte).length < 3) {
+        const kand = await page.evaluate((x, z, schon) => window.__m15.kandidaten(x, z, schon), ort.spieler[0], ort.spieler[1], Object.keys(orte));
+        for (const k of kand) {
+            if (Object.keys(orte).length >= 3 || fahrten.length >= 12) break;
+            if (orte[k.m]) continue;
+            await hin(k.x, k.z);
+            const karte = await karteDa(k.x, k.z);
+            await warte(1500);
+            const neu = karte ? await page.evaluate((x, z, schon) => window.__m15.suche(x, z, 30, schon), k.x, k.z, Object.keys(orte)) : {};
+            fahrten.push({ hinweis: k.m, ort: [k.x, k.z], karte, neu: Object.keys(neu) });
+            Object.assign(orte, neu);
         }
-        return fund;
-    }, ort.spieler[0], ort.spieler[1]);
+    }
     // der Abgriff
     await page.evaluate(() => {
         const s = window.anazhRealm.state.symphony;
@@ -69,7 +114,7 @@ function haken() {
             window.__abgriffProben.push({ t: performance.now(), rms, schwer: num / den, mat: window.anazhRealm.state._schrittKlang && window.anazhRealm.state._schrittKlang.letzter && window.anazhRealm.state._schrittKlang.letzter.material });
         }, 8);
     });
-    const erg = { klang, orte, stoffe: {} };
+    const erg = { klang, orte, fahrten, stoffe: {} };
     for (const [m, [x, z]] of Object.entries(orte)) {
         await page.evaluate((x, z) => {
             const r = window.anazhRealm, st = r.state;
@@ -77,6 +122,7 @@ function haken() {
             st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
             window.__abgriffProben.length = 0;
         }, x, z);
+        await karteDa(x, z);
         await warte(2500);
         const p0 = await page.evaluate(() => { const p = window.anazhRealm.state.playerMesh.position; return [p.x, p.z]; });
         await page.evaluate(() => (window.__abgriffProben.length = 0));
@@ -102,7 +148,7 @@ function haken() {
     }
     erg.fehler = o.fehler.slice(0, 5);
     fs.writeFileSync(OUT, JSON.stringify(erg, null, 1));
-    console.log(JSON.stringify({ klang, orte, stoffe: Object.fromEntries(Object.entries(erg.stoffe).map(([k, v]) => [k, { wegM: v.wegM, bursts: v.bursts, medianHz: v.medianHz, p10: v.p10, p90: v.p90 }])) }));
+    console.log(JSON.stringify({ klang, orte, fahrten, stoffe: Object.fromEntries(Object.entries(erg.stoffe).map(([k, v]) => [k, { wegM: v.wegM, bursts: v.bursts, medianHz: v.medianHz, p10: v.p10, p90: v.p90 }])) }));
     await o.browser.close();
 })().catch((e) => {
     console.error("FEHLER", e && e.stack);

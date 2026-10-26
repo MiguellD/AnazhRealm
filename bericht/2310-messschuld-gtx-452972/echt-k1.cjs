@@ -43,7 +43,7 @@ function haken() {
     const rec = (json) => {
         try {
             const s = JSON.parse(json);
-            return { x: Math.round(s.playerPosition.x * 1e3), z: Math.round(s.playerPosition.z * 1e3), b: (s.architectures || []).filter((a) => a.type === "stein_block").length, e: ((s.worldMeta && s.worldMeta.voxelEdits) || []).length };
+            return { x: Math.round(s.playerPosition.x * 1e3), z: Math.round(s.playerPosition.z * 1e3), b: (s.architectures || []).filter((a) => a.type === "stein_block").length, e: s.voxelEdits ? s.voxelEdits.n : ((s.worldMeta && s.worldMeta.voxelEdits) || []).length }; // der Stand des Speicher-Fadens trägt die Edits kompakt {n, xyzr, modus}
         } catch (_e) {
             return { kaputt: 1 };
         }
@@ -81,6 +81,34 @@ function haken() {
             melde("idb", v.json);
         }
         return req;
+    };
+    // DER SPEICHER-FADEN (Worker „speicher"): evaluateOnNewDocument erreicht ihn nicht, ohne ihn feuern die Tod-Haken idb/fest nie
+    // (26.10., c28a0bdc: 4 halbe, alterMax 999 — Blindheit). Sein Vorspann `faden` (Blob vor importScripts, wie der Tab-Tod in
+    // diag-persistence) meldet jeden Put eines Stands (idb) und das Ende seiner Transaktion (fest) SELBST auf seiner Konsole (Puppeteer
+    // reicht sie als Seiten-Konsole weiter — ohne Umweg über den Haupt-Faden, der im Dorf-Erwachen Sekunden belegt ist); die scharfe
+    // Art (Kanal „k1", `__scharf`) hält ihn IN diesem Schreiber, bis der Prozess stirbt. Ohne Faden (main) geht der Worker roh.
+    const kanal = new BroadcastChannel("k1");
+    window.__scharf = (a) => kanal.postMessage(a);
+    function faden(rec) {
+        let scharf = null;
+        new BroadcastChannel("k1").onmessage = (e) => (scharf = e.data);
+        const melde = (art, json) => {
+            console.log("__W__ " + JSON.stringify({ t: Date.now(), art, rec: rec(json), faden: 1 }));
+            if (scharf === art) for (console.log("__TOD__"); ; );
+        };
+        const put = IDBObjectStore.prototype.put;
+        IDBObjectStore.prototype.put = function (v, key) {
+            const req = put.apply(this, arguments);
+            if (String(key).endsWith(".bak") || !v || typeof v.json !== "string") return req;
+            this.transaction.addEventListener("complete", () => melde("fest", v.json));
+            melde("idb", v.json);
+            return req;
+        };
+    }
+    const Roh = window.Worker;
+    window.Worker = function (url, o) {
+        if (!o || o.name !== "speicher") return new Roh(url, o);
+        return new Roh(URL.createObjectURL(new Blob([`(${faden})(${rec}); importScripts("${new URL(url, location.href)}");`])), o);
     };
 }
 
@@ -257,12 +285,12 @@ const dorfStand = (page, e) =>
         { const w = await o.page.evaluate(() => { const b = window.__bilder; window.__bilder = 0; return { s: window.__save.splice(0), b }; }); saveMs.push(...w.s); bilder += w.b; }
         if (art === "zufall" || art === "erwachen-hart") (tot = Date.now()), toeten(o.browser);
         else if (art === "erwachen-idb" || art === "erwachen-fest") {
-            await o.page.evaluate((a) => { window.__tod = (e) => e.art === a; window.anazhRealm.saveState(); }, art.slice(9)).catch(() => {});
+            await o.page.evaluate((a) => { window.__tod = (e) => e.art === a; window.__scharf(a); window.anazhRealm.saveState(); }, art.slice(9)).catch(() => {});
             for (let i = 0; i < 400 && !tot; i++) await warte(50);
             if (!tot) (zeile.verfehlt = true), (tot = Date.now()), toeten(o.browser);
         }
         else {
-            await o.page.evaluate((a) => (window.__tod = (e) => e.art === a), art).catch(() => {});
+            await o.page.evaluate((a) => { window.__tod = (e) => e.art === a; window.__scharf(a); }, art).catch(() => {});
             for (let i = 0; i < 400 && !tot; i++) await warte(50);
             if (!tot) (zeile.verfehlt = true), (tot = Date.now()), toeten(o.browser);
         }
