@@ -821,14 +821,14 @@ const server = statikServer();
 
 (async () => {
     console.log("=== SICHT-ARBEIT (Welle C) — Null-Renderer, Mess-Wiese, die Sicht-Linse je Frame ===");
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(580000);
     await nullRenderer(page);
     let befund = null;
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
+        await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
         await page.evaluate(SICHT.SICHT_INSTALL);
         befund = await page.evaluate(async (MESS) => {

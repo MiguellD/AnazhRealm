@@ -645,7 +645,7 @@ const server = statikServer();
 
 (async () => {
     console.log("=== HÖHLEN-SICHT (Welle 7) — Null-Renderer, Mess-Wiese, Strahl-Wahrheit gegen den Boden-Satz ===");
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(580000);
@@ -653,7 +653,7 @@ const server = statikServer();
     await page.evaluateOnNewDocument(installHoehlenStrahl);
     let befund = null;
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
+        await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
         befund = await page.evaluate(async (ORTE) => {
             const MESS = ORTE.mess;

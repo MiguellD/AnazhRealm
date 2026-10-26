@@ -1544,7 +1544,7 @@ async function wegProbe(page, frei) {
     console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
     for (const [name, ok, detail] of wand()) check(name, ok, detail);
 
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
@@ -1564,7 +1564,7 @@ async function wegProbe(page, frei) {
                 { capture: true, passive: true }
             );
     });
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
     const out = await page.evaluate(probe, { soll: WORT_SOLL, unbekannt: WORT_UNBEKANNT, satz: PRUEF_SATZ });
     try {
         out.weg = await wegProbe(page, out.frei);

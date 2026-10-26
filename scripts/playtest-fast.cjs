@@ -26,7 +26,7 @@ function check(name, ok) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 120000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
@@ -42,7 +42,7 @@ function check(name, ok) {
             errors.push("[console] " + t.slice(0, 120));
     });
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+        await server.zeige(page, 30000);
         // ── Init abwarten (wie der Voll-Playtest) ──
         // Das echte „Welt bereit"-Signal ist `_gameLoopTick` als Funktion (startEternalLoop
         // lief, der Boot ist durch) — NICHT `rendererReady` allein: das heißt nur „GPU-Device

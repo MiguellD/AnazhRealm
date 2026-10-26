@@ -33,11 +33,11 @@ const welt = async (seite) => {
     await nullRenderer(seite);
     await seite.evaluateOnNewDocument(CODE_OF_SEITE);
     await seite.evaluateOnNewDocument(proben);
-    await seite.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(seite, 30000);
 };
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await welt(page);
@@ -334,7 +334,7 @@ const welt = async (seite) => {
 
     // ===== (T)+(F) B in einem eigenen Browser-Kontext (frisches Profil) =====
     const pageB = await (await browser.createBrowserContext()).newPage();
-    await pageB.goto(`http://127.0.0.1:${PORT}/package.json`);
+    await server.zeige(pageB, undefined, "package.json", "load");
     const leer = await pageB.evaluate(async () => (await indexedDB.databases()).length + localStorage.length);
     await welt(pageB);
     page.on("dialog", (d) => d.accept()); // die souveräne Geste des Senders (window.confirm)

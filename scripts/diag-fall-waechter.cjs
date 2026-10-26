@@ -1089,7 +1089,7 @@ async function probe(K) {
 
 (async () => {
     console.log("=== DER FALL-WÄCHTER (Leben-Schau 2) — Null-Renderer, echter Spiel-Takt, Spaltgrund + Höhle ===");
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(880000);
@@ -1097,7 +1097,7 @@ async function probe(K) {
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
     let befund;
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
+        await server.zeige(page, 120000);
         await warteAufWelt(page, 180000);
         befund = await page.evaluate(probe, {
             FALL_M,

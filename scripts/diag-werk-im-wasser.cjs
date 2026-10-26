@@ -2465,13 +2465,13 @@ async function lauf() {
     require(path.join(root, "vehicle-core.js"));
     befund.kern = kernUrteil(globalThis.__vehicleCore);
     const server = statikServer();
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     let exit = 2;
     try {
         const page = await browser.newPage();
         await nullRenderer(page);
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
+        await server.zeige(page, 120000);
         // die Orte aus der Welt: Fluss, Ufer, See, Seeufer, Rampe nächst der Mess-Wiese
         const ORTE = await page.evaluate(weltOrte, {
             mess: ((m) => [m.x, m.z])(messort("wiese")),
@@ -2524,10 +2524,7 @@ async function lauf() {
             try {
                 const p2 = await kontext.newPage();
                 await nullRenderer(p2);
-                await p2.goto(`http://127.0.0.1:${PORT}/index.html`, {
-                    waitUntil: "domcontentloaded",
-                    timeout: 120000,
-                });
+                await server.zeige(p2, 120000);
                 // die Bühne, geboren wie im Spiel (Welt-Tor + aktiv + Reload): ihre Klamm S6 trägt den Stau (s. Kopf D)
                 const buehne = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8"));
                 const S6 = JSON.parse(

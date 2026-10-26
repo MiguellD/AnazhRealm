@@ -42,7 +42,7 @@
     "messorte": [
         {
             "id": "wiese",
-            "titel": "Die Mess-Wiese (W0): Wald, Wiese, Streu und Fels fern vom Ursprung — der Ort der Band-Serie seit 04.10. Seit K55 (14.10.) ein Ort aus der Welt: K16 hob den Boden am alten Ort −900/−850 um 83 m in einen Nadelwald-Hang (Hang 16,8°); die Suche `__weltOrt(\"wiese\")` (scripts/lib/welt-orte.cjs) fand ab dem alten Ort in 650 m die nächste Stelle, die das Wiesen-Gesetz (`wiese`) mit Reserve hält — eben, offen, Gras, Waldrand, Blick ins Offene (bis T2 nach −z, seither nach WSW). Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`): mit ihm baute der Zug je nach Bildrate während der Messung ein Dorf.",
+            "titel": "Die Mess-Wiese (W0): Wald, Wiese, Streu und Fels fern vom Ursprung — der Ort der Band-Serie, ein Ort aus der Welt (K55): die Stelle, die das Wiesen-Gesetz (`wiese`) mit Reserve hält — eben, offen, Gras, Waldrand, Blick ins Offene nach WSW. Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`): mit ihm baute der Zug je nach Bildrate während der Messung ein Dorf.",
             "spieler": [
                 -280.4,
                 -1045.6
@@ -69,14 +69,14 @@
                 ],
                 "horizontMax": 3,
                 "grasMin": 0.5,
-                "quelle": "K55 (14.10.): das Wiesen-Gesetz der Mess-Wiese — gemessen von `wieseMessen` (scripts/lib/welt-orte.cjs), in der Welt beim Umstellen (werkbank, mit Gras) und am Gesetz in gate:profiband H1. Ring 25 m: Ausgleichs-Ebene ≤ 5°, kein Wasser, Kronen-Deckung der stehenden Bäume ≤ 0,12 (der Wald des Gesetzes deckt gesättigt 0,16–0,19), Waldrand im Kranz 30–90 m ≥ 0,12, keine Krone binnen 15 m im Sektor ±55° des Blicks, Horizont längs des Blicks 40–1200 m ≤ 3° über dem Auge, Wiesen-Gewicht der Boden-Karte ≥ 0,5. Gemessen an b0df2d93: −278/−1038 Hang 1,75° · Krone 0,08 · Kranz 0,19 · Horizont −0,19° · Gras 0,96; der alte Ort −900/−850 Hang 16,83° · Krone 0,141 · Horizont 8,08° (an 9fb869a5 Hang 1,89° · Krone 0,213 · Horizont 3,2°). T2 (16.10.): der Pflanz-Abstand liest die gewachsene Krone (Eiche 5,2 → 4,0 m), am alten Ort stand eine Tanne 15,6 m im Blick (−279/−1054); `__weltOrte(\"wiese\")` um ihn fand in 8 m −280,4/−1045,6 mit Blick nach WSW: Hang 1,81° · Krone 0,108 · Kranz 0,204 · Horizont 2,63° · Gras 1,0."
+                "quelle": "K55 (14.10.): das Wiesen-Gesetz der Mess-Wiese — gemessen von `wieseMessen` (scripts/lib/welt-orte.cjs), in der Welt beim Umstellen (werkbank, mit Gras) und am Gesetz in gate:profiband H1. Ring 25 m: Ausgleichs-Ebene ≤ 5°, kein Wasser, Kronen-Deckung der stehenden Bäume ≤ 0,12 (der Wald des Gesetzes deckt gesättigt 0,16–0,19), Waldrand im Kranz 30–90 m ≥ 0,12, keine Krone binnen 15 m im Sektor ±55° des Blicks, Horizont längs des Blicks 40–1200 m ≤ 3° über dem Auge, Wiesen-Gewicht der Boden-Karte ≥ 0,5."
             },
             "dorfZug": false,
             "ortTakt": []
         },
         {
             "id": "genesis",
-            "titel": "Der Genesis-Ring (S1 W1f): die Ankunft jeder Welt — zehn Kern-Portale im Kreis R 11 m um den Genesis-Ort (die Mitte der Start-Plattform, `_genesisMitte`; in der Standard-Welt 36/0, seit Welle L V-D1 steht der Ring um die Plattform statt um den Ursprung), die vier Vorschauen (Haus, Wagen, Esse, Drachentor) radial dahinter; der Spieler in der Ring-Mitte auf der Plattform, der Blick nach −x (unter vier Blicken der teuerste: am Kopf der Welle L 243 Befehle und 2,30 M Dreiecke, +x 225 / 2,09 M, +z 224 / 2,25 M, −z 234 / 2,03 M). Der Anker (`anker`) nennt die Stamm-Methode des Orts: steht der Genesis-Ort der Welt mehr als 1 m neben `spieler`, bricht `umstellen --ort genesis` laut ab. Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`: sein Inhalt hinge an der Bildrate), das deterministische Genesis-Gut baut der Ort-Takt mit den Methoden des Stamms.",
+            "titel": "Der Genesis-Ring (S1 W1f): die Ankunft jeder Welt — zehn Kern-Portale im Kreis R 11 m um den Genesis-Ort (die Mitte der Start-Plattform, `_genesisMitte`; in der Standard-Welt 36/0), die vier Vorschauen (Haus, Wagen, Esse, Drachentor) radial dahinter; der Spieler in der Ring-Mitte auf der Plattform, der Blick nach −x (der teuerste von vier Blicken). Der Anker (`anker`) nennt die Stamm-Methode des Orts: steht der Genesis-Ort der Welt mehr als 1 m neben `spieler`, bricht `umstellen --ort genesis` laut ab. Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`: sein Inhalt hinge an der Bildrate), das deterministische Genesis-Gut baut der Ort-Takt mit den Methoden des Stamms.",
             "spieler": [
                 0,
                 0
@@ -104,7 +104,7 @@
         },
         {
             "id": "dorf",
-            "titel": "Das Dorf der Zelle −4,−4 (S3 haus, Plan §3.3 1c): der Dorf-Zug LÄUFT (wie im Spiel) und baut das Dorf der Zelle; die Werkbank wartet beim Einschwingen, bis kein Export unterwegs ist und keine Siedlung mehr wächst (`einschwingOffen`, band-urteil). Der Spieler steht auf dem Zell-Ort, den `_autoSettlementCellInfo(−4, −4)` rechnet (−841,0/−861,1; Same 4291161376, 13 Häuser), der Blick zur Mitte des Dorfs: der Zug rückt den Plan vor den Spieler (`_siedlungsAnker`, der Wunsch-Anker −768,2/−885,5 für denselben Spieler-Ort, in jedem Boot), die Ort-Wahl (`_ortWahl`, K10-6) legt ihn 80 m weiter auf −812,7/−819,0, die Mitte −802,8/−821,0 liegt 55 m nordöstlich (Achse 0,690/0,723), die 16 Häuser zwischen 25 und 95 m. Im Bild (Radeon, frische Welt, Erst- und Zweit-Boot gleich): zehn Häuser zwischen 23 und 103 m (eins L1, neun L2), zwei Marktstände und die Feuerstellen des Glut-Felds; eine L0 erreicht der Zug nie — sie misst gate:haus-fern am Kern und das Bild auf 8 m.",
+            "titel": "Das Dorf der Zelle −4,−4 (S3 haus, Plan §3.3 1c): der Dorf-Zug LÄUFT (wie im Spiel) und baut das Dorf der Zelle; die Werkbank wartet beim Einschwingen, bis kein Export unterwegs ist und keine Siedlung mehr wächst (`einschwingOffen`, band-urteil). Der Spieler steht auf dem Zell-Ort, den `_autoSettlementCellInfo(−4, −4)` rechnet (−841,0/−861,1; Same 4291161376, 13 Häuser), der Blick zur Mitte des Dorfs: der Zug rückt den Plan vor den Spieler (`_siedlungsAnker`), die Ort-Wahl (`_ortWahl`) legt ihn fest; eine L0 erreicht der Zug nie — sie misst gate:haus-fern am Kern.",
             "spieler": [
                 -841,
                 -861
@@ -266,37 +266,29 @@
         },
         {
             "id": "stadt",
-            "titel": "Die Stadt (Profiband K1): der Spieler sagt am Platz „dorf 7 120“ (nH 120, die Klemme des Kerns), die Großstadt steht am Anker, der Dorf-Zug läuft; der Spieler geht die Hauptgasse (`--wandern bahn`). 111 von 127 Slots stehen, das Gelände nimmt den Rest.",
+            "titel": "Die Stadt (Profiband K1): am Anlauf sagt der Spieler „dorf 7 120“, die Großstadt (91 Häuser im Plan) steht am Anker, der Dorf-Zug läuft; der Spieler geht die Hauptgasse nach Osten (`--wandern bahn`).",
             "spieler": [
-                552.2,
-                416
-            ],
-            "blick": [
                 609.1,
                 419
+            ],
+            "blick": [
+                662.9,
+                421.8
+            ],
+            "anlauf": [
+                400,
+                400
             ],
             "dorfZug": true,
             "ortTakt": [],
             "gruendung": {
                 "wort": "dorf 7 120",
-                "platz": [
-                    400,
-                    400
-                ],
-                "blick": [
-                    462.9,
-                    403.4
-                ],
                 "anker": [
                     663,
                     423
                 ]
             },
             "bahn": [
-                [
-                    552.2,
-                    416
-                ],
                 [
                     609.1,
                     419
@@ -314,6 +306,94 @@
                     407.4
                 ]
             ]
+        },
+        {
+            "id": "stadt-voll",
+            "titel": "Die volle Stadt (der Stadt-Gipfel): am Anlauf sagt der Spieler „dorf 7 300“, die Metropole (295 Häuser, 1092 Bewohner, Markt mit Ständen) steht am Anker; der Spieler steht am Markt im Gedränge, die Bahn ist die Hauptgasse nach Osten.",
+            "spieler": [
+                836.2,
+                438.5
+            ],
+            "blick": [
+                896.1,
+                441.7
+            ],
+            "anlauf": [
+                400,
+                400
+            ],
+            "dorfZug": true,
+            "ortTakt": [],
+            "gruendung": {
+                "wort": "dorf 7 300",
+                "anker": [
+                    836.2,
+                    438.5
+                ]
+            },
+            "bahn": [
+                [
+                    836.2,
+                    438.5
+                ],
+                [
+                    854.1,
+                    436.4
+                ],
+                [
+                    872,
+                    434.5
+                ],
+                [
+                    889.6,
+                    431.2
+                ],
+                [
+                    895.4,
+                    429.5
+                ],
+                [
+                    927.2,
+                    420.9
+                ]
+            ]
+        },
+        {
+            "id": "hochhaus-dach",
+            "titel": "Das Hochhaus-Dach (der Stadt-Gipfel): die Metropole der Epoche moderne aus dem Rang-Gesetz (Zelle 2,−14, 216 Häuser, Türme bis 23 Geschosse); der Spieler schwingt am Platz ein und steht dann auf dem Dach des höchsten Glasturms, der Blick über die Türme zum Platz.",
+            "spieler": [
+                750.5,
+                -3614.2
+            ],
+            "blick": [
+                686.4,
+                -3506.4
+            ],
+            "anlauf": [
+                686.4,
+                -3506.4
+            ],
+            "dach": 179.75,
+            "dorfZug": true,
+            "ortTakt": []
+        },
+        {
+            "id": "gipfel-blick",
+            "titel": "Der Gipfel-Blick (der Stadt-Gipfel): der höchste Gipfel des Gesetzes binnen 3 km um die Metropole der Epoche moderne (172,2 m, 1,18 km nordwestlich ihres Platzes); der Spieler weckt die Stadt am Platz und steht dann auf dem Gipfel, der Blick über die Stadt zum Horizont.",
+            "spieler": [
+                -433.6,
+                -3146.4
+            ],
+            "blick": [
+                686.4,
+                -3506.4
+            ],
+            "anlauf": [
+                686.4,
+                -3506.4
+            ],
+            "dorfZug": true,
+            "ortTakt": []
         }
     ],
     "klassen": [

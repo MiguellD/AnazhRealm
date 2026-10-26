@@ -515,7 +515,7 @@ function urteil(S, H) {
 async function boot(browser) {
     const page = await browser.newPage();
     await nullRenderer(page);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000);
     await page.evaluate(async () => {
         await window.__weltDa((r) => r.state && r.state.player && r.nexus);
     });
@@ -524,7 +524,7 @@ async function boot(browser) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 900000, erwartet: /Error creating WebGL context/ });
     const page = await boot(browser);
     const S = await page.evaluate(probe, {
@@ -548,7 +548,7 @@ async function boot(browser) {
     });
     const laufS = (Date.now() - t0) / 1000;
     const lab = await browser.newPage();
-    await lab.goto(`http://127.0.0.1:${PORT}/worlds/terrain/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(lab, 60000, "worlds/terrain/index.html");
     await lab.waitForFunction("typeof updateWorld === 'function' && typeof camera === 'object' && camera");
     S.front.labor = await lab.evaluate(laborProbe);
     await browser.close();

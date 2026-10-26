@@ -758,7 +758,7 @@ function buehne() {
 
 (async () => {
     console.log("=== KAMERA-TREUE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan, Schatten an): Stapel · Override · Bild ===");
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });
@@ -771,10 +771,7 @@ function buehne() {
     const T0 = Date.now();
     const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, {
-            waitUntil: "domcontentloaded",
-            timeout: 60000,
-        });
+        await server.zeige(page, 60000, "index.html?holz=kienspan");
         // Das erste Weltbild muss stehen: (i) liest die Render-Objekte der Welt, die übrige Bühne ist eine eigene Szene.
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();

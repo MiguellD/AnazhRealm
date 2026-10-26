@@ -12,7 +12,7 @@ async function checkBandRing2Extended(ctx) {
     // ### Ring 2 Phase 3 – Chat → DSL ###
     // Parser liefert das richtige AST; processChatCommand routet durch dslRun (state.dsl.lastUserProgram
     // + Welt-Effekt); chatSuggest erkennt einen verschriebenen Befehl per Levenshtein.
-    const phase3Results = await safeEvaluate(page, () => {
+    const phase3Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
@@ -110,7 +110,7 @@ async function checkBandRing2Extended(ctx) {
 
         // 9. Phase 4: Save-Roundtrip — dslAbilities überleben localStorage
         r.saveState();
-        const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
+        const raw = await window.__stand();
         let parsed = null;
         try {
             parsed = JSON.parse(raw);

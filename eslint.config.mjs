@@ -169,6 +169,22 @@ export default [
         },
     },
     {
+        // DER SPEICHER-FADEN (Lehre 24): ein Worker — die Platte (IndexedDB), der save-server per fetch
+        files: ["speicher-faden.js"],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: "script",
+            globals: {
+                self: "readonly",
+                indexedDB: "readonly",
+                fetch: "readonly",
+                btoa: "readonly",
+                TextEncoder: "readonly",
+                TextDecoder: "readonly",
+            },
+        },
+    },
+    {
         files: ["save-server.js", "signaling-server.js"],
         languageOptions: {
             ecmaVersion: 2022,
