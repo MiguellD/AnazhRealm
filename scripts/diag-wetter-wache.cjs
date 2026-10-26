@@ -449,7 +449,7 @@ function taeterGezaehlt(liste) {
     return [...g.values()];
 }
 
-function urteil(S, H, pageErrors) {
+function urteil(S, H) {
     const rot = [];
     const SOLL_QUELLE = {
         emotion: "emotion:sorrow",
@@ -509,14 +509,12 @@ function urteil(S, H, pageErrors) {
             `(T) TAG: ein alter Spielstand (8-min-Tag) setzt die Tag-Länge auf ${T.alterStand} — er hält den alten Tag fest`
         );
     rot.push(...uhrRot(S.uhren), ...saatRot(S.saat), ...frontRot(S.front));
-    for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
 }
 
-async function boot(browser, pageErrors) {
+async function boot(browser) {
     const page = await browser.newPage();
     await nullRenderer(page);
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(async () => {
         await window.__weltDa((r) => r.state && r.state.player && r.nexus);
@@ -528,8 +526,7 @@ async function boot(browser, pageErrors) {
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "null", frist: 900000, erwartet: /Error creating WebGL context/ });
-    const pageErrors = [];
-    const page = await boot(browser, pageErrors);
+    const page = await boot(browser);
     const S = await page.evaluate(probe, {
         zuege: 10,
         laeufe: [
@@ -542,7 +539,7 @@ async function boot(browser, pageErrors) {
     });
     await page.close();
     // (G)(B)(R)(T) in einer FRISCHEN Welt: die Probe oben hat Gesetze, Bühne und Wort hinterlassen
-    const page2 = await boot(browser, pageErrors);
+    const page2 = await boot(browser);
     const t0 = Date.now();
     const H = await page2.evaluate(himmelProbe, {
         schrittSek: SCHRITT_SEK,
@@ -600,7 +597,7 @@ async function boot(browser, pageErrors) {
         `  Front · Regen an A bei trockenem B ${(100 * F.nassTrocken).toFixed(0)} % · Lag ${F.lag} s (Soll ${F.soll.toFixed(0)} s ±20 %)` +
             ` · Worte ${F.worte.length}/5 (${F.worte.join(" ")}) · Mutation des Kerns: Welt ${F.welt}, Labor ${F.labor}`
     );
-    const rot = urteil(S, H, pageErrors);
+    const rot = urteil(S, H);
     if (rot.length) {
         console.error(`\nROT (${rot.length}):`);
         for (const e of rot.slice(0, 60)) console.error("  • " + e);

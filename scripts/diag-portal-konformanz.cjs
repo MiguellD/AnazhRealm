@@ -574,9 +574,8 @@ async function fremdBereit(page, port) {
     }, "http://127.0.0.1:" + port + "/__fremd.html");
 }
 
-async function pruefeWelt(page, welt, fehlerLog, lies) {
+async function pruefeWelt(page, welt, lies) {
     const aus = { id: welt.id, k: {}, stumm: null, echo: null, notiz: [] };
-    const fehlerVor = fehlerLog.length;
     const vor = await page.evaluate(abdruck, true);
     const b = await betreten(page, welt);
     if (!b || !b.ok) {
@@ -728,7 +727,7 @@ async function pruefeWelt(page, welt, fehlerLog, lies) {
         for (const t of TEILE) for (const o of ["drueben", "nach"]) if (aus[o][t] !== vor[t]) aus.notiz.push(`${t} ${o} ${aus[o][t]} statt ${vor[t]}`);
         aus.k.K8 = aus.k.K5 && !aus.notiz.some((n) => TEILE.includes(n.split(" ")[0]));
     }
-    const fehler = fehlerLog.slice(fehlerVor).concat(gpu.map((m) => "GPU: " + m.slice(0, 150)));
+    const fehler = gpu.map((m) => "GPU: " + m.slice(0, 150));
     aus.k.K6 = fehler.length === 0;
     if (!aus.k.K6) aus.notiz.push("Seiten-Fehler: " + fehler.slice(0, 2).join(" | "));
     return aus;
@@ -739,7 +738,6 @@ async function lauf(welten, taeter) {
     const lies = (rel) => ausliefern(rel, taeter, []);
     await new Promise((r) => s.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "linse", frist: 180000 });
-    const fehlerLog = [];
     const ergebnisse = [];
     try {
         const page = await browser.newPage();
@@ -750,7 +748,6 @@ async function lauf(welten, taeter) {
             window.__anazhHeadlessNullRenderer = true;
             window.__anazhGateNoFoundry = true;
         });
-        page.on("pageerror", (e) => fehlerLog.push(String((e && e.message) || e).split("\n")[0].slice(0, 160)));
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
         await page.waitForFunction(
             () => window.anazhRealm && window.anazhRealm.state && typeof window.anazhRealm._gameLoopTick === "function" && window.anazhRealm.state.blueprints,
@@ -773,14 +770,11 @@ async function lauf(welten, taeter) {
             st.hotbar[2] = "stein_block";
             r._ensureWorkshopState().studioOv[r.constructor.KOERPER_HOST_RECIPE] = { height: 1.12, hairColor: "kupfer" };
         }, MITGEBRACHT);
-        const bootFehler = fehlerLog.length;
-        if (bootFehler) console.log(`  (Heimat-Boot: ${bootFehler} Seiten-Fehler — ${fehlerLog[0]})`);
-        fehlerLog.length = 0;
         await page.evaluate(seitenHelfer);
         for (const w of welten) {
             const t0 = Date.now();
             schleusenZeit = { n: 0, ms: 0 };
-            const e = await pruefeWelt(page, w, fehlerLog, lies);
+            const e = await pruefeWelt(page, w, lies);
             e.zeit = { s: (Date.now() - t0) / 1000, schleusen: schleusenZeit };
             ergebnisse.push(e);
         }

@@ -735,7 +735,6 @@ async function welt() {
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     try {
         const page = await browser.newPage();
-        page.on("pageerror", (e) => console.log("  [Seiten-Fehler]", String((e && e.message) || e).split("\n")[0]));
         await page.evaluateOnNewDocument(WELT_HAKEN);
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
         const erst = await page.evaluate(WELT_MESSEN);

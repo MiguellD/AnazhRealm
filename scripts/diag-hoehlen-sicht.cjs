@@ -336,7 +336,6 @@ function urteil(b) {
                     `${hl.muendMittel} Himmels-Sicht (mindestens ${hl.muendMin}) — der Himmel fällt schon an der Kante weg`
             );
     }
-    for (const e of b.pageErrors || []) v.push(`PAGE-ERROR: ${e}`);
     return v;
 }
 
@@ -431,7 +430,6 @@ function selbsttest() {
             ohneAttribut: false,
         },
         muendungen: { anzahl: 20, km2: 4, jeKm2: 5 },
-        pageErrors: [],
     };
     const fehler = [];
     const g = urteil(gruen);
@@ -488,7 +486,6 @@ function selbsttest() {
             /LEER: Blick hinaus: das Auge steht nicht/,
         ],
         ["Schatten prüft nichts", (b) => (b.blicke[1].schatten.empfaenger = 0), /LEER: Blick hang: kein Empfänger/],
-        ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
         [
             "die Sperre überlebt den Boden",
             (b) => (b.gedaechtnis.nach = 0),
@@ -652,8 +649,6 @@ const server = statikServer();
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(580000);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await nullRenderer(page);
     await page.evaluateOnNewDocument(installHoehlenStrahl);
     let befund = null;
@@ -1664,7 +1659,6 @@ const server = statikServer();
         console.log("❌ LAUF-FEHLER: " + (befund ? befund.fehler : "kein Befund"));
         process.exit(1);
     }
-    befund.pageErrors = pageErrors;
     console.log(`  Ring ${befund.ringChunks} Chunks, ${befund.bereiche} Boden-Bereiche`);
     for (const sp of befund.spiegel)
         console.log(

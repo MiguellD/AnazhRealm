@@ -785,7 +785,7 @@ async function probe() {
     return aus;
 }
 
-function urteil(S, pageErrors) {
+function urteil(S) {
     const rot = [];
     for (const R of S.runden) {
         if (R.abweichungen)
@@ -851,7 +851,6 @@ function urteil(S, pageErrors) {
     if (!q.tierFragtPlatz)
         rot.push("(Q) QUELLE: der Tier-Leib (`_kreaturHuellenKontakt`) fragt die Plätze nicht (`_blockerUmPlatz`)");
     if (q.tierSchleife) rot.push("(Q) QUELLE: der Tier-Leib baut seine Nähe-Liste aus einer Schleife über den Bestand");
-    for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
 }
 
@@ -860,8 +859,6 @@ function urteil(S, pageErrors) {
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(async () => {
         await window.__weltDa((r) => r.state && r.state.player);
@@ -902,7 +899,7 @@ function urteil(S, pageErrors) {
             `  Marken-Probe (Neues Array): ${S.marken.proben} Strahlen, ${S.marken.vorgezaehlt} bis vor die alte Marke vorgezählt, Abweichungen ${S.marken.abweichungen}`
         );
     console.log(`  Quelle: ${JSON.stringify(S.quelle)}`);
-    const rot = urteil(S, pageErrors);
+    const rot = urteil(S);
     const wand = boxWand(stammLib.text(root));
     console.log(
         `  Box-Wand: ${wand.zuweisungen} Zuweisungen an .blockerAABBs, ${wand.befunde.length} Schreiber ohne Stempel`

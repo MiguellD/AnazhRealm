@@ -676,8 +676,6 @@ function erstWandInstall(BUNDLE_FRAMES) {
     const browser = await starteBrowser({ art: "linse", frist: 600000, zeit: true }); // Band 1 (LongTasks) ist auf swiftshader geeicht
     const page = await browser.newPage();
     await page.setViewport({ width: 640, height: 360 });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     // die Bau-Uhr sitzt vor dem ersten Skript der Seite: jeder Pipeline-Bau des Boots steht in ihr (die Ruhe wartet auch
     // auf ihn)
     await page.evaluateOnNewDocument(bauUhrInstall);
@@ -927,7 +925,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
 
     console.log("\n===== HITCH-TELEMETRIE-LINSE (das-feld-zeichnet §5.1) =====");
     if (!out || out.fatal) {
-        console.log("FATAL:", out ? out.fatal : "?", "· Page-Errors:", pageErrors.slice(0, 3).join(" | ") || "-");
+        console.log("FATAL:", out ? out.fatal : "?");
         process.exit(1);
     }
     console.log(
@@ -1125,8 +1123,6 @@ function erstWandInstall(BUNDLE_FRAMES) {
     );
 
     bandIn(1)(Array.isArray(out.grenzenUnter) && !out.grenzenUnter.length, "GERÄTE-GRENZEN (G1: das Gerät der Welt trägt je Stufe die Grenze seines Adapters)", (out.grenzenUnter || ["nicht gemessen"]).join(" · ") || "jede Stufe = Adapter"); // prettier-ignore
-    // Band 6 — kein pageerror.
-    band(pageErrors.length === 0, "KEIN PAGE-ERROR", pageErrors.length ? pageErrors.slice(0, 3).join(" | ") : "sauber");
 
     // SELBST-TEST — ein Fake-Trace OHNE die neuen Felder durch DIESELBE Prüf-
     // Funktion: sie MUSS rot melden (sonst wäre die Linse ein Existenz-Theater).
