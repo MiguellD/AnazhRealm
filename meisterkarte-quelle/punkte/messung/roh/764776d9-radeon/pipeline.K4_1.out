@@ -1,0 +1,36 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:/Program Files/Git/bin/bash.exe -c P="$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\764776d9-radeon\pipeline.K4_1.json' 2>/dev/null || echo 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\764776d9-radeon\pipeline.K4_1.json').profil"; rm -rf "$P"; node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P" > /dev/null; node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P"; E=$?; rm -rf "$P"; exit $E
+gpu-lauf: warte auf ci-runner 40391048191/1 echt (3 s)
+gpu-lauf: warte auf ci-runner 40391048191/1 echt (72 s)
+gpu-lauf: warte auf ci-runner 40391048191/1 echt (132 s)
+gpu-lauf: warte auf ci-runner 40391048191/1 echt (201 s)
+gpu-lauf: warte auf ci-runner 40391048191/1 echt (270 s)
+gpu-lauf: warte auf ci-runner 40391048191/1 echt (340 s)
+gpu-lauf: warte auf ci-runner 40391048191/1 echt (411 s)
+gpu-lauf: warte auf ci-runner 40391048191/1 echt (471 s)
+gpu-lauf: warte auf ci-runner 40391048191/1 echt (541 s)
+gpu-lauf: warte auf ci-runner 40391048191/1 echt (612 s)
+gpu-lauf: warte auf ci-runner 40391048191/1 echt (683 s)
+gpu-lauf: warte auf ci-runner 40391048191/1 echt (743 s)
+gpu-lauf: warte auf ci-runner 40391048191/1 echt (812 s)
+gpu-lauf: Schloss punkte-radeon nach 869 s
+[linse-gpu] amd/rdna-3
+
+=== DIE ZWEIT-ZEILE (Profil mit Platte) — echte GPU · amd rdna-3 · Holz voll · V18.546.99 ===
+    0 s  blockiert  618 ms · Foundry 0 wartend · 0 im Werk | die Welt entsteht
+    1 s  blockiert  456 ms (Bauten 62 · Buch 9 · Erst-Bau 155) · 6 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 6 im Werk | der Boden wächst (17 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · 9 Bäume und Bauten wachsen · das Dorf kehrt wieder · 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    2 s  blockiert    8 ms · 6 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | der Boden wächst (17 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · 9 Bäume und Bauten wachsen · 15 Häuser des Dorfs wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    3 s  blockiert  511 ms (Bauten 9 · Wald-Plan 176 · Streu 16 · Boden 25 · Saat 59 · Gruppen-Bau 11 · Erst-Bau 140) · 5 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | der Horizont wächst (98 %) · das Licht des Orts wird gemessen · 9 Bäume und Bauten wachsen · 15 Häuser des Dorfs wachsen · 20 Bäume werden gepflanzt, 16 Wald-Böden werden bepflanzt · 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    4 s  blockiert  972 ms (Bauten 34 · Streu 124 · Gestalt 21 · Boden 6 · Gruppen-Bau 27 · Dorf 35 · Erst-Bau 324) · 3 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | der Horizont wird gemalt · 109 Bäume und Bauten wachsen · 72 Bäume werden gepflanzt · 2 Wald-Stücke warten auf ihre Gestalt · 4 ferne Bäume werden gemalt
+    5 s  blockiert  972 ms (Bauten 143 · Streu 188 · Gestalt 58 · Boden 6 · Gruppen-Bau 12 · Erst-Bau 137) · 2 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | 116 Bäume und Bauten wachsen · 3 Wald-Stücke warten auf ihre Gestalt · 14 ferne Bäume werden gemalt
+    6 s  blockiert  611 ms (Bauten 21 · Streu 151 · Gestalt 69 · Boden 6 · Gruppen-Bau 7 · Erst-Bau 295) · 2 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | 3 Wald-Stücke warten auf ihre Gestalt
+    7 s  blockiert  820 ms (Gestalt 21 · Boden 5 · Saat 106 · Erst-Bau 170) · 2 Pipelines offen · Vorrat bestellt · Foundry 0 wartend · 0 im Werk | — das Weltbild steht
+  1.2 s  das Buch der Studios ist da
+  die Klasse Pflanzen bis zum Weltbild: 865 ms Haupt-Faden (Wald-Plan 178 · Streu 479 · Gestalt 149 · Saat 59)
+
+  t(Weltbild) = t(Kontrolle) 7.00 s ab Navigation
+  ❌ die Ankunft kalt ≤ 5 s ohne halbes Weltbild (Pflicht-OFFEN B) — 7.00 s
+  ✅ LIEFERUNG zweit: 206 von 206 von der Platte (100.0 %) · Werk 0 · Haupt-Faden 0 · leer 0 · verschluckt 0
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
