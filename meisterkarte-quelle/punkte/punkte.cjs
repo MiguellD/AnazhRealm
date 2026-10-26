@@ -2,10 +2,12 @@
 // DIE PUNKTE-MASCHINE der Meisterkarte: die Punkte eines Kriteriums sind eine FUNKTION DES SHA, gerechnet wie die CI —
 // keine Sitzung misst und bucht mehr von Hand, was hier registriert ist.
 //
-//   node punkte.cjs run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--port-basis 7700]
+//   node punkte.cjs run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--bahnen 3] [--port-basis 7700]
 //        fährt jede Station des Geräts im Spiel-Baum am SHA, schreibt messung/<sha8>-<geraet>.json
 //        --offen: nur die Stationen ohne frische Messung am SHA (das Frische-Urteil der Buchung) · --trocken: nur nennen
-//        Zwillinge (gleicher Befehl und Umgebung) fahren EINMAL; headless bis zu 3 Bahnen in eigenen Bäumen (--bahnen N)
+//        Zwillinge (gleicher Befehl und Umgebung) fahren EINMAL; DER BAHN-PLAN (fahrePlan): jede Zeit-Station allein, die übrigen
+//        auf bis zu N Bahnen (Vorgabe 3, höchstens 5) zugleich, jede Bahn mit eigenem Spiel-Baum und eigenem Port-Band (portBand) —
+//        auf radeon|gtx über das Platz-Schloss (werkzeug/gpu-lauf.sh: ein Bild-Lauf nimmt einen Platz, ein Zeit-Lauf alle)
 //   node punkte.cjs buchen --kopf <sha>
 //        liest alle messung/*.json, urteilt R6 (Pfad unberührt seit der Messung) und R10, schreibt stand.json
 //   node punkte.cjs liste [--kopf <sha>]   die registrierten Stationen, geprüft gegen src/gN.js und jeder pfad-Glob gegen den
@@ -19,7 +21,9 @@
 //   kriterium "gelaende.K2" (Bereich-Schlüssel.K<n> wie in src/gN.js) · staffel 1|2 · geraet "radeon"|"gtx"|"headless"
 //   oder eine Liste (Staffel 2 einer GPU-Station verlangt ["radeon","gtx"]) · befehl argv im Spiel-Baum (argv[0] "node"
 //   oder "bash"; Platzhalter {PORT} {AUS} {BAUM} {KOORD}) · env (optional, dieselben Platzhalter) · gpu true|false (true →
-//   über gpu-lauf.sh, nie ohne Schloss) · minuten (Deckel = 2 × minuten, mindestens 2 min) · urteil (j, lauf) →
+//   über gpu-lauf.sh, nie ohne Schloss) · zeit true|false (true: das Urteil fällt an der Wanduhr — ms, Latenz, Frame-Zeit,
+//   Sekunden bis sichtbar —, die Station fährt allein; false: Bild oder Funktion, sie verträgt parallele Bahnen; je Station
+//   Pflicht) · minuten (Deckel = 2 × minuten, mindestens 2 min) · urteil (j, lauf) →
 //   { gruen, zahl } mit j = JSON aus {AUS} oder null, lauf = { exit, stdout, stderr } · pfad: Globs des gemessenen Pfads
 //   (R6) · quelle: der Staffel-Text wörtlich (Teil der Staffel in src/gN.js).
 // Je Kriterium und Staffel EINE Station (Schlüssel "<kriterium>#<staffel>"); ein Kriterium ohne Staffel-1-Station ist ROT.
@@ -99,6 +103,7 @@ function pruefeStationen(liste, karte) {
         if (st.env && (typeof st.env !== "object" || Object.values(st.env).some((v) => typeof v !== "string")))
             f.push("env ungültig");
         if (typeof st.gpu !== "boolean") f.push("gpu nicht boolesch");
+        if (typeof st.zeit !== "boolean") f.push("zeit nicht boolesch (true: das Urteil fällt in ms, die Station fährt allein)");
         if (!(st.minuten > 0)) f.push("minuten fehlt");
         if (typeof st.urteil !== "function") f.push("urteil ist keine Funktion");
         if (!Array.isArray(st.pfad) || !st.pfad.length || st.pfad.some((p) => typeof p !== "string" || !p))
@@ -226,17 +231,34 @@ function findeBash() {
     return "bash";
 }
 
-function portRaeumen(port) {
-    if (!port) return;
+// DAS PORT-BAND je Gerät und Bahn (26.10., Karte gpu-bahnen): {PORT} = Band-Anfang + 4. Die Stationen leiten aus {PORT} ab:
+// −1 (Seite der Werkbank), +1 (Ofen, Wasser-Leben), +3 (KI), +10000 (tier-gang), +20000 (Werkbank oder save-server), +20001,
+// +30000 (Kreatur-Linse) — jede Ableitung bleibt in den 10 Ports ihres Bands und seiner +10000-Spiegel. Bis dahin trug jede
+// Station einen Port aus ihrer Stelle in der Liste: zwei Nachbarn hätten parallel kollidiert (wetter.K2#1 an 7710 sucht die Seite
+// auf 7709), und ab Stelle 100 lief die Liste aus dem Block 7700–7799. headless nimmt die Bänder ab Basis, radeon|gtx ab Basis + 50.
+const BAND = 10;
+const MAX_BAHNEN = 5;
+function portBand(basis, geraet, bahn) {
+    const a = Number(basis) + (geraet === "headless" ? 0 : MAX_BAHNEN * BAND) + bahn * BAND;
+    const alle = [0, 10000, 20000, 30000].flatMap((d) => Array.from({ length: BAND }, (_, i) => a + d + i));
+    if (alle.includes(TABU_PORT)) throw new Error("Port-Band " + a + "–" + (a + BAND - 1) + " trifft " + TABU_PORT + " (--port-basis)");
+    return { port: a + 4, alle };
+}
+
+// räumt jeden lauschenden Prozess auf den Ports (EIN netstat je Aufruf)
+function portRaeumen(ports) {
+    const ps = [].concat(ports || []).filter(Boolean).map(String);
+    if (!ps.length) return;
     if (process.platform === "win32") {
         const r = spawnSync("netstat", ["-ano", "-p", "tcp"], { encoding: "utf8" });
         const pids = new Set();
+        const re = new RegExp(":(" + ps.join("|") + ")$");
         for (const l of String(r.stdout || "").split(/\r?\n/)) {
             const s = l.trim().split(/\s+/);
-            if (s.length >= 5 && /^(LISTEN|ABH)/i.test(s[3]) && new RegExp(":" + port + "$").test(s[1]) && s[4] !== "0") pids.add(s[4]);
+            if (s.length >= 5 && /^(LISTEN|ABH)/i.test(s[3]) && re.test(s[1]) && s[4] !== "0") pids.add(s[4]);
         }
         for (const pid of pids) spawnSync("taskkill", ["/F", "/T", "/PID", pid], { encoding: "utf8" });
-    } else spawnSync("sh", ["-c", "lsof -ti tcp:" + port + " -sTCP:LISTEN | xargs -r kill -9"], { encoding: "utf8" });
+    } else spawnSync("sh", ["-c", "lsof -t -sTCP:LISTEN " + ps.map((p) => "-i tcp:" + p).join(" ") + " | xargs -r kill -9"], { encoding: "utf8" });
 }
 
 function baumTot(pid) {
@@ -247,9 +269,18 @@ function baumTot(pid) {
 const ersetze = (s, ctx) =>
     s.replace(/\{PORT\}/g, String(ctx.port)).replace(/\{AUS\}/g, ctx.aus).replace(/\{BAUM\}/g, ctx.baum).replace(/\{KOORD\}/g, ctx.koord);
 
-const SCHLOSS_WARTE_S = 2700; // gpu-lauf.sh GPU_LAUF_WARTE_S
-// fährt EINE Station; ctx = { baum, koord, port, aus, roh, geraet, gpuLauf, bash, deckelMinS }
-// Rückgabe { gruen, zahl, exit, minuten, grund? } — ein Fehler, ein Absturz, ein Deckel ist ROT mit Grund, nie still.
+// DIE EINE gpu-lauf.sh (26.10., Prüfung gpu-bahnen): run und Selbsttest fahren dieselbe Datei, die neben dieser Maschine
+// (werkzeug/, mit gpu-schloss.sh); eine andere nur ausdrücklich per PUNKTE_GPU_LAUF, und dann prüft der Selbsttest sie. Bis dahin
+// fuhr run die alte Ein-Platz-Fassung unter artifacts/profiband/werkzeug/, der Selbsttest die neue: drei Bahnen warteten still
+// nacheinander und trugen trotzdem „2/3“.
+const GPU_LAUF = process.env.PUNKTE_GPU_LAUF || path.join(DIR, "werkzeug", "gpu-lauf.sh");
+// vor dem Schloss wacht gpu-lauf.sh selbst über das Warten (Frist ohne Nachtruhe, Exit 75) und meldet sich alle 60 s; schweigt es
+// länger, hängt es — der Lauf fällt, die Station bleibt ungemessen
+const SCHLOSS_STILL_S = 600;
+const istZeit = (sts) => sts.some((st) => st.zeit === true);
+// fährt EINE Station; ctx = { baum, koord, port, band, aus, roh, geraet, bahn, plaetze, gpuLauf, bash, deckelMinS }
+// Rückgabe { gruen, zahl, exit, minuten, grund?, ungemessen? } — ein Fehler, ein Absturz, ein Deckel ist ROT mit Grund, nie still;
+// ein Schloss, das nie kam, ist ungemessen mit Grund.
 function fahreStation(st, ctx) {
     return fahreGruppe([st], ctx).then((r) => r[0]);
 }
@@ -262,15 +293,18 @@ function fahreGruppe(sts, ctx) {
         const min = () => +((Date.now() - t0) / 60000).toFixed(2);
         const fertig = (e) => ganz(sts.map(() => e));
         const rot = (grund, exit = null, zahl = "") => fertig({ gruen: false, zahl: zahl || grund, exit, minuten: min(), grund });
+        // ein Lauf, der das Schloss nie bekam, ist KEINE Messung: ungemessen beim Grund (eintragen legt ihn nie nach m.je)
+        const offen = (grund, exit = null) => fertig({ gruen: false, ungemessen: true, zahl: grund, exit, minuten: min(), grund });
         const deckelS = Math.max(ctx.deckelMinS != null ? ctx.deckelMinS : 120, Math.ceil(st.minuten * 60 * 2));
         let argv = st.befehl.map((a) => ersetze(a, ctx));
         const env = { ...process.env };
+        // die Werkbank der Bahn: wer sie ohne --port ruft, trifft die seines Bands (nie die 4490 einer Nachbar-Bahn)
+        if (ctx.port) env.WERKBANK_PORT = String(ctx.port + 20000);
         // headless läuft ohne Karte: starteBrowser griffe lokal sonst die GPU (scripts/lib/software-gpu.cjs) — ohne Schloss
     if (!st.gpu) env.LINSE_GPU = "software";
     for (const [k, v] of Object.entries(st.env || {})) env[k] = ersetze(v, ctx);
     if (!st.gpu && env.LINSE_GPU !== "software") return rot("headless verlangt LINSE_GPU=software — die Karte nur unter dem Schloss");
         let exe;
-        let warteS = 0;
         if (argv[0] === "node") exe = process.execPath;
         else {
             exe = ctx.bash;
@@ -281,17 +315,19 @@ function fahreGruppe(sts, ctx) {
         if (st.gpu) {
             if (!ctx.gpuLauf || !fs.existsSync(ctx.gpuLauf)) return rot("gpu-lauf.sh fehlt — eine GPU-Station läuft nie ohne Schloss");
             if (!ctx.bash) return rot("keine Git-bash gefunden (PUNKTE_BASH) für gpu-lauf.sh");
-            argv = [ctx.gpuLauf, "punkte-" + ctx.geraet, exe, ...argv];
+            argv = [ctx.gpuLauf, "punkte-" + ctx.geraet + "-" + ((ctx.bahn || 0) + 1), exe, ...argv];
             exe = ctx.bash;
             env.GPU_LAUF_MAX_S = String(deckelS);
-            warteS = Number(env.GPU_LAUF_WARTE_S || SCHLOSS_WARTE_S);
+            // das Platz-Schloss: ein Zeit-Lauf nimmt alle Plätze, ein Bild-Lauf einen von N (N = 1: das Ein-Platz-Schloss)
+            env.GPU_LAUF_ART = istZeit(sts) ? "zeit" : "bild";
+            env.GPU_LAUF_PLAETZE = String(ctx.plaetze || 1);
             // der Zeuge der Karte in JEDEM node-Prozess der Station (die Werkbank schreibt in ihr eigenes Log)
             env.PUNKTE_GPU_ZEUGE = zeugeDatei;
             env.NODE_OPTIONS = ((env.NODE_OPTIONS || "") + ' --require "' + ZEUGE_DATEI.split(path.sep).join("/") + '"').trim();
         }
         try { fs.rmSync(ctx.aus, { force: true }); } catch (_e) {}
         if (zeugeDatei) try { fs.rmSync(zeugeDatei, { force: true }); } catch (_e) {}
-        portRaeumen(ctx.port);
+        portRaeumen(ctx.band || ctx.port);
         let out = "", err = "", tot = false;
         let kind;
         try {
@@ -300,10 +336,19 @@ function fahreGruppe(sts, ctx) {
             return rot("Start: " + e.message);
         }
         const kappe = (s, d) => (s.length + d.length > 4 << 20 ? (s + d).slice(-(4 << 20)) : s + d);
-        kind.stdout.on("data", (d) => (out = kappe(out, String(d))));
-        kind.stderr.on("data", (d) => (err = kappe(err, String(d))));
-        // der eigene Deckel liegt HINTER dem des Schlosses: gpu-lauf.sh beendet selbst und löst das Schloss (trap)
-        const uhr = setTimeout(() => { tot = true; baumTot(kind.pid); }, (deckelS + warteS + (st.gpu ? 120 : 0)) * 1000);
+        // DIE UHR: der Deckel einer GPU-Station zählt ab dem Schloss (die Zeile „gpu-lauf: Schloss …“) und liegt HINTER dem von
+        // gpu-lauf.sh, das selbst beendet und löst (trap); davor ist sie die Wache über ein schweigendes gpu-lauf.sh (Nachtruhe und
+        // Frist zählt es selbst — eine feste Summe Deckel + Frist riss jeden Lauf, der über die Nacht wartete)
+        const stillS = ctx.stillS || SCHLOSS_STILL_S;
+        let uhr = null, amSchloss = !st.gpu;
+        const stelle = (s) => { clearTimeout(uhr); uhr = setTimeout(() => { tot = true; baumTot(kind.pid); }, s * 1000); };
+        const lauscht = () => {
+            if (amSchloss) return;
+            if (/^gpu-lauf: Schloss /m.test(err) || /^gpu-lauf: Schloss /m.test(out)) { amSchloss = true; stelle(deckelS + 120); } else stelle(stillS);
+        };
+        kind.stdout.on("data", (d) => { out = kappe(out, String(d)); lauscht(); });
+        kind.stderr.on("data", (d) => { err = kappe(err, String(d)); lauscht(); });
+        stelle(st.gpu ? stillS : deckelS);
         kind.on("error", (e) => { clearTimeout(uhr); rot("Start: " + e.message); });
         // das Ende der Station ist das Ende ihres Prozesses, nie das Schließen der Rohre: ein Enkel, der sie erbt (der Herzschlag
         // `while sleep 300` in gpu-lauf.sh der OMEN), hielte "close" bis zu seinem Erwachen — 26.10.: jede GTX-Station dauerte
@@ -320,7 +365,7 @@ function fahreGruppe(sts, ctx) {
         kind.on("close", ende);
         const abschluss = (code, sig) => {
             clearTimeout(uhr);
-            portRaeumen(ctx.port);
+            portRaeumen(ctx.band || ctx.port);
             // die Zeugen-Zeilen gehen in die Roh-Ausgabe (die Buchung liest sie dort), die Datei fällt
             const zeugeText = zeugeDatei && fs.existsSync(zeugeDatei) ? fs.readFileSync(zeugeDatei, "utf8") : "";
             if (zeugeDatei) try { fs.rmSync(zeugeDatei, { force: true }); } catch (_e) {}
@@ -329,9 +374,11 @@ function fahreGruppe(sts, ctx) {
                 fs.writeFileSync(ctx.roh, "$ " + [exe, ...argv].join(" ") + "\n" + out + (err ? "\n--- stderr ---\n" + err : "") +
                     (zeugeText ? "\n--- gpu-zeuge ---\n" + zeugeText : ""));
             }
-            if (tot) return rot("Deckel " + (deckelS + warteS) + " s überschritten — beendet", code);
+            if (tot && !amSchloss) return offen("GPU-Schloss nie bekommen: gpu-lauf.sh schwieg " + stillS + " s beim Warten — beendet, ungemessen", code);
+            if (tot) return rot("Deckel " + (st.gpu ? deckelS + 120 : deckelS) + " s überschritten — beendet", code);
             if (sig) return rot("Absturz: Signal " + sig, code);
-            if (st.gpu && code === 75) return rot("GPU-Schloss blockiert (gpu-lauf.sh Exit 75)", code);
+            const blockiert = (/^SCHLOSS BLOCKIERT .*$/m.exec(out) || [""])[0].trim();
+            if (st.gpu && code === 75) return offen("GPU-Schloss blockiert (gpu-lauf.sh Exit 75" + (blockiert ? ": " + blockiert : "") + ") — ungemessen", code);
             if (st.gpu && code === 124) return rot("GPU-Deckel " + deckelS + " s (gpu-lauf.sh Exit 124)", code);
             let j = null;
             if (fs.existsSync(ctx.aus))
@@ -410,10 +457,11 @@ async function run(opt) {
     const { stationen, fehler } = ladeGeprueft();
     if (fehler.length) throw new Error("Stationen ROT:\n - " + fehler.join("\n - "));
     const nur = opt.nur ? new Set(opt.nur.split(",")) : null;
-    // je Station ein fester Port aus ihrer Stelle in der GANZEN Liste (stabil über Läufe), nie 4312
-    const ports = new Map();
-    let p = Number(opt.portBasis || 7700);
-    for (const st of stationen) { if (p === TABU_PORT) p++; ports.set(schluessel(st), p++); }
+    const bahnenSoll = Number(opt.bahnen || 3);
+    if (!(bahnenSoll >= 1 && bahnenSoll <= MAX_BAHNEN && Number.isInteger(bahnenSoll)))
+        throw new Error("--bahnen " + opt.bahnen + ": 1 bis " + MAX_BAHNEN + " (je Bahn ein Port-Band)");
+    const band = (b) => portBand(opt.portBasis || 7700, opt.geraet, b);
+    for (let b = 0; b < bahnenSoll; b++) band(b);
     let meine = stationen.filter((st) => geraeteVon(st).includes(opt.geraet) && (!nur || nur.has(schluessel(st))));
     if (nur) for (const id of nur) if (!meine.some((st) => schluessel(st) === id)) throw new Error("--nur " + id + ": keine Station auf " + opt.geraet);
     if (!meine.length) throw new Error("keine Station auf " + opt.geraet);
@@ -434,7 +482,7 @@ async function run(opt) {
     }
     if (opt.trocken) {
         console.log("Punkte-Maschine (trocken): " + meine.length + " Station(en) auf " + opt.geraet + " am " + sha.slice(0, 8) + ", " +
-            meine.reduce((s, st) => s + (st.minuten || 0), 0) + " min: " + meine.map(schluessel).join(" "));
+            planText(gruppiere(meine), bahnenSoll) + ": " + meine.map((st) => schluessel(st) + (st.zeit ? "(Zeit)" : "")).join(" "));
         return null;
     }
     // EIN Lauf je Spiel-Baum: ein zweiter Lauf auf demselben Gerät checkte sonst seinen SHA in den Baum des ersten
@@ -457,10 +505,63 @@ async function run(opt) {
         fs.writeFileSync(datei, JSON.stringify(m, null, 1) + "\n");
         return m;
     }
-    const ctx0 = { baum, koord: KOORD, geraet: opt.geraet, bash: findeBash(),
-        gpuLauf: process.env.PUNKTE_GPU_LAUF || path.join(repo, "artifacts", "profiband", "werkzeug", "gpu-lauf.sh") };
-    // Zwillinge (gleicher Befehl, gleiche Umgebung) fahren EINMAL; headless fahren bis zu drei Gruppen zugleich, jede Bahn im
-    // EIGENEN Spiel-Baum (Spielstände, Rohdateien), eine GPU-Station wartet ohnehin am Schloss — dort EINE Bahn
+    const gruppen = gruppiere(meine);
+    const bahnen = Math.max(1, Math.min(bahnenSoll, gruppen.filter((g) => !istZeit(g)).length));
+    const ctx0 = { koord: KOORD, geraet: opt.geraet, bash: findeBash(), plaetze: bahnen, gpuLauf: GPU_LAUF };
+    // je Bahn der EIGENE Spiel-Baum (Spielstände, Rohdateien) und das eigene Port-Band
+    const baeume = [baum];
+    for (let i = 2; i <= bahnen; i++) baeume.push(baumAmSha(repo, opt.geraet + "-" + i, sha));
+    console.log(startZeile(meine.length, gruppen, opt.geraet, sha, bahnen) + " (Baum " + baeume.join(", ") + ")");
+    fs.mkdirSync(rohDir, { recursive: true });
+    await fahrePlan(gruppen, bahnen, async (g, b) => {
+        const ids = g.map(schluessel);
+        const ctx = { ...ctx0, baum: baeume[b], bahn: b, port: band(b).port, band: band(b).alle,
+            aus: path.join(rohDir, ids[0].replace("#", "_") + ".json"), roh: path.join(rohDir, ids[0].replace("#", "_") + ".out") };
+        const zeit = new Date().toISOString();
+        const es = await fahreGruppe(g, ctx);
+        g.forEach((st, i) => {
+            const id = ids[i];
+            if (i > 0 && fs.existsSync(ctx.roh)) fs.copyFileSync(ctx.roh, path.join(rohDir, id.replace("#", "_") + ".out"));
+            const e = { ...es[i], zeit, abdruck: abdruck(st, hilfe), port: ctx.port, bahn: istZeit(g) ? "allein" : b + 1 + "/" + bahnen,
+                ...(i > 0 ? { zwilling: ids[0] } : {}) };
+            eintragen(m, id, e);
+            console.log(stationsZeile(id, e));
+        });
+        m.zeit = zeit;
+        m.host = os.hostname();
+        fs.writeFileSync(datei, JSON.stringify(m, null, 1) + "\n");
+    });
+    console.log("→ " + path.relative(KOORD, datei));
+    return m;
+}
+
+// DER EINTRAG einer gefahrenen Station: ein Urteil (GRÜN/ROT) nach m.je, das Buchung und `run --offen` lesen; ein Lauf ohne
+// Schloss (Exit 75, gpu-lauf.sh schwieg beim Warten) nach m.ungemessen mit Grund, NIE als ROT — frischUrteil nähme ihn sonst als
+// frische Messung, und `run --offen` mäße die Station an diesem SHA nie neu (26.10., Prüfung gpu-bahnen)
+function eintragen(m, id, e) {
+    if (e.ungemessen) {
+        (m.ungemessen = m.ungemessen || {})[id] = e;
+        return;
+    }
+    m.je[id] = e;
+    if (m.ungemessen) delete m.ungemessen[id];
+    if (m.ungemessen && !Object.keys(m.ungemessen).length) delete m.ungemessen;
+}
+// DIE ZEILEN, die der Läufer zug.cjs (artifacts/profiband/werkzeug, Fortschritt nach zug/fortschritt-radeon.txt) liest: Start
+// `Punkte-Maschine: <n> Station(en) in `, Station `  GRÜN|ROT  <id> · … · Exit <c> · <min> min[ (Zwilling von <id>)]` — ein neues
+// Feld steht VOR „· Exit“ (26.10.: „· allein“ am Zeilenende machte den Fortschritt der Radeon blind); ein ungemessener Lauf heißt
+// OFFEN, weder GRÜN noch ROT
+const startZeile = (n, gruppen, geraet, sha, bahnen) =>
+    "Punkte-Maschine: " + n + " Station(en) in " + gruppen.length + " Läufen auf " + geraet + " am " + sha.slice(0, 8) + " · " + planText(gruppen, bahnen);
+const stationsZeile = (id, e) => {
+    const bahn = e.bahn === "allein" ? "allein" : "Bahn " + e.bahn;
+    if (e.ungemessen) return "  OFFEN " + id + " · " + e.grund + " · " + bahn + " · ungemessen, `run --offen` misst neu";
+    return "  " + (e.gruen ? "GRÜN" : "ROT ") + " " + id + " · " + e.zahl + " · " + bahn + " · Exit " + e.exit + " · " + e.minuten + " min" +
+        (e.zwilling ? " (Zwilling von " + e.zwilling + ")" : "");
+};
+
+// Zwillinge (gleicher Befehl, gleiche Umgebung, z. B. Staffel 1 und 2 aus EINER Linse) fahren EINMAL: je Lauf eine Gruppe
+function gruppiere(meine) {
     const gruppen = [];
     const je = new Map();
     for (const st of meine) {
@@ -468,35 +569,24 @@ async function run(opt) {
         if (!je.has(k)) { je.set(k, []); gruppen.push(je.get(k)); }
         je.get(k).push(st);
     }
-    const bahnen = Math.max(1, Math.min(gruppen.length, Number(opt.bahnen || (opt.geraet === "headless" ? 3 : 1))));
-    const baeume = [baum];
-    for (let i = 2; i <= bahnen; i++) baeume.push(baumAmSha(repo, opt.geraet + "-" + i, sha));
-    console.log("Punkte-Maschine: " + meine.length + " Station(en) in " + gruppen.length + " Läufen auf " + opt.geraet + " am " +
-        sha.slice(0, 8) + ", " + bahnen + " Bahn(en) (Baum " + baeume.join(", ") + ")");
-    fs.mkdirSync(rohDir, { recursive: true });
-    const schlange = gruppen.slice();
-    const bahn = async (b) => {
-        for (let g = schlange.shift(); g; g = schlange.shift()) {
-            const ids = g.map(schluessel);
-            const ctx = { ...ctx0, baum: b, port: ports.get(ids[0]), aus: path.join(rohDir, ids[0].replace("#", "_") + ".json"),
-                roh: path.join(rohDir, ids[0].replace("#", "_") + ".out") };
-            const zeit = new Date().toISOString();
-            const es = await fahreGruppe(g, ctx);
-            g.forEach((st, i) => {
-                const id = ids[i];
-                if (i > 0 && fs.existsSync(ctx.roh)) fs.copyFileSync(ctx.roh, path.join(rohDir, id.replace("#", "_") + ".out"));
-                m.je[id] = { ...es[i], zeit, abdruck: abdruck(st, hilfe), port: ctx.port, ...(i > 0 ? { zwilling: ids[0] } : {}) };
-                console.log("  " + (es[i].gruen ? "GRÜN" : "ROT ") + " " + id + " · " + es[i].zahl + " · Exit " + es[i].exit + " · " +
-                    es[i].minuten + " min" + (i > 0 ? " (Zwilling von " + ids[0] + ")" : ""));
-            });
-            m.zeit = zeit;
-            m.host = os.hostname();
-            fs.writeFileSync(datei, JSON.stringify(m, null, 1) + "\n");
-        }
-    };
-    await Promise.all(baeume.map((b) => bahn(b)));
-    console.log("→ " + path.relative(KOORD, datei));
-    return m;
+    return gruppen;
+}
+const sollMin = (gs) => gs.reduce((s, g) => s + g[0].minuten, 0);
+function planText(gruppen, bahnen) {
+    const zeit = gruppen.filter(istZeit), bild = gruppen.filter((g) => !istZeit(g));
+    return "Zeit " + zeit.length + " Läufe ~" + sollMin(zeit) + " min allein · Bild " + bild.length + " Läufe ~" + sollMin(bild) + " min auf " +
+        bahnen + " Bahn(en) · erwartet ~" + Math.round(sollMin(zeit) + sollMin(bild) / bahnen) + " min (Soll-Minuten)";
+}
+// DER BAHN-PLAN (26.10., Karte gpu-bahnen: die Prüfung darf nie länger dauern als das Erstellen — ein Radeon-Takt fuhr 45 Stationen
+// einzeln in 151–174 min, die meisten Bild-Urteile ohne ms): jede Zeit-Gruppe fährt ALLEIN auf Bahn 0, erst wenn keine andere
+// läuft, und keine startet neben ihr; danach die Bild-Gruppen auf bis zu `bahnen` Bahnen zugleich, die längsten zuerst.
+// fahre(gruppe, bahn) → Promise; das Platz-Schloss (gpu-lauf.sh) hält dieselbe Regel gegen fremde Läufe.
+async function fahrePlan(gruppen, bahnen, fahre) {
+    for (const g of gruppen.filter(istZeit)) await fahre(g, 0);
+    const schlange = gruppen.filter((g) => !istZeit(g)).sort((a, b) => sollMin([b]) - sollMin([a]));
+    await Promise.all(Array.from({ length: bahnen }, async (_, b) => {
+        for (let g = schlange.shift(); g; g = schlange.shift()) await fahre(g, b);
+    }));
 }
 
 // ───────────────────────────────── Buchung ─────────────────────────────────
@@ -638,7 +728,7 @@ function gtxNutzen(s) {
 // Zeit-Station auf die ruhige GTX, sonst das Gerät, das grün war), Staffel 2 nur über stehender 1 und auf beiden Geräten;
 // eine rote Station ohne Heil-Versuch (der Zug nennt ihr Kriterium nicht) bleibt rot und wird nicht gemessen.
 // da(id, g): die JÜNGSTE Messung der Station auf dem Gerät über alle Köpfe (ihr Vorwissen), sonst null · genannt: Set der
-// Kriterien, die die Commits seit dem vorigen Kopf nennen · zeit(id): die Station urteilt in ms (sie misst Takt, nie Bild)
+// Kriterien, die die Commits seit dem vorigen Kopf nennen · zeit(id): die Station urteilt in ms (ihr Merkmal `zeit`)
 function messPlan(stationen, da, genannt, zeit) {
     const plan = { radeon: [], gtx: [], uebersprungen: [] };
     for (const st of stationen) {
@@ -680,9 +770,9 @@ function planCli(opt) {
         return e && (!e.abdruck || e.abdruck === ab[id]) ? e : null;
     };
     const genannt = new Set((git(["log", "--format=%B", alt + ".." + neu], repo).match(/\b[a-z]+\.K\d\b/g) || []));
-    const zahlVon = (id) => ["radeon", "gtx"].map((g) => da(id, g) && da(id, g).zahl).find(Boolean) || "";
     const minVon = (id) => Math.max(0, ...["radeon", "gtx"].map((g) => (da(id, g) && da(id, g).minuten) || 0));
-    const p = messPlan(stationen, da, genannt, (id) => /\bp\d\d\b.*\bms\b|\bms\b.*\bp\d\d\b/.test(zahlVon(id)));
+    const zeit = new Set(stationen.filter((st) => st.zeit).map(schluessel));
+    const p = messPlan(stationen, da, genannt, (id) => zeit.has(id));
     const sum = (ids) => Math.round(ids.reduce((a, id) => a + minVon(id), 0));
     console.log("MESS-PLAN " + neu.slice(0, 8) + " nach " + alt.slice(0, 8) + " · genannt: " + ([...genannt].join(" ") || "—"));
     for (const g of ["radeon", "gtx"]) console.log(g + " " + p[g].length + " Stationen ~" + sum(p[g]) + " min · nur=" + p[g].join(","));
@@ -760,7 +850,7 @@ async function selbsttest() {
         pruef("R6 Welt-Bytes: Stempel und Werkzeug fallen, Code und Binär bleiben", w === "stamm/kampf.js,gelaende-core.js,bild.png", w);
     }
     // (2) jede Format-Verletzung beim Namen
-    const st0 = { kriterium: "gelaende.K4", staffel: 1, geraet: "headless", befehl: ["node", "-e", "0"], gpu: false, minuten: 1,
+    const st0 = { kriterium: "gelaende.K4", staffel: 1, geraet: "headless", befehl: ["node", "-e", "0"], gpu: false, zeit: false, minuten: 1,
         urteil: () => ({ gruen: true, zahl: "x" }), pfad: ["stamm/wasser-*.js"], quelle: "1 = alle Leser folgen der 50-Punkte-Kern-Mutation an einem Ort" };
     const fv = [
         ["FORMAT-ROT Kriterium unbekannt", { kriterium: "gelaende.K9" }, /Kriterium unbekannt/],
@@ -769,6 +859,7 @@ async function selbsttest() {
         ["FORMAT-ROT Pfad leer", { pfad: [] }, /pfad leer/],
         ["FORMAT-ROT Staffel 2 GPU an einem Gerät", { staffel: 2, geraet: "radeon", gpu: true, quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" }, /beide Geräte/],
         ["FORMAT-ROT radeon ohne gpu", { geraet: "radeon", gpu: false }, /gpu: true/],
+        ["FORMAT-ROT GPU-Station ohne zeit", { geraet: "radeon", gpu: true, zeit: undefined }, /zeit nicht boolesch/],
         ["FORMAT-ROT Urteil kein Code", { urteil: "(j) => ({gruen:true})" }, /keine Funktion/],
         ["FORMAT-ROT argv npm", { befehl: ["npm", "run", "x"] }, /node\|bash/],
     ];
@@ -814,7 +905,7 @@ async function selbsttest() {
         fs.writeFileSync(falsch, '#!/bin/bash\nN="$1"; shift\necho "schloss $N $GPU_LAUF_MAX_S"\n"$@"\n');
         const c = { ...ctx("schloss"), gpuLauf: falsch };
         const mitKarte = (zeilen) => ["node", "-e", "for (const z of " + JSON.stringify(zeilen) + ") console.log(z); require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: 0 }))", "{AUS}"];
-        e = await fahreStation({ ...st0, geraet: "radeon", gpu: true, befehl: mitKarte(["[linse-gpu] amd/rdna-3"]), urteil: (j, l) => ({ gruen: j.n === 0 && /schloss punkte-radeon 120/.test(l.stdout), zahl: l.stdout.trim().split("\n")[0] }) }, { ...c, deckelMinS: 120 });
+        e = await fahreStation({ ...st0, geraet: "radeon", gpu: true, befehl: mitKarte(["[linse-gpu] amd/rdna-3"]), urteil: (j, l) => ({ gruen: j.n === 0 && /schloss punkte-radeon-1 120/.test(l.stdout), zahl: l.stdout.trim().split("\n")[0] }) }, { ...c, deckelMinS: 120 });
         pruef("LÄUFER GPU über das Schloss", e.gruen === true && e.gpu === "amd/rdna-3", JSON.stringify(e));
         // (3b) DIE WAND GPU: ohne Zeugen der Karte, mit Software-Adapter, mit „zeichnet nie" ROT; der Zeuge aus dem Log eines Kindes GRÜN
         const gs = { ...st0, geraet: "radeon", gpu: true, urteil: lies };
@@ -829,11 +920,218 @@ async function selbsttest() {
             "fs.writeFileSync(process.argv[1], JSON.stringify({ n: 0 }))";
         e = await fahreStation({ ...gs, befehl: ["node", "-e", kind, "{AUS}"], urteil: (j, l) => ({ gruen: j.n === 0 && !/linse-gpu/.test(l.stdout), zahl: "n " + j.n }) }, { ...ctx("kind"), gpuLauf: falsch });
         pruef("WAND GPU der Zeuge liest das Log eines Kind-Prozesses → GRÜN", e.gruen === true && e.gpu === "nvidia/pascal", JSON.stringify(e));
+        // (3a) EIN BLOCKIERTES SCHLOSS IST KEINE MESSUNG: Exit 75 und ein gpu-lauf.sh, das beim Warten schweigt, sind ungemessen beim
+        // Grund — nie ROT in m.je, und `run --offen` (frischUrteil) misst die Station neu; ein Lauf AM Schloss schweigt, so lang er will
         const c2 = { ...ctx("blockiert"), gpuLauf: path.join(tmp, "blockiert.sh") };
-        fs.writeFileSync(c2.gpuLauf, "#!/bin/bash\necho SCHLOSS BLOCKIERT\nexit 75\n");
-        e = await fahreStation({ ...st0, geraet: "radeon", gpu: true, urteil: () => ({ gruen: true, zahl: "x" }) }, c2);
-        pruef("LÄUFER GPU-Schloss blockiert", e.gruen === false && /Schloss blockiert/.test(e.grund), JSON.stringify(e));
+        fs.writeFileSync(c2.gpuLauf, "#!/bin/bash\necho 'SCHLOSS BLOCKIERT von Nachtruhe 0325-0415 nach 2701 s Warten'\nexit 75\n");
+        const sg = { ...st0, geraet: "radeon", gpu: true, urteil: () => ({ gruen: true, zahl: "x" }) };
+        e = await fahreStation(sg, c2);
+        const mb = { sha: "b1", geraet: "radeon", je: {} };
+        eintragen(mb, "gelaende.K4#1", { ...e, zeit: "2026-10-26T02:11:00Z", abdruck: abdruck(sg, "h") });
+        const fr = frischUrteil([mb], () => [], "h")(sg, "radeon");
+        const nachher = { ...mb, je: { ...mb.je }, ungemessen: { ...mb.ungemessen } };
+        eintragen(nachher, "gelaende.K4#1", { gruen: true, zahl: "z", exit: 0, minuten: 1 });
+        pruef("LÄUFER GPU-Schloss blockiert (Exit 75) ist UNGEMESSEN beim Namen, nie ROT in der Messung — run --offen misst neu",
+            e.ungemessen === true && e.gruen === false && /Schloss blockiert.*Nachtruhe 0325-0415/.test(e.grund) && !mb.je["gelaende.K4#1"] &&
+            !!mb.ungemessen["gelaende.K4#1"] && fr.ungemessen === true && /R10/.test(fr.grund) && nachher.je["gelaende.K4#1"].gruen && !nachher.ungemessen,
+            JSON.stringify([e, mb, fr]));
+        const c3 = { ...ctx("schweigt"), gpuLauf: path.join(tmp, "schweigt.sh"), stillS: 2 };
+        fs.writeFileSync(c3.gpuLauf, "#!/bin/bash\necho 'gpu-lauf: probe (bild) wartet auf ?' >&2\nsleep 60\n");
+        e = await fahreStation(sg, c3);
+        const c4 = { ...ctx("am-schloss"), gpuLauf: path.join(tmp, "am-schloss.sh"), stillS: 3 };
+        fs.writeFileSync(c4.gpuLauf, '#!/bin/bash\nN="$1"; shift\necho "gpu-lauf: Schloss $N (bild, Platz 1 von 2) nach 0 s" >&2\nsleep 9\n"$@"\n');
+        const e4 = await fahreStation({ ...st0, geraet: "radeon", gpu: true, befehl: mitKarte(["[linse-gpu] amd/rdna-3"]), urteil: lies }, { ...c4, deckelMinS: 120 });
+        pruef("LÄUFER ein Schloss, das nie kommt (gpu-lauf.sh schweigt beim Warten), ist UNGEMESSEN; der Deckel zählt erst ab dem Schloss",
+            e.ungemessen === true && /nie bekommen: gpu-lauf.sh schwieg 2 s/.test(e.grund) && e4.gruen === true && !e4.ungemessen, JSON.stringify([e, e4]));
     } else pruef("LÄUFER GPU über das Schloss", false, "keine Git-bash");
+    // (3d) DER LESER zug.cjs (artifacts/profiband/werkzeug/zug.cjs, punkte(): Fortschritt der Radeon nach zug/fortschritt-radeon.txt) —
+    // seine Muster wörtlich: Start und Station in dem Format, das er liest; ein ungemessener Lauf ist weder GRÜN noch ROT noch toter
+    // Glob (26.10.: „· allein“ am Zeilenende, n blieb 0, jede ROT-Zeile zählte als toter Glob)
+    {
+        const START = /^Punkte-Maschine: (\d+) Station\(en\) in /, STATION = /^  (GRÜN|ROT ) (\S+) · .* · Exit \S+ · ([\d.]+) min( \(Zwilling von \S+\))?$/, TOT = /^  ROT  (\S+) · /;
+        const gs = [[{ ...st0, minuten: 2 }], [{ ...st0, minuten: 3, zeit: true }]];
+        const s = startZeile(7, gs, "radeon", "0123456789abcdef", 3) + " (Baum x)";
+        const z = [stationsZeile("a.K1#1", { gruen: true, zahl: "z · 3", exit: 0, minuten: 1.5, bahn: "2/3" }),
+            stationsZeile("a.K1#2", { gruen: false, zahl: "rot", exit: 1, minuten: 0.4, bahn: "allein", zwilling: "a.K1#1" }),
+            stationsZeile("a.K1#3", { gruen: false, ungemessen: true, grund: "GPU-Schloss blockiert", exit: 75, minuten: 45, bahn: "1/3" })];
+        const t = z.map((l) => STATION.exec(l));
+        pruef("LESER zug.cjs: Start- und Stationszeilen im gelesenen Format, ungemessen ist weder GRÜN noch ROT",
+            (START.exec(s) || [])[1] === "7" && !!t[0] && t[0][2] === "a.K1#1" && t[0][3] === "1.5" && !!t[1] && t[1][1] === "ROT " && !!t[1][4] &&
+            !t[2] && !TOT.test(z[2]) && !/^  (GRÜN|ROT)/.test(z[2]), JSON.stringify([s, ...z]));
+    }
+    // (3c) DIE BAHNEN: das Platz-Schloss, das run fährt (GPU_LAUF, EINE Quelle), mit Stub-Befehlen, je Fall ein eigenes Schloss in
+    // tmp (nie das der Karte, nie ein echter CI-Job: GPU_WORKER_BILD, GPU_HOOK_LOG, GPU_NACHT eigen). Das Urteil ist die REIHENFOLGE
+    // der Ereignisse im Log (S = Start unter dem Schloss, E = Ende), nie die Wanduhr (Lehre 26; 26.10. auf dem Laptop: einen Platz
+    // nehmen dauerte 2,9–3,8 s, die Fenster von 500/800 ms rissen): ein Stub hält seinen Platz, bis seine Tür (eine Datei) aufgeht
+    // oder sein Partner unter dem Schloss steht; der Test öffnet eine Tür erst, wenn der Wartende sein Warten gemeldet hat
+    if (findeBash()) {
+        const wz = GPU_LAUF;
+        const fw = (p) => p.split(path.sep).join("/");
+        const schlossEnv = (n) => ({ GPU_SCHLOSS: fw(path.join(tmp, "bahn-" + n)), GPU_HOOK_LOG: fw(path.join(tmp, "bahn-" + n + ".hook.log")),
+            GPU_NACHT: "", GPU_WORKER_BILD: "Kein.Worker.exe", GPU_LAUF_TAKT_S: "1" });
+        // $1 Log · $2 wer · $3 {AUS} oder leer · $4 Tür oder leer · $5 Partner oder leer (je höchstens ~60 s: ein Hänger wird ROT, nie ewig)
+        const STUB = 'echo "[linse-gpu] amd/rdna-3"; echo "S $2" >> "$1"; i=0; ' +
+            'while [ -n "$4" ] && [ ! -e "$4" ] && [ $i -lt 600 ]; do sleep 0.1; i=$((i+1)); done; ' +
+            'while [ -n "$5" ] && ! grep -qx "S $5" "$1" && [ $i -lt 600 ]; do sleep 0.1; i=$((i+1)); done; ' +
+            'echo "E $2" >> "$1"; [ -n "$3" ] && echo "{\\"n\\": 0}" > "$3"; true';
+        // je Lauf die Zeilen-Stelle seines S und E im Log
+        const spannen = (log) => {
+            const m = {};
+            (fs.existsSync(log) ? fs.readFileSync(log, "utf8") : "").split(/\r?\n/).forEach((z, i) => {
+                const x = /^([SE]) (\S+)$/.exec(z.trim());
+                if (x) (m[x[2]] = m[x[2]] || {})[x[1]] = i;
+            });
+            return m;
+        };
+        const spanne = (a) => !!a && a.S != null && a.E != null;
+        const ueber = (a, b) => spanne(a) && spanne(b) && a.S < b.E && b.S < a.E;
+        const nach = (a, b) => spanne(a) && spanne(b) && a.S > b.E;
+        const warte = (ms) => new Promise((r) => setTimeout(r, ms));
+        // wartet auf ein Ereignis (höchstens ~120 s: ein Hänger wird ROT, nie ewig)
+        const bis = async (f) => { for (let i = 0; i < 1200; i++) { if (f()) return true; await warte(100); } return false; };
+        // ein fremder Lauf: gpu-lauf.sh direkt, wie ein Macher oder ein zweiter Läufer ihn ruft
+        const lauf = (env, art, n, wer, log, tuer = "") => {
+            const r = { out: "", err: "", code: undefined };
+            r.k = spawn(findeBash(), [wz, "probe-" + wer, "bash", "-c", STUB, "stub", fw(log), wer, "", tuer && fw(tuer), ""],
+                { env: { ...process.env, ...env, GPU_LAUF_ART: art, GPU_LAUF_PLAETZE: String(n) }, windowsHide: true });
+            r.k.stdout.setEncoding("utf8");
+            r.k.stderr.setEncoding("utf8");
+            r.k.stdout.on("data", (d) => (r.out += d));
+            r.k.stderr.on("data", (d) => (r.err += d));
+            r.fertig = new Promise((ok) => { r.k.on("close", (c) => ok((r.code = c))); r.k.on("error", () => ok((r.code = -1))); });
+            return r;
+        };
+        const wartet = (r) => () => /wartet auf/.test(r.err);
+        const steht = (log, wer) => () => !!spannen(log)[wer];
+        // (a) der Bahn-Plan über den Läufer: Zeit allein auf Bahn 0, danach zwei Bild-Gruppen, die einander unter dem Schloss
+        // erwarten — sie enden nur, wenn beide zugleich einen Platz halten
+        const planFall = (async () => {
+            const env = schlossEnv("plan"), log = path.join(tmp, "bahn-plan.log");
+            const G = (wer, zeit, partner) => [{ ...st0, geraet: ["radeon", "gtx"], gpu: true, zeit, env, befehl: ["bash", "-c", STUB, "stub", fw(log), wer, "{AUS}", "", partner], urteil: lies }];
+            const es = [];
+            await fahrePlan([G("A", false, "B"), G("Z", true, ""), G("B", false, "A")], 2, async (g, b) =>
+                es.push(await fahreGruppe(g, { ...ctx("plan-" + g[0].befehl[5]), gpuLauf: wz, bahn: b, plaetze: 2, deckelMinS: 120 })));
+            const sp = spannen(log);
+            return ["BAHNEN der Plan: zwei Bild-Läufe halten zugleich je einen Platz, der Zeit-Lauf fährt allein (Läufer + Platz-Schloss, N = 2)",
+                ueber(sp.A, sp.B) && nach(sp.A, sp.Z) && nach(sp.B, sp.Z) && es.length === 3 && es.every((r) => r[0].gruen) && !fs.existsSync(env.GPU_SCHLOSS),
+                JSON.stringify(sp) + " " + es.map((r) => r[0].zahl).join(" | ")];
+        })();
+        // (b) fremde Läufe am Schloss: Bild X hält einen Platz, Zeit Z wartet auf ALLE Plätze, Bild Y kommt danach und tritt nicht bei,
+        // solange Z wartet (Vorrang, beim Namen) — Z überlappt nie
+        const zeitFall = (async () => {
+            const env = schlossEnv("zeit"), log = path.join(tmp, "bahn-zeit.log"), tuer = path.join(tmp, "bahn-zeit.tuer");
+            const x = lauf(env, "bild", 2, "X", log, tuer);
+            const ev = [await bis(steht(log, "X"))];
+            const z = lauf(env, "zeit", 2, "Z", log);
+            ev.push(await bis(wartet(z)));
+            const y = lauf(env, "bild", 2, "Y", log);
+            ev.push(await bis(wartet(y)));
+            fs.writeFileSync(tuer, "");
+            const codes = await Promise.all([x.fertig, z.fertig, y.fertig]);
+            const sp = spannen(log);
+            return ["BAHNEN ein Zeit-Lauf wartet auf alle Plätze, ein späterer Bild-Lauf tritt nicht vor ihm bei und nennt den Vorrang beim Namen",
+                ev.every(Boolean) && codes.every((c) => c === 0) && nach(sp.Z, sp.X) && nach(sp.Y, sp.Z) && /wartet auf Vorrang: 'probe-Z'/.test(y.err) && !fs.existsSync(env.GPU_SCHLOSS),
+                JSON.stringify(sp) + " Ereignisse " + ev.join("/") + " Exit " + codes.join("/") + " · Y: " + y.err.trim().split("\n")[0]];
+        })();
+        // (c) N = 1 ist das Ein-Platz-Schloss von vorher: der zweite Bild-Lauf wartet, bis der erste geht
+        const einFall = (async () => {
+            const env = schlossEnv("eins"), log = path.join(tmp, "bahn-eins.log"), tuer = path.join(tmp, "bahn-eins.tuer");
+            const p = lauf(env, "bild", 1, "P", log, tuer);
+            const ev = [await bis(steht(log, "P"))];
+            const q = lauf(env, "bild", 1, "Q", log);
+            ev.push(await bis(wartet(q)));
+            fs.writeFileSync(tuer, "");
+            const codes = await Promise.all([p.fertig, q.fertig]);
+            const sp = spannen(log);
+            return ["BAHNEN N = 1: zwei Bild-Läufe überlappen nie (das alte Schloss)",
+                ev.every(Boolean) && codes.every((c) => c === 0) && nach(sp.Q, sp.P), JSON.stringify(sp) + " Ereignisse " + ev.join("/") + " Exit " + codes.join("/")];
+        })();
+        // (d) VORFAHRT: ein wartender CI-Job (hook.log) hält jeden neuen Platz an, auch einen freien; der Hook nimmt das Schloss,
+        // sobald der letzte Platz geht, und erst nach ihm fährt der neue Bild-Lauf
+        const ciFall = (async () => {
+            const env = schlossEnv("ci"), log = path.join(tmp, "bahn-ci.log"), tuer = path.join(tmp, "bahn-ci.tuer");
+            const x = lauf(env, "bild", 2, "X", log, tuer);
+            const ev = [await bis(steht(log, "X"))];
+            fs.appendFileSync(env.GPU_HOOK_LOG, "2026-10-26 10:00:00 start ci-probe 1/1 echt: wartet auf Schloss von 'probe-X'\r\n");
+            const y = lauf(env, "bild", 2, "Y", log);
+            ev.push(await bis(wartet(y)));
+            fs.writeFileSync(tuer, "");
+            await x.fertig;
+            const hook = await bis(() => { try { fs.mkdirSync(env.GPU_SCHLOSS); return true; } catch (_e) { return false; } });
+            if (hook) {
+                fs.writeFileSync(path.join(env.GPU_SCHLOSS, "besitzer.txt"), "ci-probe 1/1 echt\npid=" + process.pid + "\n");
+                fs.appendFileSync(log, "S H\n");
+                fs.appendFileSync(env.GPU_HOOK_LOG, "2026-10-26 10:00:05 start ci-probe 1/1 echt: Schloss genommen\r\n");
+                fs.appendFileSync(log, "E H\n");
+                fs.rmSync(env.GPU_SCHLOSS, { recursive: true, force: true });
+            }
+            const codes = [x.code, await y.fertig];
+            const sp = spannen(log);
+            return ["BAHNEN VORFAHRT: ein wartender CI-Job hält den freien Platz an und bekommt das Schloss, der neue Bild-Lauf fährt nach ihm",
+                ev.every(Boolean) && hook && codes.every((c) => c === 0) && nach(sp.H, sp.X) && nach(sp.Y, sp.H) && /Vorfahrt: ein CI-Job wartet/.test(y.err),
+                JSON.stringify(sp) + " Ereignisse " + ev.join("/") + " Hook " + hook + " Exit " + codes.join("/")];
+        })();
+        // (e) DER VERTRETER: geht der Erste, nennt besitzer.txt den Bleibenden (die Hooks lösen ein Schloss mit toter pid)
+        const vertreterFall = (async () => {
+            const env = schlossEnv("vertreter"), log = path.join(tmp, "bahn-vertreter.log");
+            const [t1, t2] = [1, 2].map((i) => path.join(tmp, "bahn-vertreter-" + i + ".tuer"));
+            const v1 = lauf(env, "bild", 2, "V1", log, t1);
+            const ev = [await bis(steht(log, "V1"))];
+            const v2 = lauf(env, "bild", 2, "V2", log, t2);
+            ev.push(await bis(steht(log, "V2")));
+            fs.writeFileSync(t1, "");
+            const c1 = await v1.fertig;
+            const b = fs.existsSync(path.join(env.GPU_SCHLOSS, "besitzer.txt")) ? fs.readFileSync(path.join(env.GPU_SCHLOSS, "besitzer.txt"), "utf8") : "";
+            fs.writeFileSync(t2, "");
+            const c2 = await v2.fertig;
+            const sp = spannen(log);
+            return ["BAHNEN DER VERTRETER: geht der Erste, nennt besitzer.txt den Bleibenden mit pid (die Hooks lösen sonst)",
+                ev.every(Boolean) && c1 === 0 && c2 === 0 && ueber(sp.V1, sp.V2) && /^probe-V2\r?\npid=\d+/.test(b) && !fs.existsSync(env.GPU_SCHLOSS),
+                JSON.stringify(b) + " " + JSON.stringify(sp) + " Exit " + c1 + "/" + c2];
+        })();
+        // (f) DIE NACHTRUHE zählt nie zur Warte-Frist (26.10.: 50 min Nacht > 45 min Frist, Exit 75 um 04:11, ROT in der Messung):
+        // N wartet in der Nacht mit Frist 0 und läuft nie aus, während zwei Läufe ohne Nacht am selben Schloss nacheinander mit
+        // Exit 75 enden — beim Namen des Halters
+        const nachtFall = (async () => {
+            const env = schlossEnv("nacht"), log = path.join(tmp, "bahn-nacht.log");
+            fs.mkdirSync(env.GPU_SCHLOSS, { recursive: true });
+            fs.writeFileSync(path.join(env.GPU_SCHLOSS, "besitzer.txt"), "probe-halter\npid=" + process.pid + "\n");
+            const n = lauf({ ...env, GPU_NACHT: "0000-2400", GPU_LAUF_WARTE_S: "0" }, "bild", 2, "N", log);
+            const ev = [await bis(() => /wartet auf Nachtruhe 0000-2400/.test(n.err))];
+            const a1 = lauf({ ...env, GPU_LAUF_WARTE_S: "0" }, "bild", 2, "A1", log);
+            const c1 = await a1.fertig;
+            const c2 = await lauf({ ...env, GPU_LAUF_WARTE_S: "0" }, "bild", 2, "A2", log).fertig;
+            const lebt = n.code === undefined;
+            baumTot(n.k.pid);
+            await n.fertig;
+            fs.rmSync(env.GPU_SCHLOSS, { recursive: true, force: true });
+            return ["SCHLOSS die Nachtruhe zählt nie zur Warte-Frist: wer in der Nacht wartet, läuft nicht aus; ohne Nacht endet das Warten mit Exit 75 beim Namen",
+                ev[0] && lebt && c1 === 75 && c2 === 75 && /^SCHLOSS BLOCKIERT von probe-halter /m.test(a1.out) && !spannen(log).N,
+                "Nacht wartet " + ev[0] + " · lebt " + lebt + " (Exit " + n.code + ") · A " + c1 + "/" + c2 + " · " + a1.out.trim() + " · N: " + n.out.trim()];
+        })();
+        // (g) DER VORRANG fällt nach derselben Verwaist-Regel wie besitzer.txt und platz.k: ein Eintrag älter als der Systemstart
+        // (seine pid lebt, neu vergeben) sperrt nicht; ein haltender Vorrang steht beim Namen in Exit 75
+        const vorrangFall = (async () => {
+            const env = schlossEnv("vorrang"), log = path.join(tmp, "bahn-vorrang.log");
+            const vd = env.GPU_SCHLOSS + ".vorrang", alt = vd + "/" + process.pid;
+            fs.mkdirSync(vd, { recursive: true });
+            fs.writeFileSync(alt, "probe-alt\npid=" + process.pid + "\n");
+            fs.utimesSync(alt, new Date("2001-01-01T00:00:00Z"), new Date("2001-01-01T00:00:00Z"));
+            const p = lauf({ ...env, GPU_LAUF_WARTE_S: "20" }, "bild", 2, "P", log);
+            const cp = await p.fertig;
+            const weg = !fs.existsSync(alt);
+            fs.writeFileSync(alt, "probe-zeit\npid=" + process.pid + "\n");
+            const q = lauf({ ...env, GPU_LAUF_WARTE_S: "0" }, "bild", 2, "Q", log);
+            const cq = await q.fertig;
+            fs.rmSync(vd, { recursive: true, force: true });
+            const sp = spannen(log);
+            return ["SCHLOSS der Vorrang fällt nach der Verwaist-Regel (älter als der Systemstart), ein haltender Vorrang steht beim Namen in Exit 75",
+                cp === 0 && weg && spanne(sp.P) && /verwaister Vorrang 'probe-alt' geloest - älter als der Systemstart/.test(p.err) &&
+                cq === 75 && /^SCHLOSS BLOCKIERT von Vorrang: 'probe-zeit'/m.test(q.out) && !sp.Q,
+                "P Exit " + cp + " weg " + weg + " · " + p.err.trim().split("\n").filter((l) => /Vorrang/.test(l)).join(" ") + " · Q Exit " + cq + " · " + q.out.trim()];
+        })();
+        for (const [name, ok, was] of await Promise.all([planFall, zeitFall, einFall, ciFall, vertreterFall, nachtFall, vorrangFall])) pruef(name, ok, was);
+    } else pruef("BAHNEN Platz-Schloss", false, "keine Git-bash");
     // (4) Glob
     const gl = [["stamm/kreatur-leben.js", ["stamm/kreatur-*.js"], true], ["stamm/x/kreatur-a.js", ["stamm/kreatur-*.js"], false],
         ["scripts/lib/a/b.cjs", ["scripts/**"], true], ["koerper-core.js", ["koerper-core.js"], true], ["koerper-core.jsx", ["koerper-core.js"], false],
@@ -939,14 +1237,14 @@ if (require.main === module) {
                 const t = toteGlobs(st.pfad, dateien);
                 if (t.length) fehler.push(schluessel(st) + ": " + pfadGrund(t, "am Kopf " + kopf.slice(0, 8)));
             }
-            for (const st of stationen) console.log("  " + schluessel(st) + " · " + geraeteVon(st).join("+") + (st.gpu ? " · GPU" : "") + " · " + st.minuten + " min · " + st.befehl.join(" ") + " · " + abdruck(st));
+            for (const st of stationen) console.log("  " + schluessel(st) + " · " + geraeteVon(st).join("+") + (st.gpu ? " · GPU" : "") + (st.zeit ? " · Zeit" : " · Bild") + " · " + st.minuten + " min · " + st.befehl.join(" ") + " · " + abdruck(st));
             for (const e of fehlt) console.log("  FEHLT " + e.kriterium + "#" + e.staffel + " · " + String(e.grund).slice(0, 140));
             for (const f of fehler) console.log("  ROT " + f);
             console.log(stationen.length + " Stationen · " + new Set(stationen.map((s) => s.kriterium)).size + " Kriterien · fehlt " + fehlt.length + " · Fehler " + fehler.length);
             process.exitCode = fehler.length ? 1 : 0;
         } else if (verb === "selbsttest") process.exitCode = await selbsttest();
         else {
-            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--trocken] [--port-basis 7700] · buchen --kopf <sha> · liste [--kopf <sha>] · selbsttest");
+            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--trocken] [--bahnen 3] [--port-basis 7700] · buchen --kopf <sha> · liste [--kopf <sha>] · selbsttest");
             process.exitCode = 2;
         }
     })().catch((e) => {

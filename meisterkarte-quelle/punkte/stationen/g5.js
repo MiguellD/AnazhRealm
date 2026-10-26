@@ -210,6 +210,7 @@ const stationen = [
         ),
         env: K,
         gpu: true,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const teil = (n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
@@ -244,6 +245,7 @@ const stationen = [
         ),
         env: K,
         gpu: true,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const teil = (n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
@@ -284,6 +286,7 @@ const stationen = [
         ),
         env: K,
         gpu: true,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const teil = (n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
@@ -327,6 +330,7 @@ const stationen = [
             "cp \"$L/stadt-mittag.abnahme.json\" \"$A\" 2> /dev/null; true"
         ),
         gpu: true,
+        zeit: false,
         minuten: 15,
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
@@ -390,6 +394,7 @@ const stationen = [
                 "f.writeFileSync(process.argv[1], JSON.stringify({ mittag: l(\"mittag\"), daemmerung: l(\"daemmerung\") }))' \"$A\" \"$L\""
         ),
         gpu: true,
+        zeit: false,
         minuten: 15,
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
@@ -448,6 +453,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-haus-welt.cjs", "--phasen=haus"],
         env: { HAUS_WELT_PORT: "{PORT}", HAUS_WELT_JSON: "{AUS}" },
         gpu: false,
+        zeit: false,
         minuten: 5,
         urteil: (j) => {
             if (!j || !Array.isArray(j.haeuser)) return { gruen: false, zahl: "kein HAUS_WELT_JSON mit haeuser" };
@@ -500,6 +506,7 @@ const stationen = [
         ),
         env: K,
         gpu: true,
+        zeit: true,
         minuten: 14,
         urteil: (j, lauf) => {
             const teil = (n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
@@ -535,6 +542,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-settlement.cjs"],
         env: { SETTLEMENT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 4,
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
@@ -585,6 +593,7 @@ const stationen = [
         ),
         env: K,
         gpu: true,
+        zeit: true,
         minuten: 10,
         urteil: (j) => {
             const { gruen, zahl } = latenzSchlechtester(j, ["ego/gehen", "third/gehen", "ego/wechsel", "third/wechsel"], 50);
@@ -607,6 +616,7 @@ const stationen = [
         ),
         env: K,
         gpu: true,
+        zeit: true,
         minuten: 24,
         urteil: (j) => {
             const ids = ["gehen", "springen", "einsteigen", "hieb"].flatMap((v) => ["ego/" + v, "third/" + v]);
@@ -631,6 +641,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-koerper-stand.cjs", "--k8", "--bild"],
         env: { KOERPER_STAND_PORT: "{PORT}", KOERPER_STAND_JSON: "{AUS}", LINSE_GPU: "hardware" },
         gpu: true,
+        zeit: false,
         minuten: 10,
         urteil: (j, lauf) => {
             const k = j && j.k8;
@@ -687,6 +698,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kamera-laub.cjs", "--teile", "leib,gang", "--bild"],
         env: { KAMERA_LAUB_PORT: "{PORT}", LINSE_GPU: "hardware" },
         gpu: true,
+        zeit: false,
         minuten: 6,
         // DAS URTEIL (24.10., Prüfung der Buchung): das Kriterium misst Pixel „an einem Gerät“ — unter `--bild` zeichnet die Welt
         // auf der Karte (seit gpu-wand: Rezept linse ohne Null-Renderer), kamera-nah rechnet die Nah-Pixel gegen die Szene, die sie
@@ -743,6 +755,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kamera-laub.cjs", "--teile", "leib,gang,gang2", "--bild"],
         env: { KAMERA_LAUB_PORT: "{PORT}", LINSE_GPU: "hardware" },
         gpu: true,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const zeilen = lauf.stdout.split(/\r?\n/);
@@ -799,6 +812,7 @@ const stationen = [
         befehl: ["node", "scripts/playtest.cjs"],
         env: { PLAYTEST_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const z = lauf.stdout.split(/\r?\n/).filter((l) => /^\s*(✅|❌) Gamepad-Verben \(leib\.K5\): /.test(l));
@@ -821,6 +835,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kampf-gefuehl.cjs"],
         env: { KAMPF_GEFUEHL_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 4,
         urteil: (j, lauf) => {
             const l = lauf.stdout.split(/\r?\n/);
@@ -853,6 +868,7 @@ const stationen = [
         ),
         env: K,
         gpu: true,
+        zeit: true,
         minuten: 14,
         urteil: (j, lauf) => {
             const ids = ["third/hieb", "ego/hieb"];
@@ -888,6 +904,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kampf-gefuehl.cjs"],
         env: { KAMPF_GEFUEHL_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 4,
         urteil: (j, lauf) => {
             const l = String(lauf.stdout || "").split(/\r?\n/);
@@ -921,6 +938,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kampf-gefuehl.cjs"],
         env: { KAMPF_GEFUEHL_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 4,
         urteil: (j, lauf) => {
             const l = lauf.stdout.split(/\r?\n/);
@@ -949,6 +967,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kampf-gefuehl.cjs"],
         env: { KAMPF_GEFUEHL_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 4,
         urteil: (j, lauf) => {
             const l = lauf.stdout.split(/\r?\n/);
@@ -980,6 +999,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-praegung-welt.cjs"],
         env: { PRAEGUNG_WELT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 4,
         urteil: (j, lauf) => {
             const l = lauf.stdout.split(/\r?\n/);
@@ -1010,6 +1030,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-v1-pfad.cjs", "--feind"],
         env: { V1_PFAD_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const l = lauf.stdout.split(/\r?\n/);
@@ -1040,6 +1061,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kampf-gefuehl.cjs"],
         env: { KAMPF_GEFUEHL_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 4,
         urteil: (j, lauf) => {
             const l = lauf.stdout.split(/\r?\n/);
@@ -1071,6 +1093,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-kampf-gefuehl.cjs", "--k5"],
         env: { KAMPF_GEFUEHL_PORT: "{PORT}", LINSE_GPU: "hardware" },
         gpu: true,
+        zeit: false,
         minuten: 4,
         urteil: (j, lauf) => {
             const l = lauf.stdout.split(/\r?\n/);
@@ -1099,7 +1122,7 @@ const stationen = [
     // an main 833bbc24 ROT: Spitze 8,7–11,5° (Plateau), Abfall 0 % an allen 10 Achsen
     {
         kriterium: "fahrzeug.K1", staffel: 1, geraet: "headless",
-        befehl: ["node", "scripts/diag-fahr-leben.cjs", "--kern"], env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: false, minuten: 1,
+        befehl: ["node", "scripts/diag-fahr-leben.cjs", "--kern"], env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: false, zeit: false, minuten: 1,
         urteil: (j, lauf) => {
             const m = jsonZeile(lauf.stdout, /^REIFEN {/);
             const A = (m && m.achsen) || [];
@@ -1126,7 +1149,7 @@ const stationen = [
     // Boden (Gras/Weg 1,0), nass 0,7 (Bremsweg 1,28×), keine Zeile `weg`.
     {
         kriterium: "fahrzeug.K1", staffel: 2, geraet: "headless",
-        befehl: ["node", "scripts/diag-fahr-leben.cjs", "--kette"], env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: false, minuten: 1,
+        befehl: ["node", "scripts/diag-fahr-leben.cjs", "--kette"], env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: false, zeit: false, minuten: 1,
         urteil: (j, lauf) => {
             const A = (jsonZeile(lauf.stdout, /^REIFEN {/) || {}).achsen || [];
             const r = (jsonZeile(lauf.stdout, /^KETTE {/) || {}).roh || {};
@@ -1177,7 +1200,7 @@ const stationen = [
     // heimbringen. An main 206b395a ROT: 0/30 (drüben hält keine Hülle etwas, daheim vor = nach).
     {
         kriterium: "tore.K3", staffel: 1, geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-portal-konformanz.cjs"], env: { PORTAL_KONFORMANZ_PORT: "{PORT}" }, gpu: true, minuten: 5,
+        befehl: ["node", "scripts/diag-portal-konformanz.cjs"], env: { PORTAL_KONFORMANZ_PORT: "{PORT}" }, gpu: true, zeit: false, minuten: 5,
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/).find((l) => l.startsWith("K8 ["));
             let R = null;
@@ -1221,7 +1244,7 @@ const stationen = [
     // am Grund eeaff9d6 Reittier 0/10 (drüben fehlte es — das Gepäck trug es nicht).
     {
         kriterium: "tore.K3", staffel: 2, geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-portal-konformanz.cjs"], env: { PORTAL_KONFORMANZ_PORT: "{PORT}" }, gpu: true, minuten: 5,
+        befehl: ["node", "scripts/diag-portal-konformanz.cjs"], env: { PORTAL_KONFORMANZ_PORT: "{PORT}" }, gpu: true, zeit: false, minuten: 5,
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/).find((l) => l.startsWith("K8 ["));
             let R = null;
@@ -1271,6 +1294,7 @@ const stationen = [
         befehl: ["node", "scripts/diag-praegung-welt.cjs"],
         env: { PRAEGUNG_WELT_PORT: "{PORT}" },
         gpu: false,
+        zeit: true,
         minuten: 4,
         urteil: (j, lauf) => {
             const l = String(lauf.stdout || "").split(/\r?\n/);

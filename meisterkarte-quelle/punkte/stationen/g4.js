@@ -177,6 +177,7 @@ const alle = [
         befehl: ["node", "scripts/diag-studio-huelle.cjs", "--engine"],
         env: { ...SOFT, STUDIO_HUELLE_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const je = {};
@@ -230,6 +231,7 @@ const alle = [
         befehl: ["node", "scripts/diag-studio-uebergabe.cjs", "--welt"],
         env: { ...SOFT, STUDIO_UEBERGABE_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const u = uebergabeLesen(lauf);
@@ -246,6 +248,7 @@ const alle = [
         befehl: ["node", "scripts/diag-studio-uebergabe.cjs", "--welt"],
         env: { ...SOFT, STUDIO_UEBERGABE_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const u = uebergabeLesen(lauf);
@@ -266,6 +269,7 @@ const alle = [
         befehl: REGLER_BEFEHL,
         env: { ...SOFT, REGLER_WIRKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const r = reglerLesen(lauf);
@@ -283,6 +287,7 @@ const alle = [
         befehl: REGLER_BEFEHL,
         env: { ...SOFT, REGLER_WIRKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const r = reglerLesen(lauf);
@@ -322,6 +327,7 @@ const alle = [
         ],
         env: { BOOT_STAGE_PORT: "{PORT}" },
         gpu: true,
+        zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             const m =
@@ -377,6 +383,7 @@ const alle = [
         ],
         env: { ...SOFT, V1_PFAD_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 4,
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
@@ -456,6 +463,7 @@ const alle = [
         ],
         env: { ...SOFT, V1_PFAD_PORT: "{PORT}", KI_ENDPUNKT: "http://127.0.0.1:11434/", KI_MODELL: "qwen3:4b-instruct" },
         gpu: false,
+        zeit: false,
         minuten: 15,
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
@@ -523,6 +531,7 @@ const alle = [
         befehl: ["node", "scripts/diag-praegung-welt.cjs"],
         env: { ...SOFT, PRAEGUNG_WELT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
@@ -560,6 +569,7 @@ const alle = [
         ],
         env: { ...SOFT, PRAEGUNG_WELT_PORT: "{PORT}", V1_PFAD_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 12,
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
@@ -599,6 +609,7 @@ const alle = [
         befehl: WEG_BEFEHL,
         env: WEG_ENV,
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             if (!j || j.gestartet !== true || !j.wege) return { gruen: false, zahl: "keine Rohdatei weg.json (Exit " + lauf.exit + ")" };
@@ -666,6 +677,7 @@ const alle = [
         befehl: WEG_BEFEHL,
         env: WEG_ENV,
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const l = zeilen(lauf.stdout).find((x) => /^\s*(✅|❌) Brennglas die Eiche an der Genesis-Plattform/.test(x));
@@ -706,6 +718,7 @@ const alle = [
         befehl: WEG_BEFEHL,
         env: WEG_ENV,
         gpu: false,
+        zeit: false,
         minuten: 4,
         urteil: (j, lauf) => {
             const l = zeilen(lauf.stdout).find((x) => /^\s*(✅|❌) Prüf-Satz über den Bau-Weg/.test(x));
@@ -751,6 +764,7 @@ const alle = [
         befehl: ["node", "scripts/diag-fall-waechter.cjs"],
         env: { ...SOFT, FALL_WAECHTER_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const b = jsonZeile(lauf.stdout, /^\s*B-ZAHL \{/);
@@ -798,6 +812,7 @@ const alle = [
         befehl: ["node", "scripts/diag-fall-waechter.cjs"],
         env: { ...SOFT, FALL_WAECHTER_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             const b = jsonZeile(lauf.stdout, /^\s*B2-ZAHL \{/);
@@ -849,6 +864,7 @@ const alle = [
         befehl: WEG_BEFEHL,
         env: WEG_ENV,
         gpu: false,
+        zeit: false,
         minuten: 4,
         urteil: (j, lauf) => {
             const v = j && j.verben;
@@ -905,6 +921,7 @@ const alle = [
         befehl: ["node", "scripts/diag-nervensystem.cjs"],
         env: { ...SOFT, NERV_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 2,
         urteil: (j, lauf) => {
             const e = jsonZeile(lauf.stdout, /^E-ZAHL \{/);
@@ -946,6 +963,7 @@ const alle = [
         befehl: ["node", "scripts/diag-nervensystem.cjs"],
         env: { ...SOFT, NERV_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 4,
         urteil: (j, lauf) => {
             const e = jsonZeile(lauf.stdout, /^E-ZAHL \{/);

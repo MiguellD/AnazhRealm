@@ -120,6 +120,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-worker-dichte.cjs", "--studio", "--selftest", "--json", "{AUS}"],
         env: { WORKER_DICHTE_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             if (!j) return { gruen: false, zahl: "kein JSON der Studio-Probe (Exit " + lauf.exit + ")" };
@@ -177,6 +178,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-worker-dichte.cjs", "--kern", "--selftest", "--json", "{AUS}"],
         env: { WORKER_DICHTE_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const k = j && j.kern;
@@ -238,6 +240,7 @@ module.exports = [
             `set -u; B=$(cygpath -m '{BAUM}'); K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT={PORT} node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:{PORT}/ && break; sleep 1; done; export SPIEL_URL=http://localhost:{PORT}; node "$D/m2-graben.cjs"; E=$?; cp "$D/roh/m2-graben.json" "$A" 2>/dev/null; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $E`,
         ],
         gpu: true,
+        zeit: true,
         minuten: 6,
         urteil: (j, lauf) => {
             const g = (j && Array.isArray(j.graeben) ? j.graeben : []).filter((x) => x.verb === "graben");
@@ -297,6 +300,7 @@ module.exports = [
             `set -u; B=$(cygpath -m '{BAUM}'); K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; sed -e 's/"third"/"first"/g' -e 's/m2-graben[.]json/m2-graben-ego.json/' -e 's/m2-s/m2e-s/g' "$D/m2-graben.cjs" > "$D/m2-graben-ego.cjs"; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT={PORT} node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:{PORT}/ && break; sleep 1; done; export SPIEL_URL=http://localhost:{PORT}; node "$D/m2-graben.cjs"; E1=$?; node "$D/m2-graben-ego.cjs"; E2=$?; export WASSER_LEBEN_PORT=$(( {PORT} + 1 )); node scripts/diag-wasser-leben.cjs --nur graben,damm > "$D/damm.log" 2>&1; E3=$?; node scripts/diag-wasser-leben.cjs --bild --echt > "$D/ferne.log" 2>&1; E4=$?; cat "$D/ferne.log" | grep -F '[linse-gpu]'; node -e 'const fs = require("fs"); const d = process.argv[1]; const lies = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch (_e) { return null; } }; const block = (f) => { const t = fs.existsSync(f) ? fs.readFileSync(f, "utf8") : ""; const a = t.indexOf("\\n{\\n"); const e = t.indexOf("\\n}\\n", a); try { return JSON.parse(t.slice(a + 1, e + 2)); } catch (_e) { return {}; } }; fs.writeFileSync(process.argv[2], JSON.stringify({ third: lies(d + "/roh/m2-graben.json"), ego: lies(d + "/roh/m2-graben-ego.json"), damm: block(d + "/damm.log").damm || null, ferne: block(d + "/ferne.log").ferne || null, exit: [Number(process.argv[3]), Number(process.argv[4]), Number(process.argv[5]), Number(process.argv[6])] }, null, 1));' "$D" "$A" $E1 $E2 $E3 $E4; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $(( E1 | E2 ))`,
         ],
         gpu: true,
+        zeit: true,
         minuten: 16,
         urteil: (j, lauf) => {
             if (!j) return { gruen: false, zahl: "keine Ausgabe (Exit " + lauf.exit + ")" };
@@ -365,6 +369,7 @@ module.exports = [
             `set -u; A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D"; SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; raeum() { for p in $(netstat -ano | grep -E ":($SP|$WP) .*LISTEN" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }; W() { node scripts/werkbank.cjs "$@"; }; raeum; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT=$SP node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 30); do curl -s -o /dev/null http://localhost:$SP/ && break; sleep 1; done; (node scripts/werkbank.cjs start --echt --port $WP --seite http://localhost:$SP > "$D/werkbank.log" 2>&1 < /dev/null &); for t in $(seq 1 120); do grep -qE "bereit|FEHLER" "$D/werkbank.log" 2>/dev/null && break; sleep 5; done; W fenster 1920 1080 > "$D/fenster.txt" 2>&1; W umstellen 1866.6 -6193.9 > "$D/umstellen.txt" 2>&1; W eval 'const s = r.state; if (s.cameraMode !== "first") r.setCameraMode("first"); s.yaw = -1.309; s.pitch = 0; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = s.camera, d = new T.Vector3(); c.getWorldDirection(d); return [c.position.x, c.position.y, c.position.z, c.position.x + d.x * 100, c.position.y + d.y * 100, c.position.z + d.z * 100].map((v) => +v.toFixed(3));' > "$D/kamera.txt" 2>&1; KAM=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const o = JSON.parse(t.slice(t.indexOf("{"))); console.log(o.ergebnis.join(" "))' "$D/kamera.txt"); echo "KAMERA $KAM"; W bild $KAM --w 1920 --h 1080 --wahl 0 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --datei "$D/wasser.png" > "$D/bild.txt" 2>&1; E=$?; echo "BILD $(tr -d '\\n' < "$D/bild.txt" | cut -c1-600)"; cp "$D/wasser.abnahme.json" "$A" 2>/dev/null; W stop > /dev/null 2>&1; sleep 3; raeum; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $E`,
         ],
         gpu: true,
+        zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             if (!j || !j.klasse) {
@@ -420,6 +425,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-wasser-leben.cjs", "--nur", "mutation"],
         env: { WASSER_LEBEN_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const b = jsonBlock(lauf.stdout);
@@ -476,6 +482,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-wasser-leben.cjs", "--nur", "mutation,ueberall,laeufe,treibt"],
         env: { WASSER_LEBEN_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 15,
         urteil: (j, lauf) => {
             const b = jsonBlock(lauf.stdout);
@@ -550,6 +557,7 @@ module.exports = [
         befehl: ["node", "-e", "(" + k8Sichten.toString() + ")()", "{AUS}"],
         env: { KOERPER_STAND_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 10,
         urteil: (j) => {
             const l = k8Lesen(j);
@@ -571,6 +579,7 @@ module.exports = [
         befehl: ["node", "-e", "(" + k8Sichten.toString() + ")()", "{AUS}", "--bild"],
         env: { KOERPER_STAND_PORT: "{PORT}" },
         gpu: true,
+        zeit: false,
         minuten: 10,
         urteil: (j) => {
             const l = k8Lesen(j);
@@ -598,6 +607,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-wetter-wache.cjs"],
         env: { WETTER_WACHE_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             const re = /^\s*Saat (saat-[ab]) · (-?\d+) · (\d+)\s+(.*) \((\d+) überblendet\)\s*$/;
@@ -649,6 +659,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-wetter-wache.cjs"],
         env: { WETTER_WACHE_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             const m = /^\s*Front · Regen an A bei trockenem B (\d+) % · Lag (\d+) s \(Soll (\d+) s ±20 %\) · Worte (\d)\/5 \(([^)]*)\) · Mutation des Kerns: Welt (\w+), Labor (\w+)\s*$/m.exec(
@@ -688,6 +699,7 @@ module.exports = [
         geraet: ["radeon", "gtx"],
         befehl: ["node", "scripts/werkbank.cjs", "licht", "--naesse", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
         gpu: true,
+        zeit: false,
         minuten: 4,
         urteil: (j) => {
             const d = j && j.dorf;
@@ -740,6 +752,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-kopplung.cjs"],
         env: { KOPPLUNG_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
@@ -773,6 +786,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-kopplung.cjs"],
         env: { KOPPLUNG_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
@@ -821,6 +835,7 @@ module.exports = [
             'FAHR_LEBEN_PORT={PORT} node scripts/diag-fahr-leben.cjs; E1=$?; echo "FAHR-LEBEN EXIT $E1"; KOLLISION_BILD_PORT={PORT} node scripts/diag-kollision-bild.cjs; E2=$?; echo "KOLLISION-BILD EXIT $E2"; exit $(( E1 > E2 ? E1 : E2 ))',
         ],
         gpu: false,
+        zeit: false,
         minuten: 10,
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/);
@@ -901,6 +916,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-kollision-bild.cjs", "--bild"],
         env: { KOLLISION_BILD_PORT: "{PORT}" },
         gpu: true,
+        zeit: false,
         minuten: 15,
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/);
@@ -956,6 +972,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-stand-takt.cjs"],
         env: { STAND_TAKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
@@ -1005,6 +1022,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-stand-takt.cjs"],
         env: { STAND_TAKT_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
@@ -1047,6 +1065,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-mp-sync.cjs"],
         env: { MP_SYNC_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             const e = String(lauf.stdout || "").split(/\r?\n/).filter((x) => /^\s*(OK|ROT)\s+\(e\)/.test(x));
@@ -1090,6 +1109,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-mp-sync.cjs"],
         env: { MP_SYNC_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/);
@@ -1129,6 +1149,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-fahr-leben.cjs", "--kette"],
         env: { FAHR_LEBEN_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const k = jsonZeile(lauf.stdout, /^KETTE \{/);
@@ -1156,6 +1177,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-fahr-leben.cjs", "--kette"],
         env: { FAHR_LEBEN_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const k = jsonZeile(lauf.stdout, /^KETTE \{/);
@@ -1173,7 +1195,7 @@ module.exports = [
     // an main 833bbc24 ROT: 0 Stümpfe für 10, Feld 0, nach dem Reload 30 von 30 Pflanzen zurück (feld-k4-tat 08b943ca)
     {
         kriterium: "feld.K4", staffel: 1, geraet: "headless",
-        befehl: ["node", "scripts/diag-stand-takt.cjs", "--tat"], env: { STAND_TAKT_PORT: "{PORT}" }, gpu: false, minuten: 4,
+        befehl: ["node", "scripts/diag-stand-takt.cjs", "--tat"], env: { STAND_TAKT_PORT: "{PORT}" }, gpu: false, zeit: false, minuten: 4,
         urteil: (j, lauf) => {
             const T = jsonZeile(lauf.stdout, /^TAT {/);
             const h = T && T.stunde;
@@ -1188,7 +1210,7 @@ module.exports = [
     },
     {
         kriterium: "feld.K4", staffel: 2, geraet: "headless",
-        befehl: ["node", "scripts/diag-stand-takt.cjs", "--tat"], env: { STAND_TAKT_PORT: "{PORT}" }, gpu: false, minuten: 4,
+        befehl: ["node", "scripts/diag-stand-takt.cjs", "--tat"], env: { STAND_TAKT_PORT: "{PORT}" }, gpu: false, zeit: false, minuten: 4,
         urteil: (j, lauf) => {
             const T = jsonZeile(lauf.stdout, /^TAT {/);
             const [a, r, g] = T ? [T.reload, T.reloadStunde, T.heilung] : [];
@@ -1214,6 +1236,7 @@ module.exports = [
         geraet: "headless",
         befehl: ["bash", "-c", 'FAHR_LEBEN_PORT={PORT} node scripts/diag-fahr-leben.cjs --koerper; echo "KOERPER EXIT $?"'],
         gpu: false,
+        zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             const l = String(lauf.stdout || "").split(/\r?\n/).find((x) => /^\s*(✅|❌) K1#1 /.test(x));
@@ -1231,6 +1254,7 @@ module.exports = [
         geraet: "headless",
         befehl: ["bash", "-c", 'FAHR_LEBEN_PORT={PORT} node scripts/diag-fahr-leben.cjs --koerper; echo "KOERPER EXIT $?"'],
         gpu: false,
+        zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/);
@@ -1264,6 +1288,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-gegenstand-stoff.cjs", "--tafel"],
         env: { GEGENSTAND_STOFF_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const T = jsonZeile(lauf.stdout, /^TAFEL \{/);
@@ -1316,6 +1341,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-wasser-leben.cjs", "--nur", "koerper"],
         env: { WASSER_LEBEN_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const b = jsonBlock(lauf.stdout);
@@ -1377,6 +1403,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-wasser-leben.cjs", "--nur", "koerper"],
         env: { WASSER_LEBEN_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 3,
         urteil: (j, lauf) => {
             const b = jsonBlock(lauf.stdout);

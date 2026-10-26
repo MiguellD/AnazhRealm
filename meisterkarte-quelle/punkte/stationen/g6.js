@@ -123,6 +123,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-worker-dichte.cjs", "--faden"],
         env: { WORKER_DICHTE_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             const t = String(lauf.stdout || "");
@@ -150,6 +151,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-worker-dichte.cjs", "--faden"],
         env: { WORKER_DICHTE_PORT: "{PORT}" },
         gpu: false,
+        zeit: true,
         minuten: 6,
         urteil: (j, lauf) => {
             const t = String(lauf.stdout || "");
@@ -171,6 +173,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-worker-dichte.cjs", "--faden"],
         env: { WORKER_DICHTE_PORT: "{PORT}" },
         gpu: false,
+        zeit: true,
         minuten: 6,
         urteil: (j, lauf) => {
             const t = String(lauf.stdout || "");
@@ -223,6 +226,7 @@ module.exports = [
                 "rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json",
         ],
         gpu: true,
+        zeit: true,
         minuten: 25,
         urteil: (j, lauf) => {
             const boots = [];
@@ -295,6 +299,7 @@ module.exports = [
                 "rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json",
         ],
         gpu: true,
+        zeit: true,
         minuten: 35,
         urteil: (j, lauf) => {
             const laeufe = [];
@@ -357,6 +362,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-klang-zensus.cjs", "--json", "{AUS}"],
         env: { KLANG_ZENSUS_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 5,
         urteil: (j, lauf) => {
             const d = (j && j.daten) || {};
@@ -410,6 +416,7 @@ module.exports = [
         // CDP-Screencast (|ΔLuma| im Boden-Ausschnitt je 0,5 s), Ohr = Analyser am Gain der Wind-Stimme
         befehl: ["bash", "-c", HARNESS + 'node "$D/m15-wind.cjs" 60'],
         gpu: true,
+        zeit: false,
         minuten: 5,
         urteil: (j, lauf) => {
             const z = jsonZeile(lauf.stdout, /^\{"stand":/);
@@ -458,6 +465,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-klang-zensus.cjs", "--gesehen", "--selftest", "--json", "{AUS}"],
         env: { KLANG_ZENSUS_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             const g = j && j.gesehen;
@@ -500,6 +508,7 @@ module.exports = [
         // gras 5648 Hz n 21 · laub 5265 Hz n 23 · quarz 3208 Hz n 21, kleinster Abstand 383 Hz — vorher 2 Stoffe mit ≥ 5 Schritten)
         befehl: ["bash", "-c", HARNESS + ': werk 2610-schritt-gesetz; node "$D/m15-schritt.cjs" && node "$D/m15-schritt.cjs" --auswerten'],
         gpu: true,
+        zeit: false,
         minuten: 5,
         urteil: (j, lauf) => {
             const je = [];
@@ -536,6 +545,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-klang-zensus.cjs", "--json", "{AUS}"],
         env: { KLANG_ZENSUS_PORT: "{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 4,
         urteil: (j, lauf) => {
             const k = j && j.kosten;
@@ -574,6 +584,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-klang-zensus.cjs", "--takt", "--echt", "--minuten", "10", "--json", "{AUS}"],
         env: { KLANG_ZENSUS_PORT: "{PORT}" },
         gpu: true,
+        zeit: true,
         minuten: 15,
         urteil: (j, lauf) => {
             const ph = (j && j.phasen) || {};
@@ -620,6 +631,7 @@ module.exports = [
         // platz, zufällig und im Dorf-Erwachen; Alter des geladenen Stands, halbe Welt (Blöcke und Edits), korrupt
         befehl: ["bash", "-c", ECHT_K1 + '20 punkte; E=$?; cp "$D/echt-k1-punkte.json" "$A" 2>/dev/null; exit $E'],
         gpu: true,
+        zeit: true,
         minuten: 10,
         urteil: (j, lauf) => {
             if (!j || !Array.isArray(j.zyklen)) return { gruen: false, zahl: "kein Ergebnis des Tab-Tods (Exit " + lauf.exit + ")" };
@@ -648,6 +660,7 @@ module.exports = [
         // laufenden Gang des Dorf-Erwachens (hart und am IDB-Schreiben des saveState, der den Gang schließt — be20b015)
         befehl: ["bash", "-c", ECHT_K1 + '20 punkte; E=$?; cp "$D/echt-k1-punkte.json" "$A" 2>/dev/null; exit $E'],
         gpu: true,
+        zeit: true,
         minuten: 10,
         urteil: (j, lauf) => {
             if (!j || !Array.isArray(j.zyklen)) return { gruen: false, zahl: "kein Ergebnis des Tab-Tods (Exit " + lauf.exit + ")" };
@@ -684,6 +697,7 @@ module.exports = [
         // des Speicher-Bilds (zwei Rufe in einem Bild zählen einzeln).
         befehl: ["bash", "-c", ECHT_K1 + '4 k2; E=$?; cp "$D/echt-k1-k2.json" "$A" 2>/dev/null; exit $E'],
         gpu: true,
+        zeit: true,
         minuten: 4,
         urteil: (j, lauf) => {
             const s = j && j.saveMs;
@@ -711,6 +725,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-persistence.cjs", "--weg"],
         env: { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_WEG: "5-30" },
         gpu: false,
+        zeit: false,
         minuten: 15,
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/);
@@ -734,6 +749,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-persistence.cjs", "--weg"],
         env: { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_WEG: "5-30", PERSISTENCE_EDITS: "1000" },
         gpu: false,
+        zeit: false,
         minuten: 18,
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/);
@@ -765,6 +781,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-persistence.cjs"],
         env: { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_SERVER_PORT: "2{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/);
@@ -797,6 +814,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-persistence.cjs"],
         env: { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_SERVER_PORT: "2{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 8,
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/);
@@ -818,6 +836,7 @@ module.exports = [
         befehl: ["node", "scripts/diag-persistence.cjs"],
         env: { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_SERVER_PORT: "2{PORT}" },
         gpu: false,
+        zeit: false,
         minuten: 10,
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/);
