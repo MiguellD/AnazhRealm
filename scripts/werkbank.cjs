@@ -3293,7 +3293,7 @@ async function starte() {
         const LL = require("./lib/licht-linsen.cjs");
         const ref = JSON.parse(fs.readFileSync(path.join(__dirname, "../spec/farbe/luft-referenz.json"), "utf8"));
         const fehl = LL.luftTiefeSelbsttest(ref);
-        selbsttestEnde(fehl, "grauer β, Kante 21 %, Linie und leere Messung beim Namen ROT");
+        selbsttestEnde(fehl, "grauer β, Kante 21 %, Linie, leere Messung und ein Pass ohne Himmels-Ton beim Namen ROT");
         if (argv.includes("--selbsttest")) process.exit(0);
         const halt = argv.includes("--eigen") ? await eigeneWelt() : null;
         const luft = async (o) =>
