@@ -46,3 +46,6 @@
 2026-10-26T08:15 atlas-holz champion 190k 79A verworfen Holz als Außen: L2 0,256 → 0,361, Klasse 0,241 (rot) — Karten-Stämme schneiden Kanten ins Laub; Befund: Foto-Referenz misst nur gegen Himmel, die Welt gegen Himmel+Boden+Holz · WICHTIG
 2026-10-26T08:30 b-streu-ort champion 179k 106A WIP Verdacht widerlegt: Streu an der Stadt byte-gleich (0/446 364), Ort prüft der Haupt-Faden; Ursache = Zeitpunkt (Probe rechnet den Tag synchron, ehe Wald/Streu stehen); Wand MAIN=FADEN auch an einer Siedlung ebadc978 · WICHTIG
 2026-10-26T08:35 bewohner-stand champion 90k 45A grün Bewohner-Probe beginnt den Tag in der stehenden Welt (__weltStehtNach): Zweig 5/5, main 2/2, Probe 128–185 s statt 125–403 s c842f360 · WICHTIG
+2026-10-26T11:30 bewohner-radeon champion wf471k/3 96A WIP Täter Messgerät: Probe hält playerMesh.position fest, echte GPU baut den Avatar später neu (Stadt 735 m vom Spieler) → Proxy; mensch.K1#1 Radeon 2/3; Klasse 188 Stellen 7c2f8418 · PUNKTE
+2026-10-26T11:30 siedlung-saaten champion wf471k/3 ~70A befund Saaten 7/8 wie vorher; rot ist das BILD: nach umstellen meldet _weltSteht zu früh, Haus 97 kommt im Schuss in den Bau-Satz (Täter-Commit 54a710f9 a-laub-pose) · PUNKTE
+2026-10-26T11:30 speicher-takt champion wf471k/3 86A WIP speicher.K2 Radeon p95 5 → 0,2 ms GRÜN; gate:persistence (T) 6 halbe Welten ROT 3dc1e504 · PUNKTE/WICHTIG
