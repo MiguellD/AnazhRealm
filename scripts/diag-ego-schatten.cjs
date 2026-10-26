@@ -152,7 +152,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -518,8 +518,7 @@ function buehne(arg) {
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 180 });
     let out = null;
-    const T0 = Date.now();
-    const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
+    const log = laufUhr();
     try {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         await page.evaluate(AUSGABE_INSTALL);

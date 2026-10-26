@@ -2797,12 +2797,11 @@ class AnazhRealm_bild_himmel {
     }
 
     // DAS WETTER AM ORT (wetter.K1): das Wort der Front über (x, z) — der Kern (phyto-core `wetterAt` über die Saat der Welt,
-    // den Ort und die Zeit, ohne `t` die Wetter-Uhr `worldMeta.wetterUhr`) wählt die Zeile von WX_GESETZ, die Welt spricht ihr
-    // Wort (`WETTER_WORT`). Leser: der Wetter-Zug (`_loopWeatherAndGrowth`).
-    _wetterAmOrt(x, z, t) {
+    // den Ort und die Zeit, ohne `t` die Welt-Uhr `spielZeit`) wählt die Zeile von WX_GESETZ, die Welt spricht ihr Wort
+    // (`WETTER_WORT`). Leser: der Wetter-Zug (`_loopWeatherAndGrowth`).
+    _wetterAmOrt(x, z, t = this.state.spielZeit) {
         const wm = this.state.worldMeta || {};
-        const uhr = t == null ? Number(wm.wetterUhr) || 0 : t;
-        const zeile = globalThis.__phytoCore.wetterAt(wm.seed || "anazh-realm-seed", x, z, uhr).zeile;
+        const zeile = globalThis.__phytoCore.wetterAt(wm.seed || "anazh-realm-seed", x, z, t).zeile;
         const wort = AnazhRealm.WETTER_WORT[zeile];
         if (!wort) throw new Error("_wetterAmOrt: die Zeile „" + zeile + "“ hat kein Wort der Welt (WETTER_ZEILE)");
         return wort;
@@ -3003,16 +3002,18 @@ class AnazhRealm_bild_himmel {
     // die Transition ist rein visuell (Skybox + Symphonie cross-faden ~45 s). Aufrufer: DSL-Op `weather`
     // (Quelle = die DSL-Quelle: emotion:<Achse> · nexus · rule:<Herkunft> · human · remote:<Peer> · llm:grok …)
     // und der Auto-Zug (_loopWeatherAndGrowth, „auto-zug") — nie ein roher Flip am Blend-System vorbei.
-    // DIE WETTER-WACHE: eine Uhr des Auto-Zugs unter 0 ist der Halt einer Messung (die Bühne der Linsen,
-    // scripts/lib/ausgabe-aufnahme.cjs `__wetterHalten`; im Spiel zählt die Uhr von 0 aufwärts). Halt heißt Halt:
-    // solange sie steht, dreht KEIN Schreiber das Wetter. Bis V18.534 hielt sie nur den Auto-Zug — der OMEN
+    // DIE WETTER-WACHE: `weatherEffectTime` unter 0 ist der Halt einer Messung (die Bühne der Linsen,
+    // scripts/lib/ausgabe-aufnahme.cjs `__wetterHalten`; im Spiel steht er auf 0). Halt heißt Halt:
+    // solange er steht, dreht KEIN Schreiber das Wetter. Bis V18.534 hielt sie nur den Auto-Zug — der OMEN
     // fand in einem Boot sunny → rainy bei eingefrorener Uhr (ein anderer Schreiber: Nexus, Emotion, Gesetz).
     // DAS GESETZ DER SCHREIBER (`_himmelSchreiber`, Leben-Schau 2): der SPIELER schreibt, und sein Wort steht
     // (`wetterWort`, bis „setze wetter frei"); ein Gesetz des Spielers schreibt wie er; solange das Wort steht, dreht
     // weder der Zug noch die Welt das Wetter (false). Ohne Wort schreibt die WELT (Nexus, seine Gesetze, die Emotion,
     // die Wesen) nie selbst: sie WÜNSCHT das nächste Wort (`wetterWunsch`, Rückgabe "wunsch"), der Zug zieht es in seinem
     // Takt (`WETTER_ZUG_SEK`). Vorher hielt „setze wetter sonnig" bis zum nächsten Nexus-Regen (alle 4,7 s).
-    _setWeather(name, quelle) {
+    // `zug` ({ von, beginn }) trägt der Wetter-Zug: sein Übergang ist eine Funktion der Welt-Uhr — aus dem Wort der Front `von`,
+    // ab `beginn`, über die Dauer des Gesetzes (nie die Laune einer Seite), gleich welcher Übergang lief.
+    _setWeather(name, quelle, zug) {
         if (!(name in AnazhRealm.WEATHER_INTENSITY)) return false;
         if (this._messHalt()) {
             this.log(`Wetter gehalten: ${quelle || "?"} wollte ${name}`, "DEBUG");
@@ -3038,8 +3039,10 @@ class AnazhRealm_bild_himmel {
         } else if (wer === "gesetz" && this.state.wetterWort) this.state.wetterWort = name;
         const oldWeather = this.state.weather;
         this.state.weather = name;
-        this.state.weatherEffectTime = 0;
-        if (oldWeather !== name) {
+        if (zug) {
+            this.state.weatherTransition = null;
+            this.requestWeatherTransition(name, this.constructor.WEATHER_TRANSITION_DURATION_MS, zug.von, zug.beginn);
+        } else if (oldWeather !== name) {
             this.requestWeatherTransition(name, undefined, oldWeather);
         }
         // updateSkyboxWeather wird nicht direkt gerufen —
@@ -3049,19 +3052,20 @@ class AnazhRealm_bild_himmel {
     }
 
     // DER SPIELER GIBT DAS WETTER FREI („setze wetter frei"): sein Wort fällt, ein alter Wunsch der Welt mit ihm; das Wetter
-    // steht noch einen Takt des Zugs (seine Uhr beginnt bei 0 — nie unter dem Halt einer Messung), dann zieht es wieder.
+    // steht bis zum nächsten Zug der Welt-Uhr, dann zieht es wieder.
     _wetterFreigeben(quelle) {
         const wer = this._himmelSchreiber(quelle, "wetter");
         if (wer !== "spieler" && wer !== "gesetz") return false;
         this.state.wetterWort = null;
         this.state.wetterWunsch = null;
-        if (!this._messHalt()) this.state.weatherEffectTime = 0;
+        this._wetterZug = Math.floor(this.state.spielZeit / AnazhRealm.WETTER_ZUG_SEK);
         return true;
     }
 
     // [ATMOSPHERE] Startet einen Cross-Fade. Default-Dauer via _emotionModulate aus den Emotionen
     // (peace ×1.6 langsamer, chaos ×0.4 schneller); eine explizite Dauer überschreibt.
-    requestWeatherTransition(target, durationMs, fromWeather) {
+    // `beginn` ist die Welt-Uhr (s), ab der er läuft — ohne sie jetzt.
+    requestWeatherTransition(target, durationMs, fromWeather, beginn = this.state.spielZeit) {
         // D5a (V18.128) — das Vokabular ist die WEATHER_INTENSITY-Tabelle
         // (sunny · rainy · stormy), nicht mehr das harte Binär-Paar.
         if (!(target in AnazhRealm.WEATHER_INTENSITY)) return false;
@@ -3097,20 +3101,18 @@ class AnazhRealm_bild_himmel {
             to: target,
             progress: 0,
             duration: dur,
-            startedAt: typeof performance !== "undefined" ? performance.now() : Date.now(),
+            startedAt: beginn,
         };
         return true;
     }
 
-    // Pro Frame: treibt weatherTransition.progress; bei ≥ 1 state.weather = to, Transition genullt.
-    // Währenddessen wirken Skybox-Mul (_applyDayNightToScene) und die Klang-Welt (der Regen liest das
-    // transition-aware Wetter-Feld `_weatherFieldFor` — kein zweiter Schreiber).
+    // Pro Frame: treibt weatherTransition.progress auf der Welt-Uhr (`startedAt` in s der Welt-Uhr, `duration` in ms); bei ≥ 1
+    // state.weather = to, Transition genullt. Währenddessen wirken Skybox-Mul (_applyDayNightToScene) und die Klang-Welt (der
+    // Regen liest das transition-aware Wetter-Feld `_weatherFieldFor` — kein zweiter Schreiber).
     tickWeatherTransition(_currentTime) {
         const wt = this.state.weatherTransition;
         if (!wt) return;
-        const nowMs = typeof performance !== "undefined" ? performance.now() : Date.now();
-        const elapsed = nowMs - wt.startedAt;
-        wt.progress = Math.min(1, elapsed / wt.duration);
+        wt.progress = Math.max(0, Math.min(1, ((this.state.spielZeit - wt.startedAt) * 1000) / wt.duration));
         if (wt.progress >= 1) {
             // Übergang abgeschlossen: state.weather steht seit dem Aufruf auf dem Ziel; der nächste
             // DayNight-Tick setzt die finale Skybox-Tönung (currentTint direkt).

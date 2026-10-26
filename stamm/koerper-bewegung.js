@@ -538,7 +538,7 @@ class AnazhRealm_koerper_bewegung {
         }
         let dvEigen = 0;
         let aufprall = 0;
-        let stossTags = null;
+        let gegnerStoff = null;
         for (const [q, g] of gegner) {
             const d = Math.hypot(g.x, g.z);
             if (!(d > 1e-9)) continue;
@@ -566,15 +566,24 @@ class AnazhRealm_koerper_bewegung {
             dvEigen = Math.max(dvEigen, dv);
             if (hinein > aufprall) {
                 aufprall = hinein;
-                stossTags =
-                    leib && G.art === "tier"
-                        ? this.computeCreatureCompoundTags(q)
-                        : q && q.type && this.state.blueprints && this.state.blueprints[q.type]
-                          ? this.computeCompoundTags(this.state.blueprints[q.type])
-                          : null;
+                // der Stoff des Gegners (halten.K2): ein Leib seine Zeile, ein Wagen seine Hülle, ein Bauwerk sein Werk, das
+                // Starre ohne Eintrag (Insel, Fels) der Stoff des Felds am Stoß
+                gegnerStoff = leib
+                    ? this._leibStoff(G.art !== "tier")
+                    : G
+                      ? this._wagenStoff(q)
+                      : q && q.type
+                        ? this._werkStoff(q)
+                        : this._terrainMaterialAt(pos.x, pos.z, fz.y + k.stufe);
             }
         }
-        if (meldet && aufprall >= ST.ereignisMs) this._stossEreignis(stossTags, dvEigen);
+        if (meldet && aufprall >= ST.ereignisMs)
+            this._stossEreignis(
+                gegnerStoff,
+                dvEigen,
+                { x: pos.x, y: fz.y + k.stufe, z: pos.z },
+                this._wagenStoff(entry)
+            );
         return { x: pos.x, z: pos.z, vx, vz };
     }
 
@@ -630,15 +639,15 @@ class AnazhRealm_koerper_bewegung {
 
     // DAS STOSS-EREIGNIS (das EINE Impuls-Gesetz): ein Aufprall erreicht Kamera und Klang — der Kamera-Ruck über den EINEN
     // Landungs-Dip (_landImpactPending, wie der Treffer) mit dem Sprung der eigenen Fahrt (am leichten Tier klein, am Fels
-    // voll), der Klang über das Gesetz klang:SUBSTANZ.treffer (die Substanz des Gegners färbt ihn; stumm ohne Symphonie).
-    _stossEreignis(tags, dv) {
+    // voll), Klang und Funken über das Stoff-Paar Hülle × Gegner (`_trefferPaar`; stumm ohne Symphonie).
+    _stossEreignis(gegner, dv, ort, eigen) {
         const G = AnazhRealm._arenaGesetz().gefuehl;
         const e = Math.max(0, Math.min(1, dv / AnazhRealm.STOSS.ruckRefMs));
         this.state._landImpactPending = Math.max(
             this.state._landImpactPending || 0,
             G.dipMin + (G.dipMax - G.dipMin) * e
         );
-        this._substanzKlang("treffer", tags || {});
+        this._trefferPaar(eigen, gegner, ort, e);
     }
 
     // ===== DER FELD-NATIVE KAPSEL-CHARACTER-CONTROLLER =====

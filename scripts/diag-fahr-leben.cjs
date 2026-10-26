@@ -825,7 +825,6 @@ async function probeBahn(B) {
         uhr.zeilen.push(`${name} ${((t - uhr.t) / 1000).toFixed(1)} s`);
         uhr.t = t;
     };
-    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;

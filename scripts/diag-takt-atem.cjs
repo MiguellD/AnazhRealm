@@ -24,7 +24,7 @@
 //   node scripts/diag-takt-atem.cjs [--selftest]   (npm run gate:takt-atem; Port TAKT_ATEM_PORT, 4399)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr } = require("./lib/welt-boot.cjs");
 
 const SOLL = { dichte: 0.1, stand: 0.1, lage: 0.1 };
 
@@ -274,8 +274,7 @@ function atem() {
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 180 });
     let out = null;
-    const T0 = Date.now();
-    const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
+    const log = laufUhr();
     try {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         // die Welt steht: Renderer, Foundry-Buch, Sätze und Bäume der Stufen-Wahl; danach ruht der Spiel-Loop

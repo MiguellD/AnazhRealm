@@ -318,8 +318,8 @@ class AnazhRealm_feld_dsl {
         ctx.budget.depthLeft++;
     }
 
-    // DER HALT EINER MESSUNG: die Uhr des Wetter-Zugs unter 0 (die Bühne der Linsen, scripts/lib/ausgabe-aufnahme.cjs
-    // `__wetterHalten`; im Spiel zählt sie von 0 aufwärts). Leser: der EINE Wetter-Schreiber (`_setWeather`) und die EINE
+    // DER HALT EINER MESSUNG: `weatherEffectTime` unter 0 (die Bühne der Linsen, scripts/lib/ausgabe-aufnahme.cjs
+    // `__wetterHalten`; im Spiel steht er auf 0). Leser: der Wetter-Zug, der EINE Wetter-Schreiber (`_setWeather`) und die EINE
     // Engstelle der Welt-Akte (`dslEval`).
     _messHalt() {
         return this.state.weatherEffectTime < 0;

@@ -39,7 +39,7 @@
 //   node scripts/diag-fachwerk-contract.cjs
 const fs = require("fs");
 const path = require("path");
-const { probeWand, fingerabdruck, goldenVergleich: compare, goldenSelbsttest } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck, goldenVergleich: compare, goldenSelbsttest, fallSchluessel: caseKey } = require("./lib/plattform-probe.cjs");
 const fingerprint = (g) => fingerabdruck(g, false, true); // die v3–v5-Form samt Fernform der NUR-WURF-Stufe
 
 const root = path.resolve(__dirname, "..");
@@ -83,9 +83,6 @@ CASES.push({ rezeptId: "hochhaus", seed: 7, lod: 2, ov: { W: 12 } });
 
 function buildCase(c) {
     return FC.buildInstance(c.rezeptId, c.seed, c.lod, c.ov || undefined);
-}
-function caseKey(c) {
-    return `${c.rezeptId}-s${c.seed}-L${c.lod}${c.ov ? "-ov_" + Object.keys(c.ov).sort().join("_") : ""}`;
 }
 
 // ── DIE SHELL-KOMPOSITION (Split-Paritäts-Referenz): derselbe Bau aus den

@@ -23,7 +23,7 @@
 //   node scripts/diag-porta-contract.cjs
 const fs = require("fs");
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenVergleich: compare, goldenSelbsttest } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenVergleich: compare, goldenSelbsttest, fallSchluessel: caseKey } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v4/golden");
@@ -56,9 +56,6 @@ for (const g of ORDNUNGEN) CASES.push({ rezeptId: g, seed: 7, lod: 2 });
 
 function buildCase(c) {
     return PC.buildInstance(c.rezeptId, c.seed, c.lod, c.ov || undefined);
-}
-function caseKey(c) {
-    return `${c.rezeptId}-s${c.seed}-L${c.lod}${c.ov ? "-ov_" + Object.keys(c.ov).sort().join("_") : ""}`;
 }
 
 

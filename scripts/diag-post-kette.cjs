@@ -37,7 +37,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr } = require("./lib/welt-boot.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 
@@ -921,8 +921,7 @@ function buehne(nFrames, nachtLicht) {
         if (m.type() === "error" || /\[ERROR\]/.test(t)) konsolenFehler.push(t.slice(0, 240));
     });
     let out = null;
-    const T0 = Date.now();
-    const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
+    const log = laufUhr();
     try {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         // Die Kette steht erst nach dem ersten Frame mit bereitem Renderer (`_ensurePostProcessing` im Loop).

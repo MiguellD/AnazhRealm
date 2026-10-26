@@ -26,14 +26,12 @@
 //
 //   node scripts/diag-reconnect.cjs
 "use strict";
-const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const { hauptLauf, ROOT: root } = require("./lib/welt-boot.cjs");
 
-const root = path.resolve(__dirname, "..");
 const stammSrc = stammLib.text(root);
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
-const { hauptLauf } = require("./lib/welt-boot.cjs");
 
 // ── Methoden-Extraktion: 4-Space-Klassen-Indent, schließende Zeile `    }` ──
 function extractMethod(name) {
@@ -508,6 +506,7 @@ hauptLauf(async () => {
         self._p2pSampleSnapBuf = mk("_p2pSampleSnapBuf", env).bind(self);
         self._p2pMsgPos = mk("_p2pMsgPos", env);
         self._fremdeZahl = mk("_fremdeZahl", env); // die EINE Zahl aus fremder Hand, die _p2pMsgPos liest
+        self._weltUhrNimm = mk("_weltUhrNimm", env); // die Welt-Uhr des Orts (pos.w; ohne w nimmt sie nichts)
 
         // Der reine Kern: (t=0,x=0) · (t=100,x=3) ⇒ bei 50 ≈ 1,5.
         const buf = [

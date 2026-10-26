@@ -644,6 +644,12 @@ async function tempo(K) {
     // DER LEBENSZYKLUS RUHT (Ökologie K1/K2): sein Riss und sein Hungertod nahmen der Probe den stehenden Bären, die Mitte ging
     // durch den Leichnam (heim-z29b: fuchs @60 → baer, 0,34 m) — ein Hindernis, das dennoch fällt, nennt der Lauf
     r.tickFaunaLifecycle = () => {};
+    // DIE TROCKENHEIT (wie gate:fahr-leben): der erste Takt der Seite zieht das Wort der Front am Ort zur Welt-Uhr (feld.K2#2),
+    // an der Mess-Wiese zur Uhr 0 Regen — die Nässe senkt die Haftung am Rad (`_fahrHaft`), der GT bei vmax blieb 0,051 m vor dem
+    // Mammut stehen. Das Wort des Spielers hält Sonne, die Nässe steht trocken; die Nässe am Rad misst gate:fahr-leben W.
+    r._setWeather("sunny", "human");
+    st.weatherTransition = null;
+    r._naesseTakt(1e6);
     // DIE GEOMETRIE, eigen (nie der Löser, den sie richtet): der Rahmen wie `_boxAbstand2`, innen negativ
     const rahmen = (b) =>
         b.obb || {

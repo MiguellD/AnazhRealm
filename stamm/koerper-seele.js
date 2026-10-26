@@ -1043,12 +1043,11 @@ class AnazhRealm_koerper_seele {
     // Keule und Bogen) — die Bronze-Axt schneller als die Stahl-Axt (halten.K3); vorher las es die Teile seines Spenders
     // (geraet_schwert, geraet_spitzhacke): zwei Raten für 22 Gestalten und jeden Stoff. Ein Eigenwerk liest seine Teile.
     _wearPerStrike(bp) {
-        const sc = this._schmiedeWerk(bp) ? globalThis.__schmiedeCore : null;
-        if (sc && typeof sc.werkStoff !== "function") AnazhRealm._kernPflichtBruch("schmiede:werkStoff");
-        const stoff = sc ? sc.werkStoff(this._schmiedeGestalt(bp), this._artifactStudioOv(bp) || undefined) : null;
+        const werk = this._schmiedeWerk(bp);
+        const stoff = werk ? this._geraetStoff(bp) : null;
         const zeile = stoff ? (this.state.materials || {})[stoff] : null;
         if (stoff && !zeile) this._bruchMelden("STOFF-ZEILE fehlt: das Werk aus „" + stoff + "“ zehrt ohne Härte");
-        const tags = zeile ? zeile.tags : !sc && bp ? this.computeCompoundTags(bp) : null;
+        const tags = zeile ? zeile.tags : !werk && bp ? this.computeCompoundTags(bp) : null;
         const haerte = tags && typeof tags["härte"] === "number" ? tags["härte"] : 0.5;
         const floor = AnazhRealm.WEAR_HARDNESS_FLOOR;
         const ceil = AnazhRealm.WEAR_HARDNESS_CEIL;
@@ -1056,6 +1055,17 @@ class AnazhRealm_koerper_seele {
         // Härte normiert zu Verschleiß-Skalierung: floor → 1.0×, ceil → 1/3.
         const scale = floor / norm;
         return AnazhRealm.WEAR_PER_STRIKE_BASE * scale;
+    }
+
+    // DER STOFF DES GERÄTS (halten.K2 · K3): woraus der Teil ist, der am Ziel arbeitet — ein Werk der Schmiede ihr werkStoff
+    // (Klinge, Kopf, Blatt; das Holz von Keule und Bogen), ein Eigenwerk der Stoff seines größten festen Teils (`_werkStoff`),
+    // die leere Hand der Leib. Leser: der Verschleiß (`_wearPerStrike`) und der Treffer (`_trefferPaar`).
+    _geraetStoff(bp) {
+        if (!bp) return this._leibStoff(true);
+        if (!this._schmiedeWerk(bp)) return this._werkStoff({ type: bp.name });
+        const sc = globalThis.__schmiedeCore;
+        if (typeof sc.werkStoff !== "function") AnazhRealm._kernPflichtBruch("schmiede:werkStoff");
+        return sc.werkStoff(this._schmiedeGestalt(bp), this._artifactStudioOv(bp) || undefined);
     }
 
     // wear-Faktor auf den Treffer-Schaden des gehaltenen Geräts, linear: wear=0 → WEAR_STAT_FLOOR (0.3, nie 0 —

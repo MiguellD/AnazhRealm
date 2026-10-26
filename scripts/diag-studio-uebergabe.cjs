@@ -14,9 +14,8 @@ const vm = require("vm");
 const stammLib = require("./lib/stamm.cjs");
 const { kanalImVm, bauAbdruck } = require("./lib/asset-worker-harness.cjs");
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
-const { hauptLauf } = require("./lib/welt-boot.cjs");
+const { hauptLauf, ROOT } = require("./lib/welt-boot.cjs");
 
-const ROOT = path.resolve(__dirname, "..");
 const argNach = (n) => (process.argv.includes(n) ? process.argv[process.argv.indexOf(n) + 1] : null);
 const SAAT = Number(argNach("--saat")) >>> 0 || Date.now() >>> 0;
 

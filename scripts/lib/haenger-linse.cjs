@@ -227,7 +227,10 @@ function spurProfil(ev) {
     for (const n of knoten.values()) if (knoten.has(n.parent)) knoten.get(n.parent).children.push(n.id);
     const startTime = kopf.args.data.startTime, endTime = timeDeltas.reduce((t, x) => t + x, startTime);
     const nodes = [...knoten.values()].sort((x, y) => x.id - y.id);
-    return { profil: { nodes, startTime, endTime, samples, timeDeltas }, marken: marken.map((m) => m.ts) };
+    // DIE ANDEREN PROZESSE (Kategorie `gpu` der Spur): ihre Aufträge ab 20 ms auf der Spur-Uhr — eine GPU-Leine ohne Auftrag der
+    // Seite heißt nach dem Auftrag, der den GPU-Prozess hielt (Radeon 26.10.: `gpu_info_collector::CollectDawnInfo` 217 ms).
+    const gpu = ev.filter((e) => e.pid !== kopf.pid && e.dur >= 2e4);
+    return { profil: { nodes, startTime, endTime, samples, timeDeltas }, marken: marken.map((m) => m.ts), gpu };
 }
 
 // Der Versatz Seite → Spur: der Median über die Takte (Marke gegen Takt-Beginn); ungleiche Zahl legt keine Probe.
@@ -445,7 +448,11 @@ function haengerAuswerten(roh, spur, opts) {
                 name = `Pipeline synchron (${stoffe.slice(0, 4).join(", ")}${stoffe.length > 4 ? ", …" : ""})`;
             } else if (vor.dev.shader) name = `Shader-Modul ×${vor.dev.shader}`;
             else if (up > 4096) name = `Upload ${(up / 1024).toFixed(1)} MB`;
-            else name = ohneRender ? "GPU-Leine ohne Auftrag" : "Bild-Takt ruht ohne Auftrag";
+            else {
+                // ein Auftrag des GPU-Prozesses im Fenster (Spur-Uhr): er hielt die Leine, nicht die Seite
+                const g = versatz != null && (spur.gpu || []).find((x) => x.ts < versatz + w1 * 1e3 && x.ts + x.dur > versatz + w0 * 1e3);
+                name = g ? `GPU-Prozess: ${g.name}` : ohneRender ? "GPU-Leine ohne Auftrag" : "Bild-Takt ruht ohne Auftrag";
+            }
         }
         haenger.push({
             t: +(w0 - roh.tMess[0]).toFixed(0),
@@ -609,9 +616,8 @@ function haengerTabelle(a) {
                 .map(([k, v]) => `${k} ${v}`)
                 .join(" · ");
             z.push(`  t=${h.t} dt=${h.dt} ms (${h.takte} Takte, ${h.ohneRender} ohne Bild) [${zt}] ${h.ursache}`);
-            if (h.pfad.length) z.push(`      Pfad: ${h.pfad.map((x) => `${x.name} ${x.pct}%`).join(" › ")}`);
-            if (h.zweige.length) z.push(`      Zweige: ${h.zweige.map((x) => `${x.name} ${x.pct}%`).join(" · ")}`);
-            if (h.selbst.length) z.push(`      Selbst: ${h.selbst.map((x) => `${x.name} ${x.pct}%`).join(" · ")}`);
+            for (const [wort, l, fuge] of [["Pfad", h.pfad, " › "], ["Zweige", h.zweige, " · "], ["Selbst", h.selbst, " · "]])
+                if (l.length) z.push(`      ${wort}: ${l.map((x) => `${x.name} ${x.pct}%`).join(fuge)}`);
             const g = Object.entries(h.geraetVorher || h.geraet || {})
                 .map(([k, v]) => `${k} ${v}`)
                 .join(" · ");
@@ -704,9 +710,9 @@ function linseWerten(roh, spur, b) {
     return Object.assign(a, { befunde: haengerLinsenBefunde(a), tabelle: haengerTabelle(a) });
 }
 
-// DER SELBSTTEST (ohne Welt): ein erfundener Lauf mit vier Hängern bekannter Ursache (Takt-Last, Neben-Last, Collector,
-// GPU-Warten nach synchronen Pipelines) als Spur (Profile, zwei ProfileChunks, Takt-Marken auf einer gegen die Seite versetzten
-// Uhr) — die Auswertung muss jeden beim Namen nennen und keinen ruhigen Frame zählen; fehlt eine Takt-Marke, ist sie ROT.
+// DER SELBSTTEST (ohne Welt): ein erfundener Lauf mit Hängern bekannter Ursache (Takt-Last, Neben-Last, Collector,
+// GPU-Warten nach synchronen Pipelines, ein Auftrag des GPU-Prozesses) als Spur (Profile, zwei ProfileChunks, Takt-Marken
+// auf einer gegen die Seite versetzten Uhr) — die Auswertung muss jeden beim Namen nennen und keinen ruhigen Frame zählen; fehlt eine Takt-Marke, ist sie ROT.
 // Die Takt-Spitze: 200 Takte zu 5 ms (A 2 · B 1 · C 2), dann 200 mit 3 ms Last in jedem 10. — die Last ist allein Täter
 // (3 ms), A (in jedem Takt) keiner; ohne Last GRÜN.
 function selbsttest() {
@@ -760,54 +766,50 @@ function selbsttest() {
         for (let x = von; x < bis - 0.5; x += 1) probe(x + 0.5, id || 6);
         t = bis;
     };
-    // 30 ruhige Takte
-    for (let i = 0; i < 30; i++) {
-        takt(4);
+    // n ruhige Takte; die Leine: 18 Takte ohne Render (300 ms Warten), dann das nächste Bild
+    const ruhig = (n) => {
+        for (let i = 0; i < n; i++) {
+            takt(4);
+            luecke(t + 16.7);
+        }
+    };
+    const leine = () => {
+        for (let i = 0; i < 18; i++) {
+            luecke(t + 16.7);
+            takt(1, 11, false);
+        }
         luecke(t + 16.7);
-    }
+    };
+    ruhig(30);
     // Hänger 1: 250 ms im Takt (_lastImTakt unter _loopRender, je zur Hälfte in zwei Geschwister-Knoten)
     takt(250, [5, 14]);
     luecke(T.c1[T.c1.length - 1] + 5);
-    for (let i = 0; i < 10; i++) {
-        takt(4);
-        luecke(t + 16.7);
-    }
+    ruhig(10);
     // Hänger 2: 250 ms neben dem Takt (onmessage → _nebenLast)
     takt(4);
     luecke(t + 260, 8);
-    for (let i = 0; i < 10; i++) {
-        takt(4);
-        luecke(t + 16.7);
-    }
+    ruhig(10);
     // Hänger 3: 200 ms Collector neben dem Takt
     takt(4);
     luecke(t + 210, 9);
-    for (let i = 0; i < 10; i++) {
-        takt(4);
-        luecke(t + 16.7);
-    }
+    ruhig(10);
     // Hänger 4: drei synchrone Pipelines im Takt, danach 300 ms Warten (Takte ohne Render unter der Leine)
     namen.push(
         { t: t + 1, art: "sync", n: "renderPipeline_baumRinde_17" },
         { t: t + 2, art: "sync", n: "renderPipeline_NodeMaterial_18" }
     );
     takt(4, 11, true, { pipeSync: 2 });
-    for (let i = 0; i < 18; i++) {
-        luecke(t + 16.7);
-        takt(1, 11, false);
-    }
-    luecke(t + 16.7);
-    for (let i = 0; i < 10; i++) {
-        takt(4);
-        luecke(t + 16.7);
-    }
+    leine();
+    ruhig(10);
     // Hänger 5: 210 ms im Takt, gleich verteilt auf drei Zweige — keiner trägt die Hälfte: VERTEILT
     takt(210, [15, 16, 17]);
     luecke(T.c1[T.c1.length - 1] + 5);
-    for (let i = 0; i < 10; i++) {
-        takt(4);
-        luecke(t + 16.7);
-    }
+    ruhig(10);
+    // Hänger 6: 300 ms unter der Leine ohne Auftrag der Seite — der GPU-Prozess sammelt seine Dawn-Info (Spur, Kategorie gpu)
+    takt(4);
+    const gpuVon = t;
+    leine();
+    ruhig(10);
     const spitzen = [0, 3].map((last) => {
         const von = T.t.length;
         for (let i = 0; i < 200; i++) {
@@ -822,6 +824,7 @@ function selbsttest() {
         cpuProfile: { nodes: nodes.slice(von, bis), samples: samples.slice(von * 300, bis * 300) },
         timeDeltas: deltas.slice(von * 300, bis * 300) } } });
     const ev = [chunk(8, 99, V + 2e6), { name: "Profile", pid: 1, tid: 1, id: "0x1", ts: V + 989e3, args: { data: { startTime: V + 989e3 } } },
+        { name: "gpu_info_collector::CollectDawnInfo", pid: 2, ts: gpuVon * 1000 + V, dur: 3e5 },
         chunk(0, 8, V + 1e6), ...T.c0.map((c) => ({ name: "anazh-takt", cat: "blink.user_timing", pid: 1, tid: 1, ts: c * 1000 + V + 40 }))];
     const a = haengerAuswerten(roh, spurProfil(ev), { schwelle: 100 });
     const erwartet = [
@@ -830,6 +833,7 @@ function selbsttest() {
         ["GC", "Garbage-Collector"],
         ["GPU", "Pipeline synchron (baumRinde, NodeMaterial)"],
         ["TAKT", "verteilt"],
+        ["GPU", "GPU-Prozess: gpu_info_collector::CollectDawnInfo"],
     ];
     if (a.haengerN !== erwartet.length)
         f.push(`Hänger ${a.haengerN}, erwartet ${erwartet.length}: ${a.haenger.map((h) => h.ursache).join(" | ")}`);
@@ -857,14 +861,15 @@ function selbsttest() {
     if (!haengerLinsenBefunde(ohne).length)
         f.push("ohne Profil meldet die Linse keinen Befund (sie wäre blind und grün)");
     const sp = spurProfil(ev);
+    const teilVon = (von, bis) => [Object.fromEntries(Object.entries(T).map(([k, v]) => [k, v.slice(von, bis)])), { ...sp, marken: sp.marken.slice(von, bis) }];
     spitzen.forEach(([von, bis], last) => {
-        const teil = Object.fromEntries(Object.entries(T).map(([k, v]) => [k, v.slice(von, bis)]));
-        const s = spitzenAuswerten({ takte: teil }, { profil: sp.profil, marken: sp.marken.slice(von, bis) });
+        const [teil, spur] = teilVon(von, bis);
+        const s = spitzenAuswerten({ takte: teil }, spur);
         const t = s.taeter[0];
         if (last ? s.befunde.length !== 1 || t.name !== "_spitzenLast" || Math.abs(t.spitzeMs - t.mitteMs - 3) > 0.3 : s.befunde.length)
             f.push(`Spitze ${last ? "mit" : "ohne"} 3 ms je 10. Takt falsch geurteilt:\n${s.tabelle}`);
         // die Posten: _teilA trägt 2/8 jedes Takts (≥ 1,25 ms ohne Spitze über der Mitte: ROT), _teilB 1/8 (GRÜN)
-        const p = spitzenAuswerten({ takte: teil }, { profil: sp.profil, marken: sp.marken.slice(von, bis) }, ["_teilA", "_teilB"]);
+        const p = spitzenAuswerten({ takte: teil }, spur, ["_teilA", "_teilB"]);
         if (p.befunde.length !== s.befunde.length + 1 || !/^Posten _teilA: /.test(p.befunde.at(-1)))
             f.push(`Posten ${p.posten.map((x) => `${x.name} ${x.spitzeMs}`).join(" · ")} ms falsch geurteilt`);
     });
@@ -872,8 +877,8 @@ function selbsttest() {
     const [v0, b0] = spitzen[0];
     const fahrt = (nm, bahnM) => {
         const nodes = sp.profil.nodes.map((n) => (n.id === 17 ? { ...n, callFrame: { ...n.callFrame, functionName: nm } } : n));
-        const takte = Object.fromEntries(Object.entries(T).map(([k, v]) => [k, v.slice(v0, b0)]));
-        return linseWerten({ takte, wandern: "fahrt", bahnM }, { profil: { ...sp.profil, nodes }, marken: sp.marken.slice(v0, b0) }, { spitze: true }).befunde.join();
+        const [takte, spur] = teilVon(v0, b0);
+        return linseWerten({ takte, wandern: "fahrt", bahnM }, { ...spur, profil: { ...sp.profil, nodes } }, { spitze: true }).befunde.join();
     };
     const urteil = [fahrt("_teilC", 500), fahrt("computeVertexNormals", 500), fahrt("_teilC", 20)];
     if (urteil[0] || !/^Fahrt-Posten computeVertexNormals: 2[^,]*$/.test(urteil[1]) || !/^die Fahrt stand[^,]*$/.test(urteil[2]))
