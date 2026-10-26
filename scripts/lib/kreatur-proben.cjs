@@ -1715,11 +1715,10 @@ async function kreaturProben(r, T, opts) {
 
     // ── rudel: DER SPIELER IST BEUTE im Wolfsrevier (oekologie.K4) — ein Rudel aus dem Wurf (`_kreaturWurf`, die Leine am
     // Wurf-Ort), der stehende Spieler 45 m vom Wurf-Ort (jenseits der Neugier noticeRadius, in der Witterung scentRangeM);
-    // höchstens 10 Spielminuten am echten Takt. Die Ereignisse in Sekunden der Kreatur-Uhr: die erste Pirsch auf den Spieler
-    // (ein Wolf im Zustand „jagd" mit dem Ziel „spieler"), das erste Umstellen (alle näher als 2 × jagd.hetzM, die größte
-    // Winkel-Lücke ≤ anderthalb Plätze, 540°/n); danach 1500 Takte die Lücke und die Lücke beim ersten Biss ──
+    // höchstens 10 Spielminuten am echten Takt, davor je 2 s Frieden und leerer Anker. Die Ereignisse in Sekunden der Kreatur-Uhr: die
+    // erste Pirsch auf den Spieler (ein Wolf im Zustand „jagd" mit dem Ziel „spieler"), das erste Umstellen (≥ 3 Jäger, alle
+    // näher als 2 × jagd.hetzM, die größte Winkel-Lücke ≤ anderthalb Plätze, 540°/n) und die Lücke beim ersten Biss ──
     await buehne("rudel", async (restore) => {
-        r.setGameMode("pfad");
         if (taeter === "rudel") schrittJagd(restore);
         // der alte Defekt: die Witterung liest nur Tiere, der Spieler ist keine Beute
         if (taeter === "rudel-beute")
@@ -1729,9 +1728,18 @@ async function kreaturProben(r, T, opts) {
         kamera(1, 0);
         const woelfe = r._kreaturWurf({ x: heim.x, z: heim.z }, "wolf", "happy", r._faunaRng("rudel"), 7);
         woelfe.forEach(ruhig);
-        const o = neben(heim.x + 45, heim.z);
-        pm.set(o.x, o.y, o.z);
+        pm.copy(neben(heim.x + 45, heim.z));
         s.player.hp = 1e9;
+        // DAS RUDEL AM SPIELER: die Wölfe, die ihn jetzt pirschen oder hetzen (wer unter der halben Masse des Spielers wiegt,
+        // jagt ihn nie — jagd.beuteMasse); die größte Winkel-Lücke des Rudels um ihn in Grad
+        const jaeger = () =>
+            woelfe.filter(
+                (c) => c.userData._jagdZiel === "spieler" && /^(jagd|hetzen)$/.test(c.userData._motionZustand)
+            );
+        const luecke = (R) => {
+            const w = R.map((c) => Math.atan2(c.position.x - pm.x, c.position.z - pm.z)).sort((a, b) => a - b);
+            return grad(Math.max(...w.map((a, i) => (i + 1 < w.length ? w[i + 1] : w[0] + TAU) - a)));
+        };
         // die Lücke beim ersten Biss, der den Spieler trifft (das Maul am Leib)
         let ersterBiss = null;
         decke(
@@ -1739,38 +1747,36 @@ async function kreaturProben(r, T, opts) {
             "damagePlayer",
             (alt) =>
                 function (amount, quelle) {
-                    if (quelle === "jagd" && ersterBiss === null) ersterBiss = luecke();
+                    if (quelle === "jagd" && ersterBiss === null) ersterBiss = luecke(jaeger());
                     return alt.call(this, amount, quelle);
                 }
         );
-        const luecke = () => {
-            const w = woelfe.map((c) => Math.atan2(c.position.x - pm.x, c.position.z - pm.z)).sort((a, b) => a - b);
-            let g = 0;
-            for (let i = 0; i < w.length; i++) {
-                const n = i + 1 < w.length ? w[i + 1] : w[0] + Math.PI * 2;
-                g = Math.max(g, n - w[i]);
-            }
-            return grad(g);
+        // DER FRIEDEN und DER LEERE ANKER (der Boot vor dem Guss des Spielers, `_deferredAvatarSoul`): je 2 s keine Pirsch, kein
+        // Bruch; der Täter rudel-leib ist die Witterung, die nicht fragt, ob er seinen Leib trägt (die Marke fehlt, die Gestalt auch)
+        const leib = [];
+        s.playerMesh.traverse((k) => k.userData._leibV > 0 && leib.push([k, k.userData._leibV]));
+        const anker = (leer) => {
+            for (const [k, v] of leib) k.userData._leibV = leer ? 0 : v;
+            s._deferredAvatarSoul = leer && taeter !== "rudel-leib" ? "human" : null;
         };
-        const J = A._verhaltenGesetz().jagd;
-        const [luecken, t0] = [[], s.creatureAnimationTime];
-        const ev = { woelfe: woelfe.length, pirschS: null, umstelltS: null };
-        for (let k = 0; k < 36000 && luecken.length < 1500; k++) {
+        restore.push(() => anker(false));
+        const ev = { woelfe: woelfe.length, ohnePirsch: [0, 0], pirschS: null, umstelltS: null };
+        for (const [i, leer] of [0, 1].entries()) {
+            r.setGameMode(leer ? "pfad" : "frieden");
+            anker(leer);
+            for (let k = 0; k < 120; k++) (takt(1 / 60), (ev.ohnePirsch[i] += jaeger().length > 0));
+        }
+        anker(false);
+        const [t0, H] = [s.creatureAnimationTime, A._verhaltenGesetz().jagd.hetzM];
+        for (let k = 0; k < 36000 && ersterBiss === null; k++) {
             ruhigSpieler();
             takt(1 / 60);
-            const t = +(s.creatureAnimationTime - t0).toFixed(1);
-            const pirscht = (c) => c.userData._jagdZiel === "spieler" && c.userData._motionZustand === "jagd";
-            if (ev.pirschS === null && woelfe.some(pirscht)) ev.pirschS = t;
-            if (!woelfe.every((c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < 2 * J.hetzM)) continue;
-            luecken.push(luecke());
-            if (ev.umstelltS === null && luecken[luecken.length - 1] <= 540 / woelfe.length) ev.umstelltS = t;
+            const [R, t] = [jaeger(), +(s.creatureAnimationTime - t0).toFixed(1)];
+            if (ev.pirschS === null && R.length) ev.pirschS = t;
+            const nah = R.length >= 3 && R.every((c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < 2 * H);
+            if (ev.umstelltS === null && nah && luecke(R) <= 540 / R.length) ev.umstelltS = t;
         }
-        return {
-            ...ev,
-            nahTakte: luecken.length,
-            lueckeP50: luecken.length ? +quantil(luecken, 0.5).toFixed(0) : null,
-            lueckeBeimBiss: ersterBiss === null ? null : +ersterBiss.toFixed(0),
-        };
+        return { ...ev, lueckeBeimBiss: ersterBiss === null ? null : +ersterBiss.toFixed(0) };
     });
 
     // ── querhang: die Beine stehen lotrecht, der Leib rollt — Wolf und Hirsch QUER zur Fall-Linie eines Hangs von 20–30°
@@ -3311,14 +3317,12 @@ function urteil(name, z) {
         }
     }
     if (name === "rudel") {
-        soll(z.woelfe >= 3, `der Wurf wirft kein Rudel: ${z.woelfe} Wölfe (Soll ≥ 3, vakuös)`);
-        soll(z.pirschS !== null, `das Rudel pirscht den Spieler nicht: ${z.woelfe} Wölfe 45 m vom Wurf-Ort, 600 s`);
-        soll(z.umstelltS !== null, `das Rudel umstellt nicht: kein Takt in 600 s mit Lücke ≤ 540°/${z.woelfe}`);
-        soll(z.nahTakte >= 60, `das Rudel kommt nicht heran (${z.nahTakte} Takte nah, vakuös)`);
         soll(
-            z.lueckeP50 !== null && z.lueckeP50 <= 180,
-            `das Rudel umstellt nicht: größte Lücke p50 ${z.lueckeP50}° (Soll ≤ 180°)`
+            !z.ohnePirsch.some(Boolean),
+            `das Rudel pirscht im Frieden / den leeren Anker: ${z.ohnePirsch.join(" / ")} Takte`
         );
+        soll(z.pirschS !== null, `das Rudel pirscht den Spieler nicht: ${z.woelfe} Wölfe 45 m vom Wurf-Ort, 600 s`);
+        soll(z.umstelltS !== null, `das Rudel umstellt nicht: kein Takt in 600 s mit ≥ 3 Jägern und Lücke ≤ 540°/n`);
         soll(
             z.lueckeBeimBiss !== null && z.lueckeBeimBiss <= 180,
             `das Rudel umstellt nicht: beim ersten Biss ${z.lueckeBeimBiss}° Lücke`
@@ -3424,6 +3428,7 @@ const TAETER = {
     rudel: [
         ["rudel", /umstellt nicht/],
         ["rudel-beute", /pirscht den Spieler nicht/],
+        ["rudel-leib", /Gestalt ohne Volumen/],
     ],
     // je Täter nennen BEIDE Orte ihn: der Hang der Welt und die Rampe der Prüfbühne
     querhang: [

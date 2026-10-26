@@ -368,9 +368,11 @@ class AnazhRealm_kreatur_verhalten {
         const creatures = this.state.creatures || [];
         let best = null,
             bestS = 0;
-        // die Leiber der Welt: jedes Tier, zuletzt der Spieler
+        // die Leiber der Welt: jedes Tier, zuletzt der Spieler, sobald er seinen Leib trägt (bis sein Guss steht,
+        // `_deferredAvatarSoul`, ist er der leere Anker — ohne Gestalt keine Masse und keine Witterung)
+        const spieler = this.state._deferredAvatarSoul ? null : this.state.playerMesh;
         for (let i = 0; i <= creatures.length; i++) {
-            const other = i < creatures.length ? creatures[i] : this.state.playerMesh;
+            const other = i < creatures.length ? creatures[i] : spieler;
             if (!other || !other.position) continue;
             const dx = other.position.x - cx;
             const dz = other.position.z - cz;
