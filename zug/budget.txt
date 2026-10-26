@@ -16,3 +16,4 @@
 2026-10-25T18:15 woche=98 karte=95
 2026-10-25T20:55 woche=0 karte=95 konto=neu (Woche bis 31.10. 21:00)
 2026-10-25T23:57 woche=17 karte=95 (5h 43 %, Welle gestoppt)
+2026-10-26T01:45 woche=22 karte=95 (5h 3 %, Mess-Takt 4 headless läuft, Welle frueh 5 + decke)

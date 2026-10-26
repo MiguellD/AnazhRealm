@@ -66,13 +66,11 @@ module.exports = {
       ],
       hebel: [
         { name: "Das Wasser folgt dem Edit: Damm-Aufstau, Hydro-Raster und Fern-Ring lesen die EINE editForm", k: ["gelaende.K2+1"], t: [1, 2], wurzel: "`voxel-worker.js:3616` (Hydro-Raster) und `stamm/gelaende-fern.js:880` (Fern-Ring) lesen editForm aus dem Kern (Bauen H1); Aufstau am Fixpunkt `_ensureWaterCALevel` (`stamm/wasser-zellen.js`), Ablauf beim Abbau `stamm/werkstatt-bauen.js:823`. Der Graben (a) steht an der Radeon (M31 an 6cfce28a: 9/10, 0 doppelt, 0 über dem Spiegel, gefüllt ≤ 216 ms); der Rest ist (b) Damm, (d) Ferne, Ego und die GTX.", pflicht: "—", v1: true },
-        { name: "S5: dichte, spalte und Wasser-Spiegel in den Kern (der Rest von W1)", k: ["gelaende.K1+1"], t: [4, 6], wurzel: "`gelaende-core.js` + `stamm/gelaende-boden.js:914/955/1003`, `stamm/wasser-hydro.js:54/760`, `voxel-worker.js:462-795/1120`; die Abschrift fällt im selben Commit, gate:worker-dichte prüft gegen den Kern.", pflicht: "B (die Hydrosphäre, ≈ 0,5 s synchron in dom-fertig, wandert in den Worker)", v1: true },
         { name: "Wasser-Bild an allen 12 Posen: Strömungs-Normalen aus den Bahnen, Schaum aus Gefälle × A", k: ["gelaende.K3+1"], t: [1, 1.5], wurzel: "Erst Messschuld M1 (Ist in Ausgabe-Größe), dann der Schnitt im EINEN Baustein `_wasserBlick` (`stamm/wasser-hydro.js:1538`): zwei phasenversetzte Normalen-Lagen aus `flussLaeufe` (`gelaende-core.js:1177`).", pflicht: "A (wasser)", v1: true },
-        { name: "EIN Wasser-Spiegel überall: jeder Lauf endet in See oder Meer, die Strömung treibt (der Rest nach wasser-leser)", k: ["gelaende.K4+1"], t: [1, 1.5], wurzel: "Die Leser folgen der Kern-Mutation an einem Ort (wasser-leser 66e114de, K12 M 10 von 10 je 50/50); der Rest: die Mutation an Zufalls-Orten der ganzen Welt, jeder Lauf aus `flussLaeufe` (`gelaende-core.js`) endet in See oder Meer, der Spiegel steigt stromab nie, die Strömung (gate:kopplung F1) treibt Schwimmer, Boot und Tier > 0,5 m in 90 Takten; die Mutation prüft heute nur Wasser hinzu, `_landAt` trägt das Gesetz dazu.", pflicht: "—", v1: false }
       ],
       feststeck: {
         versucht: "W1 und S5 stehen seit 18.10. als Plan in der SYSTEMKARTE, F2a seit dem Schöpfer-Fund vom 17.10.; am main f2904a72 trägt der 48er-Kegel weiter an vier Stellen (`stamm/gelaende-boden.js:1201/1240`, `voxel-worker.js:612/734`). Die 37 Commits seit 01.10. mit S5 im Namen gehören zur Frost-Wand einer Linse (Namens-Kollision), keiner zum 3D-Gesetz. Der Wasser-Punkt stieg einmal am Lineal statt am Wasser (A13).",
-        anders: "Vom Verbraucher her statt Großumzug zuerst: editForm wird eine Hülle im Kern, den der Worker schon lädt (Bauen H1, hoch-bauen 9d987a93 als Byte-Referenz) — F2a fällt ganz, und dieselbe Bahn trägt danach dichte und Spiegel (H2). Punkte nur mit Welt-Byte."
+        anders: "Vom Verbraucher her statt Großumzug zuerst: editForm wird eine Hülle im Kern, den der Worker schon lädt (Bauen H1, hoch-bauen 9d987a93 als Byte-Referenz) — F2a fällt ganz, und dieselbe Bahn trägt danach dichte und Spiegel (K1). Punkte nur mit Welt-Byte."
       }
     },
     {
@@ -134,11 +132,9 @@ module.exports = {
         }
       ],
       hebel: [
-        { name: "Wetter als Kern-Feld wetterAt(saat, x, z, t) ⊕ Akte", k: ["wetter.K1+1"], t: [2, 2], wurzel: "`phyto-core.js:3289` WX_GESETZ wird eine Funktion: Fronten als Rausch-Zellen der Saat, die mit `_windDirAt` driften; Leser `stamm/bild-himmel.js:2614` `_weatherFieldFor(x,z)`.", pflicht: "—", v1: false },
         { name: "Die Nässe ganz: Pfützen in den Mulden, Glanz im Bild, Trocken-Kurve, beide Geräte (Zustand, Dach und Stoff stehen seit naesse)", k: ["wetter.K2+1"], t: [1.5, 2], wurzel: "Der Zustand `_naesseTakt` (`stamm/bild-himmel.js:2775`) und das Gesetz `_naesseImStoff` (`stamm/stoff-material.js:1462`) stehen; der Rest: Pfützen in den Senken des Kerns im `_wasserBlick` (`stamm/wasser-hydro.js:1538`), der Glanz nass/trocken im Ausgabe-Bild statt am Gesetz, die Trocknung 1 500 s auf 5–15 min Spielzeit, Regen-Fall 42 → ≤ 9 m/s (`foundry-core.js:171`), Third und die GTX; die +1,2 ms GPU im Regen an der GTX (Werkpaket naesse-kosten) zahlt der Term je Pixel.", pflicht: "—", v1: false },
         { name: "Der Pegel ist eine Funktion des Regens", k: ["wetter.K3+2"], t: [3, 3], wurzel: "`gelaende-core.js:1177` flussLaeufe (A, Lauflänge) + `stamm/wasser-hydro.js:54`: pegel(x,z,t) = Basis + Abfluss(∫ Regen-Feld über A, Lag ∝ Lauflänge) in geschlossener Form — die Welt bleibt eine Funktion.", pflicht: "—", v1: false },
         { name: "temperaturAt im Kern, Schnee-Decke mit Tiefe", k: ["wetter.K4+2"], t: [3, 3], wurzel: "`gelaende-core.js:1098` schnee(L,y,x,z) → temperaturAt(L,y,saison,uhr) × Niederschlag; die Tiefe als Boden-Schicht unter `_bodenSichtAt`.", pflicht: "—", v1: false },
-        { name: "Wind vom Gelände geformt, alle Leser", k: ["wetter.K5+1"], t: [1.5, 1.5], wurzel: "`stamm/stoff-material.js:158` `_windDirAt` → `_windAt(x,z,t)` mit Lee und Tal-Düse aus Hang und Exposition des Kerns.", pflicht: "—", v1: false }
       ],
       feststeck: {
         versucht: "Keine wiederholten Wellen, sondern Blindheit: jede Bild-Sonde hält Mittag, Sonne und Sommer (Lehre 17, `__wetterHalten`), und gate:season-meadow schreibt fest, dass die Saison eine Farbe ist. So konnte kein Wetter-Punkt entstehen oder fallen.",
@@ -149,7 +145,7 @@ module.exports = {
       key: "physik",
       titel: "Physik der Körper — Kontakt, Impuls, Trümmer, Seile, der aktive Leib",
       dom: "`stamm/kreatur-verhalten.js` (Stoß) · `stamm/koerper-bewegung.js` · `stamm/bau-buch.js` (Ω-PHYSIS) · `koerper-core.js`",
-      v1: "Feature-Stopp bis v1.0 — außer H4 (Kontakt in Fahrt)",
+      v1: "Feature-Stopp bis v1.0 — außer H3 (Kontakt in Fahrt)",
       aaaa: "Alles, was einen Körper hat, folgt EINEM Körper-Gesetz: Masse = Volumen der Gestalt × Dichte der Stoff-Zeile (SI), Impuls-Tausch mit Stoßzahl je Stoff-Paar, Reibung μ je Stoff-Paar × Nässe, Auftrieb aus der Dichte gegen Wasser — für Spieler, Tier, Wagen, jedes gebaute Teil und jedes lose Ding. Der Spieler stößt ein Fass um, und eine Wand, deren Lastpfad er durchtrennt, stürzt in Trümmer, die liegen bleiben. Die Hängebrücke schwingt, die Fahne flattert im selben Wind wie das Gras. Ein gestoßener Leib fängt sich mit einem Ausfallschritt, ein fallender wird zur Ragdoll und steht wieder auf. 0 Durchdringen bei der Höchstgeschwindigkeit des Spiels; bei 30, 60 oder 144 fps ≤ 1 cm Abweichung nach 200 Schritten; 200 aktive Körper ≤ 1,5 ms CPU an der GTX-CPU. **Wo wir die Besten schlagen:** TotK und Teardown pflegen Masse und Material je Asset; bei uns kommt die Masse aus dem Studio-Gesetz (Volumen des erzeugten Meshes × Stoff-Zeile) — jedes prozedurale Ding ist ab dem ersten Bild physisch, die geschmiedete Klinge, das gebaute Haus, der gewachsene Baum, Labor = Welt.",
       beste: [
         "**The Legend of Zelda: Tears of the Kingdom** (Nintendo 2023, Havok): Ultrahand fügt bis zu 21 Objekte zu einem Fahrzeug; jedes hat Masse, Reibung und Auftrieb, Feuer und Wind wirken darauf — EIN Starrkörper-System für jedes Ding.",
@@ -203,11 +199,10 @@ module.exports = {
         }
       ],
       hebel: [
-        { name: "Gebautes und Gegenstände wiegen: die Stoff-Zeile trägt kg (nach Stoffe H1)", k: ["physik.K1+1"], t: [1, 1], wurzel: "`stamm/bau-buch.js:1521` `_compoundCenterOfMass` und `_leibMasse` (`stamm/kreatur-verhalten.js:717`) lesen ρ in kg/m³ aus der EINEN Stoff-Tafel; der Auftrieb folgt aus ρ/ρw am Spiegel.", pflicht: "—", v1: false },
         { name: "EIN XPBD-Löser im Körper-Kern: Seil, Tuch, Brücke", k: ["physik.K4+2"], t: [5, 7], wurzel: "`koerper-core.js` (Small-Steps-XPBD, Unter-Schritte im FIXED_DT); erster Leser das Schmiede-Seil (`worlds/schmiede/schmiede.js:1161` stepRope fällt — Labor = Welt), dann Fahne und Plane des Fachwerks.", pflicht: "—", v1: false },
-        { name: "Der Lastpfad wird Bewegung (nach H2)", k: ["physik.K3+2"], t: [2, 3], wurzel: "`stamm/bau-buch.js:1791` `_loadPath` übergibt die Teile ohne Pfad an den Löser; Trümmer werden Welt-Zustand im Speicher wie die `_voxelEditKarte`.", pflicht: "—", v1: false },
+        { name: "Der Lastpfad wird Bewegung (nach H1)", k: ["physik.K3+2"], t: [2, 3], wurzel: "`stamm/bau-buch.js:1791` `_loadPath` übergibt die Teile ohne Pfad an den Löser; Trümmer werden Welt-Zustand im Speicher wie die `_voxelEditKarte`.", pflicht: "—", v1: false },
         { name: "Kontakt beim Tempo des Spiels", k: ["physik.K2+1"], t: [1, 1], wurzel: "`stamm/koerper-bewegung.js:238-325` (Hülle gegen Box) rechnet in Teil-Schritten wie `_kreaturStossSchritt`; Station: Wagen bei vmax × 1,2 gegen die Mauer bei 30/60/144 fps, Bild-Probe Spalt.", pflicht: "—", v1: true },
-        { name: "Der aktive Leib (nach H2)", k: ["physik.K5+2"], t: [3, 4], wurzel: "Gleichgewichts-Regler im Leib-Löser (`koerper-core.js`: Stützpolygon, Ausfallschritt); `_kreaturFaellt` (`stamm/kreatur-leben.js:830`) wird der Ragdoll-Übergang.", pflicht: "—", v1: false }
+        { name: "Der aktive Leib (nach H1)", k: ["physik.K5+2"], t: [3, 4], wurzel: "Gleichgewichts-Regler im Leib-Löser (`koerper-core.js`: Stützpolygon, Ausfallschritt); `_kreaturFaellt` (`stamm/kreatur-leben.js:830`) wird der Ragdoll-Übergang.", pflicht: "—", v1: false }
       ],
       feststeck: {
         versucht: "Hier rechnet die Physik, ohne zu bewegen. Ω-PHYSIS hat Schwerpunkt, Hebel, Standfestigkeit und Lastpfad als Achsen eines Bauplans (`stamm/bau-buch.js:1517-1830`, AXIS_CLASS „physik“); jede neue Achse machte die Werkstatt klüger, nie die Welt physischer. Nichts kippt, nichts fällt.",
@@ -248,7 +243,7 @@ module.exports = {
           name: "Phasen: Gefrieren, Schmelzen, Erstarren, Glühen",
           punkte: 0,
           staffel: "1 = eine Phase mit Körper-Folge (das Eis trägt den Spieler, y am Spiegel ±5 cm) · 2 = alle vier: Schnee schmilzt über 0 °C und speist den Pegel, Lava (glut-Achse) erstarrt am Wasser unter Dampf zu Basalt, Stahl glüht in der Esse ab seiner Temperatur (Schmiede = Welt)",
-          messung: "werkbank eval + bild mit dem Temperatur-Feld aus Höhe × Saison × Uhr (Wetter H4).",
+          messung: "werkbank eval + bild mit dem Temperatur-Feld aus Höhe × Saison × Uhr (Wetter H3).",
           beleg: "Lava, Basalt und Schnee sind statische Boden-Farben (`stamm/gelaende-boden.js:2392-2437`, `voxel-worker.js:2613-2628`); glut ist eine eingefrorene Feld-Achse (`docs/das-lebendige-feld.md` §4.1); im Stamm gibt es keine Temperatur (nur die Lichtfarbe `kelvin`).",
           schlupfloch: "Eine Eis-Textur ohne Tragkraft bestünde das Bild: der Körper auf dem Eis und die Schmelze im Pegel sind Pflicht.",
           aenderung: "EIN Heim für Eis und Schmelze (vorher auch Wetter K4; B15, V24)."
@@ -274,9 +269,9 @@ module.exports = {
       ],
       hebel: [
         { name: "EINE Stoff-Tafel in SI im Kern", k: ["stoffe.K1+1"], t: [2, 2], wurzel: "`foundry-core.js` neben dem FARB-GESETZ: die Zeilen der Albedo-Tafel bekommen ρ, μ, c, T_zünd, T_schmelz, Wasser-Aufnahme; `schmiede-core.js:2519` und die [0,1]-Achsen aus `stamm/bau-buch.js:2507-2596` werden Leser, ihre eigenen Zahlen fallen im selben Commit.", pflicht: "—", v1: false },
-        { name: "Die drei Regeln auf dem Feld: Hitze und Brand als Overlay-Achsen", k: ["stoffe.K2+2"], t: [4, 4], wurzel: "`stamm/feld-leben.js` (auraAt + Deposit-Familie: sparse 2-m-Zellen, lazy-decay; die Brand-Front tickt nur in brennenden Zellen); Leser Licht (kelvin-Pool `stamm/dirigent-kern.js:1637`), Klang, Nah-Wiese, Asche im Boden-Stoff; Regen löscht über die EINE Nässe (Wetter H2).", pflicht: "—", v1: false },
-        { name: "Phasen am Temperatur-Feld (nach Wetter H4)", k: ["stoffe.K3+2"], t: [2, 2], wurzel: "Eis als Kontakt am Spiegel (`stamm/wasser-hydro.js` `_waterLevelAt`), Lava → Basalt als Phasen-Regel an der glut-Achse, die Schmiede-Esse liest dieselbe Temperatur.", pflicht: "—", v1: false },
-        { name: "Alter = Zeit × Nässe (nach Wetter H2)", k: ["stoffe.K4+2"], t: [2, 2], wurzel: "`fachwerk-core.js:3864` verwitterung und `gelaende-core.js:2132-2142` (Moos) lesen das Alter seit dem Bau × Nässe-Achse statt eines Reglers; der Trampelpfad aus einer Lauf-Achse, die die Nah-Wiese liest.", pflicht: "—", v1: false },
+        { name: "Die drei Regeln auf dem Feld: Hitze und Brand als Overlay-Achsen", k: ["stoffe.K2+2"], t: [4, 4], wurzel: "`stamm/feld-leben.js` (auraAt + Deposit-Familie: sparse 2-m-Zellen, lazy-decay; die Brand-Front tickt nur in brennenden Zellen); Leser Licht (kelvin-Pool `stamm/dirigent-kern.js:1637`), Klang, Nah-Wiese, Asche im Boden-Stoff; Regen löscht über die EINE Nässe (Wetter H1).", pflicht: "—", v1: false },
+        { name: "Phasen am Temperatur-Feld (nach Wetter H3)", k: ["stoffe.K3+1"], t: [2, 2], wurzel: "Eis als Kontakt am Spiegel (`stamm/wasser-hydro.js` `_waterLevelAt`), Lava → Basalt als Phasen-Regel an der glut-Achse, die Schmiede-Esse liest dieselbe Temperatur.", pflicht: "—", v1: false },
+        { name: "Alter = Zeit × Nässe (nach Wetter H1)", k: ["stoffe.K4+2"], t: [2, 2], wurzel: "`fachwerk-core.js:3864` verwitterung und `gelaende-core.js:2132-2142` (Moos) lesen das Alter seit dem Bau × Nässe-Achse statt eines Reglers; der Trampelpfad aus einer Lauf-Achse, die die Nah-Wiese liest.", pflicht: "—", v1: false },
         { name: "Nährstoff, Nachwuchs, Sukzession", k: ["stoffe.K5+2"], t: [3, 3], wurzel: "Nährstoff-Achse neben `_feuchteAt` (`stamm/gelaende-boden.js:1333`); `_tickScatterRegrow` (`stamm/vegetation-wiese.js:1083`) und die Pflanz-Schlange lesen sie, `treeParams(alter)` (phyto-core) liefert den Jungwuchs.", pflicht: "—", v1: false }
       ],
       feststeck: {
@@ -288,7 +283,7 @@ module.exports = {
       key: "feld",
       titel: "Das lebendige Feld — Kette, Gleichheit, Ruhe, Gedächtnis (liest · schreibt)",
       dom: "`stamm/feld-leben.js` (auraAt, Overlays) · `stamm/feld-dsl.js` · `stamm/wasser-zellen.js` · `stamm/vegetation-*.js` · `docs/das-lebendige-feld.md`",
-      v1: "Feature-Stopp bis v1.0 — außer H3 (Ruhe = 0, trägt E)",
+      v1: "Feature-Stopp bis v1.0 — Ruhe = 0 steht (K3, trägt E)",
       aaaa: "Eine Ursache läuft durch ≥ 4 Teilsysteme, und jedes liest den Zustand seines Vorgängers, nie die Ursache: Sturm → Regen-Feld → nasser Boden und steigender Bach → der Grip fällt, Tiere suchen Unterstand und Tränke → weniger Wild im Offenen, der Klang wechselt. Jede Tat schreibt ins EINE Feld und bleibt am Ort: zehn gefällte Bäume sind über Speichern und Laden eine Lichtung, die über Spieltage zuwächst, schneller, wo der Spieler pflegt; eine Pflege-Geste macht genau diese 16-m-Zelle dichter und bunter (ΔLAI ≥ +0,3), die Nachbarzelle bleibt gleich. Alles ist Funktion von Saat und Schreib-Akten: jeder Peer und jeder Reload sieht dieselbe Welt, ohne Zustands-Nachricht. In Ruhe rechnet keine Simulation; die Kosten hängen an berührten Zellen, nie an der Welt (Gebot 7). **Wo wir die Besten schlagen:** From Dust koppelt Stoffe auf einer Insel, Dwarf Fortress simuliert Geschichte, aber nicht in Echtzeit-3D, BotW koppelt Elemente, aber die Welt erinnert nicht; bei uns lesen Pflanze, Tier, Licht, Klang und Nexus dieselbe Quelle `auraAt` in einer unendlichen Welt.",
       beste: [
         "**From Dust** (Ubisoft 2011, Eric Chahi): Wasser, Sand, Lava, Vegetation und Feuer auf EINEM Feld; jede Ursache läuft durch alle (Lava erstarrt und staut Wasser, das Dorf ertrinkt oder blüht).",
@@ -343,10 +338,8 @@ module.exports = {
       ],
       hebel: [
         { name: "Das Feld wird gesehen: die Vegetation liest auraAt", k: ["feld.K5+1"], t: [1, 1.5], wurzel: "`stamm/feld-leben.js:auraAt` wird die EINE Lese-API der 7 frozen Leser (`vegetation-wiese.js:510/1111/1139`, `vegetation-streu.js:102/705`, `vegetation-baum.js:1310`); eine Overlay-Änderung weckt nur die berührte 16-m-Zelle (`_weltRegt`, Kachel.zustand = null).", pflicht: "—", v1: false },
-        { name: "Die Tat bleibt: Narbe in Spielzeit, Ernte und Fällung im Speicher, Nachwuchs aus lebendig", k: ["feld.K4+2"], t: [1.5, 1.5], wurzel: "`stamm/feld-leben.js:_depositLife`: eine Narbe je Tat-Klasse in Spielzeit statt 87 s Halbwertszeit; scatterHarvested und gefällte Bäume atomar in den Speicher (`stamm/speicher-laden.js`); der Nachwuchs folgt lebendig statt FORAGE.regrowMs.", pflicht: "—", v1: false },
-        { name: "Ruhe = 0 überall: langsame Sims ticken nur in berührten Zellen, im echten Fenster an beiden Geräten (der Fixpunkt-Schlaf steht seit feld-ruhe)", k: ["feld.K3+1"], t: [1, 1.5], wurzel: "Der Schlaf am Fixpunkt steht (feld-ruhe 8de57097, 65 965 → 0 Einheiten in 60 s Ruhe); der Rest: die Arbeit unter Taten an die berührte Zelle binden (heute 32 805 Einheiten, das Feld bis 1 170 Zellen bei 630 lebenden, `stamm/feld-leben.js`), Brand als Sim mit Takt, und `werkbank stand --sim` im echten Fenster an Radeon und GTX.", pflicht: "E (Takt im Stand)", v1: true },
-        { name: "Die Wetter-Kette schließen (nach Wetter H2/H3, Fahrzeug H1)", k: ["feld.K1+2"], t: [1, 1.5], wurzel: "Trinkziel und Unterstand der Tiere (`stamm/kreatur-verhalten.js`) lesen Nässe-Achse und Pegel statt `_weatherIsWet` (`:2199`); der Grip liest die Nässe; dazu die Festhalte-Probe der Station Sturm.", pflicht: "—", v1: false },
-        { name: "Alle Teil-Simulationen aus Saat + Akten (nach Wetter H1)", k: ["feld.K2+1"], t: [1, 1], wurzel: "gate:mp-sync-Erweiterung mit Auto-Wetter, Pegel und Overlays; Verbot von Zustands-Nachrichten im Netz-Log.", pflicht: "—", v1: false }
+        { name: "Die Wetter-Kette schließen (nach Wetter H1/H2; Fahrzeug K1 steht)", k: ["feld.K1+1"], t: [1, 1.5], wurzel: "Trinkziel und Unterstand der Tiere (`stamm/kreatur-verhalten.js`) lesen Nässe-Achse und Pegel statt `_weatherIsWet` (`:2199`); der Grip liest die Nässe; dazu die Festhalte-Probe der Station Sturm.", pflicht: "—", v1: false },
+        { name: "Alle Teil-Simulationen aus Saat + Akten (Wetter K1 steht)", k: ["feld.K2+1"], t: [1, 1], wurzel: "gate:mp-sync-Erweiterung mit Auto-Wetter, Pegel und Overlays; Verbot von Zustands-Nachrichten im Netz-Log.", pflicht: "—", v1: false }
       ],
       feststeck: {
         versucht: "Das Feld ist seit Monaten der wahre Norden („wer eine neue lebendige Wirkung baut, liest HIER — kein neues _tickX“, `docs/das-lebendige-feld.md` §4.1); trotzdem entstand jede langsame Simulation daneben, mit eigenem Zustand und eigener Uhr (`_tickWorldWaterCA`, `_tickRain`, `_tickSeason`, `_tickScatterRegrow`, `_tickHarvest`). Gemessen wurde das Feld als Existenz (21 headless Checks in `scripts/playtest/feld-leben.cjs`, „LIFE_FIELD-Konstante existiert“).",
