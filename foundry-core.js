@@ -380,7 +380,7 @@ const PORTAL_RENDER_CONFIG = {
         kindStages: {
             tree: [0, 1, 2],
             shrub: [0, 1, 2],
-            grass: [1, 2],
+            grass: [1, 2, 3],
             flower: [0, 2],
             rock: [0],
             fern: [0, 1],
@@ -518,6 +518,10 @@ const PORTAL_RENDER_CONFIG = {
             grass: {
                 1: { tris: 1000, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 2, breite: 3.2 } },
                 2: { tris: 130, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 1, breite: 2.65 } },
+                // DIE FERNSTUFE L3 (26.10., additiv — L1/L2 byte-gleich): das Fern-Band der Nah-Wiese (radius bis fern, 14–32 m)
+                // trug die L2 (130 Dreiecke je Büschel), die Nah-Wiese 116k gegen ihre Haushalt-Zeile 80k. Die L3 trägt 0,08 der
+                // Halme der L0 (GRAS_FERN) statt 0,333, breiter um (0,333/0,08)^0,763 — dieselbe Kompensation wie L1 → L2.
+                3: { tris: 30, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 1, breite: 5.3 } },
                 fernform: "boden",
             },
             flower: {
@@ -2976,9 +2980,12 @@ function groundCover(L, m, rk, td) {
 // LINEAL wie ein Grasblatt — parallele Ränder, die Spitze erst im letzten Drittel (Breite 1 − 0,86·f³, Fläche 0,76 statt
 // 0,57 des Rechtecks bei denselben Dreiecken) —, und die Fernstufe L2 ist ein gerader Halm (ein Segment, 2 Dreiecke) in
 // 2,4-facher Zahl: L2 trägt 59 % der L1-Fläche je Büschel statt 38 %.
+// DIE FERNSTUFE DES GRASES (L3, Budget grass[3]): der Anteil der Halme der L0 und ihre Breite — die L2 trägt 0,333 bei 6,5,
+// die L3 0,08 bei 6,5 · (0,333/0,08)^0,763 = 19,3 (die Kompensation der Stufen L1 → L2: 0,92/0,333 Halme, 3,0 → 6,5 Breite).
+const GRAS_FERN = Object.freeze({ anteil: 0.08, breite: 19.3 });
 function emitGrass(P) {
     const geos = [];
-    const lf = __lod === 0 ? 1 : __lod === 1 ? 0.92 : 0.333;
+    const lf = __lod === 0 ? 1 : __lod === 1 ? 0.92 : __lod === 2 ? 0.333 : GRAS_FERN.anteil;
     const N = Math.max(3, Math.round(lerp(50, 150, P.density) * lf));
     const baseCol = vegFarbe(seasonTint).multiplyScalar(0.6),
         tipCol = vegFarbe(seasonAccent).multiplyScalar(GRAS_SPITZE_HELL);
@@ -3000,7 +3007,7 @@ function emitGrass(P) {
         const bx = Math.cos(a) * rr,
             bz = Math.sin(a) * rr;
         const isCulm = SH > 0 && rnd() < SH * 0.5; // Teil der Halme -> Rispenstaengel
-        const wMul = __lod === 0 ? 1 : __lod === 1 ? 3.0 : 6.5;
+        const wMul = __lod === 0 ? 1 : __lod === 1 ? 3.0 : __lod === 2 ? 6.5 : GRAS_FERN.breite;
         const L = P.bladeLen * (isCulm ? rrange(1.25, 1.6) : rrange(0.6, 1.15)),
             w = P.bladeW * wMul * (isCulm ? 0.5 : 0.74) * rrange(0.8, 1.1);
         const lean = rrange(0.1, 0.4),

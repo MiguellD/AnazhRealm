@@ -192,8 +192,8 @@ class AnazhRealm_vegetation_wiese {
         // brach jeder Deko-Takt bis zum Buch an `phyto:lod.budget (gras)` und riss Nah-Streu und Hydro-Kacheln mit.
         // Der Rang der Vorlage ist der Ort ihres Lesers, das Auge (`wo`, B5): ohne Ort stand sie auf ∞ und wartete vor dem
         // ersten Bild auf eine leere Bahn (GTX kalt 8,5 s), während die Streu-Lücke im Blick auf sie wartete.
-        for (const stufe of [1, 2]) {
-            for (let v = 0; v < 2; v++) {
+        for (const stufe of [1, 2, 3]) {
+            for (let v = 0; v < AnazhRealm.nahWieseGestalten(stufe); v++) {
                 const fl = this._foundryFlattenFor({ seed: v + 1, wo: cam }, "gras", stufe);
                 if (!(fl && Array.isArray(fl.leaves) && fl.leaves.length)) {
                     nw.offen++; // das Studio-Asset kommt noch (Buch kalt oder die Foundry-Anfrage läuft)
@@ -337,7 +337,7 @@ class AnazhRealm_vegetation_wiese {
     }
 
     // DER SICHT-SATZ (`_passSicht`, der Haupt-Pass jedes Frames, vor der Projektion): je Büschel die Stufe (L1 im Kreis
-    // `stufe1` um das Auge, Austritt erst `stufe1Rand` dahinter), das Rand-Band (seine Würfel-Ordnung gegen den Anteil
+    // `stufe1` um das Auge, Austritt erst `stufe1Rand` dahinter, L2 bis `radius`, die Fernstufe L3 im Fern-Band), das Rand-Band (seine Würfel-Ordnung gegen den Anteil
     // seiner EIGENEN Distanz — ein Präfix der zufälligen Ordnung ist eine gleichmäßige Ausdünnung) und die Sicht (die Kachel
     // als Box, das Büschel als Kugel nach dem EINEN Gesetz der Pass-Wahl `_passTrifft` in der Lage dieses Passes `L`); jede
     // Senke trägt dicht genau ihre sichtbaren Büschel. Die Büschel sind Daten der Kacheln, keine Instanzen einer Gruppe: der
@@ -351,6 +351,13 @@ class AnazhRealm_vegetation_wiese {
     // im Band zählen ∝ ln(fern/radius) je Schirm-Winkel: Kosten am Schirm, nie an der Weltgröße (Gebot 7). Am Rand `rand`
     // um `fern` blendet sie aus. Bis 26.10. endete die Wiese bei 14 ± 2 m in einer glatten Fläche: jeder Fuß der Karten L2
     // (ab 18 m) stand auf kahlem Grund als gerade Kante (laub-kante, Fuß-Band der Tafel-Pose).
+    // DIE GESTALTEN JE STUFE: die feine L1 trägt beide Vorlagen (Samen 1 und 2) — jenseits von `stufe1` liest das Auge die
+    // Gestalt des Büschels nicht mehr (Drehung, Größe und Tint tragen die Vielfalt), dort trägt EINE Vorlage die L2 und die
+    // Fernstufe L3 des Fern-Bands: die Zeile nahWiese hält ihre 4 Befehle (2 + 1 + 1) statt 6.
+    static nahWieseGestalten(stufe) {
+        return stufe === 1 ? 2 : 1;
+    }
+
     static nahWieseDichte(d) {
         const NW = AnazhRealm.NAH_WIESE;
         const aus = Math.max(0, Math.min(1, (NW.fern - d) / NW.rand + 0.5));
@@ -368,10 +375,10 @@ class AnazhRealm_vegetation_wiese {
         const NW = AnazhRealm.NAH_WIESE;
         const we = kamera.matrixWorld.elements;
         // Je Stufe × Vorlage die Senken samt Sicht-Kugel (fehlt eine, kommt ihr Studio-Asset noch).
-        const ziel = [null, [null, null], [null, null]];
+        const ziel = [null, [null, null], [null, null], [null, null]];
         let rMax = 0;
-        for (const stufe of [1, 2])
-            for (let v = 0; v < 2; v++) {
+        for (const stufe of [1, 2, 3])
+            for (let v = 0; v < AnazhRealm.nahWieseGestalten(stufe); v++) {
                 const vl = nw.vorlagen.get(`${v}:L${stufe}`) || null;
                 ziel[stufe][v] = vl;
                 if (vl && vl.r + Math.abs(vl.cy) > rMax) rMax = vl.r + Math.abs(vl.cy);
@@ -414,7 +421,7 @@ class AnazhRealm_vegetation_wiese {
                 const wachs = dichte < 1 ? Math.min(1, (dichte - b.ordnung) / (0.125 * dichte)) : 1;
                 const l1 = k.l1[i] ? d <= NW.stufe1 + NW.stufe1Rand : d <= NW.stufe1;
                 k.l1[i] = l1 ? 1 : 0;
-                const vl = ziel[l1 ? 1 : 2][b.vorlage];
+                const vl = l1 ? ziel[1][b.vorlage] : ziel[d > NW.radius ? 3 : 2][0];
                 if (!vl || !this._passTrifft(L, b.x, b.y + vl.cy * b.s, b.z, 0, 0, 0, vl.r * b.s * breit)) continue;
                 m4.fromArray(k.basis, i * 16);
                 if (breit !== 1 || wachs !== 1) m4.scale(sv.set(breit * wachs, wachs, breit * wachs));
