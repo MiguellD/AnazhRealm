@@ -1408,6 +1408,39 @@ const stationen = [
             "2 = die Ansteckung verschiebt die Stimmung des Spielers messbar gegen einen Gegenlauf mit bond = 0, und die Bindung übersteht den Reload",
     },
 
+    // ───────── oekologie.K4 Staffel 1 — der Spieler als Beute (Zweig ok4-beute: EINE Witterung für Tier und Spieler) ─────────
+    // Probe rudel der Kreatur-Linse (Null-Renderer): ein Rudel aus dem Wurf (`_kreaturWurf`, die Leine am Wurf-Ort), der
+    // stehende Spieler 45 m vom Wurf-Ort (jenseits der Neugier, in der Witterung jagd.scentRangeM), höchstens 600 s der
+    // Kreatur-Uhr. Gelesen werden die Ereignisse, nie das Urteil der Probe: die erste Pirsch auf den Spieler (ein Wolf im
+    // Zustand „jagd" mit dem Ziel „spieler") und das erste Umstellen (alle näher als 2 × jagd.hetzM, die größte Winkel-Lücke
+    // ≤ anderthalb Plätze, 540°/n). An main 9ceeca71 ROT: der Spieler war Ziel nur in jagd.radius 12 m, 6 Wölfe standen nach
+    // 600 s 47–51 m fern, keine Pirsch. „im Bild" zählt diese Station nicht: das Bild bleibt eine Radeon-Schau.
+    {
+        kriterium: "oekologie.K4",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "rudel"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "rudel");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe rudel (Exit " + lauf.exit + ")" };
+            if (z.fehler || !("pirschS" in z))
+                return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne pirschS (die Probe vor ok4-beute)") };
+            const im = (t) => t !== null && t <= 600;
+            return {
+                gruen: z.woelfe >= 3 && im(z.pirschS) && im(z.umstelltS),
+                zahl:
+                    z.woelfe + " Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch " + z.pirschS + " s · umstellt " +
+                    z.umstelltS + " s (Lücke ≤ " + Math.round(540 / z.woelfe) + "°) · Lücke p50 " + z.lueckeP50 +
+                    "° · beim ersten Biss " + z.lueckeBeimBiss + "° (Soll ≤ 600 s Kreatur-Uhr)",
+            };
+        },
+        pfad: [...KREATUR],
+        quelle: "1 = im Wolfsrevier wird der Spieler in 10 Spielminuten ≥ 1× gepirscht und umstellt (im Bild)",
+    },
+
     // ───────── mensch.K2 Staffel 2 — die Ankunft der Bewohner (mensch-bewohner-k5 1e4e725a) ─────────
     {
     kriterium: "mensch.K2",
@@ -1484,17 +1517,6 @@ const stationen = [
 // Nicht als Station fassbar (heute): je Kriterium und Staffel der Grund beim Namen. Sie tragen keine Punkte der Maschine;
 // was hier steht, bucht weiter die Hand oder bleibt 0, bis das Werkzeug steht.
 const fehlt = [
-    {
-        kriterium: "oekologie.K4",
-        staffel: 1,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "Mechanik und Werkzeug fehlen: der Spieler ist Ziel einer Jagd nur in jagd.radius 12 m (_creatureHuntDrive), die Witterung " +
-            "(_creatureScentHuntDir) liest nur Tiere — ein Rudel aus der Geburt (≥ 130 m, Leine am Geburtsort) wird nicht zum Spieler gezogen; " +
-            "ungemessen, „im Bild\" verlangt eine Radeon-Station",
-        quelle: "1 = im Wolfsrevier wird der Spieler in 10 Spielminuten ≥ 1× gepirscht und umstellt (im Bild)",
-    },
     {
         kriterium: "mensch.K1",
         staffel: 2,
