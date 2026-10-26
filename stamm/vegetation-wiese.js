@@ -345,16 +345,17 @@ class AnazhRealm_vegetation_wiese {
     // Generation `L.gen` (`_passLageGen`, das EINE Gesetz der Lage: nie wegen des Versatzes der zeitlichen Auflösung, nie
     // wegen des atmenden Auges; den Rand dafür trägt das Gesetz).
     // DIE DICHTE DER WIESE ÜBER DEN ABSTAND (EINE Funktion des Sicht-Satzes): bis `radius` die volle Wiese des Studio-Gesetzes,
-    // dahinter das FERN-BAND bis `fern` — die Zahl dünnt mit (radius/d)², jeder Büschel wird um d/radius breiter (n·s²): die
-    // Halm-Fläche im Blick (Breite × Höhe × Zahl) fällt mit radius/d, der Weg des flachen Blicks durch die Halme wächst mit d — die
-    // Lücke (Nilson: exp(−G·LAI/cos θ)) bleibt die der vollen Wiese an ihrem Rand, der Boden zeigt keine Kante. Die Büschel
-    // im Band zählen ∝ ln(fern/radius) je Schirm-Winkel: Kosten am Schirm, nie an der Weltgröße (Gebot 7). Am Rand `rand`
-    // um `fern` blendet sie aus. Bis 26.10. endete die Wiese bei 14 ± 2 m in einer glatten Fläche: jeder Fuß der Karten L2
-    // (ab 18 m) stand auf kahlem Grund als gerade Kante (laub-kante, Fuß-Band der Tafel-Pose).
+    // dahinter das FERN-BAND bis `fern`. Der flache Blick legt je Schirm-Fläche ~d³ Boden zusammen; die Zahl dünnt mit
+    // (radius/d)³, so steht je Schirm-Fläche dieselbe Zahl Büschel wie am Rand der vollen Wiese, und im ganzen Band höchstens
+    // 2π·radius² × die Dichte des Gesetzes, wie weit `fern` auch reicht — Kosten am Schirm, nie an der Weltgröße (Gebot 7).
+    // Jeder Büschel wird um d/radius breiter (die Höhe bleibt): die Halm-Fläche im Blick fällt mit (radius/d)², der Weg des
+    // flachen Blicks durch die Halme wächst mit d, die Lücke (Nilson: exp(−G·LAI/cos θ)) öffnet sich nur mit radius/d — der
+    // Boden zeigt keine Kante. Am Rand `rand` um `fern` blendet sie aus. Bis 26.10. endete die Wiese bei 14 ± 2 m in einer
+    // glatten Fläche: jeder Fuß der Karten L2 (ab 18 m) stand auf kahlem Grund als gerade Kante (laub-kante, Fuß-Band der Tafel-Pose).
     static nahWieseDichte(d) {
         const NW = AnazhRealm.NAH_WIESE;
         const aus = Math.max(0, Math.min(1, (NW.fern - d) / NW.rand + 0.5));
-        return d <= NW.radius ? aus : aus * (NW.radius / d) ** 2;
+        return d <= NW.radius ? aus : aus * (NW.radius / d) ** 3;
     }
 
     _nahWieseSicht(kamera, L) {
