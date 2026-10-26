@@ -1038,6 +1038,52 @@ const stationen = [
         ],
         quelle: "1 = Leib, Inventar und Gehaltenes stehen nach Tor hin und zurück byte-gleich, an einem Gerät",
     },
+    // ───────── tore.K3 Staffel 2 — auch Reittier/Fahrzeug und die Rundreise eines Werks (tk3-reittier) ─────────
+    // Dieselbe Tafel `K8 [[welt, weg, vor, drüben, nach, esc], …]` von gate:portal-konformanz: der Spieler sitzt auf dem Pferd
+    // (`state.player.mountedArch`), reitet durch jedes Tor des Genesis-Rings und kommt mit Esc zurück. Der Teil `reittier` (Art ·
+    // Gestalt aus Bauplan, Saat, Maß, Tönung, Prägung · Glut · Bindung des gerittenen Werks) steht vor dem Tor aus der Heimat,
+    // drüben aus der Hülle (das Gepäck der Übergabe, `_portalEnterPayload`) und daheim; ohne Abdruck vor dem Tor ritt er nicht
+    // (rot, nie vakuös). Die Rundreise eines Werks Studio → Welt → Studio verlangt je Ziel-Seite den Teil `werk` (der Bau-Hash
+    // des getragenen Werks, die Messung der Karte) — die Tafel trägt ihn nicht: ROT beim Namen, bis eine Linse ihn misst.
+    // Ist an tk3-reittier (main eeaff9d6 + Schnitt, swiftshader): Leib, Inventar, Gehaltenes und Reittier je 10/10, Werk 0/10;
+    // am Grund eeaff9d6 Reittier 0/10 (drüben fehlte es — das Gepäck trug es nicht).
+    {
+        kriterium: "tore.K3", staffel: 2, geraet: ["radeon", "gtx"],
+        befehl: ["node", "scripts/diag-portal-konformanz.cjs"], env: { PORTAL_KONFORMANZ_PORT: "{PORT}" }, gpu: true, minuten: 5,
+        urteil: (j, lauf) => {
+            const z = String(lauf.stdout || "").split(/\r?\n/).find((l) => l.startsWith("K8 ["));
+            let R = null;
+            try {
+                R = z ? JSON.parse(z.slice(3)) : null;
+            } catch (_e) {
+                R = null;
+            }
+            if (!Array.isArray(R) || !R.length) return { gruen: false, zahl: "keine K8-Tafel (Exit " + lauf.exit + ")" };
+            const T = ["leib", "inventar", "wield", "reittier", "werk"];
+            const rot = Object.fromEntries(T.map((t) => [t, []]));
+            for (const [welt, , vor, dr, nach, esc] of R)
+                for (const t of T)
+                    if (!(esc === true && vor && dr && nach && vor[t] && vor[t] === dr[t] && vor[t] === nach[t]))
+                        rot[t].push(welt + (esc === true ? (vor && vor[t] ? "" : " (kein Abdruck vor dem Tor)") : " (Esc bringt nicht heim)"));
+            return {
+                gruen: R.length >= 10 && T.every((t) => !rot[t].length),
+                zahl: T.map((t) => t + " " + (R.length - rot[t].length) + "/" + R.length).join(" · ") +
+                    " Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim" +
+                    T.filter((t) => rot[t].length).map((t) => " · rot " + t + ": " + rot[t].join(", ")).join(""),
+            };
+        },
+        pfad: [
+            "stamm/netz-portal.js",
+            "stamm/siedlung-ort.js",
+            "stamm/koerper-bewegung.js",
+            "stamm/koerper-fahrt.js",
+            "stamm/bau-vorlagen.js",
+            "worlds/huelle/huelle.js",
+            "scripts/diag-portal-konformanz.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = auch Reittier/Fahrzeug und die Rundreise eines Werks Studio → Welt → Studio mit gleichem Bau-Hash, für jede Ziel-Seite",
+    },
 ];
 
 module.exports = stationen;
@@ -1055,14 +1101,6 @@ module.exports.fehlt = [
     {
         kriterium: "tore.K5", staffel: 2, befehl: null,
         grund: "der Welt-Fluss hat keine Linse: der Einladungs-Code lädt die Seite neu (joinWorldFromCode → _weltWechselNeuLaden), Kontrolle ≤ 5 s verlangt das Welt-Tor ohne Neuladen; dazu beide Flüsse an zwei Geräten (#1 steht ebenfalls hier: B ist kein anderes Gerät)",
-    },
-    {
-        kriterium: "tore.K3", staffel: 2, befehl: null,
-        grund: "Werkzeug fehlt: der Abdruck von gate:portal-konformanz K8 trägt Leib, Inventar und Gehaltenes (#1); das Reittier/Fahrzeug " +
-            "(`state.player.mountedArch`) reist nicht im Gepäck der Übergabe (`_portalEnterPayload`), und die Rundreise eines Werks " +
-            "Studio → Welt → Studio misst keine Linse — der Hinweg steht (gate:studio-uebergabe (K): Bau-Hash Studio = Welt, im vm), den " +
-            "Rückweg trägt keine Ziel-Seite: keines der 8 Studios mit `werk()` nimmt das Werk der Welt in seine Bühne, und der Bau-Hash " +
-            "der Welt verlangt die Foundry (K8 fährt ohne). Ist an tore-k3-abdruck: Reittier 0/10, Werk-Rundreise 0/8",
     },
     {
         kriterium: "siedlung.K1", staffel: 2, befehl: null,
