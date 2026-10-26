@@ -1263,7 +1263,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         out.waldLueckeErst = wald();
         for (out.waldTakte = 0; wald() && out.waldTakte < 1500; out.waldTakte++) {
             r._gameLoopTick(performance.now());
-            await new Promise((ok) => setTimeout(ok, 0));
+            await sleep(0);
         }
         out.waldLueckeRest = wald();
         const archTrees = r.state.architectures.filter(istBaum);
@@ -1323,7 +1323,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         while (newTreeArch && !steht() && out.newTreeTakte < 900) {
             r._gameLoopTick();
             out.newTreeTakte++;
-            if (out.newTreeTakte % 10 === 0) await new Promise((ok) => setTimeout(ok, 0));
+            if (out.newTreeTakte % 10 === 0) await sleep(0);
         }
         // instancierter Baum: gerendert via Instance-Slot
         // (entry.instanced), nicht via entry.mesh.

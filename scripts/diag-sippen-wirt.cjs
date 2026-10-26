@@ -14,13 +14,13 @@
 //      MUSS die Linse die Abweichung nennen — sonst ist sie vakuös. Beide Stubs werden zurückgesetzt.
 //   node scripts/diag-sippen-wirt.cjs
 
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.SIPPEN_PORT || 4413);
 const server = statikServer();
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
@@ -30,7 +30,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
     const out = await page.evaluate(async () => {
         const res = { items: [], fehler: [], selbst: {}, kinds: [] };
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         await window.__weltDa();
         const r = window.anazhRealm;
         const A = r.constructor;
@@ -224,12 +223,4 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     }
     console.log(`\n✅ GRÜN — ${out.items.length} Stufen: das Gesetz zählt jede Leaf des Wirts.`);
     process.exit(0);
-})().catch((e) => {
-    console.error("❌ Linse abgestürzt:", e && e.stack ? e.stack : e);
-    try {
-        server.close();
-    } catch {
-        /* bereits zu */
-    }
-    process.exit(1);
 });

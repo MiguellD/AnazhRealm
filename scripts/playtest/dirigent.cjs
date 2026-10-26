@@ -1290,7 +1290,7 @@ async function checkBandPerfPanel(ctx) {
                     r._gameLoopTick(t);
                 } catch {}
             }
-            await new Promise((res2) => setTimeout(res2, 110));
+            await sleep(110);
         }
         const panelVorher = r.state.perfPanel;
         r.state.perfPanel = true;

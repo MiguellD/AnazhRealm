@@ -17,7 +17,7 @@
 // Lücke ist das Tier UNSICHTBAR. swiftshader-Zeiten sind keine GPU-Zeiten; die
 // Draw-Call-/Dreiecks-Zahlen sind hardware-unabhängig.
 "use strict";
-const { statikServer, starteBrowser, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const fs = require("fs");
@@ -205,7 +205,7 @@ const SCHUSS_FN = async (kam) => {
     return { ok: true, farben: set.size, nonzero, png: cv.toDataURL("image/png"), zahlen };
 };
 
-(async () => {
+hauptLauf(async () => {
     fs.mkdirSync(OUT, { recursive: true });
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: PROTO_MS });
@@ -217,7 +217,6 @@ const SCHUSS_FN = async (kam) => {
 
     // ── 1: Boot + Settle + Mittag + Buch warm ──
     const boot = await page.evaluate(async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
         let stable = 0,
             last = -1;
@@ -294,7 +293,6 @@ const SCHUSS_FN = async (kam) => {
     // ── 1b: auf die Mess-Wiese (der Messort des Haushalts: flach + grün, PFLICHT D) — dort sind Bühne und Kamera
     // wirklich eben.
     const wieseStart = await page.evaluate(async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = window.anazhRealm;
         const [X, Z] = window.__messWiese;
         r.state.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
@@ -322,7 +320,6 @@ const SCHUSS_FN = async (kam) => {
 
     // ── 2: Spawn (Wolf · Eiche · Haus) auf flachen Bühnen der Wiese ──
     const spawn = await page.evaluate(async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = window.anazhRealm;
         const pm = r.state.playerMesh.position;
         const setzeMittag = () => {
@@ -537,7 +534,6 @@ const SCHUSS_FN = async (kam) => {
     const umstellen = (kam, voll = false) =>
         page.evaluate(
             async (kam, voll) => {
-                const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
                 const r = window.anazhRealm;
                 const g = r._voxelSurfaceY(kam.px, kam.pz);
                 r.state.playerMesh.position.set(kam.px, g + 1.8, kam.pz);
@@ -789,10 +785,4 @@ const SCHUSS_FN = async (kam) => {
             : `❌ ROT — ${rot} Schuss/Schüsse leer.`
     );
     process.exit(rot === 0 ? 0 : 1);
-})().catch((e) => {
-    console.error("DIAG-FEHLER:", e);
-    try {
-        server.close();
-    } catch {}
-    process.exit(1);
 });

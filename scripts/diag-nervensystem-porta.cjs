@@ -17,7 +17,7 @@
 //     liefert Meshes end-to-end (mat.color reist, BuildGroup baut) · die
 //     Distanz-Wahl lod=2 klemmt auf die groesste deklarierte Stufe ≤ 2.
 //   node scripts/diag-nervensystem-porta.cjs [--selftest]
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
@@ -39,7 +39,7 @@ function staticLaws(q) {
     ];
 }
 
-(async () => {
+hauptLauf(async () => {
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
         // V4: ein Buch mit abgeschriebener Stufen-Liste -> der Merge-Vergleich nennt die Art.
@@ -243,7 +243,4 @@ function staticLaws(q) {
         "\n✅ GRÜN — DER ε-BEWEIS STEHT: die Tor-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — porta-core reist durch den EINEN Foundry-Worker (Rezepte + kindStages + Asset), tor_<id> entsteht am EINEN Chokepoint, site reist als Daten ohne Streu (N5.6)."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("ε-Porta-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

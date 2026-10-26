@@ -2393,6 +2393,7 @@ async function kreaturProben(r, T, opts) {
                 return { fehler: `keine Stadt mit freiem Rand am Platz („dorf ${seed} 30" bei ${x}/${z})` };
             const da = () => S.liste && S.liste.every((b) => b.leib && !b.ankunft) && r._weltOffen().leiber === 0;
             await bisDa("bewohner: die Stadt", () => !da());
+            await stehtUm("bewohner: die Stadt");
             // je Tag die Ankunft um 5 Uhr und ein eigenes Messer; Täter (Selbsttest) je 3 Spielstunden mit seiner Decke: wer
             // ausweicht, weicht nie — dann die EINE Frage an die Wand (`_bewohnerWand`: der Weg, die Wache, das Ausweichen,
             // die Linie zurück auf das Bein) ist blind
@@ -2423,6 +2424,19 @@ async function kreaturProben(r, T, opts) {
                     /* der Takt meldet selbst */
                 }
         };
+        // DER TAG BEGINNT IN DER STEHENDEN WELT (welt-boot `__weltStehtNach`, der Takt des Spiels): er rechnet synchron, ohne
+        // Loop — seine Welt ist, was bis zu seinem Anfang um den Ort wuchs; wüchsen Wald oder Streu noch (die Streu im Faden
+        // landet Takte später), mäße jeder Lauf einen anderen Tag. Der Deckel zählt Takte ohne Offenes und wirft beim Ort.
+        const stehtUm = (wo) =>
+            W.__weltStehtNach(() => {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch {
+                    /* der Takt meldet selbst */
+                }
+            }, 600).catch((f) => {
+                throw new Error(`${wo}: ${f.message}`);
+            });
         const haeuserIn = (slots, ox, oz) =>
             slots.filter((sl) =>
                 s.architectures.some(
@@ -2468,6 +2482,7 @@ async function kreaturProben(r, T, opts) {
             "bewohner: die Leiber",
             () => leiber().length < sollSumme || r._weltOffen().leiber > 0 || hausE.some((e) => !e._hausHuelle)
         );
+        await stehtUm("bewohner: das Start-Dorf");
         // Täter (Selbsttest), gezählt und zurück: die Leiber des ersten bewohnten Hauses fallen aus der Szene
         const h1 = haeuser.find((x) => x.soll > 0);
         const fort = leiber().filter((b) => hat("bewohner-haus") && h1 && b.userData.heim === h1.seed);

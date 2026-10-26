@@ -765,15 +765,39 @@ class AnazhRealm_dirigent_ankunft {
                 this._ladeschirmStand(sig);
                 return false;
             }
+            const taeter = luecken.map((l) => this._lueckeTaeter(l)).filter(Boolean);
             this.log(
-                gedeckelt
+                (gedeckelt
                     ? `Das erste Weltbild steht ohne: ${sig} — der Deckel von ${AnazhRealm.WELTBILD_DECKEL_MS} ms ist erreicht.`
-                    : `Das erste Weltbild steht ohne: ${sig} — die Arbeit ruhte ${AnazhRealm.WELTBILD_STILL_MS} ms.`,
+                    : `Das erste Weltbild steht ohne: ${sig} — die Arbeit ruhte ${AnazhRealm.WELTBILD_STILL_MS} ms.`) +
+                    (taeter.length ? ` Täter: ${taeter.join(" · ")}` : ""),
                 "WARN"
             );
         }
         this._weltbildSteht();
         return true;
+    }
+
+    // DER TÄTER EINER LÜCKE beim Namen (Gebot 10): das erste Ding, das sie offen hält (`zeuge` aus `_weltbildLuecken`) — seine Art,
+    // Stufe und Abstand und warum es hält: ungebaut (keine Instanz, kein Mesh) oder der Stufen-Vorlauf, dessen Arena weder
+    // zeichnete noch vorbaute (`_vorlaufOffen`, ihr Schlüssel). null ohne Zeugen.
+    _lueckeTaeter(l) {
+        const e = l && l.zeuge;
+        if (!e || !e.position) return null;
+        const p = this.state.playerMesh ? this.state.playerMesh.position : e.position;
+        const wer = `${this._foundryPresetForEntry(e) || e.type} L${e._lodLevel} in ${Math.round(Math.hypot(e.position.x - p.x, e.position.z - p.z))} m`;
+        if (!this._archIsRendered(e)) return `${wer} ungebaut`;
+        const E = this._erstZeichnung;
+        const G = this.state.archInstanceGroups;
+        const offen = (e.instSlots || [])
+            .map((ref) => [ref.key, G && G.get(ref.key)])
+            .filter(([, g]) => g && g.mesh.layers.mask & 1)
+            .filter(
+                ([, g]) =>
+                    !(g.mesh.__arena && E && (E.gezeichnet.has(g.mesh.__arena) || E.vorgebaut.has(g.mesh.__arena)))
+            )
+            .map(([k]) => k);
+        return `${wer} im Stufen-Vorlauf, ${offen.length ? "Arena ohne Programm: " + offen.join(", ") : "wartet auf das Bild nach seinen Arenen"}`;
     }
 
     // Der EINE Schreiber des ersten Weltbilds: seine Zeit (`_weltbildDa`, ab Navigation — gate:boot-stage liest sie), das
@@ -867,10 +891,13 @@ class AnazhRealm_dirigent_ankunft {
     _imStufenVorlauf(e) {
         return !!this._vorlauf && !this.state._weltbildDa && this._vorlauf.eintraege.has(e);
     }
-    // Zeichnete der Vorlauf-Baum? Jede seiner L1-Gruppen, die das Hauptbild sieht, trat in ihre Arena, die Arena zeichnete
-    // (`gezeichnet` der Erst-Zeichnung), und danach lief ein weiteres Bild (die GPU-Leine zählt sie): in ihm fand jede Kaskade
-    // die Form der Arena stehen und baute vor — ein Wurf-Teil (Ebene 0 aus) lebt nur in den Kaskaden. Ohne Arena (WebGL2)
-    // zeichnet der Zeichner im Bild.
+    // Steht das Programm des Vorlauf-Baums? Jede seiner L1-Gruppen, die das Hauptbild sieht, trat in ihre Arena, die Arena
+    // zeichnete (`gezeichnet` der Erst-Zeichnung) ODER baute ihr Programm ohne Draw (`vorgebaut`, der Vorbau des
+    // Lade-Takts: keine ihrer Instanzen fällt in den Kegel der Kamera), und danach lief ein weiteres Bild (die GPU-Leine
+    // zählt sie): in ihm fand jede Kaskade die Form der Arena stehen und baute vor — ein Wurf-Teil (Ebene 0 aus) lebt nur in
+    // den Kaskaden. Befund b-ankunft (Radeon kalt, main 8f1802b1, 4 von 4 Läufen): die Rinde der Birke in 31 m am Rand des
+    // Blicks zeichnete nie, ihr Programm stand vorgebaut — der Baum hielt das Bild, bis die Ruhe-Uhr nach 15 s laut wich (das
+    // halbe Weltbild). Ohne Arena (WebGL2) zeichnet der Zeichner im Bild.
     _vorlaufOffen(e) {
         if (!this._imStufenVorlauf(e)) return false;
         if (e._lodLevel !== 1 || !e.instSlots || !e.instSlots.length) return true;
@@ -881,7 +908,8 @@ class AnazhRealm_dirigent_ankunft {
         for (const ref of e.instSlots) {
             const g = G && G.get(ref.key);
             if (!g || (g.mesh.layers.mask & 1) === 0) continue;
-            if (!g.mesh.__arena || !E || !E.gezeichnet.has(g.mesh.__arena)) return true;
+            const a = g.mesh.__arena;
+            if (!a || !E || !(E.gezeichnet.has(a) || E.vorgebaut.has(a))) return true;
         }
         const B = this._vorlauf.bild;
         if (!B.has(e)) B.set(e, L.gerendert);
@@ -953,8 +981,16 @@ class AnazhRealm_dirigent_ankunft {
     // außer Blick ERSTER_BLICK.ausserD2 obenauf — nah zuerst gilt in beiden Hälften; `_weltbildSteht` nimmt ihn wieder ab.
     _blickRang(x, z) {
         const E = AnazhRealm.ERSTER_BLICK;
-        if (this.state._weltbildDa || this._imErstenBlick(x, z, E.dingM)) return 0;
-        return E.ausserD2;
+        return this._blickDerAnkunft(x, z, E.dingM) ? 0 : E.ausserD2;
+    }
+    // Gilt ein Ding (Mitte x/z, Radius r) für die Ankunft JETZT? Bis das erste Weltbild steht nur im Blick, danach rundum —
+    // die EINE Frage hinter dem Rang der Schlange und der Pflanzung (Lehre 14/25): die Saat eines Chunks (`_foliageChunkInRadius`),
+    // eine neue Streu-Region (`_tickScatterStreaming`) und der Baum der Pflanz-Schlange (`_tickPendingVegSpawns`, über
+    // `_rangImErstenBlick`) außer Blick warten auf den Nachlauf. Bis hierher säte, streute und setzte der Lade-Takt den ganzen
+    // Ring vor dem Bild — je länger der Boot, desto mehr (Radeon kalt, die Kalt-Zeile: die Klasse Pflanzen 5,5–6,4 s Haupt-Faden
+    // bei 34–52 s, mit der Frage 2,2 s bei 13 s; bei 11 s Boot trägt der Blick allein 1,7–2,2 s, fast ganz Streu).
+    _blickDerAnkunft(x, z, r) {
+        return !!this.state._weltbildDa || this._imErstenBlick(x, z, r);
     }
     // Der Rang eines Auftrags (`_foundryAuftragD2`) im Blick des ersten Bilds: außer Blick trägt er ERSTER_BLICK.ausserD2. Die
     // Frage gilt nur VOR dem Bild — danach ist der Blick rundum: ein Rang ohne Ort (Vorrat, Karte ohne Leser: ∞) läge sonst
@@ -992,8 +1028,10 @@ class AnazhRealm_dirigent_ankunft {
         const st = this.state;
         const out = [];
         // `arbeitet`: für diese Lücke ist etwas unterwegs (ein Faden baut an ihr) — die Ruhe-Uhr von `_ankunftsBild` steht;
-        // `n`: so viele Löcher trägt sie (der Rundblick zählt sie)
-        const luecke = (term, satz, arbeitet, n) => out.push({ term, satz, arbeitet: !!arbeitet, n: n > 0 ? n : 1 });
+        // `n`: so viele Löcher trägt sie (der Rundblick zählt sie); `zeuge`: das erste Ding, das sie offen hält — weicht der
+        // Ladeschirm laut, nennt sein Satz den Täter (`_lueckeTaeter`)
+        const luecke = (term, satz, arbeitet, n, zeuge) =>
+            out.push({ term, satz, arbeitet: !!arbeitet, n: n > 0 ? n : 1, zeuge });
         const pm = st.playerMesh;
         if (!pm) {
             luecke("welt", "die Welt entsteht");
@@ -1056,6 +1094,7 @@ class AnazhRealm_dirigent_ankunft {
         const R = Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : 150;
         this._stufenVorlaufWahl(p, R, imBlick);
         let ungebaut = 0;
+        let zeuge = null;
         for (const e of st.architectures || []) {
             if (!e || !e.position) continue;
             const dx = e.position.x - p.x;
@@ -1065,9 +1104,9 @@ class AnazhRealm_dirigent_ankunft {
                 (!this._archIsRendered(e) || this._vorlaufOffen(e)) &&
                 imBlick(e.position.x, e.position.z)
             )
-                ungebaut++;
+                zeuge = ungebaut++ ? zeuge : e;
         }
-        if (ungebaut) luecke("bauten", `${ungebaut} Bäume und Bauten wachsen`, false, ungebaut);
+        if (ungebaut) luecke("bauten", `${ungebaut} Bäume und Bauten wachsen`, false, ungebaut, zeuge);
         // DAS DORF DER ANKUNFT (K60-4): ein Haus, das noch kein Eintrag ist, zählt „bauten" nicht — das Start-Dorf ist fällig
         // (`_startDorfFaellig`, noch nicht bestellt), sein Export ist unterwegs (`_autoSettlementPendingKey`: der Plan und die
         // Ort-Wahl) oder seine Häuser der Mesh-Zone stehen in der Schlange (`_autoSettlementQueue`). Ohne den Term stand das

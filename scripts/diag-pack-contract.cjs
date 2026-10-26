@@ -18,6 +18,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const PK = require("./lib/pack-kanon.cjs");
+const { hauptLauf } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.PACK_GATE_PORT || 4562);
@@ -254,7 +255,4 @@ async function main() {
 
 if (process.argv.includes("--selftest")) selftest();
 else
-    main().catch((e) => {
-        console.error("Gate-Fehler:", (e && e.stack) || e);
-        process.exit(2);
-    });
+    hauptLauf(main);

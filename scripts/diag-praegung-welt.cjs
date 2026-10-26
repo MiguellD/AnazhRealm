@@ -5,7 +5,7 @@
 // Korpus-Teil Regler-Wörter sagbar · (T) Teilen in EINER Geste, zwei Browser-Kontexte · (F) Korpus fremder Codes, jeder fällt
 // beim Namen; jede Wand mit ihrer Täter-Probe.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PRAEGUNG_WELT_PORT || 4439);
 const server = statikServer();
@@ -19,7 +19,7 @@ function proben() {
     window.__flatFor = async (r, entry, preset = "gt") => {
         let flat = r._foundryFlattenFor(entry, preset, 0);
         for (const weiter = window.__deckel("das Flat der Gestalt", 300); !(flat && flat.leaves) && weiter(); ) {
-            await new Promise((ok) => setTimeout(ok, 50));
+            await sleep(50);
             flat = r._foundryFlattenFor(entry, preset, 0);
         }
         return flat && flat.leaves ? flat : null;
@@ -36,7 +36,7 @@ const welt = async (seite) => {
     await server.zeige(seite, 30000);
 };
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
@@ -44,7 +44,6 @@ const welt = async (seite) => {
 
     const out = await page.evaluate(async (REGLER) => {
         const res = { s: {}, n: {}, g: {}, r: {}, b: {} };
-        const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
         const fp = window.__abdruck; // der EINE Abdruck (welt-boot)
 
         // ===== WARM-ANKER: Boot → f.ready → Buch (langschwert + gt) → !_vorrat (__weltDa wartet, bis alles steht) =====
@@ -583,7 +582,4 @@ const welt = async (seite) => {
     }
     console.log("\n✅ GRÜN — die Prägung reist mit dem Artefakt, per Code zum anderen Spieler, jeder fremde Code fällt beim Namen");
     process.exit(0);
-})().catch((e) => {
-    console.error("Prägung-Welt-Diag-Fehler:", e?.stack || e);
-    process.exit(2);
 });

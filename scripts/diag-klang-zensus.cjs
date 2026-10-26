@@ -116,7 +116,6 @@ function quellenAbgriff() {
 function werkzeug() {
     const r = window.anazhRealm;
     const st = r.state;
-    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const W = {};
     // Ein Frame des echten Loops (Bühne fest, Tiere halten).
     W.takt = () => {
@@ -645,7 +644,7 @@ async function messeOrt(page, name, ort, stubs) {
                 const dl = performance.now() + 2500;
                 while (performance.now() < dl) {
                     W.takt();
-                    await new Promise((res) => setTimeout(res, 30));
+                    await sleep(30);
                 }
                 const aus = await W.ausgang(2.0);
                 const laufend = W.laufend();
@@ -757,7 +756,6 @@ async function kosten(page, stubs) {
         const r = window.anazhRealm;
         const st = r.state;
         const P = Object.getPrototypeOf(r);
-        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         const zaehl = { boden: 0, wasser: 0, stroemung: 0, fluss: 0, segmente: 0, bauten: 0 };
         const wer = {};
         let imTakt = false;
@@ -877,7 +875,7 @@ async function labPruefen(browser) {
                 document.getElementById("weltModeBtn").click();
                 const knopf = document.querySelector('[data-welt-ort="seeufer"]');
                 if (knopf) knopf.click();
-                await new Promise((res) => setTimeout(res, 1500));
+                await sleep(1500);
                 const z = window.__klangWelt && window.__klangWelt.zensus ? window.__klangWelt.zensus() : [];
                 o.seeuferUfer = z.some((v) => v.name === "ufer" && v.an);
                 o.laufendLab = z.filter((v) => v.an).map((v) => v.name);

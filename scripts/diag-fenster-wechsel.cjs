@@ -74,14 +74,13 @@ async function fensterSchritt(o) {
     const r = window.anazhRealm;
     const st = r.state;
     const L = () => (r._gpuLeine ? r._gpuLeine.gerendert : 0);
-    const warte = () => new Promise((q) => setTimeout(q, 20));
     if (o.pr != null) {
         const f0 = L();
         await window
             .__gebautNach("noch: Math.abs(st.renderer.getPixelRatio() - o.pr) > 1e-6 && L() - f0 < 60", {
                 fertig: () => !!(!(Math.abs(st.renderer.getPixelRatio() - o.pr) > 1e-6 && L() - f0 < 60)),
                 takt: async () => {
-                await warte();
+                await sleep(20);
                 },
                 max: 2400,
             });
@@ -93,8 +92,8 @@ async function fensterSchritt(o) {
     // n Frames (die Leine trägt 2 im Flug), dann bis der GPU-Prozess die Submits des Schritts geprüft hat (der Selbsttest
     // endet mit der ersten Meldung)
     const halt = () => o.bisMeldung && gemeldet();
-    while (L() - f0 < o.n && !halt()) await warte();
-    for (const offen = [...S.offen]; !halt() && offen.some((e) => S.offen.has(e)); ) await warte();
+    while (L() - f0 < o.n && !halt()) await sleep(20);
+    for (const offen = [...S.offen]; !halt() && offen.some((e) => S.offen.has(e)); ) await sleep(20);
     const t = r._szeneTiefeKnoten && r._szeneTiefeKnoten.value;
     const W = r._gpuWache || { n: 0, meldungen: [] };
     return {

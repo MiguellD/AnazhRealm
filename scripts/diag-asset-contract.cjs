@@ -13,6 +13,7 @@ const fs = require("fs");
 const path = require("path");
 const { runWithWorker, fingerprintMeshes, DATEN_KANAELE, ersteAbweichung } = require("./lib/asset-worker-harness.cjs");
 const { probeWand } = require("./lib/plattform-probe.cjs");
+const { hauptLauf } = require("./lib/welt-boot.cjs");
 const {
     bildDeckung,
     bildLagen,
@@ -406,7 +407,7 @@ function bildUrteil(mess, tafel) {
     return v;
 }
 
-(async () => {
+hauptLauf(async () => {
     if (!fs.existsSync(DIR)) {
         console.error(
             `❌ Keine Goldens in ${path.relative(process.cwd(), DIR)} — erst 'node scripts/mint-asset-goldens.cjs'.`
@@ -1125,7 +1126,4 @@ function bildUrteil(mess, tafel) {
     }
     console.log("\n✅ GRÜN — der Generator trifft die eingefrorenen Goldens byte-genau (cv:1). Kein stiller Drift.");
     process.exit(0);
-})().catch((e) => {
-    console.error("Gate-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

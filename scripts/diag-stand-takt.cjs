@@ -633,7 +633,7 @@ async function tatSeite(MESS, vorher) {
     Object.assign(T, { gefaellt: T.staemme.length, gepflueckt: T.ernte.length });
     T.stunde = await stunden(1, T);
     r.saveState();
-    await new Promise((ok) => setTimeout(ok, 2500)); // der Save landet vor dem Reload
+    await sleep(2500); // der Save landet vor dem Reload
     return T;
 }
 
@@ -683,7 +683,6 @@ const TAT = process.argv.includes("--tat");
                 const r = window.anazhRealm,
                     st = r.state;
                 const P = Object.getPrototypeOf(r);
-                const pause = (ms) => new Promise((ok) => setTimeout(ok, ms || 0));
                 let t = performance.now();
                 const takt = () => {
                     t += 1000 / 60;
@@ -724,7 +723,7 @@ const TAT = process.argv.includes("--tat");
                     for (; i < n && still < 30; i++) {
                         takt();
                         still = summe(L.frame()) === 0 ? still + 1 : 0;
-                        if (i % 10 === 0) await pause(5);
+                        if (i % 10 === 0) await sleep(5);
                     }
                     return i;
                 };
@@ -735,7 +734,7 @@ const TAT = process.argv.includes("--tat");
                         if (schritt) schritt(i);
                         takt();
                         fs.push(L.frame());
-                        if (i % 10 === 0) await pause(5);
+                        if (i % 10 === 0) await sleep(5);
                     }
                     return window.__standPhase(fs);
                 };
@@ -813,7 +812,7 @@ const TAT = process.argv.includes("--tat");
                             const g = gang();
                             if (jeFrame) jeFrame(f, g);
                             if (namen.every((n) => runden[n] !== undefined && g[n] >= runden[n])) break;
-                            if (i % 10 === 0) await pause(5);
+                            if (i % 10 === 0) await sleep(5);
                         }
                     } finally {
                         P._standRuht = ruheRuf;
@@ -1029,7 +1028,7 @@ const TAT = process.argv.includes("--tat");
                     let studio = 0;
                     for (; studio < 900 && !studioRuht(); studio++) {
                         takt();
-                        if (studio % 5 === 0) await pause(10);
+                        if (studio % 5 === 0) await sleep(10);
                     }
                     await bisRuhe(900);
                     const ankunft0 = F ? F.ankunft | 0 : 0;
@@ -1178,7 +1177,7 @@ const TAT = process.argv.includes("--tat");
                             const t1 = performance.now();
                             takt();
                             max = Math.max(max, performance.now() - t1);
-                            if (i % 10 === 0) await pause(5);
+                            if (i % 10 === 0) await sleep(5);
                         }
                         O.plan = pfc;
                         O.maxTaktMs = +max.toFixed(1);
@@ -1311,7 +1310,7 @@ const TAT = process.argv.includes("--tat");
                                     if (ms - m0 > maxMs) maxMs = ms - m0;
                                     maxN = Math.max(maxN, n - n0);
                                     g = r._foundryGestaltFor(e, preset);
-                                    if (takte % 20 === 0) await pause(5);
+                                    if (takte % 20 === 0) await sleep(5);
                                 }
                                 Object.assign(Wd, {
                                     takte,
@@ -1373,7 +1372,7 @@ const TAT = process.argv.includes("--tat");
                             while (!drin() && takte < 600) {
                                 takt();
                                 takte++;
-                                if (takte % 20 === 0) await pause(5);
+                                if (takte % 20 === 0) await sleep(5);
                             }
                             const gs = gruppen();
                             Object.assign(SH, {
@@ -1474,7 +1473,7 @@ const TAT = process.argv.includes("--tat");
                                     A.heil = true;
                                     break;
                                 }
-                                if (A.takte % 5 === 0) await pause(10);
+                                if (A.takte % 5 === 0) await sleep(10);
                             }
                         } finally {
                             if (bauEigen) r._buildVoxelChunkData = bauRoh;
@@ -1545,14 +1544,14 @@ const TAT = process.argv.includes("--tat");
                             takt();
                             W.maxTakt = Math.max(W.maxTakt, jetztTakt);
                             if (st.voxelChunks && st.voxelChunks.has(key)) break;
-                            if (n % 5 === 0) await pause(10);
+                            if (n % 5 === 0) await sleep(10);
                         }
                         // der Chunk steht — sein Wald und der seiner Nachbarn kommt in den Takten danach
                         for (; nach < 240; nach++) {
                             jetztTakt = 0;
                             takt();
                             W.maxTakt = Math.max(W.maxTakt, jetztTakt);
-                            if (nach % 10 === 0) await pause(5);
+                            if (nach % 10 === 0) await sleep(5);
                         }
                     } finally {
                         core.planForestCell = roh;
@@ -1582,7 +1581,7 @@ const TAT = process.argv.includes("--tat");
                     for (; i < 2000; i++) {
                         if (o().wald + o().foundry === 0 && r._streuWartet(p) === 0) break;
                         takt();
-                        if (i % 10 === 0) await pause(5);
+                        if (i % 10 === 0) await sleep(5);
                     }
                     const warten = [];
                     r._streuWartet(p, warten);
@@ -1621,7 +1620,7 @@ const TAT = process.argv.includes("--tat");
                             if (schritt) schritt(i);
                             takt();
                             fs.push(S.frame());
-                            if (i % 20 === 0) await pause(2);
+                            if (i % 20 === 0) await sleep(2);
                         }
                         return window.__simPhase(fs, st.spielZeit - z0);
                     };
@@ -1702,7 +1701,7 @@ const TAT = process.argv.includes("--tat");
                             Z.einheiten.push(S.frame().brand);
                             Z.glut = Math.max(Z.glut, +(am().glut - glut0).toFixed(3));
                             Z.licht = Z.licht || r._leuchtQuellen(MESS.x, pm.y, MESS.z, 32).some((q) => q.quelle === "brand");
-                            if (i % 20 === 0) await pause(2);
+                            if (i % 20 === 0) await sleep(2);
                         }
                         Object.assign(Z, { brennt: st.brandFeld ? st.brandFeld.size : 0, lebNach: +am().lebendig.toFixed(3) });
                         Z.asche += asche();

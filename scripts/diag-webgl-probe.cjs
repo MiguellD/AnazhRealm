@@ -19,11 +19,11 @@
 //   node scripts/diag-webgl-probe.cjs
 // ─────────────────────────────────────────────────────────────────────────
 
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.WGLP_PORT || 4671);
 const server = statikServer();
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
@@ -48,7 +48,7 @@ const server = statikServer();
         };
     });
     // Die Welt einige Sekunden LEBEN lassen (der natürliche Loop läuft; swiftshader-GL ist zäh).
-    await new Promise((r) => setTimeout(r, 6000));
+    await sleep(6000);
     const out = await page.evaluate(async () => {
         const r = window.anazhRealm;
         const o = { err: null };
@@ -99,7 +99,7 @@ const server = statikServer();
                 } catch (_e) {
                     o.tickErr = (_e && _e.message) || String(_e);
                 }
-                await new Promise((res) => setTimeout(res, 50));
+                await sleep(50);
             }
             o.frames = st.flightRecorder ? st.flightRecorder.frames : 0;
             o.spielerEndlich = !!pm && [pm.position.x, pm.position.y, pm.position.z].every(Number.isFinite);
@@ -196,7 +196,4 @@ const server = statikServer();
         "\n✅ GRÜN — die Kein-WebGPU-Geschichte ist BEWIESEN: der erzwungene WebGL2-Rückfall bootet eine LEBENDE, sichtbare Welt; die WGSL-Konsumenten + Bundles ruhen hinter der EINEN Backend-Wand, der Rückfall ist LAUT benannt, der Fern-Ring trägt auf CPU."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("WebGL-Probe-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

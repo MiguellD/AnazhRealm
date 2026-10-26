@@ -30,7 +30,7 @@
 // Namen genannt.
 //   node scripts/diag-freie-slots.cjs [--selftest]          (npm run gate:freie-slots; Port: FREIE_SLOTS_PORT)
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 
@@ -59,7 +59,6 @@ async function welt() {
     await page.evaluateOnNewDocument(installWieseSicht);
     await server.zeige(page, 60000);
     const out = await page.evaluate(async (selbst) => {
-        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         const o = {};
         const r = await window.__weltDa();
         const st = r.state;
@@ -403,7 +402,7 @@ async function welt() {
     return { out };
 }
 
-(async () => {
+hauptLauf(async () => {
     const fails = [];
     // ── Q (Quelle) + ihr Selbsttest ──
     const q = quellBefunde();
@@ -478,7 +477,4 @@ async function welt() {
         `\n✅ gate:freie-slots GRÜN — nach ${out.umzuege.length} Umzügen ist jede Instanz-Senke dicht: kein freier Slot, keine sichtbare leere Hülle, in keinem Pass; ${letzt.abschiede} Senken fielen mit Abschied, keine ohne; der Sicht-Satz der Nah-Wiese trug in ${wieseOrte} Ringen jedes Soll seines Blicks (${Math.min(...out.umzuege.filter((u) => u.wiese.bueschel > 0).map((u) => u.wiese.summe))}–${Math.max(...out.umzuege.map((u) => u.wiese.summe))} Instanzen), ein Ring ohne Wiese stand leer.`
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Linsen-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

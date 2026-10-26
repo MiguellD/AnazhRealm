@@ -27,7 +27,7 @@
 //     Werkstatt-Vorschau; _liveRefs-Rueckgabe) · foundry-off (lokaler Hook,
 //     sichern/wiederherstellen) -> der Part-Pfad byte-alt.
 //   node scripts/diag-nervensystem-schmiede.cjs [--selftest]
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
@@ -67,7 +67,7 @@ function staticLaws(q) {
     ];
 }
 
-(async () => {
+hauptLauf(async () => {
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
         // V6/V8: portalMeta in der Donor-Zeile, ein Vorwärmen in der Hand -> S6 und S8 feuern beim Namen
@@ -252,7 +252,7 @@ function staticLaws(q) {
                 for (const weiter = window.__deckel("der Degen der Schmiede", 300); weiter(); ) {
                     const w = pm.userData && pm.userData.heldMesh;
                     if (w && w.userData && w.userData.foundryHeld) break;
-                    await new Promise((r2) => setTimeout(r2, 150));
+                    await sleep(150);
                 }
                 const hmD = pm.userData && pm.userData.heldMesh;
                 res.h.degenStudio = !!(hmD && hmD.userData && hmD.userData.foundryHeld);
@@ -261,7 +261,7 @@ function staticLaws(q) {
                 for (const weiter = window.__deckel("das Langschwert der Schmiede", 300); weiter(); ) {
                     const w = pm.userData && pm.userData.heldMesh;
                     if (w && w.userData && w.userData.foundryHeld) break;
-                    await new Promise((r2) => setTimeout(r2, 150));
+                    await sleep(150);
                 }
                 const hm = pm.userData && pm.userData.heldMesh;
                 res.h.studio = !!(hm && hm.userData && hm.userData.foundryHeld);
@@ -369,7 +369,7 @@ function staticLaws(q) {
                 // (5) SPITZHACKE-Probe (Werkzeug-Klasse, s.schaft-Griff) — direkte Quelle + Zahlen.
                 let probe = r._heldFoundryGroup("klinge_spitzhacke");
                 for (const weiter = window.__deckel("die Spitzhacke", 300); probe === "pending" && weiter(); ) {
-                    await new Promise((r2) => setTimeout(r2, 150));
+                    await sleep(150);
                     probe = r._heldFoundryGroup("klinge_spitzhacke");
                 }
                 if (probe && probe !== "pending") {
@@ -576,7 +576,4 @@ function staticLaws(q) {
         "\n✅ GRÜN — DER ε-BEWEIS STEHT: die Waffen-/Werkzeug-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — schmiede-core reist durch den EINEN Foundry-Worker (Rezepte + kindStages + B4-Regler + Asset), klinge_<id> entsteht am EINEN Chokepoint, hand reist als Daten ohne Streu (N5.5) — UND (W-A4b) die gehaltene Klinge traegt die STUDIO-GESTALT: Part-Interim -> Ankunfts-Tausch, sharedGeom-Wrapper, daten-getriebener Griff-Anker, Unequip laesst das geteilte Asset stehen, foundry-off bleibt Part byte-alt."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("ε-Schmiede-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });
