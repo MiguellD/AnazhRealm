@@ -56,7 +56,6 @@ const server = statikServer();
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.evaluateOnNewDocument(installWieseSicht);
-    page.on("pageerror", (e) => console.log("[ERR]", (e.stack || e.message).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     const out = await page.evaluate(async (doSelftest) => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

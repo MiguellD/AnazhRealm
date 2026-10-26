@@ -622,12 +622,6 @@ const NUR_K5 = process.argv.includes("--k5");
     const browser = await starteBrowser({ art: NUR_K5 ? "linse" : "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
-    let pageErr = null;
-    page.on("pageerror", (e) => {
-        const m = (e.stack || e.message).split("\n")[0];
-        if (!pageErr) pageErr = m;
-        console.log("[PAGE-ERROR]", m);
-    });
     if (!NUR_K5) await nullRenderer(page); // GPU-frei, Produktions-Boot
     let out;
     let welle = null;
@@ -1059,7 +1053,6 @@ const NUR_K5 = process.argv.includes("--k5");
         check(c.eArmHebt, "(E) OBERKÖRPER-Layer: im Windup heben Arm + Rumpf (additiv über der Lokomotion)");
         check(c.eBeineByteGleich, "(E) die BEINE bleiben byte-gleich (der Layer ist NUR Oberkörper)");
         check(c.eRueckstandsfrei, "(E) nach dem Schwung ist die Pose rückstandsfrei byte-alt");
-        check(!pageErr, `kein Page-Error (${pageErr || "sauber"})`);
     }
     console.log("\n  ── WELLE L — Treffer · Maus · Blick (die Leben-Prüfung „Kampf“ als Linse) ──\n");
     if (!welle) {

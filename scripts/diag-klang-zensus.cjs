@@ -1567,7 +1567,6 @@ async function zensus(page, browser, ergebnis) {
     try {
         const page = await browser.newPage();
         page.setDefaultTimeout(590000);
-        page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
         if (!ECHT) await nullRenderer(page);
         // der Quellen-Abgriff kostet je Quelle einen Stapel — der Takt misst ohne ihn
         if (!TAKT) await page.evaluateOnNewDocument(quellenAbgriff);

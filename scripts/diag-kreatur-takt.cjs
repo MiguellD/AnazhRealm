@@ -75,8 +75,6 @@ async function headless(laeufe) {
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(880000);
-    const fehler = [];
-    page.on("pageerror", (e) => fehler.push((e.stack || e.message).split("\n")[0]));
     await nullRenderer(page);
     const [aus, dauer] = [[], {}];
     const zeit = async (p, fn) => {
@@ -170,7 +168,7 @@ async function headless(laeufe) {
         await browser.close();
         server.close();
     }
-    return { aus, fehler, dauer };
+    return { aus, dauer };
 }
 
 async function imFenster(laeufe) {
@@ -182,7 +180,7 @@ async function imFenster(laeufe) {
         if (!o.ergebnis) throw new Error(o.fehler || o.roh);
         aus.push(o.ergebnis);
     }
-    return { aus, fehler: [] };
+    return { aus };
 }
 
 (async () => {
@@ -199,7 +197,7 @@ async function imFenster(laeufe) {
     for (const p of gewaehlt)
         for (const [t, re] of SELBST ? TAETER[p] : [[null]]) nennt[laeufe.push({ proben: [p], taeter: t }) - 1] = re;
     const t0 = Date.now();
-    const { aus, fehler, dauer } = WERKBANK ? await imFenster(laeufe) : await headless(laeufe);
+    const { aus, dauer } = WERKBANK ? await imFenster(laeufe) : await headless(laeufe);
     console.log(
         `\n===== DIE KREATUR-LINSE (gate:kreatur-takt) — ${WERKBANK ? "sichtbares Fenster, echte GPU (Werkbank :" + WERKBANK + ")" : "headless, Null-Renderer"}${SELBST ? " — SELBST-TEST (Täter eingespielt)" : ""} =====\n`
     );
@@ -226,10 +224,6 @@ async function imFenster(laeufe) {
                 }`
             );
     });
-    if (fehler.length) {
-        console.log(`\n  ❌ Seiten-Fehler: ${fehler.slice(0, 3).join(" | ")}`);
-        rot++;
-    }
     const je = Object.entries(dauer || {}).map(([p, s]) => `${p}: ${Math.round(s)}`);
     console.log(
         `\n  (${((Date.now() - t0) / 1000).toFixed(0)} s)${je.length ? ` — Sekunden je Probe: ${je.join(", ")}` : ""}`

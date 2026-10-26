@@ -651,8 +651,6 @@ const TAT = process.argv.includes("--tat");
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(580000);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
         window.__anazhFernRing = true; // der Fern-Ring (die Saum-Wache) läuft auch ohne GPU — sein Haken
@@ -1750,7 +1748,7 @@ const TAT = process.argv.includes("--tat");
         console.log(v.length ? "❌ TAT ROT — " + v.join(" | ") : "✅ TAT GRÜN — die Spur hält bis zum Reload");
         process.exit(v.length ? 1 : 0);
     }
-    befund.pageErrors = pageErrors.concat(befund.taktFehler || []);
+    befund.pageErrors = befund.taktFehler || [];
     const namen = Object.keys(STAND.TAKTE);
     const zeile = (n, x) =>
         `  ${n.padEnd(8)} ${x.frames} Frames · Σ ${x.summe} Einheiten · ` +

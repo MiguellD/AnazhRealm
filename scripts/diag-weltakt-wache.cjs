@@ -18,7 +18,7 @@
 //       jeden Op, Ort und jede Bedingung der DSL mit Form, die Welt-Akte als eigene Gruppe; jeder Op
 //       wirkt als KI an seiner Form (`_dslForm`, Werte aus der Welt), jede DSL-Liste (`*_OPS`, `DSL_*`) nennt nur lebende Ops
 //       (modify_terrain in einer Liste);
-//   (P) kein Page-Error.
+//   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 //   (T) DIE TAT (affekt K1/K4, ohne Halt): 10 Pflegen je 30 s — |δ₁₀| ≤ 0,3 δ₁, der Chor-Teil der Wertung am Ort ≥ 3 dB, 32 m
 //       daneben ≤ 0,5 dB, gestempelte Freude 0; Taten von Nexus und KI im Blick in ≤ 1 treuen Zeile je 30 s (`tat-k1`/`tat-k4`).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): `weltaktUrteil` fällt bei jedem durchgelaufenen Akt, beim blinden
@@ -421,7 +421,7 @@ function gleich(a, b) {
     return JSON.stringify(a) === JSON.stringify(b);
 }
 
-function urteil(S, pageErrors) {
+function urteil(S) {
     const rot = [];
     for (const [n, w] of Object.entries(S.halt)) {
         const u = weltaktUrteil(w.buch);
@@ -471,7 +471,6 @@ function urteil(S, pageErrors) {
         const gruppen = { "Welt-Akte": welt, "Weitere Ops": S.ops.filter((o) => !welt.includes(o)), ...S.ki.gruppen };
         rot.push(...kiUrteil(S.ki.prompt, gruppen), ...formUrteil(S.form, S.listen, S.ops));
     }
-    for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
 }
 
@@ -480,8 +479,6 @@ function urteil(S, pageErrors) {
     const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(async () => {
         await window.__weltDa((r) => r.state && r.state.player && r.nexus);
@@ -492,7 +489,6 @@ function urteil(S, pageErrors) {
     // (T) DIE TAT auf einer frischen Seite (die Welt der Wand oben trägt ihre Bauten, Seelen und Gesetze)
     const tatSeite = await browser.newPage();
     await nullRenderer(tatSeite);
-    tatSeite.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await tatSeite.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await tatSeite.evaluate(() => window.__weltDa((r) => r.state && r.state.rendererReady && r.state.blueprints && r.nexus));
     await tatSeite.evaluate(AUSGABE_INSTALL);
@@ -520,7 +516,7 @@ function urteil(S, pageErrors) {
         `  KI: Prompt ${S.ki.prompt.length} Zeichen · Quelle: ${S.ops.length} Ops, ${S.ki.gruppen.Orte.length} Orte, ${S.ki.gruppen.Bedingungen.length} Bedingungen, ${S.liste ? S.liste.length : "keine"} Welt-Akte, ${FREI.length} frei; der Nexus komponiert ${Object.keys(S.nexusOps).length} Ops (${Object.keys(S.nexusOps).sort().join(" · ")})`
     );
     console.log(`  KI-Form: ${S.form.length} Läufe über ${S.ops.length} Ops, ${formUrteil(S.form, {}, []).length} Läufe scheitern an ihrer Form; Listen ${Object.entries(S.listen).map(([n, l]) => `${n} ${l.filter((x) => !S.ops.includes(x)).length}/${l.length} tot`).join(" · ")}`);
-    const rot = urteil(S, pageErrors);
+    const rot = urteil(S);
     // (T) die Zahlen je Kriterium (`tat-k1 {…}`, `tat-k4 {…}` — die Punkte-Maschine liest sie), die Befunde im Urteil
     const [tu, t, Z] = [tatUrteil(T), T.taten, T.stimme.zeilen];
     for (const z of Z) console.log(`  [${z.t | 0} s] ${z.text}`);
