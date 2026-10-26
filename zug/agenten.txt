@@ -57,3 +57,4 @@
 2026-10-26T13:15 bauen-heil champion wf838k/3 78A WIP vehicle-drive B-c + asset-contract s1/s11 geheilt, regler-wirkt leiter:L1 0,571 neu rot f8536c37 · PUNKTE
 2026-10-26T13:50 bauen-quote champion 143k 61A grün Fase-Regler Podestleiter ab 0,002: leiter L1/L0 0,571 → 0,167, 5709/5712 byte-gleich 21f084e4 · PUNKTE
 2026-10-26T14:05 bewohner-rand champion 230k 89A grün Wege = Wenden des Plans (b.tagAb), rot 0/6, Start-Dorf 6–8 gleich je Lauf b3a10c93 · FEUER
+2026-10-26T17:55 leib-k1-rueck champion 88k 37A befund KEIN Rückschritt: verschränkt 12/12 auf der Radeon, ego/gehen 44,8 vs 45,5 ms Median, B−A +0,10 ms (0,04 σ); Station kippt an beiden Köpfen 1 von 4 · WICHTIG
