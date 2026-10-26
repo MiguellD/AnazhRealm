@@ -23,3 +23,4 @@
 2026-10-26T19:30 woche=50 karte=97 (z39 gelandet, z40 fährt, takt6-gtx mit geheiltem Läufer: fahrzeug.K4#2 3,4 min statt 5,0)
 2026-10-26T21:18 karte=98 (gebucht am b2c6c627, buche.sh)
 2026-10-26T21:27 karte=108 (gebucht am b2c6c627, buche.sh)
+2026-10-26T21:28 woche=55 karte=108 (Hand, nach takt6-gtx)
