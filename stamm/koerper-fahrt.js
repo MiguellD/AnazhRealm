@@ -717,6 +717,8 @@ class AnazhRealm_koerper_fahrt {
     // V18.150 — das Profil des AKTUELL gerittenen Gefährts (der Bewegungs-
     // Loop konsumiert es). _tickMountedMovement cacht den Entry pro Frame
     // (_mountedEntry) — kein zweiter Array-Scan im Bewegungs-Pfad.
+    // DER SITZ FÄHRT NIE (bauen.K5): ein Werk, das nicht fahrbar ist (die Bank, `sitzbar`), trägt den Sitzenden mit Tempo 0 —
+    // hier, am EINEN Ritt-Leser; das Profil selbst bleibt die Emergenz der Substanz (`_vehicleProfile`, jeder andere Leser).
     _mountedVehicleProfile() {
         const archId = this.state.player && this.state.player.mountedArch;
         if (archId === null || archId === undefined) return null;
@@ -724,7 +726,11 @@ class AnazhRealm_koerper_fahrt {
             this._mountedEntry && this._mountedEntry.id === archId
                 ? this._mountedEntry
                 : (this.state.architectures || []).find((e) => e.id === archId);
-        return entry ? this._vehicleProfile(entry) : null;
+        const prof = entry ? this._vehicleProfile(entry) : null;
+        if (!prof || (entry.affordances && entry.affordances.moveable)) return prof;
+        if (!entry._sitzRitt || entry._sitzRitt.prof !== prof)
+            entry._sitzRitt = { prof, ritt: Object.assign({}, prof, { topSpeedMul: 0 }) };
+        return entry._sitzRitt.ritt;
     }
 
     // REITER + GEFÄHRT = EIN KÖRPER: das gerittene Werk ist der Leib des Spielers — seine Blocker blocken weder den Spieler
@@ -736,9 +742,11 @@ class AnazhRealm_koerper_fahrt {
         return id !== null && id !== undefined && !!e && e.id === id;
     }
 
+    // DER SITZ (bauen.K5): ein sitzbares Werk (`sitzbar`, das Sitz-Gesetz der Form) trägt den Leib wie ein Gefährt — dieselbe
+    // Sitz-Pose, derselbe Sitz-Punkt (`_attachPointFor` „sitz"), derselbe Abstieg —, nur fährt es nie (`_vehicleProfile`: Tempo 0).
     mountArchitecture(entry) {
-        if (!entry || !entry.affordances || !entry.affordances.moveable) {
-            this.log("Mount: Architektur ist nicht fahrbar", "INFO");
+        if (!entry || !entry.affordances || !(entry.affordances.moveable || entry.affordances.sitzbar)) {
+            this.log("Mount: Architektur ist weder fahrbar noch sitzbar", "INFO");
             return { ok: false, reason: "not_moveable" };
         }
         this.state.player.mountedArch = entry.id;
@@ -809,6 +817,12 @@ class AnazhRealm_koerper_fahrt {
             this.state._mountVorKamera = this.state.cameraMode;
             this.setCameraMode("third");
         }
+        if (!entry.affordances.moveable) {
+            // wer sich setzt, steht still: die Fahrt des Gehens fällt mit dem Sitz
+            if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
+            this.log(`Sitzt auf „${entry.type}"`, "INFO");
+            return { ok: true, entry };
+        }
         const art =
             prof && prof.radCount > 0
                 ? `${prof.radCount}× Rad — rollt`
@@ -873,6 +887,24 @@ class AnazhRealm_koerper_fahrt {
                 this.state._fieldVy = 0;
             }
         }
+        // DER SITZ (bauen.K5): wer aufsteht, steht vor ihm — die Front +z des Werks, eine Kapsel vor der Vorderkante seines
+        // Sitzes, die Füße auf dem Grund des Werks (Basis − Bodenfreiheit); vorher stand der Leib in der Sitzfläche
+        const sp =
+            entry && entry.affordances && !entry.affordances.moveable
+                ? this._attachPointFor(this.state.blueprints[entry.type], "sitz")
+                : null;
+        if (sp && sp.part !== null && this.state.playerMesh) {
+            const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
+            const tiefe = Math.abs(this.state.blueprints[entry.type].parts[sp.part].size.z || 0);
+            const vor = (sp.point.z + tiefe / 2) * sc + AnazhRealm.PLAYER_WALL_RADIUS + 0.05;
+            const th = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+            this.state.playerMesh.position.set(
+                entry.position.x + Math.cos(th) * sp.point.x * sc + Math.sin(th) * vor,
+                entry.position.y - (entry._groundClear || 0),
+                entry.position.z - Math.sin(th) * sp.point.x * sc + Math.cos(th) * vor
+            );
+            this.state._fieldVy = 0;
+        }
         this.state.player.mountedArch = null;
         // FAHR-ABSCHLUSS (19.07.) — die gemerkte Vor-Fahrt-Sicht kehrt zurück.
         if (this.state._mountVorKamera) {
@@ -928,9 +960,15 @@ class AnazhRealm_koerper_fahrt {
         if (this.state.player.mountedArch !== null && this.state.player.mountedArch !== undefined) {
             return this.dismountArchitecture();
         }
-        const entry = this._findNearestAffordanceEntry("moveable", AnazhRealm.MOUNT_RANGE_M);
+        // das nächste Werk, das den Leib trägt: ein Gefährt (fahrbar) oder ein Sitz (sitzbar, bauen.K5) — das nähere gewinnt
+        const fahr = this._findNearestAffordanceEntry("moveable", AnazhRealm.MOUNT_RANGE_M);
+        const sitz = this._findNearestAffordanceEntry("sitzbar", AnazhRealm.MOUNT_RANGE_M);
+        const pm = this.state.playerMesh.position;
+        const d2 = (e) =>
+            e ? (e.position.x - pm.x) ** 2 + (e.position.y - pm.y) ** 2 + (e.position.z - pm.z) ** 2 : Infinity;
+        const entry = d2(sitz) < d2(fahr) ? sitz : fahr;
         if (!entry) {
-            this.log("Mount: kein fahrbares Compound in Reichweite", "INFO");
+            this.log("Mount: kein fahrbares oder sitzbares Werk in Reichweite", "INFO");
             return { ok: false, reason: "none_in_range" };
         }
         return this.mountArchitecture(entry);
