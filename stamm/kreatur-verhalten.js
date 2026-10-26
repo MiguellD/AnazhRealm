@@ -912,11 +912,15 @@ class AnazhRealm_kreatur_verhalten {
         return o;
     }
 
-    // DER STOFF EINES LEIBS (physik K1): ein Tier ist Fleisch (das Gewebe aus tetrapoda), der Mensch Leib (samt der Luft seiner
-    // Lunge, aus koerper) — je eine Zeile der EINEN Stoff-Zeile (`_stoffRho`). Leser: die Masse (`_leibMasse`) und das Wasser,
-    // das ihn trägt (`_leibGetragen`).
+    // DER STOFF EINES LEIBS (physik K1): ein Tier ist Fleisch (das Gewebe aus tetrapoda, unter dem Fell), der Mensch Leib
+    // (samt der Luft seiner Lunge, aus koerper) — je eine Zeile der EINEN Stoff-Tafel. Leser: die Masse (`_leibMasse`), das
+    // Wasser, das ihn trägt (`_leibGetragen`), und der Treffer (`_trefferPaar`).
+    _leibStoff(mensch) {
+        return mensch ? "leib" : "fleisch";
+    }
+
     _leibRho(mensch) {
-        return this._stoffRho(mensch ? "leib" : "fleisch");
+        return this._stoffRho(this._leibStoff(mensch));
     }
 
     // DAS WASSER TRÄGT DEN LEIB (Archimedes, physik K1): ein Leib schwimmt, solange er nicht dichter ist als Wasser

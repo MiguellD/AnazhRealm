@@ -2264,6 +2264,13 @@ class AnazhRealm_koerper_fahrt {
         return true;
     }
 
+    // DER STOFF EINES WAGENS (halten.K2): die Hülle eines Studio-Wagens ist Blech (wie seine Masse, unten), ein Teile-Werk
+    // trägt den Stoff seines größten festen Teils (`_werkStoff`, der Holzkarren Holz). Leser: der Stoß (`_stossEreignis`).
+    _wagenStoff(entry) {
+        const fzg = this._fahrzeugGesetzFor(entry);
+        return fzg && fzg.drive && fzg.drive.huelle ? "blech" : this._werkStoff(entry);
+    }
+
     // DIE MASSE EINES WAGENS (kg): das Volumen seiner Gestalt × ρ seines Stoffs. Ein Studio-Wagen (die Hülle seines Kerns)
     // ist Blech: der Raum seines Fahr-Satzes (`raumM3`, carPhys des Kerns, G.m) × der Anteil Blech darin
     // (`_fahrGesetz().fuellGrad`) × ρ(blech) — ein GT mit 9,6 m³ wiegt 1,4 t. Ein Teile-Werk wiegt seine Teile (`_teilMasse`,
