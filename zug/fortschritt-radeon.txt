@@ -31,3 +31,4 @@
 2026-10-26 01:45:17 takt4-headless stoffe.K1#1 GRÜN 0.5 · 21/74
 2026-10-26 01:45:40 takt4-headless tiere.K1#1 GRÜN 0.5 · 22/74
 2026-10-26 01:46:04 takt4-headless tiere.K3#1 GRÜN 0.4 · 23/74
+2026-10-26 01:46:24 takt4-headless physik.K2#1 GRÜN 4.1 · 24/74
