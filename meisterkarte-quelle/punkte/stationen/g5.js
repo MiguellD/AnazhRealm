@@ -1,7 +1,7 @@
 // Stationen der Gruppe V (src/g5.js) — Welten und Wege. Format und Regeln: punkte/punkte.cjs (Kopf).
 // Erfasst: jedes Kriterium mit Punkten > 0 (fahrzeug.K3/K4, siedlung.K1, leib.K1/K4, halten.K1/K2), die Messschuld M36
 // (siedlung.K5) und was ein Zweig im Stau kippen soll (stadt-erwachen-2 siedlung.K5, halten-gesetz halten.K1/K3, halten-k5 halten.K5,
-// teilen-sicher ultiversum.K5, gamepad-verben leib.K5, leib-k2-fuss leib.K2, sk2-zipf siedlung.K2 Staffel 2; tore.K5 steht seit 24.10. ganz in fehlt: kein anderes Gerät). Was sich nicht als Station fassen lässt, steht in
+// teilen-sicher ultiversum.K5, gamepad-verben leib.K5, leib-k2-fuss leib.K2, sk2-zipf siedlung.K2 Staffel 2; tore-k5-zweit tore.K5 Staffel 1; tore.K5 Staffel 2 steht in fehlt). Was sich nicht als Station fassen lässt, steht in
 // `module.exports.fehlt` (befehl null, grund) — außerhalb der Liste, damit `run` der anderen Gruppen nicht an ihr bricht.
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
@@ -1218,6 +1218,57 @@ const stationen = [
         ],
         quelle: "2 = auch Reittier/Fahrzeug und die Rundreise eines Werks Studio → Welt → Studio mit gleichem Bau-Hash, für jede Ziel-Seite",
     },
+    // ───────── tore.K5 — Teilen in EINER Geste an ein anderes Gerät (tore-k5-zweit) ─────────
+    // gate:praegung-welt (T): B ist ein eigener Browser-Prozess mit frischem Profil (IDB + localStorage vor dem Boot leer), nie ein
+    // Kontext im Chrome von A; beide treten per initP2PSync in einen Raum des signaling-servers, B kennt A erst am offenen
+    // DataChannel und an der Vibe-Identität, die A dort bewies. A klickt Werkstatt → GT → Teilen, B gibt den Code in den Chat;
+    // das Urteil liest die Zeilen der Probe am Text: anderes Gerät, der Selbsttest (B als Kontext ist ROT), Signatur von A, an
+    // B's Pose (≤ 24 m, NDC im Sichtfeld am Null-Renderer — ein Bild an B's Pose misst die Station nicht), ≤ 10 s, Stempel und
+    // Same, Bau-Hash A = B ≠ ungeprägt. An main 9ceeca71 ROT (die Geräte-Zeile fehlt: B war ein Kontext im selben Chrome); an
+    // tk5-zweit GRÜN: Profil A ≠ B, Bau-Hash 9c183437/12 = 9c183437/12, 530 Zeichen, 866 ms.
+    {
+        kriterium: "tore.K5",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-praegung-welt.cjs"],
+        env: { PRAEGUNG_WELT_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const l = String(lauf.stdout || "").split(/\r?\n/);
+            const soll = [
+                ["Gerät", /^\s*(✅|❌) B ist ein ANDERES GERÄT: /],
+                ["Selbsttest", /^\s*(✅|❌) SELBST-TEST: B als zweiter Kontext im Chrome von A ist ROT/],
+                ["Signatur", /^\s*(✅|❌) B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A/],
+                ["Pose", /^\s*(✅|❌) B: gezeichnet an der eigenen Pose/],
+                ["Zeit", /^\s*(✅|❌) ZEIT: Klick bis Code \+ Enter bis gezeichnet ≤ 10 s/],
+                ["Stempel", /^\s*(✅|❌) B: Stempel und Same reisen tief gleich/],
+                ["Bau-Hash", /^\s*(✅|❌) BAU-HASH A ↔ B byte-gleich/],
+            ];
+            const je = soll.map(([, re]) => l.find((x) => re.test(x)));
+            const fehlt = soll.filter((_, i) => !je[i]).map(([n]) => n);
+            if (fehlt.length) return { gruen: false, zahl: "Zeile fehlt: " + fehlt.join(", ") + " (Exit " + lauf.exit + ")" };
+            const rot = soll.filter((_, i) => !/✅/.test(je[i])).map(([n]) => n);
+            const nach = (i) => je[i].split(" — ").slice(1).join(" — ").slice(0, 160);
+            return {
+                gruen: !rot.length && lauf.exit === 0,
+                zahl: (rot.length ? "ROT: " + rot.join(", ") + " · " : "") + "Zeit " + nach(4) + " · " + nach(6) +
+                    " · Profil A, B, Kontext-Probe: " + (je[0].match(/profile-[\w-]+/g) || ["?"]).join(" · "),
+            };
+        },
+        pfad: [
+            "stamm/netz-identitaet.js",
+            "stamm/netz-p2p.js",
+            "stamm/feld-dsl.js",
+            "stamm/feld-leben.js",
+            "stamm/studio-bruecke.js",
+            "stamm/werkstatt-*.js",
+            "signaling-server.js",
+            "scripts/diag-praegung-welt.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = ein Fluss (Bauplan oder Welt) an einem Gerät: A teilt, B (anderes Gerät, frisches Profil, IDB leer) öffnet; das Werk steht an B's Pose mit gleichem Bau-Hash und studioOv, Signatur gültig, ≤ 10 s",
+    },
 ];
 
 module.exports = stationen;
@@ -1225,16 +1276,8 @@ module.exports = stationen;
 // NICHT FASSBAR als Station (befehl null): das Werkzeug fehlt oder die Staffel verlangt, was EIN Lauf auf EINEM Gerät nie misst.
 module.exports.fehlt = [
     {
-        kriterium: "tore.K5", staffel: 1, befehl: null,
-        grund: "die Probe (T) von gate:praegung-welt misst KEIN anderes Gerät: B ist ein zweiter BrowserContext im selben Chrome " +
-            "(scripts/diag-praegung-welt.cjs:297 createBrowserContext — derselbe Prozess, derselbe GPU-Prozess, dieselbe Maschine), " +
-            "und „steht an B's Pose“ ist eine NDC-Projektion am Null-Renderer (:421, :505), kein Bild an B's Pose (Schlupfloch der " +
-            "Karte: Bau-Hash und Bild); ein anderes Gerät verlangt mindestens einen eigenen Browser-Prozess mit eigenem Profil und " +
-            "Speicher, besser die OMEN als B über die Warteschlange — gemessen an 1d9164e9: Code 530 Zeichen, Bau-Hash A = B 9c183437/12, 640 ms",
-    },
-    {
         kriterium: "tore.K5", staffel: 2, befehl: null,
-        grund: "der Welt-Fluss hat keine Linse: der Einladungs-Code lädt die Seite neu (joinWorldFromCode → _weltWechselNeuLaden), Kontrolle ≤ 5 s verlangt das Welt-Tor ohne Neuladen; dazu beide Flüsse an zwei Geräten (#1 steht ebenfalls hier: B ist kein anderes Gerät)",
+        grund: "der Welt-Fluss hat keine Linse: der Einladungs-Code lädt die Seite neu (joinWorldFromCode → _weltWechselNeuLaden), Kontrolle ≤ 5 s verlangt das Welt-Tor ohne Neuladen; dazu beide Flüsse an zwei Geräten",
     },
     {
         kriterium: "siedlung.K1", staffel: 2, befehl: null,
