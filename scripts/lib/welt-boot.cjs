@@ -169,13 +169,16 @@ const MIME = {
 // Der Statik-Server: die Datei unter der Wurzel (`/` heißt `start`, außerhalb 403, fehlt 404); `seiten` liefert eigene Seiten
 // nach Pfad (Text, Puffer, Funktion, auch als Promise), `keinCache` setzt no-store; `wandle(pfad, daten)` ist der EINE Haken der
 // Selbsttests (null heißt 404). Ein Wurf im Haken oder in einer Seite ist 500 und ein Fehler beim Namen.
+// Der EINE Server-Start und die EINE Welt-Adresse: `await server.lausche(port)` (127.0.0.1, 0 = frei) und
+// `server.zeige(seite, frist, rest = "index.html", warte = "domcontentloaded")` fährt die Seite an die Adresse, an der der Server
+// WIRKLICH lauscht — eine Linse mit eigenem listen-Versprechen oder eigener 127.0.0.1-Adresse daneben ist ein Zwilling (gate:welt-boot).
 function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinCache = false, wandle = null } = {}) {
     const bruch = (res, p, e) => {
         melde("server", `${p}: ${(e && (e.stack || e.message)) || e}`);
         res.statusCode = 500;
         res.end();
     };
-    return http.createServer((req, res) => {
+    const server = http.createServer((req, res) => {
         let p;
         try {
             p = decodeURIComponent(req.url.split("?")[0]);
@@ -211,6 +214,10 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
                 );
         });
     });
+    server.lausche = (port) => new Promise((ok) => server.listen(port, "127.0.0.1", () => ok(server)));
+    server.zeige = (seite, frist, rest = "index.html", warte = "domcontentloaded") =>
+        seite.goto(`http://127.0.0.1:${server.address().port}/${rest}`, { waitUntil: warte, timeout: frist });
+    return server;
 }
 
 // Die Browser-Rezepte: null (kein GPU-Prozess, der Null-Renderer) · webgl (WebGL2 an der Weiche) · standard (Chromes Wahl) ·
@@ -1107,18 +1114,16 @@ async function selbsttest() {
         "/wirft.html": "<!doctype html><script>setTimeout(function(){throw new Error('__seitenWurf')},50)</script>",
     };
     const server = statikServer({ seiten });
-    await new Promise((r) => server.listen(0, "127.0.0.1", r));
-    const url = (p) => `http://127.0.0.1:${server.address().port}${p}`;
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "null", frist: 7000, stallMs: 3000 });
     const fall = async (pfad, tu) => {
         const page = await browser.newPage();
-        await page.goto(url(pfad), { waitUntil: "load" });
+        await server.zeige(page, undefined, pfad.slice(1), "load");
         await tu(page);
         const id = page.__akte.id;
         await page.close().catch(() => {});
         return akten.filter((a) => a.seite === id);
     };
-    const warte = (ms) => new Promise((r) => setTimeout(r, ms));
     // LANGSAM: der Bau steht nach 3,2 s, das Warten hält; TOT: nichts offen, ROT beim Namen; REGLER: das Einschwingen hält den
     // atmenden Regler und gibt ihn frei (die ruhige Seite, 4,5 s).
     let bau = null;
@@ -1164,28 +1169,40 @@ async function selbsttest() {
     // DIE WEICHE: ohne GPU-Arbeit ist ein Echt-Rezept ROT beim Namen, EIN Draw-Aufruf (der Haken) trägt es
     const weiche = [];
     const ruhig = await fall("/ruhig.html", async (p) => {
-        [bau] = await Promise.all([p.evaluate(bauProbe), warte(4500)]);
+        [bau] = await Promise.all([p.evaluate(bauProbe), sleep(4500)]);
         weiche.push(await weicheUrteil(browser, "echt"));
         await p.evaluate(() => WebGL2RenderingContext.prototype.drawArrays.call(null)).catch(() => {});
         weiche.push(await weicheUrteil(browser, "echt"));
     });
     const schleife = await fall("/schleife.html", async () => {
-        for (let i = 0; i < 30 && !akten.some((a) => a.urteil); i++) await warte(500);
-        await warte(500);
+        for (let i = 0; i < 30 && !akten.some((a) => a.urteil); i++) await sleep(500);
+        await sleep(500);
     });
     const haenger = await fall("/haenger.html", (p) => p.evaluate(() => window.__nie()).catch(() => {}));
     // DER EINE SAMMLER: der Wurf einer Seite (auch in einem eigenen Kontext) steht beim Namen in der Liste und macht das
     // Prozess-Ende ROT — ein eigener pageerror-Sammler einer Linse daneben ist ein Zwilling (werkbank.cjs startet sein Fenster selbst)
     const kontext = await browser.createBrowserContext();
-    await (await kontext.newPage()).goto(url("/wirft.html"), { waitUntil: "load" });
-    await warte(400);
+    await server.zeige(await kontext.newPage(), undefined, "wirft.html", "load");
+    await sleep(400);
     const wurf = sammlung.fehler.filter((f) => f.includes("__seitenWurf"));
     sammlung.fehler = sammlung.fehler.filter((f) => !wurf.includes(f));
-    const zwillinge = fs
+    const code = fs
         .readdirSync(path.join(ROOT, "scripts"), { recursive: true })
         .map((f) => f.replace(/\\/g, "/"))
-        .filter((f) => /\.cjs$/.test(f) && f !== "lib/welt-boot.cjs" && f !== "werkbank.cjs")
-        .filter((f) => /\.on\("pageerror"/.test(ohneKommentare(fs.readFileSync(path.join(ROOT, "scripts", f), "utf8"))));
+        .filter((f) => /\.cjs$/.test(f) && f !== "lib/welt-boot.cjs")
+        .sort()
+        .map((f) => [f, ohneKommentare(fs.readFileSync(path.join(ROOT, "scripts", f), "utf8"))]);
+    const zwillinge = code.filter(([f, c]) => f !== "werkbank.cjs" && /\.on\("pageerror"/.test(c)).map(([f]) => f);
+    // DIE ADRESS-WAND: lauscht eine Linse an einem statikServer selbst oder baut ihre 127.0.0.1-Adresse selbst, ist das ein Zwilling von
+    // lausche/zeige; FREMD tragen ihn bis zum Schnitt ihres Besitzers (ein geheilter Eintrag macht die Liste ROT, bis er fällt)
+    const adressZwilling = (c) =>
+        /statikServer\(/.test(c) && /new Promise\(\(?\w+\)? => \w+\.listen\(|\.goto\(`http:\/\/127\.0\.0\.1:\$\{/.test(c);
+    const adressen = code.filter(([, c]) => adressZwilling(c)).map(([f]) => f).join(", ");
+    const FREMD = "diag-koerper-stand.cjs, diag-persistence.cjs, diag-weltgrenze.cjs, werkbank.cjs";
+    const gepflanzt = [
+        "statikServer(); await new Promise((r) => s.listen(1, r));",
+        "statikServer(); p.goto(`http://127.0.0.1:${P}/index.html`);",
+    ].filter(adressZwilling).length;
     await browser.close();
     server.close();
     // BESETZT: ein Server auf einem belegten Port endet — der Start urteilt am Ereignis (EADDRINUSE), nie an einer Frist;
@@ -1203,6 +1220,10 @@ async function selbsttest() {
     const urteile = [
         [/^pageerror: Error: __seitenWurf/.test(wurf[0]), `Seiten-Wurf: ${wurf[0] || "KEIN Fehler gesammelt — still grün"}`],
         [!zwillinge.length, `eigene pageerror-Sammler neben dem EINEN: ${zwillinge.join(", ") || "keiner"}`],
+        [
+            adressen === FREMD && gepflanzt === 2 && !adressZwilling("statikServer(); await s.lausche(1); s.zeige(p, 1);"),
+            `eigene Server-Starts/Welt-Adressen neben lausche/zeige: ${adressen} (FREMD ${FREMD}) · gepflanzt ${gepflanzt}/2 gefasst`,
+        ],
         [ruhig.length === 0,`ruhig (0,8 s Block): keine Akte — ${ruhig.length ? ruhig[0].urteil : "keine"}`],
         [
             schleife.length > 0 &&

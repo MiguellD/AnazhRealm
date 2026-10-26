@@ -1148,7 +1148,7 @@ async function studioProbe(page) {
     const out = { zweck: "K16b Studio-Probe (Gelände-Studio → Plan → Welt)", regler: [], befunde };
     console.log("\n========= DIE STUDIO-PROBE — Gelände-Studio → EIN Plan → Welt-Tür → Welt, byte-gleich =========");
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await server.zeige(page, 60000);
         await page.evaluate(() => localStorage.clear());
         // DIE FREMDE WELT: eine Welt, die kein Plan beschreibt (Basis 7 m, das Meer darunter, eine Rampe hinter der Wildnis),
         // wird die aktive Welt — über ihr öffnet sich das Studio.
@@ -1174,10 +1174,7 @@ async function studioProbe(page) {
             setTimeout(() => r._weltBetreten(snap), 0);
         });
         await nav0;
-        await page.goto(`http://127.0.0.1:${PORT}/index.html?studio=gelaende`, {
-            waitUntil: "domcontentloaded",
-            timeout: 60000,
-        });
+        await server.zeige(page, 60000, "index.html?studio=gelaende");
         const b = await boote(page);
         if (!b.ok) throw new Error("die Welt unter dem Studio erwachte nicht in 120 s");
         console.log(`  Boot unter dem Studio: ${b.ms} ms (Seed ${b.seed})`);
@@ -1343,7 +1340,7 @@ async function studioProbe(page) {
         }
         befunde.push(...presetBefunde(presets));
         // DIE WELT-TÜR: ohne Studio, die Datei durch das Welt-Tor („Ersetzen") — die Welt erwacht neu (Reload).
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await server.zeige(page, 60000);
         const b2 = await boote(page);
         if (!b2.ok) throw new Error("die Welt vor dem Import erwachte nicht");
         const nav = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 60000 });
@@ -2061,7 +2058,7 @@ async function faden(page, url) {
 
 (async () => {
     if (argv.includes("--realismus")) process.exit(realismus());
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "standard", frist: 900000 });
     const page = await browser.newPage();
     await nullRenderer(page);

@@ -159,11 +159,11 @@ const triasStaticLaws = () => [
     console.log("\n=== TEIL B: die LOD-Geschichte lebt (Browser, foundry-ON, Null-Renderer) ===");
     const PORT = Number(process.env.TRIAS_PORT || 4443);
     const server = statikServer();
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 480000, zusatz: ["--disable-setuid-sandbox"] });
     const page = await browser.newPage();
     await nullRenderer(page);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

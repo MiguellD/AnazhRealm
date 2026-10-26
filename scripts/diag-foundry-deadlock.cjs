@@ -9,11 +9,11 @@ const PORT = Number(process.env.DEADLOCK_PORT || 4581);
 const server = statikServer();
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page); // die Foundry baut auch ohne Bild (die echte Pipeline)
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
     await page.evaluate(async () => {
         await window.__weltDa((r) => r.state && r.state.blueprints);
     });

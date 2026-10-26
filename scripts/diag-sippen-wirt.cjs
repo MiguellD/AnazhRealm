@@ -21,12 +21,12 @@ const server = statikServer();
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     const t0 = Date.now();
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {
         const res = { items: [], fehler: [], selbst: {}, kinds: [] };
