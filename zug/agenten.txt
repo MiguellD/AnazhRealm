@@ -49,3 +49,6 @@
 2026-10-26T11:30 bewohner-radeon champion wf471k/3 96A WIP Täter Messgerät: Probe hält playerMesh.position fest, echte GPU baut den Avatar später neu (Stadt 735 m vom Spieler) → Proxy; mensch.K1#1 Radeon 2/3; Klasse 188 Stellen 7c2f8418 · PUNKTE
 2026-10-26T11:30 siedlung-saaten champion wf471k/3 ~70A befund Saaten 7/8 wie vorher; rot ist das BILD: nach umstellen meldet _weltSteht zu früh, Haus 97 kommt im Schuss in den Bau-Satz (Täter-Commit 54a710f9 a-laub-pose) · PUNKTE
 2026-10-26T11:30 speicher-takt champion wf471k/3 86A WIP speicher.K2 Radeon p95 5 → 0,2 ms GRÜN; gate:persistence (T) 6 halbe Welten ROT 3dc1e504 · PUNKTE/WICHTIG
+2026-10-26T12:20 avatar-stand champion wf396k/3 80A grün Leib offen im Stand (_weltOffen.leib), Lage EIN Vektor über applyPlayerSoul, Proxy fällt, Deckel laut; mensch.K1#1 3/3 + K2#2 2/2 Radeon 1ae62f88 · PUNKTE
+2026-10-26T12:20 satz-stand champion wf396k/3 ~50A befund Bau-Satz im Schuss voll; Blick-Wahl liest den Satz-Abschnitt des letzten Passes (umstellen-Kamera) → Stand-Wache des Satz-Passes + legeDreiecke + --wahl 14 · PUNKTE
+2026-10-26T12:20 persistenz-takt champion wf396k/3 73A grün Stempel beim Zusammensetzen (_standNachholen), Platte vor Zeiger; (T) 6 → 0 halbe, K2 p95 0,2 86f7f92f · PUNKTE
