@@ -2028,7 +2028,11 @@ class AnazhRealm_koerper_fahrt {
         // Compound-Seele bliebe sonst XYZ — die Abschieds-Welle hob es hierher).
         newGroup.rotation.order = "YXZ";
         if (old) {
-            newGroup.position.copy(old.position);
+            // DER ORT DES SPIELERS IST EIN VEKTOR über jeden Leib: der neue trägt die Lage des alten als dasselbe Objekt (three:
+            // `position` ist konfigurierbar, nur nicht schreibbar) — wer sie vor dem Tausch hielt (der deferierte Boot-Guss auf
+            // echter GPU, eine Wandlung per Wort), rückt danach den Spieler, nie einen abgehängten Leib (mensch.K1 Radeon: die
+            // Stadt 735 m vom Spieler, ihre Bewohner abgebaut)
+            Object.defineProperty(newGroup, "position", { configurable: true, enumerable: true, value: old.position });
             newGroup.rotation.copy(old.rotation);
             newGroup.scale.copy(old.scale);
             newGroup.visible = old.visible;
