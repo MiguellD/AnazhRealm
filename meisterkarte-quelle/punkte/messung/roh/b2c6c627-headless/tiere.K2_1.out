@@ -1,0 +1,29 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben jagdkreis
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7737/index.html · der Puls steht seit 20.2 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 21.8 s
+[stall-akte] Puls 11×, zuletzt vor 20.2 s — complete · renderer bereit · weltbild da · frames 355 · welt 355 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 30572 118 % · GPU 18376 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 29:49 gpu 8/r 248 · 29:51 gpu 2/r 399 · 29:53 gpu 1/r 722 · 29:55 gpu 2/r 354 · 29:57 gpu 1/r 138 · 29:59 gpu 2/r 126 · 30:01 gpu 2/r 153 · 30:03 gpu 2/r 140 · 30:05 gpu 1/r 149 · 30:07 gpu 1/r 113 · 30:09 gpu 1/r 114 · 30:11 gpu 1/r 109 · 30:13 gpu 1/r 108 · 30:15 gpu 1/r 107 · 30:17 gpu 1/r 116 · 30:19 gpu 1/r 123
+[stall-akte] Stapel _creatureWariness :215 < updateCreatures :3278 < takt :245 < (anonym) :1664 < buehne :59 < kreaturProben :1559
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [INFO] State-Import (Lade Datei) initialisiert
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [INFO] Hauptschleife gestartet – Ultiversum pulsiert!
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [INFO] Nervensystem: 74 neue Studio-Art(en) automatisch registriert.
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [WARN] AUSGABE: rg11b10ufloat ist auf diesem Gerät nicht renderbar (Feature rg11b10ufloat-renderable fehlt) — das Szenen-Ziel bleibt rgba16float, +7,9 MB bei 1080p
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — Cannot read properties of undefined (reading 'enabled')
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [WARN] FPS-Einbruch: 14 (zuvor ~38)
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [WARN] Der Rundblick steht nach 120 Takten ohne: 3 Bäume und Bauten wachsen · 337 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [INFO] Welt-Beziehung: Pfad
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _creatureWariness :215
+[stall-akte] Seite #2: der Puls kehrt zurück nach 52.5 s — complete · renderer bereit · weltbild da · frames 411 · welt 411 Takte · Ruhe 30 · zuletzt Fege-Takt archLod 1280/1307 · programme 0 · gl-sync 0
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ jagdkreis {"riss":{"quote":{"einWolf":{"jagden":20,"risse":0,"erschoepft":20,"hp0":168},"rudel":{"jagden":60,"risse":18,"erschoepft":42,"hp0":168},"kitz":{"jagden":20,"risse":20,"erschoepft":0,"hp0":60}},"rissS":49,"fleisch0":56.5,"fleischEnde":0,"fressS":110.7,"gaeste":[{"seele":"fuchs","kommtS":20.2,"frissS":31.14},{"seele":"baer","kommtS":16.8,"frissS":32.16}]}}
+
+  (67 s) — Sekunden je Probe: jagdkreis: 52
+
+✅ GRÜN — jagdkreis

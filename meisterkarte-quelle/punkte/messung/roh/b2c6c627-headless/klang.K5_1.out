@@ -1,0 +1,124 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-klang-zensus.cjs --json C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\b2c6c627-headless\klang.K1_1.json
+Symphonie: {"ok":true,"laeuft":"running"}
+Orte: {"wiese":{"x":-293.8373769637635,"z":-1146.7110127549602,"vomMessort":102,"glutHoerweite":26},"seeufer":{"x":2382.8154601944357,"z":-5193.694608409414,"wasser":{"x":2383.355727241822,"z":-5194.53610203239},"ring":{"erst":3,"alle":12}},"wald":{"x":-148.39999999999998,"z":-1021.5999999999999,"deckung":1,"bestand":37},"dorf":{"x":-285.15333994878404,"z":-1038.0278189187975,"glut":{"x":-287.28000000000003,"z":-1034.64,"typ":"glutbrunnen"}},"glutArm":{"x":-286.748334987196,"z":-1035.4869547296994,"glut":{"x":-287.28000000000003,"z":-1034.64,"typ":"glutbrunnen"}},"fallArm":{"x":1570.6151516478296,"z":496.1061847293407,"fall":{"x":1570.6151516478296,"z":492.1061847293407,"d":4,"hoehe":8.2}}}
+
+── STAMM-KLASSE (statisch): jede Quell-Stelle des Stamms in einem Wirt-Leser (Wirt-Leser: _lofiPlayChord · _lofiPlayMelody · _lofiPlayBass · _lofiKick · _lofiSnare · _lofiHihat · _playSchrittOneShot)
+
+── WIESE (-294/-1147) — Ausgang -44.5 dBFS · Bäume ≤ 15 m: 3
+   Oktavbänder: 63:-70.9 125:-64.7 250:-61.9 500:-65.8 1000:-72.2 2000:-55 4000:-59.4 8000:-86.1
+   Lage: wind 0.066 · böe 0.64 · deckung 0.00 · regen 0 · sonne 0.96 · vögel 17 · ufer — · fluss — · fall — · glut 35.0 m
+   ▶ wind     -37.3 dB  klang:UMWELT.stimmen.wind  (2 Quellen)
+   ▶ vogel    -39.1 dB  klang:UMWELT.stimmen.vogel  (2 Quellen)
+   laufende Quellen: 4 (dauernd 4)
+     4× Gesetzbuch · BufferSource · starte ← anwenden
+   Synthese im Haupt-Thread: 0 Samples · Werkstatt: läuft, Pakete 3/3, Rufe 0/0
+   offline wind    Gesetz -36.3 dB · gemessen -36.2 dB · Schwerpunkt 304 Hz
+   offline vogel   Gesetz -39.8 dB · gemessen -40 dB · Schwerpunkt 3014 Hz
+
+── WIESEOHNELEIB (-294/-1147) — Ausgang -50.3 dBFS · Bäume ≤ 15 m: 3
+   Oktavbänder: 63:-69.4 125:-64.7 250:-62.3 500:-66.3 1000:-72.2 2000:-78.8 4000:-85.8 8000:-94.7
+   Lage: wind 0.066 · böe 0.64 · deckung 0.00 · regen 0 · sonne 0.96 · vögel 0 · ufer — · fluss — · fall — · glut 35.0 m
+   ▶ wind     -37.3 dB  klang:UMWELT.stimmen.wind  (2 Quellen)
+   laufende Quellen: 2 (dauernd 2)
+     2× Gesetzbuch · BufferSource · starte ← anwenden
+   Synthese im Haupt-Thread: 0 Samples · Werkstatt: läuft, Pakete 3/3, Rufe 0/0
+
+── WALD (-148/-1022) — Ausgang -45.5 dBFS · Bäume ≤ 15 m: 37
+   Oktavbänder: 63:-77.3 125:-73 250:-71.7 500:-75.9 1000:-74.3 2000:-58.1 4000:-57 8000:-62.9
+   Lage: wind 0.066 · böe 0.54 · deckung 1.00 · regen 0 · sonne 0.96 · vögel 14 · ufer — · fluss — · fall — · glut 23.8 m
+   ▶ wind     -47.0 dB  klang:UMWELT.stimmen.wind  (2 Quellen)
+   ▶ laub     -33.8 dB  klang:UMWELT.stimmen.laub  (2 Quellen)
+   ▶ glut     -52.5 dB  klang:UMWELT.stimmen.glut  (1 Quellen)
+   ▶ vogel    -39.7 dB  klang:UMWELT.stimmen.vogel  (2 Quellen)
+   laufende Quellen: 7 (dauernd 7)
+     7× Gesetzbuch · BufferSource · starte ← anwenden
+   Synthese im Haupt-Thread: 0 Samples · Werkstatt: läuft, Pakete 4/4, Rufe 0/0
+   offline wind    Gesetz -44.2 dB · gemessen -44.1 dB · Schwerpunkt 304 Hz
+   offline laub    Gesetz -31.1 dB · gemessen -31.6 dB · Schwerpunkt 4304 Hz
+   offline glut    Gesetz -52.5 dB · gemessen -52.5 dB · Schwerpunkt 1210 Hz
+   offline vogel   Gesetz -39.7 dB · gemessen -39.9 dB · Schwerpunkt 3014 Hz
+
+── DORF (-285/-1038) — Ausgang -38.4 dBFS · Bäume ≤ 15 m: 1
+   Oktavbänder: 63:-54.9 125:-55.7 250:-59 500:-62.5 1000:-64.9 2000:-57.3 4000:-52.7 8000:-57.2
+   Lage: wind 0.066 · böe 1.08 · deckung 0.59 · regen 0 · sonne 0.96 · vögel 20 · ufer — · fluss — · fall — · glut 4.0 m
+   ▶ wind     -35.4 dB  klang:UMWELT.stimmen.wind  (2 Quellen)
+   ▶ laub     -31.2 dB  klang:UMWELT.stimmen.laub  (2 Quellen)
+   ▶ glut     -27.2 dB  klang:UMWELT.stimmen.glut  (1 Quellen)
+   ▶ vogel    -39.4 dB  klang:UMWELT.stimmen.vogel  (2 Quellen)
+   laufende Quellen: 7 (dauernd 7)
+     7× Gesetzbuch · BufferSource · starte ← anwenden
+   Synthese im Haupt-Thread: 0 Samples · Werkstatt: läuft, Pakete 4/4, Rufe 0/0
+   offline wind    Gesetz -40.1 dB · gemessen -40 dB · Schwerpunkt 304 Hz
+   offline laub    Gesetz -35.7 dB · gemessen -36.2 dB · Schwerpunkt 4304 Hz
+   offline glut    Gesetz -27.2 dB · gemessen -27.2 dB · Schwerpunkt 1561 Hz
+   offline vogel   Gesetz -39.7 dB · gemessen -40 dB · Schwerpunkt 3014 Hz
+
+── GLUTARM (-287/-1035) — Ausgang -27 dBFS · Bäume ≤ 15 m: 3
+   Oktavbänder: 63:-42.5 125:-42.8 250:-50.3 500:-57.9 1000:-53.7 2000:-46.2 4000:-43.7 8000:-45.7
+   Lage: wind 0.066 · böe 1.10 · deckung 0.60 · regen 0 · sonne 0.96 · vögel 19 · ufer — · fluss — · fall — · glut 1.0 m
+   ▶ wind     -35.3 dB  klang:UMWELT.stimmen.wind  (2 Quellen)
+   ▶ laub     -30.9 dB  klang:UMWELT.stimmen.laub  (2 Quellen)
+   ▶ glut     -15.2 dB  klang:UMWELT.stimmen.glut  (1 Quellen)
+   ▶ vogel    -41.0 dB  klang:UMWELT.stimmen.vogel  (2 Quellen)
+   laufende Quellen: 7 (dauernd 7)
+     7× Gesetzbuch · BufferSource · starte ← anwenden
+   Synthese im Haupt-Thread: 0 Samples · Werkstatt: läuft, Pakete 4/4, Rufe 0/0
+   offline wind    Gesetz -40.2 dB · gemessen -40 dB · Schwerpunkt 304 Hz
+   offline laub    Gesetz -35.6 dB · gemessen -36 dB · Schwerpunkt 4304 Hz
+   offline glut    Gesetz -15.2 dB · gemessen -15.2 dB · Schwerpunkt 1556 Hz
+   offline vogel   Gesetz -41 dB · gemessen -41.3 dB · Schwerpunkt 3014 Hz
+
+── SEEUFER (2383/-5194) — Ausgang -35.4 dBFS · Bäume ≤ 15 m: 13
+   Oktavbänder: 63:-49.6 125:-51.7 250:-53.3 500:-54.9 1000:-56 2000:-59.5 4000:-70.8 8000:-88.6
+   Lage: wind 0.066 · böe 0.93 · deckung 0.00 · regen 0 · sonne 0.96 · vögel 7 · ufer 4 m/0.36 · fluss — · fall — · glut 162.6 m
+   ▶ wind     -33.3 dB  klang:UMWELT.stimmen.wind  (2 Quellen)
+   ▶ ufer     -25.8 dB  klang:UMWELT.stimmen.ufer  (1 Quellen)
+   ▶ vogel    -47.3 dB  klang:UMWELT.stimmen.vogel  (2 Quellen)
+   laufende Quellen: 5 (dauernd 5)
+     5× Gesetzbuch · BufferSource · starte ← anwenden
+   Synthese im Haupt-Thread: 0 Samples · Werkstatt: läuft, Pakete 5/5, Rufe 0/0
+   offline wind    Gesetz -36.3 dB · gemessen -36.2 dB · Schwerpunkt 304 Hz
+   offline ufer    Gesetz -25.8 dB · gemessen -25.7 dB · Schwerpunkt 189 Hz
+   offline vogel   Gesetz -47.2 dB · gemessen -47.4 dB · Schwerpunkt 3014 Hz
+
+── FALLARM (1571/496) — Ausgang -22.8 dBFS · Bäume ≤ 15 m: 6
+   Oktavbänder: 63:-39.2 125:-40.8 250:-37.7 500:-39 1000:-43.7 2000:-50.4 4000:-54.7 8000:-64.6
+   Lage: wind 0.079 · böe 0.74 · deckung 0.00 · regen 0 · sonne 0.96 · vögel 19 · ufer 0 m/0.15 · fluss 4 m · fall 4 m · glut 10.2 m
+   ▶ wind     -34.7 dB  klang:UMWELT.stimmen.wind  (2 Quellen)
+   ▶ ufer     -21.9 dB  klang:UMWELT.stimmen.ufer  (1 Quellen)
+   ▶ fluss    -25.0 dB  klang:UMWELT.stimmen.fluss  (1 Quellen)
+   ▶ fall     -10.7 dB  klang:UMWELT.stimmen.fall  (1 Quellen)
+   ▶ glut     -35.3 dB  klang:UMWELT.stimmen.glut  (1 Quellen)
+   ▶ vogel    -43.7 dB  klang:UMWELT.stimmen.vogel  (2 Quellen)
+   laufende Quellen: 8 (dauernd 8)
+     8× Gesetzbuch · BufferSource · starte ← anwenden
+   Synthese im Haupt-Thread: 0 Samples · Werkstatt: läuft, Pakete 7/7, Rufe 0/0
+   offline wind    Gesetz -35.3 dB · gemessen -35.2 dB · Schwerpunkt 313 Hz
+   offline ufer    Gesetz -21.9 dB · gemessen -21.9 dB · Schwerpunkt 199 Hz
+   offline fluss   Gesetz -25 dB · gemessen -24.9 dB · Schwerpunkt 1012 Hz
+   offline fall    Gesetz -10.7 dB · gemessen -10.7 dB · Schwerpunkt 226 Hz
+   offline glut    Gesetz -35.3 dB · gemessen -35.3 dB · Schwerpunkt 1441 Hz
+   offline vogel   Gesetz -42.8 dB · gemessen -43 dB · Schwerpunkt 3014 Hz
+
+── KOSTEN je Klang-Takt (Welt-Abfragen, vor → nach 4000 Bauten + 200 Fluss-Läufe)
+   vor  {"boden":0,"wasser":2,"stroemung":0,"fluss":0,"segmente":0,"bauten":167.15}
+   nach {"boden":0,"wasser":2,"stroemung":0,"fluss":0,"segmente":0,"bauten":0}
+
+── LAB: Welt-Modus ja · Graph über umweltGraph 1× · Seeufer-Ufer ja · laufend ["wind","laub","ufer","vogel"]
+
+── SYNTHESE IM HAUPT-THREAD über die Tour: 0 Samples (Anreise 0 · Orte wiese 0 · wieseOhneLeib 0 · wald 0 · dorf 0 · glutArm 0 · seeufer 0 · fallArm 0 · Kosten-Takte 0 · Ereignisse treffer 0 · wasser 0 · wasserTrocken 0 · abschied 0 · singen 0 · tier 0 · inventar 0 · auftrag 0 · stufe 0)
+
+── SPITZEN am Ausgang (offline, 9 s, mittlere Böe, Spitze/RMS dBFS): wiese -35.6/-48.2 · wieseOhneLeib -35.6/-48.2 · wald -23/-43.7 · dorf -8.2/-39.3 · glutArm -1/-27.3 · seeufer -17.2/-38.3 · fallArm -9.7/-22.7 · lab:wiese -36.8/-49.4 · lab:seeufer -16.3/-36.7 · lab:wald -24.9/-45.6 · lab:dorf -7.9/-38.5 · lab:glutArm -1.1/-26.6 · lab:fallArm -4/-18.6 · lab:sturm -3.5/-23.7 · lab:nacht -29.8/-47.2
+
+── EREIGNISSE (je einmal über den echten Weg ausgelöst)
+   treffer   1 Quelle(n): Gesetzbuch substanzKlang ← _substanzKlang · Haupt-Thread-Synthese 0 Samples
+   wasser    9 Quelle(n): Gesetzbuch substanzKlang ← _substanzKlang · Gesetzbuch substanzKlang ← _substanzKlang · Gesetzbuch substanzKlang ← _substanzKlang · Gesetzbuch substanzKlang ← _substanzKlang · Gesetzbuch substanzKlang ← _substanzKlang · Gesetzbuch substanzKlang ← _substanzKlang · Gesetzbuch substanzKlang ← _substanzKlang · Gesetzbuch substanzKlang ← _substanzKlang · Gesetzbuch substanzKlang ← _substanzKlang · Haupt-Thread-Synthese 0 Samples
+   wasserTrocken 0 Quelle(n):  · Haupt-Thread-Synthese 0 Samples
+   abschied  1 Quelle(n): Gesetzbuch substanzKlang ← _substanzKlang · Haupt-Thread-Synthese 0 Samples
+   singen    1 Quelle(n): Gesetzbuch substanzKlang ← _substanzKlang · Haupt-Thread-Synthese 0 Samples
+   tier      0 Quelle(n):  · Haupt-Thread-Synthese 0 Samples
+   inventar  1 Quelle(n): Gesetzbuch substanzKlang ← _substanzKlang · Haupt-Thread-Synthese 0 Samples
+   auftrag   1 Quelle(n): Gesetzbuch tierRufSpielen ← onmessage · Haupt-Thread-Synthese 0 Samples
+   stufe     1 Quelle(n): Gesetzbuch tierRufSpielen ← onmessage · Haupt-Thread-Synthese 0 Samples
+
+✅ GRÜN — jede klingende Quelle trägt ein Gesetz, kostet nur hörbar, jeder Ort hält sein SOLL, jeder Ruf hat einen Leib, Lab = Welt.
