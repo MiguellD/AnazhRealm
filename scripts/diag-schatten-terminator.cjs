@@ -110,9 +110,7 @@ function selbsttest() {
 }
 
 if (require.main === module) {
-    const f = selbsttest();
-    console.log(f.length ? "SELBSTTEST ROT:\n  " + f.join("\n  ") : "SELBSTTEST GRÜN: das Terminator-Urteil nennt die Hang-Akne beim Namen");
-    if (f.length) process.exit(1);
+    require("./lib/welt-boot.cjs").selbsttestEnde(selbsttest(), "das Terminator-Urteil nennt die Hang-Akne beim Namen");
     if (process.argv.includes("--selftest")) process.exit(0);
     const i = process.argv.indexOf("--port");
     const PORT = Number(i >= 0 ? process.argv[i + 1] : process.env.SCHATTEN_TERMINATOR_PORT || 4609);

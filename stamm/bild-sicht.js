@@ -2058,6 +2058,7 @@ class AnazhRealm_bild_sicht {
         const ankerX = fr.anchorX;
         const ankerZ = fr.anchorZ;
         const saison = this._fernSaison({ r: 1, g: 1, b: 1 });
+        const schnee = this._schneeGilt(); // der Faden färbt mit dem Versatz der Schneegrenze, den er trägt
         // die Masche des Texels: Azimut-Breite am Radius (im Faden je Texel), die radiale Zeile des Felds
         const hr = (P.rMaxM - rMin) / (2 * P.rad);
         this._fernAuftrag("feld", { punkte, ax: ankerX, az: ankerZ, azN: P.az, hr, saison }, [punkte.buffer])
@@ -2071,6 +2072,7 @@ class AnazhRealm_bild_sicht {
                 fp.anchorX = ankerX;
                 fp.anchorZ = ankerZ;
                 fp.saison = saison;
+                fp.schnee = schnee;
                 fp.laeufe++;
                 // SCHATTIERUNGS-PERSISTENZ: sichtbar wird der Pass erst mit gebackenem Panorama (_feldPanoramaMal setzt
                 // visible) — das Fragment liest NUR noch das Panorama, nie das rohe Feld.
@@ -2082,9 +2084,11 @@ class AnazhRealm_bild_sicht {
             });
     }
 
-    // Ist die Saison seit dem Bild des Feldes gewandert (je Kanal > `FERN_FARBE.saisonDrift`)? Ohne Bild nie.
+    // Ist die Saison seit dem Bild des Feldes gewandert (je Kanal > `FERN_FARBE.saisonDrift`, oder die Schneegrenze um eine
+    // Stufe, `_schneeGilt`)? Ohne Bild nie.
     _feldSaisonDrift(fp) {
         if (!fp.saison || fp.flug) return false;
+        if (fp.schnee !== this._schneeGilt()) return true;
         const jetzt = this._fernSaison(this._feldSaisonTmp || (this._feldSaisonTmp = { r: 1, g: 1, b: 1 }));
         const d = AnazhRealm.FERN_FARBE.saisonDrift;
         return (

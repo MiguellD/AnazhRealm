@@ -31,7 +31,7 @@
 // Port: WASSER_LEBEN_PORT (Standard 4623).
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { quellTeileVereinen, QUELL_KACHELN } = require("./lib/wasser-linse.cjs");
 
@@ -437,6 +437,14 @@ function urteil(b) {
             if (!(ue.erster >= 0) || !(ue.traegt - ue.erster >= 2) || ue.wechsel !== 2 || Math.max(...ue.tagesgang))
                 v.push(`E4 KANTE: ${JSON.stringify(ue)}`);
             if (!(me.kalt > 0) || me.traegt || !(me.tiefst > me.gefrier)) v.push(`E5 MEER: ${JSON.stringify(me)}`);
+            // stoffe.K3-2: der Schnee schmilzt über 0 °C und die Grenze liest ihn; die Lava erstarrt, am Wasser schneller
+            const sm = k.schmelze || {};
+            if (!(sm.pegel > 0.01 && sm.schmilzt > 0) || sm.gegen || !(sm.halt <= 0.001)) v.push(`S1 EINGEFROREN: ${JSON.stringify(sm)}`);
+            if (!(sm.versatz >= 20 && sm.weiss >= 0.3 && sm.neuBau > 0)) v.push(`S2 GRENZE: ${JSON.stringify(sm)}`);
+            const [la, ls] = (k.erstarrung || []).map((o) => [o.ab, o.frei, o.reihe[0], o.reihe[o.reihe.length - 1]]);
+            if (!la || !(la[2].glut >= 0.95 && la[2].stoff === "glut" && la[2].licht && !la[2].dampf && la[0] > 0) || la[3].stoff !== "stein" || la[3].licht || la[3].glut > la[1] + 0.01)
+                v.push(`L1 ERSTARRT NIE: ${JSON.stringify(la)}`);
+            else if (!(ls[2].dampf && ls[0] >= 0 && ls[0] < la[0])) v.push(`L2 WASSER: ${JSON.stringify(ls)}`);
             if (!k.peer) v.push("K7 MITSPIELER: die Peer-Probe lief nicht");
             else if (!(Math.abs(k.peer.lehne) > 0.05))
                 v.push(`K7 MITSPIELER: der Peer-Körper an der Brustkorb-Linie schwimmt nicht (Lehne ${k.peer.lehne})`);
@@ -678,6 +686,11 @@ function selbsttest() {
                 uebergang: { erster: 19, traegt: 26, wechsel: 2, tagesgang: [0, 0] },
                 meer: { tiefst: 1.3, gefrier: -1.89, traegt: 0, kalt: 46 },
             },
+            schmelze: { pegel: 0.16, schmilzt: 3, gegen: 0, versatz: 178, weiss: 0.5, neuBau: 81, halt: 0 },
+            erstarrung: [
+                { ab: 2, frei: 0.4, reihe: [{ glut: 1, stoff: "glut", licht: true }, { glut: 0.4, stoff: "stein" }] },
+                { ab: 1, reihe: [{ dampf: true }] },
+            ],
         },
         licht: {
             nachtOben: 0.03,
@@ -767,6 +780,12 @@ function selbsttest() {
         ["E4 KANTE", (b) => Object.assign(b.koerper.eis.uebergang, { erster: 11, traegt: 11, wechsel: 1, tagesgang: [0, 1] })],
         ["E5 MEER", (b) => Object.assign(b.koerper.eis.meer, { tiefst: -4.25, traegt: 15 })],
         ["E5 MEER", (b) => (b.koerper.eis.meer.kalt = 0)],
+        // stoffe.K3-2 an der Basis b2c6c627: die Schneegrenze war Höhe allein (der Pegel stand), die glut-Achse eingefroren
+        ["S1 EINGEFROREN", (b) => Object.assign(b.koerper.schmelze, { pegel: 0, schmilzt: 0 })],
+        ["S1 EINGEFROREN", (b) => (b.koerper.schmelze.halt = 0.16)],
+        ["S2 GRENZE", (b) => Object.assign(b.koerper.schmelze, { versatz: 0, neuBau: 0 })],
+        ["L1 ERSTARRT NIE", (b) => (b.koerper.erstarrung[0].ab = -1)],
+        ["L2 WASSER", (b) => (b.koerper.erstarrung[1].ab = 3)],
         ["K9 NACHT", (b) => Object.assign(b.licht, { nachtUnten: 0.17 })],
         ["K9 LITERAL", (b) => Object.assign(b.licht, { nachtUnten: 0.17, mittagUnten: 0.17, nachtOben: 0.5 })],
         ["K9 HIMMEL", (b) => (b.licht.himmelGetaucht = [81, 132, 170])],
@@ -855,18 +874,13 @@ function selbsttest() {
                 ])),
         ],
     ];
-    let rot = 0;
+    const fehler = [];
     // B6 an der lebenden Quelle (die Wand der CI, ohne Browser): der Wasser-Stoff rechnet sein Rauschen ohne sin.
     const quelleSin = hashSin();
     console.log(
         `  ${quelleSin ? "❌" : "✅"} B6 HASH an der Quelle: ${quelleSin || "das Wasser-Rauschen rechnet ohne sin"}`
     );
-    if (quelleSin) rot++;
-    const g = urteil(gut);
-    if (g.length) {
-        console.log("  ❌ der grüne Befund fällt rot:", g);
-        rot++;
-    } else console.log("  ✅ der grüne Befund bleibt grün");
+    if (quelleSin) fehler.push("B6 HASH an der Quelle: " + quelleSin);
     // die Teile zusammen urteilen wie das Ganze: der grüne Befund in zwei Teilen bleibt grün, jede Zahl wie vorher
     {
         const q = gut.quelle;
@@ -897,20 +911,10 @@ function selbsttest() {
         console.log(
             `  ${ok ? "✅" : "❌"} die Teile zusammen urteilen wie das Ganze (${m.quellen} Quellen aus 2 Teilen, Breite p50 ${m.breiteP50} m, max ${m.breiteMax} m)${fehlt.length ? " — weichen ab: " + fehlt.join(", ") : ""}${v.length ? " — rot: " + v[0] : ""}`
         );
-        if (!ok) rot++;
+        if (!ok) fehler.push("die Teile urteilen anders als das Ganze");
     }
-    for (const [name, mach] of taeter) {
-        const b = kopie();
-        mach(b);
-        const v = urteil(b);
-        const ok = v.some((x) => x.startsWith(name));
-        console.log(
-            `  ${ok ? "✅" : "❌"} Täter ${name} → ${ok ? v.find((x) => x.startsWith(name)) : "nicht erkannt: " + JSON.stringify(v)}`
-        );
-        if (!ok) rot++;
-    }
-    console.log(rot ? `SELBSTTEST ROT (${rot})` : "SELBSTTEST GRÜN");
-    process.exit(rot ? 1 : 0);
+    taeterFaelle([{ name: "der grüne Befund", z: gut }, ...taeter.map(([n, m]) => [n, m, { test: (x) => x.startsWith(n) }])], urteil, { fehler, klon: kopie });
+    selbsttestEnde(fehler);
 }
 
 if (process.argv.includes("--selftest")) selbsttest();

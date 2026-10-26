@@ -639,9 +639,8 @@ if (process.argv.includes("--selftest")) {
     // die Tat-Linse: grün am Soll, je Täter rot beim Namen
     const T = (h, n = 10) => ({ gefaellt: n, gepflueckt: 30, baeumeVorher: 12, stunde: Object.assign({ baeume: 2, pflanzen: 0, stuempfe: 10, narbe: -0.2 }, h) });
     const roh = [[T({}), ""], [T({ narbe: 0 }), "NARBE"], [T({ stuempfe: 0 }), "STUMPF"], [T({ pflanzen: 9 }), "ERNTE"], [T({ baeume: 12 }), "BAUM"], [T({}, 3), "LEER"], [{}, "LEER"]];
-    const fall = roh.filter(([b, n]) => (tatUrteil(b).join() + "|").split(":")[0] !== (n || "|"));
-    console.log(fall.length ? "❌ SELBSTTEST ROT — die Tat-Linse irrt: " + fall.map(([, n]) => n || "GRÜN").join(" · ") : "✅ SELBSTTEST GRÜN — die Tat-Linse nennt jeden Täter.");
-    process.exit(fall.length ? 1 : 0);
+    selbsttestEnde(roh.filter(([b, n]) => (tatUrteil(b).join() + "|").split(":")[0] !== (n || "|")).map(([, n]) => n || "GRÜN"), "die Tat-Linse nennt jeden Täter.");
+    process.exit(0);
 }
 
 const PORT = Number(process.env.STAND_TAKT_PORT) || 4528;

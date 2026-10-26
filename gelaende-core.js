@@ -1088,6 +1088,9 @@
     // Gelände-Rauschens verschieben sie je Ort (`zungen`: λ ≈ 330 m um ±18 m, λ ≈ 45 m um ±7 m), die Kappe franst in Zungen
     // und Flecken aus, wie Schnee in Mulden länger liegt als auf Rücken. Das Mittel bleibt die Grenze (Rauschen ohne Mittel).
     // Die Leser geben den Ort (x, z); fehlt er, bricht die Funktion laut (nie die alte Höhenlinie als Ersatz).
+    // DIE GRENZE LIEST DEN PEGEL (stoffe.K3-2): `versatz` (m) ist der Weg der Linie des Schnee-Pegels seit der Sommer-Mitte
+    // (`schneeVersatz`) — das Band K16 ist die Form der Grenze zur Sommer-Mitte, der Pegel trägt sie über das Jahr; ohne ihn
+    // (0) die Grenze der Sommer-Mitte, bit-gleich zu vorher.
     const SCHNEE = Object.freeze({
         start: 140,
         voll: 185,
@@ -1096,12 +1099,12 @@
             { f: 0.022, a: 7, ox: -5.1, oz: 8.3 },
         ],
     });
-    function schnee(L, y, x, z) {
+    function schnee(L, y, x, z, versatz) {
         if (!Number.isFinite(x) || !Number.isFinite(z)) throw new Error("gelaende-core schnee: der Ort (x, z) fehlt");
         const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
         let zunge = 0;
         for (const o of SCHNEE.zungen) zunge += L.noise.noise2D(x * o.f + o.ox, z * o.f + o.oz) * o.a;
-        return glatt(SCHNEE.start, SCHNEE.voll, y - wl + zunge);
+        return glatt(SCHNEE.start, SCHNEE.voll, y - wl + zunge - (versatz || 0));
     }
 
     // DIE TEMPERATUR (stoffe.K3, Wetter H4): die Luft an der Höhe y in °C — EINE reine Funktion aus der Höhe über dem Meer,
@@ -1234,6 +1237,104 @@
         if (p <= psiB) return Math.min(tiefe, stefan(g(h0) + frost(psiAn, p)));
         const hB = stefan(g(h0) + frost(psiAn, psiB));
         return Math.min(tiefe, Math.max(0, hB + E.uebergang * frost(psiB, p)));
+    }
+
+    // DER SCHNEE-PEGEL (stoffe.K3-2): das Wasser des Schnees an der Höhe y in Metern (Schnee-Wasser-Äquivalent) — eine Funktion
+    // der Höhe und der Saison auf dem Temperatur-Feld (`feld(traegTage)`, die Naht des Wirts; ohne sie das Feld des Kerns).
+    // DER GANG (Grad-Tag, Braithwaite 1995): liegt das Tagesmittel der Luft unter 0 °C, fällt Schnee mit `fall` Wasser je Tag;
+    // darüber schmilzt er mit `gradTag` je Kelvin und Tag, bis der Pegel leer ist. Gerechnet geschlossen auf der Jahres-Welle
+    // des Tagesmittels (wie das Eis): der Frost beginnt, wo die Welle die Null-Linie fällt, der Pegel wächst linear bis zu ihrem
+    // Steigen, dann zehrt die Wärme das Integral der Grad-Tage. Zehrt der Sommer nicht alles, bleibt der Schnee übers Jahr: der
+    // Firn (`firn` + die Welle des Jahres darüber). Die Sonne trägt die Welle (Jahr und Höhe im Feld).
+    // DIE LINIE (`schneeLinie`): die tiefste Höhe, an der der Pegel `deckt` trägt — der Pegel wächst mit der Höhe (kälter:
+    // länger Frost, kürzer Schmelze), also ist sie EINE Höhe je Saison (Halbierung auf 1 cm zwischen 250 m unter und 1 km über
+    // dem Meer). DER VERSATZ (`schneeVersatz`): ihr Weg seit der Sommer-Mitte (`TEMPERATUR.sommerPhase`) in Stufen von `stufe`
+    // m — der Leser der Schneegrenze (`schnee`); zur Sommer-Mitte genau 0. Die Zahlen (Hock 2003): der Grad-Tag-Faktor des
+    // Schnees 3–6 mm/(K·d), Schneefall 1,5 mm Wasser je Frosttag; der Schnee deckt ab 5 cm Wasser. Mit ihnen liegt die Linie zur
+    // Sommer-Mitte auf 140,6 m über dem Meer, am Beginn des Bands K16 (`SCHNEE.start`): das Band beginnt an der Linie des Pegels,
+    // im Winter am Meer (−31 m).
+    const SCHMELZE = Object.freeze({
+        fall: 0.0015,
+        gradTag: 0.006,
+        deckt: 0.05,
+        firn: 2,
+        stufe: 2,
+    });
+    function schneePegel(L, y, saison, feld) {
+        if (!Number.isFinite(y) || !Number.isFinite(saison))
+            throw new Error("gelaende-core schneePegel: Höhe oder Saison fehlt");
+        const S = SCHMELZE;
+        const F = feld ? feld(0) : temperaturFeld(L, y, 0);
+        const A = F.jahr.amp;
+        const basis = F.mittel - F.kuehlung;
+        const c = -basis / A;
+        if (c <= -1) return 0;
+        const tage = TEMPERATUR.jahrTage / (2 * Math.PI);
+        const psi = 2 * Math.PI * (saison - F.jahr.gipfel) - F.jahr.spaet;
+        const a = Math.acos(Math.min(1, c)); // friert die Luft immer, beginnt die (leere) Schmelze am wärmsten Tag
+        const u = (((psi + a) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) - a;
+        const zehrt = (v) => S.gradTag * tage * (basis * (v + a) + A * (Math.sin(v) + Math.sin(a)));
+        const voll = S.fall * tage * (2 * Math.PI - 2 * a);
+        // der Rest, den der Sommer nicht zehrt: über dem Firn bleibt er bis zur nächsten Schmelze (der Überschuss des Jahres
+        // fließt als Eis ab — der Gang springt um ihn, wo die Schmelze beginnt)
+        const rest = Math.max(0, voll - zehrt(a));
+        const firn = rest > 0 ? S.firn : 0;
+        if (u >= a) return firn + rest + S.fall * tage * (u - a);
+        return firn + Math.max(0, voll - zehrt(u));
+    }
+    function schneeLinie(L, saison, feldAt) {
+        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
+        const F = feldAt || ((y, tr) => temperaturFeld(L, y, tr));
+        const traegt = (y) => schneePegel(L, y, saison, (tr) => F(y, tr)) >= SCHMELZE.deckt;
+        let [lo, hi] = [wl - 250, wl + 1000];
+        if (traegt(lo)) return lo;
+        if (!traegt(hi)) return hi;
+        while (hi - lo > 0.01) {
+            const m = (lo + hi) / 2;
+            if (traegt(m)) hi = m;
+            else lo = m;
+        }
+        return hi;
+    }
+    function schneeVersatz(L, saison, feldAt) {
+        const weg = schneeLinie(L, saison, feldAt) - schneeLinie(L, TEMPERATUR.sommerPhase, feldAt);
+        return Math.round(weg / SCHMELZE.stufe) * SCHMELZE.stufe;
+    }
+
+    // DIE LAVA (stoffe.K3-2): geschmolzener Stein, der über die glut-Achse zu Stein erstarrt — ihr Zustand nach `alterS`
+    // Sekunden Welt-Zeit. DER STOFF ist die Zeile `stein` der Stoff-Tafel des Wirts (ρ, c, T_schmelz in K); der Kern hält nur die
+    // Zahlen des Vorgangs: die Überhitzung beim Ausbruch über T_schmelz, die Dicke der Decke, den Übergang α an die Luft
+    // (Strahlung + Konvektion der glühenden Kruste, ~150 W/(m²·K)) und an das Wasser (Filmsieden, ~1 000), den Draper-Punkt, ab
+    // dem Stein sichtbar glüht (798 K), und das Sieden des Wassers. DER GANG (Newton): T = T_Luft + (T₀ − T_Luft)·e^(−t/τ),
+    // τ = ρ·c·d / α — am Wasser zehnmal schneller und unter DAMPF, solange die Decke über dem Sieden liegt. Unter T_schmelz ist
+    // sie ERSTARRT (Stein); die GLUT (0…1) ist ihre Strahlung über dem Draper-Punkt (∝ T⁴), die die glut-Achse der Welt trägt.
+    // Die Erstarrungs-Wärme trägt der Gang nicht (sie verzögerte die Erstarrung um ~ L/(c·ΔT)).
+    const LAVA = Object.freeze({
+        ueberhitzung: 150,
+        dicke: 1,
+        luft: 150,
+        wasser: 1000,
+        glueht: 798,
+        sieden: 373.15,
+    });
+    function lava(alterS, amWasser, luftC, stoff) {
+        if (!Number.isFinite(alterS) || !Number.isFinite(luftC)) throw new Error("gelaende-core lava: Alter oder Luft fehlt");
+        const S = stoff && stoff.stein;
+        if (!(S && S.rho * S.c > 0 && S.tSchmelz > 0))
+            throw new Error("gelaende-core lava: der Stoff fehlt (die Zeile stein der Stoff-Tafel)");
+        const V = LAVA;
+        const tau = (S.rho * S.c * V.dicke) / (amWasser ? V.wasser : V.luft);
+        const tu = luftC + 273.15;
+        const t0 = S.tSchmelz + V.ueberhitzung;
+        const T = tu + (t0 - tu) * Math.exp(-Math.max(0, alterS) / tau);
+        const g4 = V.glueht ** 4;
+        return {
+            temperatur: T - 273.15,
+            glut: Math.min(1, Math.max(0, (T ** 4 - g4) / (t0 ** 4 - g4))),
+            erstarrt: T < S.tSchmelz,
+            dampf: !!amWasser && T > V.sieden,
+            tau,
+        };
     }
 
     function wildnisY(L, x, z, mitDetail, aus) {
@@ -5490,6 +5591,12 @@
         EIS: EIS,
         wasserKoerper: wasserKoerper,
         eisDicke: eisDicke,
+        SCHMELZE: SCHMELZE,
+        schneePegel: schneePegel,
+        schneeLinie: schneeLinie,
+        schneeVersatz: schneeVersatz,
+        LAVA: LAVA,
+        lava: lava,
         grossform: grossformAus,
         landformRegler: landformRegler,
         benannteSeen: benannteSeen,

@@ -750,6 +750,8 @@ function applyStateSnapshot(snap) {
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
     // Die Boden-Palette des Mains (Studio PORTAL_GROUND nach dem Farb-Gesetz, linear) — dieselben Zahlen.
     if (snap.bodenPalette) state.bodenPalette = snap.bodenPalette;
+    // Der Versatz der Schneegrenze (stoffe.K3-2), den der Main trägt (`_schneeGilt`) — dieselbe Zahl.
+    if (typeof snap.schneeVersatz === "number") state.schneeVersatz = snap.schneeVersatz;
     // Der Wiesen-Grund des Mains (K53, `WIESEN_GRUND`: Farbe, Wache, Fleck) — dieselben Zahlen.
     if (snap.wiesenGrund) state.wiesenGrund = snap.wiesenGrund;
     if (typeof snap.regionSize === "number") state.regionSize = snap.regionSize;
@@ -2441,8 +2443,10 @@ function bodenFarbe(x, y, z, out, fussM) {
     let magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
     if (oktav) magieFleck += (fleckMittel(sandNoise) - magieFleck) * oktav(fussM, 1 / 0.09);
     mix(P.magie, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
-    // Die Schneegrenze ist Gesetz (gelaende-core \`schnee\`).
-    mix(P.schnee, G.schnee(state, y, x, z));
+    // Die Schneegrenze ist Gesetz (gelaende-core \`schnee\`) und liest den Pegel (der Versatz des Mains, stoffe.K3-2).
+    if (!Number.isFinite(state.schneeVersatz))
+        throw new Error("bodenFarbe: der Versatz der Schneegrenze fehlt (schneeVersatz)");
+    mix(P.schnee, G.schnee(state, y, x, z, state.schneeVersatz));
     // Schlick und Strand über beiden Bezügen: See/Meer voll, der Fluss mit seiner Kronen-Blende; mit fussM trägt jedes
     // Fluss-Band das Mittel seiner Kronen-Blende über die Fläche (\`flussAbdruck\`, je Segment sein Spiegel).
     const uf = { see: 0, fluss: null, ufer: 0 };

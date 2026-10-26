@@ -26,7 +26,7 @@
 //   node scripts/diag-blocker-netz.cjs [--selftest]   (npm run gate:blocker-netz; Port BLOCKER_NETZ_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root, hauptLauf, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.BLOCKER_NETZ_PORT || 4604);
@@ -141,13 +141,9 @@ if (process.argv.includes("--selftest")) {
         )
     );
     if (ok.befunde.length) v.push(`gestempelt: die Wand meldet ${JSON.stringify(ok.befunde)}`);
-    for (const x of v) console.log("  ❌ " + x);
-    if (v.length) {
-        console.log("\n❌ SELBSTTEST ROT — die Box-Wand ist blind oder der Stamm trägt einen Schreiber ohne Stempel.");
-        process.exit(1);
-    }
-    console.log(
-        `✅ SELBSTTEST GRÜN — der Stamm sauber (${stamm.zuweisungen} Zuweisungen an .blockerAABBs gesehen), drei eingeschleuste Schreiber rot, ein gestempelter grün.`
+    selbsttestEnde(
+        v,
+        `der Stamm sauber (${stamm.zuweisungen} Zuweisungen an .blockerAABBs gesehen), drei eingeschleuste Schreiber rot, ein gestempelter grün.`
     );
     process.exit(0);
 }

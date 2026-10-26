@@ -42,7 +42,7 @@
 // Der save-server läuft vorher (`npm start`, :4312 — am OMEN der Mess-Klon); die Werkbank startet und stoppt die Folge selbst
 // (ein Boot je Aufruf; `--serie` hält das Profil für den Zweit-Boot).
 "use strict";
-const { werkbankRuf, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
+const { werkbankRuf, hauptLauf, sleep, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -1482,11 +1482,7 @@ async function selbsttest() {
         orte.filter((o) => typeof o.dorfZug !== "boolean").map((o) => `${o.id}: dorfZug ${o.dorfZug}`),
         null
     );
-    if (fehler.length) {
-        console.log("\n❌ SELBSTTEST ROT — die Mess-Folge ist blind: " + fehler.join(" · "));
-        process.exit(1);
-    }
-    console.log("\n✅ SELBSTTEST GRÜN — die Folge-Regel und jede Wache nennen ihren Täter.");
+    selbsttestEnde(fehler, "die Folge-Regel und jede Wache nennen ihren Täter.");
     process.exit(0);
 }
 
