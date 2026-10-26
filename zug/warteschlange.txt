@@ -90,3 +90,4 @@ takt5-gtx 0 storno
 b-ankunft-a 0 storno
 b-ankunft-b 0 storno
 takt5z-gtx 2 punkte sha=eeaff9d6dad7df61e5ace3466fe84375e9496045 geraet=gtx
+z37-abab 1 abab A=eeaff9d6dad7df61e5ace3466fe84375e9496045 B=9ceeca7169d4980549974ce81a608cacd3ac471f zellen=w-ego,d-ego,stadt
