@@ -485,7 +485,7 @@ function wasserErstarrung(r, orte) {
             aus.forEach((o, i) => {
                 const d = r._lavaAt(o.x, o.z);
                 const licht = r._leuchtQuellen(o.x, o.y, o.z, 30).some((q) => q.id === wm.taten[n + i]);
-                o.reihe.push({ T: Math.round(d.temperatur), glut: wasserRund(2)(r.auraAt(o.x, o.z).glut), stoff: r._kontaktStoffAt(o.x, o.z, o.y), erstarrt: d.erstarrt, dampf: d.dampf, licht });
+                o.reihe.push({ glut: wasserRund(2)(r.auraAt(o.x, o.z).glut), stoff: r._kontaktStoffAt(o.x, o.z, o.y), erstarrt: d.erstarrt, dampf: d.dampf, licht });
             });
         }
     } finally {
