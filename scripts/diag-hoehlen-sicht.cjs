@@ -340,7 +340,7 @@ function urteil(b) {
 }
 
 function selbsttest() {
-    const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+    const { taeterFaelle, selbsttestEnde, nullSeite } = require("./lib/welt-boot.cjs");
     const gruen = {
         spiegel: [
             {
@@ -636,10 +636,8 @@ const server = statikServer();
 (async () => {
     console.log("=== HÖHLEN-SICHT (Welle 7) — Null-Renderer, Mess-Wiese, Strahl-Wahrheit gegen den Boden-Satz ===");
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 600000 });
-    const page = await browser.newPage();
+    const { browser, page } = await nullSeite({ frist: 600000 });
     page.setDefaultTimeout(580000);
-    await nullRenderer(page);
     await page.evaluateOnNewDocument(installHoehlenStrahl);
     let befund = null;
     try {

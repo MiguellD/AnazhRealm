@@ -29,12 +29,12 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 //   node scripts/diag-foundry-crossfade.cjs [--selftest]
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const vm = require("vm");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.CROSSFADE_PORT || 4418);
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 
 // ===== TEIL (a): die geladene Klasse, das Gesetz und die Studio-Blende =====
 const KLASSE = stammLib.ladeKlasse(root);

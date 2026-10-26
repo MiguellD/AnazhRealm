@@ -145,7 +145,7 @@ function urteil(b) {
 }
 
 function selbsttest() {
-    const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+    const { taeterFaelle, selbsttestEnde, nullSeite } = require("./lib/welt-boot.cjs");
     const ex = Object.fromEntries(PFLICHT_EXEMPLARE.map((k) => [k, true]));
     const gruen = {
         zensus: { werke: 900, taeter: [] },
@@ -969,10 +969,8 @@ async function tempo(K) {
 (async () => {
     console.log("=== KOLLISION = BILD (Leben-Schau 2) — Null-Renderer, Foundry an, Mess-Wiese 150 m + Exemplare ===");
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 900000 });
-    const page = await browser.newPage();
+    const { browser, page } = await nullSeite({ frist: 900000 });
     page.setDefaultTimeout(880000);
-    await nullRenderer(page);
     let befund = null;
     try {
         await server.zeige(page, 120000);

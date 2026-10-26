@@ -14,11 +14,11 @@
 //      MUSS die Linse die Abweichung nennen — sonst ist sie vakuös. Beide Stubs werden zurückgesetzt.
 //   node scripts/diag-sippen-wirt.cjs
 
-const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.SIPPEN_PORT || 4413);
 const server = statikServer();
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 
 hauptLauf(async () => {
     await server.lausche(PORT);

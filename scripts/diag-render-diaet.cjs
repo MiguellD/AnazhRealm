@@ -30,7 +30,7 @@
 //
 //   node scripts/diag-render-diaet.cjs
 "use strict";
-const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.RENDER_DIAET_PORT || 4444);
@@ -39,7 +39,7 @@ const PORT = Number(process.env.RENDER_DIAET_PORT || 4444);
 const RD_FAMILIEN_ANKER = 1;
 const server = statikServer();
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 
 hauptLauf(async () => {
     // ── Q: die Quell-Absenz über den EINEN Helfer (Chokepoint-Disziplin, kein Parallelpfad): kein dritter setColorAt-Pfad

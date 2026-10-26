@@ -13,14 +13,14 @@
 //     ~3077 ms) und liest ohne Rezept die Kern-GENRES-Tafel (fail-closed, 78 bpm).
 //   --selftest: injizierte Verletzungen machen die statischen Gesetze rot.
 //   node scripts/diag-nervensystem-labs.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
 const PORT = Number(process.env.NERV_LABS_PORT || 4437);
 const server = statikServer();
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 
 // ===== TEIL S: das Manifest trägt die drei MESHFREI-Kerne (die Kern-Form prüft gate:daten-contract am Namensraum) =====
 function staticLaws(manifestSrc) {

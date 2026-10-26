@@ -13,12 +13,12 @@
 //
 //   node scripts/diag-reload-treue.cjs
 "use strict";
-const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.RELOAD_TREUE_PORT || 4459);
 const server = statikServer();
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 
 hauptLauf(async () => {
     console.log("=== RELOAD-TREUE — der Guss-Pin am Verhalten ===");

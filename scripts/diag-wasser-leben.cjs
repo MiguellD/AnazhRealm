@@ -33,7 +33,7 @@
 // Port: WASSER_LEBEN_PORT (Standard 4623).
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { quellTeileVereinen, QUELL_KACHELN, WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
@@ -868,18 +868,13 @@ function selbsttest() {
                 ])),
         ],
     ];
-    let rot = 0;
+    const fehler = [];
     // B6 an der lebenden Quelle (die Wand der CI, ohne Browser): der Wasser-Stoff rechnet sein Rauschen ohne sin.
     const quelleSin = hashSin();
     console.log(
         `  ${quelleSin ? "❌" : "✅"} B6 HASH an der Quelle: ${quelleSin || "das Wasser-Rauschen rechnet ohne sin"}`
     );
-    if (quelleSin) rot++;
-    const g = urteil(gut);
-    if (g.length) {
-        console.log("  ❌ der grüne Befund fällt rot:", g);
-        rot++;
-    } else console.log("  ✅ der grüne Befund bleibt grün");
+    if (quelleSin) fehler.push(`B6 HASH an der Quelle: ${quelleSin}`);
     // die Teile zusammen urteilen wie das Ganze: der grüne Befund in zwei Teilen bleibt grün, jede Zahl wie vorher
     {
         const q = gut.quelle;
@@ -910,20 +905,12 @@ function selbsttest() {
         console.log(
             `  ${ok ? "✅" : "❌"} die Teile zusammen urteilen wie das Ganze (${m.quellen} Quellen aus 2 Teilen, Breite p50 ${m.breiteP50} m, max ${m.breiteMax} m)${fehlt.length ? " — weichen ab: " + fehlt.join(", ") : ""}${v.length ? " — rot: " + v[0] : ""}`
         );
-        if (!ok) rot++;
+        if (!ok) fehler.push("die Teile der Quell-Probe urteilen nicht wie das Ganze");
     }
-    for (const [name, mach] of taeter) {
-        const b = kopie();
-        mach(b);
-        const v = urteil(b);
-        const ok = v.some((x) => x.startsWith(name));
-        console.log(
-            `  ${ok ? "✅" : "❌"} Täter ${name} → ${ok ? v.find((x) => x.startsWith(name)) : "nicht erkannt: " + JSON.stringify(v)}`
-        );
-        if (!ok) rot++;
-    }
-    console.log(rot ? `SELBSTTEST ROT (${rot})` : "SELBSTTEST GRÜN");
-    process.exit(rot ? 1 : 0);
+    // der grüne Befund bleibt grün, jeder Täter fällt beim Namen (der Befund beginnt mit ihm) — der EINE Täter-Fall-Lauf
+    const anfang = (name) => new RegExp("^" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const faelle = [{ name: "der grüne Befund", z: gut, muss: null }, ...taeter.map(([name, tat]) => [name, tat, anfang(name)])];
+    selbsttestEnde(taeterFaelle(faelle, urteil, { fehler, klon: kopie }));
 }
 
 if (process.argv.includes("--selftest")) selbsttest();
