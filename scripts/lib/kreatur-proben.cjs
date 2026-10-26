@@ -2472,11 +2472,10 @@ async function kreaturProben(r, T, opts) {
         } catch {
             /* die Quote nennt, wer fehlt */
         }
-        // Täter (Selbsttest): die Leiber des ersten bewohnten Hauses fallen aus der Szene
-        if (hat("bewohner-haus")) {
-            const h = haeuser.find((x) => x.soll > 0);
-            for (const b of leiber()) if (h && b.userData.heim === h.seed) s.scene.remove(b);
-        }
+        // Täter (Selbsttest), gezählt und zurück: die Leiber des ersten bewohnten Hauses fallen aus der Szene
+        const h1 = haeuser.find((x) => x.soll > 0);
+        const fort = leiber().filter((b) => hat("bewohner-haus") && h1 && b.userData.heim === h1.seed);
+        for (const b of fort) s.scene.remove(b);
         const L = leiber();
         // Täter (Selbsttest), gezählt und zurück: jeder Bewohner zeichnet seinen eigenen Leib (Befehle je Kopf)
         const sah = L.map((b) => b.visible);
@@ -2488,6 +2487,7 @@ async function kreaturProben(r, T, opts) {
             .map((h) => `${h.rolle} ${h.kultur} #${h.seed}: 0 von ${h.soll}`);
         const alsLeibStart = L.filter((b) => b.visible).length;
         L.forEach((b, i) => (b.visible = sah[i]));
+        for (const b of fort) s.scene.add(b);
         const wer = (b) => `${b.rolle}/${b.beruf} #${b.heim}`;
         const cam = s.camera;
         const gezeichnet = (b) => b.visible || b.userData._satz === true || r._kzBesitztFeld(b);
