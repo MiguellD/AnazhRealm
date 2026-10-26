@@ -37,7 +37,7 @@
 //   … [--s5=frames | --s5=halde]                  Selbsttest S5: nur Welt-Frames statt Zügen (GRÜN) · jedes Einzelstück bleibt (ROT)
 //   Port: WELTBILD_FROST_PORT (Standard 4426). Exit 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, selbsttest } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, selbsttest, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -159,7 +159,7 @@ function pruefRaum(echt) {
                 ? !!s
                 : fragt || ((fragt = true), s.renderer.backend.device.queue.onSubmittedWorkDone().then(() => (fragt = false)), false);
         for (const weiter = window.__deckel(name, 400, offen); !bis(F.gezeichnet(holen())) && weiter(); )
-            await new Promise((res) => setTimeout(res, 50));
+            await sleep(50);
     };
     r.setCameraMode("third");
     // der Leib von JETZT: der Seelenwechsel (S1, `applyPlayerSoul`) ersetzt den Spieler-Leib, T2 weitet nie den alten
@@ -179,8 +179,8 @@ function pruefRaum(echt) {
         F.zeichne = async (n) => {
             const info = rend.info.render;
             const a = info.calls;
-            await new Promise((res) => setTimeout(res, 600)); // ein Bild steht mindestens 600 ms
-            for (const weiter = window.__deckel("ein Bild", 2400); info.calls - a < n && weiter(); ) await new Promise((res) => setTimeout(res, 50));
+            await sleep(600); // ein Bild steht mindestens 600 ms
+            for (const weiter = window.__deckel("ein Bild", 2400); info.calls - a < n && weiter(); ) await sleep(50);
         };
         F.drehe = () => (r.state.yaw += 1.1);
         F.mittag = () => {
@@ -234,7 +234,7 @@ function pruefRaum(echt) {
     F.zeichne = async (n) => {
         for (let i = 0; i < n; i++) F.bildSofort();
         await rend.backend.device.queue.onSubmittedWorkDone();
-        await new Promise((res) => setTimeout(res, 50));
+        await sleep(50);
     };
     // ein Bild ohne auf die GPU zu warten: der Knoten-Bau, die Pipeline und das Render-Objekt entstehen synchron im render()
     // (swiftshader kompiliert synchron); das Warten teilt sich bei offener Bühne den CPU-Raster mit ihr (lokal ~1 s je Bild,
@@ -259,7 +259,7 @@ function pruefRaum(echt) {
     return { weg: "probe-buehne" };
 }
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({
         art: ECHT ? "echt" : "linse",
@@ -302,7 +302,7 @@ function pruefRaum(echt) {
                     (st._leibWarm || !echt)
                 )
                     break;
-                await new Promise((res) => setTimeout(res, 300));
+                await sleep(300);
             }
             const r = window.anazhRealm;
             const rend = r && r.state && r.state.renderer;
@@ -809,7 +809,7 @@ function pruefRaum(echt) {
     const heapMB = async () => {
         for (let i = 0; i < 3; i++) {
             await cdp.send("HeapProfiler.collectGarbage");
-            await new Promise((res) => setTimeout(res, 150));
+            await sleep(150);
         }
         const h = await cdp.send("Runtime.getHeapUsage");
         // der JS-Heap UND die Puffer dahinter (Vertex- und Index-Arrays liegen als ArrayBuffer außerhalb des Heaps)
@@ -1114,7 +1114,7 @@ function pruefRaum(echt) {
         let l = await lage();
         for (let n = 0; (l.hoer === 0 || !l.gpuWache || !(l.gpuWache.n > t2.vor)) && (n++ < 8 || l.bauOffen || l.bereiche); ) {
             await zeichne(1);
-            await new Promise((res) => setTimeout(res, 250));
+            await sleep(250);
             l = await lage();
         }
         console.log(
@@ -1155,7 +1155,4 @@ function pruefRaum(echt) {
         "\n✅ DIE FROST-WAND steht — durch Werkstatt, Ich- und Hof-Bühne trägt jeder Index-Puffer der Welt-GPU sein Format, kein Device meldet, das Bild folgt der Kamera; die Täter (Index über der Vertex-Zahl, ein fremd geweiteter Mensch-Index) nennen die Wachen beim Namen, und das stehende Bild wird erkannt."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Frost-Wand-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

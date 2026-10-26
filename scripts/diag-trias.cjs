@@ -25,7 +25,7 @@
 //     Klon-Erbe (studioGestalt reist, donorOnly nicht).
 //   --selftest: injizierte Verletzungen machen die Gesetze rot (Linse nicht vakuoes).
 //   node scripts/diag-trias.cjs [--selftest]
-const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const crypto = require("crypto");
 const stammLib = require("./lib/stamm.cjs");
@@ -70,7 +70,7 @@ const triasStaticLaws = () => [
     ["T-S4: cloneBlueprint fasst donorOnly NICHT an", stammLib.fehlt("cloneBlueprint", /donorOnly/), stammLib.fehlt.wo],
 ];
 
-(async () => {
+hauptLauf(async () => {
     // ===== SELBST-TEST =====
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Trias-Linse feuert ===");
@@ -166,7 +166,6 @@ const triasStaticLaws = () => [
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const res = { errors: [] };
         const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();
@@ -524,7 +523,4 @@ const triasStaticLaws = () => [
         "\n✅ GRÜN — DIE TRIAS BLEIBT GEDECKELT: platzierte Studio-Architektur lebt in der EINEN LOD-Geschichte (Fernstufe fern, Promotion nah, Cull + Slot-Bilanz sauber ueber Churn) und der Klon erbt die Studio-Gestalt."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Trias-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

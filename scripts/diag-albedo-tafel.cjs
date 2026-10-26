@@ -25,7 +25,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
 const { kartenEichung } = require("./lib/licht-linsen.cjs");
 // der Code-Abdruck einer Datei des Baums und der Stand einer Messung (abnahme-urteil `standLeser`, derselbe wie Werkzeug und
@@ -89,7 +89,7 @@ async function aktion(page, a) {
         );
     }
     // Die Shells bauen im Klick-Takt oder entprellt (Regler 90–180 ms) — zwei Bilder später steht die Gestalt.
-    await page.evaluate(() => new Promise((r) => setTimeout(r, 600)));
+    await page.evaluate(() => sleep(600));
 }
 
 async function messeLabor({ echt, nur, tafel }) {
@@ -111,7 +111,7 @@ async function messeLabor({ echt, nur, tafel }) {
                 if (w) w.traverse((x) => (n += x.isMesh ? 1 : 0));
                 return n > 0 && !!g(S.renderer) && g(S.renderer)._initialized !== false; // r184 rendert nach init()
             };
-            while (!(await page.evaluate(bereit, S))) await new Promise((r) => setTimeout(r, 300));
+            while (!(await page.evaluate(bereit, S))) await sleep(300);
             if (!out.geraet)
                 out.geraet = await page.evaluate((S) => {
                     const R = new Function(`return ${S.renderer};`)();
@@ -536,12 +536,12 @@ async function neuMessen(t, ids) {
     try {
         while (!/WERKBANK bereit/.test(fs.readFileSync(wlog, "utf8"))) {
             if (w.exitCode != null) throw new Error(`die Werkbank startet nicht (${wlog})`);
-            await new Promise((r) => setTimeout(r, 2000));
+            await sleep(2000);
         }
         const gw = t.gemessen.welt || {};
         const um = wb(gw.ort ? ["umstellen", "--ort", gw.ort] : ["umstellen", ...(gw.spieler || [0, 0]).map(String)]);
         if (um.exit !== 0) throw new Error("umstellen: " + um.aus.slice(-400));
-        wb(["eval", "await new Promise((x) => setTimeout(x, 10000)); return 1"]);
+        wb(["eval", "await sleep(10000); return 1"]);
         // Exit 1 heißt dort nur: das Urteil gegen das gespeicherte Labor ist ROT — die Datei trägt die Messung
         const al = wb(["albedo", "--tafel", "--datei", wd, "--ordner", path.join(ordner, "albw")]);
         if (!fs.existsSync(wd)) throw new Error("albedo --tafel ohne Messung: " + al.aus.slice(-400));
@@ -678,7 +678,4 @@ async function main() {
     );
 }
 
-main().catch((e) => {
-    console.error("ALBEDO-TAFEL-FEHLER:", (e && e.stack) || e);
-    process.exit(2);
-});
+hauptLauf(main);

@@ -55,6 +55,7 @@
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
+const { hauptLauf } = require("./lib/welt-boot.cjs");
 require("../phyto-core.js");
 const PC = globalThis.__phytoCore;
 const ROOT = path.resolve(__dirname, "..");
@@ -1044,7 +1045,7 @@ function windUrteil(fall, T, skala, deltaMul) {
     };
 }
 
-(async () => {
+hauptLauf(async () => {
     const fails = [];
     const roh = {};
     let buch = null,
@@ -1397,7 +1398,4 @@ function windUrteil(fall, T, skala, deltaMul) {
     }
     console.log(`\n✅ GRÜN — ${Object.keys(roh).length} Fälle.`);
     process.exit(0);
-})().catch((e) => {
-    console.error("Gate-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

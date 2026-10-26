@@ -258,7 +258,6 @@ async function checkBandNahStreu(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
-        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         // (3) Die Arten kommen aus dem Studio-Buch (warten, bis Buch + Render-Config stehen).
         let arten = null;
         for (let i = 0; i < 300 && !arten; i++) {
@@ -2120,12 +2119,12 @@ async function checkBandScatterScheibe(ctx) {
             // die Region NUR noch auf ihren zwei Zusagen
             for (let i = 0; i < 4000 && r._waldPlanSchlange && r._waldPlanSchlange.size; i++) {
                 r._tickWaldPlan(Infinity);
-                await new Promise((res) => setTimeout(res, 10));
+                await sleep(10);
             }
             wecker.schlangeNach = r._waldPlanSchlange ? r._waldPlanSchlange.size : 0;
             const steht = () => st.scatterRegions.get(key) === reg5;
             const tick = async () => {
-                await new Promise((res) => setTimeout(res, 0));
+                await sleep(0);
                 r._tickScatterStreaming(pos);
             };
             r._scatterRefillPending = true; // eine FREMDE Lieferung
@@ -2177,7 +2176,7 @@ async function checkBandScatterScheibe(ctx) {
                 // der Takt schickt die Schlange an den Faden (`_tickWaldPlan`, Job `waldPlan`) — die Linse ist sein Takt
                 await window.__gebautNach("die Lieferung an die wartende Region", {
                     fertig: () => !(reg6._deferredFoundry && !reg6._geweckt),
-                    takt: async () => (r._tickWaldPlan(Infinity), await new Promise((res) => setTimeout(res, 50))),
+                    takt: async () => (r._tickWaldPlan(Infinity), await sleep(50)),
                     max: 1200,
                 });
                 stoff.gewartet = reg6._deferredFoundry === true && reg6._geweckt === true;

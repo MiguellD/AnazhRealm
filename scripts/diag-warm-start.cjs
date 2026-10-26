@@ -21,7 +21,7 @@
 // minutenlanges page.evaluate stirbt sonst an „Promise was collected".
 //   node scripts/diag-warm-start.cjs
 
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.WARMSTART_PORT || 4571);
 const server = statikServer();
 
@@ -84,7 +84,7 @@ async function jobKalt() {
             const e = st.voxelChunks && st.voxelChunks.get(key);
             if (e && (e.mesh || e.empty)) return e;
             r._ensureVoxelChunkAt(cx, cz, 0);
-            await new Promise((res) => setTimeout(res, 25));
+            await sleep(25);
         }
         return (st.voxelChunks && st.voxelChunks.get(key)) || null;
     };
@@ -99,7 +99,7 @@ async function jobKalt() {
     if (probes.length < 2)
         return { err: "keine 2 nicht-leeren Probe-Chunks baubar (Kandidaten: " + cands.length + ")" };
     // Stiftung flushen lassen (fire-and-forget-Puts) + Store befragen.
-    await new Promise((res) => setTimeout(res, 500));
+    await sleep(500);
     const seed = st.worldMeta.seed;
     const keyA = seed + "|" + probes[0][0] + "," + probes[0][1] + "|0";
     const store = await new Promise((resolve) => {
@@ -160,7 +160,7 @@ async function jobWarm(kaltIn) {
             const e = st.voxelChunks && st.voxelChunks.get(key);
             if (e && (e.mesh || e.empty)) return e;
             r._ensureVoxelChunkAt(cx, cz, 0);
-            await new Promise((res) => setTimeout(res, 25));
+            await sleep(25);
         }
         return (st.voxelChunks && st.voxelChunks.get(key)) || null;
     };
@@ -196,7 +196,7 @@ async function jobWarm(kaltIn) {
     let rebuilt = false;
     for (const weiter = window.__deckel("der Neubau des Chunks", 2400); !rebuilt && weiter(); ) {
         rebuilt = r._rebuildVoxelChunk(A[0], A[1], 0);
-        if (!rebuilt) await new Promise((res) => setTimeout(res, 25));
+        if (!rebuilt) await sleep(25);
     }
     out.rebuilt = rebuilt;
     out.hitABefore = hitABefore;
@@ -241,7 +241,7 @@ async function jobSelbsttest(kaltIn) {
     await window.__weltDa(() => r.state.voxelWorkerWorldgenSynced);
     const [bx, bz] = kaltIn.probes[1];
     for (const weiter = window.__deckel("der Chunk B", 2400); weiter() && !r._ensureVoxelChunkAt(bx, bz, 0); )
-        await new Promise((res) => setTimeout(res, 25));
+        await sleep(25);
     const keyA = kaltIn.seed + "|" + kaltIn.probes[0][0] + "," + kaltIn.probes[0][1] + "|0";
     return await new Promise((resolve) => {
         const req = indexedDB.open("anazhChunkMesh", 1);
@@ -271,7 +271,7 @@ async function jobSelbsttest(kaltIn) {
     });
 }
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
@@ -348,7 +348,4 @@ async function jobSelbsttest(kaltIn) {
         "\nGRÜN — der zweite Boot liest den Ring aus der Platte: gestiftet · getroffen · byte-gleich · Edits schlagen den Cache · Stempel-Wand greift."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Warm-Start-Linsen-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

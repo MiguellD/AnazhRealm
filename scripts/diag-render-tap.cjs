@@ -42,7 +42,7 @@ const server = statikServer();
                     st = r.state;
                 const samples = [];
                 for (let i = 0; i < 60; i++) {
-                    await new Promise((res) => setTimeout(res, 50));
+                    await sleep(50);
                     const info = st.renderer && st.renderer.info;
                     if (info && info.render) samples.push(info.render.drawCalls != null ? info.render.drawCalls : -1);
                 }
@@ -104,7 +104,7 @@ const server = statikServer();
                 // Phase 1 — 120 Frames „früh in der Session"
                 for (let i = 0; i < 120; i++) {
                     r._gameLoopTick();
-                    await new Promise((res) => setTimeout(res, 0));
+                    await sleep(0);
                 }
                 // Der Frame-Akku `_perfFrame` wird beim Fold KONSUMIERT (am Tick-Ende geleert) —
                 // die pro-Frame-Wahrheit liest man an der EWMA: bei KONSTANTEM drawCalls=1100
@@ -116,7 +116,7 @@ const server = statikServer();
                 // Zähler ist jetzt ~2× so groß; eine vergiftete Kette WÜCHSE mit).
                 for (let i = 0; i < 150; i++) {
                     r._gameLoopTick();
-                    await new Promise((res) => setTimeout(res, 0));
+                    await sleep(0);
                 }
                 o.senseLate = st.perfSense ? st.perfSense.renderCalls : -1;
                 o.lifetimeLate = fake.render.calls;

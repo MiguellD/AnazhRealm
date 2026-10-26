@@ -320,7 +320,6 @@ function standLauf(k) {
         const st = r.state;
         const rend = st.renderer;
         const P = Object.getPrototypeOf(r);
-        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         window.__buehne();
         if (k.tiere !== "frei" && window.__tiereHalten) window.__tiereHalten();
         const decke = st.perfTargetMs;
