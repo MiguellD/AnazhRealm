@@ -11,7 +11,7 @@
 // des Haltens · Q12 der ballistische Bogen · G3/T12 das Grob-Tor · T13–T27 die Posten der Leben-Schau; danach Q13 Sturz, Tod
 // und Wiederkehr über einen Reload (allein: `--k5`, mit dem echten Renderer); die Selbst-Tests S3–S18 feuern je an ihrer
 // Naht, jede Naht restauriert. Aufruf: node scripts/diag-kampf-gefuehl.cjs [--k5]
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, sleep } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 // Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
 const PORT = Number(process.env.KAMPF_GEFUEHL_PORT || 4451);
@@ -572,7 +572,7 @@ function k5Verdict(K) {
 // der Lauf: die Probe (sie speichert am Ende), der IDB-Put landet, der Reload, der Abdruck der geladenen Welt
 async function k5Lauf(page) {
     const k5 = await page.evaluate(`(${K5_VOR})(${K5_ABDRUCK})`);
-    await new Promise((ok) => setTimeout(ok, 1500));
+    await sleep(1500);
     await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
     await warteAufWelt(page, 180000);
     k5.nachReload = await page.evaluate(K5_ABDRUCK);

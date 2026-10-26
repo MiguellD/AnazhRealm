@@ -166,7 +166,6 @@ hauptLauf(async () => {
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const res = { errors: [] };
         const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();

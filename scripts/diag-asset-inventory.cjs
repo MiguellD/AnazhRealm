@@ -58,7 +58,6 @@ hauptLauf(async () => {
     await page.evaluateOnNewDocument(installWieseSicht);
     await server.zeige(page, 30000);
     const out = await page.evaluate(async (doSelftest) => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         // ── Warmup: Welt bauen (Chunk-Plateau) + Foundry ready + Scatter konvergieren lassen
         // (das bewährte diag-no-second-treebuilder-Rezept — dieselbe Bühne, breiterer Blick).
         for (const weiter = window.__deckel("der Ring der Inventur", 9000); weiter();) {

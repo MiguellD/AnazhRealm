@@ -4,7 +4,7 @@
 // Die Seite läuft in ihrem echten Renderer (r184 WebGPU, die Engine der Welt) im Kopflos-Browser; gezählt wird an der Seite selbst.
 //   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
 "use strict";
-const { statikServer, starteBrowser, pruefer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, pruefer, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const { tempoVerdict, tempoSpion } = require("./lib/fahr-proben.cjs");
 
 const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
@@ -82,7 +82,7 @@ hauptLauf(async () => {
     await page.waitForFunction(() => typeof window.__vehicleCore === "object" && document.querySelector("canvas"), {
         timeout: 30000,
     });
-    await new Promise((r) => setTimeout(r, 500));
+    await sleep(500);
     const m = { geladen: true };
     // G4 (Teil): der Regler-Zustand beim ersten Laden == das Modell (vor jedem Klick).
     m.reglerLeck = await page.evaluate(() => {
@@ -101,7 +101,7 @@ hauptLauf(async () => {
     for (let i = 0; i < 10; i++) await page.mouse.move(640 + i * 8, 360 + i * 2);
     await page.mouse.up();
     await page.click("#start");
-    await new Promise((r) => setTimeout(r, 300));
+    await sleep(300);
     await page.evaluate(
         `window.__m7 = (${tempoSpion})(window.__vehicleCore, cam, (z, vm) => z === car && vm === fahrGesetzLab().vmax)`
     );
@@ -159,7 +159,7 @@ hauptLauf(async () => {
     await page.keyboard.up("KeyW");
     m.tempo = await page.evaluate(() => (window.__m7.ende(), Object.assign(window.__m7, { fov: undefined })));
     await page.keyboard.press("Escape");
-    await new Promise((r) => setTimeout(r, 200));
+    await sleep(200);
     m.schilderWerkstatt = (await schilder()).length;
     // G4/G5: Gattung und Kultur wechseln — P ist DEFAULT_P + Preset (+ die gewählte Kultur), ohne Rest.
     Object.assign(

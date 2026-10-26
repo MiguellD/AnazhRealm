@@ -1661,7 +1661,7 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         r._voxelWorkerSyncWorldgenState();
         // Warten bis das ack durchgelaufen ist — das ack des state-set bumpt
         // voxelWorkerReady auch erneut.
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await sleep(50);
         out.workerStateGen = r.state.voxelWorkerStateGen;
         out.workerSynced = r.state.voxelWorkerWorldgenSynced;
         // 5) voxelEdit notify (K23, die Generation je Chunk): ein Edit über den Spielpfad ändert den Stand SEINES Chunks,
@@ -1721,7 +1721,7 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
             return { ...out, error: "init sync failed: " + e.message };
         }
         r._voxelWorkerSyncWorldgenState();
-        await new Promise((resolve) => setTimeout(resolve, 80));
+        await sleep(80);
         out.workerSynced = r.state.voxelWorkerWorldgenSynced;
         // Sync-Build via _buildVoxelChunkData (kontrollierter Pfad, ohne
         // preDensityOverride → Sync-Sampling).
@@ -2096,7 +2096,7 @@ async function checkBandCarveWorker(ctx) {
         };
         for (let takte = 0; takte < 600 && !steht(); takte++) {
             r._gameLoopTick();
-            await new Promise((res) => setTimeout(res, 0));
+            await sleep(0);
         }
         const pc = st.lastPlayerVoxelChunk;
         if (!pc || !steht()) return { err: "der Spieler-Chunk entstand nie" };

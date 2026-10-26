@@ -38,7 +38,7 @@ hauptLauf(async () => {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch {}
-                await new Promise((res) => setTimeout(res, 0));
+                await sleep(0);
             }
 
             const archs = () => (Array.isArray(r.state.architectures) ? r.state.architectures : []);
@@ -113,7 +113,7 @@ hauptLauf(async () => {
                     // ein Wurf im Takt ist ROT beim Namen, nie still verschluckt
                     out.err = out.err || "Takt " + i + ": " + ((e && e.message) || String(e));
                 }
-                await new Promise((res) => setTimeout(res, 0)); // dem Worker die Message-Runde geben
+                await sleep(0); // dem Worker die Message-Runde geben
                 out.ticks++;
             }
             out.foundryAfter = foundry();

@@ -239,7 +239,6 @@ async function verhalten(schaleSrc) {
                         });
                     return { w, frag };
                 };
-                const ruhe = (ms) => new Promise((r) => setTimeout(r, ms));
                 const aus = {};
                 const A = neu(2, true);
                 const a1 = await A.frag({ type: "build-asset", reqId: "a1", presetId: "x", seed: 1, lod: 0 });
@@ -259,7 +258,7 @@ async function verhalten(schaleSrc) {
                     lod: 0,
                     platte: key,
                 });
-                await ruhe(400);
+                await sleep(400);
                 const b2 = await A.frag({
                     type: "build-asset",
                     reqId: "b2",
@@ -330,7 +329,7 @@ async function verhalten(schaleSrc) {
                     platte: "gt|7|0",
                     vorrat: true,
                 });
-                await ruhe(400);
+                await sleep(400);
                 const v2 = await D.frag({
                     type: "build-asset",
                     reqId: "v2",
@@ -389,7 +388,7 @@ async function verhalten(schaleSrc) {
                     tLang = performance.now() - tH0;
                     return k;
                 });
-                await ruhe(300);
+                await sleep(300);
                 const wf1 = await koerper(Wk, "wf1", "f1");
                 const wf2 = await koerper(Wk, "wf2", "f2");
                 const tWerk = performance.now() - tH0;
@@ -483,7 +482,6 @@ const WELT_HAKEN = () => {
     };
 };
 const WELT_MESSEN = async () => {
-    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await window.__weltDa(); // der Ring wächst nach dem Erwachen des Boots (die Tiere stehen, ehe der Takt läuft)
     for (const weiter = window.__deckel("der Ring am Fluss", 6000); weiter(); ) {
         const r = window.anazhRealm;

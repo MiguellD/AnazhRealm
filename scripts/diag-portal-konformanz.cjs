@@ -35,7 +35,7 @@
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
 // Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
-const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -105,7 +105,7 @@ async function stromZeichnet(page, fr) {
     const rueckfall = /konnte nicht starten|Render-Fehler/.test(hud);
     const el = await page.$("#portal-overlay iframe.portal-frame");
     const a = el ? await el.screenshot({ encoding: "base64" }) : "";
-    await warte(400);
+    await sleep(400);
     const b = el ? await el.screenshot({ encoding: "base64" }) : "";
     const bewegt = !!a && a !== b;
     return { ok: !rueckfall && bewegt, notiz: `Strom zeichnet: ${rueckfall ? "Rückfall — " + hud : "Engine steht"}, Bild ${bewegt ? "bewegt" : "steht"}` };
@@ -301,7 +301,6 @@ function manifestOhneZeile(welten) {
         .sort();
 }
 
-const warte = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ── in der Heimat: eine Welt betreten (der echte Weg) und den Kanal zählen
 async function betreten(page, welt) {
@@ -556,7 +555,7 @@ const WIRKUNG_FRIST_MS = 6000;
 async function bisWirkung(page, welt, n, gut) {
     const t0 = Date.now();
     while (!gut(n) && Date.now() - t0 < WIRKUNG_FRIST_MS) {
-        await warte(200);
+        await sleep(200);
         n = await zustand(page, welt);
     }
     return n;
@@ -590,7 +589,7 @@ async function pruefeWelt(page, welt, lies) {
     const t0 = Date.now();
     let z = await zaehler(page);
     while (!(z.readys && z.geladen) && Date.now() - t0 < READY_FRIST_MS) {
-        await warte(250);
+        await sleep(250);
         z = await zaehler(page);
     }
     aus.k.K1 = z.readys > 0 && z.geladen > 0;

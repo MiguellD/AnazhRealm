@@ -307,7 +307,6 @@ const server = statikServer();
 
 // ── DIE PROBEN IN DER SEITE (Funktionsrumpf; r = die Welt). ──
 async function probe(argW) {
-    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const out = {};
     await window.__weltDa();
     const r = window.anazhRealm;

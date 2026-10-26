@@ -31,7 +31,7 @@ async function runOnce(browser, noFoundry) {
             try {
                 r._gameLoopTick(performance.now());
             } catch {}
-            await new Promise((res) => setTimeout(res, 4));
+            await sleep(4);
         }
     });
     const out = await page.evaluate(() => {

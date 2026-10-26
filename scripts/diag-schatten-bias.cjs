@@ -289,7 +289,6 @@ async function probe(cfg) {
     const st = r.state;
     const T = window.THREE;
     const rend = st.renderer;
-    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const { bx, bz } = window.__sb;
     const W = cfg.W,
         H = cfg.H;

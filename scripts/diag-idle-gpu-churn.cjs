@@ -10,7 +10,7 @@
 // bevor irgendwer den Freeze spürt. Die Struktur trägt die Disziplin, nicht das Gedächtnis.
 //
 // Lauf: node scripts/diag-idle-gpu-churn.cjs   (CI: npm run gpu-lens)
-const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 // Port über IDLE_GPU_CHURN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4395.
 const PORT = Number(process.env.IDLE_GPU_CHURN_PORT || 4395);
@@ -110,7 +110,7 @@ hauptLauf(async () => {
                     }
                     S.dorf = !!r._autoSettlementStartHopeless || !r._autoSettlementQueue;
                 }
-                await new Promise((res) => setTimeout(res, 6));
+                await sleep(6);
             }
             return { done: S.done, ms: performance.now() - S.start, sz: S.sz, dorf: S.dorf };
         });
@@ -368,7 +368,7 @@ hauptLauf(async () => {
                 return E ? E.offen.size : 0;
             });
             if (offen === 0) break;
-            await new Promise((res) => setTimeout(res, 500));
+            await sleep(500);
         }
         const ms = Date.now() - t0;
         if (ms > LANG_MS) log(`Pipelines abgewartet (${wo}): ${Math.round(ms / 1000)} s`);

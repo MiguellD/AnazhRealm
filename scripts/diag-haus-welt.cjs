@@ -225,13 +225,12 @@ async function proben(phasen) {
     const pm = s.playerMesh;
     const DT = A.FIXED_DT || 1 / 60;
     let t = 5000;
-    const warte = (ms) => new Promise((rs) => setTimeout(rs, ms));
     const pumpe = async (n) => {
         for (let k = 0; k < n; k++) {
             try {
                 r._gameLoopTick(performance.now());
             } catch {}
-            if (k % 8 === 0) await warte(10);
+            if (k % 8 === 0) await sleep(10);
         }
     };
     // DAS WARTEN IM EREIGNIS (welt-boot `__deckel`): Takt um Takt, bis `bis()` gilt — der Deckel zählt nur Takte, in denen die
@@ -240,7 +239,7 @@ async function proben(phasen) {
         let ja = false;
         try {
             for (let k = 0, weiter = window.__deckel("haus-welt", max); !(ja = bis()) && weiter() && k++ < 4 * max;)
-                await pumpe(n).then(() => ms && warte(ms));
+                await pumpe(n).then(() => ms && sleep(ms));
         } catch {}
         return ja;
     };

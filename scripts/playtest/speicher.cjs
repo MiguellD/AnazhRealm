@@ -2213,7 +2213,7 @@ async function checkBandV18151Idb(ctx) {
         }
         let idb = null;
         for (let i = 0; i < 20 && !(idb && idb.at >= tVor); i++) {
-            await new Promise((res2) => setTimeout(res2, 100));
+            await sleep(100);
             idb = await r._idbGetWorld(worldId);
         }
         r.saveState(); // das Abbild wiederherstellen

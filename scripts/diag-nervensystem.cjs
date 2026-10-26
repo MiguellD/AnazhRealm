@@ -21,6 +21,7 @@ const {
     waitFor,
     ROOT,
     hauptLauf,
+    sleep,
 } = require("./lib/welt-boot.cjs");
 const { fehlt, text: stammText } = require("./lib/stamm.cjs");
 const fs = require("fs");
@@ -233,7 +234,7 @@ hauptLauf(async () => {
             });
             return { bau: window.__bauWerk(w()), stand: window.__stand(w()) };
         }, e.werk.id);
-        await new Promise((ok) => setTimeout(ok, 1500)); // der IDB-Put des Saves landet, bevor der Reload ihn abschneidet
+        await sleep(1500); // der IDB-Put des Saves landet, bevor der Reload ihn abschneidet
         await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
         e.geladen = await page.evaluate(async (o) => {
             await window.__buch();

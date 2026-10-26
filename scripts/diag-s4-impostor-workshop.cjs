@@ -49,7 +49,7 @@ hauptLauf(async () => {
                     } catch {}
                     grp = r._workshopFoundryPreviewGroup(treeBp); // wirft nicht
                     if (grp && grp.children && grp.children.length) break;
-                    await new Promise((res2) => setTimeout(res2, 40));
+                    await sleep(40);
                 }
                 res.behavior.returnedGroup = !!(grp && grp.children && grp.children.length);
                 if (grp && grp.children && grp.children.length) {

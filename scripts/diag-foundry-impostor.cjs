@@ -84,7 +84,7 @@ async function installiereBacke(page) {
                         if (e === true) return z;
                         if (e === false) throw new Error(`der Bake von ${z.key} scheiterte`);
                     }
-                    await new Promise((ok) => setTimeout(ok, 50));
+                    await sleep(50);
                 }
             } finally {
                 r.state.renderer = vor;
@@ -121,7 +121,7 @@ async function driveImpostor(page) {
                 flat1 = r._foundryBuildImpostorFlat({ seed: 7 }, "eiche") || flat1;
                 flat2 = r._foundryBuildImpostorFlat({ seed: 7 }, "fichte") || flat2;
                 if (rec && rec2 && flat1 && flat2) break;
-                await new Promise((res) => setTimeout(res, 30));
+                await sleep(30);
             }
             const at = r._impostorAtlas();
             if (rec) {
@@ -405,7 +405,7 @@ async function kleberProbe(page, fmtWunsch) {
                 // rgba8: das Ziel wächst neu, die Schichten backen nach (bc: die GPU kopiert sie)
                 if (at.fmt === "rgba8") for (const zz of [z, zV]) await window.__fimpBacke(ren, at, zz);
                 const q = await zaehle();
-                await new Promise((ok) => setTimeout(ok, 0)); // die alte Form fällt nach dem Submit
+                await sleep(0); // die alte Form fällt nach dem Submit
                 const sonne = (r._karteBuehneSatz && r._karteBuehneSatz.schatten.textures) || [];
                 const leben = [...ren.info.memoryMap.keys()].filter(
                     (t) => t.isTexture && /^karte-.*:atlas$/.test(t.name || "") && !sonne.includes(t)

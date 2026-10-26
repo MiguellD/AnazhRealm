@@ -22,7 +22,7 @@
 // fester Schirm) → K rot.
 //   node scripts/diag-schirm-monotonie.cjs [--selftest]       (npm run gate:schirm-monotonie; Port SCHIRM_PORT)
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
@@ -150,7 +150,6 @@ async function welt() {
 
     // Boot · Mess-Wiese · Einschwingen · Bühne · stille Tiere · der Wolf der Fell-Probe
     const boot = await page.evaluate(async (groessen) => {
-        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         const r = await window.__weltDa();
         if (!r.state.renderer || !r.state.renderer._isHeadlessNull) return { fatal: "kein Null-Renderer" };
         const st = r.state;
@@ -300,10 +299,9 @@ async function welt() {
     // Eine Größe: der ECHTE resize-Handler (Viewport), Takte durch den Loop, dann Schirm, Fell und Zensus.
     const phase = async (w, h) => {
         await page.setViewport({ width: w, height: h, deviceScaleFactor: 1 });
-        await new Promise((res) => setTimeout(res, 150));
+        await sleep(150);
         return page.evaluate(
             async (TAKTE, PROBEN) => {
-                const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
                 const r = window.anazhRealm;
                 const st = r.state;
                 const proben = [];

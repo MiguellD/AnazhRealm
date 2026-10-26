@@ -58,7 +58,6 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = {};
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = await window.__weltDa();
         const AR = r.constructor;
         const f = r._ensureAssetFoundry();
@@ -640,7 +639,6 @@ hauptLauf(async () => {
     });
     await server.zeige(hPage, 60000);
     const h = await hPage.evaluate(async (KALT) => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const H = window.__buchHalt;
         await window.__weltDa(() => H.zuSpaet || H.los);
         const r = window.anazhRealm;

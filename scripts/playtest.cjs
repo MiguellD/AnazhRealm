@@ -506,7 +506,7 @@ if (require.main === module) hauptLauf(async () => {
                 if (warm || elapsed >= HARD_CAP_MS) {
                     break;
                 }
-                await new Promise((resolve) => setTimeout(resolve, 0));
+                await sleep(0);
             }
             // Foundry-Warm-Anker: der Studio-Worker bootet ASYNC (ein anderer Worker als der ausgehängte
             // voxelWorker) → warten auf f.ready → recipeCount > 0 → !_vorrat (im ready-Handler synchron
@@ -525,7 +525,7 @@ if (require.main === module) hauptLauf(async () => {
                             } catch {
                                 // Ein einzelner Tick-Fehler darf den Warm-Anker nicht abbrechen.
                             }
-                            await new Promise((resolve) => setTimeout(resolve, 25));
+                            await sleep(25);
                         },
                         max: 4800,
                     });
@@ -540,7 +540,7 @@ if (require.main === module) hauptLauf(async () => {
                     try {
                         r._gameLoopTick(performance.now());
                     } catch {}
-                    await new Promise((resolve) => setTimeout(resolve, 0));
+                    await sleep(0);
                 }
             }
             // Worker wieder einhängen — die Folge-Bänder nutzen den echten async-Pfad

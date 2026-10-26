@@ -86,13 +86,12 @@ hauptLauf(async () => {
         window.__anazhFernRing = true;
         // Der Takt bestellt Scheiben (`FERN_RING.scheibe`) beim Fern-Faden und hängt die Antworten ein — die Linse pumpt den
         // Takt mit einer Pause je Takt (die Antworten brauchen die Ereignis-Schleife), bis der Cursor durch ist.
-        const sleepT = (ms) => new Promise((rs) => setTimeout(rs, ms));
         // DER TAKT DES RINGS bis zur Bedingung (Deckel: `ms` / 16 Takte ohne Offenes): je Takt die Zahl der eingehängten Punkte
         const pumpe = async (pos, fertig, ms, takt = () => r._tickFernRing(pos)) => {
             let takte = 0;
             let maxD = 0;
             let vor = r.state.fernRing ? r.state.fernRing.cursor : 0;
-            for (const weiter = window.__deckel("der Fern-Ring", ms / 16); weiter(); await sleepT(16)) {
+            for (const weiter = window.__deckel("der Fern-Ring", ms / 16); weiter(); await sleep(16)) {
                 takt();
                 takte++;
                 const f = r.state.fernRing;
@@ -427,7 +426,6 @@ hauptLauf(async () => {
         res.disposeRestored = r.state.camera.far === altVorDispose && r.state.fernRing === null;
 
         // ===== (7) DER NEUBAU AUS DEM FADEN: nach dem Dispose entsteht der Ring wieder ganz (B2) =====
-        const sleep7 = sleepT;
         r._tickFernRing(r.state.playerMesh.position);
         const fr7 = r.state.fernRing;
         await pumpe(r.state.playerMesh.position, (f) => f.cursor >= f.totalVerts, 120000);
@@ -447,7 +445,7 @@ hauptLauf(async () => {
         for (const weiter = window.__deckel("Feld-Anstrich und Panorama", 900); (!fp8 || fp8.laeufe < 1 || !(fp8.panoLaeufe >= 1)) && weiter(); ) {
             r._tickFernRing(r.state.playerMesh.position);
             fp8 = r.state.feldPass;
-            await sleep7(100);
+            await sleep(100);
         }
         res.fpDa = !!fp8;
         res.fpLaeufe = fp8 ? fp8.laeufe : 0;
@@ -539,10 +537,10 @@ hauptLauf(async () => {
             const MS = r.constructor.WELT_SCHWUND_MS;
             res.einStart = hE ? L8[hE.feld * 32 + 23] : -1;
             res.sofortStart = hS ? L8[hS.feld * 32 + 23] : -1;
-            await new Promise((rs) => setTimeout(rs, MS / 2));
+            await sleep(MS / 2);
             r._weltSchwundTakt(wm8);
             res.einMitte = hE ? L8[hE.feld * 32 + 23] : -1;
-            await new Promise((rs) => setTimeout(rs, MS / 2 + 60));
+            await sleep(MS / 2 + 60);
             r._weltSchwundTakt(wm8);
             res.einEnde = hE ? L8[hE.feld * 32 + 23] : -1;
             res.einAus = !!hE && !wm8.schwund.has(hE);
@@ -558,7 +556,6 @@ hauptLauf(async () => {
         // 6-m-Raster den Durchstich (Ring > Chunk + 5 cm), und ob der Ring-Stoff der Boden-Stoff des Chunks ist (die Gesetze
         // `_wegeBodenFarbe` und `_terrainGeologyAlbedo` bauen ihn, die Licht-Knoten des Chunk-Stoffs trägt er).
         try {
-            const sleep9 = (ms) => new Promise((rs) => setTimeout(rs, ms));
             const T9 = THREE;
             const gebaut9 = () => {
                 let n = 0;
@@ -583,7 +580,7 @@ hauptLauf(async () => {
                 } catch {
                     /* ein Takt-Fehler zählt im pageerror-Band */
                 }
-                if (t % 5 === 0) await sleep9(0);
+                if (t % 5 === 0) await sleep(0);
                 const n = gebaut9();
                 if (n !== n9) {
                     n9 = n;

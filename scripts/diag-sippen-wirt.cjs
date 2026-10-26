@@ -30,7 +30,6 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = { items: [], fehler: [], selbst: {}, kinds: [] };
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         await window.__weltDa();
         const r = window.anazhRealm;
         const A = r.constructor;

@@ -42,7 +42,7 @@
 // Der save-server läuft vorher (`npm start`, :4312 — am OMEN der Mess-Klon); die Werkbank startet und stoppt die Folge selbst
 // (ein Boot je Aufruf; `--serie` hält das Profil für den Zweit-Boot).
 "use strict";
-const { werkbankRuf, hauptLauf } = require("./lib/welt-boot.cjs");
+const { werkbankRuf, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -758,7 +758,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
                 code:
                     `r.state.yaw = ${g}; r.state.pitch = 0;` +
                     "for (let i = 0; i < 20; i++) { window.__wetterHalten(); if (window.__ortSchritt) window.__ortSchritt(); " +
-                    "r._gameLoopTick(performance.now()); await new Promise((s) => setTimeout(s, 16)); } " +
+                    "r._gameLoopTick(performance.now()); await sleep(16); } " +
                     "r.state.renderer.setAnimationLoop(null); " +
                     "return { gier: r.state.yaw, tiere: typeof window.__tierZahl === 'function' ? window.__tierZahl() : null };",
             });
@@ -907,7 +907,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
         if (!abbruch && gefahren.length !== FOLGE.length)
             aus.befunde.push(`FOLGE: ${gefahren.length} von ${FOLGE.length} Schritten gefahren`);
         try {
-            await Promise.race([R("/stop"), new Promise((res) => setTimeout(res, 30000))]);
+            await Promise.race([R("/stop"), sleep(30000)]);
         } catch {}
         aus.werkbankEnde = await beendeBaum(kind, 30000);
         if (aus.werkbankEnde === "waise")
@@ -1306,7 +1306,7 @@ async function selbsttest() {
         };
         let kindLebt = kindPid ? lebt(kindPid) : true;
         for (let i = 0; i < 20 && kindLebt; i++) {
-            await new Promise((res) => setTimeout(res, 100));
+            await sleep(100);
             kindLebt = lebt(kindPid);
         }
         const v = [];

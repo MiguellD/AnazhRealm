@@ -252,7 +252,7 @@ hauptLauf(async () => {
                 for (const weiter = window.__deckel("der Degen der Schmiede", 300); weiter(); ) {
                     const w = pm.userData && pm.userData.heldMesh;
                     if (w && w.userData && w.userData.foundryHeld) break;
-                    await new Promise((r2) => setTimeout(r2, 150));
+                    await sleep(150);
                 }
                 const hmD = pm.userData && pm.userData.heldMesh;
                 res.h.degenStudio = !!(hmD && hmD.userData && hmD.userData.foundryHeld);
@@ -261,7 +261,7 @@ hauptLauf(async () => {
                 for (const weiter = window.__deckel("das Langschwert der Schmiede", 300); weiter(); ) {
                     const w = pm.userData && pm.userData.heldMesh;
                     if (w && w.userData && w.userData.foundryHeld) break;
-                    await new Promise((r2) => setTimeout(r2, 150));
+                    await sleep(150);
                 }
                 const hm = pm.userData && pm.userData.heldMesh;
                 res.h.studio = !!(hm && hm.userData && hm.userData.foundryHeld);
@@ -369,7 +369,7 @@ hauptLauf(async () => {
                 // (5) SPITZHACKE-Probe (Werkzeug-Klasse, s.schaft-Griff) — direkte Quelle + Zahlen.
                 let probe = r._heldFoundryGroup("klinge_spitzhacke");
                 for (const weiter = window.__deckel("die Spitzhacke", 300); probe === "pending" && weiter(); ) {
-                    await new Promise((r2) => setTimeout(r2, 150));
+                    await sleep(150);
                     probe = r._heldFoundryGroup("klinge_spitzhacke");
                 }
                 if (probe && probe !== "pending") {

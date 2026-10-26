@@ -19,7 +19,7 @@ function proben() {
     window.__flatFor = async (r, entry, preset = "gt") => {
         let flat = r._foundryFlattenFor(entry, preset, 0);
         for (const weiter = window.__deckel("das Flat der Gestalt", 300); !(flat && flat.leaves) && weiter(); ) {
-            await new Promise((ok) => setTimeout(ok, 50));
+            await sleep(50);
             flat = r._foundryFlattenFor(entry, preset, 0);
         }
         return flat && flat.leaves ? flat : null;
@@ -44,7 +44,6 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async (REGLER) => {
         const res = { s: {}, n: {}, g: {}, r: {}, b: {} };
-        const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
         const fp = window.__abdruck; // der EINE Abdruck (welt-boot)
 
         // ===== WARM-ANKER: Boot → f.ready → Buch (langschwert + gt) → !_vorrat (__weltDa wartet, bis alles steht) =====

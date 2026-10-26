@@ -70,7 +70,7 @@ hauptLauf(async () => {
             cells = 0;
             if (map) for (const reg of map.values()) cells += reg.cells ? reg.cells.length : 0;
             if (cells > 40) break;
-            await new Promise((r2) => setTimeout(r2, 30));
+            await sleep(30);
         }
         res.cells = cells;
 

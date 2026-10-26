@@ -384,7 +384,6 @@ const server = statikServer();
 
 // ── DIE PROBEN IN DER SEITE (r = die Welt). ──
 async function probe(arg) {
-    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const out = {};
     await window.__weltDa();
     const r = window.anazhRealm;

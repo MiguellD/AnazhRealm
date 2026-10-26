@@ -243,7 +243,6 @@ function leibInstall(cfg) {
     const r = window.anazhRealm;
     const st = r.state;
     const R = cfg.R;
-    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const L = (window.__kamLeib = {});
     let T = 5000;
     // die Kosten: die Feld-Proben eines Aufrufs (der Zähler auf `_fieldDensityAt`, danach fällt er)
@@ -681,7 +680,7 @@ async function leibGang(G) {
                     const d = window.__nahDeckung({ radien: G.nahRadien, gw: G.gw, gh: G.gh, ort: { id: `gang-${art}`, x: p.x, z: p.z, r: 14 }, neu: n === G.nahJe });
                     if (d.deckung > 0) g.nah.push({ bild: n, phase, jeKlasse: d.jeKlasse });
                 }
-                if (n % 20 === 0) await new Promise((res) => setTimeout(res, 0));
+                if (n % 20 === 0) await sleep(0);
             };
             const tasten = (k) => Object.assign(st.keys, { w: false, a: false, s: false, d: false }, k);
             for (let j = 0; j < 10; j++) await bild("stand");
@@ -820,7 +819,6 @@ const server = statikServer({
 
 // ── DIE PROBE IN DER SEITE (r = die Welt) ──
 async function probe(arg) {
-    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;

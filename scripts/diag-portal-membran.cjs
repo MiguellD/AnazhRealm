@@ -49,7 +49,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 // B: die Seite — der Renderer steht, die Membranen sind gebaut; dann ruht der Loop, und je Blick zählt EIN Frame, was der
 // Renderer nach dem Culling zeichnet. `opts.alt`: alle Membranen auf `frustumCulled = false` (der Selbsttest).
 async function blickProbe(opts) {
-    const warte = (ms) => new Promise((q) => setTimeout(q, ms));
     let r = null,
         st = null,
         stand = null;
@@ -81,7 +80,7 @@ async function blickProbe(opts) {
     await window
         .__gebautNach("die Fenster am Ring", {
             fertig: () => (stand = fensterStand()).fenster >= 3 && !stand.wartend.length,
-            takt: async () => (await Promise.all([...r._torZielAtlas.welten.values()].map((z) => z.kommt)), await warte(250)),
+            takt: async () => (await Promise.all([...r._torZielAtlas.welten.values()].map((z) => z.kommt)), await sleep(250)),
             max: 120,
         });
     if (!st || !st.renderer || st.renderer.backend.isWebGPUBackend !== true) return { fehler: "kein WebGPU-Renderer" };

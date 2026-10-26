@@ -59,7 +59,6 @@ async function welt() {
     await page.evaluateOnNewDocument(installWieseSicht);
     await server.zeige(page, 60000);
     const out = await page.evaluate(async (selbst) => {
-        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         const o = {};
         const r = await window.__weltDa();
         const st = r.state;

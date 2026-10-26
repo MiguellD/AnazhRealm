@@ -239,7 +239,7 @@ function atem() {
                         zaehl.arbeit += (W1 ? W1.arbeit : 0) - ar0;
                         for (const k of Object.keys(Z.f)) zaehl.f[k] = (zaehl.f[k] || 0) + Z.f[k] - (f0[k] || 0);
                     }
-                    if (++n % 60 === 0) await new Promise((res) => setTimeout(res, 0));
+                    if (++n % 60 === 0) await sleep(0);
                 }
             const takte = zaehl.takte;
             const d = (x) => +((x || 0) / takte).toFixed(3);
@@ -302,7 +302,7 @@ function atem() {
                     n > 10
                 )
                     break;
-                await new Promise((res) => setTimeout(res, 200));
+                await sleep(200);
             }
             // dann ruht der Bestand: 5 s ohne neuen Eintrag und ohne offenen Chunk-Bau (eine Welt im Aufbau weckt die Fege-Takte
             // selbst — der Zähler sähe ihr Wachsen statt des Atems)
@@ -322,7 +322,7 @@ function atem() {
                     const b = st.architectures.filter((a) => a && a.instanced && a._lodSpecies !== undefined).length;
                     return { ok: true, ms: Math.round(performance.now() - t0), baeume: b, bestand: n };
                 }
-                await new Promise((res) => setTimeout(res, 250));
+                await sleep(250);
             }
             return { ok: false };
         });

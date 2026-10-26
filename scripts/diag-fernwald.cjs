@@ -52,7 +52,6 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = {};
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = await window.__weltDa((r) => r.state.blueprints);
         const AR = r.constructor;
         const st = r.state;
@@ -92,7 +91,7 @@ hauptLauf(async () => {
                 for (let i = 0; g == null && i < 4000; i++) {
                     r._forestDartStand(r._forestSeedInt());
                     r._tickWaldPlan(Infinity);
-                    await new Promise((res) => setTimeout(res, 0));
+                    await sleep(0);
                     g = r._foundryGestaltFor(e, "eiche");
                 }
                 return g;

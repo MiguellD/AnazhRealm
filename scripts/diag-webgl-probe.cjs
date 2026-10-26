@@ -19,7 +19,7 @@
 //   node scripts/diag-webgl-probe.cjs
 // ─────────────────────────────────────────────────────────────────────────
 
-const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.WGLP_PORT || 4671);
 const server = statikServer();
 
@@ -48,7 +48,7 @@ hauptLauf(async () => {
         };
     });
     // Die Welt einige Sekunden LEBEN lassen (der natürliche Loop läuft; swiftshader-GL ist zäh).
-    await new Promise((r) => setTimeout(r, 6000));
+    await sleep(6000);
     const out = await page.evaluate(async () => {
         const r = window.anazhRealm;
         const o = { err: null };
@@ -99,7 +99,7 @@ hauptLauf(async () => {
                 } catch (_e) {
                     o.tickErr = (_e && _e.message) || String(_e);
                 }
-                await new Promise((res) => setTimeout(res, 50));
+                await sleep(50);
             }
             o.frames = st.flightRecorder ? st.flightRecorder.frames : 0;
             o.spielerEndlich = !!pm && [pm.position.x, pm.position.y, pm.position.z].every(Number.isFinite);

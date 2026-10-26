@@ -27,7 +27,7 @@ hauptLauf(async () => {
         const { span } = r._voxelChunkConfig();
         for (let i = 0; i < 160; i++) {
             try { r._gameLoopTick(performance.now()); } catch {}
-            await new Promise((res) => setTimeout(res, 4));
+            await sleep(4);
         }
         return {
             activeRing: st._activeRingRadius,

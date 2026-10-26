@@ -217,7 +217,6 @@ hauptLauf(async () => {
 
     // ── 1: Boot + Settle + Mittag + Buch warm ──
     const boot = await page.evaluate(async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
         let stable = 0,
             last = -1;
@@ -294,7 +293,6 @@ hauptLauf(async () => {
     // ── 1b: auf die Mess-Wiese (der Messort des Haushalts: flach + grün, PFLICHT D) — dort sind Bühne und Kamera
     // wirklich eben.
     const wieseStart = await page.evaluate(async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = window.anazhRealm;
         const [X, Z] = window.__messWiese;
         r.state.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
@@ -322,7 +320,6 @@ hauptLauf(async () => {
 
     // ── 2: Spawn (Wolf · Eiche · Haus) auf flachen Bühnen der Wiese ──
     const spawn = await page.evaluate(async () => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = window.anazhRealm;
         const pm = r.state.playerMesh.position;
         const setzeMittag = () => {
@@ -537,7 +534,6 @@ hauptLauf(async () => {
     const umstellen = (kam, voll = false) =>
         page.evaluate(
             async (kam, voll) => {
-                const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
                 const r = window.anazhRealm;
                 const g = r._voxelSurfaceY(kam.px, kam.pz);
                 r.state.playerMesh.position.set(kam.px, g + 1.8, kam.pz);

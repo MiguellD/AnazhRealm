@@ -78,7 +78,7 @@ hauptLauf(async () => {
             if (map) for (const reg of map.values()) cells += reg.cells ? reg.cells.length : 0;
             return cells;
         };
-        const streuSchritt = async () => (streuTakt(), await new Promise((r2) => setTimeout(r2, 30)));
+        const streuSchritt = async () => (streuTakt(), await sleep(30));
         await window
             .__gebautNach("die Streu um den Spieler", { fertig: () => zellen() > 40 && r._streuWartet(pm) === 0, takt: streuSchritt, max: 1500 });
         res.streuWartet = r._streuWartet(pm);
@@ -156,7 +156,7 @@ hauptLauf(async () => {
         // F-Block (Flat lädt async, 100-ms-Polls).
         const lodTakt = (zahl, bis) => async () => {
             for (let i = 0; i < 40 && !bis(); i++) r._tickScatterLod(pm, 8, zahl);
-            await new Promise((r2) => setTimeout(r2, 150));
+            await sleep(150);
         };
         const gewandelt = () => probe.lod !== lodVorher;
         await window.__gebautNach("der Stufen-Wandel der Probe", { fertig: gewandelt, takt: lodTakt(400, gewandelt), max: 300 });
@@ -203,7 +203,7 @@ hauptLauf(async () => {
             await window
                 .__gebautNach("eine nahe zwei-stufige Zelle", {
                     fertig: zweiNah,
-                    takt: async () => (streuTakt(), r._tickScatterLod(pm, 8, 800), await new Promise((r2) => setTimeout(r2, 60))),
+                    takt: async () => (streuTakt(), r._tickScatterLod(pm, 8, 800), await sleep(60)),
                     max: 500,
                 })
                 .catch(() => (dz2 = null)); // keine nahe da: die Probe baut die Voraussetzung (unten)
@@ -237,7 +237,7 @@ hauptLauf(async () => {
                             takt: async () => {
                                 streuTakt();
                                 for (let i = 0; i < 20; i++) r._tickScatterLod(pm, 8, 800);
-                                await new Promise((r2) => setTimeout(r2, 100));
+                                await sleep(100);
                             },
                             max: 450,
                         });
@@ -343,7 +343,7 @@ hauptLauf(async () => {
                         karte = r._foundryFlattenFor({ seed: 7 }, "strauch", 2);
                         return !!(flat && flat.instanceable && karte && karte.instanceable);
                     },
-                    takt: () => new Promise((r2) => setTimeout(r2, 100)),
+                    takt: () => sleep(100),
                     max: 300,
                 });
             fern.flat = !!(flat && flat.instanceable && flat.lod === 2 && karte && karte.instanceable && karte.lod === 2);

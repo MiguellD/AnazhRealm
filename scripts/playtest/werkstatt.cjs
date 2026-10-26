@@ -2384,7 +2384,7 @@ async function checkBandWCIchWahrheit(ctx) {
             const anImFlow = !!item && item.style.display !== "none" && !!lab && lab.textContent === "Freude";
             for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
             r._updateEmotionFeedback();
-            await new Promise((res2) => setTimeout(res2, 1700));
+            await sleep(1700);
             const ruheAusFlow = !!item && item.style.display === "none";
             r.state.player.emotions.joy = 0.9;
             r._updateEmotionFeedback();
@@ -2433,7 +2433,6 @@ async function checkBandRezeptKatalog(ctx) {
     const portaParamsLen = Array.isArray(pp) ? pp.length : -1;
     const out = (await safeEvaluate(page, async (portaLen) => {
         const res = { a: {}, b: {}, c: {}, d: {}, e: {} };
-        const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
         // ===== WARM-ANKER: Boot → f.ready → Buch+paramsByKind → !_vorrat (120-s-Cap) =====
         const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();

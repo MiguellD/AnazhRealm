@@ -92,7 +92,7 @@ async function boote(page) {
                 if (s && s.voxelChunks && s.voxelChunks.size > 4 && s.voxelWorkerReady && s.voxelWorkerWorldgenSynced)
                     return { ok: true, ms: Math.round(performance.now() - start), seed: s.worldMeta.seed };
             }
-            await new Promise((res) => setTimeout(res, 16));
+            await sleep(16);
         }
         return { ok: false };
     });
@@ -240,7 +240,7 @@ async function s0Probe(page, station, schein) {
                     } catch {
                         /* ein Takt-Fehler zählt der Page-Error */
                     }
-                    await new Promise((res) => setTimeout(res, 16));
+                    await sleep(16);
                 }
             };
             const P = Object.getPrototypeOf(r);
@@ -500,7 +500,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                     } catch {
                         /* ein Takt-Fehler zählt der Page-Error */
                     }
-                    await new Promise((res) => setTimeout(res, 16));
+                    await sleep(16);
                 }
             };
             // Die Welt reift aus (Genesis-Ring, Vorschauen, Start-Dorf der Wildnis): erst wenn ihr Bestand 4 s steht, misst
@@ -1111,7 +1111,7 @@ async function lichtLauf() {
                                     /* ein Takt-Fehler zählt der Page-Error */
                                 }
                                 laengsterTakt = Math.max(laengsterTakt, performance.now() - t);
-                                await new Promise((res) => setTimeout(res, 16));
+                                await sleep(16);
                             }
                         };
                         if (!gestalt) {
@@ -1294,7 +1294,7 @@ async function lichtLauf() {
                         cam.lookAt(f.x, g + 0.2, f.z + 1e-4);
                         cam.updateMatrixWorld(true);
                         // die Plätze des Pools blenden in LICHT_POOL.blendeS ein: die Wand-Uhr läuft, ehe der Schuss misst
-                        await new Promise((res) => setTimeout(res, 1000 * r.constructor.LICHT_POOL.blendeS + 100));
+                        await sleep(1000 * r.constructor.LICHT_POOL.blendeS + 100);
                         // der Satz „messung" (K32, scripts/lib/abnahme-urteil.cjs): der Schuss ist ein Mess-Frame der Nacht — sein
                         // Urteil liest den Kreis um das Feuer (kreis, ton) aus den Pixeln; die Belichtungs-Zeile des Beweis-Satzes
                         // (Tag-Bühne, abgesoffen ≤ 60 %) warf hier an der Mitternacht (schwarz 71,9 %, Kreis hell)
@@ -1448,7 +1448,7 @@ async function lichtLauf() {
             cam.position.set(f.x - 3.6, g(f.x, f.z) + 1.8, f.z - 3.8);
             cam.lookAt(f.x + 0.6, g(f.x, f.z) + 0.6, f.z - 0.6);
             cam.updateMatrixWorld(true);
-            await new Promise((res) => setTimeout(res, 700));
+            await sleep(700);
             let auf = null;
             // die Figuren im Licht des Pools zeichnen mit (der Feuerkreis allein läse sie nicht)
             const nahLos = nahM
@@ -1477,7 +1477,7 @@ async function lichtLauf() {
             cam.position.set(f.x - 6, g(f.x - 6, f.z) + 1.7, f.z);
             cam.lookAt(f.x, g(f.x, f.z) + 0.3, f.z + 1e-4);
             cam.updateMatrixWorld(true);
-            await new Promise((res) => setTimeout(res, 700));
+            await sleep(700);
             const nahLos6 = nahM ? window.__s0Nah(new window.THREE.Vector3(f.x, g(f.x, f.z), f.z), nahM + 6) : null;
             try {
                 for (let i = 0; i < 2; i++) {

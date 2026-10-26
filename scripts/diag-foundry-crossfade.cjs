@@ -315,7 +315,6 @@ async function runPartB() {
 
     const out = await page.evaluate(async () => {
         const res = { samples: [], err: null };
-        const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
         // ── Boot + Foundry abwarten ──
         const r = await window.__weltDa();
         const st = r.state;
@@ -338,7 +337,7 @@ async function runPartB() {
         // pumpt die Schlange, bis sie steht: die Wärme-Frist unten zählt dann nur Bauten, nie den Plan (Lehre 26)
         for (let i = 0; i < 2000 && r._foundryGestaltFor(entry, preset) == null; i++) {
             r._tickWaldPlan(Infinity);
-            await new Promise((res2) => setTimeout(res2, 0)); // der Wald-Faden rechnet die Schlange (K60-4)
+            await sleep(0); // der Wald-Faden rechnet die Schlange (K60-4)
         }
         res.gestalt = r._foundryGestaltFor(entry, preset);
         // ── ALLE drei Stufen VOR der Baseline wärmen (kein Rewarm-Störer im Sweep):
@@ -1253,7 +1252,7 @@ async function runPartB() {
         // pumpt die Schlange, bis sie steht (Bau-Ereignisse, nie Wanduhr)
         for (let i = 0; i < 2000 && r._foundryGestaltFor(e, preset) == null; i++) {
             r._tickWaldPlan(Infinity);
-            await new Promise((res2) => setTimeout(res2, 0)); // der Wald-Faden rechnet die Schlange (K60-4)
+            await sleep(0); // der Wald-Faden rechnet die Schlange (K60-4)
         }
         const fl0 = r._foundryFlattenFor(e, preset, 0),
             fl1 = r._foundryFlattenFor(e, preset, 1);

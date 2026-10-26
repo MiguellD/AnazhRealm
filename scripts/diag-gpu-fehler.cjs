@@ -6,7 +6,7 @@
 //   node scripts/diag-gpu-fehler.cjs --selftest          Port: GPU_FEHLER_PORT (Standard 4423)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const { GPU_FEHLER_INSTALL, GPU_ABGABE } = require("./lib/gpu-fehler.cjs");
 
 const PORT = Number(process.env.GPU_FEHLER_PORT || 4423);
@@ -58,7 +58,7 @@ async function probe() {
     lauf(true);
     const nachVoll = F.draws.length;
     await dev.queue.onSubmittedWorkDone();
-    await new Promise((r) => setTimeout(r, 300));
+    await sleep(300);
     return { nachLuecke, nachVoll, draw: F.draws[0] || null, device: F.device.slice(0, 2) };
 }
 
@@ -67,8 +67,7 @@ async function gegendruck([name, spaet]) {
     const dev = await (await navigator.gpu.requestAdapter()).requestDevice({ label: name });
     const q = dev.queue;
     const roh = q.onSubmittedWorkDone;
-    q.onSubmittedWorkDone = () =>
-        spaet < 0 ? new Promise(() => {}) : roh.call(q).then(() => new Promise((r) => setTimeout(r, spaet)));
+    q.onSubmittedWorkDone = () => (spaet < 0 ? new Promise(() => {}) : roh.call(q).then(() => sleep(spaet)));
     setInterval(() => q.submit([dev.createCommandEncoder().finish()]), 50);
 }
 
@@ -97,13 +96,13 @@ hauptLauf(async () => {
         s: (Date.now() - t0) / 1000,
     });
     await page.evaluate(gegendruck, ["spaet", 3000]);
-    await new Promise((r) => setTimeout(r, 3500));
+    await sleep(3500);
     const spaet = await abgabe();
     await page.evaluate(() => ((window.__raf = requestAnimationFrame), (window.requestAnimationFrame = () => 0)));
     const ohneBild = await abgabe();
     await page.evaluate(() => (window.requestAnimationFrame = window.__raf));
     await page.evaluate(gegendruck, ["haengt", -1]);
-    await new Promise((r) => setTimeout(r, 500));
+    await sleep(500);
     const zwei = await abgabe();
     await browser.close();
     server.close();

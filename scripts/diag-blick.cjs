@@ -42,7 +42,6 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(
         async (zeitArg, blickArg) => {
-            const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
             const res = { schuesse: {} };
             const r = await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
             // Settle: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`, der Takt der Seite)

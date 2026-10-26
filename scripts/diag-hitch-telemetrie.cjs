@@ -13,7 +13,7 @@
 //   Exit 0 = alle Bänder GRÜN (inkl. Selbst-Test: ein Fake-Trace ohne die neuen
 //   Felder MUSS rot melden) · Exit 1 = mindestens ein Band ROT (mit Diagnose).
 "use strict";
-const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 // Port der Linse (4463 — neben diag-blick 4461, nie der save-server 4312).
@@ -94,7 +94,6 @@ function bauUhrInstall() {
 function erstWandInstall(BUNDLE_FRAMES) {
     const r = window.anazhRealm;
     const rend = r.state.renderer;
-    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const U = window.__bauUhr || null;
     // (4b) DIE ERST-ZEICHNUNG: drei neue Stoffe vor die Kamera, einmal am EINEN Ort (die Nachbildung von
     // `_renderObjectDirect` am Renderer-Exemplar) und einmal auf dem Vendor-Weg (der Gegen-Lauf, MUSS rot sein). Gezählt
@@ -695,7 +694,6 @@ hauptLauf(async () => {
     console.log("WebGPU-Probe:", gpu);
 
     const out = await page.evaluate(async (laufzeitMs) => {
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const res = {};
         const r = await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
         // Settle wie diag-blick: Chunks-Plateau (großzügig — swiftshader ist zäh).
@@ -878,7 +876,7 @@ hauptLauf(async () => {
                             `, Bau-Uhr angelegt/gebaut/abgesagt ${s.ereignis}`
                     );
                 }
-                await new Promise((r) => setTimeout(r, 250));
+                await sleep(250);
             }
             const { v, stauMs } = await page.evaluate(() => {
                 const w = window.__erstRuf.wert;

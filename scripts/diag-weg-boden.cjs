@@ -330,7 +330,7 @@ hauptLauf(async () => {
         };
         for (const weiter = window.__deckel("Buch und Ring", 4500); !warm() && weiter(); ) {
             r._tickVoxelChunkStreaming(r.state.playerMesh.position);
-            await new Promise((ok) => setTimeout(ok, 20));
+            await sleep(20);
         }
     });
     const messen = async (stoerung) =>
