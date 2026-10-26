@@ -25,7 +25,10 @@ if [ -z "$GPU_SCHLOSS" ]; then
     if [ -d /c/Users/micha/AppData/Local/Temp ]; then GPU_SCHLOSS=/c/Users/micha/AppData/Local/Temp/claude/gpu-schloss; else GPU_SCHLOSS="${TMPDIR:-/tmp}/claude/gpu-schloss"; fi
 fi
 GPU_HOOK_LOG=${GPU_HOOK_LOG:-/c/actions-runner/hooks/hook.log}
-GPU_NACHT=${GPU_NACHT-0325-0415}
+# keine Nachtruhe mehr (27.10., Schöpfer: „wir sind Maschinen“): 0325–0415 hielt jede Nacht 50 min beide GPUs leer, damit der
+# nächtliche echt-Job (cron 02:30 UTC) nie wartet — den schützt schon die Vorfahrt des Runners (gs_worker, ci_wartet) wie jeden
+# echt-Job am Tag. GPU_NACHT=HHMM-HHMM setzt sie ausdrücklich (der Selbsttest prüft den Fall).
+GPU_NACHT=${GPU_NACHT-}
 GPU_WORKER_BILD=${GPU_WORKER_BILD:-Runner.Worker.exe}
 GPU_ICH_PID=$(cat /proc/$$/winpid 2>/dev/null || echo $$)
 GPU_PLATZ=
