@@ -66,7 +66,7 @@ class AnazhRealm_werkstatt_vorschau {
             list.appendChild(row);
         }
         // W-A1 (Katalysator §5) — DIE „STUDIO-REZEPTE"-SEKTION: das LIVE-Buch unter den
-        // Blueprints (jedes Rezept ohne Katalog-Blueprint — heute mindestens `gras`).
+        // Blueprints (jedes Rezept ohne Katalog-Blueprint — heute Farn, Strauch, Fels-Sorten, Klang, Körper, Gattung).
         this._workshopAppendStudioRecipeSection(list, ws);
         // V18.36 — den Such-Filter nach dem Neu-Aufbau wieder anwenden (Zeilen neu erzeugt).
         this._applyWorkshopFilter();
@@ -74,7 +74,8 @@ class AnazhRealm_werkstatt_vorschau {
 
     // Rezept-Ids des LIVE-Buchs OHNE Katalog-Blueprint: gedeckt ist ein Rezept, wenn ein Blueprint unter
     // seiner Id existiert ODER via KIND_POLICY-Präfix darauf zeigt (baum_eiche → eiche, fahrzeug_gt → gt).
-    // Der Rest (`gras`/`blume`/Fels-Sorten) ist nur hier regelbar; place.mode entscheidet die Welt.
+    // Der Rest (Farn, Strauch, Fels-Sorten …) ist nur hier regelbar (Blume und Gras sind seit KI K2 Natur-Baupläne);
+    // place.mode entscheidet die Welt.
     _workshopStudioRecipeIds() {
         const f = this._foundry;
         if (!f || !f.recipes) return [];
@@ -811,17 +812,29 @@ class AnazhRealm_werkstatt_vorschau {
         return Object.keys(out).length ? out : null;
     }
 
+    // Die Seele einer Gattung (TETRAPODA_SOUL_MAP Seele → Rezept, rückwärts gelesen): der exakte Schlüssel zuerst (wolf-Rezept
+    // → wolf-Seele), sonst die erste gemappte Seele (deer → wesen); null ohne eine. Leser: der Ofen der Werkstatt und das Werk
+    // der Gattung aus einem Programm (`_dslSpawnStudioItems`) — dieselbe Seele für denselben Guss.
+    _gattungsSeele(preset) {
+        const SM = AnazhRealm.TETRAPODA_SOUL_MAP;
+        if (SM[preset] === preset && AnazhRealm.CREATURE_SOULS[preset]) return preset;
+        for (const k in SM) if (SM[k] === preset && AnazhRealm.CREATURE_SOULS[k]) return k;
+        return null;
+    }
+
     // DIE EINE STUDIO-VORSCHAU-QUELLE (_workshopStudioPreviewFrom) für Bauplan- UND Rezept-Auswahl,
     // DREI-WERTIG: Group · "pending" (Asset/Worker/ov-Bau unterwegs) · false (Foundry kann es nicht
     // → klassischer Pfad). ov-Vorschau cache-FREI — sie vergiftet NIE den Welt-Cache.
-    // Der Host-OFEN für MESHFREI-Domänen (koerper · kreatur · klang exportieren kein Mesh): Guss via
-    // bauTier/bauMensch, sonst endlose request→null-Schleife. Rückgabe Group · false (klang: kein 3D)
-    // · undefined (keine Ofen-Domäne → Foundry-Pfad). Memo je Schlüssel = EIN lebender Guss, der dem Ofen gehört; der
-    // Wechsel entsorgt ihn über `_disposeSoulGroup` (das Einzelstück fällt, geteilte Vorlagen bleiben).
+    // Der Host-OFEN für die Arten mit Werk-Verb (KIND_POLICY `werk`: koerper · kreatur · klang exportieren kein Mesh): Guss
+    // via bauTier (die Gattung, "wesen") bzw. bauMensch (die Prägung des Körpers), sonst endlose request→null-Schleife.
+    // Rückgabe Group · false (eine Prägung ohne Körper, der Klang: kein 3D) · undefined (keine Ofen-Domäne → Foundry-Pfad).
+    // Memo je Schlüssel = EIN lebender Guss, der dem Ofen gehört; der Wechsel entsorgt ihn über `_disposeSoulGroup` (das
+    // Einzelstück fällt, geteilte Vorlagen bleiben).
     _workshopOvenPreview(rec, preset, ov, lod) {
         const kind = rec && rec.kind;
-        if (kind !== "kreatur" && kind !== "koerper" && kind !== "klang") return undefined;
-        if (kind === "klang") return false;
+        const werk = kind && AnazhRealm.KIND_POLICY[kind] ? AnazhRealm.KIND_POLICY[kind].werk : null;
+        if (!werk) return undefined;
+        if (werk !== "wesen" && preset !== AnazhRealm.KOERPER_HOST_RECIPE) return false;
         // Die LOD-Wahl (ws.recipeLod, aus den kindStages-Vertragsdaten) reist bis in den Ofen-Guss: er
         // trägt nah + fern aus DERSELBEN Pipe, die Wahl toggelt sie — wie die Welt am Distanz-Band.
         const lodN = Number.isFinite(lod) ? Math.max(0, lod | 0) : 0;
@@ -831,22 +844,9 @@ class AnazhRealm_werkstatt_vorschau {
         if (memo && memo.group) this._disposeSoulGroup(memo.group);
         this._wsOvenMemo = null;
         let group = null;
-        if (kind === "kreatur") {
-            // Rezept → Seele: exakter Schluessel-Match zuerst (wolf-Rezept → wolf-Seele,
-            // exakter Schlüssel zuerst), sonst die erste gemappte Seele (deer→wesen).
-            const SM = AnazhRealm.TETRAPODA_SOUL_MAP;
-            let soulKey = SM[preset] === preset && AnazhRealm.CREATURE_SOULS[preset] ? preset : null;
-            if (!soulKey) {
-                for (const k in SM) {
-                    if (SM[k] === preset && AnazhRealm.CREATURE_SOULS[k]) {
-                        soulKey = k;
-                        break;
-                    }
-                }
-            }
-            if (soulKey) {
-                group = this._buildCreatureGroup(soulKey, { dialsOv: ov || null, eigen: true });
-            }
+        if (werk === "wesen") {
+            const soulKey = this._gattungsSeele(preset);
+            if (soulKey) group = this._buildCreatureGroup(soulKey, { dialsOv: ov || null, eigen: true });
         } else group = this._buildHumanGroup(ov || undefined, { eigen: true });
         if (!group || !group.children) return false;
         // Die LOD-Wahl der Vorschau schaltet die Stufe am EINEN Schalter der Gelenk-Gestalt (Tier und Mensch): L0 = die

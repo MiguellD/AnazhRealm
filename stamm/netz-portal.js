@@ -1258,18 +1258,25 @@ class AnazhRealm_netz_portal {
         if (!msg || typeof msg !== "object" || Array.isArray(msg) || typeof msg.kind !== "string") return false;
         const praegung = this._studioWerkPruefen(msg.kind, msg.preset, msg.ov, msg.seed);
         if (!praegung) return false;
-        this._ensureWorkshopState().studioOv[msg.preset] = praegung;
-        if (msg.preset === AnazhRealm.KOERPER_HOST_RECIPE) {
+        this._praegungSetzen(msg.kind, msg.preset, praegung);
+        this.log(`Studio-Übergabe: das Werk „${msg.preset}" (${msg.kind}) steht in der Prägung der Welt.`, "INFO");
+        return true;
+    }
+
+    // DER EINE SCHREIBER DER PRÄGUNG eines Rezepts (ws.studioOv[Rezept]) samt seinen lebenden Lesern: der Avatar gießt neu (die
+    // Prägung des Mensch-Rezepts), der Klang der Welt spielt das Genre. Rufer: die Übergabe eines Studios (`_studioUebergabeEmpfang`,
+    // must-ignore geprüft) und das Werk einer Prägungs-Art aus einem Programm (`_dslSpawnStudioItems`, fail-closed geklemmt, KI K2).
+    _praegungSetzen(kind, preset, praegung) {
+        this._ensureWorkshopState().studioOv[preset] = praegung;
+        if (preset === AnazhRealm.KOERPER_HOST_RECIPE) {
             try {
                 this.applyPlayerSoul((this.state.player && this.state.player.soul) || "human");
             } catch (_e) {
-                this._stoffBruch("der Avatar (Studio-Übergabe)", _e);
+                this._stoffBruch("der Avatar (Prägung)", _e);
             }
             // die Sicht folgt dem State sofort: der mensch-Eintrag des Ich-Selects trägt „✦ Studio-Gestalt"
             if (typeof this._refreshSoulSelect === "function") this._refreshSoulSelect();
-        } else if (msg.kind === "klang") this.state.klangPreset = msg.preset;
-        this.log(`Studio-Übergabe: das Werk „${msg.preset}" (${msg.kind}) steht in der Prägung der Welt.`, "INFO");
-        return true;
+        } else if (kind === "klang") this.state.klangPreset = preset;
     }
 
     // Die GEWÄHR — nur durch die R2-Host-Geste (außerhalb jedes iframes,
