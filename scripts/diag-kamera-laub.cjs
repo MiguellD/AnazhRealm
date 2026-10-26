@@ -16,7 +16,7 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
@@ -247,7 +247,6 @@ function leibInstall(cfg) {
     const r = window.anazhRealm;
     const st = r.state;
     const R = cfg.R;
-    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const L = (window.__kamLeib = {});
     let T = 5000;
     // die Kosten: die Feld-Proben eines Aufrufs (der Zähler auf `_fieldDensityAt`, danach fällt er)
@@ -687,7 +686,7 @@ async function leibGang(G) {
                     const d = window.__nahDeckung({ radien: G.nahRadien, gw: G.gw, gh: G.gh, ort: { id: `gang-${art}`, x: p.x, z: p.z, r: 14 }, neu: n === G.nahJe });
                     if (d.deckung > 0) g.nah.push({ bild: n, phase, jeKlasse: d.jeKlasse });
                 }
-                if (n % 20 === 0) await new Promise((res) => setTimeout(res, 0));
+                if (n % 20 === 0) await sleep(0);
             };
             const tasten = (k) => Object.assign(st.keys, { w: false, a: false, s: false, d: false, shift: !!sprint }, k);
             tasten({});
@@ -1112,7 +1111,7 @@ async function probe(arg) {
     return out;
 }
 
-(async () => {
+hauptLauf(async () => {
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST (ohne Welt) ===");
         // je Fall das Urteil über die Messung: `soll` null heißt 0 Täter, sonst nennt die Linse ihn beim Namen (Anfang der Zeile)
@@ -1375,7 +1374,4 @@ async function probe(arg) {
     }
     console.log("\n✅ GRÜN — die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");
     process.exit(0);
-})().catch((e) => {
-    console.error("Kamera-Laub-Linse-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

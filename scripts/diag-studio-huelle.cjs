@@ -31,7 +31,7 @@
 //   node scripts/diag-studio-huelle.cjs --engine     DER GANG je Seite der Hülle: ihre Anfragen (H6), ihre Sitzung (H3),
 //                                                    die L0 eines Ofen-Labors (H4); Port STUDIO_HUELLE_PORT (8742)
 "use strict";
-const { statikServer, starteBrowser, ROOT } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -511,7 +511,7 @@ async function panoramaBacken(nur) {
     if (rot) process.exitCode = 1;
 }
 
-(async () => {
+hauptLauf(async () => {
     const a = process.argv;
     if (a.includes("--panorama")) {
         const n = a[a.indexOf("--panorama") + 1];
@@ -529,7 +529,4 @@ async function panoramaBacken(nur) {
         process.exit(1);
     }
     console.log(`✅ gate:studio-huelle: ${STUDIOS.length} Studios + ${NEBENWELTEN.length} Nebenwelten auf der EINEN Hülle, kein Hand-Regler, keine Brücken-Kopie`);
-})().catch((e) => {
-    console.error("studio-huelle-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

@@ -4,11 +4,11 @@
 // darf über Budget gebacken werden. Misst die Konvergenz mit einer Zahl.
 //   node scripts/diag-foundry-deadlock.cjs
 
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.DEADLOCK_PORT || 4581);
 const server = statikServer();
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
@@ -38,7 +38,7 @@ const server = statikServer();
                 try {
                     r._gameLoopTick(performance.now());
                 } catch {}
-                await new Promise((res) => setTimeout(res, 0));
+                await sleep(0);
             }
 
             const archs = () => (Array.isArray(r.state.architectures) ? r.state.architectures : []);
@@ -113,7 +113,7 @@ const server = statikServer();
                     // ein Wurf im Takt ist ROT beim Namen, nie still verschluckt
                     out.err = out.err || "Takt " + i + ": " + ((e && e.message) || String(e));
                 }
-                await new Promise((res) => setTimeout(res, 0)); // dem Worker die Message-Runde geben
+                await sleep(0); // dem Worker die Message-Runde geben
                 out.ticks++;
             }
             out.foundryAfter = foundry();
@@ -158,7 +158,4 @@ const server = statikServer();
         `\n✅ GRÜN — unter Dauer-Über-Budget konvergierten +${converged} Nah-Bäume von KALT zu Foundry (vorher: bakeBudget=0 → 0). Der Deadlock ist geheilt.`
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Deadlock-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

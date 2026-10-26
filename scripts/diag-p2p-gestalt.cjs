@@ -20,14 +20,14 @@
 //
 //   node scripts/diag-p2p-gestalt.cjs
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.P2P_GESTALT_PORT || 4457);
 const server = statikServer();
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
@@ -253,10 +253,4 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     console.log(
         "\n✅ GRÜN — die Studio-Übergabe reist zu den Peers: der soul-Kanal trägt die Avatar-Gestalt, der Empfänger validiert am SELBEN Validator, der Peer-Guss führt sie transient (kein Leck), zwei Peers bleiben eigenständig (distinkte Ofen-Keys), und der eigene Avatar ist unberührt."
     );
-})().catch((e) => {
-    console.error("DIAG-FEHLER:", e);
-    try {
-        server.close();
-    } catch {}
-    process.exit(1);
 });

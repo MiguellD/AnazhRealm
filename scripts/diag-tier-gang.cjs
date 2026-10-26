@@ -20,7 +20,7 @@
 //   wählt den Galopp → die Kreuz-Probe feuert. Jede Zeile des Selbsttests trägt „[Selbsttest]“ (ihr ❌ ist das Soll).
 //   node scripts/diag-tier-gang.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.TIER_GANG_PORT) || 4449;
 const SELBST = process.argv.includes("--selftest");
@@ -554,7 +554,7 @@ const GANG = (k) => {
     /* eslint-enable no-undef */
 };
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     // je Seite ihr Fehler beim Namen und (wo sie gemessen wird) der EINE Schlupf — ohne Frist (ein hängender Boot steht in der Stall-Akte)
@@ -744,7 +744,4 @@ const GANG = (k) => {
         `\n✅ GRÜN — jede Gattung setzt ihre Pfoten (Schlupf ≤ ${SCHWELLE}) in Schritt, Trab und Galopp; der Mensch geht und läuft nach demselben Gesetz (Kadenz ≥ ${KADENZ_GEHEN}, Töne ± 15 %), in der Welt und im Körper-Studio.`
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("GLEIT-LINSE-FEHLER:", e);
-    process.exit(1);
 });

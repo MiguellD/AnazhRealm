@@ -94,7 +94,7 @@ function check(name, ok) {
                 }
                 const stable = performance.now() - lastGrowth;
                 if ((built >= TARGET && stable >= PLATEAU_MS && elapsed >= MIN_MS) || elapsed >= CAP_MS) break;
-                await new Promise((res) => setTimeout(res, 0));
+                await sleep(0);
             }
             r.state.voxelWorker = _warmupSavedWorker;
         });

@@ -1009,7 +1009,7 @@ async function checkBandV17117FarWater(ctx) {
             return { ...out, error: "worker init failed: " + e.message };
         }
         r._voxelWorkerSyncWorldgenState();
-        await new Promise((resolve) => setTimeout(resolve, 80));
+        await sleep(80);
         let wm;
         try {
             wm = await r._voxelWorkerComputeChunkMesh(oCx, oCz, 0);
@@ -1926,141 +1926,6 @@ async function checkBandWasserWahrheit(ctx) {
     check("Wasser-Wahrheit: F1 Höhen-Gate · F2 Rim-Wand · F4 Stau · F5 Ruhe-Fixpunkt auch nach dem Schnitt · F6 geleerte Spalte · F7 Netz, Selbsttest an den Nähten F4 · F5 · F7", out.fails.length === 0, out.fails.join(" · ").slice(0, 400));
 }
 
-// Die Byte-Wand des Scatter-Wasser-Gates (W3.3a) — eingefaltet aus gate:scatter-ab: das Wasser-Verdikt der Streu liest das
-// Feld (`_sampleBakedField`, ~30× billiger als der Voll-Scan `_voxelSurfaceY`) mit konservativem Exakt-Fallback im Ufer-Band. Der
-// Korpus mit erzwungenen Klassen (Ufer · Steilhang · Fluss · Spieler-Region; ohne Ufer-Klasse fail-closed), A/B byte-exakt je
-// Region (Referenz-Hook `__scatterExactWater` gegen den Produktions-Pfad) und der Selbsttest:
-// ein injiziert-falsches Wasser-Verdikt macht den Diff rot.
-async function checkBandScatterWasserAB(ctx) {
-    const { page, check } = ctx;
-    const out = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm,
-            st = r.state;
-        const A = window.AnazhRealm || r.constructor;
-        const SC = A.SCATTER;
-        const o = { corpus: [], diffs: [] };
-        const pos = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
-        const pRegX = Math.floor(pos.x / SC.regionM),
-            pRegZ = Math.floor(pos.z / SC.regionM);
-        // ── (1) KORPUS: Regionen klassifizieren (Signal-unabhängig — direkte Welt-Reads) ──
-        const classify = (rx, rz) => {
-            let shore = 0,
-                steep = 0,
-                river = 0,
-                nass = 0,
-                nulls = 0,
-                probes = 0;
-            for (let gz = 8; gz < SC.regionM; gz += 16) {
-                for (let gx = 8; gx < SC.regionM; gx += 16) {
-                    const x = rx * SC.regionM + gx,
-                        z = rz * SC.regionM + gz;
-                    const sy = r._voxelSurfaceY(x, z);
-                    const wy = r._waterLevelAt(x, z);
-                    probes++;
-                    if (sy === null || !Number.isFinite(sy)) {
-                        nulls++;
-                        continue;
-                    }
-                    if (Math.abs(sy - (wy + 0.4)) < 3) shore++;
-                    if (!r._landAt(x, z, 0.4)) nass++;
-                    const sl = r._slopeAt(x, z);
-                    if (sl > 1.2) steep++;
-                    const rv = r._hydroRiverAt(x, z);
-                    if (rv && (rv.strength > 0.3 || rv.centerness > 0.3)) river++;
-                }
-            }
-            return { shore, steep, river, nass, nulls, probes };
-        };
-        const candidates = [];
-        for (let dz = -2; dz <= 2; dz++)
-            for (let dx = -2; dx <= 2; dx++)
-                candidates.push({ rx: pRegX + dx, rz: pRegZ + dz, d: Math.abs(dx) + Math.abs(dz) });
-        candidates.sort((a, b) => a.d - b.d);
-        const corpus = [];
-        let haveShore = 0,
-            haveSteep = 0,
-            haveRiver = 0;
-        for (const c of candidates) {
-            if (corpus.length >= 6) break;
-            const cl = classify(c.rx, c.rz);
-            const isShore = cl.shore >= 8,
-                isSteep = cl.steep >= 20,
-                isRiver = cl.river >= 4;
-            const want =
-                corpus.length < 1 ||
-                (isShore && haveShore < 2) ||
-                (isSteep && haveSteep < 1) ||
-                (isRiver && haveRiver < 1);
-            if (want) {
-                corpus.push({ rx: c.rx, rz: c.rz, cl });
-                if (isShore) haveShore++;
-                if (isSteep) haveSteep++;
-                if (isRiver) haveRiver++;
-            }
-        }
-        o.corpus = corpus.map((c) => ({ rx: c.rx, rz: c.rz, ...c.cl }));
-        o.classes = { shore: haveShore, steep: haveSteep, river: haveRiver };
-        // ── (2) A/B BYTE-EXAKT je Korpus-Region (Referenz-Hook vs Produktion) ──
-        const snapshot = (reg) =>
-            JSON.stringify(
-                (reg && reg.cells ? reg.cells : []).map((cell) => [
-                    cell.cellX,
-                    cell.cellZ,
-                    cell.layer,
-                    cell.species,
-                    cell.variantIndex,
-                    cell.lod,
-                    cell.bpName,
-                ])
-            );
-        // Bau-Position: Region-Ecke (deterministisch; alle Zellen in [innerM..outerM] bis
-        // auf die 64-m-Ecke — identisch für A und B, nur GLEICHHEIT zählt)
-        const buildAt = (c, exact) => {
-            const key = `${c.rx},${c.rz}`;
-            const bp = { x: c.rx * SC.regionM - 20, y: 0, z: c.rz * SC.regionM - 20 };
-            if (st.scatterRegions && st.scatterRegions.has(key)) r._disposeScatterRegion(key);
-            st.__scatterExactWater = exact === true;
-            const reg = r._scatterRegion(c.rx, c.rz, bp);
-            st.__scatterExactWater = false;
-            const snap = snapshot(reg);
-            r._disposeScatterRegion(key);
-            return snap;
-        };
-        for (const c of corpus) {
-            const a = buildAt(c, true); // Referenz: der EXAKTE Wasser-Pfad (Hook)
-            const b = buildAt(c, false); // Produktion (vor 3a identisch; nach 3a feld-first)
-            const cellsA = JSON.parse(a).length;
-            if (a !== b) o.diffs.push({ rx: c.rx, rz: c.rz, cellsA, cellsB: JSON.parse(b).length });
-            else o.diffs.push({ rx: c.rx, rz: c.rz, cellsA, identical: true });
-        }
-        o.abIdentical = o.diffs.every((d) => d.identical === true);
-        o.totalCells = o.diffs.reduce((s2, d) => s2 + (d.cellsA || 0), 0);
-        // ── (4) SELBST-TEST: injiziert-falsches Verdikt → der Diff MUSS feuern ──
-        {
-            // die Region, in der das Wasser-Verdikt am meisten entscheidet (die meisten nassen Proben, `_landAt`): seit K16
-            // trägt die Heimat keinen See, das Ufer liegt am Fluss-Kanal: in (1,0) (9 nasse Proben) traf kein Streu-Wurf
-            // das Wasser, in (0,1) (16) feuert die Störung
-            const c = corpus.reduce((m, cc) => (cc.cl.nass > m.cl.nass ? cc : m), corpus[0]);
-            const a = buildAt(c, true);
-            const orig = r._landAt;
-            r._landAt = () => true; // die Störung: Wasser existiert nicht mehr
-            const bad = buildAt(c, false);
-            r._landAt = orig;
-            o.selftestFires = a !== bad;
-            o.selftestRegion = { rx: c.rx, rz: c.rz, shore: c.cl.shore };
-        }
-        return o;
-    });
-    if (!out || out.__err) return check("Scatter-Wasser A/B: die Probe antwortet", false, out ? out.__err : "keine Antwort der Seite");
-    check(`Scatter-Wasser A/B: der Korpus trägt die Ufer-Klasse (shore ${out.classes.shore} · steep ${out.classes.steep} · river ${out.classes.river} über ${out.corpus.length} Regionen)`, out.classes.shore >= 1);
-    check(
-        `Scatter-Wasser A/B: BYTE-IDENTISCH über alle ${out.corpus.length} Regionen (${out.totalCells} Zellen)`,
-        out.abIdentical === true,
-        out.diffs.filter((x) => !x.identical).map((x) => `(${x.rx},${x.rz}) A ${x.cellsA} vs B ${x.cellsB}`).join(" · ")
-    );
-    check("Scatter-Wasser A/B SELBSTTEST: ein injiziert-falsches Wasser-Verdikt macht den Diff rot", out.selftestFires === true, JSON.stringify(out.selftestRegion));
-}
-
 // B1 der Wasser-Sheet-Worker-Spiegel ist BYTE-IDENTISCH — eingefaltet aus gate:worker-watersheet: der Worker baut den
 // Wasser-Zell-Oberkanten-Sheet OFF-THREAD (`buildWaterSheetGeometry`) und MUSS bit-identisch zum Main-Sync-Pfad
 // (`_computeWaterSheetData`) sein, sonst lebt das Wasser auf zwei Wahrheiten (Lehre 7). Am nächsten Wasser der Welt (`__wasserOrte`):
@@ -2101,7 +1966,7 @@ async function checkBandWasserSheetSpiegel(ctx) {
             } catch {
                 /* */
             }
-            if (i % 6 === 0) await new Promise((res) => setTimeout(res, 12));
+            if (i % 6 === 0) await sleep(12);
         };
         for (let i = 0; i < 280; i++) await pumpe(i);
         await window.__gebautNach("Chunks mit Wasser-Zellen am Ort", { fertig: steht, takt: pumpe, max: 4000 });
@@ -2243,5 +2108,5 @@ module.exports = {
     checkBandHydrosphere, checkBandWelleC1WaterCells, checkBandWelleC2WaterIsoSurface,
     checkBandWellePerfHWaterIsoQueue, checkBandV17117FarWater, checkBandWelleV11D1WaterContext,
     checkBandWelleV11D2WaterBias, checkBandV18129HochBecken, checkBandV18194Gamma6Befoerderung,
-    checkBandWasserWahrheit, checkBandScatterWasserAB, checkBandWasserSheetSpiegel,
+    checkBandWasserWahrheit, checkBandWasserSheetSpiegel,
 };

@@ -25,7 +25,7 @@
 // Lauf via `npm run audit:strict`. Strikter als playtest (auch warnings
 // werden zu exits).
 
-const { starteBrowser, nullRenderer, ROOT, startProc, eigenePorte, warteAufWelt } = require("./lib/welt-boot.cjs");
+const { starteBrowser, nullRenderer, ROOT, startProc, eigenePorte, warteAufWelt, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -189,10 +189,6 @@ async function auditStateAndMethods() {
 
             // Bekannt-fehlerhafte / dynamische Pfade die wir whitelisten
             const whitelist = new Set([
-                // W3.3a — TEST-HOOK der gate:scatter-ab-Byte-Wand (Legacy-Gate-Ordnung als
-                // Referenz-Ufer, wie __anazhGateNoFoundry): nur Gates setzen ihn; der eine
-                // Leser (_scatterPass) prüft `=== true` — undefined-sicher per Konstruktion.
-                "__scatterExactWater",
                 // Lazy-init Pfade (werden erst nach User-Geste gesetzt)
                 "workshop.preview",
                 // Lazy game-loop-Feld: die pitch-gesteuerte Wunsch-
@@ -285,7 +281,6 @@ async function auditStateAndMethods() {
                 // Worldgen-gesetzt (in generateTerrainWithParameters, vor jedem Tick-Read):
                 "hydroTiles",
                 "canopyChunks",
-                "bakedRegionFields",
                 "scatterRegions",
                 "scatterPromoted",
                 "scatterCounters",
@@ -493,7 +488,7 @@ function auditPlaytestSkipGates() {
 // ============================================================
 // Main
 // ============================================================
-(async () => {
+hauptLauf(async () => {
     console.log("AnazhRealm Strict-Audit-Suite\n");
     auditCssVariables();
     auditSoftDefaults();
@@ -514,7 +509,4 @@ function auditPlaytestSkipGates() {
         console.log("\n✅ Audit komplett clean.");
         process.exit(0);
     }
-})().catch((err) => {
-    console.error("Audit-Crash:", err);
-    process.exit(2);
 });

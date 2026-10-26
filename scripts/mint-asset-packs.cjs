@@ -27,6 +27,7 @@
 const fs = require("fs");
 const path = require("path");
 const PK = require("./lib/pack-kanon.cjs");
+const { hauptLauf } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PACK_PORT || 4561);
 const OUT_DIR = path.resolve(PK.ROOT, "artifacts", "packs");
@@ -50,7 +51,7 @@ function parseKey(key) {
     return { presetId: p[0], seed: Number(p[1]), lod: Number(p[2]) };
 }
 
-(async () => {
+hauptLauf(async () => {
     const args = parseArgs(process.argv);
     const manifest = PK.readManifest(PK.ROOT);
     const stamp = PK.computeStamp(PK.ROOT);
@@ -205,7 +206,4 @@ function parseKey(key) {
     } finally {
         await realm.close();
     }
-})().catch((e) => {
-    console.error("Mint-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

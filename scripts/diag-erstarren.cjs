@@ -131,7 +131,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
                         if (stalls.length < 12) stalls.push({ i, ms: Math.round(w), top });
                     }
                 }
-                if (i % 50 === 0) await new Promise((res2) => setTimeout(res2, 0));
+                if (i % 50 === 0) await sleep(0);
             }
             const quart = (a, b) => {
                 let sum = 0;

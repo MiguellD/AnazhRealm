@@ -15,8 +15,9 @@
 // (1 = fill), im Stand base64 unter `voxelEdits` {n, xyzr, modus} — 43 Zeichen je Edit statt 64 im Objekt-JSON. Der Leser
 // (`_standNormal`) legt sie zurück nach `worldMeta.voxelEdits`.
 //
-// Ops (je Nachricht EINE Antwort mit ihrem `n`, in der Reihenfolge der Nachrichten): stand · ablegen · loeschen · abbild ·
-// server · still. Ein Fehler antwortet {ok:false, grund}; das Modell der Welt fällt, der Haupt-Faden sendet sie ganz neu.
+// Ops (in der Reihenfolge der Nachrichten): stand · ablegen · loeschen · abbild · server · still. Eine Nachricht mit Zusage
+// bekommt EINE Antwort mit ihrem `n`; eine ohne (`leise`: der Stand, die Ablage, das Löschen) nur den Bruch {ok:false, grund}
+// — das Modell der Welt fällt, der Haupt-Faden sendet sie ganz neu — und einmal das Fehlen der Platte.
 // =============================================================================
 "use strict";
 
@@ -214,6 +215,7 @@ const OPS = {
 };
 
 let reihe = Promise.resolve();
+let ohneGesagt = false;
 self.onmessage = (e) => {
     const m = e.data;
     reihe = reihe.then(async () => {
@@ -227,6 +229,9 @@ self.onmessage = (e) => {
         antwort.n = m.n;
         antwort.op = m.op;
         if (!P.db) antwort.ohnePlatte = P.grund;
+        // die Quittung einer leisen Nachricht trüge nichts, was die Seite liest — sie wäre nur ein Task im Haupt-Faden
+        if (m.leise && antwort.ok && (P.db || ohneGesagt)) return;
+        if (!P.db) ohneGesagt = true;
         self.postMessage(antwort, antwort.daten ? [antwort.daten] : []);
     });
 };
