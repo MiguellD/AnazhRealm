@@ -1,7 +1,7 @@
 {
  "sha": "b2c6c627e6526265fcdc5178b987515ae06f2584",
  "geraet": "radeon",
- "zeit": "2026-10-26T15:51:30.186Z",
+ "zeit": "2026-10-26T15:55:35.702Z",
  "host": "MiguellD",
  "je": {
   "gelaende.K2#1": {
@@ -318,14 +318,14 @@
   },
   "leib.K1#1": {
    "gruen": false,
-   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 59.8 · third/gehen 53.5 · ego/wechsel 45.8 · third/wechsel 40.8 · Bild 16.5/16.5/16.4 ms",
+   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 50.2 · third/gehen 41.9 · ego/wechsel 24.4 · third/wechsel 26.5 · Bild 16.3/16.4/16.4 ms",
    "exit": 0,
-   "minuten": 6.22,
-   "grund": "ROT: schlechtester von 3 Läufen p95 ms ego/gehen 59.8 · third/gehen 53.5 · ego/wechsel 45.8 · third/wechsel 40.8 · Bild 16.5/16.5/16.4 ms",
+   "minuten": 5.7,
+   "grund": "ROT: schlechtester von 3 Läufen p95 ms ego/gehen 50.2 · third/gehen 41.9 · ego/wechsel 24.4 · third/wechsel 26.5 · Bild 16.3/16.4/16.4 ms",
    "gpu": "amd/rdna-3",
-   "zeit": "2026-10-26T14:27:57.820Z",
+   "zeit": "2026-10-26T15:55:35.702Z",
    "abdruck": "9687c62fd915",
-   "port": 7785
+   "port": 7787
   },
   "leib.K1#2": {
    "gruen": true,
