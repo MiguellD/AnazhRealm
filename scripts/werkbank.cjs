@@ -4,7 +4,8 @@
 //   node scripts/werkbank.cjs start [--port 4490] [--holz voll|nah|kienspan] [--ort <id>]  Welt + Steuer-Server (bleibt offen)
 //   node scripts/werkbank.cjs umstellen <x> <z>            Spieler setzen, einschwingen
 //   node scripts/werkbank.cjs umstellen --ort <id> [--pose p] [--sicht ego|third] an einen MESSORT (spec/profiband/haushalt.json
-//                                                           `messorte`): Spieler, Blick, Dorf-Zug, Ort-Takt und Sicht; buehne betritt ihre Welt
+//                                                           `messorte`): Spieler, Blick, Dorf-Zug, Ort-Takt und Sicht; buehne betritt ihre Welt;
+//                                                           mit `anlauf` schwingt der Ort dort ein (Gründung, Stadt), `dach` stellt aufs Dach
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                      [--uhr 0..1] [--wetter rainy] [--saison winter] Bühne + echter Frame (Ausgabe-Pfad)
 //                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]] [--fov v]
@@ -70,7 +71,7 @@ const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { AUSGABE_INSTALL, wetterUrteil } = require("./lib/ausgabe-aufnahme.cjs");
-const { LINSEN_INSTALL } = require("./lib/licht-linsen.cjs");
+const LL = require("./lib/licht-linsen.cjs");
 const { ZAEHLER_INSTALL, FALTE_INSTALL, gangLauf } = require("./lib/draw-zaehler.cjs");
 const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
@@ -93,6 +94,8 @@ const HL = require("./lib/haenger-linse.cjs");
 // schreibt, was es gemessen hat, in die EINE Tafel (spec/abnahme/soll-tafel.json, wie `--nachziehen` die Albedo-Tafel) — Ist
 // und Täter rechnet die Linse daraus (abnahme-urteil `sollTafelUrteil`); von Hand steht dort keine Zahl.
 const SOLL_TAFEL = path.join(root, "spec", "abnahme", "soll-tafel.json");
+// der Ordner einer Datei, die das Werkzeug schreibt
+const ordnerFuer = (datei) => fs.mkdirSync(path.dirname(datei), { recursive: true });
 // DER ORT DER BILDER DER TAFEL (abnahme-urteil `bildPfadFehler`): je Ziel `--ist <id>[:teil]` EIN Name unter
 // artifacts/soll-tafel/ (gitignored, lokal) — Bild, Maske und Begleit-JSON nebeneinander
 const sollAblage = (ziel, endung) => {
@@ -793,7 +796,7 @@ async function starte() {
                 timeout: 60000,
             }));
         await page.evaluate(AUSGABE_INSTALL);
-        await page.evaluate(LINSEN_INSTALL);
+        await page.evaluate(LL.LINSEN_INSTALL);
         await page.evaluate(ZAEHLER_INSTALL);
         await page.evaluate(BAND.EINSCHWING_INSTALL);
         await page.evaluate(FLUSS_INSTALL);
@@ -898,9 +901,17 @@ async function starte() {
                     for (const m of window.__ortTakt) r[m](pm);
                 };
                 if (window.__ortStell) window.__ortStell();
-                // DIE GRÜNDUNG (haushalt.json `gruendung`, die Stadt): der Spieler sagt sein Wort am Platz mit seinem Blick, wie im Spiel (Chat) — die
-                // Siedlung steht danach am Anker der Spec (±1 m, sonst laut: die Ort-Wahl wanderte mit der Welt); eine Welt, die sie
-                // trägt, gründet nicht neu. Die Bahn des Orts (`bahn`, die Hauptgasse) liegt Meter für Meter auf ihrem Weg (`_aufWeg`).
+                if (o && Number.isFinite(o.gier)) {
+                    r.state.yaw = o.gier;
+                    r.state.pitch = 0;
+                }
+                // DER ANLAUF (haushalt.json `anlauf`): dort steht der Spieler zuerst und schwingt ein — er gründet die Stadt, der Zug baut
+                // kein Haus auf ihm, eine Stadt erwacht erst, wenn er naht —, dann steht er am Ort: am Boden oder auf dem Dach (`dach`, m)
+                const a = (o && o.anlauf) || [x, z];
+                r.state.playerMesh.position.set(a[0], r._voxelSurfaceY(a[0], a[1]) + 1.8, a[1]);
+                // DIE GRÜNDUNG (haushalt.json `gruendung`, die Stadt): der Spieler sagt sein Wort am Anlauf mit dem Blick des Orts, wie im
+                // Spiel (Chat) — die Siedlung steht danach am Anker der Spec (±1 m, sonst laut: die Ort-Wahl wanderte mit der Welt); eine Welt,
+                // die sie trägt, gründet nicht neu. Die Bahn des Orts (`bahn`, die Hauptgasse) liegt Meter für Meter auf ihrem Weg (`_aufWeg`).
                 const g = o && o.gruendung;
                 window.__ortBahn = (o && o.bahn) || null;
                 if (g) {
@@ -909,28 +920,15 @@ async function starte() {
                     const steht = () =>
                         zellen().find((c) => String(c.seed) === same && Math.hypot(c.x - g.anker[0], c.z - g.anker[1]) <= 1);
                     if (!steht()) {
-                        r.state.yaw = Math.atan2(g.blick[0] - g.platz[0], g.blick[1] - g.platz[1]);
-                        r.state.playerMesh.position.set(g.platz[0], r._voxelSurfaceY(g.platz[0], g.platz[1]) + 1.8, g.platz[1]);
                         r._chatDispatchLegacyCommand(g.wort, [], () => {});
                         for (const weiter = window.__deckel(`die Gründung „${g.wort}"`); !steht() && weiter(); ) await sleep(250);
                     }
                     if (!steht())
                         throw new Error(`Messort ${o.ort}: „${g.wort}" steht nicht am Anker ${g.anker} (${JSON.stringify(zellen())})`);
-                    const k = o.bahn;
-                    for (let i = 1; i < k.length; i++)
-                        for (let s = 0, l = Math.hypot(k[i][0] - k[i - 1][0], k[i][1] - k[i - 1][1]); s <= l; s++) {
-                            const x = k[i - 1][0] + ((k[i][0] - k[i - 1][0]) * s) / l, z = k[i - 1][1] + ((k[i][1] - k[i - 1][1]) * s) / l;
-                            if (!r._aufWeg(x, z, 0)) throw new Error(`Messort ${o.ort}: die Bahn verlässt die Gasse bei ${x.toFixed(1)} ${z.toFixed(1)}`);
-                        }
                 }
                 if (o && o.dorfZug === false) window.__anazhAutoSettlement = false;
                 else if (o && o.dorfZug === true) delete window.__anazhAutoSettlement;
-                if (o && Number.isFinite(o.gier)) {
-                    r.state.yaw = o.gier;
-                    r.state.pitch = 0;
-                }
                 if (o && o.kamera) r.setCameraMode(o.kamera);
-                r.state.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
                 // eingeschwungen, wenn der Ring an seinem Ziel gebaut ist, dann DIE WELT STEHT (A9, `__weltStehtNach` hält den Regler) —
                 // in Bau-Ereignissen, nie an der Wanduhr. Der Ort schwingt unter REGLER VOLL ein (die Bedingung der Messung, E): der Ring
                 // steht an seinem Ziel, gehalten wie `stell.ring`, nie nach der Last der Nachbarn auf der geteilten GPU (A9, Mess-Wiese:
@@ -956,6 +954,20 @@ async function starte() {
                         warum: () => `der Ring steht bei ${r._builtRingRadius()}`,
                     });
                     takte += await window.__weltStehtNach(takt);
+                    // die Bahn der Gründung erst, wenn die Welt am Anlauf steht: der Zug legt die Wege der Stadt nach ihrem Gedächtnis
+                    const k = g ? o.bahn : [];
+                    for (let i = 1; i < k.length; i++)
+                        for (let s = 0, l = Math.hypot(k[i][0] - k[i - 1][0], k[i][1] - k[i - 1][1]); s <= l; s++) {
+                            const x = k[i - 1][0] + ((k[i][0] - k[i - 1][0]) * s) / l, z = k[i - 1][1] + ((k[i][1] - k[i - 1][1]) * s) / l;
+                            if (!r._aufWeg(x, z, 0)) throw new Error(`Messort ${o.ort}: die Bahn verlässt die Gasse bei ${x.toFixed(1)} ${z.toFixed(1)}`);
+                        }
+                    if (o && o.anlauf) {
+                        r.state.playerMesh.position.set(x, o.dach ? o.dach + AnazhRealm.PLAYER_FOOT_OFFSET : r._voxelSurfaceY(x, z) + 1.8, z);
+                        takte += await window.__weltStehtNach(takt);
+                        // der Träger der Kapsel (`_stepCharacter`): steht der Spieler auf dem Bau in der Höhe des Dachs?
+                        if (o.dach && !(r.state._kapselStruktur && Math.abs(r.state._kapselTraegerY - o.dach) < 0.5))
+                            throw new Error(`Messort ${o.ort}: kein Dach bei ${o.dach} m (Träger ${r.state._kapselTraegerY})`);
+                    }
                 } finally {
                     r.state.perfTargetMs = decke;
                 }
@@ -1663,7 +1675,7 @@ async function starte() {
                     const datei = path.resolve(
                         b.datei || path.join(root, "artifacts", "werkbank", `schirm-${Date.now()}.png`)
                     );
-                    fs.mkdirSync(path.dirname(datei), { recursive: true });
+                    ordnerFuer(datei);
                     await page.screenshot({ path: datei });
                     await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
                     return send({ datei, ms: Date.now() - t0 });
@@ -1818,6 +1830,8 @@ async function starte() {
                             kamera: haushalt.sichten[sicht].kamera,
                             gruendung: ort.gruendung || null,
                             bahn: ort.bahn || null,
+                            anlauf: ort.anlauf || null,
+                            dach: ort.dach || null,
                         });
                         // DIE WIESE: ein Ort mit Wiesen-Gesetz (`wiese`) hält es in der Welt, die eben stand — dieselbe
                         // Messung wie gate:profiband H1 (scripts/lib/welt-orte.cjs), dazu das Gras der gebauten Boden-Karte. Ein
@@ -1854,11 +1868,26 @@ async function starte() {
                     return send(Object.assign(await umstellen(+b.x, +b.z), { ms: Date.now() - t0 }));
                 }
                 if (req.url === "/bild") {
+                    // DER SPIELER AN DER POSE: Ring, Wald und Stufen-Auge stehen am Spieler — eine Kamera mehr als einen Chunk
+                    // neben ihm sah fernen Boden ohne die Bäume der Pose (laub-kante: fimp:atlas:L2 0,6737 bei misch 0). Die Pose
+                    // aus dem Leib (`--gesicht`, `--arm`) und der Spieler im Bild (`--spieler`) bleiben, wo er steht.
+                    const fern = (x, z, p = window.anazhRealm.state.playerMesh.position) =>
+                        Math.hypot(p.x - x, p.z - z) > window.anazhRealm._voxelChunkConfig(0).span;
+                    if (b.gesicht == null && b.arm == null && !b.spieler && (await page.evaluate(fern, +b.px, +b.pz)))
+                        await umstellen(+b.px, +b.pz, null);
+                    // DIE LEINWAND DER KLASSE: die Soll-Tafel misst im Pixel des Schirms, 1920 × 1080 wie ihre Messungen — das
+                    // Fenster wie ein Spieler (`/fenster`), bis die Welt es trägt; danach das Fenster der Sitzung
+                    const vp = page.viewport();
+                    if (b.klasse) {
+                        await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
+                        await page.waitForFunction(() => window.anazhRealm.state.renderer.domElement.clientWidth === 1920);
+                    }
                     const o = await bild(Object.assign({ w: 640, h: 360 }, b));
+                    if (b.klasse) await page.setViewport(vp);
                     const datei = path.resolve(
                         b.datei || path.join(root, "artifacts", "werkbank", `bild-${Date.now()}.png`)
                     );
-                    fs.mkdirSync(path.dirname(datei), { recursive: true });
+                    ordnerFuer(datei);
                     fs.writeFileSync(datei, Buffer.from(o.png.split(",")[1], "base64"));
                     delete o.png;
                     // DIE KLASSE: die Maske neben dem Bild, die Maße im Begleit-JSON
@@ -2118,7 +2147,7 @@ async function starte() {
                     const m = await page.evaluate(() => window.__nahFernSicht({}));
                     m.welt = welt;
                     m.upload = upload;
-                    const u = require("./lib/licht-linsen.cjs").nahFernUrteil(m);
+                    const u = LL.nahFernUrteil(m);
                     const aus = Object.assign({ messung: m }, u);
                     if (b.datei) fs.writeFileSync(path.resolve(b.datei), JSON.stringify(aus, null, 1));
                     return send(
@@ -2186,7 +2215,7 @@ async function starte() {
                         welt,
                     };
                     const datei = path.resolve(b.datei || path.join(ordner, `welt-${Date.now()}.json`));
-                    fs.mkdirSync(path.dirname(datei), { recursive: true });
+                    ordnerFuer(datei);
                     fs.writeFileSync(datei, JSON.stringify(messung, null, 1));
                     // Das Urteil gegen das LABOR-Ist der Tafel (die Labor-Seite misst diag-albedo-tafel.cjs --labor).
                     const g = { labor: {}, welt, karten: {}, eichung: { welt: eichung, labor: {} } };
@@ -2293,7 +2322,7 @@ async function starte() {
                         if (b.datei)
                             progs.forEach((z, i) => {
                                 const d = path.resolve(i ? b.datei.replace(/(\.wgsl)?$/, `-${i + 1}.wgsl`) : b.datei);
-                                fs.mkdirSync(path.dirname(d), { recursive: true });
+                                ordnerFuer(d);
                                 fs.writeFileSync(d, z.wgsl);
                             });
                         for (const z of progs)
@@ -2547,7 +2576,7 @@ async function starte() {
                     const datei = path.resolve(
                         b.datei || path.join(root, "artifacts", "werkbank", `band-${Date.now()}.json`)
                     );
-                    fs.mkdirSync(path.dirname(datei), { recursive: true });
+                    ordnerFuer(datei);
                     // Das ROHE der Messung reist mit: `werkbank ratsche` urteilt eine Serie neu (gegen den Haushalt von
                     // heute) und nimmt ihre Hülle — nie einen einzelnen Lauf.
                     Object.assign(u, {
@@ -2629,7 +2658,7 @@ async function starte() {
                     const datei = path.resolve(
                         b.json || path.join(root, "artifacts", "werkbank", `ziele-${Date.now()}.json`)
                     );
-                    fs.mkdirSync(path.dirname(datei), { recursive: true });
+                    ordnerFuer(datei);
                     fs.writeFileSync(datei, JSON.stringify({ zensus: z, lesen, urteil: u, selbst, rest }, null, 1));
                     return send({
                         ok: selbst ? selbstOk : u.rot.length === 0,
@@ -2758,7 +2787,7 @@ async function starte() {
                         const datei = path.resolve(
                             b.json || path.join(root, "artifacts", "werkbank", `zerlegen-${Date.now()}.json`)
                         );
-                        fs.mkdirSync(path.dirname(datei), { recursive: true });
+                        ordnerFuer(datei);
                         fs.writeFileSync(
                             datei,
                             JSON.stringify(
@@ -2859,7 +2888,7 @@ async function starte() {
                     const datei = path.resolve(
                         b.json || path.join(root, "artifacts", "werkbank", `${b.spitze ? "takt" : "haenger"}-${Date.now()}.json`)
                     );
-                    fs.mkdirSync(path.dirname(datei), { recursive: true });
+                    ordnerFuer(datei);
                     // Das ROHE (Takte + Stichproben der Spur) daneben: `haenger --auswerten <roh>` urteilt es neu, ohne Welt
                     fs.writeFileSync(datei.replace(/\.json$/, "") + ".roh.json", JSON.stringify({ roh, spur: sp }));
                     fs.writeFileSync(
@@ -2984,7 +3013,6 @@ async function starte() {
         // rauscht), der Boden-Satz doppelt so hell rot mit dem Täter Boden-Satz, ein Ring neben dem Gesetz mit dem Täter
         // Fern-Ring, zu wenige Orte, ein leerer Schuss, ein fehlendes Gesetz und eine Karte, die nicht steht, laut.
         if (argv.includes("--selbsttest")) {
-            const LL = require("./lib/licht-linsen.cjs");
             const ort = (klasse, x, nY, fY, nG, gY) => ({
                 klasse,
                 ort: [x, 0],
@@ -3179,7 +3207,6 @@ async function starte() {
         // DIE TAG-ACHSE (S7, W7): je Messort (`--orte`, Standard der Spawn und die Mess-Wiese) in Ego die Uhr-Kurve aus dem
         // Ausgabe-Pfad (`__tagKurve`), ihre Nachtastung (`tagFeinUhren`) und ihr Urteil `tagKurveUrteil` (licht-linsen.cjs);
         // `--kurz` und `--eigen` die Wand der Karte, `--ordner d` die Bilder, `--datei f.json` die Messung.
-        const LL = require("./lib/licht-linsen.cjs");
         const halt = argv.includes("--eigen") ? await eigeneWelt() : null;
         const welt = {};
         if (opt("--ordner")) fs.mkdirSync(path.resolve(opt("--ordner")), { recursive: true });
@@ -3206,7 +3233,6 @@ async function starte() {
         process.exit(u.urteil === "GRUEN" ? 0 : 1);
     } else if (cmd === "licht" && argv.includes("--kontakt")) {
         // DER KONTAKT-SCHATTEN (schatten.K1): `kontaktSicht` auf der Prüfbühne je Uhr, das Urteil `kontaktUrteil`
-        const LL = require("./lib/licht-linsen.cjs");
         const fehl = LL.kontaktSelbsttest();
         console.log(`KONTAKT Selbsttest ${fehl.length ? "ROT: " + fehl.join(" | ") : "3/3"}`);
         if (fehl.length || argv.includes("--selbsttest")) process.exit(fehl.length ? 1 : 0);
@@ -3224,7 +3250,6 @@ async function starte() {
         process.exit(rot.length ? 1 : 0);
     } else if (cmd === "licht" && argv.includes("--naesse")) {
         // DIE NÄSSE (wetter.K2): Selbsttest Basis, Nässe ohne Dach, Regen im Haus, nasser Marktstand, helles Regenbild ROT
-        const LL = require("./lib/licht-linsen.cjs");
         const m = (aussen, innen, regenbild, ri = 0, dach = 2) => ({ aussen: { n: 400, verhaeltnis: aussen }, innen: { n: 400, verhaeltnis: innen }, dicht: 1, glanz: 16, regen: { innen: ri, aussen: 9 }, dachBauten: { n: 2, trocken: dach }, regenbild });
         const f = [
             [LL.naesseUrteil({ wiese: m(1.0, null, 1.08) }).befunde.join(), /wiese Nässe porös draußen 1 außerhalb.*Regenbild 1\.08/],
@@ -3299,7 +3324,6 @@ async function starte() {
     } else if (cmd === "licht" && argv.includes("--laub")) {
         // DAS LAUB IM GEGENLICHT: je Art der nächste Baum, der Spieler am Augen-Ort (die Stufe folgt ihm), Gegenlicht
         // gegen Auflicht; das Urteil `laubLichtUrteil` (≥ 1,3, Labor ± 10 % wo gemessen). `--selbsttest` ohne Welt.
-        const LL = require("./lib/licht-linsen.cjs");
         if (argv.includes("--selbsttest")) {
             const m = (v) => ({ verhaeltnis: v, gegen: { Y: v }, auf: { Y: 1 }, stoffe: "laub" });
             const fz = (v, dL, dC) => ({ paar: "fern/nah", stufe: "bodenSatz → fern-ring", karte: { verhaeltnis: v, dL, dC } });
