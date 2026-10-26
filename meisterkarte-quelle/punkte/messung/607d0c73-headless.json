@@ -1,7 +1,7 @@
 {
  "sha": "607d0c73a2b98fdc1c2dbc06a961563bad73ce2a",
  "geraet": "headless",
- "zeit": "2026-10-26T20:59:31.647Z",
+ "zeit": "2026-10-26T21:11:34.642Z",
  "host": "MiguellD",
  "je": {
   "gelaende.K4#1": {
@@ -88,22 +88,21 @@
    "port": 7707
   },
   "feld.K2#1": {
-   "gruen": false,
-   "zahl": "(e) trägt 0 von 6 Proben (Exit 2)",
-   "exit": 2,
-   "minuten": 0.77,
-   "grund": "ROT: (e) trägt 0 von 6 Proben (Exit 2)",
-   "zeit": "2026-10-26T20:35:28.944Z",
+   "gruen": true,
+   "zahl": "6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 271 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich · zug gleich",
+   "exit": 0,
+   "minuten": 1.19,
+   "zeit": "2026-10-26T21:11:34.642Z",
    "abdruck": "41d344731f62",
    "port": 7718
   },
   "feld.K2#2": {
    "gruen": false,
-   "zahl": "Zug der Welt-Uhr gleich in 0 von 2 (e)-Zeilen (Exit 2) · keine (f)-Zeile",
-   "exit": 2,
-   "minuten": 0.77,
-   "grund": "ROT: Zug der Welt-Uhr gleich in 0 von 2 (e)-Zeilen (Exit 2) · keine (f)-Zeile",
-   "zeit": "2026-10-26T20:35:28.944Z",
+   "zahl": "Zug der Welt-Uhr gleich in 2 von 2 (e)-Zeilen (Exit 0) · OFFEN (f) Peers: Teil-Simulationen gleich — Wetter gleich · Leben 0/231 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen r | OFFEN (f) Reload mitten im Sturm: Teil-Simulationen gleich — Wetter gleich · Leben 0/231 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, ",
+   "exit": 0,
+   "minuten": 1.19,
+   "grund": "ROT: Zug der Welt-Uhr gleich in 2 von 2 (e)-Zeilen (Exit 0) · OFFEN (f) Peers: Teil-Simulationen gleich — Wetter gleich · Leben 0/231 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen r | OFFEN (f) Reload mitten im Sturm: Teil-Simulationen gleich — Wetter gleich · Leben 0/231 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, ",
+   "zeit": "2026-10-26T21:11:34.642Z",
    "abdruck": "9a22b16dc0c5",
    "port": 7718,
    "zwilling": "feld.K2#1"
