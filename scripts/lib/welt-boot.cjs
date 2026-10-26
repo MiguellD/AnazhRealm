@@ -3,7 +3,8 @@
 //   starteBrowser()  der Browser über die EINE Adapter-Weiche (Rezepte: null · webgl · linse · echt, software-gpu.cjs)
 //                    + der FEHLER-SAMMLER an jeder Seite: pageerror (auch unbehandelte Rejections), console.error,
 //                    Absturz der Seite, Trennung des Browsers ohne Abbau — jeder Fehler macht den Lauf ROT mit Namen,
-//                    nie Exit 0 (die Wache sitzt am Prozess-Ende: ein Exit 0 mit gesammeltem Fehler wird Exit 1)
+//                    nie Exit 0 (die Wache sitzt am Prozess-Ende: ein Exit 0 mit gesammeltem Fehler wird Exit 1);
+//                    eine Linse trägt KEINEN eigenen pageerror-Sammler daneben (gate:welt-boot nennt jeden Zwilling beim Namen)
 //   halteBis()       eine Taste halten, bis ihr Ereignis eintritt (nie nach der Wanduhr, gate:apparat Klinge 5)
 //   buehne()         die Bühne (Mittag · Sonne · Sommer, scripts/lib/ausgabe-aufnahme.cjs)
 //   uferStellen      (Seite) ein Leser der Szenen-Tiefe im Blick, der zeichnet: das Wasser am Bach der Mess-Wiese
@@ -1103,6 +1104,7 @@ async function selbsttest() {
         "/schleife.html":
             "<!doctype html><script>function __stallSchleife(){var e=performance.now()+9000;while(performance.now()<e){}}setTimeout(__stallSchleife,300)</script>",
         "/haenger.html": "<!doctype html><script>window.__nie=function(){return new Promise(function(){})}</script>",
+        "/wirft.html": "<!doctype html><script>setTimeout(function(){throw new Error('__seitenWurf')},50)</script>",
     };
     const server = statikServer({ seiten });
     await new Promise((r) => server.listen(0, "127.0.0.1", r));
@@ -1172,6 +1174,18 @@ async function selbsttest() {
         await warte(500);
     });
     const haenger = await fall("/haenger.html", (p) => p.evaluate(() => window.__nie()).catch(() => {}));
+    // DER EINE SAMMLER: der Wurf einer Seite (auch in einem eigenen Kontext) steht beim Namen in der Liste und macht das
+    // Prozess-Ende ROT — ein eigener pageerror-Sammler einer Linse daneben ist ein Zwilling (werkbank.cjs startet sein Fenster selbst)
+    const kontext = await browser.createBrowserContext();
+    await (await kontext.newPage()).goto(url("/wirft.html"), { waitUntil: "load" });
+    await warte(400);
+    const wurf = sammlung.fehler.filter((f) => f.includes("__seitenWurf"));
+    sammlung.fehler = sammlung.fehler.filter((f) => !wurf.includes(f));
+    const zwillinge = fs
+        .readdirSync(path.join(ROOT, "scripts"), { recursive: true })
+        .map((f) => f.replace(/\\/g, "/"))
+        .filter((f) => /\.cjs$/.test(f) && f !== "lib/welt-boot.cjs" && f !== "werkbank.cjs")
+        .filter((f) => /\.on\("pageerror"/.test(ohneKommentare(fs.readFileSync(path.join(ROOT, "scripts", f), "utf8"))));
     await browser.close();
     server.close();
     // BESETZT: ein Server auf einem belegten Port endet — der Start urteilt am Ereignis (EADDRINUSE), nie an einer Frist;
@@ -1187,7 +1201,9 @@ async function selbsttest() {
     const startMs = Date.now() - t1;
     besetzt.close();
     const urteile = [
-        [ruhig.length === 0, `ruhig (0,8 s Block): keine Akte — ${ruhig.length ? ruhig[0].urteil : "keine"}`],
+        [/^pageerror: Error: __seitenWurf/.test(wurf[0]), `Seiten-Wurf: ${wurf[0] || "KEIN Fehler gesammelt — still grün"}`],
+        [!zwillinge.length, `eigene pageerror-Sammler neben dem EINEN: ${zwillinge.join(", ") || "keiner"}`],
+        [ruhig.length === 0,`ruhig (0,8 s Block): keine Akte — ${ruhig.length ? ruhig[0].urteil : "keine"}`],
         [
             schleife.length > 0 &&
                 /^JS-SCHLEIFE/.test(schleife[0].urteil) &&
