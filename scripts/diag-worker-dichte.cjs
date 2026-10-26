@@ -25,7 +25,7 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -78,7 +78,7 @@ async function boote(page) {
                 if (s && s.voxelChunks && s.voxelChunks.size > 4 && s.voxelWorkerReady && s.voxelWorkerWorldgenSynced)
                     return { ok: true, ms: Math.round(performance.now() - start), seed: s.worldMeta.seed };
             }
-            await new Promise((res) => setTimeout(res, 16));
+            await sleep(16);
         }
         return { ok: false };
     });
@@ -657,7 +657,7 @@ async function kernLesen(page, plan) {
         if (!(await w.evaluate(`typeof terrainDensityAt === "function" && !!(${KERN_HILFE})`).catch(() => false))) continue;
         seite.faden.push(
             await w.evaluate(async (b, n) => {
-                for (let t = 0; t < 200 && state.voxelEdits.length < n; t++) await new Promise((res) => setTimeout(res, 25));
+                for (let t = 0; t < 200 && state.voxelEdits.length < n; t++) await sleep(25);
                 return __kern.lies(b, terrainDensityAt, (x, y, z) => waterLevelAt(x, z), (x, y, z) => atlasWaterLevelAt(x, z, y), hydroRiverAt);
             }, plan.punkte, plan.edits.length)
         );
@@ -1179,7 +1179,7 @@ async function studioProbe(page) {
         if (!b.ok) throw new Error("die Welt unter dem Studio erwachte nicht in 120 s");
         console.log(`  Boot unter dem Studio: ${b.ms} ms (Seed ${b.seed})`);
         const da = await page.evaluate(async () => {
-            while (!(window.__gelaendeStudio && document.querySelector("#gelaende-studio"))) await new Promise((r) => setTimeout(r, 50));
+            while (!(window.__gelaendeStudio && document.querySelector("#gelaende-studio"))) await sleep(50);
             return true;
         });
         if (!da) {
@@ -1512,7 +1512,7 @@ async function gebaut(page) {
                     } catch {
                         /* der Boot reift */
                     }
-                    await new Promise((res) => setTimeout(res, 16));
+                    await sleep(16);
                     },
                     max: 3750,
                 });
@@ -2056,7 +2056,7 @@ async function faden(page, url) {
     return rot ? 1 : 0;
 }
 
-(async () => {
+hauptLauf(async () => {
     if (argv.includes("--realismus")) process.exit(realismus());
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "standard", frist: 900000 });
@@ -2247,7 +2247,4 @@ async function faden(page, url) {
     await browser.close();
     server.close();
     process.exit(pass ? 0 : 1);
-})().catch((e) => {
-    console.error("⛔", e && e.stack ? e.stack : e);
-    process.exit(1);
 });

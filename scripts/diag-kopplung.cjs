@@ -11,12 +11,12 @@
 // ihren SELBST-TEST: der Fix am Gesetz abgeschaltet (SLIDE_CLIP_PLANES 0, Hang-Grenze −1) MUSS rot sehen.
 // Exit 1 bei jedem Fail.
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.KOPPLUNG_PORT || 4407);
 const server = statikServer();
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
@@ -419,7 +419,4 @@ const server = statikServer();
             : `\n  ❌ ${out.fails.length} KOPPLUNGS-INVARIANTE(N) VERLETZT\n`
     );
     process.exit(ok ? 0 : 1);
-})().catch((e) => {
-    console.error("LINSE-FEHLER:", e.message);
-    process.exit(1);
 });

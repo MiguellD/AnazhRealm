@@ -17,7 +17,7 @@
 //   node scripts/diag-werkstatt-weg.cjs [--selftest]          Port: WERKSTATT_WEG_PORT (Standard 4623)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, halteBis, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, halteBis, pruefer, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -310,7 +310,6 @@ const server = statikServer();
 
 // ── DIE PROBEN IN DER SEITE (Funktionsrumpf; r = die Welt). ──
 async function probe(argW) {
-    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const out = {};
     await window.__weltDa();
     const r = window.anazhRealm;
@@ -1200,7 +1199,7 @@ async function wegProbe(page, frei) {
     return m;
 }
 
-(async () => {
+hauptLauf(async () => {
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Verdikte und die Wand nennen ihre Täter ===");
         const gesund = {
@@ -1668,7 +1667,4 @@ async function wegProbe(page, frei) {
     }
     console.log("\n✅ GRÜN — der Werkstatt-Weg trägt seine benannten Schnitte.");
     process.exit(0);
-})().catch((e) => {
-    console.error("Werkstatt-Weg-Linse-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

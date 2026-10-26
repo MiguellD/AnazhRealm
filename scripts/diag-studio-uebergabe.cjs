@@ -14,6 +14,7 @@ const vm = require("vm");
 const stammLib = require("./lib/stamm.cjs");
 const { kanalImVm, bauAbdruck } = require("./lib/asset-worker-harness.cjs");
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { hauptLauf } = require("./lib/welt-boot.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const argNach = (n) => (process.argv.includes(n) ? process.argv[process.argv.indexOf(n) + 1] : null);
@@ -397,7 +398,7 @@ async function weltPruefen() {
     );
 }
 
-(async () => {
+hauptLauf(async () => {
     const t0 = Date.now();
     await kanalPruefen();
     console.log(`      (K) ${((Date.now() - t0) / 1000).toFixed(1)} s`);
@@ -410,7 +411,4 @@ async function weltPruefen() {
         "\n✅ GRÜN — DER EINE ÜBERGABE-KANAL TRÄGT: jede Art reist von der Hülle in den EINEN Prägungs-Speicher, der Leser baut byte-gleich."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Studio-Übergabe-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

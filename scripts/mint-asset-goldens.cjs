@@ -9,6 +9,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const { runWithWorker, fingerprintMeshes, DATEN_KANAELE } = require("./lib/asset-worker-harness.cjs");
+const { hauptLauf } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.MINT_PORT || 4541);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");
@@ -69,7 +70,7 @@ async function nurDaten() {
     process.exit(0);
 }
 
-(async () => {
+hauptLauf(async () => {
     if (process.env.MINT_NUR_DATEN === "1") return nurDaten();
     fs.mkdirSync(DIR, { recursive: true });
     const existing = fs.readdirSync(DIR).filter((f) => f.endsWith(".json") && f !== "manifest.json");
@@ -110,7 +111,4 @@ async function nurDaten() {
     );
     console.log("   EINGEFROREN. Ab jetzt richtet gate:asset-contract gegen diese Bytes.");
     process.exit(0);
-})().catch((e) => {
-    console.error("Mint-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

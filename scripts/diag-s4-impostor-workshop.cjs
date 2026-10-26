@@ -13,11 +13,11 @@
 //       schwere L2-Geometrie.
 //   node scripts/diag-s4-impostor-workshop.cjs
 
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.S4_PORT || 4596);
 const server = statikServer();
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const errs = [];
     const browser = await starteBrowser({ art: "null", frist: 180000 });
@@ -49,7 +49,7 @@ const server = statikServer();
                     } catch {}
                     grp = r._workshopFoundryPreviewGroup(treeBp); // wirft nicht
                     if (grp && grp.children && grp.children.length) break;
-                    await new Promise((res2) => setTimeout(res2, 40));
+                    await sleep(40);
                 }
                 res.behavior.returnedGroup = !!(grp && grp.children && grp.children.length);
                 if (grp && grp.children && grp.children.length) {
@@ -148,7 +148,4 @@ const server = statikServer();
         "\n✅ GRÜN — der Impostor bäckt eager (kein Frame-Budget-Gate, weiter gedeckelt), die Werkstatt zeigt auf der L2-Baumstufe die 8-Winkel-Karte (InstancedMesh, Schicht des EINEN Atlas, aus demselben Studio-Baum gebacken)."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("S4-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });
