@@ -1829,9 +1829,27 @@ class AnazhRealm_koerper_bewegung {
                 // (`_kameraDurchsichtNode`). Die Kronen-Hülle (5167fd85) hielt die Verfolger-Kamera in 641 von 2400 Fahr-Proben
                 // unter 3 m (am Wagendach, 137 Sprünge > 2 m) und die Kamera zu Fuß in 43 % der Proben in Baumnähe auf dem
                 // 2-m-Minimum — ein Wald ist für eine Kamera mit 9,6 m Arm nie frei.
+                // DER DREHPUNKT HAT DEN LEIB DER KUGEL (leib.K4 Staffel 2): vor jeder Fläche hält die Kugel am Drehpunkt (Arm 0),
+                // darum steigt er als Kugel zur Brust (1 m über der Mitte des Leibs) — derselbe Wurf, nur über die Bauten (kein Feld:
+                // die Feld-Proben je Bild bleiben, gate:kamera-leib K2) — vom höchsten Start, den der Leib frei hält: r über der
+                // Stufe, die er übersteigt (dort hält die Kapsel jede Box PLAYER_WALL_RADIUS fern); berührt die Kugel dort schon
+                // eine Box (der Leib unter einer Decke, die er unterläuft), aus seiner Mitte. Bis hier stand er 1 m über der Mitte,
+                // auch unter der Treppe des haus_alemannisch, 1,02 m über der Stufe, auf der der Leib im Sprint stand
+                // (gate:kamera-leib gang2, innen-sprint: die Kugel in 125 von 870 Bildern im Bau).
                 const bx = player.position.x;
-                const by = player.position.y + 1.0;
                 const bz = player.position.z;
+                const y1 = player.position.y + 1.0;
+                const steigt = (y0) => {
+                    const w = this._fieldRaycast(bx, y0, bz, bx, y1, bz, {
+                        durchPflanzen: true,
+                        radius: kr,
+                        gelaende: false,
+                    });
+                    return w.t >= 1 ? y1 : y0 + (y1 - y0) * w.t; // frei: byte-alt
+                };
+                const yStufe = fussY + AnazhRealm.PLAYER_STEP_UP + kr;
+                let by = steigt(yStufe);
+                if (by === yStufe) by = steigt(player.position.y);
                 // DIE SCHULTER (Gegenprüfung Runde 1: das Fadenkreuz stand in 3rd auf dem Kopf der Figur): zu Fuß blickt die
                 // Kamera über die rechte Schulter — Auge und Blickziel stehen KAMERA_SCHULTER_M rechts (Bildschirm-rechts
                 // = (−cos Gier, 0, sin Gier)), die Figur steht links der Bildmitte, das Fadenkreuz trifft daneben die Welt.

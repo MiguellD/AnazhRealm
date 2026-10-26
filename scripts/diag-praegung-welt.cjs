@@ -2,27 +2,26 @@
 // reist per Code zum anderen Spieler: (S) Selbsttest · (N) die Hand · (G) Guss · (R) Roundtrip · (B) Byte-Identität des
 // ungeprägten Pfads · (K) KI-Regler: jede Zeile von PARAMS_BY_KIND aus spawn_studio, am Vertrag geklemmt, fail-closed — das
 // Welt-Werk (ein Bau samt seinen Gesetzen, ein Wesen, eine Prägung an ihrem Leser) ≠ ohne ov und = das Studio-Werk; der
-// Korpus-Teil Regler-Wörter sagbar · (T) Teilen in EINER Geste, zwei Browser-Kontexte · (F) Korpus fremder Codes, jeder fällt
-// beim Namen; jede Wand mit ihrer Täter-Probe.
+// Korpus-Teil Regler-Wörter sagbar · (T) Teilen in EINER Geste an ein ANDERES Gerät (eigener Browser-Prozess, eigenes Profil,
+// über signaling-server + WebRTC mit A verbunden) · (F) Korpus fremder Codes, jeder fällt beim Namen; jede Wand mit ihrer
+// Täter-Probe.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PRAEGUNG_WELT_PORT || 4439);
 const server = statikServer();
 // jede Zeile, die kein Programm erreicht, beim Namen ihres Befunds (keine Ausnahme: seit KI K2 trägt jede Zeile ein Welt-Werk)
 const kiUrteil = (m) => ["zwilling", "ohneWerk", "unbewegt", "ohneWort"].flatMap((b) => m[b].map((n) => `${n}: ${b}`));
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 
 // Die Probe beider Seiten: das Flat eines Eintrags, sobald die Foundry es trägt, und sein Abdruck (der EINE, welt-boot).
 function proben() {
     window.__flatFor = async (r, entry, preset = "gt") => {
-        let flat = r._foundryFlattenFor(entry, preset, 0);
-        for (const weiter = window.__deckel("das Flat der Gestalt", 300); !(flat && flat.leaves) && weiter(); ) {
+        let flat;
+        for (const weiter = window.__deckel("das Flat der Gestalt", 300); !(flat = r._foundryFlattenFor(entry, preset, 0))?.leaves && weiter(); )
             await sleep(50);
-            flat = r._foundryFlattenFor(entry, preset, 0);
-        }
-        return flat && flat.leaves ? flat : null;
+        return flat?.leaves ? flat : null;
     };
     window.__flatFp = async (r, entry) => {
         const flat = await window.__flatFor(r, entry);
@@ -36,9 +35,16 @@ const welt = async (seite) => {
     await server.zeige(seite, 30000);
 };
 
+// das GERÄT einer Seite: das Profil ihres Browser-Prozesses (Chrome sperrt es — ein Profil, ein Prozess)
+const geraet = (s) => s.browser().process().spawnargs.find((x) => x.startsWith("--user-data-dir"));
+let signal;
+
 hauptLauf(async () => {
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 600000 });
+    const [SIGNAL] = await eigenePorte("PRAEGUNG_WELT_SIGNAL_PORT");
+    signal = await startProc("signaling-server.js", /lauscht/, { ANAZH_SIGNALING_PORT: SIGNAL });
+    const neuesGeraet = () => starteBrowser({ art: "null", frist: 600000 });
+    const browser = await neuesGeraet();
     const page = await browser.newPage();
     await welt(page);
 
@@ -55,12 +61,11 @@ hauptLauf(async () => {
         const VC = globalThis.__vehicleCore;
 
         // ===== (N-WELT) geprägte Fahrzeug-Bauten für (S) und (B) — dass die Prägung jede Zeile im Welt-Werk trägt, urteilt (K) =====
-        const flatFor = (entry, preset) => window.__flatFor(r, entry, preset);
         const gt = (studioOv) => window.__flatFp(r, { type: "fahrzeug_gt", seed: 7, position: { x: 0, y: 0, z: 0 }, studioOv });
         // DAS STUDIO-WERK: derselbe Körper direkt aus der Foundry (Rang 0), durch DIESELBE Verschmelzung wie der Flatten
-        const studioFp = async (preset, variant, lod, ov) => {
-            const m = await Promise.race([r._foundryRequest(preset, variant, lod, ov || undefined, 0), sleep(45000)]);
-            const g = Array.isArray(m) && m.length ? r._foundryBuildGroup(m, { lod, preset }) : null;
+        const studioFp = async (variant) => {
+            const m = await Promise.race([r._foundryRequest("gt", variant, 0, undefined, 0), sleep(45000)]);
+            const g = m?.length && r._foundryBuildGroup(m, { lod: 0, preset: "gt" });
             if (!g) return null;
             const leaves = [];
             for (const c of g.children)
@@ -83,9 +88,9 @@ hauptLauf(async () => {
             res.b.noJsonKeys = added.every((k) => !k.includes("{"));
             const variant = r._foundryVariantFor(7, "gt");
             res.b.plainKeyExact = f.cache.has("gt|" + variant + "|0");
-            res.b.fpDirect = await studioFp("gt", variant, 0);
+            res.b.fpDirect = await studioFp(variant);
         } catch (e) {
-            res.n.err = e?.message || String(e);
+            res.n.err = String(e);
         }
 
         // ===== (N-HAND) geprägtes weapon formt im Hand-Guss anders, gestrippt wieder ungeprägt =====
@@ -93,11 +98,9 @@ hauptLauf(async () => {
             const bp = bps().klinge_langschwert;
             delete bp.studioOv;
             const hand = async () => {
-                let g = r._heldFoundryGroup("klinge_langschwert");
-                for (const weiter = window.__deckel("die Hand", 300); (g === "pending" || !g) && weiter(); ) {
+                let g;
+                for (const weiter = window.__deckel("die Hand", 300); ((g = r._heldFoundryGroup("klinge_langschwert")) === "pending" || !g) && weiter(); )
                     await sleep(200);
-                    g = r._heldFoundryGroup("klinge_langschwert");
-                }
                 return g && g !== "pending" ? fp(g) : null;
             };
             res.n.handU = await hand();
@@ -106,7 +109,7 @@ hauptLauf(async () => {
             delete bp.studioOv;
             res.s.handStripped = await hand();
         } catch (e) {
-            res.n.errHand = e?.message || String(e);
+            res.n.errHand = String(e);
         }
 
         // ===== (G) GUSS-SEMANTIK: wieldBlueprint stempelt (schöpfer, ungeschmiedet); präge danach ändert nichts =====
@@ -117,7 +120,7 @@ hauptLauf(async () => {
             const ws = r._ensureWorkshopState();
             ws.studioOv.langschwert = { __tradition: "Nihon" };
             // Die EINE Mode-Quelle ist worldMeta.gameMode (getGameMode kanonisiert daraus).
-            const wm = r.state.worldMeta || (r.state.worldMeta = {});
+            const wm = (r.state.worldMeta ||= {});
             const oldMode = wm.gameMode;
             wm.gameMode = "schöpfer";
             try {
@@ -133,26 +136,24 @@ hauptLauf(async () => {
             r._stampStudioOv(bp, "klinge_langschwert");
             res.g.cleared = bp.studioOv === undefined;
             // KONSUM: auch der Schmiede-Guss stempelt (Spion an _stampStudioOv, Station und Kosten freigestellt).
-            {
-                const st0 = r._stampStudioOv;
-                let n = 0;
-                r._stampStudioOv = (...a) => (n++, st0.apply(r, a));
-                r._makeStationGate = () => ({ ok: true });
-                r._makeCostGate = () => ({ ok: true, free: true });
-                try {
-                    r._forgeMaterialAndFreeze("klinge_langschwert");
-                } finally {
-                    for (const k of ["_stampStudioOv", "_makeStationGate", "_makeCostGate"]) delete r[k];
-                    delete bp.wear;
-                }
-                res.g.schmiedeStempelt = n > 0;
+            const st0 = r._stampStudioOv;
+            let n = 0;
+            r._stampStudioOv = (...a) => (n++, st0.apply(r, a));
+            r._makeStationGate = () => ({ ok: true });
+            r._makeCostGate = () => ({ ok: true, free: true });
+            try {
+                r._forgeMaterialAndFreeze("klinge_langschwert");
+            } finally {
+                for (const k of ["_stampStudioOv", "_makeStationGate", "_makeCostGate"]) delete r[k];
+                delete bp.wear;
             }
+            res.g.schmiedeStempelt = n > 0;
             if (oldMode === undefined) delete wm.gameMode;
             else wm.gameMode = oldMode;
             r.getGameMode(); // die Spiegelung (state.gameMode) sauber zurücksetzen
             delete bp.forgedPrecision;
         } catch (e) {
-            res.g.err = e?.message || String(e);
+            res.g.err = String(e);
         }
 
         // ===== (R) ROUNDTRIP: Entry · Snapshot · Restore · Bauplan-Zwilling · Taille =====
@@ -162,7 +163,7 @@ hauptLauf(async () => {
             const traegt = (e) => e?.studioOv?.cEdge === KCv.cEdge;
             const spawned = r.spawnArchitecture("fahrzeug_gt", { x: 40, y: 3, z: 40 }, { seed: 7, precise: true, id, studioOv: KCv });
             res.r.entryStamp = traegt(spawned);
-            res.r.entryDeepCopy = !!spawned && spawned.studioOv !== KCv;
+            res.r.entryDeepCopy = spawned?.studioOv !== KCv;
             const snap = r.buildStateSnapshot();
             res.r.snapCarries = traegt(snap.architectures.find((a) => a?.id === id));
             r._loadStateRestoreArchitectures({ architectures: snap.architectures });
@@ -181,7 +182,7 @@ hauptLauf(async () => {
             const fatE = r.spawnArchitecture("fahrzeug_gt", { x: 80, y: 3, z: 80 }, { seed: 7, precise: true, id: "praeg-fat-1", studioOv: fat });
             res.r.fatRejected = !!fatE && fatE.studioOv === undefined;
         } catch (e) {
-            res.r.err = e?.message || String(e);
+            res.r.err = String(e);
         }
 
         // ===== (K) KI-REGLER: je Zeile von PARAMS_BY_KIND ein spawn_studio mit dem Rand-Wert im fünften Argument =====
@@ -205,7 +206,7 @@ hauptLauf(async () => {
             // seinem Stempel liest (die Membran und die Hülle des Tors, das Fahr-Gesetz des Wagens)
             const bau = async (e) => {
                 const [t, z] = [r._torGesetzFor(e), r._fahrzeugGesetzFor(e)];
-                const flat = await flatFor(e, r._foundryPresetForEntry(e));
+                const flat = await window.__flatFor(r, e, r._foundryPresetForEntry(e));
                 r.removeArchitecture(e);
                 return flat && fp(flat, true) + "|" + h([t && [t.p, t.mu], z && z.drive]);
             };
@@ -220,7 +221,7 @@ hauptLauf(async () => {
             const werk = async (wort, ov, soll = ov) => {
                 const [s, p] = [setze(wort, ov), presetVon(wort)];
                 const [kind, e] = [f.recipes[p].kind, s.e];
-                const aus = { p, kind, lg: s.lg, ov: (e && e.studioOv) || (s.c && s.c.userData.gussDials) || ws[p] };
+                const aus = { p, kind, lg: s.lg, ov: e?.studioOv || s.c?.userData.gussDials || ws[p] };
                 if (e) aus.e = { type: e.type, pos: { ...e.position }, key: r._foundryKoerperKey(p, r._foundryGestaltFor(e, p), r._foundryServierStufe(p, 0), soll) };
                 const leser = r._studioWerkVerb(p) === "praegung" && (kind === "klang" ? h(r._klangStudioPreset()) : fp(r.state.playerMesh, true));
                 aus.w = e ? await bau(e) : s.c ? fp(s.c, true) : leser;
@@ -235,7 +236,7 @@ hauptLauf(async () => {
                 const { w, ov: st, lg, e, p, kind } = await werk(wort, ov, soll);
                 const aus = { ov: st, lg };
                 if (!w) return { ...aus, st: "ohneWerk" };
-                if (w === (fp0[wort] = fp0[wort] || (await werk(wort)).w)) return { ...aus, st: "unbewegt" };
+                if (w === (fp0[wort] ||= (await werk(wort)).w)) return { ...aus, st: "unbewegt" };
                 let s;
                 if (e) {
                     r._foundryCacheEvict(e.key);
@@ -263,7 +264,7 @@ hauptLauf(async () => {
                 for (const d of PBK[art]) {
                     const st = await zeile(art, d);
                     k[st].push(art + ":" + d.id);
-                    (k.je[art] = k.je[art] || [0, 0])[1]++;
+                    (k.je[art] ||= [0, 0])[1]++;
                     k.je[art][0] += st === "erreicht";
                     k.zeilen++;
                 }
@@ -284,8 +285,8 @@ hauptLauf(async () => {
             // DIE KLEMME: ein Wert jenseits des Vertrags steht auf dem Rand (ganze Schritte gerundet), beim Namen im Log
             const soll = { W: 6, pitchDeg: 60, annexN: 2 };
             const kl = await amWerk("haus", { W: -3, pitchDeg: 75, annexN: 1.6 }, soll);
-            const klLog = kl.lg.find((l) => l.event === "studio_regler_geklemmt") || { geklemmt: [] };
-            k.klemme = { st: kl.st, ov: kl.ov, genannt: klLog.geklemmt.map((g) => `${g.id} ${g.von}→${g.auf}`) };
+            const geklemmt = kl.lg.find((l) => l.event === "studio_regler_geklemmt")?.geklemmt || [];
+            k.klemme = { st: kl.st, ov: kl.ov, genannt: geklemmt.map((g) => `${g.id} ${g.von}→${g.auf}`) };
             k.klemme.ok = kl.st === "erreicht" && JSON.stringify(kl.ov) === JSON.stringify(soll) && k.klemme.genannt.length === 3;
             // FAIL-CLOSED: ein Regler ohne Zeile seiner Art, ein Wert ohne Zahl, ein ov ohne Objekt — nichts steht (kein Bau, kein
             // Wesen, keine Prägung), der Name im Log
@@ -298,9 +299,9 @@ hauptLauf(async () => {
                 ["praegung", "lofi", { bpm: "laut" }, "bpm"],
             ]) {
                 const { lg, neu } = setze(wort, ov);
-                const [ab, erg, blieb] = [lg.find((l) => l.event === "studio_regler_abgelehnt"), lg.find((l) => l.event === "ergebnis") || {}, neu.length || ws.lofi];
+                const [ab, erg, blieb] = [lg.find((l) => l.event === "studio_regler_abgelehnt"), lg.find((l) => l.event === "ergebnis"), neu.length || ws.lofi];
                 raeume(neu, "lofi");
-                k.zu[nm] = !blieb && !!ab && ab.regler.includes(wer) && (erg.gruende || {}).regler === 1;
+                k.zu[nm] = !blieb && ab?.regler.includes(wer) && erg?.gruende?.regler === 1;
             }
             // DER PROMPT liest DIESELBEN Zeilen (Mutation gewinnt): jede Zeile jeder sagbaren Art mit Bereich, eine eingespielte
             // Zeile erscheint im Prompt und trägt am Stempel
@@ -311,7 +312,7 @@ hauptLauf(async () => {
             PBK.haus.push(probe);
             try {
                 const { e } = setze("haus", { probeRegler: 0.5 });
-                k.mutation = r.llmBuildSystemPrompt().includes(zeigt(probe)) && !!e && e.studioOv.probeRegler === 0.5;
+                k.mutation = r.llmBuildSystemPrompt().includes(zeigt(probe)) && e?.studioOv.probeRegler === 0.5;
                 if (e) r.removeArchitecture(e);
             } finally {
                 PBK.haus.pop();
@@ -331,8 +332,9 @@ hauptLauf(async () => {
         return res;
     }, require(`${ROOT}/spec/abnahme/ki-korpus.json`).regler.saetze);
 
-    // ===== (T)+(F) B in einem eigenen Browser-Kontext (frisches Profil) =====
-    const pageB = await (await browser.createBrowserContext()).newPage();
+    // ===== (T)+(F) B ist ein ANDERES GERÄT: ein eigener Browser-Prozess (frisches Profil, eigener Speicher) =====
+    const browserB = await neuesGeraet();
+    const pageB = await browserB.newPage();
     await server.zeige(pageB, undefined, "package.json", "load");
     const leer = await pageB.evaluate(async () => (await indexedDB.databases()).length + localStorage.length);
     await welt(pageB);
@@ -364,7 +366,7 @@ hauptLauf(async () => {
             const kodiere = (h) => W.praefix + r._vibeBytesToB64u(new TextEncoder().encode(JSON.stringify(h)));
             const sign = async (p) => (await r._werkCode(p)).code;
             const gut = huelle(code);
-            const mit = (i, v) => Object.assign(gut.programm.slice(), { [i]: v });
+            const mit = (i, v) => gut.programm.with(i, v);
             const ov = gut.programm[5];
             const fremd = (name, t) => [
                 "chain",
@@ -375,23 +377,21 @@ hauptLauf(async () => {
                 ["gross", W.praefix + "A".repeat(W.max)],
                 ["kaputt", W.praefix + "@@"],
                 ["version", kodiere({ ...gut, v: 2 })],
-                ["op:voxel_carve", await sign(["voxel_carve", ["at", 0, 0, 0], 9])],
-                ["op:rule", await sign(["rule", ["always"], ["terrain_base_height", 99]])],
-                ["op:player_soul", await sign(["chain", ["player_soul", "wolf"], gut.programm])],
-                ["form", await sign(mit(2, ["at", 0, 0, 0]))],
-                ["regler:segments", await sign(mit(5, { segments: 1e6, ...ov }))],
-                ["band:radstand", await sign(mit(5, { ...ov, radstand: 99 }))],
-                ["regler:cEdge", await sign(mit(5, { ...ov, cEdge: 0.5 }))],
-                ["name", await sign(mit(1, "<img src=x onerror=alert(1)>"))],
-                ["teile:shape_not_allowed:evil", await sign(fremd("probe_x", [{ shape: "evil" }]))],
-                [
-                    "builtin:fahrzeug_gt",
-                    await sign(["chain", ["define_blueprint", "fahrzeug_gt", teile], gut.programm]),
-                ],
+                ["op:voxel_carve", ["voxel_carve", ["at", 0, 0, 0], 9]],
+                ["op:rule", ["rule", ["always"], ["terrain_base_height", 99]]],
+                ["op:player_soul", ["chain", ["player_soul", "wolf"], gut.programm]],
+                ["form", mit(2, ["at", 0, 0, 0])],
+                ["regler:segments", mit(5, { segments: 1e6, ...ov })],
+                ["band:radstand", mit(5, { ...ov, radstand: 99 })],
+                ["regler:cEdge", mit(5, { ...ov, cEdge: 0.5 })],
+                ["name", mit(1, "<img src=x onerror=alert(1)>")],
+                ["teile:shape_not_allowed:evil", fremd("probe_x", [{ shape: "evil" }])],
+                ["builtin:fahrzeug_gt", ["chain", ["define_blueprint", "fahrzeug_gt", teile], gut.programm]],
                 ["signatur", kodiere({ ...gut, programm: mit(3, 8) })],
                 ["signatur", kodiere({ ...gut, autor: "ab".repeat(32) })],
                 ["unsigniert", kodiere({ ...gut, sig: undefined })],
             ];
+            for (const k of korpus) if (Array.isArray(k[1])) k[1] = await sign(k[1]); // die Programme signiert A gültig
             return {
                 code,
                 seed,
@@ -405,28 +405,22 @@ hauptLauf(async () => {
                 autor: r.state.vibePass.publicKeyHex,
             };
         } catch (e) {
-            return { fehler: e?.message || String(e) };
+            return { fehler: String(e) };
         }
     });
-    const b = await pageB.evaluate(async (a) => {
+    // DER ECHTE ANSCHLUSS: beide Geräte treten durch die Tür des Spiels (initP2PSync) in denselben Raum des signaling-servers
+    const url = `ws://127.0.0.1:${SIGNAL}`;
+    await page.evaluate((url) => window.anazhRealm.initP2PSync("tk5", { url }), url);
+    const b = await pageB.evaluate(async (a, url) => {
         const r = await window.__weltDa(({ _foundry: f, state }) => f?.ready && f.recipes?.gt && !f._vorrat && state.vibePass?.ready);
-        const res = {
-            frisch: r.state.vibePass.publicKeyHex !== a.autor && !r.state.blueprints.probe_bogen,
-            faelle: [],
-        };
-        const zustand = () => {
-            const s = r.state;
-            const bauten = [Object.keys(s.blueprints).sort(), s.architectures.length, s.worldRules.length];
-            return JSON.stringify([...bauten, s.worldMeta.seed, s.worldMeta.voxelEdits, s.worldJournal.entries.length]);
-        };
+        const res = { faelle: [] };
+        const zustand = ({ state: s } = r) =>
+            JSON.stringify([Object.keys(s.blueprints).sort(), s.architectures.length, s.worldRules.length, s.worldMeta.seed, s.worldMeta.voxelEdits, s.worldJournal.entries.length]);
         const vor = zustand();
         // der Mitspieler über die P2P-Naht: dieselbe Wand (Slot 6), seine Regel mit verbotenem Effekt
-        const p2p = r.dslRun(["spawn_blueprint", "fahrzeug_gt", ["at", 30, 3, 30], 7, "boese-1", { segments: 1e6 }], {
-            source: "remote:boese",
-        });
-        res.p2pVertrag = p2p.log.some((e) => e.event === "studio_ov_vertrag" && e.grund === "regler:segments");
-        const regel = r.dslRun(["rule", ["always"], ["voxel_carve", ["at", 0, 0, 0], 9]], { source: "remote:boese" });
-        res.p2pRegel = regel.log.some((e) => e.event === "rule_effect_forbidden");
+        const boese = (p) => r.dslRun(p, { source: "remote:boese" }).log;
+        res.p2pVertrag = boese(["spawn_blueprint", "fahrzeug_gt", ["at", 30, 3, 30], 7, "boese-1", { segments: 1e6 }]).some((e) => e.event === "studio_ov_vertrag" && e.grund === "regler:segments");
+        res.p2pRegel = boese(["rule", ["always"], ["voxel_carve", ["at", 0, 0, 0], 9]]).some((e) => e.event === "rule_effect_forbidden");
         if (a.fehler) return { ...res, nullSchreibe: zustand() === vor };
         const sagt = [];
         const s0 = r._spielerSagt;
@@ -438,8 +432,15 @@ hauptLauf(async () => {
         for (const [soll, code] of a.korpus) res.faelle.push({ soll, ...(await lauf(code)) });
         res.nullSchreibe = zustand() === vor || [vor, zustand()];
         r.empfangeWerk = (...x) => (window.__spur = r.constructor.prototype.empfangeWerk.apply(r, x));
+        // B kennt A erst, wenn der DataChannel offen ist und A seine Vibe-Identität bewiesen hat (ed25519 über seine peerId) —
+        // die Signatur, die B am Code urteilt, ist DIESE Identität
+        r.initP2PSync("tk5", { url });
+        const { peers, rtcPeers } = r.state.p2p;
+        const peer = () => [...peers.values()].find((e) => e.vibeVerified && e.vibePassId === "ed25519:" + a.autor && rtcPeers.get(e.peerId)?.open);
+        for (const weiter = window.__deckel("der Anschluss zu A", 600, false); !peer() && weiter(); ) await sleep(50);
+        res.netz = peer().peerId;
         return res;
-    }, a);
+    }, a, url);
     // (T) die Geste des Empfängers: die Chat-Taste, der Code, Enter
     uhr = Date.now();
     await pageB.keyboard.press("Enter");
@@ -450,13 +451,13 @@ hauptLauf(async () => {
         const lauf = window.__lauf;
         const res = { gut: window.__spur ? await window.__spur : { grund: "der Chat rief empfangeWerk nie" } };
         delete r.empfangeWerk;
-        const e = res.gut.ok && r.state.architectures.find((x) => x && x.id === res.gut.id);
+        const e = res.gut.ok && r.state.architectures.find((x) => x?.id === res.gut.id);
         if (e) {
             await window.__gebautNach(e, { bau: () => {} }); // die Welt zeichnet es in ihrem eigenen Takt
             res.steht = Date.now();
             const [p, q, cam] = [r.state.playerMesh.position, e.position, r.state.camera];
             cam.updateMatrixWorld();
-            res.pose = { d: Math.hypot(q.x - p.x, q.z - p.z), ndc: new THREE.Vector3().copy(q).project(cam).toArray(), lod: e._lodLevel };
+            res.pose = { d: Math.hypot(q.x - p.x, q.z - p.z), ndc: new THREE.Vector3().copy(q).project(cam).toArray() };
             res.stempel = JSON.stringify(e.studioOv) === JSON.stringify(a.ov) && e.seed === a.seed;
             res.fp = await window.__flatFp(r, e);
             res.fpOhne = await window.__flatFp(r, { type: e.type, seed: e.seed });
@@ -473,8 +474,11 @@ hauptLauf(async () => {
         return res;
     }, a));
 
+    const ger = [page, pageB, await (await browser.createBrowserContext()).newPage()].map(geraet); // C: B als Kontext im Chrome von A
     await browser.close();
+    await browserB.close();
     server.close();
+    signal.kill();
 
     const { s, n, g, r: R, b: B } = out;
     const gleich = (x, y) => !!x && x === y;
@@ -483,20 +487,20 @@ hauptLauf(async () => {
     check("gestrippter Hand-Stempel ⇒ EXAKT der ungeprägte Hand-Fingerabdruck", gleich(s.handStripped, n.handU), `${s.handStripped} vs ${n.handU}`);
 
     console.log("\n=== (N) NAHT — die Prägung formt in der Hand ===");
-    check("HAND-Guss: klinge_langschwert geprägt (Nihon) ≠ ungeprägt", !!n.handU && !!n.handNihon && n.handU !== n.handNihon, n.errHand || `${n.handU} ${n.handNihon}`);
+    check("HAND-Guss: klinge_langschwert geprägt (Nihon) ≠ ungeprägt", n.handU && n.handNihon && n.handU !== n.handNihon, n.errHand || `${n.handU} ${n.handNihon}`);
 
     console.log("\n=== (G) GUSS-SEMANTIK — Stempel beim Guss, gefroren danach ===");
     check("wieldBlueprint (schöpfer, ungeschmiedet) stempelt bp.studioOv als TIEFE Kopie", g.stamped && g.deepCopy, g.err);
-    check("nachträgliches präge ändert das bestehende Artefakt NICHT", g.frozen === true);
-    check("Neu-Guss OHNE Prägung räumt den Alt-Stempel", g.cleared === true);
-    check("auch der Schmiede-Guss stempelt (_forgeMaterialAndFreeze → _stampStudioOv)", g.schmiedeStempelt === true);
+    check("nachträgliches präge ändert das bestehende Artefakt NICHT", g.frozen);
+    check("Neu-Guss OHNE Prägung räumt den Alt-Stempel", g.cleared);
+    check("auch der Schmiede-Guss stempelt (_forgeMaterialAndFreeze → _stampStudioOv)", g.schmiedeStempelt);
 
     console.log("\n=== (R) ROUNDTRIP — Snapshot · Bauplan-Zwilling · Taille ===");
     check("spawnArchitecture stempelt den Entry (tiefe Kopie)", R.entryStamp && R.entryDeepCopy, R.err);
     check("Snapshot trägt den Entry-Stempel + Restore bringt ihn zurück", R.snapCarries && R.restoreCarries);
     check("Bauplan-Zwilling: _serializeBlueprint/_deserializeBlueprint tragen studioOv", R.bpSer && R.bpDes);
-    check("Taille des eigenen Zweigs: ein kaputter Stempel fällt in Serialisierung und Laden", R.bpKaputt === true);
-    check("Taille-Wand: >8-KiB-Stempel fällt am Chokepoint", R.fatRejected === true);
+    check("Taille des eigenen Zweigs: ein kaputter Stempel fällt in Serialisierung und Laden", R.bpKaputt);
+    check("Taille-Wand: >8-KiB-Stempel fällt am Chokepoint", R.fatRejected);
 
     console.log("\n=== (B) BYTE-IDENTITÄT + CACHE-REINHEIT des ungeprägten Pfads ===");
     check(
@@ -504,8 +508,8 @@ hauptLauf(async () => {
         B.plainKeys?.length >= 1 && B.ovKeys?.length >= 2,
         `plain=${JSON.stringify(B.plainKeys)} ov=${B.ovKeys?.length}`
     );
-    check("der exakte Körper-Schlüssel (preset|gestalt|lod, ohne ov) lebt unverändert", B.plainKeyExact === true);
-    check("kein JSON-Schlüssel im Welt-Cache (die Rezept-Linsen-Reinheit hält)", B.noJsonKeys === true);
+    check("der exakte Körper-Schlüssel (preset|gestalt|lod, ohne ov) lebt unverändert", B.plainKeyExact);
+    check("kein JSON-Schlüssel im Welt-Cache (die Rezept-Linsen-Reinheit hält)", B.noJsonKeys);
     check("BYTE-IDENTITÄT: ungeprägter Flatten == direkter ov-loser _foundryRequest-Bau", gleich(B.fpDirect, n.fpU), n.err || `${B.fpDirect} vs ${n.fpU}`);
 
     console.log("\n=== (K) KI-REGLER — spawn_studio prägt ===");
@@ -529,27 +533,26 @@ hauptLauf(async () => {
         ["fremd", "text", "liste", "baum", "wesen", "praegung"].every((n) => K.zu[n]),
         JSON.stringify(K.zu)
     );
-    check("PROMPT: jede Zeile jeder sagbaren Art mit Bereich, aus DERSELBEN Quelle (Mutation gewinnt)", K.prompt && !K.prompt.length && K.mutation === true, `fehlt: ${K.prompt} · Mutation ${K.mutation}`);
-    const kt = (K.korpus || []).filter(([, ok]) => !ok);
-    check(`KORPUS-TEIL Regler-Wörter: ${(K.korpus || []).length} Sätze, jeder ein Programm-Ziel`, (K.korpus || []).length >= 20 && !kt.length, kt.join(" · "));
+    check("PROMPT: jede Zeile jeder sagbaren Art mit Bereich, aus DERSELBEN Quelle (Mutation gewinnt)", K.prompt && !K.prompt.length && K.mutation, `fehlt: ${K.prompt} · Mutation ${K.mutation}`);
+    const kk = K.korpus || [];
+    const kt = kk.filter(([, ok]) => !ok);
+    check(`KORPUS-TEIL Regler-Wörter: ${kk.length} Sätze, jeder ein Programm-Ziel`, kk.length >= 20 && !kt.length, kt.join(" · "));
 
     console.log("\n=== (T) TEILEN in EINER Geste: A klickt, B gibt den Code in den Chat ===");
-    const kb = (c) => (c ? `${c.length} Zeichen` : "kein Code");
-    const t = { code: a.code?.length, leer, ov: b.stempel, hashA: a.fp, hashB: b.fp, ohne: b.fpOhne, ndc: [9], ...b.pose };
-    t.ms = b.steht && msA + b.steht - uhr;
-    console.log("TEILEN " + JSON.stringify({ ...t, autor: b.gut?.autor === a.autor, msA }));
-    check("A: Werkstatt → GT → Teilen liefert EINEN Code ≤ 4 KB", t.code <= 4096, a.fehler || `${kb(a.code)}, eigener Bauplan ${kb(a.eigen)}`);
-    check("B ist ein frisches Profil (Platte + localStorage vor dem Boot leer, eigener Vibe-Pass)", b.frisch && !leer, leer);
-    check("B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A", b.gut?.ok && b.gut.autor === a.autor, JSON.stringify(b.gut));
+    const t = { ndc: [9], ...b.pose, ms: b.steht && msA + b.steht - uhr };
+    check("A: Werkstatt → GT → Teilen liefert EINEN Code ≤ 4 KB", a.code?.length <= 4096, a.fehler || `${a.code?.length} Zeichen, eigener Bauplan ${a.eigen?.length}`);
+    check("B ist ein ANDERES GERÄT: eigener Browser-Prozess, frisches Profil (Platte + localStorage vor dem Boot leer)", ger[0] !== ger[1] && !leer, `${ger} ${leer}`);
+    check("SELBST-TEST: B als zweiter Kontext im Chrome von A ist ROT", ger[0] === ger[2]);
+    check("B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A (der Peer am Anschluss)", b.gut?.ok && b.gut.autor === a.autor, b.netz + JSON.stringify(b.gut));
     check("B: gezeichnet an der eigenen Pose (≤ 24 m, im Bild)", t.d <= 24 && t.ndc.every((v) => Math.abs(v) <= 1), `${t.d} m ${t.ndc}`);
     check("ZEIT: Klick bis Code + Enter bis gezeichnet ≤ 10 s", t.ms <= 10000, `${t.ms} ms (A ${msA})`);
-    check("B: Stempel und Same reisen tief gleich", b.stempel === true);
+    check("B: Stempel und Same reisen tief gleich", b.stempel);
     check(
         "BAU-HASH A ↔ B byte-gleich, der Stempel wirkt (≠ ungeprägt)",
         gleich(b.fp, a.fp) && b.fp !== b.fpOhne,
         `A=${a.fp} B=${b.fp} ohne=${b.fpOhne}`
     );
-    check("der eigene Bauplan kommt byte-gleich (kanonische Substanz)", b.eigen === true);
+    check("der eigene Bauplan kommt byte-gleich (kanonische Substanz)", b.eigen);
 
     console.log("\n=== (F) KORPUS fremder Codes ===");
     // ein Fall hält, wenn der Code abgewiesen ist, beim erwarteten Namen, und der Spieler ihn hört — sonst ist die Probe ROT
@@ -560,11 +563,11 @@ hauptLauf(async () => {
         b.nullSchreibe === true,
         JSON.stringify(b.nullSchreibe)
     );
-    check("P2P: Slot 6 mit einem Regler außerhalb des Vertrags fällt benannt (dieselbe Wand)", b.p2pVertrag === true);
-    check("P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden)", b.p2pRegel === true);
+    check("P2P: Slot 6 mit einem Regler außerhalb des Vertrags fällt benannt (dieselbe Wand)", b.p2pVertrag);
+    check("P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden)", b.p2pRegel);
     check(
         "must-ignore gilt FREMDEN Hüllen-Feldern: das Werk steht, das Feld ist benannt",
-        b.zukunft?.ok === true && b.zukunft.fremd.includes("zukunft"),
+        b.zukunft?.ok && b.zukunft.fremd.includes("zukunft"),
         JSON.stringify(b.zukunft)
     );
     check(
@@ -573,13 +576,13 @@ hauptLauf(async () => {
     );
     check(
         "TÄTER-PROBE: ohne die Vertrags-Wand käme der Täter durch — das Urteil wird ROT",
-        b.taeter?.ok === true && !haelt(b.taeter)
+        b.taeter?.ok && !haelt(b.taeter)
     );
 
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
         process.exit(1);
     }
-    console.log("\n✅ GRÜN — die Prägung reist mit dem Artefakt, per Code zum anderen Spieler, jeder fremde Code fällt beim Namen");
+    console.log("\n✅ GRÜN — die Prägung reist mit dem Artefakt, per Code zum anderen Gerät, jeder fremde Code fällt beim Namen");
     process.exit(0);
-});
+}, () => signal?.kill());
