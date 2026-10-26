@@ -2037,11 +2037,11 @@ const mitschnitt = (ratsche) => (req) =>
 // eine Welt auf dem Null-Renderer, gewartet bis sie steht
 async function kiWelt(seiten) {
     const srv = statikServer({ seiten });
-    await new Promise((ok) => srv.listen(PORT, "127.0.0.1", ok));
+    await srv.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
+    await srv.zeige(page);
     await warteAufWelt(page);
     return { srv, browser, page };
 }
@@ -3168,12 +3168,12 @@ async function feindHaupt(quelle) {
     console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
     for (const [name, ok, detail] of wand(quelle)) check(name, ok, detail);
 
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     await nullRenderer(page);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
     // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht.
     const out = await page.evaluate(probe, {
         kiPort: PORT + 3,

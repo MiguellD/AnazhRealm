@@ -611,7 +611,7 @@ async function verdeckungPhase(opts) {
 
 (async () => {
     console.log("=== VERDECKUNGS-ABFRAGE — der Aussteige-Ablauf am Bach (WebGPU auf swiftshader) ===");
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 1200000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 180 });
@@ -620,10 +620,7 @@ async function verdeckungPhase(opts) {
     const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
     const out = { phasen: {} };
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, {
-            waitUntil: "domcontentloaded",
-            timeout: 60000,
-        });
+        await server.zeige(page, 60000, "index.html?holz=kienspan");
         const bereit = await page.evaluate(async (karte) => {
             const t0 = performance.now();
             const r = await window.__weltDa((r) => {

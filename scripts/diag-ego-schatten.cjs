@@ -517,7 +517,7 @@ function buehne(arg) {
 
 (async () => {
     console.log("=== EGO-SCHATTEN — der Leib wirft in der Ego-Sicht, das Auge sieht ihn nicht ===");
-    await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 180 });
@@ -525,10 +525,7 @@ function buehne(arg) {
     const T0 = Date.now();
     const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, {
-            waitUntil: "domcontentloaded",
-            timeout: 60000,
-        });
+        await server.zeige(page, 60000, "index.html?holz=kienspan");
         await page.evaluate(AUSGABE_INSTALL);
         // DER LEIB JE STUFE (B5): in der Ego-Sicht trägt der Spieler vor dem Bild die Grobstufe als Nah-Gestalt (`nahStufe` 1),
         // nach dem Bild die feine (`_leibFeinTausch`) — die Bühne misst beide. Der Loop hält in dem Takt, in dem der Leib der

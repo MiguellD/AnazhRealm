@@ -1428,6 +1428,7 @@ class AnazhRealm_dirigent_takt {
     // 20 m/s: _loopAutoSave 5,8 ms an der Mess-Wiese, 9,2 ms am Genesis-Ring je Takt ab p95).
     _loopAutoSave(currentTime) {
         const st = this.state;
+        this._standBesen(); // der Besen des Stands backt im Leerlauf vor (`_standFegen`), ab dem ersten Takt
         const lokal = currentTime - st.lastSaveUpdate >= st.saveInterval;
         const server = !st.isServerSaveInFlight && currentTime - st.lastServerSaveUpdate >= st.serverSaveInterval;
         if (lokal) st.lastSaveUpdate = currentTime;
@@ -1437,7 +1438,7 @@ class AnazhRealm_dirigent_takt {
         }
         if (!lokal && !server) return;
         this._imLeerlauf(() => {
-            if (lokal) this.saveState();
+            if (lokal) this.saveState(true);
             if (server)
                 this.saveToProjectFolder({ fallbackToDownload: false }).finally(() => {
                     st.isServerSaveInFlight = false;

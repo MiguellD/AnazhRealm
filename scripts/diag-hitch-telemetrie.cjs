@@ -671,7 +671,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     // Echtes WebGPU auf swiftshader — die Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs).
     const browser = await starteBrowser({ art: "linse", frist: 600000, zeit: true }); // Band 1 (LongTasks) ist auf swiftshader geeicht
     const page = await browser.newPage();
@@ -681,7 +681,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     await page.evaluateOnNewDocument(bauUhrInstall);
     // KEIN Null-Renderer — die Zähler brauchen den echten WebGPU-Pfad (Tap + Pipelines).
     // Software-Holz (Lehre 26): auf „voll" kostet auf swiftshader ein Compile 50–70 s; die Linse prüft Zähler und Gesetz.
-    await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000, "index.html?holz=kienspan");
 
     const gpu = await page.evaluate(async () => {
         if (!navigator.gpu) return "kein navigator.gpu";

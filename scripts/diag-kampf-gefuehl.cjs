@@ -618,7 +618,7 @@ const { WELLE_L, K5_VOR, K5_ABDRUCK } = require("./lib/kampf-proben.cjs");
 const NUR_K5 = process.argv.includes("--k5");
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: NUR_K5 ? "linse" : "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
@@ -627,10 +627,7 @@ const NUR_K5 = process.argv.includes("--k5");
     let welle = null;
     let k5 = null;
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html${NUR_K5 ? "?holz=kienspan" : ""}`, {
-            waitUntil: "networkidle0",
-            timeout: 120000,
-        });
+        await server.zeige(page, 120000, `index.html${NUR_K5 ? "?holz=kienspan" : ""}`, "networkidle0");
         await warteAufWelt(page, 120000);
         // Warmup: die Welt settled pumpen.
         await page.evaluate(async () => {

@@ -392,9 +392,25 @@ class AnazhRealm_siedlung_bewohner {
             if (n.isMesh) n.castShadow = false;
         });
         g.visible = false;
+        g.userData._kzN = this._bewohnerFeldGrenze(); // die Feld-Grenze seiner Art (`_kzLeib` liest sie)
         this.state.scene.add(g);
         b.leib = g;
         if (G.satz === null) G.satz = this._bewohnerSatz(S, G, b);
+    }
+
+    // DIE FELD-GRENZE DER BEWOHNER (Gebot 7: die Kosten der Menge an den Schirm, nie an die Kopfzahl): der Satz der
+    // Mengen-Stufe trägt einen Bewohner, solange sein Leib (`feldKoerperM` hoch) am Schirm mindestens `feldPx` Bildpunkte
+    // deckt (`_schirm().pxJeM`: Zeichenpuffer und Sichtfeld) — jenseits tragen die Glieder-Kapseln im Feld die Gestalt
+    // (`_kzLeib`; die Decke ist die Nah-Grenze jedes Leibs, KREATUR_NAH_MESH). Ein kleinerer Schirm schaltet früher.
+    // EIN Objekt je Welt, je Takt neu gemessen; jeder Leib liest es (`_kzN`).
+    _bewohnerFeldGrenze() {
+        const N = this._bewohnerFeldN || (this._bewohnerFeldN = { ein: 0, aus: 0 });
+        const K = AnazhRealm.KREATUR_NAH_MESH;
+        const BW = AnazhRealm.BEWOHNER;
+        const px = this._schirm().pxJeM;
+        N.ein = px ? Math.min(K.ein, (BW.feldKoerperM * px) / BW.feldPx) : K.ein;
+        N.aus = Math.min(K.aus, N.ein + BW.feldHystM);
+        return N;
     }
 
     // DER STAND DES LEIBS an (x, z): auf dem Boden jedes Körpers (Q4: die Fels-Grenze, nie das Dach), an der Tür auf ihrer
@@ -662,6 +678,7 @@ class AnazhRealm_siedlung_bewohner {
         let geburten = 0;
         let wege = 0;
         let ankuenfte = 0;
+        const NF = this._bewohnerFeldGrenze();
         for (const S of alle.values()) {
             const d2 = (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2;
             if (d2 > (A.nearM * BW.fernFaktor) ** 2) {
@@ -796,7 +813,7 @@ class AnazhRealm_siedlung_bewohner {
                 }
                 // der Glieder-Satz fragt nur, wer seine Seite wechseln kann oder noch keinen Satz trägt — die Knochen eines
                 // stehenden Leibs ruhen, seine Glieder stehen nach dem ersten Schreiben (Lehre 25: der Takt kostet, was ihn betrifft)
-                const N = AnazhRealm.KREATUR_NAH_MESH;
+                const N = NF;
                 if (
                     echt &&
                     !b.drinnen &&
@@ -1988,7 +2005,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // stehen am Tag auf dem Dorfplatz · raumM = der persönliche Raum zwischen zwei Ständen · saumM = der Saum um jeden Grundriss ·
 // geburtenJeTakt = Leiber je Takt (Klon aus dem Memo ~1 ms) · haeuserJeTakt = so viele Häuser legt die Liste je Takt · fernFaktor = jenseits nearM × fernFaktor gehen die Leiber ·
 // nahM (+ nahHystM zurück) / nahLeiber = so nah und so viele leben als Leib (Atem, Stufen), jeder andere im Nah-Kreis steht
-// im Satz seiner Gestalt (`_bewohnerSatz`: die Befehle hängen nie an der Kopfzahl) · gangPhasen = die Phasen des Doppelschritts im Gang-Puffer, gangJeTakt = so viele backt ein
+// im Satz seiner Gestalt (`_bewohnerSatz`: die Befehle hängen nie an der Kopfzahl) · feldKoerperM / feldPx (+ feldHystM zurück) = der Satz trägt, solange
+// ein Leib so hoch am Schirm so viele Bildpunkte deckt, jenseits das Feld (`_bewohnerFeldGrenze`) · gangPhasen = die Phasen des Doppelschritts im Gang-Puffer, gangJeTakt = so viele backt ein
 // Takt · platzRandM = so weit vom Rand des Platzes steht, wer auf ihm keinen Stand fand. DER TAG (mensch.K2): planH = so viele
 // Stunden der Uhr, bis jeder seinen Plan neu liest (0,002 h = 0,3 s am Tag von 60 min: so spät geht er nach seiner Wende los,
 // ≤ 0,5 m hinter der Ankunft) · DIE ANKUNFT (`_bewohnerAnkunft`): ankunftH = so viele Stunden spielt der Leib seinen Tag nach,
@@ -2020,6 +2038,9 @@ AnazhRealm.BEWOHNER = Object.freeze({
     nahM: 8,
     nahHystM: 1,
     nahLeiber: 4,
+    feldKoerperM: 1.8,
+    feldPx: 64,
+    feldHystM: 4,
     gangPhasen: 16,
     gangJeTakt: 2,
     platzRandM: 10,

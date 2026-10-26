@@ -894,7 +894,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     void errors;
     void finalState;
     // ### Player-Emotionen → Welt ###
-    const ring3Results = await safeEvaluate(page, () => {
+    const ring3Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player) return null;
         const out = {};
@@ -971,7 +971,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         r.state.player.emotions.joy = 0.42;
         r.state.player.emotions.chaos = 0.13;
         r.saveState();
-        const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
+        const raw = await window.__stand();
         let parsed = null;
         try {
             parsed = JSON.parse(raw);

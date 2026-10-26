@@ -374,7 +374,7 @@ function selbsttest() {
 async function gang() {
     const PORT = Number(process.env.STUDIO_HUELLE_PORT || 8742);
     const s = statikServer();
-    await new Promise((r) => s.listen(PORT, "127.0.0.1", r));
+    await s.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 120000 });
     const netz = {},
         seiten = {};
@@ -383,7 +383,7 @@ async function gang() {
             const page = await browser.newPage();
             const pfade = (netz[id] = []); // jeden Seitenfehler nennt der EINE Sammler der Weiche (welt-boot), der Lauf wird rot
             page.on("request", (q) => pfade.push(new URL(q.url()).pathname));
-            await page.goto(`http://127.0.0.1:${PORT}/worlds/${id}/index.html`, { waitUntil: "load", timeout: 90000 });
+            await s.zeige(page, 90000, `worlds/${id}/index.html`, "load");
             await new Promise((r) => setTimeout(r, 1500));
             const z = (seiten[id] = await page.evaluate(async () => {
                 const inp = [...document.querySelectorAll(".h-regler input")].find((i) => !i.disabled && i.closest("[data-sitzung]"));
@@ -429,7 +429,7 @@ async function gang() {
 async function panoramaBacken(nur) {
     const PORT = Number(process.env.STUDIO_HUELLE_PORT || 8742);
     const s = statikServer({ seiten: { "/__panorama.html": '<!DOCTYPE html><meta charset="utf-8"><title>Panorama</title><body style="margin:0"></body>' } });
-    await new Promise((r) => s.listen(PORT, "127.0.0.1", r));
+    await s.lausche(PORT);
     const kp = path.join(ROOT, TOR_ZIELE);
     const K = fs.existsSync(kp) ? JSON.parse(fs.readFileSync(kp, "utf8")) : {};
     const neu = { format: PANO.format, w: PANO.w, h: PANO.h, welten: K.welten || {}, ohne: {} };
@@ -441,7 +441,7 @@ async function panoramaBacken(nur) {
     try {
         const page = await browser.newPage();
         await page.setViewport({ width: 1400, height: 900 });
-        await page.goto(`http://127.0.0.1:${PORT}/__panorama.html`, { waitUntil: "load" });
+        await s.zeige(page, undefined, "__panorama.html", "load");
         const adapter = String(browser.adapter.renderer || browser.adapter.fehlt); // die Adapter-Zeile der Weiche ([linse-gpu])
         if (!istHardwareAdapter(browser.adapter)) throw new Error(`Panorama auf ${adapter}: das Ziel-Bild backt die echte GPU (Lehre 17)`);
         for (const id of [...STUDIOS, ...NEBENWELTEN]) {

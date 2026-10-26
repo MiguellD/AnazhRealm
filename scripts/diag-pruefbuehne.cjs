@@ -1007,7 +1007,7 @@ async function lichtLauf() {
             clearTimeout(uhrwerk);
         }
     };
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({
         art: ECHT ? "echt" : "linse",
         headless: !ECHT,
@@ -1660,7 +1660,7 @@ function zeige(rep) {
 
 (async () => {
     if (argv.includes("--licht")) return lichtLauf();
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "standard", frist: 900000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
