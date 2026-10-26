@@ -517,13 +517,13 @@ const stationen = [
                 z.leiber > 0 &&
                 typeof z.trefferMin === "number" &&
                 z.trefferMin >= 0.9 &&
-                z.sprungN === 0;
+                sprungVon(z) === 0;
             return {
                 gruen,
                 zahl:
                     "Soll-Orte über 24 Spielstunden min " + z.trefferMin + " (" + (z.leiber - z.unterN) + "/" +
                     z.leiber + " ≥ 0,9), Plan bit-gleich " + z.planGleich + ", Schmiede 10/2 Uhr " + z.schmiede10 +
-                    "/" + z.schmiede2 + ", Sprünge " + z.sprungN,
+                    "/" + z.schmiede2 + ", Sprünge " + sprungVon(z),
             };
         },
         pfad: [
@@ -1448,13 +1448,13 @@ const stationen = [
         const alle = z.leiber > 0 && z.unterN === 0 && typeof z.trefferMin === "number" && z.trefferMin >= 0.9;
         const wege = w.ausserN === 0 && w.wegeMin >= 4 && w.wegeMax <= 10;
         const zurueck = k.n >= z.leiber && k.ueberN === 0 && k.maxM <= 2;
-        const gruen = z.planGleich === true && z.sprungN === 0 && alle && wege && zurueck;
+        const gruen = z.planGleich === true && sprungVon(z) === 0 && alle && wege && zurueck;
         return {
             gruen,
             zahl:
                 "Soll-Orte alle " + (z.leiber - z.unterN) + "/" + z.leiber + " ≥ 0,9 (min " + z.trefferMin +
                 "), Wege je Tag " + w.wegeMin + "–" + w.wegeMax + " (außer 4–10: " + w.ausserN + "), Wiederkehr nach 1 h " +
-                k.ueberN + " von " + k.n + " Lagen über ±2 m (max " + k.maxM + " m), Sprünge " + z.sprungN +
+                k.ueberN + " von " + k.n + " Lagen über ±2 m (max " + k.maxM + " m), Sprünge " + sprungVon(z) +
                 ", Plan bit-gleich " + z.planGleich,
         };
     },
@@ -1519,6 +1519,8 @@ const fehlt = [
         quelle: "2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte",
     },
 ];
+// die Sprünge der Bewohner-Probe: seit z36 unter `wege`, davor oben (beide Köpfe bleiben buchbar)
+const sprungVon = (z) => (z.wege && z.wege.sprungN !== undefined ? z.wege.sprungN : z.sprungN);
 
 module.exports = stationen;
 module.exports.fehlt = fehlt;

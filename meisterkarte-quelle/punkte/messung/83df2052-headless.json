@@ -1,7 +1,7 @@
 {
  "sha": "83df2052d84b370158b28048ca90fb5f5f2ab30f",
  "geraet": "headless",
- "zeit": "2026-10-26T01:20:11.089Z",
+ "zeit": "2026-10-26T07:06:30.466Z",
  "host": "MiguellD",
  "je": {
   "gelaende.K4#1": {
@@ -280,11 +280,10 @@
    "gruen": true,
    "zahl": "Soll-Orte über 24 Spielstunden min 0.983 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0",
    "exit": 0,
-   "minuten": 2.07,
-   "zeit": "2026-10-26T00:45:11.615Z",
-   "abdruck": "4f12d3fe361a",
-   "port": 7725,
-   "zwilling": "mensch.K3#1"
+   "minuten": 1.73,
+   "zeit": "2026-10-26T07:06:30.466Z",
+   "abdruck": "541e13dff16c",
+   "port": 7727
   },
   "affekt.K1#1": {
    "gruen": true,
