@@ -135,7 +135,7 @@ class AnazhRealm_stoff_instanz {
                 at.nmap.name = "karte-normal:atlas";
                 at.lmap = new T.DataArrayTexture(null, M.lw, M.lh, cap);
                 at.lmap.name = "karte-licht:atlas";
-                at.lmap.format = T.RGFormat; // die Sonnen-Sicht: r der Zenit, g der 45°-Kranz (F6)
+                at.lmap.format = T.RGBAFormat; // die Sonnen-Sicht: r der Zenit, g der 45°-Kranz (F6); b·a die Holz-Bits (`sicht`)
             }
             for (const t of [at.map, at.nmap, at.lmap]) {
                 t.generateMipmaps = false;
@@ -591,10 +591,16 @@ class AnazhRealm_stoff_instanz {
         );
         const nOkt = S.select(nV.z.lessThan(0.0), S.vec2(1.0).sub(nO.yx.abs()).mul(nS), nO);
         // r184 leert jedes Ziel außer dem ersten auf (0, 0, 0, 1): die Deckung reist in z (Normale) bzw. g (Sonnen-Sicht)
+        // DAS HOLZ DER KARTE (laub-kante: der Umriss der Krone gegen Himmel, Boden UND Holz): a der Sonnen-Sicht trägt 0, wo
+        // ein Stoff der Rinde zeichnet (`material.userData.rinde`, phyto-core `budgetRegler`), sonst 1 — die Ablage packt es
+        // als 16 Bits je Fußabdruck (`sicht`), die Maske der Karte liest sie (`karteHolzMaske`); das Bild liest es nie.
+        B.uHolz = S.uniform(0).onObjectUpdate(({ object }) =>
+            object.material && object.material.userData.rinde === true ? 1 : 0
+        );
         B.mrt = S.mrt({
             [namen[0]]: S.vec4(S.diffuseColor.rgb, 1.0),
             [namen[1]]: S.vec4(nOkt.mul(0.5).add(0.5), 1.0, 1.0),
-            [namen[2]]: S.vec4(sicht.x, 1.0, sicht.y, 1.0),
+            [namen[2]]: S.vec4(sicht.x, 1.0, sicht.y, S.float(1.0).sub(B.uHolz)),
         });
         this._karteBuehneSatz = B;
         return B;
@@ -850,7 +856,7 @@ class AnazhRealm_stoff_instanz {
             zuege.push({ pipe, slot: slots.length - 1, x: Math.max(1, x), y: Math.max(1, y || 1) });
         };
         const ablage = (tex, mip, w, h, blockB, vonW) => {
-            // vonW: Texel je Wort-Spalte (bc: 4 Texel je Block; rg8: 2 Texel je Wort) — die Zeile auf 256 B gepolstert
+            // vonW: Texel je Wort-Spalte (bc: 4 Texel je Block; rgba8: 1 Texel je Wort) — die Zeile auf 256 B gepolstert
             const zeileB = pad((w / 4) * blockB);
             const zeilen = tex === 2 ? h : h / 4;
             const off = ausB;
@@ -938,12 +944,13 @@ class AnazhRealm_stoff_instanz {
             nq = no;
             no += wj * hj;
         }
-        // Sonnen-Sicht: rg8 (Zenit, 45°-Kranz), eine Stufe
-        const l = ablage(2, 0, M.lw, M.lh, 8);
+        // Sonnen-Sicht: rgba8 (Zenit, 45°-Kranz, die 16 Holz-Bits des 4×4-Fußabdrucks), eine Stufe
+        if (G.lichtTeiler !== 4) throw this._stoffBruch("die Karte: die Holz-Bits tragen genau den 4×4-Fußabdruck (lichtTeiler 4)");
+        const l = ablage(2, 0, M.lw, M.lh, 16);
         zug(
             "sicht",
             Object.assign({}, base, { w: M.lw, h: M.lh, t: G.lichtTeiler, aus: l.aus, zeile: l.zeile }),
-            Math.ceil((M.lw * M.lh) / 2 / 64),
+            Math.ceil((M.lw * M.lh) / 64),
             1
         );
         const U = GPUBufferUsage;
@@ -3849,39 +3856,36 @@ fn bc5(@builtin(global_invocation_id) g: vec3<u32>) {
 }
 
 // Die Sonnen-Sicht auf 1/lichtTeiler (p.t): das Mittel über die deckenden Texel des Fußabdrucks, ein Fußabdruck ohne
-// Blatt trägt das Mittel der Schicht (der Filter mischt an der Kante keinen fremden Wert hinein); rg8 (r der Zenit, g der
-// 45°-Kranz, F6), 2 Texel je Wort
+// Blatt trägt das Mittel der Schicht (der Filter mischt an der Kante keinen fremden Wert hinein); rgba8 (r der Zenit, g der
+// 45°-Kranz, F6; b·a das Holz: Bit dy·4 + dx je deckendem Texel der Rinde), 1 Texel je Wort
 @compute @workgroup_size(64)
 fn sicht(@builtin(global_invocation_id) g: vec3<u32>) {
-    let je = p.w / 2u;
-    let y = g.x / je;
+    let y = g.x / p.w;
     if (y >= p.h) { return; }
-    let wx = g.x - y * je;
+    let x = g.x - y * p.w;
     let zz = atomicLoad(&zahl[p.V + 1u]);
     var mittel = vec2<f32>(1.0);
     if (zz > 0u) {
         mittel = vec2<f32>(f32(atomicLoad(&zahl[p.V])), f32(atomicLoad(&zahl[p.V + 2u]))) / f32(zz) / 255.0;
     }
-    var wort = 0u;
-    for (var j = 0u; j < 2u; j++) {
-        let x = wx * 2u + j;
-        var s = vec2<f32>(0.0);
-        var n = 0.0;
-        for (var dy = 0u; dy < p.t; dy++) {
-            for (var dx = 0u; dx < p.t; dx++) {
-                let sx = x * p.t + dx;
-                let sy = y * p.t + dy;
-                if (deckt(sx, sy)) {
-                    s += textureLoad(tSicht, vec2<i32>(i32(sx), i32(sy)), 0).rb;
-                    n += 1.0;
-                }
+    var s = vec2<f32>(0.0);
+    var n = 0.0;
+    var holz = 0u;
+    for (var dy = 0u; dy < p.t; dy++) {
+        for (var dx = 0u; dx < p.t; dx++) {
+            let sx = x * p.t + dx;
+            let sy = y * p.t + dy;
+            if (deckt(sx, sy)) {
+                let l = textureLoad(tSicht, vec2<i32>(i32(sx), i32(sy)), 0);
+                s += l.rb;
+                n += 1.0;
+                if (l.a < 0.5) { holz |= 1u << (dy * 4u + dx); }
             }
         }
-        var wert = mittel;
-        if (n > 0.0) { wert = s / n; }
-        let q = vec2<u32>(round(clamp(wert, vec2<f32>(0.0), vec2<f32>(1.0)) * 255.0));
-        wort |= (q.x | (q.y << 8u)) << (16u * j);
     }
-    aus[p.aus + y * p.zeile + wx] = wort;
+    var wert = mittel;
+    if (n > 0.0) { wert = s / n; }
+    let q = vec2<u32>(round(clamp(wert, vec2<f32>(0.0), vec2<f32>(1.0)) * 255.0));
+    aus[p.aus + y * p.zeile + x] = q.x | (q.y << 8u) | (holz << 16u);
 }
 `;

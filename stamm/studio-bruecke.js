@@ -2908,6 +2908,7 @@ class AnazhRealm_studio_bruecke {
         // das Flag, NIE attribute("instanceColor") — der native InstanceNode-Auto-Multiply trägt ihn.
         if (kind === "foliage" || kind === "foliageTex") mat.userData.useInstanceTint = true;
         if (_krone) mat.userData.krone = true;
+        if (isBark) mat.userData.rinde = true; // das Holz (budgetRegler): die Karte bäckt es, die Maske zählt es nie als Laub
         // DIE WERTE JE STOFF (1310-18): was nur diesen Stoff unterscheidet (das Leucht-Maß, der Ton-Anker der Strähnen-Achse),
         // liest der Graph als Stoff-Wert (`_stoffWert`), nie als eingefaltete Konstante — sonst trüge jeder Stoff seinen
         // eigenen Graphen und r184 baute je Stoff ein Programm.

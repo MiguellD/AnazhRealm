@@ -1015,6 +1015,31 @@ class AnazhRealm_stoff_material {
                                     // die Deckung an der Codec-Schwelle (alphaTest unten); ihre Probe trägt den Versatz des Laubs
                                     // (`_probeA` über `_laubVersatz`, A3) wie jede Karte der Klasse
                                     _alpha = _samp.a;
+                                    // DIE HOLZ-MASKE DER KARTE (laub-kante: der Umriss der Krone gegen Himmel, Boden UND Holz): der Ofen
+                                    // bäckt das Holz in die Sonnen-Sicht (`_karteBuehne` a, die Ablage `sicht`: BC b·a = 16 Bits je
+                                    // 4×4-Fußabdruck, rgba8 a < 0,5 je Texel). Hebt die Teilung der Werkbank das Laub der Karte auf
+                                    // (`karteHolzMaske` = 1), zeichnet sie nur ihr Holz; im Spiel steht der Regler auf 0 (Deckung × 1).
+                                    {
+                                        const _hU = _Ta.uniform(0);
+                                        mat.userData.karteHolzMaske = _hU;
+                                        const _hL = (vAns) => {
+                                            const tx = _Ta.floor(_uv.x.mul(_kubX)).clamp(0.0, _kubX.sub(1.0));
+                                            const ty = _Ta
+                                                .floor(_vZ.add(vAns).mul(_kubY))
+                                                .clamp(0.0, _kubY.mul(_V).sub(1.0));
+                                            if (_at.fmt === "rgba8")
+                                                return _at.lmapNode.load(_Ta.ivec2(tx, ty)).depth(_schicht).level(0).a.lessThan(0.5).select(1.0, 0.0);
+                                            const w = _at.lmapNode
+                                                .load(_Ta.ivec2(_Ta.floor(tx.div(4.0)), _Ta.floor(ty.div(4.0))))
+                                                .depth(_schicht)
+                                                .level(0);
+                                            const bits = _Ta.round(w.b.mul(255.0)).add(_Ta.round(w.a.mul(255.0)).mul(256.0));
+                                            const k = ty.mod(4.0).mul(4.0).add(tx.mod(4.0));
+                                            return _Ta.floor(bits.div(_Ta.exp2(k))).mod(2.0);
+                                        };
+                                        const _holz = _Ta.mix(_hL(_v0), _hL(_v1), _fb);
+                                        _alpha = _alpha.mul(_hU.greaterThan(0.5).and(_holz.lessThan(0.5)).select(0.0, 1.0));
+                                    }
                                     // fin-Einblendung des Billboards aus der EINEN Quelle `__phytoCore.lodCrossfadeMask` lod=2 (via
                                     // `_lodCrossfadeMaskNode`); Distanz = Fragment-Anker-Peilung (√_hl2), Sichthöhe = der Stempel
                                     // |aKarte.w| (die Höhe der Höhen-Stufe × Instanz-Skala — dieselbe Zahl wie der aH0-Stempel der L1

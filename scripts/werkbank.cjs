@@ -1120,8 +1120,11 @@ async function starte() {
                         }
                     return n ? kz / n : 0;
                 };
+                // DAS HOLZ IST AUSSEN (laub-kante: der Umriss der Krone gegen Himmel, Boden UND Holz): ein Stoff der Rinde
+                // (`material.userData.rinde`) heißt <Klasse>/holz; die Karte teilt ihr Holz im Stoff (`karteHolzMaske`)
                 const teilName = (o) => {
                     const kl = r._taeterKlasse(o);
+                    if (o.material && o.material.userData && o.material.userData.rinde === true) return kl + "/holz";
                     if (k.gesicht == null || kl !== "spieler") return kl;
                     const auge =
                         o.isSkinnedMesh && o.skeleton && o.skeleton.bones.some((b) => /^iris[LR]$/.test(b.name));
@@ -1163,8 +1166,11 @@ async function starte() {
                 const alle = [].concat(...teile.values());
                 // der Wurf eines Bereichs ist der seines Satzes: der Satz wirft für die Messung nicht
                 const wurf = new Map(alle.map((o) => (o.bereich ? o.mesh : o)).map((o) => [o, o.castShadow]));
-                const verbirg = (o) => (o.bereich ? r._chunkSatzAus(o.art, o.key) : (o.visible = false));
-                const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : (o.visible = true));
+                const holzM = (o) => !o.bereich && o.material && o.material.userData && o.material.userData.karteHolzMaske;
+                const verbirg = (o) =>
+                    o.bereich ? r._chunkSatzAus(o.art, o.key) : holzM(o) ? (holzM(o).value = 1) : (o.visible = false);
+                const zeig = (o) =>
+                    o.bereich ? r._bauSatzMarke(o.key, o.art) : holzM(o) ? (holzM(o).value = 0) : (o.visible = true);
                 const bundlesNeu = () =>
                     r.state.scene.traverse((o) => {
                         if (o.isBundleGroup) o.needsUpdate = true;
