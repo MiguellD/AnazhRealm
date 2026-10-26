@@ -554,7 +554,7 @@ async function tatSeite(MESS, vorher) {
     const [pm, cam, P] = [st.playerMesh.position, st.camera, Math.hypot];
     let t = performance.now();
     const takt = () => r._gameLoopTick((t += 1000 / 60));
-    Object.assign(st, { perfRegulator: false, nexusEvolutionInterval: Infinity });
+    st.perfRegulator = false;
     const y = (x, z) => r._voxelSurfaceY(x, z);
     const stehen = (p) => (pm.set(p.x, y(p.x, p.z) + 1.8, p.z), window.__weltStehtNach(takt));
     const baum = (a) => /baum/.test(a._lodSpecies || a.type) && r._istNatur(a);
@@ -698,7 +698,6 @@ const TAT = process.argv.includes("--tat");
                 // PID Frame für Frame ohne die Grenzzyklus-Wand des Spiels (`_nexusPerfActuate`) — ein atmender Radius ist
                 // eine echte Eingabe der Wache (er weckt sie, Phase W prüft es), aber kein Stand.
                 st.perfRegulator = false;
-                st.nexusEvolutionInterval = Infinity;
                 st.playerMesh.position.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
                 // einschwingen: die Welt steht (A9, das EINE Einschwingen, welt-boot `__weltStehtNach`: Chunks, die Foundry, der Wald
                 // samt seinen Pflanz-Gängen — K69: solange er plant, weckt seine Regung die Fege-Takte)
