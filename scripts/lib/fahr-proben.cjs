@@ -767,15 +767,15 @@ async function probeLeben(expected) {
                 spalte.push(spalt);
             });
             tasten(true, false);
-            for (let i = 0; i < 90; i++) frame(i);
+            bilder(90);
             phase = "s";
             for (const k of ["w", "a", "s", "d"]) st.keys[k] = false;
             st.keys.s = true;
-            for (let i = 0; i < 40; i++) frame(i);
+            bilder(40);
             st.keys.s = false;
             phase = "a";
             tasten(true, true);
-            for (let i = 0; i < 60; i++) frame(i);
+            bilder(60);
             tasten(false);
             ab5();
             spalte.sort((a, b) => a - b);
