@@ -2033,8 +2033,8 @@ class AnazhRealm_siedlung_ort {
     // `_spawnSettlementSlot`; `worldMeta.settlementCells` markiert bei Export-ANKUNFT (nie Doppel-Dorf).
     // Headless ruht der Zug (Gate-Hook `__anazhAutoSettlement`). Unten: Zelle → {seed, nH, Anker} | null.
     // DAS RANG-GESETZ (siedlung.K2): Existenz, Anker, Stufe, Größe und Verdrängung rechnet der Kern (fachwerk `siedlungsZelle`:
-    // je Raster der Stufe die Stadt seines Siegers, Pareto-Größe, kein Ort in der Reichweite eines höheren); der Wirt reicht
-    // den Zell-Hash (FNV-1a über „<Welt-Same>:dorf:cx,cz") und hält das Gedächtnis je Welt-Same. `mehrM`: so viel weiter als
+    // je Raster der Stufe die Stadt seines Siegers, Pareto-Größe, kein Ort in der Reichweite eines höheren) am Zell-Hash des
+    // Kerns (`siedlungsHash`); der Wirt hält Hash und Gedächtnis je Welt-Same. `mehrM`: so viel weiter als
     // ein Dorf reicht der Ort (die Spawn-Klar-Wand und das Erwachen zählen ab seinem Rand). Bis K2 würfelte die Zelle hier
     // 8–17 Häuser — die Welt trug nur Dörfer.
     _autoSettlementCellInfo(cx, cz) {
@@ -2042,17 +2042,10 @@ class AnazhRealm_siedlung_ort {
         const A = AnazhRealm._siedlungGesetz();
         if (!A) return null;
         const ws = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-        if (!this._siedlungZellMemo || this._siedlungZellMemo.ws !== ws) this._siedlungZellMemo = { ws, M: new Map() }; // Instanz-Feld (die _editSaveTimer-Klasse)
-        const hash = (x, z) => {
-            const s = `${ws}:dorf:${x},${z}`;
-            let h = 2166136261 >>> 0;
-            for (let i = 0; i < s.length; i++) {
-                h ^= s.charCodeAt(i);
-                h = Math.imul(h, 16777619) >>> 0;
-            }
-            return h;
-        };
-        const z = AnazhRealm.Gesetz("fachwerk:siedlungsZelle")(A, cx, cz, hash, this._siedlungZellMemo.M);
+        if (!this._siedlungZellMemo || this._siedlungZellMemo.ws !== ws)
+            this._siedlungZellMemo = { ws, M: new Map(), hash: AnazhRealm.Gesetz("fachwerk:siedlungsHash")(ws) }; // Instanz-Feld (die _editSaveTimer-Klasse)
+        const Z = this._siedlungZellMemo;
+        const z = AnazhRealm.Gesetz("fachwerk:siedlungsZelle")(A, cx, cz, Z.hash, Z.M);
         if (!z) return null;
         return {
             key: cx + "," + cz,

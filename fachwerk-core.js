@@ -3187,9 +3187,19 @@
         if (h % 3 !== 0) return undefined;
         return namen[(h >>> 4) % namen.length];
     }
-    // DIE ZELLE DER WELT (siedlung.K2): `zellHash(cx, cz)` reicht der Wirt (FNV-1a über „<Welt-Same>:dorf:cx,cz"), der Kern
-    // entscheidet Existenz (1 von `rarity`), Anker (die Zell-Mitte ± ¼ Zelle aus den Bits >>>8 und >>>16), Stufe, Größe, Reichweite
-    // und die Verdrängung. `memo` (eine Map je Welt-Same) hält Orte, Sieger und Urteile. Rückgabe {seed, nH, stufe, x, z, reichM}
+    // DER ZELL-HASH einer Welt (siedlung.K2): FNV-1a über „<Welt-Same>:dorf:cx,cz" — der Wirt (`_autoSettlementCellInfo`) und
+    // die Linse (gate:settlement Teil Z) rufen denselben; bis 26.10. trug jeder seinen Zwilling.
+    function siedlungsHash(welt) {
+        return function (x, z) {
+            var s = welt + ":dorf:" + x + "," + z;
+            var h = 2166136261;
+            for (var i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
+            return h;
+        };
+    }
+    // DIE ZELLE DER WELT (siedlung.K2): `zellHash(cx, cz)` ist `siedlungsHash(<Welt-Same>)`, der Kern entscheidet Existenz
+    // (1 von `rarity`), Anker (die Zell-Mitte ± ¼ Zelle aus den Bits >>>8 und >>>16), Stufe, Größe, Reichweite und die
+    // Verdrängung. `memo` (eine Map je Welt-Same) hält Orte, Sieger und Urteile. Rückgabe {seed, nH, stufe, x, z, reichM}
     // oder null (kein Dorf, verdrängt).
     function siedlungsZelle(S, cx, cz, zellHash, memo) {
         var M = memo || new Map();
@@ -6909,6 +6919,7 @@
         SIEDLUNG: SIEDLUNG,
         // siedlung.K2 — das Rang-Gesetz (die Zelle, die Größe, die Reichweite), die Größe je Klasse und die Mauer der Stadt
         siedlungsZelle: siedlungsZelle,
+        siedlungsHash: siedlungsHash,
         trasseRahmen: trasseRahmen, // siedlung.K3 — der Rahmen des Höhen-Rasters um einen Ort (der Wirt füllt ihn aus gelaende-core hoehenRaster)
         hoeheAusRaster: hoeheAusRaster, // siedlung.K3 — der EINE Leser des Rasters (Export, Labor, Linse)
         siedlungsGroesse: siedlungsGroesse,
