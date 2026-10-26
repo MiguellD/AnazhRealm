@@ -515,3 +515,4 @@
 2026-10-26 22:11:31 takt7-radeon ferne.K1#1 GRÜN 2.2 · 13/37
 2026-10-26 22:11:39 takt7-radeon ferne.K2#1 GRÜN 2.2 · 14/37
 2026-10-26 22:11:34 takt7-feld-nach START 2 Stationen
+2026-10-26 22:12:46 takt7-feld-nach feld.K2#1 GRÜN 1.2 · 1/2
