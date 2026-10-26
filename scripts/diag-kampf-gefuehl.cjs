@@ -487,6 +487,17 @@ function stoffVerdict(V) {
     });
     return v;
 }
+// (Q11 halten.K2) DAS STOFF-PAAR am Bus, je Paar [Ego, Third]: die Stoffe des Gesetzes, ein Klang (Pegel > −60 dB) binnen 5 ms
+// nach dem Treffer, Funken genau bei Stahl auf Stein, Third = Ego, je zwei Paare ≥ 300 Hz Schwerpunkt auseinander (wie klang.K4).
+function paarVerdict(P) {
+    const [v, je] = [[], Object.entries(P || {})];
+    for (const [k, [e, t]] of je) {
+        const bus = e.db > -60 && e.ms >= 0 && e.ms <= 5 && !(e.funken > 0) === (k !== "stahl/stein");
+        if (e.stoffe !== k || !bus || JSON.stringify(e) !== JSON.stringify(t)) v.push(k + " " + JSON.stringify([e, t]));
+        for (const [l, [f]] of je) if (k < l && !(Math.abs(e.hz - f.hz) >= 300)) v.push(`${k} ≈ ${l}`);
+    }
+    return je.length === 3 ? v : ["keine Messung"];
+}
 // (Q12) halten.K4: die Spitze gegen die Parabel ihres Abschusses als Anteil des Falls ½·|g|·τ² ab 0,1 s; Staffel 1 Bahn und
 // Treffer-Ort ≤ 5 %, Tempo √(2E/m); Staffel 2 der Pfeil steckt und kehrt aus dem Speicher wieder, das Tempo folgt BOGENMAT.
 const fall = (g, t) => 0.5 * Math.abs(g) * t * t;
@@ -654,7 +665,7 @@ const NUR_K5 = process.argv.includes("--k5");
 
             // ── KONSUM am Zähl-Spion (Lehre 6): der Versorger o[k] zählt, während lauf() den Leser einmal ruft; die
             // Absenzen (kein attackSpeed, kein Direkt-Schaden, die Sim liest nie den Hit-Stop) halten die Wand bis D3d ──
-            const ruft = (lauf, k) => {
+            const ruft = (window.__ruft = (lauf, k) => {
                 const eigen = Object.prototype.hasOwnProperty.call(r, k),
                     f0 = r[k];
                 let n = 0;
@@ -669,17 +680,12 @@ const NUR_K5 = process.argv.includes("--k5");
                     else delete r[k];
                 }
                 return n > 0;
-            };
+            });
             o.checks.ruftSelbst = !ruft(() => r._hitStopFactor(0), "_playerSwingDauer"); // ein Leser ohne Ruf bleibt stumm
             const absenzKlick = window.__fehlt(r._playerAttackCreature, /attackSpeed|damageCreature/);
             const absenzDauer = window.__fehlt(r._beginPlayerSwing, /attackSpeed/);
-            // der Treffer klingt aus dem Gesetz (klang:SUBSTANZ.treffer) über den EINEN Ereignis-
-            // Chokepoint `_substanzKlang` — Master und Symphonie-Wand beweist gate:klang-zensus am Graphen.
-            const absenzKlang = window.__fehlt(r._substanzKlang, /new\s+AudioContext/);
             // der Tod im Kampf fällt den EINEN Fall (_kreaturFaellt, (D) treibt ihn), keiner despawnt selbst
             const absenzTod = window.__fehlt([r._creatureCombatDeath, r._kreaturFaellt], /removeCreature\(/);
-            // Stimme-aus respektiert (headless: Symphonie nie aktiviert → stumm, kein Throw)
-            o.checks.stimmeAusStumm = r._playKampfOneShot({ härte: 1 }) === false && !s.symphony.enabled;
 
             // ── (A) DAUER ∝ √I — ein ECHTER Blueprint durch die ECHTE Quelle, ρ(holz) × 2 in der Stoff-Zeile ──
             const box = (m, sz, p) => ({ shape: "box", material: m, size: sz, position: p || { x: 0, y: 0, z: 0 } });
@@ -764,7 +770,7 @@ const NUR_K5 = process.argv.includes("--k5");
                 s.pitch = Math.atan2((b.min.y + b.max.y) / 2 - c.y, Math.max(0.5, cNeben.position.z - c.z));
                 r._loopCamera(901);
             }
-            // ── KONSUM der EINEN Quellen am Zähl-Spion: Klick → Schwung → Dauer, HUD, Hit-Stop, Juice → Klang, Fall → Gefälle ──
+            // ── KONSUM der EINEN Quellen am Zähl-Spion: Klick → Schwung → Dauer, HUD, Hit-Stop, Fall → Gefälle (den Klang misst Q11 halten.K2 am Bus) ──
             p._swing = null;
             o.checks.klickLoestNurAus = ruft(() => r._playerAttackCreature(cNeben), "_beginPlayerSwing") && absenzKlick;
             p._swing = null;
@@ -775,9 +781,6 @@ const NUR_K5 = process.argv.includes("--k5");
             s._statsHudLastTick = s._statsHudTooltipLastTick = 0;
             o.checks.hudLiestQuelle = ruft(() => r.tickStatsHud(1e6), "_playerSwingDauer");
             s._statsHudLastTick = s._statsHudTooltipLastTick = 0;
-            o.checks.juiceKanaele = ruft(() => r._kampfHitJuice(cNeben, 1000, null, 5), "_playKampfOneShot");
-            p._hitStopUntil = 0;
-            o.checks.klangEineMaschine = ruft(() => r._playKampfOneShot({ härte: 1 }), "_substanzKlang") && absenzKlang;
 
             const schwinge = (t0) => {
                 // ein voller Schwung über die synthetische Anzeige-Uhr; zählt die
@@ -1024,9 +1027,6 @@ const NUR_K5 = process.argv.includes("--k5");
             `(B) der Treffer öffnet das Hit-Stop-Fenster im Gesetz-Band (${out.freeze !== null ? (out.freeze * 1000).toFixed(0) + " ms" : "kein Treffer"})`
         );
         check(c.bKameraImpuls, "(B) Kamera-Impuls über den BESTEHENDEN Landungs-Dip (_landImpactPending)");
-        check(c.juiceKanaele, "(B) der Treffer-Juice spielt den Klang-One-Shot (_playKampfOneShot am Spion)");
-        check(c.klangEineMaschine, "(B) der One-Shot klingt über _substanzKlang (kein zweiter AudioContext)");
-        check(c.stimmeAusStumm, "(B) Stimme-aus respektiert: Symphonie aus → der Treffer bleibt stumm");
         check(
             c.s2LinseFeuert,
             "SELBST-TEST (S2): Kapsel-Mathe ≡ ∞ gestubbt → kein Treffer (die Messung ist nicht blind)"
@@ -1160,6 +1160,13 @@ const NUR_K5 = process.argv.includes("--k5");
             stoffVerdict(SB.stoff).some((x) => x.startsWith("stoff")),
             "SELBST-TEST (S16): ein Verschleiß ohne Stoff (der Spender) — Bronze zehrt wie Stahl, die Linse nennt sie"
         );
+        const paarV = paarVerdict(z.paar);
+        check(
+            !paarV.length,
+            "Q11 halten.K2 Staffel 2: Klang und Funken aus dem Stoff-Paar am Bus " + JSON.stringify(z.paar) +
+                (paarV.length ? " — ROT " + paarV.join(" · ") : "")
+        );
+        check(paarVerdict(SB.paar).some((x) => x.includes("≈")), "SELBST-TEST (S19): alle Paare gleich — die Linse nennt sie");
         const s6 = satzVerdict({ hand: S.hand, langbogen: SB.bogen });
         check(
             s6.some((x) => x.includes("zehrt nicht")) && s6.some((x) => x.includes("führt bei wear")),

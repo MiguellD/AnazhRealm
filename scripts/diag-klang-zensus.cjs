@@ -436,7 +436,7 @@ function werkzeug() {
                 hauptSynthese: syn1 - syn0,
             });
         };
-        await fang("treffer", () => r._playKampfOneShot({ härte: 1, dichte: 0.2 }));
+        await fang("treffer", () => r._trefferPaar("stahl", "stein"));
         // Wasser strömt zurück — am Wasser des Seeufers; auf der trockenen Wiese (das Ohr steht dort) bleibt es still.
         const wp = W.wasserPunkt;
         await fang("wasser", () => r._playWaterReactionPing(wp ? [{ cx: wp.x, cz: wp.z, r: 1 }] : []));

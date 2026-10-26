@@ -64,11 +64,7 @@ function pruefe(o) {
 }
 const WELT = (ph) => A.prototype._saisonMul.call(null, ph, {});
 
-const errs = [];
-const check = (name, ok, detail) => {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) errs.push(name);
-};
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 if (process.argv.includes("--selftest")) {
     console.log("=== SAISON-FARBE — SELBST-TEST: die Linse feuert auf injizierte Brüche ===");
     const roh = (o, wer) => pruefe(Object.assign({ welt: WELT }, o)).find((g) => g[0].startsWith(wer))[1] === false;
