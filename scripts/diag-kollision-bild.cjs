@@ -28,10 +28,10 @@
 //       Sprint, der GT bei vmax und der Bär, den er stößt, gegen Mauer · Fels · Haus · Baum · Bär, der Fall aus FALL_M — bei
 //       144 · 60 · 30 fps und dem Takt-Deckel: je Takt Eindringen ≤ EINDRING_M, kein Durchtritt, Spalt ≤ SPALT_M (sonst vakuös);
 //       (T) der Fuchs mit EINEM Schritt je Takt (`LEIB_TEIL` ohne Teil-Schritt) MUSS durch die Mauer;
-//   (P) kein Page-Error.
+//   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Blocker ohne Bild, Bild ohne
 // Blocker, Baum ohne Stamm, fremde Gestalt, leere Zählung, stumpfer Schmuggel, fehlende Klasse, Bau auf dem Haupt-Thread,
-// Quelle, Durchtritt, Eindringen, vakuöse und fehlende Tempo-Zeile, stumpfer Tempo-Schmuggel, Page-Error — MUSS rot fallen und
+// Quelle, Durchtritt, Eindringen, vakuöse und fehlende Tempo-Zeile, stumpfer Tempo-Schmuggel — MUSS rot fallen und
 // ihn beim Namen nennen.
 //   node scripts/diag-kollision-bild.cjs [--selftest]   (npm run gate:kollision-bild; Port KOLLISION_BILD_PORT)
 // ─────────────────────────────────────────────────────────────────────────

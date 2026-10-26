@@ -16,7 +16,7 @@
 //   K4 wirkt      die Heimat schickt die chain-Form des Worts über ihren echten Weiterleiter (`_portalRouteDsl`): die
 //                 Welt wirkt sichtbar (Journal-Ereignis bzw. Zustand der UI) — bei begegnung der Ko-Präsenz-Eintritt
 //   K5 Esc        Esc in der Welt bringt den Spieler heim (die Heimat schließt das Overlay)
-//   K6 fehlerfrei die Welt wirft keinen Seiten-Fehler, und die GPU verwirft keinen ihrer Befehle (WebGPU-Prüfung)
+//   K6 fehlerfrei die GPU verwirft keinen ihrer Befehle (WebGPU-Prüfung); den Seiten-Fehler urteilt der EINE Sammler (welt-boot)
 //   K7 mitgebracht die Welt zeigt, was der Reisende mitbringt (der enter-Payload der Heimat, `MITGEBRACHT`)
 //   K8 getragen   was der Spieler trägt, reist mit (tore.K3): die Welten des Genesis-Rings betritt der Spieler über ihr Tor —
 //                 mit W durch die Apertur, wo das Tor ein Gesetz trägt (`_tickPortalMembranes` → enterPortal, die Probe taktet
@@ -729,7 +729,7 @@ async function pruefeWelt(page, welt, lies) {
     }
     const fehler = gpu.map((m) => "GPU: " + m.slice(0, 150));
     aus.k.K6 = fehler.length === 0;
-    if (!aus.k.K6) aus.notiz.push("Seiten-Fehler: " + fehler.slice(0, 2).join(" | "));
+    if (!aus.k.K6) aus.notiz.push("GPU-Prüfung: " + fehler.slice(0, 2).join(" | "));
     return aus;
 }
 

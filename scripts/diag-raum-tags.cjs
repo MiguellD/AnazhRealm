@@ -16,7 +16,7 @@
 //       die Rechnung (Werte `Object.is`, Schlüssel-Folge), nach jeder Änderung rechnet es neu, beim zweiten Fragen nicht;
 //       alle Baupläne der Welt zweimal: dieselben Tags, beim zweiten Mal ohne Rechnung;
 //   (S) DIE ZÄHNE: ein Schlüssel ohne die Stoff-Tags fällt beim direkt geänderten Stoff-Tag rot;
-//   (P) kein Page-Error.
+//   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Quell-Wand ist am Stamm grün und fällt bei einem eingeschleusten
 // Zustands-Leser, einem Instanz-Feld, einem Tabellen-Schreiber und einem Leser vorbei am Gedächtnis rot.
 //   node scripts/diag-raum-tags.cjs [--selftest]   (npm run gate:raum-tags; Port RAUM_TAGS_PORT)

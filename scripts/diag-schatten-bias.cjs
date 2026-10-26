@@ -18,7 +18,7 @@
 //       und Hang-Bias muss die ebene Platte in tiefer Sonne Akne zeigen (sonst ist die Probe blind). Echtes Dach und echter Hang
 //       zeigt `--echt` als Bild (ihre echten Kamin- und Relief-Schatten sind keine Akne — sie urteilt die Platte).
 //   (Q) QUELLE: `.normalBias` schreibt nur das Gesetz (`_schattenNormalBias`), die EINE Quelle ist `atmosphere.shadowBias`;
-//   (P) kein Page-Error.
+//   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // Die Bias-Steuerung der Probe (Versuche, die Zähne) hängt hinter der Box jeder Kaskade (`_kaskadeFit`), die Spiel-Werte kommen
 // aus dem Gesetz des Stamms (`_schattenBias`). Nach jedem castShadow-Wechsel zeichnet das Bundle neu (`_archMeshBundleTouch`).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Quell-Wand ist am Stamm grün und fällt bei einem fremden

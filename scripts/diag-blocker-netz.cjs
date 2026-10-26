@@ -20,7 +20,7 @@
 //       Bestand; den Stempel von Eintritt, Abriss, Kappe und Reiter-Schritt beweist (K) an ihren Runden;
 //   (W) DIE BOX-WAND (AST, acorn): kein Schreiben IN die Boxen (Feld, Index,
 //       ++/--, delete, push · pop · shift · unshift · splice · sort · reverse · fill · copyWithin, Object.assign);
-//   (P) kein Page-Error.
+//   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): der Stamm ist sauber, drei eingeschleuste Schreiber fallen rot
 // beim Namen, ein gestempelter bleibt grün.
 //   node scripts/diag-blocker-netz.cjs [--selftest]   (npm run gate:blocker-netz; Port BLOCKER_NETZ_PORT)

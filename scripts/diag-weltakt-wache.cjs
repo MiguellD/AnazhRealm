@@ -18,7 +18,7 @@
 //       jeden Op, Ort und jede Bedingung der DSL mit Form, die Welt-Akte als eigene Gruppe; jeder Op
 //       wirkt als KI an seiner Form (`_dslForm`, Werte aus der Welt), jede DSL-Liste (`*_OPS`, `DSL_*`) nennt nur lebende Ops
 //       (modify_terrain in einer Liste);
-//   (P) kein Page-Error.
+//   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 //   (T) DIE TAT (affekt K1/K4, ohne Halt): 10 Pflegen je 30 s — |δ₁₀| ≤ 0,3 δ₁, der Chor-Teil der Wertung am Ort ≥ 3 dB, 32 m
 //       daneben ≤ 0,5 dB, gestempelte Freude 0; Taten von Nexus und KI im Blick in ≤ 1 treuen Zeile je 30 s (`tat-k1`/`tat-k4`).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): `weltaktUrteil` fällt bei jedem durchgelaufenen Akt, beim blinden

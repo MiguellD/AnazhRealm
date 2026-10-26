@@ -28,7 +28,7 @@
 //       (Spawn, Tor), die Hitze schreibt nur der Brennglas-Takt; die Familie des Spiegel-Takts (D10,
 //       `_spiegel…`) gehört der Klasse;
 //   (W) DER WUCHS: kein Takt der Klasse leitet ein Skelett im Haupt-Faden ab — die Krone reist als Beipack aus dem Worker;
-//   (P) kein Page-Error.
+//   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Quell-Wand ist am Stamm grün und fällt bei einer eingeschleusten
 // Schleife, einem Schreiber ohne Stempel und einem fremden Hitze-Schreiber rot.
 //   node scripts/diag-brennglas-takt.cjs [--selftest]   (npm run gate:brennglas-takt; Port BRENNGLAS_TAKT_PORT)

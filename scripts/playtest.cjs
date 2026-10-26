@@ -580,7 +580,7 @@ if (require.main === module) (async () => {
         const top = [...histogram.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
 
         console.log(`\n=== Bericht (${DURATION_MS / 1000}s) ===`);
-        console.log(`FPS-Div: "${fpsText}", Log-Einträge: ${logs.length}, Page-Errors: ${errors.length}`);
+        console.log(`FPS-Div: "${fpsText}", Log-Einträge: ${logs.length}, Fehler: ${errors.length}`);
         if (fpsValues.length) {
             const min = Math.min(...fpsValues);
             const max = Math.max(...fpsValues);

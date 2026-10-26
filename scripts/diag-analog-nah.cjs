@@ -57,8 +57,8 @@ function urteil(z) {
     }
     const page = await browser.newPage();
     await page.setViewport({ width: 640, height: 360 });
-    // Die Linse nennt den Täter eines Seiten-Fehlers: die Phase (die letzte [N]-Zeile) und die Zeit seit dem Start;
-    // WebGPU-Meldungen der Konsole (Geräteverlust, Validierung) reisen mit ins Log (die CI fährt Dawns swiftshader).
+    // Die Linse nennt je WebGPU-Meldung der Konsole (Geräteverlust, Validierung) die Phase (die letzte [N]-Zeile) und die Zeit
+    // seit dem Start (die CI fährt Dawns swiftshader); den Seiten-Fehler nennt der EINE Sammler (welt-boot).
     const t0 = Date.now();
     let phase = "boot";
     let gpuMeldungen = 0;

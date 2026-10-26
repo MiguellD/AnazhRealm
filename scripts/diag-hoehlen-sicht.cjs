@@ -21,7 +21,7 @@
 //       nennt sie die fehlenden (sonst prüfte (b) nichts);
 //   (e) SCHNITT — die Wiese zeichnet weniger Höhlen-Dreiecke, als ihr Frustum trägt (sonst wäre die Sicht tot);
 //   (f) DER STOFF AM GRAPH — der Boden-Stoff legt die Himmels-Sicht als Verdeckung, Normale und Pool-Gewicht (der gebaute
-//       Knoten-Graph, der Ruf der EINEN BRDF; dass der Chokepoint die Höhle wählt, misst (b)/(d)/(e) am Bild); (g) kein Page-Error;
+//       Knoten-Graph, der Ruf der EINEN BRDF; dass der Chokepoint die Höhle wählt, misst (b)/(d)/(e) am Bild); (g) kein Page-Error (der EINE Sammler, welt-boot);
 //   (h) GEDÄCHTNIS — die gemerkte Horizont-Sperre gilt nur dem Boden, den sie gemessen hat: im Stand an der Mündung hält
 //       sie (sonst prüfte die Wand nichts), nach einem neuen Boden (`_chunkSatzMarke`: Graben, LOD-Naht) misst der nächste
 //       Pass jede Mündung im Bild neu;
@@ -48,7 +48,7 @@
 //       Himmel, Schutt und Farbe des Workers byte-gleich gegen den Sync-Bau. Gegenprobe: der Sync-Bau ruft es (sonst
 //       zählte die Wand blind).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Spiegel-Drift, Loch, Licht-Leck,
-// leerer Blick, blinde Linse, toter Schnitt, stumpfer Hinaus-Blick, fehlender Chokepoint, Page-Error — MUSS rot fallen und
+// leerer Blick, blinde Linse, toter Schnitt, stumpfer Hinaus-Blick, fehlender Chokepoint — MUSS rot fallen und
 // ihn beim Namen nennen.
 //   node scripts/diag-hoehlen-sicht.cjs [--selftest]   (npm run gate:hoehlen-sicht; Port HOEHLEN_SICHT_PORT)
 // ─────────────────────────────────────────────────────────────────────────
