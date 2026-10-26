@@ -20,11 +20,16 @@
 //   (B) DER TURM (bauen.K4): je Klick der rechten Maus (`tryMousePlace`, der Blick senkrecht nach unten) ein Block unter dem
 //       Spieler: der Stand steigt je Block ≥ HUB_ANTEIL · r, die Sohlen liegen ≤ SOHLE_M neben dem Mesh (`_bodenSichtAt`), der
 //       Turm trägt ≥ TURM_M; nach dem Reload steht jeder Edit, die Hülle ohne Loch, der Spieler oben;
+//   (B2) DER TURM AUF DACH, FELS UND BRÜCKE (bauen.K4#2): derselbe Turm im Haus der Werkstatt (vom Dachboden durch das Dach),
+//       auf der Felsdecke über der nächsten Spalte und auf dem Deck der Brücke des Prüf-Satzes, je in Ego und Third — die
+//       Sohlen auf der obersten Fläche (`_bodenSichtAt`); dann der Spieler FERN_M fern: der Fern-Ring trägt die Krone, ein Block
+//       auf sie (`voxel_fill`) steht ≤ FERN_S Spielzeit in seinen Lage-Bytes (byte-Diff); nach dem Reload jeder Edit, kein Loch;
 //   (Z) DER ZENSUS: je Ort die Überhang-Spalten im Umkreis (Luft ≥ 3 m unter ≥ 2 m Fels, ihr Grund begehbar) — Wagen und
-//       an die nächste Wand gestoßener Wolf je Spalte; ROT je Körper beim Namen, Ort und Maß;
+//       an die nächste Wand gestoßener Wolf je Spalte, gerichtet von derselben Wand wie O (`fall`); ROT je Körper beim Namen,
+//       Ort und Maß;
 //   (T) DER EINGESCHMUGGELTE TÄTER: im selben Lauf liest der Boden des Werks die Oberkante der Säule (der alte Leser) — O1
-//       MUSS rot fallen, beim Namen;
-//   (Q) DIE QUELLE (AST, acorn): die Körper-Schritte lesen ihren Boden nur über `_koerperBodenUnter` — kein
+//       MUSS durch dieselbe Wand (`fall`) rot fallen, beim Namen;
+//   (Q) DIE QUELLE (am AST, die Glieder und Rufe des Stamms `stammLib.rufe`): die Körper-Schritte lesen ihren Boden nur über `_koerperBodenUnter` — kein
 //       `getTerrainHeightAt` / `_voxelSurfaceY` / `findSurfaceAbove` / `_terrainMacroSurfaceY` in ihnen (dass sie
 //       den Boden unter dem Leib lesen, beweist (O) am Verhalten); JEDE andere Methode, die einen dieser Leser ruft UND die Höhe eines Leibs berührt
 //       (`.position.y`, `.position.set`), ist als Platzierung/Welt-Leser benannt (OBERKANTE_BENANNT, mit Grund) — sonst
@@ -35,9 +40,19 @@
 //   node scripts/diag-fall-waechter.cjs [--selftest]   (npm run gate:fall-waechter; Port FALL_WAECHTER_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT: root, sleep } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    starteBrowser,
+    warteAufWelt,
+    nullRenderer,
+    ROOT: root,
+    sleep,
+    hauptLauf,
+    pruefer,
+} = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
+const PRUEF_SATZ = require("../spec/pruefsatz/bauen-k3.json"); // die Brücke auf zwei Pfeilern (B2)
 
 const FALL_M = 1.0; // so tief darf ein Körper nie unter dem Fels unter ihm liegen
 const STEHT_M = 0.6; // so nah steht ein ruhender Körper an seinem Grund (Rad-Ebene, Nick, Sohle)
@@ -57,6 +72,8 @@ const HOEHLE_M = 0.25;
 const STIRN_M = 0.1;
 // DER TURM (B): Blöcke, ihr Maß, die Höhe über dem Gelände, die Sohle neben dem Mesh, der Hub in r
 const [TURM_BLOECKE, TURM_R, TURM_M, SOHLE_M, HUB_ANTEIL] = [20, 3.5, 60, 0.15, 0.8];
+// B2: die Unterlagen × Sichten, der Abstand des Spielers zum Turm (jenseits der Chunks, im Fern-Ring) und die Frist des Rings
+const [UNTERLAGEN, SICHTEN, FERN_M, FERN_S] = [["Dach", "Fels", "Brücke"], { Ego: "first", Third: "third" }, 320, 1];
 // Die Körper-Schritte und die Leser, die nie den Boden eines Körpers liefern dürfen.
 const KOERPER_SCHRITTE = [
     "_fahrBoden",
@@ -89,71 +106,94 @@ const OBERKANTE_BENANNT = {
     ],
 };
 
-// DIE QUELLEN-WAND (AST): je Körper-Schritt die Rufe eines Dach-Lesers (Täter) und ob er einen Boden-Leser ruft; jeder
-// andere Leser der Oberkante, der die Höhe eines Leibs berührt, ist benannt (OBERKANTE_BENANNT) oder ein Täter.
+// DIE QUELLEN-WAND (am AST: die Glieder und Rufe des Stamms, `stammLib.rufe`): je Körper-Schritt die Rufe eines Dach-Lesers
+// (Täter); jeder andere Leser der Oberkante, der die Höhe eines Leibs berührt (`.position.y`, `.position.set(`), ist benannt
+// (OBERKANTE_BENANNT) oder ein Täter.
 function quellenWand(quelle, benannt = OBERKANTE_BENANNT) {
-    const acorn = require("acorn");
-    const ast = acorn.parse(quelle, { ecmaVersion: "latest", sourceType: "script", locations: true });
-    const befunde = [];
-    const gefunden = new Set();
-    const benanntGesehen = new Set();
-    const lauf = (n, f) => (f(n), stammLib.kinder(n, (c) => lauf(c, f)));
-    const name = (m) => (m && m.type === "MemberExpression" && !m.computed && m.property ? m.property.name : null);
-    lauf(ast, (n) => {
-        if (n.type !== "MethodDefinition" || !n.key) return;
-        const methode = n.key.name;
-        if (!KOERPER_SCHRITTE.includes(methode)) {
-            // ein anderer Leser der Oberkante, der die Höhe eines Leibs berührt
-            const dach = [];
-            let leib = false;
-            lauf(n.value.body, (c) => {
-                if (c.type === "CallExpression" && DACH_LESER.has(name(c.callee)))
-                    dach.push([name(c.callee), c.loc.start.line]);
-                if (c.type === "MemberExpression" && name(c) === "y" && name(c.object) === "position") leib = true;
-                if (c.type === "CallExpression" && name(c.callee) === "set" && name(c.callee.object) === "position")
-                    leib = true;
-            });
-            if (!dach.length || !leib || DACH_LESER.has(methode)) return;
-            const b = benannt[methode];
-            if (b) benanntGesehen.add(methode);
-            for (const [nm, zeile] of dach)
-                if (!b || !b[0].includes(nm))
+    const [befunde, je, gl, leib] = [
+        [],
+        new Map(),
+        new Map(stammLib.glieder(quelle).map((g) => [g.name, g])),
+        new Set(),
+    ];
+    for (const c of stammLib.rufe(quelle))
+        if (DACH_LESER.has(c.name) && !DACH_LESER.has(c.glied) && gl.has(c.glied))
+            je.set(c.glied, [
+                ...(je.get(c.glied) || []),
+                [
+                    c.name,
+                    `${c.glied} Zeile ${stammLib.zeileVon(quelle, c.start)} ruft ${c.name} (die Oberkante der Säule)`,
+                ],
+            ]);
+    for (const m of KOERPER_SCHRITTE) if (!gl.has(m)) befunde.push(`${m} fehlt im Stamm (die Wand kennt ihn)`);
+    for (const [m, dach] of je) {
+        const [g, b] = [gl.get(m), benannt[m] || [[]]];
+        if (KOERPER_SCHRITTE.includes(m)) befunde.push(...dach.map((d) => d[1]));
+        else if (/\.position\.(?:y\b|set\()/.test(stammLib.ohneKommentare(quelle.slice(g.start, g.ende))))
+            for (const [nm, t] of leib.add(m) && dach)
+                if (!b[0].includes(nm))
                     befunde.push(
-                        `UNBENANNT: ${methode} Zeile ${zeile} ruft ${nm} (die Oberkante der Säule) und berührt die Höhe ` +
-                            `eines Leibs — Körper-Schritt (_koerperBodenUnter) oder benannte Platzierung?`
+                        `UNBENANNT: ${t} und berührt die Höhe eines Leibs — Körper-Schritt (_koerperBodenUnter) oder benannte Platzierung?`
                     );
-            return;
-        }
-        gefunden.add(methode);
-        lauf(n.value.body, (c) => {
-            if (c.type !== "CallExpression" || c.callee.type !== "MemberExpression") return;
-            const nm = name(c.callee);
-            if (DACH_LESER.has(nm))
-                befunde.push(`${methode} Zeile ${c.loc.start.line} ruft ${nm} (die Oberkante der Säule)`);
-        });
-    });
-    for (const m of KOERPER_SCHRITTE) if (!gefunden.has(m)) befunde.push(`${m} fehlt im Stamm (die Wand kennt ihn)`);
+    }
     for (const m of Object.keys(benannt))
-        if (!benanntGesehen.has(m))
+        if (!leib.has(m))
             befunde.push(
                 `VERALTET: ${m} ist benannt, liest aber keine Oberkante an einem Leib mehr (die Liste wandert mit)`
             );
     return befunde;
 }
 
-// Das Urteil über den Turm (B): je Block [Hub, Sohle neben dem Mesh], nach dem Reload `nach`.
-function turmUrteil(t) {
-    if (!t || t.fehler || !t.nach) return [`LEER: B Turm: ${t ? t.fehler || "kein Reload" : "fehlt"}`];
-    const [v, n, f] = [[], t.nach, (x) => Number(x).toFixed(2)];
-    if (t.bloecke.length !== TURM_BLOECKE) v.push(`LEER: B Turm: ${t.bloecke.length} Blöcke`);
+// Das Urteil über einen Turm (B, B2 `wo`): je Block [Hub, Sohle neben dem Mesh], nach dem Reload `nach`; in B2 der Ring `ring`
+// (die Krone im Ring vor dem Block, die Takte, bis seine Lage-Bytes den Block auf der Krone zeigen) — der Stand nach dem Reload
+// gilt dem Turm des Saves (B).
+function turmUrteil(t, wo = "B") {
+    const B = wo === "B";
+    if (!t || t.fehler || !t.nach) return [`LEER: ${wo} Turm: ${t ? t.fehler || "kein Reload" : "fehlt"}`];
+    const [v, n, f, g] = [[], t.nach, (x) => Number(x).toFixed(2), t.ring || {}];
+    if (t.bloecke.length !== TURM_BLOECKE) v.push(`LEER: ${wo} Turm: ${t.bloecke.length} Blöcke`);
     t.bloecke.forEach(([hub, sohle], k) => {
-        if (!(hub >= HUB_ANTEIL * TURM_R)) v.push(`(B) KEIN HUB: Block ${k + 1} hob ${f(hub)} m`);
-        if (!(sohle <= SOHLE_M)) v.push(`(B) SOHLE: Block ${k + 1} ${f(sohle)} m neben dem Mesh`);
+        if (!(hub >= HUB_ANTEIL * TURM_R)) v.push(`(${wo}) KEIN HUB: Block ${k + 1} hob ${f(hub)} m`);
+        if (!(sohle <= SOHLE_M)) v.push(`(${wo}) SOHLE: Block ${k + 1} ${f(sohle)} m neben dem Mesh`);
     });
-    if (!(t.hoehe >= TURM_M)) v.push(`(B) ZU NIEDRIG: ${f(t.hoehe)} m über dem Gelände`);
-    if (n.edits !== t.bloecke.length || n.loecher || !(n.sohle <= SOHLE_M) || !(n.hoehe >= t.hoehe - SOHLE_M))
-        v.push(`(B) RELOAD: ${n.edits} Edits, ${n.loecher} Löcher, Sohle ${f(n.sohle)} m, Stand ${f(n.hoehe)} m`);
+    if (!(t.hoehe >= TURM_M)) v.push(`(${wo}) ZU NIEDRIG: ${f(t.hoehe)} m über ${B ? "dem Gelände" : "der Unterlage"}`);
+    if (n.edits !== t.bloecke.length + !B || n.loecher || (B && !(n.sohle <= SOHLE_M && n.hoehe >= t.hoehe - SOHLE_M)))
+        v.push(
+            `(${wo}) RELOAD: ${n.edits} Edits, ${n.loecher} Löcher` +
+                (B ? `, Sohle ${f(n.sohle)} m, Stand ${f(n.hoehe)} m` : "")
+        );
+    if (!B && !(g.vor >= g.krone - SOHLE_M))
+        v.push(`(${wo}) FERN-RING OHNE TURM: ${f(g.vor)} m an der Krone ${f(g.krone)} m`);
+    if (!B && !(g.takte / 60 <= FERN_S))
+        v.push(`(${wo}) FERN-RING ` + (g.takte ? `ZU SPÄT: ${f(g.takte / 60)} s` : "OHNE EDIT nach 120 Takten"));
     return v;
+}
+const turm2Urteil = (liste) =>
+    UNTERLAGEN.flatMap((u) =>
+        Object.keys(SICHTEN).flatMap((s) =>
+            turmUrteil(
+                (liste || []).find((t) => t.wo === u + " " + s),
+                `B2 ${u} ${s}`
+            )
+        )
+    );
+
+// DER FALL eines Leibs (O, Z, T): tiefer als `fallM` unter dem Fels unter ihm (ein Tier steht auf der Sicht — Q4, Lehre 22: der
+// sichtbare Boden ist das Mesh —, sein Leib darf so weit neben dem Gesetz liegen, wie das Stand-Band des Spiels trägt, `band`
+// STAND_SICHT_BAND; Wagen und Spieler stehen auf dem Gesetz), unter der Todes-Ebene, höher als DACH_M über dem Grund, auf den er
+// gesetzt war (das Dach).
+function fall(p, fallM = Math.max(FALL_M, p.band || 0)) {
+    const [wo, soll] = [
+        `${p.name} — ${p.koerper} bei ${p.ort}`,
+        Number.isFinite(p.grundSoll) ? p.grundSoll : p.grundEnde,
+    ];
+    return [
+        p.tiefsteUnter > fallM &&
+            `(O) DURCH DEN BODEN: ${wo} lag ${p.tiefsteUnter.toFixed(2)} m unter dem Fels unter ihm (am Ende y ${p.yEnde.toFixed(2)}, Grund ${p.grundEnde.toFixed(2)})`,
+        p.todesEbene && `(O) UNENDLICHER FALL: ${wo} fiel unter die Todes-Ebene (y ${p.yMin.toFixed(1)})`,
+        p.yEnde - soll > DACH_M &&
+            `(O) AUF DEM DACH: ${wo} steht ${(p.yEnde - soll).toFixed(2)} m über dem Grund, auf den er gesetzt war (y ${p.yEnde.toFixed(2)}, Grund ${soll.toFixed(2)}, Säulen-Oberkante ${p.dach.toFixed(2)})`,
+    ].filter(Boolean);
 }
 
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein, im Selbsttest wie im Lauf.
@@ -176,20 +216,11 @@ function urteil(b) {
             continue;
         }
         const wo = `${p.koerper} bei ${p.ort}`;
-        // ein Tier steht auf der Sicht (Q4, Lehre 22: der sichtbare Boden ist das Mesh) — sein Leib darf so weit neben dem
-        // Gesetz liegen, wie das Stand-Band des Spiels trägt (`band`, STAND_SICHT_BAND); Wagen und Spieler stehen auf dem Gesetz.
         // IN DER HÖHLE (O3) hat die Sicht keine Karte (sie trägt die Oberkante der Säule): dort steht auch das Tier auf dem
         // Gesetz, und sein Band ist HOEHLE_M
         const hoehle = Number.isFinite(p.band) && p.name.startsWith("O3 ");
-        const fallM = hoehle ? HOEHLE_M : Number.isFinite(p.band) ? Math.max(FALL_M, p.band) : FALL_M;
-        const stehtM = hoehle ? HOEHLE_M : Number.isFinite(p.band) ? Math.max(STEHT_M, p.band) : STEHT_M;
-        if (p.tiefsteUnter > fallM)
-            v.push(
-                `(O) DURCH DEN BODEN: ${p.name} — ${wo} lag ${p.tiefsteUnter.toFixed(2)} m unter dem Fels unter ihm` +
-                    ` (am Ende y ${p.yEnde.toFixed(2)}, Grund ${p.grundEnde.toFixed(2)})`
-            );
-        if (p.todesEbene)
-            v.push(`(O) UNENDLICHER FALL: ${p.name} — ${wo} fiel unter die Todes-Ebene (y ${p.yMin.toFixed(1)})`);
+        const stehtM = hoehle ? HOEHLE_M : Math.max(STEHT_M, p.band || 0);
+        v.push(...fall(p, hoehle ? HOEHLE_M : undefined));
         if (
             p.ruhe &&
             !(Math.abs(p.yEnde - p.grundEnde) <= stehtM) &&
@@ -245,23 +276,17 @@ function urteil(b) {
                     v.push(`(O) TOD-LAGE: ${p.name} — ${wo} schwebt im Kippen ${t.kippMax.toFixed(2)} m über dem Fels`);
             }
         }
-        const soll = Number.isFinite(p.grundSoll) ? p.grundSoll : p.grundEnde;
-        if (p.yEnde - soll > DACH_M)
-            v.push(
-                `(O) AUF DEM DACH: ${p.name} — ${wo} steht ${(p.yEnde - soll).toFixed(2)} m über dem Grund, auf den er gesetzt war ` +
-                    `(y ${p.yEnde.toFixed(2)}, Grund ${soll.toFixed(2)}, Säulen-Oberkante ${p.dach.toFixed(2)})`
-            );
     }
-    const z = b.zensus || {};
+    // (Z) der Zensus: dieselbe Wand je Wagen und Wolf in den Überhang-Spalten; (T) der Schmuggel fällt durch sie
+    const [z, t] = [b.zensus || {}, b.schmuggel || { fehler: "kein Lauf" }];
     if (!(z.spalten > 0)) v.push("LEER: (Z) der Zensus fand keine Überhang-Spalte");
-    for (const t of z.taeter || []) v.push(`(Z) ${t}`);
-    if (!b.schmuggel || !b.schmuggel.rot)
+    for (const p of z.proben || []) v.push(...fall(p).map((x) => "(Z) " + x));
+    if (t.fehler || !fall(t).length)
         v.push(
-            "LINSE STUMPF: (T) mit dem Dach-Leser im Boden des Werks fiel O1 nicht rot" +
-                (b.schmuggel && b.schmuggel.mass ? ` (${b.schmuggel.mass})` : "")
+            `LINSE STUMPF: (T) mit dem Dach-Leser im Boden des Werks fiel O1 nicht rot (${t.fehler || `${t.tiefsteUnter} m unter dem Grund, am Ende y ${t.yEnde}`})`
         );
     for (const q of b.quelle || []) v.push(`(Q) DACH-LESER: ${q}`);
-    return [...v, ...turmUrteil(b.turm)];
+    return [...v, ...turmUrteil(b.turm), ...turm2Urteil(b.turm2)];
 }
 
 function selbsttest() {
@@ -297,20 +322,32 @@ function selbsttest() {
                 tod: { stehtM: 0.02, liegtM: 0.04, kippMin: 0.01, kippMax: 0.08 },
             }),
         ],
-        zensus: { spalten: 8, proben: 16, taeter: [] },
-        schmuggel: { rot: true, mass: "8,2 m durch den Boden" },
+        zensus: { spalten: 8, proben: [probe("Zensus", "Tier wolf#6", { band: 2 })] },
+        schmuggel: probe("T Schmuggel", "Wagen fahrzeug_gt#9", { tiefsteUnter: 8.2 }),
         quelle: [],
         turm: {
             bloecke: Array.from({ length: TURM_BLOECKE }, () => [3.5, 0.03]),
             hoehe: 70,
             nach: { edits: TURM_BLOECKE, loecher: 0, sohle: 0.04, hoehe: 70 },
         },
+        turm2: UNTERLAGEN.flatMap((u) =>
+            Object.keys(SICHTEN).map((s) => ({
+                wo: u + " " + s,
+                bloecke: Array.from({ length: TURM_BLOECKE }, () => [3.5, 0.01]),
+                hoehe: 70,
+                nach: { edits: TURM_BLOECKE + 1, loecher: 0 },
+                ring: { krone: 160.38, vor: 160.38, takte: 2 },
+            }))
+        ),
     };
-    const fehler = [];
-    const g = urteil(gruen);
-    if (g.length) fehler.push("der grüne Befund fällt rot: " + g.join(" · "));
+    const { errs, check } = pruefer();
     const klon = () => JSON.parse(JSON.stringify(gruen));
+    // je Fall der Täter, den die Wand beim Namen nennt (`muss`); ohne `muss` bleibt der Befund grün
     const faelle = [
+        ["der grüne Befund", () => {}],
+        // das Gegenstück: ein Tier am steilen Fuß der Höhlenwand steht auf der Ebene seiner Proben, 0,2 m unter dem Fels unter
+        // seiner Wurzel (der Grund krümmt sich unter dem Leib) — im Höhlen-Band, grün
+        ["Tier im Höhlen-Band", (b) => Object.assign(b.proben[5], { tiefsteUnter: 0.2, yEnde: 30.2, grundEnde: 30.4 })],
         [
             "der Wagen der Schau fällt durch den Spaltgrund",
             (b) => Object.assign(b.proben[0], { tiefsteUnter: 6444, yEnde: -6428, todesEbene: true, yMin: -6428 }),
@@ -390,10 +427,10 @@ function selbsttest() {
         ["leerer Zensus", (b) => (b.zensus.spalten = 0), /LEER: \(Z\) der Zensus fand keine/],
         [
             "Zensus-Täter",
-            (b) => b.zensus.taeter.push("Wagen an -870/-1230 3,1 m durch den Boden"),
-            /\(Z\) Wagen an -870\/-1230/,
+            (b) => (b.zensus.proben[0].tiefsteUnter = 3.1),
+            /\(Z\) \(O\) DURCH DEN BODEN: Zensus — Tier wolf#6 bei -900\.6\/-976\.1 lag 3\.10 m/,
         ],
-        ["stumpfer Schmuggel", (b) => (b.schmuggel.rot = false), /LINSE STUMPF: \(T\)/],
+        ["stumpfer Schmuggel", (b) => (b.schmuggel.tiefsteUnter = 0.1), /LINSE STUMPF: \(T\)/],
         [
             "Quelle",
             (b) => b.quelle.push("_fahrBoden Zeile 1 ruft getTerrainHeightAt"),
@@ -406,61 +443,48 @@ function selbsttest() {
         ["ein Block fehlt", (b) => b.turm.bloecke.pop(), /LEER: B Turm: 19 Blöcke/],
         ["ein Loch", (b) => (b.turm.nach.loecher = 3), /RELOAD: 20 Edits, 3 Löcher/],
         ["kein Reload", (b) => delete b.turm.nach, /LEER: B Turm: kein Reload/],
+        // B2 — der Fuß in der Luft (am Vorfahren gemessen: der Grund des Hauses schnitt den Turm über dem Dach, Sohle 193,85 m)
+        ["Fuß in der Luft", (b) => (b.turm2[0].bloecke[4][1] = 193.85), /\(B2 Dach Ego\) SOHLE: Block 5 193\.85 m/],
+        // der Ring ohne den Turm (am Vorfahren: 89,62 m an der Krone 160,38 m) und ohne den Edit
+        ["Ring ohne Turm", (b) => (b.turm2[2].ring.vor = 89.62), /\(B2 Fels Ego\) FERN-RING OHNE TURM: 89\.62/],
+        ["Ring ohne Edit", (b) => delete b.turm2[3].ring.takte, /\(B2 Fels Third\) FERN-RING OHNE EDIT/],
+        ["Ring zu spät", (b) => (b.turm2[5].ring.takte = 90), /\(B2 Brücke Third\) FERN-RING ZU SPÄT: 1\.50 s/],
     ];
-    {
-        // das Gegenstück: ein Tier am steilen Fuß der Höhlenwand steht auf der Ebene seiner Proben, 0,2 m unter dem Fels unter
-        // seiner Wurzel (der Grund krümmt sich unter dem Leib) — im Höhlen-Band, grün
-        const b = klon();
-        Object.assign(b.proben[5], { tiefsteUnter: 0.2, yEnde: 30.2, grundEnde: 30.4 });
-        const v = urteil(b);
-        console.log(
-            `  ${v.length ? "❌" : "✅"} Selbsttest „Tier im Höhlen-Band" bleibt grün: ${v.join(" · ") || "grün"}`
-        );
-        if (v.length) fehler.push("ein Tier im Höhlen-Band fällt rot: " + v.join(" · "));
-    }
     for (const [name, tat, muss] of faelle) {
         const b = klon();
         tat(b);
         const v = urteil(b);
-        const ok = v.some((x) => muss.test(x));
-        if (!ok) fehler.push(`${name}: die Wand nennt den Täter nicht (${muss})`);
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${name}" → rot: ${v.join(" · ") || "(nichts)"}`);
+        check(
+            `Selbsttest „${name}" → ${muss ? "rot" : "grün"}`,
+            muss ? v.some((x) => muss.test(x)) : !v.length,
+            v.join(" · ")
+        );
     }
-    // die Quellen-Wand am Stamm (grün) und an einer Kopie mit dem alten Leser (rot, beim Namen)
+    // die Quellen-Wand am Stamm (grün), an einer Kopie mit dem alten Leser im Körper-Schritt, einem unbenannten Leser der
+    // Oberkante an einem Leib und einem veralteten Namen (rot, je beim Namen)
     const stamm = stammLib.text(root);
     const amStamm = quellenWand(stamm);
-    console.log(`  ${amStamm.length ? "❌" : "✅"} Quellen-Wand am Stamm: ${amStamm.join(" · ") || "sauber"}`);
-    if (amStamm.length) fehler.push("die Quellen-Wand ist am Stamm rot: " + amStamm.join(" · "));
+    check("Quellen-Wand am Stamm sauber", !amStamm.length, amStamm.join(" · "));
     const kopie = stammLib.ersetze(
-        stamm,
+        stammLib.ersetze(
+            stamm,
+            null,
+            /(\n {4}_werkBoden\([^)]*\) \{)/,
+            "$1\n        if (entry.__schmuggel) return () => this.getTerrainHeightAt(0, 0);"
+        ),
         null,
-        /(\n {4}_werkBoden\([^)]*\) \{)/,
-        "$1\n        if (entry.__schmuggel) return () => this.getTerrainHeightAt(0, 0);"
+        /(\n {4}\*_todHebeTafel\([^)]*\) \{)/,
+        "\n    _schmuggelLeib(c) {\n        c.position.y = this.getTerrainHeightAt(c.position.x, c.position.z);\n    }\n$1"
     );
-    const anKopie = quellenWand(kopie);
-    const genannt = anKopie.some((x) => /^_werkBoden Zeile \d+ ruft getTerrainHeightAt/.test(x));
-    console.log(
-        `  ${genannt ? "✅" : "❌"} Quellen-Wand an der Kopie mit dem alten Leser → ${anKopie.join(" · ") || "(nichts)"}`
-    );
-    if (!genannt) fehler.push("die Quellen-Wand nennt den eingeschleusten Dach-Leser nicht");
-    // ein unbenannter neuer Leser der Oberkante an einem Leib, und ein veralteter Name
-    {
-        const k3 = stammLib.ersetze(stamm, null,
-            /(\n {4}\*_todHebeTafel\([^)]*\) \{)/,
-            "\n    _schmuggelLeib(c) {\n        c.position.y = this.getTerrainHeightAt(c.position.x, c.position.z);\n    }\n$1"
-        );
-        const a3 = quellenWand(k3, Object.assign({ _nieGelesen: [["getTerrainHeightAt"], "Test"] }, OBERKANTE_BENANNT));
-        const ok =
-            a3.some((x) => /^UNBENANNT: _schmuggelLeib Zeile \d+ ruft getTerrainHeightAt/.test(x)) &&
-            a3.some((x) => /^VERALTET: _nieGelesen ist benannt/.test(x));
-        console.log(
-            `  ${ok ? "✅" : "❌"} Quellen-Wand: ein unbenannter Leser am Leib und ein veralteter Name → ${a3.join(" · ") || "(nichts)"}`
-        );
-        if (!ok)
-            fehler.push("die Quellen-Wand nennt einen unbenannten Leser am Leib oder einen veralteten Namen nicht");
-    }
-    if (fehler.length) {
-        console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
+    const an = quellenWand(kopie, { _nieGelesen: [["getTerrainHeightAt"], "Test"], ...OBERKANTE_BENANNT }).join(" · ");
+    for (const muss of [
+        /_werkBoden Zeile \d+ ruft getTerrainHeightAt/,
+        /UNBENANNT: _schmuggelLeib Zeile \d+ ruft getTerrainHeightAt/,
+        /VERALTET: _nieGelesen ist benannt/,
+    ])
+        check(`Quellen-Wand an der Kopie → ${muss}`, muss.test(an), an);
+    if (errs.length) {
+        console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + errs.join(" · "));
         process.exit(1);
     }
     console.log("\n✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.");
@@ -486,7 +510,7 @@ async function probe(K) {
         r._gameLoopTick(tMs);
     };
     const f = r._ensureAssetFoundry();
-    await window.__weltDa(() => (f && f.ready && f.recipes && f.recipes.gt && st.blueprints.fahrzeug_gt));
+    await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints.fahrzeug_gt);
     // DIE SOHLE (B): je Bein der Knöchel nach der Fuß-IK minus `soleH` — der größere Abstand zum gebauten Mesh
     const sohle = () => {
         const [u, v] = [st.playerMesh.userData, new window.THREE.Vector3()];
@@ -497,17 +521,29 @@ async function probe(K) {
         // B nach dem Reload: die Füll-Edits des Turms, ihre Hülle (0,5 m innen Fels, 0,6 m außen Luft), Sohle und Stand
         await window.__weltStehtNach(takt);
         for (let i = 0; i < 120; i++) takt();
+        const huelle = (t) => {
+            const edits = st.worldMeta.voxelEdits.filter(
+                (e) => e.mode === "fill" && Math.hypot(e.x - t.x, e.z - t.z) < e.r
+            );
+            // je Säule innen Fels, außen Luft — außer in einer anderen Säule des Turms (der Treffer wandert um Zentimeter)
+            const drin = (x, y, z) => edits.some((f) => Math.hypot(x - f.x, z - f.z) < f.r && Math.abs(y - f.y) < f.r);
+            let loecher = 0;
+            for (const e of edits)
+                for (let y = Math.max(e.y, t.y0 + 2); y < e.y + e.r - 1; y++)
+                    for (let a = 0; a < 16; a++) {
+                        const q = a < 8 ? e.r - 0.5 : e.r + 0.6;
+                        const [x, z] = [e.x + Math.cos(a * 0.785) * q, e.z + Math.sin(a * 0.785) * q];
+                        if (r._terrainDensityAt(x, y, z) > 0 !== (a < 8 || drin(x, y, z))) loecher++;
+                    }
+            return { edits: edits.length, loecher };
+        };
         const t = K.nach;
-        const edits = st.worldMeta.voxelEdits.filter((e) => e.mode === "fill" && Math.hypot(e.x - t.x, e.z - t.z) < e.r);
-        let loecher = 0;
-        for (const e of edits)
-            for (let y = Math.max(e.y, t.y0 + 2); y < e.y + e.r - 1; y++)
-                for (let a = 0; a < 16; a++) {
-                    const q = a < 8 ? e.r - 0.5 : e.r + 0.6;
-                    const d = r._terrainDensityAt(e.x + Math.cos(a * 0.785) * q, y, e.z + Math.sin(a * 0.785) * q);
-                    if (d > 0 !== a < 8) loecher++;
-                }
-        return { edits: edits.length, loecher, sohle: sohle(), hoehe: st.playerMesh.position.y - t.y0 };
+        return {
+            ...huelle(t),
+            sohle: sohle(),
+            hoehe: st.playerMesh.position.y - t.y0,
+            turm2: K.nach2.map((u) => (u.fehler ? null : huelle(u))),
+        };
     }
     const todesEbene = (st.terrainBaseHeight || 0) - 88;
     // DIE BODEN-WAHRHEIT: das Dichtefeld selbst — der erste Fels unter einem Punkt (0,05-m-Schritte), unabhängig von jedem
@@ -543,8 +579,38 @@ async function probe(K) {
         for (const cr of (st.creatures || []).slice())
             if (cr && cr.position && Math.hypot(cr.position.x - x, cr.position.z - z) < rad) r.removeCreature(cr);
     };
-    // Ein Wagen auf dem Grund bei (x, z): gesetzt auf die Höhe `y` (der Grund der Probe), aufgesessen.
-    const wagen = async (x, z, y, gier) => {
+    // der Grund unter (x, z), gemessen ab der Höhe, auf die die Probe den Körper setzte (+1,5 m) — unabhängig davon, wo er endet
+    const grundAb = (x, z, ySoll) => {
+        if (!Number.isFinite(ySoll)) return NaN;
+        const g = grundUnter(x, ySoll + 1.5, z);
+        return Number.isFinite(g) ? g : ySoll;
+    };
+    // DIE SPUR EINES LEIBS: je Takt `schritt(x, y, z)` (seine Lage y gegen den Fels unter ihm), am Ende `ende(x, y, z, ySoll)` —
+    // die tiefste Lage unter dem Grund, y min, die Todes-Ebene, Ende, Grund, Oberkante und der Soll-Grund
+    const spur = () => {
+        const m = { tiefsteUnter: -Infinity, yMin: Infinity };
+        m.schritt = (x, y, z) => {
+            const g = grundAm(x, y + 0.6, z);
+            m.tiefsteUnter = Math.max(m.tiefsteUnter, g === Infinity ? 99 : Number.isFinite(g) ? g - y : 99);
+            m.yMin = Math.min(m.yMin, y);
+        };
+        m.ende = (x, y, z, ySoll) => {
+            const gE = grundAm(x, y + 0.6, z);
+            return {
+                tiefsteUnter: m.tiefsteUnter,
+                yMin: m.yMin,
+                todesEbene: m.yMin < todesEbene,
+                yEnde: y,
+                grundEnde: Number.isFinite(gE) ? gE : y - 99,
+                dach: dachAn(x, z),
+                grundSoll: grundAb(x, z, ySoll),
+            };
+        };
+        return m;
+    };
+    // DIE FAHRT: ein Wagen auf dem Grund y bei (x, z) gesetzt (Gier `gier`), aufgesessen; `vor(e)` vor der Fahrt (liefert den
+    // Tasten-Schritt je Takt), n Takte seine Spur gegen den Fels unter ihm (bis unter die Todes-Ebene), dann weg
+    const fahrt = async (x, z, y, gier, n, vor, ySoll = y) => {
         absteigen();
         st.playerMesh.position.set(x, y + 1.2, z);
         st.playerVel.setValue(0, 0, 0);
@@ -554,52 +620,29 @@ async function probe(K) {
             { x, y: y + 0.5, z },
             { silent: true, precise: true, rotationY: gier - Math.PI / 2 }
         );
-        if (!e) return null;
-        await window.__gebautNach(e, { takt });
-        const mr = r.mountArchitecture(e);
-        if (!mr || !mr.ok) {
-            r.removeArchitecture(e);
-            return null;
+        if (e) await window.__gebautNach(e, { takt });
+        if (!e || !(r.mountArchitecture(e) || {}).ok) {
+            if (e) r.removeArchitecture(e);
+            return { fehler: "der GT ließ sich nicht setzen/aufsitzen" };
         }
         tasten(false);
-        return e;
-    };
-    const weg = (e) => {
-        absteigen();
-        if (e) r.removeArchitecture(e);
-    };
-    // Die Spur eines Wagens: je Frame die Lage gegen den Fels unter ihm.
-    // der Grund unter (x, z), gemessen ab der Höhe, auf die die Probe den Körper setzte (+1,5 m) — unabhängig davon, wo er endet
-    const grundAb = (x, z, ySoll) => {
-        if (!Number.isFinite(ySoll)) return NaN;
-        const g = grundUnter(x, ySoll + 1.5, z);
-        return Number.isFinite(g) ? g : ySoll;
-    };
-    const wagenSpur = (e, n, onFrame, ySoll) => {
-        const m = { tiefsteUnter: -Infinity, yMin: Infinity, todesEbene: false };
-        for (let i = 0; i < n; i++) {
-            if (onFrame) onFrame(i);
+        const [s, jeTakt] = [spur(), (vor && vor(e)) || (() => {})];
+        for (let i = 0; i < n && !(e._fahr && e._fahr.y < todesEbene); i++) {
+            jeTakt(i);
             takt();
-            const fz = e._fahr;
-            if (!fz || !Number.isFinite(fz.y)) continue;
-            const g = grundAm(e.position.x, fz.y + 0.6, e.position.z);
-            const unter = g === Infinity ? 99 : Number.isFinite(g) ? g - fz.y : 99;
-            if (unter > m.tiefsteUnter) m.tiefsteUnter = unter;
-            if (fz.y < m.yMin) m.yMin = fz.y;
-            if (fz.y < todesEbene) {
-                m.todesEbene = true;
-                break;
-            }
+            if (e._fahr && Number.isFinite(e._fahr.y)) s.schritt(e.position.x, e._fahr.y, e.position.z);
         }
-        const fz = e._fahr;
-        m.yEnde = fz ? fz.y : NaN;
-        const gE = grundAm(e.position.x, m.yEnde + 0.6, e.position.z);
-        m.grundEnde = Number.isFinite(gE) ? gE : m.yEnde - 99;
-        m.dach = dachAn(e.position.x, e.position.z);
-        m.grundSoll = grundAb(e.position.x, e.position.z, ySoll);
-        m.luft = !!(fz && fz.luft);
-        m.ruhe = !m.luft;
-        return m;
+        tasten(false);
+        const [fz, koerper] = [e._fahr || {}, `Wagen ${e.type}#${e.id}`];
+        const aus = {
+            koerper,
+            ort: ort(e.position.x, e.position.z),
+            ...s.ende(e.position.x, e._fahr ? fz.y : NaN, e.position.z, ySoll),
+            ruhe: !fz.luft,
+        };
+        absteigen();
+        r.removeArchitecture(e);
+        return aus;
     };
     const proben = [];
     const ort = (x, z) => x.toFixed(1) + "/" + z.toFixed(1);
@@ -613,19 +656,24 @@ async function probe(K) {
         WOLF_R = 0.9;
     const spalten = (opts) => window.__weltOrte("hoehle", Object.assign({ schritt: 2, rMax: 600 }, opts));
     // ── B DER TURM: die fernste ebene Stelle ohne Bau (fern der Spalten von O1–O3); je Block der Klick, 120 Takte
-    const frei = (o) => (st.architectures || []).every((e) => !e.position || Math.hypot(e.position.x - o.x, e.position.z - o.z) > 12);
+    const frei = (o, natur) =>
+        (st.architectures || []).every(
+            (e) => !e.position || (natur && r._istNatur(e)) || Math.hypot(e.position.x - o.x, e.position.z - o.z) > 12
+        );
     const T0 = window.__weltOrte("eben", { r: 6, spanne: 1, anzahl: 12, rMax: 300, abstand: 30 }).filter(frei).pop();
     const turm = { ...T0, bloecke: [], fehler: T0 ? undefined : "keine ebene Stelle ohne Bau" };
-    if (T0) {
-        await einschwingen(T0.x, T0.z);
-        raeumen(T0.x, T0.z, 30);
+    // DER TURM auf der Unterlage, auf der der Spieler steht, in der Sicht `sicht` (B, B2)
+    const turmBauen = async (turm, sicht) => {
+        raeumen(st.playerMesh.position.x, st.playerMesh.position.z, 30);
         r.equipHeld(null);
-        [st.cameraMode, st.pitch, turm.y0] = ["third", -Math.PI / 2, st.playerMesh.position.y];
+        [st.cameraMode, st.pitch, turm.y0] = [sicht, -Math.PI / 2, st.playerMesh.position.y];
+        [turm.x, turm.z] = [st.playerMesh.position.x, st.playerMesh.position.z];
         for (let i = 0; i < 3; i++) takt();
         while (turm.bloecke.length < K.turmBloecke) {
             [st.player.stamina, st.isPointerLocked] = [st.player.maxStamina, true];
             const [vor, cv] = [st.playerMesh.position.y, document.getElementById("world-canvas")];
-            for (const art of ["mousedown", "mouseup"]) cv.dispatchEvent(new MouseEvent(art, { button: 2, bubbles: true }));
+            for (const art of ["mousedown", "mouseup"])
+                cv.dispatchEvent(new MouseEvent(art, { button: 2, bubbles: true }));
             let s = 0;
             for (let i = 0; i < 120; i++) {
                 takt();
@@ -635,6 +683,10 @@ async function probe(K) {
             turm.bloecke.push([st.playerMesh.position.y - vor, s]);
         }
         turm.hoehe = st.playerMesh.position.y - turm.y0;
+    };
+    if (T0) {
+        await einschwingen(T0.x, T0.z);
+        await turmBauen(turm, "third");
     }
     // ── O1 DER WAGEN UNTER DEM ÜBERHANG
     // Der Ort ist die nächste Spalte, in die der Wagen passt, mit ≥ 4 m Fels über ≥ 3 m Luft (welt-orte `hoehle`) — gelesen
@@ -654,66 +706,35 @@ async function probe(K) {
                 name,
                 fehler: `kein Überhang an ${ort(O1s.x, O1s.z)} (Grund ${grund}, Oberkante ${dachAn(O1s.x, O1s.z)})`,
             };
-        const e = await wagen(O1s.x, O1s.z, grund, Math.PI / 2);
-        if (!e) return { name, fehler: "der GT ließ sich nicht setzen/aufsitzen" };
-        for (let i = 0; i < 3; i++) takt();
-        const fz = e._fahr;
-        if (fz) {
-            // die Lage der Schau: im Grund, in der Luft (Rückrollen von der Gegenwand)
-            fz.y = grund + 1.4;
-            fz.vy = 0;
-            fz.luft = true;
-            fz.yBoden = NaN;
-        }
-        const m = wagenSpur(e, 240, null, grund);
-        const aus = Object.assign(
-            { name, koerper: "Wagen " + e.type + "#" + e.id, ort: ort(e.position.x, e.position.z) },
-            m
-        );
-        weg(e);
-        return aus;
+        // die Lage der Schau: im Grund, in der Luft (Rückrollen von der Gegenwand)
+        const schau = (e) => {
+            for (let i = 0; i < 3; i++) takt();
+            if (e._fahr) Object.assign(e._fahr, { y: grund + 1.4, vy: 0, luft: true, yBoden: NaN });
+        };
+        return { name, ...(await fahrt(O1s.x, O1s.z, grund, Math.PI / 2, 240, schau)) };
     };
     proben.push(await o1("O1 Wagen unter dem Überhang"));
     // ── (T) DER EINGESCHMUGGELTE TÄTER: der Boden des Werks liest die Oberkante der Säule (der alte Leser)
+    r._werkBoden = function () {
+        return (x, z) => this.getTerrainHeightAt(x, z);
+    };
+    const schmuggel = await o1("T Schmuggel").finally(() => delete r._werkBoden);
+    if (r._werkBoden !== Object.getPrototypeOf(r)._werkBoden) throw new Error("der Schmuggel blieb im Stamm");
+    // ── O2 DIE SCHAU-FAHRT über die Spaltkante: der Start liegt 11,4 m vor der Spalte aus O1 (aus der Welt), die Fahrt quert ihre
+    // Kante längs +x
     {
-        const P = Object.getPrototypeOf(r);
-        r._werkBoden = function () {
-            return (x, z) => this.getTerrainHeightAt(x, z);
-        };
-        let t;
-        try {
-            t = await o1("T Schmuggel");
-        } finally {
-            delete r._werkBoden;
-        }
-        if (r._werkBoden !== P._werkBoden) throw new Error("der Schmuggel blieb im Stamm");
-        window.__fallSchmuggel = t;
-    }
-    // ── O2 DIE SCHAU-FAHRT über die Spaltkante
-    {
-        const name = "O2 Schau-Fahrt über die Spaltkante";
-        // der Start liegt 11,4 m vor der Spalte aus O1 (aus der Welt, `spaltenUm`), die Fahrt quert ihre Kante längs +x
         const S = o1s() ? { x: O1s.x - 11.4, z: O1s.z + 1.1 } : null;
-        const grund = S ? grundUnter(S.x, r._voxelSurfaceY(S.x, S.z) + 1, S.z) : NaN;
-        const e = S ? await wagen(S.x, S.z, grund, Math.PI / 2) : null;
-        if (!S) proben.push({ name, fehler: "keine Spalte in der Welt (O1) — die Kante fehlt" });
-        else if (!e) proben.push({ name, fehler: "der GT ließ sich nicht setzen/aufsitzen" });
-        else {
+        const los = (e) => {
             raeumen(O1s.x, O1s.z, 40);
             for (let i = 0; i < 12; i++) takt();
             st.playerVel.setValue(10.6, 0, 0);
             if (e._fahr) e._fahr.vlong = 10.6;
-            const m = wagenSpur(e, 1200, (i) => tasten(i < 240));
-            tasten(false);
-            proben.push(
-                Object.assign(
-                    { name, koerper: "Wagen " + e.type + "#" + e.id, ort: ort(e.position.x, e.position.z) },
-                    m,
-                    { ruhe: false }
-                )
-            );
-            weg(e);
-        }
+            return (i) => tasten(i < 240);
+        };
+        const m = S
+            ? await fahrt(S.x, S.z, grundUnter(S.x, r._voxelSurfaceY(S.x, S.z) + 1, S.z), Math.PI / 2, 1200, los, NaN)
+            : { fehler: "keine Spalte in der Welt (O1) — die Kante fehlt" };
+        proben.push({ name: "O2 Schau-Fahrt über die Spaltkante", ...m, ruhe: false });
     }
     // ── O3 DIE HÖHLE der Boden-Funktion
     // die Höhle: die nächste Spalte mit ≥ 4 m Fels über ≥ 3 m Luft, in die der Leib passt (aus der Welt) — der Wagen in der nächsten Kammer (`hk`, die Spalte aus O1), der Wolf und der Spieler an
@@ -729,365 +750,288 @@ async function probe(K) {
             await einschwingen(hk.x, hk.z);
             raeumen(hk.x, hk.z, 40);
         }
-        if (!hk || !hoehleOk)
-            proben.push({
-                name,
-                fehler: `keine Höhle in der Welt (keine Spalte mit 4 m Fels über 3 m Luft, in die der ${hk ? "Wolf mit Wand" : "Wagen"} passt)`,
-            });
-        else {
-            const e = await wagen(hk.x, hk.z, hk.grund, 0);
-            if (!e) proben.push({ name, fehler: "der GT ließ sich nicht setzen/aufsitzen" });
-            else {
-                const m = wagenSpur(e, 120, null, hk.grund);
-                proben.push(
-                    Object.assign(
-                        { name, koerper: "Wagen " + e.type + "#" + e.id, ort: ort(e.position.x, e.position.z) },
-                        m
-                    )
-                );
-                weg(e);
-                await einschwingen(H.x, H.z);
-                raeumen(H.x, H.z, 40);
-                // DER SPIELER AM ORT DES RUFS: die Wolf-Proben rufen ihre Tiere neben ihn (`spawnCreatureAt`) — er steht, wo der
-                // Wagen stand.
-                st.playerMesh.position.set(H.x, hoehleGrund + A.PLAYER_FOOT_OFFSET + 0.05, H.z);
-                st.playerVel.setValue(0, 0, 0);
-                st._fieldVy = 0;
-            }
+        const m =
+            hk && hoehleOk
+                ? await fahrt(hk.x, hk.z, hk.grund, 0, 120)
+                : {
+                      fehler: `keine Höhle in der Welt (keine Spalte mit 4 m Fels über 3 m Luft, in die der ${hk ? "Wolf mit Wand" : "Wagen"} passt)`,
+                  };
+        proben.push({ name, ...m });
+        if (!m.fehler) {
+            await einschwingen(H.x, H.z);
+            raeumen(H.x, H.z, 40);
+            // DER SPIELER AM ORT DES RUFS: die Wolf-Proben rufen ihre Tiere neben ihn (`spawnCreatureAt`) — er steht, wo der
+            // Wagen stand.
+            st.playerMesh.position.set(H.x, hoehleGrund + A.PLAYER_FOOT_OFFSET + 0.05, H.z);
+            st.playerVel.setValue(0, 0, 0);
+            st._fieldVy = 0;
         }
     }
+    // DIE KANTE DES FELS an (x, z) ab der Höhe y: im Fels aufwärts, sonst abwärts, in 2-cm-Schritten, höchstens 3 m
+    const kante = (x, y, z) => {
+        let h = y;
+        if (r._fieldSolid(x, h, z)) while (h < y + 3 && r._fieldSolid(x, h, z)) h += 0.02;
+        else while (h > y - 3 && !r._fieldSolid(x, h, z)) h -= 0.02;
+        return h;
+    };
+    // DIE STIRN eines Leibs: wie hoch der Boden eine halbe Länge voraus (längs `gier`) über dem eine halbe Länge hinter der
+    // Wurzel liegt (das Dichtefeld, je Punkt von der Höhe des Grunds aus)
+    const stirnAn = (w, gier) => {
+        const [g0, hl] = [grundAm(w.position.x, w.position.y + 0.6, w.position.z), r._kreaturHalbLaenge(w)];
+        const an = (s) => kante(w.position.x + Math.sin(gier) * hl * s, g0, w.position.z + Math.cos(gier) * hl * s);
+        return Number.isFinite(g0) ? an(1) - an(-1) : NaN;
+    };
+    // DIE HAUT eines Leibs: je Punkt der Haut (höchstens 400) der Abstand zum Fels unter ihm im Dichtefeld (im Fels: negativ,
+    // die Tiefe darin) — der kleinste
+    const hautAbstand = (c) => {
+        c.updateMatrixWorld(true);
+        const [v, haut] = [new window.THREE.Vector3(), []];
+        c.traverseVisible(
+            (o) => o.isMesh && !o.isInstancedMesh && o.geometry && o.geometry.attributes.position && haut.push(o)
+        );
+        const n = haut.reduce((n, o) => n + o.geometry.attributes.position.count, 0);
+        let min = Infinity;
+        for (const o of haut)
+            for (let i = 0; i < o.geometry.attributes.position.count; i += Math.ceil(n / 400)) {
+                o.getVertexPosition(i, v).applyMatrix4(o.matrixWorld);
+                min = Math.min(min, v.y - kante(v.x, v.y, v.z));
+            }
+        return Number.isFinite(min) ? min : null;
+    };
+    // EIN WOLF bei (x, y, z) unter dem Steuer-Schritt `schritt`: `leben(w, s)` fährt ihn auf der Spur `s` und liefert, was die
+    // Probe über die Spur hinaus trägt (`zu` am Namen des Leibs); danach geht er (ein Wesen oder ein Gefallener, state.leichname)
+    const steuerRoh = A._steuerGesetz;
+    const kappe = st.maxCreatures;
+    const wolf = async (x, z, y, schritt, leben) => {
+        const steht = Object.create(steuerRoh.call(A));
+        steht.steuerSchritt = schritt;
+        [A._steuerGesetz, st.maxCreatures] = [() => steht, st.creatures.length + 2];
+        try {
+            const w = r.spawnCreatureAt(x, y, z, "calm", "wolf", { precise: true, bodySize: 1 });
+            if (!w) return { fehler: "der Wolf ließ sich nicht rufen" };
+            const [s, p] = [spur(), w.position];
+            const { zu = "", ...mehr } = await leben(w, s);
+            const out = {
+                koerper: `Tier wolf#${w.userData.id ?? w.id}${zu}`,
+                ort: ort(p.x, p.z),
+                ...s.ende(p.x, p.y, p.z, y),
+                band: A.STAND_SICHT_BAND,
+                ...mehr,
+            };
+            if (st.creatures.includes(w) || (st.leichname || []).includes(w)) r.removeCreature(w);
+            return out;
+        } finally {
+            [A._steuerGesetz, st.maxCreatures] = [steuerRoh, kappe];
+        }
+    };
     // Ein Wolf an der Wand: er steht (sein Steuer-Schritt hält ihn), dann gleitet er gestoßen 1,5 s auf die nächste
     // Wand zu (6 m/s — die Reibung zehrt 0,6·g, er trüge 3 m weit; ohne Wand 3 m/s in +x) — oder er LÄUFT 2,5 s mit 2
     // m/s in sie hinein (`art` „lauf"). Die Wand hält ihn.
-    const steuerRoh = A._steuerGesetz;
-    const kappe = st.maxCreatures;
-    // DIE STIRN eines Leibs: wie hoch der Boden eine halbe Länge voraus (längs `gier`) über dem eine halbe
-    // Länge hinter der Wurzel liegt (das Dichtefeld, 2-cm-Schritte, je Punkt von der Höhe des Grunds aus)
-    const stirnAn = (w, gier) => {
-        const g0 = grundAm(w.position.x, w.position.y + 0.6, w.position.z);
-        if (!Number.isFinite(g0)) return NaN;
-        const hl = r._kreaturHalbLaenge(w);
-        const bodenAn = (s) => {
-            const px = w.position.x + Math.sin(gier) * hl * s,
-                pz = w.position.z + Math.cos(gier) * hl * s;
-            let h = g0;
-            if (r._fieldSolid(px, h, pz)) while (h < g0 + 3 && r._fieldSolid(px, h, pz)) h += 0.02;
-            else while (h > g0 - 3 && !r._fieldSolid(px, h, pz)) h -= 0.02;
-            return h;
-        };
-        return bodenAn(1) - bodenAn(-1);
-    };
-    const wolfStoss = async (x, z, y, art, wand) => {
-        const rx = wand ? wand.dx : 1,
-            rz = wand ? wand.dz : 0;
-        const lauf = art === "lauf";
-        const steuer = { lauf: false };
-        const steht = Object.create(steuerRoh.call(A));
-        steht.steuerSchritt = (sw) => {
-            if (steuer.lauf) {
-                sw.gier = Math.atan2(rx, rz);
-                sw.v = 2;
-            } else sw.v = 0;
-        };
-        A._steuerGesetz = () => steht;
-        st.maxCreatures = st.creatures.length + 2;
-        try {
-            const w = r.spawnCreatureAt(x, y, z, "calm", "wolf", { precise: true, bodySize: 1 });
-            if (!w) return null;
+    const wolfStoss = (x, z, y, art, wand) => {
+        const [rx, rz, lauf, steuer] = [wand ? wand.dx : 1, wand ? wand.dz : 0, art === "lauf", { lauf: false }];
+        const schritt = (sw) => (steuer.lauf ? ([sw.gier, sw.v] = [Math.atan2(rx, rz), 2]) : (sw.v = 0));
+        return wolf(x, z, y, schritt, async (w, s) => {
             for (let i = 0; i < 20; i++) takt();
-            const v0 = wand ? 6 : 3;
-            const stirnStart = lauf ? stirnAn(w, Math.atan2(rx, rz)) : NaN;
+            const [v0, stirnStart] = [wand ? 6 : 3, lauf ? stirnAn(w, Math.atan2(rx, rz)) : NaN];
             if (lauf) steuer.lauf = true;
             else w.userData._stossV = { x: rx * v0, z: rz * v0 };
-            let tiefsteUnter = -Infinity,
-                yMin = Infinity;
             for (let i = 0; i < (lauf ? 150 : 90); i++) {
                 takt();
-                const g = grundAm(w.position.x, w.position.y + 0.6, w.position.z);
-                const unter = g === Infinity ? 99 : Number.isFinite(g) ? g - w.position.y : 99;
-                if (unter > tiefsteUnter) tiefsteUnter = unter;
-                if (w.position.y < yMin) yMin = w.position.y;
+                s.schritt(w.position.x, w.position.y, w.position.z);
             }
-            const gE = grundAm(w.position.x, w.position.y + 0.6, w.position.z);
             // DIE STIRN des laufenden Leibs am Ende und beim Anlauf — gegen den Hub, den der Gang-Deckel über die Länge
             // trägt; höher, als er beim Anlauf schon stand, steht er auf einer Kletterwand, die er hinaufstieg
-            const stirn = lauf
-                ? {
-                      hoch: stirnAn(w, w.rotation.y || 0),
-                      start: stirnStart,
-                      hl: r._kreaturHalbLaenge(w),
-                      deckel: 2 * r._kreaturHalbLaenge(w) * Math.tan(A.GANG_DECKEL_RAD),
-                  }
-                : null;
-            const out = {
-                stirn,
-                koerper:
-                    "Tier wolf#" +
-                    (w.userData.id != null ? w.userData.id : w.id) +
-                    (wand ? ` (${lauf ? "läuft" : "gestoßen"} an die Wand ${wand.d.toFixed(1)} m)` : ""),
-                ort: ort(w.position.x, w.position.z),
-                tiefsteUnter,
-                yMin,
-                todesEbene: yMin < todesEbene,
-                yEnde: w.position.y,
-                grundEnde: Number.isFinite(gE) ? gE : w.position.y - 99,
-                dach: dachAn(w.position.x, w.position.z),
-                grundSoll: grundAb(w.position.x, w.position.z, y),
-                ruhe: true,
-                band: A.STAND_SICHT_BAND,
+            const hl = r._kreaturHalbLaenge(w);
+            const stirn = {
+                hoch: stirnAn(w, w.rotation.y || 0),
+                start: stirnStart,
+                hl,
+                deckel: 2 * hl * Math.tan(A.GANG_DECKEL_RAD),
             };
-            r.removeCreature(w);
-            return out;
-        } finally {
-            A._steuerGesetz = steuerRoh;
-            st.maxCreatures = kappe;
-        }
-    };
-    {
-        const name = "O3 Wolf in der Höhle";
-        if (!hoehleOk) proben.push({ name, fehler: "keine Höhle" });
-        else {
-            const m = await wolfStoss(H.x, H.z, hoehleGrund, undefined, hs.wand);
-            proben.push(m ? Object.assign({ name }, m) : { name, fehler: "der Wolf ließ sich nicht rufen" });
-        }
-    }
-    {
-        const name = "O3 Wolf läuft in die Wand";
-        if (!hoehleOk) proben.push({ name, fehler: "keine Höhle" });
-        else {
-            const m = await wolfStoss(H.x, H.z, hoehleGrund, "lauf", hs.wand);
-            proben.push(m ? Object.assign({ name }, m) : { name, fehler: "der Wolf ließ sich nicht rufen" });
-        }
-    }
-    // DER TOD IN DER HÖHLE: der Wolf steht auf dem Höhlen-Grund, stirbt und kippt — die Tod-Lage
-    // (`_todHebeTafel`) hebt seine Wurzel je Kipp-Winkel so, dass die tiefste Stelle der Haut auf dem Boden bleibt. Die
-    // Wahrheit der Linse: je Punkt der Haut (höchstens 400) der Abstand zum Fels unter ihm im Dichtefeld (im Fels: negativ,
-    // die Tiefe darin).
-    const hautAbstand = (c) => {
-        c.updateMatrixWorld(true);
-        const T = window.THREE || globalThis.THREE;
-        const v = new T.Vector3();
-        const haut = [];
-        c.traverseVisible((o) => {
-            if (o.isMesh && !o.isInstancedMesh && o.geometry && o.geometry.attributes.position) haut.push(o);
+            return {
+                zu: wand ? ` (${lauf ? "läuft" : "gestoßen"} an die Wand ${wand.d.toFixed(1)} m)` : "",
+                ruhe: true,
+                stirn: lauf ? stirn : null,
+            };
         });
-        let n = 0;
-        for (const o of haut) n += o.geometry.attributes.position.count;
-        if (!n) return null;
-        const schritt = Math.max(1, Math.ceil(n / 400));
-        let min = Infinity;
-        for (const o of haut) {
-            const pa = o.geometry.attributes.position;
-            for (let i = 0; i < pa.count; i += schritt) {
-                o.getVertexPosition(i, v);
-                v.applyMatrix4(o.matrixWorld);
-                let a;
-                if (r._fieldSolid(v.x, v.y, v.z)) {
-                    let yy = v.y;
-                    while (yy < v.y + 3 && r._fieldSolid(v.x, yy, v.z)) yy += 0.02;
-                    a = v.y - yy;
-                } else {
-                    let yy = v.y;
-                    while (yy > v.y - 3 && !r._fieldSolid(v.x, yy, v.z)) yy -= 0.02;
-                    a = v.y - yy;
-                }
-                if (a < min) min = a;
-            }
-        }
-        return Number.isFinite(min) ? min : null;
     };
-    const wolfTod = async (x, z, y, gier) => {
-        const steht = Object.create(steuerRoh.call(A));
-        steht.steuerSchritt = (sw) => {
-            sw.v = 0;
-        };
-        A._steuerGesetz = () => steht;
-        st.maxCreatures = st.creatures.length + 2;
-        try {
-            const w = r.spawnCreatureAt(x, y, z, "calm", "wolf", { precise: true, bodySize: 1 });
-            if (!w) return null;
-            w.rotation.y = gier;
-            w.userData._steuer = { gier, v: 0 };
-            for (let i = 0; i < 30; i++) takt();
-            const stehtM = hautAbstand(w);
-            r.damageCreature(w, 1e6, {});
-            const dy = w.userData.dying;
-            if (!dy) {
-                r.removeCreature(w);
-                return { fehler: "der Wolf stirbt nicht" };
-            }
-            // der Gefallene verlässt die Liste der Wesen im Moment des Todes und liegt in state.leichname (Welle LF kampf)
-            const dabei = () => st.creatures.includes(w) || (st.leichname || []).includes(w);
-            let kippMin = Infinity,
-                kippMax = -Infinity,
-                liegtM = null,
-                tiefsteUnter = -Infinity,
-                yMin = Infinity;
-            for (let i = 0; i < 600 && dabei(); i++) {
-                takt();
-                if (!dabei()) break;
-                const g = grundAm(w.position.x, w.position.y + 0.6, w.position.z);
-                const unter = g === Infinity ? 99 : Number.isFinite(g) ? g - w.position.y : 99;
-                if (unter > tiefsteUnter) tiefsteUnter = unter;
-                if (w.position.y < yMin) yMin = w.position.y;
-                const fertig = dy.fall >= dy.dauer;
-                if (i % 3 === 2 || fertig) {
-                    const a = hautAbstand(w);
-                    if (a !== null) {
-                        kippMin = Math.min(kippMin, a);
-                        kippMax = Math.max(kippMax, a);
-                    }
+    // DER TOD IN DER HÖHLE: der Wolf steht auf dem Höhlen-Grund, stirbt und kippt — die Tod-Lage (`_todHebeTafel`) hebt seine
+    // Wurzel je Kipp-Winkel so, dass die tiefste Stelle der Haut auf dem Boden bleibt (`hautAbstand`)
+    const wolfTod = (x, z, y, gier) =>
+        wolf(
+            x,
+            z,
+            y,
+            (sw) => (sw.v = 0),
+            async (w, s) => {
+                w.rotation.y = gier;
+                w.userData._steuer = { gier, v: 0 };
+                for (let i = 0; i < 30; i++) takt();
+                const stehtM = hautAbstand(w);
+                r.damageCreature(w, 1e6, {});
+                const dy = w.userData.dying;
+                if (!dy) return { fehler: "der Wolf stirbt nicht" };
+                // der Gefallene verlässt die Liste der Wesen im Moment des Todes und liegt in state.leichname (Welle LF kampf)
+                const dabei = () => st.creatures.includes(w) || (st.leichname || []).includes(w);
+                let [kippMin, kippMax, liegtM] = [Infinity, -Infinity, null];
+                for (let i = 0; i < 600 && dabei(); i++) {
+                    takt();
+                    if (!dabei()) break;
+                    s.schritt(w.position.x, w.position.y, w.position.z);
+                    const fertig = dy.fall >= dy.dauer;
+                    const a = i % 3 === 2 || fertig ? hautAbstand(w) : null;
+                    if (a !== null) [kippMin, kippMax] = [Math.min(kippMin, a), Math.max(kippMax, a)];
                     if (fertig) {
                         liegtM = a;
                         break;
                     }
                 }
+                const e = (k) => (Number.isFinite(k) ? k : null);
+                return {
+                    zu: ` (stirbt, Gier ${Math.round((gier * 180) / Math.PI)}°)`,
+                    ruhe: false,
+                    tod: { stehtM, liegtM, kippMin: e(kippMin), kippMax: e(kippMax) },
+                };
             }
-            const out = {
-                koerper:
-                    "Tier wolf#" +
-                    (w.userData.id != null ? w.userData.id : w.id) +
-                    ` (stirbt, Gier ${Math.round((gier * 180) / Math.PI)}°)`,
-                ort: ort(w.position.x, w.position.z),
-                tiefsteUnter,
-                yMin,
-                todesEbene: yMin < todesEbene,
-                yEnde: w.position.y,
-                grundEnde: grundAm(w.position.x, w.position.y + 0.6, w.position.z),
-                dach: dachAn(w.position.x, w.position.z),
-                grundSoll: grundAb(w.position.x, w.position.z, y),
-                ruhe: false,
-                band: A.STAND_SICHT_BAND,
-                tod: {
-                    stehtM,
-                    liegtM,
-                    kippMin: Number.isFinite(kippMin) ? kippMin : null,
-                    kippMax: Number.isFinite(kippMax) ? kippMax : null,
-                },
-            };
-            if (dabei()) r.removeCreature(w); // ein Wesen oder ein Gefallener (state.leichname)
-            return out;
-        } finally {
-            A._steuerGesetz = steuerRoh;
-            st.maxCreatures = kappe;
-        }
-    };
-    // je Blickrichtung ein Tod am Ort der Höhle (die Kipp-Richtung folgt dem Hang, der Leib darüber der Gier)
-    for (let k = 0; k < K.todGier; k++) {
-        const name = "O3 Wolf stirbt in der Höhle";
-        if (!hoehleOk) {
-            proben.push({ name, fehler: "keine Höhle" });
-            break;
-        }
-        const m = await wolfTod(H.x, H.z, hoehleGrund, (k / K.todGier) * Math.PI * 2);
-        proben.push(
-            m && !m.fehler
-                ? Object.assign({ name }, m)
-                : { name, fehler: (m && m.fehler) || "der Wolf ließ sich nicht rufen" }
         );
-    }
-    {
-        const name = "O3 Spieler in der Höhle";
-        if (!hoehleOk) proben.push({ name, fehler: "keine Höhle" });
-        else {
-            absteigen();
-            const pm = st.playerMesh.position;
-            pm.set(H.x, hoehleGrund + A.PLAYER_FOOT_OFFSET + 0.05, H.z);
-            st.playerVel.setValue(0, 0, 0);
-            st._fieldVy = 0;
-            st.yaw = Math.PI; // nach −z, in die Halle
-            let tiefsteUnter = -Infinity,
-                yMin = Infinity;
-            for (let i = 0; i < 180; i++) {
-                tasten(i < 150);
-                takt();
-                const fuss = pm.y - A.PLAYER_FOOT_OFFSET;
-                const g = grundAm(pm.x, fuss + 0.6, pm.z);
-                const unter = g === Infinity ? 99 : Number.isFinite(g) ? g - fuss : 99;
-                if (unter > tiefsteUnter) tiefsteUnter = unter;
-                if (fuss < yMin) yMin = fuss;
-            }
-            tasten(false);
-            const fuss = pm.y - A.PLAYER_FOOT_OFFSET;
-            const gE = grundAm(pm.x, fuss + 0.6, pm.z);
-            proben.push({
-                name,
-                koerper: "Spieler",
-                ort: ort(pm.x, pm.z),
-                tiefsteUnter,
-                yMin,
-                todesEbene: yMin < todesEbene,
-                yEnde: fuss,
-                grundEnde: Number.isFinite(gE) ? gE : fuss - 99,
-                dach: dachAn(pm.x, pm.z),
-                grundSoll: grundAb(pm.x, pm.z, hoehleGrund),
-                ruhe: true,
-            });
+    // EINE PROBE IN DER HÖHLE: ohne Höhle LEER, sonst ihr Leib (`m()`)
+    const inHoehle = async (name, m) => (
+        proben.push({ name, ...(hoehleOk ? await m() : { fehler: "keine Höhle" }) }),
+        hoehleOk
+    );
+    await inHoehle("O3 Wolf in der Höhle", () => wolfStoss(H.x, H.z, hoehleGrund, undefined, hs.wand));
+    await inHoehle("O3 Wolf läuft in die Wand", () => wolfStoss(H.x, H.z, hoehleGrund, "lauf", hs.wand));
+    // je Blickrichtung ein Tod am Ort der Höhle (die Kipp-Richtung folgt dem Hang, der Leib darüber der Gier)
+    for (let k = 0; k < K.todGier; k++)
+        if (
+            !(await inHoehle("O3 Wolf stirbt in der Höhle", () =>
+                wolfTod(H.x, H.z, hoehleGrund, (k / K.todGier) * Math.PI * 2)
+            ))
+        )
+            break;
+    await inHoehle("O3 Spieler in der Höhle", () => {
+        absteigen();
+        const pm = st.playerMesh.position;
+        pm.set(H.x, hoehleGrund + A.PLAYER_FOOT_OFFSET + 0.05, H.z);
+        st.playerVel.setValue(0, 0, 0);
+        st._fieldVy = 0;
+        st.yaw = Math.PI; // nach −z, in die Halle
+        const s = spur();
+        for (let i = 0; i < 180; i++) {
+            tasten(i < 150);
+            takt();
+            s.schritt(pm.x, pm.y - A.PLAYER_FOOT_OFFSET, pm.z);
         }
-    }
+        tasten(false);
+        return {
+            koerper: "Spieler",
+            ort: ort(pm.x, pm.z),
+            ...s.ende(pm.x, pm.y - A.PLAYER_FOOT_OFFSET, pm.z, hoehleGrund),
+            ruhe: true,
+        };
+    });
     // ── (Z) DER ZENSUS: Überhang-Spalten um die Spalte aus O1 und die Höhle aus O3 (Luft ≥ 3 m unter ≥ 2 m Fels, der Grund
-    // ≥ 1 m Fels, der Wagen passt), je Ort bis 60 m
-    const zensus = { spalten: 0, proben: 0, taeter: [], orte: [] };
+    // ≥ 1 m Fels, der Wagen passt), je Ort bis 60 m — je Spalte ein Wagen und ein gestoßener Wolf (die Wand des Urteils)
+    const zensus = { spalten: 0, proben: [], orte: [] };
     for (const z0 of [o1s(), hs].filter(Boolean)) {
-        const [cx, cz] = [z0.x, z0.z];
-        await einschwingen(cx, cz);
-        raeumen(cx, cz, 60);
-        const sp = spalten({ mitte: [cx, cz], rMax: 60, anzahl: K.spaltenJeOrt, fels: 2, luft: 3, R: KAMMER_R });
+        await einschwingen(z0.x, z0.z);
+        raeumen(z0.x, z0.z, 60);
+        const sp = spalten({ mitte: [z0.x, z0.z], rMax: 60, anzahl: K.spaltenJeOrt, fels: 2, luft: 3, R: KAMMER_R });
         zensus.spalten += sp.length;
         for (const s of sp) {
-            zensus.orte.push(
-                ort(s.x, s.z) + " (Grund " + s.grund.toFixed(1) + ", Oberkante " + s.dach.toFixed(1) + ")"
-            );
-            const e = await wagen(s.x, s.z, s.grund, 0);
-            if (e) {
-                const m = wagenSpur(e, 90, null, s.grund);
-                zensus.proben++;
-                const wo = `Wagen ${e.type}#${e.id} an ${ort(e.position.x, e.position.z)}`;
-                if (m.tiefsteUnter > K.FALL_M || m.todesEbene)
-                    zensus.taeter.push(
-                        `${wo}: ${m.tiefsteUnter.toFixed(2)} m durch den Boden (y ${m.yEnde.toFixed(2)}, Grund ${m.grundEnde.toFixed(2)})`
-                    );
-                else if (m.yEnde - m.grundSoll > K.DACH_M)
-                    zensus.taeter.push(
-                        `${wo}: ${(m.yEnde - m.grundSoll).toFixed(2)} m über seinem Grund — aufs Dach (Oberkante ${m.dach.toFixed(1)})`
-                    );
-                weg(e);
-            }
-            const t = await wolfStoss(s.x, s.z, s.grund, undefined, s.wand);
-            if (t) {
-                zensus.proben++;
-                const wo = `${t.koerper} an ${t.ort}`;
-                if (t.tiefsteUnter > Math.max(K.FALL_M, t.band || 0) || t.todesEbene)
-                    zensus.taeter.push(`${wo}: ${t.tiefsteUnter.toFixed(2)} m durch den Boden`);
-                else if (t.yEnde - t.grundSoll > K.DACH_M)
-                    zensus.taeter.push(
-                        `${wo}: ${(t.yEnde - t.grundSoll).toFixed(2)} m über seinem Grund — aufs Dach (Oberkante ${t.dach.toFixed(1)})`
-                    );
-            }
+            zensus.orte.push(`${ort(s.x, s.z)} (Grund ${s.grund.toFixed(1)}, Oberkante ${s.dach.toFixed(1)})`);
+            for (const p of [
+                await fahrt(s.x, s.z, s.grund, 0, 90),
+                await wolfStoss(s.x, s.z, s.grund, undefined, s.wand),
+            ])
+                if (!p.fehler) zensus.proben.push({ name: "Zensus", ...p });
         }
     }
+    // ── B2 DER TURM AUF DACH, FELS UND BRÜCKE: je Unterlage zwei Stellen (Ego, Third), fern von jedem Turm und Bau
+    const turm2 = [];
+    const eben = window.__weltOrte("eben", { r: 8, spanne: 1.5, anzahl: 60, rMax: 600, abstand: 30 });
+    const felsen = spalten({ fels: 4, luft: 3, R: KAMMER_R, abstand: 60, anzahl: 12 });
+    // fern von jedem Turm, kein Bau binnen 12 m; die Natur räumt der Turm wie jeder Bau (`_naturRaeumen`)
+    const fern = (o) => frei(o, true) && [turm, ...turm2].every((t) => !(Math.hypot(t.x - o.x, t.z - o.z) < 60));
+    // die Brücke des Prüf-Satzes, Teil für Teil gefügt wie in der Werkstatt
+    const bruecke = "__turm_bruecke";
+    r.createBlueprint(bruecke, "Brücke");
+    for (const [x, y, z, a, b, c] of K.bruecke)
+        r.addPartToBlueprint(bruecke, {
+            shape: "box",
+            material: "stein",
+            position: { x, y, z },
+            size: { x: a, y: b, z: c },
+        });
+    // die Unterlage an der Stelle o: das Haus der Werkstatt (der Spieler fällt von über dem First auf den obersten Boden), die
+    // Felsdecke über der Spalte, das Deck der Brücke
+    for (const u of K.unterlagen)
+        for (const [s, sicht] of Object.entries(K.sichten)) {
+            const [liste, bau] = { Dach: [eben, "haus_alemannisch"], Fels: [felsen, null], Brücke: [eben, bruecke] }[u];
+            const o = liste.find(fern);
+            const t = {
+                ...o,
+                wo: u + " " + s,
+                bloecke: [],
+                fehler: o ? undefined : `keine Stelle für ${u} (${liste.length} Kandidaten)`,
+            };
+            turm2.push(t);
+            if (!o) continue;
+            absteigen();
+            r._naturRaeumen(o.x, o.z, 12, false);
+            let oben;
+            if (bau) {
+                await einschwingen(o.x + 20, o.z);
+                const e = r.spawnArchitecture(
+                    bau,
+                    { x: o.x, y: r._voxelSurfaceY(o.x, o.z), z: o.z },
+                    { silent: true, precise: true }
+                );
+                if (!e) {
+                    t.fehler = `${bau} ließ sich nicht setzen`;
+                    continue;
+                }
+                await window.__gebautNach(e, { takt });
+                oben = Math.max(...e.blockerAABBs.map((b) => b.topY)) + 3;
+            }
+            await einschwingen(o.x, o.z, oben);
+            await turmBauen(t, sicht);
+            // DER FERN-RING: der Spieler FERN_M vom Turm, weg von der Mitte; die Welt steht, der Ring hängt ganz
+            const l = Math.hypot(t.x, t.z) || 1;
+            await einschwingen(t.x + (t.x / l) * K.fernM, t.z + (t.z / l) * K.fernM);
+            const fr = () => st.fernRing || {};
+            const fertig = () => fr().ready && fr().cursor >= fr().totalVerts && !fr().flug && !fr().einhaengen.length;
+            await window.__gebautNach("der Fern-Ring", { takt, fertig, max: 900, offen: false });
+            // die Ecken um die Mitte des Turms (zwei Maschen), die Lage-Bytes aller Schalen
+            const F = fr();
+            const ecken = Array.from({ length: F.totalVerts }, (_, g) => r._fernRingPunkt(F, g)).filter(
+                (p) => Math.hypot(p.x - t.x, p.z - t.z) < 2 * p.fuss.hr
+            );
+            const ringY = () => Math.max(...ecken.map((p) => F.geos[p.s].attributes.position.getY(p.li)));
+            const lage = () => F.geos.map((g) => new Uint8Array(g.attributes.position.array.buffer.slice(0)));
+            const [ring, vor] = [{ krone: r._voxelSurfaceY(t.x, t.z), vor: ringY() }, lage()];
+            // ein Block auf die Krone über das Verb des Spiels (der Mensch am Turm, die KI, ein Mitspieler: `voxel_fill`)
+            const kopf = st.worldMeta.voxelEdits[st.worldMeta.voxelEdits.length - 1];
+            r.dslRun(["voxel_fill", kopf.x, ring.krone, kopf.z, K.turmR], { source: "human" });
+            const krone2 = r._voxelSurfaceY(t.x, t.z);
+            for (let i = 1; i <= 120 && !ring.takte; i++) {
+                takt();
+                await sleep();
+                const bytes = lage().reduce((n, b, s) => n + b.filter((x, k) => x !== vor[s][k]).length, 0);
+                if (bytes && ringY() >= krone2 - K.sohleM) Object.assign(ring, { takte: i, bytes });
+            }
+            t.ring = { ...ring, krone2, nach: ringY() };
+        }
     // B: zurück auf den Turm, der Save
     if (T0) {
         absteigen();
         await einschwingen(T0.x, T0.z);
         r.saveState();
     }
-    const t = window.__fallSchmuggel;
-    const schmuggel = t
-        ? {
-              rot: !!(
-                  t.fehler === undefined &&
-                  (t.tiefsteUnter > K.FALL_M || t.todesEbene || t.yEnde - t.grundEnde > K.DACH_M)
-              ),
-              mass:
-                  t.fehler ||
-                  `${(t.tiefsteUnter || 0).toFixed(2)} m unter dem Grund, am Ende y ${(t.yEnde || 0).toFixed(2)}`,
-          }
-        : null;
-    return { proben, zensus, schmuggel, turm };
+    return { proben, zensus, schmuggel, turm, turm2 };
 }
 
-(async () => {
+hauptLauf(async () => {
     console.log("=== DER FALL-WÄCHTER (Leben-Schau 2) — Null-Renderer, echter Spiel-Takt, Spaltgrund + Höhle ===");
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 900000 });
@@ -1095,32 +1039,30 @@ async function probe(K) {
     page.setDefaultTimeout(880000);
     await nullRenderer(page);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
-    let befund;
-    try {
-        await server.zeige(page, 120000);
+    await page.evaluateOnNewDocument("window.__anazhFernRing = true"); // B2: der Fern-Ring lebt auch ohne Renderer
+    await server.zeige(page, 120000);
+    await warteAufWelt(page, 180000);
+    const befund = await page.evaluate(probe, {
+        spaltenJeOrt: 6,
+        todGier: TOD_GIER,
+        turmBloecke: TURM_BLOECKE,
+        turmR: TURM_R,
+        sohleM: SOHLE_M,
+        sichten: SICHTEN,
+        unterlagen: UNTERLAGEN,
+        fernM: FERN_M,
+        bruecke: PRUEF_SATZ.stabil["Brücke auf zwei Pfeilern"],
+    });
+    if (!befund.turm.fehler) {
+        await sleep(1500); // der IDB-Put des Saves landet
+        await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
         await warteAufWelt(page, 180000);
-        befund = await page.evaluate(probe, {
-            FALL_M,
-            DACH_M,
-            spaltenJeOrt: 6,
-            todGier: TOD_GIER,
-            turmBloecke: TURM_BLOECKE,
-        });
-        if (!befund.turm.fehler) {
-            await sleep(1500); // der IDB-Put des Saves landet
-            await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
-            await warteAufWelt(page, 180000);
-            befund.turm.nach = await page.evaluate(probe, { nach: befund.turm });
-        }
-    } catch (e) {
-        befund = { fehler: (e && e.message) || String(e) };
+        const nach = await page.evaluate(probe, { nach: befund.turm, nach2: befund.turm2 });
+        befund.turm.nach = nach;
+        befund.turm2.forEach((t, k) => nach.turm2[k] && (t.nach = nach.turm2[k]));
     }
     await browser.close();
     server.close();
-    if (!befund || befund.fehler) {
-        console.log("❌ LAUF-FEHLER: " + (befund ? befund.fehler : "kein Befund"));
-        process.exit(1);
-    }
     befund.quelle = quellenWand(stammLib.text(root));
     const fx = (v) => (Number.isFinite(v) ? v.toFixed(3) : String(v));
     for (const p of befund.proben)
@@ -1138,22 +1080,15 @@ async function probe(K) {
                             `Deckel ${fx(p.stirn.deckel)} m)`
                           : "")
         );
-    // DER LEBENDE STAND am Wandfuß (urteil: STAND IM FELS): je Blickrichtung die tiefste Stelle der Haut über dem Fels
-    const stand = befund.proben.filter((p) => p.tod && Number.isFinite(p.tod.stehtM)).map((p) => p.tod.stehtM);
-    if (stand.length)
-        console.log(
-            `  Lebender Stand am Wandfuß: ${stand.filter((s) => s < -TOD_M).length} von ${stand.length} Wölfen tiefer als ` +
-                `${TOD_M} m im Fels, Haut ${Math.min(...stand).toFixed(2)} … ${Math.max(...stand).toFixed(2)} m über dem Fels`
-        );
-    console.log(
-        `  Zensus: ${befund.zensus.spalten} Überhang-Spalten, ${befund.zensus.proben} Proben, ${befund.zensus.taeter.length} Täter`
-    );
+    console.log(`  Zensus: ${befund.zensus.spalten} Überhang-Spalten, ${befund.zensus.proben.length} Proben`);
     for (const o of befund.zensus.orte) console.log(`    · ${o}`);
-    console.log(`  Schmuggel (T): ${JSON.stringify(befund.schmuggel)}`);
+    console.log(`  Schmuggel (T): ${befund.schmuggel.fehler || fall(befund.schmuggel).join(" · ") || "stumpf"}`);
     // DIE ZAHL DES TURMS (die Station bauen.K4 liest sie)
     const [T, hub] = [befund.turm, befund.turm.bloecke.map((b) => b[0])];
     const zahl = { hub: [Math.min(...hub), Math.max(...hub)], sohle: Math.max(...T.bloecke.map((b) => b[1])) };
     console.log("  B-ZAHL " + JSON.stringify({ ...T, bloecke: hub.length, ...zahl, befunde: turmUrteil(T) }));
+    // DIE ZAHL DES TURMS AUF DACH, FELS UND BRÜCKE (die Station bauen.K4#2 liest sie)
+    console.log("  B2-ZAHL " + JSON.stringify({ tuerme: befund.turm2, befunde: turm2Urteil(befund.turm2) }));
     console.log(
         `  Quelle: ${befund.quelle.length ? befund.quelle.join(" · ") : "die Körper-Schritte lesen den Boden unter dem Körper"}`
     );
@@ -1166,4 +1101,4 @@ async function probe(K) {
         "\n✅ FALL-WÄCHTER GRÜN — jeder Körper steht auf dem Boden unter ihm: keiner fällt durch, keiner springt aufs Dach."
     );
     process.exit(0);
-})();
+});
