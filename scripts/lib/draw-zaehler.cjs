@@ -457,6 +457,7 @@ function texturErzeuger(t) {
 function texturZensus() {
     const rend = window.anazhRealm.state.renderer;
     const backend = rend.backend;
+    if (!backend) return null;
     const je = new Map();
     const unbenannt = [];
     let gesamt = 0,
@@ -578,6 +579,8 @@ function gangUrteil({ vor, nach }) {
         );
     // DIE TIERE ZIEHEN FREI: ein Tier mehr oder weniger am Start ist Bestand, nie Drift — je Art erklärt der Unterschied der
     // Zahl den Leib je Tier vom Start (eine neue Art den vom Ende); was der Leib je Tier zulegt, bleibt Drift
+    // der Null-Renderer (`werkbank start --null`) trägt keine GPU: VRAM und Puffer nennt der Gang ungemessen
+    if (!nach.vram) return f;
     const [vm, nm] = [new Map(vg(vor)), new Map(vg(nach))];
     const bestand = (k) => {
         const [a, b] = [(vor.tiere || {})[k] | 0, (nach.tiere || {})[k] | 0];
@@ -674,9 +677,17 @@ async function gangLauf(page, pufferStand, b) {
             (await taste("w", "keyDown"), (rest = await bilder(rest, true)));
     };
     const drittel = Math.round((Number(b.min) || 6) * 1200);
-    await page.evaluate(() =>
-        window.anazhRealm.state.renderer.setAnimationLoop((t) => window.anazhRealm._gameLoopTick(t))
-    );
+    // der Null-Renderer zeichnet keinen Loop (`setAnimationLoop` ist leer): dort treibt der Gang den Takt an rAF
+    const takt = (an) =>
+        page.evaluate((an) => {
+            const r = window.anazhRealm;
+            if (!r.state.renderer._isHeadlessNull)
+                return r.state.renderer.setAnimationLoop(an ? (t) => r._gameLoopTick(t) : null);
+            const f = (t) => window.__gangTakt && (r._gameLoopTick(t), requestAnimationFrame(f));
+            if (an && !window.__gangTakt) requestAnimationFrame(f);
+            window.__gangTakt = an;
+        }, an);
+    await takt(true);
     await ruhig();
     await bilder(1200);
     // EINE RUNDE ab dem Start: je ein Drittel gehen · fahren (GT, Taste E; der Gang räumt seinen GT) · das Uhr-Wort, dann
@@ -695,22 +706,27 @@ async function gangLauf(page, pufferStand, b) {
     const runde = async (n, wort) => {
         const t0 = Date.now();
         await gehe(n);
+        // der GT neben dem Spieler und EIN BAU (ein Haus am Weg), gebaut wie im Spiel und mit der Runde abgerissen
         await page.evaluate(async () => {
             const r = window.anazhRealm,
                 p = r.state.playerMesh.position;
-            const e = (window.__gangGT = r.spawnArchitecture(
-                "fahrzeug_gt",
-                { x: p.x + 2, y: r.getTerrainHeightAt(p.x + 2, p.z) + 0.5, z: p.z },
-                { silent: true, precise: true }
-            ));
-            await window.__gebautNach(e, { bau: () => {}, takt: () => new Promise((f) => requestAnimationFrame(f)) });
+            window.__gangBau = [];
+            for (const [art, dx, dy] of [["fahrzeug_gt", 2, 0.5], ["haus_griechisch", -14, 0]]) {
+                const e = r.spawnArchitecture(
+                    art,
+                    { x: p.x + dx, y: r.getTerrainHeightAt(p.x + dx, p.z) + dy, z: p.z },
+                    { silent: true, precise: true }
+                );
+                window.__gangBau.push(e);
+                await window.__gebautNach(e, { bau: () => {}, takt: () => new Promise((f) => requestAnimationFrame(f)) });
+            }
         });
         await tippe("e");
         await bilder(60);
         const fahrt = await page.evaluate(() => window.anazhRealm.state.player.mountedArch != null);
         await gehe(n);
         if (fahrt) await tippe("e");
-        await page.evaluate(() => window.anazhRealm.removeArchitecture(window.__gangGT));
+        await page.evaluate(() => window.__gangBau.map((e) => window.anazhRealm.removeArchitecture(e)));
         const uhr = await sage(wort);
         await gehe(n);
         const min = (Date.now() - t0) / 60000;
@@ -732,9 +748,21 @@ async function gangLauf(page, pufferStand, b) {
             return n;
         });
     const vor = Object.assign(await pufferStand(true, 60), { min: 0, tiere: await tiere() });
+    // DIE REIHE der gemessenen Runde: je Minute [min, Heap, VRAM] nach erzwungenem GC (der Puffer-Stand ohne Halter)
+    const reihe = [],
+        uhr = { t0: Date.now(), frei: true };
+    const tick = setInterval(async () => {
+        if (!uhr.frei) return;
+        uhr.frei = false;
+        const s = await pufferStand(false, 1);
+        reihe.push([+((Date.now() - uhr.t0) / 60000).toFixed(2), s.heapMB, s.vram && s.vram.mb]);
+        uhr.frei = true;
+    }, 60000);
     const lauf = await runde(drittel, "mittag");
+    clearInterval(tick);
+    for (let i = 0; i < 600 && !uhr.frei; i++) await bilder(1);
     const nach = Object.assign(await pufferStand(true, 60), { min: lauf.min, tiere: await tiere() });
-    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
+    await takt(false);
     await cdp.detach();
     const urteil = gangUrteil({ vor, nach });
     if (!(ein.fahrt && lauf.fahrt)) urteil.push("fahrt: die Taste E nahm den GT 2 m neben dem Spieler nicht");
@@ -742,7 +770,18 @@ async function gangLauf(page, pufferStand, b) {
         urteil.push(
             `uhr: das Spieler-Wort setzte die Uhr auf ${ein.uhr} · ${nacht} · ${lauf.uhr} (Mittag · Mitternacht · Mittag)`
         );
-    return { urteil, heapMB: [vor.heapMB, nach.heapMB], vramMB: [vor.vram.mb, nach.vram.mb], min: lauf.min, tiere: [vor.tiere, nach.tiere] };
+    // die Steigung des Heaps über die Reihe: kleinste Quadrate (MB/min)
+    const m = (f) => reihe.reduce((s, x) => s + f(x), 0) / reihe.length,
+        [mx, my] = [m((x) => x[0]), m((x) => x[1])];
+    return {
+        urteil,
+        ungemessen: !nach.vram,
+        heapMB: [vor.heapMB, nach.heapMB],
+        steigung: +(m((x) => (x[0] - mx) * (x[1] - my)) / m((x) => (x[0] - mx) ** 2)).toFixed(2),
+        reihe,
+        min: lauf.min,
+        tiere: [vor.tiere, nach.tiere],
+    };
 }
 
 module.exports = {

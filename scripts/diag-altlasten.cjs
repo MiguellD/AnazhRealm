@@ -20,6 +20,12 @@ const { scanWarteWand } = require("./lib/welt-boot.cjs");
 // Die gefallenen Namen: je Eintrag ein PRÄZISER Token (nie ein generisches Wort — "sprite" träfe THREE.Sprite) und was
 // ihn trägt (`fiel`); die Geschichte jedes Schnitts steht in git (Lehre 15).
 const FORBIDDEN = [
+    // aus den Playtests (Form-Listen 10b.2, DSL-Ops über die Sandbox-Grenze, der Ein-Massiv-Anker und die Kachel-Erosion K16,
+    // die Bang-Bang-Schwellen, Horizont-Mantel B2 und Kronen-Schale N7.4)
+    ...["WHEEL_SHAPES", "LENS_SHAPES", "AXIS_SHAPES", "p2p_send", "peer_dsl", "remote_run", "_macroAnker", "state.erosion",
+        "ARCH_QUALITY_FPS_", "HORIZON_MANTLE", "horizonMantle", "mantleHoleUniforms", "CANOPY_SHELL", "canopyShell"].map(
+        (token) => ({ token, fiel: "Playtest-Absenz" })
+    ),
     { token: "tickPhoenixDeath", fiel: "W1a — der Tod ist feld-nativ (_playerDeathRespawn)" },
     { token: "triggerPhoenixDeath", fiel: "W1a" },
     { token: "preDeathSoul", fiel: "W1a — kein Gestalt-Tausch beim Tod" },

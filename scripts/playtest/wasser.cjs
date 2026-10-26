@@ -13,22 +13,6 @@ async function checkBandHydrosphere(ctx) {
     void errors;
     void finalState;
     // ### Die Kachel-Erosion ist gefallen ###
-    // Die Täler kommen aus dem Flussnetz des Gelände-Gesetzbuchs (gelaende-core), nicht aus einer nachträglichen
-    // Stream-Power-Inzision je Kachel: kein `_computeErosion`, kein `state.erosion`, kein `erosionDelta` im Kern.
-    const erosionTot = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return null;
-        return {
-            tot:
-                !("erosion" in r.state) &&
-                typeof window.__gelaendeCore.erosionDelta === "undefined" &&
-                typeof window.__gelaendeCore.erosionFuer === "undefined",
-        };
-    });
-    check(
-        "K16: die Kachel-Erosion ist gefallen (kein _computeErosion, kein state.erosion, kein erosionDelta/erosionFuer)",
-        !!(erosionTot && erosionTot.tot)
-    );
 
     // ### Der Hydrosphären-Atlas ###
     // Deterministisches Drainage-Netz aus der Voxel-Surface: Priority-Flood (Senken → Seen) →

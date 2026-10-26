@@ -367,8 +367,6 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         }
         out.ceilingThrottles = st.perfSense.loadScale < 0.5;
         out.ceilingLoadScale = +st.perfSense.loadScale.toFixed(3);
-        // der Passagier ist gekehrt: die toten Bang-Bang-Schwellen sind weg.
-        out.deadConstantsGone = A.ARCH_QUALITY_FPS_LOW === undefined && A.ARCH_QUALITY_FPS_HIGH === undefined;
 
         st.perfSense = snap.sense;
         st.architectureCullingRadius = snap.radius;
@@ -450,10 +448,6 @@ async function checkBandWellePerfENexusGovernor(ctx) {
     check(
         `über der Decke schützt der fps-Boden (loadScale ${res.ceilingLoadScale} fällt) — der Regler drosselt`,
         res.ceilingThrottles
-    );
-    check(
-        "die toten Bang-Bang-Schwellen (ARCH_QUALITY_FPS_LOW/HIGH) sind gekehrt — kein Passagier",
-        res.deadConstantsGone
     );
 }
 

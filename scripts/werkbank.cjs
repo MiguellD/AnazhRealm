@@ -1,7 +1,7 @@
 // werkbank.cjs — DIE WERKBANK der Look-Arbeit: EINE Welt bleibt offen, Fragen gehen per Befehl hinein, eine Methode aus
 // dem Arbeitsbaum wird in die laufende Seite getauscht, das Bild ist in Sekunden da.
 //
-//   node scripts/werkbank.cjs start [--port 4490] [--holz voll|nah|kienspan] [--ort <id>]  Welt + Steuer-Server (bleibt offen)
+//   node scripts/werkbank.cjs start [--port 4490] [--holz voll|nah|kienspan] [--ort <id>] [--null]  Welt + Steuer-Server (bleibt offen)
 //   node scripts/werkbank.cjs umstellen <x> <z>            Spieler setzen, einschwingen
 //   node scripts/werkbank.cjs umstellen --ort <id> [--pose p] [--sicht ego|third] an einen MESSORT (spec/profiband/haushalt.json
 //                                                           `messorte`): Spieler, Blick, Dorf-Zug, Ort-Takt und Sicht; buehne betritt ihre Welt
@@ -64,7 +64,7 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { statikServer, werkbankRuf, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, werkbankRuf, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -167,6 +167,9 @@ const ECHT = argv.includes("--echt");
 // DIE GPU-FEHLER-LINSE nur auf Zuruf (`start --gpu-fehler`): sie hüllt jeden Draw in eine JS-Probe — eine Zeit-Messung
 // (lauf, gpu-bank, band) liefe sonst mit ihrer Last.
 const GPU_FEHLER = argv.includes("--gpu-fehler");
+// DER NULL-RENDERER (`start --null`): die Welt simuliert voll ohne Rasterung — der Gang misst den JS-Heap GPU-frei (die Cloud);
+// VRAM und Bild urteilen nur auf echter GPU.
+const NULL = argv[0] === "start" && argv.includes("--null");
 // DER MESSORT VOR DEM BOOT (`start --ort <id>`): ein Ort ohne Dorf-Zug (`dorfZug: false` im Haushalt) sperrt den Auto-Zug ab
 // dem ersten Skript der Seite — sonst käme ein im Boot losgegangener Auftrag danach an, und jeder Boot mäße eine andere Szene.
 // `umstellen --ort` stellt den Ort, wie er im Haushalt steht — der Dorf-Ort schaltet den Zug dort wieder an.
@@ -752,6 +755,7 @@ async function starte() {
     await adapterZeile(browser);
     const page = await browser.newPage();
     if (!ECHT) await page.setViewport({ width: 640, height: 360 });
+    if (NULL) await nullRenderer(page);
     const spur = { an: null }; // DIE BELEGUNG: der Lauf ruft die Spur vor seinem ersten gemessenen Takt an (`/lauf`)
     await page.exposeFunction("__spurAn", () => spur.an && spur.an());
     await page.evaluateOnNewDocument(FALTE_INSTALL);
@@ -808,7 +812,9 @@ async function starte() {
         await page.evaluate(SK.SHADER_INSTALL);
         await page.evaluate(ZZ.ZIEL_INSTALL);
         await page.evaluate(HL.HAENGER_INSTALL);
-        await page.evaluate(() => window.__weltDa((r) => !!(r.state.renderer && r.state.renderer.backend)));
+        await page.evaluate(() =>
+            window.__weltDa((r) => !!(r.state.renderer && (r.state.renderer.backend || r.state.renderer._isHeadlessNull)))
+        );
         if (GPU_FEHLER) await page.evaluate(GPU_FEHLER_OBJEKT);
     };
     await lade();
@@ -3469,7 +3475,7 @@ async function starte() {
     else if (cmd === "puffer" && argv.includes("--gang")) {
         o = await rufe("/gang", { min: opt("--gang") });
         console.log(JSON.stringify(o, null, 1));
-        console.log(o.urteil && !o.urteil.length ? "GANG GRÜN" : "GANG ROT");
+        console.log(o.urteil && !o.urteil.length ? "GANG GRÜN" + (o.ungemessen ? " — VRAM und Puffer ungemessen (Null-Renderer)" : "") : "GANG ROT");
         process.exit(o.urteil && !o.urteil.length ? 0 : 1);
     } else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
     else if (cmd === "diaet") {

@@ -937,7 +937,6 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
         const out = {};
 
         // ─── Ω-K2 BAUM-FÜSSE ───
@@ -1004,11 +1003,6 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
             }
         }
 
-        // ─── Ω-C CANOPY-SHELL — GESCHNITTEN ───
-        // Foundry-Wald + Fern-Ring (das Kronendach der Arten) tragen die Ferne; das Band prüft die ABWESENHEIT von Konstante
-        // und State (die Methoden bewacht gate:altlasten).
-        out.cConstGone = !A.CANOPY_SHELL;
-        out.cStateGone = r.state.canopyShell === undefined && r.state.canopyShellMaterial === undefined;
 
         return out;
     });
@@ -1031,8 +1025,6 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
     }
 
     // Ω-C — N7.4: die Shell ist geschnitten; die Bänder prüfen die Abwesenheit.
-    check("N7.4 (C1) CANOPY_SHELL-Konstante geschnitten", res.cConstGone === true);
-    check("N7.4 (C3) kein Canopy-Shell-State (canopyShell/Material undefined)", res.cStateGone === true);
 }
 
 // Atemberaubender Wald: Palette dunkler + erdiger, per-Spezies distinkte Tag-Vektoren (Variations-

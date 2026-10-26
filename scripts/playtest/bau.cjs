@@ -491,13 +491,6 @@ async function checkBandWave10b(ctx) {
         const out = {};
         try {
             out.thresholdsFrozen = !!AR.AFFORDANCE_THRESHOLDS && Object.isFrozen(AR.AFFORDANCE_THRESHOLDS);
-            // Vision-Korrektur 10b.2: Form-Whitelists (WHEEL/LENS/AXIS_SHAPES)
-            // wurden ENTFERNT — Affordances emergieren räumlich + tag-basiert,
-            // nicht aus shape-Listen.
-            out.noShapeWhitelists =
-                typeof AR.WHEEL_SHAPES === "undefined" &&
-                typeof AR.LENS_SHAPES === "undefined" &&
-                typeof AR.AXIS_SHAPES === "undefined";
             out.thresholdsAreSpatial =
                 AR.AFFORDANCE_THRESHOLDS.moveable.minSupportParts === 2 &&
                 AR.AFFORDANCE_THRESHOLDS.moveable.midlineFactor === 0.5 &&
@@ -1093,7 +1086,7 @@ async function checkBandWave10b(ctx) {
     if (wave10bResults && !wave10bResults.error) {
         check(
             "Welle 10b.2: AFFORDANCE_THRESHOLDS + LABELS frozen, KEINE Form-Whitelists mehr (Vision-Korrektur)",
-            wave10bResults.thresholdsFrozen && wave10bResults.noShapeWhitelists && wave10bResults.affordanceLabelsExist
+            wave10bResults.thresholdsFrozen && wave10bResults.affordanceLabelsExist
         );
         check(
             "Welle 10b.2: Schwellen sind räumlich + tag-basiert (minSupportParts=2, midlineFactor=0.5, dichteMin=0.3, axialAlignmentMin=0.6)",

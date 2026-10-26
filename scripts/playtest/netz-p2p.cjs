@@ -211,13 +211,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         }
         out.tickNoOpSafe = tickError === null;
 
-        // Sandbox-Grenze: KEIN dsl-op namens p2p/sync — fremde Welten dürfen die eigene nicht per DSL-Op
-        // manipulieren (V1 trägt kein DSL-Sharing).
-        out.noP2PDslOp =
-            typeof r.dslEffects.p2p_send === "undefined" &&
-            typeof r.dslEffects.peer_dsl === "undefined" &&
-            typeof r.dslEffects.remote_run === "undefined";
-
         // CSP enthält generelle ws:/wss:-Whitelist (statt
         // explizite IP-Liste, die LAN-Spieler blockierte).
         const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
@@ -275,7 +268,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         );
         check("Ring 11 V1: p2pSend ohne offene WS liefert false", ring11Results.sendWithoutWsFalse);
         check("Ring 11 V1: p2pTick ohne enabled ist no-op (kein Crash)", ring11Results.tickNoOpSafe);
-        check("Ring 11 V1: KEIN p2p-/peer_dsl-/remote_run-DSL-Op (Sandbox-Grenze)", ring11Results.noP2PDslOp);
         check("Ring 11 V2.1: CSP enthält allgemeines ws:/wss: (LAN-fähig)", ring11Results.cspHasWebSocket);
         check("Ring 11 V1: CSP bleibt strict (default-src 'self')", ring11Results.cspKeepsSelf);
         check("Ring 11 V1: UI-URL-Input im DOM", ring11Results.uiUrlInputExists);

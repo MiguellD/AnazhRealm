@@ -1485,11 +1485,6 @@ async function checkBandGammaGenese(ctx) {
         const G = window.__gelaendeCore;
         const out = {};
         out.struct = typeof G.grossform === "function" && Array.isArray(G.LANDFORM_REGLER);
-        out.ankerTot =
-            typeof r._macroAnker !== "function" &&
-            typeof G.ankerAusSaat !== "function" &&
-            typeof G.ankerBeitrag !== "function" &&
-            !("MACRO_ANKER" in G);
         if (!out.struct) return out;
         const L = r._gelaende();
         const proben = [];
@@ -1526,10 +1521,6 @@ async function checkBandGammaGenese(ctx) {
     const f2 = (v) => (Number.isFinite(v) ? v.toFixed(2) : v);
     const f3 = (v) => (Number.isFinite(v) ? v.toFixed(3) : v);
     check(`Γ4 (K16) Struktur: gelaende-core grossform + LANDFORM_REGLER`, resG4.struct === true);
-    check(
-        `Γ4 (K16) der Ein-Massiv-Anker ist tot (_macroAnker · ankerAusSaat · ankerBeitrag · MACRO_ANKER)`,
-        resG4.ankerTot === true
-    );
     check(
         `Γ4 (K16) Hang im Gebirge > Ebene (Relief ${f2(resG4.relHoch)} vs ${f2(resG4.relTief)} m: ${f2(resG4.slopeHoch)} > ${f2(resG4.slopeTief)})`,
         Number.isFinite(resG4.slopeHoch) && resG4.slopeHoch > resG4.slopeTief
