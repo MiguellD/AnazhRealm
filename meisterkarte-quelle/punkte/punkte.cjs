@@ -1006,11 +1006,15 @@ async function selbsttest() {
             "probe.js": fn("getan", 1) + fn("nie", 2) + fn("nurText", 3) + 'getan();\nString(nurText);\nnew Worker("faden.js").onmessage = (e) =>\n    fetch("daten.json").then((r) => r.json()).then((j) => (window.fertig = e.data + j.n));\n',
             "faden.js": fn("imFaden", 5) + fn("nieFaden", 6) + "postMessage(imFaden());\n",
             "knoten.js": "exports.ja = " + fn("", 1) + "exports.nein = " + fn("", 2),
+            "kind.js": "exports.k = " + fn("", 1) + "exports.nie = " + fn("", 2),
             "daten.json": '{ "n": 1 }',
         };
         for (const [n, t] of Object.entries(probe)) fs.writeFileSync(path.join(baum, n), t);
         const pp = path.join(spielRepo(), "node_modules", "puppeteer");
+        // dazu ein Kind, das `k` ruft und getötet wird (kill: der Zeuge bittet es vorher um seinen Abschluss)
         const lauf = "const http = require('http'), fs = require('fs'), path = require('path'); require('./knoten.js').ja();" +
+            "const kind = require('child_process').spawn(process.execPath, ['-e', 'require(\\'./kind.js\\').k(); console.log(1); setInterval(() => {}, 1000)'], { stdio: ['ignore', 'pipe', 'inherit'] });" +
+            "kind.stdout.once('data', () => kind.kill());" +
             "const s = http.createServer((q, a) => fs.readFile(path.join(process.cwd(), q.url.slice(1)), (e, d) => a.end(e ? '' : d)));" +
             "s.listen(0, '127.0.0.1', async () => { const b = await require(" + JSON.stringify(pp) + ").launch({ args: ['--no-sandbox'] });" +
             "const p = await b.newPage(); await p.goto('http://127.0.0.1:' + s.address().port + '/probe.html');" +
@@ -1018,8 +1022,8 @@ async function selbsttest() {
             "fs.writeFileSync(process.argv[1], JSON.stringify({ n: 0 })); });";
         const ek = await fahreStation({ ...st0, befehl: ["node", "-e", lauf, "{AUS}"], urteil: lies }, { ...ctx("konsum"), baum, deckelMinS: 120 });
         const k = ek.konsum ? konsumVon(ek.konsum) : {};
-        const soll = { "probe.js": "1-3,7-13", "faden.js": "1-3,7", "knoten.js": "1-4", "daten.json": "*", "probe.html": "*" };
-        pruef("KONSUM Ende zu Ende: ausgeführt und gelesen, nie das Nie (Seite, Worker, Node, JSON)", ek.gruen && JSON.stringify(k) === JSON.stringify({ ...k, ...soll }) &&
+        const soll = { "probe.js": "1-3,7-13", "faden.js": "1-3,7", "knoten.js": "1-4", "kind.js": "1-4", "daten.json": "*", "probe.html": "*" };
+        pruef("KONSUM Ende zu Ende: ausgeführt und gelesen, nie das Nie (Seite, Worker, Node, getötetes Kind, JSON)", ek.gruen && JSON.stringify(k) === JSON.stringify({ ...k, ...soll }) &&
             Object.keys(k).every((p) => p in soll || p.endsWith("/")), JSON.stringify({ gruen: ek.gruen, k, fehlt: ek.konsumFehlt }));
         // die Buchung: eine Änderung außerhalb des Konsums lässt die Messung frisch, in einer ausgeführten Funktion macht sie alt,
         // eine geänderte geladene JSON macht sie alt; ohne Konsum gilt der Glob (Mischbetrieb), ein gelesenes Verzeichnis zählt

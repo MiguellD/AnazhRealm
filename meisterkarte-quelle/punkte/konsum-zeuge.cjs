@@ -180,7 +180,28 @@ if (KONSUM && BAUM) {
         if (p !== null && (p === "" || imBaum(p))) konsum.geladen.add((p || ".") + "/" + tief);
         return r;
     };
-    process.on("exit", () => {
+    // DER ABSCHLUSS am Ende jedes Prozesses — auch eines getöteten Kindes: vor `kill()` bittet der Zeuge des Elternteils das
+    // Kind (`<pid>.bitte`, bis 5 s), unter Linux fängt er SIGTERM/SIGINT (und gibt das Signal weiter, wenn sonst niemand
+    // lauscht); ein Kind, das nicht antwortet, bleibt `.offen`
+    const toeten = require("child_process").ChildProcess.prototype.kill;
+    require("child_process").ChildProcess.prototype.kill = function (...a) {
+        const bitte = path.join(KONSUM, this.pid + ".bitte");
+        if (this.pid && fs.existsSync(path.join(KONSUM, this.pid + ".offen"))) {
+            schreibe(bitte, "");
+            for (const frist = Date.now() + 5000; fs.existsSync(bitte) && Date.now() < frist; )
+                Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
+        }
+        return toeten.apply(this, a);
+    };
+    const meineBitte = path.join(KONSUM, process.pid + ".bitte");
+    setInterval(() => fs.existsSync(meineBitte) && (abschluss(), fs.rmSync(meineBitte, { force: true })), 100).unref();
+    for (const sig of ["SIGTERM", "SIGINT"])
+        process.on(sig, function fang() {
+            abschluss();
+            if (process.listenerCount(sig) === 1) (process.removeListener(sig, fang), process.kill(process.pid, sig));
+        });
+    process.on("exit", () => abschluss());
+    function abschluss() {
         sitz.post("Profiler.takePreciseCoverage", (e, r) => r && male(r.result));
         for (const z of konsum.ziele) verloren(z, false);
         const texte = [...konsum.texte];
@@ -195,5 +216,5 @@ if (KONSUM && BAUM) {
         }
         schreibe(path.join(KONSUM, process.pid + ".json"), JSON.stringify({ js, geladen: [...konsum.geladen], ganz: [...konsum.ganz] }));
         fs.rmSync(path.join(KONSUM, process.pid + ".offen"), { force: true });
-    });
+    }
 }
