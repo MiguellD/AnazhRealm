@@ -1255,7 +1255,7 @@ async function selbsttest() {
     // Zwilling von hauptLauf; ci-kopf.cjs fährt allein im sparse-checkout, FREMD tragen ihn bis zum Schnitt ihres Besitzers
     const faengerZwilling = (c) => /(?:\}\)\(\)|\b\w+\(\))\.catch\(\(?\w*\)? => \{(?:(?!\}\);)[^]){0,300}process\.exit/.test(c);
     const faenger = code.filter(([, c]) => faengerZwilling(c)).map(([f]) => f).join(", ");
-    const FAENGER_FREMD = "ci-kopf.cjs, diag-koerper-stand.cjs, diag-weltakt-wache.cjs, diag-weltgrenze.cjs, werkbank.cjs";
+    const FAENGER_FREMD = "ci-kopf.cjs";
     const gefangen = [
         "(async () => {})().catch((e) => { console.error(e); process.exit(1); });",
         "main().catch((err) => { console.error(`x ${err}`); process.exitCode = 2; });",
@@ -1270,8 +1270,7 @@ async function selbsttest() {
                 .join(" ")
         );
     const schlaefer = code.filter(([, c]) => schlafZwilling(c)).map(([f]) => f).join(", ");
-    const SCHLAF_FREMD =
-        "ci-kopf.cjs, diag-koerper-stand.cjs, diag-persistence.cjs, diag-settlement.cjs, lib/kreatur-proben.cjs, werkbank.cjs";
+    const SCHLAF_FREMD = "ci-kopf.cjs";
     const geschlafen = [
         "await new Promise((r) => setTimeout(r, 50));",
         "const s = (ms) => new Promise((ok) => { setTimeout(ok, Math.max(ms, 1) * Math.random()); });",
