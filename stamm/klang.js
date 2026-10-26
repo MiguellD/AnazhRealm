@@ -450,20 +450,32 @@ class AnazhRealm_klang {
         this._substanzKlang("inventar", tags);
     }
 
-    // Treffer-One-Shot: die SUBSTANZ des Getroffenen färbt das Timbre (härte klirrt hell · dichte wummert · lebendig
-    // weich) — das Gesetz klang:SUBSTANZ.treffer, über state.symphony.masterGain (KEIN zweiter AudioContext).
-    // Symphonie aus (s.enabled false) → stumm.
-    _playKampfOneShot(tags) {
-        return this._substanzKlang("treffer", tags);
+    // DER TREFFER IST EIN STOFF-PAAR (halten.K2 Staffel 2): das Werk, das trifft, und der Stoff, den es trifft — je eine
+    // Zeile der Stoff-Tafel (`_stoff`). Ihr Klang ist das Gesetz klang:trefferPaar am Master, ihre Funken das Stoff-Gesetz
+    // (`_funken`, am Ort `ort` mit dem Energie-Anteil e ∈ [0,1]). Leser: der Hieb (Tier und Bauwerk), der Pfeil und der Stoß
+    // des Wagens — vorher klang jeder Treffer nur nach den Tags des Ziels (der Hirsch nach seinem Spawn-Rumpf aus Stein,
+    // das Bauwerk gar nicht). Die Marke `state._trefferPaar` nennt das letzte Paar (headless messbar).
+    _trefferPaar(waffe, ziel, ort, e) {
+        const a = this._stoff(waffe);
+        const b = this._stoff(ziel);
+        if (!a || !b) return false;
+        const funken = this._funken(a, b, ort, e);
+        const klang = this._substanzKlang("treffer", a, b);
+        this.state._trefferPaar = { waffe: a.name, ziel: b.name, funken, klang };
+        return klang;
     }
 
     // DER EINE EREIGNIS-KLANG-CHOKEPOINT: art (treffer · singen · abschied · wasser · inventar) × Tags → die Einmal-
-    // Quelle des klang-Gesetzbuchs (substanzKlang) am Master. Stumm ohne Symphonie. Was ein TIER tut (Auftrag, Stufe,
-    // Spawn, Tod), klingt nicht hier, sondern mit seiner Stimme (`_tierRuf`).
-    _substanzKlang(art, tags) {
+    // Quelle des klang-Gesetzbuchs am Master; der Treffer klingt aus dem Paar zweier Zeilen der Stoff-Tafel (`tags` die des
+    // Werks, `zu` die des Getroffenen, klang:trefferPaar). Stumm ohne Symphonie. Was ein TIER tut (Auftrag, Stufe, Spawn, Tod), klingt nicht hier, sondern
+    // mit seiner Stimme (`_tierRuf`).
+    _substanzKlang(art, tags, zu) {
         const s = this.state.symphony;
         if (!s || !s.enabled || !s.ctx || !s.masterGain) return false;
-        return !!AnazhRealm._umweltGesetz().kern.substanzKlang(s.ctx, s.masterGain, art, tags || {});
+        const K = AnazhRealm._umweltGesetz().kern;
+        return !!(art === "treffer"
+            ? K.trefferPaar(s.ctx, s.masterGain, tags, zu)
+            : K.substanzKlang(s.ctx, s.masterGain, art, tags || {}));
     }
 
     // ═══ SCHRITT-KLANG ═══
@@ -1650,6 +1662,7 @@ AnazhRealm._umweltGesetz = function () {
         kern.tierRufSpielen &&
         kern.tierRufPegel &&
         kern.substanzKlang &&
+        kern.trefferPaar &&
         kern.SUBSTANZ &&
         kern.fahrtStimme &&
         kern.fahrtMischung &&

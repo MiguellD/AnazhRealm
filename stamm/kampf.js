@@ -481,7 +481,12 @@ class AnazhRealm_kampf {
                         ? { p: urteil.p, m: urteil.mEff }
                         : this._kampfStossOhneMessung(this._kampfSchlagTempo(sw, achse, t, hebel)),
                 });
-                if (res && res.ok) this._kampfHitJuice(c, nowSec, urteil, urteil ? null : this._eigenwerkSchwungKE(bp));
+                if (res && res.ok) {
+                    const ke = urteil ? null : this._eigenwerkSchwungKE(bp);
+                    const u = tr.s;
+                    const ort = { x: B.x + (T.x - B.x) * u, y: B.y + (T.y - B.y) * u, z: B.z + (T.z - B.z) * u };
+                    this._kampfHitJuice(c, nowSec, urteil, ke, this._geraetStoff(bp), ort);
+                }
             }
             if (getroffen) {
                 // die Schwung-Uhr steht auf dem Teil-Schritt des Treffers: der Hit-Stop hält die Klinge am Ziel
@@ -762,13 +767,14 @@ class AnazhRealm_kampf {
 
     // ═══ KAMPF-GEFÜHL — HIT-JUICE (render-seitig, nie Sim) ═══
     // (1) Hit-Stop pausiert NUR die Anzeige-Uhr (_hitStopUntil). (2) Kamera-Impuls über den Landungs-Dip
-    // (_landImpactPending → LAND_DIP_*), kein zweiter Kamera-Kanal. (3) Timbre-One-Shot über state.symphony, kein
-    // zweiter AudioContext. Stop und Dip skalieren mit der TREFFER-ENERGIE des Urteils (KE am Kontakt, Schnitt ·
+    // (_landImpactPending → LAND_DIP_*), kein zweiter Kamera-Kanal. (3) Klang und Funken des Stoff-Paars (`_trefferPaar`) über
+    // state.symphony, kein zweiter AudioContext. Stop und Dip skalieren mit der TREFFER-ENERGIE des Urteils (KE am Kontakt, Schnitt ·
     // Stich · Schlag) gegen die Arena-Eichung keRefJ (Welle L, K-D4: Grossschwert und Keule stoppten mit 19,5–20,5 J
     // gleich — KE = ½·I·ω² ist bei ω ∝ 1/√I je Waffe konstant). Die Zone wirkt im Schaden, nicht in der Energie des
     // Schlags (mit ihr lag jeder Brust-Treffer der schweren Klingen auf der Kappe keRefJ). Eigenwerke reichen ihre
-    // Ω-Φ4-Energie (keEigen), die Faust 0.
-    _kampfHitJuice(creature, nowSec, urteil, keEigen) {
+    // Ω-Φ4-Energie (keEigen), die Faust 0. Klang und Funken sind das Stoff-Paar (`_trefferPaar`): `waffe` der Stoff des
+    // treffenden Werks, das Ziel der Stoff des Leibs (`_leibStoff`), `ort` der Kontakt.
+    _kampfHitJuice(creature, nowSec, urteil, keEigen, waffe, ort) {
         const G = AnazhRealm._arenaGesetz().gefuehl;
         const ke = urteil ? urteil.KE : Number.isFinite(keEigen) ? keEigen : 0;
         const e = Math.max(0, Math.min(1, ke / Math.max(1, G.keRefJ)));
@@ -782,7 +788,95 @@ class AnazhRealm_kampf {
             this.state._landImpactPending || 0,
             G.dipMin + (G.dipMax - G.dipMin) * e
         );
-        this._playKampfOneShot(this.computeCreatureCompoundTags(creature) || {});
+        this._trefferPaar(waffe, this._leibStoff(!(creature.userData && creature.userData._tierBaum)), ort, e);
+    }
+
+    // ═══ DIE FUNKEN DES TREFFERS (halten.K2 Staffel 2) — aus dem Stoff-Gesetz, nie je Waffe ═══
+    // Ein Metall (stromleitung ≥ FUNKEN.metall) sprüht, wo ein Partner, der kein Gewebe ist (lebendig < ½), mindestens
+    // FUNKEN.haerte seiner Härte trägt: der Partner schabt Späne ab, die an der Luft glühen — Stahl auf Stein, Stahl auf Stahl
+    // und Blech am Fels funken, auf Holz, Fleisch und Knochen nicht. Ihre Zahl folgt dem Energie-Anteil des Treffers
+    // e ∈ [0,1] (bis FUNKEN.zahl); jeder fliegt aus dem Kontakt in die obere Halbkugel, fällt mit der Schwere der Welt
+    // (state.gravity) und verlischt in seiner Lebenszeit. Die Saat ist der Zähler der Funken-Treffer (kein Math.random).
+    // Rückgabe: die Zahl der Funken.
+    _funken(a, b, ort, e) {
+        const F = AnazhRealm.FUNKEN;
+        const reibt = (m, p) =>
+            (m.tags.stromleitung || 0) >= F.metall &&
+            (p.tags.lebendig || 0) < 0.5 &&
+            (p.tags.härte || 0) >= F.haerte * (m.tags.härte || 0);
+        if (!ort || !(e > 0) || !(reibt(a, b) || reibt(b, a))) return 0;
+        const n = Math.ceil(F.zahl * Math.min(1, e));
+        const liste = this.state.funken || (this.state.funken = []);
+        let saat = (this._funkenSaat = ((this._funkenSaat | 0) + 1) >>> 0);
+        const rnd = () => (saat = (Math.imul(saat ^ (saat >>> 16), 0x45d9f3b) + 0x9e3779b9) >>> 0) / 4294967296;
+        for (let i = 0; i < n; i++) {
+            const w = 2 * Math.PI * rnd();
+            const h = rnd();
+            const q = Math.sqrt(1 - h * h);
+            const v = F.tempo * (0.5 + rnd());
+            const t = F.lebenSek * (0.5 + rnd());
+            liste.push({
+                x: ort.x,
+                y: ort.y,
+                z: ort.z,
+                vx: q * Math.cos(w) * v,
+                vy: h * v,
+                vz: q * Math.sin(w) * v,
+                t,
+            });
+        }
+        if (liste.length > 4 * F.zahl) liste.splice(0, liste.length - 4 * F.zahl);
+        return n;
+    }
+
+    // DER TAKT DER FUNKEN (je Bild aus dem Loop): Flug unter der Schwere, Verlöschen, und der EINE Satz, der sie zeichnet — eine
+    // Instanz-Senke (`_instanzMesh`, ein Befehl für alle) mit einem Stab je Funken längs seiner Bahn, der in der Farbe seiner
+    // Temperatur leuchtet (FUNKEN.kelvin über `_lichtLinear`, × leucht); leer ist sie unsichtbar (`_instanzZahl`). Ohne Szene
+    // fliegen sie nur als Daten.
+    _funkenTakt(dt) {
+        const liste = this.state.funken;
+        const R0 = this._funkenSatz;
+        if (!liste || (!liste.length && !(R0 && R0.mesh.count))) return;
+        const g = Number.isFinite(this.state.gravity) ? this.state.gravity : 0;
+        const s = Number.isFinite(dt) && dt > 0 ? dt : 0;
+        for (let i = liste.length - 1; i >= 0; i--) {
+            const f = liste[i];
+            f.t -= s;
+            if (f.t <= 0) {
+                liste.splice(i, 1);
+                continue;
+            }
+            f.vy += g * s;
+            f.x += f.vx * s;
+            f.y += f.vy * s;
+            f.z += f.vz * s;
+        }
+        if (typeof THREE === "undefined" || !this.state.scene) return;
+        const F = AnazhRealm.FUNKEN;
+        let R = R0;
+        if (!R) {
+            const geo = new THREE.BoxGeometry(F.dickeM, F.dickeM, F.dickeM * F.streck);
+            const mat = new THREE.MeshBasicNodeMaterial();
+            this._lichtLinear(F, mat.color).multiplyScalar(F.leucht);
+            const mesh = AnazhRealm._instanzMesh(geo, mat, 4 * F.zahl);
+            mesh.name = mesh.userData.inventar = "funken"; // Identitäts-Stempel (gate:asset-inventory)
+            mesh.castShadow = mesh.receiveShadow = false;
+            AnazhRealm._instanzZahl(mesh, 0);
+            this.state.scene.add(mesh);
+            R = this._funkenSatz = { mesh, m: new THREE.Matrix4(), o: new THREE.Vector3(), v: new THREE.Vector3() };
+        }
+        const n = Math.min(liste.length, 4 * F.zahl);
+        for (let k = 0; k < n; k++) {
+            const f = liste[k];
+            R.m.lookAt(R.o, R.v.set(f.vx, f.vy, f.vz), THREE.Object3D.DEFAULT_UP);
+            R.m.setPosition(f.x, f.y, f.z);
+            R.mesh.setMatrixAt(k, R.m);
+        }
+        AnazhRealm._instanzZahl(R.mesh, n);
+        if (n > 0) {
+            R.mesh.instanceMatrix.needsUpdate = true;
+            R.mesh.boundingSphere = null; // die Funken fliegen: die Hülle folgt
+        }
     }
 
     // ═══ BOGEN — DAS SCHIESS-VERB ═══
@@ -1168,9 +1262,10 @@ class AnazhRealm_kampf {
                 fromPos: { x: ox, y: oy, z: oz },
                 stoss: { p: urteil.p, m: urteil.mEff },
             });
-            if (res && res.ok) this._kampfHitJuice(hit, nowSec, urteil, null);
             const s = hitTr.ein;
-            this._pfeilStecken(pf, ox + (ex - ox) * s, oy + (ey - oy) * s, oz + (ez - oz) * s, b, hit, hitTr);
+            const ort = { x: ox + (ex - ox) * s, y: oy + (ey - oy) * s, z: oz + (ez - oz) * s };
+            if (res && res.ok) this._kampfHitJuice(hit, nowSec, urteil, null, sc.PFEIL_STOFF, ort);
+            this._pfeilStecken(pf, ort.x, ort.y, ort.z, b, hit, hitTr);
             return true;
         }
         if (!wand.hit) return false;
@@ -1809,7 +1904,7 @@ class AnazhRealm_kampf {
     // Ein Abbau-HIEB: Fortschritt akkumuliert am Eintrag (∝ Tauglichkeit), jeder Hieb kostet Stamina
     // (invers zur Effizienz, pfad); bei Vollendung fällt das Bauwerk + lootet. Halten → _tickHarvest.
     // true, solange der Hieb zählt; false bei Erschöpfung.
-    _strikeArchitecture(entry) {
+    _strikeArchitecture(entry, ort) {
         if (!entry) return false;
         // WERKZEUG-WAND (_geraetVerbraucht): ein verbrauchtes Gerät schlägt nicht — VOR der Stamina-Wand (kaputt kostet
         // nichts), modus-unabhängig (schöpfer darf reparieren, nicht mit Kaputtem arbeiten); die Hand verbraucht nie.
@@ -1830,6 +1925,8 @@ class AnazhRealm_kampf {
         // Derselbe Verschleiß wie im Kampf (_kampfVerschleiss). Kein Stat-Neubau: kein Stat liest wear (der Faktor
         // _wearStatFactor wirkt im Treffer-Schaden).
         this._kampfVerschleiss(heldBp);
+        // der Hieb klingt und sprüht aus dem Paar Gerät × Werk (halten.K2) — vorher schlug er stumm
+        this._trefferPaar(this._geraetStoff(heldBp), this._werkStoff(entry), ort || entry.position, 1);
         entry.harvestProgress = (entry.harvestProgress || 0) + fit.progress;
         if (entry.harvestProgress < 1) return true; // der Hieb zählt — das Bauwerk steht noch
         const archId = entry.id;
@@ -1987,7 +2084,7 @@ class AnazhRealm_kampf {
         // V17.55 W1 — Abbauen kostet jetzt MÜHE: ein Bauwerk wird per Hieb-Fortschritt
         // abgetragen (Tempo/Stamina/Ertrag ∝ Werkzeug-vs-Material), kein Instant mehr. Der
         // Multi-User-Sync + das Loot + das Gefühl leben in _strikeArchitecture (bei Bruch).
-        if (verb === "abbau") return this._strikeArchitecture(pick.entry);
+        if (verb === "abbau") return this._strikeArchitecture(pick.entry, pick.point);
         if (verb === "pfluecken") return flora.mahd ? this._maehen(flora.mahd) : this._harvestScatterPick(flora);
         const target = boden || this._raycastWorldHit(30);
         if (!target.hit) {
@@ -2275,6 +2372,21 @@ AnazhRealm.MAX_PFEILE_JE_TIER = 6;
 AnazhRealm.PFEIL_EINDRING_M = 0.12;
 AnazhRealm.PFEIL_SEHNE_S = 0.05;
 AnazhRealm.PFEIL_SICHT_M = 40; // ein steckender Pfeil zeichnet bis hier (`_pfeilSteckenSicht`)
+// DIE FUNKEN DES STOFF-PAARS (`_funken`, `_funkenTakt`): metall die Schwelle der Tag-Achse stromleitung, haerte der Anteil der
+// Härte des Metalls, den der Abreiber tragen muss (Stein 0,65 an Stahl 0,85 = 0,76); zahl Funken eines vollen Treffers, tempo
+// m/s aus dem Kontakt, lebenSek bis zum Verlöschen der Späne; kelvin die Glut abgeschabter Eisen-Späne (≈ 1 900 K), leucht ihr
+// Faktor über der Lichtfarbe, der Stab dickeM × streck lang.
+AnazhRealm.FUNKEN = Object.freeze({
+    metall: 0.5,
+    haerte: 0.75,
+    zahl: 24,
+    tempo: 4,
+    lebenSek: 0.45,
+    kelvin: 1900,
+    leucht: 4,
+    dickeM: 0.012,
+    streck: 5,
+});
 // Der Treffer-Weg (_kampfTrefferWeg) tastet jede Glied-Kapsel in so vielen Schritten ab — Wirts-Auflösung, kein Gefühls-
 // Gesetz; je Treffer, nie je Frame.
 AnazhRealm.TREFFER_WEG_PROBEN = 6;

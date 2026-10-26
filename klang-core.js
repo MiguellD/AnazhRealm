@@ -1284,6 +1284,42 @@
         return { quelle: src, hz: hz };
     }
 
+    // ── DAS STOFF-PAAR (halten.K2 Staffel 2, rein additiv): ein Treffer klingt aus BEIDEN Stoffen — dem Werk, das trifft,
+    //    und dem Stoff, den es trifft —, nie nur aus dem Ziel. Der KONTAKT ist ein Rausch-Puls (−60 dB über kontaktSek), sein
+    //    Band die Dauer der Berührung nach HERTZ: zwei Federn in Reihe, E* = 1/(1/E₁ + 1/E₂) — der weichere Stoff bestimmt
+    //    sie —, die Dauer τ ∝ E*^(−2/5), das Band f = kontaktHz · (E*/1 GPa)^(2/5) (Stahl auf Granit ≈ 3 kHz hell, Stahl auf
+    //    Eiche ≈ 1,8 kHz, Holz auf Haut ein dumpfer Schlag um 45 Hz). Danach SINGT jeder Partner nach seiner Resonanz
+    //    (`resoniert` × ring) mit dem Ton, den SUBSTANZ.treffer seinem Stoff gibt — dieselbe Einmal-Quelle, kein zweiter Ton.
+    //    Der Wirt reicht die zwei Zeilen seiner Stoff-Tafel ({ E in Pa, tags }) und den Ausgang. ──
+    // prettier-ignore
+    var TREFFER_PAAR = { kontaktHz: 700, minHz: 30, q: 1.2, kontaktSek: 0.05, gain: 1, ring: 0.3 };
+    // trefferPaar(ctx, ausgang, a, b) → { quelle, hz, E } — hz das Band des Kontakts, E die Steifigkeit E* des Paars in Pa.
+    function trefferPaar(ctx, ausgang, a, b) {
+        var P = TREFFER_PAAR, t = ctx.currentTime, E = 1 / (1 / a.E + 1 / b.E);
+        var hz = Math.max(P.minHz, P.kontaktHz * Math.pow(E / 1e9, 0.4)), n = Math.max(1, Math.round(P.kontaktSek * ctx.sampleRate));
+        var puf = ctx.createBuffer(1, n, ctx.sampleRate), d = puf.getChannelData(0), rnd = umweltRng(n + Math.round(hz));
+        for (var i = 0; i < n; i++) d[i] = (2 * rnd() - 1) * Math.exp((-6.9 * i) / n);
+        var src = ctx.createBufferSource(), band = ctx.createBiquadFilter(), g = ctx.createGain();
+        src.buffer = puf;
+        band.type = "bandpass";
+        band.frequency.value = hz;
+        band.Q.value = P.q;
+        g.gain.value = P.gain;
+        src.connect(band);
+        band.connect(g);
+        g.connect(ausgang);
+        src.onended = function () { try { band.disconnect(); g.disconnect(); } catch (_e) {} };
+        src.start(t);
+        [a.tags || {}, b.tags || {}].forEach(function (T) {
+            if (!((T.resoniert || 0) > 0)) return;
+            var gr = ctx.createGain();
+            gr.gain.value = P.ring * T.resoniert;
+            gr.connect(ausgang);
+            substanzKlang(ctx, gr, "treffer", T).quelle.onended = function () { try { gr.disconnect(); } catch (_e) {} };
+        });
+        return { quelle: src, hz: hz, E: E };
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     //  DIE FAHRT (Leben-Schau 2, fahr-bahn, 10.10.; rein additiv) — der Klang eines
     //  Wagens folgt seiner Fahrt (Befund: Fahren war stumm).
@@ -1444,6 +1480,9 @@
         tierRufSpielen: tierRufSpielen,
         SUBSTANZ: SUBSTANZ,
         substanzKlang: substanzKlang,
+        // halten.K2 Staffel 2 (rein additiv) — der Treffer aus dem Stoff-Paar
+        TREFFER_PAAR: TREFFER_PAAR,
+        trefferPaar: trefferPaar,
         // Leben-Schau 2 (rein additiv) — die Stimme der Fahrt
         FAHRT: FAHRT,
         fahrtUpm: fahrtUpm,

@@ -31,7 +31,7 @@
 //   node scripts/diag-schmiede-contract.cjs
 const fs = require("fs");
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenVergleich: compare, goldenSelbsttest } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenVergleich: compare, goldenSelbsttest, fallSchluessel: caseKey } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v5/golden");
@@ -56,9 +56,6 @@ CASES.push({ rezeptId: "spitzhacke", seed: 7, lod: 0, ov: { schaft: 0.9 } });
 
 function buildCase(c) {
     return SC.buildInstance(c.rezeptId, c.seed, c.lod, c.ov || undefined);
-}
-function caseKey(c) {
-    return `${c.rezeptId}-s${c.seed}-L${c.lod}${c.ov ? "-ov_" + Object.keys(c.ov).sort().join("_") : ""}`;
 }
 
 

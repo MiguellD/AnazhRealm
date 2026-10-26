@@ -26,14 +26,12 @@
 //
 //   node scripts/diag-reconnect.cjs
 "use strict";
-const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const { hauptLauf, ROOT: root } = require("./lib/welt-boot.cjs");
 
-const root = path.resolve(__dirname, "..");
 const stammSrc = stammLib.text(root);
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
-const { hauptLauf } = require("./lib/welt-boot.cjs");
 
 // ── Methoden-Extraktion: 4-Space-Klassen-Indent, schließende Zeile `    }` ──
 function extractMethod(name) {

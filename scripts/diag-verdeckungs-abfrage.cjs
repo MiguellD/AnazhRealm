@@ -205,7 +205,7 @@ function selbsttest() {
 
 if (process.argv.includes("--selftest")) selbsttest();
 
-const { statikServer, starteBrowser, selbsttest: selbstMarke } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, selbsttest: selbstMarke, laufUhr } = require("./lib/welt-boot.cjs");
 const { linsenGpu } = require("./lib/software-gpu.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
@@ -607,8 +607,7 @@ async function verdeckungPhase(opts) {
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 180 });
     await page.evaluateOnNewDocument(sammlerInstall);
-    const T0 = Date.now();
-    const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
+    const log = laufUhr();
     const out = { phasen: {} };
     try {
         await server.zeige(page, 60000, "index.html?holz=kienspan");

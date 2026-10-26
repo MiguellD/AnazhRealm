@@ -359,11 +359,7 @@ function fernStufe(K, verfaelsche) {
         );
     return { bruch: [...new Set(bruch)], ist, maxT, summe };
 }
-const fails = [];
-const check = (name, ok, info) => {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${info ? " — " + info : ""}`);
-    if (!ok) fails.push(name);
-};
+const { errs: fails, check } = require("./lib/welt-boot.cjs").pruefer();
 console.log(`=== TOR-FERN (1110-9) — NUR-WURF-Stufe 3 und Fernform der Tore (porta-core huelle) ===`);
 const k = kosten(huelleVon);
 check(

@@ -747,22 +747,7 @@ async function WELLE_L(ort) {
         }
         // (G1)(G3) KONSUM am Zähl-Spion (Lehre 6): der Klingen-Sweep liest die EINE Vorwärts-Richtung (_blickVorn) und fragt das
         // EINE Grob-Tor (_trefferErreichbar), der Pfeil auch, und das Tor liest den kreatur-Leib (_kreaturLeib)
-        const ruft = (lauf, k) => {
-            const eigen = Object.prototype.hasOwnProperty.call(r, k),
-                f0 = r[k];
-            let n = 0;
-            r[k] = function (...a) {
-                n++;
-                return f0.apply(this, a);
-            };
-            try {
-                lauf();
-            } finally {
-                if (eigen) r[k] = f0;
-                else delete r[k];
-            }
-            return n > 0;
-        };
+        const ruft = window.__ruft; // der Zähl-Spion des Kampf-Gefühls (diag-kampf-gefuehl, vor WELLE_L in derselben Seite)
         const konsum = {};
         {
             const c = hirsch, // kein neues Wesen: jeder Spawn verschöbe die netId und so die Leiber der späteren Proben
@@ -2970,6 +2955,29 @@ async function WELLE_L(ort) {
                 }
                 return V;
             };
+            // (Q11 halten.K2) DER ABGRIFF JE STOFF-PAAR: für EINEN Klick liegt der Master-Bus der Symphonie an einem
+            // OfflineAudioContext (derselbe Ereignis-Chokepoint) — gerechnet wird, was der Treffer dort spielt: Spektral-Schwerpunkt
+            // (klang `schwerpunkt`), Pegel, die Latenz Treffer → Ton (der erste Abtastwert über 1 % der Spitze ab der Uhr des
+            // Treffers) und die Funken der Marke `_trefferPaar`; je Paar in Ego und Third.
+            const paare = async () => {
+                const [P2, sy, ruhe] = [{}, s.symphony, { _tierRuf() {}, _playArchitectureFarewellPing() {} }]; // allein der Treffer klingt
+                Object.assign(r, ruhe);
+                for (const [k, id, z] of [["stahl/holz", "langschwert", "baum_eiche"], ["stahl/stein", "langschwert", "stein_block"], ["holz/fleisch", "keule", "kreatur"]])
+                    for (const sicht of ["first", "third"]) {
+                        const [vor, ctx] = [{ ...sy }, new OfflineAudioContext(1, 24000, 48000)];
+                        r.setCameraMode(sicht);
+                        Object.assign(sy, { ctx, masterGain: ctx.destination, enabled: true });
+                        s._trefferPaar = null;
+                        await klick(id, z).finally(() => Object.assign(sy, vor));
+                        const [m, d] = [s._trefferPaar || {}, (await ctx.startRendering()).getChannelData(0)];
+                        const sp = d.reduce((a, x) => Math.max(a, Math.abs(x)), 0);
+                        (P2[k] = P2[k] || []).push({ stoffe: m.waffe + "/" + m.ziel, funken: m.funken, hz: Math.round(window.__klangCore.schwerpunkt(d, 48000)),
+                            db: Math.round(10 * Math.log10(d.reduce((a, x) => a + x * x, 0) / 24000)), ms: d.findIndex((x) => Math.abs(x) > sp / 100) / 48 });
+                    }
+                for (const k in ruhe) delete r[k];
+                r.setCameraMode("first");
+                return P2;
+            };
             const stumm = { _wearStatFactor: () => 1, _kampfVerschleiss: () => {} }; // (S6) der Pfeil ohne Verschleiß
             const tafel = {
                 _geraetGraebt: (b) => {
@@ -2979,17 +2987,18 @@ async function WELLE_L(ort) {
                 _implementProfile: () => ({ minePower: 1.6, cutPower: 1.6 }),
                 _ernteBand: (b) => (/sichel/.test(b && b.name) ? 0.6 : 0), // (S15) ein Namens-Sonderfall
                 _wearPerStrike: () => A.WEAR_PER_STRIKE_BASE / 5, // (S16) der Spender
+                _trefferPaar: (w, z, ...a) => A.prototype._trefferPaar.call(r, "stahl", "stein", ...a), // (S19) alle Paare gleich
             };
             try {
                 const satz = { hand: { halb: A.WEAR_STAT_FLOOR + (1 - A.WEAR_STAT_FLOOR) / 2 } };
                 for (const z of ZIELE.slice(0, 4)) satz.hand[z] = await klick(null, z);
                 for (const id of ids) satz[id] = await zeile(id);
-                Object.assign(w.z, { satz, form: await form(MUT.slice(2)), stoff: await stoff(), selbst: {} });
+                Object.assign(w.z, { satz, form: await form(MUT.slice(2)), stoff: await stoff(), paar: await paare(), selbst: {} });
                 Object.assign(r, stumm);
                 w.z.selbst.bogen = await zeile("langbogen");
                 for (const k in stumm) delete r[k];
                 Object.assign(r, tafel);
-                Object.assign(w.z.selbst, { form: await form(MUT), stoff: await stoff() });
+                Object.assign(w.z.selbst, { form: await form(MUT), stoff: await stoff(), paar: await paare() });
             } finally {
                 for (const k in Object.assign({}, stumm, tafel)) delete r[k];
             }
