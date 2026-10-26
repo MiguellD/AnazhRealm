@@ -152,7 +152,9 @@ class AnazhRealm_speicher_welten {
         }
     }
 
+    // Der Zeiger bewegt sich nie vor der Platte: ein ausstehender Stand des Takts geht vorher an den Faden.
     activeWorldSet(worldId) {
+        if (worldId !== this._aktivZeiger) this._standNachholen();
         try {
             if (worldId) localStorage.setItem("anazhRealmActiveWorld", worldId);
             else localStorage.removeItem("anazhRealmActiveWorld");
@@ -1603,31 +1605,35 @@ class AnazhRealm_speicher_welten {
     // dieser Welt hält). DER RUF DES TAKTS (Autosave, Edit-Timer; Lehre 14) merkt nur, DASS ein Stand aussteht — ihn setzt der
     // Besen im nächsten Leerlauf-Fenster mit Platz zusammen (`_standNachholen`), spätestens nach `STAND_TAKT.fristMs`; jeder
     // andere Ruf, die Schranke (`_speicherStill`) und das Verlassen setzen ihn vorher synchron. Bis speicher-takt setzte jeder
-    // Ruf den Stand im Takt zusammen: je Ruf p95 5 ms auf der Radeon (speicher.K2, eeaff9d6).
+    // Ruf den Stand im Takt zusammen: je Ruf p95 5 ms auf der Radeon (speicher.K2, eeaff9d6). PLATTE VOR ZEIGER: aufgeschoben
+    // wird nur, wo der Zeiger (`anazhRealmActiveWorld`) schon auf dieser Welt steht — der Stand, nach dem saveState den Zeiger
+    // bewegt, geht synchron an den Faden.
     _standSichern(welt, at, takt) {
         const S = this._speicherZustand();
         this._standBesen();
-        if (takt) {
+        if (takt && this._aktivZeiger === welt) {
             S.ausstehend = {
                 welt,
-                at,
                 bis: (S.ausstehend || { bis: performance.now() + AnazhRealm.STAND_TAKT.fristMs }).bis,
             };
             return S.wecken();
         }
         S.ausstehend = null;
-        this._standSenden(welt, at, false);
+        this._standSenden(welt, at, takt);
     }
 
     // Der ausstehende Stand des Takts, jetzt: nur für die Welt, deren Ruf ihn verlangte (die worldId erneut geprüft), nie in
-    // eine halb geladene (die Sperre des Ladens verlangt ihn nach dem Laden ganz).
+    // eine halb geladene (die Sperre des Ladens verlangt ihn nach dem Laden ganz). DER STEMPEL IST DAS ZUSAMMENSETZEN: der Stand
+    // trägt die Welt dieses Augenblicks, also seine Zeit — bis zum Schnitt trug er die des Rufs (bis `fristMs` älter als sein
+    // Inhalt; gate:persistence (T) 6 halbe Schreiben in 8 Toden, die Rettungs-Kette verglich `lastPlayed` mit einer Lüge).
     _standNachholen() {
         const S = this._speicher;
         const a = S && S.ausstehend;
         if (!a) return;
         S.ausstehend = null;
         if (this._ladeSperre) return void (this._ladeSperre.verlangt = true);
-        if (this.state.worldMeta && this.state.worldMeta.worldId === a.welt) this._standSenden(a.welt, a.at, true);
+        if (this.state.worldMeta && this.state.worldMeta.worldId === a.welt)
+            this._standSenden(a.welt, Date.now(), true);
     }
 
     _standSenden(welt, at, takt) {
