@@ -1,0 +1,15 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-worker-dichte.cjs --faden
+
+=== DER FADEN TRÄGT DIE BYTES (K4 · K5) ===
+  boot   12.6 s · 1.27 MB/min am Empfang: Faden → Main 0.24 MB · Main → Faden 0.02 MB · Kopie 0.00 MB · Platte 0.00 MB
+         Faden → Main: werk:asset 0.12 MB · buch:book 0.10 MB · buch:asset 0.01 MB · voxel:chunk-mesh-result 0.01 MB
+         Main → Faden: werk:build-asset 0.01 MB · wald:wald-darts 0.00 MB · voxel:chunk-mesh 0.00 MB · wald:state-set 0.00 MB
+  fahrt  60.0 s · 0.77 MB/min am Empfang: Faden → Main 0.42 MB · Main → Faden 0.35 MB · Kopie 0.00 MB · Platte 0.00 MB
+         Faden → Main: voxel:chunk-mesh-result 0.16 MB · wald:wald-darts-result 0.08 MB · werk:asset 0.06 MB · buch:asset 0.06 MB
+         Main → Faden: voxel:water-sheet 0.22 MB · voxel:chunk-mesh 0.07 MB · wald:wald-darts 0.06 MB · voxel:zellen-frei 0.01 MB
+  Fäden: buch · werk · werk · werk · voxel · wald
+  Hydrosphären: 2 aus dem Faden · 0 im Haupt-Faden
+  Bauten im Haupt-Faden (Chunk-Stoff, Guss): 6 an Sync-Stellen und Test-Nähten · 0 sonst
+
+✅ FADEN GRÜN: K4 0 synchrone Bauten außerhalb der Sync-Stellen · K5 0.77 MB/min ≤ 5 in der Fahrt
+

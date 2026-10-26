@@ -1,0 +1,20 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:\Program Files\nodejs\node.exe scripts/diag-haus-welt.cjs --phasen=grund --bild
+gpu-lauf: warte auf ki 2026-10-26T03:11:23+01:00 pid=6864 (3 s)
+gpu-lauf: warte auf ki 2026-10-26T03:11:23+01:00 pid=6864 (63 s)
+gpu-lauf: warte auf ki 2026-10-26T03:11:23+01:00 pid=6864 (123 s)
+gpu-lauf: warte auf ki 2026-10-26T03:11:23+01:00 pid=6864 (185 s)
+gpu-lauf: warte auf ki 2026-10-26T03:11:23+01:00 pid=6864 (249 s)
+gpu-lauf: warte auf ki 2026-10-26T03:11:23+01:00 pid=6864 (309 s)
+gpu-lauf: warte auf ki 2026-10-26T03:11:23+01:00 pid=6864 (370 s)
+gpu-lauf: warte auf ki 2026-10-26T03:11:23+01:00 pid=6864 (430 s)
+gpu-lauf: warte auf bstreu 2026-10-26T03:19:33+01:00 pid=27700 (0 s)
+gpu-lauf: Schloss punkte-radeon nach 536 s
+[linse-gpu] amd/rdna-3
+  Dorf-Ort -129/-94 (Gefälle 0.598, der Spieler bei 0/0) · 0 Häuser () · W1 (Vorplatz über der Diele  m) · W2 Diele  cm · W4 Natur im Grundriss ? · W4 Weg ? · W4c Überstand  m · W4b (fern 212/212) Streu vorher ? Zellen im Dorf-Kreis, unter den Häusern ?, fern ? Streu, nah ? Natur + ? Streu, Neubau ?, Nah-Streu ?, Promotion ? (? Häuser) · W5 Optik  % · W9 {"haeuser":43,"weite":0.6828020898649549,"summe":[0,0,0,0,94],"gegenprobe":[59212],"abbau":[{"art":"dorf","vorher":{"gruende":1,"offen":1,"kellerErde":0},"boxen":1,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":1}},{"art":"gesetzt","plan":1,"vorher":{"gruende":1,"offen":2,"kellerErde":null},"boxen":2,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":null}}],"waise":{"start":true,"gruende":43,"gesperrt":false,"ohne":0,"slots":0,"haeuser":0,"reload":0,"zugOffen":false,"ausstattung":null,"verblasst":false,"ms":2}} · W8 Lichtung ? · W7 Bau im Bau ? · W6 Tür frontal 
+  ❌ W9 Waise: blind — Start, Gründe, Sperre, Reload, Verblassen true,43,false,0,false
+  ❌ W9 Ausstattung: blind — kein Brunnen, keine Laterne
+  1 Welten, 1 zugleich, 192 s
+❌ gate:haus-welt ROT (2)
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

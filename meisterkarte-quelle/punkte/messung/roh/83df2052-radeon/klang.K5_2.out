@@ -1,0 +1,62 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:\Program Files\nodejs\node.exe scripts/diag-klang-zensus.cjs --takt --echt --minuten 10 --json C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\83df2052-radeon\klang.K5_2.json
+gpu-lauf: warte auf echtk1 2026-10-26T05:41:20+01:00 pid=28176 (2 s)
+gpu-lauf: warte auf echtk1 2026-10-26T05:41:20+01:00 pid=28176 (63 s)
+gpu-lauf: warte auf echtk1 2026-10-26T05:41:20+01:00 pid=28176 (123 s)
+gpu-lauf: warte auf echtk1 2026-10-26T05:41:20+01:00 pid=28176 (183 s)
+gpu-lauf: warte auf echtk1 2026-10-26T05:41:20+01:00 pid=28176 (243 s)
+gpu-lauf: warte auf echtk1 2026-10-26T05:41:20+01:00 pid=28176 (305 s)
+gpu-lauf: warte auf echtk1 2026-10-26T05:41:20+01:00 pid=28176 (368 s)
+gpu-lauf: warte auf echtk1 2026-10-26T05:41:20+01:00 pid=28176 (432 s)
+gpu-lauf: warte auf echtk1 2026-10-26T05:41:20+01:00 pid=28176 (497 s)
+gpu-lauf: warte auf echtk1 2026-10-26T05:41:20+01:00 pid=28176 (560 s)
+gpu-lauf: warte auf echtk1 2026-10-26T05:41:20+01:00 pid=28176 (623 s)
+gpu-lauf: warte auf grasfuss 2026-10-26T05:52:06+01:00 pid=37240 (39 s)
+gpu-lauf: warte auf grasfuss 2026-10-26T05:53:51+01:00 pid=31236 (3 s)
+gpu-lauf: Schloss punkte-radeon nach 824 s
+[linse-gpu] amd/rdna-3
+Klang-Takt: {"isoliert":true,"tiere":0}
+[stall-akte] ═══ diag-klang-zensus.cjs · Seite #3 http://127.0.0.1:7810/index.html · waitForFunction(ziel) riss nach 180.0 s: Waiting failed: 180000ms exceeded
+[stall-akte] offen waitForFunction(ziel) seit 182.0 s
+[stall-akte] Puls 185×, zuletzt vor 0.1 s — complete · renderer bereit · weltbild da · frames 19058 · welt 19979 Takte · Ruhe 3340 · zuletzt Fege-Takt archLod 2048/2219 · programme 97 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #97 renderPipeline_PointsNodeMaterial_1218
+[stall-akte] Stempel 04:55:29.088 Pipeline MeshPhysicalNodeMaterial · SkinnedMesh · vs 5262 fs 66758 Zeichen · 3 Lichter
+[stall-akte] Stempel 04:55:29.088 gpu.createRenderPipelineAsync #92 renderPipeline_MeshPhysicalNodeMaterial_51
+[stall-akte] Stempel 04:55:33.425 Pipeline ShadowMaterial · geometrie-arena · vs 6753 fs 7624 Zeichen · 3 Lichter
+[stall-akte] Stempel 04:55:33.425 gpu.createRenderPipelineAsync #93 renderPipeline_ShadowMaterial_47
+[stall-akte] Stempel 04:55:33.537 Pipeline ShadowMaterial · geometrie-arena · vs 7676 fs 9405 Zeichen · 3 Lichter
+[stall-akte] Stempel 04:55:33.537 gpu.createRenderPipelineAsync #94 renderPipeline_ShadowMaterial_47
+[stall-akte] Stempel 04:55:34.533 Pipeline MeshStandardNodeMaterial · instanz-zeichner · vs 5662 fs 58761 Zeichen · 3 Lichter
+[stall-akte] Stempel 04:55:34.533 gpu.createRenderPipelineAsync #95 renderPipeline_MeshStandardNodeMaterial_34
+[stall-akte] Stempel 04:55:44.282 Pipeline MeshStandardNodeMaterial · instanz-zeichner · vs 8612 fs 61671 Zeichen · 3 Lichter
+[stall-akte] Stempel 04:55:44.282 gpu.createRenderPipelineAsync #96 renderPipeline_MeshStandardNodeMaterial_645
+[stall-akte] Stempel 04:57:18.383 Pipeline PointsNodeMaterial · Sprite · vs 9080 fs 4357 Zeichen · 3 Lichter
+[stall-akte] Stempel 04:57:18.383 gpu.createRenderPipelineAsync #97 renderPipeline_PointsNodeMaterial_1218
+[stall-akte] CPU (2 s) renderer 5668 111 % · GPU 37248 53 % · browser 8640 2 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 57:12 gpu 47/r 138 · 57:14 gpu 51/r 79 · 57:16 gpu 49/r 77 · 57:18 gpu 57/r 82 · 57:20 gpu 46/r 113 · 57:22 gpu 52/r 113 · 57:24 gpu 51/r 77 · 57:26 gpu 49/r 80 · 57:28 gpu 53/r 89 · 57:30 gpu 47/r 75 · 57:32 gpu 57/r 89 · 57:34 gpu 57/r 105 · 57:36 gpu 52/r 85 · 57:38 gpu 47/r 79 · 57:40 gpu 56/r 92 · 57:42 gpu 60/r 105 · 57:44 gpu 60/r 105 · 57:46 gpu 57/r 123 · 57:48 gpu 51/r 82 · 57:50 gpu 55/r 89 · 57:52 gpu 53/r 82 · 57:54 gpu 50/r 78 · 57:56 gpu 47/r 81 · 57:58 gpu 45/r 75 · 58:00 gpu 52/r 83 · 58:02 gpu 51/r 82 · 58:04 gpu 50/r 85 · 58:06 gpu 52/r 83 · 58:08 gpu 52/r 82 · 58:10 gpu 53/r 103
+[stall-akte] Stapel (kein Debugger: Zeit-Linse)
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_1, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Siedlung „Westerfeld" (markt, Seed 1668000145): 20 Häuser platziert, 0 Slots übersprungen; Mitte 46 m Radius.
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Bauten n=1418 haus=20 ziegel=2 nah=haus_mittelalterlich @-6/21/-1253 d=345m
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Nexus-Evolution (Regel) registriert: evo_2
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Grok: Du bist seit einer Weile still. Geht's dir gut?
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Nexus-Evolution (Regel) registriert: evo_3
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_4, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Grok: Manche Welten brauchen das.
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_5, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Das Wetter zieht zu rainy (Wunsch: rule:nexus)
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_6, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Nexus-Evolution (Regel) registriert: evo_7
+[stall-akte] Stderr [8640:1968:1026/055513.989:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [8640:1968:1026/055513.989:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [8640:1968:1026/055514.017:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [8640:1968:1026/055541.038:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [8640:1968:1026/055629.662:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL AWAIT — der Haupt-Thread lebt (Puls vor 0.1 s), ein Versprechen der Seite kehrt nie zurück; zuletzt 04:57:18.383 gpu.createRenderPipelineAsync #97 renderPipeline_PointsNodeMaterial_1218
+── ein: Klang-ms je Bild p95 0.13 · max 1.05 (313 Bilder, 4 m) · 0.96 Parameter-Schreibungen je Bild · über dem Soll trägt _lofiPlayGroove 0.11 · _playSchrittOneShot 0.11 · _lofiPlayChord 0.05
+── gehen: Klang-ms je Bild p95 0.09 · max 1.96 (26294 Bilder, 260 m) · 0.65 Parameter-Schreibungen je Bild · über dem Soll trägt _lofiPlayGroove 0.11 · _playSchrittOneShot 0.08 · _lofiPlayChord 0.06
+── fahrt: Klang-ms je Bild p95 0.1 · max 1.54 (18847 Bilder, 123 m) · 3.44 Parameter-Schreibungen je Bild · über dem Soll trägt _lofiPlayGroove 0.19 · _lofiPlayChord 0.11 · _lofiPlayBass 0.06
+── nacht: Klang-ms je Bild p95 0.09 · max 1.55 (18440 Bilder, 195 m) · 0.69 Parameter-Schreibungen je Bild · über dem Soll trägt _lofiPlayGroove 0.12 · _playSchrittOneShot 0.08 · _lofiPlayChord 0.08
+── Aussetzer am Ausgang: 0 in 601.6 s Wiedergabe (0 s still)
+✅ GRÜN — Klang-Takt in Bewegung p95 ≤ 0.2 ms je Bild (gehen · Fahrt · nachts)
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

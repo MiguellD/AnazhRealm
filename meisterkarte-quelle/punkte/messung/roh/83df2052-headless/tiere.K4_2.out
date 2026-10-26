@@ -1,0 +1,30 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben lebensraum,tagesbudget
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7738/index.html · der Puls steht seit 20.9 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 23.1 s
+[stall-akte] Puls 14×, zuletzt vor 20.9 s — complete · renderer bereit · weltbild da · frames 407 · welt 407 Takte · Ruhe 30 · zuletzt Fege-Takt archLod 1280/1307 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 35396 114 % · GPU 17212 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 47:07 gpu 8/r 216 · 47:09 gpu 3/r 300 · 47:11 gpu 1/r 674 · 47:13 gpu 2/r 417 · 47:16 gpu 1/r 172 · 47:18 gpu 2/r 127 · 47:20 gpu 1/r 113 · 47:22 gpu 2/r 141 · 47:24 gpu 2/r 110 · 47:26 gpu 2/r 101 · 47:28 gpu 2/r 113 · 47:30 gpu 2/r 124 · 47:32 gpu 2/r 101 · 47:34 gpu 1/r 104 · 47:36 gpu 1/r 107 · 47:38 gpu 1/r 99 · 47:40 gpu 1/r 99 · 47:42 gpu 1/r 108
+[stall-akte] Stapel _eisLinien :2841 < _eisAt :417 < _standSicht :569 < _kreaturFussBoden :2296 < y :754 < _gaitSohlenKipp :759 < _animateTierBaum :2106 < _animateCompoundMotion :2918
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Hauptschleife gestartet – Ultiversum pulsiert!
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Nervensystem: 70 neue Studio-Art(en) automatisch registriert.
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [WARN] AUSGABE: rg11b10ufloat ist auf diesem Gerät nicht renderbar (Feature rg11b10ufloat-renderable fehlt) — das Szenen-Ziel bleibt rgba16float, +7,9 MB bei 1080p
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — Cannot read properties of undefined (reading 'enabled')
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [WARN] FPS-Einbruch: 15 (zuvor ~44)
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [WARN] Der Rundblick steht nach 120 Takten ohne: 2 Bäume und Bauten wachsen · 321 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Welt-Beziehung: Frieden
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _eisLinien :2841
+[stall-akte] Seite #2: der Puls kehrt zurück nach 25.6 s — complete · renderer bereit · weltbild da · frames 407 · welt 407 Takte · Ruhe 30 · zuletzt Fege-Takt archLod 1280/1307 · programme 0 · gl-sync 0
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ lebensraum {"n":783,"drin":783,"gattung":{"deer":538,"wolf":180,"bear":41,"fox":24},"klasse":{"wiese":117,"waldrand":445,"wald":180,"fluss":19,"hang":22},"geburten":213,"gruppen":148,"journal":213,"minM":130.2,"imBlick":0,"fensterMax":2.36,"fernMin":130,"baer":{"fluss":[19,19],"sonst":[194,22]},"anteil":1,"saat":"anazh-realm-seed","fensterRaum":2.5,"gegen":{"n":774,"drin":774,"gattung":{"deer":513,"bear":41,"wolf":186,"fox":34},"klasse":{"wiese":114,"waldrand":433,"hang":28,"wald":186,"fluss":13},"geburten":219,"gruppen":143,"journal":219,"minM":130.2,"imBlick":1,"fensterMax":2.45,"fernMin":130,"baer":{"fluss":[13,13],"sonst":[206,28]},"anteil":1,"saat":"lebensraum-gegen","fensterRaum":2.5}}
+  ✅ tagesbudget {"budget":{"deer":{"ruhen":0.42,"nahrung":0.498,"ziehen":0.081},"bear":{"ruhen":0.45,"nahrung":0.412,"ziehen":0.138},"fox":{"ruhen":0.598,"nahrung":0,"ziehen":0.402},"wolf":{"ruhen":0.613,"nahrung":0,"ziehen":0.387}},"soll":{"deer":{"ruhen":0.4,"nahrung":0.5,"ziehen":0.1},"bear":{"ruhen":0.45,"nahrung":0.4,"ziehen":0.15},"fox":{"ruhen":0.6,"nahrung":0,"ziehen":0.4},"wolf":{"ruhen":0.6,"nahrung":0,"ziehen":0.4}},"ruhe":[222163,2314],"truenke":[4,4,4,4,4,4,4,4,4,4,4,4],"amWasser":48,"durstAus":0}
+
+  (61 s) — Sekunden je Probe: lebensraum: 18, tagesbudget: 26
+
+✅ GRÜN — lebensraum · tagesbudget

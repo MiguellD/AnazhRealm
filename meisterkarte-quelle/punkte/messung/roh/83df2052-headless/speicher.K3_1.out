@@ -1,0 +1,13 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-persistence.cjs --weg
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1709,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] japanisch L2: [{"feld":"tris","ist":7404,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] chinesisch L2: [{"feld":"tris","ist":7288,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1706,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] japanisch L2: [{"feld":"tris","ist":7502,"soll":7250}]
+
+=== Persistenz-Härtung (Tab-Tod, Lade-Pfad, save-server, Weg) ===
+  ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 2.0 kB, Platte 5.9 kB, am stärksten worldMeta.settlementCells 3.5 kB · gesamt roh 52.4 kB, Platte 157.1 kB · Leben worldJournal 28.2 kB, dslHistory 16.8 kB, dslAbilities 5.6 kB, knowledgeBase 3.2 kB, dslPatternMemory 0.0 kB, creatures -3.4 kB
+  ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1175.5 kB, Platte 3526.6 kB, am stärksten wegSpur 1175.5 kB · gesamt roh 1175.5 kB, Platte 3526.6 kB · Leben knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, dslPatternMemory 0.0 kB, worldJournal 0.0 kB
+
+2/2 Persistenz-Invarianten OK.
+✅ Die Welt überlebt Tod und korrupten Write — kein stiller Datenverlust.

@@ -1,0 +1,9 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben herde
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ herde     {"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":0.6,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null},"flucht":{"n":5,"wurfAnteil":0.6,"mittel":1,"fluchtAnteil":0.257,"fluchtMittel":1,"fluchtMin":1}},"ausrichtung":{"mittel":0.986,"takte":919},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.48},"fluchtWegM":34,"id":{"bruch":null,"fluchtS":[5,5]}}
+
+  (27 s) — Sekunden je Probe: herde: 10
+
+✅ GRÜN — herde

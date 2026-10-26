@@ -1,0 +1,65 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-settlement.cjs
+=== TEIL Z: DAS RANG-GESETZ (siedlung.K2) ===
+  ✅ Z1 RANG: binnen 2 km eine ummauerte Stadt in 7/8 Saaten (Soll ≥ 6) — saat-0: metropole 192 Slots 416 m · saat-1: stadt 35 Slots 618 m · saat-2: stadt 39 Slots 266 m · saat-3: stadt 41 Slots 691 m · saat-4: grossstadt 68 Slots 1139 m · saat-5: keine · saat-6: stadt 32 Slots 970 m · saat-7: stadt 30 Slots 1105 m
+  ✅ Z2 EPOCHE → GRÖSSE: „moderne" ohne Zahl stadt, ohne Epoche 21 Slots (18 Häuser)
+=== N5.7 SETTLEMENT — TEIL N: exportSettlement (Node, deterministisch + eingefroren) ===
+  ✅ deterministisch fuer {"seed":7,"nH":12} (zwei Läufe byte-gleich)
+  ✅ Slots sauber fuer {"seed":7,"nH":12} (>=4, bekannte Kulturen, endliche Anker, |x/z| < 5000) — slots=16
+  ✅ deterministisch fuer {"seed":12345,"nH":6} (zwei Läufe byte-gleich)
+  ✅ Slots sauber fuer {"seed":12345,"nH":6} (>=4, bekannte Kulturen, endliche Anker, |x/z| < 5000) — slots=7
+  ✅ GOLDEN byte-treu fuer {"seed":7,"nH":12} (16 Slots · „Villaalto") — 9ce7be9804fa
+  ✅ GOLDEN byte-treu fuer {"seed":12345,"nH":6} (7 Slots · „Grünbach") — 970ee69ed079
+
+=== U6c: REIHEN-SNAP + BRANDWAND (Kern-Gesetz, beidseitiger Konsum) ===
+  ✅ Snap-Probe: zwei dichte Nachbarn docken an (1 Paar) — snaps=1
+  ✅ Snap-Probe: die Fuge ist die Norm-Fuge — fuge=0.0600
+  ✅ Snap-Probe: x und obb.cx rücken kohärent (Solids/OBB fließen konsistent)
+  ✅ Brandwand-Probe: die anliegenden Seiten sind markiert (x1 am linken, x0 am rechten Haus) — bwN=2
+  ✅ Snap-Probe: ferne Nachbarn (Fuge>1.8m) bleiben stehen — snaps=0
+  ✅ Konsum-Probe: der städtische Export trägt ov.brandwand (der Kern-Pfad ruft DIESELBE Wahrheit wie buildDorf) — groesse=markt · brandwand-Slots=2
+  DORF-LICHT je Meter: dunkle Gasse 0/4278 Meter weiter als 10 m · alle Meter Median 4.8 m · p90 7.2 m · max 72.6 m · Laternen 469 (Wand 209)
+  ✅ DAS DORF-LICHT je Meter: jeder Meter der Gasse (Kern-Wand ≤ 9.6 m) ≤ 10 m von einer Quelle, die nachts brennt, alle Meter p90 ≤ 10 m; der Mast vor der Wand und mit dem Fuß neben dem Weg, die Wandlaterne an der Wand (23 Pläne, 4278 Meter Gasse)
+  ✅ Das Licht der Wandlaterne hält das Wand-Gesetz: die Wand in 0.4 m trägt 2.00 × die Gasse unter ihr (Soll ≤ 2), 1900 K wie die Laterne
+  ✅ Die Wandlaterne hängt im Ortplan an ihrem Haus: Slot 1 fällt ins Wasser (1 nass), 12/12 hängen 0.4 m vor der Wand ihres Slots, 0/1 des nassen Hauses bleiben — {"fremd":[]}
+  ✅ Selbst-Test 16: der Ortplan mit den Slot-Nummern des v1-Plans (wie bis N1) fällt — Wandlaternen an fremden Häusern, die des nassen Hauses bleibt — {"haengt":0,"n":13,"fremd":[9.7,8,17.1,9.5],"bleibt":1}
+  ✅ Selbst-Test 15: derselbe Plan ohne Laternen fällt im Dorf-Licht, ein Mast an der Wand (0,45 m wie bis K66) ebenso, einer in der Fahrbahn (rd.w/4 von der Achse wie bis K66-n4) am Weg; die dichte Gasse ohne ihre Wandlaternen an der Marke, eine Wandlaterne 0,9 m vor ihrem Stand an der Wand — {"weg":-1.25,"wegOk":false,"ohneWand":"99/191 Meter der Gasse > 10 m, der dunkelste 33.5 m","schwebt":"0/13"}
+
+=== TEIL B: der lebende Kanal (Browser, foundry-ON, Null-Renderer) ===
+[stall-akte] ═══ diag-settlement.cjs · Seite #2 http://127.0.0.1:7782/index.html · evaluate(async () => { const res = {}; const r = await window.__weltDa(); const f = r._ensureAssetF) riss nach 240.0 s: Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect calls for a higher timeout if needed.
+[stall-akte] offen evaluate(async () => { const res = {}; const r = await window.__weltDa(); const f = r._ensureAssetF) seit 242.0 s
+[stall-akte] Puls 242×, zuletzt vor 0.2 s — complete · renderer bereit · weltbild da · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 32500 21 % · GPU 18656 0 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 10:33 gpu 0/r 4 · 10:35 gpu 0/r 4 · 10:37 gpu 0/r 7 · 10:39 gpu 0/r 12 · 10:41 gpu 0/r 17 · 10:43 gpu 0/r 14 · 10:45 gpu 0/r 31 · 10:47 gpu 0/r 26 · 10:49 gpu 0/r 32 · 10:51 gpu 0/r 15 · 10:53 gpu 0/r 36 · 10:55 gpu 0/r 17 · 10:57 gpu 0/r 32 · 10:59 gpu 0/r 60 · 11:01 gpu 0/r 65 · 11:03 gpu 0/r 55 · 11:05 gpu 0/r 52 · 11:07 gpu 0/r 108 · 11:09 gpu 0/r 125 · 11:11 gpu 0/r 92 · 11:13 gpu 0/r 88 · 11:16 gpu 0/r 55 · 11:18 gpu 0/r 32 · 11:20 gpu 0/r 28 · 11:22 gpu 0/r 14 · 11:24 gpu 0/r 15 · 11:26 gpu 0/r 17 · 11:28 gpu 0/r 16 · 11:30 gpu 0/r 35 · 11:32 gpu 0/r 36
+[stall-akte] Stapel (nicht gefragt: der Puls lebt oder die Akte fragte schon)
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] Bauten n=489 haus=8 ziegel=0 nah=haus_holzhuette @602/35/1828 d=28m
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] A3: Hydro-Kachel 0,-1 aus dem Faden (31 Fluesse, 0 Seen)
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [WARN] ORT: der Plan „Westerhausen" findet binnen 128 m um -1468/-1389 keinen Ort, der jedes Haus trocken trägt — die Wand wirft die nassen Häuser
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [WARN] ORT: der Plan „Eberfeld" findet binnen 128 m um -1468/-1389 keinen Ort, der jedes Haus trocken trägt — die Wand wirft die nassen Häuser
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [WARN] ORT: der Plan „Coloniaensis" findet binnen 128 m um -1468/-1389 keinen Ort, der jedes Haus trocken trägt — die Wand wirft die nassen Häuser
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [INFO] WERK IM WASSER: laterne_dorf bei -1449/-1402 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [WARN] ORT: der Plan „Altadunum" findet binnen 128 m um -1468/-1389 keinen Ort, der jedes Haus trocken trägt — die Wand wirft die nassen Häuser
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [WARN] ORT: der Plan „Altadunum" findet binnen 128 m um -1468/-1389 keinen Ort, der jedes Haus trocken trägt — die Wand wirft die nassen Häuser
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [WARN] ORT: der Plan „Altadunum" findet binnen 128 m um -1468/-1389 keinen Ort, der jedes Haus trocken trägt — die Wand wirft die nassen Häuser
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [WARN] ORT: der Plan „Altadunum" findet binnen 128 m um -1468/-1389 keinen Ort, der jedes Haus trocken trägt — die Wand wirft die nassen Häuser
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [WARN] ORT: der Plan „Altadunum" findet binnen 128 m um -1467/-1389 keinen Ort, der jedes Haus trocken trägt — die Wand wirft die nassen Häuser
+[stall-akte] Konsole log: [AnazhRealm V18.546.93] [WARN] ORT: der Plan „Altadunum" findet binnen 128 m um -1468/-1389 keinen Ort, der jedes Haus trocken trägt — die Wand wirft die nassen Häuser
+[stall-akte] Stderr [10896:22604:1026/020743.969:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [10896:22604:1026/020743.993:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [10896:22604:1026/020744.054:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [10896:22604:1026/020810.630:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [10896:22604:1026/020857.599:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [10896:22604:1026/021049.721:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL AWAIT — der Haupt-Thread lebt (Puls vor 0.2 s), ein Versprechen der Seite kehrt nie zurück; zuletzt kein Stempel
+
+--- stderr ---
+Settlement-Diag-Fehler: ProtocolError: Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect calls for a higher timeout if needed.
+    at <instance_members_initializer> (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\common\CallbackRegistry.js:103:14)
+    at new Callback (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\common\CallbackRegistry.js:107:16)
+    at CallbackRegistry.create (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\common\CallbackRegistry.js:25:26)
+    at Connection._rawSend (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\Connection.js:108:26)
+    at CdpCDPSession.send (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\CdpSession.js:74:33)
+    at #evaluate (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\ExecutionContext.js:363:50)
+    at ExecutionContext.evaluate (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\ExecutionContext.js:277:36)
+    at IsolatedWorld.evaluate (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\IsolatedWorld.js:105:30)
+    at CdpFrame.evaluate (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\api\Frame.js:362:43)
+    at CdpFrame.<anonymous> (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\util\decorators.js:109:27)
