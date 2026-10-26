@@ -34,3 +34,4 @@
 2026-10-26T05:05 e-bewohner champion wf680k/4 ~95A WIP Schirm-Gesetz Satz → Kapseln (19,8 m an 1080p): bewohner-satz 495k → 288k, GPU Third 26,1 → 11,8 ms (Radeon), Band rot (VRAM 1,6×) 069ed697 · WICHTIG
 2026-10-26T05:05 speicher-gate champion wf680k/4 105A WIP halbe Welten 1 → 0 (Ablage-Reihenfolge, EIN IDB-Leser), Decke +103 47e5c95f · PUNKTE
 2026-10-26T05:05 b-feuchte champion wf680k/4 93A WIP Zwilling = Fläche mit Keller (nicht Feuchte), Wand an der Spieler-Region 612eb8c2 · WICHTIG
+2026-10-26T05:20 a-laub-l2 champion 154k 58A befund Täter am Fuß, nicht in der Krone: Kronen-Rand 0,215, Fuß-Band 0,34 — Gras endet 24 m (daten.js:448), Karte L2 ab 18 m → Karte gras-fuss · WICHTIG
