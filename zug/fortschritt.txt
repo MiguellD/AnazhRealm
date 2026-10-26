@@ -221,3 +221,4 @@
 2026-10-26 15:57:09 z38-abab VORFAHRT stadt-A2 gewartet 19.4
 2026-10-26 16:08:43 z38-abab stadt nicht-langsamer 39.9 · 3/3 (2+2)
 2026-10-26 16:19:50 z38-abab d-ego(4+4) nicht-langsamer 11.0 · verlängert (4+4)
+2026-10-26 16:30:05 takt5z-gtx halten.K2#1 GRÜN 10.1 · 33/43
