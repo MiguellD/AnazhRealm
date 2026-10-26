@@ -207,3 +207,4 @@
 2026-10-26 11:52:41 takt5z-gtx siedlung.K5#2 GRÜN 10.0 · 28/43
 2026-10-26 12:02:49 takt5z-gtx leib.K1#1 GRÜN 10.0 · 29/43
 2026-10-26 13:00:27 takt5z-gtx VORFAHRT leib.K1#2 verloren 14.8
+2026-10-26 13:00:34 takt5z-gtx leib.K1#2 ROT 57.6 · 30/43
