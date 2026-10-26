@@ -2540,13 +2540,7 @@ class AnazhRealm_bild_sicht {
             fr.anchorX = Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant;
             fr.anchorZ = Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant;
             fr.uAnker.value.set(fr.anchorX, fr.anchorZ);
-            fr.cursor = 0; // voller Refresh: der Fern-Faden rechnet den Ring am neuen Anker in Scheiben
-            fr.auftrag = 0;
-            fr.flug = 0;
-            fr.einhaengen.length = 0;
-            fr.gen = (fr.gen || 0) + 1; // laufende Scheiben des Fern-Fadens sind überholt
-            fr.vollY.fill(NaN); // das volle Gesetz der Bau-Zone gehört zum Anker
-            fr.feldY.fill(NaN); // die Feld-Fläche der Naht ebenso
+            this._fernRingNeuBestellen(fr); // voller Refresh: der Fern-Faden rechnet den Ring am neuen Anker in Scheiben
         }
         // Die Schalen leben auf Layer 0 (EIN Szene-Pass) — selbstheilend, falls ein Altstand sie verschob; ihr Wurf bleibt
         // ihr `castShadow` (die Wurf-Ebene, K72 `_wurfEbene`).

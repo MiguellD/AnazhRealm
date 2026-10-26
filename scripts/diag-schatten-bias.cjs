@@ -28,7 +28,7 @@
 //   (der Bias der ganzen Probe: n/d in Texeln der Kaskade) · SB_AKNE_ZEITEN=0.28,0.32 · SB_DEBUG=1
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -229,11 +229,7 @@ if (process.argv.includes("--selftest")) {
     const mittag = kopie((s) => (s.werfer[5].erwartet = 20));
     if (urteil(mittag, []).length)
         v.push("ein Schatten unter dem Leib mittags fällt rot (dort ist er kein Befund)");
-    for (const [name, f, muss] of faelle) {
-        const rot = urteil(kopie(f), []);
-        if (!rot.some((x) => muss.test(x))) v.push(`${name} fällt nicht rot (${JSON.stringify(rot)})`);
-        else console.log(`  ✅ ${name} → ${rot.find((x) => muss.test(x))}`);
-    }
+    taeterFaelle(faelle, (z) => urteil(z, []), { fehler: v, klon: () => kopie(() => {}) });
     for (const x of v) console.log("  ❌ " + x);
     if (v.length) {
         console.log("\n❌ SELBSTTEST ROT");

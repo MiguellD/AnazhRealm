@@ -145,6 +145,7 @@ function urteil(b) {
 }
 
 function selbsttest() {
+    const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
     const ex = Object.fromEntries(PFLICHT_EXEMPLARE.map((k) => [k, true]));
     const gruen = {
         zensus: { werke: 900, taeter: [] },
@@ -244,19 +245,8 @@ function selbsttest() {
         ["stumpfer Tempo-Schmuggel", (b) => (b.tempo.schmuggel.durch = false), /LINSE STUMPF: \(V\)/],
         ["Tempo-Probe fehlt", (b) => delete b.tempo, /LEER: \(V\) die Tempo-Probe fehlt/],
     ];
-    for (const [name, tat, muss] of faelle) {
-        const b = klon();
-        tat(b);
-        const v = urteil(b);
-        const ok = v.some((x) => muss.test(x));
-        if (!ok) fehler.push(`${name}: die Wand nennt den Täter nicht (${muss})`);
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${name}" → rot: ${v.join(" · ") || "(nichts)"}`);
-    }
-    if (fehler.length) {
-        console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
-        process.exit(1);
-    }
-    console.log("\n✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.");
+    taeterFaelle(faelle, urteil, { fehler, klon });
+    selbsttestEnde(fehler);
 }
 
 if (process.argv.includes("--selftest")) {
@@ -651,6 +641,12 @@ async function tempo(K) {
     // DER LEBENSZYKLUS RUHT (Ökologie K1/K2): sein Riss und sein Hungertod nahmen der Probe den stehenden Bären, die Mitte ging
     // durch den Leichnam (heim-z29b: fuchs @60 → baer, 0,34 m) — ein Hindernis, das dennoch fällt, nennt der Lauf
     r.tickFaunaLifecycle = () => {};
+    // DIE TROCKENHEIT (wie gate:fahr-leben): der erste Takt der Seite zieht das Wort der Front am Ort zur Welt-Uhr (feld.K2#2),
+    // an der Mess-Wiese zur Uhr 0 Regen — die Nässe senkt die Haftung am Rad (`_fahrHaft`), der GT bei vmax blieb 0,051 m vor dem
+    // Mammut stehen. Das Wort des Spielers hält Sonne, die Nässe steht trocken; die Nässe am Rad misst gate:fahr-leben W.
+    r._setWeather("sunny", "human");
+    st.weatherTransition = null;
+    r._naesseTakt(1e6);
     // DIE GEOMETRIE, eigen (nie der Löser, den sie richtet): der Rahmen wie `_boxAbstand2`, innen negativ
     const rahmen = (b) =>
         b.obb || {

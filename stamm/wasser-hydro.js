@@ -70,7 +70,7 @@ class AnazhRealm_wasser_hydro {
 
     // ═══ KOPPLUNG (1) — DIE EINE STRÖMUNGS-QUELLE ═══
     // Strömungs-Geschwindigkeit (m/s) aus dem kanonischen Fluss-Flow von `_hydroRiverAt` für jeden Leser: Körper
-    // (`_stepCharacter` · Kreaturen in `updateCreatures` · Boot via `_afloat`) und Klang (Hör-Ring). Betrag = die
+    // (`_stepCharacter` · Kreaturen in `updateCreatures` · Boot via `_afloat`) und Klang (der Fluss am Ohr). Betrag = die
     // Strömung des Gesetzes (WASSER_GESETZ.wellen.adv, dieselbe Zeile, die das Wasser-Bild und der Studio-Bach tragen
     // und an der die Fluss-Stimme geeicht ist) × centerness (die Bank-Rampe schiebt nie). Bis V18.531 schob der Körper
     // mit 3,2 m/s (Host-Literal), das Bild floss mit 1,5/0,5/0,9 m/s. Reine Funktion der Welt-Position (Lockstep

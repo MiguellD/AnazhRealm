@@ -19,7 +19,8 @@
 //  (F) DER KÖRPER KLINGT AUS BEWEGUNG (klang.K4 Staffel 2): Motor, Landung, Doppler am Bus.
 //  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S13 unten), Stubs restauriert.
 //  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
-//   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>]] [--json <datei>]
+//  (U) GESEHEN = GEHÖRT am Bach und im Regen: der eigene Lauf `--gesehen` (an `gesehenSeite`, klang.K2 Staffel 2).
+//   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>] | --gesehen] [--json <datei>]
 //   (KLANG_WURZEL=<baum> misst einen anderen Arbeitsbaum unter derselben Linse)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
@@ -45,6 +46,7 @@ const argv = process.argv.slice(2);
 const SELBST = argv.includes("--selftest");
 const TAKT = argv.includes("--takt");
 const ECHT = TAKT && argv.includes("--echt"); // der Zensus misst im Null-Renderer
+const GESEHEN = argv.includes("--gesehen");
 const opt = (k) => {
     const i = argv.indexOf(k);
     return i >= 0 ? argv[i + 1] : null;
@@ -74,6 +76,7 @@ function quellenAbgriff() {
     if (!proto) return;
     const conn = AudioNode.prototype.connect;
     AudioNode.prototype.connect = function (ziel) {
+        (this.__an || (this.__an = [])).push(ziel); // die Kette der Stimme (gesehenSeite folgt ihr bis zum Gain)
         if (ziel && this.context && ziel === this.context.destination)
             D.push({ ctx: this.context, stapel: (new Error().stack || "").split("\n").slice(2, 6) });
         return conn.apply(this, arguments);
@@ -270,7 +273,9 @@ function werkzeug() {
         }
         // DIE WIESE liegt jenseits der Hörweite jeder Glut (klang-core UMWELT.stimmen.glut.hoerweiteM): an der Mess-Wiese
         // steht ein Dorf des Gesetzes. Das Dorf wächst erst ganz (die Bau-Schlange leer), dann gilt der nächste trockene,
-        // ebene Punkt um den Messort, an dem jede Glut außer Hörweite liegt und kein Wasser im Hör-Ring.
+        // ebene Punkt um den Messort, an dem jede Glut außer Hörweite liegt, kein Wasser im Hör-Ring und kein Fluss in seiner
+        // Hörweite (der Kanal, den das Ohr liest, `_hydroDistAt`: bis kk2-ufer stand die Wiese 30,6 m neben einem Bach, den der
+        // Ring zwischen seinen Radien 22 und 40 m überhörte).
         for (
             const weiter = window.__deckel("der Dorf-Plan", 1000);
             r._autoSettlementQueue && r._autoSettlementQueue.plan && weiter();
@@ -286,6 +291,8 @@ function werkzeug() {
         const wieseHaelt = (x, z) => {
             for (const e of gluten) if (Math.hypot(e.position.x - x, e.position.z - z) < hoerweite + 4) return false;
             if (r._kronenStreuAt(x, z) > deckMess || W.bestand(x, z, 15) > bestandMess) return false;
+            const fl = r._hydroDistAt(x, z);
+            if (fl.dist - fl.halfW < window.__klangCore.UMWELT.stimmen.fluss.hoerweiteM) return false;
             let lo = Infinity,
                 hi = -Infinity;
             for (let k = 0; k <= O.richtungen; k++) {
@@ -1311,6 +1318,148 @@ function koerperUrteil(F) {
     };
 }
 
+// (U) GESEHEN = GEHÖRT AM BACH UND IM REGEN (`--gesehen`, klang.K2 Staffel 2): der Spieler geht im echten Spiel (Ego, W und S
+// gehalten bis zum Ereignis) an den Bach der Mess-Wiese und zurück, derweil spricht er das Wetter (Sturm, dann bewölkt). Je
+// 0,1 s das Ohr — RMS am Gain der Stimmen fluss + ufer und regen (ein Analyser, die Stimme an ihrem Puffer erkannt) — und das
+// Bild: die sichtbare Strömung √Σ adv · flowMix / d² über die Wasser-Vertices im Blick (flowMix = die Rampe, mit der der Shader
+// die Strähnen über |aFlow| treibt), der Regen = die Deckkraft des gezeichneten Regens. Kreuzkorrelation je Paar in 0,5-s-Fenstern,
+// Lag ±3 s wie Staffel 1 (m15-wind): r ≥ 0,6 bei Lag 0, CV beider Reihen ≥ 0,1, nie stumm im Bild. `--selftest`: ein entkoppelter Pegel (Fluss,
+// Ufer und Regen am Ohr eingefroren, das Bild geht weiter) ist ROT beim Namen.
+const GESEHEN_SOLL = 0.6;
+async function gesehenSeite(m) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const adv = r.constructor.Gesetz("terrain:WASSER_GESETZ").wellen.adv;
+    const takt = (t) => (r._gameLoopTick(t), requestAnimationFrame(takt));
+    requestAnimationFrame(takt);
+    let h = null;
+    await window.__weltDa((w) => (w._ensureHydroTilesAround(m.x, m.z, 200), (h = w._hydroFor(m.x, m.z)) && h.ready));
+    // der nächste Punkt des Bachs; die Normale zur Mess-Wiese steht auf ihm senkrecht
+    let P = { d: Infinity };
+    for (const f of h.rivers || [])
+        for (const q of f.points) if (Math.hypot(q.x - m.x, q.z - m.z) < P.d) P = { x: q.x, z: q.z, d: Math.hypot(q.x - m.x, q.z - m.z) };
+    const [nx, nz] = [(m.x - P.x) / P.d, (m.z - P.z) / P.d];
+    st.playerMesh.position.set(P.x + nx * 45, r._voxelSurfaceY(P.x + nx * 45, P.z + nz * 45) + 1.8, P.z + nz * 45);
+    r.setCameraMode("first");
+    st.yaw = Math.atan2(-nx, -nz); // der Blick zum Wasser (`_blickVorn`: vorn = (sin yaw, cos yaw))
+    st.pitch = -0.2;
+    document.getElementById("anazh-symphony-toggle").click();
+    const pm = st.playerMesh.position;
+    const G = (window.__gesehen = { proben: [] });
+    G.abstand = () => Math.hypot(pm.x - P.x, pm.z - P.z);
+    G.amWasser = () => G.abstand() < 6 || r._nassAt(pm.x - nx * 3, pm.z - nz * 3);
+    G.wandelt = () => !!st.weatherTransition;
+    // DAS OHR: je Stimme der Gain ihrer laufenden Quelle (Quelle → Panner → Filter → Gain, umweltGraph), ein Analyser daran
+    const ohr = {};
+    const rms = (name) => {
+        const ctx = st.symphony.ctx;
+        const S = window.__klangCore.UMWELT.stimmen[name];
+        const o = ohr[name] || (ohr[name] = { an: ctx.createAnalyser(), td: new Float32Array(2048) });
+        const q = window.__klangQuellen.findLast(
+            ({ ctx: c, start, stop, knoten: { buffer: b } }) => c === ctx && start != null && stop == null && b && b.sampleRate === S.sr && Math.abs(b.duration - S.sek) < 0.05
+        );
+        let g = q && q.knoten;
+        for (let k = 0; k < 3 && g; k++) g = g.__an && g.__an[0];
+        if (g !== o.gain) g && g.connect(o.an), (o.gain = g);
+        if (!g) return 0;
+        o.an.getFloatTimeDomainData(o.td);
+        return Math.sqrt(o.td.reduce((x, v) => x + v * v, 0) / o.td.length);
+    };
+    // DAS BILD: die Strömung, die das Wasser im Blick zeichnet, und die Deckkraft des Regens
+    const fr = new THREE.Frustum();
+    const v = new THREE.Vector3();
+    const stroemung = (cam) => {
+        cam.updateMatrixWorld();
+        fr.setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+        let summe = 0;
+        st.scene.traverse((o) => {
+            const f = o.isMesh && o.visible && o.material === st.hydroSurfaceMaterial && o.geometry.getAttribute("aFlow");
+            for (let k = 0; f && k < f.count; k++) {
+                const t = Math.min(1, Math.max(0, (Math.hypot(f.getX(k), f.getY(k)) - 0.03) / 0.27));
+                if (t && fr.containsPoint(v.fromBufferAttribute(o.geometry.getAttribute("position"), k)))
+                    summe += (adv * t * t * (3 - 2 * t)) / Math.max(4, v.distanceToSquared(cam.position));
+            }
+        });
+        return Math.sqrt(summe);
+    };
+    setInterval(() => {
+        const R = r._rainSystem;
+        if (st.symphony.ctx)
+            G.proben.push([Math.hypot(rms("fluss"), rms("ufer")), stroemung(st.camera), rms("regen"), R && R.mesh.visible ? R.mesh.material.opacity : 0]);
+    }, 100);
+    // der Täter des Selbsttests: das Ohr hört Fluss, Ufer und Regen, wie sie beim Pflanzen klangen — das Bild geht weiter
+    G.taeter = () => {
+        const Pr = Object.getPrototypeOf(r);
+        const alt = Pr._umweltLage;
+        let fest = null;
+        Pr._umweltLage = function () {
+            const l = alt.apply(this, arguments);
+            return l && Object.assign(l, (fest = fest || { fluss: l.fluss, ufer: l.ufer, regen: l.regen }));
+        };
+        G.proben = [];
+    };
+    return [P.x, P.z, P.d].map(Math.round);
+}
+// Je Paar die Kreuzkorrelation in 0,5-s-Fenstern (5 Proben), Lag −3 … +3 s; grün: r bei Lag 0 ≥ Soll, n ≥ 60, CV beider ≥ 0,1, und
+// das Ohr schweigt nie, wo das Bild zeigt: höchstens 2 % der Fenster mit Bild ≥ 10 % seiner Spitze tragen ein Ohr unter 10⁻³ RMS.
+function gesehenUrteil(proben, ohr, bild) {
+    const mittel = (z) => z.reduce((x, w) => x + w, 0) / z.length;
+    const reihe = (k) => Array.from({ length: Math.floor(proben.length / 5) }, (_, i) => mittel(proben.slice(5 * i, 5 * i + 5).map((p) => p[k])));
+    const [A, B] = [reihe(ohr), reihe(bild)];
+    const pear = (x, y) => {
+        const [mx, my] = [mittel(x), mittel(y)];
+        const [sxy, sxx, syy] = [mittel(x.map((u, i) => (u - mx) * (y[i] - my))), mittel(x.map((u) => (u - mx) ** 2)), mittel(y.map((u) => (u - my) ** 2))];
+        return { r: sxy / Math.sqrt(sxx * syy) || 0, n: x.length, cvBild: Math.sqrt(sxx) / mx || 0, cvOhr: Math.sqrt(syy) / my || 0 };
+    };
+    const lags = [];
+    for (let k = -6; k <= 6; k++) lags.push({ lagS: k / 2, ...pear(B.slice(Math.max(0, k), B.length + Math.min(0, k)), A.slice(-Math.min(0, k), A.length - Math.max(0, k))) });
+    const [r0, best] = [lags[6], lags.reduce((x, y) => (y.r > x.r ? y : x))];
+    const zeigt = B.map((b) => b >= 0.1 * Math.max(...B));
+    const sicht = zeigt.filter(Boolean).length;
+    const stumm = zeigt.filter((z, i) => z && A[i] < 1e-3).length;
+    const gruen = r0.n >= 60 && r0.r >= GESEHEN_SOLL && r0.cvBild >= 0.1 && r0.cvOhr >= 0.1 && stumm <= 0.02 * sicht;
+    return { gruen, r0, best, stumm, sicht, lags };
+}
+// Gehen, bis das Wetter seine Worte gesprochen hat: hin (W, bis das Wasser vor den Füßen liegt) und zurück (S, bis 45 m);
+// höchstens 16 Gänge. Dann je Paar das Urteil beim Namen.
+async function gesehenGang(page, worte) {
+    const G = (f, ...a) => page.evaluate(f, ...a);
+    let i = 0;
+    await G((w) => window.anazhRealm._setWeather(w, "human"), worte[0]);
+    for (let g = 0; g < 16 && (i < worte.length || g % 2); g++) {
+        const ziel = g % 2 ? () => window.__gesehen.abstand() >= 45 : () => window.__gesehen.amWasser();
+        if (!(await halteBis(page, { taste: "ws"[g % 2], ziel, frist: g ? 60000 : 180000 })).erreicht)
+            throw new Error(`der Gang ${g} am Bach kam nicht an`);
+        if (!(await G(() => window.__gesehen.wandelt())) && ++i < worte.length) await G((w) => window.anazhRealm._setWeather(w, "human"), worte[i]);
+    }
+    const proben = await G(() => window.__gesehen.proben);
+    const je = { ufer: gesehenUrteil(proben, 0, 1), regen: gesehenUrteil(proben, 2, 3) };
+    for (const [name, { gruen, r0, best, stumm, sicht }] of Object.entries(je))
+        console.log(
+            `${gruen ? "✅" : "❌"} ${name}: r ${r0.r.toFixed(2)} bei Lag 0 (n ${r0.n}), Spitze ${best.r.toFixed(2)} bei ${best.lagS} s, CV Bild ${r0.cvBild.toFixed(2)} / Ohr ${r0.cvOhr.toFixed(2)}, stumm im Bild ${stumm} von ${sicht} Fenstern`
+        );
+    return je;
+}
+async function gesehen(page, erg) {
+    erg.seite = await page.evaluate(gesehenSeite, MESS);
+    console.log("Gesehen = gehört am Bach der Mess-Wiese (x, z, Abstand):", erg.seite.join(" · "));
+    erg.gesehen = await gesehenGang(page, ["stormy", "cloudy"]);
+    const rot = Object.keys(erg.gesehen).filter((n) => !erg.gesehen[n].gruen);
+    let feuert = true;
+    if (SELBST) {
+        await page.evaluate(() => window.__gesehen.taeter());
+        erg.selbst = await gesehenGang(page, ["rainy"]);
+        feuert = !erg.selbst.ufer.gruen && !erg.selbst.regen.gruen;
+        console.log(`${feuert ? "✅" : "❌"} SELBSTTEST: der eingefrorene Pegel ist ROT (ufer und regen)`);
+    }
+    console.log(
+        rot.length
+            ? `❌ ROT — gesehen ≠ gehört: ${rot.join(" · ")} unter r ${GESEHEN_SOLL}, ohne Varianz oder stumm im Bild`
+            : `✅ GRÜN — gesehen = gehört: der Bach-Pegel folgt der sichtbaren Strömung, der Regen-Pegel dem gezeichneten Regen`
+    );
+    return rot.length === 0 && feuert ? 0 : 1;
+}
+
 // DER ZENSUS (O · Z · G · H · S · K · E · L · W · A · P) an den Orten aus dem Gesetz.
 async function zensus(page, browser, ergebnis) {
     await page.evaluate(AUSGABE_INSTALL);
@@ -1569,7 +1718,7 @@ async function zensus(page, browser, ergebnis) {
         if (!TAKT) await page.evaluateOnNewDocument(quellenAbgriff);
         await server.zeige(page, 180000, "index.html", "networkidle0");
         await warteAufWelt(page, 180000);
-        exit = await (TAKT ? takt(page, ergebnis) : zensus(page, browser, ergebnis));
+        exit = await (TAKT ? takt(page, ergebnis) : GESEHEN ? gesehen(page, ergebnis) : zensus(page, browser, ergebnis));
     } catch (e) {
         console.log("FEHLER:", e && e.stack ? e.stack : e);
     } finally {

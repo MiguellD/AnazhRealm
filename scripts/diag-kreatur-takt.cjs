@@ -43,7 +43,7 @@ const DAUER_S = {
     temperament: 1,
     abstand: 1,
     jagdkreis: 281,
-    rudel: 1,
+    rudel: 7,
     querhang: 13,
     ferngang: 1,
     gestalt: 1,
