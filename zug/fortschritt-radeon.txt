@@ -525,3 +525,4 @@
 2026-10-26 22:23:56 takt7-radeon schatten.K1#1 GRÜN 0.9 · 19/37
 2026-10-26 22:24:29 takt7-radeon pipeline.K4#1 GRÜN 0.6 · 20/37
 2026-10-26 22:26:24 takt7-radeon fahrzeug.K4#1 GRÜN 1.9 · 21/37
+2026-10-26 22:26:28 takt7-radeon fahrzeug.K4#2 GRÜN 1.9 · 22/37
