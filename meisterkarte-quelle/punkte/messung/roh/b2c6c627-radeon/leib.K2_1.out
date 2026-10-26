@@ -1,0 +1,9 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:\Program Files\nodejs\node.exe scripts/diag-koerper-stand.cjs --k8 --bild
+gpu-lauf: Schloss punkte-radeon nach 1 s
+[linse-gpu] amd/rdna-3
+  K8 wiese -280.4/-1045.6 0° · Ring 4 von 4 · fein 1.1 (0.1, n 200) · streu 0.5 (0, n 332) · fuss 5.5 (-0.6, n 200) · huf 0.2 (gigant 0.1, n 200) · rad 0.2 (0, n 200) | K8 hang -526/-853 24.4° · Ring 4 von 4 · fein 4.3 (0.3, n 200) · streu 1 (0, n 711) · fuss 18 (-3.3, n 200) · huf 1.5 (gigant 0.9, n 201) · rad 2.4 (2.1, n 200)
+  ❌ K8 fuss hang: p95 18 cm (Median -3.3, Soll ≤ 3, Ratsche 4.2) — Täter: der Fuß des Spielers (die Sohle des Leibs gegen _gaitBodenY)
+❌ gate:koerper-stand ROT (1)
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

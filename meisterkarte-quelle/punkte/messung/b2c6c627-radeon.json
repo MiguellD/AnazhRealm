@@ -1,0 +1,477 @@
+{
+ "sha": "b2c6c627e6526265fcdc5178b987515ae06f2584",
+ "geraet": "radeon",
+ "zeit": "2026-10-26T15:51:30.186Z",
+ "host": "MiguellD",
+ "je": {
+  "gelaende.K2#1": {
+   "gruen": true,
+   "zahl": "8 von 10 Gräben über das Verb, in 2973 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 106.6–271.7 ms (1 m 3, 3 m 5)",
+   "exit": 0,
+   "minuten": 2.05,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T13:22:57.754Z",
+   "abdruck": "1ee7bd28bb9c",
+   "port": 7702
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.7853 (wasserSatz 36779 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.6 σ 51.4 schwarz 0.0 % weiß 0.1 % · Stand 18.546.97 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+   "exit": 0,
+   "minuten": 1.43,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T13:25:00.629Z",
+   "abdruck": "68e70463a0db",
+   "port": 7703
+  },
+  "gelaende.K5#2": {
+   "gruen": true,
+   "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 1.62,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T13:26:26.397Z",
+   "abdruck": "8b16706e5959",
+   "port": 7707
+  },
+  "wetter.K2#1": {
+   "gruen": true,
+   "zahl": "Dorf porös draußen 0.553 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 4 (n 5949/13809), Wiese draußen 0.771",
+   "exit": 0,
+   "minuten": 2.91,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T13:28:03.601Z",
+   "abdruck": "e03a045fab93",
+   "port": 7710
+  },
+  "physik.K2#2": {
+   "gruen": false,
+   "zahl": "Wand GPU: keine Linse nennt eine Karte ([linse-gpu] <Hersteller>/…) · (V) Wagen oder gestoßener Bär fehlt in der Ausgabe (Exit 0)",
+   "exit": 0,
+   "minuten": 1.14,
+   "grund": "Wand GPU: keine Linse nennt eine Karte ([linse-gpu] <Hersteller>/…)",
+   "gpu": null,
+   "zeit": "2026-10-26T13:30:58.405Z",
+   "abdruck": "b10c0629d940",
+   "port": 7714
+  },
+  "tiere.K1#2": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.997 über 1150 Takte, letzter Flüchter 0.4 s (1 aus zweiter Hand), Fluchtweg 32.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 19° 83.1/48, Flucht bei 17.4 m: 43.1 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (778 px) · 44.2 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (434 px) · 46.2 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (506 px)",
+   "exit": 0,
+   "minuten": 1.78,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.997 über 1150 Takte, letzter Flüchter 0.4 s (1 aus zweiter Hand), Fluchtweg 32.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 19° 83.1/48, Flucht bei 17.4 m: 43.1 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (778 px) · 44.2 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (434 px) · 46.2 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (506 px)",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T13:32:06.632Z",
+   "abdruck": "2c38cafe8615",
+   "port": 7730
+  },
+  "tiere.K3#2": {
+   "gruen": true,
+   "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2768/1209/6049/4056 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 93.6 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.97 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 2.86,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T13:33:53.298Z",
+   "abdruck": "a99597ca60dd",
+   "port": 7732
+  },
+  "mensch.K1#1": {
+   "gruen": true,
+   "zahl": "Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 27 Ego / 34 Third; Third-Bild 8 Uhr am Dorfplatz 30 Menschen im Bild, 4 gehend, 70.8 fps",
+   "exit": 0,
+   "minuten": 6.55,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T13:36:45.136Z",
+   "abdruck": "5b2b0b3745f2",
+   "port": 7733
+  },
+  "vegetation.K4#1": {
+   "gruen": true,
+   "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59026 px; ungemessen (ohne freies Auge) haus_skandinavisch 17-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt",
+   "exit": 1,
+   "minuten": 4.25,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T13:43:17.893Z",
+   "abdruck": "e53d97783caf",
+   "port": 7734
+  },
+  "tiere.K2#2": {
+   "gruen": true,
+   "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.1 s, 3 fressen: tier:wolf 7461 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.34 m · Luma 75.2 σ 32.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.97 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 2.45,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T13:47:32.784Z",
+   "abdruck": "6f4d55252639",
+   "port": 7740
+  },
+  "mensch.K2#2": {
+   "gruen": true,
+   "zahl": "Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 5–9 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.123 m), Sprünge 0, Plan bit-gleich true",
+   "exit": 0,
+   "minuten": 3.77,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T13:49:59.603Z",
+   "abdruck": "dc99c476be49",
+   "port": 7747
+  },
+  "licht.K2#1": {
+   "gruen": true,
+   "zahl": "Verhältnis 5.005 (5–12,5), Schatten-Anteil 0.1998 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.04,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T13:53:45.672Z",
+   "abdruck": "a3fab07da97f",
+   "port": 7748
+  },
+  "licht.K2#2": {
+   "gruen": false,
+   "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.005, Schatten-Anteil 0.1998 · Uhr 0.27 klar (Sonne 7.2°) 0.9 UNGÜLTIG (A/B 0.802, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.027 UNGÜLTIG (A/B 0.822, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.638 · Uhr 0.27 Regen (Sonne 7.2°) null UNGÜLTIG (A/B ?, A/C 1.000, 1463 px) · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.55,
+   "grund": "ROT: Uhr 0.5 klar (Sonne 74.2°) 5.005, Schatten-Anteil 0.1998 · Uhr 0.27 klar (Sonne 7.2°) 0.9 UNGÜLTIG (A/B 0.802, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.027 UNGÜLTIG (A/B 0.822, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.638 · Uhr 0.27 Regen (Sonne 7.2°) null UNGÜLTIG (A/B ?, A/C 1.000, 1463 px) · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T13:54:48.036Z",
+   "abdruck": "a30f7cb6b0e1",
+   "port": 7749
+  },
+  "ferne.K1#1": {
+   "gruen": true,
+   "zahl": "Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 2.22,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T13:56:20.965Z",
+   "abdruck": "bbee11502f53",
+   "port": 7750
+  },
+  "ferne.K2#1": {
+   "gruen": true,
+   "zahl": "Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 2.22,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T13:56:20.965Z",
+   "abdruck": "a2c61a28b0e5",
+   "port": 7750,
+   "zwilling": "ferne.K1#1"
+  },
+  "ferne.K1#2": {
+   "gruen": false,
+   "zahl": "K1-2 ROT (10 Befunde) · Farbton 8 km 0.4404–29.33° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.17/5.137 (≥ 1,2) · fernes Weiß R/B 2.594 (≥ 1,3) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 2.22,
+   "grund": "ROT: K1-2 ROT (10 Befunde) · Farbton 8 km 0.4404–29.33° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.17/5.137 (≥ 1,2) · fernes Weiß R/B 2.594 (≥ 1,3) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T13:56:20.965Z",
+   "abdruck": "61e1079f2588",
+   "port": 7750,
+   "zwilling": "ferne.K1#1"
+  },
+  "ferne.K2#2": {
+   "gruen": true,
+   "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0.47°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.8k/120k Dreiecke · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 6.92,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T13:58:34.104Z",
+   "abdruck": "dad9cf32497f",
+   "port": 7753
+  },
+  "material.K2#1": {
+   "gruen": false,
+   "zahl": "boden 0.5 m glatt 0.0175 nyquist 0.1267 (Arm 0.408), 1 m glatt 0.0107 nyquist 0.134 (Arm 0.909), 2 m glatt 0.0072 nyquist 0.1302 (Arm 1.91) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 4.83,
+   "grund": "ROT: boden 0.5 m glatt 0.0175 nyquist 0.1267 (Arm 0.408), 1 m glatt 0.0107 nyquist 0.134 (Arm 0.909), 2 m glatt 0.0072 nyquist 0.1302 (Arm 1.91) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:05:29.151Z",
+   "abdruck": "db1cd34d4849",
+   "port": 7754
+  },
+  "material.K3#1": {
+   "gruen": true,
+   "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.985 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.54,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:10:18.783Z",
+   "abdruck": "c1c161cacf47",
+   "port": 7755
+  },
+  "material.K1#1": {
+   "gruen": true,
+   "zahl": "Welt/Labor 0,9–1,1: 12/12 · im realen Band beidseits: 12/12 · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 2.25,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:11:51.137Z",
+   "abdruck": "7d958f1a0783",
+   "port": 7756
+  },
+  "material.K1#2": {
+   "gruen": true,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 2.25,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:11:51.137Z",
+   "abdruck": "03c706724ee9",
+   "port": 7756,
+   "zwilling": "material.K1#1"
+  },
+  "schatten.K1#1": {
+   "gruen": true,
+   "zahl": "Uhr 0.5 ego 2.4 cm (12 Kanten) · Uhr 0.5 third 2.4 cm (12 Kanten), [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.89,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:14:06.131Z",
+   "abdruck": "5e5cfa6d8c00",
+   "port": 7758
+  },
+  "fahrzeug.K3#1": {
+   "gruen": true,
+   "zahl": "Garage FOV +9.06° Arm +18.1 % bei 15.20/16.00 m/s · Welt FOV +9.5° Arm +18.8 % bei 15.26 m/s (Ende ok)",
+   "exit": 0,
+   "minuten": 1.2,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:14:59.273Z",
+   "abdruck": "47c7c8bcd372",
+   "port": 7775
+  },
+  "fahrzeug.K3#2": {
+   "gruen": false,
+   "zahl": "Drift Kamera ≤ 0° neben dem Fahrtvektor (Schlupf bis 4.7°) · Rückkehr 1.08 s nach 67° Orbit · Ruck p95 0.031 m (165) · FOV-Schreiber [_kamFov]",
+   "exit": 0,
+   "minuten": 2.01,
+   "grund": "ROT: Drift Kamera ≤ 0° neben dem Fahrtvektor (Schlupf bis 4.7°) · Rückkehr 1.08 s nach 67° Orbit · Ruck p95 0.031 m (165) · FOV-Schreiber [_kamFov]",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:16:11.553Z",
+   "abdruck": "3a58d98e9e1c",
+   "port": 7776
+  },
+  "fahrzeug.K4#1": {
+   "gruen": true,
+   "zahl": "nach Ego → Third im Bild 3/3, Azimut 5.1/2.8/1.4°, Stufe ≤ 1.8 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 1.3° · Hang 17.4°",
+   "exit": 0,
+   "minuten": 1.8,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:18:11.950Z",
+   "abdruck": "ab61dce55516",
+   "port": 7777
+  },
+  "fahrzeug.K4#2": {
+   "gruen": true,
+   "zahl": "nach Ego → Third im Bild 3/3, Azimut 5.1/2.8/1.4°, Stufe ≤ 1.8 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 1.3° · Hang 17.4°",
+   "exit": 0,
+   "minuten": 1.8,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:18:11.950Z",
+   "abdruck": "b8dfe1a249ab",
+   "port": 7777,
+   "zwilling": "fahrzeug.K4#1"
+  },
+  "siedlung.K2#1": {
+   "gruen": true,
+   "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 94 · Schuss vom acker 103 m vor der Mitte, 3.5 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 62 σ 26 schwarz 0.0 % weiß 0.0 % · Sta",
+   "exit": 0,
+   "minuten": 1.41,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:19:59.710Z",
+   "abdruck": "22156cd39fff",
+   "port": 7779
+  },
+  "siedlung.K2#2": {
+   "gruen": false,
+   "zahl": "ZIPF keine Zeile · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 94 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.25 (Exit 0)",
+   "exit": 0,
+   "minuten": 1.5,
+   "grund": "ROT: ZIPF keine Zeile · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 94 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.25 (Exit 0)",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:21:24.327Z",
+   "abdruck": "b846e8481015",
+   "port": 7780
+  },
+  "siedlung.K5#1": {
+   "gruen": true,
+   "zahl": "nH 12 erstes Haus nach 57.1 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 113.4 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf)",
+   "exit": 0,
+   "minuten": 5.06,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:22:54.038Z",
+   "abdruck": "1bf868639fe6",
+   "port": 7782
+  },
+  "siedlung.K5#2": {
+   "gruen": true,
+   "zahl": "nH 12 erstes Haus nach 57.1 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 113.4 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf)",
+   "exit": 0,
+   "minuten": 5.06,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:22:54.038Z",
+   "abdruck": "607c1995be2b",
+   "port": 7782,
+   "zwilling": "siedlung.K5#1"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 59.8 · third/gehen 53.5 · ego/wechsel 45.8 · third/wechsel 40.8 · Bild 16.5/16.5/16.4 ms",
+   "exit": 0,
+   "minuten": 6.22,
+   "grund": "ROT: schlechtester von 3 Läufen p95 ms ego/gehen 59.8 · third/gehen 53.5 · ego/wechsel 45.8 · third/wechsel 40.8 · Bild 16.5/16.5/16.4 ms",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:27:57.820Z",
+   "abdruck": "9687c62fd915",
+   "port": 7785
+  },
+  "leib.K1#2": {
+   "gruen": true,
+   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 44.3 · third/gehen 44.8 · ego/springen 33.4 · third/springen 30.9 · ego/einsteigen 33.3 · third/einsteigen 24.9 · ego/hieb 27.9 · third/hieb 28.3 · Bild 16/16.1/16.1 ms",
+   "exit": 0,
+   "minuten": 14.71,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:34:10.728Z",
+   "abdruck": "160f0c239df2",
+   "port": 7786
+  },
+  "leib.K2#1": {
+   "gruen": false,
+   "zahl": "hang 18 (n 200) · falllinie ? · treppe hang ? · treppe wiese ? cm p95 · Steckenbleiber 0 — ROT: hang p95 18 cm an 200 Kontakten · falllinie p95 ? cm an 0 Kontakten · treppe hang p95 ? cm an 0 Kontakten · treppe wiese p95 ? cm an 0 Kontakten · ein Gang ohne Steckenbleiber-Zahl",
+   "exit": 1,
+   "minuten": 0.53,
+   "grund": "ROT: hang 18 (n 200) · falllinie ? · treppe hang ? · treppe wiese ? cm p95 · Steckenbleiber 0 — ROT: hang p95 18 cm an 200 Kontakten · falllinie p95 ? cm an 0 Kontakten · treppe hang p95 ? cm an 0 Kontakten · treppe wiese p95 ? cm an 0 Kontakten · ein Gang ohne Steckenbleiber-Zahl",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:48:53.347Z",
+   "abdruck": "e13a985143f4",
+   "port": 7787
+  },
+  "leib.K4#1": {
+   "gruen": true,
+   "zahl": "stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":19} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.42 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0051 höchstens 2.700 m",
+   "exit": 0,
+   "minuten": 1.14,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:49:24.986Z",
+   "abdruck": "c6df0d186932",
+   "port": 7788
+  },
+  "halten.K2#1": {
+   "gruen": true,
+   "zahl": "schlechtester von 3 Läufen p95 ms third/hieb 38.4 · ego/hieb 28.3 · Bild 16.2/16.1/16.2 ms · Hit-Stop im schlechtesten Lauf 11 Bilder · im Spiel Halt gesetzt 59-mal (153–173 ms, gleitet bis 0 mm je Takt) / 60-mal (145–174 ms, gleitet bis 0 mm je Takt) / 60-mal (153–175 ms, gleitet bis 0 mm je Takt)",
+   "exit": 0,
+   "minuten": 5.42,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:50:33.529Z",
+   "abdruck": "631137359d80",
+   "port": 7792
+  },
+  "halten.K5#1": {
+   "gruen": true,
+   "zahl": "Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 84864b15008e → 84864b15008e",
+   "exit": 0,
+   "minuten": 0.6,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:55:58.941Z",
+   "abdruck": "b8c2b35ae818",
+   "port": 7799
+  },
+  "tore.K3#1": {
+   "gruen": true,
+   "zahl": "30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E)",
+   "exit": 0,
+   "minuten": 1.04,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:56:34.706Z",
+   "abdruck": "34ff650a2da6",
+   "port": 7802
+  },
+  "tore.K3#2": {
+   "gruen": false,
+   "zahl": "leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 0/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim · rot werk: skeleton (kein Abdruck vor dem Tor), fluid (kein Abdruck vor dem Tor), terrain (kein Abdruck vor dem Tor), garage (kein Abdruck vor dem Tor), portale (kein Abdruck vor dem Tor), schmiede (kein Abdruck vor dem Tor), fachwerk (kein Abdruck vor dem Tor), klang (kein Abdruck vor dem Tor), koerperstudio (kein Abdruck vor dem Tor), tetrapoda (kein Abdruck vor dem Tor)",
+   "exit": 0,
+   "minuten": 1.04,
+   "grund": "ROT: leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 0/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim · rot werk: skeleton (kein Abdruck vor dem Tor), fluid (kein Abdruck vor dem Tor), terrain (kein Abdruck vor dem Tor), garage (kein Abdruck vor dem Tor), portale (kein Abdruck vor dem Tor), schmiede (kein Abdruck vor dem Tor), fachwerk (kein Abdruck vor dem Tor), klang (kein Abdruck vor dem Tor), koerperstudio (kein Abdruck vor dem Tor), tetrapoda (kein Abdruck vor dem Tor)",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:56:34.706Z",
+   "abdruck": "4a0e91ccdc14",
+   "port": 7802,
+   "zwilling": "tore.K3#1"
+  },
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "0 von 4 Sitzungen ohne Frame > 100 ms (max 234 · 226 · 209 · 251 ms; Hänger 1/1/1/1)",
+   "exit": 0,
+   "minuten": 12.3,
+   "grund": "ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 234 · 226 · 209 · 251 ms; Hänger 1/1/1/1)",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T14:57:37.317Z",
+   "abdruck": "3b1e54b5711e",
+   "port": 7807
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "0 von 8 Läufen ohne Frame > 100 ms und ≤ 1 % > 33 ms mit Sicht-Wechsel und Einsteigen (max ms/Anteil: s1 geh 83.6/7.69 % · s1 fahrt 116.9/73.93 % · s2 geh 234.2/5.61 % · s2 fahrt 92.1/30.18 % · s3 geh 92.1/7.54 % · s3 fahrt 125.6/72.55 % · s4 geh 217.6/5.00 % · s4 fahrt 100.6/25.37 %); ROT s1 geh: 7.69 % > 33 ms | s1 fahrt: max 116.9 ms, 73.93 % > 33 ms | s2 geh: max 234.2 ms, 5.61 % > 33 ms | s2 fahrt: 30.18 % > 33 ms | s3 geh: 7.54 % > 33 ms | s3 fahrt: max 125.6 ms, 72.55 % > 33 ms | s4 geh: max 217.6 ms, 5.00 % > 33 ms | s4 fahrt: max 100.6 ms, 25.37 % > 33 ms",
+   "exit": 0,
+   "minuten": 17.45,
+   "grund": "ROT: 0 von 8 Läufen ohne Frame > 100 ms und ≤ 1 % > 33 ms mit Sicht-Wechsel und Einsteigen (max ms/Anteil: s1 geh 83.6/7.69 % · s1 fahrt 116.9/73.93 % · s2 geh 234.2/5.61 % · s2 fahrt 92.1/30.18 % · s3 geh 92.1/7.54 % · s3 fahrt 125.6/72.55 % · s4 geh 217.6/5.00 % · s4 fahrt 100.6/25.37 %); ROT s1 geh: 7.69 % > 33 ms | s1 fahrt: max 116.9 ms, 73.93 % > 33 ms | s2 geh: max 234.2 ms, 5.61 % > 33 ms | s2 fahrt: 30.18 % > 33 ms | s3 geh: 7.54 % > 33 ms | s3 fahrt: max 125.6 ms, 72.55 % > 33 ms | s4 geh: max 217.6 ms, 5.00 % > 33 ms | s4 fahrt: max 100.6 ms, 25.37 % > 33 ms",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T15:09:55.378Z",
+   "abdruck": "b35c7ee98fac",
+   "port": 7808
+  },
+  "klang.K2#1": {
+   "gruen": true,
+   "zahl": "r 0.85 bei Lag 0 (n 119), Spitze 0.87 bei -0.5 s, CV Bild 0.26 / Ohr 0.54, 119.5 fps, Klang an",
+   "exit": 0,
+   "minuten": 1.5,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T15:27:22.371Z",
+   "abdruck": "2d4a675eda1b",
+   "port": 7810
+  },
+  "klang.K5#2": {
+   "gruen": true,
+   "zahl": "Klang-Takt p95 gehen 0.1 · fahrt 0.11 · nacht 0.1 ms · Aussetzer 0 in 600.7 s Wiedergabe (0 s still) (Exit 0)",
+   "exit": 0,
+   "minuten": 13.18,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T15:28:52.650Z",
+   "abdruck": "fd9f3386b62b",
+   "port": 7813
+  },
+  "speicher.K1#1": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 1.58 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
+   "exit": 0,
+   "minuten": 9.45,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T15:42:03.475Z",
+   "abdruck": "80965330139c",
+   "port": 7814
+  },
+  "speicher.K1#2": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 1.58 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+   "exit": 0,
+   "minuten": 9.45,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T15:42:03.475Z",
+   "abdruck": "347160cebd7c",
+   "port": 7814,
+   "zwilling": "speicher.K1#1"
+  },
+  "speicher.K2#1": {
+   "gruen": true,
+   "zahl": "je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 81 Rufe in 5833 Bildern; aufgefüllt je Bild p95 0, blind)",
+   "exit": 0,
+   "minuten": 2.09,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-26T15:51:30.186Z",
+   "abdruck": "2897b2bde797",
+   "port": 7816
+  }
+ }
+}

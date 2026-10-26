@@ -1,0 +1,77 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:\Program Files\nodejs\node.exe scripts/diag-kollision-bild.cjs --bild
+gpu-lauf: Schloss punkte-radeon nach 2 s
+=== KOLLISION = BILD (Leben-Schau 2) — Null-Renderer, Foundry an, Mess-Wiese 150 m + Exemplare ===
+[stall-akte] ═══ diag-kollision-bild.cjs · Seite #2 http://127.0.0.1:7714/index.html · der Puls steht seit 20.3 s
+[stall-akte] offen evaluate(tempo) seit 22.3 s
+[stall-akte] Puls 21×, zuletzt vor 20.3 s — complete · renderer bereit · weltbild da · frames 1077 · welt 1077 Takte · Ruhe 322 · zuletzt Fege-Takt streuLod 1600/1615 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 32748 113 % · browser 6288 1 % · GPU 24996 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 31:06 gpu 7/r 248 · 31:08 gpu 2/r 270 · 31:10 gpu 1/r 646 · 31:12 gpu 1/r 785 · 31:14 gpu 1/r 264 · 31:16 gpu 2/r 115 · 31:18 gpu 1/r 190 · 31:20 gpu 1/r 155 · 31:22 gpu 1/r 150 · 31:24 gpu 1/r 117 · 31:26 gpu 1/r 227 · 31:28 gpu 2/r 134 · 31:30 gpu 1/r 171 · 31:32 gpu 1/r 119 · 31:34 gpu 1/r 108 · 31:36 gpu 1/r 109 · 31:38 gpu 1/r 107 · 31:40 gpu 1/r 107 · 31:42 gpu 1/r 109 · 31:44 gpu 1/r 108 · 31:46 gpu 1/r 125
+[stall-akte] Stapel _koerperMotionProfile :2858 < animatePlayerSoul :1628 < loop :241 < takt :11 < fahre :121 < (anonym) :242 < lauf :231 < galopp :236
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [WARN] FPS-Einbruch: 38 (zuvor ~64)
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [WARN] FPS-Einbruch: 17 (zuvor ~62)
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [WARN] FPS-Einbruch: 23 (zuvor ~63)
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [WARN] FPS-Einbruch: 28 (zuvor ~64)
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [WARN] FPS-Einbruch: 11 (zuvor ~60)
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [INFO] Grok: Du bist seit einer Weile still. Geht's dir gut?
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [WARN] FPS-Einbruch: 23 (zuvor ~62)
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [WARN] FPS-Einbruch: 38 (zuvor ~63)
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [WARN] FPS-Einbruch: 13 (zuvor ~61)
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [WARN] FPS-Einbruch: 23 (zuvor ~63)
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [WARN] FPS-Einbruch: 38 (zuvor ~64)
+[stall-akte] Konsole log: [AnazhRealm V18.546.97] [WARN] FPS-Einbruch: 13 (zuvor ~61)
+[stall-akte] Stderr [6288:29612:1026/143123.141:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [6288:29612:1026/143123.141:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [6288:29612:1026/143123.141:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [6288:29612:1026/143123.169:ERROR:google_apis\gcm\engine\mcs_client.cc:702]   Error code: 401  Error message: Authentication Failed: wrong_secret
+[stall-akte] Stderr [6288:29612:1026/143123.169:ERROR:google_apis\gcm\engine\mcs_client.cc:704] Failed to log in to GCM, resetting connection.
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _koerperMotionProfile :2858
+[stall-akte] Seite #2: der Puls kehrt zurück nach 32.0 s — complete · renderer bereit · weltbild da · frames 8524 · welt 8524 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+  Ring 81 Chunks · 1124 Studio-Werke gezählt
+  Klasse (Typ→Gestalt)                     n   Blocker ohne Bild seitlich/oben (m)   Bild ohne Blocker (m)
+  grown_blume_gross#→blume                    1     0.05 / 0.20                   0.00
+  kiesel→geroell                              1     0.10 / 0.09                   0.00
+  felsbrocken→geroell                         1     0.10 / 0.09                   0.00
+  stein_block→basalt                          1     0.04 / 0.07                   0.00
+  felsturm→zacken                            20     0.05 / 0.03                   0.00
+  felsbogen→zacken                           28     0.05 / 0.03                   0.00
+  fels_var8→zacken                            1     0.05 / 0.02                   0.00
+  glutbrunnen→feuerstelle                    45     0.05 / 0.00                   0.28
+  kristall_geode→kristalle                    1     0.02 / 0.02                   0.00
+  tor_geisttor→geisttor                       1     0.01 / 0.01                   0.00
+  tor_drachentor→drachentor                   1     0.01 / 0.00                   0.00
+  welt_fachwerk→ruine                         1     0.01 / 0.00                   0.00
+  welt_schmiede→maurentor                     1     0.00 / 0.01                   0.00
+  baum_tanne→tanne                          186     0.00 / 0.00                   0.00
+  grown_busch_hazel#→strauch                532     0.00 / 0.00                   0.00
+  baum_kiefer→fichte                        111     0.00 / 0.00                   0.00
+  baum_birke→birke                           74     0.00 / 0.00                   0.00
+  baum_eiche→eiche                           95     0.00 / 0.00                   0.00
+  baum_erle→weide                            14     0.00 / 0.00                   0.00
+  baum_mammut→mammut                          1     0.00 / 0.00                   0.00
+  fahrzeug_gt→gt                              1     0.00 / 0.00                   0.16
+  tor_kathedrale→kathedrale                   1     0.00 / 0.00                   0.00
+  tor_maschine→maschine                       1     0.00 / 0.00                   0.00
+  tor_verkalkt→verkalkt                       1     0.00 / 0.00                   0.00
+  haus_alemannisch→alemannisch                1     0.00 / 0.00                   1.02
+  brunnen_dorf→brunnen                        1     0.00 / 0.00                   0.33
+  marktstand_dorf→marktstand                  1     0.00 / 0.00                   0.69
+  laterne_dorf→laterne                        1     0.00 / 0.00                   0.03
+  Exemplare: {"felsturm":true,"felsbogen":true,"stein_block":true,"kiesel":true,"felsbrocken":true,"kristall_geode":true,"fels_var8":true,"fahrzeug_gt":true,"tor_drachentor":true,"tor_kathedrale":true,"tor_maschine":true,"tor_geisttor":true,"tor_verkalkt":true,"welt_fachwerk":true,"welt_schmiede":true,"haus_alemannisch":true,"brunnen_dorf":true,"marktstand_dorf":true,"laterne_dorf":true}
+  Schmuggel (T): {"wer":"felsturm#2","genannt":true,"funde":["blocker 1.69"]} · Tor: {"wer":"welt_fachwerk#2306","genannt":true,"funde":["bild 3.16"]}
+  Bauten des Haupt-Threads (K): 0
+  Quelle: {"felsOhneTypListe":true,"partsSkala":true,"torTafel":true,"ohneBau":true}
+  OFFEN (U) haus: haus_alemannisch#2308 — das Bild steht 1.02 m neben jeder Box (bei 0.8/1.7/2.1)
+  OFFEN (U) ausstattung: brunnen_dorf#2309 — das Bild steht 0.33 m neben jeder Box (bei 1.4/1.2/0.0)
+  OFFEN (U) ausstattung: marktstand_dorf#2310 — das Bild steht 0.69 m neben jeder Box (bei 1.6/0.3/-0.1)
+  (V) Kontakt beim Tempo: 114/114 Zeilen · Schmuggel {"koerper":"schmuggel","hindernis":"mauer","kad":"deckel","v":5.86,"wer":"_t_kontakt_mauer#2312","durch":true,"tief":0.285,"spalt":0}
+      fuchs      5.860 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      wolf       7.450 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      baer       8.230 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      riese      13.520 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      gehen      1.150 m/s · Durchtritt 0/10 · Eindringen max 0.000 m · Spalt max 0.000 m
+      sprint     5.170 m/s · Durchtritt 0/10 · Eindringen max 0.000 m · Spalt max 0.000 m
+      fall       25.000 m/s · Durchtritt 0/2 · Eindringen max 0.001 m · Spalt max 0.000 m
+      gt         16.000 m/s · Durchtritt 0/10 · Eindringen max 0.000 m · Spalt max 0.042 m
+      gestossen  13.810 m/s · Durchtritt 0/2 · Eindringen max 0.000 m · Spalt max 0.000 m
+
+✅ KOLLISION = BILD GRÜN — jede Box hat ihr Bild; Fels, Tor (außer der Passage) und Wagen: jedes Bild im Körper-Band liegt an einer Box; jedes feste Werk trägt Boxen; kein Blocker baut eine Gestalt auf dem Haupt-Thread; kein Körper dringt beim Tempo des Spiels in ein Hindernis — OFFEN: 3 Werk(e) mit Bild ohne Box (oben)
