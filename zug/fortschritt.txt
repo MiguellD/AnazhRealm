@@ -179,3 +179,4 @@
 2026-10-26 09:09:12 takt5z-gtx START 43 Stationen
 2026-10-26 09:14:19 takt5z-gtx gelaende.K2#1 GRÜN 5.0 · 1/43
 2026-10-26 09:19:26 takt5z-gtx gelaende.K3#1 GRÜN 5.0 · 2/43
+2026-10-26 09:24:32 takt5z-gtx gelaende.K5#2 GRÜN 5.0 · 3/43
