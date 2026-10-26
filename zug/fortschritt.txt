@@ -269,3 +269,4 @@
 2026-10-26 21:52:25 takt7-gtx mensch.K2#2 GRÜN 4.5 · 6/20
 2026-10-26 22:00:33 takt7-gtx ferne.K2#2 GRÜN 8.0 · 7/20
 2026-10-26 22:03:53 takt7-gtx material.K1#2 GRÜN 3.2 · 8/20
+2026-10-26 22:05:29 takt7-gtx fahrzeug.K3#1 GRÜN 1.5 · 9/20
