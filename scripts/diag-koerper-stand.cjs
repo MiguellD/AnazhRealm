@@ -907,9 +907,63 @@ async function rollen(n) {
             const z = Z + d * Math.sin(w);
             const g = gez(x, z);
             const l = r._voxelSurfaceY(x, z);
-            if (g !== null && Number.isFinite(l) && !window.__gezeichnet.steil) fein.push(g - l);
+            if (g === null) R.__leer = (R.__leer | 0) + 1;
+            else if (window.__gezeichnet.steil) R.__steil = (R.__steil | 0) + 1;
+            if (g !== null && Number.isFinite(l) && !window.__gezeichnet.steil) {
+                fein.push(g - l);
+                (R.__p || (R.__p = [])).push([g - l, x, z]);
+            }
         }
         R.fein = mass(fein);
+        {
+            const span = r._voxelChunkConfig(0).span;
+            const a = s.stufeAuge || {};
+            const U = s.atmoUniforms;
+            R.diag = {
+                auge: [a.x, a.z].map((q) => Math.round(q * 10) / 10),
+                pm: [pm.position.x, pm.position.z].map((q) => Math.round(q * 10) / 10),
+                gm: U && U.geomorph ? U.geomorph.value : null,
+                leer: R.__leer | 0,
+                steil: R.__steil | 0,
+                chunks: [...s.voxelChunks].filter(([k, e]) => { const [cx, cz] = k.split(",").map(Number); return Math.max(Math.abs((cx + 0.5) * span - X), Math.abs((cz + 0.5) * span - Z)) < 60; }).map(([k, e]) => k + ":" + e.lod + (e.mesh ? "" : "!") + (e.empty ? "e" : "")).join(" "),
+                falsch: [],
+                top: (R.__p || [])
+                    .sort((p, q) => Math.abs(q[0]) - Math.abs(p[0]))
+                    .slice(0, 8)
+                    .map(([d, x, z]) => {
+                        const key = `${Math.floor(x / span)},${Math.floor(z / span)}`;
+                        const e = s.voxelChunks.get(key);
+                        let code = null;
+                        if (e && e.mesh) {
+                            const P = e.mesh.geometry.attributes.position.array;
+                            const Wm = e.mesh.geometry.attributes.aMorphWeight;
+                            let bd = Infinity;
+                            for (let i = 0; Wm && i < Wm.count; i++) {
+                                const q = (P[3 * i] - x) ** 2 + (P[3 * i + 2] - z) ** 2;
+                                if (q < bd) [bd, code] = [q, Wm.array[i]];
+                            }
+                        }
+                        return {
+                            cm: Math.round(d * 1000) / 10,
+                            x: Math.round(x * 10) / 10,
+                            z: Math.round(z * 10) / 10,
+                            cheb: Math.round(Math.max(Math.abs(x - a.x), Math.abs(z - a.z)) * 10) / 10,
+                            key,
+                            lod: e ? e.lod : "-",
+                            code,
+                            w: e ? Math.round(r._stufeGewicht(e.lod, x, z) * 100) / 100 : null,
+                            offen: !!((s.voxelMeshPending && s.voxelMeshPending.has(key)) || (s.dirtyVoxelChunks && s.dirtyVoxelChunks.has(key))),
+                        };
+                    }),
+            };
+            for (const [key, e] of s.voxelChunks) {
+                const [cx, cz] = key.split(",").map(Number);
+                const soll = r._voxelChunkLodFor(cx, cz, a.x, a.z, null);
+                if (!e.empty && e.lod !== soll && Math.max(Math.abs((cx + 0.5) * span - X), Math.abs((cz + 0.5) * span - Z)) < 60)
+                    R.diag.falsch.push(`${key}:${e.lod}->${soll}`);
+            }
+            delete R.__p;
+        }
         // der Fuß der Streu: der Ursprung jeder Instanz (die erste Scheibe, ihre Blatt-Matrix trägt keinen Versatz, ihr Ursprung
         // liegt über der Zelle) gegen das Mesh, wie es JETZT gezeichnet ist — im Stand, nach dem Gang und nach der Fahrt, ohne
         // Einschwingen (der Geomorph folgt dem Auge)
@@ -1171,6 +1225,8 @@ function zeile(o) {
             const errs = [];
             page.on("pageerror", (e) => errs.push((e.message || String(e)).split("\n")[0]));
             if (!BILD) await nullRenderer(page);
+            if (process.env.K8_DROSSEL)
+                await (await page.createCDPSession()).send("Emulation.setCPUThrottlingRate", { rate: Number(process.env.K8_DROSSEL) });
             // die Mess-Wiese in IHREM Zustand (spec/profiband/haushalt.json `dorfZug`): ruht dort der Zug, wächst kein Auto-Dorf an
             // Wiese und Hang — headless ruht er ohnehin (`_dorfTaktLebt`), auf der Karte lief er, und der 25°-Hang stand unter den
             // Terrassen des Dorfs (Radeon: Feinform p95 21,1 statt 4,3 cm)
