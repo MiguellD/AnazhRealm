@@ -480,3 +480,4 @@
 2026-10-26 21:53:34 takt7-headless studios.K5#1 GRÜN 0.6 · 53/81
 2026-10-26 21:53:47 takt7-headless studios.K5#2 GRÜN 0.6 · 54/81
 2026-10-26 21:54:07 takt7-headless siedlung.K1#1 GRÜN 1.1 · 55/81
+2026-10-26 21:54:34 takt7-headless ki.K1#2 GRÜN 12.1 · 56/81
