@@ -2463,11 +2463,11 @@ async function kreaturProben(r, T, opts) {
             s.scene.children.filter((o) => o && o.userData && o.userData.rig && o.userData.heim != null);
         const sollSumme = haeuser.reduce((a, h) => a + (h.soll || 0), 0);
         // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios — bricht der
-        // Deckel, bricht die Probe beim Namen dessen, was fehlt (nie misst die Quote ein halb geborenes Dorf)
-        const [nL, nF, nH] = [() => leiber().length, () => r._weltOffen().leiber, () => hausE.filter((e) => !e._hausHuelle).length];
-        await bisDa("bewohner: die Leiber", () => nL() < sollSumme || nF() > 0 || nH() > 0).catch((f) => {
-            throw new Error(`${f.message} (${nL()} von ${sollSumme} Leibern, ${nF()} ohne Feld, ${nH()} Häuser ohne Hülle)`);
-        });
+        // Deckel, bricht die Probe bei seinem Namen (nie misst die Quote ein halb geborenes Dorf)
+        await bisDa(
+            "bewohner: die Leiber",
+            () => leiber().length < sollSumme || r._weltOffen().leiber > 0 || hausE.some((e) => !e._hausHuelle)
+        );
         // Täter (Selbsttest), gezählt und zurück: die Leiber des ersten bewohnten Hauses fallen aus der Szene
         const h1 = haeuser.find((x) => x.soll > 0);
         const fort = leiber().filter((b) => hat("bewohner-haus") && h1 && b.userData.heim === h1.seed);
