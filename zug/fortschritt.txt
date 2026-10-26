@@ -239,3 +239,4 @@
 2026-10-26 19:19:06 takt5z-gtx speicher.K1#2 GRÜN 15.0 · 42/43
 2026-10-26 19:24:13 takt5z-gtx speicher.K2#1 ROT 5.0 · 43/43
 2026-10-26 19:24:40 takt6-gtx START 16 Stationen
+2026-10-26 19:28:08 takt6-gtx fahrzeug.K4#2 GRÜN 3.4 · 1/16
