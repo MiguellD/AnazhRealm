@@ -1510,18 +1510,25 @@ class AnazhRealm_speicher_welten {
     // der Listen reihum (die Bauten, die Baupläne, die Wesen) und serialisiert die geänderten — der Takt-Stand reicht nur sie
     // weiter. Eine Runde beginnt mit der frischen Menge der Baupläne (ein neuer oder gefallener ohne Inventar-Akt kommt so
     // spätestens eine Runde später); jedes Glied ist einmal je Sicherungs-Abstand dran, ein neues sofort.
+    // → die ms, bis wieder ein Glied fällig ist (der Besen schläft so lange).
     _standFegen(frist) {
         const S = this._speicherZustand();
-        if (!this.state.worldMeta || !this.state.playerMesh) return;
+        if (!this.state.worldMeta || !this.state.playerMesh) return 1000;
         const F = S.fege || (S.fege = { reihe: [], i: 0, guthaben: 0, zeit: performance.now(), runde: 0 });
         // das Guthaben: so viele Glieder, dass jedes einmal je Sicherungs-Abstand dran ist (ein neues prüft der Stand selbst)
         const jetzt = performance.now();
         const abstand = 1000 * this.state.saveInterval;
         F.guthaben = Math.min(F.reihe.length + 1, F.guthaben + ((jetzt - F.zeit) * F.reihe.length) / abstand);
         F.zeit = jetzt;
-        // nichts fällig, kein Kontext: der Besen läuft in jedem Leerlauf-Fenster, ein Glied ist nur alle Abstand/Länge dran,
-        // eine Runde ohne Glieder einmal je Abstand (bis speicher-takt baute jedes Fenster den Kontext samt Bauten-Filter)
-        if (F.i < F.reihe.length ? F.guthaben < 1 : !F.reihe.length && jetzt - F.runde < abstand) return;
+        // nichts fällig, kein Kontext: ein Glied ist alle Abstand/Länge dran, eine Runde ohne Glieder einmal je Abstand (bis
+        // speicher-takt lief der Besen in JEDEM Leerlauf-Fenster und baute dort den Kontext samt Bauten-Filter)
+        const ruhe = () =>
+            F.i < F.reihe.length
+                ? Math.max(0, ((1 - F.guthaben) * abstand) / F.reihe.length)
+                : F.reihe.length
+                  ? 0
+                  : Math.max(0, abstand - (performance.now() - F.runde));
+        if (ruhe() > 0) return ruhe();
         const K = this._standKontext();
         while ((F.guthaben >= 1 || F.i >= F.reihe.length) && (frist.timeRemaining() > 1 || frist.didTimeout)) {
             if (F.i >= F.reihe.length) {
@@ -1541,7 +1548,7 @@ class AnazhRealm_speicher_welten {
                     }
                     for (const g of L.glieder) F.reihe.push([L, art, g]);
                 }
-                if (frist.didTimeout || !F.reihe.length) return;
+                if (frist.didTimeout || !F.reihe.length) return ruhe();
             }
             const [L, art, g] = F.reihe[F.i++];
             F.guthaben--;
@@ -1552,8 +1559,9 @@ class AnazhRealm_speicher_welten {
             m.marke = marke;
             const json = JSON.stringify(art.glied(g));
             if (json !== m.json) ((m.json = json), L.gefegt.add(m));
-            if (frist.didTimeout) return;
+            if (frist.didTimeout) return ruhe();
         }
+        return ruhe();
     }
 
     // DER SPEICHER-FADEN (speicher-faden.js, Lehre 24): lazy geboren, EIN Faden je Seite; jede Antwort löst die Zusage ihrer
@@ -1605,7 +1613,7 @@ class AnazhRealm_speicher_welten {
                 at,
                 bis: (S.ausstehend || { bis: performance.now() + AnazhRealm.STAND_TAKT.fristMs }).bis,
             };
-            return;
+            return S.wecken();
         }
         S.ausstehend = null;
         this._standSenden(welt, at, false);
@@ -1653,20 +1661,29 @@ class AnazhRealm_speicher_welten {
         );
     }
 
-    // Der Besen läuft ab dem Boot in jedem Leerlauf-Fenster (ohne die API im nächsten Task: ohne Frist) — EINMAL gestartet.
-    // Zuerst der ausstehende Stand des Takts: in einem Fenster mit `STAND_TAKT.platzMs` Platz, sonst nach seiner Frist.
+    // Der Besen läuft ab dem Boot in Leerlauf-Fenstern (ohne die API im nächsten Task: ohne Frist) — EINMAL gestartet; er
+    // schläft, bis wieder ein Glied fällig ist, und der Ruf des Takts weckt ihn (`S.wecken`). Zuerst der ausstehende Stand des
+    // Takts: in einem Fenster mit `STAND_TAKT.platzMs` Platz, sonst nach seiner Frist.
     _standBesen() {
         const S = this._speicherZustand();
-        if (S.besen) return;
-        S.besen = true;
+        if (S.wecken) return;
+        S.schlaf = null;
         const lauf = (f) => {
-            const frist = f || { timeRemaining: () => 0, didTimeout: true };
+            const [frist, T] = [f || { timeRemaining: () => 0, didTimeout: true }, AnazhRealm.STAND_TAKT];
             const a = S.ausstehend;
-            const jetzt = performance.now();
-            if (a && (frist.didTimeout || jetzt >= a.bis || frist.timeRemaining() >= AnazhRealm.STAND_TAKT.platzMs))
+            if (a && (frist.didTimeout || performance.now() >= a.bis || frist.timeRemaining() >= T.platzMs))
                 this._standNachholen();
-            this._standFegen(frist);
-            this._imLeerlauf(lauf, S.ausstehend ? Math.max(1, S.ausstehend.bis - jetzt) : 1000);
+            // fällig Gewordenes sammelt sich (`schlafMs`): ein Fenster prüft mehrere Glieder statt eines je Bild
+            const ruhe = this._standFegen(frist);
+            if (S.ausstehend) return this._imLeerlauf(lauf, Math.max(1, S.ausstehend.bis - performance.now()));
+            const ms = ruhe > 0 ? Math.min(Math.max(ruhe, T.schlafMs), 1000) : 0;
+            S.schlaf = setTimeout(() => ((S.schlaf = null), this._imLeerlauf(lauf, 1000)), ms);
+        };
+        S.wecken = () => {
+            if (S.schlaf === null) return;
+            clearTimeout(S.schlaf);
+            S.schlaf = null;
+            this._imLeerlauf(lauf, AnazhRealm.STAND_TAKT.fristMs);
         };
         this._imLeerlauf(lauf, 1000);
     }
@@ -2621,8 +2638,9 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
 AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX = 8192;
 // Die leere Reihe der Stand-Tafel (eine Marke vergleicht Identität: nie je Ruf ein neues [])
 AnazhRealm.STAND_LEER = Object.freeze([]);
-// DER STAND DES TAKTS im Leerlauf (`_standSichern`): spätestens `fristMs` nach dem Ruf, vorher nur in einem Fenster mit `platzMs`
-AnazhRealm.STAND_TAKT = Object.freeze({ fristMs: 1000, platzMs: 4 });
+// DER STAND DES TAKTS im Leerlauf (`_standSichern`): spätestens `fristMs` nach dem Ruf, vorher nur in einem Fenster mit `platzMs`;
+// der Besen schläft, bis ein Glied fällig ist, mindestens `schlafMs`
+AnazhRealm.STAND_TAKT = Object.freeze({ fristMs: 1000, platzMs: 4, schlafMs: 100 });
 AnazhRealm.BLUEPRINT_KNOWN_KEYS = Object.freeze([
     "name",
     "label",
