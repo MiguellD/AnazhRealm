@@ -110,3 +110,4 @@
 2026-10-26 04:08:36 takt4-radeon fahrzeug.K4#1 GRÜN 3.1 · 24/43
 2026-10-26 04:08:41 takt4-radeon fahrzeug.K4#2 GRÜN 3.1 · 25/43
 2026-10-26 04:10:10 takt4-radeon siedlung.K2#1 GRÜN 1.6 · 26/43
+2026-10-26 04:15:28 takt4-radeon siedlung.K5#1 GRÜN 5.3 · 27/43
