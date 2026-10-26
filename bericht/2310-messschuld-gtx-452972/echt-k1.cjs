@@ -68,6 +68,8 @@ function haken() {
         if (!String(k).endsWith(".bak")) req.addEventListener("success", () => { const v = req.result; if (v && typeof v.json === "string") window.__gelesen.push({ quelle: "idb", at: v.at, rec: rec(v.json) }); });
         return req;
     };
+    // der Platz ohne Faden (main: saveState schreibt ihn in jeder Sicherung); mit Faden nur Verlassen und Ablage — dann stirbt
+    // `platz` im Vorspann `faden` am Schlüssel der Welt
     const set = Storage.prototype.setItem;
     Storage.prototype.setItem = function (k, v) {
         set.call(this, k, v);
@@ -96,10 +98,16 @@ function haken() {
             console.log("__W__ " + JSON.stringify({ t: Date.now(), art, rec: rec(json), faden: 1 }));
             if (scharf === art) for (console.log("__TOD__"); ; );
         };
+        // DER PLATZ IM FADEN (26.10.): seit dem Speicher-Faden schreibt die Seite `anazhRealmState_<id>` nur noch beim Verlassen der
+        // Welt und bei der Ablage — ein Tod-Zyklus betritt beides nie, der Haken am localStorage verfehlte in z4/z10/z16 (47e5c95f,
+        // Radeon: 3 verfehlt). Der Platz der Welt ist heute ihr Schlüssel `<id>` im Faden (`schreibeAtomar`, derselbe Schreiber für
+        // Stand und Ablage): `platz` stirbt dort, VOR dem Put — der Faden steht am Platz, der neue Stand ist noch nicht übergeben;
+        // `idb` stirbt nach der Übergabe, `fest` nach dem Ende der Transaktion. Drei Orte am EINEN Schreiber, jeder Stand betritt sie.
         const put = IDBObjectStore.prototype.put;
         IDBObjectStore.prototype.put = function (v, key) {
+            if (String(key).endsWith(".bak") || !v || typeof v.json !== "string") return put.apply(this, arguments);
+            melde("platz", v.json);
             const req = put.apply(this, arguments);
-            if (String(key).endsWith(".bak") || !v || typeof v.json !== "string") return req;
             this.transaction.addEventListener("complete", () => melde("fest", v.json));
             melde("idb", v.json);
             return req;
@@ -322,6 +330,7 @@ const dorfStand = (page, e) =>
         versetztMaxMm: Math.max(0, ...zyklen.map((x) => x.versetztMm || 0)),
         alterAmGelesen: zyklen.filter((x) => x.alterAm).map((x) => ({ z: x.z, am: x.alterAm, alterS: x.alterS, versetztMm: x.versetztMm })),
         bauFehler: zyklen.reduce((n, x) => n + (x.bauFehler || []).length, 0),
+        verfehlt: zyklen.filter((x) => x.verfehlt).map((x) => x.z), // Haken-Zyklen, deren Schreib-Ort in 20 s nie kam (dann zufällig getötet)
         erwachen: zyklen.filter((x) => x.erwachen || x.dorfGeladen).map((x) => ({ z: x.z, erwachen: x.erwachen, tod: x.tod, alterS: x.alterS, dorfGeladen: x.dorfGeladen, dorfNach10s: x.dorfNach10s })),
         saveRufe: saveMs.length,
         saveMs: { p50: q(saveMs, 0.5), p95: q(saveMs, 0.95), max: q(saveMs, 1) },
