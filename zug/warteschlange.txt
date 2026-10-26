@@ -92,3 +92,4 @@ b-ankunft-b 0 storno
 takt5z-gtx 2 punkte sha=eeaff9d6dad7df61e5ace3466fe84375e9496045 geraet=gtx
 z37-abab 1 abab A=eeaff9d6dad7df61e5ace3466fe84375e9496045 B=9ceeca7169d4980549974ce81a608cacd3ac471f zellen=w-ego,d-ego,stadt
 z38-abab 1 abab A=9ceeca7169d4980549974ce81a608cacd3ac471f B=b2c6c627e6526265fcdc5178b987515ae06f2584 zellen=w-ego,d-ego,stadt
+z39-abab 1 abab A=b2c6c627e6526265fcdc5178b987515ae06f2584 B=f85ddf35bd377c89a1df293a1e5e00498a695650 zellen=w-ego,d-ego,stadt
