@@ -395,3 +395,4 @@
 2026-10-26 17:01:21 b2c6c627-radeon-ruhe ENDE 0 grün / 1 rot · 5.8 min
 2026-10-26 20:03:57 takt7a-radeon START 38 Stationen
 2026-10-26 20:05:37 takt7a-radeon gelaende.K2#1 GRÜN 1.7 · 1/38
+2026-10-26 20:08:19 takt7a-radeon gelaende.K2#2 ROT 2.7 · 2/38
