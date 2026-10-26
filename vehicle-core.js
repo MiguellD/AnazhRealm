@@ -3155,6 +3155,15 @@
     function winkelPi(a) {
         return Math.atan2(Math.sin(a), Math.cos(a));
     }
+    // DIE FOLGE IN DER ZEIT DES RIGS (fzk3-drift, 26.10.): jede Feder des Rigs (Azimut, Rueckkehr, Tempo, Drift, Elevation) mit
+    // dem Rest 1 − ease^dt, das Ziel zwischen zwei Bildern als Gerade (exakte Loesung, Halteglied 1. Ordnung): e0 der Abstand
+    // zum alten Ziel, du dessen Schritt seit dem letzten Bild → der Zuwachs. Der Nachlauf einer Rampe steht ω·τ (τ = −1/ln ease)
+    // bei JEDER Bildzeit. Vorher sprang das Ziel am Bildende: der Nachlauf hing an dt (8–33 ms: ±5 %), in der Kurve zitterte
+    // der Arm quer zum Wagen (gate:fahr-leben T4, Ruck p95 0,03 m je Bild an Radeon, GTX und headless).
+    function chaseFolge(e0, du, dt, ease) {
+        const k = 1 - Math.pow(ease, dt);
+        return k > 0 ? e0 * k + du * (1 + (k / dt) / Math.log(ease)) : 0;
+    }
     // DIE FAHRBAHN IN DER RICHTUNG DES RIGS (K1-Folge, 23.10.): die Neigung der Ebene der Raeder (steig laengs, wank quer, um
     // die Gier) vom Wagen zum Rig bei Azimut az gesehen — hinter dem Wagen (az = gier) −steig. Am gleichmaessigen Hang steht
     // ihr Gefaelle in der Welt still, waehrend steig und wank mit der Gier wandern.
@@ -3173,47 +3182,56 @@
         const drift = z ? Math.atan2(z.vlat, Math.max(Math.abs(z.vlong), K.driftMinV)) : 0;
         const frisch = !Number.isFinite(c.az) || !(dt > 0);
         if (frisch || !Number.isFinite(c.tF)) {
-            c.tF = s;
-            c.dF = drift;
+            c.tF = c.tZ = s;
+            c.dF = c.dZ = drift;
         } else {
-            const kT = 1 - Math.pow(K.tempoEase, dt);
-            c.tF += (s - c.tF) * kT;
-            c.dF += (drift - c.dF) * kT;
+            c.tF += chaseFolge(c.tZ - c.tF, s - c.tZ, dt, K.tempoEase);
+            c.dF += chaseFolge(c.dZ - c.dF, drift - c.dZ, dt, K.tempoEase);
+            c.tZ = s;
+            c.dZ = drift;
         }
         if (Number.isFinite(gier)) {
             const ziel = gier + K.driftFolge * c.dF;
+            // das Ziel des letzten Bilds (nach dem Griff der Maus keins: der erste Schritt springt wie zuvor)
+            const zVor = Number.isFinite(c.azZ) ? c.azZ : ziel;
+            const dZiel = winkelPi(ziel - zVor);
+            c.azZ = ziel;
             if (frisch) {
                 c.az = ziel;
-                c.el = c.elF = K.el + chaseFahrbahn(c.az, gier, st, wk);
+                c.el = c.elF = c.elZ = K.el + chaseFahrbahn(c.az, gier, st, wk);
                 c.rueck = null;
             } else {
                 const p0 = chaseFahrbahn(c.az, gier, st, wk);
-                const kA = 1 - Math.pow(K.azEase, dt);
                 if (c.frei) {
                     c.frei = false;
                     c.rueck = { t: 0, d0: winkelPi(c.az - ziel), az: ziel };
                 }
                 const r = c.rueck;
                 if (r) {
-                    r.az += winkelPi(ziel - r.az) * kA;
+                    r.az += chaseFolge(winkelPi(zVor - r.az), dZiel, dt, K.azEase);
                     r.t += dt;
                     const u = Math.min(1, r.t / K.rueckS);
                     c.az = r.az + r.d0 * (1 - u * u * (3 - 2 * u));
                     if (u >= 1) c.rueck = null;
-                } else c.az += winkelPi(ziel - c.az) * kA;
+                } else c.az += chaseFolge(winkelPi(zVor - c.az), dZiel, dt, K.azEase);
                 // DAS RIG DREHT AUF DER FAHRBAHN (K1-Folge): die Elevation steht K.el ueber der Fahrbahn in SEINER Richtung;
                 // dreht der Azimut, tragen el und elF die Neigung dorthin starr mit, die Federn glaetten nur, was der Boden
                 // aendert. Vorher zielten sie auf K.el − steig, und in der Hang-Kurve hinkten sie dem wandernden Ziel nach:
                 // die Kamera sank am Steilhang (T4) auf p05 8,9° ueber der Ebene des Wagens (main 12,3°, Soll ≥ 10°), jetzt 17,5°.
                 const p1 = chaseFahrbahn(c.az, gier, st, wk);
                 const elZ = K.el + p1;
-                const k = 1 - Math.pow(K.elEase, dt);
+                const elVor = Number.isFinite(c.elZ) ? c.elZ + p1 - p0 : elZ;
                 c.el = Number.isFinite(c.el) ? c.el + p1 - p0 : elZ;
                 c.elF = Number.isFinite(c.elF) ? c.elF + p1 - p0 : c.el;
-                c.elF += (elZ - c.elF) * k;
-                c.el += (c.elF - c.el) * k;
+                const fVor = c.elF;
+                c.elF += chaseFolge(elVor - c.elF, elZ - elVor, dt, K.elEase);
+                c.el += chaseFolge(fVor - c.el, c.elF - fVor, dt, K.elEase);
+                c.elZ = elZ;
             }
-        } else if (Number.isFinite(c.az)) c.frei = true;
+        } else if (Number.isFinite(c.az)) {
+            c.frei = true;
+            c.azZ = c.elZ = NaN;
+        }
         const ce = Math.cos(c.el);
         const dist = K.dist * (1 + K.distV * c.tF);
         return {

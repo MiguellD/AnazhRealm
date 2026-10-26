@@ -607,8 +607,8 @@ async function probeLeben(expected) {
                 const [c, f] = [st.camera.position, kurs()];
                 const [dx, dy, dz] = [c.x - e.position.x, c.y - e.position.y, c.z - e.position.z];
                 if (++n === 10 && ausEgo) w.nach10.push(wink(Math.atan2(-dx, -dz) - f));
-                q.push(dx * Math.cos(f) - dz * Math.sin(f));
-                if (n > 15) ruck.push(Math.abs(q[q.length - 1] - 2 * q[q.length - 2] + q[q.length - 3]));
+                q.push([dx * Math.cos(f) - dz * Math.sin(f), tMs]);
+                if (n > 15) ruck.push(window.__ruckJeBild(q.slice(-3)));
                 const o = V.setFromMatrixColumn(M, 1).normalize();
                 hoch.push((Math.asin((dx * o.x + dy * o.y + dz * o.z) / Math.hypot(dx, dy, dz)) * 180) / Math.PI);
             };
@@ -2179,6 +2179,12 @@ function tempoVerdict(m) {
     ];
     return soll.filter(([k, ok]) => k in m && !ok).map((s) => s[2]);
 }
+// DER RUCK JE BILD (T4, fzk3-drift): die zweite Differenz des Quer-Versatzes [[q, tMs] × 3] ZEITRICHTIG über die ungleichen
+// Bildzeiten, auf ein 60-Hz-Bild gerechnet (gleiche Bildzeiten: q2 − 2q1 + q0). Je Bild roh zählte jede gleichförmige
+// Querbewegung als Ruck — die Überblendung des Rigs (1,8 m/s) und das Mitgehen in den Schlupf am Hang trugen 0,035 m, zeitrichtig 0,0022.
+function ruckJeBild([[a, ta], [b, tb], [c, tc]]) {
+    return Math.abs((c - b) / (tc - tb) - (b - a) / (tb - ta)) * (2 / (tc - ta)) * (1000 / 60) ** 2;
+}
 // DER TEMPO-SPION (Seite: Welt UND Garage) umhüllt VC.chaseKamera: zeigt = |camera.fov − Ruhe − fovPlus des Vor-Bilds|; ein
 // Schatten-Zustand ohne Maus misst Orbit und Rückkehr ab dem Loslassen in der Zeit des Rigs (dt je Aufruf).
 function tempoSpion(VC, cam, quelle) {
@@ -2346,4 +2352,4 @@ async function probeKoerper(opt) {
     return res;
 }
 
-module.exports = { probeLeben, probeKoerper, tempoVerdict, tempoSpion, kernTempo };
+module.exports = { probeLeben, probeKoerper, tempoVerdict, tempoSpion, kernTempo, ruckJeBild };
