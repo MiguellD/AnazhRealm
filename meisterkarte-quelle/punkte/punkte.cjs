@@ -25,7 +25,8 @@
 // Je Kriterium und Staffel EINE Station (Schlüssel "<kriterium>#<staffel>"); ein Kriterium ohne Staffel-1-Station ist ROT.
 //
 // BUCHUNG (R2 · R6 · R10): je Station und Gerät zählt die JÜNGSTE Messung, deren Abdruck (Befehl, Urteil, Pfad, Hilfen)
-// der Station gleicht und deren Pfad zwischen Mess-SHA und Kopf in Welt-Bytes unberührt ist (weltDateien). 1 = jede
+// der Station gleicht und deren KONSUM (konsum-zeuge.cjs, sonst ihr Pfad-Glob) zwischen Mess-SHA und Kopf in Welt-Bytes
+// unberührt ist (weltDiff, Abschnitt Konsum). 1 = jede
 // Staffel-1-Station auf mindestens einem ihrer Geräte grün · 2 = dazu jede Staffel-2-Station auf JEDEM ihrer Geräte grün ·
 // sonst 0. Ein jüngeres ROT schlägt ein älteres GRÜN; ungemessen ist 0.
 // ZWEI WÄNDE (24.10., Prüfung der Buchung 61 → 80): (PFAD) jeder `pfad`-Glob trifft am Mess-SHA und am Kopf mindestens eine
@@ -39,6 +40,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const crypto = require("crypto");
+const zlib = require("zlib");
 const { spawn, spawnSync } = require("child_process");
 
 const DIR = __dirname;
@@ -269,6 +271,7 @@ function fahreGruppe(sts, ctx) {
     if (!st.gpu) env.LINSE_GPU = "software";
     for (const [k, v] of Object.entries(st.env || {})) env[k] = ersetze(v, ctx);
     if (!st.gpu && env.LINSE_GPU !== "software") return rot("headless verlangt LINSE_GPU=software — die Karte nur unter dem Schloss");
+        const konsumOrdner = konsumAn(env, ctx);
         let exe;
         let warteS = 0;
         if (argv[0] === "node") exe = process.execPath;
@@ -341,6 +344,7 @@ function fahreGruppe(sts, ctx) {
             const zeuge = st.gpu ? gpuZeuge(zeugeText + "\n" + out + "\n" + err) : null;
             const wand = zeuge && gpuWand(zeuge);
             const gz = zeuge ? { gpu: zeuge.karte, ...(zeuge.fremd ? { gpuFremd: zeuge.fremd } : {}), ...(zeuge.nie ? { gpuNie: zeuge.nie } : {}) } : {};
+            const kz = konsumFalten(konsumOrdner, ctx.baum);
             ganz(sts.map((s) => {
                 const r = (grund) => ({ gruen: false, zahl: grund, exit: code, minuten: m, grund, ...gz });
                 let u;
@@ -353,7 +357,7 @@ function fahreGruppe(sts, ctx) {
                     return r("Urteil ungültig (verlangt { gruen: bool, zahl: Text })");
                 if (wand) return { gruen: false, zahl: "Wand GPU: " + wand + " · " + u.zahl, exit: code, minuten: m, grund: "Wand GPU: " + wand, ...gz };
                 return { gruen: u.gruen, zahl: u.zahl, exit: code, minuten: m, ...(u.gruen ? {} : { grund: "ROT: " + u.zahl }), ...gz };
-            }));
+            }).map((e) => ({ ...e, ...kz })));
         };
     });
 }
@@ -424,7 +428,7 @@ async function run(opt) {
     // --offen: nur die Stationen, die die Buchung am SHA nicht frisch fände — ein Zug misst, was er berührt, nie die ganze Liste
     if (opt.offen) {
         const frisch = frischUrteil(ladeMessungen(), (s) =>
-            weltDateien(git(["diff", "--name-only", s, sha], repo), git(["diff", "-U0", "--no-color", s, sha], repo)), hilfeText(),
+            weltDiff(git(["diff", "--no-renames", "--name-only", s, sha], repo), git(["diff", "--no-renames", "-U0", "--no-color", s, sha], repo)), hilfeText(),
             { tot, roh: rohAus() });
         meine = meine.filter((st) => frisch(st, opt.geraet).ungemessen);
         if (!meine.length) {
@@ -508,7 +512,7 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
     const diffCache = new Map();
     const diff = (sha) => {
         if (!diffCache.has(sha)) {
-            try { diffCache.set(sha, { dateien: geaendert(sha) }); } catch (e) { diffCache.set(sha, { fehler: e.message }); }
+            try { const g = geaendert(sha); diffCache.set(sha, Array.isArray(g) ? { dateien: g } : g); } catch (e) { diffCache.set(sha, { fehler: e.message }); }
         }
         return diffCache.get(sha);
     };
@@ -517,7 +521,7 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
         const tot = opt.tot ? opt.tot(st) : [];
         if (tot.length) return { gruen: false, ungemessen: true, grund: pfadGrund(tot, "am Kopf") };
         const ab = abdruck(st, hilfe);
-        let alt = 0, fremd = 0, unbekannt = 0, ohneZeugen = null, taeter = [];
+        let alt = 0, fremd = 0, unbekannt = 0, ohneZeugen = null, taeter = [], altWas = "Pfad";
         const frisch = [];
         for (const m of messungen) {
             if (m.geraet !== g || !m.je || !m.je[id]) continue;
@@ -525,8 +529,10 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
             if (e.abdruck !== ab) { fremd++; continue; }
             const d = diff(m.sha);
             if (d.fehler) { unbekannt++; continue; }
-            const t = d.dateien.filter((f) => trifftPfad(f, st.pfad));
-            if (t.length) { alt++; taeter = t; continue; }
+            // R6 nach KONSUM, wo die Messung ihn trägt (eine Welt-Zeile in einer ausgeführten Spanne, eine gelesene Datei), sonst
+            // nach dem Pfad-Glob der Station (Mischbetrieb)
+            const t = e.konsum ? konsumTreffer(konsumVon(e.konsum), d) : d.dateien.filter((f) => trifftPfad(f, st.pfad));
+            if (t.length) { alt++; taeter = t; altWas = e.konsum ? "Konsum" : "Pfad"; continue; }
             // ein GRÜN einer GPU-Station trägt den Zeugen der Karte: im Eintrag (seit der Wand) oder in seiner Roh-Ausgabe
             if (st.gpu && e.gruen) {
                 const z = "gpu" in e ? { karte: e.gpu, fremd: e.gpuFremd || null, nie: e.gpuNie || 0 } : gpuZeuge(opt.roh ? opt.roh(m.sha, g, id) : "");
@@ -538,7 +544,7 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
         frisch.sort((a, b) => String(b.zeit).localeCompare(String(a.zeit)));
         if (frisch.length) return frisch[0];
         // der Grund der jüngsten verworfenen Art zuerst: ein GRÜN ohne Zeugen vor dem R6 einer älteren Messung
-        return { gruen: false, ungemessen: true, grund: ohneZeugen ? "Wand GPU: " + ohneZeugen : alt ? "Pfad seit der Messung geändert (R6: " + taeter.slice(0, 3).join(", ") + (taeter.length > 3 ? " +" + (taeter.length - 3) : "") + ")" : unbekannt ? "Mess-SHA unbekannt — kein R6-Urteil" : fremd ? "Station seit der Messung geändert" : "ungemessen (R10)" };
+        return { gruen: false, ungemessen: true, grund: ohneZeugen ? "Wand GPU: " + ohneZeugen : alt ? altWas + " seit der Messung geändert (R6: " + taeter.slice(0, 3).join(", ") + (taeter.length > 3 ? " +" + (taeter.length - 3) : "") + ")" : unbekannt ? "Mess-SHA unbekannt — kein R6-Urteil" : fremd ? "Station seit der Messung geändert" : "ungemessen (R10)" };
     };
 }
 
@@ -593,27 +599,136 @@ const VERSIONS_STEMPEL = [
     [/(VERSION\s*=\s*["'`])[^"'`]*(["'`])/g, "$1$2"],
 ];
 const ohneStempel = (z) => VERSIONS_STEMPEL.reduce((s, [rx, e]) => s.replace(rx, e), z);
-// namen: git diff --name-only · diffText: git diff -U0 über dieselben Stände → die Dateien, deren Welt-Bytes sich änderten
-function weltDateien(namen, diffText) {
+// namen: git diff --no-renames --name-only · diffText: git diff --no-renames -U0 über dieselben Stände → { dateien: die Dateien,
+// deren Welt-Bytes sich änderten · zeilen: je Datei die geänderten Zeilen am Mess-SHA [von, bis] (eine reine Einfügung nach
+// Zeile a trifft a und a + 1; ein Hunk aus reinen Versions-Stempeln fällt) · neu: angelegte und gelöschte Dateien }
+function weltDiff(namen, diffText) {
     const je = new Map();
-    let cur = null;
+    let cur = null, h = null;
+    const hunkZu = () => {
+        if (h && h.weg.sort().join("\n") !== h.neu.sort().join("\n")) cur.zeilen.push(h.alt);
+        h = null;
+    };
     for (const z of String(diffText).split("\n")) {
         const m = /^diff --git a\/(.+?) b\//.exec(z);
         if (m) {
-            cur = { weg: [], neu: [], bin: false };
+            if (cur) hunkZu();
+            cur = { weg: [], neu: [], bin: false, zeilen: [], angelegt: false };
             je.set(m[1], cur);
             continue;
         }
         if (!cur || z.startsWith("+++ ") || z.startsWith("--- ")) continue;
-        if (/^Binary files /.test(z)) cur.bin = true;
-        else if (z[0] === "-") cur.weg.push(ohneStempel(z.slice(1)));
-        else if (z[0] === "+") cur.neu.push(ohneStempel(z.slice(1)));
+        const k = /^@@ -(\d+)(?:,(\d+))? /.exec(z);
+        if (k) {
+            hunkZu();
+            const [a, n] = [+k[1], k[2] == null ? 1 : +k[2]];
+            h = { weg: [], neu: [], alt: n ? [a, a + n - 1] : [Math.max(1, a), a + 1] };
+        } else if (/^(new|deleted) file mode /.test(z)) cur.angelegt = true;
+        else if (/^Binary files /.test(z)) cur.bin = true;
+        else if (z[0] === "-" || z[0] === "+") {
+            const t = ohneStempel(z.slice(1));
+            (z[0] === "-" ? cur.weg : cur.neu).push(t);
+            if (h) (z[0] === "-" ? h.weg : h.neu).push(t);
+        }
     }
-    return String(namen).split("\n").filter(Boolean).filter((f) => {
+    if (cur) hunkZu();
+    const dateien = String(namen).split("\n").filter(Boolean).filter((f) => {
         if (WERKZEUG_PFAD.test(f)) return false;
         const d = je.get(f);
         if (!d || d.bin) return true;
         return d.weg.sort().join("\n") !== d.neu.sort().join("\n");
+    });
+    const zeilen = new Map(dateien.filter((f) => je.has(f) && !je.get(f).bin).map((f) => [f, je.get(f).zeilen]));
+    return { dateien, zeilen, neu: new Set(dateien.filter((f) => je.has(f) && je.get(f).angelegt)) };
+}
+
+// ───────────────────────────────── Konsum (R6) ─────────────────────────────────
+// R6 NACH KONSUM (26.10., Karte r6-konsum: nach jedem Zug machten breite Pfad-Globs fast jede Messung alt — z39 33 von 45 Radeon-
+// und 60 von 75 headless-Stationen —, die Messung dauerte 2–3 h, länger als das Bauen): der Zeuge konsum-zeuge.cjs fährt in
+// jedem node-Prozess der Station, die Faltung legt seinen Konsum komprimiert in die Messung — je Datei die ausgeführten Zeilen
+// am Mess-SHA ("3-40,52") oder "*" (ganz gelesen: Daten, Dokument, Text; ein Skript ohne Coverage) und je gelesenes
+// Verzeichnis "pfad/" ("pfad/**" rekursiv). Eine Messung mit Konsum ist alt, wenn der Diff seit ihr eine Welt-Zeile in einer
+// konsumierten Spanne ändert, eine ganz gelesene Datei ändert oder einem gelesenen Verzeichnis eine Datei gibt oder nimmt.
+// Ohne Konsum (ein Prozess endete nicht, ältere Messungen) gilt der Pfad-Glob.
+const KONSUM_ZEUGE = path.join(DIR, "konsum-zeuge.cjs");
+function konsumAn(env, ctx) {
+    const ordner = ctx.aus + ".konsum";
+    fs.rmSync(ordner, { recursive: true, force: true });
+    env.PUNKTE_KONSUM = ordner;
+    env.PUNKTE_KONSUM_BAUM = ctx.baum;
+    env.NODE_OPTIONS = ((env.NODE_OPTIONS || "") + ' --require "' + KONSUM_ZEUGE.split(path.sep).join("/") + '"').trim();
+    return ordner;
+}
+// die Zeilen-Spannen der Zeichen-Bereiche [von, bis) im Text (1-basiert, verschmolzen): "3-40,52"
+function zeilenSpannen(text, bereiche) {
+    const start = [0];
+    for (let i = 0; i < text.length; i++) if (text.charCodeAt(i) === 10) start.push(i + 1);
+    const zeile = (o) => {
+        let [lo, hi] = [0, start.length - 1];
+        while (lo < hi) { const mi = (lo + hi + 1) >> 1; if (start[mi] <= o) lo = mi; else hi = mi - 1; }
+        return lo + 1;
+    };
+    const sp = [];
+    for (let [a, b] of bereiche.slice().sort((x, y) => x[0] - y[0])) {
+        // nur sichtbare Zeichen tragen eine Zeile (der Zeilenumbruch nach der Klammer einer nie gerufenen Funktion nicht)
+        while (a < b && /\s/.test(text[a])) a++;
+        while (b > a && /\s/.test(text[b - 1])) b--;
+        if (a >= b) continue;
+        const [x, y] = [zeile(a), zeile(b - 1)];
+        if (sp.length && x <= sp[sp.length - 1][1] + 1) sp[sp.length - 1][1] = Math.max(sp[sp.length - 1][1], y);
+        else sp.push([x, y]);
+    }
+    return sp.map(([x, y]) => (x === y ? String(x) : x + "-" + y)).join(",");
+}
+// der Ordner des Zeugen → { konsum: base64(deflateRaw(JSON { pfad: Spannen | "*" })), konsumN } oder { konsumFehlt: Grund };
+// der Inhalt jeder Datei aus dem Baum der Station (die ausgelieferten Bytes, am SHA)
+function konsumFalten(ordner, baum) {
+    try {
+        if (!fs.existsSync(ordner)) return { konsumFehlt: "kein Prozess der Station trug den Zeugen" };
+        const n = fs.readdirSync(ordner);
+        const offen = n.filter((f) => f.endsWith(".offen")).length;
+        if (offen) return { konsumFehlt: offen + " Prozess(e) ohne Ende — R6 nach Pfad" };
+        const roh = n.filter((f) => f.endsWith(".json")).map((f) => JSON.parse(fs.readFileSync(path.join(ordner, f), "utf8")));
+        if (!roh.length) return { konsumFehlt: "kein Prozess der Station trug den Zeugen" };
+        const k = {};
+        const js = new Map();
+        for (const r of roh) {
+            for (const p of r.ganz) k[p] = "*";
+            for (const [p, e] of Object.entries(r.js)) {
+                if (js.has(p) && js.get(p).len !== e.len) k[p] = "*";
+                js.set(p, { len: e.len, bereiche: [...(js.has(p) ? js.get(p).bereiche : []), ...e.bereiche] });
+            }
+        }
+        for (const r of roh) for (const p of r.geladen) if (p.endsWith("/") || p.endsWith("/**") || !js.has(p)) k[p] = "*";
+        for (const [p, e] of js) {
+            if (k[p]) continue;
+            const text = fs.readFileSync(path.join(baum, p), "utf8");
+            k[p] = text.length === e.len ? zeilenSpannen(text, e.bereiche) || "*" : "*";
+        }
+        for (const p of Object.keys(k)) if (WERKZEUG_PFAD.test(p)) delete k[p];
+        return { konsum: zlib.deflateRawSync(JSON.stringify(k)).toString("base64"), konsumN: Object.keys(k).length };
+    } catch (e) {
+        return { konsumFehlt: "Faltung: " + e.message };
+    } finally {
+        fs.rmSync(ordner, { recursive: true, force: true });
+    }
+}
+const konsumCache = new Map();
+const konsumVon = (z) => {
+    if (!konsumCache.has(z)) konsumCache.set(z, JSON.parse(zlib.inflateRawSync(Buffer.from(z, "base64")).toString("utf8")));
+    return konsumCache.get(z);
+};
+// k: der entfaltete Konsum · d: { dateien, zeilen?, neu? } (ohne zeilen zählt jede konsumierte Datei ganz) → die Täter
+function konsumTreffer(k, d) {
+    const dirs = Object.keys(k).filter((p) => p.endsWith("/") || p.endsWith("/**"));
+    return d.dateien.filter((f) => {
+        const imDir = (p) => p.endsWith("/**") ? p === "./**" || f.startsWith(p.slice(0, -2)) : (f.includes("/") ? f.slice(0, f.lastIndexOf("/") + 1) : "./") === p;
+        if (d.neu && d.neu.has(f) && dirs.some(imDir)) return true;
+        const s = k[f];
+        if (!s) return false;
+        if (s === "*" || !d.zeilen || !d.zeilen.has(f)) return true;
+        const sp = s.split(",").map((x) => x.split("-").map(Number)).map(([a, b = a]) => [a, b]);
+        return d.zeilen.get(f).some(([a, b]) => sp.some(([x, y]) => a <= y && x <= b));
     });
 }
 
@@ -706,7 +821,7 @@ function buchenCli(opt) {
     const kopfVoll = voll(repo, opt.kopf);
     const dateien = dateienAm(repo, kopfVoll);
     const s = buchen(kopfVoll.slice(0, 8), stationen, ladeMessungen(), (sha) =>
-        weltDateien(git(["diff", "--name-only", sha, kopfVoll], repo), git(["diff", "-U0", "--no-color", sha, kopfVoll], repo)),
+        weltDiff(git(["diff", "--no-renames", "--name-only", sha, kopfVoll], repo), git(["diff", "--no-renames", "-U0", "--no-color", sha, kopfVoll], repo)),
         hilfeText(), fehlt, { tot: (st) => toteGlobs(st.pfad, dateien), roh: rohAus() });
     s.kopfVoll = kopfVoll;
     s.zeit = new Date().toISOString();
@@ -756,7 +871,7 @@ async function selbsttest() {
             "diff --git a/gelaende-core.js b/gelaende-core.js", "@@ -1 +1 @@", '-importScripts("a.js?v=1.2");', '+importScripts("a.js?v=1.3");', "+neu();",
             "diff --git a/bild.png b/bild.png", "Binary files a/bild.png and b/bild.png differ",
         ].join("\n");
-        const w = weltDateien(namen, dt).join(",");
+        const w = weltDiff(namen, dt).dateien.join(",");
         pruef("R6 Welt-Bytes: Stempel und Werkzeug fallen, Code und Binär bleiben", w === "stamm/kampf.js,gelaende-core.js,bild.png", w);
     }
     // (2) jede Format-Verletzung beim Namen
@@ -880,6 +995,66 @@ async function selbsttest() {
     pruef("BUCHUNG ungemessen → 0 (R10)", b.je["gelaende.K4"].punkte === 0 && /R10/.test(b.je["gelaende.K4"].beleg), b.je["gelaende.K4"].beleg);
     b = buchen("kopf", [s1, s2], [M("a1", "radeon", "gelaende.K4#2", s2, true), M("b2", "gtx", "gelaende.K4#2", s2, true)], keine, h);
     pruef("BUCHUNG Staffel 2 grün ohne Staffel 1 → 0", b.je["gelaende.K4"].punkte === 0, b.je["gelaende.K4"].beleg);
+    // (5b) R6 NACH KONSUM, Ende zu Ende: eine Station (der Läufer, der Zeuge in jedem node-Prozess, ein Browser mit Seite und
+    // Worker) führt in probe.js `getan` aus, liest den Text von `nurText` und nie `nie`, im Worker `imFaden` und nie
+    // `nieFaden`, im Node-Prozess `ja` und nie `nein`, und holt daten.json — der gefaltete Konsum nennt genau das
+    {
+        const baum = fs.mkdtempSync(path.join(os.tmpdir(), "punkte-konsum-"));
+        const fn = (n, r) => "function " + n + "() {\n    return " + r + ";\n}\n";
+        const probe = {
+            "probe.html": '<!doctype html><script src="probe.js"></script>',
+            "probe.js": fn("getan", 1) + fn("nie", 2) + fn("nurText", 3) + 'getan();\nString(nurText);\nnew Worker("faden.js").onmessage = (e) =>\n    fetch("daten.json").then((r) => r.json()).then((j) => (window.fertig = e.data + j.n));\n',
+            "faden.js": fn("imFaden", 5) + fn("nieFaden", 6) + "postMessage(imFaden());\n",
+            "knoten.js": "exports.ja = " + fn("", 1) + "exports.nein = " + fn("", 2),
+            "daten.json": '{ "n": 1 }',
+        };
+        for (const [n, t] of Object.entries(probe)) fs.writeFileSync(path.join(baum, n), t);
+        const pp = path.join(spielRepo(), "node_modules", "puppeteer");
+        const lauf = "const http = require('http'), fs = require('fs'), path = require('path'); require('./knoten.js').ja();" +
+            "const s = http.createServer((q, a) => fs.readFile(path.join(process.cwd(), q.url.slice(1)), (e, d) => a.end(e ? '' : d)));" +
+            "s.listen(0, '127.0.0.1', async () => { const b = await require(" + JSON.stringify(pp) + ").launch({ args: ['--no-sandbox'] });" +
+            "const p = await b.newPage(); await p.goto('http://127.0.0.1:' + s.address().port + '/probe.html');" +
+            "await p.waitForFunction(() => window.fertig === 6, { timeout: 20000 }); await b.close(); s.close();" +
+            "fs.writeFileSync(process.argv[1], JSON.stringify({ n: 0 })); });";
+        const ek = await fahreStation({ ...st0, befehl: ["node", "-e", lauf, "{AUS}"], urteil: lies }, { ...ctx("konsum"), baum, deckelMinS: 120 });
+        const k = ek.konsum ? konsumVon(ek.konsum) : {};
+        const soll = { "probe.js": "1-3,7-13", "faden.js": "1-3,7", "knoten.js": "1-4", "daten.json": "*", "probe.html": "*" };
+        pruef("KONSUM Ende zu Ende: ausgeführt und gelesen, nie das Nie (Seite, Worker, Node, JSON)", ek.gruen && JSON.stringify(k) === JSON.stringify({ ...k, ...soll }) &&
+            Object.keys(k).every((p) => p in soll || p.endsWith("/")), JSON.stringify({ gruen: ek.gruen, k, fehlt: ek.konsumFehlt }));
+        // die Buchung: eine Änderung außerhalb des Konsums lässt die Messung frisch, in einer ausgeführten Funktion macht sie alt,
+        // eine geänderte geladene JSON macht sie alt; ohne Konsum gilt der Glob (Mischbetrieb), ein gelesenes Verzeichnis zählt
+        const sk = { ...st0, pfad: ["probe.js", "daten.json", "anders.js"] };
+        const mk = (konsum) => ({ sha: "a1", geraet: "headless", je: { "gelaende.K4#1": { gruen: true, zahl: "z", zeit: "2026-10-26T10:00:00Z", abdruck: abdruck(sk, h), ...konsum } } });
+        const mitK = mk({ konsum: ek.konsum || "" });
+        const d = (f, a, b) => () => ({ dateien: [f], zeilen: new Map([[f, [[a, b]]]]), neu: new Set() });
+        const fall = (name, m, g, punkte) => {
+            const x = buchen("kopf", [sk], [m], g, h).je["gelaende.K4"];
+            pruef(name, x.punkte === punkte, x.beleg);
+        };
+        fall("KONSUM Änderung in `nie` (nie ausgeführt) → frisch → 1", mitK, d("probe.js", 5, 5), 1);
+        fall("KONSUM Änderung in `getan` (ausgeführt) → alt → 0", mitK, d("probe.js", 2, 2), 0);
+        fall("KONSUM Einfügung zwischen `nie` und `nurText` → alt → 0", mitK, d("probe.js", 6, 7), 0);
+        fall("KONSUM geladene JSON geändert → alt → 0", mitK, () => ({ dateien: ["daten.json"], neu: new Set() }), 0);
+        fall("KONSUM nie geladene Datei im Glob geändert → frisch → 1", mitK, d("anders.js", 1, 1), 1);
+        fall("KONSUM ohne Zeilen (Liste) zählt die konsumierte Datei ganz → 0", mitK, () => ["probe.js"], 0);
+        fall("MISCHBETRIEB ohne Konsum: der Glob urteilt → alt → 0", mk({}), d("probe.js", 5, 5), 0);
+        const dir = mk({ konsum: zlib.deflateRawSync(JSON.stringify({ "worlds/": "*" })).toString("base64") });
+        fall("KONSUM gelesenes Verzeichnis bekommt eine Datei → alt → 0", dir, () => ({ dateien: ["worlds/neu.js"], zeilen: new Map(), neu: new Set(["worlds/neu.js"]) }), 0);
+        fall("KONSUM gelesenes Verzeichnis, Unterordner bekommt eine Datei → frisch → 1", dir, () => ({ dateien: ["worlds/a/neu.js"], zeilen: new Map(), neu: new Set(["worlds/a/neu.js"]) }), 1);
+        // der Diff: ein Hunk aus reinen Versions-Stempeln fällt, ein echter bleibt; Anlegen und Löschen beim Namen
+        const wd = weltDiff("probe.js\nneu.js", ["diff --git a/probe.js b/probe.js", "@@ -2 +2 @@", '-importScripts("a.js?v=1");', '+importScripts("a.js?v=2");',
+            "@@ -5,0 +6,2 @@", "+x();", "+y();", "diff --git a/neu.js b/neu.js", "new file mode 100644", "@@ -0,0 +1 @@", "+z();"].join("\n"));
+        pruef("KONSUM Diff: Stempel-Hunk fällt, Einfügung trifft 5 und 6, Anlegen beim Namen", JSON.stringify(wd.zeilen.get("probe.js")) === "[[5,6]]" && wd.neu.has("neu.js") && !wd.neu.has("probe.js"),
+            JSON.stringify([...wd.zeilen]) + " neu " + [...wd.neu]);
+        // ein getöteter Prozess (ein .offen ohne Ende) macht den Konsum ungültig — nie still klein
+        const ord = path.join(tmp, "getoetet.konsum");
+        fs.mkdirSync(ord, { recursive: true });
+        fs.writeFileSync(path.join(ord, "1.json"), JSON.stringify({ js: {}, geladen: [], ganz: [] }));
+        fs.writeFileSync(path.join(ord, "2.offen"), "");
+        const kf = konsumFalten(ord, baum);
+        pruef("KONSUM ein Prozess ohne Ende → kein Konsum (R6 nach Pfad)", !kf.konsum && /ohne Ende/.test(kf.konsumFehlt), JSON.stringify(kf));
+        fs.rmSync(baum, { recursive: true, force: true });
+    }
     // (6) Übergang in gen.cjs
     const stand = { kopf: "abcd1234", je: { "gelaende.K4": { punkte: 2, beleg: "Maschine: z" } } };
     const k0 = { name: "n", punkte: 1, beleg: "Hand" };
