@@ -215,6 +215,11 @@ const dorfStand = (page, e) =>
                 zeile.versetztMm = traeger.versetztMm;
                 if (zeile.alterS == null) (zeile.alterS = traeger.alterS), (zeile.alterAm = "gelesen");
             }
+            // DER STEMPEL AUF DER PLATTE (26.10.): stirbt der Browser, während die Meldung des letzten Schreibens noch im Prozess liegt
+            // (harter Tod im Dorf-Erwachen, der Faden schreibt fest, die Konsole kommt nie in Node an), trägt der gelesene IndexedDB-Stand
+            // sein Alter selbst: `at` ist der Stempel seines Auftrags (≤ dem Ende der Transaktion, das Alter also nie zu jung)
+            const stempel = zeile.alterS == null && zeile.gelesen.find((l) => l.quelle === "idb" && Number.isFinite(l.at) && l.rec && l.rec.b === g.b && l.rec.e === g.e);
+            if (stempel) (zeile.alterS = Math.max(0, vorher.tot - stempel.at) / 1000), (zeile.alterAm = "stempel");
             zeile.eGeladen = g.e; // die Station urteilt: entstand in keinem Zyklus ein Edit, ist die Sonde blind (ROT)
             zeile.tod = vorher.art;
             if (vorher.erw && vorher.erw.key) {
@@ -315,7 +320,7 @@ const dorfStand = (page, e) =>
         korrupt: zyklen.filter((x) => x.befund.length).length,
         ohneAlter: zyklen.filter((x) => x.tod && x.alterS == null).map((x) => ({ z: x.z, tod: x.tod, g: x.g, gelesen: x.gelesen })),
         versetztMaxMm: Math.max(0, ...zyklen.map((x) => x.versetztMm || 0)),
-        alterAmGelesen: zyklen.filter((x) => x.alterAm === "gelesen").map((x) => ({ z: x.z, alterS: x.alterS, versetztMm: x.versetztMm })),
+        alterAmGelesen: zyklen.filter((x) => x.alterAm).map((x) => ({ z: x.z, am: x.alterAm, alterS: x.alterS, versetztMm: x.versetztMm })),
         bauFehler: zyklen.reduce((n, x) => n + (x.bauFehler || []).length, 0),
         erwachen: zyklen.filter((x) => x.erwachen || x.dorfGeladen).map((x) => ({ z: x.z, erwachen: x.erwachen, tod: x.tod, alterS: x.alterS, dorfGeladen: x.dorfGeladen, dorfNach10s: x.dorfNach10s })),
         saveRufe: saveMs.length,
