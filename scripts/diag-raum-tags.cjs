@@ -16,7 +16,7 @@
 //       die Rechnung (Werte `Object.is`, Schlüssel-Folge), nach jeder Änderung rechnet es neu, beim zweiten Fragen nicht;
 //       alle Baupläne der Welt zweimal: dieselben Tags, beim zweiten Mal ohne Rechnung;
 //   (S) DIE ZÄHNE: ein Schlüssel ohne die Stoff-Tags fällt beim direkt geänderten Stoff-Tag rot;
-//   (P) kein Page-Error.
+//   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Quell-Wand ist am Stamm grün und fällt bei einem eingeschleusten
 // Zustands-Leser, einem Instanz-Feld, einem Tabellen-Schreiber und einem Leser vorbei am Gedächtnis rot.
 //   node scripts/diag-raum-tags.cjs [--selftest]   (npm run gate:raum-tags; Port RAUM_TAGS_PORT)
@@ -460,7 +460,7 @@ async function probe() {
     return aus;
 }
 
-function urteil(S, Q, pageErrors) {
+function urteil(S, Q) {
     const rot = [];
     for (const b of Q.befunde) rot.push(`(Q) QUELLE: ${b}`);
     if (!S.hatGedaechtnis)
@@ -503,7 +503,6 @@ function urteil(S, Q, pageErrors) {
         rot.push(
             `(S) ZÄHNE: der Stoff wirkt nicht, ein Schlüssel ohne Stoffe fiel nicht auf, oder der echte Schlüssel urteilt danach anders (${JSON.stringify(S.zaehne)})`
         );
-    for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
 }
 
@@ -513,8 +512,6 @@ function urteil(S, Q, pageErrors) {
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(async () => {
         await window.__weltDa((r) => r.state && r.state.player);
@@ -547,7 +544,7 @@ function urteil(S, Q, pageErrors) {
         console.log(
             `  Zahl: ${S.zahl.bauplan} (${S.zahl.teile} Teile) · Rechnung ${S.zahl.rechnungMs} ms je Ruf · Gedächtnis ${S.zahl.gedaechtnisMs} ms je Ruf`
         );
-    const rot = urteil(S, Q, pageErrors);
+    const rot = urteil(S, Q);
     if (rot.length) {
         console.error("\nROT:");
         for (const e of rot) console.error("  • " + e);

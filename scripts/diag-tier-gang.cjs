@@ -560,7 +560,6 @@ const GANG = (k) => {
     // je Seite ihr Fehler beim Namen und (wo sie gemessen wird) der EINE Schlupf — ohne Frist (ein hängender Boot steht in der Stall-Akte)
     const seite = async (b, wer, schlupf) => {
         const p = await b.newPage();
-        p.on("pageerror", (e) => console.log(`[${wer}PAGE-ERROR]`, (e.stack || e.message).split("\n")[0]));
         if (schlupf) await p.evaluateOnNewDocument(`window.__schlupf = ${SCHLUPF};`);
         return p;
     };

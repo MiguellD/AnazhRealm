@@ -108,14 +108,6 @@ async function fahreForm(browser, form, schein) {
     const ctx = await browser.createBrowserContext();
     const page = await ctx.newPage();
     const rep = { form, schein: !!schein, befunde: [], boots: [] };
-    let pageErr = null;
-    page.on("pageerror", (e) => {
-        if (!pageErr)
-            pageErr = String(e.stack || e.message)
-                .split("\n")
-                .slice(0, 3)
-                .join(" | ");
-    });
     page.on("dialog", (d) => d.accept().catch(() => {}));
     await nullRenderer(page);
     if (schein) await page.evaluateOnNewDocument(scheinNurPlatz);
@@ -275,7 +267,6 @@ async function fahreForm(browser, form, schein) {
     } catch (e) {
         befund(`ABBRUCH: ${e && e.message ? e.message : e}`);
     } finally {
-        if (pageErr) befund(`PAGE-ERROR: ${pageErr}`);
         rep.ms = Date.now() - t0;
         await ctx.close();
     }

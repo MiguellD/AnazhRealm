@@ -20,11 +20,6 @@ const server = statikServer();
     await new Promise((r) => server.listen(PORT, r));
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
-    let pageErr = null;
-    page.on("pageerror", (e) => {
-        pageErr = (e.stack || e.message).split("\n")[0];
-        console.log("[PAGE-ERROR]", pageErr);
-    });
     await nullRenderer(page);
     let out = null;
     try {
@@ -417,10 +412,6 @@ const server = statikServer();
         );
     console.log("");
     for (const f of out.fails) console.log(`  ❌ ${f}`);
-    if (pageErr) {
-        console.log(`  ❌ PAGE-ERROR: ${pageErr}`);
-        out.fails.push(pageErr);
-    }
     const ok = out.fails.length === 0;
     console.log(
         ok
