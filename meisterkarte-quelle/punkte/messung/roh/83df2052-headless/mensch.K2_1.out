@@ -2,8 +2,8 @@ $ C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben bewohn
 
 ===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
 
-  ✅ bewohner  {"sprungN":0,"alsLeib":4,"schmiede10":2,"schmiede2":0,"dorf":"Steintal","haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":31,"third":33},"nahLeiber":4,"plan":true,"planGleich":true,"bewohner":81,"trefferMin":0.983,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.023,"wegLeib":1139.4,"spuren":88},"blick":{"n":164,"quote":0.97,"sektorMax":0.188},"ohnePlatz":0,"ohnePlatzWer":[],"takt":{"n":1800,"p95":0.2,"mittel":0.093},"huellen":18,"wege":{"wandN":0,"wand":[],"durch":260,"tuer":260,"falsch":[],"aufWeg":0.925,"wegeMin":4,"wegeMax":8,"ausserN":0,"ausser":[],"streckeMin":42,"kurzN":0,"kurz":[]},"stall":null,"sek":22.3,"wiederkehr":{"n":1296,"maxM":1.234,"ueberN":0,"ueber":[]}}
+  ✅ bewohner  {"sprungN":0,"alsLeib":4,"schmiede10":2,"schmiede2":0,"dorf":"Steintal","haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":31,"third":33},"nahLeiber":4,"plan":true,"planGleich":true,"bewohner":81,"trefferMin":0.987,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.021,"wegLeib":1137.6,"spuren":88},"blick":{"n":164,"quote":0.97,"sektorMax":0.188},"ohnePlatz":0,"ohnePlatzWer":[],"takt":{"n":1800,"p95":0.2,"mittel":0.101},"huellen":18,"wege":{"wandN":0,"wand":[],"durch":260,"tuer":260,"falsch":[],"aufWeg":0.925,"wegeMin":4,"wegeMax":8,"ausserN":0,"ausser":[],"streckeMin":42,"kurzN":0,"kurz":[]},"stall":null,"sek":24.9,"wiederkehr":{"n":1296,"maxM":0.983,"ueberN":0,"ueber":[]}}
 
-  (104 s) — Sekunden je Probe: bewohner: 92
+  (77 s) — Sekunden je Probe: bewohner: 65
 
 ✅ GRÜN — bewohner

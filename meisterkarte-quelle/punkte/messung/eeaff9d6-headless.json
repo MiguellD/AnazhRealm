@@ -1,7 +1,7 @@
 {
  "sha": "eeaff9d6dad7df61e5ace3466fe84375e9496045",
  "geraet": "headless",
- "zeit": "2026-10-26T07:08:28.029Z",
+ "zeit": "2026-10-26T07:14:27.477Z",
  "host": "MiguellD",
  "je": {
   "gelaende.K4#1": {
@@ -312,13 +312,12 @@
    "zwilling": "mensch.K3#1"
   },
   "mensch.K2#1": {
-   "gruen": false,
-   "zahl": "Soll-Orte über 24 Spielstunden min 0.987 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge undefined",
+   "gruen": true,
+   "zahl": "Soll-Orte über 24 Spielstunden min 0.987 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0",
    "exit": 0,
-   "minuten": 2.45,
-   "grund": "ROT: Soll-Orte über 24 Spielstunden min 0.987 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge undefined",
-   "zeit": "2026-10-26T07:08:28.029Z",
-   "abdruck": "541e13dff16c",
+   "minuten": 3.09,
+   "zeit": "2026-10-26T07:14:27.477Z",
+   "abdruck": "8959d343c09e",
    "port": 7727
   },
   "oekologie.K5#2": {
