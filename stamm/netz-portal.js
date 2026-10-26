@@ -417,9 +417,13 @@ class AnazhRealm_netz_portal {
         }
         payload.tools = tools;
         // WAS DER SPIELER TRÄGT, REIST MIT (tore.K3): Leib (Seele · Teile einer eigenen Seele · Prägung des Mensch-Rezepts),
-        // Inventar (Slots · Hotbar) und Gehaltenes (Haupt-, Neben-Hand, Rüstung) — die Bytes des Zustands, nie eine Auswahl; die
-        // Hülle drüben hält sie (`AnazhHuelle.reisender`), gate:portal-konformanz K8 vergleicht vor · drüben · nach der Heimkehr.
+        // Inventar (Slots · Hotbar), Gehaltenes (Haupt-, Neben-Hand, Rüstung) und das Werk, auf dem er sitzt (Reittier oder
+        // Fahrzeug, `mountedArch`: Art · Gestalt aus Bauplan, Saat, Maß, Tönung und Prägung · die Glut, sein einziger
+        // Lebenswert · die Bindung) — die Bytes des Zustands, nie eine Auswahl; die Hülle drüben hält sie
+        // (`AnazhHuelle.reisender`), gate:portal-konformanz K8 vergleicht vor · drüben · nach der Heimkehr.
         const ov = (this.state.workshop && this.state.workshop.studioOv) || {};
+        const ritt = (this.state.architectures || []).find((e) => e.id === player.mountedArch);
+        const rittBp = ritt && this.state.blueprints[ritt.type];
         payload.gepaeck = {
             leib: {
                 seele: soul.name,
@@ -428,6 +432,24 @@ class AnazhRealm_netz_portal {
             },
             inventar: { slots: player.inventory || [], hotbar: this.state.hotbar || [] },
             wield: player.equipped || { held: null, offhand: null, armor: null },
+            reittier: ritt
+                ? {
+                      art: ritt.type,
+                      // Teile und Verbindungen des Bauplans, Saat, Maß, Tönung (H, S, V), Prägung
+                      gestalt: [
+                          rittBp && rittBp.parts,
+                          rittBp && rittBp.connections,
+                          ritt.seed,
+                          ritt.scale,
+                          ritt.tintH,
+                          ritt.tintS,
+                          ritt.tintV,
+                          ritt.studioOv,
+                      ],
+                      leben: ritt.heatBuildup || 0,
+                      bindung: ritt.id,
+                  }
+                : null,
         };
         return payload;
     }
