@@ -914,35 +914,29 @@ function selbsttest() {
     if (u0.rot.length) fehler.push("der saubere Lauf fällt rot: " + u0.rot.join(" · "));
     console.log(`  ${u0.rot.length ? "❌" : "✅"} sauberer Lauf → ${u0.rot.join(" · ") || "grün"}`);
     const faelle = [
-        { name: "Ziel ohne Leser", mit: { ohneLeser: true }, muss: /OHNE LESER: x:ohne-leser/ },
-        { name: "Bloom in Leinwand-Größe", mit: { bloom: true }, muss: /VOLLE AUFLÖSUNG: x:bloom/ },
-        { name: "Tiefe ohne Nutzung", mit: { tiefeOhne: true }, muss: /TIEFE OHNE LESER: x:tiefe-ohne/ },
-        { name: "doppelte Tiefe", mit: { kopie: true }, muss: /DOPPELTE TIEFE: x:tiefe-kopie .* ist eine Kopie von depth,/ },
-        { name: "teilbares Paar", mit: { paar: true }, muss: /TEILBAR: x:paar-a und x:paar-b/ },
-        { name: "32 bit mit 16-bit-Inhalt", mit: { f32: true }, muss: /FORMAT: x:f32 .* trägt nur 16-bit-Inhalt/ },
-        { name: "Textur ohne Erzeuger", mit: { ohneErzeuger: true }, muss: /ERZEUGER: #11/ },
-        { name: "blindes Bündel", mit: { blind: 3 }, muss: /3 Bündel ohne bekannten Inhalt/ },
-        { name: "zu kurzes Fenster", mit: { frames: 2 }, muss: /nur 2 Frames/ },
-        { name: "Attrappe ohne Umleitungs-Marke", mit: { attrappe: "ohne" }, muss: /TIEFE OHNE LESER: x:attrappe .* geschrieben, nie gelesen/ },
+        { name: "Ziel ohne Leser", z: { ohneLeser: true }, muss: /OHNE LESER: x:ohne-leser/ },
+        { name: "Bloom in Leinwand-Größe", z: { bloom: true }, muss: /VOLLE AUFLÖSUNG: x:bloom/ },
+        { name: "Tiefe ohne Nutzung", z: { tiefeOhne: true }, muss: /TIEFE OHNE LESER: x:tiefe-ohne/ },
+        { name: "doppelte Tiefe", z: { kopie: true }, muss: /DOPPELTE TIEFE: x:tiefe-kopie .* ist eine Kopie von depth,/ },
+        { name: "teilbares Paar", z: { paar: true }, muss: /TEILBAR: x:paar-a und x:paar-b/ },
+        { name: "32 bit mit 16-bit-Inhalt", z: { f32: true }, muss: /FORMAT: x:f32 .* trägt nur 16-bit-Inhalt/ },
+        { name: "Textur ohne Erzeuger", z: { ohneErzeuger: true }, muss: /ERZEUGER: #11/ },
+        { name: "blindes Bündel", z: { blind: 3 }, muss: /3 Bündel ohne bekannten Inhalt/ },
+        { name: "zu kurzes Fenster", z: { frames: 2 }, muss: /nur 2 Frames/ },
+        { name: "Attrappe ohne Umleitungs-Marke", z: { attrappe: "ohne" }, muss: /TIEFE OHNE LESER: x:attrappe .* geschrieben, nie gelesen/ },
         {
             name: "Szenen-Ziel in 64 bit auf einem rg11b10-Gerät",
-            mit: { geraet: { rg11b10: true } },
+            z: { geraet: { rg11b10: true } },
             muss: /AUSGABE-FORMAT: output \(rgba16float 1920×1080, 15\.82 MB\) .*\(−7\.91 MB/,
         },
         {
             // der Schmuggel des echten Frames: ein eigenes 64-bit-Ziel als Szenen-Ziel ausgewiesen, das echte bleibt rg11b10
             name: "ausgewiesenes Szenen-Ziel in 64 bit",
-            mit: { geraet: { rg11b10: true, ausgabeId: 13 }, ausgabe: "rg11b10ufloat", ausgewiesen: true },
+            z: { geraet: { rg11b10: true, ausgabeId: 13 }, ausgabe: "rg11b10ufloat", ausgewiesen: true },
             muss: /AUSGABE-FORMAT: x:ausgabe \(rgba16float/,
         },
     ];
-    for (const f of faelle) {
-        const b = bau(f.mit);
-        const u = zielUrteil(b.z, b.lesen);
-        const ok = u.rot.some((x) => f.muss.test(x));
-        if (!ok) fehler.push(`${f.name}: der Zensus nennt den Täter nicht (${f.muss})`);
-        console.log(`  ${ok ? "✅" : "❌"} ${f.name} → ${u.rot.join(" · ") || "grün"}`);
-    }
+    require("./welt-boot.cjs").taeterFaelle(faelle, (m) => (({ z, lesen }) => zielUrteil(z, lesen).rot)(bau(m)), { fehler });
     // Grün mit Hinweis: die markierte Attrappe (die Umleitung), das Szenen-Ziel in rg11b10 auf dem Gerät mit Feature, die
     // Adapter-Bedingung ohne Feature (64 bit bleiben, der Zensus nennt es).
     const gruen = [

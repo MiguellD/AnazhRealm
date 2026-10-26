@@ -12,6 +12,7 @@ const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cj
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
 const { messe } = require("./ci-zeiten.cjs");
+const { taeterFaelle } = require("./lib/welt-boot.cjs");
 
 const root = path.resolve(__dirname, "..");
 const DATEI = ".github/workflows/check.yml";
@@ -696,14 +697,7 @@ function selbsttestKlasse() {
         ["die Klasse reist nicht an die Schritte", (d) => delete V(d).env, /\(K\) KLASSE: „voll" reicht die Klasse nicht als CI_KLASSE/],
     ];
     const f = [];
-    for (const [n, tat, soll] of faelle) {
-        const d = doc();
-        tat(d);
-        const u = klassenUrteil(d, skripte, lies);
-        const ok = soll ? u.some((x) => soll.test(x)) : u.length === 0;
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${n}" → ${u.join(" · ") || "grün"}`);
-        if (!ok) f.push(`„${n}" fällt nicht rot beim Namen (${u.join(" · ") || "grün"})`);
-    }
+    taeterFaelle(faelle, (d) => klassenUrteil(d, skripte, lies), { fehler: f, klon: doc });
     return f;
 }
 
@@ -889,14 +883,7 @@ function selbsttestSchluessel() {
         ],
     ];
     const f = [];
-    for (const [n, tat, soll] of faelle) {
-        const d = doc();
-        tat(d);
-        const u = schluesselUrteil({ "t.yml": d });
-        const ok = soll ? u.some((x) => soll.test(x)) : u.length === 0;
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${n}" → ${u.join(" · ") || "grün"}`);
-        if (!ok) f.push(`„${n}" fällt nicht rot beim Namen (${u.join(" · ") || "grün"})`);
-    }
+    taeterFaelle(faelle, (d) => schluesselUrteil({ "t.yml": d }), { fehler: f, klon: doc });
     const lock = (pv = "1.0.0", a = "1.2.3", pc = "24.43.1", dep = "^1.2.0") => ({
         name: "p",
         version: pv,
@@ -1148,14 +1135,7 @@ function selbsttest() {
         const g0 = urteil(d);
         if (g0.length) f.push(`der gute Stand${n} ist rot: ` + g0.join(" · "));
     }
-    for (const [n, tat, soll] of faelle) {
-        const d = gut();
-        tat(d);
-        const u = urteil(d);
-        const ok = u.some((x) => soll.test(x));
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${n}" → ${u.join(" · ") || "grün"}`);
-        if (!ok) f.push(`„${n}" fällt nicht rot beim Namen (${u.join(" · ") || "grün"})`);
-    }
+    taeterFaelle(faelle, urteil, { fehler: f, klon: gut });
     // (F) am Täter: die echte check.yml mit dem Schritt vom 22.10. gegen das echte package.json
     const wf = workflowsLesen();
     wf[path.basename(DATEI)].jobs[VOLL_JOB].steps.push({ name: "Fernstufe", if: "matrix.gruppe == 4", run: "npm run gate:fahrzeug-fern" });
@@ -1507,14 +1487,7 @@ function selbsttestPlaytest() {
         ["continue-on-error am Schritt", (d) => (T(d)["continue-on-error"] = true), /\(P\) STUMM: .*continue-on-error/],
     ];
     const f = [];
-    for (const [n, tat, soll] of faelle) {
-        const d = docs();
-        tat(d);
-        const u = playtestUrteil(d, skripte);
-        const ok = soll ? u.some((x) => soll.test(x)) : u.length === 0;
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${n}" → ${u.join(" · ") || "grün"}`);
-        if (!ok) f.push(`(P) „${n}" fällt nicht rot beim Namen (${u.join(" · ") || "grün"})`);
-    }
+    taeterFaelle(faelle, (d) => playtestUrteil(d, skripte), { fehler: f, klon: docs });
     return f;
 }
 
