@@ -28,3 +28,4 @@ z35-abab LANGSAMER abab 8dff8f15 gegen 83df2052: w-ego 4+4 nicht-langsamer · d-
 z36-abab LANGSAMER abab eeaff9d6 gegen 8dff8f15: w-ego 4+4 LANGSAMER · d-ego 2+2 nicht-langsamer · stadt 2+2 nicht-langsamer
 z32k-gtx gemessen punkte 034952a7 gtx: 32 grün / 9 rot
 z37-abab nicht-langsamer abab 9ceeca71 gegen eeaff9d6: w-ego 2+2 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
+z38-abab nicht-langsamer abab b2c6c627 gegen 9ceeca71: w-ego 2+2 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
