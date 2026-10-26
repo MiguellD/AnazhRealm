@@ -114,18 +114,19 @@
                     3: { tris: 48, draws: 1, schatten: 3, nurWurf: true },
                     fernform: "huelle",
                 },
-                // DIE WERKE DES ZIMMERMANNS (bauen.K5, unten): Bank und Leiter aus gefasten Hölzern in EINEM Stoff — nah ein
-                // Draw, die L1 ohne Fase, die Stufe 3 wirft für die L1 (Bank 20, Leiter 30 Dreiecke); gemessen am Rand jedes Reglers.
+                // DIE WERKE DES ZIMMERMANNS (bauen.K5, unten): Bank und Leiter aus gefasten Hölzern, nah mit Holznägeln in den
+                // Zapfen (der Nagel faltet ins Holz: ein Draw), die L1 ohne Fase, die Stufe 3 wirft für die L1 (Bank 20, Leiter 30
+                // Dreiecke, die Zeile dicht); gemessen am Rand jedes Reglers.
                 bank: {
                     0: { tris: 900, draws: 1, schatten: 0 },
                     1: { tris: 240, draws: 1, schatten: 3 },
-                    3: { tris: 48, draws: 1, schatten: 3, nurWurf: true },
+                    3: { tris: 20, draws: 1, schatten: 3, nurWurf: true },
                     fernform: "huelle",
                 },
                 leiter: {
                     0: { tris: 900, draws: 1, schatten: 0 },
                     1: { tris: 180, draws: 1, schatten: 3 },
-                    3: { tris: 48, draws: 1, schatten: 3, nurWurf: true },
+                    3: { tris: 30, draws: 1, schatten: 3, nurWurf: true },
                     fernform: "huelle",
                 },
                 gestalten: {},
@@ -5434,13 +5435,15 @@
         PRESETS[_wk] = { kind: WERKE[_wk].kind, lab: WERKE[_wk].lab, s: ausParams({ kind: WERKE[_wk].kind }, null), fx: { place: { mode: "site", siteTag: WERKE[_wk].siteTag } } };
     // ── DIE SITZBANK (Front +z: der Sitzende blickt längs +z): zwei Wangen — Vorderbein, Hinterbein, der Lehnen-Pfosten um
     //    `neigung` nach hinten, die Sitz-Zarge, nah der Fuß-Riegel —, zwei Längs-Zargen, das Sitzbrett aus `latten` Latten mit
-    //    Fuge (Oberkante = die Sitzhöhe), die Lehne aus zwei Latten auf den Pfosten. ──
+    //    Fuge (Oberkante = die Sitzhöhe), die Lehne aus zwei Latten auf den Pfosten; nah sichert je Bein ein Holznagel (`nagel`,
+    //    wie im Fachwerk des Hauses) quer durch das Bein den Zapfen der Sitz-Zarge. ──
     function ausSitzbank(g, p, seed, stufe) {
         var m = AUS_MASS.sitzbank(0, p),
             W = p.verwitterung,
             fein = stufe === 0,
             fa = fein ? 0.008 : 0,
-            zH = ausZufall(seed, 0xa1);
+            zH = ausZufall(seed, 0xa1),
+            zNg = ausZufall(seed, 0xa2);
         var holz = function (geo, ton) {
             ausFaerbe(geo, "holz", W, function () {
                 return { ton: ton };
@@ -5458,6 +5461,7 @@
             holz(ausStrecke(ausSetze(ausKiste(m.b, m.lP, m.b * 0.8, fa), 0, m.lP / 2, 0), [x, m.pA[0], m.pA[1]], [x, m.pB[0], m.pB[1]]), ausTon(zH, 0.05, 0.02));
             holz(ausSetze(ausKiste(m.b * 0.8, 0.08, m.zV - m.zH + m.b, fa), x, m.hZ - 0.04, (m.zV + m.zH) / 2), ausTon(zH, 0.05, 0.02));
             if (fein) holz(ausSetze(ausKiste(m.b * 0.6, 0.05, m.zV - m.zH, fa), x, 0.12, (m.zV + m.zH) / 2), ausTon(zH, 0.05, 0.02));
+            if (fein) for (i = 0; i < 2; i++) ausNagel(g, [x - m.b / 2 - 0.003, m.hZ - 0.04, i ? m.zH : m.zV], [x + m.b / 2 + 0.003, m.hZ - 0.04, i ? m.zH : m.zV], W, zNg);
         }
         for (ws = -1; ws <= 1; ws += 2) holz(ausSetze(ausKiste(2 * m.wx - m.b, 0.08, 0.025, fa * 0.5), 0, m.hZ - 0.04, ws * (m.T / 2 - 0.045)), ausTon(zH, 0.05, 0.02));
         for (i = 0; i < m.n; i++) holz(ausSetze(ausKiste(m.L, m.dL, m.bL, fa * 0.6), 0, m.H - m.dL / 2, -m.T / 2 + m.bL / 2 + i * (m.bL + m.fuge)), ausTon(zH, 0.08, 0.03));
@@ -5468,13 +5472,14 @@
     }
     // ── DIE PODESTLEITER (Steigseite −z): die Holme vom Fuß über das Podest hinaus zum Haltebügel, die Stützschenkel vom
     //    Podest zum Boden, fünf Stufen, das Podest (nah drei Bretter auf zwei Querhölzern), nah die Spreizsicherung und zwei
-    //    Querstreben der Stützseite (fern eine). ──
+    //    Querstreben der Stützseite (fern eine); nah sichert je Holm ein Holznagel quer durch den Holm den Haltebügel. ──
     function ausPodestleiter(g, p, seed, stufe) {
         var m = AUS_MASS.podestleiter(0, p),
             W = p.verwitterung,
             fein = stufe === 0,
             fa = fein ? p.fase : 0,
-            zH = ausZufall(seed, 0xa5);
+            zH = ausZufall(seed, 0xa5),
+            zNg = ausZufall(seed, 0xa6);
         var holz = function (geo, ton) {
             ausFaerbe(geo, "holz", W, function () {
                 return { ton: ton };
@@ -5492,6 +5497,14 @@
             lang([x, 0, m.zF], [x, m.yB, m.zB], m.dx, m.h);
             lang([x, m.P - m.dP, m.zP], [x, 0, m.zS], m.dx, m.h * 0.85);
             if (fein) lang([x + ws * m.dx, 0.6, m.zF + 0.6 / m.ta], [x + ws * m.dx, 0.6, m.schenkelZ(0.6)], 0.012, 0.03);
+            if (fein) {
+                var yN = m.yB - 0.025,
+                    zN = m.zF + (yN / m.yB) * (m.zB - m.zF),
+                    lH = Math.hypot(m.yB, m.zB - m.zF),
+                    nY = (-(m.zB - m.zF) / lH) * (m.h / 2 + 0.003),
+                    nZ = (m.yB / lH) * (m.h / 2 + 0.003);
+                ausNagel(g, [x, yN - nY, zN - nZ], [x, yN + nY, zN + nZ], W, zNg);
+            }
         }
         for (k = 1; k <= m.n; k++) holz(ausSetze(ausKiste(m.wI, m.dS, m.tS, fa * 0.6), 0, k * m.r - m.dS / 2, m.stufeZ(k)), ausTon(zH, 0.08, 0.03));
         if (fein) {
@@ -5503,6 +5516,16 @@
         for (k = 0; k < (fein ? 2 : 1); k++) holz(ausSetze(ausKiste(2 * m.hx - m.dx, 0.06, 0.025, fa * 0.5), 0, 0.5 + 0.55 * k, m.schenkelZ(0.5 + 0.55 * k) + 0.03), ausTon(zH, 0.05, 0.02));
     }
 
+    // DER HOLZNAGEL (die Rolle `nagel` des Fachwerks, 14 mm vierkant über Eck): quer durch das Holz von a nach b, 3 mm über
+    //    beide Flächen — er sichert den Zapfen; seine Seh-Klasse ist die des Holzes, die Faltung trägt ihn in dessen Draw.
+    function ausNagel(g, a, b, W, z) {
+        var l = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]),
+            geo = ausStrecke(ausSetze(ausKiste(0.014, l, 0.014, 0), 0, l / 2, 0, 0, Math.PI / 4, 0), a, b);
+        ausFaerbe(geo, "nagel", W, function () {
+            return { ton: ausTon(z, 0.06, 0.02) };
+        });
+        ausTeil(g, geo, "nagel");
+    }
     var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, sitzbank: ausSitzbank, podestleiter: ausPodestleiter };
     // DIE STUFE 3 DER AUSSTATTUNG (nurWurf, S3): die Grundform als EIN Gitter in EINEM Stoff (Rolle stein) — sie wirft für
     // die L1 (die L0 wirft selbst: nah, höchstens drei im Bild); ihre Hülle (`ausHuelle`) reist als Beipack `__fern`.
