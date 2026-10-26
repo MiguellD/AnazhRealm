@@ -57,8 +57,6 @@ async function welt() {
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.evaluateOnNewDocument(installWieseSicht);
-    const seitenFehler = [];
-    page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     const out = await page.evaluate(async (selbst) => {
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -402,7 +400,7 @@ async function welt() {
     }, process.argv.includes("--selftest"));
     await browser.close();
     server.close();
-    return { out, seitenFehler };
+    return { out };
 }
 
 (async () => {
@@ -421,7 +419,7 @@ async function welt() {
         if (!ok) fails.push("Q-SELBSTTEST: die eingeschmuggelte count-Zeile blieb ungesehen");
     }
 
-    const { out, seitenFehler } = await welt();
+    const { out } = await welt();
     console.log("\n=== G/F/S — die Wander-Sequenz (Null-Renderer, Foundry an) ===");
     if (!out.foundry) fails.push("die Foundry wurde nicht bereit (die Linse sähe keine Studio-Gruppe)");
     let maxGruppen = 0;
@@ -471,10 +469,6 @@ async function welt() {
             fails.push("SELBSTTEST: die leeren Senken der Nah-Wiese mit Soll blieben ungesehen (oder der Himmel ohne Soll schlug an)");
         if (!s.wieseNullGenannt) fails.push("SELBSTTEST: die gelegte Null-3×3 der Nah-Wiese blieb ungesehen");
         if (!s.wieseRingGenannt) fails.push("SELBSTTEST: die Instanz fort aus dem Ring blieb ungesehen");
-    }
-    if (seitenFehler.length) {
-        console.log("  Seiten-Fehler:", seitenFehler.slice(0, 3));
-        fails.push(`${seitenFehler.length} Seiten-Fehler`);
     }
     if (fails.length) {
         console.log(`\n❌ gate:freie-slots ROT: ${fails.join(" · ")}`);

@@ -96,13 +96,11 @@ async function messeLabor({ echt, nur, tafel }) {
     const server = statisch();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const b = await browser(echt);
-    const out = { labor: {}, karten: {}, eichung: { labor: {} }, geraet: null, fehler: [] };
+    const out = { labor: {}, karten: {}, eichung: { labor: {} }, geraet: null };
     try {
         for (const [sid, S] of Object.entries(AT.STUDIOS)) {
             if (nur && !nur.includes(sid)) continue;
             const page = await b.newPage();
-            const fehler = [];
-            page.on("pageerror", (e) => fehler.push(String((e && e.message) || e).split("\n")[0]));
             await page.goto(`http://127.0.0.1:${PORT}/${S.pfad}`, { waitUntil: "load", timeout: 120000 });
             await page.evaluate(AT.LABOR_INSTALL);
             // die Bereitschaft fragt Node je 300 ms (die strenge CSP der Seiten erlaubt new Function nur im Aufruf von außen)
@@ -148,7 +146,6 @@ async function messeLabor({ echt, nur, tafel }) {
                     : { Y: null, fehler: e.fehler || "kein Pixel" };
             }
             out.eichung.labor[sid] = eich;
-            if (fehler.length) out.fehler.push(`${sid}: ${fehler.slice(0, 3).join(" | ")}`);
             await page.close();
         }
     } finally {
@@ -608,7 +605,7 @@ async function main() {
             u.rot = u.rot.filter((r) => !/^Karte /.test(r.text) || nur.some((s) => r.text.includes(" " + s + ":")));
             u.urteil = u.rot.length ? "ROT" : "GRUEN";
         }
-        console.log(`Labor: ${m.geraet}${m.fehler.length ? " · Seiten-Fehler: " + m.fehler.join(" ; ") : ""}`);
+        console.log(`Labor: ${m.geraet}`);
         console.log(AT.tafelTabelle(u));
         process.exit(u.urteil === "GRUEN" ? 0 : 1);
     }

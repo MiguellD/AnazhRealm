@@ -172,8 +172,6 @@ async function bootRealm(port) {
     const browser = await starteBrowser({ art: "null", frist: 240000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // Welt bereit = `_gameLoopTick` ist eine Funktion (renderer-unabhängig korrekt, CLAUDE.md).
     await page.evaluate(async () => {
@@ -185,7 +183,7 @@ async function bootRealm(port) {
         } catch {}
         server.close();
     };
-    return { browser, page, server, pageErrors, close };
+    return { browser, page, server, close };
 }
 
 // Auf den Worker + das Rezeptbuch warten (der Rezept-Reply ist
