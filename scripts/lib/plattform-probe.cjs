@@ -352,6 +352,10 @@ function fingerabdruck(group, nurGeometrie, mitFern) {
     return { objects, vertices, sha256: h.digest("hex") };
 }
 
+// DER SCHLÜSSEL EINES FALLS der Vertrags-Linsen (fachwerk · porta · schmiede): Rezept, Saat, Stufe und die Schlüssel der
+// Prägung — je Linse eine eigene Zeile war ein Zwilling.
+const fallSchluessel = (c) => `${c.rezeptId}-s${c.seed}-L${c.lod}${c.ov ? "-ov_" + Object.keys(c.ov).sort().join("_") : ""}`;
+
 // DER GOLDEN-VERGLEICH der Vertrags-Linsen (fachwerk · porta · schmiede · vehicle; auch ihr Selbst-Test ruft ihn): die
 // Fälle des Goldens gegen das Ist (sha256, dann objects/vertices) → Abweichungsliste.
 function goldenVergleich(golden, actual) {
@@ -390,4 +394,5 @@ module.exports = {
     fingerabdruck,
     goldenVergleich,
     goldenSelbsttest,
+    fallSchluessel,
 };

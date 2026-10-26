@@ -213,6 +213,8 @@ class AnazhRealm_dirigent_takt {
 
                 // ### Kamin-Rauch ### (.105 — Quellen + minimale Lab-Partikel)
                 this._updateDorfRauch(delta);
+                // ### Funken ### (halten.K2 — die Späne eines Treffers aus dem Stoff-Paar fliegen und verlöschen)
+                this._funkenTakt(delta);
 
                 if (!ruht) {
                     // ### Fähigkeiten ### (rule) — gehalten über die Verb-Tafel: ihre Taste oder ihr Pad-Knopf (`_verbTaste`)

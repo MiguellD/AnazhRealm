@@ -3572,6 +3572,8 @@
         feder: 0xe8e0d0,
         leitfeder: 0xd24b4b,
     });
+    // halten.K2 (additiv): der Stoff, mit dem der Pfeil trifft — die Bodkin-Spitze ist Eisen (M.iron, buildPfeil)
+    var PFEIL_STOFF = "eisen";
     function vertexAlbedo(geo, hex) {
         var r = linKanal(((hex >> 16) & 255) / 255),
             g = linKanal(((hex >> 8) & 255) / 255),
@@ -3637,6 +3639,7 @@
         zielStoff: zielStoff,
         metallRho: metallRho,
         PFEIL: PFEIL,
+        PFEIL_STOFF: PFEIL_STOFF,
         buildPfeil: buildPfeil,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,

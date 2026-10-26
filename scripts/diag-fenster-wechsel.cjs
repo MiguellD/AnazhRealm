@@ -20,7 +20,7 @@
 //       42–292 s) fängt keine Meldung, die Schritte warten auf keinen Bau der ganzen Welt. K hält den Rest.
 //
 //   node scripts/diag-fenster-wechsel.cjs
-const { statikServer, starteBrowser, uferStellen } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, uferStellen, laufUhr, pruefer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
@@ -29,11 +29,7 @@ const GROESSEN_ZIELE = /Destroyed texture \[Texture "(szene:tiefenabbild|spiegel
 const LESER_NEUBAU = /_tiefenKnotenTausch|_tiefenLeserNeuBinden|_ensureHydroSurfaceMaterial|_feldPassDispose|hydroSurfaceMaterial\s*=/;
 const server = statikServer();
 
-let ok = true;
-const check = (name, cond, detail) => {
-    console.log(`  ${cond ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!cond) ok = false;
-};
+const { errs, check } = pruefer();
 
 // K: der Körper des resize-Handlers (der EINE Absenz-Helfer; ohne Handler wirft er) — kein Leser der Szenen-Tiefe wird dort neu gebaut
 const RESIZE_KOPF = /window\.addEventListener\("resize", \(\) => \{/;
@@ -107,8 +103,7 @@ async function fensterSchritt(o) {
 }
 
 (async () => {
-    const T0 = Date.now();
-    const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
+    const log = laufUhr();
     console.log("=== K — kein Zwilling im resize-Handler (Quelle) ===");
     check(
         "K der resize-Handler baut keinen Leser der Szenen-Tiefe neu (die Diät trägt jeden Größenwechsel)",
@@ -192,7 +187,7 @@ async function fensterSchritt(o) {
     }
     await browser.close();
     server.close();
-    log(ok ? "GRÜN" : "ROT");
-    console.log(ok ? "GRÜN fenster-wechsel" : "ROT fenster-wechsel");
-    process.exit(ok ? 0 : 1);
+    log(errs.length ? "ROT" : "GRÜN");
+    console.log(errs.length ? "ROT fenster-wechsel" : "GRÜN fenster-wechsel");
+    process.exit(errs.length ? 1 : 0);
 })();

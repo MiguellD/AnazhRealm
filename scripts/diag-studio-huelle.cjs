@@ -32,7 +32,7 @@
 //   node scripts/diag-studio-huelle.cjs --engine     DER GANG je Seite der Hülle: ihre Anfragen (H6), ihre Sitzung (H3),
 //                                                    die L0 eines Ofen-Labors (H4); Port STUDIO_HUELLE_PORT (8742)
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -388,7 +388,7 @@ async function gang() {
             const pfade = (netz[id] = []); // jeden Seitenfehler nennt der EINE Sammler der Weiche (welt-boot), der Lauf wird rot
             page.on("request", (q) => pfade.push(new URL(q.url()).pathname));
             await s.zeige(page, 90000, seite(id), "load");
-            await new Promise((r) => setTimeout(r, 1500));
+            await sleep(1500);
             // H3: der Spieler zieht und greift im selben Atemzug die Tasten des VERLAUFs (kein Bild, keine Ruhe dazwischen), je
             // Taste am LEBENDEN Schieber seiner Zeile (die schmiede baut ihre Leiste im Rückweg neu — ein abgehängter trüge nie ans Fenster)
             const z = (seiten[id] = await page.evaluate((verlauf) => {
