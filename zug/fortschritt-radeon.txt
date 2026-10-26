@@ -296,3 +296,4 @@
 2026-10-26 14:29:08 takt6-headless tiere.K1#1 GRÜN 0.4 · 22/75
 2026-10-26 14:29:28 takt6-headless tiere.K3#1 GRÜN 0.3 · 23/75
 2026-10-26 14:29:44 takt6-headless oekologie.K3#1 GRÜN 0.3 · 24/75
+2026-10-26 14:29:51 takt6-headless oekologie.K3#2 GRÜN 0.3 · 25/75
