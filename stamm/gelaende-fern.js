@@ -207,7 +207,8 @@ class AnazhRealm_gelaende_fern {
         const schalen = F.schalen.map((s, i) => {
             const inner = i === 0 ? innerRand : F.schalen[i - 1].aussen;
             const reihen = AnazhRealm._fernRingReihen(inner, s.aussen);
-            const sh = Object.freeze({ inner, aussen: s.aussen, snap: s.snap, reihen, off, per: W * reihen });
+            const q = Math.pow(s.aussen / inner, 1 / (reihen - 1)); // der Reihen-Faktor: Reihe r liegt auf inner·q^r
+            const sh = Object.freeze({ inner, aussen: s.aussen, snap: s.snap, reihen, q, off, per: W * reihen });
             off += W * reihen;
             return sh;
         });
@@ -496,6 +497,8 @@ class AnazhRealm_gelaende_fern {
             li,
             row,
             rad, // der LOCH-DECKEL liest den Reihen-Radius (Deck-Zonen-Urteil)
+            ang: ort.ang, // der ungerundete Winkel um den Anker und der Reihen-Faktor der Schale (die Masche, `fernKrone`)
+            q: sh.q,
             // die Masche des Punkts (`_fernFarbeMasche`): halbe Breite tangential, halbe Tiefe radial (Reihen-Faktor)
             fuss: {
                 ax: fr.anchorX,
@@ -515,6 +518,7 @@ class AnazhRealm_gelaende_fern {
         const rad = sh.inner * Math.pow(sh.aussen / sh.inner, row / (sh.reihen - 1));
         const ang = (ai / AnazhRealm.FERN_RING.winkel) * Math.PI * 2;
         out.rad = rad;
+        out.ang = ang;
         out.x = Math.round((fr.anchorX + Math.cos(ang) * rad) / sh.snap) * sh.snap;
         out.z = Math.round((fr.anchorZ + Math.sin(ang) * rad) / sh.snap) * sh.snap;
         return out;
@@ -1274,7 +1278,6 @@ class AnazhRealm_gelaende_fern {
         const n = gs.length;
         const punkte = new Float64Array(n * 2);
         const [ht, hr, rad, ang, q] = [0, 0, 0, 0, 0].map(() => new Float64Array(n));
-        const W = AnazhRealm.FERN_RING.winkel;
         const zone = new Uint8Array(n);
         for (let k = 0; k < n; k++) {
             const p = this._fernRingPunkt(fr, gs[k]);
@@ -1283,9 +1286,8 @@ class AnazhRealm_gelaende_fern {
             ht[k] = p.fuss.ht;
             hr[k] = p.fuss.hr;
             rad[k] = p.rad;
-            const sh = fr.schalen[p.s];
-            ang[k] = ((p.li - p.row * W) / W) * 2 * Math.PI;
-            q[k] = Math.pow(sh.aussen / sh.inner, 1 / (sh.reihen - 1));
+            ang[k] = p.ang;
+            q[k] = p.q;
             // die Bau-Zone: dort trägt der Punkt das volle Gesetz (Loch-Deckel und Naht) und immer seine Teile
             zone[k] = p.s === 0 && p.rad <= fr.bauZoneRad ? 1 : 0;
         }
@@ -1327,7 +1329,7 @@ class AnazhRealm_gelaende_fern {
             if (!(rad > 0)) continue;
             const ai = Math.round((Math.atan2(e.z - fr.anchorZ, e.x - fr.anchorX) / (2 * Math.PI)) * W);
             for (const sh of fr.schalen) {
-                const row = Math.round(((sh.reihen - 1) * Math.log(rad / sh.inner)) / Math.log(sh.aussen / sh.inner));
+                const row = Math.round(Math.log(rad / sh.inner) / Math.log(sh.q));
                 for (let r = Math.max(0, row - 2); r <= Math.min(sh.reihen - 1, row + 2); r++)
                     for (let a = ai - 2; a <= ai + 2; a++) gs.add(sh.off + r * W + (((a % W) + W) % W));
             }
