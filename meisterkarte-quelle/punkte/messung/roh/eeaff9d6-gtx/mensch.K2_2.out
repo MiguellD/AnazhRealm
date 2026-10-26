@@ -1,0 +1,39 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\eeaff9d6-gtx\mensch.K2_2.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7746 )); W=$(( 7746 + 20000 )); export WERKBANK_PORT=$W
+raeum() { for p in $(netstat -ano | grep -E ":($S|$W|$((W - 1))) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }
+stand() { mkdir -p "$B-stand"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json "$B-stand/" 2> /dev/null; }
+ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }
+trap ende EXIT; trap 'exit 143' INT TERM
+raeum; stand
+(PORT=$S node save-server.js > "$B-save.log" 2>&1 &)
+for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done
+(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > "$B-werkbank.log" 2>&1 &)
+for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' "$B-werkbank.log" 2> /dev/null && break; sleep 5; done
+grep -E 'WERKBANK bereit' "$B-werkbank.log" || { echo 'WERKBANK startet nicht'; tail -5 "$B-werkbank.log"; exit 1; }
+node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner
+WERKBANK bereit: Steuer 127.0.0.1:27746 · Seite :27745
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27746) =====
+
+  ❌ bewohner  {"fehler":"Error: DER BAU STEHT NICHT: bewohner: die Stadt nach 304 Takten — die Welt hat nichts mehr offen\n    at eval (eval at <anonymous> (:2:29), <anonymous>:173:19)\n    at bisDa (eval at <anonymous> (:2:29), <anonymous>:2618:56)\n    at async stadtTag (eval at <anonymous> (:2:29), <anonymous>:2594:13)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:2917:20)\n    at async buehne (eval at <anonymous> (:2:29), <anonymous>:267:25)\n    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2420:5)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:209:13)"}
+       ↳ Error: DER BAU STEHT NICHT: bewohner: die Stadt nach 304 Takten — die Welt hat nichts mehr offen
+    at eval (eval at <anonymous> (:2:29), <anonymous>:173:19)
+    at bisDa (eval at <anonymous> (:2:29), <anonymous>:2618:56)
+    at async stadtTag (eval at <anonymous> (:2:29), <anonymous>:2594:13)
+    at async eval (eval at <anonymous> (:2:29), <anonymous>:2917:20)
+    at async buehne (eval at <anonymous> (:2:29), <anonymous>:267:25)
+    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2420:5)
+    at async eval (eval at <anonymous> (:2:29), <anonymous>:209:13)
+
+  (84 s)
+
+❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 46499 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
