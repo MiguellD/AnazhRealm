@@ -844,7 +844,9 @@ class AnazhRealm_speicher_welten {
                 {
                     marke: (K) => {
                         const p = st().playerMesh && st().playerMesh.position;
-                        return p ? [p.x, p.y, p.z, this._voxelStand(Math.floor(p.x / K.span), Math.floor(p.z / K.span))] : [null];
+                        return p
+                            ? [p.x, p.y, p.z, this._voxelStand(Math.floor(p.x / K.span), Math.floor(p.z / K.span))]
+                            : [null];
                     },
                 },
             ],
