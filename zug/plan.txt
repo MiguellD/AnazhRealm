@@ -45,6 +45,6 @@ läuft   echt-k1-platz  Champion auf werkzeug-heil: platz-Haken am Faden-Put sta
 läuft   z36  05:52 NEU (1. Lauf ROT beim Bau: Siegel „fertig“ aus Karten-Key e-stadt-fertig in 3 WIP-Messages → Zweig e-bewohner-z36 a9f2216b, Messages umgeschrieben, Baum gleich): decke-zahlstelle-2 · e-bewohner-z36 · speicher-k2-anhang · b-streu-faden · a-laub-pose · fahr-s3 · k8-fein  fahre.sh  E · B · A · speicher
 lehre   omen-ci  jeder Zug-Lauf und jeder integ/main-Push trägt einen echt-Job mit Vorfahrt auf der OMEN; 3 z35-Läufe verdrängten leib.K1#2 bis zum Deckel 5580 s → Züge nicht leichtfertig neu starten  Koordinator  —
 fertig  weltakt-null  d33df55b: kein singender Vogel → NaN; wartet jetzt in Spielzeit, stumme Tat ROT beim Namen (Decke +332)  Champion  → z37
-läuft   decke-zahlstelle-3  Champion: dritte Zwillings-Klasse (≤ −1500) für z37 — jeder Zug trägt seine Zahlstelle (das Guthaben verfällt mit dem Push)  Champion  FEUER
+fertig  decke-zahlstelle-3  5ad32e8c: 80 eigene Absturz-Fänger → hauptLauf, scripts −2533 (merge main nach z36)  Champion  → z37
 plan    z37  gras-fuss + weltakt-null + decke-zahlstelle-3 (+ echt-k1-platz nach koordination)  fahre.sh  A · FEUER
 hinweis e-stadt-gipfel  der Zweig trägt 3 Messages mit „e-stadt-fertig“ — nie direkt in einen Zug, nur über e-bewohner-z36 (umgeschrieben)  Koordinator  —
