@@ -2226,6 +2226,9 @@ async function kreaturProben(r, T, opts) {
             else W.__anazhAutoSettlement = altHook;
         });
         W.__anazhAutoSettlement = true;
+        // Täter (Selbsttest): alle in EINEM Lauf (`EIN_LAUF`), je Täter seine Sicht — vor dem Tag je einer und zurück, im Tag
+        // eine zweite Messung neben der sauberen, nach ihm je ein eigenes Fenster
+        const [hat, sicht] = [(t) => [].concat(taeter || []).includes(t), {}];
         const schlaf = (ms) => new Promise((z) => setTimeout(z, ms));
         const FC = globalThis.__fachwerkCore;
         const wm = s.worldMeta;
@@ -2390,16 +2393,27 @@ async function kreaturProben(r, T, opts) {
                 return { fehler: `keine Stadt mit freiem Rand am Platz („dorf ${seed} 30" bei ${x}/${z})` };
             const da = () => S.liste && S.liste.every((b) => b.leib && !b.ankunft) && r._weltOffen().leiber === 0;
             await bisDa("bewohner: die Stadt", () => !da());
-            r._uhrSetzen(5 / 24, "regler");
-            r._tickBewohner(0); // erst der Takt sieht den Sprung der Uhr (`_bewohnerAnkunft`), vorher stand jeder noch
-            await bisDa("bewohner: die Ankunft der Stadt", () => !da());
-            // Täter (Selbsttest): wer ausweicht, weicht nie — und die EINE Frage an die Wand (`_bewohnerWand`: der Weg, die
-            // Wache, das Ausweichen, die Linie zurück auf das Bein) ist blind
-            if (taeter === "bewohner-stadt-rempeln") decke(restore, "_bewohnerAusweichen", () => () => null);
-            if (taeter === "bewohner-stadt-blind") decke(restore, "_bewohnerWand", () => () => null);
-            const M = wegeMesser(S.liste);
-            for (let i = 0; i < (taeter ? 30 : 240) * takte; i++) takt(DT, M);
-            return { haeuser: haeuserIn(S.plan.slots, S.ox, S.oz).length, wege: M.zahl() };
+            const haeuser = haeuserIn(S.plan.slots, S.ox, S.oz).length;
+            // je Tag die Ankunft um 5 Uhr, ein eigenes Messer und die Decke nur in ihm (`ueber`)
+            const tag = async (stunden, ueber) => {
+                const [ab, M] = [[], wegeMesser(S.liste)];
+                r._uhrSetzen(5 / 24, "regler");
+                r._tickBewohner(0); // erst der Takt sieht den Sprung der Uhr (`_bewohnerAnkunft`), vorher stand jeder noch
+                await bisDa("bewohner: die Ankunft der Stadt", () => !da());
+                if (ueber) decke(ab, ueber, () => () => null);
+                for (let i = 0; i < stunden * 10 * takte; i++) takt(DT, M);
+                for (const f of ab) f();
+                return { haeuser, wege: M.zahl() };
+            };
+            // Täter (Selbsttest), je 3 Spielstunden: wer ausweicht, weicht nie — dann die EINE Frage an die Wand
+            // (`_bewohnerWand`: der Weg, die Wache, das Ausweichen, die Linie zurück auf das Bein) ist blind
+            if (!taeter) return tag(24);
+            for (const [t, ueber] of [
+                ["bewohner-stadt-rempeln", "_bewohnerAusweichen"],
+                ["bewohner-stadt-blind", "_bewohnerWand"],
+            ])
+                if (hat(t)) sicht[t] = { stadt: await tag(3, ueber) };
+            return null;
         };
         // der Takt des Spiels, bis die Siedlung steht (`offen` nicht mehr)
         const bisDa = async (name, offen) => {
@@ -2419,7 +2433,6 @@ async function kreaturProben(r, T, opts) {
                         Math.hypot(e.position.x - (ox + sl.x), e.position.z - (oz + sl.z)) < 1
                 )
             );
-        if (/^bewohner-stadt/.test(taeter || "")) return { nurStadt: true, stadt: await stadtTag() };
         if (!(wm.settlementCells && wm.settlementCells.start)) r._startDorfBestellen(pm);
         for (
             const weiter = W.__deckel("bewohner: das Start-Dorf", 200, () => !!r._autoSettlementPendingKey);
@@ -2460,20 +2473,32 @@ async function kreaturProben(r, T, opts) {
         } catch {
             /* die Quote nennt, wer fehlt */
         }
-        // Täter (Selbsttest): die Leiber des ersten bewohnten Hauses fallen aus der Szene
-        if (taeter === "bewohner-haus") {
+        // der Bestand: die Leiber je Haus und wie viele als Leib gezeichnet sind
+        const bestand = () => {
+            const [L, jeHaus] = [leiber(), new Map()];
+            for (const b of L) jeHaus.set(b.userData.heim, (jeHaus.get(b.userData.heim) || 0) + 1);
+            const leer = haeuser
+                .filter((h) => h.soll > 0 && !jeHaus.get(h.seed))
+                .map((h) => `${h.rolle} ${h.kultur} #${h.seed}: 0 von ${h.soll}`);
+            const q = sollSumme > 0 ? q3(L.length / sollSumme) : null;
+            return [L, { leiber: L.length, quote: q, leer: leer.slice(0, 6), leerN: leer.length, alsLeib: L.filter((b) => b.visible).length }]; // prettier-ignore
+        };
+        // Täter (Selbsttest), je einer und zurück: die Leiber des ersten bewohnten Hauses fallen aus der Szene — jeder
+        // Bewohner zeichnet seinen eigenen Leib (Befehle je Kopf)
+        if (hat("bewohner-haus")) {
             const h = haeuser.find((x) => x.soll > 0);
-            for (const b of leiber()) if (h && b.userData.heim === h.seed) s.scene.remove(b);
+            const fort = leiber().filter((b) => h && b.userData.heim === h.seed);
+            for (const b of fort) s.scene.remove(b);
+            sicht["bewohner-haus"] = bestand()[1];
+            for (const b of fort) s.scene.add(b);
         }
-        const L = leiber();
-        // Täter (Selbsttest): jeder Bewohner zeichnet seinen eigenen Leib (Befehle je Kopf)
-        if (taeter === "bewohner-menge") for (const b of L) b.visible = true;
-        const jeHaus = new Map();
-        for (const b of L) jeHaus.set(b.userData.heim, (jeHaus.get(b.userData.heim) || 0) + 1);
-        const leer = haeuser
-            .filter((h) => h.soll > 0 && !jeHaus.get(h.seed))
-            .map((h) => `${h.rolle} ${h.kultur} #${h.seed}: 0 von ${h.soll}`);
-        const alsLeibStart = L.filter((b) => b.visible).length;
+        if (hat("bewohner-menge")) {
+            const vor = leiber().map((b) => [b, b.visible]);
+            for (const [b] of vor) b.visible = true;
+            sicht["bewohner-menge"] = bestand()[1];
+            for (const [b, v] of vor) b.visible = v;
+        }
+        const [L, B] = bestand();
         const wer = (b) => `${b.rolle}/${b.beruf} #${b.heim}`;
         const cam = s.camera;
         const gezeichnet = (b) => b.visible || b.userData._satz === true || r._kzBesitztFeld(b);
@@ -2501,9 +2526,9 @@ async function kreaturProben(r, T, opts) {
         const tag0 = s.timeOfDay;
         restore.push(() => r._uhrSetzen(tag0, "regler"));
         const SD = wegeMesser(liste);
-        const treffer = new Map();
-        const vorher = new Map();
-        const z = { alsLeib: alsLeibStart, schmiede10: null, schmiede2: null };
+        // je Plan-Sicht die Treffer und der Weg des letzten Ereignisses — die saubere, und der Täter liest die Uhr 6 h daneben
+        const planSicht = [0, ...(hat("bewohner-plan6") ? [6] : [])].map((plus) => ({ plus, treffer: new Map(), vorher: new Map() })); // prettier-ignore
+        const z = Object.assign(B, { schmiede10: null, schmiede2: null });
         let blick10 = [[], []];
         let planGleich = !!planFn;
         const stationen = liste.filter((b) => b.rolle === "schmiede" && b.orte.werk).map((b) => b.orte.werk);
@@ -2531,7 +2556,7 @@ async function kreaturProben(r, T, opts) {
             return ymin > -A.PLAYER_FOOT_OFFSET + 0.03 ? null : fuss;
         };
         let gehend = [];
-        const gang = satzGang(fussIx, (x, z) => {
+        const leibIn = (x, z) => {
             const b = gehend.find((q) => ab({ x, z }, q.leib.position) <= 1e-3);
             const g = b && b.leib;
             return b
@@ -2543,37 +2568,69 @@ async function kreaturProben(r, T, opts) {
                       ry: g.rotation.y,
                   }
                 : null;
-        });
+        };
+        // Täter (Selbsttest): die zweite Messung sieht jede Instanz des Satzes in der Phase 0
+        const [gang, gangG] = [satzGang(fussIx, leibIn), hat("bewohner-gleiten") && satzGang(fussIx, leibIn)];
         const gangMessen = (SZ) => {
             gehend = liste.filter((b) => b.weg && b.leib && b.leib.userData._satz === true);
-            if (gehend.length) gang.messen(SZ);
+            if (!gehend.length) return;
+            gang.messen(SZ);
+            if (!gangG) return;
+            const vor = SZ.map((m) => m.geometry.attributes.aGang)
+                .filter(Boolean)
+                .map((a) => [a, a.array.slice()]);
+            for (const [a] of vor) for (let q = 0; q < a.count; q++) a.setX(q, 0);
+            gangG.messen(SZ);
+            for (const [a, v] of vor) a.array.set(v);
         };
-        // DER BLICK DER STEHENDEN (mensch.K2): am Platz zur Mitte, vor der Tür vom Haus fort; die Streuung je Sektor von 30°
-        const blicke = { n: 0, treffer: 0, sektor: new Array(12).fill(0) };
+        // DER BLICK DER STEHENDEN (mensch.K2): am Platz zur Mitte, vor der Tür vom Haus fort; die Streuung je Sektor von 30°.
+        // Täter (Selbsttest): die zweite Messung sieht jeden nach Norden
+        const blicke = [false, ...(hat("bewohner-nord") ? [true] : [])].map((nord) => ({ nord, n: 0, treffer: 0, sektor: new Array(12).fill(0) })); // prettier-ignore
         const blickMessen = () => {
             for (const b of liste) {
                 const g = b.leib;
                 if (!g || !b.da || b.drinnen || !gezeichnet(g) || !b.ziel) continue;
-                if (taeter === "bewohner-nord") g.rotation.y = 0;
                 const o = b.orte;
-                const th = g.rotation.y;
-                blicke.sektor[((Math.round(th / (Math.PI / 6)) % 12) + 12) % 12]++;
                 const soll =
                     b.ziel === o.platz
                         ? Math.atan2(pc.x - g.position.x, pc.z - g.position.z)
                         : b.ziel === o.heim || (b.ziel === o.werk && b.beruf !== "feld" && b.beruf !== "markt")
                           ? Math.atan2(g.position.x - o.tuer.x, g.position.z - o.tuer.z)
                           : null;
-                if (soll === null) continue;
-                blicke.n++;
-                const d = th - soll;
-                if (Math.abs(wrap(d)) <= 1.3) blicke.treffer++;
+                for (const Bl of blicke) {
+                    const th = Bl.nord ? 0 : g.rotation.y;
+                    Bl.sektor[((Math.round(th / (Math.PI / 6)) % 12) + 12) % 12]++;
+                    if (soll === null) continue;
+                    Bl.n++;
+                    if (Math.abs(wrap(th - soll)) <= 1.3) Bl.treffer++;
+                }
             }
         };
-        // DER PLATZ (mensch.K2): jeder hat einen Stand am Platz, seinem Rand oder seinen Gassen (bis 12 m über ihn hinaus)
-        if (taeter === "bewohner-daheim") for (const b of liste.slice(0, 6)) b.orte.platz = null;
+        const blickZahl = (Bl) => ({
+            n: Bl.n,
+            quote: Bl.n ? q3(Bl.treffer / Bl.n) : null,
+            sektorMax: q3(
+                Math.max(...Bl.sektor) /
+                    Math.max(
+                        1,
+                        Bl.sektor.reduce((a, x) => a + x, 0)
+                    )
+            ),
+        });
+        // DER PLATZ (mensch.K2): jeder hat einen Stand am Platz, seinem Rand oder seinen Gassen (bis 12 m über ihn hinaus).
+        // Täter (Selbsttest), einmal und zurück: sechs ohne Platz
         const platzR = Math.hypot(pz.ex, pz.ez) + 12;
-        const ohnePlatz = liste.filter((b) => !(b.orte.platz && ab(b.orte.platz, pc) <= platzR));
+        const ohne = () => {
+            const o = liste.filter((b) => !(b.orte.platz && ab(b.orte.platz, pc) <= platzR));
+            return { ohnePlatz: o.length, ohnePlatzWer: o.slice(0, 4).map(wer) };
+        };
+        if (hat("bewohner-daheim")) {
+            const vor = liste.slice(0, 6).map((b) => [b, b.orte.platz]);
+            for (const [b] of vor) b.orte.platz = null;
+            sicht["bewohner-daheim"] = ohne();
+            for (const [b, p] of vor) b.orte.platz = p;
+        }
+        const ohnePlatz = ohne();
         // DIE WIEDERKEHR (mensch.K2 Staffel 2): wer blieb, sah jede Lage; wer nach 1 h Abwesenheit kommt, findet sie (≤ 2 m)
         const Sx = () => r._bewohnerSiedlungen.get(S.key).liste || [];
         const lagen = () => new Map(Sx().map((b) => [`${wer(b)}:${b.same}`, b.leib && b.leib.position.clone()]));
@@ -2581,45 +2638,35 @@ async function kreaturProben(r, T, opts) {
         for (let i = 1; i <= 240; i++) {
             const stunde = (s.timeOfDay * 24 + 0.1) % 24;
             const SZ = saetze();
-            for (let k = 0; k < takte; k++) {
-                takt(DT, SD);
-                // Täter (Selbsttest): der Teleport an den Soll-Ort
-                if (taeter === "bewohner-sprung")
-                    for (const b of liste) if (b.ziel) b.leib.position.set(b.ziel.x, b.leib.position.y, b.ziel.z);
-            }
+            for (let k = 0; k < takte; k++) takt(DT, SD);
             // DAS GANG-FENSTER: die Wege zum Werk, zum Platz, nach Hause, 10 s zu 1/60 s
             if ([7.5, 12, 17.2].some((h) => Math.abs(stunde - h) < 0.05)) {
-                gang.luecke(); // das Fenster beginnt jede Spur neu
+                for (const G of [gang, gangG]) if (G) G.luecke(); // das Fenster beginnt jede Spur neu
                 for (let k = 0; k < 600; k++) {
                     takt(1 / 60, SD);
-                    // Täter (Selbsttest): jede Instanz des Satzes steht in der Phase 0
-                    if (taeter === "bewohner-gleiten")
-                        for (const m of SZ) {
-                            const a = m.geometry.attributes.aGang;
-                            if (a) for (let q = 0; q < a.count; q++) a.setX(q, 0);
-                        }
                     gangMessen(SZ);
                 }
             }
             z.alsLeib = Math.max(z.alsLeib, L.filter((g) => g.visible).length);
             // die Soll-Orte: am Ort (≤ 1,5 m, gezeichnet) · drinnen (an der Tür) · unterwegs (sein Weg zu DIESEM Soll begann
             // eben oder schrumpfte um die Hälfte dessen, was sein Tempo seit dem letzten Ereignis trägt)
-            for (const b of planFn ? liste : []) {
-                const o = b.orte;
-                const sh = (stunde + (taeter === "bewohner-plan6" ? 6 : 0)) % 24;
-                const planJetzt = () => planFn(b.same, b.rolle, o.heim, o.werk, sh, o.platz, o.besuch);
-                const soll = planJetzt();
-                if (JSON.stringify(soll) !== JSON.stringify(planJetzt())) planGleich = false;
-                const ziel = soll.drinnen ? o.tuer : soll.ort;
-                const g = b.leib;
-                const alt = vorher.get(b);
-                const rest = b.ziel === ziel && Number.isFinite(b.wegRest) ? b.wegRest : null;
-                const unterwegs =
-                    rest !== null && (!alt || alt.ziel !== ziel || alt.rest - rest >= 0.5 * b.tempo * takte * DT);
-                const da = ab(g.position, ziel) < 1.5 && gezeichnet(g) !== soll.drinnen;
-                treffer.set(b, (treffer.get(b) || 0) + (da || unterwegs ? 1 / 240 : 0));
-                vorher.set(b, { ziel: b.ziel, rest });
-            }
+            for (const b of planFn ? liste : [])
+                for (const { plus, treffer, vorher } of planSicht) {
+                    const o = b.orte;
+                    const sh = (stunde + plus) % 24;
+                    const planJetzt = () => planFn(b.same, b.rolle, o.heim, o.werk, sh, o.platz, o.besuch);
+                    const soll = planJetzt();
+                    if (JSON.stringify(soll) !== JSON.stringify(planJetzt())) planGleich = false;
+                    const ziel = soll.drinnen ? o.tuer : soll.ort;
+                    const g = b.leib;
+                    const alt = vorher.get(b);
+                    const rest = b.ziel === ziel && Number.isFinite(b.wegRest) ? b.wegRest : null;
+                    const unterwegs =
+                        rest !== null && (!alt || alt.ziel !== ziel || alt.rest - rest >= 0.5 * b.tempo * takte * DT);
+                    const da = ab(g.position, ziel) < 1.5 && gezeichnet(g) !== soll.drinnen;
+                    treffer.set(b, (treffer.get(b) || 0) + (da || unterwegs ? 1 / 240 : 0));
+                    vorher.set(b, { ziel: b.ziel, rest });
+                }
             if (Math.abs(stunde - 10) < 0.05) {
                 z.schmiede10 = anStation();
                 blick10 = [blickZaehlen("ego", L), blickZaehlen("third", L)];
@@ -2631,10 +2678,18 @@ async function kreaturProben(r, T, opts) {
         }
         // gezählt: ein Leib mit Rig, der im Tag ging
         const gegangen = (g) => liste.some((b) => b.leib === g && SD.wSpur.get(b).gesamt > 0.5);
-        const unter = liste.filter((b) => !(treffer.get(b) >= 0.9));
+        const trefferZahl = ({ treffer }) => {
+            const unter = liste.filter((b) => !(treffer.get(b) >= 0.9));
+            return {
+                trefferMin: liste.length ? q3(Math.min(...liste.map((b) => treffer.get(b) || 0))) : null,
+                unter: unter.slice(0, 5).map((b) => `${wer(b)}: ${Math.round((treffer.get(b) || 0) * 100)} %`),
+                unterN: unter.length,
+            };
+        };
         // der Heimkehrer geht 1 h vor jeder Prüf-Stunde fort und findet die neu Geborenen (Takt 0). Täter: geboren am Ziel
-        const wiederkehr = async () => {
-            if (taeter === "bewohner-wiederkehr") decke(restore, "_bewohnerAnkunft", () => () => {});
+        const wiederkehr = async (mitTaeter) => {
+            const ab0 = [];
+            if (mitTaeter) decke(ab0, "_bewohnerAnkunft", () => () => {});
             const [ueber, P] = [[], pm.clone()];
             let [n, maxM] = [0, 0];
             for (const [T, sah] of blieb) {
@@ -2652,44 +2707,47 @@ async function kreaturProben(r, T, opts) {
                     if (!(d <= 2)) ueber.push(`${id} um ${q3(T)} Uhr ${q3(d)} m`);
                 }
             }
+            for (const f of ab0) f();
             return { n, maxM: q3(maxM), ueberN: ueber.length, ueber: ueber.slice(0, 5) };
         };
-        return Object.assign(z, {
+        Object.assign(z, {
             haeuser: haeuser.length,
             sollSumme,
-            leiber: L.length,
-            quote: sollSumme > 0 ? q3(L.length / sollSumme) : null,
-            leer: leer.slice(0, 6),
-            leerN: leer.length,
             imBlick: {
                 ego: blick10[0].filter(gegangen).length,
                 third: blick10[1].filter(gegangen).length,
             },
             nahLeiber: A.BEWOHNER.nahLeiber,
             planGleich,
-            trefferMin: liste.length ? q3(Math.min(...liste.map((b) => treffer.get(b) || 0))) : null,
-            unter: unter.slice(0, 5).map((b) => `${wer(b)}: ${Math.round((treffer.get(b) || 0) * 100)} %`),
-            unterN: unter.length,
+            ...trefferZahl(planSicht[0]),
             stationen: stationen.length,
             satzGang: gang.schlupf(),
-            blick: {
-                n: blicke.n,
-                quote: blicke.n ? q3(blicke.treffer / blicke.n) : null,
-                sektorMax: q3(
-                    Math.max(...blicke.sektor) /
-                        Math.max(
-                            1,
-                            blicke.sektor.reduce((a, x) => a + x, 0)
-                        )
-                ),
-            },
-            ohnePlatz: ohnePlatz.length,
-            ohnePlatzWer: ohnePlatz.slice(0, 4).map(wer),
+            blick: blickZahl(blicke[0]),
+            ...ohnePlatz,
             huellen: hausE.filter((e) => e._hausHuelle).length,
             wege: SD.zahl(),
-            wiederkehr: !taeter || taeter === "bewohner-wiederkehr" ? await wiederkehr() : null,
-            stadt: taeter ? null : await stadtTag(),
+            wiederkehr: taeter ? null : await wiederkehr(),
         });
+        if (!taeter) return Object.assign(z, { stadt: await stadtTag() });
+        // die Sichten der Täter im Tag und nach ihm: der Teleport an den Soll-Ort eine Spielstunde am Morgen mit eigenem
+        // Messer (nach der Ankunft um 7 Uhr), der Heimkehrer findet die am Ziel Geborenen, dann die Stadt
+        if (hat("bewohner-plan6")) sicht["bewohner-plan6"] = trefferZahl(planSicht[1]);
+        if (hat("bewohner-nord")) sicht["bewohner-nord"] = { blick: blickZahl(blicke[1]) };
+        if (hat("bewohner-gleiten")) sicht["bewohner-gleiten"] = { satzGang: gangG.schlupf() };
+        if (hat("bewohner-sprung")) {
+            r._uhrSetzen(7 / 24, "regler");
+            r._tickBewohner(0);
+            await bisDa("bewohner: die Ankunft am Morgen", () => !liste.every((b) => b.leib && !b.ankunft));
+            const SP = wegeMesser(liste);
+            for (let k = 0; k < 10 * takte; k++) {
+                takt(DT, SP);
+                for (const b of liste) if (b.ziel) b.leib.position.set(b.ziel.x, b.leib.position.y, b.ziel.z);
+            }
+            sicht["bewohner-sprung"] = { wege: SP.zahl() };
+        }
+        if (hat("bewohner-wiederkehr")) sicht["bewohner-wiederkehr"] = { wiederkehr: await wiederkehr(true) };
+        z.stadt = await stadtTag();
+        return { sicht: Object.fromEntries([].concat(taeter).map((t) => [t, Object.assign({}, z, sicht[t])])) };
     });
 
     // ── tiersatz (profiband.K1 „Sturm mit 50 Tieren“): 10 und 50 Tiere im Nah-Kreis — die Befehle der Tiere hängen nie an
@@ -2961,7 +3019,7 @@ function urteil(name, z) {
             `${wo}Wege ${v.wegeMin}–${v.wegeMax} (${v.ausser}), ${v.steckenN} Steckenbleiber (${v.stecken}), auf Wegen ${v.aufWeg} (Soll ≥ 0,85), Strecke min ${v.streckeMin} m (Soll ≥ 100 je Tag: ${v.kurz}), Berührung: ${v.beruehrN} (${v.beruehr})`
         );
     }
-    if (name === "bewohner" && !z.nurStadt) {
+    if (name === "bewohner") {
         const [sg, b, wk] = [z.satzGang || {}, z.blick, z.wiederkehr || { ueberN: "ungemessen" }];
         soll(
             z.leiber > 0 && Math.abs(z.quote - 1) <= 0.05,
@@ -3405,5 +3463,7 @@ module.exports = {
     KREATUR_PROBEN_SRC: kreaturProben.toString().replace("/* LEBEN_BUEHNEN */", () => LEBEN.BUEHNEN),
     PROBEN: [...PROBEN, ...LEBEN.PROBEN],
     TAETER: Object.assign(TAETER, LEBEN.TAETER),
+    // die Probe mit EINEM Lauf im Selbsttest: alle ihre Täter in ihm, je Täter seine Sicht (`sicht`), je einer allein
+    EIN_LAUF: ["bewohner"],
     urteil,
 };

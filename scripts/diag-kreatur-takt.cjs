@@ -10,7 +10,7 @@
 const { statikServer, starteBrowser, CODE_OF_SEITE, nullRenderer, werkbankRuf, teilAus, ROOT: root } = require("./lib/welt-boot.cjs"); // prettier-ignore
 const fs = require("fs");
 const path = require("path");
-const { KREATUR_PROBEN_SRC, PROBEN, TAETER, urteil } = require("./lib/kreatur-proben.cjs");
+const { KREATUR_PROBEN_SRC, PROBEN, TAETER, EIN_LAUF, urteil } = require("./lib/kreatur-proben.cjs");
 
 const PORT = Number(process.env.KREATUR_TAKT_PORT || 4478);
 const argv = process.argv.slice(2);
@@ -187,8 +187,9 @@ async function imFenster(laeufe) {
 
 (async () => {
     if (!gewaehlt.length) throw new Error("keine Probe gewählt — ohne Messung ROT");
-    // je Probe ein Lauf, mit --selftest je Probe jeder ihrer Täter in einem eigenen; das Wort, das ihn nennt, bleibt in Node
-    const [laeufe, nennt] = [[], []];
+    // je Probe ein Lauf, mit --selftest je Täter ein eigener — die Probe mit EINEM Lauf (`EIN_LAUF`) spielt alle ihre Täter
+    // in ihm und gibt je Täter seine Sicht (`sicht`); das Wort, das ihn nennt, bleibt in Node
+    const [laeufe, faelle] = [[], []];
     if (SELBST) {
         const ohne = gewaehlt.filter((p) => !(TAETER[p] && TAETER[p].length));
         if (ohne.length) {
@@ -196,22 +197,23 @@ async function imFenster(laeufe) {
             process.exit(1);
         }
     }
-    for (const p of gewaehlt)
-        for (const [t, re] of SELBST ? TAETER[p] : [[null]]) nennt[laeufe.push({ proben: [p], taeter: t }) - 1] = re;
+    for (const p of gewaehlt) {
+        const [T, ein] = [SELBST ? TAETER[p] : [[null]], SELBST && EIN_LAUF.includes(p)];
+        if (ein) laeufe.push({ proben: [p], taeter: T.map(([t]) => t) });
+        for (const [t, re] of T) faelle.push({ li: ein ? laeufe.length - 1 : laeufe.push({ proben: [p], taeter: t }) - 1, t, re }); // prettier-ignore
+    }
     const t0 = Date.now();
     const { aus, fehler, dauer } = WERKBANK ? await imFenster(laeufe) : await headless(laeufe);
     console.log(
         `\n===== DIE KREATUR-LINSE (gate:kreatur-takt) — ${WERKBANK ? "sichtbares Fenster, echte GPU (Werkbank :" + WERKBANK + ")" : "headless, Null-Renderer"}${SELBST ? " — SELBST-TEST (Täter eingespielt)" : ""} =====\n`
     );
     let rot = 0;
-    aus.forEach((erg, li) => {
-        const {
-            proben: [name],
-            taeter: t,
-        } = laeufe[li];
-        const z = erg[name];
+    for (const { li, t, re } of faelle) {
+        const name = laeufe[li].proben[0];
+        const e = aus[li][name];
+        const z = e && e.sicht ? e.sicht[t] : e;
         const u = urteil(name, z);
-        const gruen = t ? !u.ok && nennt[li].test(u.grund) : u.ok;
+        const gruen = t ? !u.ok && re.test(u.grund) : u.ok;
         if (!gruen) rot++;
         console.log(`  ${u.ok ? "✅" : "❌"} ${name.padEnd(9)}${t ? ` [Täter ${t}]` : ""} ${JSON.stringify(z)}`);
         if (!u.ok) console.log(`       ↳ ${u.grund}`);
@@ -222,10 +224,10 @@ async function imFenster(laeufe) {
                         ? "✅ der Täter macht die Probe ROT und wird beim Namen genannt — die Linse sieht ihn"
                         : u.ok
                           ? "❌ der Täter bleibt unsichtbar — die Linse ist blind"
-                          : `❌ rot, aber nicht aus seinem Grund (${nennt[li]}) — die Linse nennt ihn nicht`
+                          : `❌ rot, aber nicht aus seinem Grund (${re}) — die Linse nennt ihn nicht`
                 }`
             );
-    });
+    }
     if (fehler.length) {
         console.log(`\n  ❌ Seiten-Fehler: ${fehler.slice(0, 3).join(" | ")}`);
         rot++;
@@ -244,7 +246,7 @@ async function imFenster(laeufe) {
     }
     console.log(
         SELBST
-            ? `\n✅ SELBST-TEST GRÜN — jeder Täter macht seine Probe rot und wird beim Namen genannt (${laeufe.length} Täter).`
+            ? `\n✅ SELBST-TEST GRÜN — jeder Täter macht seine Probe rot und wird beim Namen genannt (${faelle.length} Täter).`
             : `\n✅ GRÜN — ${gewaehlt.join(" · ")}`
     );
     process.exit(0);
