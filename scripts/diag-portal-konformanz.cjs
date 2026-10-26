@@ -20,11 +20,12 @@
 //   K7 mitgebracht die Welt zeigt, was der Reisende mitbringt (der enter-Payload der Heimat, `MITGEBRACHT`)
 //   K8 getragen   was der Spieler trägt, reist mit (tore.K3): die Welten des Genesis-Rings betritt der Spieler über ihr Tor —
 //                 mit W durch die Apertur, wo das Tor ein Gesetz trägt (`_tickPortalMembranes` → enterPortal, die Probe taktet
-//                 die Heimat), sonst bis vor das Tor und E —, heim kommt er mit Esc (K5). Der ABDRUCK je Teil (Leib = Seele ·
-//                 Teile einer eigenen Seele · Prägung des Mensch-Rezepts; Inventar = Slots · Hotbar; wield = Haupt-, Neben-Hand,
-//                 Rüstung: kanonisches JSON + FNV-1a, `abdruck`) steht vor dem Tor aus dem Zustand der Heimat, drüben aus dem,
+//                 die Heimat), sonst bis vor das Tor und E —, heim kommt er mit Esc (K5); er reitet dabei das Pferd. Der ABDRUCK
+//                 je Teil (Leib = Seele · Teile einer eigenen Seele · Prägung des Mensch-Rezepts; Inventar = Slots · Hotbar;
+//                 wield = Haupt-, Neben-Hand, Rüstung; Reittier = das gerittene Werk: Art · Gestalt · Glut · Bindung —
+//                 kanonisches JSON + FNV-1a, `abdruck`; ein leerer Teil 0, ein fehlender keiner) steht vor dem Tor aus dem Zustand der Heimat, drüben aus dem,
 //                 was die Hülle der Welt hält (`AnazhHuelle.reisender`), und nach der Heimkehr; ein Teil, dessen Bytes unterwegs
-//                 anders werden, ist rot beim Namen — nie ein ok-Flag der Übergabe. `--aus <datei>` schreibt die Tafel (Station).
+//                 anders werden, ist rot beim Namen — nie ein ok-Flag der Übergabe. Die Zeile `K8 [[welt, weg, vor, drüben, nach, esc], …]` ist die Tafel (Station).
 // Dazu zwei RATSCHEN (spec/vertraege/ratsche.json — Ist darf nur fallen, Soll daneben):
 //   dslEinzelwort  der Spieler tippt EIN Wort in die Konsole (`processChatCommand`, die Heimat schickt die flache Form
 //                  ["w"]): wirkt es sichtbar oder bleibt die Welt stumm?
@@ -159,24 +160,33 @@ async function mitgebrachtPruefen(page, fr, art) {
 // K8 — was der Spieler trägt: die Teile des Abdrucks, die Zeile, mit der die Hülle den Reisenden hält (die Fundstelle des
 // Täters), und der ABDRUCK (in Heimat und Welt derselbe Text): je Teil FNV-1a über das kanonische JSON (Schlüssel sortiert) —
 // `heim` liest den Zustand der Heimat (nie den Bauer der Übergabe), sonst was die Hülle der Welt hält.
-const TEILE = ["leib", "inventar", "wield"];
+const TEILE = ["leib", "inventar", "wield", "reittier"];
 const HALT = 'reisender = m.avatar && typeof m.avatar === "object" ? m.avatar : {};';
+// Das Reittier ist das Werk, auf dem der Spieler sitzt (`mountedArch`): Art, Gestalt (Bauplan, Saat, Maß, Tönung, Prägung),
+// die Glut (der einzige Lebenswert, den ein Werk trägt) und die Bindung. Ein leerer Teil hat den Abdruck 0, ein fehlender keinen.
 function abdruck(heim) {
     const st = heim && window.anazhRealm.state;
     const p = st && st.player;
+    const w = st && st.architectures.find((e) => e.id === p.mountedArch);
     const g = st
         ? {
               leib: { seele: p.soul || "human", teile: (st.customSouls[p.soul || "human"] || {}).bodyParts || null, praegung: st.workshop.studioOv[anazhRealm.constructor.KOERPER_HOST_RECIPE] || null },
               inventar: { slots: p.inventory, hotbar: st.hotbar },
               wield: p.equipped,
+              reittier: w && {
+                  art: w.type,
+                  gestalt: [st.blueprints[w.type].parts, st.blueprints[w.type].connections, w.seed, w.scale, w.tintH, w.tintS, w.tintV, w.studioOv],
+                  leben: w.heatBuildup || 0,
+                  bindung: w.id,
+              },
           }
         : ((AnazhHuelle.reisender && AnazhHuelle.reisender()) || {}).gepaeck || {};
     return Object.fromEntries(
-        ["leib", "inventar", "wield"].map((t) => {
+        Object.entries(g).map(([t, x]) => {
             let h = 0x811c9dc5;
-            for (const c of JSON.stringify(g[t] || null, (k, x) => (x && x.constructor === Object ? Object.fromEntries(Object.entries(x).sort()) : x)))
+            for (const c of JSON.stringify(x || null, (k, x) => (x && x.constructor === Object ? Object.fromEntries(Object.entries(x).sort()) : x)))
                 h = Math.imul(h ^ c.charCodeAt(0), 0x01000193);
-            return [t, h >>> 0];
+            return [t, x ? h >>> 0 : 0];
         })
     );
 }
@@ -218,8 +228,9 @@ const TAETER = {
         ],
         // (d) die Brücke ohne Quellen-Prüfung — eine fremde Seite steuert jede Welt der Hülle (K3 rot, auch am UI-Pfad)
         ["if (ev.source !== eltern) return;\n            var m = ev.data;", "var m = ev.data;"],
-        // (e) die Hülle hält den Reisenden ohne das, was er in der Hand trägt (K8 rot am Teil wield, Leib und Inventar grün)
-        [HALT, HALT + " if (reisender.gepaeck) delete reisender.gepaeck.wield.held;"],
+        // (e) die Hülle hält den Reisenden ohne das, was er in der Hand trägt, und ohne sein Reittier (K8 rot an den Teilen
+        // wield und reittier, Leib und Inventar grün)
+        [HALT, HALT + " if (reisender.gepaeck) delete reisender.gepaeck.wield.held, delete reisender.gepaeck.reittier;"],
         [
             "var dsl = m && Array.isArray(m.dsl) ? m.dsl : null;",
             'var dsl = m && Array.isArray(m.dsl) ? m.dsl.filter(function (w) { return w !== "flut"; }) : null;',
@@ -332,7 +343,7 @@ async function betreten(page, welt) {
             const meta = r.state.blueprints[ob.blueprint].portalMeta;
             // Zähler: was die Welt der Heimat schickt (Quelle = das Portal-iframe) und wie oft die Heimat enter sendet
             // (eine delegierende Zähl-Hülle, nach der Messung entfernt).
-            const k = (window.__k = { typen: {}, n: 0, enters: 0, geladen: 0, t0: performance.now(), ersteReady: null });
+            const k = (window.__k = { typen: {}, enters: 0, geladen: 0 });
             if (window.__kSpy) window.removeEventListener("message", window.__kSpy, true);
             window.__kSpy = (ev) => {
                 const po = r._portalOverlay;
@@ -341,8 +352,6 @@ async function betreten(page, welt) {
                 if (d.__schleuse) return;
                 const t = d.type || (d.__anazhNet ? "net" : "?");
                 k.typen[t] = (k.typen[t] || 0) + 1;
-                k.n++;
-                if (t === "ready" && k.ersteReady === null) k.ersteReady = Math.round(performance.now() - k.t0);
                 if (t === "ready" && Array.isArray(d.dsl) && d.dsl.length) k.readyDsl = true;
             };
             window.addEventListener("message", window.__kSpy, true);
@@ -373,11 +382,11 @@ async function betreten(page, welt) {
     );
     if (!b.weg) return b;
     // W gehalten, die Probe taktet die Heimat (headless taktet sie nicht selbst), bis das Tor aufgeht: durch die Apertur, am
-    // Teile-Tor bis vor es, dort E
+    // Teile-Tor, bis es in der Reichweite der Taste steht (`_tryEnterPortalAtPlayer`), dort E
     await halteBis(page, {
         druck: () => page.evaluate('dispatchEvent(new KeyboardEvent("keydown", { key: "w" })); window.__takt = setInterval(() => anazhRealm._gameLoopTick(performance.now()), 20)'),
         los: () => page.evaluate('clearInterval(__takt); dispatchEvent(new KeyboardEvent("keyup", { key: "w" }))'),
-        ziel: (e) => !!anazhRealm._portalOverlay || (e && anazhRealm.state.playerMesh.position.distanceTo(__tor.position) < 2.5),
+        ziel: (e) => !!anazhRealm._portalOverlay || (e && anazhRealm._findNearestAffordanceEntry("isPortal", AnazhRealm.PORTAL_REACH_M) === __tor),
         args: [b.weg === "E"],
     });
     if (b.weg === "E") await page.evaluate('dispatchEvent(new KeyboardEvent("keydown", { code: "KeyE" }))');
@@ -422,12 +431,9 @@ function seitenHelfer() {
             const k = window.__k;
             return {
                 readys: k.typen.ready || 0,
-                typen: k.typen,
                 enters: k.enters,
                 geladen: k.geladen,
-                ersteReady: k.ersteReady,
                 readyDsl: !!k.readyDsl,
-                offen: !!po,
                 stufe: po ? po.manifestStage : null,
                 label: po ? po.label : null,
                 dsl: po && Array.isArray(po.dsl) ? po.dsl.slice() : null,
@@ -447,10 +453,10 @@ async function rueckHoerer(page, ui) {
     if (!fr) throw new Error("die Schleuse findet keine Welt");
     await fr.evaluate((ui) => {
         if (window.__schleuseHin) return;
-        const lies = () => {
+        const lies = (window.__lies = () => {
             const e = ui && document.querySelector(ui.sel);
             return e ? (ui.feld === "value" ? e.value : (e.textContent || "").trim()) : null;
-        };
+        });
         let frisch = true;
         let vor = null;
         window.__schleuseHin = (ev) => {
@@ -534,16 +540,8 @@ async function zustand(page, welt) {
     const journal = await page.evaluate(() => window.__konformanz.journal());
     let ui = null;
     if (welt.ui) {
-        // der Rahmen der Welt ist der des Rück-Hörers (`hinFrame`, gehängt in der ersten Schleuse je Welt)
-        ui = hinFrame
-            ? await hinFrame
-                  .evaluate((u) => {
-                      const el = document.querySelector(u.sel);
-                      if (!el) return null;
-                      return u.feld === "value" ? el.value : (el.textContent || "").trim();
-                  }, welt.ui)
-                  .catch(() => null)
-            : null;
+        // der Rahmen der Welt ist der des Rück-Hörers (`hinFrame`, gehängt in der ersten Schleuse je Welt), er liest wie er
+        ui = hinFrame ? await hinFrame.evaluate(() => window.__lies()).catch(() => null) : null;
     }
     return { journal, ui };
 }
@@ -657,7 +655,7 @@ async function pruefeWelt(page, welt, lies) {
         aus.notiz.push(...k7.notiz);
     }
     aus.k.K2 = ruhig && z.enters <= 3;
-    aus.handshake = { readys: z.readys, enters: z.enters, ersteReadyMs: z.ersteReady, stufe: z.stufe };
+    aus.handshake = { readys: z.readys, enters: z.enters };
     if (!aus.k.K2)
         aus.notiz.push(
             `Handshake ohne Ende: ${z.enters} enter, ${z.readys} ready${ruhig ? "" : ` (während der letzten Schleuse ${s.enterImFenster} enter)`} in ${Math.round((Date.now() - t0) / 1000)} s`
@@ -689,7 +687,6 @@ async function pruefeWelt(page, welt, lies) {
         const ew = await schleuse(page, "heimat", welt, { chat: welt.wort });
         const nach = await bisWirkung(page, welt, ew.nach, (n) => wirkt(welt, vorEw, n));
         aus.stumm = !wirkt(welt, vorEw, nach);
-        aus.einzelwort = { programm, vor: vorEw, nach };
     }
     // K4: die chain-Form über den echten Weiterleiter der Heimat (bzw. der Ko-Präsenz-Eintritt von der Heimat).
     const s4 = await schleuse(
@@ -723,7 +720,8 @@ async function pruefeWelt(page, welt, lies) {
     // K8 nach der Heimkehr: jeder Teil trägt vor dem Tor, drüben und daheim dieselben Bytes
     if (b.weg) {
         aus.nach = await page.evaluate(abdruck, true);
-        for (const t of TEILE) for (const o of ["drueben", "nach"]) if (aus[o][t] !== vor[t]) aus.notiz.push(`${t} ${o} ${aus[o][t]} statt ${vor[t]}`);
+        // ein Teil mit dem Abdruck 0 vor dem Tor (der Spieler reitet nicht) ist rot: K8 misst nie vakuös
+        for (const t of TEILE) for (const o of ["drueben", "nach"]) if (aus[o][t] !== vor[t] || !vor[t]) aus.notiz.push(`${t} ${o} ${aus[o][t]} statt ${vor[t]}`);
         aus.k.K8 = aus.k.K5 && !aus.notiz.some((n) => TEILE.includes(n.split(" ")[0]));
     }
     const fehler = gpu.map((m) => "GPU: " + m.slice(0, 150));
@@ -759,9 +757,11 @@ async function lauf(welten, taeter) {
             st.materials[M.material] = { builtIn: false, color: M.farbe, label: M.material, tags: {} };
             st.tools.konformanz_feile = { builtIn: false, label: M.werkzeug, opName: "konformanz_op", opClass: "subtractive" };
             // K8: der Ring des Genesis-Orts (headless ruht sein Takt) und was der Spieler trägt — ein Kiesel in der Hand, eine
-            // Laterne in der Neben-Hand, der Brustpanzer, drei Dinge im Inventar, ein Platz der Hotbar, die Gestalt des Körpers
+            // Laterne in der Neben-Hand, der Brustpanzer, drei Dinge im Inventar, ein Platz der Hotbar, die Gestalt des Körpers,
+            // und er sitzt auf dem Pferd (der Spieler-Weg: aufsitzen, reiten, durchs Tor)
             const r = window.anazhRealm;
             r._genesisPortalRing(r._genesisMitte());
+            r.mountArchitecture(r.spawnArchitecture("reittier_holzross", st.playerMesh.position));
             r.equipHeld("kiesel");
             r.equipArmor("ruestung_brustpanzer");
             st.player.equipped.offhand = "laterne_dorf";
@@ -838,8 +838,8 @@ async function selbsttest() {
         ["K1 rot: garage trägt ein manifest.json ohne Soll-Zeile", by.garage && by.garage.k.K1 === false && by.garage.notiz.some((n) => /ohne Soll-Zeile/.test(n)), by.garage ? by.garage.notiz.filter((n) => /Soll-Zeile/.test(n)).join("") : ""],
         ["Soll-Wand rot: ein Manifest im Baum, dessen Welt WELTEN nicht kennt (fluid ohne Zeile)", manifestOhneZeile(WELTEN.filter((w) => w.id !== "fluid")).join() === "fluid", ""],
         [
-            "K8 rot: die Hülle lässt das Gehaltene fallen — jede Ring-Welt nur am Teil wield drüben",
-            ring.length >= 5 && ring.every((e) => e.notiz.filter((n) => TEILE.includes(n.split(" ")[0])).map((n) => n.slice(0, 13)).join() === "wield drueben"),
+            "K8 rot: die Hülle lässt das Gehaltene und das Reittier fallen — jede Ring-Welt nur an den Teilen wield und reittier drüben",
+            ring.length >= 5 && ring.every((e) => e.notiz.filter((n) => TEILE.includes(n.split(" ")[0])).map((n) => n.split(" ", 2).join(" ")).join() === "wield drueben,reittier drueben"),
             ring.map((e) => e.id).join(),
         ],
     ];
