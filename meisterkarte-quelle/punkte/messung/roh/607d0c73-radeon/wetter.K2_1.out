@@ -1,0 +1,59 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\artifacts\profiband\werkzeug\gpu-lauf.sh punkte-radeon C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --naesse --eigen --port 7711 --datei C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\607d0c73-radeon\wetter.K2_1.json
+gpu-lauf: Schloss punkte-radeon nach 1 s
+NÄSSE Selbsttest: 5/5
+[linse-gpu] amd/rdna-3
+[seite] 2026-10-26T20:40:34.872Z navigiert http://127.0.0.1:7710/index.html
+WERKBANK bereit: Steuer 127.0.0.1:7711 · Seite :7710
+{
+ "wiese": {
+  "ort": "wiese",
+  "haus": null,
+  "naesse": 0.909,
+  "innen": {
+   "n": 0,
+   "verhaeltnis": null
+  },
+  "aussen": {
+   "n": 25920,
+   "verhaeltnis": 0.771
+  },
+  "dicht": 1,
+  "glanz": 16,
+  "regen": {
+   "innen": 0,
+   "aussen": 151
+  },
+  "regenbild": 0.644
+ },
+ "dorf": {
+  "ort": "dorf",
+  "haus": "haus_griechisch",
+  "naesse": 0.909,
+  "innen": {
+   "n": 13809,
+   "verhaeltnis": 1
+  },
+  "aussen": {
+   "n": 5949,
+   "verhaeltnis": 0.553
+  },
+  "dicht": 1,
+  "glanz": 16,
+  "regen": {
+   "innen": 0,
+   "aussen": 4
+  },
+  "regenbild": 0.684,
+  "dachBauten": {
+   "n": 2,
+   "trocken": 2,
+   "arten": [
+    "marktstand_dorf"
+   ]
+  }
+ }
+}
+NÄSSE GRUEN
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
