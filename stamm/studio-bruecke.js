@@ -121,6 +121,7 @@ class AnazhRealm_studio_bruecke {
             // Das Budget-Gesetz am Studio-Ausgang (W8) meldet einen Bruch LAUT — nie still.
             if (Array.isArray(m.budgetBruch) && m.budgetBruch.length)
                 this.log("BUDGET-BRUCH " + m.presetId + " L" + m.lod + ": " + JSON.stringify(m.budgetBruch), "ERROR");
+            this._foundryLiefer(f, m.bau ? "werk" : m.platte ? "platte" : "leer");
             const p = f.pending.get(m.reqId);
             if (p) {
                 f.pending.delete(m.reqId);
@@ -143,6 +144,13 @@ class AnazhRealm_studio_bruecke {
         }
         // die Antwort ist das Ereignis der Fristen: die Uhr des nächsten ihres Fadens läuft an (`_foundryUhren`)
         this._foundryUhren(f);
+    }
+    // DIE LIEFER-MARKE (pipeline.K4) am EINEN Weg jedes Körpers: der Auftrag (`_foundryAuftrag`), wie seine Antwort kam
+    // (`_foundryAntwort`: von der Platte · im Werk gebaut — die Schale stempelt `bau` an jeden Studio-Lauf · leer) und der Guss
+    // des Haupt-Fadens (`_ofenBudget`). Der Leser: diag-boot-stage --kalt (die Liefer-Zeile; --zweit urteilt die Stufe 1).
+    _foundryLiefer(f, art) {
+        const L = f && (f.lieferung || (f.lieferung = { auftrag: 0, platte: 0, werk: 0, leer: 0, haupt: 0 }));
+        if (L) L[art]++;
     }
     // DER EINE BLATT-ATLAS (S7, B3a): seine Fracht kommt NACH dem Buch — der Buch-Faden malt, mippt und kodiert ihn, während
     // die Welt schon bestellt (bis B3a war er die Vorbedingung des ganzen Buchs: Radeon kalt 1,81 s Malen + 0,98 s Fracht vor
@@ -717,6 +725,7 @@ class AnazhRealm_studio_bruecke {
             );
         W.postMessage = function (msg, a, b) {
             if (msg && msg.type === "asset" && Array.isArray(msg.meshes)) {
+                msg.bau = true; // das Bau-Ereignis im Werk (die Liefer-Marke): nur ein Studio-Lauf antwortet hier
                 schlank(msg.meshes);
                 const auftrag = schreibAuftrag.get(msg.reqId);
                 if (auftrag !== undefined) {
@@ -771,7 +780,7 @@ class AnazhRealm_studio_bruecke {
             lies(m.platte).then((wert) => {
                 const hit = wert && Array.isArray(wert.meshes) ? wert.meshes : null;
                 if (hit) return antwort(m, hit, true);
-                if (m.nurPlatte) return antwort(m, [], true);
+                if (m.nurPlatte) return antwort(m, [], false);
                 schreibAuftrag.set(m.reqId, { key: m.platte, vorrat: false });
                 studio();
             });
@@ -1067,6 +1076,7 @@ class AnazhRealm_studio_bruecke {
     // älter als FOUNDRY_ALTER_MS, wechselt die Wahl ab (der Älteste, dann der Nächste). Die Request-Nummer entsteht
     // beim SENDEN: die EINE Frist (`_foundryFrist`) bleibt eine Arbeits-Uhr in Worker-Reihenfolge.
     _foundryAuftrag(f, praefix, msg, wo, fristMs, ablaufWort) {
+        if (msg.type === "build-asset") this._foundryLiefer(f, "auftrag");
         return new Promise((resolve) => {
             const q = f.warte || (f.warte = []);
             q.push({ praefix, msg, rang: this._foundryRang(wo), fristMs, ablaufWort, resolve, t: performance.now() });
