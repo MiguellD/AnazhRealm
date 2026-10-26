@@ -65,7 +65,7 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { statikServer, werkbankRuf, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, werkbankRuf, ROOT: root, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -3152,12 +3152,8 @@ async function starte() {
                 }),
                 /NAH-FERN wald 0\/0: der Schuss fern stand nicht still oder wiederholte sich nicht \(Runden 4/
             );
-            console.log(
-                f.length
-                    ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
-                    : "SELBSTTEST GRÜN: das Nah-Fern-Urteil nennt die zwei Farben derselben Stelle beim Namen"
-            );
-            process.exit(f.length ? 1 : 0);
+            selbsttestEnde(f, "das Nah-Fern-Urteil nennt die zwei Farben derselben Stelle beim Namen");
+            process.exit(0);
         }
         o = await rufe("/albedo", { nahFern: true, datei: opt("--datei") });
         if (o && o.zeilen) {
@@ -3297,8 +3293,8 @@ async function starte() {
         const LL = require("./lib/licht-linsen.cjs");
         const ref = JSON.parse(fs.readFileSync(path.join(__dirname, "../spec/farbe/luft-referenz.json"), "utf8"));
         const fehl = LL.luftTiefeSelbsttest(ref);
-        console.log(fehl.length ? "SELBSTTEST ROT: " + fehl.join(" | ") : "SELBSTTEST GRÜN: grauer β, Kante 21 %, Linie und leere Messung beim Namen ROT");
-        if (fehl.length || argv.includes("--selbsttest")) process.exit(fehl.length ? 1 : 0);
+        selbsttestEnde(fehl, "grauer β, Kante 21 %, Linie und leere Messung beim Namen ROT");
+        if (argv.includes("--selbsttest")) process.exit(0);
         const halt = argv.includes("--eigen") ? await eigeneWelt() : null;
         const luft = async (o) =>
             ((a) => a.ergebnis || { fehler: a.fehler || "kein Ergebnis" })(await rufe("/eval", { code: `const kantenLinie = ${LL.kantenLinie}; return await (${LL.luftTiefe})(${JSON.stringify(o)});` }));
@@ -3499,12 +3495,8 @@ async function starte() {
     else if (cmd === "diaet") {
         if (argv.includes("--selbsttest")) {
             const f = DIAET.selbsttest();
-            console.log(
-                f.length
-                    ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
-                    : "SELBSTTEST GRÜN: das Diät-Urteil nennt die Wiederholung im Stand, den Refresh ohne Änderung, die Prüfung ohne Meldung und eine blinde Linse beim Namen"
-            );
-            process.exit(f.length ? 1 : 0);
+            selbsttestEnde(f, "das Diät-Urteil nennt die Wiederholung im Stand, den Refresh ohne Änderung, die Prüfung ohne Meldung und eine blinde Linse beim Namen");
+            process.exit(0);
         }
         o = await rufe("/diaet", {
             frames: a[0],
@@ -3659,11 +3651,11 @@ async function starte() {
     } else if (cmd === "lauf") {
         if (argv.includes("--selbsttest")) {
             const f = [...ZL.zweiGipfelSelbsttest(), ...ZL.belegungSelbsttest(), ...require("./lib/ausgabe-aufnahme.cjs").buehneSelbsttest()];
-            console.log(f.length ? "SELBSTTEST ROT:\n  " + f.join("\n  ") : "SELBSTTEST GRÜN: die Pass-Teilung trennt zwei Gipfel " +
+            selbsttestEnde(f, "die Pass-Teilung trennt zwei Gipfel " +
                 "(rein = der untere, anteilOben genau) und lässt einhöckrige Pässe ganz; die Belegung nennt eine Pflicht-Last je " +
                 "Bild beim Klassen-Namen und lässt vertagbare Zeitgeber im Bild-Fenster GRÜN; die Bühne stellt n Tiere im Ring auf Land, " +
                 "füllt nur auf und bricht ohne Platz laut");
-            process.exit(f.length ? 1 : 0);
+            process.exit(0);
         }
         o = await rufe("/lauf", {
             sek: a[0],
@@ -3689,12 +3681,8 @@ async function starte() {
         const spitze = cmd === "takt";
         if (argv.includes("--selbsttest")) {
             const f = HL.selbsttest();
-            console.log(
-                f.length
-                    ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
-                    : "SELBSTTEST GRÜN: die Hänger-Linse nennt Takt-Last, Neben-Last, Collector, GPU-Warten nach synchronen Pipelines und den Auftrag des GPU-Prozesses beim Namen, die Takt-Marken legen die Stichproben der Spur auf die Takte; die Takt-Spitze nennt eine 3-ms-Last je 10. Takt allein beim Namen und ist ohne Last GRÜN, in Fahrt ein computeVertexNormals im Takt beim Namen und einen stehenden Wagen"
-            );
-            process.exit(f.length ? 1 : 0);
+            selbsttestEnde(f, "die Hänger-Linse nennt Takt-Last, Neben-Last, Collector, GPU-Warten nach synchronen Pipelines und den Auftrag des GPU-Prozesses beim Namen, die Takt-Marken legen die Stichproben der Spur auf die Takte; die Takt-Spitze nennt eine 3-ms-Last je 10. Takt allein beim Namen und ist ohne Last GRÜN, in Fahrt ein computeVertexNormals im Takt beim Namen und einen stehenden Wagen");
+            process.exit(0);
         }
         // `--auswerten <x.roh.json>`: ein gesicherter Lauf neu geurteilt (nur Node — eine andere Schwelle, eine neue Linse)
         if (opt("--auswerten")) {
@@ -3730,9 +3718,8 @@ async function starte() {
     else if (cmd === "gpu-bank") o = await rufe("/gpu-bank", { n: a[0], runden: opt("--runden", 3) });
     else if (cmd === "latenz") {
         if (argv.includes("--selbsttest")) {
-            const f = HL.latenzSelbsttest(); // ohne Welt: das Urteil
-            console.log(`SELBSTTEST ${f.length ? "ROT: " + f.join(" · ") : "GRÜN: das Latenz-Urteil nennt jede fehlende Größe beim Namen"}`);
-            process.exit(f.length ? 1 : 0);
+            selbsttestEnde(HL.latenzSelbsttest(), "das Latenz-Urteil nennt jede fehlende Größe beim Namen"); // ohne Welt: das Urteil
+            process.exit(0);
         }
         // die Verzug-Probe (in der Welt): 3 Bilder Verzug im Eingabe-Pfad sind ROT und heben den Median um mindestens 2 Bilder
         const reihe = { proben: opt("--proben", 50), sichten: opt("--sicht", "ego,third"), verben: opt("--verb", "gehen,wechsel") };
@@ -3780,12 +3767,8 @@ async function starte() {
     } else if (cmd === "shader") {
         if (argv.includes("--selbsttest")) {
             const f = SK.selbsttest();
-            console.log(
-                f.length
-                    ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
-                    : "SELBSTTEST GRÜN: die Shader-Kosten-Linse zählt Orte, Arten, Arbeit, Rauschen und den Stoff-Graph, das Urteil nennt jeden Bruch"
-            );
-            process.exit(f.length ? 1 : 0);
+            selbsttestEnde(f, "die Shader-Kosten-Linse zählt Orte, Arten, Arbeit, Rauschen und den Stoff-Graph, das Urteil nennt jeden Bruch");
+            process.exit(0);
         }
         o = await rufe("/shader", {
             nur: opt("--nur"),

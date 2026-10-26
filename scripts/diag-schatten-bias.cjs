@@ -28,7 +28,7 @@
 //   (der Bias der ganzen Probe: n/d in Texeln der Kaskade) · SB_AKNE_ZEITEN=0.28,0.32 · SB_DEBUG=1
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -230,13 +230,9 @@ if (process.argv.includes("--selftest")) {
     if (urteil(mittag, []).length)
         v.push("ein Schatten unter dem Leib mittags fällt rot (dort ist er kein Befund)");
     taeterFaelle(faelle, (z) => urteil(z, []), { fehler: v, klon: () => kopie(() => {}) });
-    for (const x of v) console.log("  ❌ " + x);
-    if (v.length) {
-        console.log("\n❌ SELBSTTEST ROT");
-        process.exit(1);
-    }
-    console.log(
-        "✅ SELBSTTEST GRÜN — normalBias schreibt nur das Gesetz; ein fester Wert, ein leerer Schatten, eine vakuöse Probe, Akne und eine blinde Akne-Probe fallen rot."
+    selbsttestEnde(
+        v,
+        "normalBias schreibt nur das Gesetz; ein fester Wert, ein leerer Schatten, eine vakuöse Probe, Akne und eine blinde Akne-Probe fallen rot."
     );
     process.exit(0);
 }

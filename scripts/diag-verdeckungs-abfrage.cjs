@@ -194,12 +194,8 @@ function selbsttest() {
         ["Selbsttest fehlt", (o) => delete o.selbst, /SELBSTTEST fehlt/],
         ["Abbruch", (o) => (o.abbruch = "Renderer stand nicht"), /ABBRUCH: Renderer stand nicht/],
     ];
-    const rot = require("./lib/welt-boot.cjs").taeterFaelle(faelle, urteil, { klon: sauber }).length;
-    if (rot) {
-        console.log(`\n❌ SELBSTTEST ROT — ${rot} Fall/Fälle vakuös`);
-        process.exit(1);
-    }
-    console.log(`\n✅ SELBSTTEST GRÜN — ${faelle.length} Fälle: jeder Täter und jede vakuöse Phase beim Namen`);
+    const W = require("./lib/welt-boot.cjs");
+    W.selbsttestEnde(W.taeterFaelle(faelle, urteil, { klon: sauber }), `${faelle.length} Fälle: jeder Täter und jede vakuöse Phase beim Namen`);
     process.exit(0);
 }
 
