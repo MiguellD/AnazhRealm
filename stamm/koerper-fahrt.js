@@ -523,10 +523,8 @@ class AnazhRealm_koerper_fahrt {
             // die mittlere Dichte (kg/m³) reist ins Profil: die Wasserlinie (`_fahrzeugGestalt`, Archimedes) liest sie
             dichte: rhoMittel,
             stoffStand: stand,
-            // DER SITZ FÄHRT NIE (bauen.K5): ein Werk, das nicht fahrbar ist (die Bank, `sitzbar`), trägt den Sitzenden ohne Tempo
-            topSpeedMul: !(entry.affordances && entry.affordances.moveable)
-                ? 0
-                : 1 + Math.min(HE.radCap, radCount * HE.radMul) + (radCount === 0 && beinCount >= 2 ? HE.beinBonus : 0),
+            topSpeedMul:
+                1 + Math.min(HE.radCap, radCount * HE.radMul) + (radCount === 0 && beinCount >= 2 ? HE.beinBonus : 0),
             kAcc: Math.max(HE.kAccMin, Math.min(HE.kAccMax, HE.kAcc / mass)),
             kBrake:
                 radCount > 0
@@ -719,6 +717,8 @@ class AnazhRealm_koerper_fahrt {
     // V18.150 — das Profil des AKTUELL gerittenen Gefährts (der Bewegungs-
     // Loop konsumiert es). _tickMountedMovement cacht den Entry pro Frame
     // (_mountedEntry) — kein zweiter Array-Scan im Bewegungs-Pfad.
+    // DER SITZ FÄHRT NIE (bauen.K5): ein Werk, das nicht fahrbar ist (die Bank, `sitzbar`), trägt den Sitzenden mit Tempo 0 —
+    // hier, am EINEN Ritt-Leser; das Profil selbst bleibt die Emergenz der Substanz (`_vehicleProfile`, jeder andere Leser).
     _mountedVehicleProfile() {
         const archId = this.state.player && this.state.player.mountedArch;
         if (archId === null || archId === undefined) return null;
@@ -726,7 +726,11 @@ class AnazhRealm_koerper_fahrt {
             this._mountedEntry && this._mountedEntry.id === archId
                 ? this._mountedEntry
                 : (this.state.architectures || []).find((e) => e.id === archId);
-        return entry ? this._vehicleProfile(entry) : null;
+        const prof = entry ? this._vehicleProfile(entry) : null;
+        if (!prof || (entry.affordances && entry.affordances.moveable)) return prof;
+        if (!entry._sitzRitt || entry._sitzRitt.prof !== prof)
+            entry._sitzRitt = { prof, ritt: Object.assign({}, prof, { topSpeedMul: 0 }) };
+        return entry._sitzRitt.ritt;
     }
 
     // REITER + GEFÄHRT = EIN KÖRPER: das gerittene Werk ist der Leib des Spielers — seine Blocker blocken weder den Spieler
