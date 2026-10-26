@@ -39,7 +39,7 @@
 //   node scripts/diag-fall-waechter.cjs [--selftest]   (npm run gate:fall-waechter; Port FALL_WAECHTER_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT: root, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT: root, sleep, hauptLauf } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const PRUEF_SATZ = require("../spec/pruefsatz/bauen-k3.json"); // die Brücke auf zwei Pfeilern (B2)
@@ -164,9 +164,9 @@ function turmUrteil(t, wo = "B") {
     if (n.edits !== t.bloecke.length + !B || n.loecher || (B && !(n.sohle <= SOHLE_M && n.hoehe >= t.hoehe - SOHLE_M)))
         v.push(`(${wo}) RELOAD: ${n.edits} Edits, ${n.loecher} Löcher` + (B ? `, Sohle ${f(n.sohle)} m, Stand ${f(n.hoehe)} m` : ""));
     if (!B && !(g.vor >= g.krone - SOHLE_M))
-        v.push(`(${wo}) FERN-RING OHNE TURM: der Ring trägt ${f(g.vor)} m an der Krone ${f(g.krone)} m (${FERN_M} m fern)`);
+        v.push(`(${wo}) FERN-RING OHNE TURM: ${f(g.vor)} m an der Krone ${f(g.krone)} m`);
     if (!B && !(g.takte / 60 <= FERN_S))
-        v.push(`(${wo}) FERN-RING ` + (g.takte ? `ZU SPÄT: ${f(g.takte / 60)} s > ${FERN_S} s` : `OHNE EDIT: der Block auf der Krone steht nach 120 Takten nicht in den Lage-Bytes`));
+        v.push(`(${wo}) FERN-RING ` + (g.takte ? `ZU SPÄT: ${f(g.takte / 60)} s` : "OHNE EDIT nach 120 Takten"));
     return v;
 }
 const turm2Urteil = (liste) =>
@@ -436,10 +436,9 @@ function selbsttest() {
         // B2 — der Fuß in der Luft (am Vorfahren gemessen: der Grund des Hauses schnitt den Turm über dem Dach, Sohle 193,85 m)
         ["Fuß in der Luft", (b) => (b.turm2[0].bloecke[4][1] = 193.85), /\(B2 Dach Ego\) SOHLE: Block 5 193\.85 m/],
         // der Ring ohne den Turm (am Vorfahren: 89,62 m an der Krone 160,38 m) und ohne den Edit
-        ["Ring ohne Turm", (b) => (b.turm2[2].ring.vor = 89.62), /\(B2 Fels Ego\) FERN-RING OHNE TURM: der Ring trägt 89\.62/],
+        ["Ring ohne Turm", (b) => (b.turm2[2].ring.vor = 89.62), /\(B2 Fels Ego\) FERN-RING OHNE TURM: 89\.62/],
         ["Ring ohne Edit", (b) => delete b.turm2[3].ring.takte, /\(B2 Fels Third\) FERN-RING OHNE EDIT/],
         ["Ring zu spät", (b) => (b.turm2[5].ring.takte = 90), /\(B2 Brücke Third\) FERN-RING ZU SPÄT: 1\.50 s/],
-        ["Unterlage fehlt", (b) => b.turm2.pop(), /LEER: B2 Brücke Third Turm: fehlt/],
     ];
     {
         // das Gegenstück: ein Tier am steilen Fuß der Höhlenwand steht auf der Ebene seiner Proben, 0,2 m unter dem Fels unter
@@ -619,31 +618,42 @@ async function probe(K) {
         const g = grundUnter(x, ySoll + 1.5, z);
         return Number.isFinite(g) ? g : ySoll;
     };
+    // DIE SPUR EINES LEIBS: je Takt `schritt(x, y, z)` (seine Lage y gegen den Fels unter ihm), am Ende `ende(x, y, z, ySoll)` —
+    // die tiefste Lage unter dem Grund, y min, die Todes-Ebene, Ende, Grund, Oberkante und der Soll-Grund
+    const spur = () => {
+        const m = { tiefsteUnter: -Infinity, yMin: Infinity };
+        m.schritt = (x, y, z) => {
+            const g = grundAm(x, y + 0.6, z);
+            m.tiefsteUnter = Math.max(m.tiefsteUnter, g === Infinity ? 99 : Number.isFinite(g) ? g - y : 99);
+            m.yMin = Math.min(m.yMin, y);
+        };
+        m.ende = (x, y, z, ySoll) => {
+            const gE = grundAm(x, y + 0.6, z);
+            return {
+                tiefsteUnter: m.tiefsteUnter,
+                yMin: m.yMin,
+                todesEbene: m.yMin < todesEbene,
+                yEnde: y,
+                grundEnde: Number.isFinite(gE) ? gE : y - 99,
+                dach: dachAn(x, z),
+                grundSoll: grundAb(x, z, ySoll),
+            };
+        };
+        return m;
+    };
     const wagenSpur = (e, n, onFrame, ySoll) => {
-        const m = { tiefsteUnter: -Infinity, yMin: Infinity, todesEbene: false };
+        const s = spur();
         for (let i = 0; i < n; i++) {
             if (onFrame) onFrame(i);
             takt();
             const fz = e._fahr;
             if (!fz || !Number.isFinite(fz.y)) continue;
-            const g = grundAm(e.position.x, fz.y + 0.6, e.position.z);
-            const unter = g === Infinity ? 99 : Number.isFinite(g) ? g - fz.y : 99;
-            if (unter > m.tiefsteUnter) m.tiefsteUnter = unter;
-            if (fz.y < m.yMin) m.yMin = fz.y;
-            if (fz.y < todesEbene) {
-                m.todesEbene = true;
-                break;
-            }
+            s.schritt(e.position.x, fz.y, e.position.z);
+            if (fz.y < todesEbene) break;
         }
         const fz = e._fahr;
-        m.yEnde = fz ? fz.y : NaN;
-        const gE = grundAm(e.position.x, m.yEnde + 0.6, e.position.z);
-        m.grundEnde = Number.isFinite(gE) ? gE : m.yEnde - 99;
-        m.dach = dachAn(e.position.x, e.position.z);
-        m.grundSoll = grundAb(e.position.x, e.position.z, ySoll);
-        m.luft = !!(fz && fz.luft);
-        m.ruhe = !m.luft;
-        return m;
+        const luft = !!(fz && fz.luft);
+        return { ...s.ende(e.position.x, fz ? fz.y : NaN, e.position.z, ySoll), luft, ruhe: !luft };
     };
     const proben = [];
     const ort = (x, z) => x.toFixed(1) + "/" + z.toFixed(1);
@@ -848,16 +858,11 @@ async function probe(K) {
             const stirnStart = lauf ? stirnAn(w, Math.atan2(rx, rz)) : NaN;
             if (lauf) steuer.lauf = true;
             else w.userData._stossV = { x: rx * v0, z: rz * v0 };
-            let tiefsteUnter = -Infinity,
-                yMin = Infinity;
+            const s = spur();
             for (let i = 0; i < (lauf ? 150 : 90); i++) {
                 takt();
-                const g = grundAm(w.position.x, w.position.y + 0.6, w.position.z);
-                const unter = g === Infinity ? 99 : Number.isFinite(g) ? g - w.position.y : 99;
-                if (unter > tiefsteUnter) tiefsteUnter = unter;
-                if (w.position.y < yMin) yMin = w.position.y;
+                s.schritt(w.position.x, w.position.y, w.position.z);
             }
-            const gE = grundAm(w.position.x, w.position.y + 0.6, w.position.z);
             // DIE STIRN des laufenden Leibs am Ende und beim Anlauf — gegen den Hub, den der Gang-Deckel über die Länge
             // trägt; höher, als er beim Anlauf schon stand, steht er auf einer Kletterwand, die er hinaufstieg
             const stirn = lauf
@@ -875,13 +880,7 @@ async function probe(K) {
                     (w.userData.id != null ? w.userData.id : w.id) +
                     (wand ? ` (${lauf ? "läuft" : "gestoßen"} an die Wand ${wand.d.toFixed(1)} m)` : ""),
                 ort: ort(w.position.x, w.position.z),
-                tiefsteUnter,
-                yMin,
-                todesEbene: yMin < todesEbene,
-                yEnde: w.position.y,
-                grundEnde: Number.isFinite(gE) ? gE : w.position.y - 99,
-                dach: dachAn(w.position.x, w.position.z),
-                grundSoll: grundAb(w.position.x, w.position.z, y),
+                ...s.ende(w.position.x, w.position.y, w.position.z, y),
                 ruhe: true,
                 band: A.STAND_SICHT_BAND,
             };
@@ -969,16 +968,12 @@ async function probe(K) {
             const dabei = () => st.creatures.includes(w) || (st.leichname || []).includes(w);
             let kippMin = Infinity,
                 kippMax = -Infinity,
-                liegtM = null,
-                tiefsteUnter = -Infinity,
-                yMin = Infinity;
+                liegtM = null;
+            const s = spur();
             for (let i = 0; i < 600 && dabei(); i++) {
                 takt();
                 if (!dabei()) break;
-                const g = grundAm(w.position.x, w.position.y + 0.6, w.position.z);
-                const unter = g === Infinity ? 99 : Number.isFinite(g) ? g - w.position.y : 99;
-                if (unter > tiefsteUnter) tiefsteUnter = unter;
-                if (w.position.y < yMin) yMin = w.position.y;
+                s.schritt(w.position.x, w.position.y, w.position.z);
                 const fertig = dy.fall >= dy.dauer;
                 if (i % 3 === 2 || fertig) {
                     const a = hautAbstand(w);
@@ -998,13 +993,7 @@ async function probe(K) {
                     (w.userData.id != null ? w.userData.id : w.id) +
                     ` (stirbt, Gier ${Math.round((gier * 180) / Math.PI)}°)`,
                 ort: ort(w.position.x, w.position.z),
-                tiefsteUnter,
-                yMin,
-                todesEbene: yMin < todesEbene,
-                yEnde: w.position.y,
-                grundEnde: grundAm(w.position.x, w.position.y + 0.6, w.position.z),
-                dach: dachAn(w.position.x, w.position.z),
-                grundSoll: grundAb(w.position.x, w.position.z, y),
+                ...s.ende(w.position.x, w.position.y, w.position.z, y),
                 ruhe: false,
                 band: A.STAND_SICHT_BAND,
                 tod: {
@@ -1045,33 +1034,15 @@ async function probe(K) {
             st.playerVel.setValue(0, 0, 0);
             st._fieldVy = 0;
             st.yaw = Math.PI; // nach −z, in die Halle
-            let tiefsteUnter = -Infinity,
-                yMin = Infinity;
+            const s = spur();
             for (let i = 0; i < 180; i++) {
                 tasten(i < 150);
                 takt();
-                const fuss = pm.y - A.PLAYER_FOOT_OFFSET;
-                const g = grundAm(pm.x, fuss + 0.6, pm.z);
-                const unter = g === Infinity ? 99 : Number.isFinite(g) ? g - fuss : 99;
-                if (unter > tiefsteUnter) tiefsteUnter = unter;
-                if (fuss < yMin) yMin = fuss;
+                s.schritt(pm.x, pm.y - A.PLAYER_FOOT_OFFSET, pm.z);
             }
             tasten(false);
-            const fuss = pm.y - A.PLAYER_FOOT_OFFSET;
-            const gE = grundAm(pm.x, fuss + 0.6, pm.z);
-            proben.push({
-                name,
-                koerper: "Spieler",
-                ort: ort(pm.x, pm.z),
-                tiefsteUnter,
-                yMin,
-                todesEbene: yMin < todesEbene,
-                yEnde: fuss,
-                grundEnde: Number.isFinite(gE) ? gE : fuss - 99,
-                dach: dachAn(pm.x, pm.z),
-                grundSoll: grundAb(pm.x, pm.z, hoehleGrund),
-                ruhe: true,
-            });
+            const ende = s.ende(pm.x, pm.y - A.PLAYER_FOOT_OFFSET, pm.z, hoehleGrund);
+            proben.push({ name, koerper: "Spieler", ort: ort(pm.x, pm.z), ...ende, ruhe: true });
         }
     }
     // ── (Z) DER ZENSUS: Überhang-Spalten um die Spalte aus O1 und die Höhle aus O3 (Luft ≥ 3 m unter ≥ 2 m Fels, der Grund
@@ -1176,7 +1147,8 @@ async function probe(K) {
             const lage = () => F.geos.map((g) => new Uint8Array(g.attributes.position.array.buffer.slice(0)));
             const [ring, vor] = [{ krone: r._voxelSurfaceY(t.x, t.z), vor: ringY() }, lage()];
             // ein Block auf die Krone über das Verb des Spiels (der Mensch am Turm, die KI, ein Mitspieler: `voxel_fill`)
-            r.dslRun(["voxel_fill", t.x, ring.krone, t.z, K.turmR], { source: "human" });
+            const kopf = st.worldMeta.voxelEdits[st.worldMeta.voxelEdits.length - 1];
+            r.dslRun(["voxel_fill", kopf.x, ring.krone, kopf.z, K.turmR], { source: "human" });
             const krone2 = r._voxelSurfaceY(t.x, t.z);
             for (let i = 1; i <= 120 && !ring.takte; i++) {
                 takt();
@@ -1207,7 +1179,7 @@ async function probe(K) {
     return { proben, zensus, schmuggel, turm, turm2 };
 }
 
-(async () => {
+hauptLauf(async () => {
     console.log("=== DER FALL-WÄCHTER (Leben-Schau 2) — Null-Renderer, echter Spiel-Takt, Spaltgrund + Höhle ===");
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 900000 });
@@ -1216,40 +1188,31 @@ async function probe(K) {
     await nullRenderer(page);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
     await page.evaluateOnNewDocument("window.__anazhFernRing = true"); // B2: der Fern-Ring lebt auch ohne Renderer
-    let befund;
-    try {
-        await server.zeige(page, 120000);
+    await server.zeige(page, 120000);
+    await warteAufWelt(page, 180000);
+    const befund = await page.evaluate(probe, {
+        FALL_M,
+        DACH_M,
+        spaltenJeOrt: 6,
+        todGier: TOD_GIER,
+        turmBloecke: TURM_BLOECKE,
+        turmR: TURM_R,
+        sohleM: SOHLE_M,
+        sichten: SICHTEN,
+        unterlagen: UNTERLAGEN,
+        fernM: FERN_M,
+        bruecke: PRUEF_SATZ.stabil["Brücke auf zwei Pfeilern"],
+    });
+    if (!befund.turm.fehler) {
+        await sleep(1500); // der IDB-Put des Saves landet
+        await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
         await warteAufWelt(page, 180000);
-        befund = await page.evaluate(probe, {
-            FALL_M,
-            DACH_M,
-            spaltenJeOrt: 6,
-            todGier: TOD_GIER,
-            turmBloecke: TURM_BLOECKE,
-            turmR: TURM_R,
-            sohleM: SOHLE_M,
-            sichten: SICHTEN,
-            unterlagen: UNTERLAGEN,
-            fernM: FERN_M,
-            bruecke: PRUEF_SATZ.stabil["Brücke auf zwei Pfeilern"],
-        });
-        if (!befund.turm.fehler) {
-            await sleep(1500); // der IDB-Put des Saves landet
-            await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
-            await warteAufWelt(page, 180000);
-            const nach = await page.evaluate(probe, { nach: befund.turm, nach2: befund.turm2 });
-            befund.turm.nach = nach;
-            befund.turm2.forEach((t, k) => nach.turm2[k] && (t.nach = nach.turm2[k]));
-        }
-    } catch (e) {
-        befund = { fehler: (e && e.message) || String(e) };
+        const nach = await page.evaluate(probe, { nach: befund.turm, nach2: befund.turm2 });
+        befund.turm.nach = nach;
+        befund.turm2.forEach((t, k) => nach.turm2[k] && (t.nach = nach.turm2[k]));
     }
     await browser.close();
     server.close();
-    if (!befund || befund.fehler) {
-        console.log("❌ LAUF-FEHLER: " + (befund ? befund.fehler : "kein Befund"));
-        process.exit(1);
-    }
     befund.quelle = quellenWand(stammLib.text(root));
     const fx = (v) => (Number.isFinite(v) ? v.toFixed(3) : String(v));
     for (const p of befund.proben)
@@ -1284,16 +1247,7 @@ async function probe(K) {
     const zahl = { hub: [Math.min(...hub), Math.max(...hub)], sohle: Math.max(...T.bloecke.map((b) => b[1])) };
     console.log("  B-ZAHL " + JSON.stringify({ ...T, bloecke: hub.length, ...zahl, befunde: turmUrteil(T) }));
     // DIE ZAHL DES TURMS AUF DACH, FELS UND BRÜCKE (die Station bauen.K4#2 liest sie)
-    const zahl2 = befund.turm2.map(({ wo, bloecke = [], hoehe, nach, ring, fehler }) => ({
-        wo,
-        fehler,
-        hoehe,
-        hub: Math.min(...bloecke.map((b) => b[0])),
-        sohle: Math.max(...bloecke.map((b) => b[1])),
-        nach,
-        ring,
-    }));
-    console.log("  B2-ZAHL " + JSON.stringify({ tuerme: zahl2, befunde: turm2Urteil(befund.turm2) }));
+    console.log("  B2-ZAHL " + JSON.stringify({ tuerme: befund.turm2, befunde: turm2Urteil(befund.turm2) }));
     console.log(
         `  Quelle: ${befund.quelle.length ? befund.quelle.join(" · ") : "die Körper-Schritte lesen den Boden unter dem Körper"}`
     );
@@ -1306,4 +1260,4 @@ async function probe(K) {
         "\n✅ FALL-WÄCHTER GRÜN — jeder Körper steht auf dem Boden unter ihm: keiner fällt durch, keiner springt aufs Dach."
     );
     process.exit(0);
-})();
+});

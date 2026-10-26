@@ -3510,6 +3510,7 @@ function fernAuftrag(msg) {
         const flussC = new Float64Array(n);
         const flussSp = new Float64Array(n);
         const teile = new Float32Array(n * 8).fill(NaN);
+        const krone = new Float64Array(n);
         const fl = { spiegel: NaN };
         const fuss = { ax: msg.ax, az: msg.az, ht: 0, hr: 0 };
         const deck = msg.deckZoneRad;
@@ -3520,6 +3521,8 @@ function fernAuftrag(msg) {
             let L = G.hoehe(state, x, z, false, aus);
             const s = fernSchuttVon(aus);
             const zone = msg.zone[k] === 1;
+            // die Krone der Füll-Edits in der Masche hebt das Gesetz; der Ring legt sie auch über Naht und Feld (`_fernRingY`)
+            krone[k] = fernKrone(msg.ax, msg.az, msg.rad[k], msg.ang[k], msg.ht[k], msg.q[k], kronen);
             if (zone) {
                 const V = G.hoehe(state, x, z, true);
                 voll[k] = V;
@@ -3529,8 +3532,7 @@ function fernAuftrag(msg) {
                     L = L + (V - L) * w - 0.3 * w;
                 }
             }
-            L = Math.max(L, fernKrone(msg.ax, msg.az, msg.rad[k], msg.ang[k], msg.ht[k], msg.q[k], kronen));
-            law[k] = L;
+            law[k] = L = Math.max(L, krone[k]);
             schutt[k] = s;
             const wet = fernNass(x, z, L, wl, nass);
             nassY[k] = nass.y;
@@ -3542,7 +3544,7 @@ function fernAuftrag(msg) {
             if (wet && !zone) continue;
             teile.set(fernRingTeile(x, z, L, fuss, s, msg.memo | 0), k * 8);
         }
-        const antwort = { law, voll, schutt, nassY, spiegel, flussC, flussSp, teile };
+        const antwort = { law, voll, schutt, nassY, spiegel, flussC, flussSp, teile, krone };
         return { antwort, transfer: Object.values(antwort).map((a) => a.buffer) };
     }
     if (msg.art === "feld") {

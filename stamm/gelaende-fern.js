@@ -439,6 +439,7 @@ class AnazhRealm_gelaende_fern {
             flussC: new Float64Array(off),
             flussSp: new Float64Array(off),
             teile: new Float32Array(off * 8).fill(NaN),
+            krone: new Float64Array(off).fill(-Infinity), // die Krone der Füll-Edits in der Masche (`fernKrone`, bauen.K4)
             nass: new Uint8Array(off), // je Punkt: trägt der Boden dort Wasser
             // die Bestellung: der nächste Index (`auftrag`), die Scheiben im Flug, die Antworten vor dem Einhängen
             auftrag: 0,
@@ -889,6 +890,8 @@ class AnazhRealm_gelaende_fern {
         const rand = fr.teilung.randV;
         let law = p.s === 0 && rand && rand[p.li] ? fr.feldY[g] : NaN; // die Ecke eines Naht-Dreiecks: das Feld
         if (!(law === law) && this._fernRingNaht(fr, p)) law = fr.vollY[g];
+        // DIE KRONE DER MASCHE (bauen.K4): Feld und volles Gesetz messen die Ecke, ein Turm in ihrer Masche steht über beiden
+        if (law === law) law = Math.max(law, fr.krone[g]);
         const aus = nass || this._fernRingNass || (this._fernRingNass = { y: 0, spiegel: 0 });
         let wet;
         if (law === law) wet = this._fernNass(p.x, p.z, law, wl, aus);
@@ -1248,7 +1251,10 @@ class AnazhRealm_gelaende_fern {
             fr.auftrag = von + n;
             fr.flug++;
             const gen = fr.gen | 0;
-            this._fernRingBestellen(fr, Int32Array.from({ length: n }, (_, k) => von + k))
+            this._fernRingBestellen(
+                fr,
+                Int32Array.from({ length: n }, (_, k) => von + k)
+            )
                 .then((antwort) => {
                     if (this.state.fernRing !== fr || (fr.gen | 0) !== gen) return; // überholt (Re-Anker/Dispose)
                     fr.flug--;
@@ -1357,7 +1363,7 @@ class AnazhRealm_gelaende_fern {
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         const bewegt = [[], [], []];
         const setze = (g, a, k) => {
-            for (const f of ["law", "schutt", "nassY", "spiegel", "flussC", "flussSp"]) fr[f][g] = a[f][k];
+            for (const f of ["law", "schutt", "nassY", "spiegel", "flussC", "flussSp", "krone"]) fr[f][g] = a[f][k];
             fr.teile.set(a.teile.subarray(k * 8, k * 8 + 8), g * 8);
             const v = a.voll[k];
             if (v === v) fr.vollY[g] = v;
