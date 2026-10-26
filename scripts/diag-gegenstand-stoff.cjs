@@ -27,7 +27,7 @@
 //            Gras: die Wiese am Ufer) verdoppelt sich
 //   albedo   OFFEN: die Luma braucht das Ausgabe-Bild der echten GPU, headless zählt sie nie
 //   klang    die Frequenz der Klang-Spalte × 2: der Spektral-Schwerpunkt des Schritts (die Stimme des Wirts im
-//            OfflineAudioContext) auf dem Stoff steigt (das Wasser: watend am Ufer)
+//            OfflineAudioContext, das Mittel aus 8 Tritten) auf dem Stoff steigt (das Wasser: watend am Ufer)
 //   tZuend   T_zünd − 100 K: der Stoff im Brennpunkt einer Linse (`_tickFocusingAffordances`) fängt früher Feuer
 //   tSchmelz T_schmelz − 100 K: der See gefriert im Winter nicht (`_eisAt`)
 //   c        c × ½: der Stoff im Brennpunkt ist nach 2 s wärmer; das Wasser folgt der Luft schneller, der See trägt im Herbst
@@ -286,15 +286,30 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
         ],
         klang: [
             (z) => (z.klang = { ...z.klang, freq: z.klang.freq * 2 }),
+            // je Tritt EIN Rausch-Burst (`_playSchrittOneShot`, Math.random): sein Schwerpunkt streut (Erde 241–406 Hz in 400 Tritten,
+            // ein Paar über 1,4 in 3 von 800 — die Sabotage maß grün), gemessen wird das Mittel aus 8 Tritten, je einer im eigenen Kontext
             async (X) => {
                 const sym = st.symphony;
                 const alt = { ...sym };
-                const ctx = new OfflineAudioContext(1, 24000, 48000);
-                Object.assign(sym, { enabled: true, ctx, masterGain: ctx.destination });
-                const tritt = (x, z, y) => (setz(x, z, y), r._schrittKlangTick({ walkPhase: 0 }, 0, false, pm), r._schrittKlangEreignis(pm, false, 0));
-                await (X === "wasser" ? tritt(watX, UZ) : boden(X, tritt));
-                Object.assign(sym, alt);
-                return window.__klangCore.schwerpunkt((await ctx.startRendering()).getChannelData(0), 48000);
+                const ctxe = [];
+                const tritte = (x, z, y) => {
+                    for (let i = 0; i < 8; i++) {
+                        const ctx = new OfflineAudioContext(1, 24000, 48000);
+                        ctxe.push(ctx);
+                        Object.assign(sym, { enabled: true, ctx, masterGain: ctx.destination });
+                        setz(x, z, y);
+                        r._schrittKlangTick({ walkPhase: 0 }, 0, false, pm);
+                        r._schrittKlangEreignis(pm, false, 0);
+                    }
+                };
+                try {
+                    await (X === "wasser" ? tritte(watX, UZ) : boden(X, tritte));
+                } finally {
+                    Object.assign(sym, alt);
+                }
+                let summe = 0;
+                for (const ctx of ctxe) summe += window.__klangCore.schwerpunkt((await ctx.startRendering()).getChannelData(0), 48000);
+                return summe / ctxe.length;
             },
             (X, v, n) => n / v > 1.4,
         ],
