@@ -1,0 +1,17 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-persistence.cjs --weg
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1702,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1703,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1701,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1709,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] chinesisch L2: [{"feld":"tris","ist":7288,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] japanisch L2: [{"feld":"tris","ist":7404,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] japanisch L2: [{"feld":"tris","ist":7502,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1704,"soll":1700}]
+
+=== Persistenz-Härtung (Tab-Tod, Lade-Pfad, save-server, Weg) ===
+  ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 2.6 kB, Platte 5.1 kB, am stärksten worldMeta.settlementCells 3.6 kB · gesamt roh 60.6 kB, Platte 121.2 kB · Leben worldJournal 28.4 kB, dslHistory 19.5 kB, dslAbilities 7.9 kB, knowledgeBase 3.1 kB, dslPatternMemory 0.0 kB, creatures -0.9 kB
+  ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1156.9 kB, Platte 2313.7 kB, am stärksten wegSpur 1156.9 kB · gesamt roh 1156.9 kB, Platte 2313.7 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worldJournal 0.0 kB
+  ✅ (D) jeder Stand des Speicher-Fadens ist die volle Serialisierung: gleich · gleich · gleich · gleich
+
+3/3 Persistenz-Invarianten OK.
+✅ Die Welt überlebt Tod und korrupten Write — kein stiller Datenverlust.

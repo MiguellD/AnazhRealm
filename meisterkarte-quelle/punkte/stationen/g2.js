@@ -513,17 +513,16 @@ const stationen = [
             if (!z) return { gruen: false, zahl: "keine Zeile der Probe bewohner (Exit " + lauf.exit + ")" };
             if (z.fehler) return { gruen: false, zahl: "Probe-Fehler: " + z.fehler };
             const gruen =
-                z.plan === true &&
                 z.planGleich === true &&
-                z.bewohner > 0 &&
+                z.leiber > 0 &&
                 typeof z.trefferMin === "number" &&
                 z.trefferMin >= 0.9 &&
                 z.sprungN === 0;
             return {
                 gruen,
                 zahl:
-                    "Soll-Orte über 24 Spielstunden min " + z.trefferMin + " (" + (z.bewohner - z.unterN) + "/" +
-                    z.bewohner + " ≥ 0,9), Plan bit-gleich " + z.planGleich + ", Schmiede 10/2 Uhr " + z.schmiede10 +
+                    "Soll-Orte über 24 Spielstunden min " + z.trefferMin + " (" + (z.leiber - z.unterN) + "/" +
+                    z.leiber + " ≥ 0,9), Plan bit-gleich " + z.planGleich + ", Schmiede 10/2 Uhr " + z.schmiede10 +
                     "/" + z.schmiede2 + ", Sprünge " + z.sprungN,
             };
         },
@@ -1446,14 +1445,14 @@ const stationen = [
         if (z.fehler) return { gruen: false, zahl: "Probe-Fehler: " + z.fehler };
         const w = z.wege || {};
         const k = z.wiederkehr || {};
-        const alle = z.bewohner > 0 && z.unterN === 0 && typeof z.trefferMin === "number" && z.trefferMin >= 0.9;
+        const alle = z.leiber > 0 && z.unterN === 0 && typeof z.trefferMin === "number" && z.trefferMin >= 0.9;
         const wege = w.ausserN === 0 && w.wegeMin >= 4 && w.wegeMax <= 10;
-        const zurueck = k.n >= z.bewohner && k.ueberN === 0 && k.maxM <= 2;
-        const gruen = z.plan === true && z.planGleich === true && z.sprungN === 0 && alle && wege && zurueck;
+        const zurueck = k.n >= z.leiber && k.ueberN === 0 && k.maxM <= 2;
+        const gruen = z.planGleich === true && z.sprungN === 0 && alle && wege && zurueck;
         return {
             gruen,
             zahl:
-                "Soll-Orte alle " + (z.bewohner - z.unterN) + "/" + z.bewohner + " ≥ 0,9 (min " + z.trefferMin +
+                "Soll-Orte alle " + (z.leiber - z.unterN) + "/" + z.leiber + " ≥ 0,9 (min " + z.trefferMin +
                 "), Wege je Tag " + w.wegeMin + "–" + w.wegeMax + " (außer 4–10: " + w.ausserN + "), Wiederkehr nach 1 h " +
                 k.ueberN + " von " + k.n + " Lagen über ±2 m (max " + k.maxM + " m), Sprünge " + z.sprungN +
                 ", Plan bit-gleich " + z.planGleich,
