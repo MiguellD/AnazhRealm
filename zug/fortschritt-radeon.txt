@@ -239,3 +239,4 @@
 2026-10-26 08:42:53 takt5-radeon material.K3#1 GRÜN 1.6 · 16/43
 2026-10-26 08:45:02 takt5-radeon material.K1#1 GRÜN 2.1 · 17/43
 2026-10-26 08:45:08 takt5-radeon material.K1#2 GRÜN 2.1 · 18/43
+2026-10-26 08:45:55 takt5-radeon schatten.K1#1 GRÜN 0.9 · 19/43
