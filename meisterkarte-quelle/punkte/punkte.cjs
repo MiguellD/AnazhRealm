@@ -7,7 +7,7 @@
 //        --offen: nur die Stationen ohne frische Messung am SHA (das Frische-Urteil der Buchung) · --trocken: nur nennen
 //        Zwillinge (gleicher Befehl und Umgebung) fahren EINMAL; headless bis zu 3 Bahnen in eigenen Bäumen (--bahnen N)
 //   node punkte.cjs buchen --kopf <sha>
-//        liest alle messung/*.json, urteilt R6 (Pfad unberührt seit der Messung) und R10, schreibt stand.json
+//        liest alle messung/*.json, urteilt R6 (Konsum, sonst Pfad, unberührt seit der Messung) und R10, schreibt stand.json
 //   node punkte.cjs liste [--kopf <sha>]   die registrierten Stationen, geprüft gegen src/gN.js und jeder pfad-Glob gegen den
 //        Kopf (sonst origin/main des Spiel-Klons)
 //   node punkte.cjs gtx-nutzen --kopf <sha>   die GTX-Stationen, deren Messung am Kopf Punkte ändern kann (nur=… für die OMEN)
