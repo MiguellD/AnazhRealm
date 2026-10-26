@@ -1,7 +1,7 @@
 // Stationen der Gruppe V (src/g5.js) — Welten und Wege. Format und Regeln: punkte/punkte.cjs (Kopf).
 // Erfasst: jedes Kriterium mit Punkten > 0 (fahrzeug.K3/K4, siedlung.K1, leib.K1/K4, halten.K1/K2), die Messschuld M36
 // (siedlung.K5) und was ein Zweig im Stau kippen soll (stadt-erwachen-2 siedlung.K5, halten-gesetz halten.K1/K3, halten-k5 halten.K5,
-// teilen-sicher ultiversum.K5, gamepad-verben leib.K5, leib-k2-fuss leib.K2, sk2-zipf siedlung.K2 Staffel 2; tore-k5-zweit tore.K5 Staffel 1; tore.K5 Staffel 2 steht in fehlt). Was sich nicht als Station fassen lässt, steht in
+// teilen-sicher ultiversum.K5, gamepad-verben leib.K5, leib-k2-fuss leib.K2, sk2-zipf siedlung.K2 Staffel 2, hk2-klang halten.K2 Staffel 2; tore-k5-zweit tore.K5 Staffel 1; tore.K5 Staffel 2 steht in fehlt). Was sich nicht als Station fassen lässt, steht in
 // `module.exports.fehlt` (befehl null, grund) — außerhalb der Liste, damit `run` der anderen Gruppen nicht an ihr bricht.
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
@@ -872,6 +872,44 @@ const stationen = [
         pfad: LATENZ,
         quelle: "1 = Eingabe → erstes Schwung-Bild ≤ 50 ms und Hit-Stop sichtbar im Ausgabe-Bild an einem Gerät",
     },
+    {
+        kriterium: "halten.K2",
+        staffel: 2,
+        geraet: "headless",
+        // gate:kampf-gefuehl Q11 halten.K2 (hk2-klang): je Stoff-Paar EIN Klick über den echten Dispatcher — Langschwert an Eiche
+        // (Stahl/Holz) und Fels (Stahl/Stein), Keule am Hirsch (Holz/Fell, die Zeile fleisch) —, in Ego und Third; der Master-Bus
+        // der Symphonie liegt für den Klick an einem OfflineAudioContext: Schwerpunkt (klang `schwerpunkt`), Pegel, Latenz
+        // Treffer → Ton, die Funken der Marke `_trefferPaar`. GRÜN: die Stoffe des Gesetzes, Pegel > −60 dB binnen 5 ms, Funken
+        // genau bei Stahl auf Stein, Third = Ego, je zwei Paare ≥ 300 Hz auseinander, und der Selbsttest S19 (alle Paare gleich)
+        // feuert. Der Klang rechnet ohne GPU (Web Audio auf der CPU, deterministisch) — headless urteilt für beide Geräte.
+        // An hk2-klang d7cb5c9b (headless, Ego = Third): stahl/holz 954 Hz −37 dB · stahl/stein 2179 Hz −34 dB, 24 Funken ·
+        // holz/fleisch 192 Hz −49 dB, Latenz 0 ms, S19 feuert; dieselbe Linse an main b2c6c627 ROT (Abbau stumm 0 Hz, der Hirsch
+        // 304 Hz nach seinem Spawn-Rumpf, kein Paar, keine Funken).
+        befehl: ["node", "scripts/diag-kampf-gefuehl.cjs"],
+        env: { KAMPF_GEFUEHL_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const l = String(lauf.stdout || "").split(/\r?\n/);
+            const q = l.find((x) => /^\s*(✅|❌) Q11 halten\.K2 Staffel 2/.test(x));
+            const s19 = l.find((x) => /^\s*(✅|❌) SELBST-TEST \(S19\)/.test(x));
+            if (!q) return { gruen: false, zahl: "keine Zeile Q11 halten.K2 (Exit " + lauf.exit + ")" };
+            const m = /am Bus (\{.*\})(?: — ROT (.*))?$/.exec(q);
+            let P = null;
+            try {
+                P = m && JSON.parse(m[1]);
+            } catch (_e) {
+                P = null;
+            }
+            const je = P ? Object.entries(P).map(([k, [e]]) => k + " " + e.hz + " Hz " + e.db + " dB Funken " + e.funken + " Latenz " + e.ms + " ms") : ["keine Messung"];
+            return {
+                gruen: /✅/.test(q) && !!s19 && /✅/.test(s19),
+                zahl: je.join(" · ") + (m && m[2] ? " — ROT " + m[2].slice(0, 200) : "") + " · S19 " + (s19 && /✅/.test(s19) ? "feuert" : "stumm"),
+            };
+        },
+        pfad: [...KAMPF, "klang-core.js", "stamm/klang.js", "stamm/bau-vorlagen.js", "stamm/dirigent-takt.js"],
+        quelle: "2 = Klang und Funken aus dem Stoff-Paar (Spektrum je Paar verschieden), Ego und Third, beide Geräte",
+    },
 
     // ───────── halten.K3 — das Werkzeug wirkt nach seiner Form (halten-gesetz) ─────────
     {
@@ -1286,9 +1324,5 @@ module.exports.fehlt = [
     {
         kriterium: "halten.K1", staffel: 2, befehl: null,
         grund: "Q11 mutiert MAT (rho, sigY) und misst den Treffer headless; dass dieselbe Mutation das Labor-Werk ändert, und der Treffer im Bild beider Geräte, misst keine Linse",
-    },
-    {
-        kriterium: "halten.K2", staffel: 2, befehl: null,
-        grund: "kein Klang-Abgriff je Stoff-Paar (Stahl/Holz, Stahl/Stein, Holz/Fell) und keine Funken-Probe; latenz zählt nur den Hit-Stop",
     },
 ];
