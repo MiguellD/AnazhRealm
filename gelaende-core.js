@@ -5227,12 +5227,13 @@
     // floor((x − R)/span) − 1 … floor((x + R)/span) + 1, R = `editReich`), in Setz-Reihenfolge; der KERN ohne Rand dient der
     // Punkt-Probe. Ein Leser fragt nur seinen Chunk, die Summe bleibt Bit für Bit die der ganzen Liste. Identität und Länge der
     // Liste halten die Karte `k` frisch (ein Push wird nachgetragen, ein Tausch oder Kürzen baut neu); `gen` (optional) zieht je
-    // Edit eine Generation, die jeder berührte Chunk trägt (der Stale-Filter des Stamms).
+    // Edit eine Generation, die jeder berührte Chunk trägt (der Stale-Filter des Stamms). `am*` merkt den letzten
+    // Chunk der Punkt-Probe (`editsAm`).
     const KEINE_EDITS = Object.freeze([]);
     const editKarteSchluessel = (cx, cz) => (cx + 32768) * 65536 + (cz + 32768);
     function editKarte(k, edits, span, gen) {
         if (!k || k.edits !== edits || k.n > (edits ? edits.length : 0))
-            k = { edits, n: 0, span, je: new Map(), kern: new Map(), gen: new Map() };
+            k = { edits, n: 0, span, je: new Map(), kern: new Map(), gen: new Map(), amX: NaN, amZ: NaN, amN: -1 };
         while (edits && k.n < edits.length) {
             const ed = edits[k.n++];
             if (!ed || !Number.isFinite(ed.x) || !Number.isFinite(ed.z)) continue;
@@ -5259,13 +5260,29 @@
         }
         return k;
     }
+    // DIE KARTE STEHT (ek-schleife, Lehre 25): dieselbe Liste und kein neuer Edit — `editKarte` trüge nichts nach.
+    // Ein Leser, der die Karte je Probe frisch hält, fragt zuerst dies und zahlt zwei Vergleiche statt seiner Argumente
+    // (der Stamm baute je Dichte-Probe das Chunk-Maß: im Fall-Wächter 60 Mio. Proben, der Edit-Weg 48 % der Feld-Dichte).
+    function editKarteSteht(k, edits) {
+        return !!k && k.edits === edits && k.n === (edits ? edits.length : 0);
+    }
     // die Edits, die den Chunk (cx, cz) samt einem Chunk Rand berühren können (leer ohne)
     function editsNah(k, cx, cz) {
         return k.je.get(editKarteSchluessel(cx, cz)) || KEINE_EDITS;
     }
-    // die Edits, deren Kasten den Chunk des Punkts (x, z) berührt (undefined ohne)
+    // die Edits, deren Kasten den Chunk des Punkts (x, z) berührt (undefined ohne). DER LETZTE CHUNK bleibt gemerkt
+    // (ek-schleife): eine Spalten-Probe fragt je Höhe denselben Chunk — dieselbe Liste ohne Schlüssel und Map; ein
+    // Nachtrag (`n`) verwirft ihn, ein Neubau ist eine neue Karte.
     function editsAm(k, x, z) {
-        return k.kern.get(editKarteSchluessel(Math.floor(x / k.span), Math.floor(z / k.span)));
+        const cx = Math.floor(x / k.span);
+        const cz = Math.floor(z / k.span);
+        if (cx !== k.amX || cz !== k.amZ || k.amN !== k.n) {
+            k.amX = cx;
+            k.amZ = cz;
+            k.amN = k.n;
+            k.am = k.kern.get(editKarteSchluessel(cx, cz));
+        }
+        return k.am;
     }
     // die Edits, die den waagrechten Kasten [x0, x1] × [z0, z1] berühren können: liegt er (mit 1 m Rand) im 3×3 um den Chunk
     // seiner Mitte, dessen Eintrag (jedes Chunk-Gitter samt Pad), sonst die ganze Liste
@@ -5617,6 +5634,7 @@
         dichteGitter: dichteGitter,
         gitterMitEdits: gitterMitEdits,
         editKarte: editKarte,
+        editKarteSteht: editKarteSteht,
         editsNah: editsNah,
         editsAm: editsAm,
         editsImKasten: editsImKasten,

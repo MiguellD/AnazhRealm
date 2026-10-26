@@ -1018,7 +1018,7 @@ Gitters `bandOben`/`bandUnten`, das die Edits deckt (`bandUmEdits`); Stamm und v
 DIE 3D-DICHTE UND DER WASSER-SPIEGEL (gelaende-k1k4): die Region einer Stelle `hydroRegion`, der Kanal `flussKanal`, das
 See-Becken `seeBecken` und ihre Form im Gelände `gewaesserForm`; die Dichte `dichte` aus dem Spalten-Kontext `dichteSpalte` und
 der Basis `dichteBasis`, ihr Gitter `dichteGitter` und `gitterMitEdits`; die Edit-Karte je Chunk `editKarte` mit `editsNah`,
-`editsAm`, `editsImKasten`; der Spiegel des Körpers `wasserSpiegel`, des Atlas `atlasSpiegel`, des Flusses `flussAm`, quer über
+`editsAm`, `editsImKasten` und ihr Stand `editKarteSteht` (die Probe fragt die stehende Karte für zwei Vergleiche); der Spiegel des Körpers `wasserSpiegel`, des Atlas `atlasSpiegel`, des Flusses `flussAm`, quer über
 die Krone `spiegelQuer`, am Rand `flussRand` und im Schnitt `schnittSpiegel` — Stamm-Leser und Worker-Feld rufen sie, die
 Kern-Probe (`gate:worker-dichte --kern`) mutiert sie.
 DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.

@@ -493,10 +493,15 @@ async function probe(K) {
     const r = window.anazhRealm;
     const st = r.state;
     const A = r.constructor;
-    let tMs = performance.now();
-    const takt = () => {
+    let [tMs, tN] = [performance.now(), 0];
+    // DER ATEM (ek-schleife): je 10 Takte gibt der Takt den Haupt-Faden frei (`await takt()`), wie das Spiel je Bild —
+    // Leerlauf (die Tod-Lage), Faden-Antworten und der Puls der Stall-Akte laufen dazwischen. Ohne ihn rechnete O3 (acht
+    // Tode in der Höhle) 9,0 s am Stück, unter der Last der Station 25,8 s — die Akte nannte den Takt darin
+    // (`editKarte`), der längste Spiel-Takt hielt 325 ms.
+    const takt = async () => {
         tMs += 1000 / 60;
         r._gameLoopTick(tMs);
+        if (++tN % 10 === 0) await sleep();
     };
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints.fahrzeug_gt);
@@ -509,7 +514,7 @@ async function probe(K) {
     if (K.nach) {
         // B nach dem Reload: die Füll-Edits des Turms, ihre Hülle (0,5 m innen Fels, 0,6 m außen Luft), Sohle und Stand
         await window.__weltStehtNach(takt);
-        for (let i = 0; i < 120; i++) takt();
+        for (let i = 0; i < 120; i++) await takt();
         const huelle = (t) => {
             const edits = st.worldMeta.voxelEdits.filter(
                 (e) => e.mode === "fill" && Math.hypot(e.x - t.x, e.z - t.z) < e.r
@@ -618,7 +623,7 @@ async function probe(K) {
         const [s, jeTakt] = [spur(), (vor && vor(e)) || (() => {})];
         for (let i = 0; i < n && !(e._fahr && e._fahr.y < todesEbene); i++) {
             jeTakt(i);
-            takt();
+            await takt();
             if (e._fahr && Number.isFinite(e._fahr.y)) s.schritt(e.position.x, e._fahr.y, e.position.z);
         }
         tasten(false);
@@ -665,8 +670,7 @@ async function probe(K) {
                 cv.dispatchEvent(new MouseEvent(art, { button: 2, bubbles: true }));
             let s = 0;
             for (let i = 0; i < 120; i++) {
-                takt();
-                if (i % 10 === 9) await sleep();
+                await takt();
                 if (st._fieldWasGrounded === true || i === 119) s = Math.max(s, sohle());
             }
             turm.bloecke.push([st.playerMesh.position.y - vor, s]);
@@ -820,12 +824,12 @@ async function probe(K) {
         const [rx, rz, lauf, steuer] = [wand ? wand.dx : 1, wand ? wand.dz : 0, art === "lauf", { lauf: false }];
         const schritt = (sw) => (steuer.lauf ? ([sw.gier, sw.v] = [Math.atan2(rx, rz), 2]) : (sw.v = 0));
         return wolf(x, z, y, schritt, async (w, s) => {
-            for (let i = 0; i < 20; i++) takt();
+            for (let i = 0; i < 20; i++) await takt();
             const [v0, stirnStart] = [wand ? 6 : 3, lauf ? stirnAn(w, Math.atan2(rx, rz)) : NaN];
             if (lauf) steuer.lauf = true;
             else w.userData._stossV = { x: rx * v0, z: rz * v0 };
             for (let i = 0; i < (lauf ? 150 : 90); i++) {
-                takt();
+                await takt();
                 s.schritt(w.position.x, w.position.y, w.position.z);
             }
             // DIE STIRN des laufenden Leibs am Ende und beim Anlauf — gegen den Hub, den der Gang-Deckel über die Länge
@@ -855,7 +859,7 @@ async function probe(K) {
             async (w, s) => {
                 w.rotation.y = gier;
                 w.userData._steuer = { gier, v: 0 };
-                for (let i = 0; i < 30; i++) takt();
+                for (let i = 0; i < 30; i++) await takt();
                 const stehtM = hautAbstand(w);
                 r.damageCreature(w, 1e6, {});
                 const dy = w.userData.dying;
@@ -864,7 +868,7 @@ async function probe(K) {
                 const dabei = () => st.creatures.includes(w) || (st.leichname || []).includes(w);
                 let [kippMin, kippMax, liegtM] = [Infinity, -Infinity, null];
                 for (let i = 0; i < 600 && dabei(); i++) {
-                    takt();
+                    await takt();
                     if (!dabei()) break;
                     s.schritt(w.position.x, w.position.y, w.position.z);
                     const fertig = dy.fall >= dy.dauer;
@@ -898,7 +902,7 @@ async function probe(K) {
             ))
         )
             break;
-    await inHoehle("O3 Spieler in der Höhle", () => {
+    await inHoehle("O3 Spieler in der Höhle", async () => {
         absteigen();
         const pm = st.playerMesh.position;
         pm.set(H.x, hoehleGrund + A.PLAYER_FOOT_OFFSET + 0.05, H.z);
@@ -908,7 +912,7 @@ async function probe(K) {
         const s = spur();
         for (let i = 0; i < 180; i++) {
             tasten(i < 150);
-            takt();
+            await takt();
             s.schritt(pm.x, pm.y - A.PLAYER_FOOT_OFFSET, pm.z);
         }
         tasten(false);

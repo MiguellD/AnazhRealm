@@ -640,7 +640,17 @@ async function kernLesen(page, plan) {
         const fehlt = ["dichte", "editKarte", "editsAm", "wasserSpiegel", "atlasSpiegel", "flussAm"].filter((f) => !K[f]);
         const karte = !fehlt.length && K.editKarte(null, alle, r._voxelChunkConfig().span, null);
         const out = { fehlt, wirkt: [0, 0, 0, 0, 0], haelt: alle.length };
+        // DIE KARTE STEHT (ek-schleife, Lehre 25): nach dem letzten Edit baut der Stamm-Leser die Edit-Karte
+        // (`_voxelEditKarte`) in keiner Probe neu — gezählt an den Generationen, die ein Neubau je Edit zieht. `rueckfall`
+        // (Selbsttest): die Karte baut je Probe neu, die Zählung MUSS ihn nennen.
+        const [g0, neu] = [r._editGenZaehler, () => (r._editGenZaehler - g0) / alle.length];
         out.stamm = __kern.lies(plan.punkte, r._terrainDensityAt.bind(r), (x, y, z) => r._waterLevelAt(x, z), (x, y, z) => r._atlasWaterLevelAt(x, z, y), r._hydroRiverAt.bind(r));
+        out.karteNeu = [neu()];
+        if (plan.rueckfall) {
+            globalThis.__gelaendeCore = { ...G, editKarteSteht: () => false, editKarte: (k, ...a) => G.editKarte(null, ...a) };
+            r._terrainDensityAt(...plan.punkte.slice(0, 3));
+            [globalThis.__gelaendeCore, out.karteNeu[1]] = [G, neu()];
+        }
         if (karte)
             out.kern = __kern.lies(plan.punkte, (x, y, z) => K.dichte(L, x, y, z, plan.liste ? alle : K.editsAm(karte, x, z)), (x, y, z) => K.wasserSpiegel(L, x, z), (x, y, z) => K.atlasSpiegel(L, x, z, y), (x, z) => K.flussAm(L, x, z));
         const P = plan.punkte;
@@ -666,6 +676,7 @@ async function kernLesen(page, plan) {
     return Object.assign(seite, { stamm: f64(seite.stamm), kern: f64(seite.kern), faden: seite.faden.map(f64) });
 }
 
+const karteRot = (n) => `EDIT-KARTE (_voxelEditKarte): ${n} Neubauten — sie baut je Probe neu`;
 // a gegen b Wort für Wort (Object.is): wie viele weichen ab, die größte endliche Abweichung
 function kernVergleich(a, b) {
     const v = { ab: 0, maxDiff: 0 };
@@ -698,7 +709,7 @@ async function kernProbe(page, url) {
     await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
     plan = await kernPlan(page, messort("wiese"), 20000);
     if (plan.fehler) throw new Error(plan.fehler);
-    const rein = await kernLesen(page, { ...plan, liste: true });
+    const rein = await kernLesen(page, { ...plan, liste: true, rueckfall: SELBSTTEST });
     const [g0, N] = [kernGleich(rein), rein.stamm[0].length];
     const [ho, ka, se] = plan.orte.map((o) => o.map(Math.round));
     console.log(`  Orte: Höhle ${ho} · Kanal ${ka} · See ${se} · ${plan.edits.length} Edits (der Stamm hält ${rein.haelt}) · ${N} Punkte · ${rein.faden.length} Voxel-Fäden`);
@@ -709,8 +720,11 @@ async function kernProbe(page, url) {
         [!rein.faden.length, "WORKER-FELD: kein Voxel-Faden antwortete"],
         [g0.abweichend, `UNVERÄNDERT: ${g0.abweichend} Werte weichen ab (maxDiff ${g0.maxDiff})`],
         [rein.wirkt.some((w) => w < N / 25), "ORT: ein Ort trägt kein Fünftel seiner Punkte"],
+        [rein.karteNeu[0] > 0, karteRot(rein.karteNeu[0])],
+        [SELBSTTEST && !(rein.karteNeu[1] > 0), "SELBSTTEST: der Neubau je Probe blieb unentdeckt"],
     ])
         if (rot) befunde.push(b);
+    console.log(`  Die Edit-Karte steht: ${rein.karteNeu[0]} Neubauten in ${N} Proben${SELBSTTEST ? ` · Rückfall ROT: ${karteRot(rein.karteNeu[1])}` : ""}`);
     for (const name of ["Edit-Stärke", "Edit-Radius", "Dichte-Versatz", "See-Spiegel"]) {
         const z = { name, anker: kernQuelle().split(KERN_MUTATIONEN[name][0]).length === 2 };
         const m = z.anker && (await lauf(name));
