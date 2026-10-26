@@ -44,6 +44,9 @@ async function probeLeben(expected) {
         r._gameLoopTick(tMs);
         raeumen();
     };
+    const bilder = (n) => {
+        for (let i = 0; i < n; i++) frame(i);
+    };
     const raeumen = () => {
         const w = bahnWache;
         if (!w) return;
@@ -78,7 +81,7 @@ async function probeLeben(expected) {
         if (!fz || fz.luft || !Number.isFinite(fz.y)) return false;
         const a = r._rittAufstand(me);
         const boden = r._fahrBoden(me);
-        const yk = (Number.isFinite(me._rideYaw) ? me._rideYaw : 0) - Math.PI / 2; // der Rahmen des Kerns
+        const yk = gierUnwrap(me) - Math.PI / 2; // der Rahmen des Kerns
         const fx = Math.cos(yk);
         const fzz = -Math.sin(yk);
         const lx = -Math.sin(yk);
@@ -154,7 +157,7 @@ async function probeLeben(expected) {
     // Lauf. Seit er am 24.10. in den Wagen kam, streuten S3 (Quer-Abdrift 0,333–0,361 m am selben Ort) und L8 (3,5 cm
     // zwischen 60 fps und gemischten Bildern, die zu verschiedenen Sim-Zeiten fahren). Die Linse misst das Fahr-Gesetz; den
     // Wind am Wagen misst sein eigenes Gesetz (wetter.K5). Fehlt das Glied, ruft die Probe den Täter beim Namen.
-    if (typeof r._fahrWind !== "function") throw new Error("fahr-leben: der Wind am Wagen (_fahrWind) fehlt — die Windstille greift nicht");
+    if (!r._fahrWind) throw new Error("Windstille: _fahrWind fehlt");
     r._fahrWind = () => ({ x: 0, z: 0 });
     const aufraeumen = () => {
         delete r._loopFixedStep;
@@ -247,7 +250,7 @@ async function probeLeben(expected) {
         const mr = r.mountArchitecture(e);
         if (!mr || !mr.ok) return null;
         tasten(false);
-        for (let i = 0; i < 12; i++) frame(i); // einschwingen (Sitz, Ebene, Interpolation)
+        bilder(12); // einschwingen (Sitz, Ebene, Interpolation)
         return e;
     };
     const weg = (e) => {
@@ -842,7 +845,7 @@ async function probeLeben(expected) {
         // vorbei, auf Gras flog er an einer Welle 80 m weiter mit 0,50 m. Klippen dieser Welt sind Hang-Kanten: im Umkreis 1,6 km
         // liegt keine Bahn flacher als 27,8°.
         const bahnFrei = () => {
-            for (let i = 0; i < 60; i++) frame(i);
+            bilder(60);
         };
         if (kl) strasse(kl.sx, kl.sz, kl.fahrt, 24);
         const klippenBahn = (k) => ({
@@ -891,7 +894,7 @@ async function probeLeben(expected) {
                     frame(i);
                 }
                 tasten(false);
-                for (let i = 0; i < 60; i++) frame(i);
+                bilder(60);
                 ab2();
                 const unterGrund = g2.position.y - 0.5 - hh(g2.position.x, g2.position.z);
                 S.klippe = {
@@ -944,7 +947,7 @@ async function probeLeben(expected) {
                     sprungAb = Math.max(sprungAb, Math.abs(g4.position.y - yv));
                     yv = g4.position.y;
                 });
-                for (let i = 0; i < 240; i++) frame(i);
+                bilder(240);
                 ab7();
                 const eb = r._rittEbene(g4, g4.position.x, g4.position.z, g4._rideYaw);
                 const bodenY = eb ? eb.y : hh(g4.position.x, g4.position.z);
@@ -979,18 +982,14 @@ async function probeLeben(expected) {
             const g3 = await setzen("fahrzeug_gt", qh.x, qh.z, qh.fahrt);
             if (g3) {
                 // Die QUER-ABDRIFT talwärts: je Sim-Schritt die Geschwindigkeit quer zum Bug, auf die tiefe Seite gezählt
-                // (ohne Quer-Hangabtrieb tötet der Reifen jede Quer-Fahrt: 0) — über genau QUER_SCHRITTE Sim-Schritte (die
+                // (ohne Quer-Hangabtrieb tötet der Reifen jede Quer-Fahrt: 0) — über genau 110 Sim-Schritte (die
                 // Uhr des Gesetzes; 100 Muster-Bilder trugen je nach Rest des Akkumulators 110 oder 111), in der Windstille
                 // der Probe — gemessen wird der Quer-Hangabtrieb, nie das Wetter.
-                const QUER_SCHRITTE = 110;
                 let drift = 0;
-                let schritte3 = 0;
-                let weg3 = 0;
+                let rest3 = 110;
                 const ab3 = nachSchritt((dt) => {
-                    if (schritte3 >= QUER_SCHRITTE) return;
-                    schritte3++;
-                    weg3 = Math.hypot(g3.position.x - qh.x, g3.position.z - qh.z);
-                    const ry = Number.isFinite(g3._rideYaw) ? g3._rideYaw : 0;
+                    if (rest3-- <= 0) return;
+                    const ry = gierUnwrap(g3);
                     const lx = Math.cos(ry);
                     const lz = -Math.sin(ry);
                     const x = g3.position.x;
@@ -1000,16 +999,10 @@ async function probeLeben(expected) {
                     drift += (v.x() * lx + v.z() * lz) * -Math.sign(steigLinks) * dt;
                 });
                 tasten(true, false);
-                for (let i = 0; i < 200 && schritte3 < QUER_SCHRITTE; i++) frame(i);
+                for (let i = 0; i < 200 && rest3 > 0; i++) frame(i);
                 tasten(false);
                 ab3();
-                S.quer = {
-                    drift,
-                    weg: weg3,
-                    wache: bahnWache.n,
-                    schritte: schritte3,
-                    haft: r._fahrHaft(g3._fahr),
-                };
+                S.quer = { drift, weg: Math.hypot(g3.position.x - qh.x, g3.position.z - qh.z), wache: bahnWache.n };
                 weg(g3);
             }
             los3();
