@@ -24,7 +24,17 @@ async function kreaturProben(r, T, opts) {
         const b = arr.slice().sort((x, y) => x - y);
         return b[Math.min(b.length - 1, Math.floor(q * (b.length - 1) + 0.5))];
     };
-    const pm = s.playerMesh.position;
+    // DER SPIELER IST SEIN LEBENDER LEIB: die echte Welt tauscht `playerMesh`, während die Probe taktet (der deferierte
+    // Avatar-Bau `applyPlayerSoul`, sobald seine Vorlagen im Memo liegen; headless baut er synchron) — wer die Lage des alten
+    // Leibs hält, rückt einen Geist (mensch.K1 Radeon: die Stadt 18 m vom Geist, 735 m vom Spieler, ihre Liste nie gelegt);
+    // `pm` liest je Zugriff den Leib, der jetzt steht
+    const pm = new Proxy(s.playerMesh.position, {
+        get: (_, k) => {
+            const p = s.playerMesh.position;
+            return typeof p[k] === "function" ? p[k].bind(p) : p[k];
+        },
+        set: (_, k, v) => ((s.playerMesh.position[k] = v), true),
+    });
     const P0 = pm.clone();
 
     // Die Bühne je Probe: eigene Tier-Liste (die Welt-Tiere ruhen), der Spieler zurück, Modus und Gefühl zurück.
@@ -2392,7 +2402,15 @@ async function kreaturProben(r, T, opts) {
             if (!S || !amPlatz(S.ox, S.oz, S.plan.platz))
                 return { fehler: `keine Stadt mit freiem Rand am Platz („dorf ${seed} 30" bei ${x}/${z})` };
             const da = () => S.liste && S.liste.every((b) => b.leib && !b.ankunft) && r._weltOffen().leiber === 0;
-            await bisDa("bewohner: die Stadt", () => !da());
+            // was der Stadt fehlt, beim Namen: ihre Liste, Leiber, Ankünfte und der Spieler, an dem ihr Takt sie misst
+            const fehlt = () =>
+                JSON.stringify({
+                    liste: S.liste ? S.liste.length : S.listeWerk ? "im Werk" : "keine",
+                    ohneLeib: (S.liste || []).filter((b) => !b.leib).length,
+                    ankunft: (S.liste || []).filter((b) => b.ankunft).length,
+                    spielerM: Math.round(Math.hypot(S.ox - pm.x, S.oz - pm.z)),
+                });
+            await bisDa("bewohner: die Stadt", () => !da(), fehlt);
             // je Tag die Ankunft um 5 Uhr und ein eigenes Messer; Täter (Selbsttest) je 3 Spielstunden mit seiner Decke: wer
             // ausweicht, weicht nie — dann die EINE Frage an die Wand (`_bewohnerWand`: der Weg, die Wache, das Ausweichen,
             // die Linie zurück auf das Bein) ist blind
@@ -2415,13 +2433,17 @@ async function kreaturProben(r, T, opts) {
             return taeter ? null : sicht[undefined].stadt;
         };
         // der Takt des Spiels, bis die Siedlung steht (`offen` nicht mehr)
-        const bisDa = async (name, offen) => {
-            for (const weiter = W.__deckel(name, 120); weiter() && offen(); await schlaf(16))
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {
-                    /* der Takt meldet selbst */
-                }
+        const bisDa = async (name, offen, warum) => {
+            try {
+                for (const weiter = W.__deckel(name, 120); weiter() && offen(); await schlaf(16))
+                    try {
+                        r._gameLoopTick(performance.now());
+                    } catch {
+                        /* der Takt meldet selbst */
+                    }
+            } catch (f) {
+                throw warum ? new Error(`${f.message} — ${warum()}`) : f;
+            }
         };
         const haeuserIn = (slots, ox, oz) =>
             slots.filter((sl) =>
