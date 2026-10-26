@@ -157,3 +157,4 @@
 2026-10-26 05:09:06 z35-abab w-ego VERLÄNGERN 14.2 · 1/3 (2+2)
 2026-10-26 05:20:11 z35-abab d-ego nicht-langsamer 11.0 · 2/3 (2+2)
 2026-10-26 05:30:37 z35-abab stadt VERLÄNGERN 10.4 · 3/3 (2+2)
+2026-10-26 05:44:13 z35-abab w-ego(4+4) nicht-langsamer 13.5 · verlängert (4+4)
