@@ -1,0 +1,14 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx C:\Program Files\nodejs\node.exe scripts/diag-kampf-gefuehl.cjs --k5
+[linse-gpu] nvidia/pascal
+  (Q13) 84864b15008e → 84864b15008e {"sturz":[{"v":6.213,"d":0,"quelle":null},{"v":8.829,"d":10.73,"quelle":"sturz"},{"v":12.59,"d":57.043,"quelle":"sturz"},{"v":15.369,"d":101.727,"quelle":"sturz"},{"v":11.924,"d":47.663,"quelle":"sturz"}],"lage":[[29.244,0.045],[29.244,0.045]],"vorTod":{"ort":[144,95.6,0],"inventar":["holz7","stein3"],"leben":[0.64,0],"bindung":[0.12,"follow_player"]},"tod":{"q":"jagd","anker":0,"rueckkehr":[true,true,true,true,true,true,true,true,true]},"nachTod":{"ort":[0,91.8,0],"inventar":["holz7","stein3"],"leben":[0.6,1],"bindung":[0.12,"follow_player"]},"nachReload":{"ort":[0,91.8,0],"inventar":["holz7","stein3"],"leben":[0.6,1],"bindung":[0.12,"follow_player"]}}
+  ✅ Q13 halten.K5 Staffel 1: Sturz, Tod durch den Wolf, Wiederkehr mit Zustand 
+  ✅ SELBST-TEST (S17): ein fester Sturz-Schaden ROT an der Reihe, ein Höhen-Zähler am Wurf
+  ✅ SELBST-TEST (S18): eine Wiederkehr ohne Inventar ROT am Teil
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 32757 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
