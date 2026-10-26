@@ -17,7 +17,12 @@ const path = require("path");
 // CSS-Animation hielt die Raster-Fäden voll, jeder synchrone Programm-Bau wartete dahinter (Raster-CPU p90 771 → 254 s). Die
 // Linse wünscht weniger Bewegung, die Seite hält dann jede Deko-Animation an (index.html, prefers-reduced-motion).
 const CPU_COMPOSITOR = ["--force-prefers-reduced-motion"];
-const BASIS = ["--no-sandbox", "--disable-setuid-sandbox", "--enable-unsafe-swiftshader", ...CPU_COMPOSITOR];
+// DIE INFO-SAMMLUNG DES BROWSERS: 120 s nach seinem Start sammelt Chrome einmal die Dawn-Info für seine Metriken (Feature
+// `CollectWebGPUSupportMetrics`, `gpu_info_collector::CollectDawnInfo`) auf dem Haupt-Faden des GPU-Prozesses, der so lange
+// keinen Auftrag einer Seite abarbeitet — Radeon 890M 26.10.: 217 ms; der eine GPU-Hänger je Sitzung der Station profiband.K4
+// lag in 50 von 50 Sitzungen 118,6–119,2 s nach dem Seiten-Start, mitten im Mess-Fenster jedes frischen Linsen-Browsers.
+const OHNE_INFO_SAMMLUNG = ["--disable-features=CollectWebGPUSupportMetrics"];
+const BASIS = ["--no-sandbox", "--disable-setuid-sandbox", "--enable-unsafe-swiftshader", ...CPU_COMPOSITOR, ...OHNE_INFO_SAMMLUNG];
 // Linux: die Swapchain braucht die Vulkan-Ablage des GPU-Prozesses (swiftshader), ANGLE auf swiftshader, keine Oberfläche.
 const LINUX_SWAPCHAIN = ["--enable-features=Vulkan", "--use-vulkan=swiftshader", "--use-angle=swiftshader", "--disable-vulkan-surface"];
 
@@ -30,17 +35,17 @@ function softwareWebGpuArgs(plattform = process.platform) {
 
 // WebGPU auf der ECHTEN GPU (Hardware-Adapter).
 function echteWebGpuArgs() {
-    return ["--enable-unsafe-webgpu", "--ignore-gpu-blocklist"];
+    return ["--enable-unsafe-webgpu", "--ignore-gpu-blocklist", ...OHNE_INFO_SAMMLUNG];
 }
 
 // WebGL2 auf swiftshader (ANGLE) — die CI und jede Zeit-Linse der WebGL-Familie.
 function softwareWebglArgs() {
-    return ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox", ...CPU_COMPOSITOR];
+    return ["--use-angle=swiftshader", ...BASIS];
 }
 
 // WebGL2 auf der Karte (ANGLE am Treiber); navigator.gpu fällt, die Welt wählt wie auf swiftshader ihren WebGL2-Rückfall.
 function hardwareWebglArgs() {
-    return ["--no-sandbox", "--disable-setuid-sandbox", "--ignore-gpu-blocklist", "--disable-blink-features=WebGPU"];
+    return ["--no-sandbox", "--disable-setuid-sandbox", "--ignore-gpu-blocklist", "--disable-blink-features=WebGPU", ...OHNE_INFO_SAMMLUNG];
 }
 
 // DIE EINE WEICHE: "software" (swiftshader) oder "hardware"; `zeit`: ein ms-/fps-Urteil fährt swiftshader wie die CI, außer
