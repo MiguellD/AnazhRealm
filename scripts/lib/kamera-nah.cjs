@@ -65,43 +65,22 @@ function nahDeckungInSeite(o) {
         return false;
     };
     const archNachMesh = new Map();
-    for (const e of st.architectures || []) if (e && e.mesh) archNachMesh.set(e.mesh, e);
     const eintragNachId = new Map();
-    for (const e of st.architectures || []) if (e && e.id != null) eintragNachId.set(e.id, e);
+    for (const e of st.architectures || []) {
+        if (e && e.mesh) archNachMesh.set(e.mesh, e);
+        if (e && e.id != null) eintragNachId.set(e.id, e);
+    }
     const eintragVon = (obj, inst) => {
         // der Pool der Fundamente (`st.archFundament`, EIN Mesh für jedes Bauwerk, `idAt[slot]` = die id des Eintrags)
         const fu = st.archFundament;
         if (fu && obj === fu.mesh) return eintragNachId.get(fu.idAt[inst]) || null;
-        if (obj.isInstancedMesh && obj.userData && obj.userData.archInstanceKey && st.archInstanceGroups) {
+        if (obj.isInstancedMesh && obj.userData.archInstanceKey && st.archInstanceGroups) {
             const g = st.archInstanceGroups.get(obj.userData.archInstanceKey);
-            return g && g.slotEntry ? g.slotEntry[inst] || null : null;
+            return g?.slotEntry?.[inst] || null;
         }
         for (let p = obj; p; p = p.parent) if (archNachMesh.has(p)) return archNachMesh.get(p);
         return null;
     };
-    // DAS ZIEL IM SATZ: der Bau-Satz zeichnet die Instanzen vieler Gruppen in EINEM Mesh (`_bauSatzBlock`: je
-    // lebende Instanz ihre n Ecken in Welt-Lage ab dem Bereichs-Anfang `vStart`), ein Dreieck dort gehört
-    // `slotEntry[i]` seiner Gruppe. Je Satz-Mesh die Ecken-Läufe der Einträge in `o.ohne` — sie decken nie und
-    // verdecken nie, wie jedes andere Ziel.
-    const ohneSatz = new Map();
-    if (OHNE.size && st.chunkSaetze && st.archInstanceGroups)
-        for (const [key, g] of st.archInstanceGroups) {
-            const s = g && g.satz && g.slotEntry ? st.chunkSaetze.get(g.satz) : null;
-            const b = s && s.mesh ? s.bloecke.get(key) : null;
-            const n = b && g.geom && g.geom.attributes.position ? g.geom.attributes.position.count : 0;
-            if (!n) continue;
-            const laeufe = ohneSatz.get(s.mesh) || [];
-            for (let i = 0; i < Math.floor(b.vAnzahl / n); i++) {
-                const e = g.slotEntry[i];
-                if (e && OHNE.has(e.id)) laeufe.push(b.vStart + i * n, b.vStart + (i + 1) * n);
-            }
-            if (laeufe.length) ohneSatz.set(s.mesh, laeufe);
-        }
-    const imLauf = (l, v) => {
-        for (let k = 0; k < l.length; k += 2) if (v >= l[k] && v < l[k + 1]) return true;
-        return false;
-    };
-    const natur = (e) => !!e && r._istNatur(e);
     const artVonStoff = (mat) => {
         const k = mat && mat.userData ? mat.userData.foundryKind : null;
         if (k === "foliage" || k === "foliageTex") return "laub";
@@ -129,21 +108,19 @@ function nahDeckungInSeite(o) {
         if (ritt && e === ritt) return { klasse: "Wagen", name: "Wagen " + (e.type || "?") };
         if (art === "laub") return { klasse: "Laub", name: "Laub " + ((e && e.type) || nm || "Streu") };
         if (art === "rinde") return { klasse: "Rinde", name: "Rinde " + ((e && e.type) || nm || "Streu") };
-        if (e && natur(e)) return { klasse: "Fels", name: "Natur " + e.type };
+        if (e && r._istNatur(e)) return { klasse: "Fels", name: "Natur " + e.type };
         return { klasse: "Bau", name: (e && e.type) || nm || obj.type };
     };
     const zaehlt = (obj) =>
         obj.isMesh &&
         obj.geometry &&
-        obj.geometry.attributes &&
         obj.geometry.attributes.position &&
         !(obj.material && obj.material.visible === false) &&
         // was die Kamera zeichnet: der Schatten-Zwilling (SHADOW_TWIN_LAYER, Stoff „schatten") wirft nur in den Kaskaden
         obj.layers.test(st.camera.layers) &&
         !obj.isSkinnedMesh &&
         obj.name !== "himmel" &&
-        obj.name !== "wasserSatz" &&
-        !(obj.userData && obj.userData.isHydrosphere) &&
+        !obj.userData.isHydrosphere &&
         !unter(obj, player);
     const TAETER = {};
     for (const [k, v] of Object.entries(R)) if (v > 0) TAETER[k] = v;
@@ -177,7 +154,17 @@ function nahDeckungInSeite(o) {
         }
         return me;
     };
-    const legeDreiecke = (obj, inst, nimm, sammle) => {
+    // DER BESTAND, NIE DER LETZTE PASS (satz-pass): ein Satz (`st.chunkSaetze`: Boden · Wasser · Bau · Streu) zeichnet je Pass
+    // nur seinen Abschnitt — Index und `drawRange` gelten der Kamera des letzten Passes (`_chunkSatzAbschnitt`), am
+    // Null-Renderer keiner. Die Strahlen lesen darum jede Zelle jedes lebenden Bereichs (`bloecke` → `zellen[].idx`, die Ecken
+    // im Satz), deren Hülle die Kugel der Frage trifft. Vorher hieß die Pose der Blick-Wahl frei, deren Haus hinter dem Blick
+    // der vorigen Kamera lag (siedlung.K2 an 1ae62f88: der Bau-Satz verdeckte das Ziel in 41,26 m, die Wahl nahm Pose 0).
+    // DAS ZIEL IM SATZ: ein Bau-Bereich ist eine Instanz-Gruppe (`_bauSatzBlock`), je lebende Instanz eine Zelle, sie gehört
+    // `slotEntry[i]` ihrer Gruppe — die Zelle eines Eintrags in `o.ohne` deckt nie und verdeckt nie, wie jedes andere Ziel.
+    const satzVon = new Map();
+    for (const s of st.chunkSaetze ? st.chunkSaetze.values() : []) satzVon.set(s.mesh, s);
+    const zs = new T.Sphere();
+    const legeDreiecke = (obj, inst, nimm, sammle, kugel) => {
         const g = obj.geometry;
         const pos = g.attributes.position;
         const uv = g.attributes.uv || null;
@@ -186,27 +173,35 @@ function nahDeckungInSeite(o) {
         const dr0 = Math.max(0, g.drawRange.start);
         const dr1 = Math.min(nIdx, g.drawRange.start + (Number.isFinite(g.drawRange.count) ? g.drawRange.count : nIdx));
         const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-        const gruppen =
-            g.groups && g.groups.length && Array.isArray(obj.material)
+        // die Läufe [Index, von, bis, Stoff]: im Satz jede Zelle, sonst die Gruppen im gezeichneten Bereich
+        const satz = satzVon.get(obj);
+        const gruppen = [];
+        if (satz)
+            for (const b of satz.bloecke.values()) {
+                const se = st.archInstanceGroups.get(b.key)?.slotEntry;
+                b.zellen.forEach((z, i) => {
+                    if (!OHNE.has(se?.[i]?.id) && kugel(z.huelle.getBoundingSphere(zs)))
+                        gruppen.push([z.idx, 0, z.idx.length, 0]);
+                });
+            }
+        else
+            for (const gr of g.groups && g.groups.length && Array.isArray(obj.material)
                 ? g.groups
-                : [{ start: dr0, count: dr1 - dr0, materialIndex: 0 }];
+                : [{ start: dr0, count: dr1 - dr0, materialIndex: 0 }])
+                gruppen.push([idx, Math.max(dr0, gr.start), Math.min(dr1, gr.start + gr.count), gr.materialIndex]);
         const e = eintragVon(obj, inst);
         if (e && OHNE.has(e.id)) return; // das Ziel selbst (o.ohne) deckt nie und verdeckt nie
-        const ohneL = ohneSatz.get(obj) || null; // ... auch als Bereich im Satz (`ohneSatz`)
-        for (const gr of gruppen) {
-            const mat = mats[gr.materialIndex] || mats[0];
+        for (const [I, s0, s1, mi] of gruppen) {
+            const mat = mats[mi] || mats[0];
             if (!mat || mat.visible === false) continue;
             const kl = klasseVon(obj, mat, e);
             if (!kl) continue;
             const karte = !!(atlasA && uv && mat.userData && mat.userData.foundryKind === "foliageTex");
             const me = metaFuer(kl, mat, karte);
-            const s0 = Math.max(dr0, gr.start);
-            const s1 = Math.min(dr1, gr.start + gr.count);
             for (let t = s0; t + 2 < s1; t += 3) {
-                const i0 = idx ? idx[t] : t;
-                const i1 = idx ? idx[t + 1] : t + 1;
-                const i2 = idx ? idx[t + 2] : t + 2;
-                if (ohneL && imLauf(ohneL, i0)) continue;
+                const i0 = I ? I[t] : t;
+                const i1 = I ? I[t + 1] : t + 1;
+                const i2 = I ? I[t + 2] : t + 2;
                 va.fromBufferAttribute(pos, i0).applyMatrix4(m4);
                 vb.fromBufferAttribute(pos, i1).applyMatrix4(m4);
                 vc.fromBufferAttribute(pos, i2).applyMatrix4(m4);
@@ -242,7 +237,7 @@ function nahDeckungInSeite(o) {
         }
     };
     // was sich dreht, steht nie im Speicher: der Tür- und Tor-Flügel (seine Gruppe trägt `tuer`, `_tickTorFluegel`)
-    const dreht = (obj) => !!(st.archInstanceGroups.get(obj.userData.archInstanceKey) || {}).tuer;
+    const dreht = (obj) => !!st.archInstanceGroups.get(obj.userData.archInstanceKey)?.tuer;
     const dynamisch = (obj, inst) => {
         const e = eintragVon(obj, inst);
         return dreht(obj) || !!(e && o.dyn != null && e.id === o.dyn);
@@ -281,7 +276,7 @@ function nahDeckungInSeite(o) {
         st.scene.traverseVisible((obj) => {
             if (!zaehlt(obj)) return;
             jeInstanz(obj, region, (ob, i) => {
-                if (!dynamisch(ob, i)) legeDreiecke(ob, i, imFeld, sammle);
+                if (!dynamisch(ob, i)) legeDreiecke(ob, i, imFeld, sammle, region);
             });
         });
         const n = metas.length;
@@ -593,7 +588,7 @@ function nahDeckungInSeite(o) {
             };
             st.scene.traverseVisible((obj) => {
                 if (!zaehlt(obj)) return;
-                jeInstanz(obj, amStrahl, (ob, i) => legeDreiecke(ob, i, () => true, pruefe));
+                jeInstanz(obj, amStrahl, (ob, i) => legeDreiecke(ob, i, () => true, pruefe, amStrahl));
             });
             return { vor, vorD, L };
         };
