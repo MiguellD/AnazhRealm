@@ -162,3 +162,4 @@
 2026-10-26 07:37:48 takt5-headless tiere.K4#1 GRÜN 0.4 · 27/74
 2026-10-26 07:38:20 takt5-headless tiere.K2#1 GRÜN 1.0 · 28/74
 2026-10-26 07:38:27 takt5-headless tiere.K4#2 GRÜN 0.6 · 29/74
+2026-10-26 07:38:47 takt5-headless affekt.K1#1 GRÜN 0.5 · 30/74
