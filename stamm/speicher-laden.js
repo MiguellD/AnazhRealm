@@ -287,6 +287,7 @@ class AnazhRealm_speicher_laden {
         if (typeof state.timeOfDay === "number" && state.timeOfDay >= 0 && state.timeOfDay <= 1) {
             this._uhrSetzen(state.timeOfDay, "laden");
         }
+        this._weltUhrNimm(state.spielZeit); // die Welt-Uhr des Stands (feld.K2#2)
         // `state.dayLengthMinutes` des Stands setzt der Restore NIE: die Tag-Länge ist die Wahl des Spielers (localStorage,
         // `setDayLength`) — der Kopf trägt sie nur für die Taille v1 (Leben-Schau 2, gate:wetter-wache (T)).
         // ERFINDER-WELLE — die Welt-Klang-Wahl (Genre-Id; der Konsument `_klangStudioPreset`
