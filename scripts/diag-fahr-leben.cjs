@@ -4,7 +4,7 @@
 //
 //   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper]   Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const path = require("path");
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
@@ -1542,7 +1542,7 @@ function quellenAbgriff() {
     }
 }
 
-(async () => {
+hauptLauf(async () => {
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Fahr-Linse nennt jeden Täter des Befunds ===");
         const gesund = {
@@ -2643,7 +2643,4 @@ function quellenAbgriff() {
         "\n✅ GRÜN — der Ritt fährt im Sim-Schritt den EINEN Fahr-Schritt des Kerns: kein Teleport, Welt == Labor, Reibkreis, Querhang und Vertikale wirken."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Fahr-Leben-Linse-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

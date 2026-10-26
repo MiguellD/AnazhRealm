@@ -413,7 +413,6 @@ function laborAlbedo(o) {
         const W = o.w || 640,
             H = o.h || 400;
         const { gpu, rt, lies } = window.__laborZiel(R, W, H);
-        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         const ARTEN = new Map(
             Object.entries({ barkMat: "bark", barkMatBirch: "bark", foliageMatTex: "foliageTex", foliageMat: "foliage", foliageMatKrone: "foliage", grassMat: "grass", stemMat: "stem" })
                 .map(([n, a]) => [g(n), a])

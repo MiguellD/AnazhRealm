@@ -34,7 +34,7 @@
 //   node scripts/diag-brennglas-takt.cjs [--selftest]   (npm run gate:brennglas-takt; Port BRENNGLAS_TAKT_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.BRENNGLAS_TAKT_PORT || 4605);
@@ -1372,7 +1372,7 @@ function urteil(S, stamm) {
     return rot;
 }
 
-(async () => {
+hauptLauf(async () => {
     const stamm = quellWand(stammLib.text(root));
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
@@ -1450,7 +1450,4 @@ function urteil(S, stamm) {
             "die Klasse fragt das Verzeichnis."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Brennglas-Takt-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

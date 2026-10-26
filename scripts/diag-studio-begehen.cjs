@@ -18,7 +18,7 @@
 //   rot werden. Fehlt die geheilte Zeile in der Quelle, ist der Selbsttest rot (die Linse kann ihren Defekt nicht setzen).
 //   node scripts/diag-studio-begehen.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, ROOT } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 
 const PORT = Number(process.env.STUDIO_BEGEHEN_PORT || 4473);
@@ -438,7 +438,7 @@ function zeile(o) {
     );
 }
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 600000 });
     let rot = 0;
@@ -492,7 +492,4 @@ function zeile(o) {
     }
     console.log(rot ? `❌ gate:studio-begehen ROT (${rot})` : "✅ gate:studio-begehen grün");
     process.exit(rot ? 1 : 0);
-})().catch((e) => {
-    console.error(e);
-    process.exit(2);
 });

@@ -966,7 +966,7 @@ function latenzAn(k) {
         if (verb === "hieb" && !(await L.tierStellen())) return false;
         if (verb === "einsteigen") await L.wagenStellen();
         for (const bis = L.bilder.length + 240; L.still < 8 || st.player._swing; await wache()) if (L.bilder.length > bis) return false;
-        await new Promise((f) => setTimeout(f, Math.random() * 17));
+        await sleep(Math.random() * 17);
         return !!(L.probe = {});
     };
     L.treffer = async () => {

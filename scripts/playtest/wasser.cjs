@@ -1009,7 +1009,7 @@ async function checkBandV17117FarWater(ctx) {
             return { ...out, error: "worker init failed: " + e.message };
         }
         r._voxelWorkerSyncWorldgenState();
-        await new Promise((resolve) => setTimeout(resolve, 80));
+        await sleep(80);
         let wm;
         try {
             wm = await r._voxelWorkerComputeChunkMesh(oCx, oCz, 0);
@@ -2101,7 +2101,7 @@ async function checkBandWasserSheetSpiegel(ctx) {
             } catch {
                 /* */
             }
-            if (i % 6 === 0) await new Promise((res) => setTimeout(res, 12));
+            if (i % 6 === 0) await sleep(12);
         };
         for (let i = 0; i < 280; i++) await pumpe(i);
         await window.__gebautNach("Chunks mit Wasser-Zellen am Ort", { fertig: steht, takt: pumpe, max: 4000 });

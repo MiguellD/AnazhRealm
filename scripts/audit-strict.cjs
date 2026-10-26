@@ -25,7 +25,7 @@
 // Lauf via `npm run audit:strict`. Strikter als playtest (auch warnings
 // werden zu exits).
 
-const { starteBrowser, nullRenderer, ROOT, startProc, eigenePorte, warteAufWelt } = require("./lib/welt-boot.cjs");
+const { starteBrowser, nullRenderer, ROOT, startProc, eigenePorte, warteAufWelt, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -493,7 +493,7 @@ function auditPlaytestSkipGates() {
 // ============================================================
 // Main
 // ============================================================
-(async () => {
+hauptLauf(async () => {
     console.log("AnazhRealm Strict-Audit-Suite\n");
     auditCssVariables();
     auditSoftDefaults();
@@ -514,7 +514,4 @@ function auditPlaytestSkipGates() {
         console.log("\n✅ Audit komplett clean.");
         process.exit(0);
     }
-})().catch((err) => {
-    console.error("Audit-Crash:", err);
-    process.exit(2);
 });

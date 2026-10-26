@@ -664,7 +664,7 @@ async function probe(A) {
                 try {
                     frame();
                 } catch {}
-                if (i % 20 === 0) await new Promise((res) => setTimeout(res, 0));
+                if (i % 20 === 0) await sleep(0);
             }
             st.playerMesh.position.set(PX, r._voxelSurfaceY(PX, PZ) + 1.8, PZ);
             st.yaw = Math.PI / 2;
@@ -678,7 +678,7 @@ async function probe(A) {
                 try {
                     frame();
                 } catch {}
-                if (i % 20 === 0) await new Promise((res) => setTimeout(res, 0));
+                if (i % 20 === 0) await sleep(0);
             }
             zensus.quelle = "strom";
             satz.orte++;
@@ -712,13 +712,13 @@ async function probe(A) {
             still = n === last ? still + 1 : 0;
             last = n;
             if (n >= 9 && still > 30 && !r._weltOffen().chunks) break;
-            await new Promise((res) => setTimeout(res, 0));
+            await sleep(0);
         }
         for (let i = 0; i < nachlauf; i++) {
             try {
                 frame();
             } catch {}
-            if (i % 20 === 0) await new Promise((res) => setTimeout(res, 0));
+            if (i % 20 === 0) await sleep(0);
         }
     };
     try {
@@ -773,7 +773,7 @@ async function probe(A) {
                     try {
                         frame();
                     } catch {}
-                    if (i % 20 === 0) await new Promise((res) => setTimeout(res, 0));
+                    if (i % 20 === 0) await sleep(0);
                 }
                 out.hain = {
                     takte: A.takte,
@@ -953,7 +953,7 @@ async function probe(A) {
                         if (Number.isFinite(b) && cam.y < b) kamUnter++;
                     }
                     if (tA && tMs - tA.zeit > 4000) break;
-                    if (i % 30 === 0) await new Promise((res) => setTimeout(res, 0));
+                    if (i % 30 === 0) await sleep(0);
                 }
                 st.keys.w = false;
                 const nachA = tA ? spur.filter((p) => p.t > tA.zeit) : [];
@@ -1003,7 +1003,7 @@ async function probe(A) {
                         }
                     for (let i = 0; i < 240; i++) {
                         frame();
-                        if (i % 30 === 0) await new Promise((res) => setTimeout(res, 0));
+                        if (i % 30 === 0) await sleep(0);
                     }
                 } finally {
                     r._invalidateWaterCapsAround = invAltA;
@@ -1138,7 +1138,7 @@ async function probe(A) {
                         }
                     }
                     if (tEin && zeit - tEin.zeit > 2500) break;
-                    if (i % 30 === 0) await new Promise((res) => setTimeout(res, 0));
+                    if (i % 30 === 0) await sleep(0);
                 }
                 st.keys.w = false;
                 r.dismountArchitecture();
@@ -1208,7 +1208,7 @@ async function probe(A) {
                     for (let i = 0; i < 60; i++) {
                         st.playerMesh.position.set(PX, r._voxelSurfaceY(PX, PZ) + 1.8, PZ);
                         frame();
-                        if (i % 20 === 0) await new Promise((res) => setTimeout(res, 0));
+                        if (i % 20 === 0) await sleep(0);
                     }
                     st.playerMesh.position.set(PX, r._voxelSurfaceY(PX, PZ) + 1.8, PZ);
                     st.yaw = yaw;
@@ -1282,7 +1282,7 @@ async function probe(A) {
                 for (let i = 0; i < 180; i++) {
                     frame();
                     if (st.playerUnderwater) schwimm++;
-                    if (i % 30 === 0) await new Promise((res) => setTimeout(res, 0));
+                    if (i % 30 === 0) await sleep(0);
                 }
                 const p = st.playerMesh.position;
                 const g = r._voxelSurfaceY(p.x, p.z);
@@ -1400,7 +1400,7 @@ async function probe(A) {
                             try {
                                 frame();
                             } catch {}
-                        await new Promise((res2) => setTimeout(res2, 50));
+                        await sleep(50);
                         echo = el
                             ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(sofort.length).slice(0, 300)
                             : "";
@@ -1508,7 +1508,7 @@ async function probe(A) {
                         try {
                             frame();
                         } catch {}
-                        if (i % 20 === 0) await new Promise((res2) => setTimeout(res2, 0));
+                        if (i % 20 === 0) await sleep(0);
                     }
                 };
                 await neuBauen();
@@ -1518,7 +1518,7 @@ async function probe(A) {
                         try {
                             frame();
                         } catch {}
-                    await new Promise((res2) => setTimeout(res2, 0));
+                    await sleep(0);
                     const z = zaehlen();
                     ruhig = z.nass === vor.nass && z.bild === vor.bild ? ruhig + 1 : 0;
                     vor = z;
@@ -1761,7 +1761,7 @@ async function dammProbe(A) {
     const takte = async (n) => {
         for (let i = 0; i < n; i++) {
             frame();
-            if (i % 20 === 0) await new Promise((res) => setTimeout(res, 0));
+            if (i % 20 === 0) await sleep(0);
         }
     };
     const stroemen = async (X, Z) => {
@@ -1774,7 +1774,7 @@ async function dammProbe(A) {
             still = n === last ? still + 1 : 0;
             last = n;
             if (n >= 9 && still > 30 && !r._weltOffen().chunks) break;
-            await new Promise((res) => setTimeout(res, 0));
+            await sleep(0);
         }
         await takte(120);
     };
