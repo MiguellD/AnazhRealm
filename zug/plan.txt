@@ -42,6 +42,9 @@ fertig  decke-zahlstelle-2  675f98ae: eigene Server-Starts/Adressen in 95 Linsen
 befund  a-laub-l2  Täter der L2-Kante ist der FUSS: Kronen 0,215 (im Soll), Fuß-Band 0,34 — Gras endet bei 24 m, Karte L2 beginnt bei 18 m; derselbe Bruch wie das Auge 25.10. (Gras endet in flacher Fläche)  Champion  → gras-fuss
 läuft   gras-fuss  Champion: Gras-Wirkung bis an die Füße der Karten, Kosten nach Schirm (A laub-kante + boden-nah + Auge Wiese)  Champion  A
 läuft   echt-k1-platz  Champion auf werkzeug-heil: platz-Haken am Faden-Put statt localStorage  Champion  speicher.K1
-läuft   z36  05:52 fahre.sh: decke-zahlstelle-2@b181ad08 (V1-Pfad srv/server-Verwechslung geheilt) · e-bewohner@069ed697 · speicher-k2-anhang@47e5c95f · b-streu-faden@612eb8c2 · a-laub-pose@4ca4c428 · fahr-s3-wurzel@523c5923 · k8-fein@391460c6 — Probe-Merge Decke scripts −5738 GRÜN  fahre.sh  E · B · A · speicher.K3#2 · streaming.K5#2
+läuft   z36  05:52 NEU (1. Lauf ROT beim Bau: Siegel „fertig“ aus Karten-Key e-stadt-fertig in 3 WIP-Messages → Zweig e-bewohner-z36 a9f2216b, Messages umgeschrieben, Baum gleich): decke-zahlstelle-2 · e-bewohner-z36 · speicher-k2-anhang · b-streu-faden · a-laub-pose · fahr-s3 · k8-fein  fahre.sh  E · B · A · speicher
 lehre   omen-ci  jeder Zug-Lauf und jeder integ/main-Push trägt einen echt-Job mit Vorfahrt auf der OMEN; 3 z35-Läufe verdrängten leib.K1#2 bis zum Deckel 5580 s → Züge nicht leichtfertig neu starten  Koordinator  —
-läuft   weltakt-null  Champion: diag-weltakt-wache:527 stürzt ab (Tat ohne Antwort, null.toFixed) in G8 — 2. Sichtung (mensch, b-streu)  Champion  FEUER
+fertig  weltakt-null  d33df55b: kein singender Vogel → NaN; wartet jetzt in Spielzeit, stumme Tat ROT beim Namen (Decke +332)  Champion  → z37
+läuft   decke-zahlstelle-3  Champion: dritte Zwillings-Klasse (≤ −1500) für z37 — jeder Zug trägt seine Zahlstelle (das Guthaben verfällt mit dem Push)  Champion  FEUER
+plan    z37  gras-fuss + weltakt-null + decke-zahlstelle-3 (+ echt-k1-platz nach koordination)  fahre.sh  A · FEUER
+hinweis e-stadt-gipfel  der Zweig trägt 3 Messages mit „e-stadt-fertig“ — nie direkt in einen Zug, nur über e-bewohner-z36 (umgeschrieben)  Koordinator  —
