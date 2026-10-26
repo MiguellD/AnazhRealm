@@ -29,7 +29,7 @@
 //       den Boden unter dem Leib lesen, beweist (O) am Verhalten); JEDE andere Methode, die einen dieser Leser ruft UND die Höhe eines Leibs berührt
 //       (`.position.y`, `.position.set`), ist als Platzierung/Welt-Leser benannt (OBERKANTE_BENANNT, mit Grund) — sonst
 //       ROT beim Namen (UNBENANNT), ein Name ohne Leser ist VERALTET;
-//   (P) kein Page-Error.
+//   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter MUSS rot fallen und ihn beim Namen
 // nennen; die Quellen-Wand nennt eine eingeschleuste Zeile in einer Kopie des Stamms (und ist am Stamm grün).
 //   node scripts/diag-fall-waechter.cjs [--selftest]   (npm run gate:fall-waechter; Port FALL_WAECHTER_PORT)
@@ -75,10 +75,6 @@ const DACH_LESER = new Set(["getTerrainHeightAt", "_voxelSurfaceY", "findSurface
 // verboten) oder hier BENANNT — mit ihren erlaubten Dach-Lesern und dem Grund. Eine unbenannte ist ROT beim Namen, eine
 // benannte, die nicht mehr liest, ist VERALTET (die Liste wandert mit dem Stamm).
 const OBERKANTE_BENANNT = {
-    dslEffects: [
-        ["getTerrainHeightAt"],
-        "Platzierung: die Geburt fern am Wunsch-Ort setzt das Tier auf die Oberfläche",
-    ],
     _playerDeathRespawn: [["getTerrainHeightAt"], "Platzierung: der Spieler ersteht auf der Oberfläche"],
     _rescuePlayerFromVoid: [["getTerrainHeightAt"], "Platzierung: die Rettung aus der Leere auf die Oberfläche"],
     _stepCharacter: [
@@ -265,7 +261,6 @@ function urteil(b) {
                 (b.schmuggel && b.schmuggel.mass ? ` (${b.schmuggel.mass})` : "")
         );
     for (const q of b.quelle || []) v.push(`(Q) DACH-LESER: ${q}`);
-    for (const e of b.pageErrors || []) v.push(`PAGE-ERROR: ${e}`);
     return [...v, ...turmUrteil(b.turm)];
 }
 
@@ -305,7 +300,6 @@ function selbsttest() {
         zensus: { spalten: 8, proben: 16, taeter: [] },
         schmuggel: { rot: true, mass: "8,2 m durch den Boden" },
         quelle: [],
-        pageErrors: [],
         turm: {
             bloecke: Array.from({ length: TURM_BLOECKE }, () => [3.5, 0.03]),
             hoehe: 70,
@@ -405,7 +399,6 @@ function selbsttest() {
             (b) => b.quelle.push("_fahrBoden Zeile 1 ruft getTerrainHeightAt"),
             /\(Q\) DACH-LESER: _fahrBoden Zeile 1/,
         ],
-        ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
         // der additive Kegel der Stärke 48 (am Vorfahren e3dd2b67: 39,38 m, Hub 3,23 → 1,36 m, die Sohle bis 2,88 m)
         ["der Kegel", (b) => (b.turm.bloecke[19] = [1.36, 2.88]), /KEIN HUB: Block 20 hob 1\.36/],
         ["die Sohle", (b) => (b.turm.bloecke[17][1] = 2.88), /SOHLE: Block 18 2\.88 m neben dem Mesh/],
@@ -1100,8 +1093,6 @@ async function probe(K) {
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(880000);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await nullRenderer(page);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
     let befund;
@@ -1130,7 +1121,6 @@ async function probe(K) {
         console.log("❌ LAUF-FEHLER: " + (befund ? befund.fehler : "kein Befund"));
         process.exit(1);
     }
-    befund.pageErrors = pageErrors;
     befund.quelle = quellenWand(stammLib.text(root));
     const fx = (v) => (Number.isFinite(v) ? v.toFixed(3) : String(v));
     for (const p of befund.proben)

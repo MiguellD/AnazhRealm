@@ -275,7 +275,6 @@ function pruefRaum(echt) {
     // Der zweite Weg einer Validierung: r184 fängt sie in seinem offenen Pipeline-Fehler-Bereich und meldet sie als
     // THREE-Konsolenzeile (nie als uncapturederror) — der eigene Hörer zählt auch diese (die Zeilen des Spiels nicht).
     const konsoleGpu = { n: 0, erste: [] };
-    page.on("pageerror", (e) => console.log(`  [Seiten-Fehler] ${zeit()}: ${String(e.message || e).split("\n")[0]}`));
     page.on("console", (m) => {
         const t = m.text();
         if (!t.startsWith("[AnazhRealm") && /does not fit in|\[Invalid [A-Za-z]+|\n\s*-\s*While /.test(t)) {

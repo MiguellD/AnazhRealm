@@ -36,7 +36,6 @@ function check(name, ok) {
         window.__anazhHeadlessNullRenderer = true;
     });
     const errors = [];
-    page.on("pageerror", (e) => errors.push((e.stack || e.message || String(e)).split("\n")[0]));
     page.on("console", (m) => {
         const t = m.text();
         if (/Chunk-Generation-Fehler|WASM-MIME|Vendor-Lib nicht geladen/.test(t))
@@ -317,7 +316,7 @@ function check(name, ok) {
 
         // ── AUSWERTUNG ──
         console.log(`\n=== Schnell-Playtest (Kern-Gesundheit) ===`);
-        check("Keine Page-/Console-Fehler (Crash-Wand)", errors.length === 0);
+        check("Keine Console-Fehler (Crash-Wand)", errors.length === 0);
         if (errors.length) errors.slice(0, 5).forEach((e) => console.log("     ⟶ " + e));
         check("window.anazhRealm.state erreichbar", R.stateReachable === true);
         check(`voxelChunks gebaut (${R.voxelChunks} ≥ 1)`, R.voxelChunks >= 1);

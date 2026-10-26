@@ -973,7 +973,10 @@ class AnazhRealm_gelaende_kollision {
     // Das Tor-Gesetz eines Eintrags: reine porta-Zahlen (Dial-Satz p · membranUniforms mu ·
     // MEMBRAN_GESETZ), wenn der Bauplan eine gate-Gestalt trägt — via studioGestalt-Zeile (welt_portal →
     // geisttor) oder KIND_POLICY.gate.prefix (tor_drachentor → drachentor). EINE Quelle: porta-core
-    // (main-seitig geladen, index.html); memoisiert je Gestalt. null ohne Tor/Kern (headless → Alt-Pfad).
+    // (main-seitig geladen, index.html); memoisiert je Gestalt und Stempel. null ohne Tor/Kern (headless → Alt-Pfad).
+    // DAS GESETZ LIEST DEN STEMPEL (KI K2): der Dial-Satz ist `gateParams(Rezept, Stempel)` wie im Bau des Kerns — die Membran
+    // (energy, swirl, fractal …) und die Kollision des geprägten Tors folgen seinem Stempel; vorher las sie das Rezept allein,
+    // acht Membran-Regler wirkten in keiner Welt und ein geprägtes Tor stieß mit der Hülle des ungeprägten.
     _torGesetzFor(entry) {
         if (!entry || typeof entry.type !== "string") return null;
         const core = typeof globalThis !== "undefined" ? globalThis.__portaCore : null;
@@ -992,17 +995,19 @@ class AnazhRealm_gelaende_kollision {
         const pre = gestalt ? core.PRESETS[gestalt] : null;
         if (!pre || pre.kind !== "gate") return null;
         if (!this._torGesetzMemo) this._torGesetzMemo = new Map();
-        let g = this._torGesetzMemo.get(gestalt);
+        const ov = this._artifactStudioOv(entry);
+        const key = ov ? gestalt + "|ov:" + this._studioOvHash(ov) : gestalt;
+        let g = this._torGesetzMemo.get(key);
         if (!g) {
-            const p = core.gateParams(pre);
-            g = { gestalt, p, mu: core.membranUniforms(p), gesetz: core.MEMBRAN_GESETZ };
+            const p = core.gateParams(pre, ov);
+            g = { gestalt, key, p, mu: core.membranUniforms(p), gesetz: core.MEMBRAN_GESETZ };
             // V18.491.87 — porta messen Host-Leser: Stich/Schub/Dicke/Streckung am Rezept (fail-soft).
             if (typeof core.messen === "function") {
                 try {
                     g.messen = core.messen(p);
                 } catch (_) {}
             }
-            this._torGesetzMemo.set(gestalt, g);
+            this._torGesetzMemo.set(key, g);
         }
         return g;
     }
@@ -1010,7 +1015,8 @@ class AnazhRealm_gelaende_kollision {
     // Das Fahrzeug-Gesetz eines Eintrags (Muster `_torGesetzFor`): reine vehicle-Zahlen (exportDrive:
     // sitz + huelle + Fahrwerte) aus dem SYNCHRON geladenen Kern (Lockstep-fest, nie der async Buch-
     // Stand), via studioGestalt-Zeile oder KIND_POLICY.vehicle.prefix. Domänen-Wand: pre.kind ===
-    // "vehicle". Memoisiert je Gestalt; null ohne Fahrzeug/Kern (fail-closed → Donor-Pfad).
+    // "vehicle". Memoisiert je Gestalt und Stempel; null ohne Fahrzeug/Kern (fail-closed → Donor-Pfad). Der Stempel tritt
+    // hinter s+fx wie im Bau des Kerns (KI K2): Griff, Feder und Hülle des geprägten Wagens fahren, wie er gebaut ist.
     _fahrzeugGesetzFor(entry) {
         if (!entry || typeof entry.type !== "string") return null;
         const core = typeof globalThis !== "undefined" ? globalThis.__vehicleCore : null;
@@ -1027,11 +1033,13 @@ class AnazhRealm_gelaende_kollision {
         const pre = gestalt ? core.PRESETS[gestalt] : null;
         if (!pre || pre.kind !== "vehicle") return null;
         if (!this._fahrzeugGesetzMemo) this._fahrzeugGesetzMemo = new Map();
-        let g = this._fahrzeugGesetzMemo.get(gestalt);
+        const ov = this._artifactStudioOv(entry);
+        const key = ov ? gestalt + "|ov:" + this._studioOvHash(ov) : gestalt;
+        let g = this._fahrzeugGesetzMemo.get(key);
         if (!g) {
-            // s+fx ist exakt der Brücken-Merge (phytogenesis fahrprofil-Münze) —
+            // s+fx+Stempel ist exakt der Merge des Baus (vehicle-core buildInstance) —
             // der Kern mergt DEFAULT_P+BASE_P intern davor: EINE Merge-Ordnung.
-            const P = Object.assign({}, pre.s, pre.fx);
+            const P = Object.assign({}, pre.s, pre.fx, ov);
             g = { gestalt, drive: core.exportDrive(P) };
             // V18.491.88 — vehicle LEHREN/messen Host-Leser (fail-soft; exportDrive unverändert).
             if (typeof core.evalLehren === "function") {
@@ -1044,7 +1052,7 @@ class AnazhRealm_gelaende_kollision {
                     g.messen = core.messen(P);
                 } catch (_) {}
             }
-            this._fahrzeugGesetzMemo.set(gestalt, g);
+            this._fahrzeugGesetzMemo.set(key, g);
         }
         return g;
     }

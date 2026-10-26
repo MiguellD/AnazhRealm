@@ -237,7 +237,6 @@ async function main() {
             `Roundtrip mint→zurücklesen: ${bufs} Puffer · ${(bytes / 1024).toFixed(0)} KB byte-gleich` +
                 (diffs.length ? ` (${diffs[0]})` : "")
         );
-        if (realm.pageErrors.length) console.log("  Seiten-Fehler:", realm.pageErrors.slice(0, 3));
     } finally {
         fs.rmSync(tmp, { recursive: true, force: true });
         await realm.close();

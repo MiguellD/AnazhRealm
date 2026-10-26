@@ -257,7 +257,13 @@ function nahDeckungInSeite(o) {
     const ZELLE = 2;
     const zk = (ix, iz) => ix * 65536 + iz;
     let C = window.__nahSpeicher;
-    if (o.neu || !C || !o.ort || C.id !== o.ort.id) {
+    // DER STAND DES GEZEICHNETEN (leib.K4): der Speicher gilt nur dem Bestand, aus dem er gelegt wurde — jeder Slot einer
+    // Instanz-Gruppe, der kommt oder geht (der Stufen-Wechsel eines Hauses, `slotStand`), legt ihn neu. Vorher hielt der Gang
+    // die Dreiecke seines ersten Bilds: das Haus in 12 m stand dort auf Stufe 1, ging nah auf Stufe 0, und die Linse zählte die
+    // nicht mehr gezeichnete Stufe 1 vor der Hülle der Stufe 0 (Bild 1032, Bau 0,9 % — je nach Lade-Takt rot oder grün).
+    let stand = 0;
+    for (const g of (st.archInstanceGroups || new Map()).values()) stand += g.slotStand | 0;
+    if (o.neu || !C || !o.ort || C.id !== o.ort.id || C.stand !== stand) {
         const tris = [];
         const uvs = [];
         const metas = [];
@@ -297,6 +303,7 @@ function nahDeckungInSeite(o) {
         }
         C = window.__nahSpeicher = {
             id: o.ort ? o.ort.id : "?",
+            stand,
             tris: ft,
             uvs: new Float32Array(uvs),
             metas,

@@ -340,16 +340,7 @@ async function fahreWeg(browser, weg, schein) {
     const basis = weg.split("-")[0];
     const form = weg.endsWith("-ohne-id") ? "ohne-id" : weg.endsWith("-ohne-meta") ? "ohne-meta" : "voll";
     const tuer = TUEREN.has(basis);
-    let pageErr = null;
-    let phase = "boot A";
     let gemeldet = null;
-    page.on("pageerror", (err) => {
-        const zeilen = String(err.stack || err.message).split("\n");
-        if (!pageErr) pageErr = `[${phase}] ${zeilen.slice(0, 4).join(" | ")}`;
-    });
-    page.on("framenavigated", (f) => {
-        if (f === page.mainFrame() && phase !== "boot A") phase = "nach dem Reload";
-    });
     page.on("dialog", (d) => d.accept().catch(() => {}));
     await page.exposeFunction("__grenzeMelde", (x) => {
         gemeldet = x;
@@ -365,7 +356,6 @@ async function fahreWeg(browser, weg, schein) {
         const a = await bereit(page, null);
         rep.boot.push(a.ms);
         if (!a.ok) throw new Error("Welt A nicht bereit nach 120 s");
-        phase = "Weg";
         // A ist gespeichert (sein Platz besteht), bevor sie ihr Zeichen trägt
         const aId = await page.evaluate(() => {
             const r = window.anazhRealm;
@@ -617,7 +607,6 @@ async function fahreWeg(browser, weg, schein) {
         rep.befunde.push(`ABBRUCH: ${e && e.message ? e.message : e}`);
     } finally {
         verzoegerung = 0;
-        if (pageErr) rep.befunde.push(`PAGE-ERROR: ${pageErr}`);
         rep.ms = Date.now() - t0;
         rep.befunde = Array.from(new Set(rep.befunde));
         await ctx.close();

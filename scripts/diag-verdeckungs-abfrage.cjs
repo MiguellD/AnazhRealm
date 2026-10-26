@@ -616,8 +616,6 @@ async function verdeckungPhase(opts) {
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 180 });
     await page.evaluateOnNewDocument(sammlerInstall);
-    const seitenFehler = [];
-    page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
     const T0 = Date.now();
     const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
     const out = { phasen: {} };
@@ -688,7 +686,6 @@ async function verdeckungPhase(opts) {
     }
     await browser.close();
     server.close();
-    out.seitenFehlerGesamt = seitenFehler.slice(0, 8);
     const v = urteil(out);
     log(v.length ? "ROT" : "GRÜN");
     if (v.length) {

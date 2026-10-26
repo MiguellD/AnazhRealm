@@ -27,7 +27,6 @@ const server = statikServer();
     const browser = await starteBrowser({ art: "null" });
     const page = await browser.newPage();
     await nullRenderer(page);
-    page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
     // der Stoff-Zeuge: ein Bruch des Geomorph-Stoffs meldet ERROR „STOFF: der Geomorph des Bodens" (`_stoffBruch`)
     const stoffBrueche = [];
     page.on("console", (m) => {

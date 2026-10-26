@@ -141,9 +141,6 @@ async function auditStateAndMethods() {
     const browser = await starteBrowser({ art: "standard", zusatz: ["--autoplay-policy=no-user-gesture-required"] });
     try {
         const page = await browser.newPage();
-        page.on("pageerror", (err) => {
-            fail("PAGE-ERROR", "Script-Exception", err.message);
-        });
         // GPU-FREI booten (Null-Renderer), wie das Mechanik-Gate: der State-Audit
         // liest nie ein Pixel (nur State-Pfade) → der echte swiftshader-Renderer ist reine
         // Crash-Quelle. Die No-op-Hülle bootet schneller + ohne GPU-Tod-Risiko.

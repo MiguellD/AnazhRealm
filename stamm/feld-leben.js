@@ -269,7 +269,9 @@ class AnazhRealm_feld_leben {
             spawn_studio: (a) => {
                 const n = typeof a[0] === "string" ? this._studioBlueprintForWord(a[0].toLowerCase()) : null;
                 const bp = n && this.state.blueprints ? this.state.blueprints[n] : null;
-                return `lässt ${a[2] || 1}× „${(bp && bp.label) || a[0]}" aus dem Studio wachsen ${pos(a[1])}`;
+                const was = (bp && bp.label) || (n && this._werkLabel(n)) || a[0];
+                if (n && this._studioWerkVerb(n) === "praegung") return `prägt „${was}" in die Welt`;
+                return `lässt ${a[2] || 1}× „${was}" aus dem Studio wachsen ${pos(a[1])}`;
             },
             spawn_island: (a) => `setzt eine schwebende Insel ${pos(a[0])}`,
             spawn_ufo: (a) => `ruft ein UFO ${pos(a[0])}`,
@@ -2247,7 +2249,8 @@ class AnazhRealm_feld_leben {
     // „Alemannisch"), nie die interne id. Leser: der Studio-Satz (`describe`) und der Satz des Ergebnisses.
     _werkLabel(name) {
         const bp = this.state.blueprints && this.state.blueprints[name];
-        return String((bp && bp.label) || name).split(/\s[·—(]/)[0];
+        const rec = !bp && this._foundry && this._foundry.recipes ? this._foundry.recipes[name] : null;
+        return String((bp && bp.label) || (rec && rec.lab) || name).split(/\s[·—(]/)[0];
     }
 
     // Das Grundriss-Gesetz einer Art: { preset, pre (die Zeile des Gesetzbuchs der Architektur), rec (die des Buchs) } für ein
