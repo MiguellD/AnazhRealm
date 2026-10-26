@@ -160,7 +160,7 @@ function probe(o) {
         const [folge, s0] = [[], window.__wetterSpion().seq];
         for (let i = 0; i < o.zuege; i++) {
             performance.now = () => pn.call(performance) + uhr * (i + 1);
-            st.spielZeit = Z * (i + 1);
+            [st.spielZeit, st.weatherEffectTime] = [Z * (i + 1), 0];
             r._loopWeatherAndGrowth(0);
             folge.push(st.weather);
             st.weatherTransition = null;
@@ -180,7 +180,7 @@ function probe(o) {
     const kern = P.wetterAt;
     P.wetterAt = () => ({ zeile: "sturm" });
     zug("saat-a", 0);
-    st.spielZeit = Z;
+    [st.spielZeit, st.weatherEffectTime] = [Z, 0];
     r._loopWeatherAndGrowth(0);
     P.wetterAt = kern;
     const nass = (w) => r._weatherIsWet(w);

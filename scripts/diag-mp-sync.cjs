@@ -25,12 +25,12 @@
 //                 am Draht: jede Art außer `NETZ_ERLAUBT` ist eine Zustands-Nachricht. Der Leib: B's Ghost rechnet jeden Schritt
 //                 von A bit-gleich (je seq). Selbsttests: B wendet jede Akt-Nachricht doppelt an und verschiebt den Samen des
 //                 Baus → Edits und Bauten ROT; A sendet eine Wetter-Nachricht → das Netz-Log ROT.
-//   (f) DIE WELT-UHR (feld.K2#2): alle Teil-Simulationen aus Saat + Akten. A entfacht am Ort (der Weg des Brennglases) und
-//                 springt 20 min Spielzeit in einen Zug, in dem am Ort ein Sturm aufzieht (erst in den Zug davor, der jeden alten
-//                 Wunsch nimmt); B folgt der Uhr von A (`pos.w`, `_weltUhrNimm`) — der Zug der Welt-Uhr steht im Abdruck von (e),
-//                 über Peers und den Reload mitten im Sturm. Was Stufe 2 noch verlangt, steht als OFFEN mit Zahl (`simAbdruck`):
-//                 Wetter (Wort, Übergang), Leben (A pflegt im Gespräch) und Brand je Zelle gleich, der Pegel (hier ungemessen:
-//                 kein Wasser am Graben). Selbsttest: B mit eigener Uhr → der Zug ROT.
+//   (f) DIE WELT-UHR (feld.K2#2): alle Teil-Simulationen aus Saat + Akten. A springt 20 min Spielzeit in einen Zug, in dem
+//                 am Ort ein Sturm aufzieht (erst in den Zug davor, der jeden alten Wunsch nimmt); B folgt der Uhr von A
+//                 (`pos.w`, `_weltUhrNimm`) — der Zug der Welt-Uhr steht hart im Abdruck von (e), über Peers und den Reload
+//                 mitten im Sturm. Was Stufe 2 noch verlangt, steht als OFFEN mit Zahl: Wetter (Wort, Übergang) und Leben (A
+//                 pflegt im Gespräch) je Zelle gleich; Brand und Pegel sind hier ungemessen (das Entfachen reist nicht, kein
+//                 Wasser am Graben). Selbsttest: B mit eigener Uhr → der Zug ROT.
 // Dazu der Spielpfad: Seite A über den KNOPF (`#p2p-toggle`, zweiter Klick im Aufbau startet kein zweites Init, der
 // Knopf liest die EINE Absicht), Seite B über den BOOT (die gemerkte Absicht aus `p2pPersist`). A läuft nach dem
 // Ladeschirm über die Tastatur (`_stepCharacter`; A bootete zuerst, sein Ladeschirm fällt zuerst), B sieht A an dessen
@@ -89,7 +89,8 @@ function netzLog() {
     }
 }
 // Der Abdruck der Welt aus den Schreib-Akten (Seite): die Edits, die Bauten der Akte (`bauten`, je eine Kennung), der Boden an
-// jedem Edit und (f) der Zug der Welt-Uhr — verglichen als JSON-Text, byte-gleich oder nicht
+// jedem Edit und (f) der Zug der Welt-Uhr — verglichen als JSON-Text, byte-gleich oder nicht; dazu (f) das Wetter (Wort, Übergang)
+// und das Leben je Zelle, die Stufe 2 noch verlangt
 function abdruck(bauten) {
     const r = window.anazhRealm;
     const st = r.state;
@@ -108,20 +109,13 @@ function abdruck(bauten) {
             e.studioOv || null,
         ]);
     const boden = edits.map(([, , x, y, z]) => [r._terrainDensityAt(x, y, z), r._voxelSurfaceY(x, z)]);
-    return { edits, bauten: B.sort(), boden, zug: r._wetterZug };
-}
-// (f) Was Stufe 2 noch verlangt (Seite): je Teil-Simulation ihre Zellen als JSON-Text — Wetter (Wort, Übergang), Leben, Brand
-function simAbdruck() {
-    const st = window.anazhRealm.state;
     const wt = st.weatherTransition;
-    const je = (m, f) => [...(m || [])].map(([k, e]) => JSON.stringify([k, ...f(e)]));
-    const asche = (st.worldMeta.taten || []).filter((a) => a.tat === "brand");
-    return {
-        wetter: [JSON.stringify([st.weather, wt && [wt.from, wt.to, wt.startedAt, wt.duration]])],
-        leben: je(st.lifeField, (e) => [e.a, e.t]),
-        brand: je(st.brandFeld, (e) => [e.stoff, e.glut]).concat(JSON.stringify(asche)),
-    };
+    const wetter = JSON.stringify([st.weather, wt && [wt.from, wt.to, wt.startedAt, wt.duration]]);
+    const leben = [...(st.lifeField || [])].map(([k, e]) => JSON.stringify([k, e.a, e.t]));
+    return { edits, bauten: B.sort(), boden, zug: r._wetterZug, wetter, leben };
 }
+// Byte-gleich je Teil des Abdrucks (JSON-Text)
+const gleichIn = (A, B) => (k) => JSON.stringify(A[k]) === JSON.stringify(B[k]);
 // (f) DER SPRUNG: A springt in den Zug vor dem nächsten Sturm am Ort, `ab` Züge voraus (die Front einen Zug davor ohne Sturm)
 // → [die Uhr nach dem Sprung, die Uhr im Sturm] in s
 function sturmSprung(ab) {
@@ -384,7 +378,6 @@ hauptLauf(async () => {
         );
 
         // ── (b) TÜR: der nackte Aufruf, Server beim Aufbau aus ──
-        console.log("(b) Tür-Probe: nackter Aufruf, signaling-server 3 s aus ...");
         const vorTuer = await pageA.evaluate(() => window.anazhRealm.state.p2p.enabled === true);
         await pageA.evaluate(() => window.anazhRealm.initP2PSync(null));
         await sleep(3000);
@@ -466,7 +459,6 @@ hauptLauf(async () => {
         check("Knopf an: A verbunden, Knopf „an“", kVerb.connected && kVerb.knopf === "true", `Inits ${kVerb.inits}`);
 
         // ── Seite B: der BOOT (die gemerkte Absicht aus p2pPersist) ──
-        console.log("Seite B bootet mit der gemerkten Absicht ...");
         const pageB = await seite(browser, "B", false);
         await waitFor(pageB, () => window.anazhRealm.state.p2p.connected === true, "B verbunden über den Boot");
         const idA = kVerb.peerId;
@@ -505,7 +497,7 @@ hauptLauf(async () => {
         const laufUndSicht = async () => {
             const vorLauf = await pageA.evaluate(() => {
                 const p = window.anazhRealm.state.playerMesh.position;
-                return { x: p.x, y: p.y, z: p.z };
+                return { x: p.x, z: p.z };
             });
             await pageB.evaluate((id) => {
                 const e = window.anazhRealm.state.p2p.peers.get(id);
@@ -553,7 +545,7 @@ hauptLauf(async () => {
             );
             const wahrA = await pageA.evaluate(() => {
                 const p = window.anazhRealm.state.playerMesh.position;
-                return { x: p.x, y: p.y, z: p.z, bewegtAm: window.__mp.eigenBewegtAm };
+                return { x: p.x, z: p.z, bewegtAm: window.__mp.eigenBewegtAm };
             });
             const sichtB = await pageB.evaluate((id) => {
                 const e = window.anazhRealm.state.p2p.peers.get(id);
@@ -561,7 +553,6 @@ hauptLauf(async () => {
                 const ls = e.lockstep;
                 return {
                     x: p.x,
-                    y: p.y,
                     z: p.z,
                     art: e.meshKind,
                     sichtbar: e.mesh.visible,
@@ -601,9 +592,6 @@ hauptLauf(async () => {
             `B sieht A an dessen Ort (±${ABSTAND_M} m waagrecht)`,
             l0.sichtB.sichtbar && l0.abstand <= ABSTAND_M,
             sichtSatz(l0)
-        );
-        console.log(
-            `  INFO Latenz A bewegt → B sieht: ${l0.latenz === null ? "n/a" : l0.latenz + " ms"} (Soll lokal ≤ ${LATENZ_MS} ms, in der CI berichtet)`
         );
         if (!process.env.CI && l0.latenz !== null)
             check(`Latenz ≤ ${LATENZ_MS} ms (lokal)`, l0.latenz <= LATENZ_MS, `${l0.latenz} ms`);
@@ -707,10 +695,6 @@ hauptLauf(async () => {
                 `Verbrauch je Takt bis ${max("n")}, Puffer nach dem Takt bis ${max("nach")}, Gesetz gehalten ${gehalten}/${g.length}`
             );
         };
-        console.log(
-            `  INFO (d) der Ghost bei B verbraucht erst je ${ZUFLUSS_SOLL} angekommene Schritte von A (${ZUFLUSS_FAKTOR} × aufholJeSchritt ${lsGesetz.aufhol}); ` +
-                `je Takt das Gesetz: Kappe ceil(${lsGesetz.aufhol} × dt / ${lsGesetz.fixMs.toFixed(2)} ms) oder Reserve ${lsGesetz.reserve}`
-        );
         // das Fenster endet nach seinem Ereignis (drei lange Takte mit dem Ghost von A), nie nach der Uhr des Läufers
         const fensterZu = async () => {
             await waitFor(
@@ -747,29 +731,27 @@ hauptLauf(async () => {
         );
         await sleep(1500);
 
-        // ── (f) DIE WELT-UHR: A entfacht am Ort und springt 20 min Spielzeit in einen Sturm, erst in den Zug davor (er nimmt jeden
+        // ── (f) DIE WELT-UHR: A springt 20 min Spielzeit in einen Sturm, erst in den Zug davor (er nimmt jeden
         // alten Wunsch der Welt); B folgt je Sprung seinem Ereignis, der Uhr von A — nie der Wanduhr ──
-        const folgt = (z) => waitFor(pageB, (z) => window.anazhRealm.state.spielZeit >= z, "B trägt die Uhr von A", z);
-        const entfacht = await pageA.evaluate(() => {
-            const p = window.anazhRealm.state.playerMesh.position;
-            return !!window.anazhRealm._brandEntfachen(p.x, p.z);
-        });
+        const folgt = (z) =>
+            waitFor(pageB, (z) => window.anazhRealm.state.spielZeit >= z, "B trägt die Uhr von A", z).catch(() => {
+                throw new Error(
+                    "(f) ROT: B trägt die Welt-Uhr von A nicht — Täter: die Uhr je Seite (pos.w, _weltUhrNimm)"
+                );
+            });
         const [vorSturm, sturm] = await pageA.evaluate(sturmSprung, 10);
         await folgt(vorSturm);
         await pageA.evaluate((z) => (window.anazhRealm.state.spielZeit = z), sturm);
         await folgt(sturm);
-        // (f) was Stufe 2 noch verlangt: je Teil-Simulation die Zellen von B, die A trägt — OFFEN, bis jede gleich ist
-        const teilSims = async (wann) => {
-            const [a, b] = [await pageA.evaluate(simAbdruck), await pageB.evaluate(simAbdruck)];
-            const je = Object.keys(a).map((k) => `${k} ${b[k].filter((z) => a[k].includes(z)).length}/${a[k].length}`);
-            const grund = `entfacht ${entfacht} — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen reisen nicht`;
+        // (f) was Stufe 2 noch verlangt, gemessen und OFFEN, bis es gleich ist: Wetter (Wort, Übergang) und Leben je Zelle
+        const weich = (wann, A, B) =>
             check(
                 `(f) ${wann}: Teil-Simulationen gleich`,
                 false,
-                `${je.join(" · ")} · pegel ungemessen · ${grund}`,
+                `Wetter ${A.wetter === B.wetter ? "gleich" : "VERSCHIEDEN"} · Leben ${B.leben.filter((z) => A.leben.includes(z)).length}/` +
+                    `${A.leben.length} gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen reisen nicht`,
                 true
             );
-        };
 
         // ── (c)+(e) GLEICH FÜR ALLE (feld.K2): A gräbt, schüttet und baut im Gespräch (die Chat-Taste, der Spielpfad) ──
         // B trägt denselben Abdruck der Schreib-Akte (`abdruck`). Täter, wenn B einen Edit weniger trägt: `_chatTryVoxelDebugCommand`
@@ -826,11 +808,12 @@ hauptLauf(async () => {
                 edits: A.edits.length - nA,
                 A,
                 B,
-                gleich: (k) => JSON.stringify(A[k]) === JSON.stringify(B[k]),
+                gleich: gleichIn(A, B),
             };
         };
         const g = await akte();
         const teile = ["edits", "bauten", "boden", "zug"];
+        const satz = (gl) => teile.map((k) => `${k} ${gl(k) ? "gleich" : "VERSCHIEDEN"}`).join(" · ");
         check(
             "A gräbt, schüttet und baut per Chat (zwei Edits und ein Bau bei A)",
             g.edits === 2 && g.a.length === 1,
@@ -839,7 +822,7 @@ hauptLauf(async () => {
         check(
             "(e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B",
             g.a.length > 0 && teile.every(g.gleich),
-            teile.map((k) => `${k} ${g.gleich(k) ? "gleich" : "VERSCHIEDEN"}`).join(" · ") +
+            satz(g.gleich) +
                 (g.B.edits.length < g.A.edits.length
                     ? " — Täter _chatTryVoxelDebugCommand: schnitzt direkt statt über dslRun"
                     : "") +
@@ -851,7 +834,7 @@ hauptLauf(async () => {
                     : ` — Bau bei A ${JSON.stringify(g.A.bauten)}, bei B ${JSON.stringify(g.B.bauten)}: die Kennung ist keine Funktion des Akts`) +
                 (g.gleich("zug") ? "" : " — Täter: die Welt-Uhr reist nicht (pos.w)")
         );
-        await teilSims("Peers");
+        weich("Peers", g.A, g.B);
 
         // ── (a) URSPRUNG ── (vor dem Reload von B: seine Zähler leben in der Seite)
         const endA = await bericht(pageA);
@@ -891,16 +874,13 @@ hauptLauf(async () => {
         if (nachReload) await pageB.evaluate(installiere, false);
         await waitFor(pageB, () => window.anazhRealm._wetterZug !== undefined, "B zieht den Zug");
         const R = nachReload ? await pageB.evaluate(abdruck, g.a) : null;
+        const rg = R && gleichIn(R, g.A);
         check(
             "(e) Reload: B trägt nach dem Neuladen denselben Abdruck",
-            !!R && JSON.stringify(R) === JSON.stringify(g.A),
-            R
-                ? teile
-                      .map((k) => `${k} ${JSON.stringify(R[k]) === JSON.stringify(g.A[k]) ? "gleich" : "VERSCHIEDEN"}`)
-                      .join(" · ")
-                : "B stand nach dem Reload nicht mit dem Bau"
+            !!R && teile.every(rg),
+            R ? satz(rg) : "B stand nach dem Reload nicht mit dem Bau"
         );
-        await teilSims("Reload mitten im Sturm");
+        if (R) weich("Reload mitten im Sturm", g.A, R);
         // der Selbsttest: B wendet jede Akt-Nachricht doppelt an und nimmt den Samen des Baus um eins verschoben — die Edits UND die
         // Bauten des Abdrucks fallen ROT (die Probe sieht beide); (f) B nimmt keine Uhr mehr, A springt einen Zug — der Zug ROT
         await pageA.evaluate(sturmSprung, 1);
@@ -924,9 +904,7 @@ hauptLauf(async () => {
         check(
             "(e)(f) Selbsttest: B wendet jede Akt-Nachricht doppelt an, verschiebt den Samen des Baus, trägt eigene Uhr → Edits, Bauten, Zug ROT",
             s.a.length > 0 && !["edits", "bauten", "zug"].some(s.gleich),
-            ["edits", "bauten", "zug"]
-                .map((k) => `${k} ${s.gleich(k) ? "GRÜN, die Linse ist blind" : "ROT"}`)
-                .join(" · ")
+            satz(s.gleich)
         );
         // DAS NETZ-LOG beider Seiten (B vor und nach dem Reload): jede Art ist erlaubt, sonst eine Zustands-Nachricht
         const netz = async () => {

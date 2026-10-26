@@ -589,10 +589,6 @@ async function kreaturProben(r, T, opts) {
         const c = tier(land(95, -40), "wesen");
         r.assignCreatureTask(c, "wait", {}, { silent: true });
         const s0 = c.scale.x;
-        const altWetterT = s.weatherEffectTime;
-        restore.push(() => {
-            s.weatherEffectTime = altWetterT;
-        });
         if (taeter === "wachsen")
             decke(
                 restore,
@@ -606,10 +602,7 @@ async function kreaturProben(r, T, opts) {
             );
         // 3600 Spiel-Sekunden am Loop-Pfad (je Aufruf eine Sekunde weiter)
         const t0 = 1e6;
-        for (let k = 0; k < 3600; k++) {
-            s.weatherEffectTime = 0;
-            r._loopWeatherAndGrowth(1 / 60, t0 + k);
-        }
+        for (let k = 0; k < 3600; k++) r._loopWeatherAndGrowth(1 / 60, t0 + k);
         return { skala: +(c.scale.x / s0).toFixed(4) };
     });
 
