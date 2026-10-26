@@ -1,7 +1,7 @@
 {
  "sha": "83df2052d84b370158b28048ca90fb5f5f2ab30f",
  "geraet": "radeon",
- "zeit": "2026-10-26T05:19:08.736Z",
+ "zeit": "2026-10-26T05:53:01.465Z",
  "host": "MiguellD",
  "je": {
   "gelaende.K2#1": {
@@ -367,12 +367,12 @@
   },
   "profiband.K4#1": {
    "gruen": false,
-   "zahl": "0 von 4 Sitzungen ohne Frame > 100 ms (max 217.5 · 267.8 · 209.2 · 234.1 ms; Hänger 1/1/1/1)",
+   "zahl": "1 von 4 Sitzungen ohne Frame > 100 ms (max 217.7 · 159.7 · 74.9 · 109.1 ms; Hänger 1/2/0/1)",
    "exit": 0,
-   "minuten": 12.38,
-   "grund": "ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 217.5 · 267.8 · 209.2 · 234.1 ms; Hänger 1/1/1/1)",
+   "minuten": 27.77,
+   "grund": "ROT: 1 von 4 Sitzungen ohne Frame > 100 ms (max 217.7 · 159.7 · 74.9 · 109.1 ms; Hänger 1/2/0/1)",
    "gpu": "amd/rdna-3",
-   "zeit": "2026-10-26T04:07:13.414Z",
+   "zeit": "2026-10-26T05:25:15.514Z",
    "abdruck": "3b1e54b5711e",
    "port": 7804
   },
@@ -398,14 +398,13 @@
    "port": 7807
   },
   "klang.K4#1": {
-   "gruen": false,
-   "zahl": "2 Stoffe mit ≥ 5 Schritten (Exit 0)",
+   "gruen": true,
+   "zahl": "gras 5635 Hz (n 21) · laub 5265 Hz (n 16) · quarz 3206 Hz (n 19) — kleinster Abstand 370 Hz",
    "exit": 0,
-   "minuten": 0.99,
-   "grund": "ROT: 2 Stoffe mit ≥ 5 Schritten (Exit 0)",
+   "minuten": 1.43,
    "gpu": "amd/rdna-3",
-   "zeit": "2026-10-26T04:40:21.827Z",
-   "abdruck": "762071c99dce",
+   "zeit": "2026-10-26T05:53:01.465Z",
+   "abdruck": "29930e27f73e",
    "port": 7808
   },
   "klang.K5#2": {
