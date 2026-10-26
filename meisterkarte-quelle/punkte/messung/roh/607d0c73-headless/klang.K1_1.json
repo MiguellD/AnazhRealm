@@ -1,0 +1,4260 @@
+{
+ "stamm": {
+  "rot": []
+ },
+ "hauptSynthese": {
+  "summe": 0,
+  "phasen": {
+   "anreise": 0,
+   "kosten": 0
+  }
+ },
+ "spitzen": {
+  "wiese": {
+   "wand": true,
+   "spitzeDbfs": -35.6,
+   "rmsDbfs": -48.2
+  },
+  "wieseOhneLeib": {
+   "wand": true,
+   "spitzeDbfs": -35.6,
+   "rmsDbfs": -48.2
+  },
+  "wald": {
+   "wand": true,
+   "spitzeDbfs": -23,
+   "rmsDbfs": -43.7
+  },
+  "dorf": {
+   "wand": true,
+   "spitzeDbfs": -8.2,
+   "rmsDbfs": -39.3
+  },
+  "glutArm": {
+   "wand": true,
+   "spitzeDbfs": -1,
+   "rmsDbfs": -27.3
+  },
+  "seeufer": {
+   "wand": true,
+   "spitzeDbfs": -17.2,
+   "rmsDbfs": -38.3
+  },
+  "fallArm": {
+   "wand": true,
+   "spitzeDbfs": -9.7,
+   "rmsDbfs": -22.7
+  },
+  "lab:wiese": {
+   "wand": true,
+   "spitzeDbfs": -36.8,
+   "rmsDbfs": -49.4
+  },
+  "lab:seeufer": {
+   "wand": true,
+   "spitzeDbfs": -16.3,
+   "rmsDbfs": -36.7
+  },
+  "lab:wald": {
+   "wand": true,
+   "spitzeDbfs": -24.9,
+   "rmsDbfs": -45.6
+  },
+  "lab:dorf": {
+   "wand": true,
+   "spitzeDbfs": -7.9,
+   "rmsDbfs": -38.5
+  },
+  "lab:glutArm": {
+   "wand": true,
+   "spitzeDbfs": -1.1,
+   "rmsDbfs": -26.6
+  },
+  "lab:fallArm": {
+   "wand": true,
+   "spitzeDbfs": -4,
+   "rmsDbfs": -18.6
+  },
+  "lab:sturm": {
+   "wand": true,
+   "spitzeDbfs": -3.5,
+   "rmsDbfs": -23.7
+  },
+  "lab:nacht": {
+   "wand": true,
+   "spitzeDbfs": -29.8,
+   "rmsDbfs": -47.2
+  }
+ },
+ "orte": {
+  "wiese": {
+   "x": -397.37435956002514,
+   "z": -1092.429469413201,
+   "vomMessort": 126,
+   "glutHoerweite": 26
+  },
+  "seeufer": {
+   "x": 2382.8154601944357,
+   "z": -5193.694608409414,
+   "wasser": {
+    "x": 2383.355727241822,
+    "z": -5194.53610203239
+   },
+   "ring": {
+    "erst": 3,
+    "alle": 12
+   }
+  },
+  "wald": {
+   "x": -148.39999999999998,
+   "z": -1021.5999999999999,
+   "deckung": 1,
+   "bestand": 37
+  },
+  "dorf": {
+   "x": -285.15333994878404,
+   "z": -1038.0278189187975,
+   "glut": {
+    "x": -287.28000000000003,
+    "z": -1034.64,
+    "typ": "glutbrunnen"
+   }
+  },
+  "glutArm": {
+   "x": -286.748334987196,
+   "z": -1035.4869547296994,
+   "glut": {
+    "x": -287.28000000000003,
+    "z": -1034.64,
+    "typ": "glutbrunnen"
+   }
+  },
+  "fallArm": {
+   "x": 1570.6151516478296,
+   "z": 496.1061847293407,
+   "fall": {
+    "x": 1570.6151516478296,
+    "z": 492.1061847293407,
+    "d": 4,
+    "hoehe": 8.2
+   }
+  }
+ },
+ "daten": {
+  "wiese": {
+   "name": "wiese",
+   "ort": {
+    "x": -397.37435956002514,
+    "z": -1092.429469413201,
+    "vomMessort": 126,
+    "glutHoerweite": 26
+   },
+   "um": {
+    "takte": 297,
+    "chunks": 96,
+    "wald": true,
+    "waldTakte": 297
+   },
+   "aus": {
+    "dbfs": -50.1,
+    "spitzeDbfs": -34.9,
+    "baender": {
+     "63": -72.2,
+     "125": -68.6,
+     "250": -66.4,
+     "500": -71,
+     "1000": -77.2,
+     "2000": -60.9,
+     "4000": -64.9,
+     "8000": -89.5
+    }
+   },
+   "laufend": [
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    }
+   ],
+   "zensus": {
+    "lage": {
+     "windFeld": 0.06609364574406063,
+     "boe": 0.431764222293542,
+     "deckung": 0,
+     "regen": 0,
+     "sonne": 0.9622504486493761,
+     "temperatur": 17.414388776217887,
+     "voegel": [
+      {
+       "d": 92.15219378570326,
+       "pan": 0.8183635184651417
+      },
+      {
+       "d": 96.56603234939296,
+       "pan": 0.9173112399937013
+      },
+      {
+       "d": 64.17890905005189,
+       "pan": 0.47759303627314814
+      },
+      {
+       "d": 74.11106256206895,
+       "pan": 0.4846350938551899
+      },
+      {
+       "d": 22.846447157611436,
+       "pan": 0.25860006906952476
+      },
+      {
+       "d": 80.94803302566687,
+       "pan": 0.2938758069420095
+      },
+      {
+       "d": 66.12157237938534,
+       "pan": 0.01311984709319478
+      },
+      {
+       "d": 23.771285762638197,
+       "pan": -0.5517768825275162
+      },
+      {
+       "d": 80.90782671167835,
+       "pan": 0.06312660726860657
+      },
+      {
+       "d": 47.6726422421511,
+       "pan": -0.6368530070709181
+      },
+      {
+       "d": 30.119967671100166,
+       "pan": -0.8769563521518491
+      },
+      {
+       "d": 70.59464868898675,
+       "pan": -0.6014320358118821
+      },
+      {
+       "d": 63.143798366637,
+       "pan": -0.8570782311514548
+      },
+      {
+       "d": 60.185068354618714,
+       "pan": -0.9803539959935902
+      },
+      {
+       "d": 93.77526317764716,
+       "pan": -0.9784514075890172
+      }
+     ],
+     "ufer": {
+      "d": 1000000000,
+      "anteil": 0,
+      "pan": 0
+     },
+     "fluss": {
+      "d": 1000000000,
+      "tempo": 0,
+      "pan": 0
+     },
+     "fall": {
+      "d": 1000000000,
+      "hoehe": 0,
+      "pan": 0
+     },
+     "glut": {
+      "d": 35.473418582309215,
+      "flaeche": 0.38484510006474965,
+      "pan": -0.9115095429835578
+     },
+     "antwort": null
+    },
+    "stimmen": [
+     {
+      "name": "wind",
+      "gesetz": "klang:UMWELT.stimmen.wind",
+      "an": true,
+      "bereit": true,
+      "quellen": 2,
+      "db": -41.53206105787005,
+      "hz": 225.7204233221313,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "laub",
+      "gesetz": "klang:UMWELT.stimmen.laub",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 2699.75365088465,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "ufer",
+      "gesetz": "klang:UMWELT.stimmen.ufer",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 700,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "fluss",
+      "gesetz": "klang:UMWELT.stimmen.fluss",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 1500,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "fall",
+      "gesetz": "klang:UMWELT.stimmen.fall",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 600,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "regen",
+      "gesetz": "klang:UMWELT.stimmen.regen",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 5000,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "glut",
+      "gesetz": "klang:UMWELT.stimmen.glut",
+      "an": false,
+      "bereit": true,
+      "quellen": 0,
+      "db": -999,
+      "hz": 4588.986171097807,
+      "pan": -0.9115095429835578,
+      "rate": 1
+     },
+     {
+      "name": "vogel",
+      "gesetz": "klang:UMWELT.stimmen.vogel",
+      "an": true,
+      "bereit": true,
+      "quellen": 2,
+      "db": -40.54610468385232,
+      "hz": 9000,
+      "pan": -0.29323017603789425,
+      "rate": 1
+     },
+     {
+      "name": "grille",
+      "gesetz": "klang:UMWELT.stimmen.grille",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 2500,
+      "pan": 0,
+      "rate": 0.8354611039411383
+     }
+    ],
+    "leiber": {
+     "gehoert": 15,
+     "gezeichnet": 15
+    },
+    "tierRufe": 9,
+    "werkstatt": {
+     "laeuft": true,
+     "bestellt": 3,
+     "geliefert": 3,
+     "rufeBestellt": 0,
+     "rufeGespielt": 0
+    }
+   },
+   "baeume": 3,
+   "hauptSynthese": 0,
+   "mixMitte": {
+    "wind": {
+     "db": -36.28577636039593,
+     "gain": 0.15335967587101093,
+     "hz": 254.12447505604865,
+     "q": 0.8,
+     "pan": 0,
+     "rate": 1
+    },
+    "laub": {
+     "db": -999,
+     "gain": 0,
+     "hz": 2761.7261273950153,
+     "q": 0.5,
+     "pan": 0,
+     "rate": 1
+    },
+    "ufer": {
+     "db": -999,
+     "gain": 0,
+     "hz": 700,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "fluss": {
+     "db": -999,
+     "gain": 0,
+     "hz": 1500,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "fall": {
+     "db": -999,
+     "gain": 0,
+     "hz": 600,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "regen": {
+     "db": -999,
+     "gain": 0,
+     "hz": 5000,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "glut": {
+     "db": -999,
+     "gain": 0,
+     "hz": 4588.986171097807,
+     "q": 0.707,
+     "pan": -0.9115095429835578,
+     "rate": 1
+    },
+    "vogel": {
+     "db": -40.70942796077776,
+     "gain": 0.0921570579945725,
+     "hz": 9000,
+     "q": 0.707,
+     "pan": -0.3124099711263365,
+     "rate": 1
+    },
+    "grille": {
+     "db": -999,
+     "gain": 0,
+     "hz": 2500,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 0.8354611039411383
+    }
+   }
+  },
+  "wieseOhneLeib": {
+   "name": "wieseOhneLeib",
+   "ort": {
+    "x": -397.37435956002514,
+    "z": -1092.429469413201,
+    "vomMessort": 126,
+    "glutHoerweite": 26
+   },
+   "um": {
+    "takte": 89,
+    "chunks": 96,
+    "wald": true,
+    "waldTakte": 89
+   },
+   "aus": {
+    "dbfs": -54.7,
+    "spitzeDbfs": -42.4,
+    "baender": {
+     "63": -74,
+     "125": -68.3,
+     "250": -66.4,
+     "500": -70.8,
+     "1000": -77.1,
+     "2000": -83.8,
+     "4000": -90.7,
+     "8000": -99.7
+    }
+   },
+   "laufend": [
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    }
+   ],
+   "zensus": {
+    "lage": {
+     "windFeld": 0.06609364574406063,
+     "boe": 0.431764222293542,
+     "deckung": 0,
+     "regen": 0,
+     "sonne": 0.9622504486493761,
+     "temperatur": 17.414494889690204,
+     "voegel": [],
+     "ufer": {
+      "d": 1000000000,
+      "anteil": 0,
+      "pan": 0
+     },
+     "fluss": {
+      "d": 1000000000,
+      "tempo": 0,
+      "pan": 0
+     },
+     "fall": {
+      "d": 1000000000,
+      "hoehe": 0,
+      "pan": 0
+     },
+     "glut": {
+      "d": 35.473418582309215,
+      "flaeche": 0.38484510006474965,
+      "pan": -0.9115095429835578
+     },
+     "antwort": null
+    },
+    "stimmen": [
+     {
+      "name": "wind",
+      "gesetz": "klang:UMWELT.stimmen.wind",
+      "an": true,
+      "bereit": true,
+      "quellen": 2,
+      "db": -41.53206105787005,
+      "hz": 225.7204233221313,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "laub",
+      "gesetz": "klang:UMWELT.stimmen.laub",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 2699.75365088465,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "ufer",
+      "gesetz": "klang:UMWELT.stimmen.ufer",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 700,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "fluss",
+      "gesetz": "klang:UMWELT.stimmen.fluss",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 1500,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "fall",
+      "gesetz": "klang:UMWELT.stimmen.fall",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 600,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "regen",
+      "gesetz": "klang:UMWELT.stimmen.regen",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 5000,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "glut",
+      "gesetz": "klang:UMWELT.stimmen.glut",
+      "an": false,
+      "bereit": true,
+      "quellen": 0,
+      "db": -999,
+      "hz": 4588.986171097807,
+      "pan": -0.9115095429835578,
+      "rate": 1
+     },
+     {
+      "name": "vogel",
+      "gesetz": "klang:UMWELT.stimmen.vogel",
+      "an": false,
+      "bereit": true,
+      "quellen": 0,
+      "db": -999,
+      "hz": 9000,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "grille",
+      "gesetz": "klang:UMWELT.stimmen.grille",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 2500,
+      "pan": 0,
+      "rate": 0.8354609468997634
+     }
+    ],
+    "leiber": {
+     "gehoert": 0,
+     "gezeichnet": 0
+    },
+    "tierRufe": 9,
+    "werkstatt": {
+     "laeuft": true,
+     "bestellt": 3,
+     "geliefert": 3,
+     "rufeBestellt": 0,
+     "rufeGespielt": 0
+    }
+   },
+   "baeume": 3,
+   "hauptSynthese": 0
+  },
+  "wald": {
+   "name": "wald",
+   "ort": {
+    "x": -148.39999999999998,
+    "z": -1021.5999999999999,
+    "deckung": 1,
+    "bestand": 37
+   },
+   "um": {
+    "takte": 353,
+    "chunks": 94,
+    "wald": true,
+    "waldTakte": 353
+   },
+   "aus": {
+    "dbfs": -45.5,
+    "spitzeDbfs": -30,
+    "baender": {
+     "63": -77.5,
+     "125": -73.5,
+     "250": -72.3,
+     "500": -76.2,
+     "1000": -74.7,
+     "2000": -58.5,
+     "4000": -57.2,
+     "8000": -62.4
+    }
+   },
+   "laufend": [
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    }
+   ],
+   "zensus": {
+    "lage": {
+     "windFeld": 0.06609364574406063,
+     "boe": 0.5410326034340959,
+     "deckung": 1,
+     "regen": 0,
+     "sonne": 0.9622504486493761,
+     "temperatur": 18.495858136541983,
+     "voegel": [
+      {
+       "d": 83.3761774397442,
+       "pan": 0.9541861894812042
+      },
+      {
+       "d": 95.27294111394622,
+       "pan": 0.2657972080328869
+      },
+      {
+       "d": 27.709601094094946,
+       "pan": 0.19944526000893756
+      },
+      {
+       "d": 27.98722685886842,
+       "pan": 0.5959130082412856
+      },
+      {
+       "d": 97.11051137276878,
+       "pan": 0.2551387556851198
+      },
+      {
+       "d": 67.89211291270217,
+       "pan": -0.09422113588126074
+      },
+      {
+       "d": 37.206349103599216,
+       "pan": -0.5340236246398091
+      },
+      {
+       "d": 11.528511986210123,
+       "pan": -0.6963213496956137
+      },
+      {
+       "d": 89.00753275451981,
+       "pan": -0.3833445048531831
+      },
+      {
+       "d": 84.8099433864083,
+       "pan": -0.40825735348898906
+      },
+      {
+       "d": 38.18059761902177,
+       "pan": -0.9774090768762228
+      },
+      {
+       "d": 74.96591355757135,
+       "pan": -0.7586110280589715
+      },
+      {
+       "d": 61.84823671723434,
+       "pan": -0.9708920500747249
+      },
+      {
+       "d": 90.09429894201534,
+       "pan": -0.5471729703599517
+      },
+      {
+       "d": 87.88369700396075,
+       "pan": -0.950104625096229
+      },
+      {
+       "d": 95.71734575392294,
+       "pan": -0.986757459429752
+      }
+     ],
+     "ufer": {
+      "d": 1000000000,
+      "anteil": 0,
+      "pan": 0
+     },
+     "fluss": {
+      "d": 1000000000,
+      "tempo": 0,
+      "pan": 0
+     },
+     "fall": {
+      "d": 1000000000,
+      "hoehe": 0,
+      "pan": 0
+     },
+     "glut": {
+      "d": 23.83046789301454,
+      "flaeche": 0.38484510006474965,
+      "pan": 0.9332590572642211
+     },
+     "antwort": null
+    },
+    "stimmen": [
+     {
+      "name": "wind",
+      "gesetz": "klang:UMWELT.stimmen.wind",
+      "an": true,
+      "bereit": true,
+      "quellen": 2,
+      "db": -47.041441605933926,
+      "hz": 237.29108245394247,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "laub",
+      "gesetz": "klang:UMWELT.stimmen.laub",
+      "an": true,
+      "bereit": true,
+      "quellen": 2,
+      "db": -33.799335775193455,
+      "hz": 2724.998725354056,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "ufer",
+      "gesetz": "klang:UMWELT.stimmen.ufer",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 700,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "fluss",
+      "gesetz": "klang:UMWELT.stimmen.fluss",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 1500,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "fall",
+      "gesetz": "klang:UMWELT.stimmen.fall",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 600,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "regen",
+      "gesetz": "klang:UMWELT.stimmen.regen",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 9000,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "glut",
+      "gesetz": "klang:UMWELT.stimmen.glut",
+      "an": true,
+      "bereit": true,
+      "quellen": 1,
+      "db": -52.466454238951414,
+      "hz": 4881.400427065744,
+      "pan": 0.9332590572642211,
+      "rate": 1
+     },
+     {
+      "name": "vogel",
+      "gesetz": "klang:UMWELT.stimmen.vogel",
+      "an": true,
+      "bereit": true,
+      "quellen": 2,
+      "db": -38.10235805970379,
+      "hz": 9000,
+      "pan": -0.4612357778909405,
+      "rate": 1
+     },
+     {
+      "name": "grille",
+      "gesetz": "klang:UMWELT.stimmen.grille",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 2500,
+      "pan": 0,
+      "rate": 0.904281881416308
+     }
+    ],
+    "leiber": {
+     "gehoert": 17,
+     "gezeichnet": 17
+    },
+    "tierRufe": 10,
+    "werkstatt": {
+     "laeuft": true,
+     "bestellt": 4,
+     "geliefert": 4,
+     "rufeBestellt": 0,
+     "rufeGespielt": 0
+    }
+   },
+   "baeume": 37,
+   "hauptSynthese": 0,
+   "mixMitte": {
+    "wind": {
+     "db": -44.24457653383668,
+     "gain": 0.06134387034840439,
+     "hz": 254.12447505604865,
+     "q": 0.8,
+     "pan": 0,
+     "rate": 1
+    },
+    "laub": {
+     "db": -31.114345305980088,
+     "gain": 0.27815235078462597,
+     "hz": 2761.7261273950153,
+     "q": 0.5,
+     "pan": 0,
+     "rate": 1
+    },
+    "ufer": {
+     "db": -999,
+     "gain": 0,
+     "hz": 700,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "fluss": {
+     "db": -999,
+     "gain": 0,
+     "hz": 1500,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "fall": {
+     "db": -999,
+     "gain": 0,
+     "hz": 600,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "regen": {
+     "db": -999,
+     "gain": 0,
+     "hz": 9000,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "glut": {
+     "db": -52.466454238951414,
+     "gain": 0.023805498926760815,
+     "hz": 4881.400427065744,
+     "q": 0.707,
+     "pan": 0.9332590572642211,
+     "rate": 1
+    },
+    "vogel": {
+     "db": -38.10235805970379,
+     "gain": 0.12441767947411582,
+     "hz": 9000,
+     "q": 0.707,
+     "pan": -0.4612357778909405,
+     "rate": 1
+    },
+    "grille": {
+     "db": -999,
+     "gain": 0,
+     "hz": 2500,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 0.904281881416308
+    }
+   }
+  },
+  "dorf": {
+   "name": "dorf",
+   "ort": {
+    "x": -285.15333994878404,
+    "z": -1038.0278189187975,
+    "glut": {
+     "x": -287.28000000000003,
+     "z": -1034.64,
+     "typ": "glutbrunnen"
+    }
+   },
+   "um": {
+    "takte": 192,
+    "chunks": 96,
+    "wald": true,
+    "waldTakte": 192
+   },
+   "aus": {
+    "dbfs": -38.6,
+    "spitzeDbfs": -17.9,
+    "baender": {
+     "63": -54.3,
+     "125": -56.6,
+     "250": -59,
+     "500": -62.4,
+     "1000": -65.1,
+     "2000": -57.5,
+     "4000": -52.9,
+     "8000": -57.2
+    }
+   },
+   "laufend": [
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    }
+   ],
+   "zensus": {
+    "lage": {
+     "windFeld": 0.06609364574406063,
+     "boe": 1.0806298789849678,
+     "deckung": 0.5905336615779576,
+     "regen": 0,
+     "sonne": 0.9622504486493761,
+     "temperatur": 18.090248608296456,
+     "voegel": [
+      {
+       "d": 91.985830569377,
+       "pan": 0.9703610673086983
+      },
+      {
+       "d": 76.80575087764335,
+       "pan": 0.9979091654688776
+      },
+      {
+       "d": 44.03267844167681,
+       "pan": 0.9955562921516816
+      },
+      {
+       "d": 82.44427850893892,
+       "pan": 0.8013613564697208
+      },
+      {
+       "d": 51.2113959124127,
+       "pan": 0.3831656520356571
+      },
+      {
+       "d": 40.012480985525855,
+       "pan": 0.4905908230337166
+      },
+      {
+       "d": 23.508002679831897,
+       "pan": 0.953098998336204
+      },
+      {
+       "d": 59.52978952959368,
+       "pan": 0.7716597761488305
+      },
+      {
+       "d": 99.44010290920953,
+       "pan": 0.2003880650905826
+      },
+      {
+       "d": 97.15501672428113,
+       "pan": 0.015841217876475997
+      },
+      {
+       "d": 65.57369468584068,
+       "pan": -0.05646688034213955
+      },
+      {
+       "d": 57.37519679602355,
+       "pan": -0.20050238355158115
+      },
+      {
+       "d": 35.033036585418934,
+       "pan": 0.16368246966932523
+      },
+      {
+       "d": 37.70660509322784,
+       "pan": 0.09835971530750107
+      },
+      {
+       "d": 94.05172812598255,
+       "pan": -0.19829887736353796
+      },
+      {
+       "d": 46.95906241082883,
+       "pan": -0.8091531882849664
+      },
+      {
+       "d": 75.01036490787752,
+       "pan": -0.7532092488125803
+      },
+      {
+       "d": 74.1431595493114,
+       "pan": -0.851798586127918
+      },
+      {
+       "d": 76.73080063296041,
+       "pan": -0.78734980872082
+      }
+     ],
+     "ufer": {
+      "d": 1000000000,
+      "anteil": 0,
+      "pan": 0
+     },
+     "fluss": {
+      "d": 1000000000,
+      "tempo": 0,
+      "pan": 0
+     },
+     "fall": {
+      "d": 1000000000,
+      "hoehe": 0,
+      "pan": 0
+     },
+     "glut": {
+      "d": 3.999999999999943,
+      "flaeche": 0.38484510006474965,
+      "pan": 0.5316650128040057
+     },
+     "antwort": null
+    },
+    "stimmen": [
+     {
+      "name": "wind",
+      "gesetz": "klang:UMWELT.stimmen.wind",
+      "an": true,
+      "bereit": true,
+      "quellen": 2,
+      "db": -35.37095903816636,
+      "hz": 294.4301750137745,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "laub",
+      "gesetz": "klang:UMWELT.stimmen.laub",
+      "an": true,
+      "bereit": true,
+      "quellen": 2,
+      "db": -31.163557785939847,
+      "hz": 2849.66583639369,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "ufer",
+      "gesetz": "klang:UMWELT.stimmen.ufer",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 700,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "fluss",
+      "gesetz": "klang:UMWELT.stimmen.fluss",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 1500,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "fall",
+      "gesetz": "klang:UMWELT.stimmen.fall",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 600,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "regen",
+      "gesetz": "klang:UMWELT.stimmen.regen",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 7362.13464631183,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "glut",
+      "gesetz": "klang:UMWELT.stimmen.glut",
+      "an": true,
+      "bereit": true,
+      "quellen": 1,
+      "db": -27.233685690776188,
+      "hz": 9048.979947844782,
+      "pan": 0.5316650128040057,
+      "rate": 1
+     },
+     {
+      "name": "vogel",
+      "gesetz": "klang:UMWELT.stimmen.vogel",
+      "an": true,
+      "bereit": true,
+      "quellen": 2,
+      "db": -40.70801538173773,
+      "hz": 9000,
+      "pan": 0.3710598137728667,
+      "rate": 1
+     },
+     {
+      "name": "grille",
+      "gesetz": "klang:UMWELT.stimmen.grille",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 2500,
+      "pan": 0,
+      "rate": 0.8784703659825016
+     }
+    ],
+    "leiber": {
+     "gehoert": 18,
+     "gezeichnet": 18
+    },
+    "tierRufe": 10,
+    "werkstatt": {
+     "laeuft": true,
+     "bestellt": 4,
+     "geliefert": 4,
+     "rufeBestellt": 0,
+     "rufeGespielt": 0
+    }
+   },
+   "baeume": 1,
+   "hauptSynthese": 0,
+   "mixMitte": {
+    "wind": {
+     "db": -40.08543232376805,
+     "gain": 0.09902124531270086,
+     "hz": 254.12447505604865,
+     "q": 0.8,
+     "pan": 0,
+     "rate": 1
+    },
+    "laub": {
+     "db": -35.68945214011747,
+     "gain": 0.1642583261853616,
+     "hz": 2761.7261273950153,
+     "q": 0.5,
+     "pan": 0,
+     "rate": 1
+    },
+    "ufer": {
+     "db": -999,
+     "gain": 0,
+     "hz": 700,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "fluss": {
+     "db": -999,
+     "gain": 0,
+     "hz": 1500,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "fall": {
+     "db": -999,
+     "gain": 0,
+     "hz": 600,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "regen": {
+     "db": -999,
+     "gain": 0,
+     "hz": 7362.13464631183,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "glut": {
+     "db": -27.233685690776188,
+     "gain": 0.43482621131049165,
+     "hz": 9048.979947844782,
+     "q": 0.707,
+     "pan": 0.5316650128040057,
+     "rate": 1
+    },
+    "vogel": {
+     "db": -40.70801538173773,
+     "gain": 0.09217204663937165,
+     "hz": 9000,
+     "q": 0.707,
+     "pan": 0.3710598137728667,
+     "rate": 1
+    },
+    "grille": {
+     "db": -999,
+     "gain": 0,
+     "hz": 2500,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 0.8784703659825016
+    }
+   }
+  },
+  "glutArm": {
+   "name": "glutArm",
+   "ort": {
+    "x": -286.748334987196,
+    "z": -1035.4869547296994,
+    "glut": {
+     "x": -287.28000000000003,
+     "z": -1034.64,
+     "typ": "glutbrunnen"
+    }
+   },
+   "um": {
+    "takte": 91,
+    "chunks": 99,
+    "wald": true,
+    "waldTakte": 91
+   },
+   "aus": {
+    "dbfs": -27,
+    "spitzeDbfs": -2.7,
+    "baender": {
+     "63": -41.8,
+     "125": -43.5,
+     "250": -50,
+     "500": -58.3,
+     "1000": -53.8,
+     "2000": -46.6,
+     "4000": -44.2,
+     "8000": -46.7
+    }
+   },
+   "laufend": [
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    }
+   ],
+   "zensus": {
+    "lage": {
+     "windFeld": 0.06609364574406063,
+     "boe": 1.0962039722511663,
+     "deckung": 0.5990388416072042,
+     "regen": 0,
+     "sonne": 0.9622504486493761,
+     "temperatur": 18.054174762754553,
+     "voegel": [
+      {
+       "d": 79.10059453998055,
+       "pan": 0.9580325050029082
+      },
+      {
+       "d": 73.51953598345031,
+       "pan": 0.8945766170329216
+      },
+      {
+       "d": 58.50203913124361,
+       "pan": 0.9903198982565617
+      },
+      {
+       "d": 80.91557459711814,
+       "pan": 0.8084623136959849
+      },
+      {
+       "d": 50.24899168117771,
+       "pan": 0.4137686135336192
+      },
+      {
+       "d": 26.66308166555437,
+       "pan": 0.9938092461563794
+      },
+      {
+       "d": 46.41459748237221,
+       "pan": 0.6710052148441641
+      },
+      {
+       "d": 80.32675678497003,
+       "pan": 0.2022995441365766
+      },
+      {
+       "d": 99.97597937145407,
+       "pan": -0.009628447553089642
+      },
+      {
+       "d": 70.41315952967375,
+       "pan": -0.11335277103367362
+      },
+      {
+       "d": 50.66678936461721,
+       "pan": -0.16097446917763955
+      },
+      {
+       "d": 43.91368079755155,
+       "pan": 0.015499718345723262
+      },
+      {
+       "d": 28.99530361349339,
+       "pan": -0.4756922181564766
+      },
+      {
+       "d": 83.24155794843638,
+       "pan": -0.0898978396266854
+      },
+      {
+       "d": 46.96485963173682,
+       "pan": -0.5360102107647555
+      },
+      {
+       "d": 70.20569999491647,
+       "pan": -0.8245420460610676
+      },
+      {
+       "d": 98.00994260462988,
+       "pan": -0.9639995511562613
+      }
+     ],
+     "ufer": {
+      "d": 1000000000,
+      "anteil": 0,
+      "pan": 0
+     },
+     "fluss": {
+      "d": 1000000000,
+      "tempo": 0,
+      "pan": 0
+     },
+     "fall": {
+      "d": 1000000000,
+      "hoehe": 0,
+      "pan": 0
+     },
+     "glut": {
+      "d": 0.9999999999999452,
+      "flaeche": 0.38484510006474965,
+      "pan": 0.5316650128040415
+     },
+     "antwort": null
+    },
+    "stimmen": [
+     {
+      "name": "wind",
+      "gesetz": "klang:UMWELT.stimmen.wind",
+      "an": true,
+      "bereit": true,
+      "quellen": 2,
+      "db": -35.28452038507291,
+      "hz": 296.0793485678186,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "laub",
+      "gesetz": "klang:UMWELT.stimmen.laub",
+      "an": true,
+      "bereit": true,
+      "quellen": 2,
+      "db": -30.89020569301997,
+      "hz": 2853.264033238877,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "ufer",
+      "gesetz": "klang:UMWELT.stimmen.ufer",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 700,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "fluss",
+      "gesetz": "klang:UMWELT.stimmen.fluss",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 1500,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "fall",
+      "gesetz": "klang:UMWELT.stimmen.fall",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 600,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "regen",
+      "gesetz": "klang:UMWELT.stimmen.regen",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 7396.155366428817,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "glut",
+      "gesetz": "klang:UMWELT.stimmen.glut",
+      "an": true,
+      "bereit": true,
+      "quellen": 1,
+      "db": -15.192485864216588,
+      "hz": 11118.72676938451,
+      "pan": 0.5316650128040415,
+      "rate": 1
+     },
+     {
+      "name": "vogel",
+      "gesetz": "klang:UMWELT.stimmen.vogel",
+      "an": true,
+      "bereit": true,
+      "quellen": 2,
+      "db": -41.24304209749342,
+      "hz": 9000,
+      "pan": 0.23450500834818372,
+      "rate": 1
+     },
+     {
+      "name": "grille",
+      "gesetz": "klang:UMWELT.stimmen.grille",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 2500,
+      "pan": 0,
+      "rate": 0.8761747576298351
+     }
+    ],
+    "leiber": {
+     "gehoert": 17,
+     "gezeichnet": 17
+    },
+    "tierRufe": 10,
+    "werkstatt": {
+     "laeuft": true,
+     "bestellt": 4,
+     "geliefert": 4,
+     "rufeBestellt": 0,
+     "rufeGespielt": 0
+    }
+   },
+   "baeume": 3,
+   "hauptSynthese": 0,
+   "mixMitte": {
+    "wind": {
+     "db": -40.154353671389515,
+     "gain": 0.09823863432119494,
+     "hz": 254.12447505604865,
+     "q": 0.8,
+     "pan": 0,
+     "rate": 1
+    },
+    "laub": {
+     "db": -35.565245647883906,
+     "gain": 0.16662406200434304,
+     "hz": 2761.7261273950153,
+     "q": 0.5,
+     "pan": 0,
+     "rate": 1
+    },
+    "ufer": {
+     "db": -999,
+     "gain": 0,
+     "hz": 700,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "fluss": {
+     "db": -999,
+     "gain": 0,
+     "hz": 1500,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "fall": {
+     "db": -999,
+     "gain": 0,
+     "hz": 600,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "regen": {
+     "db": -999,
+     "gain": 0,
+     "hz": 7396.155366428817,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "glut": {
+     "db": -15.192485864216588,
+     "gain": 1.7393048452420372,
+     "hz": 11118.72676938451,
+     "q": 0.707,
+     "pan": 0.5316650128040415,
+     "rate": 1
+    },
+    "vogel": {
+     "db": -41.24304209749342,
+     "gain": 0.08666582890374706,
+     "hz": 9000,
+     "q": 0.707,
+     "pan": 0.23450500834818372,
+     "rate": 1
+    },
+    "grille": {
+     "db": -999,
+     "gain": 0,
+     "hz": 2500,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 0.8761747576298351
+    }
+   }
+  },
+  "seeufer": {
+   "name": "seeufer",
+   "ort": {
+    "x": 2382.8154601944357,
+    "z": -5193.694608409414,
+    "wasser": {
+     "x": 2383.355727241822,
+     "z": -5194.53610203239
+    },
+    "ring": {
+     "erst": 3,
+     "alle": 12
+    }
+   },
+   "um": {
+    "takte": 472,
+    "chunks": 81,
+    "wald": true,
+    "waldTakte": 472
+   },
+   "aus": {
+    "dbfs": -37.1,
+    "spitzeDbfs": -20.7,
+    "baender": {
+     "63": -52.6,
+     "125": -53,
+     "250": -54.6,
+     "500": -56.7,
+     "1000": -57.6,
+     "2000": -59.8,
+     "4000": -66.2,
+     "8000": -88
+    }
+   },
+   "laufend": [
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    }
+   ],
+   "zensus": {
+    "lage": {
+     "windFeld": 0.06609364574406063,
+     "boe": 0.9251454863569252,
+     "deckung": 0,
+     "regen": 0,
+     "sonne": 0.9622504486493761,
+     "temperatur": 21.041205828112155,
+     "voegel": [
+      {
+       "d": 95.2134305194414,
+       "pan": 0.9743326425403916
+      },
+      {
+       "d": 99.80748298489581,
+       "pan": 0.9858135471872559
+      },
+      {
+       "d": 93.72259678406627,
+       "pan": 0.9403131607012253
+      },
+      {
+       "d": 86.18589797700538,
+       "pan": 0.7349929746260774
+      },
+      {
+       "d": 78.66311880672775,
+       "pan": 0.8521993562260257
+      },
+      {
+       "d": 61.37826227867375,
+       "pan": 0.9996072278899237
+      },
+      {
+       "d": 99.3338198224414,
+       "pan": 0.4418225269661084
+      },
+      {
+       "d": 54.080001634461674,
+       "pan": 0.6110619789614206
+      },
+      {
+       "d": 45.685987983866404,
+       "pan": 0.6877197311660616
+      },
+      {
+       "d": 61.348128056734076,
+       "pan": 0.44120438517339217
+      },
+      {
+       "d": 74.8215236259892,
+       "pan": -0.04107451790434859
+      },
+      {
+       "d": 25.889803615986988,
+       "pan": -0.9219889511231121
+      },
+      {
+       "d": 56.886055214519295,
+       "pan": -0.6885187435600985
+      },
+      {
+       "d": 80.4147850654217,
+       "pan": -0.9574556459643391
+      }
+     ],
+     "ufer": {
+      "d": 4,
+      "anteil": 0.36363636363636365,
+      "pan": -0.5690355937288494
+     },
+     "fluss": {
+      "d": 1000000000,
+      "tempo": 0,
+      "pan": 0
+     },
+     "fall": {
+      "d": 1000000000,
+      "hoehe": 0,
+      "pan": 0
+     },
+     "glut": {
+      "d": 162.5553191764334,
+      "flaeche": 0.38484510006474965,
+      "pan": -0.9812323620886397
+     },
+     "antwort": null
+    },
+    "stimmen": [
+     {
+      "name": "wind",
+      "gesetz": "klang:UMWELT.stimmen.wind",
+      "an": true,
+      "bereit": true,
+      "quellen": 2,
+      "db": -33.25797650298838,
+      "hz": 277.9656050381142,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "laub",
+      "gesetz": "klang:UMWELT.stimmen.laub",
+      "an": false,
+      "bereit": true,
+      "quellen": 0,
+      "db": -999,
+      "hz": 2813.7431382649766,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "ufer",
+      "gesetz": "klang:UMWELT.stimmen.ufer",
+      "an": true,
+      "bereit": true,
+      "quellen": 1,
+      "db": -25.7782775676747,
+      "hz": 2095.020517339057,
+      "pan": -0.5690355937288494,
+      "rate": 1
+     },
+     {
+      "name": "fluss",
+      "gesetz": "klang:UMWELT.stimmen.fluss",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 1500,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "fall",
+      "gesetz": "klang:UMWELT.stimmen.fall",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 600,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "regen",
+      "gesetz": "klang:UMWELT.stimmen.regen",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 5000,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "glut",
+      "gesetz": "klang:UMWELT.stimmen.glut",
+      "an": false,
+      "bereit": true,
+      "quellen": 0,
+      "db": -999,
+      "hz": 4500.000011231855,
+      "pan": -0.9812323620886397,
+      "rate": 1
+     },
+     {
+      "name": "vogel",
+      "gesetz": "klang:UMWELT.stimmen.vogel",
+      "an": true,
+      "bereit": true,
+      "quellen": 2,
+      "db": -43.554398268617206,
+      "hz": 9000,
+      "pan": -0.19663668527475406,
+      "rate": 1
+     },
+     {
+      "name": "grille",
+      "gesetz": "klang:UMWELT.stimmen.grille",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 2500,
+      "pan": 0,
+      "rate": 1.0662532132147362
+     }
+    ],
+    "leiber": {
+     "gehoert": 14,
+     "gezeichnet": 14
+    },
+    "tierRufe": 11,
+    "werkstatt": {
+     "laeuft": true,
+     "bestellt": 5,
+     "geliefert": 5,
+     "rufeBestellt": 0,
+     "rufeGespielt": 0
+    }
+   },
+   "baeume": 13,
+   "hauptSynthese": 0,
+   "mixMitte": {
+    "wind": {
+     "db": -36.28577636039593,
+     "gain": 0.15335967587101093,
+     "hz": 254.12447505604865,
+     "q": 0.8,
+     "pan": 0,
+     "rate": 1
+    },
+    "laub": {
+     "db": -999,
+     "gain": 0,
+     "hz": 2761.7261273950153,
+     "q": 0.5,
+     "pan": 0,
+     "rate": 1
+    },
+    "ufer": {
+     "db": -25.7782775676747,
+     "gain": 0.5141455977541814,
+     "hz": 2095.020517339057,
+     "q": 0.707,
+     "pan": -0.5690355937288494,
+     "rate": 1
+    },
+    "fluss": {
+     "db": -999,
+     "gain": 0,
+     "hz": 1500,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "fall": {
+     "db": -999,
+     "gain": 0,
+     "hz": 600,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "regen": {
+     "db": -999,
+     "gain": 0,
+     "hz": 5000,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "glut": {
+     "db": -999,
+     "gain": 0,
+     "hz": 4500.000011231855,
+     "q": 0.707,
+     "pan": -0.9812323620886397,
+     "rate": 1
+    },
+    "vogel": {
+     "db": -43.528922235835225,
+     "gain": 0.06661221700650216,
+     "hz": 9000,
+     "q": 0.707,
+     "pan": -0.17467061919729523,
+     "rate": 1
+    },
+    "grille": {
+     "db": -999,
+     "gain": 0,
+     "hz": 2500,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1.0662585526980461
+    }
+   }
+  },
+  "fallArm": {
+   "name": "fallArm",
+   "ort": {
+    "x": 1570.6151516478296,
+    "z": 496.1061847293407,
+    "fall": {
+     "x": 1570.6151516478296,
+     "z": 492.1061847293407,
+     "d": 4,
+     "hoehe": 8.2
+    }
+   },
+   "um": {
+    "takte": 417,
+    "chunks": 81,
+    "wald": true,
+    "waldTakte": 417
+   },
+   "aus": {
+    "dbfs": -21.8,
+    "spitzeDbfs": -9.8,
+    "baender": {
+     "63": -39.5,
+     "125": -40.3,
+     "250": -37.1,
+     "500": -37.9,
+     "1000": -42.7,
+     "2000": -47.4,
+     "4000": -50.7,
+     "8000": -59.2
+    }
+   },
+   "laufend": [
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    },
+    {
+     "art": "BufferSource",
+     "dauernd": true,
+     "freq": null,
+     "frames": [
+      {
+       "fn": "starte",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "anwenden",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_umweltKlangTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "symphonyTick",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "dirigent-takt.js"
+      }
+     ],
+     "gesetzKnoten": true,
+     "herkunft": "Gesetzbuch"
+    }
+   ],
+   "zensus": {
+    "lage": {
+     "windFeld": 0.0790006723691466,
+     "boe": 0.7411609244340304,
+     "deckung": 0,
+     "regen": 0,
+     "sonne": 0.9622504486493761,
+     "temperatur": 16.41746569929481,
+     "voegel": [
+      {
+       "d": 76.21203786217092,
+       "pan": 0.9610567495057702
+      },
+      {
+       "d": 90.29461313929869,
+       "pan": 0.9806950466551786
+      },
+      {
+       "d": 79.83319502807745,
+       "pan": 0.8777654570329301
+      },
+      {
+       "d": 85.35269105141607,
+       "pan": 0.7715976606849058
+      },
+      {
+       "d": 79.18840207690445,
+       "pan": 0.5840537193035896
+      },
+      {
+       "d": 63.557181917729395,
+       "pan": 0.7522194931189816
+      },
+      {
+       "d": 70.10914951853925,
+       "pan": 0.05370872777304588
+      },
+      {
+       "d": 94.0938848915189,
+       "pan": 0.14640141649753888
+      },
+      {
+       "d": 28.29090211267046,
+       "pan": -0.9886340158516868
+      },
+      {
+       "d": 38.946485491360036,
+       "pan": -0.29098050841488204
+      },
+      {
+       "d": 96.92287219317748,
+       "pan": -0.563422620542479
+      },
+      {
+       "d": 94.73080289837904,
+       "pan": -0.8454470534136557
+      },
+      {
+       "d": 93.76545382314352,
+       "pan": -0.7284553354115928
+      }
+     ],
+     "ufer": {
+      "d": 0,
+      "anteil": 0.15151515151515152,
+      "pan": 0.0757614408414158
+     },
+     "fluss": {
+      "d": 1.1632876561572885,
+      "tempo": 1.2,
+      "pan": -0.5440715516876705
+     },
+     "fall": {
+      "d": 4,
+      "hoehe": 8.173727123282909,
+      "pan": 0
+     },
+     "glut": {
+      "d": 10.154625928254388,
+      "flaeche": 0.38484510006474965,
+      "pan": -0.8217780163572118
+     },
+     "antwort": null
+    },
+    "stimmen": [
+     {
+      "name": "wind",
+      "gesetz": "klang:UMWELT.stimmen.wind",
+      "an": true,
+      "bereit": true,
+      "quellen": 2,
+      "db": -34.691429333172955,
+      "hz": 265.8490535941722,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "laub",
+      "gesetz": "klang:UMWELT.stimmen.laub",
+      "an": false,
+      "bereit": true,
+      "quellen": 0,
+      "db": -999,
+      "hz": 2787.3070260236486,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "ufer",
+      "gesetz": "klang:UMWELT.stimmen.ufer",
+      "an": true,
+      "bereit": true,
+      "quellen": 1,
+      "db": -21.93332831190319,
+      "hz": 3000,
+      "pan": 0.0757614408414158,
+      "rate": 1
+     },
+     {
+      "name": "fluss",
+      "gesetz": "klang:UMWELT.stimmen.fluss",
+      "an": true,
+      "bereit": true,
+      "quellen": 1,
+      "db": -19.64657124081299,
+      "hz": 7286.186339579376,
+      "pan": -0.5440715516876705,
+      "rate": 1
+     },
+     {
+      "name": "fall",
+      "gesetz": "klang:UMWELT.stimmen.fall",
+      "an": true,
+      "bereit": true,
+      "quellen": 1,
+      "db": -10.719110895031669,
+      "hz": 3056.1922592339456,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "regen",
+      "gesetz": "klang:UMWELT.stimmen.regen",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 5000,
+      "pan": 0,
+      "rate": 1
+     },
+     {
+      "name": "glut",
+      "gesetz": "klang:UMWELT.stimmen.glut",
+      "an": true,
+      "bereit": true,
+      "quellen": 1,
+      "db": -35.32576445785744,
+      "hz": 6607.652522378319,
+      "pan": -0.8217780163572118,
+      "rate": 1
+     },
+     {
+      "name": "vogel",
+      "gesetz": "klang:UMWELT.stimmen.vogel",
+      "an": true,
+      "bereit": true,
+      "quellen": 2,
+      "db": -44.632129540135715,
+      "hz": 9000,
+      "pan": -0.3534252875110093,
+      "rate": 1
+     },
+     {
+      "name": "grille",
+      "gesetz": "klang:UMWELT.stimmen.grille",
+      "an": false,
+      "bereit": false,
+      "quellen": 0,
+      "db": -999,
+      "hz": 2500,
+      "pan": 0,
+      "rate": 0.7720205445005788
+     }
+    ],
+    "leiber": {
+     "gehoert": 13,
+     "gezeichnet": 13
+    },
+    "tierRufe": 11,
+    "werkstatt": {
+     "laeuft": true,
+     "bestellt": 7,
+     "geliefert": 7,
+     "rufeBestellt": 0,
+     "rufeGespielt": 0
+    }
+   },
+   "baeume": 6,
+   "hauptSynthese": 0,
+   "mixMitte": {
+    "wind": {
+     "db": -35.3117911910676,
+     "gain": 0.17155778897538237,
+     "hz": 261.08136240697,
+     "q": 0.8,
+     "pan": 0,
+     "rate": 1
+    },
+    "laub": {
+     "db": -999,
+     "gain": 0,
+     "hz": 2776.9047907061163,
+     "q": 0.5,
+     "pan": 0,
+     "rate": 1
+    },
+    "ufer": {
+     "db": -21.93332831190319,
+     "gain": 0.8004488488860515,
+     "hz": 3000,
+     "q": 0.707,
+     "pan": 0.0757614408414158,
+     "rate": 1
+    },
+    "fluss": {
+     "db": -19.64657124081299,
+     "gain": 1.0415291706343526,
+     "hz": 7286.186339579376,
+     "q": 0.707,
+     "pan": -0.5440715516876705,
+     "rate": 1
+    },
+    "fall": {
+     "db": -10.719110895031669,
+     "gain": 2.911015080119594,
+     "hz": 3056.1922592339456,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "regen": {
+     "db": -999,
+     "gain": 0,
+     "hz": 5000,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 1
+    },
+    "glut": {
+     "db": -35.32576445785744,
+     "gain": 0.17128202038466753,
+     "hz": 6607.652522378319,
+     "q": 0.707,
+     "pan": -0.8217780163572118,
+     "rate": 1
+    },
+    "vogel": {
+     "db": -44.632129540135715,
+     "gain": 0.05866695168301189,
+     "hz": 9000,
+     "q": 0.707,
+     "pan": -0.3534252875110093,
+     "rate": 1
+    },
+    "grille": {
+     "db": -999,
+     "gain": 0,
+     "hz": 2500,
+     "q": 0.707,
+     "pan": 0,
+     "rate": 0.7720205445005788
+    }
+   }
+  }
+ },
+ "offline": {
+  "wiese": {
+   "wind": {
+    "gesetzDb": -36.3,
+    "gemessenDb": -36.2,
+    "schwerpunktHz": 304
+   },
+   "vogel": {
+    "gesetzDb": -40.7,
+    "gemessenDb": -40.9,
+    "schwerpunktHz": 3014
+   }
+  },
+  "wald": {
+   "wind": {
+    "gesetzDb": -44.2,
+    "gemessenDb": -44.1,
+    "schwerpunktHz": 304
+   },
+   "laub": {
+    "gesetzDb": -31.1,
+    "gemessenDb": -31.6,
+    "schwerpunktHz": 4304
+   },
+   "glut": {
+    "gesetzDb": -52.5,
+    "gemessenDb": -52.5,
+    "schwerpunktHz": 1210
+   },
+   "vogel": {
+    "gesetzDb": -38.1,
+    "gemessenDb": -38.3,
+    "schwerpunktHz": 3014
+   }
+  },
+  "dorf": {
+   "wind": {
+    "gesetzDb": -40.1,
+    "gemessenDb": -40,
+    "schwerpunktHz": 304
+   },
+   "laub": {
+    "gesetzDb": -35.7,
+    "gemessenDb": -36.2,
+    "schwerpunktHz": 4304
+   },
+   "glut": {
+    "gesetzDb": -27.2,
+    "gemessenDb": -27.2,
+    "schwerpunktHz": 1561
+   },
+   "vogel": {
+    "gesetzDb": -40.7,
+    "gemessenDb": -40.9,
+    "schwerpunktHz": 3014
+   }
+  },
+  "glutArm": {
+   "wind": {
+    "gesetzDb": -40.2,
+    "gemessenDb": -40,
+    "schwerpunktHz": 304
+   },
+   "laub": {
+    "gesetzDb": -35.6,
+    "gemessenDb": -36,
+    "schwerpunktHz": 4304
+   },
+   "glut": {
+    "gesetzDb": -15.2,
+    "gemessenDb": -15.2,
+    "schwerpunktHz": 1556
+   },
+   "vogel": {
+    "gesetzDb": -41.2,
+    "gemessenDb": -41.5,
+    "schwerpunktHz": 3014
+   }
+  },
+  "seeufer": {
+   "wind": {
+    "gesetzDb": -36.3,
+    "gemessenDb": -36.2,
+    "schwerpunktHz": 304
+   },
+   "ufer": {
+    "gesetzDb": -25.8,
+    "gemessenDb": -25.7,
+    "schwerpunktHz": 189
+   },
+   "vogel": {
+    "gesetzDb": -43.5,
+    "gemessenDb": -43.7,
+    "schwerpunktHz": 3014
+   }
+  },
+  "fallArm": {
+   "wind": {
+    "gesetzDb": -35.3,
+    "gemessenDb": -35.2,
+    "schwerpunktHz": 313
+   },
+   "ufer": {
+    "gesetzDb": -21.9,
+    "gemessenDb": -21.9,
+    "schwerpunktHz": 199
+   },
+   "fluss": {
+    "gesetzDb": -19.6,
+    "gemessenDb": -19.6,
+    "schwerpunktHz": 1015
+   },
+   "fall": {
+    "gesetzDb": -10.7,
+    "gemessenDb": -10.7,
+    "schwerpunktHz": 226
+   },
+   "glut": {
+    "gesetzDb": -35.3,
+    "gemessenDb": -35.3,
+    "schwerpunktHz": 1441
+   },
+   "vogel": {
+    "gesetzDb": -44.6,
+    "gemessenDb": -44.9,
+    "schwerpunktHz": 3014
+   }
+  }
+ },
+ "kosten": {
+  "vor": {
+   "boden": 0,
+   "wasser": 2,
+   "stroemung": 0,
+   "fluss": 0,
+   "segmente": 0,
+   "bauten": 172.63
+  },
+  "nach": {
+   "boden": 0,
+   "wasser": 2,
+   "stroemung": 0,
+   "fluss": 0,
+   "segmente": 0,
+   "bauten": 0
+  },
+  "wachsen": []
+ },
+ "lab": {
+  "weltModus": true,
+  "graphGebaut": 1,
+  "orte": {
+   "wiese": {
+    "wind": {
+     "db": -37.42689379162745
+    },
+    "laub": {
+     "db": -50.00311426241201
+    },
+    "ufer": {
+     "db": -999
+    },
+    "fluss": {
+     "db": -999
+    },
+    "fall": {
+     "db": -999
+    },
+    "regen": {
+     "db": -999
+    },
+    "glut": {
+     "db": -999
+    },
+    "vogel": {
+     "db": -42.16607408890692
+    },
+    "grille": {
+     "db": -999
+    }
+   },
+   "seeufer": {
+    "wind": {
+     "db": -37.88819987300132
+    },
+    "laub": {
+     "db": -45.56613927008489
+    },
+    "ufer": {
+     "db": -24.151525224473815
+    },
+    "fluss": {
+     "db": -999
+    },
+    "fall": {
+     "db": -999
+    },
+    "regen": {
+     "db": -999
+    },
+    "glut": {
+     "db": -999
+    },
+    "vogel": {
+     "db": -45.57596961754378
+    },
+    "grille": {
+     "db": -999
+    }
+   },
+   "wald": {
+    "wind": {
+     "db": -42.97393171543442
+    },
+    "laub": {
+     "db": -32.99836066907866
+    },
+    "ufer": {
+     "db": -999
+    },
+    "fluss": {
+     "db": -999
+    },
+    "fall": {
+     "db": -999
+    },
+    "regen": {
+     "db": -999
+    },
+    "glut": {
+     "db": -999
+    },
+    "vogel": {
+     "db": -43.04706741754579
+    },
+    "grille": {
+     "db": -999
+    }
+   },
+   "dorf": {
+    "wind": {
+     "db": -37.597025469582825
+    },
+    "laub": {
+     "db": -48.06491400225089
+    },
+    "ufer": {
+     "db": -999
+    },
+    "fluss": {
+     "db": -999
+    },
+    "fall": {
+     "db": -999
+    },
+    "regen": {
+     "db": -999
+    },
+    "glut": {
+     "db": -26.519814845874663
+    },
+    "vogel": {
+     "db": -40.95355195475057
+    },
+    "grille": {
+     "db": -999
+    }
+   },
+   "glutArm": {
+    "wind": {
+     "db": -37.597025469582825
+    },
+    "laub": {
+     "db": -48.06491400225089
+    },
+    "ufer": {
+     "db": -999
+    },
+    "fluss": {
+     "db": -999
+    },
+    "fall": {
+     "db": -999
+    },
+    "regen": {
+     "db": -999
+    },
+    "glut": {
+     "db": -14.478615019315415
+    },
+    "vogel": {
+     "db": -41.42580386157412
+    },
+    "grille": {
+     "db": -999
+    }
+   },
+   "fallArm": {
+    "wind": {
+     "db": -38.50157626833036
+    },
+    "laub": {
+     "db": -42.04431408897126
+    },
+    "ufer": {
+     "db": -999
+    },
+    "fluss": {
+     "db": -999
+    },
+    "fall": {
+     "db": -6.552725051033061
+    },
+    "regen": {
+     "db": -999
+    },
+    "glut": {
+     "db": -999
+    },
+    "vogel": {
+     "db": -44.53373390459505
+    },
+    "grille": {
+     "db": -999
+    }
+   },
+   "sturm": {
+    "wind": {
+     "db": -17.094056614565943
+    },
+    "laub": {
+     "db": -15.73677663153666
+    },
+    "ufer": {
+     "db": -999
+    },
+    "fluss": {
+     "db": -999
+    },
+    "fall": {
+     "db": -999
+    },
+    "regen": {
+     "db": -24.5
+    },
+    "glut": {
+     "db": -999
+    },
+    "vogel": {
+     "db": -999
+    },
+    "grille": {
+     "db": -999
+    }
+   },
+   "nacht": {
+    "wind": {
+     "db": -37.42689379162745
+    },
+    "laub": {
+     "db": -50.00311426241201
+    },
+    "ufer": {
+     "db": -999
+    },
+    "fluss": {
+     "db": -999
+    },
+    "fall": {
+     "db": -999
+    },
+    "regen": {
+     "db": -999
+    },
+    "glut": {
+     "db": -999
+    },
+    "vogel": {
+     "db": -999
+    },
+    "grille": {
+     "db": -34.76209052664299
+    }
+   }
+  },
+  "seeuferUfer": true,
+  "laufendLab": [
+   "wind",
+   "laub",
+   "ufer",
+   "vogel"
+  ]
+ },
+ "ereig": [
+  {
+   "art": "treffer",
+   "still": false,
+   "quellen": [
+    {
+     "art": "BufferSource",
+     "frames": [
+      {
+       "fn": "trefferPaar",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_substanzKlang",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "_trefferPaar",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      },
+      {
+       "fn": "fang",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      }
+     ]
+    },
+    {
+     "art": "Oscillator",
+     "frames": [
+      {
+       "fn": "substanzKlang",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "forEach",
+       "datei": "<anonymous>"
+      },
+      {
+       "fn": "trefferPaar",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_substanzKlang",
+       "datei": "klang.js"
+      }
+     ]
+    },
+    {
+     "art": "Oscillator",
+     "frames": [
+      {
+       "fn": "substanzKlang",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "forEach",
+       "datei": "<anonymous>"
+      },
+      {
+       "fn": "trefferPaar",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_substanzKlang",
+       "datei": "klang.js"
+      }
+     ]
+    }
+   ],
+   "amAusgang": [],
+   "hauptSynthese": 0
+  },
+  {
+   "art": "wasser",
+   "still": false,
+   "quellen": [
+    {
+     "art": "Oscillator",
+     "frames": [
+      {
+       "fn": "substanzKlang",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_substanzKlang",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "_playWaterReactionPing",
+       "datei": "werkstatt-bauen.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      },
+      {
+       "fn": "fang",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      }
+     ]
+    },
+    {
+     "art": "Oscillator",
+     "frames": [
+      {
+       "fn": "substanzKlang",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_substanzKlang",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "_playWaterReactionPing",
+       "datei": "werkstatt-bauen.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      },
+      {
+       "fn": "fang",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      }
+     ]
+    },
+    {
+     "art": "Oscillator",
+     "frames": [
+      {
+       "fn": "substanzKlang",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_substanzKlang",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "_playWaterReactionPing",
+       "datei": "werkstatt-bauen.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      },
+      {
+       "fn": "fang",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      }
+     ]
+    },
+    {
+     "art": "Oscillator",
+     "frames": [
+      {
+       "fn": "substanzKlang",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_substanzKlang",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "_playWaterReactionPing",
+       "datei": "werkstatt-bauen.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      },
+      {
+       "fn": "fang",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      }
+     ]
+    },
+    {
+     "art": "Oscillator",
+     "frames": [
+      {
+       "fn": "substanzKlang",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_substanzKlang",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "_playWaterReactionPing",
+       "datei": "werkstatt-bauen.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      },
+      {
+       "fn": "fang",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      }
+     ]
+    },
+    {
+     "art": "Oscillator",
+     "frames": [
+      {
+       "fn": "substanzKlang",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_substanzKlang",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "_playWaterReactionPing",
+       "datei": "werkstatt-bauen.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      },
+      {
+       "fn": "fang",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      }
+     ]
+    },
+    {
+     "art": "Oscillator",
+     "frames": [
+      {
+       "fn": "substanzKlang",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_substanzKlang",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "_playWaterReactionPing",
+       "datei": "werkstatt-bauen.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      },
+      {
+       "fn": "fang",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      }
+     ]
+    },
+    {
+     "art": "Oscillator",
+     "frames": [
+      {
+       "fn": "substanzKlang",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_substanzKlang",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "_playWaterReactionPing",
+       "datei": "werkstatt-bauen.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      },
+      {
+       "fn": "fang",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      }
+     ]
+    },
+    {
+     "art": "Oscillator",
+     "frames": [
+      {
+       "fn": "substanzKlang",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_substanzKlang",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "_playWaterReactionPing",
+       "datei": "werkstatt-bauen.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      },
+      {
+       "fn": "fang",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      }
+     ]
+    }
+   ],
+   "amAusgang": [],
+   "hauptSynthese": 0
+  },
+  {
+   "art": "wasserTrocken",
+   "still": true,
+   "quellen": [],
+   "amAusgang": [],
+   "hauptSynthese": 0
+  },
+  {
+   "art": "abschied",
+   "still": false,
+   "quellen": [
+    {
+     "art": "Oscillator",
+     "frames": [
+      {
+       "fn": "substanzKlang",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_substanzKlang",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "_playArchitectureFarewellPing",
+       "datei": "werkstatt-bauen.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      },
+      {
+       "fn": "fang",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      }
+     ]
+    }
+   ],
+   "amAusgang": [],
+   "hauptSynthese": 0
+  },
+  {
+   "art": "singen",
+   "still": false,
+   "quellen": [
+    {
+     "art": "Oscillator",
+     "frames": [
+      {
+       "fn": "substanzKlang",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_substanzKlang",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "_applyCompoundWorldEffects",
+       "datei": "vegetation-baum.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      },
+      {
+       "fn": "fang",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      }
+     ]
+    }
+   ],
+   "amAusgang": [],
+   "hauptSynthese": 0
+  },
+  {
+   "art": "tier",
+   "still": true,
+   "quellen": [],
+   "amAusgang": [],
+   "hauptSynthese": 0
+  },
+  {
+   "art": "inventar",
+   "still": false,
+   "quellen": [
+    {
+     "art": "Oscillator",
+     "frames": [
+      {
+       "fn": "substanzKlang",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "_substanzKlang",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "playInventoryHoverPing",
+       "datei": "klang.js"
+      },
+      {
+       "fn": "(anonym)",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      },
+      {
+       "fn": "fang",
+       "datei": "pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-headless%5Cscripts%5Clib%5Cwelt-boot.cjs"
+      }
+     ]
+    }
+   ],
+   "amAusgang": [],
+   "hauptSynthese": 0
+  },
+  {
+   "art": "auftrag",
+   "still": false,
+   "quellen": [
+    {
+     "art": "BufferSource",
+     "frames": [
+      {
+       "fn": "tierRufSpielen",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "onmessage",
+       "datei": "klang.js"
+      }
+     ]
+    }
+   ],
+   "amAusgang": [],
+   "hauptSynthese": 0
+  },
+  {
+   "art": "stufe",
+   "still": false,
+   "quellen": [
+    {
+     "art": "BufferSource",
+     "frames": [
+      {
+       "fn": "tierRufSpielen",
+       "datei": "klang-core.js"
+      },
+      {
+       "fn": "onmessage",
+       "datei": "klang.js"
+      }
+     ]
+    }
+   ],
+   "amAusgang": [],
+   "hauptSynthese": 0
+  }
+ ],
+ "rot": []
+}

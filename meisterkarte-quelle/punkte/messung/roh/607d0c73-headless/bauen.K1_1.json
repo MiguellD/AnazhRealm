@@ -1,0 +1,2985 @@
+{
+ "gestartet": true,
+ "wege": {
+  "schöpfer": {
+   "werkstatt": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 1351,
+      "kalt": true,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 1772,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 754,
+      "kalt": true,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 789,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 824,
+      "kalt": true,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 800,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 1364,
+      "kalt": true,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 681,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "rezeptbuch": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 712,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 630,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 717,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 668,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 681,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 556,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 554,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 951,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "hotbar": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "phantom": {
+       "studio": true,
+       "meshes": 2,
+       "verworfen": 0,
+       "farbe": "grün"
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1 · KeyF",
+      "ms": 215,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1 · KeyF",
+      "ms": 151,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 12,
+        "lesen": 12,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4 · KeyF",
+      "ms": 196,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 12,
+        "lesen": 12,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4 · KeyF",
+      "ms": 175,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 19,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2 · KeyF",
+      "ms": 266,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2 · KeyF",
+      "ms": 287,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7 · KeyF",
+      "ms": 181,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7 · KeyF",
+      "ms": 219,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   }
+  },
+  "frieden mit Material": {
+   "werkstatt": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 811,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 1085,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 1169,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 1356,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 1071,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 829,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 879,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 591,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "rezeptbuch": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 502,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 519,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 733,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 663,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 662,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 837,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 666,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 696,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "hotbar": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1 · KeyF",
+      "ms": 372,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1 · KeyF",
+      "ms": 422,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4 · KeyF",
+      "ms": 332,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4 · KeyF",
+      "ms": 434,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 19,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2 · KeyF",
+      "ms": 494,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2 · KeyF",
+      "ms": 383,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7 · KeyF",
+      "ms": 396,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7 · KeyF",
+      "ms": 476,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   }
+  },
+  "frieden ohne Material": {
+   "werkstatt": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Eiche: fehlt 44× holz · 63× laub — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Eiche: fehlt 44× holz · 63× laub — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Alemannisch: fehlt 98× holz · 24× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Alemannisch: fehlt 98× holz · 24× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "GT: fehlt 16× holz · 4× eisen — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "GT: fehlt 16× holz · 4× eisen — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Hütte: fehlt 52× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Hütte: fehlt 52× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "rezeptbuch": {
+    "Eiche": {
+     "Ego": {
+      "gesperrt": "Es fehlt: 44× holz, 63× laub",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "gesperrt": "Es fehlt: 44× holz, 63× laub",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "gesperrt": "Es fehlt: 98× holz, 24× stein",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "gesperrt": "Es fehlt: 98× holz, 24× stein",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "gesperrt": "Es fehlt: 16× holz, 4× eisen",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "gesperrt": "Es fehlt: 16× holz, 4× eisen",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "gesperrt": "Es fehlt: 52× stein",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "gesperrt": "Es fehlt: 52× stein",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "hotbar": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Eiche: fehlt 44× holz · 63× laub — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Eiche: fehlt 44× holz · 63× laub — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Alemannisch: fehlt 98× holz · 24× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Alemannisch: fehlt 98× holz · 24× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "GT: fehlt 16× holz · 4× eisen — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "GT: fehlt 16× holz · 4× eisen — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Hütte: fehlt 52× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Hütte: fehlt 52× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   }
+  },
+  "pfad": {
+   "werkstatt": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 1025,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 1594,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 1138,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 1356,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 1935,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 983,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 944,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 1589,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "rezeptbuch": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 691,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 660,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 833,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 1041,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 1126,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 1126,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 1023,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 990,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "hotbar": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1 · KeyF",
+      "ms": 754,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1 · KeyF",
+      "ms": 467,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4 · KeyF",
+      "ms": 488,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4 · KeyF",
+      "ms": 566,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2 · KeyF",
+      "ms": 570,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2 · KeyF",
+      "ms": 859,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7 · KeyF",
+      "ms": 600,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7 · KeyF",
+      "ms": 553,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   }
+  }
+ },
+ "konsum": {
+  "Stoff → alphaTest": true
+ },
+ "phantom": {
+  "studio": true,
+  "meshes": 2,
+  "verworfen": 0,
+  "farbe": "grün"
+ },
+ "geraet": {
+  "name": "klinge_spitzhacke",
+  "zeile": "Spitzhacke: fehlt 1× holz · 1× eisen — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)"
+ },
+ "sucheHaus": 32,
+ "lichtung": {
+  "steht": 0,
+  "zeile": "Eiche: die Lichtung des Genesis-Platzes bleibt frei, keine Krone steht über der Scheibe und dem Ring der Tore — setz es ein paar Schritte weiter.",
+  "wand": "lichtung",
+  "toenung": {
+   "stoffe": 2,
+   "lesen": 2,
+   "farbe": "rot"
+  }
+ },
+ "verben": {
+  "Haus": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "die Tür dreht 65°",
+   "steht": 1,
+   "eingaben": 4,
+   "unecht": 0,
+   "folge": "KeyB · Klick · Klick · KeyW",
+   "ms": 574,
+   "kalt": false,
+   "zeile": "",
+   "verbraucht": {
+    "holz": 0,
+    "stein": 0
+   },
+   "kosten": {
+    "holz": 98,
+    "stein": 24
+   },
+   "imInventar": false
+  },
+  "Wagen": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "kein Fahren",
+   "steht": 1,
+   "eingaben": 6,
+   "unecht": 0,
+   "folge": "KeyB · Klick · Klick · KeyE · KeyW · KeyE",
+   "ms": 919,
+   "kalt": false,
+   "zeile": "",
+   "verbraucht": {
+    "holz": 0,
+    "eisen": 0
+   },
+   "kosten": {
+    "holz": 16,
+    "eisen": 4
+   },
+   "imInventar": false
+  },
+  "Tor": {
+   "bauModus": true,
+   "farbe": "grün",
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 4,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "kein Portal",
+   "steht": 1,
+   "eingaben": 3,
+   "unecht": 0,
+   "folge": "Digit3 · KeyF · KeyE",
+   "ms": 210,
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "stein": 0
+   },
+   "kosten": {
+    "stein": 22
+   },
+   "imInventar": false
+  },
+  "Brücke": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "vom Deck",
+   "steht": 1,
+   "eingaben": 4,
+   "unecht": 0,
+   "folge": "KeyB · Klick · Klick · KeyW",
+   "ms": 682,
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "stein": 0
+   },
+   "kosten": {
+    "stein": 56
+   },
+   "imInventar": false
+  },
+  "Leiter": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "nicht auf dem Podest",
+   "steht": 1,
+   "eingaben": 4,
+   "unecht": 0,
+   "folge": "KeyB · Klick · Klick · KeyW",
+   "ms": 721,
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "holz": 0
+   },
+   "kosten": {
+    "holz": 9
+   },
+   "imInventar": false
+  },
+  "Bank": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "sitzt nicht",
+   "steht": 1,
+   "eingaben": 16,
+   "unecht": 0,
+   "folge": "KeyB · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Klick · Klick · KeyE",
+   "ms": 1912,
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "holz": 0
+   },
+   "kosten": {
+    "holz": 6
+   },
+   "imInventar": false
+  }
+ }
+}

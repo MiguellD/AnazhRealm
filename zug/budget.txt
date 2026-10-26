@@ -21,3 +21,6 @@
 2026-10-26T12:08 woche=38 karte=95 (z37 fährt, Ruhe-Messung leib.K1 + fahrzeug.K3)
 2026-10-26T17:02 karte=97 (GEBUCHT am b2c6c627 nach z36–z38, Takt 6 headless + Radeon)
 2026-10-26T19:30 woche=50 karte=97 (z39 gelandet, z40 fährt, takt6-gtx mit geheiltem Läufer: fahrzeug.K4#2 3,4 min statt 5,0)
+2026-10-26T21:18 karte=98 (gebucht am b2c6c627, buche.sh)
+2026-10-26T21:27 karte=108 (gebucht am b2c6c627, buche.sh)
+2026-10-26T21:28 woche=55 karte=108 (Hand, nach takt6-gtx)

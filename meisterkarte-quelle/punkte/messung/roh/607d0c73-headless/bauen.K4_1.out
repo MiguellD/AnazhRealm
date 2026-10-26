@@ -1,0 +1,26 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-fall-waechter.cjs
+=== DER FALL-WÄCHTER (Leben-Schau 2) — Null-Renderer, echter Spiel-Takt, Spaltgrund + Höhle ===
+[stall-akte] ═══ diag-fall-waechter.cjs · Seite #2 http://127.0.0.1:7776/index.html · der Puls steht seit 20.7 s
+[stall-akte] offen evaluate(probe) seit 105.6 s
+[stall-akte] Puls 68×, zuletzt vor 20.7 s — complete · renderer bereit · weltbild da · frames 6690 · welt 6690 Takte · Ruhe 0 · zuletzt Fege-Takt deckWache 3072/6528 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 10352 100 % · browser 20120 1 % · GPU 17976 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 52:14 gpu 1/r 124 · 52:16 gpu 1/r 248 · 52:18 gpu 1/r 334 · 52:20 gpu 2/r 169 · 52:22 gpu 3/r 195 · 52:24 gpu 1/r 161 · 52:26 gpu 1/r 106 · 52:28 gpu 1/r 116 · 52:30 gpu 1/r 93 · 52:32 gpu 2/r 156 · 52:34 gpu 1/r 94 · 52:36 gpu 1/r 105 · 52:38 gpu 1/r 113 · 52:40 gpu 1/r 118 · 52:42 gpu 1/r 152 · 52:44 gpu 1/r 82 · 52:47 gpu 1/r 146 · 52:48 gpu 3/r 219 · 52:50 gpu 1/r 172 · 52:52 gpu 1/r 108 · 52:54 gpu 1/r 148 · 52:56 gpu 1/r 99 · 52:58 gpu 1/r 97 · 53:00 gpu 1/r 125 · 53:02 gpu 1/r 105 · 53:04 gpu 1/r 99 · 53:06 gpu 1/r 98 · 53:08 gpu 1/r 106 · 53:10 gpu 1/r 93 · 53:12 gpu 1/r 92
+[stall-akte] Stapel editKarte :5234 < _voxelEditKarte :1095 < _mitEdits :1135 < _fieldDensityAt :2333 < _fieldSolid :2342 < _fieldSurfaceBelow :2442 < _koerperGrund :1521 < _koerperBodenUnter :1509
+[stall-akte] Konsole log: [AnazhRealm V18.546.102] [INFO] Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...
+[stall-akte] Konsole log: [AnazhRealm V18.546.102] [INFO] Spieler-Sichtbarkeit auf true gesetzt
+[stall-akte] Konsole log: [AnazhRealm V18.546.102] [INFO] Eingestiegen in „fahrzeug_gt" (4× Rad — rollt · Tempo ×1.60 · träge)
+[stall-akte] Konsole log: [AnazhRealm V18.546.102] [INFO] Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...
+[stall-akte] Konsole log: [AnazhRealm V18.546.102] [INFO] Spieler-Sichtbarkeit auf true gesetzt
+[stall-akte] Konsole log: [AnazhRealm V18.546.102] [INFO] Ausgestiegen
+[stall-akte] Konsole log: [AnazhRealm V18.546.102] [INFO] WERK IM WASSER: glutbrunnen bei -153/244 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.102] [INFO] WERK IM WASSER: glutbrunnen bei -127/235 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.102] [INFO] Emotion 'sorrow' triggert Welt-Effekt (Wert 0.70)
+[stall-akte] Konsole log: [AnazhRealm V18.546.102] [INFO] Das Wetter zieht zu rainy (Wunsch: emotion:sorrow)
+[stall-akte] Konsole log: [AnazhRealm V18.546.102] [INFO] Tempo-Hauch (emotion:chaos): 9 Tiere ×1.5 im Wander-Band
+[stall-akte] Konsole log: [AnazhRealm V18.546.102] [INFO] Emotion 'chaos' triggert Welt-Effekt (Wert 0.70)
+[stall-akte] Stderr [20120:23656:1026/215226.055:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [20120:23656:1026/215226.095:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [20120:23656:1026/215226.096:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [20120:23656:1026/215253.552:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in editKarte :5234
+[stall-akte] Seite #2: der Puls kehrt zurück nach 25.8 s — complete · renderer bereit · weltbild da · frames 8032 · welt 8032 Takte · Ruhe 0 · zuletzt Bau-Regung · programme 0 · gl-sync 0
