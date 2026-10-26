@@ -479,3 +479,4 @@
 2026-10-26 21:53:23 takt7-headless bauen.K5#1 GRÜN 2.4 · 52/81
 2026-10-26 21:53:34 takt7-headless studios.K5#1 GRÜN 0.6 · 53/81
 2026-10-26 21:53:47 takt7-headless studios.K5#2 GRÜN 0.6 · 54/81
+2026-10-26 21:54:07 takt7-headless siedlung.K1#1 GRÜN 1.1 · 55/81
