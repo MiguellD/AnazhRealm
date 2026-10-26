@@ -210,3 +210,4 @@
 2026-10-26 13:00:34 takt5z-gtx leib.K1#2 ROT 57.6 · 30/43
 2026-10-26 13:42:38 takt5z-gtx leib.K2#1 ROT 42.0 · 31/43
 2026-10-26 13:42:49 z37-abab START 3 Zellen
+2026-10-26 13:56:45 z37-abab w-ego nicht-langsamer 13.9 · 1/3 (2+2)
