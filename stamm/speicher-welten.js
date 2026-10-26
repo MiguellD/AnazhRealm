@@ -1600,7 +1600,11 @@ class AnazhRealm_speicher_welten {
         const S = this._speicherZustand();
         this._standBesen();
         if (takt) {
-            S.ausstehend = { welt, at, bis: (S.ausstehend || { bis: performance.now() + AnazhRealm.STAND_TAKT.fristMs }).bis };
+            S.ausstehend = {
+                welt,
+                at,
+                bis: (S.ausstehend || { bis: performance.now() + AnazhRealm.STAND_TAKT.fristMs }).bis,
+            };
             return;
         }
         S.ausstehend = null;
