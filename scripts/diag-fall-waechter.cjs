@@ -20,6 +20,10 @@
 //   (B) DER TURM (bauen.K4): je Klick der rechten Maus (`tryMousePlace`, der Blick senkrecht nach unten) ein Block unter dem
 //       Spieler: der Stand steigt je Block ≥ HUB_ANTEIL · r, die Sohlen liegen ≤ SOHLE_M neben dem Mesh (`_bodenSichtAt`), der
 //       Turm trägt ≥ TURM_M; nach dem Reload steht jeder Edit, die Hülle ohne Loch, der Spieler oben;
+//   (B2) DER TURM AUF DACH, FELS UND BRÜCKE (bauen.K4#2): derselbe Turm im Haus der Werkstatt (vom Dachboden durch das Dach),
+//       auf der Felsdecke über der nächsten Spalte und auf dem Deck der Brücke des Prüf-Satzes, je in Ego und Third — die
+//       Sohlen auf der obersten Fläche (`_bodenSichtAt`); dann der Spieler FERN_M fern: der Fern-Ring trägt die Krone, ein Block
+//       auf sie (`voxel_fill`) steht ≤ FERN_S Spielzeit in seinen Lage-Bytes (byte-Diff); nach dem Reload jeder Edit, kein Loch;
 //   (Z) DER ZENSUS: je Ort die Überhang-Spalten im Umkreis (Luft ≥ 3 m unter ≥ 2 m Fels, ihr Grund begehbar) — Wagen und
 //       an die nächste Wand gestoßener Wolf je Spalte; ROT je Körper beim Namen, Ort und Maß;
 //   (T) DER EINGESCHMUGGELTE TÄTER: im selben Lauf liest der Boden des Werks die Oberkante der Säule (der alte Leser) — O1
@@ -38,6 +42,7 @@
 const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT: root, sleep } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
+const PRUEF_SATZ = require("../spec/pruefsatz/bauen-k3.json"); // die Brücke auf zwei Pfeilern (B2)
 
 const FALL_M = 1.0; // so tief darf ein Körper nie unter dem Fels unter ihm liegen
 const STEHT_M = 0.6; // so nah steht ein ruhender Körper an seinem Grund (Rad-Ebene, Nick, Sohle)
@@ -57,6 +62,8 @@ const HOEHLE_M = 0.25;
 const STIRN_M = 0.1;
 // DER TURM (B): Blöcke, ihr Maß, die Höhe über dem Gelände, die Sohle neben dem Mesh, der Hub in r
 const [TURM_BLOECKE, TURM_R, TURM_M, SOHLE_M, HUB_ANTEIL] = [20, 3.5, 60, 0.15, 0.8];
+// B2: die Unterlagen × Sichten, der Abstand des Spielers zum Turm (jenseits der Chunks, im Fern-Ring) und die Frist des Rings
+const [UNTERLAGEN, SICHTEN, FERN_M, FERN_S] = [["Dach", "Fels", "Brücke"], { Ego: "first", Third: "third" }, 320, 1];
 // Die Körper-Schritte und die Leser, die nie den Boden eines Körpers liefern dürfen.
 const KOERPER_SCHRITTE = [
     "_fahrBoden",
@@ -141,20 +148,31 @@ function quellenWand(quelle, benannt = OBERKANTE_BENANNT) {
     return befunde;
 }
 
-// Das Urteil über den Turm (B): je Block [Hub, Sohle neben dem Mesh], nach dem Reload `nach`.
-function turmUrteil(t) {
-    if (!t || t.fehler || !t.nach) return [`LEER: B Turm: ${t ? t.fehler || "kein Reload" : "fehlt"}`];
-    const [v, n, f] = [[], t.nach, (x) => Number(x).toFixed(2)];
-    if (t.bloecke.length !== TURM_BLOECKE) v.push(`LEER: B Turm: ${t.bloecke.length} Blöcke`);
+// Das Urteil über einen Turm (B, B2 `wo`): je Block [Hub, Sohle neben dem Mesh], nach dem Reload `nach`; in B2 der Ring `ring`
+// (die Krone im Ring vor dem Block, die Takte, bis seine Lage-Bytes den Block auf der Krone zeigen) — der Stand nach dem Reload
+// gilt dem Turm des Saves (B).
+function turmUrteil(t, wo = "B") {
+    const B = wo === "B";
+    if (!t || t.fehler || !t.nach) return [`LEER: ${wo} Turm: ${t ? t.fehler || "kein Reload" : "fehlt"}`];
+    const [v, n, f, g] = [[], t.nach, (x) => Number(x).toFixed(2), t.ring || {}];
+    if (t.bloecke.length !== TURM_BLOECKE) v.push(`LEER: ${wo} Turm: ${t.bloecke.length} Blöcke`);
     t.bloecke.forEach(([hub, sohle], k) => {
-        if (!(hub >= HUB_ANTEIL * TURM_R)) v.push(`(B) KEIN HUB: Block ${k + 1} hob ${f(hub)} m`);
-        if (!(sohle <= SOHLE_M)) v.push(`(B) SOHLE: Block ${k + 1} ${f(sohle)} m neben dem Mesh`);
+        if (!(hub >= HUB_ANTEIL * TURM_R)) v.push(`(${wo}) KEIN HUB: Block ${k + 1} hob ${f(hub)} m`);
+        if (!(sohle <= SOHLE_M)) v.push(`(${wo}) SOHLE: Block ${k + 1} ${f(sohle)} m neben dem Mesh`);
     });
-    if (!(t.hoehe >= TURM_M)) v.push(`(B) ZU NIEDRIG: ${f(t.hoehe)} m über dem Gelände`);
-    if (n.edits !== t.bloecke.length || n.loecher || !(n.sohle <= SOHLE_M) || !(n.hoehe >= t.hoehe - SOHLE_M))
-        v.push(`(B) RELOAD: ${n.edits} Edits, ${n.loecher} Löcher, Sohle ${f(n.sohle)} m, Stand ${f(n.hoehe)} m`);
+    if (!(t.hoehe >= TURM_M)) v.push(`(${wo}) ZU NIEDRIG: ${f(t.hoehe)} m über ${B ? "dem Gelände" : "der Unterlage"}`);
+    if (n.edits !== t.bloecke.length + !B || n.loecher || (B && !(n.sohle <= SOHLE_M && n.hoehe >= t.hoehe - SOHLE_M)))
+        v.push(`(${wo}) RELOAD: ${n.edits} Edits, ${n.loecher} Löcher` + (B ? `, Sohle ${f(n.sohle)} m, Stand ${f(n.hoehe)} m` : ""));
+    if (!B && !(g.vor >= g.krone - SOHLE_M))
+        v.push(`(${wo}) FERN-RING OHNE TURM: der Ring trägt ${f(g.vor)} m an der Krone ${f(g.krone)} m (${FERN_M} m fern)`);
+    if (!B && !(g.takte / 60 <= FERN_S))
+        v.push(`(${wo}) FERN-RING ` + (g.takte ? `ZU SPÄT: ${f(g.takte / 60)} s > ${FERN_S} s` : `OHNE EDIT: der Block auf der Krone steht nach 120 Takten nicht in den Lage-Bytes`));
     return v;
 }
+const turm2Urteil = (liste) =>
+    UNTERLAGEN.flatMap((u) =>
+        Object.keys(SICHTEN).flatMap((s) => turmUrteil((liste || []).find((t) => t.wo === u + " " + s), `B2 ${u} ${s}`))
+    );
 
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein, im Selbsttest wie im Lauf.
 function urteil(b) {
@@ -261,7 +279,7 @@ function urteil(b) {
                 (b.schmuggel && b.schmuggel.mass ? ` (${b.schmuggel.mass})` : "")
         );
     for (const q of b.quelle || []) v.push(`(Q) DACH-LESER: ${q}`);
-    return [...v, ...turmUrteil(b.turm)];
+    return [...v, ...turmUrteil(b.turm), ...turm2Urteil(b.turm2)];
 }
 
 function selbsttest() {
@@ -305,6 +323,15 @@ function selbsttest() {
             hoehe: 70,
             nach: { edits: TURM_BLOECKE, loecher: 0, sohle: 0.04, hoehe: 70 },
         },
+        turm2: UNTERLAGEN.flatMap((u) =>
+            Object.keys(SICHTEN).map((s) => ({
+                wo: u + " " + s,
+                bloecke: Array.from({ length: TURM_BLOECKE }, () => [3.5, 0.01]),
+                hoehe: 70,
+                nach: { edits: TURM_BLOECKE + 1, loecher: 0 },
+                ring: { krone: 160.38, vor: 160.38, takte: 2 },
+            }))
+        ),
     };
     const fehler = [];
     const g = urteil(gruen);
@@ -406,6 +433,13 @@ function selbsttest() {
         ["ein Block fehlt", (b) => b.turm.bloecke.pop(), /LEER: B Turm: 19 Blöcke/],
         ["ein Loch", (b) => (b.turm.nach.loecher = 3), /RELOAD: 20 Edits, 3 Löcher/],
         ["kein Reload", (b) => delete b.turm.nach, /LEER: B Turm: kein Reload/],
+        // B2 — der Fuß in der Luft (am Vorfahren gemessen: der Grund des Hauses schnitt den Turm über dem Dach, Sohle 193,85 m)
+        ["Fuß in der Luft", (b) => (b.turm2[0].bloecke[4][1] = 193.85), /\(B2 Dach Ego\) SOHLE: Block 5 193\.85 m/],
+        // der Ring ohne den Turm (am Vorfahren: 89,62 m an der Krone 160,38 m) und ohne den Edit
+        ["Ring ohne Turm", (b) => (b.turm2[2].ring.vor = 89.62), /\(B2 Fels Ego\) FERN-RING OHNE TURM: der Ring trägt 89\.62/],
+        ["Ring ohne Edit", (b) => delete b.turm2[3].ring.takte, /\(B2 Fels Third\) FERN-RING OHNE EDIT/],
+        ["Ring zu spät", (b) => (b.turm2[5].ring.takte = 90), /\(B2 Brücke Third\) FERN-RING ZU SPÄT: 1\.50 s/],
+        ["Unterlage fehlt", (b) => b.turm2.pop(), /LEER: B2 Brücke Third Turm: fehlt/],
     ];
     {
         // das Gegenstück: ein Tier am steilen Fuß der Höhlenwand steht auf der Ebene seiner Proben, 0,2 m unter dem Fels unter
@@ -497,17 +531,27 @@ async function probe(K) {
         // B nach dem Reload: die Füll-Edits des Turms, ihre Hülle (0,5 m innen Fels, 0,6 m außen Luft), Sohle und Stand
         await window.__weltStehtNach(takt);
         for (let i = 0; i < 120; i++) takt();
+        const huelle = (t) => {
+            const edits = st.worldMeta.voxelEdits.filter((e) => e.mode === "fill" && Math.hypot(e.x - t.x, e.z - t.z) < e.r);
+            // je Säule innen Fels, außen Luft — außer in einer anderen Säule des Turms (der Treffer wandert um Zentimeter)
+            const drin = (x, y, z) => edits.some((f) => Math.hypot(x - f.x, z - f.z) < f.r && Math.abs(y - f.y) < f.r);
+            let loecher = 0;
+            for (const e of edits)
+                for (let y = Math.max(e.y, t.y0 + 2); y < e.y + e.r - 1; y++)
+                    for (let a = 0; a < 16; a++) {
+                        const q = a < 8 ? e.r - 0.5 : e.r + 0.6;
+                        const [x, z] = [e.x + Math.cos(a * 0.785) * q, e.z + Math.sin(a * 0.785) * q];
+                        if (r._terrainDensityAt(x, y, z) > 0 !== (a < 8 || drin(x, y, z))) loecher++;
+                    }
+            return { edits: edits.length, loecher };
+        };
         const t = K.nach;
-        const edits = st.worldMeta.voxelEdits.filter((e) => e.mode === "fill" && Math.hypot(e.x - t.x, e.z - t.z) < e.r);
-        let loecher = 0;
-        for (const e of edits)
-            for (let y = Math.max(e.y, t.y0 + 2); y < e.y + e.r - 1; y++)
-                for (let a = 0; a < 16; a++) {
-                    const q = a < 8 ? e.r - 0.5 : e.r + 0.6;
-                    const d = r._terrainDensityAt(e.x + Math.cos(a * 0.785) * q, y, e.z + Math.sin(a * 0.785) * q);
-                    if (d > 0 !== a < 8) loecher++;
-                }
-        return { edits: edits.length, loecher, sohle: sohle(), hoehe: st.playerMesh.position.y - t.y0 };
+        return {
+            ...huelle(t),
+            sohle: sohle(),
+            hoehe: st.playerMesh.position.y - t.y0,
+            turm2: K.nach2.map((u) => (u.fehler ? null : huelle(u))),
+        };
     }
     const todesEbene = (st.terrainBaseHeight || 0) - 88;
     // DIE BODEN-WAHRHEIT: das Dichtefeld selbst — der erste Fels unter einem Punkt (0,05-m-Schritte), unabhängig von jedem
@@ -613,14 +657,15 @@ async function probe(K) {
         WOLF_R = 0.9;
     const spalten = (opts) => window.__weltOrte("hoehle", Object.assign({ schritt: 2, rMax: 600 }, opts));
     // ── B DER TURM: die fernste ebene Stelle ohne Bau (fern der Spalten von O1–O3); je Block der Klick, 120 Takte
-    const frei = (o) => (st.architectures || []).every((e) => !e.position || Math.hypot(e.position.x - o.x, e.position.z - o.z) > 12);
+    const frei = (o, natur) => (st.architectures || []).every((e) => !e.position || (natur && r._istNatur(e)) || Math.hypot(e.position.x - o.x, e.position.z - o.z) > 12);
     const T0 = window.__weltOrte("eben", { r: 6, spanne: 1, anzahl: 12, rMax: 300, abstand: 30 }).filter(frei).pop();
     const turm = { ...T0, bloecke: [], fehler: T0 ? undefined : "keine ebene Stelle ohne Bau" };
-    if (T0) {
-        await einschwingen(T0.x, T0.z);
-        raeumen(T0.x, T0.z, 30);
+    // DER TURM auf der Unterlage, auf der der Spieler steht, in der Sicht `sicht` (B, B2)
+    const turmBauen = async (turm, sicht) => {
+        raeumen(st.playerMesh.position.x, st.playerMesh.position.z, 30);
         r.equipHeld(null);
-        [st.cameraMode, st.pitch, turm.y0] = ["third", -Math.PI / 2, st.playerMesh.position.y];
+        [st.cameraMode, st.pitch, turm.y0] = [sicht, -Math.PI / 2, st.playerMesh.position.y];
+        [turm.x, turm.z] = [st.playerMesh.position.x, st.playerMesh.position.z];
         for (let i = 0; i < 3; i++) takt();
         while (turm.bloecke.length < K.turmBloecke) {
             [st.player.stamina, st.isPointerLocked] = [st.player.maxStamina, true];
@@ -635,6 +680,10 @@ async function probe(K) {
             turm.bloecke.push([st.playerMesh.position.y - vor, s]);
         }
         turm.hoehe = st.playerMesh.position.y - turm.y0;
+    };
+    if (T0) {
+        await einschwingen(T0.x, T0.z);
+        await turmBauen(turm, "third");
     }
     // ── O1 DER WAGEN UNTER DEM ÜBERHANG
     // Der Ort ist die nächste Spalte, in die der Wagen passt, mit ≥ 4 m Fels über ≥ 3 m Luft (welt-orte `hoehle`) — gelesen
@@ -1066,6 +1115,77 @@ async function probe(K) {
             }
         }
     }
+    // ── B2 DER TURM AUF DACH, FELS UND BRÜCKE: je Unterlage zwei Stellen (Ego, Third), fern von jedem Turm und Bau
+    const turm2 = [];
+    const eben = window.__weltOrte("eben", { r: 8, spanne: 1.5, anzahl: 60, rMax: 600, abstand: 30 });
+    const felsen = spalten({ fels: 4, luft: 3, R: KAMMER_R, abstand: 60, anzahl: 12 });
+    // fern von jedem Turm, kein Bau binnen 12 m; die Natur räumt der Turm wie jeder Bau (`_naturRaeumen`)
+    const fern = (o) => frei(o, true) && [turm, ...turm2].every((t) => !(Math.hypot(t.x - o.x, t.z - o.z) < 60));
+    // die Brücke des Prüf-Satzes, Teil für Teil gefügt wie in der Werkstatt
+    const bruecke = "__turm_bruecke";
+    r.createBlueprint(bruecke, "Brücke");
+    for (const [x, y, z, a, b, c] of K.bruecke)
+        r.addPartToBlueprint(bruecke, { shape: "box", material: "stein", position: { x, y, z }, size: { x: a, y: b, z: c } });
+    // die Unterlage an der Stelle o: das Haus der Werkstatt (der Spieler fällt von über dem First auf den obersten Boden), die
+    // Felsdecke über der Spalte, das Deck der Brücke
+    const stellen = {
+        Dach: [eben, "haus_alemannisch"],
+        Fels: [felsen, null],
+        Brücke: [eben, bruecke],
+    };
+    for (const u of K.unterlagen)
+        for (const [s, sicht] of Object.entries(K.sichten)) {
+            const [liste, bau] = stellen[u];
+            const o = liste.find(fern);
+            const t = { wo: u + " " + s, bloecke: [], ...(o ? { x: o.x, z: o.z } : { fehler: `keine Stelle für ${u} (${liste.length} Kandidaten)` }) };
+            turm2.push(t);
+            if (!o) continue;
+            absteigen();
+            r._naturRaeumen(o.x, o.z, 12, false);
+            let oben;
+            if (bau) {
+                await einschwingen(o.x + 20, o.z);
+                const e = r.spawnArchitecture(bau, { x: o.x, y: r._voxelSurfaceY(o.x, o.z), z: o.z }, { silent: true, precise: true });
+                if (!e) {
+                    t.fehler = `${bau} ließ sich nicht setzen`;
+                    continue;
+                }
+                await window.__gebautNach(e, { takt });
+                oben = Math.max(...e.blockerAABBs.map((b) => b.topY)) + 3;
+            }
+            await einschwingen(o.x, o.z, oben);
+            await turmBauen(t, sicht);
+            // DER FERN-RING: der Spieler FERN_M vom Turm, weg von der Mitte; die Welt steht, der Ring hängt ganz
+            const l = Math.hypot(t.x, t.z) || 1;
+            await einschwingen(t.x + (t.x / l) * K.fernM, t.z + (t.z / l) * K.fernM);
+            const fr = () => st.fernRing;
+            for (
+                const weiter = window.__deckel("der Fern-Ring", 900, false);
+                !(fr() && fr().ready && fr().cursor >= fr().totalVerts && !fr().flug && !fr().einhaengen.length) && weiter();
+
+            ) {
+                takt();
+                await sleep();
+            }
+            // die Ecken um die Mitte des Turms (zwei Maschen), die Lage-Bytes aller Schalen
+            const F = fr();
+            const ecken = Array.from({ length: F.totalVerts }, (_, g) => r._fernRingPunkt(F, g)).filter(
+                (p) => Math.hypot(p.x - t.x, p.z - t.z) < 2 * p.fuss.hr
+            );
+            const ringY = () => Math.max(...ecken.map((p) => F.geos[p.s].attributes.position.getY(p.li)));
+            const lage = () => F.geos.map((g) => new Uint8Array(g.attributes.position.array.buffer.slice(0)));
+            const [ring, vor] = [{ krone: r._voxelSurfaceY(t.x, t.z), vor: ringY() }, lage()];
+            // ein Block auf die Krone über das Verb des Spiels (der Mensch am Turm, die KI, ein Mitspieler: `voxel_fill`)
+            r.dslRun(["voxel_fill", t.x, ring.krone, t.z, K.turmR], { source: "human" });
+            const krone2 = r._voxelSurfaceY(t.x, t.z);
+            for (let i = 1; i <= 120 && !ring.takte; i++) {
+                takt();
+                await sleep();
+                const bytes = lage().reduce((n, b, s) => n + b.filter((x, k) => x !== vor[s][k]).length, 0);
+                if (bytes && ringY() >= krone2 - K.sohleM) Object.assign(ring, { takte: i, bytes });
+            }
+            t.ring = { ...ring, krone2, nach: ringY() };
+        }
     // B: zurück auf den Turm, der Save
     if (T0) {
         absteigen();
@@ -1084,7 +1204,7 @@ async function probe(K) {
                   `${(t.tiefsteUnter || 0).toFixed(2)} m unter dem Grund, am Ende y ${(t.yEnde || 0).toFixed(2)}`,
           }
         : null;
-    return { proben, zensus, schmuggel, turm };
+    return { proben, zensus, schmuggel, turm, turm2 };
 }
 
 (async () => {
@@ -1095,6 +1215,7 @@ async function probe(K) {
     page.setDefaultTimeout(880000);
     await nullRenderer(page);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
+    await page.evaluateOnNewDocument("window.__anazhFernRing = true"); // B2: der Fern-Ring lebt auch ohne Renderer
     let befund;
     try {
         await server.zeige(page, 120000);
@@ -1105,12 +1226,20 @@ async function probe(K) {
             spaltenJeOrt: 6,
             todGier: TOD_GIER,
             turmBloecke: TURM_BLOECKE,
+            turmR: TURM_R,
+            sohleM: SOHLE_M,
+            sichten: SICHTEN,
+            unterlagen: UNTERLAGEN,
+            fernM: FERN_M,
+            bruecke: PRUEF_SATZ.stabil["Brücke auf zwei Pfeilern"],
         });
         if (!befund.turm.fehler) {
             await sleep(1500); // der IDB-Put des Saves landet
             await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
             await warteAufWelt(page, 180000);
-            befund.turm.nach = await page.evaluate(probe, { nach: befund.turm });
+            const nach = await page.evaluate(probe, { nach: befund.turm, nach2: befund.turm2 });
+            befund.turm.nach = nach;
+            befund.turm2.forEach((t, k) => nach.turm2[k] && (t.nach = nach.turm2[k]));
         }
     } catch (e) {
         befund = { fehler: (e && e.message) || String(e) };
@@ -1154,6 +1283,17 @@ async function probe(K) {
     const [T, hub] = [befund.turm, befund.turm.bloecke.map((b) => b[0])];
     const zahl = { hub: [Math.min(...hub), Math.max(...hub)], sohle: Math.max(...T.bloecke.map((b) => b[1])) };
     console.log("  B-ZAHL " + JSON.stringify({ ...T, bloecke: hub.length, ...zahl, befunde: turmUrteil(T) }));
+    // DIE ZAHL DES TURMS AUF DACH, FELS UND BRÜCKE (die Station bauen.K4#2 liest sie)
+    const zahl2 = befund.turm2.map(({ wo, bloecke = [], hoehe, nach, ring, fehler }) => ({
+        wo,
+        fehler,
+        hoehe,
+        hub: Math.min(...bloecke.map((b) => b[0])),
+        sohle: Math.max(...bloecke.map((b) => b[1])),
+        nach,
+        ring,
+    }));
+    console.log("  B2-ZAHL " + JSON.stringify({ tuerme: zahl2, befunde: turm2Urteil(befund.turm2) }));
     console.log(
         `  Quelle: ${befund.quelle.length ? befund.quelle.join(" · ") : "die Körper-Schritte lesen den Boden unter dem Körper"}`
     );
