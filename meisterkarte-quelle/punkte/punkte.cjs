@@ -11,6 +11,8 @@
 //   node punkte.cjs liste [--kopf <sha>]   die registrierten Stationen, geprüft gegen src/gN.js und jeder pfad-Glob gegen den
 //        Kopf (sonst origin/main des Spiel-Klons)
 //   node punkte.cjs gtx-nutzen --kopf <sha>   die GTX-Stationen, deren Messung am Kopf Punkte ändern kann (nur=… für die OMEN)
+//   node punkte.cjs plan --kopf <neu> --vorher <alt>   der Mess-Plan nach einem Zug: je GPU-Gerät die Stationen, die Punkte halten
+//        oder gewinnen können (Staffel 1 auf EINEM Gerät, Zeit-Stationen auf der GTX, rote ohne Heil-Versuch nie)
 //   node punkte.cjs selbsttest   jeder Fall beim Namen
 //
 // FORMAT (stationen/g1.js .. g6.js, module.exports = [ … ]), je Eintrag:
@@ -631,6 +633,63 @@ function gtxNutzen(s) {
     return { ja: ja.sort(), nein: nein.sort() };
 }
 
+// DER MESS-PLAN nach einem Zug (26.10.: 10 h vom Landen bis zur Buchung, die Prüfung länger als das Bauen): je GPU-Station
+// das, was Punkte halten oder gewinnen kann, am Ergebnis des VORIGEN Kopfs — Staffel 1 braucht EIN grünes Gerät (die
+// Zeit-Station auf die ruhige GTX, sonst das Gerät, das grün war), Staffel 2 nur über stehender 1 und auf beiden Geräten;
+// eine rote Station ohne Heil-Versuch (der Zug nennt ihr Kriterium nicht) bleibt rot und wird nicht gemessen.
+// da(id, g): die JÜNGSTE Messung der Station auf dem Gerät über alle Köpfe (ihr Vorwissen), sonst null · genannt: Set der
+// Kriterien, die die Commits seit dem vorigen Kopf nennen · zeit(id): die Station urteilt in ms (sie misst Takt, nie Bild)
+function messPlan(stationen, da, genannt, zeit) {
+    const plan = { radeon: [], gtx: [], uebersprungen: [] };
+    for (const st of stationen) {
+        const ge = geraeteVon(st).filter((g) => g === "radeon" || g === "gtx");
+        if (!ge.length) continue;
+        const id = schluessel(st), k = st.kriterium;
+        const neu = ge.some((g) => !da(id, g));
+        const heil = genannt.has(k) || neu;
+        if (st.staffel === 1) {
+            const gruen = ge.filter((g) => da(id, g) && da(id, g).gruen);
+            if (gruen.length) plan[zeit(id) && gruen.includes("gtx") ? "gtx" : gruen.includes("radeon") ? "radeon" : "gtx"].push(id);
+            else if (heil) for (const g of ge) plan[g].push(id);
+            else plan.uebersprungen.push(id);
+            continue;
+        }
+        const s1 = stationen.find((x) => x.kriterium === k && x.staffel === 1);
+        const s1gruen = s1 && geraeteVon(s1).some((g) => da(schluessel(s1), g) && da(schluessel(s1), g).gruen);
+        const allesGruen = ge.every((g) => da(id, g) && da(id, g).gruen);
+        if ((s1gruen || genannt.has(k)) && (allesGruen || heil)) for (const g of ge) plan[g].push(id);
+        else plan.uebersprungen.push(id);
+    }
+    return plan;
+}
+
+function planCli(opt) {
+    if (!opt.kopf || !opt.vorher) throw new Error("plan --kopf <neu> --vorher <voriger Kopf>");
+    const repo = spielRepo();
+    const [neu, alt] = [voll(repo, opt.kopf), voll(repo, opt.vorher)];
+    const { stationen } = ladeGeprueft();
+    const juengste = {};
+    for (const m of ladeMessungen())
+        for (const [id, e] of Object.entries(m.je || {})) {
+            const w = id + "|" + m.geraet;
+            if (!juengste[w] || String(e.zeit) > String(juengste[w].zeit)) juengste[w] = e;
+        }
+    const ab = Object.fromEntries(stationen.map((st) => [schluessel(st), abdruck(st)]));
+    const da = (id, g) => {
+        const e = juengste[id + "|" + g];
+        return e && (!e.abdruck || e.abdruck === ab[id]) ? e : null;
+    };
+    const genannt = new Set((git(["log", "--format=%B", alt + ".." + neu], repo).match(/\b[a-z]+\.K\d\b/g) || []));
+    const zahlVon = (id) => ["radeon", "gtx"].map((g) => da(id, g) && da(id, g).zahl).find(Boolean) || "";
+    const minVon = (id) => Math.max(0, ...["radeon", "gtx"].map((g) => (da(id, g) && da(id, g).minuten) || 0));
+    const p = messPlan(stationen, da, genannt, (id) => /\bp\d\d\b.*\bms\b|\bms\b.*\bp\d\d\b/.test(zahlVon(id)));
+    const sum = (ids) => Math.round(ids.reduce((a, id) => a + minVon(id), 0));
+    console.log("MESS-PLAN " + neu.slice(0, 8) + " nach " + alt.slice(0, 8) + " · genannt: " + ([...genannt].join(" ") || "—"));
+    for (const g of ["radeon", "gtx"]) console.log(g + " " + p[g].length + " Stationen ~" + sum(p[g]) + " min · nur=" + p[g].join(","));
+    console.log("übersprungen " + p.uebersprungen.length + " (rot ohne Heil-Versuch oder Staffel 2 ohne stehende 1): " + p.uebersprungen.join(" "));
+    return p;
+}
+
 function gtxNutzenCli(opt) {
     const s = buchenCli({ ...opt, trocken: true });
     const n = gtxNutzen(s);
@@ -836,7 +895,16 @@ async function selbsttest() {
     } });
     pruef("GTX-NUTZEN Staffel 1 hinter grüner Radeon fällt, Staffel 2 nur über stehender 1 und grüner Radeon",
         nz.ja.join() === "a.K1#2,b.K1#1" && nz.nein.join() === "a.K1#1,b.K1#2,c.K1#2", JSON.stringify(nz));
-    pruef("GEN unbekanntes Kriterium ist ROT",standPruefen({ kopf: "abcd1234", je: { "x.K1": {} } }, "abcd1234", new Set()).length === 1);
+    const P = (k, s, ge) => ({ kriterium: k, staffel: s, geraet: ge, befehl: ["node"], gpu: true });
+    const V = (id, g, gruen) => ({ id, geraet: g, gruen, zahl: gruen ? "ok" : "rot" });
+    const vor = [V("a.K1#1", "radeon", true), V("a.K1#1", "gtx", true), V("a.K1#2", "radeon", true), V("a.K1#2", "gtx", true),
+        V("b.K1#1", "radeon", false), V("b.K1#1", "gtx", false), V("c.K1#1", "radeon", false), V("c.K1#1", "gtx", false),
+        V("d.K1#1", "radeon", false), V("d.K1#1", "gtx", true), V("d.K1#2", "radeon", true), V("d.K1#2", "gtx", false)];
+    const mp = messPlan([P("a.K1", 1, ["radeon", "gtx"]), P("a.K1", 2, ["radeon", "gtx"]), P("b.K1", 1, ["radeon", "gtx"]), P("c.K1", 1, ["radeon", "gtx"]), P("d.K1", 1, ["radeon", "gtx"]), P("d.K1", 2, ["radeon", "gtx"])],
+        (id, g) => vor.find((x) => x.id === id && x.geraet === g) || null, new Set(["c.K1"]), (id) => id === "d.K1#1");
+    pruef("MESS-PLAN Staffel 1 auf EINEM Gerät (Zeit auf der GTX), rot ohne Heil-Versuch fällt, genannt fährt beide, Staffel 2 nur ganz grün oder geheilt",
+        mp.radeon.join() === "a.K1#1,a.K1#2,c.K1#1" && mp.gtx.join() === "a.K1#2,c.K1#1,d.K1#1" && mp.uebersprungen.join() === "b.K1#1,d.K1#2", JSON.stringify(mp));
+    pruef("GEN unbekanntes Kriterium ist ROT", standPruefen({ kopf: "abcd1234", je: { "x.K1": {} } }, "abcd1234", new Set()).length === 1);
     fs.rmSync(tmp, { recursive: true, force: true });
     const rot = fall.filter((f) => !f.ok);
     console.log((rot.length ? "SELBSTTEST ROT — " + rot.map((f) => f.name).join(", ") : "SELBSTTEST GRÜN") + " (" + (fall.length - rot.length) + "/" + fall.length + ")");
@@ -860,6 +928,7 @@ if (require.main === module) {
         if (verb === "run") await run(o);
         else if (verb === "buchen") buchenCli(o);
         else if (verb === "gtx-nutzen") gtxNutzenCli(o);
+        else if (verb === "plan") planCli(o);
         else if (verb === "liste") {
             const { stationen, fehler, fehlt } = ladeGeprueft();
             // DIE WAND PFAD am Kopf (--kopf, sonst origin/main des Spiel-Klons): jeder Glob trifft eine Datei
