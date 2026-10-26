@@ -241,3 +241,4 @@
 2026-10-26 19:24:40 takt6-gtx START 16 Stationen
 2026-10-26 19:28:08 takt6-gtx fahrzeug.K4#2 GRÜN 3.4 · 1/16
 2026-10-26 19:36:10 takt6-gtx ferne.K2#2 GRÜN 7.9 · 2/16
+2026-10-26 19:38:12 takt6-gtx gelaende.K5#2 GRÜN 1.9 · 3/16
