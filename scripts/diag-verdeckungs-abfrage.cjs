@@ -362,7 +362,6 @@ async function verdeckungPhase(opts) {
         }
         return drawVor.call(this, ro, info);
     };
-    const warte = (ms) => new Promise((q) => setTimeout(q, ms));
     // der Szenen-Pass rendert einmal je NODE-FRAME, den sonst die Animations-Schleife weiterschaltet (wie die Ausgabe-Aufnahme)
     const nf = rend._nodes && rend._nodes.nodeFrame;
     // DIE GPU-LEINE (`_gpuLeineFrei`) setzt den Render aus, solange GPU_FRAMES_IM_FLUG Frames unterwegs sind — auf
@@ -371,7 +370,7 @@ async function verdeckungPhase(opts) {
         try {
             await be.device.queue.onSubmittedWorkDone();
         } catch {}
-        await warte(0);
+        await sleep(0);
     };
     const render = async (n, vor) => {
         for (let i = 0; i < n; i++) {
@@ -487,7 +486,7 @@ async function verdeckungPhase(opts) {
             const tOrt = performance.now();
             for (const weiter = window.__deckel("das Wasser am Ort", (opts.ortMs || 180000) / 20); weiter() && !(sichtbaresWasser() > 0 && z.wasser > 0 && bereit()); ) {
                 for (let i = 0; i < 5; i++) takt();
-                await warte(20);
+                await sleep(20);
             }
             aus.wasserMeshes = sichtbaresWasser();
             aus.wasserAmOrt = z.wasser;
@@ -559,7 +558,7 @@ async function verdeckungPhase(opts) {
             q.occlusionTest = false;
             for (let i = 0; i < 400 && gebaut < 1; i++) {
                 await render(1, stelle);
-                if (gebaut < 1) await warte(30);
+                if (gebaut < 1) await sleep(30);
             }
             be.draw = dv;
             aus.vorgebaut = gebaut;
@@ -595,7 +594,7 @@ async function verdeckungPhase(opts) {
         for (const k in eigen) be[k] = eigen[k];
     }
     // die Nachläufer der Phase (asynchron) noch in ihr buchen; ohne Hülle bis zum Wort der Validierung (solange eine Pipeline baut, mindestens 8 Bilder: r184s Fehler-Bereich hält es bis zum Ende eines offenen Pipeline-Baus)
-    for (let n = 0; await render(1), await warte(200), opts.roh && W.n === wacheVor && !Object.keys(S.gpu[marke] || {}).length && (n++ < 8 || window.anazhRealm._erstZeichnungStand().offen.size); );
+    for (let n = 0; await render(1), await sleep(200), opts.roh && W.n === wacheVor && !Object.keys(S.gpu[marke] || {}).length && (n++ < 8 || window.anazhRealm._erstZeichnungStand().offen.size); );
     S.phase = "zwischen";
     aus.z = z;
     aus.gpu = S.gpu[marke] || {};

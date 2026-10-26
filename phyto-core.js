@@ -5101,7 +5101,126 @@
         return A.mul(A.mul(tau, hinten), keule);
     }
 
+    // DIE STREU EINER REGION (B-Streu): ihre Felder (Steilheit · Feuchte · lebendig je Texel, Float32 wie jeder Bake) und die
+    // Würfe ihrer Zellen — je Schicht in Zeilen-Reihe (cz-major, cx-minor) jede Zelle, die Abstand, Steilheit und den Dichte-Wurf
+    // trägt, als STREU_WURF Zahlen [cellX, cellZ, x, z, yaw, scale, hash, lebendig, feuchte]. EINE Regel für den Haupt-Faden
+    // (One-Shot) und den Streu-Faden (voxel-worker `streu-region`, die Region der Ankunft); die Leser des Orts reicht der Host
+    // (`leser`: surfaceYAt · slopeAt · feuchteAt · fieldAt). Was der Zustand des Hosts urteilt (Promotion, Tat, Wasser, Asset, die
+    // Zahl je Region), bleibt beim Host. Ein Texel rechnet beim ersten Lesen — dieselbe Zahl in jeder Reihe.
+    function streuPcg(a, b) {
+        let x = (a >>> 0) * 1664525 + 1013904223;
+        let y = (b >>> 0) * 1664525 + 1013904223;
+        x = (x >>> 0) + (((y >>> 0) * 1664525) >>> 0);
+        y = (y >>> 0) + (((x >>> 0) * 1664525) >>> 0);
+        x = (x >>> 0) ^ (x >>> 16);
+        y = (y >>> 0) ^ (y >>> 16);
+        x = (x >>> 0) + (((y >>> 0) * 1664525) >>> 0);
+        y = (y >>> 0) + (((x >>> 0) * 1664525) >>> 0);
+        x = (x >>> 0) ^ (x >>> 16);
+        return x >>> 0;
+    }
+    function streuPcgFloat(cx, cz, salt) {
+        return streuPcg((cx * 73856093) ^ ((salt | 0) * 19349663), cz * 83492791) / 4294967296;
+    }
+    // Der Ort einer Streu-Zelle: Jitter in der Zelle, Drehung, Größe (scaleBase + Wurf × scaleVar).
+    function streuZelle(cellX, cellZ, cm, sb, sv) {
+        const jx = streuPcgFloat(cellX, cellZ, 1);
+        const jz = streuPcgFloat(cellX, cellZ, 2);
+        return {
+            x: (cellX + 0.15 + jx * 0.7) * cm,
+            z: (cellZ + 0.15 + jz * 0.7) * cm,
+            yaw: streuPcgFloat(cellX, cellZ, 3) * Math.PI * 2,
+            scale: sb + streuPcgFloat(cellX, cellZ, 4) * sv,
+        };
+    }
+    const STREU_WURF = 9;
+    function streuFelder(B, L) {
+        const R = B.res;
+        const felder = new Map();
+        return (x, z) => {
+            const rx = Math.floor(x / B.sizeM);
+            const rz = Math.floor(z / B.sizeM);
+            let e = felder.get(rx + "," + rz);
+            if (!e) {
+                e = { ox: rx * B.sizeM, oz: rz * B.sizeM, d: new Float32Array(R * R * 3), da: new Uint8Array(R * R) };
+                felder.set(rx + "," + rz, e);
+            }
+            const texel = (i, j) => {
+                const n = j * R + i;
+                if (!e.da[n]) {
+                    const tx = e.ox + (i + 0.5) * B.texelM;
+                    const tz = e.oz + (j + 0.5) * B.texelM;
+                    const f = L.fieldAt(tx, tz);
+                    e.d[n * 3] = L.slopeAt(tx, tz);
+                    e.d[n * 3 + 1] = L.feuchteAt(tx, tz, L.surfaceYAt(tx, tz));
+                    e.d[n * 3 + 2] = f ? +f.lebendig || 0 : 0;
+                    e.da[n] = 1;
+                }
+                return n * 3;
+            };
+            const lx = (x - e.ox) / B.texelM - 0.5;
+            const lz = (z - e.oz) / B.texelM - 0.5;
+            const i0 = Math.max(0, Math.min(R - 1, Math.floor(lx)));
+            const j0 = Math.max(0, Math.min(R - 1, Math.floor(lz)));
+            const i1 = Math.min(R - 1, i0 + 1);
+            const j1 = Math.min(R - 1, j0 + 1);
+            const fx = Math.max(0, Math.min(1, lx - i0));
+            const fz = Math.max(0, Math.min(1, lz - j0));
+            const [a, b, c, d] = [texel(i0, j0), texel(i1, j0), texel(i0, j1), texel(i1, j1)];
+            const w = (k) => {
+                const v0 = e.d[a + k] + (e.d[b + k] - e.d[a + k]) * fx;
+                return v0 + (e.d[c + k] + (e.d[d + k] - e.d[c + k]) * fx - v0) * fz;
+            };
+            return { slope: w(0), moisture: w(1), lebendig: w(2) };
+        };
+    }
+    function streuRegion(a) {
+        const SC = a.SC;
+        const feld = streuFelder(a.bake, a.leser);
+        return a.layers.map((layer) => {
+            const out = [];
+            const cellM = layer.cellM;
+            const n = Math.round(SC.regionM / cellM);
+            const bx = Math.round((a.regX * SC.regionM) / cellM);
+            const bz = Math.round((a.regZ * SC.regionM) / cellM);
+            const slopeMax = Number.isFinite(layer.slopeMax) ? layer.slopeMax : SC.slopeMax;
+            const floor = Number.isFinite(layer.floor) ? layer.floor : SC.densityFloor;
+            const dScale = Number.isFinite(layer.densityScale) ? layer.densityScale : SC.densityScale;
+            let salt = 0; // je Schicht ein eigener Wurf-Strom
+            for (let i = 0; i < layer.name.length; i++) salt = (salt * 131 + layer.name.charCodeAt(i)) >>> 0;
+            for (let cz = 0; cz < n; cz++)
+                for (let cx = 0; cx < n; cx++) {
+                    const cellX = bx + cx;
+                    const cellZ = bz + cz;
+                    const tf = streuZelle(cellX, cellZ, cellM, layer.scaleBase, layer.scaleVar);
+                    const dist = Math.sqrt((tf.x - a.px) * (tf.x - a.px) + (tf.z - a.pz) * (tf.z - a.pz));
+                    if (dist < SC.innerM || dist > SC.outerM) continue;
+                    const f = feld(tf.x, tf.z);
+                    if (f.slope > slopeMax) continue;
+                    // Fels bricht an STEILEN, TROCKENEN, KAHLEN Hängen durch, jede andere Schicht folgt dem lebendigen Feld
+                    const prob =
+                        layer.kind === "rock"
+                            ? Math.min(
+                                  0.85,
+                                  floor +
+                                      Math.max(0, f.slope * 1.1 + (1 - f.moisture) * 0.25 - f.lebendig * 0.5 - 0.15) *
+                                          dScale
+                              )
+                            : Math.min(0.95, floor + f.lebendig * SC.densityScale);
+                    if (streuPcgFloat(cellX ^ salt, cellZ, 9) >= prob * a.fdScale) continue;
+                    const h = streuPcg((cellX ^ a.seedHash ^ salt) >>> 0, (cellZ * 2654435761) >>> 0);
+                    out.push(cellX, cellZ, tf.x, tf.z, tf.yaw, tf.scale, h, f.lebendig, f.moisture);
+                }
+            return new Float64Array(out);
+        });
+    }
+
     root.__phytoCore = {
+        streuPcg: streuPcg,
+        streuPcgFloat: streuPcgFloat,
+        streuZelle: streuZelle,
+        streuRegion: streuRegion,
+        STREU_WURF: STREU_WURF,
         vn2: vn2,
         fbm2: fbm2,
         barkProfile: barkProfile,

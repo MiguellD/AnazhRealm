@@ -22,7 +22,7 @@
 //   node scripts/diag-raum-tags.cjs [--selftest]   (npm run gate:raum-tags; Port RAUM_TAGS_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.RAUM_TAGS_PORT || 4606);
@@ -506,7 +506,7 @@ function urteil(S, Q) {
     return rot;
 }
 
-(async () => {
+hauptLauf(async () => {
     const Q = quellWand(stammLib.text(root));
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
@@ -554,7 +554,4 @@ function urteil(S, Q) {
         "\nGRÜN — das Gedächtnis urteilt über jede Werkstatt-Änderung byte-gleich wie die Rechnung; sein Schlüssel liest jeden ihrer Eingänge."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Raum-Tags-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

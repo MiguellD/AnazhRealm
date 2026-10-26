@@ -548,7 +548,7 @@ function erstRuhe(frame, opt, wer) {
                 window.anazhRealm.state.renderer.backend.device;
             if (dev && dev.queue && typeof dev.queue.onSubmittedWorkDone === "function")
                 await dev.queue.onSubmittedWorkDone();
-            await new Promise((res) => setTimeout(res, 0));
+            await sleep(0);
             // der Blick steht, wenn ein Frame nichts baut, nichts verschiebt, kein Draw auf seine Pipeline wartet
             // und kein Bundle ohne einen Bürger versiegelt ist (der wartende Draw zählt auf jedem Backend)
             if ((!offenZaehlt || E.offen.size === 0) && E.bauN === b0 && E.verschoben === v0 && E.wartetN === w0) break;

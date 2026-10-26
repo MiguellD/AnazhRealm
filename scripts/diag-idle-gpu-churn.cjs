@@ -10,7 +10,7 @@
 // bevor irgendwer den Freeze spürt. Die Struktur trägt die Disziplin, nicht das Gedächtnis.
 //
 // Lauf: node scripts/diag-idle-gpu-churn.cjs   (CI: npm run gpu-lens)
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 // Port über IDLE_GPU_CHURN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4395.
 const PORT = Number(process.env.IDLE_GPU_CHURN_PORT || 4395);
@@ -24,7 +24,7 @@ const IDLE_THRESHOLD = 8; // reines Idle (kein Env-Trigger) — sollte ~0 sein
 const REGEN_THRESHOLD = 4; // Env-Regenerierung — MUSS ~0 sein (die scharfe Wand gegen V18.322)
 const KASKADE = 40; // Gesamt-Compiles je Fenster, egal ob neu oder wiederholt
 let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Frist-Riss nennt ihn
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "webgl", frist: 300000, zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] });
     const page = await browser.newPage();
@@ -110,7 +110,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                     }
                     S.dorf = !!r._autoSettlementStartHopeless || !r._autoSettlementQueue;
                 }
-                await new Promise((res) => setTimeout(res, 6));
+                await sleep(6);
             }
             return { done: S.done, ms: performance.now() - S.start, sz: S.sz, dorf: S.dorf };
         });
@@ -368,7 +368,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 return E ? E.offen.size : 0;
             });
             if (offen === 0) break;
-            await new Promise((res) => setTimeout(res, 500));
+            await sleep(500);
         }
         const ms = Date.now() - t0;
         if (ms > LANG_MS) log(`Pipelines abgewartet (${wo}): ${Math.round(ms / 1000)} s`);
@@ -539,4 +539,4 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     console.log("   pro-Frame neu allokierte Render-Ressource). Heile sie identitäts-stabil + rate-gedeckelt,");
     console.log("   NICHT durch Wegdrosseln des Symptoms. (CLAUDE.md: Rendering · scene.environment IDENTITÄTS-STABIL.)");
     process.exit(2);
-})().catch((e) => { console.error(`⛔ Crash im Aufruf „${laufenderRuf}":`, e); process.exit(1); });
+}, () => console.error(`⛔ Crash im Aufruf „${laufenderRuf}"`));

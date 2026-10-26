@@ -28,7 +28,7 @@
 //   node scripts/diag-look-golden.cjs --render   → rendert den Spot, vergleicht gegen Golden
 //   node scripts/diag-look-golden.cjs --mint      → mintet das Golden aus dem aktuellen Render
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, sleep } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -160,7 +160,7 @@ async function renderLuma() {
             const r = window.anazhRealm;
             for (let i = 0; i < 80; i++) r._gameLoopTick && r._gameLoopTick();
         });
-        await new Promise((r) => setTimeout(r, 2500));
+        await sleep(2500);
         luma = await page.evaluate((n) => {
             const cv = document.getElementById("world-canvas");
             if (!cv) return null;

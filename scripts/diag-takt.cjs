@@ -27,13 +27,14 @@
 //   node scripts/diag-takt.cjs [--selftest]          (npm run gate:takt)
 "use strict";
 const PK = require("./lib/pack-kanon.cjs");
+const { hauptLauf } = require("./lib/welt-boot.cjs");
 
 // Port über TAKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 
 const PORT = Number(process.env.TAKT_PORT || 4563);
 const SELBST = process.argv.includes("--selftest");
 
-(async () => {
+hauptLauf(async () => {
     const realm = await PK.bootRealm(PORT);
     let aus;
     try {
@@ -168,13 +169,13 @@ const SELBST = process.argv.includes("--selftest");
                     const wos = [...Array(11).keys()].map((i) => ({ x: pm.x + 900 + i, z: pm.z }));
                     const zuege = wos.map((wo, i) => zug("fern" + i, wo));
                     for (const [id, res] of [...f.pending]) f.pending.delete(id) && res([]);
-                    await new Promise((res) => setTimeout(res, 0));
+                    await sleep(0);
                     // nur die eigenen Ergebnisse (die Welt liefert in denselben Wächter): am Datensatz, ohne ihn am Ort
                     const meine = r._foundryIngestQueue.map((e) => [e, zuege.findIndex((z, i) => (e.rang ? e.rang === z.rang : e.wo === wos[i]))]).filter(([, i]) => i >= 0); // prettier-ignore
                     meine.forEach(([e, i]) => ((f0) => (e.frei = () => (reihe.push(i), f0())))(e.frei));
                     zug("fern10", pm); // der nahe Leser hängt sich an den letzten Zug
                     for (let t = 0; t < 30 && reihe.length < meine.length; t++) r._tickFoundryIngest(1 / 60);
-                    await new Promise((res) => setTimeout(res, 0));
+                    await sleep(0);
                     return { n: meine.length, erster: reihe[0] };
                 } finally {
                     [r._foundry, st.renderer, r._foundryIngestQueue] = [fE, rE, qE];
@@ -214,7 +215,7 @@ const SELBST = process.argv.includes("--selftest");
                     auftrag("dahinter", "zweiter");
                     auftrag("helfer-dahinter", "helferZweiter");
                     aus8.nummern = [...f.pending.keys()];
-                    await new Promise((res) => setTimeout(res, 2000));
+                    await sleep(2000);
                     // die Geister der ersten (r1, rw1_2) halten noch ihren Platz — die Welt läuft weiter und darf derweil
                     // eigene Aufträge an das Doppel stellen (spätere Nummern, sie berühren keine der Uhren)
                     aus8.geist = f.pending.has("r1");
@@ -422,7 +423,4 @@ const SELBST = process.argv.includes("--selftest");
         process.exit(1);
     }
     console.log("\n✅ GRÜN — der Takt kostet, was ihn betrifft, nicht die Weltgröße.");
-})().catch((e) => {
-    console.error("❌ FEHLER:", e && e.stack ? e.stack : e);
-    process.exit(1);
 });

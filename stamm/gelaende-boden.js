@@ -781,7 +781,6 @@ class AnazhRealm_gelaende_boden {
                     st.grundNeu = true;
             }
         if (amWasser) this._invalidateWaterCapsAround(cx, cz, rad);
-        this._invalidateBakedRegionsAround(cx, cz, rad);
         if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
     }
     // DAS WASSER DES ERDBAUS (K10): ändert der Erdbau E (die Normalform seiner Splats) den Grund an gezeichnetem Wasser? Die

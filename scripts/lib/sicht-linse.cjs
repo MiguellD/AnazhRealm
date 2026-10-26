@@ -1105,7 +1105,6 @@ function sichtLauf(k) {
         const r = window.anazhRealm;
         const st = r.state;
         const rend = st.renderer;
-        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         window.__buehne();
         if (window.__tiereHalten) window.__tiereHalten();
         const decke = st.perfTargetMs;

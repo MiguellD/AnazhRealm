@@ -237,6 +237,14 @@ self.onmessage = function (e) {
             // (`waldTakt`) — ein später bestellter naher überholt die fernen, die vor ihm reisten
             waldAuftraege.push(msg);
             waldWecken();
+        } else if (msg.type === "streu-region") {
+            // DIE STREU DER REGION IM FADEN (B-Streu): Felder und Würfe jeder Schicht (phyto-core `streuRegion`) per Transfer
+            // zurück (Lehre 24) — der Haupt-Faden urteilt nur, was sein Zustand trägt, und setzt die Instanzen (`_scatterPass`)
+            const w = self.__phytoCore.streuRegion(Object.assign(msg, { leser: STREU_LESER }));
+            self.postMessage(
+                { type: "streu-region-result", requestId: msg.requestId, wuerfe: w.map((a) => a.buffer) },
+                w.map((a) => a.buffer)
+            );
         } else if (msg.type === "ort-wahl") {
             // DIE ORT-WAHL IM FADEN (siedlung.K5, `ortWahl`): die Antwort trägt den Plan v2 des ersten Kandidaten, der jedes Haus
             // im groben Raster trägt (`wand` true: auch im Raster der Wand) — der Wirt prüft an ihm die Bauten und den Spieler
@@ -583,13 +591,24 @@ function waldDarts(msg) {
 // =============================================================================
 
 // Mirror von `_voxelSurfaceY`: von oben durchs Band bis zur ersten Luft→Fest-Grenze, der Nulldurchgang linear.
-function voxelSurfaceY(x, z) {
+function voxelSurfaceY(x, z, gitter) {
     const base = state.baseHeight || 0;
     const cfg = voxelChunkConfig(0);
     const floorY = base - cfg.floorDrop;
     const top = floorY + cfg.dimY * cfg.step - 8;
     const bottom = floorY + 12;
     const colCtx = terrainColumnContext(x, z);
+    // DER KELLER IST HOHL (S4): die Fläche ist eine Probe des FELDS wie `_voxelSurfaceY` des Mains (`_fieldDensityAt`: die
+    // Spalte über einem Keller, gelaende-core `erdbauKeller`, liest `erdbauHohl` je Probe) — das Gitter des Netzes nie. Bis
+    // b-feuchte las der Faden hier die Dichte ohne Keller: an den Spalten über einem Keller fielen Steilheit und Würfe der Streu
+    // (Fels 2219 gegen 2246 an der Region des Spielers) und des Walds anders als im Haupt-Faden. `gitter`: der Boden des Netzes
+    // ohne Keller (die Hydrosphäre, deren Becken nie im Keller liegt).
+    const E = state.erdbau;
+    const K = !gitter && E && E.hohl && G.erdbauKeller(E, x, z) ? E : null;
+    const feld = (y) => {
+        const d = terrainDensityAtCol(x, y, z, colCtx);
+        return K ? G.erdbauHohl(K, x, y, z, d) : d;
+    };
     const macroSurf = colCtx.surf;
     const skipAbove = Number.isFinite(macroSurf)
         ? Math.max(macroSurf + 12 + 4 * cfg.step, editsFillTop() + 2)
@@ -598,10 +617,10 @@ function voxelSurfaceY(x, z) {
     let prevD = null;
     for (let y = top; y >= bottom; y -= 1.2) {
         if (y > skipAbove) continue;
-        const d = terrainDensityAtCol(x, y, z, colCtx);
+        const d = feld(y);
         const solid = d > 0;
         if (solid && prevAir) {
-            const dLuft = prevD != null ? prevD : terrainDensityAtCol(x, y + 1.2, z, colCtx);
+            const dLuft = prevD != null ? prevD : feld(y + 1.2);
             const t = d - dLuft > 1e-9 ? d / (d - dLuft) : 0;
             return y + 1.2 * Math.min(1, Math.max(0, t));
         }
@@ -609,6 +628,10 @@ function voxelSurfaceY(x, z) {
         prevD = d;
     }
     return null;
+}
+
+function voxelGitterY(x, z) {
+    return voxelSurfaceY(x, z, true);
 }
 
 // Wie `_voxelEditsFillTop`: die Krone der Füll-Edits (`G.editKrone`), gemerkt je Edit-Liste und Länge.
@@ -665,10 +688,6 @@ function waldCtx(msg) {
     let bodenX = NaN;
     let bodenZ = NaN;
     let bodenY = null;
-    const hoehe = (px, pz) => {
-        const vy = voxelSurfaceY(px, pz);
-        return typeof vy === "number" && Number.isFinite(vy) ? vy : state.baseHeight || 0;
-    };
     return {
         F: fernK().forest, // das Wald-Gesetz des Stands (FOREST), nie je Auftrag
         baseH: state.baseHeight || 0,
@@ -681,18 +700,33 @@ function waldCtx(msg) {
             return bodenY;
         },
         waterYAt: (x, z) => atlasWaterLevelAt(x, z, x === bodenX && z === bodenZ ? bodenY : voxelSurfaceY(x, z)),
-        slopeAt: (x, z) => {
-            const yE = hoehe(x + 2, z);
-            const yW = hoehe(x - 2, z);
-            const yN = hoehe(x, z - 2);
-            const yS = hoehe(x, z + 2);
-            if (!Number.isFinite(yE) || !Number.isFinite(yW) || !Number.isFinite(yN) || !Number.isFinite(yS)) return 0;
-            return Math.hypot((yE - yW) / 4, (yS - yN) / 4);
-        },
+        slopeAt: bodenSteilheit,
         feuchteAt: (x, z, sy) => feuchteAt(x, z, sy),
         ortFrei: (x, z, T) => ortFrei(x, z, T),
     };
 }
+// Mirror von `_slopeAt` am Sampler `getTerrainHeightAt` ±2 m (die Oberfläche, ohne sie die Basis): die Steilheit des Walds und
+// der Streu-Felder (`streuRegion`).
+function bodenHoehe(x, z) {
+    const vy = voxelSurfaceY(x, z);
+    return typeof vy === "number" && Number.isFinite(vy) ? vy : state.baseHeight || 0;
+}
+function bodenSteilheit(x, z) {
+    const yE = bodenHoehe(x + 2, z);
+    const yW = bodenHoehe(x - 2, z);
+    const yN = bodenHoehe(x, z - 2);
+    const yS = bodenHoehe(x, z + 2);
+    if (!Number.isFinite(yE) || !Number.isFinite(yW) || !Number.isFinite(yN) || !Number.isFinite(yS)) return 0;
+    return Math.hypot((yE - yW) / 4, (yS - yN) / 4);
+}
+// DIE LESER DER STREU (B-Streu): die Felder der Region (phyto-core `streuRegion`) an DIESEM Zustand — dieselben Leser wie der Bake
+// des Haupt-Fadens (`_streuLeser`); die Byte-Wand Main = Faden fährt gate:scatter-slice (checkBandScatterScheibe).
+const STREU_LESER = {
+    surfaceYAt: voxelSurfaceY,
+    slopeAt: bodenSteilheit,
+    feuchteAt: (x, z, sy) => feuchteAt(x, z, sy),
+    fieldAt: worldFieldAt,
+};
 
 function applyStateSnapshot(snap) {
     if (!snap) return;
@@ -797,7 +831,7 @@ function hydroRegion(key, origin) {
     state.hydroComputing = true;
     let h;
     try {
-        h = G.hydrosphaere(state, state.hydroGesetz, voxelSurfaceY, origin);
+        h = G.hydrosphaere(state, state.hydroGesetz, voxelGitterY, origin);
     } finally {
         state.hydroComputing = false;
     }

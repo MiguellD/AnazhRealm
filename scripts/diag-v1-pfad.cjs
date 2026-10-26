@@ -17,7 +17,7 @@
 //   node scripts/diag-v1-pfad.cjs [--selftest | --korpus [--regler] [--echt [--bild] [--aufnahme]] | --feind]   Port: V1_PFAD_PORT (4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, warteAufWelt, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, warteAufWelt, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
@@ -1049,7 +1049,6 @@ const server = statikServer();
 
 async function probe(arg) {
     const kiPort = arg && arg.kiPort;
-    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const out = {};
     await window.__weltDa();
     const r = window.anazhRealm;
@@ -1984,7 +1983,7 @@ async function korpusAufbau(a) {
         a.gegenprobe,
     ];
     for (const u of tueren) fetch(u, { method: "POST", signal: AbortSignal.timeout(50) }).catch(() => {});
-    await new Promise((ok) => setTimeout(ok, 500));
+    await sleep(500);
     return {
         wortTyp: Object.fromEntries(a.worte.map((w) => [w, r._studioBlueprintForWord(w)])),
         tueren: tueren.map((u) => [u, gesperrt.some((g) => g.startsWith(new URL(u).origin))]),
@@ -2217,7 +2216,7 @@ async function feindLauf(a) {
     for (const e of st.worldJournal.entries.slice(-8)) {
         [st.grok.lastSpoke, st.grok.triggers.journalEvent.lastFired, st.llm.lastResponseAt] = [-1e9, -1e9, -1e9];
         r.grokSpeakFromJournal(e);
-        while (st.llm.inFlight) await new Promise((ok) => setTimeout(ok, 20));
+        while (st.llm.inFlight) await sleep(20);
     }
     // DIE SIGNATUR: der echte Bauplan, seine Substanz verschoben, seine Signatur gefälscht
     const g = [0, 1, 2].map(() => r._deserializeBlueprint(JSON.parse(JSON.stringify(a.golden))));
@@ -2280,7 +2279,7 @@ async function feindHaupt(quelle) {
     process.exit(errs.length ? 1 : 0);
 }
 
-(async () => {
+hauptLauf(async () => {
     if (process.argv.includes("--korpus") && !process.argv.includes("--selftest")) return korpusHaupt();
     const quelle = stammLib.text(root);
     if (process.argv.includes("--feind")) return feindHaupt(quelle);
@@ -3314,7 +3313,4 @@ async function feindHaupt(quelle) {
     }
     console.log("\n✅ GRÜN — der v1-Pfad trägt seine benannten Schnitte.");
     process.exit(0);
-})().catch((e) => {
-    console.error("V1-Pfad-Linse-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

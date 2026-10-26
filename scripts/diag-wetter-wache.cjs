@@ -20,7 +20,7 @@
 //   node scripts/diag-wetter-wache.cjs [--selftest]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const {
     AUSGABE_INSTALL,
     wetterUrteil,
@@ -523,7 +523,7 @@ async function boot(browser) {
     return page;
 }
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 900000, erwartet: /Error creating WebGL context/ });
     const page = await boot(browser);
@@ -609,7 +609,4 @@ async function boot(browser) {
             " wünscht nur, jeder Schreiber steht beim Namen."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Wetter-Wache-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

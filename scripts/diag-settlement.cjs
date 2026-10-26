@@ -2,7 +2,7 @@
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
 // Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände.
 // --selftest: jede Wand feuert an injizierten Brüchen.
-const { statikServer, starteBrowser, nullRenderer, waitFor, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, waitFor, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -746,7 +746,7 @@ const FIXTURES = [
     { seed: 12345, nH: 6 },
 ];
 
-(async () => {
+hauptLauf(async () => {
     global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
     require(path.join(root, "fachwerk-core.js"));
     const FC = globalThis.__fachwerkCore;
@@ -3069,7 +3069,4 @@ const FIXTURES = [
         "\n✅ GRÜN — DER SETTLEMENT-KANAL N5.7 STEHT: exportSettlement ist deterministisch + eingefroren (Kern), der Export reist durch den EINEN Worker (Brücke generisch, M8), der Host hebt die Slots positions-deterministisch, wasser-bewacht und fail-closed in die Welt (deliberater Akt) — UND der Worldgen-Konsument lebt (Auto-Dörfer: Γ5-Zellen, Site-Wände, budgetierte Materialisierung durch die EINE Slot-Quelle, Reload-idempotent, headless-ruhig)."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Settlement-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

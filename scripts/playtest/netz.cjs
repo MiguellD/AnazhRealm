@@ -286,7 +286,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         r.p2pHandleMessage(
             JSON.stringify({ type: "vibe", peerId: "_w13p3self", vibePassId: foreignId, proof: proofA })
         );
-        await new Promise((res) => setTimeout(res, 140));
+        await sleep(140);
         const peerA = p2p.peers.get("_w13p3peerA");
         const peerB = p2p.peers.get("_w13p3peerB");
         const peerC = p2p.peers.get("_w13p3peerC");
@@ -754,7 +754,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         r._buildPortalOverlay({ world: REG.fluid.world, label: "Strom-Welt", dsl: REG.fluid.dsl });
         out.overlayHasSigEl = !!(r._portalOverlay && r._portalOverlay.sigEl);
         out.overlaySigInDom = !!document.querySelector("#portal-overlay .portal-sig");
-        await new Promise((res) => setTimeout(res, 180));
+        await sleep(180);
         const sigEl = r._portalOverlay && r._portalOverlay.sigEl;
         out.overlayShowsSigned = !!sigEl && sigEl.hidden === false && /signiert von/.test(sigEl.textContent);
         r._disposePortalOverlay();
