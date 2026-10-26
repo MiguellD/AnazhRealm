@@ -5425,9 +5425,11 @@
         { id: "neigung", lab: "Lehne", min: 5, max: 20, step: 1, def: 12, law: "der Rücken lehnt 5–20° hinter die Senkrechte (100–110° zum Sitz)", grp: "FORM" },
         { id: "verwitterung", lab: "Verwitterung", min: 0, max: 1, step: 0.05, def: 0.5, law: "das Alter des Holzes — Sonnenbleiche oben, Erdsaum an den Füßen", grp: "MATERIAL" },
     ];
+    // Die Fase beginnt bei der gebrochenen Kante (2 mm): eine scharfe Leiter bräche das Gesetz ihres eigenen Reglers, und
+    // die Nah-Stufe verlöre mit der Fase fast drei Viertel ihrer Dreiecke — die L1 hielte die Hälfte nicht mehr (Quote L1/L0 ≤ 0,5).
     var LEITER_PARAMS = [
         { id: "holm", lab: "Holm", min: 0.06, max: 0.09, step: 0.005, def: 0.075, law: "die Tiefe der Holme und Schenkel — 60–90 mm Fichte tragen den Steigenden", grp: "FORM" },
-        { id: "fase", lab: "Fase", min: 0, max: 0.012, step: 0.001, def: 0.008, law: "das Zimmermanns-Gesetz: keine Kante bleibt scharf, die Fase fängt das Licht", grp: "FORM" },
+        { id: "fase", lab: "Fase", min: 0.002, max: 0.012, step: 0.001, def: 0.008, law: "das Zimmermanns-Gesetz: keine Kante bleibt scharf (2 mm die gebrochene Kante), die Fase fängt das Licht", grp: "FORM" },
         { id: "verwitterung", lab: "Verwitterung", min: 0, max: 1, step: 0.05, def: 0.5, law: "das Alter des Holzes — Sonnenbleiche oben, Erdsaum an den Füßen", grp: "MATERIAL" },
     ];
     var AUS_ARTEN = { ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS };
