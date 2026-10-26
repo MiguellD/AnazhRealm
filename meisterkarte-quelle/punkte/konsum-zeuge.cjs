@@ -1,8 +1,11 @@
 // DER ZEUGE DES KONSUMS (R6 in punkte.cjs): der Läufer lädt diese Datei in JEDEN node-Prozess der Station (NODE_OPTIONS
 // --require, wie gpu-zeuge.cjs) — an jedem SHA, in jede Linse und die Werkbank, in jeden Browser, den ein Prozess startet.
 // Er nennt, was die Station WIRKLICH ausführte und las:
-//   · die Precise Coverage (callCount false, detailed true) jeder Seite und jedes Workers — angeheftet, BEVOR das Ziel läuft
-//     (puppeteer schickt runIfWaitingForDebugger nach `sessionattached`) — und des Node-Prozesses selbst ab dem Start;
+//   · die Precise Coverage je FUNKTION (callCount false, detailed false) jeder Seite und jedes Workers — angeheftet, BEVOR
+//     das Ziel läuft (puppeteer schickt runIfWaitingForDebugger nach `sessionattached`) — und des Node-Prozesses ab dem Start.
+//     Eine gerufene Funktion zählt ganz, auch ihr nie genommener Zweig. Block-Coverage (detailed true) kostete die JS-Last
+//     +69 % (Median 53,4 gegen 31,6 ms, 6 Runden verschränkt, headless 26.10.) und verfälschte jede Zeit-Station und jeden
+//     Deckel (mensch.K2#1 riss 16 min); je Funktion kostet sie nichts messbar (31,7 ms), der Debugger ebenso;
 //   · `geladen`: ein Skript über das Netz (zählt über seine Bereiche, ohne sie ganz) und ein gelesenes Verzeichnis „pfad/“
 //     („pfad/**“ rekursiv);
 //   · `ganz`: eine Datei als Text oder Daten (fetch, JSON, Bild, Dokument, readFileSync) und jedes Skript eines Ziels, das ohne
@@ -80,7 +83,7 @@ if (KONSUM && BAUM) {
         s.on("Runtime.bindingCalled", (e) => e.name === "__punkteKonsumText" && konsum.texte.add(e.payload));
         for (const [m, p] of [
             ["Profiler.enable"],
-            ["Profiler.startPreciseCoverage", { callCount: false, detailed: true }],
+            ["Profiler.startPreciseCoverage", { callCount: false, detailed: false }],
             ["Debugger.enable"],
             ["Network.enable"],
             ["Runtime.addBinding", { name: "__punkteKonsumText" }],
@@ -154,7 +157,7 @@ if (KONSUM && BAUM) {
     const sitz = new (require("inspector").Session)();
     sitz.connect();
     sitz.post("Profiler.enable");
-    sitz.post("Profiler.startPreciseCoverage", { callCount: false, detailed: true });
+    sitz.post("Profiler.startPreciseCoverage", { callCount: false, detailed: false });
     const modul = new Set();
     for (const x of [".js", ".cjs"].filter((e) => Module._extensions[e])) {
         const o = Module._extensions[x];
