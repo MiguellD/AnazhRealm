@@ -2843,7 +2843,8 @@ async function starte() {
                 }
                 // DIE EINE SPUR (CDP-Trace) um den Lauf, nur im Mess-Fenster: die Belegung liest den Faden (`BELEGUNG_SPUR`,
                 // `belegungAuswerten`), Profil und Hänger-Linse lesen Stichproben aus derselben Spur (`HL.spurProfil`) — nie ein
-                // zweites Instrument; ein langer Hänger-Lauf nimmt nur Marken und Stichproben (der Faden voll sprengt den Puffer).
+                // zweites Instrument; ein langer Hänger-Lauf nimmt nur Marken, Stichproben und die Aufträge des GPU-Prozesses
+                // (`gpu`: eine Leine ohne Auftrag der Seite heißt nach ihm) — der Faden voll sprengt den Puffer.
                 const laufMitSpur = async (k, kategorien) => {
                     const cdp = await page.target().createCDPSession(), ev = [];
                     cdp.on("Tracing.dataCollected", (e) => e.value.forEach((x) => ev.push(x)));
@@ -2859,7 +2860,7 @@ async function starte() {
                     }
                     return { o, ev };
                 };
-                const PROBEN = ["blink.user_timing", "disabled-by-default-v8.cpu_profiler"];
+                const PROBEN = ["blink.user_timing", "disabled-by-default-v8.cpu_profiler", "gpu"];
                 if (req.url === "/lauf") {
                     const { o, ev } = await laufMitSpur(
                         { sek: Number(b.sek) || 20, ein: b.ein != null ? Number(b.ein) : 30, ruhe: Number(b.ruhe) || 0, regler: b.regler || "frei", wandern: b.wandern },

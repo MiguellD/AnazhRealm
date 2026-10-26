@@ -227,7 +227,11 @@ function spurProfil(ev) {
     for (const n of knoten.values()) if (knoten.has(n.parent)) knoten.get(n.parent).children.push(n.id);
     const startTime = kopf.args.data.startTime, endTime = timeDeltas.reduce((t, x) => t + x, startTime);
     const nodes = [...knoten.values()].sort((x, y) => x.id - y.id);
-    return { profil: { nodes, startTime, endTime, samples, timeDeltas }, marken: marken.map((m) => m.ts) };
+    // DER GPU-PROZESS (Kategorie `gpu` der Spur): seine Aufträge ab 20 ms auf der Spur-Uhr — eine GPU-Leine ohne Auftrag der
+    // Seite heißt nach dem Auftrag, der den Prozess hielt (Radeon 26.10.: `gpu_info_collector::CollectDawnInfo` 217 ms).
+    const gpuPid = new Set(ev.filter((e) => e.ph === "M" && e.name === "process_name" && e.args.name === "GPU Process").map((e) => e.pid));
+    const gpu = ev.filter((e) => gpuPid.has(e.pid) && e.ph === "X" && e.dur >= 2e4).map((e) => ({ ts: e.ts, dur: e.dur, name: e.name }));
+    return { profil: { nodes, startTime, endTime, samples, timeDeltas }, marken: marken.map((m) => m.ts), gpu };
 }
 
 // Der Versatz Seite → Spur: der Median über die Takte (Marke gegen Takt-Beginn); ungleiche Zahl legt keine Probe.
@@ -445,7 +449,13 @@ function haengerAuswerten(roh, spur, opts) {
                 name = `Pipeline synchron (${stoffe.slice(0, 4).join(", ")}${stoffe.length > 4 ? ", …" : ""})`;
             } else if (vor.dev.shader) name = `Shader-Modul ×${vor.dev.shader}`;
             else if (up > 4096) name = `Upload ${(up / 1024).toFixed(1)} MB`;
-            else name = ohneRender ? "GPU-Leine ohne Auftrag" : "Bild-Takt ruht ohne Auftrag";
+            else {
+                // der längste Auftrag des GPU-Prozesses im Fenster (Seiten-Uhr): er hielt die Leine, nicht die Seite
+                let g = null;
+                for (const x of (versatz != null && spur.gpu) || [])
+                    if ((x.ts - versatz) / 1000 < w1 && (x.ts + x.dur - versatz) / 1000 > w0 && (!g || x.dur > g.dur)) g = x;
+                name = g ? `GPU-Prozess: ${g.name}` : ohneRender ? "GPU-Leine ohne Auftrag" : "Bild-Takt ruht ohne Auftrag";
+            }
         }
         haenger.push({
             t: +(w0 - roh.tMess[0]).toFixed(0),
@@ -808,6 +818,19 @@ function selbsttest() {
         takt(4);
         luecke(t + 16.7);
     }
+    // Hänger 6: 300 ms unter der Leine ohne Auftrag der Seite — der GPU-Prozess sammelt seine Dawn-Info (Spur, Kategorie gpu)
+    takt(4);
+    const gpuVon = t;
+    for (let i = 0; i < 18; i++) {
+        luecke(t + 16.7);
+        takt(1, 11, false);
+    }
+    const gpuBis = t;
+    luecke(t + 16.7);
+    for (let i = 0; i < 10; i++) {
+        takt(4);
+        luecke(t + 16.7);
+    }
     const spitzen = [0, 3].map((last) => {
         const von = T.t.length;
         for (let i = 0; i < 200; i++) {
@@ -822,6 +845,8 @@ function selbsttest() {
         cpuProfile: { nodes: nodes.slice(von, bis), samples: samples.slice(von * 300, bis * 300) },
         timeDeltas: deltas.slice(von * 300, bis * 300) } } });
     const ev = [chunk(8, 99, V + 2e6), { name: "Profile", pid: 1, tid: 1, id: "0x1", ts: V + 989e3, args: { data: { startTime: V + 989e3 } } },
+        { ph: "M", name: "process_name", pid: 2, args: { name: "GPU Process" } },
+        { ph: "X", name: "gpu_info_collector::CollectDawnInfo", cat: "gpu,startup", pid: 2, tid: 1, ts: gpuVon * 1000 + V, dur: (gpuBis - gpuVon) * 1000 },
         chunk(0, 8, V + 1e6), ...T.c0.map((c) => ({ name: "anazh-takt", cat: "blink.user_timing", pid: 1, tid: 1, ts: c * 1000 + V + 40 }))];
     const a = haengerAuswerten(roh, spurProfil(ev), { schwelle: 100 });
     const erwartet = [
@@ -830,6 +855,7 @@ function selbsttest() {
         ["GC", "Garbage-Collector"],
         ["GPU", "Pipeline synchron (baumRinde, NodeMaterial)"],
         ["TAKT", "verteilt"],
+        ["GPU", "GPU-Prozess: gpu_info_collector::CollectDawnInfo"],
     ];
     if (a.haengerN !== erwartet.length)
         f.push(`Hänger ${a.haengerN}, erwartet ${erwartet.length}: ${a.haenger.map((h) => h.ursache).join(" | ")}`);
