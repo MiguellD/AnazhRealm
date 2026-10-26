@@ -448,7 +448,8 @@ module.exports = [
         // M15 K4: m15-schritt (je Stoff 10 s Gehen mit W an einem Ort, dessen 12-m-Gangstrecke `_schrittMaterialAt` — das Gesetz des
         // Schritts, bei stehender Boden-Karte — zu ≥ 80 % einen trockenen Stoff nennt; fehlt er an der Wiese, fährt die Probe ferne Kandidaten an,
         // Analyser an jedem Schritt-Gain), dann `--auswerten` je Etikett des Schritts — der Schwerpunkt-Median je Stoff
-        // werk: die Ort-Wahl am Gesetz des Schritts mit Fahrt zu fernen Kandidaten (26.10., werkzeug-heil)
+        // werk: die Ort-Wahl am Gesetz des Schritts mit Fahrt zu fernen Kandidaten (26.10., werkzeug-heil; an main 83df2052 auf der Radeon
+        // gras 5648 Hz n 21 · laub 5265 Hz n 23 · quarz 3208 Hz n 21, kleinster Abstand 383 Hz — vorher 2 Stoffe mit ≥ 5 Schritten)
         befehl: ["bash", "-c", HARNESS + ': werk 2610-schritt-gesetz; node "$D/m15-schritt.cjs" && node "$D/m15-schritt.cjs" --auswerten'],
         gpu: true,
         minuten: 5,
