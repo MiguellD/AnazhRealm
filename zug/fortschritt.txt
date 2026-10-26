@@ -243,3 +243,27 @@
 2026-10-26 19:36:10 takt6-gtx ferne.K2#2 GRÜN 7.9 · 2/16
 2026-10-26 19:38:12 takt6-gtx gelaende.K5#2 GRÜN 1.9 · 3/16
 2026-10-26 19:39:26 takt6-gtx klang.K4#1 GRÜN 1.1 · 4/16
+2026-10-26 20:18:46 takt6-gtx VORFAHRT klang.K5#2 verloren 3.5
+2026-10-26 20:18:52 takt6-gtx klang.K5#2 GRÜN 39.3 · 5/16
+2026-10-26 20:24:57 takt6-gtx leib.K1#1 GRÜN 6.0 · 6/16
+2026-10-26 20:26:12 takt6-gtx leib.K2#1 ROT 1.1 · 7/16
+2026-10-26 20:29:42 takt6-gtx material.K1#2 GRÜN 3.4 · 8/16
+2026-10-26 20:35:24 takt6-gtx material.K2#1 ROT 5.6 · 9/16
+2026-10-26 20:39:57 takt6-gtx mensch.K2#2 GRÜN 4.5 · 10/16
+2026-10-26 20:40:48 takt6-gtx pipeline.K4#1 ROT 0.8 · 11/16
+2026-10-26 20:54:46 takt6-gtx profiband.K4#1 ROT 13.9 · 12/16
+2026-10-26 21:00:26 takt6-gtx siedlung.K5#2 ROT 5.6 · 13/16
+2026-10-26 21:12:34 takt6-gtx speicher.K1#2 GRÜN 12.1 · 14/16
+2026-10-26 21:12:50 z42-abab START 3 Zellen
+2026-10-26 21:16:34 z42-abab STORNO in w-ego
+2026-10-26 21:19:58 takt6-gtx tiere.K2#2 GRÜN 3.3 · 15/16
+2026-10-26 21:22:15 takt6-gtx tiere.K3#2 GRÜN 2.1 · 16/16
+2026-10-26 21:30:53 z43-abab START 3 Zellen
+2026-10-26 21:34:23 z43-abab STORNO in w-ego
+2026-10-26 21:34:31 takt7-gtx START 20 Stationen
+2026-10-26 21:38:25 takt7-gtx gelaende.K2#2 ROT 3.8 · 1/20
+2026-10-26 21:40:34 takt7-gtx gelaende.K5#2 GRÜN 2.0 · 2/20
+2026-10-26 21:42:17 takt7-gtx physik.K2#2 ROT 1.6 · 3/20
+2026-10-26 21:44:30 takt7-gtx tiere.K3#2 GRÜN 2.1 · 4/20
+2026-10-26 21:47:51 takt7-gtx tiere.K2#2 GRÜN 3.2 · 5/20
+2026-10-26 21:52:25 takt7-gtx mensch.K2#2 GRÜN 4.5 · 6/20

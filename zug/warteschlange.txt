@@ -94,3 +94,13 @@ z37-abab 1 abab A=eeaff9d6dad7df61e5ace3466fe84375e9496045 B=9ceeca7169d49805499
 z38-abab 1 abab A=9ceeca7169d4980549974ce81a608cacd3ac471f B=b2c6c627e6526265fcdc5178b987515ae06f2584 zellen=w-ego,d-ego,stadt
 z39-abab 1 abab A=b2c6c627e6526265fcdc5178b987515ae06f2584 B=f85ddf35bd377c89a1df293a1e5e00498a695650 zellen=w-ego,d-ego,stadt
 takt6-gtx 2 punkte sha=b2c6c627e6526265fcdc5178b987515ae06f2584 geraet=gtx nur=fahrzeug.K4#2,ferne.K2#2,gelaende.K5#2,klang.K4#1,klang.K5#2,leib.K1#1,leib.K2#1,material.K1#2,material.K2#1,mensch.K2#2,pipeline.K4#1,profiband.K4#1,siedlung.K5#2,speicher.K1#2,tiere.K2#2,tiere.K3#2
+z40-abab 1 abab A=f85ddf35bd377c89a1df293a1e5e00498a695650 B=764776d9f204870559034b3bb0add176458f6731 zellen=w-ego,d-ego,stadt
+z40-abab 0 storno
+z41-abab 1 abab A=764776d9f204870559034b3bb0add176458f6731 B=d108724a8990c60f796ce14ad39fa4c1174fbe6d zellen=w-ego,d-ego,stadt
+z41-abab 0 storno
+z42-abab 1 abab A=d108724a8990c60f796ce14ad39fa4c1174fbe6d B=bd86d008d3974955b63a07ff1a452f103b7cdb14 zellen=w-ego,d-ego,stadt
+z42-abab 0 storno
+z43-abab 1 abab A=bd86d008d3974955b63a07ff1a452f103b7cdb14 B=607d0c73a2b98fdc1c2dbc06a961563bad73ce2a zellen=w-ego,d-ego,stadt
+z43-abab 0 storno
+takt7-gtx 1 punkte sha=607d0c73a2b98fdc1c2dbc06a961563bad73ce2a geraet=gtx nur=gelaende.K2#2,gelaende.K5#2,physik.K2#2,tiere.K3#2,tiere.K2#2,mensch.K2#2,ferne.K2#2,material.K1#2,fahrzeug.K3#1,fahrzeug.K4#2,siedlung.K2#2,leib.K1#1,leib.K4#2,halten.K2#1,tore.K3#2,profiband.K4#1,profiband.K4#2,klang.K4#1,klang.K5#2,speicher.K1#2
+z40z43-abab 2 abab A=f85ddf35bd377c89a1df293a1e5e00498a695650 B=607d0c73a2b98fdc1c2dbc06a961563bad73ce2a zellen=w-ego,d-ego,stadt
