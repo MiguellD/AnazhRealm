@@ -1,0 +1,10 @@
+{
+ "fehler": "Messort stadt: die Bahn verlässt die Gasse bei 552.2 416.0",
+ "stapel": [
+  "at evaluate (evaluate at umstellen (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\mp-baum\\83df2052\\scripts\\werkbank.cjs:858:14), <anonymous>:64:59)",
+  "at #evaluate (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:391:56)",
+  "at async ExecutionContext.evaluate (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:277:16)",
+  "at async IsolatedWorld.evaluate (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\IsolatedWorld.js:105:16)"
+ ],
+ "ms": 2894
+}
