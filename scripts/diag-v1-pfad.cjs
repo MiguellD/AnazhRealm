@@ -10,10 +10,11 @@
 //     scheitert benannt an `dslEvalPos`, keine Op ändert die Welt) · V-k6 (P2P trägt den Ort aufgelöst) · V-D8 (das Label im
 //     Chat) · R2 (die Wasser-Suche: 0 Abweichungen gegen den Spalten-Scan, Soll trocken ≤ 8 Scans je 4-m-Ring).
 //   WORT — der Korpus (spec/abnahme/ki-korpus.json) über den echten Chat-Pfad `maybeAnswerWithLlm` → `llmCall` → `dslRun`;
-//     --echt fragt den Anbieter, --aufnahme schreibt den Mitschnitt (Ratsche, sinkt nie), die CI spielt ihn ab.
+//     --echt fragt den Anbieter, --aufnahme schreibt den Mitschnitt (Ratsche, sinkt nie), die CI spielt ihn ab; --regler
+//     fährt den Korpus-Teil Regler-Wörter (KI K2, das Soll am Stempel der Werke, eigene Ratsche ratsche-ki-korpus-regler.json).
 //   FEIND — der feindliche Korpus (spec/abnahme/ki-feind-korpus.json) kommt durch die Eingänge der Fremde zu einem
 //     gehorsamen Modell: 0 erreicht · 0 ausgeführt · die Signatur schlägt an · der Spieler liest den Namen.
-//   node scripts/diag-v1-pfad.cjs [--selftest | --korpus [--echt [--bild] [--aufnahme]] | --feind]   Port: V1_PFAD_PORT (4421)
+//   node scripts/diag-v1-pfad.cjs [--selftest | --korpus [--regler] [--echt [--bild] [--aufnahme]] | --feind]   Port: V1_PFAD_PORT (4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, warteAufWelt, ROOT: root } = require("./lib/welt-boot.cjs");
@@ -993,12 +994,14 @@ function korpusPraedikat(soll, vor, nach, wortTyp) {
         const [a, b] = soll.uhr;
         return a <= b ? nach.uhr >= a && nach.uhr <= b : nach.uhr >= a || nach.uhr <= b;
     }
+    const traf = (t) => soll.werk === "*" || soll.werk.some((w) => wortTyp[w] === t);
+    // DIE REGLER-WÖRTER (KI K2): ein neues Werk des Satzes, dessen Stempel jede genannte Zeile in ihrem Bereich trägt — der
+    // Stempel eines Baus, der Guss eines Wesens, die Prägung eines Rezepts (`stempel`: [Werk-Ziel, Werte])
     const zahl = (x) =>
-        Object.entries(x.werke).reduce(
-            (s, [t, n]) => s + (soll.werk === "*" || soll.werk.some((w) => wortTyp[w] === t) ? n : 0),
-            0
-        );
-    if (soll.werk) return zahl(nach) - zahl(vor) >= soll.min;
+        soll.regler
+            ? x.stempel.filter(([t, ov]) => traf(t) && Object.entries(soll.regler).every(([id, [a, b]]) => ov && ov[id] >= a && ov[id] <= b)).length
+            : Object.entries(x.werke).reduce((s, [t, n]) => s + (traf(t) ? n : 0), 0);
+    if (soll.werk) return zahl(nach) - zahl(vor) >= (soll.min || 1);
     for (const k of ["wesen", "traurig", "regel"]) if (soll[k]) return nach[k] - vor[k] >= soll[k];
     for (const k of ["tempo", "sprung", "schwere"]) if (soll[k]) return nach[k] > vor[k];
     return null;
@@ -1035,7 +1038,7 @@ function korpusVerdict(m) {
     const pz = (x) => (100 * x).toFixed(1) + " %";
     if (m.echt) {
         for (const k of ["gueltig", "absicht"])
-            if (q(k) < KORPUS_SOLL[k]) out.push(`${k} ${pz(q(k))} < ${pz(KORPUS_SOLL[k])}`);
+            if (q(k) < (m.soll || KORPUS_SOLL)[k]) out.push(`${k} ${pz(q(k))} < ${pz((m.soll || KORPUS_SOLL)[k])}`);
         if (!(m.p95 <= KORPUS_SOLL.p95Ms)) out.push(`p95 Satz → Welt ${m.p95} ms > ${KORPUS_SOLL.p95Ms} ms`);
     } else if (r.quote && q("absicht") < r.quote.absicht)
         out.push(`Rückschritt am Mitschnitt: Absicht ${pz(q("absicht"))} < ${pz(r.quote.absicht)} des echten Laufs`);
@@ -1914,12 +1917,19 @@ async function korpusAufbau(a) {
         K.lauf = res.ok && !res.log.some((x) => /^(sovereign|weltakt_gehalten)/.test(x.event));
         return res;
     };
+    const ws = r._ensureWorkshopState().studioOv;
     K.abdruck = () => {
         const [da, werke] = [new Set(st.architectures), {}];
         for (const x of K.werke) if (da.has(x)) werke[x.type] = (werke[x.type] || 0) + 1;
+        const lebt = K.wesen.filter((c) => st.creatures.includes(c));
         return {
             werke,
-            wesen: K.wesen.filter((c) => st.creatures.includes(c)).length,
+            stempel: [
+                ...K.werke.filter((x) => da.has(x)).map((x) => [x.type, x.studioOv]),
+                ...lebt.map((c) => [c.userData.gattung, c.userData.gussDials]),
+                ...Object.entries(ws),
+            ],
+            wesen: lebt.length,
             traurig: st.creatures.filter((c) => ((c.userData && c.userData.emotions) || {}).sorrow >= 0.5).length,
             wetter: st.weather,
             uhr: st.timeOfDay,
@@ -1945,14 +1955,19 @@ async function korpusAufbau(a) {
         .find(([x, z]) => r._landAt(x, z, 1)) || [P.x + R, P.z];
     pm.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
     await window.__weltStehtNach();
-    // DER RÜCKBAU je Satz: was entstand, fällt; Ort, Leib, Schwere und Gemüt der Wesen stehen wie vorher
+    // DER RÜCKBAU je Satz: was entstand, fällt; Ort, Leib, Schwere, Gemüt der Wesen und die Prägungen stehen wie vorher
     K.stand = () => ({
         werke: new Set(st.architectures),
         wesen: new Set(st.creatures),
         gemuet: st.creatures.map((c) => [c, { ...(c.userData || {}).emotions }]),
         leib: [pm.clone(), st.gravity, st.jumpPower, st.speed],
+        praegung: JSON.stringify(ws),
     });
     K.zurueck = (v) => {
+        const alt = JSON.parse(v.praegung);
+        for (const p in ws)
+            if (JSON.stringify(ws[p]) !== JSON.stringify(alt[p]))
+                r._praegungSetzen(r._foundry.recipes[p].kind, p, alt[p] || {}), alt[p] || delete ws[p];
         for (const x of st.architectures.filter((x) => !v.werke.has(x)).reverse()) r.removeArchitecture(x);
         for (const c of st.creatures.filter((c) => !v.wesen.has(c))) r.removeCreature(c);
         for (const [c, e] of v.gemuet) if (c.userData && c.userData.emotions) c.userData.emotions = e;
@@ -2018,22 +2033,33 @@ const mitschnitt = (ratsche) => (req) =>
         });
     });
 
+// DIE WELT DER KI-LÄUFE (WORT und FEIND): der Statik-Server mit der Antwort des Modells (`seiten`, null: der echte Anbieter),
+// eine Welt auf dem Null-Renderer, gewartet bis sie steht
+async function kiWelt(seiten) {
+    const srv = statikServer({ seiten });
+    await new Promise((ok) => srv.listen(PORT, "127.0.0.1", ok));
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
+    const page = await browser.newPage();
+    await nullRenderer(page);
+    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
+    await warteAufWelt(page);
+    return { srv, browser, page };
+}
+
 async function korpusHaupt() {
-    const echt = process.argv.includes("--echt");
+    const [echt, regler] = ["--echt", "--regler"].map((s) => process.argv.includes(s));
+    // DER TEIL REGLER-WÖRTER (`--regler`, KI K2) läuft mit eigener Ratsche und dem Soll seiner Staffel (Absicht 80 %); seine
+    // Sätze tragen [Werk-Wort oder "*", {Regler: [von, bis]}]
+    const ratschePfad = regler ? RATSCHE_PFAD.replace(".json", "-regler.json") : RATSCHE_PFAD;
     const lies = (p) => (fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null);
-    const [roh, ratsche] = [lies(KORPUS_PFAD), lies(RATSCHE_PFAD) || {}];
-    const korpus = roh && { saetze: Object.entries(roh.saetze) };
-    const m = { korpus, ratsche, echt, saetze: [] };
+    const [roh, ratsche] = [lies(KORPUS_PFAD), lies(ratschePfad) || {}];
+    const satz = ([s, [w, r]]) => [s, { werk: w === "*" ? w : [w], regler: r }];
+    const korpus = roh && { saetze: regler ? Object.entries(roh.regler.saetze).map(satz) : Object.entries(roh.saetze) };
+    const m = { korpus, ratsche, echt, saetze: [], soll: { ...KORPUS_SOLL, absicht: regler ? 0.8 : KORPUS_SOLL.absicht } };
     const modell = process.env.KI_MODELL || ratsche.modell || "qwen3:4b-instruct";
     const q = (k) => +(m.saetze.filter((e) => e.urteil[k]).length / Math.max(1, m.saetze.length)).toFixed(3);
     if (korpus) {
-        const srv = statikServer({ seiten: echt ? null : { "/api/chat": mitschnitt(ratsche) } });
-        await new Promise((ok) => srv.listen(PORT, "127.0.0.1", ok));
-        const browser = await starteBrowser({ art: "null", frist: 900000 });
-        const page = await browser.newPage();
-        await nullRenderer(page);
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
-        await warteAufWelt(page);
+        const { srv, browser, page } = await kiWelt(echt ? null : { "/api/chat": mitschnitt(ratsche) });
         await page.evaluate(AUSGABE_INSTALL);
         const worte = [...new Set(korpus.saetze.flatMap(([, s]) => (Array.isArray(s.werk) ? s.werk : [])))];
         const endpunkt = echt ? process.env.KI_ENDPUNKT || "http://127.0.0.1:11434/" : `http://127.0.0.1:${PORT}/`;
@@ -2070,7 +2096,7 @@ async function korpusHaupt() {
             const mit = Object.fromEntries(m.saetze.map((e) => [e.satz, prog(e.antwort)]));
             const kopf = { modell, anbieter: new URL(endpunkt).host, datum: new Date().toISOString().slice(0, 10) };
             if (!m.sinkt)
-                fs.writeFileSync(RATSCHE_PFAD, JSON.stringify({ ...kopf, quote, mitschnitt: mit }, null, 1) + "\n");
+                fs.writeFileSync(ratschePfad, JSON.stringify({ ...kopf, quote, mitschnitt: mit }, null, 1) + "\n");
         }
     }
     const v = korpusVerdict(m);
@@ -2223,13 +2249,7 @@ async function feindHaupt(quelle) {
     const log = [];
     let m = { korpus };
     if (korpus) {
-        const srv = statikServer({ seiten: { "/api/chat": gehorsam(korpus, log) } });
-        await new Promise((ok) => srv.listen(PORT, "127.0.0.1", ok));
-        const browser = await starteBrowser({ art: "null", frist: 600000 });
-        const page = await browser.newPage();
-        await nullRenderer(page);
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
-        await warteAufWelt(page);
+        const { srv, browser, page } = await kiWelt({ "/api/chat": gehorsam(korpus, log) });
         const golden = JSON.parse(fs.readFileSync(path.join(root, "spec/golden/v1/blueprint-signed.json"), "utf8"));
         const arg = { inj: korpus.injektionen, tat: korpus.tat, golden, endpunkt: `http://127.0.0.1:${PORT}/` };
         m = { ...(await page.evaluate(feindLauf, arg)), korpus, erreicht: log };
@@ -3017,6 +3037,12 @@ async function feindHaupt(quelle) {
                 false,
             ],
             ["ein Soll ohne Leser", kP({ farbe: 1 }, {}), null],
+            // die Regler-Wörter: W 7 trifft [6, 8]; W 12 und ein Werk ohne Stempel nie; die alte Prägung (lofi) zählt nie
+            ...[7, 12, null].map((w) => [
+                `Regler-Wörter: ein neues Haus mit W ${w}, die alte Prägung W 7`,
+                korpusPraedikat({ werk: "*", regler: { W: [6, 8] } }, { stempel: [["lofi", { W: 7 }]] }, { stempel: [["lofi", { W: 7 }], ["haus", w && { W: w }]] }, {}),
+                w === 7,
+            ]),
         ])
             check(`Selbst-Test WORT Prädikat: ${name} → ${soll}`, ist === soll, String(ist));
         const kSaetze = [...Array(39)]
