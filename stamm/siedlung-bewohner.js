@@ -2011,7 +2011,7 @@ AnazhRealm.BEWOHNER = Object.freeze({
     nahHystM: 1,
     nahLeiber: 4,
     feldKoerperM: 1.8,
-    feldPx: 48,
+    feldPx: 64,
     feldHystM: 4,
     gangPhasen: 16,
     gangJeTakt: 2,
