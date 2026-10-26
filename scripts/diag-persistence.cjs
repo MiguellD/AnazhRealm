@@ -356,12 +356,7 @@ async function tabTodProbe({ von, bis, selbst = false }) {
                 tod: vorher.art,
                 halb: !ganz.length || g.w !== vorher.w,
             });
-            // ohne Zeugen beim Namen: der jüngste Stand vor dem Tod mit gleichen Edits und Bauten und sein Versatz
-            const nah = alle.filter((e) => e.t <= vorher.tot && e.rec && e.rec.e === g.e && e.rec.b === g.b).pop();
-            if (zeile.halb)
-                zeile.befund.push(
-                    `halbes ohne Zeugen: ${nah ? `${nah.art} ${g.x - nah.rec.x}/${g.z - nah.rec.z} mm daneben, ${vorher.tot - nah.t} ms vor dem Tod` : "kein Stand mit gleichen Edits/Bauten"}`
-                );
+            if (zeile.halb) zeile.befund.push("halbes ohne Zeugen: kein Stand vor dem Tod trägt den geladenen");
         }
         // HALB: jeder Stand trägt GENAU den Boot plus den Treiber, als die Seite ihn reichte
         const halbe = () => {
