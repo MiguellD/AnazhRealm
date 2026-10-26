@@ -2,7 +2,7 @@
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
 // Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände.
 // --selftest: jede Wand feuert an injizierten Brüchen.
-const { statikServer, starteBrowser, nullRenderer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, waitFor, ROOT: root } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -1022,14 +1022,12 @@ const FIXTURES = [
     console.log("\n=== U6c: REIHEN-SNAP + BRANDWAND (Kern-Gesetz, beidseitiger Konsum) ===");
     {
         const gap = 0.06; // Metropol-Norm — dicht (<=0.6), der Snap-Pfad ist scharf
-        const Bs = [
-            { dims: { W: 8, D: 7 }, kern: false, p: {} },
-            { dims: { W: 8, D: 7 }, kern: false, p: {} },
+        // zwei Nachbarn (8 × 7 m) in einer Reihe, der zweite `x` m weiter (Grundriss-Daten einer Einheits-Probe, kein Ort)
+        const paar = (x) => [
+            [0, x].map(() => ({ dims: { W: 8, D: 7 }, kern: false, p: {} })),
+            [0, x].map((cx) => ({ phi: 0, x: cx, z: 0, obb: { cx, cz: 0, phi: 0, ex: 4, ez: 3.5 } })),
         ];
-        const pl = [
-            { phi: 0, x: 0, z: 0, obb: { cx: 0, cz: 0, phi: 0, ex: 4, ez: 3.5 } },
-            { phi: 0, x: 9, z: 0, obb: { cx: 9, cz: 0, phi: 0, ex: 4, ez: 3.5 } },
-        ];
+        const [Bs, pl] = paar(9);
         const snaps = FC.reihenSnap(Bs, pl, gap);
         const fuge = Math.abs(pl[1].obb.cx - pl[0].obb.cx) - 8; // (Wi+Wj)/2 = 8
         check("Snap-Probe: zwei dichte Nachbarn docken an (1 Paar)", snaps === 1, `snaps=${snaps}`);
@@ -1049,18 +1047,7 @@ const FIXTURES = [
                 Bs[1].p.brandwand.x0 === 1,
             `bwN=${bwN}`
         );
-        const weit = FC.reihenSnap(
-            [
-                { dims: { W: 8, D: 7 }, kern: false, p: {} },
-                { dims: { W: 8, D: 7 }, kern: false, p: {} },
-            ],
-            [
-                { phi: 0, x: 0, z: 0, obb: { cx: 0, cz: 0, phi: 0, ex: 4, ez: 3.5 } },
-                // BÜHNE: Grundriss-Daten einer Einheits-Probe, kein gesetzter Ort
-                { phi: 0, x: 30, z: 0, obb: { cx: 30, cz: 0, phi: 0, ex: 4, ez: 3.5 } },
-            ],
-            gap
-        );
+        const weit = FC.reihenSnap(...paar(30), gap);
         check("Snap-Probe: ferne Nachbarn (Fuge>1.8m) bleiben stehen", weit === 0, `snaps=${weit}`);
         const stadt = FC.exportSettlement({ seed: 7, nH: 20 });
         const bwSlots = stadt.slots.filter((s) => s.ov && s.ov.brandwand).length;
@@ -1082,15 +1069,18 @@ const FIXTURES = [
         const MARKE_SOLL = Number.isFinite(FC.LICHT_MARKE_M) ? FC.LICHT_MARKE_M : 10; // ohne das Gesetz misst sie mit 10 m und fällt
         const MARKE_P90 = 10;
         const GASSE_M = MARKE_SOLL - (LWd ? LWd.armM : 0);
-        // der Abstand eines Punkts zur Wand des Kerns eines Slots (die Tür-Zeile W × D um den Slot; innen negativ)
+        // der Abstand eines Punkts zur Wand des Rechtecks um (cx, cz) mit den Halbachsen ex × ez, gedreht um phi (innen negativ)
+        const kasten = (cx, cz, phi, ex, ez, x, z) => {
+            const c = Math.cos(phi || 0);
+            const sn = Math.sin(phi || 0);
+            const uu = Math.abs((x - cx) * c - (z - cz) * sn) - ex;
+            const vv = Math.abs((x - cx) * sn + (z - cz) * c) - ez;
+            return uu > 0 ? (vv > 0 ? Math.hypot(uu, vv) : uu) : vv > 0 ? vv : Math.max(uu, vv);
+        };
+        // der Abstand eines Punkts zur Wand des Kerns eines Slots (die Tür-Zeile W × D um den Slot)
         const kernAbstand = (sl, x, z) => {
             const tu = sl.tuer;
-            if (!tu || !(tu.W > 0) || !(tu.D > 0)) return Infinity;
-            const c = Math.cos(sl.phi || 0);
-            const sn = Math.sin(sl.phi || 0);
-            const uu = Math.abs((x - sl.x) * c - (z - sl.z) * sn) - tu.W / 2;
-            const vv = Math.abs((x - sl.x) * sn + (z - sl.z) * c) - tu.D / 2;
-            return uu > 0 ? (vv > 0 ? Math.hypot(uu, vv) : uu) : vv > 0 ? vv : Math.max(uu, vv);
+            return tu && tu.W > 0 && tu.D > 0 ? kasten(sl.x, sl.z, sl.phi, tu.W / 2, tu.D / 2, x, z) : Infinity;
         };
         const brennt = (l) => ((l.wand ? LWd : LGd) || { zeit: {} }).zeit.nacht > 0;
         const wegPunkt = (rd, u) => {
@@ -1128,15 +1118,8 @@ const FIXTURES = [
             });
             let wand = Infinity;
             for (const l of maste)
-                for (const sl of pl.slots || []) {
-                    const o = sl.obb;
-                    if (!o) continue;
-                    const c = Math.cos(o.phi || 0);
-                    const sn = Math.sin(o.phi || 0);
-                    const uu = Math.abs((l.x - o.cx) * c - (l.z - o.cz) * sn) - o.ex;
-                    const vv = Math.abs((l.x - o.cx) * sn + (l.z - o.cz) * c) - o.ez;
-                    wand = Math.min(wand, uu > 0 ? (vv > 0 ? Math.hypot(uu, vv) : uu) : vv > 0 ? vv : Math.max(uu, vv));
-                }
+                for (const { obb: o } of pl.slots || [])
+                    if (o) wand = Math.min(wand, kasten(o.cx, o.cz, o.phi, o.ex, o.ez, l.x, l.z));
             const wandOk = !(wand < wandSoll - 0.01);
             let weg = Infinity;
             for (const l of maste)
@@ -1362,21 +1345,47 @@ const FIXTURES = [
     const browser = await starteBrowser({ art: "null", frist: 240000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
+    // DIE PROBEN JE LAUFZEIT-MARKE: `fn` läuft in der Seite, jede Probe setzt ihre Marke (`__marke(name)`); gewartet wird Marke um
+    // Marke über das EINE Warten (`waitFor`, sein Name im Puls der Stall-Akte), höchstens eine Runde je Marke — so trägt jede Probe
+    // die Frist des Browsers allein, nie die Summe (bis 26.10. EIN Ruf über Teil B und C: am belasteten Laptop riss er nach 240 s
+    // in C-K5c, die Linse brach mit Exit 2 vor C-K3). Reißt oder wirft eine, trägt das Ergebnis `bruch` mit ihrer Marke (ein Wurf
+    // samt Stapel, ein Riss samt Ursache) und was `fn` bis dahin in `__kanal.res` trug — die EINE Wand der Proben, keine eigene
+    // catch-Kette je Probe.
+    const jeMarke = async (fn) => {
+        await page.evaluate((src) => {
+            const K = (window.__kanal = { n: 0 });
+            window.__marke = (m) => ((K.marke = m), K.n++);
+            K.lauf = new Function("return (" + src + ")")()()
+                .catch((e) => ({ ...K.res, bruch: `${K.marke}: ${(e && e.stack) || e}` }))
+                .finally(() => (K.ende = true));
+        }, fn.toString());
+        let K = {};
+        try {
+            while (!(K = await page.evaluate(() => window.__kanal)).ende)
+                await waitFor(page, (n) => window.__kanal.n > n || window.__kanal.ende, K.marke, K.n);
+            return await page.evaluate(() => window.__kanal.lauf);
+        } catch (e) {
+            return { ...K.res, bruch: `${K.marke}: ${(e.cause || e).message}` };
+        }
+    };
+    // die Welt samt den Rezepten der Foundry — vor Teil B und, brach eine Probe, frisch geladen für Teil O
+    const bereit = () =>
+        page.evaluate(async () => {
+            const f = (await window.__weltDa())._ensureAssetFoundry();
+            await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.alemannisch);
+        });
+    await bereit();
 
-    const out = await page.evaluate(async () => {
-        const res = {};
-        const r = await window.__weltDa();
-        const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.alemannisch);
-        // 1) Der Export durch den EINEN Worker (Timeout-bewacht — massBau × Häuser braucht Sekunden).
-        const plan = await Promise.race([
-            r._foundryRequestSettlement({ seed: 7, nH: 8 }),
-            new Promise((res3) => setTimeout(() => res3("timeout"), 90000)),
-        ]);
-        res.planOk = !!(plan && plan !== "timeout" && Array.isArray(plan.slots) && plan.slots.length >= 4);
+    const out = await jeMarke(async () => {
+        const res = (window.__kanal.res = {});
+        window.__marke("B");
+        const r = window.anazhRealm;
+        // 1) Der Export durch den EINEN Worker (massBau × Häuser braucht Sekunden; ein Hänger reißt an der Marke B).
+        const plan = await r._foundryRequestSettlement({ seed: 7, nH: 8 });
+        res.planOk = !!(plan && Array.isArray(plan.slots) && plan.slots.length >= 4);
         res.planName = plan && plan.name;
-        res.planSlots = plan && plan.slots ? plan.slots.length : plan === "timeout" ? "timeout" : -1;
+        res.planSlots = plan && plan.slots ? plan.slots.length : -1;
         if (!res.planOk) return res;
         // 2) Der Konsument: POSITIONS-DETERMINISTISCH am SELBEN Anker (die Wasser-Wand ist
         //    Terrain-Wahrheit je Ort — verschiedene Anker duerfen verschieden viele Slots
@@ -1547,7 +1556,7 @@ const FIXTURES = [
             window.__fehlt([r.spawnSettlement, r._bauSame], /Math\.random/);
         // DER DSL-AKT spawn_village liest die Größe aus dem Siedlungs-Gesetz NACH der Buch-Ankunft: das Dorf
         // des Akts trägt nH = SIEDLUNG.nHMin + (Same >>> 24) % SIEDLUNG.nHSpan, gemessen am Rebuild-Gedächtnis (settlementCells).
-        try {
+        {
             const SG = r.constructor._siedlungGesetz();
             const same = 0x5a5a1234;
             const pv = { x: o1.x + 600, y: 0, z: o1.z - 600 };
@@ -1555,7 +1564,7 @@ const FIXTURES = [
             const ctxV = { budget: { spawnsLeft: 4 }, log: [], rng: () => 0.5, source: "human" };
             r.dslEffects.spawn_village([["at", pv.x, pv.y, pv.z], same], ctxV);
             let cell = null;
-            for (let k = 0; k < 600 && !cell; k++) {
+            for (const weiter = window.__deckel("B: das Dorf des DSL-Akts", 600); !cell && weiter();) {
                 await new Promise((rs) => setTimeout(rs, 100));
                 const sc = (r.state.worldMeta && r.state.worldMeta.settlementCells) || {};
                 // der Wege-Schlüssel des Dorfs: d:<Same>@<Ort>, auf älteren Ständen d:<Same>
@@ -1564,12 +1573,11 @@ const FIXTURES = [
             }
             res.villageNH = cell ? cell.nH : null;
             res.villageNHSoll = SG ? r.constructor.Gesetz("fachwerk:siedlungsGroesse")(SG, same, 0) : null;
-        } catch (e) {
-            res.villageNHErr = (e && e.message) || String(e);
         }
         // ===== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) =====
         res.c = {};
-        try {
+        window.__marke("C");
+        {
             const A = r.constructor.AUTO_SETTLEMENT;
             // C1 — Zell-Wahrheit deterministisch + zell-sensitiv (reine Funktion, Γ5).
             let cand = null;
@@ -1614,12 +1622,9 @@ const FIXTURES = [
             const key = cand ? cand.key : null;
             const archBefore = r.state.architectures.length;
             const plan = cand
-                ? await Promise.race([
-                      r._autoSettlementSpawnCell(parseInt(key), parseInt(key.split(",")[1]), cand),
-                      new Promise((rs) => setTimeout(() => rs("timeout"), 90000)),
-                  ])
+                ? await r._autoSettlementSpawnCell(parseInt(key), parseInt(key.split(",")[1]), cand)
                 : null;
-            res.c.planOk = !!(plan && plan !== "timeout" && Array.isArray(plan.slots));
+            res.c.planOk = !!(plan && Array.isArray(plan.slots));
             // DORF-ERLEBNIS — das Band wandert MIT dem Gesetz: die
             // Reservierung ist jetzt das Rebuild-Gedächtnis-OBJEKT {seed,nH,x,z}.
             res.c.reserved = !!(
@@ -1710,7 +1715,8 @@ const FIXTURES = [
             // Kreis R 11 m; doppelt idempotent
             // (worldMeta-Stempel + Existenz-Probe).
             res.c.ring = {};
-            try {
+            window.__marke("C5");
+            {
                 const wm5 = r.state.worldMeta;
                 const M5 = r._genesisMitte();
                 const d2M = (e) => (e.position.x - M5.x) ** 2 + (e.position.z - M5.z) ** 2;
@@ -1742,12 +1748,11 @@ const FIXTURES = [
                         const d = Math.sqrt(d2M(e));
                         return d > 9 && d < 13;
                     });
-            } catch (e5) {
-                res.c.ring.err = (e5 && e5.message) || String(e5);
             }
             // C6 — DER WEGE-SCHLÜSSEL TRÄGT DEN ORT: zwei Siedlungen mit DEMSELBEN Samen an
             // zwei Orten bauen je ihre Wege (die Wege-Formen werden am echten Bau gezählt, `_stlWegeBuild` läuft durch).
-            try {
+            window.__marke("C6");
+            {
                 const orig = r._stlWegeBuild;
                 const formen = [];
                 r._stlWegeBuild = function (...a) {
@@ -1759,13 +1764,12 @@ const FIXTURES = [
                 await r.spawnSettlement({ seed: 4711, nH: 6, position: { x: -1500, y: 0, z: 1500 } });
                 r._stlWegeBuild = orig;
                 res.c.wegeJeOrt = formen;
-            } catch (e6) {
-                res.c.wegeErr = (e6 && e6.message) || String(e6);
             }
             // C7 — DER BLICK GEHÖRT DEM, DER DAS DORF VERLANGT: ein Dorf aus einem Nexus-Programm (DSL-Quelle „nexus") lässt den Blick des Spielers
             // stehen; eines aus dem Chat-Programm des Spielers (DSL-Quelle „human") und der Befehl „dorf" richten ihn auf IHR
             // neues Dorf (den Schwerpunkt der eben gesetzten Häuser) — nie auf alle Häuser der Welt.
-            try {
+            window.__marke("C7");
+            {
                 const pm = r.state.playerMesh;
                 const orig = r.spawnSettlement;
                 let laeuft = null;
@@ -1824,13 +1828,12 @@ const FIXTURES = [
                     ),
                 };
                 r.spawnSettlement = orig;
-            } catch (e7) {
-                res.c.blickErr = (e7 && e7.message) || String(e7);
             }
             // C-K5 — DAS ERSTE HAUS AM ERWACHEN (siedlung.K5): die Zelle von C3, der Spieler naht durch den Vorlauf-Ring; `haus` =
             // Takte vom Erwachen bis zum ersten Slot, `plaene` = Pläne v2 (`ortPlan`) im Haupt-Thread und im Ort-Faden
             // (`_ortWahlMass.kandidaten`); `alt` (Selbsttest) stellt die Schichten des Gangs vor das erste Haus
             res.c.k5 = {};
+            window.__marke("C-K5");
             const FC = globalThis.__fachwerkCore;
             const ortPlan0 = FC.ortPlan;
             const alt = ["_autoSettlementRejected", "_stlWegePending", "_autoSettlementQueue"].map((f) => r[f]);
@@ -1965,6 +1968,7 @@ const FIXTURES = [
                     const [a, b] = [await ortLauf(A.nearM + 140, stoer), await ortLauf(A.nearM + 136.3, stoer)];
                     return { hash: [a.hash, b.hash], erste: erste(a, b) };
                 };
+                window.__marke("C-K5c");
                 res.c.k5.ort = await ortPaar(false);
                 res.c.k5.ortStoer = await ortPaar(true);
                 // C-K5d DAS ERWACHEN IN RATEN (Lehre 14): je Takt vom Erwachen bis zum letzten Haus (`_tickAutoSettlement`, seine
@@ -2043,10 +2047,9 @@ const FIXTURES = [
                         kopf: takte.slice(0, 6).map(zeile),
                     };
                 };
+                window.__marke("C-K5d");
                 res.c.k5.wach = await wachLauf(false);
                 res.c.k5.wachVoll = await wachLauf(true);
-            } catch (e5) {
-                res.c.k5.err = String(e5);
             } finally {
                 FC.ortPlan = ortPlan0;
                 for (const f of ["_autoSettlementCellInfo", "_spawnSettlementSlot", "_dorfZug"]) delete r[f];
@@ -2060,11 +2063,20 @@ const FIXTURES = [
             if (prevHook === undefined) delete window.__anazhAutoSettlement;
             else window.__anazhAutoSettlement = prevHook;
             r.state._frameOverBudget = fob;
-        } catch (e) {
-            res.c.err = (e && e.message) || String(e);
         }
         return res;
     });
+    const wurf = await jeMarke(async () => {
+        window.__marke("Selbsttest");
+        throw "__probeWurf";
+    });
+    check("B/C: jede Probe kehrt an ihrer Marke zurück", !out.bruch, out.bruch);
+    check(
+        "B/C Selbsttest: die Probe, die wirft, steht beim Namen ihrer Marke",
+        wurf.bruch === "Selbsttest: __probeWurf"
+    );
+    // die gebrochene Probe hält ihre Haken in der Seite (ein Hänger läuft nie in sein finally)
+    if (out.bruch) await page.reload().then(bereit);
 
     // ===== TEIL O: DER ORT AUF DEM GELÄNDE — das Dorf 7/18 der Gründerzeit an einem Hang, gemessen an der Welt =====
     // Der Akt `spawnSettlement` an einem Hang (Gefälle 0,12–0,25 über 16 m, fern der Orte der Teile B und C); gemessen wird,
@@ -2736,7 +2748,7 @@ const FIXTURES = [
             el.aecker === false,
         `mit ${JSON.stringify(out.erlebnis)} · ohne ${JSON.stringify(out.erlebnisLeer)} · Plan ${JSON.stringify(out.planKern)}`
     );
-    const sm = out.stadt;
+    const sm = out.stadt || {};
     check(
         `B: DIE STADTMAUER (siedlung.K2) — ${sm.mauer}/${sm.soll} Streifen, wirft, die Natur weicht; Dorf ${eh.mauer}`,
         sm.mauer >= 0.8 * sm.soll && sm.wirft && sm.natur && !eh.mauer,
@@ -2751,7 +2763,7 @@ const FIXTURES = [
     check(
         "B: der DSL-Akt spawn_village trägt die Größe des Siedlungs-Gesetzes (nach der Buch-Ankunft, nie der Kern-Default)",
         Number.isFinite(out.villageNH) && out.villageNH === out.villageNHSoll,
-        `nH ${out.villageNH} (Soll ${out.villageNHSoll})${out.villageNHErr ? " err=" + out.villageNHErr : ""}`
+        `nH ${out.villageNH} (Soll ${out.villageNHSoll})`
     );
     const pruefeOrt = (titel, modusName, outO, gtO) => {
         console.log(`\n=== TEIL O: DER ORT AUF DEM GELÄNDE (K10, ${titel}) ===`);
@@ -2895,7 +2907,7 @@ const FIXTURES = [
     check(
         "C1: die Zell-Wahrheit ist selten + deterministisch (2 Läufe byte-gleich) und zieht aus dem Strom des Welt-Seeds (ein anderer Seed, andere Dörfer; Γ5)",
         c.hashRare === true && c.deterministic === true && c.seedStrom === true,
-        c.err || `seedStrom=${c.seedStrom}`
+        `seedStrom=${c.seedStrom}`
     );
     check("C1b: die Spawn-Klar-Wand steht (der Welt-Ursprung ist nie Dorf-Site)", c.spawnClearWall === true);
     check(
@@ -2915,7 +2927,7 @@ const FIXTURES = [
     check(
         "C6: der Wege-Schlüssel trägt den Ort — zwei Siedlungen mit demselben Samen bauen je ihre Wege",
         Array.isArray(c.wegeJeOrt) && c.wegeJeOrt.length === 2 && c.wegeJeOrt.every((n6) => n6 > 0),
-        `Wege-Formen je Ort: ${(c.wegeJeOrt || []).join(" / ")}${c.wegeErr ? " err=" + c.wegeErr : ""}`
+        `Wege-Formen je Ort: ${(c.wegeJeOrt || []).join(" / ")}`
     );
     const bl = c.blick || {};
     const blZ = (q) =>
@@ -2923,7 +2935,7 @@ const FIXTURES = [
     check(
         "C7: ein Nexus-Dorf lässt den Blick des Spielers stehen (0710-7; 4B: −2,745 mitten im Lauf)",
         !!bl.nexus && bl.nexus.haeuser > 0 && bl.nexus.gedreht < 1e-6,
-        `Nexus: ${blZ(bl.nexus)}${c.blickErr ? " err=" + c.blickErr : ""}`
+        `Nexus: ${blZ(bl.nexus)}`
     );
     check(
         "C7: ein Dorf, das der Spieler verlangt (Chat-Programm, Befehl „dorf“), richtet den Blick auf SEIN neues Dorf",
@@ -2950,7 +2962,7 @@ const FIXTURES = [
     check(
         "C5: DER GENESIS-PORTAL-RING hebt am Ursprung (alle builtIn-Welt-Portale, Stempel gesetzt)",
         ring.stempel === true && ring.arten >= 1 && ring.gebaut >= 1,
-        `arten=${ring.arten} gebaut=${ring.gebaut}${ring.err ? " err=" + ring.err : ""}`
+        `arten=${ring.arten} gebaut=${ring.gebaut}`
     );
     check(
         "C5: Ring-Radius ~11 m + doppelt idempotent (Stempel traegt, 0 Doppel)",
@@ -2990,7 +3002,7 @@ const FIXTURES = [
     check(
         "C-K5c: DER ORT IST EINE FUNKTION — zwei Vorläufe nH 300, der Spieler 3,7 m versetzt: der Plan v2 bit-gleich",
         !!ort.hash && ort.hash[0] === ort.hash[1] && !ort.erste,
-        ort.erste ? `die erste Abweichung: ${ort.erste}` : JSON.stringify(ort.hash || k5.err)
+        ort.erste ? `die erste Abweichung: ${ort.erste}` : JSON.stringify(ort.hash)
     );
     check(
         "C-K5c Selbsttest: ein Wunsch, der mit dem Spieler rückt, wird ROT beim Namen",
@@ -3001,7 +3013,7 @@ const FIXTURES = [
     check(
         "C-K5d: DAS ERWACHEN IN RATEN — vom Erwachen bis zum letzten Haus trägt jeder Takt höchstens EINEN Schritt des Dorfs",
         wach.takte > 1 && !!wach.mehr && !wach.mehr.length,
-        (wach.mehr || [k5.err]).join(" | ") ||
+        (wach.mehr || []).join(" | ") ||
             `${wach.takte} Takte, das erste Haus im Takt ${wach.haus}, der längste ${wach.max}`
     );
     check(
