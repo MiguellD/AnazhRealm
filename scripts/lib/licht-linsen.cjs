@@ -337,20 +337,8 @@ function albedoSicht(opts) {
         // der Schuss sieht die Schichten des Auges, nie den Wurf-Zwilling (material.K1: Grobstufe L1 über der feinen L0)
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const cam = st.camera;
-        const half = T.DataUtils.fromHalfFloat;
-        const bundles = () =>
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
-        // Halb-Float, je Zeile auf 256 Byte ausgerichtet (8 Byte je Pixel) → Float32, dicht.
-        const lies = async () => {
-            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
-            const zeile = W * 4;
-            const schritt = px.length > zeile * H ? Math.ceil((zeile * 2) / 256) * 128 : zeile;
-            const out = new Float32Array(zeile * H);
-            for (let y = 0; y < H; y++) for (let i = 0; i < zeile; i++) out[y * zeile + i] = half(px[y * schritt + i]);
-            return out;
-        };
+        const bundles = () => window.__linseBuendel(sc);
+        const lies = async () => window.__linseHalb(await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H), W, H);
         // DIE STUFEN-MASKE (die Dither-Blende der Foundry-Stufen misst vom Auge des Spielers, `uLodAuge`): welche Gruppe ein
         // Exemplar trägt, entschied die CPU vom Spieler aus; die Maske kann es von dort trotzdem ganz verwerfen — der Wagen
         // gt am Genesis-Ring (19,3 m, nur L0, Stempel aLodLevel 1) zeichnete 0 Pixel, ohne Maske 6 236.
@@ -676,6 +664,37 @@ function albedoSicht(opts) {
     })();
 }
 
+// DIE ZÜGE JEDER LICHT-LINSE auf der Seite (`LINSEN_INSTALL`): ein Bild der Szene ins Ziel der Linse (der Knoten-Frame zuerst),
+// die Bündel neu (ein Replay trägt nur, was es refresht, Lehre 23), ein Ausgabe-Bild als PNG, die sRGB-Tafel (8 Bit → linear)
+function linseBild(rend, rt, sc, cam) {
+    if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+    rend.setRenderTarget(rt);
+    rend.setClearColor(0x000000, 0);
+    rend.clear();
+    rend.render(sc, cam);
+    rend.setRenderTarget(null);
+}
+function linseBuendel(sc) {
+    sc.traverse((o) => {
+        if (o.isBundleGroup) o.needsUpdate = true;
+    });
+}
+// Halb-Float, je Zeile auf 256 Byte ausgerichtet (8 Byte je Pixel) → Float32, dicht
+function linseHalb(px, W, H) {
+    const half = window.THREE.DataUtils.fromHalfFloat;
+    const zeile = W * 4;
+    const schritt = px.length > zeile * H ? Math.ceil((zeile * 2) / 256) * 128 : zeile;
+    const out = new Float32Array(zeile * H);
+    for (let y = 0; y < H; y++) for (let i = 0; i < zeile; i++) out[y * zeile + i] = half(px[y * schritt + i]);
+    return out;
+}
+function linsePng(u8, W, H) {
+    const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
+    cv.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(u8.subarray(0, W * H * 4), (v, i) => (i % 4 === 3 ? 255 : v)), W, H), 0, 0);
+    return cv.toDataURL("image/png");
+}
+const SRGB_LIN = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+
 // DIE RUHE DER LINSE (die EINE Stelle für jede Linse dieser Familie, die in ihr eigenes Ziel zeichnet): ihre Karten,
 // Kugeln und Licht-Varianten sind neue Stoffe und Programme — der erste Render baut die Pipeline asynchron und zeichnet nichts,
 // und Renders am Stück lassen kein Versprechen reifen. Die Linse schaltet ihren Frame, bis nichts mehr baut —
@@ -686,12 +705,7 @@ function linseRuhe(rend, rt, sc, cam, wer) {
     // über der Linse (A7, Radeon: die Sonne auf derselben Birke 0 bis 0,06 je Lauf, Karte gegen Gestalt 0,93–1,32 je Lauf)
     const zeichne = () => {
         window.anazhRealm._schattenAlleNeu();
-        if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-        rend.setRenderTarget(rt);
-        rend.setClearColor(0x000000, 0);
-        rend.clear();
-        rend.render(sc, cam);
-        rend.setRenderTarget(null);
+        window.__linseBild(rend, rt, sc, cam);
     };
     return window.__erstRuhe(zeichne, {}, wer);
 }
@@ -742,11 +756,7 @@ function lichtBilanz() {
         const cam = st.camera;
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const lagen = { oben: new T.Vector3(0, 1, 0), zurSonne: hz.clone(), vonSonne: hz.clone().negate() };
-        const half = T.DataUtils.fromHalfFloat;
-        const bundles = () =>
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
+        const bundles = () => window.__linseBuendel(sc);
         const mess = async (n) => {
             karte.position.copy(basis);
             karte.lookAt(basis.clone().add(n));
@@ -755,26 +765,19 @@ function lichtBilanz() {
             cam.lookAt(basis);
             cam.updateMatrixWorld(true);
             const zeichne = () => {
-                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                rend.setRenderTarget(rt);
-                rend.setClearColor(0x000000, 0);
-                rend.clear();
-                rend.render(sc, cam);
-                rend.setRenderTarget(null);
+                window.__linseBild(rend, rt, sc, cam);
             };
             // die Karte ist je Aufruf ein neuer Stoff, jede Licht-Variante ein neues Programm (`linseRuhe`)
             await window.__linseRuhe(rend, rt, sc, cam, "die Licht-Bilanz");
             const lauf = async () => {
                 zeichne();
-                const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
-                const zeile = W * 4;
-                const schritt = px.length > zeile * H ? Math.ceil((zeile * 2) / 256) * 128 : zeile;
+                const px = window.__linseHalb(await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H), W, H);
                 const s = [0, 0, 0];
                 let n2 = 0;
                 for (let y = H / 2 - 4; y < H / 2 + 4; y++)
                     for (let x = W / 2 - 4; x < W / 2 + 4; x++) {
-                        const i = y * schritt + x * 4;
-                        for (let c = 0; c < 3; c++) s[c] += half(px[i + c]);
+                        const i = (y * W + x) * 4;
+                        for (let c = 0; c < 3; c++) s[c] += px[i + c];
                         n2++;
                     }
                 return s.map((v) => v / n2);
@@ -854,7 +857,7 @@ function tagKurve(o) {
                 k = v;
             },
         });
-        const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+        const lin = window.__lin;
         const W = o.w || 480,
             H = o.h || 270;
         const zeilen = [];
@@ -891,14 +894,7 @@ function tagKurve(o) {
                     Y: +lum(s.slice(1), 1 / n).toPrecision(4),
                     warm: +(s[1] / Math.max(s[3], 1e-9)).toFixed(3),
                 };
-                if (o.png) {
-                    const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
-                    const ctx = cv.getContext("2d");
-                    const img = ctx.createImageData(W, H);
-                    img.data.set(u8.subarray(0, W * H * 4));
-                    ctx.putImageData(img, 0, 0);
-                    z.png = cv.toDataURL("image/png");
-                }
+                if (o.png) z.png = window.__linsePng(u8, W, H);
                 zeilen.push(z);
             }
         } finally {
@@ -1087,17 +1083,8 @@ function nahFernSicht(opts) {
                     Object.assign(k, { klasse: "wiese" })
                 )
             );
-        const half = T.DataUtils.fromHalfFloat;
         const rt = new T.RenderTarget(W, HH, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
-        const lies = async () => {
-            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, HH);
-            const zeile = W * 4;
-            const schritt = px.length > zeile * HH ? Math.ceil((zeile * 2) / 256) * 128 : zeile;
-            const out = new Float32Array(zeile * HH);
-            for (let yy = 0; yy < HH; yy++)
-                for (let i = 0; i < zeile; i++) out[yy * zeile + i] = half(px[yy * schritt + i]);
-            return out;
-        };
+        const lies = async () => window.__linseHalb(await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, HH), W, HH);
         const meshes = [];
         sc.traverse((o) => {
             if (o.isMesh || o.isSprite || o.isPoints || o.isLine) meshes.push(o);
@@ -1173,9 +1160,7 @@ function nahFernSicht(opts) {
         }
         const schuss = async (sicht, e) => {
             for (const m of meshes) m.visible = visAlt.get(m) && sicht(m);
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
+            window.__linseBuendel(sc);
             for (const [l] of lichter) l.intensity = 0;
             A.intensity = e;
             if (maskeAlt != null) lu.uLodMaskOn.value = 0;
@@ -1191,12 +1176,7 @@ function nahFernSicht(opts) {
             const spur = [];
             await window.__linseRuhe(rend, rt, sc, cam, "die Nah-Fern-Sicht");
             for (let lauf = 0, weiter = window.__deckel("die Ruhe der Nah-Fern-Sicht", 400); weiter(); lauf++) {
-                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                rend.setRenderTarget(rt);
-                rend.setClearColor(0x000000, 0);
-                rend.clear();
-                rend.render(sc, cam);
-                rend.setRenderTarget(null);
+                window.__linseBild(rend, rt, sc, cam);
                 px = await lies();
                 laeufe = lauf + 1;
                 let m = 0,
@@ -1304,9 +1284,7 @@ function nahFernSicht(opts) {
             if (luftU) luftU.value = betaAlt;
             if (maskeAlt != null) lu.uLodMaskOn.value = maskeAlt;
             rt.dispose();
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
+            window.__linseBuendel(sc);
         }
         // Die Karte der Fern-Krone im Boden-Stoff: steht sie nicht (bereit 0, oder ein Füll-Job offen — dann
         // liegt ihre Mitte noch am alten Anker), mischt der Boden hier nichts — das Urteil nennt es.
@@ -1600,11 +1578,7 @@ function laubGegenlicht(opts) {
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const luftU = st.luft && st.luft.U;
         const luftAlt = luftU ? luftU.beta.value : null;
-        const half = T.DataUtils.fromHalfFloat;
-        const bundles = () =>
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
+        const bundles = () => window.__linseBuendel(sc);
         if (elev == null)
             elev = Math.max(
                 (5 * Math.PI) / 180,
@@ -1650,16 +1624,10 @@ function laubGegenlicht(opts) {
             let px = null;
             await window.__linseRuhe(rend, rt, sc, cam, wer);
             for (let k = 0; k < 3; k++) {
-                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                rend.setRenderTarget(rt);
-                rend.setClearColor(0x000000, 0);
-                rend.clear();
-                rend.render(sc, cam);
-                rend.setRenderTarget(null);
+                window.__linseBild(rend, rt, sc, cam);
                 px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
             }
-            const zeile = W * 4;
-            const schritt = px.length > zeile * H ? Math.ceil((zeile * 2) / 256) * 128 : zeile;
+            px = window.__linseHalb(px, W, H);
             const cv = document.createElement("canvas");
             cv.width = W;
             cv.height = H;
@@ -1671,11 +1639,11 @@ function laubGegenlicht(opts) {
                 Cp = new Float32Array(W * H * 3);
             for (let y = 0; y < H; y++)
                 for (let x = 0; x < W; x++) {
-                    const i = y * schritt + x * 4;
+                    const i = (y * W + x) * 4;
                     const o = ((H - 1 - y) * W + x) * 4;
-                    const a = half(px[i + 3]);
+                    const a = px[i + 3];
                     if (a > 0) {
-                        const c = [half(px[i]), half(px[i + 1]), half(px[i + 2])];
+                        const c = [px[i], px[i + 1], px[i + 2]];
                         Yp[y * W + x] = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
                         Cp.set(c, (y * W + x) * 3);
                         img.data[o] = enc(c[0]);
@@ -2176,7 +2144,7 @@ function luftTiefe(o) {
         const gz = st.playerMesh.position.z;
         const gy = gesetz(gx, gz) + o.augeM;
         const Hs = R.skalenHoeheM;
-        const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+        const lin = window.__lin;
         const roh = (u8, i) => {
             const c = [lin[u8[i]], lin[u8[i + 1]], lin[u8[i + 2]]];
             const m = Math.min(...c);
@@ -2627,11 +2595,7 @@ function naesseSicht(o) {
             glanz: poroes ? +((0.8 / poroes.rauh) ** 4).toFixed(2) : null,
             regen,
             regenbild: +(mittel(nass) / mittel(klar)).toFixed(3),
-            png: o.png ? [klar, frisch, nass].map((u8) => {
-                const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
-                cv.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(u8.subarray(0, W * H * 4), (v, i) => (i % 4 === 3 ? 255 : v)), W, H), 0, 0);
-                return cv.toDataURL("image/png");
-            }) : undefined,
+            png: o.png ? [klar, frisch, nass].map((u8) => window.__linsePng(u8, W, H)) : undefined,
         };
     })();
 }
@@ -2704,7 +2668,7 @@ function kontaktSicht(o) {
         PU.bloomStrength.value = 0;
         const db = rend.getDrawingBufferSize(new T.Vector2());
         const [W, H] = [db.x, db.y];
-        const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+        const lin = window.__lin;
         // PBR Neutral zurück (Versatz am kleinsten, Schulter am größten Kanal)
         const zurueck = (c) => {
             const hi = Math.min(Math.max(...c), 0.9995);
@@ -2779,11 +2743,7 @@ function kontaktSicht(o) {
                     breiten.sort((x, y) => x - y);
                     p[ebene] = { halbschattenCm: breiten.length ? +breiten[breiten.length >> 1].toFixed(1) : null, kanten: 2 * breiten.length, von };
                 }
-                if (png) {
-                    const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
-                    cv.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(png, (q, i) => (i % 4 === 3 ? 255 : q)), W, H), 0, 0);
-                    p.png = cv.toDataURL("image/png");
-                }
+                if (png) p.png = window.__linsePng(png, W, H);
             }
         } finally {
             [dl.intensity, PU.bloomStrength.value, cam.fov, st.playerMesh.visible] = [I0, bloom0, fov0, true];
@@ -2844,6 +2804,7 @@ module.exports = {
     kronenReflexionSoll,
     LINSEN_INSTALL:
         `window.__linseRuhe = ${linseRuhe.toString()};` +
+        `window.__linseBild = ${linseBild};window.__linseBuendel = ${linseBuendel};window.__linsePng = ${linsePng};window.__linseHalb = ${linseHalb};window.__lin = ${JSON.stringify(SRGB_LIN)};` +
         `window.__laubGegenlicht = ${laubGegenlicht.toString()};` +
         `window.__albedoAuswerten = ${albedoAuswerten.toString()};` +
         `window.__stoffPasst = ${stoffPasst.toString()};` +

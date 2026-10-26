@@ -1846,15 +1846,16 @@ class AnazhRealm_bild_himmel {
             rtEq,
             qT: quad(passDurchlass, "atmo-durchlass"),
             qMS: quad(passMehrfach, "atmo-mehrfach"),
-            qSV: quad(passHimmel, "atmo-himmel"),
-            // die Keule in der Reihe ihres Zeichnens (`_atmoTakt`): Feld, isotropes Feld, Keulen, gerichtetes Feld, k
-            keule: [
+            // DIE HIMMELS-SICHT in der Reihe ihres Zeichnens (`_atmoTakt`, jeder Renderer, der sie zeichnet): Feld, isotropes Feld,
+            // Keulen, gerichtetes Feld, k, die Himmels-Sicht
+            himmelZuege: [
                 [quad(passFeld, "atmo-feld"), rtF],
                 [quad(passFeldIso, "atmo-feld-iso"), rtFi],
                 [quad(passKeule(phaseR), "atmo-keule-r"), rtKR],
                 [quad(passKeule(phaseM), "atmo-keule-m"), rtKM],
                 [quad(passFeldKeule, "atmo-feld-keule"), rtFa],
                 [quad(passK, "atmo-keule-k"), rtK],
+                [quad(passHimmel, "atmo-himmel"), rtSV],
             ],
             qEq: quad(passUmgebung, "atmo-umgebung"),
             rtBS,
@@ -1957,8 +1958,7 @@ class AnazhRealm_bild_himmel {
             A.himmelSchluessel = null;
         }
         if (A.himmelSchluessel !== schluessel) {
-            for (const [q, rt] of A.keule) this._atmoZeichne(q, rt);
-            this._atmoZeichne(A.qSV, A.rtSV);
+            for (const [q, rt] of A.himmelZuege) this._atmoZeichne(q, rt);
             A.himmelSchluessel = schluessel;
             A.himmelVersion++;
         }

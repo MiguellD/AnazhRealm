@@ -508,7 +508,7 @@ hauptLauf(async () => {
             try {
                 r._atmoZeichne(A8.qT, A8.rtT);
                 r._atmoZeichne(A8.qMS, A8.rtMS);
-                r._atmoZeichne(A8.qSV, A8.rtSV);
+                for (const [q, rt] of A8.himmelZuege) r._atmoZeichne(q, rt);
             } finally {
                 r.state.renderer = welt8;
             }
