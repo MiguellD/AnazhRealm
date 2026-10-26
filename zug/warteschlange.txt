@@ -85,3 +85,4 @@ b-ankunft-b 3 station sha=68086befac73c07b5a413907d2c24303bb894a25 lauf=ankunft-
 z32-abab 1 abab A=d43cb61c78fdf982d2f43378ecef3f11ea2e2a0b B=83df2052d84b370158b28048ca90fb5f5f2ab30f zellen=w-ego,d-ego,stadt
 z35-abab 1 abab A=83df2052d84b370158b28048ca90fb5f5f2ab30f B=8dff8f1545ebe3abd917982789cd8f008d250224 zellen=w-ego,d-ego,stadt
 takt5-gtx 2 punkte sha=8dff8f1545ebe3abd917982789cd8f008d250224 geraet=gtx
+z36-abab 1 abab A=8dff8f1545ebe3abd917982789cd8f008d250224 B=eeaff9d6dad7df61e5ace3466fe84375e9496045 zellen=w-ego,d-ego,stadt
