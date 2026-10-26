@@ -30,3 +30,7 @@
 2026-10-26T03:30 speicher-anhang champion wf872k/5 97A WIP K2 p95 1,9–3,3 → 1,2–1,8 ms (Soll 0,3 ROT; Liste war nicht die Wurzel) 52755428 · WICHTIG
 2026-10-26T03:30 ki-schema champion wf872k/5 97A grün Ollama format aus dem Vertrag: ki.K2#2 Absicht 0,792 → 0,833, ki.K1 0,75 → 0,9 2c40a9f5 · PUNKTE
 2026-10-26T03:30 b-streu-faden champion wf872k/5 111A WIP Region-Streu im Voxel-Faden: Haupt-Faden 1504 → ~750 ms; Feuchte-Zwilling offen bf83213f · WICHTIG
+2026-10-26T05:05 a-laub-pose champion wf680k/4 92A WIP werkbank setzt den Spieler an die Pose: laub-kante Klasse 0,1976 ≤ 0,22, rot nur am Mangel L2-Karte (fimp 0,263); Decke +187 4ca4c428 · WICHTIG
+2026-10-26T05:05 e-bewohner champion wf680k/4 ~95A WIP Schirm-Gesetz Satz → Kapseln (19,8 m an 1080p): bewohner-satz 495k → 288k, GPU Third 26,1 → 11,8 ms (Radeon), Band rot (VRAM 1,6×) 069ed697 · WICHTIG
+2026-10-26T05:05 speicher-gate champion wf680k/4 105A WIP halbe Welten 1 → 0 (Ablage-Reihenfolge, EIN IDB-Leser), Decke +103 47e5c95f · PUNKTE
+2026-10-26T05:05 b-feuchte champion wf680k/4 93A WIP Zwilling = Fläche mit Keller (nicht Feuchte), Wand an der Spieler-Region 612eb8c2 · WICHTIG
