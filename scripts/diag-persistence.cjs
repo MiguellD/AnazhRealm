@@ -225,7 +225,7 @@ function ttHaken() {
         e: s.voxelEdits ? s.voxelEdits.n : (s.worldMeta.voxelEdits || []).length,
         b: (s.architectures || []).filter((a) => a.type === "stein_block").length,
     }));
-    const n = (window.__ttN = [0, 0]); // Löcher, Blöcke des Treibers
+    window.__ttN = [0, 0]; // Löcher, Blöcke des Treibers
     // je Takt des Treibers [Zeit, Löcher, Blöcke]: ein Stand trägt die zu seinem Stempel (in derselben ms: davor oder danach)
     const reihe = (window.__ttReihe = [[0, 0, 0]]);
     const melde = (art, json, nJetzt) => {
@@ -242,8 +242,11 @@ function ttHaken() {
     new BroadcastChannel("tt").onmessage = ({ data: d }) =>
         melde(d.art, d.json, [reihe.findLast((x) => x[0] < d.at) || reihe[0], reihe.findLast((x) => x[0] <= d.at)]);
     // der Speicher-Faden („speicher") mit dem Vorspann `faden`: jeder Put eines Stands (idb) und das Ende seiner Transaktion
-    // (fest) gehen an die Seite; eine scharfe Art (`tt`-Kanal der Seite) hält ihn IN diesem Schreiber, „selbst" schreibt die halbe Last
-    function faden() {
+    // (fest) gehen an die Seite; eine scharfe Art (`tt`-Kanal der Seite) hält ihn IN diesem Schreiber, „selbst" schreibt die halbe Last.
+    // DER ZEUGE IM FADEN: jeder Put meldet seinen Stand („put") selbst auf der Konsole des Workers, BEVOR er die Platte erreicht —
+    // der Umweg über den Kanal und den Takt der Seite kam bei einem Tod mitten in der Nachricht nie an (CI 40249944696 z10: ein
+    // ganzer Stand geladen, ungesehen, „halb" mit Alter null)
+    function faden(rec) {
         const kanal = new BroadcastChannel("tt");
         let scharf = null;
         kanal.onmessage = (e) => (scharf = e.data);
@@ -251,6 +254,13 @@ function ttHaken() {
         IDBObjectStore.prototype.put = function (v, k) {
             if (String(k).endsWith(".bak") || !v || typeof v.json !== "string") return put.apply(this, arguments);
             if (scharf === "selbst") v = { at: v.at, json: v.json.slice(0, v.json.length >> 1) };
+            let r = { kaputt: 1 };
+            try {
+                r = rec(JSON.parse(v.json));
+            } catch {
+                /* der halbe Stand des Selbsttests */
+            }
+            console.log("__TT__ " + JSON.stringify({ t: Date.now(), art: "put", rec: r }));
             const req = put.call(this, v, k);
             this.transaction.addEventListener("complete", () => {
                 kanal.postMessage({ art: "fest", json: v.json, at: v.at });
@@ -265,7 +275,7 @@ function ttHaken() {
     window.Worker = function (url, o) {
         if (!o || o.name !== "speicher") return new Roh(url, o);
         return new Roh(
-            URL.createObjectURL(new Blob([`(${faden})(); importScripts("${new URL(url, location.href)}");`])),
+            URL.createObjectURL(new Blob([`(${faden})(${rec}); importScripts("${new URL(url, location.href)}");`])),
             o
         );
     };
@@ -345,6 +355,12 @@ async function tabTodProbe({ von, bis, selbst = false }) {
                 tod: vorher.art,
                 halb: !ganz.length || g.w !== vorher.w,
             });
+            // ohne Zeugen beim Namen: der jüngste Stand vor dem Tod mit gleichen Edits und Bauten und sein Versatz
+            const nah = alle.filter((e) => e.t <= vorher.tot && e.rec && e.rec.e === g.e && e.rec.b === g.b).pop();
+            if (zeile.halb)
+                zeile.befund.push(
+                    `halbes ohne Zeugen: ${nah ? `${nah.art} ${g.x - nah.rec.x}/${g.z - nah.rec.z} mm daneben, ${vorher.tot - nah.t} ms vor dem Tod` : "kein Stand mit gleichen Edits/Bauten"}`
+                );
         }
         // HALB: jeder Stand trägt GENAU den Boot plus den Treiber, als die Seite ihn reichte
         const halbe = () => {

@@ -915,11 +915,14 @@ class AnazhRealm_speicher_laden {
         try {
             const json = JSON.stringify(welt);
             const at = Date.now(); // EIN Stempel für den Platz und den atomaren Stand in IndexedDB (der Speicher-Faden schreibt)
-            this._speicherAuftrag({ op: "ablegen", welt: worldId, at, json }, [], false);
-            if (this._speicher && this._speicher.welt === worldId) this._speicher.welt = null; // der Faden hält ihr Modell nicht mehr
+            // DIE REIHENFOLGE: der Platz mit Probe, dann die Platte, zuletzt Index und Zeiger — wirft der Platz (Quota), erreicht
+            // die Welt weder IndexedDB noch den Zeiger (bis speicher-gate schrieb der Faden sie vor der Probe: eine gescheiterte
+            // Ablage lag als Waise in IndexedDB, unter der Id einer lebenden Welt über deren Stand)
             localStorage.setItem(this.worldStorageKey(worldId), json);
             if (localStorage.getItem(this.worldStorageKey(worldId)) !== json)
                 return { ok: false, reason: "der Speicher trägt andere Bytes" };
+            this._speicherAuftrag({ op: "ablegen", welt: worldId, at, json }, [], false);
+            if (this._speicher && this._speicher.welt === worldId) this._speicher.welt = null; // der Faden hält ihr Modell nicht mehr
             this.worldsIndexUpsert({
                 worldId,
                 slug: m.slug || "",
