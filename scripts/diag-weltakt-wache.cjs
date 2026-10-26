@@ -40,9 +40,8 @@ function tatUrteil(T) {
     const [a, z] = [t[0], t[t.length - 1]];
     // der stumme Chor (die Probe hörte bis zum Deckel keinen singenden Leib): ROT beim Namen der Tat, nie TypeError, nie still grün
     [...t, T.stempel].forEach((x, i) => {
-        const stumm = ["antwort", "nachbar", "mischung", "ausgabe"].filter((k) => k in x && !Number.isFinite(x[k]));
-        const [wer, w] = i < t.length ? [`Tat ${i + 1}`, T.warten.taten[i]] : ["Stempel", T.warten.stempel];
-        if (stumm.length) rot.push(`K1 ${wer} am Ort (${T.ort.join(", ")}) ohne ${stumm.join("/")}: der Chor schwieg ${w} Schritte à 5 s Vogel-Uhr`);
+        const k = Object.keys(x).filter((k) => !Number.isFinite(x[k]));
+        if (k.length) rot.push(`K1 ${t[i] ? "Tat " + (i + 1) : "Stempel"} am Ort (${T.ort}) ohne ${k} nach ${T.warten[i]} Schritten à 5 s Vogel-Uhr`);
     });
     if (!(a.delta > 0 && Math.abs(z.delta) <= 0.3 * a.delta)) rot.push(`K1 δ ${a.delta} → ${z.delta}: keine Wertung mit Gewöhnung`);
     if (!(a.antwort >= 3 && Math.abs(z.antwort) <= 0.3 * a.antwort)) rot.push(`K1 Antwort am Ort ${a.antwort} → ${z.antwort} dB`);
@@ -63,7 +62,7 @@ function tatSelbsttest() {
         ort: [12, -7],
         taten: [{ delta: 0.2, antwort: 6, nachbar: 0, ausgabe: -4, mischung: -4 }, { delta: 0, antwort: 0, nachbar: 0 }],
         stempel: { delta: 0, antwort: 0 },
-        warten: { taten: [0, 24], stempel: 0 },
+        warten: [0, 24, 0],
         stimme: { plan: [{ welt: true, blick: true, n: 2 }, { welt: true }, { blick: true }], zeilen: [{ t: 0, weitere: 1, falsch: [] }], box: undefined },
     });
     const faelle = { "taten.0.delta": null, "taten.1.delta": 0.2, "taten.0.antwort": 0.76, "taten.1.nachbar": 4, "taten.0.ausgabe": -9, "stempel.antwort": 4.8, "taten.0.nachbar": null,
@@ -74,10 +73,10 @@ function tatSelbsttest() {
         return tatUrteil(x).length > 0;
     };
     // die eingeschmuggelte stumme Tat (Tat 2 ohne Antwort nach 24 Schritten) fällt beim Namen: Tat, Ort, Warten
-    const stumm = gut();
-    stumm.taten[1].antwort = null;
-    const nennt = tatUrteil(stumm).some((x) => /^K1 Tat 2 am Ort \(12, -7\) ohne antwort: .* 24 Schritte/.test(x));
-    return [...(rot("") ? ["(T) tatUrteil rot am heilen Fall"] : []), ...(nennt ? [] : ["(T) die stumme Tat 2 fällt nicht beim Namen"]), ...Object.keys(faelle).filter((f) => !rot(f)).map((f) => `(T) tatUrteil blind: ${f}`)];
+    const x = gut();
+    x.taten[1].antwort = null;
+    const nennt = tatUrteil(x).includes("K1 Tat 2 am Ort (12,-7) ohne antwort nach 24 Schritten à 5 s Vogel-Uhr");
+    return [...(rot("") || !nennt ? ["(T) tatUrteil rot am heilen Fall oder die stumme Tat 2 ohne Namen"] : []), ...Object.keys(faelle).filter((f) => !rot(f)).map((f) => `(T) tatUrteil blind: ${f}`)];
 }
 
 if (process.argv.includes("--selftest")) {
@@ -383,27 +382,24 @@ async function tatProbe(m) {
     // lief sie mit der Wanduhr); hört ein Ohr keinen singenden Leib, ist die Messung blind (−∞ − −∞) — die Vogel-Uhr schreitet 5 s
     // Spielzeit, je Schritt 4 Takte, bis der Chor singt; der Deckel sind zwei Lied-Perioden des Vogel-Gesetzes
     const deckel = Math.ceil((2 * P.constructor._vogelGesetz().V.flug.periodeS) / 5);
-    const hoere = (mess) => {
+    const [taten, warten] = [[], []];
+    const hoere = (mess, x) => {
         for (let w = 0; ; w++, st.worldMeta.wetterUhr += 5) {
             um.letzteMischung = -Infinity;
             stelle(4);
-            const x = mess();
-            if (Object.values(x).every(Number.isFinite) || w >= deckel) return [x, w];
+            x = mess();
+            if (Object.values(x).every(Number.isFinite) || w >= deckel) return warten.push(w), x;
         }
     };
-    const [taten, warten] = [[], { taten: [] }];
     for (let n = 1, t0 = st.spielZeit; n <= 10; n++, st.spielZeit = t0 += 30) {
         const delta = tat(() => r.processChatCommand("pflege das land"));
-        const [x, w] = hoere(() => {
+        taten.push({ delta, ...hoere(() => {
             const [mischung, antwort] = ohr(m.x, um.lage);
             return { antwort, nachbar: ohr(m.x + 32)[1], mischung, ausgabe: um.graph.zensus().find((v) => v.name === "vogel").db };
-        });
-        taten.push({ delta, ...x });
-        warten.taten.push(w);
+        }) });
     }
     st.spielZeit += 120;
-    const stempel = { delta: tat(() => r.dslRun(["deposit_emotion", "joy", 0.8], { source: "human" })) };
-    [{ antwort: stempel.antwort }, warten.stempel] = hoere(() => ({ antwort: ohr(m.x)[1] }));
+    const stempel = { delta: tat(() => r.dslRun(["deposit_emotion", "joy", 0.8], { source: "human" })), ...hoere(() => ({ antwort: ohr(m.x)[1] })) };
     stelle(30);
     [st.taten, st.nexusWirk, st.llm.enabled] = [[], 1e6, true];
     delete r._loopNexusUpdate;
