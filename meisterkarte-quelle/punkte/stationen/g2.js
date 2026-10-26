@@ -1411,10 +1411,11 @@ const stationen = [
     // ───────── oekologie.K4 Staffel 1 — der Spieler als Beute (Zweig ok4-beute: EINE Witterung für Tier und Spieler) ─────────
     // Probe rudel der Kreatur-Linse (Null-Renderer): ein Rudel aus dem Wurf (`_kreaturWurf`, die Leine am Wurf-Ort), der
     // stehende Spieler 45 m vom Wurf-Ort (jenseits der Neugier, in der Witterung jagd.scentRangeM), höchstens 600 s der
-    // Kreatur-Uhr. Gelesen werden die Ereignisse, nie das Urteil der Probe: die erste Pirsch auf den Spieler (ein Wolf im
-    // Zustand „jagd" mit dem Ziel „spieler") und das erste Umstellen (alle näher als 2 × jagd.hetzM, die größte Winkel-Lücke
-    // ≤ anderthalb Plätze, 540°/n). An main 9ceeca71 ROT: der Spieler war Ziel nur in jagd.radius 12 m, 6 Wölfe standen nach
-    // 600 s 47–51 m fern, keine Pirsch. „im Bild" zählt diese Station nicht: das Bild bleibt eine Radeon-Schau.
+    // Kreatur-Uhr, davor je 2 s Frieden und der leere Anker vor dem Guss des Leibs (keine Pirsch). Gelesen werden die
+    // Ereignisse, nie das Urteil der Probe: die erste Pirsch auf den Spieler (ein Wolf im Zustand „jagd" mit dem Ziel
+    // „spieler") und das erste Umstellen (≥ 3 Jäger näher als 2 × jagd.hetzM, die größte Winkel-Lücke ≤ anderthalb Plätze,
+    // 540°/n). An main 9ceeca71 ROT: der Spieler war Ziel nur in jagd.radius 12 m, das Rudel blieb 47–51 m fern, keine
+    // Pirsch. „im Bild" zählt diese Station nicht: das Bild bleibt eine Radeon-Schau.
     {
         kriterium: "oekologie.K4",
         staffel: 1,
@@ -1426,15 +1427,15 @@ const stationen = [
         urteil: (j, lauf) => {
             const z = probeZeile(lauf.stdout, "rudel");
             if (!z) return { gruen: false, zahl: "keine Zeile der Probe rudel (Exit " + lauf.exit + ")" };
-            if (z.fehler || !("pirschS" in z))
-                return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne pirschS (die Probe vor ok4-beute)") };
+            if (z.fehler || !Array.isArray(z.ohnePirsch))
+                return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne ohnePirsch (die Probe vor ok4-beute)") };
             const im = (t) => t !== null && t <= 600;
             return {
-                gruen: z.woelfe >= 3 && im(z.pirschS) && im(z.umstelltS),
+                gruen: im(z.pirschS) && im(z.umstelltS) && z.ohnePirsch.every((n) => n === 0),
                 zahl:
                     z.woelfe + " Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch " + z.pirschS + " s · umstellt " +
-                    z.umstelltS + " s (Lücke ≤ " + Math.round(540 / z.woelfe) + "°) · Lücke p50 " + z.lueckeP50 +
-                    "° · beim ersten Biss " + z.lueckeBeimBiss + "° (Soll ≤ 600 s Kreatur-Uhr)",
+                    z.umstelltS + " s · Lücke beim ersten Biss " + z.lueckeBeimBiss + "° · Pirsch im Frieden / am leeren Anker " +
+                    z.ohnePirsch.join(" / ") + " Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0)",
             };
         },
         pfad: [...KREATUR],
