@@ -839,7 +839,14 @@ class AnazhRealm_speicher_welten {
             [
                 "spielerUeberGrund",
                 () => (st().playerMesh ? this._ueberGrund(st().playerMesh.position) : undefined),
-                { marke: (K) => (st().playerMesh ? [...st().playerMesh.position.toArray(), K.bodenGen] : [null]) },
+                // die Quelle: seine Lage und der Boden seiner Nachbarschaft (`_voxelStand`, die Regel je Bau) — eine Grube fern
+                // von ihm misst nicht neu (bis speicher-k2-anhang jeder neue Boden der Welt, ~0,2 ms je Sicherung)
+                {
+                    marke: (K) => {
+                        const p = st().playerMesh && st().playerMesh.position;
+                        return p ? [p.x, p.y, p.z, this._voxelStand(Math.floor(p.x / K.span), Math.floor(p.z / K.span))] : [null];
+                    },
+                },
             ],
             ["knowledgeBase", () => st().knowledgeBase.slice(-200), angehaengt(() => st().knowledgeBase)],
             ["version", () => st().currentVersion],
@@ -1469,7 +1476,6 @@ class AnazhRealm_speicher_welten {
         return {
             bauten: this._standBauten(),
             bodenNeu: true,
-            bodenGen: this._speicher.bodenGen,
             span: this._voxelChunkConfig(0).span,
             listenGen: {},
             listenZahl: {},
