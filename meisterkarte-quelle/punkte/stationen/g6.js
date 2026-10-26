@@ -529,6 +529,62 @@ module.exports = [
         quelle: "1 = am Abgriff gemessen: der Spektral-Schwerpunkt der Schritte je Stoff ≥ 300 Hz verschieden",
     },
     {
+        kriterium: "klang.K4",
+        staffel: 2,
+        geraet: "headless",
+        // (F) im Zensus (Zweig kk4-motor, Null-Renderer): je Abgriff liegt der Master-Bus EINEN Klang-Takt lang an einem
+        // OfflineAudioContext, die Linse fährt den festen Schritt des Leibs selbst — j.koerper.motor [Upm, Hz] im Sattel des GT mit Gas
+        // (der Grundton = die stärkste Linie, die Zünd-Folge, gegen die Drehzahl klang `fahrtUpm`), j.koerper.landung [h, Aufprall des
+        // Leib-Lösers, Landungen, Aufprall des Klangs, dB] für einen Hopser aus 0,2 m und Stürze aus 1 · 2 · 4 · 8 · 12 m bei 30 Bildern/s,
+        // j.koerper.doppler [wo, soll, ist]: ein gestoßener GT rutscht 4 m am stehenden Ohr vorbei, die Periode seines Abrollens 6 m vor
+        // und hinter dem nächsten Punkt gegen c 343 m/s. Ihr Urteil nennt jeden Täter „F …" in j.rot. Derselbe Lauf wie klang.K1#1 und
+        // K5#1 (Zwilling). Die Schritte je Stoff (das „beides") trägt die 1.
+        befehl: ["node", "scripts/diag-klang-zensus.cjs", "--json", "{AUS}"],
+        env: { KLANG_ZENSUS_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const F = j && j.koerper;
+            if (!F || !Array.isArray(F.motor) || !Array.isArray(F.landung) || !Array.isArray(F.doppler))
+                return { gruen: false, zahl: "kein Körper-Teil (F) im Zensus (Exit " + lauf.exit + ")" };
+            const M = F.motor.filter((x) => x[0] > 0 && x[1] > 0);
+            const [u, h] = [M.map((x) => x[0]), M.map((x) => x[1])];
+            const mu = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+            const kov = (a, b) => a.reduce((s, x, i) => s + (x - mu(a)) * (b[i] - mu(b)), 0);
+            const r = M.length > 2 ? kov(u, h) / Math.sqrt(kov(u, u) * kov(h, h)) : NaN;
+            const hz = M.map((x) => (x[1] / x[0]) * 1000).sort((a, b) => a - b)[M.length >> 1];
+            const fall = F.landung.slice(1);
+            const [l0, l1] = [fall[0] || [], fall[fall.length - 1] || []];
+            const dbJe = (l1[4] - l0[4]) / (l1[1] - l0[1]);
+            const rotF = (j.rot || []).filter((t) => /^F /.test(t));
+            const f = (x, n) => (typeof x === "number" && isFinite(x) ? x.toFixed(n) : "—");
+            return {
+                gruen: rotF.length === 0 && M.length >= 10 && r >= 0.9 && fall.length === 5 && dbJe > 0 && F.doppler.length === 2,
+                zahl:
+                    "Motor " + f(hz, 1) + " Hz je 1000 Upm (r " + f(r, 3) + ", " + M.length + " Abgriffe) · Landung " + f(dbJe, 2) +
+                    " dB je m/s (" + fall.map((x) => x[0] + " m " + f(x[1], 1) + " m/s " + f(x[4], 1) + " dB").join(" · ") + ") · Doppler " +
+                    F.doppler.map((x) => x[0] + " m " + f(x[2], 4) + "/" + f(x[1], 4)).join(" · ") +
+                    (rotF.length ? " · " + rotF.length + " Befund(e): " + rotF.slice(0, 2).join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "klang-core.js",
+            "vehicle-core.js",
+            "koerper-core.js",
+            "stamm/klang.js",
+            "stamm/dirigent-takt.js",
+            "stamm/koerper-*.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/wasser-hydro.js",
+            "stamm/bau-buch.js",
+            "scripts/diag-klang-zensus.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "spec/profiband/haushalt.json",
+        ],
+        quelle: "2 = beides, die Landung skaliert mit dem Aufprall, Doppler proportional zur Radialgeschwindigkeit",
+    },
+    {
         kriterium: "klang.K5",
         staffel: 1,
         geraet: "headless",
@@ -837,12 +893,6 @@ module.exports = [
 
 // Nicht fassbar: das Werkzeug fehlt. Je Eintrag der Grund beim Namen; diese Staffeln zählen 0, bis eine Linse sie misst.
 module.exports.fehlt = [
-    {
-        kriterium: "klang.K4",
-        staffel: 2,
-        befehl: null,
-        grund: "m15-schritt misst nur die Schritte je Stoff; kein Abgriff am Motor über die Drehzahl (klang-core FAHRT), an der Landung nach Aufprall und am Doppler einer Vorbeifahrt",
-    },
     {
         kriterium: "speicher.K2",
         staffel: 2,
