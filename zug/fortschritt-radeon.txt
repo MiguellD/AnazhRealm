@@ -345,3 +345,4 @@
 2026-10-26 14:47:24 takt6-headless streaming.K5#1 GRÜN 0.7 · 66/75
 2026-10-26 14:47:31 takt6-headless streaming.K5#2 GRÜN 0.7 · 67/75
 2026-10-26 14:47:43 takt6-headless ultiversum.K5#1 GRÜN 1.8 · 68/75
+2026-10-26 14:47:32 takt6-radeon vegetation.K4#1 GRÜN 4.3 · 9/45
