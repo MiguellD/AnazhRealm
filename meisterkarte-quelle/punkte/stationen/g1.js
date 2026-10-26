@@ -1006,6 +1006,47 @@ module.exports = [
         quelle: "1 = Edits und Bauten aus Schreib-Akten byte-gleich über Peers und Reload, gemessen",
     },
 
+    // ── feld.K2 Staffel 2 ── gate:mp-sync (f) (zwei Seiten einer Maschine, ein echter Broker): A springt 20 min Spielzeit in einen
+    // Zug, in dem am Ort ein Sturm aufzieht; B trägt die Welt-Uhr von A (`pos.w`, `_weltUhrNimm`) und denselben Zug im Abdruck
+    // von (e), über Peers und den Reload mitten im Sturm. Was Stufe 2 noch verlangt, schreibt die Linse als (f)-Zeile mit Zahl:
+    // Wetter (Wort, Übergang) und Leben je Zelle gleich, Brand und Pegel gemessen — OFFEN, bis jede Teil-Simulation gleich ist.
+    // GRÜN erst, wenn beide (f)-Zeilen OK sind und (e) den Zug in Peers und Reload gleich trägt. An main ROT (B trägt die Uhr
+    // von A nicht, fk2-uhr); am Schnitt fk2-uhr: Zug gleich, Wetter gleich, Leben 0 von 237 Zellen, Brand und Pegel ungemessen.
+    {
+        kriterium: "feld.K2",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-mp-sync.cjs"],
+        env: { MP_SYNC_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const z = String(lauf.stdout || "").split(/\r?\n/);
+            const f = z.filter((x) => /^\s*(OK|ROT|OFFEN)\s+\(f\)/.test(x));
+            const zug = z.filter((x) => /^\s*OK\s+\(e\) (Peers|Reload):/.test(x) && /zug gleich/.test(x)).length;
+            return {
+                gruen: lauf.exit === 0 && zug === 2 && f.length >= 2 && f.every((x) => /^\s*OK/.test(x)),
+                zahl:
+                    "Zug der Welt-Uhr gleich in " + zug + " von 2 (e)-Zeilen (Exit " + lauf.exit + ") · " +
+                    (f.length ? f.map((x) => x.replace(/^\s*/, "").slice(0, 160)).join(" | ") : "keine (f)-Zeile"),
+            };
+        },
+        pfad: [
+            "stamm/netz-*.js",
+            "stamm/feld-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/kreatur-*.js",
+            "stamm/speicher-*.js",
+            "stamm/dirigent-*.js",
+            "phyto-core.js",
+            "signaling-server.js",
+            "save-server.js",
+            "scripts/diag-mp-sync.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = alle Teil-Simulationen (Wetter am Ort, Pegel, Overlays, Brand) ohne Zustands-Nachricht; ein Reload mitten im Sturm setzt denselben Zustand fort",
+    },
+
     // ── feld.K1 ── gate:fahr-leben W (Zweig wetter-kette-k1): Sturm → Regen-Feld → Nässe → Grip, je Glied die Festhalte-Probe
     // (`ketteVerdict`: ein Glied zählt, wenn es mit dem Sturm zieht UND steht, solange sein Vorgänger gehalten wird); das
     // Urteil liest die Zeile `KETTE {"tiefe":N,…}` — an main fehlt `--kette` (ROT „keine KETTE-Zeile"). Seit fahrzeug-k1-reifen
@@ -1255,7 +1296,6 @@ module.exports.fehlt = [
     { kriterium: "gelaende.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: Damm (b) und Ferne (d, byte-Diff am Ring) misst keine Linse; Ego und GTX ungemessen" },
     { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug und Gesetz fehlen für die Fließ-Anisotropie: keine Linse misst die Normalen-Anisotropie längs/quer zum Lauf im Ausgabe-Bild, und die Strömung der Welt ist `WASSER_GESETZ.wellen.adv × centerness` (`_waterFlowAt`, stamm/wasser-hydro.js) — kein Gefälle, kein Einzugsgebiet, aus dem sie wüchse (25.10. gelesen an d43cb61c). Die 12 Posen allein (Ego/Third × Mittag/Nacht/Regen über `bild --uhr --wetter` wie Staffel 1) wären eine halbe Station" },
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug und Welt fehlen: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Trocken-Kurve, kein Third; die Welt trägt keine Pfütze (stamm/ kennt kein Pfützen-Gesetz, 25.10. an d43cb61c), die Mulden-Korrelation r ≥ 0,5 hätte nichts zu messen" },
-    { kriterium: "feld.K2", staffel: 2, befehl: null, grund: "nicht gebaut: das Netz-Log steht (gate:mp-sync (e), keine Zustands-Nachricht), aber die Uhren der Teil-Simulationen sind je Seite — der Auto-Zug des Wetters zählt die Sitzung (`weatherEffectTime`) und den Wunsch des eigenen Nexus, Overlays und Brand die Spielzeit der Seite (`spielZeit`), die Tageszeit ist Spieler-Wort (set_time_of_day nicht broadcastbar); ohne geteilte Welt-Uhr ist Wetter am Ort keine Funktion von Saat und Akten, und ein Reload mitten im Sturm setzt nur das Wort fort (der Übergang reist nicht)" },
     { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
     { kriterium: "stoffe.K3", staffel: 2, befehl: null, grund: "nicht gebaut: der Schnee schmilzt nicht (die Schneegrenze ist Höhe allein, kein Pegel liest Schmelze), Lava erstarrt nicht (die glut-Achse ist eine eingefrorene Feld-Achse), der Stahl der Esse liest das Temperatur-Feld nicht; nur das Eis steht (Staffel 1)" },
 ];
