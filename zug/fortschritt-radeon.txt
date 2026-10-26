@@ -384,3 +384,4 @@
 2026-10-26 15:57:41 takt6-radeon tore.K3#2 ROT 1.0 · 38/45
 2026-10-26 16:09:55 takt6-radeon profiband.K4#1 ROT 12.3 · 39/45
 2026-10-26 16:27:22 takt6-radeon profiband.K4#2 ROT 17.4 · 40/45
+2026-10-26 16:28:52 takt6-radeon klang.K2#1 GRÜN 1.5 · 41/45
