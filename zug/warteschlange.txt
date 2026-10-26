@@ -100,3 +100,4 @@ z41-abab 1 abab A=764776d9f204870559034b3bb0add176458f6731 B=d108724a8990c60f796
 z41-abab 0 storno
 z42-abab 1 abab A=d108724a8990c60f796ce14ad39fa4c1174fbe6d B=bd86d008d3974955b63a07ff1a452f103b7cdb14 zellen=w-ego,d-ego,stadt
 z42-abab 0 storno
+z43-abab 1 abab A=bd86d008d3974955b63a07ff1a452f103b7cdb14 B=607d0c73a2b98fdc1c2dbc06a961563bad73ce2a zellen=w-ego,d-ego,stadt
