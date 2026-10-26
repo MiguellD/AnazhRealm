@@ -24,3 +24,4 @@
 2026-10-26T21:18 karte=98 (gebucht am b2c6c627, buche.sh)
 2026-10-26T21:27 karte=108 (gebucht am b2c6c627, buche.sh)
 2026-10-26T21:28 woche=55 karte=108 (Hand, nach takt6-gtx)
+2026-10-26T23:38 karte=112 (gebucht am 607d0c73, buche.sh)
