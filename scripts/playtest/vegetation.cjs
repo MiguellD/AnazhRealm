@@ -2017,7 +2017,7 @@ async function checkBandScatterScheibe(ctx) {
             if (!reg || !reg._cont) break;
             const c = reg._cont;
             contSeenPhases.add(c.darts ? "zellen" : "faden");
-            if (!c.darts) await new Promise((res) => setTimeout(res, 10));
+            if (!c.darts) await sleep(10);
         }
         o.slices = slices;
         o.contPhases = Array.from(contSeenPhases);
@@ -2061,7 +2061,7 @@ async function checkBandScatterScheibe(ctx) {
             let reg2 = r._scatterRegion(rx, rz, pos, performance.now() + 0.4);
             let guard = 0;
             while (reg2 && reg2._cont && !reg2._cont.darts && guard++ < 300) {
-                await new Promise((res) => setTimeout(res, 10)); // die Würfe rechnet der Streu-Faden
+                await sleep(10); // die Würfe rechnet der Streu-Faden
                 reg2 = r._scatterRegion(rx, rz, pos, performance.now() + 0.4);
             }
             // jetzt in der Zellen-Phase (oder fertig) → mitten drin disposen
