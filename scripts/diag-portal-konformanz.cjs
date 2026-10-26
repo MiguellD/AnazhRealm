@@ -22,7 +22,9 @@
 //                 mit W durch die Apertur, wo das Tor ein Gesetz trägt (`_tickPortalMembranes` → enterPortal, die Probe taktet
 //                 die Heimat), sonst bis vor das Tor und E —, heim kommt er mit Esc (K5); er reitet dabei das Pferd. Der ABDRUCK
 //                 je Teil (Leib = Seele · Teile einer eigenen Seele · Prägung des Mensch-Rezepts; Inventar = Slots · Hotbar;
-//                 wield = Haupt-, Neben-Hand, Rüstung; Reittier = das gerittene Werk: Art · Gestalt · Glut · Bindung —
+//                 wield = Haupt-, Neben-Hand, Rüstung; Reittier = das gerittene Werk: Art · Gestalt · Glut · Bindung; Werk =
+//                 der Prägungs-Speicher, in den die Garage über ihren Knopf „In der Welt ansehen" das Werk des Spielers reichte
+//                 (`werkHolen`, Studio → Welt → jedes Studio) —
 //                 kanonisches JSON + FNV-1a, `abdruck`; ein leerer Teil 0, ein fehlender keiner) steht vor dem Tor aus dem Zustand der Heimat, drüben aus dem,
 //                 was die Hülle der Welt hält (`AnazhHuelle.reisender`), und nach der Heimkehr; ein Teil, dessen Bytes unterwegs
 //                 anders werden, ist rot beim Namen — nie ein ok-Flag der Übergabe. Die Zeile `K8 [[welt, weg, vor, drüben, nach, esc], …]` ist die Tafel (Station).
@@ -160,14 +162,14 @@ async function mitgebrachtPruefen(page, fr, art) {
 // K8 — was der Spieler trägt: die Teile des Abdrucks, die Zeile, mit der die Hülle den Reisenden hält (die Fundstelle des
 // Täters), und der ABDRUCK (in Heimat und Welt derselbe Text): je Teil FNV-1a über das kanonische JSON (Schlüssel sortiert) —
 // `heim` liest den Zustand der Heimat (nie den Bauer der Übergabe), sonst was die Hülle der Welt hält.
-const TEILE = ["leib", "inventar", "wield", "reittier"];
+const TEILE = ["leib", "inventar", "wield", "reittier", "werk"];
 const HALT = 'reisender = m.avatar && typeof m.avatar === "object" ? m.avatar : {};';
 // Das Reittier ist das Werk, auf dem der Spieler sitzt (`mountedArch`): Art, Gestalt (Bauplan, Saat, Maß, Tönung, Prägung),
 // die Glut (der einzige Lebenswert, den ein Werk trägt) und die Bindung. Ein leerer Teil hat den Abdruck 0, ein fehlender keinen.
 function abdruck(heim) {
-    const st = heim && window.anazhRealm.state;
-    const p = st && st.player;
-    const w = st && st.architectures.find((e) => e.id === p.mountedArch);
+    const st = heim ? anazhRealm.state : null;
+    const p = st?.player;
+    const w = st?.architectures.find((e) => e.id === p.mountedArch);
     const g = st
         ? {
               leib: { seele: p.soul || "human", teile: (st.customSouls[p.soul || "human"] || {}).bodyParts || null, praegung: st.workshop.studioOv[anazhRealm.constructor.KOERPER_HOST_RECIPE] || null },
@@ -179,6 +181,7 @@ function abdruck(heim) {
                   leben: w.heatBuildup || 0,
                   bindung: w.id,
               },
+              werk: st.workshop.studioOv,
           }
         : ((AnazhHuelle.reisender && AnazhHuelle.reisender()) || {}).gepaeck || {};
     return Object.fromEntries(
@@ -228,9 +231,9 @@ const TAETER = {
         ],
         // (d) die Brücke ohne Quellen-Prüfung — eine fremde Seite steuert jede Welt der Hülle (K3 rot, auch am UI-Pfad)
         ["if (ev.source !== eltern) return;\n            var m = ev.data;", "var m = ev.data;"],
-        // (e) die Hülle hält den Reisenden ohne das, was er in der Hand trägt, und ohne sein Reittier (K8 rot an den Teilen
-        // wield und reittier, Leib und Inventar grün)
-        [HALT, HALT + " if (reisender.gepaeck) delete reisender.gepaeck.wield.held, delete reisender.gepaeck.reittier;"],
+        // (e) die Hülle hält den Reisenden ohne das, was er in der Hand trägt, ohne sein Reittier und ohne sein Werk (K8 rot an
+        // den Teilen wield, reittier und werk beim Namen jedes Studios, Leib und Inventar grün)
+        [HALT, HALT + " if (reisender.gepaeck) delete reisender.gepaeck.wield.held, delete reisender.gepaeck.reittier, delete reisender.gepaeck.werk;"],
         [
             "var dsl = m && Array.isArray(m.dsl) ? m.dsl : null;",
             'var dsl = m && Array.isArray(m.dsl) ? m.dsl.filter(function (w) { return w !== "flut"; }) : null;',
@@ -391,6 +394,18 @@ async function betreten(page, welt) {
     });
     if (b.weg === "E") await page.evaluate('dispatchEvent(new KeyboardEvent("keydown", { code: "KeyE" }))');
     return (await page.evaluate(() => !!anazhRealm._portalOverlay)) ? b : { fehler: `das Tor geht nicht auf (${b.weg})` };
+}
+
+// K8 werk: der Spieler holt sein Werk mit dem Verb des Studios — durch das Tor der Garage, dort „In der Welt ansehen" (die
+// Hülle reicht es über den EINEN Übergabe-Kanal und kehrt heim); steht danach kein zweites Werk (neben der Prägung des Leibs) im
+// Prägungs-Speicher, ist die Probe rot beim Namen
+async function werkHolen(page) {
+    await betreten(page, { id: "garage" });
+    await zaehlerAus(page);
+    await (await rueckHoerer(page)).$eval(".h-werk", (k) => k.click());
+    await page.waitForFunction(() => !anazhRealm._portalOverlay && Object.keys(anazhRealm.state.workshop.studioOv)[1], { timeout: READY_FRIST_MS }).catch(() => {
+        throw new Error("K8 werk: die Garage reicht kein Werk in die Welt");
+    });
 }
 
 const zaehler = (page) => page.evaluate(() => window.__konformanz.zaehler());
@@ -573,13 +588,10 @@ async function fremdBereit(page, port) {
 
 async function pruefeWelt(page, welt, lies) {
     const aus = { id: welt.id, k: {}, stumm: null, echo: null, notiz: [] };
+    const k1Rot = (n) => ((aus.k.K1 = false), aus.notiz.push(n));
     const vor = await page.evaluate(abdruck, true);
     const b = await betreten(page, welt);
-    if (!b || !b.ok) {
-        aus.k.K1 = false;
-        aus.notiz.push((b && b.fehler) || "betreten fehlgeschlagen");
-        return aus;
-    }
+    if (!b?.ok) return k1Rot(b?.fehler || "betreten fehlgeschlagen"), aus;
     // K1: auf die ready und das load der Welt warten (terrain bootet mehrere Sekunden; nach dem load ist das enter des
     // load-Hörers geschickt), dann klingt der Handshake durch die Schleuse aus, bis die Heimat während der Reise einer
     // Marke kein enter mehr schickt: jedes enter davor ist dann beantwortet, und keine Antwort brachte ein neues (ein
@@ -608,10 +620,7 @@ async function pruefeWelt(page, welt, lies) {
     // Handshake klang aus — jedes enter der Heimat ist gelesen, die Hülle hält den Reisenden
     if (b.weg) Object.assign(aus, { weg: b.weg, vor, drueben: hinFrame ? await hinFrame.evaluate(abdruck, false) : {} });
     // Meldet die Welt ihr Wörterbuch in der ready, übernimmt die Heimat es (Stufe „nativ", `_portalReceiveManifest`).
-    if (z.readyDsl && z.stufe !== "nativ") {
-        aus.k.K1 = false;
-        aus.notiz.push(`die ready trägt ein Wörterbuch, die Heimat steht auf „${z.stufe}"`);
-    }
+    if (z.readyDsl && z.stufe !== "nativ") k1Rot(`die ready trägt ein Wörterbuch, die Heimat steht auf „${z.stufe}"`);
     // Das Manifest gegen das SOLL in WELTEN, gelesen wie die Welt es liest (dieselben Bytes des Servers): eine Soll-Welt
     // liefert es in Form, meldet es im ready, und die Heimat übernimmt es ganz (Stufe „nativ", Label, jedes Wort);
     // fehlt es ihr, ist K1 rot beim Namen — ebenso ein Manifest einer Welt ohne Soll-Zeile.
@@ -631,23 +640,13 @@ async function pruefeWelt(page, welt, lies) {
         Array.isArray(m.dsl) &&
         m.dsl.length > 0 &&
         m.dsl.every((w) => typeof w === "string");
-    if (welt.manifest && !roh) {
-        aus.k.K1 = false;
-        aus.notiz.push(`das Soll-Manifest fehlt: ${rel} liefert 404, die Heimat steht auf „${z.stufe}"`);
-    } else if (!welt.manifest && roh) {
-        aus.k.K1 = false;
-        aus.notiz.push(`${rel} steht ohne Soll-Zeile (WELTEN trägt kein manifest für ${welt.id})`);
-    } else if (welt.manifest && !inForm) {
-        aus.k.K1 = false;
-        aus.notiz.push(`${rel} ist nicht in Form (schemaVersion 1.0 · id ${welt.id} · label · dsl mit Wörtern)`);
-    } else if (welt.manifest) {
+    if (welt.manifest && !roh) k1Rot(`das Soll-Manifest fehlt: ${rel} liefert 404, die Heimat steht auf „${z.stufe}"`);
+    else if (!welt.manifest && roh) k1Rot(`${rel} steht ohne Soll-Zeile (WELTEN trägt kein manifest für ${welt.id})`);
+    else if (welt.manifest && !inForm) k1Rot(`${rel} ist nicht in Form (schemaVersion 1.0 · id ${welt.id} · label · dsl mit Wörtern)`);
+    else if (welt.manifest) {
         const fehlt = m.dsl.filter((w) => !(z.dsl || []).includes(w));
-        if (z.stufe !== "nativ" || z.label !== m.label || fehlt.length) {
-            aus.k.K1 = false;
-            aus.notiz.push(
-                `das Manifest der Welt kommt nicht an: Stufe „${z.stufe}", Label „${z.label}"${fehlt.length ? ", es fehlen " + fehlt.slice(0, 3).join("/") : ""}`
-            );
-        }
+        if (z.stufe !== "nativ" || z.label !== m.label || fehlt.length)
+            k1Rot(`das Manifest der Welt kommt nicht an: Stufe „${z.stufe}", Label „${z.label}"${fehlt.length ? ", es fehlen " + fehlt.slice(0, 3).join("/") : ""}`);
     }
     if (welt.mitgebracht) {
         const k7 = hinFrame ? await mitgebrachtPruefen(page, hinFrame, welt.mitgebracht) : { ok: false, notiz: ["Welt-Frame nicht gefunden"] };
@@ -696,8 +695,7 @@ async function pruefeWelt(page, welt, lies) {
         programm ? { route: [programm, welt.wort] } : { peer: { type: "peer-join", peerId: "gefaehrte-konformanz", name: "Gefährtin" } }
     );
     // Die Studios zeigen die chain-Wirkung am Soll-Zustand (nach dem Einzelwort kann er schon stehen).
-    const vorK4 = s4.vor;
-    const k4Pruef = (n) => (welt.ui ? n.ui === welt.ui.soll : n.journal > vorK4.journal);
+    const k4Pruef = (n) => (welt.ui ? n.ui === welt.ui.soll : n.journal > s4.vor.journal);
     const nach = await bisWirkung(page, welt, s4.nach, k4Pruef);
     let k4 = k4Pruef(nach);
     if (!k4) aus.notiz.push("die Heimat-Form chain wirkt nicht sichtbar");
@@ -747,7 +745,7 @@ async function lauf(welten, taeter) {
         });
         await s.zeige(page, 60000);
         await page.waitForFunction(
-            () => window.anazhRealm && window.anazhRealm.state && typeof window.anazhRealm._gameLoopTick === "function" && window.anazhRealm.state.blueprints,
+            () => window.anazhRealm?.state?.blueprints && anazhRealm._gameLoopTick,
             { timeout: 120000, polling: 200 }
         );
         // Der Vibe-Pass steht (ed25519, asynchron im Boot); dann das Mitgebrachte in den Zustand der Heimat.
@@ -770,6 +768,7 @@ async function lauf(welten, taeter) {
             r._ensureWorkshopState().studioOv[r.constructor.KOERPER_HOST_RECIPE] = { height: 1.12, hairColor: "kupfer" };
         }, MITGEBRACHT);
         await page.evaluate(seitenHelfer);
+        if (welten.some((w) => w.id === "garage")) await werkHolen(page);
         for (const w of welten) {
             const t0 = Date.now();
             schleusenZeit = { n: 0, ms: 0 };
@@ -838,8 +837,8 @@ async function selbsttest() {
         ["K1 rot: garage trägt ein manifest.json ohne Soll-Zeile", by.garage && by.garage.k.K1 === false && by.garage.notiz.some((n) => /ohne Soll-Zeile/.test(n)), by.garage ? by.garage.notiz.filter((n) => /Soll-Zeile/.test(n)).join("") : ""],
         ["Soll-Wand rot: ein Manifest im Baum, dessen Welt WELTEN nicht kennt (fluid ohne Zeile)", manifestOhneZeile(WELTEN.filter((w) => w.id !== "fluid")).join() === "fluid", ""],
         [
-            "K8 rot: die Hülle lässt das Gehaltene und das Reittier fallen — jede Ring-Welt nur an den Teilen wield und reittier drüben",
-            ring.length >= 5 && ring.every((e) => e.notiz.filter((n) => TEILE.includes(n.split(" ")[0])).map((n) => n.split(" ", 2).join(" ")).join() === "wield drueben,reittier drueben"),
+            "K8 rot: die Hülle lässt Gehaltenes, Reittier und Werk fallen — jede Ring-Welt nur an diesen Teilen drüben",
+            ring.length >= 5 && ring.every((e) => e.notiz.filter((n) => TEILE.includes(n.split(" ")[0])).map((n) => n.split(" ", 2).join(" ")).join() === "wield drueben,reittier drueben,werk drueben"),
             ring.map((e) => e.id).join(),
         ],
     ];
@@ -864,17 +863,12 @@ hauptLauf(async () => {
     for (const e of ergebnisse) for (const [k, v] of Object.entries(e.k)) if (v === false) rot.push(`${e.id} ${k}`);
     for (const id of manifestOhneZeile(WELTEN)) rot.push(`${id} K1 — worlds/${id}/manifest.json ohne Soll-Zeile in WELTEN`);
     const ratsche = ratscheLesen();
-    const stumm = ergebnisse.filter((e) => e.stumm).map((e) => e.id);
-    const echo = ergebnisse.filter((e) => e.echo).map((e) => e.id);
+    const [stumm, echo] = ["stumm", "echo"].map((f) => ergebnisse.filter((e) => e[f]).map((e) => e.id));
     // Eine Welt ohne Messung (K1 rot) heilt keine Ratsche — sie ist schon rot und bleibt aus dem Vergleich.
-    const gemessenS = new Set(ergebnisse.filter((e) => e.stumm !== null).map((e) => e.id));
-    const gemessenE = new Set(ergebnisse.filter((e) => e.echo !== null).map((e) => e.id));
-    const vS = ratscheVergleich(stumm, ratsche.dslEinzelwort.welten.filter((w) => gemessenS.has(w)));
-    const vE = ratscheVergleich(echo, ratsche.readyEcho.welten.filter((w) => gemessenE.has(w)));
-    for (const w of vS.neu) rot.push(`${w} dslEinzelwort NEU stumm`);
-    for (const w of vS.geheilt) rot.push(`${w} dslEinzelwort geheilt — die Zeile fällt aus spec/vertraege/ratsche.json, die Ratsche sinkt`);
-    for (const w of vE.neu) rot.push(`${w} readyEcho NEU`);
-    for (const w of vE.geheilt) rot.push(`${w} readyEcho geheilt — die Zeile fällt aus spec/vertraege/ratsche.json, die Ratsche sinkt`);
+    for (const [b, f, ist, neu] of [["dslEinzelwort", "stumm", stumm, "NEU stumm"], ["readyEcho", "echo", echo, "NEU"]]) {
+        const v = ratscheVergleich(ist, ratsche[b].welten.filter((w) => ergebnisse.some((e) => e.id === w && e[f] !== null)));
+        rot.push(...v.neu.map((w) => `${w} ${b} ${neu}`), ...v.geheilt.map((w) => `${w} ${b} geheilt — die Zeile fällt aus spec/vertraege/ratsche.json, die Ratsche sinkt`));
+    }
     const mitDsl = ergebnisse.filter((e) => e.stumm !== null).length;
     console.log(
         `  Ratsche dslEinzelwort: ${mitDsl - stumm.length}/${mitDsl} Welten wirken auf ein Einzelwort · stumm ${stumm.length} (${stumm.join(", ") || "—"}) · Soll ${ratsche.dslEinzelwort.soll}`
