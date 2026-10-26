@@ -392,3 +392,4 @@
 2026-10-26 16:53:39 takt6-radeon ENDE 33 grün / 12 rot · 150.8 min
 2026-10-26 16:55:35 b2c6c627-radeon-ruhe START 1 Stationen
 2026-10-26 17:01:17 b2c6c627-radeon-ruhe leib.K1#1 ROT 5.7 · 1/1
+2026-10-26 17:01:21 b2c6c627-radeon-ruhe ENDE 0 grün / 1 rot · 5.8 min
