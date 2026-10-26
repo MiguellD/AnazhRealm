@@ -439,3 +439,4 @@
 2026-10-26 21:37:19 takt7-headless physik.K1#1 GRÜN 0.3 · 17/81
 2026-10-26 21:37:26 takt7-headless physik.K1#2 GRÜN 0.3 · 18/81
 2026-10-26 21:37:33 takt7-headless stoffe.K1#1 GRÜN 0.4 · 19/81
+2026-10-26 21:37:42 takt7-headless feld.K4#1 GRÜN 0.9 · 20/81
