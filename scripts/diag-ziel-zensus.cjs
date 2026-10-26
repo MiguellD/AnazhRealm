@@ -24,7 +24,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, uferStellen } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, uferStellen, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 const stammLib = require("./lib/stamm.cjs");
@@ -144,7 +144,7 @@ function selbsttest() {
         { name: "Rundungs-Probe blind", z: mit((z) => (z.rundung = {})), muss: /RUNDUNG: die Probe lief nicht/ },
         { name: "Quelle ohne Ausgleich", z: mit((z) => (z.rundungQuelle = ["x"])), muss: /RUNDUNG \(Quelle\): x/ },
     ];
-    require("./lib/welt-boot.cjs").taeterLauf(faelle, urteil, fehler);
+    taeterFaelle(faelle, urteil, { fehler });
     // die Quell-Wand am Stamm: grün; eine zweite Abtastung → rot
     const q0 = rundungQuelle();
     if (q0.length) fehler.push("Quell-Wand der Rundung am Stamm rot: " + q0.join(" · "));
@@ -153,27 +153,17 @@ function selbsttest() {
         {
             name: "zweite Abtastung am Ausgleich vorbei",
             // eine Mutation, die den Stamm nicht trifft, wirft (stammLib.ersetze: vakuös)
-            wandel: (t) => stammLib.ersetze(t, "_ensurePostProcessing", "const roh = bild(screenUV);", "const roh = bild(screenUV);\nconst roh2 = sceneColor.sample(screenUV);"),
+            z: (t) => stammLib.ersetze(t, "_ensurePostProcessing", "const roh = bild(screenUV);", "const roh = bild(screenUV);\nconst roh2 = sceneColor.sample(screenUV);"),
             muss: /mehrfach abgetastet/,
         },
     ];
-    for (const q of quellFaelle) {
-        const b = rundungQuelle(q.wandel);
-        const ok = b.some((x) => q.muss.test(x));
-        if (!ok) fehler.push(`${q.name}: die Quell-Wand nennt den Täter nicht (${q.muss})`);
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${q.name}" → ${b.join(" · ") || "(grün)"}`);
-    }
+    taeterFaelle(quellFaelle, rundungQuelle, { fehler });
     return fehler;
 }
 
 if (process.argv.includes("--selftest")) {
     console.log("=== ZIEL-ZENSUS — Selbsttest (ohne Browser) ===");
-    const f = selbsttest();
-    if (f.length) {
-        console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + f.join(" · "));
-        process.exit(1);
-    }
-    console.log("\n✅ SELBSTTEST GRÜN — das Urteil nennt jeden gebauten Täter beim Namen, der saubere Lauf bleibt grün.");
+    selbsttestEnde(selbsttest(), "das Urteil nennt jeden gebauten Täter beim Namen, der saubere Lauf bleibt grün.");
     process.exit(0);
 }
 

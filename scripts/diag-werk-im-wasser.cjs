@@ -49,7 +49,7 @@
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]          Port: WERK_WASSER_PORT (Standard 4643)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -2203,14 +2203,7 @@ function selbsttest() {
     ];
     let ok = urteil(JSON.parse(JSON.stringify(gruen))).length === 0;
     console.log(`  ${ok ? "✅" : "❌"} grüner Befund → 0 Täter`);
-    for (const [name, gift, re] of faelle) {
-        const b = JSON.parse(JSON.stringify(gruen));
-        gift(b);
-        const v = urteil(b);
-        const t = v.some((x) => re.test(x));
-        console.log(`  ${t ? "✅" : "❌"} ${name} → ${v[0] || "(kein Täter)"}`);
-        if (!t) ok = false;
-    }
+    if (taeterFaelle(faelle, urteil, { klon: () => JSON.parse(JSON.stringify(gruen)) }).length) ok = false;
     // die Leser-Linse gegen eingeschmuggelte Täter im echten Stamm (der Vor-Stand über den EINEN Helfer)
     const echt = leserUrteil();
     const gifte = [

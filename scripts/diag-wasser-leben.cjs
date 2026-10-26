@@ -31,7 +31,7 @@
 // Port: WASSER_LEBEN_PORT (Standard 4623).
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { quellTeileVereinen, QUELL_KACHELN } = require("./lib/wasser-linse.cjs");
 
@@ -874,18 +874,13 @@ function selbsttest() {
                 ])),
         ],
     ];
-    let rot = 0;
+    const fehler = [];
     // B6 an der lebenden Quelle (die Wand der CI, ohne Browser): der Wasser-Stoff rechnet sein Rauschen ohne sin.
     const quelleSin = hashSin();
     console.log(
         `  ${quelleSin ? "❌" : "✅"} B6 HASH an der Quelle: ${quelleSin || "das Wasser-Rauschen rechnet ohne sin"}`
     );
-    if (quelleSin) rot++;
-    const g = urteil(gut);
-    if (g.length) {
-        console.log("  ❌ der grüne Befund fällt rot:", g);
-        rot++;
-    } else console.log("  ✅ der grüne Befund bleibt grün");
+    if (quelleSin) fehler.push("B6 HASH an der Quelle: " + quelleSin);
     // die Teile zusammen urteilen wie das Ganze: der grüne Befund in zwei Teilen bleibt grün, jede Zahl wie vorher
     {
         const q = gut.quelle;
@@ -916,13 +911,10 @@ function selbsttest() {
         console.log(
             `  ${ok ? "✅" : "❌"} die Teile zusammen urteilen wie das Ganze (${m.quellen} Quellen aus 2 Teilen, Breite p50 ${m.breiteP50} m, max ${m.breiteMax} m)${fehlt.length ? " — weichen ab: " + fehlt.join(", ") : ""}${v.length ? " — rot: " + v[0] : ""}`
         );
-        if (!ok) rot++;
+        if (!ok) fehler.push("die Teile urteilen anders als das Ganze");
     }
-    const fehler = [];
-    require("./lib/welt-boot.cjs").taeterLauf(taeter.map(([n, m]) => [n, m, { test: (x) => x.startsWith(n) }]), urteil, fehler, kopie);
-    rot += fehler.length;
-    console.log(rot ? `SELBSTTEST ROT (${rot})` : "SELBSTTEST GRÜN");
-    process.exit(rot ? 1 : 0);
+    taeterFaelle([{ name: "der grüne Befund", z: gut }, ...taeter.map(([n, m]) => [n, m, { test: (x) => x.startsWith(n) }])], urteil, { fehler, klon: kopie });
+    selbsttestEnde(fehler);
 }
 
 if (process.argv.includes("--selftest")) selbsttest();

@@ -37,7 +37,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, laufUhr } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 
@@ -446,14 +446,8 @@ function selbsttest() {
             muss: /DUNKEL: die Nacht stand bei nightFactor 0/,
         },
     ];
-    require("./lib/welt-boot.cjs").taeterLauf(faelle, urteil, fehler);
-    if (fehler.length) {
-        console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ SELBSTTEST GRÜN — die Shader-Kosten-Linse zählt richtig, jeder injizierte Täter fällt rot und wird beim Namen genannt."
-    );
+    taeterFaelle(faelle, urteil, { fehler });
+    selbsttestEnde(fehler, "die Shader-Kosten-Linse zählt richtig, jeder injizierte Täter fällt rot und wird beim Namen genannt.");
 }
 
 if (process.argv.includes("--selftest")) {
