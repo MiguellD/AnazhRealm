@@ -281,6 +281,77 @@ module.exports = [
         quelle: "1 = (a) im Ausgabe-Bild an einem Gerät",
     },
 
+    // ── gelaende.K2 Staffel 2 ── (a) der Graben im Ausgabe-Bild wie Staffel 1 (dasselbe eingefrorene Mess-Bahn-Skript m2-graben.cjs,
+    // Third und als Ego-Kopie mit der Sicht "first"), (b) und (d) über die Wasser-Wand des Spiel-Baums (gate:wasser-leben, Zweig
+    // gk2-damm): G6/G7 der Damm aus dem Verb (`voxel_fill`) 60 m stromab des Graben-Orts — stromauf das gezeichnete Wasser auf der
+    // Überlaufhöhe (Minimax über den Boden des Feldes) ±0,1 m über dem Fluss von vorher, stromab der Fluss auf seinem Spiegel —, G8
+    // der Fern-Ring unter den Säulen im Takt des Edits (byte-Diff) und der Fern-Faden an den Säulen-Mitten auf der Krone (--bild
+    // --echt: die Hardware-GPU des Geräts). (b) und (d) urteilen das Gesetz (Spiegel, Ring, Faden) — kamera-frei, je Gerät gemessen.
+    {
+        kriterium: "gelaende.K2",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: [
+            "bash",
+            "-c",
+            `set -u; B=$(cygpath -m '{BAUM}'); K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; sed -e 's/"third"/"first"/g' -e 's/m2-graben[.]json/m2-graben-ego.json/' -e 's/m2-s/m2e-s/g' "$D/m2-graben.cjs" > "$D/m2-graben-ego.cjs"; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT={PORT} node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:{PORT}/ && break; sleep 1; done; export SPIEL_URL=http://localhost:{PORT}; node "$D/m2-graben.cjs"; E1=$?; node "$D/m2-graben-ego.cjs"; E2=$?; export WASSER_LEBEN_PORT=$(( {PORT} + 1 )); node scripts/diag-wasser-leben.cjs --nur graben,damm > "$D/damm.log" 2>&1; E3=$?; node scripts/diag-wasser-leben.cjs --bild --echt > "$D/ferne.log" 2>&1; E4=$?; cat "$D/ferne.log" | grep -F '[linse-gpu]'; node -e 'const fs = require("fs"); const d = process.argv[1]; const lies = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch (_e) { return null; } }; const block = (f) => { const t = fs.existsSync(f) ? fs.readFileSync(f, "utf8") : ""; const a = t.indexOf("\\n{\\n"); const e = t.indexOf("\\n}\\n", a); try { return JSON.parse(t.slice(a + 1, e + 2)); } catch (_e) { return {}; } }; fs.writeFileSync(process.argv[2], JSON.stringify({ third: lies(d + "/roh/m2-graben.json"), ego: lies(d + "/roh/m2-graben-ego.json"), damm: block(d + "/damm.log").damm || null, ferne: block(d + "/ferne.log").ferne || null, exit: [Number(process.argv[3]), Number(process.argv[4]), Number(process.argv[5]), Number(process.argv[6])] }, null, 1));' "$D" "$A" $E1 $E2 $E3 $E4; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $(( E1 | E2 ))`,
+        ],
+        gpu: true,
+        minuten: 16,
+        urteil: (j, lauf) => {
+            if (!j) return { gruen: false, zahl: "keine Ausgabe (Exit " + lauf.exit + ")" };
+            // (a) je Sicht dasselbe Urteil wie Staffel 1
+            const graben = (m) => {
+                const g = (m && Array.isArray(m.graeben) ? m.graeben : []).filter((x) => x.verb === "graben");
+                const neu = g.filter((x) => x.nassEnde > x.nassVor);
+                const je = (a) => neu.filter((x) => x.abstand === a && x.gefuelltMs != null && x.gefuelltMs <= 2000).length;
+                const ok =
+                    g.length >= 8 && Math.max(...g.map((x) => x.doppeltMax)) === 0 && Math.max(...g.map((x) => x.ueberMax)) === 0 &&
+                    g.every((x) => x.bilder > 0) && neu.every((x) => x.gefuelltMs != null && x.gefuelltMs <= 2000) && je(1) >= 1 && je(3) >= 1;
+                return { ok, zahl: g.length + "/" + (m && m.graeben ? m.graeben.length : 0) + " Gräben (1 m " + je(1) + ", 3 m " + je(3) + ")" };
+            };
+            const [t, e] = [graben(j.third), graben(j.ego)];
+            // (b) G6 · G7 — (d) G8, wie die Wand sie urteilt
+            const d = j.damm || {};
+            const auf = d.stromauf || [];
+            const ab = d.stromab || [];
+            const b =
+                d.saeulen >= 3 && auf.length === 2 && ab.length === 2 &&
+                auf.every((u) => Math.abs(u.wasser - u.ueberlauf) <= 0.1 && u.ueberlauf > u.fluss + 0.1) &&
+                ab.every((u) => Math.abs(u.wasser - u.fluss) <= 0.1);
+            const f = (j.ferne && j.ferne.ring) || {};
+            const fern = f.punkte >= 3 && f.anders === f.punkte && f.hubM >= 1 && f.faden === j.ferne.saeulen;
+            return {
+                gruen: t.ok && e.ok && b && fern,
+                zahl:
+                    "(a) Third " + t.zahl + " · Ego " + e.zahl + " · (b) stromauf " + auf.map((u) => u.wasser + "/" + u.ueberlauf).join(", ") +
+                    " m Wasser/Überlauf über Fluss " + auf.map((u) => u.fluss).join(", ") + ", stromab " + ab.map((u) => u.wasser + "/" + u.fluss).join(", ") +
+                    " · (d) Ring " + f.anders + "/" + f.punkte + " Hub " + f.hubM + " m, Faden " + f.faden + "/" + (j.ferne ? j.ferne.saeulen : "?"),
+            };
+        },
+        pfad: [
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "stamm/gelaende-*.js",
+            "stamm/wasser-*.js",
+            "stamm/werkstatt-*.js",
+            "stamm/koerper-*.js",
+            "stamm/bild-*.js",
+            "stamm/stoff-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/feld-dsl.js",
+            "stamm/daten.js",
+            "index.html",
+            "save-server.js",
+            "scripts/diag-wasser-leben.cjs",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "2 = (a), (b) und (d) an beiden Geräten, Ego und Third",
+    },
+
     // ── gelaende.K3 ── M1: spiegelTreue an der Ego-Pose des Spiels am See (Ufer 1866,6/−6193,9, Gier −1,309, Neigung 0),
     // die Kamera aus dem Spiel (state.camera nach `_loopCamera`), geschossen mit `bild --wahl 0` in 1920×1080 aus dem
     // Ausgabe-Pfad (werkbank start --echt gegen den eigenen save-server auf {PORT}, die Werkbank auf {PORT} + 20000)
@@ -1363,7 +1434,6 @@ module.exports = [
 
 // ── NICHT FASSBAR (befehl: null): kein Werkzeug im Spiel-Baum misst das Soll dieser Staffel als EIN Befehl am SHA ──
 module.exports.fehlt = [
-    { kriterium: "gelaende.K2", staffel: 2, befehl: null, grund: "Werkzeug fehlt: Damm (b) und Ferne (d, byte-Diff am Ring) misst keine Linse; Ego und GTX ungemessen" },
     { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug und Gesetz fehlen für die Fließ-Anisotropie: keine Linse misst die Normalen-Anisotropie längs/quer zum Lauf im Ausgabe-Bild, und die Strömung der Welt ist `WASSER_GESETZ.wellen.adv × centerness` (`_waterFlowAt`, stamm/wasser-hydro.js) — kein Gefälle, kein Einzugsgebiet, aus dem sie wüchse (25.10. gelesen an d43cb61c). Die 12 Posen allein (Ego/Third × Mittag/Nacht/Regen über `bild --uhr --wetter` wie Staffel 1) wären eine halbe Station" },
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug und Welt fehlen: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Trocken-Kurve, kein Third; die Welt trägt keine Pfütze (stamm/ kennt kein Pfützen-Gesetz, 25.10. an d43cb61c), die Mulden-Korrelation r ≥ 0,5 hätte nichts zu messen" },
     { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
