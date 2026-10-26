@@ -54,15 +54,17 @@ function ortOf(haushalt, id) {
 // Jede Ratsche ist EINE Datei `ratsche-<ort>-<gerät>-<sicht>.json`; die Geräte und Sichten nennt der Haushalt (`geraete`,
 // `sichten`), die Messung nennt, woran sie stand (`geraet`, `sicht`), und nur deren Ratsche richtet sie.
 const ratscheDatei = (ortId, geraet, sicht) => `ratsche-${ortId}-${geraet}-${sicht}.json`;
-// Ein Ort, den der Spieler erst gründet (`gruendung`, die Stadt), misst den Lauf (Profiband K1), nicht das Band: keine Ratsche.
-const istBandOrt = (o) => !!o && o.bank === undefined && o.gruendung === undefined;
+// Ein Toggle-Ort (`bank`, die Prüfbühne) richtet die GPU-Zeit eines Schalters, nie das Band. Jeder andere Ort misst das Band (E an
+// JEDEM Messort) und wählt seine Ratsche; Pflicht (H2b) ist sie an den Orten ohne Anlauf — ein Ort mit Anlauf (`anlauf`: die Stadt,
+// die der Spieler gründet, Dach und Gipfel über der erwachten Stadt) urteilt `ungemessen`, bis die Serie seine Ratsche prägt.
+const istBandOrt = (o) => o.bank === undefined && o.anlauf === undefined;
 
 function ladeSpec(ortId, wahl) {
     const haushalt = JSON.parse(fs.readFileSync(path.join(SPEC, "haushalt.json"), "utf8"));
     const ort = ortOf(haushalt, ortId);
     const spec = { haushalt, ort, ratsche: null, ratscheDatei: null };
     // Die Ratsche wählt nur, wer Gerät UND Sicht nennt; ein Toggle-Ort (`bank`) trägt keine (`ratscheVon` bricht laut).
-    if (wahl && istBandOrt(ort)) {
+    if (wahl && ort.bank === undefined) {
         if (!(haushalt.geraete || {})[wahl.geraet] || !(haushalt.sichten || {})[wahl.sicht])
             throw new Error(
                 `Ratschen-Wahl ${wahl.geraet} × ${wahl.sicht}: der Haushalt kennt die Geräte ` +
@@ -79,14 +81,7 @@ function ladeSpec(ortId, wahl) {
 // Die Ratsche eines Orts für ein Band-Urteil — ein Toggle-Ort hat keine, das Band richten die Band-Orte. `null` heißt
 // ungemessen (die Datei fehlt) und urteilt rot.
 function ratscheVon(spec) {
-    if (!istBandOrt(spec.ort))
-        throw new Error(
-            `Messort ${spec.ort.id} ist ein Toggle-Ort ohne Ratsche (bank) — das Band richten ` +
-                spec.haushalt.messorte
-                    .filter(istBandOrt)
-                    .map((o) => o.id)
-                    .join(", ")
-        );
+    if (spec.ort.bank !== undefined) throw new Error(`Messort ${spec.ort.id} ist ein Toggle-Ort ohne Ratsche (bank)`);
     return spec.ratsche;
 }
 
@@ -170,11 +165,13 @@ function messortePruefen(h) {
         // Aufstellen, dass `spieler` auf ihm steht (diag-profiband H6: der Stamm trägt sie).
         if (o.anker !== undefined && (typeof o.anker !== "string" || !/^_?[A-Za-z]\w*$/.test(o.anker)))
             f.push(`${o.id}: anker ist kein Methoden-Name`);
-        // DIE GRÜNDUNG (die Stadt): das Wort des Spielers (`dorf <same> <häuser>`), sein Platz und Blick, der Anker der Siedlung, und die
-        // Bahn — eine Kette [x, z] ab dem Spieler, die `werkbank umstellen` auf ihrem Weg prüft.
+        // DER ANLAUF (`anlauf` [x, z]): dort steht der Spieler zuerst und schwingt ein, dann am Ort — mit `dach` (m) auf dem Dach. DIE
+        // GRÜNDUNG (die Stadt): das Wort des Spielers am Anlauf (`dorf <same> <häuser>`), der Anker der Siedlung, und die Bahn — eine
+        // Kette [x, z] ab dem Spieler, die `werkbank umstellen` auf ihrem Weg prüft.
         const g = o.gruendung;
-        if (g !== undefined && (!g || !/^dorf \d+ \d+$/.test(g.wort) || ![g.platz, g.blick, g.anker].every(xz)))
-            f.push(`${o.id}: gruendung ohne wort „dorf <same> <häuser>", platz, blick oder anker [x, z]`);
+        if ((g || o.dach || o.anlauf) !== undefined && !xz(o.anlauf)) f.push(`${o.id}: anlauf ist kein [x, z]`);
+        if (g !== undefined && (!g || !/^dorf \d+ \d+$/.test(g.wort) || !xz(g.anker)))
+            f.push(`${o.id}: gruendung ohne wort „dorf <same> <häuser>" oder anker [x, z]`);
         if (g !== undefined && !(Array.isArray(o.bahn) && o.bahn.length > 1 && o.bahn.every(xz) && `${o.bahn[0]}` === `${o.spieler}`))
             f.push(`${o.id}: bahn ist keine Kette [x, z] ab dem Spieler`);
         // DAS WIESEN-GESETZ (K55, `wiese`): die Mess-Wiese trägt es — jede Schwelle eine Zahl, Kranz und Fernblick als [von, bis];
