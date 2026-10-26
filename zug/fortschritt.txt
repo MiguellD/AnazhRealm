@@ -213,3 +213,4 @@
 2026-10-26 13:56:45 z37-abab w-ego nicht-langsamer 13.9 · 1/3 (2+2)
 2026-10-26 14:16:00 z37-abab VORFAHRT d-ego-A1 gewartet 19.1
 2026-10-26 14:29:33 z37-abab d-ego VERLÄNGERN 32.7 · 2/3 (2+2)
+2026-10-26 14:47:06 z37-abab stadt nicht-langsamer 17.5 · 3/3 (2+2)
