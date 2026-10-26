@@ -25,3 +25,8 @@
 2026-10-26T02:25 decke-zahlstelle champion 190k 69A grün 57 pageerror-Zwillinge → welt-boot, scripts −5415 Atome, Wand in gate:welt-boot 4f5c1895 · FEUER
 2026-10-26T03:20 mensch-k3-frist champion 196k 75A grün Kreatur-Linse Teil 1 1427 → 404 s (Selbsttest 10 Täter in EINEM Lauf 1071 → 173 s), mensch.K3#2 grün 402c297d · PUNKTE
 2026-10-26T03:25 k8-fein champion 163k 79A WIP lokal 11/11 Läufe 4,3 cm (Drossel, Worker-Verzug, Kerne) — Wackler nur auf Linux-Läufer; Linse nennt den p95-Punkt, Diagnose-Lauf CI 391460c6 · FEUER
+2026-10-26T03:30 fege-takt champion wf872k/5 106A grün Täter: Warte-Grund ohne Auflösung (Kamera 1 km neben dem Spieler, Boden kommt nie) → _bodenKommtNie + Linse (K) Führung; Pose steht nach 1362 Takten statt nie 8772daa5 · FEUER
+2026-10-26T03:30 werkzeug-heil champion wf872k/5 ~95A grün echt-k1 Faden-Vorspann (halbe 4 → 0), m15 nach Schritt-Gesetz: klang.K4#1 an main GRÜN 3 Stoffe 9c32f50e · PUNKTE
+2026-10-26T03:30 speicher-anhang champion wf872k/5 97A WIP K2 p95 1,9–3,3 → 1,2–1,8 ms (Soll 0,3 ROT; Liste war nicht die Wurzel) 52755428 · WICHTIG
+2026-10-26T03:30 ki-schema champion wf872k/5 97A grün Ollama format aus dem Vertrag: ki.K2#2 Absicht 0,792 → 0,833, ki.K1 0,75 → 0,9 2c40a9f5 · PUNKTE
+2026-10-26T03:30 b-streu-faden champion wf872k/5 111A WIP Region-Streu im Voxel-Faden: Haupt-Faden 1504 → ~750 ms; Feuchte-Zwilling offen bf83213f · WICHTIG
