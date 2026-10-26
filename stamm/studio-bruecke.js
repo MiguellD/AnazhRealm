@@ -1404,8 +1404,29 @@ class AnazhRealm_studio_bruecke {
     // die Wörter des Programms („fachwerkhaus", „eiche") samt den Reglern der Art aus dem Vertrag (PARAMS_BY_KIND, wie das
     // Buch sie bringt: id Name min–max — dieselben Zeilen klemmt der Stempel, KI K2).
     _studioWordsForPrompt(nennen = false) {
-        const K = this._studioWortKatalog();
         const PBK = (this._foundry && this._foundry.paramsByKind) || {};
+        const { GRUPPE, gruppen: paare } = this._studioWortGruppen();
+        const gruppen = {};
+        for (const [art, ps] of Object.entries(paare))
+            gruppen[art] = [...new Set(ps.map(([w, nennung]) => (nennen ? nennung : w)))];
+        const kappe = nennen ? 5 : 8;
+        const regler = (a) =>
+            !nennen && Array.isArray(PBK[a]) && PBK[a].length
+                ? ` (Regler: ${PBK[a].map((d) => `"${d.id}" ${d.min}–${d.max} ${d.lab}`).join(", ")})`
+                : "";
+        return Object.keys(GRUPPE)
+            .filter((a) => gruppen[a] && gruppen[a].length)
+            .map(
+                (a) =>
+                    `${GRUPPE[a]}: ${gruppen[a].slice(0, kappe).join(", ")}${gruppen[a].length > kappe ? " …" : ""}${regler(a)}`
+            )
+            .join(" · ");
+    }
+
+    // Die lebenden Wörter je benannter Art aus dem EINEN Wort-Katalog: { GRUPPE: {art: Name}, gruppen: {art: [[wort, nennung], …]} }
+    // — der Prompt nennt sie, die Antwort-Form der Welt-KI (`_kiAntwortSchema`) erlaubt GENAU sie, je Art mit ihren Reglern.
+    _studioWortGruppen() {
+        const K = this._studioWortKatalog();
         const GRUPPE = {
             tree: "Bäume",
             rock: "Stein",
@@ -1428,23 +1449,20 @@ class AnazhRealm_studio_bruecke {
         for (const [w, nennung] of K.woerter) {
             const ziel = this._studioBlueprintForWord(w);
             const art = ziel && K.artVon[ziel];
-            if (!GRUPPE[art]) continue;
-            const nenn = nennen ? nennung : w;
-            const g = (gruppen[art] = gruppen[art] || []);
-            if (!g.includes(nenn)) g.push(nenn);
+            if (GRUPPE[art]) (gruppen[art] = gruppen[art] || []).push([w, nennung]);
         }
-        const kappe = nennen ? 5 : 8;
-        const regler = (a) =>
-            !nennen && Array.isArray(PBK[a]) && PBK[a].length
-                ? ` (Regler: ${PBK[a].map((d) => `"${d.id}" ${d.min}–${d.max} ${d.lab}`).join(", ")})`
-                : "";
-        return Object.keys(GRUPPE)
-            .filter((a) => gruppen[a] && gruppen[a].length)
-            .map(
-                (a) =>
-                    `${GRUPPE[a]}: ${gruppen[a].slice(0, kappe).join(", ")}${gruppen[a].length > kappe ? " …" : ""}${regler(a)}`
-            )
-            .join(" · ");
+        // `ziele`: JEDES Wort, das der Katalog genau auflöst (alle Stufen, die frühere gewinnt — „hirsch" ist sagbar über
+        // das Werk), je Art seines Werk-Ziels
+        const ziele = {};
+        const gesehen = new Set();
+        for (const stufe of K.stufen)
+            for (const [w, ziel] of stufe) {
+                if (gesehen.has(w)) continue;
+                gesehen.add(w);
+                const art = K.artVon[ziel];
+                if (GRUPPE[art]) (ziele[art] = ziele[art] || []).push(w);
+            }
+        return { GRUPPE, gruppen, ziele };
     }
 
     // Das Werk-Verb eines Werk-Ziels (`_studioBlueprintForWord`): "wesen" · "praegung" (KIND_POLICY `werk` der Art eines

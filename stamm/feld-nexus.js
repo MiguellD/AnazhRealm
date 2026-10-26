@@ -869,6 +869,9 @@ class AnazhRealm_feld_nexus {
                 // JSON UND FESTE TEMPERATUR (KI H1, 20.10., qwen3:4b-instruct am Korpus): `format: "json"` lässt das lokale Modell
                 // nur JSON schreiben (jeder Rufer liest JSON), Temperatur 0 — derselbe Satz, dieselbe Tat. DAS FENSTER (KI K2, 26.10.):
                 // der Vertrag mit jeder Regler-Zeile trägt ~4 300 Token, ollama gibt ohne `num_ctx` 4 096 — jede Anfrage fiel mit HTTP 400.
+                // DIE FORM (KI K2, 26.10.): der Vertrag der Welt-KI geht als JSON-Schema in `format` — ollama erzwingt es beim
+                // Sampeln, ein Regler-Name außerhalb der Zeilen seiner Art ist kein erzeugbares Token mehr (vorher erfand das
+                // Modell dachform/width/tower, FAIL-CLOSED ließ die ganze Tat fallen: Regler-Wörter 19/24).
                 buildBody: (model, system, userContent, cfg) => {
                     const body = {
                         model,
@@ -882,7 +885,7 @@ class AnazhRealm_feld_nexus {
                     const isOpenAiCompat = /\/v1\//.test(ep);
                     if (!isOpenAiCompat) {
                         body.options = { num_predict: 800, temperature: 0, num_ctx: 8192 };
-                        body.format = "json";
+                        body.format = system.includes(AnazhRealm.KI_WELT_FORM) ? this._kiAntwortSchema() : "json";
                     } else {
                         body.max_tokens = 800;
                         body.temperature = 0;
@@ -970,6 +973,75 @@ class AnazhRealm_feld_nexus {
     // `dslEffects`, jeder Ort aus `dslPositions`, jede Bedingung aus `dslConditions`, je mit Form (`_dslForm`), die Welt-Akte
     // (`AnazhRealm.DSL_WELTAKTE`) als eigene Gruppe. Bis 16.10. sah sie `Object.keys(dslEffects).slice(0, 40)` — 40 von 70
     // Ops (when · repeat · delay · player_speed … fehlten), Orte und Bedingungen nur aus Beispielen. Wache: gate:weltakt-wache (K).
+    // DIE ANTWORT-FORM DER WELT-KI (KI K2, 26.10.) als JSON-Schema, erzeugt aus denselben Quellen wie der Prompt — den Verben,
+    // Orten und Bedingungen der DSL und den Wörtern je Art (`_studioWortGruppen`) samt ihren Reglern (PARAMS_BY_KIND): ein
+    // spawn_studio mit <regler> trägt nur die Zeilen der Art seines Worts, jeder Wert eine Zahl. ollama (llama.cpp) liest ein
+    // Tupel nur als `prefixItems` fester Länge (`items: false` bricht die Anfrage, `items` neben `prefixItems` verdrängt es) —
+    // darum je Länge eine Form; kein anderes Array darf mit "spawn_studio" beginnen.
+    _kiAntwortSchema() {
+        const W = { $ref: "#/$defs/wert" };
+        const zahl = { type: "number" };
+        const tupel = (glieder) => ({
+            type: "array",
+            prefixItems: glieder,
+            minItems: glieder.length,
+            maxItems: glieder.length,
+        });
+        const kopfMitRest = (namen, bis) =>
+            Array.from({ length: bis + 1 }, (_, n) => tupel([{ enum: namen }, ...Array(n).fill(W)]));
+        const { ziele } = this._studioWortGruppen();
+        const PBK = (this._foundry && this._foundry.paramsByKind) || {};
+        const ss = { const: "spawn_studio" };
+        const alle = Object.values(ziele).flat();
+        const spawn = !alle.length
+            ? []
+            : [
+                  ...[2, 3, 4, 5].map((n) =>
+                      tupel([ss, { $ref: "#/$defs/wort" }, W, zahl, { anyOf: [zahl, { type: "null" }] }].slice(0, n))
+                  ),
+                  ...Object.entries(ziele).map(([art, ws]) =>
+                      tupel([
+                          ss,
+                          { enum: ws },
+                          W,
+                          zahl,
+                          { anyOf: [zahl, { type: "null" }] },
+                          {
+                              type: "object",
+                              properties: Object.fromEntries((PBK[art] || []).map((d) => [d.id, zahl])),
+                              additionalProperties: false,
+                          },
+                      ])
+                  ),
+              ];
+        const verben = Object.keys(this.dslEffects).filter((n) => n !== "spawn_studio");
+        const orte = [...Object.keys(this.dslPositions), ...Object.keys(this.dslConditions)];
+        return {
+            type: "object",
+            properties: {
+                say: { type: "string" },
+                program: { anyOf: [{ type: "null" }, { $ref: "#/$defs/programm" }] },
+            },
+            required: ["say", "program"],
+            additionalProperties: false,
+            $defs: {
+                ...(alle.length ? { wort: { enum: alle } } : {}),
+                programm: { anyOf: [...spawn, ...kopfMitRest(verben, 8)] },
+                wert: {
+                    anyOf: [
+                        zahl,
+                        { type: "string" },
+                        { type: "boolean" },
+                        { type: "null" },
+                        { $ref: "#/$defs/programm" },
+                        ...kopfMitRest(orte, 4),
+                        { type: "object", additionalProperties: W },
+                    ],
+                },
+            },
+        };
+    }
+
     _dslVokabular() {
         const W = AnazhRealm.DSL_WERTE;
         const liste = (eintraege) =>
@@ -1037,7 +1109,7 @@ class AnazhRealm_feld_nexus {
         // lokale Modell jeden Satz alle ~1 900 Token neu (CPU 29 s je Satz); der feste Vertrag vorn steht einmal im Cache.
         return [
             AnazhRealm._datum`Du bist ${companionName}, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.`,
-            "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:",
+            AnazhRealm.KI_WELT_FORM,
             '  - say: EIN kurzer deutscher Satz, warm-narrativ, in erster Person. Sprich von dir als "ich". Keine Emojis.',
             "  - program: EIN DSL-Programm oder null — ein verschachteltes Array, das mit dem Op-Namen beginnt; nie eine Liste von",
             "    Programmen (mehrere Taten: chain). Verlangt der Spieler eine Tat, die ein Verb kann: IMMER ein program.",
@@ -1916,6 +1988,9 @@ AnazhRealm.GESTURE_CRYSTAL = Object.freeze({
 // Infrastruktur-Defaults an EINER Stelle (Drift-Schutz): lokaler Ollama-Server und
 // Default-Signaling-Adresse.
 AnazhRealm.OLLAMA_DEFAULT_ENDPOINT = "http://localhost:11434";
+// Die Kopfzeile des Vertrags der Welt-KI ({say, program}): der Prompt trägt sie, der ollama-Body erkennt an ihr, dass die
+// Antwort-Form (`_kiAntwortSchema`) gilt — Persona-, Übersetzer- und Reflexions-Prompts tragen sie nie.
+AnazhRealm.KI_WELT_FORM = "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:";
 // Claude-5er-Generation (Sonnet 5.5 · Opus 5/5.5 · Fable 5/5.1): thinking immer an,
 // `output_config.effort`, serverseitige `fallbacks` — der EINE Prüfer für Header + Body.
 AnazhRealm._llmFuenferModell = function (model) {
