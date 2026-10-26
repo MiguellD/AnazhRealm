@@ -1870,6 +1870,7 @@ class AnazhRealm_netz_p2p {
     _p2pMsgPos(msg, p2p) {
         const pid = msg.peerId;
         if (typeof pid !== "string" || pid === p2p.peerId) return;
+        this._weltUhrNimm(this._fremdeZahl(msg.w));
         const entry = this._p2pEnsurePeerEntry(pid);
         // Ein Ort aus dem Draht ohne Zahl ist kein Ort (NaN reist als null): der ortlos geborene Mitspieler bleibt ohne
         // Ort und unsichtbar, statt in den Ursprung zu springen.
@@ -2671,7 +2672,8 @@ class AnazhRealm_netz_p2p {
         const p2p = this.state.p2p;
         if (!p2p.enabled || !p2p.connected || !p2p.ws) return;
         // Position-Broadcast bei 30 Hz. lastBroadcastAt ist in ms,
-        // currentTimeMs sollte performance.now() sein.
+        // currentTimeMs sollte performance.now() sein. Der Takt des Anschlusses trägt die Welt-Uhr (`w`, feld.K2#2): jede
+        // Seite nimmt sie, wenn sie später ist (`_weltUhrNimm`) — die Uhr reist, kein Zustand einer Teil-Simulation.
         const playerMesh = this.state.playerMesh;
         if (playerMesh && currentTimeMs - p2p.lastBroadcastAt > p2p.broadcastIntervalMs) {
             p2p.lastBroadcastAt = currentTimeMs;
@@ -2681,6 +2683,7 @@ class AnazhRealm_netz_p2p {
                 y: playerMesh.position.y,
                 z: playerMesh.position.z,
                 yaw: this.state.yaw || 0,
+                w: this.state.spielZeit,
             });
         }
         // Ring 11 V3 — Aura-Sync, ~1 Hz (die Aura pulsiert langsam, kein

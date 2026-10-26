@@ -147,11 +147,11 @@ function probe(o) {
     // WETTER_ZUG_SEK (Ereignis-Takte), die Folge ist das Wort nach jedem Takt
     const wm = st.worldMeta || (st.worldMeta = {});
     const pm = st.playerMesh.position;
-    const [saat0, pn, x0, y0, uhr0, Z] = [wm.seed, performance.now, pm.x, pm.z, wm.wetterUhr, r.constructor.WETTER_ZUG_SEK];
+    const [saat0, pn, x0, y0, uhr0, Z] = [wm.seed, performance.now, pm.x, pm.z, st.spielZeit, r.constructor.WETTER_ZUG_SEK];
     const P = globalThis.__phytoCore;
     const zug = (saat, d) => {
         const g = P.windGrund(saat);
-        [wm.seed, pm.x, pm.z, wm.wetterUhr] = [saat, x0 + d * g.x, y0 + d * g.z, 0];
+        [wm.seed, pm.x, pm.z, st.spielZeit] = [saat, x0 + d * g.x, y0 + d * g.z, 0];
         window.__wetterSetzen("sunny");
         r.dslRun(["weather", "frei"], { source: "human" });
     };
@@ -160,7 +160,7 @@ function probe(o) {
         const [folge, s0] = [[], window.__wetterSpion().seq];
         for (let i = 0; i < o.zuege; i++) {
             performance.now = () => pn.call(performance) + uhr * (i + 1);
-            [wm.wetterUhr, st.weatherEffectTime] = [Z * (i + 1), Z];
+            st.spielZeit = Z * (i + 1);
             r._loopWeatherAndGrowth(0);
             folge.push(st.weather);
             st.weatherTransition = null;
@@ -180,14 +180,14 @@ function probe(o) {
     const kern = P.wetterAt;
     P.wetterAt = () => ({ zeile: "sturm" });
     zug("saat-a", 0);
-    [wm.wetterUhr, st.weatherEffectTime] = [Z, Z];
+    st.spielZeit = Z;
     r._loopWeatherAndGrowth(0);
     P.wetterAt = kern;
     const nass = (w) => r._weatherIsWet(w);
     aus.front = { nassTrocken: A.filter((w, i) => nass(w) && !nass(B[i])).length / A.length, lag: Z * lag, worte: [...worte] };
     Object.assign(aus.front, { soll: 3000 / P.WIND_FELD.front.zugMS, welt: st.weather });
     st.weatherTransition = null;
-    [wm.seed, pm.x, pm.z, wm.wetterUhr] = [saat0, x0, y0, uhr0];
+    [wm.seed, pm.x, pm.z, st.spielZeit] = [saat0, x0, y0, uhr0];
     window.__buehne();
     aus.ende = { wetter: st.weather, uhr: st.weatherEffectTime };
     // (Q) der Zwilling `time_of_day` ist fort

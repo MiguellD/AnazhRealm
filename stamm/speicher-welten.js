@@ -988,7 +988,9 @@ class AnazhRealm_speicher_welten {
             // (localStorage, `setDayLength`): der Kopf trägt sie, weil die Taille v1 den Schlüssel verlangt
             // (spec/golden/v1/snapshot-head.json, MUST weiter produziert), das Laden setzt sie nie (Leben-Schau 2: jeder
             // alte Stand trug den 8-min-Tag und hielte ihn fest).
-            // weatherTransition NICHT persistiert (Laufzeit-Artefakt; Reload startet mit stabilem Wetter).
+            // DIE WELT-UHR (feld.K2#2) reist: nach dem Reload laufen Front, Zug, Leben und Brand an ihr weiter (`_weltUhrNimm`);
+            // der Übergang des Wetter-Zugs ist ihre Funktion (der erste Takt zieht ihn neu), darum reist weatherTransition nicht.
+            ["spielZeit", () => st().spielZeit],
             ["timeOfDay", () => (typeof st().timeOfDay === "number" ? st().timeOfDay : 0.5)],
             ["dayLengthMinutes", () => st().dayLengthMinutes],
             // Das Wort des Spielers über das Wetter reist mit (es steht, bis er es freigibt); der Wunsch der Welt nicht.

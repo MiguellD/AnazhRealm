@@ -14,14 +14,14 @@
 //
 // Protokoll (alle Nachrichten JSON, eine Zeile):
 //   Client → Server   { "type": "join", "room": "<worldId>", "peerId": "<rand>" }
-//   Client → Server   { "type": "pos",  "x": .., "y": .., "z": .., "yaw": .. }
+//   Client → Server   { "type": "pos",  "x": .., "y": .., "z": .., "yaw": .., "w": <Welt-Uhr s> }
 //   Client → Server   { "type": "dsl",  "program": [...DSL-AST] }
 //   Client → Server   { "type": "world-request", "to": "<hostPeerId>" }   (V2.2 / Ring 11.5)
 //   Client → Server   { "type": "world-snapshot", "to": "<guestPeerId>", "state": {...} }
 //   Server → Client   { "type": "welcome", "peers": ["peerA", "peerB"] }
 //   Server → Client   { "type": "peer-join", "peerId": "..." }
 //   Server → Client   { "type": "peer-leave", "peerId": "..." }
-//   Server → Client   { "type": "pos", "peerId": "...", "x":.., "y":.., "z":.., "yaw":.. }
+//   Server → Client   { "type": "pos", "peerId": "...", "x":.., "y":.., "z":.., "yaw":.., "w":.. }
 //   Server → Client   { "type": "dsl", "peerId": "...", "program": [...] }
 //   Server → Client   { "type": "soul", "peerId": "...", "soulName": "...", "bodyParts": [...], "name": "...", "catalog": [...] }
 //   Server → Client   { "type": "world-request", "peerId": "..." }   (forwarded)
@@ -232,7 +232,10 @@ function handleClientMessage(ws, raw) {
         const z = Number(msg.z);
         const yaw = Number(msg.yaw);
         if (![x, y, z, yaw].every(Number.isFinite)) return;
-        broadcastToRoom(ws.anazh.room, { type: "pos", peerId: ws.anazh.peerId, x, y, z, yaw }, ws);
+        // die Welt-Uhr des Senders (feld.K2#2) reist mit, wo sie eine Zahl ist — der Relay trägt dieselbe Nachricht wie der Kanal
+        const w = Number(msg.w);
+        const uhr = Number.isFinite(w) ? { w } : {};
+        broadcastToRoom(ws.anazh.room, { type: "pos", peerId: ws.anazh.peerId, x, y, z, yaw, ...uhr }, ws);
         return;
     }
     if (msg.type === "creature-pos") {

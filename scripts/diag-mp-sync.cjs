@@ -25,6 +25,12 @@
 //                 am Draht: jede Art außer `NETZ_ERLAUBT` ist eine Zustands-Nachricht. Der Leib: B's Ghost rechnet jeden Schritt
 //                 von A bit-gleich (je seq). Selbsttests: B wendet jede Akt-Nachricht doppelt an und verschiebt den Samen des
 //                 Baus → Edits und Bauten ROT; A sendet eine Wetter-Nachricht → das Netz-Log ROT.
+//   (f) DIE WELT-UHR (feld.K2#2): alle Teil-Simulationen aus Saat + Akten. A entfacht am Ort (der Weg des Brennglases) und
+//                 springt 20 min Spielzeit in einen Zug, in dem am Ort ein Sturm aufzieht (erst in den Zug davor, der jeden alten
+//                 Wunsch nimmt); B folgt der Uhr von A (`pos.w`, `_weltUhrNimm`) — der Zug der Welt-Uhr steht im Abdruck von (e),
+//                 über Peers und den Reload mitten im Sturm. Was Stufe 2 noch verlangt, steht als OFFEN mit Zahl (`simAbdruck`):
+//                 Wetter (Wort, Übergang), Leben (A pflegt im Gespräch) und Brand je Zelle gleich, der Pegel (hier ungemessen:
+//                 kein Wasser am Graben). Selbsttest: B mit eigener Uhr → der Zug ROT.
 // Dazu der Spielpfad: Seite A über den KNOPF (`#p2p-toggle`, zweiter Klick im Aufbau startet kein zweites Init, der
 // Knopf liest die EINE Absicht), Seite B über den BOOT (die gemerkte Absicht aus `p2pPersist`). A läuft nach dem
 // Ladeschirm über die Tastatur (`_stepCharacter`; A bootete zuerst, sein Ladeschirm fällt zuerst), B sieht A an dessen
@@ -33,22 +39,16 @@
 //
 // Selbsttest (`--selftest`): die alte Tür wieder eingesetzt (initP2PSync lässt `enabled`, wie es war) → (b) ROT. Die
 // Selbsttests von (c), (d) und (e) laufen im Hauptlauf.
-// Ports: MP_SYNC_PORT (save-server), MP_SYNC_SIGNAL_PORT (signaling), sonst freie des Systems. `--roh <datei>`
-// schreibt die Zahlen als JSON.
+// Ports: MP_SYNC_PORT (save-server), MP_SYNC_SIGNAL_PORT (signaling), sonst freie des Systems.
 //
-//   node scripts/diag-mp-sync.cjs [--selftest] [--roh <datei>]
+//   node scripts/diag-mp-sync.cjs [--selftest]
 "use strict";
-const { starteBrowser, halteBis, startProc, eigenePorte, sleep, waitFor } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
+const { starteBrowser, halteBis, startProc, eigenePorte, sleep, waitFor, hauptLauf } = require("./lib/welt-boot.cjs");
 
 // die eigenen Ports: MP_SYNC_PORT und MP_SYNC_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
 let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
 const ROOM = "mp-sync-raum";
 const SELBSTTEST = process.argv.includes("--selftest");
-const ROH = (() => {
-    const i = process.argv.indexOf("--roh");
-    return i > 0 ? process.argv[i + 1] : null;
-})();
 const REJOIN_DECKEL_S = 31;
 const ABSTAND_M = 0.3;
 const LATENZ_MS = 150;
@@ -88,8 +88,8 @@ function netzLog() {
             };
     }
 }
-// Der Abdruck der Welt aus den Schreib-Akten (Seite): die Edits, die Bauten der Akte (`bauten`, je eine Kennung) und der Boden an
-// jedem Edit — verglichen als JSON-Text, byte-gleich oder nicht
+// Der Abdruck der Welt aus den Schreib-Akten (Seite): die Edits, die Bauten der Akte (`bauten`, je eine Kennung), der Boden an
+// jedem Edit und (f) der Zug der Welt-Uhr — verglichen als JSON-Text, byte-gleich oder nicht
 function abdruck(bauten) {
     const r = window.anazhRealm;
     const st = r.state;
@@ -108,7 +108,29 @@ function abdruck(bauten) {
             e.studioOv || null,
         ]);
     const boden = edits.map(([, , x, y, z]) => [r._terrainDensityAt(x, y, z), r._voxelSurfaceY(x, z)]);
-    return { edits, bauten: B.sort(), boden };
+    return { edits, bauten: B.sort(), boden, zug: r._wetterZug };
+}
+// (f) Was Stufe 2 noch verlangt (Seite): je Teil-Simulation ihre Zellen als JSON-Text — Wetter (Wort, Übergang), Leben, Brand
+function simAbdruck() {
+    const st = window.anazhRealm.state;
+    const wt = st.weatherTransition;
+    const je = (m, f) => [...(m || [])].map(([k, e]) => JSON.stringify([k, ...f(e)]));
+    const asche = (st.worldMeta.taten || []).filter((a) => a.tat === "brand");
+    return {
+        wetter: [JSON.stringify([st.weather, wt && [wt.from, wt.to, wt.startedAt, wt.duration]])],
+        leben: je(st.lifeField, (e) => [e.a, e.t]),
+        brand: je(st.brandFeld, (e) => [e.stoff, e.glut]).concat(JSON.stringify(asche)),
+    };
+}
+// (f) DER SPRUNG: A springt in den Zug vor dem nächsten Sturm am Ort, `ab` Züge voraus (die Front einen Zug davor ohne Sturm)
+// → [die Uhr nach dem Sprung, die Uhr im Sturm] in s
+function sturmSprung(ab) {
+    const r = window.anazhRealm;
+    const [Z, p] = [r.constructor.WETTER_ZUG_SEK, r.state.playerMesh.position];
+    const sturm = (k) => r._wetterAmOrt(p.x, p.z, k * Z) === "stormy";
+    let k = Math.floor(r.state.spielZeit / Z) + ab;
+    while (!sturm(k) || sturm(k - 1)) k++;
+    return [(r.state.spielZeit = k * Z - Z + 1), k * Z + 1];
 }
 
 // (d) DAS GESETZ JE TAKT, wie `_lockstepTickPeers` es trägt: ein Takt von dt ms (seit dem vorigen Verbrauchs-Takt) verbraucht
@@ -162,7 +184,6 @@ function installiere(alteTuer) {
     r.state.postProcessingFailed = true;
     r.state.p2p.lockstepDebug = true; // die Spuren des Leibs (A je seq, der Ghost bei B) für (e)
     const mp = (window.__mp = {
-        takte: 0,
         peerTakte: 0,
         ursprung: 0,
         ursprungOhneOrt: 0,
@@ -218,7 +239,6 @@ function installiere(alteTuer) {
     r.p2pTick = function (t) {
         const res = tick.call(this, t);
         const p2p = this.state.p2p;
-        mp.takte++;
         if (p2p.connected && mp.verbundenAm === null) mp.verbundenAm = Date.now();
         if (!p2p.connected) mp.verbundenAm = null;
         for (const [pid, e] of p2p.peers) {
@@ -271,13 +291,27 @@ function installiere(alteTuer) {
     return true;
 }
 
+// Eine Seite bootet (vor ihrem ersten Skript das Netz-Log), bis ihr Loop und ihr Leib stehen; dann die Probe
+async function seite(browser, name, alteTuer) {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 640, height: 400 });
+    await page.evaluateOnNewDocument(netzLog);
+    await page.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
+    const da = () =>
+        !!window.anazhRealm &&
+        typeof window.anazhRealm._gameLoopTick === "function" &&
+        !!window.anazhRealm.state.playerMesh;
+    await waitFor(page, da, `Seite ${name} bereit`);
+    await page.evaluate(installiere, alteTuer);
+    return page;
+}
+
 function bericht(p) {
     return p.evaluate(() => {
         const mp = window.__mp;
         const p2p = window.anazhRealm.state.p2p;
         const t = document.getElementById("p2p-toggle");
         return {
-            takte: mp.takte,
             peerTakte: mp.peerTakte,
             ursprung: mp.ursprung,
             ursprungOhneOrt: mp.ursprungOhneOrt,
@@ -289,21 +323,20 @@ function bericht(p) {
             timer: !!p2p.reconnectTimer,
             knopf: t ? t.getAttribute("aria-pressed") : null,
             peerId: p2p.peerId,
-            peers: Array.from(p2p.peers.keys()),
-            meshActive: p2p.meshActive === true,
         };
     });
 }
 
-(async () => {
+let saveServer, signaling;
+hauptLauf(async () => {
     const fehler = [];
     [PORT, SIGNAL_PORT] = await eigenePorte("MP_SYNC_PORT", "MP_SYNC_SIGNAL_PORT");
     PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
     SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
-    const roh = { selbsttest: SELBSTTEST, port: PORT, signalPort: SIGNAL_PORT };
-    const check = (name, ok, detail = "") => {
-        console.log(`  ${ok ? "OK  " : "ROT "} ${name}${detail ? " — " + detail : ""}`);
-        if (!ok) fehler.push(name);
+    // `offen`: ein Teil der Staffel, der noch nicht gleich ist — gemessen und mit Zahl berichtet, ohne die Wand zu brechen
+    const check = (name, ok, detail = "", offen = false) => {
+        console.log(`  ${ok ? "OK  " : offen ? "OFFEN" : "ROT "} ${name}${detail ? " — " + detail : ""}`);
+        if (!ok && !offen) fehler.push(name);
     };
     const t0 = Date.now();
     if (!SELBSTTEST) {
@@ -318,11 +351,10 @@ function bericht(p) {
                 ` · fester Verzug max ${verzugMax} ${verzugMax > festGrenze ? ">" : "≤"} ${festGrenze}`
         );
     }
-    const saveServer = await startProc("save-server.js", /läuft/, {
+    saveServer = await startProc("save-server.js", /läuft/, {
         PORT: String(PORT),
         ANAZH_SIGNALING_PORT: String(SIGNAL_PORT),
     });
-    let signaling = null;
     const browser = await starteBrowser({
         art: "webgl",
         frist: 180000,
@@ -334,21 +366,9 @@ function bericht(p) {
             "--disable-renderer-backgrounding",
         ],
     });
-    try {
+    {
         // ── Seite A: frisch, der signaling-server ist AUS ──
-        const pageA = await browser.newPage();
-        await pageA.setViewport({ width: 640, height: 400 });
-        await pageA.evaluateOnNewDocument(netzLog);
-        await pageA.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
-        await waitFor(
-            pageA,
-            () =>
-                !!window.anazhRealm &&
-                typeof window.anazhRealm._gameLoopTick === "function" &&
-                !!window.anazhRealm.state.playerMesh,
-            "Seite A bereit"
-        );
-        await pageA.evaluate(installiere, SELBSTTEST);
+        const pageA = await seite(browser, "A", SELBSTTEST);
         // Adresse + Raum über die UI-Felder (ihr change-Hörer schreibt + merkt sie; verbunden wird hier noch nichts).
         await pageA.evaluate(
             (url, raum) => {
@@ -391,7 +411,6 @@ function bericht(p) {
             await sleep(250);
         }
         const nachTuer = await bericht(pageA);
-        roh.tuer = { enabledVor: vorTuer, enabledNach: nachTuer.enabled, rejoinS };
         check(
             `(b) Tür: der nackte Aufruf heilt nach ${3} s Server-Ausfall (Rejoin ≤ ${REJOIN_DECKEL_S} s)`,
             rejoinS !== null,
@@ -401,15 +420,12 @@ function bericht(p) {
         );
         if (SELBSTTEST) {
             await browser.close();
-            saveServer.kill();
-            if (signaling) signaling.kill();
             const rot = rejoinS === null;
             console.log(
                 rot
                     ? "SELBSTTEST OK: die alte Tür (initP2PSync ohne Absicht) macht (b) ROT"
                     : "SELBSTTEST ROT: die alte Tür blieb grün — die Probe sieht die Tür nicht"
             );
-            if (ROH) fs.writeFileSync(ROH, JSON.stringify(roh, null, 2));
             process.exit(rot ? 0 : 1);
         }
 
@@ -451,19 +467,7 @@ function bericht(p) {
 
         // ── Seite B: der BOOT (die gemerkte Absicht aus p2pPersist) ──
         console.log("Seite B bootet mit der gemerkten Absicht ...");
-        const pageB = await browser.newPage();
-        await pageB.setViewport({ width: 640, height: 400 });
-        await pageB.evaluateOnNewDocument(netzLog);
-        await pageB.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
-        await waitFor(
-            pageB,
-            () =>
-                !!window.anazhRealm &&
-                typeof window.anazhRealm._gameLoopTick === "function" &&
-                !!window.anazhRealm.state.playerMesh,
-            "Seite B bereit"
-        );
-        await pageB.evaluate(installiere, false);
+        const pageB = await seite(browser, "B", false);
         await waitFor(pageB, () => window.anazhRealm.state.p2p.connected === true, "B verbunden über den Boot");
         const idA = kVerb.peerId;
         const idB = (await bericht(pageB)).peerId;
@@ -484,7 +488,7 @@ function bericht(p) {
         );
 
         // A steht: der Ladeschirm ist gefallen (erst dann gehören die Tasten dem Spieler), die Höhe ruhig.
-        const ladeMs = await waitFor(pageA, () => !window.anazhRealm._ladeschirmSteht(), "A: Ladeschirm weg");
+        await waitFor(pageA, () => !window.anazhRealm._ladeschirmSteht(), "A: Ladeschirm weg");
         await waitFor(
             pageA,
             () => {
@@ -574,7 +578,6 @@ function bericht(p) {
             `Abstand ${l.abstand.toFixed(3)} m, Leib ${l.sichtB.art}, sichtbar=${l.sichtB.sichtbar}, ` +
             `Rückstau ${l.sichtB.rueckstau} Schritte, Latenz ${l.latenz === null ? "n/a" : l.latenz + " ms"}`;
         const l0 = await laufUndSicht();
-        roh.lauf = Object.assign({ ladeschirmMs: ladeMs }, l0);
         check("A lief über die Tastatur (> 1 m)", l0.lauf > 1, `${l0.lauf.toFixed(2)} m nach ${l0.haltMs} ms W`);
         // (e) der Leib aus seinen Eingaben: B's Ghost rechnet jeden Schritt von A bit-gleich nach (je seq, die Spuren des Laufs)
         const spurA = new Map(
@@ -721,7 +724,6 @@ function bericht(p) {
         const l1 = await laufUndSicht();
         const f1 = await fensterZu();
         const m1 = dMaengel(l1, f1);
-        roh.langeTakte = Object.assign({ zuflussSoll: ZUFLUSS_SOLL, gesetz: lsGesetz, fenster: f1 }, l1);
         check(
             `(d) lange Takte bei B (je ${ZUFLUSS_SOLL} Schritte von A): B sieht A an dessen Ort (±${ABSTAND_M} m waagrecht), jeder Takt hält das Gesetz`,
             m1.length === 0,
@@ -733,7 +735,6 @@ function bericht(p) {
         const l2 = await laufUndSicht();
         const f2 = await fensterZu();
         const m2 = dMaengel(l2, f2);
-        roh.langeTakteAlteKappe = Object.assign({ fenster: f2 }, l2);
         // das Szenario stresst die alte Kappe (Zufluss je Takt über ihr), und (d) fällt am Gesetz
         const gestresst = zuflussMedian(f2) > lsGesetz.aufhol;
         const amGesetz = m2.some((x) => x.startsWith("GESETZ"));
@@ -745,6 +746,30 @@ function bericht(p) {
             }${gestresst ? "" : ` — das Szenario stresst die alte Kappe nicht (Zufluss ≤ ${lsGesetz.aufhol} je Takt)`}`
         );
         await sleep(1500);
+
+        // ── (f) DIE WELT-UHR: A entfacht am Ort und springt 20 min Spielzeit in einen Sturm, erst in den Zug davor (er nimmt jeden
+        // alten Wunsch der Welt); B folgt je Sprung seinem Ereignis, der Uhr von A — nie der Wanduhr ──
+        const folgt = (z) => waitFor(pageB, (z) => window.anazhRealm.state.spielZeit >= z, "B trägt die Uhr von A", z);
+        const entfacht = await pageA.evaluate(() => {
+            const p = window.anazhRealm.state.playerMesh.position;
+            return !!window.anazhRealm._brandEntfachen(p.x, p.z);
+        });
+        const [vorSturm, sturm] = await pageA.evaluate(sturmSprung, 10);
+        await folgt(vorSturm);
+        await pageA.evaluate((z) => (window.anazhRealm.state.spielZeit = z), sturm);
+        await folgt(sturm);
+        // (f) was Stufe 2 noch verlangt: je Teil-Simulation die Zellen von B, die A trägt — OFFEN, bis jede gleich ist
+        const teilSims = async (wann) => {
+            const [a, b] = [await pageA.evaluate(simAbdruck), await pageB.evaluate(simAbdruck)];
+            const je = Object.keys(a).map((k) => `${k} ${b[k].filter((z) => a[k].includes(z)).length}/${a[k].length}`);
+            const grund = `entfacht ${entfacht} — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen reisen nicht`;
+            check(
+                `(f) ${wann}: Teil-Simulationen gleich`,
+                false,
+                `${je.join(" · ")} · pegel ungemessen · ${grund}`,
+                true
+            );
+        };
 
         // ── (c)+(e) GLEICH FÜR ALLE (feld.K2): A gräbt, schüttet und baut im Gespräch (die Chat-Taste, der Spielpfad) ──
         // B trägt denselben Abdruck der Schreib-Akte (`abdruck`). Täter, wenn B einen Edit weniger trägt: `_chatTryVoxelDebugCommand`
@@ -777,7 +802,7 @@ function bericht(p) {
                 (await pageA.evaluate(abdruck, [])).edits.length,
                 await pageB.evaluate(werke),
             ];
-            for (const satz of ["voxel carve", "voxel fill", "bau mir ein haus"]) await sage(satz);
+            for (const satz of ["voxel carve", "voxel fill", "bau mir ein haus", "pflege das land"]) await sage(satz);
             const a = (await bautenVon(pageA)).filter((id) => !vorA.includes(id));
             // B trägt so viele Edits wie A und je Bau von A ein neues Werk (das Ereignis, nie die Uhr)
             const n = (await pageA.evaluate(abdruck, [])).edits.length;
@@ -805,8 +830,7 @@ function bericht(p) {
             };
         };
         const g = await akte();
-        roh.gleich = { A: g.A, B: g.B };
-        const teile = ["edits", "bauten", "boden"];
+        const teile = ["edits", "bauten", "boden", "zug"];
         check(
             "A gräbt, schüttet und baut per Chat (zwei Edits und ein Bau bei A)",
             g.edits === 2 && g.a.length === 1,
@@ -824,13 +848,14 @@ function bericht(p) {
                     : "") +
                 (g.gleich("bauten")
                     ? ""
-                    : ` — Bau bei A ${JSON.stringify(g.A.bauten)}, bei B ${JSON.stringify(g.B.bauten)}: die Kennung ist keine Funktion des Akts`)
+                    : ` — Bau bei A ${JSON.stringify(g.A.bauten)}, bei B ${JSON.stringify(g.B.bauten)}: die Kennung ist keine Funktion des Akts`) +
+                (g.gleich("zug") ? "" : " — Täter: die Welt-Uhr reist nicht (pos.w)")
         );
+        await teilSims("Peers");
 
         // ── (a) URSPRUNG ── (vor dem Reload von B: seine Zähler leben in der Seite)
         const endA = await bericht(pageA);
         const endB = await bericht(pageB);
-        roh.ursprung = { A: endA, B: endB };
         for (const [n, s] of [
             ["A", endA],
             ["B", endB],
@@ -862,8 +887,10 @@ function bericht(p) {
                 () => true,
                 () => false
             );
+        // B spielt wieder (die Pumpe der Probe), bis sein erster Zug den laufenden Sturm zieht
+        if (nachReload) await pageB.evaluate(installiere, false);
+        await waitFor(pageB, () => window.anazhRealm._wetterZug !== undefined, "B zieht den Zug");
         const R = nachReload ? await pageB.evaluate(abdruck, g.a) : null;
-        roh.gleich.reload = R;
         check(
             "(e) Reload: B trägt nach dem Neuladen denselben Abdruck",
             !!R && JSON.stringify(R) === JSON.stringify(g.A),
@@ -873,10 +900,13 @@ function bericht(p) {
                       .join(" · ")
                 : "B stand nach dem Reload nicht mit dem Bau"
         );
+        await teilSims("Reload mitten im Sturm");
         // der Selbsttest: B wendet jede Akt-Nachricht doppelt an und nimmt den Samen des Baus um eins verschoben — die Edits UND die
-        // Bauten des Abdrucks fallen ROT (die Probe sieht beide)
+        // Bauten des Abdrucks fallen ROT (die Probe sieht beide); (f) B nimmt keine Uhr mehr, A springt einen Zug — der Zug ROT
+        await pageA.evaluate(sturmSprung, 1);
         await pageB.evaluate(() => {
             const r = window.anazhRealm;
+            r._weltUhrNimm = () => {};
             const echt = r._p2pMsgDsl;
             const schiebe = (n) =>
                 Array.isArray(n)
@@ -892,9 +922,11 @@ function bericht(p) {
         });
         const s = await akte();
         check(
-            "(e) Selbsttest: B wendet jede Akt-Nachricht doppelt an und verschiebt den Samen des Baus → Edits und Bauten ROT",
-            s.a.length > 0 && !s.gleich("edits") && !s.gleich("bauten"),
-            `edits ${s.gleich("edits") ? "GRÜN, die Linse ist blind" : "ROT"} · bauten ${s.gleich("bauten") ? "GRÜN, die Linse ist blind" : "ROT"}`
+            "(e)(f) Selbsttest: B wendet jede Akt-Nachricht doppelt an, verschiebt den Samen des Baus, trägt eigene Uhr → Edits, Bauten, Zug ROT",
+            s.a.length > 0 && !["edits", "bauten", "zug"].some(s.gleich),
+            ["edits", "bauten", "zug"]
+                .map((k) => `${k} ${s.gleich(k) ? "GRÜN, die Linse ist blind" : "ROT"}`)
+                .join(" · ")
         );
         // DAS NETZ-LOG beider Seiten (B vor und nach dem Reload): jede Art ist erlaubt, sonst eine Zustands-Nachricht
         const netz = async () => {
@@ -909,7 +941,6 @@ function bericht(p) {
                     .map((t) => `${seite} ${t}×${log[t]}`)
             );
         const n0 = await netz();
-        roh.gleich.netz = n0;
         check(
             "(e) Netz-Log: keine Zustands-Nachricht, nur Schreib-Akte, Leib, Sicht und Leitung",
             fremd(n0).length === 0 && n0.A.dsl > 0,
@@ -922,15 +953,10 @@ function bericht(p) {
             n1.some((x) => x.startsWith("A wetter")),
             n1.join(", ") || "GRÜN, die Linse ist blind"
         );
-        roh.dauerS = (Date.now() - t0) / 1000;
-    } catch (err) {
-        check("Lauf", false, err && err.message ? err.message : String(err));
-    } finally {
-        await browser.close().catch(() => {});
-        saveServer.kill();
-        if (signaling) signaling.kill();
     }
-    if (ROH) fs.writeFileSync(ROH, JSON.stringify(roh, null, 2));
+    await browser.close();
     console.log(`gate:mp-sync ${fehler.length ? "ROT" : "GRÜN"} — ${((Date.now() - t0) / 1000).toFixed(0)} s`);
     process.exit(fehler.length ? 1 : 0);
-})();
+});
+// die Dienste der Probe fallen mit ihr, auch beim Absturz (hauptLauf endet mit process.exit)
+process.on("exit", () => [saveServer, signaling].forEach((p) => p && p.kill()));
