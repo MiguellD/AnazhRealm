@@ -612,23 +612,30 @@ const server = statikServer();
 const { probeLeben, probeKoerper, tempoVerdict, tempoSpion, kernTempo } = require("./lib/fahr-proben.cjs");
 
 // W (feld.K1) DIE WETTER-KETTE: ein Glied zählt, wenn es mit dem Sturm ZIEHT und STEHT, solange sein Vorgänger gehalten wird
-// (`kette` in lib/fahr-proben.cjs); die Tiefe zählt von vorn (Staffel 1 = Tiefe 2–3, 2 = ≥ 4), der Grip zieht ab Bremsweg × `nass`.
-const KETTE = { v0: 50 / 3.6, bremsMax: 400, sprungS: 1200, eps: 0.02, tiefe: 3 };
+// (`kette` in lib/fahr-proben.cjs), und nur hinter einem zählenden Vorgänger; die Tiefe ist der längste Ast (Staffel 1 =
+// Tiefe 2–3, 2 = ≥ 4): Regen-Feld → Nässe → Grip (zieht ab Bremsweg × `nass`) und Nässe → Brand (der Herd erlischt, wo die
+// Welt nass ist) → Licht (sein Feuer im Licht der Welt). Ein zweiter Leser am selben Vorgänger verlängert keinen Ast.
+const KETTE = { v0: 50 / 3.6, bremsMax: 400, sprungS: 1200, eps: 0.02, tiefe: 4 };
 function ketteVerdict(m) {
-    const f = ["trocken", "sturm", "festRegen", "festNaesse"].filter((l) => !(m && m[l] && m[l].s > 0));
+    const f = ["trocken", "sturm", "festRegen", "festNaesse", "festBrand"].filter((l) => !(m && m[l] && m[l].s > 0));
     if (f.length) return { tiefe: 0, befunde: [`ohne Bremsung: ${f}`] };
-    const { trocken: t, sturm: s, festRegen: fr, festNaesse: fn } = m;
+    const { trocken: t, sturm: s, festRegen: fr, festNaesse: fn, festBrand: fb } = m;
     const gl = (a, b) => Math.abs(a - b) <= KETTE.eps * Math.max(1, Math.abs(b));
+    const nasHalt = (k) => fn.regen > KETTE.eps && gl(fn.naesse, t.naesse) && gl(fn[k], t[k]);
     const glieder = [
-        ["Regen-Feld", s.regen > t.regen + KETTE.eps, true],
-        ["Nässe", s.naesse > t.naesse + KETTE.eps && gl(s.stoff, s.naesse), !(fr.regen > t.regen) && gl(fr.naesse, t.naesse)],
-        ["Grip", s.s / t.s >= REIFEN.nass, fn.regen > KETTE.eps && gl(fn.naesse, t.naesse) && gl(fn.s, t.s)],
+        ["Regen-Feld", 0, s.regen > t.regen + KETTE.eps, true],
+        ["Nässe", 1, s.naesse > t.naesse + KETTE.eps && gl(s.stoff, s.naesse), !(fr.regen > t.regen) && gl(fr.naesse, t.naesse)],
+        ["Grip", 2, s.s / t.s >= REIFEN.nass, nasHalt("s")],
+        ["Brand", 2, s.brand < t.brand - KETTE.eps, nasHalt("brand")],
+        ["Licht", 4, s.licht < t.licht - KETTE.eps, fb.naesse > t.naesse + KETTE.eps && gl(fb.brand, t.brand) && gl(fb.licht, t.licht)],
     ];
-    let tiefe = 0;
-    while (tiefe < 3 && glieder[tiefe][1] && glieder[tiefe][2]) tiefe++;
-    const befunde = glieder.slice(tiefe, tiefe + 1).map(([n, zieht]) => `${n} ${zieht ? "steht nicht" : "zieht nicht"}`);
+    const [tief, befunde] = [[0], []]; // je Glied (Vorgänger: sein Index hier, 0 das Wort) seine Tiefe, −1 zählt nicht
+    for (const [n, v, zieht, steht] of glieder) {
+        tief.push(tief[v] >= 0 && zieht && steht ? tief[v] + 1 : -1);
+        if (tief[v] >= 0 && !(zieht && steht)) befunde.push(`${n} ${zieht ? "steht nicht" : "zieht nicht"}`);
+    }
     if (m.stern && gl(m.stern.s, t.s)) befunde.push("blind: der Wort-Leser steht");
-    return { tiefe, befunde };
+    return { tiefe: Math.max(...tief), befunde };
 }
 // K8 IN DER WELT (fahrzeug.K1 Staffel 2) an den Bremsungen der W-Kette (je Lage der Weg `s` bis bremsV): Gras/Weg (`boden`), nass
 // gegen trocken auf beiden Böden (`nass`), μ(gras) halb in der Stoff-Zeile (`zeile`), der Takt an jedem Schritt der Welt (`hz`),
@@ -641,7 +648,7 @@ function reifenWeltVerdict(k) {
 function ketteBericht(k, err) {
     const v = ketteVerdict(k);
     check(
-        `W (feld.K1) DIE WETTER-KETTE: Sturm → Regen-Feld → Nässe → Grip, jedes Glied zieht und steht, wenn sein Vorgänger gehalten wird (Tiefe ≥ ${KETTE.tiefe})`,
+        `W (feld.K1) DIE WETTER-KETTE: Sturm → Regen-Feld → Nässe → Grip | Brand → Licht, jedes Glied zieht und steht, wenn sein Vorgänger gehalten wird (Tiefe ≥ ${KETTE.tiefe})`,
         !err && v.tiefe >= KETTE.tiefe && !v.befunde.length,
         `Tiefe ${v.tiefe} ${JSON.stringify(k)} ${err || ""}${v.befunde.join(" · ")}`
     );
@@ -1558,15 +1565,19 @@ hauptLauf(async () => {
             stufe: 0,
         };
         check("Selbst-Test 0: gesunder Ritt == 0 Täter", taktVerdict(gesund).length === 0);
-        // W: gesund Tiefe 3, jeder Täter beim Namen seines Glieds (je Lage der Bremsweg s); dieselben Lagen trägt der K8-Selbsttest
-        const lg = (regen, naesse, s) => ({ regen, naesse, stoff: naesse, s });
-        const kg = { trocken: lg(0, 0, 20), sturm: lg(1, 1, 35), festRegen: lg(0, 0, 20), festNaesse: lg(1, 0, 20), stern: lg(1, 0, 35) };
+        // W: gesund Tiefe 4 (der Ast über Brand und Licht), jeder Täter beim Namen seines Glieds (je Lage der Bremsweg s, die
+        // Glut des Herds, sein Licht); ein gebrochener Grip kürzt die Tiefe nicht. Dieselben Lagen trägt der K8-Selbsttest
+        const lg = (regen, naesse, s, brand = 1 - naesse, licht = brand) => ({ regen, naesse, stoff: naesse, s, brand, licht });
+        const kg = { trocken: lg(0, 0, 20), sturm: lg(1, 1, 35), festRegen: lg(0, 0, 20), festNaesse: lg(1, 0, 20), festBrand: lg(1, 1, 20, 1), stern: lg(1, 0, 35) };
         for (const [bruch, tiefe, soll] of [
-            [{}, 3, /^$/],
-            [{ sturm: lg(1, 1, 20) }, 2, /Grip zieht nicht/],
-            [{ festNaesse: lg(1, 0, 35) }, 2, /Grip steht nicht/],
+            [{}, 4, /^$/],
+            [{ sturm: lg(1, 1, 20) }, 4, /Grip zieht nicht/],
+            [{ festNaesse: lg(1, 0, 35) }, 4, /Grip steht nicht/],
+            [{ sturm: lg(1, 1, 35, 1) }, 3, /Brand zieht nicht/],
+            [{ festNaesse: lg(1, 0, 20, 0) }, 3, /Brand steht nicht/],
+            [{ festBrand: lg(1, 1, 20, 1, 0) }, 3, /Licht steht nicht/],
             [{ festRegen: lg(0, 1, 35) }, 1, /Nässe steht nicht/],
-            [{ stern: lg(1, 0, 20) }, 3, /blind/],
+            [{ stern: lg(1, 0, 20) }, 4, /blind/],
         ]) {
             const v = ketteVerdict(Object.assign({}, kg, bruch));
             check(`Selbst-Test W ${soll} → Tiefe ${tiefe}`, v.tiefe === tiefe && soll.test(v.befunde.join()), v.befunde.join());

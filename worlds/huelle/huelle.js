@@ -10,7 +10,8 @@
  *                              ein Aufbau je Bild), Zurücksetzen. Die Werte leben in `opt.werte` (das P der Shell, IN
  *                              PLACE beschrieben) — die Shell liest ihr P, nie das DOM.
  *   sitzung(opt)               Seed + Sperre je Achse + Undo/Redo über Werte-Diffs (Strg+Z · Strg+Umschalt+Z · Strg+Y);
- *                              `schritt(fn)` macht aus jeder Tat (Preset, Kultur, Würfel) EINEN Rückgängig-Schritt.
+ *                              `schritt(fn)` macht aus jeder Tat (Preset, Kultur, Würfel) EINEN Rückgängig-Schritt;
+ *                              ein offener Regler-Zug wird sein Schritt, bevor der Verlauf geht (`abschliessen`).
  *   kosten(ziel, opt)          die Kosten-Leiste je LOD-Stufe: Dreiecke · Stoffe · Schatten gegen die Budget-Zeile des
  *                              Kerns, der Faktor zum Band; gemessen an der Welt-Gestalt (`bauen(stufe)` = buildInstance
  *                              des Kerns) oder an der Labor-Gestalt (`messen(obj, stufe)`), meshfrei benannt; die
@@ -210,6 +211,12 @@
             sync: function () {
                 liste.forEach(anzeigen);
             },
+            // der offene Zug wird JETZT sein Schritt (die Sitzung ruft es, bevor sie geht), die geplante Ruhe fällt
+            abschliessen: function () {
+                clearTimeout(uhr);
+                if (bild) (wurzel.cancelAnimationFrame || clearTimeout).call(wurzel, bild);
+                flush();
+            },
             // Werte von außen setzen (Preset, Kultur, Undo): nur bekannte Zeilen, dann sichtbar; still = ohne nachRuhe.
             setzen: function (obj, still) {
                 var ids = [];
@@ -355,6 +362,7 @@
             },
             // EINE Tat = EIN Schritt: Werte (und Zustand) vorher ↔ nachher.
             schritt: function (tat) {
+                abschliessen();
                 var a = schnapp(werte, opt.zustand);
                 var r = tat();
                 var d = diffVon(a, schnapp(werte, opt.zustand));
@@ -362,11 +370,13 @@
                 return r;
             },
             zurueck: function () {
+                abschliessen();
                 if (!zeiger) return toast("Nichts mehr rückgängig zu machen."), false;
                 anwendenDiff(stapel[--zeiger], 0, "zurueck");
                 return true;
             },
             vor: function () {
+                abschliessen();
                 if (zeiger >= stapel.length) return toast("Nichts zum Wiederholen."), false;
                 anwendenDiff(stapel[zeiger++], 1, "vor");
                 return true;
@@ -445,6 +455,13 @@
                 return l;
             },
         };
+        // Der Verlauf geht nie an einem offenen Zug vorbei: Strg+Z im selben Atemzug wie der Zug (vor der Ruhe, vor dem
+        // nächsten Bild) nimmt DIESEN zurück, nie den davor; eine Tat (Preset, Würfel) nach dem Zug wird ihr eigener Schritt.
+        function abschliessen() {
+            regler_.forEach(function (r) {
+                r.abschliessen();
+            });
+        }
         function malen() {
             if (!anzeige) return;
             anzeige.z.disabled = !zeiger;

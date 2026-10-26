@@ -31,7 +31,12 @@
 const { statikServer, starteBrowser, warteAufWelt } = require("./lib/welt-boot.cjs");
 const STAND = require("./lib/stand-linse.cjs");
 
-const urteil = (b) => STAND.standUrteil(b);
+// (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass nennt die Linie der Strahl-Sonde (scripts/lib/kamera-nah.cjs)
+// zum Punkt 2 m unter dem Boden 60 m hinter dem gezeichneten Blick das Gelände, das der Satz-Abschnitt des Passes nicht trägt
+const urteil = (b) =>
+    STAND.standUrteil(b).concat(
+        b.sonde?.vor === "Gelände" ? [] : `SONDE: Abschnitt der vorigen Kamera, trifft ${b.sonde?.vor}`
+    );
 
 function selbsttest() {
     const namen = Object.keys(STAND.TAKTE);
@@ -170,6 +175,7 @@ function selbsttest() {
             wasser: { ort: [-396, -878], chunks: 9, takte: [1, 1], gehalten: [0, 0], bewegt: [0, 0] },
         },
         fixWach: false,
+        sonde: { vor: "Gelände" },
         fix: [
             { takte: 49, wirkte: 7, nach: { frames: 150, summe: 0, takte: { archLod: { summe: 0, mitArbeit: 0, wirkt: 0 } } } },
             { takte: 44, wirkte: 8, nach: { frames: 150, summe: 0, takte: { archLod: { summe: 0, mitArbeit: 0, wirkt: 0 } } } },
@@ -509,6 +515,7 @@ function selbsttest() {
             /FIXPUNKT: die Welt hieß stehend — Sprung/,
         ],
         ["die Ankunft gleitet, die Welt steht (die Basis)", (b) => (b.fixWach = "Gleite"), /stehend — Gleite/],
+        ["die Sonde ohne Bestand", (b) => (b.sonde.vor = "Rinde baum_tanne"), /SONDE: .* trifft Rinde/],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -547,7 +554,7 @@ async function tatSeite(MESS, vorher) {
     const [pm, cam, P] = [st.playerMesh.position, st.camera, Math.hypot];
     let t = performance.now();
     const takt = () => r._gameLoopTick((t += 1000 / 60));
-    Object.assign(st, { perfRegulator: false, nexusEvolutionInterval: Infinity });
+    st.perfRegulator = false;
     const y = (x, z) => r._voxelSurfaceY(x, z);
     const stehen = (p) => (pm.set(p.x, y(p.x, p.z) + 1.8, p.z), window.__weltStehtNach(takt));
     const baum = (a) => /baum/.test(a._lodSpecies || a.type) && r._istNatur(a);
@@ -669,7 +676,7 @@ const TAT = process.argv.includes("--tat");
     try {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
-        await page.evaluate(STAND.STAND_INSTALL);
+        await page.evaluate(STAND.STAND_INSTALL + require("./lib/kamera-nah.cjs").KAMERA_NAH_INSTALL);
         if (TAT) befund = await tatLauf(page);
         else befund = await page.evaluate(
             async (MESS, TAKTE) => {
@@ -691,7 +698,6 @@ const TAT = process.argv.includes("--tat");
                 // PID Frame für Frame ohne die Grenzzyklus-Wand des Spiels (`_nexusPerfActuate`) — ein atmender Radius ist
                 // eine echte Eingabe der Wache (er weckt sie, Phase W prüft es), aber kein Stand.
                 st.perfRegulator = false;
-                st.nexusEvolutionInterval = Infinity;
                 st.playerMesh.position.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
                 // einschwingen: die Welt steht (A9, das EINE Einschwingen, welt-boot `__weltStehtNach`: Chunks, die Foundry, der Wald
                 // samt seinen Pflanz-Gängen — K69: solange er plant, weckt seine Regung die Fege-Takte)
@@ -743,6 +749,10 @@ const TAT = process.argv.includes("--tat");
                 st._ankunftGleit = 0;
                 aus.fixWach = stand && r._weltSteht() && "Gleite";
                 st._ankunftGleit = gleit;
+                const h = st.camera.getWorldDirection(K.clone()).multiplyScalar(-60).add(K);
+                r._passSicht(st.camera, false);
+                r._passSicht(st.camera, true);
+                aus.sonde = window.__nahDeckung({ gw: 1, gh: 1, ziel: h.setY(r._voxelSurfaceY(h.x, h.z) - 2) }).ziel;
                 K.x += 40;
                 aus.fixWach = aus.fixWach || (stand && r._weltSteht() && "Sprung");
                 K.x -= 40;

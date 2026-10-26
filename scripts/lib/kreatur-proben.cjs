@@ -2492,16 +2492,12 @@ async function kreaturProben(r, T, opts) {
         const leiber = () =>
             s.scene.children.filter((o) => o && o.userData && o.userData.rig && o.userData.heim != null);
         const sollSumme = haeuser.reduce((a, h) => a + (h.soll || 0), 0);
-        // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios — fehlt
-        // einer (der Täter bewohner-haus nahm ihn im selben Fenster aus der Szene), urteilt die Quote, nicht der Deckel
-        try {
-            await bisDa(
-                "bewohner: die Leiber",
-                () => leiber().length < sollSumme || r._weltOffen().leiber > 0 || hausE.some((e) => !e._hausHuelle)
-            );
-        } catch {
-            /* die Quote nennt, wer fehlt */
-        }
+        // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios — bricht der
+        // Deckel, bricht die Probe bei seinem Namen (nie misst die Quote ein halb geborenes Dorf)
+        await bisDa(
+            "bewohner: die Leiber",
+            () => leiber().length < sollSumme || r._weltOffen().leiber > 0 || hausE.some((e) => !e._hausHuelle)
+        );
         await stehtUm("bewohner: das Start-Dorf");
         // Täter (Selbsttest), gezählt und zurück: die Leiber des ersten bewohnten Hauses fallen aus der Szene
         const h1 = haeuser.find((x) => x.soll > 0);
@@ -2687,8 +2683,15 @@ async function kreaturProben(r, T, opts) {
                 r._tickBewohner(0); // fern gehen die Leiber
                 r._uhrSetzen(T / 24, "regler");
                 pm.copy(P);
+                // die Vorlagen der Gestalten kommen aus dem Faden zurück (die Fortgegangenen gaben sie frei): die Freigabe
+                // der Foundry wie je Bild, die Uhr steht (Takt 0)
                 for (const weiter = W.__deckel("bewohner: die Wiederkehr", 60); weiter(); await schlaf(16))
-                    if ((r._tickBewohner(0), Sx().length && Sx().every((b) => b.leib !== null && !b.ankunft))) break;
+                    if (
+                        (r._tickFoundryIngest(),
+                        r._tickBewohner(0),
+                        Sx().length && Sx().every((b) => b.leib !== null && !b.ankunft))
+                    )
+                        break;
                 const kam = lagen();
                 for (const [id, v] of sah) {
                     const d = v && kam.get(id) ? kam.get(id).distanceTo(v) : NaN;

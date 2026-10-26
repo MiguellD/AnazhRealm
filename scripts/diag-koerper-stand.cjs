@@ -79,8 +79,7 @@ function eignerKarte(r, x, z) {
 // Nachbarn, so gemorpht, wie der Stoff es zeichnet (je Vertex zum Ziel der gröberen Stufe um `_morphFaktor`, Naht und Stufe am
 // Auge; je Auge und Geometrie einmal gebaut) — die oberste TRAGENDE Fläche (|n_y| ≥ 0,3, wie die Karte: eine Wand trägt nichts), nie durch einen Leser, den ein
 // Schnitt heilt; null ohne Mesh. `steil`: die oberste Fläche des Strahls ist steil (ein Überhang: die Karte trägt dort die
-// Oberkante ihrer Raster-Punkte, der Strahl die Fläche darunter); `meshe` zählt die getroffenen Chunks, `treffer` nennt den Chunk der
-// Fläche (Stufe, Morph-Code 2 · Stufe + Naht am Vertex).
+// Oberkante ihrer Raster-Punkte, der Strahl die Fläche darunter); `meshe` zählt die getroffenen Chunks.
 function gezeichnet(r, x, z) {
     const T = window.THREE;
     const G = window.__gezeichnet;
@@ -95,8 +94,9 @@ function gezeichnet(r, x, z) {
         [0, -1],
         [-1, -1],
     ]) {
-        const k = `${Math.floor(x / span) + a},${Math.floor(z / span) + b}`;
-        const e = r.state.voxelChunks ? r.state.voxelChunks.get(k) : null;
+        const e = r.state.voxelChunks
+            ? r.state.voxelChunks.get(`${Math.floor(x / span) + a},${Math.floor(z / span) + b}`)
+            : null;
         if (!e || !e.mesh || !e.mesh.geometry) continue;
         G.meshe = (G.meshe | 0) + 1;
         const geo = e.mesh.geometry;
@@ -116,11 +116,7 @@ function gezeichnet(r, x, z) {
         strahl.set(new T.Vector3(x, 900, z), new T.Vector3(0, -1, 0));
         const alle = strahl.intersectObject(e.__gez.mesh, false);
         const h = alle.find((t) => t.face && Math.abs(t.face.normal.y) >= 0.3);
-        if (h && (best === null || h.point.y > best)) {
-            best = h.point.y;
-            const mw = geo.attributes.aMorphWeight;
-            G.treffer = { k, stufe: e.lod, code: mw ? mw.array[h.face.a] : 0 };
-        }
+        if (h && (best === null || h.point.y > best)) best = h.point.y;
         if (alle.length && alle[0].point.y > oben) {
             oben = alle[0].point.y;
             G.steil = !(alle[0].face && Math.abs(alle[0].face.normal.y) >= 0.3);
@@ -202,6 +198,15 @@ function taeter(inj) {
             P._ringWaechst.call(this);
             this.state._activeRingRadius = Math.min(2, this.state._activeRingRadius);
         };
+    // nexus (K8): der Takt des Nexus wirft nach der Wanduhr in die Mess-Welt (vor k8-hang fragte er die Gate-Treue nicht)
+    if (inj === "nexus") {
+        r.state.nexusEvolutionInterval = 5;
+        r.evolveNexus = function (t) {
+            this._dorfTaktLebt = () => true;
+            P.evolveNexus.call(this, t);
+            delete this._dorfTaktLebt;
+        };
+    }
 }
 
 const server = statikServer({ root: ROOT });
@@ -911,24 +916,9 @@ async function rollen(n) {
             const z = Z + d * Math.sin(w);
             const g = gez(x, z);
             const l = r._voxelSurfaceY(x, z);
-            if (g !== null && Number.isFinite(l) && !window.__gezeichnet.steil)
-                fein.push({ d: g - l, x, z, ...window.__gezeichnet.treffer });
+            if (g !== null && Number.isFinite(l) && !window.__gezeichnet.steil) fein.push(g - l);
         }
-        R.fein = mass(fein.map((p) => p.d));
-        // der Punkt am p95 beim Namen: der Chunk, der ihn zeichnet, seine Stufe gegen die Wahl am Auge, Morph-Code und Gewicht der
-        // Stufe dort, offen (schmutzig oder im Bau) — Messgerät (die Stufe steht noch nicht) oder Welt (sie steht und weicht ab)
-        const p = fein.sort((a, b) => Math.abs(a.d) - Math.abs(b.d))[Math.floor(0.95 * fein.length)];
-        const a = s.stufeAuge;
-        if (p && a) {
-            const [cx, cz] = p.k.split(",").map(Number);
-            R.fein.wo =
-                `${Math.round(p.d * 1000) / 10} cm bei ${p.x.toFixed(1)}/${p.z.toFixed(1)}, ${Math.max(Math.abs(p.x - a.x), Math.abs(p.z - a.z)).toFixed(1)} m vom Auge: ` +
-                `Chunk ${p.k} Stufe ${p.stufe} (Wahl ${r._voxelChunkLodFor(cx, cz, a.x, a.z, p.stufe)}), Morph-Code ${p.code}, Gewicht ${r._stufeGewicht(p.stufe, p.x, p.z).toFixed(2)}` +
-                ((s.dirtyVoxelChunks && s.dirtyVoxelChunks.has(p.k)) ||
-                (s.voxelMeshPending && s.voxelMeshPending.has(p.k))
-                    ? ", offen"
-                    : "");
-        }
+        R.fein = mass(fein);
         // der Fuß der Streu: der Ursprung jeder Instanz (die erste Scheibe, ihre Blatt-Matrix trägt keinen Versatz, ihr Ursprung
         // liegt über der Zelle) gegen das Mesh, wie es JETZT gezeichnet ist — im Stand, nach dem Gang und nach der Fahrt, ohne
         // Einschwingen (der Geomorph folgt dem Auge)
@@ -1036,6 +1026,7 @@ async function rollen(n) {
         }
         R.streu = mass(streu);
     }
+    o.nexus = r.nexus && r.nexus.knightOfTime.autonomyLevel;
     return o;
 }
 
@@ -1122,6 +1113,11 @@ function urteilK8(o, umfang) {
     if (!o || !o.wiese || !o.hang) return ["K8 Aufbau: Mess-Wiese oder 25°-Hang fehlt"];
     const f = [];
     const rs = fs.existsSync(RATSCHE) ? JSON.parse(fs.readFileSync(RATSCHE, "utf8")) : {};
+    // die Mess-Welt ist eine Funktion des Codes: kein Wurf des Nexus nach der Wanduhr (sein Dorf am Hang: fein 30,8/31,4 cm)
+    if (o.nexus)
+        f.push(
+            `K8 Aufbau: der Nexus entwickelte sich ${o.nexus}-mal in der Mess-Welt — Täter: evolveNexus ohne Gate-Treue`
+        );
     for (const ort of ["wiese", "hang"]) {
         const [ring, ziel] = o[ort].ring || [];
         if (!(ring >= ziel))
@@ -1133,7 +1129,7 @@ function urteilK8(o, umfang) {
             if (!m || !(m.n >= min)) f.push(`K8 Aufbau ${ort} ${rolle}: ${m ? m.n : 0} Kontakte (Soll ≥ ${min})`);
             else if (!(m.p95 <= Math.max(soll, ((rs[ort] || {})[rolle] || 0) * 1.15 + 0.5)))
                 f.push(
-                    `K8 ${rolle} ${ort}: p95 ${m.p95} cm (Median ${m.median}, Soll ≤ ${soll}, Ratsche ${(rs[ort] || {})[rolle]}) — Täter: ${wer}${m.wo ? ` — am p95 ${m.wo}` : ""}`
+                    `K8 ${rolle} ${ort}: p95 ${m.p95} cm (Median ${m.median}, Soll ≤ ${soll}, Ratsche ${(rs[ort] || {})[rolle]}) — Täter: ${wer}`
                 );
         }
     }
@@ -1190,7 +1186,7 @@ function zeile(o) {
             if (!BILD) await nullRenderer(page);
             // die Mess-Wiese in IHREM Zustand (spec/profiband/haushalt.json `dorfZug`): ruht dort der Zug, wächst kein Auto-Dorf an
             // Wiese und Hang — headless ruht er ohnehin (`_dorfTaktLebt`), auf der Karte lief er, und der 25°-Hang stand unter den
-            // Terrassen des Dorfs (Radeon: Feinform p95 21,1 statt 4,3 cm)
+            // Terrassen des Dorfs (Radeon: Feinform p95 21,1 statt 4,3 cm); dasselbe Urteil hält den Takt des Nexus an (sein Dorf)
             if (DORF_ZUG === false) await page.evaluateOnNewDocument(() => (window.__anazhAutoSettlement = false));
             await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
             await page.evaluateOnNewDocument(`window.__eignerKarte = ${eignerKarte.toString()};`);
@@ -1225,6 +1221,7 @@ function zeile(o) {
                 rolle: ["K8 streu wiese", "K8 streu hang", "K8 huf hang", "K8 rad hang"],
                 sohle: ["K8 huf hang"],
                 ring: ["K8 Ring wiese", "K8 Ring hang"],
+                nexus: ["K8 Aufbau: der Nexus"],
             };
             for (const inj of Object.keys(soll)) {
                 const k8 = soll[inj][0].startsWith("K8");

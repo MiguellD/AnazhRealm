@@ -355,7 +355,7 @@ async function probe(GESCHICKT) {
 async function tatProbe(m) {
     const [r, K] = [window.anazhRealm, window.__klangCore];
     const [st, P, pm] = [r.state, Object.getPrototypeOf(r), r.state.playerMesh.position];
-    [r._loopNexusUpdate, r.evolveNexus, st.worldRules] = [() => {}, () => {}, []];
+    [r._loopNexusUpdate, st.worldRules] = [() => {}, []];
     pm.set(m.x, r._voxelSurfaceY(m.x, m.z) + 1.8, m.z); // der Leib fällt einmal, je Takt hält die Probe x und z
     const stelle = (n) => {
         for (let i = 0; i < n; i++) pm.setX(m.x).setZ(m.z), r._gameLoopTick(performance.now()), pm.setX(m.x).setZ(m.z);

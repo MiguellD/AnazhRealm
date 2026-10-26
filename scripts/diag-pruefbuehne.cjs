@@ -10,7 +10,7 @@
 //       Fraktal, Füll-Kugel) mit der Quelle des Feldes — `nexus` und `rule:nexus` — und ihr Zuwachs an Welt-Substanz
 //       (Bauten, Tiere, Inseln, UFOs, Pflanz-Schlange, Dorf-Zellen, Edits). Bühne: 0 je Op; Wildnis: > 0 (die Linse sieht).
 //   (2) DER AKT: dieselbe Op als Mensch (`human`) setzt auch auf der Bühne (das Prädikat hält das Feld, nie die Hand).
-//   (3) DER NEXUS-TAKT, getrieben: N Evolutionen (`evolveNexus` + `_loopNexusUpdate`, Wirk-Kraft voll — im Spiel alle
+//   (3) DER NEXUS-TAKT, getrieben: N Evolutionen (`generateEvolution` + `_loopNexusUpdate`, Wirk-Kraft voll — im Spiel alle
 //       24 s eine) und ein Takt, in dem seine Regeln feuern. Bühne: Zuwachs 0.
 //   (4) DER ABSENZ-ZENSUS in 300 m nach dem Takt: fremde Bauten, Streu-Zellen, Nah-Streu, Tiere, Inseln, Dorf-Zellen,
 //       Pflanz-Schlange, Flüsse — auf der Bühne 0.
@@ -587,9 +587,8 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                 let laeufe = 0;
                 for (let i = 0; i < evolutionen; i++) {
                     s.nexusWirk = 1e9; // die Wirk-Kraft hält den Takt nicht an
-                    if (r.nexus && r.nexus.knightOfTime) r.nexus.knightOfTime.autonomyLevel = 0;
-                    r.evolveNexus(performance.now() / 1000);
-                    const evo = s.nexusEvolutionQueue[s.nexusEvolutionQueue.length - 1];
+                    const evo = r.generateEvolution(); // der Takt selbst ruht headless (Gate-Treue)
+                    s.nexusEvolutionQueue.push(evo);
                     const kopf = evo && Array.isArray(evo.program) ? String(evo.program[0]) : "?";
                     const innen = JSON.stringify((evo && evo.program) || []).match(/"spawn_[a-z_]+"/g) || [];
                     for (const w of innen) zaehl[w.replace(/"/g, "")] = (zaehl[w.replace(/"/g, "")] || 0) + 1;
