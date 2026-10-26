@@ -422,8 +422,9 @@ class AnazhRealm_daten {
     // aus `kindStages.grass`), jenseits trägt die Boden-Funktion. Kosten an den SCHIRM gebunden (Gebot 7):
     // ein Kachel-Ring um die Kamera, nie je Chunk; gezeichnet wird je Büschel, was das Auge sieht (der Sicht-Satz
     // `_nahWieseSicht`, EINE Senke je Vorlage × Stufe × Teil). `stufe1` = Radius der feinen Stufe (L1) um das Auge, je
-    // Büschel, `stufe1Rand` = ihr Austritt dahinter (Hysterese), `radius` = Ende der Büschel, `rand` = Ausdünnungs-Band
-    // davor (ein Büschel zeigt sich, solange seine Würfel-Ordnung unter dem Anteil seiner Distanz liegt), `kachel` =
+    // Büschel, `stufe1Rand` = ihr Austritt dahinter (Hysterese), `radius` = Ende der VOLLEN Wiese (der Ring der Tafel,
+    // boden-nah), `fern` = Ende des Fern-Bands, `rand` = sein Ausblend-Band (ein Büschel zeigt sich, solange seine Würfel-Ordnung
+    // unter der Dichte seiner Distanz liegt, `nahWieseDichte`), `kachel` =
     // Kachel-Kante (Bau- und Grob-Cull-Einheit). Raster, Dichte-Gesetz und Skala kommen aus dem Studio
     // (understory.grassStep · groundCover.grass · placement.scale.gras). `reich` = die Weite eines Büschels je Skala 1 (m,
     // die weiteste Halm-Spitze um seinen Fuß, waagrecht): sein Kreis vor dem Grund der Häuser (`erdbauGrund`, S4). Gemessen
@@ -438,6 +439,7 @@ class AnazhRealm_daten {
                 stufe1: 5,
                 stufe1Rand: 0.5,
                 radius: 14,
+                fern: 32,
                 rand: 4,
                 kachelnJeTakt: 1,
                 reich: 0.72,

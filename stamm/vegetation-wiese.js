@@ -91,8 +91,10 @@ class AnazhRealm_vegetation_wiese {
                 const sb = sk * (m > 0.8 ? 1.45 : 1);
                 // der Kreis des Büschels vor dem Grund der Häuser (S4, `erdbauGrund`: jede Box des Körper-Satzes)
                 if (Gb.erdbauGrund(E, x, z, NW.reich * sb)) continue;
+                // im Fern-Band wird der Büschel bis fern/radius breiter (`nahWieseDichte`): vor dem Grund bleibt er schmal
+                const eng = Gb.erdbauGrund(E, x, z, (NW.reich * sb * NW.fern) / NW.radius);
                 const f = WT(x, z, L, m, [1, 1, 1], 0);
-                out.push({ x, y, z, s: sb, rot, vorlage, ordnung, f, gi, gj });
+                out.push({ x, y, z, s: sb, rot, vorlage, ordnung, f, gi, gj, eng });
             }
         }
         // Zufällige Ordnung: ein Präfix der Liste ist eine gleichmäßige Ausdünnung (das Rand-Band).
@@ -150,7 +152,7 @@ class AnazhRealm_vegetation_wiese {
         const cam = st.camera.position;
         const tcx = Math.floor(cam.x / NW.kachel);
         const tcz = Math.floor(cam.z / NW.kachel);
-        const reichweite = Math.ceil(NW.radius / NW.kachel) + 1;
+        const reichweite = Math.ceil(NW.fern / NW.kachel) + 1;
         // Chunk-Neubau oder neues gezeichnetes Wasser → betroffene Kacheln neu (ihre Büschel standen auf dem alten Boden,
         // am alten Ufer).
         for (const [key, k] of nw.kacheln) {
@@ -163,7 +165,7 @@ class AnazhRealm_vegetation_wiese {
                 const tx = tcx + dx;
                 const tz = tcz + dz;
                 const d = Math.hypot((tx + 0.5) * NW.kachel - cam.x, (tz + 0.5) * NW.kachel - cam.z);
-                if (d > NW.radius + NW.kachel * 0.71) continue;
+                if (d > NW.fern + NW.kachel * 0.71) continue;
                 // dasselbe Rechteck wie der Bau der Büschel (`_nahWieseKachelBueschel`, Jitter 0,34 m)
                 const x0 = tx * NW.kachel - 0.34;
                 const z0 = tz * NW.kachel - 0.34;
@@ -342,6 +344,19 @@ class AnazhRealm_vegetation_wiese {
     // Satz schreibt ihre Matrizen, und er rechnet nur, wenn sich der Ring (`neu`) oder die Lage des Passes ändert — ihre
     // Generation `L.gen` (`_passLageGen`, das EINE Gesetz der Lage: nie wegen des Versatzes der zeitlichen Auflösung, nie
     // wegen des atmenden Auges; den Rand dafür trägt das Gesetz).
+    // DIE DICHTE DER WIESE ÜBER DEN ABSTAND (EINE Funktion des Sicht-Satzes): bis `radius` die volle Wiese des Studio-Gesetzes,
+    // dahinter das FERN-BAND bis `fern` — die Zahl dünnt mit (radius/d)², jeder Büschel wird um d/radius breiter (n·s²): die
+    // Halm-Fläche im Blick (Breite × Höhe × Zahl) fällt mit radius/d, der Weg des flachen Blicks durch die Halme wächst mit d — die
+    // Lücke (Nilson: exp(−G·LAI/cos θ)) bleibt die der vollen Wiese an ihrem Rand, der Boden zeigt keine Kante. Die Büschel
+    // im Band zählen ∝ ln(fern/radius) je Schirm-Winkel: Kosten am Schirm, nie an der Weltgröße (Gebot 7). Am Rand `rand`
+    // um `fern` blendet sie aus. Bis 26.10. endete die Wiese bei 14 ± 2 m in einer glatten Fläche: jeder Fuß der Karten L2
+    // (ab 18 m) stand auf kahlem Grund als gerade Kante (laub-kante, Fuß-Band der Tafel-Pose).
+    static nahWieseDichte(d) {
+        const NW = AnazhRealm.NAH_WIESE;
+        const aus = Math.max(0, Math.min(1, (NW.fern - d) / NW.rand + 0.5));
+        return d <= NW.radius ? aus : aus * (NW.radius / d) ** 2;
+    }
+
     _nahWieseSicht(kamera, L) {
         const nw = this.state.nahWiese;
         if (!nw || !kamera || !nw.senken.size) return;
@@ -375,19 +390,34 @@ class AnazhRealm_vegetation_wiese {
         // die Stufen-Hysterese gilt dem stetigen Auge: nach einem Sprung (`_augeSprung`) wählt jedes Büschel aus dem Jetzt
         if (this._augeSprung(nw, ax, we[13], az)) for (const k of nw.kacheln.values()) k.l1.fill(0);
         const H = NW.kachel * 0.5;
+        const breitMax = NW.fern / NW.radius;
+        const sv = this._tmpWieseS || (this._tmpWieseS = new THREE.Vector3());
         for (const k of nw.kacheln.values()) {
             const n = k.bueschel.length;
-            if (!n || !this._passTrifft(L, k.mx, (k.y0 + k.y1) / 2, k.mz, H, (k.y1 - k.y0) / 2, H, k.sMax * rMax))
+            if (
+                !n ||
+                !this._passTrifft(L, k.mx, (k.y0 + k.y1) / 2, k.mz, H, (k.y1 - k.y0) / 2, H, k.sMax * rMax * breitMax)
+            )
                 continue;
+            // die Büschel liegen nach ihrer Ordnung (ein Präfix ist eine gleichmäßige Ausdünnung): jenseits der Dichte am
+            // nächsten Punkt der Kachel zeigt sich keiner mehr — der Satz zahlt je GEZEIGTEM Büschel, nie je Kachel im Ring
+            const dichteMax = AnazhRealm.nahWieseDichte(Math.max(0, Math.hypot(k.mx - ax, k.mz - az) - H * Math.SQRT2));
             for (let i = 0; i < n; i++) {
                 const b = k.bueschel[i];
+                if (b.ordnung >= dichteMax) break;
                 const d = Math.hypot(b.x - ax, b.z - az);
-                if (b.ordnung >= Math.max(0, Math.min(1, (NW.radius - d) / NW.rand + 0.5))) continue;
+                const dichte = AnazhRealm.nahWieseDichte(d);
+                if (b.ordnung >= dichte) continue;
+                // n·s² hält: im Fern-Band trägt jeder Büschel die Breite d/radius (die Höhe bleibt), und er wächst über das
+                // letzte Achtel seiner Schwelle aus dem Boden, statt aufzuspringen
+                const breit = d > NW.radius && !b.eng ? Math.min(breitMax, d / NW.radius) : 1;
+                const wachs = dichte < 1 ? Math.min(1, (dichte - b.ordnung) / (0.125 * dichte)) : 1;
                 const l1 = k.l1[i] ? d <= NW.stufe1 + NW.stufe1Rand : d <= NW.stufe1;
                 k.l1[i] = l1 ? 1 : 0;
                 const vl = ziel[l1 ? 1 : 2][b.vorlage];
-                if (!vl || !this._passTrifft(L, b.x, b.y + vl.cy * b.s, b.z, 0, 0, 0, vl.r * b.s)) continue;
+                if (!vl || !this._passTrifft(L, b.x, b.y + vl.cy * b.s, b.z, 0, 0, 0, vl.r * b.s * breit)) continue;
                 m4.fromArray(k.basis, i * 16);
+                if (breit !== 1 || wachs !== 1) m4.scale(sv.set(breit * wachs, wachs, breit * wachs));
                 for (const a of vl.senken) {
                     if (a.anzahl >= a.kap) {
                         this._senkeMesh(a, Math.ceil(a.kap * 1.5), this.state.scene);
