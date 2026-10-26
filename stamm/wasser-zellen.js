@@ -1916,11 +1916,6 @@ class AnazhRealm_wasser_zellen {
         return clusters;
     }
 
-    // DER ÜBERLAUF: das Gesetz des Kerns (gelaende-core `stauUeberlauf`), mit dem jeder Faden die Felder rechnet
-    _stauSpillLevels(barrier, w, h, init) {
-        return globalThis.__gelaendeCore.stauUeberlauf(barrier, w, h, init);
-    }
-
     // DER STAU IM FADEN (gelaende.K2 (b), Lehre 14): je Takt und Edit fragt der Stamm nur, ob sich ein Werk änderte (die Cluster
     // sind nach Liste, Länge und Hülle gemerkt, `_stauWorkClusters`) oder eine Hydro-Kachel kam, und wählt die Werke über Wasser
     // (gelaende-core `stauWerkY`; Werke und Wahl lesen das Gesetz ohne Stau). Kam ein Werk über Wasser, fiel eines oder ein Edit,

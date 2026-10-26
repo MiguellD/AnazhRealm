@@ -1307,11 +1307,11 @@ async function checkBandV18129HochBecken(ctx) {
             return { barrier, init };
         };
         const closed = mkGrid(false);
-        const fillClosed = r._stauSpillLevels(closed.barrier, w, w, closed.init);
+        const fillClosed = globalThis.__gelaendeCore.stauUeberlauf(closed.barrier, w, w, closed.init);
         out.basinHolds = Math.abs(fillClosed[5 + 5 * w] - 10) < 1e-9; // Zentrum hält bis Wand-Krone
         out.outsideOpen = Math.abs(fillClosed[1 + 1 * w] - 1) < 1e-9; // außerhalb: Außenwelt-Pegel
         const gapped = mkGrid(true);
-        const fillGap = r._stauSpillLevels(gapped.barrier, w, w, gapped.init);
+        const fillGap = globalThis.__gelaendeCore.stauUeberlauf(gapped.barrier, w, w, gapped.init);
         out.gapDrains = Math.abs(fillGap[5 + 5 * w] - 1) < 1e-9; // ein Loch → kein Stau
         return out;
     });
