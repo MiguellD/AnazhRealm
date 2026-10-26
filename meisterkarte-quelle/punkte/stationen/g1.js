@@ -1289,6 +1289,76 @@ module.exports = [
         ],
         quelle: "1 = eine Phase mit Körper-Folge (das Eis trägt den Spieler, y am Spiegel ±5 cm)",
     },
+
+    // ── stoffe.K3#2 ── alle vier Phasen am Temperatur-Feld, je Glied beim Namen (dieselbe Wand wie Staffel 1, Block koerper):
+    // GEFRIEREN das Eis trägt im Winter, +10 °C bricht es ein (wie #1) · SCHMELZEN das Jahr im Takt der Saison (`_tickSeason`):
+    // der Schnee-Pegel (gelaende-core `schneePegel`) fällt nur über 0 °C, das Feld ohne Jahres-Welle hält ihn, die Schneegrenze
+    // liest ihn (Versatz übers Jahr, das Weiß des Boden-Lesers, die Chunks im Band neu gebaut) · PEGEL die Schmelze speist den
+    // Pegel des Wassers — keine Probe: der Spiegel ist eine Funktion ohne Zeit (wetter.K3+2 „Der Pegel ist eine Funktion des
+    // Regens“ trägt ihn) · ERSTARREN die DSL gießt Lava an Land und in den See, die Uhr läuft im Takt des Tags: die glut-Achse
+    // glüht und erkaltet, unter dem Fuß Glut → Stein, am Wasser schneller und unter Dampf · GLÜHEN der Stahl der Esse — keine
+    // Probe: die Esse liest das Temperatur-Feld nicht. Am main b2c6c627 ROT 1 von 5 (nur das Eis: die Grenze war Höhe allein,
+    // die glut-Achse eingefroren); am Zweig sk3-schmelze ROT 3 von 5 (Eis, Schnee, Lava).
+    {
+        kriterium: "stoffe.K3",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-wasser-leben.cjs", "--nur", "koerper"],
+        env: { WASSER_LEBEN_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const b = jsonBlock(lauf.stdout);
+            const k = (b && b.koerper) || {};
+            const e = k.eis || {};
+            const sm = k.schmelze;
+            const [la, ls] = Array.isArray(k.erstarrung) ? k.erstarrung : [];
+            const kopf = (o) => (o && o.reihe && o.reihe[0]) || {};
+            const ende = (o) => (o && o.reihe && o.reihe[o.reihe.length - 1]) || {};
+            const glieder = {
+                gefrieren:
+                    !!e.winter && e.winter.temperatur < 0 && e.winter.schwimmFrames === 0 && e.winter.maxM <= 0.05 &&
+                    !!e.mutation && e.mutation.schwimmFrames > 0,
+                schmelzen:
+                    !!sm && sm.pegel > 0.01 && sm.schmilzt > 0 && sm.gegen === 0 && sm.halt <= 0.001 && sm.versatz >= 20 &&
+                    sm.weiss >= 0.3 && sm.neuBau > 0,
+                pegel: false,
+                erstarren:
+                    !!la && !!ls && la.ab > 0 && kopf(la).glut >= 0.95 && kopf(la).stoff === "glut" && kopf(la).licht === true &&
+                    ende(la).stoff === "stein" && !ende(la).licht && ende(la).glut <= la.frei + 0.01 && kopf(ls).dampf === true &&
+                    ls.ab >= 0 && ls.ab < la.ab,
+                gluehen: false,
+            };
+            const n = Object.values(glieder).filter(Boolean).length;
+            const ja = (x) => (x ? "✓" : "✗");
+            return {
+                gruen: lauf.exit === 0 && /WASSER-LEBEN GRÜN/.test(lauf.stdout) && n === 5,
+                zahl:
+                    n + " von 5 Gliedern · Eis " + ja(glieder.gefrieren) + " (" + (e.winter && e.winter.temperatur) + " °C) · Schnee " +
+                    ja(glieder.schmelzen) + " (Pegel " + (sm && sm.pegel) + " m, Grenze " + (sm && sm.versatz) + " m übers Jahr, " +
+                    (sm && sm.neuBau) + " Chunks neu) · Wasser-Pegel ✗ (keine Probe) · Lava " + ja(glieder.erstarren) +
+                    " (erstarrt Land Takt " + (la && la.ab) + ", See Takt " + (ls && ls.ab) + " unter Dampf) · Stahl ✗ (keine Probe)",
+            };
+        },
+        pfad: [
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "stamm/wasser-*.js",
+            "stamm/koerper-*.js",
+            "stamm/kreatur-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/bild-*.js",
+            "stamm/feld-*.js",
+            "stamm/dirigent-kern.js",
+            "stamm/bau-vorlagen.js",
+            "stamm/daten.js",
+            "scripts/diag-wasser-leben.cjs",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle:
+            "2 = alle vier: Schnee schmilzt über 0 °C und speist den Pegel, Lava (glut-Achse) erstarrt am Wasser unter Dampf zu Basalt, Stahl glüht in der Esse ab seiner Temperatur (Schmiede = Welt)",
+    },
 ];
 
 // ── NICHT FASSBAR (befehl: null): kein Werkzeug im Spiel-Baum misst das Soll dieser Staffel als EIN Befehl am SHA ──
@@ -1297,5 +1367,4 @@ module.exports.fehlt = [
     { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug und Gesetz fehlen für die Fließ-Anisotropie: keine Linse misst die Normalen-Anisotropie längs/quer zum Lauf im Ausgabe-Bild, und die Strömung der Welt ist `WASSER_GESETZ.wellen.adv × centerness` (`_waterFlowAt`, stamm/wasser-hydro.js) — kein Gefälle, kein Einzugsgebiet, aus dem sie wüchse (25.10. gelesen an d43cb61c). Die 12 Posen allein (Ego/Third × Mittag/Nacht/Regen über `bild --uhr --wetter` wie Staffel 1) wären eine halbe Station" },
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug und Welt fehlen: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Trocken-Kurve, kein Third; die Welt trägt keine Pfütze (stamm/ kennt kein Pfützen-Gesetz, 25.10. an d43cb61c), die Mulden-Korrelation r ≥ 0,5 hätte nichts zu messen" },
     { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
-    { kriterium: "stoffe.K3", staffel: 2, befehl: null, grund: "nicht gebaut: der Schnee schmilzt nicht (die Schneegrenze ist Höhe allein, kein Pegel liest Schmelze), Lava erstarrt nicht (die glut-Achse ist eine eingefrorene Feld-Achse), der Stahl der Esse liest das Temperatur-Feld nicht; nur das Eis steht (Staffel 1)" },
 ];
