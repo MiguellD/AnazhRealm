@@ -785,14 +785,54 @@ const alle = [
         ],
         quelle: "1 = ein Turm aus 20 Blöcken trägt ≥ 60 m über dem Gelände (Fuß ≤ 0,15 m über dem Mesh) und hält über den Reload (0 Löcher)",
     },
+    // gate:fall-waechter (B2) DER TURM AUF DACH, FELS UND BRÜCKE (bk4-turm): derselbe Turm wie #1 über die Maus, je in Ego und
+    // Third, im Haus der Werkstatt (vom Dachboden durch das Dach), auf der Felsdecke über der nächsten Spalte und auf dem Deck der
+    // Brücke des Prüf-Satzes — die Sohlen neben der obersten Fläche (`_bodenSichtAt`); dann der Spieler 320 m fern: die
+    // Lage-Bytes des Fern-Rings tragen die Krone, ein Block auf sie (`voxel_fill`) steht ≤ 1 s Spielzeit in ihnen (byte-Diff);
+    // Reload: jeder Edit, kein Loch. Gelesen wird die B2-ZAHL. Gerät headless: die Lage des Rings ist eine CPU-Geometrie (der
+    // Fern-Faden rechnet sie, `fernKrone`) — das Bild auf Radeon und GTX misst die Station nicht.
     {
         kriterium: "bauen.K4",
         staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "kein Werkzeug setzt den Turm auf Dach, Fels und Brücke (`_bodenSichtAt`) und misst den Fern-Ring-Edit ≤ 1 s per byte-Diff " +
-            "in Ego und Third",
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-fall-waechter.cjs"],
+        env: { ...SOFT, FALL_WAECHTER_PORT: "{PORT}" },
+        gpu: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const b = jsonZeile(lauf.stdout, /^\s*B2-ZAHL \{/);
+            if (!b) return { gruen: false, zahl: "keine B2-ZAHL-Zeile (Exit " + lauf.exit + ")" };
+            const [tuerme, befunde, f] = [b.tuerme || [], b.befunde || ["keine Befund-Liste"], (x) => Number(x).toFixed(2)];
+            const je = tuerme.map((t) => {
+                const g = t.ring || {};
+                const sohle = Math.max(...(t.bloecke || []).map((k) => k[1]));
+                return t.fehler
+                    ? `${t.wo}: ${t.fehler}`
+                    : `${t.wo} ${f(t.hoehe)} m, Sohle ≤ ${f(sohle)} m, Ring ${f(g.vor)}/${f(g.krone)} m, Edit nach ${g.takte} Takten (${g.bytes} Bytes)`;
+            });
+            return {
+                gruen: befunde.length === 0 && tuerme.length === 6 && tuerme.every((t) => !t.fehler),
+                zahl: je.join(" · ") + (befunde.length ? " — " + befunde.slice(0, 3).join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "stamm/gelaende-*.js",
+            "stamm/bild-sicht.js",
+            "stamm/koerper-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/speicher-*.js",
+            "stamm/kampf.js",
+            "stamm/feld-dsl.js",
+            "stamm/werkstatt-bauen.js",
+            "stamm/dienst.js",
+            "spec/pruefsatz/bauen-k3.json",
+            "scripts/diag-fall-waechter.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/lib/stamm.cjs",
+        ],
         quelle: "2 = auch auf Dach, Fels und Brücke (oberste Fläche, `_bodenSichtAt`), der Fern-Ring zeigt den Edit ≤ 1 s (byte-Diff), Ego und Third, beide Geräte",
     },
     // ── bauen.K5 ── L-VERBEN (diag-werkstatt-weg, bauen-k5-verben): je Werk über die Werkstatt gesetzt (das Tor über die Hotbar: die
