@@ -84,7 +84,7 @@
     var GESTALTEN_JE_REZEPT = 16;
     var PORTAL_RENDER_CONFIG = {
         lod: {
-            kindStages: { haus: [0, 1, 2, 3], ausstattung: [0, 1, 3] },
+            kindStages: { haus: [0, 1, 2, 3], ausstattung: [0, 1, 3], bank: [0, 1, 3], leiter: [0, 1, 3] },
             budget: {
                 // DAS EINE WURF-GESETZ (S3, E1): jede gezeigte Stufe wirft die Stufe 3 — der grundriss-treue Fernkörper,
                 // nurWurf (nie gezeigt, ≤ 96 Dreiecke in EINEM Draw, gate:haus-fern); vorher warf die L0 sich selbst
@@ -111,6 +111,20 @@
                 ausstattung: {
                     0: { tris: 3400, draws: 2, schatten: 0 },
                     1: { tris: 620, draws: 2, schatten: 3 },
+                    3: { tris: 48, draws: 1, schatten: 3, nurWurf: true },
+                    fernform: "huelle",
+                },
+                // DIE WERKE DES ZIMMERMANNS (bauen.K5, unten): Bank und Leiter aus gefasten Hölzern in EINEM Stoff — nah ein
+                // Draw, die L1 ohne Fase, die Stufe 3 wirft für die L1 (Bank 20, Leiter 30 Dreiecke); gemessen am Rand jedes Reglers.
+                bank: {
+                    0: { tris: 900, draws: 1, schatten: 0 },
+                    1: { tris: 240, draws: 1, schatten: 3 },
+                    3: { tris: 48, draws: 1, schatten: 3, nurWurf: true },
+                    fernform: "huelle",
+                },
+                leiter: {
+                    0: { tris: 900, draws: 1, schatten: 0 },
+                    1: { tris: 180, draws: 1, schatten: 3 },
                     3: { tris: 48, draws: 1, schatten: 3, nurWurf: true },
                     fernform: "huelle",
                 },
@@ -4189,8 +4203,9 @@
     function buildInstance(rezeptId, seed, lod, ov) {
         var pre = PRESETS[rezeptId];
         if (!pre) return null;
-        // DIE AUSSTATTUNG (unten) baut ihr eigenes Gesetz — dieselben Rollen, derselbe Bake, eigene Stufen.
-        if (pre.kind === "ausstattung") return buildAusstattung(rezeptId, seed, lod, ov);
+        // DIE AUSSTATTUNG (unten) baut ihr eigenes Gesetz — dieselben Rollen, derselbe Bake, eigene Stufen; die Werke (Bank,
+        // Leiter) bauen auf derselben Maschine.
+        if (AUS_ARTEN[pre.kind]) return buildAusstattung(rezeptId, seed, lod, ov);
         materials();
         var p = hausParams(pre, ov || null);
         var sd = Number(seed);
@@ -4262,7 +4277,6 @@
     //  PLATTFORMGLEICH: jede Zahl, die den Kern verlässt, liegt auf dem Raster 2^-12 (Normalen 2^-14, −0 wird 0) —
     //  sin/cos dürfen zwischen V8-Bauten in der letzten Stelle abweichen, die Bytes nicht.
     // ═══════════════════════════════════════════════════════════════════════
-    var AUS_STUFEN = PORTAL_RENDER_CONFIG.lod.kindStages.ausstattung;
     // Die drei Rezepte: Label, wie viele Individuen die Welt trägt (B2c gestalten), der Ort als Daten (site — der
     // Wirt setzt sie über seine Schichten: Glut-Feld · Dorfplatz).
     // DIE TRITTFLÄCHE (`tritt`, Asset-Raum, reist als fx-Daten): um eine Feuerstelle, einen Brunnen, einen Stand ist der
@@ -4409,11 +4423,12 @@
     SEH_DER_ROLLE.ware = "stoff";
 
     // Die Regler: Rezept-s, dann ov — nur die eigenen ids, geklemmt (fremde Schlüssel: must-ignore; `__`-Schlüssel
-    // sind Steuer-Passagiere, nie Bau-Parameter).
+    // sind Steuer-Passagiere, nie Bau-Parameter). Die Tafel ist die der Art (`AUS_ARTEN`: die Ausstattung, die Bank, die Leiter).
     function ausParams(pre, ov) {
-        var P = {};
-        for (var i = 0; i < AUS_PARAMS.length; i++) {
-            var d = AUS_PARAMS[i];
+        var P = {},
+            T = (pre && AUS_ARTEN[pre.kind]) || AUS_PARAMS;
+        for (var i = 0; i < T.length; i++) {
+            var d = T[i];
             var v = pre && pre.s && typeof pre.s[d.id] === "number" ? pre.s[d.id] : d.def;
             if (ov && typeof ov === "object" && typeof ov[d.id] === "number" && isFinite(ov[d.id])) v = ov[d.id];
             P[d.id] = Math.max(d.min, Math.min(d.max, v));
@@ -5394,7 +5409,101 @@
         ausLaterneKopf(g, m, eisen, fein);
     }
 
-    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne };
+    // ═══ DIE WERKE DES ZIMMERMANNS (bauen.K5, rein additiv): die Sitzbank und die Podestleiter — eigene Arten (`bank` · `leiter`:
+    //     eigene Regler, eigene Wirts-Zeile B7 unten), gebaut auf der Maschine der Ausstattung (Bake · Stufen · Wurf · Hülle ·
+    //     Raster). Ihr Verb trägt die Form: die Bank ihre Sitzfläche auf Sitzhöhe (der Wirt liest sie als `sitzbar`, E setzt
+    //     den Leib), die Leiter ihre Stufen bis zum Podest (der Leib steigt und klettert). Die Maße sind Norm, kein Regler rückt
+    //     sie — die Substanz der Wirts-Zeile trägt dieselben (`AUS_MASS`), Kollision == Optik. ═══
+    var WERKE = {
+        sitzbank: { kind: "bank", art: "Bank", lab: "Sitzbank · Latten, Lehne, Wangen", gestalten: 2, siteTag: "platz", salz: 0x6fb3 },
+        podestleiter: { kind: "leiter", art: "Leiter", lab: "Podestleiter · Holme, Stufen, Podest, Bügel", gestalten: 1, siteTag: "wand", salz: 0x71c5 },
+    };
+    // B4 — die Regler der Werke: nur, was die Norm nicht verschiebt (Sitzhöhe, Steigmaß und Podest bleiben stehen).
+    var BANK_PARAMS = [
+        { id: "latten", lab: "Sitz-Latten", min: 2, max: 5, step: 1, def: 3, law: "das Sitzbrett aus Latten mit 12 mm Fuge — die Tiefe bleibt 0,42 m", grp: "FORM" },
+        { id: "neigung", lab: "Lehne", min: 5, max: 20, step: 1, def: 12, law: "der Rücken lehnt 5–20° hinter die Senkrechte (100–110° zum Sitz)", grp: "FORM" },
+        { id: "verwitterung", lab: "Verwitterung", min: 0, max: 1, step: 0.05, def: 0.5, law: "das Alter des Holzes — Sonnenbleiche oben, Erdsaum an den Füßen", grp: "MATERIAL" },
+    ];
+    var LEITER_PARAMS = [
+        { id: "holm", lab: "Holm", min: 0.06, max: 0.09, step: 0.005, def: 0.075, law: "die Tiefe der Holme und Schenkel — 60–90 mm Fichte tragen den Steigenden", grp: "FORM" },
+        { id: "fase", lab: "Fase", min: 0, max: 0.012, step: 0.001, def: 0.008, law: "das Zimmermanns-Gesetz: keine Kante bleibt scharf, die Fase fängt das Licht", grp: "FORM" },
+        { id: "verwitterung", lab: "Verwitterung", min: 0, max: 1, step: 0.05, def: 0.5, law: "das Alter des Holzes — Sonnenbleiche oben, Erdsaum an den Füßen", grp: "MATERIAL" },
+    ];
+    var AUS_ARTEN = { ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS };
+    for (var _wk in WERKE)
+        PRESETS[_wk] = { kind: WERKE[_wk].kind, lab: WERKE[_wk].lab, s: ausParams({ kind: WERKE[_wk].kind }, null), fx: { place: { mode: "site", siteTag: WERKE[_wk].siteTag } } };
+    // ── DIE SITZBANK (Front +z: der Sitzende blickt längs +z): zwei Wangen — Vorderbein, Hinterbein, der Lehnen-Pfosten um
+    //    `neigung` nach hinten, die Sitz-Zarge, nah der Fuß-Riegel —, zwei Längs-Zargen, das Sitzbrett aus `latten` Latten mit
+    //    Fuge (Oberkante = die Sitzhöhe), die Lehne aus zwei Latten auf den Pfosten. ──
+    function ausSitzbank(g, p, seed, stufe) {
+        var m = AUS_MASS.sitzbank(0, p),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            fa = fein ? 0.008 : 0,
+            zH = ausZufall(seed, 0xa1);
+        var holz = function (geo, ton) {
+            ausFaerbe(geo, "holz", W, function () {
+                return { ton: ton };
+            });
+            ausTeil(g, geo, "holz");
+        };
+        var c = Math.cos(m.phi),
+            s = Math.sin(m.phi),
+            i,
+            ws;
+        for (ws = -1; ws <= 1; ws += 2) {
+            var x = ws * m.wx;
+            holz(ausSetze(ausKiste(m.b, m.hZ, m.b, fa), x, m.hZ / 2, m.zV), ausTon(zH, 0.05, 0.02));
+            holz(ausSetze(ausKiste(m.b, m.hZ, m.b, fa), x, m.hZ / 2, m.zH), ausTon(zH, 0.05, 0.02));
+            holz(ausStrecke(ausSetze(ausKiste(m.b, m.lP, m.b * 0.8, fa), 0, m.lP / 2, 0), [x, m.pA[0], m.pA[1]], [x, m.pB[0], m.pB[1]]), ausTon(zH, 0.05, 0.02));
+            holz(ausSetze(ausKiste(m.b * 0.8, 0.08, m.zV - m.zH + m.b, fa), x, m.hZ - 0.04, (m.zV + m.zH) / 2), ausTon(zH, 0.05, 0.02));
+            if (fein) holz(ausSetze(ausKiste(m.b * 0.6, 0.05, m.zV - m.zH, fa), x, 0.12, (m.zV + m.zH) / 2), ausTon(zH, 0.05, 0.02));
+        }
+        for (ws = -1; ws <= 1; ws += 2) holz(ausSetze(ausKiste(2 * m.wx - m.b, 0.08, 0.025, fa * 0.5), 0, m.hZ - 0.04, ws * (m.T / 2 - 0.045)), ausTon(zH, 0.05, 0.02));
+        for (i = 0; i < m.n; i++) holz(ausSetze(ausKiste(m.L, m.dL, m.bL, fa * 0.6), 0, m.H - m.dL / 2, -m.T / 2 + m.bL / 2 + i * (m.bL + m.fuge)), ausTon(zH, 0.08, 0.03));
+        for (i = 0; i < 2; i++) {
+            var t = m.lehneT[i];
+            holz(ausSetze(ausKiste(m.L - 0.04, 0.09, 0.022, fa * 0.6), 0, m.pA[0] + t * c + m.o * s, m.pA[1] - t * s + m.o * c, -m.phi, 0, 0), ausTon(zH, 0.08, 0.03));
+        }
+    }
+    // ── DIE PODESTLEITER (Steigseite −z): die Holme vom Fuß über das Podest hinaus zum Haltebügel, die Stützschenkel vom
+    //    Podest zum Boden, fünf Stufen, das Podest (nah drei Bretter auf zwei Querhölzern), nah die Spreizsicherung und zwei
+    //    Querstreben der Stützseite (fern eine). ──
+    function ausPodestleiter(g, p, seed, stufe) {
+        var m = AUS_MASS.podestleiter(0, p),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            fa = fein ? p.fase : 0,
+            zH = ausZufall(seed, 0xa5);
+        var holz = function (geo, ton) {
+            ausFaerbe(geo, "holz", W, function () {
+                return { ton: ton };
+            });
+            ausTeil(g, geo, "holz");
+        };
+        // ein Holz entlang a → b (Querschnitt dx × dz)
+        var lang = function (a, b, dx, dz) {
+            var l = Math.sqrt((b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]) + (b[2] - a[2]) * (b[2] - a[2]));
+            holz(ausStrecke(ausSetze(ausKiste(dx, l, dz, fa), 0, l / 2, 0), a, b), ausTon(zH, 0.05, 0.02));
+        };
+        var k, ws;
+        for (ws = -1; ws <= 1; ws += 2) {
+            var x = ws * m.hx;
+            lang([x, 0, m.zF], [x, m.yB, m.zB], m.dx, m.h);
+            lang([x, m.P - m.dP, m.zP], [x, 0, m.zS], m.dx, m.h * 0.85);
+            if (fein) lang([x + ws * m.dx, 0.6, m.zF + 0.6 / m.ta], [x + ws * m.dx, 0.6, m.schenkelZ(0.6)], 0.012, 0.03);
+        }
+        for (k = 1; k <= m.n; k++) holz(ausSetze(ausKiste(m.wI, m.dS, m.tS, fa * 0.6), 0, k * m.r - m.dS / 2, m.stufeZ(k)), ausTon(zH, 0.08, 0.03));
+        if (fein) {
+            var bB = (2 * m.zP - 0.024) / 3;
+            for (k = 0; k < 3; k++) holz(ausSetze(ausKiste(m.wP, m.dP, bB, fa * 0.6), 0, m.P - m.dP / 2, -m.zP + bB / 2 + k * (bB + 0.012)), ausTon(zH, 0.08, 0.03));
+            for (ws = -1; ws <= 1; ws += 2) holz(ausSetze(ausKiste(m.wI, 0.06, 0.04, fa), 0, m.P - m.dP - 0.03, ws * (m.zP - 0.03)), ausTon(zH, 0.05, 0.02));
+        } else holz(ausSetze(ausKiste(m.wP, m.dP, 2 * m.zP, 0), 0, m.P - m.dP / 2, 0), ausTon(zH, 0.08, 0.03));
+        holz(ausSetze(ausKiste(2 * m.hx + m.dx, 0.05, 0.05, fa), 0, m.yB - 0.025, m.zB), ausTon(zH, 0.05, 0.02));
+        for (k = 0; k < (fein ? 2 : 1); k++) holz(ausSetze(ausKiste(2 * m.hx - m.dx, 0.06, 0.025, fa * 0.5), 0, 0.5 + 0.55 * k, m.schenkelZ(0.5 + 0.55 * k) + 0.03), ausTon(zH, 0.05, 0.02));
+    }
+
+    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, sitzbank: ausSitzbank, podestleiter: ausPodestleiter };
     // DIE STUFE 3 DER AUSSTATTUNG (nurWurf, S3): die Grundform als EIN Gitter in EINEM Stoff (Rolle stein) — sie wirft für
     // die L1 (die L0 wirft selbst: nah, höchstens drei im Bild); ihre Hülle (`ausHuelle`) reist als Beipack `__fern`.
     // Dieselben Maße wie die Stufen 0/1 (Ring R + Steinbreite, Tisch und Plane, Kranz, Pfosten, First): Feuerstelle der
@@ -5443,7 +5552,85 @@
                 sB = [a * 0.35, yA, 0];
             return { kb: 0.22 * G, kh: kh, yL: yL, yK0: yL - kh / 2, yK1: yL + kh / 2, hb: 0.17 * G, yT: yT, yA: yA, a: a, pl: pl, sA: sA, sB: sB, st: Math.hypot(sB[0] - sA[0], sB[1] - sA[1]) };
         },
+        // DIE SITZBANK: Sitzhöhe 0,45 m, Tiefe 0,42 m, Länge 1,6 m (drei Plätze zu 0,53 m) — die Norm des Sitzens (DIN EN 581-2:
+        // 0,40–0,48 m); die Wangen 0,12 m eingerückt, die Lehnen-Pfosten (0,5 m) stehen über den Hinterbeinen, die zwei
+        // Lehnen-Latten 0,24 und 0,44 m den Pfosten hinauf auf seiner Front (Normale (0, sin, cos)).
+        sitzbank: function (_G, p) {
+            var H = 0.45,
+                T = 0.42,
+                dL = 0.035,
+                fuge = 0.012,
+                n = Math.round(p.latten),
+                b = 0.065,
+                lP = 0.5,
+                phi = (p.neigung * Math.PI) / 180,
+                hZ = H - dL,
+                zH = -T / 2 + 0.05;
+            var pA = [hZ - 0.02, zH];
+            return { H: H, T: T, L: 1.6, dL: dL, fuge: fuge, n: n, bL: (T - (n - 1) * fuge) / n, b: b, hZ: hZ, wx: 0.68, zV: T / 2 - 0.05, zH: zH, phi: phi, lP: lP, pA: pA, pB: [pA[0] + lP * Math.cos(phi), pA[1] - lP * Math.sin(phi)], lehneT: [0.24, 0.44], o: b * 0.4 + 0.011 };
+        },
+        // DIE PODESTLEITER (DIN EN 131): Steigmaß 0,28 m, fünf Stufen (0,16 m tief) und das Podest auf 1,68 m (0,4 m tief), die
+        // Steigseite 60° gegen den Boden, die Stützseite 75°, 0,5 m lichte Weite; die Holme laufen durch die Vorderkante des
+        // Podests bis 0,6 m darüber und tragen dort den Haltebügel.
+        podestleiter: function (_G, p) {
+            var r = 0.28,
+                n = 5,
+                P = (n + 1) * r,
+                ta = Math.tan(Math.PI / 3),
+                tb = Math.tan((75 * Math.PI) / 180),
+                zP = 0.2,
+                dP = 0.045,
+                wI = 0.5,
+                dx = 0.035,
+                zF = -zP - P / ta;
+            return {
+                r: r, n: n, P: P, ta: ta, zP: zP, dP: dP, wI: wI, wP: wI + 2 * dx, dx: dx, hx: wI / 2 + dx / 2, h: p.holm, tS: 0.16, dS: 0.04, zF: zF,
+                yB: P + 0.6, zB: -zP + 0.6 / ta, zS: zP + (P - dP) / tb,
+                stufeZ: function (k) {
+                    return zF + (k * r) / ta + 0.06;
+                },
+                schenkelZ: function (y) {
+                    return zP + (P - dP - y) / tb;
+                },
+            };
+        },
     };
+    // ── B7: DIE WIRTS-ZEILEN DER WERKE (docs/studio-vertrag.md B7) — je Art der Bauplan-Namensraum (`bank_`, `leiter_`) und die
+    //    unsichtbare Substanz in der Teile-Form des Wirts, aus DERSELBEN Maß-Funktion wie die Gestalt (die Regler auf ihrem Grund):
+    //    an ihr urteilt der Wirt Kollision, Kosten und Verb. Die Bank: das Sitzbrett (die oberste flache Fläche — dort sitzt der
+    //    Leib), vier Beine, die Lehne im Winkel der Pfosten. Die Leiter: fünf Stufen, das Podest, die Stützschenkel, der
+    //    Haltebügel — die Holme nicht (die Kapsel des Leibs ist breiter als die lichte Weite; sie stiege nie zwischen ihnen). ──
+    function werkSubstanz(id) {
+        var m = AUS_MASS[id](0, ausParams(PRESETS[id], null)),
+            parts = [],
+            a,
+            k;
+        var r = function (v) {
+            return Math.round(v * 1000) / 1000;
+        };
+        var teil = function (x, y, z, sx, sy, sz, rx) {
+            var t = { shape: "box", material: "holz", position: { x: r(x), y: r(y), z: r(z) }, size: { x: r(sx), y: r(sy), z: r(sz) } };
+            if (rx) t.rotation = { x: r(rx), y: 0, z: 0 };
+            return t;
+        };
+        if (id === "sitzbank") {
+            var tm = (m.lehneT[0] + m.lehneT[1]) / 2,
+                c = Math.cos(m.phi),
+                s = Math.sin(m.phi);
+            parts.push(teil(0, m.H - m.dL / 2, 0, m.L, m.dL, m.T));
+            for (a = -1; a <= 1; a += 2) for (k = -1; k <= 1; k += 2) parts.push(teil(a * m.wx, m.hZ / 2, k < 0 ? m.zH : m.zV, m.b, m.hZ, m.b));
+            parts.push(teil(0, m.pA[0] + tm * c + m.o * s, m.pA[1] - tm * s + m.o * c, m.L - 0.04, m.lehneT[1] - m.lehneT[0] + 0.09, 0.03, -m.phi));
+        } else {
+            var lS = Math.sqrt((m.zS - m.zP) * (m.zS - m.zP) + (m.P - m.dP) * (m.P - m.dP));
+            for (k = 1; k <= m.n; k++) parts.push(teil(0, k * m.r - m.dS / 2, m.stufeZ(k), m.wI, m.dS, m.tS));
+            parts.push(teil(0, m.P - m.dP / 2, 0, m.wP, m.dP, 2 * m.zP));
+            for (a = -1; a <= 1; a += 2) parts.push(teil(a * m.hx, (m.P - m.dP) / 2, (m.zP + m.zS) / 2, m.dx, lS, m.h * 0.85, -Math.atan2(m.zS - m.zP, m.P - m.dP)));
+            parts.push(teil(0, m.yB - 0.025, m.zB, 2 * m.hx + m.dx, 0.05, 0.05));
+        }
+        return { label: WERKE[id].art, parts: parts };
+    }
+    var KIND_POLICY = {};
+    for (var _wp in WERKE) KIND_POLICY[WERKE[_wp].kind] = { prefix: WERKE[_wp].kind + "_", substanz: werkSubstanz(_wp) };
     // Die Wahl einer Gestalt, die nur der Bau kennt (der Strom zieht sie zwischen den Waren): der Marktstand nennt sein Fass
     // (`userData.fass` = [x, z] oder fehlt) — die Stufe 3 liest sie aus der L1 derselben Gestalt (dieselbe Funktion,
     // derselbe Strom), nie aus einem zweiten Würfel.
@@ -5458,7 +5645,7 @@
         return w;
     }
     function ausWurf(rezeptId, g, p, wahl) {
-        var m = AUS_MASS[rezeptId](p.groesse);
+        var m = AUS_MASS[rezeptId](p.groesse, p);
         var teil = function (geo) {
             ausFaerbe(geo, "stein", 0, null);
             ausTeil(g, geo, "stein");
@@ -5551,6 +5738,29 @@
                 flaeche([[[-h, k0, -h], [h, k0, -h], [h, k1, -h], [-h, k1, -h]], [[-h, k0, h], [h, k0, h], [h, k1, h], [-h, k1, h]], [[-h, k0, -h], [-h, k0, h], [-h, k1, h], [-h, k1, -h]], [[h, k0, -h], [h, k0, h], [h, k1, h], [h, k1, -h]]]);
                 teil(ausSetze(ausKiste(0.035, 0.055, 0.035, 0), 0, m.yT + 0.0275, 0));
             }
+        } else if (rezeptId === "sitzbank") {
+            // DIE BANK (20 Dreiecke): das Sitzbrett, die Lehne als EIN Viereck im Winkel der Pfosten, die vier Beine als Kreuze
+            var c = Math.cos(m.phi),
+                s = Math.sin(m.phi),
+                xl = m.L / 2 - 0.02,
+                l0 = [m.pA[0] + 0.18 * c + m.o * s, m.pA[1] - 0.18 * s + m.o * c],
+                l1 = [m.pA[0] + 0.49 * c + m.o * s, m.pA[1] - 0.49 * s + m.o * c];
+            platte(-m.L / 2, m.L / 2, m.H, -m.T / 2, m.T / 2);
+            flaeche([[[-xl, l0[0], l0[1]], [xl, l0[0], l0[1]], [xl, l1[0], l1[1]], [-xl, l1[0], l1[1]]]]);
+            for (var bw = -1; bw <= 1; bw += 2) for (var bt = -1; bt <= 1; bt += 2) pfosten(bw * m.wx, bt < 0 ? m.zH : m.zV, 0, m.hZ, m.b / 2);
+        } else if (rezeptId === "podestleiter") {
+            // DIE LEITER (30 Dreiecke): fünf Stufen und das Podest je als Platte, Holme und Stützschenkel je als Kreuz zweier
+            // Flächen längs ihrer Achse, der Bügel als Fläche
+            var strebe = function (x, a, b, d) {
+                flaeche([[[x - d, a[0], a[1]], [x + d, a[0], a[1]], [x + d, b[0], b[1]], [x - d, b[0], b[1]]], [[x, a[0], a[1] - d], [x, a[0], a[1] + d], [x, b[0], b[1] + d], [x, b[0], b[1] - d]]]);
+            };
+            for (var ks = 1; ks <= m.n; ks++) platte(-m.wI / 2, m.wI / 2, ks * m.r, m.stufeZ(ks) - m.tS / 2, m.stufeZ(ks) + m.tS / 2);
+            platte(-m.wP / 2, m.wP / 2, m.P, -m.zP, m.zP);
+            for (var ls = -1; ls <= 1; ls += 2) {
+                strebe(ls * m.hx, [0, m.zF], [m.yB, m.zB], m.h / 2);
+                strebe(ls * m.hx, [m.P - m.dP, m.zP], [0, m.zS], m.h / 2);
+            }
+            flaeche([[[-m.hx, m.yB - 0.05, m.zB], [m.hx, m.yB - 0.05, m.zB], [m.hx, m.yB, m.zB], [-m.hx, m.yB, m.zB]]]);
         } else {
             teil(ausDreh([[m.rk, -0.05], [m.rk, m.hK], [0, m.hK]], 8, false, false));
             for (var i = -1; i <= 1; i += 2) pfosten(i * m.px, 0, -0.05, m.yF, 0.07);
@@ -5566,7 +5776,7 @@
     }
     // Die Hülle der Ausstattung in der EINEN Form (N5): dieselben Maße als Kästen und Keile, die Farben ihrer Stoffe.
     function ausHuelle(rezeptId, p, kol, wahl) {
-        var m = AUS_MASS[rezeptId](p.groesse),
+        var m = AUS_MASS[rezeptId](p.groesse, p),
             IW = KOERPER_INNEN.wand;
         var F = function (r) {
             return _colFor(r, kol);
@@ -5599,6 +5809,13 @@
             dazu(huelleTeil("box", -m.kb / 2, m.kb / 2, m.yK0, m.yK1, -m.kb / 2, m.kb / 2, F("glas")));
             dazu(huelleTeil("keil", -m.hb, m.hb, m.yK1, m.yT, -m.hb, 0, F("metall"), { first: "+z", walm: 1 }));
             dazu(huelleTeil("keil", -m.hb, m.hb, m.yK1, m.yT, 0, m.hb, F("metall"), { first: "-z", walm: 1 }));
+        } else if (rezeptId === "sitzbank") {
+            dazu(huelleTeil("box", -m.L / 2, m.L / 2, 0, m.H, -m.T / 2, m.T / 2, F("holz")));
+            dazu(huelleTeil("box", -m.L / 2 + 0.02, m.L / 2 - 0.02, m.H, m.pB[0], m.pB[1] - 0.04, m.zH + 0.04, F("holz")));
+        } else if (rezeptId === "podestleiter") {
+            dazu(huelleTeil("keil", -m.hx, m.hx, 0, m.P, m.zF, -m.zP, F("holz"), { first: "+z" }));
+            dazu(huelleTeil("box", -m.wP / 2, m.wP / 2, m.P - m.dP, m.P, -m.zP, m.zP, F("holz")));
+            dazu(huelleTeil("keil", -m.hx, m.hx, 0, m.P - m.dP, m.zP, m.zS, F("holz"), { first: "-z" }));
         } else {
             dazu(huelleTeil("box", -m.rk + IW, m.rk - IW, -0.05, m.hK, -m.rk + IW, m.rk - IW, F("stein")));
             for (var i = -1; i <= 1; i += 2) dazu(huelleTeil("box", i * m.px - 0.07, i * m.px + 0.07, -0.3, m.yF, -0.07, 0.07, F("holz")));
@@ -5614,7 +5831,7 @@
         var p = ausParams(pre, ov || null);
         var sd = ov && typeof ov === "object" && ov.seed != null ? Number(ov.seed) : Number(seed);
         if (!isFinite(sd)) sd = 1;
-        sd = (Math.round(sd) ^ AUSSTATTUNG[rezeptId].salz) >>> 0;
+        sd = (Math.round(sd) ^ (AUSSTATTUNG[rezeptId] || WERKE[rezeptId]).salz) >>> 0;
         var kol = ausFarben(rezeptId, sd);
         return ausHuelle(rezeptId, p, kol, ausWahl(rezeptId, p, sd, kol));
     }
@@ -5633,6 +5850,7 @@
         if (rezeptId === "feuerstelle") return { stein: pick([0x9a958a, 0x928d83, 0xa19a8f]), holz: pick([0x8a745c, 0x84705a]), lehm: 0xb4afa6 };
         if (rezeptId === "marktstand") return { holz: pick([0x8e7860, 0x977f66, 0x84705c]), tuch: pick(AUS_PLANE), lattung: 0x9a8358, stroh: 0xb39b68 };
         if (rezeptId === "laterne" || rezeptId === "wandlaterne") return { metall: pick([0x6b706a, 0x6e6b66]) }; // gestrichenes Guss-Eisen, das Glas des Fensters
+        if (WERKE[rezeptId]) return { holz: pick([0x8e7860, 0x977f66, 0x86705a]) }; // die Werke: ungestrichenes Holz, vergraut
         return { stein: pick([0xa29b8e, 0x9a9488, 0xaaa397]), holz: pick([0x7c6650, 0x86705a]), lattung: 0x8f7a56, stamm: pick([0x847866, 0x7a6e5e]) };
     }
     // Das Raster der Bytes (plattformgleich): 2^-12, Normalen 2^-14, −0 → 0.
@@ -5650,23 +5868,25 @@
     // B2 der Ausstattung: buildInstance(id, seed, lod, ov) → EINE Gruppe, je Rolle EIN gebakter Mesh (die Glut wirft
     // nicht), Stufe = die größte deklarierte ≤ lod (sonst die kleinste). ov.seed überstimmt das seed-Argument.
     var _ausDetail = 1; // die Teilung der Drehkörper der Ausstattung (1 = das Lab-Maß; buildAusstattung senkt sie nur über der Zeile)
+    // Die Werke des Zimmermanns (Bank, Leiter) bauen hier mit ihrer Art: deren Regler, Stufen und Zeile.
     function buildAusstattung(rezeptId, seed, lod, ov) {
         var pre = PRESETS[rezeptId];
-        if (!pre || pre.kind !== "ausstattung" || !AUS_BAU[rezeptId]) return null;
+        if (!pre || !AUS_ARTEN[pre.kind] || !AUS_BAU[rezeptId]) return null;
         ausMaterialien();
         var p = ausParams(pre, ov || null);
         var sd = ov && typeof ov === "object" && ov.seed != null ? Number(ov.seed) : Number(seed);
         if (!isFinite(sd)) sd = 1;
-        sd = (Math.round(sd) ^ AUSSTATTUNG[rezeptId].salz) >>> 0;
-        var L = lod | 0,
-            stufe = AUS_STUFEN[0];
-        for (var i = 0; i < AUS_STUFEN.length; i++) if (AUS_STUFEN[i] <= L) stufe = AUS_STUFEN[i];
+        sd = (Math.round(sd) ^ (AUSSTATTUNG[rezeptId] || WERKE[rezeptId]).salz) >>> 0;
+        var stufen = PORTAL_RENDER_CONFIG.lod.kindStages[pre.kind],
+            L = lod | 0,
+            stufe = stufen[0];
+        for (var i = 0; i < stufen.length; i++) if (stufen[i] <= L) stufe = stufen[i];
         var kol = ausFarben(rezeptId, sd);
         var wahl = stufe === 3 ? ausWahl(rezeptId, p, sd, kol) : null;
         // DIE STUFE TRÄGT IHRE ZEILE (pipeline.K3, B2c — auch am Rand jedes Reglers): die Fülle legt Steine und Scheite
         // zu, die Zeile der Stufe wächst nicht; trägt der Bau mehr Dreiecke, fällt die Teilung jedes Drehkörpers um das
         // Verhältnis und der Bau steht neu (höchstens vier Mal) — ein Bau auf seiner Zeile bleibt byte-gleich.
-        var zeile = (PORTAL_RENDER_CONFIG.lod.budget.ausstattung[stufe] || {}).tris;
+        var zeile = (PORTAL_RENDER_CONFIG.lod.budget[pre.kind][stufe] || {}).tris;
         try {
             for (var versuch = 0; ; versuch++) {
                 var roh = new THREE.Group();
@@ -5693,7 +5913,7 @@
             if (o.isMesh && o.material && o.material.emissive && o.material.emissive.getHex() !== 0) o.castShadow = false;
         });
         ausRaster(g);
-        g.userData = { kind: "ausstattung", rezeptId: rezeptId, seed: seed, lod: stufe };
+        g.userData = { kind: pre.kind, rezeptId: rezeptId, seed: seed, lod: stufe };
         if (stufe === 3) {
             g.userData.__fern = ausHuelle(rezeptId, p, kol, wahl);
             stufeWirft(g);
@@ -6851,7 +7071,7 @@
     // W8 — die Gestalten je Rezept (B2c): JEDER Stil trägt GESTALTEN_JE_REZEPT Individuen (ein neuer Stil zählt mit);
     // die Ausstattung zählt ihre eigenen (AUSSTATTUNG[id].gestalten — wenige, die Instanzen teilen sich die Draws).
     for (var _gid in PRESETS)
-        PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = AUSSTATTUNG[_gid] ? AUSSTATTUNG[_gid].gestalten : GESTALTEN_JE_REZEPT;
+        PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = (AUSSTATTUNG[_gid] || WERKE[_gid] || {}).gestalten || GESTALTEN_JE_REZEPT;
 
     // ── Der Namensraum (Vertrag v1.1 §7): Manifest-Blöcke + Bau-Vokabular ──
     root.__fachwerkCore = {
@@ -6859,8 +7079,11 @@
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
-        PARAMS_BY_KIND: { haus: PARAMS, ausstattung: AUS_PARAMS },
+        PARAMS_BY_KIND: { haus: PARAMS, ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS },
         buildInstance: buildInstance,
+        // B7 — die Wirts-Zeilen der Werke (Bank, Leiter): Bauplan-Namensraum und Substanz in den Maßen der Gestalt
+        KIND_POLICY: KIND_POLICY,
+        WERKE: WERKE,
         // DIE AUSSTATTUNG (Feuerstelle · Marktstand · Brunnen) — das Labor-Dorf baut seine Brunnen und Stände hierüber
         AUSSTATTUNG: AUSSTATTUNG,
         // N5.7 — der Settlement-Export + die Dorf-Quelle (Shell-Aliasse lesen sie)
