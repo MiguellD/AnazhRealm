@@ -1513,19 +1513,21 @@ class AnazhRealm_speicher_welten {
     _standFegen(frist) {
         const S = this._speicherZustand();
         if (!this.state.worldMeta || !this.state.playerMesh) return;
-        const F = S.fege || (S.fege = { reihe: [], i: 0, guthaben: 0, zeit: performance.now() });
-        const K = this._standKontext();
+        const F = S.fege || (S.fege = { reihe: [], i: 0, guthaben: 0, zeit: performance.now(), runde: 0 });
         // das Guthaben: so viele Glieder, dass jedes einmal je Sicherungs-Abstand dran ist (ein neues prüft der Stand selbst)
         const jetzt = performance.now();
-        F.guthaben = Math.min(
-            F.reihe.length + 1,
-            F.guthaben + ((jetzt - F.zeit) * F.reihe.length) / (1000 * this.state.saveInterval)
-        );
+        const abstand = 1000 * this.state.saveInterval;
+        F.guthaben = Math.min(F.reihe.length + 1, F.guthaben + ((jetzt - F.zeit) * F.reihe.length) / abstand);
         F.zeit = jetzt;
+        // nichts fällig, kein Kontext: der Besen läuft in jedem Leerlauf-Fenster, ein Glied ist nur alle Abstand/Länge dran,
+        // eine Runde ohne Glieder einmal je Abstand (bis speicher-takt baute jedes Fenster den Kontext samt Bauten-Filter)
+        if (F.i < F.reihe.length ? F.guthaben < 1 : !F.reihe.length && jetzt - F.runde < abstand) return;
+        const K = this._standKontext();
         while ((F.guthaben >= 1 || F.i >= F.reihe.length) && (frist.timeRemaining() > 1 || frist.didTimeout)) {
             if (F.i >= F.reihe.length) {
                 F.reihe = [];
                 F.i = 0;
+                F.runde = jetzt;
                 for (const [k, , art] of this._standTafel()) {
                     if (!art || !art.liste) continue;
                     const L = this._standListe(k);
@@ -1580,9 +1582,9 @@ class AnazhRealm_speicher_welten {
             };
         }
         nachricht.n = ++S.n;
-        // ohne Zusage (der Stand, die Ablage, das Löschen): niemand wartet, die Antwort meldet nur den Bruch; die Schranke
-        // (`_speicherStill`) steht hinter jeder früheren Nachricht
-        if (!zusage) return S.faden.postMessage(nachricht, transfer);
+        // ohne Zusage (der Stand, die Ablage, das Löschen): niemand wartet, der Faden antwortet nur den Bruch (`leise`); die
+        // Schranke (`_speicherStill`) steht hinter jeder früheren Nachricht
+        if (!zusage) return S.faden.postMessage(Object.assign(nachricht, { leise: true }), transfer);
         return new Promise((ok) => {
             S.warten.set(nachricht.n, ok);
             S.faden.postMessage(nachricht, transfer);
@@ -1590,13 +1592,37 @@ class AnazhRealm_speicher_welten {
     }
 
     // Die Sicherung der lebenden Welt an den Faden: die Änderung seit dem letzten Stand (ganz, wenn der Faden kein Modell
-    // dieser Welt hält).
+    // dieser Welt hält). DER RUF DES TAKTS (Autosave, Edit-Timer; Lehre 14) merkt nur, DASS ein Stand aussteht — ihn setzt der
+    // Besen im nächsten Leerlauf-Fenster mit Platz zusammen (`_standNachholen`), spätestens nach `STAND_TAKT.fristMs`; jeder
+    // andere Ruf, die Schranke (`_speicherStill`) und das Verlassen setzen ihn vorher synchron. Bis speicher-takt setzte jeder
+    // Ruf den Stand im Takt zusammen: je Ruf p95 5 ms auf der Radeon (speicher.K2, eeaff9d6).
     _standSichern(welt, at, takt) {
         const S = this._speicherZustand();
+        this._standBesen();
+        if (takt) {
+            S.ausstehend = { welt, at, bis: (S.ausstehend || { bis: performance.now() + AnazhRealm.STAND_TAKT.fristMs }).bis };
+            return;
+        }
+        S.ausstehend = null;
+        this._standSenden(welt, at, false);
+    }
+
+    // Der ausstehende Stand des Takts, jetzt: nur für die Welt, deren Ruf ihn verlangte (die worldId erneut geprüft), nie in
+    // eine halb geladene (die Sperre des Ladens verlangt ihn nach dem Laden ganz).
+    _standNachholen() {
+        const S = this._speicher;
+        const a = S && S.ausstehend;
+        if (!a) return;
+        S.ausstehend = null;
+        if (this._ladeSperre) return void (this._ladeSperre.verlangt = true);
+        if (this.state.worldMeta && this.state.worldMeta.worldId === a.welt) this._standSenden(a.welt, a.at, true);
+    }
+
+    _standSenden(welt, at, takt) {
+        const S = this._speicher;
         // voll: der Faden hält kein Modell dieser Welt — die Gedächtnisse der Seite bleiben, gesendet wird alles
         const voll = S.welt !== welt;
         if (voll) Object.assign(S, { edits: { ref: null, n: 0 }, ordnung: null, kopf: null });
-        this._standBesen();
         const { nachricht, transfer } = this._standAenderung(voll, takt);
         Object.assign(nachricht, { op: "stand", welt, at, voll });
         S.welt = welt;
@@ -1624,19 +1650,26 @@ class AnazhRealm_speicher_welten {
     }
 
     // Der Besen läuft ab dem Boot in jedem Leerlauf-Fenster (ohne die API im nächsten Task: ohne Frist) — EINMAL gestartet.
+    // Zuerst der ausstehende Stand des Takts: in einem Fenster mit `STAND_TAKT.platzMs` Platz, sonst nach seiner Frist.
     _standBesen() {
         const S = this._speicherZustand();
         if (S.besen) return;
         S.besen = true;
-        const lauf = (frist) => {
-            this._standFegen(frist || { timeRemaining: () => 0, didTimeout: true });
-            this._imLeerlauf(lauf, 1000);
+        const lauf = (f) => {
+            const frist = f || { timeRemaining: () => 0, didTimeout: true };
+            const a = S.ausstehend;
+            const jetzt = performance.now();
+            if (a && (frist.didTimeout || jetzt >= a.bis || frist.timeRemaining() >= AnazhRealm.STAND_TAKT.platzMs))
+                this._standNachholen();
+            this._standFegen(frist);
+            this._imLeerlauf(lauf, S.ausstehend ? Math.max(1, S.ausstehend.bis - jetzt) : 1000);
         };
         this._imLeerlauf(lauf, 1000);
     }
 
     // Die Schranke des Fadens: löst, wenn alles davor Gesendete fest ist (der Welt-Wechsel wartet auf sie).
     _speicherStill() {
+        this._standNachholen();
         return this._speicher ? this._speicherAuftrag({ op: "still" }) : Promise.resolve({ ok: true });
     }
 
@@ -1644,6 +1677,7 @@ class AnazhRealm_speicher_welten {
     // Fusion, der Welt-Wechsel, die Rettungs-Kette ohne Platte — finden jede verlassene Welt dort) mit dem Stempel ihres
     // letzten Stands (`lastPlayed`; IndexedDB trägt denselben, die Rettungs-Kette wählt sie).
     async _speicherVerlassen() {
+        this._standNachholen();
         const S = this._speicher;
         if (!S || !S.welt) return;
         const a = await this._speicherAuftrag({ op: "abbild", welt: S.welt });
@@ -2583,6 +2617,8 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
 AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX = 8192;
 // Die leere Reihe der Stand-Tafel (eine Marke vergleicht Identität: nie je Ruf ein neues [])
 AnazhRealm.STAND_LEER = Object.freeze([]);
+// DER STAND DES TAKTS im Leerlauf (`_standSichern`): spätestens `fristMs` nach dem Ruf, vorher nur in einem Fenster mit `platzMs`
+AnazhRealm.STAND_TAKT = Object.freeze({ fristMs: 1000, platzMs: 4 });
 AnazhRealm.BLUEPRINT_KNOWN_KEYS = Object.freeze([
     "name",
     "label",
