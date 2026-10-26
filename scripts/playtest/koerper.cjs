@@ -118,7 +118,7 @@ async function checkBandRing5Soul(ctx) {
     // ### Ring 5 — createPlayerSoul V1 ###
     // Mensch + verkörperbare Tier-Körper: Default human, Wechsel ändert geometry+color, Chat-Pattern
     // routet, Save/Load-Roundtrip, unbekannte Namen abgelehnt, Position überlebt, Drawer + Status-Bar-UI.
-    const ring5Results = await safeEvaluate(page, () => {
+    const ring5Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player || !r.state.playerMesh) return null;
         const out = {};
@@ -276,7 +276,7 @@ async function checkBandRing5Soul(ctx) {
         // Save-Roundtrip: die getragene Wolf-Verkörperung reist als Custom-Seele
         r.applyPlayerSoul("wolf");
         r.saveState();
-        const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
+        const raw = await window.__stand();
         let parsed = null;
         try {
             parsed = JSON.parse(raw);
