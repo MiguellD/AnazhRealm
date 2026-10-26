@@ -698,10 +698,11 @@ jobs:
               # Haupt-Thread (jeder buildInstance eines Kerns am Spawn beim Namen; 10.10.: sieben Tore nachgebaut). Befund 09.10.:
               # der Felsturm stiess als Eisen-Mast 4,4 x 16,8 m. Der Spender-Felsturm und das Tor ohne Pfosten fallen rot beim
               # Namen; Haus und Ausstattung stehen als OFFEN mit Zahl. (V) KONTAKT BEIM TEMPO (physik.K2): Fuchs, Wolf, Baer und
-              # Riese im Galopp, der Spieler gehend und im Sprint, der GT bei vmax und der Baer, den er stoesst, gegen Mauer,
-              # Fels, Haus, Baum und einen stehenden Baeren, der Fall aus 60 m — bei 144/60/30 fps und dem Takt-Deckel:
-              # Eindringen <= 1 cm, kein Durchtritt, Spalt <= 5 cm; der Fuchs mit EINEM Schritt je Takt muss durch die Mauer
-              # (vorher 25/114 Zeilen rot). Selbsttest inklusive.
+              # Riese im Galopp, der Spieler gehend und im Sprint, der Wagen (das schnellste Spiel-Rezept bei vmax x 1,2,
+              # physik.K2 Staffel 2) und der Baer, den er stoesst, gegen Mauer, Fels, Haus, Baum und einen stehenden Baeren,
+              # der Fall aus 60 m — bei 144/60/30 fps und dem Takt-Deckel, nach jedem Sim-Schritt und Bild: Eindringen <= 1 cm,
+              # kein Durchtritt, Spalt <= 5 cm; das Bild von Wagen und Baer an der Mauer steht mit Zahl (OFFEN, die Station
+              # urteilt); der Fuchs mit EINEM Schritt je Takt muss durch die Mauer (vorher 25/114 Zeilen rot). Selbsttest inklusive.
               run: npm run gate:kollision-bild
 
             - name: Fall-Waechter (Leben-Schau 2 — jeder Koerper steht auf dem Boden unter ihm)

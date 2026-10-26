@@ -25,15 +25,20 @@
 //       Studio-Werks (`_studioWeltSkala`; der Hand-Spiegel `STUDIO_WORLD_SCALE` ist gate:altlasten), das Tor liest seine Hülle
 //       aus dem Gesetzbuch (`porta:TOR_HUELLE`) und kein Blocker-Erzeuger ruft `buildInstance`;
 //   (V) KONTAKT BEIM TEMPO (physik.K2, echter Takt): Fuchs · Wolf · Bär · Riese (GIGANT) im Galopp, der Spieler gehend und im
-//       Sprint, der GT bei vmax und der Bär, den er stößt, gegen Mauer · Fels · Haus · Baum · Bär, der Fall aus FALL_M — bei
-//       144 · 60 · 30 fps und dem Takt-Deckel: je Takt Eindringen ≤ EINDRING_M, kein Durchtritt, Spalt ≤ SPALT_M (sonst vakuös);
+//       Sprint, der Wagen — das schnellste Spiel-Rezept bei vmax × UEBER_VMAX (Staffel 2; die vmax aus `_vehicleProfile`,
+//       gemessen das gefahrene Tempo) — und der Bär, den er stößt, gegen Mauer · Fels · Haus · Baum · Bär, der Fall aus FALL_M —
+//       bei 144 · 60 · 30 fps und dem Takt-Deckel: nach jedem Sim-Schritt und jedem Bild Eindringen ≤ EINDRING_M, kein
+//       Durchtritt, Spalt ≤ SPALT_M (sonst vakuös); DAS BILD: Wagen und Bär an der Mauer — an jedem Bild, in dem sie anliegen,
+//       ihre gezeichneten Ecken (Zeichner-Matrix, Skin) gegen das gezeichnete Mesh der Mauer: Spalt ≤ SPALT_M, Eindringen ≤
+//       EINDRING_M; was die Welt nicht trägt, steht OFFEN mit Zahl (die Station physik.K2#2 urteilt), kein Bild ist ROT;
 //       (T) der Fuchs mit EINEM Schritt je Takt (`LEIB_TEIL` ohne Teil-Schritt) MUSS durch die Mauer;
 //   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Blocker ohne Bild, Bild ohne
 // Blocker, Baum ohne Stamm, fremde Gestalt, leere Zählung, stumpfer Schmuggel, fehlende Klasse, Bau auf dem Haupt-Thread,
-// Quelle, Durchtritt, Eindringen, vakuöse und fehlende Tempo-Zeile, stumpfer Tempo-Schmuggel — MUSS rot fallen und
-// ihn beim Namen nennen.
-//   node scripts/diag-kollision-bild.cjs [--selftest]   (npm run gate:kollision-bild; Port KOLLISION_BILD_PORT)
+// Quelle, Durchtritt (der Wagen bei × 1,2), Eindringen, vakuöse und fehlende Tempo-Zeile, stumpfer Tempo-Schmuggel, der Wagen
+// unter vmax × 1,2, kein Bild — MUSS rot fallen und ihn beim Namen nennen; der Leib im Bild in der Mauer steht OFFEN beim Namen.
+//   node scripts/diag-kollision-bild.cjs [--selftest | --bild]   (npm run gate:kollision-bild; Port KOLLISION_BILD_PORT;
+//   `--bild`: die Welt zeichnet auf der Karte — die Station physik.K2#2 auf beiden Geräten)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
@@ -63,17 +68,26 @@ const PFLICHT_EXEMPLARE = [
     "marktstand_dorf",
     "laterne_dorf",
 ];
-// (V) DAS SOLL: Eindringen nach dem Takt ≤ PhysX/Unity `defaultContactOffset`, Spalt ≤ die Bild-Probe von physik.K2
+// (V) DAS SOLL: Eindringen nach dem Takt ≤ PhysX/Unity `defaultContactOffset`, Spalt ≤ die Bild-Probe von physik.K2 — im
+// Bild wie im Körper; der Wagen fährt die vmax des schnellsten Spiel-Rezepts × UEBER_VMAX (physik.K2 Staffel 2: die vmax
+// liest die Probe aus dem EINEN Fahrzeug-Profil `_vehicleProfile`, der Faktor ist das Soll der Staffel)
 const EINDRING_M = 0.01;
 const SPALT_M = 0.05;
+const UEBER_VMAX = 1.2;
 const FALL_M = 60;
 const HINDERNISSE = ["mauer", "fels", "haus", "baum", "leib"];
+const TAKTE = ["144", "60", "30", "deckel"];
 const zeilen = (koerper, kad) => koerper.flatMap((k) => HINDERNISSE.flatMap((h) => kad.map((t) => `${k}|${h}|${t}`)));
 const TEMPO_ZEILEN = [
-    ...zeilen(["fuchs", "wolf", "baer", "riese"], ["144", "60", "30", "deckel"]),
-    ...zeilen(["gehen", "sprint", "gt"], ["60", "deckel"]),
-    ...["60", "deckel"].flatMap((t) => [`gestossen|mauer|${t}`, `fall|boden|${t}`]),
+    ...zeilen(["fuchs", "wolf", "baer", "riese", "wagen"], TAKTE),
+    ...zeilen(["gehen", "sprint"], ["60", "deckel"]),
+    ...TAKTE.map((t) => `gestossen|mauer|${t}`),
+    ...["60", "deckel"].map((t) => `fall|boden|${t}`),
 ];
+// die Paare, deren Körper die gezeichnete Mauer erreicht: ihr BILD urteilt mit, an jedem Bild, in dem der Körper anliegt
+// (Kollision = Bild, physik.K2 Staffel 2) — je Paar mindestens eines (der Wagen prallt in EINEM Sim-Schritt ab: im Takt-Deckel
+// liegt er in keinem Bild an)
+const BILD_PAARE = ["wagen|mauer", "gestossen|mauer"];
 
 // (V) Das Urteil (rein).
 function tempoUrteil(T) {
@@ -88,7 +102,15 @@ function tempoUrteil(T) {
         else if (!(z.tief <= EINDRING_M))
             v.push(`(V) EINDRINGEN: ${wer} — ${z.tief} m > ${EINDRING_M} m nach dem Takt`);
         if (z && !(z.spalt <= SPALT_M)) v.push(`(V) VAKUÖS: ${wer} — der Körper erreichte es nie (Spalt ${z.spalt} m)`);
+        if (z && z.koerper === "wagen" && !(z.v / z.vmax >= UEBER_VMAX - 0.01))
+            v.push(`(V) UNTER TEMPO: ${wer} — vmax ${z.vmax} m/s des schnellsten Rezepts × ${UEBER_VMAX}`);
+        const b = z && z.bild;
+        if (b && !(b.spalt <= SPALT_M && b.tief <= EINDRING_M))
+            v.push(`OFFEN (V) BILD ≠ KOLLISION: ${wer} — im Bild Spalt ${b.spalt} m, Eindringen ${b.tief} m`);
     }
+    for (const p of BILD_PAARE)
+        if (!T.zeilen.some((z) => z.koerper + "|" + z.hindernis === p && z.bild))
+            v.push(`(V) KEIN BILD: ${p} — in keinem lag der Körper an der Wand`);
     if (!(T.schmuggel && T.schmuggel.durch))
         v.push(
             `LINSE STUMPF: (V) der Fuchs mit EINEM Schritt je Takt ging nicht durch die Mauer ${JSON.stringify(T.schmuggel)}`
@@ -96,7 +118,8 @@ function tempoUrteil(T) {
     return v;
 }
 
-// Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein, im Selbsttest wie im Lauf.
+// Das Urteil über einen Befund: Liste der Verstöße (leer = grün; OFFEN steht mit Zahl, nie grün gezählt, die Station von
+// physik.K2 Staffel 2 urteilt es). Rein, im Selbsttest wie im Lauf.
 function urteil(b) {
     const v = [];
     if (!b.zensus || !(b.zensus.werke > 0)) v.push("LEER: die Zählung fand kein Werk, das das Studio zeichnet");
@@ -161,7 +184,8 @@ function selbsttest() {
         tempo: {
             zeilen: TEMPO_ZEILEN.map((k) => {
                 const [koerper, hindernis, kad] = k.split("|");
-                return { koerper, hindernis, kad, v: 5.86, wer: hindernis + "#7", durch: false, tief: 0, spalt: 0 };
+                const bild = { spalt: 0, tief: 0 };
+                return { koerper, hindernis, kad, v: 5.86, vmax: 4.88, wer: hindernis + "#7", tief: 0, spalt: 0, bild };
             }),
             schmuggel: { durch: true, tief: 0.28, spalt: 0 },
         },
@@ -235,7 +259,11 @@ function selbsttest() {
             (b) => (Z(b, "wolf|haus|deckel").tief = 0.13),
             /\(V\) EINDRINGEN: wolf .*@deckel → haus#7 — 0\.13 m/,
         ],
-        ["vakuöse Tempo-Zeile", (b) => (Z(b, "gt|baum|60").spalt = 0.8), /\(V\) VAKUÖS: gt .*baum#7 .*Spalt 0\.8/],
+        ["vakuöse Tempo-Zeile", (b) => (Z(b, "wagen|baum|60").spalt = 0.8), /\(V\) VAKUÖS: wagen .*baum#7 .*Spalt 0\.8/],
+        ["Wagen bei × 1,2 durch die Mauer", (b) => (Z(b, "wagen|mauer|144").durch = true), /DURCHTRITT: wagen 5\.86 m\/s @144/],
+        ["Wagen unter vmax × 1,2", (b) => (Z(b, "wagen|fels|30").v = 4.88), /UNTER TEMPO: wagen 4\.88 m\/s @30/],
+        ["Leib im Bild in der Mauer", (b) => (Z(b, "gestossen|mauer|60").bild.tief = 0.12), /BILD ≠ KOLLISION: gestossen .*@60/],
+        ["Bild fehlt", (b) => TAKTE.forEach((t) => delete Z(b, `wagen|mauer|${t}`).bild), /KEIN BILD: wagen\|mauer/],
         [
             "fehlende Tempo-Zeile",
             (b) => (b.tempo.zeilen = b.tempo.zeilen.filter((z) => z.koerper !== "riese")),
@@ -269,6 +297,8 @@ const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./l
 const { messort } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOLLISION_BILD_PORT) || 4631;
+// `--bild`: die Welt zeichnet auf der Karte (Rezept `linse`, ohne Null-Renderer) — physik.K2 Staffel 2 auf beiden Geräten
+const BILD = process.argv.includes("--bild");
 const server = statikServer();
 
 // Die Zählung im Seiten-Kontext: je Studio-Werk im Umkreis das Bild gegen die Kollision.
@@ -636,7 +666,7 @@ async function tempo(K) {
     const r = window.anazhRealm;
     const st = r.state;
     const A = r.constructor;
-    const { mess: MW, HINDERNISSE } = K;
+    const { mess: MW, HINDERNISSE, TAKTE } = K;
     const pm = st.playerMesh;
     const hh = (x, z) => r._voxelSurfaceY(x, z); // der Boden, auf dem die Körper gehen (die Oberkante des Felds)
     const STUFE = A.PLAYER_STEP_UP;
@@ -669,6 +699,28 @@ async function tempo(K) {
         return ox > 0 || oz > 0 ? Math.hypot(Math.max(ox, 0), Math.max(oz, 0)) : Math.max(ox, oz);
     };
     const weite = (R, ux, uz) => R.hx * Math.abs(R.c * ux - R.s * uz) + R.hz * Math.abs(R.s * ux + R.c * uz);
+    // DAS BILD (physik.K2 Staffel 2): jede gezeichnete Ecke eines Körpers — je Instanz-Slot eines Werks mit der Matrix des
+    // Zeichners (`_archInstanceUpdate`), sonst jedes sichtbare Mesh (der Leib mit Skin: `getVertexPosition`) — gegen das Mesh
+    // der Wand `W` (die Box seiner Geometrie im eigenen Rahmen): der kleinste Abstand, innen negativ
+    const V = new THREE.Vector3();
+    const bildAbstand = (o, W) => {
+        const teile = (o.instSlots || []).map(({ key, slot }) => {
+            const g = st.archInstanceGroups.get(key).mesh;
+            const M = new THREE.Matrix4();
+            g.getMatrixAt(slot, M);
+            return [g, M.premultiply(g.matrixWorld)];
+        });
+        if (!o.instSlots) o.updateMatrixWorld(true) || o.traverseVisible((m) => m.isMesh && teile.push([m, m.matrixWorld]));
+        const [B, I] = [W.geometry.boundingBox, W.matrixWorld.clone().invert()];
+        let d = Infinity;
+        for (const [m, M] of teile)
+            for (let i = 0; i < m.geometry.attributes.position.count; i++) {
+                const p = m.getVertexPosition(i, V).applyMatrix4(M).applyMatrix4(I);
+                const a = ["x", "y", "z"].map((k) => Math.max(B.min[k] - p[k], p[k] - B.max[k]));
+                d = Math.min(d, Math.max(...a) > 0 ? Math.hypot(...a.map((x) => Math.max(x, 0))) : Math.max(...a));
+            }
+        return d;
+    };
     // DIE KÖRPER: das Tier die drei Kreise seines Leibs, der Spieler seine Kapsel (Sim-Lage), der Wagen der Rahmen seiner Hülle
     const leibKreise = (c) => {
         const l = r._kreaturLeib(c, 0, {});
@@ -679,13 +731,17 @@ async function tempo(K) {
         const { l, kreise } = leibKreise(c);
         return { mx: c.position.x, mz: c.position.z, y0: c.position.y, y1: c.position.y + l.hoehe, kreise };
     };
+    // die Sim-Lage: im Sim-Schritt trägt sie der Mesh, nach dem Bild `_fixedSimPos` (der Mesh die gezeichnete) — vorher las
+    // der Schritt das `_fixedSimPos` des vorigen Bilds, und bei 2–6 Schritten je Bild sah die Probe keinen Aufprall
+    let imSchritt = false;
+    const simLage = () => (imSchritt || !st._fixedSimPos ? pm.position : st._fixedSimPos);
     const spielerK = () => {
-        const p = st._fixedSimPos || pm.position;
+        const p = simLage();
         const F = A.PLAYER_FOOT_OFFSET;
         return { mx: p.x, mz: p.z, y0: p.y - F, y1: p.y + F, kreise: [[p.x, p.z, A.PLAYER_WALL_RADIUS]] };
     };
     const wagenK = (e) => () => {
-        const p = st._fixedSimPos || pm.position;
+        const p = simLage();
         const h = r._fahrHuelle(e);
         const [s, c] = [Math.sin(e._rideYaw || 0), Math.cos(e._rideYaw || 0)];
         const re = { cx: p.x + s * h.mitte, cz: p.z + c * h.mitte, c, s, hx: h.hw, hz: h.hl, stufe: h.stufe };
@@ -733,34 +789,42 @@ async function tempo(K) {
             return t;
         },
     });
-    // DER LAUF: gemessen nach jedem Bild und nach dem Kontakt jedes Sim-Schritts (`_loopPhysicsSync`)
+    // DER LAUF: gemessen nach jedem Bild und nach jedem Sim-Schritt (`_stepFixedSim`: Kontakt, Stoß, Leib an Leib); nach dem Bild auch
+    // das gezeichnete Paar `bk` gegen die gezeichnete Wand, wenn der Körper anliegt (Spalt ≤ SPALT_M)
     const fahre = (kad, sek, paare, je) => {
         const m = paare.map(() => ({ tief: -Infinity, spalt: Infinity, durch: false }));
-        const miss = () =>
-            paare.forEach(([kf, H], i) => {
+        const miss = (bild) =>
+            paare.forEach(([kf, H, bk], i) => {
                 const k = kf();
                 const d = H.tiefe(k);
                 if (d === -Infinity) return;
                 m[i].tief = Math.max(m[i].tief, d);
                 m[i].spalt = Math.min(m[i].spalt, Math.max(0, -d));
                 if (H.durch(k)) m[i].durch = true;
+                if (!bild || !bk || d < -K.SPALT_M) return;
+                const b = bildAbstand(bk, H.bild);
+                const a = (m[i].bild = m[i].bild || { spalt: Infinity, tief: 0 });
+                [a.spalt, a.tief] = [Math.min(a.spalt, Math.max(0, b)), Math.max(a.tief, -b)];
             });
-        r._loopPhysicsSync = function (...a) {
-            Object.getPrototypeOf(r)._loopPhysicsSync.apply(this, a);
+        r._stepFixedSim = function (...a) {
+            Object.getPrototypeOf(r)._stepFixedSim.apply(this, a);
+            imSchritt = true;
             miss();
+            imSchritt = false;
         };
         try {
             for (let t = 0; t < sek; t += KAD[kad] / 1000) {
                 if (je) je();
                 takt(KAD[kad]);
-                miss();
+                miss(true);
             }
         } finally {
-            delete r._loopPhysicsSync;
+            delete r._stepFixedSim;
         }
         return m;
     };
-    const zeile = (koerper, hindernis, kad, v, H, m) =>
+    const mm = (x) => (x < Infinity ? +Math.max(0, x).toFixed(3) : 999);
+    const zeile = (koerper, hindernis, kad, v, H, m, extra) =>
         aus.zeilen.push({
             koerper,
             hindernis,
@@ -768,8 +832,10 @@ async function tempo(K) {
             v: +v.toFixed(2),
             wer: H.wer,
             durch: m.durch,
-            tief: +Math.max(0, m.tief).toFixed(3),
-            spalt: Number.isFinite(m.spalt) ? +m.spalt.toFixed(3) : 999,
+            tief: mm(m.tief),
+            spalt: mm(m.spalt),
+            ...(m.bild && { bild: { spalt: mm(m.bild.spalt), tief: mm(m.bild.tief) } }),
+            ...extra,
         });
     // DER GANG: der Läufer fährt den Sprint seiner Gestalt, der stehende Bär 0, jedes andere Tier sein Gesetz
     const roh = A._steuerGesetz;
@@ -834,6 +900,8 @@ async function tempo(K) {
             if (!e || !ziel(e)) throw new Error(`${typ} steht nicht`);
             H[n] = werkH(e, ziel(e), rot > 0);
         }
+        H.mauer.e.mesh.updateMatrixWorld(true);
+        H.mauer.e.mesh.traverse((m) => m.isMesh && (H.mauer.bild = m) && m.geometry.computeBoundingBox());
         for (const z of Object.values(BAHN))
             for (const o of st.architectures.slice())
                 if (
@@ -885,8 +953,7 @@ async function tempo(K) {
             ["baer", "baer", 1],
             ["riese", "baer", riese],
         ])
-            for (const n of HINDERNISSE)
-                for (const kad of ["144", "60", "30", "deckel"]) await galopp(name, art, gr, n, kad);
+            for (const n of HINDERNISSE) for (const kad of TAKTE) await galopp(name, art, gr, n, kad);
         // (T) der Fuchs im Takt-Deckel mit EINEM Schritt je Takt
         const teil = A.LEIB_TEIL;
         A.LEIB_TEIL = { radius: Infinity, minM: Infinity };
@@ -926,34 +993,42 @@ async function tempo(K) {
             );
             zeile("fall", "boden", kad, vf, Hb, m);
         }
-        // DER WAGEN bei vmax (W), und der Bär, den er stößt, 2 m vor der Mauer
+        // DER WAGEN (physik.K2 Staffel 2): das schnellste Rezept des Spiels — jedes Fahrzeug-Buch der Foundry, die vmax aus dem
+        // EINEN Fahrzeug-Profil — bei vmax × UEBER_VMAX: das Tempo trägt sein Profil, der Kern deckelt am Profil (`_fahrSatz` →
+        // vehicle-core fahrKraefte), gemessen wird das gefahrene; dazu der Bär, den er stößt, 2 m vor der Mauer
+        const buch = r._ensureAssetFoundry().recipes;
+        const vmaxVon = (type) => r._vehicleProfile({ type }).vmax;
+        const rezept = Object.keys(buch)
+            .filter((id) => buch[id].kind === "vehicle")
+            .map((id) => A.KIND_POLICY.vehicle.prefix + id)
+            .reduce((a, b) => (vmaxVon(b) > vmaxVon(a) ? b : a));
         for (const n of HINDERNISSE)
-            for (const kad of ["60", "deckel"]) {
+            for (const kad of TAKTE) {
                 const steht = n === "leib" ? baer(H.mauer.x - 2.7, BAHN.mauer) : null;
                 const [x, z] = n === "leib" ? [H.mauer.x - 12, BAHN.mauer] : start(n, 3, 2.5);
                 pm.position.set(x, hh(x, z) + 1.2, z);
-                const e = r.spawnArchitecture(
-                    "fahrzeug_gt",
-                    { x, y: hh(x, z) + 0.5, z },
-                    { silent: true, precise: true, rotationY: 0 }
-                );
+                const e = r.spawnArchitecture(rezept, { x, y: hh(x, z) + 0.5, z }, { silent: true, precise: true, rotationY: 0 });
                 await window.__gebautNach(e);
-                if (!(r.mountArchitecture(e) || {}).ok) throw new Error("kein Ritt im GT");
+                if (!(r.mountArchitecture(e) || {}).ok) throw new Error(`kein Ritt im ${rezept}`);
                 tasten(false);
                 for (let i = 0; i < 12; i++) takt(1000 / 60);
-                const vmax = r._vehicleProfile(e).vmax;
-                e._fahr.vlong = vmax;
-                st.playerVel.setValue(vmax, st.playerVel.y(), 0);
+                const P = r._vehicleProfile(e);
+                const vmax = P.vmax;
+                P.vmax *= K.UEBER_VMAX;
+                e._fahr.vlong = P.vmax;
+                st.playerVel.setValue(P.vmax, st.playerVel.y(), 0);
                 tasten(true, false);
                 const Hn = steht ? leibH(steht) : H[n];
-                let vs = 0;
-                const paare = [[wagenK(e), Hn], ...(steht ? [[tierK(steht), H.mauer]] : [])];
-                const [m, mb] = fahre(kad, 12 / vmax + 0.9, paare, () => {
+                let [vs, vw] = [0, null];
+                const paare = [[wagenK(e), Hn, n === "mauer" && e], ...(steht ? [[tierK(steht), H.mauer, steht]] : [])];
+                const [m, mb] = fahre(kad, 12 / P.vmax + 2.5, paare, () => {
+                    // das gefahrene Tempo nach jedem Takt (der erste Aufruf liegt vor dem ersten)
+                    vw = vw === null ? 0 : Math.max(vw, Math.hypot(st.playerVel.x(), st.playerVel.z()));
                     const sv = steht && steht.userData._stossV;
                     if (sv) vs = Math.max(vs, Math.hypot(sv.x, sv.z));
                 });
                 tasten(false);
-                zeile("gt", n, kad, vmax, Hn, m);
+                zeile("wagen", n, kad, vw, Hn, m, { vmax: +vmax.toFixed(2), rezept });
                 if (mb) zeile("gestossen", "mauer", kad, vs, H.mauer, mb);
                 r.dismountArchitecture();
                 r.removeArchitecture(e);
@@ -972,12 +1047,12 @@ async function tempo(K) {
 }
 
 (async () => {
-    console.log("=== KOLLISION = BILD (Leben-Schau 2) — Null-Renderer, Foundry an, Mess-Wiese 150 m + Exemplare ===");
+    console.log(`=== KOLLISION = BILD (Leben-Schau 2) — ${BILD ? "die Karte zeichnet" : "Null-Renderer"}, Foundry an, Mess-Wiese 150 m + Exemplare ===`);
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 900000 });
+    const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(880000);
-    await nullRenderer(page);
+    if (!BILD) await nullRenderer(page);
     let befund = null;
     try {
         await server.zeige(page, 120000);
@@ -992,7 +1067,7 @@ async function tempo(K) {
             STRENG,
             exemplare: PFLICHT_EXEMPLARE,
         });
-        befund.tempo = await page.evaluate(tempo, { mess: messort("wiese"), FALL_M, HINDERNISSE });
+        befund.tempo = await page.evaluate(tempo, { mess: messort("wiese"), FALL_M, HINDERNISSE, TAKTE, UEBER_VMAX, SPALT_M });
     } catch (e) {
         befund = { fehler: (e && e.message) || String(e) };
     }
@@ -1026,12 +1101,15 @@ async function tempo(K) {
     console.log(`  (V) Kontakt beim Tempo: ${Z.length}/${TEMPO_ZEILEN.length} Zeilen · Schmuggel ${JSON.stringify(befund.tempo.schmuggel)}`);
     for (const k of new Set(Z.map((z) => z.koerper))) {
         const J = Z.filter((z) => z.koerper === k);
-        const max = (f) => Math.max(...J.map(f)).toFixed(3);
+        const max = (f, L = J) => Math.max(...L.map(f)).toFixed(3);
+        const B = J.filter((z) => z.bild).map((z) => z.bild);
         console.log(
-            `      ${k.padEnd(10)} ${max((z) => z.v)} m/s · Durchtritt ${J.filter((z) => z.durch).length}/${J.length} · Eindringen max ${max((z) => z.tief)} m · Spalt max ${max((z) => z.spalt)} m`
+            `      ${k.padEnd(10)} ${max((z) => z.v)} m/s · Durchtritt ${J.filter((z) => z.durch).length}/${J.length} · Eindringen max ${max((z) => z.tief)} m · Spalt max ${max((z) => z.spalt)} m` +
+                (B.length ? ` · im Bild Spalt max ${max((b) => b.spalt, B)} m, Eindringen max ${max((b) => b.tief, B)} m` : "") +
+                (J[0].rezept ? ` · ${J[0].rezept} vmax ${J[0].vmax} m/s × ${UEBER_VMAX}` : "")
         );
     }
-    const v = urteil(befund);
+    const v = urteil(befund).filter((x) => !x.startsWith("OFFEN") || console.log("  " + x));
     if (v.length) {
         console.log("\n❌ KOLLISION = BILD ROT:\n  " + v.join("\n  "));
         process.exit(1);
@@ -1039,7 +1117,7 @@ async function tempo(K) {
     console.log(
         "\n✅ KOLLISION = BILD GRÜN — jede Box hat ihr Bild; Fels, Tor (außer der Passage) und Wagen: jedes Bild im Körper-Band " +
             "liegt an einer Box; jedes feste Werk trägt Boxen; kein Blocker baut eine Gestalt auf dem Haupt-Thread; kein Körper " +
-            "dringt beim Tempo des Spiels in ein Hindernis" +
+            "dringt beim Tempo des Spiels (der Wagen × 1,2) in ein Hindernis" +
             ((befund.offen || []).length ? ` — OFFEN: ${befund.offen.length} Werk(e) mit Bild ohne Box (oben)` : "")
     );
     process.exit(0);
