@@ -2128,16 +2128,13 @@ function zeile(o) {
         const lauf = async (inj, phasen, platz) => {
             const z = { patch: inj && BASIS[inj] ? BASIS[inj] : null, fehler: [], angewandt: new Set() };
             platz.z = z;
-            const PORT = platz.port;
             // je Lauf ein eigener Browser-Kontext: kein Speicherstand (Save, IndexedDB) des Vorlaufs reist in die nächste
             // Welt (ein gespeichertes Dorf stünde sonst unter dem neu gegründeten)
             const kontext = await browser.createBrowserContext();
             const page = await kontext.newPage();
             page.setDefaultTimeout(880000);
-            const errs = [];
-            page.on("pageerror", (e) => errs.push((e.message || String(e)).split("\n")[0]));
             if (!BILD) await nullRenderer(page);
-            await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 180000 });
+            await platz.server.zeige(page, 180000, "index.html", "networkidle0");
             await warteAufWelt(page, 180000);
             await page.evaluate(() =>
                 window.__weltStehtNach(() => {
@@ -2154,7 +2151,7 @@ function zeile(o) {
                 const [d, g] = patchZiel(zeile);
                 if (!z.angewandt.has(d + "|" + g)) z.fehler.push(`nie angewandt: ${d} („${g.slice(0, 60)}…")`);
             }
-            return { o, errs, pf: z.fehler.slice() };
+            return { o, pf: z.fehler.slice() };
         };
         // die Welten im Pool: höchstens PARALLEL zugleich, die Ergebnisse in der Reihenfolge der Aufträge
         const pool = async (auftraege) => {
@@ -2162,10 +2159,9 @@ function zeile(o) {
             let naechster = 0;
             const arbeiter = async (k) => {
                 // der Platz k: EIN Server, der den Patch der Welt liefert, die gerade auf ihm fährt
-                const platz = { z: null, port: 0 };
+                const platz = { z: null };
                 const server = machServer(platz);
-                await new Promise((r) => server.listen(PORT_BASIS ? PORT_BASIS + k : 0, "127.0.0.1", r));
-                platz.port = server.address().port;
+                platz.server = await server.lausche(PORT_BASIS ? PORT_BASIS + k : 0);
                 try {
                     while (naechster < auftraege.length) {
                         const i = naechster++;
@@ -2248,7 +2244,7 @@ function zeile(o) {
             }
         }
         if (haupt) {
-            const { o, errs } = haupt;
+            const { o } = haupt;
             if (o.w9) {
                 fs.mkdirSync(path.join(ROOT, "artifacts/haus-welt"), { recursive: true });
                 o.w9.haeuser.forEach((h, i) =>
@@ -2265,8 +2261,7 @@ function zeile(o) {
             console.log("  " + zeile(o));
             const f = urteil(o);
             for (const x of f) console.log("  ❌ " + x);
-            if (errs.length) console.log("  ❌ Seiten-Fehler: " + errs[0]);
-            rot += f.length + (errs.length ? 1 : 0);
+            rot += f.length;
             if (process.env.HAUS_WELT_JSON) fs.writeFileSync(process.env.HAUS_WELT_JSON, JSON.stringify(o, null, 1));
         }
     } finally {

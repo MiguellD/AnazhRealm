@@ -40,7 +40,7 @@ function urteil(z) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 1800000, dumpio: false });
     // Was der Browser-Prozess über seinen GPU-Prozess sagt (Absturz, Watchdog, Verlust), reist ins Log.
     {
@@ -57,17 +57,11 @@ function urteil(z) {
     }
     const page = await browser.newPage();
     await page.setViewport({ width: 640, height: 360 });
-    const pageErrors = [];
-    // Die Linse nennt den Täter eines Seiten-Fehlers: die Phase (die letzte [N]-Zeile) und die Zeit seit dem Start;
-    // WebGPU-Meldungen der Konsole (Geräteverlust, Validierung) reisen mit ins Log (die CI fährt Dawns swiftshader).
+    // Die Linse nennt je WebGPU-Meldung der Konsole (Geräteverlust, Validierung) die Phase (die letzte [N]-Zeile) und die Zeit
+    // seit dem Start (die CI fährt Dawns swiftshader); den Seiten-Fehler nennt der EINE Sammler (welt-boot).
     const t0 = Date.now();
     let phase = "boot";
     let gpuMeldungen = 0;
-    page.on("pageerror", (e) => {
-        const m = (e.stack || e.message || String(e)).split("\n")[0];
-        pageErrors.push(m);
-        console.log(`  [Seiten-Fehler] Phase „${phase}" +${Date.now() - t0} ms: ${m}`);
-    });
     page.on("console", (m) => {
         const t = m.text();
         if (t.startsWith("[N]")) {
@@ -99,7 +93,7 @@ function urteil(z) {
     await page.evaluateOnNewDocument((dorfZug) => {
         if (dorfZug === false) window.__anazhAutoSettlement = false;
     }, ORT.dorfZug);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000);
     const res = await page.evaluate(
         async (k) => {
             const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -309,7 +303,7 @@ function urteil(z) {
     await browser.close();
     server.close();
     if (!res || res.fatal) {
-        console.log("❌ FEHLER:", res ? res.fatal : "?", "· Page-Errors:", pageErrors.slice(0, 3).join(" | ") || "-");
+        console.log("❌ FEHLER:", res ? res.fatal : "?");
         process.exit(1);
     }
     console.log(`   Backend: ${res.backend}`);
@@ -356,11 +350,11 @@ function urteil(z) {
             ? "✅ X  keine Ausnahme im Spiel-Takt"
             : `❌ X  ${res.taktFehler.n} Ausnahmen im Spiel-Takt — erste: ${res.taktFehler.erster}`
     );
-    const gruen = S && E && R && T && TF && pageErrors.length === 0;
+    const gruen = S && E && R && T && TF;
     console.log(
         gruen
             ? "✅ GRÜN — nah und mittel trägt das Studio-Mesh: kein Analog-Satz < 64 m nach dem Einschwingen, die Rampe kurz und benannt."
-            : `❌ ROT${pageErrors.length ? " · Page-Errors: " + pageErrors.slice(0, 2).join(" | ") : ""}`
+            : "❌ ROT"
     );
     process.exit(gruen ? 0 : 1);
 })().catch((e) => {

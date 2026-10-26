@@ -85,7 +85,6 @@ function urteil(z) {
         else if (rd.zurueck !== 0) v.push(`RUNDUNG: zurückgestellt bleibt das Bild um ${rd.zurueck} Stufen verschoben`);
     }
     for (const f of z.gpuFehler || []) v.push("GPU: " + f);
-    for (const f of z.seitenFehler || []) v.push("SEITE: " + f);
     const s = z.selbst || [];
     if (!s.length) v.push("SELBSTTEST: der Schmuggel lief nicht");
     for (const x of s) if (!x.ok) v.push(`SELBSTTEST: blind für ${x.muss}`);
@@ -100,7 +99,6 @@ function selbsttest() {
         tiefeGelesen: true,
         karte: { gelaufen: true, huelle: true, farbeGpu: false, farbAnhaenge: 0, schattenPaesse: 3, dunkler: 60 },
         gpuFehler: [],
-        seitenFehler: [],
         selbst: [{ muss: "OHNE LESER", ok: true }],
         rest: [],
         rundungQuelle: [],
@@ -329,19 +327,17 @@ function rundungProbe() {
 
 (async () => {
     console.log("=== ZIEL-ZENSUS — die Wand am echten Frame (WebGPU auf swiftshader) ===");
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });
     await page.evaluateOnNewDocument(FALTE_INSTALL);
     await page.evaluateOnNewDocument(vramAbgriff);
-    const seitenFehler = [];
-    page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
     const T0 = Date.now();
     const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
     let out = {};
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await server.zeige(page, 60000, "index.html?holz=kienspan");
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
             const r = await window.__weltDa((r) => {
@@ -432,7 +428,6 @@ function rundungProbe() {
     }
     await browser.close();
     server.close();
-    out.seitenFehler = seitenFehler.slice(0, 5);
     const v = urteil(out);
     if (v.length) {
         console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);

@@ -682,7 +682,7 @@ function kernGleich(lauf) {
     return out;
 }
 
-async function kernProbe(page, fehler, url) {
+async function kernProbe(page, url) {
     const [t0, befunde, mutationen] = [Date.now(), [], []];
     let plan = null;
     const lauf = async (haupt = null, faden = haupt, probe = haupt) => {
@@ -727,7 +727,6 @@ async function kernProbe(page, fehler, url) {
         console.log(`  SELBSTTEST (${wer} liest den unveränderten Kern): ≠ Kern Stamm ${g.stamm} · Faden ${g.faden} → ${selbsttest[wer].nennt ? "beim Namen ROT" : "BLIEB BLIND"}`);
     }
     if (selbsttest && !(selbsttest.sieht = selbsttest["WORKER-FELD"].nennt && selbsttest["STAMM-LESER"].nennt)) befunde.push("SELBSTTEST: eine Abschrift blieb unentdeckt");
-    if (fehler()) befunde.push("PAGE-ERROR: " + fehler());
     const kern = { punkte: N, edits: plan.edits.length, haelt: rein.haelt, orte: plan.orte, wirkt: rein.wirkt, faeden: rein.faden.length, rein: g0, mutationen, selbsttest,
         sekunden: Math.round((Date.now() - t0) / 1000) };
     for (const b of befunde) console.log("  ⛔", b);
@@ -1143,13 +1142,13 @@ async function weltMessen(page) {
         statistik: Z.messStatistik(Float64Array.from(H), { waterLevel: w.wasser }, { benannteSeen: () => benannt }),
     };
 }
-async function studioProbe(page, fehler) {
+async function studioProbe(page) {
     const t0 = Date.now();
     const befunde = [];
     const out = { zweck: "K16b Studio-Probe (Gelände-Studio → Plan → Welt)", regler: [], befunde };
     console.log("\n========= DIE STUDIO-PROBE — Gelände-Studio → EIN Plan → Welt-Tür → Welt, byte-gleich =========");
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await server.zeige(page, 60000);
         await page.evaluate(() => localStorage.clear());
         // DIE FREMDE WELT: eine Welt, die kein Plan beschreibt (Basis 7 m, das Meer darunter, eine Rampe hinter der Wildnis),
         // wird die aktive Welt — über ihr öffnet sich das Studio.
@@ -1175,10 +1174,7 @@ async function studioProbe(page, fehler) {
             setTimeout(() => r._weltBetreten(snap), 0);
         });
         await nav0;
-        await page.goto(`http://127.0.0.1:${PORT}/index.html?studio=gelaende`, {
-            waitUntil: "domcontentloaded",
-            timeout: 60000,
-        });
+        await server.zeige(page, 60000, "index.html?studio=gelaende");
         const b = await boote(page);
         if (!b.ok) throw new Error("die Welt unter dem Studio erwachte nicht in 120 s");
         console.log(`  Boot unter dem Studio: ${b.ms} ms (Seed ${b.seed})`);
@@ -1344,7 +1340,7 @@ async function studioProbe(page, fehler) {
         }
         befunde.push(...presetBefunde(presets));
         // DIE WELT-TÜR: ohne Studio, die Datei durch das Welt-Tor („Ersetzen") — die Welt erwacht neu (Reload).
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await server.zeige(page, 60000);
         const b2 = await boote(page);
         if (!b2.ok) throw new Error("die Welt vor dem Import erwachte nicht");
         const nav = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 60000 });
@@ -1480,7 +1476,6 @@ async function studioProbe(page, fehler) {
     } catch (e) {
         if (!befunde.length) befunde.push(String((e && e.message) || e));
     }
-    if (fehler()) befunde.push(`Page-Error: ${fehler()}`);
     out.sekunden = Math.round((Date.now() - t0) / 1000);
     if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify(out, null, 1));
     for (const f of befunde) console.log(`  ⛔ ${f}`);
@@ -1498,7 +1493,7 @@ async function studioProbe(page, fehler) {
 // Hydrosphäre) — ohne den Kanal grün → der Kanal (`hydroNetzFluesse` → `_hydrosphereCarveAt`). Die Hydrosphäre jeder Saat
 // rechnet der Faden (Karte hydro-faden). Mit `--selftest` im selben Boot: die Bett-Tiefe des alten Gesetzes (1,4 m + 0,16 ·
 // Breite, ohne `kanalTiefe`, dem Faden als Gesetz gegeben) MUSS die Boot-Saat rot färben.
-async function gebaut(page, fehler) {
+async function gebaut(page) {
     const b = await boote(page);
     if (!b.ok) {
         console.log("  ⛔ GEBAUT: Boot nicht bereit nach 120 s");
@@ -1628,7 +1623,7 @@ async function gebaut(page, fehler) {
     const gruen = (x) => x.senken <= 1 && x.dorf >= 3;
     // der Mäander im Wasser: Median der Sinuosität der flachen 400-m-Fenster ≥ 1,25 (ohne flaches Fenster kein Urteil)
     const maeanderGut = (m) => !m.fenster || m.sinuositaet >= 1.25;
-    let rot = !!fehler();
+    let rot = false;
     for (const out of alle) {
         console.log(
             `\n========= DER GEBAUTE BODEN — Natur-Zahlen am Boden des Spielers (Saat ${out.seed}, 2 × 2 km, 30 m, ${out.fluesse} Flüsse) =========`
@@ -1923,7 +1918,7 @@ function fadenSeite(bytesQ, huelleQ, sync) {
         set: (r) => haken((real = r)),
     });
 }
-async function faden(page, fehler, url) {
+async function faden(page, url) {
     // KALT: der Ursprung ohne Welt räumt Abbild und Platten, dann der erste Boot
     await page.evaluateOnNewDocument(fadenSeite, String(klonBytes), String(fadenHuelle), FADEN_SYNC);
     await page.goto(url.replace("index.html", "cores.manifest.json"), { timeout: 60000 });
@@ -2034,7 +2029,7 @@ async function faden(page, fehler, url) {
         (!F.haken && "die Haken sitzen nicht") ||
         (!F.hydro.faden && !F.hydro.rot.length && "keine Hydrosphäre gesehen") ||
         (!summe((F.t.fahrt || {}).empfang) && "kein Empfang in der Fahrt");
-    let rot = !!blind || k4.length > 0 || proMin.fahrt > FADEN_SOLL || !!fehler();
+    let rot = !!blind || k4.length > 0 || proMin.fahrt > FADEN_SOLL;
     if (blind) console.log(`  ⛔ BLIND: ${blind}`);
     if (k4.length) console.log(`  ⛔ K4: ${k4.length} synchrone Bauten im Haupt-Faden, obwohl ein Faden zuständig ist`);
     if (proMin.fahrt > FADEN_SOLL)
@@ -2063,14 +2058,9 @@ async function faden(page, fehler, url) {
 
 (async () => {
     if (argv.includes("--realismus")) process.exit(realismus());
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "standard", frist: 900000 });
     const page = await browser.newPage();
-    let pageErr = null;
-    page.on("pageerror", (err) => {
-        pageErr = (err.stack || err.message).split("\n")[0];
-        console.log("[PAGE-ERROR]", pageErr);
-    });
     await nullRenderer(page);
     // der EINE Abdruck der Seite (SHA-256 eines Felds, hex) für Probe und Studio
     await page.evaluateOnNewDocument(() => {
@@ -2079,14 +2069,14 @@ async function faden(page, fehler, url) {
                 .map((b) => b.toString(16).padStart(2, "0"))
                 .join("");
     });
-    if (argv.includes("--studio")) process.exit(await studioProbe(page, () => pageErr));
+    if (argv.includes("--studio")) process.exit(await studioProbe(page));
     const url = `http://127.0.0.1:${PORT}/index.html`;
-    if (argv.includes("--faden")) process.exit(await faden(page, () => pageErr, url));
-    if (argv.includes("--kern")) process.exit(await kernProbe(page, () => pageErr, url));
+    if (argv.includes("--faden")) process.exit(await faden(page, url));
+    if (argv.includes("--kern")) process.exit(await kernProbe(page, url));
     // Frische Standard-Welt (der Boot-Seed): kein Rest einer früheren Welt im Profil.
     await frisch(page, url);
 
-    if (argv.includes("--gebaut")) process.exit(await gebaut(page, () => pageErr));
+    if (argv.includes("--gebaut")) process.exit(await gebaut(page));
     console.log("\n========= DER DICHTE-SPIEGEL — Main _voxelEditedDensityGrid == Worker computeDensityGrid =========");
     const berichte = [];
     let rot = false;
@@ -2230,7 +2220,6 @@ async function faden(page, fehler, url) {
         );
     }
     if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ berichte, selbst }, null, 1));
-    if (pageErr) rot = true;
     let pass;
     if (SELBSTTEST) {
         // die Höhen der Ferne (K60) fallen mit demselben verfälschten Worker-Term rot, der Zwilling der Form beim Namen

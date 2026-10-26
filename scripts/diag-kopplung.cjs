@@ -17,18 +17,13 @@ const PORT = Number(process.env.KOPPLUNG_PORT || 4407);
 const server = statikServer();
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
-    let pageErr = null;
-    page.on("pageerror", (e) => {
-        pageErr = (e.stack || e.message).split("\n")[0];
-        console.log("[PAGE-ERROR]", pageErr);
-    });
     await nullRenderer(page);
     let out = null;
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
+        await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
         out = await page.evaluate(() => {
             const r = window.anazhRealm;
@@ -417,10 +412,6 @@ const server = statikServer();
         );
     console.log("");
     for (const f of out.fails) console.log(`  ❌ ${f}`);
-    if (pageErr) {
-        console.log(`  ❌ PAGE-ERROR: ${pageErr}`);
-        out.fails.push(pageErr);
-    }
     const ok = out.fails.length === 0;
     console.log(
         ok

@@ -23,11 +23,9 @@ async function bootPage(browser, nullRenderer) {
     await page.evaluateOnNewDocument((nr) => {
         if (nr) window.__anazhHeadlessNullRenderer = true;
     }, nullRenderer);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
     await page.evaluate(() => window.__weltDa((r) => r.state));
-    return { page, pageErrors };
+    return { page };
 }
 
 // DIE PROBE-GESTALTEN (Teil C): Dreiecke in Ansichts-Koordinaten (u, v ∈ 0..1, v = 0 Unterkante) im Rahmen 4 × 8 der
@@ -789,12 +787,12 @@ async function windProbe(page) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const errs = [];
 
     // ===== TEIL A — MECHANIK (Null-Renderer, HART) =====
     const browserA = await starteBrowser({ art: "webgl", frist: 180000 });
-    const { page: pageA, pageErrors: errA } = await bootPage(browserA, true);
+    const { page: pageA } = await bootPage(browserA, true);
     const A = await driveImpostor(pageA);
     await installiereBacke(pageA);
     const ruhe = await weltRuht(pageA);
@@ -811,7 +809,6 @@ async function windProbe(page) {
     console.log(`  Gruppen (Streu ×2 Arten + gesetzt): ${JSON.stringify(A.gruppen)}`);
     console.log(`  asset-foundry-iframe im DOM: ${A.hasIframe} (erwartet false)`);
     if (A.err) console.log(`  Fehler: ${A.err}`);
-    if (errA.length) console.log("  Seiten-Fehler A:", errA.slice(0, 3));
 
     if (!A.ready) errs.push("A: der Worker wurde nicht ready");
     if (!A.rec) errs.push("A: keine Atlas-Zelle entstanden (die LOD1-Geometrie lud nicht?)");
@@ -864,7 +861,6 @@ async function windProbe(page) {
             errs.push("A-SELBSTTEST: ein Atlas-Stoff ohne Gradienten oder mit springender Ableitung bleibt ungesehen");
     } else if (A.ready) errs.push("A: die Strich-Proben liefen nicht");
     if (A.hasIframe) errs.push("A: ein asset-foundry-iframe LEBT noch im DOM (P3b nicht geschnitten)");
-    if (errA.length) errs.push(`A: ${errA.length} Seiten-Fehler`);
 
     console.log(`\n  RUHE VOR TEIL C: die Welt steht nach ${ruhe.takte} Takten · mit einer wartenden Karte: ${ruhe.karte}`);
     if (ruhe.karte) errs.push("C: eine wartende Karte bricht die Ruhe nicht (`_weltSteht` true)");

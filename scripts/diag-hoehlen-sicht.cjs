@@ -21,7 +21,7 @@
 //       nennt sie die fehlenden (sonst prüfte (b) nichts);
 //   (e) SCHNITT — die Wiese zeichnet weniger Höhlen-Dreiecke, als ihr Frustum trägt (sonst wäre die Sicht tot);
 //   (f) DER STOFF AM GRAPH — der Boden-Stoff legt die Himmels-Sicht als Verdeckung, Normale und Pool-Gewicht (der gebaute
-//       Knoten-Graph, der Ruf der EINEN BRDF; dass der Chokepoint die Höhle wählt, misst (b)/(d)/(e) am Bild); (g) kein Page-Error;
+//       Knoten-Graph, der Ruf der EINEN BRDF; dass der Chokepoint die Höhle wählt, misst (b)/(d)/(e) am Bild); (g) kein Page-Error (der EINE Sammler, welt-boot);
 //   (h) GEDÄCHTNIS — die gemerkte Horizont-Sperre gilt nur dem Boden, den sie gemessen hat: im Stand an der Mündung hält
 //       sie (sonst prüfte die Wand nichts), nach einem neuen Boden (`_chunkSatzMarke`: Graben, LOD-Naht) misst der nächste
 //       Pass jede Mündung im Bild neu;
@@ -48,7 +48,7 @@
 //       Himmel, Schutt und Farbe des Workers byte-gleich gegen den Sync-Bau. Gegenprobe: der Sync-Bau ruft es (sonst
 //       zählte die Wand blind).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Spiegel-Drift, Loch, Licht-Leck,
-// leerer Blick, blinde Linse, toter Schnitt, stumpfer Hinaus-Blick, fehlender Chokepoint, Page-Error — MUSS rot fallen und
+// leerer Blick, blinde Linse, toter Schnitt, stumpfer Hinaus-Blick, fehlender Chokepoint — MUSS rot fallen und
 // ihn beim Namen nennen.
 //   node scripts/diag-hoehlen-sicht.cjs [--selftest]   (npm run gate:hoehlen-sicht; Port HOEHLEN_SICHT_PORT)
 // ─────────────────────────────────────────────────────────────────────────
@@ -336,7 +336,6 @@ function urteil(b) {
                     `${hl.muendMittel} Himmels-Sicht (mindestens ${hl.muendMin}) — der Himmel fällt schon an der Kante weg`
             );
     }
-    for (const e of b.pageErrors || []) v.push(`PAGE-ERROR: ${e}`);
     return v;
 }
 
@@ -431,7 +430,6 @@ function selbsttest() {
             ohneAttribut: false,
         },
         muendungen: { anzahl: 20, km2: 4, jeKm2: 5 },
-        pageErrors: [],
     };
     const fehler = [];
     const g = urteil(gruen);
@@ -488,7 +486,6 @@ function selbsttest() {
             /LEER: Blick hinaus: das Auge steht nicht/,
         ],
         ["Schatten prüft nichts", (b) => (b.blicke[1].schatten.empfaenger = 0), /LEER: Blick hang: kein Empfänger/],
-        ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
         [
             "die Sperre überlebt den Boden",
             (b) => (b.gedaechtnis.nach = 0),
@@ -648,17 +645,15 @@ const server = statikServer();
 
 (async () => {
     console.log("=== HÖHLEN-SICHT (Welle 7) — Null-Renderer, Mess-Wiese, Strahl-Wahrheit gegen den Boden-Satz ===");
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(580000);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await nullRenderer(page);
     await page.evaluateOnNewDocument(installHoehlenStrahl);
     let befund = null;
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
+        await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
         befund = await page.evaluate(async (ORTE) => {
             const MESS = ORTE.mess;
@@ -1664,7 +1659,6 @@ const server = statikServer();
         console.log("❌ LAUF-FEHLER: " + (befund ? befund.fehler : "kein Befund"));
         process.exit(1);
     }
-    befund.pageErrors = pageErrors;
     console.log(`  Ring ${befund.ringChunks} Chunks, ${befund.bereiche} Boden-Bereiche`);
     for (const sp of befund.spiegel)
         console.log(

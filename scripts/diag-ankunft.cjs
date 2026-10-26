@@ -1894,7 +1894,7 @@ async function probe(arg) {
     console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
     for (const [name, ok, detail] of wand()) check(name, ok, detail);
 
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
@@ -1907,7 +1907,7 @@ async function probe(arg) {
             window.__ladeHtml = l ? { imHtml: true, htmlVersteckt: !!l.hidden, zIndex: +getComputedStyle(l).zIndex || 0 } : { imHtml: false };
         })
     );
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
     // Der KI-Endpunkt der D6-Probe: ein Port, auf dem nichts lauscht.
     const out = await page.evaluate(probe, { kiPort: PORT + 3 });
     await browser.close();

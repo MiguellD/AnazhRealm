@@ -25,12 +25,10 @@ const REGEN_THRESHOLD = 4; // Env-Regenerierung — MUSS ~0 sein (die scharfe Wa
 const KASKADE = 40; // Gesamt-Compiles je Fenster, egal ob neu oder wiederholt
 let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Frist-Riss nennt ihn
 (async () => {
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "webgl", frist: 300000, zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 }); // klein → schnelle Rasterung; Compile ist res-unabhängig
-    let pageErr = null;
-    page.on("pageerror", (e) => { pageErr = (e.stack || e.message).split("\n")[0]; console.log("[PAGE-ERROR]", pageErr); });
     // DER TÄTER BEIM NAMEN: jeder Compile außerhalb des Schlüssel-Warmups meldet sich mit Programm-Größe und Aufrufer,
     // BEVOR er kompiliert — die Konsole erreicht Node auch, wenn der Aufruf danach die Frist reißt. Der
     // Schlüssel-Warmup nennt seine Schlüssel selbst.
@@ -50,7 +48,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     // SELBSTTEST der Programm-Wache: mitten im Warmup läuft ein Programm, das ein Dorf baut — die Wache MUSS es anhalten
     // (die Bühne hält, die Wache nennt es), sonst ist sie vakuös.
     const SELBSTTEST_PROGRAMM = process.argv.includes("--selbsttest-programm");
-    await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000, "index.html?holz=kienspan");
     await page.evaluate(AUSGABE_INSTALL);
 
     // JEDER AUFRUF HAT EINEN NAMEN. `ruf` misst jeden evaluate, nennt jeden über LANG_MS beim Namen (mit seinen
@@ -508,7 +506,6 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     await browser.close();
     server.close();
     console.log("===== STEHENDE LINSE — Idle/Env-GPU-Pipeline-Churn (echter Renderer) =====\n");
-    if (pageErr) { console.error("⛔ Page-Error während des Laufs:", pageErr); process.exit(1); }
     console.log(`  Bühne: ${kipp.length ? "GEKIPPT — " + kipp.join(" · ") : "hielt (Wetter, Saison, Tageszeit, Bauten unverändert)"}${verweigert.length ? ` · die Wetter-Wache verweigerte ${verweigert.length} Zug/Züge: ${verweigert.slice(0, 6).join(" · ")}` : ""}${weltGehalten.length ? ` · der Welt-Halt hielt ${weltGehalten.length} Welt-Akt(e) an: ${weltGehalten.slice(0, 6).join(" · ")}` : ""}`);
     if (SELBSTTEST_PROGRAMM) {
         const gehalten = weltGehalten.some((z) => z.startsWith("selbsttest:"));

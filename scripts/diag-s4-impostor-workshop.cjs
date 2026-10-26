@@ -18,12 +18,12 @@ const PORT = Number(process.env.S4_PORT || 4596);
 const server = statikServer();
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const errs = [];
     const browser = await starteBrowser({ art: "null", frist: 180000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
     await page.evaluate(async () => {
         await window.__weltDa((r) => r.state);
     });

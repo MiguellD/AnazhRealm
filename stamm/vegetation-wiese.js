@@ -113,6 +113,27 @@ class AnazhRealm_vegetation_wiese {
     // baut die betroffenen Kacheln neu. Stufe, Rand-Band und Sicht wählt der Sicht-Satz je Büschel und Frame
     // (`_nahWieseSicht`) — eine Kachel baut nur, wenn sie den Ring betritt. Rückgabe: Zahl der Neubauten (0 = der Ring
     // steht).
+    // DER BODEN, DEN NIEMAND BAUT: die Kacheln der Nah-Wiese und der Nah-Streu stehen am Auge, der Ring der Chunks steht am
+    // Spieler (`_tickVoxelChunkStreaming` um `lastPlayerVoxelChunk`, sein Radius `_voxelChunkConfig().ringRadius` — derselbe,
+    // den der Strom baut und `_pruneDistantVoxelChunks` hält). Liegt ein Chunk, den die Kachel liest (die Spanne von
+    // `_bodenSichtChunks`: der Eigner und seine unteren Nachbarn), jenseits dieses Rings, baut ihn kein Takt — die Kachel ist
+    // nicht gewollt: kein Bau, nichts offen. Wächst der Ring oder geht der Spieler hin, regt der Strom die Welt (`_weltRegt`)
+    // und die Kachel ist wieder gewollt. Bis fege-takt wartete sie dort ewig: führte ein Studio (`kameraFuehren`, der
+    // Makro-Flug des Gelände-Studios) oder eine Sonde (werkbank bild) die Kamera jenseits des Rings, hielt „Fege-Takt
+    // nahWiese wartet, nahStreu wartet" die Welt in JEDEM Takt wach (bild laub-kante, Radeon: 3 von 3 Läufen nach 2653–3368
+    // Takten nicht stehend, 3040 von 3040 Gängen offen, 0 Kacheln, die Kamera 1 km neben dem Spieler).
+    _bodenKommtNie(x0, z0, x1, z1) {
+        const z = this.state.lastPlayerVoxelChunk;
+        if (!z || !this.state.voxelTerrainActive) return false;
+        const { span, step, ringRadius } = this._voxelChunkConfig(0);
+        return (
+            z.cx - Math.floor((x0 - 2 * step) / span) > ringRadius ||
+            Math.floor(x1 / span) - z.cx > ringRadius ||
+            z.cz - Math.floor((z0 - 2 * step) / span) > ringRadius ||
+            Math.floor(z1 / span) - z.cz > ringRadius
+        );
+    }
+
     _tickNahWiese(deadline) {
         const st = this.state;
         if (!st.scene || !st.camera || typeof THREE === "undefined") return 0;
@@ -143,6 +164,10 @@ class AnazhRealm_vegetation_wiese {
                 const tz = tcz + dz;
                 const d = Math.hypot((tx + 0.5) * NW.kachel - cam.x, (tz + 0.5) * NW.kachel - cam.z);
                 if (d > NW.radius + NW.kachel * 0.71) continue;
+                // dasselbe Rechteck wie der Bau der Büschel (`_nahWieseKachelBueschel`, Jitter 0,34 m)
+                const x0 = tx * NW.kachel - 0.34;
+                const z0 = tz * NW.kachel - 0.34;
+                if (this._bodenKommtNie(x0, z0, x0 + NW.kachel + 0.68, z0 + NW.kachel + 0.68)) continue;
                 wunsch.push({ key: `${tx},${tz}`, tx, tz, d });
             }
         }
@@ -796,6 +821,9 @@ class AnazhRealm_vegetation_wiese {
                 // die kürzeste Distanz Kamera → Kachel-Rechteck: reicht der Armlängen-Kreis hinein?
                 const ex = Math.max(tx * NS.kachel - cam.x, 0, cam.x - (tx + 1) * NS.kachel);
                 const ez = Math.max(tz * NS.kachel - cam.z, 0, cam.z - (tz + 1) * NS.kachel);
+                // dasselbe Rechteck wie der Satz der Kachel (`_nahStreuKachel`)
+                if (this._bodenKommtNie(tx * NS.kachel, tz * NS.kachel, (tx + 1) * NS.kachel, (tz + 1) * NS.kachel))
+                    continue;
                 wunsch.push({ key: `${tx},${tz}`, tx, tz, d, imKreis: Math.hypot(ex, ez) <= NS.stufe0 + 1 });
             }
         }

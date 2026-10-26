@@ -400,14 +400,14 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
     console.log("=== CHUNK-SATZ (Welle B) — Null-Renderer, die Render-Bürger je Klasse ===");
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
     await nullRenderer(page);
     let out = null;
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
+        await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
         out = await page.evaluate(async () => {
             const r = window.anazhRealm,

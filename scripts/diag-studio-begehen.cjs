@@ -439,7 +439,7 @@ function zeile(o) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 600000 });
     let rot = 0;
     try {
@@ -447,19 +447,14 @@ function zeile(o) {
             patch = inj && BASIS[inj] ? BASIS[inj] : null;
             patchFehler = [];
             const page = await browser.newPage();
-            const errs = [];
-            page.on("pageerror", (e) => errs.push((e.message || String(e)).split("\n")[0]));
-            await page.goto(`http://127.0.0.1:${PORT}/worlds/fachwerk/index.html`, {
-                waitUntil: "load",
-                timeout: 120000,
-            });
+            await server.zeige(page, 120000, "worlds/fachwerk/index.html", "load");
             await page.waitForFunction(() => typeof buildDorf === "function" && typeof walkUpdate === "function", {
                 timeout: 60000,
             });
             const o = await page.evaluate(proben, inj || null);
             await page.close();
             patch = null;
-            return { o, errs, patchFehler: patchFehler.slice() };
+            return { o, patchFehler: patchFehler.slice() };
         };
         if (SELBST) {
             // je Basis-Zeile muss GENAU die Probe ihres Defekts rot werden (nicht irgendeine)
@@ -484,12 +479,11 @@ function zeile(o) {
                 if (!ok) rot++;
             }
         }
-        const { o, errs } = await lauf(null);
+        const { o } = await lauf(null);
         console.log("  " + zeile(o));
         const f = urteil(o);
         for (const x of f) console.log("  ❌ " + x);
-        if (errs.length) console.log("  ❌ Seiten-Fehler: " + errs[0]);
-        rot += f.length + (errs.length ? 1 : 0);
+        rot += f.length;
         if (process.env.STUDIO_BEGEHEN_JSON)
             fs.writeFileSync(process.env.STUDIO_BEGEHEN_JSON, JSON.stringify(o, null, 1));
     } finally {

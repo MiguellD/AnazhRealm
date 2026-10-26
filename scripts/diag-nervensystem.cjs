@@ -128,18 +128,16 @@ function seitenHelfer() {
 
     console.log("\n=== TEIL C, E: der lebende Draht (Browser, foundry-ON) ===");
     const [PORT, SIGNAL] = await eigenePorte("NERV_PORT", "NERV_SIGNAL_PORT");
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const signal = await startProc("signaling-server.js", /lauscht/, { ANAZH_SIGNALING_PORT: String(SIGNAL) });
     process.on("exit", () => signal.kill()); // auch beim Absturz
     const browser = await starteBrowser({ art: "null", frist: 240000 });
-    const pageErrors = [];
     const seite = async (k) => {
         const page = await k.newPage();
         await nullRenderer(page);
         await page.evaluateOnNewDocument(seitenHelfer);
-        page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
         await page.setViewport({ width: 1280, height: 720 });
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+        await server.zeige(page, 30000);
         return page;
     };
     // der Spieler und sein Mitspieler (eigenes Profil: eigene Platte, eigener Speicher) im Raum über den signaling-Weg
@@ -328,7 +326,6 @@ function seitenHelfer() {
     console.log(`    ${e.atlas === NEUN ? "✅" : "❌"} Atlas: ${e.atlas || "kein Gesetzbuch"}`);
     const auf = e.wege.filter((w) => w.ok).length + (e.atlas === NEUN);
     check("E2: das neunte Buch auf allen Wegen, der Atlas nennt seine Quelle", auf === 5, `${auf}/5`);
-    if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);

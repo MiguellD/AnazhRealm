@@ -9,7 +9,7 @@
 //   DIE ZWEI TEILE (je eine Welt, je eine CI-Gruppe): Teil 1 trägt den Boot-Konsum (Bänder 1–5, Konsum im Boot, Selbst-Test), die
 //   Probe mit ihrem Gegen-Lauf, den Neubau und den Bundle-Neubau; Teil 2 in einer eigenen Welt den Bundle-Gegen-Lauf ohne
 //   Anmeldung, den hängenden Fehler-Scope (er bleibt der letzte Bürger-Test: sein Stummel lässt jedes popErrorScope offen),
-//   die Beweis-Aufnahme, die Absage und die WebGL2-Weiche. Jedes Band urteilt in GENAU einem Teil (KEIN PAGE-ERROR je Welt).
+//   die Beweis-Aufnahme, die Absage und die WebGL2-Weiche. Jedes Band urteilt in GENAU einem Teil (den Seiten-Fehler urteilt der EINE Sammler in welt-boot).
 //   Exit 0 = alle Bänder GRÜN (inkl. Selbst-Test: ein Fake-Trace ohne die neuen
 //   Felder MUSS rot melden) · Exit 1 = mindestens ein Band ROT (mit Diagnose).
 "use strict";
@@ -671,19 +671,17 @@ function erstWandInstall(BUNDLE_FRAMES) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     // Echtes WebGPU auf swiftshader — die Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs).
     const browser = await starteBrowser({ art: "linse", frist: 600000, zeit: true }); // Band 1 (LongTasks) ist auf swiftshader geeicht
     const page = await browser.newPage();
     await page.setViewport({ width: 640, height: 360 });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     // die Bau-Uhr sitzt vor dem ersten Skript der Seite: jeder Pipeline-Bau des Boots steht in ihr (die Ruhe wartet auch
     // auf ihn)
     await page.evaluateOnNewDocument(bauUhrInstall);
     // KEIN Null-Renderer — die Zähler brauchen den echten WebGPU-Pfad (Tap + Pipelines).
     // Software-Holz (Lehre 26): auf „voll" kostet auf swiftshader ein Compile 50–70 s; die Linse prüft Zähler und Gesetz.
-    await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000, "index.html?holz=kienspan");
 
     const gpu = await page.evaluate(async () => {
         if (!navigator.gpu) return "kein navigator.gpu";
@@ -927,7 +925,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
 
     console.log("\n===== HITCH-TELEMETRIE-LINSE (das-feld-zeichnet §5.1) =====");
     if (!out || out.fatal) {
-        console.log("FATAL:", out ? out.fatal : "?", "· Page-Errors:", pageErrors.slice(0, 3).join(" | ") || "-");
+        console.log("FATAL:", out ? out.fatal : "?");
         process.exit(1);
     }
     console.log(
@@ -1125,8 +1123,6 @@ function erstWandInstall(BUNDLE_FRAMES) {
     );
 
     bandIn(1)(Array.isArray(out.grenzenUnter) && !out.grenzenUnter.length, "GERÄTE-GRENZEN (G1: das Gerät der Welt trägt je Stufe die Grenze seines Adapters)", (out.grenzenUnter || ["nicht gemessen"]).join(" · ") || "jede Stufe = Adapter"); // prettier-ignore
-    // Band 6 — kein pageerror.
-    band(pageErrors.length === 0, "KEIN PAGE-ERROR", pageErrors.length ? pageErrors.slice(0, 3).join(" | ") : "sauber");
 
     // SELBST-TEST — ein Fake-Trace OHNE die neuen Felder durch DIESELBE Prüf-
     // Funktion: sie MUSS rot melden (sonst wäre die Linse ein Existenz-Theater).

@@ -18,7 +18,7 @@
 //       und Hang-Bias muss die ebene Platte in tiefer Sonne Akne zeigen (sonst ist die Probe blind). Echtes Dach und echter Hang
 //       zeigt `--echt` als Bild (ihre echten Kamin- und Relief-Schatten sind keine Akne — sie urteilt die Platte).
 //   (Q) QUELLE: `.normalBias` schreibt nur das Gesetz (`_schattenNormalBias`), die EINE Quelle ist `atmosphere.shadowBias`;
-//   (P) kein Page-Error.
+//   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // Die Bias-Steuerung der Probe (Versuche, die Zähne) hängt hinter der Box jeder Kaskade (`_kaskadeFit`), die Spiel-Werte kommen
 // aus dem Gesetz des Stamms (`_schattenBias`). Nach jedem castShadow-Wechsel zeichnet das Bundle neu (`_archMeshBundleTouch`).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Quell-Wand ist am Stamm grün und fällt bei einem fremden
@@ -91,7 +91,7 @@ function quellWand(quelle) {
 
 // DAS URTEIL (rein, Node): S = { werfer: [{ name, zeit, seitlich, iou, deckung, erwartet, gemessen, normalBias, fehler }],
 // akne: [{ name, zeit, maske, dunkel, anteil }], zaehne: { maske, anteil }, fehler }
-function urteil(S, Q, pageErrors) {
+function urteil(S, Q) {
     const rot = [];
     for (const b of Q) rot.push(`(Q) QUELLE: ${b}`);
     if (S.fehler) rot.push(`(P) BÜHNE: ${S.fehler}`);
@@ -142,7 +142,6 @@ function urteil(S, Q, pageErrors) {
             `(A) ZÄHNE: bei 0,1 Texel ohne Tiefen- und Hang-Bias zeigt die Platte nur ${(S.zaehne.anteil * 100).toFixed(2)} % ` +
                 `Akne (${S.zaehne.maske} Pixel) — die Probe sieht keine`
         );
-    for (const e of pageErrors || []) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
 }
 
@@ -226,12 +225,12 @@ if (process.argv.includes("--selftest")) {
             /busch @0\.32: 3 Fremde derselben Art standen im Mit-Schuss wieder/,
         ],
     ];
-    if (urteil(gut, [], []).length) v.push(`ein gutes Bild fällt rot (${JSON.stringify(urteil(gut, [], []))})`);
+    if (urteil(gut, []).length) v.push(`ein gutes Bild fällt rot (${JSON.stringify(urteil(gut, []))})`);
     const mittag = kopie((s) => (s.werfer[5].erwartet = 20));
-    if (urteil(mittag, [], []).length)
+    if (urteil(mittag, []).length)
         v.push("ein Schatten unter dem Leib mittags fällt rot (dort ist er kein Befund)");
     for (const [name, f, muss] of faelle) {
-        const rot = urteil(kopie(f), [], []);
+        const rot = urteil(kopie(f), []);
         if (!rot.some((x) => muss.test(x))) v.push(`${name} fällt nicht rot (${JSON.stringify(rot)})`);
         else console.log(`  ✅ ${name} → ${rot.find((x) => muss.test(x))}`);
     }
@@ -1292,7 +1291,7 @@ async function probe(cfg) {
 (async () => {
     const Q = quellWand(stammLib.text(root));
     fs.mkdirSync(OUT, { recursive: true });
-    await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
+    await server.lausche(PORT);
     const browser = await starteBrowser({
         art: "echt",
         headless: false,
@@ -1305,9 +1304,7 @@ async function probe(cfg) {
     await page.evaluateOnNewDocument(() => {
         window.__anazhAutoSettlement = false;
     });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000);
     await page.evaluate(AUSGABE_INSTALL);
     const b = await page.evaluate(buehneBauen);
     let S;
@@ -1360,7 +1357,7 @@ async function probe(cfg) {
     if (S.fleck) console.log(`  Akne-Fleck (offen, isoliert): ${JSON.stringify(S.fleck)} (x, z, Abstand zur Bühne m)`);
     for (const e of S.echt || []) console.log(`  echt: ${JSON.stringify(e)}`);
     console.log(`  Bilder: ${OUT}`);
-    const rot = urteil(S, Q, pageErrors);
+    const rot = urteil(S, Q);
     if (rot.length) {
         console.error("\nROT:");
         for (const e of rot) console.error("  • " + e);

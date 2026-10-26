@@ -273,12 +273,10 @@ function pageHtml() {
 // { build, getData }, räumt danach ab. Wirft bei Boot-/Worker-Fehler mit klarer Meldung.
 async function runWithWorker(port, cb) {
     const server = statikServer({ seiten: { "/": pageHtml, "/__aw.html": pageHtml } });
-    await new Promise((r) => server.listen(port, "127.0.0.1", r));
+    await server.lausche(port);
     const browser = await starteBrowser({ art: "null", frist: 240000 });
     try {
         const page = await browser.newPage();
-        const pageErrors = [];
-        page.on("pageerror", (e) => pageErrors.push(String((e && e.message) || e)));
         await page.goto("http://127.0.0.1:" + port + "/__aw.html", { waitUntil: "domcontentloaded" });
         await page.waitForFunction("window.__AW && (window.__AW.ready || window.__AW.error)", {
             timeout: 120000,
@@ -327,8 +325,7 @@ async function runWithWorker(port, cb) {
                 bis == null ? null : bis,
                 fangen == null ? -1 : fangen
             );
-        const out = await cb({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, atlasBild, probeLauf, pageErrors });
-        if (pageErrors.length) throw new Error("Seiten-Fehler: " + pageErrors.slice(0, 3).join(" · "));
+        const out = await cb({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, atlasBild, probeLauf });
         return out;
     } finally {
         await browser.close();

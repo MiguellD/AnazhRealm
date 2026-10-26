@@ -97,7 +97,7 @@ function kernVonArt() {
 const OFEN_PORT = Number(process.env.REGLER_WIRKT_OFEN_PORT || PORT + 1);
 async function imStamm(cb) {
     const server = statikServer();
-    await new Promise((r) => server.listen(OFEN_PORT, "127.0.0.1", r));
+    await server.lausche(OFEN_PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     try {
         const page = await browser.newPage();
@@ -105,9 +105,7 @@ async function imStamm(cb) {
             if (window.top !== window) return;
             window.__anazhHeadlessNullRenderer = true;
         });
-        const seitenFehler = [];
-        page.on("pageerror", (e) => seitenFehler.push(String((e && e.message) || e).split("\n")[0].slice(0, 160)));
-        await page.goto(`http://127.0.0.1:${OFEN_PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await server.zeige(page, 60000);
         // Warm: die Heimat steht, die Foundry ist bereit, das Buch (Rezepte + PARAMS) ist da, die Kerne der Öfen sind
         // geladen und der Boot-Prefetch der Gattungen ist durch.
         await page.waitForFunction(
@@ -118,9 +116,7 @@ async function imStamm(cb) {
             },
             { timeout: 240000, polling: 250 }
         );
-        seitenFehler.length = 0;
         const out = await cb(page);
-        if (seitenFehler.length) throw new Error("Seiten-Fehler im Guss: " + seitenFehler.slice(0, 3).join(" · "));
         return out;
     } finally {
         await browser.close();

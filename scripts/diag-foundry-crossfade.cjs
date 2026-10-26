@@ -307,13 +307,11 @@ function mitTaeter(glied, taeter) {
 // ===== TEIL (b) — W5.4: die CPU-Doppel-Mitgliedschaft im lebenden System (headless) =====
 async function runPartB() {
     const server = statikServer();
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 240000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {
         const res = { samples: [], err: null };
@@ -1331,7 +1329,7 @@ async function runPartB() {
 
     await browser.close();
     server.close();
-    return { out, pageErrors, attrWand, gnade, kehraus, laut };
+    return { out, attrWand, gnade, kehraus, laut };
 }
 
 
@@ -1450,7 +1448,7 @@ async function main() {
     for (const [name, glied, re] of ABSENZEN) check(name, stammLib.fehlt(glied, re), stammLib.fehlt.wo || "");
 
     console.log("--- Teil (b) — W5.4: die Doppel-Mitgliedschaft im lebenden System (headless, foundry-ON) ---");
-    const { out, pageErrors, attrWand, gnade, kehraus, laut } = await runPartB();
+    const { out, attrWand, gnade, kehraus, laut } = await runPartB();
     check(
         "KEHRAUS DES WURFS: die L0 trägt die Zwillings-Leaves ihrer L1 · ihr Räumen lässt die Wurf-Gestalt der lebenden L1 stehen · das Räumen der L1 gibt jede genau einmal frei",
         kehraus &&
@@ -1530,7 +1528,6 @@ async function main() {
             );
         }
     }
-    if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     check(
         "DIE LAUTE BLENDE (Seite): ohne uLodD0 bricht der Baum-Stoff beim Namen, statt still ohne Maske zu zeichnen",
         !!laut && laut.blende === true && /uLodD0/.test(laut.bruch || ""),

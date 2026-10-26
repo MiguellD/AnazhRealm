@@ -1,6 +1,6 @@
 // diag-garage-labor.cjs — DIE LABOR-LINSE DER GARAGE (Welle L, Familie fahren): die Probefahrt-Werkstatt so, wie der
 // Schöpfer sie bedient — Maus ziehen, Probefahrt starten, Gas geben, Gattung und Kultur wechseln.
-//   G1 Maus · G2 HUD · G3 Tacho · G4 Preset · G5 Kultur · G6 Lehren · G7 Tempo — je Zeile das Soll im Namen ihres Checks.
+//   G1 Maus (ein Seitenfehler beim Ziehen: der EINE Sammler, welt-boot) · G2 HUD · G3 Tacho · G4 Preset · G5 Kultur · G6 Lehren · G7 Tempo — je Zeile das Soll im Namen ihres Checks.
 // Die Seite läuft in ihrem echten Renderer (r184 WebGPU, die Engine der Welt) im Kopflos-Browser; gezählt wird an der Seite selbst.
 //   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
 "use strict";
@@ -14,7 +14,6 @@ const { errs, check } = pruefer();
 function laborVerdict(m) {
     const out = [];
     if (!m || m.geladen !== true) return ["laden"];
-    if (m.mausFehler !== 0) out.push(`maus ${m.mausFehler} Seitenfehler`);
     if (m.hudDisplay !== "flex") out.push(`hud display ${m.hudDisplay}`);
     if (!(m.hudAbstand >= 10)) out.push(`hud Einheit klebt (${Math.round(m.hudAbstand)} px)`);
     if (!(m.tachoV > 3)) out.push(`tacho keine Fahrt (${(m.tachoV || 0).toFixed(1)} m/s)`);
@@ -38,7 +37,6 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
         console.log("=== SELBST-TEST: die Labor-Linse nennt jeden Täter des Befunds ===");
         const gesund = {
             geladen: true,
-            mausFehler: 0,
             hudDisplay: "flex",
             hudAbstand: 22,
             tachoV: 10.5,
@@ -51,7 +49,6 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
         };
         check("Selbst-Test 0: gesundes Labor == 0 Täter", laborVerdict(gesund).length === 0);
         for (const [name, bruch, soll] of [
-            ["10 Seitenfehler je Orbit-Zug", { mausFehler: 10 }, "maus"],
             ["HUD display:block", { hudDisplay: "block", hudAbstand: 0 }, "hud display"],
             ["126 km/h angezeigt bei 10,5 m/s (×12)", { tachoAnzeige: 126 }, "tacho"],
             ["Supersport → GT lässt grip 0,85", { presetLeck: ["grip"] }, "preset"],
@@ -77,19 +74,16 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
         process.exit(0);
     }
 
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 120000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.message || String(e)).split("\n")[0]));
-    await page.goto(`http://127.0.0.1:${PORT}/worlds/garage/index.html`, { waitUntil: "load", timeout: 60000 });
+    await server.zeige(page, 60000, "worlds/garage/index.html", "load");
     await page.waitForFunction(() => typeof window.__vehicleCore === "object" && document.querySelector("canvas"), {
         timeout: 30000,
     });
     await new Promise((r) => setTimeout(r, 500));
     const m = { geladen: true };
-    const fehler0 = pageErrors.length;
     // G4 (Teil): der Regler-Zustand beim ersten Laden == das Modell (vor jedem Klick).
     m.reglerLeck = await page.evaluate(() => {
         const out = [];
@@ -115,7 +109,6 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
     await page.mouse.down();
     for (let i = 0; i < 10; i++) await page.mouse.move(640 - i * 8, 360);
     await page.mouse.up();
-    m.mausFehler = pageErrors.length - fehler0;
     await page.waitForFunction(() => window.__m7.rueck !== null, { timeout: 30000, polling: 100 }).catch(() => {});
     // G2: der HUD im Fahr-Modus.
     Object.assign(
@@ -197,17 +190,11 @@ const server = statikServer({ start: "/worlds/garage/index.html" });
             return { presetLeck, kulturAb };
         })
     );
-    m.seitenFehler = pageErrors.slice(0, 3);
     await browser.close();
     server.close();
 
     console.log("=== G — DIE GARAGE IM KOPFLOS-BROWSER (r184 WebGPU, echte Seite) ===");
     const v = laborVerdict(m);
-    check(
-        "G1 Maus ziehen in Werkstatt und Probefahrt ohne Seitenfehler",
-        m.mausFehler === 0,
-        `${m.mausFehler} Fehler${m.seitenFehler.length ? " — " + m.seitenFehler[0] : ""}`
-    );
     check(
         "G2 der Fahr-HUD ist ein Flex-Band (Einheit getrennt von der Tastenhilfe)",
         m.hudDisplay === "flex" && m.hudAbstand >= 10,

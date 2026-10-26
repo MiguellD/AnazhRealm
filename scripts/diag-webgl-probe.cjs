@@ -24,16 +24,15 @@ const PORT = Number(process.env.WGLP_PORT || 4671);
 const server = statikServer();
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhForceWebGL = true; // der EINE Hook — echter Renderer, erzwungener WebGL2-Backend
     });
-    const pageErrors = [], consoleLines = []; // prettier-ignore
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
+    const consoleLines = [];
     page.on("console", (m) => consoleLines.push(m.text()));
-    await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=voll`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000, "index.html?holz=voll");
     await page.evaluate(async () => {
         await window.__weltDa(() => window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state.rendererReady === true); // prettier-ignore
         // W5: ein Programm, das nicht linkt, steht beim Stoff-Namen im Fehler-Sammler — ab dem ersten Frame, den das Spiel zeichnet
@@ -161,7 +160,6 @@ const server = statikServer();
     console.log(`  W6 Sampler je Stoff (Grenze vertex ${out.grenze && out.grenze[1]} · fragment ${out.grenze && out.grenze[2]}), ${z.length} Stoff-Stufen, ${out.ohneLink} Zensus-Pipelines ohne Link:`); // prettier-ignore
     for (const [k, n, , wo] of z.slice(0, 6)) console.log(`     ${String(n).padStart(2)} ${k} — ${wo}`);
     if (out.err) console.log(`  Probe-Fehler: ${out.err}`);
-    if (pageErrors.length) console.log("  Seiten-Fehler:", pageErrors.slice(0, 5));
 
     const errs = [];
     if (out.err) errs.push(`Probe brach ab: ${out.err}`);
@@ -188,7 +186,6 @@ const server = statikServer();
     if (!(z.length > 4 && selbst.length === 1 && selbst[0].startsWith("W6: selbsttest:17-karten fragment trägt 17 "))) errs.push(`W6-Selbsttest: der Stoff mit 17 Karten fällt nicht beim Namen (${selbst.join(" · ") || "kein Urteil"}; ${z.length} Stoffe) — die Linse ist blind`); // prettier-ignore
     else console.log(`  W6-Selbsttest ROT am Täter: ${selbst[0]}`);
     if (!(out.ohneLink > 0)) errs.push("W6: der Zensus linkt (compileAsync fragt seine Pipeline anders als mit eigener Versprechen-Liste — r184-Drift)"); // prettier-ignore
-    if (pageErrors.length) errs.push(`${pageErrors.length} Seiten-Fehler auf dem WebGL-Pfad`);
 
     if (errs.length) {
         console.error("\n❌ ROT:");

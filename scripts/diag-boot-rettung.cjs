@@ -108,14 +108,6 @@ async function fahreForm(browser, form, schein) {
     const ctx = await browser.createBrowserContext();
     const page = await ctx.newPage();
     const rep = { form, schein: !!schein, befunde: [], boots: [] };
-    let pageErr = null;
-    page.on("pageerror", (e) => {
-        if (!pageErr)
-            pageErr = String(e.stack || e.message)
-                .split("\n")
-                .slice(0, 3)
-                .join(" | ");
-    });
     page.on("dialog", (d) => d.accept().catch(() => {}));
     await nullRenderer(page);
     if (schein) await page.evaluateOnNewDocument(scheinNurPlatz);
@@ -124,7 +116,7 @@ async function fahreForm(browser, form, schein) {
     try {
         // Die Form wird auf einer leeren Seite desselben Ursprungs gelegt (localStorage + IndexedDB des Spiels), ohne eine
         // Welt zu booten: ein Save mit seiner Marke im Wissen, vor dem Erst-Spawn (playerPosition null).
-        await page.goto(`http://127.0.0.1:${PORT}/__leer`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await server.zeige(page, 60000, "__leer");
         const v = await page.evaluate(async (form) => {
             const mit = (marke, id, art) => {
                 const s = {
@@ -221,7 +213,7 @@ async function fahreForm(browser, form, schein) {
             return {};
         }, form);
         rep.vorbereitung = v;
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await server.zeige(page, 60000);
         const b1 = await bereit(page);
         rep.boots.push(b1);
         if (!b1.ok) throw new Error("Boot 1 erwachte nicht in 120 s");
@@ -275,7 +267,6 @@ async function fahreForm(browser, form, schein) {
     } catch (e) {
         befund(`ABBRUCH: ${e && e.message ? e.message : e}`);
     } finally {
-        if (pageErr) befund(`PAGE-ERROR: ${pageErr}`);
         rep.ms = Date.now() - t0;
         await ctx.close();
     }
@@ -284,7 +275,7 @@ async function fahreForm(browser, form, schein) {
 
 (async () => {
     const tStart = Date.now();
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "standard", frist: 600000 });
     console.log("\n========= DIE BOOT-RETTUNG — der Boot verliert die Welt des Aktiv-Zeigers nie =========");
     console.log(`  Baum: ${root}`);

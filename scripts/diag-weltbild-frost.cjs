@@ -260,7 +260,7 @@ function pruefRaum(echt) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({
         art: ECHT ? "echt" : "linse",
         headless: !ECHT,
@@ -275,7 +275,6 @@ function pruefRaum(echt) {
     // Der zweite Weg einer Validierung: r184 fängt sie in seinem offenen Pipeline-Fehler-Bereich und meldet sie als
     // THREE-Konsolenzeile (nie als uncapturederror) — der eigene Hörer zählt auch diese (die Zeilen des Spiels nicht).
     const konsoleGpu = { n: 0, erste: [] };
-    page.on("pageerror", (e) => console.log(`  [Seiten-Fehler] ${zeit()}: ${String(e.message || e).split("\n")[0]}`));
     page.on("console", (m) => {
         const t = m.text();
         if (!t.startsWith("[AnazhRealm") && /does not fit in|\[Invalid [A-Za-z]+|\n\s*-\s*While /.test(t)) {
@@ -285,10 +284,7 @@ function pruefRaum(echt) {
         if (/INDEX-WACHE|GPU-VALIDIERUNG/.test(t) && konsole++ < 10) console.log("  [Spiel] " + t.slice(0, 260));
     });
     await page.evaluateOnNewDocument(geraeteHoerer);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html${ECHT ? "" : "?holz=kienspan"}`, {
-        waitUntil: "domcontentloaded",
-        timeout: 120000,
-    });
+    await server.zeige(page, 120000, `index.html${ECHT ? "" : "?holz=kienspan"}`);
     const boot = await page.evaluate(
         async ({ minChunks, echt }) => {
             for (const weiter = window.__deckel("das erste Weltbild", 1200); weiter(); ) {

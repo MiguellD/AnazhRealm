@@ -28,9 +28,9 @@
 //       BLENDE-TREUE: eine Instanz auf der Kante ihres Fensters, der Anker 3 mm jenseits, das Auge 9,5 mm herüber — die Lage
 //       hält, und die gehaltene Wahl trägt sie (der Halt als Rand des Fensters); ohne den Rand fehlt sie (scharf);
 //   (C) EIN Gesetz der Lage: die Nah-Wiese prüft ihre Kacheln nur bei neuer Generation (`L.gen`, am Ruf von `_passTrifft`);
-//       die eigene Kamera-Signatur der Nah-Wiese ist gefallen (gate:altlasten); (P) kein Page-Error.
+//       die eigene Kamera-Signatur der Nah-Wiese ist gefallen (gate:altlasten); (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Arbeit in Ruhe, Bytes in Ruhe,
-// kein Treffer, starres Drehen, untreue Wahl, stumpfe Linse, fehlender Leser, Page-Error — MUSS rot fallen und ihn beim
+// kein Treffer, starres Drehen, untreue Wahl, stumpfe Linse, fehlender Leser — MUSS rot fallen und ihn beim
 // Namen nennen.
 //   node scripts/diag-sicht-arbeit.cjs [--selftest]   (npm run gate:sicht-arbeit; Port SICHT_ARBEIT_PORT)
 // ─────────────────────────────────────────────────────────────────────────
@@ -101,7 +101,6 @@ function urteil(b) {
     if (c.wieseLiest === "leer") v.push("LEER: die Nah-Wiese trägt keine Kachel mit Büscheln — die Wiesen-Probe ist blind");
     else if (!c.wieseLiest)
         v.push("WIESE: `_nahWieseSicht` prüft ihre Kacheln bei gleicher Lage-Generation neu oder bei neuer nicht (`L.gen`)");
-    for (const e of b.pageErrors || []) v.push(`PAGE-ERROR: ${e}`);
     return v;
 }
 
@@ -186,7 +185,6 @@ function selbsttest() {
             namen: [],
         },
         code: { wieseLiest: true },
-        pageErrors: [],
     };
     const klon = () => JSON.parse(JSON.stringify(gruen));
     const fehler = [];
@@ -794,7 +792,6 @@ function selbsttest() {
         ],
         ["Wiese liest nicht", (b) => (b.code.wieseLiest = false), /WIESE: `_nahWieseSicht` prüft/],
         ["Wiese leer", (b) => (b.code.wieseLiest = "leer"), /LEER: die Nah-Wiese trägt keine Kachel/],
-        ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -824,16 +821,14 @@ const server = statikServer();
 
 (async () => {
     console.log("=== SICHT-ARBEIT (Welle C) — Null-Renderer, Mess-Wiese, die Sicht-Linse je Frame ===");
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(580000);
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await nullRenderer(page);
     let befund = null;
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
+        await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
         await page.evaluate(SICHT.SICHT_INSTALL);
         befund = await page.evaluate(async (MESS) => {
@@ -1452,7 +1447,6 @@ const server = statikServer();
         console.log("❌ LAUF-FEHLER: " + (befund ? befund.fehler : "kein Befund"));
         process.exit(1);
     }
-    befund.pageErrors = pageErrors;
     const zeile = (n, x) =>
         `  ${n.padEnd(7)} ${x.frames} Frames · Pässe ${x.paesse.mittel} · Arbeit Ø ${x.arbeit.mittel} (Median ${x.arbeit.median}, ` +
         `max ${x.arbeit.max}) · Höhlen-Sicht ${x.hoehlenSicht.mittel} + Licht ${x.hoehlenSichtLicht.mittel} · Abschnitte ` +

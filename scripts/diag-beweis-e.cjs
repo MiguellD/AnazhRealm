@@ -207,14 +207,12 @@ const SCHUSS_FN = async (kam) => {
 
 (async () => {
     fs.mkdirSync(OUT, { recursive: true });
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: PROTO_MS });
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000);
     await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme: der echte Frame, getont wie beim Spieler
 
     // ── 1: Boot + Settle + Mittag + Buch warm ──
@@ -284,7 +282,7 @@ const SCHUSS_FN = async (kam) => {
         };
     });
     if (!boot || boot.fatal) {
-        console.log("FEHLER:", boot ? boot.fatal : "?", "· Page-Errors:", pageErrors.slice(0, 3).join(" | ") || "-");
+        console.log("FEHLER:", boot ? boot.fatal : "?");
         await browser.close();
         server.close();
         process.exit(1);
@@ -777,7 +775,6 @@ const SCHUSS_FN = async (kam) => {
         bericht.wiesePos = { x: +kam.fern.px.toFixed(1), z: +kam.fern.pz.toFixed(1) };
     }
 
-    bericht.pageErrors = pageErrors.slice(0, 10);
     bericht.uploadLinse = [...new Set(await page.evaluate(() => window.__uploadLinse || []))].slice(0, 10);
     if (bericht.uploadLinse.length) console.log(`Upload-Linse: ${bericht.uploadLinse.join(" | ")}`);
     const teil = KLASSEN.length < 4 ? "-" + KLASSEN.join("+") : "";
@@ -785,7 +782,7 @@ const SCHUSS_FN = async (kam) => {
     fs.writeFileSync(jf, JSON.stringify(bericht, null, 2));
     await browser.close();
     server.close();
-    console.log(`\nBericht: ${path.relative(root, jf)} · Page-Errors: ${pageErrors.length}`);
+    console.log(`\nBericht: ${path.relative(root, jf)}`);
     console.log(
         rot === 0
             ? "✅ GRÜN — jeder Schuss trägt Substanz (das URTEIL über die Gestalt ist das Bild)."

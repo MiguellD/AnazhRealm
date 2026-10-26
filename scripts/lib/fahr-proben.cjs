@@ -42,6 +42,12 @@ async function probeLeben(expected) {
     const frame = (i) => {
         tMs += MUSTER[i % MUSTER.length];
         r._gameLoopTick(tMs);
+        raeumen();
+    };
+    const bilder = (n) => {
+        for (let i = 0; i < n; i++) frame(i);
+    };
+    const raeumen = () => {
         const w = bahnWache;
         if (!w) return;
         for (const e of st.architectures.slice()) {
@@ -75,7 +81,7 @@ async function probeLeben(expected) {
         if (!fz || fz.luft || !Number.isFinite(fz.y)) return false;
         const a = r._rittAufstand(me);
         const boden = r._fahrBoden(me);
-        const yk = (Number.isFinite(me._rideYaw) ? me._rideYaw : 0) - Math.PI / 2; // der Rahmen des Kerns
+        const yk = gierUnwrap(me) - Math.PI / 2; // der Rahmen des Kerns
         const fx = Math.cos(yk);
         const fzz = -Math.sin(yk);
         const lx = -Math.sin(yk);
@@ -146,10 +152,18 @@ async function probeLeben(expected) {
             Math.abs(v.z() - vz) > 1e-9;
         z.kontakt = anders ? { x: m.x, z: m.z, vx: v.x(), vz: v.z() } : null;
     };
+    // DIE WINDSTILLE (Fixture der ganzen Probe): der Wind am Wagen (wetter.K5, `_fahrWind`) ist eine Funktion der Sim-Uhr, und
+    // die trägt die Wanduhr des Boots und jedes Wartens auf Bau und Welt — gleicher Ort, gleiche Saat: 0,35 gegen 1,75 m/s je
+    // Lauf. Seit er am 24.10. in den Wagen kam, streuten S3 (Quer-Abdrift 0,333–0,361 m am selben Ort) und L8 (3,5 cm
+    // zwischen 60 fps und gemischten Bildern, die zu verschiedenen Sim-Zeiten fahren). Die Linse misst das Fahr-Gesetz; den
+    // Wind am Wagen misst sein eigenes Gesetz (wetter.K5). Fehlt das Glied, ruft die Probe den Täter beim Namen.
+    if (!r._fahrWind) throw new Error("Windstille: _fahrWind fehlt");
+    r._fahrWind = () => ({ x: 0, z: 0 });
     const aufraeumen = () => {
         delete r._loopFixedStep;
         delete r._stepFixedSim;
         delete r._stepCharacter;
+        delete r._fahrWind;
     };
     const tasten = (w, a) => {
         for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
@@ -229,12 +243,14 @@ async function probeLeben(expected) {
             { silent: true, precise: true, rotationY: rotY }
         );
         if (!e) return null;
+        // der Bau wartet im Takt der Probe (`frame`: Muster-Zeiten, die Bahn-Wache je Bild), nie im Takt der Seite — dessen
+        // Wanduhr-Takt (`performance.now()`) trug je Lauf andere Schritte in die Welt, ehe der Wagen fuhr (Lehre 13)
         await window.__gebautNach(e);
         if (vorAufsitzen) vorAufsitzen(e);
         const mr = r.mountArchitecture(e);
         if (!mr || !mr.ok) return null;
         tasten(false);
-        for (let i = 0; i < 12; i++) frame(i); // einschwingen (Sitz, Ebene, Interpolation)
+        bilder(12); // einschwingen (Sitz, Ebene, Interpolation)
         return e;
     };
     const weg = (e) => {
@@ -751,15 +767,15 @@ async function probeLeben(expected) {
                 spalte.push(spalt);
             });
             tasten(true, false);
-            for (let i = 0; i < 90; i++) frame(i);
+            bilder(90);
             phase = "s";
             for (const k of ["w", "a", "s", "d"]) st.keys[k] = false;
             st.keys.s = true;
-            for (let i = 0; i < 40; i++) frame(i);
+            bilder(40);
             st.keys.s = false;
             phase = "a";
             tasten(true, true);
-            for (let i = 0; i < 60; i++) frame(i);
+            bilder(60);
             tasten(false);
             ab5();
             spalte.sort((a, b) => a - b);
@@ -829,7 +845,7 @@ async function probeLeben(expected) {
         // vorbei, auf Gras flog er an einer Welle 80 m weiter mit 0,50 m. Klippen dieser Welt sind Hang-Kanten: im Umkreis 1,6 km
         // liegt keine Bahn flacher als 27,8°.
         const bahnFrei = () => {
-            for (let i = 0; i < 60; i++) frame(i);
+            bilder(60);
         };
         if (kl) strasse(kl.sx, kl.sz, kl.fahrt, 24);
         const klippenBahn = (k) => ({
@@ -878,7 +894,7 @@ async function probeLeben(expected) {
                     frame(i);
                 }
                 tasten(false);
-                for (let i = 0; i < 60; i++) frame(i);
+                bilder(60);
                 ab2();
                 const unterGrund = g2.position.y - 0.5 - hh(g2.position.x, g2.position.z);
                 S.klippe = {
@@ -931,7 +947,7 @@ async function probeLeben(expected) {
                     sprungAb = Math.max(sprungAb, Math.abs(g4.position.y - yv));
                     yv = g4.position.y;
                 });
-                for (let i = 0; i < 240; i++) frame(i);
+                bilder(240);
                 ab7();
                 const eb = r._rittEbene(g4, g4.position.x, g4.position.z, g4._rideYaw);
                 const bodenY = eb ? eb.y : hh(g4.position.x, g4.position.z);
@@ -952,19 +968,28 @@ async function probeLeben(expected) {
             bahnWache = null;
         }
         // S3 QUERHANG: 25–40° quer, die Höhenlinie 16 m gerade (Richtung ±20°), trocken; Fahrt längs der Linie, W. Der Querhang
-        // aus der Welt (welt-orte `querhang`), die Fahrt-Linie frei von Bauten und Stämmen (wie die Gasse von H).
+        // aus dem GESETZ (welt-orte `querhang`: Höhe, Land, Nässe — nie die gestreamten Bauten, die je Lauf anders geladen
+        // waren: drei Orte, 0,27–0,35 m), angekommen an der stehenden Welt (der Fixpunkt), die Tiere stehen, die Bahn-Wache
+        // räumt die Fahrt-Linie von Bauten und Stämmen (wie die Gasse von H) — dieselbe Saat fährt dieselbe Abdrift.
         const qOrt = window.__weltOrt("querhang", { schritt: 4, rMax: 1600 });
         const qh = qOrt ? { x: qOrt.sx, z: qOrt.sz, grad: qOrt.neigung, fahrt: qOrt.gier } : null;
         S.querOrt = qh;
         if (qh) {
+            await ankommen(qh.x, qh.z);
+            const los3 = tiereStehen();
             bahnWache = { sx: qh.x, sz: qh.z, ux: Math.sin(qh.fahrt), uz: Math.cos(qh.fahrt), len: 24, quer: 4, n: 0 };
+            raeumen(); // die Bahn ist frei, ehe der Wagen steht (eine Birke bei −0,5 m stieß ihn je Lauf oder nicht)
             const g3 = await setzen("fahrzeug_gt", qh.x, qh.z, qh.fahrt);
             if (g3) {
                 // Die QUER-ABDRIFT talwärts: je Sim-Schritt die Geschwindigkeit quer zum Bug, auf die tiefe Seite gezählt
-                // (ohne Quer-Hangabtrieb tötet der Reifen jede Quer-Fahrt: 0).
+                // (ohne Quer-Hangabtrieb tötet der Reifen jede Quer-Fahrt: 0) — über genau 110 Sim-Schritte (die
+                // Uhr des Gesetzes; 100 Muster-Bilder trugen je nach Rest des Akkumulators 110 oder 111), in der Windstille
+                // der Probe — gemessen wird der Quer-Hangabtrieb, nie das Wetter.
                 let drift = 0;
+                let rest3 = 110;
                 const ab3 = nachSchritt((dt) => {
-                    const ry = Number.isFinite(g3._rideYaw) ? g3._rideYaw : 0;
+                    if (rest3-- <= 0) return;
+                    const ry = gierUnwrap(g3);
                     const lx = Math.cos(ry);
                     const lz = -Math.sin(ry);
                     const x = g3.position.x;
@@ -974,12 +999,13 @@ async function probeLeben(expected) {
                     drift += (v.x() * lx + v.z() * lz) * -Math.sign(steigLinks) * dt;
                 });
                 tasten(true, false);
-                for (let i = 0; i < 100; i++) frame(i);
+                for (let i = 0; i < 200 && rest3 > 0; i++) frame(i);
                 tasten(false);
                 ab3();
                 S.quer = { drift, weg: Math.hypot(g3.position.x - qh.x, g3.position.z - qh.z), wache: bahnWache.n };
                 weg(g3);
             }
+            los3();
             bahnWache = null;
         }
 

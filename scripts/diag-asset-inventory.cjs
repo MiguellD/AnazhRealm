@@ -51,13 +51,12 @@ const PORT = Number(process.env.ASSET_INVENTORY_PORT || 4517);
 const server = statikServer();
 (async () => {
     const selftest = process.argv.includes("--selftest");
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 240000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.evaluateOnNewDocument(installWieseSicht);
-    page.on("pageerror", (e) => console.log("[ERR]", (e.stack || e.message).split("\n")[0]));
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
     const out = await page.evaluate(async (doSelftest) => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         // ── Warmup: Welt bauen (Chunk-Plateau) + Foundry ready + Scatter konvergieren lassen

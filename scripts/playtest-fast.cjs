@@ -26,7 +26,7 @@ function check(name, ok) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 120000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
@@ -36,14 +36,13 @@ function check(name, ok) {
         window.__anazhHeadlessNullRenderer = true;
     });
     const errors = [];
-    page.on("pageerror", (e) => errors.push((e.stack || e.message || String(e)).split("\n")[0]));
     page.on("console", (m) => {
         const t = m.text();
         if (/Chunk-Generation-Fehler|WASM-MIME|Vendor-Lib nicht geladen/.test(t))
             errors.push("[console] " + t.slice(0, 120));
     });
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+        await server.zeige(page, 30000);
         // ── Init abwarten (wie der Voll-Playtest) ──
         // Das echte „Welt bereit"-Signal ist `_gameLoopTick` als Funktion (startEternalLoop
         // lief, der Boot ist durch) — NICHT `rendererReady` allein: das heißt nur „GPU-Device
@@ -317,7 +316,7 @@ function check(name, ok) {
 
         // ── AUSWERTUNG ──
         console.log(`\n=== Schnell-Playtest (Kern-Gesundheit) ===`);
-        check("Keine Page-/Console-Fehler (Crash-Wand)", errors.length === 0);
+        check("Keine Console-Fehler (Crash-Wand)", errors.length === 0);
         if (errors.length) errors.slice(0, 5).forEach((e) => console.log("     ⟶ " + e));
         check("window.anazhRealm.state erreichbar", R.stateReachable === true);
         check(`voxelChunks gebaut (${R.voxelChunks} ≥ 1)`, R.voxelChunks >= 1);

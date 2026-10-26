@@ -927,59 +927,7 @@ class AnazhRealm_feld_dsl {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 const n = c(count, 1, 20);
                 const e = emotion || "happy"; // das Gesetz der Werte hält dslEval (`AnazhRealm.DSL_WERTE`)
-                // === Spawn-Harmonie ===
-                // Kreaturen erscheinen im RING um den Ziel-Punkt, nie gestapelt, nie AUF dem Spieler (sonst
-                // clippt es); liegt das Ziel auf dem Spieler (at_player), rückt der Ring nach außen. ctx.rng →
-                // deterministisch + broadcast-konsistent.
-                const ppos = ctx.state.playerMesh && ctx.state.playerMesh.position;
-                const onPlayer = !!(ppos && Math.hypot(pos.x - ppos.x, pos.z - ppos.z) < 2.0);
-                // DIE NEXUS-GEBURT folgt dem Geburts-Gesetz (D13 auch für den Nexus-Weg, Leben-Schau 07.10. Neu 1): der
-                // autonome Nexus setzt ein Wesen nur dorthin, wo es fern und außerhalb des Blicks zur Welt kommt
-                // (`_kreaturGeburtsOrt` — der gewünschte Ort, wenn er es ist; sonst ein Ort nach dem Gesetz). Vorher setzte
-                // `spawn_creature at_player` es 4–7 m vor den Spieler. Der Mensch (und wer in seinem Namen spricht) ruft
-                // Leben vor sich — das ist sein Akt.
-                const autonom = this._feldHandelt(ctx);
-                let spawned = 0;
-                let lastBorn = null;
-                const gruende = {};
-                const absage = (g) => (gruende[g] = (gruende[g] || 0) + 1);
-                for (let i = 0; i < n; i++) {
-                    if (ctx.budget.spawnsLeft <= 0) {
-                        ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
-                        gruende.budget = n - i; // die übrigen Würfe fallen benannt
-                        break;
-                    }
-                    ctx.budget.spawnsLeft--;
-                    const ang = ctx.rng() * Math.PI * 2;
-                    const rad = (onPlayer ? 2.5 : 0) + 1.5 + ctx.rng() * 2.5; // 1.5..4 m, +2.5 wenn auf dem Spieler
-                    let sx = pos.x + Math.cos(ang) * rad;
-                    let sz = pos.z + Math.sin(ang) * rad;
-                    let sy = pos.y;
-                    if (autonom) {
-                        const ort = this._kreaturGeburtsOrt(ctx.rng, 80, { x: sx, z: sz });
-                        if (!ort) continue; // die Wildnis trägt den Ort nicht: keine autonome Geburt
-                        if (ort.x !== sx || ort.z !== sz) {
-                            sx = ort.x;
-                            sz = ort.z;
-                            const gY = this.getTerrainHeightAt(sx, sz);
-                            sy = (Number.isFinite(gY) ? gY : pos.y) + 1;
-                        }
-                    }
-                    // eine Geburt, die nicht stattfand, zählt nicht und trägt kein Leben (die Absage nennt ihren Grund —
-                    // bis Schau-2 Runde 3 zählte der Op jeden Wurf: „10 Kreaturen gespawnt" bei 3, 0 und 0 an der Obergrenze)
-                    const born = this.spawnCreatureAt(sx, sy, sz, e, null, { absage });
-                    if (!born) continue;
-                    // Intentional getragene Kreatur (Nexus/Chat/DSL) TENDET das Feld (träufelt Leben, wo sie wohnt;
-                    // _tickCreatureLifeTrickle). Ambiente Fauna bekommt das Flag NIE — sie ist die Folge des Feldes
-                    // (kein Runaway).
-                    if (born.userData) born.userData.tendsLife = true;
-                    lastBorn = born;
-                    // Eine Geburt TRÄGT Leben ins Feld: hebt lebendig an der Wiege → schließt den at_field_need-Loop
-                    // (Mangel sinkt, der Nexus zieht weiter), die Region ergrünt. NUR dieser intentionale Pfad
-                    // deponiert — ambiente Fauna + Restore nie (sonst positives Feedback-Runaway in üppigen Regionen).
-                    this._depositLife(sx, sz);
-                    spawned++;
-                }
+                const { spawned, gruende, lastBorn } = this._dslWesenSetzen(ctx, pos, n, e, null, null);
                 ctx.log.push({ event: "spawned_creature", count: spawned, emotion: e });
                 this._setzErgebnis(ctx, "spawn_creature", n, spawned, gruende, "Kreaturen", "erschienen");
                 // Spawnt DER SPIELER Leben (source "human") → joy + peace; der autonome Nexus hebt die
@@ -1038,11 +986,17 @@ class AnazhRealm_feld_dsl {
             // wird über dieselben Tabellen wie die Werkstatt zum Bauplan (_studioBlueprintForWord) und landet
             // am EINEN Chokepoint spawnArchitecture — mit Preset-Stempel (_studioStampFor), geerdet, nie im
             // Wasser (_dslSpawnStudioItems). Unbekanntes Wort → Log-Eintrag, kein Raten, kein Ersatz-Baum. `ov` (die
-            // Regler {id: Zahl}, KI K2) prägt das Werk über denselben Stempel, am Vertrag der Art geklemmt.
+            // Regler {id: Zahl}, KI K2) prägt das Werk über denselben Stempel, am Vertrag der Art geklemmt. Eine Prägung (der
+            // Klang der Welt, die Gestalt des Spielers — KIND_POLICY `werk`) steht an keinem Ort: Ort und Zahl zählen dort nicht.
             spawn_studio: ([what, positionNode, count, seed, ov], ctx) => {
                 const name = this._studioBlueprintForWord(what == null ? "" : String(what));
                 if (!name) {
                     ctx.log.push({ event: "unknown_studio_word", word: what, program_id: ctx.programId });
+                    return;
+                }
+                if (this._studioWerkVerb(name) === "praegung") {
+                    const n1 = this._dslSpawnStudioItems(name, null, 1, seed, ctx, 0, ov);
+                    ctx.log.push({ event: "spawned_studio", count: n1, pos: null, kind: name });
                     return;
                 }
                 const n = c(count, 1, 24);
@@ -1991,25 +1945,32 @@ class AnazhRealm_feld_dsl {
 
     // Die Regler des Programms (`ov`) prägen über den EINEN Stempel; jede Klemme steht beim Namen im Log, ein fremder Regler
     // setzt nichts (der Grund `regler`, das Log nennt ihn und die Regler der Art). Ein Same null ist keiner (Lehre 17).
+    // DAS WERK JE ART (KIND_POLICY `werk`, KI K2): eine Gattung erscheint als Wesen, ihr Stempel ist der Guss (`_dslWesenSetzen`);
+    // eine Prägung schreibt der EINE Prägungs-Schreiber (`_praegungSetzen`), ihre lebenden Leser folgen; sonst baut oder
+    // wächst der Bauplan.
     _dslSpawnStudioItems(name, pos, n, seed, ctx, jitter, ov) {
         const befund = {};
         const stamp = this._studioStampFor(name, ov, befund);
         const istBaum = name.startsWith("baum_");
         const natur = this._istNatur({ type: name });
+        const werk = this._studioWerkVerb(name);
+        const verb = werk === "praegung" ? "geprägt" : werk === "wesen" ? "erschienen" : natur ? "gewachsen" : "gebaut";
         if (befund.geklemmt && befund.geklemmt.length)
             ctx.log.push({ event: "studio_regler_geklemmt", kind: name, geklemmt: befund.geklemmt });
         if (stamp === false) {
             ctx.log.push({ event: "studio_regler_abgelehnt", kind: name, regler: befund.fremd, kennt: befund.kennt });
-            this._setzErgebnis(
-                ctx,
-                "spawn_studio",
-                n,
-                0,
-                { regler: n },
-                this._werkLabel(name),
-                natur ? "gewachsen" : "gebaut"
-            );
+            this._setzErgebnis(ctx, "spawn_studio", n, 0, { regler: n }, this._werkLabel(name), verb);
             return 0;
+        }
+        if (werk === "praegung") {
+            this._praegungSetzen(this._foundry.recipes[name].kind, name, stamp || {});
+            this._setzErgebnis(ctx, "spawn_studio", 1, 1, {}, this._werkLabel(name), verb);
+            return 1;
+        }
+        if (werk === "wesen") {
+            const w = this._dslWesenSetzen(ctx, pos, n, "happy", this._gattungsSeele(name), stamp);
+            this._setzErgebnis(ctx, "spawn_studio", n, w.spawned, w.gruende, this._werkLabel(name), verb);
+            return w.spawned;
         }
         const grundriss = !natur && !!this._grundrissGesetz(name);
         const baseSeed =
@@ -2070,16 +2031,63 @@ class AnazhRealm_feld_dsl {
             )
                 spawned++;
         }
-        this._setzErgebnis(
-            ctx,
-            "spawn_studio",
-            n,
-            spawned,
-            weicht,
-            this._werkLabel(name),
-            natur ? "gewachsen" : "gebaut"
-        );
+        this._setzErgebnis(ctx, "spawn_studio", n, spawned, weicht, this._werkLabel(name), verb);
         return spawned;
+    }
+
+    // DIE GEBURT AUS EINEM PROGRAMM (spawn_creature und die Gattung aus spawn_studio): n Wesen im RING um den Ziel-Punkt, nie
+    // gestapelt, nie AUF dem Spieler (liegt das Ziel auf ihm, at_player, rückt der Ring nach außen); ctx.rng → deterministisch
+    // + broadcast-konsistent. `seele` null würfelt die Seele, `dialsOv` ist der Guss (der Stempel der Gattung, sonst ihre
+    // Prägung). DIE NEXUS-GEBURT folgt dem Geburts-Gesetz (D13, Leben-Schau 07.10. Neu 1): der autonome Nexus setzt ein Wesen
+    // nur dorthin, wo es fern und außerhalb des Blicks zur Welt kommt (`_kreaturGeburtsOrt`); der Mensch (und wer in seinem
+    // Namen spricht) ruft Leben vor sich — das ist sein Akt. { spawned, gruende, lastBorn }.
+    _dslWesenSetzen(ctx, pos, n, e, seele, dialsOv) {
+        const ppos = ctx.state.playerMesh && ctx.state.playerMesh.position;
+        const onPlayer = !!(ppos && Math.hypot(pos.x - ppos.x, pos.z - ppos.z) < 2.0);
+        const autonom = this._feldHandelt(ctx);
+        let spawned = 0;
+        let lastBorn = null;
+        const gruende = {};
+        const absage = (g) => (gruende[g] = (gruende[g] || 0) + 1);
+        const opts = dialsOv ? { absage, dialsOv } : { absage };
+        for (let i = 0; i < n; i++) {
+            if (ctx.budget.spawnsLeft <= 0) {
+                ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                gruende.budget = n - i; // die übrigen Würfe fallen benannt
+                break;
+            }
+            ctx.budget.spawnsLeft--;
+            const ang = ctx.rng() * Math.PI * 2;
+            const rad = (onPlayer ? 2.5 : 0) + 1.5 + ctx.rng() * 2.5; // 1.5..4 m, +2.5 wenn auf dem Spieler
+            let sx = pos.x + Math.cos(ang) * rad;
+            let sz = pos.z + Math.sin(ang) * rad;
+            let sy = pos.y;
+            if (autonom) {
+                const ort = this._kreaturGeburtsOrt(ctx.rng, 80, { x: sx, z: sz });
+                if (!ort) continue; // die Wildnis trägt den Ort nicht: keine autonome Geburt
+                if (ort.x !== sx || ort.z !== sz) {
+                    sx = ort.x;
+                    sz = ort.z;
+                    const gY = this.getTerrainHeightAt(sx, sz);
+                    sy = (Number.isFinite(gY) ? gY : pos.y) + 1;
+                }
+            }
+            // eine Geburt, die nicht stattfand, zählt nicht und trägt kein Leben (die Absage nennt ihren Grund —
+            // bis Schau-2 Runde 3 zählte der Op jeden Wurf: „10 Kreaturen gespawnt" bei 3, 0 und 0 an der Obergrenze)
+            const born = this.spawnCreatureAt(sx, sy, sz, e, seele, opts);
+            if (!born) continue;
+            // Intentional getragene Kreatur (Nexus/Chat/DSL) TENDET das Feld (träufelt Leben, wo sie wohnt;
+            // _tickCreatureLifeTrickle). Ambiente Fauna bekommt das Flag NIE — sie ist die Folge des Feldes
+            // (kein Runaway).
+            if (born.userData) born.userData.tendsLife = true;
+            lastBorn = born;
+            // Eine Geburt TRÄGT Leben ins Feld: hebt lebendig an der Wiege → schließt den at_field_need-Loop
+            // (Mangel sinkt, der Nexus zieht weiter), die Region ergrünt. NUR dieser intentionale Pfad
+            // deponiert — ambiente Fauna + Restore nie (sonst positives Feedback-Runaway in üppigen Regionen).
+            this._depositLife(sx, sz);
+            spawned++;
+        }
+        return { spawned, gruende, lastBorn };
     }
 
     get dslPositions() {

@@ -135,15 +135,13 @@ function driftBefunde(reihe) {
 // ── die Welt ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 async function welt() {
     const server = statikServer();
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: GROESSEN[0][0], height: GROESSEN[0][1], deviceScaleFactor: 1 });
     await nullRenderer(page);
-    const seitenFehler = [];
-    page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000);
     await page.evaluate(AUSGABE_INSTALL);
     const ende = async () => {
         await browser.close();
@@ -296,7 +294,7 @@ async function welt() {
     }, GROESSEN);
     if (boot.fatal) {
         await ende();
-        return { fatal: boot.fatal, seitenFehler };
+        return { fatal: boot.fatal };
     }
 
     // Eine Größe: der ECHTE resize-Handler (Viewport), Takte durch den Loop, dann Schirm, Fell und Zensus.
@@ -390,7 +388,7 @@ async function welt() {
         });
     }
     await ende();
-    return { boot, messung, selbst, seitenFehler, quelleLiest };
+    return { boot, messung, selbst, quelleLiest };
 }
 
 // K: das Fell-Gesetz folgt dem Schirm (Reihe groß → klein → Kontrolle)
@@ -424,7 +422,6 @@ function konsumBefunde(reihe) {
     const w = await welt();
     if (w.fatal) {
         console.log(`  ❌ Welt: ${w.fatal}`);
-        for (const e of w.seitenFehler.slice(0, 4)) console.log(`      ${e}`);
         console.log("ROT schirm-monotonie");
         process.exit(1);
     }
@@ -449,7 +446,6 @@ function konsumBefunde(reihe) {
     console.log("=== M · ein kleinerer Schirm trägt höchstens gleich viel (je Pass und Täter-Klasse) ===");
     check("M Befehle und Dreiecke fallen oder halten von groß nach klein (Spannen, beide Klammern)", monotonieBefunde(w.messung));
     for (const d of driftBefunde(w.messung)) console.log(`      (Drift, ohne Schirm) ${d}`);
-    if (w.seitenFehler.length) check("keine Seiten-Fehler", w.seitenFehler.slice(0, 4));
 
     if (SELBST) {
         console.log("=== SELBSTTEST ===");

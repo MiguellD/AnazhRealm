@@ -555,12 +555,11 @@ const GANG = (k) => {
 };
 
 (async () => {
-    await new Promise((res) => server.listen(PORT, res));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     // je Seite ihr Fehler beim Namen und (wo sie gemessen wird) der EINE Schlupf — ohne Frist (ein hängender Boot steht in der Stall-Akte)
     const seite = async (b, wer, schlupf) => {
         const p = await b.newPage();
-        p.on("pageerror", (e) => console.log(`[${wer}PAGE-ERROR]`, (e.stack || e.message).split("\n")[0]));
         if (schlupf) await p.evaluateOnNewDocument(`window.__schlupf = ${SCHLUPF};`);
         return p;
     };
@@ -595,7 +594,7 @@ const GANG = (k) => {
         return ok;
     };
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
+        await server.zeige(page, 120000, "index.html", "networkidle0");
         // die Welt und ihr Gang-Gesetz sind da: das EINE Warten ohne Frist (ein hängender Boot steht in der Stall-Akte)
         await page.evaluate(() =>
             window.__weltDa(() => window.__tetrapodaCore && typeof window.__tetrapodaCore.gangSchritt === "function")
@@ -678,10 +677,7 @@ const GANG = (k) => {
         const sb = await starteBrowser({ art: "linse", frist: 300000 });
         try {
             const sp = await seite(sb, "STUDIO-", true);
-            await sp.goto(`http://127.0.0.1:${PORT}/worlds/koerperstudio/index.html`, {
-                waitUntil: "domcontentloaded",
-                timeout: 240000,
-            });
+            await server.zeige(sp, 240000, "worlds/koerperstudio/index.html");
             // das Labor steht, wenn sein Spiel-Modus geladen ist — ohne Frist (ein swiftshader-Bild des Labors hält den Compositor
             // und mit ihm den Poll); ein hängendes Labor steht in der Stall-Akte
             // eslint-disable-next-line no-undef
@@ -708,10 +704,7 @@ const GANG = (k) => {
             }
             // dieselbe Gangart im Labor der Tiere (Labor = Welt)
             const tp = await seite(sb, "TETRAPODA-");
-            await tp.goto(`http://127.0.0.1:${PORT}/worlds/tetrapoda/index.html`, {
-                waitUntil: "domcontentloaded",
-                timeout: 240000,
-            });
+            await server.zeige(tp, 240000, "worlds/tetrapoda/index.html");
             await tp.waitForFunction(() => typeof wolf !== "undefined" && !!wolf && typeof emo !== "undefined", { timeout: 0 });
             for (const [gattung, seele] of Object.entries(LABOR_WELT)) {
                 const res = await tp.evaluate(GANG, { art: gattung, vh: VH, stub: SELBST, stimmung: STIMMUNG_FOLGE });

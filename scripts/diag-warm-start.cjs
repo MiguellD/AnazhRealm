@@ -272,14 +272,14 @@ async function jobSelbsttest(kaltIn) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true; // der Gate-Kontext (kein GPU)
         window.__anazhChunkIdb = true; // den Warm-Start headless ERZWINGEN (Hook-Override in _chunkPlatte)
     });
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000);
 
     // ===== BAND 1: KALT =====
     const kalt = await runJob(page, jobKalt);

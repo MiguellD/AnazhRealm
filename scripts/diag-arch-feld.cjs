@@ -67,18 +67,16 @@ function kartenGesetz(buch, zelleF) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });
-    const pageErrors = [];
-    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     page.on("console", (m) => {
         const t = m.text();
         if (t.startsWith("[D]")) console.log("  " + t);
     });
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000);
     const res = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         await window.__weltDa((r) => r.state);
@@ -290,7 +288,7 @@ function kartenGesetz(buch, zelleF) {
         };
     });
     if (!res || res.fatal) {
-        console.log("FEHLER:", res ? res.fatal : "?", "· Page-Errors:", pageErrors.slice(0, 3).join(" | ") || "-");
+        console.log("FEHLER:", res ? res.fatal : "?");
         await browser.close();
         server.close();
         process.exit(1);
@@ -341,11 +339,11 @@ function kartenGesetz(buch, zelleF) {
             ? "✅ T  keine Ausnahme im Spiel-Takt"
             : `❌ T  ${res.taktFehler.n} Ausnahmen im Spiel-Takt — erste: ${res.taktFehler.erster}`
     );
-    const gruen = A && AM && AF && Bk && C && TF && pageErrors.length === 0;
+    const gruen = A && AM && AF && Bk && C && TF;
     console.log(
         gruen
             ? "✅ GRÜN — gesetzte Dinge erscheinen: nah als Mesh (das Feld überbrückt), fern im Feld oder als Karte."
-            : `❌ ROT${pageErrors.length ? " · Page-Errors: " + pageErrors.slice(0, 2).join(" | ") : ""}`
+            : "❌ ROT"
     );
     process.exit(gruen ? 0 : 1);
 })().catch((e) => {

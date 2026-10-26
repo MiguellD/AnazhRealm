@@ -32,7 +32,7 @@
 //   misst Falsches — die Zahlen stehen trotzdem im JSON, beim Namen markiert), 2 = Abbruch. Am Ende stirbt die Werkbank samt
 //   Chrome (`beendeBaum`: `/stop`, und hängt er, der ganze Prozess-Baum) — erst dann endet die Folge.
 //
-//   node scripts/omen-messfolge.cjs [--ort wiese|genesis] [--port 4490] [--seite http://localhost:4312] [--serie <name>] [--datei f.json]
+//   node scripts/omen-messfolge.cjs [--ort <FOLGEN>] [--port 4490] [--seite http://localhost:4312] [--serie <name>] [--datei f.json]
 //                                   [--lauf-sek 30] [--ein 20] [--ruhe 300] [--profil-sek 12] [--proben 6]
 //                                   [--sicht ego|third] [--basis <A.json>]   (K26: die Sicht des Orts; die Basis-Seite A des ABAB)
 //   node scripts/omen-messfolge.cjs --urteil <boot.json> [--basis <A.json>]   (K26, ohne GPU: ein gespeicherter Boot neu gelesen)
@@ -84,6 +84,9 @@ const FOLGEN = {
     // die lange Bank je Pose (haushalt.json `bank`, `posen`), bei festen Stellgrößen des Reglers (`stell`).
     buehne: ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "gpu-bank"],
 };
+// DER STADT-GIPFEL (E an JEDEM Messort): der Ort schwingt am Anlauf ein und weckt die Stadt (der Dorf-Zug läuft), dann richten Lauf und
+// Band (mit seiner GPU-Bank) Frame, CPU-Takt, Befehle, Dreiecke, VRAM und GPU-Zeit der vollen Stadt, vom Gipfel und vom Hochhaus-Dach.
+FOLGEN["stadt-voll"] = FOLGEN["gipfel-blick"] = FOLGEN["hochhaus-dach"] = FOLGEN.genesis;
 
 // DIE WIEDERHOLBARKEIT EINES MESSORTS (1110-6, rein): dieselbe Seite in N frischen Sitzungen — je Pose (Toggle-Ort) bzw. je
 // Blick (Band-Ort) das Bank-Mittel jeder Sitzung. Liegt die Spanne (max − min) über dem Soll, ist der Ort für Toggle-Urteile

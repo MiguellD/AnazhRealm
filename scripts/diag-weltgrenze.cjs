@@ -157,14 +157,17 @@ function seitenPruefer() {
         markerB() {
             return JSON.stringify(window.anazhRealm.buildStateSnapshot()).includes("MARKER-B");
         },
-        // A BLEIBT unter seiner Id: sein Platz trägt A (nicht B), der Index kennt A; mit `spaet` auch A's Fortschritt seit
-        // dem letzten Autosave (die Tür sichert A vor der Sperre).
-        befundeA(aId, spaet) {
+        // A BLEIBT unter seiner Id: sein Stand trägt A (nicht B), der Index kennt A; mit `spaet` auch A's Fortschritt seit
+        // dem letzten Autosave (die Tür sichert A vor der Sperre). Gelesen wird, was der nächste Boot lädt: die EINE
+        // Rettungs-Kette über IndexedDB und den Platz, nachdem der Speicher-Faden alles Gesendete fest hat (die lebende Welt
+        // liegt seit speicher-faden nur in IndexedDB, ihr Platz entsteht beim Verlassen).
+        async befundeA(aId, spaet) {
             const r = window.anazhRealm;
-            const roh = localStorage.getItem(r.worldStorageKey(aId));
-            if (!roh) return [`A: unter ${aId} liegt keine Welt mehr`];
+            await r._speicherStill();
+            const s = r._weltRettungsKette(aId, await r._idbStand(aId)).state;
+            if (!s) return [`A: unter ${aId} liegt keine Welt mehr`];
             const out = [];
-            const s = JSON.parse(roh);
+            const roh = JSON.stringify(s);
             const id = s.worldMeta && s.worldMeta.worldId;
             if (id !== aId) out.push(`A: der Platz von A trägt die Welt ${id === undefined ? "ohne worldId" : id}`);
             if (roh.includes("MARKER-B")) out.push("A: der Platz von A trägt B (MARKER-B)");
@@ -317,13 +320,17 @@ async function bereit(page, weltId) {
     }, weltId || null);
 }
 
-// DIE ABSENZ (statisch, im Stamm des Baums, über den EINEN Helfer stammLib.fehlt): eine ganze Welt schreibt nur saveState
-// (die lebende) und `_weltAblegen` (die EINE Ablage) in den Speicher, `location.reload` steht nur im Welt-Wechsel
+// DIE ABSENZ (statisch, im Stamm des Baums, über den EINEN Helfer stammLib.fehlt): eine ganze Welt schreibt nur `_weltAblegen`
+// (die EINE Ablage) und `_speicherVerlassen` (die verlassene) auf ihren Platz, `location.reload` steht nur im Welt-Wechsel
 // `_weltWechselNeuLaden`. Jeder andere Ort fällt mit Datei und Zeile (fehlt.wo); die Engstellen sind Glieder am AST.
 function absenz() {
     const out = [];
     const pruefe = (re, ausser, was) => stammLib.fehlt({ ausser }, re) || out.push(`${was}: ${stammLib.fehlt.wo}`);
-    pruefe(/localStorage\.setItem\(this\.worldStorageKey\(/, ["saveState", "_weltAblegen"], "Welt-Schreiber neben der EINEN Ablage");
+    pruefe(
+        /localStorage\.setItem\(this\.worldStorageKey\(/,
+        ["_weltAblegen", "_speicherVerlassen"],
+        "Welt-Schreiber neben der EINEN Ablage"
+    );
     pruefe(/location\.reload\(\)/, ["_weltWechselNeuLaden"], "Reload neben dem Welt-Wechsel");
     return out;
 }
@@ -340,16 +347,7 @@ async function fahreWeg(browser, weg, schein) {
     const basis = weg.split("-")[0];
     const form = weg.endsWith("-ohne-id") ? "ohne-id" : weg.endsWith("-ohne-meta") ? "ohne-meta" : "voll";
     const tuer = TUEREN.has(basis);
-    let pageErr = null;
-    let phase = "boot A";
     let gemeldet = null;
-    page.on("pageerror", (err) => {
-        const zeilen = String(err.stack || err.message).split("\n");
-        if (!pageErr) pageErr = `[${phase}] ${zeilen.slice(0, 4).join(" | ")}`;
-    });
-    page.on("framenavigated", (f) => {
-        if (f === page.mainFrame() && phase !== "boot A") phase = "nach dem Reload";
-    });
     page.on("dialog", (d) => d.accept().catch(() => {}));
     await page.exposeFunction("__grenzeMelde", (x) => {
         gemeldet = x;
@@ -365,7 +363,6 @@ async function fahreWeg(browser, weg, schein) {
         const a = await bereit(page, null);
         rep.boot.push(a.ms);
         if (!a.ok) throw new Error("Welt A nicht bereit nach 120 s");
-        phase = "Weg";
         // A ist gespeichert (sein Platz besteht), bevor sie ihr Zeichen trägt
         const aId = await page.evaluate(() => {
             const r = window.anazhRealm;
@@ -375,7 +372,8 @@ async function fahreWeg(browser, weg, schein) {
         const B = await page.evaluate((f) => window.__grenze.bauB("grenze-b", f), form);
         rep.pflanzung = await page.evaluate((e) => window.__grenze.pflanzeA(e), BUEHNE.worldMeta.erbgut);
         // die Licht-Gedächtnisse tragen das Zeichen, ehe die Tür sie prüft (sonst sähe die Linse nichts)
-        for (const k of rep.pflanzung.lichtBlind) rep.befunde.push(`die Pflanzung ist blind: this.${k} trägt das Zeichen von A nicht`);
+        for (const k of rep.pflanzung.lichtBlind)
+            rep.befunde.push(`die Pflanzung ist blind: this.${k} trägt das Zeichen von A nicht`);
         // A's Fortschritt nach dem letzten Autosave: er muss die Tür überleben (auf A's Platz)
         await page.evaluate(() => {
             const r = window.anazhRealm;
@@ -434,7 +432,7 @@ async function fahreWeg(browser, weg, schein) {
                     });
                     if (basis === "laden") {
                         r.loadState(B);
-                        return { inSeite: g.befundeLive([], false).concat(g.befundeA(aId)) };
+                        return { inSeite: g.befundeLive([], false).concat(await g.befundeA(aId)) };
                     }
                     if (basis === "ersetzen") {
                         if (weg === "ersetzen-quota") {
@@ -617,7 +615,6 @@ async function fahreWeg(browser, weg, schein) {
         rep.befunde.push(`ABBRUCH: ${e && e.message ? e.message : e}`);
     } finally {
         verzoegerung = 0;
-        if (pageErr) rep.befunde.push(`PAGE-ERROR: ${pageErr}`);
         rep.ms = Date.now() - t0;
         rep.befunde = Array.from(new Set(rep.befunde));
         await ctx.close();

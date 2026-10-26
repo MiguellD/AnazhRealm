@@ -22,8 +22,7 @@ async function runOnce(browser, noFoundry) {
         // auch dort DEFAULT AN, die alte Regime-Weiche ist gefallen).
         if (nf) window.__anazhGateNoFoundry = true;
     }, noFoundry);
-    page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
+    await server.zeige(page, 120000, "index.html", "networkidle0");
     await warteAufWelt(page, 120000);
     // kurzer Warm-Pump (Chunks + erster Fern-Wasser-Bau via Scheduler)
     await page.evaluate(async () => {
@@ -203,7 +202,7 @@ async function runOnce(browser, noFoundry) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 240000 });
     const okAlt = await runOnce(browser, true);
     const okProd = await runOnce(browser, false);

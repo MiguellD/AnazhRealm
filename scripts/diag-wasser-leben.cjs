@@ -531,7 +531,6 @@ function urteil(b) {
                 v.push(`G5 FLACKERN: ${wo}: die Wiese daneben fiel ${g.wieseFaelle}-mal, Büschel je Takt ${g.bueschel.join("–")}`);
         }
     }
-    if (b.seitenFehler && b.seitenFehler.length) v.push(`SEITE: ${b.seitenFehler[0]}`);
     return v;
 }
 
@@ -811,7 +810,6 @@ function selbsttest() {
         ["B3 STURM", (b) => (b.bild.sturmVerhaeltnis = 1)],
         ["B2 ZEBRA: der ruhige", (b) => (b.bild.uhr3600.ruhig.kantenDichte = 63.4)],
         ["B LEER", (b) => (b.bild.uhr60.schnelle.pixel = 0)],
-        ["SEITE", (b) => (b.seitenFehler = ["TypeError: x"])],
         // F3 an der Basis 25f53923: 720 Punkte über dem Spiegel bis 0,76 m, in Ruhe 397 daneben, Ruhe nach 620 Takten
         ["G2 ÜBER DEM SPIEGEL", (b) => Object.assign(b.graben.graeben[0], { ueber: 720, ueberM: 0.76 })],
         ["G3 ZWEITE FLÄCHE", (b) => Object.assign(b.graben.graeben[1], { abseits: 397, abseitsM: 0.79 })],
@@ -923,16 +921,13 @@ else lauf();
 // die Welt laden, der Strom ans Ufer der Orte der Wand (EINE Quelle der Orte für jede Seite), dann die Quellen seines Teils in
 // den Kacheln der Probe (`QUELL_KACHELN`, jede Seite stellt sie selbst her).
 const QUELL_TEILE = Math.max(1, Number(process.env.WASSER_QUELL_TEILE) || 3);
-async function quellTeil(browser, port, k, seitenFehler, orte) {
+async function quellTeil(browser, server, k, orte) {
     const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
     const kontext = await browser.createBrowserContext();
     try {
         const pg = await kontext.newPage();
-        pg.on("pageerror", (e) =>
-            seitenFehler.push(`Teil ${k}: ` + (e.stack || e.message || String(e)).split("\n")[0])
-        );
         await nullRenderer(pg);
-        await pg.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
+        await server.zeige(pg, 120000);
         await pg.waitForFunction(
             () =>
                 window.anazhRealm &&
@@ -962,7 +957,7 @@ async function lauf() {
     const ECHT = process.argv.includes("--echt");
     const PORT = Number(process.env.WASSER_LEBEN_PORT || 4623);
     const server = statikServer();
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({
         art: BILD ? (ECHT ? "echt" : "linse") : "null",
         headless: !ECHT,
@@ -970,17 +965,12 @@ async function lauf() {
     });
     const page = await browser.newPage();
     if (BILD) await page.setViewport({ width: 640, height: 360 });
-    const seitenFehler = [];
-    page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
     if (!BILD)
         await nullRenderer(page);
-    let befund = { seitenFehler, hashSin: hashSin() };
+    let befund = { hashSin: hashSin() };
     let exit = 1;
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html${BILD && !ECHT ? "?holz=kienspan" : ""}`, {
-            waitUntil: "domcontentloaded",
-            timeout: 120000,
-        });
+        await server.zeige(page, 120000, `index.html${BILD && !ECHT ? "?holz=kienspan" : ""}`);
         // Das Bild wartet auch auf den Renderer (`rendererReady`, renderer.init() durch): auf dem Hardware-Adapter steht die
         // Hydrosphäre vor dem Backend, und `__wasserBild` riss „render() called before the backend is initialized".
         await page.waitForFunction(
@@ -1035,7 +1025,7 @@ async function lauf() {
             const teilen = soll("quelle") && QUELL_TEILE > 1;
             const helfer = teilen
                 ? Array.from({ length: QUELL_TEILE - 1 }, (_, i) =>
-                      quellTeil(browser, PORT, i + 1, seitenFehler, ORTE).catch((e) => ({
+                      quellTeil(browser, server, i + 1, ORTE).catch((e) => ({
                           fehler: `Teil ${i + 1}/${QUELL_TEILE} der Quell-Probe: ${String((e && e.message) || e).split("\n")[0]}`,
                       }))
                   )
@@ -1089,7 +1079,7 @@ async function lauf() {
             }
         }
         const v = urteil(befund);
-        console.log(JSON.stringify(Object.assign({}, befund, { seitenFehler: seitenFehler.slice(0, 5) }), null, 1));
+        console.log(JSON.stringify(befund, null, 1));
         if (v.length) {
             console.log(`\nWASSER-LEBEN ROT (${v.length}):`);
             for (const x of v) console.log("  ❌ " + x);
@@ -1105,8 +1095,6 @@ async function lauf() {
             console.log(
                 `::error title=wasser-leben${BILD ? ":bild" : ""}::ABBRUCH ${String((e && e.message) || e).split("\n")[0]}`
             );
-        if (process.env.GITHUB_ACTIONS && seitenFehler.length)
-            console.log(`::error title=wasser-leben::SEITE ${seitenFehler[0]}`);
         exit = 1;
     } finally {
         await browser.close().catch(() => {});
