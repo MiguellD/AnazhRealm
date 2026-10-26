@@ -254,6 +254,21 @@ self.onmessage = function (e) {
             // Zustand des Gesetzes (gelaende-core `hoehenRaster`) — der Wirt reicht es dem Export, dessen Gassen ihm folgen
             const raster = G.hoehenRaster(state, msg.x, msg.z, msg.rahmen);
             self.postMessage({ type: "ort-raster-result", requestId: msg.requestId, raster }, [raster.h.buffer]);
+        } else if (msg.type === "stau") {
+            // DER STAU IM FADEN (`stauRechnen`): der Voxel-Faden antwortet dem Main (`stau-result`, er trägt die Rückfrage-Nummer),
+            // die Felder als Kopie per Transfer (Lehre 24; er behält seine), wenn eines kam, fiel oder neu ist, und die Fenster,
+            // deren Zellen fallen; ein Neben-Faden behält sie nur
+            const r = stauRechnen(msg);
+            if (msg.requestId) {
+                const anders = r ? r.anders.map(({ gx0, gz0, w, h, step }) => ({ gx0, gz0, w, h, step })) : [];
+                const felder = anders.length
+                    ? r.felder.map((f) => Object.assign({}, f, { fillY: f.fillY.slice() }))
+                    : null;
+                self.postMessage(
+                    { type: "stau-result", requestId: msg.requestId, welt: msg.welt, felder, anders },
+                    felder ? felder.map((f) => f.fillY.buffer) : []
+                );
+            }
         } else if (msg.type === "ping") {
             self.postMessage({ type: "pong", requestId: msg.requestId || null });
         }
@@ -745,7 +760,8 @@ function applyStateSnapshot(snap) {
     }
     if (snap.hydroBand !== undefined) state.hydroBand = snap.hydroBand;
     if (snap.voxelEdits !== undefined) state.voxelEdits = snap.voxelEdits;
-    // DER STAU DER WERKE (gelaende.K2 (b)): die Felder des Mains (`_stauFelder`) — der Spiegel des Kerns liest sie (`L.stau`)
+    // DER STAU DER WERKE (gelaende.K2 (b)): ein Faden, der nach dem Stau geboren wurde, bekommt die Felder im Stand; danach
+    // rechnet er sie selbst (`stauRechnen`) — der Spiegel des Kerns liest sie (`L.stau`)
     if (snap.stau !== undefined) state.stau = snap.stau;
     if (snap.hydroGesetz) state.hydroGesetz = snap.hydroGesetz;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): genVersion-Schleuse mit-laden.
@@ -822,6 +838,38 @@ function terrainDensityAtCol(x, y, z, ctx) {
 // die EINE Punkt-API: die Dichte an (x, y, z) samt Edits
 function terrainDensityAt(x, y, z) {
     return terrainDensityAtCol(x, y, z, terrainColumnContext(x, z));
+}
+
+// DER STAU IM FADEN (gelaende.K2 (b), Lehre 14): die Felder der Werke (gelaende-core `stauFelder`) an DIESEM Zustand — der
+// Auftrag des Mains (`_stauFelder`: die Werke, die Regel `CA_STAU`) reist über den EINEN Sender an jeden Faden, jeder rechnet ihn
+// an derselben Stelle seiner Reihe (das Gedächtnis `stauMerk` je Faden). Der Boden ist der des Feldes (`voxelSurfaceY`, sonst
+// die Höhe), wie im Stamm; während der Rechnung liest die Lage das Gesetz ohne Stau. Ohne Hydrosphäre hält kein Werk Wasser.
+let stauMerk = null;
+function stauRechnen(msg) {
+    const h = state.hydrosphere;
+    if (!(h && h.ready)) return null;
+    const alt = state.stau;
+    state.stau = null;
+    let r;
+    try {
+        const boden = (x, z) => voxelSurfaceY(x, z) ?? G.hoehe(state, x, z, true);
+        const kacheln = state.hydroTiles ? state.hydroTiles.size : 0;
+        r = G.stauFelder(
+            state,
+            msg.werke,
+            msg.gesetz,
+            voxelChunkConfig(0).step,
+            boden,
+            stauMerk,
+            state.voxelEdits || [],
+            kacheln
+        );
+    } finally {
+        state.stau = alt;
+    }
+    stauMerk = r.merk;
+    state.stau = r.felder;
+    return r;
 }
 
 // DIE REGION ENTSTEHT IM FADEN (Karte hydro-faden): das Gesetz `hydrosphaere` des Gelände-Kerns an DIESEM Zustand, die

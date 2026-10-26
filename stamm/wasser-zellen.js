@@ -1800,8 +1800,8 @@ class AnazhRealm_wasser_zellen {
     }
 
     // ===== DAS HOCH-BECKEN: der Stau-Spiegel (Regel an AnazhRealm.CA_STAU) =====
-    // Abgeleitet aus persistierter Wahrheit (worldMeta.voxelEdits + architectures.blockerAABBs): der Stamm rechnet die Felder
-    // (`_stauFelder`), der Spiegel des Kerns trägt sie (gelaende-core `stauSpiegel` in `atlasSpiegel`) — in jedem Faden dieselben.
+    // Abgeleitet aus persistierter Wahrheit (worldMeta.voxelEdits + architectures.blockerAABBs): jeder Faden rechnet die Felder
+    // (`_stauFelder` bestellt sie), der Spiegel des Kerns trägt sie (gelaende-core `stauSpiegel` in `atlasSpiegel`).
 
     // Die Stau-Werke der Welt, zu Clustern verschmolzen (ein Damm aus vielen Blöcken/Fill-Kugeln ist EIN
     // Werk). Identitäts- + Längen-gecacht: Edit-Push / Architektur-Spawn/-Remove invalidiert exakt.
@@ -1815,51 +1815,66 @@ class AnazhRealm_wasser_zellen {
         const c = this._stauClusterCache;
         if (c && c.edits === edits && c.eLen === eLen && c.archs === archs && c.aLen === aLen) return c.clusters;
         const CFG = AnazhRealm.CA_STAU;
-        const works = [];
+        // Die Krone muss über dem lokalen Ruhe-Spiegel liegen (eine Atlas-Probe je Werk); Werke fern jedes
+        // Wassers (rim=−Inf) bleiben drin. Die Rim-Frage reist mit der Werk-Basis (botY): Basis unter dem
+        // Spiegel ⇒ rim greift, darüber ⇒ trocken-fundiert, bleibt drin.
+        const traegt = (w) => {
+            const rim = this._atlasWaterLevelAt(
+                (w.minX + w.maxX) * 0.5,
+                (w.minZ + w.maxZ) * 0.5,
+                Number.isFinite(w.botY) ? w.botY : -Infinity
+            );
+            return !(rim > -Infinity && w.topY <= rim + 0.9);
+        };
+        const qualified = [];
         for (let i = 0; i < eLen; i++) {
             const e = edits[i];
             if (!e || e.mode !== "fill") continue;
             const r = Number(e.r) || 0;
             if (r * 2 < CFG.MIN_EXTENT) continue;
-            works.push({
+            const w = {
                 minX: e.x - r,
                 maxX: e.x + r,
                 minZ: e.z - r,
                 maxZ: e.z + r,
                 topY: (Number(e.y) || 0) + r,
                 botY: (Number(e.y) || 0) - r,
-            });
+            };
+            if (traegt(w)) qualified.push(w);
         }
         if (archs) {
             // Stau-Qualifikation: ein Architektur-AABB zählt NUR als Damm, wenn es (a) GEERDET ist (Basis ≤ 1
             // Sim-Zelle = 1,8 m über dem Terrain seiner Spalte) UND (b) GESCHLOSSEN (deckt in BEIDEN Achsen ≥ 1
             // volle Sim-Zelle) — schmaler versiegelt keine Spalte; Pfosten, dünne Wände, Stege fallen, ein Haus
             // wird nie zum Damm. Fill-Edits sind Terrain (bleiben). Linse: `gate:wasser-wahrheit` Fixture 4,
-            // Stau-Harness `gate:carve`.
+            // Stau-Harness `gate:carve`. Geschlossen und geerdet sind je Bau gemerkt (seine Hülle und ihre Länge): ein Takt fragt
+            // nur einen neuen Bau (Lehre 25) — bis gk2-damm-faden fragte jeder neue Bau jede Box jedes Baus (die Fahrt nach Osten:
+            // bis 76 000 Boxen, 3–6 ms im Haupt-Faden je neuem Bau, 12 ms am Damm).
             const CELL = this._voxelChunkConfig(0).step;
+            const je = this._stauBauWerke || (this._stauBauWerke = new WeakMap());
             for (const entry of archs) {
-                if (!entry || !entry.blockerAABBs) continue;
-                for (const a of entry.blockerAABBs) {
-                    if (Math.min(a.maxX - a.minX, a.maxZ - a.minZ) < CELL) continue; // (b) geschlossen
-                    const terrY = this._terrainMacroSurfaceY((a.minX + a.maxX) * 0.5, (a.minZ + a.maxZ) * 0.5);
-                    if (Number.isFinite(terrY) && Number.isFinite(a.botY) && a.botY > terrY + CELL) continue; // (a) geerdet
-                    const box = { minX: a.minX, maxX: a.maxX, minZ: a.minZ, maxZ: a.maxZ, topY: a.topY, botY: a.botY };
-                    works.push(Object.assign({ bauten: [box] }, box)); // der Bau steht nicht in der Dichte: seine Box hält
+                const boxen = entry && entry.blockerAABBs;
+                if (!boxen) continue;
+                let m = je.get(entry);
+                if (!m || m.boxen !== boxen || m.n !== boxen.length || m.cell !== CELL) {
+                    je.set(entry, (m = { boxen, n: boxen.length, cell: CELL, werke: [] }));
+                    for (const a of boxen) {
+                        if (Math.min(a.maxX - a.minX, a.maxZ - a.minZ) < CELL) continue; // (b) geschlossen
+                        const terrY = this._terrainMacroSurfaceY((a.minX + a.maxX) * 0.5, (a.minZ + a.maxZ) * 0.5);
+                        if (Number.isFinite(terrY) && Number.isFinite(a.botY) && a.botY > terrY + CELL) continue; // (a) geerdet
+                        const box = {
+                            minX: a.minX,
+                            maxX: a.maxX,
+                            minZ: a.minZ,
+                            maxZ: a.maxZ,
+                            topY: a.topY,
+                            botY: a.botY,
+                        };
+                        m.werke.push(Object.assign({ bauten: [box] }, box)); // der Bau steht nicht in der Dichte: seine Box hält
+                    }
                 }
+                for (const w of m.werke) if (traegt(w)) qualified.push(w);
             }
-        }
-        // Die Krone muss über dem lokalen Ruhe-Spiegel liegen (eine Atlas-Probe je Werk); Werke fern jedes
-        // Wassers (rim=−Inf) bleiben drin. Die Rim-Frage reist mit der Werk-Basis (botY): Basis unter dem
-        // Spiegel ⇒ rim greift, darüber ⇒ trocken-fundiert, bleibt drin.
-        const qualified = [];
-        for (const w of works) {
-            const rim = this._atlasWaterLevelAt(
-                (w.minX + w.maxX) * 0.5,
-                (w.minZ + w.maxZ) * 0.5,
-                Number.isFinite(w.botY) ? w.botY : -Infinity
-            );
-            if (rim > -Infinity && w.topY <= rim + 0.9) continue;
-            qualified.push(w);
         }
         const GAP = CFG.CLUSTER_GAP;
         const clusters = [];
@@ -1901,188 +1916,69 @@ class AnazhRealm_wasser_zellen {
         return clusters;
     }
 
-    // PURE Priority-Flood: `barrier[c]` = Höhe, über der Wasser die Spalte passiert; `init[c]` = Halte-
-    // Pegel der Außenwelt am Fensterrand (innen +Infinity). Liefert je Spalte den SPILL-Pegel (niedrigste
-    // Fluchthöhe nach außen). Relaxation fill[nb] = max(fill[cur], barrier[nb]), min-Heap.
+    // DER ÜBERLAUF: das Gesetz des Kerns (gelaende-core `stauUeberlauf`), mit dem jeder Faden die Felder rechnet
     _stauSpillLevels(barrier, w, h, init) {
-        const n = w * h;
-        const fill = new Float64Array(n);
-        const heap = new Int32Array(n + 1);
-        const pos = new Int32Array(n).fill(-1);
-        let size = 0;
-        const less = (a, b) => fill[a] < fill[b];
-        const swap = (i, j) => {
-            const t = heap[i];
-            heap[i] = heap[j];
-            heap[j] = t;
-            pos[heap[i]] = i;
-            pos[heap[j]] = j;
-        };
-        const up = (i) => {
-            while (i > 1 && less(heap[i], heap[i >> 1])) {
-                swap(i, i >> 1);
-                i >>= 1;
-            }
-        };
-        const down = (i) => {
-            for (;;) {
-                let m = i;
-                const l = i * 2;
-                const r = l + 1;
-                if (l <= size && less(heap[l], heap[m])) m = l;
-                if (r <= size && less(heap[r], heap[m])) m = r;
-                if (m === i) break;
-                swap(i, m);
-                i = m;
-            }
-        };
-        for (let c = 0; c < n; c++) {
-            fill[c] = init[c];
-            if (Number.isFinite(init[c])) {
-                heap[++size] = c;
-                pos[c] = size;
-                up(size);
-            }
-        }
-        const done = new Uint8Array(n);
-        const NDX = [1, -1, 0, 0];
-        const NDZ = [0, 0, 1, -1];
-        while (size > 0) {
-            const cur = heap[1];
-            heap[1] = heap[size--];
-            if (size > 0) {
-                pos[heap[1]] = 1;
-                down(1);
-            }
-            pos[cur] = -1;
-            if (done[cur]) continue;
-            done[cur] = 1;
-            const ci = cur % w;
-            const ck = (cur / w) | 0;
-            for (let d = 0; d < 4; d++) {
-                const ni = ci + NDX[d];
-                const nk = ck + NDZ[d];
-                if (ni < 0 || nk < 0 || ni >= w || nk >= h) continue;
-                const nb = ni + nk * w;
-                if (done[nb]) continue;
-                const cand = Math.max(fill[cur], barrier[nb]);
-                if (cand < fill[nb]) {
-                    fill[nb] = cand;
-                    if (pos[nb] >= 0) up(pos[nb]);
-                    else {
-                        heap[++size] = nb;
-                        pos[nb] = size;
-                        up(size);
-                    }
-                }
-            }
-        }
-        return fill;
+        return globalThis.__gelaendeCore.stauUeberlauf(barrier, w, h, init);
     }
 
-    // DIE FELDER DES STAUS (gelaende.K2 (b), gelesen vom Spiegel des Kerns über `L.stau`): je Werk-Cluster ein Fenster in
-    // Welt-Spalten (gx = floor(x/step), das Werk ± REACH, höchstens WIN_MAX) — die Sperre jeder Spalte ist der Boden des
-    // Feldes an ihrer Mitte (`_voxelSurfaceY`: Dichte samt Edits, sub-zellig — ein Damm aus Füllungen steht darin) oder die
-    // Krone eines Baus, der sie deckt; der Rand gibt das Wasser nur frei, wo es fließt: nass auf seinem Spiegel, wo der nicht
-    // über dem Spiegel am Werk liegt (stromab; stromauf fließt es zu, über trockenem Rand reicht der See weiter, beides hält).
-    // Der Überlauf (`_stauSpillLevels`) ist der Pegel jeder Spalte; gehalten (`fillY`) ist er dort, wo er über dem Boden und über
-    // dem Spiegel des Gesetzes liegt, verbunden mit einer gehobenen Wasser-Spalte (eine trockene Mulde daneben bleibt trocken).
-    // Gerechnet beim Edit und je Takt, nur wenn sich ein Werk ändert (die Cluster sind nach Liste, Länge und Hülle gemerkt; der
-    // Spiegel fragt nie selbst — bis dahin rechnete jeder Bau beim Strömen die Werke neu, der Graben der Wand stand bei 2 fps);
-    // dann fallen die Zellen der alten und neuen Fenster (Neubau, das Wasser flutet nach dem Gesetz) und die Felder reisen an
-    // jeden Faden. Bis gk2-damm hob ein Stau nur die Kappe des Automaten in
-    // ganzen 1,8-m-Zellen, deren volle Deck-Zelle den Spiegel des Gesetzes zeichnet: der 3-m-Damm am Fluss der Mess-Wiese
-    // staute nichts (stromauf 25,86/25,97 vor und nach dem Damm, Überlauf 26,18).
+    // DER STAU IM FADEN (gelaende.K2 (b), Lehre 14): je Takt und Edit fragt der Stamm nur, ob sich ein Werk änderte (die Cluster
+    // sind nach Liste, Länge und Hülle gemerkt, `_stauWorkClusters`) oder eine Hydro-Kachel kam, und wählt die Werke über Wasser
+    // (gelaende-core `stauWerkY`; Werke und Wahl lesen das Gesetz ohne Stau). Kam ein Werk über Wasser, fiel eines oder ein Edit,
+    // reist der Auftrag (diese Werke, die Regel `CA_STAU`) über den EINEN Sender des Zustands an jeden Faden, und jeder rechnet
+    // die Felder an derselben Stelle seiner Reihe (gelaende-core `stauFelder`, voxel-worker `stauRechnen`). Nur der Voxel-Faden
+    // trägt die Rückfrage-Nummer und reicht sie per Transfer zurück (`stau-result` → `_stauAn`); EIN Auftrag ist im Flug, die
+    // Edits dahinter sammelt der nächste. Bis gk2-damm-faden rechnete der Haupt-Faden jedes Feld selbst (44–69 ms je Damm-Edit).
     _stauFelder() {
-        // während der Rechnung liest der Spiegel das Gesetz ohne Stau; ohne Hydrosphäre hält kein Werk Wasser (nach dem Reload
-        // steht der Damm vor ihr — ein Feld aus dem leeren Spiegel bliebe gemerkt)
         const h = this.state.hydrosphere;
-        if (this._stauRechnet || !(h && h.ready)) return;
+        const w = this.state.voxelWorker;
+        if (!w || this._stauImFlug === w || !(h && h.ready)) return;
+        const kacheln = this.state.hydroTiles ? this.state.hydroTiles.size : 0;
+        const edits = (this.state.worldMeta && this.state.worldMeta.voxelEdits) || [];
         this._stauRechnet = true;
+        let werke;
         try {
             const clusters = this._stauWorkClusters();
-            const kacheln = this.state.hydroTiles ? this.state.hydroTiles.size : 0;
             if (this._stauVon === clusters && this._stauKacheln === kacheln) return;
-            this._stauVon = clusters;
-            // je Werk gemerkt (`key`): neu gerechnet nur ein neues Werk oder eines, in dessen Fenster ein neuer Edit reicht, und
-            // jedes, wenn eine Hydro-Kachel kam (ihr Wasser kann ein Werk tragen)
-            const edits = (this.state.worldMeta && this.state.worldMeta.voxelEdits) || [];
-            const m = this._stauMerk || { je: new Map(), edits: null, n: 0 };
-            const neu = m.edits === edits && this._stauKacheln === kacheln ? edits.slice(m.n) : null;
-            this._stauKacheln = kacheln;
-            const R = AnazhRealm.CA_STAU.REACH * this._voxelChunkConfig(0).step;
-            const je = new Map();
-            const anders = [];
-            for (const cl of clusters) {
-                const alt = m.je.get(cl.key);
-                const fern = (e) => {
-                    const r = R + globalThis.__gelaendeCore.editReich(e);
-                    return e.x + r < cl.minX || e.x - r > cl.maxX || e.z + r < cl.minZ || e.z - r > cl.maxZ;
-                };
-                if (alt !== undefined && neu && neu.every(fern)) je.set(cl.key, alt);
-                else anders.push(alt, je.set(cl.key, this._stauFeld(cl)).get(cl.key));
-            }
-            for (const [key, alt] of m.je) if (!je.has(key)) anders.push(alt);
-            this._stauMerk = { je, edits, n: edits.length };
-            if (!anders.some(Boolean)) return;
-            this.state.waterStau = [...je.values()].filter(Boolean);
-            // die Zellen der alten und neuen Fenster fallen (Neubau, die Flut liest den neuen Spiegel), der Automat wacht
-            for (const f of anders.filter(Boolean)) {
-                const [x, z] = [(f.gx0 + f.w * 0.5) * f.step, (f.gz0 + f.h * 0.5) * f.step];
-                this._remeshVoxelChunksAround(x, z, Math.max(f.w, f.h) * 0.5 * f.step, 0);
-                this._invalidateWaterCapsAround(x, z, Math.max(f.w, f.h) * 0.5 * f.step);
-            }
-            this._voxelZustandPost({ type: "state-update", delta: { stau: this.state.waterStau } });
+            [this._stauVon, this._stauKacheln] = [clusters, kacheln];
+            const L = this._gelaende();
+            werke = clusters.filter((cl) => globalThis.__gelaendeCore.stauWerkY(L, cl) > -Infinity);
         } finally {
             this._stauRechnet = false;
         }
+        const stand = `${werke.map((cl) => cl.key).join(";")}|${edits.length}|${kacheln}`;
+        if (stand === this._stauStand) return;
+        this._stauStand = stand;
+        if (this._stauHoert !== w) {
+            this._stauHoert = w;
+            w.addEventListener("message", ({ data: a }) => {
+                if (a && (a.type === "stau-result" || (a.type === "error" && a.op === "stau"))) this._stauAn(a);
+            });
+        }
+        this._stauImFlug = w;
+        const requestId = this.state.voxelWorkerNextRequestId++;
+        this._voxelZustandPost({
+            type: "stau",
+            werke,
+            gesetz: AnazhRealm.CA_STAU,
+            welt: this._hydroWelt | 0,
+            requestId,
+        });
     }
 
-    // DAS FELD EINES WERKS (`_stauFelder`): null, wenn das Werk nicht über Wasser steht oder nichts hebt.
-    _stauFeld(cl) {
-        const CFG = AnazhRealm.CA_STAU;
-        const step = this._voxelChunkConfig(0).step;
-        const werkY = this._atlasWaterLevelAt((cl.minX + cl.maxX) * 0.5, (cl.minZ + cl.maxZ) * 0.5, -Infinity);
-        if (!(werkY > -Infinity)) return null;
-        let gx0 = Math.floor(cl.minX / step) - CFG.REACH;
-        let gx1 = Math.floor(cl.maxX / step) + CFG.REACH;
-        let gz0 = Math.floor(cl.minZ / step) - CFG.REACH;
-        let gz1 = Math.floor(cl.maxZ / step) + CFG.REACH;
-        if (gx1 - gx0 + 1 > CFG.WIN_MAX) gx1 = (gx0 = ((gx0 + gx1) >> 1) - (CFG.WIN_MAX >> 1)) + CFG.WIN_MAX - 1;
-        if (gz1 - gz0 + 1 > CFG.WIN_MAX) gz1 = (gz0 = ((gz0 + gz1) >> 1) - (CFG.WIN_MAX >> 1)) + CFG.WIN_MAX - 1;
-        const w = gx1 - gx0 + 1;
-        const h = gz1 - gz0 + 1;
-        const barrier = new Float64Array(w * h);
-        const basis = new Float64Array(w * h);
-        const init = new Float64Array(w * h).fill(Infinity);
-        for (let c = 0; c < w * h; c++) {
-            const ix = c % w;
-            const kz = (c / w) | 0;
-            const x = (gx0 + ix + 0.5) * step;
-            const z = (gz0 + kz + 0.5) * step;
-            let bY = this._voxelSurfaceY(x, z) ?? this._terrainMacroSurfaceY(x, z);
-            for (const b of cl.bauten)
-                if (x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ) bY = Math.max(bY, b.topY);
-            barrier[c] = bY;
-            basis[c] = this._atlasWaterLevelAt(x, z, bY);
-            if (ix === 0 || kz === 0 || ix === w - 1 || kz === h - 1)
-                init[c] = basis[c] > -Infinity && basis[c] <= werkY + 0.05 ? basis[c] : Infinity;
+    // DER EMPFANG DES STAUS (`_stauFelder`): die gerechneten Felder des Voxel-Fadens gehen in den Zustand (`waterStau`, der Spiegel
+    // des Kerns liest sie über die Lage), die Zellen der Fenster, deren Feld kam, fiel oder neu gerechnet ist, fallen (Neubau,
+    // die Flut liest den neuen Spiegel), der Automat wacht. Der Stau einer alten Welt fällt; ein Wurf des Fadens bricht laut.
+    _stauAn(a) {
+        this._stauImFlug = null;
+        if (a.type === "error")
+            return void this._bruchMelden(`STAU-FADEN: die Felder des Staus kamen nicht — ${a.message}`);
+        if (a.welt !== (this._hydroWelt | 0)) return;
+        if (a.felder) this.state.waterStau = a.felder;
+        for (const f of a.anders) {
+            const [x, z] = [(f.gx0 + f.w * 0.5) * f.step, (f.gz0 + f.h * 0.5) * f.step];
+            this._remeshVoxelChunksAround(x, z, Math.max(f.w, f.h) * 0.5 * f.step, 0);
+            this._invalidateWaterCapsAround(x, z, Math.max(f.w, f.h) * 0.5 * f.step);
         }
-        const fill = this._stauSpillLevels(barrier, w, h, init);
-        // gehalten: die Spalten, die der Pegel über Boden und Gesetz hebt, verbunden mit einer gehobenen Wasser-Spalte
-        const fillY = new Float32Array(w * h).fill(NaN);
-        const hebt = (c) => fill[c] < Infinity && fill[c] > barrier[c] + 0.01 && fill[c] > basis[c] + 0.01;
-        const offen = [];
-        for (let c = 0; c < w * h; c++) if (basis[c] > -Infinity && hebt(c)) offen.push(c);
-        for (const c of offen) fillY[c] = fill[c];
-        while (offen.length) {
-            const c = offen.pop();
-            const ix = c % w;
-            for (const nb of [ix > 0 ? c - 1 : -1, ix < w - 1 ? c + 1 : -1, c - w, c + w])
-                if (nb >= 0 && nb < w * h && !(fillY[nb] === fillY[nb]) && hebt(nb))
-                    (offen.push(nb), (fillY[nb] = fill[nb]));
-        }
-        return fillY.some((v) => v === v) ? { gx0, gz0, w, h, step, fillY } : null;
     }
 
     // Der EINE Invalidations-Eingang nach einer Werk-Änderung (Edit / Architektur-Spawn/-Remove, ein neuer Stau): Kappen +

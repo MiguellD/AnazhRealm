@@ -35,7 +35,7 @@
 "use strict";
 const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
-const { quellTeileVereinen, QUELL_KACHELN } = require("./lib/wasser-linse.cjs");
+const { quellTeileVereinen, QUELL_KACHELN, WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
 const SCHWELLE = {
     steigend: 0, // Anteil der 2-m-Schritte, deren Lauf-Fläche > 5 cm steigt
@@ -89,6 +89,15 @@ function urteil(b) {
                     `(bis ${wi.maxM} m über dem Fuß)`
             );
     };
+    // UNSICHTBAR · PHANTOM je Querschnitt (F5 die Quell-Läufe, F8 der Bach): Körper-Wasser, das die Welt nicht zeichnet, und
+    // gezeichnetes Wasser, in dem der Körper trocken steht — als Breite (Summe je Punkt) in `nU` · `nP` Querschnitten
+    const quer = (F, wo, k, nU, nP, mehr = "") => {
+        const breite = (n) => ` m Breite (Summe je Punkt, in ${n} von ${k.querschnitte} Querschnitten) Wasser, `;
+        if (!(k.unsichtbarBreite <= 0))
+            v.push(`${F} UNSICHTBAR: ${wo} — der Körper liest auf ${k.unsichtbarBreite}${breite(nU)}das die Welt nicht zeichnet${mehr}`);
+        if (!(k.phantomBreite <= 0))
+            v.push(`${F} PHANTOM: ${wo} — die Welt zeichnet auf ${k.phantomBreite}${breite(nP)}in dem der Körper trocken steht${mehr}`);
+    };
     if (b.fluss) {
         const f = b.fluss;
         if (f.fehler) v.push(`F: ${f.fehler}`);
@@ -137,16 +146,7 @@ function urteil(b) {
                     `F5 BUCKEL: ${q.buckel} von ${q.imKanal} Quellen im Kanal eines breiteren Flusses heben dessen Spiegel ` +
                         `(bis ${q.buckelMax} m) — der Zufluss nahm den Spiegel seiner ungefrästen Ufer`
                 );
-            if (!(q.unsichtbarBreite <= 0))
-                v.push(
-                    `F5 UNSICHTBAR: auf den Quell-Läufen liest der Körper auf ${q.unsichtbarBreite} m Breite (Summe je Punkt, in ` +
-                        `${q.unsichtbar} von ${q.querschnitte} Querschnitten) Wasser, das die Welt nicht zeichnet`
-                );
-            if (!(q.phantomBreite <= 0))
-                v.push(
-                    `F5 PHANTOM: auf den Quell-Läufen zeichnet die Welt auf ${q.phantomBreite} m Breite (Summe je Punkt, in ` +
-                        `${q.phantom} von ${q.querschnitte} Querschnitten) Wasser, in dem der Körper trocken steht`
-                );
+            quer("F5", "auf den Quell-Läufen", q, q.unsichtbar, q.phantom);
         }
     }
     // F8 = der Bach der Mess-Wiese: das gezeichnete Wasser gegen den Körper
@@ -155,20 +155,8 @@ function urteil(b) {
         if (k.fehler) v.push(`F8: ${k.fehler}`);
         else if (!(k.querschnitte >= 80 && k.koerperNass >= 80))
             v.push(`F8 LEER: nur ${k.querschnitte} Querschnitte, ${k.koerperNass} mit Körper-Wasser`);
-        else {
-            if (!(k.unsichtbarBreite <= 0))
-                v.push(
-                    `F8 UNSICHTBAR: der Bach der Mess-Wiese — der Körper liest auf ${k.unsichtbarBreite} m Breite (Summe je ` +
-                        `Punkt, in ${k.mitUnsichtbar} von ${k.querschnitte} Querschnitten) Wasser, das die Welt nicht zeichnet ` +
-                        `(Breiten-Summe Körper ${k.breiteKoerper} m, Bild ${k.breiteBild} m)`
-                );
-            if (!(k.phantomBreite <= 0))
-                v.push(
-                    `F8 PHANTOM: der Bach der Mess-Wiese — die Welt zeichnet auf ${k.phantomBreite} m Breite (Summe je Punkt, ` +
-                        `in ${k.mitPhantom} von ${k.querschnitte} Querschnitten) Wasser, in dem der Körper trocken steht ` +
-                        `(Breiten-Summe Körper ${k.breiteKoerper} m, Bild ${k.breiteBild} m)`
-                );
-        }
+        else
+            quer("F8", "der Bach der Mess-Wiese", k, k.mitUnsichtbar, k.mitPhantom, ` (Breiten-Summe Körper ${k.breiteKoerper} m, Bild ${k.breiteBild} m)`);
         florUrteil("am Bach", k.flora, 100, 30);
     }
     if (b.see) {
@@ -947,39 +935,48 @@ else lauf();
 // den Kacheln der Probe (`QUELL_KACHELN`, jede Seite stellt sie selbst her).
 const QUELL_TEILE = Math.max(1, Number(process.env.WASSER_QUELL_TEILE) || 3);
 async function quellTeil(browser, server, k, orte) {
-    const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
     const kontext = await browser.createBrowserContext();
     try {
         const pg = await kontext.newPage();
         await nullRenderer(pg);
         await server.zeige(pg, 120000);
-        await pg.waitForFunction(
-            () =>
-                window.anazhRealm &&
-                typeof window.anazhRealm._gameLoopTick === "function" &&
-                window.anazhRealm.state.hydrosphere &&
-                window.anazhRealm.state.hydrosphere.ready,
-            { timeout: 600000, polling: 250 }
-        );
-        await pg.evaluate(WASSER_INSTALL);
+        await wasserDa(pg, false);
         await pg.evaluate((u) => window.__wasserStrom(u, 0.6), orte.see.ufer);
-        return await pg.evaluate(
-            (o, t, kacheln) => window.__wasserQuelle({ alle: true, bach: o.bach, teil: t, kacheln }),
-            orte,
-            { k, n: QUELL_TEILE },
-            QUELL_KACHELN
-        );
+        return await quellProbe(pg, orte, { k, n: QUELL_TEILE });
     } finally {
         await kontext.close();
     }
 }
+// die Welt steht mit ihrer Hydrosphäre (und mit `bild` ihrem Renderer: auf dem Hardware-Adapter steht die Hydrosphäre vor dem
+// Backend, und `__wasserBild` riss „render() called before the backend is initialized"), die Proben sind installiert
+async function wasserDa(pg, bild) {
+    await pg.waitForFunction(
+        (bild) =>
+            window.anazhRealm &&
+            typeof window.anazhRealm._gameLoopTick === "function" &&
+            window.anazhRealm.state.hydrosphere &&
+            window.anazhRealm.state.hydrosphere.ready &&
+            (!bild || window.anazhRealm.state.rendererReady),
+        { timeout: 600000, polling: 250 },
+        bild
+    );
+    await pg.evaluate(WASSER_INSTALL);
+}
+// die Quellen eines Teils `teil` ({ k, n }, null: alle) in den Kacheln der Probe
+const quellProbe = (pg, orte, teil) =>
+    pg.evaluate(
+        (o, t, kacheln) => window.__wasserQuelle({ alle: true, bach: o.bach, teil: t, kacheln }),
+        orte,
+        teil,
+        QUELL_KACHELN
+    );
 
 async function lauf() {
     const fs = require("fs");
     const path = require("path");
-    const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
     const BILD = process.argv.includes("--bild");
     const ECHT = process.argv.includes("--echt");
+    const annotation = (x) => process.env.GITHUB_ACTIONS && console.log(`::error title=wasser-leben${BILD ? ":bild" : ""}::${x}`);
     const PORT = Number(process.env.WASSER_LEBEN_PORT || 4623);
     const server = statikServer();
     await server.lausche(PORT);
@@ -996,19 +993,8 @@ async function lauf() {
     let exit = 1;
     try {
         await server.zeige(page, 120000, `index.html${BILD && !ECHT ? "?holz=kienspan" : ""}`);
-        // Das Bild wartet auch auf den Renderer (`rendererReady`, renderer.init() durch): auf dem Hardware-Adapter steht die
-        // Hydrosphäre vor dem Backend, und `__wasserBild` riss „render() called before the backend is initialized".
-        await page.waitForFunction(
-            (bild) =>
-                window.anazhRealm &&
-                typeof window.anazhRealm._gameLoopTick === "function" &&
-                window.anazhRealm.state.hydrosphere &&
-                window.anazhRealm.state.hydrosphere.ready &&
-                (!bild || window.anazhRealm.state.rendererReady),
-            { timeout: 600000, polling: 250 },
-            BILD
-        );
-        await page.evaluate(WASSER_INSTALL);
+        // Das Bild wartet auch auf den Renderer (`rendererReady`, renderer.init() durch)
+        await wasserDa(page, BILD);
         if (BILD) {
             const ordner = (() => {
                 const i = process.argv.indexOf("--bilder");
@@ -1088,12 +1074,7 @@ async function lauf() {
                 if (soll(art)) befund[art] = await page.evaluate((fluss, n) => window.__wasserKarte({ fluss, n }), fluss, n);
             // zuletzt (sie bauen die Chunks an jeder Quelle und am Bach selbst): das gezeichnete Wasser gegen den Körper
             if (soll("quelle")) {
-                const teil0 = await page.evaluate(
-                    (o, t, kacheln) => window.__wasserQuelle({ alle: true, bach: o.bach, teil: t, kacheln }),
-                    ORTE,
-                    teilen ? { k: 0, n: QUELL_TEILE } : null,
-                    QUELL_KACHELN
-                );
+                const teil0 = await quellProbe(page, ORTE, teilen ? { k: 0, n: QUELL_TEILE } : null);
                 befund.quelle = teilen ? quellTeileVereinen([teil0, ...(await Promise.all(helfer))]) : teil0;
             }
             if (soll("bach"))
@@ -1109,21 +1090,17 @@ async function lauf() {
         }
         const v = urteil(befund);
         console.log(JSON.stringify(befund, null, 1));
+        // in der CI auch als Annotation (die Check-Run-API trägt sie ohne Log-Rechte): K16 — das Bild war dort rot
+        // und lokal grün, der Täter stand nur im Log
         if (v.length) {
             console.log(`\nWASSER-LEBEN ROT (${v.length}):`);
             for (const x of v) console.log("  ❌ " + x);
-            // in der CI auch als Annotation (die Check-Run-API trägt sie ohne Log-Rechte): K16 — das Bild war dort rot
-            // und lokal grün, der Täter stand nur im Log
-            if (process.env.GITHUB_ACTIONS)
-                for (const x of v) console.log(`::error title=wasser-leben${BILD ? ":bild" : ""}::${x}`);
+            v.forEach(annotation);
         } else console.log("\nWASSER-LEBEN GRÜN");
         exit = v.length ? 1 : 0;
     } catch (e) {
         console.log("WASSER-LEBEN ABBRUCH:", (e && e.message) || e);
-        if (process.env.GITHUB_ACTIONS)
-            console.log(
-                `::error title=wasser-leben${BILD ? ":bild" : ""}::ABBRUCH ${String((e && e.message) || e).split("\n")[0]}`
-            );
+        annotation(`ABBRUCH ${String((e && e.message) || e).split("\n")[0]}`);
         exit = 1;
     } finally {
         await browser.close().catch(() => {});
