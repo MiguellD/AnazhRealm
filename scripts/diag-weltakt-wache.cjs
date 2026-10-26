@@ -27,7 +27,7 @@
 //   node scripts/diag-weltakt-wache.cjs [--selftest]   (npm run gate:weltakt-wache; Port WELTAKT_WACHE_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, nullSeite } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL, weltaktUrteil, weltaktSelbsttest } = require("./lib/ausgabe-aufnahme.cjs");
 const MESS = require("./lib/welt-orte.cjs").messort("wiese");
 
@@ -496,9 +496,7 @@ function urteil(S) {
 
 (async () => {
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 180000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 60000);
     await page.evaluate(async () => {
         await window.__weltDa((r) => r.state && r.state.player && r.nexus);

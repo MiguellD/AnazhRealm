@@ -36,6 +36,7 @@
 //   node scripts/diag-kollision-bild.cjs [--selftest]   (npm run gate:kollision-bild; Port KOLLISION_BILD_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, selbsttestEnde } = require("./lib/welt-boot.cjs");
 
 const SEITE_M = 0.3; // die Kapsel des Spielers misst 0,35 m — was weniger daneben steht, fasst kein Körper als Luft an
 const OBEN_ANTEIL = 0.02; // oben: 2 % der Bild-Höhe (über einer 40-m-Krone erreicht kein Körper die Spitze)
@@ -252,11 +253,7 @@ function selbsttest() {
         if (!ok) fehler.push(`${name}: die Wand nennt den Täter nicht (${muss})`);
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${name}" → rot: ${v.join(" · ") || "(nichts)"}`);
     }
-    if (fehler.length) {
-        console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
-        process.exit(1);
-    }
-    console.log("\n✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.");
+    selbsttestEnde(fehler);
 }
 
 if (process.argv.includes("--selftest")) {
@@ -265,7 +262,6 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOLLISION_BILD_PORT) || 4631;

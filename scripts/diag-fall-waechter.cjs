@@ -35,7 +35,7 @@
 //   node scripts/diag-fall-waechter.cjs [--selftest]   (npm run gate:fall-waechter; Port FALL_WAECHTER_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT: root, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT: root, sleep, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
@@ -459,11 +459,7 @@ function selbsttest() {
         if (!ok)
             fehler.push("die Quellen-Wand nennt einen unbenannten Leser am Leib oder einen veralteten Namen nicht");
     }
-    if (fehler.length) {
-        console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
-        process.exit(1);
-    }
-    console.log("\n✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.");
+    selbsttestEnde(fehler);
 }
 
 if (process.argv.includes("--selftest")) {

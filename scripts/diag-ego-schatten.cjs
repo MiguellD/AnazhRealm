@@ -29,6 +29,7 @@
 //   node scripts/diag-ego-schatten.cjs [--selftest]   (npm run gate:ego-schatten; Port EGO_SCHATTEN_PORT, 4398)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
+const { statikServer, starteBrowser, selbsttestEnde } = require("./lib/welt-boot.cjs");
 
 const IOU_SOLL = 0.9; // der Ego-Schatten deckt den der 3rd-Person (dieselbe Pose)
 const WURF_MIN = 400; // Bildpunkte: so viel Schatten wirft der Leib auf der Bühne mindestens (192×108)
@@ -143,11 +144,7 @@ function selbsttest() {
         if (!v.some((s) => f.muss.test(s))) fehler.push(`${f.name}: die Wand nennt den Täter nicht (${f.muss})`);
         console.log(`  ${v.length ? "✅" : "❌"} Selbsttest „${f.name}" → rot: ${v.join(" · ") || "(nichts)"}`);
     }
-    if (fehler.length) {
-        console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
-        process.exit(1);
-    }
-    console.log("\n✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.");
+    selbsttestEnde(fehler);
 }
 
 if (process.argv.includes("--selftest")) {
@@ -156,7 +153,6 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 const path = require("path");

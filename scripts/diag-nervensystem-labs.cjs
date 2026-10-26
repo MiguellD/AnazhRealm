@@ -13,7 +13,7 @@
 //     ~3077 ms) und liest ohne Rezept die Kern-GENRES-Tafel (fail-closed, 78 bpm).
 //   --selftest: injizierte Verletzungen machen die statischen Gesetze rot.
 //   node scripts/diag-nervensystem-labs.cjs [--selftest]
-const { statikServer, starteBrowser, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -60,9 +60,7 @@ hauptLauf(async () => {
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 180000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {

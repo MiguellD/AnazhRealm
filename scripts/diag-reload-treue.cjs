@@ -13,7 +13,7 @@
 //
 //   node scripts/diag-reload-treue.cjs
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.RELOAD_TREUE_PORT || 4459);
 const server = statikServer();
@@ -23,9 +23,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 hauptLauf(async () => {
     console.log("=== RELOAD-TREUE — der Guss-Pin am Verhalten ===");
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 300000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {

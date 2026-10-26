@@ -41,7 +41,7 @@
 //   node scripts/diag-streu-fern.cjs        (Port: STREU_FERN_PORT)
 "use strict";
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
-const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.STREU_FERN_PORT || 4586);
 const server = statikServer();
@@ -50,9 +50,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 hauptLauf(async () => {
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 600000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 600000 });
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await server.zeige(page, 60000);
 

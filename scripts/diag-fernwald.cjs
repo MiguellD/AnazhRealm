@@ -32,7 +32,7 @@
 //   node scripts/diag-fernwald.cjs        (Port: FERNWALD_PORT)
 "use strict";
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
-const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.FERNWALD_PORT || 4598);
 const server = statikServer();
@@ -41,9 +41,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 hauptLauf(async () => {
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 900000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 900000 });
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     // das Holz der Mess-Wiese ist „voll" (Ring 4): seit die Holz-Wahl auf dem WebGL2-Rückfall den GL-Renderer fragt,
     // wählt swiftshader kienspan (Ring 2) — die Karten-Zone trüge dann 18 statt ≥ 100 Bäume, A wäre vakuös. Der Null-

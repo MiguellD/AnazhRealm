@@ -14,7 +14,7 @@ const vm = require("vm");
 const stammLib = require("./lib/stamm.cjs");
 const { kanalImVm, bauAbdruck } = require("./lib/asset-worker-harness.cjs");
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
-const { hauptLauf } = require("./lib/welt-boot.cjs");
+const { hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const argNach = (n) => (process.argv.includes(n) ? process.argv[process.argv.indexOf(n) + 1] : null);
@@ -289,9 +289,7 @@ async function weltPruefen() {
     const PORT = Number(process.env.STUDIO_UEBERGABE_PORT || 4453);
     const server = statikServer();
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 300000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 30000);
     const out = await page.evaluate(async () => {
         const res = {};

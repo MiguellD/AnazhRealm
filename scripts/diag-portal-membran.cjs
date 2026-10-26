@@ -38,7 +38,7 @@
 //
 //   node scripts/diag-portal-membran.cjs [--ohne-blick]
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.PORTAL_MEMBRAN_PORT || 4439);
@@ -445,9 +445,7 @@ async function blickStufe(check) {
 
 hauptLauf(async () => {
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 300000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {

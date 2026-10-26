@@ -26,7 +26,7 @@
 //
 //   node scripts/diag-scatter-lod.cjs
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.SCATTER_LOD_PORT || 4441);
@@ -50,9 +50,7 @@ hauptLauf(async () => {
     );
 
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 300000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {

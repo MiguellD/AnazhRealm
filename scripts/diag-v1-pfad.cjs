@@ -17,7 +17,7 @@
 //   node scripts/diag-v1-pfad.cjs [--selftest | --korpus [--regler] [--echt [--bild] [--aufnahme]] | --feind]   Port: V1_PFAD_PORT (4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, warteAufWelt, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, warteAufWelt, ROOT: root, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
@@ -2037,9 +2037,7 @@ const mitschnitt = (ratsche) => (req) =>
 async function kiWelt(seiten) {
     const srv = statikServer({ seiten });
     await srv.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 900000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 900000 });
     await srv.zeige(page);
     await warteAufWelt(page);
     return { srv, browser, page };

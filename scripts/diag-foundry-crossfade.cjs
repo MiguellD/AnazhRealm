@@ -29,7 +29,7 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 //   node scripts/diag-foundry-crossfade.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
 const vm = require("vm");
 const stammLib = require("./lib/stamm.cjs");
 
@@ -308,9 +308,7 @@ function mitTaeter(glied, taeter) {
 async function runPartB() {
     const server = statikServer();
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 240000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 240000 });
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {
