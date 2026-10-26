@@ -27,14 +27,11 @@ async function kreaturProben(r, T, opts) {
     // DER SPIELER IST SEIN LEBENDER LEIB: die echte Welt tauscht `playerMesh`, während die Probe taktet (der deferierte
     // Avatar-Bau `applyPlayerSoul`, sobald seine Vorlagen im Memo liegen; headless baut er synchron) — wer die Lage des alten
     // Leibs hält, rückt einen Geist (mensch.K1 Radeon: die Stadt 18 m vom Geist, 735 m vom Spieler, ihre Liste nie gelegt);
-    // `pm` liest je Zugriff den Leib, der jetzt steht
-    const pm = new Proxy(s.playerMesh.position, {
-        get: (_, k) => {
-            const p = s.playerMesh.position;
-            return typeof p[k] === "function" ? p[k].bind(p) : p[k];
-        },
-        set: (_, k, v) => ((s.playerMesh.position[k] = v), true),
-    });
+    // `pm` liest und schreibt je Zugriff den Leib, der jetzt steht (seine Methoden laufen mit `pm` als this)
+    const pm = new Proxy(
+        {},
+        { get: (_, k) => s.playerMesh.position[k], set: (_, k, v) => ((s.playerMesh.position[k] = v), true) }
+    );
     const P0 = pm.clone();
 
     // Die Bühne je Probe: eigene Tier-Liste (die Welt-Tiere ruhen), der Spieler zurück, Modus und Gefühl zurück.
