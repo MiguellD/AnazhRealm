@@ -24,7 +24,10 @@ befund  radeon-stoerung  20:47:34–20:50:34 Radeon von außen gestört, Schloss
 gestoppt speicher-faden  23:55 lokale Sitzung bei 750k Kontext, WIP gesichert 3be5ac6b (8 Commits, ungeprüft)  frisch fortsetzen  speicher.K2 · K3#2 · streaming.K5#2
 gestoppt fahrzeug-k2-route  23:55 lokale Sitzung bei 570k Kontext, 0 Commits  neu schneiden (Spike ≤ 60 Schritte)  fahrzeug.K2
 nacht   Mess-Takt 4  nach z32: GTX am Kandidaten (z32k-gtx läuft), headless + Radeon am Kopf in Ruhe, buche.sh, Artifact  Koordinator  Punkte buchen
-läuft   nacht-klein  wf_52056345-7bc: fahr-s3 (Wackler-Wurzel G8) · klang-fertig · e-stadt-fertig  Champions ≤ 120 Aufrufe  FEUER · PUNKTE · WICHTIG
-läuft   nacht-breit  wf_bf754b95-b9f: ki-k2-fertig · mensch-k3-fertig · speicher-fertig · b-ankunft-pflanzen · a-laub-spike · leib-k4-haus · ladeschirm-zeile  Champions ≤ 120 Aufrufe  WICHTIG 4 · PUNKTE 3
-danach  Ruhe-Fenster  nach beiden Wellen: headless + Radeon am Kopf 83df2052 (Mess-Takt 4), GTX aus z32k-gtx; buche.sh  Koordinator  Buchung
+läuft   nacht-klein  e-stadt edfa23cd (BAND ROT stadt-voll: bewohner-satz 868k) · klang 0a129a86 (K4 Probe → werkzeug-heil) zurück; fahr-s3 läuft (233+ Aufrufe, ringt mit der Decke)  Champions  FEUER
+fertig  nacht-breit  7 Karten 649 Aufrufe 1,05 M: ladeschirm 2e15df01 CI grün · mensch-k3 12334198 grün · speicher-faden c28a0bdc 70 % · ki-k2 06dd161b Decke rot · leib-k4 0a682c0d Decke rot · b-ankunft bab5bc63 25 % · a-laub ohne Zahl (Welt steht nicht)  Champions  → z35, fege-takt
+läuft   Mess-Takt 4  01:40 headless 74 Stationen am 83df2052 (3 Bahnen; Reste-Ordner punkte-* mit Junction geräumt), danach Radeon; GTX aus z32k-gtx  Koordinator  buche.sh, Artifact
 befund  cloud  das neue Konto hat keine Cloud-Umgebung (no_environment) — Cloud-Karten liefen lokal  Schöpfer: Umgebung auf claude.ai/code anlegen  Laptop frei für Messungen
+läuft   frueh  wf_19800924-1f4: fege-takt (FEUER Welt steht nicht) · werkzeug-heil (echt-k1 Faden, m15 Probe) · speicher-anhang (K2 0,3 ms) · ki-schema (Ollama format aus PARAMS_BY_KIND) · b-streu-faden (B Region-Streu in den Voxel-Faden)  Champions ≤ 120  FEUER · WICHTIG 2 · PUNKTE 2
+läuft   decke-zahlstelle  Champion lokal (Cloud-Start über Remote Control gesperrt): 55 pageerror-Zwillinge → welt-boot, scripts ≤ −2000 Atome — bezahlt ki-k2, leib-k4, fahr-s3 im Zug  Champion  FEUER
+plan    z35  ladeschirm-zeile + mensch-k3-wege + speicher-faden (+ decke-zahlstelle, ki-k2, leib-k4, fahr-s3 wenn bereit)  fahre.sh  mensch.K3 · speicher.K3#2 · streaming.K5#2

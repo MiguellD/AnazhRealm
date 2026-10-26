@@ -12,3 +12,12 @@
 2026-10-25T23:45 e-stadtgipfel champion ~442000out/163Mlesen 195 GESTOPPT 494 Schritte, Kontext 563k, WIP c19aecd3 gepusht · WICHTIG
 2026-10-25T23:45 klang-schritte champion ~404000out/104Mlesen 195 GESTOPPT 372 Schritte, WIP 0a129a86 gepusht (Zensus je Stoff) · PUNKTE
 2026-10-25T23:45 b-ankunft-pruefer champion ~96000out/14Mlesen 20 GESTOPPT mit der Welle (2 Dateien Entwurf in pruef-b-ankunft-heil) · WICHTIG
+2026-10-26T01:30 ladeschirm-zeile champion(sonnet) wf1,05M/7 31A grün Ladeschirm-Zeile Rand+Mitte an #ladeschirm, CI voll grün 2e15df01 · WICHTIG
+2026-10-26T01:30 a-laub-spike champion wf1,05M/7 55A rot laub-kante ohne Zahl: Pose steht nicht (Fege-Takt nahWiese/nahStreu wartet, 3/3 Radeon) → Karte fege-takt · WICHTIG/FEUER
+2026-10-26T01:30 ki-k2 champion wf1,05M/7 117A WIP ki.K2#2 0/24 → gültig 100 % / Absicht 79,2 % (num_ctx 8192 + Prompt), Decke +1256 rot 06dd161b · PUNKTE
+2026-10-26T01:30 leib-k4-haus champion wf1,05M/7 118A WIP leib.K4#1 Täter = Orts-Speicher der Linse (Stufe 1 vor Stufe 0), 2/3 grün, Decke +46 0a682c0d · PUNKTE
+2026-10-26T01:30 b-ankunft-pflanzen champion wf1,05M/7 108A WIP _blickDerAnkunft hält Saat/Streu/Baum außer Blick zurück, Radeon unter Last kein Urteil bab5bc63 · WICHTIG
+2026-10-26T01:30 speicher-faden champion wf1,05M/7 101A WIP K3#2 192→86 kB grün, K5#2 Faden ja, K2 p95 47→2,6 ms (Soll 0,3) c28a0bdc · WICHTIG/PUNKTE
+2026-10-26T01:30 mensch-k3-wege champion wf1,05M/7 103A grün mensch.K3#2 3/3 grün, Wiederkehr 0/1296, Wege 4–9 12334198 · PUNKTE
+2026-10-26T01:20 e-stadt-gipfel champion wfk 117A WIP Band-Linse urteilt an stadt-voll/gipfel-blick/hochhaus-dach: BAND ROT (bewohner-satz 868k Dreiecke, VRAM 1,6×) edfa23cd · WICHTIG
+2026-10-26T01:32 klang-stoff-schritte champion wfk 98A WIP K5#2 Radeon 0 Aussetzer; K4#1 Täter = Probe m15-schritt (altes Gesetz) → werkzeug-heil 0a129a86 · PUNKTE
