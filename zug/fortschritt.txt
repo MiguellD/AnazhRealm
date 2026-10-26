@@ -208,3 +208,5 @@
 2026-10-26 12:02:49 takt5z-gtx leib.K1#1 GRÜN 10.0 · 29/43
 2026-10-26 13:00:27 takt5z-gtx VORFAHRT leib.K1#2 verloren 14.8
 2026-10-26 13:00:34 takt5z-gtx leib.K1#2 ROT 57.6 · 30/43
+2026-10-26 13:42:38 takt5z-gtx leib.K2#1 ROT 42.0 · 31/43
+2026-10-26 13:42:49 z37-abab START 3 Zellen
