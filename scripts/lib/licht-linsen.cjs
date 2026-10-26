@@ -2265,12 +2265,22 @@ function luftTiefe(o) {
             const D = await window.__spiegelDaten();
             const L0 = await schuss(0, k);
             const S = await schuss(1, k);
+            // die Laufzeit-Marke des Wegs: derselbe Schuss ohne die Draws des Feld-Passes (March und Panorama)
+            const fp = st.feldPass || { mesh: {}, march: {} };
+            const an = fp.mesh.visible;
+            fp.mesh.visible = fp.march.visible = false;
+            const Sf = await schuss(1, k);
+            fp.mesh.visible = fp.march.visible = an;
             D.iv = new T.Matrix4().fromArray(D.ivp);
             const bd = R.baenderM.map((d) => ({ d, q: [[], [], []], dk: [], dh: [] }));
             const gez = [];
             const fern = {};
             const gesetzOben = {};
             const inS = [[], [], []];
+            // DER TON JE WEG: die In-Streuung (β = 1) jedes Pixels je Zeichner — Mesh (`scene.fogNode`), Feld-Pass (der March, echte
+            // Tiefe), Panorama — ihr Median gegen den des Mesh-Wegs (dieselben Spalten, derselbe Himmel)
+            const je = [[], [], []];
+            const d8 = (A, B, i) => Math.abs(A[i] - B[i]) + Math.abs(A[i + 1] - B[i + 1]) + Math.abs(A[i + 2] - B[i + 2]);
             for (let yy = 0; yy < H; yy += 2)
                 for (let xx = 4; xx < W; xx += 8) {
                     const t = treffer(xx, yy, D);
@@ -2282,6 +2292,7 @@ function luftTiefe(o) {
                     if (!t || !l || !l0 || !sa || Math.abs(Y(l0) - Y(sa)) < 0.02 * Y(sa)) continue;
                     gez.push({ x: xx, d: t.d, C: Math.abs(Y(l) - Y(sa)) / Y(sa) });
                     sa.forEach((x, c) => inS[c].push(x));
+                    je[d8(Sf, S, i) > 4 ? (t.szene ? 1 : 2) : 0].push(sa);
                     fern[xx] = Math.max(fern[xx] || 0, t.d);
                     const b = t.szene && bd.find((x) => Math.abs(t.d - x.d) < 0.12 * x.d);
                     if (!b) continue;
@@ -2297,11 +2308,12 @@ function luftTiefe(o) {
             // je Spalte die erste Zeile, die die Luft ändert (8 Bit, auch über der Kompression): das Ende der gezeichneten Welt
             const oben = {};
             for (const x in gesetzOben)
-                for (let y = 0, i = +x * 4; y < H && !(x in oben); y++, i += W * 4) if (Math.abs(L0[i] - S[i]) + Math.abs(L0[i + 1] - S[i + 1]) + Math.abs(L0[i + 2] - S[i + 2]) > 4) oben[x] = y;
+                for (let y = 0, i = +x * 4; y < H && !(x in oben); y++, i += W * 4) if (d8(L0, S, i) > 4) oben[x] = y;
             const kante = Object.fromEntries(Object.keys(oben).filter((x) => gesetzOben[x] < oben[x] - 1).map((x) => [x, oben[x]]));
             const kl = kantenLinie(Yd, W, H, kante, R.kontrast, 8);
             const hfov = (2 * Math.atan(Math.tan((cam.fov * Math.PI) / 360) * cam.aspect) * 180) / Math.PI;
             return {
+                paesse: je.map((g, i) => ({ p: ["Mesh", "Feld-Pass", "Panorama"][i], n: g.length, c: [0, 1, 2].map((k) => med(g.map((v) => v[k]))) })),
                 kante: { spalten: Object.keys(oben).length, rand: Object.keys(kante).length, linie: +((kl.linie / W) * hfov).toFixed(2), stufe: kl.stufe },
                 blende: k,
                 baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: med(b.dh) })),
@@ -2379,6 +2391,10 @@ function luftTiefeUrteil(m, R) {
             // inverse Varianz: der Fehler von dk fällt mit d, die Band-Mediane wiegen nk·d²
             const w = fern.reduce((a, b) => a + b.nk * b.d * b.d, 0);
             const v = +(fern.reduce((a, b) => a + b.dk * b.nk * b.d * b.d, 0) / w / dRef).toFixed(2);
+            // jeder Weg, der Ferne zeichnet, dunstet mit dem Ton des EINEN Himmels: Feld-Pass und Panorama gegen den Mesh-Weg je Kanal
+            const [ms, ...wege] = z.paesse || [];
+            for (const w of wege)
+                if (w.n >= M.n && w.c.some((v, c) => !(Math.abs(v / ms.c[c] - 1) <= B.passTon))) liste.push(`K1-2 HIMMELS-TON ${w.p} ${wo}: ${w.c} statt ${ms.c} (Mesh)`);
             if (nk < M.nk) liste.push(`K1-2 JE KANAL ${wo} ab 2 km: ungemessen (${nk} Paare < ${M.nk})`);
             else if (!(v >= B.kanal[0] && v <= B.kanal[1])) liste.push(`K1-2 JE KANAL ${wo} ab 2 km: Δβ blau−rot ${v} × Referenz (grau = 0, ${nk} Paare)`);
             if (u === 0.5 && !(z.rand.C != null && z.rand.C <= B.rand))
@@ -2448,6 +2464,8 @@ function luftTiefeSelbsttest(R) {
         urteil(sichten(k, 0.005, 50, 0, 1.15)).befunde.some((b) => /SONNENSEITE/.test(b)) || "die Sonnenseite 1,15 ist nicht ROT",
         urteil(sichten(k, 0.005, 50, 0, 1.3, [0.39, 0.45, 0.39])).befunde.some((b) => /HIMMEL/.test(b)) || "ein grüner Horizont ist nicht ROT",
         urteil(sichten(k, 0.005), undefined, null).befunde.some((b) => /FERNES WEISS/.test(b)) || "ein ungemessenes fernes Weiß ist nicht ROT",
+        urteil(sichten(k, 0.005).map((z) => Object.assign({ paesse: [{ c: [1, 1, 1] }, { p: "Feld-Pass", n: 50, c: [1, 1, 1.3] }] }, z))).befunde.some((b) => /HIMMELS-TON Feld-Pass/.test(b)) ||
+            "ein Pass ohne Himmels-Ton ist nicht ROT",
         (bild(0.05) >= 400 && bild(0.01) === 0 && bild(0.05, true) <= 8) || `Linie bei Stufe 5 % ${bild(0.05)} px, 1 % ${bild(0.01)}, Zacken ${bild(0.05, true)}`,
         (leer["K1-1"] === "ROT" && leer["K1-2"] === "ROT" && leer["K2-1"] === "ROT" && leer["K2-2"] === "ROT") || "eine leere Messung ist nicht ROT",
         urteil([]).urteil === "ROT" || "eine Messung ohne Sicht ist nicht ROT",

@@ -1383,7 +1383,14 @@ class AnazhRealm_bild_himmel {
             return rt;
         };
         const rtT = ziel(Z.durchlass[0], Z.durchlass[1], null, "atmo-durchlass");
-        const rtMS = ziel(Z.mehrfach[0], Z.mehrfach[1], null, "atmo-mehrfach");
+        // Ψ_ms links, rechts der Anteil der zweiten Ordnung (1 − f_ms) je Kanal: er trägt die Richtung (die Keule)
+        const rtMS = ziel(Z.mehrfach[0] * 2, Z.mehrfach[1], null, "atmo-mehrfach");
+        const rtF = ziel(Z.feld[0], Z.feld[1], THREE.RepeatWrapping, "atmo-feld");
+        const rtFi = ziel(Z.feld[0], Z.feld[1], THREE.RepeatWrapping, "atmo-feld-iso");
+        const rtFa = ziel(Z.feld[0], Z.feld[1], THREE.RepeatWrapping, "atmo-feld-keule");
+        const rtK = ziel(1, 1, null, "atmo-keule-k");
+        const rtKR = ziel(Z.keule[0], Z.keule[1], THREE.RepeatWrapping, "atmo-keule-r");
+        const rtKM = ziel(Z.keule[0], Z.keule[1], THREE.RepeatWrapping, "atmo-keule-m");
         const rtSV = ziel(Z.himmel[0], Z.himmel[1], THREE.RepeatWrapping, "atmo-himmel");
         const rtEq = ziel(Z.umgebung[0], Z.umgebung[1], THREE.RepeatWrapping, "himmel-umgebung");
         const rtBS = ziel(Z.bestrahlung[0], Z.bestrahlung[1], null, "atmo-bestrahlung");
@@ -1460,11 +1467,15 @@ class AnazhRealm_bild_himmel {
             ).rgb;
             return select(amBoden(r, mu), vec3(0), t);
         };
-        const mehrfach = (h, mus) =>
-            texture(
-                rtMS.texture,
-                vec2(subUv(mus.add(1).mul(0.5), Z.mehrfach[0]), subUv(h.div(RT - RG), Z.mehrfach[1]))
-            ).level(float(0)).rgb;
+        const msUv = (h, mus, rechts) =>
+            vec2(
+                subUv(mus.add(1).mul(0.5), Z.mehrfach[0])
+                    .mul(0.5)
+                    .add(rechts ? 0.5 : 0),
+                subUv(h.div(RT - RG), Z.mehrfach[1])
+            );
+        const mehrfach = (h, mus) => texture(rtMS.texture, msUv(h, mus, false)).level(float(0)).rgb;
+        const zweite = (h, mus) => texture(rtMS.texture, msUv(h, mus, true)).level(float(0)).rgb;
         const phaseR = (nu) =>
             nu
                 .mul(nu)
@@ -1513,7 +1524,8 @@ class AnazhRealm_bild_himmel {
         // ── Ψ_ms: je (cos Sonnen-Zenit, Höhe) die Mehrfachstreuung (Hillaire Gl. 5–9), 8 × 8 Richtungen, Boden = Welt-Albedo ──
         const passMehrfach = Fn(() => {
             const q = uv();
-            const mus = ausUv(q.x, Z.mehrfach[0]).mul(2).sub(1).toVar();
+            const rechts = q.x.greaterThanEqual(0.5).toVar();
+            const mus = ausUv(q.x.mul(2).fract(), Z.mehrfach[0]).mul(2).sub(1).toVar();
             const h = max(ausUv(q.y, Z.mehrfach[1]).mul(RT - RG), 0.001).toVar();
             const r = h.add(RG).toVar();
             const sun = vec3(sqrt(max(float(1).sub(mus.mul(mus)), 0)), mus, 0).toVar();
@@ -1575,11 +1587,11 @@ class AnazhRealm_bild_himmel {
                 Fsum.addAssign(F);
             });
             const fms = Fsum.div(64);
-            return vec4(Lsum.div(64).div(max(fms.oneMinus(), vec3(1e-4))), 1);
+            return vec4(select(rechts, fms.oneMinus(), Lsum.div(64).div(max(fms.oneMinus(), vec3(1e-4)))), 1);
         });
         // ── die Himmels-Sicht: Richtung ↔ Texel (Azimut absolut, Breite quadratisch um den Horizont des Auges) ──
         const horizontEl = () => T.acos(float(RG).div(U.hKm.add(RG))).negate();
-        const himmelUv = (dir) => {
+        const himmelUv = (dir, n = Z.himmel[1]) => {
             const el = T.asin(clamp(dir.y, -1, 1)).toVar();
             const hz = horizontEl().toVar();
             const oben = sqrt(max(el.sub(hz).div(float(PI / 2).sub(hz)), 0))
@@ -1590,12 +1602,27 @@ class AnazhRealm_bild_himmel {
                 .div(2 * PI)
                 .add(1)
                 .fract();
-            return vec2(u, subUv(select(el.greaterThanEqual(hz), oben, unten), Z.himmel[1]));
+            return vec2(u, subUv(select(el.greaterThanEqual(hz), oben, unten), n));
+        };
+        // die Umkehr: Texel → Richtung (dieselbe Lage, `n` Zeilen)
+        const himmelRichtung = (q, n) => {
+            const phi = q.x.mul(2 * PI).toVar();
+            const hz = horizontEl().toVar();
+            const c = ausUv(q.y, n).sub(0.5).mul(2).toVar();
+            const el = select(
+                c.greaterThanEqual(0),
+                hz.add(c.mul(c).mul(float(PI / 2).sub(hz))),
+                hz.sub(c.mul(c).mul(float(PI / 2).add(hz)))
+            ).toVar();
+            const ce = el.cos().toVar();
+            return vec3(ce.mul(phi.cos()), el.sin(), ce.mul(phi.sin()));
         };
         // DER MARSCH längs v: die Quellen (Richtung, Gewicht in Einheiten von E0 — die Sonne 1, der Mond `mondE`) und das
         // Sternen-Licht (`nacht`, in E0). Die Himmels-Sicht ruft ihn mit Sonne, Mond und Sternen, die Bestrahlungs-Tafel mit
-        // EINER Quelle je Sonnenhöhe — derselbe Marsch, dieselbe Streuung, dieselben Tafeln.
-        const marsch = (v, quellen, nacht) => {
+        // EINER Quelle je Sonnenhöhe — derselbe Marsch, dieselbe Streuung, dieselben Tafeln. `keule` ist die Richtung der
+        // Mehrfachstreuung im Blick v ({R, M, k}: das Gewicht je Streuer und das k des Himmels, `keuleIn`); ohne sie streut Ψ_ms isotrop (Hillaire), `false`
+        // zeichnet nur die erste Ordnung (das Feld der Keule).
+        const marsch = (v, quellen, nacht, keule) => {
             const r0 = U.hKm.add(RG).toVar();
             const mu = v.y;
             const boden = amBoden(r0, mu).toVar();
@@ -1622,9 +1649,23 @@ class AnazhRealm_bild_himmel {
                 const S = quellen
                     .map((q, i) => {
                         const muQ = dot(p, q.dir).div(ri).toVar();
-                        const s = durchlass(ri, muQ)
-                            .mul(sR.mul(ph[i].x).add(sM.mul(ph[i].y)))
-                            .add(mehrfach(hi, muQ).mul(sca));
+                        const eins = durchlass(ri, muQ).mul(sR.mul(ph[i].x).add(sM.mul(ph[i].y)));
+                        // DIE MEHRFACHSTREUUNG IN RICHTUNG (fk1-ton): die zweite Ordnung (1 − f_ms von Ψ_ms) streut das Feld der
+                        // ersten mit der Phase des Mediums, die höheren bleiben isotrop
+                        const zw = keule ? zweite(hi, muQ).toVar() : null;
+                        const s =
+                            keule === false
+                                ? eins
+                                : eins.add(
+                                      mehrfach(hi, muQ).mul(
+                                          keule
+                                              ? sR
+                                                    .mul(zw.mul(keule.R.sub(1)).add(1))
+                                                    .add(sM.mul(zw.mul(keule.M.sub(1)).add(1)))
+                                                    .mul(keule.k || 1)
+                                              : sca
+                                      )
+                                  );
                         return q.gewicht ? q.gewicht.mul(s) : s;
                     })
                     .reduce((a, b) => a.add(b))
@@ -1662,20 +1703,82 @@ class AnazhRealm_bild_himmel {
             });
             return L;
         };
+        const quellen = [{ dir: U.sonne }, { dir: U.mond, gewicht: U.mondE }];
+        // ── DIE KEULE DER MEHRFACHSTREUUNG (fk1-ton): Hillaires Ψ_ms streut isotrop — die Ferne war zur Sonne und gegen sie
+        // gleich hell (Mittag 1,17); Monte Carlo im Medium des Gesetzes (Rückwärts-Pfade, Next-Event zur Sonne, Lambert-Boden)
+        // gibt 1,35, abgewandt das Blau und zur tiefen Sonne die Vorwärts-Keule der höheren Ordnungen. Das Feld der ersten
+        // Ordnung am Auge (Sonne, Mond, Sterne, der Boden; gleiche Raumwinkel: u = Azimut, v = cos Zenit), gestreut mit der
+        // Phase je Streuer, gibt A(v) = ∫L·4πP(ω·v)dω / ∫L dω; über dem Azimut-Mittel seiner Blick-Höhe ist es die Keule
+        // (`keuleIn`: max(1, A / Ring)). Ihre Energie zahlt der ganze Himmel: k je Kanal hält die Mehrfachstreuung auf der
+        // waagrechten Fläche bei der isotropen (`passK`) — die Bestrahlung bleibt die der Tafel. ──
+        const [FW, FH] = Z.feld;
+        const [KW, KH] = Z.keule;
+        const feldRichtung = (q) => {
+            const phi = q.x.mul(2 * PI);
+            const mu = q.y.mul(2).sub(1).toVar();
+            const s = sqrt(max(float(1).sub(mu.mul(mu)), 0));
+            return vec3(s.mul(phi.cos()), mu, s.mul(phi.sin()));
+        };
+        const feldPass = (keule) =>
+            Fn(() => {
+                const v = feldRichtung(uv()).toVar();
+                return vec4(marsch(v, quellen, U.nachtE, keule && keule(v)), 1);
+            });
+        const passFeld = feldPass(() => false);
+        const passKeule = (phase) =>
+            Fn(() => {
+                const v = himmelRichtung(uv(), KH).toVar();
+                const a = vec3(0).toVar();
+                const m = vec3(0).toVar();
+                Loop({ start: 0, end: FW * FH, type: "float", name: "k" }, ({ k }) => {
+                    const j = k.div(FW).floor();
+                    const q = vec2(k.sub(j.mul(FW)).add(0.5).div(FW), j.add(0.5).div(FH)).toVar();
+                    const L = texture(rtF.texture, q).level(float(0)).rgb.toVar();
+                    a.addAssign(L.mul(phase(dot(feldRichtung(q), v))));
+                    m.addAssign(L);
+                });
+                return vec4(a.mul(4 * PI).div(max(m, vec3(1e-12))), 1);
+            });
+        const keuleIn = (v, k) => {
+            const q = himmelUv(v, KH).toVar();
+            const ring = (rt) => {
+                const s = vec3(0).toVar();
+                Loop({ start: 0, end: KW, type: "float", name: "i" }, ({ i }) => {
+                    s.addAssign(texture(rt.texture, vec2(i.add(0.5).div(KW), q.y)).level(float(0)).rgb);
+                });
+                return max(
+                    texture(rt.texture, q)
+                        .level(float(0))
+                        .rgb.mul(KW)
+                        .div(max(s, vec3(1e-12))),
+                    vec3(1)
+                ).toVar();
+            };
+            return { R: ring(rtKR), M: ring(rtKM), k };
+        };
+        // die Felder ohne (`passFeld`), mit isotroper (`passFeldIso`) und mit gerichteter Mehrfachstreuung (`passFeldKeule`, k = 1)
+        const passFeldIso = feldPass(() => undefined);
+        const passFeldKeule = feldPass((v) => keuleIn(v));
+        // k je Kanal: die Mehrfachstreuung der oberen Halbkugel, kosinus-gewichtet, isotrop gegen gerichtet
+        const passK = Fn(() => {
+            const e = vec3(0).toVar();
+            const a = vec3(0).toVar();
+            Loop({ start: (FW * FH) / 2, end: FW * FH, type: "float", name: "k" }, ({ k }) => {
+                const j = k.div(FW).floor();
+                const q = vec2(k.sub(j.mul(FW)).add(0.5).div(FW), j.add(0.5).div(FH)).toVar();
+                const eins = texture(rtF.texture, q).level(float(0)).rgb.toVar();
+                const c = q.y.mul(2).sub(1);
+                e.addAssign(texture(rtFi.texture, q).level(float(0)).rgb.sub(eins).mul(c));
+                a.addAssign(texture(rtFa.texture, q).level(float(0)).rgb.sub(eins).mul(c));
+            });
+            return vec4(e.add(1e-12).div(a.add(1e-12)), 1);
+        });
         const passHimmel = Fn(() => {
-            const q = uv();
-            const phi = q.x.mul(2 * PI).toVar();
-            const w = ausUv(q.y, Z.himmel[1]);
-            const hz = horizontEl().toVar();
-            const c = w.sub(0.5).mul(2).toVar();
-            const el = select(
-                c.greaterThanEqual(0),
-                hz.add(c.mul(c).mul(float(PI / 2).sub(hz))),
-                hz.sub(c.mul(c).mul(float(PI / 2).add(hz)))
-            ).toVar();
-            const ce = el.cos().toVar();
-            const v = vec3(ce.mul(phi.cos()), el.sin(), ce.mul(phi.sin())).toVar();
-            return vec4(marsch(v, [{ dir: U.sonne }, { dir: U.mond, gewicht: U.mondE }], U.nachtE), 1);
+            const v = himmelRichtung(uv(), Z.himmel[1]).toVar();
+            return vec4(
+                marsch(v, quellen, U.nachtE, keuleIn(v, texture(rtK.texture, vec2(0.5)).level(float(0)).rgb)),
+                1
+            );
         });
         // DIE FARBE DES HIMMELS in Richtung `dir` (Welt): die Himmels-Sicht (je Einheit E0) × das Licht jetzt (E0) × die Tönung
         // (Wetter, Feld, Gefühl, DSL — relativ zum Himmel des Studios, `_dayNightApplySkybox`). Leser: die Kuppel, die Umgebung, die Luft.
@@ -1744,6 +1847,15 @@ class AnazhRealm_bild_himmel {
             qT: quad(passDurchlass, "atmo-durchlass"),
             qMS: quad(passMehrfach, "atmo-mehrfach"),
             qSV: quad(passHimmel, "atmo-himmel"),
+            // die Keule in der Reihe ihres Zeichnens (`_atmoTakt`): Feld, isotropes Feld, Keulen, gerichtetes Feld, k
+            keule: [
+                [quad(passFeld, "atmo-feld"), rtF],
+                [quad(passFeldIso, "atmo-feld-iso"), rtFi],
+                [quad(passKeule(phaseR), "atmo-keule-r"), rtKR],
+                [quad(passKeule(phaseM), "atmo-keule-m"), rtKM],
+                [quad(passFeldKeule, "atmo-feld-keule"), rtFa],
+                [quad(passK, "atmo-keule-k"), rtK],
+            ],
             qEq: quad(passUmgebung, "atmo-umgebung"),
             rtBS,
             qBS: quad(passBestrahlung, "atmo-bestrahlung"),
@@ -1845,6 +1957,7 @@ class AnazhRealm_bild_himmel {
             A.himmelSchluessel = null;
         }
         if (A.himmelSchluessel !== schluessel) {
+            for (const [q, rt] of A.keule) this._atmoZeichne(q, rt);
             this._atmoZeichne(A.qSV, A.rtSV);
             A.himmelSchluessel = schluessel;
             A.himmelVersion++;
@@ -3134,6 +3247,8 @@ AnazhRealm.ATMO_LUT = Object.freeze({
     durchlass: Object.freeze([256, 64]),
     mehrfach: Object.freeze([32, 32]),
     himmel: Object.freeze([192, 108]),
+    feld: Object.freeze([48, 24]),
+    keule: Object.freeze([32, 16]),
     umgebung: Object.freeze([128, 64]),
     bestrahlung: Object.freeze([65, 1]),
     richtungen: Object.freeze([12, 24]),
