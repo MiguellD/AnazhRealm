@@ -856,6 +856,7 @@ function validateManifest(m) {
             Number.isFinite(V.jagd.pirschSichtM) &&
             Number.isFinite(V.jagd.beuteMasse) &&
             V.jagd.scentProbeM === undefined &&
+            V.jagd.radius === undefined && // die Spieler-Reichweite ohne Wind kehrt nicht zurueck (oekologie.K4)
             V.furcht.fleeSpeedBoost === undefined &&
             V.stimmung &&
             V.stimmung.schwellen &&
@@ -887,7 +888,7 @@ function validateManifest(m) {
             Number.isFinite(V.wasser.uferBias);
         if (!seeleOk)
             v.push(
-                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeCooldownSec/hetzM/pirschSichtM/beuteMasse ohne Gradienten-Schritt, Reichweite um die Mitten und festen Pirsch-Stopp · furcht.fleeThreshold ohne Trab-Flucht · temperament{gattung,profile} ohne Substanz-Signaturen, furcht.mutGewicht ohne Substanz-Gewichte · wandern.leashBaseM · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · groessen/separation{raumKugel}/aufgaben/herde{fensterRaum} ohne festen Paar-Radius, Fenster und Neugier-Stopp/wasser)"
+                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeCooldownSec/hetzM/pirschSichtM/beuteMasse ohne Gradienten-Schritt und Spieler-Radius, Reichweite um die Mitten und festen Pirsch-Stopp · furcht.fleeThreshold ohne Trab-Flucht · temperament{gattung,profile} ohne Substanz-Signaturen, furcht.mutGewicht ohne Substanz-Gewichte · wandern.leashBaseM · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · groessen/separation{raumKugel}/aufgaben/herde{fensterRaum} ohne festen Paar-Radius, Fenster und Neugier-Stopp/wasser)"
             );
     }
     return v;
