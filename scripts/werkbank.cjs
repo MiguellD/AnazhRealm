@@ -415,7 +415,6 @@ function lauf(k) {
             const haenger = H && {
                 takte: T, namen: H.namen.slice(), probe, k, tMess: [tMess0, performance.now()], kreaturen: st.creatures ? st.creatures.length : 0, wetter: st.weather,
                 chunks: st.voxelChunks ? st.voxelChunks.size : 0,
-                spielerEnde: [st.playerMesh.position.x, st.playerMesh.position.z].map((x) => +x.toFixed(1)),
                 loadScale: st.perfSense ? +st.perfSense.loadScale.toFixed(2) : null,
                 erst: erst0 && Object.assign(Object.fromEntries(ERST.map((x, i) => [x, +((E[x] || 0) - erst0[i]).toFixed(1)])),
                     { offen: E.offen.size }),
@@ -2843,7 +2842,8 @@ async function starte() {
                 }
                 // DIE EINE SPUR (CDP-Trace) um den Lauf, nur im Mess-Fenster: die Belegung liest den Faden (`BELEGUNG_SPUR`,
                 // `belegungAuswerten`), Profil und Hänger-Linse lesen Stichproben aus derselben Spur (`HL.spurProfil`) — nie ein
-                // zweites Instrument; ein langer Hänger-Lauf nimmt nur Marken und Stichproben (der Faden voll sprengt den Puffer).
+                // zweites Instrument; ein langer Hänger-Lauf nimmt nur Marken, Stichproben und die Aufträge des GPU-Prozesses
+                // (`gpu`: eine Leine ohne Auftrag der Seite heißt nach ihm) — der Faden voll sprengt den Puffer.
                 const laufMitSpur = async (k, kategorien) => {
                     const cdp = await page.target().createCDPSession(), ev = [];
                     cdp.on("Tracing.dataCollected", (e) => e.value.forEach((x) => ev.push(x)));
@@ -2859,7 +2859,7 @@ async function starte() {
                     }
                     return { o, ev };
                 };
-                const PROBEN = ["blink.user_timing", "disabled-by-default-v8.cpu_profiler"];
+                const PROBEN = ["blink.user_timing", "disabled-by-default-v8.cpu_profiler", "gpu"];
                 if (req.url === "/lauf") {
                     const { o, ev } = await laufMitSpur(
                         { sek: Number(b.sek) || 20, ein: b.ein != null ? Number(b.ein) : 30, ruhe: Number(b.ruhe) || 0, regler: b.regler || "frei", wandern: b.wandern },
@@ -3692,7 +3692,7 @@ async function starte() {
             console.log(
                 f.length
                     ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
-                    : "SELBSTTEST GRÜN: die Hänger-Linse nennt Takt-Last, Neben-Last, Collector und GPU-Warten nach synchronen Pipelines beim Namen, die Takt-Marken legen die Stichproben der Spur auf die Takte; die Takt-Spitze nennt eine 3-ms-Last je 10. Takt allein beim Namen und ist ohne Last GRÜN, in Fahrt ein computeVertexNormals im Takt beim Namen und einen stehenden Wagen"
+                    : "SELBSTTEST GRÜN: die Hänger-Linse nennt Takt-Last, Neben-Last, Collector, GPU-Warten nach synchronen Pipelines und den Auftrag des GPU-Prozesses beim Namen, die Takt-Marken legen die Stichproben der Spur auf die Takte; die Takt-Spitze nennt eine 3-ms-Last je 10. Takt allein beim Namen und ist ohne Last GRÜN, in Fahrt ein computeVertexNormals im Takt beim Namen und einen stehenden Wagen"
             );
             process.exit(f.length ? 1 : 0);
         }

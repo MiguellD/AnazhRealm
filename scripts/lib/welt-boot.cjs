@@ -22,6 +22,9 @@ const { ohneKommentare, ast, wandere, zeileVon } = require("./stamm.cjs");
 // DER EINE SCHLAF (`await sleep(ms)`): in Node der Export, in jeder Seite derselbe Text als `window.sleep` (`WARTEN_SEITE`) —
 // eine Probe schläft in beiden Welten mit demselben Ruf, ein eigenes `new Promise((r) => setTimeout(r, ms))` ist ein Zwilling
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// DIE UHR DES LAUFS (`const log = laufUhr()`): jede Zeile trägt die Sekunden seit dem Ruf — je Linse ein eigenes `T0` samt
+// eigenem log war ein Zwilling
+const laufUhr = (T0 = Date.now()) => (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
 
 // DAS EINE __codeOf: jede Seite trägt vor ihrem ersten Skript `window.__codeOf` (Code ohne Kommentare, der EINE Stripper
 // aus stamm.cjs), `window.__dokuOf` (ungestrippt, für Marker im Kommentar) und `window.__fehlt(fn, re)` (true = das Muster
@@ -1129,6 +1132,7 @@ module.exports = {
     startProc,
     eigenePorte,
     sleep,
+    laufUhr,
     hauptLauf,
     waitFor,
     werkbankTor,
@@ -1260,7 +1264,7 @@ async function selbsttest() {
         );
     const schlaefer = code.filter(([, c]) => schlafZwilling(c)).map(([f]) => f).join(", ");
     const SCHLAF_FREMD =
-        "ci-kopf.cjs, diag-fahr-leben.cjs, diag-koerper-stand.cjs, diag-persistence.cjs, diag-settlement.cjs, diag-studio-huelle.cjs, lib/kreatur-proben.cjs, werkbank.cjs";
+        "ci-kopf.cjs, diag-koerper-stand.cjs, diag-persistence.cjs, diag-settlement.cjs, lib/kreatur-proben.cjs, werkbank.cjs";
     const geschlafen = [
         "await new Promise((r) => setTimeout(r, 50));",
         "const s = (ms) => new Promise((ok) => { setTimeout(ok, Math.max(ms, 1) * Math.random()); });",

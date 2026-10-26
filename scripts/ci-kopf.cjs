@@ -42,7 +42,8 @@ function kopfUrteil({ ereignis, eigenerLauf, laeufe, jobsJe, gewartet = [] }) {
 // die Läufe, neueste zuerst, OHNE Filter der API: `nimm` wählt, `seit` endet; eine kurze Seite
 // wird bis 3× neu gefragt — sonst ROT, nie leer.
 async function alleLaeufe(api, pfad, { nimm = () => true, seit = 0, hoechstens = Infinity, traegt = (rs) => rs.length > 0, pause = 2000 } = {}) {
-    const [out, je, neu] = [[], 100, (x) => new Date(x.created_at) >= seit];
+    // 30 je Seite: die Läufe-Liste mit 100 je Seite riss bei GitHub wiederholt mit 502 (26.10.: z40 zweimal, bewohner-gesetz einmal)
+    const [out, je, neu] = [[], 30, (x) => new Date(x.created_at) >= seit];
     let [gesamt, gelesen] = [0, 0];
     for (let seite = 1; ; seite++) {
         let r;
@@ -59,12 +60,12 @@ async function alleLaeufe(api, pfad, { nimm = () => true, seit = 0, hoechstens =
     }
 }
 
-// die EINE Anfrage an die API (Kopf-Richter und ci-zeiten): ein 5xx oder ein Abriss ist ein Wackler, bis 3 Versuche; sonst ROT
+// die EINE Anfrage an die API (Kopf-Richter und ci-zeiten): ein 5xx oder ein Abriss ist ein Wackler, bis 5 Versuche (3, 6, 9, 12 s); sonst ROT
 function apiMit(basis, token) {
     const api = async (p, v = 1) => {
         const kopf = { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } };
         const r = await fetch(basis + p, kopf).catch((e) => (v < 3 ? null : Promise.reject(e)));
-        if ((!r || r.status >= 500) && v < 3) return new Promise((ok) => setTimeout(ok, 2000 * v)).then(() => api(p, v + 1));
+        if ((!r || r.status >= 500) && v < 5) return new Promise((ok) => setTimeout(ok, 3000 * v)).then(() => api(p, v + 1));
         if (!r.ok) throw new Error(`${p}: ${r.status} ${await r.text()}`);
         return r.json();
     };

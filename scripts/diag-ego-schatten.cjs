@@ -29,7 +29,7 @@
 //   node scripts/diag-ego-schatten.cjs [--selftest]   (npm run gate:ego-schatten; Port EGO_SCHATTEN_PORT, 4398)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, selbsttestEnde, laufUhr } = require("./lib/welt-boot.cjs");
 
 const IOU_SOLL = 0.9; // der Ego-Schatten deckt den der 3rd-Person (dieselbe Pose)
 const WURF_MIN = 400; // Bildpunkte: so viel Schatten wirft der Leib auf der Bühne mindestens (192×108)
@@ -518,8 +518,7 @@ function buehne(arg) {
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 180 });
     let out = null;
-    const T0 = Date.now();
-    const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
+    const log = laufUhr();
     try {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         await page.evaluate(AUSGABE_INSTALL);

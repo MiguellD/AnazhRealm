@@ -18,7 +18,7 @@
 //   LAUF — kein Spiel-Bild und kein Kehraus-Puffer während der Bühne (der Loop ruht).
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
 "use strict";
-const { statikServer, starteBrowser, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, selbsttestEnde, laufUhr } = require("./lib/welt-boot.cjs");
 const { DIAET_INSTALL, diaetUrteil } = require("./lib/diaet-linse.cjs");
 
 const BILD_SOLL = 0.999; // der Replay zeichnet wie der direkte Pfad
@@ -764,8 +764,7 @@ function buehne() {
         if (/Vendor-Drift/.test(t)) vendorDrift.push(t.slice(0, 200));
     });
     let out = null;
-    const T0 = Date.now();
-    const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
+    const log = laufUhr();
     try {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         // Das erste Weltbild muss stehen: (i) liest die Render-Objekte der Welt, die übrige Bühne ist eine eigene Szene.

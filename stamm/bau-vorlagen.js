@@ -1456,6 +1456,7 @@ class AnazhRealm_bau_vorlagen {
     //   L, k     J/kg und W/(m·K), nur die Zeile eis — Schmelzwärme und Wärmeleitung: mit ρ wächst das Eis nach STEFAN
     //            (h²/2k + h/H = ∫Frost dt / ρL, gelaende-core `eisDicke`)
     //   klang    die Schritt-Spalte des Klang-Kerns (klang:SCHRITT_TIMBRE, ein Zugriff — wer die Zeile ändert, ändert den Schritt)
+    //   E        Pa — die Steifigkeit, aus der ein Treffer klingt (klang trefferPaar; die Metalle lesen MAT.E der Schmiede)
     // Tafel-Werte (Engineering ToolBox, CRC Handbook): Granit c 790, T_schmelz 1 500 K; Holz c 1 700, Zündung 573 K; Eisen c 449,
     // 1 811 K; Bronze 380, 1 223 K; Stahl 490, 1 723 K; Quarz 740, 1 986 K; trockenes Laub, Gras und Kraut c 1 800, Zündung
     // 523–533 K; trockener Boden c 800; Wasser c 4 186, 273,15 K; Eis ρ 917, c 2 050, L 334 000, k 2,2, μ 0,05; Huf und Sohle auf trockenem Fels
@@ -1500,30 +1501,36 @@ class AnazhRealm_bau_vorlagen {
         // Wagen (`_fahrHaft`). Die Stoffe der Leiber tragen keine — unter dem Rad liegt nie Fleisch —, und kraut, die Mahd im
         // Beutel, auch nicht: die Wiese unter Rad, Huf und Schritt ist EINE Zeile, gras. μ des Leibs (`mu`) und μ des Rads sind
         // zwei Paare (Huf auf Fels 0,6, Reifen auf Fels 0,8), je eine Spalte derselben Zeile.
+        // DIE STEIFIGKEIT (halten.K2): E in Pa, der Elastizitäts-Modul — der Treffer klingt aus ihm (klang trefferPaar, Hertz: der
+        // Kontakt zweier Stoffe ist so kurz, wie E* = 1/(1/E₁ + 1/E₂) es erlaubt). Die Metalle lesen MAT.E der Schmiede (null
+        // hier), eine Flüssigkeit trägt ihren Kompressions-Modul. Tafel-Werte (Engineering ToolBox): Granit 50 GPa, Eiche längs
+        // 11 GPa, Quarzglas 72 GPa, Leder 0,2 GPa, kortikaler Knochen 18 GPa, Haut und Gewebe 1 MPa, Keratin (Federn, Schuppen)
+        // 2,5 GPa, Holzkohle 3 GPa, Blatt und Halm 50 MPa, verdichteter Boden 50 MPa, Aluminium (die Hülle) 70 GPa, Wasser
+        // (K) 2,2 GPa, Eis 9 GPa.
         // prettier-ignore
         const SI = {
-            //         μ      c     T_zünd  T_schmelz  μ Rad  nass
-            stein:    [0.6,  790,  null,   1500,      0.8,   0.55],
-            holz:     [0.6,  1700, 573,    null,      0.65,  0.4],
-            eisen:    [0.5,  449,  null,   1811,      0.6,   0.35],
-            bronze:   [0.5,  380,  null,   1223,      0.6,   0.35],
-            stahl:    [0.5,  490,  null,   1723,      0.6,   0.35],
-            quarz:    [0.6,  740,  null,   1986,      0.6,   0.35],
-            leder:    [0.6,  1500, 573,    null,      null,  null],
-            knochen:  [0.5,  1300, null,   null,      null,  null],
-            fleisch:  [0.5,  3500, null,   null,      null,  null],
-            leib:     [0.5,  3500, null,   null,      null,  null],
-            federn:   [0.4,  1500, 573,    null,      null,  null],
-            schuppen: [0.4,  1500, null,   null,      null,  null],
-            glut:     [0.6,  1000, 623,    null,      0.6,   0.45],
-            laub:     [0.4,  1800, 523,    null,      0.45,  0.2],
-            erde:     [0.6,  800,  null,   null,      0.7,   0.45],
-            kraut:    [0.4,  1800, 533,    null,      null,  null],
-            essenz:   [null, 4186, null,   null,      null,  null],
-            blech:    [0.5,  460,  null,   1723,      0.6,   0.35],
-            gras:     [0.6,  1800, 533,    null,      0.4,   0.2],
-            wasser:   [null, 4186, null,   273.15,    null,  null],
-            eis:      [0.05, 2050, null,   null,      null,  null],
+            //         μ      c     T_zünd  T_schmelz  μ Rad  nass  E
+            stein:    [0.6,  790,  null,   1500,      0.8,   0.55, 5e10],
+            holz:     [0.6,  1700, 573,    null,      0.65,  0.4,  1.1e10],
+            eisen:    [0.5,  449,  null,   1811,      0.6,   0.35, null],
+            bronze:   [0.5,  380,  null,   1223,      0.6,   0.35, null],
+            stahl:    [0.5,  490,  null,   1723,      0.6,   0.35, null],
+            quarz:    [0.6,  740,  null,   1986,      0.6,   0.35, 7.2e10],
+            leder:    [0.6,  1500, 573,    null,      null,  null, 2e8],
+            knochen:  [0.5,  1300, null,   null,      null,  null, 1.8e10],
+            fleisch:  [0.5,  3500, null,   null,      null,  null, 1e6],
+            leib:     [0.5,  3500, null,   null,      null,  null, 1e6],
+            federn:   [0.4,  1500, 573,    null,      null,  null, 2.5e9],
+            schuppen: [0.4,  1500, null,   null,      null,  null, 2.5e9],
+            glut:     [0.6,  1000, 623,    null,      0.6,   0.45, 3e9],
+            laub:     [0.4,  1800, 523,    null,      0.45,  0.2,  5e7],
+            erde:     [0.6,  800,  null,   null,      0.7,   0.45, 5e7],
+            kraut:    [0.4,  1800, 533,    null,      null,  null, 5e7],
+            essenz:   [null, 4186, null,   null,      null,  null, 2.2e9],
+            blech:    [0.5,  460,  null,   1723,      0.6,   0.35, 7e10],
+            gras:     [0.6,  1800, 533,    null,      0.4,   0.2,  5e7],
+            wasser:   [null, 4186, null,   273.15,    null,  null, 2.2e9],
+            eis:      [0.05, 2050, null,   null,      null,  null, 9e9],
         };
         const PHASE = { eis: { L: 334000, k: 2.2 } }; // die Spalten L und k (oben): nur das Eis wächst im Kern
         const TB = AnazhRealm._schrittTimbre().material;
@@ -1549,6 +1556,7 @@ class AnazhRealm_bau_vorlagen {
                 muRadNass: si[5],
                 ...PHASE[name],
             };
+            Object.defineProperty(z, "E", { enumerable: true, get: () => (si[6] === null ? sc.MAT[name].E : si[6]) });
             Object.defineProperty(z, "klang", {
                 enumerable: true,
                 get: () => TB[name],

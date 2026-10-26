@@ -14,9 +14,8 @@ const vm = require("vm");
 const stammLib = require("./lib/stamm.cjs");
 const { kanalImVm, bauAbdruck } = require("./lib/asset-worker-harness.cjs");
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
-const { hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
+const { hauptLauf, nullSeite, ROOT } = require("./lib/welt-boot.cjs");
 
-const ROOT = path.resolve(__dirname, "..");
 const argNach = (n) => (process.argv.includes(n) ? process.argv[process.argv.indexOf(n) + 1] : null);
 const SAAT = Number(argNach("--saat")) >>> 0 || Date.now() >>> 0;
 
@@ -285,7 +284,7 @@ async function kanalPruefen() {
 
 // --welt: der Konsum im echten Spiel (Null-Renderer, Foundry warm) — das Werk über den Empfänger, die Leser der Welt bauen.
 async function weltPruefen() {
-    const { statikServer, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+    const { statikServer } = require("./lib/welt-boot.cjs");
     const PORT = Number(process.env.STUDIO_UEBERGABE_PORT || 4453);
     const server = statikServer();
     await server.lausche(PORT);

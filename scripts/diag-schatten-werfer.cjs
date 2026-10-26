@@ -63,7 +63,7 @@
 //       wird rot
 //
 //   node scripts/diag-schatten-werfer.cjs [--selftest]
-const { statikServer, warteAufWelt, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.SCHATTEN_WERFER_PORT || 4577);
@@ -1430,11 +1430,7 @@ function probe(selbsttest) {
 (async () => {
     await server.lausche(PORT);
     const { browser, page } = await nullSeite();
-    let ok = true;
-    const check = (name, cond, detail) => {
-        console.log(`  ${cond ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-        if (!cond) ok = false;
-    };
+    const { errs, check } = pruefer();
     try {
         // Z2 — die Bildziele je Leser im Stamm (GPU-frei, vor dem Boot)
         const z2 = bildZiele();
@@ -1730,6 +1726,6 @@ function probe(selbsttest) {
     }
     await browser.close();
     server.close();
-    console.log(ok ? "GRÜN schatten-werfer" : "ROT schatten-werfer");
-    process.exit(ok ? 0 : 1);
+    console.log(errs.length ? "ROT schatten-werfer" : "GRÜN schatten-werfer");
+    process.exit(errs.length ? 1 : 0);
 })();
