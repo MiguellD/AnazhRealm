@@ -368,3 +368,4 @@
 2026-10-26 15:14:10 takt6-radeon material.K1#2 GRÜN 2.3 · 21/45
 2026-10-26 15:14:59 takt6-radeon schatten.K1#1 GRÜN 0.9 · 22/45
 2026-10-26 15:16:11 takt6-radeon fahrzeug.K3#1 GRÜN 1.2 · 23/45
+2026-10-26 15:18:11 takt6-radeon fahrzeug.K3#2 ROT 2.0 · 24/45
