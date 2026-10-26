@@ -415,7 +415,6 @@ function lauf(k) {
             const haenger = H && {
                 takte: T, namen: H.namen.slice(), probe, k, tMess: [tMess0, performance.now()], kreaturen: st.creatures ? st.creatures.length : 0, wetter: st.weather,
                 chunks: st.voxelChunks ? st.voxelChunks.size : 0,
-                spielerEnde: [st.playerMesh.position.x, st.playerMesh.position.z].map((x) => +x.toFixed(1)),
                 loadScale: st.perfSense ? +st.perfSense.loadScale.toFixed(2) : null,
                 erst: erst0 && Object.assign(Object.fromEntries(ERST.map((x, i) => [x, +((E[x] || 0) - erst0[i]).toFixed(1)])),
                     { offen: E.offen.size }),
