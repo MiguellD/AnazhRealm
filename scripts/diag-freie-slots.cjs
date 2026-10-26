@@ -52,12 +52,12 @@ function quellBefunde(q) {
 
 async function welt() {
     const server = statikServer();
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.evaluateOnNewDocument(installWieseSicht);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000);
     const out = await page.evaluate(async (selbst) => {
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         const o = {};

@@ -345,10 +345,7 @@ async function blickStufe(check) {
     const lauf = async (alt) => {
         const page = await browser.newPage();
         await page.setViewport({ width: 480, height: 270 });
-        await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, {
-            waitUntil: "domcontentloaded",
-            timeout: 60000,
-        });
+        await server.zeige(page, 60000, "index.html?holz=kienspan");
         // H und sein Selbsttest HS in DERSELBEN Seite (eine Maske), VOR den Blicken B; die Seite des
         // alten Culling-Stands (BS) zählt nur Befehle
         let hell = null;
@@ -448,11 +445,11 @@ async function blickStufe(check) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {
         const res = {};

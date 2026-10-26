@@ -10,7 +10,7 @@ class AnazhRealm_speicher_laden {
             if (!state) return false;
         }
         // DIE SPERRE DES LADENS (speicher.K1): bis der letzte Restore lief, ist die Welt halb — jeder Schreiber, der in ihr
-        // ruft (die Stoff-Setter der Seele riefen neunmal vor den Bauten), wartet; danach schreibt EIN saveState die ganze.
+        // ruft (die Stoff-Setter der Seele riefen neunmal vor den Bauten), wartet; danach schreibt EIN Stand die ganze (im nächsten Leerlauf).
         const sperre = (this._ladeSperre = { verlangt: false });
         try {
             this._loadStateRestorePlayerPosition(state);
@@ -70,7 +70,9 @@ class AnazhRealm_speicher_laden {
         } finally {
             this._ladeSperre = null;
         }
-        if (sperre.verlangt) this.saveState();
+        // die Lade-Sicherung im nächsten Leerlauf-Fenster (Takt): der Boot trägt sie nicht, der Besen hat bis dahin vorgebacken —
+        // stirbt die Seite davor, liegt der geladene Stand noch ganz auf der Platte
+        if (sperre.verlangt) this._imLeerlauf(() => this.saveState(true), 2000);
         return true;
     }
 
@@ -908,11 +910,15 @@ class AnazhRealm_speicher_laden {
         if (!worldId) return { ok: false, reason: "keine worldId" };
         try {
             const json = JSON.stringify(welt);
-            const at = Date.now(); // EIN Stempel für das Abbild und den atomaren Stand in IndexedDB (wie saveState)
-            this._idbPutWorld(worldId, json, at);
+            const at = Date.now(); // EIN Stempel für den Platz und den atomaren Stand in IndexedDB (der Speicher-Faden schreibt)
+            // DIE REIHENFOLGE: der Platz mit Probe, dann die Platte, zuletzt Index und Zeiger — wirft der Platz (Quota), erreicht
+            // die Welt weder IndexedDB noch den Zeiger (bis speicher-gate schrieb der Faden sie vor der Probe: eine gescheiterte
+            // Ablage lag als Waise in IndexedDB, unter der Id einer lebenden Welt über deren Stand)
             localStorage.setItem(this.worldStorageKey(worldId), json);
             if (localStorage.getItem(this.worldStorageKey(worldId)) !== json)
                 return { ok: false, reason: "der Speicher trägt andere Bytes" };
+            this._speicherAuftrag({ op: "ablegen", welt: worldId, at, json }, [], false);
+            if (this._speicher && this._speicher.welt === worldId) this._speicher.welt = null; // der Faden hält ihr Modell nicht mehr
             this.worldsIndexUpsert({
                 worldId,
                 slug: m.slug || "",
@@ -933,7 +939,9 @@ class AnazhRealm_speicher_laden {
     // alten im Platz der neuen) oder setzte den Aktiv-Zeiger auf die alte zurück (der Beitritt durchs Adress-Portal und die
     // „Neue Welt" verschwanden still). DIE EINE SPERRE: der Edit-Timer fällt, `saveState` — jeder Speicher-Weg der lebenden
     // Welt geht durch ihn — verweigert, der Zeiger zeigt auf die Ziel-Welt. Rufer: jeder Welt-Wechsel (Neue Welt, Wechsel,
-    // daneben-und-springen, Fusion, die Tür `_weltBetreten`, der Beitritt per Einladung und Adress-Portal).
+    // daneben-und-springen, Fusion, die Tür `_weltBetreten`, der Beitritt per Einladung und Adress-Portal). Der Reload wartet
+    // auf den Speicher-Faden: alles Gesendete ist fest, und die verlassene Welt liegt als Platz (`_speicherVerlassen`) — ein
+    // Reload vorher bräche seine Transaktion ab.
     _weltWechselNeuLaden(zielId) {
         this._weltWechselSperre = true;
         if (this._editSaveTimer) {
@@ -941,8 +949,16 @@ class AnazhRealm_speicher_laden {
             this._editSaveTimer = null;
         }
         if (zielId) this.activeWorldSet(zielId);
-        if (typeof window !== "undefined" && window.location && typeof window.location.reload === "function")
-            window.location.reload();
+        const neu = () => {
+            if (typeof window !== "undefined" && window.location && typeof window.location.reload === "function")
+                window.location.reload();
+        };
+        this._speicherVerlassen()
+            .then(() => this._speicherStill())
+            .then(neu, (e) => {
+                this.log(`Der Speicher-Faden schloss die verlassene Welt nicht ab (${e.message}).`, "ERROR");
+                neu();
+            });
     }
 
     // Globaler localStorage-Key `anazhRealmVersions` (versionsHistory ist nicht
@@ -1679,11 +1695,14 @@ class AnazhRealm_speicher_laden {
             return { ok: false, reason: `unbekannte Strategie: ${strategy}` };
         }
         // Führt die Fusion in die neue Welt (reload), sichert sich die Welt der Seite zuerst — ihr Fortschritt seit dem
-        // letzten Autosave fiele sonst hinter die Sperre des Welt-Wechsels (und ist sie ein Elternteil, liest die Fusion
-        // so ihren jetzigen Stand).
-        if (reload && this.state.worldMeta && this.state.worldMeta.worldId) this.saveState();
-        const rawA = localStorage.getItem(this.worldStorageKey(idA));
-        const rawB = localStorage.getItem(this.worldStorageKey(idB));
+        // letzten Autosave fiele sonst hinter die Sperre des Welt-Wechsels. Die lebende Welt liegt nicht auf ihrem Platz (der
+        // Speicher-Faden schreibt sie nach IndexedDB): ist sie ein Elternteil, ist ihr Stand der der Seite.
+        const hier = this.state.worldMeta && this.state.worldMeta.worldId;
+        if (reload && hier) this.saveState();
+        const roh = (id) =>
+            id === hier ? JSON.stringify(this.buildStateSnapshot()) : localStorage.getItem(this.worldStorageKey(id));
+        const rawA = roh(idA);
+        const rawB = roh(idB);
         if (!rawA || !rawB) {
             return { ok: false, reason: "Eltern-Welt nicht im Speicher" };
         }

@@ -40,7 +40,7 @@ function urteil(z) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 1800000, dumpio: false });
     // Was der Browser-Prozess über seinen GPU-Prozess sagt (Absturz, Watchdog, Verlust), reist ins Log.
     {
@@ -93,7 +93,7 @@ function urteil(z) {
     await page.evaluateOnNewDocument((dorfZug) => {
         if (dorfZug === false) window.__anazhAutoSettlement = false;
     }, ORT.dorfZug);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000);
     const res = await page.evaluate(
         async (k) => {
             const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

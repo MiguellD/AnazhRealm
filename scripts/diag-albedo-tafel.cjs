@@ -94,14 +94,14 @@ async function aktion(page, a) {
 
 async function messeLabor({ echt, nur, tafel }) {
     const server = statisch();
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const b = await browser(echt);
     const out = { labor: {}, karten: {}, eichung: { labor: {} }, geraet: null };
     try {
         for (const [sid, S] of Object.entries(AT.STUDIOS)) {
             if (nur && !nur.includes(sid)) continue;
             const page = await b.newPage();
-            await page.goto(`http://127.0.0.1:${PORT}/${S.pfad}`, { waitUntil: "load", timeout: 120000 });
+            await server.zeige(page, 120000, S.pfad, "load");
             await page.evaluate(AT.LABOR_INSTALL);
             // die Bereitschaft fragt Node je 300 ms (die strenge CSP der Seiten erlaubt new Function nur im Aufruf von außen)
             const bereit = (S) => {
@@ -163,13 +163,13 @@ async function laborLaub() {
     const LL = require("./lib/licht-linsen.cjs");
     const S = AT.STUDIOS.terrain;
     const server = statisch();
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const b = await browser(argv.includes("--echt"));
     const labor = {};
     const welt = opt("--welt") ? JSON.parse(fs.readFileSync(path.resolve(opt("--welt")), "utf8")).welt : null;
     try {
         const page = await b.newPage();
-        await page.goto(`http://127.0.0.1:${PORT}/${S.pfad}`, { waitUntil: "load", timeout: 120000 });
+        await server.zeige(page, 120000, S.pfad, "load");
         await page.evaluate(AT.LABOR_INSTALL);
         for (const art of String(opt("--laub", "eiche,birke") || "eiche,birke").split(",")) {
             await aktion(page, { klick: `#ui [data-p="${art}"]` });
@@ -409,11 +409,11 @@ roh.position.x = -0.8; gesetz.position.x = 0.8; subject.add(roh); subject.add(ge
 window.__bereit = true;
 </script>`,
     });
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const b = await browser(false);
     try {
         const page = await b.newPage();
-        await page.goto(`http://127.0.0.1:${PORT}/__albedo_selbst.html`, { waitUntil: "load", timeout: 60000 });
+        await server.zeige(page, 60000, "__albedo_selbst.html", "load");
         await page.waitForFunction(() => window.__bereit === true, { timeout: 30000 });
         await page.evaluate(AT.LABOR_INSTALL);
         const S = { szene: "scene", renderer: "renderer", wurzel: "subject", ausgabe: null };

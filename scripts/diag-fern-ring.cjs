@@ -45,11 +45,11 @@ const server = statikServer();
 
 (async () => {
     console.log("=== FERN-RING (STUFE 2) — Browser, Null-Renderer + Hook ===");
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse", frist: 240000 });
     const page = await browser.newPage();
     await nullRenderer(page);
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {
         const res = {};

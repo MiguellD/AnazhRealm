@@ -40,7 +40,7 @@ const server = statikServer();
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     await nullRenderer(page);
@@ -48,7 +48,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
     // das Holz der Mess-Wiese ist „voll" (Ring 4): seit die Holz-Wahl auf dem WebGL2-Rückfall den GL-Renderer fragt,
     // wählt swiftshader kienspan (Ring 2) — die Karten-Zone trüge dann 18 statt ≥ 100 Bäume, A wäre vakuös. Der Null-
     // Renderer baut kein Programm: „voll" kostet hier nichts.
-    await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=voll`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000, "index.html?holz=voll");
 
     const out = await page.evaluate(async () => {
         const res = {};

@@ -81,11 +81,11 @@ async function gegendruck([name, spaet]) {
     }
     console.log("=== SELBST-TEST: die GPU-Fehler-Linse nennt den Draw ohne Vertex-Slot beim Namen ===");
     const server = statikServer({ seiten: { "/": "<!doctype html><title>gpu-fehler</title>" } });
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "linse" });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
-    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: "domcontentloaded" });
+    await server.zeige(page, undefined, "");
     const out = await page.evaluate(probe);
     // DIE ABGABE, Stillstand 1,5 s: 3 s spät, aber laufend abgegeben, wartet sie; ohne Bild nennt sie das Bild; hängt
     // ein Gerät, während ein zweites weiter abgibt, nennt sie das hängende

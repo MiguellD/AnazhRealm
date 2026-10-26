@@ -3056,9 +3056,8 @@ class AnazhRealm_gelaende_chunks {
             const maxCZ = Math.floor((z + reich) / span) + 1;
             for (let cx = minCX; cx <= maxCX; cx++) for (let cz = minCZ; cz <= maxCZ; cz++) this._wakeWaterCA(cx, cz);
         }
-        // Persistenz debounced (~1.2 s nach dem letzten Hit): `saveState()` baut den VOLLEN Snapshot +
-        // JSON.stringify + synchrones localStorage.setItem — je Carve-Hit ein Ruckler. Der Edit liegt schon
-        // in `worldMeta.voxelEdits`; World-Switch/Beforeunload/andere Saves flushen sofort.
+        // Persistenz debounced (~1.2 s nach dem letzten Hit): der nächste Stand reicht dem Speicher-Faden die neuen Edits als
+        // Anhang. Der Edit liegt schon in `worldMeta.voxelEdits`; jeder andere Save nimmt ihn sofort mit.
         this._scheduleEditSave();
         return true;
     }

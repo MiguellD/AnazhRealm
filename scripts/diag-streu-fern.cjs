@@ -49,12 +49,12 @@ const server = statikServer();
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     await nullRenderer(page);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(page, 60000);
 
     const out = await page.evaluate(async () => {
         const res = {};
@@ -638,7 +638,7 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
             };
         }, 5);
     });
-    await hPage.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await server.zeige(hPage, 60000);
     const h = await hPage.evaluate(async (KALT) => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const H = window.__buchHalt;

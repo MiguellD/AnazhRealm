@@ -2128,14 +2128,13 @@ function zeile(o) {
         const lauf = async (inj, phasen, platz) => {
             const z = { patch: inj && BASIS[inj] ? BASIS[inj] : null, fehler: [], angewandt: new Set() };
             platz.z = z;
-            const PORT = platz.port;
             // je Lauf ein eigener Browser-Kontext: kein Speicherstand (Save, IndexedDB) des Vorlaufs reist in die nächste
             // Welt (ein gespeichertes Dorf stünde sonst unter dem neu gegründeten)
             const kontext = await browser.createBrowserContext();
             const page = await kontext.newPage();
             page.setDefaultTimeout(880000);
             if (!BILD) await nullRenderer(page);
-            await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 180000 });
+            await platz.server.zeige(page, 180000, "index.html", "networkidle0");
             await warteAufWelt(page, 180000);
             await page.evaluate(() =>
                 window.__weltStehtNach(() => {
@@ -2160,10 +2159,9 @@ function zeile(o) {
             let naechster = 0;
             const arbeiter = async (k) => {
                 // der Platz k: EIN Server, der den Patch der Welt liefert, die gerade auf ihm fährt
-                const platz = { z: null, port: 0 };
+                const platz = { z: null };
                 const server = machServer(platz);
-                await new Promise((r) => server.listen(PORT_BASIS ? PORT_BASIS + k : 0, "127.0.0.1", r));
-                platz.port = server.address().port;
+                platz.server = await server.lausche(PORT_BASIS ? PORT_BASIS + k : 0);
                 try {
                     while (naechster < auftraege.length) {
                         const i = naechster++;
