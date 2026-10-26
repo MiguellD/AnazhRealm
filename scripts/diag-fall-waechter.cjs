@@ -49,6 +49,8 @@ const {
     sleep,
     hauptLauf,
     pruefer,
+    taeterFaelle,
+    selbsttestEnde,
 } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
@@ -450,16 +452,7 @@ function selbsttest() {
         ["Ring ohne Edit", (b) => delete b.turm2[3].ring.takte, /\(B2 Fels Third\) FERN-RING OHNE EDIT/],
         ["Ring zu spät", (b) => (b.turm2[5].ring.takte = 90), /\(B2 Brücke Third\) FERN-RING ZU SPÄT: 1\.50 s/],
     ];
-    for (const [name, tat, muss] of faelle) {
-        const b = klon();
-        tat(b);
-        const v = urteil(b);
-        check(
-            `Selbsttest „${name}" → ${muss ? "rot" : "grün"}`,
-            muss ? v.some((x) => muss.test(x)) : !v.length,
-            v.join(" · ")
-        );
-    }
+    taeterFaelle(faelle, urteil, { fehler: errs, klon });
     // die Quellen-Wand am Stamm (grün), an einer Kopie mit dem alten Leser im Körper-Schritt, einem unbenannten Leser der
     // Oberkante an einem Leib und einem veralteten Namen (rot, je beim Namen)
     const stamm = stammLib.text(root);
@@ -483,11 +476,7 @@ function selbsttest() {
         /VERALTET: _nieGelesen ist benannt/,
     ])
         check(`Quellen-Wand an der Kopie → ${muss}`, muss.test(an), an);
-    if (errs.length) {
-        console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + errs.join(" · "));
-        process.exit(1);
-    }
-    console.log("\n✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.");
+    selbsttestEnde(errs);
 }
 
 if (process.argv.includes("--selftest")) {

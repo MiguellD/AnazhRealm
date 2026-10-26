@@ -346,8 +346,8 @@ async function checkBandHydrosphere(ctx) {
     }
 
     // ### Wasser-Klang ###
-    // Das Ohr hört das Wasser über den Hör-Ring (klang:UMWELT.ohr): je Punkt nass (Boden unter dem Spiegel) und
-    // Strömung (`_waterFlowAt`); der Wasserfall der Region über `_hydroFor`. Die Mischung des Gesetzes macht daraus
+    // Das Ohr hört das stille Wasser über den Hör-Ring (klang:UMWELT.ohr: je Punkt nass, Boden unter dem Spiegel), den Fluss
+    // aus dem Kanal (`_hydroDistAt` + `_waterFlowAt`); der Wasserfall der Region über `_hydroFor`. Die Mischung des Gesetzes macht daraus
     // Pegel — nah hörbar, 5 km fern stumm. Der Ring wird hier einmal ganz gefegt (der Takt fegt ohr.probenJeFrame).
     const voxelV943e = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
@@ -415,7 +415,7 @@ async function checkBandHydrosphere(ctx) {
         const zahl = (v) => (v > -900 ? v.toFixed(1) : "−∞");
         check("Welle 5 Klang: Symphonie + Klang-Welt aktiv (initSymphony headless)", e.symphonyOn);
         check(
-            "Welle 5 Klang: der Hör-Ring hört den Fluss (nah über der Hörschwelle, 5 km fern stumm)",
+            "Welle 5 Klang: das Ohr hört den Fluss (nah über der Hörschwelle, 5 km fern stumm)",
             e.hasRiver === true && e.flussNah >= e.schwelle && e.flussFern < e.schwelle,
             `nah=${zahl(e.flussNah)} dB fern=${zahl(e.flussFern)} dB`
         );
