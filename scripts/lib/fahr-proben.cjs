@@ -159,6 +159,16 @@ async function probeLeben(expected) {
     // Wind am Wagen misst sein eigenes Gesetz (wetter.K5). Fehlt das Glied, ruft die Probe den Täter beim Namen.
     if (!r._fahrWind) throw new Error("Windstille: _fahrWind fehlt");
     r._fahrWind = () => ({ x: 0, z: 0 });
+    // DIE TROCKENHEIT (Fixture der ganzen Probe, wie die Windstille): der erste Takt der Seite zieht das Wort der Front am Ort
+    // zur Welt-Uhr (feld.K2#2) — an der Mess-Wiese zur Uhr 0 Regen; die Nässe senkt die Haftung am Rad (`_fahrHaft`) und geht
+    // mit der Welt-Uhr, nie im Sim-Schritt: S4 hob nicht ab (0,08 m über dem Grund), L8 ging ab Schritt 1 auseinander (0,10 m).
+    // Das Wort des Spielers hält Sonne und Trockenheit über den EINEN Schreiber; die Nässe am Rad misst die Kette W (feld.K1).
+    const wetter = (wort, s) => {
+        r._setWeather(wort, "human");
+        st.weatherTransition = null; // der Übergang fällt: das Wort steht ab diesem Takt
+        r._naesseTakt(s);
+    };
+    wetter("sunny", 1e6);
     const aufraeumen = () => {
         delete r._loopFixedStep;
         delete r._stepFixedSim;
@@ -395,11 +405,6 @@ async function probeLeben(expected) {
     const kette = async (K) => {
         const [P0, bV, out] = [Object.getPrototypeOf(r), VC.FAHR.schritt.bremsV, {}];
         await ankommen(start.x, start.z);
-        const wetter = (wort, s) => {
-            r._setWeather(wort, "human");
-            st.weatherTransition = null; // der Übergang des Bilds läuft auf der Wanduhr
-            r._naesseTakt(s);
-        };
         const bremse = async () => {
             const e = await gtAmStart();
             if (!e || !e._fahr) return {};
@@ -453,7 +458,6 @@ async function probeLeben(expected) {
         await lage("wegNass", "stormy");
         wetter("sunny", 1e6);
         out.labor = await weltLabor();
-        r._wetterFreigeben("human");
         return out;
     };
     if (expected.nurKette) {
