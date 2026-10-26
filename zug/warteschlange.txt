@@ -83,3 +83,4 @@ z32k-gtx 2 punkte sha=034952a73bccedeef17cef819f8b8cfe3c7900a1 geraet=gtx
 b-ankunft-a 3 station sha=d43cb61c78fdf982d2f43378ecef3f11ea2e2a0b lauf=ankunft-kalt.sh
 b-ankunft-b 3 station sha=68086befac73c07b5a413907d2c24303bb894a25 lauf=ankunft-kalt.sh
 z32-abab 1 abab A=d43cb61c78fdf982d2f43378ecef3f11ea2e2a0b B=83df2052d84b370158b28048ca90fb5f5f2ab30f zellen=w-ego,d-ego,stadt
+z35-abab 1 abab A=83df2052d84b370158b28048ca90fb5f5f2ab30f B=8dff8f1545ebe3abd917982789cd8f008d250224 zellen=w-ego,d-ego,stadt
