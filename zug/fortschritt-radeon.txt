@@ -133,3 +133,4 @@
 2026-10-26 06:54:27 takt4-nach klang.K4#1 GRÜN 1.4 · 2/2
 2026-10-26 06:54:32 takt4-nach ENDE 1 grün / 1 rot · 29.3 min
 2026-10-26 07:30:09 takt5-headless START 74 Stationen
+2026-10-26 07:30:59 takt5-headless gelaende.K4#1 GRÜN 0.8 · 1/74
