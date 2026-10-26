@@ -270,3 +270,4 @@
 2026-10-26 14:22:57 takt6-radeon START 45 Stationen
 2026-10-26 14:23:00 takt6-headless START 75 Stationen
 2026-10-26 14:23:41 takt6-headless gelaende.K4#1 GRÜN 0.7 · 1/75
+2026-10-26 14:24:18 takt6-headless gelaende.K1#1 GRÜN 1.3 · 2/75
