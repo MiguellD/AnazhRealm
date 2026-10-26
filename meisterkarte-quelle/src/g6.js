@@ -69,7 +69,7 @@ module.exports = {
       ],
       feststeck: {
         versucht: "GTX kalt: 28 s am 13.10., 16,6 s am 18.10., 15,87 s am 19.10., 15,25 s am 20.10. (b-blick), 15,33 s an 8ba1510d (Bündel 2 mit b-strom-faden und b-programme) — ≥ 8 Wellen (K30, B4, B5, b-wald, b-blick, B-Plan, b-strom-faden, b-programme), jede zog 0,3–1 s ab, keine brachte einen Punkt. Der B-Plan rechnet selbst eine Untergrenze von ≈ 8 s ohne Strukturwechsel, und freie Haupt-Faden-Zeit wird nur zu ≤ 0,35 in ein früheres Bild umgesetzt; der Richter liest die Eigenmeldung.",
-        anders: "Nicht schneller bauen, sondern bei der Ankunft nicht bauen. Der Programm-Abdruck (H2) ist gemessen und trägt so nicht (Gerät erst nach dem Buch, ≤ 0,3 s); offen bleiben die Welt-Arbeit auf einem zweiten Faden (Streaming H4, Spike 1 Tag: EINE Streu-Region im Worker, Zahl = Haupt-Faden-ms und t(Bild) an der GTX). Ehrlich in Prozent: erst alle drei zusammen (B-Plan, Abdruck, Welt-Faden) reichen rechnerisch an 5 s auf der GTX; und der Richter misst von außen (Messschuld M10)."
+        anders: "Nicht schneller bauen, sondern bei der Ankunft nicht bauen. Der Programm-Abdruck (H2) ist gemessen und trägt so nicht (Gerät erst nach dem Buch, ≤ 0,3 s); offen bleiben die Welt-Arbeit auf einem zweiten Faden (Streaming H3, Spike 1 Tag: EINE Streu-Region im Worker, Zahl = Haupt-Faden-ms und t(Bild) an der GTX). Ehrlich in Prozent: erst alle drei zusammen (B-Plan, Abdruck, Welt-Faden) reichen rechnerisch an 5 s auf der GTX; und der Richter misst von außen (Messschuld M10)."
       }
     },
     {
@@ -133,7 +133,6 @@ module.exports = {
       hebel: [
         { name: "Die Lücken-Linse am Spieler-Weg ROT, dann EIN Rang Zeit bis Bedarf (fahrt-vorausschau 1bb06b4e einfädeln)", k: ["streaming.K1+1", "streaming.K2+1"], t: [2, 3], wurzel: "`stamm/studio-bruecke.js:_foundryRang` (`:772`) als EINE Quelle; Leser `stamm/gelaende-chunks.js:_tickVoxelChunkStreaming` (`:2530`; Voraus = Abstand entlang der Bahn ÷ Tempo statt fest 1–2 Chunks), `stamm/gelaende-boden.js:_voxelChunkLodFor` (`:2587`), `stamm/vegetation-baum.js:_tickPendingVegSpawns` (`:2041`), `stamm/vegetation-streu.js:_scatterPass` (`:635`). Vorausschau entlang des Gesetzes (Wegenetz, Gelände), nicht entlang des Tempo-Vektors.", pflicht: "B · E", v1: true },
         { name: "Grob zuerst, fein danach", k: ["streaming.K2+1"], t: [1, 1], wurzel: "`stamm/gelaende-chunks.js:_tickDirtyVoxelChunks` (`:2826`, bisher EIN Einbau je Takt) und `_voxelChunkLodFor`: die Ankunftszeit wählt die Stufe, weit voraus kommt erst die Grobstufe.", pflicht: "E", v1: true },
-        { name: "Die Hydrosphäre in den Faden, das Instrument am Empfang (der Chunk im Faden steht seit 85801a46)", k: ["streaming.K4+1", "streaming.K5+1"], t: [1, 1.5], wurzel: "`stamm/wasser-hydro.js:_computeHydrosphere` (`:54`) → `voxel-worker.js` vor dem ersten Chunk (Lehre 14, S5); Zähler am onmessage.", pflicht: "B", v1: true },
         { name: "Der Welt-Faden: alles, was Geometrie oder Platzierung rechnet, rechnet im Worker (Spike 1 Tag zuerst)", k: ["streaming.K3+2", "streaming.K4+1", "ankunft.K1+1"], t: [8, 12], wurzel: "Aus `stamm/dirigent-takt.js:_runFrameScheduler` (`:1257`) wandern nach `voxel-worker.js` (dort laufen gelaende-core und phyto-core schon): `_ensureVoxelChunkAt`-Geomorph (0,86 s), `_tickFernRing` (0,69 s), `_naturSetzen`-Skelett (0,59 s), `_forestPlantChunk` (0,36 s), `_rebuildVoxelChunk` (0,33 s), `_tickScatterLod` (0,26 s), `_scatterPass` (1,22 s); der Haupt-Faden lädt nur Transfer-Puffer hoch. Der Welt-Faden, kein Render-Worker: ein Render-Worker bräuchte einen Proxy-Zwilling jedes three-Objekts.", pflicht: "B · E", v1: true }
       ],
       feststeck: {
@@ -335,7 +334,7 @@ module.exports = {
         }
       ],
       hebel: [
-        { name: "Änderung statt Abbild, gespeichert im Worker", k: ["speicher.K2+1", "speicher.K3+2"], t: [3, 4], wurzel: "Der Save-Ruf kostet am Kopf 6cfce28a p95 14,6, max 18,8 ms (Radeon, M35) und p95 28,1 ms (GTX, M30) im Haupt-Faden. `stamm/dienst.js:saveState` (`:1177`) und `stamm/speicher-welten.js:buildStateSnapshot` (`:791`) werden ein Änderungs-Journal je Domäne (Edits, Bauten, Leib, Inventar), gemeldet an der Schreib-Stelle; Verdichten und Schreiben (IDB oder OPFS) übernimmt der Worker; der localStorage-Spiegel fällt als Zwilling.", pflicht: "E", v1: true }
+        { name: "Änderung statt Abbild, gespeichert im Worker", k: ["speicher.K2+1", "speicher.K3+1"], t: [3, 4], wurzel: "Der Save-Ruf kostet am Kopf 6cfce28a p95 14,6, max 18,8 ms (Radeon, M35) und p95 28,1 ms (GTX, M30) im Haupt-Faden. `stamm/dienst.js:saveState` (`:1177`) und `stamm/speicher-welten.js:buildStateSnapshot` (`:791`) werden ein Änderungs-Journal je Domäne (Edits, Bauten, Leib, Inventar), gemeldet an der Schreib-Stelle; Verdichten und Schreiben (IDB oder OPFS) übernimmt der Worker; der localStorage-Spiegel fällt als Zwilling.", pflicht: "E", v1: true }
       ],
       feststeck: {
         versucht: "Kein Wellen-Feststecken: der Server-Pfad ist bewiesen und wurde als Beweis des Spieler-Pfads gelesen — der Spieler über den Link hat keinen save-server.",

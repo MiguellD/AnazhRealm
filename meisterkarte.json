@@ -256,21 +256,6 @@
           "v1": true
         },
         {
-          "name": "S5: dichte, spalte und Wasser-Spiegel in den Kern (der Rest von W1)",
-          "bewegt": [
-            "gelaende.K1+1"
-          ],
-          "punkte": 1,
-          "tage": [
-            4,
-            6
-          ],
-          "p_je_tag": 0.2,
-          "wurzel": "`gelaende-core.js` + `stamm/gelaende-boden.js:914/955/1003`, `stamm/wasser-hydro.js:54/760`, `voxel-worker.js:462-795/1120`; die Abschrift fällt im selben Commit, gate:worker-dichte prüft gegen den Kern.",
-          "pflicht": "B (die Hydrosphäre, ≈ 0,5 s synchron in dom-fertig, wandert in den Worker)",
-          "v1": true
-        },
-        {
           "name": "Wasser-Bild an allen 12 Posen: Strömungs-Normalen aus den Bahnen, Schaum aus Gefälle × A",
           "bewegt": [
             "gelaende.K3+1"
@@ -284,26 +269,11 @@
           "wurzel": "Erst Messschuld M1 (Ist in Ausgabe-Größe), dann der Schnitt im EINEN Baustein `_wasserBlick` (`stamm/wasser-hydro.js:1538`): zwei phasenversetzte Normalen-Lagen aus `flussLaeufe` (`gelaende-core.js:1177`).",
           "pflicht": "A (wasser)",
           "v1": true
-        },
-        {
-          "name": "EIN Wasser-Spiegel überall: jeder Lauf endet in See oder Meer, die Strömung treibt (der Rest nach wasser-leser)",
-          "bewegt": [
-            "gelaende.K4+1"
-          ],
-          "punkte": 1,
-          "tage": [
-            1,
-            1.5
-          ],
-          "p_je_tag": 0.8,
-          "wurzel": "Die Leser folgen der Kern-Mutation an einem Ort (wasser-leser 66e114de, K12 M 10 von 10 je 50/50); der Rest: die Mutation an Zufalls-Orten der ganzen Welt, jeder Lauf aus `flussLaeufe` (`gelaende-core.js`) endet in See oder Meer, der Spiegel steigt stromab nie, die Strömung (gate:kopplung F1) treibt Schwimmer, Boot und Tier > 0,5 m in 90 Takten; die Mutation prüft heute nur Wasser hinzu, `_landAt` trägt das Gesetz dazu.",
-          "pflicht": "—",
-          "v1": false
         }
       ],
       "feststeck": {
         "versucht": "W1 und S5 stehen seit 18.10. als Plan in der SYSTEMKARTE, F2a seit dem Schöpfer-Fund vom 17.10.; am main f2904a72 trägt der 48er-Kegel weiter an vier Stellen (`stamm/gelaende-boden.js:1201/1240`, `voxel-worker.js:612/734`). Die 37 Commits seit 01.10. mit S5 im Namen gehören zur Frost-Wand einer Linse (Namens-Kollision), keiner zum 3D-Gesetz. Der Wasser-Punkt stieg einmal am Lineal statt am Wasser (A13).",
-        "anders": "Vom Verbraucher her statt Großumzug zuerst: editForm wird eine Hülle im Kern, den der Worker schon lädt (Bauen H1, hoch-bauen 9d987a93 als Byte-Referenz) — F2a fällt ganz, und dieselbe Bahn trägt danach dichte und Spiegel (H2). Punkte nur mit Welt-Byte."
+        "anders": "Vom Verbraucher her statt Großumzug zuerst: editForm wird eine Hülle im Kern, den der Worker schon lädt (Bauen H1, hoch-bauen 9d987a93 als Byte-Referenz) — F2a fällt ganz, und dieselbe Bahn trägt danach dichte und Spiegel (K1). Punkte nur mit Welt-Byte."
       }
     },
     {
@@ -371,21 +341,6 @@
       ],
       "hebel": [
         {
-          "name": "Wetter als Kern-Feld wetterAt(saat, x, z, t) ⊕ Akte",
-          "bewegt": [
-            "wetter.K1+1"
-          ],
-          "punkte": 1,
-          "tage": [
-            2,
-            2
-          ],
-          "p_je_tag": 0.5,
-          "wurzel": "`phyto-core.js:3289` WX_GESETZ wird eine Funktion: Fronten als Rausch-Zellen der Saat, die mit `_windDirAt` driften; Leser `stamm/bild-himmel.js:2614` `_weatherFieldFor(x,z)`.",
-          "pflicht": "—",
-          "v1": false
-        },
-        {
           "name": "Die Nässe ganz: Pfützen in den Mulden, Glanz im Bild, Trocken-Kurve, beide Geräte (Zustand, Dach und Stoff stehen seit naesse)",
           "bewegt": [
             "wetter.K2+1"
@@ -429,21 +384,6 @@
           "wurzel": "`gelaende-core.js:1098` schnee(L,y,x,z) → temperaturAt(L,y,saison,uhr) × Niederschlag; die Tiefe als Boden-Schicht unter `_bodenSichtAt`.",
           "pflicht": "—",
           "v1": false
-        },
-        {
-          "name": "Wind vom Gelände geformt, alle Leser",
-          "bewegt": [
-            "wetter.K5+1"
-          ],
-          "punkte": 1,
-          "tage": [
-            1.5,
-            1.5
-          ],
-          "p_je_tag": 0.67,
-          "wurzel": "`stamm/stoff-material.js:158` `_windDirAt` → `_windAt(x,z,t)` mit Lee und Tal-Düse aus Hang und Exposition des Kerns.",
-          "pflicht": "—",
-          "v1": false
         }
       ],
       "feststeck": {
@@ -456,7 +396,7 @@
       "titel": "Physik der Körper — Kontakt, Impuls, Trümmer, Seile, der aktive Leib",
       "gruppe": "physis",
       "punkte": 3,
-      "pfad": "Feature-Stopp bis v1.0 — außer H4 (Kontakt in Fahrt)",
+      "pfad": "Feature-Stopp bis v1.0 — außer H3 (Kontakt in Fahrt)",
       "dateien": "`stamm/kreatur-verhalten.js` (Stoß) · `stamm/koerper-bewegung.js` · `stamm/bau-buch.js` (Ω-PHYSIS) · `koerper-core.js`",
       "aaaa": "Alles, was einen Körper hat, folgt EINEM Körper-Gesetz: Masse = Volumen der Gestalt × Dichte der Stoff-Zeile (SI), Impuls-Tausch mit Stoßzahl je Stoff-Paar, Reibung μ je Stoff-Paar × Nässe, Auftrieb aus der Dichte gegen Wasser — für Spieler, Tier, Wagen, jedes gebaute Teil und jedes lose Ding. Der Spieler stößt ein Fass um, und eine Wand, deren Lastpfad er durchtrennt, stürzt in Trümmer, die liegen bleiben. Die Hängebrücke schwingt, die Fahne flattert im selben Wind wie das Gras. Ein gestoßener Leib fängt sich mit einem Ausfallschritt, ein fallender wird zur Ragdoll und steht wieder auf. 0 Durchdringen bei der Höchstgeschwindigkeit des Spiels; bei 30, 60 oder 144 fps ≤ 1 cm Abweichung nach 200 Schritten; 200 aktive Körper ≤ 1,5 ms CPU an der GTX-CPU. **Wo wir die Besten schlagen:** TotK und Teardown pflegen Masse und Material je Asset; bei uns kommt die Masse aus dem Studio-Gesetz (Volumen des erzeugten Meshes × Stoff-Zeile) — jedes prozedurale Ding ist ab dem ersten Bild physisch, die geschmiedete Klinge, das gebaute Haus, der gewachsene Baum, Labor = Welt.",
       "beste": [
@@ -514,21 +454,6 @@
       ],
       "hebel": [
         {
-          "name": "Gebautes und Gegenstände wiegen: die Stoff-Zeile trägt kg (nach Stoffe H1)",
-          "bewegt": [
-            "physik.K1+1"
-          ],
-          "punkte": 1,
-          "tage": [
-            1,
-            1
-          ],
-          "p_je_tag": 1,
-          "wurzel": "`stamm/bau-buch.js:1521` `_compoundCenterOfMass` und `_leibMasse` (`stamm/kreatur-verhalten.js:717`) lesen ρ in kg/m³ aus der EINEN Stoff-Tafel; der Auftrieb folgt aus ρ/ρw am Spiegel.",
-          "pflicht": "—",
-          "v1": false
-        },
-        {
           "name": "EIN XPBD-Löser im Körper-Kern: Seil, Tuch, Brücke",
           "bewegt": [
             "physik.K4+2"
@@ -544,7 +469,7 @@
           "v1": false
         },
         {
-          "name": "Der Lastpfad wird Bewegung (nach H2)",
+          "name": "Der Lastpfad wird Bewegung (nach H1)",
           "bewegt": [
             "physik.K3+2"
           ],
@@ -574,7 +499,7 @@
           "v1": true
         },
         {
-          "name": "Der aktive Leib (nach H2)",
+          "name": "Der aktive Leib (nach H1)",
           "bewegt": [
             "physik.K5+2"
           ],
@@ -631,7 +556,7 @@
           "name": "Phasen: Gefrieren, Schmelzen, Erstarren, Glühen",
           "punkte": 1,
           "staffel": "1 = eine Phase mit Körper-Folge (das Eis trägt den Spieler, y am Spiegel ±5 cm) · 2 = alle vier: Schnee schmilzt über 0 °C und speist den Pegel, Lava (glut-Achse) erstarrt am Wasser unter Dampf zu Basalt, Stahl glüht in der Esse ab seiner Temperatur (Schmiede = Welt)",
-          "messung": "werkbank eval + bild mit dem Temperatur-Feld aus Höhe × Saison × Uhr (Wetter H4).",
+          "messung": "werkbank eval + bild mit dem Temperatur-Feld aus Höhe × Saison × Uhr (Wetter H3).",
           "beleg": "Maschine: Winter -4.375 °C am Spiegel: 1151 Schritte auf dem See, die Füße bis 0 m vom Spiegel, 0 schwimmend · 3 von 3 Tieren am Spiegel · Feld +10 °C (5.625 °C): 1003 Schritte schwimmend an 8f1802b1 headless — offen: stoffe.K3#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Eine Eis-Textur ohne Tragkraft bestünde das Bild: der Körper auf dem Eis und die Schmelze im Pegel sind Pflicht.",
           "aenderung": "EIN Heim für Eis und Schmelze (vorher auch Wetter K4; B15, V24).",
@@ -683,27 +608,27 @@
             4
           ],
           "p_je_tag": 0.5,
-          "wurzel": "`stamm/feld-leben.js` (auraAt + Deposit-Familie: sparse 2-m-Zellen, lazy-decay; die Brand-Front tickt nur in brennenden Zellen); Leser Licht (kelvin-Pool `stamm/dirigent-kern.js:1637`), Klang, Nah-Wiese, Asche im Boden-Stoff; Regen löscht über die EINE Nässe (Wetter H2).",
+          "wurzel": "`stamm/feld-leben.js` (auraAt + Deposit-Familie: sparse 2-m-Zellen, lazy-decay; die Brand-Front tickt nur in brennenden Zellen); Leser Licht (kelvin-Pool `stamm/dirigent-kern.js:1637`), Klang, Nah-Wiese, Asche im Boden-Stoff; Regen löscht über die EINE Nässe (Wetter H1).",
           "pflicht": "—",
           "v1": false
         },
         {
-          "name": "Phasen am Temperatur-Feld (nach Wetter H4)",
+          "name": "Phasen am Temperatur-Feld (nach Wetter H3)",
           "bewegt": [
-            "stoffe.K3+2"
+            "stoffe.K3+1"
           ],
-          "punkte": 2,
+          "punkte": 1,
           "tage": [
             2,
             2
           ],
-          "p_je_tag": 1,
+          "p_je_tag": 0.5,
           "wurzel": "Eis als Kontakt am Spiegel (`stamm/wasser-hydro.js` `_waterLevelAt`), Lava → Basalt als Phasen-Regel an der glut-Achse, die Schmiede-Esse liest dieselbe Temperatur.",
           "pflicht": "—",
           "v1": false
         },
         {
-          "name": "Alter = Zeit × Nässe (nach Wetter H2)",
+          "name": "Alter = Zeit × Nässe (nach Wetter H1)",
           "bewegt": [
             "stoffe.K4+2"
           ],
@@ -743,7 +668,7 @@
       "titel": "Das lebendige Feld — Kette, Gleichheit, Ruhe, Gedächtnis (liest · schreibt)",
       "gruppe": "physis",
       "punkte": 6,
-      "pfad": "Feature-Stopp bis v1.0 — außer H3 (Ruhe = 0, trägt E)",
+      "pfad": "Feature-Stopp bis v1.0 — Ruhe = 0 steht (K3, trägt E)",
       "dateien": "`stamm/feld-leben.js` (auraAt, Overlays) · `stamm/feld-dsl.js` · `stamm/wasser-zellen.js` · `stamm/vegetation-*.js` · `docs/das-lebendige-feld.md`",
       "aaaa": "Eine Ursache läuft durch ≥ 4 Teilsysteme, und jedes liest den Zustand seines Vorgängers, nie die Ursache: Sturm → Regen-Feld → nasser Boden und steigender Bach → der Grip fällt, Tiere suchen Unterstand und Tränke → weniger Wild im Offenen, der Klang wechselt. Jede Tat schreibt ins EINE Feld und bleibt am Ort: zehn gefällte Bäume sind über Speichern und Laden eine Lichtung, die über Spieltage zuwächst, schneller, wo der Spieler pflegt; eine Pflege-Geste macht genau diese 16-m-Zelle dichter und bunter (ΔLAI ≥ +0,3), die Nachbarzelle bleibt gleich. Alles ist Funktion von Saat und Schreib-Akten: jeder Peer und jeder Reload sieht dieselbe Welt, ohne Zustands-Nachricht. In Ruhe rechnet keine Simulation; die Kosten hängen an berührten Zellen, nie an der Welt (Gebot 7). **Wo wir die Besten schlagen:** From Dust koppelt Stoffe auf einer Insel, Dwarf Fortress simuliert Geschichte, aber nicht in Echtzeit-3D, BotW koppelt Elemente, aber die Welt erinnert nicht; bei uns lesen Pflanze, Tier, Licht, Klang und Nexus dieselbe Quelle `auraAt` in einer unendlichen Welt.",
       "beste": [
@@ -818,24 +743,9 @@
           "v1": false
         },
         {
-          "name": "Die Tat bleibt: Narbe in Spielzeit, Ernte und Fällung im Speicher, Nachwuchs aus lebendig",
+          "name": "Die Wetter-Kette schließen (nach Wetter H1/H2; Fahrzeug K1 steht)",
           "bewegt": [
-            "feld.K4+2"
-          ],
-          "punkte": 2,
-          "tage": [
-            1.5,
-            1.5
-          ],
-          "p_je_tag": 1.33,
-          "wurzel": "`stamm/feld-leben.js:_depositLife`: eine Narbe je Tat-Klasse in Spielzeit statt 87 s Halbwertszeit; scatterHarvested und gefällte Bäume atomar in den Speicher (`stamm/speicher-laden.js`); der Nachwuchs folgt lebendig statt FORAGE.regrowMs.",
-          "pflicht": "—",
-          "v1": false
-        },
-        {
-          "name": "Ruhe = 0 überall: langsame Sims ticken nur in berührten Zellen, im echten Fenster an beiden Geräten (der Fixpunkt-Schlaf steht seit feld-ruhe)",
-          "bewegt": [
-            "feld.K3+1"
+            "feld.K1+1"
           ],
           "punkte": 1,
           "tage": [
@@ -843,27 +753,12 @@
             1.5
           ],
           "p_je_tag": 0.8,
-          "wurzel": "Der Schlaf am Fixpunkt steht (feld-ruhe 8de57097, 65 965 → 0 Einheiten in 60 s Ruhe); der Rest: die Arbeit unter Taten an die berührte Zelle binden (heute 32 805 Einheiten, das Feld bis 1 170 Zellen bei 630 lebenden, `stamm/feld-leben.js`), Brand als Sim mit Takt, und `werkbank stand --sim` im echten Fenster an Radeon und GTX.",
-          "pflicht": "E (Takt im Stand)",
-          "v1": true
-        },
-        {
-          "name": "Die Wetter-Kette schließen (nach Wetter H2/H3, Fahrzeug H1)",
-          "bewegt": [
-            "feld.K1+2"
-          ],
-          "punkte": 2,
-          "tage": [
-            1,
-            1.5
-          ],
-          "p_je_tag": 1.6,
           "wurzel": "Trinkziel und Unterstand der Tiere (`stamm/kreatur-verhalten.js`) lesen Nässe-Achse und Pegel statt `_weatherIsWet` (`:2199`); der Grip liest die Nässe; dazu die Festhalte-Probe der Station Sturm.",
           "pflicht": "—",
           "v1": false
         },
         {
-          "name": "Alle Teil-Simulationen aus Saat + Akten (nach Wetter H1)",
+          "name": "Alle Teil-Simulationen aus Saat + Akten (Wetter K1 steht)",
           "bewegt": [
             "feld.K2+1"
           ],
@@ -1079,36 +974,6 @@
           "v1": false
         },
         {
-          "name": "Die Jagd ins Band: Riss-Quote je Jagd über 20 Saaten (1 Wolf, 4 Wölfe, Kitz — MacNulty), Fressen ≥ 60 s, Wolfsrevier im Bild",
-          "bewegt": [
-            "tiere.K2+2"
-          ],
-          "punkte": 2,
-          "tage": [
-            1,
-            1.5
-          ],
-          "p_je_tag": 1.6,
-          "wurzel": "Riss, Kadaver und Geruch stehen seit tiere-kreislauf (5bef501f); `scripts/lib/kreatur-proben.cjs` jagdkreis (A) zählt heute Orte einer Saat in 600 s — die Quote je Jagd über Saaten und Rudel-Größe, dann `stamm/kreatur-verhalten.js:_kreaturJagdZug` (Ausdauer der Hetze, Abbruch) ins Band.",
-          "pflicht": "—",
-          "v1": false
-        },
-        {
-          "name": "Lebensraum und Tages-Budget im Gesetzbuch",
-          "bewegt": [
-            "tiere.K4+2"
-          ],
-          "punkte": 2,
-          "tage": [
-            1.5,
-            1.5
-          ],
-          "p_je_tag": 1.33,
-          "wurzel": "`tetrapoda-core.js` VERHALTEN.lebensraum (Gattung × Landform aus gelaende-core) + Bedürfnis-Pegel Hunger, Durst, Ruhe; `stamm/kreatur-leben.js:_pickFaunaSoulAtPlayer` wählt nach Ort; die Tags bleiben neutral (Lehre 8).",
-          "pflicht": "—",
-          "v1": false
-        },
-        {
           "name": "Begegnung im Bild: ferne Verbände als EIN Agent, Ratsche tier, Dichte über die Kappe am Schirm",
           "bewegt": [
             "tiere.K5+1"
@@ -1198,46 +1063,16 @@
         {
           "name": "EIN Bestands-Gesetz: Geburt und Tod aus Nahrung × Lebensraum",
           "bewegt": [
-            "oekologie.K2+2"
+            "oekologie.K2+1"
           ],
-          "punkte": 2,
+          "punkte": 1,
           "tage": [
             2,
             2
           ],
-          "p_je_tag": 1,
+          "p_je_tag": 0.5,
           "wurzel": "`tetrapoda-core.js` VERHALTEN bekommt fress und Bestands-Bilanz; `stamm/kreatur-leben.js` Geburt und Tod aus der Nahrung statt aus FAUNA_MAX; die Kappe am Schirm wählt nur, wer Körper ist.",
           "pflicht": "— (Last: E, Kosten-Kappe am Schirm)",
-          "v1": false
-        },
-        {
-          "name": "Fraß schreibt negativ ins Feld, Kaskade über ≥ 8 Seeds (nach H1)",
-          "bewegt": [
-            "oekologie.K1+2"
-          ],
-          "punkte": 2,
-          "tage": [
-            1.5,
-            1.5
-          ],
-          "p_je_tag": 1.33,
-          "wurzel": "Fraß über `_depositLife` negativ (erlaubt: §4.2 verbietet nur die positive Rückkopplung); Zeitraffer-Linse mit Mutante.",
-          "pflicht": "—",
-          "v1": false
-        },
-        {
-          "name": "EIN Furcht-Gesetz: Erinnerung ⊕ Feld-Furcht",
-          "bewegt": [
-            "oekologie.K3+2"
-          ],
-          "punkte": 2,
-          "tage": [
-            1,
-            1
-          ],
-          "p_je_tag": 2,
-          "wurzel": "tetrapoda-core VERHALTEN: furcht(wesen, ort) = Erinnerung des Wesens ⊕ Feld-Furcht am Ort; Leser im Flucht- und Neugier-Zweig von updateCreatures (`stamm/kreatur-verhalten.js`); `_creatureRemember` (`stamm/kreatur-leben.js:1088`) mit Typen geschlagen/gefüttert; ein Riss deponiert über `_depositEmotion`.",
-          "pflicht": "—",
           "v1": false
         },
         {
@@ -1357,21 +1192,6 @@
           "v1": false
         },
         {
-          "name": "Wer nach 1 h zurückkommt, findet jeden Bewohner auf ±2 m, an beiden Geräten (die 4–10 Wege stehen seit bewohner-wege)",
-          "bewegt": [
-            "mensch.K2+1"
-          ],
-          "punkte": 1,
-          "tage": [
-            1,
-            1
-          ],
-          "p_je_tag": 1,
-          "wurzel": "Die Wege 4–7 je Tag stehen (bewohner-wege 3d1f6b14); der Rest: fern setzt der Plan nur die Lage (`_tickBewohner`, `stamm/siedlung-bewohner.js`), die Linse `bewohner` richtet die Wiederkehr nach 1 h Abwesenheit gegen `tagesPlan` (ungemessen), dazu Radeon und GTX; im Fenster der Radeon ist „alle Bewohner“ ROT (trefferMin 0,825, Feld-Bewohner #724672 und #45665 unter 0,9, M32 an 6cfce28a).",
-          "pflicht": "—",
-          "v1": false
-        },
-        {
           "name": "Begegnung ohne Modell: Kopf-Zuwendung, Ausweichen, Gedächtnis-Abstand",
           "bewegt": [
             "mensch.K5+1"
@@ -1382,7 +1202,7 @@
             1
           ],
           "p_je_tag": 1,
-          "wurzel": "Leib-Löser (`stamm/koerper-leib.js`) für die Kopf-Zuwendung; Furcht-Gesetz aus Ökologie H3 lenkt den Abstand.",
+          "wurzel": "Leib-Löser (`stamm/koerper-leib.js`) für die Kopf-Zuwendung; Furcht-Gesetz aus Ökologie K3 lenkt den Abstand.",
           "pflicht": "—",
           "v1": false
         },
@@ -1641,7 +1461,7 @@
           "v1": false
         },
         {
-          "name": "Kleidung als Tuch des Lösers (nach Physik H2)",
+          "name": "Kleidung als Tuch des Lösers (nach Physik H1)",
           "bewegt": [
             "haar.K4+1"
           ],
@@ -1729,13 +1549,13 @@
           "punkte": 0,
           "staffel": "1 = 100 Vögel im Bild ≤ 0,3 ms CPU an der GTX-CPU · 2 = dazu im Haushalt ≤ 10 Befehle, beide Geräte",
           "messung": "werkbank zerlegen/takt an einer Prüfbühne mit festem Schwarm.",
-          "beleg": "Ungemessen: es gibt keinen Schwarm in der Welt; die Herde rechnet heute je Kopf (Tiere H4 legt die Separation auf das FLOCK_CELL-Gitter und ferne Verbände auf das Leittier).",
+          "beleg": "Ungemessen: es gibt keinen Schwarm in der Welt; die Herde rechnet heute je Kopf (Tiere H2 legt die Separation auf das FLOCK_CELL-Gitter und ferne Verbände auf das Leittier).",
           "schlupfloch": "Schwärme nur außerhalb des Blicks: die Prüfbühne zählt den Schwarm im Bild."
         }
       ],
       "hebel": [
         {
-          "name": "Das Vogel-Gesetzbuch dockt ohne Wirt-Zeile an (nach Studios H4)",
+          "name": "Das Vogel-Gesetzbuch dockt ohne Wirt-Zeile an (Studios K5 steht)",
           "bewegt": [
             "luftwasser.K1+2",
             "luftwasser.K2+1",
@@ -1792,7 +1612,7 @@
             1.5
           ],
           "p_je_tag": 1.6,
-          "wurzel": "Leittier rechnet, Glieder folgen in Formation (aiDiv-Band wie Tiere H4).",
+          "wurzel": "Leittier rechnet, Glieder folgen in Formation (aiDiv-Band wie Tiere H2).",
           "pflicht": "—",
           "v1": false
         }
@@ -2039,7 +1859,7 @@
           "v1": false
         },
         {
-          "name": "Die Sicht im Wetter aus EINEM Medium (nach Wetter H1)",
+          "name": "Die Sicht im Wetter aus EINEM Medium (Wetter K1 steht)",
           "bewegt": [
             "ferne.K5+1"
           ],
@@ -2122,21 +1942,6 @@
         }
       ],
       "hebel": [
-        {
-          "name": "Haut und Lack aus EINER Zeile, die Tafel echt auf beiden Seiten",
-          "bewegt": [
-            "material.K1+1"
-          ],
-          "punkte": 1,
-          "tage": [
-            0.5,
-            1
-          ],
-          "p_je_tag": 1.33,
-          "wurzel": "Haut-Stoff `stamm/studio-bruecke.js:2638` gegen koerperstudio, Lack aus LACK_GESETZ; `scripts/diag-albedo-tafel.cjs --labor --echt`.",
-          "pflicht": "A",
-          "v1": true
-        },
         {
           "name": "Mikro-Detail an den Schirm gebunden",
           "bewegt": [
@@ -2264,14 +2069,14 @@
         {
           "name": "Kontakt-Härtung der nahen Kaskade",
           "bewegt": [
-            "schatten.K1+2"
+            "schatten.K1+1"
           ],
-          "punkte": 2,
+          "punkte": 1,
           "tage": [
             1.5,
             1.5
           ],
-          "p_je_tag": 1.33,
+          "p_je_tag": 0.67,
           "wurzel": "`stamm/bild-kosten.js:SCHATTEN_KASKADE` (`:3456-3466`) + Kaskaden-Geburt (`:2179-2215`): eine Spieler-Kaskade über 15 m mit Texel ≤ 5 cm oder eine PCSS-Blocker-Suche im receivedShadowNode (`stamm/stoff-material.js:1263`).",
           "pflicht": "— (Last: E ≤ 0,3 ms GTX)",
           "v1": true
@@ -2581,21 +2386,6 @@
           "v1": true
         },
         {
-          "name": "Ein neuntes Gesetzbuch als Fixture: die Positivlisten des Wirts fallen",
-          "bewegt": [
-            "studios.K5+2"
-          ],
-          "punkte": 2,
-          "tage": [
-            1.5,
-            2
-          ],
-          "p_je_tag": 1.14,
-          "wurzel": "Fixture-Kern in spec/; `stamm/netz-portal.js:1274` (Positivliste → jede Art aus PARAMS_BY_KIND), `_studioBlueprintForWord` liest den Vertrag statt Namen.",
-          "pflicht": "—",
-          "v1": false
-        },
-        {
           "name": "terrain auf die Bühne: das Studio des meistgesehenen Werks zeigt den Welt-Baum",
           "bewegt": [
             "studios.K4+1"
@@ -2679,21 +2469,6 @@
         }
       ],
       "hebel": [
-        {
-          "name": "EIN Übergabe-Kanal für alle Arten: die Hülle schickt das Werk, die Welt schreibt in den EINEN Prägungs-Speicher ws.studioOv",
-          "bewegt": [
-            "pipeline.K1+2"
-          ],
-          "punkte": 2,
-          "tage": [
-            1.5,
-            2
-          ],
-          "p_je_tag": 1.14,
-          "wurzel": "`stamm/netz-portal.js:1274` `_studioUebergabeEmpfang` (Positivliste → jede Art aus PARAMS_BY_KIND, geklemmt am Kern) + `worlds/huelle/huelle.js:850` bruecke (neu werk(kind, preset, seed, ov)); Leser bleibt `_studioStampFor` (`werkstatt-vorschau.js:768`), kein zweiter Speicher.",
-          "pflicht": "—",
-          "v1": true
-        },
         {
           "name": "Foundry-Worker als Modul auf vendor/three.core (r184), EIN Karten-Bäcker; r128, synchrones XHR und LEGACY_LICHT fallen in derselben Welle",
           "bewegt": [
@@ -2943,14 +2718,14 @@
         {
           "name": "editForm als Hülle im Kern (F2a), der Zweig hoch-bauen als Byte-Referenz",
           "bewegt": [
-            "bauen.K4+2"
+            "bauen.K4+1"
           ],
-          "punkte": 2,
+          "punkte": 1,
           "tage": [
             1.5,
             2
           ],
-          "p_je_tag": 1.14,
+          "p_je_tag": 0.57,
           "wurzel": "`gelaende-core.js`: reine Funktion editForm (Mindest-Dichte statt additivem 48er-Kegel); Leser `stamm/gelaende-boden.js:1139/1178`, `voxel-worker.js:612/734` (der Worker lädt den Kern schon), Fern-Ring `stamm/gelaende-fern.js:880`; Byte-Referenz origin/hoch-bauen 9d987a93 maxDiff 0 — kein zweiter Weg.",
           "pflicht": "— (Schöpfer-Fund F2a)",
           "v1": true
@@ -2968,21 +2743,6 @@
           "p_je_tag": 1.14,
           "wurzel": "`stamm/gelaende-kollision.js:_hausGrundSetzen` (Grund und Keller aus fachwerk `grundPlan`, 7e95bfd4) → `fachwerk-core.js` ortPlan als Ein-Slot-Ort mit vorplatzFlaeche (`:5382-5401`), der Byte-Vergleich gegen den Dorf-Slot derselben Gestalt; der Gang Tür → Treppe → Keller steht seit haus-innen (Siedlung K1, gate:haus-welt W10).",
           "pflicht": "A (Wiese im Haus)",
-          "v1": true
-        },
-        {
-          "name": "Die Statik gilt beim Setzen, in jedem Modus",
-          "bewegt": [
-            "bauen.K3+1"
-          ],
-          "punkte": 1,
-          "tage": [
-            1,
-            1
-          ],
-          "p_je_tag": 1,
-          "wurzel": "`stamm/werkstatt-bauen.js:143` `_setzUrteil` liest `_workshopPhysicsVerdict` (`werkstatt-vorschau.js:548`) am echten Kontakt (Boden + blockerAABBs, `_bauDachUnter` `feld-dsl.js:1931`).",
-          "pflicht": "—",
           "v1": true
         },
         {
@@ -3232,21 +2992,6 @@
       ],
       "hebel": [
         {
-          "name": "Reifen mit Spitze, μ aus der EINEN Stoff-Zeile, 240 Hz in 4 Unter-Schritten (nach Stoffe H1)",
-          "bewegt": [
-            "fahrzeug.K1+2"
-          ],
-          "punkte": 2,
-          "tage": [
-            1.5,
-            2
-          ],
-          "p_je_tag": 1.14,
-          "wurzel": "`vehicle-core.js:fahrKraefte` (`:2863`, Seitenkraft `:2913-2914`) → D·sin(C·atan(B·α)); fahrSchritt (`:3003/:3015`) mit e.mu aus der Stoff-Zeile unter `_bodenSichtAt` × der EINEN Nässe; `stamm/koerper-bewegung.js` FIXED_DT `:2108`; Golden-Re-Mint als Vertrags-Akt (Lehre 11).",
-          "pflicht": "—",
-          "v1": true
-        },
-        {
           "name": "Die Station fahrt auf dem Wegenetz ROT, dann der Täter",
           "bewegt": [
             "fahrzeug.K2+1"
@@ -3366,14 +3111,14 @@
         {
           "name": "Das Stadt-Tor: EPOCHEN.groesse wird nZiel, SIEDLUNG mit Rang-Größe-Verteilung, mauer und graph reisen im Export, vier Klemmen werden EINE",
           "bewegt": [
-            "siedlung.K2+2"
+            "siedlung.K2+1"
           ],
-          "punkte": 2,
+          "punkte": 1,
           "tage": [
             1,
             1.5
           ],
-          "p_je_tag": 1.6,
+          "p_je_tag": 0.8,
           "wurzel": "`fachwerk-core.js` EPOCHEN (`:2806-2814`) · SIEDLUNG (`:2844`) · exportSettlement (`:5452ff`) · ortPlan (`:5551`) + `stamm/siedlung-ort.js` Klemmen (`:1786`, `:1814`, `:1935`, `:2232`); Golden-Re-Mint siedlung.json als Vertrags-Akt.",
           "pflicht": "—",
           "v1": false
@@ -3381,14 +3126,14 @@
         {
           "name": "Die Trasse liest das Gelände: dorfLayout bekommt hoeheAt",
           "bewegt": [
-            "siedlung.K3+2"
+            "siedlung.K3+1"
           ],
-          "punkte": 2,
+          "punkte": 1,
           "tage": [
             1.5,
             2
           ],
-          "p_je_tag": 1.14,
+          "p_je_tag": 0.57,
           "wurzel": "`fachwerk-core.js:dorfLayout` (`:3043`) mit ctx.hoeheAt aus gelaende-core; EIN Grundriss-Leser.",
           "pflicht": "—",
           "v1": false
@@ -3538,21 +3283,6 @@
           "wurzel": "`stamm/koerper-bewegung.js:_loopCamera` (`:1579`): Kugel mit Kollision gegen Fels und Blocker, Glättung wie chaseKamera.",
           "pflicht": "—",
           "v1": true
-        },
-        {
-          "name": "Gamepad analog für jedes Verb",
-          "bewegt": [
-            "leib.K5+2"
-          ],
-          "punkte": 2,
-          "tage": [
-            1.5,
-            1.5
-          ],
-          "p_je_tag": 1.33,
-          "wurzel": "Eingabe-Schicht in `stamm/koerper-bewegung.js` (Tastatur und Achsen über EINE Verb-Tafel), Rumble aus dem Fahr- und Treffer-Zustand.",
-          "pflicht": "—",
-          "v1": true
         }
       ],
       "feststeck": {
@@ -3653,36 +3383,6 @@
           "wurzel": "Die Latenz hält seit 11774d4d (p95 30,5/36,0 ms, im Hörer 2,0/1,3 ms, Radeon; die Linse `werkbank latenz --verb hieb`); der Rest: `_kampfKlingenKontakt` (`stamm/kampf.js:464`) → `_substanzKlang` (`stamm/klang.js:454`) je Stoff-Paar mit Spektral-Abgriff (Stahl/Holz, Stahl/Stein, Holz/Fell), Funken aus dem Paar, das Hit-Stop-Bild in Ego, dieselbe Station an der GTX.",
           "pflicht": "—",
           "v1": true
-        },
-        {
-          "name": "Das Werkzeug nach der Form",
-          "bewegt": [
-            "halten.K3+1"
-          ],
-          "punkte": 1,
-          "tage": [
-            1,
-            1
-          ],
-          "p_je_tag": 1,
-          "wurzel": "`_geraetGraebt` (`stamm/kampf.js:807`) und Fällen/Ernten lesen die Affordanz aus der Geometrie (`stamm/bau-teile.js:202-450`) statt eines Werkzeug-Namens.",
-          "pflicht": "—",
-          "v1": true
-        },
-        {
-          "name": "Der ballistische Bogen",
-          "bewegt": [
-            "halten.K4+2"
-          ],
-          "punkte": 2,
-          "tage": [
-            1.5,
-            1.5
-          ],
-          "p_je_tag": 1.33,
-          "wurzel": "`_heldBogenRecipe` (`stamm/kampf.js:750`): Abschuss aus der Zug-Kraft, Bahn im Fix-Takt, Pfeil als Welt-Zustand.",
-          "pflicht": "—",
-          "v1": false
         },
         {
           "name": "Sturz, Tod und Wiederkehr",
@@ -3954,21 +3654,6 @@
           "wurzel": "DSL-Editor als Werkstatt-Modus über `stamm/feld-dsl.js`.",
           "pflicht": "—",
           "v1": false
-        },
-        {
-          "name": "Vertrauens-Korpus und Whitelist-Probe",
-          "bewegt": [
-            "ultiversum.K5+2"
-          ],
-          "punkte": 2,
-          "tage": [
-            1.5,
-            1.5
-          ],
-          "p_je_tag": 1.33,
-          "wurzel": "Lade-Pfad geteilter Regeln und Baupläne (`stamm/feld-dsl.js`, `stamm/netz-identitaet.js`), Injektions-Korpus in spec gegen maybeAnswerWithLlm.",
-          "pflicht": "— (Sicherheit des Teilens, v1-Schritt 5)",
-          "v1": true
         }
       ],
       "feststeck": {
@@ -4070,7 +3755,7 @@
       ],
       "feststeck": {
         "versucht": "GTX kalt: 28 s am 13.10., 16,6 s am 18.10., 15,87 s am 19.10., 15,25 s am 20.10. (b-blick), 15,33 s an 8ba1510d (Bündel 2 mit b-strom-faden und b-programme) — ≥ 8 Wellen (K30, B4, B5, b-wald, b-blick, B-Plan, b-strom-faden, b-programme), jede zog 0,3–1 s ab, keine brachte einen Punkt. Der B-Plan rechnet selbst eine Untergrenze von ≈ 8 s ohne Strukturwechsel, und freie Haupt-Faden-Zeit wird nur zu ≤ 0,35 in ein früheres Bild umgesetzt; der Richter liest die Eigenmeldung.",
-        "anders": "Nicht schneller bauen, sondern bei der Ankunft nicht bauen. Der Programm-Abdruck (H2) ist gemessen und trägt so nicht (Gerät erst nach dem Buch, ≤ 0,3 s); offen bleiben die Welt-Arbeit auf einem zweiten Faden (Streaming H4, Spike 1 Tag: EINE Streu-Region im Worker, Zahl = Haupt-Faden-ms und t(Bild) an der GTX). Ehrlich in Prozent: erst alle drei zusammen (B-Plan, Abdruck, Welt-Faden) reichen rechnerisch an 5 s auf der GTX; und der Richter misst von außen (Messschuld M10)."
+        "anders": "Nicht schneller bauen, sondern bei der Ankunft nicht bauen. Der Programm-Abdruck (H2) ist gemessen und trägt so nicht (Gerät erst nach dem Buch, ≤ 0,3 s); offen bleiben die Welt-Arbeit auf einem zweiten Faden (Streaming H3, Spike 1 Tag: EINE Streu-Region im Worker, Zahl = Haupt-Faden-ms und t(Bild) an der GTX). Ehrlich in Prozent: erst alle drei zusammen (B-Plan, Abdruck, Welt-Faden) reichen rechnerisch an 5 s auf der GTX; und der Richter misst von außen (Messschuld M10)."
       }
     },
     {
@@ -4165,22 +3850,6 @@
           "p_je_tag": 1,
           "wurzel": "`stamm/gelaende-chunks.js:_tickDirtyVoxelChunks` (`:2826`, bisher EIN Einbau je Takt) und `_voxelChunkLodFor`: die Ankunftszeit wählt die Stufe, weit voraus kommt erst die Grobstufe.",
           "pflicht": "E",
-          "v1": true
-        },
-        {
-          "name": "Die Hydrosphäre in den Faden, das Instrument am Empfang (der Chunk im Faden steht seit 85801a46)",
-          "bewegt": [
-            "streaming.K4+1",
-            "streaming.K5+1"
-          ],
-          "punkte": 2,
-          "tage": [
-            1,
-            1.5
-          ],
-          "p_je_tag": 1.6,
-          "wurzel": "`stamm/wasser-hydro.js:_computeHydrosphere` (`:54`) → `voxel-worker.js` vor dem ersten Chunk (Lehre 14, S5); Zähler am onmessage.",
-          "pflicht": "B",
           "v1": true
         },
         {
@@ -4504,14 +4173,14 @@
           "name": "Änderung statt Abbild, gespeichert im Worker",
           "bewegt": [
             "speicher.K2+1",
-            "speicher.K3+2"
+            "speicher.K3+1"
           ],
-          "punkte": 3,
+          "punkte": 2,
           "tage": [
             3,
             4
           ],
-          "p_je_tag": 0.86,
+          "p_je_tag": 0.57,
           "wurzel": "Der Save-Ruf kostet am Kopf 6cfce28a p95 14,6, max 18,8 ms (Radeon, M35) und p95 28,1 ms (GTX, M30) im Haupt-Faden. `stamm/dienst.js:saveState` (`:1177`) und `stamm/speicher-welten.js:buildStateSnapshot` (`:791`) werden ein Änderungs-Journal je Domäne (Edits, Bauten, Leib, Inventar), gemeldet an der Schreib-Stelle; Verdichten und Schreiben (IDB oder OPFS) übernimmt der Worker; der localStorage-Spiegel fällt als Zwilling.",
           "pflicht": "E",
           "v1": true
@@ -4684,7 +4353,7 @@
       "id": "M22",
       "kriterium": "material.K1",
       "messung": "Albedo-Tafel --echt: Labor-Seite an der Radeon, beide Seiten an der GTX",
-      "erwartung": "Welt-Seite Radeon gemessen 21.10. ROT (lack 0,04, tor 3,07, haut 0,25, fell 0,67; rinde, laub, boden stumm) — das Vorher von Material H1"
+      "erwartung": "Welt-Seite Radeon gemessen 21.10. ROT (lack 0,04, tor 3,07, haut 0,25, fell 0,67; rinde, laub, boden stumm) — das Vorher von Material K1"
     },
     {
       "id": "M23",
@@ -4778,21 +4447,6 @@
       "pflicht": "A (Ferne); Last: E (Boden-Haushalt 12/120k)"
     },
     {
-      "bereich": "streaming",
-      "hebel": "Die Hydrosphäre in den Faden, das Instrument am Empfang (der Chunk im Faden steht seit 85801a46)",
-      "bewegt": [
-        "streaming.K4+1",
-        "streaming.K5+1"
-      ],
-      "punkte": 2,
-      "tage": [
-        1,
-        1.5
-      ],
-      "p_je_tag": 1.6,
-      "pflicht": "B"
-    },
-    {
       "bereich": "material",
       "hebel": "Mikro-Detail an den Schirm gebunden",
       "bewegt": [
@@ -4819,6 +4473,20 @@
       ],
       "p_je_tag": 1.33,
       "pflicht": "A (laub-kante)"
+    },
+    {
+      "bereich": "lod",
+      "hebel": "F2b mit Atlas-Diät mergen: Hebungs-Ringe −20/40/80° in ¼ der Zellfläche",
+      "bewegt": [
+        "lod.K3+2"
+      ],
+      "punkte": 2,
+      "tage": [
+        1.5,
+        1.5
+      ],
+      "p_je_tag": 1.33,
+      "pflicht": "A; Last: E (VRAM)"
     }
   ],
   "verlauf": [
@@ -5079,7 +4747,7 @@
       [
         "B · die Ankunft an der GTX",
         "≥ 8 Wellen (K30, B4, B5, b-wald, b-blick, B-Plan, b-strom-faden, b-programme): 28 s (13.10.) → 16,6 (18.10.) → 15,87 (19.10.) → 15,25 s (20.10.) → 15,33 s am Bündel 2 (8ba1510d: b-strom-faden, b-programme; gegen 16,08 an dc6702ab); jede zog 0,3–1 s ab, keine brachte einen Punkt; freie Haupt-Faden-Zeit wird nur zu ≤ 0,35 in ein früheres Bild umgesetzt, der B-Plan rechnet selbst eine Untergrenze ≈ 8 s auf EINEM Faden; der Richter liest die Eigenmeldung `_weltbildDa`",
-        "Nicht schneller bauen, sondern bei der Ankunft nicht bauen: der Programm-Abdruck je Gesetz-SHA (Ankunft H2) und der Welt-Faden (Streaming H4, Spike 1 Tag: EINE Streu-Region im Worker, die Zahl ist Haupt-Faden-ms und t(Bild) an der GTX); der Richter misst von außen (M10). GEMESSEN 21.10. (Spike b-abdruck 78f6abe5, Radeon kalt 11 Läufe, diag-boot-stage --abdruck): 48 Signaturen, stabil je Gesetz-Stand, ALLE nach dem Buch; das Gerät steht 0,03–0,23 s NACH dem Buch, weil requestAdapter 0,76–0,88 s wartet und erst bei 0,6 s gefragt wird — die Boot-Lücke trägt 0 ms, großzügig verschiebbar 0,64–0,89 s Erst-Bau = ≤ 0,3 s Weltbild. Der Weg trägt so nicht; geparkt. Neu offen: die Adapter-Frage beim ersten Byte der Seite (die 0,8 s Warten beginnen erst bei 0,6 s)."
+        "Nicht schneller bauen, sondern bei der Ankunft nicht bauen: der Programm-Abdruck je Gesetz-SHA (Ankunft H2) und der Welt-Faden (Streaming H3, Spike 1 Tag: EINE Streu-Region im Worker, die Zahl ist Haupt-Faden-ms und t(Bild) an der GTX); der Richter misst von außen (M10). GEMESSEN 21.10. (Spike b-abdruck 78f6abe5, Radeon kalt 11 Läufe, diag-boot-stage --abdruck): 48 Signaturen, stabil je Gesetz-Stand, ALLE nach dem Buch; das Gerät steht 0,03–0,23 s NACH dem Buch, weil requestAdapter 0,76–0,88 s wartet und erst bei 0,6 s gefragt wird — die Boot-Lücke trägt 0 ms, großzügig verschiebbar 0,64–0,89 s Erst-Bau = ≤ 0,3 s Weltbild. Der Weg trägt so nicht; geparkt. Neu offen: die Adapter-Frage beim ersten Byte der Seite (die 0,8 s Warten beginnen erst bei 0,6 s)."
       ],
       [
         "E · der CPU-Takt der GTX",
@@ -5119,7 +4787,7 @@
       [
         "Gelände 3D (W1/S5, F2a)",
         "Plan seit 18.10., der 48er-Kegel trägt an vier Stellen; 37 Commits „S5“ gehören zu einer Linse (Namens-Kollision); zwei gemessene Heilungen (hoch-bauen 69,5 m, wiese-im-haus 0/25) warten auf den 4–7-Tage-Umzug",
-        "Vom Verbraucher her: editForm als Hülle im Kern, der Zweig hoch-bauen als Byte-Referenz (Bauen H1); dieselbe Bahn trägt danach dichte und Spiegel (Gelände H2)."
+        "Vom Verbraucher her: editForm als Hülle im Kern, der Zweig hoch-bauen als Byte-Referenz (Bauen H1); dieselbe Bahn trägt danach dichte und Spiegel (Gelände K1)."
       ],
       [
         "Die KI mit Modell",
@@ -5144,7 +4812,7 @@
       [
         "Physik und Chemie",
         "Ω-PHYSIS-Achsen (Schwerpunkt, Lastpfad) und 14 Stoff-Achsen machten die Werkstatt klüger, nie die Welt physischer; „Feuer-Ausbreitung wäre ein eigener Pfad“ (`stamm/bau-buch.js:2423`)",
-        "Zuerst Bewegung mit EINEM Löser, an dem ein Körper sichtbar fällt (Physik H2); Chemie als Lese-Schreib-Regel auf dem Feld, das schon steht (Stoffe H2)."
+        "Zuerst Bewegung mit EINEM Löser, an dem ein Körper sichtbar fällt (Physik H1); Chemie als Lese-Schreib-Regel auf dem Feld, das schon steht (Stoffe H2)."
       ],
       [
         "Das Feld",
