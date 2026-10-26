@@ -2309,7 +2309,9 @@ async function kreaturProben(r, T, opts) {
                     const innen0 = b.drinnen ? b.orte.tuer.haus : null;
                     const sp =
                         wSpur.get(b) ||
-                        wSpur.set(b, { x, z, innen: innen0, weg: null, m: 0, n: 0, gesamt: 0, ax: x, az: z }).get(b);
+                        wSpur
+                            .set(b, { x, z, innen: innen0, ziel: b.ziel, n: new Set(), gesamt: 0, ax: x, az: z })
+                            .get(b);
                     const d = Math.hypot(x - sp.x, z - sp.z);
                     sp.gesamt += d;
                     if (d > 2 && Math.min(ab(sp, pm), ab(b.leib.position, pm)) < nahR) WG.sprungN++;
@@ -2338,11 +2340,12 @@ async function kreaturProben(r, T, opts) {
                         WG.geh++;
                         if (r._aufWeg(x, z, 0)) WG.aufWeg++;
                     }
-                    if (sp.weg) sp.m += d;
-                    if (b.weg !== sp.weg) {
-                        if (sp.weg && !b.weg && b.da && sp.m >= 2) sp.n++;
-                        [sp.weg, sp.m] = [b.weg, 0];
-                    }
+                    // DER WEG DES TAGS: jede Wende seines Plans zwischen zwei Orten ≥ 2 m, einmal je Stunde der Wende
+                    // (`tagAb`, `_bewohnerZiel`, gleich ab wo gesucht) — der Tag misst ≥ 24 Spielstunden, die Wende an
+                    // seinem Rand zählt einmal; Beiseitetreten (`_bewohnerPlatz`), der Weg zurück und der gerückte Stand
+                    // wechseln kein Ziel
+                    if (b.ziel !== sp.ziel && ab(sp.ziel, b.ziel) >= 2) sp.n.add(((b.tagAb + 24) % 24).toFixed(4));
+                    sp.ziel = b.ziel;
                     const da = b.drinnen ? !b.hinaus : !b.ziel || (!b.drinnenSoll && ab(b.leib.position, b.ziel) < 1.5);
                     if (da || Math.hypot(x - sp.ax, z - sp.az) >= 1) Object.assign(sp, { ax: x, az: z, seit: minute });
                     else if (minute - sp.seit >= 5 && !sp.steckt) stecken.push(wann(b));
@@ -2368,12 +2371,12 @@ async function kreaturProben(r, T, opts) {
                     falsch: WG.falsch.slice(0, 4),
                     aufWeg: WG.geh ? q3(WG.aufWeg / WG.geh) : null,
                     sprungN: WG.sprungN,
-                    wegeMin: Math.min(...je.map((q) => q.n)),
-                    wegeMax: Math.max(...je.map((q) => q.n)),
+                    wegeMin: Math.min(...je.map((q) => q.n.size)),
+                    wegeMax: Math.max(...je.map((q) => q.n.size)),
                     streckeMin: Math.round(Math.min(...je.map((q) => q.gesamt))),
                     ...vier(
                         "ausser",
-                        je.filter((q) => q.n < 4 || q.n > 10).map((q) => `${q.wer}: ${q.n}`)
+                        je.filter((q) => q.n.size < 4 || q.n.size > 10).map((q) => `${q.wer}: ${q.n.size}`)
                     ),
                     ...vier(
                         "kurz",
