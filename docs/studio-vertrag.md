@@ -1019,7 +1019,9 @@ der Basis `dichteBasis`, ihr Gitter `dichteGitter` und `gitterMitEdits`; die Edi
 `editsAm`, `editsImKasten`; der Spiegel des Körpers `wasserSpiegel`, des Atlas `atlasSpiegel`, des Flusses `flussAm`, quer über
 die Krone `spiegelQuer`, am Rand `flussRand` und im Schnitt `schnittSpiegel`, der Stau der Werke im Spiegel des Atlas (die Felder
 `L.stau`, gelaende.K2) — Stamm-Leser und Worker-Feld rufen sie, die
-Kern-Probe (`gate:worker-dichte --kern`) mutiert sie.
+Kern-Probe (`gate:worker-dichte --kern`) mutiert sie. Die Felder selbst: der Überlauf `stauUeberlauf`, der Spiegel am Werk
+`stauWerkY` (die Wahl der Werke im Stamm) und die Felder der Werke `stauFelder` — jeder Faden rechnet sie, nie der Haupt-Faden
+(`gate:worker-dichte --faden` zählt sie).
 DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
 Geladen vom Stamm (vor `stamm/`), vom Terrain-Labor (vor `foundry-core.js`), vom voxel-worker (`importScripts` mit `?v=`),
 vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, das Bild und der Körper `eisDicke`, der Feld-Zeichner und der Fern-Ring `hoehe`, die

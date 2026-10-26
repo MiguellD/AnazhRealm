@@ -1853,12 +1853,12 @@ class AnazhRealm_wasser_zellen {
             const CELL = this._voxelChunkConfig(0).step;
             const je = this._stauBauWerke || (this._stauBauWerke = new WeakMap());
             for (const entry of archs) {
-                const boxen = entry && entry.blockerAABBs;
-                if (!boxen) continue;
+                const huelle = entry && entry.blockerAABBs;
+                if (!huelle) continue;
                 let m = je.get(entry);
-                if (!m || m.boxen !== boxen || m.n !== boxen.length || m.cell !== CELL) {
-                    je.set(entry, (m = { boxen, n: boxen.length, cell: CELL, werke: [] }));
-                    for (const a of boxen) {
+                if (!m || m.huelle !== huelle || m.n !== huelle.length || m.cell !== CELL) {
+                    je.set(entry, (m = { huelle, n: huelle.length, cell: CELL, werke: [] }));
+                    for (const a of huelle) {
                         if (Math.min(a.maxX - a.minX, a.maxZ - a.minZ) < CELL) continue; // (b) geschlossen
                         const terrY = this._terrainMacroSurfaceY((a.minX + a.maxX) * 0.5, (a.minZ + a.maxZ) * 0.5);
                         if (Number.isFinite(terrY) && Number.isFinite(a.botY) && a.botY > terrY + CELL) continue; // (a) geerdet
