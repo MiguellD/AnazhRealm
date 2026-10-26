@@ -28,5 +28,11 @@ Vorgänger fielen — gemessen, mit Exit-Code (`echo EXIT=$?`, Lehre 9), und nen
    und der GTX fällt beim Koordinator — du lieferst den Befehl, die headless/swiftshader-Zahl und das erwartete Soll.
 
 ## Stand beim Start
-main 764776d9 (V18.546.99, z40) · Meisterkarte 97/330 gebucht · Pflicht-Offen A · B · C · E. Zug z41 (fk2-uhr, bk4-turm, ok4-beute,
-sk3-schmelze, kk2-ufer) fährt. Fünf Karten laufen parallel; jede nennt ihre Dateien, fremde Dateien editiert sie nicht.
+main 5b8603c1 (V18.546.103, z44b) · Meisterkarte 112/330 gebucht am 607d0c73 · Pflicht-Offen A · B · C · E. Zug z45 (hk5-bindung,
+sk5-kopie) folgt. Acht Karten laufen parallel (Ladung w2f); jede nennt ihre Dateien, fremde Dateien editiert sie nicht.
+
+## Neu seit w2e
+9. **Der Einlass:** der Zug nimmt einen Zweig nur, wenn sein EIGENER Code-Check am selben SHA keinen roten Job trägt (fahre.sh
+   Stufe 0; gk2-damm kam mit roten Gruppen 4, 5, 14 und kostete z44). Pushe deinen Code früh mit [ci voll] und fahre danach die
+   Wände; die Gruppen 4, 5 und 14 (Linsen mit Null-Renderer, `diag-hoehlen-sicht`, `diag-kollision-bild`, `diag-wasser-leben --bild`)
+   fallen an Imports und Laufzeit-Namen, die nur im Selbsttest-Bereich stehen: fahre jede berührte Linse EINMAL ganz, nicht nur `--selftest`.
