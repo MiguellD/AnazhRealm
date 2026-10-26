@@ -987,7 +987,8 @@ class AnazhRealm_dirigent_ankunft {
     // die EINE Frage hinter dem Rang der Schlange und der Pflanzung (Lehre 14/25): die Saat eines Chunks (`_foliageChunkInRadius`),
     // eine neue Streu-Region (`_tickScatterStreaming`) und der Baum der Pflanz-Schlange (`_tickPendingVegSpawns`, über
     // `_rangImErstenBlick`) außer Blick warten auf den Nachlauf. Bis hierher säte, streute und setzte der Lade-Takt den ganzen
-    // Ring vor dem Bild (Radeon kalt, die Kalt-Zeile: die Klasse Pflanzen 5,5 s Haupt-Faden vor dem Weltbild).
+    // Ring vor dem Bild — je länger der Boot, desto mehr (Radeon kalt, die Kalt-Zeile: die Klasse Pflanzen 5,5–6,4 s Haupt-Faden
+    // bei 34–52 s, mit der Frage 2,2 s bei 13 s; bei 11 s Boot trägt der Blick allein 1,7–2,2 s, fast ganz Streu).
     _blickDerAnkunft(x, z, r) {
         return !!this.state._weltbildDa || this._imErstenBlick(x, z, r);
     }
