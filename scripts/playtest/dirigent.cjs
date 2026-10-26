@@ -1125,23 +1125,7 @@ async function checkBandRauschGesetz(ctx) {
             // DIE ATLAS-BYTES: die MaterialX-Gradienten aus lookup3 (eigene Portierung), gepackt je Komponente × 4 Ecken
             const P = A.RAUSCH_GESETZ.P;
             const d = A._rauschAtlasDaten();
-            const rot = (x, k) => ((x << k) | (x >>> (32 - k))) >>> 0;
-            const mxHash = (x, y, z) => {
-                let a = (0xdeadbeef + 12 + 13) >>> 0;
-                let b = a;
-                let c = a;
-                a = (a + x) >>> 0;
-                b = (b + y) >>> 0;
-                c = (c + z) >>> 0;
-                c = ((c ^ b) - rot(b, 14)) >>> 0;
-                a = ((a ^ c) - rot(c, 11)) >>> 0;
-                b = ((b ^ a) - rot(a, 25)) >>> 0;
-                c = ((c ^ b) - rot(b, 16)) >>> 0;
-                a = ((a ^ c) - rot(c, 4)) >>> 0;
-                b = ((b ^ a) - rot(a, 14)) >>> 0;
-                c = ((c ^ b) - rot(b, 24)) >>> 0;
-                return c;
-            };
+            const mxHash = window.mxLookup3; // die EINE Portierung (scripts/lib/shader-kosten.cjs, SHADER_INSTALL)
             // der Gradient als Wert der mx-Regel an den Einheits-Achsen: g = (grad(h,1,0,0), grad(h,0,1,0), grad(h,0,0,1))
             const mxGrad = (h, x, y, z) => {
                 const u = h < 8 ? x : y;

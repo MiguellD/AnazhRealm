@@ -2320,8 +2320,8 @@ class AnazhRealm_gelaende_boden {
         const magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
         mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
         // Die Schneegrenze ist Gesetz (gelaende-core `schnee`: die Höhe über dem Meer, dieselbe Funktion ruft der Worker
-        // in `attachFieldColors`).
-        mix(snow, globalThis.__gelaendeCore.schnee(this._gelaende(), y, x, z));
+        // in `attachFieldColors`) und liest den Pegel des Schnees (stoffe.K3-2): den Versatz, den die Welt trägt (`_schneeGilt`).
+        mix(snow, globalThis.__gelaendeCore.schnee(this._gelaende(), y, x, z, this._schneeGilt()));
         // Der Seegrund: unter JEDEM Wasser (Meer, See, Fluss — der Spiegel des Orts) liegt Schlick, voll ab 4 m
         // Tiefe (bis V18.530 nur unter dem Meeresspiegel y < −2: die Bergseen lagen auf Wiese und Streu).
         // Schlick und Strand sind Ufer-Bänder über beiden Bezügen (`_waterLevelAt`): See/Meer voll, der Fluss mit seiner

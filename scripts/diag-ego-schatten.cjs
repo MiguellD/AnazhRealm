@@ -138,11 +138,7 @@ function selbsttest() {
         { name: "Bühne schreitet nicht (Gegenprobe Karte steht blind)", z: mit("grob.gegenprobe.5.m.ego", { wurf: 754 }), muss: /GEGENPROBE: die Regel „Karte steht" fällt nicht/ },
         { name: "Bühne am falschen Leib", z: mit("fein", { stufe: 1 }), muss: /STUFE: die Bühne „fein" misst .* nahStufe 1/ },
     ];
-    for (const f of faelle) {
-        const v = urteilJeStufe(f.z);
-        if (!v.some((s) => f.muss.test(s))) fehler.push(`${f.name}: die Wand nennt den Täter nicht (${f.muss})`);
-        console.log(`  ${v.length ? "✅" : "❌"} Selbsttest „${f.name}" → rot: ${v.join(" · ") || "(nichts)"}`);
-    }
+    require("./lib/welt-boot.cjs").taeterLauf(faelle, urteilJeStufe, fehler);
     if (fehler.length) {
         console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
         process.exit(1);

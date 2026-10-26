@@ -144,12 +144,7 @@ function selbsttest() {
         { name: "Rundungs-Probe blind", z: mit((z) => (z.rundung = {})), muss: /RUNDUNG: die Probe lief nicht/ },
         { name: "Quelle ohne Ausgleich", z: mit((z) => (z.rundungQuelle = ["x"])), muss: /RUNDUNG \(Quelle\): x/ },
     ];
-    for (const f of faelle) {
-        const v = urteil(f.z);
-        const ok = v.some((s) => f.muss.test(s));
-        if (!ok) fehler.push(`${f.name}: die Wand nennt den Täter nicht (${f.muss})`);
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${f.name}" → ${v.join(" · ") || "(grün)"}`);
-    }
+    require("./lib/welt-boot.cjs").taeterLauf(faelle, urteil, fehler);
     // die Quell-Wand am Stamm: grün; eine zweite Abtastung → rot
     const q0 = rundungQuelle();
     if (q0.length) fehler.push("Quell-Wand der Rundung am Stamm rot: " + q0.join(" · "));

@@ -351,12 +351,7 @@ function selbsttest() {
             muss: [/BODEN-STUFEN: 1 Naht-Bänder ohne Bereich im Boden-Satz — -19,-18/],
         },
     ];
-    for (const f of faelle) {
-        const v = urteil(f.z);
-        for (const re of f.muss)
-            if (!v.some((s) => re.test(s))) fehler.push(`${f.name}: die Wand nennt den Täter nicht (${re})`);
-        console.log(`  ${v.length ? "✅" : "❌"} Selbsttest „${f.name}" → rot: ${v.join(" · ") || "(nichts)"}`);
-    }
+    require("./lib/welt-boot.cjs").taeterLauf(faelle, urteil, fehler);
     // (j) die Neuschreib-Wand: Ruhe ist grün; die alte Verdrängung (die Kaskaden schreiben einander je Frame neu) und
     // ein fremder Umzug fallen rot, beim Namen.
     const neuGruen = { ruhe: [{ "haupt>haupt": 1335096, "k0>k0": 1758984 }, {}, {}], druck: [{ "k1>k1": 4096 }, {}] };

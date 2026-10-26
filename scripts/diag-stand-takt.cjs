@@ -517,14 +517,7 @@ function selbsttest() {
         ["die Ankunft gleitet, die Welt steht (die Basis)", (b) => (b.fixWach = "Gleite"), /stehend — Gleite/],
         ["die Sonde ohne Bestand", (b) => (b.sonde.vor = "Rinde baum_tanne"), /SONDE: .* trifft Rinde/],
     ];
-    for (const [name, tat, muss] of faelle) {
-        const b = klon();
-        tat(b);
-        const v = urteil(b);
-        const ok = v.some((x) => muss.test(x));
-        if (!ok) fehler.push(`${name}: die Wand nennt den Täter nicht (${muss})`);
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${name}" → rot: ${v.join(" · ") || "(nichts)"}`);
-    }
+    require("./lib/welt-boot.cjs").taeterLauf(faelle, urteil, fehler, klon);
     if (fehler.length) {
         console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
         process.exit(1);

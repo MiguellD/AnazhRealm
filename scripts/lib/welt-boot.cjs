@@ -1092,7 +1092,22 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
     return errs;
 }
 
+// DER TÄTER-LAUF der Selbsttests (EIN Lauf für jede Wand): je Fall — { name, z, muss } oder [name, tat, muss] (die Tat
+// an einer Kopie `klon()`) — das Urteil; nennt es nicht jeden Täter `muss` beim Namen, steht der Fall in `fehler`.
+function taeterLauf(faelle, urteil, fehler, klon) {
+    for (const f of faelle) {
+        const [name, muss] = Array.isArray(f) ? [f[0], f[2]] : [f.name, f.muss];
+        const z = Array.isArray(f) ? klon() : f.z;
+        if (Array.isArray(f)) f[1](z);
+        const v = urteil(z);
+        const ok = [].concat(muss).every((re) => v.some((x) => re.test(x)));
+        if (!ok) fehler.push(`${name}: die Wand nennt den Täter nicht (${muss})`);
+        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${name}" → rot: ${v.join(" · ") || "(nichts)"}`);
+    }
+}
+
 module.exports = {
+    taeterLauf,
     scanWarteWand,
     ROOT,
     MIME,

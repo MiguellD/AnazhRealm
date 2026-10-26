@@ -407,11 +407,93 @@ async function wasserKoerper(o = {}) {
         st.seasonPhase = 0.875;
         feld(10);
         aus.eis.mutation = gang();
+        delete r._temperaturFeld;
+        aus.schmelze = wasserSchmelze(r, x0 + 20, mz);
+        aus.erstarrung = wasserErstarrung(r, [[x0, mz], [mx, mz]]);
     } finally {
         delete r._temperaturFeld;
         [st.seasonPhase, st.autoSeason] = jahr;
         leib.zurueck();
     }
+    return aus;
+}
+
+// (12) DIE SCHMELZE ÜBER SPIELZEIT (stoffe.K3-2): das Jahr läuft im Takt der Saison (`_tickSeason`, eine Woche je Takt); am
+// Ort (x, z) je Woche der Pegel des Schnees (`_schneePegelAt`), das Tagesmittel der Luft (die Uhr und ihr Gegenüber heben den
+// Tagesgang auf), der Versatz, den die Welt trägt (`_schneeGilt`), das Weiß des Boden-Lesers (`_bodenFarbeAt` gegen den
+// Schnee der Palette) und die Chunks, die der Takt der Grenze neu baut. Die Festhalte-Probe: das Feld ohne Jahres-Welle hält
+// den Pegel (`halt` 0).
+function wasserSchmelze(r, x, z) {
+    const st = r.state;
+    const y = r._voxelSurfaceY(x, z);
+    const [S, c, R] = [r.constructor.BODEN_FARBE.schnee, [0, 0, 0], wasserRund(3)];
+    const spanne = (a) => R(Math.max(...a) - Math.min(...a));
+    const lauf = () => {
+        const alt = [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, (r._lastSeasonTime = 0)];
+        Object.assign(st, { seasonPhase: 0.375, autoSeason: true, seasonYearSeconds: 10.4 });
+        const w = [];
+        let neuBau = 0;
+        try {
+            for (let k = 1; k <= 52; k++) {
+                const vor = st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0;
+                r._tickSeason(k * 200);
+                neuBau += (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) - vor;
+                r._bodenFarbeAt(x, y, z, c);
+                const F = r._temperaturFeld(y, 0);
+                const t = (window.__gelaendeCore.temperaturAus(F, st.seasonPhase, 0.25) + window.__gelaendeCore.temperaturAus(F, st.seasonPhase, 0.75)) / 2;
+                w.push({ p: r._schneePegelAt(y), t, v: r._schneeGilt(), weiss: 1 - Math.max(...c.map((v, i) => Math.abs(v - S[i]))) });
+            }
+        } finally {
+            [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, r._lastSeasonTime] = alt;
+            r._tickSeason(0);
+        }
+        const n = (f) => w.filter((b, i) => i && f(w[i - 1], b)).length;
+        return {
+            pegel: spanne(w.map((b) => b.p)),
+            schmilzt: n((a, b) => a.t > 0 && b.p < a.p),
+            gegen: n((a, b) => (a.t > 1.5 && b.p > a.p + 1e-6) || (a.t < -1.5 && b.p < a.p - 1e-6)),
+            versatz: spanne(w.map((b) => b.v)),
+            weiss: spanne(w.map((b) => b.weiss)),
+            neuBau,
+        };
+    };
+    const aus = lauf();
+    r._temperaturFeld = (yy, tr) => {
+        const F = r.constructor.prototype._temperaturFeld.call(r, yy, tr);
+        return { ...F, jahr: { ...F.jahr, amp: 1e-9 } };
+    };
+    aus.halt = lauf().pegel;
+    delete r._temperaturFeld;
+    return aus;
+}
+
+// (13) DIE ERSTARRUNG ÜBER SPIELZEIT (stoffe.K3-2): die DSL gießt Lava (`lava`) an Land und ins Wasser des Sees, die Uhr läuft
+// im Takt des Tags (`tickDayNight`, Tag 1 min: ein Takt = 0,4 Welt-Stunden); je Takt die glut-Achse der Welt (`auraAt`, `frei`
+// ohne Lava), der Stoff unter dem Fuß (`_kontaktStoffAt`), die Decke (`_lavaAt`) und ihr Licht (`_leuchtQuellen`); `ab` der
+// erste erstarrte Takt. Die Taten fallen danach.
+function wasserErstarrung(r, orte) {
+    const st = r.state;
+    const wm = st.worldMeta;
+    const n = (wm.taten || []).length;
+    const alt = [st.timeOfDay, wm.tag, st.dayLengthMinutes, st._lastDayNightTick];
+    const aus = orte.map(([x, z]) => ({ x, z, y: r._voxelSurfaceY(x, z), frei: r.auraAt(x, z).glut, reihe: [] }));
+    try {
+        for (const o of aus) r.dslRun(["lava", o.x, o.y, o.z], { source: "human" });
+        Object.assign(st, { dayLengthMinutes: 1, _lastDayNightTick: 0 });
+        for (let k = 0; k <= 15; k++) {
+            if (k) r.tickDayNight(k);
+            aus.forEach((o, i) => {
+                const d = r._lavaAt(o.x, o.z);
+                const licht = r._leuchtQuellen(o.x, o.y, o.z, 30).some((q) => q.id === wm.taten[n + i]);
+                o.reihe.push({ T: Math.round(d.temperatur), glut: wasserRund(2)(r.auraAt(o.x, o.z).glut), stoff: r._kontaktStoffAt(o.x, o.z, o.y), erstarrt: d.erstarrt, dampf: d.dampf, licht });
+            });
+        }
+    } finally {
+        wm.taten.splice(n);
+        r._tatGen = (r._tatGen | 0) + 1;
+        [st.timeOfDay, wm.tag, st.dayLengthMinutes, st._lastDayNightTick] = alt;
+    }
+    for (const o of aus) o.ab = o.reihe.findIndex((s) => s.erstarrt);
     return aus;
 }
 
@@ -2993,6 +3075,8 @@ module.exports = {
         wasserBoot.toString() +
         wasserTier.toString() +
         wasserPflanzen.toString() +
+        wasserSchmelze.toString() +
+        wasserErstarrung.toString() +
         // jede Probe als `window.__<Name>` (der Name der Funktion ohne führende Striche)
         Object.entries({ wasserOrte, wasserLeser, wasserLeib, wasserMutation, wasserKarte, wasserLaeufe, wasserTreibt, wasserHoehle, wasserWagen, wasserSichtNetz, wasserFlora, wasserSee, wasserQuelle, wasserQuellTeil, wasserBach, wasserBank, wasserFluss, __wasserKroneVon, wasserUfer, wasserStrom, __wasserFlussNah, wasserGraben, wasserUferFarbe, wasserKoerper, wasserBild, __wasserSeeAm, wasserLicht, wasserRegen })
             .map(([n, f]) => `window.__${n.replace(/^_+/, "")} = ${f};`)

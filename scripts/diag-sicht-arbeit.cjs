@@ -793,14 +793,7 @@ function selbsttest() {
         ["Wiese liest nicht", (b) => (b.code.wieseLiest = false), /WIESE: `_nahWieseSicht` prüft/],
         ["Wiese leer", (b) => (b.code.wieseLiest = "leer"), /LEER: die Nah-Wiese trägt keine Kachel/],
     ];
-    for (const [name, tat, muss] of faelle) {
-        const b = klon();
-        tat(b);
-        const v = urteil(b);
-        const ok = v.some((x) => muss.test(x));
-        if (!ok) fehler.push(`${name}: die Wand nennt den Täter nicht (${muss})`);
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${name}" → rot: ${v.join(" · ") || "(nichts)"}`);
-    }
+    require("./lib/welt-boot.cjs").taeterLauf(faelle, urteil, fehler, klon);
     if (fehler.length) {
         console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
         process.exit(1);
