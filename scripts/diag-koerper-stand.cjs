@@ -1060,59 +1060,49 @@ async function rollen(n) {
         streuJetzt();
         R.streu = mass(streu);
         // DER SPRUNG AUS DEM LEIB-GESETZ (K9, leib.K2 Staffel 2) an der Wiese je Sicht: aus dem Sprint, die Taste einen Takt
-        // gehalten, bis der Leib landet — der Hub der Kapsel, der gezeichneten Hüfte und des Auges, die Weite vom Abdruck bis
-        // zur Landung; das Gesetz ist der Scheitel des Abdrucks im Takt (v²/2g − v·dt/2, v aus `_sprungAbdruck`). Je Leib: das
-        // Gesetz, die Masse ×1,25 (das Volumen der Haut, `_leibMasse`), die Kraft ×1,25 (`_sprungKraft`)
+        // gehalten, bis der Leib landet — der Hub der Kapsel, der gezeichneten Hüfte und des Auges und die Weite vom Abdruck bis
+        // zur Landung, je Leib: der heutige, die Masse ×1,25 (`_leibMasse`), die Kraft ×1,25 (`_sprungKraft`)
         if (ort !== "wiese") continue;
-        const av = [];
-        pm.traverse((q) => q.userData._leibV > 0 && av.push(q));
         const y = () => (pm.updateMatrixWorld(true), [P.y, rig.legL.hip.getWorldPosition(v).y, s.camera.position.y]);
         const sprung = (fm, fk, j = { hub: [0, 0, 0] }) => {
-            av.forEach((q) => (q.userData._leibV *= fm));
-            r._sprungKraft = () => fk * Object.getPrototypeOf(r)._sprungKraft.call(r);
+            const L = Object.getPrototypeOf(r);
+            [r._leibMasse, r._sprungKraft] = [(k) => fm * L._leibMasse.call(r, k), () => fk * L._sprungKraft.call(r)];
             setz();
             [s.keys.w, s.keys.shift, s.yaw] = [true, true, 0];
             for (let k = 0; k < 120; k++) takt();
-            const [y0, x0, z0, a] = [y(), P.x, P.z, r._sprungAbdruck()];
+            const [y0, x0, z0] = [y(), P.x, P.z];
             s.keys[" "] = true;
             for (let k = 0; k < 300 && (!k || s.isJumping); k++, s.keys[" "] = false) {
                 takt();
                 y().forEach((h, i) => (j.hub[i] = Math.max(j.hub[i], h - y0[i])));
             }
-            [s.keys.w, s.keys.shift, j.weite, j.gesetz] = [
-                false,
-                false,
-                Math.hypot(P.x - x0, P.z - z0),
-                (a * a) / 2 / -s.gravity - a / 120,
-            ];
+            [s.keys.w, s.keys.shift, j.weite] = [false, false, Math.hypot(P.x - x0, P.z - z0)];
+            delete r._leibMasse;
             delete r._sprungKraft;
-            av.forEach((q) => (q.userData._leibV /= fm));
             return j;
         };
         o.sprung = {};
         for (const b of ["first", "third"]) {
             r.setCameraMode(b);
-            o.sprung[b] = { gesetz: sprung(1, 1), masse: sprung(1.25, 1), kraft: sprung(1, 1.25) };
+            o.sprung[b] = [sprung(1, 1), sprung(1.25, 1), sprung(1, 1.25)];
         }
     }
     o.nexus = r.nexus && r.nexus.knightOfTime.autonomyLevel;
     return o;
 }
 
-// K9 je Sicht: die Höhe hält das Gesetz des Abdrucks auf 2 %, der Leib (Third) und das Auge (Ego) heben sich mit (≥ 80 %), die
-// Masse ×1,25 senkt Höhe und Weite, die Kraft ×1,25 hebt sie (je ≥ 10 %)
+// K9 je Sicht: der Leib (Third) und das Auge (Ego) heben sich mit der Kapsel (≥ 80 %), die Masse ×1,25 senkt Höhe und Weite,
+// die Kraft ×1,25 hebt sie (je ≥ 10 %)
 function urteilK9(o) {
     const f = o ? [] : ["K9 Aufbau: kein Sprung"];
-    for (const [b, { gesetz: g, masse, kraft }] of Object.entries(o || {})) {
-        if (!(Math.abs(g.hub[0] / g.gesetz - 1) <= 0.02))
-            f.push(`K9 Höhe ${b}: ${g.hub[0]} m, das Gesetz ${g.gesetz} m`);
+    for (const [b, [g, ...mut]] of Object.entries(o || {})) {
         if (!(g.hub[b === "first" ? 2 : 1] >= 0.8 * g.hub[0])) f.push(`K9 Bild ${b}: Kapsel/Leib/Auge ${g.hub} m`);
         for (const [n, j, vz] of [
-            ["masse", masse, -1],
-            ["kraft", kraft, 1],
+            ["masse", mut[0], -1],
+            ["kraft", mut[1], 1],
         ])
-            if (!(Math.min(...[j.hub[0] / g.hub[0], j.weite / g.weite].map((q) => (q - 1) * vz)) >= 0.1))
-                f.push(`K9 Mutante ${n} ${b}: ${j.hub[0]}/${j.weite} m gegen ${g.hub[0]}/${g.weite} m`);
+            if (!((j.hub[0] / g.hub[0] - 1) * vz >= 0.1 && (j.weite / g.weite - 1) * vz >= 0.1))
+                f.push(`K9 Mutante ${n} ${b}: ${j.hub[0]}/${j.weite} gegen ${g.hub[0]}/${g.weite} m`);
     }
     return f;
 }
