@@ -1,0 +1,6 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:\Program Files\nodejs\node.exe scripts/diag-kollision-bild.cjs --bild
+
+--- stderr ---
+gpu-lauf: punkte-radeon-1 (bild) wartet auf punkte-headless-1
+gpu-lauf: punkte-radeon-1 (bild) wartet auf punkte-headless-3
+gpu-lauf: punkte-radeon-1 (bild) wartet auf punkte-headless-3
