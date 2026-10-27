@@ -2612,7 +2612,7 @@ class AnazhRealm_kreatur_leben {
         this._vogelSchwarmTakt(this._sonnenRichtung().y, wf.rain);
     }
     // DER SCHWARM (luftwasser.K5, tetrapoda VOGEL_GESETZ.schwarm): fern EIN Agent. Je Takt die Schwarm-Zellen um das Auge
-    // (sichtM): je Zelle einmal ihr Wurf (Mitte, Würfe, das Revier aus der Kronen-Deckung der Mitte), je fliegendem Schwarm sein
+    // (sichtM): je Zelle einmal ihr Wurf (Mitte, Würfe), je frischeS ihr Revier aus der Kronen-Deckung der Mitte, je fliegendem Schwarm sein
     // ZENTRUM auf der Uhr der Welt (`schwarmZentrum`: jeder Peer und jeder Reload sieht denselben Schwarm). Jenseits von sichtM
     // oder mit der Hülle außer dem Blick (`_frustumCache`) rechnet er nur das; im Bild ist jedes Glied eine Funktion von Index
     // und Zeit (`schwarmGlied`), nah (nahM) hält die Separation über das Gitter die Paare auseinander (`schwarmSeparation`).
@@ -2665,9 +2665,20 @@ class AnazhRealm_kreatur_leben {
                 let c = sk.zellen.get(k);
                 if (!c) {
                     const w = (j) => VG.wurf(sk.saat, ix, iz, j);
-                    c = { ix, iz, x: (ix + w(1)) * Z, z: (iz + w(2)) * Z, wurf: [w(3), w(4), w(5), w(6), w(7)] };
-                    c.revier = VG.schwarmRevier(w(0), this._kronenStreuAt(c.x, c.z), V);
+                    c = {
+                        ix,
+                        iz,
+                        x: (ix + w(1)) * Z,
+                        z: (iz + w(2)) * Z,
+                        u: w(0),
+                        wurf: [w(3), w(4), w(5), w(6), w(7)],
+                    };
                     sk.zellen.set(k, c);
+                }
+                // das Revier folgt der Deckung (Pflanzen, Fällen; die Karte der Kronen steht erst nach dem Boot): je frischeS neu
+                if (!(Math.abs(uhr - c.frisch) <= S.frischeS)) {
+                    c.frisch = uhr;
+                    c.revier = VG.schwarmRevier(c.u, this._kronenStreuAt(c.x, c.z), V);
                 }
                 if (!c.revier || !VG.schwarmZentrum(c.wurf, uhr, sonne, regen, V, zt)) continue;
                 lage.fliegen++;

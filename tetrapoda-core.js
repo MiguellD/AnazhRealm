@@ -2065,7 +2065,8 @@
         // 0,7–1,5 m), atmend (atmen), eine Dichte-Welle läuft längs durch den Verband (welle; Procaccini et al. 2011), jedes Glied
         // zittert um seinen Platz (zitterM) und wechselt Schlag und Gleiten (gleitHz, der Starenflug). NAH (nahM vom Auge) hält
         // die Separation die Glieder auf ihrem Paar-Raum raumM auseinander (schwarmSeparation, über ein Hash-Gitter der Zelle
-        // raumM: Kosten an den Gliedern, nie n²); jenseits von sichtM rechnet nur das Zentrum. Bei Tag (sonneMin) und unter
+        // raumM: Kosten an den Gliedern, nie n²); jenseits von sichtM rechnet nur das Zentrum; das Revier einer Zelle folgt der
+        // Deckung je frischeS Sekunden der Welt-Uhr (gepflanzter Wald vertreibt den Schwarm). Bei Tag (sonneMin) und unter
         // regenMax fliegt er, sonst ruht er (kein Glied im Bild). Der Leib ist der des Singvogels (leib).
         schwarm: Object.freeze({
             zelleM: 480,
@@ -2088,6 +2089,7 @@
             sichtM: 320,
             sonneMin: 0.05,
             regenMax: 0.5,
+            frischeS: 30,
         }),
     });
     // saat (uint32), die Zelle (ix, iz) und die Wurf-Nummer k → [0, 1).
