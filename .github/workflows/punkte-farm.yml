@@ -48,28 +48,6 @@ env:
     K: .claude/worktrees/koordination
 
 jobs:
-    # PROBE (fällt vor dem Zug): der Selbsttest der Maschine auf einem Läufer (am Laptop reißen unter der Last des Takts die
-    # Schloss-Fälle BAHNEN ihre 120-s-Fenster)
-    selbsttest:
-        runs-on: ubuntu-latest
-        timeout-minutes: 20
-        steps:
-            - uses: actions/checkout@v4
-              with:
-                  filter: blob:none
-            - uses: actions/setup-node@v4
-              with:
-                  node-version: "22"
-            - name: Selbsttest der Maschine
-              shell: bash
-              run: |
-                  git fetch -q --depth=1 --filter=blob:none origin "+refs/heads/$KOORD:refs/remotes/origin/$KOORD"
-                  git worktree add -q --detach --no-checkout "$K" "origin/$KOORD"
-                  git -C "$K" sparse-checkout set --no-cone '/meisterkarte-quelle/' '!/meisterkarte-quelle/punkte/messung/roh/'
-                  git -C "$K" reset -q --hard
-                  node "$K/meisterkarte-quelle/punkte/punkte.cjs" selbsttest
-                  node "$K/meisterkarte-quelle/punkte/punkte.cjs" liste --kopf HEAD | tail -1
-
     scheiben:
         runs-on: ubuntu-latest
         timeout-minutes: 15
@@ -95,9 +73,9 @@ jobs:
               shell: bash
               env:
                   SHA: ${{ inputs.sha || 'dc06b495020b357431dc998342945d2352e0beee' }}
-                  AUSWAHL: ${{ inputs.auswahl || 'nur' }}
-                  NUR: ${{ inputs.nur || 'fahrzeug.K1#1,wetter.K5#1,wetter.K5#2,stoffe.K1#1,oekologie.K4#1' }}
-                  JOBS: ${{ inputs.jobs || '3' }}
+                  AUSWAHL: ${{ inputs.auswahl || 'alle' }}
+                  NUR: ${{ inputs.nur }}
+                  JOBS: ${{ inputs.jobs || '12' }}
               run: |
                   echo "beginn=$(date +%s)" >> "$GITHUB_OUTPUT"
                   git fetch -q --filter=blob:none origin "+refs/heads/$KOORD:refs/remotes/origin/$KOORD"
