@@ -523,3 +523,4 @@
 2026-10-28 00:10:19 takt14a-gtx tore.K3#1 GRÜN 1.5 · 11/12
 2026-10-28 00:11:38 takt14a-gtx klang.K4#1 ROT 1.2 · 12/12
 2026-10-28 00:11:56 takt14b-gtx START 20 Stationen in 19 Läufen
+2026-10-28 00:13:45 takt14b-gtx fahrzeug.K3#1 GRÜN 1.7 · 1/20
