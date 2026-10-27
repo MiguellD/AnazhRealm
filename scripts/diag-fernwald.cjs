@@ -551,13 +551,17 @@ hauptLauf(async () => {
         // Der Tausch ändert, was Cull und Stufen-Wahl urteilen: er ist ein Schreiber und trägt seinen Weckruf (die Stand-Wache,
         // `_standRuht` — ohne ihn ging der Cull in einer eingeschwungenen Welt nie, A blieb unter dem alten Weg grün: CI
         // 91c44f0f, A 1558/1558). A zählt erst, wenn der Cull nach dem Tausch gegangen ist — nie nach einer festen Taktzahl.
+        // Seit pbk4-fahrt schläft ein Eintrag mit stehendem Urteil in der Cull-Wache (`_cullWache`, ihr Schlüssel: Bestand und
+        // Buch) — der Tausch ist ein neues Buch und weckt sie ganz (ohne ihn A 2230/2230 grün unter dem alten Weg).
         const cullVor = wache("archCull").arbeit;
         r._archKartenPreset = () => null;
+        r._cullWacheStand = null;
         r._weltRegt();
         await warte("der Cull nach dem Tausch", () => wache("archCull").arbeit > cullVor);
         const cullGaenge = wache("archCull").arbeit - cullVor;
         res.S1 = { A: formZensus(), cullGaenge, D: await uebergang(), vorher: !kandS1.fehlt };
         delete r._archKartenPreset; // die Prototyp-Methode trägt wieder
+        r._cullWacheStand = null;
         r._weltRegt();
         // ── SELBSTTEST (2): ein injizierter Satz an einem Baum ──
         const opfer = karten()[0];
