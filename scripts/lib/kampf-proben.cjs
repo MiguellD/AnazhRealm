@@ -3200,32 +3200,24 @@ async function K5_VOR(abdruck) {
     // Eisen · Bronze · Holz), die Nahrung (der Lebenssaft, sein Inhalt aus Kraut · Fleisch, `activateConsumable`); dann trägt der
     // Leib den Brustpanzer und hat gegessen (600 s), und beides reist im Stand (der Abdruck `werte`).
     const bp = s.blueprints;
-    const werte = () => (
-        r.recomputePlayerStats(),
-        [p.hpMax, p.staminaMax, p.manaMax, p.stats.defense].map((v) => +v.toFixed(2))
-    );
-    const klon = (von, name, mat, teil) => {
-        const b = JSON.parse(JSON.stringify(bp[von]));
-        Object.assign(b, { name, builtIn: false, consumableMeta: { durationSeconds: 600 } });
+    const werte = () => (r.recomputePlayerStats(), [p.hpMax, p.staminaMax, p.manaMax, p.stats.defense]);
+    const klon = (von, mat, teil) => {
+        const b = (bp._k5 = JSON.parse(JSON.stringify(bp[von])));
+        Object.assign(b, { name: "_k5", builtIn: false, consumableMeta: { durationSeconds: 600 } });
         b.parts.forEach((x, i) => teil(i) && (x.material = mat));
-        bp[name] = b;
-        return name;
+        return "_k5";
     };
-    K.q14 = { leer: werte(), werk: {}, nahrung: {} };
-    for (const mat of ["eisen", "bronze", "holz"]) {
-        r.equipArmor(klon("ruestung_brustpanzer", "_k5_werk", mat, () => true));
-        K.q14.werk[mat] = werte();
-    }
+    const Q = (K.q14 = { leer: werte(), werk: {}, nahrung: {} });
+    for (const mat of ["eisen", "bronze", "holz"])
+        (r.equipArmor(klon("ruestung_brustpanzer", mat, () => 1)), (Q.werk[mat] = werte()));
     r.equipArmor(null);
-    for (const mat of ["kraut", "fleisch"]) {
-        p.boosts = [];
-        r.activateConsumable(klon("trank_lebenssaft", "_k5_kost", mat, (i) => i === 1));
-        K.q14.nahrung[mat] = werte();
-    }
-    delete bp._k5_werk;
+    for (const mat of ["kraut", "fleisch"])
+        ((p.boosts = []),
+            r.activateConsumable(klon("trank_lebenssaft", mat, (i) => i === 1)),
+            (Q.nahrung[mat] = werte()));
     r.equipArmor("ruestung_brustpanzer");
-    K.q14.getragen = werte();
-    delete bp._k5_kost;
+    Q.getragen = werte();
+    delete bp._k5;
     K.nachTod = abdruck();
     r.saveState();
     return K;
@@ -3262,148 +3254,100 @@ function K5_ABDRUCK() {
 }
 
 // ── Q15 halten.K1 Staffel 2 — DER TREFFER AUS DEM GESETZ IM BILD (Seiten-Funktion, allein mit `--k1`, echter Renderer; der ewige
-// Loop läuft: Sweep und Pose im Takt des Spiels). Das Langschwert in der Hand (die Studio-Gestalt), ein Hirsch vor dem Leib,
-// das Fadenkreuz auf seiner Leibes-Mitte (die Hand der Latenz-Linse, `haenger-linse` tierStellen), EIN Klick über den
-// Dispatcher (`tryMouseBreak`); am Treffer das Urteil des Kerns (KE · Impuls p · edgeQ · Art) und der Schaden, dann hält der
-// Hit-Stop das Bild (die Linse schießt es), und die Schneide der gezeichneten Pose (`_kampfSchneide`). `lauf` mutiert den Kern
-// (`__schmiedeCore`): vor · masse (MAT.*.rho × 1,25) · schneide (die Stoff-Zeile des Werks, sigY × 1,5); `K1_LOS` nimmt sie zurück.
+// Loop läuft: Sweep und Pose im Takt des Spiels). Das Langschwert in der Hand (die Studio-Gestalt, Prägung Nihon: die Stahl-Zeile
+// ist die Eichung der Schneide — edgeBeta normiert an ihr, ihre Mutation ändert keine Fase, die Eisen-Zeile schon), ein Hirsch vor
+// dem Leib, je Bild an seinem Platz gehalten (gemessen wird das Gesetz des Treffers, nicht die Flucht), das Fadenkreuz auf seiner
+// Leibes-Mitte (die Hand der Latenz-Linse, `haenger-linse` tierStellen), EIN Klick über den Dispatcher (`tryMouseBreak`); am
+// Treffer das Urteil des Kerns (KE · p · edgeQ · v · eff · Zone), der Schaden und die Kraft der Führung, dann hält der Hit-Stop
+// das Bild (die Linse schießt es) und die Schneide der gezeichneten Pose (`_kampfSchneide`). `lauf` mutiert den Kern
+// (`__schmiedeCore`): vor · masse (MAT.*.rho × 1,25) · schneide (die Stoff-Zeile des Werks, sigY × 1,5); jeder Ruf nimmt zuerst
+// den letzten Lauf zurück (Halt, Kern, Schwung), `lauf` null auch die Prägung.
 async function K1_BILD(lauf) {
     const r = window.anazhRealm,
         s = r.state,
         p = s.player,
         pm = s.playerMesh,
-        sc = globalThis.__schmiedeCore;
+        sc = globalThis.__schmiedeCore,
+        bp = s.blueprints.klinge_langschwert;
     const bild = () => new Promise((ok) => requestAnimationFrame(() => ok()));
-    const bp = s.blueprints.klinge_langschwert;
-    // die Prägung Nihon (Eisen, wie Q11): die Stahl-Zeile ist die Eichung der Schneide (edgeBeta normiert an ihr), ihre Mutation
-    // ändert keine Fase — die Eisen-Zeile schon; die Hand baut die geprägte Gestalt neu
-    if (!bp.studioOv || bp.studioOv.__tradition !== "Nihon") {
-        window.__k1ov = bp.studioOv;
-        bp.studioOv = { __tradition: "Nihon" };
-        r.equipHeld(null);
-    }
-    if (!p.equipped || p.equipped.held !== "klinge_langschwert") r.equipHeld("klinge_langschwert");
-    r._setBlueprintWear(bp, 1);
-    const geraet = () => pm.userData.heldMesh && pm.userData.heldMesh.userData;
-    for (let i = 0; i < 900 && !(geraet() && geraet().foundryHeld); i++) await bild();
-    const stoff = r._geraetStoff(bp);
+    p._hitStopUntil = 0;
+    for (const [o, k, v] of window.__k1alt || []) o[k] = v;
     const alt = (window.__k1alt = []);
     const mut = (o, k, f) => (alt.push([o, k, o[k]]), (o[k] *= f));
     if (lauf === "masse") for (const m of Object.values(sc.MAT)) mut(m, "rho", 1.25);
-    if (lauf === "schneide") mut(sc.MAT[stoff], "sigY", 1.5);
-    r._kampfMaszeMemo = null;
-    r._gueteAnteilMemo = null;
-    if (s.cameraMode !== "third") r.setCameraMode("third");
+    if (lauf === "schneide") mut(sc.MAT.eisen, "sigY", 1.5);
+    if (!("__k1ov" in window)) window.__k1ov = bp.studioOv;
+    if (lauf === null || !bp.studioOv || bp.studioOv.__tradition !== "Nihon") r.equipHeld(null);
+    bp.studioOv = lauf === null ? window.__k1ov : { __tradition: "Nihon" };
+    r._kampfMaszeMemo = r._gueteAnteilMemo = null;
+    for (let i = 0; i < 600 && p._swing; i++) await bild();
+    if (lauf === null) return null;
+    if (p.equipped.held !== "klinge_langschwert") r.equipHeld("klinge_langschwert");
+    r._setBlueprintWear(bp, 1);
+    for (let i = 0; i < 900 && !pm.userData.heldMesh?.userData.foundryHeld; i++) await bild();
+    r.setCameraMode("third");
     const start = (window.__k1start = window.__k1start || pm.position.clone());
     pm.position.copy(start);
     const f = r._blickVorn(s.yaw, 0),
         d = 0.5 * r._kampfBladeReach() + 0.5,
-        x = start.x + f.x * d,
-        z = start.z + f.z * d;
+        [x, z] = [start.x + f.x * d, start.z + f.z * d];
     const c = (window.__k1tier = window.__k1tier || r.spawnCreatureAt(x, start.y, z, "happy", "wesen"));
     for (let i = 0; i < 240 && !r._leibMitte(c); i++) await bild();
-    c.position.set(x, r._voxelSurfaceY(x, z) + c.position.y - r._voxelSurfaceY(c.position.x, c.position.z), z);
+    const platz = c.position
+        .set(x, r._voxelSurfaceY(x, z) + c.position.y - r._voxelSurfaceY(c.position.x, c.position.z), z)
+        .clone();
+    const halte = () => (c.position.copy(platz), (c.userData._steuer = null), (c.userData.fearUntil = 0));
     c.userData.hp = 1e9;
-    p.stamina = p.staminaMax || 100;
-    // das Tier steht bis zum Treffer, wo es gestellt ist (je Bild zurück — die Probe misst das Gesetz des Treffers, nicht die Flucht)
-    const platz = c.position.clone(),
-        gier = c.rotation.y;
-    const halte = () => {
-        c.position.copy(platz);
-        c.rotation.y = gier;
-        c.userData._steuer = null;
-        c.userData.fearUntil = 0;
-    };
-    let zielFehl = null;
+    p.stamina = p.staminaMax;
+    const out = { lauf, traf: false };
     for (let i = 0, um = (a) => Math.atan2(Math.sin(a), Math.cos(a)); i < 30; i++, halte(), await bild()) {
         const F = r._fadenkreuzStrahl(),
             v = r._leibMitte(c).sub(F.o).normalize();
-        zielFehl = v.distanceTo(F.d);
-        if (zielFehl < 0.03) break;
+        if ((out.zielFehl = v.distanceTo(F.d)) < 0.03) break;
         s.yaw += 0.6 * um(Math.atan2(v.x, v.z) - Math.atan2(F.d.x, F.d.z));
         s.pitch += 0.6 * (Math.asin(v.y) - Math.asin(F.d.y));
     }
-    const pick = r._pickCreatureAtCrosshair();
-    const out = { lauf, stoff, traf: false, zielFehl, pick: !!(pick && pick.creature === c) };
-    const juice = r._kampfHitJuice,
-        dmg = r.damageCreature;
-    r._kampfHitJuice = function (cr, now, u, ...rest) {
-        if (cr === c && u && !out.traf)
-            Object.assign(out, {
-                traf: true,
-                KE: u.KE,
-                p: u.p,
-                edgeQ: u.edgeQ,
-                art: u.art,
-                v: u.v,
-                eff: u.eff,
-                zone: u.zone,
-            });
-        return juice.call(this, cr, now, u, ...rest);
+    r._kampfHitJuice = function (cr, now, u) {
+        if (cr === c && u && !out.traf) Object.assign(out, u, { traf: true });
+        return Object.getPrototypeOf(r)._kampfHitJuice.apply(this, arguments);
     };
-    r.damageCreature = function (cr, roh, o) {
-        if (cr === c && !("schaden" in out)) Object.assign(out, { schaden: roh, kraft: r._kampfKraft() });
-        return dmg.call(this, cr, roh, o);
+    r.damageCreature = function (cr, roh) {
+        if (cr === c && !out.kraft) Object.assign(out, { schaden: roh, kraft: r._kampfKraft() });
+        return Object.getPrototypeOf(r).damageCreature.apply(this, arguments);
     };
     try {
-        p._swing = null;
         s.isPointerLocked = true;
         r.tryMouseBreak();
-        out.verb = p._mausVerb || null;
         for (let i = 0; i < 600 && !out.traf && p._swing; i++) (halte(), await bild());
     } finally {
         delete r._kampfHitJuice;
         delete r.damageCreature;
     }
     const km = r._schmiedeKampfMasze(bp);
-    const u20 = sc.trefferUrteil(km.mess, { vLat: 20, vAx: 0, edgeQ: 1, zone: null });
-    Object.assign(out, { kg: km.masseKg, mEffWerk: km.mEff, edgeWinkel: km.mess.edgeWinkel, KE20: u20.KE, p20: u20.p });
+    Object.assign(out, { kg: km.masseKg, mEffWerk: km.mEff, edgeWinkel: km.mess.edgeWinkel });
     if (out.traf && p._swing) {
-        // das Bild des Treffer-Takts hält (der Hit-Stop bis zur Rücknahme); die Pose liegt gezeichnet
-        p._hitStopAb = -Infinity;
-        p._hitStopUntil = 1e12;
+        // das Bild des Treffer-Takts hält (der Hit-Stop bis zum nächsten Ruf); die Pose liegt gezeichnet
+        Object.assign(p, { _hitStopAb: -Infinity, _hitStopUntil: 1e12 });
         for (let i = 0; i < 4; i++) await bild();
         const sw = p._swing;
         out.schneideBild = r._kampfSchneide(r._kampfSchwungLage(sw, sw.t, r._kampfKlingenAchse(sw, {}), {}));
     }
     return out;
 }
-// die Rücknahme eines Laufs: der Halt fällt, der Kern steht wieder auf seinen Zahlen, der Schwung endet; `ende` nimmt die Prägung
-async function K1_LOS(ende) {
-    const r = window.anazhRealm,
-        p = r.state.player;
-    p._hitStopUntil = 0;
-    if (ende && "__k1ov" in window) {
-        const bp = r.state.blueprints.klinge_langschwert;
-        if (window.__k1ov === undefined) delete bp.studioOv;
-        else bp.studioOv = window.__k1ov;
-        delete window.__k1ov;
-        r.equipHeld(null);
-    }
-    for (const [o, k, v] of window.__k1alt || []) o[k] = v;
-    window.__k1alt = [];
-    r._kampfMaszeMemo = null;
-    r._gueteAnteilMemo = null;
-    for (let i = 0; i < 600 && p._swing; i++) await new Promise((ok) => requestAnimationFrame(() => ok()));
-}
-// das Labor (worlds/schmiede, dieselbe Datei schmiede-core.js): sein Werk (`measure(P)` der Shell, die Gattung Langschwert in der
-// Prägung Nihon über seine eigenen Knöpfe) und sein Treffer-Urteil bei 20 m/s, je Lauf mit derselben Mutation am Kern der Seite
-function K1_LABOR(lauf, stoff) {
-    /* global measure, P, currentGattung, currentTrad, TRADITIONEN, gattungWaehlen, applyTrad */
-    const sc = window.__schmiedeCore;
-    if (currentGattung !== "Langschwert") gattungWaehlen("Langschwert");
+// das Labor (worlds/schmiede, dieselbe Datei schmiede-core.js): sein Werk (`measure(P)` der Shell, das Langschwert in der Prägung
+// Nihon über seine eigenen Wege), je Lauf mit derselben Mutation am Kern der Seite
+function K1_LABOR(lauf) {
+    /* global measure, P, currentTrad, TRADITIONEN, gattungWaehlen, applyTrad */
+    const MAT = window.__schmiedeCore.MAT,
+        alt = [MAT.eisen.sigY, ...Object.values(MAT).map((m) => m.rho)];
+    gattungWaehlen("Langschwert");
     if (currentTrad !== TRADITIONEN.Nihon) applyTrad(TRADITIONEN.Nihon, true);
-    const alt = [];
-    const mut = (o, k, f) => (alt.push([o, k, o[k]]), (o[k] *= f));
-    if (lauf === "masse") for (const m of Object.values(sc.MAT)) mut(m, "rho", 1.25);
-    if (lauf === "schneide") mut(sc.MAT[stoff], "sigY", 1.5);
-    try {
-        const m = measure(P);
-        const u = sc.trefferUrteil(m, { vLat: 20, vAx: 0, edgeQ: 1, zone: null });
-        return { gattung: currentGattung, kg: m.M, edgeWinkel: m.edgeWinkel, KE20: u.KE, p20: u.p };
-    } finally {
-        for (const [o, k, v] of alt) o[k] = v;
-    }
+    if (lauf === "masse") for (const m of Object.values(MAT)) m.rho *= 1.25;
+    if (lauf === "schneide") MAT.eisen.sigY *= 1.5;
+    const m = measure(P);
+    MAT.eisen.sigY = alt[0];
+    Object.values(MAT).forEach((x, i) => (x.rho = alt[i + 1]));
+    return { kg: m.M, edgeWinkel: m.edgeWinkel };
 }
 
-module.exports = { WELLE_L, K5_VOR, K5_ABDRUCK, K1_BILD, K1_LOS, K1_LABOR };
+module.exports = { WELLE_L, K5_VOR, K5_ABDRUCK, K1_BILD, K1_LABOR };

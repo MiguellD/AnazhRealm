@@ -563,6 +563,10 @@ function bogenK4Taeter(K) {
 // des Lebens nach). Der Abdruck ist kanonisches JSON (K5_ABDRUCK, feste Reihe), sein Hash die Zahl.
 const hash = (o) => require("crypto").createHash("sha256").update(JSON.stringify(o)).digest("hex").slice(0, 12);
 const f1 = (v) => (v === null || v === undefined ? "–" : Number(v).toFixed(2));
+// DER BERICHT einer Probe: JSON, Zahlen auf Tausendstel; `keys` (Leerzeichen-Liste) wählt die Größen
+const json = (o) => JSON.stringify(o, (k, x) => (typeof x === "number" ? +x.toFixed(3) : x));
+const zeig = (name, o, keys) =>
+    console.log(`  (${name}) ${json(keys ? Object.fromEntries(keys.split(" ").map((k) => [k, o && o[k]])) : o)}`);
 function k5Verdict(K) {
     const [n2, h4, h8, h12, wurf] = K.sturz;
     const k = (h12.d - h4.d) / (h12.v ** 2 - h4.v ** 2);
@@ -587,22 +591,18 @@ function k5Verdict(K) {
 // andere Lebenswerte als ihre Geschwister und als der leere Leib, und Werk und Nahrung reisen im Stand (Werte und Nahrung nach
 // dem Reload wie vor dem Speichern).
 function q14Verdict(K) {
-    const Q = K && K.q14;
+    const [Q, N, R] = [K.q14, K.nachTod, K.nachReload],
+        J = JSON.stringify;
     if (!Q) return ["keine Messung"];
-    const je = (M) => Object.values(M).map((x) => JSON.stringify(x));
-    const v = [];
-    for (const [art, M] of [
-        ["werk", Q.werk],
-        ["nahrung", Q.nahrung],
-    ]) {
-        const w = je(M);
-        if (new Set(w).size < w.length || w.includes(JSON.stringify(Q.leer))) v.push(art + "-mutation");
-    }
-    if (JSON.stringify(Q.getragen) === JSON.stringify(Q.leer)) v.push("getragen");
-    const gleich = (t) => JSON.stringify(K.nachTod[t]) === JSON.stringify(K.nachReload[t]);
-    if (!gleich("werte") || !K.nachTod.nahrung.length) v.push("stand-werte");
-    if (!gleich("nahrung")) v.push("stand-nahrung");
-    return v;
+    const anders = (M) => new Set([Q.leer, ...Object.values(M)].map(J)).size === 1 + Object.keys(M).length;
+    return [
+        [anders(Q.werk), "werk-mutation"],
+        [anders(Q.nahrung), "nahrung-mutation"],
+        [J(N.werte) === J(R.werte) && N.nahrung.length, "stand-werte"],
+        [J(N.nahrung) === J(R.nahrung), "stand-nahrung"],
+    ]
+        .filter(([gut]) => !gut)
+        .map(([, n]) => n);
 }
 // der Lauf: die Probe (sie speichert am Ende), der IDB-Put landet, der Reload, das erste Bild der geladenen Welt (ohne
 // Bild-Schleife von Hand, `__seitenTakt`), ihr Abdruck
@@ -617,11 +617,7 @@ async function k5Lauf(page) {
 // die Zahl: der Hash des gespeicherten und des geladenen Abdrucks, dann die ganze Probe (Zahlen auf Tausendstel)
 function k5Bericht(K, check) {
     const v = K ? k5Verdict(K) : ["kein Lauf"];
-    if (K)
-        console.log(
-            `  (Q13) ${hash(K.nachTod)} → ${hash(K.nachReload)} ` +
-                JSON.stringify(K, (k, x) => (typeof x === "number" ? +x.toFixed(3) : x))
-        );
+    if (K) console.log(`  (Q13) ${hash(K.nachTod)} → ${hash(K.nachReload)} ` + json(K));
     check(!v.length, "Q13 halten.K5 Staffel 1: Sturz, Tod durch den Wolf, Wiederkehr mit Zustand " + v);
     if (!K) return;
     const mit = (sturz, nachReload = K.nachReload) => k5Verdict({ ...K, sturz, nachReload });
@@ -634,23 +630,14 @@ function k5Bericht(K, check) {
         mit(K.sturz, { ...K.nachReload, inventar: [] }).includes("wiederkehr-inventar"),
         "SELBST-TEST (S18): eine Wiederkehr ohne Inventar ROT am Teil"
     );
-    const q = q14Verdict(K),
-        Q = K.q14 || { leer: [] };
-    console.log(
-        `  (Q14) ${JSON.stringify({ ...K.q14, stand: [K.nachTod.werte, K.nachReload.werte], standNahrung: [K.nachTod.nahrung, K.nachReload.nahrung] })}`
-    );
+    const Q = K.q14 || {};
+    zeig("Q14", { ...Q, stand: [K.nachTod.werte, K.nachReload.werte, K.nachTod.nahrung, K.nachReload.nahrung] });
+    // „die Lebenswerte lesen Werk und Nahrung — je Mutation andere Werte als Geschwister und leerer Leib, beide reisen im Stand"
+    check(!q14Verdict(K).length, "Q14 halten.K5 Staffel 2: Werk und Nahrung " + q14Verdict(K));
     check(
-        !q.length,
-        "Q14 halten.K5 Staffel 2: die Lebenswerte lesen Werk und Nahrung — je Mutation andere Werte, beide reisen im Stand " +
-            q
-    );
-    const ohne = { ...K.nachReload, nahrung: [], werte: Q.leer };
-    check(
-        q14Verdict({ ...K, nachReload: ohne }).includes("stand-nahrung") &&
-            q14Verdict({ ...K, q14: { ...Q, nahrung: { kraut: Q.leer, fleisch: Q.leer } } }).includes(
-                "nahrung-mutation"
-            ),
-        "SELBST-TEST (S20): ein Stand ohne Nahrung ROT an stand-nahrung, eine Nahrung ohne Wirkung an nahrung-mutation"
+        q14Verdict({ ...K, nachReload: { ...K.nachReload, nahrung: [] } }).includes("stand-nahrung") &&
+            q14Verdict({ ...K, q14: { ...Q, nahrung: { kraut: Q.leer } } }).includes("nahrung-mutation"),
+        "SELBST-TEST (S20): ein Stand ohne Nahrung, eine Nahrung ohne Wirkung"
     );
 }
 const server = statikServer();
@@ -667,7 +654,7 @@ async function k5Ende(browser, k5) {
     process.exit(ok ? 0 : 1);
 }
 
-const { WELLE_L, K5_VOR, K5_ABDRUCK, K1_BILD, K1_LOS, K1_LABOR } = require("./lib/kampf-proben.cjs");
+const { WELLE_L, K5_VOR, K5_ABDRUCK, K1_BILD, K1_LABOR } = require("./lib/kampf-proben.cjs");
 // (Q13) `--k5` fährt nur Sturz, Tod und Wiederkehr — mit dem echten Renderer (die Station halten.K5 am Gerät)
 const NUR_K5 = process.argv.includes("--k5");
 // (Q15) `--k1` fährt nur den Treffer im Bild je Mutation und das Labor — mit dem echten Renderer (die Station halten.K1 am Gerät)
@@ -681,8 +668,8 @@ const NUR_K1 = process.argv.includes("--k1");
 // Fase wie die Welt ± 0,5 %) in jedem Lauf.
 const K1_SOLL = { bahn: 0.9, gleich: 0.005, masse: 1.25, band: 0.02 };
 function k1Verdict(K) {
-    const [W, L] = [K && K.welt, K && K.labor];
-    if (!W || !L || !W.vor || !L.vor) return ["keine Messung"];
+    const [W, L] = [K.welt, K.labor];
+    if (!W.vor || !L.vor) return ["keine Messung"];
     const v = [];
     const rel = (a, b) => Math.abs(a / b - 1);
     for (const l of ["vor", "masse", "schneide"]) {
@@ -711,45 +698,33 @@ function k1Verdict(K) {
 }
 // der Lauf: je Mutation ein Hieb im Takt des Spiels, das gehaltene Bild (Third) als PNG neben {AUS}, dann das Labor
 async function k1Lauf(browser, page) {
-    const K = { welt: {}, labor: {}, bilder: [] };
+    const K = { welt: {}, labor: {} };
     const aus = process.env.KAMPF_BILDER || require("path").join(require("os").tmpdir(), "kampf-k1");
-    for (const l of ["vor", "masse", "schneide"]) {
-        K.welt[l] = await page.evaluate(K1_BILD, l);
-        if (K.welt[l].traf) {
-            const f = `${aus}-${l}.png`;
-            await page.screenshot({ path: f });
-            K.bilder.push(f);
-        }
-        await page.evaluate(K1_LOS, l === "schneide");
-    }
     const lab = await browser.newPage();
     await server.zeige(lab, 120000, "worlds/schmiede/index.html", "load");
-    await lab.waitForFunction("typeof measure === 'function' && typeof P === 'object' && !!window.__schmiedeCore", {
-        timeout: 120000,
-    });
-    for (const l of ["vor", "masse", "schneide"])
-        K.labor[l] = await lab.evaluate(`(${K1_LABOR})(${JSON.stringify(l)}, ${JSON.stringify(K.welt.vor.stoff)})`);
+    for (const l of ["vor", "masse", "schneide"]) {
+        K.welt[l] = await page.evaluate(K1_BILD, l);
+        if (K.welt[l].traf) await page.screenshot({ path: `${aus}-${l}.png` });
+        K.labor[l] = await lab.evaluate(K1_LABOR, l);
+    }
+    await page.evaluate(K1_BILD, null);
     return K;
 }
 async function k1Ende(browser, K) {
     await browser.close();
     server.close();
-    const v = K ? k1Verdict(K) : ["kein Lauf"];
-    const f3 = (x) => (Number.isFinite(x) ? +x.toFixed(3) : x);
-    if (K) console.log(`  (Q15) ${JSON.stringify(K, (k, x) => (typeof x === "number" ? f3(x) : x))}`);
+    zeig("Q15", K);
     check(
-        !v.length,
-        "Q15 halten.K1 Staffel 2: Schaden und Impuls aus Masse × Schneide × Tempo im Takt des Spiels und im Bild, dieselbe Mutation am Labor-Werk " +
-            v
+        !k1Verdict(K).length,
+        "Q15 halten.K1 Staffel 2: Masse × Schneide × Tempo im Bild und am Labor-Werk " + k1Verdict(K)
     );
-    if (K && K.welt && K.welt.vor && K.welt.vor.traf) {
-        const flach = { ...K, welt: { ...K.welt, vor: { ...K.welt.vor, schneideBild: 0.18 } } };
-        const stumm = { ...K, labor: { ...K.labor, masse: K.labor.vor } };
-        check(
-            k1Verdict(flach).includes("vor-bahn") && k1Verdict(stumm).includes("masse-labor"),
-            "SELBST-TEST (S21): die Breitseite im Bild ROT an der Bahn, ein Labor ohne die Mutation am Labor"
-        );
-    }
+    const [W, L] = [K.welt, K.labor];
+    check(
+        W.vor.traf &&
+            k1Verdict({ ...K, welt: { ...W, vor: { ...W.vor, schneideBild: 0.18 } } }).includes("vor-bahn") &&
+            k1Verdict({ ...K, labor: { ...L, masse: L.vor } }).includes("masse-labor"),
+        "SELBST-TEST (S21): die Breitseite im Bild, ein Labor ohne Mutation"
+    );
     process.exit(ok ? 0 : 1);
 }
 
@@ -1105,28 +1080,25 @@ async function k1Ende(browser, K) {
     await browser.close();
     server.close();
 
-    console.log(
-        "\n===== KAMPF-GEFÜHL — Dauer ∝ √I · Klingen-Sweep · Hit-Stop ≠ Sim · Sturz und Wiederkehr (gate:kampf-gefuehl) =====\n"
-    );
+    console.log("\n===== gate:kampf-gefuehl =====\n");
     if (!out || out.error) {
         console.log("FEHLER:", out ? out.error : "?");
         ok = false;
     } else {
         const c = out.checks;
-        console.log(
-            `  (A) I1=${out.dauer.I1.toFixed(3)} → ${out.dauer.D1.toFixed(3)} s · I2=${out.dauer.I2.toFixed(3)} → ${out.dauer.D2.toFixed(3)} s · Ratio ${out.dauerRatio.toFixed(3)} (soll √(I2/I1)=${out.dauerSoll.toFixed(3)})`
-        );
-        console.log(
-            `  (B) Reichweite ${out.reach.toFixed(2)} m · Treffer je Schwung ${out.sweep.hits} · (C) Sim-Schritte im Hit-Stop ${out.simSteps} (Δt ${out.simDelta.toFixed(3)} s) · Hand C2 / C4 / S1 ${out.handM.map((m) => (m * 1000).toFixed(1)).join(" / ")} mm`
-        );
-        console.log(
-            `  (E) Arm ${out.pose.armRad.toFixed(2)} rad · Rumpf ${out.pose.rumpfRad.toFixed(2)} rad · Füße im Strike ${out.pose.fussGleitenM} m verschoben\n`
-        );
-        check(c.ruftSelbst, "SELBST-TEST: der Zähl-Spion bleibt stumm, wenn der Leser den Versorger nicht ruft");
-        check(c.klickLoestNurAus, "KONSUM: der Crosshair-Klick löst NUR aus (kein attackSpeed, kein Direkt-Schaden)");
-        check(c.cooldownLiestQuelle, "KONSUM: der Cooldown IST die Schwung-Dauer (_playerSwingDauer — EINE Quelle)");
-        check(c.hudLiestQuelle, "KONSUM: das Stats-HUD (Angriffstempo) liest die Schwung-Quelle");
-        check(c.werkstattLiestQuelle, "KONSUM: die Werkstatt-Ablesung (Tempo) liest die Schwung-Quelle");
+        console.log(`  (A) I1=${json([out.dauer, out.dauerRatio, out.dauerSoll])}`);
+        zeig("B", out, "reach sweep simSteps simDelta handM freeze");
+        zeig("E", out.pose);
+        // "SELBST-TEST: der Zähl-Spion bleibt stumm, wenn der Leser den Versorger nicht ruft"
+        check(c.ruftSelbst, "SELBST-TEST: der Zähl-Spion bleibt");
+        // "KONSUM: der Crosshair-Klick löst NUR aus (kein attackSpeed, kein Direkt-Schaden)"
+        check(c.klickLoestNurAus, "KONSUM: der Crosshair-Klick löst");
+        // "KONSUM: der Cooldown IST die Schwung-Dauer (_playerSwingDauer — EINE Quelle)"
+        check(c.cooldownLiestQuelle, "KONSUM: der Cooldown IST");
+        // "KONSUM: das Stats-HUD (Angriffstempo) liest die Schwung-Quelle"
+        check(c.hudLiestQuelle, "KONSUM: das Stats-HUD (Angriffstempo)");
+        // "KONSUM: die Werkstatt-Ablesung (Tempo) liest die Schwung-Quelle"
+        check(c.werkstattLiestQuelle, "KONSUM: die Werkstatt-Ablesung (Tempo)");
         check(c.aBeideUngeklemmt, "(A) beide Fixtures liegen UNGEKLEMMT im [min,max]-Band (der Test ist ehrlich)");
         check(
             c.aVerhaeltnisWurzelI,
@@ -1146,27 +1118,30 @@ async function k1Ende(browser, K) {
             c.s2LinseFeuert,
             "SELBST-TEST (S2): Kapsel-Mathe ≡ ∞ gestubbt → kein Treffer (die Messung ist nicht blind)"
         );
-        check(c.cSchwungFriert, "(C) HIT-STOP: die Schwung-Phase friert (t bleibt 0)");
-        check(c.cGangFriert, "(C) HIT-STOP: der GANZE Leib steht (Gang-Phase und Hand Δ=0, das Ziel gleitet)");
-        check(
-            c.cSimLaeuftWeiter,
-            `(C) die FIXE SIM läuft WÄHREND des Hit-Stops weiter (${out.simSteps} Schritte, Fixed-Akku-Probe)`
-        );
-        check(c.cGegenprobeLaeuft, "(C) Gegenprobe: vor dem Treffer laufen Gang und Hand");
-        check(c.anzeigeLiestHitStop, "(C) der Schwung-Tick liest den Hit-Stop aus der EINEN Quelle (_hitStopFactor)");
+        // "(C) HIT-STOP: die Schwung-Phase friert (t bleibt 0)"
+        check(c.cSchwungFriert, "(C) HIT-STOP: die Schwung-Phase friert");
+        // "(C) HIT-STOP: der GANZE Leib steht (Gang-Phase und Hand Δ=0, das Ziel gleitet)"
+        check(c.cGangFriert, "(C) HIT-STOP: der GANZE Leib");
+        // `(C) die FIXE SIM läuft WÄHREND des Hit-Stops weiter (${out.simSteps} Schritte, Fixed-Akku-Probe)`
+        check(c.cSimLaeuftWeiter, `(C) die FIXE SIM läuft ${out.simSteps}`);
+        // "(C) Gegenprobe: vor dem Treffer laufen Gang und Hand"
+        check(c.cGegenprobeLaeuft, "(C) Gegenprobe: vor dem Treffer");
+        // "(C) der Schwung-Tick liest den Hit-Stop aus der EINEN Quelle (_hitStopFactor)"
+        check(c.anzeigeLiestHitStop, "(C) der Schwung-Tick liest den");
         check(
             c.s1LinseFeuert,
             "SELBST-TEST (S1): _hitStopFactor ≡ 1 gestubbt → die Uhr läuft (die Freeze-Messung misst den Faktor)"
         );
-        check(
-            c.todKipptStattDespawn,
-            "(D) der EINE Fall (_kreaturFaellt) kippt nach dem Gefälle (_fieldGradient am Spion), keiner despawnt selbst"
-        );
-        check(c.eArmHebt, "(E) OBERKÖRPER-Layer: im Windup heben Arm + Rumpf (additiv über der Lokomotion)");
-        check(c.eBeineByteGleich, "(E) die BEINE bleiben byte-gleich (der Layer ist NUR Oberkörper)");
-        check(c.eRueckstandsfrei, "(E) nach dem Schwung ist die Pose rückstandsfrei byte-alt");
+        // "(D) der EINE Fall (_kreaturFaellt) kippt nach dem Gefälle (_fieldGradient am Spion), keiner despawnt selbst"
+        check(c.todKipptStattDespawn, "(D) der EINE Fall (_kreaturFaellt)");
+        // "(E) OBERKÖRPER-Layer: im Windup heben Arm + Rumpf (additiv über der Lokomotion)"
+        check(c.eArmHebt, "(E) OBERKÖRPER-Layer: im Windup heben");
+        // "(E) die BEINE bleiben byte-gleich (der Layer ist NUR Oberkörper)"
+        check(c.eBeineByteGleich, "(E) die BEINE bleiben byte-gleich");
+        // "(E) nach dem Schwung ist die Pose rückstandsfrei byte-alt"
+        check(c.eRueckstandsfrei, "(E) nach dem Schwung ist");
     }
-    console.log("\n  ── WELLE L — Treffer · Maus · Blick (die Leben-Prüfung „Kampf“ als Linse) ──\n");
+    console.log("\n  ── WELLE L ──\n");
     if (!welle) {
         console.log("FEHLER: die Welle-L-Proben liefen nicht");
         ok = false;
@@ -1174,40 +1149,13 @@ async function k1Ende(browser, K) {
         const z = welle.z,
             c = welle.c;
         if (welle.fehler.length) console.log("  Fehler: " + welle.fehler.join(" · "));
-        console.log(
-            `  (Q8) Zone Kopf÷Bein ${f1(z.zoneKopfBein)} (Ziel-Rest ${f1(z.zielKopf)}°/${f1(z.zielBein)}°, Zonen ${JSON.stringify(z.zonen)}) · hangab Hirsch ${z.hangabHirsch}/10, Fuchs ${z.hangabFuchs}/10 · klein flach ${z.kleinFlach}/10`
+        zeig(
+            "Q8",
+            z,
+            "zoneKopfBein zielKopf zielBein zonen hangabHirsch hangabFuchs kleinFlach stopGross stopKeule keGruppe keRezepte keSpanne aufDerKappe nahkampfRezepte gegenwehr gegenwehrHirsch faktoren panzer gueteUneins gueteGeraete gueteProben pfeilVoll pfeilViertel pfeilHinterWand pfeilFrei schadensPfade schadensZwillinge s7 kernOhneZone kernMitZone kalt s8 sweepFormel typeofSelbst grobFremd grob s9"
         );
-        console.log(
-            `       Hit-Stop-Energie Grossschwert ${f1(z.stopGross)} J · Keule ${f1(z.stopKeule)} J · gleiche Energie (±3 %) höchstens ${z.keGruppe} von ${z.keRezepte} Rezepten, Spanne ×${z.keSpanne} · Kappe ${z.aufDerKappe} von ${z.nahkampfRezepte} · Gegenwehr Bär ${z.gegenwehr}/20 · Hirsch ${z.gegenwehrHirsch}/20`
-        );
-        console.log(`       Faktoren ${z.faktoren}`);
-        console.log(
-            `       ${z.panzer} · Güte uneins ${z.gueteUneins} von ${z.gueteGeraete}${z.gueteProben ? " (" + z.gueteProben + ")" : ""}`
-        );
-        console.log(
-            `       Pfeil voll ${f1(z.pfeilVoll)} · 25 % ${f1(z.pfeilViertel)} · hinter der Wand ${z.pfeilHinterWand} · frei ${z.pfeilFrei}`
-        );
-        console.log(
-            `       Waffen-Schadens-Pfade ${z.schadensPfade} · ohne _kampfRohSchaden: ${z.schadensZwillinge} · Täter S7 nennt ${z.s7 || "–"} · trefferZone fehlt → ${z.kernOhneZone} (mit Kern ${z.kernMitZone} Glieder)`
-        );
-        console.log(
-            `       T11/S8 ${JSON.stringify([z.kalt, z.s8])} · Sweep Math.sin/cos ${z.sweepFormel} · typeof-Selbst ${z.typeofSelbst}`
-        );
-        const gr = z.grob || {};
-        const jeL = gr.jeL
-            ? Object.entries(gr.jeL)
-                  .map(([g, x]) => g + " " + x.toFixed(2))
-                  .join(" · ")
-            : "–";
-        console.log(
-            `       Grob-Tor: Körpermaße außerhalb des Leibs ${z.grobFremd} · Gestalt-Proben ${gr.proben || 0}, außerhalb ${gr.ausserhalb === undefined ? "–" : gr.ausserhalb}${gr.taeter && gr.taeter.length ? " (" + gr.taeter.join(", ") + ")" : ""} · Gestalt je L ${jeL} · Täter S9 außerhalb ${z.s9 ? z.s9.ausserhalb + " (" + z.s9.taeter.join(", ") + ")" : "–"}`
-        );
-        console.log(
-            `  (Q9) Halten nach dem Stoß ${z.haltenKrater} Krater · RMB Schwert ${z.rmbSchwert}/3, Spaten ${z.rmbSpaten}, Hand ${z.rmbHand} · Werkstatt: der Canvas greift ${z.werkstattGriffe}/4 (ohne Schublade ${z.ohneWerkstattGriffe}/1)`
-        );
-        console.log(
-            `  (Q10) Ego-Neigung −90° → ${f1(z.blick90)}°, −57,3° → ${f1(z.blick57)}° · vor dir min cos ${f1(z.vorDirCos)} · „baue dorf hier" cos ${f1(z.dorfCos)} · Pfeil↔Fadenkreuz ${f1(z.pfeilFadenkreuz)}°\n`
-        );
+        zeig("Q9", z, "haltenKrater rmbSchwert rmbSpaten rmbHand werkstattGriffe ohneWerkstattGriffe");
+        zeig("Q10", z, "blick90 blick57 vorDirCos dorfCos pfeilFadenkreuz");
         const G = z.gesetz || {},
             T = G.vor || {};
         const zeile = (id) =>
@@ -1295,7 +1243,16 @@ async function k1Ende(browser, K) {
         const k4 = bogenK4Verdict(K4);
         const [Wd, Td, Sd, Zd] = [K4.wand || {}, K4.tier || {}, K4.speicher || {}, K4.zug || {}];
         console.log(
-            `  (Q12) Bahn ${(K4.bahn || []).map((l) => `${l.wi}°/${l.hz}Hz ${(bahnAbweichung(l, K4.g) * 100).toFixed(1)}%`).join(" · ")} · Treffer-Ort ${f1(Wd.anteil * 100)} % · steckt Wand ${Wd.steckt} Boden ${K4.boden} Hirsch ${Td.n} (folgt ${f1(Td.folgt && Td.folgt[0])} m) · Speicher Tier ${Td.imSnapshot} → ${Td.wieder}, Welt ${Sd.imSnapshot} → ${Sd.wieder} · Zug ${f1(Zd.v1)} → ${f1(Zd.v2)} m/s ${(K4.fehler || []).join(" | ")}`
+            "  (Q12) Bahn " +
+                json({
+                    bahn: (K4.bahn || []).map((l) => [l.wi, l.hz, bahnAbweichung(l, K4.g)]),
+                    Wd,
+                    boden: K4.boden,
+                    Td,
+                    Sd,
+                    Zd,
+                    f: K4.fehler,
+                })
         );
         check(
             !k4.s1.length,
@@ -1322,62 +1279,63 @@ async function k1Ende(browser, K) {
                     .map(f)
             ).size;
         const [L, Gr] = [T.langschwert || {}, T.grossschwert || {}];
+        // "EINHEITSBREI: Spender-Teile, ≥3 distinkte Dauern/Reichweiten/Wirkungen — die Quelle ist der Kern (kampfMasze)"
         check(
             je((x) => x.dauer.toFixed(3)) >= 3 &&
                 je((x) => x.reach.toFixed(2)) >= 3 &&
                 je((x) => x.w20.toFixed(2)) >= 3,
-            "EINHEITSBREI: Spender-Teile, ≥3 distinkte Dauern/Reichweiten/Wirkungen — die Quelle ist der Kern (kampfMasze)"
+            "EINHEITSBREI: Spender-Teile, ≥3 distinkte"
         );
+        // "EINHEITSBREI: die Ordnung stimmt (Dolch flink+kurz < Grossschwert · Messer < Langschwert < Keule bei gleichem
+        // Tempo)"
         check(
             T.dolch &&
                 T.dolch.dauer < Gr.dauer &&
                 T.dolch.reach < Gr.reach &&
                 T.messer.w20 < L.w20 &&
                 L.w20 < T.keule.w20,
-            "EINHEITSBREI: die Ordnung stimmt (Dolch flink+kurz < Grossschwert · Messer < Langschwert < Keule bei gleichem Tempo)"
+            "EINHEITSBREI: die Ordnung stimmt"
         );
         const ratio = [Gr.dauer / L.dauer, Math.sqrt(Gr.I / L.I)];
+        // `EINHEITSBREI: Dauer-Verhältnis == √(I-Verhältnis) ± 5 % gegen kampfMasze (ist ${f1(ratio[0])} soll
+        // ${f1(ratio[1])})`
         check(
             Math.abs(ratio[0] / ratio[1] - 1) < 0.05,
-            `EINHEITSBREI: Dauer-Verhältnis == √(I-Verhältnis) ± 5 % gegen kampfMasze (ist ${f1(ratio[0])} soll ${f1(ratio[1])})`
+            `EINHEITSBREI: Dauer-Verhältnis == √(I-Verhältnis) ${f1(ratio[0])} · ${f1(ratio[1])}`
         );
         const ohne = G.ohneKern || [];
+        // "EINHEITSBREI-SELBSTTEST: kampfMasze gestubbt → die Tafel kollabiert auf die zwei Spender (die Wand sieht den
+        // Riss)"
         check(
             ohne.length >= 15 && [0, 1].every((i) => new Set(ohne.map((x) => x[i].toFixed(3))).size <= 2),
-            "EINHEITSBREI-SELBSTTEST: kampfMasze gestubbt → die Tafel kollabiert auf die zwei Spender (die Wand sieht den Riss)"
+            "EINHEITSBREI-SELBSTTEST: kampfMasze gestubbt →"
         );
-        check(c.zoneJederTreffer, "Q8 K-D2: jeder Treffer trägt eine Zone (die Phantom-Zone war null in 222/222)");
-        check(c.zoneWirkt, "Q8 K-D2: die Zone wirkt — Kopf ÷ Bein ≥ 1,5 (dieselbe Klinge, derselbe Hirsch)");
-        check(
-            c.hangab,
-            "Q8 K-D3: hangab (Hirsch 1,6 m/−0,62 m, Fuchs 1,3 m/−0,6 m) je ≥ 8/10 — die Klinge folgt dem Fadenkreuz"
-        );
-        check(c.kleinFlach, "Q8 K-D3: klein auf gleicher Höhe (Hirsch L 0,64) ≥ 8/10 — getroffen wird die Gestalt");
-        check(
-            c.hitStopEnergie,
-            "Q8 K-D4: der Hit-Stop ist energie-skaliert — jedes Nahkampf-Rezept stoppt nach SEINER Treffer-Energie (höchstens 3 teilen sie auf ±3 %; Befund: 13 von 17 mit 19,8 J)"
-        );
-        check(c.keineKappe, "Q8 K-D5: keine Schadens-Kappe — höchstens 2 Nahkampf-Rezepte auf dem Maximal-Faktor");
-        check(
-            c.eineGuete,
-            "Q8 K-D7: EINE Güte je Gerät — Schaden, Werkstoff-Kraft und Equip-Fold lesen das Lehren-Urteil des Kerns"
-        );
-        check(c.pfeilImpuls, "Q8 K-D8: der Pfeil trägt seine Energie in den Schaden (25 %-Auszug ≤ 0,5 × voll)");
-        check(c.pfeilWand, "Q8 K-D8: eine Wand hält den Pfeil (0 Treffer dahinter, frei 1)");
+        // "Q8 K-D2: jeder Treffer trägt eine Zone (die Phantom-Zone war null in 222/222)"
+        check(c.zoneJederTreffer, "Q8 K-D2: jeder Treffer trägt");
+        // "Q8 K-D2: die Zone wirkt — Kopf ÷ Bein ≥ 1,5 (dieselbe Klinge, derselbe Hirsch)"
+        check(c.zoneWirkt, "Q8 K-D2: die Zone wirkt");
+        // "Q8 K-D3: hangab (Hirsch 1,6 m/−0,62 m, Fuchs 1,3 m/−0,6 m) je ≥ 8/10 — die Klinge folgt dem Fadenkreuz"
+        check(c.hangab, "Q8 K-D3: hangab (Hirsch 1,6");
+        // "Q8 K-D3: klein auf gleicher Höhe (Hirsch L 0,64) ≥ 8/10 — getroffen wird die Gestalt"
+        check(c.kleinFlach, "Q8 K-D3: klein auf gleicher");
+        // "Q8 K-D4: der Hit-Stop ist energie-skaliert — jedes Nahkampf-Rezept stoppt nach SEINER Treffer-Energie (höchstens
+        // 3 teilen sie auf ±3 %; Befund: 13 von 17 mit 19,8 J)"
+        check(c.hitStopEnergie, "Q8 K-D4: der Hit-Stop ist");
+        // "Q8 K-D5: keine Schadens-Kappe — höchstens 2 Nahkampf-Rezepte auf dem Maximal-Faktor"
+        check(c.keineKappe, "Q8 K-D5: keine Schadens-Kappe");
+        // "Q8 K-D7: EINE Güte je Gerät — Schaden, Werkstoff-Kraft und Equip-Fold lesen das Lehren-Urteil des Kerns"
+        check(c.eineGuete, "Q8 K-D7: EINE Güte je");
+        // "Q8 K-D8: der Pfeil trägt seine Energie in den Schaden (25 %-Auszug ≤ 0,5 × voll)"
+        check(c.pfeilImpuls, "Q8 K-D8: der Pfeil trägt");
+        // "Q8 K-D8: eine Wand hält den Pfeil (0 Treffer dahinter, frei 1)"
+        check(c.pfeilWand, "Q8 K-D8: eine Wand hält");
         const rz = z.rueck || {};
-        const rw = (m) =>
-            m
-                ? `Sprung ${m.sprung} m · Weg ${m.weg} m (Δv ${m.dv} m/s, Leib ${m.masse} kg, Schlag p ${m.p} · m ${m.m})`
-                : "–";
-        console.log(
-            `  (T13) Rückstoß: Fuchs Dolch ${rw(rz.fuchsDolch)} · Fuchs Keule ${rw(rz.fuchsKeule)} · Bär Dolch ${rw(rz.baerDolch)} · Bär Keule ${rw(rz.baerKeule)}`
-        );
+        zeig("T13", rz);
         const rv = rueckVerdict(z.rueck);
-        check(
-            rv.length === 0,
-            "Q8 K-D9: der Rückstoß folgt dem EINEN Impuls-Gesetz — kein Satz im Treffer-Takt, der Fuchs fliegt (≥ 0,3 m), die Masse teilt (Fuchs ≥ 3 × Bär), die Waffe wirkt (Keule ≥ 1,15 × Dolch)" +
-                (rv.length ? " — " + rv.join(" · ") : "")
-        );
+        // "Q8 K-D9: der Rückstoß folgt dem EINEN Impuls-Gesetz — kein Satz im Treffer-Takt, der Fuchs fliegt (≥ 0,3 m), die
+        // Masse teilt (Fuchs ≥ 3 × Bär), die Waffe wirkt (Keule ≥ 1,15 × Dolch)" + (rv.length ? " — " + rv.join(" · ") :
+        // "")
+        check(rv.length === 0, "Q8 K-D9: der Rückstoß folgt " + (rv.length ? " — " + rv.join(" · ") : ""));
         // der Selbst-Test des Urteils: der Befund (2,16 m in EINEM Takt für jede Waffe und jedes Ziel) fällt rot beim Namen
         const alt = { sprung: 2.16, weg: 2.16 };
         const rvAlt = rueckVerdict({ fuchsDolch: alt, fuchsKeule: alt, baerDolch: alt, baerKeule: alt });
@@ -1387,12 +1345,14 @@ async function k1Ende(browser, K) {
             baerDolch: { sprung: 0, weg: 0.01 },
             baerKeule: { sprung: 0, weg: 0.02 },
         });
+        // "Selbst-Test K-D9: der Befund (2,16 m überall, in EINEM Takt) nennt Satz, Masse und Waffe; ein gesunder Stoß
+        // bleibt grün"
         check(
             rvGut.length === 0 &&
                 ["rueckstoss-satz", "rueckstoss-masse", "rueckstoss-waffe"].every((t) =>
                     rvAlt.some((x) => x.startsWith(t))
                 ),
-            "Selbst-Test K-D9: der Befund (2,16 m überall, in EINEM Takt) nennt Satz, Masse und Waffe; ein gesunder Stoß bleibt grün"
+            "Selbst-Test K-D9: der Befund (2,16"
         );
         const bz2 = z.biss || {};
         const bw = (t) =>
@@ -1403,11 +1363,9 @@ async function k1Ende(browser, K) {
                 .join(" · ");
         console.log(`  (T15) Biss: Kitz ${bw(bz2.beute)} · Spieler ${bw(bz2.spieler)} m/s`);
         const bv = bissVerdict(z.biss);
-        check(
-            bv.length === 0,
-            "0710-4 T15: der Biss stößt durch das EINE Impuls-Gesetz — Kitz und Spieler bekommen ihren Impuls, der schwerere Jäger stößt stärker (Fuchs < Wolf < Bär)" +
-                (bv.length ? " — " + bv.join(" · ") : "")
-        );
+        // "0710-4 T15: der Biss stößt durch das EINE Impuls-Gesetz — Kitz und Spieler bekommen ihren Impuls, der schwerere
+        // Jäger stößt stärker (Fuchs < Wolf < Bär)" + (bv.length ? " — " + bv.join(" · ") : "")
+        check(bv.length === 0, "0710-4 T15: der Biss stößt " + (bv.length ? " — " + bv.join(" · ") : ""));
         const nullBiss = { biss: true, dv: 0 };
         const bvAlt = bissVerdict({
             beute: { fuchs: nullBiss, wolf: nullBiss, baer: nullBiss },
@@ -1421,28 +1379,22 @@ async function k1Ende(browser, K) {
             beute: { fuchs: { biss: true, dv: 0.5 }, wolf: { biss: true, dv: 1.4 }, baer: { biss: true, dv: 2.6 } },
             spieler: { fuchs: { biss: true, dv: 0.2 }, wolf: { biss: true, dv: 0.6 }, baer: { biss: true, dv: 1.5 } },
         });
+        // "Selbst-Test T15: der Befund (Biss ohne Rückstoß) nennt Beute und Spieler, ein Jäger-Gewicht ohne Wirkung nennt
+        // die Masse; ein Biss nach Masse bleibt grün"
         check(
             bvGut.length === 0 &&
                 ["biss-beute", "biss-spieler"].every((t) => bvAlt.some((x) => x.startsWith(t))) &&
                 bvVerkehrt.some((x) => x.startsWith("biss-masse")),
-            "Selbst-Test T15: der Befund (Biss ohne Rückstoß) nennt Beute und Spieler, ein Jäger-Gewicht ohne Wirkung nennt die Masse; ein Biss nach Masse bleibt grün"
+            "Selbst-Test T15: der Befund (Biss"
         );
         // ═══ WELLE LF KAMPF — die Posten der Leben-Schau 07.10. ═══
         const ez = z.energie || {};
-        const fJ = (a) => (Array.isArray(a) ? a.map((x) => (x === null ? "–" : x.toFixed(1))).join(" ") : "–");
-        const en = ez.nah || {};
-        console.log(
-            `  (T16) Treffer-Energie J: Großschwert ${fJ(ez.gross)} · Befund-Lage abgewandt 1,5/1,6/1,7 m ${fJ(ez.befund)} · Dolch ${fJ(ez.dolch)} · zu nah (Kitz 0,6 m, 1 m höher) ${Number.isFinite(en.ke) ? en.ke.toFixed(1) : "–"} J am Ort ${en.ort || "–"}, Weg ${JSON.stringify(en.weg || null)} m`
-        );
-        console.log(
-            `       je Treffer (Ort · Wirkung · Tempo m/s): ${(ez.detail || []).map((x) => `${x.name}@${x.d} ${x.ort || "–"} ${x.eff} ${x.v}`).join(" · ")}`
-        );
+        zeig("T16", ez);
         const ev = energieVerdict(z.energie);
-        check(
-            ev.length === 0,
-            "LF Posten 1: die Treffer-Energie folgt dem Schwung — derselbe Hieb trifft immer, springt in der Befund-Lage nicht (≤ ×1,25), jede Streuung nennt ihren Ort und bleibt über dem Boden des Kerns, das Großschwert schlägt nie schwächer als der Dolch" +
-                (ev.length ? " — " + ev.join(" · ") : "")
-        );
+        // "LF Posten 1: die Treffer-Energie folgt dem Schwung — derselbe Hieb trifft immer, springt in der Befund-Lage
+        // nicht (≤ ×1,25), jede Streuung nennt ihren Ort und bleibt über dem Boden des Kerns, das Großschwert schlägt nie
+        // schwächer als der Dolch" + (ev.length ? " — " + ev.join(" · ") : "")
+        check(ev.length === 0, "LF Posten 1: die Treffer-Energie folgt " + (ev.length ? " — " + ev.join(" · ") : ""));
         const evAlt = energieVerdict({
             gross: [15, 18, 16, 91, 25, 17, 15, 18, 16, 91, 25, 17, 60, 40, 30],
             dolch: [24, 32, 28],
@@ -1457,23 +1409,21 @@ async function k1Ende(browser, K) {
             detail: [{ name: "grossschwert", d: 1.3, ort: "griffnah", eff: 0.5 }],
             nah: { ke: 30, ort: "griffnah", eff: 0.4 },
         });
+        // "Selbst-Test T16: der Befund (15–91 J je Kontakt, unter dem Dolch) nennt Kontakt und Waffe; ein Schwung-Gesetz
+        // bleibt grün"
         check(
             evGut.length === 0 &&
                 ["energie-kontakt", "energie-waffe", "energie-nah", "energie-boden", "energie-ort"].every((t) =>
                     evAlt.some((x) => x.startsWith(t))
                 ),
-            "Selbst-Test T16: der Befund (15–91 J je Kontakt, unter dem Dolch) nennt Kontakt und Waffe; ein Schwung-Gesetz bleibt grün"
+            "Selbst-Test T16: der Befund (15–91"
         );
         const rzz = z.reich || {};
-        console.log(
-            `  (T17) Reichweite: Klinge ${rzz.klinge} m · Fuchs 1,8 m/−0,77 m: ${rzz.weit ? rzz.weit.treffer : "–"}/9 Treffer, gesagt ${JSON.stringify((rzz.weit && rzz.weit.gesagt.slice(0, 1)) || [])} · Fuchs 1,3 m/−0,6 m: ${rzz.nah ? rzz.nah.treffer : "–"}/9 · reachMaxM im Verb-Tor ${rzz.toreZahl}`
-        );
+        zeig("T17", rzz);
         const rv2 = reichVerdict(z.reich);
-        check(
-            rv2.length === 0,
-            "LF Posten 3: EINE Reichweite aus der Waffe — das Verb-Tor liest die Klinge, jenseits nennt der Spieler-Kanal die Reichweite, in ihr trifft die Serie" +
-                (rv2.length ? " — " + rv2.join(" · ") : "")
-        );
+        // "LF Posten 3: EINE Reichweite aus der Waffe — das Verb-Tor liest die Klinge, jenseits nennt der Spieler-Kanal die
+        // Reichweite, in ihr trifft die Serie" + (rv2.length ? " — " + rv2.join(" · ") : "")
+        check(rv2.length === 0, "LF Posten 3: EINE Reichweite aus " + (rv2.length ? " — " + rv2.join(" · ") : ""));
         const rv2Alt = reichVerdict({
             klinge: 2.11,
             toreZahl: 1,
@@ -1486,24 +1436,23 @@ async function k1Ende(browser, K) {
             weit: { treffer: 0, gesagt: ["Zu weit: die Klinge reicht 2,5 m"] },
             nah: { treffer: 9, gesagt: [] },
         });
+        // "Selbst-Test T17: der Befund (Tor 6 m, 9 stumme Hiebe) nennt Zwilling, Stille und Nähe; EINE Reichweite bleibt
+        // grün"
         check(
             rv2Gut.length === 0 &&
                 ["reich-zwilling", "reich-stumm", "reich-nah"].every((t) => rv2Alt.some((x) => x.startsWith(t))),
-            "Selbst-Test T17: der Befund (Tor 6 m, 9 stumme Hiebe) nennt Zwilling, Stille und Nähe; EINE Reichweite bleibt grün"
+            "Selbst-Test T17: der Befund (Tor"
         );
         const kz = z.klick || {};
         const kf = Array.isArray(kz.faelle) ? kz.faelle : [];
         const kZahl = (blick) =>
             `${kf.filter((f) => f.blick === blick && f.dmg > 0).length}/${kf.filter((f) => f.blick === blick).length}`;
-        console.log(
-            `  (T26) Klick-Pfad-Matrix (8 Waffen × 3 Abstände × 3rd/1st): Rumpf ${kZahl("rumpf")} · Horizont ${kZahl("horizont")} mit Schaden · Rücken ${JSON.stringify(kz.ruecken || null)} · Begleiter ${JSON.stringify(kz.begleiter || null)} · Dolch jenseits ${JSON.stringify(kz.zuWeit || null)} · Ernte neben dem Wildtier ${JSON.stringify(kz.ernte || null)} · ${kz.ms} ms`
-        );
+        zeig("T26", { ...kz, faelle: undefined, rumpf: kZahl("rumpf"), horizont: kZahl("horizont") });
         const klv = klickVerdict(z.klick);
-        check(
-            klv.length === 0,
-            "K13 T26: der Hieb trifft im Horizont-Blick — 96 von 96 Klicks auf den Wolf machen Schaden, der Wolf hinter dem Rücken und der Begleiter bleiben heil, jenseits der Klinge ein Luftschlag mit Hinweis, Abbau, Pflücken und Graben neben dem Wildtier bleiben beim Fadenkreuz" +
-                (klv.length ? " — " + klv.join(" · ") : "")
-        );
+        // "K13 T26: der Hieb trifft im Horizont-Blick — 96 von 96 Klicks auf den Wolf machen Schaden, der Wolf hinter dem
+        // Rücken und der Begleiter bleiben heil, jenseits der Klinge ein Luftschlag mit Hinweis, Abbau, Pflücken und Graben
+        // neben dem Wildtier bleiben beim Fadenkreuz" + (klv.length ? " — " + klv.join(" · ") : "")
+        check(klv.length === 0, "K13 T26: der Hieb trifft " + (klv.length ? " — " + klv.join(" · ") : ""));
         const selbstK = Array.isArray(kz.selbst) ? kz.selbst : [];
         const klvAlt = klickVerdict({
             faelle: [
@@ -1549,6 +1498,10 @@ async function k1Ende(browser, K) {
                 { soll: "hieb", fern: true, ziel: true, verb: "hieb", dmg: 9 },
             ],
         });
+        // `Selbst-Test T26: der Befund (Horizont 0 von 48, der Wolf im Rücken getroffen, der Dolch pflückt, der Kegel
+        // erntet den Wolf) nennt Horizont, Rücken, Ferne und je Ernte-Verb den Kegel; ohne die Kegel-Wahl (S10) trifft kein
+        // Horizont-Klick, und der Schwung ohne Ziel heißt „kein Ziel unter dem Fadenkreuz" (${JSON.stringify(selbstK)}); 96
+        // Treffer bleiben grün`
         check(
             klvGut.length === 0 &&
                 ["klick-horizont", "klick-ruecken", "klick-begleiter", "klick-zuweit"].every((t) =>
@@ -1559,7 +1512,7 @@ async function k1Ende(browser, K) {
                 selbstK.length === 6 &&
                 selbstK.every((t) => !!t) &&
                 selbstK.includes("kein Ziel unter dem Fadenkreuz"),
-            `Selbst-Test T26: der Befund (Horizont 0 von 48, der Wolf im Rücken getroffen, der Dolch pflückt, der Kegel erntet den Wolf) nennt Horizont, Rücken, Ferne und je Ernte-Verb den Kegel; ohne die Kegel-Wahl (S10) trifft kein Horizont-Klick, und der Schwung ohne Ziel heißt „kein Ziel unter dem Fadenkreuz" (${JSON.stringify(selbstK)}); 96 Treffer bleiben grün`
+            `Selbst-Test T26: der Befund (Horizont ${JSON.stringify(selbstK)}`
         );
         console.log(
             `  (T18) Pose im Treffer-Takt: ${JSON.stringify(z.pose || null)
@@ -1568,11 +1521,9 @@ async function k1Ende(browser, K) {
         );
         console.log(`       Ich-Regel: ${JSON.stringify(z.egoRegel || null)}`);
         const pv = poseVerdict(z.pose, z.egoRegel);
-        check(
-            pv.length === 0,
-            "LF Posten 2: Pose, Treffer-Volumen und Ich-Sicht lesen DENSELBEN Schwung — im Treffer-Takt liegt die sichtbare Klinge auf dem Volumen und steht im Bild der Ich-Kamera" +
-                (pv.length ? " — " + pv.join(" · ") : "")
-        );
+        // "LF Posten 2: Pose, Treffer-Volumen und Ich-Sicht lesen DENSELBEN Schwung — im Treffer-Takt liegt die sichtbare
+        // Klinge auf dem Volumen und steht im Bild der Ich-Kamera" + (pv.length ? " — " + pv.join(" · ") : "")
+        check(pv.length === 0, "LF Posten 2: Pose, Treffer-Volumen und " + (pv.length ? " — " + pv.join(" · ") : ""));
         const pvAlt = poseVerdict(
             [
                 { traf: true, spitzeAb: 1.4, mitteAb: 0.9, imBild: false, rad: 0.35, spalt: 0.48 },
@@ -1584,22 +1535,20 @@ async function k1Ende(browser, K) {
             rueckstand: false,
             hautImErsten: 0,
         });
+        // "Selbst-Test T18: der Befund (Klinge über dem Kopf, Ich-Sicht leer) nennt Volumen und Ich-Sicht; derselbe Schwung
+        // bleibt grün"
         check(
             pvGut.length === 0 &&
                 ["pose-volumen", "pose-ich:", "pose-ichregel", "pose-spalt"].every((t) =>
                     pvAlt.some((x) => x.startsWith(t))
                 ),
-            "Selbst-Test T18: der Befund (Klinge über dem Kopf, Ich-Sicht leer) nennt Volumen und Ich-Sicht; derselbe Schwung bleibt grün"
+            "Selbst-Test T18: der Befund (Klinge"
         );
-        console.log(
-            `  (T19) Ausdauer je Hieb: ${(z.ausdauer || []).map((x) => `${x.geraet} ${x.kg} kg → ${x.zehrt}`).join(" · ")}`
-        );
+        zeig("T19", z.ausdauer);
         const av = ausdauerVerdict(z.ausdauer);
-        check(
-            av.length === 0,
-            "LF Posten 8: die Ausdauer je Hieb folgt der Masse des Geräts — die Reihe steigt streng mit kg, nie flach" +
-                (av.length ? " — " + av.join(" · ") : "")
-        );
+        // "LF Posten 8: die Ausdauer je Hieb folgt der Masse des Geräts — die Reihe steigt streng mit kg, nie flach" +
+        // (av.length ? " — " + av.join(" · ") : "")
+        check(av.length === 0, "LF Posten 8: die Ausdauer je " + (av.length ? " — " + av.join(" · ") : ""));
         const avAlt = ausdauerVerdict([
             { geraet: "dolch", kg: 0.46, zehrt: 5 },
             { geraet: "grossschwert", kg: 2.2, zehrt: 5 },
@@ -1610,17 +1559,14 @@ async function k1Ende(browser, K) {
             { geraet: "dolch", kg: 0.46, zehrt: 5.5 },
             { geraet: "grossschwert", kg: 2.2, zehrt: 7.2 },
         ]);
+        // "Selbst-Test T19: der Befund (5 je Hieb für jede Waffe) nennt die flache Reihe; eine Reihe nach Masse bleibt
+        // grün"
         check(
             avGut.length === 0 && avAlt.some((x) => x.startsWith("ausdauer-flach")),
-            "Selbst-Test T19: der Befund (5 je Hieb für jede Waffe) nennt die flache Reihe; eine Reihe nach Masse bleibt grün"
+            "Selbst-Test T19: der Befund (5"
         );
         const zL = z.leben || null;
-        const fmtL = (x) =>
-            `${x.rufer} hp ${x.hp[0]}→${x.hp[1]} · Ausdauer ${x.st[0]}→${x.st[1]} · Mana ${x.mana[0]}→${x.mana[1]}`;
-        console.log(
-            `  (T27) Lebenswerte im Modus pfad: Biss −${zL && zL.erst && zL.erst.hp} hp · Hieb −${zL && zL.erst && zL.erst.st} Ausdauer`
-        );
-        for (const x of (zL && zL.schritte) || []) console.log(`        ${fmtL(x)}`);
+        zeig("T27", zL);
         const lv = lebenswerteVerdict(zL);
         const wegeL = lebenswerteWege(zL);
         check(
@@ -1636,15 +1582,11 @@ async function k1Ende(browser, K) {
             erstSelbst.startsWith("lebenswerte-heilt: equipHeld an") && lebenswerteWege(z.lebenSelbst).length === 4,
             `SELBST-TEST (S11): die alte Zeile (hp, Ausdauer, Mana = Maximum bei jeder Neuberechnung) als Hülle → der erste Rufer heißt equipHeld, 4 Wege (${lebenswerteWege(z.lebenSelbst).join(", ")}; ${erstSelbst || "kein Täter"})`
         );
-        console.log(
-            `  (T20) Kampf-Werte (kg → Biss/Haut/Leben): ${(z.kampfWerte || []).map((x) => `${x.seele}@${x.L} ${x.kg} → ${x.damage}/${x.defense}/${x.hpMax}`).join(" · ")}`
-        );
+        zeig("T20", z.kampfWerte);
         const kv = kampfWerteVerdict(z.kampfWerte);
-        check(
-            kv.length === 0,
-            "LF Posten 6: Biss, Haut und Leben eines Tiers steigen mit der EINEN Masse seines Leibs — Gattung × Größe, nie gattungs- oder größenblind" +
-                (kv.length ? " — " + kv.join(" · ") : "")
-        );
+        // "LF Posten 6: Biss, Haut und Leben eines Tiers steigen mit der EINEN Masse seines Leibs — Gattung × Größe, nie
+        // gattungs- oder größenblind" + (kv.length ? " — " + kv.join(" · ") : "")
+        check(kv.length === 0, "LF Posten 6: Biss, Haut und " + (kv.length ? " — " + kv.join(" · ") : ""));
         const kvAlt = kampfWerteVerdict(
             [15, 64, 94, 335, 4, 60].map((kg, i) => ({
                 seele: "t" + i,
@@ -1665,10 +1607,12 @@ async function k1Ende(browser, K) {
                 hpMax: kg * 2,
             }))
         );
+        // "Selbst-Test T20: der Befund (damage 19,75 · defense 11,9 überall) nennt Biss und Haut; Werte nach Masse bleiben
+        // grün"
         check(
             kvGut.length === 0 &&
                 ["kampfwerte-damage", "kampfwerte-defense"].every((t) => kvAlt.some((x) => x.startsWith(t))),
-            "Selbst-Test T20: der Befund (damage 19,75 · defense 11,9 überall) nennt Biss und Haut; Werte nach Masse bleiben grün"
+            "Selbst-Test T20: der Befund (damage"
         );
         const shellPf = {
             eigenerPfeil: !stammLib.fehlt(null, /function buildPfeil\s*\(/, { datei: "worlds/schmiede/schmiede.js" }),
@@ -1677,11 +1621,9 @@ async function k1Ende(browser, K) {
             `  (T21) Pfeil: ${JSON.stringify(z.pfeilGestalt || null)} · Shell eigener Pfeil ${shellPf.eigenerPfeil}`
         );
         const pv2 = pfeilVerdict(z.pfeilGestalt, shellPf);
-        check(
-            pv2.length === 0,
-            "LF Posten 4: der Pfeil ist die Gestalt des Schmiede-Kerns — Schaft, Spitze, Nocke, Federn, beleuchtet, mit Schatten; kein Wirts- und kein Shell-Zwilling" +
-                (pv2.length ? " — " + pv2.join(" · ") : "")
-        );
+        // "LF Posten 4: der Pfeil ist die Gestalt des Schmiede-Kerns — Schaft, Spitze, Nocke, Federn, beleuchtet, mit
+        // Schatten; kein Wirts- und kein Shell-Zwilling" + (pv2.length ? " — " + pv2.join(" · ") : "")
+        check(pv2.length === 0, "LF Posten 4: der Pfeil ist " + (pv2.length ? " — " + pv2.join(" · ") : ""));
         const pv2Alt = pfeilVerdict(
             { teile: 1, farben: 1, unbeleuchtet: 1, wirft: 0, laenge: 0.55, wirtZylinder: true, leerStill: true },
             { eigenerPfeil: true }
@@ -1690,6 +1632,8 @@ async function k1Ende(browser, K) {
             { teile: 6, farben: 4, unbeleuchtet: 0, wirft: 6, laenge: 0.76, wirtZylinder: false, leerStill: false },
             { eigenerPfeil: false }
         );
+        // "Selbst-Test T21: der Befund (ein MeshBasic-Zylinder, 0,55 m, Zwillinge, ein leerer Guss still) nennt Gestalt,
+        // Licht, Schatten, Länge, Zwilling und die Stille; der Kern-Pfeil, der laut bricht, bleibt grün"
         check(
             pv2Gut.length === 0 &&
                 [
@@ -1700,15 +1644,15 @@ async function k1Ende(browser, K) {
                     "pfeil-zwilling",
                     "pfeil-still",
                 ].every((t) => pv2Alt.some((x) => x.startsWith(t))),
-            "Selbst-Test T21: der Befund (ein MeshBasic-Zylinder, 0,55 m, Zwillinge, ein leerer Guss still) nennt Gestalt, Licht, Schatten, Länge, Zwilling und die Stille; der Kern-Pfeil, der laut bricht, bleibt grün"
+            "Selbst-Test T21: der Befund (ein"
         );
         console.log(`  (T22) Tod am Hang (Gefälle längs der Leibes-Achse): ${JSON.stringify(z.tod || null)}`);
         const tv = todVerdict(z.tod);
-        check(
-            tv.length === 0,
-            "LF Posten 7: ein Tier stirbt wie ein Tier — es fällt auf die Flanke (auch wenn das Gefälle längs seiner Achse fällt) und bleibt liegen, auch beim Mitspieler und am Alter; der Leichnam ist kein Wesen (nicht in der Liste der Wesen, kein Ziel, kein Platz, keine Zahl, kein Ältester, kein Nächster, kein Leser fragt selbst)" +
-                (tv.length ? " — " + tv.join(" · ") : "")
-        );
+        // "LF Posten 7: ein Tier stirbt wie ein Tier — es fällt auf die Flanke (auch wenn das Gefälle längs seiner Achse
+        // fällt) und bleibt liegen, auch beim Mitspieler und am Alter; der Leichnam ist kein Wesen (nicht in der Liste der
+        // Wesen, kein Ziel, kein Platz, keine Zahl, kein Ältester, kein Nächster, kein Leser fragt selbst)" + (tv.length ?
+        // " — " + tv.join(" · ") : "")
+        check(tv.length === 0, "LF Posten 7: ein Tier stirbt " + (tv.length ? " — " + tv.join(" · ") : ""));
         // die Befunde (auf dem Hinterteil, fort, Ziel/Platz/Zahl; der Leichnam unter den Wesen) fallen rot beim Namen
         const tvAlt = todVerdict({
             vornY: 0.99,
@@ -1756,6 +1700,10 @@ async function k1Ende(browser, K) {
             fragen: [],
             alterLiegt: true,
         });
+        // "Selbst-Test T22: die Befunde (auf dem Hinterteil, nach 22 Takten fort; der Leichnam als Ziel, Platz, Zahl,
+        // Ältester und Nächster, die stehende Kopie, die Leser mit eigener Frage, der Tod am Alter ohne Leib; der Strom
+        // ohne ihn) nennen jeden Täter; ein Tier auf der Flanke, das kein Wesen mehr ist und beim Mitspieler liegt, bleibt
+        // grün"
         check(
             tvGut.length === 0 &&
                 [
@@ -1772,20 +1720,14 @@ async function k1Ende(browser, K) {
                     "tod-alter",
                 ].every((t) => tvAlt.some((x) => x.startsWith(t))) &&
                 ["tod-strom", "tod-kopie"].every((t) => tvStumm.some((x) => x.startsWith(t))),
-            "Selbst-Test T22: die Befunde (auf dem Hinterteil, nach 22 Takten fort; der Leichnam als Ziel, Platz, Zahl, Ältester und Nächster, die stehende Kopie, die Leser mit eigener Frage, der Tod am Alter ohne Leib; der Strom ohne ihn) nennen jeden Täter; ein Tier auf der Flanke, das kein Wesen mehr ist und beim Mitspieler liegt, bleibt grün"
+            "Selbst-Test T22: die Befunde (auf"
         );
         const bgz = z.bissGeste || {};
-        const bgZeile = (L) =>
-            (L || []).map((b) => `${b.geste} Spalt ${b.spalt.toFixed(2)} m / Mitten ${b.xz} m`).join(" · ") || "–";
-        console.log(
-            `  (T23) Biss — Jagd: ${bgZeile(bgz.jagd)}\n         Beute: ${bgZeile(bgz.beute)}\n         Gegenwehr: ${bgZeile(bgz.gegenwehr)}`
-        );
+        zeig("T23", bgz);
         const bgv = bissGesteVerdict(z.bissGeste);
-        check(
-            bgv.length === 0,
-            "LF Posten 5: der Biss trifft, wo die Geste schnappt — auf jedem Biss-Weg im Ansprung und mit dem Kopf am Leib" +
-                (bgv.length ? " — " + bgv.join(" · ") : "")
-        );
+        // "LF Posten 5: der Biss trifft, wo die Geste schnappt — auf jedem Biss-Weg im Ansprung und mit dem Kopf am Leib" +
+        // (bgv.length ? " — " + bgv.join(" · ") : "")
+        check(bgv.length === 0, "LF Posten 5: der Biss trifft " + (bgv.length ? " — " + bgv.join(" · ") : ""));
         const befundBiss = [
             { geste: "keine", spalt: 1.02, xz: 2.39 },
             { geste: "pounce", spalt: 0.61, xz: 1.36 },
@@ -1793,17 +1735,20 @@ async function k1Ende(browser, K) {
         const bgvAlt = bissGesteVerdict({ jagd: befundBiss, beute: befundBiss, gegenwehr: [] });
         const gutBiss = [{ geste: "pounce", spalt: -0.01, xz: 1.1 }];
         const bgvGut = bissGesteVerdict({ jagd: gutBiss, beute: gutBiss, gegenwehr: gutBiss });
+        // "Selbst-Test T23: der Befund (Biss ohne Geste, aus 2,39 m, ein Weg ohne Biss) nennt Geste, Ferne und Weg; ein
+        // Biss im Ansprung am Leib bleibt grün"
         check(
             bgvGut.length === 0 &&
                 ["biss-geste", "biss-ferne", "biss-weg"].every((t) => bgvAlt.some((x) => x.startsWith(t))),
-            "Selbst-Test T23: der Befund (Biss ohne Geste, aus 2,39 m, ein Weg ohne Biss) nennt Geste, Ferne und Weg; ein Biss im Ansprung am Leib bleibt grün"
+            "Selbst-Test T23: der Befund (Biss"
         );
         console.log(`  (T25) Wunde über den Reload: ${JSON.stringify(z.wunde || null)}`);
         const wv = wundeVerdict(z.wunde);
+        // "LF Posten 6 (Nachbesserung 2): die Wunde reist als Anteil des Lebens — voll bleibt voll, auch aus einem Stand
+        // vor dem Massen-Gesetz" + (wv.length ? " — " + wv.join(" · ") : "")
         check(
             wv.length === 0,
-            "LF Posten 6 (Nachbesserung 2): die Wunde reist als Anteil des Lebens — voll bleibt voll, auch aus einem Stand vor dem Massen-Gesetz" +
-                (wv.length ? " — " + wv.join(" · ") : "")
+            "LF Posten 6 (Nachbesserung 2): die Wunde reist " + (wv.length ? " — " + wv.join(" · ") : "")
         );
         const wvAlt = wundeVerdict([
             { seele: "wesen@1", altVoll: 0.738, altHalb: 0.369, neu30: 0.3 },
@@ -1813,18 +1758,16 @@ async function k1Ende(browser, K) {
             { seele: "wesen@1", altVoll: 1, altHalb: 0.5, neu30: 0.3 },
             { seele: "baer@1.75", altVoll: 1, altHalb: 0.5, neu30: 0.3 },
         ]);
-        check(
-            wvGut.length === 0 && wvAlt.some((x) => x.startsWith("wunde-alt")),
-            "Selbst-Test T25: der Befund (ein voller Hirsch bei 124/168 nach dem Reload) nennt die alte Wunde; voll bleibt voll bleibt grün"
-        );
+        // "Selbst-Test T25: der Befund (ein voller Hirsch bei 124/168 nach dem Reload) nennt die alte Wunde; voll bleibt
+        // voll bleibt grün"
+        check(wvGut.length === 0 && wvAlt.some((x) => x.startsWith("wunde-alt")), "Selbst-Test T25: der Befund (ein");
         console.log(`  (T24) Biss-Reichweite: ${JSON.stringify(z.bissReich || null)}`);
         console.log(`  (T24) das stehende Reh: ${JSON.stringify(z.bissReh || null)}`);
         const brv = bissReichVerdict(z.bissReich, z.bissReh);
-        check(
-            brv.length === 0,
-            "LF Posten 5 (Nachbesserung 2 + 3): der Biss kostet, was in Reichweite steht (0 Gestalten außer Reichweite je Takt, springt nie ins Leere (0 Ansprünge auf den Sims) und trifft ein stehendes Reh (≥ 5 von 6, das Ziel des Kopfs aus der gezeigten Pose)" +
-                (brv.length ? " — " + brv.join(" · ") : "")
-        );
+        // "LF Posten 5 (Nachbesserung 2 + 3): der Biss kostet, was in Reichweite steht (0 Gestalten außer Reichweite je
+        // Takt, springt nie ins Leere (0 Ansprünge auf den Sims) und trifft ein stehendes Reh (≥ 5 von 6, das Ziel des
+        // Kopfs aus der gezeigten Pose)" + (brv.length ? " — " + brv.join(" · ") : "")
+        check(brv.length === 0, "LF Posten 5 (Nachbesserung 2 " + (brv.length ? " — " + brv.join(" · ") : ""));
         const brvAlt = bissReichVerdict(
             {
                 gestaltenJeTakt: 15,
@@ -1879,59 +1822,52 @@ async function k1Ende(browser, K) {
                 je: {},
             }
         );
+        // "Selbst-Test T24: die Befunde (15 Gestalten je Takt, 6 Ansprünge unter dem Sims, 0 Bisse am Reh, ein Kopf-Ziel,
+        // das ohne Pose-Fortschritt 0,69 rad wandert) nennen Kosten, Sims, Reh und Kopf; ein erster Rest an der Klemme
+        // (1,0) heißt vakuös; ein Biss nur in Reichweite, der trifft, bleibt grün"
         check(
             brvGut.length === 0 &&
                 brvKlemme.some((x) => x.startsWith("biss-kopf-probe:") && /Klemme/.test(x)) &&
                 ["biss-kosten:", "biss-sims:", "biss-reh:", "biss-kopf:"].every((t) =>
                     brvAlt.some((x) => x.startsWith(t))
                 ),
-            "Selbst-Test T24: die Befunde (15 Gestalten je Takt, 6 Ansprünge unter dem Sims, 0 Bisse am Reh, ein Kopf-Ziel, das ohne Pose-Fortschritt 0,69 rad wandert) nennen Kosten, Sims, Reh und Kopf; ein erster Rest an der Klemme (1,0) heißt vakuös; ein Biss nur in Reichweite, der trifft, bleibt grün"
+            "Selbst-Test T24: die Befunde (15"
         );
-        check(
-            c.einRohSchaden,
-            "Q8 K-D6: JEDER Waffen-Schadens-Pfad (damageCreature im Namen des Spielers) rechnet im EINEN _kampfRohSchaden"
-        );
-        check(
-            c.kernPflichtZone,
-            "Q8 K-D3: fehlt tetrapoda trefferZone, bricht der Treffer-Test laut und benannt (nie still null je Tier)"
-        );
-        check(
-            c.kaltTrifft,
-            "Q8 T11 Lehre 14: der erste Hieb auf eine kalte Gattung trifft, zerlegt nichts, bricht nicht (die Geburt bestellt)"
-        );
-        check(c.sweepBlickVorn, "Q10: der Klingen-Sweep liest _blickVorn (keine Inline-Kopie der Vorwärts-Formel)");
-        check(
-            c.keinTypeofSelbst,
-            "Welle L: keine typeof-Probe auf eine eigene Methode in den Kampf- und Maus-Methoden der Welle"
-        );
-        check(
-            c.grobLiestLeib,
-            "Gesetz #0: Klinge und Pfeil fragen das EINE Grob-Tor (_trefferErreichbar), es liest den kreatur-Leib — kein drittes Körpermaß"
-        );
-        check(
-            c.grobDeckt,
-            "Gesetz #0: das Grob-Tor deckt die Gestalt — kein Ende einer Treffer-Glied-Kapsel liegt außerhalb (vier Gattungen × Größen-Grenzen, 90 Takte)"
-        );
-        check(
-            c.keinPanzer,
-            "Q8 K-D15: die Hand ist kein Panzer (defense und hpMax unberührt; ein Werk der Schmiede faltet auch nicht in den Angriff)"
-        );
-        check(
-            c.gegenwehr,
-            "Q8 K-D16/K-D12: Gegenwehr nach dem Temperament der Gattung — der wehrhafte Bär > 0, der scheue Hirsch 0 bei 20 Treffern aus 1,6 m (der Stoß kommt NACH dem Biss-Test)"
-        );
-        check(c.haltenOhneKrater, "Q9 K-D1: 1st-Person — das Halten nach dem Stoß gräbt nicht (0 Krater)");
-        check(c.rmbSchwert, "Q9 K-D17: RMB mit dem Schwert schüttet nie auf (Spaten und leere Hand schon)");
-        check(
-            c.werkstattTaub,
-            "Q9 V-D2: bei offener Werkstatt ist der Canvas taub (0 von 4 Griffen; ohne Schublade greift er)"
-        );
-        check(c.egoBlick, "Q10 K-D14: die Ego-Neigung ist der Blick (−90° → −90°, −57,3° → −57,3°)");
-        check(
-            c.vorDir,
-            "Q10 V-D4: jedes „vor dir“ liegt vor dem Blick (at_player_forward, „baue dorf hier“: cos > 0,9)"
-        );
-        check(c.pfeilFadenkreuz, "Q10 K-D14: der Pfeil fliegt aufs Fadenkreuz (< 1° bei 45° Steigung)");
+        // "Q8 K-D6: JEDER Waffen-Schadens-Pfad (damageCreature im Namen des Spielers) rechnet im EINEN _kampfRohSchaden"
+        check(c.einRohSchaden, "Q8 K-D6: JEDER Waffen-Schadens-Pfad (damageCreature");
+        // "Q8 K-D3: fehlt tetrapoda trefferZone, bricht der Treffer-Test laut und benannt (nie still null je Tier)"
+        check(c.kernPflichtZone, "Q8 K-D3: fehlt tetrapoda trefferZone");
+        // "Q8 T11 Lehre 14: der erste Hieb auf eine kalte Gattung trifft, zerlegt nichts, bricht nicht (die Geburt
+        // bestellt)"
+        check(c.kaltTrifft, "Q8 T11 Lehre 14: der erste Hieb");
+        // "Q10: der Klingen-Sweep liest _blickVorn (keine Inline-Kopie der Vorwärts-Formel)"
+        check(c.sweepBlickVorn, "Q10: der Klingen-Sweep liest");
+        // "Welle L: keine typeof-Probe auf eine eigene Methode in den Kampf- und Maus-Methoden der Welle"
+        check(c.keinTypeofSelbst, "Welle L: keine typeof-Probe auf");
+        // "Gesetz #0: Klinge und Pfeil fragen das EINE Grob-Tor (_trefferErreichbar), es liest den kreatur-Leib — kein
+        // drittes Körpermaß"
+        check(c.grobLiestLeib, "Gesetz #0: Klinge und Pfeil");
+        // "Gesetz #0: das Grob-Tor deckt die Gestalt — kein Ende einer Treffer-Glied-Kapsel liegt außerhalb (vier Gattungen
+        // × Größen-Grenzen, 90 Takte)"
+        check(c.grobDeckt, "Gesetz #0: das Grob-Tor deckt");
+        // "Q8 K-D15: die Hand ist kein Panzer (defense und hpMax unberührt; ein Werk der Schmiede faltet auch nicht in den
+        // Angriff)"
+        check(c.keinPanzer, "Q8 K-D15: die Hand ist");
+        // "Q8 K-D16/K-D12: Gegenwehr nach dem Temperament der Gattung — der wehrhafte Bär > 0, der scheue Hirsch 0 bei 20
+        // Treffern aus 1,6 m (der Stoß kommt NACH dem Biss-Test)"
+        check(c.gegenwehr, "Q8 K-D16/K-D12: Gegenwehr nach dem");
+        // "Q9 K-D1: 1st-Person — das Halten nach dem Stoß gräbt nicht (0 Krater)"
+        check(c.haltenOhneKrater, "Q9 K-D1: 1st-Person — das");
+        // "Q9 K-D17: RMB mit dem Schwert schüttet nie auf (Spaten und leere Hand schon)"
+        check(c.rmbSchwert, "Q9 K-D17: RMB mit dem");
+        // "Q9 V-D2: bei offener Werkstatt ist der Canvas taub (0 von 4 Griffen; ohne Schublade greift er)"
+        check(c.werkstattTaub, "Q9 V-D2: bei offener Werkstatt");
+        // "Q10 K-D14: die Ego-Neigung ist der Blick (−90° → −90°, −57,3° → −57,3°)"
+        check(c.egoBlick, "Q10 K-D14: die Ego-Neigung ist");
+        // "Q10 V-D4: jedes „vor dir“ liegt vor dem Blick (at_player_forward, „baue dorf hier“: cos > 0,9)"
+        check(c.vorDir, "Q10 V-D4: jedes „vor dir“");
+        // "Q10 K-D14: der Pfeil fliegt aufs Fadenkreuz (< 1° bei 45° Steigung)"
+        check(c.pfeilFadenkreuz, "Q10 K-D14: der Pfeil fliegt");
         check(
             c.s3 === true,
             "SELBST-TEST (S3): _blickVorn mit der alten −(sin, cos)-Richtung → „vor dir“ kippt hinter dich"
@@ -1954,8 +1890,6 @@ async function k1Ende(browser, K) {
             "SELBST-TEST (S9): der Leib ohne Glieder (Reichweite = halb + radius) → Kopf und Rute liegen außerhalb, die Deckungs-Probe nennt sie"
         );
     }
-    console.log(
-        `\n  ${ok ? "✅ GRÜN — die gerechnete Schwungphysik erreicht den Kampf: √I führt · die Klinge trifft · die Sim steht nie" : "❌ ROT — das Kampf-Gefühl trägt nicht"}\n`
-    );
+    console.log(`\n  ${ok ? "✅ GRÜN" : "❌ ROT"} — gate:kampf-gefuehl\n`);
     process.exit(ok ? 0 : 1);
 })();
