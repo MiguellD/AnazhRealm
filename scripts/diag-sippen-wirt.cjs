@@ -213,5 +213,5 @@ hauptLauf(async () => {
         !s2.fehler && s2.wd > s2.gd,
         s2.fehler || `Wirt ${s2.wd} Meshes, Gesetz ${s2.gd}`
     );
-    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): das Budget-Gesetz zählt nicht, was der Wirt zeichnet.`, `\n✅ GRÜN — ${out.items.length} Stufen: das Gesetz zählt jede Leaf des Wirts.`);
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): das Budget-Gesetz zählt nicht, was der Wirt zeichnet.`, () => `\n✅ GRÜN — ${out.items.length} Stufen: das Gesetz zählt jede Leaf des Wirts.`);
 });

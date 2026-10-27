@@ -727,7 +727,7 @@ hauptLauf(async () => {
             [tastRot, "der halbe Stand (Tastgrad 0,5) blieb grün: die Tastgrad-Wand"],
             [gefeuert.has("satz"), "der Satz ohne das Gedächtnis des Leibs blieb grün: die Satz-Wand"],
         ].find(([ok]) => !ok);
-        urteilEnde(vakuoes, `\n❌ SELBST-TEST ROT — ${vakuoes[1]} ist vakuös.`, `\n✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (${rot} Läufe über ${SCHWELLE}).`);
+        urteilEnde(vakuoes, () => `\n❌ SELBST-TEST ROT — ${vakuoes[1]} ist vakuös.`, `\n✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (${rot} Läufe über ${SCHWELLE}).`);
     }
     if (rot) {
         console.error(

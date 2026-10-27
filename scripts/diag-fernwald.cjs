@@ -696,5 +696,5 @@ hauptLauf(async () => {
         E.kachel ? "" : "keine Probe"
     );
     check("T keine Ausnahme im Spiel-Takt", !out.taktFehler, out.taktFehler || "");
-    urteilEnde(errs.length, `\n❌ ROT — ${errs.join(", ")}`, `\n✅ GRÜN — der gesetzte Wald ist jenseits der Mesh-Zone seine Karte (${A.ok} Bäume), kein Satz, kein Pop am Radius.`);
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.join(", ")}`, () => `\n✅ GRÜN — der gesetzte Wald ist jenseits der Mesh-Zone seine Karte (${A.ok} Bäume), kein Satz, kein Pop am Radius.`);
 });

@@ -2821,7 +2821,7 @@ async function kreaturProben(r, T, opts) {
             "begegnung-vergessen": "_bewohnerZeuge",
         })) {
             const zurueck = [];
-            decke(zurueck, name, () => () => false);
+            decke(name, () => () => false, zurueck);
             if ([].concat(taeter).includes(t)) sicht[t] = lauf();
             for (const f of zurueck) f();
         }

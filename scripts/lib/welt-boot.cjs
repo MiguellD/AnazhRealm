@@ -1019,13 +1019,15 @@ const argOpt = (k, d) => {
     return i >= 0 && a[i + 1] && !a[i + 1].startsWith("--") ? a[i + 1] : d;
 };
 // DAS EINE URTEIL AM ENDE einer Linse: `urteilEnde(rot, roteZeile, grueneZeile)` — rot (Zahl, Liste der Länge oder wahr) nennt die
-// rote Zeile auf stderr und endet mit Exit 1, sonst die grüne auf stdout mit Exit 0 (Lehre 9: der Exit spricht)
+// rote Zeile auf stderr und endet mit Exit 1, sonst die grüne auf stdout mit Exit 0 (Lehre 9: der Exit spricht); eine Zeile, die
+// nur auf ihrer Seite gilt (sie liest den Befund), steht als Funktion und wird erst dort gelesen
 const urteilEnde = (rot, roteZeile, grueneZeile) => {
+    const z = (x) => (typeof x === "function" ? x() : x);
     if (rot) {
-        console.error(roteZeile);
+        console.error(z(roteZeile));
         process.exit(1);
     }
-    console.log(grueneZeile);
+    console.log(z(grueneZeile));
     process.exit(0);
 };
 // DER EINE RUF an die Werkbank (POST JSON, ohne Frist; kein JSON: `{ roh }`)
