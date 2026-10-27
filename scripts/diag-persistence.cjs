@@ -329,10 +329,7 @@ async function tabTodProbe({ von, bis, selbst = false }) {
         await nullRenderer(page);
         await page.evaluateOnNewDocument(ttHaken);
         const tGoto = Date.now();
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, {
-            waitUntil: "domcontentloaded",
-            timeout: 120000,
-        });
+        await server.zeige(page, 120000);
         const g = (zeile.geladen = await page.evaluate(async () => {
             const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
             const loch = (o) => r._terrainDensityAt(o.x, o.y, o.z) + o.r; // das Zentrum liegt r m in der Luft (die Säule)
@@ -500,7 +497,7 @@ const kB = (b) => (b / 1000).toFixed(1) + " kB";
 async function wegLauf(km, min, edits) {
     const { browser, page } = await nullSeite({ frist: 3600000 });
     await page.evaluateOnNewDocument(() => (window.__anazhAutoSettlement = true));
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
+    await server.zeige(page);
     const { S, abw } = await page.evaluate(wegSeite, km, min, edits);
     await browser.close();
     return {
@@ -568,22 +565,26 @@ function korpusHaken(feld) {
         },
     });
 }
-// Je Stand eine Seite, sein localStorage hinein (IndexedDB trug denselben Stand), der Boot des Spielers.
+// Je Stand eine Seite in seinem Kontext, sein localStorage hinein (IndexedDB trug denselben Stand), der Boot des Spielers.
 async function korpusLauf(selbst) {
     const alle = fs
         .readdirSync(KORPUS)
         .map((f) => JSON.parse(zlib.brotliDecompressSync(fs.readFileSync(path.join(KORPUS, f)))));
     const [browser, zeilen] = [await starteBrowser({ art: "null" }), []];
     alle.sort((a, b) => a.version.localeCompare(b.version, "en", { numeric: true }));
-    for (const [i, k] of (selbst ? alle.slice(0, VERLUST.length) : NUR_STUFE ? alle.slice(-1) : alle).entries()) {
-        const [page, s] = [await browser.newPage(), korpusSoll(k)];
+    const liste = selbst ? alle.slice(0, VERLUST.length) : NUR_STUFE ? alle.slice(-1) : alle;
+    // DREI STÄNDE ZUGLEICH, je in seinem Kontext (localStorage, IndexedDB): 46 Boots je 4,5 s trugen 60 % von Teil 2 der CI, je
+    // Versions-Stufe einer mehr (27.10., Karte lange-stationen); der Kopf (aus dem jüngsten Stand) bootet danach in dessen Bahn
+    const stand = async (k, i) => {
+        const kontext = await browser.createBrowserContext();
+        const [page, s] = [await kontext.newPage(), korpusSoll(k)];
         await nullRenderer(page);
         await page.evaluateOnNewDocument(korpusHaken, selbst ? VERLUST[i] : null);
-        await page.goto(`http://127.0.0.1:${PORT}/cores.manifest.json`);
+        await server.zeige(page, undefined, "cores.manifest.json", "load");
         await page.evaluate((ls) => Object.assign((localStorage.clear(), localStorage), ls), k.ls);
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
+        await server.zeige(page);
         const ist = await page.evaluate(korpusIst, s);
-        await page.close();
+        await kontext.close();
         const kopf = korpusSave(ist.neu.ls);
         const inv = kopf.playerInventory.filter(Boolean).map(korpusSlot);
         const bauten = s.bauten.map(([t, x, z, ue]) =>
@@ -612,8 +613,10 @@ async function korpusLauf(selbst) {
             alle.push({ ...neu, kopf: true });
         }
         console.log(`  [V] ${z.version}${selbst ? " ohne " + VERLUST[i] : ""}: ${korpusZahl([z])}`);
-        zeilen.push(z);
-    }
+        zeilen[i] = z;
+    };
+    let n = 0;
+    await Promise.all([0, 1, 2].map(async () => { while (n < liste.length) await stand(liste[n], n++); }));
     await browser.close();
     return zeilen;
 }
@@ -660,7 +663,7 @@ function korpusUrteil(z, selbst) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     if (NUR_STUFE) process.exit((await korpusLauf(false))[0].ganz ? 0 : 1);
     // PERSISTENCE_WEG=0-0: kein Gang — ein Lauf, der (D) nie urteilt (speicher.K4/K5; den Gang misst speicher.K3 mit 5 km)
     const w = WEG_KM && (await wegLauf(WEG_KM, WEG_MIN, EDITS));
