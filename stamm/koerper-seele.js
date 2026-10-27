@@ -1654,6 +1654,7 @@ class AnazhRealm_koerper_seele {
         // geerdet + über der Tempo-Schwelle; Hit-Stop friert ihn mit, im Sattel kein Fuß-Klappern.
         this._schrittKlangTick(p, speedNow, underwater, mesh);
         if (hasSkeleton) {
+            this._kampfHuelle(mesh); // die Hülle ohne den Ausfall des letzten Takts: die Fuß-IK misst den Leib in Ruhe
             def.animate(mesh, currentTime, p.walkPhase, isMoving, underwater, p.emotions, gait);
             // Der 3-Phasen-Kampf-Schwung ist ein additiver Oberkörper-Layer über der Lokomotion (dieselbe
             // Null-Reset-Basis, danach +=) — kein zweites Rig-System. No-op ohne Schwung/Rig.

@@ -1027,8 +1027,8 @@ jobs:
               # K2 die Fuß-Probe in der Höhle liest den Höhlen-Boden · K3 das Tier bleibt auf dem Höhlen-Boden · K4 der Leib
               # steht am Hang auf der Boden-Karte, keine Cache-Treppe · K5 das tote Tier liegt auf dem trockenen Boden · K6 der
               # Stand-Leser im Chunk-Rand · K7 Wiese und Streu im Rand-Streifen so dicht wie daneben (K21, der EINE Boden-Leser) ·
-              # K8 (Welt mit Foundry) Fuß, Huf, Rad, Streu-Fuß und Feinform gegen das gezeichnete Mesh an Mess-Wiese und 25°-Hang,
-              # Soll p95 3 cm, Ratsche spec/profiband/ratsche-boden-rolle.json. --selftest: je Defekt die Basis-Zeile → seine Probe rot.
+              # K8 (Welt mit Foundry) Fuß (Höhenlinie, Falllinie, Treppe; 0 Steckenbleiber), Huf, Rad, Streu-Fuß und Feinform gegen
+              # das gezeichnete Mesh an Mess-Wiese und 25°-Hang, Soll p95 3 cm, Ratsche spec/profiband/ratsche-boden-rolle.json. --selftest: je Defekt die Basis-Zeile → seine Probe rot.
               run: npm run gate:koerper-stand
 
             - name: Das Haus der Welt ist begehbar, wie es gezeichnet ist (Welle L — Hülle der Stufe, Treppe, Grundriss)
