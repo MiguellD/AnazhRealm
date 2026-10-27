@@ -1091,22 +1091,6 @@ async function rollen(n) {
     return o;
 }
 
-// K9 je Sicht: der Leib (Third) und das Auge (Ego) heben sich mit der Kapsel (≥ 80 %), die Masse ×1,25 senkt Höhe und Weite,
-// die Kraft ×1,25 hebt sie (je ≥ 10 %)
-function urteilK9(o) {
-    const f = o ? [] : ["K9 Aufbau: kein Sprung"];
-    for (const [b, [g, ...mut]] of Object.entries(o || {})) {
-        if (!(g.hub[b === "first" ? 2 : 1] >= 0.8 * g.hub[0])) f.push(`K9 Bild ${b}: Kapsel/Leib/Auge ${g.hub} m`);
-        for (const [n, j, vz] of [
-            ["masse", mut[0], -1],
-            ["kraft", mut[1], 1],
-        ])
-            if (!((j.hub[0] / g.hub[0] - 1) * vz >= 0.1 && (j.weite / g.weite - 1) * vz >= 0.1))
-                f.push(`K9 Mutante ${n} ${b}: ${j.hub[0]}/${j.weite} gegen ${g.hub[0]}/${g.weite} m`);
-    }
-    return f;
-}
-
 function urteil(o) {
     const f = [];
     if (o.fehler) return [o.fehler];
@@ -1179,7 +1163,7 @@ const K8_ROLLEN = Object.freeze({
     huf: [3, "der Huf (_kreaturFussBoden, seine Sohle _gaitSohlenKipp)"],
     rad: [3, "das Rad (_archRadMatrix: der Reifen auf _standSicht)"],
 });
-function urteilK8(o, umfang) {
+function urteilK8(o) {
     if (!o || !o.wiese || !o.hang) return ["K8 Aufbau: Mess-Wiese oder 25°-Hang fehlt"];
     const f = [];
     // die Mess-Welt ist eine Funktion des Codes: kein Wurf des Nexus nach der Wanduhr (sein Dorf am Hang: fein 30,8/31,4 cm)
@@ -1193,13 +1177,25 @@ function urteilK8(o, umfang) {
             f.push(`K8 Ring ${ort}: ${ring} von ${ziel} — Täter: _ringWaechst (der Ring wächst bis zum Ziel)`);
         for (const [rolle, [soll, wer]] of Object.entries(K8_ROLLEN)) {
             // die Deko-Streu über den Chunks (64–194 m) trägt an der Wiese (einer Aue) gut 100 Instanzen: die Hälfte des Umfangs
-            const m = o[ort][rolle];
-            const min = rolle === "streu" ? umfang / 2 : umfang;
-            if (m && m.stecken) f.push(`K8 Steckenbleiber ${ort} ${rolle}: ${m.stecken} — Täter: der Kapsel-Schritt`);
-            if (!m || !(m.n >= min)) f.push(`K8 Aufbau ${ort} ${rolle}: ${m ? m.n : 0} Kontakte (Soll ≥ ${min})`);
+            const m = o[ort][rolle] || {};
+            const min = rolle === "streu" ? K8_UMFANG / 2 : K8_UMFANG;
+            if (m.stecken) f.push(`K8 Steckenbleiber ${ort} ${rolle}: ${m.stecken} — Täter: der Kapsel-Schritt`);
+            if (!(m.n >= min)) f.push(`K8 Aufbau ${ort} ${rolle}: ${m.n} Kontakte (Soll ≥ ${min})`);
             else if (!(m.p95 <= soll))
                 f.push(`K8 ${rolle} ${ort}: p95 ${m.p95} cm (Median ${m.median}, Soll ≤ ${soll}) — Täter: ${wer}`);
         }
+    }
+    // K9 je Sicht: der Leib (Third) und das Auge (Ego) heben sich mit der Kapsel (≥ 80 %), die Masse ×1,25 senkt Höhe und
+    // Weite, die Kraft ×1,25 hebt sie (je ≥ 10 %)
+    if (!o.sprung) f.push("K9 Aufbau: kein Sprung");
+    for (const [b, [g, masse, kraft]] of Object.entries(o.sprung || {})) {
+        if (!(g.hub[b === "first" ? 2 : 1] >= 0.8 * g.hub[0])) f.push(`K9 Bild ${b}: Kapsel/Leib/Auge ${g.hub} m`);
+        for (const [n, j, vz] of [
+            ["masse", masse, -1],
+            ["kraft", kraft, 1],
+        ])
+            if (!((j.hub[0] / g.hub[0] - 1) * vz >= 0.1 && (j.weite / g.weite - 1) * vz >= 0.1))
+                f.push(`K9 Mutante ${n} ${b}: ${j.hub[0]}/${j.weite} gegen ${g.hub[0]}/${g.weite} m`);
     }
     return f;
 }
@@ -1262,9 +1258,9 @@ hauptLauf(async () => {
                 sprung: ["K9 Mutante masse first", "K9 Mutante kraft third"],
             };
             for (const inj of Object.keys(soll)) {
-                const k8 = soll[inj][0].startsWith("K8");
+                const k8 = /^K[89]/.test(soll[inj][0]);
                 const { o } = await lauf(inj, k8);
-                const f = k8 ? [...urteilK8(o, K8_UMFANG), ...urteilK9(o.sprung)] : urteil(o);
+                const f = k8 ? urteilK8(o) : urteil(o);
                 const fehlt = soll[inj].filter((x) => !f.some((y) => y.startsWith(x)));
                 const ok = fehlt.length === 0;
                 const beleg = soll[inj].map((x) => f.find((y) => y.startsWith(x)) || `${x}: grün (blind!)`).join(" | ");
@@ -1274,7 +1270,7 @@ hauptLauf(async () => {
         }
         const { o } = NUR_K8 ? { o: null } : await lauf(null);
         const k8 = await lauf(null, true);
-        const f = [...(o ? urteil(o) : []), ...urteilK8(k8.o, K8_UMFANG), ...urteilK9(k8.o.sprung)];
+        const f = [...(o ? urteil(o) : []), ...urteilK8(k8.o)];
         console.log("  " + zeile({ ...o, k8: k8.o }));
         for (const x of f) console.log("  ❌ " + x);
         rot += f.length;
