@@ -8,6 +8,11 @@
 //        Zwillinge (gleicher Befehl und Umgebung) fahren EINMAL; DER BAHN-PLAN (fahrePlan): jede Zeit-Station allein, die übrigen
 //        auf bis zu N Bahnen (Vorgabe 3, höchstens 5) zugleich, jede Bahn mit eigenem Spiel-Baum und eigenem Port-Band (portBand) —
 //        auf radeon|gtx über das Platz-Schloss (werkzeug/gpu-lauf.sh: ein Bild-Lauf nimmt einen Platz, ein Zeit-Lauf alle)
+//        --farm <name>: headless auf einem Läufer der Farm (punkte-farm.yml im Spiel-Repo), ohne Schloss des Rechners, host = name
+//   node punkte.cjs scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur id,id]
+//        der Plan der Farm: die Läufe in höchstens --jobs Scheiben, die schwersten zuerst (JSON auf stdout = die Matrix)
+//   node punkte.cjs vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben scheiben.json] [--beginn <s>]
+//        die Teil-Messungen der Scheiben zur EINEN messung/<sha8>-<geraet>.json samt Roh-Ausgaben
 //   node punkte.cjs buchen --kopf <sha>
 //        liest alle messung/*.json, urteilt R6 (Pfad unberührt seit der Messung) und R10, schreibt stand.json
 //   node punkte.cjs liste [--kopf <sha>]   die registrierten Stationen, geprüft gegen src/gN.js und jeder pfad-Glob gegen den
@@ -458,17 +463,14 @@ const rohAus = (mdir = path.join(DIR, "messung")) => (sha, g, id) => {
     return fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "";
 };
 
-async function run(opt) {
+// DIE AUSWAHL eines Laufs — EINE Quelle für run und scheiben: die Stationen des Geräts nach --nur und --offen am SHA.
+// Rückgabe { repo, sha, meine, tot }; meine leer heißt: am SHA ist nichts zu messen (--offen)
+function auswahl(opt) {
     if (!opt.sha) throw new Error("--sha fehlt");
     if (!GERAETE.includes(opt.geraet)) throw new Error("--geraet radeon|gtx|headless");
     const { stationen, fehler } = ladeGeprueft();
     if (fehler.length) throw new Error("Stationen ROT:\n - " + fehler.join("\n - "));
     const nur = opt.nur ? new Set(opt.nur.split(",")) : null;
-    const bahnenSoll = Number(opt.bahnen || 3);
-    if (!(bahnenSoll >= 1 && bahnenSoll <= MAX_BAHNEN && Number.isInteger(bahnenSoll)))
-        throw new Error("--bahnen " + opt.bahnen + ": 1 bis " + MAX_BAHNEN + " (je Bahn ein Port-Band)");
-    const band = (b) => portBand(opt.portBasis || 7700, opt.geraet, b);
-    for (let b = 0; b < bahnenSoll; b++) band(b);
     let meine = stationen.filter((st) => geraeteVon(st).includes(opt.geraet) && (!nur || nur.has(schluessel(st))));
     if (nur) for (const id of nur) if (!meine.some((st) => schluessel(st) === id)) throw new Error("--nur " + id + ": keine Station auf " + opt.geraet);
     if (!meine.length) throw new Error("keine Station auf " + opt.geraet);
@@ -482,10 +484,155 @@ async function run(opt) {
             weltDateien(git(["diff", "--name-only", s, sha], repo), git(["diff", "-U0", "--no-color", s, sha], repo)), hilfeText(),
             { tot, roh: rohAus() });
         meine = meine.filter((st) => frisch(st, opt.geraet).ungemessen);
-        if (!meine.length) {
-            console.log("Punkte-Maschine: am " + sha.slice(0, 8) + " ist jede Station auf " + opt.geraet + " frisch gemessen");
-            return null;
+    }
+    return { repo, sha, meine, tot };
+}
+
+// DIE FARM (27.10., Karte punkte-farm; die Regel des Schöpfers: „Die Prüfung darf nie länger dauern als das Erstellen“ — der
+// headless-Takt an e7a28b06 fuhr 76 Stationen Σ 266 min in 60 min Wanduhr auf dem Laptop): `run --farm <name>` fährt headless auf
+// einem Läufer der Farm (.github/workflows/punkte-farm.yml im Spiel-Repo), der nur diesen Lauf trägt — dort hält kein
+// Schloss des Rechners (Takt 8: es schützte die Zeit-Stationen vor den Bahnen der Radeon NEBENAN, die auf dem Läufer nie
+// laufen); die Karte bleibt verwehrt (LINSE_GPU=software). Eine GPU-Station fährt nie auf der Farm: sie misst nur unter dem
+// Schloss ihrer Karte. Rückgabe: die gpu-lauf.sh des Laufs oder null (frei)
+function gpuLaufFuer(geraet, farm) {
+    if (!farm) return GPU_LAUF;
+    if (geraet !== "headless") throw new Error("--farm fährt nur headless — " + geraet + " misst nur unter dem Schloss seiner Karte");
+    return null;
+}
+
+// DIE SCHEIBEN DER FARM: die Läufe (Zwillinge EIN Lauf, gruppiere) auf höchstens `jobs` Scheiben, die schwersten zuerst in die
+// leichteste (LPT) — die Wanduhr der Farm ist die schwerste Scheibe, also mindestens der längste Lauf. gewicht(gruppe) → Minuten.
+// Rückgabe [{ nr, gruppen, min }] ohne leere Scheiben, nr ab 1 in der Reihenfolge der Last
+function scheibenPlan(gruppen, jobs, gewicht) {
+    const k = Math.max(1, Math.min(Number(jobs) || 1, gruppen.length));
+    const sch = Array.from({ length: k }, () => ({ gruppen: [], min: 0 }));
+    const last = gruppen.map((g, i) => ({ g, w: Math.max(0, Number(gewicht(g)) || 0), i })).sort((a, b) => b.w - a.w || a.i - b.i);
+    for (const { g, w } of last) {
+        const s = sch.reduce((a, b) => (b.min < a.min ? b : a));
+        s.gruppen.push(g);
+        s.min = +(s.min + w).toFixed(2);
+    }
+    return sch.filter((s) => s.gruppen.length).sort((a, b) => b.min - a.min).map((s, i) => ({ nr: i + 1, ...s }));
+}
+// das Gewicht eines Laufs: die KÜRZESTE seiner jüngsten 5 Messungen auf dem Gerät (eine mit 0 min — toter Glob — zählt nicht), sonst
+// die Soll-Minuten seiner ersten Station. Am Laptop zählen die Minuten das Warten auf das Schloss und die Last der Nachbar-Bahnen mit
+// (speicher.K3#2 allein 8,6–10,4 min, in 3 Bahnen neben der Radeon 26,6 und 52,3 min; feld.K3#1 0,7–2,6 und 33,6 min) — Last
+// verlängert nur, also schätzt die kürzeste den Lauf allein; der Abdruck zählt hier nicht (er urteilt die Frische, nie die Länge)
+function laufGewicht(messungen, geraet) {
+    const je = new Map();
+    for (const m of messungen) {
+        if (m.geraet !== geraet) continue;
+        for (const [id, e] of Object.entries(m.je || {})) if (e.minuten > 0) (je.get(id) || je.set(id, []).get(id)).push(e);
+    }
+    const kuerzeste = (id) => {
+        const es = (je.get(id) || []).sort((a, b) => String(b.zeit).localeCompare(String(a.zeit))).slice(0, 5);
+        return es.length ? Math.min(...es.map((e) => e.minuten)) : null;
+    };
+    return (g) => {
+        const ms = g.map((st) => kuerzeste(schluessel(st))).filter((x) => x != null);
+        return ms.length ? Math.max(...ms) : g[0].minuten;
+    };
+}
+// DER ANBIETER DES LAPTOPS: eine Station, deren KI_ENDPUNKT der lokale Ollama ist (Port 11434), verlangt dessen Modell auf dem
+// Läufer ihrer Scheibe — die Farm stellt ihn (punkte-farm.yml, Schritt KI-Anbieter), die Station selbst bleibt byte-gleich
+const LOKALER_ANBIETER = /^https?:\/\/(127\.0\.0\.1|localhost):11434(\/|$)/;
+const kiModelle = (gruppen) =>
+    [...new Set(gruppen.flat().filter((st) => st.env && LOKALER_ANBIETER.test(st.env.KI_ENDPUNKT || "") && st.env.KI_MODELL).map((st) => st.env.KI_MODELL))];
+
+// `scheiben`: der Plan der Farm als JSON auf stdout (die Matrix des Workflows), die Zeilen für Menschen auf stderr
+function scheibenCli(opt) {
+    const { sha, meine } = auswahl(opt);
+    const gruppen = gruppiere(meine);
+    const plan = scheibenPlan(gruppen, opt.jobs || 12, laufGewicht(ladeMessungen(), opt.geraet));
+    const scheiben = plan.map((s) => ({ nr: s.nr, nur: s.gruppen.flat().map(schluessel).join(","), stationen: s.gruppen.flat().length,
+        laeufe: s.gruppen.length, min: s.min, ki: kiModelle(s.gruppen).join(" ") }));
+    console.error("SCHEIBEN " + sha.slice(0, 8) + " " + opt.geraet + ": " + meine.length + " Stationen in " + gruppen.length + " Läufen auf " +
+        scheiben.length + " Scheiben · schwerste ~" + (scheiben[0] ? scheiben[0].min : 0) + " min · Σ ~" + +plan.reduce((a, s) => a + s.min, 0).toFixed(1) + " min");
+    for (const s of scheiben) console.error("  " + s.nr + " · ~" + s.min + " min · " + s.laeufe + " Läufe" + (s.ki ? " · KI " + s.ki : "") + " · " + s.nur);
+    const aus = { sha, sha8: sha.slice(0, 8), geraet: opt.geraet, stationen: meine.length, laeufe: gruppen.length, scheiben };
+    process.stdout.write(JSON.stringify(aus) + "\n");
+    return aus;
+}
+
+// DIE VEREINIGUNG der Farm: die Teil-Messungen der Scheiben (je Läufer `run --nur … --farm`) in die EINE Messung m des SHA, über
+// `eintragen` wie ein Lauf am Platz (ein Teil-Eintrag ersetzt den alten derselben Station, ungemessen bleibt ungemessen); jeder
+// Eintrag trägt den Läufer (host), die Datei die Farm. teile: [{ name, m }]; erwartet: [{ nr, nur }] oder null. Rückgabe
+// { m, n, fehlt: [{ nr, ids }] } — eine Scheibe ohne Teil (ihr Läufer fiel) steht beim Namen, ihre Stationen bleiben, wie sie waren.
+function vereineMessungen(m, teile, sha, geraet, host, erwartet = null) {
+    const ziel = m && m.sha === sha ? { ...m, je: { ...m.je }, ...(m.ungemessen ? { ungemessen: { ...m.ungemessen } } : {}) }
+        : { sha, geraet, zeit: null, host, je: {} };
+    const gesehen = new Set();
+    let n = 0;
+    for (const t of teile) {
+        if (!t.m || t.m.sha !== sha || t.m.geraet !== geraet)
+            throw new Error("Teil " + t.name + " misst " + (t.m && t.m.sha) + " " + (t.m && t.m.geraet) + " statt " + sha + " " + geraet);
+        for (const [id, e] of [...Object.entries(t.m.je || {}), ...Object.entries(t.m.ungemessen || {})]) {
+            eintragen(ziel, id, { ...e, host: e.host || t.m.host || t.name });
+            gesehen.add(id);
+            n++;
         }
+        if (t.m.zeit && String(t.m.zeit) > String(ziel.zeit || "")) ziel.zeit = t.m.zeit;
+    }
+    ziel.host = host;
+    const fehlt = (erwartet || []).map((s) => ({ nr: s.nr, ids: String(s.nur).split(",").filter((id) => id && !gesehen.has(id)) })).filter((s) => s.ids.length);
+    return { m: ziel, n, fehlt };
+}
+
+// `vereine --sha <sha> --geraet headless --farm <name> --teile <dir> [--scheiben scheiben.json] [--beginn <epoch s>]`: jedes
+// Unterverzeichnis von <dir> (download-artifact: teil-<nr>/) trägt <sha8>-<geraet>.json und roh/<sha8>-<geraet>/
+function vereineCli(opt) {
+    if (!opt.sha || !opt.geraet || !opt.farm || !opt.teile) throw new Error("vereine --sha <voll> --geraet <g> --farm <name> --teile <dir>");
+    const name = opt.sha.slice(0, 8) + "-" + opt.geraet;
+    const teile = [];
+    for (const d of fs.readdirSync(opt.teile).sort()) {
+        const f = path.join(opt.teile, d, name + ".json");
+        if (fs.existsSync(f)) teile.push({ name: d, m: JSON.parse(fs.readFileSync(f, "utf8")), roh: path.join(opt.teile, d, "roh", name) });
+        else console.log("  Teil " + d + " ohne " + name + ".json");
+    }
+    const erwartet = opt.scheiben ? JSON.parse(fs.readFileSync(opt.scheiben, "utf8")).scheiben : null;
+    const datei = messDatei(opt.sha, opt.geraet);
+    const alt = fs.existsSync(datei) ? JSON.parse(fs.readFileSync(datei, "utf8")) : null;
+    const r = vereineMessungen(alt, teile, opt.sha, opt.geraet, opt.farm, erwartet);
+    fs.writeFileSync(datei, JSON.stringify(r.m, null, 1) + "\n");
+    const rohZiel = path.join(DIR, "messung", "roh", name);
+    for (const t of teile) {
+        if (!fs.existsSync(t.roh)) continue;
+        fs.mkdirSync(rohZiel, { recursive: true });
+        for (const f of fs.readdirSync(t.roh)) fs.copyFileSync(path.join(t.roh, f), path.join(rohZiel, f));
+    }
+    // die Zahl: je Läufer die Minuten seiner Läufe (ein Zwilling fuhr nie selbst), die Wanduhr ab dem Beginn der Farm
+    const neu = teile.flatMap((t) => Object.entries(t.m.je || {}).map(([id, e]) => ({ id, ...e, host: e.host || t.name })));
+    const jeHost = {};
+    for (const e of neu) if (!e.zwilling) jeHost[e.host] = +((jeHost[e.host] || 0) + (e.minuten || 0)).toFixed(2);
+    const ungemessen = teile.reduce((a, t) => a + Object.keys(t.m.ungemessen || {}).length, 0);
+    const gruen = neu.filter((e) => e.gruen).length;
+    const wanduhr = opt.beginn ? +((Date.now() / 1000 - Number(opt.beginn)) / 60).toFixed(1) : null;
+    const laengste = Math.max(0, ...Object.values(jeHost));
+    const zeile = "Farm " + opt.geraet + " " + name.slice(0, 8) + ": " + neu.length + " Stationen aus " + teile.length + " Teilen · GRÜN " + gruen +
+        " · ROT " + (neu.length - gruen) + (ungemessen ? " · ungemessen " + ungemessen : "") + " · längster Läufer " + laengste + " min · Σ " +
+        +Object.values(jeHost).reduce((a, x) => a + x, 0).toFixed(1) + " min" + (wanduhr != null ? " · Wanduhr " + wanduhr + " min" : "");
+    console.log(zeile);
+    for (const e of neu.sort((a, b) => a.id.localeCompare(b.id))) console.log(stationsZeile(e.id, e) + " · " + e.host);
+    for (const s of r.fehlt) console.log("  FEHLT Scheibe " + s.nr + " (" + s.ids.length + " Stationen, kein Teil): " + s.ids.join(","));
+    console.log("→ " + path.relative(KOORD, datei));
+    return { ...r, zeile };
+}
+
+async function run(opt) {
+    if (!opt.sha) throw new Error("--sha fehlt");
+    if (!GERAETE.includes(opt.geraet)) throw new Error("--geraet radeon|gtx|headless");
+    const gpuLauf = gpuLaufFuer(opt.geraet, opt.farm);
+    const bahnenSoll = Number(opt.bahnen || 3);
+    if (!(bahnenSoll >= 1 && bahnenSoll <= MAX_BAHNEN && Number.isInteger(bahnenSoll)))
+        throw new Error("--bahnen " + opt.bahnen + ": 1 bis " + MAX_BAHNEN + " (je Bahn ein Port-Band)");
+    const band = (b) => portBand(opt.portBasis || 7700, opt.geraet, b);
+    for (let b = 0; b < bahnenSoll; b++) band(b);
+    const a = auswahl(opt);
+    const { repo, sha, tot } = a;
+    let meine = a.meine;
+    if (!meine.length) {
+        console.log("Punkte-Maschine: am " + sha.slice(0, 8) + " ist jede Station auf " + opt.geraet + " frisch gemessen");
+        return null;
     }
     if (opt.trocken) {
         console.log("Punkte-Maschine (trocken): " + meine.length + " Station(en) auf " + opt.geraet + " am " + sha.slice(0, 8) + ", " +
@@ -497,13 +644,15 @@ async function run(opt) {
     const baum = baumAmSha(repo, opt.geraet, sha);
     const datei = messDatei(sha, opt.geraet);
     const rohDir = path.join(DIR, "messung", "roh", sha.slice(0, 8) + "-" + opt.geraet);
+    fs.mkdirSync(path.dirname(datei), { recursive: true }); // die Farm checkt messung/ nie aus (ihr Teil trägt nur die Scheibe)
     let m = fs.existsSync(datei) ? JSON.parse(fs.readFileSync(datei, "utf8")) : null;
-    if (!m || m.sha !== sha) m = { sha, geraet: opt.geraet, zeit: null, host: os.hostname(), je: {} };
+    const host = opt.farm || os.hostname();
+    if (!m || m.sha !== sha) m = { sha, geraet: opt.geraet, zeit: null, host, je: {} };
     const hilfe = hilfeText();
     // DIE WAND PFAD: eine Station mit totem Glob am SHA fährt nie — sie ist ROT beim Glob (R6 wäre für ihn blind)
     for (const st of meine.filter((s) => tot(s).length)) {
         const grund = pfadGrund(tot(st), "am " + sha.slice(0, 8));
-        m.je[schluessel(st)] = { gruen: false, zahl: grund, exit: null, minuten: 0, grund, zeit: new Date().toISOString(), abdruck: abdruck(st, hilfe) };
+        m.je[schluessel(st)] = { gruen: false, zahl: grund, exit: null, minuten: 0, grund, zeit: new Date().toISOString(), abdruck: abdruck(st, hilfe), ...(opt.farm ? { host } : {}) };
         console.log("  ROT  " + schluessel(st) + " · " + grund);
     }
     meine = meine.filter((s) => !tot(s).length);
@@ -514,7 +663,7 @@ async function run(opt) {
     }
     const gruppen = gruppiere(meine);
     const bahnen = Math.max(1, Math.min(bahnenSoll, gruppen.filter((g) => !istZeit(g)).length));
-    const ctx0 = { koord: KOORD, geraet: opt.geraet, bash: findeBash(), plaetze: bahnen, gpuLauf: GPU_LAUF };
+    const ctx0 = { koord: KOORD, geraet: opt.geraet, bash: findeBash(), plaetze: bahnen, gpuLauf };
     // je Bahn der EIGENE Spiel-Baum (Spielstände, Rohdateien) und das eigene Port-Band
     const baeume = [baum];
     for (let i = 2; i <= bahnen; i++) baeume.push(baumAmSha(repo, opt.geraet + "-" + i, sha));
@@ -529,13 +678,13 @@ async function run(opt) {
         g.forEach((st, i) => {
             const id = ids[i];
             if (i > 0 && fs.existsSync(ctx.roh)) fs.copyFileSync(ctx.roh, path.join(rohDir, id.replace("#", "_") + ".out"));
-            const e = { ...es[i], zeit, abdruck: abdruck(st, hilfe), port: ctx.port, bahn: istZeit(g) ? "allein" : b + 1 + "/" + bahnen,
+            const e = { ...es[i], zeit, abdruck: abdruck(st, hilfe), port: ctx.port, bahn: istZeit(g) ? "allein" : b + 1 + "/" + bahnen, ...(opt.farm ? { host } : {}),
                 ...(i > 0 ? { zwilling: ids[0] } : {}) };
             eintragen(m, id, e);
             console.log(stationsZeile(id, e));
         });
         m.zeit = zeit;
-        m.host = os.hostname();
+        m.host = host;
         fs.writeFileSync(datei, JSON.stringify(m, null, 1) + "\n");
     });
     console.log("→ " + path.relative(KOORD, datei));
@@ -1215,6 +1364,38 @@ async function selbsttest() {
     pruef("MESS-PLAN Staffel 1 auf EINEM Gerät (Zeit auf der GTX), rot ohne Heil-Versuch fällt, genannt fährt beide, Staffel 2 nur ganz grün oder geheilt",
         mp.radeon.join() === "a.K1#1,a.K1#2,c.K1#1" && mp.gtx.join() === "a.K1#2,c.K1#1,d.K1#1" && mp.uebersprungen.join() === "b.K1#1,d.K1#2", JSON.stringify(mp));
     pruef("GEN unbekanntes Kriterium ist ROT", standPruefen({ kopf: "abcd1234", je: { "x.K1": {} } }, "abcd1234", new Set()).length === 1);
+    // (7) DIE FARM: Scheiben (LPT, Zwillinge zusammen, Gewicht aus der jüngsten Messung), der Anbieter je Scheibe, die Vereinigung
+    // der Teile (ersetzt, ungemessen, fehlende Scheibe beim Namen, fremder SHA wirft) und kein Schloss nur für headless
+    {
+        const S = (k, s, min, extra = {}) => ({ ...st0, kriterium: k, staffel: s, minuten: min, befehl: ["node", k], ...extra });
+        const zw = S("a.K1", 2, 1, { befehl: ["node", "a.K1"] });
+        const gs = gruppiere([S("a.K1", 1, 1), zw, S("b.K1", 1, 7), S("c.K1", 1, 5), S("d.K1", 1, 4), S("e.K1", 1, 3),
+            S("f.K1", 1, 1, { env: { KI_ENDPUNKT: "http://127.0.0.1:11434/", KI_MODELL: "qwen3:4b-instruct" } })]);
+        const mess = [{ geraet: "headless", je: { "a.K1#1": { minuten: 10, zeit: "2026-10-27T01:00:00Z" } } },
+            { geraet: "headless", je: { "a.K1#1": { minuten: 0, zeit: "2026-10-27T02:00:00Z" } } },
+            { geraet: "headless", je: { "a.K1#1": { minuten: 30, zeit: "2026-10-27T02:30:00Z" } } },
+            { geraet: "radeon", je: { "b.K1#1": { minuten: 99, zeit: "2026-10-27T03:00:00Z" } } }];
+        const p = scheibenPlan(gs, 3, laufGewicht(mess, "headless"));
+        const ids = p.map((s) => s.gruppen.flat().map(schluessel).join(","));
+        const ki = p.map((s) => kiModelle(s.gruppen).join(" "));
+        pruef("FARM die Scheiben: die schwersten zuerst in die leichteste, Zwillinge EIN Lauf, Gewicht = die kürzeste der jüngsten 5 Messungen > 0 auf dem Gerät, sonst Soll",
+            p.length === 3 && p.map((s) => s.min).join() === "10,10,10" && ids.join(" | ") === "a.K1#1,a.K1#2 | b.K1#1,e.K1#1 | c.K1#1,d.K1#1,f.K1#1" &&
+            ki.join("|") === "||qwen3:4b-instruct" && scheibenPlan(gs, 99, () => 1).length === gs.length, JSON.stringify(p.map((s, i) => [s.min, ids[i], ki[i]])));
+        const alt = { sha: "f1", geraet: "headless", host: "laptop", je: { "a.K1#1": { gruen: false, zahl: "rot", minuten: 3 }, "z.K1#1": { gruen: true, zahl: "z", minuten: 1 } } };
+        const t1 = { name: "teil-1", m: { sha: "f1", geraet: "headless", host: "farm:7/1", zeit: "2026-10-27T10:00:00Z", je: { "a.K1#1": { gruen: true, zahl: "g", minuten: 2, host: "farm:7/1" }, "a.K1#2": { gruen: true, zahl: "g", minuten: 2, zwilling: "a.K1#1", host: "farm:7/1" } } } };
+        const t2 = { name: "teil-2", m: { sha: "f1", geraet: "headless", host: "farm:7/2", zeit: "2026-10-27T10:05:00Z", je: {}, ungemessen: { "b.K1#1": { gruen: false, ungemessen: true, grund: "x" } } } };
+        const v = vereineMessungen(alt, [t1, t2], "f1", "headless", "farm:7", [{ nr: 1, nur: "a.K1#1,a.K1#2" }, { nr: 2, nur: "b.K1#1" }, { nr: 3, nur: "c.K1#1,d.K1#1" }]);
+        let wirft = "";
+        try { vereineMessungen(alt, [{ name: "teil-9", m: { sha: "f2", geraet: "headless", je: {} } }], "f1", "headless", "farm:7"); } catch (e) { wirft = e.message; }
+        pruef("FARM die Vereinigung: ein Teil ersetzt den alten Eintrag, Fremdes bleibt, ungemessen bleibt ungemessen, die fehlende Scheibe beim Namen, ein fremder SHA wirft",
+            v.n === 3 && v.m.je["a.K1#1"].gruen && v.m.je["a.K1#1"].host === "farm:7/1" && v.m.je["z.K1#1"].gruen && !v.m.je["b.K1#1"] && v.m.ungemessen["b.K1#1"] &&
+            v.m.host === "farm:7" && v.m.zeit === "2026-10-27T10:05:00Z" && !alt.je["a.K1#1"].gruen && v.fehlt.length === 1 && v.fehlt[0].nr === 3 &&
+            v.fehlt[0].ids.join() === "c.K1#1,d.K1#1" && /teil-9 misst f2 headless statt f1 headless/.test(wirft), JSON.stringify([v, wirft]));
+        let gpuWirft = "";
+        try { gpuLaufFuer("radeon", "farm:7/1"); } catch (e) { gpuWirft = e.message; }
+        pruef("FARM headless fährt auf dem Läufer ohne Schloss des Rechners, am Platz mit ihm; eine GPU-Station nie auf der Farm",
+            gpuLaufFuer("headless", "farm:7/1") === null && gpuLaufFuer("headless", undefined) === GPU_LAUF && gpuLaufFuer("gtx") === GPU_LAUF && /nur headless/.test(gpuWirft), gpuWirft);
+    }
     fs.rmSync(tmp, { recursive: true, force: true });
     const rot = fall.filter((f) => !f.ok);
     console.log((rot.length ? "SELBSTTEST ROT — " + rot.map((f) => f.name).join(", ") : "SELBSTTEST GRÜN") + " (" + (fall.length - rot.length) + "/" + fall.length + ")");
@@ -1236,6 +1417,8 @@ if (require.main === module) {
     const o = opts(rest);
     (async () => {
         if (verb === "run") await run(o);
+        else if (verb === "scheiben") scheibenCli(o);
+        else if (verb === "vereine") vereineCli(o);
         else if (verb === "buchen") buchenCli(o);
         else if (verb === "gtx-nutzen") gtxNutzenCli(o);
         else if (verb === "plan") planCli(o);
@@ -1256,7 +1439,7 @@ if (require.main === module) {
             process.exitCode = fehler.length ? 1 : 0;
         } else if (verb === "selbsttest") process.exitCode = await selbsttest();
         else {
-            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--trocken] [--bahnen 3] [--port-basis 7700] · buchen --kopf <sha> · liste [--kopf <sha>] · selbsttest");
+            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · buchen --kopf <sha> · liste [--kopf <sha>] · selbsttest");
             process.exitCode = 2;
         }
     })().catch((e) => {
