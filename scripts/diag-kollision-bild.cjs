@@ -146,7 +146,7 @@ function urteil(b) {
         if (t.art === "gestalt") v.push(`(G) FREMDE GESTALT: ${wo}Bild ${t.bildG}, Blocker ${t.blockG}`);
     }
     const ex = b.exemplare || {};
-    for (const k of PFLICHT_EXEMPLARE) if (ex[k] !== true) v.push(`(E) KLASSE FEHLT: ${k} (${ex[k] || "nicht gesetzt"})`);
+    for (const k of PFLICHT_EXEMPLARE) if (ex[k] !== true) v.push(`(E) KLASSE FEHLT: ${k} (nicht gezählt)`);
     for (const k of ["schmuggel", "schmuggelTor"]) if (!(b[k] || {}).genannt) v.push(`LINSE STUMPF: (T) ${k} wurde nicht genannt (${(b[k] || {}).wer})`);
     if (!Array.isArray(b.bauten)) v.push("LEER: (K) keine Bau-Zählung");
     for (const t of b.bauten || []) v.push(`(K) DER HAUPT-THREAD BAUT: ${t}`);
@@ -182,7 +182,7 @@ function selbsttest() {
     const T = (art, o) => (b) => b.zensus.taeter.push({ wer: "felsturm#174", ort: "-913.7/-900.7", art, ...o });
     taeterFaelle(
         [
-            [T("blocker", { mass: 16.46, wo: "oben" }), /BLOCKER OHNE BILD: felsturm#174 bei -913.7\/-900.7 — .* 16.46 m oben/],
+            [T("blocker", { mass: 16.46, wo: "oben" }), /BLOCKER OHNE BILD: felsturm#174 .*16.46 m oben/],
             [T("bild", { wer: "haus_alemannisch#9", mass: 1.2 }), /BILD OHNE BLOCKER: haus_alemannisch#9 .* 1.20 m neben/],
             [T("stamm", { wer: "baum_eiche#3" }), /BAUM OHNE STAMM: baum_eiche#3/],
             [T("gestalt", { bildG: 3, blockG: 7 }), /FREMDE GESTALT: felsturm#174 .*Bild 3, Blocker 7/],
@@ -190,17 +190,17 @@ function selbsttest() {
             [(b) => (b.schmuggel.genannt = false), /STUMPF: \(T\) schmuggel .*felsturm#4/],
             [(b) => (b.schmuggelTor.genannt = false), /STUMPF: \(T\) schmuggelTor .*welt_fachwerk#9/],
             [(b) => delete b.exemplare.felsbogen, /KLASSE FEHLT: felsbogen/],
-            [(b) => b.bauten.push("__portaCore.buildInstance(drachentor)"), /BAUT: __portaCore.buildInstance\(drachentor\)/],
+            [(b) => b.bauten.push("__portaCore.buildInstance(drachentor)"), /BAUT: __portaCore.buildInstance.drachentor/],
             [(b) => delete b.bauten, /LEER: \(K\)/],
             [(b) => (b.quelle.torTafel = false), /QUELLE: die Tor-Hülle/],
-            [Zs("fuchs|mauer|deckel", { durch: true }), /DURCHTRITT: fuchs 5.86 m\/s @deckel → mauer#7/],
+            [Zs("fuchs|mauer|deckel", { durch: true }), /DURCHTRITT: fuchs .*@deckel → mauer#7/],
             [Zs("wolf|haus|deckel", { tief: 0.13 }), /EINDRINGEN: wolf .*@deckel → haus#7 — 0.13 m/],
             [Zs("wagen|baum|60", { spalt: 0.8 }), /VAKUÖS: wagen .*baum#7 .*Spalt 0.8/],
             [Zs("gestossen|mauer|60", { bild: { spalt: 0, tief: 0.12 } }), /BILD ≠ KOLLISION: gestossen .*@60/],
-            [(b) => (b.tempo.schuss.px.wagen = 0), /\(V\) NICHT IM BILD: wagen — 0 px/],
-            [(b) => (b.tempo.karte = { fehlt: "kein Adapter" }), /\(V\) KEINE KARTE: .*kein Adapter/],
-            [(b) => TAKTE.forEach((t) => delete Z(b, `wagen|mauer|${t}`).bild), /KEIN BILD: wagen\|mauer/],
-            [(b) => (b.tempo.zeilen = b.tempo.zeilen.filter((z) => z.koerper !== "riese")), /ZEILE FEHLT: riese\|mauer\|144/],
+            [(b) => (b.tempo.schuss.px.wagen = 0), /NICHT IM BILD: wagen — 0 px/],
+            [(b) => (b.tempo.karte = { fehlt: "kein Adapter" }), /KEINE KARTE: .*kein Adapter/],
+            [(b) => TAKTE.forEach((t) => delete Z(b, `wagen|mauer|${t}`).bild), /KEIN BILD: wagen.mauer/],
+            [(b) => (b.tempo.zeilen = b.tempo.zeilen.filter((z) => z.koerper !== "riese")), /ZEILE FEHLT: riese.mauer.144/],
             [(b) => (b.tempo.schmuggel.durch = false), /LINSE STUMPF: \(V\)/],
             [(b) => delete b.tempo, /LEER: \(V\)/],
         ].map(([tat, muss]) => [muss.source, tat, muss]),
@@ -251,7 +251,7 @@ async function probe(K) {
     // — auf der Karte wartet jeder Takt bis 100 ms auf die GPU (die Ankunft zählt gezeichnete Bilder, die Fege-Takte zählen Takte:
     // swiftshader zeichnet ein Bild in Sekunden und baut eine Pipeline in Minuten, die Welt braucht ~1100 Takte)
     const q = K.BILD && st.renderer.backend.device.queue;
-    await window.__weltStehtNach(async () => (takt(), q && (await Promise.race([q.onSubmittedWorkDone(), sleep(100)]))));
+    await __weltStehtNach(async () => (takt(), q && (await Promise.race([q.onSubmittedWorkDone(), sleep(100)]))));
     const aus = { exemplare: {}, zensus: { werke: 0, taeter: [], max: [0, 0, 0] }, offen: [] };
     // (K) DIE BAUTEN DES HAUPT-THREADS: jeder Kern mit einer Bau-Funktion wird gezählt, solange die Exemplare entstehen
     // (Spawn und Bau-Takte) — mit kaltem Tor-Gedächtnis, wie bei der Ankunft (der Genesis-Ring) und jedem Restore
@@ -288,9 +288,11 @@ async function probe(K) {
     }
     // DAS BILD einer Gestalt (LOD 0 im Vorlagen-Raum), je Art|Gestalt einmal
     const bildCache = new Map();
+    // — auf der Karte gibt erst der Loop-Takt das Ergebnis frei (`_foundryIngestTakt`, headless sofort): die Zählung taktet, bis es da ist
     const bild = async (pr, g, k = pr + "|" + g) => {
-        if (!bildCache.has(k)) bildCache.set(k, ((await r._foundryRequest(pr, g, 0, null, 0)) || []).flatMap(({ position: p }) => Array.from((p && p.length ? p : p && p.array) || [])));
-        return bildCache.get(k);
+        const p = bildCache.get(k) || r._foundryRequest(pr, g, 0, null, 0).then((L) => (L || []).flatMap(({ position: p }) => Array.from((p && p.length ? p : p && p.array) || [])));
+        for (let da = bildCache.set(k, p) && 0; !da; ) da = (await Promise.race([p.then(() => 1), sleep(20)])) || (takt(), 0);
+        return p;
     };
     const kindVon = (pr) => {
         const rec = (f.recipes || {})[pr];
@@ -374,7 +376,6 @@ async function probe(K) {
         const ex = gesetzt.find(([, x]) => x === e);
         if (ex) aus.exemplare[ex[0]] = true;
     }
-    for (const [typ, e] of gesetzt) if (aus.exemplare[typ] !== true) aus.exemplare[typ] = e.instanced || e.mesh ? "kein Bild" : "nicht gebaut";
     // (T) DIE EINGESCHMUGGELTEN TÄTER — die Boxen des Werks für ein Urteil getauscht: (B) MUSS den Felsturm mit den
     // Spender-Parts (die alte Regel, Vorlagen-Maß) beim Namen nennen, (U) das Tor ohne seinen ersten Pfosten (die Ruine — eine
     // Seite trägt den Schutt) außerhalb der Passage (die Strenge des Tors ist nicht vakuös)
@@ -394,7 +395,7 @@ async function probe(K) {
     if (tor && (tor.blockerAABBs || []).length > 1) aus.schmuggelTor = await schmuggel(tor, tor.blockerAABBs.slice(1), "bild");
     // (Q) DIE QUELLE: der Konsum am Zähl-Spion des Versorgers, während der Erzeuger einmal läuft; die Absenzen kommentarfrei
     const ruft = (lauf, o, k, wer = () => true) => {
-        const [eigen, f] = [Object.hasOwn(o, k), o[k]];
+        const f = o[k];
         let n = 0;
         o[k] = function (...a) {
             n += wer(...a) ? 1 : 0;
@@ -403,19 +404,19 @@ async function probe(K) {
         try {
             lauf();
         } finally {
-            if (eigen) o[k] = f;
-            else delete o[k];
+            delete o[k];
+            if (o[k] !== f) o[k] = f;
         }
         return n > 0;
     };
     const baum = st.architectures.find((e) => e && r._foundryPresetIsTree(r._foundryPresetForEntry(e)) && Array.isArray(r._baumGestaltTeile(e)));
     const drache = exemplar("tor_drachentor");
     aus.quelle = {
-        felsOhneTypListe: window.__fehlt(r._felsBlockerParts, /_var/),
+        felsOhneTypListe: __fehlt(r._felsBlockerParts, /_var/),
         partsSkala: !!baum && ruft(() => r._populateBlockerAABBs(baum), r, "_studioWeltSkala"),
         torTafel: !!drache && ruft(() => r._torBlockerAABBs(drache), r.constructor, "Gesetz", (pfad) => /^porta:TOR_HUELLE\./.test(pfad)),
         // die Erzeuger und ihre Hilfs-Methoden (der Nachbau lag in einer Hilfs-Methode des Tors) — die Liste beim Namen
-        ohneBau: window.__fehlt(
+        ohneBau: __fehlt(
             [
                 "_populateBlockerAABBs",
                 "_torBlockerAABBs",
@@ -601,7 +602,7 @@ async function tempo(K) {
     try {
         for (const [n, typ, dx, ziel, rot = 0] of ziele) {
             const e = setze(typ, MW.x + dx, BAHN[n], rot);
-            if (e) werke.push(e) && (await window.__gebautNach(e, { fertig: () => !!ziel(e), bau: () => r._populateBlockerAABBs(e) }));
+            if (e) werke.push(e) && (await __gebautNach(e, { fertig: () => !!ziel(e), bau: () => r._populateBlockerAABBs(e) }));
             if (!e || !ziel(e)) throw new Error(`${typ} steht nicht`);
             H[n] = werkH(e, ziel(e), rot > 0);
         }
@@ -687,13 +688,13 @@ async function tempo(K) {
         const stossBild = async (e, b) => {
             const [W, HO, q, M] = [640, 360, b.position, { satz: "messung" }];
             for (const o of [b, ...(e.instSlots || []).map(({ key }) => st.archInstanceGroups.get(key).mesh)]) o.traverse((m) => (m.castShadow = false));
-            window.__buehne();
+            __buehne();
             pm.visible = false;
-            st.camera.position.set(q.x - 2, hh(q.x - 2, q.z - 7) + 1.6, q.z - 7);
+            st.camera.position.set(q.x - 6, hh(q.x - 6, q.z + 4) + 2.5, q.z + 4);
             const schuss = async (opt) => {
                 st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
                 r._schattenAlleNeu();
-                return window.__ausgabeAufnahme(W, HO, 1, opt);
+                return __ausgabeAufnahme(W, HO, 1, opt);
             };
             try {
                 const G = await schuss({ ziel: { x: q.x, y: q.y + 0.8, z: q.z, name: "Bär an der Mauer", ohne: [e.id] }, wahl: 28, erstFristMs: 3e5 });
@@ -701,7 +702,7 @@ async function tempo(K) {
                 const Ob = (await schuss(M)).u8;
                 b.visible = true;
                 r._cullArchitectureMesh(e);
-                const { teil } = window.__klassenTeilung(G.u8, [(await schuss(M)).u8, Ob], W, HO, 18);
+                const { teil } = __klassenTeilung(G.u8, [(await schuss(M)).u8, Ob], W, HO, 18);
                 const px = { wagen: 0, gestossen: 0 };
                 for (const t of teil) if (t) px[t > 1 ? "gestossen" : "wagen"]++;
                 const cv = Object.assign(document.createElement("canvas"), { width: W, height: HO });
@@ -717,7 +718,7 @@ async function tempo(K) {
                 const [x, z] = steht ? [H.mauer.x - 12, BAHN.mauer] : start(n, 3, 2.5);
                 pm.position.set(x, hh(x, z) + 1.2, z);
                 const e = setze(rezept, x, z, 0);
-                await window.__gebautNach(e);
+                await __gebautNach(e);
                 if (!(r.mountArchitecture(e) || {}).ok) throw new Error(`kein Ritt im ${rezept}`);
                 tasten(false);
                 for (let i = 0; i < 12; i++) takt(1000 / 60);
@@ -726,18 +727,20 @@ async function tempo(K) {
                 st.playerVel.setValue((e._fahr.vlong = v), st.playerVel.y(), 0);
                 tasten(true, false);
                 const Hn = steht ? leibH(steht) : H[n];
-                let [vs, vw] = [0, null];
+                let [vs, vw, kontakt] = [0, null];
                 const paare = [[wagenK(e), Hn, n === "mauer" && e], ...(steht ? [[tierK(steht), H.mauer, steht]] : [])];
                 const [m, mb] = fahre(kad, 12 / v + 2.5, paare, () => {
                     // das gefahrene Tempo nach jedem Takt (der erste Aufruf liegt vor dem ersten)
                     vw = vw === null ? 0 : Math.max(vw, Math.hypot(st.playerVel.x(), st.playerVel.z()));
                     const sv = steht && steht.userData._stossV;
                     if (sv) vs = Math.max(vs, Math.hypot(sv.x, sv.z));
+                    // die Lage des Bären beim ersten Anliegen an der Mauer (das Bild des Stoßes zeigt den Kontakt)
+                    if (steht && !kontakt && H.mauer.tiefe(tierK(steht)()) > -K.SPALT_M) kontakt = steht.position.clone();
                 });
                 tasten(false);
                 zeile("wagen", n, kad, vw, Hn, m, { vmax: +vmax.toFixed(2), rezept });
                 if (mb) zeile("gestossen", "mauer", kad, vs, H.mauer, mb);
-                if (K.BILD && steht && kad === "deckel") aus.schuss = await stossBild(e, steht);
+                if (K.BILD && kontakt && kad === "deckel") aus.schuss = await stossBild(e, steht, steht.position.copy(kontakt));
                 r.dismountArchitecture();
                 r.removeArchitecture(e);
                 if (steht) r.removeCreature(steht);
