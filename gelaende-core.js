@@ -1301,6 +1301,65 @@
         return Math.round(weg / SCHMELZE.stufe) * SCHMELZE.stufe;
     }
 
+    // DER PEGEL (stoffe.K3-2 — die Schmelze speist ihn; wetter.K3: der Regen an DERSELBEN Stelle, `abfluss`): der Hub des Spiegels
+    // der Binnen-Gewässer (See und Fluss, nie das Meer) über ihren Ruhe-Spiegel — eine Funktion der Höhe y ihres Spiegels und der
+    // Saison auf dem Temperatur-Feld (`feld(traegTage)`, die Naht des Wirts).
+    // DER ABFLUSS (`abfluss`, m Wasser je Tag): was die Fläche an der Höhe y ihrem Wasser gibt — die Schmelze des Schnee-Pegels
+    // (Grad-Tag: `SCHMELZE.gradTag` je Kelvin des Tagesmittels über 0 °C, solange der Pegel Wasser trägt; der Firn des Gebirges
+    // schmilzt den Sommer hindurch). Die Fläche um den Spiegel steht für sein Einzugsgebiet (stromauf liegt es höher und schmilzt
+    // später — nicht gerechnet).
+    // DER HUB: der Ruhe-Spiegel führt den mittleren Abfluss des Klimas (`spende`, 330 mm im Jahr, gemäßigt-kontinental), das Bett
+    // formte der bordvolle (Leopold & Wolman 1957): seine Krone liegt Freibord · Tiefe über dem Ruhe-Spiegel (`spiegelFreibord` ·
+    // `kanalTiefe` der Hydrosphäre, die Damm-Krone mindestens `dammFreibord`). Im breiten Bett wächst die Tiefe mit dem Abfluss
+    // hoch 3/5 (Manning): Hub = (1 − f)·T·((1 + Abfluss/spende)^(3/5) − 1), gedeckelt an der Krone — darüber trägt die Aue den
+    // Überschuss (nicht gerechnet). Jede Schmelze über 0,6 mm am Tag füllt das Bett bis zur Krone (0,2 m): das Frühjahr hebt See
+    // und Fluss bordvoll, solange der Schnee an ihrer Höhe Wasser trägt.
+    // DIE TAFEL (`pegelTafel`): der Hub je `dy` m Höhe von `unter` unter dem Meer bis `ueber` darüber, in Stufen von `stufe` m, zum
+    // Tagesmittel der Saison; null, wo kein Wasser steigt. Die Lage trägt sie (`L.pegel`: der Wirt zieht sie je Tag der Welt nach,
+    // der Faden bekommt sie im Stand). `pegelHub` liest sie, linear zwischen den Metern: der Spiegel jedes Sees (`koerperY`) und
+    // jedes Flusses (`flussAm`, `spiegelQuer`, `flussRand`) — nie das Bett (`flussKanal`). Der Hub hängt am Spiegel allein: ein ebener Fluss-Abschnitt
+    // hebt sich eben, und stromab steigt kein Spiegel — der Hub fällt mit der Höhe höchstens 0,2 m je Meter (die Linie der
+    // Schmelze rampt über 0,09 K, 0,8 m Höhe).
+    const PEGEL = Object.freeze({ spende: 0.0009, unter: 40, ueber: 300, dy: 1, stufe: 0.01 });
+    function abfluss(L, y, saison, feld) {
+        if (!Number.isFinite(y) || !Number.isFinite(saison)) throw new Error("gelaende-core abfluss: Höhe oder Saison fehlt");
+        if (!(schneePegel(L, y, saison, feld) > 0)) return 0;
+        const F = feld ? feld(0) : temperaturFeld(L, y, 0);
+        const t = F.mittel - F.kuehlung + F.jahr.amp * Math.cos(2 * Math.PI * (saison - F.jahr.gipfel) - F.jahr.spaet);
+        return SCHMELZE.gradTag * Math.max(0, t);
+    }
+    function pegelTafel(L, saison, feldAt) {
+        const H = L.hydroGesetz;
+        if (!(H && H.kanalTiefe > 0 && H.spiegelFreibord > 0 && H.dammFreibord > 0))
+            throw new Error("gelaende-core pegelTafel: das Gesetz der Hydrosphäre fehlt (kanalTiefe, Freibord)");
+        const P = PEGEL;
+        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
+        const F = feldAt || ((y, tr) => temperaturFeld(L, y, tr));
+        const [T, f] = [H.kanalTiefe, H.spiegelFreibord];
+        const krone = Math.min(f * T, H.dammFreibord);
+        const y0 = Math.floor(wl - P.unter);
+        const hub = new Float32Array(Math.round((P.unter + P.ueber) / P.dy) + 1);
+        let steigt = false;
+        for (let i = 0; i < hub.length; i++) {
+            const y = y0 + i * P.dy;
+            const a = abfluss(L, y, saison, (tr) => F(y, tr));
+            if (!(a > 0)) continue;
+            hub[i] = Math.round(Math.min(krone, (1 - f) * T * (Math.pow(1 + a / P.spende, 0.6) - 1)) / P.stufe) * P.stufe;
+            if (hub[i] > 0) steigt = true;
+        }
+        return steigt ? { y0, dy: P.dy, hub } : null;
+    }
+    function pegelHub(L, y) {
+        const P = L.pegel;
+        if (!P || !Number.isFinite(y)) return 0;
+        const n = P.hub.length;
+        const u = (y - P.y0) / P.dy;
+        if (u <= 0) return P.hub[0];
+        if (u >= n - 1) return P.hub[n - 1];
+        const i = Math.floor(u);
+        return P.hub[i] + (P.hub[i + 1] - P.hub[i]) * (u - i);
+    }
+
     // DIE LAVA (stoffe.K3-2): geschmolzener Stein, der über die glut-Achse zu Stein erstarrt — ihr Zustand nach `alterS`
     // Sekunden Welt-Zeit. DER STOFF ist die Zeile `stein` der Stoff-Tafel des Wirts (ρ, c, T_schmelz in K); der Kern hält nur die
     // Zahlen des Vorgangs: die Überhitzung beim Ausbruch über T_schmelz, die Dicke der Decke, den Übergang α an die Luft
@@ -1309,6 +1368,7 @@
     // τ = ρ·c·d / α — am Wasser zehnmal schneller und unter DAMPF, solange die Decke über dem Sieden liegt. Unter T_schmelz ist
     // sie ERSTARRT (Stein); die GLUT (0…1) ist ihre Strahlung über dem Draper-Punkt (∝ T⁴), die die glut-Achse der Welt trägt.
     // Die Erstarrungs-Wärme trägt der Gang nicht (sie verzögerte die Erstarrung um ~ L/(c·ΔT)).
+    // DER GANG UND DIE GLUT sind EIN Gesetz jedes heißen Körpers der Welt (`waermeGang`, `glutAus`: die Lava, der Stahl der Esse).
     const LAVA = Object.freeze({
         ueberhitzung: 150,
         dicke: 1,
@@ -1317,6 +1377,16 @@
         glueht: 798,
         sieden: 373.15,
     });
+    // DER WÄRME-GANG (Newton): die Temperatur (K) eines Körpers, der von `vonK` nach `s` Sekunden gegen `zielK` strebt (τ s) —
+    // geschlossen, darum auch der exakte Schritt eines Takts gegen ein Ziel, das über den Schritt steht.
+    function waermeGang(zielK, vonK, s, tau) {
+        return zielK + (vonK - zielK) * Math.exp(-Math.max(0, s) / tau);
+    }
+    // DIE GLUT (0…1) eines Körpers der Temperatur `TK`: seine Strahlung über dem Draper-Punkt (`LAVA.glueht`, ∝ T⁴), 1 bei `vollK`.
+    function glutAus(TK, vollK) {
+        const g4 = LAVA.glueht ** 4;
+        return Math.min(1, Math.max(0, (TK ** 4 - g4) / (vollK ** 4 - g4)));
+    }
     function lava(alterS, amWasser, luftC, stoff) {
         if (!Number.isFinite(alterS) || !Number.isFinite(luftC)) throw new Error("gelaende-core lava: Alter oder Luft fehlt");
         const S = stoff && stoff.stein;
@@ -1326,11 +1396,10 @@
         const tau = (S.rho * S.c * V.dicke) / (amWasser ? V.wasser : V.luft);
         const tu = luftC + 273.15;
         const t0 = S.tSchmelz + V.ueberhitzung;
-        const T = tu + (t0 - tu) * Math.exp(-Math.max(0, alterS) / tau);
-        const g4 = V.glueht ** 4;
+        const T = waermeGang(tu, t0, alterS, tau);
         return {
             temperatur: T - 273.15,
-            glut: Math.min(1, Math.max(0, (T ** 4 - g4) / (t0 ** 4 - g4))),
+            glut: glutAus(T, t0),
             erstarrt: T < S.tSchmelz,
             dampf: !!amWasser && T > V.sieden,
             tau,
@@ -2030,6 +2099,20 @@
             }
         }
         return top;
+    }
+    // DIE HÖHE MIT EDITS (die Ferne, gelaende.K2 (d)): die oberste Fläche über (x, z) einer Höhe h ohne Edits nach den Säulen
+    // der Liste (Setz-Reihenfolge; die Form `editForm`: Radius r, halbe Höhe r, oben und unten eben) — eine Füllung hebt sie auf
+    // ihre Krone (y + r), ein Graben, dessen Säule die Fläche öffnet, senkt sie auf seinen Grund (y − r) — ohne die Kehle der
+    // Vereinigung (`rundM`: wo zwei Füllungen sich treffen, trägt die Dichte die Krone bis 0,41 m höher). Leser: die Nässe der
+    // Ferne (`fernNass`, Stamm `_fernNass`) — der Fern-Ring trägt jeden Edit, der Kern rechnet ihn einmal für Faden und Stamm.
+    function editHoehe(h, x, z, edits) {
+        for (let i = 0; edits && i < edits.length; i++) {
+            const e = edits[i];
+            if (!e || !(e.r > 0) || (x - e.x) ** 2 + (z - e.z) ** 2 > e.r * e.r) continue;
+            if (e.mode === "fill") h = Math.max(h, e.y + e.r);
+            else if (e.y + e.r >= h && e.y - e.r < h) h = e.y - e.r;
+        }
+        return h;
     }
     // DER PUNKT: die Dichte über `basis` an (x, y, z) mit den Edits `edits` (Setz-Reihenfolge; ohne Liste die Basis) —
     // max(1, |Basis|/tiefeM) · n: stetig, gleich der Basis, wo kein Edit sie ändert, um jede Säule ihr Abstand (die Wand-Proben
@@ -5227,12 +5310,13 @@
     // floor((x − R)/span) − 1 … floor((x + R)/span) + 1, R = `editReich`), in Setz-Reihenfolge; der KERN ohne Rand dient der
     // Punkt-Probe. Ein Leser fragt nur seinen Chunk, die Summe bleibt Bit für Bit die der ganzen Liste. Identität und Länge der
     // Liste halten die Karte `k` frisch (ein Push wird nachgetragen, ein Tausch oder Kürzen baut neu); `gen` (optional) zieht je
-    // Edit eine Generation, die jeder berührte Chunk trägt (der Stale-Filter des Stamms).
+    // Edit eine Generation, die jeder berührte Chunk trägt (der Stale-Filter des Stamms). `am*` merkt den letzten
+    // Chunk der Punkt-Probe (`editsAm`).
     const KEINE_EDITS = Object.freeze([]);
     const editKarteSchluessel = (cx, cz) => (cx + 32768) * 65536 + (cz + 32768);
     function editKarte(k, edits, span, gen) {
         if (!k || k.edits !== edits || k.n > (edits ? edits.length : 0))
-            k = { edits, n: 0, span, je: new Map(), kern: new Map(), gen: new Map() };
+            k = { edits, n: 0, span, je: new Map(), kern: new Map(), gen: new Map(), amX: NaN, amZ: NaN, amN: -1 };
         while (edits && k.n < edits.length) {
             const ed = edits[k.n++];
             if (!ed || !Number.isFinite(ed.x) || !Number.isFinite(ed.z)) continue;
@@ -5259,13 +5343,29 @@
         }
         return k;
     }
+    // DIE KARTE STEHT (ek-schleife, Lehre 25): dieselbe Liste und kein neuer Edit — `editKarte` trüge nichts nach.
+    // Ein Leser, der die Karte je Probe frisch hält, fragt zuerst dies und zahlt zwei Vergleiche statt seiner Argumente
+    // (der Stamm baute je Dichte-Probe das Chunk-Maß: im Fall-Wächter 60 Mio. Proben, der Edit-Weg 48 % der Feld-Dichte).
+    function editKarteSteht(k, edits) {
+        return !!k && k.edits === edits && k.n === (edits ? edits.length : 0);
+    }
     // die Edits, die den Chunk (cx, cz) samt einem Chunk Rand berühren können (leer ohne)
     function editsNah(k, cx, cz) {
         return k.je.get(editKarteSchluessel(cx, cz)) || KEINE_EDITS;
     }
-    // die Edits, deren Kasten den Chunk des Punkts (x, z) berührt (undefined ohne)
+    // die Edits, deren Kasten den Chunk des Punkts (x, z) berührt (undefined ohne). DER LETZTE CHUNK bleibt gemerkt
+    // (ek-schleife): eine Spalten-Probe fragt je Höhe denselben Chunk — dieselbe Liste ohne Schlüssel und Map; ein
+    // Nachtrag (`n`) verwirft ihn, ein Neubau ist eine neue Karte.
     function editsAm(k, x, z) {
-        return k.kern.get(editKarteSchluessel(Math.floor(x / k.span), Math.floor(z / k.span)));
+        const cx = Math.floor(x / k.span);
+        const cz = Math.floor(z / k.span);
+        if (cx !== k.amX || cz !== k.amZ || k.amN !== k.n) {
+            k.amX = cx;
+            k.amZ = cz;
+            k.amN = k.n;
+            k.am = k.kern.get(editKarteSchluessel(cx, cz));
+        }
+        return k.am;
     }
     // die Edits, die den waagrechten Kasten [x0, x1] × [z0, z1] berühren können: liegt er (mit 1 m Rand) im 3×3 um den Chunk
     // seiner Mitte, dessen Eintrag (jedes Chunk-Gitter samt Pad), sonst die ganze Liste
@@ -5280,8 +5380,8 @@
     }
 
     // DER FLUSS an (x, z) → { flowX, flowZ, depth, surfaceY, centerness, ufer } oder null jenseits jeder Krone: der Spiegel der
-    // Segmente (linear zwischen ihren Enden — stromab nie steigend, quer waagrecht), gemittelt zur Krone stetig auslaufend; Lauf,
-    // Tiefe und Breite des nächsten Segments; centerness [0, 1] (1 Mittellinie, 0 Kanal-Kante — die Strömung trägt nur im Kanal);
+    // Segmente (linear zwischen ihren Enden — stromab nie steigend, quer waagrecht), gemittelt zur Krone stetig auslaufend, samt
+    // dem Pegel (`pegelHub`); Lauf, Tiefe und Breite des nächsten Segments; centerness [0, 1] (1 Mittellinie, 0 Kanal-Kante — die Strömung trägt nur im Kanal);
     // ufer die Kronen-Blende [0, 1] (1 bis zur Kanal-Kante, smoothstep auf 0 an der Krone, das Maximum der Segmente).
     function flussAm(L, x, z) {
         const h = hydroRegion(L, x, z);
@@ -5332,7 +5432,7 @@
             flowX: dirX,
             flowZ: dirZ,
             depth,
-            surfaceY: sSumme / gSumme,
+            surfaceY: sSumme / gSumme + pegelHub(L, sSumme / gSumme),
             centerness: Math.max(0, 1 - bestD / Math.max(bestHalfW, 1)),
             ufer,
         };
@@ -5362,7 +5462,7 @@
                 spiegel = seg[o + 8] + (seg[o + 9] - seg[o + 8]) * t;
             }
         }
-        return spiegel;
+        return spiegel + pegelHub(L, spiegel);
     }
     // DER NÄCHSTE RAND eines Flusses an (x, z) über die 3×3-Buckets (die Feuchte reicht ~26 m, weiter als die Bank) → { dist,
     // halfW, spiegel }: der nächste RAND (Abstand minus die Halbbreite), nie die nächste Mittellinie — zwischen zwei Segmenten
@@ -5407,7 +5507,7 @@
                 }
             }
         }
-        return { dist: best, halfW: bestHw, spiegel: bestSp };
+        return { dist: best, halfW: bestHw, spiegel: bestSp + pegelHub(L, bestSp) };
     }
     // DER SPIEGEL AM SCHNITT (F3): der Fluss-Spiegel quer (`spiegelQuer`) über einer Spalte, die ein Schnitt der Edit-Karte k
     // berührt (sein Radius + eine halbe Zell-Diagonale der Kante `step`), sonst −Infinity. Leser: das Wasser-Sheet am Graben.
@@ -5419,9 +5519,187 @@
         }
         return -Infinity;
     }
-    // der Spiegel des stehenden Wasser-Körpers (Meer, See) der Zelle i einer Region
-    function koerperY(h, i) {
-        return h.water.waterY[i];
+    // DER STAU (gelaende.K2 (b)): der Spiegel des Stausees hinter einem Werk (Damm aus Füllungen, ein geerdeter Bau) an (x, z) —
+    // die Stau-Felder der Lage (`L.stau`, je Feld ein Spalten-Fenster `gx0`/`gz0`/`w`/`h` der Kante `step` mit dem gehaltenen
+    // Pegel `fillY`, NaN wo er nichts hebt), über dem Boden `boden` (−Infinity: jeder Pegel, Infinity: keiner); −Infinity ohne.
+    // Ein stehender Körper wie See und Meer: der Spiegel des Kerns trägt ihn (`atlasSpiegel`), jeder Leser liest ihn mit. Die
+    // Felder rechnet jeder Faden (`stauFelder`: der Überlauf aus Werk und Feld-Boden), nie der Haupt-Faden.
+    function stauSpiegel(L, x, z, boden) {
+        const felder = L.stau;
+        let y = -Infinity;
+        for (let n = 0; felder && n < felder.length; n++) {
+            const f = felder[n];
+            const i = Math.floor(x / f.step) - f.gx0;
+            const k = Math.floor(z / f.step) - f.gz0;
+            if (i < 0 || k < 0 || i >= f.w || k >= f.h) continue;
+            const v = f.fillY[i + k * f.w];
+            if (v > y && !(boden >= v)) y = v;
+        }
+        return y;
+    }
+    // DER ÜBERLAUF (Priority-Flood, gelaende.K2 (b)): `barrier[c]` = die Höhe, über der Wasser die Spalte c passiert, `init[c]`
+    // = der Halte-Pegel der Außenwelt am Fensterrand (innen +Infinity) → je Spalte die niedrigste Fluchthöhe nach außen
+    // (Relaxation fill[nb] = max(fill[cur], barrier[nb]) über einen Min-Heap).
+    function stauUeberlauf(barrier, w, h, init) {
+        const n = w * h;
+        const fill = new Float64Array(n);
+        const heap = new Int32Array(n + 1);
+        const pos = new Int32Array(n).fill(-1);
+        let size = 0;
+        const less = (a, b) => fill[a] < fill[b];
+        const swap = (i, j) => {
+            const t = heap[i];
+            heap[i] = heap[j];
+            heap[j] = t;
+            pos[heap[i]] = i;
+            pos[heap[j]] = j;
+        };
+        const up = (i) => {
+            while (i > 1 && less(heap[i], heap[i >> 1])) {
+                swap(i, i >> 1);
+                i >>= 1;
+            }
+        };
+        const down = (i) => {
+            for (;;) {
+                let m = i;
+                const l = i * 2;
+                const r = l + 1;
+                if (l <= size && less(heap[l], heap[m])) m = l;
+                if (r <= size && less(heap[r], heap[m])) m = r;
+                if (m === i) break;
+                swap(i, m);
+                i = m;
+            }
+        };
+        for (let c = 0; c < n; c++) {
+            fill[c] = init[c];
+            if (Number.isFinite(init[c])) {
+                heap[++size] = c;
+                pos[c] = size;
+                up(size);
+            }
+        }
+        const done = new Uint8Array(n);
+        const NDX = [1, -1, 0, 0];
+        const NDZ = [0, 0, 1, -1];
+        while (size > 0) {
+            const cur = heap[1];
+            heap[1] = heap[size--];
+            if (size > 0) {
+                pos[heap[1]] = 1;
+                down(1);
+            }
+            pos[cur] = -1;
+            if (done[cur]) continue;
+            done[cur] = 1;
+            const ci = cur % w;
+            const ck = (cur / w) | 0;
+            for (let d = 0; d < 4; d++) {
+                const ni = ci + NDX[d];
+                const nk = ck + NDZ[d];
+                if (ni < 0 || nk < 0 || ni >= w || nk >= h) continue;
+                const nb = ni + nk * w;
+                if (done[nb]) continue;
+                const cand = Math.max(fill[cur], barrier[nb]);
+                if (cand < fill[nb]) {
+                    fill[nb] = cand;
+                    if (pos[nb] >= 0) up(pos[nb]);
+                    else {
+                        heap[++size] = nb;
+                        pos[nb] = size;
+                        up(size);
+                    }
+                }
+            }
+        }
+        return fill;
+    }
+    // DER SPIEGEL AM WERK: das Wasser an der Mitte des Werks `cl` (−Infinity: es steht nicht über Wasser und hält keines) —
+    // das Feld (`stauFeld`) und die Auswahl der Werke, die der Stamm den Fäden schickt (`_stauFelder`), lesen ihn.
+    function stauWerkY(L, cl) {
+        return atlasSpiegel(L, (cl.minX + cl.maxX) * 0.5, (cl.minZ + cl.maxZ) * 0.5, -Infinity);
+    }
+    // DAS FELD EINES WERKS (`stauFelder`): ein Fenster in Welt-Spalten (gx = floor(x/step), das Werk ± REACH, höchstens WIN_MAX)
+    // — die Sperre jeder Spalte ist der Boden `boden(x, z)` (der Boden des Feldes samt Edits: ein Damm aus Füllungen steht
+    // darin) oder die Krone eines Baus, der sie deckt; der Rand gibt das Wasser nur frei, wo es fließt: nass auf seinem Spiegel,
+    // wo der nicht über dem Spiegel am Werk liegt (stromab; stromauf fließt es zu, über trockenem Rand reicht der See weiter,
+    // beides hält). Der Überlauf ist der Pegel jeder Spalte; gehalten (`fillY`) ist er dort, wo er über dem Boden und über dem
+    // Spiegel des Gesetzes liegt, verbunden mit einer gehobenen Wasser-Spalte (eine trockene Mulde daneben bleibt trocken).
+    // null, wenn das Werk nicht über Wasser steht oder nichts hebt.
+    function stauFeld(L, cl, CFG, step, boden) {
+        const werkY = stauWerkY(L, cl);
+        if (!(werkY > -Infinity)) return null;
+        let gx0 = Math.floor(cl.minX / step) - CFG.REACH;
+        let gx1 = Math.floor(cl.maxX / step) + CFG.REACH;
+        let gz0 = Math.floor(cl.minZ / step) - CFG.REACH;
+        let gz1 = Math.floor(cl.maxZ / step) + CFG.REACH;
+        if (gx1 - gx0 + 1 > CFG.WIN_MAX) gx1 = (gx0 = ((gx0 + gx1) >> 1) - (CFG.WIN_MAX >> 1)) + CFG.WIN_MAX - 1;
+        if (gz1 - gz0 + 1 > CFG.WIN_MAX) gz1 = (gz0 = ((gz0 + gz1) >> 1) - (CFG.WIN_MAX >> 1)) + CFG.WIN_MAX - 1;
+        const w = gx1 - gx0 + 1;
+        const h = gz1 - gz0 + 1;
+        const barrier = new Float64Array(w * h);
+        const basis = new Float64Array(w * h);
+        const init = new Float64Array(w * h).fill(Infinity);
+        for (let c = 0; c < w * h; c++) {
+            const ix = c % w;
+            const kz = (c / w) | 0;
+            const x = (gx0 + ix + 0.5) * step;
+            const z = (gz0 + kz + 0.5) * step;
+            let bY = boden(x, z);
+            for (const b of cl.bauten)
+                if (x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ) bY = Math.max(bY, b.topY);
+            barrier[c] = bY;
+            basis[c] = atlasSpiegel(L, x, z, bY);
+            if (ix === 0 || kz === 0 || ix === w - 1 || kz === h - 1)
+                init[c] = basis[c] > -Infinity && basis[c] <= werkY + 0.05 ? basis[c] : Infinity;
+        }
+        const fill = stauUeberlauf(barrier, w, h, init);
+        const fillY = new Float32Array(w * h).fill(NaN);
+        const hebt = (c) => fill[c] < Infinity && fill[c] > barrier[c] + 0.01 && fill[c] > basis[c] + 0.01;
+        const offen = [];
+        for (let c = 0; c < w * h; c++) if (basis[c] > -Infinity && hebt(c)) offen.push(c);
+        for (const c of offen) fillY[c] = fill[c];
+        while (offen.length) {
+            const c = offen.pop();
+            const ix = c % w;
+            for (const nb of [ix > 0 ? c - 1 : -1, ix < w - 1 ? c + 1 : -1, c - w, c + w])
+                if (nb >= 0 && nb < w * h && !(fillY[nb] === fillY[nb]) && hebt(nb))
+                    (offen.push(nb), (fillY[nb] = fill[nb]));
+        }
+        return fillY.some((v) => v === v) ? { gx0, gz0, w, h, step, fillY } : null;
+    }
+    // DIE FELDER DES STAUS (gelaende.K2 (b), gelesen von `stauSpiegel` über `L.stau`): je Werk der Werke `werke` (die Cluster
+    // des Stamms `_stauWorkClusters`: Kasten minX/maxX/minZ/maxZ, Krone topY, Bauten `bauten`, Schlüssel `key`) sein Feld
+    // (`stauFeld`, Regel `CFG` = CA_STAU des Stamms, Spalten-Kante `step`, Boden `boden`) an der Lage L, die dabei das Gesetz
+    // ohne Stau liest (der Rufer hält `L.stau` leer). Gerechnet im Faden (voxel-worker `stauRechnen`, Lehre 14), nie im
+    // Haupt-Faden. `merk` (oder null) ist der Stand der letzten Rechnung über der Edit-Liste `edits` und der Zahl der
+    // Hydro-Kacheln `kacheln`: neu gerechnet wird nur ein neues Werk oder eines, in dessen Fenster ein neuer Edit reicht, und
+    // jedes, wenn eine Kachel kam (ihr Wasser kann ein Werk tragen). → { felder, anders, merk }: `anders` die Felder, die
+    // kamen, fielen oder neu gerechnet sind (ihre Zellen fallen).
+    function stauFelder(L, werke, CFG, step, boden, merk, edits, kacheln) {
+        const m = merk || { je: new Map(), edits: null, n: 0, kacheln: -1 };
+        const neu = m.edits === edits && m.kacheln === kacheln ? edits.slice(m.n) : null;
+        const R = CFG.REACH * step;
+        const je = new Map();
+        const anders = [];
+        for (const cl of werke) {
+            const alt = m.je.get(cl.key);
+            const fern = (e) => {
+                const r = R + editReich(e);
+                return e.x + r < cl.minX || e.x - r > cl.maxX || e.z + r < cl.minZ || e.z - r > cl.maxZ;
+            };
+            if (alt !== undefined && neu && neu.every(fern)) je.set(cl.key, alt);
+            else anders.push(alt, je.set(cl.key, stauFeld(L, cl, CFG, step, boden)).get(cl.key));
+        }
+        for (const [key, alt] of m.je) if (!je.has(key)) anders.push(alt);
+        const felder = [...je.values()].filter(Boolean);
+        return { felder, anders: anders.filter(Boolean), merk: { je, edits, n: edits.length, kacheln } };
+    }
+    // der Spiegel des stehenden Wasser-Körpers (Meer, See) der Zelle i einer Region — der See mit dem Pegel der Lage (`pegelHub`)
+    function koerperY(L, h, i) {
+        const y = h.water.waterY[i];
+        return h.water.waterKind[i] === 2 ? y + pegelHub(L, y) : y;
     }
     // DER BEZUG DER UFER-BÄNDER an (x, z): MAX aus Meer (`waterLevel`, Default überall), See (3×3 der Zellen — die Dilatation
     // gegen den quantisierten Becken-Rand) und Fluss-Spiegel. `aus` (optional) trägt die beiden Bezüge getrennt: `see`
@@ -5441,7 +5719,7 @@
                     const nj = cj + dj;
                     if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
                     const idx = ni + nj * dim;
-                    if (wK[idx] === 2 && koerperY(h, idx) > level) level = koerperY(h, idx);
+                    if (wK[idx] === 2 && koerperY(L, h, idx) > level) level = koerperY(L, h, idx);
                 }
             }
         }
@@ -5471,7 +5749,7 @@
                 inRegion = true;
                 const wK = h.water.waterKind;
                 const here = wK[ci + cj * dim];
-                if (here === 1 || here === 2) level = koerperY(h, ci + cj * dim);
+                if (here === 1 || here === 2) level = koerperY(L, h, ci + cj * dim);
                 else {
                     let rim = -Infinity;
                     for (let dj = -1; dj <= 1; dj++) {
@@ -5480,7 +5758,7 @@
                             const nj = cj + dj;
                             if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
                             const nk = wK[ni + nj * dim];
-                            if ((nk === 1 || nk === 2) && koerperY(h, ni + nj * dim) > rim) rim = koerperY(h, ni + nj * dim);
+                            if ((nk === 1 || nk === 2) && koerperY(L, h, ni + nj * dim) > rim) rim = koerperY(L, h, ni + nj * dim);
                         }
                     }
                     if (Number.isFinite(terrainTopY) && rim > -Infinity && terrainTopY < rim) level = rim;
@@ -5488,6 +5766,8 @@
             }
         }
         if (h && h.ready && !inRegion) level = typeof L.waterLevel === "number" ? L.waterLevel : 0;
+        const stau = stauSpiegel(L, x, z, terrainTopY);
+        if (stau > level) level = stau;
         if (aus) aus.koerper = level;
         const river = flussAm(L, x, z);
         if (river && river.surfaceY > level && (terrainTopY !== -Infinity || river.centerness > 0)) level = river.surfaceY;
@@ -5564,6 +5844,7 @@
         editForm: editForm,
         editReich: editReich,
         editKrone: editKrone,
+        editHoehe: editHoehe,
         mitEdits: mitEdits,
         editsImGitter: editsImGitter,
         bandOben: bandOben,
@@ -5595,7 +5876,13 @@
         schneePegel: schneePegel,
         schneeLinie: schneeLinie,
         schneeVersatz: schneeVersatz,
+        PEGEL: PEGEL,
+        abfluss: abfluss,
+        pegelTafel: pegelTafel,
+        pegelHub: pegelHub,
         LAVA: LAVA,
+        waermeGang: waermeGang,
+        glutAus: glutAus,
         lava: lava,
         grossform: grossformAus,
         landformRegler: landformRegler,
@@ -5617,6 +5904,7 @@
         dichteGitter: dichteGitter,
         gitterMitEdits: gitterMitEdits,
         editKarte: editKarte,
+        editKarteSteht: editKarteSteht,
         editsNah: editsNah,
         editsAm: editsAm,
         editsImKasten: editsImKasten,
@@ -5626,5 +5914,8 @@
         flussRand: flussRand,
         wasserSpiegel: wasserSpiegel,
         atlasSpiegel: atlasSpiegel,
+        stauUeberlauf: stauUeberlauf,
+        stauWerkY: stauWerkY,
+        stauFelder: stauFelder,
     });
 })(typeof self !== "undefined" ? self : globalThis);

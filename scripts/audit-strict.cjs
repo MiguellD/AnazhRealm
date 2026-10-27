@@ -270,7 +270,7 @@ async function auditStateAndMethods() {
                 // sicher (Flag/Sentinel/Scratch) — kein echter read-before-init.
                 // Wasser-CA (alle `if (!state.X) … = new Map()/Set()`):
                 "waterLevelCells",
-                "waterStauFields",
+                "waterStau",
                 "waterCAActive",
                 "waterSourceCols",
                 "waterCABand",

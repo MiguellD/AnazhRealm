@@ -140,7 +140,10 @@ class AnazhRealm_gelaende_chunks {
                         const pending = this.state.voxelWorkerPending.get(msg.requestId);
                         if (pending) {
                             this.state.voxelWorkerPending.delete(msg.requestId);
-                            pending.reject(new Error(msg.message));
+                            // der Wurf trägt den Stapel des Fadens (die Zeile, die warf), nie nur die Meldung
+                            pending.reject(
+                                Object.assign(new Error(msg.message), msg.stapel ? { stack: msg.stapel } : null)
+                            );
                         }
                     }
                     this.log(`Voxel-Worker-Fehler (${msg.op}): ${msg.message}`, "ERROR");
@@ -151,10 +154,10 @@ class AnazhRealm_gelaende_chunks {
                 this.state.voxelWorkerReady = false;
             };
             this.state.voxelWorker = worker;
-            // DIE EINE ZUSAGE (B-K2): der init der Geburt trägt den Stand (Seed, Gesetz, voxelEdits); jeder Auftrag wartet auf
-            // sie (`_voxelFadenAuftrag`), nie auf einen neuen init. Kommt der Faden erst nach der Weltgen (der Blob-Weg),
-            // trägt dieser init schon die Welt: der Strom darf ihn fragen.
-            worker.zusage = this._voxelWorkerSyncState({ op: "init" });
+            // DER INIT DER GEBURT (B-K2) trägt den Stand (Seed, Gesetz, voxelEdits); jeder Auftrag reist hinter ihm
+            // (`_voxelFadenAuftrag`), nie mit einem neuen init. Kommt der Faden erst nach der Weltgen (der Blob-Weg), trägt dieser
+            // init schon die Welt: der Strom darf ihn fragen. Verwirft der Faden ihn, bricht es laut beim Namen.
+            this._voxelWorkerSyncState({ op: "init" }).catch((e) => this._stoffBruch("der Voxel-Faden (init)", e));
             // DIE REGIONEN DIESER WELT (streaming.K5): der Stand trägt keine — ein Faden, der nach ihrer Bestellung geboren wird,
             // rechnet jede selbst direkt hinter seinem init (ohne Rückfrage: der Main hält sie). Bis dahin baute ein
             // nachgeborener Voxel-Faden jeden Chunk ohne Fluss und See (werk-im-wasser: 0 Häuser an 8 Uferorten, das Bild trocken)
@@ -201,6 +204,8 @@ class AnazhRealm_gelaende_chunks {
             baseHeight: this.state.terrainBaseHeight || 0,
             waterLevel: typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0,
             voxelEdits: this._snapshotVoxelEdits(),
+            stau: this.state.waterStau || null, // die Felder des Staus (`_stauFelder`), dieselben im Faden
+
             // DAS GESETZ DER HYDROSPHÄRE reist mit (Karte hydro-faden): der Faden rechnet mit ihm die Regionen (gelaende-core
             // `hydrosphaere`) und baut dasselbe Bett (Welle L: Freibord und die Bank)
             hydroGesetz: AnazhRealm.HYDROSPHERE,
@@ -219,6 +224,8 @@ class AnazhRealm_gelaende_chunks {
             bodenPalette: AnazhRealm.BODEN_FARBE,
             // DER VERSATZ DER SCHNEEGRENZE (stoffe.K3-2), den die Welt trägt (`_schneeGilt`; `_schneeTakt` zieht ihn nach)
             schneeVersatz: this._schneeGilt(),
+            // DER PEGEL DER BINNEN-GEWÄSSER (stoffe.K3-2), den die Welt trägt (`_pegelGilt`; `_pegelTakt` zieht ihn nach)
+            pegel: this._pegelGilt(),
             // DER WIESEN-GRUND reist mit (K53): Farbe, Wache und Fleck aus EINER Quelle (`WIESEN_GRUND`)
             wiesenGrund: AnazhRealm.WIESEN_GRUND,
             // DER FELS-STOFF reist mit (K17-2): der Worker baut ihn beim Chunk-Bau (gelaende-core `felsStoff`) mit DENSELBEN
@@ -299,20 +306,22 @@ class AnazhRealm_gelaende_chunks {
         return !!(this.state.voxelWorker && this.state.voxelWorkerWorldgenSynced);
     }
 
-    // DER EINE AUFTRAG AN DEN VOXEL-FADEN (B-K2): jeder Rechen-Auftrag wartet auf die EINE Zusage des Fadens
-    // (`worker.zusage`, der init seiner Geburt) — nie auf einen neuen init. Bis B-K2 schickte jeder Auftrag vor dem Ack einen
-    // eigenen vollen Stand (`_voxelWorkerSyncState()`: je Auftrag ein Klon der Welt im Haupt-Faden, Lehre 24). Ein Faden
-    // ohne Zusage (von außen gesetzt) trägt seinen Stand seit der Geburt. `msg` bekommt die Rückfrage-Nummer.
-    _voxelFadenAuftrag(worker, msg) {
-        return (worker.zusage || Promise.resolve(true)).then(() => {
-            const requestId = this.state.voxelWorkerNextRequestId++;
-            const promise = new Promise((resolve, reject) => {
-                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
-            });
-            msg.requestId = requestId;
-            worker.postMessage(msg);
-            return promise;
+    // DER EINE AUFTRAG AN DEN VOXEL-FADEN (B-K2): jeder Rechen-Auftrag reist hinter dem init seiner Geburt (der Stand: Seed,
+    // Gesetz, voxelEdits — die Nachrichten eines Ports kommen in ihrer Reihe an), nie mit einem neuen init. Bis B-K2 schickte
+    // jeder Auftrag vor dem Ack einen eigenen vollen Stand (`_voxelWorkerSyncState()`: je Auftrag ein Klon der Welt im
+    // Haupt-Faden, Lehre 24). DIE REIHE DES PROGRAMMS (streaming.K5): der Auftrag geht SOFORT hinaus, in der Reihe, in der er
+    // seine Verweise las — bis sk5-kopie wartete er einen Mikro-Takt auf die Zusage (`worker.zusage`), und eine Freigabe hinter
+    // ihm im selben Takt (`zellen-frei` beim Tausch des Chunks) überholte ihn: das Wasser-Blatt fragte nach, und der Main
+    // klonte die Zellen des Fadens zurück (0,13 MB je Block, an 607d0c73 0,27 MB in der Minute Fahrt). `msg` bekommt die
+    // Rückfrage-Nummer, `transfer` sind seine Puffer (Lehre 24).
+    _voxelFadenAuftrag(worker, msg, transfer) {
+        const requestId = this.state.voxelWorkerNextRequestId++;
+        const promise = new Promise((resolve, reject) => {
+            this.state.voxelWorkerPending.set(requestId, { resolve, reject });
         });
+        msg.requestId = requestId;
+        worker.postMessage(msg, transfer || []);
+        return promise;
     }
 
     // Density-Grid im Worker: Promise<Float32Array> mit (dimX+1)·(dimY+1)·(dimZ+1) Floats, Indizierung
@@ -368,7 +377,8 @@ class AnazhRealm_gelaende_chunks {
             const p = msg.requestId ? f.pending.get(msg.requestId) : null;
             if (!p) return;
             f.pending.delete(msg.requestId);
-            if (msg.type === "error") p.reject(new Error(msg.message));
+            if (msg.type === "error")
+                p.reject(Object.assign(new Error(msg.message), msg.stapel ? { stack: msg.stapel } : null));
             else p.resolve(msg);
         };
         worker.onerror = (err) => this._bruchMelden(`${NAME}: der ${Name}-Faden brach — ` + (err && err.message));
@@ -420,21 +430,29 @@ class AnazhRealm_gelaende_chunks {
         if (!worker) return Promise.reject(new Error("voxel-worker not available"));
         const entry = this.state.voxelChunks ? this.state.voxelChunks.get(`${cx},${cz}`) : null;
         if (!entry || !entry.waterCells) return Promise.resolve({ empty: true });
-        // je Chunk des 3×3 ein Verweis auf die Zellen des Fadens (`zellenId`: er baute sie, der Main trägt sie samt der Liste
-        // seines Stempels, `zellenFest`) — sonst die eigenen Zellen des Mains (ohne Verweis, und je Verweis, der den Faden
-        // verfehlte: `ganz`, die Plätze der Antwort)
+        // je Platz i = (dz+1)·3 + (dx+1) des 3×3 ein Verweis auf die Zellen des Fadens (`zellenId`: er baute sie, der Main trägt
+        // sie samt der Liste seines Stempels, `zellenFest`) — sonst die eigenen Zellen des Mains (ohne Verweis, und je Verweis,
+        // der den Faden verfehlte: `ganz`, die Plätze der Antwort). DER AUFTRAG REIST PER TRANSFER (Lehre 24): die Verweise als
+        // EIN Int32Array (`zids`, 0 ohne Verweis), die Stempel als EINE Liste mit Grenzen (`fest`, Platz i in festAb[i]…festAb[i+1]);
+        // geklont reisen nur eigene Zellen (`eigen`). Bis sk5-kopie klonte jede Bestellung neun Objekte (0,18 MB je Minute Fahrt).
         const zellen = (ganz) => {
-            const cells = new Array(9).fill(null);
-            for (let dz = -1; dz <= 1; dz++)
-                for (let dx = -1; dx <= 1; dx++) {
-                    const e = dx === 0 && dz === 0 ? entry : this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
-                    if (e && e.waterCells)
-                        cells[(dz + 1) * 3 + (dx + 1)] =
-                            e.zellenId && !(ganz && ganz.includes((dz + 1) * 3 + (dx + 1)))
-                                ? { zid: e.zellenId, fest: e.zellenFest }
-                                : e.waterCells;
+            const [zids, festAb, listen, eigen] = [new Int32Array(9), new Int32Array(10), [], {}];
+            let n = 0;
+            for (let i = 0; i < 9; i++) {
+                const e = i === 4 ? entry : this.state.voxelChunks.get(`${cx + (i % 3) - 1},${cz + ((i / 3) | 0) - 1}`);
+                festAb[i] = n;
+                if (!e || !e.waterCells) continue;
+                if (!e.zellenId || (ganz && ganz.includes(i))) {
+                    eigen[i] = e.waterCells;
+                    continue;
                 }
-            return cells;
+                zids[i] = e.zellenId;
+                if (e.zellenFest) (listen.push(e.zellenFest), (n += e.zellenFest.length));
+            }
+            festAb[9] = n;
+            const fest = new Int32Array(n);
+            for (let i = 0, o = 0; i < listen.length; o += listen[i++].length) fest.set(listen[i], o);
+            return { zids, festAb, fest, eigen };
         };
         const smoothRaw =
             this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterSheetSmooth)
@@ -443,28 +461,29 @@ class AnazhRealm_gelaende_chunks {
         const smoothPasses = Math.max(0, Math.min(6, smoothRaw));
         // die Plätze, die den Faden verfehlten, wachsen, bis keiner mehr fehlt (höchstens neun Runden): fiel ein Verweis zwischen
         // zwei Runden (der Deckel des Fadens, `zellen-frei` beim Neubau), kam `{ fehlt }` als Blatt an — ein leeres Netz
-        const auftrag = (ganz) =>
-            this._voxelFadenAuftrag(worker, { type: "water-sheet", cx, cz, smoothPasses, cells: zellen(ganz) }).then(
-                (r) => (r && r.fehlt ? auftrag((ganz || []).concat(r.fehlt)) : r)
-            );
+        const auftrag = (ganz) => {
+            const z = zellen(ganz);
+            return this._voxelFadenAuftrag(worker, Object.assign({ type: "water-sheet", cx, cz, smoothPasses }, z), [
+                z.zids.buffer,
+                z.festAb.buffer,
+                z.fest.buffer,
+            ]).then((r) => (r && r.fehlt ? auftrag((ganz || []).concat(r.fehlt)) : r));
+        };
         return auftrag(null);
     }
 
-    // Off-thread (statischer Flood-Sheet) nur, wenn Chunk + 8 Nachbarn nicht in `waterCAActive` sind und
-    // kein Stau (`waterStauFields`) im 3×3 liegt. Byte-identisch, weil ein settled Chunk am Flood-Spiegel
-    // ruht → `_seedWaterLevel` setzt Zellen auf 1 → CA-Delta d == 0 → Main-Sheet == Worker-Sheet
-    // (`diag-worker-watersheet`). Aktiv fließende und Stau-Chunks tragen ein echtes Delta → SYNC.
+    // Off-thread (statischer Flood-Sheet) nur, wenn Chunk + 8 Nachbarn nicht in `waterCAActive` sind. Byte-identisch, weil
+    // ein settled Chunk am Flood-Spiegel ruht → `_seedWaterLevel` setzt Zellen auf 1 → CA-Delta d == 0 → Main-Sheet ==
+    // Worker-Sheet (`diag-worker-watersheet`); der Stau ist Gesetz des Spiegels (`_stauFelder`, im Faden dieselben Felder).
+    // Aktiv fließende Chunks tragen ein echtes Delta → SYNC.
     _waterSheetCaFree(cx, cz) {
         const active = this.state.waterCAActive;
-        const stau = this.state.waterStauFields;
         const chunks = this.state.voxelChunks;
         const hasActive = active && active.size > 0;
-        const hasStau = stau && stau.size > 0;
         for (let dz = -1; dz <= 1; dz++) {
             for (let dx = -1; dx <= 1; dx++) {
                 const k = `${cx + dx},${cz + dz}`;
                 if (hasActive && active.has(k)) return false;
-                if (hasStau && stau.has(k)) return false;
                 // Ein gezeichnetes oder gewünschtes Dach im 3×3 (der Automat lief dort) baut der Main: der Worker kennt
                 // es nicht — ein dachloses Worker-Sheet neben einem Main-Sheet mit Dach wäre die Wasser-Naht.
                 const e = chunks ? chunks.get(k) : null;
@@ -537,11 +556,12 @@ class AnazhRealm_gelaende_chunks {
     // Der Warm-Start-Key: seed|cx,cz|lod — mehrere Welten teilen den Store
     // (der Stempel bustet grob bei Erbgut-/Versions-Wechsel, s. _chunkPlatte).
     // Ein Versatz der Schneegrenze (stoffe.K3-2, `_schneeGilt`) färbt den Chunk: er trägt seinen Schlüssel (die Sommer-Mitte 0
-    // den alten).
+    // den alten); ebenso der Pegel, der sein Wasser hebt (`_pegelMarke`, "" wo nichts steigt).
     _chunkIdbKey(cx, cz, lod) {
         const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         const schnee = this._schneeGilt();
-        return `${seed}|${cx},${cz}|${lod}` + (schnee ? `|s${schnee}` : "");
+        const pegel = this._pegelMarke(cx, cz);
+        return `${seed}|${cx},${cz}|${lod}` + (schnee ? `|s${schnee}` : "") + (pegel ? `|p${pegel}` : "");
     }
     // Warm-Start-Gate (Read UND Write): liegt irgendein Edit in der 3×3-Chunk-Box um (cx,cz)? Wie
     // `_chunkRegionHasCarve`, aber ohne mode-Filter (auch fill ändert die Density). r ≤ 12 < span 43.2
@@ -556,6 +576,11 @@ class AnazhRealm_gelaende_chunks {
                 for (let b = Math.floor(((cz - 1) * span) / Z); b <= Math.floor(((cz + 2) * span) / Z); b++)
                     if (E.zellen.has((a + 32768) * 65536 + (b + 32768))) return false;
         }
+        // der Stau eines Werks (`waterStau`, `_stauAn`) flutet die Zellen seines Fensters wie ein Edit: auch dort nie alte Bytes —
+        // ein Damm ist ein Bau, kein Edit, und bis ci-werk-wasser las der Faden unter seinem Stausee den Chunk ohne Stau
+        for (const f of this.state.waterStau || [])
+            if ((f.gx0 + f.w) * f.step > (cx - 1) * span && f.gx0 * f.step < (cx + 2) * span)
+                if ((f.gz0 + f.h) * f.step > (cz - 1) * span && f.gz0 * f.step < (cz + 2) * span) return false;
         const edits = this._voxelEditsNah(cx, cz);
         if (!edits.length) return true;
         const loX = (cx - 1) * span,
@@ -588,6 +613,7 @@ class AnazhRealm_gelaende_chunks {
         this.state.voxelMeshPending.add(cacheKey);
         const expectedStateGen = this._voxelStand(cx, cz);
         const schnee = this._schneeGilt(); // der Faden färbt mit dem Versatz, den er bei diesem Auftrag trägt
+        const pegel = this._pegelMarke(cx, cz); // … und hebt sein Wasser mit dem Pegel, den er trägt
         this.state.voxelMeshGenAtRequest.set(cacheKey, expectedStateGen);
         // die Platte NUR für edit-freie Footprints bei stehender Worldgen-Wahrheit (Lesen und Stiften, auch `empty:true`)
         const platte =
@@ -597,7 +623,11 @@ class AnazhRealm_gelaende_chunks {
         this._voxelWorkerComputeChunkMesh(cx, cz, lod, platte)
             .then((meshData) => {
                 this.state.voxelMeshPending.delete(cacheKey);
-                if (this._voxelStand(cx, cz) !== expectedStateGen || this._schneeGilt() !== schnee) {
+                if (
+                    this._voxelStand(cx, cz) !== expectedStateGen ||
+                    this._schneeGilt() !== schnee ||
+                    this._pegelMarke(cx, cz) !== pegel
+                ) {
                     this.state.voxelMeshGenAtRequest.delete(cacheKey);
                     return;
                 }
@@ -1223,7 +1253,7 @@ class AnazhRealm_gelaende_chunks {
         this._streuFussNeu(cx, cz); // die Streu über ihm steht auf seiner Karte (Gelände H5)
         // DIE NEUEN ZELLEN TRAGEN DAS GESETZ (F3): Kappe und Quellen des Automaten leiten sich aus ihnen neu ab, und mit der
         // neuen Kappe legt `_ensureWaterCALevel` das Level auf das Gesetz. Bis F3 hielt der Automat die Kappe der alten Zellen,
-        // wenn der Neubau nach dem Edit kam (über Budget baut der Fußabdruck im Worker): der Graben zeichnete trocken.
+        // wenn der Neubau nach dem Edit kam (der Fußabdruck baut im Worker, bau-faden): der Graben zeichnete trocken.
         if (this.state.waterCapJ) this.state.waterCapJ.delete(key);
         if (this.state.waterSourceCols) this.state.waterSourceCols.delete(key);
         // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel); ein reiner Stufen-Wechsel (`stufe`,
@@ -1419,12 +1449,13 @@ class AnazhRealm_gelaende_chunks {
     // denen ein Dreieck gegen die vorige seine Lage ändert (`_bodenKarteAusMesh` mit `basis`); die Karte ist danach unveränderlich
     // und hält ihre Lage. `art` "lage": die gezeichnete Lage samt Grün (Bau und Naht-Morph, je Ruf ein neuer Puffer), "ziel": die
     // Morph-Ziele, nur die Höhe (`_bodenStufeMisch`; der Attribut-Puffer, darum eine Kopie).
-    _bodenKarteNaht(geom, cx, cz, lod, lage, art) {
+    // `ganz`: jede Ecke kann sich bewegt haben (die vorläufige Gestalt eines Edits, `_editGestaltVorlaeufig`), nicht nur der Saum.
+    _bodenKarteNaht(geom, cx, cz, lod, lage, art, ganz = false) {
         if (!geom.index) return null;
         const naht = this._bodenNaht(geom, cx, cz, lod);
         const col = art === "lage" && geom.attributes.color ? geom.attributes.color.array : null;
         const ref = art === "lage" ? lage : new Float32Array(lage);
-        const k = this._bodenKarteAusMesh(ref, geom.index.array, col, cx, cz, lod, naht[art], naht);
+        const k = this._bodenKarteAusMesh(ref, geom.index.array, col, cx, cz, lod, naht[art], ganz ? null : naht);
         naht[art] = k && Object.assign(k, { ref });
         return k;
     }
@@ -2157,7 +2188,8 @@ class AnazhRealm_gelaende_chunks {
         // DER CHUNK-STOFF ENTSTEHT IM WORKER (Lehre 14, K69-2): jeder Neubau geht über den Worker-Pfad — der alte Mesh
         // bleibt sichtbar bis zum atomaren Swap, die Kollision liest das Dichtefeld (sofort aktuell), die Flut über die
         // Naht reist als Saat mit dem Auftrag (`_flutSaat`). Synchron baut nur, wer es ausdrücklich verlangt
-        // (`opts.forceSync`: `_syncRebuildEditFootprint`, der Wasser-Fußabdruck eines Baus, `_drainDirtyVoxelChunks`).
+        // (`opts.forceSync`: der Wasser-Fußabdruck eines Baus, `_drainDirtyVoxelChunks`); der Fußabdruck eines Edits baut im
+        // Faden, bis dahin trägt das Netz seine vorläufige Gestalt (`_editGestaltVorlaeufig`, bau-faden).
         // Bis K69-2 baute der Neubau den Spieler-Chunk und jeden Chunk mit einem Schnitt im 3×3 synchron, solange der
         // Frame Zeit hatte — am Erdbau eines Dorfs um den Spieler 154–409 ms in EINEM Takt (gate:stand-takt ORT).
         // DER STUFEN-WECHSEL (K51-5): der Streaming-Takt tauscht nur die Stufe eines stehenden Chunks — keine Form-Änderung
@@ -3025,6 +3057,8 @@ class AnazhRealm_gelaende_chunks {
         // Edit-Delta an den Worker: die Generation der berührten Chunks steigt, ihre Antworten im Flug und im Cache
         // fallen; der Pump fordert frisch nach. No-op ohne gespawnten Worker (vor Worldgen).
         this._voxelWorkerNotifyEdit(newEdit);
+        // der Stau der Werke folgt dem Edit, ehe ein Faden die Chunks neu baut (ein Damm hält, ein Schnitt öffnet ihn)
+        this._stauFelder();
         // `_remeshVoxelChunksAround` ist der EINZIGE Reaktiv-Pfad: die Chunks bauen neu, das Cell-Feld
         // klassifiziert die neue Lage (Carve unter waterLevel → WATER, Fill → SOLID) — Cells sind DERIVED,
         // kein Hydro-Recompute. Nur die Footprint-Chunks werden grass-dirty (Oberfläche geändert); die
@@ -3039,13 +3073,14 @@ class AnazhRealm_gelaende_chunks {
             for (let fcz = fcz0; fcz <= fcz1; fcz++) this.state.grassDirtyChunks.add(`${fcx},${fcz}`);
         }
         this._remeshVoxelChunksAround(x, z, reich);
-        // Die direkt berührten FOOTPRINT-Chunks SYNCHRON im Edit-Frame heilen (nicht 1/Frame verteilt) —
-        // sonst ~2 Frames sichtbare Abbau-Naht zwischen Nachbarn. Die Skirt-Nachbarn (nur das 1-Zell-Pad
-        // sah die Säule, sub-cell) bleiben ASYNC → kein Edit-Cluster-Spike.
-        this._syncRebuildEditFootprint(x, z, reich);
-        // NACH dem Rebuild: Kappen/Quell-Markierungen/Stau-Felder der Region verwerfen — der Spill-Scan
-        // muss die FRISCHEN Zellen sehen (ein Fill kann Damm sein, ein Carve ihn öffnen), und der Lazy-Neubau
-        // legt das Level auf das Gesetz der neuen Zellen (`_ensureWaterCALevel`, F3). Bis F3 säte der Edit das Level
+        // DER NEUBAU KOMMT AUS DEM FADEN (Lehre 14): Fußabdruck und Saum bauen über den Neubau-Takt (`_tickDirtyVoxelChunks`,
+        // nah zuerst), bis dahin trägt das stehende Netz die Säule (`_editGestaltVorlaeufig`) — dasselbe Bild, in dem der
+        // Klick fiel. Bis bau-faden baute der Edit seinen Fußabdruck synchron (`_syncRebuildEditFootprint`, 4 Chunks:
+        // 215 ms je Bau-Klick im Haupt-Faden, höchstens 374 ms).
+        this._editGestaltVorlaeufig(newEdit);
+        // Kappen/Quell-Markierungen/Stau-Felder der Region verwerfen — der Spill-Scan muss die FRISCHEN Zellen sehen (ein
+        // Fill kann Damm sein, ein Carve ihn öffnen; die Zellen des Neubaus verwirft `_finalizeVoxelChunkBuild` ebenso), und
+        // der Lazy-Neubau legt das Level auf das Gesetz der neuen Zellen (`_ensureWaterCALevel`, F3). Bis F3 säte der Edit das Level
         // vorher aus den alten Zellen (`_preSeedWaterCAForEdit`), damit der Automat den Graben sichtbar fülle — sein Dach
         // stand dabei je Spalte auf einer eigenen Höhe neben dem Spiegel (die zweite Fläche).
         this._invalidateWaterCapsAround(x, z, reich);
@@ -3149,33 +3184,52 @@ class AnazhRealm_gelaende_chunks {
         }
     }
 
-    // Heilt die FOOTPRINT-Chunks (skirt=0, die die Reichweite wirklich überdeckt) SYNCHRON im Edit-Frame —
-    // derselbe Pfad wie `_drainDirtyVoxelChunks` (forceSync, dispose-before-build, Wasser-Iso sync).
-    // Skirt-Nachbarn bleiben async (Oberfläche unverändert). Billig (~2 ms/Chunk über den Base-
-    // Density-Cache) → 2–4 Chunks ≈ sub-Frame.
-    _syncRebuildEditFootprint(x, z, r) {
-        if (!this.state.voxelChunks || this.state.voxelChunks.size === 0) return;
-        if (!this.state.dirtyVoxelChunks) return;
-        // Über Budget den Footprint NICHT sync bauen: die Chunks bleiben dirty und heilen async (Kollision
-        // ist feld-nativ sofort korrekt, der Mesh swappt 1–2 Frames später, kein Loch) — sonst ~126 ms
-        // Stall je Carve auf schwacher HW. Test/Naht erzwingen sync über
-        // `_rebuildVoxelChunk(... forceSync:true)`.
-        if (this.state._frameOverBudget) return;
-        const { span } = this._voxelChunkConfig();
-        const minCX = Math.floor((x - r) / span);
-        const maxCX = Math.floor((x + r) / span);
-        const minCZ = Math.floor((z - r) / span);
-        const maxCZ = Math.floor((z + r) / span);
-        for (let cx = minCX; cx <= maxCX; cx++) {
-            for (let cz = minCZ; cz <= maxCZ; cz++) {
-                const key = `${cx},${cz}`;
-                if (!this.state.voxelChunks.has(key)) continue;
-                // aus dem Dirty-Set nehmen (wir bauen ihn JETZT) + sync rebuilden. Bei Fail
-                // (OOM) re-markiert `_completeVoxelRebuild` ihn dirty → der async-Tick versucht's.
-                this.state.dirtyVoxelChunks.delete(key);
-                this._rebuildVoxelChunk(cx, cz, null, { forceSync: true });
+    // DIE VORLÄUFIGE GESTALT EINES EDITS (bau-faden): bis der Neubau aus dem Faden kommt, trägt das stehende Netz die Säule
+    // des Kerns (gelaende-core `editForm`: Radius r, oben und unten eben bei y ± r) — jede Ecke in ihr rückt auf die Fläche,
+    // der sie zugewandt ist: beim Aufschütten die nach oben gewandte auf die Krone, die nach unten gewandte auf den Fuß, beim
+    // Graben umgekehrt. Lage und Morph-Ziel gehen in den Satz (`_chunkSatzMarke`), die Boden-Karte rastert die bewegten
+    // Dreiecke der gezeichneten Lage neu (`_bodenKarteNaht` ganz): Fuß, Wiese und Streu lesen die Säule ab dem Bild des
+    // Klicks, der Körper steht auf dem Gesetz (Lehre 22). Kein Chunk-Stoff entsteht hier; der Neubau ersetzt das Netz.
+    // Liefert die Zahl der Chunks, deren Netz die Säule trägt.
+    _editGestaltVorlaeufig(ed) {
+        const vc = this.state.voxelChunks;
+        if (!vc || !vc.size || !(ed.r > 0)) return 0;
+        const { span, step } = this._voxelChunkConfig();
+        const [y0, y1, rr, fill] = [ed.y - ed.r, ed.y + ed.r, ed.r * ed.r, ed.mode === "fill"];
+        // die Säule an der Lage A (Ecke v, ihre Normale in N): true, wo sie eine Ecke bewegt
+        const saeule = (A, N) => {
+            let bewegt = false;
+            for (let v = 0; v < A.length; v += 3) {
+                const [dx, y, dz] = [A[v] - ed.x, A[v + 1], A[v + 2] - ed.z];
+                if (dx * dx + dz * dz >= rr || !(y > y0 && y < y1)) continue;
+                A[v + 1] = N[v + 1] >= 0 === fill ? y1 : y0;
+                bewegt = true;
             }
-        }
+            return bewegt;
+        };
+        // die Chunks, deren Netz (samt Saum, ein Schritt) in die Säule reicht
+        const [a0, a1] = [Math.floor((ed.x - ed.r - step) / span), Math.floor((ed.x + ed.r + step) / span)];
+        const [b0, b1] = [Math.floor((ed.z - ed.r - step) / span), Math.floor((ed.z + ed.r + step) / span)];
+        let n = 0;
+        for (let cx = a0; cx <= a1; cx++)
+            for (let cz = b0; cz <= b1; cz++) {
+                const E = vc.get(`${cx},${cz}`);
+                if (!E || E.empty || !E.mesh) continue;
+                const g = E.mesh.geometry;
+                const N = g.attributes.normal.array;
+                if (!saeule(g.attributes.position.array, N)) continue;
+                saeule(g.attributes.aMorphTarget.array, N);
+                this._chunkSatzMarke("boden", `${cx},${cz}`, ["position", "aMorphTarget"]);
+                // die Karte aus der gezeichneten Lage (samt Naht-Morph des Saums), die Säule darin wie im Netz
+                const naht = this._bodenNaht(g, cx, cz, E.lod || 0);
+                const L = new Float32Array((naht.lage && naht.lage.ref) || g.attributes.position.array);
+                saeule(L, N);
+                const k = this._bodenKarteNaht(g, cx, cz, E.lod || 0, L, "lage", true);
+                [E.surfMap, E.gruenMap, E.surfMapZiel] = [k && k.hoehe, k && k.gruen, null];
+                this._streuFussNeu(cx, cz);
+                n++;
+            }
+        return n;
     }
 
     // Game-Loop-Hook: der Neubau der dirty Chunks über den Worker, NAH ZUERST (Lehre 25). Je Takt gehen die Aufträge der

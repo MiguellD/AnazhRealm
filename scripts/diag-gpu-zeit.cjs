@@ -34,18 +34,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 // Port über GPU_ZEIT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4431.
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.GPU_ZEIT_PORT || 4431);
 const server = statikServer();
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 
 (async () => {
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 300000 });
-    const page = await browser.newPage();
+    const { browser, page } = await nullSeite({ frist: 300000 }); // GPU-frei ⇒ der Proxy-Pfad ist die Wahrheit
     page.setDefaultTimeout(280000);
-    await nullRenderer(page); // GPU-frei ⇒ der Proxy-Pfad ist die Wahrheit
     let out = null;
     try {
         await server.zeige(page, 120000, "index.html", "networkidle0");

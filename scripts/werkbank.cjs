@@ -65,7 +65,7 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { statikServer, werkbankRuf, ROOT: root, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, werkbankRuf, ROOT: root, selbsttestEnde, sleep, hauptLauf } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -192,7 +192,7 @@ async function eigeneWelt() {
     const k = require("child_process").spawn(process.execPath, [__filename, "start", "--port", String(PORT)], { stdio: "inherit" });
     for (let t = 0; !(await rufe("/status").then(() => true, () => false)); t++) {
         if (k.exitCode != null || t > 600) throw new Error(`die eigene Werkbank steht nicht (Exit ${k.exitCode})`);
-        await new Promise((r) => setTimeout(r, 1000));
+        await sleep(1000);
     }
     return () => rufe("/stop");
 }
@@ -221,7 +221,6 @@ function lauf(k) {
         const r = window.anazhRealm;
         const st = r.state;
         const rend = st.renderer;
-        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         // DIE BÜHNE: Mittag · Sonne · Sommer, oder das Wort des Spielers (`--wetter stormy`) und n Tiere frei im Ring
         // (`--tiere 50`) — Profiband K1 „Sturm"
         const tiereN = /^\d+$/.test(k.tiere) ? Number(k.tiere) : 0;
@@ -638,7 +637,6 @@ function bandEinschwingen(k) {
     return (async () => {
         const r = window.anazhRealm;
         const st = r.state;
-        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         const RUHIG = k.ruhig || 30;
         // DIE VOLLE WELT: der Regler misst hier Takte mit 50 ms Pause (65 ms je Frame) und drosselte auf loadScale 0 —
         // je nach Vorgeschichte stand die Messung auf einer anderen Welt (Streu-Stufen, Laub-Radius). Die Decke geht hoch
@@ -699,7 +697,6 @@ function bandEinschwingen(k) {
 function bandProben(k) {
     return (async () => {
         const r = window.anazhRealm;
-        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         const proben = [];
         for (let i = 0; i < (k.n || 6); i++) {
             if (i)
@@ -860,7 +857,6 @@ async function starte() {
         page.evaluate(
             async (x, z, o) => {
                 const r = window.anazhRealm;
-                const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
                 // DER ANKER des Orts (haushalt.json `anker`): die Stamm-Methode nennt, wo der Ort in DIESER Welt steht —
                 // steht er mehr als 1 m neben dem Spieler-Platz der Spec, bricht die Aufstellung laut ab (sonst urteilte
                 // die Messung über einen leeren Rand).
@@ -1072,7 +1068,7 @@ async function starte() {
                 r.setTimeOfDay(k.uhr, "human");
                 for (let i = 0; i < 20; i++) {
                     r._leuchtTakt();
-                    await new Promise((ok) => setTimeout(ok, 50));
+                    await sleep(50);
                 }
             }
             if (r.state.playerMesh) r.state.playerMesh.visible = !!k.spieler;
@@ -1670,7 +1666,7 @@ async function starte() {
                         const r = window.anazhRealm;
                         r.state.renderer.setAnimationLoop((t) => r._gameLoopTick(t));
                     });
-                    await new Promise((res) => setTimeout(res, 300));
+                    await sleep(300);
                     const datei = path.resolve(
                         b.datei || path.join(root, "artifacts", "werkbank", `schirm-${Date.now()}.png`)
                     );
@@ -2059,7 +2055,7 @@ async function starte() {
                                 r._gameLoopTick(performance.now());
                             } catch {}
                             takte++;
-                            await new Promise((w) => setTimeout(w, 50));
+                            await sleep(50);
                         };
                         return window.__gebautNach("das Quadrat der Linse", { fertig: steht, takt, max: 1800 }).then(
                             () => zustand(true),
@@ -2972,7 +2968,7 @@ async function starte() {
     console.log(`WERKBANK bereit: Steuer 127.0.0.1:${PORT} · Seite :${SEITEN_PORT}`);
 }
 
-(async () => {
+hauptLauf(async () => {
     const cmd = argv[0];
     if (cmd === "start") return starte();
     const a = argv.slice(1).filter((x, i, arr) => !x.startsWith("--") && !(i > 0 && arr[i - 1].startsWith("--")));
@@ -3800,7 +3796,4 @@ async function starte() {
     // `fehler` als Zeichenkette ist das Versagen des Befehls; als Liste ist es das Konsolen-Buch der Sitzung (pageerror und
     // WebGPU-Meldungen, auch INFO) — ein Buch urteilt nicht, und `[]` ist wahr: status · wache · stand · lauf endeten immer mit 1.
     process.exit(o && typeof o.fehler === "string" ? 1 : 0);
-})().catch((e) => {
-    console.error("WERKBANK-FEHLER:", (e && e.message) || e);
-    process.exit(1);
 });

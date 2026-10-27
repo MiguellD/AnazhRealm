@@ -63,7 +63,7 @@
 //       wird rot
 //
 //   node scripts/diag-schatten-werfer.cjs [--selftest]
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.SCHATTEN_WERFER_PORT || 4577);
@@ -1429,9 +1429,7 @@ function probe(selbsttest) {
 
 (async () => {
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null" });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite();
     const { errs, check } = pruefer();
     try {
         // Z2 — die Bildziele je Leser im Stamm (GPU-frei, vor dem Boot)

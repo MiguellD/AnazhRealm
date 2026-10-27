@@ -35,20 +35,18 @@
 // (law + 0.5) MUSS rot fallen — die Linse ist nicht vakuös.
 //   node scripts/diag-fern-ring.cjs
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.FERN_RING_PORT || 4464);
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 
 const server = statikServer();
 
 hauptLauf(async () => {
     console.log("=== FERN-RING (STUFE 2) — Browser, Null-Renderer + Hook ===");
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "linse", frist: 240000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ art: "linse", frist: 240000 });
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {

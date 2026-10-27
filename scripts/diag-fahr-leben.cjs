@@ -4,12 +4,12 @@
 //
 //   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper]   Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const path = require("path");
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 
 // ── DAS TAKT-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 const TAKT = { gierGrad: 0.5, wegAnteil: 0.02, wegMinM: 0.4, wegFahrtMinM: 5, haltM: 0.05, versatzM: 0.01 };
@@ -40,8 +40,9 @@ function haltVerdict(m) {
     return out;
 }
 // T4 Der Wechsel am Steilhang (F1): jede zeichnende Stufe am Wagen, je Rückkehr nach Third (Ego drehte ≥ egoGrad) die Kamera
-// nach 10 Bildern an der Gier, Ruck und Gleichlauf p95, Höhe über der Ebene des Wagens p05.
-const WECHSEL = { stufeM: 0.2, egoGrad: 70, azGrad: 10, ruckM: 0.07, gleichMax: 0.2, hochMin: 10, wiederaufGrad: 1, sprungM: 0.5, abV: 7.5, fovGrad: 0.5 };
+// nach 10 Bildern an der Gier, Ruck (das Soll von fahrzeug.K3 Staffel 2, vorher 0,07: die Bildzeit zitterte die Feder 0,03) und
+// Gleichlauf p95, Höhe über der Ebene des Wagens p05.
+const WECHSEL = { stufeM: 0.2, egoGrad: 70, azGrad: 10, ruckM: 0.02, gleichMax: 0.2, hochMin: 10, wiederaufGrad: 1, sprungM: 0.5, abV: 7.5, fovGrad: 0.5 };
 function wechselVerdict(m) {
     if (!m || m.gestartet !== true) return [m && !m.ort ? "steilhang: kein Ort (vakuös)" : "wechsel start"];
     const W = WECHSEL;
@@ -609,7 +610,7 @@ function koerperBericht(k) {
 
 const server = statikServer();
 
-const { probeLeben, probeKoerper, tempoVerdict, tempoSpion, kernTempo } = require("./lib/fahr-proben.cjs");
+const { probeLeben, probeKoerper, tempoVerdict, tempoSpion, kernTempo, ruckJeBild } = require("./lib/fahr-proben.cjs");
 
 // W (feld.K1) DIE WETTER-KETTE: ein Glied zählt, wenn es mit dem Sturm ZIEHT und STEHT, solange sein Vorgänger gehalten wird
 // (`kette` in lib/fahr-proben.cjs), und nur hinter einem zählenden Vorgänger; die Tiefe ist der längste Ast (Staffel 1 =
@@ -1673,13 +1674,18 @@ hauptLauf(async () => {
             const v = wechselVerdict(Object.assign({}, wechsel, bruch));
             check(`Selbst-Test T4: ‚${name}' → die Linse nennt ${soll}`, v.length === 1 && v[0].startsWith(soll), v.join(" · "));
         }
+        // der Ruck je Bild über ungleiche Bildzeiten (16,7 · 33,3 ms): gleichförmig 1,8 m/s quer ist keiner (je Bild roh 0,03), ein Zittern bleibt
+        const [glatt, zittert] = [ruckJeBild([[0, 0], [0.03, 16.7], [0.09, 50]]), ruckJeBild([[0, 0], [0.03, 16.7], [0, 33.4]])];
+        check("Selbst-Test T4: der Ruck je Bild — gleichförmig quer 0, ein Zittern nennt ruck", glatt < 1e-3 && !(zittert <= WECHSEL.ruckM), `${glatt.toFixed(4)} · ${zittert.toFixed(3)} m`);
         // T5 das Tempo der Kamera: die Täter beim Namen
         const gut5 = { n: 9, quelle: true, fov: { 10: 5.4 }, zeigt: 0, schreiber: ["_kamFov"], orbit: 69, rueck: 1.08, fovMax: 10, arm: 0.2, drift: 9, knick: 0.08 };
         check("Selbst-Test T5: das gesunde Tempo == 0 Täter", tempoVerdict(gut5).length === 0, tempoVerdict(gut5).join(" · "));
+        const VCk = (require(path.join(root, "vehicle-core.js")), globalThis.__vehicleCore);
         for (const [bruch, soll] of [
+            // die Mutation am echten Kern: der Wirt reicht den Fahrtvektor ohne Schlupf — die Kamera klebt am Kurs
+            [kernTempo({ ...VCk, chaseKamera: (c, g, s, dt, K, z, vm) => VCk.chaseKamera(c, g, s, dt, K, z && { ...z, vlat: 0 }, vm) }), "drift"],
             [{ fovMax: 0 }, "fov"],
             [{ arm: 0 }, "arm"],
-            [{ drift: 45 }, "drift"],
             [{ quelle: false }, "quelle"],
             [{ fov: { 10: 0 } }, "fov"],
             [{ zeigt: 0.4 }, "zeigt"],
@@ -1791,54 +1797,22 @@ hauptLauf(async () => {
             ["Spalt ohne Spalt (vakuös)", { spalt: { rand: 32.4, grund: 31, vor: 8, yMin: 18 } }, "spalt vakuös"],
             [
                 "Fels: 10,41 → 0,16 m/s in EINEM Frame, kein Rückprall (Leben-Schau 07.10.)",
-                {
-                    stossFels: {
-                        kontakt: 40,
-                        vVor: 10.41,
-                        vNach: 0.16,
-                        vMinNach: 0.16,
-                        ereignisse: 1,
-                        ruck: 3,
-                        zielWeg: 0,
-                    },
-                },
+                { stossFels: { ...gutS.stossFels, vVor: 10.41, vNach: 0.16, vMinNach: 0.16 } },
                 "stoss-fels: kein Rückprall",
             ],
             [
                 "geparkter GT: 11,28 → 0,00 m/s, er bewegt sich nicht (Leben-Schau 07.10.)",
-                {
-                    stossWagen: { kontakt: 40, vVor: 11.28, vNach: 0, vMinNach: 0, ereignisse: 1, ruck: 3, zielWeg: 0 },
-                },
+                { stossWagen: { ...gutS.stossWagen, vVor: 11.28, vNach: 0, vMinNach: 0, zielWeg: 0 } },
                 "stoss-wagen: der geparkte GT bewegt sich",
             ],
             [
                 "Bär: 9,27 → 0,17 m/s, der Bär bewegt sich nicht (Leben-Schau 07.10.)",
-                {
-                    stossBaer: {
-                        kontakt: 40,
-                        vVor: 9.27,
-                        vNach: 0.17,
-                        vMinNach: 0.17,
-                        ereignisse: 1,
-                        ruck: 2,
-                        zielWeg: 0,
-                    },
-                },
+                { stossBaer: { ...gutS.stossBaer, vVor: 9.27, vNach: 0.17, vMinNach: 0.17, zielWeg: 0 } },
                 "stoss-baer: der Bär bewegt sich",
             ],
             [
                 "Stoß ohne Ereignis (keine Kamera, kein Klang)",
-                {
-                    stossFels: {
-                        kontakt: 40,
-                        vVor: 6.5,
-                        vNach: -1.3,
-                        vMinNach: -1.3,
-                        ereignisse: 0,
-                        ruck: 0,
-                        zielWeg: 0,
-                    },
-                },
+                { stossFels: { ...gutS.stossFels, ereignisse: 0, ruck: 0 } },
                 "stoss-fels: kein Stoß-Ereignis",
             ],
             [
@@ -1884,21 +1858,7 @@ hauptLauf(async () => {
             ],
             [
                 "der Reiter ragt aus dem GT, schwebt über dem Sitz und schaut mit der Maus (Gegenprüfung 0710-4 Klasse 4)",
-                {
-                    reiter: [
-                        {
-                            typ: "fahrzeug_gt",
-                            oben: 2.175,
-                            dach: 1.2,
-                            schenkel: 0.72,
-                            sitz: 0.475,
-                            ankerL: 0.3,
-                            ankerQ: 0.4,
-                            blickGrad: 90,
-                            lehneGrad: 0,
-                        },
-                    ],
-                },
+                { reiter: [{ ...gutS.reiter[0], oben: 2.175, schenkel: 0.72, ankerL: 0.3, ankerQ: 0.4, blickGrad: 90, lehneGrad: 0 }] },
                 "reiter fahrzeug_gt",
             ],
             [
@@ -1906,14 +1866,7 @@ hauptLauf(async () => {
                 {
                     reiter: [
                         {
-                            typ: "fahrzeug_gt",
-                            oben: 1.15,
-                            dach: 1.2,
-                            schenkel: 0.475,
-                            sitz: 0.475,
-                            ankerL: 0,
-                            ankerQ: 0,
-                            blickGrad: 0,
+                            ...gutS.reiter[0],
                             lehneGrad: 60,
                             aussen: {
                                 unten: 4200,
@@ -1975,66 +1928,22 @@ hauptLauf(async () => {
             ],
             [
                 "Vorderräder 0,09 m im Boden beim Bremsen (F-D8)",
-                {
-                    raeder: {
-                        leaves: 4,
-                        stehend: 4,
-                        stehRolle: 0,
-                        rolle: 12,
-                        lenk: 0.4,
-                        lenkHinten: 0,
-                        tauchBremse: 0.09,
-                        spaltP75: 0.01,
-                    },
-                },
+                { raeder: { ...gutS.raeder, tauchBremse: 0.09 } },
                 "raeder tauchen",
             ],
             [
                 "die Räder lenken nicht (F-D8)",
-                {
-                    raeder: {
-                        leaves: 4,
-                        stehend: 4,
-                        stehRolle: 0,
-                        rolle: 12,
-                        lenk: 0,
-                        lenkHinten: 0,
-                        tauchBremse: 0,
-                        spaltP75: 0.01,
-                    },
-                },
+                { raeder: { ...gutS.raeder, lenk: 0 } },
                 "raeder lenken nicht",
             ],
             [
                 "der Bremssattel rollt mit dem Rad (Gegenprüfung 07.10.)",
-                {
-                    raeder: {
-                        leaves: 4,
-                        stehend: 4,
-                        stehRolle: 3.1,
-                        rolle: 12,
-                        lenk: 0.4,
-                        lenkHinten: 0,
-                        tauchBremse: 0,
-                        spaltP75: 0.01,
-                    },
-                },
+                { raeder: { ...gutS.raeder, stehRolle: 3.1 } },
                 "raeder Sattel rollt",
             ],
             [
                 "kein Sattel an der Nabe",
-                {
-                    raeder: {
-                        leaves: 4,
-                        stehend: 0,
-                        stehRolle: 0,
-                        rolle: 12,
-                        lenk: 0.4,
-                        lenkHinten: 0,
-                        tauchBremse: 0,
-                        spaltP75: 0.01,
-                    },
-                },
+                { raeder: { ...gutS.raeder, stehend: 0 } },
                 "raeder ohne Sattel",
             ],
             ["ein Bär schiebt den stehenden Wagen 0,5 m", { huelleSchub: { weg: 0.5 } }, "huelle-schub"],
@@ -2285,19 +2194,16 @@ hauptLauf(async () => {
     if (process.argv.includes("--kern")) process.exit(errs.length ? 1 : 0); // Station K allein
 
     await server.lausche(PORT);
-    const browser = await starteBrowser({
-        art: "null",
+    const { browser, page } = await nullSeite({
         frist: 300000,
         zusatz: ["--autoplay-policy=no-user-gesture-required"],
     });
-    const page = await browser.newPage();
-    await nullRenderer(page);
     await server.zeige(page, 30000);
     // der Messort der Mess-Wiese (spec/profiband/haushalt.json `messorte`, S1 W1f) — derselbe Leser wie gate:vehicle-drive B-e
     const messort = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort.spieler;
     // die Orte des Wassers aus der Welt (L10: der See, `__wasserOrte`)
     await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
-    await page.evaluate(`window.__tempoSpion = ${tempoSpion}; window.__taktHz = ${taktHz};`);
+    await page.evaluate(`window.__tempoSpion = ${tempoSpion}; window.__taktHz = ${taktHz}; window.__ruckJeBild = ${ruckJeBild};`);
     if (process.argv.includes("--koerper")) {
         const o = await page.evaluate(probeKoerper, { messort });
         await browser.close();
@@ -2388,30 +2294,31 @@ hauptLauf(async () => {
     const S = out.stationen || {};
     const vS = stationVerdict(S);
     const hat = (t) => vS.some((x) => x.startsWith(t));
+    const frei = (...t) => !["kern", ...t].some(hat); // kein Täter dieser Zeilen und der Kern trägt
     check(
         "S1 Welt == Labor: der Welt-Ritt fährt die Spur des Labor-Aufrufs (VC.fahrSchritt), W und W + A",
-        !hat("kern") && !hat("labor"),
+        frei("labor"),
         S.labor
             ? `${S.labor.schritte} Schritte · ${S.labor.weg.toFixed(1)} m · größte Abweichung ${S.labor.maxM.toExponential(1)} m (Höhe ${S.labor.maxY.toExponential(1)} m) · Kontakt-Schritte ${S.labor.kontakte}`
             : vS.join(" · ")
     );
     check(
         "S2 Klippe: kein Höhen-Sprung > 0,5 m je Sim-Schritt, der Wagen fliegt",
-        !hat("kern") && !hat("klippe"),
+        frei("klippe"),
         S.klippe
             ? `Bahn-Wache ${S.klippe.wache} · Fall ${S.klippe.fall.toFixed(1)} m bei (${S.klippeOrt.x}, ${S.klippeOrt.z}) · größter Sprung ${S.klippe.sprung.toFixed(2)} m · Luft ${S.klippe.luft}/${S.klippe.schritte} · danach ${S.klippe.ueberGrund.toFixed(2)} m über dem Grund`
             : vS.join(" · ")
     );
     check(
         "S4 Absteigen im Flug: der Wagen fällt ballistisch auf seinen Boden und steht dort (nie in der Luft, kein Sprung)",
-        !hat("kern") && !hat("absteigen"),
+        frei("absteigen"),
         S.absteigen
             ? `Bahn-Wache ${S.absteigen.wache} · abgestiegen ${S.absteigen.hoehe.toFixed(2)} m über dem Boden (im Flug ${S.absteigen.imFlug}) · nach 240 Frames ${S.absteigen.ueberBoden.toFixed(3)} m über der Ebene seiner Räder · größter Sprung ${S.absteigen.sprung.toFixed(2)} m · ${S.absteigen.diag || ""}`
             : vS.join(" · ")
     );
     check(
         "S3 Querhang: Fahrt längs der Höhenlinie ohne Lenkung driftet quer talwärts (der Quer-Hangabtrieb wirkt)",
-        !hat("kern") && !hat("querhang"),
+        frei("querhang"),
         S.quer
             ? `${S.querOrt.grad.toFixed(1)}° bei (${S.querOrt.x.toFixed(0)}, ${S.querOrt.z.toFixed(0)}) · ${S.quer.weg.toFixed(1)} m gefahren · Quer-Abdrift talwärts ${S.quer.drift.toFixed(3)} m · Bahn-Wache ${S.quer.wache}`
             : vS.join(" · ")
@@ -2420,27 +2327,21 @@ hauptLauf(async () => {
     const R = S.raeder;
     check(
         "R1 die Räder rollen und lenken: Rad-Leaves je Ecke, Rolle relativ zum Aufbau > 1 rad, vorn Einschlag > 0,1 rad, hinten 0; der Sattel hängt an der Nabe (rollt nie)",
-        !hat("kern") &&
-            !hat("raeder starr") &&
-            !hat("raeder rollen") &&
-            !hat("raeder lenken") &&
-            !hat("raeder keine") &&
-            !hat("raeder ohne Sattel") &&
-            !hat("raeder Sattel"),
+        frei("raeder starr", "raeder rollen", "raeder lenken", "raeder keine", "raeder ohne Sattel", "raeder Sattel"),
         R
             ? `${R.leaves} drehende + ${R.stehend} stehende Rad-Leaves · Rolle ${R.rolle.toFixed(2)} rad · Einschlag vorn ${R.lenk.toFixed(3)} / hinten ${R.lenkHinten.toFixed(3)} rad · Sattel-Rolle ${R.stehRolle.toFixed(3)} rad`
             : "keine Probe"
     );
     check(
         "R2 die Räder stehen auf dem Boden: beim Bremsen taucht kein Vorderrad ein (≤ 0,03 m), Rad-Spalt p75 ≤ 0,03 m",
-        !hat("kern") && !hat("raeder tauchen") && !hat("raeder Spalt") && !hat("raeder keine"),
+        frei("raeder tauchen", "raeder Spalt", "raeder keine"),
         R
             ? `Eintauchen beim Bremsen ${R.tauchBremse.toFixed(3)} m · Rad-Spalt p75 ${R.spaltP75.toFixed(3)} m (max ${R.spaltMax.toFixed(3)}; das Rad gegen den gezeichneten Boden misst gate:koerper-stand K8)`
             : "keine Probe"
     );
     check(
         "P4 ein alter Kern ohne fahrGesetz/fahrEbene bricht im Spiel laut (KERN-PFLICHT), nie still der richtungs-folgende Ritt",
-        !hat("kern") && !hat("pflicht"),
+        frei("pflicht"),
         S.pflicht ? `_fahrSatz → ${S.pflicht.satz} · _rittEbene → ${S.pflicht.ebene}` : "keine Probe"
     );
     console.log("=== H — DIE HÜLLE ALS KÖRPER (Q5 · F-D4 F-L5), echter Sim-Schritt ===");
@@ -2451,12 +2352,12 @@ hauptLauf(async () => {
     );
     check(
         "H3 ein Bär steht 0,5 m im Bug des stehenden Wagens: der Wagen bleibt stehen (ein Wesen schiebt keinen Wagen)",
-        !hat("kern") && !hat("huelle-schub"),
+        frei("huelle-schub"),
         S.huelleSchub ? `Weg des Wagens in 60 Frames ${S.huelleSchub.weg.toFixed(3)} m` : "keine Probe"
     );
     check(
         "H4 ein Kasten schiebt die Hülle zur Gelände-Wand: sie dringt nie ins Gelände (die echte Methode, synthetische Welt)",
-        !hat("kern") && !hat("huelle-hang"),
+        frei("huelle-hang"),
         S.huelleHang
             ? `Schub des Kastens ${S.huelleHang.schub.toFixed(2)} m · Eindringen in die Wand ${S.huelleHang.eindringen.toFixed(3)} m`
             : "keine Probe"
@@ -2465,7 +2366,7 @@ hauptLauf(async () => {
     const L1 = S.hangfuss;
     check(
         "L1 Hangfuß (der Glutbrunnen am Dorf-Messort, 9,3 m/s, Gier 92,3°, seine Box): nach JEDER Kontakt-Antwort steht der Wagen auf dem Gesetz (≤ 0,2 m unter der Ebene seiner Räder, ≤ 3 Schritte), der Schub je Schritt ≤ 0,2 m über die eigene Fahrt, er fährt weiter",
-        !hat("kern") && !hat("hangfuss"),
+        frei("hangfuss"),
         L1
             ? `unter dem Gesetz höchstens ${L1.unterMax.toFixed(3)} m (${L1.unterN} Schritte > 0,05 m) · größter Schub ${L1.schubMax.toFixed(3)} m · ${L1.kontakte} Kontakt-Schritte · ${L1.weg.toFixed(1)} m gefahren`
             : "keine Probe"
@@ -2473,7 +2374,7 @@ hauptLauf(async () => {
     const L2 = S.spalt;
     check(
         "L2 Spaltkante (die nächste Kante am Schicht-Ort des Gesetzes, 11,4 m/s über sie): der Wagen fährt über die Kante und FÄLLT (keine unsichtbare Wand)",
-        !hat("kern") && !hat("spalt"),
+        frei("spalt"),
         L2
             ? `Kante ${L2.randX}/${L2.randZ} in (${L2.achse.join(", ")}) · Rand ${L2.rand.toFixed(1)} m, Grund ${L2.grund.toFixed(1)} m · ${L2.vor.toFixed(2)} m über die Kante · tiefste Höhe ${L2.yMin.toFixed(2)} m · größter Schub ${L2.schubMax.toFixed(3)} m · ${L2.weg.toFixed(1)} m gefahren`
             : "keine Probe"
@@ -2491,23 +2392,23 @@ hauptLauf(async () => {
             : "keine Probe";
     check(
         "L3 Stoß am Fels (der Baum der Schau: 10,41 → 0,16 m/s): der Wagen prallt zurück (≤ −0,3 m/s), Kamera und Klang hören den Stoß",
-        !hat("kern") && !hat("stoss-fels"),
+        frei("stoss-fels"),
         sz(S.stossFels)
     );
     check(
         "L4 Stoß an den geparkten GT (Schau: 11,28 → 0,00): er bekommt seinen Impuls und rutscht (≥ 0,3 m), der stoßende behält Fahrt (≥ 20 %)",
-        !hat("kern") && !hat("stoss-wagen"),
+        frei("stoss-wagen"),
         sz(S.stossWagen)
     );
     check(
         "L5 Stoß an den Bären (Schau: 9,27 → 0,17): der Bär bekommt seinen Impuls (≥ 0,5 m), der schwerere Wagen behält Fahrt (≥ 50 %)",
-        !hat("kern") && !hat("stoss-baer"),
+        frei("stoss-baer"),
         sz(S.stossBaer)
     );
     const swz = S.spielerWagen || {};
     check(
         "L6 Spieler und Wagen (0710-4): der laufende Spieler prallt am gebremsten GT ab (der Wagen hält), ein rutschender GT stößt den stehenden Spieler — Impuls nach Masse, keine Durchdringung",
-        !hat("kern") && !hat("spieler-wagen") && !hat("wagen-spieler"),
+        frei("spieler-wagen", "wagen-spieler"),
         (swz.a && swz.b
             ? `Spieler → GT: Fahrt in den Wagen ${swz.a.vorKontakt.toFixed(2)} → ${swz.a.nachKontakt.toFixed(2)} m/s, Wagen ${swz.a.wagenWeg.toFixed(3)} m gerutscht, tiefste Berührung ${swz.a.minAbstand.toFixed(3)} m, Schub des Wagens in ${swz.a.schub} Schritten, ${swz.a.paare} Stöße (Rest der Fahrt in den Wagen danach höchstens ${Number.isFinite(swz.a.prallNach) ? (swz.a.prallNach * 100).toFixed(0) : "–"} %), Fuß bis ${Number.isFinite(swz.a.aufstieg) ? swz.a.aufstieg.toFixed(2) : "–"} m über dem Boden · GT → Spieler: Spieler ${swz.b.spielerDv.toFixed(2)} m/s, tiefste Berührung ${swz.b.minAbstand.toFixed(3)} m`
             : "keine Probe") +
@@ -2517,7 +2418,7 @@ hauptLauf(async () => {
     );
     check(
         "L8 Lockstep (0710-5): der Wagen steht nach 200 Sim-Schritten gegen einen Bären bei 60 fps und gemischten Frames an derselben Stelle, ein gestoßener Schwimmer nach 20 (auch in der Höhe)",
-        !hat("kern") && !hat("lockstep"),
+        frei("lockstep"),
         (S.lockSchwimmer ? `Schwimmer ${S.lockSchwimmer.abw} m / Höhe ${S.lockSchwimmer.abwY} m · ` : "") +
             (S.lockstep
                 ? `Start ${S.lockstep.startAbw} nach ${S.lockstep.ruheBilder} Bildern${S.lockstep.ruhe ? "" : ` (unruhig: ${(S.lockstep.unruhe || []).join(" / ")})`} · Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}${S.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${S.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
@@ -2541,7 +2442,7 @@ hauptLauf(async () => {
               }`;
     check(
         "L9 der Reiter im Wagen (0710-4 Klasse 4): je Wagen-Art die Oberkante ≤ Dachlinie, die Oberschenkel auf dem Polster, das Hüftgelenk über dem Sitz-Anker, der Leib schaut längs der Fahrt (die Maus quer); abgestiegen steht er wie vorher",
-        !hat("kern") && !hat("reiter"),
+        frei("reiter"),
         (S.reiter || []).map(reiterZeile).join(" · ") +
             (S.reiterStand ? ` · abgestiegen: Wurzel ${S.reiterStand.abw} m, Gier ${S.reiterStand.gier}` : "") +
             (hat("reiter") ? ` — ${vS.filter((x) => x.startsWith("reiter")).join(" · ")}` : "")
@@ -2549,7 +2450,7 @@ hauptLauf(async () => {
     const swm = S.schwimmer || {};
     check(
         "L10 der gestoßene Schwimmer (0710-5): ein Fuchs in tiefem Wasser gleitet nach einem Stoß an seiner Schwimm-Linie, nicht auf dem Grund",
-        !hat("kern") && !hat("schwimmer"),
+        frei("schwimmer"),
         swm.fehler
             ? swm.fehler
             : `Wasser ${swm.tiefe} m tief · vor dem Stoß ${swm.vorher} m, beim Gleiten tiefstens ${swm.tiefste} m gegen die Linie (${swm.gleitet} Frames gleitend)`

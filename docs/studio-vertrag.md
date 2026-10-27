@@ -983,7 +983,10 @@ Stefan aus dem Wasserkörper `wasserKoerper` — Salz, Säule, Trägheit — und
 ρ·c und T_schmelz des Wassers, ρ, Schmelzwärme L und Wärmeleitung k des Eises, reicht der Wirt aus seiner Stoff-Tafel als `stoff`, stoffe.K1 — ohne ihn bricht der Kern laut), der
 Schnee-Pegel `SCHMELZE`/`schneePegel` (stoffe.K3-2: Grad-Tag auf der Jahres-Welle des Felds) mit seiner Linie `schneeLinie` und
 dem Versatz der Schneegrenze `schneeVersatz` (den `schnee` liest), die Lava `LAVA`/`lava` (stoffe.K3-2: Newton-Abkühlung der
-Zeile `stein` des Wirts, an der Luft und unter Dampf am Wasser, die Glut über dem Draper-Punkt), die
+Zeile `stein` des Wirts, an der Luft und unter Dampf am Wasser, die Glut über dem Draper-Punkt) — ihr Gang und ihre Glut als EIN
+Gesetz jedes heißen Körpers `waermeGang`/`glutAus` (die Lava, der Stahl der Esse) —, der Pegel `PEGEL`/`abfluss`/`pegelTafel`/
+`pegelHub` (stoffe.K3-2: der Abfluss der Schmelze hebt den Spiegel jedes Sees und Flusses nach Manning bis zur Krone des Betts;
+die Lage trägt die Tafel des Tags, `L.pegel`, der Spiegel des Kerns liest sie, nie das Bett), die
 Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DIE HYDROSPHÄRE (Karte hydro-faden): das
 Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, der gepackte Kanal `kanal` mit
 `KANAL_FELDER` Zahlen je Segment, Wasser-Feld; `H` das Gesetz des Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet
@@ -1013,14 +1016,18 @@ Höhen-Raster der Trasse `hoehenRaster` (siedlung.K3: der Grund im Rahmen fachwe
 des Wirts; ihn liest der EINE Wind der Welt (`_windAt`).
 DIE FORM DES EDITS (F2a „hoch bauen", editform-kern): jeder Spieler-Edit ist die Säule `editForm` seines Maßes `EDIT_FORM` —
 der Punkt `mitEdits`, das Gitter `editsImGitter`, die Reichweite `editReich` (Edit-Karte, Weckung, Fern-Ring), die Krone
-`editKrone` (die Garantie-Luft der Flächen-Probe) und das Band des
+`editKrone` (die Garantie-Luft der Flächen-Probe), die Höhe mit Edits `editHoehe` (die Nässe der Ferne: der Fern-Ring trägt
+jeden Edit) und das Band des
 Gitters `bandOben`/`bandUnten`, das die Edits deckt (`bandUmEdits`); Stamm und voxel-worker rufen dieselben Funktionen.
 DIE 3D-DICHTE UND DER WASSER-SPIEGEL (gelaende-k1k4): die Region einer Stelle `hydroRegion`, der Kanal `flussKanal`, das
 See-Becken `seeBecken` und ihre Form im Gelände `gewaesserForm`; die Dichte `dichte` aus dem Spalten-Kontext `dichteSpalte` und
 der Basis `dichteBasis`, ihr Gitter `dichteGitter` und `gitterMitEdits`; die Edit-Karte je Chunk `editKarte` mit `editsNah`,
-`editsAm`, `editsImKasten`; der Spiegel des Körpers `wasserSpiegel`, des Atlas `atlasSpiegel`, des Flusses `flussAm`, quer über
-die Krone `spiegelQuer`, am Rand `flussRand` und im Schnitt `schnittSpiegel` — Stamm-Leser und Worker-Feld rufen sie, die
-Kern-Probe (`gate:worker-dichte --kern`) mutiert sie.
+`editsAm`, `editsImKasten` und ihr Stand `editKarteSteht` (die Probe fragt die stehende Karte für zwei Vergleiche); der Spiegel des Körpers `wasserSpiegel`, des Atlas `atlasSpiegel`, des Flusses `flussAm`, quer über
+die Krone `spiegelQuer`, am Rand `flussRand` und im Schnitt `schnittSpiegel`, der Stau der Werke im Spiegel des Atlas (die Felder
+`L.stau`, gelaende.K2) — Stamm-Leser und Worker-Feld rufen sie, die
+Kern-Probe (`gate:worker-dichte --kern`) mutiert sie. Die Felder selbst: der Überlauf `stauUeberlauf`, der Spiegel am Werk
+`stauWerkY` (die Wahl der Werke im Stamm) und die Felder der Werke `stauFelder` — jeder Faden rechnet sie, nie der Haupt-Faden
+(`gate:worker-dichte --faden` zählt sie).
 DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
 Geladen vom Stamm (vor `stamm/`), vom Terrain-Labor (vor `foundry-core.js`), vom voxel-worker (`importScripts` mit `?v=`),
 vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, das Bild und der Körper `eisDicke`, der Feld-Zeichner und der Fern-Ring `hoehe`, die

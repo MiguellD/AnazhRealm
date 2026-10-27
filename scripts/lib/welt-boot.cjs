@@ -24,7 +24,10 @@ const { ohneKommentare, ast, wandere, zeileVon } = require("./stamm.cjs");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // DIE UHR DES LAUFS (`const log = laufUhr()`): jede Zeile trägt die Sekunden seit dem Ruf — je Linse ein eigenes `T0` samt
 // eigenem log war ein Zwilling
-const laufUhr = (T0 = Date.now()) => (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
+const laufUhr =
+    (T0 = Date.now()) =>
+    (z) =>
+        console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
 
 // DAS EINE __codeOf: jede Seite trägt vor ihrem ersten Skript `window.__codeOf` (Code ohne Kommentare, der EINE Stripper
 // aus stamm.cjs), `window.__dokuOf` (ungestrippt, für Marker im Kommentar) und `window.__fehlt(fn, re)` (true = das Muster
@@ -129,7 +132,8 @@ async function weltDa(bed) {
     // eine halbe Welt (der Spieler fällt, ehe die Tiere geboren sind)
     while (!(window.anazhRealm && window.anazhRealm.erwacht)) await sleep(50);
     await window.anazhRealm.erwacht;
-    for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r)));) await sleep(50);
+    for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r)));)
+        await sleep(50);
     window.__weltDaWartet = null;
     return window.anazhRealm;
 }
@@ -435,8 +439,22 @@ function zeichnetHaken() {
             }
             return f.apply(this, a);
         };
-    for (const K of [window.GPUAdapter, window.GPUQueue, window.GPUDevice, window.WebGL2RenderingContext, window.WebGLRenderingContext])
-        for (const m of ["requestDevice", "submit", "createRenderPipeline", "createComputePipeline", "getSupportedExtensions", "drawArrays", "linkProgram"])
+    for (const K of [
+        window.GPUAdapter,
+        window.GPUQueue,
+        window.GPUDevice,
+        window.WebGL2RenderingContext,
+        window.WebGLRenderingContext,
+    ])
+        for (const m of [
+            "requestDevice",
+            "submit",
+            "createRenderPipeline",
+            "createComputePipeline",
+            "getSupportedExtensions",
+            "drawArrays",
+            "linkProgram",
+        ])
             if (K && K.prototype[m]) K.prototype[m] = merke(K.prototype[m]);
 }
 // DIE WEICHE: ein Echt-Rezept, dessen Welt-Seiten nie zeichnen, belegt eine GPU-Gruppe (und die Karte) umsonst — ROT beim Namen
@@ -449,7 +467,11 @@ async function weicheUrteil(browser, art) {
 // Je Seite: Ringe, Puls-Binding, Debugger (nur ohne Zeit-Urteil: ein Debugger färbt keine ms), umhüllte Aufrufe.
 function akteAnSeite(page, b) {
     if (!page.__akteBereit)
-        page.__akteBereit = Promise.all([page.evaluateOnNewDocument(CODE_OF_SEITE), page.evaluateOnNewDocument(zeichnetHaken), akteAnlegen(page, b)]);
+        page.__akteBereit = Promise.all([
+            page.evaluateOnNewDocument(CODE_OF_SEITE),
+            page.evaluateOnNewDocument(zeichnetHaken),
+            akteAnlegen(page, b),
+        ]);
     return page.__akteBereit;
 }
 async function akteAnlegen(page, b) {
@@ -787,6 +809,14 @@ async function nullRenderer(page) {
         window.__anazhHeadlessNullRenderer = true;
     });
 }
+// DIE NULL-SEITE: der Browser im Rezept null und seine erste Seite mit dem Null-Renderer — der Start jeder Linse ohne Bild
+// (`opts` wie `starteBrowser`), EINMAL hier statt in jeder Linse.
+async function nullSeite(opts) {
+    const browser = await starteBrowser(Object.assign({ art: "null" }, opts));
+    const page = await browser.newPage();
+    await nullRenderer(page);
+    return { browser, page };
+}
 async function warteAufWelt(page, frist = 120000) {
     await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
         timeout: frist,
@@ -896,8 +926,10 @@ async function buehne(page) {
 // DER PRÜFER EINER LINSE (die Zeile je Urteil): `check(name, ok, detail)` schreibt ✅/❌ und sammelt jedes Rot in `errs`.
 function pruefer() {
     const errs = [];
+    // ein Detail, das kein Text ist, schreibt die Prüfung selbst als JSON (kein JSON.stringify je Aufrufer)
     const check = (name, ok, detail) => {
-        console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
+        const z = typeof detail === "object" && detail ? JSON.stringify(detail) : detail;
+        console.log(`  ${ok ? "✅" : "❌"} ${name}${z ? " — " + z : ""}`);
         if (!ok) errs.push(name);
     };
     return { errs, check };
@@ -912,9 +944,12 @@ function taeterFaelle(faelle, urteil, { fehler = [], klon } = {}) {
         const z = tat ? klon() : f.z;
         if (tat) tat(z);
         const v = urteil(z);
-        const fehlt = muss == null ? v.slice(0, v.length && 1) : [].concat(muss).filter((re) => !v.some((s) => re.test(s)));
+        const fehlt =
+            muss == null ? v.slice(0, v.length && 1) : [].concat(muss).filter((re) => !v.some((s) => re.test(s)));
         for (const re of fehlt) fehler.push(`${name}: die Wand nennt den Täter nicht (${re})`);
-        console.log(`  ${fehlt.length ? "❌" : "✅"} Selbsttest „${name}" → ${muss == null ? "grün" : "rot"}: ${v.join(" · ") || "(nichts)"}`);
+        console.log(
+            `  ${fehlt.length ? "❌" : "✅"} Selbsttest „${name}" → ${muss == null ? "grün" : "rot"}: ${v.join(" · ") || "(nichts)"}`
+        );
     }
     return fehler;
 }
@@ -1012,7 +1047,10 @@ function werkbankTor(port, zusatz = []) {
     const wb = path.join(ROOT, "scripts", "werkbank.cjs");
     const env = Object.assign({}, process.env, { WERKBANK_PORT: String(port) });
     const kind = cp.spawn(process.execPath, [wb, "start", "--port", String(port), ...zusatz], { env });
-    const tor = { log: "", rufe: (args, ms) => cp.spawnSync(process.execPath, [wb, ...args], { env, encoding: "utf8", timeout: ms }) };
+    const tor = {
+        log: "",
+        rufe: (args, ms) => cp.spawnSync(process.execPath, [wb, ...args], { env, encoding: "utf8", timeout: ms }),
+    };
     tor.bereit = new Promise((ok, nein) => {
         for (const s of [kind.stdout, kind.stderr]) s.on("data", (d) => /WERKBANK bereit/.test((tor.log += d)) && ok());
         kind.on("exit", (c) => nein(new Error(`die Werkbank endete vor dem Start (Exit ${c})`)));
@@ -1084,10 +1122,15 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
                 if (s) fristen.add(s);
             } else if (n.type === "CallExpression" && n.callee.property && n.callee.property.name === "catch") {
                 const w = n.callee.object;
-                const o = w.callee && w.callee.property && w.callee.property.name === "waitForFunction" && w.arguments[1];
+                const o =
+                    w.callee && w.callee.property && w.callee.property.name === "waitForFunction" && w.arguments[1];
                 const f = n.arguments[0];
                 const wirft = f && hat(f, (c) => c.type === "ThrowStatement");
-                if (o && !wirft && (o.properties || []).some((p) => p.key && p.key.name === "timeout" && p.value.value !== 0))
+                if (
+                    o &&
+                    !wirft &&
+                    (o.properties || []).some((p) => p.key && p.key.name === "timeout" && p.value.value !== 0)
+                )
                     fristen.add(n);
                 else if (
                     hat(w, (c) => c.property && c.property.name === "__gebautNach") &&
@@ -1130,6 +1173,7 @@ module.exports = {
     starteBrowser,
     warteAufWelt,
     nullRenderer,
+    nullSeite,
     halteBis,
     buehne,
     uferStellen,
@@ -1244,8 +1288,12 @@ async function selbsttest() {
     // DIE ADRESS-WAND: lauscht eine Linse an einem statikServer selbst oder baut ihre 127.0.0.1-Adresse selbst, ist das ein Zwilling von
     // lausche/zeige; FREMD tragen ihn bis zum Schnitt ihres Besitzers (ein geheilter Eintrag macht die Liste ROT, bis er fällt)
     const adressZwilling = (c) =>
-        /statikServer\(/.test(c) && /new Promise\(\(?\w+\)? => \w+\.listen\(|\.goto\(`http:\/\/127\.0\.0\.1:\$\{/.test(c);
-    const adressen = code.filter(([, c]) => adressZwilling(c)).map(([f]) => f).join(", ");
+        /statikServer\(/.test(c) &&
+        /new Promise\(\(?\w+\)? => \w+\.listen\(|\.goto\(`http:\/\/127\.0\.0\.1:\$\{/.test(c);
+    const adressen = code
+        .filter(([, c]) => adressZwilling(c))
+        .map(([f]) => f)
+        .join(", ");
     const FREMD = "diag-koerper-stand.cjs, diag-persistence.cjs, diag-weltgrenze.cjs, werkbank.cjs";
     const gepflanzt = [
         "statikServer(); await new Promise((r) => s.listen(1, r));",
@@ -1253,9 +1301,13 @@ async function selbsttest() {
     ].filter(adressZwilling).length;
     // DIE FÄNGER-WAND: fängt ein Skript seinen Absturz selbst (`})().catch(…)`/`main().catch(…)` bis process.exit), ist das ein
     // Zwilling von hauptLauf; ci-kopf.cjs fährt allein im sparse-checkout, FREMD tragen ihn bis zum Schnitt ihres Besitzers
-    const faengerZwilling = (c) => /(?:\}\)\(\)|\b\w+\(\))\.catch\(\(?\w*\)? => \{(?:(?!\}\);)[^]){0,300}process\.exit/.test(c);
-    const faenger = code.filter(([, c]) => faengerZwilling(c)).map(([f]) => f).join(", ");
-    const FAENGER_FREMD = "ci-kopf.cjs, diag-koerper-stand.cjs, diag-weltakt-wache.cjs, diag-weltgrenze.cjs, werkbank.cjs";
+    const faengerZwilling = (c) =>
+        /(?:\}\)\(\)|\b\w+\(\))\.catch\(\(?\w*\)? => \{(?:(?!\}\);)[^]){0,300}process\.exit/.test(c);
+    const faenger = code
+        .filter(([, c]) => faengerZwilling(c))
+        .map(([f]) => f)
+        .join(", ");
+    const FAENGER_FREMD = "ci-kopf.cjs";
     const gefangen = [
         "(async () => {})().catch((e) => { console.error(e); process.exit(1); });",
         "main().catch((err) => { console.error(`x ${err}`); process.exitCode = 2; });",
@@ -1269,9 +1321,11 @@ async function selbsttest() {
                 .map((k) => (/^(string|template|regexp)$/.test(k.type.label) ? "S" : c.slice(k.start, k.end)))
                 .join(" ")
         );
-    const schlaefer = code.filter(([, c]) => schlafZwilling(c)).map(([f]) => f).join(", ");
-    const SCHLAF_FREMD =
-        "ci-kopf.cjs, diag-koerper-stand.cjs, diag-persistence.cjs, diag-settlement.cjs, lib/kreatur-proben.cjs, werkbank.cjs";
+    const schlaefer = code
+        .filter(([, c]) => schlafZwilling(c))
+        .map(([f]) => f)
+        .join(", ");
+    const SCHLAF_FREMD = "ci-kopf.cjs";
     const geschlafen = [
         "await new Promise((r) => setTimeout(r, 50));",
         "const s = (ms) => new Promise((ok) => { setTimeout(ok, Math.max(ms, 1) * Math.random()); });",
@@ -1293,10 +1347,15 @@ async function selbsttest() {
     const startMs = Date.now() - t1;
     besetzt.close();
     const urteile = [
-        [/^pageerror: Error: __seitenWurf/.test(wurf[0]), `Seiten-Wurf: ${wurf[0] || "KEIN Fehler gesammelt — still grün"}`],
+        [
+            /^pageerror: Error: __seitenWurf/.test(wurf[0]),
+            `Seiten-Wurf: ${wurf[0] || "KEIN Fehler gesammelt — still grün"}`,
+        ],
         [!zwillinge.length, `eigene pageerror-Sammler neben dem EINEN: ${zwillinge.join(", ") || "keiner"}`],
         [
-            adressen === FREMD && gepflanzt === 2 && !adressZwilling("statikServer(); await s.lausche(1); s.zeige(p, 1);"),
+            adressen === FREMD &&
+                gepflanzt === 2 &&
+                !adressZwilling("statikServer(); await s.lausche(1); s.zeige(p, 1);"),
             `eigene Server-Starts/Welt-Adressen neben lausche/zeige: ${adressen} (FREMD ${FREMD}) · gepflanzt ${gepflanzt}/2 gefasst`,
         ],
         [
@@ -1311,11 +1370,13 @@ async function selbsttest() {
         [
             schlaefer === SCHLAF_FREMD &&
                 geschlafen === 2 &&
-                !schlafZwilling('"new Promise((r) => setTimeout(r, 5))"; new Promise((r) => setTimeout(() => r(1), 5)); new Promise((r) => setTimeout(r, 5, 1));') &&
+                !schlafZwilling(
+                    '"new Promise((r) => setTimeout(r, 5))"; new Promise((r) => setTimeout(() => r(1), 5)); new Promise((r) => setTimeout(r, 5, 1));'
+                ) &&
                 seitenSchlaf === String(sleep),
             `eigene Schlafe neben sleep: ${schlaefer} (FREMD ${SCHLAF_FREMD}) · gepflanzt ${geschlafen}/2 gefasst · die Seite schläft mit ${seitenSchlaf}`,
         ],
-        [ruhig.length === 0,`ruhig (0,8 s Block): keine Akte — ${ruhig.length ? ruhig[0].urteil : "keine"}`],
+        [ruhig.length === 0, `ruhig (0,8 s Block): keine Akte — ${ruhig.length ? ruhig[0].urteil : "keine"}`],
         [
             schleife.length > 0 &&
                 /^JS-SCHLEIFE/.test(schleife[0].urteil) &&

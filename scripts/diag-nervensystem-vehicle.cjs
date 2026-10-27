@@ -21,14 +21,14 @@
 //     geklemmt (kindStages-Merge) UND fuer einen unbekannten kind ohne jeden Eintrag ebenso
 //     (N7.5 [0]) — gemessen an den requested-Keys.
 //   node scripts/diag-nervensystem-vehicle.cjs [--selftest]
-const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_PORT || 4407);
 const server = statikServer();
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 // ===== TEIL A: die statischen Absenzen über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes Glied wirft beim
 // Namen; die Präsenzen beweist der lebende Draht B-F). (A10, M8 — kein kind-String-Vergleich im Auto-Register-Chokepoint —
 // hält gate:pipeline-constitution N1 wörtlich.) `q` die Wandlung des Vor-Stands, leer = der Arbeitsbaum. =====
@@ -80,9 +80,7 @@ hauptLauf(async () => {
 
     console.log("\n=== TEIL B-F: der lebende Draht (Browser, foundry-ON) ===");
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 180000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {
