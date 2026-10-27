@@ -299,7 +299,7 @@
         {
             "id": "birke",
             "gruppe": "Baum",
-            "titel": "Birke — der ganze Baum (Rinde und Laub) in seiner Stufe 0, das Soll seiner Stufen (S8, material.K3)",
+            "titel": "Birke, der ganze Baum in Stufe 0 (das Soll seiner Stufen, S8)",
             "labor": {
                 "studio": "terrain",
                 "aktion": {
@@ -326,17 +326,10 @@
             "quellen": [
                 "phyto-core.js",
                 "foundry-core.js",
-                "stamm/dirigent-kern.js",
-                "stamm/dienst.js",
-                "stamm/gelaende-boden.js",
                 "stamm/stoff-material.js",
                 "stamm/stoff-instanz.js",
                 "stamm/studio-bruecke.js",
-                "stamm/studio-gestalt.js",
-                "stamm/siedlung-bauten.js",
                 "stamm/vegetation-baum.js",
-                "stamm/bild-himmel.js",
-                "stamm/werkstatt-bauen.js",
                 "stamm/vegetation-streu.js"
             ],
             "ist": null,
@@ -345,10 +338,7 @@
         {
             "id": "birke-l1",
             "gruppe": "Baum",
-            "titel": "Derselbe Baum in seiner Stufe 1: die Welt-Albedo gegen die der Stufe 0 (Zeile birke); das Labor zeigt nur die L0",
-            "labor": {
-                "studio": "terrain"
-            },
+            "titel": "Die Birke in Stufe 1",
             "welt": {
                 "exemplar": {
                     "typ": "architektur",
@@ -367,32 +357,12 @@
                 ],
                 "stufeVon": "birke"
             },
-            "quellen": [
-                "phyto-core.js",
-                "foundry-core.js",
-                "stamm/dirigent-kern.js",
-                "stamm/dienst.js",
-                "stamm/gelaende-boden.js",
-                "stamm/stoff-material.js",
-                "stamm/stoff-instanz.js",
-                "stamm/studio-bruecke.js",
-                "stamm/studio-gestalt.js",
-                "stamm/siedlung-bauten.js",
-                "stamm/vegetation-baum.js",
-                "stamm/bild-himmel.js",
-                "stamm/werkstatt-bauen.js",
-                "stamm/vegetation-streu.js"
-            ],
-            "ist": null,
-            "ratsche": null
+            "ist": null
         },
         {
             "id": "birke-karte",
             "gruppe": "Baum",
-            "titel": "Derselbe Baum als Karte (Stufe 2, der EINE Atlas fimp:atlas, gebacken aus der L1): gegen die Stufe 0 (Zeile birke)",
-            "labor": {
-                "studio": "terrain"
-            },
+            "titel": "Die Birke als Karte (der EINE Atlas, aus der L1 gebacken)",
             "welt": {
                 "exemplar": {
                     "typ": "architektur",
@@ -411,29 +381,12 @@
                 ],
                 "stufeVon": "birke"
             },
-            "quellen": [
-                "phyto-core.js",
-                "foundry-core.js",
-                "stamm/dirigent-kern.js",
-                "stamm/dienst.js",
-                "stamm/gelaende-boden.js",
-                "stamm/stoff-material.js",
-                "stamm/stoff-instanz.js",
-                "stamm/studio-bruecke.js",
-                "stamm/studio-gestalt.js",
-                "stamm/siedlung-bauten.js",
-                "stamm/vegetation-baum.js",
-                "stamm/bild-himmel.js",
-                "stamm/werkstatt-bauen.js",
-                "stamm/vegetation-streu.js"
-            ],
-            "ist": null,
-            "ratsche": null
+            "ist": null
         },
         {
             "id": "fichte",
             "gruppe": "Baum",
-            "titel": "Fichte — der ganze Baum (Rinde und Laub) in seiner Stufe 0, das Soll seiner Stufen (S8, material.K3)",
+            "titel": "Fichte, der ganze Baum in Stufe 0 (das Soll seiner Stufen, S8)",
             "labor": {
                 "studio": "terrain",
                 "aktion": {
@@ -460,17 +413,10 @@
             "quellen": [
                 "phyto-core.js",
                 "foundry-core.js",
-                "stamm/dirigent-kern.js",
-                "stamm/dienst.js",
-                "stamm/gelaende-boden.js",
                 "stamm/stoff-material.js",
                 "stamm/stoff-instanz.js",
                 "stamm/studio-bruecke.js",
-                "stamm/studio-gestalt.js",
-                "stamm/siedlung-bauten.js",
                 "stamm/vegetation-baum.js",
-                "stamm/bild-himmel.js",
-                "stamm/werkstatt-bauen.js",
                 "stamm/vegetation-streu.js"
             ],
             "ist": null,
@@ -479,10 +425,7 @@
         {
             "id": "fichte-l1",
             "gruppe": "Baum",
-            "titel": "Derselbe Baum in seiner Stufe 1: die Welt-Albedo gegen die der Stufe 0 (Zeile fichte); das Labor zeigt nur die L0",
-            "labor": {
-                "studio": "terrain"
-            },
+            "titel": "Die Fichte in Stufe 1",
             "welt": {
                 "exemplar": {
                     "typ": "architektur",
@@ -501,32 +444,12 @@
                 ],
                 "stufeVon": "fichte"
             },
-            "quellen": [
-                "phyto-core.js",
-                "foundry-core.js",
-                "stamm/dirigent-kern.js",
-                "stamm/dienst.js",
-                "stamm/gelaende-boden.js",
-                "stamm/stoff-material.js",
-                "stamm/stoff-instanz.js",
-                "stamm/studio-bruecke.js",
-                "stamm/studio-gestalt.js",
-                "stamm/siedlung-bauten.js",
-                "stamm/vegetation-baum.js",
-                "stamm/bild-himmel.js",
-                "stamm/werkstatt-bauen.js",
-                "stamm/vegetation-streu.js"
-            ],
-            "ist": null,
-            "ratsche": null
+            "ist": null
         },
         {
             "id": "fichte-karte",
             "gruppe": "Baum",
-            "titel": "Derselbe Baum als Karte (Stufe 2, der EINE Atlas fimp:atlas, gebacken aus der L1): gegen die Stufe 0 (Zeile fichte)",
-            "labor": {
-                "studio": "terrain"
-            },
+            "titel": "Die Fichte als Karte (der EINE Atlas, aus der L1 gebacken)",
             "welt": {
                 "exemplar": {
                     "typ": "architektur",
@@ -545,24 +468,7 @@
                 ],
                 "stufeVon": "fichte"
             },
-            "quellen": [
-                "phyto-core.js",
-                "foundry-core.js",
-                "stamm/dirigent-kern.js",
-                "stamm/dienst.js",
-                "stamm/gelaende-boden.js",
-                "stamm/stoff-material.js",
-                "stamm/stoff-instanz.js",
-                "stamm/studio-bruecke.js",
-                "stamm/studio-gestalt.js",
-                "stamm/siedlung-bauten.js",
-                "stamm/vegetation-baum.js",
-                "stamm/bild-himmel.js",
-                "stamm/werkstatt-bauen.js",
-                "stamm/vegetation-streu.js"
-            ],
-            "ist": null,
-            "ratsche": null
+            "ist": null
         },
         {
             "id": "fels",
@@ -790,10 +696,7 @@
         {
             "id": "haus-l1",
             "gruppe": "Haus",
-            "titel": "Dasselbe Haus in seiner Stufe 1 (S8): die Welt-Albedo gegen die der Stufe 0 (Zeile haus); das Labor zeigt nur die L0 (ohne Aktion: der Stand der Zeile haus davor)",
-            "labor": {
-                "studio": "fachwerk"
-            },
+            "titel": "Das Haus in Stufe 1",
             "welt": {
                 "exemplar": {
                     "typ": "architektur",
@@ -810,24 +713,7 @@
                 ],
                 "stufeVon": "haus"
             },
-            "quellen": [
-                "fachwerk-core.js",
-                "foundry-core.js",
-                "stamm/dirigent-kern.js",
-                "stamm/dienst.js",
-                "stamm/stoff-material.js",
-                "stamm/studio-bruecke.js",
-                "stamm/siedlung-bauten.js",
-                "stamm/siedlung-satz.js",
-                "stamm/feld-leben.js",
-                "stamm/werkstatt-bauen.js"
-            ],
             "ist": {
-                "labor": {
-                    "Y": 0.1476,
-                    "rgb": "0.2801/0.1156/0.075",
-                    "pixel": 407007
-                },
                 "welt": {
                     "Y": 0.1579,
                     "rgb": "0.2745/0.1304/0.0873",
@@ -835,18 +721,13 @@
                     "stufen": [
                         1
                     ]
-                },
-                "verhaeltnis": 0.9348
-            },
-            "ratsche": 0.0586
+                }
+            }
         },
         {
             "id": "haus-l2",
             "gruppe": "Haus",
-            "titel": "Dasselbe Haus in seiner Stufe 2 (S8): die Welt-Albedo gegen die der Stufe 0 (Zeile haus); das Labor zeigt nur die L0 (ohne Aktion: der Stand der Zeile haus davor)",
-            "labor": {
-                "studio": "fachwerk"
-            },
+            "titel": "Das Haus in Stufe 2",
             "welt": {
                 "exemplar": {
                     "typ": "architektur",
@@ -863,24 +744,7 @@
                 ],
                 "stufeVon": "haus"
             },
-            "quellen": [
-                "fachwerk-core.js",
-                "foundry-core.js",
-                "stamm/dirigent-kern.js",
-                "stamm/dienst.js",
-                "stamm/stoff-material.js",
-                "stamm/studio-bruecke.js",
-                "stamm/siedlung-bauten.js",
-                "stamm/siedlung-satz.js",
-                "stamm/feld-leben.js",
-                "stamm/werkstatt-bauen.js"
-            ],
             "ist": {
-                "labor": {
-                    "Y": 0.1476,
-                    "rgb": "0.2801/0.1156/0.075",
-                    "pixel": 407007
-                },
                 "welt": {
                     "Y": 0.1568,
                     "rgb": "0.2798/0.1269/0.0909",
@@ -888,15 +752,13 @@
                     "stufen": [
                         2
                     ]
-                },
-                "verhaeltnis": 0.9413
-            },
-            "ratsche": 0.0516
+                }
+            }
         },
         {
             "id": "hochhaus",
             "gruppe": "Haus",
-            "titel": "Hochhaus (Glasturm, 7 Geschosse): die tragenden Bau-Stoffe (Stoff und Metall — die Fassade ist Metall-Raster) in Stufe 0, das Soll seiner Stufen (S8)",
+            "titel": "Hochhaus (Glasturm): Stoff und Metall (die Fassade ist Metall-Raster) in Stufe 0",
             "labor": {
                 "studio": "fachwerk",
                 "aktion": [
@@ -950,10 +812,7 @@
         {
             "id": "hochhaus-l1",
             "gruppe": "Haus",
-            "titel": "Derselbe Turm in seiner Stufe 1 (ein Körper: TURMNUR + Fern-Fenster) gegen die Stufe 0; das Labor zeigt nur die L0",
-            "labor": {
-                "studio": "fachwerk"
-            },
+            "titel": "Der Turm in Stufe 1 (ein Körper)",
             "welt": {
                 "exemplar": {
                     "typ": "architektur",
@@ -975,28 +834,12 @@
                 ],
                 "stufeVon": "hochhaus"
             },
-            "quellen": [
-                "fachwerk-core.js",
-                "foundry-core.js",
-                "stamm/dirigent-kern.js",
-                "stamm/dienst.js",
-                "stamm/stoff-material.js",
-                "stamm/studio-bruecke.js",
-                "stamm/siedlung-bauten.js",
-                "stamm/siedlung-satz.js",
-                "stamm/feld-leben.js",
-                "stamm/werkstatt-bauen.js"
-            ],
-            "ist": null,
-            "ratsche": null
+            "ist": null
         },
         {
             "id": "hochhaus-l2",
             "gruppe": "Haus",
-            "titel": "Derselbe Turm in seiner Stufe 2 gegen die Stufe 0; das Labor zeigt nur die L0",
-            "labor": {
-                "studio": "fachwerk"
-            },
+            "titel": "Der Turm in Stufe 2",
             "welt": {
                 "exemplar": {
                     "typ": "architektur",
@@ -1018,20 +861,7 @@
                 ],
                 "stufeVon": "hochhaus"
             },
-            "quellen": [
-                "fachwerk-core.js",
-                "foundry-core.js",
-                "stamm/dirigent-kern.js",
-                "stamm/dienst.js",
-                "stamm/stoff-material.js",
-                "stamm/studio-bruecke.js",
-                "stamm/siedlung-bauten.js",
-                "stamm/siedlung-satz.js",
-                "stamm/feld-leben.js",
-                "stamm/werkstatt-bauen.js"
-            ],
-            "ist": null,
-            "ratsche": null
+            "ist": null
         },
         {
             "id": "lack",

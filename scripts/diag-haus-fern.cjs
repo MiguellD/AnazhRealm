@@ -497,7 +497,7 @@ function stoffFlaechen(g) {
             w[i * 3 + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
             for (let j = 0; j < 3; j++) c[i * 3 + j] = (C ? C[k + j] : 1) * mc[j];
         }
-        out.push({ w, c, al, gl, zwei: m.side === T.DoubleSide });
+        out.push({ w, c, al, gl, zwei: m.side === T.DoubleSide, m });
     });
     return out;
 }
@@ -618,32 +618,19 @@ function glasUrteil(G, f) {
 }
 
 // ── S8 DER STUFEN-TON (material.K3): je gezeigter Stufe die Leuchtdichte, die ein Auge von außen an den tragenden Stoffen
-//    sieht — die EINE Rechnung des Kerns (`sichtTon`: Z-Puffer, 9 Blicke, Stoff und Metall), je Rolle aus den Gittern der
-//    gebauten Gruppe (der Stoff jeder Rolle ist `_mmFor(rolle)`). Soll: Stufe/L0 im Band `stufenToleranz` der Albedo-Tafel
-//    (spec/farbe/albedo-tafel.json, dieselbe Zahl wie die Welt-Seite). Vor dem Akt: hochhaus L1/L0 0,777, volle_moderne L2/L0 0,824.
-const STUFEN_TOL = require(path.join(root, "spec/farbe/albedo-tafel.json")).stufenToleranz;
+//    sieht — die EINE Rechnung des Kerns (`sichtTon`: Z-Puffer, 9 Blicke, Stoff und Metall) über den Flächen jeder Rolle
+//    (`stoffFlaechen`; der Stoff der Rolle ist `_mmFor(rolle)`, weiß). Soll: Stufe/L0 im Band `stufenToleranz` der Albedo-Tafel
+//    (dieselbe Zahl wie die Welt-Seite). Vor dem Akt: hochhaus L1/L0 0,777, volle_moderne L2/L0 0,824.
+const STUFEN_TOL = require("../spec/farbe/albedo-tafel.json").stufenToleranz;
 const ROLLE = new Map(Object.keys(FC.materials()).map((r) => [FC._mmFor(r), r]));
 function stufenTon(g) {
-    const geoms = {};
-    g.updateMatrixWorld(true);
-    g.traverse((o) => {
-        const r = o.isMesh && ROLLE.get(o.material);
-        if (!r) return;
-        const G = (geoms[r] = geoms[r] || { pos: [], nrm: [], col: [], idx: [] }),
-            A = o.geometry.attributes,
-            v0 = G.pos.length / 3,
-            v = new T.Vector3();
-        for (let i = 0; i < A.position.count; i++) {
-            v.fromBufferAttribute(A.position, i).applyMatrix4(o.matrixWorld);
-            G.pos.push(v.x, v.y, v.z);
-            G.nrm.push(A.normal.getX(i), A.normal.getY(i), A.normal.getZ(i));
-            G.col.push(A.color.getX(i), A.color.getY(i), A.color.getZ(i));
-        }
-        const I = o.geometry.index ? o.geometry.index.array : Array.from({ length: A.position.count }, (_x, i) => i);
-        for (const i of I) G.idx.push(v0 + i);
-    });
-    const a = FC.sichtTon(geoms).alle;
-    return a[3] ? luma(a) / a[3] : null;
+    const G = {};
+    for (const f of stoffFlaechen(g).filter((f) => ROLLE.has(f.m))) {
+        const z = (G[ROLLE.get(f.m)] = G[ROLLE.get(f.m)] || { pos: [], col: [], idx: [] });
+        f.w.forEach((x, i) => z.pos.push(x) && z.col.push(f.c[i]) && i % 3 === 2 && z.idx.push(z.idx.length));
+    }
+    const a = FC.sichtTon(G).alle;
+    return luma(a) / a[3];
 }
 
 // ── Ein Haus-Fall → seine Zahlen ──
@@ -711,8 +698,7 @@ function hausUrteil(z) {
     if (!(z.innen.dach <= SOLL.dach + RASTER)) f.push(`Dach ${f3(z.innen.dach)} m über der Haut − 3 cm`);
     glasUrteil(z.glas, f);
     for (const s of [1, 2])
-        if (!(z.ton[0] > 0 && Math.abs(z.ton[s] / z.ton[0] - 1) <= STUFEN_TOL))
-            f.push(`Stufen-Ton L${s}/L0 ${f3(z.ton[s] / z.ton[0])} (Sicht-Ton ${f3(z.ton[s])} gegen ${f3(z.ton[0])})`);
+        if (!(Math.abs(z.ton[s] / z.ton[0] - 1) <= STUFEN_TOL)) f.push(`Stufen-Ton L${s}/L0 ${f3(z.ton[s] / z.ton[0])}`);
     for (const s of [0, 1, 2]) {
         const weg = z.tuer[s].filter((d) => !(d <= SOLL.tuer));
         if (weg.length)
@@ -820,8 +806,7 @@ function selbsttest() {
     if (!hausUrteil(hausFall("alemannisch", 1, null, null, band)).some((x) => /^Glas L2: Glut/.test(x)))
         fehler.push("G: die schwarzen Bänder der L2 sind nicht rot");
     // S8: die L2 ein Fünftel dunkler (der Ton der Stufe-1-Fassade vor S8: L2/L0 0,788)
-    const dunkler = (g) =>
-        g[2].traverse((o) => o.isMesh && ROLLE.has(o.material) && o.geometry.attributes.color.array.forEach((c, i, a) => (a[i] = c * 0.8)));
+    const dunkler = (g) => g[2].traverse((o) => o.isMesh && o.geometry.attributes.color.array.forEach((c, i, a) => (a[i] = c * 0.8)));
     if (!hausUrteil(hausFall("alemannisch", 1, null, null, dunkler)).some((x) => /^Stufen-Ton L2/.test(x)))
         fehler.push("S8: eine L2 ein Fünftel dunkler ist nicht rot");
     return fehler;
@@ -900,10 +885,7 @@ function selbsttest() {
         `  Glas je Stufe (G, Soll Glut ${f3(SOLL.glut[0])}–${f3(SOLL.glut[1])}, Tag ${f3(SOLL.glasTag[0])}–${SOLL.glasTag[1]}, Farbe ≤ ${SOLL.glasFarbe}): ${glasZeile}`
     );
     const ton = (s) => zeilen.map((z) => z.ton[s] / z.ton[0]);
-    console.log(
-        `  Stufen-Ton (S8, Soll Stufe/L0 1 ± ${STUFEN_TOL}): ` +
-            [1, 2].map((s) => `L${s}/L0 [${f3(Math.min(...ton(s)))}, ${f3(Math.max(...ton(s)))}] im Band ${ton(s).filter((v) => Math.abs(v - 1) <= STUFEN_TOL).length}/${zeilen.length}`).join(" · ")
-    );
+    console.log(`  Stufen-Ton (S8, Stufe/L0 1 ± ${STUFEN_TOL}): L1 ${f3(Math.min(...ton(1)))}–${f3(Math.max(...ton(1)))} · L2 ${f3(Math.min(...ton(2)))}–${f3(Math.max(...ton(2)))}`);
     console.log(
         `  Ausstattung ${aus.length}: ` +
             aus

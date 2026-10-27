@@ -81,8 +81,11 @@ const STUDIOS = {
     },
 };
 
+// DIE STUFEN-ZEILE (`welt.stufeVon`) misst nur die Welt (das Labor zeigt die L0) und trägt die Quellen ihrer Zeile
 function ladeTafel(p) {
-    return JSON.parse(fs.readFileSync(p || TAFEL_PFAD, "utf8"));
+    const t = JSON.parse(fs.readFileSync(p || TAFEL_PFAD, "utf8"));
+    for (const z of t.zeilen) if (z.welt.stufeVon) z.quellen = t.zeilen.find((b) => b.id === z.welt.stufeVon).quellen;
+    return t;
 }
 
 const zahl = (x) => typeof x === "number" && Number.isFinite(x);
@@ -107,7 +110,7 @@ function tafelPruefen(t) {
         ids.add(z.id);
         if (!PFLICHT_GRUPPEN.includes(z.gruppe)) f.push(`${z.id}: gruppe ${z.gruppe} ist keine der acht Klassen`);
         const L = z.labor || {};
-        if (!STUDIOS[L.studio]) f.push(`${z.id}: labor.studio ${L.studio} unbekannt`);
+        if (!STUDIOS[L.studio] !== !!z.welt.stufeVon) f.push(`${z.id}: labor.studio ${L.studio} (eine Stufen-Zeile trägt keins)`);
         const W = z.welt || {};
         try {
             new RegExp(W.klasse);
@@ -131,10 +134,10 @@ function tafelPruefen(t) {
                         f.push(`${z.id}: Stoff-Wähler ${k} ist kein [min, max]`);
         const ist = z.ist;
         if (ist !== null && ist !== undefined) {
-            for (const s of ["labor", "welt"])
+            for (const s of z.labor ? ["labor", "welt"] : ["welt"])
                 if (!ist[s] || !zahl(ist[s].Y) || typeof ist[s].rgb !== "string")
                     f.push(`${z.id}: ist.${s} {Y, rgb} fehlt`);
-            if (!zahl(ist.verhaeltnis)) f.push(`${z.id}: ist.verhaeltnis fehlt`);
+            if (z.labor && !zahl(ist.verhaeltnis)) f.push(`${z.id}: ist.verhaeltnis fehlt`);
             else if (
                 ist.labor &&
                 ist.welt &&
@@ -181,7 +184,7 @@ function tafelStand(t, pruefsumme) {
     const rot = [];
     const g = t.gemessen || {};
     for (const z of t.zeilen || [])
-        for (const seite of ["welt", "labor"]) {
+        for (const seite of z.labor ? ["welt", "labor"] : ["welt"]) {
             const q = (g[seite] || {}).quellen || {};
             const s = messStand([g[seite] || {}], z.quellen || [], { pruefsumme });
             const art = /^veraltet/.test(s) ? "veraltet" : "ungeprüft";
@@ -217,7 +220,7 @@ function tafelUrteil(t, messung) {
         const L = messung.labor && messung.labor[z.id];
         const W = messung.welt && messung.welt[z.id];
         const e = { id: z.id, gruppe: z.gruppe, titel: z.titel, labor: L || null, welt: W || null, ratsche: z.ratsche };
-        if (!L || !zahl(L.Y) || !(L.Y > 0))
+        if (z.labor && !(L && zahl(L.Y) && L.Y > 0))
             rot.push({ art: "stumm", text: `${z.id}: das Labor maß nichts (${(L && L.fehler) || "keine Zeile"})` });
         if (!W || !zahl(W.Y) || !(W.Y > 0))
             rot.push({ art: "stumm", text: `${z.id}: die Welt maß nichts (${(W && W.fehler) || "keine Zeile"})` });
@@ -249,7 +252,7 @@ function tafelUrteil(t, messung) {
                     rot.push({ art: "stufen-ton", text: `${z.id}: Welt/${z.welt.stufeVon} ${v} (Uhr ${u})` });
             }
         }
-        if (L && W && L.Y > 0 && W.Y > 0) {
+        if (z.labor && L && W && L.Y > 0 && W.Y > 0) {
             e.verhaeltnis = +(L.Y / W.Y).toFixed(4);
             e.abweichung = +abweichung(e.verhaeltnis).toFixed(4);
             e.imSoll = e.abweichung <= sollA;
@@ -306,7 +309,7 @@ function tafelNachziehen(t, messung, gemessen) {
     const aenderungen = [];
     for (const z of neu.zeilen) {
         const e = u.zeilen.find((x) => x.id === z.id);
-        if (!(e && zahl(e.verhaeltnis))) {
+        if (!(e && (zahl(e.verhaeltnis) || (!z.labor && e.welt && zahl(e.welt.Y))))) {
             const r = u.rot.find((x) => x.art === "stumm" && x.text.startsWith(`${z.id}:`));
             z.ist = null;
             aenderungen.push(`${z.id}: das Ist fällt (${r ? r.text : "stumm"})`);
@@ -314,13 +317,13 @@ function tafelNachziehen(t, messung, gemessen) {
         }
         // die Stufen der Welt reisen mit dem Ist: die Wand prüft sie gegen `welt.stufen` auch am gespeicherten Stand
         const knapp = (m) => Object.assign({ Y: m.Y, rgb: m.rgb, pixel: m.pixel }, Array.isArray(m.stufen) ? { stufen: m.stufen } : {});
-        z.ist = { labor: knapp(e.labor), welt: knapp(e.welt), verhaeltnis: e.verhaeltnis };
+        z.ist = z.labor ? { labor: knapp(e.labor), welt: knapp(e.welt), verhaeltnis: e.verhaeltnis } : { welt: knapp(e.welt) };
         // die Uhr-Spalten der Welt (material.K3): je weitere Uhr das Ist der Stufen-Zeile
         for (const u of neu.uhren.slice(1)) {
             const m = ((messung.uhren || {})[u] || {})[z.id];
             if (m && zahl(m.Y)) (z.ist.uhren = z.ist.uhren || {})[u] = knapp(m);
         }
-        if (z.ratsche == null || e.abweichung < z.ratsche) {
+        if (z.labor && (z.ratsche == null || e.abweichung < z.ratsche)) {
             aenderungen.push(`${z.id}: ${z.ratsche == null ? "–" : z.ratsche} → ${e.abweichung}`);
             z.ratsche = e.abweichung;
         }

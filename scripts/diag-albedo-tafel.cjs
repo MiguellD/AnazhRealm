@@ -261,7 +261,7 @@ async function selbsttest() {
         const code = AT.tafelStand(S0, mit(text0 + "\n;0;\n"));
         const dk = "stamm/dirigent-kern.js";
         const stufe = AU.codeAbdruck(fs.readFileSync(path.join(__dirname, "..", dk), "utf8").replace(/VERSION = "/, "$&0."), dk);
-        const mitD0 = S0.zeilen.filter((z) => z.quellen.includes(d0)).length;
+        const mitD0 = S0.zeilen.filter((z) => z.quellen.includes(d0)).reduce((n, z) => n + (z.labor ? 1 : 0.5), 0);
         S0.gemessen.welt.quellen[d0] = "0000000000000000";
         const altForm = AT.tafelStand(S0, pruefsumme);
         delete S0.gemessen.labor.quellen;
@@ -512,10 +512,12 @@ window.__bereit = true;
 // Die gespeicherte Tafel als Messung (für das Urteil ohne GPU).
 function gespeichert(t) {
     const m = { labor: {}, welt: {}, karten: {}, eichung: { welt: t.karte.albedo, labor: {} } };
+    m.uhren = {};
     for (const z of t.zeilen)
         if (z.ist) {
             m.labor[z.id] = z.ist.labor;
             m.welt[z.id] = z.ist.welt;
+            for (const u of t.uhren.slice(1)) (m.uhren[u] = m.uhren[u] || {})[z.id] = (z.ist.uhren || {})[u];
         }
     for (const [s, k] of Object.entries(t.karten)) {
         if (k.ist) m.karten[s] = k.ist;
@@ -614,7 +616,7 @@ async function main() {
             karten: m.karten,
             eichung: { welt: g.eichung.welt, labor: m.eichung.labor },
         });
-        if (nur) for (const z of t.zeilen) if (!nur.includes(z.labor.studio)) mm.labor[z.id] = g.labor[z.id];
+        if (nur) for (const z of t.zeilen) if (z.labor && !nur.includes(z.labor.studio)) mm.labor[z.id] = g.labor[z.id];
         const u = AT.tafelUrteil(t, mm);
         if (nur) {
             u.karten = u.karten.filter((k) => nur.includes(k.studio));
@@ -657,6 +659,7 @@ async function main() {
             for (const x of [...sn.brueche, ...sn.neu.flatMap((id) => sn.veraltet[id])]) console.log("   ❌ " + x);
             process.exit(1);
         }
+        for (const z of r.tafel.zeilen) if (z.welt.stufeVon) delete z.quellen;
         fs.writeFileSync(AT.TAFEL_PFAD, JSON.stringify(r.tafel, null, 4) + "\n");
         console.log(`\nTafel nachgezogen (${r.aenderungen.length}): ${r.aenderungen.join(" · ") || "nichts fiel"}`);
         process.exit(0);
@@ -664,11 +667,16 @@ async function main() {
     // DIE WAND (GPU-frei): jede Zeile gemessen, das Ist in seiner Ratsche, der Soll-Stand benannt.
     const errs = [];
     if (!t.gemessen) errs.push("die Tafel ist ungemessen (gemessen = null)");
-    for (const z of t.zeilen) if (!z.ist || z.ratsche == null) errs.push(`${z.id}: ohne Ist oder Ratsche`);
+    // DIE NEUE ZEILE (material.K3: Birke, Fichte, Hochhaus und ihre Stufen; eine Stufen-Zeile ohne die Spalte einer Uhr): wie
+    // eine veraltete laut und ohne Sperre — die Karte misst sie (`--neu`, die Station material.K3#2), nie ein Ersatz-Renderer
+    const stufig = (z) => z.welt.stufeVon || t.zeilen.some((x) => x.welt.stufeVon === z.id);
+    const neuZ = t.zeilen.filter((z) => !z.ist || (stufig(z) && t.uhren.slice(1).some((u) => !(z.ist.uhren || {})[u])));
+    const istNeu = (r) => neuZ.some((z) => r.text.startsWith(z.id + ":") || r.text.includes(`Welt/${z.id} `));
+    for (const z of t.zeilen) if (z.ist && z.labor && z.ratsche == null) errs.push(`${z.id}: ohne Ratsche`);
     for (const [s, k] of Object.entries(t.karten))
         if (!k.ist || k.ratsche == null) errs.push(`Karte ${s}: ohne Ist oder Ratsche`);
     const u = AT.tafelUrteil(t, gespeichert(t));
-    for (const r of u.rot) errs.push(`[${r.art}] ${r.text}`);
+    for (const r of u.rot) if (!istNeu(r)) errs.push(`[${r.art}] ${r.text}`);
     for (const s of ["labor", "welt"]) if (t.gemessen && !t.gemessen[s].echt) errs.push(`[echt] ${s} nicht echt gemessen`);
     // DER STAND (K63-n8; wie H5): ungeprüft bricht, veraltet steht laut je Zeile
     const sw = AT.standWand(AT.tafelStand(t, pruefsumme));
@@ -679,10 +687,11 @@ async function main() {
         process.exit(1);
     }
     for (const id of sw.neu) for (const x of sw.veraltet[id]) console.log(`⚠ ${x} (benannt, sperrt nicht)`);
-    if (sw.neu.length && (argv.includes("--neu") || (process.env.CI === "true" && linsenGpu() === "hardware")))
+    for (const z of neuZ) console.log(`⚠ ${z.id}: ungemessen (${z.ist ? "Uhr " + t.uhren.slice(1).join("/") : "ohne Ist"}) — die Karte misst sie (--neu), sperrt nicht`);
+    if (sw.neu.push(...neuZ.map((z) => z.id)) && (argv.includes("--neu") || (process.env.CI === "true" && linsenGpu() === "hardware")))
         return neuMessen(t, sw.neu);
     const weit = u.zeilen
-        .filter((z) => !z.imSoll)
+        .filter((z) => z.verhaeltnis && !z.imSoll)
         .sort((a, b) => b.abweichung - a.abweichung)
         .map((z) => `${z.id} ${z.verhaeltnis}`);
     console.log(
