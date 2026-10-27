@@ -32,7 +32,8 @@ const CORES = [
     { file: "tetrapoda-core.js", ns: "__tetrapodaCore", kind: "kreatur", feld: "motion", minRezepte: 4 },
 ];
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
+const { errs, check } = pruefer();
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 
 // Frischer vm-Kontext je Ladung (Determinismus-Beweis über zwei unabhängige Läufe). Der Kontext liest das Math des
@@ -170,12 +171,7 @@ function validateDaten(N, spec) {
             "Selbst-Test 4: ein Kern, der beim Laden Math.sin ruft, erscheint im Nenner der Probe (v7 reißt)",
             PPt.gerufen.sin === 1
         );
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
-            process.exit(1);
-        }
-        console.log("\n✅ SELBST-TEST GRÜN.");
-        process.exit(0);
+        urteilEnde(errs.length, "\n❌ SELBST-TEST ROT — die Linse ist vakuös.", "\n✅ SELBST-TEST GRÜN.");
     }
 
     console.log("=== DATEN-VERTRAG v7 — die MESHFREI-Kerne (Studio-Vertrag §8) ===");
@@ -226,12 +222,5 @@ function validateDaten(N, spec) {
         check
     );
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — DER DATEN-VERTRAG v7 STEHT: die drei MESHFREI-Kerne erfüllen §8 (klang/motion-Schema, place none, B4-Bänder), die Skala kommt aus der EINEN Lab-Formel, und die Daten sind deterministisch + sha256-eingefroren."
-    );
-    process.exit(0);
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en).`, "\n✅ GRÜN — DER DATEN-VERTRAG v7 STEHT: die drei MESHFREI-Kerne erfüllen §8 (klang/motion-Schema, place none, B4-Bänder), die Skala kommt aus der EINEN Lab-Formel, und die Daten sind deterministisch + sha256-eingefroren.");
 })();

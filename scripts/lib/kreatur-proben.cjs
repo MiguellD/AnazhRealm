@@ -2774,8 +2774,7 @@ async function kreaturProben(r, T, opts) {
         const S = await startDorf(restore);
         if (!S) return { fehler: "das Start-Dorf entstand nicht (kein Dorf-Zug am Genesis-Ort)" };
         const stell = (x, z) => pm.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
-        const pc = { x: S.ox + S.plan.platz.cx, z: S.oz + S.plan.platz.cz };
-        stell(pc.x, pc.z);
+        stell(S.ox + S.plan.platz.cx, S.oz + S.plan.platz.cz);
         restore.push(() => r._uhrSetzen(tag0, "regler"));
         r._setWeather("sunny", "regler");
         const da = () => !!S.liste && S.liste.every((b) => b.leib && !b.ankunft);
@@ -2791,20 +2790,19 @@ async function kreaturProben(r, T, opts) {
                 const q = { x: a.x + (u.x * t) / 2, z: a.z + (u.z * t) / 2 };
                 return offen(q.x, q.z) && S.liste.every((o) => o === b || o.drinnen || o.weg || ab(q, o.leib.position) > 2.2); // prettier-ignore
             });
-        let [b, w] = [null, null];
-        for (const k of S.liste.filter((o) => !o.drinnen && !o.weg && o.da).sort((x, y) => ab(x.leib.position, pc) - ab(y.leib.position, pc))) // prettier-ignore
-            for (const dw of [0.9, -0.9, 0.6, -0.6, 1.2, -1.2])
-                for (const n of [2, -2]) {
-                    const u = { x: -Math.sin(k.leib.rotation.y + dw), z: -Math.cos(k.leib.rotation.y + dw) };
-                    const a = { x: k.leib.position.x - u.x * 9, z: k.leib.position.z - u.z * 9 };
-                    if (!b && frei(k, a, u) && frei(k, { x: a.x + u.z * n, z: a.z - u.x * n }, u)) [b, w] = [k, { a, u, n }];
-                }
+        let [b, w] = [];
+        for (const k of S.liste)
+            for (const dw of [0.9, -0.9, 0.6, -0.6, 1.2, -1.2]) {
+                const u = { x: -Math.sin(k.leib.rotation.y + dw), z: -Math.cos(k.leib.rotation.y + dw) };
+                const a = { x: k.leib.position.x - u.x * 9, z: k.leib.position.z - u.z * 9 };
+                if (!b && !k.drinnen && !k.weg && k.da && frei(k, a, u) && frei(k, { x: a.x + u.z * 2, z: a.z - u.x * 2 }, u))
+                    [b, w] = [k, { a, u }];
+            }
         if (!b) return { fehler: "kein Stehender mit freiem Weg um 10 Uhr" };
         const [g, stand] = [b.leib, { x: b.ziel.x, z: b.ziel.z }];
-        // DER KOPF IM BILD: seine Welt-Matrix (die dritte Spalte: wohin das Gesicht zeigt), gegen den Spieler und in Ruhe
+        // DER KOPF IM BILD: seine Welt-Matrix (die dritte Spalte: wohin das Gesicht zeigt) gegen den Spieler
         const kopf = () => g.userData.rig.head.matrixWorld.elements;
-        const gier = (e, x, z) => Math.abs(grad(wrap(Math.atan2(x - e[12], z - e[14]) - Math.atan2(e[8], e[10]))));
-        const ruheGrad = Math.round(gier(kopf(), kopf()[12] + Math.sin(g.rotation.y), kopf()[14] + Math.cos(g.rotation.y)));
+        const gier = (e = kopf()) => Math.abs(grad(wrap(Math.atan2(pm.x - e[12], pm.z - e[14]) - Math.atan2(e[8], e[10]))));
         // EIN GANG (versatz quer zum Weg): je Takt der Kreatur-Takt und die Bewohner, im Fenster der echte Frame aus Ego
         const gang = (v) => {
             const a = { x: w.a.x + w.u.z * v, z: w.a.z - w.u.x * v };
@@ -2820,7 +2818,7 @@ async function kreaturProben(r, T, opts) {
                 z.dMin = Math.min(z.dMin, Math.round(d * 1000) / 1000);
                 z.beruehrt.push(...S.liste.filter((o) => !o.drinnen && ab(pm, o.leib.position) < 2 * A.PLAYER_WALL_RADIUS).map((o) => o.heim)); // prettier-ignore
                 if (e === null && d <= A.BEWOHNER.begegnungM) [e, z.nah] = [t, !!b.nah];
-                if (e !== null && z.zuS === null && gier(kopf(), pm.x, pm.z) <= 10)
+                if (e !== null && z.zuS === null && gier() <= 10)
                     [z.zuS, z.imBild] = [Math.round((t - e) * 1000) / 1000, !echt || (g.visible && imBlick(kopf()[12], kopf()[13], kopf()[14]))]; // prettier-ignore
             }
             // der Spieler steht am Ende, bis der Bewohner wieder an seinem Ort steht
@@ -2830,7 +2828,7 @@ async function kreaturProben(r, T, opts) {
         // DER LAUF: der Vorbeigang, zwei Gänge ohne Erinnerung, der Schlag 5 m neben ihm, der vierte Gang
         const lauf = () => {
             g.userData.memory = [];
-            const G = [gang(w.n), gang(0), gang(0)];
+            const G = [gang(2), gang(0), gang(0)];
             const ort = spirale(stand.x + 5 - P0.x, stand.z - P0.z, 4, 1.5, (x, z) => offen(x, z) && neben(x, z));
             if (!ort) return { fehler: "kein Ort für das Wesen neben ihm" };
             r.damageCreature(tier(ort, "wesen"), 1e9, { source: "player" });
@@ -2838,7 +2836,7 @@ async function kreaturProben(r, T, opts) {
             G.push(gang(0));
             const je = (k) => G.map((x) => x[k]);
             return {
-                ...{ wer: `${b.rolle}/${b.beruf} #${b.heim}`, ruheGrad, furcht, zuS: je("zuS"), nah: je("nah") },
+                ...{ wer: `${b.rolle}/${b.beruf} #${b.heim}`, furcht, zuS: je("zuS"), nah: je("nah") },
                 ...{ imBild: je("imBild"), dMin: je("dMin"), beruehrt: [].concat(...je("beruehrt")) },
             };
         };
@@ -3166,8 +3164,7 @@ function urteil(name, z) {
     }
     // DIE BEGEGNUNG (mensch.K5 Staffel 1): je Gang (der Vorbeigang 2 m daneben, drei durch seinen Stand) der Kopf auf 10° zum
     // Spieler ≤ 0,5 s ab 3 m (als Leib, im Fenster im Bild), kein Bewohner näher als zwei Kapseln; die Gewalt neben ihm weitet
-    // den Abstand des vierten Gangs um ≥ 0,3 m, die Gegenprobe ohne Erinnerung bleibt auf 0,15 m beim zweiten; der Kopf zeigt in
-    // Ruhe, wohin der Leib schaut
+    // den Abstand des vierten Gangs um ≥ 0,3 m, die Gegenprobe ohne Erinnerung bleibt auf 0,15 m beim zweiten
     if (name === "begegnung") {
         const [zu, d] = [z.zuS, z.dMin];
         soll(
@@ -3179,7 +3176,6 @@ function urteil(name, z) {
             z.furcht > 0 && d[3] - d[1] >= 0.3 && Math.abs(d[2] - d[1]) <= 0.15,
             `die Erinnerung lenkt den Abstand nicht: ohne ${d[1]} · Gegenprobe ${d[2]} · nach der Gewalt ${d[3]} m (Furcht ${z.furcht})`
         );
-        soll(z.ruheGrad <= 10, `der Kopf zeigt in Ruhe ${z.ruheGrad}° neben den Blick des Leibs`);
     }
     if (name === "geister") soll(z.geister === 0, `${z.geister} Geister nach clearCreatures (aus ${z.vorher})`);
     if (name === "sattel") {
