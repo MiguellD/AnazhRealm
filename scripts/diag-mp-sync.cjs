@@ -946,8 +946,8 @@ hauptLauf(async () => {
         // Bauten des Abdrucks fallen ROT (die Probe sieht beide); (f) B nimmt keine Uhr mehr, A springt in den Zug vor einem Sturm
         // drei Züge voraus — nie in den von B, der Zug ROT. Bis ci-wackler-zensus einen voraus: lag der Sturm im nächsten Zug, landete
         // A im Zug von B, und der Selbsttest war blind, je nachdem, wie weit die Uhr unter Last lief (CI 40467672118; der Kern
-        // wetterAt über 2000 Züge: blind in 10,6–12,2 %, mit 3 in keinem)
-        await pageA.evaluate(sturmSprung, 3);
+        // wetterAt über 2000 Züge: blind in 10,6–12,2 %, mit 3 in keinem). B wird taub, BEVOR A springt (mp-leitung: sprang A
+        // zuerst, erreichte unter Last ein pos.w von A die Seite B vor ihrem Eingriff — „zug gleich" in 1 von 3 Läufen auf 2 Kernen)
         await pageB.evaluate(() => {
             const r = anazhRealm;
             r._weltUhrNimm = () => {};
@@ -964,6 +964,7 @@ hauptLauf(async () => {
                 return echt.call(this, m, p2p);
             };
         });
+        await pageA.evaluate(sturmSprung, 3);
         const s = await akte();
         check(
             "(e)(f) Selbsttest: B wendet jede Akt-Nachricht doppelt an, verschiebt den Samen des Baus, trägt eigene Uhr → Edits, Bauten, Zug ROT",
