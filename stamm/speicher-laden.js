@@ -385,13 +385,17 @@ class AnazhRealm_speicher_laden {
     }
 
     // DIE LEBENSWERTE (halten.K5, `buildStateSnapshot` playerLeben): nach Seele und Gerät, die das Maximum setzen, die Wunde
-    // des Tods, dann Leben, Ausdauer und Mana als Anteil des neu gerechneten Maximums. Ein Stand ohne sie lädt voll.
+    // des Tods und die Nahrung mit ihrer Restzeit (über `addPlayerBoost`, die EINE Boost-Tür), dann Leben, Ausdauer und Mana
+    // als Anteil des neu gerechneten Maximums. Ein Stand ohne sie lädt voll.
     _loadStateRestoreLeben(state) {
         const L = state.playerLeben;
         const pl = this.state.player;
         if (!L || typeof L !== "object" || !pl) return;
         const anteil = (v, leer) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : leer);
         pl.deathWoundIntensity = anteil(L.wunde, 0);
+        for (const n of Array.isArray(L.nahrung) ? L.nahrung : [])
+            if (n && String(n.quelle).startsWith("consume:") && n.rest > 0)
+                this.addPlayerBoost({ source: n.quelle, tagDelta: n.tags, durationSeconds: n.rest, label: n.label });
         this.recomputePlayerStats();
         pl.hp = anteil(L.hp, 1) * pl.hpMax;
         pl.stamina = anteil(L.ausdauer, 1) * pl.staminaMax;

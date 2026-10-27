@@ -2055,6 +2055,42 @@
             schlagHz: 12,
             schlagRad: 0.9,
         }),
+        // DER SCHWARM (luftwasser.K5, 27.10., additiv): der Starenschwarm über dem Offenland — fern EIN Agent. Kein Glied wird
+        // geboren, gespeichert oder je Kopf getaktet: der Schwarm ist der Wurf seines Reviers (Raster zelleM, je Zelle mit dem
+        // Anteil anteil ein Schwarm, wo die Kronen-Deckung der Mitte höchstens deckungMax ist — Stare schwärmen über Weide, Feld
+        // und Ried), sein ZENTRUM kreist auf der Uhr der Welt (radiusM, tempoMs, hoeheM über der 2D-Höhe; Sturnus vulgaris reist
+        // mit 12–20 m/s), und jedes Glied ist eine FUNKTION von (Index, Zeit) um das Zentrum (schwarmGlied): ein quasi-gleich-
+        // verteilter Ball (R2-Folge, Radius ∛) mit raumJeGlied Abstand³ je Glied, gestaucht zur flachen Scheibe form = [längs,
+        // hoch, quer] (gemessene Starenschwärme sind dünn längs der Schwerkraft, Ballerini et al. 2008; Nächster-Nachbar
+        // 0,7–1,5 m), atmend (atmen), eine Dichte-Welle läuft längs durch den Verband (welle; Procaccini et al. 2011), jedes Glied
+        // zittert um seinen Platz (zitterM) und wechselt Schlag und Gleiten (gleitHz, der Starenflug). NAH (nahM vom Auge) hält
+        // die Separation die Glieder auf ihrem Paar-Raum raumM auseinander (schwarmSeparation, über ein Hash-Gitter der Zelle
+        // raumM: Kosten an den Gliedern, nie n²); jenseits von sichtM rechnet nur das Zentrum; das Revier einer Zelle folgt der
+        // Deckung je frischeS Sekunden der Welt-Uhr (gepflanzter Wald vertreibt den Schwarm). Bei Tag (sonneMin) und unter
+        // regenMax fliegt er, sonst ruht er (kein Glied im Bild). Der Leib ist der des Singvogels (leib).
+        schwarm: Object.freeze({
+            zelleM: 480,
+            anteil: 0.5,
+            deckungMax: 0.35,
+            glieder: [60, 140],
+            hoeheM: [24, 46],
+            radiusM: [60, 140],
+            tempoMs: 13,
+            abstandM: 1.1,
+            raumJeGlied: 1.6,
+            form: [1.6, 0.42, 1],
+            atmen: Object.freeze({ hz: 0.05, amp: 0.14 }),
+            welle: Object.freeze({ hz: 0.11, amp: 0.35, k: 1.4 }),
+            zitterM: 0.22,
+            zitterHz: 0.6,
+            gleitHz: 0.45,
+            raumM: 0.7,
+            nahM: 60,
+            sichtM: 320,
+            sonneMin: 0.05,
+            regenMax: 0.5,
+            frischeS: 30,
+        }),
     });
     // saat (uint32), die Zelle (ix, iz) und die Wurf-Nummer k → [0, 1).
     function vogelWurf(saat, ix, iz, k) {
@@ -2105,6 +2141,167 @@
         out.gier = Math.atan2(-sinn * Math.sin(phi), sinn * Math.cos(phi));
         out.schlag = V.leib.schlagRad * Math.sin(6.283185307179586 * V.leib.schlagHz * t + w[0] * 97);
         return true;
+    }
+    // DER SCHWARM (VOGEL_GESETZ.schwarm). u = vogelWurf(…, 0) der Schwarm-Zelle, deckung die Kronen-Deckung ihrer Mitte (0..1).
+    // Liefert: zieht dort ein Schwarm?
+    function schwarmRevier(u, deckung, V) {
+        var S = V.schwarm;
+        return u < S.anteil && !(deckung > S.deckungMax);
+    }
+    // w = die Würfe des Schwarms [Phase, Kreis, Drehsinn, Höhe, Glieder] (0..1), t = die Uhr der Welt (s), sonne = sin der
+    // Sonnenhöhe, regen 0..1. Schreibt out {dx, dz (von der Mitte), h (über dem Boden), gier (rad, Blick +z), n (Glieder)};
+    // liefert, ob er fliegt. Das Zentrum ist der EINE Agent: fern rechnet der Schwarm nur dies.
+    function schwarmZentrum(w, t, sonne, regen, V, out) {
+        var S = V.schwarm;
+        out.n = Math.round(S.glieder[0] + (S.glieder[1] - S.glieder[0]) * w[4]);
+        if (!(sonne >= S.sonneMin) || regen > S.regenMax) return false;
+        var R = S.radiusM[0] + (S.radiusM[1] - S.radiusM[0]) * w[1];
+        var sinn = w[2] < 0.5 ? -1 : 1;
+        var phi = w[0] * 6.283185307179586 + (sinn * S.tempoMs * t) / R;
+        out.dx = R * Math.cos(phi);
+        out.dz = R * Math.sin(phi);
+        out.h = S.hoeheM[0] + (S.hoeheM[1] - S.hoeheM[0]) * w[3];
+        out.gier = Math.atan2(-sinn * Math.sin(phi), sinn * Math.cos(phi));
+        return true;
+    }
+    // Das Glied i von n um das Zentrum zur Zeit t (phase = w[0] des Schwarms, gier = die des Zentrums): die Formation als
+    // Funktion — kein Zustand je Kopf. Schreibt out {x, y, z (Welt-Versatz vom Zentrum, m), gier, schlag (rad)}.
+    function schwarmGlied(i, n, t, phase, gier, V, out) {
+        var S = V.schwarm,
+            f = S.form,
+            TAU = 6.283185307179586;
+        // der Ball der Glieder je n (die Einheits-Lagen, R2-Folge, Radius ∛) und die Größen des Schwarms in diesem Takt (gleich
+        // für jedes Glied) — gemerkt im Kratz-Objekt out
+        if (out.n !== n) {
+            var B = (out.ball = new Float32Array(3 * n));
+            for (var b = 0; b < n; b++) {
+                var u = (0.5 + b * 0.7548776662466927) % 1,
+                    v = (0.5 + b * 0.5698402909980532) % 1;
+                var rr = Math.cbrt((b + 0.5) / n),
+                    ct = 1 - 2 * u,
+                    st = Math.sqrt(1 - ct * ct);
+                B[3 * b] = rr * st * Math.sin(TAU * v) * f[0];
+                B[3 * b + 1] = rr * ct * f[1];
+                B[3 * b + 2] = rr * st * Math.cos(TAU * v) * f[2];
+            }
+            out.t = null;
+        }
+        if (out.n !== n || out.t !== t || out.phase !== phase || out.gier0 !== gier) {
+            out.n = n;
+            out.t = t;
+            out.phase = phase;
+            out.gier0 = gier;
+            out.R0 = S.abstandM * Math.cbrt((n * S.raumJeGlied) / (4.1887902047863905 * f[0] * f[1] * f[2]));
+            out.R0 *= 1 + S.atmen.amp * Math.sin(TAU * (S.atmen.hz * t + phase));
+            out.c = Math.cos(gier);
+            out.s = Math.sin(gier);
+        }
+        var R0 = out.R0,
+            ball = out.ball;
+        var L = ball[3 * i] * R0,
+            H = ball[3 * i + 1] * R0,
+            Q = ball[3 * i + 2] * R0;
+        var wp = (S.welle.k * L) / R0 - TAU * S.welle.hz * t;
+        H += S.welle.amp * f[1] * R0 * Math.sin(wp);
+        L += 0.5 * S.welle.amp * R0 * Math.cos(wp);
+        var psi = TAU * ((i * 0.6180339887498949) % 1),
+            zt = TAU * S.zitterHz * t;
+        Q += S.zitterM * Math.cos(zt + psi);
+        H += S.zitterM * Math.sin(1.3 * zt + 2 * psi);
+        L += S.zitterM * Math.sin(0.8 * zt + 3 * psi);
+        var c = out.c,
+            s = out.s;
+        out.x = c * Q + s * L;
+        out.y = H;
+        out.z = -s * Q + c * L;
+        out.gier = gier + 0.12 * Math.sin(zt + psi);
+        // Schlag und Gleiten: der Ausschlag blendet stetig zwischen dem Schlag des Leibs und der leicht gehobenen Gleit-Lage
+        var g = Math.sin(TAU * S.gleitHz * t + psi);
+        var a = g > 0.6 ? 0 : g < 0.2 ? 1 : (0.6 - g) / 0.4;
+        var L0 = V.leib;
+        out.schlag = 0.15 + a * (L0.schlagRad * Math.sin(TAU * L0.schlagHz * t + 97 * psi) - 0.15);
+        return out;
+    }
+    // DIE SEPARATION DES NAHEN SCHWARMS: p = die Lagen der n Glieder (x, y, z je Glied, Welt), raum = der Paar-Raum (m),
+    // G = das Gitter (Kratz-Speicher des Wirts, wächst mit n). Ein Hash-Gitter der Zelle raum (27 Nachbar-Zellen tragen jedes
+    // Paar in Reichweite): zwei Glieder näher als raum weichen einander je um die Hälfte der Überdeckung (ein Jacobi-Schritt:
+    // die Stöße summieren, dann gelten sie); bei exakter Deckung weicht das spätere in die Goldwinkel-Richtung seines Index
+    // (deterministisch). Ein Schritt je Takt, auf die Lagen der Funktion — kein Zustand bleibt. Liefert die Zahl der Paare.
+    var SCHWARM_NACHBARN = (function () {
+        var o = [0, 0, 0];
+        for (var x = -1; x <= 1; x++)
+            for (var y = -1; y <= 1; y++)
+                for (var z = -1; z <= 1; z++) if (x > 0 || (x === 0 && (y > 0 || (y === 0 && z > 0)))) o.push(x, y, z);
+        return o;
+    })();
+    function schwarmSeparation(p, n, raum, G) {
+        var m = 16;
+        while (m < 2 * n) m <<= 1;
+        if (!G.kopf || G.kopf.length < m) G.kopf = new Int32Array(m);
+        if (!G.nach || G.nach.length < n) {
+            G.nach = new Int32Array(n);
+            G.zelle = new Int32Array(3 * n);
+            G.d = new Float32Array(3 * n);
+        }
+        var kopf = G.kopf,
+            nach = G.nach,
+            zelle = G.zelle,
+            d = G.d,
+            k = m - 1,
+            i,
+            j;
+        var h = function (x, y, z) {
+            return (Math.imul(x, 73856093) ^ Math.imul(y, 19349663) ^ Math.imul(z, 83492791)) & k;
+        };
+        kopf.fill(-1, 0, m);
+        for (i = 0; i < n; i++) {
+            var cx = Math.floor(p[3 * i] / raum),
+                cy = Math.floor(p[3 * i + 1] / raum),
+                cz = Math.floor(p[3 * i + 2] / raum);
+            zelle[3 * i] = cx;
+            zelle[3 * i + 1] = cy;
+            zelle[3 * i + 2] = cz;
+            var b = h(cx, cy, cz);
+            nach[i] = kopf[b];
+            kopf[b] = i;
+            d[3 * i] = d[3 * i + 1] = d[3 * i + 2] = 0;
+        }
+        var paare = 0,
+            N = SCHWARM_NACHBARN;
+        // je Glied die eigene Zelle (nur spätere Glieder) und die 13 Zellen VOR ihr: jedes Paar genau einmal
+        for (i = 0; i < n; i++)
+            for (var o = 0; o < N.length; o += 3) {
+                var qx = zelle[3 * i] + N[o],
+                    qy = zelle[3 * i + 1] + N[o + 1],
+                    qz = zelle[3 * i + 2] + N[o + 2];
+                for (j = kopf[h(qx, qy, qz)]; j >= 0; j = nach[j]) {
+                    if ((o === 0 && j <= i) || zelle[3 * j] !== qx || zelle[3 * j + 1] !== qy || zelle[3 * j + 2] !== qz) continue;
+                    var dx = p[3 * j] - p[3 * i],
+                        dy = p[3 * j + 1] - p[3 * i + 1],
+                        dz = p[3 * j + 2] - p[3 * i + 2];
+                    var q = dx * dx + dy * dy + dz * dz;
+                    if (q >= raum * raum) continue;
+                    var e = Math.sqrt(q),
+                        u = e;
+                    if (e < 1e-6) {
+                        var ang = j * 2.39996;
+                        dx = Math.cos(ang);
+                        dy = 0;
+                        dz = Math.sin(ang);
+                        u = 1;
+                    }
+                    var s = (0.5 * (raum - e)) / u;
+                    d[3 * i] -= dx * s;
+                    d[3 * i + 1] -= dy * s;
+                    d[3 * i + 2] -= dz * s;
+                    d[3 * j] += dx * s;
+                    d[3 * j + 1] += dy * s;
+                    d[3 * j + 2] += dz * s;
+                    paare++;
+                }
+            }
+        for (i = 0; i < 3 * n; i++) p[i] += d[i];
+        return paare;
     }
 
     // Mit folge (GANG_FOLGE, die Gangart aus dem Tempo) zieht das Netz jedes Bein in DIESES Muster: jedes Bein an jedes, die
@@ -3556,6 +3753,10 @@
         vogelRevier: vogelRevier,
         vogelLied: vogelLied,
         vogelBahn: vogelBahn,
+        schwarmRevier: schwarmRevier,
+        schwarmZentrum: schwarmZentrum,
+        schwarmGlied: schwarmGlied,
+        schwarmSeparation: schwarmSeparation,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         FELL_SCHALE: FELL_SCHALE,
