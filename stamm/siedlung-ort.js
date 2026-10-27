@@ -2571,33 +2571,39 @@ class AnazhRealm_siedlung_ort {
         return { plan: null, ort };
     }
     // DAS ERSTE HAUS STEHT SOFORT (siedlung.K5, Lehre 14: im Idle vorgebacken): ist der Vorrat einer Zelle bereit, bestellt der Takt
-    // die Studio-Stufen der `AUTO_SETTLEMENT.vorbackHaeuser` Häuser, die dem Ort ihres Erwachens am nächsten liegen (der Ring `nah`
-    // auf dem Weg vom Spieler zum Anker) — in der Mesh-Zone die Stufe, die die Kette dort wählt (`_foundryLodForEntry` am Auge des
-    // Erwachens), dahinter die Fernform des Gesetzbuchs — über DENSELBEN Chokepoint wie das gesetzte Haus (`_foundryFlattenFor`).
+    // die Studio-Stufen der `AUTO_SETTLEMENT.vorbackHaeuser` Häuser, die der Zug zuerst hebt, am Auge ihres Erwachens (der Ring
+    // `nah` auf dem Weg vom Spieler zum Anker) — in der Mesh-Zone die Stufe, die die Kette dort wählt (`_foundryLodForEntry` am
+    // Auge), dahinter die Fernform des Gesetzbuchs — über DENSELBEN Chokepoint wie das gesetzte Haus (`_foundryFlattenFor`).
     // Bis hier bestellte erst das gesetzte Haus, nach dem Erdbau, und der Faden trug fremde Aufträge: das erste Haus stand nach
     // 148–518 ms (nH 12, Hülle) bzw. 474–800 ms (nH 300, Mesh; Radeon, Station dorf), vorgebacken nach 42–59 bzw. 119–294 ms.
-    // Rückgabe: ob jede Stufe steht (sonst fragt der Takt neu).
+    // DIE REIHE DES ZUGS (sk5-haus): vorgebacken wird, was der Zug zuerst hebt — seine Reihe (`_dorfZug`: die Mitte im Schirm, dann
+    // nah) am Auge des Erwachens, mit dem Blick von JETZT, neu je `AUTO_SETTLEMENT.vorbackNeuM` Weg, bis die Zelle erwacht; nie
+    // eine eigene nach dem Abstand zum Auge. Bis sk5-haus lagen gebacken die vier nächsten (nH 300, gate:settlement C-K5: 13,7–23,6 m außer
+    // Schirm), der Zug hob das Haus 117,7 m in der Mitte des Schirms — das erste Haus wartete 11 Takte auf die Foundry-Schlange.
+    // Rückgabe: ob jede Stufe steht (der Takt fragt bis zum Erwachen neu).
     _dorfVorbacken(w, p) {
         const f = this._foundry;
         if (!w.v2 || !f || !f.recipes) return false;
-        if (!w.vorback) {
-            const A = AnazhRealm.AUTO_SETTLEMENT;
+        const A = AnazhRealm.AUTO_SETTLEMENT;
+        if (!w.vorback || Math.hypot(p.x - w.vorbackBei.x, p.z - w.vorbackBei.z) >= A.vorbackNeuM) {
+            w.vorbackBei = { x: p.x, z: p.z };
             const o = w.v2.ort;
             const d = Math.hypot(p.x - o.x, p.z - o.z) || 1;
             const k = (A.nearM + (w.mehrM || 0)) / d;
             const auge = { x: o.x + (p.x - o.x) * k, z: o.z + (p.z - o.z) * k };
             const d2 = (e) => (e.position.x - auge.x) ** 2 + (e.position.z - auge.z) ** 2;
             const haeuser = [];
-            for (const sl of w.v2.slots) {
+            for (const si of this._dorfZug(w.v2, o, null, null, auge).reihe) {
+                const sl = w.v2.slots[si];
                 const type = this._slotBauplan(sl, f);
                 const position = { x: o.x + sl.x, y: sl.y + 0.5, z: o.z + sl.z };
                 if (type)
                     haeuser.push({ type, seed: sl.seed >>> 0, position, studioOv: AnazhRealm._stempelVon(sl.ov) });
+                if (haeuser.length >= A.vorbackHaeuser) break;
             }
-            haeuser.sort((a, b) => d2(a) - d2(b));
             const R = this.state.architectureCullingRadius;
             w.vorback = [];
-            for (const e of haeuser.slice(0, A.vorbackHaeuser)) {
+            for (const e of haeuser) {
                 const preset = this._foundryPresetForEntry(e);
                 const fern = d2(e) > R * R;
                 if (preset)
@@ -2633,7 +2639,8 @@ class AnazhRealm_siedlung_ort {
     // Schirm. Bis hier galt die Scheibe des Grundrisses allein: am Plan der Trasse (siedlung-k3-heil) hob der Zug an der Radeon
     // (M36 nH 300, über dem Budget ein Haus im ersten Schritt) zuerst eins 11,3 m neben dem Spieler bei 70° (Mitte außer
     // Blick), das erste im Kegel im 20. Takt — gezeichnet nach 954 ms (vorher 134 ms).
-    // Der Akt (`_spawnSettlementFromExport`) und der Zug nach dem Reload (`_dorfZugOffen`) heben in DERSELBEN Reihe.
+    // Der Akt (`_spawnSettlementFromExport`) und der Zug nach dem Reload (`_dorfZugOffen`) heben in DERSELBEN Reihe, der Vorrat
+    // backt sie vor (`_dorfVorbacken`).
     // EIN SCHRITT DES ZUGS `q`: die nächsten Slots seiner Reihe — `AUTO_SETTLEMENT.perTick`, über dem Budget (`ueber`) einer,
     // unter dem Ladeschirm bis zur Frist des Lade-Frames (`_kappeOffen`, K60-2: die Häuser der Ankunft gehören ins erste
     // Weltbild, Term „dorf"), je Slot mit seinen Wandlaternen (K66-2). Ihn fahren der Takt (`_tickAutoSettlement`) und der Akt
@@ -2692,18 +2699,23 @@ class AnazhRealm_siedlung_ort {
         }
         return neu;
     }
-    _dorfZug(plan, origin, cellKey, gang) {
+    // `auge` (der Vorrat, `_dorfVorbacken`): die Reihe, wie sie der Spieler am Ring des Erwachens sieht — der Blick ist
+    // verschiebe-gleich (`_imErstenBlick` misst vom Auge der Kamera), das Haus rückt um das, was dem Auge zum Spieler fehlt.
+    _dorfZug(plan, origin, cellKey, gang, auge) {
         const pm = this.state.playerMesh;
-        const p = pm ? pm.position : origin;
+        const p = auge || (pm ? pm.position : origin);
+        const [vx, vz] = pm && auge ? [pm.position.x - auge.x, pm.position.z - auge.z] : [0, 0];
         const aus = AnazhRealm.ERSTER_BLICK.ausserD2;
         const rang = plan.slots.map((s) => {
             const x = origin.x + s.x;
             const z = origin.z + s.z;
             const d2 = (x - p.x) ** 2 + (z - p.z) ** 2;
             if (!pm || !Number.isFinite(d2)) return d2;
-            if (this._imErstenBlick(x, z, 0, true)) return d2;
+            if (this._imErstenBlick(x + vx, z + vz, 0, true)) return d2;
             const { fp } = AnazhRealm._slotGrundriss(s);
-            return this._imErstenBlick(x, z, fp ? Math.hypot(fp.ex, fp.ez) : 0, true) ? d2 + aus : d2 + 2 * aus;
+            return this._imErstenBlick(x + vx, z + vz, fp ? Math.hypot(fp.ex, fp.ez) : 0, true)
+                ? d2 + aus
+                : d2 + 2 * aus;
         });
         const reihe = plan.slots.map((_s, i) => i).sort((a, b) => rang[a] - rang[b] || a - b);
         return { plan, origin: { x: origin.x, z: origin.z }, idx: 0, reihe, cellKey, gang: gang || null };
@@ -2878,7 +2890,7 @@ class AnazhRealm_siedlung_ort {
                 this._dorfWasserSchritt(w.wasser);
                 rate = 0;
             }
-            if (w.da && !w.vorgebacken && V.has(k)) w.vorgebacken = this._dorfVorbacken(w, playerPos);
+            if (w.da && V.has(k)) w.vorgebacken = this._dorfVorbacken(w, playerPos);
         }
         // die Zellen um den Spieler: der Ring 1 (jeder Ort), dann der Ring 2 — dort nur die Stadt des Rang-Gesetzes (siedlung.K2):
         // sie erwacht um ihr `mehrM` früher, ihr Rand liegt so viel weiter vom Anker als der eines Dorfs
@@ -3047,6 +3059,8 @@ AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     perTick: 2,
     // so viele Häuser des Vorrats bestellen ihre Studio-Stufen vor dem Erwachen (`_dorfVorbacken`)
     vorbackHaeuser: 4,
+    // so viel Weg des Spielers, und der Vorrat liest die Reihe des Zugs neu (`_dorfVorbacken`, sk5-haus)
+    vorbackNeuM: 8,
     // über so viel ms eines Zug-Schritts trägt der Takt kein Haus mehr (`_dorfZugSchritt`, stadt-erwachen)
     taktMs: 8,
     // die Laternen je Rate des Erlebnis-Gangs (`_dorfErlebnis`, stadt-erwachen)
